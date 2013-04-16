@@ -65,7 +65,9 @@ inline  int  var       (Lit p)              { return p.x >> 1; }
 inline  int  toInt     (Var v)              { return v; } 
 inline  int  toInt     (Lit p)              { return p.x; } 
 inline  Lit  toLit     (int i)              { Lit p; p.x = i; return p; } 
-
+inline int dimacs(Lit l){
+	return sign(l)? -(var(l)+1):(var(l)+1);
+}
 //const Lit lit_Undef = mkLit(var_Undef, false);  // }- Useful special constants.
 //const Lit lit_Error = mkLit(var_Undef, true );  // }
 
@@ -197,9 +199,18 @@ class ClauseAllocator : public RegionAllocator<uint32_t>
         return (sizeof(Clause) + (sizeof(Lit) * (size + (int)has_extra))) / sizeof(uint32_t); }
  public:
     bool extra_clause_field;
+    CRef marker_refs;
 
-    ClauseAllocator(uint32_t start_cap) : RegionAllocator<uint32_t>(start_cap), extra_clause_field(false){}
-    ClauseAllocator() : extra_clause_field(false){}
+    CRef makeMarkerReference(){
+    	return --marker_refs;
+    }
+
+    bool isClause(const CRef & cr)const{
+    	return cr<marker_refs;
+    }
+
+    ClauseAllocator(uint32_t start_cap) : RegionAllocator<uint32_t>(start_cap), extra_clause_field(false),marker_refs(CRef_Undef){}
+    ClauseAllocator() : extra_clause_field(false),marker_refs(CRef_Undef){}
 
     void moveTo(ClauseAllocator& to){
         to.extra_clause_field = extra_clause_field;
@@ -227,12 +238,19 @@ class ClauseAllocator : public RegionAllocator<uint32_t>
 
     void free(CRef cid)
     {
+    	if(cid>= marker_refs){
+    		assert(false);
+    		return;
+    	}
         Clause& c = operator[](cid);
         RegionAllocator<uint32_t>::free(clauseWord32Size(c.size(), c.has_extra()));
     }
 
     void reloc(CRef& cr, ClauseAllocator& to)
     {
+    	if(cr>= marker_refs){
+    		return;
+    	}
         Clause& c = operator[](cr);
         
         if (c.reloced()) { cr = c.relocation(); return; }

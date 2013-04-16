@@ -179,7 +179,7 @@ void Solver::removeClause(CRef cr) {
     Clause& c = ca[cr];
     detachClause(cr);
     // Don't leave pointers to free'd memory!
-    if (locked(c)) vardata[var(c[0])].reason = CRef_Undef;
+    if (locked(c))  vardata[var(c[0])].reason = CRef_Undef;
     c.mark(1); 
     ca.free(cr);
 }
@@ -442,6 +442,7 @@ void Solver::uncheckedEnqueue(Lit p, CRef from)
     assigns[var(p)] = lbool(!sign(p));
     vardata[var(p)] = mkVarData(from, decisionLevel());
     trail.push_(p);
+    printTrail();
 }
 
 void Solver::analyzeFinal(CRef confl, Lit skip_lit, vec<Lit>& out_conflict)
@@ -555,9 +556,9 @@ void Solver::analyzeFinal(CRef confl, Lit skip_lit, vec<Lit>& out_conflict)
 				Lit local_l =trail[local_qhead++];
 				if(var(local_l)<min_local || var(local_l)>max_local)
 					continue;//this lit is not on the interface
-				Lit out_l =mkLit(var(out_l)+super_offset, sign(out_l));
+				Lit out_l =mkLit(var(local_l)+super_offset, sign(local_l));
 
-				if(! S->enqueue(out_l, cause_marker)){
+				if(! S->enqueue(out_l, cause_marker)){//can probably increment super_qhead here...
 					//this is a conflict
 					conflict.clear();
 					analyzeFinal(~local_l,conflict);
@@ -586,7 +587,7 @@ CRef Solver::propagate(bool propagate_theories)
     CRef    confl     = CRef_Undef;
     int     num_props = 0;
     watches.cleanAll();
-    while(qhead < trail.size()){
+    do{
 		while (qhead < trail.size()){
 			Lit            p   = trail[qhead++];     // 'p' is enqueued fact to propagate.
 			vec<Watcher>&  ws  = watches[p];
@@ -711,7 +712,7 @@ CRef Solver::propagate(bool propagate_theories)
 		}
 
 
-    }
+    }while(qhead < trail.size());
     propagations += num_props;
     simpDB_props -= num_props;
 
@@ -789,7 +790,7 @@ bool Solver::simplify()
 {
     assert(decisionLevel() == 0);
 
-    if (!ok || propagate() != CRef_Undef)
+    if (!ok || propagate(false) != CRef_Undef)
         return ok = false;
 
     if (nAssigns() == simpDB_assigns || (simpDB_props > 0))
@@ -989,6 +990,7 @@ lbool Solver::solve_()
         printf("===============================================================================\n");
     }
     initial_level=0;
+    track_min_level=0;
     // Search:
     int curr_restarts = 0;
     while (status == l_Undef){
@@ -1010,6 +1012,7 @@ lbool Solver::solve_()
         ok = false;
 
     cancelUntil(0);
+    assumptions.clear();
     return status;
 }
 
@@ -1022,6 +1025,7 @@ bool Solver::solve(vec<Lit> & conflict_out){
 		// Search:
 	int curr_restarts =0;
 	conflict.clear();
+	conflict_out.clear();
 	while (status == l_Undef){
 		double rest_base = luby_restart ? luby(restart_inc, curr_restarts) : pow(restart_inc, curr_restarts);
 		status = search(rest_base * restart_first);
@@ -1036,7 +1040,10 @@ bool Solver::solve(vec<Lit> & conflict_out){
 		return false;
 	}
 	if(conflict.size()){
-		conflict.copyTo(conflict_out);
+		for(int i = 0;i<conflict.size();i++){
+			Lit l = conflict[i];
+			conflict_out.push(mkLit(var(l)+super_offset,sign(l)));
+		}
 		return false;
 	}
 
@@ -1127,6 +1134,12 @@ void Solver::toDimacs(FILE* f, const vec<Lit>& assumps)
 
 void Solver::relocAll(ClauseAllocator& to)
 {
+	for(int i = 0;i<markers.size();i++){
+		CRef cr=to.makeMarkerReference();
+		assert(cr==markers[i]);//these should be identical in the current implementation
+		markers[i]=cr;
+	}
+
     // All watchers:
     //
     // for (int i = 0; i < watches.size(); i++)
@@ -1145,7 +1158,7 @@ void Solver::relocAll(ClauseAllocator& to)
     for (int i = 0; i < trail.size(); i++){
         Var v = var(trail[i]);
 
-        if (reason(v) != CRef_Undef && (ca[reason(v)].reloced() || locked(ca[reason(v)])))
+        if (ca.isClause(reason(v)) && (locked(ca[reason(v)]) || ca[reason(v)].reloced() ))
             ca.reloc(vardata[v].reason, to);
     }
 
@@ -1173,3 +1186,6 @@ void Solver::garbageCollect()
                ca.size()*ClauseAllocator::Unit_Size, to.size()*ClauseAllocator::Unit_Size);
     to.moveTo(ca);
 }
+
+
+

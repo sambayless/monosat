@@ -56,9 +56,18 @@ public:
     //Theory interface
     void addTheory(Theory*t){
     	theories.push(t);
-    	markers.push((CRef) UINT32_MAX-theories.size());
+    	markers.push(ca.makeMarkerReference());
     	cancelUntil(0);
 
+    }
+
+    bool isTheoryCause(CRef cr){
+    	return cr>=UINT32_MAX-theories.size();
+    }
+
+    int getTheory(CRef cr){
+    	assert(isTheoryCause(cr));
+    	return UINT32_MAX-cr - 1;
     }
 
     //Attach this solver to the next, connecting literals in the super solver to literals in this solver
@@ -312,6 +321,50 @@ protected:
     // Returns a random integer 0 <= x < size. Seed must never be 0.
     static inline int irand(double& seed, int size) {
         return (int)(drand(seed) * size); }
+
+
+    void printTrail(){
+#ifndef NDEBUG
+
+    	int solver_num=0;
+    	Solver * s = this;
+    	while(s->theories.size()){
+    		solver_num++;
+    		s=(Solver*)s->theories[0];
+    	}
+
+    	 static int total_lines=0;
+    	 total_lines++;
+
+    		printf("%d: SOLVER%d TRAIL: ",total_lines, solver_num);
+
+    	 	int lev = decisionLevel();
+    	 	int nextI= lev>0? trail_lim[lev-1]:0;
+    	 	for(int i = trail.size()-1;i>=0;i--)
+    	 	{
+    	 		Lit l = trail[i];
+    	 		int d =dimacs(l);
+    	 		if(i==qhead)
+    	 	    	printf("Q:");
+
+    	 		if(var(l)==0){
+    	 			printf("G");//ground
+    			}
+    	 		printf("%d",d);
+
+    	 		 printf(", ");
+    	 		if(i==nextI || i==0)
+    	 		{
+    	 			printf("L(%d) ",level(var(l)));
+    	 			lev--;
+    	 		     nextI=lev>0? trail_lim[lev-1]:0;
+    	 		}
+    	 	}
+
+    	 	printf("\n");
+#endif
+
+     }
 };
 
 
@@ -357,7 +410,7 @@ inline bool     Solver::addEmptyClause  ()                      { add_tmp.clear(
 inline bool     Solver::addClause       (Lit p)                 { add_tmp.clear(); add_tmp.push(p); return addClause_(add_tmp); }
 inline bool     Solver::addClause       (Lit p, Lit q)          { add_tmp.clear(); add_tmp.push(p); add_tmp.push(q); return addClause_(add_tmp); }
 inline bool     Solver::addClause       (Lit p, Lit q, Lit r)   { add_tmp.clear(); add_tmp.push(p); add_tmp.push(q); add_tmp.push(r); return addClause_(add_tmp); }
-inline bool     Solver::locked          (const Clause& c) const { return value(c[0]) == l_True && reason(var(c[0])) != CRef_Undef && ca.lea(reason(var(c[0]))) == &c; }
+inline bool     Solver::locked          (const Clause& c) const { return value(c[0]) == l_True && ca.isClause( reason(var(c[0]))) && ca.lea(reason(var(c[0]))) == &c; }
 inline void     Solver::newDecisionLevel()                      { trail_lim.push(trail.size());}
 
 inline int      Solver::decisionLevel ()      const   { return trail_lim.size(); }
