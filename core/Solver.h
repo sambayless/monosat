@@ -62,12 +62,29 @@ public:
     }
 
     bool isTheoryCause(CRef cr){
-    	return cr>=UINT32_MAX-theories.size();
+    	return cr != CRef_Undef && !ca.isClause(cr);
     }
 
     int getTheory(CRef cr){
     	assert(isTheoryCause(cr));
     	return UINT32_MAX-cr - 1;
+    }
+
+    CRef constructReason(Lit p){
+    	CRef cr = reason(var(p));
+    	assert(isTheoryCause(cr));
+    	assert(!ca.isClause(cr));
+    	assert(cr!=CRef_Undef);
+    	int t = getTheory(cr);
+    	conflict.clear();
+    	theories[t]->buildReason(p,conflict);
+
+    	CRef reason = ca.alloc(conflict, false);
+    	assert(conflict[0]==p);
+		clauses.push(reason);
+		attachClause(reason);
+		vardata[var(p)]=mkVarData(reason,level(var(p)));
+		return reason;
     }
 
     //Attach this solver to the next, connecting literals in the super solver to literals in this solver
@@ -144,7 +161,7 @@ public:
     vec<lbool> model;             // If problem is satisfiable, this vector contains the model (if any).
     vec<Lit>   conflict;          // If problem is unsatisfiable (possibly under assumptions),
                                   // this vector represent the final conflict clause expressed in the assumptions.
-
+    vec<Lit> theory_conflict;
     vec<Theory*> theories;
     vec<CRef> markers;//a set of special clauses that can be recognized as pointers to theories
     Solver * S;//super solver
