@@ -487,6 +487,9 @@ void Solver::analyzeFinal(CRef confl, Lit skip_lit, vec<Lit>& out_conflict)
 	            	int lev = level(v);
 	                out_conflict.push(~trail[i]);
 	            }else{
+	            	if(isTheoryCause(r)){
+	            		r = constructReason(trail[i]);
+	            	}
 					Clause& c = ca[r];
 					for (int j = 0; j < c.size(); j++){
 
@@ -503,8 +506,8 @@ void Solver::analyzeFinal(CRef confl, Lit skip_lit, vec<Lit>& out_conflict)
 
 	void Solver::buildReason(Lit p, vec<Lit> & reason){
 		Lit local_l = mkLit(var(p)-super_offset, sign(p));
-		analyzeFinal(p, reason);
-		for(int i = 0;i<conflict.size();i++){
+		analyzeFinal(local_l, reason);
+		for(int i = 0;i<reason.size();i++){
 			reason[i]=mkLit(var(reason[i])+super_offset,sign(reason[i]));
 		}
 	}
@@ -564,15 +567,20 @@ void Solver::analyzeFinal(CRef confl, Lit skip_lit, vec<Lit>& out_conflict)
 				if(var(local_l)<min_local || var(local_l)>max_local)
 					continue;//this lit is not on the interface
 				Lit out_l =mkLit(var(local_l)+super_offset, sign(local_l));
+				if(S->value(out_l)!=l_True || S->level(var(out_l))> level(var(local_l))){
 
-				if(! S->enqueue(out_l, cause_marker)){//can probably increment super_qhead here...
-					//this is a conflict
-					conflict.clear();
-					analyzeFinal(~local_l,conflict);
-					for(int i = 0;i<conflict.size();i++){
-						conflict[i]=mkLit(var(conflict[i])+super_offset,sign(conflict[i]));
+					if(S->decisionLevel() > level(var(local_l))){
+						S->cancelUntil(level(var(local_l)));
 					}
-					return false;
+					if(! S->enqueue(out_l, cause_marker)){//can probably increment super_qhead here...
+						//this is a conflict
+						conflict.clear();
+						analyzeFinal(~local_l,conflict);
+						for(int i = 0;i<conflict.size();i++){
+							conflict[i]=mkLit(var(conflict[i])+super_offset,sign(conflict[i]));
+						}
+						return false;
+					}
 				}
 			}
 			return true;
@@ -644,7 +652,12 @@ CRef Solver::propagate(bool propagate_theories)
 			}
 			ws.shrink(i - j);
 		}
-
+		static int it=0;
+		++it;
+		int local_it = it;
+		if(it==84){
+			int a =1;
+		}
 		//propagate theories;
 		for(int i = 0;propagate_theories && i<theories.size() && qhead == trail.size() && confl==CRef_Undef;i++){
 			if(!theories[i]->propagate(theory_conflict)){
