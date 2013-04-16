@@ -686,7 +686,7 @@ CRef Solver::propagate(bool propagate_theories)
 				continue;//Disable attempting to solve sub-solvers if we've backtracked past the super solver
 
 			if(!theories[i]->solve(theory_conflict)){
-				if(conflict.size()==0){
+				if(theory_conflict.size()==0){
 					ok=false;
 					cancelUntil(0);
 					return CRef_Undef;
