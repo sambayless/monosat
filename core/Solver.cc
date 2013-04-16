@@ -138,7 +138,7 @@ bool Solver::addClause_(vec<Lit>& ps)
         return ok = false;
     else if (ps.size() == 1){
         uncheckedEnqueue(ps[0]);
-        return ok = (propagate() == CRef_Undef);
+        return ok = (propagate(false) == CRef_Undef); //do NOT propagate theory solvers here, or else adding unit clauses can become very expensive in some circumstances (such as when constructing the initial CNF for example)
     }else{
         CRef cr = ca.alloc(ps, false);
         clauses.push(cr);
@@ -218,11 +218,15 @@ void Solver::cancelUntil(int level) {
 		}
 
         for(int i = 0;i<theories.size();i++){
-			theories[i]->cancelUntil(level);
+			theories[i]->backtrackUntil(level);
 		}
     }
 }
 
+void Solver::backtrackUntil(int level){
+	if(S->trail.size()<super_qhead)
+		super_qhead =S->trail.size();
+}
 
 //=================================================================================================
 // Major methods:
@@ -497,27 +501,46 @@ void Solver::analyzeFinal(CRef confl, Lit skip_lit, vec<Lit>& out_conflict)
 		}
 	}
 
-	bool Solver::propagate(CRef cause_marker,vec<Lit> & conflict){
-		while(super_qhead<S->qhead){
+	bool Solver::propagate(vec<Lit> & conflict){
+		//backtrack as needed
+		if(S->trail.size() && super_qhead>0){
+			Lit last_super = S->trail[super_qhead-1];
+			cancelUntil(S->level(var(last_super)));
+		}else{
+			cancelUntil(0);
+		}
+		assert(decisionLevel()<=S->decisionLevel());
+
+		CRef confl = propagate();
+
+		while(confl==CRef_Undef && super_qhead<S->qhead){
 			Lit out_l = S->trail[super_qhead++];
 
 			if(var(out_l)<min_super || var(out_l)>max_super)
 				continue;//this lit is not on the interface
+
+			int lev = S->level(var(out_l));
+			assert(decisionLevel()<=lev);
+			while(decisionLevel()<lev){
+				newDecisionLevel();
+			}
 
 			Lit local_l = mkLit(var(out_l)-super_offset, sign(out_l));
 
 			if(! enqueue(local_l, CRef_Undef)){
 				//this is a conflict
 				conflict.clear();
-				analyzeFinal(local_l,conflict);
+				analyzeFinal(~local_l,conflict);
 				for(int i = 0;i<conflict.size();i++){
 					conflict[i]=mkLit(var(conflict[i])+super_offset,sign(conflict[i]));
 				}
 				return false;
 			}
+			confl = propagate();
+
 		}
 
-		CRef confl = propagate();
+
 		if(confl!=CRef_Undef){
 			//then we have a conflict which we need to instantiate in S
 			conflict.clear();
@@ -537,7 +560,7 @@ void Solver::analyzeFinal(CRef confl, Lit skip_lit, vec<Lit>& out_conflict)
 				if(! S->enqueue(out_l, cause_marker)){
 					//this is a conflict
 					conflict.clear();
-					analyzeFinal(local_l,conflict);
+					analyzeFinal(~local_l,conflict);
 					for(int i = 0;i<conflict.size();i++){
 						conflict[i]=mkLit(var(conflict[i])+super_offset,sign(conflict[i]));
 					}
@@ -558,7 +581,7 @@ void Solver::analyzeFinal(CRef confl, Lit skip_lit, vec<Lit>& out_conflict)
 |    Post-conditions:
 |      * the propagation queue is empty, even if there was a conflict.
 |________________________________________________________________________________________________@*/
-CRef Solver::propagate()
+CRef Solver::propagate(bool propagate_theories)
 {
     CRef    confl     = CRef_Undef;
     int     num_props = 0;
@@ -615,16 +638,19 @@ CRef Solver::propagate()
 		}
 
 		//propagate theories;
-		for(int i = 0;i<theories.size() && qhead == trail.size() && confl==CRef_Undef;i++){
-			if(!theories[i]->propagate(markers[i],conflict)){
+		for(int i = 0;propagate_theories && i<theories.size() && qhead == trail.size() && confl==CRef_Undef;i++){
+			if(!theories[i]->propagate(conflict)){
 				if(conflict.size()==0){
 					ok=false;
 					cancelUntil(0);
 					return CRef_Undef;
 				}else if(conflict.size()==1){
 					cancelUntil(0);
-					assert(var(conflict[i])<nVars());
-					addClause(conflict[0]);
+					assert(var(conflict[0])<nVars());
+					if(!enqueue(conflict[0])){
+						ok=false;
+						return CRef_Undef;
+					}
 				}else{
 					//find the highest level in the conflict (should be the current decision level, but we won't require that)
 					int max_lev = 0;
@@ -636,6 +662,7 @@ CRef Solver::propagate()
 							max_lev=l;
 						}
 					}
+					assert(max_lev>0);
 					cancelUntil(max_lev);
 					CRef cr = ca.alloc(conflict, true);
 					clauses.push(cr);
@@ -650,7 +677,7 @@ CRef Solver::propagate()
 			if(opt_subsearch==3 && track_min_level<initial_level)
 				continue;//Disable attempting to solve sub-solvers if we've backtracked past the super solver
 
-			if(!theories[i]->solve(markers[i],conflict)){
+			if(!theories[i]->solve(conflict)){
 				if(conflict.size()==0){
 					ok=false;
 					cancelUntil(0);
@@ -658,7 +685,10 @@ CRef Solver::propagate()
 				}else if(conflict.size()==1){
 					cancelUntil(0);
 					assert(var(conflict[i])<nVars());
-					addClause(conflict[0]);
+					if(!enqueue(conflict[0])){
+						ok=false;
+						return CRef_Undef;
+					}
 				}else{
 					//find the highest level in the conflict (should be the current decision level, but we won't require that)
 					int max_lev = 0;
@@ -670,6 +700,7 @@ CRef Solver::propagate()
 							max_lev=l;
 						}
 					}
+					assert(max_lev>0);
 					cancelUntil(max_lev);
 					CRef cr = ca.alloc(conflict, true);
 					clauses.push(cr);
@@ -801,6 +832,11 @@ lbool Solver::search(int nof_conflicts)
 
     for (;;){
         CRef confl = propagate();
+        if(opt_subsearch==0 &&  decisionLevel()< initial_level){
+			return l_Undef;//give up if we have backtracked past the super solvers decisions
+		  }else if(opt_subsearch==2 && confl==CRef_Undef){
+			confl = propagate( conflict);//re-enqueue any super solver decisions that we have backtracked past, and keep going
+		  }
         if (confl != CRef_Undef){
             // CONFLICT
             conflicts++; conflictC++;
@@ -843,9 +879,7 @@ lbool Solver::search(int nof_conflicts)
                 cancelUntil(initial_level);
                 return l_Undef; }
 
-            if(opt_subsearch==0 &&  decisionLevel()< initial_level){
-				return l_Undef;//give up
-			  }
+
 
             // Simplify the set of problem clauses:
             if (decisionLevel() == 0 && !simplify())
@@ -870,6 +904,9 @@ lbool Solver::search(int nof_conflicts)
                     break;
                 }
             }
+
+
+
 
             if (next == lit_Undef){
                 // New variable decision:
@@ -978,13 +1015,13 @@ lbool Solver::solve_()
 
 
 
-bool Solver::solve(CRef cause_marker,vec<Lit> & conflict_out){
+bool Solver::solve(vec<Lit> & conflict_out){
 	 initial_level=decisionLevel();
 	 track_min_level= initial_level;
 	 lbool status=l_Undef;
 		// Search:
 	int curr_restarts =0;
-
+	conflict.clear();
 	while (status == l_Undef){
 		double rest_base = luby_restart ? luby(restart_inc, curr_restarts) : pow(restart_inc, curr_restarts);
 		status = search(rest_base * restart_first);
@@ -995,8 +1032,15 @@ bool Solver::solve(CRef cause_marker,vec<Lit> & conflict_out){
 	if(track_min_level <initial_level ){
 		S->cancelUntil(track_min_level);
 	}
+	if(!ok){
+		return false;
+	}
+	if(conflict.size()){
+		conflict.copyTo(conflict_out);
+		return false;
+	}
 
-	return propagate(cause_marker,conflict_out);
+	return propagate(conflict_out);
 }
 
 

@@ -74,6 +74,7 @@ public:
 		max_super=super_vars.last();
 		min_local=local_vars[0];
 		max_local=local_vars.last();
+		cause_marker=super->markers.last();//this is fragile and ugly, fix this...
     }
                                                       // change the passed vector 'ps'.
 
@@ -140,6 +141,7 @@ public:
     Solver * S;//super solver
     int super_qhead;
     int local_qhead;
+    CRef cause_marker;
     int track_min_level;
     int initial_level;
 
@@ -254,10 +256,11 @@ protected:
     void     newDecisionLevel ();                                                      // Begins a new decision level.
     void     uncheckedEnqueue (Lit p, CRef from = CRef_Undef);                         // Enqueue a literal. Assumes value of literal is undefined.
     bool     enqueue          (Lit p, CRef from = CRef_Undef);                         // Test if fact 'p' contradicts current state, enqueue otherwise.
-    CRef     propagate        ();                                                      // Perform unit propagation. Returns possibly conflicting clause.
-    bool 	propagate(CRef cause_marker,vec<Lit> & conflict);
-    bool	solve(CRef cause_marker,vec<Lit> & conflict);
+    CRef     propagate        (bool propagate_theories=true);                                                      // Perform unit propagation. Returns possibly conflicting clause.
+    bool 	propagate(vec<Lit> & conflict);
+    bool	solve(vec<Lit> & conflict);
     void 	buildReason(Lit p, vec<Lit> & reason);
+    void backtrackUntil(int level);
     void     cancelUntil      (int level);                                             // Backtrack until a certain level.
     void     analyze          (CRef confl, vec<Lit>& out_learnt, int& out_btlevel);    // (bt = backtrack)
     void 	analyzeFinal(CRef confl, Lit skip_lit, vec<Lit>& out_conflict);
@@ -355,11 +358,7 @@ inline bool     Solver::addClause       (Lit p)                 { add_tmp.clear(
 inline bool     Solver::addClause       (Lit p, Lit q)          { add_tmp.clear(); add_tmp.push(p); add_tmp.push(q); return addClause_(add_tmp); }
 inline bool     Solver::addClause       (Lit p, Lit q, Lit r)   { add_tmp.clear(); add_tmp.push(p); add_tmp.push(q); add_tmp.push(r); return addClause_(add_tmp); }
 inline bool     Solver::locked          (const Clause& c) const { return value(c[0]) == l_True && reason(var(c[0])) != CRef_Undef && ca.lea(reason(var(c[0]))) == &c; }
-inline void     Solver::newDecisionLevel()                      { trail_lim.push(trail.size());
-for(int i = 0;i<theories.size();i++){
-	theories[i]->newDecisionLevel();
-}
-}
+inline void     Solver::newDecisionLevel()                      { trail_lim.push(trail.size());}
 
 inline int      Solver::decisionLevel ()      const   { return trail_lim.size(); }
 inline uint32_t Solver::abstractLevel (Var x) const   { return 1 << (level(x) & 31); }
