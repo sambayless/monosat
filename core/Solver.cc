@@ -328,7 +328,7 @@ void Solver::analyze(CRef confl, vec<Lit>& out_learnt, int& out_btlevel)
             abstract_level |= abstractLevel(var(out_learnt[i])); // (maintain an abstraction of levels involved in conflict)
 
         for (i = j = 1; i < out_learnt.size(); i++)
-            if (reason(var(out_learnt[i])) == CRef_Undef || !litRedundant(out_learnt[i], abstract_level))
+            if (!ca.isClause(reason(var(out_learnt[i])))  || !litRedundant(out_learnt[i], abstract_level))
                 out_learnt[j++] = out_learnt[i];
 
     }else if (ccmin_mode == 1){
@@ -381,6 +381,15 @@ bool Solver::litRedundant(Lit p, uint32_t abstract_levels)
     int top = analyze_toclear.size();
     while (analyze_stack.size() > 0){
         assert(reason(var(analyze_stack.last())) != CRef_Undef);
+        if(!ca.isClause(reason(var(analyze_stack.last())))){
+
+        	for (int j = top; j < analyze_toclear.size(); j++)
+   				seen[var(analyze_toclear[j])] = 0;
+			analyze_toclear.shrink(analyze_toclear.size() - top);
+			analyze_stack.clear();
+   			return false;
+        }
+
         Clause& c = ca[reason(var(analyze_stack.last()))]; analyze_stack.pop();
 
         for (int i = 1; i < c.size(); i++){
@@ -433,7 +442,7 @@ void Solver::analyzeFinal(Lit p, vec<Lit>& out_conflict)
             	if(isTheoryCause(reason(x))){
 					constructReason(trail[i]);
 				}
-                Clause& c = ca[reason(x)];
+                Clause& c = ca[reason(x)];assert(var(c[0])==x);
                 for (int j = 1; j < c.size(); j++)
                     if (level(var(c[j])) > 0)
                         seen[var(c[j])] = 1;
@@ -452,7 +461,6 @@ void Solver::uncheckedEnqueue(Lit p, CRef from)
     assigns[var(p)] = lbool(!sign(p));
     vardata[var(p)] = mkVarData(from, decisionLevel());
     trail.push_(p);
-    printTrail();
 }
 
 void Solver::analyzeFinal(CRef confl, Lit skip_lit, vec<Lit>& out_conflict)
@@ -508,14 +516,12 @@ void Solver::analyzeFinal(CRef confl, Lit skip_lit, vec<Lit>& out_conflict)
 
 
 	void Solver::buildReason(Lit p, vec<Lit> & reason){
-		Lit local_l = mkLit(var(p)-super_offset, sign(p));
+		Lit local_l = fromSuper(p);// mkLit(var(p)-super_offset, sign(p));
 		analyzeFinal(local_l, reason);
-		for(int i = 0;i<reason.size();i++){
-			reason[i]=mkLit(var(reason[i])+super_offset,sign(reason[i]));
-		}
+		toSuper(reason,reason);
 	}
 
-	bool Solver::propagate(vec<Lit> & conflict){
+	bool Solver::propagate(vec<Lit> & conflict_out){
 		//backtrack as needed
 		if(S->trail.size() && super_qhead>0){
 			Lit last_super = S->trail[super_qhead-1];
@@ -539,29 +545,32 @@ void Solver::analyzeFinal(CRef confl, Lit skip_lit, vec<Lit>& out_conflict)
 				newDecisionLevel();
 			}
 
-			Lit local_l = mkLit(var(out_l)-super_offset, sign(out_l));
+			Lit local_l = fromSuper(out_l);
 
 			if(! enqueue(local_l, CRef_Undef)){
 				//this is a conflict
-				conflict.clear();
-				analyzeFinal(~local_l,conflict);
-				for(int i = 0;i<conflict.size();i++){
-					conflict[i]=mkLit(var(conflict[i])+super_offset,sign(conflict[i]));
-				}
+				conflict_out.clear();
+				analyzeFinal(~local_l,conflict_out);
+				toSuper(conflict_out,conflict_out);
+
 				return false;
 			}
+			initial_level=decisionLevel();
+			track_min_level=initial_level;
 			confl = propagate();
-
+			if(track_min_level<initial_level){
+				cancelUntil(track_min_level);
+				S->cancelUntil(decisionLevel());
+				break;
+			}
 		}
 
 
 		if(confl!=CRef_Undef){
 			//then we have a conflict which we need to instantiate in S
-			conflict.clear();
-			analyzeFinal(confl,lit_Undef,conflict);
-			for(int i = 0;i<conflict.size();i++){
-				conflict[i]=mkLit(var(conflict[i])+super_offset,sign(conflict[i]));
-			}
+			conflict_out.clear();
+			analyzeFinal(confl,lit_Undef,conflict_out);
+			toSuper(conflict_out,conflict_out);
 			return false;
 		}else{
 			//find lits to prop
@@ -569,7 +578,9 @@ void Solver::analyzeFinal(CRef confl, Lit skip_lit, vec<Lit>& out_conflict)
 				Lit local_l =trail[local_qhead++];
 				if(var(local_l)<min_local || var(local_l)>max_local)
 					continue;//this lit is not on the interface
-				Lit out_l =mkLit(var(local_l)+super_offset, sign(local_l));
+				Lit out_l =toSuper(local_l);
+				lbool v = S->value(out_l);
+
 				if(S->value(out_l)!=l_True || S->level(var(out_l))> level(var(local_l))){
 
 					if(S->decisionLevel() > level(var(local_l))){
@@ -577,15 +588,18 @@ void Solver::analyzeFinal(CRef confl, Lit skip_lit, vec<Lit>& out_conflict)
 					}
 					if(! S->enqueue(out_l, cause_marker)){//can probably increment super_qhead here...
 						//this is a conflict
-						conflict.clear();
-						analyzeFinal(~local_l,conflict);
-						for(int i = 0;i<conflict.size();i++){
-							conflict[i]=mkLit(var(conflict[i])+super_offset,sign(conflict[i]));
-						}
+						conflict_out.clear();
+						analyzeFinal(local_l,conflict_out);
+						toSuper(conflict_out,conflict_out);
 						return false;
 					}
 				}
 			}
+
+			while(decisionLevel()<S->decisionLevel())
+				newDecisionLevel();
+
+			assert(decisionLevel()==S->decisionLevel());
 			return true;
 		}
 	}
@@ -655,12 +669,7 @@ CRef Solver::propagate(bool propagate_theories)
 			}
 			ws.shrink(i - j);
 		}
-		static int it=0;
-		++it;
-		int local_it = it;
-		if(it==79523){
-			int a =1;
-		}
+	
 		//propagate theories;
 		for(int i = 0;propagate_theories && i<theories.size() && qhead == trail.size() && confl==CRef_Undef;i++){
 			if(!theories[i]->propagate(theory_conflict)){
@@ -1080,10 +1089,7 @@ bool Solver::solve(vec<Lit> & conflict_out){
 		return false;
 	}
 	if(conflict.size()){
-		for(int i = 0;i<conflict.size();i++){
-			Lit l = conflict[i];
-			conflict_out.push(mkLit(var(l)+super_offset,sign(l)));
-		}
+		toSuper(conflict,conflict_out);
 		return false;
 	}
 

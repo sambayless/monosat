@@ -151,6 +151,9 @@ int main(int argc, char** argv)
            // voluntarily:
            signal(SIGINT, SIGINT_interrupt);
            signal(SIGXCPU,SIGINT_interrupt);
+           printf("Solving circuit with %d gates, %d latches, %d inputs, %d outputs\n", aiger->num_ands, aiger->num_latches, aiger->num_inputs, aiger->num_outputs);
+
+
 
 
          //really simple, unsophisticated incremental BMC:
@@ -169,6 +172,14 @@ int main(int argc, char** argv)
            for(int i = 1;i<opt_k;i++){
         	   if(solvers.last()->solve(safety)){
         		   ret=l_True;
+        		   break;
+        	   }else if (!solvers.last()->okay()){
+					printf("Note: Problem proven unsat even without asserting property (this usually indicates a bug).\n");
+					ret= l_False;
+					break;
+        	   }else if (aiger->num_latches==0){
+        		   ret=l_False;
+        			printf("Note: Circuit has no latches.\n");
         		   break;
         	   }
         	   Solver * S = new Solver();

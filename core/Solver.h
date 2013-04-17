@@ -76,11 +76,10 @@ public:
     	assert(!ca.isClause(cr));
     	assert(cr!=CRef_Undef);
     	int t = getTheory(cr);
-    	conflict.clear();
-    	theories[t]->buildReason(p,conflict);
-
-    	CRef reason = ca.alloc(conflict, false);
-    	assert(conflict[0]==p);
+    	theory_reason.clear();
+    	theories[t]->buildReason(p,theory_reason);
+    	CRef reason = ca.alloc(theory_reason, false);
+    	assert(theory_reason[0]==p); assert(value(p)==l_True);
 		clauses.push(reason);
 		attachClause(reason);
 		vardata[var(p)]=mkVarData(reason,level(var(p)));
@@ -161,6 +160,7 @@ public:
     vec<lbool> model;             // If problem is satisfiable, this vector contains the model (if any).
     vec<Lit>   conflict;          // If problem is unsatisfiable (possibly under assumptions),
                                   // this vector represent the final conflict clause expressed in the assumptions.
+    vec<Lit>  theory_reason;
     vec<Lit> theory_conflict;
     vec<Theory*> theories;
     vec<CRef> markers;//a set of special clauses that can be recognized as pointers to theories
@@ -339,51 +339,57 @@ protected:
     static inline int irand(double& seed, int size) {
         return (int)(drand(seed) * size); }
 
+    inline void toSuper(vec<Lit> & from, vec<Lit> & to){
 
-    void printTrail(){
-/*
-#ifndef NDEBUG
+    	to.growTo(from.size());
+    	to.shrink(to.size()- from.size());
+		for(int i = 0;i<from.size();i++){
+			Lit l = from[i];
+			assert(local_interface(l));
+			to[i]=mkLit(var(l)+super_offset,sign(l));
+			assert(super_interface(to[i]));
+		}
+    }
 
-    	int solver_num=0;
-    	Solver * s = this;
-    	while(s->theories.size()){
-    		solver_num++;
-    		s=(Solver*)s->theories[0];
-    	}
+    inline Var toSuper(Var p){
+        	assert(p<nVars());
+        	assert(local_interface(p));
+        	Var v=  p+super_offset;
+        	assert(v<S->nVars());
+			assert(super_interface(v));
+            return v;
+        }
 
-    	 static int total_lines=0;
-    	 total_lines++;
+        inline Lit toSuper(Lit p){
+        	assert(var(p)<nVars());
+        	assert(local_interface(p));
 
-    		printf("%d: SOLVER%d TRAIL: ",total_lines, solver_num);
+        	Lit l=  mkLit(var(p)+super_offset,sign(p));
+        	assert(var(l)<S->nVars());
+        	assert(super_interface(l));
+        	return l;
+        }
+        inline Var fromSuper(Var p){
+        	return  p-super_offset;
+        }
 
-    	 	int lev = decisionLevel();
-    	 	int nextI= lev>0? trail_lim[lev-1]:0;
-    	 	for(int i = trail.size()-1;i>=0;i--)
-    	 	{
-    	 		Lit l = trail[i];
-    	 		int d =dimacs(l);
-    	 		if(i==qhead)
-    	 	    	printf("Q:");
+        inline Lit fromSuper(Lit p){
+        	return  mkLit(var(p)-super_offset,sign(p));
+        }
+        inline bool local_interface(Lit p)const{
+            	return var(p)>=min_local && var(p) <= max_local;
+            }
+          inline bool local_interface(Var v)const{
+          	return v>=min_local  && v <= max_local;
+          }
+        inline bool super_interface(Lit p)const{
+          	return var(p)>=min_super && var(p) <= max_super;
+          }
+        inline bool super_interface(Var v)const{
+        	return v>=min_super  && v <= max_super;
+        }
 
-    	 		if(var(l)==0){
-    	 			printf("G");//ground
-    			}
-    	 		printf("%d",d);
-
-    	 		 printf(", ");
-    	 		if(i==nextI || i==0)
-    	 		{
-    	 			printf("L(%d) ",level(var(l)));
-    	 			lev--;
-    	 		     nextI=lev>0? trail_lim[lev-1]:0;
-    	 		}
-    	 	}
-
-    	 	printf("\n");
-#endif
-*/
-
-     }
+  
 };
 
 

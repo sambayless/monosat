@@ -152,7 +152,7 @@ bool isReset(vec<Lit> & assignment){
 	return true;
 }
 
-void prepare(Minisat::Solver& target,aiger * mgr, Minisat::vec<Minisat::Var> & latches){
+void prepare(Solver& target,aiger * mgr, vec<Var> & latches){
 
 	assert(target.nVars()==0);
 	latches.clear();
