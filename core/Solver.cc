@@ -86,6 +86,7 @@ Solver::Solver() :
 	, S(NULL)
 	,super_qhead(0)
 	,super_offset(-1)
+,local_qhead(0)
 {}
 
 
@@ -1204,7 +1205,7 @@ void Solver::relocAll(ClauseAllocator& to)
     for (int i = 0; i < trail.size(); i++){
         Var v = var(trail[i]);
 
-        if (ca.isClause(reason(v)) && (locked(ca[reason(v)]) || ca[reason(v)].reloced() ))
+        if (ca.isClause(reason(v)) && ( ca[reason(v)].reloced()|| locked(ca[reason(v)])  ))
             ca.reloc(vardata[v].reason, to);
     }
 
