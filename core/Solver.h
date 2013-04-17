@@ -341,6 +341,7 @@ protected:
 
 
     void printTrail(){
+/*
 #ifndef NDEBUG
 
     	int solver_num=0;
@@ -380,6 +381,7 @@ protected:
 
     	 	printf("\n");
 #endif
+*/
 
      }
 };

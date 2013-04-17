@@ -430,6 +430,9 @@ void Solver::analyzeFinal(Lit p, vec<Lit>& out_conflict)
                 assert(level(x) > 0);
                 out_conflict.push(~trail[i]);
             }else{
+            	if(isTheoryCause(reason(x))){
+					constructReason(trail[i]);
+				}
                 Clause& c = ca[reason(x)];
                 for (int j = 1; j < c.size(); j++)
                     if (level(var(c[j])) > 0)
@@ -655,7 +658,7 @@ CRef Solver::propagate(bool propagate_theories)
 		static int it=0;
 		++it;
 		int local_it = it;
-		if(it==84){
+		if(it==79523){
 			int a =1;
 		}
 		//propagate theories;

@@ -18,6 +18,7 @@ class SimpleGraph:Graph{
 	int offset;
 	int super_qhead;
 	int local_q;
+	Solver * S;
 	SimpleGraph(Solver * S_):S(S_){
 		super_qhead=0;
 		local_q=0;
@@ -27,7 +28,16 @@ class SimpleGraph:Graph{
 				S->addClause(True);
 	}
     virtual ~SimpleGraph();
+
+	int nNodes(){
+		return nodes;
+	}
+	bool isNode(int n){
+		return n>=0 && n<nodes;
+	}
+
 private:
+	int nodes;
 	struct Edge{
 		Lit out_l;
 		Lit local_l;
