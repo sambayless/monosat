@@ -706,43 +706,7 @@ CRef Solver::propagate(bool propagate_theories)
 			}
 		}
 
-		//solve theories if this solver is completely assigned
-		for(int i = 0;i<theories.size() && qhead == trail.size() && confl==CRef_Undef && nAssigns()==nVars();i++){
-			if(opt_subsearch==3 && track_min_level<initial_level)
-				continue;//Disable attempting to solve sub-solvers if we've backtracked past the super solver
 
-			if(!theories[i]->solve(theory_conflict)){
-				if(theory_conflict.size()==0){
-					ok=false;
-					cancelUntil(0);
-					return CRef_Undef;
-				}else if(theory_conflict.size()==1){
-					cancelUntil(0);
-					assert(var(theory_conflict[i])<nVars());
-					if(!enqueue(theory_conflict[0])){
-						ok=false;
-						return CRef_Undef;
-					}
-				}else{
-					//find the highest level in the conflict (should be the current decision level, but we won't require that)
-					int max_lev = 0;
-					for(int j = 0;j<theory_conflict.size();j++){
-						assert(var(theory_conflict[i])<nVars());
-						assert(value(theory_conflict[i])==l_False);
-						int l = level(var(theory_conflict[i]));
-						if(l>max_lev){
-							max_lev=l;
-						}
-					}
-					assert(max_lev>0);
-					cancelUntil(max_lev);
-					CRef cr = ca.alloc(theory_conflict, true);
-					clauses.push(cr);
-					attachClause(cr);
-					return cr;
-				}
-			}
-		}
 
 
     }while(qhead < trail.size());
@@ -865,6 +829,7 @@ lbool Solver::search(int nof_conflicts)
     starts++;
 
     for (;;){
+    	propagate:
         CRef confl = propagate();
 
         if (confl != CRef_Undef){
@@ -964,9 +929,51 @@ lbool Solver::search(int nof_conflicts)
                 decisions++;
                 next = pickBranchLit();
 
-                if (next == lit_Undef)
+                if (next == lit_Undef){
+
+                	//solve theories if this solver is completely assigned
+					for(int i = 0;i<theories.size() && qhead == trail.size() && confl==CRef_Undef && nAssigns()==nVars();i++){
+						if(opt_subsearch==3 && track_min_level<initial_level)
+							continue;//Disable attempting to solve sub-solvers if we've backtracked past the super solver
+
+						if(!theories[i]->solve(theory_conflict)){
+							if(theory_conflict.size()==0){
+								ok=false;
+								cancelUntil(0);
+								return l_False;
+							}else if(theory_conflict.size()==1){
+								cancelUntil(0);
+								assert(var(theory_conflict[i])<nVars());
+								if(!enqueue(theory_conflict[0])){
+									ok=false;
+									return l_False;
+								}
+							}else{
+								//find the highest level in the conflict (should be the current decision level, but we won't require that)
+								int max_lev = 0;
+								for(int j = 0;j<theory_conflict.size();j++){
+									assert(var(theory_conflict[i])<nVars());
+									assert(value(theory_conflict[i])==l_False);
+									int l = level(var(theory_conflict[i]));
+									if(l>max_lev){
+										max_lev=l;
+									}
+								}
+								assert(max_lev>0);
+								cancelUntil(max_lev);
+								CRef cr = ca.alloc(theory_conflict, true);
+								clauses.push(cr);
+								attachClause(cr);
+								goto propagate;
+							}
+						}
+					}
+
+
+
                     // Model found:
                     return l_True;
+                }
             }
 
             // Increase decision level and enqueue 'next'

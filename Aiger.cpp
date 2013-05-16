@@ -37,6 +37,8 @@ Lit getLit(Solver & S, int dimacs){
     return( (dimacs > 0) ? mkLit(v) : ~mkLit(v) );
 }
 
+
+
 Lit getLit(Solver & S,const int startVar, aiger * mgr, unsigned lit, vec<Var> & in_latches){
 
 	if(aiger_symbol * s = aiger_is_latch(mgr,aiger_strip(lit))){
