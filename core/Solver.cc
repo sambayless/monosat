@@ -932,7 +932,7 @@ lbool Solver::search(int nof_conflicts)
                 if (next == lit_Undef){
 
                 	//solve theories if this solver is completely assigned
-					for(int i = 0;i<theories.size() && qhead == trail.size() && confl==CRef_Undef && nAssigns()==nVars();i++){
+					for(int i = 0;i<theories.size() && qhead == trail.size() && nAssigns()==nVars();i++){
 						if(opt_subsearch==3 && track_min_level<initial_level)
 							continue;//Disable attempting to solve sub-solvers if we've backtracked past the super solver
 
@@ -948,6 +948,7 @@ lbool Solver::search(int nof_conflicts)
 									ok=false;
 									return l_False;
 								}
+
 							}else{
 								//find the highest level in the conflict (should be the current decision level, but we won't require that)
 								int max_lev = 0;
@@ -964,9 +965,12 @@ lbool Solver::search(int nof_conflicts)
 								CRef cr = ca.alloc(theory_conflict, true);
 								clauses.push(cr);
 								attachClause(cr);
-								goto propagate;
+
 							}
 						}
+						//If propagating one of the sub theories caused this solver to backtrack, then go back to propagation
+						if(qhead < trail.size()  || nAssigns()<nVars())
+							goto propagate;
 					}
 
 

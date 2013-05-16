@@ -28,14 +28,14 @@ CPP_DEPS += \
 core/%.o: ../core/%.cpp
 	@echo 'Building file: $<'
 	@echo 'Invoking: GCC C++ Compiler'
-	g++ -D__STDC_LIMIT_MACROS -D__STDC_FORMAT_MACROS -I"C:\Users\Sam\workspaceC\modsat" -O3 -Wall -c -fmessage-length=0 -MMD -MP -MF"$(@:%.o=%.d)" -MT"$(@:%.o=%.d)" -o"$@" "$<"
+	g++ -D__STDC_LIMIT_MACROS -D__STDC_FORMAT_MACROS -I"/home/sam/workspaceC/modsat" -O3 -Wall -c -fmessage-length=0 -MMD -MP -MF"$(@:%.o=%.d)" -MT"$(@:%.o=%.d)" -o "$@" "$<"
 	@echo 'Finished building: $<'
 	@echo ' '
 
 core/%.o: ../core/%.cc
 	@echo 'Building file: $<'
 	@echo 'Invoking: GCC C++ Compiler'
-	g++ -D__STDC_LIMIT_MACROS -D__STDC_FORMAT_MACROS -I"C:\Users\Sam\workspaceC\modsat" -O3 -Wall -c -fmessage-length=0 -MMD -MP -MF"$(@:%.o=%.d)" -MT"$(@:%.o=%.d)" -o"$@" "$<"
+	g++ -D__STDC_LIMIT_MACROS -D__STDC_FORMAT_MACROS -I"/home/sam/workspaceC/modsat" -O3 -Wall -c -fmessage-length=0 -MMD -MP -MF"$(@:%.o=%.d)" -MT"$(@:%.o=%.d)" -o "$@" "$<"
 	@echo 'Finished building: $<'
 	@echo ' '
 
