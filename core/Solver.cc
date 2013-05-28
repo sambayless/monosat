@@ -552,7 +552,7 @@ void Solver::analyzeFinal(CRef confl, Lit skip_lit, vec<Lit>& out_conflict)
 				confl = propagate();
 				if(confl!=CRef_Undef || track_min_level<initial_level){
 					cancelUntil(track_min_level);
-					S->cancelUntil(decisionLevel());
+					
 					goto conflict;
 				}
 
@@ -574,6 +574,7 @@ void Solver::analyzeFinal(CRef confl, Lit skip_lit, vec<Lit>& out_conflict)
 		}
 		confl = propagate();
 		conflict:
+		S->cancelUntil(decisionLevel());
 		if(confl!=CRef_Undef){
 			//then we have a conflict which we need to instantiate in S
 			conflict_out.clear();
