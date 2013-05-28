@@ -836,6 +836,7 @@ bool Solver::addConflictClause(vec<Lit> & theory_conflict, CRef & confl_out){
 			clauses.push(cr);
 			attachClause(cr);
 			confl_out=cr;
+			return false;
 		}
 	return true;
 }
@@ -979,12 +980,15 @@ lbool Solver::search(int nof_conflicts)
 							if(!addConflictClause(theory_conflict,confl))
 							{
 								goto conflict;
+							}else{
+								goto propagate;
 							}
 						}
 						//If propagating one of the sub theories caused this solver to backtrack, then go back to propagation
 						if(qhead < trail.size()  || nAssigns()<nVars())
 							goto propagate;
 					}
+
 
 
 
