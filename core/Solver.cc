@@ -599,7 +599,9 @@ void Solver::analyzeFinal(CRef confl, Lit skip_lit, vec<Lit>& out_conflict)
 				if(S->value(out_l)!=l_True || S->level(var(out_l))> level(var(local_l))){
 
 					if(S->decisionLevel() > level(var(local_l))){
+						cancelUntil(level(var(local_l)));
 						S->cancelUntil(level(var(local_l)));
+
 					}
 					if(! S->enqueue(out_l, cause_marker)){//can probably increment super_qhead here...
 						//this is a conflict
@@ -631,11 +633,12 @@ void Solver::analyzeFinal(CRef confl, Lit skip_lit, vec<Lit>& out_conflict)
 |________________________________________________________________________________________________@*/
 CRef Solver::propagate(bool propagate_theories)
 {
-	if(qhead> 0 && qhead==trail.size())
-		return CRef_Undef;//This could probably be implemented more cleanly. Basically, this skips the fairly expensive recursive propagation checks if no changes have occured. But if unit level propagation has happened in a lower solver, then we still need to check for that even if no changes happened in this solver.
+	if( qhead==trail.size())
+		return CRef_Undef;
     CRef    confl     = CRef_Undef;
     int     num_props = 0;
     watches.cleanAll();
+
     do{
 		while (qhead < trail.size()){
 			Lit            p   = trail[qhead++];     // 'p' is enqueued fact to propagate.
