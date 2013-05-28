@@ -283,7 +283,7 @@ protected:
     void     uncheckedEnqueue (Lit p, CRef from = CRef_Undef);                         // Enqueue a literal. Assumes value of literal is undefined.
     bool     enqueue          (Lit p, CRef from = CRef_Undef);                         // Test if fact 'p' contradicts current state, enqueue otherwise.
     CRef     propagate        (bool propagate_theories=true);                                                      // Perform unit propagation. Returns possibly conflicting clause.
-    bool 	propagate(vec<Lit> & conflict);
+    bool 	propagateTheory(vec<Lit> & conflict);
     bool	solve(vec<Lit> & conflict);
     void 	buildReason(Lit p, vec<Lit> & reason);
     void backtrackUntil(int level);

@@ -522,7 +522,8 @@ void Solver::analyzeFinal(CRef confl, Lit skip_lit, vec<Lit>& out_conflict)
 		toSuper(reason,reason);
 	}
 
-	bool Solver::propagate(vec<Lit> & conflict_out){
+	//Propagate assignments from the super solver's interface variables to this solver (and, if this solver makes further assignments to the interface, pass those back to the super solver)
+	bool Solver::propagateTheory(vec<Lit> & conflict_out){
 		//backtrack as needed
 		if(S->trail.size() && super_qhead>0){
 			Lit last_super = S->trail[super_qhead-1];
@@ -532,8 +533,8 @@ void Solver::analyzeFinal(CRef confl, Lit skip_lit, vec<Lit>& out_conflict)
 		}
 		assert(decisionLevel()<=S->decisionLevel());
 
-		CRef confl = propagate();
-
+		CRef confl = CRef_Undef;
+		int curLev = decisionLevel();
 		while(confl==CRef_Undef && super_qhead<S->qhead){
 			Lit out_l = S->trail[super_qhead++];
 
@@ -543,6 +544,18 @@ void Solver::analyzeFinal(CRef confl, Lit skip_lit, vec<Lit>& out_conflict)
 			int lev = S->level(var(out_l));
 			assert(decisionLevel()<=lev);
 			while(decisionLevel()<lev){
+
+				//We are going to start a new decision level; make sure the current one is fully propagated first
+				initial_level=decisionLevel();
+				track_min_level=initial_level;
+
+				confl = propagate();
+				if(confl!=CRef_Undef || track_min_level<initial_level){
+					cancelUntil(track_min_level);
+					S->cancelUntil(decisionLevel());
+					goto conflict;
+				}
+
 				newDecisionLevel();
 			}
 
@@ -556,17 +569,11 @@ void Solver::analyzeFinal(CRef confl, Lit skip_lit, vec<Lit>& out_conflict)
 
 				return false;
 			}
-			initial_level=decisionLevel();
-			track_min_level=initial_level;
-			confl = propagate();
-			if(track_min_level<initial_level){
-				cancelUntil(track_min_level);
-				S->cancelUntil(decisionLevel());
-				break;
-			}
+
+
 		}
-
-
+		confl = propagate();
+		conflict:
 		if(confl!=CRef_Undef){
 			//then we have a conflict which we need to instantiate in S
 			conflict_out.clear();
@@ -673,7 +680,7 @@ CRef Solver::propagate(bool propagate_theories)
 	
 		//propagate theories;
 		for(int i = 0;propagate_theories && i<theories.size() && qhead == trail.size() && confl==CRef_Undef;i++){
-			if(!theories[i]->propagate(theory_conflict)){
+			if(!theories[i]->propagateTheory(theory_conflict)){
 				if(theory_conflict.size()==0){
 					ok=false;
 					cancelUntil(0);
@@ -919,7 +926,7 @@ lbool Solver::search(int nof_conflicts)
             if(opt_subsearch==0 &&  decisionLevel()< initial_level){
      			return l_Undef;//give up if we have backtracked past the super solvers decisions
      		  }else if(opt_subsearch==2 && S && confl==CRef_Undef){
-     			if(super_qhead<S->qhead && ! propagate( theory_conflict))//re-enqueue any super solver decisions that we have backtracked past, and keep going
+     			if(super_qhead<S->qhead && ! propagateTheory( theory_conflict))//re-enqueue any super solver decisions that we have backtracked past, and keep going
      			{
      				if(!addConflictClause(theory_conflict))
      					return l_False;
@@ -973,7 +980,7 @@ lbool Solver::search(int nof_conflicts)
                 	//solve theories if this solver is completely assigned
 					for(int i = 0;i<theories.size();i++){
 						if(opt_subsearch==3 && track_min_level<initial_level)
-							continue;//Disable attempting to solve sub-solvers if we've backtracked past the super solver
+							continue;//Disable attempting to solve sub-solvers if we've backtracked past the super solver's decision level
 
 						if(!theories[i]->solve(theory_conflict)){
 							if(!addConflictClause(theory_conflict))
@@ -1116,7 +1123,7 @@ bool Solver::solve(vec<Lit> & conflict_out){
 		return false;
 	}
 
-	return propagate(conflict_out);
+	return propagateTheory(conflict_out);
 }
 
 
