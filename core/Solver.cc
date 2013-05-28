@@ -640,14 +640,12 @@ CRef Solver::propagate(bool propagate_theories)
     watches.cleanAll();
 
     do{
-    	bool any_interface_assigned=theories.size()!=1;
+
 		while (qhead < trail.size()){
 			Lit            p   = trail[qhead++];     // 'p' is enqueued fact to propagate.
 			vec<Watcher>&  ws  = watches[p];
 			Watcher        *i, *j, *end;
 			num_props++;
-			if(theories.size()==1 && var(p)<((Solver*)theories[0])->min_super)
-				any_interface_assigned=true;
 
 			for (i = j = (Watcher*)ws, end = i + ws.size();  i != end;){
 				// Try to avoid inspecting the clause:
@@ -694,7 +692,7 @@ CRef Solver::propagate(bool propagate_theories)
 		}
 	
 		//propagate theories;
-		for(int i = 0;any_interface_assigned && propagate_theories && i<theories.size() && qhead == trail.size() && confl==CRef_Undef;i++){
+		for(int i = 0;  propagate_theories && i<theories.size() && qhead == trail.size() && confl==CRef_Undef;i++){
 			if(!theories[i]->propagateTheory(theory_conflict)){
 				if(!addConflictClause(theory_conflict,confl))
 					return confl;
