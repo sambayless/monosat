@@ -170,6 +170,7 @@ int main(int argc, char** argv)
 
 
            for(int i = 1;i<opt_k;i++){
+
         	   if(solvers.last()->solve(safety)){
         		   ret=l_True;
         		   break;
@@ -191,6 +192,7 @@ int main(int argc, char** argv)
                S->addTheory(solvers.last());
                solvers.last()->attachTo(S, in_latches, out_latches);
                solvers.push(S);
+               printf("Unrolling to depth %d\n", i );
            }
 
 
