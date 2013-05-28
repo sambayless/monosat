@@ -383,7 +383,7 @@ bool Solver::litRedundant(Lit p, uint32_t abstract_levels)
     while (analyze_stack.size() > 0){
         assert(reason(var(analyze_stack.last())) != CRef_Undef);
         if(!ca.isClause(reason(var(analyze_stack.last())))){
-
+        	//Don't pursue this if it is a subsolver reason
         	for (int j = top; j < analyze_toclear.size(); j++)
    				seen[var(analyze_toclear[j])] = 0;
 			analyze_toclear.shrink(analyze_toclear.size() - top);
@@ -520,6 +520,8 @@ void Solver::analyzeFinal(CRef confl, Lit skip_lit, vec<Lit>& out_conflict)
 		Lit local_l = fromSuper(p);// mkLit(var(p)-super_offset, sign(p));
 		analyzeFinal(local_l, reason);
 		toSuper(reason,reason);
+		interpolant.push();
+		reason.copyTo( interpolant.last());//Add this clause into the interpolant vector
 	}
 
 	//Propagate assignments from the super solver's interface variables to this solver (and, if this solver makes further assignments to the interface, pass those back to the super solver)
@@ -566,7 +568,7 @@ void Solver::analyzeFinal(CRef confl, Lit skip_lit, vec<Lit>& out_conflict)
 				conflict_out.clear();
 				analyzeFinal(~local_l,conflict_out);
 				toSuper(conflict_out,conflict_out);
-
+				interpolant.push(); conflict_out.copyTo( interpolant.last());//Add this clause into the interpolant vector
 				return false;
 			}
 
@@ -586,6 +588,7 @@ void Solver::analyzeFinal(CRef confl, Lit skip_lit, vec<Lit>& out_conflict)
 			conflict_out.clear();
 			analyzeFinal(confl,lit_Undef,conflict_out);
 			toSuper(conflict_out,conflict_out);
+			interpolant.push(); conflict_out.copyTo( interpolant.last());//Add this clause into the interpolant vector
 			return false;
 		}else{
 			//find lits to prop
@@ -608,6 +611,7 @@ void Solver::analyzeFinal(CRef confl, Lit skip_lit, vec<Lit>& out_conflict)
 						conflict_out.clear();
 						analyzeFinal(local_l,conflict_out);
 						toSuper(conflict_out,conflict_out);
+						interpolant.push(); conflict_out.copyTo( interpolant.last());//Add this clause into the interpolant vector
 						return false;
 					}
 				}
@@ -1123,6 +1127,7 @@ bool Solver::solve(vec<Lit> & conflict_out){
 	}
 	if(conflict.size()){
 		toSuper(conflict,conflict_out);
+		interpolant.push(); conflict_out.copyTo( interpolant.last());//Add this clause into the interpolant vector
 		return false;
 	}
 

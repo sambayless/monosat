@@ -160,6 +160,9 @@ public:
     vec<lbool> model;             // If problem is satisfiable, this vector contains the model (if any).
     vec<Lit>   conflict;          // If problem is unsatisfiable (possibly under assumptions),
                                   // this vector represent the final conflict clause expressed in the assumptions.
+    vec<vec<Lit> > interpolant;  //This vector represents an interpolant between this module and its super solver ('S'), if it is attached to such a solver and the instance is UNSAT.
+    							// Variables in each clause in the interpolant vector are in the super solver's variable space, not the subsolver's.
+
     vec<Lit>  theory_reason;
     vec<Lit> theory_conflict;
     vec<Theory*> theories;
