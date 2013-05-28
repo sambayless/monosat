@@ -632,7 +632,7 @@ void Solver::analyzeFinal(CRef confl, Lit skip_lit, vec<Lit>& out_conflict)
 CRef Solver::propagate(bool propagate_theories)
 {
 	if(decisionLevel()>0 && qhead==trail.size())
-		return CRef_Undef;//This could probably be implemented more cleanly.
+		return CRef_Undef;//This could probably be implemented more cleanly. Basically, this skips the fairly expensive recursive propagation checks if no changes have occured. But if unit level propagation has happened in a lower solver, then we still need to check for that even if no changes happened in this solver.
     CRef    confl     = CRef_Undef;
     int     num_props = 0;
     watches.cleanAll();
@@ -697,7 +697,7 @@ CRef Solver::propagate(bool propagate_theories)
 
 
 		//solve theories if this solver is completely assigned
-			for(int i = 0;i<theories.size() && qhead == trail.size() && confl==CRef_Undef && nAssigns()==nVars();i++){
+		/*	for(int i = 0;i<theories.size() && qhead == trail.size() && confl==CRef_Undef && nAssigns()==nVars();i++){
 				if(opt_subsearch==3 && track_min_level<initial_level)
 					continue;//Disable attempting to solve sub-solvers if we've backtracked past the super solver
 
@@ -706,7 +706,7 @@ CRef Solver::propagate(bool propagate_theories)
 						return confl;
 
 				}
-			}
+			}*/
 
     }while(qhead < trail.size());
     propagations += num_props;
@@ -970,19 +970,21 @@ lbool Solver::search(int nof_conflicts)
 
                 if (next == lit_Undef){
 
-                /*	//solve theories if this solver is completely assigned
+                	//solve theories if this solver is completely assigned
 					for(int i = 0;i<theories.size();i++){
 						if(opt_subsearch==3 && track_min_level<initial_level)
 							continue;//Disable attempting to solve sub-solvers if we've backtracked past the super solver's decision level
 
 						if(!theories[i]->solve(theory_conflict)){
-							if(!addConflictClause(theory_conflict))
-								return l_False;
+							if(!addConflictClause(theory_conflict,confl))
+							{
+								goto conflict;
+							}
 						}
 						//If propagating one of the sub theories caused this solver to backtrack, then go back to propagation
 						if(qhead < trail.size()  || nAssigns()<nVars())
 							goto propagate;
-					}*/
+					}
 
 
 
