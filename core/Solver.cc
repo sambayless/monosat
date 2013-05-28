@@ -631,7 +631,7 @@ void Solver::analyzeFinal(CRef confl, Lit skip_lit, vec<Lit>& out_conflict)
 |________________________________________________________________________________________________@*/
 CRef Solver::propagate(bool propagate_theories)
 {
-	if(qhead==trail.size())
+	if(qhead> 0 && qhead==trail.size())
 		return CRef_Undef;//This could probably be implemented more cleanly. Basically, this skips the fairly expensive recursive propagation checks if no changes have occured. But if unit level propagation has happened in a lower solver, then we still need to check for that even if no changes happened in this solver.
     CRef    confl     = CRef_Undef;
     int     num_props = 0;
