@@ -628,8 +628,8 @@ void Solver::analyzeFinal(CRef confl, Lit skip_lit, vec<Lit>& out_conflict)
 |________________________________________________________________________________________________@*/
 CRef Solver::propagate(bool propagate_theories)
 {
-	if(decisionLevel()>0 && qhead==trail.size())
-		return CRef_Undef;//This could probably be implemented more cleanly.
+	//if(decisionLevel()>0 && qhead==trail.size())
+	//	return CRef_Undef;//This could probably be implemented more cleanly.
     CRef    confl     = CRef_Undef;
     int     num_props = 0;
     watches.cleanAll();
