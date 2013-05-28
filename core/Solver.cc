@@ -690,35 +690,8 @@ CRef Solver::propagate(bool propagate_theories)
 		//propagate theories;
 		for(int i = 0;propagate_theories && i<theories.size() && qhead == trail.size() && confl==CRef_Undef;i++){
 			if(!theories[i]->propagateTheory(theory_conflict)){
-				if(theory_conflict.size()==0){
-					ok=false;
-					cancelUntil(0);
-					return CRef_Undef;
-				}else if(theory_conflict.size()==1){
-					cancelUntil(0);
-					assert(var(theory_conflict[0])<nVars());
-					if(!enqueue(theory_conflict[0])){
-						ok=false;
-						return CRef_Undef;
-					}
-				}else{
-					//find the highest level in the conflict (should be the current decision level, but we won't require that)
-					int max_lev = 0;
-					for(int j = 0;j<theory_conflict.size();j++){
-						assert(var(theory_conflict[i])<nVars());
-						assert(value(theory_conflict[i])==l_False);
-						int l = level(var(theory_conflict[i]));
-						if(l>max_lev){
-							max_lev=l;
-						}
-					}
-					assert(max_lev>0);
-					cancelUntil(max_lev);
-					CRef cr = ca.alloc(theory_conflict, false);
-					clauses.push(cr);
-					attachClause(cr);
-					return cr;
-				}
+				if(!addConflictClause(theory_conflict,confl))
+					return confl;
 			}
 		}
 
@@ -729,36 +702,9 @@ CRef Solver::propagate(bool propagate_theories)
 					continue;//Disable attempting to solve sub-solvers if we've backtracked past the super solver
 
 				if(!theories[i]->solve(theory_conflict)){
+					if(!addConflictClause(theory_conflict,confl))
+						return confl;
 
-					if(theory_conflict.size()==0){
-						ok=false;
-						cancelUntil(0);
-						return CRef_Undef;
-					}else if(theory_conflict.size()==1){
-						cancelUntil(0);
-						assert(var(theory_conflict[i])<nVars());
-						if(!enqueue(theory_conflict[0])){
-							ok=false;
-							return CRef_Undef;
-						}
-					}else{
-						//find the highest level in the conflict (should be the current decision level, but we won't require that)
-						int max_lev = 0;
-						for(int j = 0;j<theory_conflict.size();j++){
-							assert(var(theory_conflict[i])<nVars());
-							assert(value(theory_conflict[i])==l_False);
-							int l = level(var(theory_conflict[i]));
-							if(l>max_lev){
-								max_lev=l;
-							}
-						}
-						assert(max_lev>0);
-						cancelUntil(max_lev);
-						CRef cr = ca.alloc(theory_conflict, true);
-						clauses.push(cr);
-						attachClause(cr);
-						return cr;
-					}
 				}
 			}
 
@@ -859,7 +805,8 @@ bool Solver::simplify()
     return true;
 }
 
-bool Solver::addConflictClause(vec<Lit> & theory_conflict){
+bool Solver::addConflictClause(vec<Lit> & theory_conflict, CRef & confl_out){
+	confl_out=CRef_Undef;
 	if(theory_conflict.size()==0){
 			ok=false;
 			cancelUntil(0);
@@ -888,7 +835,7 @@ bool Solver::addConflictClause(vec<Lit> & theory_conflict){
 			CRef cr = ca.alloc(theory_conflict, true);
 			clauses.push(cr);
 			attachClause(cr);
-
+			confl_out=cr;
 		}
 	return true;
 }
@@ -974,7 +921,7 @@ lbool Solver::search(int nof_conflicts)
      		  }else if(opt_subsearch==2 && S && confl==CRef_Undef){
      			if(super_qhead<S->qhead && ! propagateTheory( theory_conflict))//re-enqueue any super solver decisions that we have backtracked past, and keep going
      			{
-     				if(!addConflictClause(theory_conflict))
+     				if(!addConflictClause(theory_conflict,confl))
      					return l_False;
      				goto conflict;
      			}
