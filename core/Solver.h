@@ -324,7 +324,7 @@ protected:
     int      level            (Var x) const;
     double   progressEstimate ()      const; // DELETE THIS ?? IT'S NOT VERY USEFUL ...
     bool     withinBudget     ()      const;
-
+    bool 	addConflictClause(vec<Lit> & theory_conflict);
     // Static helpers:
     //
 
