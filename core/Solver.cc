@@ -552,7 +552,7 @@ void Solver::analyzeFinal(CRef confl, Lit skip_lit, vec<Lit>& out_conflict)
 				confl = propagate();
 				if(confl!=CRef_Undef || track_min_level<initial_level){
 					cancelUntil(track_min_level);
-					
+					S->cancelUntil(track_min_level);
 					goto conflict;
 				}
 
@@ -575,9 +575,12 @@ void Solver::analyzeFinal(CRef confl, Lit skip_lit, vec<Lit>& out_conflict)
 		initial_level=decisionLevel();
 		track_min_level=initial_level;
 		confl = propagate();
-		conflict:
-		if(confl!=CRef_Undef || decisionLevel()<initial_level)
+		if(confl!=CRef_Undef || track_min_level<initial_level){
+			cancelUntil(track_min_level);
 			S->cancelUntil(track_min_level);
+		}
+		conflict:
+
 		if(confl!=CRef_Undef){
 			//then we have a conflict which we need to instantiate in S
 			conflict_out.clear();
@@ -628,8 +631,8 @@ void Solver::analyzeFinal(CRef confl, Lit skip_lit, vec<Lit>& out_conflict)
 |________________________________________________________________________________________________@*/
 CRef Solver::propagate(bool propagate_theories)
 {
-	//if(decisionLevel()>0 && qhead==trail.size())
-	//	return CRef_Undef;//This could probably be implemented more cleanly.
+	if(decisionLevel()>0 && qhead==trail.size())
+		return CRef_Undef;//This could probably be implemented more cleanly.
     CRef    confl     = CRef_Undef;
     int     num_props = 0;
     watches.cleanAll();
