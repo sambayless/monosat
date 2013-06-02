@@ -35,7 +35,8 @@ namespace Minisat {
 
 class Solver:public Theory {
 public:
-
+	friend class Theory;
+	friend class DijGraph;
     // Constructor/Destructor:
     //
     Solver();
@@ -56,9 +57,12 @@ public:
     //Theory interface
     void addTheory(Theory*t){
     	theories.push(t);
-    	markers.push(ca.makeMarkerReference());
     	cancelUntil(0);
-
+    }
+    //Generate a new, unique `temporary value' for explaining conflicts
+    CRef newReasonMarker(){
+    	markers.push(ca.makeMarkerReference());
+    	return markers.last();
     }
 
     bool isTheoryCause(CRef cr){
@@ -99,7 +103,7 @@ public:
 		max_super=super_vars.last();
 		min_local=local_vars[0];
 		max_local=local_vars.last();
-		cause_marker=super->markers.last();//this is fragile and ugly, fix this...
+		cause_marker=super->newReasonMarker();
     }
                                                       // change the passed vector 'ps'.
 

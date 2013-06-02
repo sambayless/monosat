@@ -45,7 +45,7 @@ public:
 	}
 	void backtrackUntil(int level){};
 	void newDecisionLevel(){};
-	bool propagate(vec<Lit> & conflict){return true;};
+	bool propagateTheory(vec<Lit> & conflict){return true;};
 	bool solve(vec<Lit> & conflict){return true;};
 
 	void buildReason(Lit p, vec<Lit> & reason){};
