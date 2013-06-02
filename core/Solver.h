@@ -71,7 +71,7 @@ public:
     }
 
     CRef constructReason(Lit p){
-    	CRef cr = reason(var(p));
+    	CRef cr = reason_unsafe(var(p));
     	assert(isTheoryCause(cr));
     	assert(!ca.isClause(cr));
     	assert(cr!=CRef_Undef);
@@ -323,7 +323,8 @@ protected:
     //
     int      decisionLevel    ()      const; // Gives the current decisionlevel.
     uint32_t abstractLevel    (Var x) const; // Used to represent an abstraction of sets of decision levels.
-    CRef     reason           (Var x) const;
+    CRef     reason_unsafe           (Var x) const;
+    CRef	reason(Lit p) ;
     int      level            (Var x) const;
     double   progressEstimate ()      const; // DELETE THIS ?? IT'S NOT VERY USEFUL ...
     bool     withinBudget     ()      const;
@@ -398,8 +399,15 @@ protected:
 
 //=================================================================================================
 // Implementation of inline methods:
+inline CRef Solver::reason(Lit p) {
 
-inline CRef Solver::reason(Var x) const { return vardata[x].reason; }
+    if(isTheoryCause(reason_unsafe(var(p)))){
+     	//lazily construct the reason for this theory propagation now that we need it
+     	 constructReason(p);//this reason is also set in vardata[x].reason, so future calls to reason_unsafe will return the newly constructed clause
+     }
+	return reason_unsafe(var(p));
+}
+inline CRef Solver::reason_unsafe(Var x) const { return vardata[x].reason; }
 inline int  Solver::level (Var x) const { return vardata[x].level; }
 
 inline void Solver::insertVarOrder(Var x) {
@@ -438,7 +446,7 @@ inline bool     Solver::addEmptyClause  ()                      { add_tmp.clear(
 inline bool     Solver::addClause       (Lit p)                 { add_tmp.clear(); add_tmp.push(p); return addClause_(add_tmp); }
 inline bool     Solver::addClause       (Lit p, Lit q)          { add_tmp.clear(); add_tmp.push(p); add_tmp.push(q); return addClause_(add_tmp); }
 inline bool     Solver::addClause       (Lit p, Lit q, Lit r)   { add_tmp.clear(); add_tmp.push(p); add_tmp.push(q); add_tmp.push(r); return addClause_(add_tmp); }
-inline bool     Solver::locked          (const Clause& c) const { return value(c[0]) == l_True && ca.isClause( reason(var(c[0]))) && ca.lea(reason(var(c[0]))) == &c; }
+inline bool     Solver::locked          (const Clause& c) const { return value(c[0]) == l_True && ca.isClause( reason_unsafe(var(c[0]))) && ca.lea(reason_unsafe(var(c[0]))) == &c; }
 inline void     Solver::newDecisionLevel()                      { trail_lim.push(trail.size());}
 
 inline int      Solver::decisionLevel ()      const   { return trail_lim.size(); }

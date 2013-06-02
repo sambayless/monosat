@@ -308,11 +308,8 @@ void Solver::analyze(CRef confl, vec<Lit>& out_learnt, int& out_btlevel)
         // Select next clause to look at:
         while (!seen[var(trail[index--])]);
         p     = trail[index+1];
-        confl = reason(var(p));
-        if(isTheoryCause(confl)){
-        	//lazily construct the reason for this theory propagation now that we need it
-        	confl=constructReason(p);
-        }
+        confl = reason(p);
+
         seen[var(p)] = 0;
         pathC--;
 
@@ -329,17 +326,17 @@ void Solver::analyze(CRef confl, vec<Lit>& out_learnt, int& out_btlevel)
             abstract_level |= abstractLevel(var(out_learnt[i])); // (maintain an abstraction of levels involved in conflict)
 
         for (i = j = 1; i < out_learnt.size(); i++)
-            if (!ca.isClause(reason(var(out_learnt[i])))  || !litRedundant(out_learnt[i], abstract_level))
+            if (!ca.isClause(reason_unsafe(var(out_learnt[i])))  || !litRedundant(out_learnt[i], abstract_level))
                 out_learnt[j++] = out_learnt[i];
 
     }else if (ccmin_mode == 1){
         for (i = j = 1; i < out_learnt.size(); i++){
             Var x = var(out_learnt[i]);
 
-            if (reason(x) == CRef_Undef)
+            if (reason_unsafe(x) == CRef_Undef)
                 out_learnt[j++] = out_learnt[i];
             else{
-                Clause& c = ca[reason(var(out_learnt[i]))];
+                Clause& c = ca[reason_unsafe(var(out_learnt[i]))];
                 for (int k = 1; k < c.size(); k++)
                     if (!seen[var(c[k])] && level(var(c[k])) > 0){
                         out_learnt[j++] = out_learnt[i];
@@ -381,8 +378,8 @@ bool Solver::litRedundant(Lit p, uint32_t abstract_levels)
     analyze_stack.clear(); analyze_stack.push(p);
     int top = analyze_toclear.size();
     while (analyze_stack.size() > 0){
-        assert(reason(var(analyze_stack.last())) != CRef_Undef);
-        if(!ca.isClause(reason(var(analyze_stack.last())))){
+        assert(reason_unsafe(var(analyze_stack.last())) != CRef_Undef);
+        if(!ca.isClause(reason_unsafe(var(analyze_stack.last())))){
         	//Don't pursue this if it is a subsolver reason
         	for (int j = top; j < analyze_toclear.size(); j++)
    				seen[var(analyze_toclear[j])] = 0;
@@ -391,12 +388,12 @@ bool Solver::litRedundant(Lit p, uint32_t abstract_levels)
    			return false;
         }
 
-        Clause& c = ca[reason(var(analyze_stack.last()))]; analyze_stack.pop();
+        Clause& c = ca[reason_unsafe(var(analyze_stack.last()))]; analyze_stack.pop();
 
         for (int i = 1; i < c.size(); i++){
             Lit p  = c[i];
             if (!seen[var(p)] && level(var(p)) > 0){
-                if (reason(var(p)) != CRef_Undef && (abstractLevel(var(p)) & abstract_levels) != 0){
+                if (reason_unsafe(var(p)) != CRef_Undef && (abstractLevel(var(p)) & abstract_levels) != 0){
                     seen[var(p)] = 1;
                     analyze_stack.push(p);
                     analyze_toclear.push(p);
@@ -436,14 +433,11 @@ void Solver::analyzeFinal(Lit p, vec<Lit>& out_conflict)
     for (int i = trail.size()-1; i >= trail_lim[0]; i--){
         Var x = var(trail[i]);
         if (seen[x]){
-            if (reason(x) == CRef_Undef){
+            if (reason(trail[i]) == CRef_Undef){
                 assert(level(x) > 0);
                 out_conflict.push(~trail[i]);
             }else{
-            	if(isTheoryCause(reason(x))){
-					constructReason(trail[i]);
-				}
-                Clause& c = ca[reason(x)];assert(var(c[0])==x);
+                Clause& c = ca[reason(trail[i])];assert(var(c[0])==x);
                 for (int j = 1; j < c.size(); j++)
                     if (level(var(c[j])) > 0)
                         seen[var(c[j])] = 1;
@@ -493,15 +487,13 @@ void Solver::analyzeFinal(CRef confl, Lit skip_lit, vec<Lit>& out_conflict)
 
 	        if (seen[x]){
 	        	  assert(x!=var(skip_lit));
-	            CRef r = reason(x);
+	            CRef r = reason(trail[i]);
 	            if (r == CRef_Undef){
 	            	Var v = var(trail[i]);
 	            	int lev = level(v);
 	                out_conflict.push(~trail[i]);
 	            }else{
-	            	if(isTheoryCause(r)){
-	            		r = constructReason(trail[i]);
-	            	}
+	      
 					Clause& c = ca[r];
 					for (int j = 0; j < c.size(); j++){
 
@@ -1242,7 +1234,7 @@ void Solver::relocAll(ClauseAllocator& to)
     for (int i = 0; i < trail.size(); i++){
         Var v = var(trail[i]);
 
-        if (ca.isClause(reason(v)) && ( ca[reason(v)].reloced()|| locked(ca[reason(v)])  ))
+        if (ca.isClause(reason_unsafe(v)) && ( ca[reason_unsafe(v)].reloced()|| locked(ca[reason_unsafe(v)])  ))
             ca.reloc(vardata[v].reason, to);
     }
 
