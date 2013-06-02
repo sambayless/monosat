@@ -1,24 +1,11 @@
-================================================================================
-DIRECTORY OVERVIEW:
+This is a (somewhat tested, likely buggy, and likely sub-optimal) implementation of a SAT modulo SAT solver.
+It is designed to solve instances that have been partitioned into multiple CNFs which share relatively few variables between them.
+Right now it is pared with a simple, incremental bounded model checker to provide a source of modular CNFs to solve. 
 
-mtl/            Mini Template Library
-utils/          Generic helper code (I/O, Parsing, CPU-time, etc)
-core/           A core version of the solver
-simp/           An extended solver with simplification capabilities
-README
-LICENSE
+As a side-effect of proving an instance UNSAT, this solver will produce interpolants between each module. These can be found in the vector `Solver->interpolant'
 
-================================================================================
-BUILDING: (release version: without assertions, statically linked, etc)
+Build with 
 
-export MROOT=<minisat-dir>              (or setenv in cshell)
-cd { core | simp }
-gmake rs
-cp minisat_static <install-dir>/minisat
+$cd Release
+$make
 
-================================================================================
-EXAMPLES:
-
-Run minisat with same heuristics as version 2.0:
-
-> minisat <cnf-file> -no-luby -rinc=1.5 -phase-saving=0 -rnd-freq=0.02
