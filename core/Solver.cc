@@ -139,7 +139,7 @@ bool Solver::addClause_(vec<Lit>& ps)
         return ok = false;
     else if (ps.size() == 1){
         uncheckedEnqueue(ps[0]);
-        return ok = (propagate(false) == CRef_Undef); //do NOT propagate theory solvers here, or else adding unit clauses can become very expensive in some circumstances (such as when constructing the initial CNF for example)
+        return ok = (propagate() == CRef_Undef); //do NOT propagate theory solvers here, or else adding unit clauses can become very expensive in some circumstances (such as when constructing the initial CNF for example)
     }else{
         CRef cr = ca.alloc(ps, false);
         clauses.push(cr);
@@ -616,6 +616,24 @@ void Solver::analyzeFinal(CRef confl, Lit skip_lit, vec<Lit>& out_conflict)
 			return true;
 		}
 	}
+
+CRef Solver::propagateAll(){
+	if( qhead==trail.size())
+		return CRef_Undef;
+	  do{
+		CRef confl=  propagate();
+		if(confl!=CRef_Undef)
+			return confl;
+	  //propagate theories;
+			for(int i = 0;  i<theories.size() && qhead == trail.size() && confl==CRef_Undef;i++){
+				if(!theories[i]->propagateTheory(theory_conflict)){
+					if(!addConflictClause(theory_conflict,confl))
+						return confl;
+				}
+			}
+	  }while(qhead < trail.size());
+	  return CRef_Undef;
+}
 /*_________________________________________________________________________________________________
 |
 |  propagate : [void]  ->  [Clause*]
@@ -627,15 +645,13 @@ void Solver::analyzeFinal(CRef confl, Lit skip_lit, vec<Lit>& out_conflict)
 |    Post-conditions:
 |      * the propagation queue is empty, even if there was a conflict.
 |________________________________________________________________________________________________@*/
-CRef Solver::propagate(bool propagate_theories)
+CRef Solver::propagate()
 {
-	if( qhead==trail.size())
-		return CRef_Undef;
+
     CRef    confl     = CRef_Undef;
     int     num_props = 0;
     watches.cleanAll();
 
-    do{
 
 		while (qhead < trail.size()){
 			Lit            p   = trail[qhead++];     // 'p' is enqueued fact to propagate.
@@ -687,28 +703,7 @@ CRef Solver::propagate(bool propagate_theories)
 			ws.shrink(i - j);
 		}
 	
-		//propagate theories;
-		for(int i = 0;  propagate_theories && i<theories.size() && qhead == trail.size() && confl==CRef_Undef;i++){
-			if(!theories[i]->propagateTheory(theory_conflict)){
-				if(!addConflictClause(theory_conflict,confl))
-					return confl;
-			}
-		}
 
-
-		//solve theories if this solver is completely assigned
-		/*	for(int i = 0;i<theories.size() && qhead == trail.size() && confl==CRef_Undef && nAssigns()==nVars();i++){
-				if(opt_subsearch==3 && track_min_level<initial_level)
-					continue;//Disable attempting to solve sub-solvers if we've backtracked past the super solver
-
-				if(!theories[i]->solve(theory_conflict)){
-					if(!addConflictClause(theory_conflict,confl))
-						return confl;
-
-				}
-			}*/
-
-    }while(qhead < trail.size());
     propagations += num_props;
     simpDB_props -= num_props;
 
@@ -786,7 +781,7 @@ bool Solver::simplify()
 {
     assert(decisionLevel() == 0);
 
-    if (!ok || propagate(false) != CRef_Undef)
+    if (!ok || propagate() != CRef_Undef)
         return ok = false;
 
     if (nAssigns() == simpDB_assigns || (simpDB_props > 0))
@@ -865,7 +860,7 @@ lbool Solver::search(int nof_conflicts)
 
     for (;;){
     	propagate:
-        CRef confl = propagate();
+        CRef confl = propagateAll();
         conflict:
         if (confl != CRef_Undef){
             // CONFLICT

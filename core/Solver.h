@@ -285,7 +285,8 @@ protected:
     void     newDecisionLevel ();                                                      // Begins a new decision level.
     void     uncheckedEnqueue (Lit p, CRef from = CRef_Undef);                         // Enqueue a literal. Assumes value of literal is undefined.
     bool     enqueue          (Lit p, CRef from = CRef_Undef);                         // Test if fact 'p' contradicts current state, enqueue otherwise.
-    CRef     propagate        (bool propagate_theories=true);                                                      // Perform unit propagation. Returns possibly conflicting clause.
+    CRef     propagateAll        ();                                                   // Perform unit propagation on both this solver's clauses and any subtheories. Returns possibly conflicting clause.
+    CRef     propagate        ();                                                      // Perform unit propagation. Returns possibly conflicting clause.
     bool 	propagateTheory(vec<Lit> & conflict);
     bool	solve(vec<Lit> & conflict);
     void 	buildReason(Lit p, vec<Lit> & reason);
