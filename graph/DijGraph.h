@@ -26,6 +26,7 @@ private:
 	Solver * S;
 	DynamicGraph g;
 	DynamicGraph antig;
+	DynamicGraph cutGraph;
 	vec<Dijkstra*> reach_detectors;
 	vec<Dijkstra*> non_reach_detectors;
 	vec<vec<Lit> > reach_lits;
@@ -40,13 +41,24 @@ private:
 		int to;
 	};
 	vec<EdmondsKarp::Edge> cut;
+
+	//Full matrix
 	vec<vec<Edge> > edges;
+
+	//Just a list of the edges
 	vec<Edge> edge_list;
 	Var min_edge_var;
 	int num_edges;
+	struct AssignedEdge{
+		bool assign:1;
+		int from:31;
+		int to;
+	};
+	vec<AssignedEdge> trail;
+	vec<int> trail_lim;
 	EdmondsKarp mc;
 public:
-	DijGraph(Solver * S_):S(S_),mc(g){
+	DijGraph(Solver * S_):S(S_),mc(cutGraph){
 		True = mkLit(S->newVar(),false);
 			False=~True;
 			S->addClause(True);
@@ -55,9 +67,13 @@ public:
 	}
      ~DijGraph(){};
 	 int newNode(){
+
 		 edges.push();
+		 for(int i = 0;i<edges.size();i++)
+			 edges[i].growTo(edges.size());
 
 		 antig.addNode();
+		 cutGraph.addNode();
 		return g.addNode();
 	}
 	 void newNodes(int n){
@@ -72,10 +88,36 @@ public:
 	}
 
 	void backtrackUntil(int level){
+		//need to remove and add edges in the two graphs accordingly.
+		if(level<trail_lim.size()){
+			for(int i = trail.size()-1;i>=trail_lim[level];i--){
+				AssignedEdge e = trail[i];
+				if(e.assign){
+					g.removeEdge(e.from,e.to);
+				}else{
+					antig.addEdge(e.from,e.to);
+				}
+			}
+
+			trail_lim.shrink(trail_lim.size()-level);
+			trail.shrink(trail.size()-trail_lim.last());
+
+		}
+
 		if(local_q>S->qhead)
 			local_q=S->qhead;
+
+		for(int i = 0;i<reach_detectors.size();i++){
+			reach_detectors[i]->update();
+		}
+
+		for(int i = 0;i<non_reach_detectors.size();i++){
+			non_reach_detectors[i]->update();
+		}
 	};
-	void newDecisionLevel(){};
+	void newDecisionLevel(){
+		trail_lim.push(trail.size());
+	};
 
 	void buildReason(Lit p, vec<Lit> & reason){
 		CRef marker = S->reason(var(p));
@@ -109,7 +151,7 @@ public:
 			//set weights
 
 			//compute the mincut
-			Var v = var(p);
+			/*Var v = var(p);
 				int t =  v- var(reach_lits[d][0]);
 				assert(!detector.connected(t));
 
@@ -117,7 +159,10 @@ public:
 			mc.minCut (detector.getSource(), t,cut);
 			for(int i = 0;i<cut.size();i++){
 				reason.push(mkLit( edges[cut[i].u][cut[i].v].v,false ));
-			}
+			}*/
+			Var v = var(p);
+							int t =  v- var(reach_lits[d][0]);
+			buildNonReachReason(t,d,reason);
 			/*for(int i = 0;i<g.nodes;i++){
 				for(int j = 0;j<g.adjacency[i];j++){
 					int v = g.adjacency[i][j];
@@ -140,8 +185,22 @@ public:
 	}
 	void buildNonReachReason(int node, int detector ,vec<Lit> & conflict){
 		int u = node;
-		mc.minCut(non_reach_detectors[detector]->getSource(),node,cut);
-
+		//ok, set the weights for each edge in the cut graph.
+		//We edges to infinite weight if they are undef or true, and weight 1 otherwise.
+		for(int i = 0;i<cutGraph.adjacency.size();i++){
+			for(int j = 0;j<cutGraph.adjacency[i].size();j++){
+				int v = cutGraph.adjacency[i][j];
+				Var var = edges[i][v].v;
+				if(S->value(var)==l_False){
+					mc.setCapacity(i,v,1);
+				}else{
+					mc.setCapacity(i,v,0xF0F0F0);
+				}
+			}
+		}
+		cut.clear();
+		int f =mc.minCut(non_reach_detectors[detector]->getSource(),node,cut);
+		assert(f<0xF0F0F0); assert(f==cut.size());//because edges are only ever infinity or 1
 		for(int i = 0;i<cut.size();i++){
 			EdmondsKarp::Edge e = cut[i];
 			conflict.push(mkLit( edges[e.u][e.v].v,false));
@@ -152,15 +211,20 @@ public:
 		bool any_change = false;
 		static vec<int> detectors_to_check;
 		detectors_to_check.clear();
+		conflict.clear();
 		while(local_q<S->qhead){
 			Lit l = S->trail[local_q++];
 			Var v = var(l);
+			int lev = S->level(v);
+			while(lev>trail_lim.size()){
+				newDecisionLevel();
+			}
 			if(v>= min_edge_var && v<min_edge_var+num_edges){
 				//this is an edge assignment
 				int edge_num = v-min_edge_var;
 				int from = edge_list[edge_num].from;
 				int to = edge_list[edge_num].to;
-
+				trail.push({!sign(l), from,to});
 				if (!sign(l)){
 					g.addEdge(from,to);
 					for(int i = 0;i<reach_detectors.size();i++){
@@ -186,6 +250,7 @@ public:
 				assert(d!=0);
 				if(d>0){
 					d--;
+					reach_detectors[d]->marked =false;
 					reach_detectors[d]->update();
 					for(int j =0;j<reach_lits[d].size();j++){
 						Lit l = reach_lits[d][j];
@@ -206,6 +271,7 @@ public:
 					}
 				}else{
 					d=-d-1;
+					non_reach_detectors[d]->marked =false;
 					non_reach_detectors[d]->update();
 					for(int j =0;j<reach_lits[d].size();j++){
 						Lit l = ~reach_lits[d][j];
@@ -230,12 +296,12 @@ public:
 
 
 		}
-
+		detectors_to_check.clear();
 		//really simple dynamic optimization for online checking connectivity:
 		//only need to do an update if an added edge has non-infinite endpoints in g, or if a removed edge has non-infinite endpoints in antig
-		while(detectors_to_check.size()){
+		/*while(detectors_to_check.size()){
 
-		}
+		}*/
 
 		return true;
 	};
@@ -253,9 +319,9 @@ public:
 		num_edges++;
 		edge_list.push({v,from,to});
 		//edges.push({from,to});
-		edges[from].push({v,from,to});
+		edges[from][to]= {v,from,to};
 		antig.addEdge(from,to);
-
+		cutGraph.addEdge(from,to);
     	return mkLit(v,false);
     }
 
@@ -279,6 +345,8 @@ public:
 			reaches.push(reachLit);
 			reach_lits.last().push(reachLit);
 		}
+		reach_detectors.last()->update();
+		non_reach_detectors.last()->update();
 
     }
 

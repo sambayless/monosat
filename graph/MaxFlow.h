@@ -38,7 +38,7 @@ class EdmondsKarp{
     vec<int> Q;
 
     int  BreadthFirstSearch(int s, int t){
-
+    		Q.clear();
            Q.push(s);
            while (Q.size() > 0){
                int u =Q.last(); Q.pop();
@@ -82,6 +82,7 @@ public:
     }
     int maxFlow(int s, int t){
     	int f = 0;
+    	C.growTo(g.nodes);
     	F.growTo(g.nodes);
     	P.growTo(g.nodes);
     	M.growTo(g.nodes);
@@ -90,6 +91,7 @@ public:
     		P[i]=-1;
     		M[i]=0;
     		F[i].growTo(g.nodes);
+    		C[i].growTo(g.nodes);
     		for(int j = 0;j<g.nodes;j++){
     			F[i][j]=0;
     		}
@@ -122,7 +124,7 @@ public:
     	int u;
     	int v;
     };
-    void minCut(int s, int t, vec<Edge> & cut){
+    int minCut(int s, int t, vec<Edge> & cut){
     	int f = maxFlow(s,t);
     	//ok, now find the cut
 
@@ -155,6 +157,7 @@ public:
     		}
     	}
     	cut.shrink(i-j);
+    	return f;
     }
 
 

@@ -117,7 +117,7 @@ public:
 		}
 	}
 	bool connected_unsafe(int t){
-		return dist[t]<INF;
+		return t<dist.size() && dist[t]<INF;
 	}
 	bool connected(int t){
 		if(last_modification!=g.modifications)
