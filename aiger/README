@@ -1,0 +1,54 @@
+AIGER is a format, library and set of utilities for And-Inverter Graphs (AIGs).
+See also 'http://fmv.jku.at/aiger'.
+
+The focus is on conversion utilities and a generic reader and writer API. 
+A simple AIG library 'SimpAIG' is also included.  It is currently only
+used in the new bounded model checker 'aigbmc', but eventually 'simpaig'
+will replace the AIG libraries used in 'smvtoaig' and 'bliftoaig'.
+
+  documentation:
+
+    README                       this file
+    FORMAT                       detailed description of the format
+    LICENSE                      license and copyright
+
+  libraries:
+
+    aiger.h                      API of AIGER library ('aiger.c')
+    aiger.c                      read and write AIGs in AIGER format
+
+    simpaig.h                    API of SimpAIG library ('simpaig.c')
+    simpaig.c                    A compact and simple AIG library
+                                 (independent from 'aiger.c')
+  examples:
+
+    examples/*.aig               simple examples discussed in 'FORMAT'
+    examples/*.aag               (same in ASCII format)
+
+    examples/read.c              decoder code for binary integer repr.
+    examples/write.c             encoder code for binary integer repr.
+
+    examples/poormanaigtocnf.c   simple applications reading the binary format
+    examples/JaigerToCNF.java    without use of the AIGER library
+                                 (prototypes for competition readers)
+  utilities:
+
+    aigbmc     time frame expansion for bounded model checking
+    aigdd      delta debugger for AIGs in AIGER format
+    aiginfo    show comments of AIG
+    aignm      show symbol table of AIG
+    aigsim     simulate AIG from stimulus or randomly
+    aigstrip   strip simbols from AIG
+    aigtoaig   converts AIG formats (ascii, binary, stripped, compressed)
+    aigtocnf   translate combinational AIG into a CNF
+    aigtoblif  translate AIG into BLIF
+    aigtodot   visualizer for AIGs using 'dot' format
+    aigtosmv   translate sequential AIG to SMV format
+    andtoaig   translate file of AND gates into AIG
+    bliftoaig  translate a flat BLIF model into AIG
+    mc.sh      SAT based model checker for AIGER using these tools
+    smvtoaig   translate flat boolean encoded SMV model into AIG
+    soltostim  extract input vector from DIMACS solution
+    wrapstim   sequential stimulus from expanded combinational stimulus
+
+Armin Biere, JKU, November 2006.
