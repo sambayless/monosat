@@ -543,7 +543,7 @@ void Solver::analyzeFinal(CRef confl, Lit skip_lit, vec<Lit>& out_conflict)
 				initial_level=decisionLevel();
 				track_min_level=initial_level;
 
-				confl = propagate();
+				confl = propagateAll();
 				if(confl!=CRef_Undef || track_min_level<initial_level){
 					cancelUntil(track_min_level);
 					S->cancelUntil(track_min_level);
@@ -919,7 +919,7 @@ lbool Solver::search(int nof_conflicts)
      			{
      				if(!addConflictClause(theory_conflict,confl))
      					return l_False;
-     				goto conflict;
+     				goto propagate;
      			}
      		  }
 
