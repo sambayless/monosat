@@ -15,7 +15,7 @@
 #include "mtl/Map.h";
 #include "MaxFlow.h"
 namespace Minisat{
-class DijGraph:public Graph,public Theory{
+class DijGraph:public Theory{
 private:
 
 
@@ -33,7 +33,8 @@ private:
 
 	vec<CRef> reach_markers;
 	vec<CRef> non_reach_markers;
-	Map<CRef,int> marker_map;
+
+	vec<int> marker_map;
 	vec<int> within;
 	struct Edge{
 		Var v;
@@ -122,7 +123,7 @@ public:
 	void buildReason(Lit p, vec<Lit> & reason){
 		CRef marker = S->reason(var(p));
 		assert(marker != CRef_Undef);
-		int d = marker_map[marker];
+		int d = marker_map[CRef_Undef- marker];
 		reason.push(p);
 		assert(d!=0);
 		if(d>0){
@@ -309,9 +310,11 @@ public:
 
 
 
-	Lit newEdge(int from,int to)
+	Lit newEdge(int from,int to, Var v = var_Undef)
     {
-		Var v = S->newVar();
+		if(v==var_Undef)
+			v = S->newVar();
+
 		if(num_edges>0)
 			assert(v==min_edge_var+num_edges);
 		else
@@ -328,11 +331,18 @@ public:
 	void reachesAny(int from, vec<Lit> & reaches,int within_steps=-1){
 		assert(from<g.nodes);
 		reach_markers.push(S->newReasonMarker());
-		marker_map.insert(reach_markers.last(),reach_markers.size());
+		int mnum = CRef_Undef- reach_markers.last();
+		marker_map.growTo(mnum+1);
+		marker_map[mnum] = reach_markers.size();
+		//marker_map.insert(reach_markers.last(),reach_markers.size());
 
 		non_reach_markers.push(S->newReasonMarker());
 		//marker_map[non_reach_markers.last()]=-non_reach_markers.size();
-		marker_map.insert(non_reach_markers.last(),non_reach_markers.size());
+		//marker_map.insert(non_reach_markers.last(),non_reach_markers.size());
+
+		mnum = CRef_Undef- non_reach_markers.last();
+		marker_map.growTo(mnum+1);
+		marker_map[mnum] = non_reach_markers.size();
 
 		reach_detectors.push(new Dijkstra(from,g));
 

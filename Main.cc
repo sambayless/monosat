@@ -27,7 +27,8 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "utils/ParseUtils.h"
 #include "utils/Options.h"
 #include "Aiger.h"
-
+#include "graph/GraphParser.h"
+#include "core/Dimacs.h"
 #include "core/Solver.h"
 #include "Aiger.h"
 #include "core/Config.h"
@@ -91,11 +92,15 @@ int main(int argc, char** argv)
         
         IntOption    opt_k("bmc", "k","Maximum number of steps to unroll.\n", INT32_MAX, IntRange(0, INT32_MAX));
 
+        StringOption    opt_graph("graph", "graph","", "");
+
+
         parseOptions(argc, argv, true);
 
 
         double initial_time = cpuTime();
 
+        const char * graphstr = opt_graph;
 
 
         // Use signal handlers that forcibly quit until the solver will be able to respond to
@@ -124,34 +129,29 @@ int main(int argc, char** argv)
                     printf("WARNING! Could not set resource limit: Virtual memory.\n");
             } }
 
-         aiger *aiger;
-
-         aiger = aiger_init ();
          const char *error;
-         if (argc >= 2)
-           error = aiger_open_and_read_from_file (aiger, argv[1]);
-         else
-           error = aiger_read_from_file (aiger, stdin);
+         Solver S;
+         gzFile in = (argc == 1) ? gzdopen(0, "rb") : gzopen(argv[1], "rb");
+             if (in == NULL)
+                 printf("ERROR! Could not open file: %s\n", argc == 1 ? "<stdin>" : argv[1]), exit(1);
 
-         if (error)
-           {
-             fprintf (stderr,
-       	       "***  %s: %s\n",
-       	       (argc >= 1) ? (argv[1]) : "<stdin>", error);
-             exit(1);
-           }
-         else if (aiger->num_outputs != 1)
-           {
-             fprintf (stderr,
-       	       "***  %s: expected exactly one output\n",
-       	    (argc >= 1) ? (argv[1]) : "<stdin>");
-             exit(1);
-           }
+             if (S.verbosity > 0){
+                 printf("============================[ Problem Statistics ]=============================\n");
+                 printf("|                                                                             |\n"); }
+
+             parse_DIMACS(in, S);
+             gzclose(in);
+
+             gzFile gin =gzopen(graphstr, "rb");
+            parse_GRAPH(gin,S);
+            gzclose(gin);
+
+
          // Change to signal-handlers that will only notify the solver and allow it to terminate
            // voluntarily:
            signal(SIGINT, SIGINT_interrupt);
            signal(SIGXCPU,SIGINT_interrupt);
-           printf("Solving circuit with %d gates, %d latches, %d inputs, %d outputs\n", aiger->num_ands, aiger->num_latches, aiger->num_inputs, aiger->num_outputs);
+     //      printf("Solving circuit with %d gates, %d latches, %d inputs, %d outputs\n", aiger->num_ands, aiger->num_latches, aiger->num_inputs, aiger->num_outputs);
 
 
 
@@ -159,41 +159,6 @@ int main(int argc, char** argv)
          //really simple, unsophisticated incremental BMC:
 
            lbool ret=l_Undef;
-           vec<Var> in_latches;
-           vec<Var> out_latches;
-
-           vec<Solver*> solvers;
-           solvers.push(new Solver());
-           prepare(*solvers.last(),aiger,in_latches);
-           zero(*solvers.last(),aiger,in_latches);
-           Lit safety= unroll(*solvers.last(),aiger, in_latches,out_latches);
-
-
-           for(int i = 1;i<opt_k;i++){
-
-        	   if(solvers.last()->solve(safety)){
-        		   ret=l_True;
-        		   break;
-        	   }else if (!solvers.last()->okay()){
-					printf("Note: Problem proven unsat even without asserting property (this usually indicates a bug).\n");
-					ret= l_False;
-					break;
-        	   }else if (aiger->num_latches==0){
-        		   ret=l_False;
-        			printf("Note: Circuit has no latches.\n");
-        		   break;
-        	   }
-        	   Solver * S = new Solver();
-
-               prepare(*S,aiger,in_latches);
-               safety= unroll(*S,aiger, in_latches,out_latches);
-
-               //attach the last solver to this one
-               S->addTheory(solvers.last());
-               solvers.last()->attachTo(S, in_latches, out_latches);
-               solvers.push(S);
-               printf("Unrolling to depth %d\n", i );
-           }
 
 
         if(ret==l_True){
