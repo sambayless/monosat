@@ -51,6 +51,7 @@ static void readDiGraph(B& in, Solver& S, vec<DijGraph*> & graphs) {
         graph->newNodes(n);
         graphs.growTo(g+1);
         graphs[g]=graph;
+        S.addTheory(graph);
 
 }
 
@@ -88,7 +89,8 @@ static void readReach(B& in, Solver& S, vec<DijGraph*> & graphs) {
 
         int graphID = parseInt(in);
         int from = parseInt(in);
-        int to=parseInt(in);
+       // int steps = parseInt(in);
+        // int to=parseInt(in);
         int reachVar = parseInt(in);
         if(graphID <0 || graphID>=graphs.size() || !graphs[graphID]){
         	printf("PARSE ERROR! Undeclared graph identifier %d for edge %d\n",graphID, reachVar), exit(3);
@@ -97,8 +99,8 @@ static void readReach(B& in, Solver& S, vec<DijGraph*> & graphs) {
         	printf("PARSE ERROR! Edge variables must be >=0, was %d\n", reachVar), exit(3);
         }
         DijGraph * graph = graphs[graphID];
-        while (reachVar >= S.nVars()) S.newVar();
-
+        while (reachVar+graph->nNodes() >= S.nVars()) S.newVar();
+        graph->reachesAny(from,reachVar);
         //graph->newEdge(from,to,edgeVar);
 
 }
@@ -137,14 +139,15 @@ static void parse_GRAPH_main(B& in, Solver& S) {
             cnt++;
             readEdge(in, S,graphs);
 
+        }else if (*in == 'r'){
+
+            readReach(in, S,graphs);
+
         }else{
         	printf("PARSE ERROR! Unexpected char: %c\n", *in), exit(3);
         }
     }
-    if (vars != S.nVars())
-        fprintf(stderr, "WARNING! DIMACS header mismatch: wrong number of variables.\n");
-    if (cnt  != clauses)
-        fprintf(stderr, "WARNING! DIMACS header mismatch: wrong number of clauses.\n");
+
 }
 
 // Inserts problem into solver.
