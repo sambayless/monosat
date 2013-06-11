@@ -66,7 +66,7 @@ static void readEdge(B& in, Solver& S, vec<DijGraph*> & graphs) {
         int graphID = parseInt(in);
         int from = parseInt(in);
         int to=parseInt(in);
-        int edgeVar = parseInt(in);
+        int edgeVar = parseInt(in)-1;
         if(graphID <0 || graphID>=graphs.size() || !graphs[graphID]){
         	printf("PARSE ERROR! Undeclared graph identifier %d for edge %d\n",graphID, edgeVar), exit(3);
         }
@@ -91,7 +91,7 @@ static void readReach(B& in, Solver& S, vec<DijGraph*> & graphs) {
         int from = parseInt(in);
        // int steps = parseInt(in);
         // int to=parseInt(in);
-        int reachVar = parseInt(in);
+        int reachVar = parseInt(in)-1;
         if(graphID <0 || graphID>=graphs.size() || !graphs[graphID]){
         	printf("PARSE ERROR! Undeclared graph identifier %d for edge %d\n",graphID, reachVar), exit(3);
         }

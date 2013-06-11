@@ -219,6 +219,8 @@ public:
 		static vec<int> detectors_to_check;
 		detectors_to_check.clear();
 		conflict.clear();
+		//Can probably speed this up alot by a) constant propagating reaches that I care about at level 0, and b) Removing all detectors for nodes that appear only in the opposite polarity (or not at all) in the cnf.
+		//That second one especially.
 		while(local_q<S->qhead){
 			Lit l = S->trail[local_q++];
 			Var v = var(l);

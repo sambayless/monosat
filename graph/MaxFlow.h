@@ -38,15 +38,23 @@ class EdmondsKarp{
     vec<int> Q;
 
     int  BreadthFirstSearch(int s, int t){
-    		Q.clear();
+     	for(int i = 0;i<g.nodes;i++)
+			P[i]=-1;
+     	P[s] = -2;
+    	Q.clear();
            Q.push(s);
+
            while (Q.size() > 0){
                int u =Q.last(); Q.pop();
 
                for (int i = 0;i<g.adjacency[u].size();i++){
             	   int v = g.adjacency[u][i];
                    ///(If there is available capacity, and v is not seen before in search)
-                   if (((C[u][v] - F[u][v]) > 0) && (P[v] = -1)){
+            	   int c = C[u][v];
+            	   int f = F[u][v];
+            	   int cr = C[v][u];
+            	   int fr = F[v][u];;
+                   if (((C[u][v] - F[u][v]) > 0) && (P[v] == -1)){
                        P[v] = u;
                        M[v] = min(M[u], C[u][v] - F[u][v]);
                        if (v != t)
