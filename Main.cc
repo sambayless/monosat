@@ -158,7 +158,7 @@ int main(int argc, char** argv)
 
          //really simple, unsophisticated incremental BMC:
 
-           lbool ret=l_Undef;
+           lbool ret=S.solve()?l_True:l_False;
 
 
         if(ret==l_True){

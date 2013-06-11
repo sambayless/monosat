@@ -180,7 +180,7 @@ public:
 		int u = node;
 		while(int p = d.previous(u) != -1){
 			Var e = min_edge_var+edges[u][p].v;
-			conflict.push(mkLit(e, negate));
+			conflict.push(mkLit(e, true));
 			u = p;
 		}
 	}
@@ -327,7 +327,37 @@ public:
 		cutGraph.addEdge(from,to);
     	return mkLit(v,false);
     }
+	void reachesAny(int from, Var firstVar,int within_steps=-1){
+			assert(from<g.nodes);
+			reach_markers.push(S->newReasonMarker());
+			int mnum = CRef_Undef- reach_markers.last();
+			marker_map.growTo(mnum+1);
+			marker_map[mnum] = reach_markers.size();
+			//marker_map.insert(reach_markers.last(),reach_markers.size());
 
+			non_reach_markers.push(S->newReasonMarker());
+			//marker_map[non_reach_markers.last()]=-non_reach_markers.size();
+			//marker_map.insert(non_reach_markers.last(),non_reach_markers.size());
+
+			mnum = CRef_Undef- non_reach_markers.last();
+			marker_map.growTo(mnum+1);
+			marker_map[mnum] = non_reach_markers.size();
+
+			reach_detectors.push(new Dijkstra(from,g));
+
+			non_reach_detectors.push(new Dijkstra(from,antig));
+			reach_lits.push();
+			within.push(within_steps);
+			for(int i = 0;i<g.nodes;i++){
+				Var reachVar = firstVar+i;// S->newVar();
+				Lit reachLit=mkLit(reachVar,false);
+				//reaches.push(reachLit);
+				reach_lits.last().push(reachLit);
+			}
+			reach_detectors.last()->update();
+			non_reach_detectors.last()->update();
+
+	    }
 	void reachesAny(int from, vec<Lit> & reaches,int within_steps=-1){
 		assert(from<g.nodes);
 		reach_markers.push(S->newReasonMarker());
