@@ -180,7 +180,7 @@ public:
 		int u = node;
 		while(int p = d.previous(u) != -1){
 			Var e = min_edge_var+edges[u][p].v;
-			conflict.push(mkLit(e, negate));
+			conflict.push(mkLit(e, true));
 			u = p;
 		}
 	}
