@@ -136,7 +136,9 @@ public:
 			assert(detector.connected(u));
 
 			while(int w= detector.previous(u) > -1){
-				reason.push(mkLit( edges[w][u].v,true ));
+				Lit l = mkLit( edges[w][u].v,true );
+				assert(S->value(l)==l_False);
+				reason.push(l);
 				u=w;
 			}
 
@@ -177,6 +179,7 @@ public:
 
 	}
 	void buildReachReason(int node,Dijkstra & d, bool negate,vec<Lit> & conflict){
+		drawFull();
 		int u = node;
 		while(int p = d.previous(u) != -1){
 			Var e = min_edge_var+edges[u][p].v;
@@ -204,7 +207,10 @@ public:
 		assert(f<0xF0F0F0); assert(f==cut.size());//because edges are only ever infinity or 1
 		for(int i = 0;i<cut.size();i++){
 			EdmondsKarp::Edge e = cut[i];
-			conflict.push(mkLit( edges[e.u][e.v].v,false));
+
+			Lit l = mkLit( edges[e.u][e.v].v,false);
+			assert(S->value(l)==l_False);
+			conflict.push(l);
 		}
 
 	}
@@ -308,7 +314,28 @@ public:
 	};
 	bool solve(vec<Lit> & conflict){return true;};
 
+	void drawFull(){
+		printf("digraph{\n");
+		for(int i = 0;i<nNodes();i++){
+			printf("n%d\n", i);
+		}
 
+		for(int i = 0;i<edge_list.size();i++){
+			Edge & e = edge_list[i];
+			char * s = "black";
+			if(S->value(e.v)==l_True)
+				s="blue";
+			else if (S->value(e.v)==l_False)
+				s="red";
+			printf("n%d -> n%d [label=\"v%d\",color=\"%s\"]\n", e.from,e.to, e.v, s);
+		}
+
+		printf("}\n");
+	}
+
+	void drawCurrent(){
+
+	}
 
 	Lit newEdge(int from,int to, Var v = var_Undef)
     {
