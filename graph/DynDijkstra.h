@@ -176,7 +176,7 @@ public:
 
 	void update( ){
 
-		if ( last_modification>0){
+		/*if ( last_modification>0){
 			if(lastdellist!=g.dellistclears){
 				deletion_qhead=0;
 				lastdellist=g.dellistclears;
@@ -194,7 +194,7 @@ public:
 			//none of these deletions touched any shortest paths, so we can ignore them.
 			deletion_qhead=g.deletion_list.size();
 			last_deletion = g.deletions;
-		}
+		}*/
 
 		if(last_deletion==g.deletions && last_modification>0  ){
 			//we can use a faster, simple dijkstra update method
