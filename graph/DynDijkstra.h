@@ -178,6 +178,7 @@ public:
 		if(last_deletion==g.deletions && last_modification>0  ){
 			//we can use a faster, simple dijkstra update method
 			updateFast();
+			return;
 		}
 
 		last_modification=g.modifications;
