@@ -208,10 +208,10 @@ public:
 		last_addition=g.additions;
 
 		addition_qhead=g.addition_list.size();
-		lastaddlist!=g.addlistclears;
+		lastaddlist=g.addlistclears;
 
 		deletion_qhead=g.deletion_list.size();
-		lastdellist!=g.dellistclears;
+		lastdellist=g.dellistclears;
 
 		INF=g.nodes+1;
 		dist.growTo(g.nodes);

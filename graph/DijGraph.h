@@ -225,6 +225,7 @@ public:
 	void buildNonReachReason(int node, int detector ,vec<Lit> & conflict){
 		int u = node;
 		double starttime = cpuTime();
+		cutGraph.clearChangeSets();
 		//ok, set the weights for each edge in the cut graph.
 		//We edges to infinite weight if they are undef or true, and weight 1 otherwise.
 		for(int i = 0;i<cutGraph.adjacency.size();i++){
@@ -362,6 +363,9 @@ public:
 
 
 		}
+		g.clearChangeSets();
+		antig.clearChangeSets();
+
 		detectors_to_check.clear();
 		//really simple dynamic optimization for online checking connectivity:
 		//only need to do an update if an added edge has non-infinite endpoints in g, or if a removed edge has non-infinite endpoints in antig
