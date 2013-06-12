@@ -86,7 +86,7 @@ public:
 	}
 };
 
-class Dijkstra:GraphListener{
+class Dijkstra{
 public:
 	DynamicGraph & g;
 	int last_modification;
