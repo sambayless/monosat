@@ -66,6 +66,8 @@ public:
 	double unreachtime;
 	double pathtime;
 	double propagationtime;
+	double reachupdatetime;
+	double unreachupdatetime;
 
 	DijGraph(Solver * S_):S(S_),mc(cutGraph){
 		True = mkLit(S->newVar(),false);
@@ -78,13 +80,15 @@ public:
 			unreachtime=0;
 			pathtime=0;
 			propagationtime=0;
+			reachupdatetime=0;
+			unreachupdatetime=0;
 	}
 
 	void printStats(){
 		printf("Graph stats:\n");
 		printf("Prop Time: %f\n", propagationtime);
-		printf("Reach Time: %f\n", reachtime);
-		printf("Unreach Time: %f\n", unreachtime);
+		printf("Reach Time: %f (update Time: %f)\n", reachtime,reachupdatetime);
+		printf("Unreach Time: %f (Update Time: %f)\n", unreachtime,unreachupdatetime);
 		printf("Path Time: %f\n", pathtime);
 		printf("Min-cut Time: %f\n", mctime);
 
@@ -300,6 +304,8 @@ public:
 					double startdreachtime = cpuTime();
 					reach_detectors[d]->marked =false;
 					reach_detectors[d]->update();
+					double reachUpdateElapsed = cpuTime()-startdreachtime;
+					reachupdatetime+=reachUpdateElapsed;
 					for(int j =0;j<reach_lits[d].size();j++){
 						Lit l = reach_lits[d][j];
 						if( reach_detectors[d]->connected(j)){
@@ -327,6 +333,8 @@ public:
 					double startunreachtime = cpuTime();
 					non_reach_detectors[d]->marked =false;
 					non_reach_detectors[d]->update();
+					double unreachUpdateElapsed = cpuTime()-startunreachtime;
+					unreachupdatetime+=unreachUpdateElapsed;
 					for(int j =0;j<reach_lits[d].size();j++){
 						Lit l = ~reach_lits[d][j];
 						if(! non_reach_detectors[d]->connected(j)){
