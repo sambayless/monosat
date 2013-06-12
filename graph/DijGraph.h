@@ -307,9 +307,15 @@ public:
 					reach_detectors[d]->update();
 					double reachUpdateElapsed = cpuTime()-startdreachtime;
 					reachupdatetime+=reachUpdateElapsed;
-					for(int j =0;j<reach_lits[d].size();j++){
+				/*	for(int j =0;j<reach_lits[d].size();j++){
 						Lit l = reach_lits[d][j];
-						if( reach_detectors[d]->connected(j)){
+						if( reach_detectors[d]->connected(j)){*/
+					for(int j = 0;j<reach_detectors[d]->getChanged().size();j++){
+							int u = reach_detectors[d]->getChanged()[j];
+						
+							Lit l = reach_lits[d][u];
+							if( reach_detectors[d]->connected(u)){
+
 							if(S->value(l)==l_Undef){
 								S->uncheckedEnqueue(l,reach_markers[d]) ;
 							}else if (S->value(l)==l_False){
@@ -318,7 +324,7 @@ public:
 								//conflict
 								//The reason is all the literals in the shortest path in to s in d
 								conflict.push(l);
-								buildReachReason(j,*reach_detectors[d],false,conflict);
+								buildReachReason(u,*reach_detectors[d],false,conflict);
 								//add it to s
 								//return it as a conflict
 
@@ -336,9 +342,14 @@ public:
 					non_reach_detectors[d]->update();
 					double unreachUpdateElapsed = cpuTime()-startunreachtime;
 					unreachupdatetime+=unreachUpdateElapsed;
-					for(int j =0;j<reach_lits[d].size();j++){
+					for(int j = 0;j<non_reach_detectors[d]->getChanged().size();j++){
+							int u = non_reach_detectors[d]->getChanged()[j];
+
+							Lit l = ~reach_lits[d][u];
+							if(! non_reach_detectors[d]->connected(u)){
+	/*				for(int j =0;j<reach_lits[d].size();j++){
 						Lit l = ~reach_lits[d][j];
-						if(! non_reach_detectors[d]->connected(j)){
+						if(! non_reach_detectors[d]->connected(j)){*/
 							if(S->value(l)==l_Undef){
 								S->uncheckedEnqueue(l,non_reach_markers[d]) ;
 							}else if (S->value(l)==l_False){
@@ -347,7 +358,7 @@ public:
 								//conflict
 								//The reason is a cut separating s from t
 								conflict.push(l);
-								buildNonReachReason(j,d,conflict);
+								buildNonReachReason(u,d,conflict);
 								//add it to s
 								//return it as a conflict
 								return false;

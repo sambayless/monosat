@@ -101,6 +101,9 @@ public:
 
 	bool marked;
 
+	vec<int> old_dist;
+	vec<int> changed;
+
 	vec<int> dist;
 	vec<int> prev;
 	struct DistCmp{
@@ -128,6 +131,8 @@ public:
 	}
 
 	void updateFast(){
+		/*for(int i = 0;i<g.nodes;i++)
+					changed.push(i);*/
 		assert(last_deletion==g.deletions);
 		last_modification=g.modifications;
 		last_addition=g.additions;
@@ -145,6 +150,11 @@ public:
 			int v=g.addition_list[i].v;
 			int alt = dist[u]+1 ;
 			if(alt< dist[v]){
+
+				if(dist[v]>=INF){
+					//this was changed
+					changed.push(v);
+				}
 				dist[v]=alt;
 				prev[v]=u;
 
@@ -173,9 +183,13 @@ public:
 			}
 		}
 	}
-
+	vec<int> & getChanged(){
+		return changed;
+	}
 	void update( ){
-
+		changed.clear();
+		//for(int i = 0;i<g.nodes;i++)
+		//	changed.push(i);
 		/*if (last_addition==g.additions && last_modification>0){
 			if(lastdellist!=g.dellistclears){
 				deletion_qhead=0;
@@ -203,29 +217,28 @@ public:
 		}
 		//if none of the deletions were to 'previous' edges, then we don't need to do anything
 
-		last_modification=g.modifications;
-		last_deletion = g.deletions;
-		last_addition=g.additions;
-
-		addition_qhead=g.addition_list.size();
-		lastaddlist=g.addlistclears;
-
-		deletion_qhead=g.deletion_list.size();
-		lastdellist=g.dellistclears;
+		//for(int i = 0;i<g.nodes;i++)
+		//	changed.push(i);
 
 		INF=g.nodes+1;
 		dist.growTo(g.nodes);
 		prev.growTo(g.nodes);
+		old_dist.growTo(g.nodes);
 		q.clear();
 		for(int i = 0;i<g.nodes;i++){
+			old_dist[i]=last_modification > 0 ? dist[i]:INF;//this won't work properly if we added nodes...
 			dist[i]=i==source?0 :INF;
 			prev[i]=-1;
 			q.insert(i);
 		}
 		while(q.size()){
-			int u = q.removeMin();
+			int u = q.peakMin();
 			if(dist[u]==INF)
 				break;
+			if(old_dist[u]>=INF){
+				changed.push(u);
+			}
+			q.removeMin();
 			for(int i = 0;i<g.adjacency[u].size();i++){
 				int v = g.adjacency[u][i];
 				int alt = dist[u]+ 1;
@@ -237,6 +250,26 @@ public:
 
 			}
 		}
+		while(q.size()){
+			//iterate through the unreached nodes and check which ones were previously reached
+			int u = q.removeMin();
+			if(last_modification <=0  || (old_dist[u]<INF && dist[u]>=INF)){
+				changed.push(u);
+			}
+		}
+	
+
+	last_modification=g.modifications;
+		last_deletion = g.deletions;
+		last_addition=g.additions;
+
+		addition_qhead=g.addition_list.size();
+		lastaddlist=g.addlistclears;
+
+		deletion_qhead=g.deletion_list.size();
+		lastdellist=g.dellistclears;
+
+
 	}
 	bool connected_unsafe(int t){
 		return t<dist.size() && dist[t]<INF;

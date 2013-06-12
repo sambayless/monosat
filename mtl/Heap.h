@@ -106,6 +106,9 @@ class Heap {
         percolateUp(indices[n]); 
     }
 
+    int peakMin(){
+    	return heap[0];
+    }
 
     int  removeMin()
     {
