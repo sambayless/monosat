@@ -176,7 +176,7 @@ public:
 
 	void update( ){
 
-		if (last_addition==g.additions && last_modification>0){
+		if ( last_modification>0){
 			if(lastdellist!=g.dellistclears){
 				deletion_qhead=0;
 				lastdellist=g.dellistclears;
