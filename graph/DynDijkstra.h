@@ -153,11 +153,7 @@ public:
 			}
 		}
 		addition_qhead=g.addition_list.size();
-		for(int i = 0;i<g.nodes;i++){
-			dist[i]=i==source?0 :INF;
-			prev[i]=-1;
-			q.insert(i);
-		}
+
 		while(q.size()){
 			int u = q.removeMin();
 			if(dist[u]==INF)
