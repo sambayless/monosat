@@ -12,8 +12,9 @@
 #include "Graph.h"
 #include "DynDijkstra.h"
 #include "core/SolverTypes.h"
-#include "mtl/Map.h";
+#include "mtl/Map.h"
 #include "MaxFlow.h"
+#include "utils/System.h"
 namespace Minisat{
 class DijGraph:public Theory{
 private:
@@ -59,13 +60,36 @@ private:
 	vec<int> trail_lim;
 	EdmondsKarp mc;
 public:
+
+	double mctime;
+	double reachtime;
+	double unreachtime;
+	double pathtime;
+	double propagationtime;
+
 	DijGraph(Solver * S_):S(S_),mc(cutGraph){
 		True = mkLit(S->newVar(),false);
 			False=~True;
 			S->addClause(True);
 			num_edges=0;
 			local_q=0;
+			mctime=0;
+			reachtime=0;
+			unreachtime=0;
+			pathtime=0;
+			propagationtime=0;
 	}
+
+	void printStats(){
+		printf("Graph stats:\n");
+		printf("Prop Time: %f\n", propagationtime);
+		printf("Reach Time: %f\n", reachtime);
+		printf("Unreach Time: %f\n", unreachtime);
+		printf("Path Time: %f\n", pathtime);
+		printf("Min-cut Time: %f\n", mctime);
+
+	}
+
      ~DijGraph(){};
 	 int newNode(){
 
@@ -127,6 +151,7 @@ public:
 		reason.push(p);
 		assert(d!=0);
 		if(d>0){
+			double startpathtime = cpuTime();
 			d--;
 			Dijkstra & detector = *reach_detectors[d];
 			//the reason is a path from s to p(provided by d)
@@ -141,10 +166,12 @@ public:
 				reason.push(l);
 				u=w;
 			}
-
+			double elapsed = cpuTime()-startpathtime;
+			pathtime+=elapsed;
 		}else{
 			d=-d-1;
 			Dijkstra & detector = *non_reach_detectors[d];
+
 			//the reason is a cut separating p from s;
 			//We want to find a min-cut in the full graph separating, where activated edges (ie, those still in antig) are weighted infinity, and all others are weighted 1.
 
@@ -179,16 +206,21 @@ public:
 
 	}
 	void buildReachReason(int node,Dijkstra & d, bool negate,vec<Lit> & conflict){
-		drawFull();
+		//drawFull();
+		double starttime = cpuTime();
 		int u = node;
 		while(int p = d.previous(u) != -1){
 			Var e = min_edge_var+edges[u][p].v;
 			conflict.push(mkLit(e, true));
 			u = p;
 		}
+		double elapsed = cpuTime()-starttime;
+		pathtime+=elapsed;
+
 	}
 	void buildNonReachReason(int node, int detector ,vec<Lit> & conflict){
 		int u = node;
+		double starttime = cpuTime();
 		//ok, set the weights for each edge in the cut graph.
 		//We edges to infinite weight if they are undef or true, and weight 1 otherwise.
 		for(int i = 0;i<cutGraph.adjacency.size();i++){
@@ -212,10 +244,12 @@ public:
 			assert(S->value(l)==l_False);
 			conflict.push(l);
 		}
-
+		double elapsed = cpuTime()-starttime;
+			mctime+=elapsed;
 	}
 	bool propagateTheory(vec<Lit> & conflict){
 		bool any_change = false;
+		double startproptime = cpuTime();
 		static vec<int> detectors_to_check;
 		detectors_to_check.clear();
 		conflict.clear();
@@ -235,6 +269,7 @@ public:
 				int to = edge_list[edge_num].to;
 				trail.push({!sign(l), from,to});
 				if (!sign(l)){
+
 					g.addEdge(from,to);
 					for(int i = 0;i<reach_detectors.size();i++){
 						if(!reach_detectors[i]->marked && (reach_detectors[i]->connected_unsafe(from)||reach_detectors[i]->connected_unsafe(to))){
@@ -254,11 +289,15 @@ public:
 				}
 			}
 
+
+
+
 			for(int i = 0;i<detectors_to_check.size();i++){
 				int d = detectors_to_check[i];
 				assert(d!=0);
 				if(d>0){
 					d--;
+					double startdreachtime = cpuTime();
 					reach_detectors[d]->marked =false;
 					reach_detectors[d]->update();
 					for(int j =0;j<reach_lits[d].size();j++){
@@ -267,19 +306,25 @@ public:
 							if(S->value(l)==l_Undef){
 								S->uncheckedEnqueue(l,reach_markers[d]) ;
 							}else if (S->value(l)==l_False){
+								double elapsed = cpuTime()-startdreachtime;
+															reachtime+=elapsed;
 								//conflict
 								//The reason is all the literals in the shortest path in to s in d
 								conflict.push(l);
 								buildReachReason(j,*reach_detectors[d],false,conflict);
 								//add it to s
 								//return it as a conflict
+
 								return false;
 							}
 						}
 
 					}
+					double elapsed = cpuTime()-startdreachtime;
+								reachtime+=elapsed;
 				}else{
 					d=-d-1;
+					double startunreachtime = cpuTime();
 					non_reach_detectors[d]->marked =false;
 					non_reach_detectors[d]->update();
 					for(int j =0;j<reach_lits[d].size();j++){
@@ -288,6 +333,8 @@ public:
 							if(S->value(l)==l_Undef){
 								S->uncheckedEnqueue(l,non_reach_markers[d]) ;
 							}else if (S->value(l)==l_False){
+								double elapsed = cpuTime()-startunreachtime;
+												unreachtime+=elapsed;
 								//conflict
 								//The reason is a cut separating s from t
 								conflict.push(l);
@@ -299,6 +346,8 @@ public:
 						}
 
 					}
+					double elapsed = cpuTime()-startunreachtime;
+					unreachtime+=elapsed;
 				}
 			}
 
@@ -311,7 +360,8 @@ public:
 		/*while(detectors_to_check.size()){
 
 		}*/
-
+		double elapsed = cpuTime()-startproptime;
+					propagationtime+=elapsed;
 		return true;
 	};
 	bool solve(vec<Lit> & conflict){return true;};
