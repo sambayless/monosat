@@ -164,8 +164,11 @@ int main(int argc, char** argv)
         if(ret==l_True){
         	printf("SAT\n");
         	int v = 1;
-        	for (int i = 0;i<8;i++){
-        		for(int j = 0;j<8;j++){
+        	Theory * t = S.theories[0];
+			DijGraph *g = (DijGraph*)t;
+			int w = sqrt(g->nNodes());
+        	for (int i = 0;i<w;i++){
+        		for(int j = 0;j<w;j++){
         			if(S.model[v++]==l_True)
         				printf(" 1");
         			else
