@@ -128,8 +128,9 @@ public:
 	}
 
 	void updateFast(){
+		assert(last_deletion==g.deletions);
 		last_modification=g.modifications;
-
+		last_addition=g.additions;
 		INF=g.nodes+1;
 		dist.growTo(g.nodes);
 		prev.growTo(g.nodes);
@@ -184,7 +185,8 @@ public:
 		}
 
 		last_modification=g.modifications;
-
+		last_deletion = g.deletions;
+		last_addition=g.additions;
 
 
 		INF=g.nodes+1;
