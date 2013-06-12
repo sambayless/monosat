@@ -172,6 +172,10 @@ public:
 				int v = g.adjacency[u][i];
 				int alt = dist[u]+ 1;
 				if(alt<dist[v]){
+					if(dist[v]>=INF){
+						//this was changed
+						changed.push(v);
+					}
 					dist[v]=alt;
 					prev[v]=u;
 					if(!q.inHeap(v))
