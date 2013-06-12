@@ -12,17 +12,31 @@
 #include "mtl/Heap.h"
 using namespace Minisat;
 
-
-
+/*
+class GraphListener{
+	void addEdge(int u, int v, int mod);
+	void removeEdge(int u, int v, int mod);
+};*/
 
 class DynamicGraph{
 public:
 	int nodes;
 	int modifications;
+	int additions;
+	int deletions;
+	int addlistclears;
+	int dellistclears;
 	vec<vec<int> > adjacency;//adj list
+	struct EdgeChange{
+		int u;
+		int v;
+		int mod;
+	};
+	vec<EdgeChange> addition_list;
+	vec<EdgeChange> deletion_list;
 
 
-	DynamicGraph():nodes(0),modifications(0){}
+	DynamicGraph():nodes(0),modifications(0),additions(0),deletions(0),addlistclears(0),dellistclears(0){}
 	void addNodes(int n){
 		for(int i = 0;i<n;i++)
 			addNode();
@@ -36,12 +50,16 @@ public:
 			g[i].growTo(nodes+1);
 		}*/
 		modifications++;
+		additions=modifications;
+		deletions=modifications;
 		return nodes++;
 	}
 	void addEdge(int from, int to){
 		adjacency[from].push(to);
 
 		modifications++;
+		additions=modifications;
+		addition_list.push({from,to,modifications});
 	}
 	//Removes _all_ edges (from, to)
 	void removeEdge(int from, int to){
@@ -56,16 +74,33 @@ public:
 		}
 		adj.shrink(i-j);
 		modifications++;
+		deletions=modifications;
+		deletion_list.push({from,to,modifications});
+	}
+
+	void clearChangeSets(){
+		addition_list.clear();
+		deletion_list.clear();
+		addlistclears++;
+		dellistclears++;
 	}
 };
 
-class Dijkstra{
+class Dijkstra:GraphListener{
 public:
 	DynamicGraph & g;
 	int last_modification;
+	int last_addition;
+	int last_deletion;
+	int addition_qhead;
+	int deletion_qhead;
+	int lastaddlist;
+	int lastdellist;
 	int source;
 	int INF;
+
 	bool marked;
+
 	vec<int> dist;
 	vec<int> prev;
 	struct DistCmp{
@@ -78,19 +113,80 @@ public:
 	Heap<DistCmp> q;
 public:
 
-	Dijkstra(int s,DynamicGraph & graph):g(graph), last_modification(-1),source(s),INF(0),marked(false),q(DistCmp(dist)){	}
-	Dijkstra(const Dijkstra& d):g(d.g), last_modification(-1),source(d.source),INF(0),marked(false),q(DistCmp(dist)){};
+	Dijkstra(int s,DynamicGraph & graph):g(graph), last_modification(-1),last_addition(-1),last_deletion(-1),addition_qhead(0),deletion_qhead(0),lastaddlist(0),lastdellist(0),source(s),INF(0),marked(false),q(DistCmp(dist)){	}
+	Dijkstra(const Dijkstra& d):g(d.g), last_modification(-1),last_addition(-1),last_deletion(-1),addition_qhead(0),deletion_qhead(0),lastaddlist(0),lastdellist(0),source(d.source),INF(0),marked(false),q(DistCmp(dist)){};
 
 
 	void setSource(int s){
 		source = s;
 		last_modification=-1;
+		last_addition=-1;
+		last_deletion=-1;
 	}
 	int getSource(){
 		return source;
 	}
-	void update( ){
+
+	void updateFast(){
 		last_modification=g.modifications;
+
+		INF=g.nodes+1;
+		dist.growTo(g.nodes);
+		prev.growTo(g.nodes);
+		q.clear();
+		if(lastaddlist!=g.addlistclears){
+			addition_qhead=0;
+			lastaddlist=g.addlistclears;
+		}
+		//ok, now check if any of the added edges allow for a decrease in distance.
+		for (int i = addition_qhead;i<g.addition_list.size();i++){
+			int u=g.addition_list[i].u;
+			int v=g.addition_list[i].v;
+			int alt = dist[u]+1 ;
+			if(alt< dist[v]){
+				dist[v]=alt;
+				prev[v]=u;
+
+				if(!q.inHeap(v))
+					q.insert(v);
+			}
+		}
+		addition_qhead=g.addition_list.size();
+		for(int i = 0;i<g.nodes;i++){
+			dist[i]=i==source?0 :INF;
+			prev[i]=-1;
+			q.insert(i);
+		}
+		while(q.size()){
+			int u = q.removeMin();
+			if(dist[u]==INF)
+				break;
+			for(int i = 0;i<g.adjacency[u].size();i++){
+				int v = g.adjacency[u][i];
+				int alt = dist[u]+ 1;
+				if(alt<dist[v]){
+					dist[v]=alt;
+					prev[v]=u;
+					if(!q.inHeap(v))
+						q.insert(v);
+					else
+						q.decrease(v);
+				}
+
+			}
+		}
+	}
+
+	void update( ){
+		if(last_deletion==g.deletions && last_modification>0  ){
+			//we can use a faster, simple dijkstra update method
+			updateFast();
+		}
+
+		last_modification=g.modifications;
+
+
+
 		INF=g.nodes+1;
 		dist.growTo(g.nodes);
 		prev.growTo(g.nodes);
