@@ -37,8 +37,8 @@ namespace Minisat {
 //r g u w var is a reach querry: var is true if can u reach w in graph g, false otherwise
 
 template<class B, class Solver>
-static void readDiGraph(B& in, Solver& S, vec<DijGraph*> & graphs) {
-    int     g, n,e;
+static int readDiGraph(B& in, Solver& S, vec<DijGraph*> & graphs) {
+    int     g, n,e, ev;
     if(!eagerMatch(in,"digraph")){
     	 printf("PARSE ERROR! Unexpected char: %c\n", *in), exit(3);
     }
@@ -46,17 +46,18 @@ static void readDiGraph(B& in, Solver& S, vec<DijGraph*> & graphs) {
 
         n = parseInt(in);//num nodes
         e = parseInt(in);//num edges (I'm ignoring this currently)
+        ev = parseInt(in);//the variable of the first graph edge.
         g=parseInt(in);//id of the edge
         DijGraph * graph = new DijGraph(&S);
         graph->newNodes(n);
         graphs.growTo(g+1);
         graphs[g]=graph;
         S.addTheory(graph);
-
+        return ev;
 }
 
 template<class B, class Solver>
-static void readEdge(B& in, Solver& S, vec<DijGraph*> & graphs) {
+static void readEdge(B& in,int & edge_var, Solver& S, vec<DijGraph*> & graphs) {
 
     if(*in != 'e'){
     	printf("PARSE ERROR! Unexpected char: %c\n", *in), exit(3);
@@ -67,6 +68,9 @@ static void readEdge(B& in, Solver& S, vec<DijGraph*> & graphs) {
         int from = parseInt(in);
         int to=parseInt(in);
         int edgeVar = parseInt(in)-1;
+        if(edgeVar==-1){
+        	edgeVar=edge_var++-1;
+        }
         if(graphID <0 || graphID>=graphs.size() || !graphs[graphID]){
         	printf("PARSE ERROR! Undeclared graph identifier %d for edge %d\n",graphID, edgeVar), exit(3);
         }
@@ -108,22 +112,25 @@ static void readReach(B& in, Solver& S, vec<DijGraph*> & graphs) {
 template<class B, class Solver>
 static void parse_GRAPH_main(B& in, Solver& S) {
 	vec<DijGraph*> graphs;
+	vec<Lit> lits;
     int vars    = 0;
     int clauses = 0;
     int cnt     = 0;
+    int edge_var = 0;
     for (;;){
         skipWhitespace(in);
         if (*in == EOF) break;
         else if (*in == 'p'){
-            if (eagerMatch(in, "p graph")){
+        	skipLine(in);
+            //if (eagerMatch(in, "p graph")){
                 //vars    = parseInt(in);
                 //clauses = parseInt(in);
                 // SATRACE'06 hack
                 // if (clauses > 4000000)
                 //     S.eliminate(true);
-            }else{
-                printf("PARSE ERROR! Unexpected char: %c\n", *in), exit(3);
-            }
+           // }else{
+           //     printf("PARSE ERROR! Unexpected char: %c\n", *in), exit(3);
+           // }
         } else if (*in == 'c' || *in == 'p')
             skipLine(in);
         else if (*in == 'g'){
@@ -131,21 +138,21 @@ static void parse_GRAPH_main(B& in, Solver& S) {
         	skipWhitespace(in);
         	if(*in=='d'){
         		//for now, only digraphs are supported
-        		readDiGraph(in, S,graphs);
+        		edge_var = readDiGraph(in, S,graphs);
         	}else{
         		printf("PARSE ERROR! Unexpected char: %c\n", *in), exit(3);
         	}
         }else if (*in == 'e'){
             cnt++;
-            readEdge(in, S,graphs);
-
+            readEdge(in,edge_var, S,graphs);
         }else if (*in == 'r'){
-
             readReach(in, S,graphs);
-
         }else{
-        	printf("PARSE ERROR! Unexpected char: %c\n", *in), exit(3);
+            cnt++;
+            readClause(in, S, lits);
+            S.addClause_(lits);
         }
+
     }
 
 }

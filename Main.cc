@@ -139,7 +139,7 @@ int main(int argc, char** argv)
                  printf("============================[ Problem Statistics ]=============================\n");
                  printf("|                                                                             |\n"); }
 
-             parse_DIMACS(in, S);
+             parse_GRAPH(in, S);
              gzclose(in);
 
              gzFile gin =gzopen(graphstr, "rb");

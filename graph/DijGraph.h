@@ -117,25 +117,40 @@ public:
 	}
 
 	void backtrackUntil(int level){
+		static int it = 0;
+		if(++it==28){
+			int a =1;
+		}
 		//need to remove and add edges in the two graphs accordingly.
-		if(level<trail_lim.size()){
+		if(trail_lim.size()>level){
+			int stop = trail_lim[level];
 			for(int i = trail.size()-1;i>=trail_lim[level];i--){
 				AssignedEdge e = trail[i];
+				if(i==5){
+					int a =1;
+				}
+				if(e.from==0 && e.to==8){
+					int  a=1;
+				}
 				if(e.assign){
 					g.removeEdge(e.from,e.to);
 				}else{
 					antig.addEdge(e.from,e.to);
 				}
 			}
-
+			trail.shrink(trail.size()-stop);
 			trail_lim.shrink(trail_lim.size()-level);
-			trail.shrink(trail.size()-trail_lim.last());
+			assert(trail_lim.size()==level);
+			int lim = trail_lim.last();
 
+			if(trail.size()<=5){
+				int a =1;
+			}
 		}
 
 		if(local_q>S->qhead)
 			local_q=S->qhead;
-
+		assert(dbg_graphsUpToDate());
 		for(int i = 0;i<reach_detectors.size();i++){
 			reach_detectors[i]->update();
 		}
@@ -211,6 +226,7 @@ public:
 	}
 	void buildReachReason(int node,Dijkstra & d, bool negate,vec<Lit> & conflict){
 		//drawFull();
+		assert(dbg_reachable(d.source,node));
 		double starttime = cpuTime();
 		int u = node;
 		while(int p = d.previous(u) != -1){
@@ -222,8 +238,69 @@ public:
 		pathtime+=elapsed;
 
 	}
+
+
+	bool dbg_reachable(int from, int to){
+		DynamicGraph g;
+		for(int i = 0;i<nNodes();i++){
+			g.addNode();
+		}
+
+		for(int i = 0;i<edge_list.size();i++){
+			Edge e  = edge_list[i];
+			if(S->assigns[e.v]==l_True){
+				g.addEdge(e.from,e.to);
+			}
+		}
+
+		Dijkstra d(from,g);
+
+		return d.connected(to);
+
+	}
+
+	bool dbg_notreachable(int from, int to){
+		//drawFull(from,to);
+		DynamicGraph g;
+		for(int i = 0;i<nNodes();i++){
+			g.addNode();
+		}
+
+		for(int i = 0;i<edge_list.size();i++){
+			Edge e  = edge_list[i];
+			if(S->assigns[e.v]!=l_False){
+				g.addEdge(e.from,e.to);
+			}
+		}
+
+		Dijkstra d(from,g);
+
+		return !d.connected(to);
+
+	}
+
+	bool dbg_graphsUpToDate(){
+		for(int i = 0;i<edge_list.size();i++){
+			Edge e = edge_list[i];
+			lbool val = S->value(e.v);
+			if(val==l_True || val==l_Undef){
+				assert(antig.hasEdge(e.from,e.to));
+			}else{
+				assert(!antig.hasEdge(e.from,e.to));
+			}
+			if(val==l_True){
+				assert(g.hasEdge(e.from,e.to));
+			}else{
+				assert(!g.hasEdge(e.from,e.to));
+			}
+		}
+		return true;
+	}
+
 	void buildNonReachReason(int node, int detector ,vec<Lit> & conflict){
 		int u = node;
+		//drawFull( non_reach_detectors[detector]->getSource(),u);
+		assert(dbg_notreachable( non_reach_detectors[detector]->getSource(),u));
 		double starttime = cpuTime();
 		cutGraph.clearChangeSets();
 		//ok, set the weights for each edge in the cut graph.
@@ -253,6 +330,8 @@ public:
 			mctime+=elapsed;
 	}
 	bool propagateTheory(vec<Lit> & conflict){
+		static int itp = 0;
+			++itp;
 		bool any_change = false;
 		double startproptime = cpuTime();
 		static vec<int> detectors_to_check;
@@ -263,6 +342,9 @@ public:
 		while(local_q<S->qhead){
 			Lit l = S->trail[local_q++];
 			Var v = var(l);
+			if(v==64){
+				int a=1;
+			}
 			int lev = S->level(v);
 			while(lev>trail_lim.size()){
 				newDecisionLevel();
@@ -273,6 +355,9 @@ public:
 				int from = edge_list[edge_num].from;
 				int to = edge_list[edge_num].to;
 				trail.push({!sign(l), from,to});
+				AssignedEdge e = trail.last();
+				assert(e.from==from);
+				assert(e.to==to);
 				if (!sign(l)){
 
 					g.addEdge(from,to);
@@ -293,10 +378,8 @@ public:
 					}
 				}
 			}
-
-
-
-
+		}
+			assert(dbg_graphsUpToDate());
 			for(int i = 0;i<detectors_to_check.size();i++){
 				int d = detectors_to_check[i];
 				assert(d!=0);
@@ -315,7 +398,7 @@ public:
 						
 							Lit l = reach_lits[d][u];
 							if( reach_detectors[d]->connected(u)){
-
+								assert(dbg_reachable( reach_detectors[d]->getSource(),u));
 							if(S->value(l)==l_Undef){
 								S->uncheckedEnqueue(l,reach_markers[d]) ;
 							}else if (S->value(l)==l_False){
@@ -342,11 +425,13 @@ public:
 					non_reach_detectors[d]->update();
 					double unreachUpdateElapsed = cpuTime()-startunreachtime;
 					unreachupdatetime+=unreachUpdateElapsed;
+					assert(dbg_graphsUpToDate());
 					for(int j = 0;j<non_reach_detectors[d]->getChanged().size();j++){
 							int u = non_reach_detectors[d]->getChanged()[j];
 
 							Lit l = ~reach_lits[d][u];
 							if(! non_reach_detectors[d]->connected(u)){
+								assert(dbg_notreachable( non_reach_detectors[d]->getSource(),u));
 	/*				for(int j =0;j<reach_lits[d].size();j++){
 						Lit l = ~reach_lits[d][j];
 						if(! non_reach_detectors[d]->connected(j)){*/
@@ -373,7 +458,7 @@ public:
 
 
 
-		}
+
 		g.clearChangeSets();
 		antig.clearChangeSets();
 
@@ -388,7 +473,29 @@ public:
 		return true;
 	};
 	bool solve(vec<Lit> & conflict){return true;};
+	void drawFull(int from, int to){
+			printf("digraph{\n");
+			for(int i = 0;i<nNodes();i++){
+				if(i==from){
+					printf("n%d [label=\"From\", style=filled, fillcolor=blue]\n", i);
+				}else if (i==to){
+					printf("n%d [label=\"To\", style=filled, fillcolor=red]\n", i);
+				}else
+					printf("n%d\n", i);
+			}
 
+			for(int i = 0;i<edge_list.size();i++){
+				Edge & e = edge_list[i];
+				char * s = "black";
+				if(S->value(e.v)==l_True)
+					s="blue";
+				else if (S->value(e.v)==l_False)
+					s="red";
+				printf("n%d -> n%d [label=\"v%d\",color=\"%s\"]\n", e.from,e.to, e.v, s);
+			}
+
+			printf("}\n");
+		}
 	void drawFull(){
 		printf("digraph{\n");
 		for(int i = 0;i<nNodes();i++){
@@ -430,6 +537,7 @@ public:
     	return mkLit(v,false);
     }
 	void reachesAny(int from, Var firstVar,int within_steps=-1){
+
 			assert(from<g.nodes);
 			reach_markers.push(S->newReasonMarker());
 			int mnum = CRef_Undef- reach_markers.last();

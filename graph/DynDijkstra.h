@@ -41,6 +41,16 @@ public:
 		for(int i = 0;i<n;i++)
 			addNode();
 	}
+
+	bool hasEdge(int from, int to){
+		for(int i = 0;i< adjacency[from].size();i++){
+			if(adjacency[from][i]==to){
+				return true;
+			}
+		}
+		return false;
+	}
+
 	int addNode(){
 
 		adjacency.push();//adj list
@@ -251,7 +261,6 @@ public:
 					prev[v]=u;
 					q.decrease(v);
 				}
-
 			}
 		}
 		while(q.size()){
@@ -275,12 +284,39 @@ public:
 
 
 	}
+
+	bool dbg_uptodate(){
+	/*	DynamicGraph gdbg;
+		for(int i = 0;i<g.nodes;i++){
+			gdbg.addNode();
+		}
+
+		for(int i = 0;i<g.adjacency.size();i++){
+			for(int j = 0;j<g.adjacency[i].size();j++){
+				int u = g.adjacency[i][j];
+				gdbg.addEdge(i,u);
+			}
+		}*/
+
+		Dijkstra d(source,g);
+		d.update();
+		for(int i = 0;i<g.nodes;i++){
+			int distance = dist[i];
+			int dbgdist = d.dist[i];
+			assert(distance==dbgdist);
+		}
+		return true;
+	}
+
 	bool connected_unsafe(int t){
 		return t<dist.size() && dist[t]<INF;
 	}
 	bool connected(int t){
 		if(last_modification!=g.modifications)
 			update();
+
+		assert(dbg_uptodate());
+
 		return dist[t]<INF;
 	}
 	int distance(int t){

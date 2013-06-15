@@ -838,7 +838,7 @@ bool Solver::addConflictClause(vec<Lit> & theory_conflict, CRef & confl_out){
 					max_lev=l;
 				}
 			}
-			assert(max_lev>0);
+			//assert(max_lev>0);
 			cancelUntil(max_lev);
 			CRef cr = ca.alloc(theory_conflict, true);
 			clauses.push(cr);
