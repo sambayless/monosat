@@ -163,7 +163,8 @@ int main(int argc, char** argv)
 
         if(ret==l_True){
         	printf("SAT\n");
-        	int v = 1;
+        	int v = 0;
+
         	Theory * t = S.theories[0];
 			DijGraph *g = (DijGraph*)t;
 			int w = sqrt(g->nNodes());
