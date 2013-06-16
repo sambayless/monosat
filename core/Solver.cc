@@ -984,7 +984,7 @@ lbool Solver::search(int nof_conflicts)
 						if(opt_subsearch==3 && track_min_level<initial_level)
 							continue;//Disable attempting to solve sub-solvers if we've backtracked past the super solver's decision level
 
-						if(!theories[i]->solve(theory_conflict)){
+						if(!theories[i]->solveTheory(theory_conflict)){
 							if(!addConflictClause(theory_conflict,confl))
 							{
 								goto conflict;
@@ -1104,7 +1104,7 @@ lbool Solver::solve_()
 
 
 
-bool Solver::solve(vec<Lit> & conflict_out){
+bool Solver::solveTheory(vec<Lit> & conflict_out){
 	 initial_level=decisionLevel();
 	 track_min_level= initial_level;
 	 lbool status=l_Undef;

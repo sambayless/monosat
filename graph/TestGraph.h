@@ -36,6 +36,10 @@ public:
 			edges.push();
 		return nodes++;
 	}
+	 void newNodes(int n){
+		 for(int i = 0;i<n;i++)
+			 newNode();
+	 }
 	int nNodes(){
 
 		return nodes;
@@ -46,15 +50,27 @@ public:
 	void backtrackUntil(int level){};
 	void newDecisionLevel(){};
 	bool propagateTheory(vec<Lit> & conflict){return true;};
-	bool solve(vec<Lit> & conflict){return true;};
+	bool solveTheory(vec<Lit> & conflict){return true;};
 
 	void buildReason(Lit p, vec<Lit> & reason){};
-
 
 	Lit newEdge(int from,int to)
     {
     		assert(isNode(from));assert(isNode(to));
-    		Lit l = mkLit( S->newVar(),false);
+
+    		Lit l = mkLit(S->newVar(),false);
+    		Edge e{l,from,to};
+    		edges[from].push(e);
+    		return l;
+    	}
+	Lit newEdge(int from,int to, Var v )
+    {
+    		assert(isNode(from));assert(isNode(to));
+    		if(v==var_Undef)
+    			v=S->newVar();
+    		while(S->nVars()<=v)
+    			S->newVar();
+    		Lit l = mkLit(v,false);
     		Edge e{l,from,to};
     		edges[from].push(e);
     		return l;
@@ -104,6 +120,72 @@ public:
         	}
         }
     }
+
+	void reachesAny(int from, Var firstVar,int within_steps=-1){
+			if(within_steps<0){
+				within_steps=nodes;
+			}
+			//could put these in a separate solver to better test this...
+
+	        //bellman-ford:
+	        //Bellman-ford: For each vertex
+			vec<Lit>  reaches;
+			reaches.clear();
+			for(int i = 0;i<nNodes();i++){
+				reaches.push(False);
+			}
+
+			reaches[from]=True;
+
+			while(S->nVars()<=firstVar+nNodes())
+				S->newVar();
+
+	        for (int i = 0;i<within_steps;i++){
+	            //For each edge:
+	        	for(int j = 0;j<edges.size();j++){
+	        		for(int k = 0;k<edges[j].size();k++){
+						Edge e = edges[j][k];
+						if(reaches[e.to]==True){
+							//do nothing
+						}else if (reaches[e.from]==False){
+							//do nothing
+						}else{
+							Lit r = mkLit( S->newVar(), false);
+							c.clear();
+							c.push(~r);c.push(reaches[e.to]);c.push(e.l); //r -> (e.l or reaches[e.to])
+							S->addClause(c);
+							c.clear();
+							c.push(~r);c.push(reaches[e.to]);c.push(reaches[e.from]); //r -> (reaches[e.from]) or reaches[e.to])
+							S->addClause(c);
+							c.clear();
+							c.push(r);c.push(~reaches[e.to]); //~r -> ~reaches[e.to]
+							S->addClause(c);
+							c.clear();
+							c.push(r);c.push(~reaches[e.from]);c.push(~e.l); //~r -> (~reaches[e.from] or ~e.l)
+							S->addClause(c);
+							reaches[e.to]=r   ;//reaches[e.to] == (var & reaches[e.from])| reaches[e.to];
+						}
+	        		}
+	        	}
+	        }
+
+
+	        for(int i = 0;i<reaches.size();i++){
+	        	Var v = firstVar+i;
+	        	Lit l = reaches[i];
+	        	c.clear();
+	        	c.push(mkLit(v,false));
+	        	c.push(~l);
+	        	S->addClause(c);
+	        	c.clear();
+	        	c.push(mkLit(v,true));
+				c.push(l);
+				S->addClause(c);
+				c.clear();
+	        }
+
+	    }
+
 
 };
 

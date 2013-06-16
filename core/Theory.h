@@ -23,7 +23,7 @@ public:
 	virtual void backtrackUntil(int level)=0;
 	virtual void newDecisionLevel()=0;
 	virtual bool propagateTheory(vec<Lit> & conflict)=0;
-	virtual bool solve(vec<Lit> & conflict)=0;
+	virtual bool solveTheory(vec<Lit> & conflict)=0;
 	//Lazily construct the reason clause explaining this propagation
 	virtual void buildReason(Lit p, vec<Lit> & reason)=0;
 };

@@ -60,8 +60,21 @@ public:
     	cancelUntil(0);
     }
     //Generate a new, unique `temporary value' for explaining conflicts
-    CRef newReasonMarker(){
+    CRef newReasonMarker(Theory * forTheory){
     	markers.push(ca.makeMarkerReference());
+    	marker_theory.push(-1);
+
+    	int marker_num = CRef_Undef-markers.last()-1;
+    	assert(marker_theory.size()==marker_num+1);
+    	//this could be done more efficiently
+    	for(int i = 0;i<theories.size();i++){
+    		if(theories[i]==forTheory){
+    			marker_theory[marker_num]=i;
+    			break;
+    		}
+    	}
+    	assert(marker_theory[marker_num]>=0);
+
     	return markers.last();
     }
 
@@ -71,7 +84,9 @@ public:
 
     int getTheory(CRef cr){
     	assert(isTheoryCause(cr));
-    	return UINT32_MAX-cr - 1;
+    	// UINT32_MAX-cr - 1;
+    	int marker = CRef_Undef-cr-1;
+    	return marker_theory[marker];
     }
 
     CRef constructReason(Lit p){
@@ -103,7 +118,7 @@ public:
 		max_super=super_vars.last();
 		min_local=local_vars[0];
 		max_local=local_vars.last();
-		cause_marker=super->newReasonMarker();
+		cause_marker=super->newReasonMarker(this);
     }
                                                       // change the passed vector 'ps'.
 
@@ -117,6 +132,7 @@ public:
     bool    solve        (Lit p, Lit q);            // Search for a model that respects two assumptions.
     bool    solve        (Lit p, Lit q, Lit r);     // Search for a model that respects three assumptions.
     bool    okay         () const;                  // FALSE means solver is in a conflicting state
+
 
     void    toDimacs     (FILE* f, const vec<Lit>& assumps);            // Write CNF to file in DIMACS-format.
     void    toDimacs     (const char *file, const vec<Lit>& assumps);
@@ -171,6 +187,7 @@ public:
     vec<Lit> theory_conflict;
     vec<Theory*> theories;
     vec<CRef> markers;//a set of special clauses that can be recognized as pointers to theories
+    vec<int> marker_theory;
     Solver * S;//super solver
     int super_qhead;
     int local_qhead;
@@ -291,7 +308,9 @@ protected:
     bool     enqueue          (Lit p, CRef from = CRef_Undef);                         // Test if fact 'p' contradicts current state, enqueue otherwise.
     CRef     propagate        (bool propagate_theories=true);                                                      // Perform unit propagation. Returns possibly conflicting clause.
     bool 	propagateTheory(vec<Lit> & conflict);
-    bool	solve(vec<Lit> & conflict);
+    bool 	solveTheory(vec<Lit> & conflict_out);
+
+
     void 	buildReason(Lit p, vec<Lit> & reason);
     void backtrackUntil(int level);
     void     cancelUntil      (int level);                                             // Backtrack until a certain level.

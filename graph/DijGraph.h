@@ -5,8 +5,8 @@
  *      Author: sam
  */
 
-#ifndef TESTGRAPH_H_
-#define TESTGRAPH_H_
+#ifndef DGRAPH_H_
+#define DGRAPH_H_
 
 #include "core/Theory.h"
 #include "Graph.h"
@@ -15,6 +15,9 @@
 #include "mtl/Map.h"
 #include "MaxFlow.h"
 #include "utils/System.h"
+#ifdef DEBUG_GRAPH
+#include "TestGraph.h"
+#endif
 namespace Minisat{
 class DijGraph:public Theory{
 private:
@@ -25,6 +28,10 @@ private:
 	int local_q;
 
 	Solver * S;
+#ifdef DEBUG_GRAPH
+	Solver * dbg;
+	TestGraph *dbg_graph;
+#endif
 	DynamicGraph g;
 	DynamicGraph antig;
 	DynamicGraph cutGraph;
@@ -55,6 +62,7 @@ private:
 		bool assign:1;
 		int from:31;
 		int to;
+		Var var;
 	};
 	vec<AssignedEdge> trail;
 	vec<int> trail_lim;
@@ -82,6 +90,10 @@ public:
 			propagationtime=0;
 			reachupdatetime=0;
 			unreachupdatetime=0;
+#ifdef DEBUG_GRAPH
+		dbg=new Solver();
+		dbg_graph = new TestGraph(dbg);
+#endif
 	}
 
 	void printStats(){
@@ -96,6 +108,9 @@ public:
 
      ~DijGraph(){};
 	 int newNode(){
+#ifdef DEBUG_GRAPH
+		 dbg_graph->newNode();
+#endif
 
 		 edges.push();
 		 for(int i = 0;i<edges.size();i++)
@@ -116,6 +131,39 @@ public:
 		return n>=0 && n<nNodes();
 	}
 
+#ifdef DEBUG_GRAPH
+		bool dbg_clause(const vec<Lit> &conflict){
+
+			static vec<Lit> c;
+			c.clear();
+			for(int i = 0;i<conflict.size();i++)
+				c.push(~conflict[i]);
+			assert(dbg->solve());
+			bool res = dbg->solve(c);
+			assert(~res);
+
+			return true;
+		}
+		bool dbg_propgation(Lit l){
+
+			static vec<Lit> c;
+			c.clear();
+			for(int i = 0;i<S->trail.size() ;i++){
+				Lit l = S->trail[i];
+				Var v = var(l);
+				if(v>=min_edge_var && v<min_edge_var+num_edges){
+					Edge e = edge_list[v-min_edge_var];
+					c.push(l);
+				}
+			}
+			c.push(~l);
+			bool res = dbg->solve(c);
+			assert(~res);
+
+			return true;
+		}
+#endif
+
 	void backtrackUntil(int level){
 		static int it = 0;
 		if(++it==28){
@@ -126,16 +174,18 @@ public:
 			int stop = trail_lim[level];
 			for(int i = trail.size()-1;i>=trail_lim[level];i--){
 				AssignedEdge e = trail[i];
-				if(i==5){
-					int a =1;
-				}
-				if(e.from==0 && e.to==8){
+				if(e.from==47 && e.to==55){
+									int a =1;
+								}
+				if(e.var==368){
 					int  a=1;
 				}
+				assert(S->value(e.var)==l_Undef);
 				if(e.assign){
 					g.removeEdge(e.from,e.to);
 				}else{
 					antig.addEdge(e.from,e.to);
+					assert(antig.hasEdge(e.from,e.to));
 				}
 			}
 			trail.shrink(trail.size()-stop);
@@ -166,7 +216,8 @@ public:
 	void buildReason(Lit p, vec<Lit> & reason){
 		CRef marker = S->reason(var(p));
 		assert(marker != CRef_Undef);
-		int d = marker_map[CRef_Undef- marker];
+		int pos = CRef_Undef- marker;
+		int d = marker_map[pos];
 		reason.push(p);
 		assert(d!=0);
 		if(d>0){
@@ -178,8 +229,8 @@ public:
 			Var v = var(p);
 			int u =  v- var(reach_lits[d][0]);
 			assert(detector.connected(u));
-
-			while(int w= detector.previous(u) > -1){
+			int w;
+			while(( w= detector.previous(u)) > -1){
 				Lit l = mkLit( edges[w][u].v,true );
 				assert(S->value(l)==l_False);
 				reason.push(l);
@@ -224,19 +275,26 @@ public:
 		}
 
 	}
-	void buildReachReason(int node,Dijkstra & d, bool negate,vec<Lit> & conflict){
+	void buildReachReason(int node,Dijkstra & d,vec<Lit> & conflict){
 		//drawFull();
 		assert(dbg_reachable(d.source,node));
 		double starttime = cpuTime();
 		int u = node;
-		while(int p = d.previous(u) != -1){
-			Var e = min_edge_var+edges[u][p].v;
+		int p;
+		while(( p = d.previous(u)) != -1){
+			Edge edg = edges[p][u];
+			Var e =edges[p][u].v;
+			lbool val = S->value(e);
+			assert(S->value(e)==l_True);
 			conflict.push(mkLit(e, true));
 			u = p;
 		}
 		double elapsed = cpuTime()-starttime;
 		pathtime+=elapsed;
+#ifdef DEBUG_GRAPH
+		 assert(dbg_clause(conflict));
 
+#endif
 	}
 
 
@@ -328,6 +386,10 @@ public:
 		}
 		double elapsed = cpuTime()-starttime;
 			mctime+=elapsed;
+
+#ifdef DEBUG_GRAPH
+		 assert(dbg_clause(conflict));
+#endif
 	}
 	bool propagateTheory(vec<Lit> & conflict){
 		static int itp = 0;
@@ -342,22 +404,26 @@ public:
 		while(local_q<S->qhead){
 			Lit l = S->trail[local_q++];
 			Var v = var(l);
-			if(v==64){
-				int a=1;
-			}
+
 			int lev = S->level(v);
 			while(lev>trail_lim.size()){
 				newDecisionLevel();
 			}
 			if(v>= min_edge_var && v<min_edge_var+num_edges){
+				if(v==368){
+							int a=1;
+						}
 				//this is an edge assignment
 				int edge_num = v-min_edge_var;
 				int from = edge_list[edge_num].from;
 				int to = edge_list[edge_num].to;
-				trail.push({!sign(l), from,to});
+				trail.push({!sign(l), from,to,v});
 				AssignedEdge e = trail.last();
 				assert(e.from==from);
 				assert(e.to==to);
+				if(from==47 && to==55){
+					int a =1;
+				}
 				if (!sign(l)){
 
 					g.addEdge(from,to);
@@ -395,11 +461,15 @@ public:
 						if( reach_detectors[d]->connected(j)){*/
 					for(int j = 0;j<reach_detectors[d]->getChanged().size();j++){
 							int u = reach_detectors[d]->getChanged()[j];
-						
+
 							Lit l = reach_lits[d][u];
+
 							if( reach_detectors[d]->connected(u)){
 								assert(dbg_reachable( reach_detectors[d]->getSource(),u));
 							if(S->value(l)==l_Undef){
+#ifdef DEBUG_GRAPH
+								assert(dbg_propgation(l));
+#endif
 								S->uncheckedEnqueue(l,reach_markers[d]) ;
 							}else if (S->value(l)==l_False){
 								double elapsed = cpuTime()-startdreachtime;
@@ -407,9 +477,13 @@ public:
 								//conflict
 								//The reason is all the literals in the shortest path in to s in d
 								conflict.push(l);
-								buildReachReason(u,*reach_detectors[d],false,conflict);
+								buildReachReason(u,*reach_detectors[d],conflict);
 								//add it to s
 								//return it as a conflict
+#ifdef DEBUG_GRAPH
+								for(int i = 0;i<conflict.size();i++)
+											 assert(S->value(conflict[i])==l_False);
+#endif
 
 								return false;
 							}
@@ -436,6 +510,9 @@ public:
 						Lit l = ~reach_lits[d][j];
 						if(! non_reach_detectors[d]->connected(j)){*/
 							if(S->value(l)==l_Undef){
+#ifdef DEBUG_GRAPH
+								assert(dbg_propgation(l));
+#endif
 								S->uncheckedEnqueue(l,non_reach_markers[d]) ;
 							}else if (S->value(l)==l_False){
 								double elapsed = cpuTime()-startunreachtime;
@@ -446,6 +523,10 @@ public:
 								buildNonReachReason(u,d,conflict);
 								//add it to s
 								//return it as a conflict
+#ifdef DEBUG_GRAPH
+								for(int i = 0;i<conflict.size();i++)
+											 assert(S->value(conflict[i])==l_False);
+#endif
 								return false;
 							}
 						}
@@ -472,7 +553,7 @@ public:
 					propagationtime+=elapsed;
 		return true;
 	};
-	bool solve(vec<Lit> & conflict){return true;};
+	bool solveTheory(vec<Lit> & conflict){return true;};
 	void drawFull(int from, int to){
 			printf("digraph{\n");
 			for(int i = 0;i<nNodes();i++){
@@ -521,9 +602,14 @@ public:
 
 	Lit newEdge(int from,int to, Var v = var_Undef)
     {
+		if(from==55 && to==1){
+			int a =1;
+		}
 		if(v==var_Undef)
 			v = S->newVar();
-
+#ifdef DEBUG_GRAPH
+		 dbg_graph->newEdge(from,to,v);
+#endif
 		if(num_edges>0)
 			assert(v==min_edge_var+num_edges);
 		else
@@ -538,20 +624,24 @@ public:
     }
 	void reachesAny(int from, Var firstVar,int within_steps=-1){
 
+#ifdef DEBUG_GRAPH
+		 dbg_graph->reachesAny(from,firstVar,within_steps);
+#endif
+
 			assert(from<g.nodes);
-			reach_markers.push(S->newReasonMarker());
+			reach_markers.push(S->newReasonMarker(this));
 			int mnum = CRef_Undef- reach_markers.last();
 			marker_map.growTo(mnum+1);
 			marker_map[mnum] = reach_markers.size();
 			//marker_map.insert(reach_markers.last(),reach_markers.size());
 
-			non_reach_markers.push(S->newReasonMarker());
+			non_reach_markers.push(S->newReasonMarker(this));
 			//marker_map[non_reach_markers.last()]=-non_reach_markers.size();
 			//marker_map.insert(non_reach_markers.last(),non_reach_markers.size());
 
 			mnum = CRef_Undef- non_reach_markers.last();
 			marker_map.growTo(mnum+1);
-			marker_map[mnum] = non_reach_markers.size();
+			marker_map[mnum] = -non_reach_markers.size();
 
 			reach_detectors.push(new Dijkstra(from,g));
 
@@ -570,19 +660,19 @@ public:
 	    }
 	void reachesAny(int from, vec<Lit> & reaches,int within_steps=-1){
 		assert(from<g.nodes);
-		reach_markers.push(S->newReasonMarker());
+		reach_markers.push(S->newReasonMarker(this));
 		int mnum = CRef_Undef- reach_markers.last();
 		marker_map.growTo(mnum+1);
 		marker_map[mnum] = reach_markers.size();
 		//marker_map.insert(reach_markers.last(),reach_markers.size());
 
-		non_reach_markers.push(S->newReasonMarker());
+		non_reach_markers.push(S->newReasonMarker(this));
 		//marker_map[non_reach_markers.last()]=-non_reach_markers.size();
 		//marker_map.insert(non_reach_markers.last(),non_reach_markers.size());
 
 		mnum = CRef_Undef- non_reach_markers.last();
 		marker_map.growTo(mnum+1);
-		marker_map[mnum] = non_reach_markers.size();
+		marker_map[mnum] = -non_reach_markers.size();
 
 		reach_detectors.push(new Dijkstra(from,g));
 
@@ -604,4 +694,4 @@ public:
 
 };
 
-#endif /* TESTGRAPH_H_ */
+#endif /* DGRAPH_H_ */
