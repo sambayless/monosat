@@ -30,6 +30,7 @@ public:
 		True = mkLit(S->newVar(),false);
 			False=~True;
 			S->addClause(True);
+			nodes=0;
 	}
      ~TestGraph(){};
 	 int newNode(){

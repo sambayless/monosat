@@ -200,8 +200,11 @@ public:
 	vec<int> & getChanged(){
 		return changed;
 	}
-	void update( ){
+	void clearChanged(){
 		changed.clear();
+	}
+	void update( ){
+		//changed.clear();
 		//for(int i = 0;i<g.nodes;i++)
 		//	changed.push(i);
 		/*if (last_addition==g.additions && last_modification>0){

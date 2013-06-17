@@ -138,7 +138,7 @@ public:
 			c.clear();
 			for(int i = 0;i<conflict.size();i++)
 				c.push(~conflict[i]);
-			assert(dbg->solve());
+		//	assert(dbg->solve());
 			bool res = dbg->solve(c);
 			assert(~res);
 
@@ -236,6 +236,10 @@ public:
 				reason.push(l);
 				u=w;
 			}
+#ifdef DEBUG_GRAPH
+		 assert(dbg_clause(reason));
+
+#endif
 			double elapsed = cpuTime()-startpathtime;
 			pathtime+=elapsed;
 		}else{
@@ -401,6 +405,20 @@ public:
 		conflict.clear();
 		//Can probably speed this up alot by a) constant propagating reaches that I care about at level 0, and b) Removing all detectors for nodes that appear only in the opposite polarity (or not at all) in the cnf.
 		//That second one especially.
+
+		//At level 0, need to propagate constant reaches/source nodes/edges...
+		if(local_q==0){
+			assert(S->decisionLevel()==0);
+			for(int i = 0;i<reach_detectors.size();i++){
+				detectors_to_check.push((i+1));
+				reach_detectors[i]->marked =true;
+			}
+			for(int i = 0;i<non_reach_detectors.size();i++){
+				detectors_to_check.push(-(i+1));
+				non_reach_detectors[i]->marked =true;
+			}
+		}
+
 		while(local_q<S->qhead){
 			Lit l = S->trail[local_q++];
 			Var v = var(l);
@@ -486,10 +504,13 @@ public:
 #endif
 
 								return false;
+							}else{
+								int  a=1;
 							}
 						}
 
 					}
+					reach_detectors[d]->clearChanged();
 					double elapsed = cpuTime()-startdreachtime;
 								reachtime+=elapsed;
 				}else{
@@ -532,6 +553,7 @@ public:
 						}
 
 					}
+					non_reach_detectors[d]->clearChanged();
 					double elapsed = cpuTime()-startunreachtime;
 					unreachtime+=elapsed;
 				}
