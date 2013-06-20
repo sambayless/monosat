@@ -241,10 +241,13 @@ public:
 		q.clear();
 		for(int i = 0;i<g.nodes;i++){
 			old_dist[i]=last_modification > 0 ? dist[i]:INF;//this won't work properly if we added nodes...
-			dist[i]=i==source?0 :INF;
+			//dist[i]=i==source?0 :INF;
+			dist[i]=INF;
 			prev[i]=-1;
-			q.insert(i);
+			//q.insert(i);//as per http://stackoverflow.com/questions/938338/what-is-the-fastest-dijkstra-implementation-you-know-in-c, insert into the queue only as neighbours are encountered, in the main loop below.
 		}
+		dist[source]=0;
+		q.insert(source);
 		while(q.size()){
 			int u = q.peakMin();
 			if(dist[u]==INF)
@@ -259,7 +262,10 @@ public:
 				if(alt<dist[v]){
 					dist[v]=alt;
 					prev[v]=u;
-					q.decrease(v);
+					if(!q.inHeap(v))
+						q.insert(v);
+					else
+						q.decrease(v);
 				}
 			}
 		}
