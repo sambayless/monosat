@@ -10,6 +10,7 @@
 
 #include "mtl/Vec.h"
 #include "mtl/Heap.h"
+#include "DynamicGraph.h"
 using namespace Minisat;
 
 /*
@@ -18,83 +19,6 @@ class GraphListener{
 	void removeEdge(int u, int v, int mod);
 };*/
 
-class DynamicGraph{
-public:
-	int nodes;
-	int modifications;
-	int additions;
-	int deletions;
-	int addlistclears;
-	int dellistclears;
-	vec<vec<int> > adjacency;//adj list
-	struct EdgeChange{
-		int u;
-		int v;
-		int mod;
-	};
-	vec<EdgeChange> addition_list;
-	vec<EdgeChange> deletion_list;
-
-
-	DynamicGraph():nodes(0),modifications(0),additions(0),deletions(0),addlistclears(0),dellistclears(0){}
-	void addNodes(int n){
-		for(int i = 0;i<n;i++)
-			addNode();
-	}
-
-	bool hasEdge(int from, int to){
-		for(int i = 0;i< adjacency[from].size();i++){
-			if(adjacency[from][i]==to){
-				return true;
-			}
-		}
-		return false;
-	}
-
-	int addNode(){
-
-		adjacency.push();//adj list
-
-	/*	g.push(); // full matrix
-		for(int i = 0;i<g.size();g++){
-			g[i].growTo(nodes+1);
-		}*/
-		modifications++;
-		additions=modifications;
-		deletions=modifications;
-		return nodes++;
-	}
-	void addEdge(int from, int to){
-		adjacency[from].push(to);
-
-		modifications++;
-		additions=modifications;
-		addition_list.push({from,to,modifications});
-	}
-	//Removes _all_ edges (from, to)
-	void removeEdge(int from, int to){
-		vec<int>& adj= adjacency[from];
-		int i,j = 0;
-		for(i = 0;i<adj.size();i++){
-			if(adj[i]==to){
-
-			}else{
-				adj[j++]=adj[i];
-			}
-		}
-		adj.shrink(i-j);
-		modifications++;
-		deletions=modifications;
-		deletion_list.push({from,to,modifications});
-	}
-
-	void clearChangeSets(){
-		addition_list.clear();
-		deletion_list.clear();
-		addlistclears++;
-		dellistclears++;
-	}
-};
 
 class Dijkstra{
 public:
@@ -159,18 +83,19 @@ public:
 			int u=g.addition_list[i].u;
 			int v=g.addition_list[i].v;
 			int alt = dist[u]+1 ;
-			if(alt< dist[v]){
+			//if(alt< dist[v]){
+			//I altered this code; is it still correct?
+			if(dist[v]>=INF){
+				//this was changed
+				changed.push(v);
 
-				if(dist[v]>=INF){
-					//this was changed
-					changed.push(v);
-				}
 				dist[v]=alt;
 				prev[v]=u;
 
 				if(!q.inHeap(v))
 					q.insert(v);
 			}
+			//}
 		}
 		addition_qhead=g.addition_list.size();
 

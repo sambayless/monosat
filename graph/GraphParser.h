@@ -13,7 +13,7 @@
 
 #include "utils/ParseUtils.h"
 #include "core/SolverTypes.h"
-#include "graph/DijGraph.h"
+#include "graph/GraphTheory.h"
 
 namespace Minisat {
 
