@@ -142,10 +142,11 @@ int main(int argc, char** argv)
              parse_GRAPH(in, S);
              gzclose(in);
 
-             gzFile gin =gzopen(graphstr, "rb");
-            parse_GRAPH(gin,S);
-            gzclose(gin);
-
+             if(strlen(graphstr)){
+				 gzFile gin =gzopen(graphstr, "rb");
+				parse_GRAPH(gin,S);
+				gzclose(gin);
+             }
 
          // Change to signal-handlers that will only notify the solver and allow it to terminate
            // voluntarily:
@@ -164,20 +165,20 @@ int main(int argc, char** argv)
         if(ret==l_True){
         	printf("SAT\n");
         	int v = 0;
-
-        	Theory * t = S.theories[0];
-			DijGraph *g = (DijGraph*)t;
-			int w = sqrt(g->nNodes());
-        	for (int i = 0;i<w;i++){
-        		for(int j = 0;j<w;j++){
-        			if(S.model[v++]==l_True)
-        				printf(" 1");
-        			else
-        				printf(" 0");
-        		}
-        		printf("\n");
+        	if(S.theories.size()){
+				Theory * t = S.theories[0];
+				DijGraph *g = (DijGraph*)t;
+				int w = sqrt(g->nNodes());
+				for (int i = 0;i<w;i++){
+					for(int j = 0;j<w;j++){
+						if(S.model[v++]==l_True)
+							printf(" 1");
+						else
+							printf(" 0");
+					}
+					printf("\n");
+				}
         	}
-
         }else if(ret==l_False){
         	printf("UNSAT\n");
         }else{

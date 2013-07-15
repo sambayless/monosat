@@ -307,7 +307,7 @@ public:
 
 	}
 	void buildReachReason(int node,Dijkstra & d,vec<Lit> & conflict){
-		//drawFull();
+		drawFull();
 		assert(dbg_reachable(d.source,node));
 		double starttime = cpuTime();
 		int u = node;
@@ -534,6 +534,8 @@ public:
 							}else{
 								int  a=1;
 							}
+						}else{
+							assert(!dbg_reachable( reach_detectors[d]->source,u));
 						}
 
 					}
@@ -695,8 +697,6 @@ public:
 				mnum = CRef_Undef- non_reach_markers.last();
 				marker_map.growTo(mnum+1);
 				marker_map[mnum] = -non_reach_markers.size();
-
-
 
 				reach_detectors.push(new ReachDetector());
 

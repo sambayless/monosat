@@ -31,6 +31,9 @@ public:
 			False=~True;
 			S->addClause(True);
 			nodes=0;
+
+		while(S->nVars()<20000)
+			S->newVar();
 	}
      ~TestGraph(){};
 	 int newNode(){
@@ -187,8 +190,10 @@ public:
 
 	    }
 
-	//This is just STUPIDLY inefficient...
-	void reaches(int from, int to, Var var,int within_steps=-1){
+	vec<bool> has_reaches;
+	vec<vec<Lit> >  reaches_vecs;
+
+	void reaches(int from, int to, Var reach_var,int within_steps=-1){
 
 				if(within_steps<0){
 					within_steps=nodes;
@@ -197,59 +202,64 @@ public:
 
 		        //bellman-ford:
 		        //Bellman-ford: For each vertex
-				vec<Lit>  reaches;
-				reaches.clear();
-				for(int i = 0;i<nNodes();i++){
-					reaches.push(False);
+				has_reaches.growTo(nodes);
+				reaches_vecs.growTo(nodes);
+				vec<Lit> & reaches = reaches_vecs[from];
+
+				if(!has_reaches[from]){
+					has_reaches[from]=true;
+					for(int i = 0;i<nNodes();i++){
+						reaches.push(False);
+					}
+
+					reaches[from]=True;
+
+					while(S->nVars()<=reach_var)
+						S->newVar();
+
+					for (int i = 0;i<within_steps;i++){
+						//For each edge:
+						for(int j = 0;j<edges.size();j++){
+							for(int k = 0;k<edges[j].size();k++){
+								Edge e = edges[j][k];
+								if(reaches[e.to]==True){
+									//do nothing
+								}else if (reaches[e.from]==False){
+									//do nothing
+								}else{
+									Lit r = mkLit( S->newVar(), false);
+									c.clear();
+									c.push(~r);c.push(reaches[e.to]);c.push(e.l); //r -> (e.l or reaches[e.to])
+									S->addClause(c);
+									c.clear();
+									c.push(~r);c.push(reaches[e.to]);c.push(reaches[e.from]); //r -> (reaches[e.from]) or reaches[e.to])
+									S->addClause(c);
+									c.clear();
+									c.push(r);c.push(~reaches[e.to]); //~r -> ~reaches[e.to]
+									S->addClause(c);
+									c.clear();
+									c.push(r);c.push(~reaches[e.from]);c.push(~e.l); //~r -> (~reaches[e.from] or ~e.l)
+									S->addClause(c);
+									reaches[e.to]=r   ;//reaches[e.to] == (var & reaches[e.from])| reaches[e.to];
+								}
+							}
+						}
+					}
+
 				}
 
-				reaches[from]=True;
 
-				while(S->nVars()<=var)
-					S->newVar();
-
-		        for (int i = 0;i<within_steps;i++){
-		            //For each edge:
-		        	for(int j = 0;j<edges.size();j++){
-		        		for(int k = 0;k<edges[j].size();k++){
-							Edge e = edges[j][k];
-							if(reaches[e.to]==True){
-								//do nothing
-							}else if (reaches[e.from]==False){
-								//do nothing
-							}else{
-								Lit r = mkLit( S->newVar(), false);
-								c.clear();
-								c.push(~r);c.push(reaches[e.to]);c.push(e.l); //r -> (e.l or reaches[e.to])
-								S->addClause(c);
-								c.clear();
-								c.push(~r);c.push(reaches[e.to]);c.push(reaches[e.from]); //r -> (reaches[e.from]) or reaches[e.to])
-								S->addClause(c);
-								c.clear();
-								c.push(r);c.push(~reaches[e.to]); //~r -> ~reaches[e.to]
-								S->addClause(c);
-								c.clear();
-								c.push(r);c.push(~reaches[e.from]);c.push(~e.l); //~r -> (~reaches[e.from] or ~e.l)
-								S->addClause(c);
-								reaches[e.to]=r   ;//reaches[e.to] == (var & reaches[e.from])| reaches[e.to];
-							}
-		        		}
-		        	}
-		        }
-
-
-
-		        	Var v = var;
-		        	Lit l = reaches[to];
-		        	c.clear();
-		        	c.push(mkLit(v,false));
-		        	c.push(~l);
-		        	S->addClause(c);
-		        	c.clear();
-		        	c.push(mkLit(v,true));
-					c.push(l);
-					S->addClause(c);
-					c.clear();
+				Var v = reach_var;
+				Lit l = reaches[to];
+				c.clear();
+				c.push(mkLit(v,false));
+				c.push(~l);
+				S->addClause(c);
+				c.clear();
+				c.push(mkLit(v,true));
+				c.push(l);
+				S->addClause(c);
+				c.clear();
 
 
 		    }

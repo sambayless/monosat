@@ -83,8 +83,24 @@ public:
 			int u=g.addition_list[i].u;
 			int v=g.addition_list[i].v;
 			int alt = dist[u]+1 ;
-			//if(alt< dist[v]){
-			//I altered this code; is it still correct?
+			if(alt< dist[v]){
+
+				if(dist[v]>=INF){
+					//this was changed
+					changed.push(v);
+				}
+
+				dist[v]=alt;
+				prev[v]=u;
+
+				if(!q.inHeap(v))
+					q.insert(v);
+			}
+
+			/*
+			 *
+			 *
+			//Is this altered code still correct?
 			if(dist[v]>=INF){
 				//this was changed
 				changed.push(v);
@@ -95,7 +111,9 @@ public:
 				if(!q.inHeap(v))
 					q.insert(v);
 			}
-			//}
+			 *
+			 */
+
 		}
 		addition_qhead=g.addition_list.size();
 
