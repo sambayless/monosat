@@ -430,7 +430,7 @@ protected:
         	return v>=min_super  && v <= max_super;
         }
 
-        void dbg_check_propagation(Lit p){
+        inline void dbg_check_propagation(Lit p){
   #ifdef DEBUG_SOLVER
       	  	 if (dbg_solver){
 
@@ -448,7 +448,7 @@ protected:
   #endif
         }
 
-      void dbg_check(const vec<Lit> & clause){
+      inline void dbg_check(const vec<Lit> & clause){
 #ifdef DEBUG_SOLVER
     	  	 if (dbg_solver){
     	  		 static bool first = true;

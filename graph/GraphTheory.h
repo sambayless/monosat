@@ -433,6 +433,8 @@ public:
 	}
 
 	bool dbg_notreachable(int from, int to){
+
+#ifdef DEBUG_GRAPH
 		//drawFull(from,to);
 		DynamicGraph g;
 		for(int i = 0;i<nNodes();i++){
@@ -449,10 +451,13 @@ public:
 		Dijkstra d(from,g);
 
 		return !d.connected(to);
-
+#else
+		return true;
+#endif
 	}
 
 	bool dbg_graphsUpToDate(){
+#ifdef DEBUG_GRAPH
 		for(int i = 0;i<edge_list.size();i++){
 			Edge e = edge_list[i];
 			lbool val = S->value(e.v);
@@ -468,6 +473,7 @@ public:
 			}
 		}
 		return true;
+#endif
 	}
 
 	void buildNonReachReason(int node, int detector ,vec<Lit> & conflict){
