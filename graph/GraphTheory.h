@@ -18,6 +18,10 @@
 #ifdef DEBUG_GRAPH
 #include "TestGraph.h"
 #endif
+
+#ifdef DEBUG_SOLVER
+#include "TestGraph.h"
+#endif
 namespace Minisat{
 
 
@@ -34,6 +38,9 @@ private:
 #ifdef DEBUG_GRAPH
 	Solver * dbg;
 	TestGraph *dbg_graph;
+#endif
+#ifdef DEBUG_SOLVER
+	TestGraph * shadow_dbg;
 #endif
 	DynamicGraph g;
 	DynamicGraph antig;
@@ -87,13 +94,14 @@ private:
 	vec<Edge> edge_list;
 	Var min_edge_var;
 	int num_edges;
-	struct AssignedEdge{
+	struct Assignment{
+		bool isEdge:1;
 		bool assign:1;
-		int from:31;
+		int from:30;
 		int to;
 		Var var;
 	};
-	vec<AssignedEdge> trail;
+	vec<Assignment> trail;
 	vec<int> trail_lim;
 	EdmondsKarp mc;
 public:
@@ -123,6 +131,10 @@ public:
 		dbg=new Solver();
 		dbg_graph = new TestGraph(dbg);
 #endif
+#ifdef DEBUG_SOLVER
+		if(S->dbg_solver)
+			shadow_dbg = new TestGraph(S->dbg_solver);
+#endif
 	}
 
 	void printStats(){
@@ -140,7 +152,10 @@ public:
 #ifdef DEBUG_GRAPH
 		 dbg_graph->newNode();
 #endif
-
+#ifdef DEBUG_SOLVER
+		if(S->dbg_solver)
+			shadow_dbg->newNode();
+#endif
 		 edges.push();
 		 for(int i = 0;i<edges.size();i++)
 			 edges[i].growTo(edges.size());
@@ -243,29 +258,22 @@ public:
 		if(trail_lim.size()>level){
 			int stop = trail_lim[level];
 			for(int i = trail.size()-1;i>=trail_lim[level];i--){
-				AssignedEdge e = trail[i];
-				if(e.from==47 && e.to==55){
-									int a =1;
-								}
-				if(e.var==368){
-					int  a=1;
-				}
-				assert(S->value(e.var)==l_Undef);
-				if(e.assign){
-					g.removeEdge(e.from,e.to);
-				}else{
-					antig.addEdge(e.from,e.to);
-					assert(antig.hasEdge(e.from,e.to));
+				Assignment e = trail[i];
+				if(e.isEdge){
+					assert(S->value(e.var)==l_Undef);
+					if(e.assign){
+						g.removeEdge(e.from,e.to);
+					}else{
+						antig.addEdge(e.from,e.to);
+						assert(antig.hasEdge(e.from,e.to));
+					}
 				}
 			}
 			trail.shrink(trail.size()-stop);
 			trail_lim.shrink(trail_lim.size()-level);
 			assert(trail_lim.size()==level);
-			int lim = trail_lim.last();
 
-			if(trail.size()<=5){
-				int a =1;
-			}
+
 		}
 
 		if(local_q>S->qhead)
@@ -282,6 +290,33 @@ public:
 
 
 	};
+
+	void backtrackUntil(Lit p){
+			//need to remove and add edges in the two graphs accordingly.
+			int i = trail.size()-1;
+			for(;i>=0;i--){
+				Assignment e = trail[i];
+				if(e.isEdge){
+					if(e.assign){
+						g.removeEdge(e.from,e.to);
+					}else{
+						antig.addEdge(e.from,e.to);
+						assert(antig.hasEdge(e.from,e.to));
+					}
+				}else{
+					if(var(p)==e.var){
+						assert(sign(p)!=e.assign);
+						break;
+					}
+				}
+			}
+
+			trail.shrink(trail.size()-(i+1));
+			while(trail_lim.size() && trail_lim.last()>=trail.size())
+				trail_lim.pop();
+
+		};
+
 	void newDecisionLevel(){
 		trail_lim.push(trail.size());
 	};
@@ -291,6 +326,9 @@ public:
 		assert(marker != CRef_Undef);
 		int pos = CRef_Undef- marker;
 		int d = marker_map[pos];
+
+		backtrackUntil(p);
+
 		reason.push(p);
 		assert(d!=0);
 		if(d>0){
@@ -353,7 +391,7 @@ public:
 
 	}
 	void buildReachReason(int node,Dijkstra & d,vec<Lit> & conflict){
-		drawFull();
+		//drawFull();
 		assert(dbg_reachable(d.source,node));
 		double starttime = cpuTime();
 		int u = node;
@@ -439,18 +477,26 @@ public:
 		double starttime = cpuTime();
 		cutGraph.clearChangeSets();
 		//ok, set the weights for each edge in the cut graph.
-		//We edges to infinite weight if they are undef or true, and weight 1 otherwise.
-		for(int i = 0;i<cutGraph.adjacency.size();i++){
-			for(int j = 0;j<cutGraph.adjacency[i].size();j++){
-				int v = cutGraph.adjacency[i][j];
-				Var var = edges[i][v].v;
-				if(S->value(var)==l_False){
-					mc.setCapacity(i,v,1);
-				}else{
-					mc.setCapacity(i,v,0xF0F0F0);
-				}
+		//Set edges to infinite weight if they are undef or true, and weight 1 otherwise.
+		for(int u = 0;u<cutGraph.adjacency.size();u++){
+			for(int j = 0;j<cutGraph.adjacency[u].size();j++){
+				int v = cutGraph.adjacency[u][j];
+				Var var = edges[u][v].v;
+				/*if(S->value(var)==l_False){
+					mc.setCapacity(u,v,1);
+				}else{*/
+					mc.setCapacity(u,v,0xF0F0F0);
+				//}
 			}
 		}
+
+		//find any edges assigned to false, and set their capacity to 1
+		for(int i =0;i<trail.size();i++){
+			if(trail[i].isEdge && !trail[i].assign){
+				mc.setCapacity(trail[i].from, trail[i].to,1);
+			}
+		}
+
 		cut.clear();
 		int f =mc.minCut(reach_detectors[detector]->source,node,cut);
 		assert(f<0xF0F0F0); assert(f==cut.size());//because edges are only ever infinity or 1
@@ -501,20 +547,16 @@ public:
 				newDecisionLevel();
 			}
 			if(v>= min_edge_var && v<min_edge_var+num_edges){
-				if(v==368){
-							int a=1;
-						}
+
 				//this is an edge assignment
 				int edge_num = v-min_edge_var;
 				int from = edge_list[edge_num].from;
 				int to = edge_list[edge_num].to;
-				trail.push({!sign(l), from,to,v});
-				AssignedEdge e = trail.last();
+				trail.push({true,!sign(l), from,to,v});
+				Assignment e = trail.last();
 				assert(e.from==from);
 				assert(e.to==to);
-				if(from==47 && to==55){
-					int a =1;
-				}
+
 				if (!sign(l)){
 
 					g.addEdge(from,to);
@@ -562,6 +604,11 @@ public:
 #ifdef DEBUG_GRAPH
 								assert(dbg_propgation(l));
 #endif
+#ifdef DEBUG_SOLVER
+								if(S->dbg_solver)
+									S->dbg_check_propagation(l);
+#endif
+								trail.push({false,true,d,0,var(l)});
 								S->uncheckedEnqueue(l,reach_markers[d]) ;
 							}else if (S->value(l)==l_False){
 								double elapsed = cpuTime()-startdreachtime;
@@ -576,7 +623,10 @@ public:
 								for(int i = 0;i<conflict.size();i++)
 											 assert(S->value(conflict[i])==l_False);
 #endif
-
+#ifdef DEBUG_SOLVER
+								if(S->dbg_solver)
+									S->dbg_check(conflict);
+#endif
 								return false;
 							}else{
 								int  a=1;
@@ -610,6 +660,11 @@ public:
 #ifdef DEBUG_GRAPH
 								assert(dbg_propgation(l));
 #endif
+#ifdef DEBUG_SOLVER
+								if(S->dbg_solver)
+									S->dbg_check_propagation(l);
+#endif
+								trail.push({false,false,d,0,var(l)});
 								S->uncheckedEnqueue(l,non_reach_markers[d]) ;
 							}else if (S->value(l)==l_False){
 								double elapsed = cpuTime()-startunreachtime;
@@ -618,6 +673,10 @@ public:
 								//The reason is a cut separating s from t
 								conflict.push(l);
 								buildNonReachReason(u,d,conflict);
+#ifdef DEBUG_SOLVER
+								if(S->dbg_solver)
+									S->dbg_check(conflict);
+#endif
 								//add it to s
 								//return it as a conflict
 #ifdef DEBUG_GRAPH
@@ -709,6 +768,10 @@ public:
 #ifdef DEBUG_GRAPH
 		 dbg_graph->newEdge(from,to,v);
 #endif
+#ifdef DEBUG_SOLVER
+		if(S->dbg_solver)
+			shadow_dbg->newEdge(from,to,v);
+#endif
 		if(num_edges>0)
 			assert(v==min_edge_var+num_edges);
 		else
@@ -727,7 +790,10 @@ public:
 #ifdef DEBUG_GRAPH
 		 dbg_graph->reaches(from,  to,reach_var,within_steps);
 #endif
-
+#ifdef DEBUG_SOLVER
+		if(S->dbg_solver)
+			shadow_dbg->reaches(from,  to,reach_var,within_steps);
+#endif
 			assert(from<g.nodes);
 
 			if (reach_info[from].source<0){

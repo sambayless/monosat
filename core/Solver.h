@@ -37,7 +37,9 @@ class Solver:public Theory {
 public:
 	friend class Theory;
 	friend class DijGraph;
-
+#ifdef DEBUG_SOLVER
+	Solver * dbg_solver;
+#endif
     // Constructor/Destructor:
     //
     Solver();
@@ -100,6 +102,18 @@ public:
     	theories[t]->buildReason(p,theory_reason);
     	CRef reason = ca.alloc(theory_reason, false);
     	assert(theory_reason[0]==p); assert(value(p)==l_True);
+#ifdef DEBUG_SOLVER
+    	//assert all the other reasons in this cause are earlier on the trail than p...
+    	static vec<bool> marks;
+    	marks.clear();
+    	marks.growTo(nVars());
+    	for(int i = 0;i<trail.size() && var(trail[i])!=var(p);i++){
+    		marks[var(trail[i])]=true;
+    	}
+    	for(int i = 1;i<theory_reason.size();i++){
+    		assert(marks[var(theory_reason[i])]);
+    	}
+#endif
 		clauses.push(reason);
 		attachClause(reason);
 		vardata[var(p)]=mkVarData(reason,level(var(p)));
@@ -415,6 +429,42 @@ protected:
         inline bool super_interface(Var v)const{
         	return v>=min_super  && v <= max_super;
         }
+
+        void dbg_check_propagation(Lit p){
+  #ifdef DEBUG_SOLVER
+      	  	 if (dbg_solver){
+
+      	  		static vec<Lit> c;
+  				c.clear();
+  				for(int i = 0;i<trail.size();i++)
+  				{
+  					c.push(trail[i]);
+  				}
+  				c.push(~p);
+  				bool res = dbg_solver->solve(c);
+
+  				assert(!res);
+      	  	 }
+  #endif
+        }
+
+      void dbg_check(const vec<Lit> & clause){
+#ifdef DEBUG_SOLVER
+    	  	 if (dbg_solver){
+    	  		 static bool first = true;
+    	  		static vec<Lit> c;
+				c.clear();
+				for(int i = 0;i<clause.size();i++)
+				{
+					c.push(~ clause[i]);
+				}
+
+				bool res = dbg_solver->solve(c);
+
+				assert(!res);
+    	  	 }
+#endif
+      }
 
   
 };

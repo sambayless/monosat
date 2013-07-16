@@ -104,6 +104,12 @@ Solver::~Solver()
 //
 Var Solver::newVar(bool sign, bool dvar)
 {
+
+#ifdef DEBUG_SOLVER
+	if( dbg_solver){
+		dbg_solver->newVar();
+	}
+#endif
     int v = nVars();
     watches  .init(mkLit(v, false));
     watches  .init(mkLit(v, true ));
@@ -122,6 +128,14 @@ Var Solver::newVar(bool sign, bool dvar)
 
 bool Solver::addClause_(vec<Lit>& ps)
 {
+
+#ifdef DEBUG_SOLVER
+	if( dbg_solver){
+		static vec<Lit> c;
+		ps.copyTo(c);
+		dbg_solver->addClause(c);
+	}
+#endif
     assert(decisionLevel() == 0);
     if (!ok) return false;
 
@@ -318,6 +332,7 @@ void Solver::analyze(CRef confl, vec<Lit>& out_learnt, int& out_btlevel)
 
     }while (pathC > 0);
     out_learnt[0] = ~p;
+    dbg_check(out_learnt);
 
     // Simplify conflict clause:
     //
@@ -369,7 +384,7 @@ void Solver::analyze(CRef confl, vec<Lit>& out_learnt, int& out_btlevel)
         out_learnt[1]     = p;
         out_btlevel       = level(var(p));
     }
-
+    dbg_check(out_learnt);
     for (int j = 0; j < analyze_toclear.size(); j++) seen[var(analyze_toclear[j])] = 0;    // ('seen[]' is now cleared)
 }
 
@@ -458,9 +473,6 @@ void Solver::analyzeFinal(Lit p, vec<Lit>& out_conflict)
 
 void Solver::uncheckedEnqueue(Lit p, CRef from)
 {
-	if(var(p)==320){
-		int a =1;
-	}
     assert(value(p) == l_Undef);
     assigns[var(p)] = lbool(!sign(p));
     vardata[var(p)] = mkVarData(from, decisionLevel());
@@ -817,6 +829,7 @@ bool Solver::simplify()
 }
 
 bool Solver::addConflictClause(vec<Lit> & theory_conflict, CRef & confl_out){
+	dbg_check(theory_conflict);
 	confl_out=CRef_Undef;
 	if(theory_conflict.size()==0){
 			ok=false;
@@ -825,6 +838,7 @@ bool Solver::addConflictClause(vec<Lit> & theory_conflict, CRef & confl_out){
 		}else if(theory_conflict.size()==1){
 			cancelUntil(0);
 			assert(var(theory_conflict[0])<nVars());
+			dbg_check_propagation(theory_conflict[0]);
 			if(!enqueue(theory_conflict[0])){
 				ok=false;
 				return false;
@@ -881,7 +895,8 @@ lbool Solver::search(int nof_conflicts)
         if (confl != CRef_Undef){
             // CONFLICT
             conflicts++; conflictC++;
-            if (decisionLevel() == 0) return l_False;
+            if (decisionLevel() == 0)
+            	return l_False;
 
             learnt_clause.clear();
             analyze(confl, learnt_clause, backtrack_level);
@@ -965,6 +980,8 @@ lbool Solver::search(int nof_conflicts)
                     newDecisionLevel();
                 }else if (value(p) == l_False){
                     analyzeFinal(~p, conflict);
+                    dbg_check(conflict);
+                    dbg_check_propagation(~p);
                     return l_False;
                 }else{
                     next = p;
@@ -999,7 +1016,6 @@ lbool Solver::search(int nof_conflicts)
 						if(qhead < trail.size()  || nAssigns()<nVars())
 							goto propagate;
 					}
-
 
 
 
@@ -1097,9 +1113,26 @@ lbool Solver::solve_()
         // Extend & copy model:
         model.growTo(nVars());
         for (int i = 0; i < nVars(); i++) model[i] = value(i);
-    }else if (status == l_False && conflict.size() == 0)
-        ok = false;
 
+
+#ifdef DEBUG_SOLVER
+					if(dbg_solver)
+						assert(dbg_solver->solve(assumptions));
+#endif
+
+    }else if (status == l_False && conflict.size() == 0){
+        ok = false;
+#ifdef DEBUG_SOLVER
+		if(dbg_solver)
+			assert(!dbg_solver->solve());
+#endif
+    }else if (status == l_False){
+    	assert(ok);
+#ifdef DEBUG_SOLVER
+		if(dbg_solver)
+			assert(!dbg_solver->solve(assumptions));
+#endif
+    }
     cancelUntil(0);
     assumptions.clear();
     return status;

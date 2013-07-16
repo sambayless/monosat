@@ -131,6 +131,9 @@ int main(int argc, char** argv)
 
          const char *error;
          Solver S;
+#ifdef DEBUG_SOLVER
+         S.dbg_solver = new Solver();
+#endif
          gzFile in = (argc == 1) ? gzdopen(0, "rb") : gzopen(argv[1], "rb");
              if (in == NULL)
                  printf("ERROR! Could not open file: %s\n", argc == 1 ? "<stdin>" : argv[1]), exit(1);
