@@ -9,9 +9,10 @@
 #define TESTGRAPH_H_
 
 #include "core/Theory.h"
+
 #include "Graph.h"
 namespace Minisat{
-class TestGraph:public Graph,public Theory{
+class TestGraph:public GraphTheory{
 private:
 	int nodes;
 	struct Edge{
@@ -32,8 +33,7 @@ public:
 			S->addClause(True);
 			nodes=0;
 
-		while(S->nVars()<20000)
-			S->newVar();
+
 	}
      ~TestGraph(){};
 	 int newNode(){
@@ -145,6 +145,7 @@ public:
 				S->newVar();
 
 	        for (int i = 0;i<within_steps;i++){
+
 	            //For each edge:
 	        	for(int j = 0;j<edges.size();j++){
 	        		for(int k = 0;k<edges[j].size();k++){
@@ -212,9 +213,14 @@ public:
 						reaches.push(False);
 					}
 
+
 					reaches[from]=True;
 
 					while(S->nVars()<=reach_var)
+						S->newVar();
+
+					//this is not a good fix
+					for(int i = 0;i<1000;i++)
 						S->newVar();
 
 					for (int i = 0;i<within_steps;i++){

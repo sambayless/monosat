@@ -17,8 +17,22 @@
 
 namespace Minisat {
 
+class GraphTheory: public Theory{
 
-class Graph {
+public:
+
+    virtual ~GraphTheory(){};
+	virtual int newNode()=0;
+	virtual void newNodes(int n)=0;
+	virtual int nNodes()=0;
+	virtual bool isNode(int n)=0;
+	virtual Lit newEdge(int from,int to, Var v)=0;
+	virtual void reachesAny(int from, Var firstVar,int within_steps)=0;
+	virtual void reachesAny(int from, vec<Lit> & properties_out,int within_steps)=0;
+	virtual void reaches(int from,int to, Var reach_var,int within_steps=-1)=0;
+};
+
+class Graph{
 public:
 	static const int Undef_Node =-1;
 

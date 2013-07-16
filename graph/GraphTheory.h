@@ -19,7 +19,10 @@
 #include "TestGraph.h"
 #endif
 namespace Minisat{
-class DijGraph:public Theory{
+
+
+
+class DijGraph:public GraphTheory{
 private:
 
 
@@ -191,6 +194,46 @@ public:
 		}
 #endif
 
+	void dbg_sync(){
+#ifdef DEBUG_GRAPH
+		static vec<lbool> assigned;
+		assigned.clear();
+		for(int i = 0;i<num_edges;i++)
+			assigned.push(l_Undef);
+		int lev = 0;
+		int j =0;
+		for(int i = 0;i<trail.size();i++){
+			while(j<trail_lim.size() && i>=trail_lim[j]){
+				lev++;
+				j++;
+			}
+			AssignedEdge e = trail[i];
+			Lit l = mkLit( e.var,!e.assign);
+			assert(S->value(l)==l_True);
+			int expected_level = S->level(var(l));
+			assert(S->level(var(l))==lev);
+			int edge_num = e.var-min_edge_var;
+			assert(assigned[edge_num]==l_Undef);
+			assigned[edge_num] = sign(l)?l_False:l_True;
+		}
+
+		for(int i = 0;i<S->trail.size();i++){
+
+			Lit l = S->trail[i];
+			Var v = var(l);
+
+			int lev = S->level(v);
+
+			if(v>= min_edge_var && v<min_edge_var+num_edges){
+				int edge_num = v-min_edge_var;
+				lbool assigned_val=assigned[edge_num];
+				assert(assigned_val== (sign(l)?l_False:l_True));
+			}
+		}
+
+#endif
+	}
+
 	void backtrackUntil(int level){
 		static int it = 0;
 		if(++it==28){
@@ -234,6 +277,9 @@ public:
 			if(reach_detectors[i]->negative_reach_detector)
 				reach_detectors[i]->negative_reach_detector->update();
 		}
+
+		dbg_sync();
+
 
 	};
 	void newDecisionLevel(){
@@ -490,6 +536,7 @@ public:
 				}
 			}
 		}
+		dbg_sync();
 			assert(dbg_graphsUpToDate());
 			for(int i = 0;i<detectors_to_check.size();i++){
 				int d = detectors_to_check[i];
@@ -602,6 +649,7 @@ public:
 		}*/
 		double elapsed = cpuTime()-startproptime;
 					propagationtime+=elapsed;
+					dbg_sync();
 		return true;
 	};
 	bool solveTheory(vec<Lit> & conflict){return true;};

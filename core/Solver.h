@@ -37,6 +37,7 @@ class Solver:public Theory {
 public:
 	friend class Theory;
 	friend class DijGraph;
+
     // Constructor/Destructor:
     //
     Solver();
