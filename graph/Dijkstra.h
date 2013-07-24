@@ -33,6 +33,8 @@ public:
 	int source;
 	int INF;
 
+
+
 	bool marked;
 
 	vec<int> old_dist;
@@ -48,10 +50,20 @@ public:
 		 DistCmp(vec<int> & d):_dist(d){};
 	};
 	Heap<DistCmp> q;
-public:
 
-	Dijkstra(int s,DynamicGraph & graph):g(graph), last_modification(-1),last_addition(-1),last_deletion(-1),addition_qhead(0),deletion_qhead(0),lastaddlist(0),lastdellist(0),source(s),INF(0),marked(false),q(DistCmp(dist)){	}
-	Dijkstra(const Dijkstra& d):g(d.g), last_modification(-1),last_addition(-1),last_deletion(-1),addition_qhead(0),deletion_qhead(0),lastaddlist(0),lastdellist(0),source(d.source),INF(0),marked(false),q(DistCmp(dist)){};
+
+
+public:
+	int stats_full_updates;
+	int stats_fast_updates;
+	int stats_skip_deletes;
+	int stats_skipped_updates;
+
+	double stats_full_update_time;
+	double stats_fast_update_time;
+
+	Dijkstra(int s,DynamicGraph & graph):g(graph), last_modification(-1),last_addition(-1),last_deletion(-1),addition_qhead(0),deletion_qhead(0),lastaddlist(0),lastdellist(0),source(s),INF(0),marked(false),q(DistCmp(dist)),stats_full_updates(0),stats_fast_updates(0),stats_skip_deletes(0),stats_skipped_updates(0),stats_full_update_time(0),stats_fast_update_time(0){	}
+	Dijkstra(const Dijkstra& d):g(d.g), last_modification(-1),last_addition(-1),last_deletion(-1),addition_qhead(0),deletion_qhead(0),lastaddlist(0),lastdellist(0),source(d.source),INF(0),marked(false),q(DistCmp(dist)),stats_full_updates(0),stats_fast_updates(0),stats_skip_deletes(0),stats_skipped_updates(0),stats_full_update_time(0),stats_fast_update_time(0){};
 
 
 	void setSource(int s){
@@ -65,6 +77,9 @@ public:
 	}
 
 	void updateFast(){
+		stats_fast_updates++;
+		double start_time = cpuTime();
+
 		/*for(int i = 0;i<g.nodes;i++)
 					changed.push(i);*/
 		assert(last_deletion==g.deletions);
@@ -95,12 +110,13 @@ public:
 
 				if(!q.inHeap(v))
 					q.insert(v);
+				else
+					q.decrease(v);
 			}
-
 			/*
 			 *
 			 *
-			//Is this altered code still correct?
+			//Is this altered code still correct? Well, not for dijkstras, but probably for connectivity
 			if(dist[v]>=INF){
 				//this was changed
 				changed.push(v);
@@ -129,6 +145,7 @@ public:
 						//this was changed
 						changed.push(v);
 					}
+
 					dist[v]=alt;
 					prev[v]=u;
 					if(!q.inHeap(v))
@@ -139,6 +156,7 @@ public:
 
 			}
 		}
+		stats_fast_update_time+=cpuTime()-start_time;
 	}
 	vec<int> & getChanged(){
 		return changed;
@@ -147,38 +165,65 @@ public:
 		changed.clear();
 	}
 	void update( ){
-		//changed.clear();
-		//for(int i = 0;i<g.nodes;i++)
-		//	changed.push(i);
-		/*if (last_addition==g.additions && last_modification>0){
+		static int iteration = 0;
+		int local_it = ++iteration ;
+		if(local_it==17513){
+			int a =1;
+		}
+
+
+		if (last_addition==g.additions && last_modification>0){
+			//if none of the deletions were to edges that were the previous edge of some shortest path, then we don't need to do anything
 			if(lastdellist!=g.dellistclears){
 				deletion_qhead=0;
 				lastdellist=g.dellistclears;
 			}
+			bool need_recompute = false;
 			//ok, now check if any of the added edges allow for a decrease in distance.
 			for (int i = deletion_qhead;i<g.deletion_list.size();i++){
 				int u=g.deletion_list[i].u;
 				int v=g.deletion_list[i].v;
 				if(prev[v]==u){
 					deletion_qhead = i-1;
+					need_recompute=true;
 					//this deletion matters, so we need to recompute.
 					break;
 				}
 			}
-			//none of these deletions touched any shortest paths, so we can ignore them.
-			deletion_qhead=g.deletion_list.size();
-			last_deletion = g.deletions;
-		}*/
+			if(!need_recompute){
+				//none of these deletions touched any shortest paths, so we can ignore them.
+
+				last_modification=g.modifications;
+				last_deletion = g.deletions;
+				last_addition=g.additions;
+
+				addition_qhead=g.addition_list.size();
+				lastaddlist=g.addlistclears;
+
+				deletion_qhead=g.deletion_list.size();
+				lastdellist=g.dellistclears;
+				assert(dbg_uptodate());
+				stats_skip_deletes++;
+				return;
+			}
+		}
 
 		if(last_deletion==g.deletions && last_modification>0  ){
+			//Don't need to do anything at all.
+			if(last_addition==g.additions){
+				last_modification = g.modifications;
+				stats_skipped_updates++;
+				assert(dbg_uptodate());
+				return;
+			}
 			//we can use a faster, simple dijkstra update method
 			updateFast();
+			assert(dbg_uptodate());
 			return;
 		}
-		//if none of the deletions were to 'previous' edges, then we don't need to do anything
 
-		//for(int i = 0;i<g.nodes;i++)
-		//	changed.push(i);
+		stats_full_updates++;
+		double startdupdatetime = cpuTime();
 
 		INF=g.nodes+1;
 		dist.growTo(g.nodes);
@@ -187,10 +232,11 @@ public:
 		q.clear();
 		for(int i = 0;i<g.nodes;i++){
 			old_dist[i]=last_modification > 0 ? dist[i]:INF;//this won't work properly if we added nodes...
-			dist[i]=i==source?0 :INF;
+			dist[i]=INF;
 			prev[i]=-1;
-			q.insert(i);
 		}
+		dist[source]=0;
+		q.insert(source);
 		while(q.size()){
 			int u = q.peakMin();
 			if(dist[u]==INF)
@@ -205,18 +251,24 @@ public:
 				if(alt<dist[v]){
 					dist[v]=alt;
 					prev[v]=u;
-					q.decrease(v);
+					if(!q.inHeap(v))
+						q.insert(v);
+					else
+						q.decrease(v);
 				}
 			}
 		}
-		while(q.size()){
+
+		for(int u = 0;u<g.nodes;u++){
+		//while(q.size()){
 			//iterate through the unreached nodes and check which ones were previously reached
-			int u = q.removeMin();
+
 			if(last_modification <=0  || (old_dist[u]<INF && dist[u]>=INF)){
 				changed.push(u);
 			}
 		}
-	
+		//}
+		assert(dbg_uptodate());
 
 	last_modification=g.modifications;
 		last_deletion = g.deletions;
@@ -228,10 +280,13 @@ public:
 		deletion_qhead=g.deletion_list.size();
 		lastdellist=g.dellistclears;
 
-
+		stats_full_update_time+=cpuTime()-startdupdatetime;;
 	}
 
 	bool dbg_uptodate(){
+#ifdef DEBUG_DIJKSTRA
+		if(last_modification<=0)
+			return true;
 	/*	DynamicGraph gdbg;
 		for(int i = 0;i<g.nodes;i++){
 			gdbg.addNode();
@@ -251,6 +306,7 @@ public:
 			int dbgdist = d.dist[i];
 			assert(distance==dbgdist);
 		}
+#endif
 		return true;
 	}
 

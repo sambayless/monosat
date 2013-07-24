@@ -11,6 +11,7 @@
 #include "core/Theory.h"
 #include "Graph.h"
 #include "Dijkstra.h"
+#include "Connectivity.h"
 #include "core/SolverTypes.h"
 #include "mtl/Map.h"
 #include "MaxFlow.h"
@@ -49,8 +50,10 @@ private:
 	struct ReachDetector{
 		int within;
 		int source;
-		Dijkstra* positive_reach_detector;
-		Dijkstra* negative_reach_detector;
+		Connectivity * positive_reach_detector;
+		Connectivity * negative_reach_detector;
+		Dijkstra* positive_dist_detector;
+		Dijkstra* negative_dist_detector;
 		vec<Lit>  reach_lits;
 		Var first_reach_var;
 		vec<int> reach_lit_map;
@@ -63,7 +66,7 @@ private:
 			return reach_lit_map[index];
 		}
 
-		ReachDetector():within(-1),source(-1),positive_reach_detector(NULL),negative_reach_detector(NULL){}
+		ReachDetector():within(-1),source(-1),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_dist_detector(NULL),negative_dist_detector(NULL){}
 	};
 
 	struct ReachInfo{
@@ -144,6 +147,37 @@ public:
 		printf("Unreach Time: %f (Update Time: %f)\n", unreachtime,unreachupdatetime);
 		printf("Path Time: %f\n", pathtime);
 		printf("Min-cut Time: %f\n", mctime);
+
+		int stats_full_updates=0;
+		int stats_fast_updates=0;
+		int stats_skip_deletes=0;
+		int stats_skipped_updates=0;
+
+		double stats_full_update_time=0;
+		double stats_fast_update_time=0;
+
+		for(int i = 0;i<reach_detectors.size();i++){
+
+			stats_full_updates+=reach_detectors[i]->positive_reach_detector->stats_full_updates;
+			stats_fast_updates+=reach_detectors[i]->positive_reach_detector->stats_fast_updates;
+			stats_skip_deletes+=reach_detectors[i]->positive_reach_detector->stats_skip_deletes;
+			stats_skipped_updates+=reach_detectors[i]->positive_reach_detector->stats_skipped_updates;
+
+			stats_full_update_time+=reach_detectors[i]->positive_reach_detector->stats_full_update_time;
+			stats_fast_update_time+=reach_detectors[i]->positive_reach_detector->stats_fast_update_time;
+
+			stats_full_updates+=reach_detectors[i]->negative_reach_detector->stats_full_updates;
+			stats_fast_updates+=reach_detectors[i]->negative_reach_detector->stats_fast_updates;
+			stats_skip_deletes+=reach_detectors[i]->negative_reach_detector->stats_skip_deletes;
+			stats_skipped_updates+=reach_detectors[i]->negative_reach_detector->stats_skipped_updates;
+
+			stats_full_update_time+=reach_detectors[i]->negative_reach_detector->stats_full_update_time;
+			stats_fast_update_time+=reach_detectors[i]->negative_reach_detector->stats_fast_update_time;
+		}
+
+		printf("Dijkstra Full Updates: %d (time: %f)\n",stats_full_updates, stats_full_update_time);
+		printf("Dijkstra Fast Updates: %d (time: %f)\n",stats_fast_updates, stats_fast_update_time);
+		printf("Dijkstra Skipped Updates: %d (deletionSkips: %d)\n",stats_skipped_updates, stats_skip_deletes);
 
 	}
 
@@ -279,12 +313,12 @@ public:
 		if(local_q>S->qhead)
 			local_q=S->qhead;
 		assert(dbg_graphsUpToDate());
-		for(int i = 0;i<reach_detectors.size();i++){
+		/*for(int i = 0;i<reach_detectors.size();i++){
 			if(reach_detectors[i]->positive_reach_detector)
 				reach_detectors[i]->positive_reach_detector->update();
 			if(reach_detectors[i]->negative_reach_detector)
 				reach_detectors[i]->negative_reach_detector->update();
-		}
+		}*/
 
 		dbg_sync();
 
@@ -312,9 +346,15 @@ public:
 			}
 
 			trail.shrink(trail.size()-(i+1));
-			while(trail_lim.size() && trail_lim.last()>=trail.size())
-				trail_lim.pop();
+			//while(trail_lim.size() && trail_lim.last()>=trail.size())
+			//	trail_lim.pop();
 
+	/*		for(int i = 0;i<reach_detectors.size();i++){
+					if(reach_detectors[i]->positive_reach_detector)
+						reach_detectors[i]->positive_reach_detector->update();
+					if(reach_detectors[i]->negative_reach_detector)
+						reach_detectors[i]->negative_reach_detector->update();
+				}*/
 		};
 
 	void newDecisionLevel(){
@@ -334,9 +374,10 @@ public:
 		if(d>0){
 			double startpathtime = cpuTime();
 			d--;
-			Dijkstra & detector = *reach_detectors[d]->positive_reach_detector;
+			Dijkstra & detector = *reach_detectors[d]->positive_dist_detector;
 			//the reason is a path from s to p(provided by d)
 			//p is the var for a reachability detector in dijkstra, and corresponds to a node
+			detector.update();
 			Var v = var(p);
 			int u =reach_detectors[d]->getNode(v); //reach_detectors[d]->reach_lit_map[v];
 			assert(detector.connected(u));
@@ -355,7 +396,6 @@ public:
 			pathtime+=elapsed;
 		}else{
 			d=-d-1;
-			Dijkstra & detector = *reach_detectors[d]->negative_reach_detector;
 
 			//the reason is a cut separating p from s;
 			//We want to find a min-cut in the full graph separating, where activated edges (ie, those still in antig) are weighted infinity, and all others are weighted 1.
@@ -393,6 +433,7 @@ public:
 	void buildReachReason(int node,Dijkstra & d,vec<Lit> & conflict){
 		//drawFull();
 		assert(dbg_reachable(d.source,node));
+		d.update();
 		double starttime = cpuTime();
 		int u = node;
 		int p;
@@ -414,6 +455,7 @@ public:
 
 
 	bool dbg_reachable(int from, int to){
+#ifdef DEBUG_GRAPH
 		DynamicGraph g;
 		for(int i = 0;i<nNodes();i++){
 			g.addNode();
@@ -429,7 +471,9 @@ public:
 		Dijkstra d(from,g);
 
 		return d.connected(to);
-
+#else
+		return true;
+#endif
 	}
 
 	bool dbg_notreachable(int from, int to){
@@ -472,8 +516,9 @@ public:
 				assert(!g.hasEdge(e.from,e.to));
 			}
 		}
-		return true;
+
 #endif
+		return true;
 	}
 
 	void buildNonReachReason(int node, int detector ,vec<Lit> & conflict){
@@ -622,7 +667,7 @@ public:
 								//conflict
 								//The reason is all the literals in the shortest path in to s in d
 								conflict.push(l);
-								buildReachReason(u,*reach_detectors[d]->positive_reach_detector,conflict);
+								buildReachReason(u,*reach_detectors[d]->positive_dist_detector,conflict);
 								//add it to s
 								//return it as a conflict
 #ifdef DEBUG_GRAPH
@@ -638,7 +683,9 @@ public:
 								int  a=1;
 							}
 						}else{
+#ifdef DEBUG_GRAPH
 							assert(!dbg_reachable( reach_detectors[d]->source,u));
+#endif
 						}
 
 					}
@@ -819,9 +866,12 @@ public:
 				marker_map[mnum] = -non_reach_markers.size();
 
 				reach_detectors.push(new ReachDetector());
+				reach_detectors.last()->positive_reach_detector = new Connectivity(from,g);
+				reach_detectors.last()->negative_reach_detector = new Connectivity(from,antig);
 
-				reach_detectors.last()->positive_reach_detector = new Dijkstra(from,g);
-				reach_detectors.last()->negative_reach_detector = new Dijkstra(from,antig);
+				reach_detectors.last()->positive_dist_detector = new Dijkstra(from,g);
+
+				//reach_detectors.last()->negative_dist_detector = new Dijkstra(from,antig);
 				reach_detectors.last()->source=from;
 
 				reach_info[from].source=from;
