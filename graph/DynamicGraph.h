@@ -13,22 +13,23 @@ using namespace Minisat;
 class DynamicGraph{
 public:
 	int nodes;
+	int edges;
 	int modifications;
 	int additions;
 	int deletions;
-	int addlistclears;
-	int dellistclears;
+	int historyclears;
+
 	vec<vec<int> > adjacency;//adj list
+	vec<vec<int> > inverted_adjacency;//adj list
 	struct EdgeChange{
+		bool addition;
 		int u;//from
 		int v;//top
 		int mod;
 	};
-	vec<EdgeChange> addition_list;
-	vec<EdgeChange> deletion_list;
+	vec<EdgeChange> history;
 
-
-	DynamicGraph():nodes(0),modifications(0),additions(0),deletions(0),addlistclears(0),dellistclears(0){}
+	DynamicGraph():nodes(0),edges(0),modifications(0),additions(0),deletions(0),historyclears(0){}
 	void addNodes(int n){
 		for(int i = 0;i<n;i++)
 			addNode();
@@ -46,45 +47,59 @@ public:
 	int addNode(){
 
 		adjacency.push();//adj list
-
-	/*	g.push(); // full matrix
-		for(int i = 0;i<g.size();g++){
-			g[i].growTo(nodes+1);
-		}*/
+		inverted_adjacency.push();
 		modifications++;
 		additions=modifications;
 		deletions=modifications;
+		clearHistory();
 		return nodes++;
 	}
 	void addEdge(int from, int to){
+		assert(from<nodes);
+		assert(to<nodes);
+		edges++;
 		adjacency[from].push(to);
-
+		inverted_adjacency[to].push(from);
 		modifications++;
 		additions=modifications;
-		addition_list.push({from,to,modifications});
+		history.push({true,from,to,modifications});
 	}
 	//Removes _all_ edges (from, to)
 	void removeEdge(int from, int to){
-		vec<int>& adj= adjacency[from];
-		int i,j = 0;
-		for(i = 0;i<adj.size();i++){
-			if(adj[i]==to){
-
-			}else{
-				adj[j++]=adj[i];
+		{
+			vec<int>& adj= adjacency[from];
+			int i,j = 0;
+			for(i = 0;i<adj.size();i++){
+				if(adj[i]==to){
+					edges--;
+				}else{
+					adj[j++]=adj[i];
+				}
 			}
+			adj.shrink(i-j);
 		}
-		adj.shrink(i-j);
+		{
+			vec<int>& inv_adj= inverted_adjacency[to];
+			int i,j = 0;
+			for(i = 0;i<inv_adj.size();i++){
+				if(inv_adj[i]==from){
+
+				}else{
+					inv_adj[j++]=inv_adj[i];
+				}
+			}
+			inv_adj.shrink(i-j);
+		}
 		modifications++;
 		deletions=modifications;
-		deletion_list.push({from,to,modifications});
+		history.push({false,from,to,modifications});
 	}
 
-	void clearChangeSets(){
-		addition_list.clear();
-		deletion_list.clear();
-		addlistclears++;
-		dellistclears++;
+	void clearHistory(){
+		if(history.size()>1000){
+			history.clear();
+			historyclears++;
+		}
 	}
 };
 

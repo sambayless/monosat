@@ -35,3 +35,4 @@ static const char* _cat_graph ="GRAPH";
  IntOption Minisat::opt_subsearch(_cat_sms,"subsearch","Control how the solver performs search on the subsolvers: 0=abort as soon as a conflict backtracks past the supersolvers decisionlevel. 1=Abort only once a conflict on the super-interface variables is found, allowing backtracks past those variables in the process. 2=Abort only when the the super-solvers assignment is proven to be in conflict. 3=Don't continue subsearach if the subsolver has backtracked past super-solver decisions. 4=Don't continue past the last interpolant level if any solver has backtracked past a super solver's decisions",2,IntRange(0,4));
 
  BoolOption Minisat::opt_graph(_cat_graph,"graph","Use graph theory solver",true);
+ BoolOption Minisat::opt_inc_graph(_cat_graph,"inc","Use incremental graph reachability",true);

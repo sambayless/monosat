@@ -27,6 +27,7 @@ extern IntOption opt_eager_prop;
 extern IntOption opt_subsearch;
 
 extern BoolOption opt_graph;
+extern BoolOption opt_inc_graph;
 }
 
 #endif /* CONFIG_H_ */

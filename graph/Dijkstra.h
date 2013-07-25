@@ -13,12 +13,6 @@
 #include "DynamicGraph.h"
 using namespace Minisat;
 
-/*
-class GraphListener{
-	void addEdge(int u, int v, int mod);
-	void removeEdge(int u, int v, int mod);
-};*/
-
 
 class Dijkstra{
 public:
@@ -26,10 +20,10 @@ public:
 	int last_modification;
 	int last_addition;
 	int last_deletion;
-	int addition_qhead;
-	int deletion_qhead;
-	int lastaddlist;
-	int lastdellist;
+	int history_qhead;
+
+	int last_history_clear;
+
 	int source;
 	int INF;
 
@@ -62,8 +56,8 @@ public:
 	double stats_full_update_time;
 	double stats_fast_update_time;
 
-	Dijkstra(int s,DynamicGraph & graph):g(graph), last_modification(-1),last_addition(-1),last_deletion(-1),addition_qhead(0),deletion_qhead(0),lastaddlist(0),lastdellist(0),source(s),INF(0),marked(false),q(DistCmp(dist)),stats_full_updates(0),stats_fast_updates(0),stats_skip_deletes(0),stats_skipped_updates(0),stats_full_update_time(0),stats_fast_update_time(0){	}
-	Dijkstra(const Dijkstra& d):g(d.g), last_modification(-1),last_addition(-1),last_deletion(-1),addition_qhead(0),deletion_qhead(0),lastaddlist(0),lastdellist(0),source(d.source),INF(0),marked(false),q(DistCmp(dist)),stats_full_updates(0),stats_fast_updates(0),stats_skip_deletes(0),stats_skipped_updates(0),stats_full_update_time(0),stats_fast_update_time(0){};
+	Dijkstra(int s,DynamicGraph & graph):g(graph), last_modification(-1),last_addition(-1),last_deletion(-1),history_qhead(0),last_history_clear(0),source(s),INF(0),marked(false),q(DistCmp(dist)),stats_full_updates(0),stats_fast_updates(0),stats_skip_deletes(0),stats_skipped_updates(0),stats_full_update_time(0),stats_fast_update_time(0){	}
+	Dijkstra(const Dijkstra& d):g(d.g), last_modification(-1),last_addition(-1),last_deletion(-1),history_qhead(0),last_history_clear(0),source(d.source),INF(0),marked(false),q(DistCmp(dist)),stats_full_updates(0),stats_fast_updates(0),stats_skip_deletes(0),stats_skipped_updates(0),stats_full_update_time(0),stats_fast_update_time(0){};
 
 
 	void setSource(int s){
@@ -89,14 +83,15 @@ public:
 		dist.growTo(g.nodes);
 		prev.growTo(g.nodes);
 		q.clear();
-		if(lastaddlist!=g.addlistclears){
-			addition_qhead=0;
-			lastaddlist=g.addlistclears;
+		if(last_history_clear!=g.historyclears){
+			history_qhead=0;
+			last_history_clear=g.historyclears;
 		}
 		//ok, now check if any of the added edges allow for a decrease in distance.
-		for (int i = addition_qhead;i<g.addition_list.size();i++){
-			int u=g.addition_list[i].u;
-			int v=g.addition_list[i].v;
+		for (int i = history_qhead;i<g.history.size();i++){
+			assert(g.history[i].addition);
+			int u=g.history[i].u;
+			int v=g.history[i].v;
 			int alt = dist[u]+1 ;
 			if(alt< dist[v]){
 
@@ -131,7 +126,7 @@ public:
 			 */
 
 		}
-		addition_qhead=g.addition_list.size();
+		history_qhead=g.history.size();
 
 		while(q.size()){
 			int u = q.removeMin();
@@ -174,17 +169,18 @@ public:
 
 		if (last_addition==g.additions && last_modification>0){
 			//if none of the deletions were to edges that were the previous edge of some shortest path, then we don't need to do anything
-			if(lastdellist!=g.dellistclears){
-				deletion_qhead=0;
-				lastdellist=g.dellistclears;
+			if(last_history_clear!=g.historyclears){
+				history_qhead=0;
+				last_history_clear=g.historyclears;
 			}
 			bool need_recompute = false;
 			//ok, now check if any of the added edges allow for a decrease in distance.
-			for (int i = deletion_qhead;i<g.deletion_list.size();i++){
-				int u=g.deletion_list[i].u;
-				int v=g.deletion_list[i].v;
+			for (int i = history_qhead;i<g.history.size();i++){
+				assert(!g.history[i].addition);
+				int u=g.history[i].u;
+				int v=g.history[i].v;
 				if(prev[v]==u){
-					deletion_qhead = i-1;
+					history_qhead = i-1;
 					need_recompute=true;
 					//this deletion matters, so we need to recompute.
 					break;
@@ -197,11 +193,9 @@ public:
 				last_deletion = g.deletions;
 				last_addition=g.additions;
 
-				addition_qhead=g.addition_list.size();
-				lastaddlist=g.addlistclears;
+				history_qhead=g.history.size();
+				last_history_clear=g.historyclears;
 
-				deletion_qhead=g.deletion_list.size();
-				lastdellist=g.dellistclears;
 				assert(dbg_uptodate());
 				stats_skip_deletes++;
 				return;
@@ -270,15 +264,12 @@ public:
 		//}
 		assert(dbg_uptodate());
 
-	last_modification=g.modifications;
+		last_modification=g.modifications;
 		last_deletion = g.deletions;
 		last_addition=g.additions;
 
-		addition_qhead=g.addition_list.size();
-		lastaddlist=g.addlistclears;
-
-		deletion_qhead=g.deletion_list.size();
-		lastdellist=g.dellistclears;
+		history_qhead=g.history.size();
+		last_history_clear=g.historyclears;
 
 		stats_full_update_time+=cpuTime()-startdupdatetime;;
 	}

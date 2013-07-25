@@ -95,6 +95,7 @@ private:
 
 	//Just a list of the edges
 	vec<Edge> edge_list;
+
 	Var min_edge_var;
 	int num_edges;
 	struct Assignment{
@@ -526,7 +527,7 @@ public:
 		//drawFull( non_reach_detectors[detector]->getSource(),u);
 		assert(dbg_notreachable( reach_detectors[detector]->source,u));
 		double starttime = cpuTime();
-		cutGraph.clearChangeSets();
+		cutGraph.clearHistory();
 		//ok, set the weights for each edge in the cut graph.
 		//Set edges to infinite weight if they are undef or true, and weight 1 otherwise.
 		for(int u = 0;u<cutGraph.adjacency.size();u++){
@@ -597,10 +598,12 @@ public:
 			while(lev>trail_lim.size()){
 				newDecisionLevel();
 			}
-			if(v>= min_edge_var && v<min_edge_var+num_edges){
+			if(v>= min_edge_var && v<min_edge_var+edge_list.size()){
 
 				//this is an edge assignment
 				int edge_num = v-min_edge_var;
+				if(edge_list[edge_num].v<0)
+					continue;
 				int from = edge_list[edge_num].from;
 				int to = edge_list[edge_num].to;
 				trail.push({true,!sign(l), from,to,v});
@@ -646,7 +649,9 @@ public:
 						if( reach_detectors[d]->connected(j)){*/
 					for(int j = 0;j<reach_detectors[d]->positive_reach_detector->getChanged().size();j++){
 							int u = reach_detectors[d]->positive_reach_detector->getChanged()[j];
-							assert(reach_detectors[d]->reach_lits[u]!=lit_Undef);
+							if(u>= reach_detectors[d]->reach_lits.size() || reach_detectors[d]->reach_lits[u] == lit_Undef)
+								continue;
+							//assert(reach_detectors[d]->reach_lits[u]!=lit_Undef);
 							Lit l = (reach_detectors[d]->reach_lits[u]); // reach_lits[d][u];
 
 							if( reach_detectors[d]->positive_reach_detector->connected(u)){
@@ -702,6 +707,8 @@ public:
 					assert(dbg_graphsUpToDate());
 					for(int j = 0;j<reach_detectors[d]->negative_reach_detector->getChanged().size();j++){
 							int u = reach_detectors[d]->negative_reach_detector->getChanged()[j];
+							if(u>= reach_detectors[d]->reach_lits.size()||  reach_detectors[d]->reach_lits[u] == lit_Undef)
+									continue;
 							assert(reach_detectors[d]->reach_lits[u]!=lit_Undef);
 							Lit l = ~ (reach_detectors[d]->reach_lits[u]); // ~reach_lits[d][u];
 							if(! reach_detectors[d]->negative_reach_detector->connected(u)){
@@ -750,15 +757,11 @@ public:
 
 
 
-		g.clearChangeSets();
-		antig.clearChangeSets();
+		g.clearHistory();
+		antig.clearHistory();
 
 		detectors_to_check.clear();
-		//really simple dynamic optimization for online checking connectivity:
-		//only need to do an update if an added edge has non-infinite endpoints in g, or if a removed edge has non-infinite endpoints in antig
-		/*while(detectors_to_check.size()){
 
-		}*/
 		double elapsed = cpuTime()-startproptime;
 					propagationtime+=elapsed;
 					dbg_sync();
@@ -813,9 +816,7 @@ public:
 
 	Lit newEdge(int from,int to, Var v = var_Undef)
     {
-		if(from==55 && to==1){
-			int a =1;
-		}
+
 		if(v==var_Undef)
 			v = S->newVar();
 #ifdef DEBUG_GRAPH
@@ -825,13 +826,20 @@ public:
 		if(S->dbg_solver)
 			shadow_dbg->newEdge(from,to,v);
 #endif
-		if(num_edges>0)
-			assert(v==min_edge_var+num_edges);
-		else
+		if(num_edges>0){
+		}else
 			min_edge_var=v;
+
+		int index = v-min_edge_var;
+
+		while(edge_list.size()<=index)
+			edge_list.push({-1,-1,-1});
+
 		num_edges++;
-		edge_list.push({v,from,to});
-		//edges.push({from,to});
+		edge_list[index].v =v;
+		edge_list[index].from=from;
+		edge_list[index].to =to;
+
 		edges[from][to]= {v,from,to};
 		antig.addEdge(from,to);
 		cutGraph.addEdge(from,to);

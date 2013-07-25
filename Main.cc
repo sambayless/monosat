@@ -32,7 +32,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "core/Solver.h"
 #include "Aiger.h"
 #include "core/Config.h"
-
+#include <unistd.h>
 using namespace Minisat;
 
 //=================================================================================================
@@ -174,10 +174,19 @@ int main(int argc, char** argv)
 				int w = sqrt(g->nNodes());
 				for (int i = 0;i<w;i++){
 					for(int j = 0;j<w;j++){
-						if(S.model[v++]==l_True)
-							printf(" 1");
-						else
-							printf(" 0");
+						if (isatty(fileno(stdout))){
+
+							if(S.model[v++]==l_True)
+								printf("\033[1;42m\033[1;37m1\033[0m");
+							else
+								printf("\033[1;44m\033[1;37m0\033[0m");
+						}else{
+
+							if(S.model[v++]==l_True)
+								printf(" 1");
+							else
+								printf(" 0");
+						}
 					}
 					printf("\n");
 				}
