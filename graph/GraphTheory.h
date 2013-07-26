@@ -15,6 +15,7 @@
 #include "core/SolverTypes.h"
 #include "mtl/Map.h"
 #include "MaxFlow.h"
+#include "IBFS.h"
 #include "utils/System.h"
 #ifdef DEBUG_GRAPH
 #include "TestGraph.h"
@@ -88,7 +89,7 @@ private:
 		int from;
 		int to;
 	};
-	vec<EdmondsKarp::Edge> cut;
+	vec<IBFS::Edge> cut;
 
 	//Full matrix
 	vec<vec<Edge> > edges;
@@ -107,7 +108,7 @@ private:
 	};
 	vec<Assignment> trail;
 	vec<int> trail_lim;
-	EdmondsKarp mc;
+	IBFS mc;
 public:
 
 	double mctime;
@@ -553,7 +554,7 @@ public:
 		int f =mc.minCut(reach_detectors[detector]->source,node,cut);
 		assert(f<0xF0F0F0); assert(f==cut.size());//because edges are only ever infinity or 1
 		for(int i = 0;i<cut.size();i++){
-			EdmondsKarp::Edge e = cut[i];
+			IBFS::Edge e = cut[i];
 
 			Lit l = mkLit( edges[e.u][e.v].v,false);
 			assert(S->value(l)==l_False);

@@ -98,6 +98,13 @@ int main(int argc, char** argv)
         parseOptions(argc, argv, true);
 
 
+        mincutalg = MC_EDWARDSKARP;
+
+        if(strcasecmp(opt_min_cut,"ibfs")){
+        	mincutalg=MC_IBFS;
+        }
+
+
         double initial_time = cpuTime();
 
         const char * graphstr = opt_graph;
@@ -177,9 +184,9 @@ int main(int argc, char** argv)
 						if (isatty(fileno(stdout))){
 
 							if(S.model[v++]==l_True)
-								printf("\033[1;42m\033[1;37m1\033[0m");
+								printf("\033[1;42m\033[1;37m 1\033[0m");
 							else
-								printf("\033[1;44m\033[1;37m0\033[0m");
+								printf("\033[1;44m\033[1;37m 0\033[0m");
 						}else{
 
 							if(S.model[v++]==l_True)

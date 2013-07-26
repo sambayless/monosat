@@ -20,7 +20,7 @@ public:
 	int historyclears;
 
 	vec<vec<int> > adjacency;//adj list
-	vec<vec<int> > inverted_adjacency;//adj list
+	//vec<vec<int> > inverted_adjacency;//adj list
 	struct EdgeChange{
 		bool addition;
 		int u;//from
@@ -47,7 +47,7 @@ public:
 	int addNode(){
 
 		adjacency.push();//adj list
-		inverted_adjacency.push();
+		//inverted_adjacency.push();
 		modifications++;
 		additions=modifications;
 		deletions=modifications;
@@ -59,7 +59,7 @@ public:
 		assert(to<nodes);
 		edges++;
 		adjacency[from].push(to);
-		inverted_adjacency[to].push(from);
+		//inverted_adjacency[to].push(from);
 		modifications++;
 		additions=modifications;
 		history.push({true,from,to,modifications});
@@ -78,7 +78,7 @@ public:
 			}
 			adj.shrink(i-j);
 		}
-		{
+	/*	{
 			vec<int>& inv_adj= inverted_adjacency[to];
 			int i,j = 0;
 			for(i = 0;i<inv_adj.size();i++){
@@ -89,7 +89,7 @@ public:
 				}
 			}
 			inv_adj.shrink(i-j);
-		}
+		}*/
 		modifications++;
 		deletions=modifications;
 		history.push({false,from,to,modifications});

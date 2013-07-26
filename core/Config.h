@@ -28,6 +28,13 @@ extern IntOption opt_subsearch;
 
 extern BoolOption opt_graph;
 extern BoolOption opt_inc_graph;
+extern StringOption opt_min_cut;
+
+enum MinCutAlg{
+	 MC_EDWARDSKARP,
+	 MC_IBFS
+};
+extern MinCutAlg mincutalg;
 }
 
 #endif /* CONFIG_H_ */
