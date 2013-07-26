@@ -36,7 +36,7 @@ static const char* _cat_graph ="GRAPH";
 
  BoolOption Minisat::opt_graph(_cat_graph,"graph","Use graph theory solver",true);
  BoolOption Minisat::opt_inc_graph(_cat_graph,"inc","Use incremental graph reachability",false);
- StringOption Minisat::opt_min_cut(_cat_graph,"cut","Select max-flow/min-cut algorithm (edwards-karp, ibfs)","edmonds-karp");
+ StringOption Minisat::opt_min_cut(_cat_graph,"mincut","Select max-flow/min-cut algorithm (edmondskarp, ibfs)","edmondskarp");
 
 MinCutAlg Minisat::mincutalg=MC_EDMONSKARP ;
 

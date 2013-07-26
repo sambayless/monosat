@@ -78,6 +78,7 @@ private:
 	};
 
 	vec<ReachInfo> reach_info;
+public:
 	vec<ReachDetector*> reach_detectors;
 
 	vec<CRef> reach_markers;
@@ -157,7 +158,7 @@ public:
 		printf("Reach Time: %f (update Time: %f)\n", reachtime,reachupdatetime);
 		printf("Unreach Time: %f (Update Time: %f)\n", unreachtime,unreachupdatetime);
 		printf("Path Time: %f\n", pathtime);
-		printf("Min-cut Time: %f (Calls %d)\n", mctime, stats_mc_calls);
+		printf("Min-cut Time: %f (%d calls)\n", mctime, stats_mc_calls);
 
 		int stats_full_updates=0;
 		int stats_fast_updates=0;

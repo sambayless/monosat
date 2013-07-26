@@ -103,7 +103,7 @@ int main(int argc, char** argv)
         if(!strcasecmp(opt_min_cut,"ibfs")){
         	mincutalg=MC_IBFS;
 
-        }else if (!strcasecmp(opt_min_cut,"edmonds-karp")){
+        }else if (!strcasecmp(opt_min_cut,"edmondskarp")){
         	mincutalg = MC_EDMONSKARP;
         }else{
         	fprintf(stderr,"Error: unknown max-flow/min-cut algorithm %s, aborting\n", mincutalg);
@@ -180,30 +180,76 @@ int main(int argc, char** argv)
 
         if(ret==l_True){
         	printf("SAT\n");
-        	int v = 0;
+
         	if(S.theories.size()){
 				Theory * t = S.theories[0];
 				GraphTheorySolver *g = (GraphTheorySolver*)t;
-				int w = sqrt(g->nNodes());
-				for (int i = 0;i<w;i++){
-					for(int j = 0;j<w;j++){
+				int width = sqrt(g->nNodes());
+				int v = 0;
+				//for (int i = 0;i<w;i++){
+				//	for(int j = 0;j<w;j++){
+				int lasty= 0;
+				for(int n = 0;n<g->nNodes();n++){
+					int x = n%width;
+					int y = n/width;
+					if(y > lasty)
+						printf("\n");
 						if (isatty(fileno(stdout))){
 
-							if(S.model[v++]==l_True)
+							if(S.model[n]==l_True)
 								printf("\033[1;42m\033[1;37m 1\033[0m");
 							else
 								printf("\033[1;44m\033[1;37m 0\033[0m");
 						}else{
 
-							if(S.model[v++]==l_True)
+							if(S.model[n]==l_True)
 								printf(" 1");
 							else
 								printf(" 0");
 						}
-					}
-					printf("\n");
+
+					lasty=y;
 				}
         	}
+        	printf("\n");
+        	for(int t = 0;t<S.theories.size();t++){
+        		printf("Theory %d\n", t);
+        		GraphTheorySolver *g = (GraphTheorySolver*)S.theories[t];
+
+        		for(int r = 0;r<g->reach_detectors.size();r++){
+
+        			int width = sqrt(g->nNodes());
+        			int lasty= 0;
+        			int extra =  g->nNodes() % width ? (width- g->nNodes() % width ):0;
+					for(int n = 0;n<g->nNodes();n++){
+						int x = n%width;
+
+						int y = (n + extra )/width;
+						if(y > lasty)
+							printf("\n");
+
+						int v =var( g->reach_detectors[r]->reach_lits[n]);
+						if (isatty(fileno(stdout))){
+							if(S.model[v]==l_True)
+								printf("\033[1;42m\033[1;37m%4d\033[0m", v);
+							else
+								printf("\033[1;44m\033[1;37m    \033[0m");
+						}else{
+
+							if(S.model[v]==l_True)
+								printf(" 1");
+							else
+								printf(" 0");
+						}
+
+						lasty=y;
+					}
+					printf("\n");
+        		}
+
+
+        	}
+
         }else if(ret==l_False){
         	printf("UNSAT\n");
         }else{
