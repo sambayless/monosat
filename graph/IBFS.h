@@ -1,10 +1,7 @@
 #ifndef MAX_FLOW_IBFS_H
 #define MAX_FLOW_IBFS_H
 
-    // Maximum Flow- Edmonds-Karp Algorithm
-    // by Iraklis Karagkiozoglou <i.kar@windowslive.com>
-    #include <iostream>
-    #include <climits>
+
 #include "ibfs.h"
 #include "mtl/Vec.h"
 #ifdef DEBUG_MAXFLOW
@@ -14,7 +11,7 @@
     using namespace std;
     using namespace Minisat;
 
-class IBFS{
+class IBFS:public MaxFlow{
 
     DynamicGraph& g;
 #ifdef DEBUG_MAXFLOW
@@ -91,13 +88,7 @@ public:
         return f;
     }
 
-    vec<int> q;
-    vec<bool> seen;
-    vec<bool> visited;
-    struct Edge {
-    	int u;
-    	int v;
-    };
+
     int minCut(int s, int t, vec<Edge> & cut){
     	int f = maxFlow(s,t);
     	//ok, now find the cut

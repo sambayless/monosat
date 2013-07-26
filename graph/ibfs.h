@@ -2,6 +2,7 @@
 #ifndef _IBFS_H__
 #define _IBFS_H__
 
+//Source is based on that from http://www.cs.tau.ac.il/~sagihed/ibfs/, from this paper:e "A.V. Goldberg, S.Hed, H. Kaplan, R.E. Tarjan, and R.F. Werneck, Maximum Flows By Incremental Breadth-First Search"
 
 //#define STATS
 
@@ -21,7 +22,7 @@ public:
 	} termtype;
 	typedef int node_id;
 
-	IBFSGraph(int numNodes, int numEdges, void (*errorFunction)(char*) = NULL);
+	IBFSGraph(int numNodes, int numEdges);
 	~IBFSGraph();
 	int add_node(int numNodes);
 	void add_edge(int nodeIndexFrom, int nodeIndexTo, captype capacity, captype reverseCapacity);
@@ -98,7 +99,7 @@ private:
 	node* activeFirst1;
 	node* activeLast1;
 
-	void (*errorFunction)(char *);
+
 public:
 	int nNodes;
 
@@ -281,21 +282,15 @@ if ((n)->nextActive == NULL)						\
 
 
 
-template <typename captype, typename tcaptype, typename flowtype> IBFSGraph<captype, tcaptype, flowtype>::IBFSGraph(int numNodes, int numEdges, void (*errorFunctionArg)(char*))
+template <typename captype, typename tcaptype, typename flowtype> IBFSGraph<captype, tcaptype, flowtype>::IBFSGraph(int numNodes, int numEdges)
 {
-	errorFunction = errorFunctionArg;
 	nNodes = 0;
 
 	nodes = (node*) malloc((numNodes+1)*sizeof(node));
 	arcs = (arc*) malloc((2*numEdges)*sizeof(arc));
-	if (!nodes || !arcs)
-	{
-		if (errorFunction)
-		{
-			(*errorFunction)("Cannot Allocate Memory!\n");
-		}
-		exit(1);
-	}
+
+	assert(nodes);
+	assert(arcs);
 
 	node *maxNode = nodes + numNodes - 1;
 	for (nodeLast = nodes; nodeLast <= maxNode; nodeLast++)

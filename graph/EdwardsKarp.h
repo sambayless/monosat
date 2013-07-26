@@ -1,15 +1,15 @@
 #ifndef EDMONDS_KARP_H
 #define EDMONDS_KARP_H
 
-    // Maximum Flow- Edmonds-Karp Algorithm
-    // by Iraklis Karagkiozoglou <i.kar@windowslive.com>
-    #include <iostream>
-    #include <climits>
-#include "mtl/Vec.h"
-    using namespace std;
-    using namespace Minisat;
+// Maximum Flow- Edmonds-Karp Algorithm
+// by Iraklis Karagkiozoglou <i.kar@windowslive.com>
 
-class EdmondsKarp{
+#include "MaxFlow.h"
+#include "mtl/Vec.h"
+using namespace std;
+using namespace Minisat;
+
+class EdmondsKarp:public MaxFlow{
 
 
 /*
@@ -128,10 +128,7 @@ public:
     vec<int> q;
     vec<bool> seen;
     vec<bool> visited;
-    struct Edge {
-    	int u;
-    	int v;
-    };
+
     int minCut(int s, int t, vec<Edge> & cut){
     	int f = maxFlow(s,t);
     	//ok, now find the cut

@@ -31,7 +31,7 @@ extern BoolOption opt_inc_graph;
 extern StringOption opt_min_cut;
 
 enum MinCutAlg{
-	 MC_EDWARDSKARP,
+	 MC_EDMONSKARP,
 	 MC_IBFS
 };
 extern MinCutAlg mincutalg;

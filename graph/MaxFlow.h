@@ -11,6 +11,9 @@ using namespace Minisat;
 class MaxFlow{
 public:
 
+
+	virtual ~MaxFlow(){};
+
     virtual void setCapacity(int u, int w, int c)=0;
 
     virtual void setAllEdgeCapacities(int c)=0;

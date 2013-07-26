@@ -36,7 +36,7 @@ namespace Minisat {
 class Solver:public Theory {
 public:
 	friend class Theory;
-	friend class DijGraph;
+	friend class GraphTheorySolver;
 #ifdef DEBUG_SOLVER
 	Solver * dbg_solver;
 #endif

@@ -98,10 +98,16 @@ int main(int argc, char** argv)
         parseOptions(argc, argv, true);
 
 
-        mincutalg = MC_EDWARDSKARP;
+        mincutalg = MC_EDMONSKARP;
 
-        if(strcasecmp(opt_min_cut,"ibfs")){
+        if(!strcasecmp(opt_min_cut,"ibfs")){
         	mincutalg=MC_IBFS;
+
+        }else if (!strcasecmp(opt_min_cut,"edmonds-karp")){
+        	mincutalg = MC_EDMONSKARP;
+        }else{
+        	fprintf(stderr,"Error: unknown max-flow/min-cut algorithm %s, aborting\n", mincutalg);
+        	exit(1);
         }
 
 
@@ -177,7 +183,7 @@ int main(int argc, char** argv)
         	int v = 0;
         	if(S.theories.size()){
 				Theory * t = S.theories[0];
-				DijGraph *g = (DijGraph*)t;
+				GraphTheorySolver *g = (GraphTheorySolver*)t;
 				int w = sqrt(g->nNodes());
 				for (int i = 0;i<w;i++){
 					for(int j = 0;j<w;j++){
@@ -206,7 +212,7 @@ int main(int argc, char** argv)
         printStats(S);
         for(int i = 0;i<S.theories.size();i++){
         	Theory * t = S.theories[i];
-        	DijGraph *g = (DijGraph*)t;
+        	GraphTheorySolver *g = (GraphTheorySolver*)t;
         	g->printStats();
         }
         fflush(stdout);

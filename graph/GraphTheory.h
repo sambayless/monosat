@@ -16,6 +16,7 @@
 #include "mtl/Map.h"
 #include "MaxFlow.h"
 #include "IBFS.h"
+#include "EdwardsKarp.h"
 #include "utils/System.h"
 #ifdef DEBUG_GRAPH
 #include "TestGraph.h"
@@ -28,7 +29,7 @@ namespace Minisat{
 
 
 
-class DijGraph:public GraphTheory{
+class GraphTheorySolver:public GraphTheory{
 private:
 
 
@@ -89,7 +90,7 @@ private:
 		int from;
 		int to;
 	};
-	vec<IBFS::Edge> cut;
+	vec<MaxFlow::Edge> cut;
 
 	//Full matrix
 	vec<vec<Edge> > edges;
@@ -108,7 +109,7 @@ private:
 	};
 	vec<Assignment> trail;
 	vec<int> trail_lim;
-	IBFS mc;
+	MaxFlow * mc;
 public:
 
 	double mctime;
@@ -118,20 +119,28 @@ public:
 	double propagationtime;
 	double reachupdatetime;
 	double unreachupdatetime;
-
-	DijGraph(Solver * S_):S(S_),mc(cutGraph){
+	long stats_mc_calls;
+	GraphTheorySolver(Solver * S_):S(S_){
 		True = mkLit(S->newVar(),false);
 			False=~True;
 			S->addClause(True);
 			num_edges=0;
 			local_q=0;
 			mctime=0;
+			stats_mc_calls=0;
 			reachtime=0;
 			unreachtime=0;
 			pathtime=0;
 			propagationtime=0;
 			reachupdatetime=0;
 			unreachupdatetime=0;
+
+			if(mincutalg==MC_IBFS){
+				mc = new IBFS(cutGraph);
+			}else{
+				mc = new EdmondsKarp(cutGraph);
+			}
+
 #ifdef DEBUG_GRAPH
 		dbg=new Solver();
 		dbg_graph = new TestGraph(dbg);
@@ -148,7 +157,7 @@ public:
 		printf("Reach Time: %f (update Time: %f)\n", reachtime,reachupdatetime);
 		printf("Unreach Time: %f (Update Time: %f)\n", unreachtime,unreachupdatetime);
 		printf("Path Time: %f\n", pathtime);
-		printf("Min-cut Time: %f\n", mctime);
+		printf("Min-cut Time: %f (Calls %d)\n", mctime, stats_mc_calls);
 
 		int stats_full_updates=0;
 		int stats_fast_updates=0;
@@ -183,7 +192,7 @@ public:
 
 	}
 
-     ~DijGraph(){};
+     ~GraphTheorySolver(){};
 	 int newNode(){
 #ifdef DEBUG_GRAPH
 		 dbg_graph->newNode();
@@ -538,7 +547,7 @@ public:
 				/*if(S->value(var)==l_False){
 					mc.setCapacity(u,v,1);
 				}else{*/
-					mc.setCapacity(u,v,0xF0F0F0);
+					mc->setCapacity(u,v,0xF0F0F0);
 				//}
 			}
 		}
@@ -546,15 +555,16 @@ public:
 		//find any edges assigned to false, and set their capacity to 1
 		for(int i =0;i<trail.size();i++){
 			if(trail[i].isEdge && !trail[i].assign){
-				mc.setCapacity(trail[i].from, trail[i].to,1);
+				mc->setCapacity(trail[i].from, trail[i].to,1);
 			}
 		}
 
 		cut.clear();
-		int f =mc.minCut(reach_detectors[detector]->source,node,cut);
+		stats_mc_calls++;
+		int f =mc->minCut(reach_detectors[detector]->source,node,cut);
 		assert(f<0xF0F0F0); assert(f==cut.size());//because edges are only ever infinity or 1
 		for(int i = 0;i<cut.size();i++){
-			IBFS::Edge e = cut[i];
+			MaxFlow::Edge e = cut[i];
 
 			Lit l = mkLit( edges[e.u][e.v].v,false);
 			assert(S->value(l)==l_False);

@@ -51,7 +51,7 @@ static void readDiGraph(B& in, Solver& S, vec<GraphTheory*> & graphs) {
         g=parseInt(in);//id of the graph
         GraphTheory * graph = NULL;
         if(opt_graph)
-        	graph= new DijGraph(&S);
+        	graph= new GraphTheorySolver(&S);
         else
         	graph= new TestGraph(&S);
         graph->newNodes(n);
