@@ -10,6 +10,7 @@
 
 #include "core/Theory.h"
 #include "Graph.h"
+#include "Reach.h"
 #include "Dijkstra.h"
 #include "Connectivity.h"
 #include "core/SolverTypes.h"
@@ -49,16 +50,19 @@ private:
 	DynamicGraph antig;
 	DynamicGraph cutGraph;
 
+
+
 	struct ReachDetector{
 		int within;
 		int source;
-		Connectivity * positive_reach_detector;
-		Connectivity * negative_reach_detector;
+		Reach * positive_reach_detector;
+		Reach * negative_reach_detector;
 		Dijkstra* positive_dist_detector;
 		Dijkstra* negative_dist_detector;
 		vec<Lit>  reach_lits;
 		Var first_reach_var;
 		vec<int> reach_lit_map;
+
 
 		int getNode(Var reachVar){
 			assert(reachVar>=first_reach_var);
@@ -66,6 +70,11 @@ private:
 			assert(index< reach_lit_map.size());
 			assert(reach_lit_map[index]>=0);
 			return reach_lit_map[index];
+		}
+
+		Lit getLit(int node){
+
+			return reach_lits[node];
 		}
 
 		ReachDetector():within(-1),source(-1),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_dist_detector(NULL),negative_dist_detector(NULL){}
@@ -98,6 +107,8 @@ public:
 
 	//Just a list of the edges
 	vec<Edge> edge_list;
+
+	vec<vec<Edge> > inv_adj;
 
 	Var min_edge_var;
 	int num_edges;
@@ -136,7 +147,7 @@ public:
 			reachupdatetime=0;
 			unreachupdatetime=0;
 
-			if(mincutalg==MC_IBFS){
+			if(mincutalg==ALG_IBFS){
 				mc = new IBFS(cutGraph);
 			}else{
 				mc = new EdmondsKarp(cutGraph);
@@ -153,12 +164,13 @@ public:
 	}
 
 	void printStats(){
+
 		printf("Graph stats:\n");
 		printf("Prop Time: %f\n", propagationtime);
 		printf("Reach Time: %f (update Time: %f)\n", reachtime,reachupdatetime);
 		printf("Unreach Time: %f (Update Time: %f)\n", unreachtime,unreachupdatetime);
 		printf("Path Time: %f\n", pathtime);
-		printf("Min-cut Time: %f (%d calls)\n", mctime, stats_mc_calls);
+		printf("Min-cut Time: %f (%d calls, %f average)\n", mctime, stats_mc_calls,(mctime/(stats_mc_calls ? stats_mc_calls:1)));
 
 		int stats_full_updates=0;
 		int stats_fast_updates=0;
@@ -187,8 +199,8 @@ public:
 			stats_fast_update_time+=reach_detectors[i]->negative_reach_detector->stats_fast_update_time;
 		}
 
-		printf("Dijkstra Full Updates: %d (time: %f)\n",stats_full_updates, stats_full_update_time);
-		printf("Dijkstra Fast Updates: %d (time: %f)\n",stats_fast_updates, stats_fast_update_time);
+		printf("Dijkstra Full Updates: %d (time: %f, average: %f)\n",stats_full_updates, stats_full_update_time,(stats_full_update_time/(stats_full_updates ? stats_full_updates:1)));
+		printf("Dijkstra Fast Updates: %d (time: %f, average: %f)\n",stats_fast_updates, stats_fast_update_time,(stats_fast_update_time/(stats_fast_updates ? stats_fast_updates:1)));
 		printf("Dijkstra Skipped Updates: %d (deletionSkips: %d)\n",stats_skipped_updates, stats_skip_deletes);
 
 	}
@@ -205,7 +217,7 @@ public:
 		 edges.push();
 		 for(int i = 0;i<edges.size();i++)
 			 edges[i].growTo(edges.size());
-
+		 inv_adj.push();
 		 reach_info.push();
 		 antig.addNode();
 		 cutGraph.addNode();
@@ -243,6 +255,8 @@ public:
 				Lit l = S->trail[i];
 				Var v = var(l);
 				if(v>=min_edge_var && v<min_edge_var+num_edges){
+					if(edge_list[v-min_edge_var].v<0)
+								continue;
 					Edge e = edge_list[v-min_edge_var];
 					c.push(l);
 				}
@@ -254,12 +268,32 @@ public:
 			return true;
 		}
 #endif
+	void	dbg_sync_reachability(){
+#ifdef DEBUG_GRAPH
 
+		for(int i = 0;i<reach_detectors.size();i++){
+			ReachDetector* d  = reach_detectors[i];
+			for(int j = 0;j< d->reach_lits.size();j++){
+				Lit l = d->reach_lits[j];
+				if(l!=lit_Undef){
+					int node = d->getNode(var(l));
+
+					if(d->positive_reach_detector->connected(node)){
+						assert(S->value(l)==l_True);
+					}else if(! d->negative_reach_detector->connected(node)){
+						assert(S->value(l)==l_False);
+					}
+				}
+
+			}
+		}
+#endif
+	}
 	void dbg_sync(){
 #ifdef DEBUG_GRAPH
 		static vec<lbool> assigned;
 		assigned.clear();
-		for(int i = 0;i<num_edges;i++)
+		for(int i = 0;i<edge_list.size();i++)
 			assigned.push(l_Undef);
 		int lev = 0;
 		int j =0;
@@ -268,14 +302,23 @@ public:
 				lev++;
 				j++;
 			}
-			AssignedEdge e = trail[i];
-			Lit l = mkLit( e.var,!e.assign);
-			assert(S->value(l)==l_True);
-			int expected_level = S->level(var(l));
-			assert(S->level(var(l))==lev);
-			int edge_num = e.var-min_edge_var;
-			assert(assigned[edge_num]==l_Undef);
-			assigned[edge_num] = sign(l)?l_False:l_True;
+
+			Assignment e = trail[i];
+			if(e.isEdge){
+				Lit l = mkLit( e.var,!e.assign);
+				assert(S->value(l)==l_True);
+				int expected_level = S->level(var(l));
+				assert(S->level(var(l))==lev);
+				int edge_num = e.var-min_edge_var;
+				if(edge_list[edge_num].v<0)
+							continue;
+				assert(assigned[edge_num]==l_Undef);
+				assigned[edge_num] = sign(l)?l_False:l_True;
+			}else{
+				//Reachability assignment
+
+
+			}
 		}
 
 		for(int i = 0;i<S->trail.size();i++){
@@ -287,10 +330,15 @@ public:
 
 			if(v>= min_edge_var && v<min_edge_var+num_edges){
 				int edge_num = v-min_edge_var;
+				if(edge_list[edge_num].v<0)
+					continue;
 				lbool assigned_val=assigned[edge_num];
 				assert(assigned_val== (sign(l)?l_False:l_True));
 			}
+
 		}
+
+
 
 #endif
 	}
@@ -384,9 +432,9 @@ public:
 		reason.push(p);
 		assert(d!=0);
 		if(d>0){
-			double startpathtime = cpuTime();
+		//	double startpathtime = cpuTime();
 			d--;
-			Dijkstra & detector = *reach_detectors[d]->positive_dist_detector;
+			/*Dijkstra & detector = *reach_detectors[d]->positive_dist_detector;
 			//the reason is a path from s to p(provided by d)
 			//p is the var for a reachability detector in dijkstra, and corresponds to a node
 			detector.update();
@@ -399,13 +447,17 @@ public:
 				assert(S->value(l)==l_False);
 				reason.push(l);
 				u=w;
-			}
+			}*/
+			Var v = var(p);
+			int u =reach_detectors[d]->getNode(v);
+			buildReachReason(v,opt_conflict_shortest_path ? *reach_detectors[d]->positive_dist_detector: *reach_detectors[d]->positive_reach_detector,reason);
+
 #ifdef DEBUG_GRAPH
 		 assert(dbg_clause(reason));
 
 #endif
-			double elapsed = cpuTime()-startpathtime;
-			pathtime+=elapsed;
+			//double elapsed = cpuTime()-startpathtime;
+		//	pathtime+=elapsed;
 		}else{
 			d=-d-1;
 
@@ -442,9 +494,9 @@ public:
 		}
 
 	}
-	void buildReachReason(int node,Dijkstra & d,vec<Lit> & conflict){
+	void buildReachReason(int node,Reach & d,vec<Lit> & conflict){
 		//drawFull();
-		assert(dbg_reachable(d.source,node));
+		assert(dbg_reachable(d.getSource(),node));
 		d.update();
 		double starttime = cpuTime();
 		int u = node;
@@ -498,6 +550,8 @@ public:
 		}
 
 		for(int i = 0;i<edge_list.size();i++){
+			if(edge_list[i].v<0)
+						continue;
 			Edge e  = edge_list[i];
 			if(S->assigns[e.v]!=l_False){
 				g.addEdge(e.from,e.to);
@@ -515,6 +569,8 @@ public:
 	bool dbg_graphsUpToDate(){
 #ifdef DEBUG_GRAPH
 		for(int i = 0;i<edge_list.size();i++){
+			if(edge_list[i].v<0)
+				continue;
 			Edge e = edge_list[i];
 			lbool val = S->value(e.v);
 			if(val==l_True || val==l_Undef){
@@ -539,37 +595,86 @@ public:
 		assert(dbg_notreachable( reach_detectors[detector]->source,u));
 		double starttime = cpuTime();
 		cutGraph.clearHistory();
-		//ok, set the weights for each edge in the cut graph.
-		//Set edges to infinite weight if they are undef or true, and weight 1 otherwise.
-		for(int u = 0;u<cutGraph.adjacency.size();u++){
-			for(int j = 0;j<cutGraph.adjacency[u].size();j++){
-				int v = cutGraph.adjacency[u][j];
-				Var var = edges[u][v].v;
-				/*if(S->value(var)==l_False){
-					mc.setCapacity(u,v,1);
-				}else{*/
-					mc->setCapacity(u,v,0xF0F0F0);
-				//}
-			}
-		}
-
-		//find any edges assigned to false, and set their capacity to 1
-		for(int i =0;i<trail.size();i++){
-			if(trail[i].isEdge && !trail[i].assign){
-				mc->setCapacity(trail[i].from, trail[i].to,1);
-			}
-		}
-
-		cut.clear();
 		stats_mc_calls++;
-		int f =mc->minCut(reach_detectors[detector]->source,node,cut);
-		assert(f<0xF0F0F0); assert(f==cut.size());//because edges are only ever infinity or 1
-		for(int i = 0;i<cut.size();i++){
-			MaxFlow::Edge e = cut[i];
+		if(opt_conflict_min_cut){
+			//ok, set the weights for each edge in the cut graph.
+			//Set edges to infinite weight if they are undef or true, and weight 1 otherwise.
+			for(int u = 0;u<cutGraph.adjacency.size();u++){
+				for(int j = 0;j<cutGraph.adjacency[u].size();j++){
+					int v = cutGraph.adjacency[u][j];
+					Var var = edges[u][v].v;
+					/*if(S->value(var)==l_False){
+						mc.setCapacity(u,v,1);
+					}else{*/
+						mc->setCapacity(u,v,0xF0F0F0);
+					//}
+				}
+			}
 
-			Lit l = mkLit( edges[e.u][e.v].v,false);
-			assert(S->value(l)==l_False);
-			conflict.push(l);
+			//find any edges assigned to false, and set their capacity to 1
+			for(int i =0;i<trail.size();i++){
+				if(trail[i].isEdge && !trail[i].assign){
+					mc->setCapacity(trail[i].from, trail[i].to,1);
+				}
+			}
+
+			cut.clear();
+
+			int f =mc->minCut(reach_detectors[detector]->source,node,cut);
+			assert(f<0xF0F0F0); assert(f==cut.size());//because edges are only ever infinity or 1
+			for(int i = 0;i<cut.size();i++){
+				MaxFlow::Edge e = cut[i];
+
+				Lit l = mkLit( edges[e.u][e.v].v,false);
+				assert(S->value(l)==l_False);
+				conflict.push(l);
+			}
+		}else{
+			//We could learn an arbitrary (non-infinite) cut here, or just the whole set of false edges
+			//or perhaps we can learn the actual 1-uip cut?
+
+
+			    static vec<char> seen;
+
+			    static vec<int> to_visit;
+
+			    seen.clear();
+			    seen.growTo(nNodes());
+			    to_visit.clear();
+			    to_visit.push(node);
+			    seen[node]=true;
+			    do{
+
+			    	assert(to_visit.size());
+			    	int u = to_visit.last();
+			    	assert(u!=reach_detectors[detector]->source);
+			    	to_visit.pop();
+			    	assert(seen[u]);
+			    	assert(!reach_detectors[detector]->negative_reach_detector->connected_unsafe(u));
+			    	//Ok, then add all its incoming disabled edges to the cut, and visit any unseen, non-disabled incoming edges
+			    	for(int i = 0;i<inv_adj[u].size();i++){
+			    		int v = inv_adj[u][i].v;
+			    		int from = inv_adj[u][i].from;
+			    		assert(from!=u);
+			    		assert(inv_adj[u][i].to==u);
+			    		//Problem: the variable has to not only be assigned false, but assigned false earlier in the trail than the reach variable...
+			    	/*	if(){
+			    			//note: we know we haven't seen this edge variable before, because we know we haven't visited this node before
+			    			//if we are already planning on visiting the from node, then we don't need to include it in the conflict (is this correct?)
+			    			//if(!seen[from])
+			    				conflict.push(mkLit(v,false));
+			    		}else{
+			    			assert(from!=reach_detectors[detector]->source);
+			    			//even if it is undef? probably...
+			    			if(!seen[from]){
+			    				seen[from]=true;
+			    				to_visit.push(from);
+			    			}
+			    		}*/
+			    	}
+			    }  while (to_visit.size());
+
+
 		}
 		double elapsed = cpuTime()-starttime;
 			mctime+=elapsed;
@@ -580,27 +685,19 @@ public:
 	}
 	bool propagateTheory(vec<Lit> & conflict){
 		static int itp = 0;
-			++itp;
+		if(	++itp==1545){
+			int a =1;
+		}
+
 		bool any_change = false;
 		double startproptime = cpuTime();
 		static vec<int> detectors_to_check;
-		detectors_to_check.clear();
+
 		conflict.clear();
 		//Can probably speed this up alot by a) constant propagating reaches that I care about at level 0, and b) Removing all detectors for nodes that appear only in the opposite polarity (or not at all) in the cnf.
 		//That second one especially.
 
 		//At level 0, need to propagate constant reaches/source nodes/edges...
-		if(local_q==0){
-			assert(S->decisionLevel()==0);
-			for(int i = 0;i<reach_detectors.size();i++){
-				detectors_to_check.push((i+1));
-				reach_detectors[i]->positive_reach_detector->marked =true;
-			}
-			for(int i = 0;i<reach_detectors.size();i++){
-				detectors_to_check.push(-(i+1));
-				reach_detectors[i]->negative_reach_detector->marked =true;
-			}
-		}
 
 		while(local_q<S->qhead){
 			Lit l = S->trail[local_q++];
@@ -626,41 +723,31 @@ public:
 				if (!sign(l)){
 
 					g.addEdge(from,to);
-					for(int i = 0;i<reach_detectors.size();i++){
-						if(!reach_detectors[i]->positive_reach_detector->marked && (reach_detectors[i]->positive_reach_detector->connected_unsafe(from)||reach_detectors[i]->positive_reach_detector->connected_unsafe(to))){
-								detectors_to_check.push((i+1));
-								reach_detectors[i]->positive_reach_detector->marked =true;
-							}
-					}
+
 				}else{
 					antig.removeEdge(from,to);
-					for(int i = 0;i<reach_detectors.size();i++){
 
-						if(!reach_detectors[i]->negative_reach_detector->marked && ( reach_detectors[i]->negative_reach_detector->connected_unsafe(from)||reach_detectors[i]->negative_reach_detector->connected_unsafe(to))){
-							detectors_to_check.push(-(i+1));
-							reach_detectors[i]->negative_reach_detector->marked =true;
-						}
-					}
 				}
 			}
 		}
 		dbg_sync();
 			assert(dbg_graphsUpToDate());
-			for(int i = 0;i<detectors_to_check.size();i++){
-				int d = detectors_to_check[i];
-				assert(d!=0);
-				if(d>0){
-					d--;
+
+
+
+			for(int d = 0;d<reach_detectors.size();d++){
+
+				{
 					double startdreachtime = cpuTime();
-					reach_detectors[d]->positive_reach_detector->marked =false;
+
 					reach_detectors[d]->positive_reach_detector->update();
 					double reachUpdateElapsed = cpuTime()-startdreachtime;
 					reachupdatetime+=reachUpdateElapsed;
 				/*	for(int j =0;j<reach_lits[d].size();j++){
 						Lit l = reach_lits[d][j];
 						if( reach_detectors[d]->connected(j)){*/
-					for(int j = 0;j<reach_detectors[d]->positive_reach_detector->getChanged().size();j++){
-							int u = reach_detectors[d]->positive_reach_detector->getChanged()[j];
+					for(int u = 0;u<reach_detectors[d]->reach_lits.size();u++){
+							//int u = reach_detectors[d]->positive_reach_detector->getChanged()[j];
 							if(u>= reach_detectors[d]->reach_lits.size() || reach_detectors[d]->reach_lits[u] == lit_Undef)
 								continue;
 							//assert(reach_detectors[d]->reach_lits[u]!=lit_Undef);
@@ -684,7 +771,8 @@ public:
 								//conflict
 								//The reason is all the literals in the shortest path in to s in d
 								conflict.push(l);
-								buildReachReason(u,*reach_detectors[d]->positive_dist_detector,conflict);
+
+								buildReachReason(u,opt_conflict_shortest_path ? *reach_detectors[d]->positive_dist_detector: *reach_detectors[d]->positive_reach_detector,conflict);
 								//add it to s
 								//return it as a conflict
 #ifdef DEBUG_GRAPH
@@ -695,6 +783,9 @@ public:
 								if(S->dbg_solver)
 									S->dbg_check(conflict);
 #endif
+
+
+								reach_detectors[d]->positive_reach_detector->clearChanged();
 								return false;
 							}else{
 								int  a=1;
@@ -709,16 +800,18 @@ public:
 					reach_detectors[d]->positive_reach_detector->clearChanged();
 					double elapsed = cpuTime()-startdreachtime;
 								reachtime+=elapsed;
-				}else{
-					d=-d-1;
+				}
+
+				{
+
 					double startunreachtime = cpuTime();
-					reach_detectors[d]->negative_reach_detector->marked =false;
+
 					reach_detectors[d]->negative_reach_detector->update();
 					double unreachUpdateElapsed = cpuTime()-startunreachtime;
 					unreachupdatetime+=unreachUpdateElapsed;
 					assert(dbg_graphsUpToDate());
-					for(int j = 0;j<reach_detectors[d]->negative_reach_detector->getChanged().size();j++){
-							int u = reach_detectors[d]->negative_reach_detector->getChanged()[j];
+					for(int u = 0;u<reach_detectors[d]->reach_lits.size();u++){
+							//int u = reach_detectors[d]->negative_reach_detector->getChanged()[j];
 							if(u>= reach_detectors[d]->reach_lits.size()||  reach_detectors[d]->reach_lits[u] == lit_Undef)
 									continue;
 							assert(reach_detectors[d]->reach_lits[u]!=lit_Undef);
@@ -755,6 +848,7 @@ public:
 								for(int i = 0;i<conflict.size();i++)
 											 assert(S->value(conflict[i])==l_False);
 #endif
+								reach_detectors[d]->negative_reach_detector->clearChanged();
 								return false;
 							}
 						}
@@ -777,6 +871,7 @@ public:
 		double elapsed = cpuTime()-startproptime;
 					propagationtime+=elapsed;
 					dbg_sync();
+					dbg_sync_reachability();
 		return true;
 	};
 	bool solveTheory(vec<Lit> & conflict){return true;};
@@ -792,6 +887,8 @@ public:
 			}
 
 			for(int i = 0;i<edge_list.size();i++){
+				if(edge_list[i].v<0)
+							continue;
 				Edge & e = edge_list[i];
 				char * s = "black";
 				if(S->value(e.v)==l_True)
@@ -816,10 +913,54 @@ public:
 				s="blue";
 			else if (S->value(e.v)==l_False)
 				s="red";
+			else{
+				int  a=1;
+			}
 			printf("n%d -> n%d [label=\"v%d\",color=\"%s\"]\n", e.from,e.to, e.v, s);
 		}
 
 		printf("}\n");
+	}
+
+	bool dbg_solved(){
+#ifdef DEBUG_GRAPH
+		for(int i = 0;i<edge_list.size();i++){
+			if(edge_list[i].v<0)
+						continue;
+			Edge & e = edge_list[i];
+			lbool val = S->value(e.v);
+			assert(val!=l_Undef);
+
+			if(val==l_True){
+				assert(g.hasEdge(e.from,e.to));
+				assert(antig.hasEdge(e.from,e.to));
+			}else{
+				assert(!g.hasEdge(e.from,e.to));
+				assert(!antig.hasEdge(e.from,e.to));
+			}
+
+
+		}
+		for(int i = 0;i<reach_detectors.size();i++){
+			ReachDetector* d  = reach_detectors[i];
+			for(int j = 0;j< d->reach_lits.size();j++){
+				Lit l = d->reach_lits[j];
+				if(l!=lit_Undef){
+					int node = d->getNode(var(l));
+
+					if(S->value(l)==l_True){
+						assert(d->positive_reach_detector->connected(node));
+					}else if (S->value(l)==l_False){
+						assert(! d->negative_reach_detector->connected(node));
+					}else{
+						assert(!d->positive_reach_detector->connected(node));
+						assert(d->negative_reach_detector->connected(node));
+					}
+				}
+			}
+		}
+#endif
+		return true;
 	}
 
 	void drawCurrent(){
@@ -846,6 +987,8 @@ public:
 
 		while(edge_list.size()<=index)
 			edge_list.push({-1,-1,-1});
+
+		inv_adj[to].push({v,from,to});
 
 		num_edges++;
 		edge_list[index].v =v;
@@ -886,11 +1029,18 @@ public:
 				marker_map[mnum] = -non_reach_markers.size();
 
 				reach_detectors.push(new ReachDetector());
-				reach_detectors.last()->positive_reach_detector = new Connectivity(from,g);
-				reach_detectors.last()->negative_reach_detector = new Connectivity(from,antig);
+				if(reachalg==ALG_CONNECTIVITY){
+					reach_detectors.last()->positive_reach_detector = new Connectivity(from,g);
+					reach_detectors.last()->negative_reach_detector = new Connectivity(from,antig);
+					if(opt_conflict_shortest_path)
+						reach_detectors.last()->positive_dist_detector = new Dijkstra(from,g);
+				}else{
 
-				reach_detectors.last()->positive_dist_detector = new Dijkstra(from,g);
-
+					reach_detectors.last()->positive_reach_detector = new Dijkstra(from,g);
+					reach_detectors.last()->negative_reach_detector = new Dijkstra(from,antig);
+					reach_detectors.last()->positive_dist_detector = (Dijkstra*)reach_detectors.last()->positive_reach_detector;
+					//reach_detectors.last()->positive_dist_detector = new Dijkstra(from,g);
+				}
 				//reach_detectors.last()->negative_dist_detector = new Dijkstra(from,antig);
 				reach_detectors.last()->source=from;
 
@@ -927,7 +1077,6 @@ public:
 				}
 
 				d->reach_lit_map[reach_var-d->first_reach_var]=to;
-
 			}else{
 				Lit r = d->reach_lits[to];
 				//force equality between the new lit and the old reach lit, in the SAT solver

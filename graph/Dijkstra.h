@@ -11,10 +11,11 @@
 #include "mtl/Vec.h"
 #include "mtl/Heap.h"
 #include "DynamicGraph.h"
+#include "Reach.h"
 using namespace Minisat;
 
 
-class Dijkstra{
+class Dijkstra:public Reach{
 public:
 	DynamicGraph & g;
 	int last_modification;
@@ -29,7 +30,7 @@ public:
 
 
 
-	bool marked;
+
 
 	vec<int> old_dist;
 	vec<int> changed;
@@ -56,8 +57,8 @@ public:
 	double stats_full_update_time;
 	double stats_fast_update_time;
 
-	Dijkstra(int s,DynamicGraph & graph):g(graph), last_modification(-1),last_addition(-1),last_deletion(-1),history_qhead(0),last_history_clear(0),source(s),INF(0),marked(false),q(DistCmp(dist)),stats_full_updates(0),stats_fast_updates(0),stats_skip_deletes(0),stats_skipped_updates(0),stats_full_update_time(0),stats_fast_update_time(0){	}
-	Dijkstra(const Dijkstra& d):g(d.g), last_modification(-1),last_addition(-1),last_deletion(-1),history_qhead(0),last_history_clear(0),source(d.source),INF(0),marked(false),q(DistCmp(dist)),stats_full_updates(0),stats_fast_updates(0),stats_skip_deletes(0),stats_skipped_updates(0),stats_full_update_time(0),stats_fast_update_time(0){};
+	Dijkstra(int s,DynamicGraph & graph):g(graph), last_modification(-1),last_addition(-1),last_deletion(-1),history_qhead(0),last_history_clear(0),source(s),INF(0),q(DistCmp(dist)),stats_full_updates(0),stats_fast_updates(0),stats_skip_deletes(0),stats_skipped_updates(0),stats_full_update_time(0),stats_fast_update_time(0){marked=false;	}
+	Dijkstra(const Dijkstra& d):g(d.g), last_modification(-1),last_addition(-1),last_deletion(-1),history_qhead(0),last_history_clear(0),source(d.source),INF(0),q(DistCmp(dist)),stats_full_updates(0),stats_fast_updates(0),stats_skip_deletes(0),stats_skipped_updates(0),stats_full_update_time(0),stats_fast_update_time(0){marked=false;};
 
 
 	void setSource(int s){
@@ -165,7 +166,8 @@ public:
 		if(local_it==17513){
 			int a =1;
 		}
-
+		if(last_modification>0 && g.modifications==last_modification)
+				return;
 
 		if (last_addition==g.additions && last_modification>0){
 			//if none of the deletions were to edges that were the previous edge of some shortest path, then we don't need to do anything
@@ -273,7 +275,27 @@ public:
 
 		stats_full_update_time+=cpuTime()-startdupdatetime;;
 	}
+	bool dbg_path(int to){
+#ifdef DEBUG_DIJKSTRA
+		assert(connected(to));
+		if(to == source){
+			return true;
+		}
+		int p = prev[to];
 
+		if(p<0){
+			return false;
+		}
+		if(p==to){
+			return false;
+		}
+
+		return dbg_path(p);
+
+
+#endif
+		return true;
+	}
 	bool dbg_uptodate(){
 #ifdef DEBUG_DIJKSTRA
 		if(last_modification<=0)
@@ -301,7 +323,7 @@ public:
 		return true;
 	}
 
-	bool connected_unsafe(int t){
+	bool connected_unsafe(int t)const{
 		return t<dist.size() && dist[t]<INF;
 	}
 	bool connected(int t){

@@ -98,17 +98,29 @@ int main(int argc, char** argv)
         parseOptions(argc, argv, true);
 
 
-        mincutalg = MC_EDMONSKARP;
+        mincutalg = ALG_EDMONSKARP;
 
-        if(!strcasecmp(opt_min_cut,"ibfs")){
-        	mincutalg=MC_IBFS;
+        if(!strcasecmp(opt_min_cut_alg,"ibfs")){
+        	mincutalg=ALG_IBFS;
 
-        }else if (!strcasecmp(opt_min_cut,"edmondskarp")){
-        	mincutalg = MC_EDMONSKARP;
+        }else if (!strcasecmp(opt_min_cut_alg,"edmondskarp")){
+        	mincutalg = ALG_EDMONSKARP;
         }else{
         	fprintf(stderr,"Error: unknown max-flow/min-cut algorithm %s, aborting\n", mincutalg);
         	exit(1);
         }
+
+        reachalg = ALG_CONNECTIVITY;
+
+		 if(!strcasecmp(opt_reach_alg,"dijkstra")){
+			reachalg=ALG_DIJKSTRA;
+
+		 }else if (!strcasecmp(opt_reach_alg,"connectivity")){
+			 reachalg = ALG_CONNECTIVITY;
+		 }else{
+			fprintf(stderr,"Error: unknown max-flow/min-cut algorithm %s, aborting\n", mincutalg);
+			exit(1);
+		 }
 
 
         double initial_time = cpuTime();
@@ -144,6 +156,7 @@ int main(int argc, char** argv)
 
          const char *error;
          Solver S;
+         S.max_decision_var = opt_restrict_decisions;
 #ifdef DEBUG_SOLVER
          S.dbg_solver = new Solver();
 #endif
@@ -210,6 +223,34 @@ int main(int argc, char** argv)
 
 					lasty=y;
 				}
+				printf("\n\n");
+
+				/* v = 0;
+				//for (int i = 0;i<w;i++){
+				//	for(int j = 0;j<w;j++){
+				 lasty= 0;
+				for(int n = 0;n<g->nNodes();n++){
+					int x = n%width;
+					int y = n/width;
+					if(y > lasty)
+						printf("\n");
+						if (isatty(fileno(stdout))){
+
+							if(S.model[n]==l_True)
+								printf("\033[1;42m\033[1;37m%2d\033[0m",n);
+							else
+								printf("\033[1;44m\033[1;37m%2d\033[0m",n);
+						}else{
+
+							if(S.model[n]==l_True)
+								printf(" 1");
+							else
+								printf(" 0");
+						}
+
+					lasty=y;
+				}
+				printf("\n");
         	}
         	printf("\n");
         	for(int t = 0;t<S.theories.size();t++){
@@ -231,9 +272,9 @@ int main(int argc, char** argv)
 						int v =var( g->reach_detectors[r]->reach_lits[n]);
 						if (isatty(fileno(stdout))){
 							if(S.model[v]==l_True)
-								printf("\033[1;42m\033[1;37m%4d\033[0m", v);
+								printf("\033[1;42m\033[1;37m%4d\033[0m", v+1);
 							else
-								printf("\033[1;44m\033[1;37m    \033[0m");
+								printf("\033[1;44m\033[1;37m%4d\033[0m",v+1);
 						}else{
 
 							if(S.model[v]==l_True)
@@ -248,6 +289,38 @@ int main(int argc, char** argv)
         		}
 
 
+
+        		g->drawFull();
+
+        		assert(g->dbg_solved());*/
+
+/*        		for(int r = 0;r<g->reach_detectors.size();r++){
+
+					int width = sqrt(g->nNodes());
+					int lasty= 0;
+					int extra =  g->nNodes() % width ? (width- g->nNodes() % width ):0;
+					for(int n = 0;n<g->nNodes();n++){
+						int x = n%width;
+
+						int y = (n + extra )/width;
+
+						int v =var( g->reach_detectors[r]->reach_lits[n]);
+						if(v==306){
+							int a =1;
+						}
+						if(S.model[v]==l_True){
+							assert(S.value(v)==l_True);
+							int node = g->reach_detectors[r]->getNode(v);
+							g->reach_detectors[r]->positive_reach_detector->dbg_path(node);
+							int  b=1;
+
+						}
+
+
+						lasty=y;
+					}
+					printf("\n");
+				}*/
         	}
 
         }else if(ret==l_False){

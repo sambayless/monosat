@@ -87,7 +87,12 @@ Solver::Solver() :
 	,super_qhead(0)
 	,super_offset(-1)
 ,local_qhead(0)
-{}
+{
+	max_decision_var=0;
+#ifdef DEBUG_SOLVER
+	dbg_solver=NULL;
+#endif
+}
 
 
 Solver::~Solver()
@@ -121,6 +126,9 @@ Var Solver::newVar(bool sign, bool dvar)
     polarity .push(sign);
     decision .push();
     trail    .capacity(v+1);
+    if(max_decision_var>0 && v>max_decision_var)
+    	dvar=false;
+
     setDecisionVar(v, dvar);
     return v;
 }
@@ -1077,6 +1085,7 @@ static double luby(double y, int x){
 // NOTE: assumptions passed in member-variable 'assumptions'.
 lbool Solver::solve_()
 {
+    cancelUntil(0);
     model.clear();
     conflict.clear();
     if (!ok) return l_False;
@@ -1133,7 +1142,7 @@ lbool Solver::solve_()
 			assert(!dbg_solver->solve(assumptions));
 #endif
     }
-    cancelUntil(0);
+
     assumptions.clear();
     return status;
 }

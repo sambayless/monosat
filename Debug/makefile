@@ -11,6 +11,13 @@ RM := rm -rf
 -include utils/subdir.mk
 -include core/subdir.mk
 -include aiger/subdir.mk
+-include ReleaseTmp/utils/subdir.mk
+-include ReleaseTmp/minilib/subdir.mk
+-include ReleaseTmp/graph/subdir.mk
+-include ReleaseTmp/dbg/subdir.mk
+-include ReleaseTmp/core/subdir.mk
+-include ReleaseTmp/aiger/subdir.mk
+-include ReleaseTmp/subdir.mk
 -include Release2/utils/subdir.mk
 -include Release2/minilib/subdir.mk
 -include Release2/dbg/subdir.mk

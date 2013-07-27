@@ -36,7 +36,12 @@ static const char* _cat_graph ="GRAPH";
 
  BoolOption Minisat::opt_graph(_cat_graph,"graph","Use graph theory solver",true);
  BoolOption Minisat::opt_inc_graph(_cat_graph,"inc","Use incremental graph reachability",false);
- StringOption Minisat::opt_min_cut(_cat_graph,"mincut","Select max-flow/min-cut algorithm (edmondskarp, ibfs)","edmondskarp");
+ StringOption Minisat::opt_min_cut_alg(_cat_graph,"mincut","Select max-flow/min-cut algorithm (edmondskarp, ibfs)","edmondskarp");
+ StringOption Minisat::opt_reach_alg(_cat_graph,"reach","Select reachability algorithm (connectivity, dijkstra)","connectivity");
 
-MinCutAlg Minisat::mincutalg=MC_EDMONSKARP ;
+  BoolOption Minisat::opt_conflict_shortest_path(_cat_graph,"conflict-shortest-path","Use shortest path (instead of arbitrary path) for conflict resolution",true);
+  BoolOption Minisat::opt_conflict_min_cut(_cat_graph,"conflict-min-cut","Use min-cut (instead of arbitrary cut) for conflict resolution",true);
+IntOption Minisat::opt_restrict_decisions(_cat_graph,"decisions","Restrict decisions to the first n variables (0 to disable)",0);
 
+MinCutAlg Minisat::mincutalg=ALG_EDMONSKARP ;
+ReachAlg Minisat::reachalg=ALG_CONNECTIVITY;

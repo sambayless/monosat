@@ -210,6 +210,8 @@ public:
     int track_min_level;
     int initial_level;
 
+    int max_decision_var;
+
     Var max_super;
     Var min_super;
     Var min_local;

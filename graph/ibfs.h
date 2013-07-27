@@ -814,8 +814,8 @@ template <typename captype, typename tcaptype, typename flowtype> void IBFSGraph
 	}
 
 	// check consistency
-#ifdef DEBUG_GRAPH
-	for (i=nodes; i<nodeLast; i++)
+#ifdef DEBUG_MAXFLOW
+	for (node * i=nodes; i<nodeLast; i++)
 	{
 		for (a=i->firstArc; a !=(i+1)->firstArc; a++)
 		{

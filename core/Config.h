@@ -28,11 +28,22 @@ extern IntOption opt_subsearch;
 
 extern BoolOption opt_graph;
 extern BoolOption opt_inc_graph;
-extern StringOption opt_min_cut;
+extern BoolOption opt_conflict_shortest_path;
+extern BoolOption opt_conflict_min_cut;
+extern IntOption opt_restrict_decisions;
+
+extern StringOption opt_min_cut_alg;
+extern StringOption opt_reach_alg;
+
+enum ReachAlg{
+	 ALG_CONNECTIVITY,
+	 ALG_DIJKSTRA
+};
+extern ReachAlg reachalg;
 
 enum MinCutAlg{
-	 MC_EDMONSKARP,
-	 MC_IBFS
+	 ALG_EDMONSKARP,
+	 ALG_IBFS
 };
 extern MinCutAlg mincutalg;
 }
