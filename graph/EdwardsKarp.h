@@ -48,7 +48,9 @@ class EdmondsKarp:public MaxFlow{
                int u =Q.last(); Q.pop();
 
                for (int i = 0;i<g.adjacency[u].size();i++){
-            	   int v = g.adjacency[u][i];
+            	   if(!g.edgeEnabled(g.adjacency[u][i].id))
+						continue;
+            	   int v = g.adjacency[u][i].to;
                    ///(If there is available capacity, and v is not seen before in search)
             	   int c = C[u][v];
             	   int f = F[u][v];
@@ -84,7 +86,9 @@ public:
     void setAllEdgeCapacities(int c){
     	for(int i = 0;i<g.nodes;i++){
     		for(int j = 0;j<g.adjacency[i].size();j++){
-    			setCapacity(i,g.adjacency[i][j],c);
+    			if(!g.edgeEnabled(g.adjacency[i][j].id))
+						continue;
+    			setCapacity(i,g.adjacency[i][j].to,c);
     		}
     	}
     }
@@ -144,7 +148,9 @@ public:
     		int u = q.last(); q.pop();
 
     		for(int i = 0;i<g.adjacency[u].size();i++){
-    			int v = g.adjacency[u][i];
+    			if(!g.edgeEnabled(g.adjacency[u][i].id))
+    				continue;
+    			int v = g.adjacency[u][i].to;
 
     			if(C[u][v] - F[u][v] == 0){
     				cut.push(Edge{u,v});

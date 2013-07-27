@@ -368,8 +368,10 @@ class BoolOption : public Option
 
         fprintf(stderr, "  -%s, -no-%s", name, name);
 
-        for (uint32_t i = 0; i < 32 - strlen(name)*2; i++)
+        //Changed this to signed int, otherwise this can overflow if name is longer than 32...
+        for (int i = 0; i < 32 - strlen(name)*2; i++)
             fprintf(stderr, " ");
+
 
         fprintf(stderr, " ");
         fprintf(stderr, "(default: %s)\n", value ? "on" : "off");

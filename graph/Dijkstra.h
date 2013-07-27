@@ -134,7 +134,9 @@ public:
 			if(dist[u]==INF)
 				break;
 			for(int i = 0;i<g.adjacency[u].size();i++){
-				int v = g.adjacency[u][i];
+				if(!g.edgeEnabled( g.adjacency[u][i].id))
+					continue;
+				int v = g.adjacency[u][i].to;
 				int alt = dist[u]+ 1;
 				if(alt<dist[v]){
 					if(dist[v]>=INF){
@@ -242,7 +244,9 @@ public:
 			}
 			q.removeMin();
 			for(int i = 0;i<g.adjacency[u].size();i++){
-				int v = g.adjacency[u][i];
+				if(!g.edgeEnabled( g.adjacency[u][i].id))
+					continue;
+				int v = g.adjacency[u][i].to;
 				int alt = dist[u]+ 1;
 				if(alt<dist[v]){
 					dist[v]=alt;

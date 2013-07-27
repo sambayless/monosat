@@ -374,9 +374,9 @@ public:
 					assert(edge_assignments[edge_num]!=l_Undef);
 					edge_assignments[edge_num]=l_Undef;
 					if(e.assign){
-						g.removeEdge(e.from,e.to);
+						g.disableEdge(e.from,e.to, edge_num);
 					}else{
-						antig.addEdge(e.from,e.to);
+						antig.enableEdge(e.from,e.to,edge_num);
 						assert(antig.hasEdge(e.from,e.to));
 					}
 				}
@@ -413,9 +413,9 @@ public:
 					assert(edge_assignments[edge_num]!=l_Undef);
 					edge_assignments[edge_num]=l_Undef;
 					if(e.assign){
-						g.removeEdge(e.from,e.to);
+						g.disableEdge(e.from,e.to, edge_num);
 					}else{
-						antig.addEdge(e.from,e.to);
+						antig.enableEdge(e.from,e.to,edge_num);
 						assert(antig.hasEdge(e.from,e.to));
 					}
 				}else{
@@ -597,13 +597,17 @@ public:
 			Edge e = edge_list[i];
 			lbool val = S->value(e.v);
 			if(val==l_True || val==l_Undef){
+				assert(antig.edgeEnabled(i));
 				assert(antig.hasEdge(e.from,e.to));
 			}else{
+				assert(!antig.edgeEnabled(i));
 				assert(!antig.hasEdge(e.from,e.to));
 			}
 			if(val==l_True){
+				assert(g.edgeEnabled(i));
 				assert(g.hasEdge(e.from,e.to));
 			}else{
+				assert(!g.edgeEnabled(i));
 				assert(!g.hasEdge(e.from,e.to));
 			}
 		}
@@ -626,7 +630,7 @@ public:
 			//Set edges to infinite weight if they are undef or true, and weight 1 otherwise.
 			for(int u = 0;u<cutGraph.adjacency.size();u++){
 				for(int j = 0;j<cutGraph.adjacency[u].size();j++){
-					int v = cutGraph.adjacency[u][j];
+					int v = cutGraph.adjacency[u][j].to;
 					Var var = edges[u][v].v;
 					/*if(S->value(var)==l_False){
 						mc.setCapacity(u,v,1);
@@ -678,7 +682,7 @@ public:
 			    		int from = inv_adj[u][i].from;
 			    		assert(from!=u);
 			    		assert(inv_adj[u][i].to==u);
-			    		//Problem: the variable has to not only be assigned false, but assigned false earlier in the trail than the reach variable...
+			    		//Note: the variable has to not only be assigned false, but assigned false earlier in the trail than the reach variable...
 			    		int edge_num = v-min_edge_var;
 
 			    		if(edge_assignments[edge_num]==l_False){
@@ -747,10 +751,9 @@ public:
 
 				if (!sign(l)){
 
-					g.addEdge(from,to);
-
+					g.enableEdge(from,to,edge_num);
 				}else{
-					antig.removeEdge(from,to);
+					antig.disableEdge(from,to,edge_num);
 
 				}
 			}
@@ -1081,8 +1084,10 @@ public:
 		edge_list[index].to =to;
 
 		edges[from][to]= {v,from,to};
-		antig.addEdge(from,to);
-		cutGraph.addEdge(from,to);
+		g.addEdge(from,to,index);
+		g.disableEdge(from,to, index);
+		antig.addEdge(from,to,index);
+		cutGraph.addEdge(from,to,index);
     	return mkLit(v,false);
     }
 

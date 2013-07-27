@@ -43,7 +43,9 @@ public:
     void setAllEdgeCapacities(int c){
     	for(int i = 0;i<g.nodes;i++){
     		for(int j = 0;j<g.adjacency[i].size();j++){
-    			setCapacity(i,g.adjacency[i][j],c);
+    			if(!g.edgeEnabled(g.adjacency[i][j].id))
+						continue;
+    			setCapacity(i,g.adjacency[i][j].to,c);
     		}
     	}
     }
@@ -96,7 +98,9 @@ public:
     		IBFSGraph<int,int,int>::termtype utype = ibfs->what_segment(u,IBFSGraph<int,int,int>::SOURCE);
     		if(utype ==IBFSGraph<int,int,int>::SOURCE ){
 				for(int j = 0;j<g.adjacency[u].size();j++){
-					int v = g.adjacency[u][j];
+					if(!g.edgeEnabled(g.adjacency[u][j].id))
+						continue;
+					int v = g.adjacency[u][j].to;
 					if( ibfs->what_segment(v,IBFSGraph<int,int,int>::SOURCE) ==IBFSGraph<int,int,int>::SINK ){
 						//then this is on the cut
 						cut.push(Edge{u,v});

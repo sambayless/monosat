@@ -130,7 +130,9 @@ public:
 				changed.push(u);
 			//}
 			for(int i = 0;i<g.adjacency[u].size();i++){
-				int v = g.adjacency[u][i];
+				if(!g.edgeEnabled( g.adjacency[u][i].id))
+					continue;
+				int v = g.adjacency[u][i].to;
 				if(!seen[v]){
 					seen[v]=1;
 					prev[v]=u;
@@ -290,7 +292,10 @@ public:
 			}
 
 			for(int i = 0;i<g.adjacency[u].size();i++){
-				int v = g.adjacency[u][i];
+				if(!g.edgeEnabled( g.adjacency[u][i].id))
+					continue;
+				int v = g.adjacency[u][i].to;
+
 				if(!seen[v]){
 					seen[v]=1;
 					prev[v]=u;
