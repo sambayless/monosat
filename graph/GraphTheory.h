@@ -526,6 +526,8 @@ public:
 		}
 
 		for(int i = 0;i<edge_list.size();i++){
+			if(edge_list[i].v<0)
+				continue;
 			Edge e  = edge_list[i];
 			if(S->assigns[e.v]==l_True){
 				g.addEdge(e.from,e.to);
