@@ -947,6 +947,64 @@ public:
 		printf("}\n");
 	}
 
+	bool check_solved(){
+		for(int i = 0;i<edge_list.size();i++){
+			if(edge_list[i].v<0)
+						continue;
+			Edge & e = edge_list[i];
+			lbool val = S->value(e.v);
+			if(val==l_Undef){
+				return false;
+			}
+
+			if(val==l_True){
+				if(!g.hasEdge(e.from,e.to)){
+					return false;
+				}
+				if(!antig.hasEdge(e.from,e.to)){
+					return false;
+				}
+			}else{
+				if(g.hasEdge(e.from,e.to)){
+					return false;
+				}
+				if(antig.hasEdge(e.from,e.to)){
+					return false;
+				}
+
+			}
+
+
+		}
+		for(int i = 0;i<reach_detectors.size();i++){
+			ReachDetector* d  = reach_detectors[i];
+			for(int j = 0;j< d->reach_lits.size();j++){
+				Lit l = d->reach_lits[j];
+				if(l!=lit_Undef){
+					int node = d->getNode(var(l));
+
+					if(S->value(l)==l_True){
+						if(!d->positive_reach_detector->connected(node)){
+							return false;
+						}
+					}else if (S->value(l)==l_False){
+						if( d->negative_reach_detector->connected(node)){
+							return false;
+						}
+					}else{
+						if(d->positive_reach_detector->connected(node)){
+							return false;
+						}
+						if(!d->negative_reach_detector->connected(node)){
+							return false;
+						}
+					}
+				}
+			}
+		}
+		return true;
+	}
+
 	bool dbg_solved(){
 #ifdef DEBUG_GRAPH
 		for(int i = 0;i<edge_list.size();i++){

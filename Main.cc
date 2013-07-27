@@ -224,8 +224,15 @@ int main(int argc, char** argv)
 					lasty=y;
 				}
 				printf("\n\n");
+				if(opt_check_solution){
+					if(!g->check_solved()){
+						fprintf(stderr,"Error! Solution doesn't satisfy graph properties!\n");
+						exit(1);
+					}
+				}
 
-				/* v = 0;
+				if(opt_print_reach){
+				 v = 0;
 				//for (int i = 0;i<w;i++){
 				//	for(int j = 0;j<w;j++){
 				 lasty= 0;
@@ -237,9 +244,9 @@ int main(int argc, char** argv)
 						if (isatty(fileno(stdout))){
 
 							if(S.model[n]==l_True)
-								printf("\033[1;42m\033[1;37m%2d\033[0m",n);
+								printf("\033[1;42m\033[1;37m%3d\033[0m",n);
 							else
-								printf("\033[1;44m\033[1;37m%2d\033[0m",n);
+								printf("\033[1;44m\033[1;37m%3d\033[0m",n);
 						}else{
 
 							if(S.model[n]==l_True)
@@ -251,49 +258,51 @@ int main(int argc, char** argv)
 					lasty=y;
 				}
 				printf("\n");
-        	}
-        	printf("\n");
-        	for(int t = 0;t<S.theories.size();t++){
-        		printf("Theory %d\n", t);
-        		GraphTheorySolver *g = (GraphTheorySolver*)S.theories[t];
 
-        		for(int r = 0;r<g->reach_detectors.size();r++){
+				printf("\n");
+				for(int t = 0;t<S.theories.size();t++){
+					printf("Theory %d\n", t);
+					GraphTheorySolver *g = (GraphTheorySolver*)S.theories[t];
 
-        			int width = sqrt(g->nNodes());
-        			int lasty= 0;
-        			int extra =  g->nNodes() % width ? (width- g->nNodes() % width ):0;
-					for(int n = 0;n<g->nNodes();n++){
-						int x = n%width;
+					for(int r = 0;r<g->reach_detectors.size();r++){
 
-						int y = (n + extra )/width;
-						if(y > lasty)
-							printf("\n");
+						int width = sqrt(g->nNodes());
+						int lasty= 0;
+						int extra =  g->nNodes() % width ? (width- g->nNodes() % width ):0;
+						for(int n = 0;n<g->nNodes();n++){
+							int x = n%width;
 
-						int v =var( g->reach_detectors[r]->reach_lits[n]);
-						if (isatty(fileno(stdout))){
-							if(S.model[v]==l_True)
-								printf("\033[1;42m\033[1;37m%4d\033[0m", v+1);
-							else
-								printf("\033[1;44m\033[1;37m%4d\033[0m",v+1);
-						}else{
+							int y = (n + extra )/width;
+							if(y > lasty)
+								printf("\n");
 
-							if(S.model[v]==l_True)
-								printf(" 1");
-							else
-								printf(" 0");
+							int v =var( g->reach_detectors[r]->reach_lits[n]);
+							if (isatty(fileno(stdout))){
+								if(S.model[v]==l_True)
+									printf("\033[1;42m\033[1;37m%4d\033[0m", v+1);
+								else
+									printf("\033[1;44m\033[1;37m%4d\033[0m",v+1);
+							}else{
+
+								if(S.model[v]==l_True)
+									printf(" 1");
+								else
+									printf(" 0");
+							}
+
+							lasty=y;
 						}
-
-						lasty=y;
+						printf("\n");
 					}
-					printf("\n");
-        		}
 
 
 
-        		g->drawFull();
+					//g->drawFull();
 
-        		assert(g->dbg_solved());*/
+					assert(g->dbg_solved());
+				}
 
+				}
 /*        		for(int r = 0;r<g->reach_detectors.size();r++){
 
 					int width = sqrt(g->nNodes());

@@ -40,8 +40,10 @@ static const char* _cat_graph ="GRAPH";
  StringOption Minisat::opt_reach_alg(_cat_graph,"reach","Select reachability algorithm (connectivity, dijkstra)","connectivity");
 
   BoolOption Minisat::opt_conflict_shortest_path(_cat_graph,"conflict-shortest-path","Use shortest path (instead of arbitrary path) for conflict resolution",true);
-  BoolOption Minisat::opt_conflict_min_cut(_cat_graph,"conflict-min-cut","Use min-cut (instead of arbitrary cut) for conflict resolution",true);
+  BoolOption Minisat::opt_conflict_min_cut(_cat_graph,"conflict-min-cut","Use min-cut (instead of arbitrary cut) for conflict resolution",false);
 IntOption Minisat::opt_restrict_decisions(_cat_graph,"decisions","Restrict decisions to the first n variables (0 to disable)",0);
 
+BoolOption Minisat::opt_check_solution(_cat_graph,"check-solution","Double check solution",true);
+BoolOption Minisat::opt_print_reach(_cat_graph,"print-reach","Print reachability graphs",false);
 MinCutAlg Minisat::mincutalg=ALG_EDMONSKARP ;
 ReachAlg Minisat::reachalg=ALG_CONNECTIVITY;

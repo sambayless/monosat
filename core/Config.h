@@ -35,6 +35,8 @@ extern IntOption opt_restrict_decisions;
 extern StringOption opt_min_cut_alg;
 extern StringOption opt_reach_alg;
 
+extern BoolOption opt_check_solution;
+extern BoolOption opt_print_reach;
 enum ReachAlg{
 	 ALG_CONNECTIVITY,
 	 ALG_DIJKSTRA
