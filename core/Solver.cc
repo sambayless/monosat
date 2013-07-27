@@ -1112,6 +1112,14 @@ lbool Solver::solve_()
         status = search(rest_base * restart_first);
         if (!withinBudget()) break;
         curr_restarts++;
+        if(opt_rnd_restart && status == l_Undef){
+
+        	for(int i = 0;i<nVars();i++){
+        		 activity[i] = drand(random_seed) * 0.00001;
+        	}
+        	rebuildOrderHeap();
+
+        }
     }
 
     if (verbosity >= 1)

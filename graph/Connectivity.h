@@ -42,18 +42,19 @@ public:
 
 
 public:
-	int stats_full_updates;
-	int stats_fast_updates;
-	int stats_skip_deletes;
-	int stats_skipped_updates;
 
-	double mod_percentage;
 
-	double stats_full_update_time;
-	double stats_fast_update_time;
-
-	Connectivity(int s,DynamicGraph & graph):g(graph), last_modification(-1),last_addition(-1),last_deletion(-1),history_qhead(0),last_history_clear(0),source(s),INF(0),mod_percentage(0.2),stats_full_updates(0),stats_fast_updates(0),stats_skip_deletes(0),stats_skipped_updates(0),stats_full_update_time(0),stats_fast_update_time(0){marked=false;	}
-	Connectivity(const Connectivity& d):g(d.g), last_modification(-1),last_addition(-1),last_deletion(-1),history_qhead(0),last_history_clear(0),source(d.source),INF(0),mod_percentage(0.2),stats_full_updates(0),stats_fast_updates(0),stats_skip_deletes(0),stats_skipped_updates(0),stats_full_update_time(0),stats_fast_update_time(0){marked=false;};
+	Connectivity(int s,DynamicGraph & graph):g(graph), last_modification(-1),last_addition(-1),last_deletion(-1),history_qhead(0),last_history_clear(0),source(s),INF(0){
+		marked=false;
+		mod_percentage=0.2;
+		stats_full_updates=0;
+		stats_fast_updates=0;
+		stats_skip_deletes=0;
+		stats_skipped_updates=0;
+		stats_full_update_time=0;
+		stats_fast_update_time=0;
+	}
+	//Connectivity(const Connectivity& d):g(d.g), last_modification(-1),last_addition(-1),last_deletion(-1),history_qhead(0),last_history_clear(0),source(d.source),INF(0),mod_percentage(0.2),stats_full_updates(0),stats_fast_updates(0),stats_skip_deletes(0),stats_skipped_updates(0),stats_full_update_time(0),stats_fast_update_time(0){marked=false;};
 
 
 	void setSource(int s){

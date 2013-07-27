@@ -21,6 +21,7 @@ extern  BoolOption    opt_luby_restart ;
 extern  IntOption     opt_restart_first ;
 extern  DoubleOption  opt_restart_inc   ;
 extern  DoubleOption  opt_garbage_frac  ;
+extern  BoolOption    opt_rnd_restart ;
 
 extern  BoolOption opt_interpolate;
 extern IntOption opt_eager_prop;

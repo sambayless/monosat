@@ -49,16 +49,19 @@ public:
 
 
 public:
-	int stats_full_updates;
-	int stats_fast_updates;
-	int stats_skip_deletes;
-	int stats_skipped_updates;
 
-	double stats_full_update_time;
-	double stats_fast_update_time;
+	Dijkstra(int s,DynamicGraph & graph):g(graph), last_modification(-1),last_addition(-1),last_deletion(-1),history_qhead(0),last_history_clear(0),source(s),INF(0),q(DistCmp(dist)){
 
-	Dijkstra(int s,DynamicGraph & graph):g(graph), last_modification(-1),last_addition(-1),last_deletion(-1),history_qhead(0),last_history_clear(0),source(s),INF(0),q(DistCmp(dist)),stats_full_updates(0),stats_fast_updates(0),stats_skip_deletes(0),stats_skipped_updates(0),stats_full_update_time(0),stats_fast_update_time(0){marked=false;	}
-	Dijkstra(const Dijkstra& d):g(d.g), last_modification(-1),last_addition(-1),last_deletion(-1),history_qhead(0),last_history_clear(0),source(d.source),INF(0),q(DistCmp(dist)),stats_full_updates(0),stats_fast_updates(0),stats_skip_deletes(0),stats_skipped_updates(0),stats_full_update_time(0),stats_fast_update_time(0){marked=false;};
+		marked=false;
+		mod_percentage=0.2;
+		stats_full_updates=0;
+		stats_fast_updates=0;
+		stats_skip_deletes=0;
+		stats_skipped_updates=0;
+		stats_full_update_time=0;
+		stats_fast_update_time=0;
+	}
+	//Dijkstra(const Dijkstra& d):g(d.g), last_modification(-1),last_addition(-1),last_deletion(-1),history_qhead(0),last_history_clear(0),source(d.source),INF(0),q(DistCmp(dist)),stats_full_updates(0),stats_fast_updates(0),stats_skip_deletes(0),stats_skipped_updates(0),stats_full_update_time(0),stats_fast_update_time(0){marked=false;};
 
 
 	void setSource(int s){
@@ -75,6 +78,8 @@ public:
 		stats_fast_updates++;
 		double start_time = cpuTime();
 
+
+
 		/*for(int i = 0;i<g.nodes;i++)
 					changed.push(i);*/
 		assert(last_deletion==g.deletions);
@@ -90,7 +95,7 @@ public:
 		}
 		//ok, now check if any of the added edges allow for a decrease in distance.
 		for (int i = history_qhead;i<g.history.size();i++){
-			assert(g.history[i].addition);
+			assert(g.history[i].addition); //NOTE: Currently, this is glitchy in some circumstances - specifically, ./modsat -rinc=1.05 -rnd-restart  -conflict-shortest-path  -no-conflict-min-cut   -rnd-init -rnd-seed=01231 -rnd-freq=0.01 /home/sam/data/gnf/unit_tests/unit_test_17_reduced.gnf can trigger this assertion!
 			int u=g.history[i].u;
 			int v=g.history[i].v;
 			int alt = dist[u]+1 ;
@@ -206,7 +211,7 @@ public:
 			}
 		}
 
-		if(last_deletion==g.deletions && last_modification>0  ){
+		/*if(last_deletion==g.deletions && last_modification>0  ){
 			//Don't need to do anything at all.
 			if(last_addition==g.additions){
 				last_modification = g.modifications;
@@ -218,7 +223,7 @@ public:
 			updateFast();
 			assert(dbg_uptodate());
 			return;
-		}
+		}*/
 
 		stats_full_updates++;
 		double startdupdatetime = cpuTime();
