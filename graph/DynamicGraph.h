@@ -54,6 +54,8 @@ public:
 		clearHistory();
 		return nodes++;
 	}
+
+	//Instead of actually adding and removing edges, tag each edge with an 'enabled/disabled' label, and just expect reading algorithms to check and respect that label.
 	void addEdge(int from, int to){
 		assert(from<nodes);
 		assert(to<nodes);
@@ -64,6 +66,8 @@ public:
 		additions=modifications;
 		history.push({true,from,to,modifications});
 	}
+
+
 	//Removes _all_ edges (from, to)
 	void removeEdge(int from, int to){
 		{

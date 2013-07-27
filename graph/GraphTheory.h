@@ -119,9 +119,14 @@ public:
 		int to;
 		Var var;
 	};
+	vec<lbool> edge_assignments;
 	vec<Assignment> trail;
 	vec<int> trail_lim;
 	MaxFlow * mc;
+
+    vec<char> seen;
+	vec<int> to_visit;
+
 public:
 
 	double mctime;
@@ -221,6 +226,10 @@ public:
 		 reach_info.push();
 		 antig.addNode();
 		 cutGraph.addNode();
+
+
+		 seen.growTo(nNodes());
+
 		return g.addNode();
 	}
 	 void newNodes(int n){
@@ -305,6 +314,7 @@ public:
 
 			Assignment e = trail[i];
 			if(e.isEdge){
+
 				Lit l = mkLit( e.var,!e.assign);
 				assert(S->value(l)==l_True);
 				int expected_level = S->level(var(l));
@@ -313,12 +323,17 @@ public:
 				if(edge_list[edge_num].v<0)
 							continue;
 				assert(assigned[edge_num]==l_Undef);
+
 				assigned[edge_num] = sign(l)?l_False:l_True;
 			}else{
 				//Reachability assignment
 
 
 			}
+		}
+
+		for(int i = 0;i<assigned.size();i++){
+			assert(edge_assignments[i]== assigned[i]);
 		}
 
 		for(int i = 0;i<S->trail.size();i++){
@@ -355,6 +370,9 @@ public:
 				Assignment e = trail[i];
 				if(e.isEdge){
 					assert(S->value(e.var)==l_Undef);
+					int edge_num = e.var-min_edge_var;
+					assert(edge_assignments[edge_num]!=l_Undef);
+					edge_assignments[edge_num]=l_Undef;
 					if(e.assign){
 						g.removeEdge(e.from,e.to);
 					}else{
@@ -391,6 +409,9 @@ public:
 			for(;i>=0;i--){
 				Assignment e = trail[i];
 				if(e.isEdge){
+					int edge_num = e.var-min_edge_var;
+					assert(edge_assignments[edge_num]!=l_Undef);
+					edge_assignments[edge_num]=l_Undef;
 					if(e.assign){
 						g.removeEdge(e.from,e.to);
 					}else{
@@ -592,6 +613,8 @@ public:
 	}
 
 	void buildNonReachReason(int node, int detector ,vec<Lit> & conflict){
+		static int it = 0;
+		++it;
 		int u = node;
 		//drawFull( non_reach_detectors[detector]->getSource(),u);
 		assert(dbg_notreachable( reach_detectors[detector]->source,u));
@@ -635,16 +658,12 @@ public:
 			//We could learn an arbitrary (non-infinite) cut here, or just the whole set of false edges
 			//or perhaps we can learn the actual 1-uip cut?
 
-
-			    static vec<char> seen;
-
-			    static vec<int> to_visit;
-
-			    seen.clear();
-			    seen.growTo(nNodes());
 			    to_visit.clear();
 			    to_visit.push(node);
+			    seen.clear();
+				seen.growTo(nNodes());
 			    seen[node]=true;
+
 			    do{
 
 			    	assert(to_visit.size());
@@ -660,7 +679,9 @@ public:
 			    		assert(from!=u);
 			    		assert(inv_adj[u][i].to==u);
 			    		//Problem: the variable has to not only be assigned false, but assigned false earlier in the trail than the reach variable...
-			    	/*	if(){
+			    		int edge_num = v-min_edge_var;
+
+			    		if(edge_assignments[edge_num]==l_False){
 			    			//note: we know we haven't seen this edge variable before, because we know we haven't visited this node before
 			    			//if we are already planning on visiting the from node, then we don't need to include it in the conflict (is this correct?)
 			    			//if(!seen[from])
@@ -672,7 +693,7 @@ public:
 			    				seen[from]=true;
 			    				to_visit.push(from);
 			    			}
-			    		}*/
+			    		}
 			    	}
 			    }  while (to_visit.size());
 
@@ -687,7 +708,7 @@ public:
 	}
 	bool propagateTheory(vec<Lit> & conflict){
 		static int itp = 0;
-		if(	++itp==1545){
+		if(	++itp==6){
 			int a =1;
 		}
 
@@ -718,6 +739,8 @@ public:
 				int from = edge_list[edge_num].from;
 				int to = edge_list[edge_num].to;
 				trail.push({true,!sign(l), from,to,v});
+				assert(edge_assignments[edge_num]==l_Undef);
+				edge_assignments[edge_num]=sign(l) ? l_False:l_True;
 				Assignment e = trail.last();
 				assert(e.from==from);
 				assert(e.to==to);
@@ -987,8 +1010,10 @@ public:
 
 		int index = v-min_edge_var;
 
-		while(edge_list.size()<=index)
+		while(edge_list.size()<=index){
 			edge_list.push({-1,-1,-1});
+			edge_assignments.push(l_Undef);
+		}
 
 		inv_adj[to].push({v,from,to});
 
