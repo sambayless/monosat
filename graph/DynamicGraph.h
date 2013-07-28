@@ -10,9 +10,10 @@
 #include "mtl/Vec.h"
 using namespace Minisat;
 
-
+template<class EdgeStatus=vec<bool> >
 class DynamicGraph{
 public:
+	EdgeStatus & edge_status;
 	int nodes;
 	int edges;
 	int modifications;
@@ -35,9 +36,9 @@ public:
 		int mod;
 	};
 	vec<EdgeChange> history;
-	vec<char> edge_status;
+	//vec<char> edge_status;
 
-	DynamicGraph():nodes(0),edges(0),modifications(0),additions(0),deletions(0),historyclears(0),next_id(0){}
+	DynamicGraph(EdgeStatus & _status):edge_status(_status), nodes(0),edges(0),modifications(0),additions(0),deletions(0),historyclears(0),next_id(0){}
 	void addNodes(int n){
 		for(int i = 0;i<n;i++)
 			addNode();
@@ -106,7 +107,7 @@ public:
 		if(edge_status[id]!=false){
 			edge_status[id]=false;
 			modifications++;
-			additions=modifications;
+			deletions=modifications;
 			history.push({false,from,to,id,modifications});
 		}
 	}

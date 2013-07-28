@@ -14,10 +14,10 @@
 #include "Reach.h"
 using namespace Minisat;
 
-
+template<class EdgeStatus=vec<bool> >
 class Dijkstra:public Reach{
 public:
-	DynamicGraph & g;
+	DynamicGraph<EdgeStatus> & g;
 	int last_modification;
 	int last_addition;
 	int last_deletion;
@@ -50,7 +50,7 @@ public:
 
 public:
 
-	Dijkstra(int s,DynamicGraph & graph):g(graph), last_modification(-1),last_addition(-1),last_deletion(-1),history_qhead(0),last_history_clear(0),source(s),INF(0),q(DistCmp(dist)){
+	Dijkstra(int s,DynamicGraph<EdgeStatus> & graph):g(graph), last_modification(-1),last_addition(-1),last_deletion(-1),history_qhead(0),last_history_clear(0),source(s),INF(0),q(DistCmp(dist)){
 
 		marked=false;
 		mod_percentage=0.2;
@@ -334,6 +334,10 @@ public:
 
 	bool connected_unsafe(int t)const{
 		return t<dist.size() && dist[t]<INF;
+	}
+	bool connected_unchecked(int t)const{
+		assert(last_modification==g.modifications);
+		return connected_unsafe(t);
 	}
 	bool connected(int t){
 		if(last_modification!=g.modifications)

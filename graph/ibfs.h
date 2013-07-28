@@ -7,7 +7,6 @@
 //#define STATS
 
 
-#pragma warning(disable:4786)
 #include <time.h>
 #include <sys/timeb.h>
 

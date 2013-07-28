@@ -9,6 +9,7 @@
 using namespace std;
 using namespace Minisat;
 
+template<class EdgeStatus=vec<bool> >
 class EdmondsKarp:public MaxFlow{
 
 
@@ -26,7 +27,7 @@ class EdmondsKarp:public MaxFlow{
     vec<vec<int> > C;
     vec<int> P;
     vec<int> M;
-    DynamicGraph& g;
+    DynamicGraph<EdgeStatus>& g;
     int INF;
     /*
      *            input:
@@ -71,7 +72,7 @@ class EdmondsKarp:public MaxFlow{
 
 	   }
 public:
-    EdmondsKarp(DynamicGraph& _g):g(_g),INF(0xF0F0F0){
+    EdmondsKarp(DynamicGraph<EdgeStatus>& _g):g(_g),INF(0xF0F0F0){
     	setAllEdgeCapacities(1);
     }
     void setCapacity(int u, int w, int c){

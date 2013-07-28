@@ -5,23 +5,25 @@
 #include "ibfs.h"
 #include "mtl/Vec.h"
 #ifdef DEBUG_MAXFLOW
-#include "EdwardsKarp.h"
+#include "EdmondsKarp.h"
 #endif
 
     using namespace std;
     using namespace Minisat;
 
+template<class EdgeStatus>
 class IBFS:public MaxFlow{
 
-    DynamicGraph& g;
-#ifdef DEBUG_MAXFLOW
-    	EdmondsKarp ek;
-#endif
+    DynamicGraph<EdgeStatus>& g;
     int INF;
+#ifdef DEBUG_MAXFLOW
+    	EdmondsKarp<EdgeStatus> ek;
+#endif
+
     vec<vec<int> > C;
     IBFSGraph<int,int,int>* ibfs ;
 public:
-    IBFS(DynamicGraph& _g):g(_g),INF(0xF0F0F0)
+    IBFS(DynamicGraph<EdgeStatus>& _g):g(_g),INF(0xF0F0F0)
 #ifdef DEBUG_MAXFLOW
     	,ek(_g)
 #endif

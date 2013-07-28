@@ -106,7 +106,7 @@ int main(int argc, char** argv)
         }else if (!strcasecmp(opt_min_cut_alg,"edmondskarp")){
         	mincutalg = ALG_EDMONSKARP;
         }else{
-        	fprintf(stderr,"Error: unknown max-flow/min-cut algorithm %s, aborting\n", mincutalg);
+        	fprintf(stderr,"Error: unknown max-flow/min-cut algorithm %s, aborting\n",((string)  opt_min_cut_alg).c_str());
         	exit(1);
         }
 
@@ -118,7 +118,7 @@ int main(int argc, char** argv)
 		 }else if (!strcasecmp(opt_reach_alg,"connectivity")){
 			 reachalg = ALG_CONNECTIVITY;
 		 }else{
-			fprintf(stderr,"Error: unknown max-flow/min-cut algorithm %s, aborting\n", mincutalg);
+			fprintf(stderr,"Error: unknown reachability algorithm %s, aborting\n", ((string) opt_reach_alg).c_str());
 			exit(1);
 		 }
 
