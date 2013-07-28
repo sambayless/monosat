@@ -10,7 +10,27 @@
 #include "mtl/Vec.h"
 using namespace Minisat;
 
-template<class EdgeStatus=vec<bool> >
+struct DefaultEdgeStatus{
+
+	vec<bool> status;
+
+	bool operator [] (int index) const {
+		return status[index];
+	}
+	void setStatus(int index, bool value){
+		status[index]=value;
+	}
+
+	int size(){
+		return status.size();
+	}
+	void growTo(int size) {
+		status.growTo(size);
+	}
+
+};
+
+template<class EdgeStatus=DefaultEdgeStatus >
 class DynamicGraph{
 public:
 	EdgeStatus & edge_status;
@@ -44,7 +64,7 @@ public:
 			addNode();
 	}
 
-	bool hasEdge(int from, int to){
+	bool hasEdge(int from, int to)const{
 		for(int i = 0;i< adjacency[from].size();i++){
 			if(adjacency[from][i].to==to && edgeEnabled(adjacency[from][i].id)){
 				return true;
@@ -64,7 +84,7 @@ public:
 		return nodes++;
 	}
 
-	bool edgeEnabled(int edgeID){
+	bool edgeEnabled(int edgeID)const{
 		assert(edgeID<edge_status.size());
 		return edge_status[edgeID];
 	}
@@ -94,7 +114,8 @@ public:
 		assert(id>=0);
 		assert(id<edge_status.size());
 		if(edge_status[id]!=true){
-			edge_status[id]=true;
+			edge_status.setStatus(id,true);
+
 			modifications++;
 			additions=modifications;
 			history.push({true,from,to,id,modifications});
@@ -105,7 +126,9 @@ public:
 		assert(id>=0);
 		assert(id<edge_status.size());
 		if(edge_status[id]!=false){
-			edge_status[id]=false;
+			edge_status.setStatus(id,false);
+
+
 			modifications++;
 			deletions=modifications;
 			history.push({false,from,to,id,modifications});

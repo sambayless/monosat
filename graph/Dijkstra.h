@@ -14,7 +14,7 @@
 #include "Reach.h"
 using namespace Minisat;
 
-template<class EdgeStatus=vec<bool> >
+template<class EdgeStatus=DefaultEdgeStatus >
 class Dijkstra:public Reach{
 public:
 	DynamicGraph<EdgeStatus> & g;

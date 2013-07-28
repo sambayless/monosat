@@ -33,9 +33,7 @@ namespace Minisat{
 class GraphTheorySolver:public GraphTheory{
 private:
 
-	typedef vec<char> PositiveEdgeStatus;
-	typedef vec<char> NegativeEdgeStatus;
-	typedef vec<char> CutEdgeStatus;
+
 	Lit False;
 	Lit True;
 	int local_q;
@@ -48,6 +46,52 @@ private:
 #ifdef DEBUG_SOLVER
 	TestGraph * shadow_dbg;
 #endif
+
+
+	vec<lbool> edge_assignments;
+
+	typedef DefaultEdgeStatus PositiveEdgeStatus;
+	typedef DefaultEdgeStatus NegativeEdgeStatus;
+	typedef DefaultEdgeStatus CutEdgeStatus;
+
+	/*struct PositiveEdgeStatus{
+
+		const GraphTheorySolver & outer;
+
+	    bool operator [] (int index) const {
+	    	return outer.edge_assignments[index]==l_True;
+	    }
+	    void setStatus(int id,bool value){
+	    	//Do nothing
+	    }
+
+	    int size(){
+	    	return outer.edge_assignments.size();
+	    }
+	    void growTo(int size) const{
+	    	assert(outer.edge_assignments.size()>=size);
+	    }
+	    PositiveEdgeStatus(GraphTheorySolver & _outer):outer(_outer){
+
+	    }
+	};*/
+
+/*	struct NegativeEdgeStatus{
+
+		const GraphTheorySolver & outer;
+		bool ignore;
+	    const bool operator [] (int index) const { return outer.edge_assignments[index]!=l_False; }
+	    bool&       operator [] (int index)       { return ignore; }
+	    int size(){
+	    	return outer.edge_assignments.size();
+	    }
+	    void growTo(int size) const{
+	    	assert(outer.edge_assignments.size()>=size);
+	    }
+	    NegativeEdgeStatus(GraphTheorySolver & _outer):outer(_outer), ignore(false){
+
+	    }
+	};*/
 
 	PositiveEdgeStatus g_status;
 	NegativeEdgeStatus antig_status;
@@ -126,13 +170,14 @@ public:
 		int to;
 		Var var;
 	};
-	vec<lbool> edge_assignments;
+
 	vec<Assignment> trail;
 	vec<int> trail_lim;
 	MaxFlow * mc;
 
     vec<char> seen;
 	vec<int> to_visit;
+
 
 public:
 
@@ -552,7 +597,7 @@ public:
 
 	bool dbg_reachable(int from, int to){
 #ifdef DEBUG_GRAPH
-		vec<bool> tmp;
+		DefaultEdgeStatus tmp;
 		DynamicGraph<> g(tmp);
 		for(int i = 0;i<nNodes();i++){
 			g.addNode();
@@ -579,7 +624,7 @@ public:
 
 #ifdef DEBUG_GRAPH
 		//drawFull(from,to);
-		vec<bool> tmp;
+		DefaultEdgeStatus tmp;
 		DynamicGraph<> g(tmp);
 		for(int i = 0;i<nNodes();i++){
 			g.addNode();
@@ -609,6 +654,7 @@ public:
 				continue;
 			Edge e = edge_list[i];
 			lbool val = S->value(e.v);
+			assert(edge_assignments[i]==val);
 			if(val==l_True || val==l_Undef){
 				assert(antig.edgeEnabled(i));
 				assert(antig.hasEdge(e.from,e.to));
@@ -725,7 +771,7 @@ public:
 	}
 	bool propagateTheory(vec<Lit> & conflict){
 		static int itp = 0;
-		if(	++itp==6){
+		if(	++itp==13){
 			int a =1;
 		}
 

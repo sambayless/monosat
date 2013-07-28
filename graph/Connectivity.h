@@ -15,7 +15,7 @@ class GraphListener{
 	void removeEdge(int u, int v, int mod);
 };*/
 
-template<class EdgeStatus> //, class Status>
+template<class EdgeStatus=DefaultEdgeStatus> //, class Status>
 class Connectivity:public Reach{
 public:
 	//Status & status;
