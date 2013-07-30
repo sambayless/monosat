@@ -15,11 +15,12 @@ class GraphListener{
 	void removeEdge(int u, int v, int mod);
 };*/
 
-template<class EdgeStatus=DefaultEdgeStatus> //, class Status>
+template<class Status,class EdgeStatus=DefaultEdgeStatus>
 class Connectivity:public Reach{
 public:
-	//Status & status;
+
 	DynamicGraph<EdgeStatus> & g;
+	Status & status;
 	int last_modification;
 	int last_addition;
 	int last_deletion;
@@ -41,12 +42,22 @@ public:
 
 	vec<int> prev;
 
-
+	struct DefaultReachStatus{
+			vec<bool> stat;
+				void setReachable(int u, bool reachable){
+					stat.growTo(u+1);
+					stat[u]=reachable;
+				}
+				bool isReachable(int u) const{
+					return stat[u];
+				}
+				DefaultReachStatus(){}
+			};
 
 public:
 
 
-	Connectivity(int s,DynamicGraph<EdgeStatus> & graph):g(graph), last_modification(-1),last_addition(-1),last_deletion(-1),history_qhead(0),last_history_clear(0),source(s),INF(0){
+	Connectivity(int s,DynamicGraph<EdgeStatus> & graph, Status & _status ):g(graph), status(_status), last_modification(-1),last_addition(-1),last_deletion(-1),history_qhead(0),last_history_clear(0),source(s),INF(0){
 		marked=false;
 		mod_percentage=0.2;
 		stats_full_updates=0;
@@ -357,7 +368,7 @@ public:
 		for (int i = 0;i<q.size();i++){
 			int u = q[i];
 			assert(seen[u]);
-			//status.setReachable(u,true);
+			status.setReachable(u,true);
 			/*if(!old_seen[u]){
 				changed.push(u);
 			}*/
@@ -377,7 +388,7 @@ public:
 
 		for(int u = 0;u<g.nodes;u++){
 			if(!seen[u]){
-			//	status.setReachable(u,false);
+				status.setReachable(u,false);
 			}
 			/*if(last_modification <=0  || (old_seen[u]==1 && seen[u]==0)){
 				changed.push(u);

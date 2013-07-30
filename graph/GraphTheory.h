@@ -101,9 +101,21 @@ private:
 	DynamicGraph<NegativeEdgeStatus> antig;
 	DynamicGraph<CutEdgeStatus> cutGraph;
 
+	Var min_edge_var;
+	int num_edges;
+	struct Assignment{
+		bool isEdge:1;
+		bool assign:1;
+		int from:30;
+		int to;
+		Var var;
+	};
 
+	vec<Assignment> trail;
+	vec<int> trail_lim;
 
 	struct ReachDetector{
+		GraphTheorySolver & outer;
 		int within;
 		int source;
 		Reach * positive_reach_detector;
@@ -113,6 +125,49 @@ private:
 		vec<Lit>  reach_lits;
 		Var first_reach_var;
 		vec<int> reach_lit_map;
+
+		struct Change{
+			Lit l;
+			int u;
+		};
+
+		vec<Change> changed;
+
+		vec<Change> & getChanged(){
+			return changed;
+		}
+
+		struct ReachStatus{
+			ReachDetector & outer;
+			bool polarity;
+			void setReachable(int u, bool reachable){
+				if(polarity==reachable && u<outer.reach_lits.size()){
+					Lit l = outer.reach_lits[u];
+					if(l!=lit_Undef){
+						lbool assign = outer.outer.S->value(l);
+						if(assign!= (reachable? l_True:l_False ))
+							 outer.changed.push({reachable? l:~l,u});
+					}
+				}
+			}
+			bool isReachable(int u) const{
+				return false;
+			}
+
+		/*	vec<bool> stat;
+			void setReachable(int u, bool reachable){
+				stat.growTo(u+1);
+				stat[u]=reachable;
+			}
+			bool isReachable(int u) const{
+				return stat[u];
+			}*/
+
+
+			ReachStatus(ReachDetector & _outer, bool _polarity):outer(_outer), polarity(_polarity){}
+		};
+		ReachStatus *positiveReachStatus;
+		ReachStatus *negativeReachStatus;
 
 
 		int getNode(Var reachVar){
@@ -128,7 +183,7 @@ private:
 			return reach_lits[node];
 		}
 
-		ReachDetector():within(-1),source(-1),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_dist_detector(NULL),negative_dist_detector(NULL){}
+		ReachDetector(GraphTheorySolver & _outer):outer(_outer),within(-1),source(-1),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_dist_detector(NULL),negative_dist_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL){}
 	};
 
 	struct ReachInfo{
@@ -161,18 +216,7 @@ public:
 
 	vec<vec<Edge> > inv_adj;
 
-	Var min_edge_var;
-	int num_edges;
-	struct Assignment{
-		bool isEdge:1;
-		bool assign:1;
-		int from:30;
-		int to;
-		Var var;
-	};
 
-	vec<Assignment> trail;
-	vec<int> trail_lim;
 	MaxFlow * mc;
 
     vec<char> seen;
@@ -822,26 +866,25 @@ public:
 			assert(dbg_graphsUpToDate());
 
 			for(int d = 0;d<reach_detectors.size();d++){
-
 				{
 					double startdreachtime = cpuTime();
-
+					reach_detectors[d]->changed.clear();
 					reach_detectors[d]->positive_reach_detector->update();
 					double reachUpdateElapsed = cpuTime()-startdreachtime;
 					reachupdatetime+=reachUpdateElapsed;
-				/*	for(int j =0;j<reach_lits[d].size();j++){
-						Lit l = reach_lits[d][j];
-						if( reach_detectors[d]->connected(j)){*/
-					for(int u = 0;u<reach_detectors[d]->reach_lits.size();u++){
-							//int u = reach_detectors[d]->positive_reach_detector->getChanged()[j];
-							if(u>= reach_detectors[d]->reach_lits.size() || reach_detectors[d]->reach_lits[u] == lit_Undef)
-								continue;
-							//assert(reach_detectors[d]->reach_lits[u]!=lit_Undef);
-							Lit l = (reach_detectors[d]->reach_lits[u]); // reach_lits[d][u];
 
-							if( reach_detectors[d]->positive_reach_detector->connected_unsafe(u)){
-								assert(dbg_reachable( reach_detectors[d]->source,u));
-							if(S->value(l)==l_Undef){
+					double startunreachtime = cpuTime();
+					reach_detectors[d]->negative_reach_detector->update();
+					double unreachUpdateElapsed = cpuTime()-startunreachtime;
+					unreachupdatetime+=unreachUpdateElapsed;
+
+					for(int j = 0;j<reach_detectors[d]->getChanged().size();j++){
+							Lit l = reach_detectors[d]->getChanged()[j].l;
+							int u =  reach_detectors[d]->getChanged()[j].u;
+							bool reach = !sign(l);
+							if(S->value(l)==l_True){
+								//do nothing
+							}else if(S->value(l)==l_Undef){
 #ifdef DEBUG_GRAPH
 								assert(dbg_propgation(l));
 #endif
@@ -849,18 +892,27 @@ public:
 								if(S->dbg_solver)
 									S->dbg_check_propagation(l);
 #endif
-								trail.push({false,true,d,0,var(l)});
-								S->uncheckedEnqueue(l,reach_markers[d]) ;
-							}else if (S->value(l)==l_False){
-								double elapsed = cpuTime()-startdreachtime;
-								reachtime+=elapsed;
-								//conflict
-								//The reason is all the literals in the shortest path in to s in d
-								conflict.push(l);
+								trail.push({false,reach,d,0,var(l)});
+								if(reach)
+									S->uncheckedEnqueue(l,reach_markers[d]) ;
+								else
+									S->uncheckedEnqueue(l,non_reach_markers[d]) ;
 
-								buildReachReason(u,opt_conflict_shortest_path ? *reach_detectors[d]->positive_dist_detector: *reach_detectors[d]->positive_reach_detector,conflict);
+							}else if (S->value(l)==l_False){
+								conflict.push(l);
+								if(reach){
+
+								//conflict
+								//The reason is a path in g from to s in d
+									buildReachReason(u,opt_conflict_shortest_path ? *reach_detectors[d]->positive_dist_detector: *reach_detectors[d]->positive_reach_detector,conflict);
 								//add it to s
 								//return it as a conflict
+
+								}else{
+									//The reason is a cut separating s from t
+									buildNonReachReason(u,d,conflict);
+
+								}
 #ifdef DEBUG_GRAPH
 								for(int i = 0;i<conflict.size();i++)
 											 assert(S->value(conflict[i])==l_False);
@@ -870,79 +922,18 @@ public:
 									S->dbg_check(conflict);
 #endif
 
-
-							//	reach_detectors[d]->positive_reach_detector->clearChanged();
+								propagationtime+= cpuTime()-startproptime;
 								return false;
 							}else{
 								int  a=1;
 							}
-						}else{
-#ifdef DEBUG_GRAPH
-							assert(!dbg_reachable( reach_detectors[d]->source,u));
-#endif
 						}
 
 					}
-					//reach_detectors[d]->positive_reach_detector->clearChanged();
-					double elapsed = cpuTime()-startdreachtime;
-								reachtime+=elapsed;
+
 				}
 
-				{
 
-					double startunreachtime = cpuTime();
-
-					reach_detectors[d]->negative_reach_detector->update();
-					double unreachUpdateElapsed = cpuTime()-startunreachtime;
-					unreachupdatetime+=unreachUpdateElapsed;
-					assert(dbg_graphsUpToDate());
-					for(int u = 0;u<reach_detectors[d]->reach_lits.size();u++){
-							//int u = reach_detectors[d]->negative_reach_detector->getChanged()[j];
-							if(u>= reach_detectors[d]->reach_lits.size()||  reach_detectors[d]->reach_lits[u] == lit_Undef)
-									continue;
-							assert(reach_detectors[d]->reach_lits[u]!=lit_Undef);
-							Lit l = ~ (reach_detectors[d]->reach_lits[u]); // ~reach_lits[d][u];
-							if(! reach_detectors[d]->negative_reach_detector->connected_unsafe(u)){
-								assert(dbg_notreachable( reach_detectors[d]->source,u));
-
-							if(S->value(l)==l_Undef){
-#ifdef DEBUG_GRAPH
-								assert(dbg_propgation(l));
-#endif
-#ifdef DEBUG_SOLVER
-								if(S->dbg_solver)
-									S->dbg_check_propagation(l);
-#endif
-								trail.push({false,false,d,0,var(l)});
-								S->uncheckedEnqueue(l,non_reach_markers[d]) ;
-							}else if (S->value(l)==l_False){
-								double elapsed = cpuTime()-startunreachtime;
-												unreachtime+=elapsed;
-								//conflict
-								//The reason is a cut separating s from t
-								conflict.push(l);
-								buildNonReachReason(u,d,conflict);
-#ifdef DEBUG_SOLVER
-								if(S->dbg_solver)
-									S->dbg_check(conflict);
-#endif
-								//add it to s
-								//return it as a conflict
-#ifdef DEBUG_GRAPH
-								for(int i = 0;i<conflict.size();i++)
-											 assert(S->value(conflict[i])==l_False);
-#endif
-							//	reach_detectors[d]->negative_reach_detector->clearChanged();
-								return false;
-							}
-						}
-
-					}
-				//	reach_detectors[d]->negative_reach_detector->clearChanged();
-					double elapsed = cpuTime()-startunreachtime;
-					unreachtime+=elapsed;
-				}
-			}
 
 
 
@@ -1174,10 +1165,12 @@ public:
 				marker_map.growTo(mnum+1);
 				marker_map[mnum] = -non_reach_markers.size();
 
-				reach_detectors.push(new ReachDetector());
+				reach_detectors.push(new ReachDetector(*this));
 				if(reachalg==ALG_CONNECTIVITY){
-					reach_detectors.last()->positive_reach_detector = new Connectivity<PositiveEdgeStatus>(from,g);
-					reach_detectors.last()->negative_reach_detector = new Connectivity<NegativeEdgeStatus>(from,antig);
+					reach_detectors.last()->positiveReachStatus = new ReachDetector::ReachStatus(*reach_detectors.last(),true);
+					reach_detectors.last()->negativeReachStatus = new ReachDetector::ReachStatus(*reach_detectors.last(),false);
+					reach_detectors.last()->positive_reach_detector = new Connectivity<ReachDetector::ReachStatus,PositiveEdgeStatus>(from,g,*(reach_detectors.last()->positiveReachStatus));
+					reach_detectors.last()->negative_reach_detector = new Connectivity<ReachDetector::ReachStatus,NegativeEdgeStatus>(from,antig,*(reach_detectors.last()->negativeReachStatus));
 					if(opt_conflict_shortest_path)
 						reach_detectors.last()->positive_dist_detector = new Dijkstra<PositiveEdgeStatus>(from,g);
 				}else{
@@ -1195,8 +1188,7 @@ public:
 
 				reach_detectors.last()->within=within_steps;
 
-				reach_detectors.last()->positive_reach_detector->update();
-				reach_detectors.last()->negative_reach_detector->update();
+
 
 				reach_detectors.last()->first_reach_var = reach_var;
 
