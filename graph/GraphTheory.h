@@ -13,6 +13,7 @@
 #include "Reach.h"
 #include "Dijkstra.h"
 #include "Connectivity.h"
+#include "Distance.h"
 #include "core/SolverTypes.h"
 #include "mtl/Map.h"
 #include "MaxFlow.h"
@@ -120,11 +121,20 @@ private:
 		int source;
 		Reach * positive_reach_detector;
 		Reach * negative_reach_detector;
-		Dijkstra<PositiveEdgeStatus>* positive_dist_detector;
-		Dijkstra<NegativeEdgeStatus>* negative_dist_detector;
+		Reach *  positive_path_detector;
+
 		vec<Lit>  reach_lits;
 		Var first_reach_var;
 		vec<int> reach_lit_map;
+
+		struct DistLit{
+			Lit l;
+			int min_distance;
+
+		};
+
+		vec<vec<DistLit> > dist_lits;
+
 
 		struct Change{
 			Lit l;
@@ -155,21 +165,37 @@ private:
 				return false;
 			}
 
-		/*	vec<bool> stat;
-			void setReachable(int u, bool reachable){
-				stat.growTo(u+1);
-				stat[u]=reachable;
+			void setMininumDistance(int u, bool reachable, int distance){
+				assert(reachable ==(distance<outer.outer.g.nodes));
+				setReachable(u,reachable);
+
+				if(u<outer.dist_lits.size()){
+					assert(distance>=0);
+					assert(distance<outer.outer.g.nodes);
+					for(int i = 0;i<outer.dist_lits[u].size();i++){
+						int d =  outer.dist_lits[u][i].min_distance;
+						Lit l = outer.dist_lits[u][i].l;
+						assert(l!=lit_Undef);
+						if(d<distance && !polarity){
+							lbool assign = outer.outer.S->value(l);
+							if( assign!= l_False ){
+								 outer.changed.push({~l,u});
+							}
+						}else if(d>=distance && polarity){
+							lbool assign = outer.outer.S->value(l);
+							if( assign!= l_True ){
+								 outer.changed.push({l,u});
+							}
+						}
+					}
+				}
 			}
-			bool isReachable(int u) const{
-				return stat[u];
-			}*/
 
 
 			ReachStatus(ReachDetector & _outer, bool _polarity):outer(_outer), polarity(_polarity){}
 		};
 		ReachStatus *positiveReachStatus;
 		ReachStatus *negativeReachStatus;
-
 
 		int getNode(Var reachVar){
 			assert(reachVar>=first_reach_var);
@@ -179,12 +205,13 @@ private:
 			return reach_lit_map[index];
 		}
 
-		Lit getLit(int node){
+	/*	Lit getLit(int node){
 
 			return reach_lits[node];
-		}
 
-		ReachDetector(GraphTheorySolver & _outer):outer(_outer),within(-1),source(-1),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_dist_detector(NULL),negative_dist_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL){}
+		}*/
+
+		ReachDetector(GraphTheorySolver & _outer):outer(_outer),within(-1),source(-1),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL){}
 	};
 
 	struct ReachInfo{
@@ -575,7 +602,7 @@ public:
 			}*/
 			Var v = var(p);
 			int u =reach_detectors[d]->getNode(v);
-			buildReachReason(u,opt_conflict_shortest_path ? *reach_detectors[d]->positive_dist_detector: *reach_detectors[d]->positive_reach_detector,reason);
+			buildReachReason(u,*reach_detectors[d]->positive_path_detector,reason);
 
 #ifdef DEBUG_GRAPH
 		 assert(dbg_clause(reason));
@@ -923,7 +950,7 @@ public:
 
 								//conflict
 								//The reason is a path in g from to s in d
-									buildReachReason(u,opt_conflict_shortest_path ? *reach_detectors[d]->positive_dist_detector: *reach_detectors[d]->positive_reach_detector,conflict);
+									buildReachReason(u,*reach_detectors[d]->positive_path_detector,conflict);
 								//add it to s
 								//return it as a conflict
 
@@ -1199,19 +1226,48 @@ public:
 				marker_map[mnum] = -non_reach_markers.size();
 
 				reach_detectors.push(new ReachDetector(*this));
-				if(reachalg==ALG_CONNECTIVITY){
-					reach_detectors.last()->positiveReachStatus = new ReachDetector::ReachStatus(*reach_detectors.last(),true);
-					reach_detectors.last()->negativeReachStatus = new ReachDetector::ReachStatus(*reach_detectors.last(),false);
-					reach_detectors.last()->positive_reach_detector = new Connectivity<ReachDetector::ReachStatus,PositiveEdgeStatus>(from,g,*(reach_detectors.last()->positiveReachStatus),1);
-					reach_detectors.last()->negative_reach_detector = new Connectivity<ReachDetector::ReachStatus,NegativeEdgeStatus>(from,antig,*(reach_detectors.last()->negativeReachStatus),-1);
-					if(opt_conflict_shortest_path)
-						reach_detectors.last()->positive_dist_detector = new Dijkstra<PositiveEdgeStatus>(from,g);
+				if(within_steps<0 || within_steps>g.nodes){
+					if(reachalg==ALG_CONNECTIVITY){
+						reach_detectors.last()->positiveReachStatus = new ReachDetector::ReachStatus(*reach_detectors.last(),true);
+						reach_detectors.last()->negativeReachStatus = new ReachDetector::ReachStatus(*reach_detectors.last(),false);
+						reach_detectors.last()->positive_reach_detector = new Connectivity<ReachDetector::ReachStatus,PositiveEdgeStatus>(from,g,*(reach_detectors.last()->positiveReachStatus),1);
+						reach_detectors.last()->negative_reach_detector = new Connectivity<ReachDetector::ReachStatus,NegativeEdgeStatus>(from,antig,*(reach_detectors.last()->negativeReachStatus),-1);
+						if(opt_conflict_shortest_path)
+							reach_detectors.last()->positive_path_detector = new Distance<NullEdgeStatus,PositiveEdgeStatus>(from,g,nullEdgeStatus,1);
+						else
+							reach_detectors.last()->positive_path_detector = reach_detectors.last()->positive_reach_detector;
+					}else if(reachalg==ALG_BFS){
+						reach_detectors.last()->positiveReachStatus = new ReachDetector::ReachStatus(*reach_detectors.last(),true);
+						reach_detectors.last()->negativeReachStatus = new ReachDetector::ReachStatus(*reach_detectors.last(),false);
+						reach_detectors.last()->positive_reach_detector = new Distance<ReachDetector::ReachStatus,PositiveEdgeStatus>(from,g,*(reach_detectors.last()->positiveReachStatus),1);
+						reach_detectors.last()->negative_reach_detector = new Distance<ReachDetector::ReachStatus,NegativeEdgeStatus>(from,antig,*(reach_detectors.last()->negativeReachStatus),-1);
+						reach_detectors.last()->positive_path_detector = reach_detectors.last()->positive_reach_detector;
+					}else{
+
+						reach_detectors.last()->positive_reach_detector = new Dijkstra<PositiveEdgeStatus>(from,g);
+						reach_detectors.last()->negative_reach_detector = new Dijkstra<NegativeEdgeStatus>(from,antig);
+						reach_detectors.last()->positive_path_detector = reach_detectors.last()->positive_reach_detector;
+						//reach_detectors.last()->positive_dist_detector = new Dijkstra(from,g);
+					}
 				}else{
 
-					reach_detectors.last()->positive_reach_detector = new Dijkstra<PositiveEdgeStatus>(from,g);
-					reach_detectors.last()->negative_reach_detector = new Dijkstra<NegativeEdgeStatus>(from,antig);
-					reach_detectors.last()->positive_dist_detector = (Dijkstra<PositiveEdgeStatus>*)reach_detectors.last()->positive_reach_detector;
-					//reach_detectors.last()->positive_dist_detector = new Dijkstra(from,g);
+					if(distalg==ALG_BFS){
+						reach_detectors.last()->positiveReachStatus = new ReachDetector::ReachStatus(*reach_detectors.last(),true);
+						reach_detectors.last()->negativeReachStatus = new ReachDetector::ReachStatus(*reach_detectors.last(),false);
+						reach_detectors.last()->positive_reach_detector = new Distance<ReachDetector::ReachStatus,PositiveEdgeStatus>(from,g,*(reach_detectors.last()->positiveReachStatus),1);
+						reach_detectors.last()->negative_reach_detector = new Distance<ReachDetector::ReachStatus,NegativeEdgeStatus>(from,antig,*(reach_detectors.last()->negativeReachStatus),-1);
+						reach_detectors.last()->positive_path_detector = reach_detectors.last()->positive_reach_detector;
+						/*	if(opt_conflict_shortest_path)
+							reach_detectors.last()->positive_dist_detector = new Dijkstra<PositiveEdgeStatus>(from,g);*/
+					}else{
+
+						reach_detectors.last()->positive_reach_detector = new Dijkstra<PositiveEdgeStatus>(from,g);
+						reach_detectors.last()->negative_reach_detector = new Dijkstra<NegativeEdgeStatus>(from,antig);
+						reach_detectors.last()->positive_path_detector = reach_detectors.last()->positive_reach_detector;
+						//reach_detectors.last()->positive_dist_detector = new Dijkstra(from,g);
+					}
+
+
 				}
 				//reach_detectors.last()->negative_dist_detector = new Dijkstra(from,antig);
 				reach_detectors.last()->source=from;
@@ -1254,19 +1310,14 @@ public:
 				S->addClause(~r, reachLit);
 				S->addClause(r, ~reachLit);
 			}
-
-
-
-
 	    }
 
 	void reachesAny(int from, Var firstVar,int within_steps=-1){
-
 		for(int i = 0;i<g.nodes;i++){
 			reaches(from,i,firstVar+i,within_steps);
 		}
+	}
 
-	  }
 	void reachesAny(int from, vec<Lit> & reachlits_out,int within_steps=-1){
 		for(int i = 0;i<g.nodes;i++){
 			Var reachVar = S->newVar();

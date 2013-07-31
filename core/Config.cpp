@@ -53,3 +53,4 @@ BoolOption Minisat::opt_rnd_restart(_cat,"rnd-restart","Randomize activity on re
 
 MinCutAlg Minisat::mincutalg=ALG_EDMONSKARP ;
 ReachAlg Minisat::reachalg=ALG_CONNECTIVITY;
+ReachAlg Minisat::distalg=ALG_BFS;

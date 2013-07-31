@@ -115,6 +115,9 @@ int main(int argc, char** argv)
 		 if(!strcasecmp(opt_reach_alg,"dijkstra")){
 			reachalg=ALG_DIJKSTRA;
 
+		 }else if(!strcasecmp(opt_reach_alg,"bfs")){
+			reachalg=ALG_BFS;
+
 		 }else if (!strcasecmp(opt_reach_alg,"connectivity")){
 			 reachalg = ALG_CONNECTIVITY;
 		 }else{

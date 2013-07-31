@@ -1,6 +1,6 @@
 
-#ifndef CONNECTIVITY_H_
-#define CONNECTIVITY_H_
+#ifndef DISTANCE_H_
+#define DISTANCE_H_
 
 #include "mtl/Vec.h"
 #include "mtl/Heap.h"
@@ -9,11 +9,27 @@
 #include "Reach.h"
 using namespace Minisat;
 
+struct NullEdgeStatus{
+	void setReachable(int u, bool reachable){
 
+	}
+	bool isReachable(int u) const{
+		return false;
+	}
 
+	void setMininumDistance(int u, bool reachable, int distance){
+
+	}
+};
+static NullEdgeStatus nullEdgeStatus;
+/**
+ * Detect connectivity within a number of steps in unweighted, directed graphs
+ */
 template<class Status,class EdgeStatus=DefaultEdgeStatus>
-class Connectivity:public Reach{
+class Distance:public Reach{
 public:
+
+
 
 	DynamicGraph<EdgeStatus> & g;
 	Status &  status;
@@ -33,7 +49,7 @@ public:
 	const int reportPolarity;
 
 	//vec<char> old_seen;
-	vec<char> seen;;
+	vec<int> dist;
 //	vec<int> changed;
 
 
@@ -54,7 +70,7 @@ public:
 public:
 
 
-	Connectivity(int s,DynamicGraph<EdgeStatus> & graph, Status & _status, int _reportPolarity=0 ):g(graph), status(_status), last_modification(-1),last_addition(-1),last_deletion(-1),history_qhead(0),last_history_clear(0),source(s),INF(0),reportPolarity(0){
+	Distance(int s,DynamicGraph<EdgeStatus> & graph, Status & _status, int _reportPolarity=0 ):g(graph), status(_status), last_modification(-1),last_addition(-1),last_deletion(-1),history_qhead(0),last_history_clear(0),source(s),INF(0),reportPolarity(0){
 		marked=false;
 		mod_percentage=0.2;
 		stats_full_updates=0;
@@ -172,13 +188,12 @@ public:
 
 	void setNodes(int n){
 		q.capacity(n);
-		check.capacity(n);
-		seen.growTo(n);
+		dist.growTo(n);
 		prev.growTo(n);
 		INF=g.nodes+1;
 	}
 
-	inline void add_update(int to, bool update){
+	/*inline void add_update(int to, bool update){
 		q.clear();
 		q.push_(to);
 		//while(q.size()){
@@ -214,20 +229,20 @@ public:
 		seen[to]=false;
 		prev[to]=-1;
 		check.clear();
-		check.push_(to);
+		check.push(to);
 		//while(q.size()){
 		for(int i = 0;i<q.size();i++){
 			int u = q[i];
 			assert(!seen[u]);
 
 			for(int i = 0;i<g.adjacency[u].size();i++){
-/*				if(!g.edgeEnabled( g.adjacency[u][i].id))
-					continue;*/
+				if(!g.edgeEnabled( g.adjacency[u][i].id))
+					continue;
 				int v = g.adjacency[u][i].node;
 				if(seen[v] && prev[v]==u){
 					seen[v]=0;
 					prev[v]=-1;
-					check.push_(v);
+					check.push(v);
 					q.push_(v);
 
 				}
@@ -261,8 +276,8 @@ public:
 			}
 		}
 
-	}
-	bool update_additions(){
+	}*/
+	/*bool update_additions(){
 		double startdupdatetime = cpuTime();
 
 		if(g.historyclears!=last_history_clear){
@@ -312,9 +327,9 @@ public:
 
 			stats_fast_update_time+=cpuTime()-startdupdatetime;;
 			return true;
-	}
+	}*/
 
-	bool incrementalUpdate(){
+/*	bool incrementalUpdate(){
 			double startdupdatetime = cpuTime();
 
 			if(g.historyclears!=last_history_clear){
@@ -373,75 +388,8 @@ public:
 
 				stats_fast_update_time+=cpuTime()-startdupdatetime;;
 				return true;
-		}
-	//Attempt an incremental update
-	/*bool incrementalUpdate(){
-		if(g.historyclears!=last_history_clear){
-			last_history_clear=g.historyclears;
-			history_qhead=0;
-		}
+		}*/
 
-
-		double startdupdatetime = cpuTime();
-
-		q.clear();
-
-		for(int i = history_qhead;i<g.history.size();i++){
-			if(g.history[i].addition){
-				//incrementally add edge
-				int from = g.history[i].u;
-				int to = g.history[i].v;
-
-				if(seen[from] && !seen[to]){
-					seen[to]=1;
-					prev[to]=from;
-					add_update(to);
-				}
-
-			}else{
-				//incrementally delete edge
-				int from = g.history[i].u;
-				int to = g.history[i].v;
-				if(to==0){
-					int a =1;
-				}
-				if(!seen[from] || !seen[to] || prev[to]!=from){
-					//then deleting this edge has no impact on connectivity, so don't need to do anything
-				}else{
-
-					//IF no other incoming edges are seen, then this might be a safe deletion (but we'd need to update any outgoing edges that have to as their previous...)
-
-					//Incremental update failed.
-					stats_fast_update_time+=cpuTime()-startdupdatetime;;
-					return false;
-				}
-
-			}
-
-		}
-		stats_fast_updates++;
-		history_qhead = g.history.size();
-
-		for(int u = 0;u<g.nodes;u++){
-			if(last_modification <=0  || (old_seen[u]==1 && seen[u]==0)){
-				changed.push(u);
-			}
-		}
-
-		assert(dbg_uptodate());
-
-		last_modification=g.modifications;
-		last_deletion = g.deletions;
-		last_addition=g.additions;
-
-		history_qhead=g.history.size();
-		last_history_clear=g.historyclears;
-
-
-
-		stats_fast_update_time+=cpuTime()-startdupdatetime;;
-		return true;
-	}*/
 
 	void update( ){
 		static int iteration = 0;
@@ -462,76 +410,41 @@ public:
 		if(g.historyclears!=last_history_clear){
 			last_history_clear=g.historyclears;
 			history_qhead=0;
-		}else if(opt_inc_graph && last_modification>0 && (g.historyclears <= (last_history_clear+1))){// && (g.history.size()-history_qhead < g.edges*mod_percentage)){
-			if(opt_dec_graph==2){
-				if(incrementalUpdate())
-					return;
-			}else{
-				if(opt_dec_graph==1 && last_deletion < g.deletions){
-					double startddecupdatetime = cpuTime();
-					//scan through the deletions and check if any of them matter..
-					bool safe=true;
-					for(int i = history_qhead;i<g.history.size();i++){
-						int from = g.history[i].u;
-						int to = g.history[i].v;
-						if(g.history[i].addition){
-							//safe
-						}else if (!seen[from] || (seen[to] && seen[prev[to]] &&  prev[to]!=from)){
-							//then deleting this edge has no impact on connectivity, so don't need to do anything
-						}else{
-							safe= false;
-							break;
-						}
-					}
-					if(safe){
-						last_deletion=g.deletions;
-					}
-					stats_fast_update_time+=cpuTime()-startddecupdatetime;;
-				}
-
-				if(last_deletion==g.deletions){
-					if(update_additions())
-						return;
-				}
-			}
-			/**/
 		}
-
 
 
 		q.clear();
 		for(int i = 0;i<g.nodes;i++){
-			seen[i]=0;
+			dist[i]=INF;
 			prev[i]=-1;
 		}
-		seen[source]=1;
+		dist[source]=0;
 		q.push_(source);
 		for (int i = 0;i<q.size();i++){
 			int u = q[i];
-			assert(seen[u]);
+			assert(dist[u]<INF);
 			if(reportPolarity>-1)
-				status.setReachable(u,true);
-
+				status.setMininumDistance(u,true,dist[u]);
+			int d = dist[u];
 			for(int i = 0;i<g.adjacency[u].size();i++){
 				if(!g.edgeEnabled( g.adjacency[u][i].id))
 					continue;
 				int v = g.adjacency[u][i].node;
-
-				if(!seen[v]){
-					seen[v]=1;
+				int dv = dist[v];
+				if(dist[v]>=INF){
+					dist[v]=d+1;
 					prev[v]=u;
 					q.push_(v);
-					if(v==53 && u == 54){
-										int a=1;
-									}
+				}else{
+					assert(dist[v]<=d+1);
 				}
 			}
 		}
 
 		if(reportPolarity<1){
 			for(int u = 0;u<g.nodes;u++){
-				if(!seen[u]){
-					status.setReachable(u,false);
+				if(dist[u]>=INF){
+					status.setMininumDistance(u,false,INF);
 				}
 			}
 		}
@@ -574,8 +487,8 @@ public:
 				printf("digraph{\n");
 				for(int i = 0;i< g.nodes;i++){
 
-					if(seen[i]){
-						printf("n%d [fillcolor=blue style=filled]\n", i);
+					if(dist[i]<INF){
+						printf("n%d [label=\"n%d %d \" fillcolor=blue style=filled]\n", i,i,dist[i]);
 					}else{
 						printf("n%d \n", i);
 					}
@@ -608,25 +521,18 @@ public:
 		Dijkstra<EdgeStatus> d(source,g);
 		d.update();
 		//drawFull();
-		for(int i = 0;i<g.nodes;i++){
 
-			int dbgdist = d.dist[i];
-			if(!seen[i])
-				assert(dbgdist==d.INF  );
-			else{
-
-				if(!(dbgdist<d.INF)){
-					drawFull();
-				}
-				assert(dbgdist<d.INF);
+			for(int i = 0;i<g.nodes;i++){
+				int distance = dist[i];
+				int dbgdist = d.dist[i];
+				assert(distance==dbgdist);
 			}
-		}
 #endif
 		return true;
 	}
 
 	bool connected_unsafe(int t)const{
-		return t<seen.size() && seen[t];
+		return t<dist.size() && dist[t]<INF;
 	}
 	bool connected_unchecked(int t)const{
 		assert(last_modification==g.modifications);
@@ -638,7 +544,14 @@ public:
 
 		assert(dbg_uptodate());
 
-		return seen[t];
+		return dist[t]<INF;
+	}
+	int distance(int t){
+		if(connected(t)){
+			return dist[t];
+		}else{
+			return INF;
+		}
 	}
 
 	int previous(int t){
