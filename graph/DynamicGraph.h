@@ -43,11 +43,11 @@ public:
 	int next_id;
 
 	struct Edge{
-		int to;
+		int node;
 		int id;
 	};
 	vec<vec<Edge> > adjacency;//adj list
-	//vec<vec<int> > inverted_adjacency;//adj list
+	vec<vec<Edge> > inverted_adjacency;//adj list
 	struct EdgeChange{
 		bool addition;
 		int u;//from
@@ -66,7 +66,7 @@ public:
 
 	bool hasEdge(int from, int to)const{
 		for(int i = 0;i< adjacency[from].size();i++){
-			if(adjacency[from][i].to==to && edgeEnabled(adjacency[from][i].id)){
+			if(adjacency[from][i].node==to && edgeEnabled(adjacency[from][i].id)){
 				return true;
 			}
 		}
@@ -76,7 +76,7 @@ public:
 	int addNode(){
 
 		adjacency.push();//adj list
-		//inverted_adjacency.push();
+		inverted_adjacency.push();
 		modifications++;
 		additions=modifications;
 		deletions=modifications;
@@ -103,7 +103,7 @@ public:
 		edges++;
 		adjacency[from].push({to,id});
 		edge_status.growTo(id+1);
-		//inverted_adjacency[to].push(from);
+		inverted_adjacency[to].push({from,id});
 		modifications++;
 		additions=modifications;
 		history.push({true,from,to,id,modifications});
@@ -134,7 +134,28 @@ public:
 			history.push({false,from,to,id,modifications});
 		}
 	}
+	void drawFull(){
+			printf("digraph{\n");
+			for(int i = 0;i<nodes;i++){
+				printf("n%d\n", i);
+			}
 
+			for(int i = 0;i<adjacency.size();i++){
+				for(int j =0;j<adjacency[i].size();j++){
+				int id  =adjacency[i][j].id;
+				int u = adjacency[i][j].node;
+				const char * s = "black";
+				if( edgeEnabled(id))
+					s="blue";
+				else
+					s="red";
+
+				printf("n%d -> n%d [label=\"v%d\",color=\"%s\"]\n", i,u, id, s);
+				}
+			}
+
+			printf("}\n");
+		}
 	//Removes _all_ edges (from, to)
 	/*void removeEdge(int from, int to, int id){
 		assert(id>=0);

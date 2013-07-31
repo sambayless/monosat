@@ -20,7 +20,7 @@ class Connectivity:public Reach{
 public:
 
 	DynamicGraph<EdgeStatus> & g;
-	Status & status;
+	Status &  status;
 	int last_modification;
 	int last_addition;
 	int last_deletion;
@@ -31,9 +31,10 @@ public:
 	int source;
 	int INF;
 
+
 	vec<int> q;
-
-
+	vec<int> check;
+	const int reportPolarity;
 
 	//vec<char> old_seen;
 	vec<char> seen;;
@@ -57,7 +58,7 @@ public:
 public:
 
 
-	Connectivity(int s,DynamicGraph<EdgeStatus> & graph, Status & _status ):g(graph), status(_status), last_modification(-1),last_addition(-1),last_deletion(-1),history_qhead(0),last_history_clear(0),source(s),INF(0){
+	Connectivity(int s,DynamicGraph<EdgeStatus> & graph, Status & _status, int _reportPolarity=0 ):g(graph), status(_status), last_modification(-1),last_addition(-1),last_deletion(-1),history_qhead(0),last_history_clear(0),source(s),INF(0),reportPolarity(0){
 		marked=false;
 		mod_percentage=0.2;
 		stats_full_updates=0;
@@ -67,6 +68,7 @@ public:
 		stats_full_update_time=0;
 		stats_fast_update_time=0;
 		stats_num_skipable_deletions=0;
+		stats_fast_failed_updates=0;
 	}
 	//Connectivity(const Connectivity& d):g(d.g), last_modification(-1),last_addition(-1),last_deletion(-1),history_qhead(0),last_history_clear(0),source(d.source),INF(0),mod_percentage(0.2),stats_full_updates(0),stats_fast_updates(0),stats_skip_deletes(0),stats_skipped_updates(0),stats_full_update_time(0),stats_fast_update_time(0){marked=false;};
 
@@ -172,13 +174,22 @@ public:
 		}
 	}*/
 
-	inline void add_update(int to){
+	void setNodes(int n){
+		q.capacity(n);
+		seen.growTo(n);
+		prev.growTo(n);
+		INF=g.nodes+1;
+	}
+
+	inline void add_update(int to, bool update){
 		q.clear();
-		q.push(to);
-		while(q.size()){
-			int u = q.last();
-			q.pop();
+		q.push_(to);
+		//while(q.size()){
+		for(int i = 0;i<q.size();i++){
+			int u = q[i];
 			assert(seen[u]);
+			if(update)
+				status.setReachable(u,seen[u]);
 			//status.setReachable(u,true);
 			//if(!old_seen[u]){
 			//	changed.push(u);
@@ -186,57 +197,112 @@ public:
 			for(int i = 0;i<g.adjacency[u].size();i++){
 				if(!g.edgeEnabled( g.adjacency[u][i].id))
 					continue;
-				int v = g.adjacency[u][i].to;
+				int v = g.adjacency[u][i].node;
 				if(!seen[v]){
 					seen[v]=1;
 					prev[v]=u;
-					q.push(v);
+					if(v==53 && u == 54){
+						int a=1;
+					}
+					q.push_(v);
 				}
 			}
 		}
 	}
-	void update_additions(){
+
+
+	inline void delete_update(int to){
+		q.clear();
+		q.push_(to);
+		seen[to]=false;
+		prev[to]=-1;
+		check.clear();
+		check.push(to);
+		//while(q.size()){
+		for(int i = 0;i<q.size();i++){
+			int u = q[i];
+			assert(!seen[u]);
+
+			for(int i = 0;i<g.adjacency[u].size();i++){
+/*				if(!g.edgeEnabled( g.adjacency[u][i].id))
+					continue;*/
+				int v = g.adjacency[u][i].node;
+				if(seen[v] && prev[v]==u){
+					seen[v]=0;
+					prev[v]=-1;
+					check.push(v);
+					q.push_(v);
+
+				}
+			}
+		}
+
+		q.clear();
+		for(int i = 0;i<check.size();i++){
+			int u = check[i];
+			if(!seen[u]){
+				for(int i = 0;i<g.inverted_adjacency[u].size();i++){
+
+					if(g.edgeEnabled(g.inverted_adjacency[u][i].id)){
+						int from = g.inverted_adjacency[u][i].node;
+						int to = u;
+						if(seen[from]){
+							if(to==231){
+								int a =1;
+							}
+							seen[to]=1;
+							prev[to]=from;
+							add_update(to,false);
+							if(to==53 && from == 54){
+												int a=1;
+											}
+							break;
+						}
+					}
+				}
+
+			}
+		}
+
+	}
+	bool update_additions(){
+		double startdupdatetime = cpuTime();
+
 		if(g.historyclears!=last_history_clear){
 				last_history_clear=g.historyclears;
 				history_qhead=0;
 			}
 
-
-			double startdupdatetime = cpuTime();
-
-			INF=g.nodes+1;
-			seen.growTo(g.nodes);
-			prev.growTo(g.nodes);
+			assert(INF>g.nodes);
+			assert(seen.size()>=g.nodes);
 			//old_seen.growTo(g.nodes);
 			q.clear();
 
 			for(int i = history_qhead;i<g.history.size();i++){
+				int from = g.history[i].u;
+				int to = g.history[i].v;
 				if(g.history[i].addition){
 					//incrementally add edge
-					int from = g.history[i].u;
-					int to = g.history[i].v;
+
 
 					if(seen[from] && !seen[to]){
 						seen[to]=1;
 						prev[to]=from;
-						add_update(to);
+						add_update(to,true);
 					}
 
+				}else if (to==source || !seen[from] || (seen[to] && seen[prev[to]] &&  prev[to]!=from)){
+					//then deleting this edge has no impact on connectivity, so don't need to do anything
 				}else{
-					assert(false);
+					stats_fast_failed_updates++;
+					stats_fast_update_time+=cpuTime()-startdupdatetime;;
+					return false;
 				}
 
 			}
 
-
 			stats_fast_updates++;
 			history_qhead = g.history.size();
-
-	/*		for(int u = 0;u<g.nodes;u++){
-				if(last_modification <=0  || (old_seen[u]==1 && seen[u]==0)){
-					changed.push(u);
-				}
-			}*/
 
 			assert(dbg_uptodate());
 
@@ -247,14 +313,72 @@ public:
 			history_qhead=g.history.size();
 			last_history_clear=g.historyclears;
 
-
-
 			stats_fast_update_time+=cpuTime()-startdupdatetime;;
-			return ;
+			return true;
 	}
 
-	//Attempt an incremental update
 	bool incrementalUpdate(){
+			double startdupdatetime = cpuTime();
+
+			if(g.historyclears!=last_history_clear){
+					last_history_clear=g.historyclears;
+					history_qhead=0;
+				}
+
+				assert(INF>g.nodes);
+				assert(seen.size()>=g.nodes);
+				//old_seen.growTo(g.nodes);
+				q.clear();
+
+				for(int i = history_qhead;i<g.history.size();i++){
+					int from = g.history[i].u;
+					int to = g.history[i].v;
+					if(g.history[i].id==814){
+												int a=1;
+											}
+					if(g.history[i].addition && g.edgeEnabled(g.history[i].id)){
+						//incrementally add edge
+
+
+						if(seen[from] && !seen[to]){
+							seen[to]=1;
+							prev[to]=from;
+							add_update(to,false);
+						}
+
+					}else if (!g.history[i].addition && !g.edgeEnabled(g.history[i].id)){
+
+						if (to==source || !seen[from] || (seen[to] && seen[prev[to]] &&  prev[to]!=from)){
+							//then deleting this edge has no impact on connectivity, so don't need to do anything
+						}else{
+							delete_update(to);
+						}
+					}
+				}
+
+				for(int u = 0;u<g.nodes;u++){
+					status.setReachable(u,seen[u]);
+				}
+
+
+
+				stats_fast_updates++;
+				history_qhead = g.history.size();
+
+				assert(dbg_uptodate());
+
+				last_modification=g.modifications;
+				last_deletion = g.deletions;
+				last_addition=g.additions;
+
+				history_qhead=g.history.size();
+				last_history_clear=g.historyclears;
+
+				stats_fast_update_time+=cpuTime()-startdupdatetime;;
+				return true;
+		}
+	//Attempt an incremental update
+	/*bool incrementalUpdate(){
 		if(g.historyclears!=last_history_clear){
 			last_history_clear=g.historyclears;
 			history_qhead=0;
@@ -263,10 +387,6 @@ public:
 
 		double startdupdatetime = cpuTime();
 
-		INF=g.nodes+1;
-		seen.growTo(g.nodes);
-		prev.growTo(g.nodes);
-	//	old_seen.growTo(g.nodes);
 		q.clear();
 
 		for(int i = history_qhead;i<g.history.size();i++){
@@ -304,12 +424,12 @@ public:
 		}
 		stats_fast_updates++;
 		history_qhead = g.history.size();
-/*
+
 		for(int u = 0;u<g.nodes;u++){
 			if(last_modification <=0  || (old_seen[u]==1 && seen[u]==0)){
 				changed.push(u);
 			}
-		}*/
+		}
 
 		assert(dbg_uptodate());
 
@@ -324,77 +444,100 @@ public:
 
 		stats_fast_update_time+=cpuTime()-startdupdatetime;;
 		return true;
-	}
+	}*/
 
 	void update( ){
 		static int iteration = 0;
 		int local_it = ++iteration ;
-
-		if(last_modification>0 && g.modifications==last_modification)
+		stats_full_updates++;
+		double startdupdatetime = cpuTime();
+		if(last_modification>0 && g.modifications==last_modification){
+			stats_skipped_updates++;
 			return;
+		}
 
 		if(last_deletion==g.deletions){
 			stats_num_skipable_deletions++;
 		}
 
+		setNodes(g.nodes);
 
 		if(g.historyclears!=last_history_clear){
 			last_history_clear=g.historyclears;
 			history_qhead=0;
 		}else if(opt_inc_graph && last_modification>0 && (g.historyclears <= (last_history_clear+1))){// && (g.history.size()-history_qhead < g.edges*mod_percentage)){
-			if(last_deletion==g.deletions){
-				update_additions();
-				return;
+			if(opt_dec_graph==2){
+				if(incrementalUpdate())
+					return;
+			}else{
+				if(opt_dec_graph==1 && last_deletion < g.deletions){
+					double startddecupdatetime = cpuTime();
+					//scan through the deletions and check if any of them matter..
+					bool safe=true;
+					for(int i = history_qhead;i<g.history.size();i++){
+						int from = g.history[i].u;
+						int to = g.history[i].v;
+						if(g.history[i].addition){
+							//safe
+						}else if (!seen[from] || (seen[to] && seen[prev[to]] &&  prev[to]!=from)){
+							//then deleting this edge has no impact on connectivity, so don't need to do anything
+						}else{
+							safe= false;
+							break;
+						}
+					}
+					if(safe){
+						last_deletion=g.deletions;
+					}
+					stats_fast_update_time+=cpuTime()-startddecupdatetime;;
+				}
+
+				if(last_deletion==g.deletions){
+					if(update_additions())
+						return;
+				}
 			}
-			/*if(incrementalUpdate())
-				return;*/
+			/**/
 		}
 
-		stats_full_updates++;
-		double startdupdatetime = cpuTime();
 
-		INF=g.nodes+1;
-		seen.growTo(g.nodes);
-		prev.growTo(g.nodes);
-		//old_seen.growTo(g.nodes);
+
 		q.clear();
 		for(int i = 0;i<g.nodes;i++){
-			//old_seen[i]=last_modification > 0 ? seen[i]:0;//this won't work properly if we added nodes...
 			seen[i]=0;
 			prev[i]=-1;
 		}
 		seen[source]=1;
-		q.push(source);
+		q.push_(source);
 		for (int i = 0;i<q.size();i++){
 			int u = q[i];
 			assert(seen[u]);
-			status.setReachable(u,true);
-			/*if(!old_seen[u]){
-				changed.push(u);
-			}*/
+			if(reportPolarity>-1)
+				status.setReachable(u,true);
 
 			for(int i = 0;i<g.adjacency[u].size();i++){
 				if(!g.edgeEnabled( g.adjacency[u][i].id))
 					continue;
-				int v = g.adjacency[u][i].to;
+				int v = g.adjacency[u][i].node;
 
 				if(!seen[v]){
 					seen[v]=1;
 					prev[v]=u;
-					q.push(v);
+					q.push_(v);
+					if(v==53 && u == 54){
+										int a=1;
+									}
 				}
 			}
 		}
 
-		for(int u = 0;u<g.nodes;u++){
-			if(!seen[u]){
-				status.setReachable(u,false);
+		if(reportPolarity<1){
+			for(int u = 0;u<g.nodes;u++){
+				if(!seen[u]){
+					status.setReachable(u,false);
+				}
 			}
-			/*if(last_modification <=0  || (old_seen[u]==1 && seen[u]==0)){
-				changed.push(u);
-			}*/
 		}
-
 		assert(dbg_uptodate());
 
 		last_modification=g.modifications;
@@ -430,20 +573,56 @@ public:
 #endif
 		return true;
 	}
+	void drawFull(){
+				printf("digraph{\n");
+				for(int i = 0;i< g.nodes;i++){
 
+					if(seen[i]){
+						printf("n%d [fillcolor=blue style=filled]\n", i);
+					}else{
+						printf("n%d \n", i);
+					}
+
+
+				}
+
+				for(int i = 0;i< g.adjacency.size();i++){
+					for(int j =0;j<g.adjacency[i].size();j++){
+					int id  =g.adjacency[i][j].id;
+					int u =  g.adjacency[i][j].node;
+					const char * s = "black";
+					if( g.edgeEnabled(id))
+						s="blue";
+					else
+						s="red";
+
+
+
+					printf("n%d -> n%d [label=\"v%d\",color=\"%s\"]\n", i,u, id, s);
+					}
+				}
+
+				printf("}\n");
+			}
 	bool dbg_uptodate(){
 #ifdef DEBUG_DIJKSTRA
 		if(last_modification<=0)
 			return true;
 		Dijkstra<EdgeStatus> d(source,g);
 		d.update();
+		//drawFull();
 		for(int i = 0;i<g.nodes;i++){
 
 			int dbgdist = d.dist[i];
 			if(!seen[i])
 				assert(dbgdist==d.INF  );
-			else
+			else{
+
+				if(!(dbgdist<d.INF)){
+					drawFull();
+				}
 				assert(dbgdist<d.INF);
+			}
 		}
 #endif
 		return true;
@@ -466,6 +645,8 @@ public:
 	}
 
 	int previous(int t){
+		assert(t>=0 && t<prev.size());
+		assert(prev[t]>=-1 && prev[t]<prev.size());
 		return prev[t];
 	}
 

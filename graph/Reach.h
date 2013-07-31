@@ -16,6 +16,7 @@ public:
 
 	int stats_full_updates;
 	int stats_fast_updates;
+	int stats_fast_failed_updates;
 	int stats_skip_deletes;
 	int stats_skipped_updates;
 	int stats_num_skipable_deletions;
@@ -24,7 +25,7 @@ public:
 	double stats_full_update_time;
 	double stats_fast_update_time;
 
-
+	virtual void drawFull()=0;
 
 	virtual ~Reach(){};
 

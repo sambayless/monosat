@@ -167,6 +167,11 @@ public:
 	void clearChanged(){
 		changed.clear();
 	}
+
+	void drawFull(){
+
+	}
+
 	void update( ){
 		static int iteration = 0;
 		int local_it = ++iteration ;
@@ -251,7 +256,7 @@ public:
 			for(int i = 0;i<g.adjacency[u].size();i++){
 				if(!g.edgeEnabled( g.adjacency[u][i].id))
 					continue;
-				int v = g.adjacency[u][i].to;
+				int v = g.adjacency[u][i].node;
 				int alt = dist[u]+ 1;
 				if(alt<dist[v]){
 					dist[v]=alt;

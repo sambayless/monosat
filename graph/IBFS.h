@@ -47,7 +47,7 @@ public:
     		for(int j = 0;j<g.adjacency[i].size();j++){
     			if(!g.edgeEnabled(g.adjacency[i][j].id))
 						continue;
-    			setCapacity(i,g.adjacency[i][j].to,c);
+    			setCapacity(i,g.adjacency[i][j].node,c);
     		}
     	}
     }
@@ -102,7 +102,7 @@ public:
 				for(int j = 0;j<g.adjacency[u].size();j++){
 					if(!g.edgeEnabled(g.adjacency[u][j].id))
 						continue;
-					int v = g.adjacency[u][j].to;
+					int v = g.adjacency[u][j].node;
 					if( ibfs->what_segment(v,IBFSGraph<int,int,int>::SOURCE) ==IBFSGraph<int,int,int>::SINK ){
 						//then this is on the cut
 						cut.push(Edge{u,v});

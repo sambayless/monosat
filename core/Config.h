@@ -29,6 +29,7 @@ extern IntOption opt_subsearch;
 
 extern BoolOption opt_graph;
 extern BoolOption opt_inc_graph;
+extern IntOption opt_dec_graph;
 extern BoolOption opt_conflict_shortest_path;
 extern BoolOption opt_conflict_min_cut;
 extern IntOption opt_restrict_decisions;
