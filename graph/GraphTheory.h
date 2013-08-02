@@ -216,7 +216,9 @@ private:
 
 	struct ReachInfo{
 		int source;
+		bool distance;
 		ReachDetector * detector;
+
 		ReachInfo():source(-1),detector(NULL){}
 	};
 
@@ -602,7 +604,7 @@ public:
 			}*/
 			Var v = var(p);
 			int u =reach_detectors[d]->getNode(v);
-			buildReachReason(u,*reach_detectors[d]->positive_path_detector,reason);
+			buildReachReason(u,d,reason);
 
 #ifdef DEBUG_GRAPH
 		 assert(dbg_clause(reason));
@@ -646,8 +648,15 @@ public:
 		}
 	}
 
-	void buildReachReason(int node,Reach & d,vec<Lit> & conflict){
+	void buildReachReason(int node,int detector,vec<Lit> & conflict){
 		//drawFull();
+		Reach & d = *reach_detectors[detector]->positive_path_detector;
+
+
+		double starttime = cpuTime();
+		d.update();
+
+
 		if(!dbg_reachable(d.getSource(),node)){
 			drawFull();
 
@@ -655,23 +664,40 @@ public:
 
 			assert(false);
 		}
-		d.update();
 		assert(d.connected_unchecked(node));
-		double starttime = cpuTime();
-		d.update();
-		int u = node;
-		int p;
-		while(( p = d.previous(u)) != -1){
-			Edge edg = edges[p][u];
-			Var e =edges[p][u].v;
-			lbool val = S->value(e);
-			assert(S->value(e)==l_True);
-			conflict.push(mkLit(e, true));
-			u = p;
-			if(u>400){
-				int a =1;
+		if(opt_learn_reaches ==0 || opt_learn_reaches==2){
+			int u = node;
+			int p;
+			while(( p = d.previous(u)) != -1){
+				Edge edg = edges[p][u];
+				Var e =edges[p][u].v;
+				lbool val = S->value(e);
+				assert(S->value(e)==l_True);
+				conflict.push(mkLit(e, true));
+				u = p;
 
 			}
+		}else{
+			//Instead of a complete path, we can learn reach variables, if they exist
+			int u = node;
+			int p;
+			while(( p = d.previous(u)) != -1){
+				Edge edg = edges[p][u];
+				Var e =edges[p][u].v;
+				lbool val = S->value(e);
+				assert(S->value(e)==l_True);
+				conflict.push(mkLit(e, true));
+				u = p;
+				if( u< reach_detectors[detector]->reach_lits.size() && reach_detectors[detector]->reach_lits[u]!=lit_Undef && S->value(reach_detectors[detector]->reach_lits[u])==l_True && S->level(var(reach_detectors[detector]->reach_lits[u]))< S->decisionLevel()){
+					//A potential (fixed) problem with the above: reach lit can be false, but have been assigned after r in the trail, messing up clause learning if this is a reason clause...
+					//This is avoided by ensuring that L is lower level than the conflict.
+					Lit l = reach_detectors[detector]->reach_lits[u];
+					assert(S->value(l)==l_True);
+					conflict.push(~l);
+					break;
+				}
+			}
+
 		}
 		double elapsed = cpuTime()-starttime;
 		pathtime+=elapsed;
@@ -685,7 +711,7 @@ public:
 	bool dbg_reachable(int from, int to){
 #ifdef DEBUG_GRAPH
 		DefaultEdgeStatus tmp;
-		DynamicGraph<> gtest(tmp);
+		/*DynamicGraph<> gtest(tmp);
 		for(int i = 0;i<nNodes();i++){
 			gtest.addNode();
 		}
@@ -700,9 +726,9 @@ public:
 			}else{
 				assert(!g.edgeEnabled(e.v));
 			}
-		}
+		}*/
 
-		Dijkstra<> d(from,gtest);
+		Dijkstra<> d(from,g);
 		d.update();
 		return d.connected(to);
 #else
@@ -811,6 +837,8 @@ public:
 			//We could learn an arbitrary (non-infinite) cut here, or just the whole set of false edges
 			//or perhaps we can learn the actual 1-uip cut?
 
+
+
 			    to_visit.clear();
 			    to_visit.push(node);
 			    seen.clear();
@@ -844,7 +872,15 @@ public:
 			    			//even if it is undef? probably...
 			    			if(!seen[from]){
 			    				seen[from]=true;
-			    				to_visit.push(from);
+			    				if((opt_learn_reaches ==2 || opt_learn_reaches==3) && from< reach_detectors[detector]->reach_lits.size() && reach_detectors[detector]->reach_lits[from]!=lit_Undef && S->value(reach_detectors[detector]->reach_lits[from])==l_False  && S->level(var(reach_detectors[detector]->reach_lits[from]))< S->decisionLevel())
+			    				{
+			    				//The problem with the above: reach lit can be false, but have been assigned after r in the trail, messing up clause learning if this is a reason clause...
+			    					Lit r = reach_detectors[detector]->reach_lits[from];
+			    					assert(var(r)<S->nVars());
+			    					assert(S->value(r)==l_False);
+			    					conflict.push(r);
+			    				}else
+			    					to_visit.push(from);
 			    			}
 			    		}
 			    	}
@@ -946,11 +982,12 @@ public:
 
 							}else if (S->value(l)==l_False){
 								conflict.push(l);
+								propagationtime+= cpuTime()-startproptime;
 								if(reach){
 
 								//conflict
 								//The reason is a path in g from to s in d
-									buildReachReason(u,*reach_detectors[d]->positive_path_detector,conflict);
+									buildReachReason(u,d,conflict);
 								//add it to s
 								//return it as a conflict
 
@@ -968,7 +1005,7 @@ public:
 									S->dbg_check(conflict);
 #endif
 
-								propagationtime+= cpuTime()-startproptime;
+
 								return false;
 							}else{
 								int  a=1;
@@ -1208,6 +1245,8 @@ public:
 			shadow_dbg->reaches(from,  to,reach_var,within_steps);
 #endif
 			assert(from<g.nodes);
+			if(within_steps>g.nodes)
+				within_steps=-1;
 
 			if (reach_info[from].source<0){
 
@@ -1226,7 +1265,7 @@ public:
 				marker_map[mnum] = -non_reach_markers.size();
 
 				reach_detectors.push(new ReachDetector(*this));
-				if(within_steps<0 || within_steps>g.nodes){
+				if(within_steps<0 ){
 					if(reachalg==ALG_CONNECTIVITY){
 						reach_detectors.last()->positiveReachStatus = new ReachDetector::ReachStatus(*reach_detectors.last(),true);
 						reach_detectors.last()->negativeReachStatus = new ReachDetector::ReachStatus(*reach_detectors.last(),false);

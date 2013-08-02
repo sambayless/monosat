@@ -353,6 +353,7 @@ public:
 					}
 				}
 
+
 				for(int u = 0;u<g.nodes;u++){
 					status.setReachable(u,seen[u]);
 				}

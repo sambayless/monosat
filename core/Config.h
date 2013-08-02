@@ -39,6 +39,9 @@ extern StringOption opt_reach_alg;
 
 extern BoolOption opt_check_solution;
 extern BoolOption opt_print_reach;
+
+extern IntOption opt_learn_reaches;
+extern StringOption opt_priority;
 enum ReachAlg{
 	 ALG_CONNECTIVITY,
 	 ALG_DIJKSTRA,

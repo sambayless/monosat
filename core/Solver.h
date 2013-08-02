@@ -56,6 +56,9 @@ public:
     bool    addClause (Lit p, Lit q, Lit r);                    // Add a ternary clause to the solver. 
     bool    addClause_(      vec<Lit>& ps);                     // Add a clause to the solver without making superflous internal copy. Will
 
+    void setDecisionPriority(Var v,unsigned int p){
+    	priority[v]=p;
+    }
 
     //Theory interface
     void addTheory(Theory*t){
@@ -217,6 +220,9 @@ public:
     Var min_local;
     Var max_local;
     int super_offset;
+
+
+
     // Mode of operation:
     //
     int       verbosity;
@@ -268,8 +274,15 @@ protected:
 
     struct VarOrderLt {
         const vec<double>&  activity;
-        bool operator () (Var x, Var y) const { return activity[x] > activity[y]; }
-        VarOrderLt(const vec<double>&  act) : activity(act) { }
+        const vec<int> &  priority;
+        bool operator () (Var x, Var y) const {
+        	if (priority[x] == priority[y])
+        		return activity[x] > activity[y];
+        	else{
+        		return priority[x]>priority[y];
+        	}
+        }
+        VarOrderLt(const vec<double>&  act,const vec<int>&  pri) : activity(act),priority(pri) { }
     };
 
     // Solver state:
@@ -285,6 +298,7 @@ protected:
     vec<lbool>          assigns;          // The current assignments.
     vec<char>           polarity;         // The preferred polarity of each variable.
     vec<char>           decision;         // Declares if a variable is eligible for selection in the decision heuristic.
+    vec<int>			priority;		  // Static, lexicographic heuristic
     vec<Lit>            trail;            // Assignment stack; stores all assigments made in the order they were made.
     vec<int>            trail_lim;        // Separator indices for different decision levels in 'trail'.
     vec<VarData>        vardata;          // Stores reason and level for each variable.

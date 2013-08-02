@@ -186,7 +186,31 @@ int main(int argc, char** argv)
            signal(SIGXCPU,SIGINT_interrupt);
      //      printf("Solving circuit with %d gates, %d latches, %d inputs, %d outputs\n", aiger->num_ands, aiger->num_latches, aiger->num_inputs, aiger->num_outputs);
 
-
+           const char * priority_file = opt_priority;
+           if(strlen(priority_file)>0){
+        	   FILE * f = fopen(priority_file,"r");
+        	   if(f){
+        		   char * line = NULL;
+				  int v=0;
+				  int p=0;
+				  int total_read = 0;
+				  while (fscanf(f," %d %d ", &v,&p) ==2) {
+					  if(v<1 || v> S.nVars() || p<0){
+						  fprintf(stderr,"Bad priority line: %d %d", v, p);
+						  exit(1);
+					  }
+					  v--;
+					  total_read++;
+					  S.setDecisionPriority(v,p);
+					 }
+				  if(total_read==0){
+					  fprintf(stderr,"Warning: read no priorities from priority file!");
+				  }
+        		   fclose(f);
+        	   }else{
+        		   fprintf(stderr,"Failed to read priority file!\n");
+        	   }
+           }
 
 
          //really simple, unsophisticated incremental BMC:
