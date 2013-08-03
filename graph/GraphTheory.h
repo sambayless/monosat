@@ -8,6 +8,7 @@
 #ifndef DGRAPH_H_
 #define DGRAPH_H_
 
+#include "utils/System.h"
 #include "core/Theory.h"
 #include "Graph.h"
 #include "Reach.h"
@@ -263,6 +264,11 @@ public:
 	double reachupdatetime;
 	double unreachupdatetime;
 	double stats_initial_propagation_time;
+	int num_learnt_paths;
+	int learnt_path_clause_length;
+	int num_learnt_cuts;
+	int learnt_cut_clause_length;
+
 	int stats_mc_calls;
 	GraphTheorySolver(Solver * S_):S(S_),g(g_status),antig(antig_status) ,cutGraph(cutGraph_status){
 		True = mkLit(S->newVar(),false);
@@ -279,6 +285,12 @@ public:
 			reachupdatetime=0;
 			unreachupdatetime=0;
 			stats_initial_propagation_time=0;
+
+			 num_learnt_paths=0;
+			 learnt_path_clause_length=0;
+			 num_learnt_cuts=0;
+			 learnt_cut_clause_length=0;
+
 			if(mincutalg==ALG_IBFS){
 				mc = new IBFS<CutEdgeStatus>(cutGraph);
 			}else{
@@ -301,8 +313,8 @@ public:
 		printf("Prop Time: %f (initial: %f)\n", propagationtime,stats_initial_propagation_time);
 		printf("Reach Time: %f (update Time: %f)\n", reachtime,reachupdatetime);
 		printf("Unreach Time: %f (Update Time: %f)\n", unreachtime,unreachupdatetime);
-		printf("Path Time: %f\n", pathtime);
-		printf("Min-cut Time: %f (%d calls, %f average)\n", mctime, stats_mc_calls,(mctime/(stats_mc_calls ? stats_mc_calls:1)));
+		printf("Path Time: %f (#Paths: %d, AvgLength %f, total: %d)\n", pathtime, num_learnt_paths, (learnt_path_clause_length /  ((float) num_learnt_paths+1)),learnt_path_clause_length);
+		printf("Min-cut Time: %f (%d calls, %f average, #Cuts: %d, AvgLength %f, total: %d)\n", mctime, stats_mc_calls,(mctime/(stats_mc_calls ? stats_mc_calls:1)),  num_learnt_cuts, (learnt_cut_clause_length /  ((float) num_learnt_cuts+1)),learnt_cut_clause_length);
 
 		int stats_full_updates=0;
 		int stats_fast_updates=0;
@@ -699,6 +711,8 @@ public:
 			}
 
 		}
+		 num_learnt_paths++;
+			 learnt_path_clause_length+= (conflict.size()-1);
 		double elapsed = cpuTime()-starttime;
 		pathtime+=elapsed;
 #ifdef DEBUG_GRAPH
@@ -888,6 +902,10 @@ public:
 
 
 		}
+
+		 num_learnt_cuts++;
+		 learnt_cut_clause_length+= (conflict.size()-1);
+
 		double elapsed = cpuTime()-starttime;
 			mctime+=elapsed;
 

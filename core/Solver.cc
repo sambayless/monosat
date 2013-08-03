@@ -23,6 +23,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "mtl/Sort.h"
 #include "core/Solver.h"
 #include "core/Config.h"
+#include "graph/GraphTheory.h"
 using namespace Minisat;
 
 //=================================================================================================
@@ -124,7 +125,7 @@ Var Solver::newVar(bool sign, bool dvar)
     //activity .push(0);
     activity .push(rnd_init_act ? drand(random_seed) * 0.00001 : 0);
     seen     .push(0);
-    polarity .push(sign);
+    polarity .push(opt_init_rnd_phase ? irand(random_seed,1) : sign);
     decision .push();
     trail    .capacity(v+1);
     if(max_decision_var>0 && v>max_decision_var)
@@ -895,8 +896,9 @@ lbool Solver::search(int nof_conflicts)
     int         backtrack_level;
     int         conflictC = 0;
     vec<Lit>    learnt_clause;
-    starts++;
 
+    starts++;
+    last_dec= var_Undef;
     for (;;){
     	propagate:
         CRef confl = propagate();
@@ -906,9 +908,96 @@ lbool Solver::search(int nof_conflicts)
             conflicts++; conflictC++;
             if (decisionLevel() == 0)
             	return l_False;
-
             learnt_clause.clear();
             analyze(confl, learnt_clause, backtrack_level);
+
+            if(opt_print_conflicts){
+            	printf("Conflict:\n");
+                           	Theory * t = theories[0];
+           					GraphTheorySolver *g = (GraphTheorySolver*)t;
+           					int width = sqrt(g->nNodes());
+
+                           //	exit(1);
+
+                           	if(opt_print_reach){
+                           				int  v = 0;
+
+
+                           				printf("\n");
+                           				for(int t = 0;t<theories.size();t++){
+                           					printf("Theory %d\n", t);
+                           					GraphTheorySolver *g = (GraphTheorySolver*)theories[t];
+
+                           					for(int r = 0;r<g->reach_detectors.size();r++){
+
+                           						int width = sqrt(g->nNodes());
+                           						int lasty= 0;
+                           						int extra =  g->nNodes() % width ? (width- g->nNodes() % width ):0;
+                           						for(int n = 0;n<g->nNodes();n++){
+                           							int x = n%width;
+
+                           							int y = (n + extra )/width;
+                           							if(y > lasty)
+                           								printf("\n");
+
+                           							int v =var( g->reach_detectors[r]->reach_lits[n]);
+                           							bool isany = false;
+                           							for(int i = 0;i<learnt_clause.size();i++){
+                           								if(var(learnt_clause[i])==v)
+                           									isany=true;
+                           							}
+                           							if(isany){
+                           								printf("\033[1;41m\033[1;37m x\033[0m");
+                           							}else if(value(v)==l_True)
+           												printf("\033[1;42m\033[1;37m 1\033[0m");
+           											else if(value(v)==l_False)
+           												printf("\033[1;44m\033[1;37m 0\033[0m");
+           											else{
+           												printf("\033[1;43m\033[1;37m-1\033[0m");
+           											}
+
+                           							lasty=y;
+                           						}
+                           						printf("\n");
+                           					}
+
+
+
+                           					//g->drawFull();
+
+                           					assert(g->dbg_solved());
+                           				}
+                           			 	printf("\n");
+                           				}
+
+                           	int lasty= -1;
+                           	                           	for(int n = 0;n<g->nNodes();n++){
+                           	                           					int x = n%width;
+                           	                           					int y = n/width;
+                           	                           					if(y > lasty)
+                           	                           						printf("\n");
+                           	           									if (isatty(fileno(stdout))){
+                           	           									bool isany = false;
+																			for(int i = 0;i<learnt_clause.size();i++){
+																				if(var(learnt_clause[i])==n)
+																					isany=true;
+																			}
+																			if(isany){
+																				printf("\033[1;41m\033[1;37m x\033[0m");
+																			}else if(value(n)==l_True)
+                           	           											printf("\033[1;42m\033[1;37m 1\033[0m");
+                           	           										else if(value(n)==l_False)
+                           	           											printf("\033[1;44m\033[1;37m 0\033[0m");
+                           	           										else{
+                           	           											printf("\033[1;43m\033[1;37m-1\033[0m");
+                           	           										}
+                           	           									}
+                           	           									lasty=y;
+                           	                           	}
+                           	                           	printf("\n\n");
+                           }
+
+
             cancelUntil(backtrack_level);
 
             //this is now slightly more complicated, if there are multiple lits implied by the super solver in the current decision level:
@@ -1005,7 +1094,80 @@ lbool Solver::search(int nof_conflicts)
                 // New variable decision:
                 decisions++;
                 next = pickBranchLit();
+                int p = priority[var(next)];
 
+               /* if(last_dec!= var_Undef && theories.size() && priority[var(next)]<priority[last_dec]){
+
+                	Theory * t = theories[0];
+					GraphTheorySolver *g = (GraphTheorySolver*)t;
+					int width = sqrt(g->nNodes());
+					int lasty= -1;
+                	for(int n = 0;n<g->nNodes();n++){
+                					int x = n%width;
+                					int y = n/width;
+                					if(y > lasty)
+                						printf("\n");
+									if (isatty(fileno(stdout))){
+
+										if(value(n)==l_True)
+											printf("\033[1;42m\033[1;37m 1\033[0m");
+										else if(value(n)==l_False)
+											printf("\033[1;44m\033[1;37m 0\033[0m");
+										else{
+											printf("\033[1;43m\033[1;37m-1\033[0m");
+										}
+									}
+									lasty=y;
+                	}
+                	printf("\n\n");
+                //	exit(1);
+
+                	if(opt_print_reach){
+                				int  v = 0;
+
+
+                				printf("\n");
+                				for(int t = 0;t<theories.size();t++){
+                					printf("Theory %d\n", t);
+                					GraphTheorySolver *g = (GraphTheorySolver*)theories[t];
+
+                					for(int r = 0;r<g->reach_detectors.size();r++){
+
+                						int width = sqrt(g->nNodes());
+                						int lasty= 0;
+                						int extra =  g->nNodes() % width ? (width- g->nNodes() % width ):0;
+                						for(int n = 0;n<g->nNodes();n++){
+                							int x = n%width;
+
+                							int y = (n + extra )/width;
+                							if(y > lasty)
+                								printf("\n");
+
+                							int v =var( g->reach_detectors[r]->reach_lits[n]);
+                							if(value(v)==l_True)
+												printf("\033[1;42m\033[1;37m 1\033[0m");
+											else if(value(v)==l_False)
+												printf("\033[1;44m\033[1;37m 0\033[0m");
+											else{
+												printf("\033[1;43m\033[1;37m-1\033[0m");
+											}
+
+                							lasty=y;
+                						}
+                						printf("\n");
+                					}
+
+
+
+                					//g->drawFull();
+
+                					assert(g->dbg_solved());
+                				}
+
+                				}
+
+                }
+*/
                 if (next == lit_Undef){
 
                 	//solve theories if this solver is completely assigned
@@ -1032,7 +1194,7 @@ lbool Solver::search(int nof_conflicts)
                     return l_True;
                 }
             }
-
+			last_dec= var(next);
             // Increase decision level and enqueue 'next'
             newDecisionLevel();
             uncheckedEnqueue(next);
@@ -1110,6 +1272,12 @@ lbool Solver::solve_()
     int curr_restarts = 0;
     while (status == l_Undef){
         double rest_base = luby_restart ? luby(restart_inc, curr_restarts) : pow(restart_inc, curr_restarts);
+
+        if(opt_rnd_phase){
+        	for(int i = 0;i<nVars();i++)
+        		polarity[i]=irand(random_seed,1);
+        }
+
         status = search(rest_base * restart_first);
         if (!withinBudget()) break;
         curr_restarts++;

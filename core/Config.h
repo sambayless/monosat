@@ -42,6 +42,11 @@ extern BoolOption opt_print_reach;
 
 extern IntOption opt_learn_reaches;
 extern StringOption opt_priority;
+
+extern BoolOption opt_print_conflicts;
+extern BoolOption opt_rnd_phase;
+extern BoolOption opt_init_rnd_phase;
+
 enum ReachAlg{
 	 ALG_CONNECTIVITY,
 	 ALG_DIJKSTRA,

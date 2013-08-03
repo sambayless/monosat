@@ -55,6 +55,10 @@ IntOption Minisat::opt_learn_reaches(_cat_graph,"learn-reach","Learn using reach
 
 StringOption Minisat::opt_priority(_cat_graph,"priority","Decision variable priority list","");
 
+BoolOption Minisat::opt_print_conflicts(_cat,"print-conflicts","",false);
+
+BoolOption Minisat::opt_rnd_phase(_cat,"rnd-phase","",false);
+BoolOption Minisat::opt_init_rnd_phase(_cat,"init-rnd-phase","",false);
 
 MinCutAlg Minisat::mincutalg=ALG_EDMONSKARP ;
 ReachAlg Minisat::reachalg=ALG_CONNECTIVITY;
