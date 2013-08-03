@@ -57,6 +57,7 @@ extern ReachAlg distalg;
 
 enum MinCutAlg{
 	 ALG_EDMONSKARP,
+	 ALG_EDKARP_ADJ,
 	 ALG_IBFS
 };
 extern MinCutAlg mincutalg;

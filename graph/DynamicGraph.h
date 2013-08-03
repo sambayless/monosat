@@ -48,6 +48,15 @@ public:
 	};
 	vec<vec<Edge> > adjacency;//adj list
 	vec<vec<Edge> > inverted_adjacency;//adj list
+
+	struct FullEdge{
+		int from;
+		int to;
+		int id;
+	};
+
+	vec<FullEdge> all_edges;
+
 	struct EdgeChange{
 		bool addition;
 		int u;//from
@@ -104,10 +113,16 @@ public:
 		adjacency[from].push({to,id});
 		edge_status.growTo(id+1);
 		inverted_adjacency[to].push({from,id});
+		all_edges.growTo(id+1);
+		all_edges[id]={from,to,id};
 		modifications++;
 		additions=modifications;
 		history.push({true,from,to,id,modifications});
 		enableEdge(from,to,id);//default to enabled
+	}
+
+	FullEdge getEdge(int id){
+		return all_edges[id];
 	}
 
 	void enableEdge(int from, int to, int id){

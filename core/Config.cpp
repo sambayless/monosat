@@ -38,7 +38,7 @@ static const char* _cat_graph ="GRAPH";
  BoolOption Minisat::opt_graph(_cat_graph,"graph","Use graph theory solver",true);
  BoolOption Minisat::opt_inc_graph(_cat_graph,"inc","Use incremental graph reachability",false);
  IntOption Minisat::opt_dec_graph(_cat_graph,"dec","Use decremental graph reachability",0,IntRange(0, 2));
- StringOption Minisat::opt_min_cut_alg(_cat_graph,"mincut","Select max-flow/min-cut algorithm (edmondskarp, ibfs)","edmondskarp");
+ StringOption Minisat::opt_min_cut_alg(_cat_graph,"mincut","Select max-flow/min-cut algorithm (edmondskarp, edmondskarp, ibfs)","edmondskarp-adj");
  StringOption Minisat::opt_reach_alg(_cat_graph,"reach","Select reachability algorithm (connectivity, dijkstra)","connectivity");
 
   BoolOption Minisat::opt_conflict_shortest_path(_cat_graph,"conflict-shortest-path","Use shortest path (instead of arbitrary path) for conflict resolution",true);

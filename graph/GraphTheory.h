@@ -20,6 +20,8 @@
 #include "MaxFlow.h"
 #include "IBFS.h"
 #include "EdmondsKarp.h"
+#include "EdmondsKarpAdj.h"
+
 #include "utils/System.h"
 #ifdef DEBUG_GRAPH
 #include "TestGraph.h"
@@ -56,44 +58,6 @@ private:
 	typedef DefaultEdgeStatus NegativeEdgeStatus;
 	typedef DefaultEdgeStatus CutEdgeStatus;
 
-	/*struct PositiveEdgeStatus{
-
-		const GraphTheorySolver & outer;
-
-	    bool operator [] (int index) const {
-	    	return outer.edge_assignments[index]==l_True;
-	    }
-	    void setStatus(int id,bool value){
-	    	//Do nothing
-	    }
-
-	    int size(){
-	    	return outer.edge_assignments.size();
-	    }
-	    void growTo(int size) const{
-	    	assert(outer.edge_assignments.size()>=size);
-	    }
-	    PositiveEdgeStatus(GraphTheorySolver & _outer):outer(_outer){
-
-	    }
-	};*/
-
-/*	struct NegativeEdgeStatus{
-
-		const GraphTheorySolver & outer;
-		bool ignore;
-	    const bool operator [] (int index) const { return outer.edge_assignments[index]!=l_False; }
-	    bool&       operator [] (int index)       { return ignore; }
-	    int size(){
-	    	return outer.edge_assignments.size();
-	    }
-	    void growTo(int size) const{
-	    	assert(outer.edge_assignments.size()>=size);
-	    }
-	    NegativeEdgeStatus(GraphTheorySolver & _outer):outer(_outer), ignore(false){
-
-	    }
-	};*/
 
 	PositiveEdgeStatus g_status;
 	NegativeEdgeStatus antig_status;
@@ -270,7 +234,22 @@ public:
 	int learnt_cut_clause_length;
 
 	int stats_mc_calls;
-	GraphTheorySolver(Solver * S_):S(S_),g(g_status),antig(antig_status) ,cutGraph(cutGraph_status){
+
+	struct CutStatus{
+		GraphTheorySolver & outer;
+		int operator () (int id) const {
+
+			if(outer.edge_assignments[id]==l_False){
+				return 1;
+			}else{
+				return 0xF0F0F0;
+			}
+		}
+		CutStatus(GraphTheorySolver & _outer):outer(_outer){}
+
+	} cutStatus;
+
+	GraphTheorySolver(Solver * S_):S(S_),g(g_status),antig(antig_status) ,cutGraph(cutGraph_status),cutStatus(*this){
 		True = mkLit(S->newVar(),false);
 			False=~True;
 			S->addClause(True);
@@ -293,6 +272,9 @@ public:
 
 			if(mincutalg==ALG_IBFS){
 				mc = new IBFS<CutEdgeStatus>(cutGraph);
+			}else if (mincutalg == ALG_EDKARP_ADJ){
+
+				mc = new EdmondsKarpAdj<CutStatus, CutEdgeStatus>(cutGraph,cutStatus);
 			}else{
 				mc = new EdmondsKarp<CutEdgeStatus>(cutGraph);
 			}
@@ -815,27 +797,28 @@ public:
 		cutGraph.clearHistory();
 		stats_mc_calls++;
 		if(opt_conflict_min_cut){
-			//ok, set the weights for each edge in the cut graph.
-			//Set edges to infinite weight if they are undef or true, and weight 1 otherwise.
-			for(int u = 0;u<cutGraph.adjacency.size();u++){
-				for(int j = 0;j<cutGraph.adjacency[u].size();j++){
-					int v = cutGraph.adjacency[u][j].node;
-					Var var = edges[u][v].v;
-					/*if(S->value(var)==l_False){
-						mc.setCapacity(u,v,1);
-					}else{*/
-						mc->setCapacity(u,v,0xF0F0F0);
-					//}
+			if(mincutalg!= ALG_EDKARP_ADJ){
+				//ok, set the weights for each edge in the cut graph.
+				//Set edges to infinite weight if they are undef or true, and weight 1 otherwise.
+				for(int u = 0;u<cutGraph.adjacency.size();u++){
+					for(int j = 0;j<cutGraph.adjacency[u].size();j++){
+						int v = cutGraph.adjacency[u][j].node;
+						Var var = edges[u][v].v;
+						/*if(S->value(var)==l_False){
+							mc.setCapacity(u,v,1);
+						}else{*/
+							mc->setCapacity(u,v,0xF0F0F0);
+						//}
+					}
+				}
+
+				//find any edges assigned to false, and set their capacity to 1
+				for(int i =0;i<trail.size();i++){
+					if(trail[i].isEdge && !trail[i].assign){
+						mc->setCapacity(trail[i].from, trail[i].to,1);
+					}
 				}
 			}
-
-			//find any edges assigned to false, and set their capacity to 1
-			for(int i =0;i<trail.size();i++){
-				if(trail[i].isEdge && !trail[i].assign){
-					mc->setCapacity(trail[i].from, trail[i].to,1);
-				}
-			}
-
 			cut.clear();
 
 			int f =mc->minCut(reach_detectors[detector]->source,node,cut);
@@ -915,7 +898,7 @@ public:
 	}
 	bool propagateTheory(vec<Lit> & conflict){
 		static int itp = 0;
-		if(	++itp==7451){
+		if(	++itp==2){
 			int a =1;
 		}
 

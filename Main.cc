@@ -103,6 +103,8 @@ int main(int argc, char** argv)
         if(!strcasecmp(opt_min_cut_alg,"ibfs")){
         	mincutalg=ALG_IBFS;
 
+        }else if (!strcasecmp(opt_min_cut_alg,"edmondskarp-adj")){
+        	mincutalg = ALG_EDKARP_ADJ;
         }else if (!strcasecmp(opt_min_cut_alg,"edmondskarp")){
         	mincutalg = ALG_EDMONSKARP;
         }else{
