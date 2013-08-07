@@ -84,6 +84,25 @@ class EdmondsKarpAdj:public MaxFlow{
                            return M[t];
                    }
                }
+               /*for (int i = 0;i<g.inverted_adjacency[u].size();i++){
+				   if(!g.edgeEnabled(g.inverted_adjacency[u][i].id))
+						continue;
+				   int v = g.inverted_adjacency[u][i].node;
+				   int id = g.inverted_adjacency[u][i].id;
+					///(If there is available capacity, and v is not seen before in search)
+				   int c = 0;
+				   int id_rev = rev[id];
+				   int f = F[id_rev];
+
+					if (((0 - f) > 0) && (prev[v].from == -1)){
+						prev[v] = {u,id_rev};
+						M[v] = min(M[u], c - f);
+						if (v != t)
+							Q.push(v);
+						else
+							return M[t];
+					}
+				}*/
            }
            return 0;
 

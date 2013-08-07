@@ -47,6 +47,8 @@ extern BoolOption opt_print_conflicts;
 extern BoolOption opt_rnd_phase;
 extern BoolOption opt_init_rnd_phase;
 
+extern BoolOption opt_reach_prop;
+
 enum ReachAlg{
 	 ALG_CONNECTIVITY,
 	 ALG_DIJKSTRA,

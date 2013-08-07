@@ -60,6 +60,8 @@ BoolOption Minisat::opt_print_conflicts(_cat,"print-conflicts","",false);
 BoolOption Minisat::opt_rnd_phase(_cat,"rnd-phase","",false);
 BoolOption Minisat::opt_init_rnd_phase(_cat,"init-rnd-phase","",false);
 
+BoolOption Minisat::opt_reach_prop(_cat_graph,"prop-reach","",false);
+
 MinCutAlg Minisat::mincutalg=ALG_EDMONSKARP ;
 ReachAlg Minisat::reachalg=ALG_CONNECTIVITY;
 ReachAlg Minisat::distalg=ALG_BFS;

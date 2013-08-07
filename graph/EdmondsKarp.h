@@ -67,6 +67,24 @@ class EdmondsKarp:public MaxFlow{
                            return M[t];
                    }
                }
+               //Must also try reverse edges
+               for (int i = 0;i<g.inverted_adjacency[u].size();i++){
+				   if(!g.edgeEnabled(g.inverted_adjacency[u][i].id))
+						continue;
+				   int v = g.inverted_adjacency[u][i].node;
+					///(If there is available capacity, and v is not seen before in search)
+				   int c = C[u][v];
+				   int f = F[u][v];
+
+					if (((C[u][v] - F[u][v]) > 0) && (P[v] == -1)){
+						P[v] = u;
+						M[v] = min(M[u], C[u][v] - F[u][v]);
+						if (v != t)
+							Q.push(v);
+						else
+							return M[t];
+					}
+				}
            }
            return 0;
 
@@ -131,10 +149,88 @@ public:
         }
         return f;
     }
+    int maxFlow(int s, int t, int max_length){
+       	int f = 0;
+       	C.growTo(g.nodes);
+       	F.growTo(g.nodes);
+       	P.growTo(g.nodes);
+       	M.growTo(g.nodes);
 
+       	for(int i = 0;i<g.nodes;i++){
+       		P[i]=-1;
+       		M[i]=0;
+       		F[i].growTo(g.nodes);
+       		C[i].growTo(g.nodes);
+       		for(int j = 0;j<g.nodes;j++){
+       			F[i][j]=0;
+       		}
+       	}
+       	P[s] = -2;
+       	 M[s] = INF;
+           while(true){
+           	int m= BreadthFirstSearch(s,t);
+
+               if (m == 0)
+                   break;
+
+               f = f + m;
+               if(f>max_length){
+            	   return f;
+               }
+               int v = t;
+               while (v!=  s){
+                   int u = P[v];
+                   F[u][v] = F[u][v] + m;
+                   F[v][u] = F[v][u] - m;
+                   v = u;
+               }
+           }
+           return f;
+       }
 
     vec<bool> seen;
     vec<bool> visited;
+
+    bool minCut(int s, int t, int max_length, vec<Edge> & cut){
+    	int f = maxFlow(s,t,max_length);
+    	if(f>max_length){
+    		return false;
+    	}
+		//ok, now find the cut
+		Q.clear();
+		Q.push(s);
+		seen.clear();
+		seen.growTo(g.nodes);
+		seen[s]=true;
+	//	visited.clear();
+		//visited.growTo(g.nodes);
+	//	visited[s]=true;
+		for(int j = 0;j<Q.size();j++){
+		   int u = Q[j];
+
+			for(int i = 0;i<g.adjacency[u].size();i++){
+				if(!g.edgeEnabled(g.adjacency[u][i].id))
+					continue;
+				int v = g.adjacency[u][i].node;
+
+				if(C[u][v] - F[u][v] == 0){
+					cut.push(Edge{u,v});
+				}else if(!seen[v]){
+					Q.push(v);
+					seen[v]=true;
+				}
+			}
+		}
+		//Now remove any edges that lead to vertices that we ended up visiting
+		int i, j = 0;
+		for( i = 0;i<cut.size();i++){
+			if(!seen[cut[i].v]){
+				cut[j++]=cut[i];
+			}
+		}
+		cut.shrink(i-j);
+		return true;
+    }
 
     int minCut(int s, int t, vec<Edge> & cut){
     	int f = maxFlow(s,t);
