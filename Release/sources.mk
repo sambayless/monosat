@@ -26,5 +26,11 @@ SUBDIRS := \
 utils \
 core \
 aiger \
+Release2/utils \
+Release2/minilib \
+Release2/dbg \
+Release2/core \
+Release2/aiger \
+Release2 \
 . \
 

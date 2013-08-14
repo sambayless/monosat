@@ -30,6 +30,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 #include "core/Solver.h"
 #include "Aiger.h"
+#include "core/Dimacs.h"
 #include "core/Config.h"
 
 using namespace Minisat;
@@ -89,7 +90,6 @@ int main(int argc, char** argv)
         IntOption    cpu_lim("MAIN", "cpu-lim","Limit on CPU time allowed in seconds.\n", INT32_MAX, IntRange(0, INT32_MAX));
         IntOption    mem_lim("MAIN", "mem-lim","Limit on memory usage in megabytes.\n", INT32_MAX, IntRange(0, INT32_MAX));
         
-        IntOption    opt_k("bmc", "k","Maximum number of steps to unroll.\n", INT32_MAX, IntRange(0, INT32_MAX));
 
         parseOptions(argc, argv, true);
 
@@ -124,77 +124,52 @@ int main(int argc, char** argv)
                     printf("WARNING! Could not set resource limit: Virtual memory.\n");
             } }
 
-         aiger *aiger;
 
-         aiger = aiger_init ();
-         const char *error;
-         if (argc >= 2)
-           error = aiger_open_and_read_from_file (aiger, argv[1]);
-         else
-           error = aiger_read_from_file (aiger, stdin);
+        gzFile in = (argc == 1) ? gzdopen(0, "rb") : gzopen(argv[1], "rb");
+        if (in == NULL)
+            printf("ERROR! Could not open file: %s\n", argc == 1 ? "<stdin>" : argv[1]), exit(1);
 
-         if (error)
-           {
-             fprintf (stderr,
-       	       "***  %s: %s\n",
-       	       (argc >= 1) ? (argv[1]) : "<stdin>", error);
-             exit(1);
-           }
-         else if (aiger->num_outputs != 1)
-           {
-             fprintf (stderr,
-       	       "***  %s: expected exactly one output\n",
-       	    (argc >= 1) ? (argv[1]) : "<stdin>");
-             exit(1);
-           }
-         // Change to signal-handlers that will only notify the solver and allow it to terminate
-           // voluntarily:
-           signal(SIGINT, SIGINT_interrupt);
-           signal(SIGXCPU,SIGINT_interrupt);
-           printf("Solving circuit with %d gates, %d latches, %d inputs, %d outputs\n", aiger->num_ands, aiger->num_latches, aiger->num_inputs, aiger->num_outputs);
+        Solver S;
 
 
+	   S.verbosity = verb;
 
+	   solver = &S;
+        if (S.verbosity > 0){
+            printf("============================[ Problem Statistics ]=============================\n");
+            printf("|                                                                             |\n"); }
 
-         //really simple, unsophisticated incremental BMC:
+        parse_DIMACS(in, S);
+        gzclose(in);
+        FILE* res = (argc >= 3) ? fopen(argv[2], "wb") : NULL;
 
-           lbool ret=l_Undef;
-           vec<Var> in_latches;
-           vec<Var> out_latches;
+        if (S.verbosity > 0){
+            printf("|  Number of variables:  %12d                                         |\n", S.nVars());
+            printf("|  Number of clauses:    %12d                                         |\n", S.nClauses()); }
 
-           vec<Solver*> solvers;
-           solvers.push(new Solver());
-           prepare(*solvers.last(),aiger,in_latches);
-           zero(*solvers.last(),aiger,in_latches);
-           Lit safety= unroll(*solvers.last(),aiger, in_latches,out_latches);
+        double parsed_time = cpuTime();
+        if (S.verbosity > 0){
+            printf("|  Parse time:           %12.2f s                                       |\n", parsed_time - initial_time);
+            printf("|                                                                             |\n"); }
 
+        // Change to signal-handlers that will only notify the solver and allow it to terminate
+        // voluntarily:
+        signal(SIGINT, SIGINT_interrupt);
+        signal(SIGXCPU,SIGINT_interrupt);
 
-           for(int i = 1;i<opt_k;i++){
+        if (!S.simplify()){
+            if (res != NULL) fprintf(res, "UNSAT\n"), fclose(res);
+            if (S.verbosity > 0){
+                printf("===============================================================================\n");
+                printf("Solved by unit propagation\n");
+                printStats(S);
+                printf("\n"); }
+            printf("UNSATISFIABLE\n");
+            exit(20);
+        }
 
-        	   if(solvers.last()->solve(safety)){
-        		   ret=l_True;
-        		   break;
-        	   }else if (!solvers.last()->okay()){
-					printf("Note: Problem proven unsat even without asserting property (this usually indicates a bug).\n");
-					ret= l_False;
-					break;
-        	   }else if (aiger->num_latches==0){
-        		   ret=l_False;
-        			printf("Note: Circuit has no latches.\n");
-        		   break;
-        	   }
-        	   Solver * S = new Solver();
-
-               prepare(*S,aiger,in_latches);
-               safety= unroll(*S,aiger, in_latches,out_latches);
-
-               //attach the last solver to this one
-               S->addTheory(solvers.last());
-               solvers.last()->attachTo(S, in_latches, out_latches);
-               solvers.push(S);
-               printf("Unrolling to depth %d\n", i );
-           }
-
+        vec<Lit> dummy;
+        lbool ret = S.solveLimited(dummy);
 
         if(ret==l_True){
         	printf("SAT\n");
