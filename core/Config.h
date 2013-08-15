@@ -22,11 +22,16 @@ extern  IntOption     opt_restart_first ;
 extern  DoubleOption  opt_restart_inc   ;
 extern  DoubleOption  opt_garbage_frac  ;
 
+extern BoolOption opt_partial;
+
 extern  BoolOption opt_interpolate;
 extern IntOption opt_eager_prop;
 extern IntOption opt_subsearch;
 
 
+extern  IntOption opt_allsat_vars;
+extern BoolOption opt_allsat_first;
+extern BoolOption opt_allsat;
 }
 
 #endif /* CONFIG_H_ */

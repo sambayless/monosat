@@ -30,12 +30,14 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 namespace Minisat {
 
+class Cover;
+
 //=================================================================================================
 // Solver -- the main class:
 
 class Solver:public Theory {
 public:
-
+	friend class Cover;
     // Constructor/Destructor:
     //
     Solver();
@@ -157,6 +159,7 @@ public:
 
     // Extra results: (read-only member variable)
     //
+    bool use_model;
     vec<lbool> model;             // If problem is satisfiable, this vector contains the model (if any).
     vec<Lit>   conflict;          // If problem is unsatisfiable (possibly under assumptions),
                                   // this vector represent the final conflict clause expressed in the assumptions.
@@ -168,6 +171,8 @@ public:
     vec<Theory*> theories;
     vec<CRef> markers;//a set of special clauses that can be recognized as pointers to theories
     Solver * S;//super solver
+    //Whether or not to fill the model vector (and reset the solver) after solving
+
     int super_qhead;
     int local_qhead;
     CRef cause_marker;
@@ -291,7 +296,9 @@ protected:
     bool	solve(vec<Lit> & conflict);
     void 	buildReason(Lit p, vec<Lit> & reason);
     void backtrackUntil(int level);
+public:
     void     cancelUntil      (int level);                                             // Backtrack until a certain level.
+private:
     void     analyze          (CRef confl, vec<Lit>& out_learnt, int& out_btlevel);    // (bt = backtrack)
     void 	analyzeFinal(CRef confl, Lit skip_lit, vec<Lit>& out_conflict);
     void     analyzeFinal     (Lit p, vec<Lit>& out_conflict);                         // COULD THIS BE IMPLEMENTED BY THE ORDINARIY "analyze" BY SOME REASONABLE GENERALIZATION?
@@ -454,8 +461,8 @@ inline int      Solver::decisionLevel ()      const   { return trail_lim.size();
 inline uint32_t Solver::abstractLevel (Var x) const   { return 1 << (level(x) & 31); }
 inline lbool    Solver::value         (Var x) const   { return assigns[x]; }
 inline lbool    Solver::value         (Lit p) const   { return assigns[var(p)] ^ sign(p); }
-inline lbool    Solver::modelValue    (Var x) const   { return model[x]; }
-inline lbool    Solver::modelValue    (Lit p) const   { return model[var(p)] ^ sign(p); }
+inline lbool    Solver::modelValue    (Var x) const   { assert(use_model); return model[x]; }
+inline lbool    Solver::modelValue    (Lit p) const   { assert(use_model); return model[var(p)] ^ sign(p); }
 inline int      Solver::nAssigns      ()      const   { return trail.size(); }
 inline int      Solver::nClauses      ()      const   { return clauses.size(); }
 inline int      Solver::nLearnts      ()      const   { return learnts.size(); }

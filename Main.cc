@@ -32,7 +32,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "Aiger.h"
 #include "core/Dimacs.h"
 #include "core/Config.h"
-
+#include "Partial.h"
 using namespace Minisat;
 
 //=================================================================================================
@@ -133,7 +133,7 @@ int main(int argc, char** argv)
 
 
 	   S.verbosity = verb;
-
+	   S.use_model=false;
 	   solver = &S;
         if (S.verbosity > 0){
             printf("============================[ Problem Statistics ]=============================\n");
@@ -167,10 +167,135 @@ int main(int argc, char** argv)
             printf("UNSATISFIABLE\n");
             exit(20);
         }
-
         vec<Lit> dummy;
-        lbool ret = S.solveLimited(dummy);
+        lbool ret=l_Undef;
+        if(!opt_allsat){
 
+        	ret = S.solveLimited(dummy);
+      	  if(ret==l_True) {
+      		 if(opt_partial){
+      			Cover c;
+      			vec<Lit> partial;
+      			c.getCover(S,partial);
+      			sort(partial);
+ 				printf("v ");
+ 				for (int i = 0; i < partial.size(); i++){
+ 					Lit l = partial[i];
+ 					printf("%s%s%d", (i==0)?"":" ", (sign(l))?"-":"", var(l)+1);
+
+ 				}
+ 				printf(" 0\n");
+
+
+      		 }else{
+				printf("v ");
+				for (int i = 0; i < S.nVars(); i++){
+					if (S.value(i) != l_Undef)
+						printf("%s%s%d", (i==0)?"":" ", (S.value(i)==l_True)?"":"-", i+1);
+				}
+
+				printf(" 0\n");
+      		 }
+      	  }
+
+        }else{
+        	vec<Var> allsatvec;
+        	if(opt_allsat_vars==0){
+        		for(int i = 0;i<S.nVars();i++){
+
+					allsatvec.push(i);
+				}
+        	}else if(opt_allsat_vars>0){
+        		for(int i = 0;i<opt_allsat_vars;i++){
+        			if(i>=S.nVars())
+        				break;
+        			allsatvec.push(i);
+        		}
+        	}else {
+        		int start = S.nVars()+opt_allsat_vars;
+        		if(start<0)
+        			start=0;
+        		for(int i = start;i<S.nVars();i++){
+					allsatvec.push(i);
+				}
+        	}
+
+        	//do an allsat loop
+        	if(opt_allsat_first){
+        		vec<Var> supervec;
+        		vec<Lit> block;
+        		Cover c;
+        		Solver allsat;
+        		allsat.use_model=false;
+        		for(int i = 0;i<S.nVars();i++){
+					c.excludeFromCover(i,true);
+				}
+        		//map from sub to supersolver vars
+        		vec<int> allsat_map;
+
+        		for(int i = 0;i<allsatvec.size();i++){
+        			Var v =allsat.newVar();
+        			supervec.push(v);
+        			allsat_map.growTo(allsatvec[i]+1);
+        			allsat_map[allsatvec[i]]=v;
+        			c.excludeFromCover(allsatvec[i],false);
+        		}
+        		allsat.addTheory(&S);
+        		S.attachTo(&allsat,supervec,allsatvec);
+        		long n_blocking_clauses=0;
+        		double n_solutions=0;
+        		//ok, now do an allsat loop:
+        		while(ret!=l_False){
+        			ret = allsat.solveLimited(dummy);
+        			if(ret==l_True){
+        				n_blocking_clauses++;
+        				//Negate the solver's assignments
+        				block.clear();
+        				if(opt_partial){
+        					c.getCover(S,block);
+        					sort(block);
+        					if(verb>1){
+								printf("v ");
+								for (int i = 0; i < block.size(); i++){
+									Lit l = block[i];
+									printf("%s%s%d", (i==0)?"":" ", (sign(l))?"-":"", var(l)+1);
+
+								}
+								printf(" 0\n");
+        					}
+        					double t = pow(2, (allsatvec.size() - block.size()));
+        					n_solutions+= t;
+        					for(int i = 0;i<block.size();i++){
+        						Lit l = block[i];
+        						Var s =allsat_map[var(l)];
+        						block[i]= ~mkLit(s,sign(l));//intentionally inverting this
+        					}
+        				}else{
+        					n_solutions++;
+        					for(int i = 0;i<allsat.nVars();i++){
+								block.push(~mkLit(i, allsat.value(i)==l_False));
+							}
+          					if(verb>1){
+								printf("v ");
+								for (int i = 0; i < block.size(); i++){
+									Lit l = block[i];
+									l=mkLit(allsatvec[var(l)],sign(l));
+									printf("%s%s%d", (i==0)?"":" ", (sign(l))?"-":"", var(l)+1);
+
+								}
+								printf(" 0\n");
+							}
+
+        				}
+        				allsat.cancelUntil(0);
+        				allsat.addClause(block);
+        			}
+        		}
+        		printf("Done allsat\n");
+        		printf("Learned %ld blocking clauses.\n",n_blocking_clauses);
+        		printf("#solutions: %.0f\n",n_solutions);
+        	}
+        }
         if(ret==l_True){
         	printf("SAT\n");
         }else if(ret==l_False){

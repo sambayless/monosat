@@ -83,6 +83,7 @@ Solver::Solver() :
   , conflict_budget    (-1)
   , propagation_budget (-1)
   , asynch_interrupt   (false)
+	,use_model(true)
 	, S(NULL)
 	,super_qhead(0)
 	,super_offset(-1)
@@ -971,7 +972,7 @@ lbool Solver::search(int nof_conflicts)
 						if(opt_subsearch==3 && track_min_level<initial_level)
 							continue;//Disable attempting to solve sub-solvers if we've backtracked past the super solver's decision level
 
-						if(!theories[i]->solve(theory_conflict)){
+ 						if(!theories[i]->solve(theory_conflict)){
 							if(!addConflictClause(theory_conflict,confl))
 							{
 								goto conflict;
@@ -1078,13 +1079,17 @@ lbool Solver::solve_()
 
 
     if (status == l_True){
-        // Extend & copy model:
-        model.growTo(nVars());
-        for (int i = 0; i < nVars(); i++) model[i] = value(i);
+    	if(use_model){
+    		// Extend & copy model:
+			model.growTo(nVars());
+			for (int i = 0; i < nVars(); i++) model[i] = value(i);
+        }
     }else if (status == l_False && conflict.size() == 0)
         ok = false;
 
-    cancelUntil(0);
+    if(use_model)
+    	cancelUntil(0);
+
     assumptions.clear();
     return status;
 }
@@ -1102,23 +1107,31 @@ bool Solver::solve(vec<Lit> & conflict_out){
 	while (status == l_Undef){
 		double rest_base = luby_restart ? luby(restart_inc, curr_restarts) : pow(restart_inc, curr_restarts);
 		status = search(rest_base * restart_first);
-		if (!withinBudget() || (opt_subsearch==0 && track_min_level<initial_level)) break;
+		if (!withinBudget() || (opt_subsearch==0 && track_min_level<initial_level)){
+			status=l_Undef;
+			break;
+
+		}
 		curr_restarts++;
 	}
-	cancelUntil(track_min_level);
-	if(track_min_level <initial_level ){
-		S->cancelUntil(track_min_level);
-	}
-	if(!ok){
-		return false;
-	}
-	if(conflict.size()){
-		toSuper(conflict,conflict_out);
-		interpolant.push(); conflict_out.copyTo( interpolant.last());//Add this clause into the interpolant vector
-		return false;
-	}
+	if(status!=l_True){
+		cancelUntil(track_min_level);
+		if(track_min_level <initial_level ){
+			S->cancelUntil(track_min_level);
+		}
+		if(!ok){
+			return false;
+		}
+		if(conflict.size()){
+			toSuper(conflict,conflict_out);
+			interpolant.push(); conflict_out.copyTo( interpolant.last());//Add this clause into the interpolant vector
+			return false;
+		}
 
-	return propagateTheory(conflict_out);
+		return propagateTheory(conflict_out);
+	}else{
+		return true;
+	}
 }
 
 
