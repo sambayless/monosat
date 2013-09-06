@@ -25,6 +25,7 @@ extern  DoubleOption  opt_garbage_frac  ;
 extern BoolOption opt_partial;
 
 extern  BoolOption opt_interpolate;
+
 extern IntOption opt_eager_prop;
 extern IntOption opt_subsearch;
 
@@ -32,6 +33,8 @@ extern IntOption opt_subsearch;
 extern  IntOption opt_allsat_vars;
 extern BoolOption opt_allsat_first;
 extern BoolOption opt_allsat;
+extern IntOption opt_max_allsat;
+extern BoolOption opt_allsat_inc_block;
 }
 
 #endif /* CONFIG_H_ */

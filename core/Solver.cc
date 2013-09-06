@@ -928,7 +928,7 @@ lbool Solver::search(int nof_conflicts)
             if ((nof_conflicts >= 0 && conflictC >= nof_conflicts )|| !withinBudget()){
                 // Reached bound on number of conflicts:
                 progress_estimate = progressEstimate();
-                cancelUntil(initial_level);
+                cancelUntil(track_min_level);
                 return l_Undef; }
 
 
@@ -1114,7 +1114,7 @@ bool Solver::solve(vec<Lit> & conflict_out){
 		}
 		curr_restarts++;
 	}
-	if(status!=l_True){
+	if(status!=l_True || track_min_level<initial_level){
 		cancelUntil(track_min_level);
 		if(track_min_level <initial_level ){
 			S->cancelUntil(track_min_level);

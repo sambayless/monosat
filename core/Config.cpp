@@ -38,3 +38,5 @@ BoolOption Minisat::opt_partial(_cat,"partial","Attempt to find a partial satisf
  BoolOption Minisat::opt_allsat(_cat_allsat,"allsat","Perform allsat",false);
  IntOption Minisat::opt_allsat_vars(_cat_allsat,"allsat-vars", "Perform allsat over the first (or negative for last) n variables (0 for all variables).", 0, IntRange(INT32_MIN,INT32_MAX));
  BoolOption Minisat::opt_allsat_first(_cat_allsat,"allsat-first","Force the allsat variables to assigned first",true);
+IntOption Minisat::opt_max_allsat(_cat_allsat,"max-allsat","Stop allsat after learning n blocking clauses (0 for infinite)",0,IntRange(0,INT32_MAX));
+BoolOption Minisat::opt_allsat_inc_block(_cat_allsat,"inc-block","Add blocking clauses using partial backtracking",true);

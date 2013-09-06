@@ -212,7 +212,7 @@ public:
     uint64_t dec_vars, clauses_literals, learnts_literals, max_literals, tot_literals;
 
 protected:
-
+public:
     // Helper structures:
     //
     struct VarData { CRef reason; int level; };
@@ -296,9 +296,9 @@ protected:
     bool	solve(vec<Lit> & conflict);
     void 	buildReason(Lit p, vec<Lit> & reason);
     void backtrackUntil(int level);
-public:
+
     void     cancelUntil      (int level);                                             // Backtrack until a certain level.
-private:
+
     void     analyze          (CRef confl, vec<Lit>& out_learnt, int& out_btlevel);    // (bt = backtrack)
     void 	analyzeFinal(CRef confl, Lit skip_lit, vec<Lit>& out_conflict);
     void     analyzeFinal     (Lit p, vec<Lit>& out_conflict);                         // COULD THIS BE IMPLEMENTED BY THE ORDINARIY "analyze" BY SOME REASONABLE GENERALIZATION?

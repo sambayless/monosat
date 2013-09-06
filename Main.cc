@@ -72,6 +72,16 @@ static void SIGINT_exit(int signum) {
 //=================================================================================================
 // Main:
 
+void printInterpolant (Solver & S, FILE * out){
+	for(int i = 0;i<S.interpolant.size();i++){
+		vec<Lit> & c = S.interpolant[i];
+		for(int j  =0;j<c.size();j++){
+			Lit l = c[j];
+			fprintf(out,"%d ",dimacs(l));
+		}
+		fprintf(out,"0\n");
+	}
+}
 
 int main(int argc, char** argv)
 {
@@ -90,6 +100,7 @@ int main(int argc, char** argv)
         IntOption    cpu_lim("MAIN", "cpu-lim","Limit on CPU time allowed in seconds.\n", INT32_MAX, IntRange(0, INT32_MAX));
         IntOption    mem_lim("MAIN", "mem-lim","Limit on memory usage in megabytes.\n", INT32_MAX, IntRange(0, INT32_MAX));
         
+        StringOption opt_interpolant_file("MAIN","int-out","Write interpolants to given file","");
 
         parseOptions(argc, argv, true);
 
@@ -142,6 +153,8 @@ int main(int argc, char** argv)
         parse_DIMACS(in, S);
         gzclose(in);
         FILE* res = (argc >= 3) ? fopen(argv[2], "wb") : NULL;
+        const char * intfile =  opt_interpolant_file;
+        FILE * intout = strlen(intfile)>0? fopen(intfile,"wb") : NULL;
 
         if (S.verbosity > 0){
             printf("|  Number of variables:  %12d                                         |\n", S.nVars());
@@ -174,6 +187,7 @@ int main(int argc, char** argv)
         	ret = S.solveLimited(dummy);
       	  if(ret==l_True) {
       		 if(opt_partial){
+
       			Cover c;
       			vec<Lit> partial;
       			c.getCover(S,partial);
@@ -200,6 +214,7 @@ int main(int argc, char** argv)
 
         }else{
         	vec<Var> allsatvec;
+
         	if(opt_allsat_vars==0){
         		for(int i = 0;i<S.nVars();i++){
 
@@ -222,6 +237,7 @@ int main(int argc, char** argv)
 
         	//do an allsat loop
         	if(opt_allsat_first){
+        		vec<Lit> learnt_clause;
         		vec<Var> supervec;
         		vec<Lit> block;
         		Cover c;
@@ -243,9 +259,12 @@ int main(int argc, char** argv)
         		allsat.addTheory(&S);
         		S.attachTo(&allsat,supervec,allsatvec);
         		long n_blocking_clauses=0;
+        		long total_clause_length=0;
         		double n_solutions=0;
+        		long max_clauses = opt_max_allsat;
+
         		//ok, now do an allsat loop:
-        		while(ret!=l_False){
+        		while(ret!=l_False && (!max_clauses || n_blocking_clauses<max_clauses)){
         			ret = allsat.solveLimited(dummy);
         			if(ret==l_True){
         				n_blocking_clauses++;
@@ -287,15 +306,124 @@ int main(int argc, char** argv)
 							}
 
         				}
-        				allsat.cancelUntil(0);
-        				allsat.addClause(block);
+        				if(opt_allsat_inc_block){
+        				int max_lev = 0;
+        				int second_max = 0;
+        				int max_pos=0;
+        				int second_pos=1;
+        				Lit max=lit_Undef;
+        				for(int i = 0;i<block.size();i++){
+        					Lit l = block[i];
+        					assert(allsat.value(l)==l_False);
+        					int lev = allsat.level(var(l));
+        					if(lev>=max_lev){
+        						second_max=max_lev;
+        						second_pos=max_pos;
+        						max_lev=lev;
+        						max_pos=i;
+        						max=l;
+        					}else if (lev>second_max){
+        						second_max=lev;
+        						second_pos=i;
+        					}
+        				}
+
+        				if(block.size()>1){
+        					Lit second_max = block[second_pos];
+        					if(max_pos!=0){
+        						Lit t = block[0];
+        						block[0]=max;
+        						block[max_pos]=t;
+        						if(second_pos==0){
+        							second_pos=max_pos;
+        						}
+        					}
+
+        					if(second_pos!=1){
+        						Lit t= block[1];
+        						block[1]=second_max;
+        						block[second_pos]=t;
+        					}
+
+        					assert(block[0]==max);
+        					assert(block[1]==second_max);
+        				}
+
+
+        				allsat.cancelUntil(second_max);
+
+        				if(block.size()==1 || max_lev>second_max){
+        				    if (block.size() == 1){
+        				    	allsat.ok&= allsat.enqueue(max);
+							}else{
+								CRef cr = allsat.ca.alloc(block, false);
+								allsat.clauses.push(cr);
+								allsat.attachClause(cr);
+
+								assert(allsat.value(block[0])==l_Undef);
+								allsat.uncheckedEnqueue(block[0], cr);
+							}
+        				}else{
+        					//solver is in conflict...
+        					CRef confl = allsat.ca.alloc(block, false);
+							allsat.clauses.push(confl);
+							allsat.attachClause(confl);
+
+							if(allsat.decisionLevel()==0){
+								ret = l_False;//done
+							}else{
+
+
+								 learnt_clause.clear();
+								 int backtrack_level=0;
+								allsat.analyze(confl, learnt_clause, backtrack_level);
+								allsat.cancelUntil(backtrack_level);
+
+								//this is now slightly more complicated, if there are multiple lits implied by the super solver in the current decision level:
+								//The learnt clause may not be asserting.
+
+								if (learnt_clause.size() == 1){
+									allsat.uncheckedEnqueue(learnt_clause[0]);
+								}else{
+									CRef cr = allsat.ca.alloc(learnt_clause, true);
+									allsat.learnts.push(cr);
+									allsat.attachClause(cr);
+									allsat.claBumpActivity(allsat.ca[cr]);
+
+
+									allsat.uncheckedEnqueue(learnt_clause[0], cr);
+
+
+
+								}
+							}
+        				}
+        				}else{
+        					allsat.cancelUntil(0);
+        					allsat.addClause_(block);
+        				}
+
+        				total_clause_length+=block.size();
+
         			}
         		}
         		printf("Done allsat\n");
+
         		printf("Learned %ld blocking clauses.\n",n_blocking_clauses);
-        		printf("#solutions: %.0f\n",n_solutions);
+        		printf("Avg. blocking clause length: %f\n",total_clause_length/((double)n_blocking_clauses));
+        		printf("# Interpolants: %d\n", S.interpolant.size());
+        		printf("#solutions: %g\n",n_solutions);
+
+
+       		   if(intout){
+       		        printInterpolant(S,intout);
+ 				}
         	}
         }
+        if(intout){
+        	fclose(intout);
+        }
+
         if(ret==l_True){
         	printf("SAT\n");
         }else if(ret==l_False){
@@ -304,6 +432,9 @@ int main(int argc, char** argv)
         	printf("UNKNOWN\n");
         }
         fflush(stdout);
+
+
+
 #ifdef NDEBUG
         exit(ret == l_True ? 10 : ret == l_False ? 20 : 0);     // (faster than "return", which will invoke the destructor for 'Solver')
 #else
