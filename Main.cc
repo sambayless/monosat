@@ -33,6 +33,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "core/Dimacs.h"
 #include "core/Config.h"
 #include "Cover.h"
+#include "Subsume.h"
 using namespace Minisat;
 
 //=================================================================================================
@@ -53,6 +54,18 @@ void printStats(Solver& solver)
 
 
 static Solver* solver;
+FILE * intout;
+void printInterpolant (Solver & S, FILE * out){
+	for(int i = 0;i<S.interpolant.size();i++){
+		vec<Lit> & c = S.interpolant[i];
+		for(int j  =0;j<c.size();j++){
+			Lit l = c[j];
+			fprintf(out,"%d ",dimacs(l));
+		}
+		fprintf(out,"0\n");
+	}
+}
+
 // Terminate by notifying the solver and back out gracefully. This is mainly to have a test-case
 // for this feature of the Solver as it may take longer than an immediate call to '_exit()'.
 static void SIGINT_interrupt(int signum) { solver->interrupt();   fflush(stdout);}
@@ -66,29 +79,25 @@ static void SIGINT_exit(int signum) {
         printStats(*solver);
         printf("\n"); printf("*** INTERRUPTED ***\n"); }
     fflush(stdout);
+
+	   if(intout){
+			printInterpolant(*solver,intout);
+			fclose(intout);
+		}
+
     _exit(1); }
 
 
 //=================================================================================================
 // Main:
 
-void printInterpolant (Solver & S, FILE * out){
-	for(int i = 0;i<S.interpolant.size();i++){
-		vec<Lit> & c = S.interpolant[i];
-		for(int j  =0;j<c.size();j++){
-			Lit l = c[j];
-			fprintf(out,"%d ",dimacs(l));
-		}
-		fprintf(out,"0\n");
-	}
-}
 
 int main(int argc, char** argv)
 {
     try {
         setUsageHelp("USAGE: %s [options] <input-file> <result-output-file>\n\n  where input may be either in plain or gzipped DIMACS.\n");
         // printf("This is MiniSat 2.0 beta\n");
-        
+        intout=NULL;
 #if defined(__linux__)
         fpu_control_t oldcw, newcw;
         _FPU_GETCW(oldcw); newcw = (oldcw & ~_FPU_EXTENDED) | _FPU_DOUBLE; _FPU_SETCW(newcw);
@@ -100,7 +109,7 @@ int main(int argc, char** argv)
         IntOption    cpu_lim("MAIN", "cpu-lim","Limit on CPU time allowed in seconds.\n", INT32_MAX, IntRange(0, INT32_MAX));
         IntOption    mem_lim("MAIN", "mem-lim","Limit on memory usage in megabytes.\n", INT32_MAX, IntRange(0, INT32_MAX));
         
-        StringOption opt_interpolant_file("MAIN","int-out","Write interpolants to given file","");
+        StringOption opt_interpolant_file("MAIN","int-out","Write interpolant to given file","");
 
         parseOptions(argc, argv, true);
 
@@ -154,7 +163,7 @@ int main(int argc, char** argv)
         gzclose(in);
         FILE* res = (argc >= 3) ? fopen(argv[2], "wb") : NULL;
         const char * intfile =  opt_interpolant_file;
-        FILE * intout = strlen(intfile)>0? fopen(intfile,"wb") : NULL;
+        intout = strlen(intfile)>0? fopen(intfile,"wb") : NULL;
 
         if (S.verbosity > 0){
             printf("|  Number of variables:  %12d                                         |\n", S.nVars());
@@ -411,7 +420,25 @@ int main(int argc, char** argv)
 
         		printf("Learned %ld blocking clauses.\n",n_blocking_clauses);
         		printf("Avg. blocking clause length: %f\n",total_clause_length/((double)n_blocking_clauses));
+
+
+        		if(opt_subsume){
+        			Subsume subsume;
+        			subsume.setNumVars(S.nVars());
+        			printf("Checking for subsumed clauses...\n");
+        			subsume.checkAll(S.interpolant);
+        		}
+
+        		long total_int_clause_length = 0;
+        		int n_int_clauses =0;
+        		for(int i = 0;i<S.interpolant.size();i++){
+        			n_int_clauses++;
+        			total_int_clause_length+= S.interpolant[i].size();
+        		}
+
         		printf("# Interpolants: %d\n", S.interpolant.size());
+        		printf("Avg. interpolant clause length: %f\n",total_int_clause_length/((double)n_int_clauses));
+
         		printf("#solutions: %g\n",n_solutions);
 
 

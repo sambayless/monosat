@@ -40,3 +40,4 @@ BoolOption Minisat::opt_partial(_cat,"partial","Attempt to find a partial satisf
  BoolOption Minisat::opt_allsat_first(_cat_allsat,"allsat-first","Force the allsat variables to assigned first",true);
 IntOption Minisat::opt_max_allsat(_cat_allsat,"max-allsat","Stop allsat after learning n blocking clauses (0 for infinite)",0,IntRange(0,INT32_MAX));
 BoolOption Minisat::opt_allsat_inc_block(_cat_allsat,"inc-block","Add blocking clauses using partial backtracking",true);
+BoolOption Minisat::opt_subsume(_cat_sms,"subsume","Check for and remove subsumed clauses from the interpolant",false);

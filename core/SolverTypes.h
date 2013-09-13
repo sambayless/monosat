@@ -121,6 +121,14 @@ inline lbool toLbool(int   v) { return lbool((uint8_t)v);  }
 
 class Clause;
 typedef RegionAllocator<uint32_t>::Ref CRef;
+template<class Lits>
+uint32_t calcAbstraction(const Lits & ls) {
+
+    uint32_t abstraction = 0;
+    for (int i = 0; i < ls.size(); i++)
+        abstraction |= 1 << (var(ls[i]) & 31);
+    return abstraction;
+}
 
 class Clause {
     struct {
@@ -412,6 +420,58 @@ inline Lit Clause::subsumes(const Clause& other) const
 
     return ret;
 }
+
+/*
+_________________________________________________________________________________________________
+|
+|  subsumes : (other : const Clause&)  ->  Lit
+|
+|  Description:
+|       Checks if clause subsumes 'other', and at the same time, if it can be used to simplify 'other'
+|       by subsumption resolution.
+|
+|    Result:
+|       lit_Error  - No subsumption or simplification
+|       lit_Undef  - Clause subsumes 'other'
+
+|________________________________________________________________________________________________@
+inline bool Clause::subsumedBy(const Clause& other)
+{
+    //if (other.size() < size() || (extra.abst & ~other.extra.abst) != 0)
+    //if (other.size() < size() || (!learnt() && !other.learnt() && (extra.abst & ~other.extra.abst) != 0))
+    assert(!header.learnt);   assert(!other.header.learnt);
+    assert(header.has_extra); assert(other.header.has_extra);
+    if (header.size < other.header.size || (other.data[header.size].abs & ~data[other.header.size].abs) != 0)
+        return false;
+
+    Lit        ret = lit_Undef;
+    const Lit* d   = (const Lit*)(*this);
+    const Lit* c   = (const Lit*)other;
+
+    for (unsigned i = 0; i < other.header.size; i++) {
+        // search for c[i] or ~c[i]
+        for (unsigned j = 0; j < header.size; j++)
+            if (c[i] == d[j])
+                goto ok;
+            else if (ret == lit_Undef && c[i] == ~d[j]){
+                ret = c[i];
+                goto ok;
+            }
+
+        // did not find it
+        return false;
+    ok:;
+    }
+
+    if(ret!=lit_Undef){
+    	//Not subsumbed, but is simplified
+    	for(int i = 0;i<)
+    	return false;
+    }
+
+    return true;
+}*/
+
 
 inline void Clause::strengthen(Lit p)
 {

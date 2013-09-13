@@ -35,6 +35,7 @@ extern BoolOption opt_allsat_first;
 extern BoolOption opt_allsat;
 extern IntOption opt_max_allsat;
 extern BoolOption opt_allsat_inc_block;
+extern BoolOption opt_subsume;
 }
 
 #endif /* CONFIG_H_ */
