@@ -32,7 +32,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "Aiger.h"
 #include "core/Dimacs.h"
 #include "core/Config.h"
-#include "Partial.h"
+#include "Cover.h"
 using namespace Minisat;
 
 //=================================================================================================
