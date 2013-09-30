@@ -17,9 +17,9 @@ NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FO
 DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT
 OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 **************************************************************************************************/
-
+#include <gmpxx.h>
 #include <errno.h>
-
+#include <climits>
 #include <signal.h>
 #include <zlib.h>
 
@@ -224,7 +224,18 @@ int main(int argc, char** argv)
         }else{
         	vec<Var> allsatvec;
 
-        	if(opt_allsat_vars==0){
+        	for(int i = opt_allsat_from-1;i<S.nVars() && i < opt_allsat_to;i++){
+
+				allsatvec.push(i);
+			}
+        	printf("Performing allsat on the following %d variables: ", allsatvec.size());
+        	for (int i = 0;i<allsatvec.size();i++){
+        		Var v = allsatvec[i];
+        		printf("%d ", (v+1));
+        	}
+        	printf("\n");
+
+     /*   	if(opt_allsat_vars==0){
         		for(int i = 0;i<S.nVars();i++){
 
 					allsatvec.push(i);
@@ -242,10 +253,10 @@ int main(int argc, char** argv)
         		for(int i = start;i<S.nVars();i++){
 					allsatvec.push(i);
 				}
-        	}
+        	}*/
 
         	//do an allsat loop
-        	if(opt_allsat_first){
+        	if(opt_allsat_modsat){
         		vec<Lit> learnt_clause;
         		vec<Var> supervec;
         		vec<Lit> block;
@@ -269,7 +280,8 @@ int main(int argc, char** argv)
         		S.attachTo(&allsat,supervec,allsatvec);
         		long n_blocking_clauses=0;
         		long total_clause_length=0;
-        		double n_solutions=0;
+        		mpz_class n_solutions=0;
+        		//double n_solutions=0;
         		long max_clauses = opt_max_allsat;
 
         		//ok, now do an allsat loop:
@@ -291,8 +303,11 @@ int main(int argc, char** argv)
 								}
 								printf(" 0\n");
         					}
-        					double t = pow(2, (allsatvec.size() - block.size()));
-        					n_solutions+= t;
+        					mpz_class p_solutions=0;
+        					int width = (allsatvec.size() - block.size());
+        					mpz_ui_pow_ui (p_solutions.get_mpz_t(), 2, width);
+        					//double t = pow(2, );
+        					n_solutions+= p_solutions;
         					for(int i = 0;i<block.size();i++){
         						Lit l = block[i];
         						Var s =allsat_map[var(l)];
@@ -435,12 +450,16 @@ int main(int argc, char** argv)
         			n_int_clauses++;
         			total_int_clause_length+= S.interpolant[i].size();
         		}
-
-        		printf("# Interpolants: %d\n", S.interpolant.size());
-        		printf("Avg. interpolant clause length: %f\n",total_int_clause_length/((double)n_int_clauses));
-
-        		printf("#solutions: %g\n",n_solutions);
-
+        		if(opt_interpolate){
+        			printf("# Interpolants: %d\n", S.interpolant.size());
+        			printf("Avg. interpolant clause length: %f\n",total_int_clause_length/((double)n_int_clauses));
+        		}
+        		gmp_printf ("#solutions: %Zd\n", n_solutions.get_mpz_t());
+        	/*	if(n_solutions>ULONG_MAX){
+        			printf("#solutions: %g\n",n_solutions);
+        		}else{
+        			printf("#solutions: %lu\n",n_solutions);
+        		}*/
 
        		   if(intout){
        		        printInterpolant(S,intout);

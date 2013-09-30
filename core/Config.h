@@ -30,8 +30,10 @@ extern IntOption opt_eager_prop;
 extern IntOption opt_subsearch;
 
 
-extern  IntOption opt_allsat_vars;
-extern BoolOption opt_allsat_first;
+//extern  IntOption opt_allsat_vars;
+extern IntOption opt_allsat_from;
+extern IntOption opt_allsat_to;
+extern BoolOption opt_allsat_modsat;
 extern BoolOption opt_allsat;
 extern IntOption opt_max_allsat;
 extern BoolOption opt_allsat_inc_block;
