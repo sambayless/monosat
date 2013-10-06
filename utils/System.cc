@@ -92,4 +92,6 @@ double Minisat::memUsed(void) {
 #else
 double Minisat::memUsed() { 
     return 0; }
+double Minisat::memUsedPeak() {
+    return 0; }
 #endif

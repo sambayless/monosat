@@ -33,6 +33,9 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "Aiger.h"
 #include "core/Config.h"
 #include <unistd.h>
+#include <sys/time.h>
+
+
 using namespace Minisat;
 
 //=================================================================================================
@@ -41,7 +44,9 @@ using namespace Minisat;
 void printStats(Solver& solver)
 {
     double cpu_time = cpuTime();
+
     double mem_used = memUsedPeak();
+
     printf("restarts              : %" PRIu64 "\n", solver.starts);
     printf("conflicts             : %-12" PRIu64 "   (%.0f /sec)\n", solver.conflicts   , solver.conflicts   /cpu_time);
     printf("decisions             : %-12" PRIu64 "   (%4.2f %% random) (%.0f /sec)\n", solver.decisions, (float)solver.rnd_decisions*100 / (float)solver.decisions, solver.decisions   /cpu_time);
@@ -79,24 +84,32 @@ int main(int argc, char** argv)
         setUsageHelp("USAGE: %s [options] <input-file> <result-output-file>\n\n  where input may be either in plain or gzipped DIMACS.\n");
         // printf("This is MiniSat 2.0 beta\n");
         
-#if defined(__linux__)
-        fpu_control_t oldcw, newcw;
-        _FPU_GETCW(oldcw); newcw = (oldcw & ~_FPU_EXTENDED) | _FPU_DOUBLE; _FPU_SETCW(newcw);
-        printf("WARNING: for repeatability, setting FPU to use double precision\n");
-#endif
+
         // Extra options:
         //
         IntOption    verb   ("MAIN", "verb",   "Verbosity level (0=silent, 1=some, 2=more).", 1, IntRange(0, 2));
         IntOption    cpu_lim("MAIN", "cpu-lim","Limit on CPU time allowed in seconds.\n", INT32_MAX, IntRange(0, INT32_MAX));
         IntOption    mem_lim("MAIN", "mem-lim","Limit on memory usage in megabytes.\n", INT32_MAX, IntRange(0, INT32_MAX));
         
-        IntOption    opt_k("bmc", "k","Maximum number of steps to unroll.\n", INT32_MAX, IntRange(0, INT32_MAX));
+        IntOption    opt_width("GRAPH","width","Width of graph.\n", 0, IntRange(0, INT32_MAX));
 
-        StringOption    opt_graph("graph", "graph","", "");
+        BoolOption	 opt_csv("GRAPH","csv","Output in CSV format",false);
+
+        StringOption    opt_graph("GRAPH", "graph","Not currently used", "");
+
 
 
         parseOptions(argc, argv, true);
 
+        if(opt_csv){
+           	verb=0;
+           }
+#if defined(__linux__)
+        fpu_control_t oldcw, newcw;
+        _FPU_GETCW(oldcw); newcw = (oldcw & ~_FPU_EXTENDED) | _FPU_DOUBLE; _FPU_SETCW(newcw);
+        if(verb>0)
+        	fprintf(stderr,"WARNING: for repeatability, setting FPU to use double precision\n");
+#endif
 
         mincutalg = ALG_EDMONSKARP;
 
@@ -135,6 +148,7 @@ int main(int argc, char** argv)
 
         // Use signal handlers that forcibly quit until the solver will be able to respond to
         // interrupts:
+#if not defined(__MINGW32__)
         signal(SIGINT, SIGINT_exit);
         signal(SIGXCPU,SIGINT_exit);
 
@@ -145,7 +159,7 @@ int main(int argc, char** argv)
             if (rl.rlim_max == RLIM_INFINITY || (rlim_t)cpu_lim < rl.rlim_max){
                 rl.rlim_cur = cpu_lim;
                 if (setrlimit(RLIMIT_CPU, &rl) == -1)
-                    printf("WARNING! Could not set resource limit: CPU-time.\n");
+                    fprintf(stderr,"WARNING! Could not set resource limit: CPU-time.\n");
             } }
 
         // Set limit on virtual memory:
@@ -156,9 +170,9 @@ int main(int argc, char** argv)
             if (rl.rlim_max == RLIM_INFINITY || new_mem_lim < rl.rlim_max){
                 rl.rlim_cur = new_mem_lim;
                 if (setrlimit(RLIMIT_AS, &rl) == -1)
-                    printf("WARNING! Could not set resource limit: Virtual memory.\n");
+                    fprintf(stderr,"WARNING! Could not set resource limit: Virtual memory.\n");
             } }
-
+#endif
          const char *error;
          Solver S;
          S.max_decision_var = opt_restrict_decisions;
@@ -184,8 +198,10 @@ int main(int argc, char** argv)
 
          // Change to signal-handlers that will only notify the solver and allow it to terminate
            // voluntarily:
+#if not defined(__MINGW32__)
            signal(SIGINT, SIGINT_interrupt);
            signal(SIGXCPU,SIGINT_interrupt);
+#endif
      //      printf("Solving circuit with %d gates, %d latches, %d inputs, %d outputs\n", aiger->num_ands, aiger->num_latches, aiger->num_inputs, aiger->num_outputs);
 
            const char * priority_file = opt_priority;
@@ -221,12 +237,17 @@ int main(int argc, char** argv)
 
 
         if(ret==l_True){
-        	printf("SAT\n");
+        	if(!opt_csv)
+        		printf("SAT\n");
 
         	if(S.theories.size()){
 				Theory * t = S.theories[0];
 				GraphTheorySolver *g = (GraphTheorySolver*)t;
 				int width = sqrt(g->nNodes());
+				if(opt_width>0){
+					width=opt_width;
+				}
+
 				int v = 0;
 				//for (int i = 0;i<w;i++){
 				//	for(int j = 0;j<w;j++){
@@ -236,12 +257,24 @@ int main(int argc, char** argv)
 					int y = n/width;
 					if(y > lasty)
 						printf("\n");
-						if (isatty(fileno(stdout))){
-
+#if not defined(__MINGW32__)
+						if (!opt_csv && isatty(fileno(stdout))){
+#else
+						if(false){
+#endif
 							if(S.model[n]==l_True)
 								printf("\033[1;42m\033[1;37m 1\033[0m");
 							else
 								printf("\033[1;44m\033[1;37m 0\033[0m");
+						}else if (opt_csv){
+
+							if(S.model[n]==l_True)
+								printf("1");
+							else
+								printf("0");
+							if (x<width-1){
+								printf(",");
+							}
 						}else{
 
 							if(S.model[n]==l_True)
@@ -270,7 +303,11 @@ int main(int argc, char** argv)
 					int y = n/width;
 					if(y > lasty)
 						printf("\n");
+#if not defined(__MINGW32__)
 						if (isatty(fileno(stdout))){
+#else
+						if(false){
+#endif
 
 							if(S.model[n]==l_True)
 								printf("\033[1;42m\033[1;37m%3d\033[0m",n);
@@ -306,7 +343,11 @@ int main(int argc, char** argv)
 								printf("\n");
 
 							int v =var( g->reach_detectors[r]->reach_lits[n]);
-							if (isatty(fileno(stdout))){
+#if not defined(__MINGW32__)
+						if (isatty(fileno(stdout))){
+#else
+						if(false){
+#endif
 								if(S.model[v]==l_True)
 									printf("\033[1;42m\033[1;37m%4d\033[0m", v+1);
 								else
@@ -366,12 +407,14 @@ int main(int argc, char** argv)
         }else{
         	printf("UNKNOWN\n");
         }
-        printStats(S);
-        for(int i = 0;i<S.theories.size();i++){
-        	Theory * t = S.theories[i];
-        	GraphTheorySolver *g = (GraphTheorySolver*)t;
-        	g->printStats();
-        }
+		if(verb>0){
+			printStats(S);
+			for(int i = 0;i<S.theories.size();i++){
+				Theory * t = S.theories[i];
+				GraphTheorySolver *g = (GraphTheorySolver*)t;
+				g->printStats();
+			}
+		}
         fflush(stdout);
 #ifdef NDEBUG
         exit(ret == l_True ? 10 : ret == l_False ? 20 : 0);     // (faster than "return", which will invoke the destructor for 'Solver')
