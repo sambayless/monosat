@@ -29,6 +29,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "Aiger.h"
 #include "graph/GraphParser.h"
 #include "core/Dimacs.h"
+#include "core/AssumptionParser.h"
 #include "core/Solver.h"
 #include "Aiger.h"
 #include "core/Config.h"
@@ -97,7 +98,9 @@ int main(int argc, char** argv)
 
         StringOption    opt_graph("GRAPH", "graph","Not currently used", "");
 
+        StringOption    opt_assume("MAIN", "assume","Specify a file of assumptions, with one literal per line", "");
 
+        BoolOption opt_id_graph("GRAPH","print-vars","Identify the variables in the graph, then quit\n",false);
 
         parseOptions(argc, argv, true);
 
@@ -232,8 +235,71 @@ int main(int argc, char** argv)
 
 
          //really simple, unsophisticated incremental BMC:
+           vec<Lit> assume;
 
-           lbool ret=S.solve()?l_True:l_False;
+           const char * assume_str =opt_assume;
+		   if(strlen(assume_str)){
+			 gzFile gin =gzopen(assume_str, "rb");
+
+			parse_Assumptions(gin,assume, S);
+
+			gzclose(gin);
+		   }
+
+		   if(opt_id_graph){
+			   if(S.theories.size()){
+
+					   printf("Graph Variables:\n");
+						Theory * t = S.theories[0];
+						GraphTheorySolver *g = (GraphTheorySolver*)t;
+						int width = sqrt(g->nNodes());
+						if(opt_width>0){
+							width=opt_width;
+						}
+
+						int v = 0;
+						//for (int i = 0;i<w;i++){
+						//	for(int j = 0;j<w;j++){
+						int lasty= 0;
+						for(int n = 0;n<g->nNodes();n++){
+							int x = n%width;
+							int y = n/width;
+							if(y > lasty)
+								printf("\n");
+
+
+							printf("%4d", n+1);
+
+							Lit l = mkLit(n,false);
+							if(assume.contains(l)){
+								printf("+");
+							}else{
+								l=~l;
+								if(assume.contains(l)){
+									printf("-");
+								}else{
+									printf(" ");
+								}
+							}
+
+							if (x<width-1){
+								printf(",");
+							}
+							lasty=y;
+						}
+						printf("\n\n");
+
+
+
+
+				}else{
+					printf("No graph to identify\n");
+				}
+
+			   exit(0);
+		   }
+
+           lbool ret=S.solve(assume)?l_True:l_False;
 
 
         if(ret==l_True){
