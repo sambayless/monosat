@@ -24,6 +24,9 @@ public:
 	virtual void newDecisionLevel()=0;
 	virtual bool propagateTheory(vec<Lit> & conflict)=0;
 	virtual bool solveTheory(vec<Lit> & conflict)=0;
+	virtual Lit decideTheory(){
+		return lit_Undef;
+	}
 	//Lazily construct the reason clause explaining this propagation
 	virtual void buildReason(Lit p, vec<Lit> & reason)=0;
 };

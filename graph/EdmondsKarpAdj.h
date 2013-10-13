@@ -9,7 +9,7 @@
 using namespace std;
 using namespace Minisat;
 
-template< class Capacity ,class EdgeStatus=vec<bool>>
+template< class Capacity ,class EdgeStatus=vec<bool> >
 class EdmondsKarpAdj:public MaxFlow{
 
 

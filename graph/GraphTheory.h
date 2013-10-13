@@ -937,6 +937,66 @@ public:
 
 	};
 
+	Lit decideTheory(){
+		if(!opt_decide_graph)
+			return lit_Undef;
+		for(int i = 0;i<reach_detectors.size();i++){
+			ReachDetector * r = reach_detectors[i];
+
+			Distance<ReachDetector::ReachStatus,NegativeEdgeStatus> * over = (Distance<ReachDetector::ReachStatus,NegativeEdgeStatus>*) r->negative_reach_detector;
+
+			Distance<ReachDetector::ReachStatus,PositiveEdgeStatus> * under = (Distance<ReachDetector::ReachStatus,PositiveEdgeStatus>*) r->positive_reach_detector;
+
+			//ok, for each node that is assigned reachable, but that is not actually reachable in the under approx, decide an edge on a feasible path
+
+			//this can be obviously more efficient
+			for(int j = 0;j<nNodes();j++){
+				Lit l = r->reach_lits[j];
+				if(S->value(l)==l_True){
+					if(!under->connected(j)){
+						//then lets try to connect this
+						int a = 1;
+						assert(over->connected(j));//Else, we would already be in conflict
+
+						//ok, read back the path from the over to find a candidate edge we can decide
+						//find the earliest unconnected node on this path
+						int p = j;
+						int last = j;
+						while(!under->connected(p)){
+							last=p;
+							assert(p!=r->source);
+							int prev = over->previous(p);
+							p = prev;
+
+						}
+						//ok, now pick some edge p->last that will connect p to last;
+						assert(!under->connected(last));
+						assert(under->connected(p));
+
+						assert(over->connected(last));
+						assert(over->connected(p));
+
+						for(int k = 0;k<antig.adjacency[p].size();k++){
+							int to = antig.adjacency[p][k].node;
+							if (to==last){
+								Var v =edge_list[ antig.adjacency[p][k].id].v;
+								if(S->value(v)==l_Undef){
+									return mkLit(v,false);
+								}else{
+									assert(S->value(v)!=l_True);
+								}
+							}
+						}
+						assert(false);
+					}
+				}
+			}
+
+		}
+
+		return lit_Undef;
+	}
+
 	void backtrackUntil(Lit p){
 			//need to remove and add edges in the two graphs accordingly.
 			int i = trail.size()-1;
