@@ -35,8 +35,10 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "core/Config.h"
 #include <unistd.h>
 #include <sys/time.h>
-
-
+#include <algorithm>
+#include <sstream>
+#include <algorithm>
+#include <iterator>
 using namespace Minisat;
 
 //=================================================================================================
@@ -99,6 +101,9 @@ int main(int argc, char** argv)
         StringOption    opt_graph("GRAPH", "graph","Not currently used", "");
 
         StringOption    opt_assume("MAIN", "assume","Specify a file of assumptions, with one literal per line", "");
+
+        StringOption    opt_decidable("MAIN", "decidable-theories","Specify which graphs should make decisions on their own, in comma delimited format", "");
+
 
         BoolOption opt_id_graph("GRAPH","print-vars","Identify the variables in the graph, then quit\n",false);
 
@@ -233,6 +238,21 @@ int main(int argc, char** argv)
         	   }
            }
 
+           vec<int> decidable;
+           string dstr= (const char*) opt_decidable;
+           std::replace(dstr.begin(),dstr.end(), '\'',' ');
+           std::replace(dstr.begin(),dstr.end(), '\"',' ');
+           std::replace(dstr.begin(),dstr.end(), ',',' ');
+
+           istringstream iss(dstr);
+
+            do
+            {
+                string sub;
+                iss >> sub;
+                int value = atoi(sub.c_str());
+                decidable.push(value);
+            } while (iss);
 
          //really simple, unsophisticated incremental BMC:
            vec<Lit> assume;
@@ -244,6 +264,17 @@ int main(int argc, char** argv)
 			parse_Assumptions(gin,assume, S);
 
 			gzclose(gin);
+		   }
+
+		   for(int i = 0;i<decidable.size();i++){
+			   int t = decidable[i];
+			   if(t<0 || t>= S.theories.size()){
+				   fprintf(stderr,"Cannot set theory %d to be decidable, because there is no such theory\n",t);
+				   fflush(stderr);
+				   exit(1);
+			   }
+
+			   S.decidable_theories.push(S.theories[t]);
 		   }
 
 		   if(opt_id_graph){
