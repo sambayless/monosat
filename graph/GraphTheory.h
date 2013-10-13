@@ -947,6 +947,8 @@ public:
 
 			Distance<ReachDetector::ReachStatus,PositiveEdgeStatus> * under = (Distance<ReachDetector::ReachStatus,PositiveEdgeStatus>*) r->positive_reach_detector;
 
+			//we can probably also do something similar, but with cuts, for nodes that are decided to be unreachable.
+
 			//ok, for each node that is assigned reachable, but that is not actually reachable in the under approx, decide an edge on a feasible path
 
 			//this can be obviously more efficient
