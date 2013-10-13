@@ -65,6 +65,8 @@ BoolOption Minisat::opt_reach_prop(_cat_graph,"prop-reach","",false);
 BoolOption Minisat::opt_decide_graph(_cat_graph,"decide-graph","",false);
 BoolOption Minisat::opt_use_random_path_for_decisions(_cat_graph,"decide-graph-rnd","",false);
 
+BoolOption Minisat::opt_print_decision_path(_cat_graph,"decide-graph-print","",false);
+
 MinCutAlg Minisat::mincutalg=ALG_EDMONSKARP ;
 ReachAlg Minisat::reachalg=ALG_CONNECTIVITY;
 ReachAlg Minisat::distalg=ALG_BFS;

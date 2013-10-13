@@ -50,6 +50,7 @@ extern BoolOption opt_init_rnd_phase;
 extern BoolOption opt_reach_prop;
 extern BoolOption opt_decide_graph;
 extern BoolOption opt_use_random_path_for_decisions;
+extern BoolOption opt_print_decision_path;
 enum ReachAlg{
 	 ALG_CONNECTIVITY,
 	 ALG_DIJKSTRA,

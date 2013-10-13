@@ -691,7 +691,7 @@ public:
 			 num_learnt_cuts=0;
 			 learnt_cut_clause_length=0;
 
-			 rnd_seed=1;
+			 rnd_seed=opt_random_seed;
 
 			if(mincutalg==ALG_IBFS){
 				mc = new IBFS<CutEdgeStatus>(cutGraph);
@@ -972,9 +972,83 @@ public:
 			//this can be obviously more efficient
 			for(int j = 0;j<nNodes();j++){
 				Lit l = r->reach_lits[j];
+
 				if(S->value(l)==l_True){
+					//if(S->level(var(l))>0)
+					//	continue;
 					if(!under->connected(j)){
 						//then lets try to connect this
+						static vec<bool> print_path;
+						if(S->level(var(l))==0 && opt_print_decision_path){
+							print_path.clear();
+							print_path.growTo(nNodes());
+
+							if(!opt_use_random_path_for_decisions){
+													//ok, read back the path from the over to find a candidate edge we can decide
+													//find the earliest unconnected node on this path
+								over->update();
+								int p = j;
+
+								while(p!=r->source){
+									if(opt_print_decision_path)
+										print_path[p]=true;
+
+
+									assert(p!=r->source);
+									int prev = over->previous(p);
+									p = prev;
+
+								}
+							}else{
+								 r->rnd_path->update();
+								int p = j;
+
+								while(p!=r->source){
+									if(opt_print_decision_path)
+										print_path[p]=true;
+
+
+									assert(p!=r->source);
+									int prev = r->rnd_path->previous(p);
+									p = prev;
+
+								}
+							}
+
+							if(opt_print_decision_path){
+								printf("From %d to %d:\n",r->source,j);
+														int width = sqrt(nNodes());
+
+
+														int v = 0;
+														//for (int i = 0;i<w;i++){
+														//	for(int j = 0;j<w;j++){
+														int lasty= 0;
+														for(int n = 0;n<nNodes();n++){
+															int x = n%width;
+															int y = n/width;
+															if(y > lasty)
+																printf("\n");
+
+															if(n==j){
+																printf("* ");
+															}else if (n==r->source){
+																printf("#");
+															}else{
+
+																if(print_path[n]){
+																	printf("+ ");
+																}else{
+																	printf("- ");
+																}
+															}
+
+															lasty=y;
+														}
+														printf("\n\n");
+													}
+						}
+
 
 						assert(over->connected(j));//Else, we would already be in conflict
 						int p =j;
@@ -982,9 +1056,12 @@ public:
 						if(!opt_use_random_path_for_decisions){
 							//ok, read back the path from the over to find a candidate edge we can decide
 							//find the earliest unconnected node on this path
+							over->update();
 							 p = j;
 							 last = j;
 							while(!under->connected(p)){
+
+
 								last=p;
 								assert(p!=r->source);
 								int prev = over->previous(p);
@@ -992,18 +1069,23 @@ public:
 
 							}
 						}else{
+							 r->rnd_path->update();
 							//derive a random path in the graph
 							 p = j;
 							 last = j;
+							 assert( r->rnd_path->connected(p));
 							while(!under->connected(p)){
+
 								last=p;
 								assert(p!=r->source);
 								int prev = r->rnd_path->previous(p);
 								p = prev;
-
+								assert(p>=0);
 							}
 
 						}
+
+
 
 						//ok, now pick some edge p->last that will connect p to last;
 						assert(!under->connected(last));
@@ -1579,11 +1661,15 @@ public:
 
 				reach_detectors.last()->rnd_path=NULL;
 				 if(opt_use_random_path_for_decisions){
-					 reach_detectors.last()->rnd_path = new WeightedDijkstra<NegativeEdgeStatus>(from,g);
+					 reach_detectors.last()->rnd_path = new WeightedDijkstra<NegativeEdgeStatus>(from,antig);
 					 for(int i=0;i<g.nodes;i++){
 						 double w = drand(rnd_seed);
+						 w-=0.5;
+						 w*=w;
+						 //printf("%f (%f),",w,rnd_seed);
 						 reach_detectors.last()->rnd_path->setWeight(i,w);
 					 }
+					 //printf("\n");
 				 }
 
 

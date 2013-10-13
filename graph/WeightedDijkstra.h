@@ -373,6 +373,8 @@ public:
 		return dist[t];
 	}
 	int previous(int t){
+		if(last_modification!=g.modifications)
+							update();
 		return prev[t];
 	}
 
