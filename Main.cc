@@ -239,7 +239,9 @@ int main(int argc, char** argv)
            }
 
            vec<int> decidable;
+
            string dstr= (const char*) opt_decidable;
+           if(dstr.length()>0){
            std::replace(dstr.begin(),dstr.end(), '\'',' ');
            std::replace(dstr.begin(),dstr.end(), '\"',' ');
            std::replace(dstr.begin(),dstr.end(), ',',' ');
@@ -253,7 +255,7 @@ int main(int argc, char** argv)
                 int value = atoi(sub.c_str());
                 decidable.push(value);
             } while (iss);
-
+           }
          //really simple, unsophisticated incremental BMC:
            vec<Lit> assume;
 
