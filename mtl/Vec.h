@@ -89,6 +89,15 @@ public:
     // Duplicatation (preferred instead):
     void copyTo(vec<T>& copy) const { copy.clear(); copy.growTo(sz); for (int i = 0; i < sz; i++) copy[i] = data[i]; }
     void moveTo(vec<T>& dest) { dest.clear(true); dest.data = data; dest.sz = sz; dest.cap = cap; data = NULL; sz = 0; cap = 0; }
+
+    int contains(T& element)const{
+    	for(int i = 0;i<size();i++){
+    		if(data[i]==element){
+    			return true;
+    		}
+    	}
+    	return false;
+    }
 };
 
 

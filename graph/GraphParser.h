@@ -13,8 +13,9 @@
 
 #include "utils/ParseUtils.h"
 #include "core/SolverTypes.h"
-#include "graph/DijGraph.h"
-
+#include "graph/GraphTheory.h"
+#include "graph/TestGraph.h"
+#include "core/Config.h"
 namespace Minisat {
 
 //=================================================================================================
@@ -37,7 +38,7 @@ namespace Minisat {
 //r g u w var is a reach querry: var is true if can u reach w in graph g, false otherwise
 
 template<class B, class Solver>
-static int readDiGraph(B& in, Solver& S, vec<DijGraph*> & graphs) {
+static void readDiGraph(B& in, Solver& S, vec<GraphTheory*> & graphs) {
     int     g, n,e, ev;
     if(!eagerMatch(in,"digraph")){
     	 printf("PARSE ERROR! Unexpected char: %c\n", *in), exit(3);
@@ -46,18 +47,22 @@ static int readDiGraph(B& in, Solver& S, vec<DijGraph*> & graphs) {
 
         n = parseInt(in);//num nodes
         e = parseInt(in);//num edges (I'm ignoring this currently)
-        ev = parseInt(in);//the variable of the first graph edge.
-        g=parseInt(in);//id of the edge
-        DijGraph * graph = new DijGraph(&S);
+      //  ev = parseInt(in);//the variable of the first graph edge.
+        g=parseInt(in);//id of the graph
+        GraphTheory * graph = NULL;
+        if(opt_graph)
+        	graph= new GraphTheorySolver(&S);
+        else
+        	graph= new TestGraph(&S);
         graph->newNodes(n);
         graphs.growTo(g+1);
         graphs[g]=graph;
         S.addTheory(graph);
-        return ev;
+      //  return ev;
 }
 
 template<class B, class Solver>
-static void readEdge(B& in,int & edge_var, Solver& S, vec<DijGraph*> & graphs) {
+static void readEdge(B& in, Solver& S, vec<GraphTheory*> & graphs) {
 
     if(*in != 'e'){
     	printf("PARSE ERROR! Unexpected char: %c\n", *in), exit(3);
@@ -68,23 +73,23 @@ static void readEdge(B& in,int & edge_var, Solver& S, vec<DijGraph*> & graphs) {
         int from = parseInt(in);
         int to=parseInt(in);
         int edgeVar = parseInt(in)-1;
-        if(edgeVar==-1){
+        /*if(edgeVar==-1){
         	edgeVar=edge_var++-1;
-        }
+        }*/
         if(graphID <0 || graphID>=graphs.size() || !graphs[graphID]){
         	printf("PARSE ERROR! Undeclared graph identifier %d for edge %d\n",graphID, edgeVar), exit(3);
         }
         if(edgeVar<0){
         	printf("PARSE ERROR! Edge variables must be >=0, was %d\n", edgeVar), exit(3);
         }
-        DijGraph * graph = graphs[graphID];
+        GraphTheory * graph = graphs[graphID];
         while (edgeVar >= S.nVars()) S.newVar();
         graph->newEdge(from,to,edgeVar);
 
 }
 
 template<class B, class Solver>
-static void readReach(B& in, Solver& S, vec<DijGraph*> & graphs) {
+static void readReach(B& in, Solver& S, vec<GraphTheory*> & graphs) {
 	//r g u w var is a reach querry: var is true if can u reach w in graph g, false otherwise
     if(*in != 'r'){
     	printf("PARSE ERROR! Unexpected char: %c\n", *in), exit(3);
@@ -94,7 +99,7 @@ static void readReach(B& in, Solver& S, vec<DijGraph*> & graphs) {
         int graphID = parseInt(in);
         int from = parseInt(in);
        // int steps = parseInt(in);
-        // int to=parseInt(in);
+         int to=parseInt(in);
         int reachVar = parseInt(in)-1;
         if(graphID <0 || graphID>=graphs.size() || !graphs[graphID]){
         	printf("PARSE ERROR! Undeclared graph identifier %d for edge %d\n",graphID, reachVar), exit(3);
@@ -102,21 +107,21 @@ static void readReach(B& in, Solver& S, vec<DijGraph*> & graphs) {
         if(reachVar<0){
         	printf("PARSE ERROR! Edge variables must be >=0, was %d\n", reachVar), exit(3);
         }
-        DijGraph * graph = graphs[graphID];
+        GraphTheory * graph = graphs[graphID];
         while (reachVar+graph->nNodes() >= S.nVars()) S.newVar();
-        graph->reachesAny(from,reachVar);
-        //graph->newEdge(from,to,edgeVar);
+        graph->reaches(from,to,reachVar);
+
 
 }
 
 template<class B, class Solver>
 static void parse_GRAPH_main(B& in, Solver& S) {
-	vec<DijGraph*> graphs;
+	vec<GraphTheory*> graphs;
 	vec<Lit> lits;
     int vars    = 0;
     int clauses = 0;
     int cnt     = 0;
-    int edge_var = 0;
+
     for (;;){
         skipWhitespace(in);
         if (*in == EOF) break;
@@ -138,13 +143,13 @@ static void parse_GRAPH_main(B& in, Solver& S) {
         	skipWhitespace(in);
         	if(*in=='d'){
         		//for now, only digraphs are supported
-        		edge_var = readDiGraph(in, S,graphs);
+        		 readDiGraph(in, S,graphs);
         	}else{
         		printf("PARSE ERROR! Unexpected char: %c\n", *in), exit(3);
         	}
         }else if (*in == 'e'){
             cnt++;
-            readEdge(in,edge_var, S,graphs);
+            readEdge(in, S,graphs);
         }else if (*in == 'r'){
             readReach(in, S,graphs);
         }else{

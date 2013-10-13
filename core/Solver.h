@@ -36,7 +36,10 @@ namespace Minisat {
 class Solver:public Theory {
 public:
 	friend class Theory;
-	friend class DijGraph;
+	friend class GraphTheorySolver;
+#ifdef DEBUG_SOLVER
+	Solver * dbg_solver;
+#endif
     // Constructor/Destructor:
     //
     Solver();
@@ -53,6 +56,9 @@ public:
     bool    addClause (Lit p, Lit q, Lit r);                    // Add a ternary clause to the solver. 
     bool    addClause_(      vec<Lit>& ps);                     // Add a clause to the solver without making superflous internal copy. Will
 
+    void setDecisionPriority(Var v,unsigned int p){
+    	priority[v]=p;
+    }
 
     //Theory interface
     void addTheory(Theory*t){
@@ -99,6 +105,18 @@ public:
     	theories[t]->buildReason(p,theory_reason);
     	CRef reason = ca.alloc(theory_reason, false);
     	assert(theory_reason[0]==p); assert(value(p)==l_True);
+#ifdef DEBUG_SOLVER
+    	//assert all the other reasons in this cause are earlier on the trail than p...
+    	static vec<bool> marks;
+    	marks.clear();
+    	marks.growTo(nVars());
+    	for(int i = 0;i<trail.size() && var(trail[i])!=var(p);i++){
+    		marks[var(trail[i])]=true;
+    	}
+    	for(int i = 1;i<theory_reason.size();i++){
+    		assert(marks[var(theory_reason[i])]);
+    	}
+#endif
 		clauses.push(reason);
 		attachClause(reason);
 		vardata[var(p)]=mkVarData(reason,level(var(p)));
@@ -195,11 +213,16 @@ public:
     int track_min_level;
     int initial_level;
 
+    int max_decision_var;
+
     Var max_super;
     Var min_super;
     Var min_local;
     Var max_local;
     int super_offset;
+
+
+
     // Mode of operation:
     //
     int       verbosity;
@@ -226,7 +249,7 @@ public:
     //
     uint64_t solves, starts, decisions, rnd_decisions, propagations, conflicts;
     uint64_t dec_vars, clauses_literals, learnts_literals, max_literals, tot_literals;
-
+    Var last_dec;
 protected:
 
     // Helper structures:
@@ -251,8 +274,15 @@ protected:
 
     struct VarOrderLt {
         const vec<double>&  activity;
-        bool operator () (Var x, Var y) const { return activity[x] > activity[y]; }
-        VarOrderLt(const vec<double>&  act) : activity(act) { }
+        const vec<int> &  priority;
+        bool operator () (Var x, Var y) const {
+        	if (priority[x] == priority[y])
+        		return activity[x] > activity[y];
+        	else{
+        		return priority[x]>priority[y];
+        	}
+        }
+        VarOrderLt(const vec<double>&  act,const vec<int>&  pri) : activity(act),priority(pri) { }
     };
 
     // Solver state:
@@ -268,6 +298,7 @@ protected:
     vec<lbool>          assigns;          // The current assignments.
     vec<char>           polarity;         // The preferred polarity of each variable.
     vec<char>           decision;         // Declares if a variable is eligible for selection in the decision heuristic.
+    vec<int>			priority;		  // Static, lexicographic heuristic
     vec<Lit>            trail;            // Assignment stack; stores all assigments made in the order they were made.
     vec<int>            trail_lim;        // Separator indices for different decision levels in 'trail'.
     vec<VarData>        vardata;          // Stores reason and level for each variable.
@@ -356,6 +387,7 @@ protected:
 
     // Returns a random float 0 <= x < 1. Seed must never be 0.
     static inline double drand(double& seed) {
+    	assert(seed!=0);
         seed *= 1389796;
         int q = (int)(seed / 2147483647);
         seed -= (double)q * 2147483647;
@@ -414,6 +446,42 @@ protected:
         inline bool super_interface(Var v)const{
         	return v>=min_super  && v <= max_super;
         }
+
+        inline void dbg_check_propagation(Lit p){
+  #ifdef DEBUG_SOLVER
+      	  	 if (dbg_solver){
+
+      	  		static vec<Lit> c;
+  				c.clear();
+  				for(int i = 0;i<trail.size();i++)
+  				{
+  					c.push(trail[i]);
+  				}
+  				c.push(~p);
+  				bool res = dbg_solver->solve(c);
+
+  				assert(!res);
+      	  	 }
+  #endif
+        }
+
+      inline void dbg_check(const vec<Lit> & clause){
+#ifdef DEBUG_SOLVER
+    	  	 if (dbg_solver){
+    	  		 static bool first = true;
+    	  		static vec<Lit> c;
+				c.clear();
+				for(int i = 0;i<clause.size();i++)
+				{
+					c.push(~ clause[i]);
+				}
+
+				bool res = dbg_solver->solve(c);
+
+				assert(!res);
+    	  	 }
+#endif
+      }
 
   
 };

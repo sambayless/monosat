@@ -15,7 +15,7 @@
 #include <set>
 //adapted from http://www.boost.org/doc/libs/1_46_1/boost/graph/stoer_wagner_min_cut.hpp
 using namespace Minisat;
-//Finds a global min-weight-cut, over all possible s-t
+//Finds a global min-weight-cut, over all possible s-t, NOT the expected normal s-t min-cut
 class MinCut{
 
   	//  vec<vec<int> > & g ;

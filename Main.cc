@@ -29,9 +29,13 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "Aiger.h"
 #include "graph/GraphParser.h"
 #include "core/Dimacs.h"
+#include "core/AssumptionParser.h"
 #include "core/Solver.h"
 #include "Aiger.h"
 #include "core/Config.h"
+#include <unistd.h>
+#include <sys/time.h>
+
 
 using namespace Minisat;
 
@@ -41,7 +45,9 @@ using namespace Minisat;
 void printStats(Solver& solver)
 {
     double cpu_time = cpuTime();
+
     double mem_used = memUsedPeak();
+
     printf("restarts              : %" PRIu64 "\n", solver.starts);
     printf("conflicts             : %-12" PRIu64 "   (%.0f /sec)\n", solver.conflicts   , solver.conflicts   /cpu_time);
     printf("decisions             : %-12" PRIu64 "   (%4.2f %% random) (%.0f /sec)\n", solver.decisions, (float)solver.rnd_decisions*100 / (float)solver.decisions, solver.decisions   /cpu_time);
@@ -79,23 +85,63 @@ int main(int argc, char** argv)
         setUsageHelp("USAGE: %s [options] <input-file> <result-output-file>\n\n  where input may be either in plain or gzipped DIMACS.\n");
         // printf("This is MiniSat 2.0 beta\n");
         
-#if defined(__linux__)
-        fpu_control_t oldcw, newcw;
-        _FPU_GETCW(oldcw); newcw = (oldcw & ~_FPU_EXTENDED) | _FPU_DOUBLE; _FPU_SETCW(newcw);
-        printf("WARNING: for repeatability, setting FPU to use double precision\n");
-#endif
+
         // Extra options:
         //
         IntOption    verb   ("MAIN", "verb",   "Verbosity level (0=silent, 1=some, 2=more).", 1, IntRange(0, 2));
         IntOption    cpu_lim("MAIN", "cpu-lim","Limit on CPU time allowed in seconds.\n", INT32_MAX, IntRange(0, INT32_MAX));
         IntOption    mem_lim("MAIN", "mem-lim","Limit on memory usage in megabytes.\n", INT32_MAX, IntRange(0, INT32_MAX));
         
-        IntOption    opt_k("bmc", "k","Maximum number of steps to unroll.\n", INT32_MAX, IntRange(0, INT32_MAX));
+        IntOption    opt_width("GRAPH","width","Width of graph.\n", 0, IntRange(0, INT32_MAX));
 
-        StringOption    opt_graph("graph", "graph","", "");
+        BoolOption	 opt_csv("GRAPH","csv","Output in CSV format",false);
 
+        StringOption    opt_graph("GRAPH", "graph","Not currently used", "");
+
+        StringOption    opt_assume("MAIN", "assume","Specify a file of assumptions, with one literal per line", "");
+
+        BoolOption opt_id_graph("GRAPH","print-vars","Identify the variables in the graph, then quit\n",false);
 
         parseOptions(argc, argv, true);
+
+        if(opt_csv){
+           	verb=0;
+           }
+#if defined(__linux__)
+        fpu_control_t oldcw, newcw;
+        _FPU_GETCW(oldcw); newcw = (oldcw & ~_FPU_EXTENDED) | _FPU_DOUBLE; _FPU_SETCW(newcw);
+        if(verb>0)
+        	fprintf(stderr,"WARNING: for repeatability, setting FPU to use double precision\n");
+#endif
+
+        mincutalg = ALG_EDMONSKARP;
+
+        if(!strcasecmp(opt_min_cut_alg,"ibfs")){
+        	mincutalg=ALG_IBFS;
+
+        }else if (!strcasecmp(opt_min_cut_alg,"edmondskarp-adj")){
+        	mincutalg = ALG_EDKARP_ADJ;
+        }else if (!strcasecmp(opt_min_cut_alg,"edmondskarp")){
+        	mincutalg = ALG_EDMONSKARP;
+        }else{
+        	fprintf(stderr,"Error: unknown max-flow/min-cut algorithm %s, aborting\n",((string)  opt_min_cut_alg).c_str());
+        	exit(1);
+        }
+
+        reachalg = ALG_CONNECTIVITY;
+
+		 if(!strcasecmp(opt_reach_alg,"dijkstra")){
+			reachalg=ALG_DIJKSTRA;
+
+		 }else if(!strcasecmp(opt_reach_alg,"bfs")){
+			reachalg=ALG_BFS;
+
+		 }else if (!strcasecmp(opt_reach_alg,"connectivity")){
+			 reachalg = ALG_CONNECTIVITY;
+		 }else{
+			fprintf(stderr,"Error: unknown reachability algorithm %s, aborting\n", ((string) opt_reach_alg).c_str());
+			exit(1);
+		 }
 
 
         double initial_time = cpuTime();
@@ -105,6 +151,7 @@ int main(int argc, char** argv)
 
         // Use signal handlers that forcibly quit until the solver will be able to respond to
         // interrupts:
+#if not defined(__MINGW32__)
         signal(SIGINT, SIGINT_exit);
         signal(SIGXCPU,SIGINT_exit);
 
@@ -115,7 +162,7 @@ int main(int argc, char** argv)
             if (rl.rlim_max == RLIM_INFINITY || (rlim_t)cpu_lim < rl.rlim_max){
                 rl.rlim_cur = cpu_lim;
                 if (setrlimit(RLIMIT_CPU, &rl) == -1)
-                    printf("WARNING! Could not set resource limit: CPU-time.\n");
+                    fprintf(stderr,"WARNING! Could not set resource limit: CPU-time.\n");
             } }
 
         // Set limit on virtual memory:
@@ -126,11 +173,15 @@ int main(int argc, char** argv)
             if (rl.rlim_max == RLIM_INFINITY || new_mem_lim < rl.rlim_max){
                 rl.rlim_cur = new_mem_lim;
                 if (setrlimit(RLIMIT_AS, &rl) == -1)
-                    printf("WARNING! Could not set resource limit: Virtual memory.\n");
+                    fprintf(stderr,"WARNING! Could not set resource limit: Virtual memory.\n");
             } }
-
+#endif
          const char *error;
          Solver S;
+         S.max_decision_var = opt_restrict_decisions;
+#ifdef DEBUG_SOLVER
+         S.dbg_solver = new Solver();
+#endif
          gzFile in = (argc == 1) ? gzdopen(0, "rb") : gzopen(argv[1], "rb");
              if (in == NULL)
                  printf("ERROR! Could not open file: %s\n", argc == 1 ? "<stdin>" : argv[1]), exit(1);
@@ -142,40 +193,279 @@ int main(int argc, char** argv)
              parse_GRAPH(in, S);
              gzclose(in);
 
-             gzFile gin =gzopen(graphstr, "rb");
-            parse_GRAPH(gin,S);
-            gzclose(gin);
-
+             if(strlen(graphstr)){
+				 gzFile gin =gzopen(graphstr, "rb");
+				parse_GRAPH(gin,S);
+				gzclose(gin);
+             }
 
          // Change to signal-handlers that will only notify the solver and allow it to terminate
            // voluntarily:
+#if not defined(__MINGW32__)
            signal(SIGINT, SIGINT_interrupt);
            signal(SIGXCPU,SIGINT_interrupt);
+#endif
      //      printf("Solving circuit with %d gates, %d latches, %d inputs, %d outputs\n", aiger->num_ands, aiger->num_latches, aiger->num_inputs, aiger->num_outputs);
 
-
+           const char * priority_file = opt_priority;
+           if(strlen(priority_file)>0){
+        	   FILE * f = fopen(priority_file,"r");
+        	   if(f){
+        		   char * line = NULL;
+				  int v=0;
+				  int p=0;
+				  int total_read = 0;
+				  while (fscanf(f," %d %d ", &v,&p) ==2) {
+					  if(v<1 || v> S.nVars() || p<0){
+						  fprintf(stderr,"Bad priority line: %d %d", v, p);
+						  exit(1);
+					  }
+					  v--;
+					  total_read++;
+					  S.setDecisionPriority(v,p);
+					 }
+				  if(total_read==0){
+					  fprintf(stderr,"Warning: read no priorities from priority file!");
+				  }
+        		   fclose(f);
+        	   }else{
+        		   fprintf(stderr,"Failed to read priority file!\n");
+        	   }
+           }
 
 
          //really simple, unsophisticated incremental BMC:
+           vec<Lit> assume;
 
-           lbool ret=S.solve()?l_True:l_False;
+           const char * assume_str =opt_assume;
+		   if(strlen(assume_str)){
+			 gzFile gin =gzopen(assume_str, "rb");
+
+			parse_Assumptions(gin,assume, S);
+
+			gzclose(gin);
+		   }
+
+		   if(opt_id_graph){
+			   if(S.theories.size()){
+
+					   printf("Graph Variables:\n");
+						Theory * t = S.theories[0];
+						GraphTheorySolver *g = (GraphTheorySolver*)t;
+						int width = sqrt(g->nNodes());
+						if(opt_width>0){
+							width=opt_width;
+						}
+
+						int v = 0;
+						//for (int i = 0;i<w;i++){
+						//	for(int j = 0;j<w;j++){
+						int lasty= 0;
+						for(int n = 0;n<g->nNodes();n++){
+							int x = n%width;
+							int y = n/width;
+							if(y > lasty)
+								printf("\n");
+
+
+							printf("%4d", n+1);
+
+							Lit l = mkLit(n,false);
+							if(assume.contains(l)){
+								printf("+");
+							}else{
+								l=~l;
+								if(assume.contains(l)){
+									printf("-");
+								}else{
+									printf(" ");
+								}
+							}
+
+							if (x<width-1){
+								printf(",");
+							}
+							lasty=y;
+						}
+						printf("\n\n");
+
+
+
+
+				}else{
+					printf("No graph to identify\n");
+				}
+
+			   exit(0);
+		   }
+
+           lbool ret=S.solve(assume)?l_True:l_False;
 
 
         if(ret==l_True){
-        	printf("SAT\n");
-        	int v = 0;
+        	if(!opt_csv)
+        		printf("SAT\n");
 
-        	Theory * t = S.theories[0];
-			DijGraph *g = (DijGraph*)t;
-			int w = sqrt(g->nNodes());
-        	for (int i = 0;i<w;i++){
-        		for(int j = 0;j<w;j++){
-        			if(S.model[v++]==l_True)
-        				printf(" 1");
-        			else
-        				printf(" 0");
-        		}
-        		printf("\n");
+        	if(S.theories.size()){
+				Theory * t = S.theories[0];
+				GraphTheorySolver *g = (GraphTheorySolver*)t;
+				int width = sqrt(g->nNodes());
+				if(opt_width>0){
+					width=opt_width;
+				}
+
+				int v = 0;
+				//for (int i = 0;i<w;i++){
+				//	for(int j = 0;j<w;j++){
+				int lasty= 0;
+				for(int n = 0;n<g->nNodes();n++){
+					int x = n%width;
+					int y = n/width;
+					if(y > lasty)
+						printf("\n");
+#if not defined(__MINGW32__)
+						if (!opt_csv && isatty(fileno(stdout))){
+#else
+						if(false){
+#endif
+							if(S.model[n]==l_True)
+								printf("\033[1;42m\033[1;37m 1\033[0m");
+							else
+								printf("\033[1;44m\033[1;37m 0\033[0m");
+						}else if (opt_csv){
+
+							if(S.model[n]==l_True)
+								printf("1");
+							else
+								printf("0");
+							if (x<width-1){
+								printf(",");
+							}
+						}else{
+
+							if(S.model[n]==l_True)
+								printf(" 1");
+							else
+								printf(" 0");
+						}
+
+					lasty=y;
+				}
+				printf("\n\n");
+				if(opt_check_solution){
+					if(!g->check_solved()){
+						fprintf(stderr,"Error! Solution doesn't satisfy graph properties!\n");
+						exit(1);
+					}
+				}
+
+				if(opt_print_reach){
+				 v = 0;
+				//for (int i = 0;i<w;i++){
+				//	for(int j = 0;j<w;j++){
+				 lasty= 0;
+				for(int n = 0;n<g->nNodes();n++){
+					int x = n%width;
+					int y = n/width;
+					if(y > lasty)
+						printf("\n");
+#if not defined(__MINGW32__)
+						if (isatty(fileno(stdout))){
+#else
+						if(false){
+#endif
+
+							if(S.model[n]==l_True)
+								printf("\033[1;42m\033[1;37m%3d\033[0m",n);
+							else
+								printf("\033[1;44m\033[1;37m%3d\033[0m",n);
+						}else{
+
+							if(S.model[n]==l_True)
+								printf(" 1");
+							else
+								printf(" 0");
+						}
+
+					lasty=y;
+				}
+				printf("\n");
+
+				printf("\n");
+				for(int t = 0;t<S.theories.size();t++){
+					printf("Theory %d\n", t);
+					GraphTheorySolver *g = (GraphTheorySolver*)S.theories[t];
+
+					for(int r = 0;r<g->reach_detectors.size();r++){
+
+						int width = sqrt(g->nNodes());
+						int lasty= 0;
+						int extra =  g->nNodes() % width ? (width- g->nNodes() % width ):0;
+						for(int n = 0;n<g->nNodes();n++){
+							int x = n%width;
+
+							int y = (n + extra )/width;
+							if(y > lasty)
+								printf("\n");
+
+							int v =var( g->reach_detectors[r]->reach_lits[n]);
+#if not defined(__MINGW32__)
+						if (isatty(fileno(stdout))){
+#else
+						if(false){
+#endif
+								if(S.model[v]==l_True)
+									printf("\033[1;42m\033[1;37m%4d\033[0m", v+1);
+								else
+									printf("\033[1;44m\033[1;37m%4d\033[0m",v+1);
+							}else{
+
+								if(S.model[v]==l_True)
+									printf(" 1");
+								else
+									printf(" 0");
+							}
+
+							lasty=y;
+						}
+						printf("\n");
+					}
+
+
+
+					//g->drawFull();
+
+					assert(g->dbg_solved());
+				}
+
+				}
+/*        		for(int r = 0;r<g->reach_detectors.size();r++){
+
+					int width = sqrt(g->nNodes());
+					int lasty= 0;
+					int extra =  g->nNodes() % width ? (width- g->nNodes() % width ):0;
+					for(int n = 0;n<g->nNodes();n++){
+						int x = n%width;
+
+						int y = (n + extra )/width;
+
+						int v =var( g->reach_detectors[r]->reach_lits[n]);
+						if(v==306){
+							int a =1;
+						}
+						if(S.model[v]==l_True){
+							assert(S.value(v)==l_True);
+							int node = g->reach_detectors[r]->getNode(v);
+							g->reach_detectors[r]->positive_reach_detector->dbg_path(node);
+							int  b=1;
+
+						}
+
+
+						lasty=y;
+					}
+					printf("\n");
+				}*/
         	}
 
         }else if(ret==l_False){
@@ -183,12 +473,14 @@ int main(int argc, char** argv)
         }else{
         	printf("UNKNOWN\n");
         }
-        printStats(S);
-        for(int i = 0;i<S.theories.size();i++){
-        	Theory * t = S.theories[i];
-        	DijGraph *g = (DijGraph*)t;
-        	g->printStats();
-        }
+		if(verb>0){
+			printStats(S);
+			for(int i = 0;i<S.theories.size();i++){
+				Theory * t = S.theories[i];
+				GraphTheorySolver *g = (GraphTheorySolver*)t;
+				g->printStats();
+			}
+		}
         fflush(stdout);
 #ifdef NDEBUG
         exit(ret == l_True ? 10 : ret == l_False ? 20 : 0);     // (faster than "return", which will invoke the destructor for 'Solver')

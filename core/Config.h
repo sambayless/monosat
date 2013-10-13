@@ -21,12 +21,48 @@ extern  BoolOption    opt_luby_restart ;
 extern  IntOption     opt_restart_first ;
 extern  DoubleOption  opt_restart_inc   ;
 extern  DoubleOption  opt_garbage_frac  ;
+extern  BoolOption    opt_rnd_restart ;
 
 extern  BoolOption opt_interpolate;
 extern IntOption opt_eager_prop;
 extern IntOption opt_subsearch;
 
+extern BoolOption opt_graph;
+extern BoolOption opt_inc_graph;
+extern IntOption opt_dec_graph;
+extern BoolOption opt_conflict_shortest_path;
+extern BoolOption opt_conflict_min_cut;
+extern IntOption opt_restrict_decisions;
 
+extern StringOption opt_min_cut_alg;
+extern StringOption opt_reach_alg;
+
+extern BoolOption opt_check_solution;
+extern BoolOption opt_print_reach;
+
+extern IntOption opt_learn_reaches;
+extern StringOption opt_priority;
+
+extern BoolOption opt_print_conflicts;
+extern BoolOption opt_rnd_phase;
+extern BoolOption opt_init_rnd_phase;
+
+extern BoolOption opt_reach_prop;
+
+enum ReachAlg{
+	 ALG_CONNECTIVITY,
+	 ALG_DIJKSTRA,
+	 ALG_BFS
+};
+extern ReachAlg reachalg;
+extern ReachAlg distalg;
+
+enum MinCutAlg{
+	 ALG_EDMONSKARP,
+	 ALG_EDKARP_ADJ,
+	 ALG_IBFS
+};
+extern MinCutAlg mincutalg;
 }
 
 #endif /* CONFIG_H_ */

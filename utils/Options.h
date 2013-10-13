@@ -282,15 +282,15 @@ class Int64Option : public Option
         if (range.begin == INT64_MIN)
             fprintf(stderr, "imin");
         else
-            fprintf(stderr, "%4"PRIi64, range.begin);
+            fprintf(stderr, "%4" PRIi64, range.begin);
 
         fprintf(stderr, " .. ");
         if (range.end == INT64_MAX)
             fprintf(stderr, "imax");
         else
-            fprintf(stderr, "%4"PRIi64, range.end);
+            fprintf(stderr, "%4" PRIi64, range.end);
 
-        fprintf(stderr, "] (default: %"PRIi64")\n", value);
+        fprintf(stderr, "] (default: %" PRIi64 ")\n", value);
         if (verbose){
             fprintf(stderr, "\n        %s\n", description);
             fprintf(stderr, "\n");
@@ -368,8 +368,10 @@ class BoolOption : public Option
 
         fprintf(stderr, "  -%s, -no-%s", name, name);
 
-        for (uint32_t i = 0; i < 32 - strlen(name)*2; i++)
+        //Note: Changed this to signed int, otherwise this can overflow if name is longer than 32...
+        for (int i = 0; i < 32 - (int)( strlen(name))*2; i++)
             fprintf(stderr, " ");
+
 
         fprintf(stderr, " ");
         fprintf(stderr, "(default: %s)\n", value ? "on" : "off");
