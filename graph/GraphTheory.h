@@ -22,6 +22,7 @@
 #include "EdmondsKarp.h"
 #include "EdmondsKarpAdj.h"
 #include "Chokepoint.h"
+#include "WeightedDijkstra.h"
 
 #include "utils/System.h"
 #ifdef DEBUG_GRAPH
@@ -33,12 +34,22 @@
 #endif
 namespace Minisat{
 
+// Returns a random float 0 <= x < 1. Seed must never be 0.
+   static inline double drand(double& seed) {
+   	assert(seed!=0);
+       seed *= 1389796;
+       int q = (int)(seed / 2147483647);
+       seed -= (double)q * 2147483647;
+       return seed / 2147483647; }
 
+   // Returns a random integer 0 <= x < size. Seed must never be 0.
+   static inline int irand(double& seed, int size) {
+       return (int)(drand(seed) * size); }
 
 class GraphTheorySolver:public GraphTheory{
 private:
 
-
+	double rnd_seed;
 	Lit False;
 	Lit True;
 	int local_q;
@@ -80,6 +91,9 @@ private:
 
 	vec<Assignment> trail;
 	vec<int> trail_lim;
+
+
+
 
 	struct ReachDetector{
 		GraphTheorySolver & outer;
@@ -168,7 +182,7 @@ private:
 		};
 		ReachStatus *positiveReachStatus;
 		ReachStatus *negativeReachStatus;
-
+		WeightedDijkstra<NegativeEdgeStatus> * rnd_path;
 
 		struct ChokepointStatus{
 			ReachDetector & outer;
@@ -577,6 +591,8 @@ private:
 		ReachInfo():source(-1),detector(NULL){}
 	};
 
+
+
 	vec<ReachInfo> reach_info;
 public:
 	vec<ReachDetector*> reach_detectors;
@@ -674,6 +690,8 @@ public:
 			 learnt_path_clause_length=0;
 			 num_learnt_cuts=0;
 			 learnt_cut_clause_length=0;
+
+			 rnd_seed=1;
 
 			if(mincutalg==ALG_IBFS){
 				mc = new IBFS<CutEdgeStatus>(cutGraph);
@@ -957,20 +975,36 @@ public:
 				if(S->value(l)==l_True){
 					if(!under->connected(j)){
 						//then lets try to connect this
-						int a = 1;
-						assert(over->connected(j));//Else, we would already be in conflict
 
-						//ok, read back the path from the over to find a candidate edge we can decide
-						//find the earliest unconnected node on this path
-						int p = j;
-						int last = j;
-						while(!under->connected(p)){
-							last=p;
-							assert(p!=r->source);
-							int prev = over->previous(p);
-							p = prev;
+						assert(over->connected(j));//Else, we would already be in conflict
+						int p =j;
+						int last=j;
+						if(!opt_use_random_path_for_decisions){
+							//ok, read back the path from the over to find a candidate edge we can decide
+							//find the earliest unconnected node on this path
+							 p = j;
+							 last = j;
+							while(!under->connected(p)){
+								last=p;
+								assert(p!=r->source);
+								int prev = over->previous(p);
+								p = prev;
+
+							}
+						}else{
+							//derive a random path in the graph
+							 p = j;
+							 last = j;
+							while(!under->connected(p)){
+								last=p;
+								assert(p!=r->source);
+								int prev = r->rnd_path->previous(p);
+								p = prev;
+
+							}
 
 						}
+
 						//ok, now pick some edge p->last that will connect p to last;
 						assert(!under->connected(last));
 						assert(under->connected(p));
@@ -1541,6 +1575,16 @@ public:
 				mnum = CRef_Undef- reach_detectors.last()->forced_reach_marker;
 				marker_map.growTo(mnum+1);
 				marker_map[mnum] = reach_detectors.size()-1;
+
+
+				reach_detectors.last()->rnd_path=NULL;
+				 if(opt_use_random_path_for_decisions){
+					 reach_detectors.last()->rnd_path = new WeightedDijkstra<NegativeEdgeStatus>(from,g);
+					 for(int i=0;i<g.nodes;i++){
+						 double w = drand(rnd_seed);
+						 reach_detectors.last()->rnd_path->setWeight(i,w);
+					 }
+				 }
 
 
 				if(within_steps<0 ){
