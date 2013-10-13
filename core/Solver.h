@@ -204,6 +204,7 @@ public:
     vec<Lit>  theory_reason;
     vec<Lit> theory_conflict;
     vec<Theory*> theories;
+    vec<Theory*> decidable_theories;
     vec<CRef> markers;//a set of special clauses that can be recognized as pointers to theories
     vec<int> marker_theory;
     Solver * S;//super solver

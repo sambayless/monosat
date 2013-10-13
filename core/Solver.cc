@@ -1091,8 +1091,10 @@ lbool Solver::search(int nof_conflicts)
             /**
              * Give the theory solvers a chance to make decisions
              */
-			for(int i = 0;i<theories.size() && next==lit_Undef;i++){
-				next = theories[i]->decideTheory();
+			for(int i = 0;i<decidable_theories.size() && next==lit_Undef;i++){
+
+					next = decidable_theories[i]->decideTheory();
+
 			}
 
             if (next == lit_Undef){
