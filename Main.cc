@@ -252,9 +252,27 @@ int main(int argc, char** argv)
             {
                 string sub;
                 iss >> sub;
-                int value = atoi(sub.c_str());
-                decidable.push(value);
+                if(sub.length()==0)
+                	continue;
+				//int value = atoi(sub.c_str());
+
+                const char * s = sub.c_str();
+                char* p=NULL;
+                long value = strtol(s, &p, 10);
+                if (*p) {
+                    // conversion failed because the input wasn't a number
+                }
+                else {
+
+                	 decidable.push(value);
+                }
+
             } while (iss);
+           }else{
+        	   //default to all theories decidable
+        	   for(int i = 0;i<S.theories.size();i++){
+        		   decidable.push(i);
+        	   }
            }
          //really simple, unsophisticated incremental BMC:
            vec<Lit> assume;
@@ -268,6 +286,7 @@ int main(int argc, char** argv)
 			gzclose(gin);
 		   }
 
+
 		   for(int i = 0;i<decidable.size();i++){
 			   int t = decidable[i];
 			   if(t<0 || t>= S.theories.size()){
@@ -278,6 +297,7 @@ int main(int argc, char** argv)
 
 			   S.decidable_theories.push(S.theories[t]);
 		   }
+
 
 		   if(opt_id_graph){
 			   if(S.theories.size()){

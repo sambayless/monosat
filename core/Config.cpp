@@ -63,7 +63,8 @@ BoolOption Minisat::opt_init_rnd_phase(_cat,"init-rnd-phase","",false);
 BoolOption Minisat::opt_reach_prop(_cat_graph,"prop-reach","",false);
 
 BoolOption Minisat::opt_decide_graph(_cat_graph,"decide-graph","",false);
-BoolOption Minisat::opt_use_random_path_for_decisions(_cat_graph,"decide-graph-rnd","",false);
+BoolOption Minisat::opt_use_random_path_for_decisions(_cat_graph,"decide-graph-rnd","",true);
+DoubleOption Minisat::opt_decide_graph_re_rnd(_cat_graph,"decide-graph-re-rnd","Randomly make new random graphs for graph decisions instead of sticking with just one",0.01);
 
 BoolOption Minisat::opt_print_decision_path(_cat_graph,"decide-graph-print","",false);
 

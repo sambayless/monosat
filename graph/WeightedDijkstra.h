@@ -326,29 +326,7 @@ public:
 		return true;
 	}
 	bool dbg_uptodate(){
-#ifdef DEBUG_DIJKSTRA
-		if(last_modification<=0)
-			return true;
-	/*	DynamicGraph gdbg;
-		for(int i = 0;i<g.nodes;i++){
-			gdbg.addNode();
-		}
 
-		for(int i = 0;i<g.adjacency.size();i++){
-			for(int j = 0;j<g.adjacency[i].size();j++){
-				int u = g.adjacency[i][j];
-				gdbg.addEdge(i,u);
-			}
-		}*/
-
-		Dijkstra d(source,g);
-		d.update();
-		for(int i = 0;i<g.nodes;i++){
-			int distance = dist[i];
-			int dbgdist = d.dist[i];
-			assert(distance==dbgdist);
-		}
-#endif
 		return true;
 	}
 
@@ -373,8 +351,7 @@ public:
 		return dist[t];
 	}
 	int previous(int t){
-		if(last_modification!=g.modifications)
-							update();
+
 		return prev[t];
 	}
 
