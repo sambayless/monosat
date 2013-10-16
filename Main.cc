@@ -286,7 +286,9 @@ int main(int argc, char** argv)
 			gzclose(gin);
 		   }
 
-
+		   if(verb>0){
+			   printf("Decidable theories: ");
+		   }
 		   for(int i = 0;i<decidable.size();i++){
 			   int t = decidable[i];
 			   if(t<0 || t>= S.theories.size()){
@@ -294,10 +296,14 @@ int main(int argc, char** argv)
 				   fflush(stderr);
 				   exit(1);
 			   }
-
+			   if(verb>0){
+					   printf("%d, ", t);
+				   }
 			   S.decidable_theories.push(S.theories[t]);
 		   }
-
+		   if(verb>0){
+				   printf("\n");
+			   }
 
 		   if(opt_id_graph){
 			   if(S.theories.size()){
