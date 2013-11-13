@@ -22,7 +22,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #define Minisat_Dimacs_h
 
 #include <stdio.h>
-
+#include "core/Config.h"
 #include "utils/ParseUtils.h"
 #include "core/SolverTypes.h"
 
@@ -63,9 +63,26 @@ static void parse_DIMACS_main(B& in, Solver& S) {
             }else{
                 printf("PARSE ERROR! Unexpected char: %c\n", *in), exit(3);
             }
-        } else if (*in == 'c' || *in == 'p')
-            skipLine(in);
-        else{
+        } else if (*in == 'c' || *in == 'p'){
+        	if (eagerMatch(in, "c from")){
+        		int from    = parseInt(in);
+        		//Try to read this comment as an allsat specification of from=n to=m
+        		skipWhitespace(in);
+        		if(! eagerMatch(in, "to")){
+        			skipLine(in);
+        		}else{
+					int to = parseInt(in);
+					if(opt_allsat_to != INT32_MAX){
+						printf("Ignoring allsat from/to line from CNF because of user specified values\n", from,to);
+					}else{
+						printf("Read allsat from=%d and to=%d settings from CNF\n", from,to);
+						opt_allsat_from=from;
+						opt_allsat_to=to;
+					}
+        		}
+        	}else
+        		skipLine(in);
+        }else{
             cnt++;
             readClause(in, S, lits);
             S.addClause_(lits); }
