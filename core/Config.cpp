@@ -42,5 +42,6 @@ BoolOption Minisat::opt_partial(_cat,"partial","Attempt to find a partial satisf
  //IntOption Minisat::opt_allsat_vars(_cat_allsat,"allsat-vars", "Perform allsat over the first (or negative for last) n variables (0 for all variables).", 0, IntRange(INT32_MIN,INT32_MAX));
  BoolOption Minisat::opt_allsat_modsat(_cat_allsat,"allsat-modsat","Use modular sat solver for allsat",true);
 IntOption Minisat::opt_max_allsat(_cat_allsat,"max-allsat","Stop allsat after learning n blocking clauses (0 for infinite)",0,IntRange(0,INT32_MAX));
+IntOption Minisat::opt_max_interpolant(_cat_allsat,"max-int","Stop allsat after learning n interpolant clauses (0 for infinite)",0,IntRange(0,INT32_MAX));
 BoolOption Minisat::opt_allsat_inc_block(_cat_allsat,"inc-block","Add blocking clauses using partial backtracking",true);
 BoolOption Minisat::opt_subsume(_cat_sms,"subsume","Check for and remove subsumed clauses from the interpolant",false);

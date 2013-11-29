@@ -52,7 +52,12 @@ void printStats(Solver& solver)
     printf("CPU time              : %g s\n", cpu_time);
 }
 
-
+long n_blocking_clauses=0;
+long total_clause_length=0;
+mpz_class n_solutions=0;
+//double n_solutions=0;
+long max_clauses=0;
+long max_int =0;
 static Solver* solver;
 FILE * intout;
 void printInterpolant (Solver & S, FILE * out){
@@ -64,30 +69,60 @@ void printInterpolant (Solver & S, FILE * out){
 		}
 		fprintf(out,"0\n");
 	}
+	fflush(out);
 }
 
-// Terminate by notifying the solver and back out gracefully. This is mainly to have a test-case
-// for this feature of the Solver as it may take longer than an immediate call to '_exit()'.
-static void SIGINT_interrupt(int signum) { solver->interrupt();   fflush(stdout);}
 
 // Note that '_exit()' rather than 'exit()' has to be used. The reason is that 'exit()' calls
 // destructors and may cause deadlocks if a malloc/free function happens to be running (these
 // functions are guarded by locks for multithreaded use).
 static void SIGINT_exit(int signum) {
-    printf("\n"); printf("*** INTERRUPTED ***\n");
+
     if (solver->verbosity > 0){
         printStats(*solver);
-        printf("\n"); printf("*** INTERRUPTED ***\n"); }
-    fflush(stdout);
+        }
+    printf("\n"); printf("*** INTERRUPTED ***\n");
 
+    printf("Interrupted allsat\n");
+
+		printf("Learned %ld blocking clauses.\n",n_blocking_clauses);
+		printf("Avg. blocking clause length: %f\n",total_clause_length/((double)n_blocking_clauses));
+
+
+   		if(opt_subsume){
+   			Subsume subsume;
+   			subsume.setNumVars(solver->nVars());
+   			printf("Checking for subsumed clauses...\n");
+   			subsume.checkAll(solver->interpolant);
+   		}
+
+   		long total_int_clause_length = 0;
+   		int n_int_clauses =0;
+   		for(int i = 0;i<solver->interpolant.size();i++){
+   			n_int_clauses++;
+   			total_int_clause_length+= solver->interpolant[i].size();
+   		}
+
+   		if(opt_interpolate){
+   			printf("# Interpolants: %d\n", solver->interpolant.size());
+   			printf("Avg. interpolant clause length: %f\n",total_int_clause_length/((double)n_int_clauses));
+   		}
+   		gmp_printf ("#solutions: %Zd\n", n_solutions.get_mpz_t());
 	   if(intout){
 			printInterpolant(*solver,intout);
 			fclose(intout);
 		}
 
-    _exit(1); }
+	   fflush(stdout);
 
 
+    _exit(1);
+}
+
+
+// Terminate by notifying the solver and back out gracefully. This is mainly to have a test-case
+// for this feature of the Solver as it may take longer than an immediate call to '_exit()'.
+static void SIGINT_interrupt(int signum) { solver->interrupt(); fflush(stdout); SIGINT_exit(signum); }
 //=================================================================================================
 // Main:
 
@@ -116,8 +151,8 @@ int main(int argc, char** argv)
 
         double initial_time = cpuTime();
 
-
-
+        max_clauses= opt_max_allsat;
+        max_int=opt_max_interpolant;
         // Use signal handlers that forcibly quit until the solver will be able to respond to
         // interrupts:
         signal(SIGINT, SIGINT_exit);
@@ -278,14 +313,10 @@ int main(int argc, char** argv)
         		}
         		allsat.addTheory(&S);
         		S.attachTo(&allsat,supervec,allsatvec);
-        		long n_blocking_clauses=0;
-        		long total_clause_length=0;
-        		mpz_class n_solutions=0;
-        		//double n_solutions=0;
-        		long max_clauses = opt_max_allsat;
+
 
         		//ok, now do an allsat loop:
-        		while(ret!=l_False && (!max_clauses || n_blocking_clauses<max_clauses)){
+        		while(ret!=l_False && (!max_clauses || n_blocking_clauses<max_clauses) && (!max_int || S.interpolant.size() <max_int)  &&! allsat.asynch_interrupt){
         			ret = allsat.solveLimited(dummy);
         			if(ret==l_True){
         				n_blocking_clauses++;
@@ -431,6 +462,7 @@ int main(int argc, char** argv)
 
         			}
         		}
+
         		printf("Done allsat\n");
 
         		printf("Learned %ld blocking clauses.\n",n_blocking_clauses);
