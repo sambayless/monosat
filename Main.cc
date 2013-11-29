@@ -61,6 +61,7 @@ long max_int =0;
 static Solver* solver;
 FILE * intout;
 void printInterpolant (Solver & S, FILE * out){
+	fprintf(out,"c Over-approximation of satisfying assignments\n");
 	for(int i = 0;i<S.interpolant.size();i++){
 		vec<Lit> & c = S.interpolant[i];
 		for(int j  =0;j<c.size();j++){
@@ -362,26 +363,26 @@ int main(int argc, char** argv)
 
         				}
         				if(opt_allsat_inc_block){
-        				int max_lev = 0;
-        				int second_max = 0;
-        				int max_pos=0;
-        				int second_pos=1;
-        				Lit max=lit_Undef;
-        				for(int i = 0;i<block.size();i++){
-        					Lit l = block[i];
-        					assert(allsat.value(l)==l_False);
-        					int lev = allsat.level(var(l));
-        					if(lev>=max_lev){
-        						second_max=max_lev;
-        						second_pos=max_pos;
-        						max_lev=lev;
-        						max_pos=i;
-        						max=l;
-        					}else if (lev>second_max){
-        						second_max=lev;
-        						second_pos=i;
-        					}
-        				}
+							int max_lev = 0;
+							int second_max = 0;
+							int max_pos=0;
+							int second_pos=1;
+							Lit max=lit_Undef;
+							for(int i = 0;i<block.size();i++){
+								Lit l = block[i];
+								assert(allsat.value(l)==l_False);
+								int lev = allsat.level(var(l));
+								if(lev>=max_lev){
+									second_max=max_lev;
+									second_pos=max_pos;
+									max_lev=lev;
+									max_pos=i;
+									max=l;
+								}else if (lev>second_max){
+									second_max=lev;
+									second_pos=i;
+								}
+							}
 
         				if(block.size()>1){
         					Lit second_max = block[second_pos];
