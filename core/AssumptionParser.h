@@ -20,7 +20,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 #ifndef Assumption_Parser_h
 #define Assumption_Parser_h
-
+#include <unordered_map>
 #include <stdio.h>
 
 #include "utils/ParseUtils.h"
@@ -44,17 +44,54 @@ static Lit readLit(B& in){
 }
 
 template<class Solver>
-static void parse_Assumptions(gzFile input_stream, vec<Lit>& assumptions, Solver& S) {
+static void parse_Assumptions(gzFile input_stream, vec<Lit>& assumptions, Solver& S, vec<std::pair<int,std::string> > * symbols=NULL) {
     StreamBuffer in(input_stream);
+    std::string symbol;
+    std::unordered_map<std::string, int> symbol_table;
+    if(symbols){
+    	for (int i = 0;i<symbols->size();i++){
+    		int var = (*symbols)[i].first;
+    		string symbol = (*symbols)[i].second;
+    		symbol_table[symbol]=var;
+    	}
+    }
     for (;;){
 		skipWhitespace(in);
 		if (*in == EOF) break;
 		else if (*in == 'c' || *in == 'p')
 			skipLine(in);
 		else{
-			Lit l = readLit(in);
+			bool neg=false;
+			if(*in=='-'){
+				neg=true;
+				++in;
+			}
+			if (isNumber(*in)){
+				Lit l = readLit(in);
+				if(neg){
+					l=~l;
+				}
+				assumptions.push(l);
+			}else{
+				//look this up in the symbol table
+				symbol.clear();
+				while(*in != '\n' && ! isWhitespace(*in)){
+					symbol.push_back(*in);
+					++in;
+				}
+				if(symbol.size()>0){
+					if(symbol_table.count(symbol)==0){
+						printf("PARSE ERROR! Unknown symbol: %s\n", symbol.c_str()), exit(3);
+					}else{
+						int v = symbol_table[symbol];
+						Lit l =mkLit(v,neg);
+						assumptions.push(l);
+					}
+				}else{
+					printf("PARSE ERROR! Empty symbol!\n"), exit(3);
+				}
 
-			assumptions.push(l);
+			}
 		}
 	}
 	   sort(assumptions);

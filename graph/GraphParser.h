@@ -115,13 +115,13 @@ static void readReach(B& in, Solver& S, vec<GraphTheory*> & graphs) {
 }
 
 template<class B, class Solver>
-static void parse_GRAPH_main(B& in, Solver& S) {
+static void parse_GRAPH_main(B& in, Solver& S, vec<std::pair<int,std::string> > * symbols=NULL ) {
 	vec<GraphTheory*> graphs;
 	vec<Lit> lits;
     int vars    = 0;
     int clauses = 0;
     int cnt     = 0;
-
+    std::string symbol;
     for (;;){
         skipWhitespace(in);
         if (*in == EOF) break;
@@ -136,9 +136,34 @@ static void parse_GRAPH_main(B& in, Solver& S) {
            // }else{
            //     printf("PARSE ERROR! Unexpected char: %c\n", *in), exit(3);
            // }
-        } else if (*in == 'c' || *in == 'p')
+        } else if (*in == 'c'){
+        	if(symbols && eagerMatch(in,"c var ")){
+        		//this is a variable symbol map
+        		skipWhitespace(in);
+        		int v = parseInt(in);
+        		if(v<0){
+        			printf("PARSE ERROR! Variables must be positive: %c\n", *in), exit(3);
+        		}
+        		symbol.clear();
+        		skipWhitespace(in);
+        		while(*in != '\n' && ! isWhitespace(*in)){
+        			symbol.push_back(*in);
+        			++in;
+        		}
+        		if(symbol.size()==0){
+        			printf("PARSE ERROR! Empty symbol: %c\n", *in), exit(3);
+        		}
+        		symbols->push();
+        		symbols->last().first=v;
+        		symbols->last().second=symbol;
+        		skipLine(in);
+        	}else{
+        		//just a comment
+        		skipLine(in);
+        	}
+        } else if (*in == 'p'){
             skipLine(in);
-        else if (*in == 'g'){
+        }else if (*in == 'g'){
         	++in;
         	skipWhitespace(in);
         	if(*in=='d'){
@@ -165,9 +190,9 @@ static void parse_GRAPH_main(B& in, Solver& S) {
 // Inserts problem into solver.
 //
 template<class Solver>
-static void parse_GRAPH(gzFile input_stream, Solver& S) {
+static void parse_GRAPH(gzFile input_stream, Solver& S, vec<std::pair<int,std::string> > * symbols=NULL) {
     StreamBuffer in(input_stream);
-    parse_GRAPH_main(in, S); }
+    parse_GRAPH_main(in, S,symbols); }
 
 //=================================================================================================
 }

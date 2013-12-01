@@ -90,20 +90,22 @@ int main(int argc, char** argv)
 
         // Extra options:
         //
-        IntOption    verb   ("MAIN", "verb",   "Verbosity level (0=silent, 1=some, 2=more).", 1, IntRange(0, 2));
+        IntOption    verb   ("MAIN", "verb",   "Verbosity level (0=silent, 1=some, 2=more).", 1, IntRange(0, 3));
         IntOption    cpu_lim("MAIN", "cpu-lim","Limit on CPU time allowed in seconds.\n", INT32_MAX, IntRange(0, INT32_MAX));
         IntOption    mem_lim("MAIN", "mem-lim","Limit on memory usage in megabytes.\n", INT32_MAX, IntRange(0, INT32_MAX));
         
         IntOption    opt_width("GRAPH","width","Width of graph.\n", 0, IntRange(0, INT32_MAX));
+        IntOption    opt_height("GRAPH","height","Height of graph.\n", 0, IntRange(0, INT32_MAX));
 
         BoolOption	 opt_csv("GRAPH","csv","Output in CSV format",false);
 
         StringOption    opt_graph("GRAPH", "graph","Not currently used", "");
 
-        StringOption    opt_assume("MAIN", "assume","Specify a file of assumptions, with one literal per line", "");
+        StringOption    opt_assume("MAIN", "assume","Specify a file of assumptions, with one literal or symbol per line", "");
 
         StringOption    opt_decidable("MAIN", "decidable-theories","Specify which graphs should make decisions on their own, in comma delimited format", "");
 
+        BoolOption 		opt_symbols("MAIN","read-symbols","Whether to read symbol lines (\"c var <variable number> <name>\") from the gnf",true);
 
         BoolOption opt_id_graph("GRAPH","print-vars","Identify the variables in the graph, then quit\n",false);
 
@@ -118,6 +120,8 @@ int main(int argc, char** argv)
         if(verb>0)
         	fprintf(stderr,"WARNING: for repeatability, setting FPU to use double precision\n");
 #endif
+
+        vec<std::pair<int,string> > symbols;
 
         mincutalg = ALG_EDMONSKARP;
 
@@ -195,8 +199,16 @@ int main(int argc, char** argv)
                  printf("============================[ Problem Statistics ]=============================\n");
                  printf("|                                                                             |\n"); }
 
-             parse_GRAPH(in, S);
+             parse_GRAPH(in, S,opt_symbols?&symbols:NULL);
              gzclose(in);
+
+             if(verb>2){
+            	 for(int i = 0;i<symbols.size();i++){
+            		 int v = symbols[i].first;
+            		 string s = symbols[i].second;
+            		 std::cout<<"Symbol: " << (v+1) << " = " << s <<"\n";
+            	 }
+             }
 
              if(strlen(graphstr)){
 				 gzFile gin =gzopen(graphstr, "rb");
@@ -281,10 +293,19 @@ int main(int argc, char** argv)
 		   if(strlen(assume_str)){
 			 gzFile gin =gzopen(assume_str, "rb");
 
-			parse_Assumptions(gin,assume, S);
+			parse_Assumptions(gin,assume, S,&symbols);
 
 			gzclose(gin);
 		   }
+		   if(verb>2 && assume.size()){
+
+			   printf("Assumptions: ");
+				 for(int i = 0;i<assume.size();i++){
+					 Lit l = assume[i];
+					 printf("%d, ", dimacs(l));
+				 }
+				printf("\n");
+		}
 
 		   if(verb>0){
 			   printf("Decidable theories: ");
@@ -315,12 +336,16 @@ int main(int argc, char** argv)
 						if(opt_width>0){
 							width=opt_width;
 						}
+						int height =width;
+						if(opt_height>0){
+							height = opt_height;
+						}
 
 						int v = 0;
 						//for (int i = 0;i<w;i++){
 						//	for(int j = 0;j<w;j++){
 						int lasty= 0;
-						for(int n = 0;n<g->nNodes();n++){
+						for(int n = 0;n<height*width;n++){
 							int x = n%width;
 							int y = n/width;
 							if(y > lasty)
@@ -363,7 +388,7 @@ int main(int argc, char** argv)
 
         if(ret==l_True){
         	if(!opt_csv)
-        		printf("SAT\n");
+        		printf("s SATISFIABLE\n");
 
         	if(S.theories.size()){
 				Theory * t = S.theories[0];
@@ -372,12 +397,16 @@ int main(int argc, char** argv)
 				if(opt_width>0){
 					width=opt_width;
 				}
-
+				int height =width;
+				if(opt_height>0){
+					height = opt_height;
+				}
 				int v = 0;
 				//for (int i = 0;i<w;i++){
 				//	for(int j = 0;j<w;j++){
 				int lasty= 0;
-				for(int n = 0;n<g->nNodes();n++){
+
+				for(int n = 0;n<height*width;n++){
 					int x = n%width;
 					int y = n/width;
 					if(y > lasty)
@@ -528,7 +557,7 @@ int main(int argc, char** argv)
         	}
 
         }else if(ret==l_False){
-        	printf("UNSAT\n");
+        	printf("s UNSATISFIABLE\n");
         }else{
         	printf("UNKNOWN\n");
         }

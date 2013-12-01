@@ -351,18 +351,41 @@ class BoolOption : public Option
     BoolOption& operator=(bool b)     { value = b; return *this; }
 
     virtual bool parse(const char* str){
-        const char* span = str; 
-        
-        if (match(span, "-")){
-            bool b = !match(span, "no-");
+		const char* span = str;
 
-            if (strcmp(span, name) == 0){
-                value = b;
-                return true; }
-        }
+		if(strstr ( span, "=")){
 
-        return false;
-    }
+			 if (!match(span, "-") || !match(span, name) || !match(span, "="))
+						return false;
+
+			char*   end;
+			int32_t tmp = strtol(span, &end, 10);
+
+			if (end == NULL)
+				return false;
+			else if (tmp > 1){
+				fprintf(stderr, "ERROR! value <%s> is too large for option \"%s\".\n", span, name);
+				exit(1);
+			}else if (tmp < 0){
+				fprintf(stderr, "ERROR! value <%s> is too small for option \"%s\".\n", span, name);
+				exit(1); }
+
+			value = tmp;
+			 return true;
+		}else if (match(span, "-")){
+
+
+
+			bool b = !match(span, "no-");
+
+			if (strcmp(span, name) == 0){
+				value = b;
+				return true;
+			}
+		}
+
+		return false;
+	}
 
     virtual void help (bool verbose = false){
 

@@ -60,6 +60,8 @@ public:
 
 static inline bool isEof(StreamBuffer& in) { return *in == EOF;  }
 static inline bool isEof(const char*   in) { return *in == '\0'; }
+static inline bool isNumber(const char   in) { return ((in >= '0' && in <= '9') || in=='-'); }
+static inline bool isWhitespace(const char   in) { return (in >= 9 && in <= 13) || in == 32; }
 
 //-------------------------------------------------------------------------------------------------
 // Generic parse functions parametrized over the input-stream type.
