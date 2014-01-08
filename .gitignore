@@ -1,3 +1,7 @@
 Release/*
 Release2/*
 Debug/*
+Klee/*
+coverage/*
+Static/*
+

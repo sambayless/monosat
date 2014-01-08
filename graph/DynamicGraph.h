@@ -8,27 +8,10 @@
 #ifndef DYNAMICGRAPH_H_
 #define DYNAMICGRAPH_H_
 #include "mtl/Vec.h"
+#include "GraphTheoryTypes.h"
 using namespace Minisat;
 
-struct DefaultEdgeStatus{
 
-	vec<bool> status;
-
-	bool operator [] (int index) const {
-		return status[index];
-	}
-	void setStatus(int index, bool value){
-		status[index]=value;
-	}
-
-	int size(){
-		return status.size();
-	}
-	void growTo(int size) {
-		status.growTo(size);
-	}
-
-};
 
 template<class EdgeStatus=DefaultEdgeStatus >
 class DynamicGraph{

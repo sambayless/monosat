@@ -23,31 +23,31 @@
 #include "EdmondsKarpAdj.h"
 #include "Chokepoint.h"
 #include "WeightedDijkstra.h"
-
+#include "GraphTheoryTypes.h"
 #include "utils/System.h"
+#include "core/Solver.h"
 #ifdef DEBUG_GRAPH
 #include "TestGraph.h"
 #endif
+#include "ReachDetector.h"
+
+namespace Minisat{
+
+class GraphTheorySolver;
+
 
 #ifdef DEBUG_SOLVER
 #include "TestGraph.h"
 #endif
-namespace Minisat{
 
-// Returns a random float 0 <= x < 1. Seed must never be 0.
-   static inline double drand(double& seed) {
-   	assert(seed!=0);
-       seed *= 1389796;
-       int q = (int)(seed / 2147483647);
-       seed -= (double)q * 2147483647;
-       return seed / 2147483647; }
 
-   // Returns a random integer 0 <= x < size. Seed must never be 0.
-   static inline int irand(double& seed, int size) {
-       return (int)(drand(seed) * size); }
+
+
+
+
 
 class GraphTheorySolver:public GraphTheory{
-private:
+public:
 
 	double rnd_seed;
 	Lit False;
@@ -66,9 +66,7 @@ private:
 
 	vec<lbool> edge_assignments;
 
-	typedef DefaultEdgeStatus PositiveEdgeStatus;
-	typedef DefaultEdgeStatus NegativeEdgeStatus;
-	typedef DefaultEdgeStatus CutEdgeStatus;
+
 
 
 	PositiveEdgeStatus g_status;
@@ -81,13 +79,6 @@ private:
 
 	Var min_edge_var;
 	int num_edges;
-	struct Assignment{
-		bool isEdge:1;
-		bool assign:1;
-		int from:30;
-		int to;
-		Var var;
-	};
 
 	vec<Assignment> trail;
 	vec<int> trail_lim;
@@ -95,493 +86,7 @@ private:
 
 
 
-	struct ReachDetector{
-		GraphTheorySolver & outer;
-		int within;
-		int source;
 
-		CRef reach_marker;
-		CRef non_reach_marker;
-		CRef forced_reach_marker;
-
-		Reach * positive_reach_detector;
-		Reach * negative_reach_detector;
-		Reach *  positive_path_detector;
-
-		vec<Lit>  reach_lits;
-		Var first_reach_var;
-		vec<int> reach_lit_map;
-		vec<int> force_reason;
-
-		struct DistLit{
-			Lit l;
-			int min_distance;
-
-		};
-
-		vec<vec<DistLit> > dist_lits;
-
-
-		struct Change{
-			Lit l;
-			int u;
-		};
-
-		vec<Change> changed;
-
-		vec<Change> & getChanged(){
-			return changed;
-		}
-
-		struct ReachStatus{
-			ReachDetector & outer;
-			bool polarity;
-			void setReachable(int u, bool reachable){
-				if(polarity==reachable && u<outer.reach_lits.size()){
-					Lit l = outer.reach_lits[u];
-					if(l!=lit_Undef){
-						lbool assign = outer.outer.S->value(l);
-						if(assign!= (reachable? l_True:l_False )){
-							 outer.changed.push({reachable? l:~l,u});
-						}
-					}
-				}
-			}
-			bool isReachable(int u) const{
-				return false;
-			}
-
-			void setMininumDistance(int u, bool reachable, int distance){
-				assert(reachable ==(distance<outer.outer.g.nodes));
-				setReachable(u,reachable);
-
-				if(u<outer.dist_lits.size()){
-					assert(distance>=0);
-					assert(distance<outer.outer.g.nodes);
-					for(int i = 0;i<outer.dist_lits[u].size();i++){
-						int d =  outer.dist_lits[u][i].min_distance;
-						Lit l = outer.dist_lits[u][i].l;
-						assert(l!=lit_Undef);
-						if(d<distance && !polarity){
-							lbool assign = outer.outer.S->value(l);
-							if( assign!= l_False ){
-								 outer.changed.push({~l,u});
-							}
-						}else if(d>=distance && polarity){
-							lbool assign = outer.outer.S->value(l);
-							if( assign!= l_True ){
-								 outer.changed.push({l,u});
-							}
-						}
-					}
-				}
-			}
-
-
-			ReachStatus(ReachDetector & _outer, bool _polarity):outer(_outer), polarity(_polarity){}
-		};
-		ReachStatus *positiveReachStatus;
-		ReachStatus *negativeReachStatus;
-		WeightedDijkstra<NegativeEdgeStatus> * rnd_path;
-
-		struct ChokepointStatus{
-			ReachDetector & outer;
-			bool mustReach(int node){
-				Lit l =  outer.reach_lits[node];
-				if(l!=lit_Undef){
-					return outer.outer.S->value(l)==l_True;
-				}
-				return false;
-			}
-			bool operator() (int edge_id){
-				return outer.outer.edge_assignments[edge_id]==l_Undef;
-			}
-			ChokepointStatus(ReachDetector & _outer):outer(_outer){
-
-			}
-		}chokepoint_status;
-
-		Chokepoint<ChokepointStatus ,NegativeEdgeStatus> chokepoint;
-
-		int getNode(Var reachVar){
-			assert(reachVar>=first_reach_var);
-			int index = reachVar-first_reach_var;
-			assert(index< reach_lit_map.size());
-			assert(reach_lit_map[index]>=0);
-			return reach_lit_map[index];
-		}
-
-	/*	Lit getLit(int node){
-
-			return reach_lits[node];
-
-		}*/
-
-		void buildReachReason(int node,vec<Lit> & conflict){
-			//drawFull();
-			Reach & d = *positive_path_detector;
-
-
-			double starttime = cpuTime();
-			d.update();
-
-
-			if(!outer.dbg_reachable(d.getSource(),node)){
-				outer.drawFull();
-
-				d.drawFull();
-
-				assert(false);
-			}
-			assert(d.connected_unchecked(node));
-			if(opt_learn_reaches ==0 || opt_learn_reaches==2){
-				int u = node;
-				int p;
-				while(( p = d.previous(u)) != -1){
-					Edge edg = outer.edges[p][u];
-					Var e =outer.edges[p][u].v;
-					lbool val = outer.S->value(e);
-					assert(outer.S->value(e)==l_True);
-					conflict.push(mkLit(e, true));
-					u = p;
-
-				}
-			}else{
-				//Instead of a complete path, we can learn reach variables, if they exist
-				int u = node;
-				int p;
-				while(( p = d.previous(u)) != -1){
-					Edge edg = outer.edges[p][u];
-					Var e =outer.edges[p][u].v;
-					lbool val = outer.S->value(e);
-					assert(outer.S->value(e)==l_True);
-					conflict.push(mkLit(e, true));
-					u = p;
-					if( u< reach_lits.size() && reach_lits[u]!=lit_Undef && outer.S->value(reach_lits[u])==l_True && outer.S->level(var(reach_lits[u]))< outer.S->decisionLevel()){
-						//A potential (fixed) problem with the above: reach lit can be false, but have been assigned after r in the trail, messing up clause learning if this is a reason clause...
-						//This is avoided by ensuring that L is lower level than the conflict.
-						Lit l =reach_lits[u];
-						assert(outer.S->value(l)==l_True);
-						conflict.push(~l);
-						break;
-					}
-				}
-
-			}
-			outer.num_learnt_paths++;
-			outer.learnt_path_clause_length+= (conflict.size()-1);
-			double elapsed = cpuTime()-starttime;
-			outer.pathtime+=elapsed;
-	#ifdef DEBUG_GRAPH
-			 assert(outer.dbg_clause(conflict));
-
-	#endif
-		}
-		void buildNonReachReason(int node,vec<Lit> & conflict){
-			static int it = 0;
-			++it;
-			int u = node;
-			//drawFull( non_reach_detectors[detector]->getSource(),u);
-			assert(outer.dbg_notreachable( source,u));
-			double starttime = cpuTime();
-			outer.cutGraph.clearHistory();
-			outer.stats_mc_calls++;
-			if(opt_conflict_min_cut){
-				if(mincutalg!= ALG_EDKARP_ADJ){
-					//ok, set the weights for each edge in the cut graph.
-					//Set edges to infinite weight if they are undef or true, and weight 1 otherwise.
-					for(int u = 0;u<outer.cutGraph.adjacency.size();u++){
-						for(int j = 0;j<outer.cutGraph.adjacency[u].size();j++){
-							int v = outer.cutGraph.adjacency[u][j].node;
-							Var var = outer.edges[u][v].v;
-							/*if(S->value(var)==l_False){
-								mc.setCapacity(u,v,1);
-							}else{*/
-							outer.mc->setCapacity(u,v,0xF0F0F0);
-							//}
-						}
-					}
-
-					//find any edges assigned to false, and set their capacity to 1
-					for(int i =0;i<outer.trail.size();i++){
-						if(outer.trail[i].isEdge && !outer.trail[i].assign){
-							outer.mc->setCapacity(outer.trail[i].from, outer.trail[i].to,1);
-						}
-					}
-				}
-				outer.cut.clear();
-
-				int f =outer.mc->minCut(source,node,outer.cut);
-				assert(f<0xF0F0F0); assert(f==outer.cut.size());//because edges are only ever infinity or 1
-				for(int i = 0;i<outer.cut.size();i++){
-					MaxFlow::Edge e = outer.cut[i];
-
-					Lit l = mkLit( outer.edges[e.u][e.v].v,false);
-					assert(outer.S->value(l)==l_False);
-					conflict.push(l);
-				}
-			}else{
-				//We could learn an arbitrary (non-infinite) cut here, or just the whole set of false edges
-				//or perhaps we can learn the actual 1-uip cut?
-
-
-					vec<int>& to_visit  = outer.to_visit;
-					vec<char>& seen  = outer.seen;
-
-				    to_visit.clear();
-				    to_visit.push(node);
-				    seen.clear();
-					seen.growTo(outer.nNodes());
-				    seen[node]=true;
-
-				    do{
-
-				    	assert(to_visit.size());
-				    	int u = to_visit.last();
-				    	assert(u!=source);
-				    	to_visit.pop();
-				    	assert(seen[u]);
-				    	assert(!negative_reach_detector->connected_unsafe(u));
-				    	//Ok, then add all its incoming disabled edges to the cut, and visit any unseen, non-disabled incoming edges
-				    	for(int i = 0;i<outer.inv_adj[u].size();i++){
-				    		int v = outer.inv_adj[u][i].v;
-				    		int from = outer.inv_adj[u][i].from;
-				    		assert(from!=u);
-				    		assert(outer.inv_adj[u][i].to==u);
-				    		//Note: the variable has to not only be assigned false, but assigned false earlier in the trail than the reach variable...
-				    		int edge_num = v-outer.min_edge_var;
-
-				    		if(outer.edge_assignments[edge_num]==l_False){
-				    			//note: we know we haven't seen this edge variable before, because we know we haven't visited this node before
-				    			//if we are already planning on visiting the from node, then we don't need to include it in the conflict (is this correct?)
-				    			//if(!seen[from])
-				    				conflict.push(mkLit(v,false));
-				    		}else{
-				    			assert(from!=source);
-				    			//even if it is undef? probably...
-				    			if(!seen[from]){
-				    				seen[from]=true;
-				    				if((opt_learn_reaches ==2 || opt_learn_reaches==3) && from< reach_lits.size() && reach_lits[from]!=lit_Undef && outer.S->value(reach_lits[from])==l_False  && outer.S->level(var(reach_lits[from]))< outer.S->decisionLevel())
-				    				{
-				    				//The problem with the above: reach lit can be false, but have been assigned after r in the trail, messing up clause learning if this is a reason clause...
-				    					Lit r = reach_lits[from];
-				    					assert(var(r)<outer.S->nVars());
-				    					assert(outer.S->value(r)==l_False);
-				    					conflict.push(r);
-				    				}else
-				    					to_visit.push(from);
-				    			}
-				    		}
-				    	}
-				    }  while (to_visit.size());
-
-
-			}
-
-			 outer.num_learnt_cuts++;
-			 outer.learnt_cut_clause_length+= (conflict.size()-1);
-
-			double elapsed = cpuTime()-starttime;
-			 outer.mctime+=elapsed;
-
-	#ifdef DEBUG_GRAPH
-			 assert(outer.dbg_clause(conflict));
-	#endif
-		}
-
-		/**
-		 * Explain why an edge was forced (to true).
-		 * The reason is that _IF_ that edge is false, THEN there is a cut of disabled edges between source and target
-		 * So, create the graph that has that edge (temporarily) assigned false, and find a min-cut in it...
-		 */
-		void buildForcedEdgeReason(int reach_node, int forced_edge_id,vec<Lit> & conflict){
-					static int it = 0;
-					++it;
-
-					assert(outer.edge_assignments[forced_edge_id]==l_True);
-					Lit edgeLit =mkLit( outer.edge_list[forced_edge_id].v,false);
-
-					conflict.push(edgeLit);
-
-					int forced_edge_from = outer.edge_list[forced_edge_id].from;
-					int forced_edge_to= outer.edge_list[forced_edge_id].to;
-
-
-					int u = reach_node;
-					//drawFull( non_reach_detectors[detector]->getSource(),u);
-					assert(outer.dbg_notreachable( source,u));
-					double starttime = cpuTime();
-					outer.cutGraph.clearHistory();
-					outer.stats_mc_calls++;
-
-
-
-					if(opt_conflict_min_cut){
-						if(mincutalg!= ALG_EDKARP_ADJ){
-							//ok, set the weights for each edge in the cut graph.
-							//Set edges to infinite weight if they are undef or true, and weight 1 otherwise.
-							for(int u = 0;u<outer.cutGraph.adjacency.size();u++){
-								for(int j = 0;j<outer.cutGraph.adjacency[u].size();j++){
-									int v = outer.cutGraph.adjacency[u][j].node;
-									Var var = outer.edges[u][v].v;
-									/*if(S->value(var)==l_False){
-										mc.setCapacity(u,v,1);
-									}else{*/
-									outer.mc->setCapacity(u,v,0xF0F0F0);
-									//}
-								}
-							}
-
-							//find any edges assigned to false, and set their capacity to 1
-							for(int i =0;i<outer.trail.size();i++){
-								if(outer.trail[i].isEdge && !outer.trail[i].assign){
-									outer.mc->setCapacity(outer.trail[i].from, outer.trail[i].to,1);
-								}
-							}
-
-							outer.mc->setCapacity(forced_edge_from, forced_edge_to,1);
-						}
-						outer.cut.clear();
-
-						int f =outer.mc->minCut(source,reach_node,outer.cut);
-						assert(f<0xF0F0F0); assert(f==outer.cut.size());//because edges are only ever infinity or 1
-						for(int i = 0;i<outer.cut.size();i++){
-							MaxFlow::Edge e = outer.cut[i];
-
-							Lit l = mkLit( outer.edges[e.u][e.v].v,false);
-							assert(outer.S->value(l)==l_False);
-							conflict.push(l);
-						}
-					}else{
-						//We could learn an arbitrary (non-infinite) cut here, or just the whole set of false edges
-						//or perhaps we can learn the actual 1-uip cut?
-
-
-							vec<int>& to_visit  = outer.to_visit;
-							vec<char>& seen  = outer.seen;
-
-						    to_visit.clear();
-						    to_visit.push(reach_node);
-						    seen.clear();
-							seen.growTo(outer.nNodes());
-						    seen[reach_node]=true;
-
-						    do{
-
-						    	assert(to_visit.size());
-						    	int u = to_visit.last();
-						    	assert(u!=source);
-						    	to_visit.pop();
-						    	assert(seen[u]);
-						    	assert(!negative_reach_detector->connected_unsafe(u));
-						    	//Ok, then add all its incoming disabled edges to the cut, and visit any unseen, non-disabled incoming edges
-						    	for(int i = 0;i<outer.inv_adj[u].size();i++){
-						    		int v = outer.inv_adj[u][i].v;
-						    		int from = outer.inv_adj[u][i].from;
-						    		assert(from!=u);
-						    		assert(outer.inv_adj[u][i].to==u);
-						    		//Note: the variable has to not only be assigned false, but assigned false earlier in the trail than the reach variable...
-						    		int edge_num = v-outer.min_edge_var;
-
-						    		if(edge_num == forced_edge_id || outer.edge_assignments[edge_num]==l_False){
-						    			//note: we know we haven't seen this edge variable before, because we know we haven't visited this node before
-						    			//if we are already planning on visiting the from node, then we don't need to include it in the conflict (is this correct?)
-						    			//if(!seen[from])
-						    				conflict.push(mkLit(v,false));
-						    		}else{
-						    			assert(from!=source);
-						    			//even if it is undef? probably...
-						    			if(!seen[from]){
-						    				seen[from]=true;
-						    				if((opt_learn_reaches ==2 || opt_learn_reaches==3) && from< reach_lits.size() && reach_lits[from]!=lit_Undef && outer.S->value(reach_lits[from])==l_False  && outer.S->level(var(reach_lits[from]))< outer.S->decisionLevel())
-						    				{
-						    				//The problem with the above: reach lit can be false, but have been assigned after r in the trail, messing up clause learning if this is a reason clause...
-						    					Lit r = reach_lits[from];
-						    					assert(var(r)<outer.S->nVars());
-						    					assert(outer.S->value(r)==l_False);
-						    					conflict.push(r);
-						    				}else
-						    					to_visit.push(from);
-						    			}
-						    		}
-						    	}
-						    }  while (to_visit.size());
-
-
-					}
-
-					 outer.num_learnt_cuts++;
-					 outer.learnt_cut_clause_length+= (conflict.size()-1);
-
-					double elapsed = cpuTime()-starttime;
-					 outer.mctime+=elapsed;
-
-			#ifdef DEBUG_GRAPH
-					 assert(outer.dbg_clause(conflict));
-			#endif
-				}
-
-		void buildReason(Lit p, vec<Lit> & reason, CRef marker){
-
-
-				if(marker==reach_marker){
-					reason.push(p);
-				//	double startpathtime = cpuTime();
-
-					/*Dijkstra & detector = *reach_detectors[d]->positive_dist_detector;
-					//the reason is a path from s to p(provided by d)
-					//p is the var for a reachability detector in dijkstra, and corresponds to a node
-					detector.update();
-					Var v = var(p);
-					int u =reach_detectors[d]->getNode(v); //reach_detectors[d]->reach_lit_map[v];
-					assert(detector.connected(u));
-					int w;
-					while(( w= detector.previous(u)) > -1){
-						Lit l = mkLit( edges[w][u].v,true );
-						assert(S->value(l)==l_False);
-						reason.push(l);
-						u=w;
-					}*/
-					Var v = var(p);
-					int u =getNode(v);
-					buildReachReason(u,reason);
-
-		#ifdef DEBUG_GRAPH
-				 assert(outer.dbg_clause(reason));
-
-		#endif
-					//double elapsed = cpuTime()-startpathtime;
-				//	pathtime+=elapsed;
-				}else if(marker==non_reach_marker){
-					reason.push(p);
-
-					//the reason is a cut separating p from s;
-					//We want to find a min-cut in the full graph separating, where activated edges (ie, those still in antig) are weighted infinity, and all others are weighted 1.
-
-					//This is a cut that describes a minimal set of edges which are disabled in the current graph, at least one of which would need to be activated in order for s to reach p
-					//assign the mincut edge weights if they aren't already assigned.
-
-
-					Var v = var(p);
-					int t = getNode(v); // v- var(reach_lits[d][0]);
-					buildNonReachReason(t,reason);
-
-				}else if (marker==forced_reach_marker){
-					Var v = var(p);
-					//The forced variable is an EDGE that was forced.
-					int forced_edge_id =v- outer.min_edge_var;
-					//The corresponding node that is the reason it was forced
-					int reach_node=force_reason[forced_edge_id];
-					 buildForcedEdgeReason( reach_node,  forced_edge_id, reason);
-				}else{
-					assert(false);
-				}
-		}
-
-
-
-		ReachDetector(GraphTheorySolver & _outer, int _source):outer(_outer),within(-1),source(_source),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL),chokepoint_status(*this),chokepoint(chokepoint_status, outer.antig,source){}
-	};
 
 	struct ReachInfo{
 		int source;
@@ -600,11 +105,7 @@ public:
 
 	vec<int> marker_map;
 
-	struct Edge{
-		Var v;
-		int from;
-		int to;
-	};
+
 	vec<MaxFlow::Edge> cut;
 
 	//Full matrix
@@ -960,173 +461,9 @@ public:
 			return lit_Undef;
 		for(int i = 0;i<reach_detectors.size();i++){
 			ReachDetector * r = reach_detectors[i];
-
-			Distance<ReachDetector::ReachStatus,NegativeEdgeStatus> * over = (Distance<ReachDetector::ReachStatus,NegativeEdgeStatus>*) r->negative_reach_detector;
-
-			Distance<ReachDetector::ReachStatus,PositiveEdgeStatus> * under = (Distance<ReachDetector::ReachStatus,PositiveEdgeStatus>*) r->positive_reach_detector;
-
-			//we can probably also do something similar, but with cuts, for nodes that are decided to be unreachable.
-
-			//ok, for each node that is assigned reachable, but that is not actually reachable in the under approx, decide an edge on a feasible path
-
-			//this can be obviously more efficient
-			//for(int j = 0;j<nNodes();j++){
-			for(int k = 0;k<r->reach_lits.size();k++){
-				Lit l = r->reach_lits[k];
-				if(l==lit_Undef)
-					continue;
-				int j = r->getNode(var(l));
-				if(S->value(l)==l_True){
-					//if(S->level(var(l))>0)
-					//	continue;
-					if(!under->connected(j)){
-						//then lets try to connect this
-						static vec<bool> print_path;
-
-
-
-
-
-
-						assert(over->connected(j));//Else, we would already be in conflict
-						int p =j;
-						int last=j;
-						if(!opt_use_random_path_for_decisions){
-							//ok, read back the path from the over to find a candidate edge we can decide
-							//find the earliest unconnected node on this path
-							over->update();
-							 p = j;
-							 last = j;
-							while(!under->connected(p)){
-
-
-								last=p;
-								assert(p!=r->source);
-								int prev = over->previous(p);
-								p = prev;
-
-							}
-						}else{
-							//Randomly re-weight the graph sometimes
-							if(drand(rnd_seed)<opt_decide_graph_re_rnd){
-
-								for(int i=0;i<g.nodes;i++){
-										 double w = drand(rnd_seed);
-										/* w-=0.5;
-										 w*=w;*/
-										 //printf("%f (%f),",w,rnd_seed);
-										 r->rnd_path->setWeight(i,w);
-									 }
-							}
-							 r->rnd_path->update();
-							//derive a random path in the graph
-							 p = j;
-							 last = j;
-							 assert( r->rnd_path->connected(p));
-							while(!under->connected(p)){
-
-								last=p;
-								assert(p!=r->source);
-								int prev = r->rnd_path->previous(p);
-								p = prev;
-								assert(p>=0);
-							}
-
-						}
-
-						if(S->level(var(l))==0 && opt_print_decision_path){
-							print_path.clear();
-							print_path.growTo(nNodes());
-
-							if(!opt_use_random_path_for_decisions){
-													//ok, read back the path from the over to find a candidate edge we can decide
-													//find the earliest unconnected node on this path
-								over->update();
-								int p = j;
-
-								while(p!=r->source){
-									if(opt_print_decision_path)
-										print_path[p]=true;
-
-
-									assert(p!=r->source);
-									int prev = over->previous(p);
-									p = prev;
-
-								}
-							}else{
-
-
-								int p = j;
-
-								while(p!=r->source){
-									if(opt_print_decision_path)
-										print_path[p]=true;
-
-
-									assert(p!=r->source);
-									int prev = r->rnd_path->previous(p);
-									p = prev;
-
-								}
-							}
-
-							if(opt_print_decision_path){
-								printf("From %d to %d:\n",r->source,j);
-								int width = sqrt(nNodes());
-
-
-								int v = 0;
-								//for (int i = 0;i<w;i++){
-								//	for(int j = 0;j<w;j++){
-								int lasty= 0;
-								for(int n = 0;n<nNodes();n++){
-									int x = n%width;
-									int y = n/width;
-									if(y > lasty)
-										printf("\n");
-
-									if(n==j){
-										printf("* ");
-									}else if (n==r->source){
-										printf("#");
-									}else{
-
-										if(print_path[n]){
-											printf("+ ");
-										}else{
-											printf("- ");
-										}
-									}
-
-									lasty=y;
-								}
-								printf("\n\n");
-							}
-						}
-
-						//ok, now pick some edge p->last that will connect p to last;
-					/*	assert(!under->connected(last));
-						assert(under->connected(p));
-
-						assert(over->connected(last));
-						assert(over->connected(p));*/
-
-						for(int k = 0;k<antig.adjacency[p].size();k++){
-							int to = antig.adjacency[p][k].node;
-							if (to==last){
-								Var v =edge_list[ antig.adjacency[p][k].id].v;
-								if(S->value(v)==l_Undef){
-									return mkLit(v,false);
-								}else{
-									assert(S->value(v)!=l_True);
-								}
-							}
-						}
-						assert(false);
-					}
-				}
-			}
+			Lit l =r->decide();
+			if(l!=lit_Undef)
+				return l;
 
 		}
 
@@ -1652,7 +989,7 @@ public:
 				within_steps=-1;
 
 			if (reach_info[from].source<0){
-				reach_detectors.push(new ReachDetector(*this,from));
+				reach_detectors.push(new ReachDetector(this,antig,from,drand(rnd_seed)));
 				reach_detectors.last()->reach_marker=S->newReasonMarker(this);
 
 				int mnum = CRef_Undef- reach_detectors.last()->reach_marker;

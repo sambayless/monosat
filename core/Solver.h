@@ -373,14 +373,16 @@ protected:
     bool     satisfied        (const Clause& c) const; // Returns TRUE if a clause is satisfied in the current state.
 
     void     relocAll         (ClauseAllocator& to);
-
+public:
     // Misc:
     //
     int      decisionLevel    ()      const; // Gives the current decisionlevel.
     uint32_t abstractLevel    (Var x) const; // Used to represent an abstraction of sets of decision levels.
+
     CRef     reason           (Var x) const;
     int      level            (Var x) const;
     double   progressEstimate ()      const; // DELETE THIS ?? IT'S NOT VERY USEFUL ...
+private:
     bool     withinBudget     ()      const;
     bool 	addConflictClause(vec<Lit> & theory_conflict,CRef & confl_out);
     // Static helpers:

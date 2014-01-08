@@ -13,7 +13,7 @@
 #include "mtl/Alg.h"
 
 #include "core/SolverTypes.h"
-
+#include "core/Theory.h"
 
 namespace Minisat {
 

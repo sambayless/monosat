@@ -13,10 +13,9 @@
 #include "mtl/Alg.h"
 #include "utils/Options.h"
 #include "core/SolverTypes.h"
-#include "Solver.h"
 
 namespace Minisat{
-class Solver;
+
 class Theory{
 public:
     virtual ~Theory(){};
@@ -30,6 +29,7 @@ public:
 	//Lazily construct the reason clause explaining this propagation
 	virtual void buildReason(Lit p, vec<Lit> & reason)=0;
 };
+
 }
 
 #endif /* THEORY_H_ */
