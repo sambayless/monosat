@@ -335,9 +335,11 @@ protected:
     //
     void     insertVarOrder   (Var x);                                                 // Insert a variable in the decision order priority queue.
     Lit      pickBranchLit    ();                                                      // Return the next decision variable.
+public:
     void     newDecisionLevel ();                                                      // Begins a new decision level.
     void     uncheckedEnqueue (Lit p, CRef from = CRef_Undef);                         // Enqueue a literal. Assumes value of literal is undefined.
     bool     enqueue          (Lit p, CRef from = CRef_Undef);                         // Test if fact 'p' contradicts current state, enqueue otherwise.
+private:
     CRef     propagate        (bool propagate_theories=true);                                                      // Perform unit propagation. Returns possibly conflicting clause.
     bool 	propagateTheory(vec<Lit> & conflict);
     bool 	solveTheory(vec<Lit> & conflict_out);

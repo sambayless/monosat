@@ -100,6 +100,7 @@ public:
 
 	vec<ReachInfo> reach_info;
 public:
+	vec<Detector*> detectors;
 	vec<ReachDetector*> reach_detectors;
 
 
@@ -141,7 +142,7 @@ public:
 
 	int stats_mc_calls;
 	vec<Lit> reach_cut;
-	vec<ForceReason> forced_edges;
+
 	struct CutStatus{
 		GraphTheorySolver & outer;
 		int operator () (int id) const {
@@ -459,8 +460,8 @@ public:
 	Lit decideTheory(){
 		if(!opt_decide_graph)
 			return lit_Undef;
-		for(int i = 0;i<reach_detectors.size();i++){
-			ReachDetector * r = reach_detectors[i];
+		for(int i = 0;i<detectors.size();i++){
+			Detector * r = detectors[i];
 			Lit l =r->decide();
 			if(l!=lit_Undef)
 				return l;
@@ -518,8 +519,8 @@ public:
 		backtrackUntil(p);
 
 
-		assert(d<reach_detectors.size());
-		reach_detectors[d]->buildReason(p,reason,marker);
+		assert(d<detectors.size());
+		detectors[d]->buildReason(p,reason,marker);
 
 
 	}
@@ -662,112 +663,12 @@ public:
 		dbg_sync();
 			assert(dbg_graphsUpToDate());
 
-			for(int d = 0;d<reach_detectors.size();d++){
-				{
-					double startdreachtime = cpuTime();
-					reach_detectors[d]->changed.clear();
-					reach_detectors[d]->positive_reach_detector->update();
-					double reachUpdateElapsed = cpuTime()-startdreachtime;
-					reachupdatetime+=reachUpdateElapsed;
-
-					double startunreachtime = cpuTime();
-					reach_detectors[d]->negative_reach_detector->update();
-					double unreachUpdateElapsed = cpuTime()-startunreachtime;
-					unreachupdatetime+=unreachUpdateElapsed;
-
-					for(int j = 0;j<reach_detectors[d]->getChanged().size();j++){
-							Lit l = reach_detectors[d]->getChanged()[j].l;
-							int u =  reach_detectors[d]->getChanged()[j].u;
-							bool reach = !sign(l);
-							if(S->value(l)==l_True){
-								//do nothing
-							}else if(S->value(l)==l_Undef){
-#ifdef DEBUG_GRAPH
-								assert(dbg_propgation(l));
-#endif
-#ifdef DEBUG_SOLVER
-								if(S->dbg_solver)
-									S->dbg_check_propagation(l);
-#endif
-								trail.push({false,reach,d,0,var(l)});
-								if(reach)
-									S->uncheckedEnqueue(l,reach_detectors[d]->reach_marker) ;
-								else
-									S->uncheckedEnqueue(l,reach_detectors[d]->non_reach_marker) ;
-
-							}else if (S->value(l)==l_False){
-								conflict.push(l);
-								propagationtime+= cpuTime()-startproptime;
-								if(reach){
-
-								//conflict
-								//The reason is a path in g from to s in d
-									reach_detectors[d]->buildReachReason(u,conflict);
-								//add it to s
-								//return it as a conflict
-
-								}else{
-									//The reason is a cut separating s from t
-									reach_detectors[d]->buildNonReachReason(u,conflict);
-
-								}
-#ifdef DEBUG_GRAPH
-								for(int i = 0;i<conflict.size();i++)
-											 assert(S->value(conflict[i])==l_False);
-#endif
-#ifdef DEBUG_SOLVER
-								if(S->dbg_solver)
-									S->dbg_check(conflict);
-#endif
-
-
-								return false;
-							}else{
-								int  a=1;
-							}
-
-							if(opt_reach_prop){
-								forced_edges.clear();
-								reach_detectors[d]->chokepoint.collectForcedEdges(forced_edges);
-								for(int i = 0;i<forced_edges.size();i++){
-									int edge_id = forced_edges[i].edge_id;
-									int node = forced_edges[i].node;
-									Lit l = mkLit( edge_list[edge_id].v,false);
-									if(S->value(l)==l_Undef){
-										reach_detectors[d]->force_reason.growTo(edge_id+1);
-										reach_detectors[d]->force_reason[edge_id]=node;
-										S->enqueue(l,reach_detectors[d]->forced_reach_marker);
-									}else if(S->value(l)==l_True){
-										//do nothing
-
-									}else{
-										//conflict.
-										//this actually shouldn't be possible (at this point in the code)
-										reach_detectors[d]->buildForcedEdgeReason(node,edge_id,conflict);
-										return false;
-									}
-								}
-
-							}
-
-						}
-
-#ifdef DEBUG_GRAPH
-		for(int i = 0;i<reach_detectors[d]->reach_lits.size();i++){
-			Lit l = reach_detectors[d]->reach_lits[i];
-			if(l!=lit_Undef){
-				int u = reach_detectors[d]->getNode(var(l));
-				if(reach_detectors[d]->positive_reach_detector->connected(u)){
-					assert(S->value(l)==l_True);
-				}else if (!reach_detectors[d]->negative_reach_detector->connected(u)){
-					assert(S->value(l)==l_False);
-				}
-			}
-
-		}
-#endif
-					}
-
+			for(int d = 0;d<detectors.size();d++){
+				assert(conflict.size()==0);
+				bool r =detectors[d]->propagate(trail,conflict);
+				if(!r)
+					propagationtime+= cpuTime()-startproptime;
+					return false;
 				}
 
 
@@ -989,7 +890,9 @@ public:
 				within_steps=-1;
 
 			if (reach_info[from].source<0){
-				reach_detectors.push(new ReachDetector(this,antig,from,drand(rnd_seed)));
+				reach_detectors.push(new ReachDetector(detectors.size(), this,antig,from,drand(rnd_seed)));
+				detectors.push(reach_detectors.last());
+				assert(detectors.last()->getID()==detectors.size()-1);
 				reach_detectors.last()->reach_marker=S->newReasonMarker(this);
 
 				int mnum = CRef_Undef- reach_detectors.last()->reach_marker;

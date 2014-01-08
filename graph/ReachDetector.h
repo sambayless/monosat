@@ -24,18 +24,18 @@
 #include "WeightedDijkstra.h"
 #include "ReachDetector.h"
 #include "utils/System.h"
-
+#include "Detector.h"
 namespace Minisat{
 class GraphTheorySolver;
-class ReachDetector{
+class ReachDetector:public Detector{
 public:
 		GraphTheorySolver * outer;
 		int within;
 		int source;
 		double rnd_seed;
-		CRef reach_marker;
+/*		CRef reach_marker;
 		CRef non_reach_marker;
-		CRef forced_reach_marker;
+		CRef forced_reach_marker;*/
 
 		Reach * positive_reach_detector;
 		Reach * negative_reach_detector;
@@ -54,10 +54,7 @@ public:
 		vec<vec<DistLit> > dist_lits;
 
 
-		struct Change{
-			Lit l;
-			int u;
-		};
+		vec<ForceReason> forced_edges;
 
 		vec<Change> changed;
 
@@ -106,6 +103,7 @@ public:
 			return reach_lits[node];
 
 		}*/
+		bool propagate(vec<Assignment> & trail,vec<Lit> & conflict);
 		void buildReachReason(int node,vec<Lit> & conflict);
 		void buildNonReachReason(int node,vec<Lit> & conflict);
 		void buildForcedEdgeReason(int reach_node, int forced_edge_id,vec<Lit> & conflict);
@@ -113,7 +111,10 @@ public:
 
 		Lit decide();
 
-		ReachDetector(GraphTheorySolver * _outer, DynamicGraph<NegativeEdgeStatus> &_antig, int _source,double seed=1):outer(_outer),within(-1),source(_source),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL),chokepoint_status(*this),chokepoint(chokepoint_status, _antig,source){}
-	};
+		ReachDetector(int _detectorID, GraphTheorySolver * _outer, DynamicGraph<NegativeEdgeStatus> &_antig, int _source,double seed=1):Detector(_detectorID),outer(_outer),within(-1),source(_source),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL),chokepoint_status(*this),chokepoint(chokepoint_status, _antig,source){}
+		virtual ~ReachDetector(){
+
+		}
+};
 };
 #endif /* REACHDETECTOR_H_ */

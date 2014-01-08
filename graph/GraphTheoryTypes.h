@@ -40,6 +40,12 @@ typedef DefaultEdgeStatus CutEdgeStatus;
 		int from:30;
 		int to;
 		Var var;
+		Assignment(bool _isEdge,bool _assign,int _from, int _to, Var v):isEdge(_isEdge),assign(_assign),from(_from),to(_to),var(v){
+
+		}
+		Assignment():isEdge(false),assign(false),from(0),to(0),var(var_Undef){
+
+		}
 	};
 	struct Edge{
 		Var v;

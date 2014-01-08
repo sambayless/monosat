@@ -418,6 +418,115 @@ void ReachDetector::buildReachReason(int node,vec<Lit> & conflict){
 					assert(false);
 				}
 		}
+
+		bool ReachDetector::propagate(vec<Assignment> & trail,vec<Lit> & conflict){
+
+
+								double startdreachtime = cpuTime();
+								getChanged().clear();
+								positive_reach_detector->update();
+								double reachUpdateElapsed = cpuTime()-startdreachtime;
+								outer->reachupdatetime+=reachUpdateElapsed;
+
+								double startunreachtime = cpuTime();
+								negative_reach_detector->update();
+								double unreachUpdateElapsed = cpuTime()-startunreachtime;
+								outer->unreachupdatetime+=unreachUpdateElapsed;
+
+								for(int j = 0;j<getChanged().size();j++){
+										Lit l = getChanged()[j].l;
+										int u =  getChanged()[j].u;
+										bool reach = !sign(l);
+										if(outer->S->value(l)==l_True){
+											//do nothing
+										}else if(outer->S->value(l)==l_Undef){
+			#ifdef DEBUG_GRAPH
+											assert(outer->dbg_propgation(l));
+			#endif
+			#ifdef DEBUG_SOLVER
+											if(S->dbg_solver)
+												S->dbg_check_propagation(l);
+			#endif
+											trail.push(Assignment(false,reach,detectorID,0,var(l)));
+											if(reach)
+												outer->S->uncheckedEnqueue(l,reach_marker) ;
+											else
+												outer->S->uncheckedEnqueue(l,non_reach_marker) ;
+
+										}else if (outer->S->value(l)==l_False){
+											conflict.push(l);
+
+											if(reach){
+
+											//conflict
+											//The reason is a path in g from to s in d
+												buildReachReason(u,conflict);
+											//add it to s
+											//return it as a conflict
+
+											}else{
+												//The reason is a cut separating s from t
+												buildNonReachReason(u,conflict);
+
+											}
+			#ifdef DEBUG_GRAPH
+											for(int i = 0;i<conflict.size();i++)
+														 assert(outer->S->value(conflict[i])==l_False);
+			#endif
+			#ifdef DEBUG_SOLVER
+											if(S->dbg_solver)
+												S->dbg_check(conflict);
+			#endif
+
+
+											return false;
+										}else{
+											int  a=1;
+										}
+
+										if(opt_reach_prop){
+											forced_edges.clear();
+											chokepoint.collectForcedEdges(forced_edges);
+											for(int i = 0;i<forced_edges.size();i++){
+												int edge_id = forced_edges[i].edge_id;
+												int node = forced_edges[i].node;
+												Lit l = mkLit( outer->edge_list[edge_id].v,false);
+												if(outer->S->value(l)==l_Undef){
+													force_reason.growTo(edge_id+1);
+													force_reason[edge_id]=node;
+													outer->S->enqueue(l,forced_reach_marker);
+												}else if(outer->S->value(l)==l_True){
+													//do nothing
+
+												}else{
+													//conflict.
+													//this actually shouldn't be possible (at this point in the code)
+													buildForcedEdgeReason(node,edge_id,conflict);
+													return false;
+												}
+											}
+
+										}
+
+									}
+
+			#ifdef DEBUG_GRAPH
+					for(int i = 0;i<reach_lits.size();i++){
+						Lit l = reach_lits[i];
+						if(l!=lit_Undef){
+							int u = getNode(var(l));
+							if(positive_reach_detector->connected(u)){
+								assert(outer->S->value(l)==l_True);
+							}else if (!negative_reach_detector->connected(u)){
+								assert(outer->S->value(l)==l_False);
+							}
+						}
+
+					}
+			#endif
+			return true;
+		}
+
 Lit ReachDetector::decide(){
 	ReachDetector *r =this;
 	Distance<ReachDetector::ReachStatus,NegativeEdgeStatus> * over = (Distance<ReachDetector::ReachStatus,NegativeEdgeStatus>*) r->negative_reach_detector;
