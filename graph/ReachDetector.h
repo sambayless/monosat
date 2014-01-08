@@ -108,7 +108,7 @@ public:
 		void buildNonReachReason(int node,vec<Lit> & conflict);
 		void buildForcedEdgeReason(int reach_node, int forced_edge_id,vec<Lit> & conflict);
 		void buildReason(Lit p, vec<Lit> & reason, CRef marker);
-
+		bool checkSatisfied();
 		Lit decide();
 
 		ReachDetector(int _detectorID, GraphTheorySolver * _outer, DynamicGraph<NegativeEdgeStatus> &_antig, int _source,double seed=1):Detector(_detectorID),outer(_outer),within(-1),source(_source),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL),chokepoint_status(*this),chokepoint(chokepoint_status, _antig,source){}

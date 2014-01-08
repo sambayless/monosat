@@ -764,30 +764,9 @@ public:
 
 
 		}
-		for(int i = 0;i<reach_detectors.size();i++){
-			ReachDetector* d  = reach_detectors[i];
-			for(int j = 0;j< d->reach_lits.size();j++){
-				Lit l = d->reach_lits[j];
-				if(l!=lit_Undef){
-					int node = d->getNode(var(l));
-
-					if(S->value(l)==l_True){
-						if(!d->positive_reach_detector->connected(node)){
-							return false;
-						}
-					}else if (S->value(l)==l_False){
-						if( d->negative_reach_detector->connected(node)){
-							return false;
-						}
-					}else{
-						if(d->positive_reach_detector->connected(node)){
-							return false;
-						}
-						if(!d->negative_reach_detector->connected(node)){
-							return false;
-						}
-					}
-				}
+		for(int i = 0;i<detectors.size();i++){
+			if(!detectors[i]->checkSatisfied()){
+				return false;
 			}
 		}
 		return true;
@@ -812,7 +791,8 @@ public:
 
 
 		}
-		for(int i = 0;i<reach_detectors.size();i++){
+		assert(check_solved());
+		/*for(int i = 0;i<reach_detectors.size();i++){
 			ReachDetector* d  = reach_detectors[i];
 			for(int j = 0;j< d->reach_lits.size();j++){
 				Lit l = d->reach_lits[j];
@@ -829,7 +809,7 @@ public:
 					}
 				}
 			}
-		}
+		}*/
 #endif
 		return true;
 	}

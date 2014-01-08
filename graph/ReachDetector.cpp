@@ -527,6 +527,33 @@ void ReachDetector::buildReachReason(int node,vec<Lit> & conflict){
 			return true;
 		}
 
+bool ReachDetector::checkSatisfied(){
+
+				for(int j = 0;j< reach_lits.size();j++){
+					Lit l = reach_lits[j];
+					if(l!=lit_Undef){
+						int node =getNode(var(l));
+
+						if(outer->S->value(l)==l_True){
+							if(!positive_reach_detector->connected(node)){
+								return false;
+							}
+						}else if (outer->S->value(l)==l_False){
+							if( negative_reach_detector->connected(node)){
+								return false;
+							}
+						}else{
+							if(positive_reach_detector->connected(node)){
+								return false;
+							}
+							if(!negative_reach_detector->connected(node)){
+								return false;
+							}
+						}
+					}
+				}
+	return true;
+}
 Lit ReachDetector::decide(){
 	ReachDetector *r =this;
 	Distance<ReachDetector::ReachStatus,NegativeEdgeStatus> * over = (Distance<ReachDetector::ReachStatus,NegativeEdgeStatus>*) r->negative_reach_detector;
@@ -698,3 +725,5 @@ Lit ReachDetector::decide(){
 	}
 	return lit_Undef;
 };
+
+
