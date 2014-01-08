@@ -141,9 +141,12 @@ static void parse_GRAPH_main(B& in, Solver& S, vec<std::pair<int,std::string> > 
         		//this is a variable symbol map
         		skipWhitespace(in);
         		int v = parseInt(in);
-        		if(v<0){
+        		if(v<=0){
         			printf("PARSE ERROR! Variables must be positive: %c\n", *in), exit(3);
         		}
+
+        		v--; //subtract one to get the variable id
+
         		symbol.clear();
         		skipWhitespace(in);
         		while(*in != '\n' && ! isWhitespace(*in)){

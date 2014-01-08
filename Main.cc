@@ -17,12 +17,14 @@ NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FO
 DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT
 OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 **************************************************************************************************/
-
+#include <fstream>
 #include <errno.h>
-
+#include <stdio.h>
+#include <fcntl.h>
 #include <signal.h>
 #include <zlib.h>
-
+#include <sstream>
+#include <string>
 #include "utils/System.h"
 #include "utils/ParseUtils.h"
 #include "utils/Options.h"
@@ -39,6 +41,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include <sstream>
 #include <algorithm>
 #include <iterator>
+#include <unordered_map>
 using namespace Minisat;
 
 //=================================================================================================
@@ -291,11 +294,62 @@ int main(int argc, char** argv)
 
            const char * assume_str =opt_assume;
 		   if(strlen(assume_str)){
-			 gzFile gin =gzopen(assume_str, "rb");
-
+	/*		 //gzFile gin =gzopen(assume_str, "rb");
+			   int fd = open(assume_str, O_RDONLY, 0);
+			   gzFile gin =   gzdopen(fd,"rb");
 			parse_Assumptions(gin,assume, S,&symbols);
+			if(assume.size()==0){
+				printf("Warning: no assumptions found in assume file %s\n", assume_str);
+			}
+			gzclose(gin);*/
+	     	   //FILE * f = fopen(assume_str,"r");
+			   std::ifstream infile(assume_str);
+			   std::string symbol;
 
-			gzclose(gin);
+
+			    std::unordered_map<std::string, int> symbol_table;
+			    if(opt_symbols){
+			    	for (int i = 0;i<symbols.size();i++){
+			    		int var = symbols[i].first;
+			    		string symbol = symbols[i].second;
+			    		symbol_table[symbol]=var;
+			    	}
+			    }
+
+			   while (std::getline(infile, symbol))
+			   {
+				   std::stringstream trimmer;
+				   trimmer << symbol;
+				   symbol.clear();
+				   trimmer>>symbol;
+				   if(symbol.length()>0){
+					   bool neg=false;
+					   if(symbol[0]=='-'){
+						   neg=true;
+						   symbol.erase(0,1);
+					   }
+					   if(symbol.size()>0){
+							if(symbol_table.count(symbol)==0){
+								printf("PARSE ERROR! Unknown symbol: %s\n", symbol.c_str()), exit(3);
+							}else{
+								int v = symbol_table[symbol];
+								Lit l =mkLit(v,neg);
+								assume.push(l);
+								if(verb>2){
+									if(neg)
+										printf("Assume not %s (%d)\n", symbol.c_str(),dimacs(l));
+									else
+										printf("Assume %s = (%d)\n", symbol.c_str(),dimacs(l));
+								}
+							}
+						}else{
+							printf("PARSE ERROR! Empty symbol!\n"), exit(3);
+						}
+				   }
+			   }
+			    if(assume.size()==0){
+			    	printf("Warning: no assumptions read from %s\n",assume_str);
+			    }
 		   }
 		   if(verb>2 && assume.size()){
 
