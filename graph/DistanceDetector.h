@@ -1,12 +1,12 @@
 /*
- * ReachDetector.h
+ * DistanceDetector.h
  *
  *  Created on: 2014-01-08
  *      Author: sam
  */
 
-#ifndef REACHDETECTOR_H_
-#define REACHDETECTOR_H_
+#ifndef DISTANCEETECTOR_H_
+#define DISTANCEETECTOR_H_
 #include "utils/System.h"
 
 #include "Graph.h"
@@ -22,20 +22,17 @@
 #include "EdmondsKarpAdj.h"
 #include "Chokepoint.h"
 #include "WeightedDijkstra.h"
-#include "ReachDetector.h"
+#include "DistanceDetector.h"
 #include "utils/System.h"
 #include "Detector.h"
 namespace Minisat{
 class GraphTheorySolver;
-class ReachDetector:public Detector{
+class DistanceDetector:public Detector{
 public:
 		GraphTheorySolver * outer;
 		int within;
 		int source;
 		double rnd_seed;
-/*		CRef reach_marker;
-		CRef non_reach_marker;
-		CRef forced_reach_marker;*/
 
 		Reach * positive_reach_detector;
 		Reach * negative_reach_detector;
@@ -53,23 +50,19 @@ public:
 		};
 		vec<vec<DistLit> > dist_lits;
 
-
-		vec<ForceReason> forced_edges;
-
 		vec<Change> changed;
 
 		vec<Change> & getChanged(){
 			return changed;
 		}
-
+		vec<Lit> & getLits(int dist){
+			return reach_lits;
+		}
 		vec<int> & getLitMap(){
 			return reach_lit_map;
 		}
-		vec<Lit> & getLits(int dist){
-				return reach_lits;
-			}
 		struct ReachStatus{
-			ReachDetector & detector;
+			DistanceDetector & detector;
 			bool polarity;
 			void setReachable(int u, bool reachable);
 			bool isReachable(int u) const{
@@ -79,22 +72,11 @@ public:
 			void setMininumDistance(int u, bool reachable, int distance);
 
 
-			ReachStatus(ReachDetector & _outer, bool _polarity):detector(_outer), polarity(_polarity){}
+			ReachStatus(DistanceDetector & _outer, bool _polarity):detector(_outer), polarity(_polarity){}
 		};
 		ReachStatus *positiveReachStatus;
 		ReachStatus *negativeReachStatus;
 		WeightedDijkstra<NegativeEdgeStatus> * rnd_path;
-
-		struct ChokepointStatus{
-			ReachDetector & detector;
-			bool mustReach(int node);
-			bool operator() (int edge_id);
-			ChokepointStatus(ReachDetector & _outer):detector(_outer){
-
-			}
-		}chokepoint_status;
-
-		Chokepoint<ChokepointStatus ,NegativeEdgeStatus> chokepoint;
 
 		int getNode(Var reachVar){
 			assert(reachVar>=first_reach_var);
@@ -115,13 +97,12 @@ public:
 		void buildForcedEdgeReason(int reach_node, int forced_edge_id,vec<Lit> & conflict);
 		void buildReason(Lit p, vec<Lit> & reason, CRef marker);
 		bool checkSatisfied();
-		void addLit(int from, int to, Var reach_var,int within_steps=-1);
 		Lit decide();
-
-		ReachDetector(int _detectorID, GraphTheorySolver * _outer, DynamicGraph<PositiveEdgeStatus> &_g, DynamicGraph<NegativeEdgeStatus> &_antig, int _source,double seed=1);//:Detector(_detectorID),outer(_outer),within(-1),source(_source),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL),chokepoint_status(*this),chokepoint(chokepoint_status, _antig,source){}
-		virtual ~ReachDetector(){
+		void addLit(int from, int to, Var reach_var,int within_steps=-1);
+		DistanceDetector(int _detectorID, GraphTheorySolver * _outer, DynamicGraph<PositiveEdgeStatus> &_g, DynamicGraph<NegativeEdgeStatus> &_antig, int _source, int within_steps,double seed=1);//:Detector(_detectorID),outer(_outer),within(-1),source(_source),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL){}
+		virtual ~DistanceDetector(){
 
 		}
 };
 };
-#endif /* REACHDETECTOR_H_ */
+#endif /* DistanceDetector_H_ */

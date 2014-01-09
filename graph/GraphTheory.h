@@ -30,7 +30,7 @@
 #include "TestGraph.h"
 #endif
 #include "ReachDetector.h"
-
+#include "DistanceDetector.h"
 namespace Minisat{
 
 class GraphTheorySolver;
@@ -91,7 +91,7 @@ public:
 	struct ReachInfo{
 		int source;
 		bool distance;
-		ReachDetector * detector;
+		Detector * detector;
 
 		ReachInfo():source(-1),detector(NULL){}
 	};
@@ -870,131 +870,64 @@ public:
 				within_steps=-1;
 
 			if (reach_info[from].source<0){
-				reach_detectors.push(new ReachDetector(detectors.size(), this,antig,from,drand(rnd_seed)));
-				detectors.push(reach_detectors.last());
-				assert(detectors.last()->getID()==detectors.size()-1);
-				reach_detectors.last()->reach_marker=S->newReasonMarker(this);
-
-				int mnum = CRef_Undef- reach_detectors.last()->reach_marker;
-				marker_map.growTo(mnum+1);
-				marker_map[mnum] = reach_detectors.size()-1;
-				//marker_map.insert(reach_markers.last(),reach_markers.size());
-
-				reach_detectors.last()->non_reach_marker=S->newReasonMarker(this);
-				//marker_map[non_reach_markers.last()]=-non_reach_markers.size();
-				//marker_map.insert(non_reach_markers.last(),non_reach_markers.size());
-
-				mnum = CRef_Undef- reach_detectors.last()->non_reach_marker;
-				marker_map.growTo(mnum+1);
-				marker_map[mnum] = reach_detectors.size()-1;
-
-				reach_detectors.last()->forced_reach_marker =S->newReasonMarker(this);
-				//marker_map[non_reach_markers.last()]=-non_reach_markers.size();
-				//marker_map.insert(non_reach_markers.last(),non_reach_markers.size());
-
-				mnum = CRef_Undef- reach_detectors.last()->forced_reach_marker;
-				marker_map.growTo(mnum+1);
-				marker_map[mnum] = reach_detectors.size()-1;
-
-
-				reach_detectors.last()->rnd_path=NULL;
-				 if(opt_use_random_path_for_decisions){
-					 reach_detectors.last()->rnd_path = new WeightedDijkstra<NegativeEdgeStatus>(from,antig);
-					 for(int i=0;i<g.nodes;i++){
-						 double w = drand(rnd_seed);
-					/*	 w-=0.5;
-						 w*=w;*/
-						 //printf("%f (%f),",w,rnd_seed);
-						 reach_detectors.last()->rnd_path->setWeight(i,w);
-					 }
-					 //printf("\n");
-				 }
 
 
 				if(within_steps<0 ){
-					if(reachalg==ALG_CONNECTIVITY){
-						reach_detectors.last()->positiveReachStatus = new ReachDetector::ReachStatus(*reach_detectors.last(),true);
-						reach_detectors.last()->negativeReachStatus = new ReachDetector::ReachStatus(*reach_detectors.last(),false);
-						reach_detectors.last()->positive_reach_detector = new Connectivity<ReachDetector::ReachStatus,PositiveEdgeStatus>(from,g,*(reach_detectors.last()->positiveReachStatus),1);
-						reach_detectors.last()->negative_reach_detector = new Connectivity<ReachDetector::ReachStatus,NegativeEdgeStatus>(from,antig,*(reach_detectors.last()->negativeReachStatus),-1);
-						if(opt_conflict_shortest_path)
-							reach_detectors.last()->positive_path_detector = new Distance<NullEdgeStatus,PositiveEdgeStatus>(from,g,nullEdgeStatus,1);
-						else
-							reach_detectors.last()->positive_path_detector = reach_detectors.last()->positive_reach_detector;
-					}else if(reachalg==ALG_BFS){
-						reach_detectors.last()->positiveReachStatus = new ReachDetector::ReachStatus(*reach_detectors.last(),true);
-						reach_detectors.last()->negativeReachStatus = new ReachDetector::ReachStatus(*reach_detectors.last(),false);
-						reach_detectors.last()->positive_reach_detector = new Distance<ReachDetector::ReachStatus,PositiveEdgeStatus>(from,g,*(reach_detectors.last()->positiveReachStatus),1);
-						reach_detectors.last()->negative_reach_detector = new Distance<ReachDetector::ReachStatus,NegativeEdgeStatus>(from,antig,*(reach_detectors.last()->negativeReachStatus),-1);
-						reach_detectors.last()->positive_path_detector = reach_detectors.last()->positive_reach_detector;
-					}else{
-
-						reach_detectors.last()->positive_reach_detector = new Dijkstra<PositiveEdgeStatus>(from,g);
-						reach_detectors.last()->negative_reach_detector = new Dijkstra<NegativeEdgeStatus>(from,antig);
-						reach_detectors.last()->positive_path_detector = reach_detectors.last()->positive_reach_detector;
-						//reach_detectors.last()->positive_dist_detector = new Dijkstra(from,g);
-					}
+					ReachDetector*rd = new ReachDetector(detectors.size(), this,g,antig,from,drand(rnd_seed));
+					detectors.push(rd);
+					reach_detectors.push(rd);
 				}else{
+					detectors.push(new DistanceDetector(detectors.size(), this,g,antig,from,within_steps,drand(rnd_seed)));
+					//reach_detectors.push(reach_detectors.last());
 
-					if(distalg==ALG_BFS){
-						reach_detectors.last()->positiveReachStatus = new ReachDetector::ReachStatus(*reach_detectors.last(),true);
-						reach_detectors.last()->negativeReachStatus = new ReachDetector::ReachStatus(*reach_detectors.last(),false);
-						reach_detectors.last()->positive_reach_detector = new Distance<ReachDetector::ReachStatus,PositiveEdgeStatus>(from,g,*(reach_detectors.last()->positiveReachStatus),1);
-						reach_detectors.last()->negative_reach_detector = new Distance<ReachDetector::ReachStatus,NegativeEdgeStatus>(from,antig,*(reach_detectors.last()->negativeReachStatus),-1);
-						reach_detectors.last()->positive_path_detector = reach_detectors.last()->positive_reach_detector;
-						/*	if(opt_conflict_shortest_path)
-							reach_detectors.last()->positive_dist_detector = new Dijkstra<PositiveEdgeStatus>(from,g);*/
-					}else{
-
-						reach_detectors.last()->positive_reach_detector = new Dijkstra<PositiveEdgeStatus>(from,g);
-						reach_detectors.last()->negative_reach_detector = new Dijkstra<NegativeEdgeStatus>(from,antig);
-						reach_detectors.last()->positive_path_detector = reach_detectors.last()->positive_reach_detector;
-						//reach_detectors.last()->positive_dist_detector = new Dijkstra(from,g);
-					}
 
 
 				}
+
+
+				assert(detectors.last()->getID()==detectors.size()-1);
+				detectors.last()->reach_marker=S->newReasonMarker(this);
+
+				int mnum = CRef_Undef- detectors.last()->reach_marker;
+				marker_map.growTo(mnum+1);
+				marker_map[mnum] = detectors.size()-1;
+				//marker_map.insert(reach_markers.last(),reach_markers.size());
+
+				detectors.last()->non_reach_marker=S->newReasonMarker(this);
+				//marker_map[non_reach_markers.last()]=-non_reach_markers.size();
+				//marker_map.insert(non_reach_markers.last(),non_reach_markers.size());
+
+				mnum = CRef_Undef- detectors.last()->non_reach_marker;
+				marker_map.growTo(mnum+1);
+				marker_map[mnum] = detectors.size()-1;
+
+				detectors.last()->forced_reach_marker =S->newReasonMarker(this);
+				//marker_map[non_reach_markers.last()]=-non_reach_markers.size();
+				//marker_map.insert(non_reach_markers.last(),non_reach_markers.size());
+
+				mnum = CRef_Undef- detectors.last()->forced_reach_marker;
+				marker_map.growTo(mnum+1);
+				marker_map[mnum] = detectors.size()-1;
+
+
+
+
 				//reach_detectors.last()->negative_dist_detector = new Dijkstra(from,antig);
-				reach_detectors.last()->source=from;
+				//reach_detectors.last()->source=from;
 
 				reach_info[from].source=from;
-				reach_info[from].detector=reach_detectors.last();
+				reach_info[from].detector=detectors.last();
 
-				reach_detectors.last()->within=within_steps;
-
-
-
-				reach_detectors.last()->first_reach_var = reach_var;
+				//reach_detectors.last()->within=within_steps;
 
 			}
 
-			ReachDetector * d = reach_info[from].detector;
+			Detector * d = reach_info[from].detector;
 			assert(d);
 
+			d->addLit(from,to,reach_var,within_steps);
 
 
-			while( d->reach_lits.size()<=to)
-				d->reach_lits.push(lit_Undef);
-
-			while(S->nVars()<=reach_var)
-				S->newVar();
-
-			Lit reachLit=mkLit(reach_var,false);
-
-			if(d->reach_lits[to]==lit_Undef){
-				d->reach_lits[to] = reachLit;
-
-				while(d->reach_lit_map.size()<= reach_var- d->first_reach_var ){
-					d->reach_lit_map.push(-1);
-				}
-
-				d->reach_lit_map[reach_var-d->first_reach_var]=to;
-			}else{
-				Lit r = d->reach_lits[to];
-				//force equality between the new lit and the old reach lit, in the SAT solver
-				S->addClause(~r, reachLit);
-				S->addClause(r, ~reachLit);
-			}
 	    }
 
 	void reachesAny(int from, Var firstVar,int within_steps=-1){

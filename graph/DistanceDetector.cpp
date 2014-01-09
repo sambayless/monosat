@@ -1,5 +1,5 @@
 /*
- * ReachDetector.c
+ * DistanceDetector.c
  *
  *  Created on: 2014-01-08
  *      Author: sam
@@ -7,54 +7,35 @@
 
 
 
-#include "ReachDetector.h"
+#include "DistanceDetector.h"
 #include "GraphTheory.h"
-#include "core/Config.h"
 
-ReachDetector::ReachDetector(int _detectorID, GraphTheorySolver * _outer, DynamicGraph<PositiveEdgeStatus> &_g, DynamicGraph<NegativeEdgeStatus> &_antig, int from,double seed):Detector(_detectorID),outer(_outer),within(-1),source(from),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL),chokepoint_status(*this),chokepoint(chokepoint_status, _antig,source){
+DistanceDetector::DistanceDetector(int _detectorID, GraphTheorySolver * _outer,  DynamicGraph<PositiveEdgeStatus> &_g,DynamicGraph<NegativeEdgeStatus> &_antig, int from, int within_steps ,double seed):
+Detector(_detectorID),outer(_outer),within(within_steps),source(from),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL){
 
-	rnd_path=NULL;
-	 if(opt_use_random_path_for_decisions){
-		 rnd_path = new WeightedDijkstra<NegativeEdgeStatus>(from,_antig);
-		 for(int i=0;i<_g.nodes;i++){
-			 double w = drand(rnd_seed);
-		/*	 w-=0.5;
-			 w*=w;*/
-			 //printf("%f (%f),",w,rnd_seed);
-			rnd_path->setWeight(i,w);
-		 }
-		 //printf("\n");
-	 }
+	if(distalg==ALG_BFS){
+		positiveReachStatus = new DistanceDetector::ReachStatus(*this,true);
+		negativeReachStatus = new DistanceDetector::ReachStatus(*this,false);
+		positive_reach_detector = new Distance<DistanceDetector::ReachStatus,PositiveEdgeStatus>(from,_g,*(positiveReachStatus),1);
+		negative_reach_detector = new Distance<DistanceDetector::ReachStatus,NegativeEdgeStatus>(from,_antig,*(negativeReachStatus),-1);
+		positive_path_detector = positive_reach_detector;
+		/*	if(opt_conflict_shortest_path)
+			reach_detectors.last()->positive_dist_detector = new Dijkstra<PositiveEdgeStatus>(from,g);*/
+	}else{
 
-
-	if(reachalg==ALG_CONNECTIVITY){
-							positiveReachStatus = new ReachDetector::ReachStatus(*this,true);
-							negativeReachStatus = new ReachDetector::ReachStatus(*this,false);
-							positive_reach_detector = new Connectivity<ReachDetector::ReachStatus,PositiveEdgeStatus>(from,_g,*(positiveReachStatus),1);
-							negative_reach_detector = new Connectivity<ReachDetector::ReachStatus,NegativeEdgeStatus>(from,_antig,*(negativeReachStatus),-1);
-							if(opt_conflict_shortest_path)
-								positive_path_detector = new Distance<NullEdgeStatus,PositiveEdgeStatus>(from,_g,nullEdgeStatus,1);
-							else
-								positive_path_detector =positive_reach_detector;
-						}else if(reachalg==ALG_BFS){
-							positiveReachStatus = new ReachDetector::ReachStatus(*this,true);
-							negativeReachStatus = new ReachDetector::ReachStatus(*this,false);
-							positive_reach_detector = new Distance<ReachDetector::ReachStatus,PositiveEdgeStatus>(from,_g,*(positiveReachStatus),1);
-							negative_reach_detector = new Distance<ReachDetector::ReachStatus,NegativeEdgeStatus>(from,_antig,*(negativeReachStatus),-1);
-							positive_path_detector = positive_reach_detector;
-						}else{
-
-							positive_reach_detector = new Dijkstra<PositiveEdgeStatus>(from,_g);
-							negative_reach_detector = new Dijkstra<NegativeEdgeStatus>(from,_antig);
-							positive_path_detector = positive_reach_detector;
-							//reach_detectors.last()->positive_dist_detector = new Dijkstra(from,g);
-						}
+		positive_reach_detector = new Dijkstra<PositiveEdgeStatus>(from,_g);
+		negative_reach_detector = new Dijkstra<NegativeEdgeStatus>(from,_antig);
+		positive_path_detector = positive_reach_detector;
+		//reach_detectors.last()->positive_dist_detector = new Dijkstra(from,g);
+	}
 
 	first_reach_var = var_Undef;
 
 }
 
-void ReachDetector::addLit(int from, int to, Var reach_var,int within_steps){
+
+
+void DistanceDetector::addLit(int from, int to, Var reach_var,int within_steps){
 	if(first_reach_var==var_Undef){
 		first_reach_var=reach_var;
 	}else{
@@ -85,7 +66,7 @@ void ReachDetector::addLit(int from, int to, Var reach_var,int within_steps){
 	}
 }
 
-void ReachDetector::ReachStatus::setReachable(int u, bool reachable){
+void DistanceDetector::ReachStatus::setReachable(int u, bool reachable){
 				if(polarity==reachable && u<detector.reach_lits.size()){
 					Lit l = detector.reach_lits[u];
 					if(l!=lit_Undef){
@@ -97,7 +78,7 @@ void ReachDetector::ReachStatus::setReachable(int u, bool reachable){
 				}
 			}
 
-void ReachDetector::ReachStatus::setMininumDistance(int u, bool reachable, int distance){
+void DistanceDetector::ReachStatus::setMininumDistance(int u, bool reachable, int distance){
 	assert(reachable ==(distance<detector.outer->g.nodes));
 	setReachable(u,reachable);
 
@@ -123,18 +104,8 @@ void ReachDetector::ReachStatus::setMininumDistance(int u, bool reachable, int d
 	}
 }
 
-bool ReachDetector::ChokepointStatus::mustReach(int node){
-	Lit l =  detector.reach_lits[node];
-	if(l!=lit_Undef){
-		return detector.outer->S->value(l)==l_True;
-	}
-	return false;
-}
-bool ReachDetector::ChokepointStatus::operator() (int edge_id){
-	return detector.outer->edge_assignments[edge_id]==l_Undef;
-}
 
-void ReachDetector::buildReachReason(int node,vec<Lit> & conflict){
+void DistanceDetector::buildReachReason(int node,vec<Lit> & conflict){
 			//drawFull();
 			Reach & d = *positive_path_detector;
 
@@ -194,7 +165,7 @@ void ReachDetector::buildReachReason(int node,vec<Lit> & conflict){
 
 	#endif
 		}
-		void ReachDetector::buildNonReachReason(int node,vec<Lit> & conflict){
+		void DistanceDetector::buildNonReachReason(int node,vec<Lit> & conflict){
 			static int it = 0;
 			++it;
 			int u = node;
@@ -311,7 +282,7 @@ void ReachDetector::buildReachReason(int node,vec<Lit> & conflict){
 		 * The reason is that _IF_ that edge is false, THEN there is a cut of disabled edges between source and target
 		 * So, create the graph that has that edge (temporarily) assigned false, and find a min-cut in it...
 		 */
-		void ReachDetector::buildForcedEdgeReason(int reach_node, int forced_edge_id,vec<Lit> & conflict){
+		void DistanceDetector::buildForcedEdgeReason(int reach_node, int forced_edge_id,vec<Lit> & conflict){
 					static int it = 0;
 					++it;
 
@@ -438,7 +409,7 @@ void ReachDetector::buildReachReason(int node,vec<Lit> & conflict){
 			#endif
 				}
 
-		void ReachDetector::buildReason(Lit p, vec<Lit> & reason, CRef marker){
+		void DistanceDetector::buildReason(Lit p, vec<Lit> & reason, CRef marker){
 
 
 				if(marker==reach_marker){
@@ -495,7 +466,7 @@ void ReachDetector::buildReachReason(int node,vec<Lit> & conflict){
 				}
 		}
 
-		bool ReachDetector::propagate(vec<Assignment> & trail,vec<Lit> & conflict){
+		bool DistanceDetector::propagate(vec<Assignment> & trail,vec<Lit> & conflict){
 
 
 								double startdreachtime = cpuTime();
@@ -560,30 +531,6 @@ void ReachDetector::buildReachReason(int node,vec<Lit> & conflict){
 											int  a=1;
 										}
 
-										if(opt_reach_prop){
-											forced_edges.clear();
-											chokepoint.collectForcedEdges(forced_edges);
-											for(int i = 0;i<forced_edges.size();i++){
-												int edge_id = forced_edges[i].edge_id;
-												int node = forced_edges[i].node;
-												Lit l = mkLit( outer->edge_list[edge_id].v,false);
-												if(outer->S->value(l)==l_Undef){
-													force_reason.growTo(edge_id+1);
-													force_reason[edge_id]=node;
-													outer->S->enqueue(l,forced_reach_marker);
-												}else if(outer->S->value(l)==l_True){
-													//do nothing
-
-												}else{
-													//conflict.
-													//this actually shouldn't be possible (at this point in the code)
-													buildForcedEdgeReason(node,edge_id,conflict);
-													return false;
-												}
-											}
-
-										}
-
 									}
 
 			#ifdef DEBUG_GRAPH
@@ -603,7 +550,7 @@ void ReachDetector::buildReachReason(int node,vec<Lit> & conflict){
 			return true;
 		}
 
-bool ReachDetector::checkSatisfied(){
+bool DistanceDetector::checkSatisfied(){
 
 				for(int j = 0;j< reach_lits.size();j++){
 					Lit l = reach_lits[j];
@@ -630,11 +577,11 @@ bool ReachDetector::checkSatisfied(){
 				}
 	return true;
 }
-Lit ReachDetector::decide(){
-	ReachDetector *r =this;
-	Distance<ReachDetector::ReachStatus,NegativeEdgeStatus> * over = (Distance<ReachDetector::ReachStatus,NegativeEdgeStatus>*) r->negative_reach_detector;
+Lit DistanceDetector::decide(){
+	DistanceDetector *r =this;
+	Distance<DistanceDetector::ReachStatus,NegativeEdgeStatus> * over = (Distance<DistanceDetector::ReachStatus,NegativeEdgeStatus>*) r->negative_reach_detector;
 
-	Distance<ReachDetector::ReachStatus,PositiveEdgeStatus> * under = (Distance<ReachDetector::ReachStatus,PositiveEdgeStatus>*) r->positive_reach_detector;
+	Distance<DistanceDetector::ReachStatus,PositiveEdgeStatus> * under = (Distance<DistanceDetector::ReachStatus,PositiveEdgeStatus>*) r->positive_reach_detector;
 
 	//we can probably also do something similar, but with cuts, for nodes that are decided to be unreachable.
 
