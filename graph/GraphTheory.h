@@ -666,11 +666,11 @@ public:
 			for(int d = 0;d<detectors.size();d++){
 				assert(conflict.size()==0);
 				bool r =detectors[d]->propagate(trail,conflict);
-				if(!r)
+				if(!r){
 					propagationtime+= cpuTime()-startproptime;
 					return false;
 				}
-
+			}
 
 
 
