@@ -115,6 +115,31 @@ static void readReach(B& in, Solver& S, vec<GraphTheory*> & graphs) {
 }
 
 template<class B, class Solver>
+static void readDistance(B& in, Solver& S, vec<GraphTheory*> & graphs) {
+	//d g u w var dist is a reach querry: var is true if can u reach w in graph g, false otherwise
+    if(*in != 'd'){
+    	printf("PARSE ERROR! Unexpected char: %c\n", *in), exit(3);
+    }
+    ++in;
+
+        int graphID = parseInt(in);
+        int from = parseInt(in);
+         int to=parseInt(in);
+        int reachVar = parseInt(in)-1;
+        int steps = parseInt(in);
+        if(graphID <0 || graphID>=graphs.size() || !graphs[graphID]){
+        	printf("PARSE ERROR! Undeclared graph identifier %d for edge %d\n",graphID, reachVar), exit(3);
+        }
+        if(reachVar<0){
+        	printf("PARSE ERROR! Edge variables must be >=0, was %d\n", reachVar), exit(3);
+        }
+        GraphTheory * graph = graphs[graphID];
+        while (reachVar+graph->nNodes() >= S.nVars()) S.newVar();
+        graph->reaches(from,to,reachVar,steps);
+
+
+}
+template<class B, class Solver>
 static void parse_GRAPH_main(B& in, Solver& S, vec<std::pair<int,std::string> > * symbols=NULL ) {
 	vec<GraphTheory*> graphs;
 	vec<Lit> lits;
@@ -180,6 +205,8 @@ static void parse_GRAPH_main(B& in, Solver& S, vec<std::pair<int,std::string> > 
             readEdge(in, S,graphs);
         }else if (*in == 'r'){
             readReach(in, S,graphs);
+        }else if (*in == 'd'){
+            readDistance(in, S,graphs);
         }else{
             cnt++;
             readClause(in, S, lits);
