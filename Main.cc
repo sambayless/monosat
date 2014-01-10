@@ -73,7 +73,7 @@ static void SIGINT_interrupt(int signum) { solver->interrupt();   fflush(stdout)
 // functions are guarded by locks for multithreaded use).
 static void SIGINT_exit(int signum) {
     printf("\n"); printf("*** INTERRUPTED ***\n");
-    if (solver->verbosity > 0){
+    if (opt_verb > 0){
         printStats(*solver);
         printf("\n"); printf("*** INTERRUPTED ***\n"); }
     fflush(stdout);
@@ -93,7 +93,7 @@ int main(int argc, char** argv)
 
         // Extra options:
         //
-        IntOption    verb   ("MAIN", "verb",   "Verbosity level (0=silent, 1=some, 2=more).", 1, IntRange(0, 3));
+        //IntOption    opt_verb   ("MAIN", "opt_verb",   "opt_verb level (0=silent, 1=some, 2=more).", 1, IntRange(0, 3));
         IntOption    cpu_lim("MAIN", "cpu-lim","Limit on CPU time allowed in seconds.\n", INT32_MAX, IntRange(0, INT32_MAX));
         IntOption    mem_lim("MAIN", "mem-lim","Limit on memory usage in megabytes.\n", INT32_MAX, IntRange(0, INT32_MAX));
         
@@ -115,12 +115,12 @@ int main(int argc, char** argv)
         parseOptions(argc, argv, true);
 
         if(opt_csv){
-           	verb=0;
+           	opt_verb=0;
            }
 #if defined(__linux__)
         fpu_control_t oldcw, newcw;
         _FPU_GETCW(oldcw); newcw = (oldcw & ~_FPU_EXTENDED) | _FPU_DOUBLE; _FPU_SETCW(newcw);
-        if(verb>0)
+        if(opt_verb>0)
         	fprintf(stderr,"WARNING: for repeatability, setting FPU to use double precision\n");
 #endif
 
@@ -198,14 +198,14 @@ int main(int argc, char** argv)
              if (in == NULL)
                  printf("ERROR! Could not open file: %s\n", argc == 1 ? "<stdin>" : argv[1]), exit(1);
 
-             if (S.verbosity > 0){
+             if (opt_verb > 0){
                  printf("============================[ Problem Statistics ]=============================\n");
                  printf("|                                                                             |\n"); }
 
              parse_GRAPH(in, S,opt_symbols?&symbols:NULL);
              gzclose(in);
 
-             if(verb>2){
+             if(opt_verb>2){
             	 for(int i = 0;i<symbols.size();i++){
             		 int v = symbols[i].first;
             		 string s = symbols[i].second;
@@ -335,7 +335,7 @@ int main(int argc, char** argv)
 								int v = symbol_table[symbol];
 								Lit l =mkLit(v,neg);
 								assume.push(l);
-								if(verb>2){
+								if(opt_verb>2){
 									if(neg)
 										printf("Assume not %s (%d)\n", symbol.c_str(),dimacs(l));
 									else
@@ -351,7 +351,7 @@ int main(int argc, char** argv)
 			    	printf("Warning: no assumptions read from %s\n",assume_str);
 			    }
 		   }
-		   if(verb>2 && assume.size()){
+		   if(opt_verb>2 && assume.size()){
 
 			   printf("Assumptions: ");
 				 for(int i = 0;i<assume.size();i++){
@@ -361,7 +361,7 @@ int main(int argc, char** argv)
 				printf("\n");
 		}
 
-		   if(verb>0){
+		   if(opt_verb>0){
 			   printf("Decidable theories: ");
 		   }
 		   for(int i = 0;i<decidable.size();i++){
@@ -371,12 +371,12 @@ int main(int argc, char** argv)
 				   fflush(stderr);
 				   exit(1);
 			   }
-			   if(verb>0){
+			   if(opt_verb>0){
 					   printf("%d, ", t);
 				   }
 			   S.decidable_theories.push(S.theories[t]);
 		   }
-		   if(verb>0){
+		   if(opt_verb>0){
 				   printf("\n");
 			   }
 
@@ -615,7 +615,7 @@ int main(int argc, char** argv)
         }else{
         	printf("UNKNOWN\n");
         }
-		if(verb>0){
+		if(opt_verb>0){
 			printStats(S);
 			for(int i = 0;i<S.theories.size();i++){
 				Theory * t = S.theories[i];

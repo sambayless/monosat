@@ -51,7 +51,7 @@ static void readDiGraph(B& in, Solver& S, vec<GraphTheory*> & graphs) {
         g=parseInt(in);//id of the graph
         GraphTheory * graph = NULL;
         if(opt_graph)
-        	graph= new GraphTheorySolver(&S);
+        	graph= new GraphTheorySolver(&S,g);
         else
         	graph= new TestGraph(&S);
         graph->newNodes(n);
@@ -214,6 +214,10 @@ static void parse_GRAPH_main(B& in, Solver& S, vec<std::pair<int,std::string> > 
         }
 
     }
+    for(int i = 0;i<graphs.size();i++){
+    	if(graphs[i])
+    	   graphs[i]->implementConstraints();
+    }
 
 }
 
@@ -222,7 +226,9 @@ static void parse_GRAPH_main(B& in, Solver& S, vec<std::pair<int,std::string> > 
 template<class Solver>
 static void parse_GRAPH(gzFile input_stream, Solver& S, vec<std::pair<int,std::string> > * symbols=NULL) {
     StreamBuffer in(input_stream);
-    parse_GRAPH_main(in, S,symbols); }
+    parse_GRAPH_main(in, S,symbols);
+
+}
 
 //=================================================================================================
 }

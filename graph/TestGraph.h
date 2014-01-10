@@ -15,6 +15,7 @@ namespace Minisat{
 class TestGraph:public GraphTheory{
 private:
 	int nodes;
+
 	struct Edge{
 
 		Lit l;
@@ -25,9 +26,9 @@ private:
 	Lit False;
 	Lit True;
 	Solver * S;
-
+	int id;
 public:
-	TestGraph(Solver * S_):S(S_){
+	TestGraph(Solver * S_, int _id=0):S(S_),id(_id){
 		True = mkLit(S->newVar(),false);
 			False=~True;
 			S->addClause(True);
@@ -36,6 +37,9 @@ public:
 
 	}
      ~TestGraph(){};
+     int getGraphID(){
+    	 return id;
+     }
 	 int newNode(){
 			edges.push();
 		return nodes++;
@@ -57,7 +61,9 @@ public:
 	bool solveTheory(vec<Lit> & conflict){return true;};
 
 	void buildReason(Lit p, vec<Lit> & reason){};
+	void implementConstraints(){
 
+	}
 	Lit newEdge(int from,int to)
     {
     		assert(isNode(from));assert(isNode(to));

@@ -22,6 +22,7 @@ class GraphTheory: public Theory{
 public:
 
     virtual ~GraphTheory(){};
+    virtual int getGraphID()=0;
 	virtual int newNode()=0;
 	virtual void newNodes(int n)=0;
 	virtual int nNodes()=0;
@@ -30,6 +31,7 @@ public:
 	virtual void reachesAny(int from, Var firstVar,int within_steps)=0;
 	virtual void reachesAny(int from, vec<Lit> & properties_out,int within_steps)=0;
 	virtual void reaches(int from,int to, Var reach_var,int within_steps=-1)=0;
+	virtual void implementConstraints()=0;
 };
 
 class Graph{

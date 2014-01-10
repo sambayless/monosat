@@ -41,6 +41,7 @@ void DistanceDetector::addLit(int from, int to, Var reach_var,int within_steps){
 	}else{
 		assert(reach_var>first_reach_var);
 	}
+	assert(from==source);
 	assert(within_steps>=0);
 
 	while( dist_lits.size()<=to)

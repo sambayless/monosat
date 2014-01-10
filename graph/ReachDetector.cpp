@@ -60,7 +60,7 @@ void ReachDetector::addLit(int from, int to, Var reach_var,int within_steps){
 	}else{
 		assert(reach_var>first_reach_var);
 	}
-
+	assert(from==source);
 	while( reach_lits.size()<=to)
 			reach_lits.push(lit_Undef);
 

@@ -17,7 +17,7 @@ int dbg_total_iterations=0;
 static const char* _cat = "CORE";
 static const char* _cat_sms = "SMS";
 static const char* _cat_graph ="GRAPH";
-
+ IntOption Minisat::opt_verb("MAIN","verb", "Verbosity level (0=silent, 1=some, 2=more).",0,IntRange(0,3));
  DoubleOption  Minisat::opt_var_decay         (_cat, "var-decay",   "The variable activity decay factor",            0.95,     DoubleRange(0, false, 1, false));
  DoubleOption  Minisat::opt_clause_decay      (_cat, "cla-decay",   "The clause activity decay factor",              0.999,    DoubleRange(0, false, 1, false));
  DoubleOption  Minisat::opt_random_var_freq   (_cat, "rnd-freq",    "The frequency with which the decision heuristic tries to choose a random variable", 0, DoubleRange(0, true, 1, true));
@@ -68,6 +68,8 @@ DoubleOption Minisat::opt_decide_graph_re_rnd(_cat_graph,"decide-graph-re-rnd","
 
 BoolOption Minisat::opt_print_decision_path(_cat_graph,"decide-graph-print","",false);
 BoolOption Minisat::opt_force_distance_solver(_cat_graph,"force-distance","Force the graph distance solver to be used, instead of the optimized reachability solver",false);
+
+DoubleOption Minisat::opt_allpairs_percentage(_cat_graph,"allpairs","Fraction of nodes as source reach querries at which to trigger using allpairs solver instead of separate theory solvers. 0 to force all querries to go through allpairs solver. 1 to disable.",1,DoubleRange(0,true,1,true));
 
 MinCutAlg Minisat::mincutalg=ALG_EDMONSKARP ;
 ReachAlg Minisat::reachalg=ALG_CONNECTIVITY;

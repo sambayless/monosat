@@ -10,6 +10,7 @@
 
 #include "utils/Options.h"
 namespace Minisat {
+extern IntOption opt_verb;
 extern  DoubleOption  opt_var_decay;
 extern  DoubleOption  opt_clause_decay ;
 extern  DoubleOption  opt_random_var_freq ;
@@ -53,6 +54,7 @@ extern BoolOption opt_use_random_path_for_decisions;
 extern DoubleOption opt_decide_graph_re_rnd;
 extern BoolOption opt_print_decision_path;
 extern BoolOption opt_force_distance_solver;
+extern DoubleOption opt_allpairs_percentage;
 enum ReachAlg{
 	 ALG_CONNECTIVITY,
 	 ALG_DIJKSTRA,

@@ -10,6 +10,14 @@
 
 #include "core/SolverTypes.h"
 namespace Minisat{
+
+struct ReachabilityConstraint{
+	int from;
+	int to;
+	int distance;
+	Var reach_var;
+};
+
 struct DefaultEdgeStatus{
 
 	vec<bool> status;

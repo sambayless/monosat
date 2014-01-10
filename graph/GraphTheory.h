@@ -26,9 +26,11 @@
 #include "GraphTheoryTypes.h"
 #include "utils/System.h"
 #include "core/Solver.h"
+
 #ifdef DEBUG_GRAPH
 #include "TestGraph.h"
 #endif
+#include "AllPairsDetector.h"
 #include "ReachDetector.h"
 #include "DistanceDetector.h"
 namespace Minisat{
@@ -55,6 +57,7 @@ public:
 	int local_q;
 
 	Solver * S;
+	int id;
 #ifdef DEBUG_GRAPH
 	Solver * dbg;
 	TestGraph *dbg_graph;
@@ -67,6 +70,7 @@ public:
 	vec<lbool> edge_assignments;
 
 
+	vec<ReachabilityConstraint> unimplemented_graph_constraints;
 
 
 	PositiveEdgeStatus g_status;
@@ -172,7 +176,8 @@ public:
 
 	}propCutStatus;
 
-	GraphTheorySolver(Solver * S_):S(S_),g(g_status),antig(antig_status) ,cutGraph(cutGraph_status),cutStatus(*this),propCutStatus(*this){
+	GraphTheorySolver(Solver * S_, int _id=-1):S(S_),id(_id),g(g_status),antig(antig_status) ,cutGraph(cutGraph_status),cutStatus(*this),propCutStatus(*this){
+
 		True = mkLit(S->newVar(),false);
 			False=~True;
 			S->addClause(True);
@@ -216,6 +221,9 @@ public:
 #endif
 	}
 
+	int getGraphID(){
+		return id;
+	}
 	void printStats(){
 
 		printf("Graph stats:\n");
@@ -235,7 +243,7 @@ public:
 		double stats_fast_update_time=0;
 
 		for(int i = 0;i<reach_detectors.size();i++){
-			/*skipable_deletions+=reach_detectors[i]->positive_reach_detector->stats_num_skipable_deletions;
+			skipable_deletions+=reach_detectors[i]->positive_reach_detector->stats_num_skipable_deletions;
 			skipable_deletions+=reach_detectors[i]->negative_reach_detector->stats_num_skipable_deletions;
 
 			stats_failed_fast_updates+=reach_detectors[i]->positive_reach_detector->stats_fast_failed_updates;
@@ -255,7 +263,7 @@ public:
 			stats_skipped_updates+=reach_detectors[i]->negative_reach_detector->stats_skipped_updates;
 
 			stats_full_update_time+=reach_detectors[i]->negative_reach_detector->stats_full_update_time;
-			stats_fast_update_time+=reach_detectors[i]->negative_reach_detector->stats_fast_update_time;*/
+			stats_fast_update_time+=reach_detectors[i]->negative_reach_detector->stats_fast_update_time;
 		}
 
 		printf("Dijkstra Full Updates: %d (time: %f, average: %f)\n",stats_full_updates, stats_full_update_time,(stats_full_update_time/(stats_full_updates ? stats_full_updates:1)));
@@ -676,6 +684,9 @@ public:
 					dbg_sync_reachability();
 		return true;
 	};
+
+
+
 	bool solveTheory(vec<Lit> & conflict){return true;};
 	void drawFull(int from, int to){
 			printf("digraph{\n");
@@ -908,92 +919,201 @@ public:
 
 		    }
 
+	void implementConstraints(){
+		if(opt_allpairs_percentage>=1){
+			for(int i = 0;i<unimplemented_graph_constraints.size();i++){
+				ReachabilityConstraint c = unimplemented_graph_constraints[i];
+				reaches_private(c.from,c.to,c.reach_var,c.distance);
+			}
+		}else if (opt_allpairs_percentage==0){
+			for(int i = 0;i<unimplemented_graph_constraints.size();i++){
+				ReachabilityConstraint c = unimplemented_graph_constraints[i];
+				allpairs(c.from,c.to,c.reach_var,c.distance);
+			}
+		}else{
+			vec<bool> seen;
+			int count=0;
+			seen.growTo(nNodes());
+			for(int i = 0;i<unimplemented_graph_constraints.size();i++){
+						ReachabilityConstraint c = unimplemented_graph_constraints[i];
+						if(!seen[c.from]){
+							seen[c.from]=true;
+							count++;
+						}
+					}
+			double frac = ((double)count)/((double)nNodes());
 
-	void reaches(int from, int to, Var reach_var,int within_steps=-1){
-		//for now, reachesWithinSteps to be called instead
-		if(within_steps>=0 || opt_force_distance_solver){
-			reachesWithinSteps(from,to,reach_var,within_steps);
-			return;
+			if (opt_verb>0 && frac>=opt_allpairs_percentage){
+				printf("Allpairs solver triggered for graph %d by percentage of source nodes: %d/%d=%f>%f\n",getGraphID() ,count,nNodes(),frac,(double)opt_allpairs_percentage);
+			}
+
+			for(int i = 0;i<unimplemented_graph_constraints.size();i++){
+									ReachabilityConstraint c = unimplemented_graph_constraints[i];
+									if(frac>=opt_allpairs_percentage)
+										allpairs(c.from,c.to,c.reach_var,c.distance);
+									else
+										reaches_private(c.from,c.to,c.reach_var,c.distance);
+								}
 		}
+		unimplemented_graph_constraints.clear();
+	}
+	void allpairs(int from, int to, Var reach_var,int within_steps=-1){
+				//for now, reachesWithinSteps to be called instead
 
-#ifdef DEBUG_GRAPH
-		 dbg_graph->reaches(from,  to,reach_var,within_steps);
-#endif
-#ifdef DEBUG_SOLVER
-		if(S->dbg_solver)
-			shadow_dbg->reaches(from,  to,reach_var,within_steps);
-#endif
-			assert(from<g.nodes);
-			if(within_steps>g.nodes)
-				within_steps=-1;
+		#ifdef DEBUG_GRAPH
+				 dbg_graph->reaches(from,  to,reach_var,within_steps);
+		#endif
+		#ifdef DEBUG_SOLVER
+				if(S->dbg_solver)
+					shadow_dbg->reaches(from,  to,reach_var,within_steps);
+		#endif
+					assert(from<g.nodes);
+					if(within_steps>g.nodes)
+						within_steps=-1;
 
-			if (reach_info[from].source<0){
-
-
-				if(within_steps<0 ){
-					ReachDetector*rd = new ReachDetector(detectors.size(), this,g,antig,from,drand(rnd_seed));
-					detectors.push(rd);
-					reach_detectors.push(rd);
-				}else{
-					detectors.push(new DistanceDetector(detectors.size(), this,g,antig,from,within_steps,drand(rnd_seed)));
-					//reach_detectors.push(reach_detectors.last());
+					if (reach_info[from].source<0){
 
 
+						detectors.push(new AllPairsDetector(detectors.size(), this,g,antig,drand(rnd_seed)));
+							//reach_detectors.push(reach_detectors.last());
+
+
+
+
+
+
+						assert(detectors.last()->getID()==detectors.size()-1);
+						detectors.last()->reach_marker=S->newReasonMarker(this);
+
+						int mnum = CRef_Undef- detectors.last()->reach_marker;
+						marker_map.growTo(mnum+1);
+						marker_map[mnum] = detectors.size()-1;
+						//marker_map.insert(reach_markers.last(),reach_markers.size());
+
+						detectors.last()->non_reach_marker=S->newReasonMarker(this);
+						//marker_map[non_reach_markers.last()]=-non_reach_markers.size();
+						//marker_map.insert(non_reach_markers.last(),non_reach_markers.size());
+
+						mnum = CRef_Undef- detectors.last()->non_reach_marker;
+						marker_map.growTo(mnum+1);
+						marker_map[mnum] = detectors.size()-1;
+
+						detectors.last()->forced_reach_marker =S->newReasonMarker(this);
+						//marker_map[non_reach_markers.last()]=-non_reach_markers.size();
+						//marker_map.insert(non_reach_markers.last(),non_reach_markers.size());
+
+						mnum = CRef_Undef- detectors.last()->forced_reach_marker;
+						marker_map.growTo(mnum+1);
+						marker_map[mnum] = detectors.size()-1;
+
+
+
+
+						//reach_detectors.last()->negative_dist_detector = new Dijkstra(from,antig);
+						//reach_detectors.last()->source=from;
+
+						reach_info[from].source=from;
+						reach_info[from].detector=detectors.last();
+
+						//reach_detectors.last()->within=within_steps;
+
+					}
+
+					Detector * d = reach_info[from].detector;
+					assert(d);
+
+					d->addLit(from,to,reach_var,within_steps);
+
+
+			    }
+	void reaches_private(int from, int to, Var reach_var,int within_steps=-1){
+			//for now, reachesWithinSteps to be called instead
+			if(within_steps>=0 || opt_force_distance_solver){
+				reachesWithinSteps(from,to,reach_var,within_steps);
+				return;
+			}
+
+	#ifdef DEBUG_GRAPH
+			 dbg_graph->reaches(from,  to,reach_var,within_steps);
+	#endif
+	#ifdef DEBUG_SOLVER
+			if(S->dbg_solver)
+				shadow_dbg->reaches(from,  to,reach_var,within_steps);
+	#endif
+				assert(from<g.nodes);
+				if(within_steps>g.nodes)
+					within_steps=-1;
+
+				if (reach_info[from].source<0){
+
+
+					if(within_steps<0 ){
+						ReachDetector*rd = new ReachDetector(detectors.size(), this,g,antig,from,drand(rnd_seed));
+						detectors.push(rd);
+						reach_detectors.push(rd);
+					}else{
+						detectors.push(new DistanceDetector(detectors.size(), this,g,antig,from,within_steps,drand(rnd_seed)));
+						//reach_detectors.push(reach_detectors.last());
+
+
+
+					}
+
+
+					assert(detectors.last()->getID()==detectors.size()-1);
+					detectors.last()->reach_marker=S->newReasonMarker(this);
+
+					int mnum = CRef_Undef- detectors.last()->reach_marker;
+					marker_map.growTo(mnum+1);
+					marker_map[mnum] = detectors.size()-1;
+					//marker_map.insert(reach_markers.last(),reach_markers.size());
+
+					detectors.last()->non_reach_marker=S->newReasonMarker(this);
+					//marker_map[non_reach_markers.last()]=-non_reach_markers.size();
+					//marker_map.insert(non_reach_markers.last(),non_reach_markers.size());
+
+					mnum = CRef_Undef- detectors.last()->non_reach_marker;
+					marker_map.growTo(mnum+1);
+					marker_map[mnum] = detectors.size()-1;
+
+					detectors.last()->forced_reach_marker =S->newReasonMarker(this);
+					//marker_map[non_reach_markers.last()]=-non_reach_markers.size();
+					//marker_map.insert(non_reach_markers.last(),non_reach_markers.size());
+
+					mnum = CRef_Undef- detectors.last()->forced_reach_marker;
+					marker_map.growTo(mnum+1);
+					marker_map[mnum] = detectors.size()-1;
+
+
+
+
+					//reach_detectors.last()->negative_dist_detector = new Dijkstra(from,antig);
+					//reach_detectors.last()->source=from;
+
+					reach_info[from].source=from;
+					reach_info[from].detector=detectors.last();
+
+					//reach_detectors.last()->within=within_steps;
 
 				}
 
+				Detector * d = reach_info[from].detector;
+				assert(d);
 
-				assert(detectors.last()->getID()==detectors.size()-1);
-				detectors.last()->reach_marker=S->newReasonMarker(this);
-
-				int mnum = CRef_Undef- detectors.last()->reach_marker;
-				marker_map.growTo(mnum+1);
-				marker_map[mnum] = detectors.size()-1;
-				//marker_map.insert(reach_markers.last(),reach_markers.size());
-
-				detectors.last()->non_reach_marker=S->newReasonMarker(this);
-				//marker_map[non_reach_markers.last()]=-non_reach_markers.size();
-				//marker_map.insert(non_reach_markers.last(),non_reach_markers.size());
-
-				mnum = CRef_Undef- detectors.last()->non_reach_marker;
-				marker_map.growTo(mnum+1);
-				marker_map[mnum] = detectors.size()-1;
-
-				detectors.last()->forced_reach_marker =S->newReasonMarker(this);
-				//marker_map[non_reach_markers.last()]=-non_reach_markers.size();
-				//marker_map.insert(non_reach_markers.last(),non_reach_markers.size());
-
-				mnum = CRef_Undef- detectors.last()->forced_reach_marker;
-				marker_map.growTo(mnum+1);
-				marker_map[mnum] = detectors.size()-1;
+				d->addLit(from,to,reach_var,within_steps);
 
 
+		    }
 
-
-				//reach_detectors.last()->negative_dist_detector = new Dijkstra(from,antig);
-				//reach_detectors.last()->source=from;
-
-				reach_info[from].source=from;
-				reach_info[from].detector=detectors.last();
-
-				//reach_detectors.last()->within=within_steps;
-
-			}
-
-			Detector * d = reach_info[from].detector;
-			assert(d);
-
-			d->addLit(from,to,reach_var,within_steps);
-
-
+	void reaches(int from, int to, Var reach_var,int within_steps=-1){
+			unimplemented_graph_constraints.push({from,to,within_steps,reach_var});
+			//to allow us to alter the solving algorithm based on the number and type of constraints, we aren't implementing them here directly any more - instead,
+			//we just store the constraints in this vector, then implement them later when 'implementConstraints' is called.
 	    }
 
 	void reachesAny(int from, Var firstVar,int within_steps=-1){
 		for(int i = 0;i<g.nodes;i++){
-			if(within_steps>=0)
-				reachesWithinSteps(from,i,firstVar+i,within_steps);
-			else
-				reaches(from,i,firstVar+i);
+			reaches(from,i,firstVar+i,within_steps);
 		}
 	}
 
@@ -1001,10 +1121,7 @@ public:
 		for(int i = 0;i<g.nodes;i++){
 			Var reachVar = S->newVar();
 			//reaches(from,i,reachVar,within_steps);
-			if(within_steps>=0)
-				reachesWithinSteps(from,i,reachVar,within_steps);
-			else
-				reaches(from,i,reachVar);
+			reaches(from,i,reachVar,within_steps);
 			reachlits_out.push(mkLit(reachVar,false));
 		}
     }
