@@ -38,7 +38,7 @@ public:
 		Reach * negative_reach_detector;
 		Reach *  positive_path_detector;
 
-		vec<Lit>  reach_lits;
+		//vec<Lit>  reach_lits;
 		Var first_reach_var;
 		vec<int> reach_lit_map;
 		vec<int> force_reason;
@@ -55,12 +55,7 @@ public:
 		vec<Change> & getChanged(){
 			return changed;
 		}
-		vec<Lit> & getLits(int dist){
-			return reach_lits;
-		}
-		vec<int> & getLitMap(){
-			return reach_lit_map;
-		}
+
 		struct ReachStatus{
 			DistanceDetector & detector;
 			bool polarity;

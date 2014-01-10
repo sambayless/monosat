@@ -41,33 +41,45 @@ void DistanceDetector::addLit(int from, int to, Var reach_var,int within_steps){
 	}else{
 		assert(reach_var>first_reach_var);
 	}
+	assert(within_steps>=0);
 
-	while( reach_lits.size()<=to)
-			reach_lits.push(lit_Undef);
+	while( dist_lits.size()<=to)
+		dist_lits.push();
+
+	//while( dist_lits[to].size()<=within_steps)
+	//	dist_lits[to].push({lit_Undef,-1});
 
 	while(outer->S->nVars()<=reach_var)
 		outer->S->newVar();
 
 	Lit reachLit=mkLit(reach_var,false);
-
-	if(reach_lits[to]==lit_Undef){
-		reach_lits[to] = reachLit;
-
+	bool found=false;
+	for(int i = 0;i<dist_lits[to].size();i++){
+		if(dist_lits[to][i].min_distance==within_steps){
+			found=true;
+			Lit r = dist_lits[to][within_steps].l;
+			//force equality between the new lit and the old reach lit, in the SAT solver
+			outer->S->addClause(~r, reachLit);
+			outer->S->addClause(r, ~reachLit);
+		}
+	}
+	if(!found){
+		dist_lits[to].push();
+		dist_lits[to].last().l = reachLit;
+		dist_lits[to].last().min_distance=within_steps;
 		while(reach_lit_map.size()<= reach_var- first_reach_var ){
 			reach_lit_map.push(-1);
 		}
 
 		reach_lit_map[reach_var-first_reach_var]=to;
-	}else{
-		Lit r = reach_lits[to];
-		//force equality between the new lit and the old reach lit, in the SAT solver
-		outer->S->addClause(~r, reachLit);
-		outer->S->addClause(r, ~reachLit);
 	}
+
+
+
 }
 
 void DistanceDetector::ReachStatus::setReachable(int u, bool reachable){
-				if(polarity==reachable && u<detector.reach_lits.size()){
+			/*	if(polarity==reachable && u<detector.reach_lits.size()){
 					Lit l = detector.reach_lits[u];
 					if(l!=lit_Undef){
 						lbool assign = detector.outer->S->value(l);
@@ -75,33 +87,39 @@ void DistanceDetector::ReachStatus::setReachable(int u, bool reachable){
 							detector.changed.push({reachable? l:~l,u});
 						}
 					}
-				}
+				}*/
 			}
 
 void DistanceDetector::ReachStatus::setMininumDistance(int u, bool reachable, int distance){
 	assert(reachable ==(distance<detector.outer->g.nodes));
-	setReachable(u,reachable);
+	if(distance<=detector.outer->g.nodes){
+		setReachable(u,reachable);
+	}
+		if(u<detector.dist_lits.size()){
+			assert(distance>=0);
 
-	if(u<detector.dist_lits.size()){
-		assert(distance>=0);
-		assert(distance<detector.outer->g.nodes);
-		for(int i = 0;i<detector.dist_lits[u].size();i++){
-			int d =  detector.dist_lits[u][i].min_distance;
-			Lit l = detector.dist_lits[u][i].l;
-			assert(l!=lit_Undef);
-			if(d<distance && !polarity){
-				lbool assign = detector.outer->S->value(l);
-				if( assign!= l_False ){
-					detector.changed.push({~l,u});
-				}
-			}else if(d>=distance && polarity){
-				lbool assign = detector.outer->S->value(l);
-				if( assign!= l_True ){
-					detector.changed.push({l,u});
+			for(int i = 0;i<detector.dist_lits[u].size();i++){
+				int d =  detector.dist_lits[u][i].min_distance;
+
+				Lit l = detector.dist_lits[u][i].l;
+				if(l!=lit_Undef){
+
+					assert(l!=lit_Undef);
+					if(d<distance && !polarity){
+						lbool assign = detector.outer->S->value(l);
+						if( assign!= l_False ){
+							detector.changed.push({~l,u});
+						}
+					}else if(d>=distance && polarity){
+						lbool assign = detector.outer->S->value(l);
+						if( assign!= l_True ){
+							detector.changed.push({l,u});
+						}
+					}
 				}
 			}
 		}
-	}
+
 }
 
 
@@ -122,7 +140,8 @@ void DistanceDetector::buildReachReason(int node,vec<Lit> & conflict){
 				assert(false);
 			}
 			assert(d.connected_unchecked(node));
-			if(opt_learn_reaches ==0 || opt_learn_reaches==2){
+			//if(opt_learn_reaches ==0 || opt_learn_reaches==2)
+			{
 				int u = node;
 				int p;
 				while(( p = d.previous(u)) != -1){
@@ -134,7 +153,7 @@ void DistanceDetector::buildReachReason(int node,vec<Lit> & conflict){
 					u = p;
 
 				}
-			}else{
+			}/*else{
 				//Instead of a complete path, we can learn reach variables, if they exist
 				int u = node;
 				int p;
@@ -155,7 +174,7 @@ void DistanceDetector::buildReachReason(int node,vec<Lit> & conflict){
 					}
 				}
 
-			}
+			}*/
 			outer->num_learnt_paths++;
 			outer->learnt_path_clause_length+= (conflict.size()-1);
 			double elapsed = cpuTime()-starttime;
@@ -174,44 +193,7 @@ void DistanceDetector::buildReachReason(int node,vec<Lit> & conflict){
 			double starttime = cpuTime();
 			outer->cutGraph.clearHistory();
 			outer->stats_mc_calls++;
-			if(opt_conflict_min_cut){
-				if(mincutalg!= ALG_EDKARP_ADJ){
-					//ok, set the weights for each edge in the cut graph.
-					//Set edges to infinite weight if they are undef or true, and weight 1 otherwise.
-					for(int u = 0;u<outer->cutGraph.adjacency.size();u++){
-						for(int j = 0;j<outer->cutGraph.adjacency[u].size();j++){
-							int v = outer->cutGraph.adjacency[u][j].node;
-							Var var = outer->edges[u][v].v;
-							/*if(S->value(var)==l_False){
-								mc.setCapacity(u,v,1);
-							}else{*/
-							outer->mc->setCapacity(u,v,0xF0F0F0);
-							//}
-						}
-					}
-
-					//find any edges assigned to false, and set their capacity to 1
-					for(int i =0;i<outer->trail.size();i++){
-						if(outer->trail[i].isEdge && !outer->trail[i].assign){
-							outer->mc->setCapacity(outer->trail[i].from, outer->trail[i].to,1);
-						}
-					}
-				}
-				outer->cut.clear();
-
-				int f =outer->mc->minCut(source,node,outer->cut);
-				assert(f<0xF0F0F0); assert(f==outer->cut.size());//because edges are only ever infinity or 1
-				for(int i = 0;i<outer->cut.size();i++){
-					MaxFlow::Edge e = outer->cut[i];
-
-					Lit l = mkLit( outer->edges[e.u][e.v].v,false);
-					assert(outer->S->value(l)==l_False);
-					conflict.push(l);
-				}
-			}else{
-				//We could learn an arbitrary (non-infinite) cut here, or just the whole set of false edges
-				//or perhaps we can learn the actual 1-uip cut?
-
+			{
 
 					vec<int>& to_visit  = outer->to_visit;
 					vec<char>& seen  = outer->seen;
@@ -244,20 +226,13 @@ void DistanceDetector::buildReachReason(int node,vec<Lit> & conflict){
 				    			//if we are already planning on visiting the from node, then we don't need to include it in the conflict (is this correct?)
 				    			//if(!seen[from])
 				    				conflict.push(mkLit(v,false));
-				    		}else{
-				    			assert(from!=source);
+				    		}else if (from!=source){
+				    			//for distance analysis, we _can_ end up reaching source.
+
 				    			//even if it is undef? probably...
 				    			if(!seen[from]){
 				    				seen[from]=true;
-				    				if((opt_learn_reaches ==2 || opt_learn_reaches==3) && from< reach_lits.size() && reach_lits[from]!=lit_Undef && outer->S->value(reach_lits[from])==l_False  && outer->S->level(var(reach_lits[from]))< outer->S->decisionLevel())
-				    				{
-				    				//The problem with the above: reach lit can be false, but have been assigned after r in the trail, messing up clause learning if this is a reason clause...
-				    					Lit r = reach_lits[from];
-				    					assert(var(r)<outer->S->nVars());
-				    					assert(outer->S->value(r)==l_False);
-				    					conflict.push(r);
-				    				}else
-				    					to_visit.push(from);
+				    				to_visit.push(from);
 				    			}
 				    		}
 				    	}
@@ -376,20 +351,12 @@ void DistanceDetector::buildReachReason(int node,vec<Lit> & conflict){
 						    			//if we are already planning on visiting the from node, then we don't need to include it in the conflict (is this correct?)
 						    			//if(!seen[from])
 						    				conflict.push(mkLit(v,false));
-						    		}else{
-						    			assert(from!=source);
+						    		}else if (from!=source){
+						    			//assert(from!=source);
 						    			//even if it is undef? probably...
 						    			if(!seen[from]){
 						    				seen[from]=true;
-						    				if((opt_learn_reaches ==2 || opt_learn_reaches==3) && from< reach_lits.size() && reach_lits[from]!=lit_Undef && outer->S->value(reach_lits[from])==l_False  && outer->S->level(var(reach_lits[from]))< outer->S->decisionLevel())
-						    				{
-						    				//The problem with the above: reach lit can be false, but have been assigned after r in the trail, messing up clause learning if this is a reason clause...
-						    					Lit r = reach_lits[from];
-						    					assert(var(r)<outer->S->nVars());
-						    					assert(outer->S->value(r)==l_False);
-						    					conflict.push(r);
-						    				}else
-						    					to_visit.push(from);
+					    					to_visit.push(from);
 						    			}
 						    		}
 						    	}
@@ -469,82 +436,84 @@ void DistanceDetector::buildReachReason(int node,vec<Lit> & conflict){
 		bool DistanceDetector::propagate(vec<Assignment> & trail,vec<Lit> & conflict){
 
 
-								double startdreachtime = cpuTime();
-								getChanged().clear();
-								positive_reach_detector->update();
-								double reachUpdateElapsed = cpuTime()-startdreachtime;
-								outer->reachupdatetime+=reachUpdateElapsed;
+		double startdreachtime = cpuTime();
+		getChanged().clear();
+		positive_reach_detector->update();
+		double reachUpdateElapsed = cpuTime()-startdreachtime;
+		outer->reachupdatetime+=reachUpdateElapsed;
 
-								double startunreachtime = cpuTime();
-								negative_reach_detector->update();
-								double unreachUpdateElapsed = cpuTime()-startunreachtime;
-								outer->unreachupdatetime+=unreachUpdateElapsed;
+		double startunreachtime = cpuTime();
+		negative_reach_detector->update();
+		double unreachUpdateElapsed = cpuTime()-startunreachtime;
+		outer->unreachupdatetime+=unreachUpdateElapsed;
 
-								for(int j = 0;j<getChanged().size();j++){
-										Lit l = getChanged()[j].l;
-										int u =  getChanged()[j].u;
-										bool reach = !sign(l);
-										if(outer->S->value(l)==l_True){
-											//do nothing
-										}else if(outer->S->value(l)==l_Undef){
+		for(int j = 0;j<getChanged().size();j++){
+				Lit l = getChanged()[j].l;
+				int u =  getChanged()[j].u;
+				bool reach = !sign(l);
+				if(outer->S->value(l)==l_True){
+					//do nothing
+				}else if(outer->S->value(l)==l_Undef){
+#ifdef DEBUG_GRAPH
+					assert(outer->dbg_propgation(l));
+#endif
+#ifdef DEBUG_SOLVER
+					if(S->dbg_solver)
+						S->dbg_check_propagation(l);
+#endif
+					trail.push(Assignment(false,reach,detectorID,0,var(l)));
+					if(reach)
+						outer->S->uncheckedEnqueue(l,reach_marker) ;
+					else
+						outer->S->uncheckedEnqueue(l,non_reach_marker) ;
+
+				}else if (outer->S->value(l)==l_False){
+					conflict.push(l);
+
+					if(reach){
+
+					//conflict
+					//The reason is a path in g from to s in d
+					buildReachReason(u,conflict);
+					//add it to s
+					//return it as a conflict
+
+					}else{
+						//The reason is a cut separating s from t
+						buildNonReachReason(u,conflict);
+
+					}
+#ifdef DEBUG_GRAPH
+					for(int i = 0;i<conflict.size();i++)
+								 assert(outer->S->value(conflict[i])==l_False);
+#endif
+#ifdef DEBUG_SOLVER
+					if(S->dbg_solver)
+						S->dbg_check(conflict);
+#endif
+
+
+					return false;
+				}else{
+					int  a=1;
+				}
+
+			}
+
 			#ifdef DEBUG_GRAPH
-											assert(outer->dbg_propgation(l));
-			#endif
-			#ifdef DEBUG_SOLVER
-											if(S->dbg_solver)
-												S->dbg_check_propagation(l);
-			#endif
-											trail.push(Assignment(false,reach,detectorID,0,var(l)));
-											if(reach)
-												outer->S->uncheckedEnqueue(l,reach_marker) ;
-											else
-												outer->S->uncheckedEnqueue(l,non_reach_marker) ;
-
-										}else if (outer->S->value(l)==l_False){
-											conflict.push(l);
-
-											if(reach){
-
-											//conflict
-											//The reason is a path in g from to s in d
-												buildReachReason(u,conflict);
-											//add it to s
-											//return it as a conflict
-
-											}else{
-												//The reason is a cut separating s from t
-												buildNonReachReason(u,conflict);
-
-											}
-			#ifdef DEBUG_GRAPH
-											for(int i = 0;i<conflict.size();i++)
-														 assert(outer->S->value(conflict[i])==l_False);
-			#endif
-			#ifdef DEBUG_SOLVER
-											if(S->dbg_solver)
-												S->dbg_check(conflict);
-			#endif
-
-
-											return false;
-										}else{
-											int  a=1;
-										}
-
-									}
-
-			#ifdef DEBUG_GRAPH
-					for(int i = 0;i<reach_lits.size();i++){
-						Lit l = reach_lits[i];
-						if(l!=lit_Undef){
-							int u = getNode(var(l));
-							if(positive_reach_detector->connected(u)){
-								assert(outer->S->value(l)==l_True);
-							}else if (!negative_reach_detector->connected(u)){
-								assert(outer->S->value(l)==l_False);
+					for(int i = 0;i<dist_lits.size();i++){
+						for(int j = 0;j<dist_lits[i].size();j++){
+							Lit l = dist_lits[i][j].l;
+							int dist =  dist_lits[i][j].min_distance;
+							if(l!=lit_Undef){
+								int u = getNode(var(l));
+								if(positive_reach_detector->distance(u)<=dist){
+									assert(outer->S->value(l)==l_True);
+								}else if (negative_reach_detector->distance(u)>dist){
+									assert(outer->S->value(l)==l_False);
+								}
 							}
 						}
-
 					}
 			#endif
 			return true;
@@ -552,25 +521,29 @@ void DistanceDetector::buildReachReason(int node,vec<Lit> & conflict){
 
 bool DistanceDetector::checkSatisfied(){
 
-				for(int j = 0;j< reach_lits.size();j++){
-					Lit l = reach_lits[j];
-					if(l!=lit_Undef){
-						int node =getNode(var(l));
+				for(int j = 0;j< dist_lits.size();j++){
+					for(int k = 0;k<dist_lits[j].size();k++){
+						Lit l = dist_lits[j][k].l;
+						int dist = dist_lits[j][k].min_distance;
 
-						if(outer->S->value(l)==l_True){
-							if(!positive_reach_detector->connected(node)){
-								return false;
-							}
-						}else if (outer->S->value(l)==l_False){
-							if( negative_reach_detector->connected(node)){
-								return false;
-							}
-						}else{
-							if(positive_reach_detector->connected(node)){
-								return false;
-							}
-							if(!negative_reach_detector->connected(node)){
-								return false;
+						if(l!=lit_Undef){
+							int node =getNode(var(l));
+
+							if(outer->S->value(l)==l_True){
+								if(positive_reach_detector->distance(node)>dist){
+									return false;
+								}
+							}else if (outer->S->value(l)==l_False){
+								if( negative_reach_detector->distance(node)<=dist){
+									return false;
+								}
+							}else{
+								if(positive_reach_detector->distance(node)<=dist){
+									return false;
+								}
+								if(!negative_reach_detector->distance(node)>dist){
+									return false;
+								}
 							}
 						}
 					}
@@ -589,162 +562,93 @@ Lit DistanceDetector::decide(){
 
 	//this can be obviously more efficient
 	//for(int j = 0;j<nNodes();j++){
-	for(int k = 0;k<r->reach_lits.size();k++){
-		Lit l = r->reach_lits[k];
-		if(l==lit_Undef)
-			continue;
-		int j = r->getNode(var(l));
-		if(outer->S->value(l)==l_True){
-			//if(S->level(var(l))>0)
-			//	continue;
-			if(!under->connected(j)){
-				//then lets try to connect this
-				static vec<bool> print_path;
+	for(int k = 0;k<dist_lits.size();k++){
+		for(int n = 0;n<dist_lits[k].size();n++){
+			Lit l = dist_lits[k][n].l;
+			int min_dist = dist_lits[k][n].min_distance;
+			if(l==lit_Undef)
+				continue;
+			int j = r->getNode(var(l));
+			if(outer->S->value(l)==l_True){
+				//if(S->level(var(l))>0)
+				//	continue;
 
+				assert(over->distance(j)<=min_dist);//else we would already be in conflict before this decision was attempted!
+				if(under->distance(j)>min_dist){
+					//then lets try to connect this
+					static vec<bool> print_path;
 
-
-
-
-
-				assert(over->connected(j));//Else, we would already be in conflict
-				int p =j;
-				int last=j;
-				if(!opt_use_random_path_for_decisions){
-					//ok, read back the path from the over to find a candidate edge we can decide
-					//find the earliest unconnected node on this path
-					over->update();
-					 p = j;
-					 last = j;
-					while(!under->connected(p)){
-
-
-						last=p;
-						assert(p!=r->source);
-						int prev = over->previous(p);
-						p = prev;
-
-					}
-				}else{
-					//Randomly re-weight the graph sometimes
-					if(drand(rnd_seed)<opt_decide_graph_re_rnd){
-
-						for(int i=0;i<outer->g.nodes;i++){
-								 double w = drand(rnd_seed);
-								/* w-=0.5;
-								 w*=w;*/
-								 //printf("%f (%f),",w,rnd_seed);
-								 r->rnd_path->setWeight(i,w);
-							 }
-					}
-					 r->rnd_path->update();
-					//derive a random path in the graph
-					 p = j;
-					 last = j;
-					 assert( r->rnd_path->connected(p));
-					while(!under->connected(p)){
-
-						last=p;
-						assert(p!=r->source);
-						int prev = r->rnd_path->previous(p);
-						p = prev;
-						assert(p>=0);
-					}
-
-				}
-
-				if(outer->S->level(var(l))==0 && opt_print_decision_path){
-					print_path.clear();
-					print_path.growTo(outer->nNodes());
-
-					if(!opt_use_random_path_for_decisions){
-											//ok, read back the path from the over to find a candidate edge we can decide
-											//find the earliest unconnected node on this path
+					assert(over->connected(j));//Else, we would already be in conflict
+					int p =j;
+					int last=j;
+					//if(!opt_use_random_path_for_decisions)
+					{
+						//ok, read back the path from the over to find a candidate edge we can decide
+						//find the earliest unconnected node on this path
 						over->update();
-						int p = j;
+						 p = j;
+						 last = j;
+						while(!under->connected(p)){
 
-						while(p!=r->source){
-							if(opt_print_decision_path)
-								print_path[p]=true;
-
-
+							last=p;
 							assert(p!=r->source);
 							int prev = over->previous(p);
 							p = prev;
 
 						}
-					}else{
+					}/*else{
+					//This won't work (without modification) because we need to constrain these paths to ones of maximum real distance < min_dist.
+						//Randomly re-weight the graph sometimes
+						if(drand(rnd_seed)<opt_decide_graph_re_rnd){
 
+							for(int i=0;i<outer->g.nodes;i++){
+									 double w = drand(rnd_seed);
+									 w-=0.5;
+									 w*=w;
+									 //printf("%f (%f),",w,rnd_seed);
+									 rnd_path->setWeight(i,w);
+								 }
+						}
+						 rnd_path->update();
+						//derive a random path in the graph
+						 p = j;
+						 last = j;
+						 assert( rnd_path->connected(p));
+						while(!under->connected(p)){
 
-						int p = j;
-
-						while(p!=r->source){
-							if(opt_print_decision_path)
-								print_path[p]=true;
-
-
-							assert(p!=r->source);
-							int prev = r->rnd_path->previous(p);
+							last=p;
+							assert(p!=source);
+							int prev = rnd_path->previous(p);
 							p = prev;
-
+							assert(p>=0);
 						}
-					}
 
-					if(opt_print_decision_path){
-						printf("From %d to %d:\n",r->source,j);
-						int width = sqrt(outer->nNodes());
+					}*/
 
 
-						int v = 0;
-						//for (int i = 0;i<w;i++){
-						//	for(int j = 0;j<w;j++){
-						int lasty= 0;
-						for(int n = 0;n<outer->nNodes();n++){
-							int x = n%width;
-							int y = n/width;
-							if(y > lasty)
-								printf("\n");
 
-							if(n==j){
-								printf("* ");
-							}else if (n==r->source){
-								printf("#");
+					//ok, now pick some edge p->last that will connect p to last;
+				/*	assert(!under->connected(last));
+					assert(under->connected(p));
+
+					assert(over->connected(last));
+					assert(over->connected(p));*/
+
+					for(int k = 0;k<outer->antig.adjacency[p].size();k++){
+						int to = outer->antig.adjacency[p][k].node;
+						if (to==last){
+							Var v =outer->edge_list[ outer->antig.adjacency[p][k].id].v;
+							if(outer->S->value(v)==l_Undef){
+								return mkLit(v,false);
 							}else{
-
-								if(print_path[n]){
-									printf("+ ");
-								}else{
-									printf("- ");
-								}
+								assert(outer->S->value(v)!=l_True);
 							}
-
-							lasty=y;
-						}
-						printf("\n\n");
-					}
-				}
-
-				//ok, now pick some edge p->last that will connect p to last;
-			/*	assert(!under->connected(last));
-				assert(under->connected(p));
-
-				assert(over->connected(last));
-				assert(over->connected(p));*/
-
-				for(int k = 0;k<outer->antig.adjacency[p].size();k++){
-					int to = outer->antig.adjacency[p][k].node;
-					if (to==last){
-						Var v =outer->edge_list[ outer->antig.adjacency[p][k].id].v;
-						if(outer->S->value(v)==l_Undef){
-							return mkLit(v,false);
-						}else{
-							assert(outer->S->value(v)!=l_True);
 						}
 					}
+					assert(false);
 				}
-				assert(false);
 			}
 		}
-
 	}
 	return lit_Undef;
 };

@@ -43,7 +43,7 @@ public:
 	virtual bool connected_unsafe(int t)const=0;
 	virtual bool connected_unchecked(int t)const=0;
 	virtual bool connected(int t)=0;
-
+	virtual int distance(int t)=0;
 	virtual int previous(int t)=0;
 };
 

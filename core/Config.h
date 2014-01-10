@@ -52,6 +52,7 @@ extern BoolOption opt_decide_graph;
 extern BoolOption opt_use_random_path_for_decisions;
 extern DoubleOption opt_decide_graph_re_rnd;
 extern BoolOption opt_print_decision_path;
+extern BoolOption opt_force_distance_solver;
 enum ReachAlg{
 	 ALG_CONNECTIVITY,
 	 ALG_DIJKSTRA,

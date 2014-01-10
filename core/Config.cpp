@@ -67,6 +67,7 @@ BoolOption Minisat::opt_use_random_path_for_decisions(_cat_graph,"decide-graph-r
 DoubleOption Minisat::opt_decide_graph_re_rnd(_cat_graph,"decide-graph-re-rnd","Randomly make new random graphs for graph decisions instead of sticking with just one",0.01);
 
 BoolOption Minisat::opt_print_decision_path(_cat_graph,"decide-graph-print","",false);
+BoolOption Minisat::opt_force_distance_solver(_cat_graph,"force-distance","Force the graph distance solver to be used, instead of the optimized reachability solver",false);
 
 MinCutAlg Minisat::mincutalg=ALG_EDMONSKARP ;
 ReachAlg Minisat::reachalg=ALG_CONNECTIVITY;

@@ -97,7 +97,7 @@ public:
 	};
 
 
-
+	vec<ReachInfo> dist_info;
 	vec<ReachInfo> reach_info;
 public:
 	vec<Detector*> detectors;
@@ -278,6 +278,7 @@ public:
 			 edges[i].growTo(edges.size());
 		 inv_adj.push();
 		 reach_info.push();
+		 dist_info.push();
 		 antig.addNode();
 		 cutGraph.addNode();
 
@@ -856,7 +857,76 @@ public:
     	return mkLit(v,false);
     }
 
+	void reachesWithinSteps(int from, int to, Var reach_var, int within_steps){
+
+	#ifdef DEBUG_GRAPH
+			 dbg_graph->reaches(from,  to,reach_var,within_steps);
+	#endif
+	#ifdef DEBUG_SOLVER
+			if(S->dbg_solver)
+				shadow_dbg->reaches(from,  to,reach_var,within_steps);
+	#endif
+				assert(from<g.nodes);
+				if(within_steps<=-1)
+					within_steps = g.nodes;
+
+				if (dist_info[from].source<0){
+
+					detectors.push(new DistanceDetector(detectors.size(), this,g,antig,from,within_steps,drand(rnd_seed)));
+						//reach_detectors.push(reach_detectors.last());
+
+					assert(detectors.last()->getID()==detectors.size()-1);
+					detectors.last()->reach_marker=S->newReasonMarker(this);
+
+					int mnum = CRef_Undef- detectors.last()->reach_marker;
+					marker_map.growTo(mnum+1);
+					marker_map[mnum] = detectors.size()-1;
+					//marker_map.insert(reach_markers.last(),reach_markers.size());
+
+					detectors.last()->non_reach_marker=S->newReasonMarker(this);
+					//marker_map[non_reach_markers.last()]=-non_reach_markers.size();
+					//marker_map.insert(non_reach_markers.last(),non_reach_markers.size());
+
+					mnum = CRef_Undef- detectors.last()->non_reach_marker;
+					marker_map.growTo(mnum+1);
+					marker_map[mnum] = detectors.size()-1;
+
+					detectors.last()->forced_reach_marker =S->newReasonMarker(this);
+					//marker_map[non_reach_markers.last()]=-non_reach_markers.size();
+					//marker_map.insert(non_reach_markers.last(),non_reach_markers.size());
+
+					mnum = CRef_Undef- detectors.last()->forced_reach_marker;
+					marker_map.growTo(mnum+1);
+					marker_map[mnum] = detectors.size()-1;
+
+
+
+
+					//reach_detectors.last()->negative_dist_detector = new Dijkstra(from,antig);
+					//reach_detectors.last()->source=from;
+
+					dist_info[from].source=from;
+					dist_info[from].detector=detectors.last();
+
+					//reach_detectors.last()->within=within_steps;
+
+				}
+
+				Detector * d = dist_info[from].detector;
+				assert(d);
+
+				d->addLit(from,to,reach_var,within_steps);
+
+
+		    }
+
+
 	void reaches(int from, int to, Var reach_var,int within_steps=-1){
+		//for now, reachesWithinSteps to be called instead
+		if(within_steps>=0 || opt_force_distance_solver){
+			reachesWithinSteps(from,to,reach_var,within_steps);
+			return;
+		}
 
 #ifdef DEBUG_GRAPH
 		 dbg_graph->reaches(from,  to,reach_var,within_steps);
@@ -932,14 +1002,21 @@ public:
 
 	void reachesAny(int from, Var firstVar,int within_steps=-1){
 		for(int i = 0;i<g.nodes;i++){
-			reaches(from,i,firstVar+i,within_steps);
+			if(within_steps>=0)
+				reachesWithinSteps(from,i,firstVar+i,within_steps);
+			else
+				reaches(from,i,firstVar+i);
 		}
 	}
 
 	void reachesAny(int from, vec<Lit> & reachlits_out,int within_steps=-1){
 		for(int i = 0;i<g.nodes;i++){
 			Var reachVar = S->newVar();
-			reaches(from,i,reachVar,within_steps);
+			//reaches(from,i,reachVar,within_steps);
+			if(within_steps>=0)
+				reachesWithinSteps(from,i,reachVar,within_steps);
+			else
+				reaches(from,i,reachVar);
 			reachlits_out.push(mkLit(reachVar,false));
 		}
     }

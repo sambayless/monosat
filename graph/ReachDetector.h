@@ -62,12 +62,7 @@ public:
 			return changed;
 		}
 
-		vec<int> & getLitMap(){
-			return reach_lit_map;
-		}
-		vec<Lit> & getLits(int dist){
-				return reach_lits;
-			}
+
 		struct ReachStatus{
 			ReachDetector & detector;
 			bool polarity;
