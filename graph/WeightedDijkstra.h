@@ -14,7 +14,7 @@
 #include "Reach.h"
 #include <limits>
 using namespace Minisat;
-
+namespace Minisat{
 template<class EdgeStatus=DefaultEdgeStatus >
 class WeightedDijkstra:public Reach{
 public:
@@ -362,5 +362,5 @@ public:
 	}
 
 };
-
+};
 #endif /* DIJKSTRA_H_ */

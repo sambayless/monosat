@@ -8,7 +8,8 @@
 #ifndef REACH_H_
 #define REACH_H_
 
-#include "mtl/Vec.h"
+
+
 class Reach{
 public:
 
@@ -47,6 +48,5 @@ public:
 	virtual int distance_unsafe(int t)=0;
 	virtual int previous(int t)=0;
 };
-
 
 #endif /* REACH_H_ */

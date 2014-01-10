@@ -11,10 +11,7 @@
 #include "GraphTheoryTypes.h"
 #include "mtl/Vec.h"
 namespace Minisat{
-struct Change{
-		Lit l;
-		int u;
-	};
+
 class Detector{
 public:
 	CRef reach_marker;
@@ -26,12 +23,12 @@ public:
 		return detectorID;
 	}
 	virtual bool propagate(vec<Assignment> &trail ,vec<Lit> & conflict)=0;
-	virtual void buildReachReason(int node,vec<Lit> & conflict)=0;
+	/*virtual void buildReachReason(int node,vec<Lit> & conflict)=0;
 	virtual void buildNonReachReason(int node,vec<Lit> & conflict)=0;
-	virtual void buildForcedEdgeReason(int reach_node, int forced_edge_id,vec<Lit> & conflict)=0;
+	virtual void buildForcedEdgeReason(int reach_node, int forced_edge_id,vec<Lit> & conflict)=0;*/
 	virtual void buildReason(Lit p, vec<Lit> & reason, CRef marker)=0;
 	virtual bool checkSatisfied()=0;
-	virtual	vec<Change> & getChanged()=0;
+
 	virtual Lit decide()=0;
 
 	virtual void addLit(int from, int to, Var reach_var,int within_steps=-1)=0;

@@ -11,7 +11,7 @@
 #include "GraphTheory.h"
 
 DistanceDetector::DistanceDetector(int _detectorID, GraphTheorySolver * _outer,  DynamicGraph<PositiveEdgeStatus> &_g,DynamicGraph<NegativeEdgeStatus> &_antig, int from, int within_steps ,double seed):
-Detector(_detectorID),outer(_outer),within(within_steps),source(from),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL){
+Detector(_detectorID),outer(_outer),source(from),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL){
 
 	if(distalg==ALG_BFS){
 		positiveReachStatus = new DistanceDetector::ReachStatus(*this,true);
@@ -282,91 +282,55 @@ void DistanceDetector::buildReachReason(int node,vec<Lit> & conflict){
 
 
 
-					if(opt_conflict_min_cut){
-						if(mincutalg!= ALG_EDKARP_ADJ){
-							//ok, set the weights for each edge in the cut graph.
-							//Set edges to infinite weight if they are undef or true, and weight 1 otherwise.
-							for(int u = 0;u<outer->cutGraph.adjacency.size();u++){
-								for(int j = 0;j<outer->cutGraph.adjacency[u].size();j++){
-									int v = outer->cutGraph.adjacency[u][j].node;
-									Var var = outer->edges[u][v].v;
-									/*if(S->value(var)==l_False){
-										mc.setCapacity(u,v,1);
-									}else{*/
-									outer->mc->setCapacity(u,v,0xF0F0F0);
-									//}
-								}
+
+				//We could learn an arbitrary (non-infinite) cut here, or just the whole set of false edges
+				//or perhaps we can learn the actual 1-uip cut?
+
+
+				vec<int>& to_visit  = outer->to_visit;
+				vec<char>& seen  = outer->seen;
+
+				to_visit.clear();
+				to_visit.push(reach_node);
+				seen.clear();
+				seen.growTo(outer->nNodes());
+				seen[reach_node]=true;
+
+				do{
+
+					assert(to_visit.size());
+					int u = to_visit.last();
+					assert(u!=source);
+					to_visit.pop();
+					assert(seen[u]);
+					assert(!negative_reach_detector->connected_unsafe(u));
+					//Ok, then add all its incoming disabled edges to the cut, and visit any unseen, non-disabled incoming edges
+					for(int i = 0;i<outer->inv_adj[u].size();i++){
+						int v = outer->inv_adj[u][i].v;
+						int from = outer->inv_adj[u][i].from;
+						assert(from!=u);
+						assert(outer->inv_adj[u][i].to==u);
+						//Note: the variable has to not only be assigned false, but assigned false earlier in the trail than the reach variable...
+						int edge_num = v-outer->min_edge_var;
+
+						if(edge_num == forced_edge_id || outer->edge_assignments[edge_num]==l_False){
+							//note: we know we haven't seen this edge variable before, because we know we haven't visited this node before
+							//if we are already planning on visiting the from node, then we don't need to include it in the conflict (is this correct?)
+							//if(!seen[from])
+								conflict.push(mkLit(v,false));
+						}else if (from!=source){
+							//assert(from!=source);
+							//even if it is undef? probably...
+							if(!seen[from]){
+								seen[from]=true;
+								to_visit.push(from);
 							}
-
-							//find any edges assigned to false, and set their capacity to 1
-							for(int i =0;i<outer->trail.size();i++){
-								if(outer->trail[i].isEdge && !outer->trail[i].assign){
-									outer->mc->setCapacity(outer->trail[i].from, outer->trail[i].to,1);
-								}
-							}
-
-							outer->mc->setCapacity(forced_edge_from, forced_edge_to,1);
 						}
-						outer->cut.clear();
-
-						int f =outer->mc->minCut(source,reach_node,outer->cut);
-						assert(f<0xF0F0F0); assert(f==outer->cut.size());//because edges are only ever infinity or 1
-						for(int i = 0;i<outer->cut.size();i++){
-							MaxFlow::Edge e = outer->cut[i];
-
-							Lit l = mkLit( outer->edges[e.u][e.v].v,false);
-							assert(outer->S->value(l)==l_False);
-							conflict.push(l);
-						}
-					}else{
-						//We could learn an arbitrary (non-infinite) cut here, or just the whole set of false edges
-						//or perhaps we can learn the actual 1-uip cut?
-
-
-							vec<int>& to_visit  = outer->to_visit;
-							vec<char>& seen  = outer->seen;
-
-						    to_visit.clear();
-						    to_visit.push(reach_node);
-						    seen.clear();
-							seen.growTo(outer->nNodes());
-						    seen[reach_node]=true;
-
-						    do{
-
-						    	assert(to_visit.size());
-						    	int u = to_visit.last();
-						    	assert(u!=source);
-						    	to_visit.pop();
-						    	assert(seen[u]);
-						    	assert(!negative_reach_detector->connected_unsafe(u));
-						    	//Ok, then add all its incoming disabled edges to the cut, and visit any unseen, non-disabled incoming edges
-						    	for(int i = 0;i<outer->inv_adj[u].size();i++){
-						    		int v = outer->inv_adj[u][i].v;
-						    		int from = outer->inv_adj[u][i].from;
-						    		assert(from!=u);
-						    		assert(outer->inv_adj[u][i].to==u);
-						    		//Note: the variable has to not only be assigned false, but assigned false earlier in the trail than the reach variable...
-						    		int edge_num = v-outer->min_edge_var;
-
-						    		if(edge_num == forced_edge_id || outer->edge_assignments[edge_num]==l_False){
-						    			//note: we know we haven't seen this edge variable before, because we know we haven't visited this node before
-						    			//if we are already planning on visiting the from node, then we don't need to include it in the conflict (is this correct?)
-						    			//if(!seen[from])
-						    				conflict.push(mkLit(v,false));
-						    		}else if (from!=source){
-						    			//assert(from!=source);
-						    			//even if it is undef? probably...
-						    			if(!seen[from]){
-						    				seen[from]=true;
-					    					to_visit.push(from);
-						    			}
-						    		}
-						    	}
-						    }  while (to_visit.size());
-
-
 					}
+				}  while (to_visit.size());
+
+
+
 
 					 outer->num_learnt_cuts++;
 					 outer->learnt_cut_clause_length+= (conflict.size()-1);

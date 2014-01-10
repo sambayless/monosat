@@ -12,8 +12,8 @@
 #include "mtl/Heap.h"
 #include "DynamicGraph.h"
 #include "Reach.h"
-using namespace Minisat;
 
+namespace Minisat{
 template<class EdgeStatus=DefaultEdgeStatus >
 class Dijkstra:public Reach{
 public:
@@ -368,5 +368,5 @@ public:
 	}
 
 };
-
+};
 #endif /* DIJKSTRA_H_ */

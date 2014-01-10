@@ -630,6 +630,23 @@ bool ReachDetector::checkSatisfied(){
 				}
 	return true;
 }
+
+void ReachDetector::dbg_sync_reachability(){
+		for(int j = 0;j< reach_lits.size();j++){
+						Lit l =reach_lits[j];
+						if(l!=lit_Undef){
+							int node = getNode(var(l));
+
+							if(positive_reach_detector->connected(node)){
+								assert(outer->S->value(l)==l_True);
+							}else if(! negative_reach_detector->connected(node)){
+								assert(outer->S->value(l)==l_False);
+							}
+						}
+
+					}
+	}
+
 Lit ReachDetector::decide(){
 	ReachDetector *r =this;
 	Distance<ReachDetector::ReachStatus,NegativeEdgeStatus> * over = (Distance<ReachDetector::ReachStatus,NegativeEdgeStatus>*) r->negative_reach_detector;

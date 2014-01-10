@@ -16,13 +16,8 @@
 #include "Distance.h"
 #include "core/SolverTypes.h"
 #include "mtl/Map.h"
-#include "MaxFlow.h"
-#include "IBFS.h"
-#include "EdmondsKarp.h"
-#include "EdmondsKarpAdj.h"
-#include "Chokepoint.h"
-#include "WeightedDijkstra.h"
-#include "DistanceDetector.h"
+
+
 #include "utils/System.h"
 #include "Detector.h"
 namespace Minisat{
@@ -30,7 +25,7 @@ class GraphTheorySolver;
 class DistanceDetector:public Detector{
 public:
 		GraphTheorySolver * outer;
-		int within;
+		//int within;
 		int source;
 		double rnd_seed;
 
@@ -49,7 +44,10 @@ public:
 
 		};
 		vec<vec<DistLit> > dist_lits;
-
+		struct Change{
+				Lit l;
+				int u;
+			};
 		vec<Change> changed;
 
 		vec<Change> & getChanged(){
@@ -71,7 +69,6 @@ public:
 		};
 		ReachStatus *positiveReachStatus;
 		ReachStatus *negativeReachStatus;
-		WeightedDijkstra<NegativeEdgeStatus> * rnd_path;
 
 		int getNode(Var reachVar){
 			assert(reachVar>=first_reach_var);

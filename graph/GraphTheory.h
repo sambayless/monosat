@@ -235,7 +235,7 @@ public:
 		double stats_fast_update_time=0;
 
 		for(int i = 0;i<reach_detectors.size();i++){
-			skipable_deletions+=reach_detectors[i]->positive_reach_detector->stats_num_skipable_deletions;
+			/*skipable_deletions+=reach_detectors[i]->positive_reach_detector->stats_num_skipable_deletions;
 			skipable_deletions+=reach_detectors[i]->negative_reach_detector->stats_num_skipable_deletions;
 
 			stats_failed_fast_updates+=reach_detectors[i]->positive_reach_detector->stats_fast_failed_updates;
@@ -255,7 +255,7 @@ public:
 			stats_skipped_updates+=reach_detectors[i]->negative_reach_detector->stats_skipped_updates;
 
 			stats_full_update_time+=reach_detectors[i]->negative_reach_detector->stats_full_update_time;
-			stats_fast_update_time+=reach_detectors[i]->negative_reach_detector->stats_fast_update_time;
+			stats_fast_update_time+=reach_detectors[i]->negative_reach_detector->stats_fast_update_time;*/
 		}
 
 		printf("Dijkstra Full Updates: %d (time: %f, average: %f)\n",stats_full_updates, stats_full_update_time,(stats_full_update_time/(stats_full_updates ? stats_full_updates:1)));
@@ -337,19 +337,7 @@ public:
 
 		for(int i = 0;i<reach_detectors.size();i++){
 			ReachDetector* d  = reach_detectors[i];
-			for(int j = 0;j< d->reach_lits.size();j++){
-				Lit l = d->reach_lits[j];
-				if(l!=lit_Undef){
-					int node = d->getNode(var(l));
-
-					if(d->positive_reach_detector->connected(node)){
-						assert(S->value(l)==l_True);
-					}else if(! d->negative_reach_detector->connected(node)){
-						assert(S->value(l)==l_False);
-					}
-				}
-
-			}
+			d->dbg_sync_reachability();
 		}
 #endif
 	}

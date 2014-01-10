@@ -22,7 +22,7 @@
 #include "EdmondsKarpAdj.h"
 #include "Chokepoint.h"
 #include "WeightedDijkstra.h"
-#include "ReachDetector.h"
+
 #include "utils/System.h"
 #include "Detector.h"
 namespace Minisat{
@@ -55,7 +55,10 @@ public:
 
 
 		vec<ForceReason> forced_edges;
-
+		struct Change{
+				Lit l;
+				int u;
+			};
 		vec<Change> changed;
 
 		vec<Change> & getChanged(){
@@ -112,6 +115,8 @@ public:
 		bool checkSatisfied();
 		void addLit(int from, int to, Var reach_var,int within_steps=-1);
 		Lit decide();
+
+		void dbg_sync_reachability();
 
 		ReachDetector(int _detectorID, GraphTheorySolver * _outer, DynamicGraph<PositiveEdgeStatus> &_g, DynamicGraph<NegativeEdgeStatus> &_antig, int _source,double seed=1);//:Detector(_detectorID),outer(_outer),within(-1),source(_source),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL),chokepoint_status(*this),chokepoint(chokepoint_status, _antig,source){}
 		virtual ~ReachDetector(){
