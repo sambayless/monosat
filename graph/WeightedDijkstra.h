@@ -350,6 +350,12 @@ public:
 					update();
 		return dist[t];
 	}
+	int distance_unsafe(int t){
+		if(connected_unsafe(t))
+			return dist[t];
+		else
+			return INF;
+	}
 	int previous(int t){
 
 		return prev[t];

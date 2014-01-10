@@ -423,8 +423,8 @@ public:
 		for (int i = 0;i<q.size();i++){
 			int u = q[i];
 			assert(dist[u]<INF);
-			if(reportPolarity>-1)
-				status.setMininumDistance(u,true,dist[u]);
+			//if(reportPolarity>-1)
+			//	status.setMininumDistance(u,true,dist[u]);
 			int d = dist[u];
 			for(int i = 0;i<g.adjacency[u].size();i++){
 				if(!g.edgeEnabled( g.adjacency[u][i].id))
@@ -441,13 +441,13 @@ public:
 			}
 		}
 
-		if(reportPolarity<1){
+		//if(reportPolarity<1){
 			for(int u = 0;u<g.nodes;u++){
-				if(dist[u]>=INF){
-					status.setMininumDistance(u,false,INF);
-				}
+				//if(dist[u]>=INF){
+					status.setMininumDistance(u,dist[u]<INF,dist[u]);
+				//}
 			}
-		}
+		//}
 		assert(dbg_uptodate());
 
 		last_modification=g.modifications;
@@ -554,7 +554,12 @@ public:
 			return INF;
 		}
 	}
-
+	int distance_unsafe(int t){
+		if(connected_unsafe(t))
+			return dist[t];
+		else
+			return INF;
+	}
 	int previous(int t){
 		assert(t>=0 && t<prev.size());
 		assert(prev[t]>=-1 && prev[t]<prev.size());

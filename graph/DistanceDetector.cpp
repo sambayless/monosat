@@ -95,6 +95,9 @@ void DistanceDetector::ReachStatus::setMininumDistance(int u, bool reachable, in
 	if(distance<=detector.outer->g.nodes){
 		setReachable(u,reachable);
 	}
+	if(u==243 || u==247){
+		int a=1;
+	}
 		if(u<detector.dist_lits.size()){
 			assert(distance>=0);
 
@@ -189,7 +192,7 @@ void DistanceDetector::buildReachReason(int node,vec<Lit> & conflict){
 			++it;
 			int u = node;
 			//drawFull( non_reach_detectors[detector]->getSource(),u);
-			assert(outer->dbg_notreachable( source,u));
+			//assert(outer->dbg_distance( source,u));
 			double starttime = cpuTime();
 			outer->cutGraph.clearHistory();
 			outer->stats_mc_calls++;
@@ -211,7 +214,7 @@ void DistanceDetector::buildReachReason(int node,vec<Lit> & conflict){
 				    	assert(u!=source);
 				    	to_visit.pop();
 				    	assert(seen[u]);
-				    	assert(!negative_reach_detector->connected_unsafe(u));
+				    	//assert(negative_reach_detector->distance_unsafe(u)>d);
 				    	//Ok, then add all its incoming disabled edges to the cut, and visit any unseen, non-disabled incoming edges
 				    	for(int i = 0;i<outer->inv_adj[u].size();i++){
 				    		int v = outer->inv_adj[u][i].v;
@@ -507,9 +510,10 @@ void DistanceDetector::buildReachReason(int node,vec<Lit> & conflict){
 							int dist =  dist_lits[i][j].min_distance;
 							if(l!=lit_Undef){
 								int u = getNode(var(l));
-								if(positive_reach_detector->distance(u)<=dist){
+								if(positive_reach_detector->distance_unsafe(u)<=dist){
 									assert(outer->S->value(l)==l_True);
-								}else if (negative_reach_detector->distance(u)>dist){
+								}else if (negative_reach_detector->distance_unsafe(u)>dist){
+									int d =negative_reach_detector->distance_unsafe(u);
 									assert(outer->S->value(l)==l_False);
 								}
 							}

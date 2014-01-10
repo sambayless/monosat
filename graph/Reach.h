@@ -44,6 +44,7 @@ public:
 	virtual bool connected_unchecked(int t)const=0;
 	virtual bool connected(int t)=0;
 	virtual int distance(int t)=0;
+	virtual int distance_unsafe(int t)=0;
 	virtual int previous(int t)=0;
 };
 

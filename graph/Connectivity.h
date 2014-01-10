@@ -647,6 +647,12 @@ public:
 		else
 			return INF;
 	}
+	int distance_unsafe(int t){
+		if(connected_unsafe(t))
+			return 1;
+		else
+			return INF;
+	}
 	int previous(int t){
 		assert(t>=0 && t<prev.size());
 		assert(prev[t]>=-1 && prev[t]<prev.size());
