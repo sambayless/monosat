@@ -27,8 +27,12 @@ Detector(_detectorID),outer(_outer),within(within_steps),rnd_seed(seed),positive
 		}
 		/*	if(opt_conflict_shortest_path)
 			reach_detectors.last()->positive_dist_detector = new Dijkstra<PositiveEdgeStatus>(from,g);*/
-
-
+#ifndef NDEBUG
+		{
+			dbg_positive_reach_detector = new DijkstraAllPairs<AllPairsDetector::IgnoreStatus,PositiveEdgeStatus>(_g,ignoreStatus,1);
+			dbg_negative_reach_detector = new DijkstraAllPairs<AllPairsDetector::IgnoreStatus,NegativeEdgeStatus>(_antig,ignoreStatus,-1);
+		}
+#endif
 	first_reach_var = var_Undef;
 
 }
@@ -62,7 +66,10 @@ void AllPairsDetector::addLit(int from, int to, Var reach_var,int within_steps){
 		sources.push(from);
 		positive_reach_detector->addSource(from);
 		negative_reach_detector->addSource(from);
-
+#ifndef NDEBUG
+		dbg_positive_reach_detector->addSource(from);
+		dbg_negative_reach_detector->addSource(from);
+#endif
 	}
 
 	Lit reachLit=mkLit(reach_var,false);
@@ -469,6 +476,12 @@ void AllPairsDetector::buildReachReason(int source, int to,vec<Lit> & conflict){
 							int dist =  dist_lits[s][i][j].min_distance;
 							if(l!=lit_Undef){
 								int u = getNode(var(l));
+								int pos_d = positive_reach_detector->distance_unsafe(s,u);
+								int neg_d = negative_reach_detector->distance_unsafe(s,u);
+								int dbg_pos_d=dbg_positive_reach_detector->distance(s,u);
+								int dbg_neg_d=dbg_negative_reach_detector->distance(s,u);
+								assert(dbg_pos_d==pos_d);
+								assert(dbg_neg_d==neg_d);
 								if(positive_reach_detector->distance_unsafe(s,u)<=dist){
 									assert(outer->S->value(l)==l_True);
 								}else if (negative_reach_detector->distance_unsafe(s,u)>dist){
@@ -584,7 +597,7 @@ Lit AllPairsDetector::decide(){
 								}
 							}
 						}
-						assert(false);
+
 					}
 				}
 			}

@@ -27,7 +27,10 @@ public:
 		int within;
 
 		double rnd_seed;
-
+#ifndef NDEBUG
+		AllPairs * dbg_positive_reach_detector;
+		AllPairs * dbg_negative_reach_detector;
+#endif
 		AllPairs * positive_reach_detector;
 		AllPairs * negative_reach_detector;
 		AllPairs *  positive_path_detector;
@@ -60,7 +63,20 @@ public:
 		vec<Change> & getChanged(){
 			return changed;
 		}
+		struct IgnoreStatus{
 
+					void setReachable(int from,int u, bool reachable){
+
+					}
+					bool isReachable(int from,int u) const{
+						return false;
+					}
+
+					void setMininumDistance(int from,int u, bool reachable, int distance){
+
+					}
+					IgnoreStatus(){}
+				}ignoreStatus;
 		struct ReachStatus{
 			AllPairsDetector & detector;
 			bool polarity;

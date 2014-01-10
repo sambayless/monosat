@@ -614,7 +614,7 @@ Lit DistanceDetector::decide(){
 							}
 						}
 					}
-					assert(false);
+
 				}
 			}
 		}

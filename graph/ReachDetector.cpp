@@ -811,7 +811,7 @@ Lit ReachDetector::decide(){
 						}
 					}
 				}
-				assert(false);
+
 			}
 		}
 

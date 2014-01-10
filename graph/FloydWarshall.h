@@ -114,15 +114,19 @@ public:
 		for(int i = 0;i<g.nodes;i++){
 			for(int j = 0;j<g.nodes;j++){
 				next[i][j]=-1;
+				dist[i][j]=INF;
 			}
 			dist[i][i]=0;
 		}
 
 		for(int i = 0;i<g.all_edges.size();i++){
-			 int u =g.all_edges[i].from;
-			 int v =g.all_edges[i].to;
-			 dist[u][v]= 1;
+			if(g.edgeEnabled(g.all_edges[i].id)){
+				 int u =g.all_edges[i].from;
+				 int v =g.all_edges[i].to;
+				 dist[u][v]= 1;
+			}
 		}
+
 
 		//for(int l = 0;l<sources.size();l++){
 		//	int k = sources[l];
@@ -163,17 +167,21 @@ public:
 
 
 	void getPath(int from, int to, vec<int> & path){
+		path.push(from);
+		getPath_private(from,to,path);
+
+	}
+	void getPath_private(int from, int to, vec<int> & path){
 		assert(dist[from][to]<INF);
 		int intermediate = next[from][to];
 		if(intermediate>-1){
-		getPath(from, intermediate, path);
-		path.push(intermediate);
-		getPath(intermediate,to,path);
+			getPath_private(from, intermediate, path);
+			path.push(intermediate);
+			getPath_private(intermediate,to,path);
 
 		}
 
 	}
-
 	bool dbg_path(int from,int to){
 
 		return true;
