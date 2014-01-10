@@ -40,7 +40,7 @@ static const char* _cat_graph ="GRAPH";
  IntOption Minisat::opt_dec_graph(_cat_graph,"dec","Use decremental graph reachability",0,IntRange(0, 2));
  StringOption Minisat::opt_min_cut_alg(_cat_graph,"mincut","Select max-flow/min-cut algorithm (edmondskarp, edmondskarp-adj, ibfs)","edmondskarp-adj");
  StringOption Minisat::opt_reach_alg(_cat_graph,"reach","Select reachability algorithm (connectivity, dijkstra)","connectivity");
-
+StringOption Minisat::opt_allpairs_alg(_cat_graph,"allpairs","Select allpairs reachability algorithm (floyd-warshall,dijkstra)","floyd-warshall");
   BoolOption Minisat::opt_conflict_shortest_path(_cat_graph,"conflict-shortest-path","Use shortest path (instead of arbitrary path) for conflict resolution",true);
   BoolOption Minisat::opt_conflict_min_cut(_cat_graph,"conflict-min-cut","Use min-cut (instead of arbitrary cut) for conflict resolution",false);
 IntOption Minisat::opt_restrict_decisions(_cat_graph,"decisions","Restrict decisions to the first n variables (0 to disable)",0);
@@ -69,8 +69,9 @@ DoubleOption Minisat::opt_decide_graph_re_rnd(_cat_graph,"decide-graph-re-rnd","
 BoolOption Minisat::opt_print_decision_path(_cat_graph,"decide-graph-print","",false);
 BoolOption Minisat::opt_force_distance_solver(_cat_graph,"force-distance","Force the graph distance solver to be used, instead of the optimized reachability solver",false);
 
-DoubleOption Minisat::opt_allpairs_percentage(_cat_graph,"allpairs","Fraction of nodes as source reach querries at which to trigger using allpairs solver instead of separate theory solvers. 0 to force all querries to go through allpairs solver. 1 to disable.",1,DoubleRange(0,true,1,true));
+DoubleOption Minisat::opt_allpairs_percentage(_cat_graph,"allpairs-frac","Fraction of nodes as source reach querries at which to trigger using allpairs solver instead of separate theory solvers. 0 to force all querries to go through allpairs solver. 1 to disable.",1,DoubleRange(0,true,1,true));
 
 MinCutAlg Minisat::mincutalg=ALG_EDMONSKARP ;
 ReachAlg Minisat::reachalg=ALG_CONNECTIVITY;
 ReachAlg Minisat::distalg=ALG_BFS;
+AllPairsAlg Minisat::allpairsalg=ALG_DIJKSTRA_ALLPAIRS;

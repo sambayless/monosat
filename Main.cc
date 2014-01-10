@@ -154,7 +154,17 @@ int main(int argc, char** argv)
 			fprintf(stderr,"Error: unknown reachability algorithm %s, aborting\n", ((string) opt_reach_alg).c_str());
 			exit(1);
 		 }
+		    allpairsalg = ALG_FLOYDWARSHALL;
 
+		    if (!strcasecmp(opt_allpairs_alg,"floyd-warshall")){
+		    	allpairsalg = ALG_FLOYDWARSHALL;
+		   		 }else if(!strcasecmp(opt_allpairs_alg,"dijkstra")){
+		   			allpairsalg=ALG_DIJKSTRA_ALLPAIRS;
+
+			 }else{
+					fprintf(stderr,"Error: unknown allpairs reachability algorithm %s, aborting\n", ((string) opt_allpairs_alg).c_str());
+					exit(1);
+				 }
 
         double initial_time = cpuTime();
 

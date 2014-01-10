@@ -1,6 +1,6 @@
 
-#ifndef FLOYD_WARSHALL_H_
-#define FLOYD_WARSHALL_H_
+#ifndef DIJKSTRA_ALLPAIRS_H_
+#define DIJKSTRA_ALLPAIRS_H_
 
 #include "mtl/Vec.h"
 #include "mtl/Heap.h"
@@ -12,7 +12,7 @@ using namespace Minisat;
 
 
 template<class Status,class EdgeStatus=DefaultEdgeStatus>
-class FloydWarshall:public AllPairs{
+class DijkstraAllPairs:public AllPairs{
 public:
 
 	DynamicGraph<EdgeStatus> & g;
@@ -29,12 +29,12 @@ public:
 	int INF;
 
 
-	vec<int> q;
+
 	vec<int> check;
 	const int reportPolarity;
 
 	vec<vec<int> > dist;
-	vec<vec<int> >  next;
+	vec<vec<int> >  prev;
 
 	struct DefaultReachStatus{
 			vec<bool> stat;
@@ -47,11 +47,21 @@ public:
 				}
 				DefaultReachStatus(){}
 			};
+	vec<int> * dist_ptr;
+	struct DistCmp{
+		vec<int> ** _dist;
+		 bool operator()(int a, int b)const{
+			return (**_dist)[a]<(**_dist)[b];
+		}
+		 DistCmp(vec<int> **d):_dist(d){};
+	};
+
+	Heap<DistCmp> q;
 
 public:
 
 
-	FloydWarshall(DynamicGraph<EdgeStatus> & graph,Status & _status,  int _reportPolarity=0 ):g(graph),status(_status), last_modification(-1),last_addition(-1),last_deletion(-1),history_qhead(0),last_history_clear(0),INF(0),reportPolarity(0){
+	DijkstraAllPairs(DynamicGraph<EdgeStatus> & graph,Status & _status,  int _reportPolarity=0 ):g(graph),status(_status), last_modification(-1),last_addition(-1),last_deletion(-1),history_qhead(0),last_history_clear(0),INF(0),reportPolarity(0),q(DistCmp(&dist_ptr)){
 		marked=false;
 		mod_percentage=0.2;
 		stats_full_updates=0;
@@ -77,7 +87,7 @@ public:
 
 
 	void setNodes(int n){
-		q.capacity(n);
+
 		check.capacity(n);
 
 		INF=g.nodes+1;
@@ -87,18 +97,17 @@ public:
 			for(int i =0;i<dist.size();i++)
 				dist[i].growTo(n);
 
-			next.growTo(n);
+			prev.growTo(n);
 			for(int i =0;i<dist.size();i++)
-				next[i].growTo(n);
+				prev[i].growTo(n);
 		}
 	}
-
 
 	void update( ){
 		static int iteration = 0;
 		int local_it = ++iteration ;
 		stats_full_updates++;
-		double startdupdatetime = cpuTime();
+
 		if(last_modification>0 && g.modifications==last_modification){
 			stats_skipped_updates++;
 			return;
@@ -107,36 +116,57 @@ public:
 		if(last_deletion==g.deletions){
 			stats_num_skipable_deletions++;
 		}
+		INF=g.nodes+1;
+		stats_full_updates++;
+		double startdupdatetime = cpuTime();
+
 
 		setNodes(g.nodes);
 
 		q.clear();
 		for(int i = 0;i<g.nodes;i++){
 			for(int j = 0;j<g.nodes;j++){
-				next[i][j]=-1;
+				prev[i][j]=-1;
+				dist[i][j]=INF;
 			}
 			dist[i][i]=0;
 		}
 
-		for(int i = 0;i<g.all_edges.size();i++){
-			 int u =g.all_edges[i].from;
-			 int v =g.all_edges[i].to;
-			 dist[u][v]= 1;
-		}
 
-		//for(int l = 0;l<sources.size();l++){
-		//	int k = sources[l];
-		for(int k = 0;k<g.nodes;k++){
-			for(int i = 0;i<g.nodes;i++){
-				for (int j = 0;j<g.nodes;j++){
-					int d = dist[i][k] + dist[k][j];
-					if(d < dist[i][j]){
-						dist[i][j] = d;
-						next[i][j]=k;
+
+
+
+
+		for(int s = 0;s<sources.size();s++){
+			int source = sources[s];
+			q.clear();
+			//distcmp._dist=&dist[source];
+			dist_ptr=&dist[source];
+			dist[source][source]=0;
+			q.insert(source);
+			while(q.size()){
+				int u = q.peakMin();
+				if(dist[source][u]==INF)
+					break;
+
+				q.removeMin();
+				for(int i = 0;i<g.adjacency[u].size();i++){
+					if(!g.edgeEnabled( g.adjacency[u][i].id))
+						continue;
+					int v = g.adjacency[u][i].node;
+					int alt = dist[source][u]+ 1;
+					if(alt<dist[source][v]){
+						dist[source][v]=alt;
+						prev[source][v]=u;
+						if(!q.inHeap(v))
+							q.insert(v);
+						else
+							q.decrease(v);
 					}
 				}
 			}
 		}
+
 		for(int i = 0;i<sources.size();i++){
 			int s = sources[i];
 			for(int u = 0;u<g.nodes;u++){
@@ -161,17 +191,31 @@ public:
 		stats_full_update_time+=cpuTime()-startdupdatetime;;
 	}
 
-
 	void getPath(int from, int to, vec<int> & path){
 		assert(dist[from][to]<INF);
-		int intermediate = next[from][to];
+		int d = dist[from][to];
+	/*	int intermediate = prev[from][to];
 		if(intermediate>-1){
 		getPath(from, intermediate, path);
 		path.push(intermediate);
 		getPath(intermediate,to,path);
-
+		}*/
+		path.clear();
+		path.push(to);
+		while(prev[from][to]!=-1){
+			int p = prev[from][to];
+			path.push(p);
+			to=p;
 		}
 
+		for(int i = 0;i<path.size();i++){
+			if(i>=path.size()-i-1)
+				break;
+			int t = path[i];
+			int e = path[path.size()-i-1];
+			path[i]=e;
+			path[path.size()-i-1]=t;
+		}
 	}
 
 	bool dbg_path(int from,int to){
@@ -242,9 +286,9 @@ public:
 			return INF;
 	}
 /*	int previous(int t){
-		assert(t>=0 && t<next.size());
-		assert(next[t]>=-1 && next[t]<next.size());
-		return next[t];
+		assert(t>=0 && t<prev.size());
+		assert(prev[t]>=-1 && prev[t]<prev.size());
+		return prev[t];
 	}*/
 
 };

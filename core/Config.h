@@ -37,7 +37,7 @@ extern IntOption opt_restrict_decisions;
 
 extern StringOption opt_min_cut_alg;
 extern StringOption opt_reach_alg;
-
+extern StringOption opt_allpairs_alg;
 extern BoolOption opt_check_solution;
 extern BoolOption opt_print_reach;
 
@@ -62,7 +62,11 @@ enum ReachAlg{
 };
 extern ReachAlg reachalg;
 extern ReachAlg distalg;
-
+enum AllPairsAlg{
+	 ALG_FLOYDWARSHALL,
+	 ALG_DIJKSTRA_ALLPAIRS
+};
+extern AllPairsAlg allpairsalg;
 enum MinCutAlg{
 	 ALG_EDMONSKARP,
 	 ALG_EDKARP_ADJ,
