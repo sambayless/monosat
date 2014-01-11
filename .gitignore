@@ -4,4 +4,7 @@ Debug/*
 Klee/*
 coverage/*
 Static/*
+Win32/*
+Win64/*
+DbgRelease/*
 
