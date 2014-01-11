@@ -220,7 +220,7 @@ public:
     			int v = g.adjacency[u][i].node;
     			int id = g.adjacency[u][i].id;
     			if(capacity(id) - F[id] == 0){
-    				cut.push(Edge{u,v});
+    				cut.push(Edge{u,v,id});
     			}else if(!seen[v]){
     				Q.push(v);
     				seen[v]=true;
@@ -236,6 +236,18 @@ public:
     	}
     	cut.shrink(i-j);
     	return f;
+    }
+    int getEdgeCapacity(int id){
+     	assert(g.edgeEnabled(id));
+     	return capacity(id);
+     }
+    int getEdgeFlow(int id){
+    	assert(g.edgeEnabled(id));
+    	return F[id];// capacity(id);
+    }
+    int getEdgeResidualCapacity(int id){
+    	assert(g.edgeEnabled(id));
+    	return  capacity(id)-F[id];// capacity(id);
     }
 };
 #endif

@@ -607,6 +607,13 @@ public:
 		return true;
 	}
 
+	int getEdgeID(Var v){
+		assert(v>= min_edge_var && v<min_edge_var+edge_list.size());
+
+						//this is an edge assignment
+		int edge_num = v-min_edge_var;
+		return edge_num;
+	}
 
 	bool propagateTheory(vec<Lit> & conflict){
 		static int itp = 0;

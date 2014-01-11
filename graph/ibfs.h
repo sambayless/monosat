@@ -39,7 +39,11 @@ public:
 		prepareGraph();
 		return maxflowClean();
 	}
+	flowtype edgeflow(int u, int v)
+	{
 
+		return 0;//not implemented yet...
+	}
 	termtype what_segment(int nodeIndex, termtype default_segm = SOURCE);
 
 

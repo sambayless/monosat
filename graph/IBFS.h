@@ -103,9 +103,10 @@ public:
 					if(!g.edgeEnabled(g.adjacency[u][j].id))
 						continue;
 					int v = g.adjacency[u][j].node;
+					int id =  g.adjacency[u][j].id;
 					if( ibfs->what_segment(v,IBFSGraph<int,int,int>::SOURCE) ==IBFSGraph<int,int,int>::SINK ){
 						//then this is on the cut
-						cut.push(Edge{u,v});
+						cut.push(Edge{u,v,id});
 					}
 				}
     		}
@@ -115,7 +116,26 @@ public:
     }
 
 
+    int getEdgeFlow(int edgeid){
+      	assert(g.edgeEnabled(edgeid));
+      	int u = g.all_edges[edgeid].from;
+      	int v = g.all_edges[edgeid].to;
+      	return ibfs->edgeflow(u,v);
+      }
+      int getEdgeCapacity(int id){
+      	assert(g.edgeEnabled(id));
+      	int u = g.all_edges[id].from;
+      	int v = g.all_edges[id].to;
+      	return C[u][v];
+         }
 
+        int getEdgeResidualCapacity(int id){
+      	  assert(g.edgeEnabled(id));
+  		int u = g.all_edges[id].from;
+  		int v = g.all_edges[id].to;
+  		return C[u][v]-ibfs->edgeflow(u,v);
+
+        }
 
 
 /*

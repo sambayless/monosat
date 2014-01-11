@@ -6,6 +6,7 @@
 
 #include "MaxFlow.h"
 #include "mtl/Vec.h"
+#include "DynamicGraph.h"
 using namespace std;
 using namespace Minisat;
 
@@ -27,6 +28,16 @@ class EdmondsKarp:public MaxFlow{
     vec<vec<int> > C;
     vec<int> P;
     vec<int> M;
+
+    int curflow;
+
+    int last_modification;
+    int last_deletion;
+    int last_addition;
+
+    int history_qhead;
+    int last_history_clear;
+
     DynamicGraph<EdgeStatus>& g;
     int INF;
     /*
@@ -93,6 +104,14 @@ class EdmondsKarp:public MaxFlow{
 public:
     EdmondsKarp(DynamicGraph<EdgeStatus>& _g):g(_g),INF(0xF0F0F0)
     {
+        curflow=-1;
+
+    	last_modification=-1;
+    	last_deletion=-1;
+    	last_addition=-1;
+
+    	history_qhead=-1;
+    	last_history_clear=-1;
     	setAllEdgeCapacities(1);
     }
     void setCapacity(int u, int w, int c){
@@ -114,6 +133,10 @@ public:
     	}
     }
     int maxFlow(int s, int t){
+    	if(last_modification>0 && g.modifications==last_modification){
+
+    			return curflow;
+    		}
     	int f = 0;
     	C.growTo(g.nodes);
     	F.growTo(g.nodes);
@@ -147,6 +170,14 @@ public:
                 v = u;
             }
         }
+        curflow=f;
+
+		last_modification=g.modifications;
+		last_deletion = g.deletions;
+		last_addition=g.additions;
+
+		history_qhead=g.history.size();
+		last_history_clear=g.historyclears;
         return f;
     }
     int maxFlow(int s, int t, int max_length){
@@ -212,9 +243,9 @@ public:
 				if(!g.edgeEnabled(g.adjacency[u][i].id))
 					continue;
 				int v = g.adjacency[u][i].node;
-
+				int id = g.adjacency[u][i].id;
 				if(C[u][v] - F[u][v] == 0){
-					cut.push(Edge{u,v});
+					cut.push(Edge{u,v,id});
 				}else if(!seen[v]){
 					Q.push(v);
 					seen[v]=true;
@@ -232,6 +263,26 @@ public:
 		return true;
     }
 
+    int getEdgeFlow(int edgeid){
+    	assert(g.edgeEnabled(edgeid));
+    	int u = g.all_edges[edgeid].from;
+    	int v = g.all_edges[edgeid].to;
+    	return F[u][v];
+    }
+    int getEdgeCapacity(int id){
+    	assert(g.edgeEnabled(id));
+    	int u = g.all_edges[id].from;
+    	int v = g.all_edges[id].to;
+    	return C[u][v];
+       }
+
+      int getEdgeResidualCapacity(int id){
+    	  assert(g.edgeEnabled(id));
+		int u = g.all_edges[id].from;
+		int v = g.all_edges[id].to;
+		return C[u][v]-F[u][v];
+
+      }
     int minCut(int s, int t, vec<Edge> & cut){
     	int f = maxFlow(s,t);
     	//ok, now find the cut

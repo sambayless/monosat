@@ -5,6 +5,7 @@
 #include <iostream>
 #include <climits>
 #include "mtl/Vec.h"
+#include "GraphTheoryTypes.h"
 using namespace std;
 using namespace Minisat;
 
@@ -23,10 +24,13 @@ public:
     struct Edge {
     	int u;
     	int v;
+    	int id;
     };
     virtual int minCut(int s, int t, vec<Edge> & cut)=0;
+    virtual int getEdgeFlow(int edgeID)=0;
+    virtual int getEdgeCapacity(int id)=0;
 
-
+    virtual  int getEdgeResidualCapacity(int id)=0;
 };
 #endif
 

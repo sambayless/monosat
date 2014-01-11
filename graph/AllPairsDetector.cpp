@@ -79,7 +79,7 @@ void AllPairsDetector::addLit(int from, int to, Var reach_var,int within_steps){
 	for(int i = 0;i<dist_lits[from][to].size();i++){
 		if(dist_lits[from][to][i].min_distance==within_steps){
 			found=true;
-			Lit r = dist_lits[from][to][within_steps].l;
+			Lit r = dist_lits[from][to][i].l;
 			//force equality between the new lit and the old reach lit, in the SAT solver
 			outer->S->addClause(~r, reachLit);
 			outer->S->addClause(r, ~reachLit);
