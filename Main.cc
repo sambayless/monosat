@@ -154,7 +154,7 @@ int main(int argc, char** argv)
 			fprintf(stderr,"Error: unknown reachability algorithm %s, aborting\n", ((string) opt_reach_alg).c_str());
 			exit(1);
 		 }
-		    allpairsalg = ALG_FLOYDWARSHALL;
+		    allpairsalg = ALG_DIJKSTRA_ALLPAIRS;
 
 		    if (!strcasecmp(opt_allpairs_alg,"floyd-warshall")){
 		    	allpairsalg = ALG_FLOYDWARSHALL;
