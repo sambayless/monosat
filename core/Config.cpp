@@ -71,6 +71,8 @@ BoolOption Minisat::opt_force_distance_solver(_cat_graph,"force-distance","Force
 
 DoubleOption Minisat::opt_allpairs_percentage(_cat_graph,"allpairs-frac","Fraction of nodes as source reach querries at which to trigger using allpairs solver instead of separate theory solvers. 0 to force all querries to go through allpairs solver. 1 to disable.",1,DoubleRange(0,true,1,true));
 
+BoolOption Minisat::opt_decide_graph_neg(_cat_graph,"decide-graph-neg","",false);
+
 MinCutAlg Minisat::mincutalg=ALG_EDMONSKARP ;
 ReachAlg Minisat::reachalg=ALG_CONNECTIVITY;
 ReachAlg Minisat::distalg=ALG_BFS;

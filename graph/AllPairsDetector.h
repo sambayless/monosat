@@ -16,7 +16,7 @@
 #include "core/SolverTypes.h"
 #include "mtl/Map.h"
 
-#define DEBUG_ALLPAIRS
+//#define DEBUG_ALLPAIRS
 #include "utils/System.h"
 #include "Detector.h"
 namespace Minisat{

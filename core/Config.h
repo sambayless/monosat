@@ -55,6 +55,7 @@ extern DoubleOption opt_decide_graph_re_rnd;
 extern BoolOption opt_print_decision_path;
 extern BoolOption opt_force_distance_solver;
 extern DoubleOption opt_allpairs_percentage;
+extern BoolOption opt_decide_graph_neg;
 enum ReachAlg{
 	 ALG_CONNECTIVITY,
 	 ALG_DIJKSTRA,

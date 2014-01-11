@@ -648,10 +648,10 @@ void ReachDetector::dbg_sync_reachability(){
 	}
 
 Lit ReachDetector::decide(){
-	ReachDetector *r =this;
-	Distance<ReachDetector::ReachStatus,NegativeEdgeStatus> * over = (Distance<ReachDetector::ReachStatus,NegativeEdgeStatus>*) r->negative_reach_detector;
 
-	Distance<ReachDetector::ReachStatus,PositiveEdgeStatus> * under = (Distance<ReachDetector::ReachStatus,PositiveEdgeStatus>*) r->positive_reach_detector;
+	Distance<ReachDetector::ReachStatus,NegativeEdgeStatus> * over = (Distance<ReachDetector::ReachStatus,NegativeEdgeStatus>*)negative_reach_detector;
+
+	Distance<ReachDetector::ReachStatus,PositiveEdgeStatus> * under = (Distance<ReachDetector::ReachStatus,PositiveEdgeStatus>*)positive_reach_detector;
 
 	//we can probably also do something similar, but with cuts, for nodes that are decided to be unreachable.
 
@@ -659,22 +659,18 @@ Lit ReachDetector::decide(){
 
 	//this can be obviously more efficient
 	//for(int j = 0;j<nNodes();j++){
-	for(int k = 0;k<r->reach_lits.size();k++){
-		Lit l = r->reach_lits[k];
+	for(int k = 0;k<reach_lits.size();k++){
+		Lit l =reach_lits[k];
 		if(l==lit_Undef)
 			continue;
-		int j = r->getNode(var(l));
+		int j =getNode(var(l));
 		if(outer->S->value(l)==l_True){
 			//if(S->level(var(l))>0)
 			//	continue;
-			if(!under->connected(j)){
+			assert(over->connected(j));
+			if(over->connected(j) && !under->connected(j)){
 				//then lets try to connect this
 				static vec<bool> print_path;
-
-
-
-
-
 
 				assert(over->connected(j));//Else, we would already be in conflict
 				int p =j;
@@ -689,7 +685,7 @@ Lit ReachDetector::decide(){
 
 
 						last=p;
-						assert(p!=r->source);
+						assert(p!=source);
 						int prev = over->previous(p);
 						p = prev;
 
@@ -703,19 +699,19 @@ Lit ReachDetector::decide(){
 								/* w-=0.5;
 								 w*=w;*/
 								 //printf("%f (%f),",w,rnd_seed);
-								 r->rnd_path->setWeight(i,w);
+								rnd_path->setWeight(i,w);
 							 }
 					}
-					 r->rnd_path->update();
+					rnd_path->update();
 					//derive a random path in the graph
 					 p = j;
 					 last = j;
-					 assert( r->rnd_path->connected(p));
+					 assert(rnd_path->connected(p));
 					while(!under->connected(p)){
 
 						last=p;
-						assert(p!=r->source);
-						int prev = r->rnd_path->previous(p);
+						assert(p!=source);
+						int prev =rnd_path->previous(p);
 						p = prev;
 						assert(p>=0);
 					}
@@ -732,12 +728,12 @@ Lit ReachDetector::decide(){
 						over->update();
 						int p = j;
 
-						while(p!=r->source){
+						while(p!=source){
 							if(opt_print_decision_path)
 								print_path[p]=true;
 
 
-							assert(p!=r->source);
+							assert(p!=source);
 							int prev = over->previous(p);
 							p = prev;
 
@@ -747,20 +743,20 @@ Lit ReachDetector::decide(){
 
 						int p = j;
 
-						while(p!=r->source){
+						while(p!=source){
 							if(opt_print_decision_path)
 								print_path[p]=true;
 
 
-							assert(p!=r->source);
-							int prev = r->rnd_path->previous(p);
+							assert(p!=source);
+							int prev =rnd_path->previous(p);
 							p = prev;
 
 						}
 					}
 
 					if(opt_print_decision_path){
-						printf("From %d to %d:\n",r->source,j);
+						printf("From %d to %d:\n",source,j);
 						int width = sqrt(outer->nNodes());
 
 
@@ -776,7 +772,7 @@ Lit ReachDetector::decide(){
 
 							if(n==j){
 								printf("* ");
-							}else if (n==r->source){
+							}else if (n==source){
 								printf("#");
 							}else{
 
@@ -799,8 +795,13 @@ Lit ReachDetector::decide(){
 
 				assert(over->connected(last));
 				assert(over->connected(p));*/
-
-				for(int k = 0;k<outer->antig.adjacency[p].size();k++){
+				Var v = outer->edges[p][last].v;
+				if(outer->S->value(v)==l_Undef){
+					return mkLit(v,false);
+				}else{
+					assert(outer->S->value(v)!=l_True);
+				}
+			/*	for(int k = 0;k<outer->antig.adjacency[p].size();k++){
 					int to = outer->antig.adjacency[p][k].node;
 					if (to==last){
 						Var v =outer->edge_list[ outer->antig.adjacency[p][k].id].v;
@@ -810,8 +811,36 @@ Lit ReachDetector::decide(){
 							assert(outer->S->value(v)!=l_True);
 						}
 					}
-				}
+				}*/
 
+			}
+		}else if(outer->S->value(l)==l_False){
+			if(opt_decide_graph_neg){
+
+				//for each negated reachability constraint, we can find a cut through the unassigned edges in the over-approx and disable one of those edges.
+				assert(!under->connected(j));
+				over->update();
+				if(over->connected(j) && ! under->connected(j)){
+					//then lets try to disconnect this node from source by walking back along the path in the over approx, and disabling the first unassigned edge we see.
+					//(there must be at least one such edge, else the variable would be connected in the under approximation as well - in which case it would already have been propagated.
+					int p = j;
+					int last = j;
+					while(!under->connected(p)){
+						last=p;
+						assert(p!=source);
+						int prev = over->previous(p);
+						Var v = outer->edges[prev][p].v;
+						if(outer->S->value(v)==l_Undef){
+							return mkLit(v,true);
+						}else{
+							assert(outer->S->value(v)!=l_False);
+						}
+						p = prev;
+
+					}
+
+
+				}
 			}
 		}
 
