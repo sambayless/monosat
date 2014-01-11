@@ -10,6 +10,8 @@
 #include "AllPairsDetector.h"
 #include "GraphTheory.h"
 
+
+
 AllPairsDetector::AllPairsDetector(int _detectorID, GraphTheorySolver * _outer,  DynamicGraph<PositiveEdgeStatus> &_g,DynamicGraph<NegativeEdgeStatus> &_antig, int within_steps ,double seed):
 Detector(_detectorID),outer(_outer),within(within_steps),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL){
 
@@ -27,7 +29,7 @@ Detector(_detectorID),outer(_outer),within(within_steps),rnd_seed(seed),positive
 		}
 		/*	if(opt_conflict_shortest_path)
 			reach_detectors.last()->positive_dist_detector = new Dijkstra<PositiveEdgeStatus>(from,g);*/
-#ifndef NDEBUG
+#ifdef DEBUG_ALLPAIRS
 		{
 			dbg_positive_reach_detector = new DijkstraAllPairs<AllPairsDetector::IgnoreStatus,PositiveEdgeStatus>(_g,ignoreStatus,1);
 			dbg_negative_reach_detector = new DijkstraAllPairs<AllPairsDetector::IgnoreStatus,NegativeEdgeStatus>(_antig,ignoreStatus,-1);
@@ -66,7 +68,7 @@ void AllPairsDetector::addLit(int from, int to, Var reach_var,int within_steps){
 		sources.push(from);
 		positive_reach_detector->addSource(from);
 		negative_reach_detector->addSource(from);
-#ifndef NDEBUG
+#ifdef DEBUG_ALLPAIRS
 		dbg_positive_reach_detector->addSource(from);
 		dbg_negative_reach_detector->addSource(from);
 #endif
@@ -148,7 +150,10 @@ void AllPairsDetector::ReachStatus::setMininumDistance(int from, int u, bool rea
 void AllPairsDetector::buildReachReason(int source, int to,vec<Lit> & conflict){
 			//drawFull();
 			AllPairs & d = *positive_path_detector;
-
+			static int iter =0;
+			if(++iter==3){
+				int a =1;
+			}
 
 			double starttime = cpuTime();
 			d.update();
@@ -156,6 +161,13 @@ void AllPairsDetector::buildReachReason(int source, int to,vec<Lit> & conflict){
 			tmp_path.clear();
 
 			assert(d.connected_unchecked(source,to));
+#ifdef DEBUG_ALLPAIRS
+					if(!dbg_positive_reach_detector->connected(source,to)){
+						assert(false);
+						exit(4);
+					}
+#endif
+			//d.update();
 			d.getPath(source,to,tmp_path);
 			//if(opt_learn_reaches ==0 || opt_learn_reaches==2)
 			{
@@ -169,6 +181,16 @@ void AllPairsDetector::buildReachReason(int source, int to,vec<Lit> & conflict){
 					Var e =outer->edges[p][u].v;
 					lbool val = outer->S->value(e);
 					assert(outer->S->value(e)==l_True);
+#ifdef DEBUG_ALLPAIRS
+					if(!dbg_positive_reach_detector->connected(source,p)){
+						assert(false);
+						exit(4);
+					}
+					if(outer->S->value(e)!=l_True){//otherwise, this can't be part of the returned learnt clause.
+						printf("iter %d\n", iter);
+						exit(6);
+					}
+#endif
 					conflict.push(mkLit(e, true));
 					u = p;
 
@@ -467,6 +489,34 @@ void AllPairsDetector::buildReachReason(int source, int to,vec<Lit> & conflict){
 
 			}
 
+#ifdef DEBUG_ALLPAIRS
+		for(int m = 0;m<sources.size();m++){
+			int s = sources[m];
+			for(int i = 0;i<dist_lits[s].size();i++){
+				for(int j = 0;j<dist_lits[s][i].size();j++){
+					Lit l = dist_lits[s][i][j].l;
+					int dist =  dist_lits[s][i][j].min_distance;
+					if(l!=lit_Undef){
+						int u = getNode(var(l));
+						int pos_d = positive_reach_detector->distance_unsafe(s,u);
+						int neg_d = negative_reach_detector->distance_unsafe(s,u);
+						int dbg_pos_d=dbg_positive_reach_detector->distance(s,u);
+						int dbg_neg_d=dbg_negative_reach_detector->distance(s,u);
+						if(dbg_pos_d!=pos_d){
+							assert(false);
+							exit(2);
+						}
+						if(dbg_neg_d!=neg_d){
+							assert(false);
+							exit(7);
+						}
+
+					}
+				}
+			}
+		}
+#endif
+
 			#ifdef DEBUG_GRAPH
 				for(int m = 0;m<sources.size();m++){
 					int s = sources[m];
@@ -476,12 +526,6 @@ void AllPairsDetector::buildReachReason(int source, int to,vec<Lit> & conflict){
 							int dist =  dist_lits[s][i][j].min_distance;
 							if(l!=lit_Undef){
 								int u = getNode(var(l));
-								int pos_d = positive_reach_detector->distance_unsafe(s,u);
-								int neg_d = negative_reach_detector->distance_unsafe(s,u);
-								int dbg_pos_d=dbg_positive_reach_detector->distance(s,u);
-								int dbg_neg_d=dbg_negative_reach_detector->distance(s,u);
-								assert(dbg_pos_d==pos_d);
-								assert(dbg_neg_d==neg_d);
 								if(positive_reach_detector->distance_unsafe(s,u)<=dist){
 									assert(outer->S->value(l)==l_True);
 								}else if (negative_reach_detector->distance_unsafe(s,u)>dist){
@@ -568,22 +612,55 @@ Lit AllPairsDetector::decide(){
 							//ok, read back the path from the over to find a candidate edge we can decide
 							//find the earliest unconnected node on this path
 							negative_reach_detector->update();
+							assert(negative_reach_detector->distance(s,j)<=min_dist);
+#ifdef DEBUG_ALLPAIRS
+					if(!negative_reach_detector->connected(s,j)){
+						assert(false);
+						exit(4);
+					}
+
+					if(!(negative_reach_detector->distance(s,j)<=min_dist)){
+							assert(false);
+							exit(4);
+						}
+#endif
+					tmp_path.clear();
 							negative_reach_detector->getPath(s,j,tmp_path);
+
 							 p = j;
 							 last = j;
-							 if(tmp_path.size()){
-								 tmp_path.pop();
-								while(!positive_reach_detector->connected(s,p)){
-
+							 if(tmp_path<=0){
+									exit(5);
+								}
+							 assert(tmp_path.size());
+							 int d = 0;
+								while(positive_reach_detector->distance(s,p)>(min_dist-d)){
+#ifdef DEBUG_ALLPAIRS
+									if(tmp_path<=0){
+										exit(5);
+									}
+#endif
+								    tmp_path.pop();
+								    if(tmp_path.size()==0)
+								    	break;
 									last=p;
 									assert(p!=s);
 									assert(tmp_path.size());
 									int prev = tmp_path.last(); //negative_reach_detector->previous(s,p);
-									tmp_path.pop();
+									d+=1;//for weighted graphs, this needs to be the weight of the edge.
 									p = prev;
-
+#ifdef DEBUG_ALLPAIRS
+					if(!negative_reach_detector->connected(s,p)){
+						assert(false);
+						exit(4);
+					}
+					if(!(negative_reach_detector->distance(s,p)<=min_dist-d)){
+						assert(false);
+						exit(4);
+					}
+#endif
 								}
-							 }
+
 						}
 
 						for(int k = 0;k<outer->antig.adjacency[p].size();k++){

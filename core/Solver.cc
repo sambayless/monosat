@@ -1101,7 +1101,7 @@ lbool Solver::search(int nof_conflicts)
                 // New variable decision:
                 decisions++;
                 next = pickBranchLit();
-                int p = priority[var(next)];
+               // int p = priority[var(next)];
 
                /* if(last_dec!= var_Undef && theories.size() && priority[var(next)]<priority[last_dec]){
 

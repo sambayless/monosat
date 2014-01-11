@@ -7,6 +7,7 @@
 #include "DynamicGraph.h"
 #include "core/Config.h"
 #include "AllPairs.h"
+#include "mtl/Sort.h"
 using namespace Minisat;
 
 
@@ -28,9 +29,9 @@ public:
 	vec<int> sources;
 	int INF;
 
-
-	vec<int> q;
-	vec<int> check;
+	vec<int> order;
+//	vec<int> q;
+//	vec<int> check;
 	const int reportPolarity;
 
 	vec<vec<int> > dist;
@@ -77,9 +78,11 @@ public:
 
 
 	void setNodes(int n){
-		q.capacity(n);
-		check.capacity(n);
-
+		//q.capacity(n);
+		//check.capacity(n);
+		order.clear();
+		for(int i =0;i<n;i++)
+			order.push(i);
 		INF=g.nodes+1;
 		if(dist.size()<n){
 			dist.growTo(n);
@@ -93,7 +96,13 @@ public:
 		}
 	}
 
-
+	struct lt_key{
+		vec<int> & _dist;
+		 bool operator()(int a, int b)const{
+			return _dist[a]<_dist[b];
+		}
+		 lt_key(vec<int> & d):_dist(d){};
+	};
 	void update( ){
 		static int iteration = 0;
 		int local_it = ++iteration ;
@@ -110,7 +119,7 @@ public:
 
 		setNodes(g.nodes);
 
-		q.clear();
+
 		for(int i = 0;i<g.nodes;i++){
 			for(int j = 0;j<g.nodes;j++){
 				next[i][j]=-1;
@@ -123,7 +132,8 @@ public:
 			if(g.edgeEnabled(g.all_edges[i].id)){
 				 int u =g.all_edges[i].from;
 				 int v =g.all_edges[i].to;
-				 dist[u][v]= 1;
+				 if(u!=v)
+					 dist[u][v]= 1;
 			}
 		}
 
@@ -143,7 +153,14 @@ public:
 		}
 		for(int i = 0;i<sources.size();i++){
 			int s = sources[i];
-			for(int u = 0;u<g.nodes;u++){
+			//sort(order,lt_key(dist[s]));//disabled because it is NOT required
+			for(int j = 0;j<order.size();j++){
+				int u =j;// order[j];
+		/*		if(j<order.size()-1){
+					assert(dist[s][u]<=dist[s][order[j+1]]);
+				}*/
+				//Wrong. This is only required if we are returning learnt clauses that include other reachability lits.
+				//it is crucial to return the nodes in order of distance, so that they are enqueued in the correct order in the solver.
 				if(dist[s][u]>=INF && reportPolarity<1){
 					status.setReachable(s,u,false);
 					status.setMininumDistance(s,u,false,INF);
@@ -152,6 +169,15 @@ public:
 					status.setMininumDistance(s,u,true,dist[s][u]);
 				}
 			}
+		/*	for(int u = 0;u<g.nodes;u++){
+				if(dist[s][u]>=INF && reportPolarity<1){
+					//status.setReachable(s,u,false);
+					//status.setMininumDistance(s,u,false,INF);
+				}else if(dist[s][u]<INF && reportPolarity>-1){
+					//status.setReachable(s,u,true);
+					//status.setMininumDistance(s,u,true,dist[s][u]);
+				}
+			}*/
 		}
 		assert(dbg_uptodate());
 
@@ -167,9 +193,11 @@ public:
 
 
 	void getPath(int from, int to, vec<int> & path){
+		update();
 		path.push(from);
 		getPath_private(from,to,path);
-
+		assert(path.last()!=to);
+		path.push(to);
 	}
 	void getPath_private(int from, int to, vec<int> & path){
 		assert(dist[from][to]<INF);

@@ -136,7 +136,7 @@ public:
 			int u = q[i];
 			assert(dist[u]<INF);
 			//if(reportPolarity>-1)
-			//	status.setMininumDistance(u,true,dist[u]);
+				status.setMininumDistance(u,true,dist[u]);
 			int d = dist[u];
 			for(int i = 0;i<g.adjacency[u].size();i++){
 				if(!g.edgeEnabled( g.adjacency[u][i].id))
@@ -155,9 +155,9 @@ public:
 
 		//if(reportPolarity<1){
 			for(int u = 0;u<g.nodes;u++){
-				//if(dist[u]>=INF){
+				if(dist[u]>=INF){
 					status.setMininumDistance(u,dist[u]<INF,dist[u]);
-				//}
+				}
 			}
 		//}
 		assert(dbg_uptodate());

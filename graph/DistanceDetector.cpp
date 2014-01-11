@@ -548,6 +548,8 @@ Lit DistanceDetector::decide(){
 					static vec<bool> print_path;
 
 					assert(over->connected(j));//Else, we would already be in conflict
+
+
 					int p =j;
 					int last=j;
 					//if(!opt_use_random_path_for_decisions)
@@ -557,11 +559,14 @@ Lit DistanceDetector::decide(){
 						over->update();
 						 p = j;
 						 last = j;
-						while(!under->connected(p)){
+						 int dist = 0;
+						while(under->distance(p)>=min_dist-dist){
 
 							last=p;
 							assert(p!=r->source);
 							int prev = over->previous(p);
+							assert(over->distance(p)<=min_dist-dist);
+							dist+=1;//should really be weighted
 							p = prev;
 
 						}

@@ -192,6 +192,7 @@ public:
 	}
 
 	void getPath(int from, int to, vec<int> & path){
+		update();
 		assert(dist[from][to]<INF);
 		int d = dist[from][to];
 	/*	int intermediate = prev[from][to];

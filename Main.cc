@@ -157,7 +157,7 @@ int main(int argc, char** argv)
 		    allpairsalg = ALG_DIJKSTRA_ALLPAIRS;
 
 		    if (!strcasecmp(opt_allpairs_alg,"floyd-warshall")){
-		    	allpairsalg = ALG_FLOYDWARSHALL;
+		    		allpairsalg = ALG_FLOYDWARSHALL;
 		   		 }else if(!strcasecmp(opt_allpairs_alg,"dijkstra")){
 		   			allpairsalg=ALG_DIJKSTRA_ALLPAIRS;
 

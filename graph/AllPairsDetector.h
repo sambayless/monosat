@@ -16,7 +16,7 @@
 #include "core/SolverTypes.h"
 #include "mtl/Map.h"
 
-
+#define DEBUG_ALLPAIRS
 #include "utils/System.h"
 #include "Detector.h"
 namespace Minisat{
@@ -27,7 +27,7 @@ public:
 		int within;
 
 		double rnd_seed;
-#ifndef NDEBUG
+#ifdef DEBUG_ALLPAIRS
 		AllPairs * dbg_positive_reach_detector;
 		AllPairs * dbg_negative_reach_detector;
 #endif
