@@ -11,7 +11,7 @@
 #include "GraphTheory.h"
 
 MaxflowDetector::MaxflowDetector(int _detectorID, GraphTheorySolver * _outer,  DynamicGraph<PositiveEdgeStatus> &_g,DynamicGraph<NegativeEdgeStatus> &_antig, int from,double seed):
-Detector(_detectorID),outer(_outer),source(from),rnd_seed(seed),positive_detector(NULL),negative_detector(NULL){
+Detector(_detectorID),outer(_outer),over_graph(_g),source(from),rnd_seed(seed),positive_detector(NULL),negative_detector(NULL){
 
 
 	positive_detector = new EdmondsKarp<PositiveEdgeStatus>(_g);
@@ -32,7 +32,7 @@ void MaxflowDetector::addLit(int from, int to, Var reach_var,int maxflow){
 		assert(reach_var>first_reach_var);
 	}
 	assert(from==source);
-	assert(within_steps>=0);
+	assert(maxflow>=0);
 
 	while( flow_lits.size()<=to)
 		flow_lits.push();
@@ -76,17 +76,25 @@ void MaxflowDetector::addLit(int from, int to, Var reach_var,int maxflow){
 
 void MaxflowDetector::buildReachReason(int node,vec<Lit> & conflict){
 			//drawFull();
-			//Construct a reason that the max flow is as high as it is.
-			//The reason is simply the corresponding min-cut in the under approximation (in which _only_ enabled edges are present, so the min cut is through a subset of the enabled edges).
+
 
 			double starttime = cpuTime();
 
 
-			tmp_cut.clear();
-			negative_detector->minCut(source, node,tmp_cut);
+		tmp_cut.clear();
+			negative_detector->maxFlow(source, node);
+
+			//just collect the set of edges which have non-zero flow, and return them
+			for(int i = 0;i<outer->edge_list.size();i++){
+				if(negative_detector->getEdgeFlow(i)>0){
+					Var v = outer->edge_list[i].v;
+					assert(outer->S->value(v)==l_True);
+					conflict.push(mkLit(v,false));
+				}
+			}
 
 
-			if(!outer->dbg_reachable(source,node)){
+			/*	if(!outer->dbg_reachable(source,node)){
 				outer->drawFull();
 				assert(false);
 			}
@@ -101,7 +109,7 @@ void MaxflowDetector::buildReachReason(int node,vec<Lit> & conflict){
 			}
 			int u = node;
 			int p;
-
+*/
 			outer->num_learnt_paths++;
 			outer->learnt_path_clause_length+= (conflict.size()-1);
 			double elapsed = cpuTime()-starttime;
@@ -115,7 +123,6 @@ void MaxflowDetector::buildReachReason(int node,vec<Lit> & conflict){
 			static int it = 0;
 			++it;
 			double starttime = cpuTime();
-
 
 			//drawFull( non_reach_detectors[detector]->getSource(),u);
 			//assert(outer->dbg_distance( source,u));
@@ -180,6 +187,8 @@ void MaxflowDetector::buildReachReason(int node,vec<Lit> & conflict){
 
 					int forced_edge_from = outer->edge_list[forced_edge_id].from;
 					int forced_edge_to= outer->edge_list[forced_edge_id].to;
+					//it should be possible to improve this so we don't need to temporarily disable this edge and recompute the max flow to find this cut...
+					over_graph.disableEdge(forced_edge_from,forced_edge_to,forced_edge_id);
 					int flow =positive_detector->maxFlow(source,node);
 
 					seen.clear();
@@ -214,6 +223,7 @@ void MaxflowDetector::buildReachReason(int node,vec<Lit> & conflict){
 
 					 outer->num_learnt_cuts++;
 					 outer->learnt_cut_clause_length+= (conflict.size()-1);
+					 over_graph.enableEdge(forced_edge_from,forced_edge_to,forced_edge_id);
 
 					double elapsed = cpuTime()-starttime;
 					 outer->mctime+=elapsed;

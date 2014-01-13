@@ -23,6 +23,7 @@ class GraphTheorySolver;
 class MaxflowDetector:public Detector{
 public:
 		GraphTheorySolver * outer;
+		DynamicGraph<PositiveEdgeStatus> & over_graph;
 		//int within;
 		int source;
 		double rnd_seed;

@@ -106,7 +106,7 @@ public:
 public:
 	vec<Detector*> detectors;
 	vec<ReachDetector*> reach_detectors;
-
+	vec<DistanceDetector*> distance_detectors;
 
 	vec<int> marker_map;
 
@@ -877,8 +877,11 @@ public:
 					within_steps = g.nodes;
 
 				if (dist_info[from].source<0){
-
-					detectors.push(new DistanceDetector(detectors.size(), this,g,antig,from,within_steps,drand(rnd_seed)));
+					DistanceDetector * d =new DistanceDetector(detectors.size(), this,g,antig,from,within_steps,drand(rnd_seed));
+					detectors.push(d);
+					//reach_detectors.push(reach_detectors.last());
+					distance_detectors.push(d);
+					//detectors.push(new DistanceDetector(detectors.size(), this,g,antig,from,within_steps,drand(rnd_seed)));
 						//reach_detectors.push(reach_detectors.last());
 
 					assert(detectors.last()->getID()==detectors.size()-1);
@@ -1059,9 +1062,10 @@ public:
 						detectors.push(rd);
 						reach_detectors.push(rd);
 					}else{
-						detectors.push(new DistanceDetector(detectors.size(), this,g,antig,from,within_steps,drand(rnd_seed)));
+						DistanceDetector * d = new DistanceDetector(detectors.size(), this,g,antig,from,within_steps,drand(rnd_seed));
+						detectors.push(d);
 						//reach_detectors.push(reach_detectors.last());
-
+						distance_detectors.push(d);
 
 
 					}

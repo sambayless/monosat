@@ -545,7 +545,7 @@ Lit DistanceDetector::decide(){
 				assert(over->distance(j)<=min_dist);//else we would already be in conflict before this decision was attempted!
 				if(under->distance(j)>min_dist){
 					//then lets try to connect this
-					static vec<bool> print_path;
+					//static vec<bool> print_path;
 
 					assert(over->connected(j));//Else, we would already be in conflict
 
@@ -607,8 +607,13 @@ Lit DistanceDetector::decide(){
 
 					assert(over->connected(last));
 					assert(over->connected(p));*/
-
-					for(int k = 0;k<outer->antig.adjacency[p].size();k++){
+					Var v = outer->edges[p][last].v;
+					if(outer->S->value(v)==l_Undef){
+						return mkLit(v,false);
+					}else{
+						assert(outer->S->value(v)!=l_True);
+					}
+			/*		for(int k = 0;k<outer->antig.adjacency[p].size();k++){
 						int to = outer->antig.adjacency[p][k].node;
 						if (to==last){
 							Var v =outer->edge_list[ outer->antig.adjacency[p][k].id].v;
@@ -618,7 +623,7 @@ Lit DistanceDetector::decide(){
 								assert(outer->S->value(v)!=l_True);
 							}
 						}
-					}
+					}*/
 
 				}
 			}
