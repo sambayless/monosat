@@ -20,7 +20,7 @@ struct ReachabilityConstraint{
 
 struct DefaultEdgeStatus{
 
-	vec<bool> status;
+	vec<char> status;
 
 	bool operator [] (int index) const {
 		return status[index];

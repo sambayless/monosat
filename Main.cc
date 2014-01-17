@@ -484,7 +484,7 @@ int main(int argc, char** argv)
 				int lasty= 0;
 				int maxwidth = log10(pow(2, bits))+1; //highestbit(bits);
 				for(int n = 0;n<height*width*bits;n+=bits){
-					int x = n%(width*bits);
+					int x = n%(width*bits)/bits;
 					int y = n/(width*bits);
 					if(y > lasty)
 						printf("\n");
@@ -527,7 +527,7 @@ int main(int argc, char** argv)
 									val = val + (1<<j);
 								}
 							}
-							printf("%l*u",maxwidth,val);
+							printf("%*lu",maxwidth,val);
 							if (x<width-1){
 								printf(",");
 							}
@@ -538,7 +538,7 @@ int main(int argc, char** argv)
 									val = val + (1<<j);
 								}
 							}
-							printf(" %l*u ",maxwidth,val);
+							printf(" %*lu ",maxwidth,val);
 
 				/*			if(S.model[n]==l_True)
 								printf(" 1");
@@ -594,8 +594,12 @@ int main(int argc, char** argv)
 				for(int t = 0;t<S.theories.size();t++){
 					printf("Theory %d\n", t);
 					GraphTheorySolver *g = (GraphTheorySolver*)S.theories[t];
+					int nnodes = g->nNodes();
+
+					int maxw = log10(g->nNodes() )+1; //highestbit(bits);
+
 					{
-						int maxwidth = log10(pow(2, g->nNodes() ))+1; //highestbit(bits);
+
 						for(int r = 0;r<g->reach_detectors.size();r++){
 
 							int width = sqrt(g->nNodes());
@@ -609,11 +613,12 @@ int main(int argc, char** argv)
 									printf("\n");
 
 								int v =var( g->reach_detectors[r]->reach_lits[n]);
-	#if not defined(__MINGW32__)
-								if (isatty(fileno(stdout))){
-		#else
-								if(false){
-		#endif
+#if not defined(__MINGW32__)
+								if (isatty(fileno(stdout)))
+#else
+								if(false)
+#endif
+								{
 										if(S.model[v]==l_True)
 											printf("\033[1;42m\033[1;37m%4d\033[0m", v+1);
 										else
@@ -637,30 +642,32 @@ int main(int argc, char** argv)
 
 							assert(g->dbg_solved());
 						}
-					}
 
 					{
-						for(int r = 0;r<g->distance_detectors.size();r++){
+								for(int r = 0;r<g->distance_detectors.size();r++){
 
-									int width = sqrt(g->nNodes());
-									int lasty= 0;
-									int extra =  g->nNodes() % width ? (width- g->nNodes() % width ):0;
-									for(int n = 0;n<g->nNodes();n++){
-										int x = n%width;
+											int width = sqrt(g->nNodes());
+											int lasty= 0;
+											int extra =  g->nNodes() % width ? (width- g->nNodes() % width ):0;
+											for(int n = 0;n<g->nNodes();n++){
+												int x = n%width;
 
-										int y = (n + extra )/width;
-										if(y > lasty)
-											printf("\n");
+												int y = (n + extra )/width;
+												if(y > lasty)
+													printf("\n");
 
-										int d = g->distance_detectors[r]->positive_reach_detector->distance(n);
-										printf("%*d ",maxwidth,d);
+												int d = g->distance_detectors[r]->positive_reach_detector->distance(n);
+												printf("%*d ",maxw,d);
 
 
-											lasty=y;
-										}
-										printf("\n");
-									}
+													lasty=y;
+												}
+												printf("\n");
+											}
+							}
 					}
+
+
 
 
 				}
@@ -694,15 +701,18 @@ int main(int argc, char** argv)
         	}
 
 			if(opt_witness){
+
+				printf("v ");
 				for(int v =0;v<S.nVars();v++){
 					if(S.model[v]==l_True){
-						printf("%d,",1);
+						printf("+%d ",(v+1));
 					}else if(S.model[v]==l_False){
-						printf("%d,",-1);
-					}else{
+						printf("%d ",-(v+1));
+					}/*else{
 						printf("%d,",0);
-					}
+					}*/
 				}
+				printf("0\n");
 			}
 
         }else if(ret==l_False){

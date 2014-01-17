@@ -73,6 +73,12 @@ DoubleOption Minisat::opt_allpairs_percentage(_cat_graph,"allpairs-frac","Fracti
 
 BoolOption Minisat::opt_decide_graph_neg(_cat_graph,"decide-graph-neg","",false);
 
+BoolOption Minisat::opt_decide_graph_pos(_cat_graph,"decide-graph-pos","",true);
+
+BoolOption Minisat::opt_ignore_graph(_cat_graph,"ignore-graph","",false);
+
+BoolOption Minisat::opt_check_pure_theory_lits(_cat_graph,"pure-theory-lits","",false);
+
 MinCutAlg Minisat::mincutalg=ALG_EDMONSKARP ;
 ReachAlg Minisat::reachalg=ALG_CONNECTIVITY;
 ReachAlg Minisat::distalg=ALG_BFS;

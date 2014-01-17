@@ -39,6 +39,11 @@ namespace Minisat {
 
 template<class B, class Solver>
 static void readDiGraph(B& in, Solver& S, vec<GraphTheory*> & graphs) {
+	if(opt_ignore_graph){
+		skipLine(in);
+		return;
+	}
+
     int     g, n,e, ev;
     if(!eagerMatch(in,"digraph")){
     	 printf("PARSE ERROR! Unexpected char: %c\n", *in), exit(3);
@@ -63,7 +68,10 @@ static void readDiGraph(B& in, Solver& S, vec<GraphTheory*> & graphs) {
 
 template<class B, class Solver>
 static void readEdge(B& in, Solver& S, vec<GraphTheory*> & graphs) {
-
+	if(opt_ignore_graph){
+		skipLine(in);
+		return;
+	}
     if(*in != 'e'){
     	printf("PARSE ERROR! Unexpected char: %c\n", *in), exit(3);
     }
@@ -90,6 +98,10 @@ static void readEdge(B& in, Solver& S, vec<GraphTheory*> & graphs) {
 
 template<class B, class Solver>
 static void readReach(B& in, Solver& S, vec<GraphTheory*> & graphs) {
+	if(opt_ignore_graph){
+		skipLine(in);
+		return;
+	}
 	//r g u w var is a reach querry: var is true if can u reach w in graph g, false otherwise
     if(*in != 'r'){
     	printf("PARSE ERROR! Unexpected char: %c\n", *in), exit(3);
@@ -116,6 +128,10 @@ static void readReach(B& in, Solver& S, vec<GraphTheory*> & graphs) {
 
 template<class B, class Solver>
 static void readDistance(B& in, Solver& S, vec<GraphTheory*> & graphs) {
+	if(opt_ignore_graph){
+		skipLine(in);
+		return;
+	}
 	//d g u w var dist is a reach querry: var is true if can u reach w in graph g, false otherwise
     if(*in != 'd'){
     	printf("PARSE ERROR! Unexpected char: %c\n", *in), exit(3);

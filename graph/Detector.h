@@ -28,7 +28,9 @@ public:
 	virtual void buildForcedEdgeReason(int reach_node, int forced_edge_id,vec<Lit> & conflict)=0;*/
 	virtual void buildReason(Lit p, vec<Lit> & reason, CRef marker)=0;
 	virtual bool checkSatisfied()=0;
+	virtual void preprocess(){
 
+	}
 	virtual Lit decide()=0;
 
 	virtual void addLit(int from, int to, Var reach_var,int within_steps=-1)=0;

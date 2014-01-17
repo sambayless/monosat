@@ -12,7 +12,8 @@
 #include "core/Config.h"
 
 ReachDetector::ReachDetector(int _detectorID, GraphTheorySolver * _outer, DynamicGraph<PositiveEdgeStatus> &_g, DynamicGraph<NegativeEdgeStatus> &_antig, int from,double seed):Detector(_detectorID),outer(_outer),within(-1),source(from),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL),chokepoint_status(*this),chokepoint(chokepoint_status, _antig,source){
-
+	check_positive=true;
+	check_negative=true;
 	rnd_path=NULL;
 	 if(opt_use_random_path_for_decisions){
 		 rnd_path = new WeightedDijkstra<NegativeEdgeStatus>(from,_antig);
@@ -132,6 +133,12 @@ bool ReachDetector::ChokepointStatus::mustReach(int node){
 }
 bool ReachDetector::ChokepointStatus::operator() (int edge_id){
 	return detector.outer->edge_assignments[edge_id]==l_Undef;
+}
+
+void ReachDetector::preprocess(){
+	//vec<bool> pure;
+	//pure.growTo(reach_lits.size());
+	//can check if all reach lits appear in only one polarity in the solver constraints; if so, then we can disable either check_positive or check_negative
 }
 
 void ReachDetector::buildReachReason(int node,vec<Lit> & conflict){
@@ -497,18 +504,19 @@ void ReachDetector::buildReachReason(int node,vec<Lit> & conflict){
 
 		bool ReachDetector::propagate(vec<Assignment> & trail,vec<Lit> & conflict){
 
-
-								double startdreachtime = cpuTime();
-								getChanged().clear();
-								positive_reach_detector->update();
-								double reachUpdateElapsed = cpuTime()-startdreachtime;
-								outer->reachupdatetime+=reachUpdateElapsed;
-
-								double startunreachtime = cpuTime();
-								negative_reach_detector->update();
-								double unreachUpdateElapsed = cpuTime()-startunreachtime;
-								outer->unreachupdatetime+=unreachUpdateElapsed;
-
+								if(check_positive){
+									double startdreachtime = cpuTime();
+									getChanged().clear();
+									positive_reach_detector->update();
+									double reachUpdateElapsed = cpuTime()-startdreachtime;
+									outer->reachupdatetime+=reachUpdateElapsed;
+								}
+								if(check_negative){
+									double startunreachtime = cpuTime();
+									negative_reach_detector->update();
+									double unreachUpdateElapsed = cpuTime()-startunreachtime;
+									outer->unreachupdatetime+=unreachUpdateElapsed;
+								}
 								for(int j = 0;j<getChanged().size();j++){
 										Lit l = getChanged()[j].l;
 										int u =  getChanged()[j].u;
@@ -664,7 +672,7 @@ Lit ReachDetector::decide(){
 		if(l==lit_Undef)
 			continue;
 		int j =getNode(var(l));
-		if(outer->S->value(l)==l_True){
+		if(outer->S->value(l)==l_True && opt_decide_graph_pos){
 			//if(S->level(var(l))>0)
 			//	continue;
 			assert(over->connected(j));
@@ -814,8 +822,8 @@ Lit ReachDetector::decide(){
 				}*/
 
 			}
-		}else if(outer->S->value(l)==l_False){
-			if(opt_decide_graph_neg){
+		}else if(outer->S->value(l)==l_False && opt_decide_graph_neg){
+
 
 				//for each negated reachability constraint, we can find a cut through the unassigned edges in the over-approx and disable one of those edges.
 				assert(!under->connected(j));
@@ -841,7 +849,7 @@ Lit ReachDetector::decide(){
 
 
 				}
-			}
+
 		}
 
 	}

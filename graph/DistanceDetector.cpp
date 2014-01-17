@@ -12,6 +12,18 @@
 
 DistanceDetector::DistanceDetector(int _detectorID, GraphTheorySolver * _outer,  DynamicGraph<PositiveEdgeStatus> &_g,DynamicGraph<NegativeEdgeStatus> &_antig, int from, int within_steps ,double seed):
 Detector(_detectorID),outer(_outer),source(from),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL){
+	rnd_path=NULL;
+	 if(opt_use_random_path_for_decisions){
+		 rnd_path = new WeightedDijkstra<NegativeEdgeStatus>(from,_antig);
+		 for(int i=0;i<_g.nodes;i++){
+			 double w = drand(rnd_seed);
+		/*	 w-=0.5;
+			 w*=w;*/
+			 //printf("%f (%f),",w,rnd_seed);
+			rnd_path->setWeight(i,w);
+		 }
+		 //printf("\n");
+	 }
 
 	if(distalg==ALG_BFS){
 		positiveReachStatus = new DistanceDetector::ReachStatus(*this,true);
@@ -531,6 +543,10 @@ Lit DistanceDetector::decide(){
 
 	//this can be obviously more efficient
 	//for(int j = 0;j<nNodes();j++){
+/*	if(opt_decide_graph_neg){
+
+	}*/
+
 	for(int k = 0;k<dist_lits.size();k++){
 		for(int n = 0;n<dist_lits[k].size();n++){
 			Lit l = dist_lits[k][n].l;
@@ -539,6 +555,7 @@ Lit DistanceDetector::decide(){
 				continue;
 			int j = r->getNode(var(l));
 			if(outer->S->value(l)==l_True){
+				if(opt_decide_graph_pos){
 				//if(S->level(var(l))>0)
 				//	continue;
 
@@ -552,7 +569,7 @@ Lit DistanceDetector::decide(){
 
 					int p =j;
 					int last=j;
-					//if(!opt_use_random_path_for_decisions)
+					if(!opt_use_random_path_for_decisions)
 					{
 						//ok, read back the path from the over to find a candidate edge we can decide
 						//find the earliest unconnected node on this path
@@ -570,7 +587,7 @@ Lit DistanceDetector::decide(){
 							p = prev;
 
 						}
-					}/*else{
+					}else{
 					//This won't work (without modification) because we need to constrain these paths to ones of maximum real distance < min_dist.
 						//Randomly re-weight the graph sometimes
 						if(drand(rnd_seed)<opt_decide_graph_re_rnd){
@@ -597,7 +614,7 @@ Lit DistanceDetector::decide(){
 							assert(p>=0);
 						}
 
-					}*/
+					}
 
 
 
@@ -625,6 +642,48 @@ Lit DistanceDetector::decide(){
 						}
 					}*/
 
+				}
+				}
+			}else if(outer->S->value(l)==l_False){
+				if(opt_decide_graph_neg){
+
+					//assert(over->distance(j)<=min_dist);//else we would already be in conflict before this decision was attempted!
+
+
+					if(over->distance(j)<=min_dist && under->distance(j)>min_dist){
+						//then lets try to disconnect this node from source by walking back along the path in the over approx, and disabling the first unassigned edge we see.
+						//(there must be at least one such edge, else the variable would be connected in the under approximation as well - in which case it would already have been propagated.
+						int p = j;
+						int last = j;
+						 int dist = 0;
+						// tmp_nodes.clear();
+						while(under->distance(p)>min_dist-dist){
+							//int d = under->distance(p);
+							//int d_over = over->distance(p);
+							last=p;
+							assert(p!=source);
+							int prev = over->previous(p);
+							Var v = outer->edges[prev][p].v;
+							if(outer->S->value(v)==l_Undef){
+								//if(opt_use_random_path_for_decisions)
+								//	tmp_nodes.push(v);
+								//else
+								return mkLit(v,true);
+							}else{
+								assert(outer->S->value(v)!=l_False);
+							}
+							assert(over->distance(p)<=min_dist-dist);
+							dist+=1;//should really be weighted
+							p = prev;
+
+						}
+				/*		assert(opt_use_random_path_for_decisions);
+						assert(tmp_nodes.size()>0);
+						int i = irand(rnd_seed,tmp_nodes.size());
+						Var v= tmp_nodes[i];
+						return mkLit(v,true);*/
+
+					}
 				}
 			}
 		}

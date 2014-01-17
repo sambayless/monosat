@@ -82,6 +82,8 @@ public:
 		ReachStatus *positiveReachStatus;
 		ReachStatus *negativeReachStatus;
 		WeightedDijkstra<NegativeEdgeStatus> * rnd_path;
+		bool check_positive;
+		bool check_negative;
 
 		struct ChokepointStatus{
 			ReachDetector & detector;
@@ -115,7 +117,7 @@ public:
 		bool checkSatisfied();
 		void addLit(int from, int to, Var reach_var,int within_steps=-1);
 		Lit decide();
-
+		void preprocess();
 		void dbg_sync_reachability();
 
 		ReachDetector(int _detectorID, GraphTheorySolver * _outer, DynamicGraph<PositiveEdgeStatus> &_g, DynamicGraph<NegativeEdgeStatus> &_antig, int _source,double seed=1);//:Detector(_detectorID),outer(_outer),within(-1),source(_source),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL),chokepoint_status(*this),chokepoint(chokepoint_status, _antig,source){}

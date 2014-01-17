@@ -16,7 +16,7 @@
 #include "Distance.h"
 #include "core/SolverTypes.h"
 #include "mtl/Map.h"
-
+#include "WeightedDijkstra.h"
 
 #include "utils/System.h"
 #include "Detector.h"
@@ -49,10 +49,11 @@ public:
 				int u;
 			};
 		vec<Change> changed;
-
+		vec<Var> tmp_nodes;
 		vec<Change> & getChanged(){
 			return changed;
 		}
+		WeightedDijkstra<NegativeEdgeStatus> * rnd_path;
 
 		struct ReachStatus{
 			DistanceDetector & detector;

@@ -139,6 +139,9 @@ public:
 	double reachupdatetime;
 	double unreachupdatetime;
 	double stats_initial_propagation_time;
+	double stats_decision_time;
+	double stats_reason_initial_time;
+	double stats_reason_time;
 	int num_learnt_paths;
 	int learnt_path_clause_length;
 	int num_learnt_cuts;
@@ -192,7 +195,9 @@ public:
 			reachupdatetime=0;
 			unreachupdatetime=0;
 			stats_initial_propagation_time=0;
-
+			stats_decision_time=0;
+			stats_reason_initial_time=0;
+			stats_reason_time=0;
 			 num_learnt_paths=0;
 			 learnt_path_clause_length=0;
 			 num_learnt_cuts=0;
@@ -227,7 +232,10 @@ public:
 	void printStats(){
 
 		printf("Graph stats:\n");
+		printf("Decision Time: %f\n", stats_decision_time);
 		printf("Prop Time: %f (initial: %f)\n", propagationtime,stats_initial_propagation_time);
+		printf("Conflict Time: %f (initial: %f)\n", stats_reason_time,stats_reason_initial_time);
+
 		printf("Reach Time: %f (update Time: %f)\n", reachtime,reachupdatetime);
 		printf("Unreach Time: %f (Update Time: %f)\n", unreachtime,unreachupdatetime);
 		printf("Path Time: %f (#Paths: %d, AvgLength %f, total: %d)\n", pathtime, num_learnt_paths, (learnt_path_clause_length /  ((float) num_learnt_paths+1)),learnt_path_clause_length);
@@ -457,6 +465,7 @@ public:
 	Lit decideTheory(){
 		if(!opt_decide_graph)
 			return lit_Undef;
+		double start = cpuTime();
 		for(int i = 0;i<detectors.size();i++){
 			Detector * r = detectors[i];
 			Lit l =r->decide();
@@ -464,7 +473,7 @@ public:
 				return l;
 
 		}
-
+		stats_decision_time += cpuTime() - start;
 		return lit_Undef;
 	}
 
@@ -512,13 +521,16 @@ public:
 		assert(marker != CRef_Undef);
 		int pos = CRef_Undef- marker;
 		int d = marker_map[pos];
-
+		double initial_start = cpuTime();
 		backtrackUntil(p);
 
+		double start = cpuTime();
 
 		assert(d<detectors.size());
 		detectors[d]->buildReason(p,reason,marker);
-
+		double finish = cpuTime();
+		stats_reason_time+=finish-start;
+		stats_reason_initial_time+=start-initial_start;
 
 	}
 
@@ -613,6 +625,12 @@ public:
 						//this is an edge assignment
 		int edge_num = v-min_edge_var;
 		return edge_num;
+	}
+
+	void preprocess(){
+		for (int i = 0;i<detectors.size();i++){
+			detectors[i]->preprocess();
+		}
 	}
 
 	bool propagateTheory(vec<Lit> & conflict){
