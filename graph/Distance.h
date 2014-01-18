@@ -106,13 +106,13 @@ public:
 	void update( ){
 		static int iteration = 0;
 		int local_it = ++iteration ;
-		stats_full_updates++;
-		double startdupdatetime = cpuTime();
+
 		if(last_modification>0 && g.modifications==last_modification){
 			stats_skipped_updates++;
 			return;
 		}
-
+		stats_full_updates++;
+		double startdupdatetime = cpuTime();
 		if(last_deletion==g.deletions){
 			stats_num_skipable_deletions++;
 		}

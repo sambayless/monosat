@@ -8,6 +8,7 @@
 #include "core/Config.h"
 #include "MinimumSpanningTree.h"
 #include "DisjointSets.h"
+#include <limits>
 using namespace Minisat;
 
 
@@ -25,7 +26,7 @@ public:
 	int history_qhead;
 
 	int last_history_clear;
-
+	bool hasParents;
 	int INF;
 	DisjointSets sets;
 	vec<int> mst;
@@ -34,7 +35,9 @@ public:
 	const int reportPolarity;
 
 	//vec<char> old_seen;
-	vec<char> seen;;
+	vec<bool> in_tree;;
+	vec<int> parents;
+	vec<int> parent_edges;
 //	vec<int> changed;
 	vec<int> edge_weights;
     struct EdgeLt {
@@ -78,32 +81,34 @@ public:
 		stats_num_skipable_deletions=0;
 		stats_fast_failed_updates=0;
 		min_weight=-1;
+		hasParents=false;
 	}
 
 	void setNodes(int n){
 		q.capacity(n);
 		check.capacity(n);
-		seen.growTo(n);
-		prev.growTo(n);
-		INF=g.nodes+1;
-		sets.AddElements(n);
+		in_tree.growTo(g.edges);
 
+		INF=std::numeric_limits<int>::max();
+		sets.AddElements(n);
+		parents.growTo(n);
+		parent_edges.growTo(n);
 	}
 
 	void update( ){
 		static int iteration = 0;
 		int local_it = ++iteration ;
-		stats_full_updates++;
-		double startdupdatetime = cpuTime();
+
 		if(last_modification>0 && g.modifications==last_modification){
 			stats_skipped_updates++;
 			return;
 		}
-
+		stats_full_updates++;
+		double startdupdatetime = cpuTime();
 		if(last_deletion==g.deletions){
 			stats_num_skipable_deletions++;
 		}
-
+		hasParents=false;
 		sets.Reset();
 		setNodes(g.nodes);
 
@@ -116,6 +121,7 @@ public:
 			if(g.edgeEnabled(i)){
 				edge_heap.insert(i);
 			}
+			in_tree[i]=false;
 		}
 
 		while(edge_heap.size()){
@@ -126,6 +132,8 @@ public:
 			int set2 = sets.FindSet(v);
 			if(set1!=set2){
 				assert(g.edgeEnabled(edge_id));
+				assert(parents[v]==-1);
+				in_tree[edge_id]=true;
 				mst.push(edge_id);
 				if(reportPolarity>-1)
 					status.inMinimumSpanningTree(edge_id,true);
@@ -150,8 +158,27 @@ public:
 		stats_full_update_time+=cpuTime()-startdupdatetime;;
 	}
 	vec<int> & getSpanningTree(){
+		update();
 		return mst;
 	 }
+
+	int getParent(int node){
+		update();
+		//kruskals doesn't actually give us the parents, normally. need to construct it on demand, here.
+		if (!hasParents)
+			buildParents();
+		return parents[node];
+	}
+	 int getParentEdge(int node){
+		 if(getParent(node)!=-1)
+			 return parent_edges[node];
+		 else
+			 return -1;
+	 }
+	bool edgeInTree(int edgeid){
+		update();
+		return in_tree[edgeid];
+	}
 	bool dbg_mst(){
 
 		return true;
@@ -161,8 +188,8 @@ public:
 	}
 
 	int weight(){
-		if(last_modification!=g.modifications)
-			update();
+
+		update();
 
 		assert(dbg_uptodate());
 
@@ -172,7 +199,32 @@ public:
 	bool dbg_uptodate(){
 		return true;
 	};
-
+private:
+	void buildParents(){
+		hasParents=true;
+		for(int i = 0;i<parents.size();i++){
+			parents[i]=-1;
+			parent_edges[i]=-1;
+		}
+		q.clear();
+		q.push(0);
+		while(q.size()){
+			int u = q.last();
+			assert(parents[u]==-1);
+			q.pop();
+			for (int j = 0;j<g.adjacency[u].size();j++){
+				int edge = g.adjacency[u][j].id;
+				int to = g.adjacency[u][j].node;
+				if(in_tree[edge]){
+					if(parents[to]==-1){
+						parents[to]=u;
+						parent_edges[to] = edge;
+						q.push(to);
+					}
+				}
+			}
+		}
+	}
 };
 
 #endif

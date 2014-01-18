@@ -38,6 +38,9 @@ public:
 	virtual bool dbg_mst()=0;
 	virtual int weight()=0;
 	virtual Minisat::vec<int> & getSpanningTree()=0;
+	virtual int getParent(int node)=0;
+	virtual int getParentEdge(int node)=0;
+	virtual bool edgeInTree(int edgeid)=0;
 };
 
 #endif /* MINIMUMSPANNINGTREE_H_ */

@@ -9,9 +9,9 @@
 
 #include "MSTDetector.h"
 #include "GraphTheory.h"
-
+#include <limits>
 MSTDetector::MSTDetector(int _detectorID, GraphTheorySolver * _outer,  DynamicGraph<PositiveEdgeStatus> &_g,DynamicGraph<NegativeEdgeStatus> &_antig ,double seed):
-Detector(_detectorID),outer(_outer),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL){
+Detector(_detectorID),outer(_outer),g(_g),antig(_antig),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL){
 
 
 
@@ -145,15 +145,93 @@ void MSTDetector::buildMinWeightReason(int weight,vec<Lit> & conflict){
 			outer->pathtime+=elapsed;
 
 		}
+
+
+		bool MSTDetector::walkback(int min_weight, int from, int to){
+			int u = from;
+			while(u!=to){
+				int p = negative_reach_detector->getParent(u);
+				int edgeid = negative_reach_detector->getParentEdge(u);
+				int weight = edge_weights[edgeid];
+				if(weight>min_weight){
+					return true;
+				}
+			}
+			return false;
+		}
+
+		void MSTDetector::TarjanOLCA(int node,vec<Lit> & conflict){
+			ancestors[node]=node;
+			for(int i = 0;i<antig.adjacency[node].size();i++){
+				int edgeid = antig.adjacency[node][i].id;
+				if(negative_reach_detector->edgeInTree(edgeid)){
+					int v = antig.adjacency[node][i].node;
+					if(negative_reach_detector->getParent(v)==node){
+						//u is a child of node in the minimum spanning tree
+						TarjanOLCA(v,conflict);
+						sets.Union(node,v);
+						int set = sets.FindSet(node);
+						ancestors[set]=node;
+
+					}
+				}
+			}
+			black[node]=true;
+			//now visit all _disabled_ edges of node
+			for(int i = 0;i<antig.adjacency[node].size();i++){
+				int edgeid = g.adjacency[node][i].id;
+				if(!antig.edgeEnabled(edgeid)){
+					//this is a disabled edge
+					int v = g.adjacency[node][i].node;
+					if(black[v]){
+						int set = sets.FindSet(v);
+						int lowest_common_ancestor = ancestors[set];
+
+						//ok, now walk back from u and v in the minimum spanning tree until either the lowest common ancestor is seen, or an edge larger than the weight of this disabled edge is found
+						int weight =edge_weights[edgeid];
+						bool any_larger_weights = walkback(weight,node,lowest_common_ancestor) ||  walkback(weight,v,lowest_common_ancestor) ;
+						//if any larger edge was found in either path from u or v to their common ancestor in the minimum spanning tree, then enabling this edge
+						//would have replaced that larger edge in the minimum spanning tree, resulting in a smaller minimum spanning tree.
+						if(any_larger_weights){
+							Var e =outer->edge_list[edgeid].v;
+							assert(outer->S->value(e)==l_False);
+							conflict.push(mkLit(e,false));
+						}
+					}
+				}
+			}
+		}
+
 		void MSTDetector::buildNonMinWeightReason(int weight,vec<Lit> & conflict){
+
 			static int it = 0;
 			++it;
-
+			black.clear();
+			black.growTo(g.nodes);
 			//drawFull( non_reach_detectors[detector]->getSource(),u);
 			//assert(outer->dbg_distance( source,u));
 			double starttime = cpuTime();
+			int INF=std::numeric_limits<int>::max();
+			negative_reach_detector->update();
 
-			//Noah's algorithm here.
+			sets.Reset();
+			sets.AddElements(g.nodes);
+
+
+			//Noah's algorithm for finding a minimal neccesary set of edges to add to decrease the weight of the tree
+			//all we are doing here is visiting each disabled edge, then examining the cycle that would be created in the minimum spanning tree if we were to
+			//add that edge to the tree. If any edge in that cycle is larger than the disabled edge, then enabling that edge would result in a smaller minimum spanning tree.
+			//so we have to add that edge to the conflict as part of the reason that the minimum spanning tree is larger than it should be.
+
+			//conceptually, thats really simple. The problem is that visiting that cycle requires computing the lowest common ancestor of the two nodes on either side of the disabled edge,
+			//and to make that efficient we are going to use Tarjan's offline lca algorithm. This results in the convoluted code below.
+
+			int root = 0;
+			while(negative_reach_detector->getParent(root)!=-1){
+				root = negative_reach_detector->getParent(root);
+			}
+			TarjanOLCA(root,conflict);
+
 
 
 			 outer->num_learnt_cuts++;
@@ -165,6 +243,174 @@ void MSTDetector::buildMinWeightReason(int weight,vec<Lit> & conflict){
 
 		}
 
+
+		int MSTDetector::walkback_edge(int min_weight, int edge_id, int from, int to, bool & found){
+			int u = from;
+			int maxweight = 0;
+			while(u!=to){
+				int p = negative_reach_detector->getParent(u);
+				int edgeid = negative_reach_detector->getParentEdge(u);
+				int weight = edge_weights[edgeid];
+				if(edgeid == edge_id){
+					assert(!found);//can't enounter the edge twice while traversing the cycle
+					found=true;
+				}
+				if(weight>maxweight){
+					maxweight=weight;
+				}
+			}
+			return maxweight;
+		}
+
+
+		void MSTDetector::TarjanOLCA_edge(int node,int check_edgeid,int lowest_endpoint,vec<Lit> & conflict){
+					ancestors[node]=node;
+					for(int i = 0;i<antig.adjacency[node].size();i++){
+						int edgeid = antig.adjacency[node][i].id;
+						if(negative_reach_detector->edgeInTree(edgeid)){
+							int v = antig.adjacency[node][i].node;
+							if(negative_reach_detector->getParent(v)==node){
+								//u is a child of node in the minimum spanning tree
+								TarjanOLCA_edge(v,edgeid,lowest_endpoint,conflict);
+								sets.Union(node,v);
+								int set = sets.FindSet(node);
+								ancestors[set]=node;
+
+							}
+						}
+					}
+					black[node]=true;
+					//now visit all _disabled_ edges of node
+					for(int i = 0;i<antig.adjacency[node].size();i++){
+						int edgeid = g.adjacency[node][i].id;
+						if(!antig.edgeEnabled(edgeid)){
+							//this is a disabled edge
+							int v = g.adjacency[node][i].node;
+							if(black[v]){
+								int set = sets.FindSet(v);
+								int lowest_common_ancestor = ancestors[set];
+
+								//ok, now walk back from u and v in the minimum spanning tree until either the lowest common ancestor is seen, or an edge larger than the weight of this disabled edge is found
+								int weight =edge_weights[edgeid];
+								bool found=false;
+
+								int largest_weight = walkback_edge(weight,check_edgeid,node,lowest_common_ancestor, found);
+
+								int largest_weight_other = walkback_edge(weight,check_edgeid,v,lowest_common_ancestor,found) ;
+								if(found   && (largest_weight>weight || largest_weight_other >weight )){
+									//if any edge larger than the disabled edge's weight was found in either path from u or v to their common ancestor in the minimum spanning tree, then enabling this edge
+									//would lead  to replacing that larger edge in the minimum spanning tree, resulting in a smaller minimum spanning tree, possibly resulting in the edge we really care about being removed from the tree.
+
+									Var e =outer->edge_list[edgeid].v;
+									assert(outer->S->value(e)==l_False);
+									conflict.push(mkLit(e,false));
+
+								}
+							}
+						}
+					}
+				}
+
+				void MSTDetector::buildNonEdgeReason(int edgeid,vec<Lit> & conflict){
+					static int it = 0;
+					++it;
+					black.clear();
+					black.growTo(g.nodes);
+					//drawFull( non_reach_detectors[detector]->getSource(),u);
+					//assert(outer->dbg_distance( source,u));
+					double starttime = cpuTime();
+					int INF=std::numeric_limits<int>::max();
+					negative_reach_detector->update();
+
+					sets.Reset();
+					sets.AddElements(g.nodes);
+
+
+					//Noah's algorithm for finding a minimal neccesary set of edges to add to decrease the weight of the tree
+					//all we are doing here is visiting each disabled edge, then examining the cycle that would be created in the minimum spanning tree if we were to
+					//add that edge to the tree. If any edge in that cycle is larger than the disabled edge, then enabling that edge would result in a smaller minimum spanning tree.
+					//so we have to add that edge to the conflict as part of the reason that the minimum spanning tree is larger than it should be.
+
+					//conceptually, thats really simple. The problem is that visiting that cycle requires computing the lowest common ancestor of the two nodes on either side of the disabled edge,
+					//and to make that efficient we are going to use Tarjan's offline lca algorithm. This results in the convoluted code below.
+					int u = g.all_edges[edgeid].from;
+					int v = g.all_edges[edgeid].to;
+					int lower_endpoint = u;
+					if(negative_reach_detector->getParent(v)==u){
+						lower_endpoint=v;
+					}else{
+						assert(negative_reach_detector->getParent(u)==v);
+					}
+
+					int root = 0;
+					while(negative_reach_detector->getParent(root)!=-1){
+						root = negative_reach_detector->getParent(root);
+					}
+					TarjanOLCA_edge(root,edgeid, lower_endpoint,conflict);//run tarjan's off-line lowest common ancestor query from node 0, arbitrarily.
+
+
+
+					 outer->num_learnt_cuts++;
+					 outer->learnt_cut_clause_length+= (conflict.size()-1);
+
+					double elapsed = cpuTime()-starttime;
+					 outer->mctime+=elapsed;
+
+
+				}
+				void MSTDetector::buildEdgeReason(int edgeid,vec<Lit> & conflict){
+					//the reason that an edge is NOT in the minimum spanning tree is the paths to lca from either edge. So long as all those edges are in the tree, each of which is <= weight to this edge,
+					//this edge cannot be in the mst.
+					seen.clear();
+					seen.growTo(g.nodes);
+					int u = g.all_edges[edgeid].from;
+					int v = g.all_edges[edgeid].to;
+					positive_reach_detector->update();
+					assert(!g.edgeEnabled(edge_id));
+					int r = u;
+					while(r != -1 ){
+						seen[r]=true;
+						r= positive_reach_detector->getParent(r);
+
+					}
+					r=v;
+					while(! seen[r]){
+						r = positive_reach_detector->getParent(r);
+						assert(r!=-1);
+					}
+					int lca = r;
+					r=u;
+					while(r!=lca){
+						assert(seen[u]);
+						seen[r]=false;
+						int p =  positive_reach_detector->getParent(r);
+						int edge = positive_reach_detector->getParentEdge(r);
+						assert(g.edgeEnabled(edge));
+						Var v = outer->edge_list[edge].v;
+						assert(outer->S->value(v)==l_True);
+						conflict.push(mkLit(v,true));
+						r= p;
+					}
+
+					r=v;
+					while(r!=lca){
+						assert(!seen[u]);
+						int p =  positive_reach_detector->getParent(r);
+						int edge = positive_reach_detector->getParentEdge(r);
+						assert(g.edgeEnabled(edge));
+						Var v = outer->edge_list[edge].v;
+						assert(outer->S->value(v)==l_True);
+						conflict.push(mkLit(v,true));
+						r= p;
+					}
+
+					r = lca;
+					while(r!=-1){
+						assert(seen[r] || r==lca);
+						seen[r]=false;
+						r = positive_reach_detector->getParent(r);
+					}
+				}
 		/**
 		 * Explain why an edge was forced (to true).
 		 * The reason is that _IF_ that edge is false, THEN there is a cut of disabled edges between source and target

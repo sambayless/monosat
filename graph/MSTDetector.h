@@ -15,7 +15,7 @@
 #include "core/SolverTypes.h"
 #include "mtl/Map.h"
 #include "Kruskal.h"
-
+#include "DisjointSets.h"
 #include "utils/System.h"
 #include "Detector.h"
 namespace Minisat{
@@ -24,7 +24,9 @@ class MSTDetector:public Detector{
 public:
 		GraphTheorySolver * outer;
 		//int within;
-		int source;
+		DynamicGraph<PositiveEdgeStatus> & g;
+		DynamicGraph<NegativeEdgeStatus> & antig;
+
 		double rnd_seed;
 
 		MinimumSpanningTree * positive_reach_detector;
@@ -35,7 +37,7 @@ public:
 
 		Map<float,int> weight_lit_map;
 		vec<int> force_reason;
-
+		vec<int> edge_weights;
 		struct MSTWeightLit{
 			Lit l;
 			int min_weight;
@@ -61,7 +63,10 @@ public:
 		vec<ChangedEdge> changed_edges;
 
 		vec<Var> tmp_nodes;
-
+		vec<bool> seen;
+		vec<bool> black;
+		vec<int> ancestors;
+		DisjointSets sets;
 
 		struct MSTStatus{
 			MSTDetector & detector;
@@ -75,9 +80,13 @@ public:
 		MSTStatus *positiveReachStatus;
 		MSTStatus *negativeReachStatus;
 
+
+
 		bool propagate(vec<Assignment> & trail,vec<Lit> & conflict);
 		void buildMinWeightReason(int weight,vec<Lit> & conflict);
 		void buildNonMinWeightReason(int weight,vec<Lit> & conflict);
+		void buildEdgeReason(int edge,vec<Lit> & conflict);
+		void buildNonEdgeReason(int edge,vec<Lit> & conflict);
 		//void buildForcedMinWeightReason(int reach_node, int forced_edge_id,vec<Lit> & conflict);
 		void buildReason(Lit p, vec<Lit> & reason, CRef marker);
 		bool checkSatisfied();
@@ -89,6 +98,11 @@ public:
 		virtual ~MSTDetector(){
 
 		}
+private:
+		void TarjanOLCA(int node, vec<Lit> & conflict);
+		bool walkback(int weight, int from, int to);
+		void TarjanOLCA_edge(int node, int edgeid,int lowest_endpoint, vec<Lit> & conflict);
+		int walkback_edge(int weight,int edgeid, int from, int to, bool &found);
 };
 };
 #endif /* DistanceDetector_H_ */

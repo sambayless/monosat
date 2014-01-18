@@ -33,6 +33,7 @@
 #include "AllPairsDetector.h"
 #include "ReachDetector.h"
 #include "DistanceDetector.h"
+#include "MSTDetector.h"
 namespace Minisat{
 
 class GraphTheorySolver;
