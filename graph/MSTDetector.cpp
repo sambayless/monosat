@@ -559,7 +559,42 @@ void MSTDetector::buildMinWeightReason(int weight,vec<Lit> & conflict){
 
 		}
 
+		for(int j = 0;j<changed_edges.size();j++){
+					Lit l = changed_edges[j].l;
+					int edge = changed_edges[j].edgeID;
+					bool reach = !sign(l);
+					if(outer->S->value(l)==l_True){
+						//do nothing
+					}else if(outer->S->value(l)==l_Undef){
+						trail.push(Assignment(false,reach,detectorID,0,var(l)));
+						if(reach)
+							outer->S->uncheckedEnqueue(l,reach_marker) ;
+						else
+							outer->S->uncheckedEnqueue(l,non_reach_marker) ;
 
+					}else if (outer->S->value(l)==l_False){
+						conflict.push(l);
+
+						if(reach){
+
+						//conflict
+						//The reason is a path in g from to s in d
+							buildEdgeReason(edge,conflict);
+						//add it to s
+						//return it as a conflict
+
+						}else{
+							//The reason is a cut separating s from t
+							buildNonEdgeReason(edge,conflict);
+
+						}
+
+						return false;
+					}else{
+						int  a=1;
+					}
+
+				}
 			return true;
 		}
 
