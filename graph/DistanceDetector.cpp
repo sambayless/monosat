@@ -108,9 +108,7 @@ void DistanceDetector::ReachStatus::setMininumDistance(int u, bool reachable, in
 	if(distance<=detector.outer->g.nodes){
 		setReachable(u,reachable);
 	}
-	if(u==243 || u==247){
-		int a=1;
-	}
+
 		if(u<detector.dist_lits.size()){
 			assert(distance>=0);
 
@@ -624,11 +622,14 @@ Lit DistanceDetector::decide(){
 
 					assert(over->connected(last));
 					assert(over->connected(p));*/
+					assert(p>-1);
+					if(p>-1){
 					Var v = outer->edges[p][last].v;
 					if(outer->S->value(v)==l_Undef){
 						return mkLit(v,false);
 					}else{
 						assert(outer->S->value(v)!=l_True);
+					}
 					}
 			/*		for(int k = 0;k<outer->antig.adjacency[p].size();k++){
 						int to = outer->antig.adjacency[p][k].node;
