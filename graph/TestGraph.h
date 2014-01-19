@@ -21,8 +21,10 @@ private:
 		Lit l;
 		int from;
 		int to;
+		int weight;
 	};
 	vec<vec<Edge> > edges;
+	vec<int> edge_weights;
 	Lit False;
 	Lit True;
 	Solver * S;
@@ -64,16 +66,20 @@ public:
 	void implementConstraints(){
 
 	}
+	int getWeight(int edgeID){
+		return edge_weights[edgeID];
+	}
 	Lit newEdge(int from,int to)
     {
     		assert(isNode(from));assert(isNode(to));
 
     		Lit l = mkLit(S->newVar(),false);
-    		Edge e{l,from,to};
+    		Edge e{l,from,to,1};
     		edges[from].push(e);
+    		edge_weights.push(1);
     		return l;
     	}
-	Lit newEdge(int from,int to, Var v )
+	Lit newEdge(int from,int to, Var v, int weight=1 )
     {
     		assert(isNode(from));assert(isNode(to));
     		if(v==var_Undef)
@@ -81,8 +87,9 @@ public:
     		while(S->nVars()<=v)
     			S->newVar();
     		Lit l = mkLit(v,false);
-    		Edge e{l,from,to};
+    		Edge e{l,from,to,weight};
     		edges[from].push(e);
+    		edge_weights.push(weight);
     		return l;
     	}
     vec<Lit> c;
@@ -276,7 +283,27 @@ public:
 
 		    }
 
+	//v will be true if the minimum weight is <= the specified value
+	void minimumSpanningTree(Var v, int minimum_weight){
+		while(S->nVars()<=v){
+			S->newVar();
+		}
+			//not implemented, so just leave this unconstrained for now
+		printf("Warning: minimum spanning tree constraints are not implemented, and will be left unconstrained\n");
 
+
+	}
+
+
+	void edgeInMinimumSpanningTree(int u, int v, Var var){
+		while(S->nVars()<=var){
+			S->newVar();
+		}
+			//not implemented, so just leave this unconstrained for now
+		printf("Warning: minimum spanning tree constraints are not implemented, and will be left unconstrained\n");
+
+
+	}
 };
 
 };

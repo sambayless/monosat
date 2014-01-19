@@ -27,7 +27,7 @@ public:
 	int last_history_clear;
 
 	int INF;
-	DisjointSets sets;
+
 	vec<int> mst;
 	vec<int> q;
 	vec<int> check;
@@ -40,6 +40,9 @@ public:
 	vec<int> keys;
 	vec<int> parents;
 	vec<int> parent_edges;
+	int next_component;
+	vec<int> components;
+	vec<int> roots;
     struct VertLt {
         const vec<int>&  keys;
 
@@ -48,7 +51,7 @@ public:
         }
         VertLt(const vec<int>&  _key) : keys(_key) { }
     };
-
+    bool hasComponents;
 	Heap<VertLt> Q;
 
 	vec<int> mst;
@@ -81,6 +84,7 @@ public:
 		stats_num_skipable_deletions=0;
 		stats_fast_failed_updates=0;
 		min_weight=-1;
+		hasComponents=false;
 	}
 
 	void setNodes(int n){
@@ -89,7 +93,7 @@ public:
 		seen.growTo(n);
 		prev.growTo(n);
 		INF=std::numeric_limits<int>::max();
-		sets.AddElements(n);
+
 		parents.growTo(n);
 		keys.growTo(n);
 		parent_edges.growTo(n);
@@ -108,8 +112,8 @@ public:
 		if(last_deletion==g.deletions){
 			stats_num_skipable_deletions++;
 		}
+		hasComponents=false;
 
-		sets.Reset();
 		setNodes(g.nodes);
 
 		min_weight=0;
@@ -130,12 +134,12 @@ public:
 			if(u!=0){
 				int parent = parents[u];
 				assert(parent!=-1);
-				int edgeid = g.adjacency[parent][u].id;
+				int edgeid = g.adjacency_undirected[parent][u].id;
 				mst.push(edgeid);
 			}
-			for(int j = 0;j< g.adjacency[u].size();j++){
-				int edgeid = g.adjacency[u][j].id;
-				int v = g.adjacency[u][j].node;
+			for(int j = 0;j< g.adjacency_undirected[u].size();j++){
+				int edgeid = g.adjacency_undirected[u][j].id;
+				int v = g.adjacency_undirected[u][j].node;
 				if(!seen[v]){
 					int w = edge_weights[edgeid];
 					if(w<keys[v]){
@@ -148,7 +152,20 @@ public:
 				}
 			}
 		}
+		int numsets = 0;
 
+		for(int i = 0;i<g.nodes;i++){
+			if(parents[i] ==-1) {
+				numsets++;
+			}
+
+		}
+		if(numsets>1){
+			min_weight=INF;
+		}
+		if(numsets==0){
+			assert(min_weight==0);
+		}
 		status.setMinimumSpanningTree(min_weight);
 
 		assert(dbg_uptodate());
@@ -191,6 +208,28 @@ public:
 		int v = g.all_edges[edgeid].to;
 		return parents[u]==v || parents[v]==u;
 	}
+	int numComponents(){
+		update();
+		buildComponents();
+		return next_component;
+	}
+	int getComponent(int node){
+		update();
+		buildComponents();
+		assert(components[node]!=-1);
+		return components[node];
+	}
+	int getRoot(int component=0){
+		update();
+		if(component>0){
+			buildComponents();
+			assert(getParent(roots[component])==-1);
+			return roots[component];
+		}
+		assert(getParent(0)==-1);//because we always build the tree from 0
+		return 0;
+	}
+
 	int weight(){
 		update();
 
@@ -202,7 +241,25 @@ public:
 	bool dbg_uptodate(){
 		return true;
 	};
+private:
+	void buildComponents(){
+		if(!hasComponents){
+					hasComponents=true;
+					components.clear();
+					components.growTo(g.nodes,-1);
+					next_component = 0;
+					roots.clear();
+					//root_list.clear();
 
+					//identify each connected component.
+					//use disjoint sets for this, later
+
+
+					assert(roots.size()>0);
+
+
+				}
+	}
 
 };
 

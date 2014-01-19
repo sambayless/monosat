@@ -39,7 +39,7 @@ public:
 	vec<int> parents;
 	vec<int> parent_edges;
 //	vec<int> changed;
-	vec<int> edge_weights;
+	vec<int> & edge_weights;
     struct EdgeLt {
         const vec<int>&  edge_weights;
 
@@ -69,7 +69,7 @@ public:
 public:
 
 
-	Kruskal(DynamicGraph<EdgeStatus> & graph, Status & _status, int _reportPolarity=0 ):g(graph), status(_status), last_modification(-1),last_addition(-1),last_deletion(-1),history_qhead(0),last_history_clear(0),INF(0),reportPolarity(_reportPolarity),edge_heap(EdgeLt(edge_weights)){
+	Kruskal(DynamicGraph<EdgeStatus> & graph, Status & _status,vec<int> & _edge_weights, int _reportPolarity=0 ):g(graph), status(_status), last_modification(-1),last_addition(-1),last_deletion(-1),history_qhead(0),last_history_clear(0),INF(0),reportPolarity(_reportPolarity),edge_weights(_edge_weights),edge_heap(EdgeLt(edge_weights)){
 		marked=false;
 		mod_percentage=0.2;
 		stats_full_updates=0;
@@ -132,7 +132,6 @@ public:
 			int set2 = sets.FindSet(v);
 			if(set1!=set2){
 				assert(g.edgeEnabled(edge_id));
-				assert(parents[v]==-1);
 				in_tree[edge_id]=true;
 				mst.push(edge_id);
 				if(reportPolarity>-1)
@@ -141,6 +140,9 @@ public:
 				sets.Union(set1,set2);
 			}
 		}
+
+		if (sets.NumSets()>1)
+			min_weight=INF;
 
 		status.setMinimumSpanningTree(min_weight);
 
@@ -195,11 +197,34 @@ public:
 
 		return min_weight;
 	}
+	 int numComponents(){
+		 update();
+		 return sets.NumSets();
+	 }
+	int getComponent(int node){
+		update();
+		return sets.FindSet(node);
+	}
+	int getRoot(int component=0){
+		update();
+		if (!hasParents)
+			buildParents();
+		int u =0;
+		if(sets.NumSets()>1)
+			u=sets.GetElement(component);
+
+		while(int p =getParent(u)!=-1){
+			u=p;
+		}
+		assert(getParent(u)==-1);
+		return u;
+	}
 
 	bool dbg_uptodate(){
 		return true;
 	};
 private:
+
 	void buildParents(){
 		hasParents=true;
 		for(int i = 0;i<parents.size();i++){
@@ -207,23 +232,39 @@ private:
 			parent_edges[i]=-1;
 		}
 		q.clear();
-		q.push(0);
-		while(q.size()){
-			int u = q.last();
-			assert(parents[u]==-1);
-			q.pop();
-			for (int j = 0;j<g.adjacency[u].size();j++){
-				int edge = g.adjacency[u][j].id;
-				int to = g.adjacency[u][j].node;
-				if(in_tree[edge]){
-					if(parents[to]==-1){
-						parents[to]=u;
-						parent_edges[to] = edge;
-						q.push(to);
+		for(int i = 0;i<sets.NumSets();i++){
+			int root = sets.GetElement(i);//chose an element arbitrarily from the nth set.
+			q.push(root);
+			assert(parents[root]==-1);
+			while(q.size()){
+				int u = q.last();
+
+				q.pop();
+				for (int j = 0;j<g.adjacency_undirected[u].size();j++){
+					int edge = g.adjacency_undirected[u][j].id;
+					int to = g.adjacency_undirected[u][j].node;
+					if(in_tree[edge]){
+						if(parents[to]==-1 &&  to!=root){
+							assert(to!=root);
+							parents[to]=u;
+							parent_edges[to] = edge;
+							q.push(to);
+						}
 					}
 				}
 			}
+			assert(parents[root]==-1);
 		}
+/*
+#ifndef NDEBUG
+		int rootcount =0;
+		for(int i = 0;i<parents.size();i++){
+			if(parents[i]==-1)
+				rootcount++;
+		}
+		assert(rootcount==1);
+#endif
+*/
 	}
 };
 

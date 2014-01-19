@@ -59,6 +59,8 @@ typedef DefaultEdgeStatus CutEdgeStatus;
 		Var v;
 		int from;
 		int to;
+		int edgeID;
+		int weight;
 	};
 
 	// Returns a random float 0 <= x < 1. Seed must never be 0.

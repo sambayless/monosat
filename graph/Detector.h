@@ -33,7 +33,7 @@ public:
 	}
 	virtual Lit decide()=0;
 
-	virtual void addLit(int from, int to, Var reach_var,int within_steps=-1)=0;
+
 	//virtual vec<int> & getLitMap();
 	Detector(int _detectorID):detectorID(_detectorID){};
 	virtual ~Detector(){

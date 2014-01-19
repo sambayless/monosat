@@ -70,7 +70,7 @@ public:
 
 	vec<lbool> edge_assignments;
 
-
+	MSTDetector * mstDetector;
 	vec<ReachabilityConstraint> unimplemented_graph_constraints;
 
 
@@ -109,6 +109,7 @@ public:
 	vec<ReachDetector*> reach_detectors;
 	vec<DistanceDetector*> distance_detectors;
 
+
 	vec<int> marker_map;
 
 
@@ -122,6 +123,8 @@ public:
 
 	vec<vec<Edge> > inv_adj;
 
+	//vector of the weights for each edge
+	vec<int> edge_weights;
 
 	MaxFlow * mc;
 	//MaxFlow * reachprop;
@@ -181,7 +184,7 @@ public:
 	}propCutStatus;
 
 	GraphTheorySolver(Solver * S_, int _id=-1):S(S_),id(_id),g(g_status),antig(antig_status) ,cutGraph(cutGraph_status),cutStatus(*this),propCutStatus(*this){
-
+		mstDetector = NULL;
 		True = mkLit(S->newVar(),false);
 			False=~True;
 			S->addClause(True);
@@ -844,7 +847,7 @@ public:
 
 	}
 
-	Lit newEdge(int from,int to, Var v = var_Undef)
+	Lit newEdge(int from,int to, Var v = var_Undef, int weight=1)
     {
 
 		if(v==var_Undef)
@@ -863,25 +866,35 @@ public:
 		int index = v-min_edge_var;
 
 		while(edge_list.size()<=index){
-			edge_list.push({-1,-1,-1});
+			edge_list.push({-1,-1,-1,-1,1});
 			edge_assignments.push(l_Undef);
 		}
 
-		inv_adj[to].push({v,from,to});
+		inv_adj[to].push({v,from,to,index,weight});
 
 		num_edges++;
 		edge_list[index].v =v;
 		edge_list[index].from=from;
 		edge_list[index].to =to;
+		edge_list[index].edgeID=index;
+		edge_list[index].weight=weight;
 
-		edges[from][to]= {v,from,to};
-		g.addEdge(from,to,index);
+		edge_weights.push(weight);
+
+		edges[from][to]= {v,from,to,index,weight};
+		g.addEdge(from,to,index,weight);
 		g.disableEdge(from,to, index);
-		antig.addEdge(from,to,index);
-		cutGraph.addEdge(from,to,index);
+		antig.addEdge(from,to,index,weight);
+		cutGraph.addEdge(from,to,index,weight);
     	return mkLit(v,false);
     }
-
+	int getEdgeID(int from, int to){
+		assert(edges[from][to].edgeID>=0);
+		return edges[from][to].edgeID;
+	}
+	int getWeight(int edgeID){
+		return edge_list[edgeID].weight;
+	}
 	void reachesWithinSteps(int from, int to, Var reach_var, int within_steps){
 
 	#ifdef DEBUG_GRAPH
@@ -940,7 +953,7 @@ public:
 
 				}
 
-				Detector * d = dist_info[from].detector;
+				DistanceDetector * d = (DistanceDetector*)dist_info[from].detector;
 				assert(d);
 
 				d->addLit(from,to,reach_var,within_steps);
@@ -1048,7 +1061,7 @@ public:
 
 					}
 
-					Detector * d = reach_info[from].detector;
+					AllPairsDetector * d =(AllPairsDetector*) reach_info[from].detector;
 					assert(d);
 
 					d->addLit(from,to,reach_var,within_steps);
@@ -1076,18 +1089,11 @@ public:
 				if (reach_info[from].source<0){
 
 
-					if(within_steps<0 ){
+
 						ReachDetector*rd = new ReachDetector(detectors.size(), this,g,antig,from,drand(rnd_seed));
 						detectors.push(rd);
 						reach_detectors.push(rd);
-					}else{
-						DistanceDetector * d = new DistanceDetector(detectors.size(), this,g,antig,from,within_steps,drand(rnd_seed));
-						detectors.push(d);
-						//reach_detectors.push(reach_detectors.last());
-						distance_detectors.push(d);
 
-
-					}
 
 
 					assert(detectors.last()->getID()==detectors.size()-1);
@@ -1127,7 +1133,7 @@ public:
 
 				}
 
-				Detector * d = reach_info[from].detector;
+				ReachDetector * d = (ReachDetector*) reach_info[from].detector;
 				assert(d);
 
 				d->addLit(from,to,reach_var,within_steps);
@@ -1155,7 +1161,22 @@ public:
 			reachlits_out.push(mkLit(reachVar,false));
 		}
     }
-
+	//v will be true if the minimum weight is <= the specified value
+	void minimumSpanningTree(Var v, int minimum_weight){
+		if(!mstDetector){
+			mstDetector = new MSTDetector(detectors.size(),this, g, antig, this->edge_weights,drand(rnd_seed));
+			detectors.push(mstDetector);
+		}
+		mstDetector->addWeightLit(v,minimum_weight);
+	}
+	void edgeInMinimumSpanningTree(int u, int v, Var var){
+		if(!mstDetector){
+			mstDetector = new MSTDetector(detectors.size(),this, g, antig, this->edge_weights,drand(rnd_seed));
+			detectors.push(mstDetector);
+		}
+		int edgeid = getEdgeID(u,v);
+		mstDetector->addTreeEdgeLit(edgeid,var);
+	}
 };
 
 };

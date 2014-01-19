@@ -97,6 +97,37 @@ static void readEdge(B& in, Solver& S, vec<GraphTheory*> & graphs) {
 }
 
 template<class B, class Solver>
+static void readWeightedEdge(B& in, Solver& S, vec<GraphTheory*> & graphs) {
+	if(opt_ignore_graph){
+		skipLine(in);
+		return;
+	}
+    if(*in != 'w'){
+    	printf("PARSE ERROR! Unexpected char: %c\n", *in), exit(3);
+    }
+    ++in;
+
+        int graphID = parseInt(in);
+        int from = parseInt(in);
+        int to=parseInt(in);
+        int edgeVar = parseInt(in)-1;
+        int weight = parseInt(in);
+        /*if(edgeVar==-1){
+        	edgeVar=edge_var++-1;
+        }*/
+        if(graphID <0 || graphID>=graphs.size() || !graphs[graphID]){
+        	printf("PARSE ERROR! Undeclared graph identifier %d for edge %d\n",graphID, edgeVar), exit(3);
+        }
+        if(edgeVar<0){
+        	printf("PARSE ERROR! Edge variables must be >=0, was %d\n", edgeVar), exit(3);
+        }
+        GraphTheory * graph = graphs[graphID];
+        while (edgeVar >= S.nVars()) S.newVar();
+        graph->newEdge(from,to,edgeVar,weight);
+
+}
+
+template<class B, class Solver>
 static void readReach(B& in, Solver& S, vec<GraphTheory*> & graphs) {
 	if(opt_ignore_graph){
 		skipLine(in);
@@ -155,6 +186,66 @@ static void readDistance(B& in, Solver& S, vec<GraphTheory*> & graphs) {
 
 
 }
+
+
+
+template<class B, class Solver>
+static void readMinSpanningTreeConstraint(B& in, Solver& S, vec<GraphTheory*> & graphs) {
+	if(opt_ignore_graph){
+		skipLine(in);
+		return;
+	}
+	//m g maxweight var is a minimum spanning tree weight constraint: var is true if the mst of the tree is <= maxweight
+    if(*in != 'm'){
+    	printf("PARSE ERROR! Unexpected char: %c\n", *in), exit(3);
+    }
+    ++in;
+
+        int graphID = parseInt(in);
+        int maxweight = parseInt(in);
+        int reachVar = parseInt(in)-1;
+        if(graphID <0 || graphID>=graphs.size() || !graphs[graphID]){
+        	printf("PARSE ERROR! Undeclared graph identifier %d for edge %d\n",graphID, reachVar), exit(3);
+        }
+        if(reachVar<0){
+        	printf("PARSE ERROR! Edge variables must be >=0, was %d\n", reachVar), exit(3);
+        }
+        GraphTheory * graph = graphs[graphID];
+        while (reachVar+graph->nNodes() >= S.nVars()) S.newVar();
+        graph->minimumSpanningTree(reachVar,maxweight);
+
+
+}
+template<class B, class Solver>
+static void readMinSpanningTreeEdgeConstraint(B& in, Solver& S, vec<GraphTheory*> & graphs) {
+	if(opt_ignore_graph){
+		skipLine(in);
+		return;
+	}
+	//x g u v var is a minimum spanning tree EDGE constraint: var is true if the UNIQUE mst of the tree includes the UNDIRECTED edge from u to v. (directed graphs will be treated as undirected here)
+	//Note that if there are multiple edges from u to v, this constraint is true if any of them are in the mst.
+    if(*in != 'x'){
+    	printf("PARSE ERROR! Unexpected char: %c\n", *in), exit(3);
+    }
+    ++in;
+
+        int graphID = parseInt(in);
+        int from = parseInt(in);
+        int to = parseInt(in);
+        int reachVar = parseInt(in)-1;
+        if(graphID <0 || graphID>=graphs.size() || !graphs[graphID]){
+        	printf("PARSE ERROR! Undeclared graph identifier %d for edge %d\n",graphID, reachVar), exit(3);
+        }
+        if(reachVar<0){
+        	printf("PARSE ERROR! Edge variables must be >=0, was %d\n", reachVar), exit(3);
+        }
+        GraphTheory * graph = graphs[graphID];
+        while (reachVar+graph->nNodes() >= S.nVars()) S.newVar();
+        graph->edgeInMinimumSpanningTree(from,to,reachVar);
+
+
+}
+
 template<class B, class Solver>
 static void parse_GRAPH_main(B& in, Solver& S, vec<std::pair<int,std::string> > * symbols=NULL ) {
 	vec<GraphTheory*> graphs;
@@ -219,10 +310,17 @@ static void parse_GRAPH_main(B& in, Solver& S, vec<std::pair<int,std::string> > 
         }else if (*in == 'e'){
             cnt++;
             readEdge(in, S,graphs);
+        }else if (*in == 'w'){
+            cnt++;
+            readWeightedEdge(in, S,graphs);
         }else if (*in == 'r'){
             readReach(in, S,graphs);
         }else if (*in == 'd'){
             readDistance(in, S,graphs);
+        }else if (*in == 'm'){
+            readMinSpanningTreeConstraint(in, S,graphs);
+        }else if (*in == 'x'){
+            readMinSpanningTreeEdgeConstraint(in, S,graphs);
         }else{
             cnt++;
             readClause(in, S, lits);

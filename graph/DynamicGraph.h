@@ -32,10 +32,13 @@ public:
 	vec<vec<Edge> > adjacency;//adj list
 	vec<vec<Edge> > inverted_adjacency;//adj list
 
+	vec<vec<Edge> > adjacency_undirected;//adj list
+
 	struct FullEdge{
 		int from;
 		int to;
 		int id;
+		int weight;
 	};
 
 	vec<FullEdge> all_edges;
@@ -64,10 +67,18 @@ public:
 		}
 		return false;
 	}
-
+	bool hasEdgeUndirected(int from, int to)const{
+		for(int i = 0;i< adjacency_undirected[from].size();i++){
+			if(adjacency_undirected[from][i].node==to && edgeEnabled(adjacency_undirected[from][i].id)){
+				return true;
+			}
+		}
+		return false;
+	}
 	int addNode(){
 
 		adjacency.push();//adj list
+		adjacency_undirected.push();
 		inverted_adjacency.push();
 		modifications++;
 		additions=modifications;
@@ -82,7 +93,7 @@ public:
 	}
 
 	//Instead of actually adding and removing edges, tag each edge with an 'enabled/disabled' label, and just expect reading algorithms to check and respect that label.
-	void addEdge(int from, int to, int id=-1){
+	void addEdge(int from, int to, int id=-1, int weight=1){
 		assert(from<nodes);
 		assert(to<nodes);
 		if(id<0){
@@ -94,16 +105,20 @@ public:
 		}
 		edges++;
 		adjacency[from].push({to,id});
+		adjacency_undirected[from].push({to,id});
+		adjacency_undirected[to].push({from,id});
 		edge_status.growTo(id+1);
 		inverted_adjacency[to].push({from,id});
 		all_edges.growTo(id+1);
-		all_edges[id]={from,to,id};
+		all_edges[id]={from,to,id,weight};
 		modifications++;
 		additions=modifications;
 		history.push({true,from,to,id,modifications});
 		enableEdge(from,to,id);//default to enabled
 	}
-
+	int getWeight(int edgeID){
+		return all_edges[edgeID].weight;
+	}
 	FullEdge getEdge(int id){
 		return all_edges[id];
 	}

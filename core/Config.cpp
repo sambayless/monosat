@@ -79,6 +79,8 @@ BoolOption Minisat::opt_ignore_graph(_cat_graph,"ignore-graph","",false);
 
 BoolOption Minisat::opt_check_pure_theory_lits(_cat_graph,"pure-theory-lits","",false);
 
+BoolOption Minisat::opt_mst_min_cut(_cat_graph,"mst-min-cut","",true);
+
 MinCutAlg Minisat::mincutalg=ALG_EDMONSKARP ;
 ReachAlg Minisat::reachalg=ALG_CONNECTIVITY;
 ReachAlg Minisat::distalg=ALG_BFS;

@@ -37,11 +37,14 @@ public:
 	// Returns the number of sets currently in the DisjointSets data structure.
 	int NumSets() const;
 
+	//return an arbitrary element of the nth set
+	int GetElement(int fromSet) ;
+
 	void Reset(){
 		m_numElements = 0;
 		m_numSets = 0;
 		m_nodes.clear();
-
+		elements.clear();
 	}
 
 private:
@@ -56,6 +59,9 @@ private:
 
 	int m_numElements; // the number of elements currently in the DisjointSets data structure.
 	int m_numSets; // the number of sets currently in the DisjointSets data structure.
+
+	Minisat::vec<int> elements; // list of arbitrary elements, one from each set
+	Minisat::vec<bool> seen; // list of arbitrary elements, one from each set
 	Minisat::vec<Node> m_nodes; // the list of nodes representing the elements
 };
 

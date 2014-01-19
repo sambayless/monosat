@@ -41,6 +41,9 @@ public:
 	virtual int getParent(int node)=0;
 	virtual int getParentEdge(int node)=0;
 	virtual bool edgeInTree(int edgeid)=0;
+	virtual int numComponents()=0;
+	virtual int getComponent(int node)=0;
+	virtual int getRoot(int component=0)=0;
 };
 
 #endif /* MINIMUMSPANNINGTREE_H_ */

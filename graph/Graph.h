@@ -27,7 +27,8 @@ public:
 	virtual void newNodes(int n)=0;
 	virtual int nNodes()=0;
 	virtual bool isNode(int n)=0;
-	virtual Lit newEdge(int from,int to, Var v)=0;
+	virtual Lit newEdge(int from,int to, Var v, int weight=1)=0;
+	virtual int getWeight(int edgeID)=0;
 	virtual void reachesAny(int from, Var firstVar,int within_steps)=0;
 	virtual void reachesAny(int from, vec<Lit> & properties_out,int within_steps)=0;
 	virtual void reaches(int from,int to, Var reach_var,int within_steps=-1)=0;
@@ -35,6 +36,10 @@ public:
 
 	}
 	virtual void implementConstraints()=0;
+
+	//v will be true if the minimum weight is <= the specified value
+	virtual void minimumSpanningTree(Var v, int minimum_weight)=0;
+	virtual void edgeInMinimumSpanningTree(int u, int v, Var var)=0;
 };
 
 class Graph{

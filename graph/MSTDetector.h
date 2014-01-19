@@ -37,7 +37,7 @@ public:
 
 		Map<float,int> weight_lit_map;
 		vec<int> force_reason;
-		vec<int> edge_weights;
+		vec<int> & edge_weights;
 		struct MSTWeightLit{
 			Lit l;
 			int min_weight;
@@ -66,6 +66,9 @@ public:
 		vec<bool> seen;
 		vec<bool> black;
 		vec<int> ancestors;
+
+		vec<Lit> tmp_conflict;
+		vec<int> visit;
 		DisjointSets sets;
 
 		struct MSTStatus{
@@ -83,8 +86,8 @@ public:
 
 
 		bool propagate(vec<Assignment> & trail,vec<Lit> & conflict);
-		void buildMinWeightReason(int weight,vec<Lit> & conflict);
-		void buildNonMinWeightReason(int weight,vec<Lit> & conflict);
+		void buildMinWeightTooSmallReason(int weight,vec<Lit> & conflict);
+		void buildMinWeightTooLargeReason(int weight,vec<Lit> & conflict);
 		void buildEdgeReason(int edge,vec<Lit> & conflict);
 		void buildNonEdgeReason(int edge,vec<Lit> & conflict);
 		//void buildForcedMinWeightReason(int reach_node, int forced_edge_id,vec<Lit> & conflict);
@@ -94,7 +97,7 @@ public:
 		void addTreeEdgeLit(int edge_id, Var reach_var);
 		void addWeightLit(Var weight_var,int min_weight);
 
-		MSTDetector(int _detectorID, GraphTheorySolver * _outer, DynamicGraph<PositiveEdgeStatus> &_g, DynamicGraph<NegativeEdgeStatus> &_antig,  double seed=1);//:Detector(_detectorID),outer(_outer),within(-1),source(_source),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL){}
+		MSTDetector(int _detectorID, GraphTheorySolver * _outer, DynamicGraph<PositiveEdgeStatus> &_g, DynamicGraph<NegativeEdgeStatus> &_antig, vec<int> & _edge_weights,  double seed=1);//:Detector(_detectorID),outer(_outer),within(-1),source(_source),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL){}
 		virtual ~MSTDetector(){
 
 		}

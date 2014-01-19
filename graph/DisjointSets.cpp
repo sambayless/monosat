@@ -115,6 +115,24 @@ void DisjointSets::AddElements(int numToAdd)
 	m_numSets += numToAdd;
 }
 
+int DisjointSets::GetElement(int fromSet){
+	if(m_numSets==1)
+		return 0;//shortcut common case.
+	if(elements.size()!=m_numSets){
+		elements.clear();
+		seen.clear();
+		seen.growTo(m_numElements);
+		for(int i = 0;i<m_numElements;i++){
+			int s = FindSet(i);
+			if(!seen[s]){
+				seen[s]=true;
+				elements.push(s);
+			}
+		}
+	}
+	return elements[fromSet];
+}
+
 int DisjointSets::NumElements() const
 {
 	return m_numElements;
