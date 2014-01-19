@@ -89,8 +89,13 @@ void MSTDetector::addTreeEdgeLit(int edge_id, Var reach_var){
 void MSTDetector::MSTStatus::inMinimumSpanningTree(int edgeid, bool in_tree){
 	if(edgeid<detector.tree_edge_lits.size()){
 		Lit l = detector.tree_edge_lits[edgeid].l;
-		if(l!=lit_Undef)
-			detector.changed_edges.push({in_tree? l:~l,edgeid});
+		if(l!=lit_Undef){
+			if(polarity && in_tree)
+				detector.changed_edges.push({l,edgeid});
+			else if (!polarity && !in_tree){
+				detector.changed_edges.push({~l,edgeid});
+			}
+		}
 	}
 }
 

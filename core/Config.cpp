@@ -79,7 +79,8 @@ BoolOption Minisat::opt_ignore_graph(_cat_graph,"ignore-graph","",false);
 
 BoolOption Minisat::opt_check_pure_theory_lits(_cat_graph,"pure-theory-lits","",false);
 
-BoolOption Minisat::opt_mst_min_cut(_cat_graph,"mst-min-cut","",true);
+BoolOption Minisat::opt_mst_min_cut(_cat_graph,"mst-min-cut","Search for a min-cut during conflict resolution of disconnected minimum spanning trees",true);
+BoolOption Minisat::opt_connected_components_min_cut(_cat_graph,"cc-mincut","Search for a min-cut during conflict resolution of connected components",true);
 
 MinCutAlg Minisat::mincutalg=ALG_EDMONSKARP ;
 ReachAlg Minisat::reachalg=ALG_CONNECTIVITY;
