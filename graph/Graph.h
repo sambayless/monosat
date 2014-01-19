@@ -39,7 +39,7 @@ public:
 
 	//v will be true if the minimum weight is <= the specified value
 	virtual void minimumSpanningTree(Var v, int minimum_weight)=0;
-	virtual void edgeInMinimumSpanningTree(int u, int v, Var var)=0;
+	virtual void edgeInMinimumSpanningTree(Var edgeVar, Var var)=0;
 };
 
 class Graph{

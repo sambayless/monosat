@@ -230,8 +230,9 @@ static void readMinSpanningTreeEdgeConstraint(B& in, Solver& S, vec<GraphTheory*
     ++in;
 
         int graphID = parseInt(in);
-        int from = parseInt(in);
-        int to = parseInt(in);
+        int edgeVar = parseInt(in)-1;
+        //int from = parseInt(in);
+        //int to = parseInt(in);
         int reachVar = parseInt(in)-1;
         if(graphID <0 || graphID>=graphs.size() || !graphs[graphID]){
         	printf("PARSE ERROR! Undeclared graph identifier %d for edge %d\n",graphID, reachVar), exit(3);
@@ -241,7 +242,7 @@ static void readMinSpanningTreeEdgeConstraint(B& in, Solver& S, vec<GraphTheory*
         }
         GraphTheory * graph = graphs[graphID];
         while (reachVar+graph->nNodes() >= S.nVars()) S.newVar();
-        graph->edgeInMinimumSpanningTree(from,to,reachVar);
+        graph->edgeInMinimumSpanningTree(edgeVar,reachVar);
 
 
 }

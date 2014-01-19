@@ -295,7 +295,7 @@ public:
 	}
 
 
-	void edgeInMinimumSpanningTree(int u, int v, Var var){
+	void edgeInMinimumSpanningTree(Var edgeVar, Var var){
 		while(S->nVars()<=var){
 			S->newVar();
 		}

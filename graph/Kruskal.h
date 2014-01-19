@@ -120,8 +120,13 @@ public:
 		for(int i = 0;i<g.edges;i++){
 			if(g.edgeEnabled(i)){
 				edge_heap.insert(i);
+			}else{
+		/*		if(reportPolarity>-1){
+					status.inMinimumSpanningTree(i,true);
+				}*/
 			}
 			in_tree[i]=false;
+
 		}
 
 		while(edge_heap.size()){
@@ -134,8 +139,8 @@ public:
 				assert(g.edgeEnabled(edge_id));
 				in_tree[edge_id]=true;
 				mst.push(edge_id);
-				if(reportPolarity>-1)
-					status.inMinimumSpanningTree(edge_id,true);
+				//if(reportPolarity>-1)
+				//	status.inMinimumSpanningTree(edge_id,true);
 				min_weight+=getEdgeWeight(edge_id);
 				sets.Union(set1,set2);
 			}
@@ -145,6 +150,17 @@ public:
 			min_weight=INF;
 
 		status.setMinimumSpanningTree(min_weight);
+
+		//if(reportPolarity>-1){
+		for(int i = 0;i<g.edges;i++){
+			//Note: for the tree edge detector, polarity is effectively reversed.
+			if(reportPolarity<1 && (!g.edgeEnabled(i) || in_tree[i]) ){
+				status.inMinimumSpanningTree(i,true);
+			}else if(reportPolarity>-1 && (g.edgeEnabled(i) && ! in_tree[i]) ){
+				status.inMinimumSpanningTree(i,false);
+			}
+		}
+		//}
 
 		assert(dbg_uptodate());
 

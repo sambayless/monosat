@@ -1169,12 +1169,12 @@ public:
 		}
 		mstDetector->addWeightLit(v,minimum_weight);
 	}
-	void edgeInMinimumSpanningTree(int u, int v, Var var){
+	void edgeInMinimumSpanningTree(Var edgeVar, Var var){
 		if(!mstDetector){
 			mstDetector = new MSTDetector(detectors.size(),this, g, antig, this->edge_weights,drand(rnd_seed));
 			detectors.push(mstDetector);
 		}
-		int edgeid = getEdgeID(u,v);
+		int edgeid =getEdgeID(edgeVar);
 		mstDetector->addTreeEdgeLit(edgeid,var);
 	}
 };

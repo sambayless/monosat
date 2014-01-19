@@ -43,6 +43,8 @@ public:
 			int min_weight;
 			MSTWeightLit():l(lit_Undef),min_weight(-1){}
 		};
+		bool checked_unique;
+		bool all_unique;
 		vec<MSTWeightLit>  weight_lits;
 		struct MSTEdgeLit{
 			Lit l;
@@ -88,8 +90,8 @@ public:
 		bool propagate(vec<Assignment> & trail,vec<Lit> & conflict);
 		void buildMinWeightTooSmallReason(int weight,vec<Lit> & conflict);
 		void buildMinWeightTooLargeReason(int weight,vec<Lit> & conflict);
-		void buildEdgeReason(int edge,vec<Lit> & conflict);
-		void buildNonEdgeReason(int edge,vec<Lit> & conflict);
+		void buildEdgeInTreeReason(int edge,vec<Lit> & conflict);
+		void buildEdgeNotInTreeReason(int edge,vec<Lit> & conflict);
 		//void buildForcedMinWeightReason(int reach_node, int forced_edge_id,vec<Lit> & conflict);
 		void buildReason(Lit p, vec<Lit> & reason, CRef marker);
 		bool checkSatisfied();
