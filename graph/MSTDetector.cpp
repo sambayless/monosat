@@ -718,6 +718,7 @@ bool MSTDetector::checkSatisfied(){
 							}
 						}
 					}
+
 					for(int k = 0;k< tree_edge_lits.size();k++){
 						Lit l = tree_edge_lits[k].l;
 						int edgeid = tree_edge_lits[k].edgeID;

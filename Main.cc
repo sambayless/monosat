@@ -603,6 +603,13 @@ int main(int argc, char** argv)
 						for(int r = 0;r<g->reach_detectors.size();r++){
 
 							int width = sqrt(g->nNodes());
+							if(opt_width>0){
+									width=opt_width;
+								}
+								int height =width;
+								if(opt_height>0){
+									height = opt_height;
+								}
 							int lasty= 0;
 							int extra =  g->nNodes() % width ? (width- g->nNodes() % width ):0;
 							for(int n = 0;n<g->nNodes();n++){
@@ -647,6 +654,13 @@ int main(int argc, char** argv)
 								for(int r = 0;r<g->distance_detectors.size();r++){
 
 											int width = sqrt(g->nNodes());
+											if(opt_width>0){
+													width=opt_width;
+												}
+												int height =width;
+												if(opt_height>0){
+													height = opt_height;
+												}
 											int lasty= 0;
 											int extra =  g->nNodes() % width ? (width- g->nNodes() % width ):0;
 											for(int n = 0;n<g->nNodes();n++){
@@ -665,6 +679,64 @@ int main(int argc, char** argv)
 												printf("\n");
 											}
 							}
+						if(g->mstDetector){
+								int min_weight = g->mstDetector->positive_reach_detector->weight();
+								printf("Min Spanning Tree Weight: %d\n",min_weight);
+								int width = sqrt(g->nNodes());
+								if(opt_width>0){
+										width=opt_width;
+									}
+									int height =width;
+									if(opt_height>0){
+										height = opt_height;
+									}
+								int lasty= 0;
+								vec<bool> down_edge;
+								int extra =  g->nNodes() % width ? (width- g->nNodes() % width ):0;
+								for(int n = 0;n<g->nNodes();n++){
+									int x = n%width;
+
+									int y = (n + extra )/width;
+									if(y > lasty){
+										printf("\n");
+
+										for(int i = 0;i<down_edge.size();i++){
+											if(down_edge[i]){
+												printf("|");
+											}else{
+												printf(" ");
+											}
+											printf(" ");
+										}
+										down_edge.clear();
+										printf("\n");
+									}
+									printf("*");
+									if(x<width-1){
+										int edge_left = g->getEdgeID(n,n+1);
+										Var edge_var = g->edge_list[edge_left].v;
+										if(S.value(edge_var)==l_True &&  g->mstDetector->positive_reach_detector->edgeInTree(edge_left)){
+											printf("-");
+										}else{
+											printf(" ");
+										}
+									}
+
+									if(y<height-1){
+											int edge_down = g->getEdgeID(n,n+width);
+											Var edge_var = g->edge_list[edge_down].v;
+											bool in_tree = g->mstDetector->positive_reach_detector->edgeInTree(edge_down);
+											if(S.value(edge_var)==l_True &&  in_tree){
+												down_edge.push(true);
+											}else{
+												down_edge.push(false);
+											}
+										}
+
+										lasty=y;
+									}
+									printf("\n");
+								}
 					}
 
 
