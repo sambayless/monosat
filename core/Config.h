@@ -61,6 +61,7 @@ extern BoolOption opt_ignore_graph;
 extern BoolOption opt_check_pure_theory_lits;
 extern BoolOption opt_mst_min_cut;
 extern BoolOption opt_connected_components_min_cut;
+extern BoolOption opt_optimize_mst;
 enum ReachAlg{
 	 ALG_CONNECTIVITY,
 	 ALG_DIJKSTRA,

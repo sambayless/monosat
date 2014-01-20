@@ -28,6 +28,10 @@ public:
 		DynamicGraph<NegativeEdgeStatus> & antig;
 
 		double rnd_seed;
+		CRef reach_marker;
+		CRef non_reach_marker;
+		CRef reach_edge_marker;
+		CRef non_reach_edge_marker;
 
 		MinimumSpanningTree * positive_reach_detector;
 		MinimumSpanningTree * negative_reach_detector;
@@ -51,7 +55,9 @@ public:
 			int edgeID;
 			MSTEdgeLit():l(lit_Undef),edgeID(-1){}
 		};
+		vec<int> tree_edge_lits_map;
 		vec<MSTEdgeLit>  tree_edge_lits;
+		Var first_reach_var;
 		struct ChangedWeight{
 			Lit l;
 			int weight;

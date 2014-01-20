@@ -43,6 +43,11 @@ Detector(_detectorID),outer(_outer),source(from),rnd_seed(seed),positive_reach_d
 
 	first_reach_var = var_Undef;
 
+	reach_marker=outer->newReasonMarker(getID());
+	non_reach_marker=outer->newReasonMarker(getID());
+	forced_reach_marker=outer->newReasonMarker(getID());
+
+
 }
 
 

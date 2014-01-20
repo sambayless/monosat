@@ -52,7 +52,9 @@ ReachDetector::ReachDetector(int _detectorID, GraphTheorySolver * _outer, Dynami
 						}
 
 	first_reach_var = var_Undef;
-
+	reach_marker=outer->newReasonMarker(getID());
+	non_reach_marker=outer->newReasonMarker(getID());
+	forced_reach_marker=outer->newReasonMarker(getID());
 }
 
 void ReachDetector::addLit(int from, int to, Var reach_var,int within_steps){

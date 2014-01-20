@@ -486,6 +486,9 @@ void Solver::uncheckedEnqueue(Lit p, CRef from)
 {
     assert(value(p) == l_Undef);
     assigns[var(p)] = lbool(!sign(p));
+    if(from==4145547160){
+    	int a=1;
+    }
     vardata[var(p)] = mkVarData(from, decisionLevel());
     trail.push_(p);
 }

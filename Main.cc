@@ -457,8 +457,38 @@ int main(int argc, char** argv)
 			   exit(0);
 		   }
 
-           lbool ret=S.solve(assume)?l_True:l_False;
+        lbool ret=S.solve(assume)?l_True:l_False;
+        if(opt_optimize_mst && ret ==l_True){
 
+        	GraphTheorySolver * g = (GraphTheorySolver*)S.theories[0];
+        	if(g->mstDetector){
+
+        		int mst_weight = g->mstDetector->positive_reach_detector->weight();
+
+        		Var prev_min = var_Undef;
+        		while(true){
+        			printf("Optimizing minimum spanning tree (%d)...\n",mst_weight);
+        			if(mst_weight==2141){
+        				int a=1;
+        			}
+        			S.cancelUntil(0);
+					Var min = S.newVar(true,false);
+					g->minimumSpanningTree(min,mst_weight-1);
+					assume.push(mkLit(min,false));
+					if(!S.solve(assume)){
+						assume.pop();
+						assume.push(mkLit(prev_min,false));
+						bool check = S.solve(assume);
+						assert(check);
+						break;
+					}
+					mst_weight = g->mstDetector->positive_reach_detector->weight();
+					assume.pop();
+					prev_min = min;
+        		}
+
+        	}
+		}
 
         if(ret==l_True){
         	if(!opt_csv)

@@ -27,7 +27,9 @@ public:
 		//int within;
 		int source;
 		double rnd_seed;
-
+		CRef reach_marker;
+		CRef non_reach_marker;
+		CRef forced_reach_marker;
 		MaxFlow * positive_detector;
 		MaxFlow * negative_detector;
 

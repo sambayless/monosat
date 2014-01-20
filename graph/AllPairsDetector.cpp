@@ -36,7 +36,9 @@ Detector(_detectorID),outer(_outer),within(within_steps),rnd_seed(seed),positive
 		}
 #endif
 	first_reach_var = var_Undef;
-
+	reach_marker=outer->newReasonMarker(getID());
+	non_reach_marker=outer->newReasonMarker(getID());
+	forced_reach_marker=outer->newReasonMarker(getID());
 }
 
 

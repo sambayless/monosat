@@ -847,6 +847,14 @@ public:
 
 	}
 
+	CRef newReasonMarker(int detectorID){
+		CRef reasonMarker = S->newReasonMarker(this);
+		int mnum = CRef_Undef- reasonMarker;
+		marker_map.growTo(mnum+1);
+		marker_map[mnum] = detectorID;
+		return reasonMarker;
+	}
+
 	Lit newEdge(int from,int to, Var v = var_Undef, int weight=1)
     {
 
@@ -917,28 +925,7 @@ public:
 						//reach_detectors.push(reach_detectors.last());
 
 					assert(detectors.last()->getID()==detectors.size()-1);
-					detectors.last()->reach_marker=S->newReasonMarker(this);
 
-					int mnum = CRef_Undef- detectors.last()->reach_marker;
-					marker_map.growTo(mnum+1);
-					marker_map[mnum] = detectors.size()-1;
-					//marker_map.insert(reach_markers.last(),reach_markers.size());
-
-					detectors.last()->non_reach_marker=S->newReasonMarker(this);
-					//marker_map[non_reach_markers.last()]=-non_reach_markers.size();
-					//marker_map.insert(non_reach_markers.last(),non_reach_markers.size());
-
-					mnum = CRef_Undef- detectors.last()->non_reach_marker;
-					marker_map.growTo(mnum+1);
-					marker_map[mnum] = detectors.size()-1;
-
-					detectors.last()->forced_reach_marker =S->newReasonMarker(this);
-					//marker_map[non_reach_markers.last()]=-non_reach_markers.size();
-					//marker_map.insert(non_reach_markers.last(),non_reach_markers.size());
-
-					mnum = CRef_Undef- detectors.last()->forced_reach_marker;
-					marker_map.growTo(mnum+1);
-					marker_map[mnum] = detectors.size()-1;
 
 
 
@@ -1025,28 +1012,7 @@ public:
 
 
 						assert(detectors.last()->getID()==detectors.size()-1);
-						detectors.last()->reach_marker=S->newReasonMarker(this);
 
-						int mnum = CRef_Undef- detectors.last()->reach_marker;
-						marker_map.growTo(mnum+1);
-						marker_map[mnum] = detectors.size()-1;
-						//marker_map.insert(reach_markers.last(),reach_markers.size());
-
-						detectors.last()->non_reach_marker=S->newReasonMarker(this);
-						//marker_map[non_reach_markers.last()]=-non_reach_markers.size();
-						//marker_map.insert(non_reach_markers.last(),non_reach_markers.size());
-
-						mnum = CRef_Undef- detectors.last()->non_reach_marker;
-						marker_map.growTo(mnum+1);
-						marker_map[mnum] = detectors.size()-1;
-
-						detectors.last()->forced_reach_marker =S->newReasonMarker(this);
-						//marker_map[non_reach_markers.last()]=-non_reach_markers.size();
-						//marker_map.insert(non_reach_markers.last(),non_reach_markers.size());
-
-						mnum = CRef_Undef- detectors.last()->forced_reach_marker;
-						marker_map.growTo(mnum+1);
-						marker_map[mnum] = detectors.size()-1;
 
 
 
@@ -1097,30 +1063,6 @@ public:
 
 
 					assert(detectors.last()->getID()==detectors.size()-1);
-					detectors.last()->reach_marker=S->newReasonMarker(this);
-
-					int mnum = CRef_Undef- detectors.last()->reach_marker;
-					marker_map.growTo(mnum+1);
-					marker_map[mnum] = detectors.size()-1;
-					//marker_map.insert(reach_markers.last(),reach_markers.size());
-
-					detectors.last()->non_reach_marker=S->newReasonMarker(this);
-					//marker_map[non_reach_markers.last()]=-non_reach_markers.size();
-					//marker_map.insert(non_reach_markers.last(),non_reach_markers.size());
-
-					mnum = CRef_Undef- detectors.last()->non_reach_marker;
-					marker_map.growTo(mnum+1);
-					marker_map[mnum] = detectors.size()-1;
-
-					detectors.last()->forced_reach_marker =S->newReasonMarker(this);
-					//marker_map[non_reach_markers.last()]=-non_reach_markers.size();
-					//marker_map.insert(non_reach_markers.last(),non_reach_markers.size());
-
-					mnum = CRef_Undef- detectors.last()->forced_reach_marker;
-					marker_map.growTo(mnum+1);
-					marker_map[mnum] = detectors.size()-1;
-
-
 
 
 					//reach_detectors.last()->negative_dist_detector = new Dijkstra(from,antig);
@@ -1175,6 +1117,7 @@ public:
 			detectors.push(mstDetector);
 		}
 		int edgeid =getEdgeID(edgeVar);
+		assert(edgeid>=0);
 		mstDetector->addTreeEdgeLit(edgeid,var);
 	}
 };

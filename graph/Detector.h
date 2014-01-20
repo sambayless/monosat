@@ -14,9 +14,7 @@ namespace Minisat{
 
 class Detector{
 public:
-	CRef reach_marker;
-	CRef non_reach_marker;
-	CRef forced_reach_marker;
+
 
 	int detectorID;
 	int getID(){

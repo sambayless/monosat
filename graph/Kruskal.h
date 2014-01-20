@@ -4,6 +4,7 @@
 
 #include "mtl/Vec.h"
 #include "mtl/Heap.h"
+#include "mtl/Sort.h"
 #include "DynamicGraph.h"
 #include "core/Config.h"
 #include "MinimumSpanningTree.h"
@@ -50,7 +51,7 @@ public:
     };
 
 	Heap<EdgeLt> edge_heap;
-
+	vec<int> edge_list;
 
 	vec<int> prev;
 
@@ -116,21 +117,23 @@ public:
 
 		mst.clear();
 
-
-		for(int i = 0;i<g.edges;i++){
-			if(g.edgeEnabled(i)){
-				edge_heap.insert(i);
-			}else{
-		/*		if(reportPolarity>-1){
-					status.inMinimumSpanningTree(i,true);
-				}*/
+		if(edge_list.size()<g.edges){
+			edge_list.clear();
+			for(int i = 0;i<g.edges;i++){
+				if(g.edgeEnabled(i)){
+					//edge_heap.insert(i);
+					edge_list.push(i);
+				}
 			}
-			in_tree[i]=false;
-
+			sort(edge_list,EdgeLt(edge_weights));
 		}
-
-		while(edge_heap.size()){
-			int edge_id = edge_heap.removeMin();
+		for(int i = 0;i<g.edges;i++)
+			in_tree[i]=false;
+		//while(edge_heap.size()){
+		for(int i = 0;i<edge_list.size();i++){
+			int edge_id = edge_list[i];//edge_heap.removeMin();
+			if(!g.edgeEnabled(edge_id))
+				continue;
 			int u = g.getEdge(edge_id).from;
 			int v = g.getEdge(edge_id).to;
 			int set1 = sets.FindSet(u);

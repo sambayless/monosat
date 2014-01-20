@@ -19,7 +19,9 @@ Detector(_detectorID),outer(_outer),g(_g),antig(_antig),rnd_seed(seed),positive_
 		negativeReachStatus = new ConnectedComponentsDetector::ConnectedComponentsStatus(*this,false);
 		positive_reach_detector = new DisjointSetsConnectedComponents<ConnectedComponentsDetector::ConnectedComponentsStatus,PositiveEdgeStatus>(_g,*(positiveReachStatus),1);
 		negative_reach_detector = new DisjointSetsConnectedComponents<ConnectedComponentsDetector::ConnectedComponentsStatus,NegativeEdgeStatus>(_g,*(negativeReachStatus),1);
-
+		reach_marker=outer->newReasonMarker(getID());
+		non_reach_marker=outer->newReasonMarker(getID());
+		forced_reach_marker=outer->newReasonMarker(getID());
 }
 void ConnectedComponentsDetector::addConnectedComponentsLit(Var weight_var,int min_components){
 

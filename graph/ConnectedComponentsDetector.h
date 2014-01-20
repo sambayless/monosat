@@ -28,7 +28,9 @@ public:
 		DynamicGraph<NegativeEdgeStatus> & antig;
 
 		double rnd_seed;
-
+		CRef reach_marker;
+		CRef non_reach_marker;
+		CRef forced_reach_marker;
 		ConnectedComponents * positive_reach_detector;
 		ConnectedComponents * negative_reach_detector;
 

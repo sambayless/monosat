@@ -33,9 +33,9 @@ public:
 		int within;
 		int source;
 		double rnd_seed;
-/*		CRef reach_marker;
+		CRef reach_marker;
 		CRef non_reach_marker;
-		CRef forced_reach_marker;*/
+		CRef forced_reach_marker;
 
 		Reach * positive_reach_detector;
 		Reach * negative_reach_detector;

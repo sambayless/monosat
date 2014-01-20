@@ -31,6 +31,9 @@ public:
 		AllPairs * dbg_positive_reach_detector;
 		AllPairs * dbg_negative_reach_detector;
 #endif
+		CRef reach_marker;
+		CRef non_reach_marker;
+		CRef forced_reach_marker;
 		AllPairs * positive_reach_detector;
 		AllPairs * negative_reach_detector;
 		AllPairs *  positive_path_detector;

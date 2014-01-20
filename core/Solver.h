@@ -118,6 +118,7 @@ public:
     	}
 #endif
 		clauses.push(reason);
+		assert(reason<10000000);
 		attachClause(reason);
 		vardata[var(p)]=mkVarData(reason,level(var(p)));
 		return reason;
@@ -347,7 +348,9 @@ private:
 
     void 	buildReason(Lit p, vec<Lit> & reason);
     void backtrackUntil(int level);
+public:
     void     cancelUntil      (int level);                                             // Backtrack until a certain level.
+private:
     void     analyze          (CRef confl, vec<Lit>& out_learnt, int& out_btlevel);    // (bt = backtrack)
     void 	analyzeFinal(CRef confl, Lit skip_lit, vec<Lit>& out_conflict);
     void     analyzeFinal     (Lit p, vec<Lit>& out_conflict);                         // COULD THIS BE IMPLEMENTED BY THE ORDINARIY "analyze" BY SOME REASONABLE GENERALIZATION?
@@ -534,7 +537,12 @@ inline bool     Solver::addEmptyClause  ()                      { add_tmp.clear(
 inline bool     Solver::addClause       (Lit p)                 { add_tmp.clear(); add_tmp.push(p); return addClause_(add_tmp); }
 inline bool     Solver::addClause       (Lit p, Lit q)          { add_tmp.clear(); add_tmp.push(p); add_tmp.push(q); return addClause_(add_tmp); }
 inline bool     Solver::addClause       (Lit p, Lit q, Lit r)   { add_tmp.clear(); add_tmp.push(p); add_tmp.push(q); add_tmp.push(r); return addClause_(add_tmp); }
-inline bool     Solver::locked          (const Clause& c) const { return value(c[0]) == l_True && ca.isClause( reason(var(c[0]))) && ca.lea(reason(var(c[0]))) == &c; }
+inline bool     Solver::locked          (const Clause& c) const {
+	CRef r = reason(var(c[0]));
+	bool isClause = ca.isClause( r);
+	if(!isClause)
+		return false;
+	return value(c[0]) == l_True && ca.isClause( reason(var(c[0]))) && ca.lea(reason(var(c[0]))) == &c; }
 inline void     Solver::newDecisionLevel()                      { trail_lim.push(trail.size());}
 
 inline int      Solver::decisionLevel ()      const   { return trail_lim.size(); }
