@@ -107,7 +107,7 @@ public:
 			if(g.edgeEnabled(i)){
 				int u = g.all_edges[i].from;
 				int v = g.all_edges[i].to;
-				sets.Union(u,v);
+				sets.UnionElements(u,v);
 			}
 		}
 

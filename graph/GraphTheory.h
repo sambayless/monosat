@@ -1118,6 +1118,10 @@ public:
 		}
 		int edgeid =getEdgeID(edgeVar);
 		assert(edgeid>=0);
+		if(edge_list[edgeid].v==var_Undef){
+			printf("MST edge constraint for undefined edge %d with variable %d, aborting.\n", edgeid,edgeVar+1);
+			exit(1);
+		}
 		mstDetector->addTreeEdgeLit(edgeid,var);
 	}
 };

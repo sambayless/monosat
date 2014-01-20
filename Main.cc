@@ -468,11 +468,14 @@ int main(int argc, char** argv)
         		Var prev_min = var_Undef;
         		while(true){
         			printf("Optimizing minimum spanning tree (%d)...\n",mst_weight);
-        			if(mst_weight==2141){
+        			if(mst_weight==10667){
         				int a=1;
         			}
         			S.cancelUntil(0);
 					Var min = S.newVar(true,false);
+					if(min==3921){
+						int a=1;
+					}
 					g->minimumSpanningTree(min,mst_weight-1);
 					assume.push(mkLit(min,false));
 					if(!S.solve(assume)){
@@ -480,11 +483,23 @@ int main(int argc, char** argv)
 						assume.push(mkLit(prev_min,false));
 						bool check = S.solve(assume);
 						assert(check);
+						if(opt_check_solution){
+											if(!g->check_solved()){
+												fprintf(stderr,"Error! Solution doesn't satisfy graph properties!\n");
+												exit(1);
+											}
+										}
 						break;
 					}
 					mst_weight = g->mstDetector->positive_reach_detector->weight();
 					assume.pop();
 					prev_min = min;
+					if(opt_check_solution){
+										if(!g->check_solved()){
+											fprintf(stderr,"Error! Solution doesn't satisfy graph properties!\n");
+											exit(1);
+										}
+									}
         		}
 
         	}
@@ -580,11 +595,11 @@ int main(int argc, char** argv)
 				}
 				printf("\n\n");
 				if(opt_check_solution){
-					if(!g->check_solved()){
-						fprintf(stderr,"Error! Solution doesn't satisfy graph properties!\n");
-						exit(1);
-					}
-				}
+							if(!g->check_solved()){
+								fprintf(stderr,"Error! Solution doesn't satisfy graph properties!\n");
+								exit(1);
+							}
+						}
 
 				if(opt_print_reach){
 				 v = 0;

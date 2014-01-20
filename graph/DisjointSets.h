@@ -28,7 +28,10 @@ public:
 	// Note: some internal data is modified for optimization even though this method is consant.
 	int FindSet(int element) ;
 	// Combine two sets into one. All elements in those two sets will share the same set id that can be gotten using FindSet.
-	void Union(int setId1, int setId2);
+	void UnionSets(int setId1, int setId2);
+
+	//Combine the sets that these two elements belong to into one.
+	void UnionElements(int element1, int element2);
 	// Add a specified number of elements to the DisjointSets data structure. The element id's of the new elements are numbered
 	// consequitively starting with the first never-before-used elementId.
 	void AddElements(int numToAdd);

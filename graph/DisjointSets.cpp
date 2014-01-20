@@ -64,11 +64,12 @@ int DisjointSets::FindSet(int elementId)
 	return m_nodes[rootID].index;
 }
 
-void DisjointSets::Union(int setId1, int setId2)
+void DisjointSets::UnionSets(int setId1, int setId2)
 {
 	assert(setId1 < m_numElements);
 	assert(setId2 < m_numElements);
-
+	assert(setId1==FindSet(setId1));
+	assert(setId2==FindSet(setId2));
 	if(setId1 == setId2)
 		return; // already unioned
 
@@ -91,6 +92,15 @@ void DisjointSets::Union(int setId1, int setId2)
 
 	// Since two sets have fused into one, there is now one less set so update the set count.
 	--m_numSets;
+	assert(FindSet(setId1)==FindSet(setId2));
+}
+void DisjointSets::UnionElements(int elementID1, int elementID2)
+{
+	assert(elementID1 < m_numElements);
+	assert(elementID2 < m_numElements);
+	int setId1=FindSet(elementID1);
+	int setId2=FindSet(elementID2);
+	UnionSets(setId1,setId2);
 }
 
 void DisjointSets::AddElements(int numToAdd)

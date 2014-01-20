@@ -1313,7 +1313,14 @@ lbool Solver::solve_()
         model.growTo(nVars());
         for (int i = 0; i < nVars(); i++) model[i] = value(i);
 
-
+		if(opt_check_solution && theories.size()){
+			Theory * t = theories[0];
+							GraphTheorySolver *g = (GraphTheorySolver*)t;
+					if(!g->check_solved()){
+						fprintf(stderr,"Error! Solution doesn't satisfy graph properties!\n");
+						exit(1);
+					}
+				}
 #ifdef DEBUG_SOLVER
 					if(dbg_solver)
 						assert(dbg_solver->solve(assumptions));

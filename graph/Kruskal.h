@@ -148,7 +148,7 @@ public:
 				//if(reportPolarity>-1)
 				//	status.inMinimumSpanningTree(edge_id,true);
 				min_weight+=getEdgeWeight(edge_id);
-				sets.Union(set1,set2);
+				sets.UnionSets(set1,set2);
 				assert(sets.FindSet(u)==sets.FindSet(v));
 			}
 		}
