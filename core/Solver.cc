@@ -178,6 +178,9 @@ bool Solver::addClause_(vec<Lit>& ps)
 void Solver::attachClause(CRef cr) {
     const Clause& c = ca[cr];
     assert(c.size() > 1);
+    if(c.size()<2){
+    	exit(4);
+    }
     watches[~c[0]].push(Watcher(cr, c[1]));
     watches[~c[1]].push(Watcher(cr, c[0]));
     if (c.learnt()) learnts_literals += c.size();

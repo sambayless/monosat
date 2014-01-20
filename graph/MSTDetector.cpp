@@ -181,7 +181,10 @@ void MSTDetector::buildMinWeightTooSmallReason(int weight,vec<Lit> & conflict){
 				assert(outer->S->value(v)==l_True);
 				conflict.push(mkLit(v,true));
 			}
-
+			if(conflict.size()==1){
+				assert(false);
+				exit(1);
+			}
 			outer->num_learnt_paths++;
 			outer->learnt_path_clause_length+= (conflict.size()-1);
 			double elapsed = cpuTime()-starttime;
@@ -513,7 +516,9 @@ void MSTDetector::buildMinWeightTooSmallReason(int weight,vec<Lit> & conflict){
 					Var vt = outer->edge_list[edgeid].v;
 					assert(outer->S->value(vt)==l_True);
 					static int it = 0;
-					++it;
+					if(++it==5){
+						int a=1;;
+					}
 					ancestors.clear();
 					ancestors.growTo(g.nodes,-1);
 
@@ -551,10 +556,12 @@ void MSTDetector::buildMinWeightTooSmallReason(int weight,vec<Lit> & conflict){
 					}
 					TarjanOLCA_edge(root,edgeid, lower_endpoint,conflict);//run tarjan's off-line lowest common ancestor query from node 0, arbitrarily.
 
-					if(conflict.size()<2){
+					/*if(conflict.size()<2){
 						exit(3);
+					}*/
+					if(conflict.size()==1){
+						conflict.push(outer->False);//should this ever be possible?? I'm not sure, but it seems wrong...
 					}
-
 					 outer->num_learnt_cuts++;
 					 outer->learnt_cut_clause_length+= (conflict.size()-1);
 
@@ -709,6 +716,7 @@ void MSTDetector::buildMinWeightTooSmallReason(int weight,vec<Lit> & conflict){
 						//conflict
 						//The reason is a path in g from to s in d
 							buildEdgeInTreeReason(edge,conflict);
+
 						//add it to s
 						//return it as a conflict
 

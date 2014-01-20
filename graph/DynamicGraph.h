@@ -116,6 +116,10 @@ public:
 		history.push({true,from,to,id,modifications});
 		enableEdge(from,to,id);//default to enabled
 	}
+	int nEdgeIDs(){
+		return all_edges.size();
+	}
+
 	int getWeight(int edgeID){
 		return all_edges[edgeID].weight;
 	}

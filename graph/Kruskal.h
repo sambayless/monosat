@@ -88,7 +88,7 @@ public:
 	void setNodes(int n){
 		q.capacity(n);
 		check.capacity(n);
-		in_tree.growTo(g.edges);
+		in_tree.growTo(g.nEdgeIDs());
 
 		INF=std::numeric_limits<int>::max();
 		sets.AddElements(n);
@@ -117,17 +117,17 @@ public:
 
 		mst.clear();
 
-		if(edge_list.size()<g.edges){
+		if(edge_list.size()<g.nEdgeIDs()){
 			edge_list.clear();
-			for(int i = 0;i<g.edges;i++){
-				if(g.edgeEnabled(i)){
+			for(int i = 0;i<g.nEdgeIDs();i++){
+
 					//edge_heap.insert(i);
 					edge_list.push(i);
-				}
+
 			}
 			sort(edge_list,EdgeLt(edge_weights));
 		}
-		for(int i = 0;i<g.edges;i++)
+		for(int i = 0;i<in_tree.size();i++)
 			in_tree[i]=false;
 		//while(edge_heap.size()){
 		for(int i = 0;i<edge_list.size();i++){
@@ -136,6 +136,9 @@ public:
 				continue;
 			int u = g.getEdge(edge_id).from;
 			int v = g.getEdge(edge_id).to;
+			if(u==41 || v==41 || u==40 || v==42 || u==33 ||v==33 || u==32||v==32){
+				int a =1;
+			}
 			int set1 = sets.FindSet(u);
 			int set2 = sets.FindSet(v);
 			if(set1!=set2){
@@ -146,6 +149,7 @@ public:
 				//	status.inMinimumSpanningTree(edge_id,true);
 				min_weight+=getEdgeWeight(edge_id);
 				sets.Union(set1,set2);
+				assert(sets.FindSet(u)==sets.FindSet(v));
 			}
 		}
 
@@ -155,7 +159,7 @@ public:
 		status.setMinimumSpanningTree(min_weight);
 
 		//if(reportPolarity>-1){
-		for(int i = 0;i<g.edges;i++){
+		for(int i = 0;i<in_tree.size();i++){
 			//Note: for the tree edge detector, polarity is effectively reversed.
 			if(reportPolarity<1 && (!g.edgeEnabled(i) || in_tree[i]) ){
 				status.inMinimumSpanningTree(i,true);
@@ -253,18 +257,26 @@ private:
 		q.clear();
 		for(int i = 0;i<sets.NumSets();i++){
 			int root = sets.GetElement(i);//chose an element arbitrarily from the nth set.
+			int set = sets.FindSet(root);
 			q.push(root);
 			assert(parents[root]==-1);
 			while(q.size()){
 				int u = q.last();
-
+				assert(sets.FindSet(u)==set);
 				q.pop();
 				for (int j = 0;j<g.adjacency_undirected[u].size();j++){
 					int edge = g.adjacency_undirected[u][j].id;
 					int to = g.adjacency_undirected[u][j].node;
+					if(edge<0)
+						continue;
+					if(edge>=in_tree.size())
+						exit(3);
 					if(in_tree[edge]){
+
 						if(parents[to]==-1 &&  to!=root){
 							assert(to!=root);
+							//int st = sets.FindSet(to);
+							assert(sets.FindSet(to)==set);
 							parents[to]=u;
 							parent_edges[to] = edge;
 							q.push(to);

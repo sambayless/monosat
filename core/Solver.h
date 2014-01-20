@@ -118,7 +118,7 @@ public:
     	}
 #endif
 		clauses.push(reason);
-		assert(reason<10000000);
+
 		attachClause(reason);
 		vardata[var(p)]=mkVarData(reason,level(var(p)));
 		return reason;
