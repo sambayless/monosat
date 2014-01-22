@@ -34,6 +34,7 @@
 #include "ReachDetector.h"
 #include "DistanceDetector.h"
 #include "MSTDetector.h"
+#include "MaxflowDetector.h"
 namespace Minisat{
 
 class GraphTheorySolver;
@@ -108,6 +109,7 @@ public:
 	vec<Detector*> detectors;
 	vec<ReachDetector*> reach_detectors;
 	vec<DistanceDetector*> distance_detectors;
+	vec<MaxflowDetector*> flow_detectors;
 
 
 	vec<int> marker_map;
@@ -1123,6 +1125,14 @@ public:
 			exit(1);
 		}
 		mstDetector->addTreeEdgeLit(edgeid,var);
+	}
+	void maxFlow(int from, int to, int max_flow, Var v){
+/*
+		for (int i =0;i< flow_detectors.size();i++){
+			if(flow_detectors[i]->source==from && flow_detectors[i]->target == to){
+
+			}
+		}*/
 	}
 };
 

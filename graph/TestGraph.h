@@ -304,6 +304,11 @@ public:
 
 
 	}
+	void maxFlow(int from, int to, int max_flow, Var v){
+		printf("Warning: max flow/mincut constraints are not implemented, and will be left unconstrained\n");
+
+
+	}
 };
 
 };

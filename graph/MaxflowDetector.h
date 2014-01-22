@@ -26,6 +26,7 @@ public:
 		DynamicGraph<PositiveEdgeStatus> & over_graph;
 		//int within;
 		int source;
+		int target;
 		double rnd_seed;
 		CRef reach_marker;
 		CRef non_reach_marker;

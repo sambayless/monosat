@@ -247,6 +247,37 @@ static void readMinSpanningTreeEdgeConstraint(B& in, Solver& S, vec<GraphTheory*
 
 }
 
+
+template<class B, class Solver>
+static void readMaxFlowConstraint(B& in, Solver& S, vec<GraphTheory*> & graphs) {
+	if(opt_ignore_graph){
+		skipLine(in);
+		return;
+	}
+	//m g s t flow var is a max flow constraint, true if the max flow is >= var
+    if(*in != 'f'){
+    	printf("PARSE ERROR! Unexpected char: %c\n", *in), exit(3);
+    }
+    ++in;
+
+        int graphID = parseInt(in);
+        int  s= parseInt(in);
+        int t = parseInt(in);
+        int flow = parseInt(in);
+        int reachVar = parseInt(in)-1;
+        if(graphID <0 || graphID>=graphs.size() || !graphs[graphID]){
+        	printf("PARSE ERROR! Undeclared graph identifier %d for edge %d\n",graphID, reachVar), exit(3);
+        }
+        if(reachVar<0){
+        	printf("PARSE ERROR! Edge variables must be >=0, was %d\n", reachVar), exit(3);
+        }
+        GraphTheory * graph = graphs[graphID];
+        while (reachVar+graph->nNodes() >= S.nVars()) S.newVar();
+        graph->maxFlow(s,t,flow,reachVar);
+
+
+}
+
 template<class B, class Solver>
 static void parse_GRAPH_main(B& in, Solver& S, vec<std::pair<int,std::string> > * symbols=NULL ) {
 	vec<GraphTheory*> graphs;
@@ -322,6 +353,8 @@ static void parse_GRAPH_main(B& in, Solver& S, vec<std::pair<int,std::string> > 
             readMinSpanningTreeConstraint(in, S,graphs);
         }else if (*in == 'x'){
             readMinSpanningTreeEdgeConstraint(in, S,graphs);
+        }else if (*in == 'f'){
+            readMaxFlowConstraint(in, S,graphs);
         }else{
             cnt++;
             readClause(in, S, lits);
