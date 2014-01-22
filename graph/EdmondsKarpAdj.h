@@ -34,10 +34,17 @@ class EdmondsKarpAdj:public MaxFlow{
 		int from;
 		int id;
 	};
+	int curflow;
+    int last_modification;
+    int last_deletion;
+    int last_addition;
+
+    int history_qhead;
+    int last_history_clear;
     vec<LocalEdge> prev;
     vec<int> M;
     DynamicGraph<EdgeStatus>& g;
-    Capacity capacity;
+    Capacity & capacity;
     int INF;
 #ifdef DEBUG_MAXFLOW
     	EdmondsKarp<EdgeStatus> ek;
@@ -72,7 +79,7 @@ class EdmondsKarpAdj:public MaxFlow{
                    ///(If there is available capacity, and v is not seen before in search)
 
             	   int f = F[id];
-            	   int c = capacity(id);
+            	   int c = capacity[id];
 
             	 //  int fr = F[id];
                    if (((c - F[id]) > 0) && (prev[v].from == -1)){
@@ -114,7 +121,14 @@ public:
     	,ek(_g)
 #endif
     {
-    	setAllEdgeCapacities(1);
+    	  curflow=0;
+      	last_modification=-1;
+      	last_deletion=-1;
+      	last_addition=-1;
+
+      	history_qhead=-1;
+      	last_history_clear=-1;
+    	//setAllEdgeCapacities(1);
     }
     void setCapacity(int u, int w, int c){
     	//C.growTo(g.edges);
@@ -131,13 +145,23 @@ public:
 #ifdef DEBUG_MAXFLOW
     	for(int i = 0;i<g.all_edges.size();i++){
     		int id = g.all_edges[i].id;
-    		int cap = capacity(id);
+    		int cap = capacity[id];
     		int from =  g.all_edges[i].from;
     		int to =  g.all_edges[i].to;
 
     		ek.setCapacity(from,to,cap);
     	}
 #endif
+      	if(last_modification>0 && g.modifications==last_modification){
+#ifdef DEBUG_MAXFLOW
+    	int expected_flow =ek.maxFlow(s,t);
+#endif
+
+#ifdef DEBUG_MAXFLOW
+    	assert(curflow==expected_flow);
+#endif
+        			return curflow;
+        		}
     	if(rev.size()<g.all_edges.size()){
     		rev.clear();
 
@@ -192,7 +216,13 @@ public:
 #ifdef DEBUG_MAXFLOW
     	assert(f==expected_flow);
 #endif
+    	curflow=f;
+		last_modification=g.modifications;
+		last_deletion = g.deletions;
+		last_addition=g.additions;
 
+		history_qhead=g.history.size();
+		last_history_clear=g.historyclears;
         return f;
     }
 
@@ -219,7 +249,7 @@ public:
     				continue;
     			int v = g.adjacency[u][i].node;
     			int id = g.adjacency[u][i].id;
-    			if(capacity(id) - F[id] == 0){
+    			if(capacity[id] - F[id] == 0){
     				cut.push(Edge{u,v,id});
     			}else if(!seen[v]){
     				Q.push(v);
@@ -239,7 +269,7 @@ public:
     }
     int getEdgeCapacity(int id){
      	assert(g.edgeEnabled(id));
-     	return capacity(id);
+     	return capacity[id];
      }
     int getEdgeFlow(int id){
     	assert(g.edgeEnabled(id));
@@ -247,7 +277,7 @@ public:
     }
     int getEdgeResidualCapacity(int id){
     	assert(g.edgeEnabled(id));
-    	return  capacity(id)-F[id];// capacity(id);
+    	return  capacity[id]-F[id];// capacity(id);
     }
 };
 #endif

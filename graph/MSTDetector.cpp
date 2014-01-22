@@ -189,7 +189,7 @@ void MSTDetector::buildMinWeightTooSmallReason(int weight,vec<Lit> & conflict){
 				assert(outer->S->value(v)==l_True);
 				conflict.push(mkLit(v,true));
 			}
-			if(conflict.size()==1){
+			if(conflict.size()==1 && outer->S->decisionLevel()>0){
 				assert(false);
 				exit(1);
 			}
@@ -361,7 +361,7 @@ void MSTDetector::buildMinWeightTooSmallReason(int weight,vec<Lit> & conflict){
 			for(int i = 0;i<black.size();i++)
 				assert(black[i]);
 #endif
-			if(conflict.size()==1){
+			if(conflict.size()==1 && outer->S->decisionLevel()>0){
 						assert(false);
 						exit(1);
 					}
@@ -515,7 +515,7 @@ void MSTDetector::buildMinWeightTooSmallReason(int weight,vec<Lit> & conflict){
 						seen[r]=false;
 						r = positive_reach_detector->getParent(r);
 					}
-					if(conflict.size()<2){
+					if(conflict.size()<2 && outer->S->decisionLevel()>0){
 									exit(4);
 								}
 
@@ -572,7 +572,7 @@ void MSTDetector::buildMinWeightTooSmallReason(int weight,vec<Lit> & conflict){
 					}
 					TarjanOLCA_edge(root,edgeid, lower_endpoint,conflict);//run tarjan's off-line lowest common ancestor query from node 0, arbitrarily.
 
-					if(conflict.size()<2){
+					if(conflict.size()<2 && outer->S->decisionLevel()>0){
 						for(int i =0;i<outer->edge_list.size();i++){
 							Var v = outer->edge_list[i].v;
 							if(v>=0){

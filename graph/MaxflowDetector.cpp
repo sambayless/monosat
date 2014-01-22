@@ -9,16 +9,17 @@
 
 #include "MaxflowDetector.h"
 #include "GraphTheory.h"
-
-MaxflowDetector::MaxflowDetector(int _detectorID, GraphTheorySolver * _outer,  DynamicGraph<PositiveEdgeStatus> &_g,DynamicGraph<NegativeEdgeStatus> &_antig, int from,double seed):
-Detector(_detectorID),outer(_outer),over_graph(_g),g(_g),antig(_antig),source(from),rnd_seed(seed),positive_detector(NULL),negative_detector(NULL){
-
-
-	positive_detector = new EdmondsKarp<PositiveEdgeStatus>(_g);
-	negative_detector = new EdmondsKarp<NegativeEdgeStatus>(_antig);
+#include "EdmondsKarpAdj.h"
+MaxflowDetector::MaxflowDetector(int _detectorID, GraphTheorySolver * _outer,  DynamicGraph<PositiveEdgeStatus> &_g,DynamicGraph<NegativeEdgeStatus> &_antig, int from, int _target,double seed):
+Detector(_detectorID),outer(_outer),over_graph(_g),g(_g),antig(_antig),source(from),target(_target),rnd_seed(seed),positive_detector(NULL),negative_detector(NULL){
 
 
+	positive_detector = new EdmondsKarpAdj<vec<int>,PositiveEdgeStatus>(_g,outer->edge_weights);
+	negative_detector = new EdmondsKarpAdj<vec<int>,NegativeEdgeStatus>(_antig,outer->edge_weights);
 
+	//for(int i = 0;i<g)
+	//positive_detector->setAllEdgeCapacities(1);
+	//negative_detector->setAllEdgeCapacities(1);
 	first_reach_var = var_Undef;
 	reach_marker=outer->newReasonMarker(getID());
 	non_reach_marker=outer->newReasonMarker(getID());
@@ -27,17 +28,18 @@ Detector(_detectorID),outer(_outer),over_graph(_g),g(_g),antig(_antig),source(fr
 
 
 
-void MaxflowDetector::addLit(int from, int to, Var reach_var,int maxflow){
+void MaxflowDetector::addFlowLit(int maxflow, Var reach_var){
+	g.invalidate();
+	antig.invalidate();
 	if(first_reach_var==var_Undef){
 		first_reach_var=reach_var;
 	}else{
 		assert(reach_var>first_reach_var);
 	}
-	assert(from==source);
+
 	assert(maxflow>=0);
 
-	while( flow_lits.size()<=to)
-		flow_lits.push();
+
 
 	//while( dist_lits[to].size()<=within_steps)
 	//	dist_lits[to].push({lit_Undef,-1});
@@ -47,25 +49,17 @@ void MaxflowDetector::addLit(int from, int to, Var reach_var,int maxflow){
 
 	Lit reachLit=mkLit(reach_var,false);
 	bool found=false;
-	for(int i = 0;i<flow_lits[to].size();i++){
-		if(flow_lits[to][i].max_flow==maxflow){
-			found=true;
-			Lit r = flow_lits[to][i].l;
-			//force equality between the new lit and the old reach lit, in the SAT solver
-			outer->S->addClause(~r, reachLit);
-			outer->S->addClause(r, ~reachLit);
-		}
-	}
-	if(!found){
-		flow_lits[to].push();
-		flow_lits[to].last().l = reachLit;
-		flow_lits[to].last().max_flow=maxflow;
+
+
+		flow_lits.push();
+		flow_lits.last().l = reachLit;
+		flow_lits.last().max_flow=maxflow;
 		while(reach_lit_map.size()<= reach_var- first_reach_var ){
 			reach_lit_map.push(-1);
 		}
 
-		reach_lit_map[reach_var-first_reach_var]=to;
-	}
+		reach_lit_map[reach_var-first_reach_var]=flow_lits.size()-1;
+
 
 
 
@@ -76,7 +70,7 @@ void MaxflowDetector::addLit(int from, int to, Var reach_var,int maxflow){
 
 
 
-void MaxflowDetector::buildReachReason(int node,vec<Lit> & conflict){
+void MaxflowDetector::buildReachReason(int flow,vec<Lit> & conflict){
 			//drawFull();
 
 
@@ -84,14 +78,15 @@ void MaxflowDetector::buildReachReason(int node,vec<Lit> & conflict){
 
 
 		tmp_cut.clear();
-			negative_detector->maxFlow(source, node);
+			int actual_flow = positive_detector->maxFlow(source, target);
 
 			//just collect the set of edges which have non-zero flow, and return them
+			//(Or, I could return a cut, probably)
 			for(int i = 0;i<outer->edge_list.size();i++){
-				if(negative_detector->getEdgeFlow(i)>0){
+				if(positive_detector->getEdgeFlow(i)>0){
 					Var v = outer->edge_list[i].v;
 					assert(outer->S->value(v)==l_True);
-					conflict.push(mkLit(v,false));
+					conflict.push(mkLit(v,true));
 				}
 			}
 
@@ -116,12 +111,9 @@ void MaxflowDetector::buildReachReason(int node,vec<Lit> & conflict){
 			outer->learnt_path_clause_length+= (conflict.size()-1);
 			double elapsed = cpuTime()-starttime;
 			outer->pathtime+=elapsed;
-	#ifdef DEBUG_GRAPH
-			 assert(outer->dbg_clause(conflict));
 
-	#endif
 		}
-		void MaxflowDetector::buildNonReachReason(int node,vec<Lit> & conflict){
+		void MaxflowDetector::buildNonReachReason(int maxflow,vec<Lit> & conflict){
 			static int it = 0;
 			++it;
 			double starttime = cpuTime();
@@ -134,7 +126,8 @@ void MaxflowDetector::buildReachReason(int node,vec<Lit> & conflict){
 			seen.clear();
 			seen.growTo(outer->nNodes());
 			visit.clear();
-			visit.push(node);
+			int foundflow = negative_detector->maxFlow(source,target);
+			visit.push(target);
 			for(int k = 0;k<visit.size();k++){
 				int u = visit[k];
 				for(int i = 0;i<outer->inv_adj[u].size();i++){
@@ -146,7 +139,7 @@ void MaxflowDetector::buildReachReason(int node,vec<Lit> & conflict){
 						if(outer->S->value(v)!=l_False){
 							//this is an enabled edge in the overapprox
 							int edgeid = outer->getEdgeID(v);
-							int residual_capacity = positive_detector->getEdgeResidualCapacity(edgeid);
+							int residual_capacity = negative_detector->getEdgeResidualCapacity(edgeid);
 							if(residual_capacity>0){
 								visit.push(p);
 							}
@@ -167,73 +160,8 @@ void MaxflowDetector::buildReachReason(int node,vec<Lit> & conflict){
 			double elapsed = cpuTime()-starttime;
 			 outer->mctime+=elapsed;
 
-	#ifdef DEBUG_GRAPH
-			 assert(outer->dbg_clause(conflict));
-	#endif
 		}
 
-		/**
-		 * Explain why an edge was forced (to true).
-		 * The reason is that _IF_ that edge is false, THEN there is a cut of disabled edges between source and target
-		 * So, create the graph that has that edge (temporarily) assigned false, and find a min-cut in it...
-		 */
-		void MaxflowDetector::buildForcedEdgeReason(int node, int forced_edge_id,vec<Lit> & conflict){
-					static int it = 0;
-					++it;
-					double starttime = cpuTime();
-
-					assert(outer->edge_assignments[forced_edge_id]==l_True);
-					Lit edgeLit =mkLit( outer->edge_list[forced_edge_id].v,false);
-
-					//conflict.push(edgeLit);
-
-					int forced_edge_from = outer->edge_list[forced_edge_id].from;
-					int forced_edge_to= outer->edge_list[forced_edge_id].to;
-					//it should be possible to improve this so we don't need to temporarily disable this edge and recompute the max flow to find this cut...
-					over_graph.disableEdge(forced_edge_from,forced_edge_to,forced_edge_id);
-					int flow =positive_detector->maxFlow(source,node);
-
-					seen.clear();
-					seen.growTo(outer->nNodes());
-					visit.clear();
-					visit.push(node);
-					for(int k = 0;k<visit.size();k++){
-						int u = visit[k];
-						for(int i = 0;i<outer->inv_adj[u].size();i++){
-							int p = outer->inv_adj[u][i].from;
-							if(!seen[p]){
-								seen[p]=true;
-								int v = outer->inv_adj[u][i].v;
-								assert( outer->inv_adj[u][i].to==u);
-								if(outer->S->value(v)!=l_False){
-									//this is an enabled edge in the overapprox
-									int edgeid = outer->getEdgeID(v);
-									int residual_capacity = positive_detector->getEdgeResidualCapacity(edgeid);
-									if(residual_capacity>0){
-										visit.push(p);
-									}
-								}else{
-									//this is a disabled edge, and we can add it to the cut.
-									//we're going to assume the edge has non-zero capacity here, otherwise we could exclude it (but it shouldn't really even be in this graph in that case, anyways).
-									conflict.push(mkLit(v,false));
-								}
-							}
-							//pred
-						}
-					}
-
-
-					 outer->num_learnt_cuts++;
-					 outer->learnt_cut_clause_length+= (conflict.size()-1);
-					 over_graph.enableEdge(forced_edge_from,forced_edge_to,forced_edge_id);
-
-					double elapsed = cpuTime()-starttime;
-					 outer->mctime+=elapsed;
-
-			#ifdef DEBUG_GRAPH
-					 assert(outer->dbg_clause(conflict));
-			#endif
-				}
 
 		void MaxflowDetector::buildReason(Lit p, vec<Lit> & reason, CRef marker){
 
@@ -257,13 +185,11 @@ void MaxflowDetector::buildReachReason(int node,vec<Lit> & conflict){
 						u=w;
 					}*/
 					Var v = var(p);
-					int u =getNode(v);
-					buildReachReason(u,reason);
+					int flow = flow_lits[reach_lit_map[v-first_reach_var]].max_flow;
+					//int u =getNode(v);
+					buildReachReason(flow,reason);
 
-		#ifdef DEBUG_GRAPH
-				 assert(outer->dbg_clause(reason));
 
-		#endif
 					//double elapsed = cpuTime()-startpathtime;
 				//	pathtime+=elapsed;
 				}else if(marker==non_reach_marker){
@@ -277,16 +203,10 @@ void MaxflowDetector::buildReachReason(int node,vec<Lit> & conflict){
 
 
 					Var v = var(p);
-					int t = getNode(v); // v- var(reach_lits[d][0]);
-					buildNonReachReason(t,reason);
+					int flow = flow_lits[reach_lit_map[v-first_reach_var]].max_flow;
+					//int t = getNode(v); // v- var(reach_lits[d][0]);
+					buildNonReachReason(flow,reason);
 
-				}else if (marker==forced_reach_marker){
-					Var v = var(p);
-					//The forced variable is an EDGE that was forced.
-					int forced_edge_id =v- outer->min_edge_var;
-					//The corresponding node that is the reason it was forced
-					int reach_node=force_reason[forced_edge_id];
-					 buildForcedEdgeReason( reach_node,  forced_edge_id, reason);
 				}else{
 					assert(false);
 				}
@@ -305,15 +225,15 @@ void MaxflowDetector::buildReachReason(int node,vec<Lit> & conflict){
 		double unreachUpdateElapsed = cpuTime()-startunreachtime;
 		outer->unreachupdatetime+=unreachUpdateElapsed;
 		for(int j = 0;j<flow_lits.size();j++){
-			for(int i = 0;i<flow_lits[j].size();i++){
-				DistLit f = flow_lits[i][j];
+
+				DistLit f = flow_lits[j];
 				Lit l = f.l;
 				int maxflow = f.max_flow;
-				int u = getNode(var(l));
+				//int u = getNode(var(l));
 				int over_maxflow;
 				int under_maxflow;
 
-				if((under_maxflow=negative_detector->maxFlow(source,u))>=maxflow){
+				if((under_maxflow=positive_detector->maxFlow(source,target))>=maxflow){
 					if(outer->S->value(l)==l_True){
 						//do nothing
 					}else if(outer->S->value(l)==l_Undef){
@@ -322,10 +242,11 @@ void MaxflowDetector::buildReachReason(int node,vec<Lit> & conflict){
 
 					}else if(outer->S->value(l)==l_False){
 						conflict.push(l);
-						buildReachReason(u,conflict);
+						buildReachReason(maxflow,conflict);
+						return false;
 					}
 
-				}else if((over_maxflow = positive_detector->maxFlow(source,u))>=maxflow){
+				}else if((over_maxflow = negative_detector->maxFlow(source,target))<maxflow){
 					if(outer->S->value(l)==l_False){
 						//do nothing
 					}else if(outer->S->value(l)==l_Undef){
@@ -333,14 +254,14 @@ void MaxflowDetector::buildReachReason(int node,vec<Lit> & conflict){
 						outer->S->uncheckedEnqueue(~l,reach_marker) ;
 
 					}else if(outer->S->value(l)==l_True){
-						conflict.push(l);
-						buildNonReachReason(u,conflict);
-
+						conflict.push(~l);
+						buildNonReachReason(maxflow,conflict);
+						return false;
 					}
 
 				}
 
-			}
+
 
 		}
 
@@ -350,31 +271,31 @@ void MaxflowDetector::buildReachReason(int node,vec<Lit> & conflict){
 bool MaxflowDetector::checkSatisfied(){
 
 				for(int j = 0;j< flow_lits.size();j++){
-					for(int k = 0;k<flow_lits[j].size();k++){
-						Lit l = flow_lits[j][k].l;
-						int dist = flow_lits[j][k].max_flow;
+
+						Lit l = flow_lits[j].l;
+						int dist = flow_lits[j].max_flow;
 
 						if(l!=lit_Undef){
-							int node =getNode(var(l));
+							//int node =getNode(var(l));
 
 							if(outer->S->value(l)==l_True){
-								if(positive_detector->maxFlow(source,node)>dist){
+								if(positive_detector->maxFlow(source,target)<dist){
 									return false;
 								}
 							}else if (outer->S->value(l)==l_False){
-								if( negative_detector->maxFlow(source,node)<=dist){
+								if( negative_detector->maxFlow(source,target)>=dist){
 									return false;
 								}
 							}else{
-								if(positive_detector->maxFlow(source,node)<=dist){
+								if(positive_detector->maxFlow(source,target)>=dist){
 									return false;
 								}
-								if(!negative_detector->maxFlow(source,node)>dist){
+								if(!negative_detector->maxFlow(source,target)<dist){
 									return false;
 								}
 							}
 						}
-					}
+
 				}
 	return true;
 }

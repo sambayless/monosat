@@ -47,23 +47,19 @@ public:
 			int max_flow;
 
 		};
-		vec<vec<DistLit> > flow_lits;
-		struct Change{
-				Lit l;
-				int u;
-			};
-		vec<Change> changed;
+		vec<DistLit> flow_lits;
+
 
 		vec<MaxFlow::Edge> tmp_cut;
 		vec<int> visit;
 		vec<bool> seen;
-		int getNode(Var reachVar){
+/*		int getNode(Var reachVar){
 			assert(reachVar>=first_reach_var);
 			int index = reachVar-first_reach_var;
 			assert(index< reach_lit_map.size());
 			assert(reach_lit_map[index]>=0);
 			return reach_lit_map[index];
-		}
+		}*/
 
 		bool propagate(vec<Assignment> & trail,vec<Lit> & conflict);
 		void buildReachReason(int node,vec<Lit> & conflict);
@@ -72,8 +68,8 @@ public:
 		void buildReason(Lit p, vec<Lit> & reason, CRef marker);
 		bool checkSatisfied();
 		Lit decide();
-		void addLit(int from, int to, Var reach_var,int within_steps=-1);
-		MaxflowDetector(int _detectorID, GraphTheorySolver * _outer, DynamicGraph<PositiveEdgeStatus> &_g, DynamicGraph<NegativeEdgeStatus> &_antig, int _source,double seed=1);//:Detector(_detectorID),outer(_outer),within(-1),source(_source),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL){}
+		void addFlowLit(int max_flow,Var reach_var);
+		MaxflowDetector(int _detectorID, GraphTheorySolver * _outer, DynamicGraph<PositiveEdgeStatus> &_g, DynamicGraph<NegativeEdgeStatus> &_antig, int _source, int _target,double seed=1);//:Detector(_detectorID),outer(_outer),within(-1),source(_source),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL){}
 		virtual ~MaxflowDetector(){
 
 		}

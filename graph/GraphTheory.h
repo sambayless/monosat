@@ -158,7 +158,7 @@ public:
 
 	struct CutStatus{
 		GraphTheorySolver & outer;
-		int operator () (int id) const {
+		int operator [] (int id) const {
 
 			if(outer.edge_assignments[id]==l_False){
 				return 1;
@@ -1127,12 +1127,17 @@ public:
 		mstDetector->addTreeEdgeLit(edgeid,var);
 	}
 	void maxFlow(int from, int to, int max_flow, Var v){
-/*
+
 		for (int i =0;i< flow_detectors.size();i++){
 			if(flow_detectors[i]->source==from && flow_detectors[i]->target == to){
-
+				flow_detectors[i]->addFlowLit(max_flow,v);
+				return;
 			}
-		}*/
+		}
+		MaxflowDetector *f = new MaxflowDetector(detectors.size(),this, g, antig,from,to,drand(rnd_seed)) ;
+		flow_detectors.push(f);
+		f->addFlowLit(max_flow,v);
+		detectors.push(f);
 	}
 };
 
