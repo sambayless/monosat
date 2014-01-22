@@ -24,6 +24,8 @@ class GraphTheorySolver;
 class AllPairsDetector:public Detector{
 public:
 		GraphTheorySolver * outer;
+		 DynamicGraph<PositiveEdgeStatus> &g;
+			 DynamicGraph<NegativeEdgeStatus> &antig;
 		int within;
 
 		double rnd_seed;
@@ -31,6 +33,7 @@ public:
 		AllPairs * dbg_positive_reach_detector;
 		AllPairs * dbg_negative_reach_detector;
 #endif
+
 		CRef reach_marker;
 		CRef non_reach_marker;
 		CRef forced_reach_marker;

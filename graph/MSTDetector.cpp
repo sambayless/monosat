@@ -29,7 +29,8 @@ Detector(_detectorID),outer(_outer),g(_g),antig(_antig),rnd_seed(seed),edge_weig
 }
 
 void MSTDetector::addWeightLit(Var weight_var,int min_weight){
-
+	g.invalidate();
+	antig.invalidate();
 
 	//while( dist_lits[to].size()<=within_steps)
 	//	dist_lits[to].push({lit_Undef,-1});
@@ -63,7 +64,8 @@ void MSTDetector::addWeightLit(Var weight_var,int min_weight){
 
 
 void MSTDetector::addTreeEdgeLit(int edge_id, Var reach_var){
-
+	g.invalidate();
+	antig.invalidate();
 
 	while(outer->S->nVars()<=reach_var)
 		outer->S->newVar();

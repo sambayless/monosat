@@ -25,6 +25,8 @@ class GraphTheorySolver;
 class DistanceDetector:public Detector{
 public:
 		GraphTheorySolver * outer;
+		 DynamicGraph<PositiveEdgeStatus> &g;
+			 DynamicGraph<NegativeEdgeStatus> &antig;
 		//int within;
 		int source;
 		double rnd_seed;

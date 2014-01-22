@@ -201,6 +201,13 @@ public:
 			historyclears++;
 		}
 	}
+	//force a new modification
+	void invalidate(){
+		modifications++;
+		additions=modifications;
+		modifications++;
+		deletions=modifications;
+	}
 };
 
 

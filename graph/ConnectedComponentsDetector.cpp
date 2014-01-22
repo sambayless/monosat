@@ -25,7 +25,8 @@ Detector(_detectorID),outer(_outer),g(_g),antig(_antig),rnd_seed(seed),positive_
 }
 void ConnectedComponentsDetector::addConnectedComponentsLit(Var weight_var,int min_components){
 
-
+	g.invalidate();
+	antig.invalidate();
 	//while( dist_lits[to].size()<=within_steps)
 	//	dist_lits[to].push({lit_Undef,-1});
 

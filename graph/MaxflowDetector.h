@@ -24,6 +24,8 @@ class MaxflowDetector:public Detector{
 public:
 		GraphTheorySolver * outer;
 		DynamicGraph<PositiveEdgeStatus> & over_graph;
+		 DynamicGraph<PositiveEdgeStatus> &g;
+			 DynamicGraph<NegativeEdgeStatus> &antig;
 		//int within;
 		int source;
 		int target;

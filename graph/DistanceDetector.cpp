@@ -11,7 +11,7 @@
 #include "GraphTheory.h"
 
 DistanceDetector::DistanceDetector(int _detectorID, GraphTheorySolver * _outer,  DynamicGraph<PositiveEdgeStatus> &_g,DynamicGraph<NegativeEdgeStatus> &_antig, int from, int within_steps ,double seed):
-Detector(_detectorID),outer(_outer),source(from),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL){
+Detector(_detectorID),outer(_outer),g(_g),antig(_antig),source(from),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL){
 	rnd_path=NULL;
 	 if(opt_use_random_path_for_decisions){
 		 rnd_path = new WeightedDijkstra<NegativeEdgeStatus>(from,_antig);
@@ -53,6 +53,8 @@ Detector(_detectorID),outer(_outer),source(from),rnd_seed(seed),positive_reach_d
 
 
 void DistanceDetector::addLit(int from, int to, Var reach_var,int within_steps){
+	g.invalidate();
+		antig.invalidate();
 	if(first_reach_var==var_Undef){
 		first_reach_var=reach_var;
 	}else{

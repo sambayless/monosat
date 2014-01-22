@@ -468,7 +468,7 @@ int main(int argc, char** argv)
         		Var prev_min = var_Undef;
         		while(true){
         			printf("Optimizing minimum spanning tree (%d)...\n",mst_weight);
-        			if(mst_weight==10667){
+        			if(mst_weight==6){
         				int a=1;
         			}
         			S.cancelUntil(0);
