@@ -255,10 +255,7 @@ void ConnectedComponentsDetector::ConnectedComponentsStatus::setComponents(int c
 
 		bool ConnectedComponentsDetector::propagate(vec<Assignment> & trail,vec<Lit> & conflict){
 
-		for(int i =0;i<g.edges;i++){
-			printf("%d, ", outer->S->value(outer->edge_list[i].v));
-		}
-		printf("\n");
+
 		double startdreachtime = cpuTime();
 		changed_edges.clear();
 		changed_weights.clear();
