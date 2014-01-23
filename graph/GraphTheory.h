@@ -35,6 +35,7 @@
 #include "DistanceDetector.h"
 #include "MSTDetector.h"
 #include "MaxflowDetector.h"
+#include "ConnectedComponentsDetector.h"
 namespace Minisat{
 
 class GraphTheorySolver;
@@ -110,6 +111,7 @@ public:
 	vec<ReachDetector*> reach_detectors;
 	vec<DistanceDetector*> distance_detectors;
 	vec<MaxflowDetector*> flow_detectors;
+	ConnectedComponentsDetector* component_detector;
 
 
 	vec<int> marker_map;
@@ -208,7 +210,7 @@ public:
 			 learnt_path_clause_length=0;
 			 num_learnt_cuts=0;
 			 learnt_cut_clause_length=0;
-
+			 component_detector=NULL;
 			 rnd_seed=opt_random_seed;
 
 			if(mincutalg==ALG_IBFS){
@@ -1138,6 +1140,13 @@ public:
 		flow_detectors.push(f);
 		f->addFlowLit(max_flow,v);
 		detectors.push(f);
+	}
+	void minConnectedComponents(int min_components, Var v){
+		if(!component_detector){
+			component_detector = new  ConnectedComponentsDetector(detectors.size(),this, g, antig,drand(rnd_seed));
+			detectors.push(component_detector);
+		}
+		component_detector->addConnectedComponentsLit(v,min_components);
 	}
 };
 

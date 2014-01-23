@@ -782,6 +782,12 @@ int main(int argc, char** argv)
 									}
 									printf("\n");
 								}
+
+						if(g->component_detector){
+							int numComponents = g->component_detector->positive_reach_detector->numComponents();
+							printf("Number of connected components is: %d\n",numComponents);
+
+						}
 					}
 
 

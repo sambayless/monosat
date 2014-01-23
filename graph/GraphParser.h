@@ -254,7 +254,7 @@ static void readMaxFlowConstraint(B& in, Solver& S, vec<GraphTheory*> & graphs) 
 		skipLine(in);
 		return;
 	}
-	//m g s t flow var is a max flow constraint, true if the max flow is >= var
+	//f g s t flow var is a max flow constraint, true if the max flow is >= var
     if(*in != 'f'){
     	printf("PARSE ERROR! Unexpected char: %c\n", *in), exit(3);
     }
@@ -278,6 +278,35 @@ static void readMaxFlowConstraint(B& in, Solver& S, vec<GraphTheory*> & graphs) 
 
 }
 
+
+
+
+template<class B, class Solver>
+static void readMinConnectedComponentsConstraint(B& in, Solver& S, vec<GraphTheory*> & graphs) {
+	if(opt_ignore_graph){
+		skipLine(in);
+		return;
+	}
+	//n g min_components var is a minimum connected component count constraint, true if the max flow is >= var
+    if(*in != 'n'){
+    	printf("PARSE ERROR! Unexpected char: %c\n", *in), exit(3);
+    }
+    ++in;
+
+        int graphID = parseInt(in);
+        int min_components = parseInt(in);
+        int reachVar = parseInt(in)-1;
+        if(graphID <0 || graphID>=graphs.size() || !graphs[graphID]){
+        	printf("PARSE ERROR! Undeclared graph identifier %d for edge %d\n",graphID, reachVar), exit(3);
+        }
+        if(reachVar<0){
+        	printf("PARSE ERROR! Edge variables must be >=0, was %d\n", reachVar), exit(3);
+        }
+        GraphTheory * graph = graphs[graphID];
+        while (reachVar+graph->nNodes() >= S.nVars()) S.newVar();
+        graph->minConnectedComponents(min_components,reachVar);
+}
+
 template<class B, class Solver>
 static void parse_GRAPH_main(B& in, Solver& S, vec<std::pair<int,std::string> > * symbols=NULL ) {
 	vec<GraphTheory*> graphs;
@@ -291,15 +320,7 @@ static void parse_GRAPH_main(B& in, Solver& S, vec<std::pair<int,std::string> > 
         if (*in == EOF) break;
         else if (*in == 'p'){
         	skipLine(in);
-            //if (eagerMatch(in, "p graph")){
-                //vars    = parseInt(in);
-                //clauses = parseInt(in);
-                // SATRACE'06 hack
-                // if (clauses > 4000000)
-                //     S.eliminate(true);
-           // }else{
-           //     printf("PARSE ERROR! Unexpected char: %c\n", *in), exit(3);
-           // }
+
         } else if (*in == 'c'){
         	if(symbols && eagerMatch(in,"c var ")){
         		//this is a variable symbol map
@@ -355,6 +376,8 @@ static void parse_GRAPH_main(B& in, Solver& S, vec<std::pair<int,std::string> > 
             readMinSpanningTreeEdgeConstraint(in, S,graphs);
         }else if (*in == 'f'){
             readMaxFlowConstraint(in, S,graphs);
+        }else if (*in == 'n'){
+            readMinConnectedComponentsConstraint(in, S,graphs);
         }else{
             cnt++;
             readClause(in, S, lits);

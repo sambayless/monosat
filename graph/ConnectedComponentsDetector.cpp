@@ -17,11 +17,12 @@ Detector(_detectorID),outer(_outer),g(_g),antig(_antig),rnd_seed(seed),positive_
 
 		positiveReachStatus = new ConnectedComponentsDetector::ConnectedComponentsStatus(*this,true);
 		negativeReachStatus = new ConnectedComponentsDetector::ConnectedComponentsStatus(*this,false);
-		positive_reach_detector = new DisjointSetsConnectedComponents<ConnectedComponentsDetector::ConnectedComponentsStatus,PositiveEdgeStatus>(_g,*(positiveReachStatus),1);
-		negative_reach_detector = new DisjointSetsConnectedComponents<ConnectedComponentsDetector::ConnectedComponentsStatus,NegativeEdgeStatus>(_g,*(negativeReachStatus),1);
+		//Note: these are _intentionalyl_ swapped
+		negative_reach_detector = new DisjointSetsConnectedComponents<ConnectedComponentsDetector::ConnectedComponentsStatus,PositiveEdgeStatus>(_g,*(negativeReachStatus),1);
+		positive_reach_detector = new DisjointSetsConnectedComponents<ConnectedComponentsDetector::ConnectedComponentsStatus,NegativeEdgeStatus>(_antig,*(positiveReachStatus),1);
 		reach_marker=outer->newReasonMarker(getID());
 		non_reach_marker=outer->newReasonMarker(getID());
-		forced_reach_marker=outer->newReasonMarker(getID());
+		//forced_reach_marker=outer->newReasonMarker(getID());
 }
 void ConnectedComponentsDetector::addConnectedComponentsLit(Var weight_var,int min_components){
 
@@ -75,12 +76,12 @@ void ConnectedComponentsDetector::ConnectedComponentsStatus::setComponents(int c
 				if(l!=lit_Undef){
 
 					assert(l!=lit_Undef);
-					if(min_components<components && !polarity){
+					if(components<=min_components && !polarity){
 						lbool assign = detector.outer->S->value(l);
 						if( assign!= l_False ){
 							detector.changed_weights.push({~l,min_components});
 						}
-					}else if(min_components>=components && polarity){
+					}else if(components>min_components && polarity){
 						lbool assign = detector.outer->S->value(l);
 						if( assign!= l_True ){
 							detector.changed_weights.push({l,min_components});
@@ -95,7 +96,7 @@ void ConnectedComponentsDetector::ConnectedComponentsStatus::setComponents(int c
 
 
 
-		void ConnectedComponentsDetector::buildMinComponentsReason(int min_components,vec<Lit> & conflict){
+		void ConnectedComponentsDetector::buildMinComponentsTooLowReason(int min_components,vec<Lit> & conflict){
 
 			double starttime = cpuTime();
 
@@ -105,9 +106,9 @@ void ConnectedComponentsDetector::ConnectedComponentsStatus::setComponents(int c
 
 			visit.clear();
 			//ok,construct spanning forest from among the connected elements using dfs, and learn that at least one edge in that each must be disabled.
-			for(int k = 0;k<positive_reach_detector->numComponents();k++){
-			//learn that at least one edge in the tree must be disabled (else, the minimum weight cannot be higher than the current weight)
-				int root =positive_reach_detector->getComponent(k);
+			for(int k = 0;k<negative_reach_detector->numComponents();k++){
+			//learn that at least one edge in the tree must be disabled (else, number of connected components cannot be increased)
+				int root =negative_reach_detector->getComponent(k);
 				seen[root]=true;
 				visit.push(root);
 
@@ -134,17 +135,18 @@ void ConnectedComponentsDetector::ConnectedComponentsStatus::setComponents(int c
 			double elapsed = cpuTime()-starttime;
 			outer->pathtime+=elapsed;
 		}
-		void ConnectedComponentsDetector::buildNotMinComponentsReason(int min_components,vec<Lit> & conflict){
+		void ConnectedComponentsDetector::buildMinComponentsTooHighReason(int min_components,vec<Lit> & conflict){
 			static int it = 0;
 						++it;
 
 				//drawFull( non_reach_detectors[detector]->getSource(),u);
 				//assert(outer->dbg_distance( source,u));
+
 				double starttime = cpuTime();
 				int INF=std::numeric_limits<int>::max();
-				negative_reach_detector->update();
-				int numComponenets = negative_reach_detector->numComponents();
-				assert(numComponenets>min_components);
+				positive_reach_detector->update();
+				int numComponents = positive_reach_detector->numComponents();
+				assert(numComponents>=min_components);
 
 					//IF the ConnectedComponents is disconnected, the reason is a separating cut between any two disconnected components.
 					//we can find one of these by identifying any two roots
@@ -154,17 +156,19 @@ void ConnectedComponentsDetector::ConnectedComponentsStatus::setComponents(int c
 					//walk back down from the each root to find a separating cut of disabled edge.
 					//return the smallest such cut.
 
-					seen.clear();
-					seen.growTo(g.nodes);
-
+					edge_in_clause.clear();
+					edge_in_clause.growTo(g.nEdgeIDs());
 					assert(conflict.size()==1);
-					for(int i = 0;i<negative_reach_detector->numComponents();i++){
-						int root = negative_reach_detector->getComponent(i);
+					for(int i = 0;i<positive_reach_detector->numComponents();i++){
+						int root = positive_reach_detector->getComponent(i);
 
 						//now explore that component.
-						tmp_conflict.clear();
+
 						visit.clear();
 						//ok, now traverse the connected component in the tree below this root.
+						seen.clear();
+						seen.growTo(g.nodes);
+
 						visit.push(root);
 						seen[root]=true;
 						while(visit.size()){
@@ -183,26 +187,21 @@ void ConnectedComponentsDetector::ConnectedComponentsStatus::setComponents(int c
 									}
 								}else if (!antig.edgeEnabled(edgeid)){
 									int v = antig.adjacency_undirected[u][i].node;
+									if( ! edge_in_clause[edgeid]){
+										edge_in_clause[edgeid]=true;
+										Var e =outer->edge_list[edgeid].v;
 
-									Var e =outer->edge_list[edgeid].v;
-									assert(outer->S->value(e)==l_False);
-									tmp_conflict.push(mkLit(e,false));
+										assert(outer->S->value(e)==l_False);
+										conflict.push(mkLit(e,false));
+									}
 								}
 							}
 						}
 
-							if(tmp_conflict.size()<min_conflict){
-								min_conflict = tmp_conflict.size();
-								conflict.shrink(conflict.size()-1);//keep only the first conflict element, which is the constraint lit
-								assert(conflict.size()==1);
-								for(int i = 0;i<tmp_conflict.size();i++){
-									conflict.push(tmp_conflict[i]);
-								}
-							}
-						if(!opt_connected_components_min_cut){
-							break;//stop looking as soon as we find a cut, instead of trying to find the smallest one.
-						}
+
+
 					}
+
 					return;
 
 		}
@@ -221,7 +220,7 @@ void ConnectedComponentsDetector::ConnectedComponentsStatus::setComponents(int c
 						}
 					}
 					assert(weight>=0);
-					buildMinComponentsReason(weight,reason);
+					buildMinComponentsTooHighReason(weight,reason);
 
 					//double elapsed = cpuTime()-startpathtime;
 				//	pathtime+=elapsed;
@@ -247,16 +246,8 @@ void ConnectedComponentsDetector::ConnectedComponentsStatus::setComponents(int c
 					}
 					assert(weight>=0);
 
-					buildNotMinComponentsReason(weight,reason);
+					buildMinComponentsTooLowReason(weight,reason);
 
-				}else if (marker==forced_reach_marker){
-					//not implemented yet
-					/*Var v = var(p);
-					//The forced variable is an EDGE that was forced.
-					int forced_edge_id =v- outer->min_edge_var;
-					//The corresponding node that is the reason it was forced
-					int reach_node=force_reason[forced_edge_id];
-					 buildForcedEdgeReason( reach_node,  forced_edge_id, reason);*/
 				}else{
 					assert(false);
 				}
@@ -264,7 +255,10 @@ void ConnectedComponentsDetector::ConnectedComponentsStatus::setComponents(int c
 
 		bool ConnectedComponentsDetector::propagate(vec<Assignment> & trail,vec<Lit> & conflict){
 
-
+		for(int i =0;i<g.edges;i++){
+			printf("%d, ", outer->S->value(outer->edge_list[i].v));
+		}
+		printf("\n");
 		double startdreachtime = cpuTime();
 		changed_edges.clear();
 		changed_weights.clear();
@@ -297,13 +291,13 @@ void ConnectedComponentsDetector::ConnectedComponentsStatus::setComponents(int c
 
 				//conflict
 				//The reason is a path in g from to s in d
-					buildMinComponentsReason(components,conflict);
+					buildMinComponentsTooHighReason(components,conflict);
 				//add it to s
 				//return it as a conflict
 
 				}else{
+					buildMinComponentsTooLowReason(components,conflict);
 
-					buildNotMinComponentsReason(components,conflict);
 
 				}
 
@@ -318,28 +312,28 @@ void ConnectedComponentsDetector::ConnectedComponentsStatus::setComponents(int c
 		}
 
 bool ConnectedComponentsDetector::checkSatisfied(){
-
-
+	int numConnected = positive_reach_detector->numComponents();
+	int numConnectedOver = negative_reach_detector->numComponents();
 					for(int k = 0;k<connected_components_lits.size();k++){
 						Lit l = connected_components_lits[k].l;
-						int dist = connected_components_lits[k].min_components;
+						int moreThanThisManyComponents = connected_components_lits[k].min_components;
 
 						if(l!=lit_Undef){
 
 
 							if(outer->S->value(l)==l_True){
-								if(positive_reach_detector->numComponents()>dist){
+								if(negative_reach_detector->numComponents()<=moreThanThisManyComponents){
 									return false;
 								}
 							}else if (outer->S->value(l)==l_False){
-								if( negative_reach_detector->numComponents()<=dist){
+								if( positive_reach_detector->numComponents()>moreThanThisManyComponents){
 									return false;
 								}
 							}else{
-								if(positive_reach_detector->numComponents()<=dist){
+								if(negative_reach_detector->numComponents()>moreThanThisManyComponents){
 									return false;
 								}
-								if(!negative_reach_detector->numComponents()>dist){
+								if(!positive_reach_detector->numComponents()<=moreThanThisManyComponents){
 									return false;
 								}
 							}

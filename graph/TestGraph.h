@@ -309,6 +309,11 @@ public:
 
 
 	}
+	void minConnectedComponents(int min_components, Var v){
+		printf("Warning: max flow/mincut constraints are not implemented, and will be left unconstrained\n");
+
+
+	}
 };
 
 };

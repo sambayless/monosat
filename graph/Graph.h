@@ -41,7 +41,7 @@ public:
 	virtual void minimumSpanningTree(Var v, int minimum_weight)=0;
 	virtual void edgeInMinimumSpanningTree(Var edgeVar, Var var)=0;
 	virtual void maxFlow(int from, int to, int max_flow, Var v)=0;
-
+	virtual void minConnectedComponents(int min_components, Var v)=0;
 };
 
 class Graph{

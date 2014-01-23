@@ -70,7 +70,7 @@ public:
 		vec<bool> black;
 		vec<int> ancestors;
 
-		vec<Lit> tmp_conflict;
+		vec<bool> edge_in_clause;
 		vec<int> visit;
 		DisjointSets sets;
 
@@ -90,8 +90,8 @@ public:
 		bool propagate(vec<Assignment> & trail,vec<Lit> & conflict);
 		void buildConnectedReason(vec<Lit> & conflict);
 		void buildDisconnectedReason(vec<Lit> & conflict);
-		void buildMinComponentsReason(int min_components,vec<Lit> & conflict);
-		void buildNotMinComponentsReason(int min_components,vec<Lit> & conflict);
+		void buildMinComponentsTooLowReason(int min_components,vec<Lit> & conflict);
+		void buildMinComponentsTooHighReason(int min_components,vec<Lit> & conflict);
 		//void buildForcedMinWeightReason(int reach_node, int forced_edge_id,vec<Lit> & conflict);
 		void buildReason(Lit p, vec<Lit> & reason, CRef marker);
 		bool checkSatisfied();
