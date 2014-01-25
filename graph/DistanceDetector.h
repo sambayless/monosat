@@ -57,8 +57,18 @@ public:
 		vec<Change> & getChanged(){
 			return changed;
 		}
-		WeightedDijkstra<NegativeEdgeStatus> * rnd_path;
+		vec<double> rnd_weight;
 
+		WeightedDijkstra<NegativeEdgeStatus,vec<double>> * rnd_path;
+		struct OptimalWeightEdgeStatus{
+			DistanceDetector & detector;
+			int operator [] (int edge) const ;
+			int size() const;
+			OptimalWeightEdgeStatus(DistanceDetector & _outer):detector(_outer){}
+
+		};
+		OptimalWeightEdgeStatus opt_weight;
+		WeightedDijkstra<NegativeEdgeStatus,OptimalWeightEdgeStatus> * opt_path;
 		struct ReachStatus{
 			DistanceDetector & detector;
 			bool polarity;

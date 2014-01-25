@@ -66,6 +66,21 @@ void ConnectedComponentsDetector::addConnectedComponentsLit(Var weight_var,int m
 			detector.changed_edges.push({in_tree? l:~l,edgeid});
 	}
 }*/
+void ConnectedComponentsDetector::ConnectedComponentsStatus::setConnected(int u, int v, bool connected){
+	/*if(u>v){
+		std::swap(u,v);
+	}
+	if (detector.reachLits[u][v]!=lit_Undef){
+		Lit l = detector.reachLits[u][v];
+		lbool assign = detector.outer->S->value(l);
+		if(assign==l_True && connected){
+			//do nothing
+		}else if(assign==l_False && !connected){
+			//do nothing
+		}else
+			detector.changed.push({connected? l:~l,u,v});
+	}*/
+}
 
 void ConnectedComponentsDetector::ConnectedComponentsStatus::setComponents(int components){
 
@@ -257,7 +272,7 @@ void ConnectedComponentsDetector::ConnectedComponentsStatus::setComponents(int c
 
 
 		double startdreachtime = cpuTime();
-		changed_edges.clear();
+		changed.clear();
 		changed_weights.clear();
 		positive_reach_detector->update();
 		double reachUpdateElapsed = cpuTime()-startdreachtime;
@@ -303,8 +318,43 @@ void ConnectedComponentsDetector::ConnectedComponentsStatus::setComponents(int c
 				int  a=1;
 			}
 
-		}
+		}/*
+		for(int j = 0;j<changed.size();j++){
+					Lit l = changed[j].l;
+					int components = changed_weights[j].min_components;
+					bool reach = !sign(l);
+					if(outer->S->value(l)==l_True){
+						//do nothing
+					}else if(outer->S->value(l)==l_Undef){
+						trail.push(Assignment(false,reach,detectorID,0,var(l)));
+						if(reach)
+							outer->S->uncheckedEnqueue(l,reach_marker) ;
+						else
+							outer->S->uncheckedEnqueue(l,non_reach_marker) ;
 
+					}else if (outer->S->value(l)==l_False){
+						conflict.push(l);
+
+						if(reach){
+
+						//conflict
+						//The reason is a path in g from to s in d
+							buildMinComponentsTooHighReason(components,conflict);
+						//add it to s
+						//return it as a conflict
+
+						}else{
+							buildMinComponentsTooLowReason(components,conflict);
+
+
+						}
+
+						return false;
+					}else{
+						int  a=1;
+					}
+
+				}*/
 			return true;
 		}
 

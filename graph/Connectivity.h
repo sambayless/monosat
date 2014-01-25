@@ -453,8 +453,16 @@ public:
 			return;
 		}
 
-		if(last_deletion==g.deletions){
+		if(last_modification>0 &&  last_deletion==g.deletions){
 			stats_num_skipable_deletions++;
+			if(opt_skip_deletions && reportPolarity<1){
+				return;//I don't trust the correctness of these shortcuts
+			}
+		}
+		if(last_modification>0 &&  last_addition==g.additions){
+			if(opt_skip_additions && reportPolarity>-1){
+				return;//I don't trust the correctness of these shortcuts
+			}
 		}
 
 		setNodes(g.nodes);
@@ -611,14 +619,17 @@ public:
 		for(int i = 0;i<g.nodes;i++){
 
 			int dbgdist = d.dist[i];
-			if(!seen[i])
-				assert(dbgdist==d.INF  );
-			else{
-
+			if(!seen[i]){
+				if(reportPolarity<1)
+					assert(dbgdist==d.INF  );
+			}else{
+				if(reportPolarity>-1){
 				if(!(dbgdist<d.INF)){
 					drawFull();
 				}
+
 				assert(dbgdist<d.INF);
+				}
 			}
 		}
 #endif

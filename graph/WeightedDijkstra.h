@@ -15,10 +15,11 @@
 #include <limits>
 using namespace Minisat;
 namespace Minisat{
-template<class EdgeStatus=DefaultEdgeStatus >
+template<class EdgeStatus=DefaultEdgeStatus, class Weight=vec<double> >
 class WeightedDijkstra:public Reach{
 public:
 	DynamicGraph<EdgeStatus> & g;
+	Weight & weight;
 	int last_modification;
 	int last_addition;
 	int last_deletion;
@@ -32,7 +33,7 @@ public:
 
 	vec<int> old_dist;
 	vec<int> changed;
-	vec<double> weight;
+
 	vec<double> dist;
 	vec<int> prev;
 	struct DistCmp{
@@ -48,7 +49,7 @@ public:
 
 public:
 
-	WeightedDijkstra(int s,DynamicGraph<EdgeStatus> & graph):g(graph), last_modification(-1),last_addition(-1),last_deletion(-1),history_qhead(0),last_history_clear(0),source(s),INF(0),q(DistCmp(dist)){
+	WeightedDijkstra(int s,DynamicGraph<EdgeStatus> & graph, Weight & _weight):g(graph),weight(_weight), last_modification(-1),last_addition(-1),last_deletion(-1),history_qhead(0),last_history_clear(0),source(s),INF(0),q(DistCmp(dist)){
 
 		marked=false;
 		mod_percentage=0.2;
@@ -62,13 +63,13 @@ public:
 	}
 	//Dijkstra(const Dijkstra& d):g(d.g), last_modification(-1),last_addition(-1),last_deletion(-1),history_qhead(0),last_history_clear(0),source(d.source),INF(0),q(DistCmp(dist)),stats_full_updates(0),stats_fast_updates(0),stats_skip_deletes(0),stats_skipped_updates(0),stats_full_update_time(0),stats_fast_update_time(0){marked=false;};
 
-	void setWeight(int node, double w){
+/*	void setWeight(int node, double w){
 		while(weight.size()<=g.nodes){
 			weight.push(1);
 		}
 		weight[node]=w;
 
-	}
+	}*/
 
 
 	void setSource(int s){
@@ -193,9 +194,10 @@ public:
 		}
 		if(last_modification>0 && g.modifications==last_modification)
 				return;
-		while(weight.size()<=g.nodes){
+		assert(weight.size()>=g.edges);
+/*		while(weight.size()<=g.nodes){
 				weight.push(1);
-			}
+			}*/
 		/*if (last_addition==g.additions && last_modification>0){
 			//if none of the deletions were to edges that were the previous edge of some shortest path, then we don't need to do anything
 			if(last_history_clear!=g.historyclears){
@@ -269,10 +271,12 @@ public:
 			}
 			q.removeMin();
 			for(int i = 0;i<g.adjacency[u].size();i++){
-				if(!g.edgeEnabled( g.adjacency[u][i].id))
+				int edge =  g.adjacency[u][i].id;
+				if(!g.edgeEnabled(edge))
 					continue;
+
 				int v = g.adjacency[u][i].node;
-				double alt = dist[u]+ weight[u];
+				double alt = dist[u]+ weight[edge];
 				if(alt<dist[v]){
 					dist[v]=alt;
 					prev[v]=u;

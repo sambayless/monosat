@@ -11,22 +11,25 @@
 #include "GraphTheory.h"
 #include "core/Config.h"
 
-ReachDetector::ReachDetector(int _detectorID, GraphTheorySolver * _outer, DynamicGraph<PositiveEdgeStatus> &_g, DynamicGraph<NegativeEdgeStatus> &_antig, int from,double seed):Detector(_detectorID),outer(_outer),g(_g),antig(_antig),within(-1),source(from),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL),chokepoint_status(*this),chokepoint(chokepoint_status, _antig,source){
+ReachDetector::ReachDetector(int _detectorID, GraphTheorySolver * _outer, DynamicGraph<PositiveEdgeStatus> &_g, DynamicGraph<NegativeEdgeStatus> &_antig, int from,double seed):Detector(_detectorID),outer(_outer),g(_g),antig(_antig),within(-1),source(from),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL),opt_weight(*this),chokepoint_status(*this),chokepoint(chokepoint_status, _antig,source){
 	check_positive=true;
 	check_negative=true;
 	rnd_path=NULL;
+	opt_path=NULL;
 	 if(opt_use_random_path_for_decisions){
-		 rnd_path = new WeightedDijkstra<NegativeEdgeStatus>(from,_antig);
-		 for(int i=0;i<_g.nodes;i++){
+		 rnd_weight.clear();
+		 rnd_path = new WeightedDijkstra<NegativeEdgeStatus, vec<double> >(from,_antig,rnd_weight);
+		 for(int i=0;i<outer->edge_list.size();i++){
 			 double w = drand(rnd_seed);
-		/*	 w-=0.5;
-			 w*=w;*/
-			 //printf("%f (%f),",w,rnd_seed);
-			rnd_path->setWeight(i,w);
+
+			 rnd_weight.push(w);
 		 }
-		 //printf("\n");
+
 	 }
 
+	 if(opt_use_optimal_path_for_decisions){
+		 opt_path = new WeightedDijkstra<NegativeEdgeStatus, OptimalWeightEdgeStatus >(from,_antig,opt_weight);
+	 }
 
 	if(reachalg==ALG_CONNECTIVITY){
 							positiveReachStatus = new ReachDetector::ReachStatus(*this,true);
@@ -659,6 +662,24 @@ void ReachDetector::dbg_sync_reachability(){
 					}
 	}
 
+
+int ReachDetector::OptimalWeightEdgeStatus::operator [] (int edge) const {
+	Var v = detector.outer->edge_list[edge].v;
+	lbool val = detector.outer->S->value(v);
+	if(val==l_False){
+		assert(false);
+		return detector.outer->edge_list.size()*2;
+	}else if (val==l_True){
+		return 0;
+	}else if (val==l_Undef){
+		return 1;
+	}
+}
+int ReachDetector::OptimalWeightEdgeStatus::size()const{
+	return detector.outer->edge_list.size();
+}
+
+
 Lit ReachDetector::decide(){
 
 	Distance<ReachDetector::ReachStatus,NegativeEdgeStatus> * over = (Distance<ReachDetector::ReachStatus,NegativeEdgeStatus>*)negative_reach_detector;
@@ -688,30 +709,46 @@ Lit ReachDetector::decide(){
 				int p =j;
 				int last=j;
 				if(!opt_use_random_path_for_decisions){
-					//ok, read back the path from the over to find a candidate edge we can decide
-					//find the earliest unconnected node on this path
-					over->update();
-					 p = j;
-					 last = j;
-					while(!under->connected(p)){
+					if(opt_use_optimal_path_for_decisions){
+						//ok, read back the path from the over to find a candidate edge we can decide
+						//find the earliest unconnected node on this path
+						opt_path->update();
+						 p = j;
+						 last = j;
+						while(!under->connected(p)){
 
+							last=p;
+							assert(p!=source);
+							int prev = opt_path->previous(p);
+							p = prev;
 
-						last=p;
-						assert(p!=source);
-						int prev = over->previous(p);
-						p = prev;
+						}
+					}else{
+						//ok, read back the path from the over to find a candidate edge we can decide
+						//find the earliest unconnected node on this path
+						over->update();
+						 p = j;
+						 last = j;
+						while(!under->connected(p)){
 
+							last=p;
+							assert(p!=source);
+							int prev = over->previous(p);
+							p = prev;
+
+						}
 					}
 				}else{
 					//Randomly re-weight the graph sometimes
 					if(drand(rnd_seed)<opt_decide_graph_re_rnd){
 
-						for(int i=0;i<outer->g.nodes;i++){
+						for(int i=0;i<outer->edge_list.size() ;i++){
 								 double w = drand(rnd_seed);
 								/* w-=0.5;
 								 w*=w;*/
 								 //printf("%f (%f),",w,rnd_seed);
-								rnd_path->setWeight(i,w);
+								//rnd_path->setWeight(i,w);
+								 rnd_weight[i]=w;
 							 }
 					}
 					rnd_path->update();

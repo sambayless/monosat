@@ -11,20 +11,22 @@
 #include "GraphTheory.h"
 
 DistanceDetector::DistanceDetector(int _detectorID, GraphTheorySolver * _outer,  DynamicGraph<PositiveEdgeStatus> &_g,DynamicGraph<NegativeEdgeStatus> &_antig, int from, int within_steps ,double seed):
-Detector(_detectorID),outer(_outer),g(_g),antig(_antig),source(from),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL){
+Detector(_detectorID),outer(_outer),g(_g),antig(_antig),source(from),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL),opt_weight(*this){
 	rnd_path=NULL;
+	opt_path=NULL;
 	 if(opt_use_random_path_for_decisions){
-		 rnd_path = new WeightedDijkstra<NegativeEdgeStatus>(from,_antig);
-		 for(int i=0;i<_g.nodes;i++){
+		 rnd_weight.clear();
+		 rnd_path = new WeightedDijkstra<NegativeEdgeStatus, vec<double> >(from,_antig,rnd_weight);
+		 for(int i=0;i<outer->edge_list.size();i++){
 			 double w = drand(rnd_seed);
-		/*	 w-=0.5;
-			 w*=w;*/
-			 //printf("%f (%f),",w,rnd_seed);
-			rnd_path->setWeight(i,w);
-		 }
-		 //printf("\n");
-	 }
 
+			 rnd_weight.push(w);
+		 }
+
+	 }
+	 if(opt_use_optimal_path_for_decisions){
+		 opt_path = new WeightedDijkstra<NegativeEdgeStatus, OptimalWeightEdgeStatus >(from,_antig,opt_weight);
+	 }
 	if(distalg==ALG_BFS){
 		positiveReachStatus = new DistanceDetector::ReachStatus(*this,true);
 		negativeReachStatus = new DistanceDetector::ReachStatus(*this,false);
@@ -536,6 +538,26 @@ bool DistanceDetector::checkSatisfied(){
 				}
 	return true;
 }
+
+int DistanceDetector::OptimalWeightEdgeStatus::operator [] (int edge) const {
+	Var v = detector.outer->edge_list[edge].v;
+	lbool val = detector.outer->S->value(v);
+	if(val==l_False){
+		assert(false);
+		return detector.outer->edge_list.size()*2;
+	}else if (val==l_True){
+		return 0;
+	}else{
+		assert(val==l_Undef);
+		return 1;
+	}
+}
+
+int DistanceDetector::OptimalWeightEdgeStatus::size()const{
+	return detector.outer->edge_list.size();
+}
+
+
 Lit DistanceDetector::decide(){
 	DistanceDetector *r =this;
 	Distance<DistanceDetector::ReachStatus,NegativeEdgeStatus> * over = (Distance<DistanceDetector::ReachStatus,NegativeEdgeStatus>*) r->negative_reach_detector;
@@ -597,12 +619,13 @@ Lit DistanceDetector::decide(){
 						//Randomly re-weight the graph sometimes
 						if(drand(rnd_seed)<opt_decide_graph_re_rnd){
 
-							for(int i=0;i<outer->g.nodes;i++){
+							for(int i=0;i<outer->edge_list.size();i++){
 									 double w = drand(rnd_seed);
-									 w-=0.5;
-									 w*=w;
+									/* w-=0.5;
+									 w*=w;*/
 									 //printf("%f (%f),",w,rnd_seed);
-									 rnd_path->setWeight(i,w);
+									 //rnd_path->setWeight(i,w);
+									 rnd_weight[i]=w;
 								 }
 						}
 						 rnd_path->update();

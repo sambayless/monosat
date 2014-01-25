@@ -64,6 +64,8 @@ BoolOption Minisat::opt_reach_prop(_cat_graph,"prop-reach","",false);
 
 BoolOption Minisat::opt_decide_graph(_cat_graph,"decide-graph","",true);
 BoolOption Minisat::opt_use_random_path_for_decisions(_cat_graph,"decide-graph-rnd","",true);
+BoolOption Minisat::opt_use_optimal_path_for_decisions(_cat_graph,"decide-graph-opt","When selecting a path during decisions, find the shortest path, excluding the weight of already assigned edges.",false);
+
 DoubleOption Minisat::opt_decide_graph_re_rnd(_cat_graph,"decide-graph-re-rnd","Randomly make new random graphs for graph decisions instead of sticking with just one",0.01);
 
 BoolOption Minisat::opt_print_decision_path(_cat_graph,"decide-graph-print","",false);
@@ -82,6 +84,8 @@ BoolOption Minisat::opt_check_pure_theory_lits(_cat_graph,"pure-theory-lits","",
 BoolOption Minisat::opt_mst_min_cut(_cat_graph,"mst-min-cut","Search for a min-cut during conflict resolution of disconnected minimum spanning trees",true);
 BoolOption Minisat::opt_connected_components_min_cut(_cat_graph,"cc-mincut","Search for a min-cut during conflict resolution of connected components",true);
 BoolOption Minisat::opt_optimize_mst(_cat_graph,"opt-mst","Find the solution that minimizes the spanning tree by making repeated sat checks.",false);
+BoolOption Minisat::opt_skip_deletions(_cat_graph,"skip-deletions","",false);
+BoolOption Minisat::opt_skip_additions(_cat_graph,"skip-additions","",false);
 MinCutAlg Minisat::mincutalg=ALG_EDMONSKARP ;
 ReachAlg Minisat::reachalg=ALG_CONNECTIVITY;
 ReachAlg Minisat::distalg=ALG_BFS;

@@ -59,11 +59,12 @@ public:
 		};
 		vec<ChangedWeight> changed_weights;
 
-		struct ChangedEdge{
+		struct Change{
 			Lit l;
-			int edgeID;
+			int u;
+			int v;
 		};
-		vec<ChangedEdge> changed_edges;
+		vec<Change> changed;
 
 		vec<Var> tmp_nodes;
 		vec<bool> seen;
@@ -74,9 +75,13 @@ public:
 		vec<int> visit;
 		DisjointSets sets;
 
+		vec<vec<Lit> > reachLits;
+
 		struct ConnectedComponentsStatus{
 			ConnectedComponentsDetector & detector;
 			bool polarity;
+
+			void setConnected(int u, int v, bool connected);
 
 			void setComponents(int components);
 
@@ -88,8 +93,7 @@ public:
 
 
 		bool propagate(vec<Assignment> & trail,vec<Lit> & conflict);
-		void buildConnectedReason(vec<Lit> & conflict);
-		void buildDisconnectedReason(vec<Lit> & conflict);
+
 		void buildMinComponentsTooLowReason(int min_components,vec<Lit> & conflict);
 		void buildMinComponentsTooHighReason(int min_components,vec<Lit> & conflict);
 		//void buildForcedMinWeightReason(int reach_node, int forced_edge_id,vec<Lit> & conflict);
