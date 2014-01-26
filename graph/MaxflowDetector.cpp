@@ -70,7 +70,7 @@ void MaxflowDetector::addFlowLit(int maxflow, Var reach_var){
 
 
 
-void MaxflowDetector::buildReachReason(int flow,vec<Lit> & conflict){
+void MaxflowDetector::buildMaxFlowTooHighReason(int flow,vec<Lit> & conflict){
 			//drawFull();
 
 
@@ -113,7 +113,7 @@ void MaxflowDetector::buildReachReason(int flow,vec<Lit> & conflict){
 			outer->pathtime+=elapsed;
 
 		}
-		void MaxflowDetector::buildNonReachReason(int maxflow,vec<Lit> & conflict){
+		void MaxflowDetector::buildMaxFlowTooLowReason(int maxflow,vec<Lit> & conflict){
 			static int it = 0;
 			++it;
 			double starttime = cpuTime();
@@ -187,7 +187,7 @@ void MaxflowDetector::buildReachReason(int flow,vec<Lit> & conflict){
 					Var v = var(p);
 					int flow = flow_lits[reach_lit_map[v-first_reach_var]].max_flow;
 					//int u =getNode(v);
-					buildReachReason(flow,reason);
+					buildMaxFlowTooHighReason(flow,reason);
 
 
 					//double elapsed = cpuTime()-startpathtime;
@@ -205,7 +205,7 @@ void MaxflowDetector::buildReachReason(int flow,vec<Lit> & conflict){
 					Var v = var(p);
 					int flow = flow_lits[reach_lit_map[v-first_reach_var]].max_flow;
 					//int t = getNode(v); // v- var(reach_lits[d][0]);
-					buildNonReachReason(flow,reason);
+					buildMaxFlowTooLowReason(flow,reason);
 
 				}else{
 					assert(false);
@@ -242,7 +242,7 @@ void MaxflowDetector::buildReachReason(int flow,vec<Lit> & conflict){
 
 					}else if(outer->S->value(l)==l_False){
 						conflict.push(l);
-						buildReachReason(maxflow,conflict);
+						buildMaxFlowTooHighReason(maxflow,conflict);
 						return false;
 					}
 
@@ -255,7 +255,7 @@ void MaxflowDetector::buildReachReason(int flow,vec<Lit> & conflict){
 
 					}else if(outer->S->value(l)==l_True){
 						conflict.push(~l);
-						buildNonReachReason(maxflow,conflict);
+						buildMaxFlowTooLowReason(maxflow,conflict);
 						return false;
 					}
 

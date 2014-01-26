@@ -1,5 +1,6 @@
 #include <cstddef>
 #include <cassert>
+#include "mtl/Vec.h"
 /**
 15-451 Algorithms
 Fall 2012
@@ -308,16 +309,19 @@ public:
 
 
 };*/
- class LinkCut {
+//Watch out - LinkCut cannot by itself implement a dynamic disjoint set datastructure - you need more for that.
 
+ class LinkCut {
+	 int setCount;
   struct Node {
+	int id;
     Node* left;
     Node* right;
     Node *parent;
-
+    Node(int _id):id(_id), left(NULL),right(NULL),parent(NULL){};
   };
 
-
+  vec<Node*> nodes;
   // Whether x is a root of a splay tree
   bool isRoot(Node *x) {
     return x->parent == NULL || (x->parent->left != x && x->parent->right != x);
@@ -389,11 +393,9 @@ public:
     splay(x);
     return last;
   }
-public:
-   Node * addNode(){
-	   return new Node();
-   }
-  Node *findRoot(Node* x) {
+
+
+   Node * _findRoot(Node * x) {
     expose(x);
     while (x->right != NULL) {
       x = x->right;
@@ -402,16 +404,35 @@ public:
     return x;
   }
 
-  // prerequisite: x and y are in distinct trees
-    void link(Node* x, Node* y) {
-    assert (findRoot(x) != findRoot(y));
+   bool dbgSetCount(){
+	   int count = 0;
+	   for(int i = 0;i<nodes.size();i++){
+		   Node * n = nodes[i];
+		   Node* r = _findRoot(n);
+		   if(r==n){
+			   count++;
+		   }
+	   }
+	   return count==setCount;
+   }
 
+  // prerequisite: x and y are in distinct trees
+    void _link(Node* x, Node* y) {
+    //assert (_findRoot(x) != _findRoot(y));
+#ifndef NDEBUG
+	Node* sY = _findRoot(y);
+    Node* sX = _findRoot(x);
+    assert(sY!=sX);//else this is a bug
+#endif
+
+    setCount--;
     expose(x);
 
     x->parent = y;
+    assert(dbgSetCount());
   }
 
-    bool connected(Node* x, Node *y) {
+    bool _connected(Node* x, Node *y) {
     if (x == y)
       return true;
     expose(x);
@@ -419,14 +440,90 @@ public:
     return x->parent != NULL;
   }
 
-    void cut(Node *x, Node *y) {
+    void _cut(Node *x, Node *y) {
     expose(x);
     expose(y);
+    if( x->parent != NULL){
+    	setCount++;
+    }
     assert(! (y->right != x || x->left != NULL || x->right != NULL));
 
     y->right->parent = NULL;
     y->right = NULL;
+    assert(dbgSetCount());
   }
 
+public:
+    LinkCut():setCount(0){
+
+    }
+
+   int addNode(){
+	   //return new Node();
+	   setCount++;
+	   nodes.push(new Node(nodes.size()));
+	   return nodes.size()-1;
+   }
+   int nNodes(){
+	   return nodes.size();
+   }
+
+   int findRoot(int x) {
+    return _findRoot(nodes[x])->id;
+  }
+
+  // prerequisite: x and y are in distinct trees
+    void link(int x, int y) {
+    	if(x==y)
+    		return;
+    	Node * xnode = nodes[x];
+    	Node * ynode = nodes[y];
+    	_link(xnode,ynode);
+  }
+
+    bool connected(int x, int y) {
+    if (x == y)
+      return true;
+     Node * xnode = nodes[x];
+ 	Node * ynode = nodes[y];
+     expose(xnode);
+     expose(ynode);
+#ifndef NDEBUG
+     int s1 = findRoot(x);
+     int s2 = findRoot(y);
+     bool dbg_connected = s1==s2;
+     if(dbg_connected){
+    	 assert(xnode->parent);
+     }else{
+    	 assert(xnode->parent==NULL);
+     }
+
+#endif
+     return xnode->parent != NULL;
+
+
+
+
+  }
+
+    void cut(int x, int y) {
+        Node * xnode = nodes[x];
+    	Node * ynode = nodes[y];
+    	_cut(xnode,ynode);
+  }
+
+    int numRoots(){
+    	assert(dbgSetCount());
+    	return setCount;
+    }
+
+    void reset(){
+    	for(int i = 0;i<nodes.size();i++){
+    		nodes[i]->parent=NULL;
+    		nodes[i]->left=NULL;
+    		nodes[i]->right =NULL;
+    	}
+    	setCount= nodes.size();
+    }
 
 };

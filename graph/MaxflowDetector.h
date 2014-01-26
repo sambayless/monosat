@@ -62,8 +62,8 @@ public:
 		}*/
 
 		bool propagate(vec<Assignment> & trail,vec<Lit> & conflict);
-		void buildReachReason(int node,vec<Lit> & conflict);
-		void buildNonReachReason(int node,vec<Lit> & conflict);
+		void buildMaxFlowTooHighReason(int node,vec<Lit> & conflict);
+		void buildMaxFlowTooLowReason(int node,vec<Lit> & conflict);
 		void buildForcedEdgeReason(int reach_node, int forced_edge_id,vec<Lit> & conflict);
 		void buildReason(Lit p, vec<Lit> & reason, CRef marker);
 		bool checkSatisfied();

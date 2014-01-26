@@ -31,7 +31,7 @@ ReachDetector::ReachDetector(int _detectorID, GraphTheorySolver * _outer, Dynami
 		 opt_path = new WeightedDijkstra<NegativeEdgeStatus, OptimalWeightEdgeStatus >(from,_antig,opt_weight);
 	 }
 
-	if(reachalg==ALG_CONNECTIVITY){
+	if(reachalg==ALG_DFS){
 							positiveReachStatus = new ReachDetector::ReachStatus(*this,true);
 							negativeReachStatus = new ReachDetector::ReachStatus(*this,false);
 							positive_reach_detector = new Connectivity<ReachDetector::ReachStatus,PositiveEdgeStatus>(from,_g,*(positiveReachStatus),1);

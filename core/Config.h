@@ -38,6 +38,7 @@ extern IntOption opt_restrict_decisions;
 extern StringOption opt_min_cut_alg;
 extern StringOption opt_reach_alg;
 extern StringOption opt_allpairs_alg;
+extern StringOption opt_components_alg;
 extern BoolOption opt_check_solution;
 extern BoolOption opt_print_reach;
 
@@ -66,7 +67,7 @@ extern BoolOption opt_optimize_mst;
 extern BoolOption opt_skip_deletions;
 extern BoolOption opt_skip_additions;
 enum ReachAlg{
-	 ALG_CONNECTIVITY,
+	 ALG_DFS,
 	 ALG_DIJKSTRA,
 	 ALG_BFS
 };
@@ -83,6 +84,11 @@ enum MinCutAlg{
 	 ALG_IBFS
 };
 extern MinCutAlg mincutalg;
+enum ComponentsAlg{
+	ALG_DISJOINT_SETS
+
+};
+extern ComponentsAlg componentsalg;
 }
 
 #endif /* CONFIG_H_ */

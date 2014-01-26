@@ -122,6 +122,8 @@ int main(int argc, char** argv)
 
         BoolOption opt_witness("MAIN","witness","print solution",false);
 
+
+
         parseOptions(argc, argv, true);
 
         if(opt_csv){
@@ -150,7 +152,17 @@ int main(int argc, char** argv)
         	exit(1);
         }
 
-        reachalg = ALG_CONNECTIVITY;
+       componentsalg =ALG_DISJOINT_SETS;
+
+		 if(!strcasecmp(opt_components_alg,"disjoint-sets")){
+			componentsalg=ALG_DISJOINT_SETS;
+		 }else{
+			fprintf(stderr,"Error: unknown connectivity algorithm %s, aborting\n", ((string) opt_components_alg).c_str());
+			exit(1);
+		 }
+
+
+        reachalg = ALG_DFS;
 
 		 if(!strcasecmp(opt_reach_alg,"dijkstra")){
 			reachalg=ALG_DIJKSTRA;
@@ -158,8 +170,8 @@ int main(int argc, char** argv)
 		 }else if(!strcasecmp(opt_reach_alg,"bfs")){
 			reachalg=ALG_BFS;
 
-		 }else if (!strcasecmp(opt_reach_alg,"connectivity")){
-			 reachalg = ALG_CONNECTIVITY;
+		 }else if (!strcasecmp(opt_reach_alg,"dfs")){
+			 reachalg = ALG_DFS;
 		 }else{
 			fprintf(stderr,"Error: unknown reachability algorithm %s, aborting\n", ((string) opt_reach_alg).c_str());
 			exit(1);

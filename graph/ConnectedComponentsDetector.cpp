@@ -120,7 +120,7 @@ void ConnectedComponentsDetector::ConnectedComponentsStatus::setComponents(int c
 			seen.growTo(g.nodes);
 
 			visit.clear();
-			//ok,construct spanning forest from among the connected elements using dfs, and learn that at least one edge in that each must be disabled.
+			//ok,construct spanning forest from among the connected elements using dfs (we don't need to use kruskal's, as the graph is unweighted), and learn that at least one edge in that each must be disabled.
 			for(int k = 0;k<negative_reach_detector->numComponents();k++){
 			//learn that at least one edge in the tree must be disabled (else, number of connected components cannot be increased)
 				int root =negative_reach_detector->getComponent(k);
