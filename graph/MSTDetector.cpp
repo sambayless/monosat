@@ -411,8 +411,7 @@ void MSTDetector::buildMinWeightTooSmallReason(int weight,vec<Lit> & conflict){
 								sets.UnionElements(node,v);
 								int set = sets.FindSet(node);
 								assert(sets.FindSet(v)==set);
-								int s = sets.FindSet(38);
-								int s2 = sets.FindSet(37);
+
 								ancestors[set]=node;
 
 							}
