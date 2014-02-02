@@ -559,6 +559,8 @@ int DistanceDetector::OptimalWeightEdgeStatus::size()const{
 
 
 Lit DistanceDetector::decide(){
+	if(!opt_decide_graph_distance)
+		return lit_Undef;
 	DistanceDetector *r =this;
 	Distance<DistanceDetector::ReachStatus,NegativeEdgeStatus> * over = (Distance<DistanceDetector::ReachStatus,NegativeEdgeStatus>*) r->negative_reach_detector;
 

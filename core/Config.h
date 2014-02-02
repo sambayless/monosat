@@ -51,6 +51,7 @@ extern BoolOption opt_init_rnd_phase;
 
 extern BoolOption opt_reach_prop;
 extern BoolOption opt_decide_graph;
+extern BoolOption opt_decide_graph_distance;
 extern BoolOption opt_use_random_path_for_decisions;
 extern BoolOption opt_use_optimal_path_for_decisions;
 extern DoubleOption opt_decide_graph_re_rnd;
@@ -66,6 +67,7 @@ extern BoolOption opt_connected_components_min_cut;
 extern BoolOption opt_optimize_mst;
 extern BoolOption opt_skip_deletions;
 extern BoolOption opt_skip_additions;
+
 enum ReachAlg{
 	 ALG_DFS,
 	 ALG_DIJKSTRA,

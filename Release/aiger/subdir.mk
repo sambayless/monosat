@@ -17,7 +17,7 @@ C_DEPS += \
 aiger/%.o: ../aiger/%.c
 	@echo 'Building file: $<'
 	@echo 'Invoking: GCC C Compiler'
-	gcc -D__STDC_LIMIT_MACROS -D__STDC_FORMAT_MACROS -I"/home/sam/workspaceC/modsat" -O3 -Wall -c -fmessage-length=0 -MMD -MP -MF"$(@:%.o=%.d)" -MT"$(@:%.o=%.d)" -o "$@" "$<"
+	gcc -D__STDC_LIMIT_MACROS -D__STDC_FORMAT_MACROS -DNDEBUG -I"/home/sam/workspaceC/modsat/modsat" -I"/home/sam/workspaceC/modsat" -O3 -Wall -c -fmessage-length=0 -MMD -MP -MF"$(@:%.o=%.d)" -MT"$(@:%.o=%.d)" -o "$@" "$<"
 	@echo 'Finished building: $<'
 	@echo ' '
 
