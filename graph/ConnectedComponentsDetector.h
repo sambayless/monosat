@@ -15,7 +15,7 @@
 #include "core/SolverTypes.h"
 #include "mtl/Map.h"
 #include "DisjointSetConnectedComponents.h"
-#include "LinkCutConnectedComponents.h"
+
 #include "DisjointSets.h"
 #include "utils/System.h"
 #include "Detector.h"

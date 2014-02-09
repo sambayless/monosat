@@ -1,0 +1,179 @@
+
+#ifndef DFS_CYCLE_H_
+#define DFS_CYCLE_H_
+
+#include "mtl/Vec.h"
+#include "mtl/Heap.h"
+#include "DynamicGraph.h"
+#include "core/Config.h"
+#include "Reach.h"
+using namespace Minisat;
+
+
+
+template<class EdgeStatus=DefaultEdgeStatus>
+class DFSCycle:public Cycle{
+public:
+
+	DynamicGraph<EdgeStatus> & g;
+
+	bool directed;
+	int last_modification;
+	int last_addition;
+	int last_deletion;
+	int history_qhead;
+
+	int last_history_clear;
+
+	int source;
+	int INF;
+
+
+	vec<int> q;
+	vec<int> check;
+	const int reportPolarity;
+
+	//vec<char> old_seen;
+	vec<bool> seen;
+	vec<bool> in_q;
+
+//	vec<int> changed;
+
+	bool undirected_cycle;
+	bool directed_cycle;
+
+	vec<int> prev;
+
+	struct DefaultReachStatus{
+			vec<bool> stat;
+				void setReachable(int u, bool reachable){
+					stat.growTo(u+1);
+					stat[u]=reachable;
+				}
+				bool isReachable(int u) const{
+					return stat[u];
+				}
+				DefaultReachStatus(){}
+			};
+
+public:
+
+
+	DFSCycle(int s,DynamicGraph<EdgeStatus> & graph,bool _directed=true, int _reportPolarity=0 ):g(graph),directed(_directed), last_modification(-1),last_addition(-1),last_deletion(-1),history_qhead(0),last_history_clear(0),source(s),INF(0),reportPolarity(_reportPolarity){
+		marked=false;
+		mod_percentage=0.2;
+		stats_full_updates=0;
+		stats_fast_updates=0;
+		stats_skip_deletes=0;
+		stats_skipped_updates=0;
+		stats_full_update_time=0;
+		stats_fast_update_time=0;
+		stats_num_skipable_deletions=0;
+		stats_fast_failed_updates=0;
+		undirected_cycle=false;
+		directed_cycle=false;
+	}
+	//Connectivity(const Connectivity& d):g(d.g), last_modification(-1),last_addition(-1),last_deletion(-1),history_qhead(0),last_history_clear(0),source(d.source),INF(0),mod_percentage(0.2),stats_full_updates(0),stats_fast_updates(0),stats_skip_deletes(0),stats_skipped_updates(0),stats_full_update_time(0),stats_fast_update_time(0){marked=false;};
+	void setSource(int s){
+		source = s;
+		last_modification=-1;
+		last_addition=-1;
+		last_deletion=-1;
+	}
+	int getSource(){
+		return source;
+	}
+
+	void setNodes(int n){
+		q.capacity(n);
+		check.capacity(n);
+		seen.growTo(n);
+		prev.growTo(n);
+		INF=g.nodes+1;
+	}
+
+	void update( ){
+		static int iteration = 0;
+		int local_it = ++iteration ;
+
+		if(last_modification>0 && g.modifications==last_modification){
+			stats_skipped_updates++;
+			reportPolarity(undirected_cycle,directed_cycle);
+			return;
+		}
+
+		if(last_modification>0 &&  last_deletion==g.deletions){
+			stats_num_skipable_deletions++;
+			reportPolarity(undirected_cycle,directed_cycle);
+			return;
+		}
+
+		setNodes(g.nodes);
+
+		stats_full_updates++;
+		double startdupdatetime = cpuTime();
+
+		q.clear();
+		for(int i = 0;i<g.nodes;i++){
+			seen[i]=0;
+			in_q[i]=0;
+			prev[i]=-1;
+		}
+		seen[source]=1;
+
+		q.push_(source);
+		while(q.size()){//dfs
+			int u = q.last();
+			if(in_q[source]){
+				q.pop();
+				in_q[source]=false;
+				continue;
+			}else{
+				in_q[source]=true;
+			}
+
+			assert(seen[u]);
+
+
+			for(int i = 0;i<g.adjacency[u].size();i++){
+				if(!g.edgeEnabled( g.adjacency[u][i].id))
+					continue;
+				int v = g.adjacency[u][i].node;
+
+				if(!seen[v]){
+					seen[v]=1;
+					prev[v]=u;
+					q.push_(v);
+				}else{
+					undirected_cycle=true;
+					if(!directed){
+						break;
+					}else if(in_q[i]){
+						directed_cycle=true;
+						break;
+					}
+				}
+			}
+		}
+
+		last_modification=g.modifications;
+		last_deletion = g.deletions;
+		last_addition=g.additions;
+
+		history_qhead=g.history.size();
+		last_history_clear=g.historyclears;
+		stats_full_update_time+=cpuTime()-startdupdatetime;;
+	}
+
+
+	bool hasDirectedCycle(){
+		update();
+		return directed_cycle;
+	}
+	bool hasUndirectedCycle(){
+		update();
+		return undirected_cycle;
+	}
+};
+
+#endif

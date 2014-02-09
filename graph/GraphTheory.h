@@ -36,6 +36,7 @@
 #include "MSTDetector.h"
 #include "MaxflowDetector.h"
 #include "ConnectedComponentsDetector.h"
+#include "CycleDetector.h"
 namespace Minisat{
 
 class GraphTheorySolver;
@@ -112,7 +113,7 @@ public:
 	vec<DistanceDetector*> distance_detectors;
 	vec<MaxflowDetector*> flow_detectors;
 	ConnectedComponentsDetector* component_detector;
-
+	CycleDetector * cycle_detector;
 
 	vec<int> marker_map;
 
@@ -1147,6 +1148,13 @@ public:
 			detectors.push(component_detector);
 		}
 		component_detector->addConnectedComponentsLit(v,min_components);
+	}
+	void detectCycle(bool directed, Var v){
+		if(!cycle_detector){
+			cycle_detector = new  CycleDetector(detectors.size(),this, g, antig,true,drand(rnd_seed));
+			detectors.push(cycle_detector);
+		}
+		cycle_detector->addCycleDetectorLit(directed,v);
 	}
 };
 

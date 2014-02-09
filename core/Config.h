@@ -71,6 +71,7 @@ extern BoolOption opt_skip_additions;
 enum ReachAlg{
 	 ALG_DFS,
 	 ALG_DIJKSTRA,
+	 ALG_DISTANCE,
 	 ALG_BFS
 };
 extern ReachAlg reachalg;
