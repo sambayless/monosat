@@ -48,25 +48,51 @@ void CycleDetector::addCycleDetectorLit(bool directed, Var v){
 	}
 }
 
-
-
-
-
-
 		void CycleDetector::buildNoUndirectedCycleReason(vec<Lit> & conflict){
-
+			//its clear that we can do better than this, but its also not clear how to do so efficiently...
+			//for now, learn the trivial clause...
+			for(int i = 0;i<outer->edge_list.size();i++){
+				Var v = outer->edge_list[i];
+				if(outer->S->value(v)==l_False){
+					conflict.push(mkLit(v,false));
+				}
+			}
 		}
 		void CycleDetector::buildNoDirectedCycleReason(vec<Lit> & conflict){
-
+			//its clear that we can do better than this, but its also not clear how to do so efficiently...
+			//for now, learn the trivial clause...
+			for(int i = 0;i<outer->edge_list.size();i++){
+				Var v = outer->edge_list[i];
+				if(outer->S->value(v)==l_False){
+					conflict.push(mkLit(v,false));
+				}
+			}
 
 		}
 
 
 		void CycleDetector::buildUndirectedCycleReason(vec<Lit> & conflict){
+			assert(positive_reach_detector->hasUndirectedCycle());
+
+			vec<int> & cycle = positive_reach_detector->getUndirectedCycle();
+			for(int i = 0;i<cycle.size();i++){
+				int e = cycle[i];
+				Lit l = mkLit( outer->edge_list[e].v,false);
+				assert(outer->S->value(l)==l_True);
+				conflict.push(~l);
+			}
 
 		}
 		void CycleDetector::buildDirectedCycleReason(vec<Lit> & conflict){
+			assert(positive_reach_detector->hasDirectedCycle());
 
+			vec<int> & cycle = positive_reach_detector->getDirectedCycle();
+			for(int i = 0;i<cycle.size();i++){
+				int e = cycle[i];
+				Lit l = mkLit( outer->edge_list[e].v,false);
+				assert(outer->S->value(l)==l_True);
+				conflict.push(~l);
+			}
 
 		}
 

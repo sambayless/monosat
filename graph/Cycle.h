@@ -8,7 +8,7 @@
 #ifndef CYCLE_H_
 #define CYCLE_H_
 
-
+#include "mtl/Vec.h"
 
 class Cycle{
 public:
@@ -31,7 +31,8 @@ public:
 	virtual bool hasDirectedCycle()=0;
 	virtual bool hasUndirectedCycle()=0;
 	virtual void update( )=0;
-
+	virtual Minisat::vec<int> & getUndirectedCycle()=0;
+	virtual Minisat::vec<int> & getDirectedCycle()=0;
 };
 
 #endif /* REACH_H_ */
