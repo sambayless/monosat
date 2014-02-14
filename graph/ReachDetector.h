@@ -13,6 +13,7 @@
 #include "Reach.h"
 #include "Dijkstra.h"
 #include "Connectivity.h"
+#include "DFSReachability.h"
 #include "Distance.h"
 #include "core/SolverTypes.h"
 #include "mtl/Map.h"
