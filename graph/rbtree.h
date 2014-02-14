@@ -142,6 +142,8 @@ class RBTree {
 			return isValidRedBlackTreeRecur_(this->root_);
 		}
 
+
+
 		int32_t size() {
 				return count_(this->root_, 0);
 			}
@@ -176,6 +178,8 @@ class RBTree {
 		~RBTree() {
 			delete this->root_;
 		}
+
+
 	private:
 		RBTreeNode<Data> *root_;
 
