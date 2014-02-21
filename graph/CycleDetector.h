@@ -5,7 +5,7 @@
 
 #include "Graph.h"
 #include "ConnectedComponents.h"
-
+#include "Cycle.h"
 #include "core/SolverTypes.h"
 #include "mtl/Map.h"
 #include "DFSCycle.h"

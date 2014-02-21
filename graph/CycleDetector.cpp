@@ -17,7 +17,7 @@ Detector(_detectorID),outer(_outer),g(_g),antig(_antig),rnd_seed(seed),positive_
 	directed_cycle_lit=lit_Undef;
 
 		//Note: these are _intentionalyl_ swapped
-		negative_reach_detector = new DFSCycle<PositiveEdgeStatus>(_g,* detect_directed_cycles,1);
+		negative_reach_detector = new DFSCycle<PositiveEdgeStatus>(_g,detect_directed_cycles,1);
 		positive_reach_detector = new DFSCycle<NegativeEdgeStatus>(_antig,detect_directed_cycles,1);
 
 		 directed_cycle_marker=outer->newReasonMarker(getID());
@@ -52,7 +52,7 @@ void CycleDetector::addCycleDetectorLit(bool directed, Var v){
 			//its clear that we can do better than this, but its also not clear how to do so efficiently...
 			//for now, learn the trivial clause...
 			for(int i = 0;i<outer->edge_list.size();i++){
-				Var v = outer->edge_list[i];
+				Var v = outer->edge_list[i].v;
 				if(outer->S->value(v)==l_False){
 					conflict.push(mkLit(v,false));
 				}
@@ -62,7 +62,7 @@ void CycleDetector::addCycleDetectorLit(bool directed, Var v){
 			//its clear that we can do better than this, but its also not clear how to do so efficiently...
 			//for now, learn the trivial clause...
 			for(int i = 0;i<outer->edge_list.size();i++){
-				Var v = outer->edge_list[i];
+				Var v = outer->edge_list[i].v;
 				if(outer->S->value(v)==l_False){
 					conflict.push(mkLit(v,false));
 				}

@@ -24,9 +24,16 @@ C_UPPER_DEPS :=
 # Every subdirectory with source files must be described here
 SUBDIRS := \
 utils \
-test \
+minilib \
 graph \
+dbg \
 core \
 aiger \
+Release2/utils \
+Release2/minilib \
+Release2/dbg \
+Release2/core \
+Release2/aiger \
+Release2 \
 . \
 

@@ -162,7 +162,7 @@ int main(int argc, char** argv)
 		 }
 
 
-        reachalg = ALG_DFS;
+        reachalg = ALG_BFS;
 
 		 if(!strcasecmp(opt_reach_alg,"dijkstra")){
 			reachalg=ALG_DIJKSTRA;

@@ -92,13 +92,13 @@ public:
 
 		if(last_modification>0 && g.modifications==last_modification){
 			stats_skipped_updates++;
-			reportPolarity(undirected_cycle,directed_cycle);
+			//reportPolarity(undirected_cycle,directed_cycle);
 			return;
 		}
 
 		if(last_modification>0 &&  last_deletion==g.deletions){
 			stats_num_skipable_deletions++;
-			reportPolarity(undirected_cycle,directed_cycle);
+			//reportPolarity(undirected_cycle,directed_cycle);
 			return;
 		}
 
