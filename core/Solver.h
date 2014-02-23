@@ -37,6 +37,7 @@ class Solver:public Theory {
 public:
 	friend class Theory;
 	friend class GraphTheorySolver;
+	friend class GeometryTheorySolver;
 #ifdef DEBUG_SOLVER
 	Solver * dbg_solver;
 #endif
