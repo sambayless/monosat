@@ -25,7 +25,11 @@ public:
 		CRef point_not_contained_marker;
 		CRef area_geq_marker;
 		CRef area_not_geq_marker;
-		vec<Lit> pointContainedLits;
+		struct PointContainedLit{
+			Point<D,T> p;
+			Lit l;
+		};
+		vec<PointContainedLit> pointContainedLits;
 		struct AreaLit{
 			T areaGreaterEqThan;
 			Lit l;
@@ -99,8 +103,8 @@ bool ConvexHullDetector<D,T>::propagate(vec<Lit> & trail,vec<Lit> & conflict){
 		under_hull->update();
 
 		if(areaDetectors.size()){
-			Polygon<D,T> & p = over_hull->getHull();
-			double over_area = p.getArea();
+
+			double over_area = over_hull->getHull().getArea();
 			double under_area = under_hull->getHull().getArea();
 			assert(under_area<=over_area);
 			for(int i = 0;i<areaDetectors.size();i++){
@@ -136,6 +140,43 @@ bool ConvexHullDetector<D,T>::propagate(vec<Lit> & trail,vec<Lit> & conflict){
 
 			}
 		}
+		//If we are making many queries, it is probably worth it to pre-process the polygon and then make the queries.
+		for(int i =0;i<pointContainedLits.size();i++){
+			Point<D,T> point = pointContainedLits[i].p;
+			Lit l = pointContainedLits[i].l;
+			ConvexPolygon<D,T> & p_over = over_hull->getHull();
+			ConvexPolygon<D,T> & p_under = under_hull->getHull();
+
+			if(p_under.contains(point)){
+				//l is true
+				if(outer->S->value(l)==l_True){
+					//do nothing
+				}else if(outer->S->value(l)==l_Undef){
+
+					outer->S->uncheckedEnqueue(l,point_contained_marker) ;
+				}else if (outer->S->value(l)==l_False){
+					conflict.push(l);
+					//buildAreaGEQReason(under_area,conflict);
+					return false;
+				}
+			}else if (!p_over.contains(point)){
+				l=~l;
+				//l is true
+				if(outer->S->value(l)==l_True){
+					//do nothing
+				}else if(outer->S->value(l)==l_Undef){
+					outer->S->uncheckedEnqueue(l,point_not_contained_marker) ;
+				}else if (outer->S->value(l)==l_False){
+					conflict.push(l);
+					//buildAreaLTReason(over_area,conflict);
+					return false;
+				}
+			}
+
+
+
+		}
+
 			return true;
 		}
 template<unsigned int D, class T>

@@ -6,9 +6,10 @@
  */
 
 #include "Polygon.h"
+#include "mtl/Vec.h"
 
-
-//Note that this is subject to rounding errors.
+//Note that this is subject to rounding errors. It also might only be correct for convex polygons.
+//Also, this is only correct for planar (non-self-intersecting) polygons.
 template<>
 double Polygon<2,double>::getArea(){
 	 vec<Point2D> &  w = getVertices();

@@ -17,7 +17,7 @@ template<unsigned int D,class T=double>
 class MonotoneConvexHull:public ConvexHull<D,T>{
 
 	PointSet<D,T> & pointSet;
-	Polygon<D,T> hull;
+	ConvexPolygon<D,T> hull;
 public:
 	MonotoneConvexHull(PointSet<D,T> & p):pointSet(p){
 
@@ -27,8 +27,8 @@ public:
 
 
 
-	Polygon<D> & getHull(){
-		update();
+	ConvexPolygon<D> & getHull(){
+
 		return hull;
 	}
 private:

@@ -8,7 +8,7 @@
 #ifndef CONVEXHULL_H_
 #define CONVEXHULL_H_
 #include "GeometryTypes.h"
-#include "Polygon.h"
+#include "ConvexPolygon.h"
 
 
 namespace Minisat{
@@ -17,7 +17,7 @@ template<unsigned int D,class T=double>
 class ConvexHull{
 public:
 	virtual void update()=0;
-	virtual Polygon<D,T> & getHull()=0;
+	virtual ConvexPolygon<D,T> & getHull()=0;
 	virtual ~ConvexHull(){
 
 	}

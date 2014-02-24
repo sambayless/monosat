@@ -18,11 +18,11 @@ class Polygon:public Shape<D>{
 public:
 	//List of vertices in clockwise order
 	vec<Point<D,T>> vertices;
-	~Polygon(){};
-	bool contains(Point<D,T> & point){
+	virtual ~Polygon(){};
+	virtual bool contains(Point<D,T> & point){
 		return false;
 	}
-	bool intersects(Shape<D,T> & s){
+	virtual bool intersects(Shape<D,T> & s){
 		return false;
 	}
 
@@ -38,13 +38,15 @@ public:
 		return vertices;
 	}
 
-	T getArea();
-	T getPerimeter();
+	virtual T getArea();
+	virtual T getPerimeter();
 };
 template<>
 double Polygon<2,double>::getArea();
 
 template<>
 double Polygon<2,double>::getPerimeter();
+
+
 
 #endif /* POLYGON_H_ */
