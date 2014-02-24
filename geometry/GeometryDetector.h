@@ -18,6 +18,7 @@ public:
 	int getID(){
 		return detectorID;
 	}
+	virtual void addPointContainmentLit(Lit l,vec<double> & point)=0;
 	virtual bool propagate(vec<Lit> &trail ,vec<Lit> & conflict)=0;
 	virtual void buildReason(Lit p, vec<Lit> & reason, CRef marker)=0;
 	virtual bool checkSatisfied()=0;
@@ -27,6 +28,7 @@ public:
 	virtual void backtrackUntil(Lit p){
 
 	}
+
 	virtual void preprocess(){
 
 	}

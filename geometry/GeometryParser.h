@@ -13,86 +13,77 @@
 
 #include "utils/ParseUtils.h"
 #include "core/SolverTypes.h"
-#include "graph/GraphTheory.h"
-#include "graph/TestGraph.h"
+#include "geometry/GeometryTheory.h"
+
 #include "core/Config.h"
 namespace Minisat {
 
 //=================================================================================================
-// GRAPH Parser:
+// GEOMETRY Parser:
 
-//Each graph file has the following (ascii) format:
 
-//p graph\n
-//c anything
-//g digraph n e id
-//e g u w var
-//r g u w var
-//...
 
-//first line is just magic
-//following lines are either g digraph nodes edges id
-//or edge specifiers, which are of the form:
-//e graphID fromNode toNode literal
-//If lit is 0 or 1, this is a constant edge (0 for false, 1 for true)
-//r g u w var is a reach querry: var is true if can u reach w in graph g, false otherwise
 
 template<class B, class Solver>
-static void readDiGraph(B& in, Solver& S, vec<GraphTheory*> & graphs) {
+static void readConvexHull(B& in, Solver& S, GeometryTheorySolver* G) {
 	if(opt_ignore_graph){
 		skipLine(in);
 		return;
 	}
 
-    int     g, n,e, ev;
-    if(!eagerMatch(in,"digraph")){
+    if(!eagerMatch(in,"hull")){
     	 printf("PARSE ERROR! Unexpected char: %c\n", *in), exit(3);
     }
 
 
-        n = parseInt(in);//num nodes
-        e = parseInt(in);//num edges (I'm ignoring this currently)
-      //  ev = parseInt(in);//the variable of the first graph edge.
-        g=parseInt(in);//id of the graph
-        GraphTheory * graph = NULL;
-        if(opt_graph)
-        	graph= new GraphTheorySolver(&S,g);
-        else
-        	graph= new TestGraph(&S);
-        graph->newNodes(n);
-        graphs.growTo(g+1);
-        graphs[g]=graph;
-        S.addTheory(graph);
-      //  return ev;
+	int hullID = parseInt(in); //ID of the hull
+	int d = parseInt(in);
+	G->createConvexHull(hullID,d);
+
 }
 
 template<class B, class Solver>
-static void readEdge(B& in, Solver& S, vec<GraphTheory*> & graphs) {
+static void readHullPoint(B& in, Solver& S,GeometryTheorySolver* G,vec<int> & point ) {
 	if(opt_ignore_graph){
 		skipLine(in);
 		return;
 	}
-    if(*in != 'e'){
+	 if(!eagerMatch(in,"hullpoint")){
     	printf("PARSE ERROR! Unexpected char: %c\n", *in), exit(3);
     }
     ++in;
+    point.clear();
+        int hullID = parseInt(in);
+        int d = parseInt(in);
+        int hullVar = parseInt(in)-1;
+        for(int i = 0;i<d;i++){
+        	int p = parseInt(in);
+        	point.push(p);
+        }
 
-        int graphID = parseInt(in);
-        int from = parseInt(in);
-        int to=parseInt(in);
-        int edgeVar = parseInt(in)-1;
-        /*if(edgeVar==-1){
-        	edgeVar=edge_var++-1;
-        }*/
-        if(graphID <0 || graphID>=graphs.size() || !graphs[graphID]){
-        	printf("PARSE ERROR! Undeclared graph identifier %d for edge %d\n",graphID, edgeVar), exit(3);
+        G->addHullPoint(hullID,mkLit(hullVar,false), point);
+
+}
+template<class B, class Solver>
+static void readPointContained(B& in, Solver& S,GeometryTheorySolver* G,vec<int> & point ) {
+	if(opt_ignore_graph){
+		skipLine(in);
+		return;
+	}
+	 if(!eagerMatch(in,"hullpoint")){
+    	printf("PARSE ERROR! Unexpected char: %c\n", *in), exit(3);
+    }
+    ++in;
+    point.clear();
+        int pID = parseInt(in);
+        int d = parseInt(in);
+        int containedVar = parseInt(in)-1;
+        for(int i = 0;i<d;i++){
+        	int p = parseInt(in);
+        	point.push(p);
         }
-        if(edgeVar<0){
-        	printf("PARSE ERROR! Edge variables must be >=0, was %d\n", edgeVar), exit(3);
-        }
-        GraphTheory * graph = graphs[graphID];
-        while (edgeVar >= S.nVars()) S.newVar();
-        graph->newEdge(from,to,edgeVar);
+
+        G->addPointContainmentLit(pID,mkLit(containedVar,false), point);
 
 }
 

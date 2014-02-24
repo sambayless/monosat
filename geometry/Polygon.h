@@ -18,7 +18,12 @@ class Polygon:public Shape<D>{
 public:
 	//List of vertices in clockwise order
 	vec<Point<D,T>> vertices;
+	Point<D,T> cirleCenter;
+	T circleRadius;
 	virtual ~Polygon(){};
+	virtual ShapeType getType(){
+		return POLYGON;
+	}
 	virtual bool contains(Point<D,T> & point){
 		return false;
 	}
@@ -26,9 +31,15 @@ public:
 		return false;
 	}
 
+
+	void update(){
+		updateCircleBound();
+	}
+
 	void clear(){
 		vertices.clear();
 	}
+
 	int size(){
 		return vertices.size();
 	}
@@ -37,7 +48,7 @@ public:
 	vec<Point<D,T> > & getVertices(){
 		return vertices;
 	}
-
+	void updateCircleBound();
 	virtual T getArea();
 	virtual T getPerimeter();
 };
@@ -47,6 +58,20 @@ double Polygon<2,double>::getArea();
 template<>
 double Polygon<2,double>::getPerimeter();
 
-
+template<unsigned int D,class T>
+void Polygon<D,T>::updateCircleBound(){
+	cirleCenter.zero();
+	for(int i = 0;i<vertices.size();i++){
+		cirleCenter+=vertices[i];
+	}
+	cirleCenter/=T(vertices.size());
+	circleRadius=T(0);
+	for(int i = 0;i<vertices.size();i++){
+		T dist = circleCenter.distance( vertices[i]);
+		if(dist>circleRadius){
+			circleRadius=dist;
+		}
+	}
+}
 
 #endif /* POLYGON_H_ */

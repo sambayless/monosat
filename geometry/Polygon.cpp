@@ -35,3 +35,24 @@ double Polygon<2,double>::getPerimeter(){
 	}
 	return sum;
 }
+
+
+
+/*
+
+//from http://content.gpwiki.org/index.php/Polygon_Collision
+double determinant(Vector2D vec1, Vector2D vec2){
+    return vec1.x * vec2.y - vec1.y * vec2.x;
+}
+
+//one edge is a-b, the other is c-d
+Vector2D edgeIntersection(Vector2D a, Vector2D b, Vector2D c, Vector2D d){
+    double det = determinant(b - a, c - d);
+    double t   = determinant(c - a, c - d) / det;
+    double u   = determinant(b - a, c - a) / det;
+    if ((t < 0) || (u < 0) || (t > 1) || (u > 1)) {
+        return NO_INTERSECTION;
+    } else {
+        return a * (1 - t) + t * b;
+    }
+}*/

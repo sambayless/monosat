@@ -437,7 +437,7 @@ public:
 			for(int i = trail.size()-1;i>=trail_lim[level];i--){
 				Assignment e = trail[i];
 				if(e.isEdge){
-					assert(S->value(e.var)==l_Undef);
+
 					int edge_num = e.var-min_edge_var;
 					assert(edge_assignments[edge_num]!=l_Undef);
 					edge_assignments[edge_num]=l_Undef;

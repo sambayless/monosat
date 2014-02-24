@@ -139,7 +139,9 @@ public:
 	}
 
 	void backtrackUntil(Lit p){
-
+		for(int i = 0;i<detectors.size();i++){
+				detectors[i]->backtrackUntil(p);
+			}
 
 	};
 
@@ -219,9 +221,28 @@ public:
 
 
 
-	void createConvexHull(int id, const int D);
+	void createConvexHull(int hullID, const int D);
+	void addHullPoint(int hullID,Lit l, vec<int> & point){
+		static vec<double> tmp;
+		tmp.clear();
+		for(int i = 0;i<point.size();i++){
+			tmp.push(point[i]);
+		}
+		addHullPoint(hullID,l,tmp);
+	}
+	void addHullPoint(int hullID, Lit l, vec<double> & point);
 
-
+	void addPointContainmentLit(int polyID, Lit l, vec<int> & point){
+		static vec<double> tmp;
+		tmp.clear();
+		for(int i = 0;i<point.size();i++){
+			tmp.push(point[i]);
+		}
+		addPointContainmentLit(polyID,l,tmp);
+	}
+	void addPointContainmentLit(int polyID, Lit l, vec<double> & point){
+		polygonList[polyID]->addPointContainmentLit(l,point);
+	}
 };
 
 };

@@ -17,15 +17,18 @@ class ConvexPolygon:public Polygon<D,T>{
 public:
 
 	~ConvexPolygon(){};
-	bool contains(Point<D,T> & point);
-	bool intersects(Shape<D,T> & s){
-		return false;
+	virtual ShapeType getType(){
+		return CONVEX_POLYGON;
 	}
-
+	bool contains(Point<D,T> & point);
+	bool intersects(Shape<D,T> & s);
 };
 
 
 template<>
 bool ConvexPolygon<2,double>::contains(Point<2,double> & point);
+
+template<>
+bool ConvexPolygon<2,double>::intersects(Shape<2,double> & s);
 
 #endif /* CONVEXPOLYGON_H_ */

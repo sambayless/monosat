@@ -28,7 +28,7 @@ public:
 		return enabled[pointID];
 	}
 	void setPointEnabled(int pointID, bool _enabled){
-		if(isEnabled(pointID)==enabled)
+		if(isEnabled(pointID)==_enabled)
 			return;
 		enabled[pointID]=_enabled;
 		if(enabled){
@@ -47,9 +47,10 @@ public:
 		}
 	}
 
-	void addPoint(Point<D,T> & P){
+	int addPoint(const Point<D,T> & P){
 		points.push(P);
 		enabled.push(false);
+		return points.size()-1;
 	}
 };
 

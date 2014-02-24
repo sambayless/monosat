@@ -35,11 +35,16 @@ struct Point{
     		new (&vector[i]) T();
     	}
     }
-
-    //Copy constructor
-    Point(const Point<D,T> & P){
+    Point(const vec<T> & list  ){
     	for(int i = 0;i<D;i++){
-    		new (&vector[i]) T(P[i]);
+    		vector[i] = list[i];
+    	}
+    }
+    //Copy constructor
+    Point(const Point<D,T> & v){
+    	assert(v.size()==D);
+    	for(int i = 0;i<D;i++){
+    		new (&vector[i]) T(v[i]);
     	}
     }
 
@@ -55,8 +60,45 @@ struct Point{
     	}
     	return sum;
     }
-
-
+    void zero(){
+    	for(int i = 0;i<D;i++){
+    		vector[i]=0;
+    	}
+    }
+    Point<D,T> &       operator += (const Point<D,T>& other) {
+    	for(int i = 0;i<D;i++){
+    		vector[i]+=other[i];
+    	}
+    	return *this;
+    }
+    Point<D,T> &       operator -= (const Point<D,T>& other) {
+    	for(int i = 0;i<D;i++){
+    		vector[i]-=other[i];
+    	}
+    	return *this;
+    }
+    Point<D,T> &       operator /= (T & scalar) {
+    	for(int i = 0;i<D;i++){
+    		vector[i]/=scalar;
+    	}
+    	return *this;
+    }
+    Point<D,T> &       operator *= (T & scalar) {
+    	for(int i = 0;i<D;i++){
+    		vector[i]*=scalar;
+    	}
+    	return *this;
+    }
+    //Note that this computes a DOUBLE. Should enforce that is a safe underapproximation of the real distance between these points (that is, the actual distance is guaranteed to be >= the returned value)
+    double distance_underapprox(Point<D,T> other){
+    	T sum=T(0);
+    	for(int i =0;i<D;i++){
+    		T difference = (vector[i]-other[i]);
+    		sum+= difference*difference;
+    	}
+    	double distance = sqrt((double)sum);
+    	return distance;
+    }
 };
 template<unsigned int D, class T=double>
 inline bool operator==(const Point<D,T>& lhs, const Point<D,T>& rhs){

@@ -24,4 +24,20 @@ void GeometryTheorySolver::createConvexHull(int id, const int D){
 			fprintf(stderr,"Unsupported number of dimensions (%d), exiting\n",D);fflush(stderr);exit(1);
 	};
 	detectors.push(d);
+	polygonList.growTo(id+1);
+	polygonList[id]=d;
+}
+
+void GeometryTheorySolver::addHullPoint(int hullID,Lit l, vec<double> & point){
+	assert(polygonList.size()>hullID);
+	assert(polygonList[hullID]!=NULL);
+	GeometryDetector*d = polygonList[hullID];
+	if(point.size()==2){
+		 ConvexHullDetector<2,double>* hull = (ConvexHullDetector<2,double>*) d;
+
+		 hull->addPoint(Point2D(point),l);
+	}else{
+		fprintf(stderr,"Unsupported number of dimensions (%d), exiting\n",point.size());fflush(stderr);exit(1);
+	}
+
 }

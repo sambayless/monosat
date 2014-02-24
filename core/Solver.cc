@@ -225,6 +225,11 @@ bool Solver::satisfied(const Clause& c) const {
 //
 void Solver::cancelUntil(int level) {
     if (decisionLevel() > level){
+
+        for(int i = 0;i<theories.size();i++){
+			theories[i]->backtrackUntil(level);
+		}
+
         for (int c = trail.size()-1; c >= trail_lim[level]; c--){
             Var      x  = var(trail[c]);
             assigns [x] = l_Undef;
@@ -246,15 +251,13 @@ void Solver::cancelUntil(int level) {
 			track_min_level=decisionLevel();
 		}
 
-        for(int i = 0;i<theories.size();i++){
-			theories[i]->backtrackUntil(level);
-		}
     }
 }
 
 void Solver::backtrackUntil(int level){
-	if(S->trail.size()<super_qhead)
-		super_qhead =S->trail.size();
+	int backtrackTo = S->trail_lim[level];
+	if(backtrackTo <super_qhead)
+		super_qhead =backtrackTo;
 }
 
 //=================================================================================================
