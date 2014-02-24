@@ -164,7 +164,11 @@ bool Solver::addClause_(vec<Lit>& ps)
         return ok = false;
     else if (ps.size() == 1){
         uncheckedEnqueue(ps[0]);
-        return ok = (propagate(false) == CRef_Undef); //do NOT propagate theory solvers here, or else adding unit clauses can become very expensive in some circumstances (such as when constructing the initial CNF for example)
+        int q = qhead;
+        ok = (propagate() == CRef_Undef); //do NOT propagate theory solvers here, or else adding unit clauses can become very expensive in some circumstances (such as when constructing the initial CNF for example)
+        //instead we are going to reset the qhead here, which is a hackish solution to force propagateAll to be called later.
+        //this will entail a (small) amount of duplicated effort.
+        qhead = q;
     }else{
         CRef cr = ca.alloc(ps, false);
         clauses.push(cr);
