@@ -47,4 +47,3 @@ void MonotoneConvexHull<2,double>::update(){
 	}
 
 
-

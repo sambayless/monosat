@@ -26,6 +26,8 @@ SUBDIRS := \
 utils \
 minilib \
 graph \
+geometry/hull \
+geometry \
 dbg \
 core \
 aiger \

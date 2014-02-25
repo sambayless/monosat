@@ -11,6 +11,8 @@ RM := rm -rf
 -include utils/subdir.mk
 -include minilib/subdir.mk
 -include graph/subdir.mk
+-include geometry/hull/subdir.mk
+-include geometry/subdir.mk
 -include dbg/subdir.mk
 -include core/subdir.mk
 -include aiger/subdir.mk

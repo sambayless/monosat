@@ -18,7 +18,7 @@ class Polygon:public Shape<D>{
 public:
 	//List of vertices in clockwise order
 	vec<Point<D,T>> vertices;
-	Point<D,T> cirleCenter;
+	Point<D,T> circleCenter;//should generalize this to an arbitrary bounding volume...
 	T circleRadius;
 	virtual ~Polygon(){};
 	virtual ShapeType getType(){
@@ -60,11 +60,11 @@ double Polygon<2,double>::getPerimeter();
 
 template<unsigned int D,class T>
 void Polygon<D,T>::updateCircleBound(){
-	cirleCenter.zero();
+	circleCenter.zero();
 	for(int i = 0;i<vertices.size();i++){
-		cirleCenter+=vertices[i];
+		circleCenter+=vertices[i];
 	}
-	cirleCenter/=T(vertices.size());
+	circleCenter/=T(vertices.size());
 	circleRadius=T(0);
 	for(int i = 0;i<vertices.size();i++){
 		T dist = circleCenter.distance( vertices[i]);

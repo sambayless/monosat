@@ -9,7 +9,8 @@
 #define GEOMETRY_TYPES_H_
 #include <initializer_list>
 #include "core/SolverTypes.h"
-
+#include <cmath>
+#include <algorithm>
 using namespace Minisat;
 
 
@@ -19,6 +20,10 @@ struct Point{
 		return D;
 	}
 	T vector[D];
+	T & x;
+	T & y;
+	T & z;
+
     // Vector interface:
     const T& operator [] (int index) const {assert(index<D);assert(index>=0); return vector[index];}
     T&       operator [] (int index)       {assert(index<D);assert(index>=0);  return vector[index];}
@@ -30,27 +35,38 @@ struct Point{
     	}
     	return true;
     }*/
-    Point(){
+    Point():x(vector[0]),y(vector[1]),z(vector[2]){
     	for(int i = 0;i<D;i++){
     		new (&vector[i]) T();
     	}
     }
-    Point(const vec<T> & list  ){
+    Point(const vec<T> & list  ):x(vector[0]),y(vector[1]),z(vector[2]){
     	for(int i = 0;i<D;i++){
     		vector[i] = list[i];
     	}
     }
     //Copy constructor
-    Point(const Point<D,T> & v){
+    Point(const Point<D,T> & v):x(vector[0]),y(vector[1]),z(vector[2]){
     	assert(v.size()==D);
     	for(int i = 0;i<D;i++){
     		new (&vector[i]) T(v[i]);
     	}
     }
 
-    Point( std::initializer_list<T> list ){
+    Point( std::initializer_list<T> list ):x(vector[0]),y(vector[1]),z(vector[2]){
     	assert(list.size()==size());
     	vector=list;
+    }
+    template<typename... Ts>
+    Point( Ts... args ):vector{args...},x(vector[0]),y(vector[1]),z(vector[2]){
+
+    }
+    Point& operator=(const Point & v)
+    {
+    	for(int i = 0;i<D;i++){
+			new (&vector[i]) T(v[i]);
+		}
+      return *this;
     }
 
     T dot(const Point<D,T> & other){
@@ -77,17 +93,31 @@ struct Point{
     	}
     	return *this;
     }
-    Point<D,T> &       operator /= (T & scalar) {
+    Point<D,T> &       operator /= (const T & scalar) {
     	for(int i = 0;i<D;i++){
     		vector[i]/=scalar;
     	}
     	return *this;
     }
-    Point<D,T> &       operator *= (T & scalar) {
+    Point<D,T> &       operator *= (const T & scalar) {
     	for(int i = 0;i<D;i++){
     		vector[i]*=scalar;
     	}
     	return *this;
+    }
+    Point<D,T>        operator * (const T & scalar)const {
+    	Point<D,T> ret;
+    	for(int i = 0;i<D;i++){
+    		ret[i]= vector[i]* scalar;
+    	}
+    	return ret;
+    }
+    Point<D,T>        operator / (const T & scalar)const {
+    	Point<D,T> ret;
+    	for(int i = 0;i<D;i++){
+    		ret[i]= vector[i]/ scalar;
+    	}
+    	return ret;
     }
     //Note that this computes a DOUBLE. Should enforce that is a safe underapproximation of the real distance between these points (that is, the actual distance is guaranteed to be >= the returned value)
     double distance_underapprox(Point<D,T> other){
@@ -132,6 +162,7 @@ inline Point<D,T> operator-(const Point<D,T> &a, const Point<D,T> &b)
 
 
 typedef Point<2,double> Point2D;
+typedef Point<3,double> Point3D;
 
 template<unsigned int D,class T=double>
 struct SortBy{

@@ -7,6 +7,7 @@
 #include "GeometryTheory.h"
 #include "ConvexHull.h"
 #include "MonotoneConvexHull.h"
+#include "QuickConvexHull.h"
 #include "Polygon.h"
 using namespace Minisat;
 
@@ -134,10 +135,20 @@ GeometryDetector(_detectorID),outer(_outer),rnd_seed(seed){
 
 	point_contained_marker=outer->newReasonMarker(getID());
 	point_not_contained_marker=outer->newReasonMarker(getID());
-
-	over_hull = new MonotoneConvexHull<D,T>(over);
-	under_hull = new MonotoneConvexHull<D,T>(under);
-
+	if(hullAlg==ALG_QUICKHULL){
+		if(D==2){
+			over_hull = new QuickConvexHull<D,T>(over);
+			under_hull = new QuickConvexHull<D,T>(under);
+		}else if (D==3){
+			over_hull = new QuickConvexHull<D,T>(over); //new MonotoneConvexHull<D,T>(over);
+			under_hull = new QuickConvexHull<D,T>(under);
+		}
+	}else if (hullAlg==ALG_MONOTONE_HULL){
+		if(D==2){
+			over_hull = new MonotoneConvexHull<D,T>(over);
+			under_hull = new MonotoneConvexHull<D,T>(under);
+		}
+	}
 	lowest_point_var=var_Undef;
 	qhead=0;
 }

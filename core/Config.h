@@ -92,6 +92,15 @@ enum ComponentsAlg{
 
 };
 extern ComponentsAlg componentsalg;
+
+extern StringOption opt_hull_alg;
+enum ConvexHullAlg{
+	ALG_MONOTONE_HULL,
+	ALG_QUICKHULL
+
+};
+extern ConvexHullAlg hullAlg;
+
 }
 
 #endif /* CONFIG_H_ */

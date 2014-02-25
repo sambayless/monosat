@@ -17,6 +17,8 @@ int dbg_total_iterations=0;
 static const char* _cat = "CORE";
 static const char* _cat_sms = "SMS";
 static const char* _cat_graph ="GRAPH";
+static const char* _cat_geom ="GEOMETRY";
+
  IntOption Minisat::opt_verb("MAIN","verb", "Verbosity level (0=silent, 1=some, 2=more).",0,IntRange(0,3));
  DoubleOption  Minisat::opt_var_decay         (_cat, "var-decay",   "The variable activity decay factor",            0.95,     DoubleRange(0, false, 1, false));
  DoubleOption  Minisat::opt_clause_decay      (_cat, "cla-decay",   "The clause activity decay factor",              0.999,    DoubleRange(0, false, 1, false));
@@ -89,6 +91,10 @@ BoolOption Minisat::opt_connected_components_min_cut(_cat_graph,"cc-mincut","Sea
 BoolOption Minisat::opt_optimize_mst(_cat_graph,"opt-mst","Find the solution that minimizes the spanning tree by making repeated sat checks.",false);
 BoolOption Minisat::opt_skip_deletions(_cat_graph,"skip-deletions","",false);
 BoolOption Minisat::opt_skip_additions(_cat_graph,"skip-additions","",false);
+StringOption Minisat::opt_hull_alg(_cat_geom,"hull","Select convex-hull algorithm (monotone,quick)","quick");
+
+ConvexHullAlg Minisat::hullAlg=ALG_QUICKHULL;
+
 MinCutAlg Minisat::mincutalg=ALG_EDMONSKARP ;
 ReachAlg Minisat::reachalg=ALG_DFS;
 ReachAlg Minisat::distalg=ALG_BFS;
