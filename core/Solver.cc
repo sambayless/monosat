@@ -169,6 +169,7 @@ bool Solver::addClause_(vec<Lit>& ps)
         //instead we are going to reset the qhead here, which is a hackish solution to force propagateAll to be called later.
         //this will entail a (small) amount of duplicated effort.
         qhead = q;
+        return ok;
     }else{
         CRef cr = ca.alloc(ps, false);
         clauses.push(cr);
