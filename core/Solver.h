@@ -27,7 +27,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "utils/Options.h"
 #include "core/SolverTypes.h"
 #include "core/Theory.h"
-
+#include "core/Config.h"
 namespace Minisat {
 
 //=================================================================================================
@@ -104,7 +104,7 @@ public:
     	int t = getTheory(cr);
     	theory_reason.clear();
     	theories[t]->buildReason(p,theory_reason);
-    	CRef reason = ca.alloc(theory_reason, false);
+    	CRef reason = ca.alloc(theory_reason, !opt_interpolants_permanent);
     	assert(theory_reason[0]==p); assert(value(p)==l_True);
 #ifdef DEBUG_SOLVER
     	//assert all the other reasons in this cause are earlier on the trail than p...
@@ -118,7 +118,10 @@ public:
     		assert(marks[var(theory_reason[i])]);
     	}
 #endif
-		clauses.push(reason);
+      	if(opt_interpolants_permanent)
+			clauses.push(reason);
+		else
+			learnts.push(reason);
 
 		attachClause(reason);
 		vardata[var(p)]=mkVarData(reason,level(var(p)));
