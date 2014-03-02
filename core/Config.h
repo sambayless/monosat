@@ -67,7 +67,7 @@ extern BoolOption opt_connected_components_min_cut;
 extern BoolOption opt_optimize_mst;
 extern BoolOption opt_skip_deletions;
 extern BoolOption opt_skip_additions;
-
+extern BoolOption opt_interpolants_permanent;
 enum ReachAlg{
 	 ALG_DFS,
 	 ALG_DIJKSTRA,

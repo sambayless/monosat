@@ -103,7 +103,11 @@ public:
     	int t = getTheory(cr);
     	theory_reason.clear();
     	theories[t]->buildReason(p,theory_reason);
-    	CRef reason = ca.alloc(theory_reason, false);
+    	CRef reason = ca.alloc(theory_reason, !opt_interpolants_permanent);
+    	if(opt_interpolants_permanent)
+			clauses.push(reason);
+		else
+			learnts.push(reason);
     	assert(theory_reason[0]==p); assert(value(p)==l_True);
 #ifdef DEBUG_SOLVER
     	//assert all the other reasons in this cause are earlier on the trail than p...
@@ -117,7 +121,6 @@ public:
     		assert(marks[var(theory_reason[i])]);
     	}
 #endif
-		clauses.push(reason);
 
 		attachClause(reason);
 		vardata[var(p)]=mkVarData(reason,level(var(p)));
