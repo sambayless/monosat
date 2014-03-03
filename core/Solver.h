@@ -24,6 +24,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "mtl/Vec.h"
 #include "mtl/Heap.h"
 #include "mtl/Alg.h"
+#include "mtl/Rnd.h"
 #include "utils/Options.h"
 #include "core/SolverTypes.h"
 #include "core/Theory.h"
@@ -105,6 +106,11 @@ public:
     	theory_reason.clear();
     	theories[t]->buildReason(p,theory_reason);
     	CRef reason = ca.alloc(theory_reason, !opt_interpolants_permanent);
+
+    	if(opt_interpolants_permanent)
+			clauses.push(reason);
+		else
+			learnts.push(reason);
     	assert(theory_reason[0]==p); assert(value(p)==l_True);
 #ifdef DEBUG_SOLVER
     	//assert all the other reasons in this cause are earlier on the trail than p...
@@ -118,10 +124,6 @@ public:
     		assert(marks[var(theory_reason[i])]);
     	}
 #endif
-      	if(opt_interpolants_permanent)
-			clauses.push(reason);
-		else
-			learnts.push(reason);
 
 		attachClause(reason);
 		vardata[var(p)]=mkVarData(reason,level(var(p)));
@@ -398,19 +400,6 @@ private:
     bool 	addConflictClause(vec<Lit> & theory_conflict,CRef & confl_out);
     // Static helpers:
     //
-
-    // Returns a random float 0 <= x < 1. Seed must never be 0.
-    static inline double drand(double& seed) {
-    	assert(seed!=0);
-        seed *= 1389796;
-        int q = (int)(seed / 2147483647);
-        seed -= (double)q * 2147483647;
-        return seed / 2147483647; }
-
-    // Returns a random integer 0 <= x < size. Seed must never be 0.
-    static inline int irand(double& seed, int size) {
-        return (int)(drand(seed) * size); }
-
     inline void toSuper(vec<Lit> & from, vec<Lit> & to){
 
     	to.growTo(from.size());
