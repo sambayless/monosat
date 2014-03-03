@@ -24,6 +24,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "mtl/Vec.h"
 #include "mtl/Heap.h"
 #include "mtl/Alg.h"
+#include "mtl/Rnd.h"
 #include "utils/Options.h"
 #include "core/SolverTypes.h"
 #include "core/Theory.h"
@@ -395,19 +396,6 @@ private:
     bool 	addConflictClause(vec<Lit> & theory_conflict,CRef & confl_out);
     // Static helpers:
     //
-
-    // Returns a random float 0 <= x < 1. Seed must never be 0.
-    static inline double drand(double& seed) {
-    	assert(seed!=0);
-        seed *= 1389796;
-        int q = (int)(seed / 2147483647);
-        seed -= (double)q * 2147483647;
-        return seed / 2147483647; }
-
-    // Returns a random integer 0 <= x < size. Seed must never be 0.
-    static inline int irand(double& seed, int size) {
-        return (int)(drand(seed) * size); }
-
     inline void toSuper(vec<Lit> & from, vec<Lit> & to){
 
     	to.growTo(from.size());
