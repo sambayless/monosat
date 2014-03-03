@@ -105,9 +105,8 @@ public:
     	int t = getTheory(cr);
     	theory_reason.clear();
     	theories[t]->buildReason(p,theory_reason);
-    	CRef reason = ca.alloc(theory_reason, !opt_interpolants_permanent);
-
-    	if(opt_interpolants_permanent)
+    	CRef reason = ca.alloc(theory_reason, !opt_permanent_theory_conflicts);
+    	if(opt_permanent_theory_conflicts)
 			clauses.push(reason);
 		else
 			learnts.push(reason);
