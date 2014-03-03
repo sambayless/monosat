@@ -879,8 +879,8 @@ bool Solver::addConflictClause(vec<Lit> & theory_conflict, CRef & confl_out){
 			}
 			//assert(max_lev>0);
 			cancelUntil(max_lev);
-			CRef cr = ca.alloc(theory_conflict, !opt_interpolants_permanent);
-	    	if(opt_interpolants_permanent)
+			CRef cr = ca.alloc(theory_conflict, !opt_permanent_theory_conflicts);
+	    	if(opt_permanent_theory_conflicts)
 				clauses.push(cr);
 			else
 				learnts.push(cr);
