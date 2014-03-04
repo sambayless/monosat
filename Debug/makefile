@@ -9,9 +9,8 @@ RM := rm -rf
 # All of the sources participating in the build are defined here
 -include sources.mk
 -include utils/subdir.mk
--include minilib/subdir.mk
+-include simp/subdir.mk
 -include graph/subdir.mk
--include dbg/subdir.mk
 -include core/subdir.mk
 -include aiger/subdir.mk
 -include Release2/utils/subdir.mk
