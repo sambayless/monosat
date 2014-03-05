@@ -61,18 +61,58 @@ public:
     	priority[v]=p;
     }
 
-    //Theory interface
+   //Theory interface
     void addTheory(Theory*t){
     	theories.push(t);
+    	cancelUntil(0);
+    	resetInitialPropagation();
+    }
+
+    //Call to force at least one round of propagation to each theory solver at the next solve() call
+    void resetInitialPropagation(){
+    	if(!initialPropagate){
+			initialPropagate=true;//to force propagation to occur at least once to the theory solvers
+			if(S){
+				S->resetInitialPropagation();
+			}
+    	}
+    }
+
+    void detatchTheory(Theory*t){
+    	int i,j =0;
+    	for(i = 0;i<theories.size();i++){
+    		if(theories[i]==t){
+    			int k,l=0;
+    			for(k=0;k<markers.size();k++){
+    				CRef cr = markers[k];
+    			  	int index = CRef_Undef-cr-1;
+    			  	int theory = marker_theory[index];
+    				if(theory==i){
+    					marker_theory[index]=-1;
+    				}else{
+    					markers[l++]=cr;
+    					if(marker_theory[index]>i){
+    						marker_theory[index]--;
+    					}
+    				}
+    			}
+    			markers.shrink(k-l);
+    		}else{
+    			theories[j++]=theories[i];
+    		}
+    	}
+    	theories.shrink(i-j);
     	cancelUntil(0);
     }
     //Generate a new, unique `temporary value' for explaining conflicts
     CRef newReasonMarker(Theory * forTheory){
     	markers.push(ca.makeMarkerReference());
-    	marker_theory.push(-1);
+
 
     	int marker_num = CRef_Undef-markers.last()-1;
-    	assert(marker_theory.size()==marker_num+1);
+    	marker_theory.growTo(marker_num+1,-1);
+
+  
     	//this could be done more efficiently
     	for(int i = 0;i<theories.size();i++){
     		if(theories[i]==forTheory){
@@ -132,6 +172,7 @@ public:
     //Super_vars and local_vars _must_ be consecutive sets of variables in the super solver.
     void attachTo(Solver * super, vec<Var> & super_vars, vec<Var> & local_vars){
     	assert(decisionLevel()==0);
+    	super->addTheory(this);
     	S=super;
     	assert(super_vars.size()==local_vars.size());
     	super_qhead=0;
@@ -213,6 +254,7 @@ public:
     vec<CRef> markers;//a set of special clauses that can be recognized as pointers to theories
     vec<int> marker_theory;
     Solver * S;//super solver
+    bool initialPropagate;//to force propagation to occur at least once to the theory solvers
     int super_qhead;
     int local_qhead;
     CRef cause_marker;

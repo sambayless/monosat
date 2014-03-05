@@ -86,6 +86,7 @@ Solver::Solver() :
   , propagation_budget (-1)
   , asynch_interrupt   (false)
 	, S(NULL)
+    ,initialPropagate(true)
 	,super_qhead(0)
 	,super_offset(-1)
 ,local_qhead(0)
@@ -149,7 +150,7 @@ bool Solver::addClause_(vec<Lit>& ps)
 #endif
     assert(decisionLevel() == 0);
     if (!ok) return false;
-
+    resetInitialPropagation();//Ensure that super solver call propagate on this solver at least once.
     // Check if clause is satisfied and remove false/duplicate literals:
     sort(ps);
     Lit p; int i, j;
@@ -164,11 +165,8 @@ bool Solver::addClause_(vec<Lit>& ps)
         return ok = false;
     else if (ps.size() == 1){
         uncheckedEnqueue(ps[0]);
-        int q = qhead;
-        ok = (propagate() == CRef_Undef); //do NOT propagate theory solvers here, or else adding unit clauses can become very expensive in some circumstances (such as when constructing the initial CNF for example)
-        //instead we are going to reset the qhead here, which is a hackish solution to force propagateAll to be called later.
-        //this will entail a (small) amount of duplicated effort.
-        qhead = q;
+        ok = (propagate() == CRef_Undef); //do NOT propagate theory solvers here (ie, do not call propagateAll(), just propagate()), or else adding unit clauses can become very expensive in some circumstances (such as when constructing the initial CNF for example)
+        //instead we are going to reset the qhead in the solve_() function, which is a hackish solution to force propagateAll to be called later and will entail some (small) duplicated effort.
         return ok;
     }else{
         CRef cr = ca.alloc(ps, false);
@@ -674,7 +672,7 @@ void Solver::analyzeFinal(CRef confl, Lit skip_lit, vec<Lit>& out_conflict)
 |________________________________________________________________________________________________@*/
 CRef Solver::propagate(bool propagate_theories)
 {
-	if( qhead==trail.size() && decisionLevel()>0)
+	if( qhead==trail.size() && !initialPropagate)
 		return CRef_Undef;
     CRef    confl     = CRef_Undef;
     int     num_props = 0;
@@ -1469,12 +1467,26 @@ void Solver::toDimacs(FILE* f, const vec<Lit>& assumps)
 
 void Solver::relocAll(ClauseAllocator& to)
 {
+	//Re-allocate the 'theory markers'
+	vec<int> marker_theory_tmp;
+
 	for(int i = 0;i<markers.size();i++){
+		CRef old_cr = markers[i];
+		assert(old_cr!=CRef_Undef);
+		int old_theory = getTheory(old_cr);
+		assert(old_theory>=0);
 		CRef cr=to.makeMarkerReference();
 		assert(cr==markers[i]);//these should be identical in the current implementation
 		markers[i]=cr;
-	}
+		int index = CRef_Undef-cr - 1;
+		marker_theory_tmp.growTo(index+1,-1 );
+		marker_theory_tmp[index] = old_theory;
 
+		assert( marker_theory_tmp[index] == old_theory);
+
+		assert(markers[ marker_theory_tmp[index]] == cr);
+	}
+	marker_theory_tmp.copyTo(marker_theory);
     // All watchers:
     //
     // for (int i = 0; i < watches.size(); i++)
