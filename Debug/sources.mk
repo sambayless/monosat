@@ -27,6 +27,7 @@ utils \
 simp \
 graph \
 geometry/cevans \
+geometry/bitmap \
 geometry \
 core \
 aiger \

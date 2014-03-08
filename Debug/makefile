@@ -12,6 +12,7 @@ RM := rm -rf
 -include simp/subdir.mk
 -include graph/subdir.mk
 -include geometry/cevans/subdir.mk
+-include geometry/bitmap/subdir.mk
 -include geometry/subdir.mk
 -include core/subdir.mk
 -include aiger/subdir.mk
