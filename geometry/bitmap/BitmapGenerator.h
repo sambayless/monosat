@@ -13,12 +13,12 @@
 using namespace Minisat;
 
 class BitmapGenerator{
-public:
+
 	int hasSeed;
 	vec<int> params;
 	vec<int> param_max;
 	vec<bool> fixed;
-
+public:
 
 	virtual void generate(Bitmap & bitmap)=0;
 
@@ -56,6 +56,9 @@ public:
 		if(value>getMaximum(parameter)){
 			value=getMaximum(parameter);
 		}
+		if(isFixed(parameter)){
+			assert(params[parameter]==value);
+		}
 		params[parameter]=value;
 	}
 	unsigned int getMaximum(unsigned int parameter)const{
@@ -69,6 +72,13 @@ public:
 	bool isFixed(int parameter)const{
 		return fixed[parameter];
 	}
+
+	void unfixParameter(int parameter){
+		if(isFixed(parameter)){
+			fixed[parameter]=false;
+		}
+	}
+
 	//Fix a parameter at the given value (or at its current value, if unspecified)
 	void fixParameter(int parameter, int atValue=-1){
 		if(!isFixed(parameter)){

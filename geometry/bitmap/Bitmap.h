@@ -32,9 +32,34 @@ public:
 		return bitmap;
 	}
 
+	void clear(){
+		for(int i =0;i<m_width;i++){
+			for(int j = 0;j<m_height;j++){
+				bitmap[i][j]=-1;
+			}
+		}
+	}
 
-
-
+	void operator &= (Bitmap & other){
+		for(int i =0;i<m_width;i++){
+			for(int j = 0;j<m_height;j++){
+				if(bitmap[i][j] != other[i][j]){
+					bitmap[i][j] =-1;
+				}
+			}
+		}
+	}
+	void operator |= (Bitmap & other){
+		for(int i =0;i<m_width;i++){
+			for(int j = 0;j<m_height;j++){
+				if(bitmap[i][j] == -1){
+					bitmap[i][j] = other[i][j];
+				}else if (bitmap[i][j] != -1 && other[i][j] != -1 && bitmap[i][j] != other[i][j] ){
+					assert(false);
+				}
+			}
+		}
+	}
 	void growTo(int w, int h){
 		assert(w>=0);
 		assert(h>=0);
