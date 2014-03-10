@@ -77,8 +77,8 @@
 						</toolChain>
 					</folderInfo>
 					<sourceEntries>
-						<entry excluding="strings|smt" flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name=""/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="smt"/>
+						<entry excluding="smt|strings" flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name=""/>
 					</sourceEntries>
 				</configuration>
 			</storageModule>
@@ -142,7 +142,7 @@
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/modsat/modsat}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/modsat}&quot;"/>
 								</option>
-								<option id="gnu.c.compiler.option.misc.other.896025370" name="Other flags" superClass="gnu.c.compiler.option.misc.other" value="-c -fmessage-length=0 march=native" valueType="string"/>
+								<option id="gnu.c.compiler.option.misc.other.896025370" name="Other flags" superClass="gnu.c.compiler.option.misc.other" value="-c -fmessage-length=0 -march=native" valueType="string"/>
 								<inputType id="cdt.managedbuild.tool.gnu.c.compiler.input.49293408" superClass="cdt.managedbuild.tool.gnu.c.compiler.input"/>
 							</tool>
 							<tool id="cdt.managedbuild.tool.gnu.c.linker.exe.release.753962792" name="GCC C Linker" superClass="cdt.managedbuild.tool.gnu.c.linker.exe.release"/>
@@ -167,8 +167,8 @@
 						</toolChain>
 					</folderInfo>
 					<sourceEntries>
-						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="smt"/>
 						<entry excluding="smt|strings" flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name=""/>
+						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="smt"/>
 					</sourceEntries>
 				</configuration>
 			</storageModule>
@@ -247,8 +247,8 @@
 						</toolChain>
 					</folderInfo>
 					<sourceEntries>
+						<entry excluding="smt|strings|schedule" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="smt"/>
-						<entry excluding="schedule|strings|smt" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
 					</sourceEntries>
 				</configuration>
 			</storageModule>
@@ -325,8 +325,8 @@
 						</toolChain>
 					</folderInfo>
 					<sourceEntries>
-						<entry excluding="schedule|strings|smt" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="smt"/>
+						<entry excluding="smt|strings|schedule" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
 					</sourceEntries>
 				</configuration>
 			</storageModule>
@@ -405,8 +405,8 @@
 						</toolChain>
 					</folderInfo>
 					<sourceEntries>
-						<entry excluding="schedule|strings|smt" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="smt"/>
+						<entry excluding="smt|strings|schedule" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
 					</sourceEntries>
 				</configuration>
 			</storageModule>
@@ -490,7 +490,7 @@
 					</folderInfo>
 					<sourceEntries>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="smt"/>
-						<entry excluding="schedule|strings|smt" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+						<entry excluding="smt|strings|schedule" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
 					</sourceEntries>
 				</configuration>
 			</storageModule>
@@ -573,8 +573,8 @@
 						</toolChain>
 					</folderInfo>
 					<sourceEntries>
-						<entry excluding="schedule|strings|smt" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="smt"/>
+						<entry excluding="smt|strings|schedule" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
 					</sourceEntries>
 				</configuration>
 			</storageModule>
@@ -665,8 +665,8 @@
 						</toolChain>
 					</folderInfo>
 					<sourceEntries>
-						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="smt"/>
 						<entry excluding="smt|strings" flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name=""/>
+						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="smt"/>
 					</sourceEntries>
 				</configuration>
 			</storageModule>
