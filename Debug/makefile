@@ -13,12 +13,6 @@ RM := rm -rf
 -include graph/subdir.mk
 -include core/subdir.mk
 -include aiger/subdir.mk
--include Release2/utils/subdir.mk
--include Release2/minilib/subdir.mk
--include Release2/dbg/subdir.mk
--include Release2/core/subdir.mk
--include Release2/aiger/subdir.mk
--include Release2/subdir.mk
 -include subdir.mk
 -include objects.mk
 
