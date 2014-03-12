@@ -184,6 +184,23 @@ void Solver::attachClause(CRef cr) {
     if(c.size()<2){
     	exit(4);
     }
+#ifndef NDEBUG
+    for(int p = 0;p<=1;p++)
+		if(value(c[p])==l_False && level(var(c[p]))==0){
+			//then c[0] must not have been propagated yet - it must be after qhead. Otherwise this clause will never be enforced
+			if(decisionLevel()>0){
+				assert(false);//because we have already propagated all the level 0 elements
+			}else{
+				bool found=false;
+				for(int i = qhead;i<trail.size();i++){
+					if(var(trail[i])==var(c[p])){
+						found=true;break;
+					}
+				}
+				assert(found);
+			}
+		}
+#endif
     watches[~c[0]].push(Watcher(cr, c[1]));
     watches[~c[1]].push(Watcher(cr, c[0]));
     if (c.learnt()) learnts_literals += c.size();
