@@ -1484,7 +1484,7 @@ void Solver::relocAll(ClauseAllocator& to)
 	//Re-allocate the 'theory markers'
 	vec<int> marker_theory_tmp;
 
-	for(int i = 0;i<markers.size();i++){
+/*	for(int i = 0;i<markers.size();i++){
 		CRef old_cr = markers[i];
 		assert(old_cr!=CRef_Undef);
 		int old_theory = getTheory(old_cr);
@@ -1500,7 +1500,7 @@ void Solver::relocAll(ClauseAllocator& to)
 
 		assert(markers[ marker_theory_tmp[index]] == cr);
 	}
-	marker_theory_tmp.copyTo(marker_theory);
+	marker_theory_tmp.copyTo(marker_theory);*/
     // All watchers:
     //
     // for (int i = 0; i < watches.size(); i++)
