@@ -31,8 +31,7 @@
 									<listOptionValue builtIn="false" value="DEBUG_MAXFLOW"/>
 								</option>
 								<option id="gnu.cpp.compiler.option.include.paths.1554597876" name="Include paths (-I)" superClass="gnu.cpp.compiler.option.include.paths" valueType="includePath">
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/MinisatGraph}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/modsat}&quot;"/>
+									<listOptionValue builtIn="false" value=".././"/>
 								</option>
 								<option id="gnu.cpp.compiler.option.other.other.561945821" name="Other flags" superClass="gnu.cpp.compiler.option.other.other" value="-c -fmessage-length=0 -std=c++11  -Wno-unused-variable -Wno-unused-but-set-variable " valueType="string"/>
 								<inputType id="cdt.managedbuild.tool.gnu.cpp.compiler.input.758743014" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.input"/>
@@ -45,8 +44,7 @@
 									<listOptionValue builtIn="false" value="__STDC_FORMAT_MACROS"/>
 								</option>
 								<option id="gnu.c.compiler.option.include.paths.809523334" name="Include paths (-I)" superClass="gnu.c.compiler.option.include.paths" valueType="includePath">
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/MinisatGraph}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/modsat}&quot;"/>
+									<listOptionValue builtIn="false" value=".././"/>
 								</option>
 								<option id="gnu.c.compiler.option.preprocessor.undef.symbol.1389303267" name="Undefined symbols (-U)" superClass="gnu.c.compiler.option.preprocessor.undef.symbol" valueType="undefDefinedSymbols">
 									<listOptionValue builtIn="false" value="__amd64"/>
@@ -69,8 +67,7 @@
 							</tool>
 							<tool id="cdt.managedbuild.tool.gnu.assembler.exe.debug.1245002214" name="GCC Assembler" superClass="cdt.managedbuild.tool.gnu.assembler.exe.debug">
 								<option id="gnu.both.asm.option.include.paths.164845782" name="Include paths (-I)" superClass="gnu.both.asm.option.include.paths" valueType="includePath">
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/MinisatGraph}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/modsat}&quot;"/>
+									<listOptionValue builtIn="false" value=".././"/>
 								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.assembler.input.1386153508" superClass="cdt.managedbuild.tool.gnu.assembler.input"/>
 							</tool>
@@ -123,8 +120,7 @@
 									<listOptionValue builtIn="false" value="NDEBUG"/>
 								</option>
 								<option id="gnu.cpp.compiler.option.include.paths.479362924" name="Include paths (-I)" superClass="gnu.cpp.compiler.option.include.paths" valueType="includePath">
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/modsat/modsat}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/modsat}&quot;"/>
+									<listOptionValue builtIn="false" value=".././"/>
 								</option>
 								<option id="gnu.cpp.compiler.option.optimization.flags.994071788" name="Other optimization flags" superClass="gnu.cpp.compiler.option.optimization.flags" value="" valueType="string"/>
 								<option id="gnu.cpp.compiler.option.other.other.347702268" name="Other flags" superClass="gnu.cpp.compiler.option.other.other" value="-c -fmessage-length=0 -march=native -std=c++11 -Wno-unused-variable -Wno-unused-but-set-variable " valueType="string"/>
@@ -139,8 +135,7 @@
 									<listOptionValue builtIn="false" value="NDEBUG"/>
 								</option>
 								<option id="gnu.c.compiler.option.include.paths.1233465992" name="Include paths (-I)" superClass="gnu.c.compiler.option.include.paths" valueType="includePath">
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/modsat/modsat}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/modsat}&quot;"/>
+									<listOptionValue builtIn="false" value=".././"/>
 								</option>
 								<option id="gnu.c.compiler.option.misc.other.896025370" name="Other flags" superClass="gnu.c.compiler.option.misc.other" value="-c -fmessage-length=0 -march=native" valueType="string"/>
 								<inputType id="cdt.managedbuild.tool.gnu.c.compiler.input.49293408" superClass="cdt.managedbuild.tool.gnu.c.compiler.input"/>
@@ -159,8 +154,7 @@
 							</tool>
 							<tool id="cdt.managedbuild.tool.gnu.assembler.exe.release.1872581490" name="GCC Assembler" superClass="cdt.managedbuild.tool.gnu.assembler.exe.release">
 								<option id="gnu.both.asm.option.include.paths.405683213" name="Include paths (-I)" superClass="gnu.both.asm.option.include.paths" valueType="includePath">
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/modsat/modsat}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/modsat}&quot;"/>
+									<listOptionValue builtIn="false" value=".././"/>
 								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.assembler.input.1579883426" superClass="cdt.managedbuild.tool.gnu.assembler.input"/>
 							</tool>
@@ -202,8 +196,7 @@
 									<listOptionValue builtIn="false" value="NDEBUG"/>
 								</option>
 								<option id="gnu.cpp.compiler.option.include.paths.1842062262" name="Include paths (-I)" superClass="gnu.cpp.compiler.option.include.paths" valueType="includePath">
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/MinisatGraph}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/modsat}&quot;"/>
+									<listOptionValue builtIn="false" value=".././"/>
 								</option>
 								<option id="gnu.cpp.compiler.option.other.other.1770553323" name="Other flags" superClass="gnu.cpp.compiler.option.other.other" value="-c -fmessage-length=0 -std=c++0x  -Wno-unused-variable -Wno-unused-but-set-variable  -static    -static-libstdc++ -m32" valueType="string"/>
 								<inputType id="cdt.managedbuild.tool.gnu.cpp.compiler.input.324880369" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.input"/>
@@ -216,8 +209,7 @@
 									<listOptionValue builtIn="false" value="__STDC_FORMAT_MACROS"/>
 								</option>
 								<option id="gnu.c.compiler.option.include.paths.1026976649" name="Include paths (-I)" superClass="gnu.c.compiler.option.include.paths" valueType="includePath">
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/MinisatGraph}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/modsat}&quot;"/>
+									<listOptionValue builtIn="false" value=".././"/>
 								</option>
 								<option id="gnu.c.compiler.option.preprocessor.undef.symbol.1005255282" name="Undefined symbols (-U)" superClass="gnu.c.compiler.option.preprocessor.undef.symbol" valueType="undefDefinedSymbols">
 									<listOptionValue builtIn="false" value="__amd64"/>
@@ -239,8 +231,7 @@
 							</tool>
 							<tool id="cdt.managedbuild.tool.gnu.assembler.exe.debug.1559653651" name="GCC Assembler" superClass="cdt.managedbuild.tool.gnu.assembler.exe.debug">
 								<option id="gnu.both.asm.option.include.paths.1858446940" name="Include paths (-I)" superClass="gnu.both.asm.option.include.paths" valueType="includePath">
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/MinisatGraph}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/modsat}&quot;"/>
+									<listOptionValue builtIn="false" value=".././"/>
 								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.assembler.input.2055032046" superClass="cdt.managedbuild.tool.gnu.assembler.input"/>
 							</tool>
@@ -283,7 +274,7 @@
 									<listOptionValue builtIn="false" value="DEBUG_ANALYSIS"/>
 								</option>
 								<option id="gnu.cpp.compiler.option.include.paths.1721445648" name="Include paths (-I)" superClass="gnu.cpp.compiler.option.include.paths" valueType="includePath">
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/modsat}&quot;"/>
+									<listOptionValue builtIn="false" value=".././"/>
 								</option>
 								<option id="gnu.cpp.compiler.option.optimization.flags.2092383469" name="Other optimization flags" superClass="gnu.cpp.compiler.option.optimization.flags" value="" valueType="string"/>
 								<option id="gnu.cpp.compiler.option.other.other.269916616" name="Other flags" superClass="gnu.cpp.compiler.option.other.other" value="-c -fmessage-length=0 -msse2  -std=c++11 -Wno-unused-variable -Wno-unused-but-set-variable  -static  -static-libgcc     -static-libstdc++" valueType="string"/>
@@ -297,7 +288,7 @@
 									<listOptionValue builtIn="false" value="__STDC_FORMAT_MACROS"/>
 								</option>
 								<option id="gnu.c.compiler.option.include.paths.1184084549" name="Include paths (-I)" superClass="gnu.c.compiler.option.include.paths" valueType="includePath">
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/modsat}&quot;"/>
+									<listOptionValue builtIn="false" value=".././"/>
 								</option>
 								<option id="gnu.c.compiler.option.misc.other.1071334463" name="Other flags" superClass="gnu.c.compiler.option.misc.other" value="-c -fmessage-length=0 -static  -static-libgcc " valueType="string"/>
 								<inputType id="cdt.managedbuild.tool.gnu.c.compiler.input.1931028451" superClass="cdt.managedbuild.tool.gnu.c.compiler.input"/>
@@ -318,7 +309,7 @@
 							</tool>
 							<tool id="cdt.managedbuild.tool.gnu.assembler.exe.release.2019153849" name="GCC Assembler" superClass="cdt.managedbuild.tool.gnu.assembler.exe.release">
 								<option id="gnu.both.asm.option.include.paths.1144657466" name="Include paths (-I)" superClass="gnu.both.asm.option.include.paths" valueType="includePath">
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/modsat}&quot;"/>
+									<listOptionValue builtIn="false" value=".././"/>
 								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.assembler.input.910660793" superClass="cdt.managedbuild.tool.gnu.assembler.input"/>
 							</tool>
@@ -360,8 +351,7 @@
 									<listOptionValue builtIn="false" value="NDEBUG"/>
 								</option>
 								<option id="gnu.cpp.compiler.option.include.paths.1408335628" name="Include paths (-I)" superClass="gnu.cpp.compiler.option.include.paths" valueType="includePath">
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/MinisatGraph}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/modsat}&quot;"/>
+									<listOptionValue builtIn="false" value=".././"/>
 								</option>
 								<option id="gnu.cpp.compiler.option.other.other.2130553311" name="Other flags" superClass="gnu.cpp.compiler.option.other.other" value="-c -fmessage-length=0 -std=c++0x  -Wno-unused-variable -Wno-unused-but-set-variable  -static-libstdc++" valueType="string"/>
 								<inputType id="cdt.managedbuild.tool.gnu.cpp.compiler.input.984393645" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.input"/>
@@ -374,8 +364,7 @@
 									<listOptionValue builtIn="false" value="__STDC_FORMAT_MACROS"/>
 								</option>
 								<option id="gnu.c.compiler.option.include.paths.873345160" name="Include paths (-I)" superClass="gnu.c.compiler.option.include.paths" valueType="includePath">
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/MinisatGraph}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/modsat}&quot;"/>
+									<listOptionValue builtIn="false" value=".././"/>
 								</option>
 								<option id="gnu.c.compiler.option.preprocessor.undef.symbol.827842947" name="Undefined symbols (-U)" superClass="gnu.c.compiler.option.preprocessor.undef.symbol" valueType="undefDefinedSymbols">
 									<listOptionValue builtIn="false" value="__amd64"/>
@@ -397,178 +386,9 @@
 							</tool>
 							<tool id="cdt.managedbuild.tool.gnu.assembler.exe.debug.1693022080" name="GCC Assembler" superClass="cdt.managedbuild.tool.gnu.assembler.exe.debug">
 								<option id="gnu.both.asm.option.include.paths.1779630639" name="Include paths (-I)" superClass="gnu.both.asm.option.include.paths" valueType="includePath">
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/MinisatGraph}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/modsat}&quot;"/>
+									<listOptionValue builtIn="false" value=".././"/>
 								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.assembler.input.510352723" superClass="cdt.managedbuild.tool.gnu.assembler.input"/>
-							</tool>
-						</toolChain>
-					</folderInfo>
-					<sourceEntries>
-						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="smt"/>
-						<entry excluding="smt|strings|schedule" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
-					</sourceEntries>
-				</configuration>
-			</storageModule>
-			<storageModule moduleId="org.eclipse.cdt.core.externalSettings"/>
-		</cconfiguration>
-		<cconfiguration id="cdt.managedbuild.config.gnu.exe.debug.1003838172.503882809">
-			<storageModule buildSystemId="org.eclipse.cdt.managedbuilder.core.configurationDataProvider" id="cdt.managedbuild.config.gnu.exe.debug.1003838172.503882809" moduleId="org.eclipse.cdt.core.settings" name="coverage">
-				<externalSettings/>
-				<extensions>
-					<extension id="org.eclipse.cdt.core.GmakeErrorParser" point="org.eclipse.cdt.core.ErrorParser"/>
-					<extension id="org.eclipse.cdt.core.CWDLocator" point="org.eclipse.cdt.core.ErrorParser"/>
-					<extension id="org.eclipse.cdt.core.GCCErrorParser" point="org.eclipse.cdt.core.ErrorParser"/>
-					<extension id="org.eclipse.cdt.core.GASErrorParser" point="org.eclipse.cdt.core.ErrorParser"/>
-					<extension id="org.eclipse.cdt.core.GLDErrorParser" point="org.eclipse.cdt.core.ErrorParser"/>
-					<extension id="org.eclipse.cdt.core.ELF" point="org.eclipse.cdt.core.BinaryParser"/>
-				</extensions>
-			</storageModule>
-			<storageModule moduleId="cdtBuildSystem" version="4.0.0">
-				<configuration artifactName="${ProjName}" buildArtefactType="org.eclipse.cdt.build.core.buildArtefactType.exe" buildProperties="org.eclipse.cdt.build.core.buildType=org.eclipse.cdt.build.core.buildType.debug,org.eclipse.cdt.build.core.buildArtefactType=org.eclipse.cdt.build.core.buildArtefactType.exe" cleanCommand="rm -rf" description="" id="cdt.managedbuild.config.gnu.exe.debug.1003838172.503882809" name="coverage" parent="cdt.managedbuild.config.gnu.exe.debug">
-					<folderInfo id="cdt.managedbuild.config.gnu.exe.debug.1003838172.503882809." name="/" resourcePath="">
-						<toolChain id="cdt.managedbuild.toolchain.gnu.exe.debug.2110554838" name="Linux GCC" superClass="cdt.managedbuild.toolchain.gnu.exe.debug">
-							<targetPlatform id="cdt.managedbuild.target.gnu.platform.exe.debug.1847152806" name="Debug Platform" superClass="cdt.managedbuild.target.gnu.platform.exe.debug"/>
-							<builder buildPath="${workspace_loc:/Minisat2/Debug}" id="cdt.managedbuild.target.gnu.builder.exe.debug.1860744937" keepEnvironmentInBuildfile="false" managedBuildOn="true" name="Gnu Make Builder" superClass="cdt.managedbuild.target.gnu.builder.exe.debug"/>
-							<tool id="cdt.managedbuild.tool.gnu.archiver.base.1742370681" name="GCC Archiver" superClass="cdt.managedbuild.tool.gnu.archiver.base"/>
-							<tool id="cdt.managedbuild.tool.gnu.cpp.compiler.exe.debug.2145627582" name="GCC C++ Compiler" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.exe.debug">
-								<option id="gnu.cpp.compiler.exe.debug.option.optimization.level.696188881" name="Optimization Level" superClass="gnu.cpp.compiler.exe.debug.option.optimization.level" value="gnu.cpp.compiler.optimization.level.none" valueType="enumerated"/>
-								<option id="gnu.cpp.compiler.exe.debug.option.debugging.level.319919738" name="Debug Level" superClass="gnu.cpp.compiler.exe.debug.option.debugging.level" value="gnu.cpp.compiler.debugging.level.max" valueType="enumerated"/>
-								<option id="gnu.cpp.compiler.option.preprocessor.def.1705354284" name="Defined symbols (-D)" superClass="gnu.cpp.compiler.option.preprocessor.def" valueType="definedSymbols">
-									<listOptionValue builtIn="false" value="__STDC_LIMIT_MACROS"/>
-									<listOptionValue builtIn="false" value="__STDC_FORMAT_MACROS"/>
-									<listOptionValue builtIn="false" value="DEBUG_GRAPH"/>
-									<listOptionValue builtIn="false" value="DEBUG_DIJKSTRA"/>
-									<listOptionValue builtIn="false" value="DEBUG_MAXFLOW"/>
-								</option>
-								<option id="gnu.cpp.compiler.option.include.paths.267433276" name="Include paths (-I)" superClass="gnu.cpp.compiler.option.include.paths" valueType="includePath">
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/MinisatGraph}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/modsat}&quot;"/>
-								</option>
-								<option id="gnu.cpp.compiler.option.other.other.1557423619" name="Other flags" superClass="gnu.cpp.compiler.option.other.other" value="-c -fmessage-length=0 -std=c++11  -Wno-unused-variable -Wno-unused-but-set-variable   -coverage" valueType="string"/>
-								<inputType id="cdt.managedbuild.tool.gnu.cpp.compiler.input.475482048" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.input"/>
-							</tool>
-							<tool id="cdt.managedbuild.tool.gnu.c.compiler.exe.debug.605072271" name="GCC C Compiler" superClass="cdt.managedbuild.tool.gnu.c.compiler.exe.debug">
-								<option defaultValue="gnu.c.optimization.level.none" id="gnu.c.compiler.exe.debug.option.optimization.level.1778109900" name="Optimization Level" superClass="gnu.c.compiler.exe.debug.option.optimization.level" valueType="enumerated"/>
-								<option id="gnu.c.compiler.exe.debug.option.debugging.level.105632605" name="Debug Level" superClass="gnu.c.compiler.exe.debug.option.debugging.level" value="gnu.c.debugging.level.max" valueType="enumerated"/>
-								<option id="gnu.c.compiler.option.preprocessor.def.symbols.576959612" name="Defined symbols (-D)" superClass="gnu.c.compiler.option.preprocessor.def.symbols" valueType="definedSymbols">
-									<listOptionValue builtIn="false" value="__STDC_LIMIT_MACROS"/>
-									<listOptionValue builtIn="false" value="__STDC_FORMAT_MACROS"/>
-								</option>
-								<option id="gnu.c.compiler.option.include.paths.767105597" name="Include paths (-I)" superClass="gnu.c.compiler.option.include.paths" valueType="includePath">
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/MinisatGraph}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/modsat}&quot;"/>
-								</option>
-								<option id="gnu.c.compiler.option.preprocessor.undef.symbol.971956304" name="Undefined symbols (-U)" superClass="gnu.c.compiler.option.preprocessor.undef.symbol" valueType="undefDefinedSymbols">
-									<listOptionValue builtIn="false" value="__amd64"/>
-								</option>
-								<option id="gnu.c.compiler.option.misc.other.1063219782" name="Other flags" superClass="gnu.c.compiler.option.misc.other" value="-c -fmessage-length=0  -coverage" valueType="string"/>
-								<inputType id="cdt.managedbuild.tool.gnu.c.compiler.input.959395968" superClass="cdt.managedbuild.tool.gnu.c.compiler.input"/>
-							</tool>
-							<tool id="cdt.managedbuild.tool.gnu.c.linker.exe.debug.1328020378" name="GCC C Linker" superClass="cdt.managedbuild.tool.gnu.c.linker.exe.debug"/>
-							<tool id="cdt.managedbuild.tool.gnu.cpp.linker.exe.debug.1290830555" name="GCC C++ Linker" superClass="cdt.managedbuild.tool.gnu.cpp.linker.exe.debug">
-								<option id="gnu.cpp.link.option.libs.1310642870" name="Libraries (-l)" superClass="gnu.cpp.link.option.libs" valueType="libs">
-									<listOptionValue builtIn="false" value="z"/>
-									<listOptionValue builtIn="false" value="gmp"/>
-									<listOptionValue builtIn="false" value="gmpxx"/>
-									<listOptionValue builtIn="false" value="m"/>
-								</option>
-								<option id="gnu.cpp.link.option.flags.148549110" name="Linker flags" superClass="gnu.cpp.link.option.flags" value="-pthread -lgcov -coverage" valueType="string"/>
-								<inputType id="cdt.managedbuild.tool.gnu.cpp.linker.input.547801364" superClass="cdt.managedbuild.tool.gnu.cpp.linker.input">
-									<additionalInput kind="additionalinputdependency" paths="$(USER_OBJS)"/>
-									<additionalInput kind="additionalinput" paths="$(LIBS)"/>
-								</inputType>
-							</tool>
-							<tool id="cdt.managedbuild.tool.gnu.assembler.exe.debug.981755495" name="GCC Assembler" superClass="cdt.managedbuild.tool.gnu.assembler.exe.debug">
-								<option id="gnu.both.asm.option.include.paths.1227525110" name="Include paths (-I)" superClass="gnu.both.asm.option.include.paths" valueType="includePath">
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/MinisatGraph}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/modsat}&quot;"/>
-								</option>
-								<inputType id="cdt.managedbuild.tool.gnu.assembler.input.1345678690" superClass="cdt.managedbuild.tool.gnu.assembler.input"/>
-							</tool>
-						</toolChain>
-					</folderInfo>
-					<sourceEntries>
-						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="smt"/>
-						<entry excluding="smt|strings|schedule" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
-					</sourceEntries>
-				</configuration>
-			</storageModule>
-			<storageModule moduleId="org.eclipse.cdt.core.externalSettings"/>
-		</cconfiguration>
-		<cconfiguration id="cdt.managedbuild.config.gnu.exe.debug.1003838172.1809949427">
-			<storageModule buildSystemId="org.eclipse.cdt.managedbuilder.core.configurationDataProvider" id="cdt.managedbuild.config.gnu.exe.debug.1003838172.1809949427" moduleId="org.eclipse.cdt.core.settings" name="Klee">
-				<externalSettings/>
-				<extensions>
-					<extension id="org.eclipse.cdt.core.GmakeErrorParser" point="org.eclipse.cdt.core.ErrorParser"/>
-					<extension id="org.eclipse.cdt.core.CWDLocator" point="org.eclipse.cdt.core.ErrorParser"/>
-					<extension id="org.eclipse.cdt.core.GCCErrorParser" point="org.eclipse.cdt.core.ErrorParser"/>
-					<extension id="org.eclipse.cdt.core.GASErrorParser" point="org.eclipse.cdt.core.ErrorParser"/>
-					<extension id="org.eclipse.cdt.core.GLDErrorParser" point="org.eclipse.cdt.core.ErrorParser"/>
-					<extension id="org.eclipse.cdt.core.ELF" point="org.eclipse.cdt.core.BinaryParser"/>
-				</extensions>
-			</storageModule>
-			<storageModule moduleId="cdtBuildSystem" version="4.0.0">
-				<configuration artifactName="${ProjName}" buildArtefactType="org.eclipse.cdt.build.core.buildArtefactType.exe" buildProperties="org.eclipse.cdt.build.core.buildType=org.eclipse.cdt.build.core.buildType.debug,org.eclipse.cdt.build.core.buildArtefactType=org.eclipse.cdt.build.core.buildArtefactType.exe" cleanCommand="rm -rf" description="" id="cdt.managedbuild.config.gnu.exe.debug.1003838172.1809949427" name="Klee" parent="cdt.managedbuild.config.gnu.exe.debug">
-					<folderInfo id="cdt.managedbuild.config.gnu.exe.debug.1003838172.1809949427." name="/" resourcePath="">
-						<toolChain id="cdt.managedbuild.toolchain.gnu.exe.debug.1233052085" name="Linux GCC" superClass="cdt.managedbuild.toolchain.gnu.exe.debug">
-							<targetPlatform id="cdt.managedbuild.target.gnu.platform.exe.debug.22631804" name="Debug Platform" superClass="cdt.managedbuild.target.gnu.platform.exe.debug"/>
-							<builder buildPath="${workspace_loc:/Minisat2/Debug}" id="cdt.managedbuild.target.gnu.builder.exe.debug.1423917145" keepEnvironmentInBuildfile="false" managedBuildOn="true" name="Gnu Make Builder" superClass="cdt.managedbuild.target.gnu.builder.exe.debug"/>
-							<tool id="cdt.managedbuild.tool.gnu.archiver.base.1152932233" name="GCC Archiver" superClass="cdt.managedbuild.tool.gnu.archiver.base"/>
-							<tool command="/home/sam/Downloads/clang+llvm-2.9-x86_64-linux.tar/bin/clang++" id="cdt.managedbuild.tool.gnu.cpp.compiler.exe.debug.1242101135" name="GCC C++ Compiler" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.exe.debug">
-								<option id="gnu.cpp.compiler.exe.debug.option.optimization.level.809261334" name="Optimization Level" superClass="gnu.cpp.compiler.exe.debug.option.optimization.level" value="gnu.cpp.compiler.optimization.level.none" valueType="enumerated"/>
-								<option id="gnu.cpp.compiler.exe.debug.option.debugging.level.600341754" name="Debug Level" superClass="gnu.cpp.compiler.exe.debug.option.debugging.level" value="gnu.cpp.compiler.debugging.level.none" valueType="enumerated"/>
-								<option id="gnu.cpp.compiler.option.preprocessor.def.391084031" name="Defined symbols (-D)" superClass="gnu.cpp.compiler.option.preprocessor.def" valueType="definedSymbols">
-									<listOptionValue builtIn="false" value="__STDC_LIMIT_MACROS"/>
-									<listOptionValue builtIn="false" value="__STDC_FORMAT_MACROS"/>
-									<listOptionValue builtIn="false" value="DEBUG_GRAPH"/>
-									<listOptionValue builtIn="false" value="DEBUG_DIJKSTRA"/>
-									<listOptionValue builtIn="false" value="DEBUG_MAXFLOW"/>
-								</option>
-								<option id="gnu.cpp.compiler.option.include.paths.110741809" name="Include paths (-I)" superClass="gnu.cpp.compiler.option.include.paths" valueType="includePath">
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/MinisatGraph}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/modsat}&quot;"/>
-								</option>
-								<option id="gnu.cpp.compiler.option.other.other.1840427785" name="Other flags" superClass="gnu.cpp.compiler.option.other.other" value="-c -fmessage-length=0 -std=c++0x  -Wno-unused-variable -Wno-unused-but-set-variable  -emit-llvm " valueType="string"/>
-								<inputType id="cdt.managedbuild.tool.gnu.cpp.compiler.input.1111804667" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.input"/>
-							</tool>
-							<tool command="clang" id="cdt.managedbuild.tool.gnu.c.compiler.exe.debug.2000755024" name="GCC C Compiler" superClass="cdt.managedbuild.tool.gnu.c.compiler.exe.debug">
-								<option defaultValue="gnu.c.optimization.level.none" id="gnu.c.compiler.exe.debug.option.optimization.level.370443880" name="Optimization Level" superClass="gnu.c.compiler.exe.debug.option.optimization.level" valueType="enumerated"/>
-								<option id="gnu.c.compiler.exe.debug.option.debugging.level.318429724" name="Debug Level" superClass="gnu.c.compiler.exe.debug.option.debugging.level" value="gnu.c.debugging.level.max" valueType="enumerated"/>
-								<option id="gnu.c.compiler.option.preprocessor.def.symbols.1949255950" name="Defined symbols (-D)" superClass="gnu.c.compiler.option.preprocessor.def.symbols" valueType="definedSymbols">
-									<listOptionValue builtIn="false" value="__STDC_LIMIT_MACROS"/>
-									<listOptionValue builtIn="false" value="__STDC_FORMAT_MACROS"/>
-								</option>
-								<option id="gnu.c.compiler.option.include.paths.102883081" name="Include paths (-I)" superClass="gnu.c.compiler.option.include.paths" valueType="includePath">
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/MinisatGraph}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/modsat}&quot;"/>
-								</option>
-								<option id="gnu.c.compiler.option.preprocessor.undef.symbol.2102396924" name="Undefined symbols (-U)" superClass="gnu.c.compiler.option.preprocessor.undef.symbol" valueType="undefDefinedSymbols">
-									<listOptionValue builtIn="false" value="__amd64"/>
-								</option>
-								<option id="gnu.c.compiler.option.misc.other.426124608" name="Other flags" superClass="gnu.c.compiler.option.misc.other" value="-c -fmessage-length=0 -emit-llvm " valueType="string"/>
-								<inputType id="cdt.managedbuild.tool.gnu.c.compiler.input.1302518036" superClass="cdt.managedbuild.tool.gnu.c.compiler.input"/>
-							</tool>
-							<tool id="cdt.managedbuild.tool.gnu.c.linker.exe.debug.2101061233" name="GCC C Linker" superClass="cdt.managedbuild.tool.gnu.c.linker.exe.debug"/>
-							<tool command="clang" id="cdt.managedbuild.tool.gnu.cpp.linker.exe.debug.621461260" name="GCC C++ Linker" superClass="cdt.managedbuild.tool.gnu.cpp.linker.exe.debug">
-								<option id="gnu.cpp.link.option.libs.1544419642" name="Libraries (-l)" superClass="gnu.cpp.link.option.libs" valueType="libs">
-									<listOptionValue builtIn="false" value="z"/>
-									<listOptionValue builtIn="false" value="gmp"/>
-									<listOptionValue builtIn="false" value="gmpxx"/>
-									<listOptionValue builtIn="false" value="m"/>
-								</option>
-								<option id="gnu.cpp.link.option.flags.1140861557" name="Linker flags" superClass="gnu.cpp.link.option.flags" value="-pthread" valueType="string"/>
-								<inputType id="cdt.managedbuild.tool.gnu.cpp.linker.input.1040392858" superClass="cdt.managedbuild.tool.gnu.cpp.linker.input">
-									<additionalInput kind="additionalinputdependency" paths="$(USER_OBJS)"/>
-									<additionalInput kind="additionalinput" paths="$(LIBS)"/>
-								</inputType>
-							</tool>
-							<tool id="cdt.managedbuild.tool.gnu.assembler.exe.debug.128846935" name="GCC Assembler" superClass="cdt.managedbuild.tool.gnu.assembler.exe.debug">
-								<option id="gnu.both.asm.option.include.paths.91701431" name="Include paths (-I)" superClass="gnu.both.asm.option.include.paths" valueType="includePath">
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/MinisatGraph}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/modsat}&quot;"/>
-								</option>
-								<inputType id="cdt.managedbuild.tool.gnu.assembler.input.1626618733" superClass="cdt.managedbuild.tool.gnu.assembler.input"/>
 							</tool>
 						</toolChain>
 					</folderInfo>
@@ -620,8 +440,7 @@
 									<listOptionValue builtIn="false" value="DEBUG_ANALYSIS"/>
 								</option>
 								<option id="gnu.cpp.compiler.option.include.paths.1627281749" name="Include paths (-I)" superClass="gnu.cpp.compiler.option.include.paths" valueType="includePath">
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/modsat/modsat}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/modsat}&quot;"/>
+									<listOptionValue builtIn="false" value=".././"/>
 								</option>
 								<option id="gnu.cpp.compiler.option.optimization.flags.751973662" name="Other optimization flags" superClass="gnu.cpp.compiler.option.optimization.flags" value="" valueType="string"/>
 								<option id="gnu.cpp.compiler.option.other.other.568939767" name="Other flags" superClass="gnu.cpp.compiler.option.other.other" value="-c -fmessage-length=0 -msse2  -std=c++11 -Wno-unused-variable -Wno-unused-but-set-variable " valueType="string"/>
@@ -637,8 +456,7 @@
 									<listOptionValue builtIn="false" value="DEBUG_ANALYSIS"/>
 								</option>
 								<option id="gnu.c.compiler.option.include.paths.1156032851" name="Include paths (-I)" superClass="gnu.c.compiler.option.include.paths" valueType="includePath">
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/modsat/modsat}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/modsat}&quot;"/>
+									<listOptionValue builtIn="false" value=".././"/>
 								</option>
 								<option id="gnu.c.compiler.option.misc.other.673090768" name="Other flags" superClass="gnu.c.compiler.option.misc.other" value="-c -fmessage-length=0 " valueType="string"/>
 								<inputType id="cdt.managedbuild.tool.gnu.c.compiler.input.1425989944" superClass="cdt.managedbuild.tool.gnu.c.compiler.input"/>
@@ -657,8 +475,7 @@
 							</tool>
 							<tool id="cdt.managedbuild.tool.gnu.assembler.exe.release.418928419" name="GCC Assembler" superClass="cdt.managedbuild.tool.gnu.assembler.exe.release">
 								<option id="gnu.both.asm.option.include.paths.192157453" name="Include paths (-I)" superClass="gnu.both.asm.option.include.paths" valueType="includePath">
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/modsat/modsat}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/modsat}&quot;"/>
+									<listOptionValue builtIn="false" value=".././"/>
 								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.assembler.input.1614395021" superClass="cdt.managedbuild.tool.gnu.assembler.input"/>
 							</tool>
@@ -689,11 +506,23 @@
 		<scannerConfigBuildInfo instanceId="cdt.managedbuild.config.gnu.exe.release.1052123975.874841032;cdt.managedbuild.config.gnu.exe.release.1052123975.874841032.;cdt.managedbuild.tool.gnu.cpp.compiler.exe.release.1720157147;cdt.managedbuild.tool.gnu.cpp.compiler.input.1004090440">
 			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId="org.eclipse.cdt.managedbuilder.core.GCCManagedMakePerProjectProfileCPP"/>
 		</scannerConfigBuildInfo>
+		<scannerConfigBuildInfo instanceId="cdt.managedbuild.config.gnu.exe.debug.1003838172.1809949427;cdt.managedbuild.config.gnu.exe.debug.1003838172.1809949427.;cdt.managedbuild.tool.gnu.c.compiler.exe.debug.2000755024;cdt.managedbuild.tool.gnu.c.compiler.input.1302518036">
+			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId="org.eclipse.cdt.managedbuilder.core.GCCManagedMakePerProjectProfileC"/>
+		</scannerConfigBuildInfo>
 		<scannerConfigBuildInfo instanceId="cdt.managedbuild.config.gnu.exe.debug.1003838172;cdt.managedbuild.config.gnu.exe.debug.1003838172.;cdt.managedbuild.tool.gnu.cpp.compiler.exe.debug.713419155;cdt.managedbuild.tool.gnu.cpp.compiler.input.758743014">
 			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId="org.eclipse.cdt.managedbuilder.core.GCCManagedMakePerProjectProfileCPP"/>
 		</scannerConfigBuildInfo>
+		<scannerConfigBuildInfo instanceId="cdt.managedbuild.config.gnu.exe.release.1052123975.2065358793;cdt.managedbuild.config.gnu.exe.release.1052123975.2065358793.;cdt.managedbuild.tool.gnu.c.compiler.exe.release.1916406613;cdt.managedbuild.tool.gnu.c.compiler.input.439442248">
+			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId="org.eclipse.cdt.managedbuilder.core.GCCManagedMakePerProjectProfileC"/>
+		</scannerConfigBuildInfo>
 		<scannerConfigBuildInfo instanceId="cdt.managedbuild.config.gnu.exe.debug.1003838172.661131711;cdt.managedbuild.config.gnu.exe.debug.1003838172.661131711.;cdt.managedbuild.tool.gnu.c.compiler.exe.debug.1281223420;cdt.managedbuild.tool.gnu.c.compiler.input.984981827">
 			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId="org.eclipse.cdt.managedbuilder.core.GCCManagedMakePerProjectProfileC"/>
+		</scannerConfigBuildInfo>
+		<scannerConfigBuildInfo instanceId="cdt.managedbuild.config.gnu.exe.debug.1003838172.503882809;cdt.managedbuild.config.gnu.exe.debug.1003838172.503882809.;cdt.managedbuild.tool.gnu.cpp.compiler.exe.debug.2145627582;cdt.managedbuild.tool.gnu.cpp.compiler.input.475482048">
+			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId="org.eclipse.cdt.managedbuilder.core.GCCManagedMakePerProjectProfileCPP"/>
+		</scannerConfigBuildInfo>
+		<scannerConfigBuildInfo instanceId="cdt.managedbuild.config.gnu.exe.release.1052123975.366680122;cdt.managedbuild.config.gnu.exe.release.1052123975.366680122.;cdt.managedbuild.tool.gnu.cpp.compiler.exe.release.1839805581;cdt.managedbuild.tool.gnu.cpp.compiler.input.310482073">
+			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId="org.eclipse.cdt.managedbuilder.core.GCCManagedMakePerProjectProfileCPP"/>
 		</scannerConfigBuildInfo>
 		<scannerConfigBuildInfo instanceId="cdt.managedbuild.config.gnu.exe.release.1052123975;cdt.managedbuild.config.gnu.exe.release.1052123975.;cdt.managedbuild.tool.gnu.cpp.compiler.exe.release.560036326;cdt.managedbuild.tool.gnu.cpp.compiler.input.1990306899">
 			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId="org.eclipse.cdt.managedbuilder.core.GCCManagedMakePerProjectProfileCPP"/>
@@ -701,17 +530,29 @@
 		<scannerConfigBuildInfo instanceId="cdt.managedbuild.config.gnu.exe.debug.1003838172.661131711;cdt.managedbuild.config.gnu.exe.debug.1003838172.661131711.;cdt.managedbuild.tool.gnu.cpp.compiler.exe.debug.1164074496;cdt.managedbuild.tool.gnu.cpp.compiler.input.324880369">
 			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId="org.eclipse.cdt.managedbuilder.core.GCCManagedMakePerProjectProfileCPP"/>
 		</scannerConfigBuildInfo>
+		<scannerConfigBuildInfo instanceId="cdt.managedbuild.config.gnu.exe.debug.1003838172.661131711.1852035064;cdt.managedbuild.config.gnu.exe.debug.1003838172.661131711.1852035064.;cdt.managedbuild.tool.gnu.c.compiler.exe.debug.1037882495;cdt.managedbuild.tool.gnu.c.compiler.input.2090190392">
+			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId="org.eclipse.cdt.managedbuilder.core.GCCManagedMakePerProjectProfileC"/>
+		</scannerConfigBuildInfo>
+		<scannerConfigBuildInfo instanceId="cdt.managedbuild.config.gnu.exe.release.1052123975.366680122;cdt.managedbuild.config.gnu.exe.release.1052123975.366680122.;cdt.managedbuild.tool.gnu.c.compiler.exe.release.1601842446;cdt.managedbuild.tool.gnu.c.compiler.input.1425989944">
+			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId="org.eclipse.cdt.managedbuilder.core.GCCManagedMakePerProjectProfileC"/>
+		</scannerConfigBuildInfo>
+		<scannerConfigBuildInfo instanceId="cdt.managedbuild.config.gnu.exe.release.1052123975.2065358793;cdt.managedbuild.config.gnu.exe.release.1052123975.2065358793.;cdt.managedbuild.tool.gnu.cpp.compiler.exe.release.960177342;cdt.managedbuild.tool.gnu.cpp.compiler.input.593731700">
+			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId="org.eclipse.cdt.managedbuilder.core.GCCManagedMakePerProjectProfileCPP"/>
+		</scannerConfigBuildInfo>
+		<scannerConfigBuildInfo instanceId="cdt.managedbuild.config.gnu.exe.debug.1003838172.503882809;cdt.managedbuild.config.gnu.exe.debug.1003838172.503882809.;cdt.managedbuild.tool.gnu.c.compiler.exe.debug.605072271;cdt.managedbuild.tool.gnu.c.compiler.input.959395968">
+			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId="org.eclipse.cdt.managedbuilder.core.GCCManagedMakePerProjectProfileC"/>
+		</scannerConfigBuildInfo>
 		<scannerConfigBuildInfo instanceId="cdt.managedbuild.config.gnu.exe.release.1052123975;cdt.managedbuild.config.gnu.exe.release.1052123975.;cdt.managedbuild.tool.gnu.c.compiler.exe.release.2036074097;cdt.managedbuild.tool.gnu.c.compiler.input.49293408">
 			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId="org.eclipse.cdt.managedbuilder.core.GCCManagedMakePerProjectProfileC"/>
 		</scannerConfigBuildInfo>
 		<scannerConfigBuildInfo instanceId="cdt.managedbuild.config.gnu.exe.release.1052123975.874841032;cdt.managedbuild.config.gnu.exe.release.1052123975.874841032.;cdt.managedbuild.tool.gnu.c.compiler.exe.release.687502783;cdt.managedbuild.tool.gnu.c.compiler.input.1931028451">
 			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId="org.eclipse.cdt.managedbuilder.core.GCCManagedMakePerProjectProfileC"/>
 		</scannerConfigBuildInfo>
-		<scannerConfigBuildInfo instanceId="cdt.managedbuild.config.gnu.exe.debug.1003838172.661131711.1852035064;cdt.managedbuild.config.gnu.exe.debug.1003838172.661131711.1852035064.;cdt.managedbuild.tool.gnu.c.compiler.exe.debug.1037882495;cdt.managedbuild.tool.gnu.c.compiler.input.2090190392">
-			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId="org.eclipse.cdt.managedbuilder.core.GCCManagedMakePerProjectProfileC"/>
-		</scannerConfigBuildInfo>
 		<scannerConfigBuildInfo instanceId="cdt.managedbuild.config.gnu.exe.debug.1003838172;cdt.managedbuild.config.gnu.exe.debug.1003838172.;cdt.managedbuild.tool.gnu.c.compiler.exe.debug.399221987;cdt.managedbuild.tool.gnu.c.compiler.input.1701141315">
 			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId="org.eclipse.cdt.managedbuilder.core.GCCManagedMakePerProjectProfileC"/>
+		</scannerConfigBuildInfo>
+		<scannerConfigBuildInfo instanceId="cdt.managedbuild.config.gnu.exe.debug.1003838172.1809949427;cdt.managedbuild.config.gnu.exe.debug.1003838172.1809949427.;cdt.managedbuild.tool.gnu.cpp.compiler.exe.debug.1242101135;cdt.managedbuild.tool.gnu.cpp.compiler.input.1111804667">
+			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId="org.eclipse.cdt.managedbuilder.core.GCCManagedMakePerProjectProfileCPP"/>
 		</scannerConfigBuildInfo>
 	</storageModule>
 </cproject>

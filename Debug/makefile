@@ -14,8 +14,13 @@ RM := rm -rf
 -include geometry/cevans/subdir.mk
 -include geometry/bitmap/subdir.mk
 -include geometry/subdir.mk
+-include coverage/utils/subdir.mk
+-include coverage/core/subdir.mk
+-include coverage/aiger/subdir.mk
+-include coverage/subdir.mk
 -include core/subdir.mk
 -include aiger/subdir.mk
+-include Klee/aiger/subdir.mk
 -include subdir.mk
 -include objects.mk
 
