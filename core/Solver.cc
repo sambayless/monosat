@@ -862,18 +862,28 @@ bool Solver::simplify()
     return true;
 }
 
-bool Solver::addConflictClause(vec<Lit> & theory_conflict, CRef & confl_out){
+bool Solver::addConflictClause(vec<Lit> & ps, CRef & confl_out){
 	dbg_check(theory_conflict);
+
+    sort(ps);
+    Lit p; int i, j;
+    for (i = j = 0, p = lit_Undef; i < ps.size(); i++)
+        if (((value(ps[i]) == l_True && level(var(ps[i]))==0) )|| ps[i] == ~p)
+            return true;
+        else if ((value(ps[i]) != l_False || level(var(ps[i]))!=0 ) && ps[i] != p)
+            ps[j++] = p = ps[i];
+    ps.shrink(i - j);
+
 	confl_out=CRef_Undef;
-	if(theory_conflict.size()==0){
+	if(ps.size()==0){
 			ok=false;
 			cancelUntil(0);
 			return false;
-		}else if(theory_conflict.size()==1){
+		}else if(ps.size()==1){
 			cancelUntil(0);
-			assert(var(theory_conflict[0])<nVars());
-			dbg_check_propagation(theory_conflict[0]);
-			if(!enqueue(theory_conflict[0])){
+			assert(var(ps[0])<nVars());
+			dbg_check_propagation(ps[0]);
+			if(!enqueue(ps[0])){
 				ok=false;
 				return false;
 			}
@@ -881,17 +891,17 @@ bool Solver::addConflictClause(vec<Lit> & theory_conflict, CRef & confl_out){
 		}else{
 			//find the highest level in the conflict (should be the current decision level, but we won't require that)
 			int max_lev = 0;
-			for(int j = 0;j<theory_conflict.size();j++){
-				assert(var(theory_conflict[j])<nVars());
-				assert(value(theory_conflict[j])==l_False);
-				int l = level(var(theory_conflict[j]));
+			for(int j = 0;j<ps.size();j++){
+				assert(var(ps[j])<nVars());
+				assert(value(ps[j])==l_False);
+				int l = level(var(ps[j]));
 				if(l>max_lev){
 					max_lev=l;
 				}
 			}
 			//assert(max_lev>0);
 			cancelUntil(max_lev);
-			CRef cr = ca.alloc(theory_conflict, !opt_permanent_theory_conflicts);
+			CRef cr = ca.alloc(ps, !opt_permanent_theory_conflicts);
 	    	if(opt_permanent_theory_conflicts)
 				clauses.push(cr);
 			else

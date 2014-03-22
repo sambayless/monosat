@@ -17,7 +17,7 @@ C_DEPS += \
 aiger/%.o: ../aiger/%.c
 	@echo 'Building file: $<'
 	@echo 'Invoking: GCC C Compiler'
-	gcc -D__STDC_LIMIT_MACROS -D__STDC_FORMAT_MACROS -U__amd64 -O0 -g3 -Wall -c -fmessage-length=0 -MMD -MP -MF"$(@:%.o=%.d)" -MT"$(@:%.o=%.d)" -o "$@" "$<"
+	gcc -D__STDC_LIMIT_MACROS -D__STDC_FORMAT_MACROS -U__amd64 -I.././ -O0 -g3 -Wall -c -fmessage-length=0 -MMD -MP -MF"$(@:%.o=%.d)" -MT"$(@:%.o=%.d)" -o "$@" "$<"
 	@echo 'Finished building: $<'
 	@echo ' '
 
