@@ -128,7 +128,7 @@ public:
 		void buildForcedEdgeReason(int reach_node, int forced_edge_id,vec<Lit> & conflict);
 		void buildReason(Lit p, vec<Lit> & reason, CRef marker);
 		bool checkSatisfied();
-		void addLit(int from, int to, Var reach_var,int within_steps=-1);
+		void addLit(int from, int to, Var reach_var);
 		Lit decide();
 		void preprocess();
 		void dbg_sync_reachability();

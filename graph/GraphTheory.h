@@ -1082,8 +1082,8 @@ public:
 
 				ReachDetector * d = (ReachDetector*) reach_info[from].detector;
 				assert(d);
-
-				d->addLit(from,to,reach_var,within_steps);
+				assert(within_steps==-1);
+				d->addLit(from,to,reach_var);
 
 
 		    }

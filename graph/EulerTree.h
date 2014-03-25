@@ -13,41 +13,133 @@ using namespace Minisat;
 
 class EulerTree{
 	struct EulerHalfEdge;
+	struct EulerVertex;
+	typedef TreapCustom<int> Treap;
 /*	struct NodeData{
 		bool vertex;
 		int count()const{
 			return vertex;
 		}
 	};*/
-	TreapCustom t;
+	Treap t;
+
 	struct EulerHalfEdge{
 		//Value value;
 		//NodeData d;
 		int value;
-		int s;
-		int t;
-		TreapCustom::Node * node;//node in the treap
-		int opposite;
+		int index;
+		int from;
+		int to;
+		Treap::Node * node;//node in the treap
+
 	};
+
+
 
 	struct EulerVertex{
 		//Value value;
-		  TreapCustom::Node * node;
-	};
+		Treap::Node * first;
+		Treap::Node * last;
+		int index;
+#ifndef NDEBUG
 
+		EulerVertex * left;
+		EulerVertex*right;
+		EulerVertex*parent;
+#endif
+		EulerVertex(Treap::Node * first,Treap::Node * last):first(first),last(last){
+			index=0;
+#ifndef NDEBUG
+
+		 left=NULL;
+		 right=NULL;
+		 parent=NULL;
+#endif
+		}
+	};
+	EulerVertex * root;
+	vec<EulerVertex*> vertices;
 	vec<EulerHalfEdge*> forward_edges;
 	vec<EulerHalfEdge*> backward_edges;
+
+	void dbg_tour(){
+#ifndef NDEBUG
+		//build the tour
+		vec<int> tour;
+		{
+			vec<bool> seenLeft;
+			vec<bool> seenRight;
+			seenLeft.growTo(vertices.size());
+			seenRight.growTo(vertices.size());
+
+			EulerVertex * r = root;
+			while(r){
+				tour.push(r->index);
+				//visit left
+				if(!r->left){
+					seenLeft[r->index]=true;
+				}
+				if(!r->right){
+					seenRight[r->index]=true;
+				}
+
+				if(! seenLeft[r->index]){
+					seenLeft[r->index]=true;
+					r=r->left;
+				}else if (!seenRight[r->index]){
+					seenRight[r->index]=true;
+					r=r->right;
+				}else{
+					r= r->parent;
+				}
+			}
+		}
+
+		vec<bool> visited;
+		visited.growTo(vertices.size());
+
+		//traverse the treap
+		Treap::Node * r = root->first;
+		assert(r==t.first(r));//the root of the euler tour tree must be the start of the euler tour, which must be the first element in the bst
+		int i = 0;
+		assert(i==r->value);
+		//ok, visit in order
+		 vec<Treap::Node*> stack;
+		  while (stack.size()){
+		    if (r){
+		    	stack.push(r);
+		    	r = r->left;
+		    }else{
+		      r = stack.last();stack.pop();
+		      visited[r->value]=true;
+		      int p = tour[i++];
+		      assert(r->value==p);
+		      r = r->right;
+		    }
+		  }
+
+		  for(bool v : visited){
+			  assert(v);
+		  }
+#endif
+	}
+
 public:
+
 	//vec<EulerVertex*> nodes;
 	void cut(int edgeID){
 
 		EulerHalfEdge * edge = forward_edges[edgeID];
-		EulerHalfEdge *opposite = edge->opposite;
-		assert(opposite==backward_edges[edgeID]);
-		TreapCustom::Node * a = edge->node;
-		TreapCustom::Node * b= t.split(a);
-		TreapCustom::Node * c = opposite->node;
-		TreapCustom::Node * d = t.split(c);
+		cut (edge);
+	}
+
+	void cut(EulerHalfEdge * edge){
+		EulerHalfEdge *opposite = backward_edges[edge->opposite];
+
+		Treap::Node * a = edge->node;
+		Treap::Node * b= t.split(a);
+		Treap::Node * c = opposite->node;
+		Treap::Node * d = t.split(c);
 
 		if(d && t.findRoot(a) != t.findRoot(d)){
 			t.concat(a,d);
@@ -58,22 +150,18 @@ public:
 		t.remove(opposite->node);
 	}
 
-
-	void setFlag (EulerVertex* node, bool f) {
-	  t.setFlag(node->node,f);
-	}
-
-	bool path(EulerVertex*  from, EulerVertex*  to){
+	bool connected(EulerVertex*  from, EulerVertex*  to){
 		return t.findRoot(from->node)==t.findRoot(from->node);
 	}
 
 	void makeRoot(EulerVertex*  node){
-		TreapCustom::Node * a = node->node;
-		TreapCustom::Node * b= t.split(a);
+		Treap::Node * a = node->node;
+		Treap::Node * b= t.split(a);
 		if(b){
 			t.concat(b,a);
 		}
 	}
+
 	int link(EulerVertex*  node, EulerVertex*  otherNode, int edgeID,int value) {
 		  //Move both vertices to root
 		  makeRoot(node);
@@ -86,17 +174,19 @@ public:
 		  if(forward_edges[edgeID]==NULL){
 			  forward_edges[edgeID] = new EulerHalfEdge();
 			  backward_edges[edgeID] = new EulerHalfEdge();
+			  forward_edges[edgeID]->index=edgeID;
+			  backward_edges[edgeID]->index=edgeID;
+
+			  forward_edges[edgeID]->value=value;
+			  forward_edges[edgeID]->from=node->index;
+			  forward_edges[edgeID]->to = otherNode->index;
+
+
+			  backward_edges[edgeID]->value=value;
+			  backward_edges[edgeID]->from=otherNode->index;
+			  backward_edges[edgeID]->to = node->index;
 		  }
 
-		  forward_edges[edgeID]->value=value;
-		  forward_edges[edgeID]->s=node;
-		  forward_edges[edgeID]->t = otherNode;
-		  forward_edges[edgeID]->opposite = edgeID;
-
-		  backward_edges[edgeID]->value=value;
-		  backward_edges[edgeID]->s=otherNode;
-		  backward_edges[edgeID]->t = node;
-		  backward_edges[edgeID]->opposite = edgeID;
 
 		  //var st = new EulerHalfEdge(value, this, other, null, null)
 		  //var ts = new EulerHalfEdge(value, other, this, null, st)
@@ -114,9 +204,11 @@ public:
 
 
 	EulerVertex * createVertex() {
-		EulerVertex *  v = new EulerVertex( );
-	  v->node = t.createNode(v);
-	  return v;
+	  Treap::Node * n1= t.createNode(vertices.size());
+	  Treap::Node * n2= t.createNode(vertices.size());
+	  vertices.push(new EulerVertex{n1,n2});
+	  vertices.last()->index = vertices.size()-1;
+	  return vertices.last();
 	}
 };
 

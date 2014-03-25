@@ -1,10 +1,3 @@
-/*
- * DisjointSetConnectedComponents.h
- *
- *  Created on: 2014-01-18
- *      Author: sam
- */
-
 #ifndef LINN_CUT_CONNECTEDCOMPONENTS_H_
 #define LINN_CUT_CONNECTEDCOMPONENTS_H_
 
@@ -22,12 +15,12 @@ using namespace Minisat;
 
 
 
-template<class Status,class EdgeStatus=DefaultEdgeStatus>
-class LinkCutConnectedComponents:public ConnectedComponents{
+template<class EdgeStatus=DefaultEdgeStatus>
+class LinkCutForest:public ConnectedComponents{
 public:
 
 	DynamicGraph<EdgeStatus> & g;
-	Status &  status;
+
 	int last_modification;
 
 	int last_addition;
@@ -38,6 +31,7 @@ public:
 	bool hasParents;
 	int INF;
 	LinkCut sets;
+	int cycleID;
 
 #ifndef NDEBUG
 	DisjointSets dbg_sets;
@@ -46,25 +40,10 @@ public:
 	vec<int> check;
 	const int reportPolarity;
 
-	//vec<char> old_seen;
-
-
-	struct DefaultReachStatus{
-			vec<bool> stat;
-				void setReachable(int u, bool reachable){
-					stat.growTo(u+1);
-					stat[u]=reachable;
-				}
-				bool isReachable(int u) const{
-					return stat[u];
-				}
-				DefaultReachStatus(){}
-			};
-
 public:
 
 
-	LinkCutConnectedComponents(DynamicGraph<EdgeStatus> & graph, Status & _status, int _reportPolarity=0 ):g(graph), status(_status), last_modification(-1),last_addition(-1),last_deletion(-1),history_qhead(0),last_history_clear(0),INF(0),reportPolarity(_reportPolarity){
+	LinkCutForest(DynamicGraph<EdgeStatus> & graph, int _reportPolarity=0 ):g(graph), last_modification(-1),last_addition(-1),last_deletion(-1),history_qhead(0),last_history_clear(0),INF(0),reportPolarity(_reportPolarity){
 		marked=false;
 		mod_percentage=0.2;
 		stats_full_updates=0;
@@ -76,6 +55,7 @@ public:
 		stats_num_skipable_deletions=0;
 		stats_fast_failed_updates=0;
 		hasParents=false;
+		cycleID=-1;
 	}
 
 	void setNodes(int n){
@@ -117,7 +97,7 @@ public:
 		}
 
 #endif
-
+		cycleID = -1;
 		if(g.historyclears!=last_history_clear){
 			last_history_clear=g.historyclears;
 			history_qhead=0;
@@ -130,17 +110,26 @@ public:
 				int u =  g.history[history_qhead].u;
 				int v =  g.history[history_qhead].v;
 				if(add){
+					if(sets.connected(u,v)){
+						//then adding this edge would produce an (undirected) cycle.
+						cycleID= edgeid;
+						break;
+					}
 					sets.link(u,v);
 				}else{
-					sets.cut(u,v);
+					if(sets.connected(u,v)){
+						sets.cut(u,v);
+					}
 				}
 			}
 		}
 
-		assert(dbg_sets.NumSets()== sets.numRoots());
-		status.setComponents(sets.numRoots());
+		if(cycleID>-1){
 
 
+		}else{
+			assert(dbg_sets.NumSets()== sets.numRoots());
+		}
 
 		last_modification=g.modifications;
 		last_deletion = g.deletions;
@@ -148,8 +137,6 @@ public:
 
 		history_qhead=g.history.size();
 		last_history_clear=g.historyclears;
-
-
 
 		stats_full_update_time+=cpuTime()-startdupdatetime;;
 	}
@@ -159,6 +146,16 @@ public:
 		return sets.findRoot(from)==sets.findRoot(to);
 	}
 
+	bool hasCycle(){
+		update();
+		return cycleID>=0;
+	}
+
+	int getCycleEdge(){
+		assert(hasCycle());
+		update();
+		return cycleID;
+	}
 
 	 int numComponents(){
 		 update();

@@ -26,6 +26,7 @@ THE SOFTWARE.
 #ifndef TREAPCUSTOM_H_
 #define TREAPCUSTOM_H_
 #include <stdlib.h>
+#include "mtl/Rnd.h"
 using namespace Minisat;
 template<class Value=int>
 class TreapCustom{
@@ -47,18 +48,6 @@ public:
 			   value(_value),flag(_flag),flagAggregate(_flagAggregate),count(valueCount),priority(_priority),parent(_parent),left(_left),right(_right),next(_next),prev(_prev)
 		   	   {}
 	};
-	/*Node * initial_node;
-*/
-/*	TreapCustom(Value value,double _seed=1234):seed(_seed){
-		int rnd = irand(seed,10000);
-		initial_node = new Node(value,false,false,0,rnd,NULL,NULL,NULL,NULL,NULL);
-
-	}*/
-/*
-	Node * getInitial(){
-		return initial_node;
-	}
-*/
 
 	Node * createNode(Value value){
 		int rnd = irand(seed,10000);
@@ -128,7 +117,10 @@ Node * last (Node * node){
 	  return r;
 }
 
-Node * insert(Node* node, Value value, int valueCount){
+
+
+
+Node * insert(Node* node, Value  value, int valueCount){
 	 if(!node->right) {
 		 int rnd = irand(seed,10000);
 		 Node * nn = node->right = new Node(value, false, false, valueCount, rnd, node, NULL, NULL, node->next, node);
@@ -285,7 +277,7 @@ void remove(Node * node) {
 }
 Node * split(Node * node) {
 
- Node * s = insert(node,NULL,0);
+ Node * s = insert(node,Value(),0);
  s->priority = -100000;
  bubbleUp(s);
  Node * l = s->left;
@@ -346,18 +338,6 @@ Node * concatRecurse(Node *a,Node * b) {
 
  }
 
-
-
-static inline double drand(double& seed) {
-
-    seed *= 1389796;
-    int q = (int)(seed / 2147483647);
-    seed -= (double)q * 2147483647;
-    return seed / 2147483647; }
-
-// Returns a random integer 0 <= x < size. Seed must never be 0.
-static inline int irand(double& seed, int size) {
-    return (int)(drand(seed) * size); }
 
 
 };

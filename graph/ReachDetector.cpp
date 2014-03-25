@@ -10,7 +10,7 @@
 #include "ReachDetector.h"
 #include "GraphTheory.h"
 #include "core/Config.h"
-
+#include "DynamicConnectivity.h"
 ReachDetector::ReachDetector(int _detectorID, GraphTheorySolver * _outer, DynamicGraph<PositiveEdgeStatus> &_g, DynamicGraph<NegativeEdgeStatus> &_antig, int from,double seed):Detector(_detectorID),outer(_outer),g(_g),antig(_antig),within(-1),source(from),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL),opt_weight(*this),chokepoint_status(*this),chokepoint(chokepoint_status, _antig,source){
 	check_positive=true;
 	check_negative=true;
@@ -69,7 +69,7 @@ ReachDetector::ReachDetector(int _detectorID, GraphTheorySolver * _outer, Dynami
 	forced_reach_marker=outer->newReasonMarker(getID());
 }
 
-void ReachDetector::addLit(int from, int to, Var reach_var,int within_steps){
+void ReachDetector::addLit(int from, int to, Var reach_var){
 	g.invalidate();
 	antig.invalidate();
 	if(first_reach_var==var_Undef){
