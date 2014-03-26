@@ -27,6 +27,7 @@ THE SOFTWARE.
 #define TREAPCUSTOM_H_
 #include <stdlib.h>
 #include "mtl/Rnd.h"
+#include "BST.h"
 using namespace Minisat;
 template<class Value=int>
 class TreapCustom{
@@ -326,6 +327,7 @@ Node * concatRecurse(Node *a,Node * b) {
 	     ta = ta->right;
 	   }
 	   Node* rb = findRoot(other);
+	   assert(rb!=ra);
 		Node* sb = rb;
 	   while(sb->left) {
 	     sb = sb->left;

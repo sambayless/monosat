@@ -9,6 +9,7 @@
 #include "TreapCustom.h"
 #include "core/Config.h"
 #include "Reach.h"
+#include "DynamicConnect.h"
 using namespace Minisat;
 
 
@@ -232,39 +233,6 @@ public:
 	  }
 	  return n;
 	}
-
-/*
-	proto.prev = function() {
-	  var n = this.node
-	  if(n) {
-	    n = n.prev
-	  }
-	  while(n) {
-	    if(n.value.type === "vertex") {
-	      break
-	    }
-
-	    n = n.prev
-	  }
-	  this.node = n
-	  return !!n
-	}
-
-	proto.hasPrev = function() {
-	  var n = this.node
-	  if(n) {
-	    n = n.prev
-	  }
-	  while(n) {
-	    if(n.value.type === "vertex") {
-	      break
-	    }
-
-	    n = n.prev
-	  }
-	  return !!n
-	}
-	*/
 
 	int KEY_COUNTER = 0;
 	struct DynamicEdge;
