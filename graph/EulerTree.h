@@ -30,6 +30,7 @@ public:
 		//NodeData d;
 		int value;
 		int index;
+		int rank;//this is the position of this edge in the euler tour
 		EulerVertex * from;
 		EulerVertex * to;
 		Treap::Node * node;//node in the treap
@@ -43,11 +44,13 @@ public:
 
 		//Treap::Node * first;
 		//Treap::Node * last;
+
 		EulerHalfEdge * left_out;//the half edge leading out of the vertex. This half edge has the first occurrence of the euler vertex in the tour.
 		EulerHalfEdge * right_in;//the half edge returning to the vertex.  This half edge has the last occurrence of the euler vertex in the tour.
 		int index;
-#ifndef NDEBUG
+		bool subtree_has_incident_edges;
 
+#ifndef NDEBUG
 		EulerVertex * dbg_left;
 		EulerVertex*dbg_right;
 		EulerVertex*dbg_parent;
@@ -61,6 +64,20 @@ public:
 			dbg_parent=NULL;
 #endif
 		}
+
+		int getSize(){
+			if(!left_out){
+				assert(!right_in);
+				return 1;//size is just a single node
+			}
+			assert(right_in);
+			assert(left_out->rank<right_in->rank);
+			assert(((left_out->rank - right_in->rank) %2) ==0);
+			int subtree_size = (left_out->rank - right_in->rank)/2;
+			assert(subtree_size==dbg_getSize());
+			return subtree_size;
+		}
+
 
 		Treap::Node * first(){
 			if(left_out){
@@ -77,7 +94,23 @@ public:
 				return nullptr;
 			}
 		}
+
+		int dbg_getSize(){
+#ifndef NDEBUG
+			int s = 1;
+			if(dbg_left){
+				s+=dbg_left->dbg_getSize();
+			}
+			if(dbg_right){
+				s+=dbg_right->dbg_getSize();
+			}
+			return s;
+#endif
+			return 0;
+		}
+
 		 void dbg_remove(){
+#ifndef NDEBUG
 				if(!dbg_left && !dbg_right){
 					if(dbg_parent){
 						if(dbg_parent->dbg_left==this){
@@ -126,6 +159,7 @@ public:
 					checkTree();*/
 				}
 				dbg_parent=nullptr;
+#endif
 			}
 
 		void dbg_insert(EulerVertex* node) {
@@ -191,6 +225,7 @@ public:
 				    }else{
 				      r = stack.last();stack.pop();
 				      int nodeindex =r->value->from->index;
+				      assert(r->value->rank==i);
 				      visited[nodeindex]=true;
 				      int p = tour[i++];
 				      assert(nodeindex==p);
