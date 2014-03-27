@@ -9,17 +9,17 @@
 #include "TreapCustom.h"
 #include "core/Config.h"
 #include "Reach.h"
-#include "DynamicConnect.h"
+#include "ThorupDynamicConnectivity.h"
 using namespace Minisat;
 
 
 
-template<class Status,class EdgeStatus=DefaultEdgeStatus>
+template<class EdgeStatus=DefaultEdgeStatus>
 class DynamicConnectivity:public Reach{
 public:
 
 	DynamicGraph<EdgeStatus> & g;
-	Status &  status;
+
 	int last_modification;
 	int last_addition;
 	int last_deletion;
@@ -30,8 +30,8 @@ public:
 	int source;
 	int INF;
 
+	ThorupDynamicConnectivity t;
 
-	vec<int> q;
 	vec<int> check;
 	const int reportPolarity;
 
@@ -58,7 +58,7 @@ public:
 public:
 
 
-	DynamicConnectivity(int s,DynamicGraph<EdgeStatus> & graph, Status & _status, int _reportPolarity=0 ):g(graph), status(_status), last_modification(-1),last_addition(-1),last_deletion(-1),history_qhead(0),last_history_clear(0),source(s),INF(0),reportPolarity(_reportPolarity){
+	DynamicConnectivity(int s,DynamicGraph<EdgeStatus> & graph, int _reportPolarity=0 ):g(graph), last_modification(-1),last_addition(-1),last_deletion(-1),history_qhead(0),last_history_clear(0),source(s),INF(0),reportPolarity(_reportPolarity){
 		marked=false;
 		mod_percentage=0.2;
 		stats_full_updates=0;
@@ -82,15 +82,26 @@ public:
 	}
 
 	void setNodes(int n){
-		q.capacity(n);
+
 		check.capacity(n);
 		seen.growTo(n);
 		prev.growTo(n);
 		INF=g.nodes+1;
+
+		for(int i = 0;i<n;i++){
+			t.addNode();
+		}
+		for(int i = 0;i<g.edges;i++){
+			t.addEdge(g.all_edges[i].id,g.all_edges[i].from,g.all_edges[i].to);
+		}
 	}
 
-
+#ifndef NDEBUG
+	DisjointSets dbg_sets;
+#endif
 	void update(){
+
+
 		static int iteration = 0;
 			int local_it = ++iteration ;
 
@@ -103,7 +114,7 @@ public:
 			if(last_deletion==g.deletions){
 				stats_num_skipable_deletions++;
 			}
-			hasParents=false;
+
 
 			setNodes(g.nodes);
 
@@ -119,7 +130,7 @@ public:
 			}
 
 	#endif
-			cycleID = -1;
+
 			if(g.historyclears!=last_history_clear){
 				last_history_clear=g.historyclears;
 				history_qhead=0;
@@ -131,27 +142,13 @@ public:
 					bool add = g.history[history_qhead].addition;
 					int u =  g.history[history_qhead].u;
 					int v =  g.history[history_qhead].v;
-					if(add){
-						if(sets.connected(u,v)){
-							//then adding this edge would produce an (undirected) cycle.
-							cycleID= edgeid;
-							break;
-						}
-						sets.link(u,v);
-					}else{
-						if(sets.connected(u,v)){
-							sets.cut(u,v);
-						}
-					}
+					t.setEdgeEnabled(edgeid,add);
 				}
 			}
 
-			if(cycleID>-1){
 
+			assert(dbg_sets.NumSets()== t.numComponents());
 
-			}else{
-				assert(dbg_sets.NumSets()== sets.numRoots());
-			}
 
 			last_modification=g.modifications;
 			last_deletion = g.deletions;

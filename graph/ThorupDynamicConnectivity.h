@@ -5,8 +5,8 @@
  *      Author: sam
  */
 
-#ifndef DYNAMICCONNECT_H_
-#define DYNAMICCONNECT_H_
+#ifndef THORUPDYNAMICCONNECT_H_
+#define THORUPDYNAMICCONNECT_H_
 
 #include "EulerTree.h"
 #include <cmath>
@@ -98,8 +98,17 @@ void setEdgeLevel(int edgeID, int level){
 
 public:
 
+bool connected(int u, int v){
+	return et.last().connected(u,v);
+}
+
+int numComponents(){
+	return et.last().numComponents();
+}
+
 void addNode(){
 	nodes++;
+
 	levels = (int)(floor(log(nodes)/log(2))+1);
 }
 

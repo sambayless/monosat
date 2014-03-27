@@ -37,6 +37,7 @@
 #include "MaxflowDetector.h"
 #include "ConnectedComponentsDetector.h"
 #include "CycleDetector.h"
+#include "TreeReachDetector.h"
 namespace Minisat{
 
 class GraphTheorySolver;

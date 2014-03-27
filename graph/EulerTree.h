@@ -17,10 +17,10 @@ public:
 	struct EulerVertex;
 private:
 	typedef TreapCustom<EulerHalfEdge*> Treap;
-
+	int nComponents;
 	//make this non-static later
 	static Treap t;
-	static EulerVertex * root;
+	//static EulerVertex * root;
 	static vec<EulerVertex*> vertices;
 	static vec<EulerHalfEdge*> forward_edges;
 	static vec<EulerHalfEdge*> backward_edges;
@@ -278,12 +278,16 @@ public:
 		cut (edge);
 	}*/
 	void cut(EulerVertex * v){
-		if(root==v){
-			assert(false);
-			return;//do nothing...
+		if(getParent(v)==nullptr){
+			return;//do nothing
+		}else{
+			nComponents++;
 		}
-		root->dbg_tour();
+
 		v->dbg_tour();
+#ifndef NDEBUG
+		EulerVertex * dbg_parent = v->dbg_parent;
+#endif
 		v->dbg_remove();
 
 		 int removedNodes = v->subtree_size;
@@ -327,8 +331,11 @@ public:
 		prev->value->node=nullptr;
 
 		t.concat(prev_kept,next_kept);
-		root->dbg_tour();
 
+		v->dbg_tour();
+#ifndef NDEBUG
+		dbg_parent->dbg_tour();
+#endif
 	}
 
 	//Get the parent of the vertex in the euler tour representation. This is O(1).
@@ -430,6 +437,8 @@ public:
 
 	//Make othernode a child of node.
 	int link(EulerVertex*  node, EulerVertex*  otherNode, int edgeID) {
+		  assert(!connected(node,otherNode));
+		  nComponents--;
 		  //Move both vertices to root
 		  //Is this really required?
 		  makeRoot(node);
@@ -437,7 +446,7 @@ public:
 
 		  node->dbg_tour();
 		  otherNode->dbg_tour();
-		  root->dbg_tour();
+
 
 		  node->dbg_insert(otherNode);
 
@@ -497,7 +506,7 @@ public:
 		  }
 		  node->dbg_tour();
 		  otherNode->dbg_tour();
-		  root->dbg_tour();
+
 		  //Return half edge
 		  return  edgeID;
 		}
@@ -533,6 +542,10 @@ public:
 		return v;
 	}
 
+	int numComponents(){
+		return nComponents;
+	}
+
 	//Return the size of the subtree rooted at v, including v
 	int getSubtreeSize(int v){
 		return getSubtreeSize(vertices[v]);
@@ -560,6 +573,7 @@ public:
 	}
 
 	EulerVertex * createVertex() {
+	  nComponents++;
 	  vertices.push(new EulerVertex());
 	  vertices.last()->index = vertices.size()-1;
 	  return vertices.last();
