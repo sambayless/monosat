@@ -36,6 +36,7 @@ public:
 	struct Node{
 
 		  Value value;
+
 		  bool flag;
 		  int flagAggregate;
 		  int count;
@@ -46,8 +47,11 @@ public:
 		   Node *  next;
 		   Node *  prev;
 		   Node(Value _value, bool _flag,bool _flagAggregate, int valueCount, int _priority, Node * _parent, Node * _left, Node * _right, Node * _next, Node * _prev):
-			   value(_value),flag(_flag),flagAggregate(_flagAggregate),count(valueCount),priority(_priority),parent(_parent),left(_left),right(_right),next(_next),prev(_prev)
-		   	   {}
+		   value(_value),flag(_flag),flagAggregate(_flagAggregate),count(valueCount),priority(_priority),parent(_parent),left(_left),right(_right),next(_next),prev(_prev)
+		   {
+
+
+		   }
 	};
 
 	Node * createNode(Value value){
@@ -212,7 +216,7 @@ void swapNodes(Node* a, Node*b) {
 
 void update(Node * node){
 
-	  int c =  node->value;//countOfValue(node->value);
+	  int c = 0;// node->value;//countOfValue(node->value);
 	  bool f = node->flag;
 	  if(node->left) {
 	    c += node->left->count;

@@ -35,9 +35,7 @@ public:
 	vec<int> check;
 	const int reportPolarity;
 
-	//vec<char> old_seen;
 	vec<char> seen;;
-//	vec<int> changed;
 
 
 	vec<int> prev;
@@ -72,8 +70,6 @@ public:
 		stats_num_skipable_deletions=0;
 		stats_fast_failed_updates=0;
 	}
-	//Connectivity(const Connectivity& d):g(d.g), last_modification(-1),last_addition(-1),last_deletion(-1),history_qhead(0),last_history_clear(0),source(d.source),INF(0),mod_percentage(0.2),stats_full_updates(0),stats_fast_updates(0),stats_skip_deletes(0),stats_skipped_updates(0),stats_full_update_time(0),stats_fast_update_time(0){marked=false;};
-
 
 	void setSource(int s){
 		source = s;
@@ -85,97 +81,6 @@ public:
 		return source;
 	}
 
-	/*void updateFast(){
-		stats_fast_updates++;
-		double start_time = cpuTime();
-
-		assert(last_deletion==g.deletions);
-		last_modification=g.modifications;
-		last_addition=g.additions;
-		INF=g.nodes+1;
-		seen.growTo(g.nodes);
-		prev.growTo(g.nodes);
-
-		if(lastaddlist!=g.addlistclears){
-			addition_qhead=0;
-			lastaddlist=g.addlistclears;
-		}
-		int start = q.size();
-		//ok, now check if any of the added edges allow for new connectivity
-		for (int i = addition_qhead;i<g.addition_list.size();i++){
-			int u=g.addition_list[i].u;
-			int v=g.addition_list[i].v;
-
-			if(!seen[v]){
-				q.push(v);
-				seen[v]=1;
-				prev[v]=u;
-			}
-		}
-		addition_qhead=g.addition_list.size();
-
-		for(int i = start;i<q.size();i++){
-			int u = q[i];
-			assert(seen[u]);
-			for(int i = 0;i<g.adjacency[u].size();i++){
-				int v = g.adjacency[u][i];
-
-				if(!seen[v]){
-					//this was changed
-					changed.push(v);
-					seen[v]=1;
-					prev[v]=u;
-					q.push(v);
-				}
-			}
-		}
-		stats_fast_update_time+=cpuTime()-start_time;
-	}*/
-/*	vec<int> & getChanged(){
-		return changed;
-	}
-	void clearChanged(){
-		changed.clear();
-	}*/
-
-
-	/*
-	 * WARNING: THIS FUNDAMENTALLY WONT WORK if there are any cycles in the graph!
-	 * inline void delete_update(int to){
-		q.clear();
-		q.push(to);
-		seen[to]=0;
-		//Is this really safe? check it very carefully, it could easily be wrong
-		while(q.size()){
-			int u = q.last();
-			q.pop();
-			assert(!seen[u]);
-			for(int i = 0;i<g.inverted_adjacency[u].size();i++){
-				int v = g.inverted_adjacency[u][i];
-				if(seen[v]){
-					seen[v]=1;
-					//Then since to is still seen, we are up to date
-					break;
-				}
-			}
-			if(!seen[u]){
-				for(int i = 0;i<g.adjacency[u].size();i++){
-					int v = g.adjacency[u][i];
-					if(seen[v] && prev[v]==to){
-						seen[v]=0;
-					}
-				}
-			}else{
-#ifdef GRAPH_DEBUG
-				for(int i = 0;i<g.adjacency[u].size();i++){
-						int v = g.adjacency[u][i];
-						assert(seen[v]);
-				}
-#endif
-			}
-		}
-	}*/
-
 	void setNodes(int n){
 		q.capacity(n);
 		check.capacity(n);
@@ -184,277 +89,78 @@ public:
 		INF=g.nodes+1;
 	}
 
-/*
-	int decisionLevel(){
-		return trail_lim.size()-1;
-	}
-	void cancelUntil(int level){
-	    if (decisionLevel() > level){
-	        for (int c = trail.size()-1; c >= trail_lim[level]; c--){
-	            int node = trail[c];
-	            seen[node]=false;
-	        }
 
-	        trail.shrink(trail.size() - trail_lim[level]);
-	        trail_lim.shrink(trail_lim.size() - level);
-	    }
-	}
-
-*/
-	vec<EulerTree::EulerVertex*> nodes;
-
-	bool next(EulerTree::EulerVertex* node) {
-	  TreapCustom::Node * n = node->node;
-	  if(n) {
-	    n = n->next;
-	  }
-	  while(n) {
-	    if(n->value.type == "vertex") {
-	      break;
-	    }
-
-	    n = n->next;
-	  }
-	  node->node = n;
-	  return n;
-	}
-
-	bool hasNext(EulerTree::EulerVertex* node) {
-		 TreapCustom::Node * n = node->node;
-	  if(n) {
-	    n = n.next
-	  }
-	  while(n) {
-	    if(n->value.type == "vertex") {
-	      break;
-	    }
-
-	    n = n->next;
-	  }
-	  return n;
-	}
-
-	int KEY_COUNTER = 0;
-	struct DynamicEdge;
-	struct DynamicVertex;
-	EulerTree<DynamicVertex*> et;
-	struct DynamicVertex {
-	  int value;
-	  vec<DynamicVertex*> adjacent;
-	  vec<EulerTree<DynamicVertex*> ::EulerVertex*> euler;
-
-
-	};
-
-	struct DynamicEdge {
-		 int value;
-		 int key;
-		 DynamicVertex* s;
-		 DynamicVertex* t;
-		 int edgeID;
-		 int level;
-		 vec<int> euler_half_edges;
-	};
-	//Raise the level of an edge, optionally inserting into higher level trees
-	void raiseLevel(DynamicEdge* edge) {
-	  DynamicVertex* s = edge->s;
-	  DynamicVertex* t = edge->t;
-
-	  //Update position in edge lists
-	  removeEdge(s, edge);
-	  removeEdge(t, edge);
-	  edge->level += 1;
-	  elist.insert(s.adjacent, edge);
-	  elist.insert(t.adjacent, edge);
-
-	  //Update flags for s
-	  if(s->euler.size() <= edge->level) {
-		s->euler.push(et.createVertex(s));
-	  }
-	  EulerTree<DynamicVertex*>::EulerVertex * vs = s->euler[edge->level];
-	  et.setFlag(vs,true);
-
-	  //Update flags for t
-	  if(t->euler.size() <= edge->level) {
-		t->euler.push(et.createVertex(t));
-	  }
-	  EulerTree<DynamicVertex*>::EulerVertex * vt = t->euler[edge->level];
-	  et.setFlag(vt, true);
-
-	  //Relink if necessary
-	  if(edge->euler) {
-		edge->euler.push(et.link(vs,vt,edge->edgeID, edge));
-	  }
-	}
-
-	//Remove edge from list and update flags
-	void removeEdge(DynamicVertex *vertex,DynamicEdge* edge) {
-	 // var adj = vertex->adjacent;
-	//  var idx = elist->index(adj, edge);
-	 // adj.splice(idx, 1);
-	  //there has got to be a better way to do this...
-		vertex->adjacent.remove(edge);
-	  //Check if flag needs to be updated
-	  if(!((idx < adj.length && adj[idx].level == edge.level) ||
-		   (idx > 0 && adj[idx-1].level == edge.level))) {
-		vertex->euler[edge->level]->setFlag(false);
-	  }
-	}
-
-	//Add an edge to all spanning forests with level <= edge.level
-	void link(DynamicEdge* edge) {
-	  vec<DynamicVertex*> & vs = edge->s->euler;
-	  vec<DynamicVertex*> & vt = edge->t->euler;
-	  //var euler = new Array(edge.level+1);
-	  for(var i=0; i<edge->level+1; ++i) {
-		if(vs.size() <= i) {
-		  vs.push(et.createVertex (edge->s));
-		}
-		if(vt.size() <= i) {
-		  vt.push(et.createVertex(edge->t));
-		}
-		edge->euler.push( link( vs[i], vt[i], edge));
-	  }
-	  //edge.euler = euler;
-	}
-	//Search over tv for edge connecting to tw
-	  bool visit(TreapCustom::Node *node) {
-		if(node->flag) {
-		  int v = node->value.value;
-		  var adj = v.adjacent;
-		  for(var ptr=elist.level(adj, level); ptr<adj.length && adj[ptr].level === level; ++ptr) {
-			var e = adj[ptr];
-			var es = e.s;
-			var et = e.t;
-			if(es.euler[level].path(et.euler[level])) {
-			  raiseLevel(e);
-			  ptr -= 1;
-			} else {
-			  //Found the edge, relink components
-			  link(e);
-			  return true;
-			}
-		  }
-		}
-		if(node->left && node->left->flagAggregate) {
-		  if(visit(node->left)) {
-			return true;
-		  }
-		}
-		if(node->right && node->right->flagAggregate) {
-		  if(visit(node->right)) {
-			return true;
-		  }
-		}
-		return false;
-	  }
-	void cut(DynamicEdge* edge) {
-		  int level;
-
-		  //Don't double cut an edge
-		  if(!edge->s) {
-		    return;
-		  }
-
-
-
-		  removeEdge(edge->s, edge);
-		  removeEdge(edge->t, edge);
-		  if(edge->euler) {
-		    //Cut edge from tree
-		    for(var i=0; i<edge->euler.size(); ++i) {
-		      cut(edge->euler[i]);
-		    }
-
-		    //Find replacement, looping over levels
-		    for(var i=edge->level; i>=0; --i) {
-		      TreapCustom::Node * tv = et.t.findRoot(edge->s.euler[i]->node);
-		      TreapCustom::Node * tw =  et.t.findRoot(edge->t.euler[i]->node);
-		      level = i;
-		      if(tv->count > tw->count) {
-		        visit(tw);
-		      } else {
-		        visit(tv);
-		      }
-		    }
-		  }
-		  edge->s = NULL;
-		  edge->t =NULL;
-		  edge->euler.clear();
-		  edge->level=32;
-		}
-
-		bool connected(DynamicVertex * a, DynamicVertex* b) {
-		  return path(a->euler[0],b->euler[0]);
-		}
-
-
-		DynamicEdge * link(DynamicVertex * node, DynamicVertex * other, int value) {
-		  DynamicEdge* e = new DynamicEdge(value, (KEY_COUNTER++), this, other, 0, NULL);
-		  if(!path( node->euler[0],other->euler[0])) {
-		    link(e);
-		  }
-		  et.setFlag( node->euler[0],true);
-		  et.setFlag( other->euler[0],true);
-		  elist->insert(node->adjacent, e);
-		  elist->insert(other->adjacent, e);
-		  return e;
-		}
-
-		//Returns the number of vertices in this connected component
-		int componentSize(DynamicVertex * node) {
-		  return count(node->euler[0]);
-		}
-
-		//Removes the vertex from the graph
-			void cut(DynamicVertex * v) {
-			  while(v->adjacent.size() > 0) {
-			   cut( v->adjacent.last());
-			  }
-			}
-
-			int component(DynamicVertex * node) {
-				  return node->euler[0]->node;//should convert this to an integer...
-			}
-			DynamicVertex * createVertex(int value) {
-				  //var euler = [null]
-				DynamicVertex * v = new DynamicVertex();
-				v->value= value;
-				v->euler.push(et.createVertex (v));
-				  return v;
-				}
-	void update( ){
+	void update(){
 		static int iteration = 0;
-		int local_it = ++iteration ;
+			int local_it = ++iteration ;
 
-		if(last_modification>0 && g.modifications==last_modification){
-			stats_skipped_updates++;
-			return;
-		}
+			if(last_modification>0 && g.modifications==last_modification){
+				stats_skipped_updates++;
+				return;
+			}
+			stats_full_updates++;
+			double startdupdatetime = cpuTime();
+			if(last_deletion==g.deletions){
+				stats_num_skipable_deletions++;
+			}
+			hasParents=false;
 
-		if(last_deletion==g.deletions){
-			stats_num_skipable_deletions++;
-		}
+			setNodes(g.nodes);
 
-		setNodes(g.nodes);
 
-		if(reportPolarity<1){
-			for(int u = 0;u<g.nodes;u++){
-				if(!seen[u]){
-					status.setReachable(u,false);
-				}else if(reportPolarity==0){
-					status.setReachable(u,true);
+	#ifndef NDEBUG
+			dbg_sets.Reset();
+			for(int i = 0;i<g.edges;i++){
+				if(g.edgeEnabled(i)){
+					int u = g.all_edges[i].from;
+					int v = g.all_edges[i].to;
+					dbg_sets.UnionElements(u,v);
 				}
 			}
-		}
-		assert(dbg_uptodate());
 
-		last_modification=g.modifications;
-		last_deletion = g.deletions;
-		last_addition=g.additions;
+	#endif
+			cycleID = -1;
+			if(g.historyclears!=last_history_clear){
+				last_history_clear=g.historyclears;
+				history_qhead=0;
+				//start from scratch
+			}else{
+				//incremental/decremental update
+				for(;history_qhead<g.history.size();history_qhead++){
+					int edgeid = g.history[history_qhead].id;
+					bool add = g.history[history_qhead].addition;
+					int u =  g.history[history_qhead].u;
+					int v =  g.history[history_qhead].v;
+					if(add){
+						if(sets.connected(u,v)){
+							//then adding this edge would produce an (undirected) cycle.
+							cycleID= edgeid;
+							break;
+						}
+						sets.link(u,v);
+					}else{
+						if(sets.connected(u,v)){
+							sets.cut(u,v);
+						}
+					}
+				}
+			}
 
-		history_qhead=g.history.size();
-		last_history_clear=g.historyclears;
+			if(cycleID>-1){
+
+
+			}else{
+				assert(dbg_sets.NumSets()== sets.numRoots());
+			}
+
+			last_modification=g.modifications;
+			last_deletion = g.deletions;
+			last_addition=g.additions;
+
+			history_qhead=g.history.size();
+			last_history_clear=g.historyclears;
+
+			stats_full_update_time+=cpuTime()-startdupdatetime;;
 	}
 
 	bool dbg_path(int to){

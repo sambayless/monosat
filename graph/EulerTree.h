@@ -30,11 +30,15 @@ public:
 		//NodeData d;
 		int value;
 		int index;
-		int rank;//this is the position of this edge in the euler tour
+		bool isforward;//forward edges go from a parent to a child
+
 		EulerVertex * from;
 		EulerVertex * to;
 		Treap::Node * node;//node in the treap
 
+#ifndef NDEBUG
+		int rank;//this is the position of this edge in the euler tour. This information is only maintained implicitly as the edges position in the underlying binary search tree.
+#endif
 	};
 
 
@@ -48,15 +52,20 @@ public:
 		EulerHalfEdge * left_out;//the half edge leading out of the vertex. This half edge has the first occurrence of the euler vertex in the tour.
 		EulerHalfEdge * right_in;//the half edge returning to the vertex.  This half edge has the last occurrence of the euler vertex in the tour.
 		int index;
+		int subtree_size;
 		bool subtree_has_incident_edges;
-
+		bool has_incident_edges;
 #ifndef NDEBUG
+		//Note: in an euler-tour tree representation, these values are not explicitly maintained
 		EulerVertex * dbg_left;
 		EulerVertex*dbg_right;
 		EulerVertex*dbg_parent;
 #endif
 		EulerVertex():left_out(nullptr),right_in(nullptr){
 			index=0;
+			subtree_size=1;
+			has_incident_edges=false;
+			subtree_has_incident_edges=false;
 #ifndef NDEBUG
 
 			dbg_left=NULL;
@@ -94,7 +103,15 @@ public:
 				return nullptr;
 			}
 		}
-
+		//Get the next node in the tour.
+		EulerVertex * getNext(){
+			if (left_out)
+				return left_out->to;
+			else if(last())
+				return last()->value->to;
+			else
+				return nullptr;
+		}
 		int dbg_getSize(){
 #ifndef NDEBUG
 			int s = 1;
@@ -236,6 +253,15 @@ public:
 				  for(bool v : visited){
 					  assert(v);
 				  }
+
+				  EulerVertex * v = this;
+				  for(int i = 0;i<tour.size();i++){
+					  int p = tour[i];
+					  assert(v->index==p);
+					  v =v->getNext();
+				  }
+				  assert(v->getNext() ==this);
+
 		#endif
 			}
 	};
@@ -259,6 +285,16 @@ public:
 		root->dbg_tour();
 		v->dbg_tour();
 		v->dbg_remove();
+
+		 int removedNodes = v->subtree_size;
+		  //update subtree sizes going up the tree
+		  EulerVertex * p = getParent(v);
+		  while(p){
+			  p->subtree_size-= removedNodes;
+			  assert(p->subtree_size==p->dbg_getSize());
+			  p = getParent(p);
+		  }
+
 
 		Treap::Node * prev = v->first()->prev;
 		Treap::Node * next = v->last()->next;
@@ -295,6 +331,91 @@ public:
 
 	}
 
+	//Get the parent of the vertex in the euler tour representation. This is O(1).
+	EulerVertex * getParent(EulerVertex * v){
+		EulerVertex * parent = nullptr;
+		if(!v->first()){
+			//this is a root
+			assert(!v->dbg_parent);
+			return nullptr;
+		}
+		assert(v->first()->value->isforward);
+		parent= v->first()->value->from;
+		assert(parent==v->dbg_parent);
+		return parent;
+	}
+	EulerVertex * getLeft(EulerVertex * v){
+			if(!v->left_out){
+				assert(!v->dbg_left);
+				return nullptr;
+			}
+
+			EulerVertex * left =  v->left_out->to;
+			assert(left==v->dbg_left);
+			return left;
+		}
+
+	EulerVertex * getRight(EulerVertex * v){
+			if(!v->right_in){
+				assert(!v->dbg_right);
+				return nullptr;
+			}
+
+			EulerVertex * right =  v->right_in->from;
+			assert(right==v->dbg_right);
+			return right;
+		}
+
+	//Get the next node in the tour.
+	EulerVertex * getNext(EulerVertex * from){
+		return from->getNext();
+	}
+
+	EulerVertex * findRoot(EulerVertex * v){
+		EulerVertex * parent = getParent(v);
+		while(parent){
+			v = parent;
+			parent = getParent(v);
+		}
+		return v;
+	}
+
+	//Return the size of the subtree rooted at v, including v
+	int getSubtreeSize(EulerVertex * v){
+		assert(v->subtree_size==v->dbg_getSize());
+		return v->subtree_size;
+	}
+
+	bool hasIncidentEdges(EulerVertex* v){
+		return v->has_incident_edges;
+	}
+	bool subtreeHasIncidentEdges(EulerVertex * v){
+		return v->subtree_has_incident_edges;
+	}
+
+	void setHasIncidentEdges(EulerVertex * v, bool hasIncident){
+		if(!v->has_incident_edges && hasIncident){
+			v->has_incident_edges=hasIncident;
+
+			//ok, now follow the tour up the tree and mark that the subtrees have incident edges
+			EulerVertex * parent = getParent(v);
+			while(parent && !parent->subtree_has_incident_edges){
+				parent->subtree_has_incident_edges=true;
+				parent = getParent(parent);
+			}
+
+#ifndef NDEBUG
+			EulerVertex * p = v->dbg_parent;
+			while(p){
+				assert(p->subtree_has_incident_edges);
+				p=p->dbg_parent;
+			}
+#endif
+		}else if(v->has_incident_edges &&! hasIncident){
+			v->has_incident_edges=false;//don't update parent information yet.
+		}
+	}
+
 	bool connected(EulerVertex*  from, EulerVertex*  to){
 		return t.findRoot(from->first())==t.findRoot(from->first());
 	}
@@ -319,6 +440,9 @@ public:
 		  root->dbg_tour();
 
 		  node->dbg_insert(otherNode);
+
+		  assert(otherNode->dbg_parent == node);
+
 		  //Create half edges and link them to each other
 		  forward_edges.growTo(edgeID+1);
 		  backward_edges.growTo(edgeID+1);
@@ -328,13 +452,13 @@ public:
 			  backward_edges[edgeID] = new EulerHalfEdge();
 			  forward_edges[edgeID]->index=edgeID;
 			  backward_edges[edgeID]->index=edgeID;
-
+			  forward_edges[edgeID]->isforward=true;
 
 			  forward_edges[edgeID]->from=node;
 			  forward_edges[edgeID]->to = otherNode;
 
 
-
+			  backward_edges[edgeID]->isforward=false;
 			  backward_edges[edgeID]->from=otherNode;
 			  backward_edges[edgeID]->to = node;
 		  }else{
@@ -350,6 +474,9 @@ public:
 			  assert(backward_edges[edgeID]->to == node);
 		  }
 
+		  assert(forward_edges[edgeID]->to->dbg_parent==forward_edges[edgeID]->from);
+		  assert(backward_edges[edgeID]->from->dbg_parent==backward_edges[edgeID]->to);
+
 		  //forward_edges[edgeID]->value==value;
 		  //backward_edges[edgeID]->value==value;
 
@@ -359,7 +486,15 @@ public:
 		  //Link tours together
 		  t.concat(forward_edges[edgeID]->node ,otherNode->first());
 		  t.concat(otherNode->last() ,backward_edges[edgeID]->node);
-
+		  assert(otherNode->subtree_size==otherNode->dbg_getSize());
+		  int addedNodes = otherNode->subtree_size;
+		  //update subtree sizes going up the tree
+		  EulerVertex * p = getParent(node);
+		  while(p){
+			  p->subtree_size+= addedNodes;
+			  assert(p->subtree_size==p->dbg_getSize());
+			  p = getParent(p);
+		  }
 		  node->dbg_tour();
 		  otherNode->dbg_tour();
 		  root->dbg_tour();
@@ -376,6 +511,50 @@ public:
 	bool connected(int u, int v){
 		return connected(vertices[u],vertices[v]);
 	}
+
+	//Get the parent of the vertex in the euler tour representation. This is O(1).
+	int getParent(int v){
+		EulerVertex * parent = getParent(vertices[v]);
+		if(!parent){
+			return -1;
+		}else{
+			return parent->index;
+		}
+	}
+
+
+
+	int findRoot(int v){
+		EulerVertex * parent = getParent(vertices[v]);
+		while(parent){
+			v = parent->index;
+			parent = getParent(vertices[v]);
+		}
+		return v;
+	}
+
+	//Return the size of the subtree rooted at v, including v
+	int getSubtreeSize(int v){
+		return getSubtreeSize(vertices[v]);
+	}
+
+	bool hasIncidentEdges(int v){
+		return hasIncidentEdges(vertices[v]);
+	}
+	bool subtreeHasIncidentEdges(int v){
+		return subtreeHasIncidentEdges(vertices[v]);
+	}
+	void setHasIncidentEdges(int v, bool hasIncident){
+		setHasIncidentEdges(vertices[v],hasIncident);
+	}
+
+	void cutEdge(int edgeID){
+		assert(forward_edges[edgeID]->from);
+		assert(forward_edges[edgeID]->to->dbg_parent==forward_edges[edgeID]->from);
+		cut(forward_edges[edgeID]->to);
+		assert(!connected(forward_edges[edgeID]->to,forward_edges[edgeID]->from));
+	}
+
 	EulerVertex* getVertex(int n){
 		return vertices[n];
 	}
