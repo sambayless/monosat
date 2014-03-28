@@ -70,7 +70,7 @@ public:
 			subtree_has_incident_edges=false;
 #ifndef NDEBUG
 			owner=nullptr;
-			dbg_parent=NULL;
+			dbg_parent=nullptr;
 #endif
 		}
 
@@ -93,17 +93,31 @@ public:
 		}
 
 		bool isRoot(){
+			EulerVertex * parent = nullptr;
+			if(isSingleton()){
+
+				return true;
+			}else if (isLeaf()){
+
+				assert(first()->value->from==dbg_parent);
+				return false;
+			}else{
+
+				return !( first()->prev);
+			}
+
+
+		}
+
+/*		bool isRoot(){
 			//Only a node that is both a leaf and root doesn't have half edges stored.
 			if(isSingleton()){
 				return true;
 			}
 
-			assert(isSingleton() || (left_out && left_out->from == this));
-			assert(isSingleton() || (right_in && right_in->to == this));
-
 			assert((left_out->from == this)==(right_in->to == this));
 			return left_out->from == this;
-		}
+		}*/
 
 		bool isLeaf(){
 			if(isSingleton()){
@@ -111,7 +125,8 @@ public:
 			}
 			//leaf vertices are special. Instead of storing the edges leading out to their first and last child, they store the (only two) edges leading into them in the euler tour.
 			//For non-singleton leaf vertices only, left_out is instead left_in, and right_in is instead right_out;
-
+			assert(!left_out || (left_out->from==this || left_out->to==this));
+			assert(!right_in || (right_in->from==this || right_in->to==this));
 			assert((left_out->to == this)==(right_in->from == this));
 			return left_out->to == this;
 		}
@@ -133,9 +148,11 @@ public:
 			}
 		}
 		void setFirst(EulerHalfEdge * n){
+			assert(!n || (n->from==this || n->to==this));
 			left_out=n;
 		}
 		void setLast(EulerHalfEdge * n){
+			assert(!n || (n->from==this || n->to==this));
 			right_in=n;
 		}
 
@@ -161,6 +178,8 @@ public:
 			}
 			while(n!=last()){
 				tour_list.push(n->value->from->index);
+				printf("(%d,%d)\n",n->value->from->index,n->value->to->index);
+				assert(n->next);
 				n=n->next;
 				assert(n);
 			}
@@ -349,14 +368,22 @@ public:
 	//Get the parent of the vertex in the euler tour representation. This is O(1).
 	EulerVertex * getParent(EulerVertex * v){
 		EulerVertex * parent = nullptr;
-		if(v->isRoot()){
+		if(v->isSingleton()){
+			assert(!v->dbg_parent);
 			return nullptr;
 		}else if (v->isLeaf()){
 			assert(v->first()->value->from==v->dbg_parent);
+			assert( v->first()->value->from==v->dbg_parent);
 			return v->first()->value->from;
 		}else{
+			if(v->first()->prev ==nullptr){
+				assert(!v->dbg_parent);
+				return nullptr;
+			}
 			assert(v->first()->prev->value->to==v);
 			assert(v->first()->prev->value->from==v->dbg_parent);
+
+			assert( v->first()->value->from==v);
 			return v->first()->prev->value->from;
 		}
 
@@ -475,8 +502,12 @@ public:
 		  nComponents--;
 		  //Move both vertices to root
 		  //Is this really required?
-		  makeRoot(node);
-		  makeRoot(otherNode);
+
+		  node->dbg_tour();
+		  otherNode->dbg_tour();
+
+		  //makeRoot(node);
+		  //makeRoot(otherNode);
 
 		  node->dbg_tour();
 		  otherNode->dbg_tour();
@@ -558,22 +589,79 @@ public:
 				  t.concat(otherNode->last(),node->last());
 
 				  assert(node->isRoot());
-				  assert(otherNode->isLeaf());
+				  assert(!otherNode->isRoot());
 				  assert(!node->isSingleton());
 				  assert(!otherNode->isSingleton());
 			  }
-		  }else if (node->isRoot()){
+		  }else if(node->isLeaf()){
+			  assert(node->isLeaf());
+			  assert(node->first()->next==node->last());
+
+			  assert(otherNode->isRoot());
+
+
+			  //assert(!node->last()->prev);
+
+			  Treap::Node*l = node->last();
+
+			  t.insertRight(node->first(),forward_edges[edgeID]->node);
+			  assert(forward_edges[edgeID]->node->prev == node->first());
+			  t.insertRight(forward_edges[edgeID]->node,backward_edges[edgeID]->node);
+			  assert(forward_edges[edgeID]->node->prev == node->first());
+			  assert(backward_edges[edgeID]->node->next == node->last());
+			  assert(backward_edges[edgeID]->node->prev == forward_edges[edgeID]->node);
+			  assert(forward_edges[edgeID]->node->prev == node->first());
+			  //t.insertRight(backward_edges[edgeID]->node,node->last());
+			  assert(node->last()->prev==backward_edges[edgeID]->node);
+
+			  if(otherNode->isSingleton()){
+				  otherNode->setFirst(forward_edges[edgeID]);
+				  otherNode->setLast(backward_edges[edgeID]);
+				  //t.concat(forward_edges[edgeID]->node,backward_edges[edgeID]->node);
+				  //t.insertRight(forward_edges[edgeID]->node,backward_edges[edgeID]->node);
+			  }else{
+				  t.split(backward_edges[edgeID]->node);
+				  t.concat(forward_edges[edgeID]->node,otherNode->first());
+				  t.concat(otherNode->last(),backward_edges[edgeID]->node);
+			  }
+			  //t.concat(node->last());
+
+			  assert(!otherNode->isSingleton());
+
+			  node->setFirst(forward_edges[edgeID]);
+			  node->setLast(backward_edges[edgeID]);
+
+
+			  assert(!node->isSingleton());
+			  assert(!otherNode->isSingleton());
+
+
+		  }else{
 			  //then we can just append the new tree to the end of this one
+			  if(!node->isRoot()){
+				  assert(node->last()->value->to==node);
+				  Treap::Node * next = node->last()->next;
+				  assert(next);
+				  t.insertRight(node->last(),backward_edges[edgeID]->node);
+				  assert(backward_edges[edgeID]->node->next==next);
+			  }
+
 			  if(otherNode->isSingleton()){
 
 				  otherNode->setFirst(forward_edges[edgeID]);
 				  otherNode->setLast(backward_edges[edgeID]);
 
-				  t.concat(node->last() ,otherNode->first());
-				  node->setLast( backward_edges[edgeID]);
-				  t.concat(otherNode->last(),node->last());
 
-				  assert(node->isRoot());
+
+				  t.concat(forward_edges[edgeID]->node,backward_edges[edgeID]->node);
+				  t.concat(node->last(),forward_edges[edgeID]->node);
+
+
+				  node->setLast( backward_edges[edgeID]);
+
+
+
+
 				  assert(otherNode->isLeaf());
 				  assert(!node->isSingleton());
 				  assert(!otherNode->isSingleton());
@@ -586,34 +674,9 @@ public:
 				  t.concat(otherNode->last(),backward_edges[edgeID]->node );
 				  node->setLast( backward_edges[edgeID]);
 
-				  assert(node->isRoot());
 				  assert(!node->isSingleton());
 				  assert(!otherNode->isSingleton());
 			  }
-
-		  }else{
-			  assert(node->isLeaf());
-
-			  if(otherNode->isSingleton()){
-				  otherNode->setFirst(forward_edges[edgeID]);
-				  otherNode->setLast(backward_edges[edgeID]);
-				  t.concat(forward_edges[edgeID]->node,backward_edges[edgeID]->node);
-			  }else{
-				  t.concat(forward_edges[edgeID]->node,otherNode->first());
-				  t.concat(otherNode->last(),backward_edges[edgeID]->node);
-			  }
-
-			  assert(!otherNode->isSingleton());
-
-			  t.insertRight(node->first(),forward_edges[edgeID]->node);
-			  t.insertRight(backward_edges[edgeID]->node,node->last());
-			  node->setFirst(forward_edges[edgeID]);
-			  node->setLast(backward_edges[edgeID]);
-
-
-			  assert(!node->isSingleton());
-			  assert(!otherNode->isSingleton());
-
 
 		  }
 /*
@@ -651,18 +714,20 @@ public:
 		  assert(otherNode->subtree_size==otherNode->dbg_getSize());
 		  int addedNodes = otherNode->subtree_size;
 		  //update subtree sizes going up the tree
-		  EulerVertex * p = getParent(node);
+		  EulerVertex * p = node;
 		  while(p){
 			  p->subtree_size+= addedNodes;
 			  assert(p->subtree_size==p->dbg_getSize());
 			  p = getParent(p);
 		  }
-
-		  dbg_printTour(node);
+		  assert(node->subtree_size==node->dbg_getSize());
+		  dbg_printTour(findRoot(node));
 
 		  node->dbg_tour();
 		  otherNode->dbg_tour();
+		  assert(connected(node,otherNode));
 
+		  findRoot(node)->dbg_tour();
 		  //Return half edge
 		  return  edgeID;
 		}
@@ -746,6 +811,11 @@ public:
 		assert(forward_edges[edgeID]->to->dbg_parent==forward_edges[edgeID]->from);
 		cut(forward_edges[edgeID]->to);
 		assert(!connected(forward_edges[edgeID]->to,forward_edges[edgeID]->from));
+	}
+
+
+	bool isRoot(int v){
+		return vertices[v]->isRoot();
 	}
 
 	EulerVertex* getVertex(int n){

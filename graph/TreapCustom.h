@@ -123,11 +123,15 @@ Node * last (Node * node){
 }
 
 void insertRight(Node* node, Node * toInsert){
+
 	assert(node);assert(toInsert);
 	 if(!node->right) {
 		 int rnd = irand(seed,10000);
 		 toInsert->priority=rnd;
+		 toInsert->parent=node;
 		 node->right = toInsert;
+		 toInsert->next=node->next;
+		 toInsert->prev = node;
 	    if(node->next) {
 	      node->next->prev = toInsert;
 	    }
@@ -136,13 +140,18 @@ void insertRight(Node* node, Node * toInsert){
 	  }else{
 		 int rnd = irand(seed,10000);
 		 toInsert->priority=rnd;
+		 toInsert->parent=node;
 		 Node * v = node->next;
+		 toInsert->next=node->next;
 		 v->left =toInsert;
-
+		 toInsert->prev = node;
 		  v->prev = toInsert;
 		  node->next = toInsert;
 		  bubbleUp(toInsert);
 	  }
+	 assert(toInsert->prev==node);
+	 assert(node->next==toInsert);
+	 assert(findRoot(node)==findRoot(toInsert));
 	}
 
 
@@ -304,7 +313,7 @@ void remove(Node * node) {
 
 Node * split(Node * node) {
 
- Node * s = insert(node,Value(),0);
+ Node * s = insert(node,Value(),0);//insert a new node with the highest priority.
  s->priority = -100000;
  bubbleUp(s);
  Node * l = s->left;
@@ -321,6 +330,9 @@ Node * split(Node * node) {
  if(s->next) {
    s->next->prev = NULL;
  }
+ s->prev=NULL;
+ s->next=NULL;
+
  return r;
 }
 
