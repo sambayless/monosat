@@ -366,7 +366,7 @@ Node * concatRecurse(Node *a,Node * b) {
 	   while(ta->right) {
 	     ta = ta->right;
 	   }
-	   Node* rb = findRoot(other);
+	   Node* rb = findRoot(other);//for much of our code, we can already safely assume that other is the leftmost node, and avoid this step and the following loop!
 	   assert(rb!=ra);
 		Node* sb = rb;
 	   while(sb->left) {

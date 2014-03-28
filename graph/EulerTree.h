@@ -169,13 +169,15 @@ public:
 
 		void tour(vec<int> & tour_list){
 			tour_list.clear();
-			Treap::Node* n= first();
-			Treap::Node* l= last();
-			assert(owner->t.findRoot(first())==owner->t.findRoot(l));
+
 			if(isSingleton() || isLeaf()){
 				tour_list.push(index);
 				return;
 			}
+			Treap::Node* n= first();
+			Treap::Node* l= last();
+
+			assert(owner->t.findRoot(first())==owner->t.findRoot(l));
 			while(n!=last()){
 				tour_list.push(n->value->from->index);
 				printf("(%d,%d)\n",n->value->from->index,n->value->to->index);
@@ -512,6 +514,9 @@ public:
 		  node->dbg_tour();
 		  otherNode->dbg_tour();
 
+		  dbg_printTour(node);
+		  dbg_printTour(otherNode);
+
 		  node->dbg_insert(otherNode);
 
 		  assert(otherNode->dbg_parent == node);
@@ -556,8 +561,8 @@ public:
 		  //otherNode MUST be a root, otherwise it is already part of some other tree and you can't link it!
 
 
-		  //insert othernode into the eulertour just before the last visit to node in that tour
-		  //this logic is made a bit ugly by the way I am storing edges specially in leaf and singleton nodes...
+		  //insert othernode into the euler tour just before the last visit to node in that tour
+		  //this logic is made a very ugly by the way I am storing edges specially in leaf and singleton nodes...
 
 		  //There are three types of nodes:
 		  //1)  singletons, which are roots with no children. For efficiency, these have _no_ nodes in the bst at all (else there would need to be two extra nodes in the bst for every single vertex).
@@ -586,7 +591,8 @@ public:
 				  node->setLast( backward_edges[edgeID]);
 
 				  t.concat(node->first(),otherNode->first());
-				  t.concat(otherNode->last(),node->last());
+				  t.insertRight(otherNode->last(),node->last());
+				  //t.concat(otherNode->last(),node->last());
 
 				  assert(node->isRoot());
 				  assert(!otherNode->isRoot());
