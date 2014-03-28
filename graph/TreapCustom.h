@@ -122,7 +122,28 @@ Node * last (Node * node){
 	  return r;
 }
 
+void insert(Node* node, Node * toInsert){
+	assert(node);assert(toInsert);
+	 if(!node->right) {
+		 int rnd = irand(seed,10000);
+		 toInsert->priority=rnd;
+		 node->right = toInsert;
+	    if(node->next) {
+	      node->next->prev = toInsert;
+	    }
+	    node->next = toInsert;
+	    bubbleUp(toInsert);
+	  }else{
+		 int rnd = irand(seed,10000);
+		 toInsert->priority=rnd;
+		 Node * v = node->next;
+		 v->left =toInsert;
 
+		  v->prev = toInsert;
+		  node->next = toInsert;
+		  bubbleUp(toInsert);
+	  }
+	}
 
 
 Node * insert(Node* node, Value  value, int valueCount){

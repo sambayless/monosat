@@ -19,11 +19,11 @@ private:
 	typedef TreapCustom<EulerHalfEdge*> Treap;
 	int nComponents;
 	//make this non-static later
-	static Treap t;
+	Treap t;
 	//static EulerVertex * root;
-	static vec<EulerVertex*> vertices;
-	static vec<EulerHalfEdge*> forward_edges;
-	static vec<EulerHalfEdge*> backward_edges;
+	vec<EulerVertex*> vertices;
+	vec<EulerHalfEdge*> forward_edges;
+	vec<EulerHalfEdge*> backward_edges;
 public:
 	struct EulerHalfEdge{
 		//Value value;
@@ -56,6 +56,7 @@ public:
 		bool subtree_has_incident_edges;
 		bool has_incident_edges;
 #ifndef NDEBUG
+		EulerTree * owner;
 		//Note: in an euler-tour tree representation, these values are not explicitly maintained
 		EulerVertex * dbg_left;
 		EulerVertex*dbg_right;
@@ -67,7 +68,7 @@ public:
 			has_incident_edges=false;
 			subtree_has_incident_edges=false;
 #ifndef NDEBUG
-
+			owner=nullptr;
 			dbg_left=NULL;
 			dbg_right=NULL;
 			dbg_parent=NULL;
@@ -94,6 +95,12 @@ public:
 			}else{
 				return nullptr;
 			}
+		}
+		void setFirst(EulerHalfEdge * n){
+			left_out=n;
+		}
+		void setLast(EulerHalfEdge * n){
+			right_in=n;
 		}
 
 		Treap::Node * last(){
@@ -194,13 +201,17 @@ public:
 		  }
 		void dbg_tour(){
 		#ifndef NDEBUG
+			if(!left_out){
+				assert(!right_in);
+				return;
+			}
 				//build the tour
 				vec<int> tour;
 				{
 					vec<bool> seenLeft;
 					vec<bool> seenRight;
-					seenLeft.growTo(vertices.size());
-					seenRight.growTo(vertices.size());
+					seenLeft.growTo(owner->vertices.size());
+					seenRight.growTo(owner->vertices.size());
 
 					EulerVertex * r = this;
 					while(r){
@@ -226,11 +237,11 @@ public:
 				}
 
 				vec<bool> visited;
-				visited.growTo(vertices.size());
+				visited.growTo(owner->vertices.size());
 
 				//traverse the treap
 				Treap::Node * r = this->left_out->node;
-				assert(r==t.first(r));//the root of the euler tour tree must be the start of the euler tour, which must be the first element in the bst
+				assert(r==owner->t.first(r));//the root of the euler tour tree must be the start of the euler tour, which must be the first element in the bst
 				int i = 0;
 				assert(i==r->value->from->index);
 				//ok, visit in order
@@ -342,6 +353,7 @@ public:
 	EulerVertex * getParent(EulerVertex * v){
 		EulerVertex * parent = nullptr;
 		if(!v->first()){
+			//this is wrong... is it? even the root should still have first and last pointers... shouldn't it?
 			//this is a root
 			assert(!v->dbg_parent);
 			return nullptr;
@@ -424,19 +436,32 @@ public:
 	}
 
 	bool connected(EulerVertex*  from, EulerVertex*  to){
+		if(from==to){
+			return true;
+		}
+		if(from->first()==nullptr || to->first()==nullptr){
+			return false;
+		}
 		return t.findRoot(from->first())==t.findRoot(from->first());
 	}
 
 	void makeRoot(EulerVertex*  node){
+		if(node->left_out){
+			assert(node->right_in);
+
 		Treap::Node * a = node->first();
 		Treap::Node * b= t.split(a);
 		if(b){
 			t.concat(b,a);
 		}
+		}else{
+			assert(!node->right_in);
+		}
 	}
 
 	//Make othernode a child of node.
 	int link(EulerVertex*  node, EulerVertex*  otherNode, int edgeID) {
+		  assert (node !=otherNode);
 		  assert(!connected(node,otherNode));
 		  nComponents--;
 		  //Move both vertices to root
@@ -466,10 +491,12 @@ public:
 			  forward_edges[edgeID]->from=node;
 			  forward_edges[edgeID]->to = otherNode;
 
-
 			  backward_edges[edgeID]->isforward=false;
 			  backward_edges[edgeID]->from=otherNode;
 			  backward_edges[edgeID]->to = node;
+
+			  forward_edges[edgeID]->node = t.createNode(forward_edges[edgeID]);
+			  backward_edges[edgeID]->node = t.createNode(backward_edges[edgeID]);
 		  }else{
 			  assert(forward_edges[edgeID]->index==edgeID);
 			  assert(backward_edges[edgeID]->index==edgeID);
@@ -489,12 +516,35 @@ public:
 		  //forward_edges[edgeID]->value==value;
 		  //backward_edges[edgeID]->value==value;
 
-		  forward_edges[edgeID]->node = t.insert( node->last(),forward_edges[edgeID],1);
-		  backward_edges[edgeID]->node = t.insert(otherNode->last(),backward_edges[edgeID],1);
+		  if(node->last()){
+			  t.insert( node->last(),backward_edges[edgeID]->node);
+		  }else{
+			  node->setLast( backward_edges[edgeID]);
+			  t.concat(forward_edges[edgeID]->node,backward_edges[edgeID]->node);
+		  }
+
+		  if(otherNode->last()){
+			  t.insert(otherNode->last(),forward_edges[edgeID]->node);
+		  }else{
+			  otherNode->setLast(forward_edges[edgeID]);
+			  //t.concat(backward_edges[edgeID]->node,forward_edges[edgeID]->node);
+		  }
 
 		  //Link tours together
-		  t.concat(forward_edges[edgeID]->node ,otherNode->first());
-		  t.concat(otherNode->last() ,backward_edges[edgeID]->node);
+		  if(node->first())
+			  t.concat(node->first() ,forward_edges[edgeID]->node);
+		  else
+			  node->setFirst(forward_edges[edgeID]);
+
+		  if(otherNode->first())
+			  t.concat(backward_edges[edgeID]->node ,otherNode->first());
+		  else
+			  otherNode->setFirst(backward_edges[edgeID] );
+
+
+
+		  assert(t.findRoot( forward_edges[edgeID]->node) == t.findRoot(backward_edges[edgeID]->node));
+
 		  assert(otherNode->subtree_size==otherNode->dbg_getSize());
 		  int addedNodes = otherNode->subtree_size;
 		  //update subtree sizes going up the tree
@@ -575,6 +625,9 @@ public:
 	EulerVertex * createVertex() {
 	  nComponents++;
 	  vertices.push(new EulerVertex());
+#ifndef NDEBUG
+	  vertices.last()->owner = this;
+#endif
 	  vertices.last()->index = vertices.size()-1;
 	  return vertices.last();
 	}
