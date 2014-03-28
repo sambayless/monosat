@@ -638,24 +638,21 @@ public:
 
 		  }else{
 			  //then we can just append the new tree to the end of this one
-			  if(!node->isRoot()){
-				  assert(node->last()->value->to==node);
-				  Treap::Node * next = node->last()->next;
-				  assert(next);
-				  t.insertRight(node->last(),backward_edges[edgeID]->node);
-				  assert(backward_edges[edgeID]->node->next==next);
-			  }
+
 
 			  if(otherNode->isSingleton()){
 
 				  otherNode->setFirst(forward_edges[edgeID]);
 				  otherNode->setLast(backward_edges[edgeID]);
 
-
-
-				  t.concat(forward_edges[edgeID]->node,backward_edges[edgeID]->node);
-				  t.concat(node->last(),forward_edges[edgeID]->node);
-
+				  //if(node->isRoot()){
+					  t.insertRight(node->last(),forward_edges[edgeID]->node);
+				  	  t.insertRight(forward_edges[edgeID]->node,backward_edges[edgeID]->node);
+				/*  }else{
+				  //t.concat(forward_edges[edgeID]->node,backward_edges[edgeID]->node);
+				  	  t.insertRight(forward_edges[edgeID]->node,backward_edges[edgeID]->node);
+				  	  t.concat(node->last(),forward_edges[edgeID]->node);
+				  }*/
 
 				  node->setLast( backward_edges[edgeID]);
 
@@ -668,6 +665,13 @@ public:
 			  }else{
 				  assert(otherNode->isRoot());
 				  //otherNode MUST be a root, otherwise it is already part of some other tree and you can't link it!
+				  if(!node->isRoot()){
+								  assert(node->last()->value->to==node);
+								  Treap::Node * next = node->last()->next;
+								  assert(next);
+								  t.insertRight(node->last(),backward_edges[edgeID]->node);
+								  assert(backward_edges[edgeID]->node->next==next);
+							  }
 
 				  t.concat(node->last() , forward_edges[edgeID]->node);
 				  t.concat(forward_edges[edgeID]->node,otherNode->first());

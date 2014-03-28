@@ -123,7 +123,9 @@ Node * last (Node * node){
 }
 
 void insertRight(Node* node, Node * toInsert){
-
+	assert(!toInsert->parent);
+	assert(!toInsert->next);
+	assert(!toInsert->prev);
 	assert(node);assert(toInsert);
 	 if(!node->right) {
 		 int rnd = irand(seed,10000);
