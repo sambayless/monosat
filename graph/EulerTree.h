@@ -7,7 +7,7 @@
 
 #include "TreapCustom.h"
 #include "mtl/Vec.h"
-
+#include <cstdio>
 
 using namespace Minisat;
 
@@ -48,8 +48,8 @@ public:
 
 		//Treap::Node * first;
 		//Treap::Node * last;
-
-		EulerHalfEdge * left_out;//the half edge leading out of the vertex. This half edge has the first occurrence of the euler vertex in the tour.
+		EulerHalfEdge * left_out;//the half edge leading into the vertex, from its parent. The 'to' field in this halfedge the first occurrence of the euler vertex in the tour.
+								//IFF the vertex is root, then this is instead the half edge leading to its first child. In that case, the 'from' field is the first occurence of the vertex in the tour
 		EulerHalfEdge * right_in;//the half edge returning to the vertex.  This half edge has the last occurrence of the euler vertex in the tour.
 		int index;
 		int subtree_size;
@@ -58,19 +58,18 @@ public:
 #ifndef NDEBUG
 		EulerTree * owner;
 		//Note: in an euler-tour tree representation, these values are not explicitly maintained
-		EulerVertex * dbg_left;
-		EulerVertex*dbg_right;
-		EulerVertex*dbg_parent;
+		EulerVertex * dbg_parent;
+		vec<EulerVertex*>dbg_children;
+
 #endif
 		EulerVertex():left_out(nullptr),right_in(nullptr){
+
 			index=0;
 			subtree_size=1;
 			has_incident_edges=false;
 			subtree_has_incident_edges=false;
 #ifndef NDEBUG
 			owner=nullptr;
-			dbg_left=NULL;
-			dbg_right=NULL;
 			dbg_parent=NULL;
 #endif
 		}
@@ -88,10 +87,47 @@ public:
 			return subtree_size;
 		}
 
+		bool isSingleton(){
+			assert(!left_out == !right_in);
+			return !left_out;
+		}
+
+		bool isRoot(){
+			//Only a node that is both a leaf and root doesn't have half edges stored.
+			if(isSingleton()){
+				return true;
+			}
+
+			assert(isSingleton() || (left_out && left_out->from == this));
+			assert(isSingleton() || (right_in && right_in->to == this));
+
+			assert((left_out->from == this)==(right_in->to == this));
+			return left_out->from == this;
+		}
+
+		bool isLeaf(){
+			if(isSingleton()){
+				return true;
+			}
+			//leaf vertices are special. Instead of storing the edges leading out to their first and last child, they store the (only two) edges leading into them in the euler tour.
+			//For non-singleton leaf vertices only, left_out is instead left_in, and right_in is instead right_out;
+
+			assert((left_out->to == this)==(right_in->from == this));
+			return left_out->to == this;
+		}
 
 		Treap::Node * first(){
 			if(left_out){
+				assert(right_in);
 				return left_out->node;
+			}else{
+				return nullptr;
+			}
+		}
+		Treap::Node * last(){
+
+			if(right_in){
+				return right_in->node;
 			}else{
 				return nullptr;
 			}
@@ -103,13 +139,7 @@ public:
 			right_in=n;
 		}
 
-		Treap::Node * last(){
-			if(right_in){
-				return right_in->node;
-			}else{
-				return nullptr;
-			}
-		}
+
 		//Get the next node in the tour.
 		EulerVertex * getNext(){
 			if (left_out)
@@ -119,14 +149,30 @@ public:
 			else
 				return nullptr;
 		}
+
+		void tour(vec<int> & tour_list){
+			tour_list.clear();
+			Treap::Node* n= first();
+			Treap::Node* l= last();
+			assert(owner->t.findRoot(first())==owner->t.findRoot(l));
+			if(isSingleton() || isLeaf()){
+				tour_list.push(index);
+				return;
+			}
+			while(n!=last()){
+				tour_list.push(n->value->from->index);
+				n=n->next;
+				assert(n);
+			}
+			tour_list.push(n->value->from->index);
+			tour_list.push(n->value->to->index);
+		}
+
 		int dbg_getSize(){
 #ifndef NDEBUG
 			int s = 1;
-			if(dbg_left){
-				s+=dbg_left->dbg_getSize();
-			}
-			if(dbg_right){
-				s+=dbg_right->dbg_getSize();
+			for(EulerVertex* c:dbg_children){
+				s+=c->dbg_getSize();
 			}
 			return s;
 #endif
@@ -135,19 +181,16 @@ public:
 
 		 void dbg_remove(){
 #ifndef NDEBUG
-				if(!dbg_left && !dbg_right){
-					if(dbg_parent){
-						if(dbg_parent->dbg_left==this){
-							dbg_parent->dbg_left=nullptr;
-						}else {
-							assert(dbg_parent->dbg_right==this);
-							dbg_parent->dbg_right=nullptr;
-						}
 
-					}else{
-						//do nothing
-					}
-				}else if (dbg_left && ! dbg_right){
+
+
+				if(dbg_parent){
+					dbg_parent->dbg_children.remove(this);
+					dbg_parent=nullptr;
+				}else{
+					//do nothing
+				}
+				/*else if (dbg_left && ! dbg_right){
 					if(dbg_parent){
 						if(dbg_parent->dbg_left==this){
 							dbg_parent->dbg_left=dbg_left;
@@ -172,23 +215,26 @@ public:
 						dbg_right->dbg_parent=nullptr;
 
 					}
-
-				}else{
+*/
+			/*	}else{
 					//not handled yet...
 					assert(false);
-					/*EulerVertex * next = dbg_right->findMin();
+					EulerVertex * next = dbg_right->findMin();
 					this->key=next->key;
 					assert(!(next->dbg_right || next->dbg_left));
 					next->remove();
-					checkTree();*/
-				}
-				dbg_parent=nullptr;
+					checkTree();
+				}*/
+
 #endif
 			}
 
 		void dbg_insert(EulerVertex* node) {
 #ifndef NDEBUG
-		     if (!dbg_left) {
+			assert(node->isRoot());
+			dbg_children.push(node);
+			node->dbg_parent=this;
+		/*     if (!dbg_left) {
 		    	 dbg_left = node;
 		    	 dbg_left->dbg_parent = this;
 		      }else if (!dbg_right) {
@@ -196,9 +242,18 @@ public:
 				  dbg_right->dbg_parent = this;
 			  } else {
 				  dbg_right->dbg_insert(node);
-			  }
+			  }*/
 #endif
 		  }
+
+		void dbg_build_tour(EulerVertex * r, vec<int> & tour){
+			tour.push(r->index);
+			for(EulerVertex * c:r->dbg_children){
+				dbg_build_tour(c,tour);
+				tour.push(r->index);
+			}
+		}
+
 		void dbg_tour(){
 		#ifndef NDEBUG
 			if(!left_out){
@@ -206,72 +261,14 @@ public:
 				return;
 			}
 				//build the tour
-				vec<int> tour;
-				{
-					vec<bool> seenLeft;
-					vec<bool> seenRight;
-					seenLeft.growTo(owner->vertices.size());
-					seenRight.growTo(owner->vertices.size());
-
-					EulerVertex * r = this;
-					while(r){
-						tour.push(r->index);
-						//visit dbg_left
-						if(!r->dbg_left){
-							seenLeft[r->index]=true;
-						}
-						if(!r->dbg_right){
-							seenRight[r->index]=true;
-						}
-
-						if(! seenLeft[r->index]){
-							seenLeft[r->index]=true;
-							r=r->dbg_left;
-						}else if (!seenRight[r->index]){
-							seenRight[r->index]=true;
-							r=r->dbg_right;
-						}else{
-							r= r->dbg_parent;
-						}
-					}
+				vec<int> dbg_tour;
+				dbg_build_tour(this,dbg_tour);
+				vec<int> real_tour;
+				tour(real_tour);
+				assert(dbg_tour.size()==real_tour.size());
+				for(int i = 0;i<real_tour.size();i++){
+					assert(dbg_tour[i]==real_tour[i]);
 				}
-
-				vec<bool> visited;
-				visited.growTo(owner->vertices.size());
-
-				//traverse the treap
-				Treap::Node * r = this->left_out->node;
-				assert(r==owner->t.first(r));//the root of the euler tour tree must be the start of the euler tour, which must be the first element in the bst
-				int i = 0;
-				assert(i==r->value->from->index);
-				//ok, visit in order
-				 vec<Treap::Node*> stack;
-				  while (stack.size()){
-				    if (r){
-				    	stack.push(r);
-				    	r = r->left;
-				    }else{
-				      r = stack.last();stack.pop();
-				      int nodeindex =r->value->from->index;
-				      assert(r->value->rank==i);
-				      visited[nodeindex]=true;
-				      int p = tour[i++];
-				      assert(nodeindex==p);
-				      r = r->right;
-				    }
-				  }
-
-				  for(bool v : visited){
-					  assert(v);
-				  }
-
-				  EulerVertex * v = this;
-				  for(int i = 0;i<tour.size();i++){
-					  int p = tour[i];
-					  assert(v->index==p);
-					  v =v->getNext();
-				  }
-				  assert(v->getNext() ==this);
 
 		#endif
 			}
@@ -352,7 +349,19 @@ public:
 	//Get the parent of the vertex in the euler tour representation. This is O(1).
 	EulerVertex * getParent(EulerVertex * v){
 		EulerVertex * parent = nullptr;
-		if(!v->first()){
+		if(v->isRoot()){
+			return nullptr;
+		}else if (v->isLeaf()){
+			assert(v->first()->value->from==v->dbg_parent);
+			return v->first()->value->from;
+		}else{
+			assert(v->first()->prev->value->to==v);
+			assert(v->first()->prev->value->from==v->dbg_parent);
+			return v->first()->prev->value->from;
+		}
+
+
+/*		if(!v->first() ){
 			//this is wrong... is it? even the root should still have first and last pointers... shouldn't it?
 			//this is a root
 			assert(!v->dbg_parent);
@@ -360,10 +369,10 @@ public:
 		}
 		assert(v->first()->value->isforward);
 		parent= v->first()->value->from;
-		assert(parent==v->dbg_parent);
+		assert(parent==v->dbg_parent);*/
 		return parent;
 	}
-	EulerVertex * getLeft(EulerVertex * v){
+/*	EulerVertex * getLeft(EulerVertex * v){
 			if(!v->left_out){
 				assert(!v->dbg_left);
 				return nullptr;
@@ -383,7 +392,7 @@ public:
 			EulerVertex * right =  v->right_in->from;
 			assert(right==v->dbg_right);
 			return right;
-		}
+		}*/
 
 	//Get the next node in the tour.
 	EulerVertex * getNext(EulerVertex * from){
@@ -472,7 +481,6 @@ public:
 		  node->dbg_tour();
 		  otherNode->dbg_tour();
 
-
 		  node->dbg_insert(otherNode);
 
 		  assert(otherNode->dbg_parent == node);
@@ -513,8 +521,102 @@ public:
 		  assert(forward_edges[edgeID]->to->dbg_parent==forward_edges[edgeID]->from);
 		  assert(backward_edges[edgeID]->from->dbg_parent==backward_edges[edgeID]->to);
 
-		  //forward_edges[edgeID]->value==value;
-		  //backward_edges[edgeID]->value==value;
+		  assert(otherNode->isRoot());
+		  //otherNode MUST be a root, otherwise it is already part of some other tree and you can't link it!
+
+
+		  //insert othernode into the eulertour just before the last visit to node in that tour
+		  //this logic is made a bit ugly by the way I am storing edges specially in leaf and singleton nodes...
+
+		  //There are three types of nodes:
+		  //1)  singletons, which are roots with no children. For efficiency, these have _no_ nodes in the bst at all (else there would need to be two extra nodes in the bst for every single vertex).
+		  //2)  non-singleton roots & internal nodes. These are nodes that have children, and hence have a non-trivial euler tour.
+		  //    For these nodes, left_out and right_in point to the half edges that contain the first and last appearance of that node in the tour:
+		  //	in left_out, the 'from' vertex is the first occurrence of the vertex in the tour; in right_in, the 'to' field is the last occurrence of the vertex in the tour.
+		  //3)  leaf nodes, which have no children. For these, left_out and right_in are backwards: the 'to' field is the first occurrence of the vertex in the tour; and right_in's from field is the last occurence.
+
+		  if(node->isSingleton()){
+			  if(otherNode->isSingleton()){
+				  //simplest case: both vertices are singletons.
+				  node->setFirst(forward_edges[edgeID]);
+				  node->setLast( backward_edges[edgeID]);
+				  otherNode->setFirst(forward_edges[edgeID]);
+				  otherNode->setLast(backward_edges[edgeID]);
+				  t.concat(forward_edges[edgeID]->node,backward_edges[edgeID]->node);
+				  assert(node->isRoot());
+				  assert(otherNode->isLeaf());
+				  assert(!node->isSingleton());
+				  assert(!otherNode->isSingleton());
+			  }else{
+				  assert(otherNode->isRoot());
+				  //otherNode MUST be a root, otherwise it is already part of some other tree and you can't link it!
+
+				  node->setFirst(forward_edges[edgeID]);
+				  node->setLast( backward_edges[edgeID]);
+
+				  t.concat(node->first(),otherNode->first());
+				  t.concat(otherNode->last(),node->last());
+
+				  assert(node->isRoot());
+				  assert(otherNode->isLeaf());
+				  assert(!node->isSingleton());
+				  assert(!otherNode->isSingleton());
+			  }
+		  }else if (node->isRoot()){
+			  //then we can just append the new tree to the end of this one
+			  if(otherNode->isSingleton()){
+
+				  otherNode->setFirst(forward_edges[edgeID]);
+				  otherNode->setLast(backward_edges[edgeID]);
+
+				  t.concat(node->last() ,otherNode->first());
+				  node->setLast( backward_edges[edgeID]);
+				  t.concat(otherNode->last(),node->last());
+
+				  assert(node->isRoot());
+				  assert(otherNode->isLeaf());
+				  assert(!node->isSingleton());
+				  assert(!otherNode->isSingleton());
+			  }else{
+				  assert(otherNode->isRoot());
+				  //otherNode MUST be a root, otherwise it is already part of some other tree and you can't link it!
+
+				  t.concat(node->last() , forward_edges[edgeID]->node);
+				  t.concat(forward_edges[edgeID]->node,otherNode->first());
+				  t.concat(otherNode->last(),backward_edges[edgeID]->node );
+				  node->setLast( backward_edges[edgeID]);
+
+				  assert(node->isRoot());
+				  assert(!node->isSingleton());
+				  assert(!otherNode->isSingleton());
+			  }
+
+		  }else{
+			  assert(node->isLeaf());
+
+			  if(otherNode->isSingleton()){
+				  otherNode->setFirst(forward_edges[edgeID]);
+				  otherNode->setLast(backward_edges[edgeID]);
+				  t.concat(forward_edges[edgeID]->node,backward_edges[edgeID]->node);
+			  }else{
+				  t.concat(forward_edges[edgeID]->node,otherNode->first());
+				  t.concat(otherNode->last(),backward_edges[edgeID]->node);
+			  }
+
+			  assert(!otherNode->isSingleton());
+
+			  t.insertRight(node->first(),forward_edges[edgeID]->node);
+			  t.insertRight(backward_edges[edgeID]->node,node->last());
+			  node->setFirst(forward_edges[edgeID]);
+			  node->setLast(backward_edges[edgeID]);
+
+
+			  assert(!node->isSingleton());
+			  assert(!otherNode->isSingleton());
+
+
+		  }
+/*
 
 		  if(node->last()){
 			  t.insert( node->last(),backward_edges[edgeID]->node);
@@ -542,6 +644,7 @@ public:
 			  otherNode->setFirst(backward_edges[edgeID] );
 
 
+*/
 
 		  assert(t.findRoot( forward_edges[edgeID]->node) == t.findRoot(backward_edges[edgeID]->node));
 
@@ -554,6 +657,9 @@ public:
 			  assert(p->subtree_size==p->dbg_getSize());
 			  p = getParent(p);
 		  }
+
+		  dbg_printTour(node);
+
 		  node->dbg_tour();
 		  otherNode->dbg_tour();
 
@@ -561,6 +667,30 @@ public:
 		  return  edgeID;
 		}
 
+	void tour(EulerVertex* v, vec<int> & tour_out){
+		v->tour(tour_out);
+	}
+
+	void dbg_printTour(EulerVertex * v){
+		dbg_printDbgTour(v);
+
+		vec<int> tour_list;
+		v->tour(tour_list);
+		printf("tour:");
+		for(int i:tour_list){
+			printf("%d,",i);
+		}
+		printf("\n");
+	}
+	void dbg_printDbgTour(EulerVertex * v){
+		vec<int> tour_list;
+		v->dbg_build_tour(v,tour_list);
+		printf("dbgtour:");
+		for(int i:tour_list){
+			printf("%d,",i);
+		}
+		printf("\n");
+	}
 	void link(int u, int v, int edgeID) {
 		link(vertices[u],vertices[v],edgeID);
 	}

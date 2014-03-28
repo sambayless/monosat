@@ -122,7 +122,7 @@ Node * last (Node * node){
 	  return r;
 }
 
-void insert(Node* node, Node * toInsert){
+void insertRight(Node* node, Node * toInsert){
 	assert(node);assert(toInsert);
 	 if(!node->right) {
 		 int rnd = irand(seed,10000);
@@ -237,7 +237,7 @@ void swapNodes(Node* a, Node*b) {
 
 void update(Node * node){
 
-	  int c = 0;// node->value;//countOfValue(node->value);
+	/*  int c = 0;// node->value;//countOfValue(node->value);
 	  bool f = node->flag;
 	  if(node->left) {
 	    c += node->left->count;
@@ -248,10 +248,10 @@ void update(Node * node){
 	    f = f || node->right->flagAggregate;
 	  }
 	  node->count = c;
-	  node->flagAggregate = f;
+	  node->flagAggregate = f;*/
 
 }
-
+/*
 void setFlag(Node * node, bool f) {
 	node->flag = f;
  for(Node* v=node; v; v=v->parent) {
@@ -261,7 +261,7 @@ void setFlag(Node * node, bool f) {
      break;
    }
  }
-}
+}*/
 
 void remove(Node * node) {
 
@@ -301,6 +301,7 @@ void remove(Node * node) {
   node->parent = node->left = node->right = node->prev = node->next = NULL;
   node->count = 1;
 }
+
 Node * split(Node * node) {
 
  Node * s = insert(node,Value(),0);

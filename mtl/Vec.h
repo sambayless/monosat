@@ -109,6 +109,20 @@ public:
     	}
     	return false;
     }
+
+    //remove all instances of the given element, if it exists
+    bool remove(const T& element){
+    	int i,j=0;
+    	for(i = 0;i<sz;i++){
+    		if(data[i]==element){
+
+    		}else{
+    			data[j++]=data[i];
+    		}
+    	}
+    	shrink(i-j);
+    	return j<i;
+    }
 };
 
 
