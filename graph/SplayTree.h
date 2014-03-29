@@ -1,4 +1,36 @@
-//From wikipedia
+//Implementation modified from wikipedia
+
+/**
+ *From http://www.eli.sdsu.edu/courses/fall95/cs660/notes/splay/Splay.html
+ *  Splay Operations
+
+access(i, t): if i is in tree t return pointer to i, otherwise return null pointer
+
+Find i, then splay tree t at i.
+If i is not in tree t, then splay last node accessed looking for i
+
+
+
+join (a, b): Return tree formed by combining tree "a", and tree "b". Assumes that every item in "a" has key less then every item in "b"
+
+Splay largest item in "a", then add "b" as a right child of root of "a"
+
+
+
+split (i, t): Split tree t, containing item i, into two trees: "a", containing all items with key less or equal to "i"; and "b", containing all items with key greater than "i"
+
+Perform access(i, t) then split tree at root
+
+
+insert(i, t): insert i in tree t
+
+Perform split (i, t) then make i the root of the two trees returned by split
+
+
+delete(i, t): delete i from tree t
+
+Perform access(i, t) then perform join on t's subtrees
+ */
 
 #ifndef SPLAY_TREE
 #define SPLAY_TREE
@@ -11,6 +43,51 @@ _node<T> *left, *right;
 _node<T> *parent;
 T value;
 _node( const T& init = T( ) ) : left( 0 ), right( 0 ), parent( 0 ), value( init ) { }
+
+_node * prev(){
+	if(left)
+		return left->findMax();
+	else {
+		  _node*n = this;
+		  _node *p = n->parent;
+		  while(p  && n == p->left)
+		  {
+		     n = p;
+		     p = p->parent;
+		  }
+		  return p;
+	}
+}
+_node * next(){
+	if(right)
+		return right->findMin();
+	else {
+		  _node*n = this;
+		  _node *p = n->parent;
+		  while(p  && n == p->right)
+		  {
+		     n = p;
+		     p = p->parent;
+		  }
+		  return p;
+	}
+
+}
+
+private:
+
+_node* findMin(  ) {
+  _node*u=this;
+  while( u->left ) u = u->left;
+  return u;
+}
+
+_node* findMax(  ) {
+  _node*u=this;
+  while( u->right ) u = u->right;
+  return u;
+}
+
 } ;
 
 template< typename T >
@@ -87,6 +164,10 @@ private:
   }
 public:
   SplayTree( ) : p_size( 0 ) { }
+
+  Node * createNode(const T &value){
+	  return new Node(value);
+  }
 
   void insertAfter(Node * insertAt, Node * toInsert ) {
     Node *z = insertAt;

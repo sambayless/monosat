@@ -25,6 +25,8 @@ public:
 
 	}
 
+
+
 	virtual void insertAfter(Node* insertAt,Node* toInsert) =0;
 	virtual void insertBefore(Node* insertAt,Node* toInsert) =0;
 	virtual Node* findRoot(Node* of)=0;

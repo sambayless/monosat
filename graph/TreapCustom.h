@@ -53,6 +53,9 @@ struct _Node{
 	   _Node():value(),priority(0),parent(nullptr),left(nullptr),right(nullptr),next(nullptr),prev(nullptr){
 
 	   }
+
+
+
 };
 
 template<class Value=int>

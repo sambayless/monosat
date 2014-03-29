@@ -17,12 +17,12 @@ public:
 	struct EulerHalfEdge;
 	struct EulerVertex;
 private:
-	SplayTree<EulerHalfEdge*> T;
 
-	typedef TreapCustom<EulerHalfEdge*> Treap;
+
+	typedef SplayTree<EulerHalfEdge*> Tree;
 	int nComponents;
 
-	Treap t;
+	Tree t;
 	//static EulerVertex * root;
 	vec<EulerVertex*> vertices;
 	vec<EulerHalfEdge*> forward_edges;
@@ -37,7 +37,7 @@ public:
 
 		EulerVertex * from;
 		EulerVertex * to;
-		Treap::Node * node;//node in the treap
+		Tree::Node * node;//node in the treap
 
 #ifndef NDEBUG
 		int rank;//this is the position of this edge in the euler tour. This information is only maintained implicitly as the edges position in the underlying binary search tree.
@@ -105,12 +105,12 @@ public:
 				assert(first()->value->from==dbg_parent);
 				return false;
 			}else{
-				if(!first()->prev){
+				if(!first()->prev()){
 					assert(owner->t.findRoot(first()) ==owner->t.findRoot(last()));
 					//assert(owner->t.first(owner->t.findRoot(first())) ==first());
 					//assert(owner->t.last(owner->t.findRoot(last())) ==last());
 				}
-				return !( first()->prev);
+				return !( first()->prev());
 			}
 
 
@@ -138,7 +138,7 @@ public:
 			return left_out->to == this;
 		}
 
-		Treap::Node * first(){
+		Tree::Node * first(){
 			if(left_out){
 				assert(right_in);
 				return left_out->node;
@@ -146,7 +146,7 @@ public:
 				return nullptr;
 			}
 		}
-		Treap::Node * last(){
+		Tree::Node * last(){
 
 			if(right_in){
 				return right_in->node;
@@ -181,16 +181,16 @@ public:
 				tour_list.push(index);
 				return;
 			}
-			Treap::Node* n= first();
-			Treap::Node* l= last();
+			Tree::Node* n= first();
+			Tree::Node* l= last();
 
 			assert(owner->t.findRoot(first())==owner->t.findRoot(l));
 			while(n!=last()){
 				tour_list.push(n->value->from->index);
-				assert(n->value->to == n->next->value->from);
+				assert(n->value->to == n->next()->value->from);
 				//printf("(%d,%d)\n",n->value->from->index,n->value->to->index);
-				assert(n->next);
-				n=n->next;
+				assert(n->next());
+				n=n->next();
 				assert(n);
 			}
 			tour_list.push(n->value->from->index);
@@ -337,8 +337,8 @@ public:
 		  }
 
 
-		Treap::Node * prev = v->first()->prev;
-		Treap::Node * next = v->last()->next;
+		Tree::Node * prev = v->first()->prev();
+		Tree::Node * next = v->last()->next();
 		assert(v->first()->value->from==v);
 		assert(v->last()->value->to==v);
 		assert(prev->value->to==v);
@@ -358,8 +358,8 @@ public:
 
 		//remove the two half edges connected the vertex to the tree
 
-		Treap::Node * prev_kept=prev->prev;
-		Treap::Node * next_kept=next->next;
+		Tree::Node * prev_kept=prev->prev();
+		Tree::Node * next_kept=next->next();
 
 		t.remove(next);
 		t.remove(prev);
@@ -386,15 +386,15 @@ public:
 			assert( v->first()->value->from==v->dbg_parent);
 			return v->first()->value->from;
 		}else{
-			if(v->first()->prev ==nullptr){
+			if(v->first()->prev() ==nullptr){
 				assert(!v->dbg_parent);
 				return nullptr;
 			}
-			assert(v->first()->prev->value->to==v);
-			assert(v->first()->prev->value->from==v->dbg_parent);
+			assert(v->first()->prev()->value->to==v);
+			assert(v->first()->prev()->value->from==v->dbg_parent);
 
 			assert( v->first()->value->from==v);
-			return v->first()->prev->value->from;
+			return v->first()->prev()->value->from;
 		}
 
 
@@ -495,8 +495,8 @@ public:
 		if(node->left_out){
 			assert(node->right_in);
 
-		Treap::Node * a = node->first();
-		Treap::Node * b= t.split(a);
+		Tree::Node * a = node->first();
+		Tree::Node * b= t.split(a);
 		if(b){
 			t.concat(b,a);
 		}
@@ -601,8 +601,8 @@ public:
 				  node->setLast( backward_edges[edgeID]);
 
 				  t.concat(node->first(),otherNode->first());
-				  assert(node->first()->next==otherNode->first());
-				  assert(otherNode->first()->prev == node->first());
+				  assert(node->first()->next()==otherNode->first());
+				  assert(otherNode->first()->prev() == node->first());
 				  t.insertAfter(otherNode->last(),node->last());
 				  //t.concat(otherNode->last(),node->last());
 
@@ -613,24 +613,24 @@ public:
 			  }
 		  }else if(node->isLeaf()){
 			  assert(node->isLeaf());
-			  assert(node->first()->next==node->last());
+			  assert(node->first()->next()==node->last());
 
 			  assert(otherNode->isRoot());
 
 
-			  //assert(!node->last()->prev);
+			  //assert(!node->last()->prev());
 			  if(otherNode->isSingleton()){
-				  Treap::Node*l = node->last();
+				  Tree::Node*l = node->last();
 
 				  t.insertAfter(node->first(),forward_edges[edgeID]->node);
-				  assert(forward_edges[edgeID]->node->prev == node->first());
+				  assert(forward_edges[edgeID]->node->prev() == node->first());
 				  t.insertAfter(forward_edges[edgeID]->node,backward_edges[edgeID]->node);
-				  assert(forward_edges[edgeID]->node->prev == node->first());
-				  assert(backward_edges[edgeID]->node->next == node->last());
-				  assert(backward_edges[edgeID]->node->prev == forward_edges[edgeID]->node);
-				  assert(forward_edges[edgeID]->node->prev == node->first());
+				  assert(forward_edges[edgeID]->node->prev() == node->first());
+				  assert(backward_edges[edgeID]->node->next() == node->last());
+				  assert(backward_edges[edgeID]->node->prev() == forward_edges[edgeID]->node);
+				  assert(forward_edges[edgeID]->node->prev() == node->first());
 				  //t.insertAfter(backward_edges[edgeID]->node,node->last());
-				  assert(node->last()->prev==backward_edges[edgeID]->node);
+				  assert(node->last()->prev()==backward_edges[edgeID]->node);
 
 
 				  otherNode->setFirst(forward_edges[edgeID]);
@@ -638,16 +638,16 @@ public:
 				  //t.concat(forward_edges[edgeID]->node,backward_edges[edgeID]->node);
 				  //t.insertAfter(forward_edges[edgeID]->node,backward_edges[edgeID]->node);
 			  }else{
-				  /*Treap::Node * n = node->last()->next;
+				  /*Treap::Node * n = node->last()->next();
 				  if(n)*/
 				  assert(t.findRoot(node->first())==t.findRoot(node->last()));
 				  assert(node->last()->value->from==node);
-				  assert(node->last()->prev==node->first());
+				  assert(node->last()->prev()==node->first());
 				  t.split(node->first());
-				  assert(!node->last()->prev);
-				  assert(!node->first()->next);
-				  Treap::Node * fr = t.findRoot(node->first());
-				  Treap::Node * lr = t.findRoot(node->last());
+				  assert(!node->last()->prev());
+				  assert(!node->first()->next());
+				  Tree::Node * fr = t.findRoot(node->first());
+				  Tree::Node * lr = t.findRoot(node->last());
 
 				  assert(t.findRoot(node->first())!=t.findRoot(node->last()));
 
@@ -700,10 +700,10 @@ public:
 				  //otherNode MUST be a root, otherwise it is already part of some other tree and you can't link it!
 				  if(!node->isRoot()){
 								  assert(node->last()->value->to==node);
-								  Treap::Node * next = node->last()->next;
+								  Tree::Node * next = node->last()->next();
 								  assert(next);
 								  t.insertAfter(node->last(),backward_edges[edgeID]->node);
-								  assert(backward_edges[edgeID]->node->next==next);
+								  assert(backward_edges[edgeID]->node->next()==next);
 							  }
 
 				  t.concat(node->last() , forward_edges[edgeID]->node);
