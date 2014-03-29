@@ -224,7 +224,7 @@ public:
   }*/
 
   //Splits and returns the node to the right of splitAt; splitAt remains connected to the nodes left of it.
-  Node*split(Node * splitAt){
+  Node*splitAfter(Node * splitAt){
 	  splay(splitAt);
 	  assert(!splitAt->parent);
 
@@ -235,14 +235,30 @@ public:
 	  }
 	  return r;
   }
+  Node*splitBefore(Node * splitAt){
+	  splay(splitAt);
+	  assert(!splitAt->parent);
 
+	  Node * l = splitAt->left;
+	  splitAt->left = nullptr;
+	  if(l){
+		  l->parent=nullptr;
+	  }
+	  return l;
+  }
   Node *concat(Node * left, Node*right){
+	   left = findRoot(left);
+	   right= findRoot(right);
+	   assert(findRoot(left)==left);
+	   assert(findRoot(right)==right);
+
 	   Node* maxLeft = findMax(left);
 	   splay(maxLeft);
 	   assert(!maxLeft->parent);
 	   assert(!maxLeft->right);
 	   maxLeft->right=right;
 	   right->parent=maxLeft;
+
 	   return left;
   }
 

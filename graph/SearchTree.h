@@ -35,7 +35,8 @@ public:
 	virtual Node* findMax(Node* root)=0;
 
 	virtual void remove(Node * toRemove)=0;
-	virtual Node*split(Node * splitAt)=0;
+	virtual Node*splitAfter(Node * splitAt)=0;
+	virtual Node*splitBefore(Node * splitAt)=0;
 	//All nodes in right must be (strictly) greater than all nodes in left
 	virtual Node*concat(Node * left, Node*right)=0;
 };
