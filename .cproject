@@ -508,7 +508,7 @@
 						</toolChain>
 					</folderInfo>
 					<sourceEntries>
-						<entry excluding="graph/TreeReachDetector.cpp|smtlib|smt|strings|schedule" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+						<entry excluding="Main.cc|graph/TreeReachDetector.cpp|smtlib|smt|strings|schedule" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="smt"/>
 					</sourceEntries>
 				</configuration>

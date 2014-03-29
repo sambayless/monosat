@@ -52,6 +52,9 @@ public:
 
 
 		   }
+		   Node():value(),priority(0),parent(nullptr),left(nullptr),right(nullptr),next(nullptr),prev(nullptr){
+
+		   }
 	};
 
 	Node * createNode(Value value){
@@ -144,10 +147,15 @@ void insertRight(Node* node, Node * toInsert){
 		 toInsert->priority=rnd;
 		 toInsert->parent=node;
 		 Node * v = node->next;
+
 		 toInsert->next=node->next;
-		 v->left =toInsert;
 		 toInsert->prev = node;
-		  v->prev = toInsert;
+		 if(v){
+		 v->left =toInsert;
+		 v->prev = toInsert;
+		 }
+
+
 		  node->next = toInsert;
 		  bubbleUp(toInsert);
 	  }
@@ -314,10 +322,12 @@ void remove(Node * node) {
 }
 
 Node * split(Node * node) {
+ Node tmpNode;
+ tmpNode.priority=-100000;
+ Node * s= &tmpNode;
+ insertRight(node,&tmpNode);//insert a new node with the highest priority.
+ assert(s->prev == node);
 
- Node * s = insert(node,Value(),0);//insert a new node with the highest priority.
- s->priority = -100000;
- bubbleUp(s);
  Node * l = s->left;
  Node * r = s->right;
  if(l) {
@@ -346,12 +356,12 @@ Node * concatRecurse(Node *a,Node * b) {
  } else if(a->priority < b->priority) {
    a->right = concatRecurse(a->right, b);
    a->right->parent = a;
-   update(a);
+  // update(a);
    return a;
  } else {
    b->left = concatRecurse(a, b->left);
    b->left->parent = b;
-   update(b);
+  // update(b);
    return b;
  }
 }
@@ -366,7 +376,7 @@ Node * concatRecurse(Node *a,Node * b) {
 	   while(ta->right) {
 	     ta = ta->right;
 	   }
-	   Node* rb = findRoot(other);//for much of our code, we can already safely assume that other is the leftmost node, and avoid this step and the following loop!
+	   Node* rb = findRoot(other);
 	   assert(rb!=ra);
 		Node* sb = rb;
 	   while(sb->left) {

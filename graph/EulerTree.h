@@ -18,7 +18,7 @@ public:
 private:
 	typedef TreapCustom<EulerHalfEdge*> Treap;
 	int nComponents;
-	//make this non-static later
+
 	Treap t;
 	//static EulerVertex * root;
 	vec<EulerVertex*> vertices;
@@ -102,7 +102,11 @@ public:
 				assert(first()->value->from==dbg_parent);
 				return false;
 			}else{
-
+				if(!first()->prev){
+					assert(owner->t.findRoot(first()) ==owner->t.findRoot(last()));
+					//assert(owner->t.first(owner->t.findRoot(first())) ==first());
+					//assert(owner->t.last(owner->t.findRoot(last())) ==last());
+				}
 				return !( first()->prev);
 			}
 
@@ -180,7 +184,8 @@ public:
 			assert(owner->t.findRoot(first())==owner->t.findRoot(l));
 			while(n!=last()){
 				tour_list.push(n->value->from->index);
-				printf("(%d,%d)\n",n->value->from->index,n->value->to->index);
+				assert(n->value->to == n->next->value->from);
+				//printf("(%d,%d)\n",n->value->from->index,n->value->to->index);
 				assert(n->next);
 				n=n->next;
 				assert(n);
@@ -252,7 +257,7 @@ public:
 
 		void dbg_insert(EulerVertex* node) {
 #ifndef NDEBUG
-			assert(node->isRoot());
+			assert(!node->dbg_parent);
 			dbg_children.push(node);
 			node->dbg_parent=this;
 		/*     if (!dbg_left) {
@@ -480,7 +485,7 @@ public:
 		if(from->first()==nullptr || to->first()==nullptr){
 			return false;
 		}
-		return t.findRoot(from->first())==t.findRoot(from->first());
+		return t.findRoot(from->first())==t.findRoot(to->first());
 	}
 
 	void makeRoot(EulerVertex*  node){
@@ -516,7 +521,9 @@ public:
 
 		  dbg_printTour(node);
 		  dbg_printTour(otherNode);
-
+		  assert(findRoot(node)->isRoot());
+		  assert(findRoot(otherNode)->isRoot());
+		  assert(otherNode->isRoot());
 		  node->dbg_insert(otherNode);
 
 		  assert(otherNode->dbg_parent == node);
@@ -557,7 +564,7 @@ public:
 		  assert(forward_edges[edgeID]->to->dbg_parent==forward_edges[edgeID]->from);
 		  assert(backward_edges[edgeID]->from->dbg_parent==backward_edges[edgeID]->to);
 
-		  assert(otherNode->isRoot());
+
 		  //otherNode MUST be a root, otherwise it is already part of some other tree and you can't link it!
 
 
@@ -591,6 +598,8 @@ public:
 				  node->setLast( backward_edges[edgeID]);
 
 				  t.concat(node->first(),otherNode->first());
+				  assert(node->first()->next==otherNode->first());
+				  assert(otherNode->first()->prev == node->first());
 				  t.insertRight(otherNode->last(),node->last());
 				  //t.concat(otherNode->last(),node->last());
 
@@ -607,28 +616,43 @@ public:
 
 
 			  //assert(!node->last()->prev);
-
-			  Treap::Node*l = node->last();
-
-			  t.insertRight(node->first(),forward_edges[edgeID]->node);
-			  assert(forward_edges[edgeID]->node->prev == node->first());
-			  t.insertRight(forward_edges[edgeID]->node,backward_edges[edgeID]->node);
-			  assert(forward_edges[edgeID]->node->prev == node->first());
-			  assert(backward_edges[edgeID]->node->next == node->last());
-			  assert(backward_edges[edgeID]->node->prev == forward_edges[edgeID]->node);
-			  assert(forward_edges[edgeID]->node->prev == node->first());
-			  //t.insertRight(backward_edges[edgeID]->node,node->last());
-			  assert(node->last()->prev==backward_edges[edgeID]->node);
-
 			  if(otherNode->isSingleton()){
+				  Treap::Node*l = node->last();
+
+				  t.insertRight(node->first(),forward_edges[edgeID]->node);
+				  assert(forward_edges[edgeID]->node->prev == node->first());
+				  t.insertRight(forward_edges[edgeID]->node,backward_edges[edgeID]->node);
+				  assert(forward_edges[edgeID]->node->prev == node->first());
+				  assert(backward_edges[edgeID]->node->next == node->last());
+				  assert(backward_edges[edgeID]->node->prev == forward_edges[edgeID]->node);
+				  assert(forward_edges[edgeID]->node->prev == node->first());
+				  //t.insertRight(backward_edges[edgeID]->node,node->last());
+				  assert(node->last()->prev==backward_edges[edgeID]->node);
+
+
 				  otherNode->setFirst(forward_edges[edgeID]);
 				  otherNode->setLast(backward_edges[edgeID]);
 				  //t.concat(forward_edges[edgeID]->node,backward_edges[edgeID]->node);
 				  //t.insertRight(forward_edges[edgeID]->node,backward_edges[edgeID]->node);
 			  }else{
-				  t.split(backward_edges[edgeID]->node);
+				  /*Treap::Node * n = node->last()->next;
+				  if(n)*/
+				  assert(t.findRoot(node->first())==t.findRoot(node->last()));
+				  assert(node->last()->value->from==node);
+				  assert(node->last()->prev==node->first());
+				  t.split(node->first());
+				  assert(!node->last()->prev);
+				  assert(!node->first()->next);
+				  Treap::Node * fr = t.findRoot(node->first());
+				  Treap::Node * lr = t.findRoot(node->last());
+
+				  assert(t.findRoot(node->first())!=t.findRoot(node->last()));
+
+				  t.concat(node->first(),forward_edges[edgeID]->node);
 				  t.concat(forward_edges[edgeID]->node,otherNode->first());
-				  t.concat(otherNode->last(),backward_edges[edgeID]->node);
+
+				  t.insertRight(otherNode->last(),backward_edges[edgeID]->node);
+				  t.concat(backward_edges[edgeID]->node,node->last());
 			  }
 			  //t.concat(node->last());
 
@@ -689,39 +713,17 @@ public:
 			  }
 
 		  }
-/*
-
-		  if(node->last()){
-			  t.insert( node->last(),backward_edges[edgeID]->node);
-		  }else{
-			  node->setLast( backward_edges[edgeID]);
-			  t.concat(forward_edges[edgeID]->node,backward_edges[edgeID]->node);
-		  }
-
-		  if(otherNode->last()){
-			  t.insert(otherNode->last(),forward_edges[edgeID]->node);
-		  }else{
-			  otherNode->setLast(forward_edges[edgeID]);
-			  //t.concat(backward_edges[edgeID]->node,forward_edges[edgeID]->node);
-		  }
-
-		  //Link tours together
-		  if(node->first())
-			  t.concat(node->first() ,forward_edges[edgeID]->node);
-		  else
-			  node->setFirst(forward_edges[edgeID]);
-
-		  if(otherNode->first())
-			  t.concat(backward_edges[edgeID]->node ,otherNode->first());
-		  else
-			  otherNode->setFirst(backward_edges[edgeID] );
-
-
-*/
 
 		  assert(t.findRoot( forward_edges[edgeID]->node) == t.findRoot(backward_edges[edgeID]->node));
 
 		  assert(otherNode->subtree_size==otherNode->dbg_getSize());
+		  dbg_printTour(node);
+		  node->dbg_tour();
+		 		  		  otherNode->dbg_tour();
+		  dbg_printTour(findRoot(node));
+
+
+
 		  int addedNodes = otherNode->subtree_size;
 		  //update subtree sizes going up the tree
 		  EulerVertex * p = node;
@@ -731,13 +733,13 @@ public:
 			  p = getParent(p);
 		  }
 		  assert(node->subtree_size==node->dbg_getSize());
-		  dbg_printTour(findRoot(node));
 
-		  node->dbg_tour();
-		  otherNode->dbg_tour();
 		  assert(connected(node,otherNode));
-
+/*		  EulerVertex * r = findRoot(node);
 		  findRoot(node)->dbg_tour();
+		  Treap::Node * last = r->last();
+		  Treap::Node * reallast = t.last(t.findRoot(r->last()));*/
+		  assert(findRoot(node)->isRoot());
 		  //Return half edge
 		  return  edgeID;
 		}
