@@ -8,7 +8,8 @@
 #include "TreapCustom.h"
 #include "mtl/Vec.h"
 #include <cstdio>
-
+#include "SplayTree.h"
+#include "SearchTree.h"
 using namespace Minisat;
 
 class EulerTree{
@@ -16,6 +17,8 @@ public:
 	struct EulerHalfEdge;
 	struct EulerVertex;
 private:
+	SplayTree<EulerHalfEdge*> T;
+
 	typedef TreapCustom<EulerHalfEdge*> Treap;
 	int nComponents;
 
@@ -600,7 +603,7 @@ public:
 				  t.concat(node->first(),otherNode->first());
 				  assert(node->first()->next==otherNode->first());
 				  assert(otherNode->first()->prev == node->first());
-				  t.insertRight(otherNode->last(),node->last());
+				  t.insertAfter(otherNode->last(),node->last());
 				  //t.concat(otherNode->last(),node->last());
 
 				  assert(node->isRoot());
@@ -619,21 +622,21 @@ public:
 			  if(otherNode->isSingleton()){
 				  Treap::Node*l = node->last();
 
-				  t.insertRight(node->first(),forward_edges[edgeID]->node);
+				  t.insertAfter(node->first(),forward_edges[edgeID]->node);
 				  assert(forward_edges[edgeID]->node->prev == node->first());
-				  t.insertRight(forward_edges[edgeID]->node,backward_edges[edgeID]->node);
+				  t.insertAfter(forward_edges[edgeID]->node,backward_edges[edgeID]->node);
 				  assert(forward_edges[edgeID]->node->prev == node->first());
 				  assert(backward_edges[edgeID]->node->next == node->last());
 				  assert(backward_edges[edgeID]->node->prev == forward_edges[edgeID]->node);
 				  assert(forward_edges[edgeID]->node->prev == node->first());
-				  //t.insertRight(backward_edges[edgeID]->node,node->last());
+				  //t.insertAfter(backward_edges[edgeID]->node,node->last());
 				  assert(node->last()->prev==backward_edges[edgeID]->node);
 
 
 				  otherNode->setFirst(forward_edges[edgeID]);
 				  otherNode->setLast(backward_edges[edgeID]);
 				  //t.concat(forward_edges[edgeID]->node,backward_edges[edgeID]->node);
-				  //t.insertRight(forward_edges[edgeID]->node,backward_edges[edgeID]->node);
+				  //t.insertAfter(forward_edges[edgeID]->node,backward_edges[edgeID]->node);
 			  }else{
 				  /*Treap::Node * n = node->last()->next;
 				  if(n)*/
@@ -651,7 +654,7 @@ public:
 				  t.concat(node->first(),forward_edges[edgeID]->node);
 				  t.concat(forward_edges[edgeID]->node,otherNode->first());
 
-				  t.insertRight(otherNode->last(),backward_edges[edgeID]->node);
+				  t.insertAfter(otherNode->last(),backward_edges[edgeID]->node);
 				  t.concat(backward_edges[edgeID]->node,node->last());
 			  }
 			  //t.concat(node->last());
@@ -676,11 +679,11 @@ public:
 				  otherNode->setLast(backward_edges[edgeID]);
 
 				  //if(node->isRoot()){
-					  t.insertRight(node->last(),forward_edges[edgeID]->node);
-				  	  t.insertRight(forward_edges[edgeID]->node,backward_edges[edgeID]->node);
+					  t.insertAfter(node->last(),forward_edges[edgeID]->node);
+				  	  t.insertAfter(forward_edges[edgeID]->node,backward_edges[edgeID]->node);
 				/*  }else{
 				  //t.concat(forward_edges[edgeID]->node,backward_edges[edgeID]->node);
-				  	  t.insertRight(forward_edges[edgeID]->node,backward_edges[edgeID]->node);
+				  	  t.insertAfter(forward_edges[edgeID]->node,backward_edges[edgeID]->node);
 				  	  t.concat(node->last(),forward_edges[edgeID]->node);
 				  }*/
 
@@ -699,7 +702,7 @@ public:
 								  assert(node->last()->value->to==node);
 								  Treap::Node * next = node->last()->next;
 								  assert(next);
-								  t.insertRight(node->last(),backward_edges[edgeID]->node);
+								  t.insertAfter(node->last(),backward_edges[edgeID]->node);
 								  assert(backward_edges[edgeID]->node->next==next);
 							  }
 

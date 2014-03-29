@@ -27,41 +27,72 @@ THE SOFTWARE.
 #define TREAPCUSTOM_H_
 #include <stdlib.h>
 #include "mtl/Rnd.h"
-#include "BST.h"
+#include "SearchTree.h"
 using namespace Minisat;
+
+template<typename Value>
+struct _Node{
+
+	  Value value;
+
+	  bool flag;
+	  int flagAggregate;
+	  int count;
+	   int priority;
+	   _Node * parent;
+	   _Node *  left;
+	   _Node *   right;
+	   _Node *  next;
+	   _Node *  prev;
+	   _Node(Value _value, bool _flag,bool _flagAggregate, int valueCount, int _priority, _Node * _parent, _Node * _left, _Node * _right, _Node * _next, _Node * _prev):
+	   value(_value),flag(_flag),flagAggregate(_flagAggregate),count(valueCount),priority(_priority),parent(_parent),left(_left),right(_right),next(_next),prev(_prev)
+	   {
+
+
+	   }
+	   _Node():value(),priority(0),parent(nullptr),left(nullptr),right(nullptr),next(nullptr),prev(nullptr){
+
+	   }
+};
+
 template<class Value=int>
-class TreapCustom{
+class TreapCustom:public SearchTree<_Node<Value> >{
 public:
 	double seed;
-	struct Node{
-
-		  Value value;
-
-		  bool flag;
-		  int flagAggregate;
-		  int count;
-		   int priority;
-		   Node * parent;
-		   Node *  left;
-		   Node *   right;
-		   Node *  next;
-		   Node *  prev;
-		   Node(Value _value, bool _flag,bool _flagAggregate, int valueCount, int _priority, Node * _parent, Node * _left, Node * _right, Node * _next, Node * _prev):
-		   value(_value),flag(_flag),flagAggregate(_flagAggregate),count(valueCount),priority(_priority),parent(_parent),left(_left),right(_right),next(_next),prev(_prev)
-		   {
-
-
-		   }
-		   Node():value(),priority(0),parent(nullptr),left(nullptr),right(nullptr),next(nullptr),prev(nullptr){
-
-		   }
-	};
+	typedef _Node<Value> Node;
 
 	Node * createNode(Value value){
 		int rnd = irand(seed,10000);
 		return new Node(value,false,false,0,rnd,NULL,NULL,NULL,NULL,NULL);
 	}
 
+
+	Node* findRoot(Node* of){
+		Node *m = of;
+		while(m->parent){
+			m=m->parent;
+		}
+		return m;
+	}
+
+	Node* findMin(Node* root){
+		Node *m = root;
+		while(m->left)
+			m=m->left;
+
+		return m;
+	}
+
+	Node* findMax(Node* root){
+		Node *m = root;
+		while(m->right)
+			m=m->right;
+
+		return m;
+	}
+
+
+private:
 void bubbleUp(Node * node) {
   while(true) {
     Node* p = node->parent;
@@ -103,13 +134,6 @@ void bubbleUp(Node * node) {
   }
 }
 
-Node* findRoot(Node* node) {
-  Node * n = node;
-  while(n->parent) {
-    n = n->parent;
-  }
-  return n;
-}
 Node * first(Node * node){
 	Node * l = findRoot(node);
 	  while(l->left) {
@@ -124,8 +148,8 @@ Node * last (Node * node){
 	  }
 	  return r;
 }
-
-void insertRight(Node* node, Node * toInsert){
+public:
+void insertAfter(Node* node, Node * toInsert){
 	assert(!toInsert->parent);
 	assert(!toInsert->next);
 	assert(!toInsert->prev);
@@ -163,8 +187,10 @@ void insertRight(Node* node, Node * toInsert){
 	 assert(node->next==toInsert);
 	 assert(findRoot(node)==findRoot(toInsert));
 	}
+void insertBefore(Node* node, Node * toInsert){
 
-
+	}
+private:
 Node * insert(Node* node, Value  value, int valueCount){
 	 if(!node->right) {
 		 int rnd = irand(seed,10000);
@@ -281,7 +307,7 @@ void setFlag(Node * node, bool f) {
    }
  }
 }*/
-
+public:
 void remove(Node * node) {
 
   if(node->left && node->right) {
@@ -325,7 +351,7 @@ Node * split(Node * node) {
  Node tmpNode;
  tmpNode.priority=-100000;
  Node * s= &tmpNode;
- insertRight(node,&tmpNode);//insert a new node with the highest priority.
+ insertAfter(node,&tmpNode);//insert a new node with the highest priority.
  assert(s->prev == node);
 
  Node * l = s->left;
@@ -347,7 +373,7 @@ Node * split(Node * node) {
 
  return r;
 }
-
+private:
 Node * concatRecurse(Node *a,Node * b) {
  if(a == NULL) {
    return b;
@@ -365,7 +391,7 @@ Node * concatRecurse(Node *a,Node * b) {
    return b;
  }
 }
-
+public:
  Node * concat(Node * node,Node * other){
 
 	   if(!other) {
