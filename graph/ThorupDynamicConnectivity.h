@@ -57,7 +57,7 @@ void cut(int edgeID){
 		EulerTree::EulerVertex * tu = et[i].getVertex(u);
 		EulerTree::EulerVertex * tv = et[i].getVertex(v);
 
-		et[i].cutEdge(edgeID);
+		/*et[i].cutEdge(edgeID);
 
 		assert(tu->getSize() + tv->getSize()<= 1<<i);//invariant from paper...
 		assert(!et[i].connected(tu,tv));//these must be disconnected now that we have cut them
@@ -81,7 +81,7 @@ void cut(int edgeID){
 				}
 				n= et[i].getNext(tv);
 			}
-		}
+		}*/
 		//also need to clear the subtree_has_incident_edges flag, if no incident edges existed...
 
 
@@ -92,8 +92,8 @@ void cut(int edgeID){
 
 void setEdgeLevel(int edgeID, int level){
 	assert(level==edges[edgeID].level);
-	et[level].setHasIncidentEdges(edges[edgeID].from,true);
-	et[level].setHasIncidentEdges(edges[edgeID].to,true);
+	//et[level].setHasIncidentEdges(edges[edgeID].from,true);
+	//et[level].setHasIncidentEdges(edges[edgeID].to,true);
 }
 
 public:
