@@ -43,6 +43,9 @@ public:
 #ifndef NDEBUG
 		int rank;//this is the position of this edge in the euler tour. This information is only maintained implicitly as the edges position in the underlying binary search tree.
 #endif
+		bool contains(EulerVertex * v){
+			return from==v||to==v;
+		}
 	};
 
 
@@ -64,7 +67,8 @@ public:
 		//Note: in an euler-tour tree representation, these values are not explicitly maintained
 		EulerVertex * dbg_parent;
 		vec<EulerVertex*>dbg_children;
-
+		bool dbg_visited;
+		vec<EulerVertex*> dbg_children_t;
 #endif
 		EulerVertex():left_out(nullptr),right_in(nullptr){
 
@@ -73,6 +77,7 @@ public:
 			has_incident_edges=false;
 			subtree_has_incident_edges=false;*/
 #ifndef NDEBUG
+			dbg_visited=false;
 			owner=nullptr;
 			dbg_parent=nullptr;
 #endif
@@ -246,20 +251,29 @@ public:
 			return 0;
 		}
 
+		void dbg_make_parent(EulerVertex * new_parent){
+		#ifndef NDEBUG
+					if(new_parent){
+						assert(dbg_children.contains(new_parent));
+						dbg_children.remove(new_parent);
+						EulerVertex * p = dbg_parent;
+						dbg_parent=new_parent;
+						if(p){
+							dbg_children.push(p);
 
+							p->dbg_make_parent(this);
+
+						}
+					}
+		#endif
+				}
 
 		void dbg_make_root(){
 #ifndef NDEBUG
 			if(dbg_parent){
-				EulerVertex * p = dbg_parent;
-				EulerVertex *r= this;
-				while(r->dbg_parent){
-					r= r->dbg_parent;
-				}
-				p->dbg_children.remove(this);
+				dbg_children.push(dbg_parent);
+				dbg_parent->dbg_make_parent(this);
 
-				dbg_children.push(r);
-				r->dbg_parent=this;
 				dbg_parent=nullptr;
 			}
 #endif
@@ -343,6 +357,16 @@ public:
 			dbg_build_tour_helper(r,tour);
 		}
 
+		void dbg_clear(){
+			assert(dbg_visited);
+			dbg_visited=false;
+			assert(dbg_children.size()==dbg_children_t.size());
+			dbg_children_t.copyTo(dbg_children);
+			dbg_children_t.clear();
+			for(EulerVertex * v:dbg_children)
+				v->dbg_clear();
+		}
+
 		void dbg_tour(){
 		#ifndef NDEBUG
 			if(!left_out){
@@ -350,15 +374,60 @@ public:
 				return;
 			}
 
+			EulerHalfEdge * from = owner->t.findMin(owner->t.findRoot(incidentEdgeA()))->value;
+
+			EulerVertex * dbgFrom = this;
+			while(dbgFrom->dbg_parent)
+				dbgFrom=dbgFrom->dbg_parent;
+
+			assert(from->contains(dbgFrom));
+			vec<EulerVertex*> dbg_stack;
+			dbgFrom->dbg_visited=true;
+			dbg_stack.push(dbgFrom);
+			while(from && dbg_stack.size()){
+
+				EulerVertex* p = dbg_stack.last();
+				bool found =false;
+
+				for(EulerVertex* t:p->dbg_children){
+					if(!t->dbg_visited && from->contains(t)){
+						t->dbg_visited=true;
+						found=true;
+						dbg_stack.push(t);
+						p->dbg_children_t.push(t);
+						from=from->node->next()->value;
+						break;
+					}
+				}
+				if(!found){
+					dbg_stack.pop();
+					if(dbg_stack.size())
+						assert(from->contains(p->dbg_parent));
+					else{
+						assert(!p->dbg_parent);
+					}
+					if(from->node->next())
+						from=from->node->next()->value;
+					else
+						from=nullptr;
+				}
+			}
+			assert(!from);
+			assert(dbg_stack.size()==1);
+			dbgFrom->dbg_clear();
+
+
+
 				//build the tour
 				vec<int> dbg_tour;
 				dbg_build_tour(this,dbg_tour);
 				vec<int> real_tour;
 				tour(real_tour);
 				assert(dbg_tour.size()==real_tour.size());
-				for(int i = 0;i<real_tour.size();i++){
+				/*for(int i = 0;i<real_tour.size();i++){
 					//assert(dbg_tour[i]==real_tour[i]);
-				}
+				}*/
+
 
 
 		#endif
@@ -689,54 +758,17 @@ public:
 			assert(t.findMax(t.findRoot(a))==node->last());
 		}*/
 		if(!node->isSingleton()){
-			//adjust subtree sizes
-			/*	EulerVertex * p = getParent(node);
-			EulerVertex * orginalParent = p;
-			int rootSize = 0;
-			while(p){
-				p->subtree_size -=node->subtree_size;
-				rootSize = p->subtree_size;
-				p=getParent(p);
+			if(t.size( t.findRoot(node->incidentEdgeA()))==2){
+				//then both nodes are equivalent to being root.
+				node->dbg_make_root();
+				assert(t.findRoot( node->incidentEdgeA()) ==t.findRoot(node->incidentEdgeB()));
+
+				node->dbg_tour();
+				return;
 			}
-*/
-			/*if(node->isLeaf()){
-				Tree::Node * left= node->incidentEdgeA();
 
-				assert(left->next()==node->incidentEdgeB());
-
-				Tree::Node * right = t.splitAfter(left);
-				assert(right==node->incidentEdgeB());
-
-				//ok, now join these in reverse order
-				t.concat(right,left);
-
-				node->setIncidentEdgeB(left->value);
-				node->setIncidentEdgeA(right->value);
-				assert( node->subtree_size==1);
-
-			}else{
-				Tree::Node * a = node->incidentEdgeA();
-				Tree::Node * r1 = t.findMin(t.findRoot(a));
-				if(r1==a){
-					bool b = node->isRoot();
-				}
-				assert(r1!=a);
-				Tree::Node * prev= t.splitBefore(a);
-				assert(prev);
-				assert(t.findRoot(a)==a);
-				assert(t.findRoot(prev)==prev);
-				Tree::Node * rr = t.findMax(prev);
-				if(prev!=r1){
-					assert(t.findRoot(r1)==a);
-					Tree::Node * Tl = t.splitBefore(r1);
-					t.concat(prev,Tl);
-				}
-				assert(t.findMin(t.findRoot(prev))==prev);
-				Tree::Node * e = t.findMax(t.findRoot(prev));
-				t.concat(node->incidentEdgeB(),prev);//is this correct?
-				node->setIncidentEdgeB(e->value);
-			}*/
 			node->dbg_tour();
+			dbg_printTour(node);
 			//split the tree at the two incident edges
 			EulerHalfEdge * f = node->incidentEdgeA()->value;
 			EulerHalfEdge * b =  node->incidentEdgeB()->value;
@@ -744,10 +776,92 @@ public:
 			if(t.compare(f->node, b->node)>0){
 				std::swap(f,b);
 			}
+			assert(t.size(t.findRoot(f->node))%2==0);//full tree is always even
 
+			//we have to do something slightly tricky here, which is to figure out whether f, or one if its neighbours, is the edge we should be splitting on.
+			//this is tricky because we aren't keeping track of this information explicitly with extra 'vertex' nodes in the binary search tree, t, which is the usual solution
+
+			//if the current half edge its following neighbour
+
+			t.splay(f->node);
+
+
+
+			assert(t.size(f->node)%2==0);//full tree is always even
+			assert(f->node->right);//because f is less than the other incident edge, so it can't be the rightmost edge.
+
+			//if there is a node to the right, then there is also a successor node (which may or may not be f->node->right).
+			EulerVertex * other = (f->to==node) ? f->from:f->to; assert(other!=node);
+			EulerHalfEdge * next = f->node->next()->value;
+			//the idea is to look at any three adjacent nodes. this will give us enough information to figure out where to split the tour.
+
+			if(!next->contains(node)){
+				//1) next does NOT contain node. in that case, we need to split on the previous node (if it exists)
+				Tree::Node * fn =f->node->prev();
+				if(!fn){
+					//node is ALREADY the root, don't do anything.
+					node->dbg_make_root();
+					assert(t.findRoot( node->incidentEdgeA()) ==t.findRoot(node->incidentEdgeB()));
+
+					node->dbg_tour();
+					return;
+				}else
+					f = fn->value;
+			}else if(next->contains(other)){
+				//2) next connects the exact same nodes as f, in which case one of them is a leaf.
+				//we need to figure out which one is the leaf and which one is the node, to figure out where to split.
+				//The node is the only one that will be an element of a third edge
+				Tree::Node * next_next = next->node->next();
+				if(!next_next)
+					next_next=f->node->prev();
+
+				if(next_next->value->contains(node)){
+					assert(other->dbg_parent==node);
+					f = next;//We want to cut AFTER returning to node.
+				}else{
+					//node is the leaf, so f is the correct place to cut.
+				}
+
+			}else{
+				//3) next contains node, but not the other vertex of f.
+				//then f is the right place to cut
+			}
+
+
+
+
+			//if(f->node->right){
+			/*	//f is already root.
+				node->dbg_make_root();
+				assert(t.findRoot( node->incidentEdgeA()) ==t.findRoot(node->incidentEdgeB()));
+
+				node->dbg_tour();
+				return;*/
+				//then we are ok - this is already the root
+			/*	f= f->node->prev()->value;
+				assert((f->to==node || f->from==node));*/
+			//}else{
+
+		/*		if(t.size(f->node->left)%2==0){
+					//then we need to split on one of the two neighbours of f in the tour (one that also has this node as an element)
+					Tree::Node * nf = f->node->prev();
+					if(nf && (nf->value->to==node || nf->value->from==node)){
+						f = nf->value;
+					}else{
+						nf = f->node->next();
+						assert(nf);//must exist
+						assert((nf->value->to==node || nf->value->from==node));
+						f=nf->value;
+					}
+				}*/
+			//}
 			//ok, f is before b in the tour. Now we are going to split the tour after f, and then append the section that ends with f  to the right hand side of the tour.
 			Tree::Node * right = t.splitAfter(f->node);
+			dbg_printEdge(f->node);
+
+
 			if(right){
+				//assert(t.size(right)%2==0);
 				assert(t.findMax(t.findRoot(f->node))==f->node);
 				//assert(t.findMin(t.findRoot(right))->value->to == node || t.findMin(t.findRoot(right))->value->from == node );
 				assert(t.findRoot(right)!=t.findRoot(f->node));
@@ -756,11 +870,12 @@ public:
 				//this already is root
 			}
 			assert(t.findMax(t.findRoot(f->node))==f->node);
+
 			//assert(t.findMin(t.findRoot(f->node))->value->to ==node || t.findMin(t.findRoot(f->node))->value->from ==node );
 
 			node->dbg_make_root();
 			assert(t.findRoot( node->incidentEdgeA()) ==t.findRoot(node->incidentEdgeB()));
-
+			dbg_printTour(node);
 			node->dbg_tour();
 		}
 
@@ -844,8 +959,9 @@ public:
 				  b=pb;
 			  }
 		  }*/
-
 		  dbg_printEdge(f);
+
+
 		  //dbg_printEdge(b);
 
 		  //ok, f is before b in the tour
@@ -916,6 +1032,7 @@ public:
 	void tour(EulerVertex* v, vec<int> & tour_out){
 		v->tour(tour_out);
 	}
+
 
 	void dbg_printTour(EulerVertex * v){
 		dbg_printDbgTour(v);
