@@ -452,18 +452,14 @@ public:
 
 		EulerHalfEdge * f = forward_edges[edgeID];
 		EulerHalfEdge * b = backward_edges[edgeID];
+		EulerVertex * from = f->from;
+		EulerVertex * to = f->to;
+
 		f->from->dbg_tour();
 		f->to->dbg_tour();
 
-		//pick one of the two vertices arbitrarily, and make it the root of the tree
-	/*	EulerVertex* root = f->from;
-		EulerVertex* child = f->to;
-		makeRoot(root);
-
-		//now the first and last edges of the tour belong to root
-		assert(t.findMin(t.findRoot(f->node))->value->from==root || t.findMin(t.findRoot(f->node))->value->to==root);
-		assert(t.findMax(t.findRoot(f->node))->value->from==root || t.findMax(t.findRoot(f->node))->value->to==root);
-*/
+		assert(connected(f->from, f->to));
+		assert(t.findRoot(f->node)==t.findRoot(b->node));
 
 		if(t.compare(f->node, b->node)>0){
 			std::swap(f,b);
@@ -471,19 +467,49 @@ public:
 
 		//ok, f is before b in the tour now
 		Tree::Node * t1 = t.splitBefore(f->node);
+		assert(t.findRoot(t1)!=t.findRoot(f->node));
 		Tree::Node * t2 = t.splitAfter(b->node);
 		assert(t.findRoot(t1)!=t.findRoot(f->node));
 		assert(t.findRoot(t2)!=t.findRoot(b->node));
 		assert(t.findRoot(t1)!=t.findRoot(b->node));
 		assert(t.findRoot(t2)!=t.findRoot(f->node));
-		t.concat(t1,t2);//rejoin the two ends of the outer tour
+		if(t1 && t2)
+			t.concat(t1,t2);//rejoin the two ends of the outer tour
 		assert(t.findRoot(t1)!=t.findRoot(f->node));
 		assert(t.findRoot(t2)!=t.findRoot(b->node));
 		assert(t.findRoot(t1)!=t.findRoot(b->node));
 		assert(t.findRoot(t2)!=t.findRoot(f->node));
 
 		//ok, now we need to pick new incident edges for both vertices
-		if(t1->value->to == f->from ||t1->value->from == f->from){
+		if(!t1 && ! t2){
+			//
+			//both vertices are now singletons
+			f->from->setIncidentEdgeA(nullptr);
+			f->from->setIncidentEdgeB(nullptr);
+			f->to->setIncidentEdgeA(nullptr);
+			f->to->setIncidentEdgeB(nullptr);
+
+		}else if (!t1 || ! t2){
+			Tree::Node * t3 = t1?t1:t2;
+			//one vertex is now a singleton... and we need to figure out which one.
+			assert(t.findRoot(t3)==t3);
+			assert(t.findMin(t3)->value->contains(from) || t.findMin(t3)->value->contains(to));
+			EulerHalfEdge * m = t.findMin(t3)->value;
+			if(m->contains(from)){
+				from->setIncidentEdgeA(m);
+				assert(t.findMax(t3)->value->contains(from));
+				from->setIncidentEdgeB(t.findMax(t3)->value);
+				to->setIncidentEdgeA(nullptr);
+				to->setIncidentEdgeB(nullptr);
+			}else{
+				assert(m->contains(to));
+				to->setIncidentEdgeA(m);
+				assert(t.findMax(t3)->value->contains(to));
+				to->setIncidentEdgeB(t.findMax(t3)->value);
+				from->setIncidentEdgeA(nullptr);
+				from->setIncidentEdgeB(nullptr);
+			}
+		}else if(t1->value->to == f->from ||t1->value->from == f->from){
 			assert(t2->value->to == f->from ||t2->value->from == f->from);
 			f->from->setIncidentEdgeA(t1->value);
 			f->from->setIncidentEdgeB(t2->value);
@@ -522,7 +548,7 @@ public:
 
 		t.setIncident(f->node,0);
 		t.setIncident(b->node,0);
-
+		assert(!connected(from,to));
 		f->from->dbg_tour();
 		f->to->dbg_tour();
 #ifndef NDEBUG

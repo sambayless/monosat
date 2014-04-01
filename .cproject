@@ -88,7 +88,7 @@
 						</toolChain>
 					</folderInfo>
 					<sourceEntries>
-						<entry excluding="Main.cc|graph/TreeReachDetector.cpp|smt|smtlib|strings" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+						<entry excluding="graph/kbtest.c|Main.cc|graph/TreeReachDetector.cpp|smt|smtlib|strings" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
 					</sourceEntries>
 				</configuration>
 			</storageModule>
@@ -177,7 +177,7 @@
 						</toolChain>
 					</folderInfo>
 					<sourceEntries>
-						<entry excluding="graph/TreeReachDetector.cpp|smtlib|smt|strings" flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name=""/>
+						<entry excluding="graph/kbtest.c|graph/TreeReachDetector.cpp|smtlib|smt|strings" flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name=""/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="smt"/>
 					</sourceEntries>
 				</configuration>
@@ -257,7 +257,7 @@
 						</toolChain>
 					</folderInfo>
 					<sourceEntries>
-						<entry excluding="graph/TreeReachDetector.cpp|smtlib|smt|strings|schedule" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+						<entry excluding="graph/kbtest.c|graph/TreeReachDetector.cpp|smtlib|smt|strings|schedule" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="smt"/>
 					</sourceEntries>
 				</configuration>
@@ -338,7 +338,7 @@
 						</toolChain>
 					</folderInfo>
 					<sourceEntries>
-						<entry excluding="graph/TreeReachDetector.cpp|smtlib|smt|strings|schedule" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+						<entry excluding="graph/kbtest.c|graph/TreeReachDetector.cpp|smtlib|smt|strings|schedule" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="smt"/>
 					</sourceEntries>
 				</configuration>
@@ -418,7 +418,7 @@
 						</toolChain>
 					</folderInfo>
 					<sourceEntries>
-						<entry excluding="graph/TreeReachDetector.cpp|smtlib|smt|strings|schedule" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+						<entry excluding="graph/kbtest.c|graph/TreeReachDetector.cpp|smtlib|smt|strings|schedule" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="smt"/>
 					</sourceEntries>
 				</configuration>
@@ -508,7 +508,7 @@
 						</toolChain>
 					</folderInfo>
 					<sourceEntries>
-						<entry excluding="Main.cc|graph/TreeReachDetector.cpp|smtlib|smt|strings|schedule" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+						<entry excluding="graph/kbtest.c|Main.cc|graph/TreeReachDetector.cpp|smtlib|smt|strings|schedule" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="smt"/>
 					</sourceEntries>
 				</configuration>
@@ -598,7 +598,7 @@
 						</toolChain>
 					</folderInfo>
 					<sourceEntries>
-						<entry excluding="graph/TreeReachDetector.cpp|smtlib|smt|strings|schedule" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+						<entry excluding="graph/kbtest.c|graph/TreeReachDetector.cpp|smtlib|smt|strings|schedule" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="smt"/>
 					</sourceEntries>
 				</configuration>
@@ -689,7 +689,7 @@
 						</toolChain>
 					</folderInfo>
 					<sourceEntries>
-						<entry excluding="graph/TreeReachDetector.cpp|smtlib|smt|strings" flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name=""/>
+						<entry excluding="graph/kbtest.c|graph/TreeReachDetector.cpp|smtlib|smt|strings" flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name=""/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="smt"/>
 					</sourceEntries>
 				</configuration>
