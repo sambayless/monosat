@@ -515,7 +515,8 @@ public:
 				}
 				assert(n!=p);
 			}
-			if(n&&p){
+			if(n){
+				assert(p);
 				dbg_printTour(from);
 				dbg_printTour(to);
 				assert(n->value->contains(from) ||n->value->contains(to) );
@@ -549,31 +550,53 @@ public:
 			assert(nn->value->contains(from));
 			from->setIncidentEdgeA(pn->value);
 			from->setIncidentEdgeB(nn->value);
-			if(n && p){
+			if((n||p) && ! (n&&p)){
+				if(!n){
+					n = t.findMin(t.findRoot(p));
+				}else{
+					p = t.findMax(t.findRoot(n));
+				}
+				assert(n!=p);
+			}
+
+			if(n){
+				assert(p);
 				assert(n->value->contains(to));
 				assert(p->value->contains(to));
 				to->setIncidentEdgeA(n->value);
 				to->setIncidentEdgeB(p->value);
-			}else if (n){
-				assert(n->value->contains(to));
-				to->setIncidentEdgeA(n->value);
-				p=t.findMax( t.findRoot(n));
-				assert(p!=n);
-				assert(p->value->contains(to));
-				to->setIncidentEdgeB(p->value);
-			}else if (p){
-				assert(p->value->contains(to));
-				to->setIncidentEdgeA(p->value);
-				n=t.findMax( t.findRoot(p));
-				assert(p!=n);
-				assert(n->value->contains(to));
-				to->setIncidentEdgeB(n->value);
 			}else{
 				//to is now a singleton.
 				to->setIncidentEdgeA(nullptr);
 				to->setIncidentEdgeB(nullptr);
 			}
-		}else{
+		}else if(pn->value->contains(to)){
+			assert(nn->value->contains(to));
+			to->setIncidentEdgeA(pn->value);
+			to->setIncidentEdgeB(nn->value);
+			if((n||p) && ! (n&&p)){
+				if(!n){
+					n = t.findMin(t.findRoot(p));
+				}else{
+					p = t.findMax(t.findRoot(n));
+				}
+				assert(n!=p);
+			}
+
+			if(n){
+				assert(p);
+				assert(n->value->contains(from));
+				assert(p->value->contains(from));
+				from->setIncidentEdgeA(n->value);
+				from->setIncidentEdgeB(p->value);
+			}else{
+				//to is now a singleton.
+				from->setIncidentEdgeA(nullptr);
+				from->setIncidentEdgeB(nullptr);
+			}
+		}
+
+		/*else{
 			assert(nn->value->contains(to));
 			to->setIncidentEdgeA(pn->value);
 			to->setIncidentEdgeB(nn->value);
@@ -601,7 +624,7 @@ public:
 				from->setIncidentEdgeA(nullptr);
 				from->setIncidentEdgeB(nullptr);
 			}
-		}
+		}*/
 
 
 		/*if(!t1 && ! t2){
