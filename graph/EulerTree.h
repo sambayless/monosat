@@ -740,23 +740,7 @@ public:
 
 	void makeRoot(EulerVertex*  node){
 		node->dbg_tour();
-	/*	if(!node->isRoot()){
-			assert(node->right_in);
-			Tree::Node * a = node->first();
-			Tree::Node * b= t.splitBefore(a);
-			assert(a==t.findRoot(a));
-			assert(b==t.findRoot(b));
 
-			assert(t.findMin(a)==a);//a is the first element in this tree now
-			assert(t.findMax(b)==b);
-			//now reverse the order of these
-			if(b){
-				t.concat(a,b);
-			}
-			assert(t.findMin(t.findRoot(a))==node->first());
-
-			assert(t.findMax(t.findRoot(a))==node->last());
-		}*/
 		if(!node->isSingleton()){
 			if(t.size( t.findRoot(node->incidentEdgeA()))==2){
 				//then both nodes are equivalent to being root.
@@ -781,19 +765,13 @@ public:
 			//we have to do something slightly tricky here, which is to figure out whether f, or one if its neighbours, is the edge we should be splitting on.
 			//this is tricky because we aren't keeping track of this information explicitly with extra 'vertex' nodes in the binary search tree, t, which is the usual solution
 
-			//if the current half edge its following neighbour
-
-			t.splay(f->node);
-
-
-
-			assert(t.size(f->node)%2==0);//full tree is always even
-			assert(f->node->right);//because f is less than the other incident edge, so it can't be the rightmost edge.
+			//t.splay(f->node);
+			//assert(f->node->right);//because f is less than the other incident edge, so it can't be the rightmost edge.
 
 			//if there is a node to the right, then there is also a successor node (which may or may not be f->node->right).
 			EulerVertex * other = (f->to==node) ? f->from:f->to; assert(other!=node);
 			EulerHalfEdge * next = f->node->next()->value;
-			//the idea is to look at any three adjacent nodes. this will give us enough information to figure out where to split the tour.
+			//the idea is to look at up to two adjacent nodes to 'node'. This will give us enough information to figure out where to split the tour.
 
 			if(!next->contains(node)){
 				//1) next does NOT contain node. in that case, we need to split on the previous node (if it exists)
@@ -827,36 +805,9 @@ public:
 				//then f is the right place to cut
 			}
 
-
-
-
-			//if(f->node->right){
-			/*	//f is already root.
-				node->dbg_make_root();
-				assert(t.findRoot( node->incidentEdgeA()) ==t.findRoot(node->incidentEdgeB()));
-
-				node->dbg_tour();
-				return;*/
-				//then we are ok - this is already the root
-			/*	f= f->node->prev()->value;
-				assert((f->to==node || f->from==node));*/
-			//}else{
-
-		/*		if(t.size(f->node->left)%2==0){
-					//then we need to split on one of the two neighbours of f in the tour (one that also has this node as an element)
-					Tree::Node * nf = f->node->prev();
-					if(nf && (nf->value->to==node || nf->value->from==node)){
-						f = nf->value;
-					}else{
-						nf = f->node->next();
-						assert(nf);//must exist
-						assert((nf->value->to==node || nf->value->from==node));
-						f=nf->value;
-					}
-				}*/
-			//}
 			//ok, f is before b in the tour. Now we are going to split the tour after f, and then append the section that ends with f  to the right hand side of the tour.
 			Tree::Node * right = t.splitAfter(f->node);
+
 			dbg_printEdge(f->node);
 
 
