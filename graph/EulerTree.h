@@ -388,7 +388,8 @@ public:
 
 				EulerVertex* p = dbg_stack.last();
 				bool found =false;
-
+				assert(p->incidentEdgeA());
+				assert(p->incidentEdgeB());
 				for(EulerVertex* t:p->dbg_children){
 					if(!t->dbg_visited && from->contains(t)){
 						t->dbg_visited=true;
@@ -454,6 +455,8 @@ public:
 		EulerHalfEdge * b = backward_edges[edgeID];
 		EulerVertex * from = f->from;
 		EulerVertex * to = f->to;
+		dbg_printTour(from);
+		dbg_printTour(to);
 
 		f->from->dbg_tour();
 		f->to->dbg_tour();
@@ -466,97 +469,237 @@ public:
 		}
 
 		//ok, f is before b in the tour now
+		Tree::Node * p = f->node->prev();
+		Tree::Node * n = b->node->next();
+		Tree::Node * pn = f->node->next();
+		Tree::Node * nn = b->node->prev();
+
 		Tree::Node * t1 = t.splitBefore(f->node);
+		assert(!t1|| t.findMax(t1)==p);
 		assert(t.findRoot(t1)!=t.findRoot(f->node));
 		Tree::Node * t2 = t.splitAfter(b->node);
-		assert(t.findRoot(t1)!=t.findRoot(f->node));
-		assert(t.findRoot(t2)!=t.findRoot(b->node));
-		assert(t.findRoot(t1)!=t.findRoot(b->node));
-		assert(t.findRoot(t2)!=t.findRoot(f->node));
-		if(t1 && t2)
-			t.concat(t1,t2);//rejoin the two ends of the outer tour
+		assert(!t2|| t.findMin(t2)==n);
+
 		assert(t.findRoot(t1)!=t.findRoot(f->node));
 		assert(t.findRoot(t2)!=t.findRoot(b->node));
 		assert(t.findRoot(t1)!=t.findRoot(b->node));
 		assert(t.findRoot(t2)!=t.findRoot(f->node));
 
+		dbg_printTour(from);
+		dbg_printTour(to);
+
+		if(t1 && t2)
+			t.concat(t1,t2);//rejoin the two ends of the outer tour
+
+		//dbg_printTour(from);
+		//dbg_printTour(to);
+
+		assert(t.findRoot(t1)!=t.findRoot(f->node));
+		assert(t.findRoot(t2)!=t.findRoot(b->node));
+		assert(t.findRoot(t1)!=t.findRoot(b->node));
+		assert(t.findRoot(t2)!=t.findRoot(f->node));
+		dbg_printTour(from);
+		dbg_printTour(to);
 		//ok, now we need to pick new incident edges for both vertices
-		if(!t1 && ! t2){
-			//
-			//both vertices are now singletons
+		//these are the previous and next edges
+
+		assert(pn);assert(nn);
+
+		if(pn->value->contains(from) && pn->value->contains(to)){
+			//at least one of from, to is a leaf
+			if((n||p) && ! (n&&p)){
+				if(!n){
+					n = t.findMin(t.findRoot(p));
+				}else{
+					p = t.findMax(t.findRoot(n));
+				}
+				assert(n!=p);
+			}
+			if(n&&p){
+				dbg_printTour(from);
+				dbg_printTour(to);
+				assert(n->value->contains(from) ||n->value->contains(to) );
+				assert(p->value->contains(from) ||p->value->contains(to) );
+
+				if(n->value->contains(from)){
+					assert(p->value->contains(from));
+					from->setIncidentEdgeA(n->value);
+					from->setIncidentEdgeB(p->value);
+					to->setIncidentEdgeA(nullptr);
+					to->setIncidentEdgeB(nullptr);
+				}else{
+					assert(n->value->contains(to));
+					assert(p->value->contains(to));
+					to->setIncidentEdgeA(n->value);
+					to->setIncidentEdgeB(p->value);
+					from->setIncidentEdgeA(nullptr);
+					from->setIncidentEdgeB(nullptr);
+				}
+
+			}else{
+				from->setIncidentEdgeA(nullptr);
+				from->setIncidentEdgeB(nullptr);
+				to->setIncidentEdgeA(nullptr);
+				to->setIncidentEdgeB(nullptr);
+
+				//both of these vertices are now singletons.
+			}
+
+		}else if(pn->value->contains(from)){
+			assert(nn->value->contains(from));
+			from->setIncidentEdgeA(pn->value);
+			from->setIncidentEdgeB(nn->value);
+			if(n && p){
+				assert(n->value->contains(to));
+				assert(p->value->contains(to));
+				to->setIncidentEdgeA(n->value);
+				to->setIncidentEdgeB(p->value);
+			}else if (n){
+				assert(n->value->contains(to));
+				to->setIncidentEdgeA(n->value);
+				p=t.findMax( t.findRoot(n));
+				assert(p!=n);
+				assert(p->value->contains(to));
+				to->setIncidentEdgeB(p->value);
+			}else if (p){
+				assert(p->value->contains(to));
+				to->setIncidentEdgeA(p->value);
+				n=t.findMax( t.findRoot(p));
+				assert(p!=n);
+				assert(n->value->contains(to));
+				to->setIncidentEdgeB(n->value);
+			}else{
+				//to is now a singleton.
+				to->setIncidentEdgeA(nullptr);
+				to->setIncidentEdgeB(nullptr);
+			}
+		}else{
+			assert(nn->value->contains(to));
+			to->setIncidentEdgeA(pn->value);
+			to->setIncidentEdgeB(nn->value);
+			if(n && p){
+				assert(n->value->contains(from));
+				assert(p->value->contains(from));
+				from->setIncidentEdgeA(n->value);
+				from->setIncidentEdgeB(p->value);
+			}else if (n){
+				assert(n->value->contains(from));
+				from->setIncidentEdgeA(n->value);
+				p=t.findMax( t.findRoot(n));
+				assert(p!=n);
+				assert(p->value->contains(from));
+				from->setIncidentEdgeB(p->value);
+			}else if (p){
+				assert(p->value->contains(from));
+				from->setIncidentEdgeA(p->value);
+				n=t.findMax( t.findRoot(p));
+				assert(p!=n);
+				assert(n->value->contains(from));
+				from->setIncidentEdgeB(n->value);
+			}else{
+				//from is now a singleton.
+				from->setIncidentEdgeA(nullptr);
+				from->setIncidentEdgeB(nullptr);
+			}
+		}
+
+
+		/*if(!t1 && ! t2){
+			//one or both of the nodes is now a singleton
 			f->from->setIncidentEdgeA(nullptr);
 			f->from->setIncidentEdgeB(nullptr);
 			f->to->setIncidentEdgeA(nullptr);
 			f->to->setIncidentEdgeB(nullptr);
 
 		}else if (!t1 || ! t2){
-			Tree::Node * t3 = t1?t1:t2;
-			//one vertex is now a singleton... and we need to figure out which one.
-			assert(t.findRoot(t3)==t3);
-			assert(t.findMin(t3)->value->contains(from) || t.findMin(t3)->value->contains(to));
+			Tree::Node * t3 = p?p:n;
+			//at most one vertex is now a singleton... and we need to figure out which one, if either.
+
+			assert(t3->value->contains(from) || t3->value->contains(to));
 			EulerHalfEdge * m = t.findMin(t3)->value;
 			if(m->contains(from)){
 				from->setIncidentEdgeA(m);
 				assert(t.findMax(t3)->value->contains(from));
 				from->setIncidentEdgeB(t.findMax(t3)->value);
-				to->setIncidentEdgeA(nullptr);
-				to->setIncidentEdgeB(nullptr);
+				//to->setIncidentEdgeA(nullptr);
+				//to->setIncidentEdgeB(nullptr);
 			}else{
 				assert(m->contains(to));
 				to->setIncidentEdgeA(m);
 				assert(t.findMax(t3)->value->contains(to));
 				to->setIncidentEdgeB(t.findMax(t3)->value);
-				from->setIncidentEdgeA(nullptr);
-				from->setIncidentEdgeB(nullptr);
+				//from->setIncidentEdgeA(nullptr);
+				//from->setIncidentEdgeB(nullptr);
 			}
-		}else if(t1->value->to == f->from ||t1->value->from == f->from){
-			assert(t2->value->to == f->from ||t2->value->from == f->from);
-			f->from->setIncidentEdgeA(t1->value);
-			f->from->setIncidentEdgeB(t2->value);
-
-			Tree::Node * fn = f->node->next();
-			Tree::Node * bp = b->node->prev();
-
-			assert(fn->value->to == f->to ||fn->value->from == f->to);
-			assert(bp->value->to == f->to ||bp->value->from == f->to);
-
-			f->to->setIncidentEdgeA(fn->value);
-			f->to->setIncidentEdgeB(bp->value);
-
 		}else{
-			assert(t1->value->to == f->to ||t1->value->from == f->to);
-			assert(t2->value->to == f->to ||t2->value->from == f->to);
-			f->to->setIncidentEdgeA(t1->value);
-			f->to->setIncidentEdgeB(t2->value);
 
-			Tree::Node * fn = f->node->next();
-			Tree::Node * bp = b->node->prev();
 
-			assert(fn->value->to == f->from ||fn->value->from == f->from);
-			assert(bp->value->to == f->from ||bp->value->from == f->from);
+			assert(p->value->contains(to) || p->value->contains(from));
+			assert(n->value->contains(to) || n->value->contains(from));
+			if(p->value->contains(from)){
 
-			f->from->setIncidentEdgeA(fn->value);
-			f->from->setIncidentEdgeB(bp->value);
-		}
+				assert(!p->value->contains(to));
+				assert(!t.findMin(n)->value->contains(to));
+				assert(t.findMin(n)->value->contains(from));
+				f->from->setIncidentEdgeA(p->value);
+				f->from->setIncidentEdgeB(n->value);
 
+				Tree::Node * fn = f->node->next();
+				Tree::Node * bp = b->node->prev();
+
+				assert(fn->value->to == f->to ||fn->value->from == f->to);
+				assert(bp->value->to == f->to ||bp->value->from == f->to);
+
+				f->to->setIncidentEdgeA(fn->value);
+				f->to->setIncidentEdgeB(bp->value);
+
+			}else{
+				assert(p->value->contains(to));
+				assert(n->value->contains(to));
+				f->to->setIncidentEdgeA(p->value);
+				f->to->setIncidentEdgeB(n->value);
+
+				Tree::Node * fn = f->node->next();
+				Tree::Node * bp = b->node->prev();
+
+				assert(fn->value->to == f->from ||fn->value->from == f->from);
+				assert(bp->value->to == f->from ||bp->value->from == f->from);
+
+				f->from->setIncidentEdgeA(fn->value);
+				f->from->setIncidentEdgeB(bp->value);
+			}
+		}*/
+		dbg_printTour(from);
+		dbg_printTour(to);
 		//finally, remove these half edges from the inner tour
 		t.splitAfter(f->node);
 		t.splitBefore(b->node);
-
+		//check if either of these has become a singleton
+		if(from->incidentEdgeA() && t.size( t.findRoot(from->incidentEdgeA()) ) ==1){
+			from->setIncidentEdgeA(nullptr);
+			from->setIncidentEdgeB(nullptr);
+		}
+		if(to->incidentEdgeA() && t.size( t.findRoot(to->incidentEdgeA()) ) ==1){
+			to->setIncidentEdgeA(nullptr);
+			to->setIncidentEdgeB(nullptr);
+		}
 		assert(t.size(f->node)==1);
 		assert(t.size(b->node)==1);
 
 		t.setIncident(f->node,0);
 		t.setIncident(b->node,0);
 		assert(!connected(from,to));
-		f->from->dbg_tour();
-		f->to->dbg_tour();
 #ifndef NDEBUG
 		if (f->to->dbg_parent==f->from)
 			f->to->dbg_remove();
 		else
 			f->from->dbg_remove();
 #endif
+
+		dbg_printTour(from);
+		dbg_printTour(to);
+		from->dbg_tour();
+		to->dbg_tour();
 
 
 		f->from->dbg_tour();
