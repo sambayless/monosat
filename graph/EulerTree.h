@@ -59,6 +59,7 @@ public:
 								//IFF the vertex is root, then this is instead the half edge leading to its first child. In that case, the 'from' field is the first occurence of the vertex in the tour
 		EulerHalfEdge * right_in;//the half edge returning to the vertex.  This half edge has the last occurrence of the euler vertex in the tour.
 		int index;
+		bool visited;
 /*		int subtree_size;
 		bool subtree_has_incident_edges;
 		bool has_incident_edges;*/
@@ -70,7 +71,7 @@ public:
 		bool dbg_visited;
 		vec<EulerVertex*> dbg_children_t;
 #endif
-		EulerVertex():left_out(nullptr),right_in(nullptr){
+		EulerVertex():left_out(nullptr),right_in(nullptr),visited(false){
 
 			index=0;
 /*			subtree_size=1;
@@ -82,7 +83,7 @@ public:
 			dbg_parent=nullptr;
 #endif
 		}
-
+/*
 		int getSize(){
 			if(!left_out){
 				assert(!right_in);
@@ -93,8 +94,11 @@ public:
 			assert(((left_out->rank - right_in->rank) %2) ==0);
 			int subtree_size = (left_out->rank - right_in->rank)/2;
 			assert(subtree_size==dbg_getSize());
-			return subtree_size;
-		}
+			//return subtree_size;
+			return t.
+		}*/
+
+
 
 		bool isSingleton(){
 			assert(!left_out == !right_in);
@@ -185,7 +189,7 @@ public:
 		}
 
 
-		//Get the next node in the tour.
+/*		//Get the next node in the tour.
 		EulerVertex * getNext(){
 			if (left_out)
 				return left_out->to;
@@ -193,7 +197,7 @@ public:
 				return incidentEdgeB()->value->to;
 			else
 				return nullptr;
-		}
+		}*/
 
 		//
 		void tour(vec<int> & tour_list){
@@ -356,6 +360,8 @@ public:
 				r=r->dbg_parent;
 			dbg_build_tour_helper(r,tour);
 		}
+
+
 
 		void dbg_clear(){
 			assert(dbg_visited);
@@ -709,8 +715,8 @@ public:
 		assert(t.size(f->node)==1);
 		assert(t.size(b->node)==1);
 
-		t.setIncident(f->node,0);
-		t.setIncident(b->node,0);
+	/*	t.setIncident(f->node,0);
+		t.setIncident(b->node,0);*/
 		assert(!connected(from,to));
 #ifndef NDEBUG
 		if (f->to->dbg_parent==f->from)
@@ -859,9 +865,11 @@ public:
 		}*/
 
 	//Get the next node in the tour. This is log time using splay trees!
+/*
 	EulerVertex * getNext(EulerVertex * from){
 		return from->getNext();
 	}
+*/
 
 /*
 	EulerVertex * findRoot(EulerVertex * v){
@@ -1270,8 +1278,126 @@ public:
 		return vertices[v]->isRoot();
 	}*/
 
+	struct iterator {
+		EulerHalfEdge * n;
+		EulerVertex * start;
+
+		bool backward;
+		static int iter;
+		//static vec<Tree::Node *>  iterator_stack;
+		iterator(EulerVertex * singleton):n(nullptr), start(singleton),backward(false){
+
+		}
+		iterator(EulerVertex * first,EulerHalfEdge * n):n(n),start(first),backward(false){
+
+
+		}
+		iterator():n(nullptr),start(nullptr),backward(false){
+
+		}
+		bool operator !=(const iterator & other)const{
+			return !( other.n==n && other.start==start);
+		}
+		bool operator ==(const iterator & other)const{
+			return other.n==n&& other.start==start;
+		}
+
+	    iterator& operator++(){
+	    	if(++iter>=16){
+	    		int a=1;
+	    	}
+	    	if(!n){
+	    		start=nullptr;
+	    		return *this;
+	    	}
+	    	if(n->from->visited!=true){
+	    		n->from->visited=true;
+	    		if(n->to->visited!=true){
+	    			return *this;
+	    		}
+	    	}
+
+	    	n->to->visited=true;
+	    	//first traverse forwards to the end of the bst from the start node
+	    	if(!backward){
+	    		while(n->node->next()){
+					n=n->node->next()->value;
+					if(!n->from->visited  || !n->to->visited){
+						return *this;
+					}
+				}
+				backward=true;//now switch to traversing backward from the start node
+				n= start->incidentEdgeA()->value;
+	    	}
+	    	assert(backward);
+			while(n->node->prev()){
+				n=n->node->prev()->value;
+				if(!n->from->visited || !n->to->visited){
+
+					return *this;
+				}
+			}
+			n=nullptr;
+			start=nullptr;
+
+			backward=false;
+			return *this;
+	    }
+	    int operator*() const{
+	    	++iter;
+	    	if(!n){
+	    		return start->index;
+	    	}else{
+
+	    		assert(n->from->visited!=true || n->to->visited!=true );
+	    		if(n->from->visited){
+	    			return n->to->index;
+	    		}else{
+	    			return n->from->index;
+	    		}
+	    	}
+
+	    }
+
+	};
+
+	//Traverse the full tree starting from this node, in arbitrary order.
+	iterator begin(int fromVertex) {
+		if(vertices[fromVertex]->isSingleton()){
+			return iterator(vertices[fromVertex]);
+		}else{
+			//Tree::Node * rootNode = t.findRoot(vertices[fromVertex]->incidentEdgeA());
+			//EulerVertex * first = rootNode->value->from;
+			//first, clear any visited vertices...
+			//this is really inefficient! Get rid of this!
+			Tree::Node * n = vertices[fromVertex]->left_out->node;
+			while(n){
+				n->value->from->visited=false;
+				n->value->to->visited=false;
+				n=n->next();
+			}
+			n = vertices[fromVertex]->left_out->node;
+			while(n){
+				n->value->from->visited=false;
+				n->value->to->visited=false;
+				n=n->prev();
+			}
+			return iterator(vertices[fromVertex],vertices[fromVertex]->incidentEdgeA()->value);
+		}
+	  return iterator();
+	}
+
+	iterator end() {
+	  return iterator();
+	}
+
+
 	EulerVertex* getVertex(int n){
 		return vertices[n];
+	}
+
+	int nVertices(){
+		return vertices.size();
 	}
 
 	EulerVertex * createVertex() {
@@ -1282,6 +1408,9 @@ public:
 #endif
 	  vertices.last()->index = vertices.size()-1;
 	  return vertices.last();
+	}
+	EulerTree(){
+		iterator::iter=0;
 	}
 };
 
