@@ -39,17 +39,75 @@ Perform access(i, t) then perform join on t's subtrees
 #include <functional>
 #include "SearchTree.h"
 
+#define linked
+
+template< typename T >
+class AugmentedSplayTree;
+
 template< typename T>
 struct _node {
+friend class AugmentedSplayTree<_node<T>>;
 _node<T> *left, *right;
 _node<T> *parent;
-int subtree_size;
-//int n_incident;
-T value;
-_node( const T& init = T( ) ) : left( 0 ), right( 0 ), parent( 0 ),subtree_size(1), value( init ) { }
+//link to the successor and predessor nodes, for quick traversal
 
-//it should be possible to add prev and next links to this node and maintain them in O(1) time to ensure these operations are also O(1) instead of O(log(n)), as they currently are.
+#ifdef linked
+_node<T> * _next;
+_node<T> * _prev;
+void setPrev(_node<T> * v){
+	_prev=v;
+}
+
+void setNext(_node<T> * v){
+	_next=v;
+}
+#else
+void setPrev(_node<T> * v){
+
+}
+
+void setNext(_node<T> * v){
+
+}
+#endif
+
+int subtree_size;
+public:
+
+T value;
+_node( const T& init = T( ) ) : left( 0 ), right( 0 ), parent( 0 ),subtree_size(1), value( init ) {
+#ifdef linked
+	_next=0;
+	_prev=0;
+#endif
+}
+public:
 _node * prev(){
+#ifdef linked
+#ifndef NDEBUG
+	_node*exp=prev_slow();
+#endif
+	assert(_prev==prev_slow());
+	return _prev;
+#else
+	return prev_slow();
+#endif
+}
+
+_node * next(){
+#ifdef linked
+#ifndef NDEBUG
+	_node*exp=next_slow();
+#endif
+	assert(_next==next_slow());
+	return _next;
+#else
+	return next_slow();
+#endif
+}
+private:
+//it should be possible to add prev and next links to this node and maintain them in O(1) time to ensure these operations are also O(1) instead of O(log(n)), as they currently are.
+_node * prev_slow(){
 	if(left)
 		return left->findMax();
 	else {
@@ -63,7 +121,7 @@ _node * prev(){
 		  return p;
 	}
 }
-_node * next(){
+_node * next_slow(){
 	if(right)
 		return right->findMin();
 	else {
@@ -218,13 +276,27 @@ public:
 #ifndef NDEBUG
 	  if(!x)
 		  return 0;
+
 	  int size = 1 + dbg_checkSubtreeSize(x->left) + dbg_checkSubtreeSize(x->right);
 	  assert(x->subtree_size==size);
 	  return size;
 #endif
 	  return 0;
   }
+  void dbg_checkNextSucc(Node * x){
+#ifndef NDEBUG
+	  if(!x)
+		  return;
+	  x->next();
+	  x->prev();
+	  if(x->next())
+		  x->next()->prev();
+	  if(x->prev())
+		  x->prev()->next();
 
+#endif
+
+  }
   void splay( Node *x ) {
     while( x->parent ) {
       if( !x->parent->parent ) {
@@ -253,8 +325,27 @@ public:
     	//root = v;
     }else if( u == u->parent->left ) u->parent->left = v;
     else u->parent->right = v;
-    if( v ) v->parent = u->parent;
+    if( v ){
+    #ifdef linked
+    	assert(!v->prev());assert(!v->parent);
+
+    	if(u->prev()){
+    		v->setPrev(u->prev());
+    		assert(u->prev()->next()==u);
+    		u->prev()->setNext(v);
+    	}
+    	if(u->next()){
+			v->setNext(u->next());
+			assert(u->next()->prev()==u);
+			u->next()->setPrev(v);
+		}
+#endif
+     v->parent = u->parent;
+     }
     dbg_checkSubtreeSize(u);
+    dbg_checkSubtreeSize(v);
+    dbg_checkNextSucc(v);
+    dbg_checkNextSucc(u);
   }
 
   Node* subtree_minimum( Node *u ) {
@@ -286,16 +377,25 @@ public:
     z = toInsert;
     z->parent = p;
 
-
     if( !p ){
     	//root = z;
     }else{
+    	assert(!p->right);
+#ifdef linked
+
+    assert(!p->next());
+    Node * m = z->findMin();
+    p->setNext(m);
+    m->setPrev(p);
+#endif
     	p->right = z;
-    	 p->subtree_size+=z->subtree_size;
+    	p->subtree_size+=z->subtree_size;
     }
     splay( z );//why?
     p_size++;
     dbg_checkSubtreeSize(z);
+    dbg_checkNextSucc(z);
+
   }
 
   void insertBefore(Node * insertAt, Node * toInsert ) {
@@ -314,12 +414,21 @@ public:
     if( !p ){
     	//root = z;
     }else{
+
+#ifdef linked
+
+    assert(!p->prev());
+    Node * m = z->findMax();
+    p->setPrev(m);
+    m->setNext(p);
+#endif
     	p->left = z;
     	 p->subtree_size+=z->subtree_size;
     }
     splay( z );
     p_size++;
     dbg_checkSubtreeSize(z);
+    dbg_checkNextSucc(z);
   }
 
 /*  node* find( const T &key ) {
@@ -339,10 +448,15 @@ public:
 	  assert(!splitAt->parent);
 	  assert(findRoot(splitAt)==splitAt);
 	  Node * r = splitAt->right;
-	  splitAt->right = nullptr;
 	  if(r){
+#ifdef linked
+		  assert(splitAt->next());
+		  splitAt->next()->setPrev(nullptr);
+		  splitAt->setNext(nullptr);
+#endif
 		  r->parent=nullptr;
 	  }
+	  splitAt->right = nullptr;
 
 	  assert(findMax(splitAt)==splitAt);
 	  assert(findMax(findRoot(splitAt))==splitAt);
@@ -361,7 +475,8 @@ public:
 			  p=p->parent;
 		  }
 	  }
-
+	  dbg_checkNextSucc(splitAt);
+	  dbg_checkNextSucc(r);
 	  return r;
   }
   //This is LOG time
@@ -370,10 +485,18 @@ public:
 	  assert(!splitAt->parent);
 
 	  Node * l = splitAt->left;
-	  splitAt->left = nullptr;
+
 	  if(l){
+	  #ifdef linked
+		  assert(splitAt->prev());
+		  splitAt->prev()->setNext(nullptr);
+		  splitAt->setPrev(nullptr);
+#endif
 		  l->parent=nullptr;
 	  }
+
+	  splitAt->left = nullptr;
+
 	  if(l){
 		  Node * p = splitAt;
 		  while(p){
@@ -382,7 +505,8 @@ public:
 			  p=p->parent;
 		  }
 	  }
-
+	  dbg_checkNextSucc(splitAt);
+	  dbg_checkNextSucc(l);
 	  return l;
   }
   //This is LOG time
@@ -393,6 +517,13 @@ public:
 	   assert(findRoot(right)==right);
 
 	   Node* maxLeft = findMax(left);
+	   	   //only needed if we are maintaining next/prev pointers
+#ifdef linked
+	   Node * minRight = findMin(right);
+	   assert(!maxLeft->next()); assert(!minRight->prev());
+	   maxLeft->setNext(minRight);
+	   minRight->setPrev(maxLeft);
+#endif
 	   splay(maxLeft);
 	   assert(!maxLeft->parent);
 	   assert(!maxLeft->right);
@@ -400,9 +531,12 @@ public:
 	   right->parent=maxLeft;
 	   maxLeft->subtree_size+=right->subtree_size;
 	   dbg_checkSubtreeSize(maxLeft);
+	   dbg_checkNextSucc(maxLeft);
+	   dbg_checkNextSucc(right);
+	   dbg_checkNextSucc(left);
 	   return left;
   }
-  //This is LOG time
+/*  //This is LOG time
   void remove( Node * toRemove ) {
     Node *z =toRemove;
     if( !z ) return;
@@ -426,7 +560,7 @@ public:
 
     delete z;
     p_size--;
-  }
+  }*/
   //This is LOG time
   Node* findRoot(Node* of ) {
 

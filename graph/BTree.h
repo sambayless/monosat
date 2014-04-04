@@ -114,7 +114,7 @@
 #include <ostream>
 #include <string>
 #include <utility>
-
+#include "SearchTree.h"
 
 namespace btree {
 
@@ -434,7 +434,7 @@ class btree_node {
 
 template <typename Node, typename Reference, typename Pointer>
 struct btree_iterator {
-  typedef typename Node::key_type key_type;
+ // typedef typename Node::key_type key_type;
   typedef typename Node::size_type size_type;
   typedef typename Node::difference_type difference_type;
   typedef typename Node::params_type params_type;
@@ -497,9 +497,9 @@ struct btree_iterator {
   }
 
   // Accessors for the key/value the iterator is pointing at.
-  const key_type& key() const {
+/*  const key_type& key() const {
     return node->key(position);
-  }
+  }*/
   reference operator*() const {
     return node->value(position);
   }
@@ -533,16 +533,48 @@ struct btree_iterator {
 };
 
 template <typename Params>
-class btree : public Params::key_compare {
+class btree :public SearchTree<btree_node<Params>>{
   typedef btree<Params> self_type;
   typedef btree_node<Params> node_type;
   typedef typename node_type::base_fields base_fields;
   typedef typename node_type::leaf_fields leaf_fields;
   typedef typename node_type::internal_fields internal_fields;
   typedef typename node_type::root_fields root_fields;
-  typedef typename Params::is_key_compare_to is_key_compare_to;
 
+  typedef node_type Node;
 
+	int size(Node * n){
+		return nodes();
+	}
+
+	Node* findRoot(Node* of){
+
+	}
+	Node* findMin(Node* of){
+		while(of->count() && of->child(0)){
+			of=of>child(0);
+		}
+		return of;
+	}
+
+	Node* findMax(Node* root){
+		while(of->count() && of->child(0)){
+			of=of>child(0);
+		}
+		return of;
+	}
+
+	int depth(Node * a){
+
+	}
+
+	//Return -1 if a< b, 1 if a>b, 0 if either they are the same node, or not in the same tree.
+	int compare(Node * a, Node * b)=0;
+	void remove(Node * toRemove)=0;
+	Node*splitAfter(Node * splitAt)=0;
+	Node*splitBefore(Node * splitAt)=0;
+	//All nodes in right must be (strictly) greater than all nodes in left
+	Node*concat(Node * left, Node*right)=0;
 
   enum {
     kNodeValues = node_type::kNodeValues,
@@ -644,7 +676,7 @@ class btree : public Params::key_compare {
   }
 
   // Finds the first element whose key is not less than key.
-  iterator lower_bound(const key_type &key) {
+/*  iterator lower_bound(const key_type &key) {
     return internal_end(
         internal_lower_bound(key, iterator(root(), 0)));
   }
@@ -718,7 +750,7 @@ class btree : public Params::key_compare {
   // Insert a range of values into the btree.
   template <typename InputIterator>
   void insert_multi(InputIterator b, InputIterator e);
-
+*/
   void assign(const self_type &x);
 
   // Erase the specified iterator from the btree. The iterator must be valid
@@ -736,6 +768,7 @@ class btree : public Params::key_compare {
   // Erases all of the entries matching the specified key from the
   // btree. Returns the number of elements erased.
   int erase_multi(const key_type &key);
+/*
 
   // Finds the iterator corresponding to a key or returns end() if the key is
   // not present.
@@ -770,6 +803,7 @@ class btree : public Params::key_compare {
   size_type count_multi(const key_type &key) const {
     return distance(lower_bound(key), upper_bound(key));
   }
+*/
 
   // Clear the btree, deleting all of the values it contains.
   void clear();
@@ -787,15 +821,6 @@ class btree : public Params::key_compare {
     return *this;
   }
 
-  key_compare* mutable_key_comp() {
-    return this;
-  }
-  const key_compare& key_comp() const {
-    return *this;
-  }
-  bool compare_keys(const key_type &x, const key_type &y) const {
-    return btree_compare_keys(key_comp(), x, y);
-  }
 
   // Dump the btree to the specified ostream. Requires that operator<< is
   // defined for Key and Value.

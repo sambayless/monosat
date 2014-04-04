@@ -251,7 +251,7 @@ public:
 		printf("Path Time: %f (#Paths: %d, AvgLength %f, total: %d)\n", pathtime, num_learnt_paths, (learnt_path_clause_length /  ((float) num_learnt_paths+1)),learnt_path_clause_length);
 		printf("Min-cut Time: %f (%d calls, %f average, #Cuts: %d, AvgLength %f, total: %d)\n", mctime, stats_mc_calls,(mctime/(stats_mc_calls ? stats_mc_calls:1)),  num_learnt_cuts, (learnt_cut_clause_length /  ((float) num_learnt_cuts+1)),learnt_cut_clause_length);
 
-		int stats_full_updates=0;
+		/*int stats_full_updates=0;
 		int stats_fast_updates=0;
 		int stats_failed_fast_updates=0;
 		int stats_skip_deletes=0;
@@ -287,7 +287,7 @@ public:
 		printf("Dijkstra Full Updates: %d (time: %f, average: %f)\n",stats_full_updates, stats_full_update_time,(stats_full_update_time/(stats_full_updates ? stats_full_updates:1)));
 		printf("Dijkstra Fast Updates: %d (time: %f, average: %f, failed: %d)\n",stats_fast_updates, stats_fast_update_time,(stats_fast_update_time/(stats_fast_updates ? stats_fast_updates:1)),stats_failed_fast_updates);
 		printf("Dijkstra Skipped Updates: %d (deletionSkips: %d, skipable deletes %d)\n",stats_skipped_updates, stats_skip_deletes,skipable_deletions);
-
+*/
 	}
 
      ~GraphTheorySolver(){};

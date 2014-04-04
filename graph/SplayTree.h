@@ -36,15 +36,59 @@ Perform access(i, t) then perform join on t's subtrees
 #define SPLAY_TREE
 #include <functional>
 #include "SearchTree.h"
+#define linked
+template< typename T>
+class SplayTree:public SearchTree<_node<T>> ;
 
 template< typename T>
 struct _node {
+friend SplayTree<_node<T>>;
 _node<T> *left, *right;
 _node<T> *parent;
-T value;
-_node( const T& init = T( ) ) : left( 0 ), right( 0 ), parent( 0 ), value( init ) { }
+//link to the successor and predessor nodes, for quick traversal
+private:
+#ifdef linked
+_node<T> * _next;
+_node<T> * _prev;
+void setPrev(_node<T> * v){
+	_prev=v;
+}
 
+void setNext(_node<T> * v){
+	_next=v;
+}
+#else
+void setPrev(_node<T> * v){
+
+}
+
+void setNext(_node<T> * v){
+
+}
+#endif
+public:
+T value;
+_node( const T& init = T( ) ) : left( 0 ), right( 0 ), parent( 0 ),_next(0),_prev(0), value( init ) { }
+public:
 _node * prev(){
+#ifdef linked
+	assert(_prev==prev_slow());
+	return _prev;
+#else
+	return prev_slow();
+#endif
+}
+
+_node * next(){
+#ifdef linked
+	assert(_next==next_slow());
+	return _next;
+#else
+	return next_slow();
+#endif
+}
+private:
+_node * prev_slow(){
 	if(left)
 		return left->findMax();
 	else {
@@ -58,7 +102,7 @@ _node * prev(){
 		  return p;
 	}
 }
-_node * next(){
+_node * next_slow(){
 	if(right)
 		return right->findMin();
 	else {
@@ -73,8 +117,6 @@ _node * next(){
 	}
 
 }
-
-private:
 
 _node* findMin(  ) {
   _node*u=this;
@@ -146,11 +188,27 @@ private:
   }
 
   void replace( Node *u, Node *v ) {
+
     if( !u->parent ){
     	//root = v;
     }else if( u == u->parent->left ) u->parent->left = v;
     else u->parent->right = v;
-    if( v ) v->parent = u->parent;
+    if( v ){
+#ifdef linked
+    	assert(!v->prev());assert(!v->parent);
+    	if(u->prev()){
+    		v->setPrev(u->prev());
+    		assert(u->prev()->next()==u);
+    		u->prev()->setNext(v);
+    	}
+    	if(u->next()){
+			v->setNext(u->next());
+			assert(u->next()->prev()==u);
+			u->next()->setPrev(v);
+		}
+#endif
+    	v->parent = u->parent;
+    }
   }
 
   Node* subtree_minimum( Node *u ) {
@@ -213,24 +271,20 @@ public:
     p_size++;
   }
 
-/*  node* find( const T &key ) {
-    node *z = root;
-    while( z ) {
-      if( comp( z->key, key ) ) z = z->right;
-      else if( comp( key, z->key ) ) z = z->left;
-      else return z;
-    }
-    return 0;
-  }*/
-
   //Splits and returns the node to the right of splitAt; splitAt remains connected to the nodes left of it.
   Node*splitAfter(Node * splitAt){
 	  splay(splitAt);
 	  assert(!splitAt->parent);
 
 	  Node * r = splitAt->right;
+
 	  splitAt->right = nullptr;
 	  if(r){
+#ifdef linked
+		  assert(r->prev());
+		  r->prev()->setNext(nullptr);
+		  r->setPrev(nullptr);
+#endif
 		  r->parent=nullptr;
 	  }
 	  return r;
@@ -242,6 +296,11 @@ public:
 	  Node * l = splitAt->left;
 	  splitAt->left = nullptr;
 	  if(l){
+#ifdef linked
+		  assert(l->next());
+		  l->next()->setPrev(nullptr);
+		  l->setNext(nullptr);
+#endif
 		  l->parent=nullptr;
 	  }
 	  return l;
@@ -253,6 +312,14 @@ public:
 	   assert(findRoot(right)==right);
 
 	   Node* maxLeft = findMax(left);
+
+	   //only needed if we are maintaining next/prev pointers
+#ifdef linked
+	   Node * minRight = findMin(right);
+	   assert(!maxLeft->next()); assert(!minRight->prev());
+	   maxLeft->setNext(minRight);
+	   minRight->setPrev(maxLeft);
+#endif
 	   splay(maxLeft);
 	   assert(!maxLeft->parent);
 	   assert(!maxLeft->right);

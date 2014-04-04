@@ -187,9 +187,7 @@ void cut(int edgeID){
 	if(!e.in_forest){
 		return;//this edge is not in the top level forest (and hence also not in _any_ level forest), so we don't need to do anything special to remove it
 	}
-	if(edgeID==389){
-		int a=1;
-	}
+
 	int u = e.from;
 	int v = e.to;
 	assert(e.level>0);
@@ -203,21 +201,19 @@ void cut(int edgeID){
 	bool foundReplacement=false;
 	for(int i = e.level;!foundReplacement && i<levels;i++){
 		dbg_tree(i);
-		EulerTree::EulerVertex * tu = et[i].getVertex(u);
-		EulerTree::EulerVertex * tv = et[i].getVertex(v);
+
 		//apparently this doesn't hold.. but shouldn't it??
-		assert(et[i].connected(tu,tv));
+		assert(et[i].connected(u,v));
 
 		et[i].cut(edgeID);
 		//int sumsize=et[i].getFullTreeSize(tu) + et[i].getFullTreeSize(tv);
-		assert(et[i].getFullTreeSize(tu) + et[i].getFullTreeSize(tv) <= pow(2,i+1));//invariant from paper... (note that we are adding one to i, because our levels start at log2(n)-1 and decrease, rather than starting at 0 and increasing)
-		assert(!et[i].connected(tu,tv));//these must be disconnected now that we have cut them
+		assert(et[i].getFullTreeSize(u) + et[i].getFullTreeSize(v) <= pow(2,i+1));//invariant from paper... (note that we are adding one to i, because our levels start at log2(n)-1 and decrease, rather than starting at 0 and increasing)
+		assert(!et[i].connected(u,v));//these must be disconnected now that we have cut them
 
-		if(et[i].getFullTreeSize(tv)>et[i].getFullTreeSize(tu)){
-			std::swap(tv,tu);
+		if(et[i].getFullTreeSize(v)>et[i].getFullTreeSize(u)){
 			std::swap(u,v);
 		}
-		int sz = et[i].getFullTreeSize(v);
+		//int sz = et[i].getFullTreeSize(v);
 		assert(et[i].getFullTreeSize(v)<=et[i].getFullTreeSize(u));
 		assert(et[i].getFullTreeSize(v) <= pow(2,i));
 
@@ -239,9 +235,9 @@ void cut(int edgeID){
 				treeEdge.level--;
 				assert(treeEdge.level>=0);
 				assert(!et[treeEdge.level].connected(treeEdge.from,treeEdge.to));
-				int oldsz1 = et[treeEdge.level].getFullTreeSize(treeEdge.from);
+				/*int oldsz1 = et[treeEdge.level].getFullTreeSize(treeEdge.from);
 				int oldsz2 = et[treeEdge.level].getFullTreeSize(treeEdge.to);
-				int psize =  et[i].getFullTreeSize(v);
+				int psize =  et[i].getFullTreeSize(v);*/
 				//assert(et[treeEdge.level].getFullTreeSize(treeEdge.from) + et[treeEdge.level].getFullTreeSize(treeEdge.to) <= pow(2,treeEdge.level+1));
 				dbg_tree(treeEdge.level);
 				dbg_printTree(treeEdge.level,treeEdge.from);
@@ -252,7 +248,7 @@ void cut(int edgeID){
 				dbg_tree(treeEdge.level);
 				//invariant 1 in the paper
 				assert(et[treeEdge.level].connected(treeEdge.from,treeEdge.to));
-				int nsz = et[treeEdge.level].getFullTreeSize(treeEdge.from);
+				//int nsz = et[treeEdge.level].getFullTreeSize(treeEdge.from);
 				//invariant 2 in the paper
 				assert(et[treeEdge.level].getFullTreeSize(treeEdge.from) <= pow(2,treeEdge.level+1));
 			}
@@ -343,8 +339,6 @@ ThorupDynamicConnectivity():nodes(0),levels(0){
 
 }
 bool connected(int u, int v){
-	bool c = et.last().connected(u,v);
-	bool d = dbg.connected(u,v);
 	assert(et.last().connected(u,v)==dbg.connected(u,v));
 	return et.last().connected(u,v);
 }
@@ -352,6 +346,10 @@ bool connected(int u, int v){
 int numComponents(){
 	assert(et.last().numComponents()==dbg.numComponents());
 	return et.last().numComponents();
+}
+
+int findRoot(int node){
+	return et.last().findRoot(node);
 }
 
 void addNode(){
@@ -385,6 +383,20 @@ void addEdge(int edgeID, int from, int to){
 
 bool edgeEnabled(int edgeid)const{
 	return edges[edgeid].enabled;
+}
+
+//disable all edges
+void clear(){
+
+	for(int i = 0;i<edges.size();i++){
+		edges[i].enabled=false;
+		edges[i].in_forest=false;
+		edges[i].level=levels;
+	}
+	for(EulerTree & t:et){
+		t.clear();
+	}
+
 }
 
 void setEdgeEnabled(int edgeID, bool enabled){

@@ -88,8 +88,8 @@
 						</toolChain>
 					</folderInfo>
 					<sourceEntries>
-						<entry excluding="smt|smtlib|tests|graph/kbtest.c|test/test_thorup.cpp|Main.cc|strings|graph/TreeReachDetector.cpp" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
-						<entry excluding="test_eulertree.cpp" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="tests"/>
+						<entry excluding="smt|smtlib|tests|graph/kbtest.c|test/test_thorup.cpp|strings|graph/TreeReachDetector.cpp" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+						<entry excluding="test_thorup.cpp|test_eulertree.cpp" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="tests"/>
 					</sourceEntries>
 				</configuration>
 			</storageModule>

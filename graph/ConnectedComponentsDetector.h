@@ -74,7 +74,7 @@ public:
 
 		vec<bool> edge_in_clause;
 		vec<int> visit;
-		DisjointSets sets;
+		//DisjointSets sets;
 
 		vec<vec<Lit> > reachLits;
 
