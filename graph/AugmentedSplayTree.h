@@ -1,0 +1,566 @@
+//Implementation modified from wikipedia
+
+/**
+ *From http://www.eli.sdsu.edu/courses/fall95/cs660/notes/splay/Splay.html
+ *  Splay Operations
+
+access(i, t): if i is in tree t return pointer to i, otherwise return null pointer
+
+Find i, then splay tree t at i.
+If i is not in tree t, then splay last node accessed looking for i
+
+
+
+join (a, b): Return tree formed by combining tree "a", and tree "b". Assumes that every item in "a" has key less then every item in "b"
+
+Splay largest item in "a", then add "b" as a right child of root of "a"
+
+
+
+split (i, t): Split tree t, containing item i, into two trees: "a", containing all items with key less or equal to "i"; and "b", containing all items with key greater than "i"
+
+Perform access(i, t) then split tree at root
+
+
+insert(i, t): insert i in tree t
+
+Perform split (i, t) then make i the root of the two trees returned by split
+
+
+delete(i, t): delete i from tree t
+
+Perform access(i, t) then perform join on t's subtrees
+ */
+
+//This splay tree is augmented to keep track of the sizes of subtrees
+
+#ifndef SPLAY_TREE
+#define SPLAY_TREE
+#include <functional>
+#include "SearchTree.h"
+
+template< typename T>
+struct _node {
+_node<T> *left, *right;
+_node<T> *parent;
+int subtree_size;
+//int n_incident;
+T value;
+_node( const T& init = T( ) ) : left( 0 ), right( 0 ), parent( 0 ),subtree_size(1), value( init ) { }
+
+//it should be possible to add prev and next links to this node and maintain them in O(1) time to ensure these operations are also O(1) instead of O(log(n)), as they currently are.
+_node * prev(){
+	if(left)
+		return left->findMax();
+	else {
+		  _node*n = this;
+		  _node *p = n->parent;
+		  while(p  && n == p->left)
+		  {
+		     n = p;
+		     p = p->parent;
+		  }
+		  return p;
+	}
+}
+_node * next(){
+	if(right)
+		return right->findMin();
+	else {
+		  _node*n = this;
+		  _node *p = n->parent;
+		  while(p  && n == p->right)
+		  {
+		     n = p;
+		     p = p->parent;
+		  }
+		  return p;
+	}
+
+}
+
+private:
+
+_node* findMin(  ) {
+  _node*u=this;
+  while( u->left ) u = u->left;
+  return u;
+}
+
+_node* findMax(  ) {
+  _node*u=this;
+  while( u->right ) u = u->right;
+  return u;
+}
+
+} ;
+
+template< typename T >
+class AugmentedSplayTree:public AugmentedSearchTree<_node<T>> {
+public:
+  //Comp comp;
+  unsigned long p_size;
+  typedef _node<T> Node;
+private:
+  //node * root;
+  /**
+   *
+   * http://www.cs.cmu.edu/~avrim/451f12/lectures/lect0927.txt:
+   *
+   * Let's denote by n.l and n.r the left and right children
+of a node n.  We can use the following fact to help us
+keep the sizes:
+
+     n.size = n.l.size + n.r.size + 1
+
+(The null nodes have size 0.)
+
+When we do a rotation, the only nodes whose sizes change
+are the two involved in the rotation.
+
+                             y             x
+   right rotation:          /     ====>     \
+                           x                 y
+
+To update the sizes after the rotation, we first fix y
+(by applying the above formula) and then we fix x.
+
+This allows us to splay while maintaining the size fields.
+   */
+  void left_rotate( Node *x ) {
+    Node *y = x->right;
+
+   // int x_incident = getIncident(x);
+   // int y_incident = getIncident(y);
+
+    x->right = y->left;
+    if( y->left )
+    	y->left->parent = x;
+    y->parent = x->parent;
+    if( !x->parent ){
+    	//root = y;
+    }else if( x == x->parent->left )
+    	x->parent->left = y;
+    else
+    	x->parent->right = y;
+    y->left = x;
+    x->parent = y;
+
+    //update x's subtree size (have to do this first, because x is a child of y)
+    x->subtree_size=1;
+   // x->n_incident=x_incident;
+    if(x->left){
+    	x->subtree_size+=x->left->subtree_size;
+    	//x->n_incident+=x->left->n_incident;
+    }
+    if(x->right){
+    	x->subtree_size+=x->right->subtree_size;
+    	//x->n_incident+=x->right->n_incident;
+    }
+
+    //update y's subtree size
+    y->subtree_size=1;
+    //y->n_incident=y_incident;
+    if(y->left){
+    	y->subtree_size+=y->left->subtree_size;
+    	//y->n_incident+=y->left->n_incident;
+    }
+    if(y->right){
+    	y->subtree_size+=y->right->subtree_size;
+    	//y->n_incident+=y->right->n_incident;
+    }
+    dbg_checkSubtreeSize(y);
+  }
+
+  void right_rotate( Node *x ) {
+    Node *y = x->left;
+
+    //int x_incident = getIncident(x);
+   // int y_incident = getIncident(y);
+
+    x->left = y->right;
+    if( y->right ) y->right->parent = x;
+    y->parent = x->parent;
+    if( !x->parent ){
+    	//root = y;
+    }else if( x == x->parent->left ) x->parent->left = y;
+    else x->parent->right = y;
+    y->right = x;
+    x->parent = y;
+
+    //update x's subtree size (have to do this first, because x is a child of y)
+    x->subtree_size=1;
+    //x->n_incident=x_incident;
+    if(x->left){
+    	x->subtree_size+=x->left->subtree_size;
+    	//x->n_incident+=x->left->n_incident;
+    }
+    if(x->right){
+    	x->subtree_size+=x->right->subtree_size;
+    	//x->n_incident+=x->right->n_incident;
+    }
+
+    //update y's subtree size
+    y->subtree_size=1;
+   // y->n_incident=y_incident;
+    if(y->left){
+    	y->subtree_size+=y->left->subtree_size;
+    	//y->n_incident+=y->left->n_incident;
+    }
+    if(y->right){
+    	y->subtree_size+=y->right->subtree_size;
+    	//y->n_incident+=y->right->n_incident;
+    }
+    dbg_checkSubtreeSize(y);
+  }
+public:
+  int dbg_checkSubtreeSize(Node * x){
+#ifndef NDEBUG
+	  if(!x)
+		  return 0;
+	  int size = 1 + dbg_checkSubtreeSize(x->left) + dbg_checkSubtreeSize(x->right);
+	  assert(x->subtree_size==size);
+	  return size;
+#endif
+	  return 0;
+  }
+
+  void splay( Node *x ) {
+    while( x->parent ) {
+      if( !x->parent->parent ) {
+        if( x->parent->left == x ) right_rotate( x->parent );
+        else left_rotate( x->parent );
+      } else if( x->parent->left == x && x->parent->parent->left == x->parent ) {
+        right_rotate( x->parent->parent );
+        right_rotate( x->parent );
+      } else if( x->parent->right == x && x->parent->parent->right == x->parent ) {
+        left_rotate( x->parent->parent );
+        left_rotate( x->parent );
+      } else if( x->parent->left == x && x->parent->parent->right == x->parent ) {
+        right_rotate( x->parent );
+        left_rotate( x->parent );
+      } else {
+        left_rotate( x->parent );
+        right_rotate( x->parent );
+      }
+    }
+    assert(findRoot(x)==x);
+    dbg_checkSubtreeSize(x);
+  }
+
+  void replace( Node *u, Node *v ) {
+    if( !u->parent ){
+    	//root = v;
+    }else if( u == u->parent->left ) u->parent->left = v;
+    else u->parent->right = v;
+    if( v ) v->parent = u->parent;
+    dbg_checkSubtreeSize(u);
+  }
+
+  Node* subtree_minimum( Node *u ) {
+    while( u->left ) u = u->left;
+    return u;
+  }
+
+  Node* subtree_maximum( Node *u ) {
+    while( u->right ) u = u->right;
+    return u;
+  }
+public:
+  AugmentedSplayTree( ) : p_size( 0 ) { }
+
+  Node * createNode(const T &value){
+	  return new Node(value);
+  }
+
+  void insertAfter(Node * insertAt, Node * toInsert ) {
+    Node *z = insertAt;
+    Node *p = nullptr;
+
+    while( z ) {
+      p = z;
+      z = z->right;
+      //else z = z->left;
+    }
+
+    z = toInsert;
+    z->parent = p;
+
+
+    if( !p ){
+    	//root = z;
+    }else{
+    	p->right = z;
+    	 p->subtree_size+=z->subtree_size;
+    }
+    splay( z );//why?
+    p_size++;
+    dbg_checkSubtreeSize(z);
+  }
+
+  void insertBefore(Node * insertAt, Node * toInsert ) {
+    Node *z = insertAt;
+    Node *p = nullptr;
+
+    while( z ) {
+      p = z;
+      z = z->left;
+      //else z = z->left;
+    }
+
+    z = toInsert;
+    z->parent = p;
+
+    if( !p ){
+    	//root = z;
+    }else{
+    	p->left = z;
+    	 p->subtree_size+=z->subtree_size;
+    }
+    splay( z );
+    p_size++;
+    dbg_checkSubtreeSize(z);
+  }
+
+/*  node* find( const T &key ) {
+    node *z = root;
+    while( z ) {
+      if( comp( z->key, key ) ) z = z->right;
+      else if( comp( key, z->key ) ) z = z->left;
+      else return z;
+    }
+    return 0;
+  }*/
+
+  //Splits and returns the node to the right of splitAt; splitAt remains connected to the nodes left of it.
+  //This is LOG time
+  Node*splitAfter(Node * splitAt){
+	  splay(splitAt);
+	  assert(!splitAt->parent);
+	  assert(findRoot(splitAt)==splitAt);
+	  Node * r = splitAt->right;
+	  splitAt->right = nullptr;
+	  if(r){
+		  r->parent=nullptr;
+	  }
+
+	  assert(findMax(splitAt)==splitAt);
+	  assert(findMax(findRoot(splitAt))==splitAt);
+
+	  if(r){
+		  assert(findRoot(r)==r);
+
+	  assert(findRoot(splitAt)!=findRoot(r));
+
+	  }
+	  if(r){
+		  Node * p = splitAt;
+		  while(p){
+			  p->subtree_size-=r->subtree_size;
+			  dbg_checkSubtreeSize(p);
+			  p=p->parent;
+		  }
+	  }
+
+	  return r;
+  }
+  //This is LOG time
+  Node*splitBefore(Node * splitAt){
+	  splay(splitAt);
+	  assert(!splitAt->parent);
+
+	  Node * l = splitAt->left;
+	  splitAt->left = nullptr;
+	  if(l){
+		  l->parent=nullptr;
+	  }
+	  if(l){
+		  Node * p = splitAt;
+		  while(p){
+			  p->subtree_size-=l->subtree_size;
+			  dbg_checkSubtreeSize(p);
+			  p=p->parent;
+		  }
+	  }
+
+	  return l;
+  }
+  //This is LOG time
+  Node *concat(Node * left, Node*right){
+	   left = findRoot(left);
+	   right= findRoot(right);
+	   assert(findRoot(left)==left);
+	   assert(findRoot(right)==right);
+
+	   Node* maxLeft = findMax(left);
+	   splay(maxLeft);
+	   assert(!maxLeft->parent);
+	   assert(!maxLeft->right);
+	   maxLeft->right=right;
+	   right->parent=maxLeft;
+	   maxLeft->subtree_size+=right->subtree_size;
+	   dbg_checkSubtreeSize(maxLeft);
+	   return left;
+  }
+  //This is LOG time
+  void remove( Node * toRemove ) {
+    Node *z =toRemove;
+    if( !z ) return;
+
+    splay( z );
+    //need to maintain subtree sizes here...
+    if( !z->left ) replace( z, z->right );
+    else if( !z->right ) replace( z, z->left );
+    else {
+      Node *y = subtree_minimum( z->right );
+      if( y->parent != z ) {
+        replace( y, y->right );
+        y->right = z->right;
+        y->right->parent = y;
+      }
+      replace( z, y );
+      y->left = z->left;
+      y->left->parent = y;
+      dbg_checkSubtreeSize(y);
+    }
+
+    delete z;
+    p_size--;
+  }
+  //This is LOG time
+  Node* findRoot(Node* of ) {
+
+	  while(of && of->parent){
+		  of=of->parent;
+	  }
+	  return of;
+  }
+  //This is LOG time
+  Node* findMin(Node* of ) { return subtree_minimum( of ); }
+  //This is LOG time
+  Node* findMax(Node* of ) { return subtree_maximum( of ); }
+
+
+  //This is LOG time
+  int depth(Node * a){
+	  int depth =0;
+	  while(a->parent){
+		  depth++;
+		  a=a->parent;
+	  }
+	  assert(depth>=0);
+	  return depth;
+  }
+
+  //Return -1 if a< b, 1 if a>b, 0 if either they are the same node, or not in the same tree.
+  //This calculation is LOG time
+  int compare(Node * a, Node * b){
+	  if(a==b){
+		  return 0;
+	  }
+	  assert(findRoot(a)==findRoot(b));
+	  //can these be avoided? well, yes, if you are willing to leave markers behind on the visited nodes...
+	  int depthA = depth(a);
+	  int depthB = depth(b);
+
+	  while(depthA>depthB){
+		  if(a->parent==b){
+			  if(a==b->left){
+				 return -1;
+			 }else{
+				 assert(a==b->right);
+				 return 1;
+			 }
+		  }
+		  a = a->parent;
+		  depthA--;
+
+	  }
+	  while(depthB>depthA){
+		  if(b->parent==a){
+			  if(b==a->left){
+				 return 1;
+			 }else{
+				 assert(b==a->right);
+				 return -1;
+			 }
+		  }
+		  b = b->parent;
+		  depthB--;
+	  }
+	  assert(depthA==depthB);
+	  int depth = depthA;
+	  while(depth){
+		  assert(a!=b);
+		 if (a->parent==b->parent){
+			 if(a==a->parent->left){
+				 assert(b==a->parent->right);
+				 return -1;
+			 }else{
+				 assert(b==a->parent->left);
+				 assert(a==a->parent->right);
+				 return 1;
+			 }
+		 }
+		 a = a->parent;
+		 b = b->parent;
+		 depth--;
+	  }
+	  assert(a && b);
+	  assert(!a->parent);
+	  assert(!b->parent);
+	  return 0;
+  }
+
+  //This is CONSTANT time
+  int size(Node * of){
+	  return of->subtree_size;
+  }
+/*	void incrementIncident(Node * x){
+		x->n_incident++;
+	}
+	void decrementIncident(Node * x){
+		x->n_incident--;
+		assert(x->n_incident>=0);
+		assert(getLocalIncident(x)>=0);
+	}*/
+
+   //This is LOG time
+  /*	void addToIncident(Node * x, int add){
+  		while(x){
+			x->n_incident+=add;
+			assert(x->n_incident>=0);
+			assert(getIncident(x)>=0);
+  			x=x->parent;
+  		}
+  	}
+
+  	//This is LOG time
+	void setIncident(Node * x, int n_incident){
+		int n = getIncident(x);
+		int diff = n_incident-n;
+		addToIncident(x,diff);
+		assert(getIncident(x)==n_incident);
+	}
+
+	//This is CONSTANT time
+  int getIncident(Node * x){
+	  int local_incident= x->n_incident;
+	  if(x->left)
+		  local_incident-=x->left->n_incident;
+	  if(x->right)
+		  local_incident-=x->right->n_incident;
+	  assert(local_incident>=0);
+	  return local_incident;
+  }
+
+  //This is CONSTANT time
+  int getSubtreeIncident(Node * of){
+	  return of->n_incident;
+  }
+*/
+  //bool empty( ) const { return root == 0; }
+  unsigned long size( ) const { return p_size; }
+};
+
+#endif // SPLAY_TREE

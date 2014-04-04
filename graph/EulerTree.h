@@ -11,6 +11,7 @@
 #include <algorithm>
 #include "AugmentedSplayTree.h"
 #include "SearchTree.h"
+#include "BTree.h"
 using namespace Minisat;
 
 class EulerTree{
@@ -889,11 +890,16 @@ public:
 	}*/
 
 	//return the size of the complete tree that v is an element of
+	int getFullTreeSize(int v){
+		return getFullTreeSize(vertices[v]);
+	}
 	int getFullTreeSize(EulerVertex * v){
 		if(v->isSingleton())
 			return 1;
-		else
-			return t.size( t.findRoot(v->incidentEdgeA()));
+		else{
+			t.dbg_checkSubtreeSize(t.findRoot(v->incidentEdgeA()));
+			return t.size( t.findRoot(v->incidentEdgeA()))/2+1;//divide by two, to go from half edges to full edges, then add one, to get the number of nodes in the tree.
+		}
 	}
 
 	/*bool hasIncidentEdges(EulerVertex* v){
@@ -1073,13 +1079,14 @@ public:
 			  assert(forward_edges[edgeID]->index==edgeID);
 			  assert(backward_edges[edgeID]->index==edgeID);
 
-
-			  assert(forward_edges[edgeID]->from==node);
+			  assert(forward_edges[edgeID]->from==node || forward_edges[edgeID]->to==node);
+			  assert(forward_edges[edgeID]->to==node || forward_edges[edgeID]->from==node);
+			 /* assert(forward_edges[edgeID]->from==node);
 			  assert(forward_edges[edgeID]->to == otherNode);
 
 
 			  assert(backward_edges[edgeID]->from==otherNode);
-			  assert(backward_edges[edgeID]->to == node);
+			  assert(backward_edges[edgeID]->to == node);*/
 		  }
 
 
@@ -1215,12 +1222,17 @@ public:
 	void link(int u, int v, int edgeID) {
 		link(vertices[u],vertices[v],edgeID);
 	}
+	bool edgeInTree(int edgeID){
+		return forward_edges[edgeID]->node->parent || forward_edges[edgeID]->node->left || forward_edges[edgeID]->node->right;
+	}
 /*	void cut(int u) {
 		cut(vertices[u]);
 	}*/
 	bool connected(int u, int v){
 		return connected(vertices[u],vertices[v]);
 	}
+
+
 
 	//Get the parent of the vertex in the euler tour representation. This is O(1).
 /*
@@ -1360,6 +1372,72 @@ public:
 	    }
 
 	};
+
+	struct tour_iterator {
+			EulerHalfEdge * n;
+			EulerHalfEdge * start;
+
+			bool backward;
+			static int iter;
+
+			tour_iterator(EulerHalfEdge * start):n(start), start(start),backward(false){
+
+			}
+
+			bool operator !=(const tour_iterator & other)const{
+				return !( other.n==n );
+			}
+			bool operator ==(const tour_iterator & other)const{
+				return other.n==n;
+			}
+
+			tour_iterator& operator++(){
+		    	if(!n)
+		    		return *this;
+
+		    	//first traverse forwards to the end of the bst from the start node
+		    	if(!backward){
+		    		if(n->node->next()){
+						n=n->node->next()->value;
+						return *this;
+					}
+					backward=true;//now switch to traversing backward from the start node
+					n= start;
+		    	}
+		    	assert(backward);
+				if(n->node->prev()){
+					n=n->node->prev()->value;
+					return *this;
+				}
+				n=nullptr;
+				start=nullptr;
+
+				backward=false;
+				return *this;
+		    }
+		    int operator*() const{
+
+		    	assert(n);
+		    	return n->index;
+
+		    }
+
+		};
+
+	//Traverse a full tour starting from this node, in _arbitrary_ order.
+	tour_iterator begin_half_edge_tour(int fromVertex) {
+		if(vertices[fromVertex]->isSingleton()){
+			return tour_iterator(nullptr);
+		}else{
+			return tour_iterator(vertices[fromVertex]->incidentEdgeA()->value);
+		}
+
+	}
+
+	tour_iterator end_half_edge_tour() {
+	  return tour_iterator(nullptr);
+	}
+
 
 	//Traverse the full tree starting from this node, in arbitrary order.
 	iterator begin(int fromVertex) {
