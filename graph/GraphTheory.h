@@ -47,12 +47,6 @@ class GraphTheorySolver;
 #include "TestGraph.h"
 #endif
 
-
-
-
-
-
-
 class GraphTheorySolver:public GraphTheory{
 public:
 
@@ -139,7 +133,7 @@ public:
     vec<char> seen;
 	vec<int> to_visit;
 
-
+	int theory_index;
 public:
 
 	double mctime;
@@ -197,6 +191,7 @@ public:
 			S->addClause(True);
 			num_edges=0;
 			local_q=0;
+			theory_index=0;
 			mctime=0;
 			stats_mc_calls=0;
 			reachtime=0;
@@ -236,7 +231,12 @@ public:
 			shadow_dbg = new TestGraph(S->dbg_solver);
 #endif
 	}
-
+	  int getTheoryIndex(){
+	    	return theory_index;
+	    }
+	    void setTheoryIndex(int id){
+	    	theory_index=id;
+	    }
 	int getGraphID(){
 		return id;
 	}
@@ -550,22 +550,6 @@ public:
 	bool dbg_reachable(int from, int to){
 #ifdef DEBUG_GRAPH
 		DefaultEdgeStatus tmp;
-		/*DynamicGraph<> gtest(tmp);
-		for(int i = 0;i<nNodes();i++){
-			gtest.addNode();
-		}
-
-		for(int i = 0;i<edge_list.size();i++){
-			if(edge_list[i].v<0)
-				continue;
-			Edge e  = edge_list[i];
-			if(S->assigns[e.v]==l_True){
-				gtest.addEdge(e.from,e.to);
-				assert(g.edgeEnabled(e.v));
-			}else{
-				assert(!g.edgeEnabled(e.v));
-			}
-		}*/
 
 		Dijkstra<> d(from,g);
 		d.update();
@@ -643,37 +627,20 @@ public:
 			detectors[i]->preprocess();
 		}
 	}
-
-	bool propagateTheory(vec<Lit> & conflict){
-		static int itp = 0;
-		if(	++itp==2){
-			int a =1;
+	void enqueueTheory(Lit l){
+		Var v = var(l);
+		int lev = S->level(v);
+		while(lev>trail_lim.size()){
+			newDecisionLevel();
 		}
+		if(v>= min_edge_var && v<min_edge_var+edge_list.size()){
 
-		bool any_change = false;
-		double startproptime = cpuTime();
-		static vec<int> detectors_to_check;
+			//this is an edge assignment
+			int edge_num = v-min_edge_var;
+			if(edge_list[edge_num].v<0){
+				//this is an assignment to a non-edge atom. (eg, a reachability assertion)
 
-		conflict.clear();
-		//Can probably speed this up alot by a) constant propagating reaches that I care about at level 0, and b) Removing all detectors for nodes that appear only in the opposite polarity (or not at all) in the cnf.
-		//That second one especially.
-
-		//At level 0, need to propagate constant reaches/source nodes/edges...
-
-		while(local_q<S->qhead){
-			Lit l = S->trail[local_q++];
-			Var v = var(l);
-
-			int lev = S->level(v);
-			while(lev>trail_lim.size()){
-				newDecisionLevel();
-			}
-			if(v>= min_edge_var && v<min_edge_var+edge_list.size()){
-
-				//this is an edge assignment
-				int edge_num = v-min_edge_var;
-				if(edge_list[edge_num].v<0)
-					continue;
+			}else{
 				int from = edge_list[edge_num].from;
 				int to = edge_list[edge_num].to;
 				trail.push({true,!sign(l), from,to,v});
@@ -692,18 +659,39 @@ public:
 				}
 			}
 		}
+	};
+	bool propagateTheory(vec<Lit> & conflict){
+		static int itp = 0;
+		if(	++itp==2){
+			int a =1;
+		}
+
+		dbg_sync();
+
+
+		bool any_change = false;
+		double startproptime = cpuTime();
+		static vec<int> detectors_to_check;
+
+		conflict.clear();
+		//Can probably speed this up alot by a) constant propagating reaches that I care about at level 0, and b) Removing all detectors for nodes that appear only in the opposite polarity (or not at all) in the cnf.
+		//That second one especially.
+
+		//At level 0, need to propagate constant reaches/source nodes/edges...
+
+
 		stats_initial_propagation_time += cpuTime() - startproptime;
 		dbg_sync();
-			assert(dbg_graphsUpToDate());
+		assert(dbg_graphsUpToDate());
 
-			for(int d = 0;d<detectors.size();d++){
-				assert(conflict.size()==0);
-				bool r =detectors[d]->propagate(trail,conflict);
-				if(!r){
-					propagationtime+= cpuTime()-startproptime;
-					return false;
-				}
+		for(int d = 0;d<detectors.size();d++){
+			assert(conflict.size()==0);
+			bool r =detectors[d]->propagate(trail,conflict);
+			if(!r){
+				propagationtime+= cpuTime()-startproptime;
+				return false;
 			}
+		}
 
 
 
@@ -862,18 +850,22 @@ public:
 		return reasonMarker;
 	}
 
-	Lit newEdge(int from,int to, Var v = var_Undef, int weight=1)
+	Lit newEdge(int from,int to, Var outerVar = var_Undef, int weight=1)
     {
 
-		if(v==var_Undef)
-			v = S->newVar();
+		if(outerVar==var_Undef)
+			outerVar = S->newVar();
+
 #ifdef DEBUG_GRAPH
-		 dbg_graph->newEdge(from,to,v);
+		 dbg_graph->newEdge(from,to,outerVar);
 #endif
 #ifdef DEBUG_SOLVER
 		if(S->dbg_solver)
-			shadow_dbg->newEdge(from,to,v);
+			shadow_dbg->newEdge(from,to,outerVar);
 #endif
+
+		Var v = outerVar;
+
 		if(num_edges>0){
 		}else
 			min_edge_var=v;
@@ -881,7 +873,7 @@ public:
 		int index = v-min_edge_var;
 
 		while(edge_list.size()<=index){
-			edge_list.push({-1,-1,-1,-1,1});
+			edge_list.push({-1,-1,-1,-1,-1,1});
 			edge_assignments.push(l_Undef);
 		}
 
@@ -889,6 +881,7 @@ public:
 
 		num_edges++;
 		edge_list[index].v =v;
+		edge_list[index].outerVar =outerVar;
 		edge_list[index].from=from;
 		edge_list[index].to =to;
 		edge_list[index].edgeID=index;
@@ -901,6 +894,7 @@ public:
 		g.disableEdge(from,to, index);
 		antig.addEdge(from,to,index,weight);
 		cutGraph.addEdge(from,to,index,weight);
+		S->setTheoryVar(v,getTheoryIndex(),v);
     	return mkLit(v,false);
     }
 	int getEdgeID(int from, int to){
@@ -1132,7 +1126,7 @@ public:
 				assert(d);
 				assert(within_steps==-1);
 				d->addLit(from,to,reach_var);
-
+				S->setTheoryVar(reach_var,getTheoryIndex(),reach_var);
 
 		    }
 

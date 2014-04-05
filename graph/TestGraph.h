@@ -29,6 +29,7 @@ private:
 	Lit True;
 	Solver * S;
 	int id;
+    int theory_index;
 public:
 	TestGraph(Solver * S_, int _id=0):S(S_),id(_id){
 		True = mkLit(S->newVar(),false);
@@ -38,6 +39,13 @@ public:
 
 
 	}
+    int getTheoryIndex(){
+    	return theory_index;
+    }
+    void setTheoryIndex(int id){
+    	theory_index=id;
+    }
+
      ~TestGraph(){};
      int getGraphID(){
     	 return id;
@@ -61,7 +69,7 @@ public:
 	void newDecisionLevel(){};
 	bool propagateTheory(vec<Lit> & conflict){return true;};
 	bool solveTheory(vec<Lit> & conflict){return true;};
-
+	void enqueueTheory(Lit l){};
 	void buildReason(Lit p, vec<Lit> & reason){};
 	void implementConstraints(){
 

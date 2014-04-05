@@ -68,7 +68,7 @@ Solver::Solver() :
     //
   , solves(0), starts(0), decisions(0), rnd_decisions(0), propagations(0), conflicts(0)
   , dec_vars(0), clauses_literals(0), learnts_literals(0), max_literals(0), tot_literals(0)
-
+  , theory_index(0)
   , ok                 (true)
   , cla_inc            (1)
   , var_inc            (1)
@@ -124,7 +124,7 @@ Var Solver::newVar(bool sign, bool dvar)
     assigns  .push(l_Undef);
     vardata  .push(mkVarData(CRef_Undef, 0));
     priority.push(0);
-
+    theory_vars.push();
     activity .push(rnd_init_act ? drand(random_seed) * 0.00001 : 0);
     seen     .push(0);
     polarity .push(opt_init_rnd_phase ? irand(random_seed,1) : sign);
@@ -506,11 +506,11 @@ void Solver::uncheckedEnqueue(Lit p, CRef from)
 {
     assert(value(p) == l_Undef);
     assigns[var(p)] = lbool(!sign(p));
-    if(from==4145547160){
-    	int a=1;
-    }
     vardata[var(p)] = mkVarData(from, decisionLevel());
     trail.push_(p);
+    if(hasTheory(p)){
+    	theories[getTheoryID(p)]->enqueueTheory(getTheoryLit(p));
+    }
 }
 
 void Solver::analyzeFinal(CRef confl, Lit skip_lit, vec<Lit>& out_conflict)
@@ -571,6 +571,10 @@ void Solver::analyzeFinal(CRef confl, Lit skip_lit, vec<Lit>& out_conflict)
 		toSuper(reason,reason);
 		interpolant.push();
 		reason.copyTo( interpolant.last());//Add this clause into the interpolant vector
+	}
+
+	void Solver::enqueueTheory(Lit l){
+
 	}
 
 	//Propagate assignments from the super solver's interface variables to this solver (and, if this solver makes further assignments to the interface, pass those back to the super solver)
@@ -1140,78 +1144,6 @@ lbool Solver::search(int nof_conflicts)
                 next = pickBranchLit();
                // int p = priority[var(next)];
 
-               /* if(last_dec!= var_Undef && theories.size() && priority[var(next)]<priority[last_dec]){
-
-                	Theory * t = theories[0];
-					GraphTheorySolver *g = (GraphTheorySolver*)t;
-					int width = sqrt(g->nNodes());
-					int lasty= -1;
-                	for(int n = 0;n<g->nNodes();n++){
-                					int x = n%width;
-                					int y = n/width;
-                					if(y > lasty)
-                						printf("\n");
-									if (isatty(fileno(stdout))){
-
-										if(value(n)==l_True)
-											printf("\033[1;42m\033[1;37m 1\033[0m");
-										else if(value(n)==l_False)
-											printf("\033[1;44m\033[1;37m 0\033[0m");
-										else{
-											printf("\033[1;43m\033[1;37m-1\033[0m");
-										}
-									}
-									lasty=y;
-                	}
-                	printf("\n\n");
-                //	exit(1);
-
-                	if(opt_print_reach){
-                				int  v = 0;
-
-
-                				printf("\n");
-                				for(int t = 0;t<theories.size();t++){
-                					printf("Theory %d\n", t);
-                					GraphTheorySolver *g = (GraphTheorySolver*)theories[t];
-
-                					for(int r = 0;r<g->reach_detectors.size();r++){
-
-                						int width = sqrt(g->nNodes());
-                						int lasty= 0;
-                						int extra =  g->nNodes() % width ? (width- g->nNodes() % width ):0;
-                						for(int n = 0;n<g->nNodes();n++){
-                							int x = n%width;
-
-                							int y = (n + extra )/width;
-                							if(y > lasty)
-                								printf("\n");
-
-                							int v =var( g->reach_detectors[r]->reach_lits[n]);
-                							if(value(v)==l_True)
-												printf("\033[1;42m\033[1;37m 1\033[0m");
-											else if(value(v)==l_False)
-												printf("\033[1;44m\033[1;37m 0\033[0m");
-											else{
-												printf("\033[1;43m\033[1;37m-1\033[0m");
-											}
-
-                							lasty=y;
-                						}
-                						printf("\n");
-                					}
-
-
-
-                					//g->drawFull();
-
-                					assert(g->dbg_solved());
-                				}
-
-                				}
-
-                }
-*/
                 if (next == lit_Undef){
 
                 	//solve theories if this solver is completely assigned

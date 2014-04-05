@@ -19,8 +19,11 @@ namespace Minisat{
 class Theory{
 public:
     virtual ~Theory(){};
+    virtual int getTheoryIndex()=0;
+    virtual void setTheoryIndex(int id)=0;
 	virtual void backtrackUntil(int level)=0;
 	virtual void newDecisionLevel()=0;
+	virtual void enqueueTheory(Lit p)=0;
 	virtual bool propagateTheory(vec<Lit> & conflict)=0;
 	virtual bool solveTheory(vec<Lit> & conflict)=0;
 	virtual Lit decideTheory(){

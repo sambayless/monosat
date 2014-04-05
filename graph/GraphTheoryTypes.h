@@ -65,6 +65,7 @@ typedef DefaultEdgeStatus CutEdgeStatus;
 	};
 	struct Edge{
 		Var v;
+		Var outerVar;
 		int from;
 		int to;
 		int edgeID;

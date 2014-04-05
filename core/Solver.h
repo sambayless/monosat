@@ -64,9 +64,12 @@ public:
    //Theory interface
     void addTheory(Theory*t){
     	theories.push(t);
+    	t->setTheoryIndex(theories.size()-1);
     	cancelUntil(0);
     	resetInitialPropagation();
     }
+
+
 
     //Call to force at least one round of propagation to each theory solver at the next solve() call
     void resetInitialPropagation(){
@@ -104,6 +107,14 @@ public:
     	theories.shrink(i-j);
     	cancelUntil(0);
     }
+
+    int getTheoryIndex(){
+    	return theory_index;
+    }
+    void setTheoryIndex(int id){
+    	theory_index=id;
+    }
+
     //Generate a new, unique `temporary value' for explaining conflicts
     CRef newReasonMarker(Theory * forTheory){
     	markers.push(ca.makeMarkerReference());
@@ -134,6 +145,46 @@ public:
     	// UINT32_MAX-cr - 1;
     	int marker = CRef_Undef-cr-1;
     	return marker_theory[marker];
+    }
+
+    bool	 hasTheory(Var v){
+    	return theory_vars[v].isTheoryVar;
+    }
+    bool	hasTheory(Lit l){
+    	return theory_vars[var(l)].isTheoryVar;
+    }
+    int		getTheoryID(Var v){
+    	return theory_vars[v].theory-1;
+    }
+    int		getTheoryID(Lit l){
+    	return theory_vars[var(l)].theory-1;
+    }
+    Var		getTheoryVar(Var v){
+    	assert(hasTheory(v));
+    	return (Var) theory_vars[v].theory_var;
+    }
+
+    //Translate a literal into its corresponding theory literal (if it has a theory literal)
+    Lit		getTheoryLit(Lit l){
+    	assert(hasTheory(l));
+    	return mkLit(getTheoryVar(var(l)),sign(l));
+    }
+
+    //Connect a variable in the SAT solver to a variable in a theory.
+    void setTheoryVar(Var solverVar, int theory, Var theoryVar){
+
+    	assert(!hasTheory(solverVar));
+    	theory_vars[solverVar].theory=theory+1;
+    	theory_vars[solverVar].theory_var=theoryVar;
+    	assert(hasTheory(solverVar));
+    	assert(getTheoryID(solverVar)==theory);
+    	assert(getTheoryVar(solverVar)==theoryVar);
+
+    	if(value(solverVar)==l_True){
+    		theories[theory]->enqueueTheory(mkLit(theoryVar, false));
+    	}else if (value(solverVar)==l_False){
+    		theories[theory]->enqueueTheory(mkLit(theoryVar, true));
+    	}
     }
 
     CRef constructReason(Lit p){
@@ -253,6 +304,7 @@ public:
     vec<Theory*> decidable_theories;
     vec<CRef> markers;//a set of special clauses that can be recognized as pointers to theories
     vec<int> marker_theory;
+    int theory_index;
     Solver * S;//super solver
     bool initialPropagate;//to force propagation to occur at least once to the theory solvers
     int super_qhead;
@@ -333,6 +385,21 @@ protected:
         VarOrderLt(const vec<double>&  act,const vec<int>&  pri) : activity(act),priority(pri) { }
     };
 
+
+    struct TheoryData{
+    	union{
+    		struct{
+			unsigned int theory:11;
+			unsigned int theory_var:21;
+    		};
+    		unsigned int isTheoryVar; //true if non-zero
+    	};
+    	TheoryData():isTheoryVar(0){}
+    	TheoryData(unsigned int theory,unsigned int theory_lit):theory(theory),theory_var(theory_lit){
+
+    	}
+    };
+
     // Solver state:
     //
     bool                ok;               // If FALSE, the constraints are already unsatisfiable. No part of the solver state may be used!
@@ -347,6 +414,7 @@ protected:
     vec<char>           polarity;         // The preferred polarity of each variable.
     vec<char>           decision;         // Declares if a variable is eligible for selection in the decision heuristic.
     vec<int>			priority;		  // Static, lexicographic heuristic
+    vec<TheoryData>     theory_vars;
     vec<Lit>            trail;            // Assignment stack; stores all assigments made in the order they were made.
     vec<int>            trail_lim;        // Separator indices for different decision levels in 'trail'.
     vec<VarData>        vardata;          // Stores reason and level for each variable.
@@ -386,8 +454,10 @@ public:
     void     newDecisionLevel ();                                                      // Begins a new decision level.
     void     uncheckedEnqueue (Lit p, CRef from = CRef_Undef);                         // Enqueue a literal. Assumes value of literal is undefined.
     bool     enqueue          (Lit p, CRef from = CRef_Undef);                         // Test if fact 'p' contradicts current state, enqueue otherwise.
+
 protected:
     CRef     propagate        (bool propagate_theories=true);                                                      // Perform unit propagation. Returns possibly conflicting clause.
+	void 	enqueueTheory(Lit l);
     bool 	propagateTheory(vec<Lit> & conflict);
     bool 	solveTheory(vec<Lit> & conflict_out);
 
