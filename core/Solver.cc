@@ -695,7 +695,17 @@ CRef Solver::propagate(bool propagate_theories)
     CRef    confl     = CRef_Undef;
     int     num_props = 0;
     watches.cleanAll();
-
+    if(initialPropagate){
+    	assert(decisionLevel()==0);
+    	//propagate any as yet unpropagated literals to each theory
+    	for(int i = 0;i<qhead;i++){
+    		Lit p = trail[i];
+    		if(hasTheory(p)){
+    			theories[getTheoryID(p)]->enqueueTheory(getTheoryLit(p));
+    		}
+    	}
+    	initialPropagate=false;
+    }
     do{
 
 		while (qhead < trail.size()){

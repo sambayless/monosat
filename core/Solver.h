@@ -179,12 +179,18 @@ public:
     	assert(hasTheory(solverVar));
     	assert(getTheoryID(solverVar)==theory);
     	assert(getTheoryVar(solverVar)==theoryVar);
-
-    	if(value(solverVar)==l_True){
+    	assert(decisionLevel()==0);
+    	initialPropagate=true;
+/*    	if(value(solverVar)==l_True){
     		theories[theory]->enqueueTheory(mkLit(theoryVar, false));
     	}else if (value(solverVar)==l_False){
     		theories[theory]->enqueueTheory(mkLit(theoryVar, true));
-    	}
+    	}*/
+    }
+
+    void remapTheoryVar(Var solverVar, Var newTheoryVar){
+    	assert(hasTheory(solverVar));
+    	theory_vars[solverVar].theory_var=newTheoryVar;
     }
 
     CRef constructReason(Lit p){
@@ -193,8 +199,9 @@ public:
     	assert(!ca.isClause(cr));
     	assert(cr!=CRef_Undef);
     	int t = getTheory(cr);
+    	assert(hasTheory(p));
     	theory_reason.clear();
-    	theories[t]->buildReason(p,theory_reason);
+    	theories[t]->buildReason(getTheoryLit(p),theory_reason);
     	CRef reason = ca.alloc(theory_reason, !opt_permanent_theory_conflicts);
     	if(opt_permanent_theory_conflicts)
 			clauses.push(reason);

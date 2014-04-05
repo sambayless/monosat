@@ -35,15 +35,17 @@ void CycleDetector::addCycleDetectorLit(bool directed, Var v){
 		if(undirected_cycle_lit==lit_Undef){
 			undirected_cycle_lit=l;
 		}else{
-			outer->S->addClause(undirected_cycle_lit, ~l);
-			outer->S->addClause(~undirected_cycle_lit, l);
+			outer->makeEqual(undirected_cycle_lit,l);
+			/*outer->S->addClause(undirected_cycle_lit, ~l);
+			outer->S->addClause(~undirected_cycle_lit, l);*/
 		}
 	}else{
 		if(directed_cycle_lit==lit_Undef){
 			directed_cycle_lit=l;
 		}else{
-			outer->S->addClause(directed_cycle_lit, ~l);
-			outer->S->addClause(~directed_cycle_lit, l);
+			outer->makeEqual(directed_cycle_lit,l);
+/*			outer->S->addClause(directed_cycle_lit, ~l);
+			outer->S->addClause(~directed_cycle_lit, l);*/
 		}
 	}
 }
@@ -53,7 +55,7 @@ void CycleDetector::addCycleDetectorLit(bool directed, Var v){
 			//for now, learn the trivial clause...
 			for(int i = 0;i<outer->edge_list.size();i++){
 				Var v = outer->edge_list[i].v;
-				if(outer->S->value(v)==l_False){
+				if(outer->value(v)==l_False){
 					conflict.push(mkLit(v,false));
 				}
 			}
@@ -63,7 +65,7 @@ void CycleDetector::addCycleDetectorLit(bool directed, Var v){
 			//for now, learn the trivial clause...
 			for(int i = 0;i<outer->edge_list.size();i++){
 				Var v = outer->edge_list[i].v;
-				if(outer->S->value(v)==l_False){
+				if(outer->value(v)==l_False){
 					conflict.push(mkLit(v,false));
 				}
 			}
@@ -78,7 +80,7 @@ void CycleDetector::addCycleDetectorLit(bool directed, Var v){
 			for(int i = 0;i<cycle.size();i++){
 				int e = cycle[i];
 				Lit l = mkLit( outer->edge_list[e].v,false);
-				assert(outer->S->value(l)==l_True);
+				assert(outer->value(l)==l_True);
 				conflict.push(~l);
 			}
 
@@ -90,7 +92,7 @@ void CycleDetector::addCycleDetectorLit(bool directed, Var v){
 			for(int i = 0;i<cycle.size();i++){
 				int e = cycle[i];
 				Lit l = mkLit( outer->edge_list[e].v,false);
-				assert(outer->S->value(l)==l_True);
+				assert(outer->value(l)==l_True);
 				conflict.push(~l);
 			}
 
@@ -143,12 +145,12 @@ void CycleDetector::addCycleDetectorLit(bool directed, Var v){
 			if(positive_reach_detector->hasDirectedCycle()){
 				Lit l = directed_cycle_lit;
 
-				if(outer->S->value(l)==l_True){
+				if(outer->value(l)==l_True){
 					//do nothing
-				}else if(outer->S->value(l)==l_Undef){
+				}else if(outer->value(l)==l_Undef){
 					trail.push(Assignment(false,true,detectorID,0,var(l)));
-					outer->S->uncheckedEnqueue(l,directed_cycle_marker) ;
-				}else if (outer->S->value(l)==l_False){
+					outer->enqueue(l,directed_cycle_marker) ;
+				}else if (outer->value(l)==l_False){
 					conflict.push(l);
 					buildDirectedCycleReason(conflict);
 					return false;
@@ -156,12 +158,12 @@ void CycleDetector::addCycleDetectorLit(bool directed, Var v){
 			}else if(!negative_reach_detector->hasDirectedCycle()){
 				Lit l = ~directed_cycle_lit;
 
-				if(outer->S->value(l)==l_True){
+				if(outer->value(l)==l_True){
 					//do nothing
-				}else if(outer->S->value(l)==l_Undef){
+				}else if(outer->value(l)==l_Undef){
 					trail.push(Assignment(false,false,detectorID,0,var(l)));
-					outer->S->uncheckedEnqueue(l,no_directed_cycle_marker) ;
-				}else if (outer->S->value(l)==l_False){
+					outer->enqueue(l,no_directed_cycle_marker) ;
+				}else if (outer->value(l)==l_False){
 					conflict.push(l);
 					buildNoDirectedCycleReason(conflict);
 					return false;
@@ -173,12 +175,12 @@ void CycleDetector::addCycleDetectorLit(bool directed, Var v){
 			if(positive_reach_detector->hasUndirectedCycle()){
 				Lit l = undirected_cycle_lit;
 
-				if(outer->S->value(l)==l_True){
+				if(outer->value(l)==l_True){
 					//do nothing
-				}else if(outer->S->value(l)==l_Undef){
+				}else if(outer->value(l)==l_Undef){
 					trail.push(Assignment(false,true,detectorID,0,var(l)));
-					outer->S->uncheckedEnqueue(l,undirected_cycle_marker) ;
-				}else if (outer->S->value(l)==l_False){
+					outer->enqueue(l,undirected_cycle_marker) ;
+				}else if (outer->value(l)==l_False){
 					conflict.push(l);
 					buildUndirectedCycleReason(conflict);
 					return false;
@@ -186,12 +188,12 @@ void CycleDetector::addCycleDetectorLit(bool directed, Var v){
 			}else if(!negative_reach_detector->hasUndirectedCycle()){
 				Lit l = ~directed_cycle_lit;
 
-				if(outer->S->value(l)==l_True){
+				if(outer->value(l)==l_True){
 					//do nothing
-				}else if(outer->S->value(l)==l_Undef){
+				}else if(outer->value(l)==l_Undef){
 					trail.push(Assignment(false,false,detectorID,0,var(l)));
-					outer->S->uncheckedEnqueue(l,no_undirected_cycle_marker) ;
-				}else if (outer->S->value(l)==l_False){
+					outer->enqueue(l,no_undirected_cycle_marker) ;
+				}else if (outer->value(l)==l_False){
 					conflict.push(l);
 					buildNoUndirectedCycleReason(conflict);
 					return false;

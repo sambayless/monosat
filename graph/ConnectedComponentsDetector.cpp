@@ -24,15 +24,16 @@ Detector(_detectorID),outer(_outer),g(_g),antig(_antig),rnd_seed(seed),positive_
 		non_reach_marker=outer->newReasonMarker(getID());
 		//forced_reach_marker=outer->newReasonMarker(getID());
 }
-void ConnectedComponentsDetector::addConnectedComponentsLit(Var weight_var,int min_components){
+void ConnectedComponentsDetector::addConnectedComponentsLit(Var outer_weight_var,int min_components){
 
 	g.invalidate();
 	antig.invalidate();
 	//while( dist_lits[to].size()<=within_steps)
 	//	dist_lits[to].push({lit_Undef,-1});
 
-	while(outer->S->nVars()<=weight_var)
-		outer->S->newVar();
+	Var weight_var = outer->newVar(outer_weight_var);
+/*	while(outer->S->nVars()<=weight_var)
+		outer->S->newVar();*/
 
 	Lit reachLit=mkLit(weight_var,false);
 	bool found=false;
@@ -41,8 +42,9 @@ void ConnectedComponentsDetector::addConnectedComponentsLit(Var weight_var,int m
 			found=true;
 			Lit r = connected_components_lits[i].l;
 			//force equality between the new lit and the old reach lit, in the SAT solver
-			outer->S->addClause(~r, reachLit);
-			outer->S->addClause(r, ~reachLit);
+			//outer->S->addClause(~r, reachLit);
+			//outer->S->addClause(r, ~reachLit);
+			outer->makeEqual(r,reachLit);
 		}
 	}
 	if(!found){
@@ -72,7 +74,7 @@ void ConnectedComponentsDetector::ConnectedComponentsStatus::setConnected(int u,
 	}
 	if (detector.reachLits[u][v]!=lit_Undef){
 		Lit l = detector.reachLits[u][v];
-		lbool assign = detector.outer->S->value(l);
+		lbool assign = detector.outer->value(l);
 		if(assign==l_True && connected){
 			//do nothing
 		}else if(assign==l_False && !connected){
@@ -92,12 +94,12 @@ void ConnectedComponentsDetector::ConnectedComponentsStatus::setComponents(int c
 
 					assert(l!=lit_Undef);
 					if(components<=min_components && !polarity){
-						lbool assign = detector.outer->S->value(l);
+						lbool assign = detector.outer->value(l);
 						if( assign!= l_False ){
 							detector.changed_weights.push({~l,min_components});
 						}
 					}else if(components>min_components && polarity){
-						lbool assign = detector.outer->S->value(l);
+						lbool assign = detector.outer->value(l);
 						if( assign!= l_True ){
 							detector.changed_weights.push({l,min_components});
 						}
@@ -139,7 +141,7 @@ void ConnectedComponentsDetector::ConnectedComponentsStatus::setComponents(int c
 							visit.push(v);
 							//this edge is in the spanning tree
 							Var v = outer->edge_list[edgeid].v;
-							assert(outer->S->value(v)==l_True);
+							assert(outer->value(v)==l_True);
 							conflict.push(mkLit(v,true));
 						}
 					}
@@ -206,7 +208,7 @@ void ConnectedComponentsDetector::ConnectedComponentsStatus::setComponents(int c
 										edge_in_clause[edgeid]=true;
 										Var e =outer->edge_list[edgeid].v;
 
-										assert(outer->S->value(e)==l_False);
+										assert(outer->value(e)==l_False);
 										conflict.push(mkLit(e,false));
 									}
 								}
@@ -287,16 +289,16 @@ void ConnectedComponentsDetector::ConnectedComponentsStatus::setComponents(int c
 			Lit l = changed_weights[j].l;
 			int components = changed_weights[j].min_components;
 			bool reach = !sign(l);
-			if(outer->S->value(l)==l_True){
+			if(outer->value(l)==l_True){
 				//do nothing
-			}else if(outer->S->value(l)==l_Undef){
+			}else if(outer->value(l)==l_Undef){
 				trail.push(Assignment(false,reach,detectorID,0,var(l)));
 				if(reach)
-					outer->S->uncheckedEnqueue(l,reach_marker) ;
+					outer->enqueue(l,reach_marker) ;
 				else
-					outer->S->uncheckedEnqueue(l,non_reach_marker) ;
+					outer->enqueue(l,non_reach_marker) ;
 
-			}else if (outer->S->value(l)==l_False){
+			}else if (outer->value(l)==l_False){
 				conflict.push(l);
 
 				if(reach){
@@ -323,16 +325,16 @@ void ConnectedComponentsDetector::ConnectedComponentsStatus::setComponents(int c
 					Lit l = changed[j].l;
 					int components = changed_weights[j].min_components;
 					bool reach = !sign(l);
-					if(outer->S->value(l)==l_True){
+					if(outer->value(l)==l_True){
 						//do nothing
-					}else if(outer->S->value(l)==l_Undef){
+					}else if(outer->value(l)==l_Undef){
 						trail.push(Assignment(false,reach,detectorID,0,var(l)));
 						if(reach)
-							outer->S->uncheckedEnqueue(l,reach_marker) ;
+							outer->enqueue(l,reach_marker) ;
 						else
-							outer->S->uncheckedEnqueue(l,non_reach_marker) ;
+							outer->enqueue(l,non_reach_marker) ;
 
-					}else if (outer->S->value(l)==l_False){
+					}else if (outer->value(l)==l_False){
 						conflict.push(l);
 
 						if(reach){
@@ -368,11 +370,11 @@ bool ConnectedComponentsDetector::checkSatisfied(){
 						if(l!=lit_Undef){
 
 
-							if(outer->S->value(l)==l_True){
+							if(outer->value(l)==l_True){
 								if(negative_reach_detector->numComponents()<=moreThanThisManyComponents){
 									return false;
 								}
-							}else if (outer->S->value(l)==l_False){
+							}else if (outer->value(l)==l_False){
 								if( positive_reach_detector->numComponents()>moreThanThisManyComponents){
 									return false;
 								}
@@ -412,7 +414,7 @@ Lit ConnectedComponentsDetector::decide(){
 			if(l==lit_Undef)
 				continue;
 			int j = r->getNode(var(l));
-			if(outer->S->value(l)==l_True){
+			if(outer->value(l)==l_True){
 				if(opt_decide_graph_pos){
 				//if(S->level(var(l))>0)
 				//	continue;
@@ -485,27 +487,27 @@ Lit ConnectedComponentsDetector::decide(){
 					assert(p>-1);
 					if(p>-1){
 					Var v = outer->edges[p][last].v;
-					if(outer->S->value(v)==l_Undef){
+					if(outer->value(v)==l_Undef){
 						return mkLit(v,false);
 					}else{
-						assert(outer->S->value(v)!=l_True);
+						assert(outer->value(v)!=l_True);
 					}
 					}
 					for(int k = 0;k<outer->antig.adjacency[p].size();k++){
 						int to = outer->antig.adjacency[p][k].node;
 						if (to==last){
 							Var v =outer->edge_list[ outer->antig.adjacency[p][k].id].v;
-							if(outer->S->value(v)==l_Undef){
+							if(outer->value(v)==l_Undef){
 								return mkLit(v,false);
 							}else{
-								assert(outer->S->value(v)!=l_True);
+								assert(outer->value(v)!=l_True);
 							}
 						}
 					}
 
 				}
 				}
-			}else if(outer->S->value(l)==l_False){
+			}else if(outer->value(l)==l_False){
 				if(opt_decide_graph_neg){
 
 					//assert(over->distance(j)<=min_dist);//else we would already be in conflict before this decision was attempted!
@@ -525,13 +527,13 @@ Lit ConnectedComponentsDetector::decide(){
 							assert(p!=source);
 							int prev = over->previous(p);
 							Var v = outer->edges[prev][p].v;
-							if(outer->S->value(v)==l_Undef){
+							if(outer->value(v)==l_Undef){
 								//if(opt_use_random_path_for_decisions)
 								//	tmp_nodes.push(v);
 								//else
 								return mkLit(v,true);
 							}else{
-								assert(outer->S->value(v)!=l_False);
+								assert(outer->value(v)!=l_False);
 							}
 							assert(over->distance(p)<=min_dist-dist);
 							dist+=1;//should really be weighted

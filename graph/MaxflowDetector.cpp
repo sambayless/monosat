@@ -28,9 +28,10 @@ Detector(_detectorID),outer(_outer),over_graph(_g),g(_g),antig(_antig),source(fr
 
 
 
-void MaxflowDetector::addFlowLit(int maxflow, Var reach_var){
+void MaxflowDetector::addFlowLit(int maxflow, Var outer_reach_var){
 	g.invalidate();
 	antig.invalidate();
+	Var reach_var = outer->newVar(outer_reach_var);
 	if(first_reach_var==var_Undef){
 		first_reach_var=reach_var;
 	}else{
@@ -44,8 +45,8 @@ void MaxflowDetector::addFlowLit(int maxflow, Var reach_var){
 	//while( dist_lits[to].size()<=within_steps)
 	//	dist_lits[to].push({lit_Undef,-1});
 
-	while(outer->S->nVars()<=reach_var)
-		outer->S->newVar();
+/*	while(outer->S->nVars()<=reach_var)
+		outer->S->newVar();*/
 
 	Lit reachLit=mkLit(reach_var,false);
 	bool found=false;
@@ -85,7 +86,7 @@ void MaxflowDetector::buildMaxFlowTooHighReason(int flow,vec<Lit> & conflict){
 			for(int i = 0;i<outer->edge_list.size();i++){
 				if(positive_detector->getEdgeFlow(i)>0){
 					Var v = outer->edge_list[i].v;
-					assert(outer->S->value(v)==l_True);
+					assert(outer->value(v)==l_True);
 					conflict.push(mkLit(v,true));
 				}
 			}
@@ -101,7 +102,7 @@ void MaxflowDetector::buildMaxFlowTooHighReason(int flow,vec<Lit> & conflict){
 				int edgeid = tmp_cut[i].id;
 				Var v = outer->edge_list[edgeid].v;
 				Lit l = mkLit(v,false);
-				assert(outer->S->value(l)==l_True);
+				assert(outer->value(l)==l_True);
 				conflict.push(~l);
 			}
 			int u = node;
@@ -136,7 +137,7 @@ void MaxflowDetector::buildMaxFlowTooHighReason(int flow,vec<Lit> & conflict){
 						seen[p]=true;
 						int v = outer->inv_adj[u][i].v;
 						assert( outer->inv_adj[u][i].to==u);
-						if(outer->S->value(v)!=l_False){
+						if(outer->value(v)!=l_False){
 							//this is an enabled edge in the overapprox
 							int edgeid = outer->getEdgeID(v);
 							int residual_capacity = negative_detector->getEdgeResidualCapacity(edgeid);
@@ -234,26 +235,26 @@ void MaxflowDetector::buildMaxFlowTooHighReason(int flow,vec<Lit> & conflict){
 				int under_maxflow;
 
 				if((under_maxflow=positive_detector->maxFlow(source,target))>=maxflow){
-					if(outer->S->value(l)==l_True){
+					if(outer->value(l)==l_True){
 						//do nothing
-					}else if(outer->S->value(l)==l_Undef){
+					}else if(outer->value(l)==l_Undef){
 						trail.push(Assignment(false,true,detectorID,0,var(l)));
-						outer->S->uncheckedEnqueue(l,reach_marker) ;
+						outer->enqueue(l,reach_marker) ;
 
-					}else if(outer->S->value(l)==l_False){
+					}else if(outer->value(l)==l_False){
 						conflict.push(l);
 						buildMaxFlowTooHighReason(maxflow,conflict);
 						return false;
 					}
 
 				}else if((over_maxflow = negative_detector->maxFlow(source,target))<maxflow){
-					if(outer->S->value(l)==l_False){
+					if(outer->value(l)==l_False){
 						//do nothing
-					}else if(outer->S->value(l)==l_Undef){
+					}else if(outer->value(l)==l_Undef){
 						trail.push(Assignment(false,false,detectorID,0,var(l)));
-						outer->S->uncheckedEnqueue(~l,reach_marker) ;
+						outer->enqueue(~l,reach_marker) ;
 
-					}else if(outer->S->value(l)==l_True){
+					}else if(outer->value(l)==l_True){
 						conflict.push(~l);
 						buildMaxFlowTooLowReason(maxflow,conflict);
 						return false;
@@ -270,33 +271,33 @@ void MaxflowDetector::buildMaxFlowTooHighReason(int flow,vec<Lit> & conflict){
 
 bool MaxflowDetector::checkSatisfied(){
 
-				for(int j = 0;j< flow_lits.size();j++){
+		for(int j = 0;j< flow_lits.size();j++){
 
-						Lit l = flow_lits[j].l;
-						int dist = flow_lits[j].max_flow;
+				Lit l = flow_lits[j].l;
+				int dist = flow_lits[j].max_flow;
 
-						if(l!=lit_Undef){
-							//int node =getNode(var(l));
+				if(l!=lit_Undef){
+					//int node =getNode(var(l));
 
-							if(outer->S->value(l)==l_True){
-								if(positive_detector->maxFlow(source,target)<dist){
-									return false;
-								}
-							}else if (outer->S->value(l)==l_False){
-								if( negative_detector->maxFlow(source,target)>=dist){
-									return false;
-								}
-							}else{
-								if(positive_detector->maxFlow(source,target)>=dist){
-									return false;
-								}
-								if(!negative_detector->maxFlow(source,target)<dist){
-									return false;
-								}
-							}
+					if(outer->value(l)==l_True){
+						if(positive_detector->maxFlow(source,target)<dist){
+							return false;
 						}
-
+					}else if (outer->value(l)==l_False){
+						if( negative_detector->maxFlow(source,target)>=dist){
+							return false;
+						}
+					}else{
+						if(positive_detector->maxFlow(source,target)>=dist){
+							return false;
+						}
+						if(!negative_detector->maxFlow(source,target)<dist){
+							return false;
+						}
+					}
 				}
+
+		}
 	return true;
 }
 Lit MaxflowDetector::decide(){
@@ -318,7 +319,7 @@ Lit MaxflowDetector::decide(){
 			if(l==lit_Undef)
 				continue;
 			int j = r->getNode(var(l));
-			if(outer->S->value(l)==l_True){
+			if(outer->value(l)==l_True){
 				//if(S->level(var(l))>0)
 				//	continue;
 
@@ -392,10 +393,10 @@ Lit MaxflowDetector::decide(){
 						int to = outer->antig.adjacency[p][k].node;
 						if (to==last){
 							Var v =outer->edge_list[ outer->antig.adjacency[p][k].id].v;
-							if(outer->S->value(v)==l_Undef){
+							if(outer->value(v)==l_Undef){
 								return mkLit(v,false);
 							}else{
-								assert(outer->S->value(v)!=l_True);
+								assert(outer->value(v)!=l_True);
 							}
 						}
 					}

@@ -48,9 +48,12 @@ Detector(_detectorID),outer(_outer),g(_g),antig(_antig),rnd_seed(seed),positive_
 
 
 
-void AllPairsDetector::addLit(int from, int to, Var reach_var,int within_steps){
+void AllPairsDetector::addLit(int from, int to, Var outer_reach_var,int within_steps){
 	g.invalidate();
 	antig.invalidate();
+
+	Var reach_var = outer->newVar(outer_reach_var);
+
 	if(first_reach_var==var_Undef){
 		first_reach_var=reach_var;
 	}else{
@@ -69,8 +72,9 @@ void AllPairsDetector::addLit(int from, int to, Var reach_var,int within_steps){
 	//while( dist_lits[to].size()<=within_steps)
 	//	dist_lits[to].push({lit_Undef,-1});
 
-	while(outer->S->nVars()<=reach_var)
-		outer->S->newVar();
+	/*while(outer->S->nVars()<=reach_var)
+		outer->S->newVar();*/
+
 
 	if(!installed_sources[from]){
 		installed_sources[from]=true;
@@ -90,8 +94,7 @@ void AllPairsDetector::addLit(int from, int to, Var reach_var,int within_steps){
 			found=true;
 			Lit r = dist_lits[from][to][i].l;
 			//force equality between the new lit and the old reach lit, in the SAT solver
-			outer->S->addClause(~r, reachLit);
-			outer->S->addClause(r, ~reachLit);
+			outer->makeEqual(r,reachLit);
 		}
 	}
 	if(!found){
@@ -114,7 +117,7 @@ void AllPairsDetector::ReachStatus::setReachable(int from,int u, bool reachable)
 			/*	if(polarity==reachable && u<detector.reach_lits.size()){
 					Lit l = detector.reach_lits[u];
 					if(l!=lit_Undef){
-						lbool assign = detector.outer->S->value(l);
+						lbool assign = detector.outer->value(l);
 						if(assign!= (reachable? l_True:l_False )){
 							detector.changed.push({reachable? l:~l,u});
 						}
@@ -139,12 +142,12 @@ void AllPairsDetector::ReachStatus::setMininumDistance(int from, int u, bool rea
 
 					assert(l!=lit_Undef);
 					if(d<distance && !polarity){
-						lbool assign = detector.outer->S->value(l);
+						lbool assign = detector.outer->value(l);
 						if( assign!= l_False ){
 							detector.changed.push({~l,u,from});
 						}
 					}else if(d>=distance && polarity){
-						lbool assign = detector.outer->S->value(l);
+						lbool assign = detector.outer->value(l);
 						if( assign!= l_True ){
 							detector.changed.push({l,u,from});
 						}
@@ -188,14 +191,14 @@ void AllPairsDetector::buildReachReason(int source, int to,vec<Lit> & conflict){
 					assert(p!=-1);
 					Edge edg = outer->edges[p][u];
 					Var e =outer->edges[p][u].v;
-					lbool val = outer->S->value(e);
-					assert(outer->S->value(e)==l_True);
+					lbool val = outer->value(e);
+					assert(outer->value(e)==l_True);
 #ifdef DEBUG_ALLPAIRS
 					if(!dbg_positive_reach_detector->connected(source,p)){
 						assert(false);
 						exit(4);
 					}
-					if(outer->S->value(e)!=l_True){//otherwise, this can't be part of the returned learnt clause.
+					if(outer->value(e)!=l_True){//otherwise, this can't be part of the returned learnt clause.
 						printf("iter %d\n", iter);
 						exit(6);
 					}
@@ -446,9 +449,9 @@ void AllPairsDetector::buildReachReason(int source, int to,vec<Lit> & conflict){
 				int source = getChanged()[j].source;
 				bool reach = !sign(l);
 
-				if(outer->S->value(l)==l_True){
+				if(outer->value(l)==l_True){
 					//do nothing
-				}else if(outer->S->value(l)==l_Undef){
+				}else if(outer->value(l)==l_Undef){
 #ifdef DEBUG_GRAPH
 					assert(outer->dbg_propgation(l));
 #endif
@@ -458,11 +461,11 @@ void AllPairsDetector::buildReachReason(int source, int to,vec<Lit> & conflict){
 #endif
 					trail.push(Assignment(false,reach,detectorID,0,var(l)));
 					if(reach)
-						outer->S->uncheckedEnqueue(l,reach_marker) ;
+						outer->enqueue(l,reach_marker) ;
 					else
-						outer->S->uncheckedEnqueue(l,non_reach_marker) ;
+						outer->enqueue(l,non_reach_marker) ;
 
-				}else if (outer->S->value(l)==l_False){
+				}else if (outer->value(l)==l_False){
 					conflict.push(l);
 
 					if(reach){
@@ -480,7 +483,7 @@ void AllPairsDetector::buildReachReason(int source, int to,vec<Lit> & conflict){
 					}
 #ifdef DEBUG_GRAPH
 					for(int i = 0;i<conflict.size();i++)
-								 assert(outer->S->value(conflict[i])==l_False);
+								 assert(outer->value(conflict[i])==l_False);
 #endif
 #ifdef DEBUG_SOLVER
 					if(S->dbg_solver)
@@ -533,10 +536,10 @@ void AllPairsDetector::buildReachReason(int source, int to,vec<Lit> & conflict){
 							if(l!=lit_Undef){
 								int u = getNode(var(l));
 								if(positive_reach_detector->distance_unsafe(s,u)<=dist){
-									assert(outer->S->value(l)==l_True);
+									assert(outer->value(l)==l_True);
 								}else if (negative_reach_detector->distance_unsafe(s,u)>dist){
 									int d =negative_reach_detector->distance_unsafe(s,u);
-									assert(outer->S->value(l)==l_False);
+									assert(outer->value(l)==l_False);
 								}
 							}
 						}
@@ -558,11 +561,11 @@ bool AllPairsDetector::checkSatisfied(){
 						if(l!=lit_Undef){
 							int node =getNode(var(l));
 
-							if(outer->S->value(l)==l_True){
+							if(outer->value(l)==l_True){
 								if(positive_reach_detector->distance(s,node)>dist){
 									return false;
 								}
-							}else if (outer->S->value(l)==l_False){
+							}else if (outer->value(l)==l_False){
 								if( negative_reach_detector->distance(s,node)<=dist){
 									return false;
 								}
@@ -601,7 +604,7 @@ Lit AllPairsDetector::decide(){
 				if(l==lit_Undef)
 					continue;
 				int j = getNode(var(l));
-				if(outer->S->value(l)==l_True){
+				if(outer->value(l)==l_True){
 					//if(S->level(var(l))>0)
 					//	continue;
 
@@ -673,10 +676,10 @@ Lit AllPairsDetector::decide(){
 							int to = outer->antig.adjacency[p][k].node;
 							if (to==last){
 								Var v =outer->edge_list[ outer->antig.adjacency[p][k].id].v;
-								if(outer->S->value(v)==l_Undef){
+								if(outer->value(v)==l_Undef){
 									return mkLit(v,false);
 								}else{
-									assert(outer->S->value(v)!=l_True);
+									assert(outer->value(v)!=l_True);
 								}
 							}
 						}

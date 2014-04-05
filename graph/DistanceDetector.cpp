@@ -54,9 +54,10 @@ Detector(_detectorID),outer(_outer),g(_g),antig(_antig),source(from),rnd_seed(se
 
 
 
-void DistanceDetector::addLit(int from, int to, Var reach_var,int within_steps){
+void DistanceDetector::addLit(int from, int to, Var outer_reach_var,int within_steps){
 	g.invalidate();
 		antig.invalidate();
+	Var reach_var= outer->newVar(outer_reach_var);
 	if(first_reach_var==var_Undef){
 		first_reach_var=reach_var;
 	}else{
@@ -71,8 +72,9 @@ void DistanceDetector::addLit(int from, int to, Var reach_var,int within_steps){
 	//while( dist_lits[to].size()<=within_steps)
 	//	dist_lits[to].push({lit_Undef,-1});
 
-	while(outer->S->nVars()<=reach_var)
-		outer->S->newVar();
+
+/*	while(outer->S->nVars()<=reach_var)
+		outer->S->newVar();*/
 
 	Lit reachLit=mkLit(reach_var,false);
 	bool found=false;
@@ -81,8 +83,9 @@ void DistanceDetector::addLit(int from, int to, Var reach_var,int within_steps){
 			found=true;
 			Lit r = dist_lits[to][i].l;
 			//force equality between the new lit and the old reach lit, in the SAT solver
-			outer->S->addClause(~r, reachLit);
-			outer->S->addClause(r, ~reachLit);
+			outer->makeEqual(r,reachLit);
+			/*outer->S->addClause(~r, reachLit);
+			outer->S->addClause(r, ~reachLit);*/
 		}
 	}
 	if(!found){
@@ -104,7 +107,7 @@ void DistanceDetector::ReachStatus::setReachable(int u, bool reachable){
 			/*	if(polarity==reachable && u<detector.reach_lits.size()){
 					Lit l = detector.reach_lits[u];
 					if(l!=lit_Undef){
-						lbool assign = detector.outer->S->value(l);
+						lbool assign = detector.outer->value(l);
 						if(assign!= (reachable? l_True:l_False )){
 							detector.changed.push({reachable? l:~l,u});
 						}
@@ -129,12 +132,12 @@ void DistanceDetector::ReachStatus::setMininumDistance(int u, bool reachable, in
 
 					assert(l!=lit_Undef);
 					if(d<distance && !polarity){
-						lbool assign = detector.outer->S->value(l);
+						lbool assign = detector.outer->value(l);
 						if( assign!= l_False ){
 							detector.changed.push({~l,u});
 						}
 					}else if(d>=distance && polarity){
-						lbool assign = detector.outer->S->value(l);
+						lbool assign = detector.outer->value(l);
 						if( assign!= l_True ){
 							detector.changed.push({l,u});
 						}
@@ -170,8 +173,8 @@ void DistanceDetector::buildReachReason(int node,vec<Lit> & conflict){
 				while(( p = d.previous(u)) != -1){
 					Edge edg = outer->edges[p][u];
 					Var e =outer->edges[p][u].v;
-					lbool val = outer->S->value(e);
-					assert(outer->S->value(e)==l_True);
+					lbool val = outer->value(e);
+					assert(outer->value(e)==l_True);
 					conflict.push(mkLit(e, true));
 					u = p;
 
@@ -183,15 +186,15 @@ void DistanceDetector::buildReachReason(int node,vec<Lit> & conflict){
 				while(( p = d.previous(u)) != -1){
 					Edge edg = outer->edges[p][u];
 					Var e =outer->edges[p][u].v;
-					lbool val = outer->S->value(e);
-					assert(outer->S->value(e)==l_True);
+					lbool val = outer->value(e);
+					assert(outer->value(e)==l_True);
 					conflict.push(mkLit(e, true));
 					u = p;
-					if( u< reach_lits.size() && reach_lits[u]!=lit_Undef && outer->S->value(reach_lits[u])==l_True && outer->S->level(var(reach_lits[u]))< outer->S->decisionLevel()){
+					if( u< reach_lits.size() && reach_lits[u]!=lit_Undef && outer->value(reach_lits[u])==l_True && outer->S->level(var(reach_lits[u]))< outer->S->decisionLevel()){
 						//A potential (fixed) problem with the above: reach lit can be false, but have been assigned after r in the trail, messing up clause learning if this is a reason clause...
 						//This is avoided by ensuring that L is lower level than the conflict.
 						Lit l =reach_lits[u];
-						assert(outer->S->value(l)==l_True);
+						assert(outer->value(l)==l_True);
 						conflict.push(~l);
 						break;
 					}
@@ -438,9 +441,9 @@ void DistanceDetector::buildReachReason(int node,vec<Lit> & conflict){
 				Lit l = getChanged()[j].l;
 				int u =  getChanged()[j].u;
 				bool reach = !sign(l);
-				if(outer->S->value(l)==l_True){
+				if(outer->value(l)==l_True){
 					//do nothing
-				}else if(outer->S->value(l)==l_Undef){
+				}else if(outer->value(l)==l_Undef){
 #ifdef DEBUG_GRAPH
 					assert(outer->dbg_propgation(l));
 #endif
@@ -450,11 +453,11 @@ void DistanceDetector::buildReachReason(int node,vec<Lit> & conflict){
 #endif
 					trail.push(Assignment(false,reach,detectorID,0,var(l)));
 					if(reach)
-						outer->S->uncheckedEnqueue(l,reach_marker) ;
+						outer->enqueue(l,reach_marker) ;
 					else
-						outer->S->uncheckedEnqueue(l,non_reach_marker) ;
+						outer->enqueue(l,non_reach_marker) ;
 
-				}else if (outer->S->value(l)==l_False){
+				}else if (outer->value(l)==l_False){
 					conflict.push(l);
 
 					if(reach){
@@ -472,7 +475,7 @@ void DistanceDetector::buildReachReason(int node,vec<Lit> & conflict){
 					}
 #ifdef DEBUG_GRAPH
 					for(int i = 0;i<conflict.size();i++)
-								 assert(outer->S->value(conflict[i])==l_False);
+								 assert(outer->value(conflict[i])==l_False);
 #endif
 #ifdef DEBUG_SOLVER
 					if(S->dbg_solver)
@@ -495,10 +498,10 @@ void DistanceDetector::buildReachReason(int node,vec<Lit> & conflict){
 							if(l!=lit_Undef){
 								int u = getNode(var(l));
 								if(positive_reach_detector->distance_unsafe(u)<=dist){
-									assert(outer->S->value(l)==l_True);
+									assert(outer->value(l)==l_True);
 								}else if (negative_reach_detector->distance_unsafe(u)>dist){
 									int d =negative_reach_detector->distance_unsafe(u);
-									assert(outer->S->value(l)==l_False);
+									assert(outer->value(l)==l_False);
 								}
 							}
 						}
@@ -517,11 +520,11 @@ bool DistanceDetector::checkSatisfied(){
 						if(l!=lit_Undef){
 							int node =getNode(var(l));
 
-							if(outer->S->value(l)==l_True){
+							if(outer->value(l)==l_True){
 								if(positive_reach_detector->distance(node)>dist){
 									return false;
 								}
-							}else if (outer->S->value(l)==l_False){
+							}else if (outer->value(l)==l_False){
 								if( negative_reach_detector->distance(node)<=dist){
 									return false;
 								}
@@ -541,7 +544,7 @@ bool DistanceDetector::checkSatisfied(){
 
 int DistanceDetector::OptimalWeightEdgeStatus::operator [] (int edge) const {
 	Var v = detector.outer->edge_list[edge].v;
-	lbool val = detector.outer->S->value(v);
+	lbool val = detector.outer->value(v);
 	if(val==l_False){
 		assert(false);
 		return detector.outer->edge_list.size()*2;
@@ -583,7 +586,7 @@ Lit DistanceDetector::decide(){
 			if(l==lit_Undef)
 				continue;
 			int j = r->getNode(var(l));
-			if(outer->S->value(l)==l_True){
+			if(outer->value(l)==l_True){
 				if(opt_decide_graph_pos){
 				//if(S->level(var(l))>0)
 				//	continue;
@@ -657,27 +660,27 @@ Lit DistanceDetector::decide(){
 					assert(p>-1);
 					if(p>-1){
 					Var v = outer->edges[p][last].v;
-					if(outer->S->value(v)==l_Undef){
+					if(outer->value(v)==l_Undef){
 						return mkLit(v,false);
 					}else{
-						assert(outer->S->value(v)!=l_True);
+						assert(outer->value(v)!=l_True);
 					}
 					}
 			/*		for(int k = 0;k<outer->antig.adjacency[p].size();k++){
 						int to = outer->antig.adjacency[p][k].node;
 						if (to==last){
 							Var v =outer->edge_list[ outer->antig.adjacency[p][k].id].v;
-							if(outer->S->value(v)==l_Undef){
+							if(outer->value(v)==l_Undef){
 								return mkLit(v,false);
 							}else{
-								assert(outer->S->value(v)!=l_True);
+								assert(outer->value(v)!=l_True);
 							}
 						}
 					}*/
 
 				}
 				}
-			}else if(outer->S->value(l)==l_False){
+			}else if(outer->value(l)==l_False){
 				if(opt_decide_graph_neg){
 
 					//assert(over->distance(j)<=min_dist);//else we would already be in conflict before this decision was attempted!
@@ -697,13 +700,13 @@ Lit DistanceDetector::decide(){
 							assert(p!=source);
 							int prev = over->previous(p);
 							Var v = outer->edges[prev][p].v;
-							if(outer->S->value(v)==l_Undef){
+							if(outer->value(v)==l_Undef){
 								//if(opt_use_random_path_for_decisions)
 								//	tmp_nodes.push(v);
 								//else
 								return mkLit(v,true);
 							}else{
-								assert(outer->S->value(v)!=l_False);
+								assert(outer->value(v)!=l_False);
 							}
 							assert(over->distance(p)<=min_dist-dist);
 							dist+=1;//should really be weighted

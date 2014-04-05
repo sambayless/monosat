@@ -79,9 +79,10 @@ ReachDetector::ReachDetector(int _detectorID, GraphTheorySolver * _outer, Dynami
 	forced_reach_marker=outer->newReasonMarker(getID());
 }
 
-void ReachDetector::addLit(int from, int to, Var reach_var){
+void ReachDetector::addLit(int from, int to, Var outer_reach_var){
 	g.invalidate();
 	antig.invalidate();
+	Var reach_var = outer->newVar(outer_reach_var);
 	if(first_reach_var==var_Undef){
 		first_reach_var=reach_var;
 	}else{
@@ -90,9 +91,9 @@ void ReachDetector::addLit(int from, int to, Var reach_var){
 	assert(from==source);
 	while( reach_lits.size()<=to)
 			reach_lits.push(lit_Undef);
-
+/*
 	while(outer->S->nVars()<=reach_var)
-		outer->S->newVar();
+		outer->S->newVar();*/
 
 	Lit reachLit=mkLit(reach_var,false);
 
@@ -107,8 +108,9 @@ void ReachDetector::addLit(int from, int to, Var reach_var){
 	}else{
 		Lit r = reach_lits[to];
 		//force equality between the new lit and the old reach lit, in the SAT solver
-		outer->S->addClause(~r, reachLit);
-		outer->S->addClause(r, ~reachLit);
+		outer->makeEqual(r,reachLit);
+	/*	outer->S->addClause(~r, reachLit);
+		outer->S->addClause(r, ~reachLit);*/
 	}
 }
 
@@ -121,7 +123,7 @@ void ReachDetector::ReachStatus::setReachable(int u, bool reachable){
 				if(polarity==reachable && u<detector.reach_lits.size()){
 					Lit l = detector.reach_lits[u];
 					if(l!=lit_Undef){
-						lbool assign = detector.outer->S->value(l);
+						lbool assign = detector.outer->value(l);
 						if(assign!= (reachable? l_True:l_False )){
 							detector.changed.push({reachable? l:~l,u});
 						}
@@ -141,12 +143,12 @@ void ReachDetector::ReachStatus::setMininumDistance(int u, bool reachable, int d
 			Lit l = detector.dist_lits[u][i].l;
 			assert(l!=lit_Undef);
 			if(d<distance && !polarity){
-				lbool assign = detector.outer->S->value(l);
+				lbool assign = detector.outer->value(l);
 				if( assign!= l_False ){
 					detector.changed.push({~l,u});
 				}
 			}else if(d>=distance && polarity){
-				lbool assign = detector.outer->S->value(l);
+				lbool assign = detector.outer->value(l);
 				if( assign!= l_True ){
 					detector.changed.push({l,u});
 				}
@@ -158,7 +160,7 @@ void ReachDetector::ReachStatus::setMininumDistance(int u, bool reachable, int d
 bool ReachDetector::ChokepointStatus::mustReach(int node){
 	Lit l =  detector.reach_lits[node];
 	if(l!=lit_Undef){
-		return detector.outer->S->value(l)==l_True;
+		return detector.outer->value(l)==l_True;
 	}
 	return false;
 }
@@ -195,8 +197,8 @@ void ReachDetector::buildReachReason(int node,vec<Lit> & conflict){
 				while(( p = d.previous(u)) != -1){
 					Edge edg = outer->edges[p][u];
 					Var e =outer->edges[p][u].v;
-					lbool val = outer->S->value(e);
-					assert(outer->S->value(e)==l_True);
+					lbool val = outer->value(e);
+					assert(outer->value(e)==l_True);
 					conflict.push(mkLit(e, true));
 					u = p;
 
@@ -208,15 +210,15 @@ void ReachDetector::buildReachReason(int node,vec<Lit> & conflict){
 				while(( p = d.previous(u)) != -1){
 					Edge edg = outer->edges[p][u];
 					Var e =outer->edges[p][u].v;
-					lbool val = outer->S->value(e);
-					assert(outer->S->value(e)==l_True);
+					lbool val = outer->value(e);
+					assert(outer->value(e)==l_True);
 					conflict.push(mkLit(e, true));
 					u = p;
-					if( u< reach_lits.size() && reach_lits[u]!=lit_Undef && outer->S->value(reach_lits[u])==l_True && outer->S->level(var(reach_lits[u]))< outer->S->decisionLevel()){
+					if( u< reach_lits.size() && reach_lits[u]!=lit_Undef && outer->value(reach_lits[u])==l_True && outer->level(var(reach_lits[u]))< outer->decisionLevel()){
 						//A potential (fixed) problem with the above: reach lit can be false, but have been assigned after r in the trail, messing up clause learning if this is a reason clause...
 						//This is avoided by ensuring that L is lower level than the conflict.
 						Lit l =reach_lits[u];
-						assert(outer->S->value(l)==l_True);
+						assert(outer->value(l)==l_True);
 						conflict.push(~l);
 						break;
 					}
@@ -272,7 +274,7 @@ void ReachDetector::buildReachReason(int node,vec<Lit> & conflict){
 					MaxFlow::Edge e = outer->cut[i];
 
 					Lit l = mkLit( outer->edges[e.u][e.v].v,false);
-					assert(outer->S->value(l)==l_False);
+					assert(outer->value(l)==l_False);
 					conflict.push(l);
 				}
 			}else{
@@ -301,6 +303,7 @@ void ReachDetector::buildReachReason(int node,vec<Lit> & conflict){
 				    	for(int i = 0;i<outer->inv_adj[u].size();i++){
 				    		int v = outer->inv_adj[u][i].v;
 				    		int from = outer->inv_adj[u][i].from;
+
 				    		assert(from!=u);
 				    		assert(outer->inv_adj[u][i].to==u);
 				    		//Note: the variable has to not only be assigned false, but assigned false earlier in the trail than the reach variable...
@@ -316,12 +319,12 @@ void ReachDetector::buildReachReason(int node,vec<Lit> & conflict){
 				    			//even if it is undef? probably...
 				    			if(!seen[from]){
 				    				seen[from]=true;
-				    				if((opt_learn_reaches ==2 || opt_learn_reaches==3) && from< reach_lits.size() && reach_lits[from]!=lit_Undef && outer->S->value(reach_lits[from])==l_False  && outer->S->level(var(reach_lits[from]))< outer->S->decisionLevel())
+				    				if((opt_learn_reaches ==2 || opt_learn_reaches==3) && from< reach_lits.size() && reach_lits[from]!=lit_Undef && outer->value(reach_lits[from])==l_False  && outer->level(var(reach_lits[from]))< outer->decisionLevel())
 				    				{
 				    				//The problem with the above: reach lit can be false, but have been assigned after r in the trail, messing up clause learning if this is a reason clause...
 				    					Lit r = reach_lits[from];
-				    					assert(var(r)<outer->S->nVars());
-				    					assert(outer->S->value(r)==l_False);
+				    					assert(var(r)<outer->nVars());
+				    					assert(outer->value(r)==l_False);
 				    					conflict.push(r);
 				    				}else
 				    					to_visit.push(from);
@@ -404,7 +407,7 @@ void ReachDetector::buildReachReason(int node,vec<Lit> & conflict){
 							MaxFlow::Edge e = outer->cut[i];
 
 							Lit l = mkLit( outer->edges[e.u][e.v].v,false);
-							assert(outer->S->value(l)==l_False);
+							assert(outer->value(l)==l_False);
 							conflict.push(l);
 						}
 					}else{
@@ -448,12 +451,12 @@ void ReachDetector::buildReachReason(int node,vec<Lit> & conflict){
 						    			//even if it is undef? probably...
 						    			if(!seen[from]){
 						    				seen[from]=true;
-						    				if((opt_learn_reaches ==2 || opt_learn_reaches==3) && from< reach_lits.size() && reach_lits[from]!=lit_Undef && outer->S->value(reach_lits[from])==l_False  && outer->S->level(var(reach_lits[from]))< outer->S->decisionLevel())
+						    				if((opt_learn_reaches ==2 || opt_learn_reaches==3) && from< reach_lits.size() && reach_lits[from]!=lit_Undef && outer->value(reach_lits[from])==l_False  && outer->level(var(reach_lits[from]))< outer->decisionLevel())
 						    				{
 						    				//The problem with the above: reach lit can be false, but have been assigned after r in the trail, messing up clause learning if this is a reason clause...
 						    					Lit r = reach_lits[from];
-						    					assert(var(r)<outer->S->nVars());
-						    					assert(outer->S->value(r)==l_False);
+						    					assert(var(r)<outer->nVars());
+						    					assert(outer->value(r)==l_False);
 						    					conflict.push(r);
 						    				}else
 						    					to_visit.push(from);
@@ -535,95 +538,95 @@ void ReachDetector::buildReachReason(int node,vec<Lit> & conflict){
 
 		bool ReachDetector::propagate(vec<Assignment> & trail,vec<Lit> & conflict){
 
-								if(check_positive){
-									double startdreachtime = cpuTime();
-									getChanged().clear();
-									positive_reach_detector->update();
-									double reachUpdateElapsed = cpuTime()-startdreachtime;
-									outer->reachupdatetime+=reachUpdateElapsed;
-								}
-								if(check_negative){
-									double startunreachtime = cpuTime();
-									negative_reach_detector->update();
-									double unreachUpdateElapsed = cpuTime()-startunreachtime;
-									outer->unreachupdatetime+=unreachUpdateElapsed;
-								}
-								for(int j = 0;j<getChanged().size();j++){
-										Lit l = getChanged()[j].l;
-										int u =  getChanged()[j].u;
-										bool reach = !sign(l);
-										if(outer->S->value(l)==l_True){
-											//do nothing
-										}else if(outer->S->value(l)==l_Undef){
-			#ifdef DEBUG_GRAPH
-											assert(outer->dbg_propgation(l));
-			#endif
-			#ifdef DEBUG_SOLVER
-											if(S->dbg_solver)
-												S->dbg_check_propagation(l);
-			#endif
-											trail.push(Assignment(false,reach,detectorID,0,var(l)));
-											if(reach)
-												outer->S->uncheckedEnqueue(l,reach_marker) ;
-											else
-												outer->S->uncheckedEnqueue(l,non_reach_marker) ;
+			if(check_positive){
+				double startdreachtime = cpuTime();
+				getChanged().clear();
+				positive_reach_detector->update();
+				double reachUpdateElapsed = cpuTime()-startdreachtime;
+				outer->reachupdatetime+=reachUpdateElapsed;
+			}
+			if(check_negative){
+				double startunreachtime = cpuTime();
+				negative_reach_detector->update();
+				double unreachUpdateElapsed = cpuTime()-startunreachtime;
+				outer->unreachupdatetime+=unreachUpdateElapsed;
+			}
+			for(int j = 0;j<getChanged().size();j++){
+					Lit l = getChanged()[j].l;
+					int u =  getChanged()[j].u;
+					bool reach = !sign(l);
+					if(outer->value(l)==l_True){
+						//do nothing
+					}else if(outer->value(l)==l_Undef){
+#ifdef DEBUG_GRAPH
+						assert(outer->dbg_propgation(l));
+#endif
+#ifdef DEBUG_SOLVER
+						if(S->dbg_solver)
+							S->dbg_check_propagation(l);
+#endif
+						trail.push(Assignment(false,reach,detectorID,0,var(l)));
+						if(reach)
+							outer->enqueue(l,reach_marker) ;
+						else
+							outer->enqueue(l,non_reach_marker) ;
 
-										}else if (outer->S->value(l)==l_False){
-											conflict.push(l);
+					}else if (outer->value(l)==l_False){
+						conflict.push(l);
 
-											if(reach){
+						if(reach){
 
-											//conflict
-											//The reason is a path in g from to s in d
-												buildReachReason(u,conflict);
-											//add it to s
-											//return it as a conflict
+						//conflict
+						//The reason is a path in g from to s in d
+							buildReachReason(u,conflict);
+						//add it to s
+						//return it as a conflict
 
-											}else{
-												//The reason is a cut separating s from t
-												buildNonReachReason(u,conflict);
+						}else{
+							//The reason is a cut separating s from t
+							buildNonReachReason(u,conflict);
 
-											}
-			#ifdef DEBUG_GRAPH
-											for(int i = 0;i<conflict.size();i++)
-														 assert(outer->S->value(conflict[i])==l_False);
-			#endif
-			#ifdef DEBUG_SOLVER
-											if(S->dbg_solver)
-												S->dbg_check(conflict);
-			#endif
+						}
+#ifdef DEBUG_GRAPH
+						for(int i = 0;i<conflict.size();i++)
+									 assert(outer->value(conflict[i])==l_False);
+#endif
+#ifdef DEBUG_SOLVER
+						if(S->dbg_solver)
+							S->dbg_check(conflict);
+#endif
 
 
-											return false;
-										}else{
-											int  a=1;
-										}
+						return false;
+					}else{
+						int  a=1;
+					}
 
-										if(opt_reach_prop){
-											forced_edges.clear();
-											chokepoint.collectForcedEdges(forced_edges);
-											for(int i = 0;i<forced_edges.size();i++){
-												int edge_id = forced_edges[i].edge_id;
-												int node = forced_edges[i].node;
-												Lit l = mkLit( outer->edge_list[edge_id].v,false);
-												if(outer->S->value(l)==l_Undef){
-													force_reason.growTo(edge_id+1);
-													force_reason[edge_id]=node;
-													outer->S->enqueue(l,forced_reach_marker);
-												}else if(outer->S->value(l)==l_True){
-													//do nothing
+					if(opt_reach_prop){
+						forced_edges.clear();
+						chokepoint.collectForcedEdges(forced_edges);
+						for(int i = 0;i<forced_edges.size();i++){
+							int edge_id = forced_edges[i].edge_id;
+							int node = forced_edges[i].node;
+							Lit l = mkLit( outer->edge_list[edge_id].v,false);
+							if(outer->value(l)==l_Undef){
+								force_reason.growTo(edge_id+1);
+								force_reason[edge_id]=node;
+								outer->enqueue(l,forced_reach_marker);
+							}else if(outer->value(l)==l_True){
+								//do nothing
 
-												}else{
-													//conflict.
-													//this actually shouldn't be possible (at this point in the code)
-													buildForcedEdgeReason(node,edge_id,conflict);
-													return false;
-												}
-											}
+							}else{
+								//conflict.
+								//this actually shouldn't be possible (at this point in the code)
+								buildForcedEdgeReason(node,edge_id,conflict);
+								return false;
+							}
+						}
 
-										}
+					}
 
-									}
+				}
 
 			#ifdef DEBUG_GRAPH
 					for(int i = 0;i<reach_lits.size();i++){
@@ -631,9 +634,9 @@ void ReachDetector::buildReachReason(int node,vec<Lit> & conflict){
 						if(l!=lit_Undef){
 							int u = getNode(var(l));
 							if(positive_reach_detector->connected(u)){
-								assert(outer->S->value(l)==l_True);
+								assert(outer->value(l)==l_True);
 							}else if (!negative_reach_detector->connected(u)){
-								assert(outer->S->value(l)==l_False);
+								assert(outer->value(l)==l_False);
 							}
 						}
 
@@ -649,11 +652,11 @@ bool ReachDetector::checkSatisfied(){
 					if(l!=lit_Undef){
 						int node =getNode(var(l));
 
-						if(outer->S->value(l)==l_True){
+						if(outer->value(l)==l_True){
 							if(!positive_reach_detector->connected(node)){
 								return false;
 							}
-						}else if (outer->S->value(l)==l_False){
+						}else if (outer->value(l)==l_False){
 							if( negative_reach_detector->connected(node)){
 								return false;
 							}
@@ -677,9 +680,9 @@ void ReachDetector::dbg_sync_reachability(){
 							int node = getNode(var(l));
 
 							if(positive_reach_detector->connected(node)){
-								assert(outer->S->value(l)==l_True);
+								assert(outer->value(l)==l_True);
 							}else if(! negative_reach_detector->connected(node)){
-								assert(outer->S->value(l)==l_False);
+								assert(outer->value(l)==l_False);
 							}
 						}
 
@@ -689,7 +692,7 @@ void ReachDetector::dbg_sync_reachability(){
 
 int ReachDetector::OptimalWeightEdgeStatus::operator [] (int edge) const {
 	Var v = detector.outer->edge_list[edge].v;
-	lbool val = detector.outer->S->value(v);
+	lbool val = detector.outer->value(v);
 	if(val==l_False){
 		assert(false);
 		return detector.outer->edge_list.size()*2;
@@ -721,7 +724,7 @@ Lit ReachDetector::decide(){
 		if(l==lit_Undef)
 			continue;
 		int j =getNode(var(l));
-		if(outer->S->value(l)==l_True && opt_decide_graph_pos){
+		if(outer->value(l)==l_True && opt_decide_graph_pos){
 			//if(S->level(var(l))>0)
 			//	continue;
 			assert(over->connected(j));
@@ -791,7 +794,7 @@ Lit ReachDetector::decide(){
 
 				}
 
-				if(outer->S->level(var(l))==0 && opt_print_decision_path){
+				if(outer->level(var(l))==0 && opt_print_decision_path){
 					print_path.clear();
 					print_path.growTo(outer->nNodes());
 
@@ -869,25 +872,25 @@ Lit ReachDetector::decide(){
 				assert(over->connected(last));
 				assert(over->connected(p));*/
 				Var v = outer->edges[p][last].v;
-				if(outer->S->value(v)==l_Undef){
+				if(outer->value(v)==l_Undef){
 					return mkLit(v,false);
 				}else{
-					assert(outer->S->value(v)!=l_True);
+					assert(outer->value(v)!=l_True);
 				}
 			/*	for(int k = 0;k<outer->antig.adjacency[p].size();k++){
 					int to = outer->antig.adjacency[p][k].node;
 					if (to==last){
 						Var v =outer->edge_list[ outer->antig.adjacency[p][k].id].v;
-						if(outer->S->value(v)==l_Undef){
+						if(outer->value(v)==l_Undef){
 							return mkLit(v,false);
 						}else{
-							assert(outer->S->value(v)!=l_True);
+							assert(outer->value(v)!=l_True);
 						}
 					}
 				}*/
 
 			}
-		}else if(outer->S->value(l)==l_False && opt_decide_graph_neg){
+		}else if(outer->value(l)==l_False && opt_decide_graph_neg){
 
 
 				//for each negated reachability constraint, we can find a cut through the unassigned edges in the over-approx and disable one of those edges.
@@ -903,10 +906,10 @@ Lit ReachDetector::decide(){
 						assert(p!=source);
 						int prev = over->previous(p);
 						Var v = outer->edges[prev][p].v;
-						if(outer->S->value(v)==l_Undef){
+						if(outer->value(v)==l_Undef){
 							return mkLit(v,true);
 						}else{
-							assert(outer->S->value(v)!=l_False);
+							assert(outer->value(v)!=l_False);
 						}
 						p = prev;
 
