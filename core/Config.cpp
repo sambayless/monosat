@@ -41,6 +41,9 @@ static const char* _cat_graph ="GRAPH";
  IntOption Minisat::opt_dec_graph(_cat_graph,"dec","Use decremental graph reachability",0,IntRange(0, 2));
  StringOption Minisat::opt_min_cut_alg(_cat_graph,"mincut","Select max-flow/min-cut algorithm (edmondskarp, edmondskarp-adj, ibfs)","edmondskarp-adj");
  StringOption Minisat::opt_reach_alg(_cat_graph,"reach","Select reachability algorithm (bfs,dfs, dijkstra)","bfs");
+StringOption Minisat::opt_con_alg(_cat_graph,"undir-reach","Select undirected reachability algorithm (bfs,dfs, dijkstra, thorup)","bfs");
+StringOption Minisat::opt_undir_allpairs_alg(_cat_graph,"undir-allpairs","Select allpairs reachability algorithm (floyd-warshall,dijkstra, thorup)","floyd-warshall");
+
 StringOption Minisat::opt_allpairs_alg(_cat_graph,"allpairs","Select allpairs reachability algorithm (floyd-warshall,dijkstra)","floyd-warshall");
 StringOption Minisat::opt_components_alg(_cat_graph,"components","Select connected-components algorithm (disjoint-sets, link-cut)","disjoint-sets");
   BoolOption Minisat::opt_conflict_shortest_path(_cat_graph,"conflict-shortest-path","Use shortest path (instead of arbitrary path) for conflict resolution",true);
@@ -90,8 +93,10 @@ BoolOption Minisat::opt_connected_components_min_cut(_cat_graph,"cc-mincut","Sea
 BoolOption Minisat::opt_optimize_mst(_cat_graph,"opt-mst","Find the solution that minimizes the spanning tree by making repeated sat checks.",false);
 BoolOption Minisat::opt_skip_deletions(_cat_graph,"skip-deletions","",false);
 BoolOption Minisat::opt_skip_additions(_cat_graph,"skip-additions","",false);
-MinCutAlg Minisat::mincutalg=ALG_EDMONSKARP ;
-ReachAlg Minisat::reachalg=ALG_DFS;
-ReachAlg Minisat::distalg=ALG_BFS;
-AllPairsAlg Minisat::allpairsalg=ALG_DIJKSTRA_ALLPAIRS;
-ComponentsAlg Minisat::componentsalg =ALG_DISJOINT_SETS;
+MinCutAlg Minisat::mincutalg=MinCutAlg::ALG_EDMONSKARP ;
+ReachAlg Minisat::reachalg=ReachAlg::ALG_DFS;
+ConnectivityAlg Minisat::undirectedalg=ConnectivityAlg::ALG_DFS;
+ReachAlg Minisat::distalg=ReachAlg::ALG_BFS;
+AllPairsAlg Minisat::allpairsalg=AllPairsAlg::ALG_DIJKSTRA_ALLPAIRS;
+AllPairsConnectivityAlg Minisat::undirected_allpairsalg=AllPairsConnectivityAlg::ALG_DIJKSTRA_ALLPAIRS;
+ComponentsAlg Minisat::componentsalg =ComponentsAlg::ALG_DISJOINT_SETS;

@@ -31,7 +31,7 @@ ReachDetector::ReachDetector(int _detectorID, GraphTheorySolver * _outer, Dynami
 		 opt_path = new WeightedDijkstra<NegativeEdgeStatus, OptimalWeightEdgeStatus >(from,_antig,opt_weight);
 	 }
 
-	if(reachalg==ALG_BFS){
+	if(reachalg==ReachAlg::ALG_BFS){
 							positiveReachStatus = new ReachDetector::ReachStatus(*this,true);
 							negativeReachStatus = new ReachDetector::ReachStatus(*this,false);
 							positive_reach_detector = new Connectivity<ReachDetector::ReachStatus,PositiveEdgeStatus>(from,_g,*(positiveReachStatus),1);
@@ -40,7 +40,7 @@ ReachDetector::ReachDetector(int _detectorID, GraphTheorySolver * _outer, Dynami
 								positive_path_detector = new Distance<NullEdgeStatus,PositiveEdgeStatus>(from,_g,nullEdgeStatus,1);
 							else
 								positive_path_detector =positive_reach_detector;
-						}else if(reachalg==ALG_DFS){
+						}else if(reachalg==ReachAlg::ALG_DFS){
 							positiveReachStatus = new ReachDetector::ReachStatus(*this,true);
 							negativeReachStatus = new ReachDetector::ReachStatus(*this,false);
 							positive_reach_detector = new DFSReachability<ReachDetector::ReachStatus,PositiveEdgeStatus>(from,_g,*(positiveReachStatus),1);
@@ -49,20 +49,30 @@ ReachDetector::ReachDetector(int _detectorID, GraphTheorySolver * _outer, Dynami
 								positive_path_detector = new Distance<NullEdgeStatus,PositiveEdgeStatus>(from,_g,nullEdgeStatus,1);
 							else
 								positive_path_detector =positive_reach_detector;
-						}else if(reachalg==ALG_DISTANCE){
+						}else if(reachalg==ReachAlg::ALG_DISTANCE){
 							positiveReachStatus = new ReachDetector::ReachStatus(*this,true);
 							negativeReachStatus = new ReachDetector::ReachStatus(*this,false);
 							positive_reach_detector = new Distance<ReachDetector::ReachStatus,PositiveEdgeStatus>(from,_g,*(positiveReachStatus),1);
 							negative_reach_detector = new Distance<ReachDetector::ReachStatus,NegativeEdgeStatus>(from,_antig,*(negativeReachStatus),-1);
 							positive_path_detector = positive_reach_detector;
-						}else{
-
+						}/*else if (reachalg==ReachAlg::ALG_THORUP){
+							positiveReachStatus = new ReachDetector::ReachStatus(*this,true);
+							negativeReachStatus = new ReachDetector::ReachStatus(*this,false);
+							positive_reach_detector = new DynamicConnectivity<ReachDetector::ReachStatus,PositiveEdgeStatus>(_g,*(positiveReachStatus),1);
+							negative_reach_detector = new DynamicConnectivity<ReachDetector::ReachStatus,NegativeEdgeStatus>(_antig,*(negativeReachStatus),-1);
+							positive_path_detector = positive_reach_detector;
+							if(opt_conflict_shortest_path)
+								positive_path_detector = new Distance<NullEdgeStatus,PositiveEdgeStatus>(from,_g,nullEdgeStatus,1);
+							else
+								positive_path_detector =positive_reach_detector;
+						}*/else{
 							positive_reach_detector = new Dijkstra<PositiveEdgeStatus>(from,_g);
 							negative_reach_detector = new Dijkstra<NegativeEdgeStatus>(from,_antig);
 							positive_path_detector = positive_reach_detector;
 							//reach_detectors.last()->positive_dist_detector = new Dijkstra(from,g);
 						}
-
+	positive_reach_detector->setSource(source);
+	negative_reach_detector->setSource(source);
 	first_reach_var = var_Undef;
 	reach_marker=outer->newReasonMarker(getID());
 	non_reach_marker=outer->newReasonMarker(getID());
@@ -103,6 +113,11 @@ void ReachDetector::addLit(int from, int to, Var reach_var){
 }
 
 void ReachDetector::ReachStatus::setReachable(int u, bool reachable){
+				if(reachable){
+					assert(!detector.outer->dbg_notreachable( detector.source,u));
+				}else{
+					assert(detector.outer->dbg_notreachable( detector.source,u));
+				}
 				if(polarity==reachable && u<detector.reach_lits.size()){
 					Lit l = detector.reach_lits[u];
 					if(l!=lit_Undef){
@@ -165,14 +180,14 @@ void ReachDetector::buildReachReason(int node,vec<Lit> & conflict){
 			double starttime = cpuTime();
 			d.update();
 
-
-			if(!outer->dbg_reachable(d.getSource(),node)){
+			assert(outer->dbg_reachable(d.getSource(),node));
+		/*	if(!outer->dbg_reachable(d.getSource(),node)){
 				outer->drawFull();
 
-				d.drawFull();
+				//d.drawFull();
 
 				assert(false);
-			}
+			}*/
 			assert(d.connected_unchecked(node));
 			if(opt_learn_reaches ==0 || opt_learn_reaches==2){
 				int u = node;
@@ -227,7 +242,7 @@ void ReachDetector::buildReachReason(int node,vec<Lit> & conflict){
 			outer->cutGraph.clearHistory();
 			outer->stats_mc_calls++;
 			if(opt_conflict_min_cut){
-				if(mincutalg!= ALG_EDKARP_ADJ){
+				if(mincutalg!= MinCutAlg::ALG_EDKARP_ADJ){
 					//ok, set the weights for each edge in the cut graph.
 					//Set edges to infinite weight if they are undef or true, and weight 1 otherwise.
 					for(int u = 0;u<outer->cutGraph.adjacency.size();u++){
@@ -357,7 +372,7 @@ void ReachDetector::buildReachReason(int node,vec<Lit> & conflict){
 
 
 					if(opt_conflict_min_cut){
-						if(mincutalg!= ALG_EDKARP_ADJ){
+						if(mincutalg!= MinCutAlg::ALG_EDKARP_ADJ){
 							//ok, set the weights for each edge in the cut graph.
 							//Set edges to infinite weight if they are undef or true, and weight 1 otherwise.
 							for(int u = 0;u<outer->cutGraph.adjacency.size();u++){

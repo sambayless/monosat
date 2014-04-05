@@ -11,7 +11,7 @@
 #include "mtl/Vec.h"
 #include "mtl/Heap.h"
 #include "mtl/Alg.h"
-
+#include "DynamicGraph.h"
 #include "core/SolverTypes.h"
 #include "core/Theory.h"
 
@@ -32,6 +32,8 @@ public:
 	virtual void reachesAny(int from, Var firstVar,int within_steps)=0;
 	virtual void reachesAny(int from, vec<Lit> & properties_out,int within_steps)=0;
 	virtual void reaches(int from,int to, Var reach_var,int within_steps=-1)=0;
+	virtual void connects(int from,int to, Var reach_var,int within_steps=-1)=0;
+
 	virtual void preprocess(){
 
 	}

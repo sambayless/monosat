@@ -9,20 +9,25 @@
 
 #include "AllPairsDetector.h"
 #include "GraphTheory.h"
+#include "FloydWarshall.h"
+#include "DijkstraAllPairs.h"
+#include "ThorupDynamicConnectivity.h"
 
-
-
-AllPairsDetector::AllPairsDetector(int _detectorID, GraphTheorySolver * _outer,  DynamicGraph<PositiveEdgeStatus> &_g,DynamicGraph<NegativeEdgeStatus> &_antig, int within_steps ,double seed):
-Detector(_detectorID),outer(_outer),g(_g),antig(_antig),within(within_steps),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL){
+AllPairsDetector::AllPairsDetector(int _detectorID, GraphTheorySolver * _outer,  DynamicGraph<PositiveEdgeStatus> &_g,DynamicGraph<NegativeEdgeStatus> &_antig, double seed):
+Detector(_detectorID),outer(_outer),g(_g),antig(_antig),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL){
 
 
 		positiveReachStatus = new AllPairsDetector::ReachStatus(*this,true);
 		negativeReachStatus = new AllPairsDetector::ReachStatus(*this,false);
-		if(allpairsalg==ALG_FLOYDWARSHALL){
+		if(allpairsalg==AllPairsAlg::ALG_FLOYDWARSHALL){
 			positive_reach_detector = new FloydWarshall<AllPairsDetector::ReachStatus,PositiveEdgeStatus>(_g,*(positiveReachStatus),1);
 			negative_reach_detector = new FloydWarshall<AllPairsDetector::ReachStatus,NegativeEdgeStatus>(_antig,*(negativeReachStatus),-1);
 			positive_path_detector = positive_reach_detector;
-		}else{
+		}/*else if (allpairsalg==ALG_THORUP_ALLPAIRS){
+			positive_reach_detector = new DynamicConnectivity<AllPairsDetector::ReachStatus,PositiveEdgeStatus>(_g,*(positiveReachStatus),1);
+			negative_reach_detector = new DynamicConnectivity<AllPairsDetector::ReachStatus,NegativeEdgeStatus>(_antig,*(negativeReachStatus),-1);
+			positive_path_detector = positive_reach_detector;
+		}*/else{
 			positive_reach_detector = new DijkstraAllPairs<AllPairsDetector::ReachStatus,PositiveEdgeStatus>(_g,*(positiveReachStatus),1);
 			negative_reach_detector = new DijkstraAllPairs<AllPairsDetector::ReachStatus,NegativeEdgeStatus>(_antig,*(negativeReachStatus),-1);
 			positive_path_detector = positive_reach_detector;
@@ -302,11 +307,8 @@ void AllPairsDetector::buildReachReason(int source, int to,vec<Lit> & conflict){
 					outer->cutGraph.clearHistory();
 					outer->stats_mc_calls++;
 
-
-
 					//We could learn an arbitrary (non-infinite) cut here, or just the whole set of false edges
 					//or perhaps we can learn the actual 1-uip cut?
-
 
 					vec<int>& to_visit  = outer->to_visit;
 					vec<char>& seen  = outer->seen;

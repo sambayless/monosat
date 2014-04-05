@@ -75,7 +75,8 @@ public:
 	vec<lbool> edge_assignments;
 
 	MSTDetector * mstDetector;
-	vec<ReachabilityConstraint> unimplemented_graph_constraints;
+	vec<ReachabilityConstraint> unimplemented_reachability_constraints;
+	vec<ConnectivityConstraint> unimplemented_connectivity_constraints;
 
 
 	PositiveEdgeStatus g_status;
@@ -215,10 +216,10 @@ public:
 			 component_detector=NULL;
 			 rnd_seed=opt_random_seed;
 
-			if(mincutalg==ALG_IBFS){
+			if(mincutalg==MinCutAlg::ALG_IBFS){
 				mc = new IBFS<CutEdgeStatus>(cutGraph);
 
-			}else if (mincutalg == ALG_EDKARP_ADJ){
+			}else if (mincutalg == MinCutAlg::ALG_EDKARP_ADJ){
 
 				mc = new EdmondsKarpAdj<CutStatus, CutEdgeStatus>(cutGraph,cutStatus);
 				//reachprop = new EdmondsKarpAdj<PropCutStatus, NegativeEdgeStatus>(antig,propCutStatus);
@@ -956,42 +957,84 @@ public:
 
 	void implementConstraints(){
 		if(opt_allpairs_percentage>=1){
-			for(int i = 0;i<unimplemented_graph_constraints.size();i++){
-				ReachabilityConstraint c = unimplemented_graph_constraints[i];
+			for(int i = 0;i<unimplemented_reachability_constraints.size();i++){
+				ReachabilityConstraint c = unimplemented_reachability_constraints[i];
 				reaches_private(c.from,c.to,c.reach_var,c.distance);
 			}
+			for(int i = 0;i<unimplemented_connectivity_constraints.size();i++){
+				ConnectivityConstraint c = unimplemented_connectivity_constraints[i];
+				connects_private(c.from,c.to,c.connect_var,c.distance);
+			}
 		}else if (opt_allpairs_percentage==0){
-			for(int i = 0;i<unimplemented_graph_constraints.size();i++){
-				ReachabilityConstraint c = unimplemented_graph_constraints[i];
+			for(int i = 0;i<unimplemented_reachability_constraints.size();i++){
+				ReachabilityConstraint c = unimplemented_reachability_constraints[i];
 				allpairs(c.from,c.to,c.reach_var,c.distance);
 			}
+			for(int i = 0;i<unimplemented_connectivity_constraints.size();i++){
+				ConnectivityConstraint c = unimplemented_connectivity_constraints[i];
+				allpairs_undirected(c.from,c.to,c.connect_var,c.distance);
+			}
 		}else{
-			vec<bool> seen;
-			int count=0;
-			seen.growTo(nNodes());
-			for(int i = 0;i<unimplemented_graph_constraints.size();i++){
-						ReachabilityConstraint c = unimplemented_graph_constraints[i];
-						if(!seen[c.from]){
-							seen[c.from]=true;
-							count++;
+			{
+				vec<bool> seen;
+				int count=0;
+				seen.growTo(nNodes());
+				for(int i = 0;i<unimplemented_reachability_constraints.size();i++){
+							ReachabilityConstraint c = unimplemented_reachability_constraints[i];
+							if(!seen[c.from]){
+								seen[c.from]=true;
+								count++;
+							}
 						}
-					}
-			double frac = ((double)count)/((double)nNodes());
+				double frac = ((double)count)/((double)nNodes());
 
-			if (opt_verb>0 && frac>=opt_allpairs_percentage){
-				printf("Allpairs solver triggered for graph %d by percentage of source nodes: %d/%d=%f>%f\n",getGraphID() ,count,nNodes(),frac,(double)opt_allpairs_percentage);
+				if (opt_verb>0 && frac>=opt_allpairs_percentage){
+					printf("Allpairs solver triggered for graph %d by percentage of source nodes: %d/%d=%f>%f\n",getGraphID() ,count,nNodes(),frac,(double)opt_allpairs_percentage);
+				}
+
+				for(int i = 0;i<unimplemented_reachability_constraints.size();i++){
+					ReachabilityConstraint c = unimplemented_reachability_constraints[i];
+					if(frac>=opt_allpairs_percentage)
+						allpairs(c.from,c.to,c.reach_var,c.distance);
+					else
+						reaches_private(c.from,c.to,c.reach_var,c.distance);
+				}
 			}
 
-			for(int i = 0;i<unimplemented_graph_constraints.size();i++){
-									ReachabilityConstraint c = unimplemented_graph_constraints[i];
-									if(frac>=opt_allpairs_percentage)
-										allpairs(c.from,c.to,c.reach_var,c.distance);
-									else
-										reaches_private(c.from,c.to,c.reach_var,c.distance);
-								}
+			{
+				vec<bool> seen;
+				int count=0;
+				seen.growTo(nNodes());
+				for(int i = 0;i<unimplemented_connectivity_constraints.size();i++){
+					ConnectivityConstraint c = unimplemented_connectivity_constraints[i];
+							if(!seen[c.from]){
+								seen[c.from]=true;
+								count++;
+							}
+						}
+				double frac = ((double)count)/((double)nNodes());
+
+				if (opt_verb>0 && frac>=opt_allpairs_percentage){
+					printf("Allpairs-undirected solver triggered for graph %d by percentage of source nodes: %d/%d=%f>%f\n",getGraphID() ,count,nNodes(),frac,(double)opt_allpairs_percentage);
+				}
+
+				for(int i = 0;i<unimplemented_connectivity_constraints.size();i++){
+					ConnectivityConstraint c = unimplemented_connectivity_constraints[i];
+					if(frac>=opt_allpairs_percentage)
+						allpairs_undirected(c.from,c.to,c.connect_var,c.distance);
+					else
+						connects_private(c.from,c.to,c.connect_var,c.distance);
+				}
+			}
 		}
-		unimplemented_graph_constraints.clear();
+		unimplemented_reachability_constraints.clear();
+
+
 	}
+	void allpairs_undirected(int from, int to, Var reach_var,int within_steps=-1){
+
+	}
+
 	void allpairs(int from, int to, Var reach_var,int within_steps=-1){
 				//for now, reachesWithinSteps to be called instead
 
@@ -1040,6 +1083,10 @@ public:
 
 
 			    }
+	void connects_private(int from, int to, Var reach_var,int within_steps=-1){
+
+	}
+
 	void reaches_private(int from, int to, Var reach_var,int within_steps=-1){
 			//for now, reachesWithinSteps to be called instead
 			if(within_steps>=0 || opt_force_distance_solver){
@@ -1089,8 +1136,13 @@ public:
 
 		    }
 
+	//Undirected reachability query
+	void connects(int from, int to, Var connect_var, int within_steps=-1){
+		unimplemented_connectivity_constraints.push({from,to,within_steps,connect_var});
+	}
+
 	void reaches(int from, int to, Var reach_var,int within_steps=-1){
-			unimplemented_graph_constraints.push({from,to,within_steps,reach_var});
+			unimplemented_reachability_constraints.push({from,to,within_steps,reach_var});
 			//to allow us to alter the solving algorithm based on the number and type of constraints, we aren't implementing them here directly any more - instead,
 			//we just store the constraints in this vector, then implement them later when 'implementConstraints' is called.
 	    }

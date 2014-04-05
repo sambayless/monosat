@@ -200,8 +200,9 @@ public:
 			//ok, now check if any of the added edges allow for a decrease in distance.
 			for (int i = history_qhead;i<g.history.size();i++){
 				assert(!g.history[i].addition);
-				int u=g.history[i].u;
-				int v=g.history[i].v;
+				int edgeid = g.history[i].id;
+				int u =  g.all_edges[edgeid].from;
+				int v =  g.all_edges[edgeid].to;
 				if(prev[v]==u){
 					history_qhead = i-1;
 					need_recompute=true;
@@ -346,10 +347,10 @@ public:
 		return true;
 	}
 
-	bool connected_unsafe(int t)const{
+	bool connected_unsafe(int t){
 		return t<dist.size() && dist[t]<INF;
 	}
-	bool connected_unchecked(int t)const{
+	bool connected_unchecked(int t){
 		assert(last_modification==g.modifications);
 		return connected_unsafe(t);
 	}

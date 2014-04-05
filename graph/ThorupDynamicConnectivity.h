@@ -26,14 +26,18 @@ struct Edge{
 	int edgeID;
 	int from;
 	int to;
-	bool in_forest;
-	bool enabled;
-	int level;
+	int in_forest:1;
+	int enabled:1;
+	int level:30;
+	Edge():edgeID(-1),from(-1),to(-1),in_forest(false),enabled(false),level(0){
 
+	}
 };
-
+public:
 vec<Edge> edges;
 vec<bool> seen;
+vec<int> t_seen;
+
 int nodes;
 
 vec<EulerTree> et;
@@ -45,6 +49,7 @@ int levels;
 
 void insert(int edgeID){
 	Edge & e = edges[edgeID];
+	assert(e.edgeID==edgeID);
 	e.level=levels-1;
 	//fix these later
 	//assert(!incident_edges[e.from].contains(edgeID));
@@ -110,6 +115,34 @@ void dbg_checkGraph(){
 	}
 	dbg_levels();
 #endif
+}
+
+void dbg_print(){
+	vec<bool> seen;
+	seen.growTo(nodes);
+	for(int n = 0;n<nodes;n++){
+		if(!seen[n]){
+			seen[n]=true;
+			vec<int> e;
+			getConnectedComponentEdges(n,e);
+
+			vec<int> node_set;
+			getConnectedComponent(n,node_set);
+			sort(node_set);
+			if(node_set.size()>1){
+			for(int n:node_set){
+				seen[n]=true;
+				printf("%d,",n);
+			}
+			printf("\n");
+
+			for(int i =0;i<e.size();i++){
+				printf("(%d->%d)", edges[e[i]].from,edges[e[i]].to );
+			}
+			printf("\n");
+			}
+		}
+	}
 }
 
 bool visit(int w,int otherTreeVertex, int removedEdge, int level, int & replacementEdge){
@@ -339,6 +372,14 @@ ThorupDynamicConnectivity():nodes(0),levels(0){
 
 }
 bool connected(int u, int v){
+#ifndef NDEBUG
+	bool c = et.last().connected(u,v);
+	bool d= dbg.connected(u,v);
+	if(c!=d){
+	dbg.dbg_print();
+	dbg_print();
+	}
+#endif
 	assert(et.last().connected(u,v)==dbg.connected(u,v));
 	return et.last().connected(u,v);
 }
@@ -354,7 +395,7 @@ int findRoot(int node){
 
 void addNode(){
 	nodes++;
-	edges.push();
+
 	incident_edges.push();
 	seen.push();
 	levels = (int)(floor(log(nodes)/log(2))+1);
@@ -369,20 +410,160 @@ void addNode(){
 #endif
 }
 
-void addEdge(int edgeID, int from, int to){
+void addEdge( int from, int to,int edgeID){
 	edges.growTo(edgeID+1);
-	edges[edgeID].from=from;
-	edges[edgeID].to=to;
-	edges[edgeID].level=levels-1;
-	edges[edgeID].edgeID=edgeID;
-	setEdgeLevel(edgeID,edges[edgeID].level);
-#ifndef NDEBUG
-	dbg.addEdge(edgeID,from,to);
-#endif
+	if(edges[edgeID].edgeID==-1){
+		edges[edgeID].from=from;
+		edges[edgeID].to=to;
+		edges[edgeID].level=levels-1;
+		edges[edgeID].edgeID=edgeID;
+		setEdgeLevel(edgeID,edges[edgeID].level);
+	#ifndef NDEBUG
+		dbg.addEdge(from,to,edgeID);
+	#endif
+	}
 }
 
 bool edgeEnabled(int edgeid)const{
 	return edges[edgeid].enabled;
+}
+
+int nNodes()const{
+	return nodes;
+}
+int nEdges()const{
+	return edges.size();
+}
+
+//If from and to are connected, finds an ARBITRARY connecting path.
+void getPath(int from, int to, vec<int> & nodes_out){
+	nodes_out.clear();
+	if(from==to){
+		nodes_out.push(from);
+		return;
+	}else{
+		if(connected(from,to)){
+			//ok, walk through the tour until a path is found. But we also want to drop from this nodes that are not needed...
+			t_seen.clear();
+			t_seen.growTo(nodes);
+			int curLevel = 1;
+			t_seen[from]=curLevel;
+			nodes_out.push(from);
+
+
+			for(auto it = et.last().begin_half_edge_tour(from,true);it != et.last().end_half_edge_tour();++it){
+				int cur_edge = *it;
+				Edge & treeEdge = edges[cur_edge];
+				assert(t_seen[treeEdge.to]==curLevel || t_seen[treeEdge.from]==curLevel);
+				if(t_seen[treeEdge.to] && t_seen[treeEdge.from]){
+					//this is a step back up the tree
+					nodes_out.pop();
+					curLevel--;
+					assert(t_seen[treeEdge.to]==curLevel || t_seen[treeEdge.from]==curLevel);
+				}else if(t_seen[treeEdge.to]==curLevel){
+					assert(!t_seen[treeEdge.from]);
+					curLevel++;
+					t_seen[treeEdge.from]=curLevel;
+					nodes_out.push(treeEdge.from);
+				}else if(t_seen[treeEdge.from]==curLevel){
+					assert(!t_seen[treeEdge.to]);
+					curLevel++;
+					t_seen[treeEdge.to]=curLevel;
+					nodes_out.push(treeEdge.to);
+				}
+				if(nodes_out.last()==to){
+					break;
+				}
+			}
+			t_seen.clear();
+			assert(nodes_out.last()==to);
+		}
+	}
+}
+void getPathEdges(int from, int to, vec<int> & edges_out){
+	edges_out.clear();
+	if(from==to){
+
+		return;
+	}else{
+		if(connected(from,to)){
+			//ok, walk through the tour until a path is found. But we also want to drop from this nodes that are not needed...
+			t_seen.clear();
+			t_seen.growTo(nodes);
+			int curLevel = 1;
+			t_seen[from]=curLevel;
+
+
+			for(auto it = et.last().begin_half_edge_tour(from,true);it != et.last().end_half_edge_tour();++it){
+				int cur_edge = *it;
+				Edge & treeEdge = edges[cur_edge];
+				assert(t_seen[treeEdge.to]==curLevel || t_seen[treeEdge.from]==curLevel);
+				if(t_seen[treeEdge.to] && t_seen[treeEdge.from]){
+					//this is a step back up the tree
+					edges_out.pop();
+					curLevel--;
+					assert(t_seen[treeEdge.to]==curLevel || t_seen[treeEdge.from]==curLevel);
+				}else if(t_seen[treeEdge.to]==curLevel){
+					assert(!t_seen[treeEdge.from]);
+					curLevel++;
+					t_seen[treeEdge.from]=curLevel;
+					edges_out.push(treeEdge.edgeID);
+				}else if(t_seen[treeEdge.from]==curLevel){
+					assert(!t_seen[treeEdge.to]);
+					curLevel++;
+					t_seen[treeEdge.to]=curLevel;
+					edges_out.push(treeEdge.edgeID);
+				}
+			}
+			t_seen.clear();
+		}
+	}
+}
+void getConnectedComponent(int from, vec<int> & nodes_out){
+	t_seen.clear();
+	t_seen.growTo(nodes);
+	t_seen[from]=true;
+	nodes_out.clear();
+	nodes_out.push(from);
+	for(auto it = et.last().begin_half_edge_tour(from);it != et.last().end_half_edge_tour();++it){
+		int cur_edge = *it;
+		Edge & treeEdge = edges[cur_edge];
+		if(!t_seen[treeEdge.to]){
+			t_seen[treeEdge.to]=true;
+			nodes_out.push(treeEdge.to);
+		}
+		if(!t_seen[treeEdge.from]){
+			t_seen[treeEdge.from]=true;
+			nodes_out.push(treeEdge.from);
+		}
+	}
+#ifndef NDEBUG
+/*	for(int i =0;i<nodes;i++){
+		if(t_seen[i]){
+			assert(nodes_out.contains(i));
+			assert(dbg.connected(from,i));
+		}else{
+			assert(!dbg.connected(from,i));
+		}
+	}*/
+#endif
+
+	t_seen.clear();
+}
+
+
+void getConnectedComponentEdges(int from, vec<int>& edges_out){
+	t_seen.clear();
+	t_seen.growTo(edges.size());
+	for(auto it = et.last().begin_half_edge_tour(from);it != et.last().end_half_edge_tour();++it){
+		int cur_edge = *it;
+		Edge & treeEdge = edges[cur_edge];
+		if(!t_seen[treeEdge.edgeID]){
+			t_seen[treeEdge.edgeID]=true;
+			edges_out.push(treeEdge.edgeID);
+		}
+	}
+	t_seen.clear();
 }
 
 //disable all edges
@@ -399,21 +580,30 @@ void clear(){
 
 }
 
-void setEdgeEnabled(int edgeID, bool enabled){
+void setEdgeEnabled(int from, int to,int edgeID, bool enabled){
 	static int iter = 0;
-	if(++iter==102){
+	if(++iter==531){
 		int a=1;
 	}
+	addEdge(from,to,edgeID);
+
+/*	if(enabled)
+		printf("Enable Edge (%d->%d)\n", edges[edgeID].from,edges[edgeID].to);
+	else
+		printf("Disable Edge (%d->%d)\n", edges[edgeID].from,edges[edgeID].to);*/
 	dbg_checkGraph();
+	assert( edges[edgeID].edgeID==edgeID);assert( edges[edgeID].to==to);assert( edges[edgeID].from==from);
 	if(enabled && ! edges[edgeID].enabled){
+		printf("%d: Enable Edge (%d->%d)\n",iter, edges[edgeID].from,edges[edgeID].to);
 		edges[edgeID].enabled=true;
 		insert(edgeID);
 	}else if(!enabled && edges[edgeID].enabled){
+		printf("%d: Disable Edge (%d->%d)\n",iter, edges[edgeID].from,edges[edgeID].to);
 		edges[edgeID].enabled=false;
 		cut(edgeID);
 	}
 #ifndef NDEBUG
-	dbg.setEdgeEnabled(edgeID,enabled);
+	dbg.setEdgeEnabled(from,to,edgeID,enabled);
 	dbg_checkGraph();
 #endif
 }

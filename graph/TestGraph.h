@@ -92,6 +92,9 @@ public:
     		edge_weights.push(weight);
     		return l;
     	}
+	void connects(int from,int to, Var reach_var,int within_steps=-1){
+
+	}
     vec<Lit> c;
 	void reachesAny(int from, vec<Lit> & reaches,int within_steps=-1){
 		if(within_steps<0){

@@ -35,7 +35,7 @@ namespace Minisat {
 //or edge specifiers, which are of the form:
 //e graphID fromNode toNode literal
 //If lit is 0 or 1, this is a constant edge (0 for false, 1 for true)
-//r g u w var is a reach querry: var is true if can u reach w in graph g, false otherwise
+//r g u w var is a reach query: var is true if can u reach w in graph g, false otherwise
 
 template<class B, class Solver>
 static void readDiGraph(B& in, Solver& S, vec<GraphTheory*> & graphs) {
@@ -128,12 +128,43 @@ static void readWeightedEdge(B& in, Solver& S, vec<GraphTheory*> & graphs) {
 }
 
 template<class B, class Solver>
+static void readConnect(B& in, Solver& S, vec<GraphTheory*> & graphs) {
+	if(opt_ignore_graph){
+		skipLine(in);
+		return;
+	}
+	//u g u w var is an undirected reachability query: var is true if can u reach w in graph g, false otherwise
+    if(*in != 'u'){
+    	printf("PARSE ERROR! Unexpected char: %c\n", *in), exit(3);
+    }
+    ++in;
+
+        int graphID = parseInt(in);
+        int from = parseInt(in);
+       // int steps = parseInt(in);
+         int to=parseInt(in);
+        int reachVar = parseInt(in)-1;
+        if(graphID <0 || graphID>=graphs.size() || !graphs[graphID]){
+        	printf("PARSE ERROR! Undeclared graph identifier %d for edge %d\n",graphID, reachVar), exit(3);
+        }
+        if(reachVar<0){
+        	printf("PARSE ERROR! Edge variables must be >=0, was %d\n", reachVar), exit(3);
+        }
+        GraphTheory * graph = graphs[graphID];
+        while (reachVar+graph->nNodes() >= S.nVars()) S.newVar();
+        graph->connects(from,to,reachVar);
+
+
+}
+
+
+template<class B, class Solver>
 static void readReach(B& in, Solver& S, vec<GraphTheory*> & graphs) {
 	if(opt_ignore_graph){
 		skipLine(in);
 		return;
 	}
-	//r g u w var is a reach querry: var is true if can u reach w in graph g, false otherwise
+	//r g u w var is a reach query: var is true if can u reach w in graph g, false otherwise
     if(*in != 'r'){
     	printf("PARSE ERROR! Unexpected char: %c\n", *in), exit(3);
     }
@@ -163,7 +194,7 @@ static void readDistance(B& in, Solver& S, vec<GraphTheory*> & graphs) {
 		skipLine(in);
 		return;
 	}
-	//d g u w var dist is a reach querry: var is true if can u reach w in graph g, false otherwise
+	//d g u w var dist is a reach query: var is true if can u reach w in graph g, false otherwise
     if(*in != 'd'){
     	printf("PARSE ERROR! Unexpected char: %c\n", *in), exit(3);
     }
@@ -368,6 +399,8 @@ static void parse_GRAPH_main(B& in, Solver& S, vec<std::pair<int,std::string> > 
             readWeightedEdge(in, S,graphs);
         }else if (*in == 'r'){
             readReach(in, S,graphs);
+        }else if (*in == 'u'){
+            readConnect(in, S,graphs);
         }else if (*in == 'd'){
             readDistance(in, S,graphs);
         }else if (*in == 'm'){

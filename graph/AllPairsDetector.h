@@ -11,8 +11,7 @@
 
 #include "Graph.h"
 #include "AllPairs.h"
-#include "FloydWarshall.h"
-#include "DijkstraAllPairs.h"
+
 #include "core/SolverTypes.h"
 #include "mtl/Map.h"
 
@@ -25,7 +24,7 @@ class AllPairsDetector:public Detector{
 public:
 		GraphTheorySolver * outer;
 		 DynamicGraph<PositiveEdgeStatus> &g;
-			 DynamicGraph<NegativeEdgeStatus> &antig;
+		 DynamicGraph<NegativeEdgeStatus> &antig;
 		int within;
 
 		double rnd_seed;
@@ -86,6 +85,9 @@ public:
 		struct ReachStatus{
 			AllPairsDetector & detector;
 			bool polarity;
+			void setReachable(int from, bool reachable){
+				//for compatability with reach algs
+			}
 			void setReachable(int from,int u, bool reachable);
 			bool isReachable(int from,int u) const{
 				return false;
@@ -126,7 +128,7 @@ public:
 		bool checkSatisfied();
 		Lit decide();
 		void addLit(int from, int to, Var reach_var,int within_steps=-1);
-		AllPairsDetector(int _detectorID, GraphTheorySolver * _outer, DynamicGraph<PositiveEdgeStatus> &_g, DynamicGraph<NegativeEdgeStatus> &_antig,  int within_steps,double seed=1);//:Detector(_detectorID),outer(_outer),within(-1),source(_source),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL){}
+		AllPairsDetector(int _detectorID, GraphTheorySolver * _outer, DynamicGraph<PositiveEdgeStatus> &_g, DynamicGraph<NegativeEdgeStatus> &_antig, double seed=1);//:Detector(_detectorID),outer(_outer),within(-1),source(_source),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL){}
 		virtual ~AllPairsDetector(){
 
 		}

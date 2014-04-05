@@ -37,7 +37,10 @@ extern IntOption opt_restrict_decisions;
 
 extern StringOption opt_min_cut_alg;
 extern StringOption opt_reach_alg;
+extern StringOption opt_con_alg;
 extern StringOption opt_allpairs_alg;
+extern StringOption opt_undir_allpairs_alg;
+
 extern StringOption opt_components_alg;
 extern BoolOption opt_check_solution;
 extern BoolOption opt_print_reach;
@@ -68,26 +71,42 @@ extern BoolOption opt_optimize_mst;
 extern BoolOption opt_skip_deletions;
 extern BoolOption opt_skip_additions;
 extern BoolOption opt_permanent_theory_conflicts;
-enum ReachAlg{
+enum class ReachAlg{
 	 ALG_DFS,
 	 ALG_DIJKSTRA,
 	 ALG_DISTANCE,
 	 ALG_BFS
 };
+
+//For undirected reachability
+enum class ConnectivityAlg{
+	 ALG_DFS,
+	 ALG_DIJKSTRA,
+	 ALG_DISTANCE,
+	 ALG_BFS,
+	 ALG_THORUP
+};
+extern ConnectivityAlg undirectedalg;
 extern ReachAlg reachalg;
 extern ReachAlg distalg;
-enum AllPairsAlg{
+enum class AllPairsAlg{
 	 ALG_FLOYDWARSHALL,
 	 ALG_DIJKSTRA_ALLPAIRS
 };
 extern AllPairsAlg allpairsalg;
-enum MinCutAlg{
+enum class AllPairsConnectivityAlg{
+	 ALG_FLOYDWARSHALL,
+	 ALG_DIJKSTRA_ALLPAIRS,
+	 ALG_THORUP
+};
+extern AllPairsConnectivityAlg undirected_allpairsalg;
+enum class MinCutAlg{
 	 ALG_EDMONSKARP,
 	 ALG_EDKARP_ADJ,
 	 ALG_IBFS
 };
 extern MinCutAlg mincutalg;
-enum ComponentsAlg{
+enum class ComponentsAlg{
 	ALG_DISJOINT_SETS
 
 };

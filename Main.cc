@@ -138,53 +138,86 @@ int main(int argc, char** argv)
 
         vec<std::pair<int,string> > symbols;
 
-        mincutalg = ALG_EDMONSKARP;
+        mincutalg = MinCutAlg::ALG_EDMONSKARP;
 
         if(!strcasecmp(opt_min_cut_alg,"ibfs")){
-        	mincutalg=ALG_IBFS;
+        	mincutalg=MinCutAlg::ALG_IBFS;
 
         }else if (!strcasecmp(opt_min_cut_alg,"edmondskarp-adj")){
-        	mincutalg = ALG_EDKARP_ADJ;
+        	mincutalg = MinCutAlg::ALG_EDKARP_ADJ;
         }else if (!strcasecmp(opt_min_cut_alg,"edmondskarp")){
-        	mincutalg = ALG_EDMONSKARP;
+        	mincutalg = MinCutAlg::ALG_EDMONSKARP;
         }else{
         	fprintf(stderr,"Error: unknown max-flow/min-cut algorithm %s, aborting\n",((string)  opt_min_cut_alg).c_str());
         	exit(1);
         }
 
-       componentsalg =ALG_DISJOINT_SETS;
+       componentsalg =ComponentsAlg::ALG_DISJOINT_SETS;
 
 		 if(!strcasecmp(opt_components_alg,"disjoint-sets")){
-			componentsalg=ALG_DISJOINT_SETS;
+			componentsalg=ComponentsAlg::ALG_DISJOINT_SETS;
 		 }else{
 			fprintf(stderr,"Error: unknown connectivity algorithm %s, aborting\n", ((string) opt_components_alg).c_str());
 			exit(1);
 		 }
 
 
-        reachalg = ALG_BFS;
+        reachalg = ReachAlg::ALG_BFS;
 
 		 if(!strcasecmp(opt_reach_alg,"dijkstra")){
-			reachalg=ALG_DIJKSTRA;
+			reachalg=ReachAlg::ALG_DIJKSTRA;
 
 		 }else if(!strcasecmp(opt_reach_alg,"bfs")){
-			reachalg=ALG_BFS;
+			reachalg=ReachAlg::ALG_BFS;
 
 		 }else if (!strcasecmp(opt_reach_alg,"dfs")){
-			 reachalg = ALG_DFS;
+			 reachalg = ReachAlg::ALG_DFS;
 		 }else{
 			fprintf(stderr,"Error: unknown reachability algorithm %s, aborting\n", ((string) opt_reach_alg).c_str());
 			exit(1);
 		 }
-		    allpairsalg = ALG_DIJKSTRA_ALLPAIRS;
+
+		 undirectedalg = ConnectivityAlg::ALG_BFS;
+
+		 if(!strcasecmp(opt_con_alg,"dijkstra")){
+			 undirectedalg=ConnectivityAlg::ALG_DIJKSTRA;
+
+		 }else if(!strcasecmp(opt_con_alg,"bfs")){
+			 undirectedalg=ConnectivityAlg::ALG_BFS;
+
+		 }else if (!strcasecmp(opt_con_alg,"dfs")){
+			 undirectedalg = ConnectivityAlg::ALG_DFS;
+		 }else  if (!strcasecmp(opt_con_alg,"thorup")){
+			 undirectedalg = ConnectivityAlg::ALG_THORUP;
+		 } else{
+			fprintf(stderr,"Error: unknown undirected reachability algorithm %s, aborting\n", ((string) opt_reach_alg).c_str());
+			exit(1);
+		 }
+
+		    allpairsalg = AllPairsAlg::ALG_DIJKSTRA_ALLPAIRS;
 
 		    if (!strcasecmp(opt_allpairs_alg,"floyd-warshall")){
-		    		allpairsalg = ALG_FLOYDWARSHALL;
+		    		allpairsalg = AllPairsAlg::ALG_FLOYDWARSHALL;
 		   		 }else if(!strcasecmp(opt_allpairs_alg,"dijkstra")){
-		   			allpairsalg=ALG_DIJKSTRA_ALLPAIRS;
+		   			allpairsalg=AllPairsAlg::ALG_DIJKSTRA_ALLPAIRS;
 
-			 }else{
-					fprintf(stderr,"Error: unknown allpairs reachability algorithm %s, aborting\n", ((string) opt_allpairs_alg).c_str());
+			 } else{
+				fprintf(stderr,"Error: unknown allpairs reachability algorithm %s, aborting\n", ((string) opt_allpairs_alg).c_str());
+				exit(1);
+			 }
+
+
+		    undirected_allpairsalg = AllPairsConnectivityAlg::ALG_DIJKSTRA_ALLPAIRS;
+
+			    if (!strcasecmp(opt_undir_allpairs_alg,"floyd-warshall")){
+			    	undirected_allpairsalg = AllPairsConnectivityAlg::ALG_FLOYDWARSHALL;
+			   		 }else if(!strcasecmp(opt_undir_allpairs_alg,"dijkstra")){
+			   			undirected_allpairsalg=AllPairsConnectivityAlg::ALG_DIJKSTRA_ALLPAIRS;
+
+				 }else  if (!strcasecmp(opt_undir_allpairs_alg,"thorup")){
+					 undirected_allpairsalg = AllPairsConnectivityAlg::ALG_THORUP;
+				 } else{
+					fprintf(stderr,"Error: unknown undirected allpairs reachability algorithm %s, aborting\n", ((string) opt_allpairs_alg).c_str());
 					exit(1);
 				 }
 

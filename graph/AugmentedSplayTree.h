@@ -136,8 +136,12 @@ _node * next_slow(){
 	}
 
 }
-
-private:
+public:
+_node * findRoot(){
+	  _node*u=this;
+	  while( u->parent ) u = u->parent;
+	  return u;
+}
 
 _node* findMin(  ) {
   _node*u=this;
@@ -586,7 +590,7 @@ public:
 	  return depth;
   }
 
-  //Return -1 if a< b, 1 if a>b, 0 if either they are the same node, or not in the same tree.
+  //Return -1 if a is before b, 1 if a is after b, 0 if either they are the same node, or not in the same tree.
   //This calculation is LOG time
   int compare(Node * a, Node * b){
 	  if(a==b){

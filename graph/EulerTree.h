@@ -12,6 +12,7 @@
 #include "AugmentedSplayTree.h"
 #include "SearchTree.h"
 //#include "BTree.h"
+//#define dbg_print
 using namespace Minisat;
 
 class EulerTree{
@@ -46,6 +47,9 @@ private:
 #endif
 		bool contains(EulerVertex * v){
 			return from==v||to==v;
+		}
+		bool contains(int v){
+			return from->index==v||to->index==v;
 		}
 	};
 
@@ -151,7 +155,9 @@ private:
 			Tree::Node* n= owner->t.findMin(owner->t.findRoot(incidentEdgeA()));
 
 			while(n->next()){
+#ifdef dbg_print
 				printf("(%d -> %d)",n->value->from->index,n->value->to->index);
+#endif
 				tour_list.push(n->value->from->index);
 				assert( n->next());
 
@@ -160,7 +166,9 @@ private:
 				n=n->next();
 				assert(n);
 			}
+#ifdef dbg_print
 			printf("(%d -> %d)\n",n->value->from->index,n->value->to->index);
+#endif
 			tour_list.push(n->value->from->index);
 			tour_list.push(n->value->to->index);
 #endif
@@ -796,27 +804,33 @@ public:
 
 		vec<int> tour_list;
 		v->dbg_real_tour(tour_list);
+#ifdef dbg_print
 		printf("tour:");
 		for(int i:tour_list){
 			printf("%d,",i);
 		}
 		printf("\n");
+#endif
 	}
 
 	void dbg_printEdge(Tree::Node * e){
 		if(!e)
 			return;
+#ifdef dbg_print
 		printf("(%d -> %d)\n",e->value->from->index,e->value->to->index);
+#endif
 	}
 
 	void dbg_printDbgTour(EulerVertex * v){
 		vec<int> tour_list;
 		v->dbg_build_tour(v,tour_list);
+#ifdef dbg_print
 		printf("dbgtour:");
 		for(int i:tour_list){
 			printf("%d,",i);
 		}
 		printf("\n");
+#endif
 	}
 	void link(int u, int v, int edgeID) {
 		link(vertices[u],vertices[v],edgeID);
@@ -973,11 +987,11 @@ public:
 	struct tour_iterator {
 			EulerHalfEdge * n;
 			EulerHalfEdge * start;
-
+			bool strict;
 			bool backward;
 
 
-			tour_iterator(EulerHalfEdge * start):n(start), start(start),backward(false){
+			tour_iterator(EulerHalfEdge * start, bool strict=false):n(start), start(start),backward(false),strict(strict){
 
 			}
 
@@ -995,11 +1009,26 @@ public:
 		    	//first traverse forwards to the end of the bst from the start node
 		    	if(!backward){
 		    		if(n->node->next()){
+		    			if(n->node->next()->value==start){
+		    				//we are done. this can only happen in strict mode.
+		    				n=nullptr;
+		    				start=nullptr;
+		    				backward=false;
+		    				return *this;
+		    			}
 						n=n->node->next()->value;
 						return *this;
 					}
-					backward=true;//now switch to traversing backward from the start node
-					n= start;
+
+					if(strict){
+						//ok, now continue the tour from the left hand side
+						//this costs log time, so this isn't the default behaviour
+						n = start->node->findRoot()->findMin()->value;
+						return *this;
+					}else{
+						backward=true;//now switch to traversing backward from the start node
+						n= start;
+					}
 		    	}
 		    	assert(backward);
 				if(n->node->prev()){
@@ -1022,11 +1051,18 @@ public:
 		};
 
 	//Traverse a full tour starting from this node, in _arbitrary_ order.
-	tour_iterator begin_half_edge_tour(int fromVertex) {
+	//If strict_tour is set, then the tour will be in 'proper' tour order, starting and ending at 'fromVertex'.
+	tour_iterator begin_half_edge_tour(int fromVertex, bool strict_tour=false) {
 		if(vertices[fromVertex]->isSingleton()){
 			return tour_iterator(nullptr);
 		}else{
-			return tour_iterator(vertices[fromVertex]->incidentEdgeA()->value);
+			EulerHalfEdge * h = vertices[fromVertex]->incidentEdgeA()->value;
+			//ensure that we start on an outgoing, not an incoming, edge in the tour
+			if(strict_tour){
+				makeRoot(vertices[fromVertex]);
+				h=t.findMin(t.findRoot(h->node))->value;
+			}
+			return tour_iterator(h,strict_tour);
 		}
 
 	}
@@ -1082,6 +1118,8 @@ public:
 	void clear(){
 
 	}
+
+
 	//return the size of the complete tree that v is an element of
 	int getFullTreeSize(int v){
 		return getFullTreeSize(vertices[v]);

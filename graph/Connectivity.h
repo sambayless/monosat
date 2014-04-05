@@ -286,8 +286,9 @@ public:
 			q.clear();
 
 			for(int i = history_qhead;i<g.history.size();i++){
-				int from = g.history[i].u;
-				int to = g.history[i].v;
+				int edgeid = g.history[i].id;
+				int from =  g.all_edges[edgeid].from;
+				int to =  g.all_edges[edgeid].to;
 				if(g.history[i].addition){
 					//incrementally add edge
 
@@ -338,8 +339,9 @@ public:
 				q.clear();
 
 				for(int i = history_qhead;i<g.history.size();i++){
-					int from = g.history[i].u;
-					int to = g.history[i].v;
+					int edgeid = g.history[i].id;
+					int from =  g.all_edges[edgeid].from;
+					int to =  g.all_edges[edgeid].to;
 					if(g.history[i].id==814){
 												int a=1;
 											}
@@ -490,8 +492,9 @@ public:
 					//scan through the deletions and check if any of them matter..
 					bool safe=true;
 					for(int i = history_qhead;i<g.history.size();i++){
-						int from = g.history[i].u;
-						int to = g.history[i].v;
+						int edgeid = g.history[i].id;
+						int from =  g.all_edges[edgeid].from;
+						int to =  g.all_edges[edgeid].to;
 						if(g.history[i].addition){
 							//safe
 						}else if (!seen[from] || (seen[to] && seen[prev[to]] &&  prev[to]!=from)){
@@ -646,10 +649,10 @@ public:
 		return true;
 	}
 
-	bool connected_unsafe(int t)const{
+	bool connected_unsafe(int t){
 		return t<seen.size() && seen[t];
 	}
-	bool connected_unchecked(int t)const{
+	bool connected_unchecked(int t){
 		assert(last_modification==g.modifications);
 		return connected_unsafe(t);
 	}

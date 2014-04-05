@@ -256,10 +256,10 @@ public:
 		return true;
 	}
 
-	bool connected_unsafe(int t)const{
+	bool connected_unsafe(int t){
 		return t<dist.size() && dist[t]<INF;
 	}
-	bool connected_unchecked(int t)const{
+	bool connected_unchecked(int t){
 		assert(last_modification==g.modifications);
 		return connected_unsafe(t);
 	}

@@ -50,10 +50,19 @@ public:
 			};
 
 public:
+	int stats_full_updates;
+	int stats_fast_updates;
+	int stats_fast_failed_updates;
+	int stats_skip_deletes;
+	int stats_skipped_updates;
+	int stats_num_skipable_deletions;
+	double mod_percentage;
 
+	double stats_full_update_time;
+	double stats_fast_update_time;
 
 	FloydWarshall(DynamicGraph<EdgeStatus> & graph,Status & _status,  int _reportPolarity=0 ):g(graph),status(_status), last_modification(-1),last_addition(-1),last_deletion(-1),history_qhead(0),last_history_clear(0),INF(0),reportPolarity(0){
-		marked=false;
+
 		mod_percentage=0.2;
 		stats_full_updates=0;
 		stats_fast_updates=0;
@@ -250,10 +259,10 @@ public:
 		return true;
 	}
 
-	bool connected_unsafe(int from,int t)const{
+	bool connected_unsafe(int from,int t){
 		return dist[from][t]<INF;
 	}
-	bool connected_unchecked(int from,int t)const{
+	bool connected_unchecked(int from,int t){
 		assert(last_modification==g.modifications);
 		return connected_unsafe(from,t);
 	}

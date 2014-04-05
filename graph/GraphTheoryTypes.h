@@ -19,6 +19,13 @@ struct ReachabilityConstraint{
 	Var reach_var;
 };
 
+struct ConnectivityConstraint{
+	int from;
+	int to;
+	int distance;
+	Var connect_var;
+};
+
 struct DefaultEdgeStatus{
 
 	vec<char> status;

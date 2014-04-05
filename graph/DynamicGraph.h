@@ -10,8 +10,9 @@
 #include "mtl/Vec.h"
 #include "GraphTheoryTypes.h"
 using namespace Minisat;
-
-
+#ifndef NDEBUG
+#include <cstdio>
+#endif
 
 template<class EdgeStatus=DefaultEdgeStatus >
 class DynamicGraph{
@@ -39,14 +40,18 @@ public:
 		int to;
 		int id;
 		int weight;
+		FullEdge():from(-1),to(-1),id(-1),weight(-1){}
+		FullEdge(int from,int to, int id,int weight):from(from),to(to),id(id),weight(weight){}
 	};
 
 	vec<FullEdge> all_edges;
 
 	struct EdgeChange{
 		bool addition;
+/*
 		int u;//from
 		int v;//top
+*/
 		int id;
 		int mod;
 	};
@@ -113,7 +118,7 @@ public:
 		all_edges[id]={from,to,id,weight};
 		modifications++;
 		additions=modifications;
-		history.push({true,from,to,id,modifications});
+		history.push({true,id,modifications});
 		enableEdge(from,to,id);//default to enabled
 	}
 	int nEdgeIDs(){
@@ -135,7 +140,7 @@ public:
 
 			modifications++;
 			additions=modifications;
-			history.push({true,from,to,id,modifications});
+			history.push({true,id,modifications});
 		}
 	}
 
@@ -148,10 +153,11 @@ public:
 
 			modifications++;
 			deletions=modifications;
-			history.push({false,from,to,id,modifications});
+			history.push({false,id,modifications});
 		}
 	}
 	void drawFull(){
+#ifndef NDEBUG
 			printf("digraph{\n");
 			for(int i = 0;i<nodes;i++){
 				printf("n%d\n", i);
@@ -172,6 +178,7 @@ public:
 			}
 
 			printf("}\n");
+#endif
 		}
 	//Removes _all_ edges (from, to)
 	/*void removeEdge(int from, int to, int id){

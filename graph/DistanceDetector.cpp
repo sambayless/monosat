@@ -27,7 +27,7 @@ Detector(_detectorID),outer(_outer),g(_g),antig(_antig),source(from),rnd_seed(se
 	 if(opt_use_optimal_path_for_decisions){
 		 opt_path = new WeightedDijkstra<NegativeEdgeStatus, OptimalWeightEdgeStatus >(from,_antig,opt_weight);
 	 }
-	if(distalg==ALG_BFS){
+	if(distalg==ReachAlg::ALG_BFS){
 		positiveReachStatus = new DistanceDetector::ReachStatus(*this,true);
 		negativeReachStatus = new DistanceDetector::ReachStatus(*this,false);
 		positive_reach_detector = new Distance<DistanceDetector::ReachStatus,PositiveEdgeStatus>(from,_g,*(positiveReachStatus),1);
@@ -153,15 +153,15 @@ void DistanceDetector::buildReachReason(int node,vec<Lit> & conflict){
 
 			double starttime = cpuTime();
 			d.update();
-
-
+			assert(outer->dbg_reachable(d.getSource(),node));
+/*
 			if(!outer->dbg_reachable(d.getSource(),node)){
 				outer->drawFull();
 
 				d.drawFull();
 
 				assert(false);
-			}
+			}*/
 			assert(d.connected_unchecked(node));
 			//if(opt_learn_reaches ==0 || opt_learn_reaches==2)
 			{
