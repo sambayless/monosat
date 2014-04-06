@@ -118,6 +118,7 @@ void dbg_checkGraph(){
 }
 
 void dbg_print(){
+#ifndef NDEBUG
 	vec<bool> seen;
 	seen.growTo(nodes);
 	for(int n = 0;n<nodes;n++){
@@ -143,6 +144,7 @@ void dbg_print(){
 			}
 		}
 	}
+#endif
 }
 
 bool visit(int w,int otherTreeVertex, int removedEdge, int level, int & replacementEdge){
@@ -373,12 +375,12 @@ ThorupDynamicConnectivity():nodes(0),levels(0){
 }
 bool connected(int u, int v){
 #ifndef NDEBUG
-	bool c = et.last().connected(u,v);
+/*	bool c = et.last().connected(u,v);
 	bool d= dbg.connected(u,v);
 	if(c!=d){
 	dbg.dbg_print();
 	dbg_print();
-	}
+	}*/
 #endif
 	assert(et.last().connected(u,v)==dbg.connected(u,v));
 	return et.last().connected(u,v);
@@ -594,11 +596,11 @@ void setEdgeEnabled(int from, int to,int edgeID, bool enabled){
 	dbg_checkGraph();
 	assert( edges[edgeID].edgeID==edgeID);assert( edges[edgeID].to==to);assert( edges[edgeID].from==from);
 	if(enabled && ! edges[edgeID].enabled){
-		printf("%d: Enable Edge (%d->%d)\n",iter, edges[edgeID].from,edges[edgeID].to);
+		//printf("%d: Enable Edge (%d->%d)\n",iter, edges[edgeID].from,edges[edgeID].to);
 		edges[edgeID].enabled=true;
 		insert(edgeID);
 	}else if(!enabled && edges[edgeID].enabled){
-		printf("%d: Disable Edge (%d->%d)\n",iter, edges[edgeID].from,edges[edgeID].to);
+		//printf("%d: Disable Edge (%d->%d)\n",iter, edges[edgeID].from,edges[edgeID].to);
 		edges[edgeID].enabled=false;
 		cut(edgeID);
 	}

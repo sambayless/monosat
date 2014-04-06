@@ -80,6 +80,7 @@ int numComponents(){
 }
 
 void dbg_print(){
+#ifndef NDEBUG
 	vec<bool> seen;
 	seen.growTo(nodes);
 	for(int n = 0;n<nodes;n++){
@@ -109,6 +110,7 @@ void dbg_print(){
 			printf("\n");*/
 		}
 	}
+#endif
 }
 
 void addNode(){

@@ -32,6 +32,7 @@
 #endif
 #include "AllPairsDetector.h"
 #include "ReachDetector.h"
+#include "ConnectDetector.h"
 #include "DistanceDetector.h"
 #include "MSTDetector.h"
 #include "MaxflowDetector.h"
@@ -100,9 +101,11 @@ public:
 
 	vec<ReachInfo> dist_info;
 	vec<ReachInfo> reach_info;
+	vec<ReachInfo> connect_info;
 public:
 	vec<Detector*> detectors;
 	vec<ReachDetector*> reach_detectors;
+	vec<ConnectDetector*> connect_detectors;
 	vec<DistanceDetector*> distance_detectors;
 	vec<MaxflowDetector*> flow_detectors;
 	ConnectedComponentsDetector* component_detector;
@@ -347,6 +350,7 @@ public:
 			 edges[i].growTo(edges.size());
 		 inv_adj.push();
 		 reach_info.push();
+		 connect_info.push();
 		 dist_info.push();
 		 antig.addNode();
 		 cutGraph.addNode();
@@ -1160,6 +1164,48 @@ public:
 
 			    }
 	void connects_private(int from, int to, Var reach_var,int within_steps=-1){
+		//for now, reachesWithinSteps to be called instead
+		if(within_steps>=0 || opt_force_distance_solver){
+			//reachesWithinSteps(from,to,reach_var,within_steps);
+			printf("Not supported yet\n");
+			exit(3);
+			return;
+		}
+
+#ifdef DEBUG_GRAPH
+		 dbg_graph->connects(from,  to,reach_var,within_steps);
+#endif
+#ifdef DEBUG_SOLVER
+		if(S->dbg_solver)
+			shadow_dbg->connects(from,  to,reach_var,within_steps);
+#endif
+			assert(from<g.nodes);
+			if(within_steps>g.nodes)
+				within_steps=-1;
+
+			if (connect_info[from].source<0){
+
+
+
+					ConnectDetector*rd = new ConnectDetector(detectors.size(), this,g,antig,from,drand(rnd_seed));
+					detectors.push(rd);
+					connect_detectors.push(rd);
+
+				assert(detectors.last()->getID()==detectors.size()-1);
+
+
+				connect_info[from].source=from;
+				connect_info[from].detector=detectors.last();
+
+				//reach_detectors.last()->within=within_steps;
+
+			}
+
+			ConnectDetector * d = (ConnectDetector*) connect_info[from].detector;
+			assert(d);
+			assert(within_steps==-1);
+			d->addLit(from,to,reach_var);
+
 
 	}
 

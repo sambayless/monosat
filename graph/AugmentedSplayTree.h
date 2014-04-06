@@ -650,6 +650,15 @@ public:
 	  return 0;
   }
 
+  void clear(Node * n){
+	  n->parent=nullptr;
+	  n->left=nullptr;
+	  n->right=nullptr;
+	  n->subtree_size=1;
+	  n->setNext(nullptr);
+	  n->setPrev(nullptr);
+  }
+
   //This is CONSTANT time
   int size(Node * of){
 	  return of->subtree_size;

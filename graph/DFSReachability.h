@@ -580,7 +580,7 @@ public:
 			if(reportPolarity==1)
 				status.setReachable(u,true);
 
-			for(int i = 0;i<adjacency.size();i++){
+			for(int i = 0;i<adjacency[u].size();i++){
 				if(!g.edgeEnabled( adjacency[u][i].id))
 					continue;
 				int v =adjacency[u][i].node;

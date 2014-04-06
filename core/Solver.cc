@@ -1013,7 +1013,38 @@ lbool Solver::search(int nof_conflicts)
                            						printf("\n");
                            					}
 
+                           					for(int r = 0;r<g->connect_detectors.size();r++){
 
+												int width = sqrt(g->nNodes());
+												int lasty= 0;
+												int extra =  g->nNodes() % width ? (width- g->nNodes() % width ):0;
+												for(int n = 0;n<g->nNodes();n++){
+													int x = n%width;
+
+													int y = (n + extra )/width;
+													if(y > lasty)
+														printf("\n");
+
+													int v =var( g->connect_detectors[r]->reach_lits[n]);
+													bool isany = false;
+													for(int i = 0;i<learnt_clause.size();i++){
+														if(var(learnt_clause[i])==v)
+															isany=true;
+													}
+													if(isany){
+														printf("\033[1;41m\033[1;37m x\033[0m");
+													}else if(value(v)==l_True)
+														printf("\033[1;42m\033[1;37m 1\033[0m");
+													else if(value(v)==l_False)
+														printf("\033[1;44m\033[1;37m 0\033[0m");
+													else{
+														printf("\033[1;43m\033[1;37m-1\033[0m");
+													}
+
+													lasty=y;
+												}
+												printf("\n");
+											}
 
                            					//g->drawFull();
 

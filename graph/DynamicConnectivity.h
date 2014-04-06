@@ -104,10 +104,10 @@ public:
 				return;
 			}
 			stats_full_updates++;
-			if(local_it==8521){
+		/*	if(local_it==8521){
 						int a=1;
-					}
-					printf("Update: %d for %d\n",local_it, reportPolarity);
+					}*/
+				//	printf("Update: %d for %d\n",local_it, reportPolarity);
 
 
 			setNodes(g.nodes);
@@ -133,13 +133,16 @@ public:
 				history_qhead=0;
 				t.clear();
 				//start from scratch
-				for(int i = 0;i<g.edges;i++){
-					if(g.edgeEnabled(i)){
+				for(int i = 0;i<g.all_edges.size();i++){
+					if(g.all_edges[i].id>=0 && g.edgeEnabled(i)){
 						t.setEdgeEnabled(g.all_edges[i].from,g.all_edges[i].to,i,true);
+					}else{
+						assert(!t.edgeEnabled(i));
 					}
 				}
 
 			}else{
+/*
 #ifndef NDEBUG
 				for(int i = 0;i<g.edges;i++){
 					if(g.all_edges[i].id>=0 && g.edgeEnabled(g.all_edges[i].id)){
@@ -147,6 +150,7 @@ public:
 					}
 				}
 #endif
+*/
 				//incremental/decremental update
 				for(;history_qhead<g.history.size();history_qhead++){
 					int edgeid = g.history[history_qhead].id;
@@ -181,7 +185,8 @@ public:
 				//ok, traverse the nodes connected to this component
 				component.clear();
 				static int iter=0;
-
+				//this is NOT the right way to do this.
+				//need to only see check from t!
 				t.getConnectedComponent(default_source,component);
 
 				if(reportPolarity>=0){
@@ -286,10 +291,10 @@ public:
 			 if(prev[to]<0){
 
 				t.getPath(getSource(),to,path);
-				for(int i:path){
+			/*	for(int i:path){
 					printf("%d->",i);
 				}
-				printf("\n");
+				printf("\n");*/
 
 				dbg_path(getSource(),to,path);
 

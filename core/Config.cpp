@@ -41,7 +41,7 @@ static const char* _cat_graph ="GRAPH";
  IntOption Minisat::opt_dec_graph(_cat_graph,"dec","Use decremental graph reachability",0,IntRange(0, 2));
  StringOption Minisat::opt_min_cut_alg(_cat_graph,"mincut","Select max-flow/min-cut algorithm (edmondskarp, edmondskarp-adj, ibfs)","edmondskarp-adj");
  StringOption Minisat::opt_reach_alg(_cat_graph,"reach","Select reachability algorithm (bfs,dfs, dijkstra)","bfs");
-StringOption Minisat::opt_con_alg(_cat_graph,"undir-reach","Select undirected reachability algorithm (bfs,dfs, dijkstra, thorup)","bfs");
+StringOption Minisat::opt_con_alg(_cat_graph,"connect","Select undirected reachability algorithm (bfs,dfs, dijkstra, thorup)","bfs");
 StringOption Minisat::opt_undir_allpairs_alg(_cat_graph,"undir-allpairs","Select allpairs reachability algorithm (floyd-warshall,dijkstra, thorup)","floyd-warshall");
 
 StringOption Minisat::opt_allpairs_alg(_cat_graph,"allpairs","Select allpairs reachability algorithm (floyd-warshall,dijkstra)","floyd-warshall");

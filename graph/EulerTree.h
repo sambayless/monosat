@@ -84,6 +84,18 @@ private:
 #endif
 		}
 
+		void clear(){
+			left_out=nullptr;
+			right_in=nullptr;
+			visited=false;
+#ifndef NDEBUG
+			dbg_visited=false;
+			owner=nullptr;
+			dbg_parent=nullptr;
+			dbg_children.clear();
+			dbg_visited=false;
+#endif
+		}
 
 		bool isSingleton(){
 			assert(!left_out == !right_in);
@@ -1116,7 +1128,17 @@ public:
 	}
 
 	void clear(){
-
+		for(int i = 0;i<vertices.size();i++){
+			vertices[i]->clear();
+		}
+		for(int i = 0;i<forward_edges.size();i++){
+			if(forward_edges[i] && forward_edges[i]->node)
+				t.clear( forward_edges[i]->node);
+		}
+		for(int i = 0;i<backward_edges.size();i++){
+			if(backward_edges[i] && backward_edges[i]->node)
+				t.clear(backward_edges[i]->node);
+		}
 	}
 
 
