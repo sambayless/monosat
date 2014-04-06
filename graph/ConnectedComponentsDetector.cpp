@@ -31,7 +31,7 @@ void ConnectedComponentsDetector::addConnectedComponentsLit(Var outer_weight_var
 	//while( dist_lits[to].size()<=within_steps)
 	//	dist_lits[to].push({lit_Undef,-1});
 
-	Var weight_var = outer->newVar(outer_weight_var);
+	Var weight_var = outer->newVar(outer_weight_var,getID());
 /*	while(outer->S->nVars()<=weight_var)
 		outer->S->newVar();*/
 

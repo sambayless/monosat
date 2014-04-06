@@ -31,7 +31,7 @@ Detector(_detectorID),outer(_outer),over_graph(_g),g(_g),antig(_antig),source(fr
 void MaxflowDetector::addFlowLit(int maxflow, Var outer_reach_var){
 	g.invalidate();
 	antig.invalidate();
-	Var reach_var = outer->newVar(outer_reach_var);
+	Var reach_var = outer->newVar(outer_reach_var,getID());
 	if(first_reach_var==var_Undef){
 		first_reach_var=reach_var;
 	}else{

@@ -82,8 +82,8 @@ public:
 	DynamicGraph<NegativeEdgeStatus> antig;
 	DynamicGraph<CutEdgeStatus> cutGraph;
 
-	Var min_edge_var;
-	int num_edges;
+	//Var min_edge_var;
+	//int num_edges;
 
 	vec<Assignment> trail;
 	vec<int> trail_lim;
@@ -131,6 +131,8 @@ public:
 	vec<int> to_visit;
 	//Data about local theory variables, and how they connect to the sat solver's variables
 	struct VarData{
+		int isEdge:1;
+		int detector_edge:31;//the detector this variable belongs to, or its edge number, if it is an edge variable
 		Var solverVar;
 	};
 
@@ -191,7 +193,7 @@ public:
 		//True = mkLit(S->newVar(),false);
 			//False=~True;
 			//S->addClause(True);
-			num_edges=0;
+
 			local_q=0;
 			theory_index=0;
 			mctime=0;
@@ -242,9 +244,17 @@ public:
 	int getGraphID(){
 		return id;
 	}
-
-	void addLit(){
-
+	bool isEdgeVar(Var v){
+		assert(v<vars.size());
+		return vars[v].isEdge;
+	}
+	int getEdgeID(Var v){
+		assert(isEdgeVar(v));
+		return vars[v].detector_edge;
+	}
+	int getDetector(Var v){
+		assert(!isEdgeVar(v));
+		return vars[v].detector_edge;
 	}
 
 	void makeEqual(Lit l1, Lit l2){
@@ -260,11 +270,13 @@ public:
 		S->addClause(~o1,o2);
 	}
 
-	Var newVar(Var solverVar){
+	Var newVar(Var solverVar, int detector, bool isEdge=false){
 		while(S->nVars()<=solverVar)
 				S->newVar();
 		Var v = vars.size();
 		vars.push();
+		vars[v].isEdge=isEdge;
+		vars[v].detector_edge=detector;
 		vars[v].solverVar=solverVar;
 		assert(toSolver(v)==solverVar);
 		S->setTheoryVar(solverVar,getTheoryIndex(),v);
@@ -373,14 +385,21 @@ public:
 			static vec<Lit> c;
 			c.clear();
 			for(int i = 0;i<S->trail.size() ;i++){
-				Lit l = S->trail[i];
-				Var v = var(l);
-				if(v>=min_edge_var && v<min_edge_var+num_edges){
+				if(!S->hasTheory(S->trail[i]) || S->getTheoryID(S->trail[i])!= getTheoryIndex())
+					continue;
+				Lit l = S->getTheoryLit(S->trail[i]);
+				Var v =  var(l);
+				if(isEdgeVar(v)){
+					Edge & e = edge_list[getEdgeID(v)];
+					c.push(l);
+				}
+
+		/*		if(v>=min_edge_var && v<min_edge_var+num_edges){
 					if(edge_list[v-min_edge_var].v<0)
 								continue;
 					Edge e = edge_list[v-min_edge_var];
 					c.push(l);
-				}
+				}*/
 			}
 			c.push(~l);
 			bool res = dbg->solve(c);
@@ -419,7 +438,7 @@ public:
 				assert(value(l)==l_True);
 				int expected_level = level(var(l));
 				assert(level(var(l))==lev);
-				int edge_num = e.var-min_edge_var;
+				int edge_num = getEdgeID(e.var); //e.var-min_edge_var;
 				if(edge_list[edge_num].v<0)
 							continue;
 				assert(assigned[edge_num]==l_Undef);
@@ -444,14 +463,20 @@ public:
 			Var v = var(l);
 
 			int lev = level(v);
-
-			if(v>= min_edge_var && v<min_edge_var+num_edges){
-				int edge_num = v-min_edge_var;
+			if(isEdgeVar(v)){
+				int edge_num = getEdgeID(v);
 				if(edge_list[edge_num].v<0)
 					continue;
 				lbool assigned_val=assigned[edge_num];
 				assert(assigned_val== (sign(l)?l_False:l_True));
 			}
+			/*if(v>= min_edge_var && v<min_edge_var+num_edges){
+				int edge_num = v-min_edge_var;
+				if(edge_list[edge_num].v<0)
+					continue;
+				lbool assigned_val=assigned[edge_num];
+				assert(assigned_val== (sign(l)?l_False:l_True));
+			}*/
 
 			}
 		}
@@ -486,7 +511,7 @@ public:
 				Assignment e = trail[i];
 				if(e.isEdge){
 					assert(value(e.var)==l_Undef);
-					int edge_num = e.var-min_edge_var;
+					int edge_num = getEdgeID(e.var); //e.var-min_edge_var;
 					assert(edge_assignments[edge_num]!=l_Undef);
 					edge_assignments[edge_num]=l_Undef;
 					if(e.assign){
@@ -541,7 +566,7 @@ public:
 			for(;i>=0;i--){
 				Assignment e = trail[i];
 				if(e.isEdge){
-					int edge_num = e.var-min_edge_var;
+					int edge_num = getEdgeID(e.var); //e.var-min_edge_var;
 					assert(edge_assignments[edge_num]!=l_Undef);
 					edge_assignments[edge_num]=l_Undef;
 					if(e.assign){
@@ -662,13 +687,13 @@ public:
 		return true;
 	}
 
-	int getEdgeID(Var v){
+/*	int getEdgeID(Var v){
 		assert(v>= min_edge_var && v<min_edge_var+edge_list.size());
 
 						//this is an edge assignment
 		int edge_num = v-min_edge_var;
 		return edge_num;
-	}
+	}*/
 
 	void preprocess(){
 		for (int i = 0;i<detectors.size();i++){
@@ -684,10 +709,11 @@ public:
 		if(v==8){
 			int a=1;
 		}
-		if(v>= min_edge_var && v<min_edge_var+edge_list.size()){
+		//if(v>= min_edge_var && v<min_edge_var+edge_list.size())
+		if(isEdgeVar(var(l))){
 
 			//this is an edge assignment
-			int edge_num = v-min_edge_var;
+			int edge_num = getEdgeID(var(l)); //v-min_edge_var;
 			if(edge_list[edge_num].v<0){
 				//this is an assignment to a non-edge atom. (eg, a reachability assertion)
 
@@ -894,7 +920,9 @@ public:
 	void drawCurrent(){
 
 	}
-
+	int nEdges(){
+		return edge_list.size();
+	}
 	CRef newReasonMarker(int detectorID){
 		CRef reasonMarker = S->newReasonMarker(this);
 		int mnum = CRef_Undef- reasonMarker;
@@ -916,14 +944,15 @@ public:
 		if(S->dbg_solver)
 			shadow_dbg->newEdge(from,to,outerVar);
 #endif
+		int index = edge_list.size();
+		Var v = newVar(outerVar,index,true);
 
-		Var v = newVar(outerVar);
-
+/*
 		if(num_edges>0){
 		}else
 			min_edge_var=v;
 
-		int index = v-min_edge_var;
+		int index = v-min_edge_var;*/
 
 		while(edge_list.size()<=index){
 			edge_list.push({-1,-1,-1,-1,-1,1});
@@ -932,7 +961,7 @@ public:
 
 		inv_adj[to].push({v,outerVar,from,to,index,weight});
 
-		num_edges++;
+		//num_edges++;
 		edge_list[index].v =v;
 		edge_list[index].outerVar =outerVar;
 		edge_list[index].from=from;

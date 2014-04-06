@@ -34,7 +34,7 @@ void MSTDetector::addWeightLit(Var outer_weight_var,int min_weight){
 
 	//while( dist_lits[to].size()<=within_steps)
 	//	dist_lits[to].push({lit_Undef,-1});
-	Var weight_var = outer->newVar(outer_weight_var);
+	Var weight_var = outer->newVar(outer_weight_var,getID());
 
 	Lit reachLit=mkLit(weight_var,false);
 	bool found=false;
@@ -63,7 +63,7 @@ void MSTDetector::addWeightLit(Var outer_weight_var,int min_weight){
 void MSTDetector::addTreeEdgeLit(int edge_id, Var outer_reach_var){
 	g.invalidate();
 	antig.invalidate();
-	Var reach_var = outer->newVar(outer_reach_var);
+	Var reach_var = outer->newVar(outer_reach_var,getID());
 	/*while(outer->S->nVars()<=reach_var)
 		outer->S->newVar();*/
 
@@ -85,7 +85,7 @@ void MSTDetector::addTreeEdgeLit(int edge_id, Var outer_reach_var){
 	}
 	if(!all_unique)
 		return;
-	tree_edge_lits.growTo(outer->num_edges);
+	tree_edge_lits.growTo(outer->nEdges());
 
 	//while( dist_lits[to].size()<=within_steps)
 	//	dist_lits[to].push({lit_Undef,-1});

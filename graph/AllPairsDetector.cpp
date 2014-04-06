@@ -52,7 +52,7 @@ void AllPairsDetector::addLit(int from, int to, Var outer_reach_var,int within_s
 	g.invalidate();
 	antig.invalidate();
 
-	Var reach_var = outer->newVar(outer_reach_var);
+	Var reach_var = outer->newVar(outer_reach_var,getID());
 
 	if(first_reach_var==var_Undef){
 		first_reach_var=reach_var;
@@ -252,7 +252,7 @@ void AllPairsDetector::buildReachReason(int source, int to,vec<Lit> & conflict){
 				    		assert(from!=u);
 				    		assert(outer->inv_adj[u][i].to==u);
 				    		//Note: the variable has to not only be assigned false, but assigned false earlier in the trail than the reach variable...
-				    		int edge_num = v-outer->min_edge_var;
+				    		int edge_num =outer->getEdgeID(v);// v-outer->min_edge_var;
 
 				    		if(outer->edge_assignments[edge_num]==l_False){
 				    			//note: we know we haven't seen this edge variable before, because we know we haven't visited this node before
@@ -337,7 +337,7 @@ void AllPairsDetector::buildReachReason(int source, int to,vec<Lit> & conflict){
 							assert(from!=u);
 							assert(outer->inv_adj[u][i].to==u);
 							//Note: the variable has to not only be assigned false, but assigned false earlier in the trail than the reach variable...
-							int edge_num = v-outer->min_edge_var;
+							int edge_num = outer->getEdgeID(v);//v-outer->min_edge_var;
 
 							if(edge_num == forced_edge_id || outer->edge_assignments[edge_num]==l_False){
 								//note: we know we haven't seen this edge variable before, because we know we haven't visited this node before
@@ -419,7 +419,7 @@ void AllPairsDetector::buildReachReason(int source, int to,vec<Lit> & conflict){
 				}else if (marker==forced_reach_marker){
 					Var v = var(p);
 					//The forced variable is an EDGE that was forced.
-					int forced_edge_id =v- outer->min_edge_var;
+					int forced_edge_id = outer->getEdgeID(v); //v- outer->min_edge_var;
 					//The corresponding node that is the reason it was forced
 					int reach_node=force_reason[forced_edge_id];
 					int source = getSource(v);
