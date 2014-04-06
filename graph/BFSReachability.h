@@ -11,7 +11,7 @@ using namespace Minisat;
 
 
 
-template<class Status,class EdgeStatus=DefaultEdgeStatus>
+template<class Status,class EdgeStatus=DefaultEdgeStatus,bool undirected=false>
 class BFSReachability:public Reach{
 public:
 
@@ -191,6 +191,7 @@ public:
 	inline void add_update(int to, bool update){
 		q.clear();
 		q.push_(to);
+		auto & adjacency = undirected? g.adjacency_undirected:g.adjacency;
 		//while(q.size()){
 		for(int i = 0;i<q.size();i++){
 			int u = q[i];
@@ -201,16 +202,14 @@ public:
 			//if(!old_seen[u]){
 			//	changed.push(u);
 			//}
-			for(int i = 0;i<g.adjacency[u].size();i++){
-				if(!g.edgeEnabled( g.adjacency[u][i].id))
+			for(int i = 0;i<adjacency[u].size();i++){
+				if(!g.edgeEnabled(adjacency[u][i].id))
 					continue;
-				int v = g.adjacency[u][i].node;
+				int v =adjacency[u][i].node;
 				if(!seen[v]){
 					seen[v]=1;
 					prev[v]=u;
-					if(v==53 && u == 54){
-						int a=1;
-					}
+
 					q.push_(v);
 				}
 			}
@@ -225,15 +224,16 @@ public:
 		prev[to]=-1;
 		check.clear();
 		check.push_(to);
+		auto & adjacency = undirected? g.adjacency_undirected:g.adjacency;
 		//while(q.size()){
 		for(int i = 0;i<q.size();i++){
 			int u = q[i];
 			assert(!seen[u]);
 
-			for(int i = 0;i<g.adjacency[u].size();i++){
+			for(int i = 0;i<adjacency[u].size();i++){
 /*				if(!g.edgeEnabled( g.adjacency[u][i].id))
 					continue;*/
-				int v = g.adjacency[u][i].node;
+				int v =adjacency[u][i].node;
 				if(seen[v] && prev[v]==u){
 					seen[v]=0;
 					prev[v]=-1;
@@ -248,26 +248,38 @@ public:
 		for(int i = 0;i<check.size();i++){
 			int u = check[i];
 			if(!seen[u]){
-				for(int i = 0;i<g.inverted_adjacency[u].size();i++){
+				if(!undirected){
+					for(int i = 0;i<g.inverted_adjacency[u].size();i++){
 
-					if(g.edgeEnabled(g.inverted_adjacency[u][i].id)){
-						int from = g.inverted_adjacency[u][i].node;
-						int to = u;
-						if(seen[from]){
-							if(to==231){
-								int a =1;
+						if(g.edgeEnabled(g.inverted_adjacency[u][i].id)){
+							int from = g.inverted_adjacency[u][i].node;
+							int to = u;
+							if(seen[from]){
+
+								seen[to]=1;
+								prev[to]=from;
+								add_update(to,false);
+
+								break;
 							}
-							seen[to]=1;
-							prev[to]=from;
-							add_update(to,false);
-							if(to==53 && from == 54){
-												int a=1;
-											}
-							break;
 						}
 					}
-				}
+				}else{
+					for(int i = 0;i<g.adjacency_undirected[u].size();i++){
 
+							if(g.edgeEnabled(g.adjacency_undirected[u][i].id)){
+								int from = g.adjacency_undirected[u][i].node;
+								assert(from!=u);
+								int to = u;
+								if(seen[from]){
+									seen[to]=1;
+									prev[to]=from;
+									add_update(to,false);
+									break;
+								}
+							}
+						}
+				}
 			}
 		}
 
@@ -297,9 +309,20 @@ public:
 						seen[to]=1;
 						prev[to]=from;
 						add_update(to,true);
+					}else if (undirected){
+						if(seen[to] && !seen[from]){
+							seen[from]=1;
+							prev[from]=to;
+							add_update(from,true);
+						}
 					}
 
-				}else if (to==source || !seen[from] || (seen[to] && seen[prev[to]] &&  prev[to]!=from)){
+				}else if (!undirected &&( to==source || !seen[from] || (seen[to] && seen[prev[to]] &&  prev[to]!=from))){
+					//then deleting this edge has no impact on BFSReachability, so don't need to do anything
+				}else if (undirected &&(( to==source || !seen[from] || (seen[to] && seen[prev[to]] &&  prev[to]!=from))
+				&& ( from==source || !seen[to] || (seen[from] && seen[prev[from]] &&  prev[from]!=to))
+
+				)){
 					//then deleting this edge has no impact on BFSReachability, so don't need to do anything
 				}else{
 					stats_fast_failed_updates++;
@@ -342,24 +365,32 @@ public:
 					int edgeid = g.history[i].id;
 					int from =  g.all_edges[edgeid].from;
 					int to =  g.all_edges[edgeid].to;
-					if(g.history[i].id==814){
-												int a=1;
-											}
+
 					if(g.history[i].addition && g.edgeEnabled(g.history[i].id)){
 						//incrementally add edge
-
 
 						if(seen[from] && !seen[to]){
 							seen[to]=1;
 							prev[to]=from;
-							add_update(to,false);
+							add_update(to,true);
+						}else if (undirected){
+							if(seen[to] && !seen[from]){
+								seen[from]=1;
+								prev[from]=to;
+								add_update(from,true);
+							}
 						}
-
 					}else if (!g.history[i].addition && !g.edgeEnabled(g.history[i].id)){
 
-						if (to==source || !seen[from] || (seen[to] && seen[prev[to]] &&  prev[to]!=from)){
+						if (!undirected &&( to==source || !seen[from] || (seen[to] && seen[prev[to]] &&  prev[to]!=from))){
 							//then deleting this edge has no impact on BFSReachability, so don't need to do anything
-						}else{
+						}else if (undirected &&(( to==source || !seen[from] || (seen[to] && seen[prev[to]] &&  prev[to]!=from))
+						&& ( from==source || !seen[to] || (seen[from] && seen[prev[from]] &&  prev[from]!=to))
+
+						)){
+							//then deleting this edge has no impact on BFSReachability, so don't need to do anything
+						}
+							else{
 							delete_update(to);
 						}
 					}
@@ -497,7 +528,11 @@ public:
 						int to =  g.all_edges[edgeid].to;
 						if(g.history[i].addition){
 							//safe
-						}else if (!seen[from] || (seen[to] && seen[prev[to]] &&  prev[to]!=from)){
+						}else if (!undirected && (!seen[from] || (seen[to] && seen[prev[to]] &&  prev[to]!=from))){
+							//then deleting this edge has no impact on BFSReachability, so don't need to do anything
+						}else if (undirected && ( (!seen[from] || (seen[to] && seen[prev[to]] &&  prev[to]!=from))
+						&& (!seen[to] || (seen[from] && seen[prev[from]] &&  prev[from]!=to))
+						)){
 							//then deleting this edge has no impact on BFSReachability, so don't need to do anything
 						}else{
 							safe= false;
@@ -526,6 +561,7 @@ public:
 			seen[i]=0;
 			prev[i]=-1;
 		}
+		auto & adjacency = undirected? g.adjacency_undirected:g.adjacency;
 		seen[source]=1;
 		q.push_(source);
 		for (int i = 0;i<q.size();i++){
@@ -534,10 +570,10 @@ public:
 			if(reportPolarity==1)
 				status.setReachable(u,true);
 
-			for(int i = 0;i<g.adjacency[u].size();i++){
-				if(!g.edgeEnabled( g.adjacency[u][i].id))
+			for(int i = 0;i<adjacency[u].size();i++){
+				if(!g.edgeEnabled(adjacency[u][i].id))
 					continue;
-				int v = g.adjacency[u][i].node;
+				int v =adjacency[u][i].node;
 
 				if(!seen[v]){
 					seen[v]=1;
@@ -626,7 +662,7 @@ public:
 #ifdef DEBUG_DIJKSTRA
 		if(last_modification<=0)
 			return true;
-		Dijkstra<EdgeStatus> d(source,g);
+		Dijkstra<EdgeStatus,undirected> d(source,g);
 		d.update();
 		//drawFull();
 		for(int i = 0;i<g.nodes;i++){

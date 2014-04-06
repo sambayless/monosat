@@ -14,7 +14,7 @@
 #include "Reach.h"
 
 namespace Minisat{
-template<class EdgeStatus=DefaultEdgeStatus >
+template<class EdgeStatus=DefaultEdgeStatus, bool undirected=false >
 class Dijkstra:public Reach{
 public:
 	DynamicGraph<EdgeStatus> & g;
@@ -122,7 +122,27 @@ public:
 					q.insert(v);
 				else
 					q.decrease(v);
+			}else if (undirected){
+				int u=g.history[i].v;
+				int v=g.history[i].u;
+				int alt = dist[u]+1 ;
+				if(alt< dist[v]){
+					if(dist[v]>=INF){
+						//this was changed
+						changed.push(v);
+					}
+
+					dist[v]=alt;
+					prev[v]=u;
+
+					if(!q.inHeap(v))
+						q.insert(v);
+					else
+						q.decrease(v);
+				}
 			}
+
+
 			/*
 			 *
 			 *
@@ -142,15 +162,16 @@ public:
 
 		}
 		history_qhead=g.history.size();
-
+		auto & adjacency = undirected? g.adjacency_undirected:g.adjacency;
 		while(q.size()){
 			int u = q.removeMin();
 			if(dist[u]==INF)
 				break;
-			for(int i = 0;i<g.adjacency[u].size();i++){
-				if(!g.edgeEnabled( g.adjacency[u][i].id))
+
+			for(int i = 0;i<adjacency[u].size();i++){
+				if(!g.edgeEnabled( adjacency[u][i].id))
 					continue;
-				int v = g.adjacency[u][i].to;
+				int v = adjacency[u][i].to;
 				int alt = dist[u]+ 1;
 				if(alt<dist[v]){
 					if(dist[v]>=INF){
@@ -203,7 +224,7 @@ public:
 				int edgeid = g.history[i].id;
 				int u =  g.all_edges[edgeid].from;
 				int v =  g.all_edges[edgeid].to;
-				if(prev[v]==u){
+				if(prev[v]==u || (undirected && prev[u]==v )){
 					history_qhead = i-1;
 					need_recompute=true;
 					//this deletion matters, so we need to recompute.
@@ -253,6 +274,7 @@ public:
 			dist[i]=INF;
 			prev[i]=-1;
 		}
+		auto & adjacency = undirected? g.adjacency_undirected:g.adjacency;
 		dist[source]=0;
 		q.insert(source);
 		while(q.size()){
@@ -263,10 +285,10 @@ public:
 				changed.push(u);
 			}
 			q.removeMin();
-			for(int i = 0;i<g.adjacency[u].size();i++){
-				if(!g.edgeEnabled( g.adjacency[u][i].id))
+			for(int i = 0;i<adjacency[u].size();i++){
+				if(!g.edgeEnabled( adjacency[u][i].id))
 					continue;
-				int v = g.adjacency[u][i].node;
+				int v = adjacency[u][i].node;
 				int alt = dist[u]+ 1;
 				if(alt<dist[v]){
 					dist[v]=alt;
@@ -336,13 +358,13 @@ public:
 			}
 		}*/
 
-		Dijkstra d(source,g);
+	/*	Dijkstra d(source,g);
 		d.update();
 		for(int i = 0;i<g.nodes;i++){
 			int distance = dist[i];
 			int dbgdist = d.dist[i];
 			assert(distance==dbgdist);
-		}
+		}*/
 #endif
 		return true;
 	}

@@ -11,7 +11,7 @@ using namespace Minisat;
 
 
 
-template<class Status,class EdgeStatus=DefaultEdgeStatus>
+template<class Status,class EdgeStatus=DefaultEdgeStatus, bool undirected=false>
 class DFSReachability:public Reach{
 public:
 
@@ -192,6 +192,7 @@ public:
 		q.clear();
 		q.push_(to);
 		//while(q.size()){
+		auto & adjacency = undirected? g.adjacency_undirected:g.adjacency;
 		while(q.size()){
 			int u =q.last();
 			q.pop();
@@ -202,16 +203,13 @@ public:
 			//if(!old_seen[u]){
 			//	changed.push(u);
 			//}
-			for(int i = 0;i<g.adjacency[u].size();i++){
-				if(!g.edgeEnabled( g.adjacency[u][i].id))
+			for(int i = 0;i< adjacency[u].size();i++){
+				if(!g.edgeEnabled(adjacency[u][i].id))
 					continue;
-				int v = g.adjacency[u][i].node;
+				int v =adjacency[u][i].node;
 				if(!seen[v]){
 					seen[v]=1;
 					prev[v]=u;
-					if(v==53 && u == 54){
-						int a=1;
-					}
 					q.push_(v);
 				}
 			}
@@ -227,15 +225,16 @@ public:
 		check.clear();
 		check.push_(to);
 		//while(q.size()){
+		auto & adjacency = undirected? g.adjacency_undirected:g.adjacency;
 		while(q.size()){
 			int u = q.last();
 			q.pop();
 			assert(!seen[u]);
 
-			for(int i = 0;i<g.adjacency[u].size();i++){
+			for(int i = 0;i< adjacency[u].size();i++){
 /*				if(!g.edgeEnabled( g.adjacency[u][i].id))
 					continue;*/
-				int v = g.adjacency[u][i].node;
+				int v =adjacency[u][i].node;
 				if(seen[v] && prev[v]==u){
 					seen[v]=0;
 					prev[v]=-1;
@@ -250,24 +249,41 @@ public:
 		for(int i = 0;i<check.size();i++){
 			int u = check[i];
 			if(!seen[u]){
-				for(int i = 0;i<g.inverted_adjacency[u].size();i++){
+				if(!undirected){
+					for(int i = 0;i<g.inverted_adjacency[u].size();i++){
 
-					if(g.edgeEnabled(g.inverted_adjacency[u][i].id)){
-						int from = g.inverted_adjacency[u][i].node;
-						int to = u;
-						if(seen[from]){
-							if(to==231){
-								int a =1;
+						if(g.edgeEnabled(g.inverted_adjacency[u][i].id)){
+							int from = g.inverted_adjacency[u][i].node;
+							int to = u;
+							if(seen[from]){
+								if(to==231){
+									int a =1;
+								}
+								seen[to]=1;
+								prev[to]=from;
+								add_update(to,false);
+								if(to==53 && from == 54){
+													int a=1;
+												}
+								break;
 							}
-							seen[to]=1;
-							prev[to]=from;
-							add_update(to,false);
-							if(to==53 && from == 54){
-												int a=1;
-											}
-							break;
 						}
 					}
+				}else{
+					for(int i = 0;i<g.adjacency_undirected[u].size();i++){
+
+							if(g.edgeEnabled(g.adjacency_undirected[u][i].id)){
+								int from = g.adjacency_undirected[u][i].node;
+								assert(from!=u);
+								int to = u;
+								if(seen[from]){
+									seen[to]=1;
+									prev[to]=from;
+									add_update(to,false);
+									break;
+								}
+							}
+						}
 				}
 
 			}
@@ -293,16 +309,23 @@ public:
 				int to =  g.all_edges[edgeid].to;
 				if(g.history[i].addition){
 					//incrementally add edge
-
-
 					if(seen[from] && !seen[to]){
 						seen[to]=1;
 						prev[to]=from;
 						add_update(to,true);
+					}else if (undirected){
+						if(seen[to] && !seen[from]){
+							seen[from]=1;
+							prev[from]=to;
+							add_update(from,true);
+						}
 					}
 
-				}else if (to==source || !seen[from] || (seen[to] && seen[prev[to]] &&  prev[to]!=from)){
+				}else if (!undirected &&( to==source || !seen[from] || (seen[to] && seen[prev[to]] &&  prev[to]!=from))){
 					//then deleting this edge has no impact on connectivity, so don't need to do anything
+
+				}else if (undirected && ( to==source || !seen[from] || (seen[to] && seen[prev[to]] &&  prev[to]!=from)) && ( from==source || !seen[to] || (seen[from] && seen[prev[from]] &&  prev[from]!=to))){
+
 				}else{
 					stats_fast_failed_updates++;
 					stats_fast_update_time+=cpuTime()-startdupdatetime;;
@@ -344,9 +367,7 @@ public:
 					int edgeid = g.history[i].id;
 					int from =  g.all_edges[edgeid].from;
 					int to =  g.all_edges[edgeid].to;
-					if(g.history[i].id==814){
-												int a=1;
-											}
+
 					if(g.history[i].addition && g.edgeEnabled(g.history[i].id)){
 						//incrementally add edge
 
@@ -355,11 +376,19 @@ public:
 							seen[to]=1;
 							prev[to]=from;
 							add_update(to,false);
+						}else if(undirected){
+							if(seen[to] && !seen[from]){
+								seen[from]=1;
+								prev[from]=to;
+								add_update(from,false);
+							}
 						}
 
 					}else if (!g.history[i].addition && !g.edgeEnabled(g.history[i].id)){
 
-						if (to==source || !seen[from] || (seen[to] && seen[prev[to]] &&  prev[to]!=from)){
+						if ((to==source || !seen[from] || (seen[to] && seen[prev[to]] &&  prev[to]!=from)) &&
+							(!undirected || (from==source || !seen[to] || (seen[from] && seen[prev[from]] &&  prev[from]!=to)))
+							){
 							//then deleting this edge has no impact on connectivity, so don't need to do anything
 						}else{
 							delete_update(to);
@@ -505,6 +534,19 @@ public:
 							safe= false;
 							break;
 						}
+						if(undirected){
+							int from =  g.all_edges[edgeid].to;
+							int to =  g.all_edges[edgeid].from;
+							if(g.history[i].addition){
+								//safe
+							}else if (!seen[from] || (seen[to] && seen[prev[to]] &&  prev[to]!=from)){
+								//then deleting this edge has no impact on connectivity, so don't need to do anything
+							}else{
+								safe= false;
+								break;
+							}
+						}
+
 					}
 					if(safe){
 						last_deletion=g.deletions;
@@ -529,6 +571,7 @@ public:
 			prev[i]=-1;
 		}
 		seen[source]=1;
+		auto & adjacency = undirected? g.adjacency_undirected:g.adjacency;
 		q.push_(source);
 		while(q.size()){
 			int u =q.last();
@@ -537,10 +580,10 @@ public:
 			if(reportPolarity==1)
 				status.setReachable(u,true);
 
-			for(int i = 0;i<g.adjacency[u].size();i++){
-				if(!g.edgeEnabled( g.adjacency[u][i].id))
+			for(int i = 0;i<adjacency.size();i++){
+				if(!g.edgeEnabled( adjacency[u][i].id))
 					continue;
-				int v = g.adjacency[u][i].node;
+				int v =adjacency[u][i].node;
 
 				if(!seen[v]){
 					seen[v]=1;
@@ -629,7 +672,7 @@ public:
 #ifdef DEBUG_DIJKSTRA
 		if(last_modification<=0)
 			return true;
-		Dijkstra<EdgeStatus> d(source,g);
+		Dijkstra<EdgeStatus,undirected> d(source,g);
 		d.update();
 		//drawFull();
 		for(int i = 0;i<g.nodes;i++){

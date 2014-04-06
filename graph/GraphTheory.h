@@ -14,7 +14,7 @@
 #include "Reach.h"
 #include "Dijkstra.h"
 #include "BFSReachability.h"
-#include "Distance.h"
+#include "UnweightedDistance.h"
 #include "core/SolverTypes.h"
 #include "mtl/Map.h"
 #include "MaxFlow.h"

@@ -25,7 +25,7 @@ static NullEdgeStatus nullEdgeStatus;
 /**
  * Detect connectivity within a number of steps in unweighted, directed graphs
  */
-template<class Status,class EdgeStatus=DefaultEdgeStatus>
+template<class Status,class EdgeStatus=DefaultEdgeStatus, bool undirected=false>
 class Distance:public Reach{
 public:
 
@@ -143,6 +143,7 @@ public:
 			dist[i]=INF;
 			prev[i]=-1;
 		}
+		auto & adjacency = undirected? g.adjacency_undirected:g.adjacency;
 		dist[source]=0;
 		q.push_(source);
 		for (int i = 0;i<q.size();i++){
@@ -151,10 +152,10 @@ public:
 			//if(reportPolarity>-1)
 				status.setMininumDistance(u,true,dist[u]);
 			int d = dist[u];
-			for(int i = 0;i<g.adjacency[u].size();i++){
-				if(!g.edgeEnabled( g.adjacency[u][i].id))
+			for(int i = 0;i<adjacency[u].size();i++){
+				if(!g.edgeEnabled(adjacency[u][i].id))
 					continue;
-				int v = g.adjacency[u][i].node;
+				int v = adjacency[u][i].node;
 				int dv = dist[v];
 				if(dist[v]>=INF){
 					dist[v]=d+1;
@@ -220,11 +221,11 @@ public:
 
 
 				}
-
-				for(int i = 0;i< g.adjacency.size();i++){
-					for(int j =0;j<g.adjacency[i].size();j++){
-					int id  =g.adjacency[i][j].id;
-					int u =  g.adjacency[i][j].node;
+				auto & adjacency = undirected? g.adjacency_undirected:g.adjacency;
+				for(int i = 0;i< adjacency.size();i++){
+					for(int j =0;j<adjacency[i].size();j++){
+					int id  =adjacency[i][j].id;
+					int u =  adjacency[i][j].node;
 					const char * s = "black";
 					if( g.edgeEnabled(id))
 						s="blue";
@@ -243,7 +244,7 @@ public:
 #ifdef DEBUG_DIJKSTRA
 		if(last_modification<=0)
 			return true;
-		Dijkstra<EdgeStatus> d(source,g);
+		Dijkstra<EdgeStatus,undirected> d(source,g);
 		d.update();
 		//drawFull();
 
