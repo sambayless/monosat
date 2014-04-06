@@ -34,8 +34,8 @@ ReachDetector::ReachDetector(int _detectorID, GraphTheorySolver * _outer, Dynami
 	if(reachalg==ReachAlg::ALG_BFS){
 							positiveReachStatus = new ReachDetector::ReachStatus(*this,true);
 							negativeReachStatus = new ReachDetector::ReachStatus(*this,false);
-							positive_reach_detector = new Connectivity<ReachDetector::ReachStatus,PositiveEdgeStatus>(from,_g,*(positiveReachStatus),1);
-							negative_reach_detector = new Connectivity<ReachDetector::ReachStatus,NegativeEdgeStatus>(from,_antig,*(negativeReachStatus),-1);
+							positive_reach_detector = new BFSReachability<ReachDetector::ReachStatus,PositiveEdgeStatus>(from,_g,*(positiveReachStatus),1);
+							negative_reach_detector = new BFSReachability<ReachDetector::ReachStatus,NegativeEdgeStatus>(from,_antig,*(negativeReachStatus),-1);
 							if(opt_conflict_shortest_path)
 								positive_path_detector = new Distance<NullEdgeStatus,PositiveEdgeStatus>(from,_g,nullEdgeStatus,1);
 							else

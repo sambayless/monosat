@@ -1,6 +1,6 @@
 
-#ifndef CONNECTIVITY_H_
-#define CONNECTIVITY_H_
+#ifndef BFSReachability_H_
+#define BFSReachability_H_
 
 #include "mtl/Vec.h"
 #include "mtl/Heap.h"
@@ -12,7 +12,7 @@ using namespace Minisat;
 
 
 template<class Status,class EdgeStatus=DefaultEdgeStatus>
-class Connectivity:public Reach{
+class BFSReachability:public Reach{
 public:
 
 	DynamicGraph<EdgeStatus> & g;
@@ -64,7 +64,7 @@ public:
 	double stats_full_update_time;
 	double stats_fast_update_time;
 
-	Connectivity(int s,DynamicGraph<EdgeStatus> & graph, Status & _status, int _reportPolarity=0 ):g(graph), status(_status), last_modification(-1),last_addition(-1),last_deletion(-1),history_qhead(0),last_history_clear(0),source(s),INF(0),reportPolarity(_reportPolarity){
+	BFSReachability(int s,DynamicGraph<EdgeStatus> & graph, Status & _status, int _reportPolarity=0 ):g(graph), status(_status), last_modification(-1),last_addition(-1),last_deletion(-1),history_qhead(0),last_history_clear(0),source(s),INF(0),reportPolarity(_reportPolarity){
 
 		mod_percentage=0.2;
 		stats_full_updates=0;
@@ -76,7 +76,7 @@ public:
 		stats_num_skipable_deletions=0;
 		stats_fast_failed_updates=0;
 	}
-	//Connectivity(const Connectivity& d):g(d.g), last_modification(-1),last_addition(-1),last_deletion(-1),history_qhead(0),last_history_clear(0),source(d.source),INF(0),mod_percentage(0.2),stats_full_updates(0),stats_fast_updates(0),stats_skip_deletes(0),stats_skipped_updates(0),stats_full_update_time(0),stats_fast_update_time(0){marked=false;};
+	//BFSReachability(const BFSReachability& d):g(d.g), last_modification(-1),last_addition(-1),last_deletion(-1),history_qhead(0),last_history_clear(0),source(d.source),INF(0),mod_percentage(0.2),stats_full_updates(0),stats_fast_updates(0),stats_skip_deletes(0),stats_skipped_updates(0),stats_full_update_time(0),stats_fast_update_time(0){marked=false;};
 
 
 	void setSource(int s){
@@ -105,7 +105,7 @@ public:
 			lastaddlist=g.addlistclears;
 		}
 		int start = q.size();
-		//ok, now check if any of the added edges allow for new connectivity
+		//ok, now check if any of the added edges allow for new BFSReachability
 		for (int i = addition_qhead;i<g.addition_list.size();i++){
 			int u=g.addition_list[i].u;
 			int v=g.addition_list[i].v;
@@ -300,7 +300,7 @@ public:
 					}
 
 				}else if (to==source || !seen[from] || (seen[to] && seen[prev[to]] &&  prev[to]!=from)){
-					//then deleting this edge has no impact on connectivity, so don't need to do anything
+					//then deleting this edge has no impact on BFSReachability, so don't need to do anything
 				}else{
 					stats_fast_failed_updates++;
 					stats_fast_update_time+=cpuTime()-startdupdatetime;;
@@ -358,7 +358,7 @@ public:
 					}else if (!g.history[i].addition && !g.edgeEnabled(g.history[i].id)){
 
 						if (to==source || !seen[from] || (seen[to] && seen[prev[to]] &&  prev[to]!=from)){
-							//then deleting this edge has no impact on connectivity, so don't need to do anything
+							//then deleting this edge has no impact on BFSReachability, so don't need to do anything
 						}else{
 							delete_update(to);
 						}
@@ -419,7 +419,7 @@ public:
 					int a =1;
 				}
 				if(!seen[from] || !seen[to] || prev[to]!=from){
-					//then deleting this edge has no impact on connectivity, so don't need to do anything
+					//then deleting this edge has no impact on BFSReachability, so don't need to do anything
 				}else{
 
 					//IF no other incoming edges are seen, then this might be a safe deletion (but we'd need to update any outgoing edges that have to as their previous...)
@@ -498,7 +498,7 @@ public:
 						if(g.history[i].addition){
 							//safe
 						}else if (!seen[from] || (seen[to] && seen[prev[to]] &&  prev[to]!=from)){
-							//then deleting this edge has no impact on connectivity, so don't need to do anything
+							//then deleting this edge has no impact on BFSReachability, so don't need to do anything
 						}else{
 							safe= false;
 							break;
