@@ -29,8 +29,22 @@ public:
 
 	int last_history_clear;
 	vec<int> sources;
+	//the transitive closure of the graph (only for components connected to one of the sources)
+	struct ClosureData{
+		char reachable:1;
+		char changed:1;
+		ClosureData():reachable(false),changed(false){}
+	};
+	vec<vec<ClosureData>> transitive_closure;
+	struct Change{
+		int sourceNum;
+		int node;
+	};
+	vec<Change> changes;
 	vec<int> prev;
 	vec<int> path;
+	vec<int> u_component;
+	vec<int> v_component;
 	vec<int> component;
 	int INF;
 
@@ -60,8 +74,12 @@ public:
 	}
 
 	void addSource(int s){
+		int sourceNum = sources.size();
 		sources.push(s);
 
+		transitive_closure.push();
+		transitive_closure[sourceNum].growTo(g.nodes);
+		transitive_closure[sourceNum][s].reachable=true;
 
 		last_modification=-1;
 		last_addition=-1;
@@ -89,6 +107,87 @@ public:
 
 	}
 
+	void updateEdge(int u,int v,int edgeid, bool add){
+
+							if(add){
+								bool already_connected=false;
+								if(!t.connected(u,v)){
+									already_connected=false;
+									u_component.clear();
+									v_component.clear();
+									for(int i = 0;i<sources.size();i++){
+
+											//then it may be the case that new nodes are connected to one of the sources we are tracking
+											if(transitive_closure[i][u].reachable && !transitive_closure[i][v].reachable){
+												//ok, explore the new connected component and enclose it
+												if(!v_component.size())
+													t.getConnectedComponent(v,v_component);
+												for(int n:v_component){
+													transitive_closure[i][n].reachable=true;
+													if(!transitive_closure[i][n].changed){
+														transitive_closure[i][n].changed=true;
+														changes.push({i,n});
+													}
+												}
+											}else if (transitive_closure[i][v].reachable &&! transitive_closure[i][u].reachable){
+												//ok, explore the new connected component and enclose it
+												if(!u_component.size())
+													t.getConnectedComponent(u,u_component);
+												for(int n:u_component){
+													transitive_closure[i][n].reachable=true;
+													if(!transitive_closure[i][n].changed){
+														transitive_closure[i][n].changed=true;
+														changes.push({i,n});
+													}
+												}
+											}
+									}
+								}else{
+									already_connected=true;
+								}
+								//avoiding an extra connected check here by using the unchecked variatn...
+								t.setEdgeEnabledUnchecked(u,v,edgeid,already_connected);
+							}else{
+								if(t.setEdgeEnabled(u,v,edgeid,add)){
+									assert(!t.connected(u,v));
+									u_component.clear();
+									v_component.clear();
+									for(int i = 0;i<sources.size();i++){
+										int source = sources[i];
+											//then it may be the case that new nodes are connected to one of the sources we are tracking
+											if(transitive_closure[i][u].reachable){
+												assert(transitive_closure[i][v].reachable);
+												//ok, explore the new connected component and enclose it
+												if(t.connected(source,u)){
+													assert(!t.connected(source,v));
+													if(!v_component.size())
+														t.getConnectedComponent(v,v_component);
+													for(int n:v_component){
+														transitive_closure[i][n].reachable=false;
+														if(!transitive_closure[i][n].changed){
+															transitive_closure[i][n].changed=true;
+															changes.push({i,n});
+														}
+													}
+												}else{
+													assert(t.connected(source,v));
+													assert(!t.connected(source,u));
+													if(!u_component.size())
+														t.getConnectedComponent(u,u_component);
+													for(int n:u_component){
+														transitive_closure[i][n].reachable=false;
+														if(!transitive_closure[i][n].changed){
+															transitive_closure[i][n].changed=true;
+															changes.push({i,n});
+														}
+													}
+												}
+											}
+									}
+								}
+							}
+	}
+
 #ifndef NDEBUG
 	DisjointSets dbg_sets;
 #endif
@@ -104,11 +203,6 @@ public:
 				return;
 			}
 			stats_full_updates++;
-		/*	if(local_it==8521){
-						int a=1;
-					}*/
-				//	printf("Update: %d for %d\n",local_it, reportPolarity);
-
 
 			setNodes(g.nodes);
 
@@ -127,37 +221,27 @@ public:
 			}
 
 	#endif
-
+			changes.clear();
 			if(g.historyclears!=last_history_clear){
 				last_history_clear=g.historyclears;
 				history_qhead=0;
-				t.clear();
 				//start from scratch
 				for(int i = 0;i<g.all_edges.size();i++){
-					if(g.all_edges[i].id>=0 && g.edgeEnabled(i)){
-						t.setEdgeEnabled(g.all_edges[i].from,g.all_edges[i].to,i,true);
-					}else{
-						assert(!t.edgeEnabled(i));
+					if(g.all_edges[i].id>=0){
+						bool add = g.edgeEnabled(i);
+						int u =  g.all_edges[i].from;
+						int v =  g.all_edges[i].to;
+						updateEdge(u,v,i,add);
 					}
 				}
-
 			}else{
-/*
-#ifndef NDEBUG
-				for(int i = 0;i<g.edges;i++){
-					if(g.all_edges[i].id>=0 && g.edgeEnabled(g.all_edges[i].id)){
-					printf("{%d->%d}\n",g.all_edges[i].from,g.all_edges[i].to);
-					}
-				}
-#endif
-*/
 				//incremental/decremental update
 				for(;history_qhead<g.history.size();history_qhead++){
 					int edgeid = g.history[history_qhead].id;
 					bool add = g.history[history_qhead].addition;
 					int u =  g.all_edges[edgeid].from;
 					int v =  g.all_edges[edgeid].to;
-					t.setEdgeEnabled(u,v,edgeid,add);
+					updateEdge(u,v,edgeid,add);
 				}
 
 			}
@@ -177,7 +261,30 @@ public:
 					}
 				}
 #endif
-
+			for(Change c:changes){
+				int source =sources[ c.sourceNum];
+				assert(transitive_closure[c.sourceNum][c.node].changed);
+				transitive_closure[c.sourceNum][c.node].changed=false;
+				if(source==default_source){
+					bool reachable = transitive_closure[c.sourceNum][c.node].reachable;
+					if(reachable && reportPolarity>=0){
+						assert(t.connected(source,c.node));
+						status.setReachable(c.node,true);
+					}else if(!reachable && reportPolarity<=0 ){
+						assert(!t.connected(source,c.node));
+						status.setReachable(c.node,false);
+					}
+				}
+			}
+			changes.clear();
+#ifndef NDEBUG
+			{
+				for(vec<ClosureData> & v:transitive_closure)
+					for(ClosureData & c:v)
+						assert(!c.changed);
+			}
+#endif
+/*
 
 			if (default_source>=0){
 				prev.clear();
@@ -211,6 +318,7 @@ public:
 					}
 				}
 			}
+*/
 
 			assert(dbg_sets.NumSets()== t.numComponents());
 

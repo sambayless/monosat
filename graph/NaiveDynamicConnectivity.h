@@ -130,14 +130,17 @@ bool edgeEnabled(int edgeid)const{
 	return edges[edgeid].enabled;
 }
 
-void setEdgeEnabled(int from,int to,int edgeid, bool enabled){
+bool setEdgeEnabled(int from,int to,int edgeid, bool enabled){
 	if(enabled && ! edges[edgeid].enabled){
 		edges[edgeid].enabled=true;
 		insert(edgeid);
+		return true;
 	}else if(!enabled && edges[edgeid].enabled){
 		edges[edgeid].enabled=false;
 		cut(edgeid);
+		return true;
 	}
+	return false;
 }
 
 };

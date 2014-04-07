@@ -617,6 +617,7 @@ public:
 		}
 public:
 	//Cut an edge in the tree, splitting it into two
+	//Returns true if the two components have in fact split.
 	void cut(int edgeID){
 
 		nComponents++;
@@ -1128,6 +1129,7 @@ public:
 	}
 
 	void clear(){
+		nComponents = vertices.size();
 		for(int i = 0;i<vertices.size();i++){
 			vertices[i]->clear();
 		}

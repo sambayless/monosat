@@ -47,7 +47,7 @@ private:
 
 int levels;
 
-void insert(int edgeID){
+bool insert(int edgeID){
 	Edge & e = edges[edgeID];
 	assert(e.edgeID==edgeID);
 	e.level=levels-1;
@@ -58,14 +58,42 @@ void insert(int edgeID){
 	if (!et.last().connected(e.from,e.to)){
 		et.last().link(e.from,e.to,edgeID);
 		e.in_forest=true;
+		dbg_levels();
+		return true;
 	}else{
 		e.in_forest=false;
 		incident_edges[e.from].push(edgeID);
 		incident_edges[e.to].push(edgeID);
+		dbg_levels();
+		return false;
 	}
-	dbg_levels();
+
 
 }
+
+bool insert_unchecked(int edgeID, bool already_connected){
+	Edge & e = edges[edgeID];
+	assert(e.edgeID==edgeID);
+	e.level=levels-1;
+	//fix these later
+	//assert(!incident_edges[e.from].contains(edgeID));
+	//assert(!incident_edges[e.to].contains(edgeID));
+	assert(et.last().connected(e.from,e.to)==already_connected);
+	if (!already_connected){
+		et.last().link(e.from,e.to,edgeID);
+		e.in_forest=true;
+		dbg_levels();
+		return true;
+	}else{
+		e.in_forest=false;
+		incident_edges[e.from].push(edgeID);
+		incident_edges[e.to].push(edgeID);
+		dbg_levels();
+		return false;
+	}
+
+}
+
 void dbg_tree(int level){
 #ifndef NDEBUG
 	for(int n = 0;n<nodes;n++){
@@ -217,10 +245,10 @@ bool visit(int w,int otherTreeVertex, int removedEdge, int level, int & replacem
 
 }
 
-void cut(int edgeID){
+bool cut(int edgeID){
 	Edge & e = edges[edgeID];
 	if(!e.in_forest){
-		return;//this edge is not in the top level forest (and hence also not in _any_ level forest), so we don't need to do anything special to remove it
+		return false;//this edge is not in the top level forest (and hence also not in _any_ level forest), so we don't need to do anything special to remove it
 	}
 
 	int u = e.from;
@@ -321,7 +349,7 @@ void cut(int edgeID){
 
 	e.level=levels;
 	dbg_levels();
-
+	return !foundReplacement;
 
 }
 void dbg_levels(){
@@ -582,13 +610,16 @@ void clear(){
 
 }
 
-void setEdgeEnabled(int from, int to,int edgeID, bool enabled){
+/**
+ * Returns true if the set of connected components have changed
+ */
+bool setEdgeEnabled(int from, int to,int edgeID, bool enabled){
 	static int iter = 0;
 	if(++iter==531){
 		int a=1;
 	}
 	addEdge(from,to,edgeID);
-
+	bool changed = false;
 /*	if(enabled)
 		printf("Enable Edge (%d->%d)\n", edges[edgeID].from,edges[edgeID].to);
 	else
@@ -598,16 +629,38 @@ void setEdgeEnabled(int from, int to,int edgeID, bool enabled){
 	if(enabled && ! edges[edgeID].enabled){
 		//printf("%d: Enable Edge (%d->%d)\n",iter, edges[edgeID].from,edges[edgeID].to);
 		edges[edgeID].enabled=true;
-		insert(edgeID);
+		changed = insert(edgeID);
 	}else if(!enabled && edges[edgeID].enabled){
 		//printf("%d: Disable Edge (%d->%d)\n",iter, edges[edgeID].from,edges[edgeID].to);
 		edges[edgeID].enabled=false;
-		cut(edgeID);
+		changed = cut(edgeID);
 	}
 #ifndef NDEBUG
 	dbg.setEdgeEnabled(from,to,edgeID,enabled);
 	dbg_checkGraph();
 #endif
+	return changed;
+}
+bool setEdgeEnabledUnchecked(int from, int to,int edgeID, bool connected){
+	static int iter = 0;
+	if(++iter==531){
+		int a=1;
+	}
+	addEdge(from,to,edgeID);
+	bool changed = false;
+
+	dbg_checkGraph();
+	assert( edges[edgeID].edgeID==edgeID);assert( edges[edgeID].to==to);assert( edges[edgeID].from==from);
+	if(! edges[edgeID].enabled){
+		//printf("%d: Enable Edge (%d->%d)\n",iter, edges[edgeID].from,edges[edgeID].to);
+		edges[edgeID].enabled=true;
+		changed = insert_unchecked(edgeID,connected);
+	}
+#ifndef NDEBUG
+	dbg.setEdgeEnabled(from,to,edgeID,true);
+	dbg_checkGraph();
+#endif
+	return changed;
 }
 
 };
