@@ -28,8 +28,10 @@ struct Edge{
 	int to;
 	int in_forest:1;
 	int enabled:1;
-	int level:30;
-	Edge():edgeID(-1),from(-1),to(-1),in_forest(false),enabled(false),level(0){
+	int incident_from:1;
+	int incident_to:1;
+	int level:28;
+	Edge():edgeID(-1),from(-1),to(-1),in_forest(false),enabled(false),incident_from(false),incident_to(false),level(0){
 
 	}
 };
@@ -52,8 +54,7 @@ bool insert(int edgeID){
 	assert(e.edgeID==edgeID);
 	e.level=levels-1;
 	//fix these later
-	//assert(!incident_edges[e.from].contains(edgeID));
-	//assert(!incident_edges[e.to].contains(edgeID));
+
 
 	if (!et.last().connected(e.from,e.to)){
 		et.last().link(e.from,e.to,edgeID);
@@ -62,8 +63,16 @@ bool insert(int edgeID){
 		return true;
 	}else{
 		e.in_forest=false;
-		incident_edges[e.from].push(edgeID);
-		incident_edges[e.to].push(edgeID);
+		if(!e.incident_from){
+			e.incident_from=true;
+			assert(!incident_edges[e.from].contains(edgeID));
+			incident_edges[e.from].push(edgeID);
+		}
+		if(!e.incident_to){
+			e.incident_to=true;
+			assert(!incident_edges[e.to].contains(edgeID));
+			incident_edges[e.to].push(edgeID);
+		}
 		dbg_levels();
 		return false;
 	}
@@ -86,8 +95,16 @@ bool insert_unchecked(int edgeID, bool already_connected){
 		return true;
 	}else{
 		e.in_forest=false;
-		incident_edges[e.from].push(edgeID);
-		incident_edges[e.to].push(edgeID);
+		if(!e.incident_from){
+			e.incident_from=true;
+			assert(!incident_edges[e.from].contains(edgeID));
+			incident_edges[e.from].push(edgeID);
+		}
+		if(!e.incident_to){
+			e.incident_to=true;
+			assert(!incident_edges[e.to].contains(edgeID));
+			incident_edges[e.to].push(edgeID);
+		}
 		dbg_levels();
 		return false;
 	}
@@ -145,6 +162,42 @@ void dbg_checkGraph(){
 #endif
 }
 
+void dbg_incident(){
+#ifndef NDEBUG
+	for(int n = 0;n<nodes;n++){
+		vec<int> & incident = incident_edges[n];
+		vec<int> seen;
+		for(int edge:incident){
+			//ensure no duplicates
+			assert(!seen.contains(edge));
+			seen.push(edge);
+			Edge & e =edges[edge];
+			assert(e.incident_from || e.incident_to);
+			if(n==e.from){
+				assert(e.incident_from);
+			}else{
+				assert(n==e.to);
+				assert(e.incident_to);
+			}
+		}
+
+	}
+
+	for(Edge & e:edges){
+		if(e.incident_from){
+			assert(incident_edges[e.from].contains(e.edgeID));
+		}
+
+		if(e.incident_to){
+			assert(incident_edges[e.to].contains(e.edgeID));
+		}
+	}
+
+
+
+#endif
+}
+
 void dbg_print(){
 #ifndef NDEBUG
 	vec<bool> seen;
@@ -185,13 +238,21 @@ bool visit(int w,int otherTreeVertex, int removedEdge, int level, int & replacem
 	//Note that because I am only storing one list of incident edges per vertex - rather than one per vertex per level -
 	//this loop may do more work than it needs to. In sparsely connected graphs, I am hoping the improved space/locality still makes this a win.
 	for(k = 0; k<incident_edges[w].size();k++){
-
-		if(incident_edges[w][k]==removedEdge ||edges[ incident_edges[w][k]].in_forest || !edges[ incident_edges[w][k]].enabled){
+		Edge & e = edges[incident_edges[w][k]];
+		if(incident_edges[w][k]==removedEdge ||e.in_forest || !e.enabled){
 			//remove this edge
+			if(w==e.from){
+				assert(e.incident_from);
+				e.incident_from=false;
+			}else{
+				assert(w==e.to);
+				assert(e.incident_to);
+				e.incident_to=false;
+			}
 			continue;
 		}
 		assert(!edges[incident_edges[w][k]].in_forest);
-		Edge & e = edges[incident_edges[w][k]];
+
 
 		assert(e.from==w || e.to==w);
 		if(e.level==level){
@@ -206,15 +267,33 @@ bool visit(int w,int otherTreeVertex, int removedEdge, int level, int & replacem
 				}*/
 
 				//remove the current edge
+				if(w==e.from){
+					assert(e.incident_from);
+					e.incident_from=false;
+				}else{
+					assert(w==e.to);
+					assert(e.incident_to);
+					e.incident_to=false;
+				}
 
 				for(k=k+1;k<incident_edges[w].size();k++){
-					if(incident_edges[w][k]==removedEdge  ||edges[ incident_edges[w][k]].in_forest  || !edges[ incident_edges[w][k]].enabled){
+					Edge & e = edges[ incident_edges[w][k]];
+					if(incident_edges[w][k]==removedEdge  ||e.in_forest  || !e.enabled){
 						//remove this edge
+						if(w==e.from){
+							assert(e.incident_from);
+							e.incident_from=false;
+						}else{
+							assert(w==e.to);
+							assert(e.incident_to);
+							e.incident_to=false;
+						}
 						continue;
 					}
 					incident_edges[w][j++]=incident_edges[w][k];
 				}
-				incident_edges[w].shrink(j-k);
+				incident_edges[w].shrink(k-j);
+				assert(!incident_edges[w].contains(e.edgeID));
 				replacementEdge=e.edgeID;
 				return true;
 			}else{
@@ -240,7 +319,7 @@ bool visit(int w,int otherTreeVertex, int removedEdge, int level, int & replacem
 		}
 		incident_edges[w][j++]=incident_edges[w][k];
 	}
-	incident_edges[w].shrink(j-k);
+	incident_edges[w].shrink(k-j);
 	return false;
 
 }
@@ -280,15 +359,18 @@ bool cut(int edgeID){
 		assert(et[i].getFullTreeSize(v)<=et[i].getFullTreeSize(u));
 		assert(et[i].getFullTreeSize(v) <= pow(2,i));
 
-		incident_edges[u].remove(edgeID);
 		edges[edgeID].in_forest=false;
+
+
+
 		//The paper says we 'can' set all the in_forest edges of Tv at level i to level i-1, but it doesn't say that we must do so, or should do so, or whether we are expected to do so or not.
 
 		//It appears that we _must_ do so, in order to avoid violating condition 1 when we move other incident edges p below
 		//the easiest option is probably to just visit the whole et tour.
 		int replacementEdge=-1;
+		dbg_incident();
 		foundReplacement=visit(v,u,edgeID,i, replacementEdge);//start with this vertex, so that we handle singleton nodes correctly.
-
+		dbg_incident();
 		//iterate through all the nodes in this tree in the forest at level i, and see if any have an incident edge at or above this level
 		for(auto it = et[i].begin_half_edge_tour(v);it != et[i].end_half_edge_tour();++it){
 			int cur_edge = *it;
@@ -319,9 +401,17 @@ bool cut(int edgeID){
 			for(int n = 0;!foundReplacement && n<2;n++){
 				//note: we only visit this search loop if we have not already found a replacement edge.
 				int w = n? treeEdge.to:treeEdge.from;
+				dbg_incident();
+				static int iter = 0;
+				if(++iter ==93){
+					int a=1;
+					int b =2;
+				}
 				foundReplacement = visit(w,u,edgeID,i,replacementEdge);
+				dbg_incident();
 			}
 		}
+
 		seen[v]=false;//needed to handle singleton nodes
 		//run through the tour again and clear all the seen markers. it would be nice to avoid this...
 		for(auto it = et[i].begin_half_edge_tour(v);it != et[i].end_half_edge_tour();++it){
@@ -544,8 +634,12 @@ void getPathEdges(int from, int to, vec<int> & edges_out){
 					t_seen[treeEdge.to]=curLevel;
 					edges_out.push(treeEdge.edgeID);
 				}
+				if(treeEdge.from==to || treeEdge.to==to){
+						break;
+					}
 			}
 			t_seen.clear();
+
 		}
 	}
 }

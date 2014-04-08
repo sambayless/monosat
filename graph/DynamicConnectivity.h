@@ -28,13 +28,14 @@ public:
 
 
 	int last_history_clear;
+	bool hasPrev;
 	vec<int> sources;
 	//the transitive closure of the graph (only for components connected to one of the sources)
 	struct ClosureData{
-		int incomingEdge;
+	//	int incomingEdge;
 		char reachable:1;
 		char changed:1;
-		ClosureData():incomingEdge(-1),reachable(false),changed(false){}
+		ClosureData():reachable(false),changed(false){}
 	};
 	vec<vec<ClosureData>> transitive_closure;
 	struct Change{
@@ -42,7 +43,7 @@ public:
 		int node;
 	};
 	vec<Change> changes;
-	//vec<int> prev;
+	vec<int> prev;
 	vec<int> path;
 	vec<int> u_component;
 	vec<int> v_component;
@@ -73,6 +74,7 @@ public:
 		stats_full_update_time=0;
 		stats_fast_update_time=0;
 		default_source=-1;
+		hasPrev=false;
 	}
 
 	void addSource(int s){
@@ -107,6 +109,7 @@ public:
 
 		while(t.nNodes()< g.nodes){
 			t.addNode();
+			prev.push(-1);
 		}
 		for(int i = 0;i<transitive_closure.size();i++){
 			transitive_closure[i].growTo(g.nodes);
@@ -138,7 +141,7 @@ public:
 												if(!v_component.size())
 													t.getConnectedComponentEdges(v,v_component,true);
 												assert(!transitive_closure[i][v].reachable);
-												transitive_closure[i][v].incomingEdge=edgeid;
+
 												transitive_closure[i][v].reachable=true;
 												if(!transitive_closure[i][v].changed){
 													transitive_closure[i][v].changed=true;
@@ -157,7 +160,7 @@ public:
 													int n = transitive_closure[i][u].reachable?v:u;
 													assert(!transitive_closure[i][n].reachable);
 													transitive_closure[i][n].reachable=true;
-													transitive_closure[i][n].incomingEdge=edgeid;
+
 													if(!transitive_closure[i][n].changed){
 														transitive_closure[i][n].changed=true;
 														changes.push({i,n});
@@ -168,7 +171,7 @@ public:
 												if(!u_component.size())
 													t.getConnectedComponentEdges(u,u_component,true);
 												assert(!transitive_closure[i][u].reachable);
-												transitive_closure[i][u].incomingEdge=edgeid;
+
 												transitive_closure[i][u].reachable=true;
 												if(!transitive_closure[i][u].changed){
 													transitive_closure[i][u].changed=true;
@@ -188,7 +191,7 @@ public:
 													int n = transitive_closure[i][u].reachable?v:u;
 													assert(!transitive_closure[i][n].reachable);
 													transitive_closure[i][n].reachable=true;
-													transitive_closure[i][n].incomingEdge=edgeid;
+
 													if(!transitive_closure[i][n].changed){
 														transitive_closure[i][n].changed=true;
 														changes.push({i,n});
@@ -221,7 +224,7 @@ public:
 															int a=1;
 														}
 														transitive_closure[i][n].reachable=false;
-														transitive_closure[i][n].incomingEdge=-1;
+
 														if(!transitive_closure[i][n].changed){
 															transitive_closure[i][n].changed=true;
 															changes.push({i,n});
@@ -237,7 +240,7 @@ public:
 															int a=1;
 														}
 														transitive_closure[i][n].reachable=false;
-														transitive_closure[i][n].incomingEdge=-1;
+
 														if(!transitive_closure[i][n].changed){
 															transitive_closure[i][n].changed=true;
 															changes.push({i,n});
@@ -268,7 +271,7 @@ public:
 			stats_full_updates++;
 
 			setNodes(g.nodes);
-
+			hasPrev=false;
 
 	#ifndef NDEBUG
 			dbg_sets.Reset();
@@ -406,14 +409,34 @@ public:
 			for(int n=0;n<transitive_closure[i].size();n++){
 				bool reachable = t.connected(source,n);
 				assert(((bool)transitive_closure[i][n].reachable)==reachable);
-				if(reachable && n!=source){
-					assert(transitive_closure[i][n].incomingEdge>=0);
-				}
+
 			}
 		}
+
+
 #endif
 	}
+	void dbg_path_edges(int from,int to, vec<int> & path){
+#ifndef NDEBUG
+		assert(path.size());
+		int n = from;
 
+		for(int i = 0;i<path.size();i++){
+			int edgeid = path[i];
+
+			int v = g.all_edges[edgeid].from;
+			int u = g.all_edges[edgeid].to;
+			assert(v==n||u==n);
+			assert(g.hasEdgeUndirected(u,v));
+			if(v==n){
+				n=u;
+			}else{
+				n=v;
+			}
+		}
+		assert(n==to);
+#endif
+	}
 	void dbg_path(int from,int to, vec<int> & path){
 #ifndef NDEBUG
 		assert(path.size());
@@ -510,33 +533,45 @@ public:
 			int incomingEdge(int to){
 				 update();
 				 assert(to>=0);
-				 /*if(prev[to]<0){
-
+				 if(!hasPrev){
+					 hasPrev=true;
+					 prev.clear();
+					 prev.growTo(g.nodes,-1);
+				 }
+				 if(prev[to]<0){
+					assert(t.connected(getSource(),to));
 					t.getPathEdges(getSource(),to,path);
-					for(int i:path){
+			/*		for(int i:path){
 						printf("%d->",i);
 					}
 					printf("\n");
+*/
+					dbg_path_edges(getSource(),to,path);
 
-					dbg_path(getSource(),to,path);
+					int n = getSource();
 
-					prev.clear();
-					prev.growTo(g.nodes,-1);
-
-					for(int i = 1;i<path.size();i++){
-						prev[path[i]]=path[i-1];
+					for(int edge:path){
+						int v = g.all_edges[edge].from;
+						assert(v==n||g.all_edges[edge].to==n);
+						if(v==n){
+							v=g.all_edges[edge].to;
+						}
+						assert(v!=getSource());
+						prev[v]=edge;
+						n=v;
 					}
-
-				 }*/
+					assert(n==to);
+				 }
 				 dbg_transitive_closure();
-				 return transitive_closure[default_source_index][to].incomingEdge;
+				 return prev[to];
 				 //return prev[to];
 			}
 			int previous(int t){
-				if(incomingEdge(t)<0)
+				int edgeID = incomingEdge(t);
+				if(edgeID<0)
 					return -1;
 				assert(transitive_closure[default_source_index][t].reachable);
-				int edgeID = incomingEdge(t);
+
 				if (g.all_edges[edgeID].from==t){
 					return g.all_edges[edgeID].to;
 				}

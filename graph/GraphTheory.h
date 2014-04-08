@@ -240,24 +240,24 @@ public:
 			shadow_dbg = new TestGraph(S->dbg_solver);
 #endif
 	}
-	  int getTheoryIndex(){
+	inline int getTheoryIndex(){
 	    	return theory_index;
 	    }
-	    void setTheoryIndex(int id){
+	  inline  void setTheoryIndex(int id){
 	    	theory_index=id;
 	    }
-	int getGraphID(){
+	inline int getGraphID(){
 		return id;
 	}
-	bool isEdgeVar(Var v){
+	inline bool isEdgeVar(Var v){
 		assert(v<vars.size());
 		return vars[v].isEdge;
 	}
-	int getEdgeID(Var v){
+	inline int getEdgeID(Var v){
 		assert(isEdgeVar(v));
 		return vars[v].detector_edge;
 	}
-	int getDetector(Var v){
+	inline int getDetector(Var v){
 		assert(!isEdgeVar(v));
 		return vars[v].detector_edge;
 	}
@@ -287,22 +287,22 @@ public:
 		S->setTheoryVar(solverVar,getTheoryIndex(),v);
 		return v;
 	}
-	int level(Var v){
+	inline int level(Var v){
 		return S->level(toSolver(v));
 	}
-	int decisionLevel(){
+	inline int decisionLevel(){
 		return S->decisionLevel();
 	}
-	int nVars()const{
+	inline int nVars()const{
 		return S->nVars();
 	}
-	Var toSolver(Var v){
+	inline Var toSolver(Var v){
 		//return v;
 		assert(v<vars.size());
 		return vars[v].solverVar;
 	}
 
-	Lit toSolver(Lit l){
+	inline Lit toSolver(Lit l){
 		//return l;
 		return mkLit(vars[var(l)].solverVar,sign(l));
 	}
@@ -313,13 +313,13 @@ public:
 		}
 	}
 
-	lbool value(Var v){
+	inline lbool value(Var v){
 		return S->value(toSolver(v));
 	}
-	lbool value(Lit l){
+	inline lbool value(Lit l){
 		return S->value(toSolver(l));
 	}
-	bool enqueue(Lit l, CRef reason){
+	inline bool enqueue(Lit l, CRef reason){
 		Lit sl = toSolver(l);
 		return S->enqueue(sl,reason);
 	}

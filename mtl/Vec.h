@@ -61,7 +61,7 @@ public:
 
     // Size operations:
     int      size     (void) const     { return sz; }
-    void     shrink   (int nelems)     { assert(nelems <= sz); for (int i = 0; i < nelems; i++) sz--, data[sz].~T(); }
+    void     shrink   (int nelems)     { assert(nelems>=0); assert(nelems <= sz); for (int i = 0; i < nelems; i++) sz--, data[sz].~T(); }
     void     shrink_  (int nelems)     { assert(nelems <= sz); sz -= nelems; }
     int      capacity (void) const     { return cap; }
     void     capacity (int min_cap);
