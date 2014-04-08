@@ -31,8 +31,8 @@ public:
 	virtual bool connected( int t)=0;
 	virtual int distance( int t)=0;
 	virtual int distance_unsafe(int t)=0;
-
-	virtual int previous( int t)=0;
+	virtual int previous( int node)=0;
+	virtual int incomingEdge( int node)=0;
 };
 
 #endif /* REACH_H_ */

@@ -582,10 +582,13 @@ void getConnectedComponent(int from, vec<int> & nodes_out){
 }
 
 
-void getConnectedComponentEdges(int from, vec<int>& edges_out){
+/**
+ * If strict is true, then the edges of the component are oriented so they start at from
+ */
+void getConnectedComponentEdges(int from, vec<int>& edges_out, bool strict=false){
 	t_seen.clear();
 	t_seen.growTo(edges.size());
-	for(auto it = et.last().begin_half_edge_tour(from);it != et.last().end_half_edge_tour();++it){
+	for(auto it = et.last().begin_half_edge_tour(from,strict);it != et.last().end_half_edge_tour();++it){
 		int cur_edge = *it;
 		Edge & treeEdge = edges[cur_edge];
 		if(!t_seen[treeEdge.edgeID]){

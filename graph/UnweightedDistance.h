@@ -155,11 +155,12 @@ public:
 			for(int i = 0;i<adjacency[u].size();i++){
 				if(!g.edgeEnabled(adjacency[u][i].id))
 					continue;
+				int edgeID = adjacency[u][i].id;
 				int v = adjacency[u][i].node;
 				int dv = dist[v];
 				if(dist[v]>=INF){
 					dist[v]=d+1;
-					prev[v]=u;
+					prev[v]=edgeID;
 					q.push_(v);
 				}else{
 					assert(dist[v]<=d+1);
@@ -194,7 +195,7 @@ public:
 		if(to == source){
 			return true;
 		}
-		int p = prev[to];
+		int p = previous(to);
 
 		if(p<0){
 			return false;
@@ -286,10 +287,21 @@ public:
 		else
 			return INF;
 	}
-	int previous(int t){
+	int incomingEdge(int t){
+
 		assert(t>=0 && t<prev.size());
-		assert(prev[t]>=-1 && prev[t]<prev.size());
+		assert(prev[t]>=-1 );
 		return prev[t];
+	}
+	int previous(int t){
+
+		if(incomingEdge(t)<0)
+			return -1;
+		if (undirected && g.all_edges[incomingEdge(t)].from==t){
+			return g.all_edges[incomingEdge(t)].to;
+		}
+		assert(g.all_edges[incomingEdge(t)].to==t);
+		return g.all_edges[incomingEdge(t)].from;
 	}
 
 };

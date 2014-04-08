@@ -15,7 +15,7 @@
 #include <limits>
 using namespace Minisat;
 namespace Minisat{
-template<class EdgeStatus=DefaultEdgeStatus, class Weight=vec<double> >
+template<class EdgeStatus=DefaultEdgeStatus, class Weight=vec<double>, bool undirected=false >
 class WeightedDijkstra:public Reach{
 public:
 	DynamicGraph<EdgeStatus> & g;
@@ -120,6 +120,7 @@ public:
 		//ok, now check if any of the added edges allow for a decrease in distance.
 		for (int i = history_qhead;i<g.history.size();i++){
 			assert(g.history[i].addition); //NOTE: Currently, this is glitchy in some circumstances - specifically, ./modsat -rinc=1.05 -rnd-restart  -conflict-shortest-path  -no-conflict-min-cut   -rnd-init -rnd-seed=01231 -rnd-freq=0.01 /home/sam/data/gnf/unit_tests/unit_test_17_reduced.gnf can trigger this assertion!
+			int edgeID = g.history[i].id;
 			int u=g.history[i].u;
 			int v=g.history[i].v;
 			double alt = dist[u]+weight[u] ;
@@ -131,12 +132,32 @@ public:
 				}
 
 				dist[v]=alt;
-				prev[v]=u;
+				prev[v]=edgeID;
 
 				if(!q.inHeap(v))
 					q.insert(v);
 				else
 					q.decrease(v);
+			}else if (undirected){
+				int v=g.history[i].u;
+				int u=g.history[i].v;
+				double alt = dist[u]+weight[u] ;
+				if(alt< dist[v]){
+
+					if(dist[v]>=INF){
+						//this was changed
+						changed.push(v);
+					}
+
+					dist[v]=alt;
+					prev[v]=edgeID;
+
+					if(!q.inHeap(v))
+						q.insert(v);
+					else
+						q.decrease(v);
+				}
+
 			}
 			/*
 			 *
@@ -157,15 +178,16 @@ public:
 
 		}
 		history_qhead=g.history.size();
-
+		auto & adjacency = undirected? g.adjacency_undirected:g.adjacency;
 		while(q.size()){
 			int u = q.removeMin();
 			if(dist[u]==INF)
 				break;
-			for(int i = 0;i<g.adjacency[u].size();i++){
-				if(!g.edgeEnabled( g.adjacency[u][i].id))
+			for(int i = 0;i<adjacency[u].size();i++){
+				if(!g.edgeEnabled(adjacency[u][i].id))
 					continue;
-				int v = g.adjacency[u][i].to;
+				int v =adjacency[u][i].to;
+				int edgeID =  adjacency[u][i].id;
 				int alt = dist[u]+ weight[u];
 				if(alt<dist[v]){
 					if(dist[v]>=INF){
@@ -174,7 +196,7 @@ public:
 					}
 
 					dist[v]=alt;
-					prev[v]=u;
+					prev[v]=edgeID;
 					if(!q.inHeap(v))
 						q.insert(v);
 					else
@@ -286,10 +308,11 @@ public:
 					continue;
 
 				int v = g.adjacency[u][i].node;
+				int edgeID = g.adjacency[u][i].id;
 				double alt = dist[u]+ weight[edge];
 				if(alt<dist[v]){
 					dist[v]=alt;
-					prev[v]=u;
+					prev[v]=edgeID;
 					if(!q.inHeap(v))
 						q.insert(v);
 					else
@@ -370,9 +393,19 @@ public:
 		else
 			return INF;
 	}
-	int previous(int t){
-
+	int incomingEdge(int t){
+		assert(t>=0 && t<prev.size());
+		assert(prev[t]>=-1 );
 		return prev[t];
+	}
+	int previous(int t){
+		if(prev[t]<0)
+			return -1;
+		if (undirected && g.all_edges[incomingEdge(t)].from==t){
+			return g.all_edges[incomingEdge(t)].to;
+		}
+		assert(g.all_edges[incomingEdge(t)].to==t);
+		return g.all_edges[incomingEdge(t)].from;
 	}
 
 };

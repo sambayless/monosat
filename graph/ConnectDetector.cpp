@@ -116,9 +116,9 @@ void ConnectDetector::addLit(int from, int to, Var outer_reach_var){
 
 void ConnectDetector::ReachStatus::setReachable(int u, bool reachable){
 	if(reachable){
-		assert(!detector.outer->dbg_notreachable( detector.source,u));
+		assert(!detector.outer->dbg_notreachable( detector.source,u,true));
 	}else{
-		assert(detector.outer->dbg_notreachable( detector.source,u));
+		assert(detector.outer->dbg_notreachable( detector.source,u,true));
 	}
 	if(polarity==reachable && u<detector.reach_lits.size()){
 		Lit l = detector.reach_lits[u];
@@ -182,21 +182,15 @@ void ConnectDetector::buildReachReason(int node,vec<Lit> & conflict){
 			double starttime = cpuTime();
 			d.update();
 
-			assert(outer->dbg_reachable(d.getSource(),node));
-		/*	if(!outer->dbg_reachable(d.getSource(),node)){
-				outer->drawFull();
+			assert(outer->dbg_reachable(d.getSource(),node,true));
 
-				//d.drawFull();
-
-				assert(false);
-			}*/
 			assert(d.connected_unchecked(node));
 			if(opt_learn_reaches ==0 || opt_learn_reaches==2){
 				int u = node;
 				int p;
 				while(( p = d.previous(u)) != -1){
-					Edge edg = outer->edges[p][u];
-					Var e =outer->edges[p][u].v;
+					Edge & edg = outer->edge_list[d.incomingEdge(u)]; //outer->edges[p][u];
+					Var e =edg.v;
 					lbool val = outer->value(e);
 					assert(outer->value(e)==l_True);
 					conflict.push(mkLit(e, true));
@@ -208,8 +202,8 @@ void ConnectDetector::buildReachReason(int node,vec<Lit> & conflict){
 				int u = node;
 				int p;
 				while(( p = d.previous(u)) != -1){
-					Edge edg = outer->edges[p][u];
-					Var e =outer->edges[p][u].v;
+					Edge & edg = outer->edge_list[d.incomingEdge(u)]; //outer->edges[p][u];
+					Var e =edg.v;
 					lbool val = outer->value(e);
 					assert(outer->value(e)==l_True);
 					conflict.push(mkLit(e, true));
@@ -223,15 +217,13 @@ void ConnectDetector::buildReachReason(int node,vec<Lit> & conflict){
 						break;
 					}
 				}
-
 			}
 			outer->num_learnt_paths++;
 			outer->learnt_path_clause_length+= (conflict.size()-1);
 			double elapsed = cpuTime()-starttime;
 			outer->pathtime+=elapsed;
 	#ifdef DEBUG_GRAPH
-			 assert(outer->dbg_clause(conflict));
-
+			assert(outer->dbg_clause(conflict));
 	#endif
 		}
 		void ConnectDetector::buildNonReachReason(int node,vec<Lit> & conflict){
@@ -239,7 +231,7 @@ void ConnectDetector::buildReachReason(int node,vec<Lit> & conflict){
 			++it;
 			int u = node;
 			//drawFull( non_reach_detectors[detector]->getSource(),u);
-			assert(outer->dbg_notreachable( source,u));
+			assert(outer->dbg_notreachable( source,u,true));
 			double starttime = cpuTime();
 			outer->cutGraph.clearHistory();
 			outer->stats_mc_calls++;
@@ -247,9 +239,9 @@ void ConnectDetector::buildReachReason(int node,vec<Lit> & conflict){
 				if(mincutalg!= MinCutAlg::ALG_EDKARP_ADJ){
 					//ok, set the weights for each edge in the cut graph.
 					//Set edges to infinite weight if they are undef or true, and weight 1 otherwise.
-					for(int u = 0;u<outer->cutGraph.adjacency.size();u++){
-						for(int j = 0;j<outer->cutGraph.adjacency[u].size();j++){
-							int v = outer->cutGraph.adjacency[u][j].node;
+					for(int u = 0;u<outer->cutGraph.adjacency_undirected.size();u++){
+						for(int j = 0;j<outer->cutGraph.adjacency_undirected[u].size();j++){
+							int v = outer->cutGraph.adjacency_undirected[u][j].node;
 							Var var = outer->edges[u][v].v;
 							/*if(S->value(var)==l_False){
 								mc.setCapacity(u,v,1);
@@ -263,6 +255,7 @@ void ConnectDetector::buildReachReason(int node,vec<Lit> & conflict){
 					for(int i =0;i<outer->trail.size();i++){
 						if(outer->trail[i].isEdge && !outer->trail[i].assign){
 							outer->mc->setCapacity(outer->trail[i].from, outer->trail[i].to,1);
+							outer->mc->setCapacity(outer->trail[i].to, outer->trail[i].from,1);
 						}
 					}
 				}
@@ -300,12 +293,12 @@ void ConnectDetector::buildReachReason(int node,vec<Lit> & conflict){
 				    	assert(seen[u]);
 				    	assert(!negative_reach_detector->connected_unsafe(u));
 				    	//Ok, then add all its incoming disabled edges to the cut, and visit any unseen, non-disabled incoming edges
-				    	for(int i = 0;i<outer->inv_adj[u].size();i++){
-				    		int v = outer->inv_adj[u][i].v;
-				    		int from = outer->inv_adj[u][i].from;
+				    	for(int i = 0;i<outer->undirected_adj[u].size();i++){
+				    		int v = outer->undirected_adj[u][i].v;
+				    		int from = outer->undirected_adj[u][i].from;
 
 				    		assert(from!=u);
-				    		assert(outer->inv_adj[u][i].to==u);
+				    		assert(outer->undirected_adj[u][i].to==u);
 				    		//Note: the variable has to not only be assigned false, but assigned false earlier in the trail than the reach variable...
 				    		int edge_num =outer->getEdgeID(v);// v-outer->min_edge_var;
 
@@ -331,6 +324,8 @@ void ConnectDetector::buildReachReason(int node,vec<Lit> & conflict){
 				    			}
 				    		}
 				    	}
+
+
 				    }  while (to_visit.size());
 
 
@@ -367,7 +362,7 @@ void ConnectDetector::buildReachReason(int node,vec<Lit> & conflict){
 
 					int u = reach_node;
 					//drawFull( non_reach_detectors[detector]->getSource(),u);
-					assert(outer->dbg_notreachable( source,u));
+					assert(outer->dbg_notreachable( source,u,true));
 					double starttime = cpuTime();
 					outer->cutGraph.clearHistory();
 					outer->stats_mc_calls++;
@@ -433,11 +428,11 @@ void ConnectDetector::buildReachReason(int node,vec<Lit> & conflict){
 						    	assert(seen[u]);
 						    	assert(!negative_reach_detector->connected_unsafe(u));
 						    	//Ok, then add all its incoming disabled edges to the cut, and visit any unseen, non-disabled incoming edges
-						    	for(int i = 0;i<outer->inv_adj[u].size();i++){
-						    		int v = outer->inv_adj[u][i].v;
-						    		int from = outer->inv_adj[u][i].from;
+						    	for(int i = 0;i<outer->undirected_adj[u].size();i++){
+						    		int v = outer->undirected_adj[u][i].v;
+						    		int from = outer->undirected_adj[u][i].from;
 						    		assert(from!=u);
-						    		assert(outer->inv_adj[u][i].to==u);
+						    		assert(outer->undirected_adj[u][i].to==u);
 						    		//Note: the variable has to not only be assigned false, but assigned false earlier in the trail than the reach variable...
 						    		int edge_num =outer->getEdgeID(v);// v-outer->min_edge_var;
 
@@ -537,7 +532,8 @@ void ConnectDetector::buildReachReason(int node,vec<Lit> & conflict){
 		}
 
 		bool ConnectDetector::propagate(vec<Assignment> & trail,vec<Lit> & conflict){
-
+			static int iter = 0;
+			++iter;
 			if(check_positive){
 				double startdreachtime = cpuTime();
 				getChanged().clear();
@@ -709,9 +705,9 @@ int ConnectDetector::OptimalWeightEdgeStatus::size()const{
 
 Lit ConnectDetector::decide(){
 
-	Distance<ConnectDetector::ReachStatus,NegativeEdgeStatus> * over = (Distance<ConnectDetector::ReachStatus,NegativeEdgeStatus>*)negative_reach_detector;
+	auto * over = negative_reach_detector;
 
-	Distance<ConnectDetector::ReachStatus,PositiveEdgeStatus> * under = (Distance<ConnectDetector::ReachStatus,PositiveEdgeStatus>*)positive_reach_detector;
+	auto * under = positive_reach_detector;
 
 	//we can probably also do something similar, but with cuts, for nodes that are decided to be unreachable.
 
@@ -756,13 +752,23 @@ Lit ConnectDetector::decide(){
 						over->update();
 						 p = j;
 						 last = j;
+						 static int local_it=0;
+						 if(++local_it==240){
+							 int a=1;
+						 }
 						while(!under->connected(p)){
+
 
 							last=p;
 							assert(p!=source);
+							assert(p!=-1);
 							int prev = over->previous(p);
+							assert(prev!=-1);
 							p = prev;
-
+							if(prev<0){
+								printf("%d\n",local_it);
+								exit(3);
+							}
 						}
 					}
 				}else{

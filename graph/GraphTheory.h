@@ -119,9 +119,11 @@ public:
 	//Full matrix
 	vec<vec<Edge> > edges;
 
+
+
 	//Just a list of the edges
 	vec<Edge> edge_list;
-
+	vec<vec<Edge> > undirected_adj;
 	vec<vec<Edge> > inv_adj;
 
 	//vector of the weights for each edge
@@ -349,6 +351,7 @@ public:
 		 for(int i = 0;i<edges.size();i++)
 			 edges[i].growTo(edges.size());
 		 inv_adj.push();
+		 undirected_adj.push();
 		 reach_info.push();
 		 connect_info.push();
 		 dist_info.push();
@@ -624,19 +627,25 @@ public:
 
 
 
-	bool dbg_reachable(int from, int to){
+	bool dbg_reachable(int from, int to, bool undirected=false){
 #ifdef DEBUG_GRAPH
 		DefaultEdgeStatus tmp;
+		if(undirected){
+			Dijkstra<DefaultEdgeStatus,true> d(from,g);
+			d.update();
+			return d.connected(to);
+		}else{
+			Dijkstra<> d(from,g);
+			d.update();
+			return d.connected(to);
+		}
 
-		Dijkstra<> d(from,g);
-		d.update();
-		return d.connected(to);
 #else
 		return true;
 #endif
 	}
 
-	bool dbg_notreachable(int from, int to){
+	bool dbg_notreachable(int from, int to, bool undirected=false){
 
 #ifdef DEBUG_GRAPH
 		//drawFull(from,to);
@@ -654,10 +663,15 @@ public:
 				g.addEdge(e.from,e.to);
 			}
 		}
+		if(undirected){
+			Dijkstra<DefaultEdgeStatus,true> d(from,g);
 
-		Dijkstra<> d(from,g);
+			return !d.connected(to);
+		}else{
+			Dijkstra<DefaultEdgeStatus,false> d(from,g);
 
-		return !d.connected(to);
+					return !d.connected(to);
+		}
 #else
 		return true;
 #endif
@@ -962,7 +976,8 @@ public:
 			edge_list.push({-1,-1,-1,-1,-1,1});
 			edge_assignments.push(l_Undef);
 		}
-
+		undirected_adj[to].push({v,outerVar,from,to,index,weight});
+		undirected_adj[from].push({v,outerVar,to,from,index,weight});
 		inv_adj[to].push({v,outerVar,from,to,index,weight});
 
 		//num_edges++;

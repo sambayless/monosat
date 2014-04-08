@@ -107,6 +107,7 @@ public:
 			assert(g.history[i].addition); //NOTE: Currently, this is glitchy in some circumstances - specifically, ./modsat -rinc=1.05 -rnd-restart  -conflict-shortest-path  -no-conflict-min-cut   -rnd-init -rnd-seed=01231 -rnd-freq=0.01 /home/sam/data/gnf/unit_tests/unit_test_17_reduced.gnf can trigger this assertion!
 			int u=g.history[i].u;
 			int v=g.history[i].v;
+			int edgeID = g.history[i].id;
 			int alt = dist[u]+1 ;
 			if(alt< dist[v]){
 
@@ -116,7 +117,7 @@ public:
 				}
 
 				dist[v]=alt;
-				prev[v]=u;
+				prev[v]=edgeID;
 
 				if(!q.inHeap(v))
 					q.insert(v);
@@ -133,7 +134,7 @@ public:
 					}
 
 					dist[v]=alt;
-					prev[v]=u;
+					prev[v]=edgeID;
 
 					if(!q.inHeap(v))
 						q.insert(v);
@@ -172,6 +173,7 @@ public:
 				if(!g.edgeEnabled( adjacency[u][i].id))
 					continue;
 				int v = adjacency[u][i].to;
+				int edgeID = adjacency[u][i].id;
 				int alt = dist[u]+ 1;
 				if(alt<dist[v]){
 					if(dist[v]>=INF){
@@ -180,7 +182,7 @@ public:
 					}
 
 					dist[v]=alt;
-					prev[v]=u;
+					prev[v]=edgeID;
 					if(!q.inHeap(v))
 						q.insert(v);
 					else
@@ -224,12 +226,18 @@ public:
 				int edgeid = g.history[i].id;
 				int u =  g.all_edges[edgeid].from;
 				int v =  g.all_edges[edgeid].to;
-				if(prev[v]==u || (undirected && prev[u]==v )){
+				if(incomingEdge(u)==edgeid || incomingEdge(v)==edgeid ){
 					history_qhead = i-1;
 					need_recompute=true;
 					//this deletion matters, so we need to recompute.
 					break;
 				}
+				/*if(previous(v)==u || (undirected && previous(u)==v )){
+					history_qhead = i-1;
+					need_recompute=true;
+					//this deletion matters, so we need to recompute.
+					break;
+				}*/
 			}
 			if(!need_recompute){
 				//none of these deletions touched any shortest paths, so we can ignore them.
@@ -288,11 +296,12 @@ public:
 			for(int i = 0;i<adjacency[u].size();i++){
 				if(!g.edgeEnabled( adjacency[u][i].id))
 					continue;
+				int edgeID = adjacency[u][i].id;
 				int v = adjacency[u][i].node;
 				int alt = dist[u]+ 1;
 				if(alt<dist[v]){
 					dist[v]=alt;
-					prev[v]=u;
+					prev[v]=edgeID;
 					if(!q.inHeap(v))
 						q.insert(v);
 					else
@@ -327,7 +336,7 @@ public:
 		if(to == source){
 			return true;
 		}
-		int p = prev[to];
+		int p = previous(to);
 
 		if(p<0){
 			return false;
@@ -395,10 +404,20 @@ public:
 		else
 			return INF;
 	}
-	int previous(int t){
+	int incomingEdge(int t){
+		assert(t>=0 && t<prev.size());
+		assert(prev[t]>=-1 );
 		return prev[t];
 	}
-
+	int previous(int t){
+		if(prev[t]<0)
+			return -1;
+		if (undirected && g.all_edges[incomingEdge(t)].from==t){
+			return g.all_edges[incomingEdge(t)].to;
+		}
+		assert(g.all_edges[incomingEdge(t)].to==t);
+		return g.all_edges[incomingEdge(t)].from;
+	}
 };
 };
 #endif /* DIJKSTRA_H_ */

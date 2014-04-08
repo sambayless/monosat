@@ -195,8 +195,8 @@ void ReachDetector::buildReachReason(int node,vec<Lit> & conflict){
 				int u = node;
 				int p;
 				while(( p = d.previous(u)) != -1){
-					Edge edg = outer->edges[p][u];
-					Var e =outer->edges[p][u].v;
+					Edge & edg = outer->edge_list[d.incomingEdge(u)]; //outer->edges[p][u];
+					Var e =edg.v;
 					lbool val = outer->value(e);
 					assert(outer->value(e)==l_True);
 					conflict.push(mkLit(e, true));
@@ -208,8 +208,8 @@ void ReachDetector::buildReachReason(int node,vec<Lit> & conflict){
 				int u = node;
 				int p;
 				while(( p = d.previous(u)) != -1){
-					Edge edg = outer->edges[p][u];
-					Var e =outer->edges[p][u].v;
+					Edge & edg = outer->edge_list[d.incomingEdge(u)]; //outer->edges[p][u];
+					Var e =edg.v;
 					lbool val = outer->value(e);
 					assert(outer->value(e)==l_True);
 					conflict.push(mkLit(e, true));
@@ -709,9 +709,9 @@ int ReachDetector::OptimalWeightEdgeStatus::size()const{
 
 Lit ReachDetector::decide(){
 
-	Distance<ReachDetector::ReachStatus,NegativeEdgeStatus> * over = (Distance<ReachDetector::ReachStatus,NegativeEdgeStatus>*)negative_reach_detector;
+	auto * over =negative_reach_detector;
 
-	Distance<ReachDetector::ReachStatus,PositiveEdgeStatus> * under = (Distance<ReachDetector::ReachStatus,PositiveEdgeStatus>*)positive_reach_detector;
+	auto * under = positive_reach_detector;
 
 	//we can probably also do something similar, but with cuts, for nodes that are decided to be unreachable.
 

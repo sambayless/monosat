@@ -118,7 +118,7 @@ public:
 		all_edges[id]={from,to,id,weight};
 		modifications++;
 		additions=modifications;
-		history.push({true,id,modifications});
+//		history.push({true,id,modifications});
 		enableEdge(from,to,id);//default to enabled
 	}
 	int nEdgeIDs(){

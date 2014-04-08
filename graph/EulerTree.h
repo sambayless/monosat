@@ -1002,10 +1002,30 @@ public:
 			EulerHalfEdge * start;
 			bool strict;
 			bool backward;
+			bool restarted;
 
+			tour_iterator(EulerHalfEdge * start, bool strict=false):n(start), start(start),backward(false),strict(strict),restarted(false){
+#ifndef NDEBUG
+				if(start){
+				//check that the nodes are well structured...
+				Tree::Node * t = start->node;
+				int total = 1;
+				int size = t->findRoot()->subtree_size;
+				while(t){
+					Tree::Node *t2 =t->next();
+					assert(t!=t2);
+					if(t2){
+						assert(t2->prev()==t);
+					}
+					if(t2){
+					total++;
+					assert(total<=size);
 
-			tour_iterator(EulerHalfEdge * start, bool strict=false):n(start), start(start),backward(false),strict(strict){
-
+					}
+					t=t2;
+				}
+				}
+#endif
 			}
 
 			bool operator !=(const tour_iterator & other)const{
@@ -1029,14 +1049,26 @@ public:
 		    				backward=false;
 		    				return *this;
 		    			}
+		    			assert(n->node!=n->node->next());
 						n=n->node->next()->value;
 						return *this;
 					}
 
-					if(strict){
+					if(strict &&! restarted){
+						restarted=true;
 						//ok, now continue the tour from the left hand side
 						//this costs log time, so this isn't the default behaviour
 						n = start->node->findRoot()->findMin()->value;
+						if(n==start){
+							n=nullptr;
+							start=nullptr;
+							backward=false;//then we are done.
+						}
+						return *this;
+					}else if (strict && restarted){
+						n=nullptr;
+						start=nullptr;
+						backward=false;
 						return *this;
 					}else{
 						backward=true;//now switch to traversing backward from the start node

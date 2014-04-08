@@ -31,9 +31,10 @@ public:
 	vec<int> sources;
 	//the transitive closure of the graph (only for components connected to one of the sources)
 	struct ClosureData{
+		int incomingEdge;
 		char reachable:1;
 		char changed:1;
-		ClosureData():reachable(false),changed(false){}
+		ClosureData():incomingEdge(-1),reachable(false),changed(false){}
 	};
 	vec<vec<ClosureData>> transitive_closure;
 	struct Change{
@@ -41,7 +42,7 @@ public:
 		int node;
 	};
 	vec<Change> changes;
-	vec<int> prev;
+	//vec<int> prev;
 	vec<int> path;
 	vec<int> u_component;
 	vec<int> v_component;
@@ -50,6 +51,7 @@ public:
 
 	ThorupDynamicConnectivity t;
 	int default_source;
+	int default_source_index;
 	const int reportPolarity;
 
 public:
@@ -76,11 +78,12 @@ public:
 	void addSource(int s){
 		int sourceNum = sources.size();
 		sources.push(s);
+		changes.push({sourceNum,s});
 
 		transitive_closure.push();
 		transitive_closure[sourceNum].growTo(g.nodes);
 		transitive_closure[sourceNum][s].reachable=true;
-
+		transitive_closure[sourceNum][s].changed=true;
 		last_modification=-1;
 		last_addition=-1;
 		last_deletion=-1;
@@ -90,6 +93,7 @@ public:
 		if(!sources.contains(s)){
 			addSource(s);
 		}
+		default_source_index = sources.size()-1;
 		default_source = s;
 
 	}
@@ -104,11 +108,21 @@ public:
 		while(t.nNodes()< g.nodes){
 			t.addNode();
 		}
+		for(int i = 0;i<transitive_closure.size();i++){
+			transitive_closure[i].growTo(g.nodes);
+		}
 
 	}
 
 	void updateEdge(int u,int v,int edgeid, bool add){
-
+		if(edgeid==2){
+			int a=1;
+		}
+		if(u==16 || v==16){
+			int a=1;
+		}
+		assert(transitive_closure[0][sources[0]].reachable);
+			assert((g.all_edges[edgeid].to==u && g.all_edges[edgeid].from==v)  ||(g.all_edges[edgeid].to==v && g.all_edges[edgeid].from==u));
 							if(add){
 								bool already_connected=false;
 								if(!t.connected(u,v)){
@@ -120,10 +134,30 @@ public:
 											//then it may be the case that new nodes are connected to one of the sources we are tracking
 											if(transitive_closure[i][u].reachable && !transitive_closure[i][v].reachable){
 												//ok, explore the new connected component and enclose it
+
 												if(!v_component.size())
-													t.getConnectedComponent(v,v_component);
-												for(int n:v_component){
+													t.getConnectedComponentEdges(v,v_component,true);
+												assert(!transitive_closure[i][v].reachable);
+												transitive_closure[i][v].incomingEdge=edgeid;
+												transitive_closure[i][v].reachable=true;
+												if(!transitive_closure[i][v].changed){
+													transitive_closure[i][v].changed=true;
+													changes.push({i,v});
+												}
+
+												for(int edgeid:v_component){
+
+													int u = g.all_edges[edgeid].from;
+													int v = g.all_edges[edgeid].to;
+													if(u==16 || v==16){
+															int a=1;
+														}
+													assert(!(transitive_closure[i][u].reachable && transitive_closure[i][v].reachable));
+													assert((transitive_closure[i][u].reachable || transitive_closure[i][v].reachable));
+													int n = transitive_closure[i][u].reachable?v:u;
+													assert(!transitive_closure[i][n].reachable);
 													transitive_closure[i][n].reachable=true;
+													transitive_closure[i][n].incomingEdge=edgeid;
 													if(!transitive_closure[i][n].changed){
 														transitive_closure[i][n].changed=true;
 														changes.push({i,n});
@@ -132,9 +166,29 @@ public:
 											}else if (transitive_closure[i][v].reachable &&! transitive_closure[i][u].reachable){
 												//ok, explore the new connected component and enclose it
 												if(!u_component.size())
-													t.getConnectedComponent(u,u_component);
-												for(int n:u_component){
+													t.getConnectedComponentEdges(u,u_component,true);
+												assert(!transitive_closure[i][u].reachable);
+												transitive_closure[i][u].incomingEdge=edgeid;
+												transitive_closure[i][u].reachable=true;
+												if(!transitive_closure[i][u].changed){
+													transitive_closure[i][u].changed=true;
+													changes.push({i,u});
+												}
+
+
+
+												for(int edgeid:u_component){
+													int u = g.all_edges[edgeid].from;
+													int v = g.all_edges[edgeid].to;
+													if(u==16 || v==16){
+															int a=1;
+														}
+													assert(!(transitive_closure[i][u].reachable && transitive_closure[i][v].reachable));
+													assert((transitive_closure[i][u].reachable || transitive_closure[i][v].reachable));
+													int n = transitive_closure[i][u].reachable?v:u;
+													assert(!transitive_closure[i][n].reachable);
 													transitive_closure[i][n].reachable=true;
+													transitive_closure[i][n].incomingEdge=edgeid;
 													if(!transitive_closure[i][n].changed){
 														transitive_closure[i][n].changed=true;
 														changes.push({i,n});
@@ -163,7 +217,11 @@ public:
 													if(!v_component.size())
 														t.getConnectedComponent(v,v_component);
 													for(int n:v_component){
+														if(n==16){
+															int a=1;
+														}
 														transitive_closure[i][n].reachable=false;
+														transitive_closure[i][n].incomingEdge=-1;
 														if(!transitive_closure[i][n].changed){
 															transitive_closure[i][n].changed=true;
 															changes.push({i,n});
@@ -175,7 +233,11 @@ public:
 													if(!u_component.size())
 														t.getConnectedComponent(u,u_component);
 													for(int n:u_component){
+														if(n==16){
+															int a=1;
+														}
 														transitive_closure[i][n].reachable=false;
+														transitive_closure[i][n].incomingEdge=-1;
 														if(!transitive_closure[i][n].changed){
 															transitive_closure[i][n].changed=true;
 															changes.push({i,n});
@@ -186,6 +248,7 @@ public:
 									}
 								}
 							}
+							assert(transitive_closure[0][sources[0]].reachable);
 	}
 
 #ifndef NDEBUG
@@ -221,7 +284,8 @@ public:
 			}
 
 	#endif
-			changes.clear();
+			assert(transitive_closure[0][sources[0]].reachable);
+			dbg_transitive_closure();
 			if(g.historyclears!=last_history_clear){
 				last_history_clear=g.historyclears;
 				history_qhead=0;
@@ -284,6 +348,7 @@ public:
 						assert(!c.changed);
 			}
 #endif
+			dbg_transitive_closure();
 /*
 
 			if (default_source>=0){
@@ -333,7 +398,24 @@ public:
 			//stats_full_update_time+=cpuTime()-startdupdatetime;;
 	}
 
+	void dbg_transitive_closure(){
+#ifndef NDEBUG
+		for(int i = 0;i<sources.size();i++){
+			int source = sources[i];
+			assert(transitive_closure[i][source].reachable);
+			for(int n=0;n<transitive_closure[i].size();n++){
+				bool reachable = t.connected(source,n);
+				assert(((bool)transitive_closure[i][n].reachable)==reachable);
+				if(reachable && n!=source){
+					assert(transitive_closure[i][n].incomingEdge>=0);
+				}
+			}
+		}
+#endif
+	}
+
 	void dbg_path(int from,int to, vec<int> & path){
+#ifndef NDEBUG
 		assert(path.size());
 		assert(path[0]==from);
 		assert(path.last()==to);
@@ -343,6 +425,7 @@ public:
 			assert(g.hasEdgeUndirected(u,v));
 
 		}
+#endif
 	}
 
 	bool connected(int from, int to){
@@ -386,7 +469,12 @@ public:
 			 return connected_unchecked(getSource(),t);
 		 }
 		 bool connected( int t){
-			 return connected(getSource(),t);
+			 update();
+			 assert(default_source_index>=0);
+			 assert(t>=0);
+			 assert(transitive_closure[default_source_index].size()>t);
+			 return transitive_closure[default_source_index][t].reachable;
+			 //return connected(getSource(),t);
 		 }
 		 int distance( int t){
 			 return distance(getSource(),t);
@@ -394,15 +482,15 @@ public:
 		 int distance_unsafe(int t){
 			 return distance_unsafe(getSource(),t);
 		 }
-		 int previous( int to){
+/*		 int previous( int to){
 			 update();
 			 if(prev[to]<0){
 
 				t.getPath(getSource(),to,path);
-			/*	for(int i:path){
+				for(int i:path){
 					printf("%d->",i);
 				}
-				printf("\n");*/
+				printf("\n");
 
 				dbg_path(getSource(),to,path);
 
@@ -417,7 +505,45 @@ public:
 			 assert(prev[to]!=to);
 			 assert(prev[to]>=0);
 			 return prev[to];
-		 }
+		 }*/
+
+			int incomingEdge(int to){
+				 update();
+				 assert(to>=0);
+				 /*if(prev[to]<0){
+
+					t.getPathEdges(getSource(),to,path);
+					for(int i:path){
+						printf("%d->",i);
+					}
+					printf("\n");
+
+					dbg_path(getSource(),to,path);
+
+					prev.clear();
+					prev.growTo(g.nodes,-1);
+
+					for(int i = 1;i<path.size();i++){
+						prev[path[i]]=path[i-1];
+					}
+
+				 }*/
+				 dbg_transitive_closure();
+				 return transitive_closure[default_source_index][to].incomingEdge;
+				 //return prev[to];
+			}
+			int previous(int t){
+				if(incomingEdge(t)<0)
+					return -1;
+				assert(transitive_closure[default_source_index][t].reachable);
+				int edgeID = incomingEdge(t);
+				if (g.all_edges[edgeID].from==t){
+					return g.all_edges[edgeID].to;
+				}
+				assert(g.all_edges[edgeID].to==t);
+				return g.all_edges[edgeID].from;
+			}
+
 		 void getPath( int t, vec<int> & path_store){
 			 getPath(getSource(),t,  path_store);
 		 }

@@ -207,9 +207,10 @@ public:
 				if(!g.edgeEnabled(adjacency[u][i].id))
 					continue;
 				int v =adjacency[u][i].node;
+				int edgeID = adjacency[u][i].id;
 				if(!seen[v]){
 					seen[v]=1;
-					prev[v]=u;
+					prev[v]=edgeID;
 					q.push_(v);
 				}
 			}
@@ -235,7 +236,8 @@ public:
 /*				if(!g.edgeEnabled( g.adjacency[u][i].id))
 					continue;*/
 				int v =adjacency[u][i].node;
-				if(seen[v] && prev[v]==u){
+				int edgeID = adjacency[u][i].id;
+				if(seen[v] && previous(v)==u){
 					seen[v]=0;
 					prev[v]=-1;
 					check.push_(v);
@@ -255,16 +257,11 @@ public:
 						if(g.edgeEnabled(g.inverted_adjacency[u][i].id)){
 							int from = g.inverted_adjacency[u][i].node;
 							int to = u;
+							int edgeID = g.inverted_adjacency[u][i].id;
 							if(seen[from]){
-								if(to==231){
-									int a =1;
-								}
 								seen[to]=1;
-								prev[to]=from;
+								prev[to]=edgeID;
 								add_update(to,false);
-								if(to==53 && from == 54){
-													int a=1;
-												}
 								break;
 							}
 						}
@@ -274,11 +271,12 @@ public:
 
 							if(g.edgeEnabled(g.adjacency_undirected[u][i].id)){
 								int from = g.adjacency_undirected[u][i].node;
+								int edgeID = g.adjacency_undirected[u][i].id;
 								assert(from!=u);
 								int to = u;
 								if(seen[from]){
 									seen[to]=1;
-									prev[to]=from;
+									prev[to]=edgeID;
 									add_update(to,false);
 									break;
 								}
@@ -311,20 +309,20 @@ public:
 					//incrementally add edge
 					if(seen[from] && !seen[to]){
 						seen[to]=1;
-						prev[to]=from;
+						prev[to]=edgeid;
 						add_update(to,true);
 					}else if (undirected){
 						if(seen[to] && !seen[from]){
 							seen[from]=1;
-							prev[from]=to;
+							prev[from]=edgeid;
 							add_update(from,true);
 						}
 					}
 
-				}else if (!undirected &&( to==source || !seen[from] || (seen[to] && seen[prev[to]] &&  prev[to]!=from))){
+				}else if (!undirected &&( to==source || !seen[from] || (seen[to] && seen[previous(to)] &&  previous(to)!=from))){
 					//then deleting this edge has no impact on connectivity, so don't need to do anything
 
-				}else if (undirected && ( to==source || !seen[from] || (seen[to] && seen[prev[to]] &&  prev[to]!=from)) && ( from==source || !seen[to] || (seen[from] && seen[prev[from]] &&  prev[from]!=to))){
+				}else if (undirected && ( to==source || !seen[from] || (seen[to] && seen[previous(to)] &&  previous(to)!=from)) && ( from==source || !seen[to] || (seen[from] && seen[previous(to)] &&  previous(to)!=to))){
 
 				}else{
 					stats_fast_failed_updates++;
@@ -374,20 +372,20 @@ public:
 
 						if(seen[from] && !seen[to]){
 							seen[to]=1;
-							prev[to]=from;
+							prev[to]=edgeid;
 							add_update(to,false);
 						}else if(undirected){
 							if(seen[to] && !seen[from]){
 								seen[from]=1;
-								prev[from]=to;
+								prev[from]=edgeid;
 								add_update(from,false);
 							}
 						}
 
 					}else if (!g.history[i].addition && !g.edgeEnabled(g.history[i].id)){
 
-						if ((to==source || !seen[from] || (seen[to] && seen[prev[to]] &&  prev[to]!=from)) &&
-							(!undirected || (from==source || !seen[to] || (seen[from] && seen[prev[from]] &&  prev[from]!=to)))
+						if ((to==source || !seen[from] || (seen[to] && seen[previous(to)] &&  previous(to)!=from)) &&
+							(!undirected || (from==source || !seen[to] || (seen[from] && seen[previous(to)] &&  previous(to)!=to)))
 							){
 							//then deleting this edge has no impact on connectivity, so don't need to do anything
 						}else{
@@ -418,74 +416,7 @@ public:
 				stats_fast_update_time+=cpuTime()-startdupdatetime;;
 				return true;
 		}
-	//Attempt an incremental update
-	/*bool incrementalUpdate(){
-		if(g.historyclears!=last_history_clear){
-			last_history_clear=g.historyclears;
-			history_qhead=0;
-		}
 
-
-		double startdupdatetime = cpuTime();
-
-		q.clear();
-
-		for(int i = history_qhead;i<g.history.size();i++){
-			if(g.history[i].addition){
-				//incrementally add edge
-				int from = g.history[i].u;
-				int to = g.history[i].v;
-
-				if(seen[from] && !seen[to]){
-					seen[to]=1;
-					prev[to]=from;
-					add_update(to);
-				}
-
-			}else{
-				//incrementally delete edge
-				int from = g.history[i].u;
-				int to = g.history[i].v;
-				if(to==0){
-					int a =1;
-				}
-				if(!seen[from] || !seen[to] || prev[to]!=from){
-					//then deleting this edge has no impact on connectivity, so don't need to do anything
-				}else{
-
-					//IF no other incoming edges are seen, then this might be a safe deletion (but we'd need to update any outgoing edges that have to as their previous...)
-
-					//Incremental update failed.
-					stats_fast_update_time+=cpuTime()-startdupdatetime;;
-					return false;
-				}
-
-			}
-
-		}
-		stats_fast_updates++;
-		history_qhead = g.history.size();
-
-		for(int u = 0;u<g.nodes;u++){
-			if(last_modification <=0  || (old_seen[u]==1 && seen[u]==0)){
-				changed.push(u);
-			}
-		}
-
-		assert(dbg_uptodate());
-
-		last_modification=g.modifications;
-		last_deletion = g.deletions;
-		last_addition=g.additions;
-
-		history_qhead=g.history.size();
-		last_history_clear=g.historyclears;
-
-
-
-		stats_fast_update_time+=cpuTime()-startdupdatetime;;
-		return true;
-	}*/
 
 	void update( ){
 		static int iteration = 0;
@@ -528,7 +459,7 @@ public:
 						int to =  g.all_edges[edgeid].to;
 						if(g.history[i].addition){
 							//safe
-						}else if (!seen[from] || (seen[to] && seen[prev[to]] &&  prev[to]!=from)){
+						}else if (!seen[from] || (seen[to] && seen[previous(to)] &&  previous(to)!=from)){
 							//then deleting this edge has no impact on connectivity, so don't need to do anything
 						}else{
 							safe= false;
@@ -539,7 +470,7 @@ public:
 							int to =  g.all_edges[edgeid].from;
 							if(g.history[i].addition){
 								//safe
-							}else if (!seen[from] || (seen[to] && seen[prev[to]] &&  prev[to]!=from)){
+							}else if (!seen[from] || (seen[to] && seen[previous(to)] &&  previous(to)!=from)){
 								//then deleting this edge has no impact on connectivity, so don't need to do anything
 							}else{
 								safe= false;
@@ -584,10 +515,10 @@ public:
 				if(!g.edgeEnabled( adjacency[u][i].id))
 					continue;
 				int v =adjacency[u][i].node;
-
+				int edgeid= adjacency[u][i].id;
 				if(!seen[v]){
 					seen[v]=1;
-					prev[v]=u;
+					prev[v]=edgeid;
 					q.push_(v);
 				}
 			}
@@ -622,7 +553,7 @@ public:
 		if(to == source){
 			return true;
 		}
-		int p = prev[to];
+		int p = previous(to);
 
 		if(p<0){
 			return false;
@@ -722,10 +653,19 @@ public:
 		else
 			return INF;
 	}
-	int previous(int t){
+	int incomingEdge(int t){
 		assert(t>=0 && t<prev.size());
-		assert(prev[t]>=-1 && prev[t]<prev.size());
+		assert(prev[t]>=-1 );
 		return prev[t];
+	}
+	int previous(int t){
+		if(prev[t]<0)
+			return -1;
+		if (undirected && g.all_edges[incomingEdge(t)].from==t){
+			return g.all_edges[incomingEdge(t)].to;
+		}
+		assert(g.all_edges[incomingEdge(t)].to==t);
+		return g.all_edges[incomingEdge(t)].from;
 	}
 
 };

@@ -171,8 +171,8 @@ void DistanceDetector::buildReachReason(int node,vec<Lit> & conflict){
 				int u = node;
 				int p;
 				while(( p = d.previous(u)) != -1){
-					Edge edg = outer->edges[p][u];
-					Var e =outer->edges[p][u].v;
+					Edge & edg = outer->edge_list[d.incomingEdge(u)]; //outer->edges[p][u];
+					Var e =edg.v;
 					lbool val = outer->value(e);
 					assert(outer->value(e)==l_True);
 					conflict.push(mkLit(e, true));
