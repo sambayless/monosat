@@ -30,6 +30,7 @@ public:
 		//int within;
 		int source;
 		double rnd_seed;
+		int constraintsBuilt;
 		CRef reach_marker;
 		CRef non_reach_marker;
 		CRef forced_reach_marker;
@@ -41,6 +42,8 @@ public:
 		Var first_reach_var;
 		vec<int> reach_lit_map;
 		vec<int> force_reason;
+
+		vec<vec<Lit> > full_dist_lits;
 
 		struct DistLit{
 			Lit l;
@@ -98,6 +101,7 @@ public:
 			return reach_lits[node];
 
 		}*/
+		void buildSATConstraints(int distance=-1);
 		bool propagate(vec<Assignment> & trail,vec<Lit> & conflict);
 		void buildReachReason(int node,vec<Lit> & conflict);
 		void buildNonReachReason(int node,vec<Lit> & conflict);

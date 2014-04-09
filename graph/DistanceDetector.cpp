@@ -14,6 +14,23 @@ DistanceDetector::DistanceDetector(int _detectorID, GraphTheorySolver * _outer, 
 Detector(_detectorID),outer(_outer),g(_g),antig(_antig),source(from),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL),opt_weight(*this){
 	rnd_path=NULL;
 	opt_path=NULL;
+	constraintsBuilt=0;
+	first_reach_var = var_Undef;
+	 if(distalg ==DistAlg::ALG_SAT){
+		 positiveReachStatus=nullptr;
+		 negativeReachStatus=nullptr;
+		 positive_reach_detector=nullptr;
+		 negative_reach_detector=nullptr;
+		 positive_path_detector=nullptr;
+		 reach_marker=CRef_Undef;
+		 non_reach_marker=CRef_Undef;
+		 forced_reach_marker=CRef_Undef;
+
+		 //we are just going to directly enforce these constraints in the original SAT solver, so _nothing_ will end up happening in this detector (except for creating the clauses needed to enforce these constraints).
+
+		 return;
+	 }
+
 	 if(opt_use_random_path_for_decisions){
 		 rnd_weight.clear();
 		 rnd_path = new WeightedDijkstra<NegativeEdgeStatus, vec<double> >(from,_antig,rnd_weight);
@@ -27,7 +44,7 @@ Detector(_detectorID),outer(_outer),g(_g),antig(_antig),source(from),rnd_seed(se
 	 if(opt_use_optimal_path_for_decisions){
 		 opt_path = new WeightedDijkstra<NegativeEdgeStatus, OptimalWeightEdgeStatus >(from,_antig,opt_weight);
 	 }
-	if(distalg==ReachAlg::ALG_BFS){
+	if(distalg==DistAlg::ALG_DISTANCE){
 		positiveReachStatus = new DistanceDetector::ReachStatus(*this,true);
 		negativeReachStatus = new DistanceDetector::ReachStatus(*this,false);
 		positive_reach_detector = new Distance<DistanceDetector::ReachStatus,PositiveEdgeStatus>(from,_g,*(positiveReachStatus),1);
@@ -43,7 +60,6 @@ Detector(_detectorID),outer(_outer),g(_g),antig(_antig),source(from),rnd_seed(se
 		//reach_detectors.last()->positive_dist_detector = new Dijkstra(from,g);
 	}
 
-	first_reach_var = var_Undef;
 
 	reach_marker=outer->newReasonMarker(getID());
 	non_reach_marker=outer->newReasonMarker(getID());
@@ -53,6 +69,68 @@ Detector(_detectorID),outer(_outer),g(_g),antig(_antig),source(from),rnd_seed(se
 }
 
 
+void DistanceDetector::buildSATConstraints(int within_steps){
+	if(within_steps<0)
+		within_steps=g.nodes;
+	if(within_steps>g.nodes)
+		within_steps=g.nodes;
+	if(constraintsBuilt>=within_steps)
+		return;
+
+
+
+	assert(outer->decisionLevel()==0);
+	vec<Lit> c;
+
+	if(constraintsBuilt==0){
+		full_dist_lits.push();
+		Lit True = mkLit(outer->newVar());
+		outer->addClause(True);
+		assert(outer->value(True)==l_True);
+		Lit False = ~True;
+		for(int i = 0;i<g.nodes;i++){
+			full_dist_lits[0].push(False);
+		}
+		full_dist_lits[0][source]=True;
+	}
+
+	vec<Lit> & reaches = full_dist_lits.last();
+	assert(outer->value( reaches[source])==l_True);
+
+	//bellman-ford:
+	for (int i = constraintsBuilt;i<within_steps;i++){
+		//For each edge:
+		for(int j = 0;j<outer->edges.size();j++){
+			for(int k = 0;k<outer->edges.size();k++){
+				Edge e = outer->edges[j][k];
+				if(outer->value(reaches[e.to])==l_True){
+					//do nothing
+				}else if (outer->value(reaches[e.to])==l_False){
+					//do nothing
+				}else{
+					Lit l = mkLit(e.v,false);
+					Lit r = mkLit( outer->newVar(), false);
+					c.clear();
+					c.push(~r);c.push(reaches[e.to]);c.push(l); //r -> (e.l or reaches[e.to])
+					outer->addClause(c);
+					c.clear();
+					c.push(~r);c.push(reaches[e.to]);c.push(reaches[e.from]); //r -> (reaches[e.from]) or reaches[e.to])
+					outer->addClause(c);
+					c.clear();
+					c.push(r);c.push(~reaches[e.to]); //~r -> ~reaches[e.to]
+					outer->addClause(c);
+					c.clear();
+					c.push(r);c.push(~reaches[e.from]);c.push(~l); //~r -> (~reaches[e.from] or ~e.l)
+					outer->addClause(c);
+					reaches[e.to]=r   ;//reaches[e.to] == (var & reaches[e.from])| reaches[e.to];
+				}
+			}
+		}
+		assert(full_dist_lits.size()==i+1);
+	}
+
+	constraintsBuilt=within_steps;
+}
 
 void DistanceDetector::addLit(int from, int to, Var outer_reach_var,int within_steps){
 	g.invalidate();
@@ -65,18 +143,31 @@ void DistanceDetector::addLit(int from, int to, Var outer_reach_var,int within_s
 	}
 	assert(from==source);
 	assert(within_steps>=0);
-
-	while( dist_lits.size()<=to)
-		dist_lits.push();
-
-	//while( dist_lits[to].size()<=within_steps)
-	//	dist_lits[to].push({lit_Undef,-1});
+	if(within_steps>g.nodes)
+		within_steps=g.nodes;
+	if(within_steps<0)
+		within_steps=g.nodes;
 
 
-/*	while(outer->S->nVars()<=reach_var)
-		outer->S->newVar();*/
 
 	Lit reachLit=mkLit(reach_var,false);
+
+	 if(distalg ==DistAlg::ALG_SAT){
+		 buildSATConstraints(within_steps);
+
+		if(full_dist_lits.size() >=within_steps){
+			//then we are using the sat encoding and can directly look up its corresponding distance lit
+
+			Lit r = full_dist_lits[within_steps][to];
+			//force equality between the new lit and the old reach lit, in the SAT solver
+			outer->makeEqual(r,reachLit);
+		}
+		return;
+	 }
+
+		while( dist_lits.size()<=to)
+			dist_lits.push();
+
 	bool found=false;
 	for(int i = 0;i<dist_lits[to].size();i++){
 		if(dist_lits[to][i].min_distance==within_steps){
@@ -88,6 +179,9 @@ void DistanceDetector::addLit(int from, int to, Var outer_reach_var,int within_s
 			outer->S->addClause(r, ~reachLit);*/
 		}
 	}
+
+
+
 	if(!found){
 		dist_lits[to].push();
 		dist_lits[to].last().l = reachLit;
@@ -424,7 +518,8 @@ void DistanceDetector::buildReachReason(int node,vec<Lit> & conflict){
 		}
 
 		bool DistanceDetector::propagate(vec<Assignment> & trail,vec<Lit> & conflict){
-
+			if(!positive_reach_detector)
+				return true;
 
 		double startdreachtime = cpuTime();
 		getChanged().clear();
@@ -511,7 +606,7 @@ void DistanceDetector::buildReachReason(int node,vec<Lit> & conflict){
 		}
 
 bool DistanceDetector::checkSatisfied(){
-
+	if(positive_reach_detector){
 				for(int j = 0;j< dist_lits.size();j++){
 					for(int k = 0;k<dist_lits[j].size();k++){
 						Lit l = dist_lits[j][k].l;
@@ -538,7 +633,40 @@ bool DistanceDetector::checkSatisfied(){
 							}
 						}
 					}
+			}
+	}else{
+				Dijkstra<PositiveEdgeStatus>under(source,g) ;
+				Dijkstra<PositiveEdgeStatus>over(source,antig) ;
+				under.update();
+				over.update();
+				for(int j = 0;j< full_dist_lits.size();j++){
+						for(int k = 0;k<full_dist_lits[j].size();k++){
+							Lit l = full_dist_lits[j][k];
+							int dist =j;
+
+							if(l!=lit_Undef){
+								int node =k;
+
+								if(outer->value(l)==l_True){
+									if(under.distance(node)>dist){
+										return false;
+									}
+								}else if (outer->value(l)==l_False){
+									if( over.distance(node)<=dist){
+										return false;
+									}
+								}else{
+									if(under.distance(node)<=dist){
+										return false;
+									}
+									if(!over.distance(node)>dist){
+										return false;
+									}
+								}
+							}
+						}
 				}
+			}
 	return true;
 }
 
@@ -562,7 +690,7 @@ int DistanceDetector::OptimalWeightEdgeStatus::size()const{
 
 
 Lit DistanceDetector::decide(){
-	if(!opt_decide_graph_distance)
+	if(!opt_decide_graph_distance || !negative_reach_detector)
 		return lit_Undef;
 	DistanceDetector *r =this;
 	Distance<DistanceDetector::ReachStatus,NegativeEdgeStatus> * over = (Distance<DistanceDetector::ReachStatus,NegativeEdgeStatus>*) r->negative_reach_detector;

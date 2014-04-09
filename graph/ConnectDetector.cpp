@@ -14,8 +14,29 @@
 ConnectDetector::ConnectDetector(int _detectorID, GraphTheorySolver * _outer, DynamicGraph<PositiveEdgeStatus> &_g, DynamicGraph<NegativeEdgeStatus> &_antig, int from,double seed):Detector(_detectorID),outer(_outer),g(_g),antig(_antig),within(-1),source(from),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL),opt_weight(*this),chokepoint_status(*this),chokepoint(chokepoint_status, _antig,source){
 	check_positive=true;
 	check_negative=true;
-	rnd_path=NULL;
-	opt_path=NULL;
+	constraintsBuilt=0;
+	first_reach_var = var_Undef;
+
+	rnd_path=nullptr;
+	opt_path=nullptr;
+
+
+	 if(undirectedalg ==ConnectivityAlg::ALG_SAT){
+		 positiveReachStatus=nullptr;
+		 negativeReachStatus=nullptr;
+		 positive_reach_detector=nullptr;
+		 negative_reach_detector=nullptr;
+		 positive_path_detector=nullptr;
+		 reach_marker=CRef_Undef;
+		 non_reach_marker=CRef_Undef;
+		 forced_reach_marker=CRef_Undef;
+
+		 //we are just going to directly enforce these constraints in the original SAT solver, so _nothing_ will end up happening in this detector (except for creating the clauses needed to enforce these constraints).
+
+		 return;
+	 }
+
+
 	 if(opt_use_random_path_for_decisions){
 		 rnd_weight.clear();
 		 rnd_path = new WeightedDijkstra<NegativeEdgeStatus, vec<double> >(from,_antig,rnd_weight);
@@ -30,8 +51,7 @@ ConnectDetector::ConnectDetector(int _detectorID, GraphTheorySolver * _outer, Dy
 	 if(opt_use_optimal_path_for_decisions){
 		 opt_path = new WeightedDijkstra<NegativeEdgeStatus, OptimalWeightEdgeStatus >(from,_antig,opt_weight);
 	 }
-
-	if(undirectedalg ==ConnectivityAlg::ALG_BFS){
+	 if(undirectedalg ==ConnectivityAlg::ALG_BFS){
 							positiveReachStatus = new ConnectDetector::ReachStatus(*this,true);
 							negativeReachStatus = new ConnectDetector::ReachStatus(*this,false);
 							positive_reach_detector = new BFSReachability<ConnectDetector::ReachStatus,PositiveEdgeStatus,true>(from,_g,*(positiveReachStatus),1);
@@ -73,10 +93,79 @@ ConnectDetector::ConnectDetector(int _detectorID, GraphTheorySolver * _outer, Dy
 						}
 	positive_reach_detector->setSource(source);
 	negative_reach_detector->setSource(source);
-	first_reach_var = var_Undef;
+
 	reach_marker=outer->newReasonMarker(getID());
 	non_reach_marker=outer->newReasonMarker(getID());
 	forced_reach_marker=outer->newReasonMarker(getID());
+}
+
+void ConnectDetector::buildSATConstraints(int within_steps){
+	if(within_steps<0)
+		within_steps=g.nodes;
+	if(within_steps>g.nodes)
+		within_steps=g.nodes;
+	if(constraintsBuilt>=within_steps)
+		return;
+
+
+
+	assert(outer->decisionLevel()==0);
+	vec<Lit> c;
+
+	if(constraintsBuilt==0){
+		dist_lits.push();
+		Lit True = mkLit(outer->newVar());
+		outer->addClause(True);
+		assert(outer->value(True)==l_True);
+		Lit False = ~True;
+		for(int i = 0;i<g.nodes;i++){
+			dist_lits[0].push(False);
+		}
+		dist_lits[0][source]=True;
+	}
+
+	vec<Lit> & reaches = dist_lits.last();
+	assert(outer->value( reaches[source])==l_True);
+
+	//bellman-ford:
+	for (int i = constraintsBuilt;i<within_steps;i++){
+		//For each edge:
+		for(int j = 0;j<outer->edges.size();j++){
+			for(int k = 0;k<outer->edges.size();k++){
+				Edge e = outer->edges[j][k];
+				if(outer->value(reaches[e.to])==l_True){
+					//do nothing
+				}else if (outer->value(reaches[e.to])==l_False){
+					//do nothing
+				}else{
+					Lit l = mkLit(e.v,false);
+					Lit r = mkLit( outer->newVar(), false);
+					c.clear();
+					c.push(~r);c.push(reaches[e.to]);c.push(l); //r -> (e.l or reaches[e.to])
+					outer->addClause(c);
+					c.clear();
+					c.push(~r);c.push(reaches[e.to]);c.push(reaches[e.from]); //r -> (reaches[e.from]) or reaches[e.to])
+					outer->addClause(c);
+					c.clear();
+					c.push(r);c.push(~reaches[e.to]); //~r -> ~reaches[e.to]
+					outer->addClause(c);
+					c.clear();
+					c.push(r);c.push(~reaches[e.from]);c.push(~l); //~r -> (~reaches[e.from] or ~e.l)
+					outer->addClause(c);
+					reaches[e.to]=r   ;//reaches[e.to] == (var & reaches[e.from])| reaches[e.to];
+				}
+			}
+		}
+		assert(dist_lits.size()==i+1);
+	}
+
+	if(within_steps==g.nodes){
+		assert(reach_lits.size()==0);
+		for(Lit d: dist_lits.last()){
+			reach_lits.push(d);
+		}
+	}
+	constraintsBuilt=within_steps;
 }
 
 void ConnectDetector::addLit(int from, int to, Var outer_reach_var){
@@ -91,13 +180,15 @@ void ConnectDetector::addLit(int from, int to, Var outer_reach_var){
 	assert(from==source);
 	while( reach_lits.size()<=to)
 			reach_lits.push(lit_Undef);
-/*
-	while(outer->S->nVars()<=reach_var)
-		outer->S->newVar();*/
+
+	 if(undirectedalg ==ConnectivityAlg::ALG_SAT){
+		 buildSATConstraints();
+	 }
 
 	Lit reachLit=mkLit(reach_var,false);
 
 	if(reach_lits[to]==lit_Undef){
+		assert(undirectedalg !=ConnectivityAlg::ALG_SAT);
 		reach_lits[to] = reachLit;
 
 		while(reach_lit_map.size()<= reach_var- first_reach_var ){
@@ -532,6 +623,8 @@ void ConnectDetector::buildReachReason(int node,vec<Lit> & conflict){
 		}
 
 		bool ConnectDetector::propagate(vec<Assignment> & trail,vec<Lit> & conflict){
+			if(!positive_reach_detector)
+				return true;
 			static int iter = 0;
 			++iter;
 			if(check_positive){
@@ -649,7 +742,7 @@ void ConnectDetector::buildReachReason(int node,vec<Lit> & conflict){
 		}
 
 bool ConnectDetector::checkSatisfied(){
-
+	if(positive_reach_detector){
 				for(int j = 0;j< reach_lits.size();j++){
 					Lit l = reach_lits[j];
 					if(l!=lit_Undef){
@@ -673,10 +766,42 @@ bool ConnectDetector::checkSatisfied(){
 						}
 					}
 				}
+	}else{
+		Dijkstra<PositiveEdgeStatus>under(source,g) ;
+		Dijkstra<PositiveEdgeStatus>over(source,antig) ;
+		under.update();
+		over.update();
+		for(int j = 0;j< reach_lits.size();j++){
+			Lit l = reach_lits[j];
+			if(l!=lit_Undef){
+				int node =j;
+
+				if(outer->value(l)==l_True){
+					if(!under.connected(node)){
+						return false;
+					}
+				}else if (outer->value(l)==l_False){
+					if( over.connected(node)){
+						return false;
+					}
+				}else{
+					if(over.connected(node)){
+						return false;
+					}
+					if(!under.connected(node)){
+						return false;
+					}
+				}
+			}
+		}
+	}
 	return true;
 }
 
 void ConnectDetector::dbg_sync_reachability(){
+#ifndef NDEBUG
+	if(!positive_reach_detector)
+			return;
 		for(int j = 0;j< reach_lits.size();j++){
 						Lit l =reach_lits[j];
 						if(l!=lit_Undef){
@@ -690,6 +815,7 @@ void ConnectDetector::dbg_sync_reachability(){
 						}
 
 					}
+#endif
 	}
 
 
@@ -711,7 +837,8 @@ int ConnectDetector::OptimalWeightEdgeStatus::size()const{
 
 
 Lit ConnectDetector::decide(){
-
+	if(!negative_reach_detector)
+		return lit_Undef;
 	auto * over = negative_reach_detector;
 
 	auto * under = positive_reach_detector;

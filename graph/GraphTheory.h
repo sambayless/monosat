@@ -262,19 +262,49 @@ public:
 		return vars[v].detector_edge;
 	}
 
+	inline Var getEdgeVar(int edgeID){
+		Var v = edge_list[edgeID].v;
+		assert(v<vars.size());
+		assert(vars[v].isEdge);
+		return v;
+	}
+
 	void makeEqual(Lit l1, Lit l2){
 		Lit o1 = toSolver(l1);
 		Lit o2 = toSolver(l2);
 		S->addClause(~o1,o2);
 		S->addClause(o2, ~o2);
 	}
-
+	void addClause(Lit l1){
+		Lit o1 = toSolver(l1);
+		S->addClause(o1);
+	}
 	void addClause(Lit l1, Lit l2){
 		Lit o1 = toSolver(l1);
 		Lit o2 = toSolver(l2);
-		S->addClause(~o1,o2);
+		S->addClause(o1,o2);
 	}
-
+	void addClause(Lit l1, Lit l2, Lit l3){
+		Lit o1 = toSolver(l1);
+		Lit o2 = toSolver(l2);
+		Lit o3 = toSolver(l3);
+		S->addClause(o1,o2,o3);
+	}
+	void addClause(vec<Lit> & c){
+		vec<Lit> t;
+		c.copyTo(t);
+		toSolver(t);
+		S->addClause(t);
+	}
+	Var newVar(){
+		Var s= S->newVar();
+		Var v = vars.size();
+		vars.push();
+		vars[v].isEdge=false;
+		vars[v].detector_edge=-1;
+		vars[v].solverVar=s;
+		return v;
+	}
 	Var newVar(Var solverVar, int detector, bool isEdge=false){
 		while(S->nVars()<=solverVar)
 				S->newVar();
@@ -736,6 +766,10 @@ public:
 				//this is an assignment to a non-edge atom. (eg, a reachability assertion)
 
 			}else{
+				if((edge_assignments[edge_num]==l_True && !(sign(l)))  || (edge_assignments[edge_num]==l_False && (sign(l)) )){
+					return;//this is already enqueued.
+				}
+
 				int from = edge_list[edge_num].from;
 				int to = edge_list[edge_num].to;
 				trail.push({true,!sign(l), from,to,v});
@@ -1051,6 +1085,8 @@ public:
 		    }
 
 	void implementConstraints(){
+		if(!S->okay())
+			return;
 		if(opt_allpairs_percentage>=1){
 			for(int i = 0;i<unimplemented_reachability_constraints.size();i++){
 				ReachabilityConstraint c = unimplemented_reachability_constraints[i];
@@ -1199,8 +1235,6 @@ public:
 				within_steps=-1;
 
 			if (connect_info[from].source<0){
-
-
 
 					ConnectDetector*rd = new ConnectDetector(detectors.size(), this,g,antig,from,drand(rnd_seed));
 					detectors.push(rd);

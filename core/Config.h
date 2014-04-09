@@ -40,6 +40,7 @@ extern StringOption opt_reach_alg;
 extern StringOption opt_con_alg;
 extern StringOption opt_allpairs_alg;
 extern StringOption opt_undir_allpairs_alg;
+extern StringOption opt_dist_alg;
 
 extern StringOption opt_components_alg;
 extern BoolOption opt_check_solution;
@@ -72,6 +73,7 @@ extern BoolOption opt_skip_deletions;
 extern BoolOption opt_skip_additions;
 extern BoolOption opt_permanent_theory_conflicts;
 enum class ReachAlg{
+	 ALG_SAT,
 	 ALG_DFS,
 	 ALG_DIJKSTRA,
 	 ALG_DISTANCE,
@@ -80,6 +82,7 @@ enum class ReachAlg{
 
 //For undirected reachability
 enum class ConnectivityAlg{
+	 ALG_SAT,
 	 ALG_DFS,
 	 ALG_DIJKSTRA,
 	 ALG_DISTANCE,
@@ -88,7 +91,7 @@ enum class ConnectivityAlg{
 };
 extern ConnectivityAlg undirectedalg;
 extern ReachAlg reachalg;
-extern ReachAlg distalg;
+
 enum class AllPairsAlg{
 	 ALG_FLOYDWARSHALL,
 	 ALG_DIJKSTRA_ALLPAIRS
@@ -111,6 +114,14 @@ enum class ComponentsAlg{
 
 };
 extern ComponentsAlg componentsalg;
+enum class DistAlg{
+	 ALG_SAT,
+	 ALG_DIJKSTRA,
+	 ALG_DISTANCE,
+};
+extern DistAlg distalg;
+
+
 }
 
 #endif /* CONFIG_H_ */

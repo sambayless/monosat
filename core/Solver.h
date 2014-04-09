@@ -180,7 +180,8 @@ public:
     	assert(getTheoryID(solverVar)==theory);
     	assert(getTheoryVar(solverVar)==theoryVar);
     	assert(decisionLevel()==0);
-    	initialPropagate=true;
+    	if(value(solverVar)!=l_Undef)
+    		initialPropagate=true;
 /*    	if(value(solverVar)==l_True){
     		theories[theory]->enqueueTheory(mkLit(theoryVar, false));
     	}else if (value(solverVar)==l_False){

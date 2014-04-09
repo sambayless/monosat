@@ -172,10 +172,30 @@ int main(int argc, char** argv)
 
 		 }else if (!strcasecmp(opt_reach_alg,"dfs")){
 			 reachalg = ReachAlg::ALG_DFS;
+		 }else if (!strcasecmp(opt_reach_alg,"sat")){
+			 reachalg = ReachAlg::ALG_SAT;
 		 }else{
 			fprintf(stderr,"Error: unknown reachability algorithm %s, aborting\n", ((string) opt_reach_alg).c_str());
 			exit(1);
 		 }
+
+
+		 distalg = DistAlg::ALG_DISTANCE;
+
+		 if(!strcasecmp(opt_reach_alg,"dijkstra")){
+			 distalg=DistAlg::ALG_DIJKSTRA;
+
+		 }else if(!strcasecmp(opt_reach_alg,"bfs")){
+			 distalg=DistAlg::ALG_DISTANCE;
+
+		 }else if (!strcasecmp(opt_reach_alg,"sat")){
+			 distalg = DistAlg::ALG_SAT;
+		 }else{
+			fprintf(stderr,"Error: unknown distance algorithm %s, aborting\n", ((string) opt_reach_alg).c_str());
+			exit(1);
+		 }
+
+
 
 		 undirectedalg = ConnectivityAlg::ALG_BFS;
 
@@ -187,6 +207,8 @@ int main(int argc, char** argv)
 
 		 }else if (!strcasecmp(opt_con_alg,"dfs")){
 			 undirectedalg = ConnectivityAlg::ALG_DFS;
+		 }else if (!strcasecmp(opt_con_alg,"sat")){
+			 undirectedalg = ConnectivityAlg::ALG_SAT;
 		 }else  if (!strcasecmp(opt_con_alg,"thorup")){
 			 undirectedalg = ConnectivityAlg::ALG_THORUP;
 		 } else{

@@ -35,6 +35,7 @@ public:
 		 DynamicGraph<NegativeEdgeStatus> &antig;
 		int within;
 		int source;
+		int constraintsBuilt;
 		double rnd_seed;
 		CRef reach_marker;
 		CRef non_reach_marker;
@@ -44,17 +45,12 @@ public:
 		Reach * negative_reach_detector;
 		Reach *  positive_path_detector;
 
+		vec<vec<Lit>>  dist_lits;
+
 		vec<Lit>  reach_lits;
 		Var first_reach_var;
 		vec<int> reach_lit_map;
 		vec<int> force_reason;
-
-/*		struct DistLit{
-			Lit l;
-			int min_distance;
-
-		};
-		vec<vec<DistLit> > dist_lits;*/
 
 
 		vec<ForceReason> forced_edges;
@@ -135,6 +131,7 @@ public:
 			return reach_lits[node];
 
 		}*/
+		void buildSATConstraints(int distance=-1);
 		bool propagate(vec<Assignment> & trail,vec<Lit> & conflict);
 		void buildReachReason(int node,vec<Lit> & conflict);
 		void buildNonReachReason(int node,vec<Lit> & conflict);
