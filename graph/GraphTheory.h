@@ -758,7 +758,7 @@ public:
 	};
 	bool propagateTheory(vec<Lit> & conflict){
 		static int itp = 0;
-		if(	++itp==2){
+		if(	++itp==62279){
 			int a =1;
 		}
 

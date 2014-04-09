@@ -624,20 +624,27 @@ void ConnectDetector::buildReachReason(int node,vec<Lit> & conflict){
 
 				}
 
-			#ifdef DEBUG_GRAPH
+			//#ifdef DEBUG_GRAPH
 					for(int i = 0;i<reach_lits.size();i++){
 						Lit l = reach_lits[i];
 						if(l!=lit_Undef){
 							int u = getNode(var(l));
 							if(positive_reach_detector->connected(u)){
 								assert(outer->value(l)==l_True);
+								if(outer->value(l)!=l_True){
+									exit(3);
+								}
+
 							}else if (!negative_reach_detector->connected(u)){
 								assert(outer->value(l)==l_False);
+								if(outer->value(l)!=l_False){
+									exit(3);
+								}
 							}
 						}
 
 					}
-			#endif
+			//#endif
 			return true;
 		}
 

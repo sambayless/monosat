@@ -75,6 +75,7 @@ public:
 		stats_fast_update_time=0;
 		default_source=-1;
 		hasPrev=false;
+		iteration=0;
 	}
 
 	void addSource(int s){
@@ -257,10 +258,11 @@ public:
 #ifndef NDEBUG
 	DisjointSets dbg_sets;
 #endif
+	int iteration;
 	void update(){
 
 
-		static int iteration = 0;
+
 			int local_it = ++iteration ;
 
 
@@ -491,12 +493,14 @@ public:
 		 bool connected_unchecked(int t){
 			 return connected_unchecked(getSource(),t);
 		 }
-		 bool connected( int t){
+		 bool connected( int to){
 			 update();
 			 assert(default_source_index>=0);
-			 assert(t>=0);
-			 assert(transitive_closure[default_source_index].size()>t);
-			 return transitive_closure[default_source_index][t].reachable;
+			 assert(to>=0);
+			 dbg_transitive_closure();
+			 assert(transitive_closure[default_source_index].size()>to);
+			 assert((bool)(transitive_closure[default_source_index][to].reachable) ==t.connected(getSource(),to) );
+			 return transitive_closure[default_source_index][to].reachable;
 			 //return connected(getSource(),t);
 		 }
 		 int distance( int t){
