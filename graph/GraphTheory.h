@@ -273,7 +273,7 @@ public:
 		Lit o1 = toSolver(l1);
 		Lit o2 = toSolver(l2);
 		S->addClause(~o1,o2);
-		S->addClause(o2, ~o2);
+		S->addClause(o1, ~o2);
 	}
 	void addClause(Lit l1){
 		Lit o1 = toSolver(l1);

@@ -182,13 +182,13 @@ int main(int argc, char** argv)
 
 		 distalg = DistAlg::ALG_DISTANCE;
 
-		 if(!strcasecmp(opt_reach_alg,"dijkstra")){
+		 if(!strcasecmp(opt_dist_alg,"dijkstra")){
 			 distalg=DistAlg::ALG_DIJKSTRA;
 
-		 }else if(!strcasecmp(opt_reach_alg,"bfs")){
+		 }else if(!strcasecmp(opt_dist_alg,"bfs")){
 			 distalg=DistAlg::ALG_DISTANCE;
 
-		 }else if (!strcasecmp(opt_reach_alg,"sat")){
+		 }else if (!strcasecmp(opt_dist_alg,"sat")){
 			 distalg = DistAlg::ALG_SAT;
 		 }else{
 			fprintf(stderr,"Error: unknown distance algorithm %s, aborting\n", ((string) opt_reach_alg).c_str());

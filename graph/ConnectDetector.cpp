@@ -124,39 +124,52 @@ void ConnectDetector::buildSATConstraints(int within_steps){
 		dist_lits[0][source]=True;
 	}
 
-	vec<Lit> & reaches = dist_lits.last();
-	assert(outer->value( reaches[source])==l_True);
+	vec<Lit>  reaches;
 
-	//bellman-ford:
+
+	//bellman-ford, unrolled:
 	for (int i = constraintsBuilt;i<within_steps;i++){
-		//For each edge:
-		for(int j = 0;j<outer->edges.size();j++){
-			for(int k = 0;k<outer->edges.size();k++){
-				Edge e = outer->edges[j][k];
-				if(outer->value(reaches[e.to])==l_True){
+		dist_lits.last().copyTo(reaches);
+		dist_lits.push();
+		reaches.copyTo(dist_lits.last());
+		assert(outer->value( reaches[source])==l_True);
+
+		for(int j = 0;j<outer->nNodes();j++){
+			Lit r_cur = reaches[j];
+			for(Edge & e: outer->undirected_adj[j]){
+				//Edge e = outer->edges[j][k];
+				assert(e.from==j);
+				int from = e.to;
+				int to =e.from;
+				if(outer->value(dist_lits.last()[to])==l_True){
 					//do nothing
-				}else if (outer->value(reaches[e.to])==l_False){
+				}else if (outer->value(reaches[from])==l_False){
 					//do nothing
 				}else{
 					Lit l = mkLit(e.v,false);
+
 					Lit r = mkLit( outer->newVar(), false);
+
 					c.clear();
-					c.push(~r);c.push(reaches[e.to]);c.push(l); //r -> (e.l or reaches[e.to])
+					c.push(~r);c.push(r_cur);c.push(l); //r -> (e.l or reaches[e.to])
 					outer->addClause(c);
 					c.clear();
-					c.push(~r);c.push(reaches[e.to]);c.push(reaches[e.from]); //r -> (reaches[e.from]) or reaches[e.to])
+					c.push(~r);c.push(r_cur);c.push(reaches[from]); //r -> (reaches[e.from]) or reaches[e.to])
 					outer->addClause(c);
 					c.clear();
-					c.push(r);c.push(~reaches[e.to]); //~r -> ~reaches[e.to]
+					c.push(r);c.push(~r_cur); //~r -> ~reaches[e.to]
 					outer->addClause(c);
 					c.clear();
-					c.push(r);c.push(~reaches[e.from]);c.push(~l); //~r -> (~reaches[e.from] or ~e.l)
+					c.push(r);c.push(~reaches[from]);c.push(~l); //~r -> (~reaches[e.from] or ~e.l)
 					outer->addClause(c);
-					reaches[e.to]=r   ;//reaches[e.to] == (var & reaches[e.from])| reaches[e.to];
+					r_cur=r;
+
 				}
 			}
+			dist_lits.last()[j]=r_cur;
 		}
-		assert(dist_lits.size()==i+1);
+
+
 	}
 
 	if(within_steps==g.nodes){
@@ -178,13 +191,13 @@ void ConnectDetector::addLit(int from, int to, Var outer_reach_var){
 		assert(reach_var>first_reach_var);
 	}
 	assert(from==source);
-	while( reach_lits.size()<=to)
-			reach_lits.push(lit_Undef);
+
 
 	 if(undirectedalg ==ConnectivityAlg::ALG_SAT){
 		 buildSATConstraints();
 	 }
-
+		while( reach_lits.size()<=to)
+				reach_lits.push(lit_Undef);
 	Lit reachLit=mkLit(reach_var,false);
 
 	if(reach_lits[to]==lit_Undef){

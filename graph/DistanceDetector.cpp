@@ -94,39 +94,46 @@ void DistanceDetector::buildSATConstraints(int within_steps){
 		full_dist_lits[0][source]=True;
 	}
 
-	vec<Lit> & reaches = full_dist_lits.last();
-	assert(outer->value( reaches[source])==l_True);
+	vec<Lit> reaches;
 
 	//bellman-ford:
 	for (int i = constraintsBuilt;i<within_steps;i++){
+		full_dist_lits.last().copyTo(reaches);
+		full_dist_lits.push();
+		reaches.copyTo(full_dist_lits.last());
+		assert(outer->value( reaches[source])==l_True);
 		//For each edge:
-		for(int j = 0;j<outer->edges.size();j++){
-			for(int k = 0;k<outer->edges.size();k++){
-				Edge e = outer->edges[j][k];
-				if(outer->value(reaches[e.to])==l_True){
-					//do nothing
-				}else if (outer->value(reaches[e.to])==l_False){
-					//do nothing
-				}else{
-					Lit l = mkLit(e.v,false);
-					Lit r = mkLit( outer->newVar(), false);
-					c.clear();
-					c.push(~r);c.push(reaches[e.to]);c.push(l); //r -> (e.l or reaches[e.to])
-					outer->addClause(c);
-					c.clear();
-					c.push(~r);c.push(reaches[e.to]);c.push(reaches[e.from]); //r -> (reaches[e.from]) or reaches[e.to])
-					outer->addClause(c);
-					c.clear();
-					c.push(r);c.push(~reaches[e.to]); //~r -> ~reaches[e.to]
-					outer->addClause(c);
-					c.clear();
-					c.push(r);c.push(~reaches[e.from]);c.push(~l); //~r -> (~reaches[e.from] or ~e.l)
-					outer->addClause(c);
-					reaches[e.to]=r   ;//reaches[e.to] == (var & reaches[e.from])| reaches[e.to];
-				}
+		for(int j = 0;j<g.nodes;j++){
+			Lit r_cur = reaches[j];
+			for(Edge & e: outer->edge_list){
+					//Edge e = outer->edges[j][k];
+					if(outer->value(full_dist_lits.last()[e.to])==l_True){
+						//do nothing
+					}else if (outer->value(reaches[e.from])==l_False){
+						//do nothing
+					}else{
+						Lit l = mkLit(e.v,false);
+						Lit r = mkLit( outer->newVar(), false);
+
+						c.clear();
+						c.push(~r);c.push(reaches[e.to]);c.push(l); //r -> (e.l or reaches[e.to])
+						outer->addClause(c);
+						c.clear();
+						c.push(~r);c.push(reaches[e.to]);c.push(reaches[e.from]); //r -> (reaches[e.from]) or reaches[e.to])
+						outer->addClause(c);
+						c.clear();
+						c.push(r);c.push(~reaches[e.to]); //~r -> ~reaches[e.to]
+						outer->addClause(c);
+						c.clear();
+						c.push(r);c.push(~reaches[e.from]);c.push(~l); //~r -> (~reaches[e.from] or ~e.l)
+						outer->addClause(c);
+						r_cur=r;
+
+					}
 			}
+			full_dist_lits.last()[j]=r_cur   ;//reaches[e.to] == (var & reaches[e.from])| reaches[e.to];
 		}
-		assert(full_dist_lits.size()==i+1);
+
 	}
 
 	constraintsBuilt=within_steps;

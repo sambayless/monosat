@@ -97,6 +97,8 @@ void ReachDetector::buildSATConstraints(int within_steps){
 		within_steps=g.nodes;
 	if(within_steps>g.nodes)
 		within_steps=g.nodes;
+	if(within_steps>g.edges)
+		within_steps=g.edges;
 	if(constraintsBuilt>=within_steps)
 		return;
 
@@ -111,6 +113,7 @@ void ReachDetector::buildSATConstraints(int within_steps){
 		outer->addClause(True);
 		assert(outer->value(True)==l_True);
 		Lit False = ~True;
+		assert(outer->value(False)==l_False);
 		for(int i = 0;i<g.nodes;i++){
 			dist_lits[0].push(False);
 		}
@@ -118,53 +121,63 @@ void ReachDetector::buildSATConstraints(int within_steps){
 	}
 
 	vec<Lit>  reaches;
-	dist_lits.last().copyTo(reaches);
-	assert(outer->value( reaches[source])==l_True);
+
+	vec<Lit> incomingEdges;
+	vec<Lit> incomingNodes;
 
 	//bellman-ford:
 	for (int i = constraintsBuilt;i<within_steps;i++){
-
+		dist_lits.last().copyTo(reaches);
 		dist_lits.push();
-
-
+		reaches.copyTo(dist_lits.last());
+		assert(outer->value( reaches[source])==l_True);
 		//For each edge:
-		for(int j = 0;j<outer->edges.size();j++){
-			for(int k = 0;k<outer->edges.size();k++){
-				Edge e = outer->edges[j][k];
-				if(outer->value(reaches[e.to])==l_True){
+		for(int j = 0;j<g.nodes;j++){
+			Lit r_cur = reaches[j];
+
+			for(Edge & e: outer->inv_adj[j]){
+				//Edge e = outer->edges[j][k];
+				assert(e.to==j);
+				if(outer->value(dist_lits.last()[e.to])==l_True){
 					//do nothing
-				}else if (outer->value(reaches[e.to])==l_False){
+				}else if (outer->value(reaches[e.from])==l_False){
 					//do nothing
 				}else{
 					Lit l = mkLit(e.v,false);
+
 					Lit r = mkLit( outer->newVar(), false);
+
 					c.clear();
-					c.push(~r);c.push(reaches[e.to]);c.push(l); //r -> (e.l or reaches[e.to])
+					c.push(~r);c.push(r_cur);c.push(l); //r -> (e.l or reaches[e.to])
 					outer->addClause(c);
 					c.clear();
-					c.push(~r);c.push(reaches[e.to]);c.push(reaches[e.from]); //r -> (reaches[e.from]) or reaches[e.to])
+					c.push(~r);c.push(r_cur);c.push(reaches[e.from]); //r -> (reaches[e.from]) or reaches[e.to])
 					outer->addClause(c);
 					c.clear();
-					c.push(r);c.push(~reaches[e.to]); //~r -> ~reaches[e.to]
+					c.push(r);c.push(~r_cur); //~r -> ~reaches[e.to]
 					outer->addClause(c);
 					c.clear();
 					c.push(r);c.push(~reaches[e.from]);c.push(~l); //~r -> (~reaches[e.from] or ~e.l)
 					outer->addClause(c);
-					reaches[e.to]=r   ;//reaches[e.to] == (var & reaches[e.from])| reaches[e.to];
+					r_cur=r;
+
 				}
 			}
-		}
-		for(int i = 0;i<reaches.size();i++){
-			dist_lits.last().push(reaches[i]);
-		}
-	}
+			dist_lits.last()[j]=r_cur;
 
-	if(within_steps==g.nodes){
+		}
+		assert(outer->value( dist_lits.last()[source])==l_True);
+
+	}
+	assert(dist_lits.size()==within_steps+1);
+	if(within_steps==g.nodes || within_steps==g.edges){
 		assert(reach_lits.size()==0);
 		for(Lit d: dist_lits.last()){
 			reach_lits.push(d);
 		}
+		assert(outer->value( reach_lits[source])==l_True);
 	}
+
 	constraintsBuilt=within_steps;
 }
 void ReachDetector::addLit(int from, int to, Var outer_reach_var){
@@ -767,11 +780,52 @@ bool ReachDetector::checkSatisfied(){
 		Dijkstra<PositiveEdgeStatus>over(source,antig) ;
 		under.update();
 		over.update();
+
+/*
+		printf("Edges: ");
+		for(Edge & e:outer->edge_list){
+			lbool assign = outer->value(e.v);
+			if(assign==l_True){
+				printf("%d:1, ",e.edgeID);
+			}else{
+				printf("%d:0, ",e.edgeID);
+			}
+		}
+		printf("\nConnected: ");
+		for(int n=0;n<g.nodes;n++){
+			if(n==28){
+				int a=1;
+			}
+			Lit r = reach_lits[n];
+			lbool l= outer->value(r);
+			if(under.connected(n) || l==l_True){
+				printf("%d: %s%s,",n,under.connected(n)?"y":"n",l==l_True?"y":"n");
+			}
+		}
+		printf("\n");
+
+
+		for(int i = 0;i<dist_lits.size();i++){
+			printf("Distance %d: ",i);
+			for(int n=0;n<g.nodes;n++){
+				if(n==28){
+					int a=1;
+				}
+				Lit r = dist_lits[i][n];
+				lbool l= outer->value(r);
+				if(under.distance(n)<=i || l==l_True){
+					printf("%d: %s%s,",n,under.distance(n)<=i?"y":"n",l==l_True?"y":"n");
+				}
+			}
+			printf("\n");
+		}
+*/
+
+
 		for(int j = 0;j< reach_lits.size();j++){
 			Lit l = reach_lits[j];
 			if(l!=lit_Undef){
 				int node =j;
-
 				if(outer->value(l)==l_True){
 					if(!under.connected(node)){
 						return false;

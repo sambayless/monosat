@@ -44,7 +44,7 @@ static const char* _cat_graph ="GRAPH";
  StringOption Minisat::opt_dist_alg(_cat_graph,"dist","Select reachability algorithm (bfs,dfs, dijkstra)","bfs");
 
  StringOption Minisat::opt_con_alg(_cat_graph,"connect","Select undirected reachability algorithm (bfs,dfs, dijkstra, thorup,sat)","bfs");
-StringOption Minisat::opt_undir_allpairs_alg(_cat_graph,"undir-allpairs","Select allpairs reachability algorithm (floyd-warshall,dijkstra, thorup)","floyd-warshall");
+StringOption Minisat::opt_undir_allpairs_alg(_cat_graph,"connect-allpairs","Select allpairs reachability algorithm (floyd-warshall,dijkstra, thorup)","floyd-warshall");
 
 StringOption Minisat::opt_allpairs_alg(_cat_graph,"allpairs","Select allpairs reachability algorithm (floyd-warshall,dijkstra)","floyd-warshall");
 StringOption Minisat::opt_components_alg(_cat_graph,"components","Select connected-components algorithm (disjoint-sets, link-cut)","disjoint-sets");
