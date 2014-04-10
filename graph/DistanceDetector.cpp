@@ -74,6 +74,8 @@ void DistanceDetector::buildSATConstraints(int within_steps){
 		within_steps=g.nodes;
 	if(within_steps>g.nodes)
 		within_steps=g.nodes;
+	if(within_steps>g.edges)
+		within_steps=g.edges;
 	if(constraintsBuilt>=within_steps)
 		return;
 

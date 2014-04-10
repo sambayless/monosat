@@ -104,6 +104,8 @@ void ConnectDetector::buildSATConstraints(int within_steps){
 		within_steps=g.nodes;
 	if(within_steps>g.nodes)
 		within_steps=g.nodes;
+	if(within_steps>g.edges)
+		within_steps=g.edges;
 	if(constraintsBuilt>=within_steps)
 		return;
 
@@ -175,7 +177,7 @@ void ConnectDetector::buildSATConstraints(int within_steps){
 
 	}
 
-	if(within_steps==g.nodes){
+	if(within_steps==g.nodes || within_steps==g.edges){
 		assert(reach_lits.size()==0);
 		for(Lit d: dist_lits.last()){
 			reach_lits.push(d);
@@ -790,10 +792,11 @@ bool ConnectDetector::checkSatisfied(){
 					}
 				}
 	}else{
-		Dijkstra<PositiveEdgeStatus>under(source,g) ;
-		Dijkstra<PositiveEdgeStatus>over(source,antig) ;
+		Dijkstra<PositiveEdgeStatus,true>under(source,g) ;
+		Dijkstra<PositiveEdgeStatus,true>over(source,antig) ;
 		under.update();
 		over.update();
+
 		for(int j = 0;j< reach_lits.size();j++){
 			Lit l = reach_lits[j];
 			if(l!=lit_Undef){
