@@ -105,8 +105,8 @@ void DistanceDetector::buildSATConstraints(int within_steps){
 		//For each edge:
 		for(int j = 0;j<g.nodes;j++){
 			Lit r_cur = reaches[j];
-			for(Edge & e: outer->edge_list){
-					//Edge e = outer->edges[j][k];
+
+			for(Edge & e: outer->inv_adj[j]){
 					if(outer->value(full_dist_lits.last()[e.to])==l_True){
 						//do nothing
 					}else if (outer->value(reaches[e.from])==l_False){

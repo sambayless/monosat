@@ -138,9 +138,12 @@ void ConnectDetector::buildSATConstraints(int within_steps){
 			Lit r_cur = reaches[j];
 			for(Edge & e: outer->undirected_adj[j]){
 				//Edge e = outer->edges[j][k];
-				assert(e.from==j);
-				int from = e.to;
-				int to =e.from;
+
+				int from = e.from;
+				int to =e.to;
+				if(from==j){
+					std::swap(from,to);
+				}
 				if(outer->value(dist_lits.last()[to])==l_True){
 					//do nothing
 				}else if (outer->value(reaches[from])==l_False){
