@@ -637,12 +637,14 @@ void ConnectDetector::buildReachReason(int node,vec<Lit> & conflict){
 					assert(false);
 				}
 		}
-
+		static int iter = 0;
 		bool ConnectDetector::propagate(vec<Assignment> & trail,vec<Lit> & conflict){
 			if(!positive_reach_detector)
 				return true;
-			static int iter = 0;
-			++iter;
+
+			if(++iter==13){
+				int a=1;
+			}
 			if(check_positive){
 				double startdreachtime = cpuTime();
 				getChanged().clear();
@@ -734,6 +736,11 @@ void ConnectDetector::buildReachReason(int node,vec<Lit> & conflict){
 				}
 
 			//#ifdef DEBUG_GRAPH
+			static bool b = false;
+			if(!b){
+				printf("Warning: Debug code enabled!!\n");
+				b=true;
+			}
 					for(int i = 0;i<reach_lits.size();i++){
 						Lit l = reach_lits[i];
 						if(l!=lit_Undef){
@@ -881,6 +888,7 @@ Lit ConnectDetector::decide(){
 				assert(over->connected(j));//Else, we would already be in conflict
 				int p =j;
 				int last=j;
+				int last_edge=-1;
 				if(!opt_use_random_path_for_decisions){
 					if(opt_use_optimal_path_for_decisions){
 						//ok, read back the path from the over to find a candidate edge we can decide
@@ -892,6 +900,7 @@ Lit ConnectDetector::decide(){
 
 							last=p;
 							assert(p!=source);
+							last_edge= opt_path->incomingEdge(p);
 							int prev = opt_path->previous(p);
 							p = prev;
 
@@ -912,6 +921,7 @@ Lit ConnectDetector::decide(){
 							last=p;
 							assert(p!=source);
 							assert(p!=-1);
+							last_edge= over->incomingEdge(p);
 							int prev = over->previous(p);
 							assert(prev!=-1);
 							p = prev;
@@ -938,11 +948,13 @@ Lit ConnectDetector::decide(){
 					//derive a random path in the graph
 					 p = j;
 					 last = j;
+					 last_edge=-1;
 					 assert(rnd_path->connected(p));
 					while(!under->connected(p)){
 
 						last=p;
 						assert(p!=source);
+						last_edge=rnd_path->incomingEdge(p);
 						int prev =rnd_path->previous(p);
 						p = prev;
 						assert(p>=0);
@@ -1022,16 +1034,17 @@ Lit ConnectDetector::decide(){
 				}
 
 				//ok, now pick some edge p->last that will connect p to last;
-			/*	assert(!under->connected(last));
-				assert(under->connected(p));
 
-				assert(over->connected(last));
-				assert(over->connected(p));*/
-				Var v = outer->edges[p][last].v;
+				assert(last_edge>=0);
+				assert(outer->edge_list[last_edge].edgeID==last_edge);
+				Var v = outer->edge_list[last_edge].v;
 				if(outer->value(v)==l_Undef){
 					return mkLit(v,false);
 				}else{
 					assert(outer->value(v)!=l_True);
+					if(outer->value(v)!=l_True){
+						exit(3);
+					}
 				}
 			/*	for(int k = 0;k<outer->antig.adjacency[p].size();k++){
 					int to = outer->antig.adjacency[p][k].node;

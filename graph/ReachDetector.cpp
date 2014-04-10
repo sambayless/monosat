@@ -914,6 +914,7 @@ Lit ReachDetector::decide(){
 
 				assert(over->connected(j));//Else, we would already be in conflict
 				int p =j;
+				int last_edge=-1;
 				int last=j;
 				if(!opt_use_random_path_for_decisions){
 					if(opt_use_optimal_path_for_decisions){
@@ -926,6 +927,7 @@ Lit ReachDetector::decide(){
 
 							last=p;
 							assert(p!=source);
+							last_edge=opt_path->incomingEdge(p);
 							int prev = opt_path->previous(p);
 							p = prev;
 
@@ -940,6 +942,7 @@ Lit ReachDetector::decide(){
 
 							last=p;
 							assert(p!=source);
+							last_edge=over->incomingEdge(p);
 							int prev = over->previous(p);
 							p = prev;
 
@@ -967,6 +970,7 @@ Lit ReachDetector::decide(){
 
 						last=p;
 						assert(p!=source);
+						last_edge=rnd_path->incomingEdge(p);
 						int prev =rnd_path->previous(p);
 						p = prev;
 						assert(p>=0);
@@ -1051,7 +1055,9 @@ Lit ReachDetector::decide(){
 
 				assert(over->connected(last));
 				assert(over->connected(p));*/
-				Var v = outer->edges[p][last].v;
+				assert(last_edge>=0);
+				assert(outer->edge_list[last_edge].edgeID==last_edge);
+				Var v = outer->edge_list[last_edge].v;
 				if(outer->value(v)==l_Undef){
 					return mkLit(v,false);
 				}else{

@@ -126,133 +126,133 @@ public:
 			int a=1;
 		}
 		assert(transitive_closure[0][sources[0]].reachable);
-			assert((g.all_edges[edgeid].to==u && g.all_edges[edgeid].from==v)  ||(g.all_edges[edgeid].to==v && g.all_edges[edgeid].from==u));
-							if(add){
-								bool already_connected=false;
-								if(!t.connected(u,v)){
-									already_connected=false;
-									u_component.clear();
-									v_component.clear();
-									for(int i = 0;i<sources.size();i++){
+		assert((g.all_edges[edgeid].to==u && g.all_edges[edgeid].from==v)  ||(g.all_edges[edgeid].to==v && g.all_edges[edgeid].from==u));
+		if(add){
+			bool already_connected=false;
+			if(!t.connected(u,v)){
+				already_connected=false;
+				u_component.clear();
+				v_component.clear();
+				for(int i = 0;i<sources.size();i++){
 
-											//then it may be the case that new nodes are connected to one of the sources we are tracking
-											if(transitive_closure[i][u].reachable && !transitive_closure[i][v].reachable){
-												//ok, explore the new connected component and enclose it
+						//then it may be the case that new nodes are connected to one of the sources we are tracking
+						if(transitive_closure[i][u].reachable && !transitive_closure[i][v].reachable){
+							//ok, explore the new connected component and enclose it
 
-												if(!v_component.size())
-													t.getConnectedComponentEdges(v,v_component,true);
-												assert(!transitive_closure[i][v].reachable);
+							if(!v_component.size())
+								t.getConnectedComponentEdges(v,v_component,true);
+							assert(!transitive_closure[i][v].reachable);
 
-												transitive_closure[i][v].reachable=true;
-												if(!transitive_closure[i][v].changed){
-													transitive_closure[i][v].changed=true;
-													changes.push({i,v});
-												}
+							transitive_closure[i][v].reachable=true;
+							if(!transitive_closure[i][v].changed){
+								transitive_closure[i][v].changed=true;
+								changes.push({i,v});
+							}
 
-												for(int edgeid:v_component){
+							for(int edgeid:v_component){
 
-													int u = g.all_edges[edgeid].from;
-													int v = g.all_edges[edgeid].to;
-													if(u==16 || v==16){
-															int a=1;
-														}
-													assert(!(transitive_closure[i][u].reachable && transitive_closure[i][v].reachable));
-													assert((transitive_closure[i][u].reachable || transitive_closure[i][v].reachable));
-													int n = transitive_closure[i][u].reachable?v:u;
-													assert(!transitive_closure[i][n].reachable);
-													transitive_closure[i][n].reachable=true;
-
-													if(!transitive_closure[i][n].changed){
-														transitive_closure[i][n].changed=true;
-														changes.push({i,n});
-													}
-												}
-											}else if (transitive_closure[i][v].reachable &&! transitive_closure[i][u].reachable){
-												//ok, explore the new connected component and enclose it
-												if(!u_component.size())
-													t.getConnectedComponentEdges(u,u_component,true);
-												assert(!transitive_closure[i][u].reachable);
-
-												transitive_closure[i][u].reachable=true;
-												if(!transitive_closure[i][u].changed){
-													transitive_closure[i][u].changed=true;
-													changes.push({i,u});
-												}
-
-
-
-												for(int edgeid:u_component){
-													int u = g.all_edges[edgeid].from;
-													int v = g.all_edges[edgeid].to;
-													if(u==16 || v==16){
-															int a=1;
-														}
-													assert(!(transitive_closure[i][u].reachable && transitive_closure[i][v].reachable));
-													assert((transitive_closure[i][u].reachable || transitive_closure[i][v].reachable));
-													int n = transitive_closure[i][u].reachable?v:u;
-													assert(!transitive_closure[i][n].reachable);
-													transitive_closure[i][n].reachable=true;
-
-													if(!transitive_closure[i][n].changed){
-														transitive_closure[i][n].changed=true;
-														changes.push({i,n});
-													}
-												}
-											}
+								int u = g.all_edges[edgeid].from;
+								int v = g.all_edges[edgeid].to;
+								if(u==16 || v==16){
+										int a=1;
 									}
-								}else{
-									already_connected=true;
+								assert(!(transitive_closure[i][u].reachable && transitive_closure[i][v].reachable));
+								assert((transitive_closure[i][u].reachable || transitive_closure[i][v].reachable));
+								int n = transitive_closure[i][u].reachable?v:u;
+								assert(!transitive_closure[i][n].reachable);
+								transitive_closure[i][n].reachable=true;
+
+								if(!transitive_closure[i][n].changed){
+									transitive_closure[i][n].changed=true;
+									changes.push({i,n});
 								}
-								//avoiding an extra connected check here by using the unchecked variatn...
-								t.setEdgeEnabledUnchecked(u,v,edgeid,already_connected);
+							}
+						}else if (transitive_closure[i][v].reachable &&! transitive_closure[i][u].reachable){
+							//ok, explore the new connected component and enclose it
+							if(!u_component.size())
+								t.getConnectedComponentEdges(u,u_component,true);
+							assert(!transitive_closure[i][u].reachable);
+
+							transitive_closure[i][u].reachable=true;
+							if(!transitive_closure[i][u].changed){
+								transitive_closure[i][u].changed=true;
+								changes.push({i,u});
+							}
+
+
+
+							for(int edgeid:u_component){
+								int u = g.all_edges[edgeid].from;
+								int v = g.all_edges[edgeid].to;
+								if(u==16 || v==16){
+										int a=1;
+									}
+								assert(!(transitive_closure[i][u].reachable && transitive_closure[i][v].reachable));
+								assert((transitive_closure[i][u].reachable || transitive_closure[i][v].reachable));
+								int n = transitive_closure[i][u].reachable?v:u;
+								assert(!transitive_closure[i][n].reachable);
+								transitive_closure[i][n].reachable=true;
+
+								if(!transitive_closure[i][n].changed){
+									transitive_closure[i][n].changed=true;
+									changes.push({i,n});
+								}
+							}
+						}
+				}
+			}else{
+				already_connected=true;
+			}
+			//avoiding an extra connected check here by using the unchecked variatn...
+			t.setEdgeEnabledUnchecked(u,v,edgeid,already_connected);
+		}else{
+			if(t.setEdgeEnabled(u,v,edgeid,add)){
+				assert(!t.connected(u,v));
+				u_component.clear();
+				v_component.clear();
+				for(int i = 0;i<sources.size();i++){
+					int source = sources[i];
+						//then it may be the case that new nodes are connected to one of the sources we are tracking
+						if(transitive_closure[i][u].reachable){
+							assert(transitive_closure[i][v].reachable);
+							//ok, explore the new connected component and enclose it
+							if(t.connected(source,u)){
+								assert(!t.connected(source,v));
+								if(!v_component.size())
+									t.getConnectedComponent(v,v_component);
+								for(int n:v_component){
+									if(n==16){
+										int a=1;
+									}
+									transitive_closure[i][n].reachable=false;
+
+									if(!transitive_closure[i][n].changed){
+										transitive_closure[i][n].changed=true;
+										changes.push({i,n});
+									}
+								}
 							}else{
-								if(t.setEdgeEnabled(u,v,edgeid,add)){
-									assert(!t.connected(u,v));
-									u_component.clear();
-									v_component.clear();
-									for(int i = 0;i<sources.size();i++){
-										int source = sources[i];
-											//then it may be the case that new nodes are connected to one of the sources we are tracking
-											if(transitive_closure[i][u].reachable){
-												assert(transitive_closure[i][v].reachable);
-												//ok, explore the new connected component and enclose it
-												if(t.connected(source,u)){
-													assert(!t.connected(source,v));
-													if(!v_component.size())
-														t.getConnectedComponent(v,v_component);
-													for(int n:v_component){
-														if(n==16){
-															int a=1;
-														}
-														transitive_closure[i][n].reachable=false;
+								assert(t.connected(source,v));
+								assert(!t.connected(source,u));
+								if(!u_component.size())
+									t.getConnectedComponent(u,u_component);
+								for(int n:u_component){
+									if(n==16){
+										int a=1;
+									}
+									transitive_closure[i][n].reachable=false;
 
-														if(!transitive_closure[i][n].changed){
-															transitive_closure[i][n].changed=true;
-															changes.push({i,n});
-														}
-													}
-												}else{
-													assert(t.connected(source,v));
-													assert(!t.connected(source,u));
-													if(!u_component.size())
-														t.getConnectedComponent(u,u_component);
-													for(int n:u_component){
-														if(n==16){
-															int a=1;
-														}
-														transitive_closure[i][n].reachable=false;
-
-														if(!transitive_closure[i][n].changed){
-															transitive_closure[i][n].changed=true;
-															changes.push({i,n});
-														}
-													}
-												}
-											}
+									if(!transitive_closure[i][n].changed){
+										transitive_closure[i][n].changed=true;
+										changes.push({i,n});
 									}
 								}
 							}
-							assert(transitive_closure[0][sources[0]].reachable);
+						}
+				}
+			}
+		}
+		assert(transitive_closure[0][sources[0]].reachable);
 	}
 
 #ifndef NDEBUG
@@ -270,7 +270,7 @@ public:
 				stats_skipped_updates++;
 				return;
 			}
-			stats_full_updates++;
+			stats_full_updates++;//1416
 
 			setNodes(g.nodes);
 			hasPrev=false;
@@ -289,8 +289,32 @@ public:
 			}
 
 	#endif
-			assert(transitive_closure[0][sources[0]].reachable);
 			dbg_transitive_closure();
+			if(last_modification<=0){
+				//initialize the transitive closure.
+				for(int s = 0;s<sources.size();s++){
+					int source = sources[s];
+					for(int n = 0;n<g.nodes;n++){
+						bool connected = t.connected(source,n);
+						if(connected && reportPolarity>=0){
+							transitive_closure[s][n].reachable=true;
+							if(!transitive_closure[s][n].changed){
+								transitive_closure[s][n].changed=true;
+								changes.push({s,n});
+							}
+						}else if (!connected && reportPolarity<=0){
+							transitive_closure[s][n].reachable=false;
+							if(!transitive_closure[s][n].changed){
+								transitive_closure[s][n].changed=true;
+								changes.push({s,n});
+							}
+						}
+					}
+				}
+			}
+
+			assert(transitive_closure[0][sources[0]].reachable);
+
 			if(g.historyclears!=last_history_clear){
 				last_history_clear=g.historyclears;
 				history_qhead=0;

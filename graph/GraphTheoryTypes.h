@@ -70,6 +70,12 @@ typedef DefaultEdgeStatus CutEdgeStatus;
 		int to;
 		int edgeID;
 		int weight;
+		Edge(Var v, Var outerVar,int from,int to, int edgeID, int weight=0):v(v),outerVar(outerVar),from(from),to(to),edgeID(edgeID),weight(weight){
+
+		}
+		Edge():v(var_Undef),outerVar(var_Undef),from(-1),to(-1),edgeID(-1),weight(0){
+
+		}
 	};
 
 };
