@@ -14,7 +14,7 @@ DistanceDetector::DistanceDetector(int _detectorID, GraphTheorySolver * _outer, 
 Detector(_detectorID),outer(_outer),g(_g),antig(_antig),source(from),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL),opt_weight(*this){
 	rnd_path=NULL;
 	opt_path=NULL;
-	constraintsBuilt=0;
+	constraintsBuilt=-1;
 	first_reach_var = var_Undef;
 	 if(distalg ==DistAlg::ALG_SAT){
 		 positiveReachStatus=nullptr;
@@ -84,7 +84,8 @@ void DistanceDetector::buildSATConstraints(int within_steps){
 	assert(outer->decisionLevel()==0);
 	vec<Lit> c;
 
-	if(constraintsBuilt==0){
+	if(constraintsBuilt<=0){
+		constraintsBuilt=0;
 		full_dist_lits.push();
 		Lit True = mkLit(outer->newVar());
 		outer->addClause(True);

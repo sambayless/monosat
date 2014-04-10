@@ -14,7 +14,7 @@
 ConnectDetector::ConnectDetector(int _detectorID, GraphTheorySolver * _outer, DynamicGraph<PositiveEdgeStatus> &_g, DynamicGraph<NegativeEdgeStatus> &_antig, int from,double seed):Detector(_detectorID),outer(_outer),g(_g),antig(_antig),within(-1),source(from),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL),opt_weight(*this),chokepoint_status(*this),chokepoint(chokepoint_status, _antig,source){
 	check_positive=true;
 	check_negative=true;
-	constraintsBuilt=0;
+	constraintsBuilt=-1;
 	first_reach_var = var_Undef;
 
 	rnd_path=nullptr;
@@ -114,7 +114,8 @@ void ConnectDetector::buildSATConstraints(int within_steps){
 	assert(outer->decisionLevel()==0);
 	vec<Lit> c;
 
-	if(constraintsBuilt==0){
+	if(constraintsBuilt<=0){
+		constraintsBuilt=0;
 		dist_lits.push();
 		Lit True = mkLit(outer->newVar());
 		outer->addClause(True);
@@ -644,7 +645,7 @@ void ConnectDetector::buildReachReason(int node,vec<Lit> & conflict){
 			if(!positive_reach_detector)
 				return true;
 
-			if(++iter==13){
+			if(++iter==68305){
 				int a=1;
 			}
 			if(check_positive){
@@ -737,7 +738,7 @@ void ConnectDetector::buildReachReason(int node,vec<Lit> & conflict){
 
 				}
 
-			//#ifdef DEBUG_GRAPH
+			#ifdef DEBUG_GRAPH
 			static bool b = false;
 			if(!b){
 				printf("Warning: Debug code enabled!!\n");
@@ -762,7 +763,7 @@ void ConnectDetector::buildReachReason(int node,vec<Lit> & conflict){
 						}
 
 					}
-			//#endif
+			#endif
 			return true;
 		}
 

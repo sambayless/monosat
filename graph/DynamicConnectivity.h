@@ -290,7 +290,13 @@ public:
 
 	#endif
 			dbg_transitive_closure();
-			if(last_modification<=0){
+
+			assert(transitive_closure[0][sources[0]].reachable);
+
+			if(last_modification<=0 || g.historyclears!=last_history_clear){
+				last_history_clear=g.historyclears;
+				history_qhead=0;
+
 				//initialize the transitive closure.
 				for(int s = 0;s<sources.size();s++){
 					int source = sources[s];
@@ -311,13 +317,7 @@ public:
 						}
 					}
 				}
-			}
 
-			assert(transitive_closure[0][sources[0]].reachable);
-
-			if(g.historyclears!=last_history_clear){
-				last_history_clear=g.historyclears;
-				history_qhead=0;
 				//start from scratch
 				for(int i = 0;i<g.all_edges.size();i++){
 					if(g.all_edges[i].id>=0){
@@ -327,6 +327,8 @@ public:
 						updateEdge(u,v,i,add);
 					}
 				}
+
+
 			}else{
 				//incremental/decremental update
 				for(;history_qhead<g.history.size();history_qhead++){

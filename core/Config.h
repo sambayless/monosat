@@ -72,6 +72,7 @@ extern BoolOption opt_optimize_mst;
 extern BoolOption opt_skip_deletions;
 extern BoolOption opt_skip_additions;
 extern BoolOption opt_permanent_theory_conflicts;
+extern BoolOption opt_force_directed;
 enum class ReachAlg{
 	 ALG_SAT,
 	 ALG_DFS,
