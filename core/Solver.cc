@@ -1170,14 +1170,16 @@ lbool Solver::search(int nof_conflicts)
                 }
             }
 
-            /**
-             * Give the theory solvers a chance to make decisions
-             */
-			for(int i = 0;i<decidable_theories.size() && next==lit_Undef;i++){
+            if(next==lit_Undef && drand(random_seed)<opt_random_theory_freq){
+				/**
+				 * Give the theory solvers a chance to make decisions
+				 */
+				for(int i = 0;i<decidable_theories.size() && next==lit_Undef;i++){
 
-					next = decidable_theories[i]->decideTheory();
+						next = decidable_theories[i]->decideTheory();
 
-			}
+				}
+            }
 
             if (next == lit_Undef){
                 // New variable decision:
