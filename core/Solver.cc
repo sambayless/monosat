@@ -751,7 +751,7 @@ CRef Solver::propagate(bool propagate_theories)
 			}
 			ws.shrink(i - j);
 		}
-	
+
 		//propagate theories;
 		for(int i = 0;  propagate_theories && i<theories.size() && qhead == trail.size() && confl==CRef_Undef;i++){
 			if(!theories[i]->propagateTheory(theory_conflict)){
@@ -1236,7 +1236,7 @@ lbool Solver::search(int nof_conflicts)
 							}
 						}
 						//If propagating one of the sub theories caused this solver to backtrack, then go back to propagation
-						if(qhead < trail.size()  || nAssigns()<nVars())
+						if(qhead < trail.size()  || nUnassignedVars()>0)
 							goto propagate;
 					}
 
