@@ -45,7 +45,9 @@ public:
     void setTheoryIndex(int id){
     	theory_index=id;
     }
+	void printStats(int detailLevel){
 
+	}
      ~TestGraph(){};
      int getGraphID(){
     	 return id;

@@ -9,6 +9,7 @@
 #define CONFIG_H_
 
 #include "utils/Options.h"
+#include "utils/System.h"
 namespace Minisat {
 extern IntOption opt_verb;
 extern  DoubleOption  opt_var_decay;
@@ -73,6 +74,8 @@ extern BoolOption opt_skip_deletions;
 extern BoolOption opt_skip_additions;
 extern BoolOption opt_permanent_theory_conflicts;
 extern BoolOption opt_force_directed;
+extern BoolOption opt_decide_graph_chokepoints;
+
 enum class ReachAlg{
 	 ALG_SAT,
 	 ALG_DFS,
@@ -121,6 +124,16 @@ enum class DistAlg{
 	 ALG_DISTANCE,
 };
 extern DistAlg distalg;
+
+extern IntOption opt_time;
+
+static double rtime(int level=1){
+	if(level<=opt_time){
+		return cpuTime();
+	}else{
+		return 0;
+	}
+}
 
 
 }

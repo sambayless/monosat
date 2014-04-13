@@ -91,7 +91,7 @@ public:
 
 	/*void updateFast(){
 		stats_fast_updates++;
-		double start_time = cpuTime();
+		double start_time = rtime(2);
 
 		assert(last_deletion==g.deletions);
 		last_modification=g.modifications;
@@ -133,7 +133,7 @@ public:
 				}
 			}
 		}
-		stats_fast_update_time+=cpuTime()-start_time;
+		stats_fast_update_time+=rtime(2)-start_time;
 	}*/
 /*	vec<int> & getChanged(){
 		return changed;
@@ -288,7 +288,7 @@ public:
 
 	}
 	bool update_additions(){
-		double startdupdatetime = cpuTime();
+		double startdupdatetime = rtime(2);
 
 		if(g.historyclears!=last_history_clear){
 				last_history_clear=g.historyclears;
@@ -329,7 +329,7 @@ public:
 					//then deleting this edge has no impact on BFSReachability, so don't need to do anything
 				}else{
 					stats_fast_failed_updates++;
-					stats_fast_update_time+=cpuTime()-startdupdatetime;;
+					stats_fast_update_time+=rtime(2)-startdupdatetime;;
 					return false;
 				}
 
@@ -347,12 +347,12 @@ public:
 			history_qhead=g.history.size();
 			last_history_clear=g.historyclears;
 
-			stats_fast_update_time+=cpuTime()-startdupdatetime;;
+			stats_fast_update_time+=rtime(2)-startdupdatetime;;
 			return true;
 	}
 
 	bool incrementalUpdate(){
-			double startdupdatetime = cpuTime();
+			double startdupdatetime = rtime(2);
 
 			if(g.historyclears!=last_history_clear){
 					last_history_clear=g.historyclears;
@@ -418,7 +418,7 @@ public:
 				history_qhead=g.history.size();
 				last_history_clear=g.historyclears;
 
-				stats_fast_update_time+=cpuTime()-startdupdatetime;;
+				stats_fast_update_time+=rtime(2)-startdupdatetime;;
 				return true;
 		}
 
@@ -455,7 +455,7 @@ public:
 					return;
 			}else{
 				if(opt_dec_graph==1 && last_deletion < g.deletions){
-					double startddecupdatetime = cpuTime();
+					double startddecupdatetime = rtime(2);
 					//scan through the deletions and check if any of them matter..
 					bool safe=true;
 					for(int i = history_qhead;i<g.history.size();i++){
@@ -478,7 +478,7 @@ public:
 					if(safe){
 						last_deletion=g.deletions;
 					}
-					stats_fast_update_time+=cpuTime()-startddecupdatetime;;
+					stats_fast_update_time+=rtime(2)-startddecupdatetime;;
 				}
 
 				if(last_deletion==g.deletions){
@@ -490,7 +490,7 @@ public:
 		}
 
 		stats_full_updates++;
-		double startdupdatetime = cpuTime();
+		double startdupdatetime = rtime(2);
 
 		q.clear();
 		for(int i = 0;i<g.nodes;i++){
@@ -539,7 +539,7 @@ public:
 
 
 
-		stats_full_update_time+=cpuTime()-startdupdatetime;;
+		stats_full_update_time+=rtime(2)-startdupdatetime;;
 	}
 
 	bool dbg_path(int to){

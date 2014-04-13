@@ -150,6 +150,9 @@ public:
 	double unreachtime;
 	double pathtime;
 	double propagationtime;
+	long stats_propagations;
+	long stats_decisions;
+	long stats_conflicts;
 	double reachupdatetime;
 	double unreachupdatetime;
 	double stats_initial_propagation_time;
@@ -207,6 +210,9 @@ public:
 			unreachtime=0;
 			pathtime=0;
 			propagationtime=0;
+			stats_propagations=0;
+			stats_decisions = 0;
+			stats_conflicts=0;
 			reachupdatetime=0;
 			unreachupdatetime=0;
 			stats_initial_propagation_time=0;
@@ -240,6 +246,30 @@ public:
 			shadow_dbg = new TestGraph(S->dbg_solver);
 #endif
 	}
+
+	void printStats(int detailLevel){
+		if(detailLevel>0){
+			for(Detector * d:detectors)
+				d->printStats();
+		}
+
+		printf("Graph stats:\n");
+/*		printf("Decision Time: %f\n", stats_decision_time);
+		printf("Prop Time: %f (initial: %f)\n", propagationtime,stats_initial_propagation_time);
+		printf("Conflict Time: %f (initial: %f)\n", stats_reason_time,stats_reason_initial_time);*/
+
+	/*	printf("Reach Time: %f (update Time: %f)\n", reachtime,reachupdatetime);
+		printf("Unreach Time: %f (Update Time: %f)\n", unreachtime,unreachupdatetime);
+		printf("Path Time: %f (#Paths: %d, AvgLength %f, total: %d)\n", pathtime, num_learnt_paths, (learnt_path_clause_length /  ((float) num_learnt_paths+1)),learnt_path_clause_length);
+		printf("Min-cut Time: %f (%d calls, %f average, #Cuts: %d, AvgLength %f, total: %d)\n", mctime, stats_mc_calls,(mctime/(stats_mc_calls ? stats_mc_calls:1)),  num_learnt_cuts, (learnt_cut_clause_length /  ((float) num_learnt_cuts+1)),learnt_cut_clause_length);
+*/
+
+		printf("Propagations: %ld (%f s, avg: %f s)\n",stats_propagations ,propagationtime, (propagationtime)/((double)stats_propagations+1));
+		printf("Decisions: %ld (%f s, avg: %f s)\n",stats_decisions,stats_decision_time, (stats_decision_time)/((double)stats_decisions+1));
+		printf("Conflicts: %ld (%f s, avg: %f s)\n",stats_conflicts,stats_reason_time, (stats_reason_time)/((double)stats_conflicts+1));
+		fflush(stdout);
+	}
+
 	inline int getTheoryIndex(){
 	    	return theory_index;
 	    }
@@ -354,19 +384,7 @@ public:
 		return S->enqueue(sl,reason);
 	}
 
-	void printStats(){
 
-		printf("Graph stats:\n");
-		printf("Decision Time: %f\n", stats_decision_time);
-		printf("Prop Time: %f (initial: %f)\n", propagationtime,stats_initial_propagation_time);
-		printf("Conflict Time: %f (initial: %f)\n", stats_reason_time,stats_reason_initial_time);
-
-		printf("Reach Time: %f (update Time: %f)\n", reachtime,reachupdatetime);
-		printf("Unreach Time: %f (Update Time: %f)\n", unreachtime,unreachupdatetime);
-		printf("Path Time: %f (#Paths: %d, AvgLength %f, total: %d)\n", pathtime, num_learnt_paths, (learnt_path_clause_length /  ((float) num_learnt_paths+1)),learnt_path_clause_length);
-		printf("Min-cut Time: %f (%d calls, %f average, #Cuts: %d, AvgLength %f, total: %d)\n", mctime, stats_mc_calls,(mctime/(stats_mc_calls ? stats_mc_calls:1)),  num_learnt_cuts, (learnt_cut_clause_length /  ((float) num_learnt_cuts+1)),learnt_cut_clause_length);
-
-	}
 
      ~GraphTheorySolver(){};
 	 int newNode(){
@@ -406,7 +424,7 @@ public:
 
 #ifdef DEBUG_GRAPH
 		bool dbg_clause(const vec<Lit> &conflict){
-
+#ifndef NDEBUG
 			static vec<Lit> c;
 			c.clear();
 			for(int i = 0;i<conflict.size();i++)
@@ -414,11 +432,11 @@ public:
 		//	assert(dbg->solve());
 			bool res = dbg->solve(c);
 			assert(~res);
-
+#endif
 			return true;
 		}
 		bool dbg_propgation(Lit l){
-
+#ifndef NDEBUG
 			static vec<Lit> c;
 			c.clear();
 			for(int i = 0;i<S->trail.size() ;i++){
@@ -439,9 +457,9 @@ public:
 				}*/
 			}
 			c.push(~l);
-			bool res = dbg->solve(c);
-			assert(~res);
-
+			//bool res = dbg->solve(c);
+			//assert(~res);
+#endif
 			return true;
 		}
 #endif
@@ -584,16 +602,18 @@ public:
 	Lit decideTheory(){
 		if(!opt_decide_graph)
 			return lit_Undef;
-		double start = cpuTime();
+		double start = rtime(1);
+
 		dbg_full_sync();
 		for(int i = 0;i<detectors.size();i++){
 			Detector * r = detectors[i];
 			Lit l =r->decide();
-			if(l!=lit_Undef)
+			if(l!=lit_Undef){
+				stats_decisions++;
 				return toSolver(l);
-
+			}
 		}
-		stats_decision_time += cpuTime() - start;
+		stats_decision_time += rtime(1) - start;
 		return lit_Undef;
 	}
 
@@ -641,16 +661,17 @@ public:
 		assert(marker != CRef_Undef);
 		int pos = CRef_Undef- marker;
 		int d = marker_map[pos];
-		double initial_start = cpuTime();
+		double initial_start = rtime(1);
 		backtrackUntil(p);
 
-		double start = cpuTime();
+		double start = rtime(1);
 
 		assert(d<detectors.size());
 		detectors[d]->buildReason(p,reason,marker);
 		toSolver(reason);
-		double finish = cpuTime();
+		double finish = rtime(1);
 		stats_reason_time+=finish-start;
+		stats_conflicts++;
 		stats_reason_initial_time+=start-initial_start;
 
 	}
@@ -800,7 +821,7 @@ public:
 
 
 		bool any_change = false;
-		double startproptime = cpuTime();
+		double startproptime = rtime(1);
 		static vec<int> detectors_to_check;
 
 		conflict.clear();
@@ -809,8 +830,8 @@ public:
 
 		//At level 0, need to propagate constant reaches/source nodes/edges...
 
-
-		stats_initial_propagation_time += cpuTime() - startproptime;
+		stats_propagations++;
+		//stats_initial_propagation_time += rtime(1) - startproptime;
 		dbg_sync();
 		assert(dbg_graphsUpToDate());
 
@@ -819,7 +840,7 @@ public:
 			bool r =detectors[d]->propagate(trail,conflict);
 			if(!r){
 				toSolver(conflict);
-				propagationtime+= cpuTime()-startproptime;
+				propagationtime+= rtime(1)-startproptime;
 				return false;
 			}
 		}
@@ -833,7 +854,7 @@ public:
 
 		detectors_to_check.clear();
 
-		double elapsed = cpuTime()-startproptime;
+		double elapsed = rtime(1)-startproptime;
 					propagationtime+=elapsed;
 					dbg_sync();
 					dbg_sync_reachability();

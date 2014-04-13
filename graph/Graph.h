@@ -33,7 +33,7 @@ public:
 	virtual void reachesAny(int from, vec<Lit> & properties_out,int within_steps)=0;
 	virtual void reaches(int from,int to, Var reach_var,int within_steps=-1)=0;
 	virtual void connects(int from,int to, Var reach_var,int within_steps=-1)=0;
-
+	virtual void printStats(int detailLevel)=0;
 	virtual void preprocess(){
 
 	}

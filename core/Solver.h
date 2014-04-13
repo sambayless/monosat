@@ -136,6 +136,12 @@ public:
     	return markers.last();
     }
 
+    void printStats(int detail_level=0){
+		for(int i = 0;i<theories.size();i++){
+			theories[i]->printStats(detail_level);
+			}
+    }
+
     bool isTheoryCause(CRef cr){
     	return cr != CRef_Undef && !ca.isClause(cr);
     }

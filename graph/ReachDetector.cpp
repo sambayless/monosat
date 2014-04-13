@@ -15,8 +15,9 @@ ReachDetector::ReachDetector(int _detectorID, GraphTheorySolver * _outer, Dynami
 	check_positive=true;
 	check_negative=true;
 	constraintsBuilt=-1;
-	rnd_path=NULL;
-	opt_path=NULL;
+	rnd_path=nullptr;
+	opt_path=nullptr;
+	chokepoint_detector=nullptr;
 	first_reach_var = var_Undef;
 	if(reachalg==ReachAlg::ALG_SAT){
 		 positiveReachStatus=nullptr;
@@ -29,6 +30,12 @@ ReachDetector::ReachDetector(int _detectorID, GraphTheorySolver * _outer, Dynami
 		 forced_reach_marker=CRef_Undef;
 		return;
 	}
+
+	if(opt_decide_graph_chokepoints){
+		 chokepoint_detector = new DFSReachability<NullEdgeStatus,NegativeEdgeStatus>(from,_antig,nullEdgeStatus,1);
+
+	}
+
 
 	 if(opt_use_random_path_for_decisions){
 		 rnd_weight.clear();
@@ -284,7 +291,7 @@ void ReachDetector::buildReachReason(int node,vec<Lit> & conflict){
 			Reach & d = *positive_path_detector;
 
 
-			double starttime = cpuTime();
+			double starttime = rtime(2);
 			d.update();
 
 			assert(outer->dbg_reachable(d.getSource(),node));
@@ -332,7 +339,7 @@ void ReachDetector::buildReachReason(int node,vec<Lit> & conflict){
 			}
 			outer->num_learnt_paths++;
 			outer->learnt_path_clause_length+= (conflict.size()-1);
-			double elapsed = cpuTime()-starttime;
+			double elapsed = rtime(2)-starttime;
 			outer->pathtime+=elapsed;
 	#ifdef DEBUG_GRAPH
 			 assert(outer->dbg_clause(conflict));
@@ -345,7 +352,7 @@ void ReachDetector::buildReachReason(int node,vec<Lit> & conflict){
 			int u = node;
 			//drawFull( non_reach_detectors[detector]->getSource(),u);
 			assert(outer->dbg_notreachable( source,u));
-			double starttime = cpuTime();
+			double starttime = rtime(2);
 			outer->cutGraph.clearHistory();
 			outer->stats_mc_calls++;
 			if(opt_conflict_min_cut){
@@ -444,7 +451,7 @@ void ReachDetector::buildReachReason(int node,vec<Lit> & conflict){
 			 outer->num_learnt_cuts++;
 			 outer->learnt_cut_clause_length+= (conflict.size()-1);
 
-			double elapsed = cpuTime()-starttime;
+			double elapsed = rtime(2)-starttime;
 			 outer->mctime+=elapsed;
 
 	#ifdef DEBUG_GRAPH
@@ -473,7 +480,7 @@ void ReachDetector::buildReachReason(int node,vec<Lit> & conflict){
 					int u = reach_node;
 					//drawFull( non_reach_detectors[detector]->getSource(),u);
 					assert(outer->dbg_notreachable( source,u));
-					double starttime = cpuTime();
+					double starttime = rtime(2);
 					outer->cutGraph.clearHistory();
 					outer->stats_mc_calls++;
 
@@ -576,7 +583,7 @@ void ReachDetector::buildReachReason(int node,vec<Lit> & conflict){
 					 outer->num_learnt_cuts++;
 					 outer->learnt_cut_clause_length+= (conflict.size()-1);
 
-					double elapsed = cpuTime()-starttime;
+					double elapsed = rtime(2)-starttime;
 					 outer->mctime+=elapsed;
 
 			#ifdef DEBUG_GRAPH
@@ -589,7 +596,7 @@ void ReachDetector::buildReachReason(int node,vec<Lit> & conflict){
 
 				if(marker==reach_marker){
 					reason.push(p);
-				//	double startpathtime = cpuTime();
+				//	double startpathtime = rtime(2);
 
 					/*Dijkstra & detector = *reach_detectors[d]->positive_dist_detector;
 					//the reason is a path from s to p(provided by d)
@@ -613,7 +620,7 @@ void ReachDetector::buildReachReason(int node,vec<Lit> & conflict){
 				 assert(outer->dbg_clause(reason));
 
 		#endif
-					//double elapsed = cpuTime()-startpathtime;
+					//double elapsed = rtime(2)-startpathtime;
 				//	pathtime+=elapsed;
 				}else if(marker==non_reach_marker){
 					reason.push(p);
@@ -645,16 +652,16 @@ void ReachDetector::buildReachReason(int node,vec<Lit> & conflict){
 			if(!positive_reach_detector)
 				return true;
 			if(check_positive){
-				double startdreachtime = cpuTime();
+				double startdreachtime = rtime(2);
 				getChanged().clear();
 				positive_reach_detector->update();
-				double reachUpdateElapsed = cpuTime()-startdreachtime;
+				double reachUpdateElapsed = rtime(2)-startdreachtime;
 				outer->reachupdatetime+=reachUpdateElapsed;
 			}
 			if(check_negative){
-				double startunreachtime = cpuTime();
+				double startunreachtime = rtime(2);
 				negative_reach_detector->update();
-				double unreachUpdateElapsed = cpuTime()-startunreachtime;
+				double unreachUpdateElapsed = rtime(2)-startunreachtime;
 				outer->unreachupdatetime+=unreachUpdateElapsed;
 			}
 			for(int j = 0;j<getChanged().size();j++){
@@ -893,6 +900,44 @@ Lit ReachDetector::decide(){
 	auto * over =negative_reach_detector;
 
 	auto * under = positive_reach_detector;
+
+
+	/*if(opt_decide_graph_chokepoints){
+
+		//we are going to detect chokepoints as follows. For each node that is reachable in over but that is NOT reachable in the under approximation,
+		//we will remove its incoming edge. If there are no other paths to that node with that edge removed, then we have found a
+		for(int k = 0;k<reach_lits.size();k++){
+				Lit l =reach_lits[k];
+				if(l==lit_Undef)
+					continue;
+				int j =getNode(var(l));
+				if(outer->value(l)==l_True ){
+
+					assert(over->connected(j));
+					if(over->connected(j) && !under->connected(j)){
+						//then check to see if there is a chokepoint leading to j, by knocking out the incoming edge and seeing if it is still connected.
+						assert(chokepoint_detector->connected(j));//Else, we would already be in conflict
+						int edgeID=over->incomingEdge(j);
+						assert(edgeID>=0);
+						assert(outer->edge_list[edgeID].edgeID==edgeID);
+						Var v = outer->edge_list[edgeID].v;
+						if(outer->value(v)==l_Undef){
+
+							antig.disableEdge(outer->edge_list[edgeID].from, outer->edge_list[edgeID].to, edgeID);
+							bool connected = chokepoint_detector->connected(j);
+							bool succeed = antig.rewindHistory(1);
+							assert(succeed);
+							if(!connected){
+								//then edgeID was an unassigned edge that was also a chokepoint leading up to j.
+								return mkLit(v,false);
+							}
+						}
+					}
+
+				}
+		}
+		return lit_Undef;
+	}*/
 
 	//we can probably also do something similar, but with cuts, for nodes that are decided to be unreachable.
 

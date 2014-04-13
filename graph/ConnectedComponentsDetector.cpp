@@ -115,7 +115,7 @@ void ConnectedComponentsDetector::ConnectedComponentsStatus::setComponents(int c
 
 		void ConnectedComponentsDetector::buildMinComponentsTooLowReason(int min_components,vec<Lit> & conflict){
 
-			double starttime = cpuTime();
+			double starttime = rtime(2);
 
 
 			seen.clear();
@@ -149,7 +149,7 @@ void ConnectedComponentsDetector::ConnectedComponentsStatus::setComponents(int c
 			}
 			outer->num_learnt_paths++;
 			outer->learnt_path_clause_length+= (conflict.size()-1);
-			double elapsed = cpuTime()-starttime;
+			double elapsed = rtime(2)-starttime;
 			outer->pathtime+=elapsed;
 		}
 		void ConnectedComponentsDetector::buildMinComponentsTooHighReason(int min_components,vec<Lit> & conflict){
@@ -159,7 +159,7 @@ void ConnectedComponentsDetector::ConnectedComponentsStatus::setComponents(int c
 				//drawFull( non_reach_detectors[detector]->getSource(),u);
 				//assert(outer->dbg_distance( source,u));
 
-				double starttime = cpuTime();
+				double starttime = rtime(2);
 				int INF=std::numeric_limits<int>::max();
 				positive_reach_detector->update();
 				int numComponents = positive_reach_detector->numComponents();
@@ -239,7 +239,7 @@ void ConnectedComponentsDetector::ConnectedComponentsStatus::setComponents(int c
 					assert(weight>=0);
 					buildMinComponentsTooHighReason(weight,reason);
 
-					//double elapsed = cpuTime()-startpathtime;
+					//double elapsed = rtime(2)-startpathtime;
 				//	pathtime+=elapsed;
 				}else if(marker==non_reach_marker){
 					reason.push(p);
@@ -273,16 +273,16 @@ void ConnectedComponentsDetector::ConnectedComponentsStatus::setComponents(int c
 		bool ConnectedComponentsDetector::propagate(vec<Assignment> & trail,vec<Lit> & conflict){
 
 
-		double startdreachtime = cpuTime();
+		double startdreachtime = rtime(2);
 		changed.clear();
 		changed_weights.clear();
 		positive_reach_detector->update();
-		double reachUpdateElapsed = cpuTime()-startdreachtime;
+		double reachUpdateElapsed = rtime(2)-startdreachtime;
 		outer->reachupdatetime+=reachUpdateElapsed;
 
-		double startunreachtime = cpuTime();
+		double startunreachtime = rtime(2);
 		negative_reach_detector->update();
-		double unreachUpdateElapsed = cpuTime()-startunreachtime;
+		double unreachUpdateElapsed = rtime(2)-startunreachtime;
 		outer->unreachupdatetime+=unreachUpdateElapsed;
 
 		for(int j = 0;j<changed_weights.size();j++){

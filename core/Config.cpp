@@ -17,7 +17,7 @@ int dbg_total_iterations=0;
 static const char* _cat = "CORE";
 static const char* _cat_sms = "SMS";
 static const char* _cat_graph ="GRAPH";
- IntOption Minisat::opt_verb("MAIN","verb", "Verbosity level (0=silent, 1=some, 2=more).",0,IntRange(0,3));
+ IntOption Minisat::opt_verb("MAIN","verb", "Verbosity level (0=silent, 1=some, 2=more).",1,IntRange(0,3));
  DoubleOption  Minisat::opt_var_decay         (_cat, "var-decay",   "The variable activity decay factor",            0.95,     DoubleRange(0, false, 1, false));
  DoubleOption  Minisat::opt_clause_decay      (_cat, "cla-decay",   "The clause activity decay factor",              0.999,    DoubleRange(0, false, 1, false));
  DoubleOption  Minisat::opt_random_var_freq   (_cat, "rnd-freq",    "The frequency with which the decision heuristic tries to choose a random variable", 0, DoubleRange(0, true, 1, true));
@@ -30,6 +30,7 @@ static const char* _cat_graph ="GRAPH";
  DoubleOption  Minisat::opt_restart_inc       (_cat, "rinc",        "Restart interval increase factor", 2, DoubleRange(1, false, HUGE_VAL, false));
  DoubleOption  Minisat::opt_garbage_frac      (_cat, "gc-frac",     "The fraction of wasted memory allowed before a garbage collection is triggered",  0.20, DoubleRange(0, false, HUGE_VAL, false));
 
+ IntOption Minisat::opt_time(_cat,"time","Detail level of timing benchmarks (these add some overhead)",1,IntRange(0,3));
 
  BoolOption Minisat::opt_interpolate(_cat_sms,"interpolate","Store learnt interface clauses to form interpolants between modules",false);
  IntOption Minisat::opt_eager_prop(_cat_sms,"eager-prop","Controls whether unit propagation is allowed to cross subsolver boundaries. 0= Disable. 1= Enable. 2=Enable, but don't cross the last interpolant. 3= Enable, but don't cross the last interpolant, or any earlier solver. 4= Enable, but dont cross the last interpolant, or any earlier solver, unless they have already had their interpolants strengthened", 1, IntRange(0,5));
@@ -89,6 +90,8 @@ BoolOption Minisat::opt_decide_graph_pos(_cat_graph,"decide-graph-pos","",true);
 BoolOption Minisat::opt_ignore_graph(_cat_graph,"ignore-graph","",false);
 
 BoolOption Minisat::opt_check_pure_theory_lits(_cat_graph,"pure-theory-lits","",false);
+
+BoolOption Minisat::opt_decide_graph_chokepoints(_cat_graph,"decide-graph-chokepoints","",false);
 
 BoolOption Minisat::opt_mst_min_cut(_cat_graph,"mst-min-cut","Search for a min-cut during conflict resolution of disconnected minimum spanning trees",true);
 BoolOption Minisat::opt_connected_components_min_cut(_cat_graph,"cc-mincut","Search for a min-cut during conflict resolution of connected components",true);

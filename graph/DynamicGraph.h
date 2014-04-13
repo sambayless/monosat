@@ -54,6 +54,7 @@ public:
 */
 		int id;
 		int mod;
+		int prev_mod;
 	};
 	vec<EdgeChange> history;
 	//vec<char> edge_status;
@@ -140,8 +141,24 @@ public:
 
 			modifications++;
 			additions=modifications;
-			history.push({true,id,modifications});
+			history.push({true,id,modifications,additions});
 		}
+	}
+
+	bool undoEnableEdge( int id){
+		assert(id>=0);
+		assert(id<edge_status.size());
+		if(!history.size())
+			return false;
+
+		if(history.last().addition  && history.last().id==id && history.last().mod==modifications){
+			edge_status.setStatus(id,false);
+			modifications--;
+			additions = history.last().prev_mod;
+			history.pop();
+			return true;
+		}
+		return false;
 	}
 
 	void disableEdge(int from, int to, int id){
@@ -152,10 +169,28 @@ public:
 
 
 			modifications++;
+
+			history.push({false,id,modifications,deletions});
 			deletions=modifications;
-			history.push({false,id,modifications});
 		}
 	}
+
+	bool undoDisableEdge( int id){
+		assert(id>=0);
+		assert(id<edge_status.size());
+		if(!history.size())
+			return false;
+
+		if(!history.last().addition  && history.last().id==id && history.last().mod==modifications){
+			edge_status.setStatus(id,true);
+			modifications--;
+			deletions = history.last().prev_mod;
+			history.pop();
+			return true;
+		}
+		return false;
+	}
+
 	void drawFull(){
 #ifndef NDEBUG
 			printf("digraph{\n");
@@ -201,6 +236,30 @@ public:
 		deletions=modifications;
 		history.push({false,from,to,id,modifications});
 	}*/
+
+	bool rewindHistory(int steps){
+
+		int cur_modifications = modifications;
+		for(int i = 0;i<steps;i++){
+			EdgeChange & e = history.last();
+			if(e.addition){
+				if(!undoEnableEdge(e.id)){
+					return false;
+				}
+			}else{
+				if(!undoDisableEdge(e.id)){
+					return false;
+				}
+			}
+
+		}
+		assert(modifications==cur_modifications-steps);
+		return true;
+	}
+
+	int getCurrentHistory(){
+		return modifications;
+	}
 
 	void clearHistory(){
 		if(history.size()>1000){

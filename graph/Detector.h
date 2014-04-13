@@ -20,6 +20,9 @@ public:
 	int getID(){
 		return detectorID;
 	}
+	virtual void printStats(){
+
+	}
 	virtual bool propagate(vec<Assignment> &trail ,vec<Lit> & conflict)=0;
 	/*virtual void buildReachReason(int node,vec<Lit> & conflict)=0;
 	virtual void buildNonReachReason(int node,vec<Lit> & conflict)=0;

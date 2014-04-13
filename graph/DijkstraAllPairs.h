@@ -126,7 +126,7 @@ public:
 		}
 		INF=g.nodes+1;
 		stats_full_updates++;
-		double startdupdatetime = cpuTime();
+		double startdupdatetime = rtime(2);
 
 
 		setNodes(g.nodes);
@@ -191,7 +191,7 @@ public:
 		history_qhead=g.history.size();
 		last_history_clear=g.historyclears;
 
-		stats_full_update_time+=cpuTime()-startdupdatetime;;
+		stats_full_update_time+=rtime(2)-startdupdatetime;;
 	}
 
 	void getPath(int from, int to, vec<int> & path){

@@ -175,7 +175,7 @@ void MSTDetector::buildMinWeightTooSmallReason(int weight,vec<Lit> & conflict){
 			MinimumSpanningTree & d = *positive_reach_detector;
 
 
-			double starttime = cpuTime();
+			double starttime = rtime(2);
 			d.update();
 			int minweight = d.weight();
 			assert(d.weight()<=weight);
@@ -190,7 +190,7 @@ void MSTDetector::buildMinWeightTooSmallReason(int weight,vec<Lit> & conflict){
 
 			outer->num_learnt_paths++;
 			outer->learnt_path_clause_length+= (conflict.size()-1);
-			double elapsed = cpuTime()-starttime;
+			double elapsed = rtime(2)-starttime;
 			outer->pathtime+=elapsed;
 
 		}
@@ -264,7 +264,7 @@ void MSTDetector::buildMinWeightTooSmallReason(int weight,vec<Lit> & conflict){
 
 			//drawFull( non_reach_detectors[detector]->getSource(),u);
 			//assert(outer->dbg_distance( source,u));
-			double starttime = cpuTime();
+			double starttime = rtime(2);
 			int INF=std::numeric_limits<int>::max();
 			negative_reach_detector->update();
 			int mstweight = negative_reach_detector->weight();
@@ -360,7 +360,7 @@ void MSTDetector::buildMinWeightTooSmallReason(int weight,vec<Lit> & conflict){
 			 outer->num_learnt_cuts++;
 			 outer->learnt_cut_clause_length+= (conflict.size()-1);
 
-			double elapsed = cpuTime()-starttime;
+			double elapsed = rtime(2)-starttime;
 			 outer->mctime+=elapsed;
 
 
@@ -531,7 +531,7 @@ void MSTDetector::buildMinWeightTooSmallReason(int weight,vec<Lit> & conflict){
 					black.growTo(g.nodes);
 					//drawFull( non_reach_detectors[detector]->getSource(),u);
 					//assert(outer->dbg_distance( source,u));
-					double starttime = cpuTime();
+					double starttime = rtime(2);
 					int INF=std::numeric_limits<int>::max();
 					negative_reach_detector->update();
 					assert(negative_reach_detector->edgeInTree(edgeid));
@@ -584,7 +584,7 @@ void MSTDetector::buildMinWeightTooSmallReason(int weight,vec<Lit> & conflict){
 					 outer->num_learnt_cuts++;
 					 outer->learnt_cut_clause_length+= (conflict.size()-1);
 
-					double elapsed = cpuTime()-starttime;
+					double elapsed = rtime(2)-starttime;
 					 outer->mctime+=elapsed;
 				}
 
@@ -605,7 +605,7 @@ void MSTDetector::buildMinWeightTooSmallReason(int weight,vec<Lit> & conflict){
 					assert(weight>=0);
 					buildMinWeightTooSmallReason(weight,reason);
 
-					//double elapsed = cpuTime()-startpathtime;
+					//double elapsed = rtime(2)-startpathtime;
 				//	pathtime+=elapsed;
 				}else if(marker==non_reach_marker){
 					reason.push(p);
@@ -639,7 +639,7 @@ void MSTDetector::buildMinWeightTooSmallReason(int weight,vec<Lit> & conflict){
 
 					buildEdgeInTreeReason(edgeid,reason);
 
-					//double elapsed = cpuTime()-startpathtime;
+					//double elapsed = rtime(2)-startpathtime;
 				//	pathtime+=elapsed;
 				}else if(marker==non_reach_edge_marker){
 					reason.push(p);
@@ -665,16 +665,16 @@ void MSTDetector::buildMinWeightTooSmallReason(int weight,vec<Lit> & conflict){
 		bool MSTDetector::propagate(vec<Assignment> & trail,vec<Lit> & conflict){
 
 
-		double startdreachtime = cpuTime();
+		double startdreachtime = rtime(2);
 		changed_edges.clear();
 		changed_weights.clear();
 		positive_reach_detector->update();
-		double reachUpdateElapsed = cpuTime()-startdreachtime;
+		double reachUpdateElapsed = rtime(2)-startdreachtime;
 		outer->reachupdatetime+=reachUpdateElapsed;
 
-		double startunreachtime = cpuTime();
+		double startunreachtime = rtime(2);
 		negative_reach_detector->update();
-		double unreachUpdateElapsed = cpuTime()-startunreachtime;
+		double unreachUpdateElapsed = rtime(2)-startunreachtime;
 		outer->unreachupdatetime+=unreachUpdateElapsed;
 
 		for(int j = 0;j<changed_weights.size();j++){

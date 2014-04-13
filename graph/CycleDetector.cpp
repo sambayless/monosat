@@ -128,15 +128,15 @@ void CycleDetector::addCycleDetectorLit(bool directed, Var v){
 		bool CycleDetector::propagate(vec<Assignment> & trail,vec<Lit> & conflict){
 
 
-		double startdreachtime = cpuTime();
+		double startdreachtime = rtime(2);
 
 		positive_reach_detector->update();
-		double reachUpdateElapsed = cpuTime()-startdreachtime;
+		double reachUpdateElapsed = rtime(2)-startdreachtime;
 		outer->reachupdatetime+=reachUpdateElapsed;
 
-		double startunreachtime = cpuTime();
+		double startunreachtime = rtime(2);
 		negative_reach_detector->update();
-		double unreachUpdateElapsed = cpuTime()-startunreachtime;
+		double unreachUpdateElapsed = rtime(2)-startunreachtime;
 		outer->unreachupdatetime+=unreachUpdateElapsed;
 
 

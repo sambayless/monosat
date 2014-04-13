@@ -31,6 +31,9 @@ public:
 	}
 	//Lazily construct the reason clause explaining this propagation
 	virtual void buildReason(Lit p, vec<Lit> & reason)=0;
+	virtual void printStats(int detailLevel=0){
+
+	}
 };
 
 }

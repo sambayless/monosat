@@ -75,7 +75,7 @@ void MaxflowDetector::buildMaxFlowTooHighReason(int flow,vec<Lit> & conflict){
 			//drawFull();
 
 
-			double starttime = cpuTime();
+			double starttime = rtime(2);
 
 
 		tmp_cut.clear();
@@ -110,14 +110,14 @@ void MaxflowDetector::buildMaxFlowTooHighReason(int flow,vec<Lit> & conflict){
 */
 			outer->num_learnt_paths++;
 			outer->learnt_path_clause_length+= (conflict.size()-1);
-			double elapsed = cpuTime()-starttime;
+			double elapsed = rtime(2)-starttime;
 			outer->pathtime+=elapsed;
 
 		}
 		void MaxflowDetector::buildMaxFlowTooLowReason(int maxflow,vec<Lit> & conflict){
 			static int it = 0;
 			++it;
-			double starttime = cpuTime();
+			double starttime = rtime(2);
 
 			//drawFull( non_reach_detectors[detector]->getSource(),u);
 			//assert(outer->dbg_distance( source,u));
@@ -158,7 +158,7 @@ void MaxflowDetector::buildMaxFlowTooHighReason(int flow,vec<Lit> & conflict){
 			 outer->num_learnt_cuts++;
 			 outer->learnt_cut_clause_length+= (conflict.size()-1);
 
-			double elapsed = cpuTime()-starttime;
+			double elapsed = rtime(2)-starttime;
 			 outer->mctime+=elapsed;
 
 		}
@@ -169,7 +169,7 @@ void MaxflowDetector::buildMaxFlowTooHighReason(int flow,vec<Lit> & conflict){
 
 				if(marker==reach_marker){
 					reason.push(p);
-				//	double startpathtime = cpuTime();
+				//	double startpathtime = rtime(2);
 
 					/*Dijkstra & detector = *reach_detectors[d]->positive_dist_detector;
 					//the reason is a path from s to p(provided by d)
@@ -191,7 +191,7 @@ void MaxflowDetector::buildMaxFlowTooHighReason(int flow,vec<Lit> & conflict){
 					buildMaxFlowTooHighReason(flow,reason);
 
 
-					//double elapsed = cpuTime()-startpathtime;
+					//double elapsed = rtime(2)-startpathtime;
 				//	pathtime+=elapsed;
 				}else if(marker==non_reach_marker){
 					reason.push(p);
@@ -216,14 +216,14 @@ void MaxflowDetector::buildMaxFlowTooHighReason(int flow,vec<Lit> & conflict){
 		bool MaxflowDetector::propagate(vec<Assignment> & trail,vec<Lit> & conflict){
 
 
-		double startdreachtime = cpuTime();
+		double startdreachtime = rtime(2);
 
-		double reachUpdateElapsed = cpuTime()-startdreachtime;
+		double reachUpdateElapsed = rtime(2)-startdreachtime;
 		outer->reachupdatetime+=reachUpdateElapsed;
 
-		double startunreachtime = cpuTime();
+		double startunreachtime = rtime(2);
 
-		double unreachUpdateElapsed = cpuTime()-startunreachtime;
+		double unreachUpdateElapsed = rtime(2)-startunreachtime;
 		outer->unreachupdatetime+=unreachUpdateElapsed;
 		for(int j = 0;j<flow_lits.size();j++){
 
