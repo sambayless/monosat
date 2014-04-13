@@ -1201,7 +1201,8 @@ lbool Solver::search(int nof_conflicts)
 							}
 						}
 						//If propagating one of the sub theories caused this solver to backtrack, then go back to propagation
-						if(qhead < trail.size()  || nAssigns()<nVars())
+
+						if(qhead < trail.size()  || nUnassignedVars()>0)
 							goto propagate;
 					}
 

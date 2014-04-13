@@ -42,6 +42,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include <algorithm>
 #include <iterator>
 #include <unordered_map>
+#include "simp/SimpSolver.h"
 using namespace Minisat;
 
 //=================================================================================================
@@ -124,7 +125,7 @@ int main(int argc, char** argv)
 
         BoolOption opt_witness("MAIN","witness","print solution",false);
 
-
+        BoolOption   pre    ("MAIN", "pre",    "Completely turn on/off any preprocessing.", true);
 
         parseOptions(argc, argv, true);
 
@@ -278,7 +279,8 @@ int main(int argc, char** argv)
             } }
 #endif
          const char *error;
-         Solver S;
+         SimpSolver S;
+         if (!pre) S.eliminate(true);
          S.max_decision_var = opt_restrict_decisions;
 #ifdef DEBUG_SOLVER
          S.dbg_solver = new Solver();
@@ -525,7 +527,7 @@ int main(int argc, char** argv)
 
 			   exit(0);
 		   }
-
+		S.eliminate(true);
         lbool ret=S.solve(assume)?l_True:l_False;
         if(opt_optimize_mst && ret ==l_True){
 

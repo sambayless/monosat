@@ -40,6 +40,10 @@ class SimpSolver : public Solver {
     // Problem specification:
     //
     Var     newVar    (bool polarity = true, bool dvar = true);
+    void setTheoryVar(Var solverVar, int theory, Var theoryVar){
+    	setFrozen(solverVar,true);
+    	Solver::setTheoryVar(solverVar,theory,theoryVar);
+    }
     bool    addClause (const vec<Lit>& ps);
     bool    addEmptyClause();                // Add the empty clause to the solver.
     bool    addClause (Lit p);               // Add a unit clause to the solver.

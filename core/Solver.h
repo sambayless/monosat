@@ -48,13 +48,13 @@ public:
 
     // Problem specification:
     //
-    Var     newVar    (bool polarity = true, bool dvar = true); // Add a new variable with parameters specifying variable mode.
+    virtual Var     newVar    (bool polarity = true, bool dvar = true); // Add a new variable with parameters specifying variable mode.
 
-    bool    addClause (const vec<Lit>& ps);                     // Add a clause to the solver.
-    bool    addEmptyClause();                                   // Add the empty clause, making the solver contradictory.
-    bool    addClause (Lit p);                                  // Add a unit clause to the solver. 
-    bool    addClause (Lit p, Lit q);                           // Add a binary clause to the solver. 
-    bool    addClause (Lit p, Lit q, Lit r);                    // Add a ternary clause to the solver. 
+    virtual bool    addClause (const vec<Lit>& ps);                     // Add a clause to the solver.
+    virtual bool    addEmptyClause();                                   // Add the empty clause, making the solver contradictory.
+    virtual bool    addClause (Lit p);                                  // Add a unit clause to the solver.
+    virtual bool    addClause (Lit p, Lit q);                           // Add a binary clause to the solver.
+    virtual bool    addClause (Lit p, Lit q, Lit r);                    // Add a ternary clause to the solver.
     bool    addClause_(      vec<Lit>& ps);                     // Add a clause to the solver without making superflous internal copy. Will
 
     void setDecisionPriority(Var v,unsigned int p){
@@ -177,7 +177,7 @@ public:
     }
 
     //Connect a variable in the SAT solver to a variable in a theory.
-    void setTheoryVar(Var solverVar, int theory, Var theoryVar){
+    virtual void setTheoryVar(Var solverVar, int theory, Var theoryVar){
 
     	assert(!hasTheory(solverVar));
     	theory_vars[solverVar].theory=theory+1;
@@ -188,11 +188,7 @@ public:
     	assert(decisionLevel()==0);
     	if(value(solverVar)!=l_Undef)
     		initialPropagate=true;
-/*    	if(value(solverVar)==l_True){
-    		theories[theory]->enqueueTheory(mkLit(theoryVar, false));
-    	}else if (value(solverVar)==l_False){
-    		theories[theory]->enqueueTheory(mkLit(theoryVar, true));
-    	}*/
+
     }
 
     void remapTheoryVar(Var solverVar, Var newTheoryVar){
@@ -254,12 +250,12 @@ public:
     // Solving:
     //
     bool    simplify     ();                        // Removes already satisfied clauses.
-    bool    solve        (const vec<Lit>& assumps); // Search for a model that respects a given set of assumptions.
-    lbool   solveLimited (const vec<Lit>& assumps); // Search for a model that respects a given set of assumptions (With resource constraints).
-    bool    solve        ();                        // Search without assumptions.
-    bool    solve        (Lit p);                   // Search for a model that respects a single assumption.
-    bool    solve        (Lit p, Lit q);            // Search for a model that respects two assumptions.
-    bool    solve        (Lit p, Lit q, Lit r);     // Search for a model that respects three assumptions.
+    virtual bool    solve        (const vec<Lit>& assumps); // Search for a model that respects a given set of assumptions.
+    virtual lbool   solveLimited (const vec<Lit>& assumps); // Search for a model that respects a given set of assumptions (With resource constraints).
+    virtual bool    solve        ();                        // Search without assumptions.
+    virtual bool    solve        (Lit p);                   // Search for a model that respects a single assumption.
+    virtual bool    solve        (Lit p, Lit q);            // Search for a model that respects two assumptions.
+    virtual bool    solve        (Lit p, Lit q, Lit r);     // Search for a model that respects three assumptions.
     bool    okay         () const;                  // FALSE means solver is in a conflicting state
 
 
@@ -288,7 +284,8 @@ public:
     int     nClauses   ()      const;       // The current number of original clauses.
     int     nLearnts   ()      const;       // The current number of learnt clauses.
     int     nVars      ()      const;       // The current number of variables.
-    int     nFreeVars  ()      const;
+    int		nUnassignedVars()  const;		// The number of variables left to assign. Does not include variables that are not decision vars!
+    int     nFreeVars  ()      const;		// The number of non-unit variables
 
     // Resource contraints:
     //
@@ -672,7 +669,8 @@ inline int      Solver::nAssigns      ()      const   { return trail.size(); }
 inline int      Solver::nClauses      ()      const   { return clauses.size(); }
 inline int      Solver::nLearnts      ()      const   { return learnts.size(); }
 inline int      Solver::nVars         ()      const   { return vardata.size(); }
-inline int      Solver::nFreeVars     ()      const   { return (int)dec_vars - (trail_lim.size() == 0 ? trail.size() : trail_lim[0]); }
+inline int 	    Solver::nUnassignedVars()	  const	  { return (int)dec_vars - ((trail_lim.size()) ? trail.size() : trail_lim[0]);}
+inline int      Solver::nFreeVars     ()      const   { return (int)dec_vars - ((trail_lim.size() == 0) ? trail.size() : trail_lim[0]); }
 inline void     Solver::setPolarity   (Var v, bool b) { polarity[v] = b; }
 inline void     Solver::setDecisionVar(Var v, bool b) 
 { 
