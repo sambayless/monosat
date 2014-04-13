@@ -92,6 +92,9 @@ BoolOption Minisat::opt_ignore_graph(_cat_graph,"ignore-graph","",false);
 BoolOption Minisat::opt_check_pure_theory_lits(_cat_graph,"pure-theory-lits","",false);
 
 BoolOption Minisat::opt_decide_graph_chokepoints(_cat_graph,"decide-graph-chokepoints","",false);
+BoolOption Minisat::opt_sort_graph_decisions(_cat_graph,"decide-graph-sort","",false);
+BoolOption Minisat::opt_rnd_order_graph_decisions(_cat_graph,"decide-graph-rnd-order","",false);
+
 
 BoolOption Minisat::opt_mst_min_cut(_cat_graph,"mst-min-cut","Search for a min-cut during conflict resolution of disconnected minimum spanning trees",true);
 BoolOption Minisat::opt_connected_components_min_cut(_cat_graph,"cc-mincut","Search for a min-cut during conflict resolution of connected components",true);

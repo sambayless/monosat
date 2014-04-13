@@ -47,6 +47,7 @@ public:
 
 		vec<Lit>  reach_lits;
 		Var first_reach_var;
+		vec<int> order_vec;
 		vec<int> reach_lit_map;
 		vec<int> force_reason;
 /*

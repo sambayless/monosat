@@ -1078,7 +1078,8 @@ Lit ConnectDetector::decide(){
 						last=p;
 						assert(p!=source);
 						int prev = over->previous(p);
-						Var v = outer->edges[prev][p].v;
+						int incoming_edge = over->incomingEdge(p);
+						Var v = outer->edge_list[incoming_edge].v;
 						if(outer->value(v)==l_Undef){
 							return mkLit(v,true);
 						}else{

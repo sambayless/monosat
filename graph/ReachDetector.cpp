@@ -945,8 +945,19 @@ Lit ReachDetector::decide(){
 
 	//this can be obviously more efficient
 	//for(int j = 0;j<nNodes();j++){
+
+	while(order_vec.size()<reach_lits.size()){
+		order_vec.push(order_vec.size());
+	}
+	if(opt_rnd_order_graph_decisions){
+		randomShuffle(rnd_seed, order_vec);
+	}
+
+	if(!opt_sort_graph_decisions){
+
+
 	for(int k = 0;k<reach_lits.size();k++){
-		Lit l =reach_lits[k];
+		Lit l =reach_lits[order_vec[k]];
 		if(l==lit_Undef)
 			continue;
 		int j =getNode(var(l));
@@ -1137,7 +1148,8 @@ Lit ReachDetector::decide(){
 						last=p;
 						assert(p!=source);
 						int prev = over->previous(p);
-						Var v = outer->edges[prev][p].v;
+						int incoming_edge = over->incomingEdge(p);
+						Var v = outer->edge_list[incoming_edge].v;
 						if(outer->value(v)==l_Undef){
 							return mkLit(v,true);
 						}else{
@@ -1150,6 +1162,62 @@ Lit ReachDetector::decide(){
 
 				}
 
+		}
+
+	}
+	}else{
+
+		int shortest_incomplete_path=-1;
+		int edgeID_to_assign=-1;
+		for(int k = 0;k<reach_lits.size();k++){
+				Lit l =reach_lits[order_vec[k]];
+				if(l==lit_Undef)
+					continue;
+				int j =getNode(var(l));
+				if(outer->value(l)==l_True && opt_decide_graph_pos){
+					//if(S->level(var(l))>0)
+					//	continue;
+					assert(over->connected(j));
+					if(over->connected(j) && !under->connected(j)){
+						//then lets try to connect this
+						assert(over->connected(j));//Else, we would already be in conflict
+						int p =j;
+						int last_edge=-1;
+						int last=j;
+						//ok, read back the path from the over to find a candidate edge we can decide
+						//find the earliest unconnected node on this path
+						int dist=0;
+						over->update();
+						 p = j;
+						 last = j;
+						while(!under->connected(p)){
+							dist++;
+							last=p;
+							assert(p!=source);
+							last_edge=over->incomingEdge(p);
+							assert(outer->value( outer->edge_list[last_edge].v)==l_Undef);
+							int prev = over->previous(p);
+							p = prev;
+
+						}
+						assert(dist>0);
+						if(shortest_incomplete_path<0 || dist<shortest_incomplete_path){
+							shortest_incomplete_path=dist;
+							edgeID_to_assign=last_edge;
+						}
+
+					}
+				}
+		}
+
+		if(edgeID_to_assign>=0){
+			assert(outer->edge_list[edgeID_to_assign].edgeID==edgeID_to_assign);
+			Var v = outer->edge_list[edgeID_to_assign].v;
+			if(outer->value(v)==l_Undef){
+				return mkLit(v,false);
+			}else{
+				assert(outer->value(v)!=l_True);
+			}
 		}
 
 	}
