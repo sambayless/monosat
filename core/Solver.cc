@@ -695,17 +695,7 @@ CRef Solver::propagate(bool propagate_theories)
     CRef    confl     = CRef_Undef;
     int     num_props = 0;
     watches.cleanAll();
-    if(initialPropagate){
-    	assert(decisionLevel()==0);
-    	//propagate any as yet unpropagated literals to each theory
-    	for(int i = 0;i<qhead;i++){
-    		Lit p = trail[i];
-    		if(hasTheory(p)){
-    			theories[getTheoryID(p)]->enqueueTheory(getTheoryLit(p));
-    		}
-    	}
-    	initialPropagate=false;
-    }
+
     do{
 
 		while (qhead < trail.size()){
@@ -757,7 +747,17 @@ CRef Solver::propagate(bool propagate_theories)
 			}
 			ws.shrink(i - j);
 		}
-	
+		  if(initialPropagate && propagate_theories){
+		    	assert(decisionLevel()==0);
+		    	//propagate any as yet unpropagated literals to each theory
+		    	for(int i = 0;i<qhead;i++){
+		    		Lit p = trail[i];
+		    		if(hasTheory(p)){
+		    			theories[getTheoryID(p)]->enqueueTheory(getTheoryLit(p));
+		    		}
+		    	}
+		    	initialPropagate=false;
+		    }
 		//propagate theories;
 		for(int i = 0;  propagate_theories && i<theories.size() && qhead == trail.size() && confl==CRef_Undef;i++){
 			if(!theories[i]->propagateTheory(theory_conflict)){

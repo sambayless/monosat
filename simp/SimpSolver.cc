@@ -189,6 +189,7 @@ void SimpSolver::removeClause(CRef cr)
 
 bool SimpSolver::strengthenClause(CRef cr, Lit l)
 {
+	assert(qhead==trail.size());
     Clause& c = ca[cr];
     assert(decisionLevel() == 0);
     assert(use_simplification);
@@ -202,11 +203,40 @@ bool SimpSolver::strengthenClause(CRef cr, Lit l)
         c.strengthen(l);
     }else{
         detachClause(cr, true);
-        c.strengthen(l);
-        attachClause(cr);
-        remove(occurs[var(l)], cr);
-        n_occ[toInt(l)]--;
-        updateElimHeap(var(l));
+        int size=c.size();
+        //remove any false lits from this clause
+        for(int i = 0;i<c.size();i++){
+        	Lit lit = c[i];
+        	if(lit!=l){
+				if(value(lit)==l_False){
+					size--;
+					c.strengthen(lit);
+				}else if (value(lit)==l_True){
+					size=-1;
+					removeClause(cr);
+					break;
+				}
+        	}
+        }
+        if(size==-1){
+        	return true;
+        }else if (size==0){
+        	ok=false;
+        	return false;
+        }else if (size==1){
+        	ok=false;
+        	c.strengthen(l);
+        	return false;
+        }else if(size==2){
+            removeClause(cr);
+            c.strengthen(l);
+        }else{
+			c.strengthen(l);
+			attachClause(cr);
+			remove(occurs[var(l)], cr);
+			n_occ[toInt(l)]--;
+			updateElimHeap(var(l));
+        }
     }
 
     return c.size() == 1 ? enqueue(c[0]) && propagate() == CRef_Undef : true;
