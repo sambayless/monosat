@@ -953,7 +953,7 @@ Lit ReachDetector::decide(){
 		randomShuffle(rnd_seed, order_vec);
 	}
 
-	if(!opt_sort_graph_decisions){
+	if(opt_sort_graph_decisions==0){
 
 
 	for(int k = 0;k<reach_lits.size();k++){
@@ -1201,11 +1201,17 @@ Lit ReachDetector::decide(){
 
 						}
 						assert(dist>0);
-						if(shortest_incomplete_path<0 || dist<shortest_incomplete_path){
-							shortest_incomplete_path=dist;
-							edgeID_to_assign=last_edge;
+						if(opt_sort_graph_decisions==1){
+							if(shortest_incomplete_path<0 || dist<shortest_incomplete_path){
+								shortest_incomplete_path=dist;
+								edgeID_to_assign=last_edge;
+							}
+						}else{
+							if(dist>shortest_incomplete_path){
+								shortest_incomplete_path=dist;
+								edgeID_to_assign=last_edge;
+							}
 						}
-
 					}
 				}
 		}
