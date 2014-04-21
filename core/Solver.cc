@@ -165,8 +165,8 @@ bool Solver::addClause_(vec<Lit>& ps)
         return ok = false;
     else if (ps.size() == 1){
         uncheckedEnqueue(ps[0]);
-        ok = (propagate() == CRef_Undef); //do NOT propagate theory solvers here (ie, do not call propagateAll(), just propagate()), or else adding unit clauses can become very expensive in some circumstances (such as when constructing the initial CNF for example)
-        //instead we are going to reset the qhead in the solve_() function, which is a hackish solution to force propagateAll to be called later and will entail some (small) duplicated effort.
+        ok = (propagate(false) == CRef_Undef); //do NOT propagate theory solvers here, or else adding unit clauses can become very expensive in some circumstances (such as when constructing the initial CNF for example)
+
         return ok;
     }else{
         CRef cr = ca.alloc(ps, false);
@@ -177,8 +177,47 @@ bool Solver::addClause_(vec<Lit>& ps)
     return true;
 }
 
+CRef Solver::attachClauseSafe(vec<Lit> & ps){
 
-void Solver::attachClause(CRef cr) {
+		//sort(ps);
+		Lit p; int i, j;
+		for (i = j = 0, p = lit_Undef; i < ps.size(); i++)
+			if (((value(ps[i]) == l_True && level(var(ps[i]))==0) )|| ps[i] == ~p)
+				return CRef_Undef;
+			else if ((value(ps[i]) != l_False || level(var(ps[i]))!=0 ) && ps[i] != p)
+				ps[j++] = p = ps[i];
+		ps.shrink(i - j);
+
+		CRef confl_out=CRef_Undef;
+		if(ps.size()==0){
+				ok=false;
+				cancelUntil(0);
+				return CRef_Undef;
+			}else if(ps.size()==1){
+				cancelUntil(0);
+				assert(var(ps[0])<nVars());
+				dbg_check_propagation(ps[0]);
+				if(!enqueue(ps[0])){
+					ok=false;
+
+				}
+				return CRef_Undef;
+			}else{
+				//find the highest level in the conflict (should be the current decision level, but we won't require that)
+
+				CRef cr = ca.alloc(ps, !opt_permanent_theory_conflicts);
+				if(opt_permanent_theory_conflicts)
+					clauses.push(cr);
+				else
+					learnts.push(cr);
+
+				attachClause(cr);
+				confl_out=cr;
+				return confl_out;
+			}
+	}
+
+	void Solver::attachClause(CRef cr) {
     const Clause& c = ca[cr];
     assert(c.size() > 1);
 #ifndef NDEBUG
@@ -857,7 +896,7 @@ bool Solver::simplify()
 {
     assert(decisionLevel() == 0);
 
-    if (!ok || propagate(false) != CRef_Undef)
+    if (!ok || propagate() != CRef_Undef || !ok)//yes, the second ok check is now required, because propagation of a theory can make the solver unsat at this point...
         return ok = false;
 
     if (nAssigns() == simpDB_assigns || (simpDB_props > 0))

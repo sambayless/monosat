@@ -8,6 +8,7 @@
 
 
 #include "ReachDetector.h"
+#include "RamalReps.h"
 #include "GraphTheory.h"
 #include "core/Config.h"
 #include "DynamicConnectivity.h"
@@ -76,6 +77,12 @@ ReachDetector::ReachDetector(int _detectorID, GraphTheorySolver * _outer, Dynami
 							positive_reach_detector = new Distance<ReachDetector::ReachStatus,PositiveEdgeStatus>(from,_g,*(positiveReachStatus),1);
 							negative_reach_detector = new Distance<ReachDetector::ReachStatus,NegativeEdgeStatus>(from,_antig,*(negativeReachStatus),-1);
 							positive_path_detector = positive_reach_detector;
+						}else if(reachalg==ReachAlg::ALG_RAMAL_REPS){
+							positiveReachStatus = new ReachDetector::ReachStatus(*this,true);
+							negativeReachStatus = new ReachDetector::ReachStatus(*this,false);
+							positive_reach_detector = new RamalReps<ReachDetector::ReachStatus,PositiveEdgeStatus>(from,_g,*(positiveReachStatus),1);
+							negative_reach_detector = new RamalReps<ReachDetector::ReachStatus,NegativeEdgeStatus>(from,_antig,*(negativeReachStatus),-1);
+							positive_path_detector =  new Distance<NullEdgeStatus,PositiveEdgeStatus>(from,_g,nullEdgeStatus,1);
 						}/*else if (reachalg==ReachAlg::ALG_THORUP){
 							positiveReachStatus = new ReachDetector::ReachStatus(*this,true);
 							negativeReachStatus = new ReachDetector::ReachStatus(*this,false);
@@ -410,7 +417,8 @@ void ReachDetector::buildReachReason(int node,vec<Lit> & conflict){
 				    	assert(u!=source);
 				    	to_visit.pop();
 				    	assert(seen[u]);
-				    	assert(!negative_reach_detector->connected_unsafe(u));
+				    	assert(!outer->dbg_reachable(source,u,false));
+				    	//assert(!negative_reach_detector->connected_unsafe(u));
 				    	//Ok, then add all its incoming disabled edges to the cut, and visit any unseen, non-disabled incoming edges
 				    	for(int i = 0;i<outer->inv_adj[u].size();i++){
 				    		int v = outer->inv_adj[u][i].v;

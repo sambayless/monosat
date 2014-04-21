@@ -84,7 +84,8 @@ enum class ReachAlg{
 	 ALG_DFS,
 	 ALG_DIJKSTRA,
 	 ALG_DISTANCE,
-	 ALG_BFS
+	 ALG_BFS,
+	 ALG_RAMAL_REPS
 };
 
 //For undirected reachability
@@ -125,6 +126,7 @@ enum class DistAlg{
 	 ALG_SAT,
 	 ALG_DIJKSTRA,
 	 ALG_DISTANCE,
+	 ALG_RAMAL_REPS
 };
 extern DistAlg distalg;
 

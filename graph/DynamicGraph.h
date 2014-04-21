@@ -13,7 +13,7 @@ using namespace Minisat;
 #ifndef NDEBUG
 #include <cstdio>
 #endif
-
+//#define RECORD
 template<class EdgeStatus=DefaultEdgeStatus >
 class DynamicGraph{
 public:
@@ -25,7 +25,9 @@ public:
 	int deletions;
 	int historyclears;
 	int next_id;
-
+#ifdef RECORD
+	FILE * outfile;
+#endif
 	struct Edge{
 		int node;
 		int id;
@@ -59,7 +61,12 @@ public:
 	vec<EdgeChange> history;
 	//vec<char> edge_status;
 
-	DynamicGraph(EdgeStatus & _status):edge_status(_status), nodes(0),edges(0),modifications(0),additions(0),deletions(0),historyclears(0),next_id(0){}
+	DynamicGraph(EdgeStatus & _status):edge_status(_status), nodes(0),edges(0),modifications(0),additions(0),deletions(0),historyclears(0),next_id(0){
+#ifdef RECORD
+		outfile=nullptr;
+#endif
+
+	}
 	void addNodes(int n){
 		for(int i = 0;i<n;i++)
 			addNode();
@@ -90,6 +97,12 @@ public:
 		additions=modifications;
 		deletions=modifications;
 		clearHistory();
+#ifdef RECORD
+			if(outfile){
+				fprintf(outfile,"node %d\n",nodes);
+				fflush(outfile);
+			}
+#endif
 		return nodes++;
 	}
 
@@ -119,6 +132,12 @@ public:
 		all_edges[id]={from,to,id,weight};
 		modifications++;
 		additions=modifications;
+#ifdef RECORD
+			if(outfile){
+				fprintf(outfile,"edge %d %d %d %d\n",from,to,weight, id+1);
+				fflush(outfile);
+			}
+#endif
 //		history.push({true,id,modifications});
 		enableEdge(from,to,id);//default to enabled
 	}
@@ -132,7 +151,12 @@ public:
 	FullEdge getEdge(int id){
 		return all_edges[id];
 	}
-
+	void enableEdge(int id){
+		enableEdge(all_edges[id].from,all_edges[id].to,id);
+	}
+	void disableEdge(int id){
+		disableEdge(all_edges[id].from,all_edges[id].to,id);
+	}
 	void enableEdge(int from, int to, int id){
 		assert(id>=0);
 		assert(id<edge_status.size());
@@ -142,6 +166,12 @@ public:
 			modifications++;
 			additions=modifications;
 			history.push({true,id,modifications,additions});
+#ifdef RECORD
+			if(outfile){
+				fprintf(outfile,"%d\n", id+1);
+				fflush(outfile);
+			}
+#endif
 		}
 	}
 
@@ -153,6 +183,12 @@ public:
 
 		if(history.last().addition  && history.last().id==id && history.last().mod==modifications){
 			edge_status.setStatus(id,false);
+#ifdef RECORD
+			if(outfile){
+				fprintf(outfile,"-%d\n", id+1);
+				fflush(outfile);
+			}
+#endif
 			modifications--;
 			additions = history.last().prev_mod;
 			history.pop();
@@ -166,7 +202,12 @@ public:
 		assert(id<edge_status.size());
 		if(edge_status[id]!=false){
 			edge_status.setStatus(id,false);
-
+#ifdef RECORD
+			if(outfile){
+				fprintf(outfile,"-%d\n", id+1);
+				fflush(outfile);
+			}
+#endif
 
 			modifications++;
 
@@ -183,6 +224,12 @@ public:
 
 		if(!history.last().addition  && history.last().id==id && history.last().mod==modifications){
 			edge_status.setStatus(id,true);
+#ifdef RECORD
+			if(outfile){
+				fprintf(outfile,"%d\n", id+1);
+				fflush(outfile);
+			}
+#endif
 			modifications--;
 			deletions = history.last().prev_mod;
 			history.pop();

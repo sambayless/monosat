@@ -16,6 +16,7 @@
 #include "graph/GraphTheory.h"
 #include "graph/TestGraph.h"
 #include "core/Config.h"
+#include <set>
 namespace Minisat {
 
 //=================================================================================================
@@ -345,6 +346,7 @@ static void parse_GRAPH_main(B& in, Solver& S, vec<std::pair<int,std::string> > 
     int vars    = 0;
     int clauses = 0;
     int cnt     = 0;
+    //std::set<std::string> used_symbols;
     std::string symbol;
     for (;;){
         skipWhitespace(in);
@@ -372,6 +374,11 @@ static void parse_GRAPH_main(B& in, Solver& S, vec<std::pair<int,std::string> > 
         		if(symbol.size()==0){
         			printf("PARSE ERROR! Empty symbol: %c\n", *in), exit(3);
         		}
+     /*   		if(symbols && used_symbols.count(symbol)){
+        			printf("PARSE ERROR! Duplicated symbol: %c\n", *symbol.c_str()), exit(3);
+        		}
+        		used_symbols.insert(symbol);*/
+
         		symbols->push();
         		symbols->last().first=v;
         		symbols->last().second=symbol;

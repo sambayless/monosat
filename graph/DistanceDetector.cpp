@@ -9,6 +9,7 @@
 
 #include "DistanceDetector.h"
 #include "GraphTheory.h"
+#include "RamalReps.h"
 
 DistanceDetector::DistanceDetector(int _detectorID, GraphTheorySolver * _outer,  DynamicGraph<PositiveEdgeStatus> &_g,DynamicGraph<NegativeEdgeStatus> &_antig, int from, int within_steps ,double seed):
 Detector(_detectorID),outer(_outer),g(_g),antig(_antig),source(from),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL),opt_weight(*this){
@@ -47,11 +48,18 @@ Detector(_detectorID),outer(_outer),g(_g),antig(_antig),source(from),rnd_seed(se
 	if(distalg==DistAlg::ALG_DISTANCE){
 		positiveReachStatus = new DistanceDetector::ReachStatus(*this,true);
 		negativeReachStatus = new DistanceDetector::ReachStatus(*this,false);
-		positive_reach_detector = new Distance<DistanceDetector::ReachStatus,PositiveEdgeStatus>(from,_g,*(positiveReachStatus),1);
-		negative_reach_detector = new Distance<DistanceDetector::ReachStatus,NegativeEdgeStatus>(from,_antig,*(negativeReachStatus),-1);
+		positive_reach_detector = new Distance<DistanceDetector::ReachStatus,PositiveEdgeStatus>(from,_g,*(positiveReachStatus),0);
+		negative_reach_detector = new Distance<DistanceDetector::ReachStatus,NegativeEdgeStatus>(from,_antig,*(negativeReachStatus),0);
 		positive_path_detector = positive_reach_detector;
 		/*	if(opt_conflict_shortest_path)
 			reach_detectors.last()->positive_dist_detector = new Dijkstra<PositiveEdgeStatus>(from,g);*/
+	}else if (distalg==DistAlg::ALG_RAMAL_REPS){
+		positiveReachStatus = new DistanceDetector::ReachStatus(*this,true);
+		negativeReachStatus = new DistanceDetector::ReachStatus(*this,false);
+		positive_reach_detector = new RamalReps<DistanceDetector::ReachStatus,PositiveEdgeStatus>(from,_g,*(positiveReachStatus),0);
+		negative_reach_detector = new RamalReps<DistanceDetector::ReachStatus,NegativeEdgeStatus>(from,_antig,*(negativeReachStatus),0);
+
+		positive_path_detector =  new Distance<NullEdgeStatus,PositiveEdgeStatus>(from,_g,nullEdgeStatus,1);
 	}else{
 
 		positive_reach_detector = new Dijkstra<PositiveEdgeStatus>(from,_g);
@@ -268,6 +276,10 @@ void DistanceDetector::buildReachReason(int node,vec<Lit> & conflict){
 				d.drawFull();
 
 				assert(false);
+			}*/
+			assert(positive_reach_detector->connected(node));
+			/*if(!d.connected_unchecked(node)){
+				exit(3);
 			}*/
 			assert(d.connected_unchecked(node));
 			//if(opt_learn_reaches ==0 || opt_learn_reaches==2)
@@ -603,10 +615,14 @@ void DistanceDetector::buildReachReason(int node,vec<Lit> & conflict){
 							if(l!=lit_Undef){
 								int u = getNode(var(l));
 								if(positive_reach_detector->distance_unsafe(u)<=dist){
-									assert(outer->value(l)==l_True);
+									if(outer->value(l)!=l_True){
+										exit(3);
+									}
 								}else if (negative_reach_detector->distance_unsafe(u)>dist){
 									int d =negative_reach_detector->distance_unsafe(u);
-									assert(outer->value(l)==l_False);
+									if(outer->value(l)!=l_False){
+										exit(3);
+									}
 								}
 							}
 						}

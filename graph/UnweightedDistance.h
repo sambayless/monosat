@@ -149,7 +149,7 @@ public:
 		for (int i = 0;i<q.size();i++){
 			int u = q[i];
 			assert(dist[u]<INF);
-			//if(reportPolarity>-1)
+			if(reportPolarity>=0)
 				status.setMininumDistance(u,true,dist[u]);
 			int d = dist[u];
 			for(int i = 0;i<adjacency[u].size();i++){
@@ -168,13 +168,13 @@ public:
 			}
 		}
 
-		//if(reportPolarity<1){
+		if(reportPolarity<=0){
 			for(int u = 0;u<g.nodes;u++){
 				if(dist[u]>=INF){
 					status.setMininumDistance(u,dist[u]<INF,dist[u]);
 				}
 			}
-		//}
+		}
 		assert(dbg_uptodate());
 
 		last_modification=g.modifications;

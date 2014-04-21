@@ -189,7 +189,7 @@ void SimpSolver::removeClause(CRef cr)
 
 bool SimpSolver::strengthenClause(CRef cr, Lit l)
 {
-	assert(qhead==trail.size());
+	//assert(qhead==trail.size());
     Clause& c = ca[cr];
     assert(decisionLevel() == 0);
     assert(use_simplification);
@@ -210,7 +210,8 @@ bool SimpSolver::strengthenClause(CRef cr, Lit l)
         	if(lit!=l){
 				if(value(lit)==l_False){
 					size--;
-					c.strengthen(lit);
+					i--;
+					c.strengthen(lit);//can do this more efficiently, obviously...
 				}else if (value(lit)==l_True){
 					size=-1;
 					removeClause(cr);

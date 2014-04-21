@@ -205,11 +205,11 @@ public:
     	assert(hasTheory(p));
     	theory_reason.clear();
     	theories[t]->buildReason(getTheoryLit(p),theory_reason);
-    	CRef reason = ca.alloc(theory_reason, !opt_permanent_theory_conflicts);
+    	/*CRef reason = ca.alloc(theory_reason, !opt_permanent_theory_conflicts);
     	if(opt_permanent_theory_conflicts)
 			clauses.push(reason);
 		else
-			learnts.push(reason);
+			learnts.push(reason);*/
     	assert(theory_reason[0]==p); assert(value(p)==l_True);
 #ifdef DEBUG_SOLVER
     	//assert all the other reasons in this cause are earlier on the trail than p...
@@ -224,7 +224,7 @@ public:
     	}
 #endif
 
-		attachClause(reason);
+    	CRef reason  = attachClauseSafe(theory_reason);
 		vardata[var(p)]=mkVarData(reason,level(var(p)));
 		return reason;
     }
@@ -498,6 +498,7 @@ protected:
 
     // Operations on clauses:
     //
+    CRef	 attachClauseSafe(vec<Lit> & ps);
     void     attachClause     (CRef cr);               // Attach a clause to watcher lists.
     void     detachClause     (CRef cr, bool strict = false); // Detach a clause to watcher lists.
     void     removeClause     (CRef cr);               // Detach and free a clause.

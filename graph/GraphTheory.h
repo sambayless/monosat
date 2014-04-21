@@ -151,8 +151,10 @@ public:
 	double pathtime;
 	double propagationtime;
 	long stats_propagations;
+	long stats_num_conflicts;
 	long stats_decisions;
-	long stats_conflicts;
+	long stats_num_reasons;
+
 	double reachupdatetime;
 	double unreachupdatetime;
 	double stats_initial_propagation_time;
@@ -201,7 +203,9 @@ public:
 		//True = mkLit(S->newVar(),false);
 			//False=~True;
 			//S->addClause(True);
-
+#ifdef RECORD
+			antig.outfile=fopen("TEST_GRAPH","w");
+#endif
 			local_q=0;
 			theory_index=0;
 			mctime=0;
@@ -211,8 +215,10 @@ public:
 			pathtime=0;
 			propagationtime=0;
 			stats_propagations=0;
+			stats_num_conflicts=0;
+			stats_num_reasons=0;
 			stats_decisions = 0;
-			stats_conflicts=0;
+
 			reachupdatetime=0;
 			unreachupdatetime=0;
 			stats_initial_propagation_time=0;
@@ -266,7 +272,8 @@ public:
 
 		printf("Propagations: %ld (%f s, avg: %f s)\n",stats_propagations ,propagationtime, (propagationtime)/((double)stats_propagations+1));
 		printf("Decisions: %ld (%f s, avg: %f s)\n",stats_decisions,stats_decision_time, (stats_decision_time)/((double)stats_decisions+1));
-		printf("Conflicts: %ld (%f s, avg: %f s)\n",stats_conflicts,stats_reason_time, (stats_reason_time)/((double)stats_conflicts+1));
+		printf("Conflicts: %ld\n",stats_num_conflicts);
+		printf("Reasons: %ld (%f s, avg: %f s)\n",stats_num_reasons,stats_reason_time, (stats_reason_time)/((double)stats_num_reasons+1));
 		fflush(stdout);
 	}
 
@@ -671,7 +678,7 @@ public:
 		toSolver(reason);
 		double finish = rtime(1);
 		stats_reason_time+=finish-start;
-		stats_conflicts++;
+		stats_num_reasons++;
 		stats_reason_initial_time+=start-initial_start;
 
 	}
@@ -679,7 +686,7 @@ public:
 
 
 	bool dbg_reachable(int from, int to, bool undirected=false){
-#ifdef DEBUG_GRAPH
+#ifdef DEBUG_DIJKSTRA
 		DefaultEdgeStatus tmp;
 		if(undirected){
 			Dijkstra<DefaultEdgeStatus,true> d(from,g);
@@ -698,7 +705,7 @@ public:
 
 	bool dbg_notreachable(int from, int to, bool undirected=false){
 
-#ifdef DEBUG_GRAPH
+#ifndef NDEBUG
 		//drawFull(from,to);
 		DefaultEdgeStatus tmp;
 		DynamicGraph<> g(tmp);
@@ -723,9 +730,9 @@ public:
 
 					return !d.connected(to);
 		}
-#else
-		return true;
 #endif
+		return true;
+
 	}
 
 	bool dbg_graphsUpToDate(){
@@ -839,6 +846,7 @@ public:
 			assert(conflict.size()==0);
 			bool r =detectors[d]->propagate(trail,conflict);
 			if(!r){
+				stats_num_conflicts++;
 				toSolver(conflict);
 				propagationtime+= rtime(1)-startproptime;
 				return false;
