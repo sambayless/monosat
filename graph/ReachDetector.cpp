@@ -8,7 +8,7 @@
 
 
 #include "ReachDetector.h"
-#include "RamalReps.h"
+#include "UnweightedRamalReps.h"
 #include "GraphTheory.h"
 #include "core/Config.h"
 #include "DynamicConnectivity.h"
@@ -80,8 +80,8 @@ ReachDetector::ReachDetector(int _detectorID, GraphTheorySolver * _outer, Dynami
 						}else if(reachalg==ReachAlg::ALG_RAMAL_REPS){
 							positiveReachStatus = new ReachDetector::ReachStatus(*this,true);
 							negativeReachStatus = new ReachDetector::ReachStatus(*this,false);
-							positive_reach_detector = new RamalReps<ReachDetector::ReachStatus,PositiveEdgeStatus>(from,_g,*(positiveReachStatus),1);
-							negative_reach_detector = new RamalReps<ReachDetector::ReachStatus,NegativeEdgeStatus>(from,_antig,*(negativeReachStatus),-1);
+							positive_reach_detector = new UnweightedRamalReps<ReachDetector::ReachStatus,PositiveEdgeStatus>(from,_g,*(positiveReachStatus),1);
+							negative_reach_detector = new UnweightedRamalReps<ReachDetector::ReachStatus,NegativeEdgeStatus>(from,_antig,*(negativeReachStatus),-1);
 							positive_path_detector =  new Distance<NullEdgeStatus,PositiveEdgeStatus>(from,_g,nullEdgeStatus,1);
 						}/*else if (reachalg==ReachAlg::ALG_THORUP){
 							positiveReachStatus = new ReachDetector::ReachStatus(*this,true);

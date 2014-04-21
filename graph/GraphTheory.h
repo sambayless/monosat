@@ -43,6 +43,9 @@ namespace Minisat{
 
 class GraphTheorySolver;
 
+#ifndef NDEBUG
+#include <cstdio>
+#endif
 
 #ifdef DEBUG_SOLVER
 #include "TestGraph.h"
@@ -204,7 +207,11 @@ public:
 			//False=~True;
 			//S->addClause(True);
 #ifdef RECORD
-			antig.outfile=fopen("TEST_GRAPH","w");
+			{
+				char t[30];
+				sprintf(t,"TEST_GRAPH%d",id);
+				g.outfile=fopen(t,"w");
+			}
 #endif
 			local_q=0;
 			theory_index=0;

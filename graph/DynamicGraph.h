@@ -13,7 +13,9 @@ using namespace Minisat;
 #ifndef NDEBUG
 #include <cstdio>
 #endif
-//#define RECORD
+#ifndef NDEBUG
+#define RECORD
+#endif
 template<class EdgeStatus=DefaultEdgeStatus >
 class DynamicGraph{
 public:

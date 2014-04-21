@@ -9,7 +9,7 @@
 
 #include "DistanceDetector.h"
 #include "GraphTheory.h"
-#include "RamalReps.h"
+#include "UnweightedRamalReps.h"
 
 DistanceDetector::DistanceDetector(int _detectorID, GraphTheorySolver * _outer,  DynamicGraph<PositiveEdgeStatus> &_g,DynamicGraph<NegativeEdgeStatus> &_antig, int from, int within_steps ,double seed):
 Detector(_detectorID),outer(_outer),g(_g),antig(_antig),source(from),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL),opt_weight(*this){
@@ -56,8 +56,8 @@ Detector(_detectorID),outer(_outer),g(_g),antig(_antig),source(from),rnd_seed(se
 	}else if (distalg==DistAlg::ALG_RAMAL_REPS){
 		positiveReachStatus = new DistanceDetector::ReachStatus(*this,true);
 		negativeReachStatus = new DistanceDetector::ReachStatus(*this,false);
-		positive_reach_detector = new RamalReps<DistanceDetector::ReachStatus,PositiveEdgeStatus>(from,_g,*(positiveReachStatus),0);
-		negative_reach_detector = new RamalReps<DistanceDetector::ReachStatus,NegativeEdgeStatus>(from,_antig,*(negativeReachStatus),0);
+		positive_reach_detector = new UnweightedRamalReps<DistanceDetector::ReachStatus,PositiveEdgeStatus>(from,_g,*(positiveReachStatus),0);
+		negative_reach_detector = new UnweightedRamalReps<DistanceDetector::ReachStatus,NegativeEdgeStatus>(from,_antig,*(negativeReachStatus),0);
 
 		positive_path_detector =  new Distance<NullEdgeStatus,PositiveEdgeStatus>(from,_g,nullEdgeStatus,1);
 	}else{

@@ -535,7 +535,13 @@ int main(int argc, char** argv)
 
 			   exit(0);
 		   }
-		S.eliminate(true);
+		double before_pre_processing = rtime(0);
+		if(pre)
+			S.eliminate(true);
+		double preprocessing_time = rtime(0)-before_pre_processing;
+		if(opt_verb>0 && pre){
+			printf("Preprocessing time = %f\n", preprocessing_time);
+		}
         lbool ret=S.solve(assume)?l_True:l_False;
         if(opt_optimize_mst && ret ==l_True){
 
