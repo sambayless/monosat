@@ -22,6 +22,7 @@ public:
 	DynamicGraph<EdgeStatus> & g;
 	Status &  status;
 	int reportPolarity;
+	bool reportDistance;
 	int last_modification;
 	int last_addition;
 	int last_deletion;
@@ -65,7 +66,7 @@ public:
 
 	double stats_full_update_time;
 	double stats_fast_update_time;
-	RamalReps(int s,DynamicGraph<EdgeStatus> & graph,	Status &  status, int reportPolarity=0):g(graph),status(status),reportPolarity(reportPolarity), last_modification(-1),last_addition(-1),last_deletion(-1),history_qhead(0),last_history_clear(0),source(s),INF(0),q(DistCmp(dist)){
+	RamalReps(int s,DynamicGraph<EdgeStatus> & graph,	Status &  status, int reportPolarity=0,bool reportDistance=false):g(graph),status(status),reportPolarity(reportPolarity),reportDistance(reportDistance), last_modification(-1),last_addition(-1),last_deletion(-1),history_qhead(0),last_history_clear(0),source(s),INF(0),q(DistCmp(dist)){
 
 		mod_percentage=0.2;
 		stats_full_updates=0;
@@ -387,14 +388,18 @@ public:
 
 			}
 			if(dist[u]!=INF){
+				//q.insert(u);
+				//dbg_Q_add(q,u);
 				q.insert(u);
-				if(reportPolarity>=0){
+
+				if(!reportDistance && reportPolarity>=0){
 					if(!node_changed[u]){
 						node_changed[u]=true;
 						changed.push(u);
 					}
 				}
-			}else if (reportPolarity<=0){
+			}else if ( reportPolarity<=0){
+				//have to mark this change even if we are reporting distanec, as u has not been added to the queue.
 				if(!node_changed[u]){
 					node_changed[u]=true;
 					changed.push(u);
@@ -407,7 +412,21 @@ public:
 			if(u==53 ){
 					int a=1;
 				}
-
+			if(reportDistance){
+				if(dist[u]!=INF){
+					if(reportPolarity>=0){
+						if(!node_changed[u]){
+							node_changed[u]=true;
+							changed.push(u);
+						}
+					}
+				}else if (reportPolarity<=0){
+					if(!node_changed[u]){
+						node_changed[u]=true;
+						changed.push(u);
+					}
+				}
+			}
 			for(auto & e:g.adjacency[u]){
 				int adjID = e.id;
 				if (g.edgeEnabled(adjID)){
@@ -497,10 +516,11 @@ public:
 			}
 		}
 
-		for(int i = 0;i<g.nodes;i++){
-			int u=i;
+		//for(int i = 0;i<g.nodes;i++){
+		//	int u=i;
+		for(int u:changed){
 			//int u = changed[i];
-			//node_changed[u]=false;
+			node_changed[u]=false;
 
 			if(reportPolarity<=0 && dist[u]>=INF){
 				status.setReachable(u,false);

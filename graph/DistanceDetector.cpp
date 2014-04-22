@@ -607,7 +607,7 @@ void DistanceDetector::buildReachReason(int node,vec<Lit> & conflict){
 
 			}
 
-			#ifdef DEBUG_GRAPH
+			#ifdef DEBUG_DIJKSTRA
 					for(int i = 0;i<dist_lits.size();i++){
 						for(int j = 0;j<dist_lits[i].size();j++){
 							Lit l = dist_lits[i][j].l;

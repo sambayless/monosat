@@ -80,8 +80,8 @@ ReachDetector::ReachDetector(int _detectorID, GraphTheorySolver * _outer, Dynami
 						}else if(reachalg==ReachAlg::ALG_RAMAL_REPS){
 							positiveReachStatus = new ReachDetector::ReachStatus(*this,true);
 							negativeReachStatus = new ReachDetector::ReachStatus(*this,false);
-							positive_reach_detector = new UnweightedRamalReps<ReachDetector::ReachStatus,PositiveEdgeStatus>(from,_g,*(positiveReachStatus),1);
-							negative_reach_detector = new UnweightedRamalReps<ReachDetector::ReachStatus,NegativeEdgeStatus>(from,_antig,*(negativeReachStatus),-1);
+							positive_reach_detector = new UnweightedRamalReps<ReachDetector::ReachStatus,PositiveEdgeStatus>(from,_g,*(positiveReachStatus),1,false);
+							negative_reach_detector = new UnweightedRamalReps<ReachDetector::ReachStatus,NegativeEdgeStatus>(from,_antig,*(negativeReachStatus),-1,false);
 							positive_path_detector =  new Distance<NullEdgeStatus,PositiveEdgeStatus>(from,_g,nullEdgeStatus,1);
 						}/*else if (reachalg==ReachAlg::ALG_THORUP){
 							positiveReachStatus = new ReachDetector::ReachStatus(*this,true);

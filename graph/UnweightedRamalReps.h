@@ -22,6 +22,7 @@ public:
 	DynamicGraph<EdgeStatus> & g;
 	Status &  status;
 	int reportPolarity;
+	bool reportDistance;
 	int last_modification;
 	int last_addition;
 	int last_deletion;
@@ -68,7 +69,7 @@ public:
 
 	double stats_full_update_time;
 	double stats_fast_update_time;
-	UnweightedRamalReps(int s,DynamicGraph<EdgeStatus> & graph,	Status &  status, int reportPolarity=0):g(graph),status(status),reportPolarity(reportPolarity), last_modification(-1),last_addition(-1),last_deletion(-1),history_qhead(0),last_history_clear(0),source(s),INF(0){
+	UnweightedRamalReps(int s,DynamicGraph<EdgeStatus> & graph,	Status &  status, int reportPolarity=0,bool reportDistance=true):g(graph),status(status),reportPolarity(reportPolarity),reportDistance(reportDistance), last_modification(-1),last_addition(-1),last_deletion(-1),history_qhead(0),last_history_clear(0),source(s),INF(0){
 
 		mod_percentage=0.2;
 		stats_full_updates=0;
@@ -223,9 +224,7 @@ public:
 			}
 		int rdv = dist[rv];
 		int rdu = dist[ru];
-		if(rv==1 ){
-			int a =1;
-		}
+
 		int weight = 1;
 		if(dist[rv]<dist[ru]+weight)
 			return;
@@ -450,23 +449,27 @@ public:
 				}
 
 			}
+
 			if(dist[u]!=INF){
 				//q.insert(u);
 				//dbg_Q_add(q,u);
 				q.push(u);
 				in_queue[u]=true;
-				if(reportPolarity>=0){
+
+				if(!reportDistance && reportPolarity>=0){
 					if(!node_changed[u]){
 						node_changed[u]=true;
 						changed.push(u);
 					}
 				}
 			}else if (reportPolarity<=0){
+				//call this even if we are reporting distance, because u hasn't been placed in the queue!
 				if(!node_changed[u]){
 					node_changed[u]=true;
 					changed.push(u);
 				}
 			}
+
 		}
 		sort(q,DistCmp(dist));
 		int i=0,j=0;
@@ -489,6 +492,21 @@ public:
 				}else{
 					assert(dist[q2[j]]<=dist[q[i]]);
 					u=q2[j++];
+				}
+				if(reportDistance){
+					if(dist[u]!=INF){
+						if(reportPolarity>=0){
+							if(!node_changed[u]){
+								node_changed[u]=true;
+								changed.push(u);
+							}
+						}
+					}else if (reportPolarity<=0){
+						if(!node_changed[u]){
+							node_changed[u]=true;
+							changed.push(u);
+						}
+					}
 				}
 				dbg_Q_order(q);
 				dbg_Q_order(q2);
@@ -593,10 +611,11 @@ public:
 			}
 		}
 
-		for(int i = 0;i<g.nodes;i++){
-			int u=i;
+		//for(int i = 0;i<g.nodes;i++){
+		for(int u:changed){
+			//int u=i;
 			//int u = changed[i];
-			//node_changed[u]=false;
+			node_changed[u]=false;
 
 			if(reportPolarity<=0 && dist[u]>=INF){
 				status.setReachable(u,false);
