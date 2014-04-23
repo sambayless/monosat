@@ -456,7 +456,7 @@ public:
 				q.push(u);
 				in_queue[u]=true;
 
-				if(!reportDistance && reportPolarity>=0){
+				if( reportPolarity>=0){
 					if(!node_changed[u]){
 						node_changed[u]=true;
 						changed.push(u);
@@ -494,14 +494,7 @@ public:
 					u=q2[j++];
 				}
 				if(reportDistance){
-					if(dist[u]!=INF){
-						if(reportPolarity>=0){
-							if(!node_changed[u]){
-								node_changed[u]=true;
-								changed.push(u);
-							}
-						}
-					}else if (reportPolarity<=0){
+					if(reportPolarity>=0){
 						if(!node_changed[u]){
 							node_changed[u]=true;
 							changed.push(u);
@@ -615,7 +608,8 @@ public:
 		for(int u:changed){
 			//int u=i;
 			//int u = changed[i];
-			node_changed[u]=false;
+			//node_changed[u]=false;
+			//CANNOT clear the change flag here, because if we backtrack and then immediately re-propagate an edge before calling theoryPropagate, the change to this node may be missed.
 
 			if(reportPolarity<=0 && dist[u]>=INF){
 				status.setReachable(u,false);
@@ -625,7 +619,7 @@ public:
 				status.setMininumDistance(u,dist[u]<INF,dist[u]);
 			}
 		}
-		changed.clear();
+
 		//}
 		assert(dbg_uptodate());
 
@@ -678,7 +672,12 @@ public:
 #endif
 		return true;
 	}
-
+	void postPropagation(){
+		for(int u:changed){
+			node_changed[u]=false;
+		}
+		changed.clear();
+	}
 	bool connected_unsafe(int t){
 		dbg_uptodate();
 		return t<dist.size() && dist[t]<INF;

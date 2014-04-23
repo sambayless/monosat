@@ -357,8 +357,9 @@ public:
 		vars[v].isEdge=isEdge;
 		vars[v].detector_edge=detector;
 		vars[v].solverVar=solverVar;
-		assert(toSolver(v)==solverVar);
 		S->setTheoryVar(solverVar,getTheoryIndex(),v);
+		assert(toSolver(v)==solverVar);
+
 		return v;
 	}
 	inline int level(Var v){
@@ -373,11 +374,14 @@ public:
 	inline Var toSolver(Var v){
 		//return v;
 		assert(v<vars.size());
+		assert(S->hasTheory(vars[v].solverVar));
+		assert(S->getTheoryVar(vars[v].solverVar)==v);
 		return vars[v].solverVar;
 	}
 
 	inline Lit toSolver(Lit l){
-		//return l;
+		assert(S->hasTheory(vars[var(l)].solverVar));
+		assert(S->getTheoryVar(vars[var(l)].solverVar)==var(l));
 		return mkLit(vars[var(l)].solverVar,sign(l));
 	}
 

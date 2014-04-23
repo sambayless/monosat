@@ -659,6 +659,10 @@ void ReachDetector::buildReachReason(int node,vec<Lit> & conflict){
 		bool ReachDetector::propagate(vec<Assignment> & trail,vec<Lit> & conflict){
 			if(!positive_reach_detector)
 				return true;
+			static int iter =0;
+			if(++iter==27){
+				int a=1;
+			}
 			if(check_positive){
 				double startdreachtime = rtime(2);
 				getChanged().clear();
@@ -748,8 +752,11 @@ void ReachDetector::buildReachReason(int node,vec<Lit> & conflict){
 					}
 
 				}
+			positive_reach_detector->postPropagation();
+			negative_reach_detector->postPropagation();
+			positive_path_detector->postPropagation();
 
-			#ifdef DEBUG_GRAPH
+			#ifdef DEBUG_DIJKSTRA
 					for(int i = 0;i<reach_lits.size();i++){
 						Lit l = reach_lits[i];
 						if(l!=lit_Undef){

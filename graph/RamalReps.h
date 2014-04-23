@@ -520,7 +520,8 @@ public:
 		//	int u=i;
 		for(int u:changed){
 			//int u = changed[i];
-			node_changed[u]=false;
+			//node_changed[u]=false;
+			//CANNOT clear the change flag here, because if we backtrack and then immediately re-propagate an edge before calling theoryPropagate, the change to this node may be missed.
 
 			if(reportPolarity<=0 && dist[u]>=INF){
 				status.setReachable(u,false);
@@ -530,7 +531,7 @@ public:
 				status.setMininumDistance(u,dist[u]<INF,dist[u]);
 			}
 		}
-		changed.clear();
+
 		//}
 		assert(dbg_uptodate());
 
@@ -543,6 +544,14 @@ public:
 
 		stats_full_update_time+=rtime(2)-startdupdatetime;;
 	}
+
+	void postPropagation(){
+		for(int u:changed){
+			node_changed[u]=false;
+		}
+		changed.clear();
+	}
+
 	bool dbg_path(int to){
 #ifdef DEBUG_DIJKSTRA
 		assert(connected(to));
