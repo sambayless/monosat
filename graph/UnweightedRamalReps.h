@@ -578,7 +578,7 @@ public:
 		}
 		if(last_modification>0 && g.modifications==last_modification)
 				return;
-		if(last_modification<=0 || g.changed()){
+		if(last_modification<=0 || g.changed()){//Note for the future: there is probably room to improve this further.
 			stats_full_updates++;
 			INF=g.nodes+1;
 			dist.growTo(g.nodes,INF);
@@ -587,8 +587,10 @@ public:
 			node_changed.growTo(g.nodes);
 			changed.clear();
 			for(int i = 0;i<g.nodes;i++){
+				if((dist[i]>=INF && reportPolarity<=0) || (dist[i]<INF && reportPolarity>=0)){
 				node_changed[i]=true;
 				changed.push(i);//On the first round, report status of all nodes.
+				}
 			}
 		}
 		edgeInShortestPathGraph.growTo(g.nEdgeIDs());
