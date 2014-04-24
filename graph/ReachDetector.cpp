@@ -752,9 +752,6 @@ void ReachDetector::buildReachReason(int node,vec<Lit> & conflict){
 					}
 
 				}
-			positive_reach_detector->postPropagation();
-			negative_reach_detector->postPropagation();
-			positive_path_detector->postPropagation();
 
 			#ifdef DEBUG_DIJKSTRA
 					for(int i = 0;i<reach_lits.size();i++){

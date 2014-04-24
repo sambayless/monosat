@@ -577,6 +577,7 @@ public:
 		if(++it==28){
 			int a =1;
 		}
+		bool changed=false;
 		//need to remove and add edges in the two graphs accordingly.
 		if(trail_lim.size()>level){
 			int stop = trail_lim[level];
@@ -594,6 +595,7 @@ public:
 						assert(antig.hasEdge(e.from,e.to));
 					}
 				}
+				changed=true;
 			}
 			trail.shrink(trail.size()-stop);
 			trail_lim.shrink(trail_lim.size()-level);
@@ -601,7 +603,11 @@ public:
 
 
 		}
-
+		if(changed){
+			g.markChanged();
+			antig.markChanged();
+			cutGraph.markChanged();
+		}
 /*		if(local_q>S->qhead)
 			local_q=S->qhead;*/
 		assert(dbg_graphsUpToDate());
@@ -659,6 +665,12 @@ public:
 			}
 
 			trail.shrink(trail.size()-(i+1));
+			if(i>0){
+				g.markChanged();
+				antig.markChanged();
+				cutGraph.markChanged();
+			}
+
 			//while(trail_lim.size() && trail_lim.last()>=trail.size())
 			//	trail_lim.pop();
 
@@ -867,6 +879,10 @@ public:
 
 
 		dbg_full_sync();
+
+		g.clearChanged();
+		antig.clearChanged();
+		cutGraph.clearChanged();
 
 		g.clearHistory();
 		antig.clearHistory();

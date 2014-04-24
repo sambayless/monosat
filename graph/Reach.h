@@ -25,10 +25,7 @@ public:
 	//virtual addSource(int s)=0;
 
 	virtual void update( )=0;
-	//To be called after succesful propagation only
-	virtual void postPropagation(){
 
-	}
 
 	virtual bool connected_unsafe(int t)=0;
 	virtual bool connected_unchecked(int t)=0;

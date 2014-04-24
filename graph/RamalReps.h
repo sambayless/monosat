@@ -490,15 +490,17 @@ public:
 		}
 		if(last_modification>0 && g.modifications==last_modification)
 				return;
-		if(last_modification<=0){
+		if(last_modification<=0 || g.changed()){
 			INF=g.nodes+1;
 			dist.growTo(g.nodes,INF);
 			dist[getSource()]=0;
 			delta.growTo(g.nodes);
 			node_changed.growTo(g.nodes,true);
 
-			for(int i = 0;i<g.nodes;i++)
+			for(int i = 0;i<g.nodes;i++){
+				node_changed[i]=true;
 				changed.push(i);//On the first round, report status of all nodes.
+			}
 		}
 		edgeInShortestPathGraph.growTo(g.nEdgeIDs());
 		if(last_history_clear!=g.historyclears){
@@ -520,7 +522,7 @@ public:
 		//	int u=i;
 		for(int u:changed){
 			//int u = changed[i];
-			//node_changed[u]=false;
+			node_changed[u]=false;
 			//CANNOT clear the change flag here, because if we backtrack and then immediately re-propagate an edge before calling theoryPropagate, the change to this node may be missed.
 
 			if(reportPolarity<=0 && dist[u]>=INF){
@@ -531,7 +533,7 @@ public:
 				status.setMininumDistance(u,dist[u]<INF,dist[u]);
 			}
 		}
-
+		changed.clear();
 		//}
 		assert(dbg_uptodate());
 
@@ -545,12 +547,6 @@ public:
 		stats_full_update_time+=rtime(2)-startdupdatetime;;
 	}
 
-	void postPropagation(){
-		for(int u:changed){
-			node_changed[u]=false;
-		}
-		changed.clear();
-	}
 
 	bool dbg_path(int to){
 #ifdef DEBUG_DIJKSTRA

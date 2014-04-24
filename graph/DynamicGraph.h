@@ -27,6 +27,7 @@ public:
 	int deletions;
 	int historyclears;
 	int next_id;
+	bool is_changed;
 #ifdef RECORD
 	FILE * outfile;
 #endif
@@ -63,7 +64,7 @@ public:
 	vec<EdgeChange> history;
 	//vec<char> edge_status;
 
-	DynamicGraph(EdgeStatus & _status):edge_status(_status), nodes(0),edges(0),modifications(0),additions(0),deletions(0),historyclears(0),next_id(0){
+	DynamicGraph(EdgeStatus & _status):edge_status(_status), nodes(0),edges(0),modifications(0),additions(0),deletions(0),historyclears(0),next_id(0),is_changed(true){
 #ifdef RECORD
 		outfile=nullptr;
 #endif
@@ -322,6 +323,17 @@ public:
 		additions=modifications;
 		modifications++;
 		deletions=modifications;
+	}
+
+	void markChanged(){
+		is_changed=true;
+	}
+	bool changed(){
+		return is_changed;
+	}
+
+	void clearChanged(){
+		is_changed=false;
 	}
 };
 

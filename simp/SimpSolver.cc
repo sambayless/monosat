@@ -240,7 +240,7 @@ bool SimpSolver::strengthenClause(CRef cr, Lit l)
         }
     }
 
-    return c.size() == 1 ? enqueue(c[0]) && propagate() == CRef_Undef : true;
+    return c.size() == 1 ? enqueue(c[0]) && propagate(false) == CRef_Undef : true;
 }
 
 
