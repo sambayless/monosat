@@ -947,6 +947,9 @@ public:
 	}
 
 	bool check_solved(){
+		if(opt_print_graph){
+			drawFull();
+		}
 		for(int i = 0;i<edge_list.size();i++){
 			if(edge_list[i].v<0)
 						continue;
@@ -957,19 +960,31 @@ public:
 			}
 
 			if(val==l_True){
-				if(!g.hasEdge(e.from,e.to)){
+			/*	if(!g.hasEdge(e.from,e.to)){
 					return false;
 				}
 				if(!antig.hasEdge(e.from,e.to)){
 					return false;
+				}*/
+				if(!g.edgeEnabled(e.edgeID)){
+					return false;
+				}
+				if(!antig.edgeEnabled(e.edgeID)){
+					return false;
 				}
 			}else{
-				if(g.hasEdge(e.from,e.to)){
+				/*if(g.hasEdge(e.from,e.to)){
+					return false;
+				}*/
+				if(g.edgeEnabled(e.edgeID)){
 					return false;
 				}
-				if(antig.hasEdge(e.from,e.to)){
+				if(antig.edgeEnabled(e.edgeID)){
 					return false;
 				}
+				/*if(antig.hasEdge(e.from,e.to)){
+					return false;
+				}*/
 
 			}
 
