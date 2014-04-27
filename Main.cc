@@ -535,6 +535,7 @@ int main(int argc, char** argv)
 
 			   exit(0);
 		   }
+
 		double before_pre_processing = rtime(0);
 		if(pre)
 			S.eliminate(true);
