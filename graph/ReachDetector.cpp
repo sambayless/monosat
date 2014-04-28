@@ -423,11 +423,16 @@ void ReachDetector::buildReachReason(int node,vec<Lit> & conflict){
 				    	for(int i = 0;i<outer->inv_adj[u].size();i++){
 				    		int v = outer->inv_adj[u][i].v;
 				    		int from = outer->inv_adj[u][i].from;
-
+				    		int edge_num =outer->getEdgeID(v);// v-outer->min_edge_var;
+				    		if(from==u){
+				    			assert(outer->edge_list[edge_num].to == u);
+				    			assert(outer->edge_list[edge_num].from == u);
+				    			continue;//Self loops are allowed, but just make sure nothing got flipped around...
+				    		}
 				    		assert(from!=u);
 				    		assert(outer->inv_adj[u][i].to==u);
 				    		//Note: the variable has to not only be assigned false, but assigned false earlier in the trail than the reach variable...
-				    		int edge_num =outer->getEdgeID(v);// v-outer->min_edge_var;
+
 
 				    		if(outer->edge_assignments[edge_num]==l_False){
 				    			//note: we know we haven't seen this edge variable before, because we know we haven't visited this node before

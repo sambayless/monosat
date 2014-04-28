@@ -498,8 +498,10 @@ public:
 			node_changed.growTo(g.nodes,true);
 
 			for(int i = 0;i<g.nodes;i++){
+				if((dist[i]>=INF && reportPolarity<=0) || (dist[i]<INF && reportPolarity>=0)){
 				node_changed[i]=true;
 				changed.push(i);//On the first round, report status of all nodes.
+				}
 			}
 		}
 		edgeInShortestPathGraph.growTo(g.nEdgeIDs());

@@ -80,6 +80,7 @@ extern BoolOption opt_force_directed;
 extern BoolOption opt_decide_graph_chokepoints;
 extern IntOption opt_sort_graph_decisions;
 extern BoolOption  opt_rnd_order_graph_decisions;
+
 enum class ReachAlg{
 	 ALG_SAT,
 	 ALG_DFS,

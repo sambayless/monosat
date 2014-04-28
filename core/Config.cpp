@@ -60,6 +60,7 @@ BoolOption Minisat::opt_check_solution(_cat_graph,"check-solution","Double check
 BoolOption Minisat::opt_print_reach(_cat_graph,"print-reach","Print reachability graphs",false);
 BoolOption Minisat::opt_print_graph(_cat_graph,"print-graph","Print digraph",false);
 
+
 BoolOption Minisat::opt_force_directed(_cat_graph,"force-directed","Use directed reachability algorithms for undirected reachability queries (by duplicating edges as needed)\n",false);
 
 BoolOption Minisat::opt_rnd_restart(_cat,"rnd-restart","Randomize activity on restart",false);

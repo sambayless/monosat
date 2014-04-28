@@ -37,7 +37,7 @@ static IntOption    opt_grow             (_cat, "grow",         "Allow a variabl
 static IntOption    opt_clause_lim       (_cat, "cl-lim",       "Variables are not eliminated if it produces a resolvent with a length above this limit. -1 means no limit", 20,   IntRange(-1, INT32_MAX));
 static IntOption    opt_subsumption_lim  (_cat, "sub-lim",      "Do not check if subsumption against a clause larger than this. -1 means no limit.", 1000, IntRange(-1, INT32_MAX));
 static DoubleOption opt_simp_garbage_frac(_cat, "simp-gc-frac", "The fraction of wasted memory allowed before a garbage collection is triggered during simplification.",  0.5, DoubleRange(0, false, HUGE_VAL, false));
-
+static BoolOption  opt_propagate_theories_during_simplification(_cat,"theory-prop-during-simp","Apply propagation to theory solvers during simplification. Can be very expensive (depending on the theory).",false);
 
 //=================================================================================================
 // Constructor/Destructor:
@@ -240,7 +240,7 @@ bool SimpSolver::strengthenClause(CRef cr, Lit l)
         }
     }
 
-    return c.size() == 1 ? enqueue(c[0]) && propagate(false) == CRef_Undef : true;
+    return c.size() == 1 ? enqueue(c[0]) && propagate(opt_propagate_theories_during_simplification) == CRef_Undef : true;
 }
 
 
@@ -349,7 +349,7 @@ bool SimpSolver::implied(const vec<Lit>& c)
             uncheckedEnqueue(~c[i]);
         }
 
-    bool result = propagate() != CRef_Undef;
+    bool result = propagate(opt_propagate_theories_during_simplification) != CRef_Undef;
     cancelUntil(0);
     return result;
 }
@@ -438,7 +438,7 @@ bool SimpSolver::asymm(Var v, CRef cr)
         else
             l = c[i];
 
-    if (propagate() != CRef_Undef){
+    if (propagate(opt_propagate_theories_during_simplification) != CRef_Undef){
         cancelUntil(0);
         asymm_lits++;
         if (!strengthenClause(cr, l))
