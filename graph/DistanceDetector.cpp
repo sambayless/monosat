@@ -48,18 +48,18 @@ Detector(_detectorID),outer(_outer),g(_g),antig(_antig),source(from),rnd_seed(se
 	if(distalg==DistAlg::ALG_DISTANCE){
 		positiveReachStatus = new DistanceDetector::ReachStatus(*this,true);
 		negativeReachStatus = new DistanceDetector::ReachStatus(*this,false);
-		positive_reach_detector = new Distance<DistanceDetector::ReachStatus,PositiveEdgeStatus>(from,_g,*(positiveReachStatus),1);
-		negative_reach_detector = new Distance<DistanceDetector::ReachStatus,NegativeEdgeStatus>(from,_antig,*(negativeReachStatus),-1);
+		positive_reach_detector = new Distance<DistanceDetector::ReachStatus,PositiveEdgeStatus>(from,_g,*(positiveReachStatus),0);
+		negative_reach_detector = new Distance<DistanceDetector::ReachStatus,NegativeEdgeStatus>(from,_antig,*(negativeReachStatus),0);
 		positive_path_detector = positive_reach_detector;
 		/*	if(opt_conflict_shortest_path)
 			reach_detectors.last()->positive_dist_detector = new Dijkstra<PositiveEdgeStatus>(from,g);*/
 	}else if (distalg==DistAlg::ALG_RAMAL_REPS){
 		positiveReachStatus = new DistanceDetector::ReachStatus(*this,true);
 		negativeReachStatus = new DistanceDetector::ReachStatus(*this,false);
-		positive_reach_detector = new UnweightedRamalReps<DistanceDetector::ReachStatus,PositiveEdgeStatus>(from,_g,*(positiveReachStatus),1);
-		negative_reach_detector = new UnweightedRamalReps<DistanceDetector::ReachStatus,NegativeEdgeStatus>(from,_antig,*(negativeReachStatus),-1);
+		positive_reach_detector = new UnweightedRamalReps<DistanceDetector::ReachStatus,PositiveEdgeStatus>(from,_g,*(positiveReachStatus),0);
+		negative_reach_detector = new UnweightedRamalReps<DistanceDetector::ReachStatus,NegativeEdgeStatus>(from,_antig,*(negativeReachStatus),0);
 
-		positive_path_detector =  new Distance<NullEdgeStatus,PositiveEdgeStatus>(from,_g,nullEdgeStatus,1);
+		positive_path_detector =  new Distance<NullEdgeStatus,PositiveEdgeStatus>(from,_g,nullEdgeStatus,0);
 	}else{
 
 		positive_reach_detector = new Dijkstra<PositiveEdgeStatus>(from,_g);
@@ -358,10 +358,16 @@ void DistanceDetector::buildReachReason(int node,vec<Lit> & conflict){
 				    	for(int i = 0;i<outer->inv_adj[u].size();i++){
 				    		int v = outer->inv_adj[u][i].v;
 				    		int from = outer->inv_adj[u][i].from;
-				    		assert(from!=u);
 				    		assert(outer->inv_adj[u][i].to==u);
 				    		//Note: the variable has to not only be assigned false, but assigned false earlier in the trail than the reach variable...
 				    		int edge_num =outer->getEdgeID(v);// v-outer->min_edge_var;
+
+							if(from==u){
+								assert(outer->edge_list[edge_num].to == u);
+								assert(outer->edge_list[edge_num].from == u);
+								continue;//Self loops are allowed, but just make sure nothing got flipped around...
+							}
+							assert(from!=u);
 
 				    		if(outer->edge_assignments[edge_num]==l_False){
 				    			//note: we know we haven't seen this edge variable before, because we know we haven't visited this node before
@@ -616,11 +622,13 @@ void DistanceDetector::buildReachReason(int node,vec<Lit> & conflict){
 								int u = getNode(var(l));
 								if(positive_reach_detector->distance_unsafe(u)<=dist){
 									if(outer->value(l)!=l_True){
+										assert(false);
 										exit(3);
 									}
 								}else if (negative_reach_detector->distance_unsafe(u)>dist){
 									int d =negative_reach_detector->distance_unsafe(u);
 									if(outer->value(l)!=l_False){
+										assert(false);
 										exit(3);
 									}
 								}

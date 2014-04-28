@@ -178,7 +178,10 @@ public:
 
     //Connect a variable in the SAT solver to a variable in a theory.
     virtual void setTheoryVar(Var solverVar, int theory, Var theoryVar){
-
+    	if(hasTheory(solverVar)){
+    		fprintf(stderr,"Variable %d is used for multiple atoms. Theory variables may not be re-used! Aborting.\n", solverVar+1);
+    		exit(1);
+    	}
     	assert(!hasTheory(solverVar));
     	theory_vars[solverVar].theory=theory+1;
     	theory_vars[solverVar].theory_var=theoryVar;

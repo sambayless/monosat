@@ -219,9 +219,7 @@ public:
 			return;
 		int ru =  g.all_edges[edgeID].from;
 		int rv =  g.all_edges[edgeID].to;
-		if(rv==63){
-				int a=1;
-			}
+
 		int rdv = dist[rv];
 		int rdu = dist[ru];
 
@@ -237,6 +235,7 @@ public:
 		edgeInShortestPathGraph[edgeID]=true;
 		delta[rv]++;
 		dist[rv]=dist[ru]+weight;
+
 		q.clear();
 		in_queue.clear();in_queue.growTo(g.nodes);
 		in_queue2.growTo(g.nodes);
@@ -246,10 +245,7 @@ public:
 		for(int i = 0;i<q.size();i++){
 			int u =q[i];
 			dbg_Q_order(q);
-			//int u = q.removeMin();
-			if(u==63 || u==55){
-					int a=1;
-				}
+
 			if(!node_changed[u]){
 				node_changed[u]=true;
 				changed.push(u);
@@ -383,9 +379,7 @@ public:
 
 		int ru =  g.all_edges[edgeID].from;
 		int rv =  g.all_edges[edgeID].to;
-		if(rv==63){
-				int a=1;
-			}
+
 		assert(delta[rv]>0);
 		delta[rv]--;
 		if(delta[rv]>0)
@@ -404,9 +398,7 @@ public:
 		//find all effected nodes whose shortest path lengths may now be increased (or that may have become unreachable)
 		for(int i = 0;i<changeset.size();i++){
 			int u = changeset[i];
-			if(u==63 || u==55){
-					int a=1;
-				}
+
 			dist[u] = INF;
 			for(auto & e:g.adjacency[u]){
 				int adjID = e.id;
@@ -415,9 +407,7 @@ public:
 						edgeInShortestPathGraph[adjID]=false;
 						assert(g.all_edges[adjID].from==u);
 						int s =g.all_edges[adjID].to;
-						if(s==63 || s==55){
-								int a=1;
-							}
+
 						assert(delta[s]>0);
 						delta[s]--;
 						if(delta[s]==0){
@@ -430,9 +420,7 @@ public:
 
 		for (int i = 0;i<changeset.size();i++){
 			int u = changeset[i];
-			if(u==63 || u==55){
-					int a=1;
-				}
+
 			assert(dist[u]==INF);
 			for(auto & e:g.inverted_adjacency[u]){
 				int adjID = e.id;
@@ -503,21 +491,23 @@ public:
 				}
 				dbg_Q_order(q);
 				dbg_Q_order(q2);
-				if(u==53 ){
-						int a=1;
-					}
 
 				for(auto & e:g.adjacency[u]){
 					int adjID = e.id;
 					if (g.edgeEnabled(adjID)){
 						assert(g.all_edges[adjID].from==u);
 						int s =g.all_edges[adjID].to;
-						if(s==63 || s==55){
-								int a=1;
-							}
 						int w = 1;//assume a weight of one for now
 						int alt = dist[u]+w;
 						if(dist[s]>alt){
+							if(reportPolarity>=0 && dist[s]>=0){
+								//This check is needed (in addition to the above), because even if we are NOT reporting distances, it is possible for a node that was previously not reachable
+								//to become reachable here. This is ONLY possible because we are batching multiple edge incs/decs at once (otherwise it would be impossible for removing an edge to decrease the distance to a node).
+								if(!node_changed[s]){
+									node_changed[s]=true;
+									changed.push(s);
+								}
+							}
 							dist[s]=alt;
 							if(!in_queue2[s]){
 								dbg_Q_add(q2,s);
@@ -573,7 +563,7 @@ public:
 #endif
 		static int iteration = 0;
 		int local_it = ++iteration ;
-		if(local_it==7668){
+		if(local_it==89){
 			int a =1;
 		}
 		if(last_modification>0 && g.modifications==last_modification)

@@ -665,7 +665,7 @@ void ReachDetector::buildReachReason(int node,vec<Lit> & conflict){
 			if(!positive_reach_detector)
 				return true;
 			static int iter =0;
-			if(++iter==27){
+			if(++iter==46){
 				int a=1;
 			}
 			if(check_positive){

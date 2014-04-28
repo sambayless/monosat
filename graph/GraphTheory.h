@@ -1290,7 +1290,7 @@ public:
 		if(within_steps>=0 || opt_force_distance_solver){
 			//reachesWithinSteps(from,to,reach_var,within_steps);
 			printf("Not supported yet\n");
-			exit(3);
+			exit(1);
 			return;
 		}
 
