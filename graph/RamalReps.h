@@ -540,7 +540,6 @@ public:
 		stats_full_update_time+=rtime(2)-startdupdatetime;;
 	}
 
-
 	bool dbg_path(int to){
 #ifdef DEBUG_DIJKSTRA
 		assert(connected(to));
