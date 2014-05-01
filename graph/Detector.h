@@ -33,8 +33,12 @@ public:
 
 	}
 	virtual Lit decide()=0;
+	virtual void assign(Lit l){
 
+	}
+	virtual void unassign(Var v){
 
+	}
 	//virtual vec<int> & getLitMap();
 	Detector(int _detectorID):detectorID(_detectorID){};
 	virtual ~Detector(){

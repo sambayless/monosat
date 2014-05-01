@@ -60,6 +60,7 @@ BoolOption Minisat::opt_check_solution(_cat_graph,"check-solution","Double check
 BoolOption Minisat::opt_print_reach(_cat_graph,"print-reach","Print reachability graphs",false);
 BoolOption Minisat::opt_print_graph(_cat_graph,"print-graph","Print digraph",false);
 
+BoolOption Minisat::opt_compute_max_distance(_cat_graph,"max-distance","Optimize shortest path computation to abort when a path is longer than the longest path in the constraints.",true);
 
 BoolOption Minisat::opt_force_directed(_cat_graph,"force-directed","Use directed reachability algorithms for undirected reachability queries (by duplicating edges as needed)\n",false);
 

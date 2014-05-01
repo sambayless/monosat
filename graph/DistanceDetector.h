@@ -42,6 +42,7 @@ public:
 		Var first_reach_var;
 		vec<int> reach_lit_map;
 		vec<int> force_reason;
+		int max_distance;
 
 		vec<vec<Lit> > full_dist_lits;
 
@@ -95,6 +96,18 @@ public:
 			assert(reach_lit_map[index]>=0);
 			return reach_lit_map[index];
 		}
+
+	 void assign(Lit l){
+	   if(opt_detect_pure_theory_lits){
+	     if(sign(l))
+	       unassigned_negatives--;
+	     else 
+	       unassigned_positives++;
+	   }
+	}
+	 void unassign(Lit l){
+	   
+	}
 
 	/*	Lit getLit(int node){
 

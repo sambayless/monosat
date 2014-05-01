@@ -571,6 +571,8 @@ public:
 
 	#endif
 		}
+	
+	
 
 	void backtrackUntil(int level){
 		static int it = 0;
@@ -594,6 +596,9 @@ public:
 						antig.enableEdge(e.from,e.to,edge_num);
 						assert(antig.hasEdge(e.from,e.to));
 					}
+				}else{
+				  //This is a reachability literal				  
+				  detectors[getDetector(e.var)]->unassign(mkLit(e.var,!e.assign));
 				}
 				changed=true;
 			}
@@ -661,6 +666,7 @@ public:
 						assert(sign(p)!=e.assign);
 						break;
 					}
+					detectors[getDetector(e.var)]->unassign(e.var);
 				}
 			}
 
@@ -815,6 +821,11 @@ public:
 			int edge_num = getEdgeID(var(l)); //v-min_edge_var;
 			if(edge_list[edge_num].v<0){
 				//this is an assignment to a non-edge atom. (eg, a reachability assertion)
+			  //if(opt_detect_pure_theory_lits){
+			    //update the count of positive and negative literals for the dtector that this literal belongs to
+         				  detectors[getDetector(e.var)]->assign(l);
+					  //getDetector(var(l))->assignLit(l);
+					  //			  }
 
 			}else{
 				if((edge_assignments[edge_num]==l_True && !(sign(l)))  || (edge_assignments[edge_num]==l_False && (sign(l)) )){

@@ -33,7 +33,7 @@ public:
 	int source;
 	int INF;
 
-
+	int maxDistance;
 
 
 
@@ -69,8 +69,8 @@ public:
 
 	double stats_full_update_time;
 	double stats_fast_update_time;
-	UnweightedRamalReps(int s,DynamicGraph<EdgeStatus> & graph,	Status &  status, int reportPolarity=0,bool reportDistance=true):g(graph),status(status),reportPolarity(reportPolarity),reportDistance(reportDistance), last_modification(-1),last_addition(-1),last_deletion(-1),history_qhead(0),last_history_clear(0),source(s),INF(0){
-
+	UnweightedRamalReps(int s,DynamicGraph<EdgeStatus> & graph,	Status &  status, int reportPolarity=0,bool reportDistance=true):g(graph),status(status),reportPolarity(reportPolarity),reportDistance(reportDistance), last_modification(-1),last_addition(-1),last_deletion(-1),history_qhead(0),last_history_clear(0),source(s),INF(-1){
+		maxDistance=-1;
 		mod_percentage=0.2;
 		stats_full_updates=0;
 		stats_fast_updates=0;
@@ -80,7 +80,13 @@ public:
 		stats_fast_update_time=0;
 	}
 	//Dijkstra(const Dijkstra& d):g(d.g), last_modification(-1),last_addition(-1),last_deletion(-1),history_qhead(0),last_history_clear(0),source(d.source),INF(0),q(DistCmp(dist)),stats_full_updates(0),stats_fast_updates(0),stats_skip_deletes(0),stats_skipped_updates(0),stats_full_update_time(0),stats_fast_update_time(0){marked=false;};
+	void setMaxDistance(int _maxDistance){
+		if(_maxDistance<0){
+			maxDistance=INF;
+		}else
+			maxDistance=_maxDistance;
 
+	}
 
 	void setSource(int s){
 		source = s;
@@ -286,8 +292,11 @@ public:
 						int w = 1;//assume a weight of one for now
 						int du = dist[u];
 						int ds = dist[s];
-						if(dist[s]>dist[u]+w){
-							dist[s]=dist[u]+w;
+						int alt = dist[u]+w;
+						if(alt>maxDistance)
+							alt=INF;
+						if(dist[s]>alt){
+							dist[s]=alt;
 							if(!in_queue[s]){
 							//q.update(s);
 								dbg_Q_add(q,s);
@@ -430,6 +439,8 @@ public:
 					int v =g.all_edges[adjID].from;
 					int w = 1;//assume a weight of one for now
 					int alt = dist[v]+w;
+					if(alt>maxDistance)
+						alt=INF;
 					assert(!edgeInShortestPathGraph[adjID]);
 					if(dist[u]>alt){
 						dist[u]=alt;
@@ -499,6 +510,8 @@ public:
 						int s =g.all_edges[adjID].to;
 						int w = 1;//assume a weight of one for now
 						int alt = dist[u]+w;
+						if(alt>maxDistance)
+							alt=INF;
 						if(dist[s]>alt){
 							if(reportPolarity>=0 && dist[s]>=0){
 								//This check is needed (in addition to the above), because even if we are NOT reporting distances, it is possible for a node that was previously not reachable
@@ -576,6 +589,8 @@ public:
 			delta.growTo(g.nodes);
 			node_changed.growTo(g.nodes);
 			changed.clear();
+			if(maxDistance<0)
+				maxDistance=INF;
 			for(int i = 0;i<g.nodes;i++){
 				if((dist[i]>=INF && reportPolarity<=0) || (dist[i]<INF && reportPolarity>=0)){
 				node_changed[i]=true;

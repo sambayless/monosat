@@ -13,6 +13,7 @@
 
 DistanceDetector::DistanceDetector(int _detectorID, GraphTheorySolver * _outer,  DynamicGraph<PositiveEdgeStatus> &_g,DynamicGraph<NegativeEdgeStatus> &_antig, int from, int within_steps ,double seed):
 Detector(_detectorID),outer(_outer),g(_g),antig(_antig),source(from),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL),opt_weight(*this){
+	max_distance=0;
 	rnd_path=NULL;
 	opt_path=NULL;
 	constraintsBuilt=-1;
@@ -166,7 +167,14 @@ void DistanceDetector::addLit(int from, int to, Var outer_reach_var,int within_s
 	if(within_steps<0)
 		within_steps=g.nodes;
 
-
+	if(within_steps>=max_distance){
+		max_distance=within_steps;
+		if(opt_compute_max_distance){
+			positive_reach_detector->setMaxDistance(max_distance);
+			negative_reach_detector->setMaxDistance(max_distance-1);
+			positive_path_detector->setMaxDistance(max_distance);
+		}
+	}
 
 	Lit reachLit=mkLit(reach_var,false);
 

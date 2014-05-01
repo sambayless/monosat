@@ -34,6 +34,10 @@ public:
 	virtual int distance_unsafe(int t)=0;
 	virtual int previous( int node)=0;
 	virtual int incomingEdge( int node)=0;
+	//The maximum distance to compute up to.
+	virtual void setMaxDistance(int maxDistance){
+
+	}
 };
 
 #endif /* REACH_H_ */
