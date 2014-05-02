@@ -573,6 +573,7 @@ public:
 			int distance = dist[i];
 			int dbgdist = d.distance(i);
 			if(distance!=dbgdist){
+				assert(false);
 				exit(4);
 			}
 		}

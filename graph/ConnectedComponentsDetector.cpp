@@ -51,6 +51,7 @@ void ConnectedComponentsDetector::addConnectedComponentsLit(Var outer_weight_var
 		connected_components_lits.push();
 		connected_components_lits.last().l = reachLit;
 		connected_components_lits.last().min_components=min_components;
+		Detector::addLit(reachLit);
 		//weight_lit_map.insert(min_weight,weight_lits.size()-1);
 	}
 

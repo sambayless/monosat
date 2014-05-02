@@ -34,6 +34,7 @@ void CycleDetector::addCycleDetectorLit(bool directed, Var v){
 	if(!directed){
 		if(undirected_cycle_lit==lit_Undef){
 			undirected_cycle_lit=l;
+			Detector::addLit(l);
 		}else{
 			outer->makeEqual(undirected_cycle_lit,l);
 			/*outer->S->addClause(undirected_cycle_lit, ~l);
@@ -42,6 +43,7 @@ void CycleDetector::addCycleDetectorLit(bool directed, Var v){
 	}else{
 		if(directed_cycle_lit==lit_Undef){
 			directed_cycle_lit=l;
+			Detector::addLit(l);
 		}else{
 			outer->makeEqual(directed_cycle_lit,l);
 /*			outer->S->addClause(directed_cycle_lit, ~l);

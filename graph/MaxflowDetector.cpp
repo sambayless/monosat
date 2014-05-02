@@ -60,7 +60,7 @@ void MaxflowDetector::addFlowLit(int maxflow, Var outer_reach_var){
 		}
 
 		reach_lit_map[reach_var-first_reach_var]=flow_lits.size()-1;
-
+		Detector::addLit(reachLit);
 
 
 

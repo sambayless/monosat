@@ -105,7 +105,7 @@ void AllPairsDetector::addLit(int from, int to, Var outer_reach_var,int within_s
 		while(reach_lit_map.size()<= reach_var- first_reach_var ){
 			reach_lit_map.push({lit_Undef,-1,-1,-1});
 		}
-
+		Detector::addLit(reachLit);
 		reach_lit_map[reach_var-first_reach_var]={reachLit,within_steps,from,to};
 	}
 

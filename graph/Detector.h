@@ -17,8 +17,8 @@ public:
 
 
 	int detectorID;
-	int unassigned_negatives;
 	int unassigned_positives;
+	int unassigned_negatives;
 	int getID(){
 		return detectorID;
 	}
@@ -47,12 +47,16 @@ public:
 			 else
 			   unassigned_positives++;
 		}
+		assert(unassigned_positives>=0);
+		assert(unassigned_negatives>=0);
 	}
 	virtual void assign(Lit l){
 		 if(sign(l))
 		   unassigned_negatives--;
 		 else
 		   unassigned_positives--;
+		 assert(unassigned_positives>=0);
+		 assert(unassigned_negatives>=0);
 
 	}
 	virtual	 void unassign(Lit l){

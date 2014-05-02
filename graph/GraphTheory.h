@@ -980,27 +980,13 @@ public:
 		return true;
 	};
 
-
-
 	bool solveTheory(vec<Lit> & conflict){
-		/*printf("SOLVE\n");
-		if(opt_detect_pure_lits || opt_detect_pure_theory_lits){
-			//just to be safe, run one last run, with all literals marked as occuring.
-			//if this fails, this is a major error in the solver!
-
-			for(Var v = 0;v<nVars();v++){
-				if(!isEdgeVar(v)){
-					detectors[getDetector(v)]->setOccurs(mkLit(v,false),true);
-					detectors[getDetector(v)]->setOccurs(mkLit(v,true),true);
-				}
-			}
-			if(!propagateTheory(conflict)){
-				exit(3);
-			}
-		}
-		 */
-		return propagateTheory(conflict);
+		bool ret = propagateTheory(conflict);
+		//Under normal conditions, this should _always_ hold (as propagateTheory should have been called and checked by the parent solver before getting to this point).
+		assert(ret);
+		return ret;
 	};
+
 	void drawFull(int from, int to){
 			printf("digraph{\n");
 			for(int i = 0;i<nNodes();i++){

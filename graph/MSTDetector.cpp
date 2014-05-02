@@ -52,6 +52,7 @@ void MSTDetector::addWeightLit(Var outer_weight_var,int min_weight){
 		weight_lits.push();
 		weight_lits.last().l = reachLit;
 		weight_lits.last().min_weight=min_weight;
+		Detector::addLit(reachLit);
 		//weight_lit_map.insert(min_weight,weight_lits.size()-1);
 	}
 
@@ -116,7 +117,7 @@ void MSTDetector::addTreeEdgeLit(int edge_id, Var outer_reach_var){
 		while(tree_edge_lits_map.size()<= reach_var- first_reach_var ){
 			tree_edge_lits_map.push(-1);
 		}
-
+		Detector::addLit(reachLit);
 		tree_edge_lits_map[reach_var-first_reach_var]=edge_id;
 	}
 

@@ -81,10 +81,13 @@ public:
 	}
 	//Dijkstra(const Dijkstra& d):g(d.g), last_modification(-1),last_addition(-1),last_deletion(-1),history_qhead(0),last_history_clear(0),source(d.source),INF(0),q(DistCmp(dist)),stats_full_updates(0),stats_fast_updates(0),stats_skip_deletes(0),stats_skipped_updates(0),stats_full_update_time(0),stats_fast_update_time(0){marked=false;};
 	void setMaxDistance(int _maxDistance){
-		if(_maxDistance<0){
-			maxDistance=INF;
-		}else
-			maxDistance=_maxDistance;
+		if(_maxDistance != maxDistance){
+			last_modification=-1;//force the next update to recompute from scratch
+			if(_maxDistance<0){
+				maxDistance=INF;
+			}else
+				maxDistance=_maxDistance;
+		}
 	}
 
 	void setSource(int s){
@@ -148,6 +151,8 @@ public:
 					int edgeID = g.inverted_adjacency[u][i].id;
 					int v = g.all_edges[edgeID].from;
 					int alt = dbg_dist[v]+ 1;
+					if(maxDistance>=0 && alt>maxDistance)
+						alt=INF;
 					assert(alt>=dbg_dist[u]);
 				/*	if (alt==dbg_dist[u]){
 						dbg_delta[u]++;
@@ -161,6 +166,8 @@ public:
 				int edgeID = g.adjacency[u][i].id;
 				int v = g.all_edges[edgeID].to;
 				int alt = dbg_dist[u]+ 1;
+				if(maxDistance>=0 && alt>maxDistance)
+					alt=INF;
 				if(alt<dbg_dist[v]){
 
 					dbg_dist[v]=alt;
@@ -188,8 +195,11 @@ public:
 				int edgeID = g.inverted_adjacency[u][i].id;
 				int v = g.all_edges[edgeID].from;
 				int alt = dbg_dist[v]+ 1;
+				int du = dbg_dist[u];
+				if(maxDistance>=0 && alt>maxDistance)
+					alt=INF;
 				assert(alt>=dbg_dist[u]);
-				if(alt==dbg_dist[u]){
+				if(alt==dbg_dist[u] ){
 					dbg_delta[u]++;
 					assert(edgeInShortestPathGraph[edgeID]);
 				}else{
@@ -229,14 +239,20 @@ public:
 		int rdu = dist[ru];
 
 		int weight = 1;
-		if(dist[rv]<dist[ru]+weight)
+		int altw = dist[ru]+weight;
+		if(maxDistance>=0 && altw>maxDistance)
+			altw=INF;
+		if(dist[rv]<altw)
 			return;
-		else if (dist[rv]==dist[ru]+weight ){
+		else if (dist[rv]==altw && dist[rv]<INF ){
 			assert(!edgeInShortestPathGraph[edgeID]);
 			edgeInShortestPathGraph[edgeID]=true;
 			delta[rv]++;//we have found an alternative shortest path to v
 			return;
+		}else if (dist[rv]==INF){
+			return;//don't do anything
 		}
+
 		edgeInShortestPathGraph[edgeID]=true;
 		delta[rv]++;
 		dist[rv]=dist[ru]+weight;
@@ -671,11 +687,15 @@ public:
 
 		for(int i = 0;i<g.nodes;i++){
 			int distance = dist[i];
+			if(maxDistance>=0 && distance>maxDistance){
+				distance=INF;
+			}
 			int dbgdist = d.distance(i);
 			if(maxDistance>=0 && dbgdist>maxDistance){
 				dbgdist=INF;
 			}
 			if(distance!=dbgdist){
+				assert(false);
 				exit(4);
 			}
 		}
