@@ -112,6 +112,10 @@ BoolOption Minisat::opt_connected_components_min_cut(_cat_graph,"cc-mincut","Sea
 BoolOption Minisat::opt_optimize_mst(_cat_graph,"opt-mst","Find the solution that minimizes the spanning tree by making repeated sat checks.",false);
 BoolOption Minisat::opt_skip_deletions(_cat_graph,"skip-deletions","",false);
 BoolOption Minisat::opt_skip_additions(_cat_graph,"skip-additions","",false);
+
+BoolOption  Minisat::opt_propagate_theories_during_simplification(_cat,"theory-prop-during-simp","Apply propagation to theory solvers during simplification. Can be very expensive (depending on the theory).",true);
+
+
 MinCutAlg Minisat::mincutalg=MinCutAlg::ALG_EDMONSKARP ;
 ReachAlg Minisat::reachalg=ReachAlg::ALG_DFS;
 ConnectivityAlg Minisat::undirectedalg=ConnectivityAlg::ALG_DFS;

@@ -945,8 +945,6 @@ bool Solver::simplify()
 				}
 			}
 			for (Var v = 0;v<nVars();v++){
-
-
 				Lit l =mkLit(v,false);
 				if(!lit_counts[toInt(l)].occurs){
 					assert(!lit_counts[toInt(l)].seen);
@@ -977,8 +975,8 @@ bool Solver::simplify()
 						theories[getTheoryID(v)]->setLiteralOccurs(getTheoryLit(~l),false);
 						setPolarity(v,true);
 						if(!lit_counts[toInt(l)].occurs){
-							setDecisionVar(v,false);//If v is pure in both polarities, and is a theory var, then just don't assign it at all - it is unconstrained.
-							//This _should_ always be safe to do, if the theory semantics make sense...
+							//setDecisionVar(v,false);//If v is pure in both polarities, and is a theory var, then just don't assign it at all - it is unconstrained.
+							//This _should_ be safe to do, if the theory semantics make sense... although there are some clause learning schemes that introduce previosuly unused literals that might break with this...
 						}
 					}else{
 						//we can safely assign this now...

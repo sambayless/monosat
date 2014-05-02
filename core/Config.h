@@ -83,6 +83,7 @@ extern BoolOption  opt_rnd_order_graph_decisions;
 extern BoolOption opt_compute_max_distance;
  extern BoolOption opt_detect_pure_theory_lits;
  extern BoolOption opt_detect_pure_lits;
+ extern BoolOption opt_propagate_theories_during_simplification;
 enum class ReachAlg{
 	 ALG_SAT,
 	 ALG_DFS,
