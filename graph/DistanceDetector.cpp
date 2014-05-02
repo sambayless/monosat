@@ -557,7 +557,10 @@ void DistanceDetector::buildReachReason(int node,vec<Lit> & conflict){
 		bool DistanceDetector::propagate(vec<Lit> & conflict){
 			if(!positive_reach_detector)
 				return true;
-
+			static int iter = 0;
+			if(++iter==2){
+				int a=1;
+			}
 		double startdreachtime = rtime(2);
 		getChanged().clear();
 		if(!opt_detect_pure_theory_lits || unassigned_positives>0)
