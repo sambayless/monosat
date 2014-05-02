@@ -920,7 +920,7 @@ bool Solver::simplify()
     	//if(pure_literal_detections==0){
 
     		pure_literal_detections++;
-			double startTime = rtime(2);
+			double startTime = rtime(1);
 			lit_counts.growTo(nVars()*2);
 			for(int i = 0;i<lit_counts.size();i++){
 				lit_counts[i].seen=false;
@@ -945,6 +945,9 @@ bool Solver::simplify()
 				}
 			}
 			for (Var v = 0;v<nVars();v++){
+				if(v==7540){
+					int a=1;
+				}
 				Lit l =mkLit(v,false);
 				if(!lit_counts[toInt(l)].occurs){
 					assert(!lit_counts[toInt(l)].seen);
@@ -953,8 +956,8 @@ bool Solver::simplify()
 					assert(!lit_counts[toInt(~l)].seen);
 				}
 
-				if (!lit_counts[toInt(l)].occurs && !lit_counts[toInt(l)].seen){
-					lit_counts[toInt(l)].occurs=true;
+				if (lit_counts[toInt(l)].occurs && !lit_counts[toInt(l)].seen){
+					lit_counts[toInt(l)].occurs=false;
 					stats_pure_lits++;
 					if(hasTheory(v)){
 						stats_pure_theory_lits++;
@@ -967,8 +970,8 @@ bool Solver::simplify()
 						}
 					}
 				}
-				if(!lit_counts[toInt(~l)].occurs && !lit_counts[toInt(~l)].seen){
-					lit_counts[toInt(~l)].occurs=true;
+				if(lit_counts[toInt(~l)].occurs && !lit_counts[toInt(~l)].seen){
+					lit_counts[toInt(~l)].occurs=false;
 					stats_pure_lits++;
 					if(hasTheory(v)){
 						stats_pure_theory_lits++;
@@ -990,7 +993,7 @@ bool Solver::simplify()
 
 
 			}
-			stats_pure_lit_time += rtime(2)-startTime;
+			stats_pure_lit_time += rtime(1)-startTime;
     	//}
     }
 

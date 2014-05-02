@@ -748,10 +748,11 @@ public:
 		assert(marker != CRef_Undef);
 		int pos = CRef_Undef- marker;
 		int d = marker_map[pos];
-		double initial_start = rtime(1);
+		//double initial_start = rtime(1);
+		double start = rtime(1);
 		backtrackUntil(p);
 
-		double start = rtime(1);
+
 
 		assert(d<detectors.size());
 		detectors[d]->buildReason(p,reason,marker);
@@ -759,7 +760,7 @@ public:
 		double finish = rtime(1);
 		stats_reason_time+=finish-start;
 		stats_num_reasons++;
-		stats_reason_initial_time+=start-initial_start;
+		//stats_reason_initial_time+=start-initial_start;
 
 	}
 
