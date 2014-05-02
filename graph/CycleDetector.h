@@ -48,7 +48,7 @@ public:
 
 
 
-		bool propagate(vec<Assignment> & trail,vec<Lit> & conflict);
+		bool propagate(vec<Lit> & conflict);
 
 		void buildNoUndirectedCycleReason(vec<Lit> & conflict);
 			void buildNoDirectedCycleReason(vec<Lit> & conflict);

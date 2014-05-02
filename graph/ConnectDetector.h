@@ -132,7 +132,7 @@ public:
 
 		}*/
 		void buildSATConstraints(int distance=-1);
-		bool propagate(vec<Assignment> & trail,vec<Lit> & conflict);
+		bool propagate(vec<Lit> & conflict);
 		void buildReachReason(int node,vec<Lit> & conflict);
 		void buildNonReachReason(int node,vec<Lit> & conflict);
 		void buildForcedEdgeReason(int reach_node, int forced_edge_id,vec<Lit> & conflict);

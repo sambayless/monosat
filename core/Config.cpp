@@ -96,12 +96,13 @@ BoolOption Minisat::opt_decide_graph_pos(_cat_graph,"decide-graph-pos","",true);
 
 BoolOption Minisat::opt_ignore_graph(_cat_graph,"ignore-graph","",false);
 
-BoolOption Minisat::opt_check_pure_theory_lits(_cat_graph,"pure-theory-lits","",false);
+//BoolOption Minisat::opt_check_pure_theory_lits(_cat_graph,"pure-theory-lits","",false);
 
 BoolOption Minisat::opt_decide_graph_chokepoints(_cat_graph,"decide-graph-chokepoints","",false);
 IntOption Minisat::opt_sort_graph_decisions(_cat_graph,"decide-graph-sort","0=dont sort, 1=sort by shortest, 2=sort by longest",0,IntRange(0,2));
 BoolOption Minisat::opt_rnd_order_graph_decisions(_cat_graph,"decide-graph-rnd-order","",false);
 
+BoolOption Minisat::opt_detect_pure_theory_lits(_cat,"detect-pure-lits","Detect pure literals in the theory solvers",false);
 
 BoolOption Minisat::opt_mst_min_cut(_cat_graph,"mst-min-cut","Search for a min-cut during conflict resolution of disconnected minimum spanning trees",true);
 BoolOption Minisat::opt_connected_components_min_cut(_cat_graph,"cc-mincut","Search for a min-cut during conflict resolution of connected components",true);

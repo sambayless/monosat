@@ -17,13 +17,15 @@ public:
 
 
 	int detectorID;
+	int unassigned_negatives;
+	int unassigned_positives;
 	int getID(){
 		return detectorID;
 	}
 	virtual void printStats(){
 
 	}
-	virtual bool propagate(vec<Assignment> &trail ,vec<Lit> & conflict)=0;
+	virtual bool propagate(vec<Lit> & conflict)=0;
 	/*virtual void buildReachReason(int node,vec<Lit> & conflict)=0;
 	virtual void buildNonReachReason(int node,vec<Lit> & conflict)=0;
 	virtual void buildForcedEdgeReason(int reach_node, int forced_edge_id,vec<Lit> & conflict)=0;*/
@@ -33,16 +35,29 @@ public:
 
 	}
 	virtual Lit decide()=0;
+
 	virtual void assign(Lit l){
+		 if(sign(l))
+		   unassigned_negatives--;
+		 else
+		   unassigned_positives--;
 
 	}
-	virtual void unassign(Var v){
-
+	virtual	 void unassign(Lit l){
+		 if(sign(l))
+		   unassigned_negatives++;
+		 else
+		   unassigned_positives++;
 	}
 	//virtual vec<int> & getLitMap();
-	Detector(int _detectorID):detectorID(_detectorID){};
+	Detector(int _detectorID):detectorID(_detectorID),unassigned_positives(0),unassigned_negatives(0){};
 	virtual ~Detector(){
 
+	}
+protected:
+	virtual void addLit(Lit l){
+		unassigned_negatives++;
+		unassigned_positives++;
 	}
 };
 };

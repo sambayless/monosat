@@ -81,6 +81,7 @@ extern BoolOption opt_decide_graph_chokepoints;
 extern IntOption opt_sort_graph_decisions;
 extern BoolOption  opt_rnd_order_graph_decisions;
 extern BoolOption opt_compute_max_distance;
+ extern BoolOption opt_detect_pure_theory_lits;
 enum class ReachAlg{
 	 ALG_SAT,
 	 ALG_DFS,

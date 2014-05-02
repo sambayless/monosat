@@ -254,7 +254,7 @@ void AllPairsDetector::buildReachReason(int source, int to,vec<Lit> & conflict){
 				    		//Note: the variable has to not only be assigned false, but assigned false earlier in the trail than the reach variable...
 				    		int edge_num =outer->getEdgeID(v);// v-outer->min_edge_var;
 
-				    		if(outer->edge_assignments[edge_num]==l_False){
+				    		if(outer->value(v)==l_False){
 				    			//note: we know we haven't seen this edge variable before, because we know we haven't visited this node before
 				    			//if we are already planning on visiting the from node, then we don't need to include it in the conflict (is this correct?)
 				    			//if(!seen[from])
@@ -294,7 +294,7 @@ void AllPairsDetector::buildReachReason(int source, int to,vec<Lit> & conflict){
 					static int it = 0;
 					++it;
 
-					assert(outer->edge_assignments[forced_edge_id]==l_True);
+					assert(outer->assigns[ outer->edge_list[forced_edge_id].v]==l_True);
 					Lit edgeLit =mkLit( outer->edge_list[forced_edge_id].v,false);
 
 					conflict.push(edgeLit);
@@ -339,7 +339,7 @@ void AllPairsDetector::buildReachReason(int source, int to,vec<Lit> & conflict){
 							//Note: the variable has to not only be assigned false, but assigned false earlier in the trail than the reach variable...
 							int edge_num = outer->getEdgeID(v);//v-outer->min_edge_var;
 
-							if(edge_num == forced_edge_id || outer->edge_assignments[edge_num]==l_False){
+							if(edge_num == forced_edge_id || outer->assigns[ outer->edge_list[forced_edge_id].v]==l_False){
 								//note: we know we haven't seen this edge variable before, because we know we haven't visited this node before
 								//if we are already planning on visiting the from node, then we don't need to include it in the conflict (is this correct?)
 								//if(!seen[from])
@@ -429,7 +429,7 @@ void AllPairsDetector::buildReachReason(int source, int to,vec<Lit> & conflict){
 				}
 		}
 
-		bool AllPairsDetector::propagate(vec<Assignment> & trail,vec<Lit> & conflict){
+		bool AllPairsDetector::propagate(vec<Lit> & conflict){
 
 
 		double startdreachtime = rtime(2);
@@ -459,7 +459,7 @@ void AllPairsDetector::buildReachReason(int source, int to,vec<Lit> & conflict){
 					if(S->dbg_solver)
 						S->dbg_check_propagation(l);
 #endif
-					trail.push(Assignment(false,reach,detectorID,0,var(l)));
+					//trail.push(Assignment(false,reach,detectorID,0,var(l)));
 					if(reach)
 						outer->enqueue(l,reach_marker) ;
 					else

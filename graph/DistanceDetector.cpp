@@ -18,6 +18,7 @@ Detector(_detectorID),outer(_outer),g(_g),antig(_antig),source(from),rnd_seed(se
 	opt_path=NULL;
 	constraintsBuilt=-1;
 	first_reach_var = var_Undef;
+	stats_pure_skipped=0;
 	 if(distalg ==DistAlg::ALG_SAT){
 		 positiveReachStatus=nullptr;
 		 negativeReachStatus=nullptr;
@@ -215,7 +216,7 @@ void DistanceDetector::addLit(int from, int to, Var outer_reach_var,int within_s
 		while(reach_lit_map.size()<= reach_var- first_reach_var ){
 			reach_lit_map.push(-1);
 		}
-
+		Detector::addLit(reachLit);
 		reach_lit_map[reach_var-first_reach_var]=to;
 	}
 
@@ -377,7 +378,7 @@ void DistanceDetector::buildReachReason(int node,vec<Lit> & conflict){
 							}
 							assert(from!=u);
 
-				    		if(outer->edge_assignments[edge_num]==l_False){
+				    		if(outer->value(v)==l_False){
 				    			//note: we know we haven't seen this edge variable before, because we know we haven't visited this node before
 				    			//if we are already planning on visiting the from node, then we don't need to include it in the conflict (is this correct?)
 				    			//if(!seen[from])
@@ -417,7 +418,7 @@ void DistanceDetector::buildReachReason(int node,vec<Lit> & conflict){
 					static int it = 0;
 					++it;
 
-					assert(outer->edge_assignments[forced_edge_id]==l_True);
+					assert(outer->value(outer->edge_list[forced_edge_id].v)==l_True);
 					Lit edgeLit =mkLit( outer->edge_list[forced_edge_id].v,false);
 
 					conflict.push(edgeLit);
@@ -466,7 +467,7 @@ void DistanceDetector::buildReachReason(int node,vec<Lit> & conflict){
 						//Note: the variable has to not only be assigned false, but assigned false earlier in the trail than the reach variable...
 						int edge_num =outer->getEdgeID(v);// v-outer->min_edge_var;
 
-						if(edge_num == forced_edge_id || outer->edge_assignments[edge_num]==l_False){
+						if(edge_num == forced_edge_id || outer->value(v)==l_False){
 							//note: we know we haven't seen this edge variable before, because we know we haven't visited this node before
 							//if we are already planning on visiting the from node, then we don't need to include it in the conflict (is this correct?)
 							//if(!seen[from])
@@ -553,18 +554,26 @@ void DistanceDetector::buildReachReason(int node,vec<Lit> & conflict){
 				}
 		}
 
-		bool DistanceDetector::propagate(vec<Assignment> & trail,vec<Lit> & conflict){
+		bool DistanceDetector::propagate(vec<Lit> & conflict){
 			if(!positive_reach_detector)
 				return true;
 
 		double startdreachtime = rtime(2);
 		getChanged().clear();
-		positive_reach_detector->update();
+		if(!opt_detect_pure_theory_lits || unassigned_positives>0)
+		  positive_reach_detector->update();
+		else
+			stats_pure_skipped++;
+
 		double reachUpdateElapsed = rtime(2)-startdreachtime;
-		outer->reachupdatetime+=reachUpdateElapsed;
+
+		  outer->reachupdatetime+=reachUpdateElapsed;
 
 		double startunreachtime = rtime(2);
-		negative_reach_detector->update();
+		if(!opt_detect_pure_theory_lits || unassigned_negatives>0)
+		  negative_reach_detector->update();
+		else
+			stats_pure_skipped++;
 		double unreachUpdateElapsed = rtime(2)-startunreachtime;
 		outer->unreachupdatetime+=unreachUpdateElapsed;
 
@@ -582,7 +591,7 @@ void DistanceDetector::buildReachReason(int node,vec<Lit> & conflict){
 					if(S->dbg_solver)
 						S->dbg_check_propagation(l);
 #endif
-					trail.push(Assignment(false,reach,detectorID,0,var(l)));
+
 					if(reach)
 						outer->enqueue(l,reach_marker) ;
 					else
@@ -628,14 +637,14 @@ void DistanceDetector::buildReachReason(int node,vec<Lit> & conflict){
 							int dist =  dist_lits[i][j].min_distance;
 							if(l!=lit_Undef){
 								int u = getNode(var(l));
-								if(positive_reach_detector->distance_unsafe(u)<=dist){
-									if(outer->value(l)!=l_True){
+								if((!opt_detect_pure_theory_lits || unassigned_positives>0) && positive_reach_detector->distance_unsafe(u)<=dist){
+									if(outer->dbg_value(l)!=l_True){
 										assert(false);
 										exit(3);
 									}
-								}else if (negative_reach_detector->distance_unsafe(u)>dist){
+								}else if ((!opt_detect_pure_theory_lits || unassigned_negatives>0) && negative_reach_detector->distance_unsafe(u)>dist){
 									int d =negative_reach_detector->distance_unsafe(u);
-									if(outer->value(l)!=l_False){
+									if(outer->dbg_value(l)!=l_False){
 										assert(false);
 										exit(3);
 									}

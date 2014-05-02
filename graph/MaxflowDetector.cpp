@@ -213,7 +213,7 @@ void MaxflowDetector::buildMaxFlowTooHighReason(int flow,vec<Lit> & conflict){
 				}
 		}
 
-		bool MaxflowDetector::propagate(vec<Assignment> & trail,vec<Lit> & conflict){
+		bool MaxflowDetector::propagate(vec<Lit> & conflict){
 
 
 		double startdreachtime = rtime(2);
@@ -238,7 +238,7 @@ void MaxflowDetector::buildMaxFlowTooHighReason(int flow,vec<Lit> & conflict){
 					if(outer->value(l)==l_True){
 						//do nothing
 					}else if(outer->value(l)==l_Undef){
-						trail.push(Assignment(false,true,detectorID,0,var(l)));
+						//trail.push(Assignment(false,true,detectorID,0,var(l)));
 						outer->enqueue(l,reach_marker) ;
 
 					}else if(outer->value(l)==l_False){
@@ -251,7 +251,7 @@ void MaxflowDetector::buildMaxFlowTooHighReason(int flow,vec<Lit> & conflict){
 					if(outer->value(l)==l_False){
 						//do nothing
 					}else if(outer->value(l)==l_Undef){
-						trail.push(Assignment(false,false,detectorID,0,var(l)));
+						//trail.push(Assignment(false,false,detectorID,0,var(l)));
 						outer->enqueue(~l,reach_marker) ;
 
 					}else if(outer->value(l)==l_True){

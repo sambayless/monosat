@@ -662,7 +662,7 @@ void MSTDetector::buildMinWeightTooSmallReason(int weight,vec<Lit> & conflict){
 				}
 		}
 
-		bool MSTDetector::propagate(vec<Assignment> & trail,vec<Lit> & conflict){
+		bool MSTDetector::propagate(vec<Lit> & conflict){
 
 
 		double startdreachtime = rtime(2);
@@ -685,7 +685,7 @@ void MSTDetector::buildMinWeightTooSmallReason(int weight,vec<Lit> & conflict){
 			if(outer->value(l)==l_True){
 				//do nothing
 			}else if(outer->value(l)==l_Undef){
-				trail.push(Assignment(false,reach,detectorID,0,var(l)));
+				//trail.push(Assignment(false,reach,detectorID,0,var(l)));
 				if(reach)
 					outer->enqueue(l,reach_marker) ;
 				else
@@ -722,7 +722,7 @@ void MSTDetector::buildMinWeightTooSmallReason(int weight,vec<Lit> & conflict){
 					if(outer->value(l)==l_True){
 						//do nothing
 					}else if(outer->value(l)==l_Undef){
-						trail.push(Assignment(false,reach,detectorID,0,var(l)));
+						//trail.push(Assignment(false,reach,detectorID,0,var(l)));
 						if(reach)
 							outer->enqueue(l,reach_edge_marker) ;
 						else

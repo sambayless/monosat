@@ -125,7 +125,7 @@ void CycleDetector::addCycleDetectorLit(bool directed, Var v){
 				}
 		}
 
-		bool CycleDetector::propagate(vec<Assignment> & trail,vec<Lit> & conflict){
+		bool CycleDetector::propagate(vec<Lit> & conflict){
 
 
 		double startdreachtime = rtime(2);
@@ -148,7 +148,7 @@ void CycleDetector::addCycleDetectorLit(bool directed, Var v){
 				if(outer->value(l)==l_True){
 					//do nothing
 				}else if(outer->value(l)==l_Undef){
-					trail.push(Assignment(false,true,detectorID,0,var(l)));
+					//trail.push(Assignment(false,true,detectorID,0,var(l)));
 					outer->enqueue(l,directed_cycle_marker) ;
 				}else if (outer->value(l)==l_False){
 					conflict.push(l);
@@ -161,7 +161,7 @@ void CycleDetector::addCycleDetectorLit(bool directed, Var v){
 				if(outer->value(l)==l_True){
 					//do nothing
 				}else if(outer->value(l)==l_Undef){
-					trail.push(Assignment(false,false,detectorID,0,var(l)));
+					//trail.push(Assignment(false,false,detectorID,0,var(l)));
 					outer->enqueue(l,no_directed_cycle_marker) ;
 				}else if (outer->value(l)==l_False){
 					conflict.push(l);
@@ -178,7 +178,7 @@ void CycleDetector::addCycleDetectorLit(bool directed, Var v){
 				if(outer->value(l)==l_True){
 					//do nothing
 				}else if(outer->value(l)==l_Undef){
-					trail.push(Assignment(false,true,detectorID,0,var(l)));
+					//trail.push(Assignment(false,true,detectorID,0,var(l)));
 					outer->enqueue(l,undirected_cycle_marker) ;
 				}else if (outer->value(l)==l_False){
 					conflict.push(l);
@@ -191,7 +191,7 @@ void CycleDetector::addCycleDetectorLit(bool directed, Var v){
 				if(outer->value(l)==l_True){
 					//do nothing
 				}else if(outer->value(l)==l_Undef){
-					trail.push(Assignment(false,false,detectorID,0,var(l)));
+					//trail.push(Assignment(false,false,detectorID,0,var(l)));
 					outer->enqueue(l,no_undirected_cycle_marker) ;
 				}else if (outer->value(l)==l_False){
 					conflict.push(l);

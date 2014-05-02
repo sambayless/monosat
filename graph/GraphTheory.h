@@ -71,7 +71,7 @@ public:
 #endif
 
 
-	vec<lbool> edge_assignments;
+	vec<lbool> assigns;
 
 	MSTDetector * mstDetector;
 	vec<ReachabilityConstraint> unimplemented_reachability_constraints;
@@ -168,7 +168,7 @@ public:
 	int learnt_path_clause_length;
 	int num_learnt_cuts;
 	int learnt_cut_clause_length;
-
+	int stats_pure_skipped;
 	int stats_mc_calls;
 	vec<Lit> reach_cut;
 
@@ -176,7 +176,7 @@ public:
 		GraphTheorySolver & outer;
 		int operator [] (int id) const {
 
-			if(outer.edge_assignments[id]==l_False){
+			if(outer.value(outer.edge_list[id].v) ==l_False){
 				return 1;
 			}else{
 				return 0xF0F0F0;
@@ -190,10 +190,10 @@ public:
 		GraphTheorySolver & outer;
 		int operator () (int id) const {
 
-			if(outer.edge_assignments[id]==l_Undef){
+			if(outer.value(outer.edge_list[id].v) ==l_Undef){
 				return 1;
 			}else{
-				assert(outer.edge_assignments[id]==l_True);
+				assert(outer.value(outer.edge_list[id].v)==l_True);
 				return 0xF0F0F0;
 			}
 		}
@@ -357,6 +357,7 @@ public:
 		vars[v].isEdge=isEdge;
 		vars[v].detector_edge=detector;
 		vars[v].solverVar=solverVar;
+		assigns.push(l_Undef);
 		S->setTheoryVar(solverVar,getTheoryIndex(),v);
 		assert(toSolver(v)==solverVar);
 
@@ -392,14 +393,33 @@ public:
 	}
 
 	inline lbool value(Var v){
-		return S->value(toSolver(v));
+		if(assigns[v]!=l_Undef)
+			assert(S->value(toSolver(v))==assigns[v]);
+
+		return assigns[v]; //S->value(toSolver(v));
 	}
 	inline lbool value(Lit l){
+		if(assigns[var(l)]!=l_Undef){
+			assert(S->value(toSolver(l))==  (assigns[var(l)]^ sign(l)));
+		}
+		return assigns[var(l)]^ sign(l);;//S->value(toSolver(l));
+	}
+	inline lbool dbg_value(Var v){
+		return S->value(toSolver(v));
+	}
+	inline lbool dbg_value(Lit l){
 		return S->value(toSolver(l));
 	}
 	inline bool enqueue(Lit l, CRef reason){
+		assert(assigns[var(l)]==l_Undef);
+
 		Lit sl = toSolver(l);
-		return S->enqueue(sl,reason);
+		if( S->enqueue(sl,reason)){
+			enqueueTheory(l);
+			return true;
+		}else{
+			return false;
+		}
 	}
 
 
@@ -491,10 +511,36 @@ public:
 #endif
 	}
 	void dbg_sync(){
-#ifdef DEBUG_GRAPH
-		static vec<lbool> assigned;
-		assigned.clear();
-		for(int i = 0;i<edge_list.size();i++)
+#ifdef DEBUG_DIJKSTRA
+
+		for(int i = 0;i<assigns.size();i++){
+			lbool val = assigns[i];
+
+			if(val!=l_Undef){
+				bool found=false;
+				for(int j = 0;j<trail.size();j++){
+					if(trail[j].var==i){
+						assert(!found);
+						assert(trail[j].assign== (val==l_True));
+						found=true;
+					}
+				}
+				assert(found);
+			}else{
+				for(int j = 0;j<trail.size();j++){
+					if(trail[j].var==i){
+						assert(false);
+					}
+				}
+			}
+			if(val!=l_Undef)
+					assert(val==S->value(toSolver(i)));
+		}
+		/*static vec<lbool> assigned;
+		assigned.clear();*.
+
+
+		/*for(int i = 0;i<edge_list.size();i++)
 			assigned.push(l_Undef);
 		int lev = 0;
 		int j =0;
@@ -525,7 +571,7 @@ public:
 		}
 
 		for(int i = 0;i<assigned.size();i++){
-			assert(edge_assignments[i]== assigned[i]);
+			assert(ass[i]== assigned[i]);
 		}
 
 		for(int i = 0;i<S->trail.size();i++){
@@ -543,16 +589,16 @@ public:
 				lbool assigned_val=assigned[edge_num];
 				assert(assigned_val== (sign(l)?l_False:l_True));
 			}
-			/*if(v>= min_edge_var && v<min_edge_var+num_edges){
+			if(v>= min_edge_var && v<min_edge_var+num_edges){
 				int edge_num = v-min_edge_var;
 				if(edge_list[edge_num].v<0)
 					continue;
 				lbool assigned_val=assigned[edge_num];
 				assert(assigned_val== (sign(l)?l_False:l_True));
-			}*/
+			}
 
 			}
-		}
+		}*/
 
 
 #endif
@@ -584,12 +630,11 @@ public:
 		if(trail_lim.size()>level){
 			int stop = trail_lim[level];
 			for(int i = trail.size()-1;i>=trail_lim[level];i--){
-				Assignment e = trail[i];
+				Assignment & e = trail[i];
+				assert(assigns[e.var]!=l_Undef);
 				if(e.isEdge){
-					assert(value(e.var)==l_Undef);
+					assert(dbg_value(e.var)==l_Undef);
 					int edge_num = getEdgeID(e.var); //e.var-min_edge_var;
-					assert(edge_assignments[edge_num]!=l_Undef);
-					edge_assignments[edge_num]=l_Undef;
 					if(e.assign){
 						g.disableEdge(e.from,e.to, edge_num);
 					}else{
@@ -600,6 +645,7 @@ public:
 				  //This is a reachability literal				  
 				  detectors[getDetector(e.var)]->unassign(mkLit(e.var,!e.assign));
 				}
+				assigns[e.var]=l_Undef;
 				changed=true;
 			}
 			trail.shrink(trail.size()-stop);
@@ -653,8 +699,8 @@ public:
 				Assignment e = trail[i];
 				if(e.isEdge){
 					int edge_num = getEdgeID(e.var); //e.var-min_edge_var;
-					assert(edge_assignments[edge_num]!=l_Undef);
-					edge_assignments[edge_num]=l_Undef;
+					assert(assigns[e.var]!=l_Undef);
+					assigns[e.var]=l_Undef;
 					if(e.assign){
 						g.disableEdge(e.from,e.to, edge_num);
 					}else{
@@ -666,7 +712,8 @@ public:
 						assert(sign(p)!=e.assign);
 						break;
 					}
-					detectors[getDetector(e.var)]->unassign(e.var);
+					assigns[e.var]=l_Undef;
+					detectors[getDetector(e.var)]->unassign(mkLit(e.var,!e.assign));
 				}
 			}
 
@@ -807,48 +854,58 @@ public:
 	}
 	void enqueueTheory(Lit l){
 		Var v = var(l);
+		if(v==3){
+			int a=1;
+		}
 		int lev = level(v);
+
+		assert(decisionLevel()<=lev);
+
 		while(lev>trail_lim.size()){
 			newDecisionLevel();
 		}
-		if(v==8){
+
+		if(assigns[var(l)]!=l_Undef){
+			return;//this is already enqueued.
+		}
+		assert(assigns[var(l)]==l_Undef);
+		assigns[var(l)]=sign(l) ? l_False:l_True;
+		if(var(l)==20){
 			int a=1;
 		}
+#ifndef NDEBUG
+		{
+			for(int i = 0;i<trail.size();i++){
+				assert(trail[i].var !=v);
+			}
+		}
+#endif
 		//if(v>= min_edge_var && v<min_edge_var+edge_list.size())
 		if(isEdgeVar(var(l))){
 
 			//this is an edge assignment
 			int edge_num = getEdgeID(var(l)); //v-min_edge_var;
-			if(edge_list[edge_num].v<0){
-				//this is an assignment to a non-edge atom. (eg, a reachability assertion)
-			  //if(opt_detect_pure_theory_lits){
-			    //update the count of positive and negative literals for the dtector that this literal belongs to
-         				  detectors[getDetector(e.var)]->assign(l);
-					  //getDetector(var(l))->assignLit(l);
-					  //			  }
+			assert(edge_list[edge_num].v==var(l));
 
+			int from = edge_list[edge_num].from;
+			int to = edge_list[edge_num].to;
+			trail.push({true,!sign(l), from,to,v});
+
+			Assignment e = trail.last();
+			assert(e.from==from);
+			assert(e.to==to);
+
+			if (!sign(l)){
+				g.enableEdge(from,to,edge_num);
 			}else{
-				if((edge_assignments[edge_num]==l_True && !(sign(l)))  || (edge_assignments[edge_num]==l_False && (sign(l)) )){
-					return;//this is already enqueued.
-				}
-
-				int from = edge_list[edge_num].from;
-				int to = edge_list[edge_num].to;
-				trail.push({true,!sign(l), from,to,v});
-				assert(edge_assignments[edge_num]==l_Undef);
-				edge_assignments[edge_num]=sign(l) ? l_False:l_True;
-				Assignment e = trail.last();
-				assert(e.from==from);
-				assert(e.to==to);
-
-				if (!sign(l)){
-
-					g.enableEdge(from,to,edge_num);
-				}else{
-					antig.disableEdge(from,to,edge_num);
-
-				}
+				antig.disableEdge(from,to,edge_num);
 			}
+
+		}else{
+
+			trail.push({false,!sign(l), 0,0,v});
+			//this is an assignment to a non-edge atom. (eg, a reachability assertion)
+			detectors[getDetector(var(l))]->assign(l);
 		}
 
 	};
@@ -878,7 +935,7 @@ public:
 
 		for(int d = 0;d<detectors.size();d++){
 			assert(conflict.size()==0);
-			bool r =detectors[d]->propagate(trail,conflict);
+			bool r =detectors[d]->propagate(conflict);
 			if(!r){
 				stats_num_conflicts++;
 				toSolver(conflict);
@@ -1079,6 +1136,7 @@ public:
 			shadow_dbg->newEdge(from,to,outerVar);
 #endif
 		int index = edge_list.size();
+		edge_list.push();
 		Var v = newVar(outerVar,index,true);
 
 /*
@@ -1087,11 +1145,11 @@ public:
 			min_edge_var=v;
 
 		int index = v-min_edge_var;*/
-
+/*
 		while(edge_list.size()<=index){
 			edge_list.push({-1,-1,-1,-1,-1,1});
-			edge_assignments.push(l_Undef);
-		}
+			assigns.push(l_Undef);
+		}*/
 		undirected_adj[to].push({v,outerVar,from,to,index,weight});
 		undirected_adj[from].push({v,outerVar,to,from,index,weight});
 		inv_adj[to].push({v,outerVar,from,to,index,weight});

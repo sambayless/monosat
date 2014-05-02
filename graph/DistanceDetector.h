@@ -26,7 +26,7 @@ class DistanceDetector:public Detector{
 public:
 		GraphTheorySolver * outer;
 		 DynamicGraph<PositiveEdgeStatus> &g;
-			 DynamicGraph<NegativeEdgeStatus> &antig;
+		 DynamicGraph<NegativeEdgeStatus> &antig;
 		//int within;
 		int source;
 		double rnd_seed;
@@ -44,6 +44,7 @@ public:
 		vec<int> force_reason;
 		int max_distance;
 
+		int stats_pure_skipped;
 		vec<vec<Lit> > full_dist_lits;
 
 		struct DistLit{
@@ -97,17 +98,11 @@ public:
 			return reach_lit_map[index];
 		}
 
-	 void assign(Lit l){
-	   if(opt_detect_pure_theory_lits){
-	     if(sign(l))
-	       unassigned_negatives--;
-	     else 
-	       unassigned_positives++;
-	   }
-	}
-	 void unassign(Lit l){
-	   
-	}
+		void printStats(){
+			printf("Distance detector\n");
+			if(opt_detect_pure_theory_lits)
+				printf("Propagations skipped by pure literal detection: %d\n", stats_pure_skipped);
+		}
 
 	/*	Lit getLit(int node){
 
@@ -115,7 +110,7 @@ public:
 
 		}*/
 		void buildSATConstraints(int distance=-1);
-		bool propagate(vec<Assignment> & trail,vec<Lit> & conflict);
+		bool propagate(vec<Lit> & conflict);
 		void buildReachReason(int node,vec<Lit> & conflict);
 		void buildNonReachReason(int node,vec<Lit> & conflict);
 		void buildForcedEdgeReason(int reach_node, int forced_edge_id,vec<Lit> & conflict);

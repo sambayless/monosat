@@ -93,7 +93,7 @@ public:
 
 
 
-		bool propagate(vec<Assignment> & trail,vec<Lit> & conflict);
+		bool propagate(vec<Lit> & conflict);
 
 		void buildMinComponentsTooLowReason(int min_components,vec<Lit> & conflict);
 		void buildMinComponentsTooHighReason(int min_components,vec<Lit> & conflict);

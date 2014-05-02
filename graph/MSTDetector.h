@@ -93,7 +93,7 @@ public:
 
 
 
-		bool propagate(vec<Assignment> & trail,vec<Lit> & conflict);
+		bool propagate(vec<Lit> & conflict);
 		void buildMinWeightTooSmallReason(int weight,vec<Lit> & conflict);
 		void buildMinWeightTooLargeReason(int weight,vec<Lit> & conflict);
 		void buildEdgeInTreeReason(int edge,vec<Lit> & conflict);

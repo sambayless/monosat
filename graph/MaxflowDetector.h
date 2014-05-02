@@ -61,7 +61,7 @@ public:
 			return reach_lit_map[index];
 		}*/
 
-		bool propagate(vec<Assignment> & trail,vec<Lit> & conflict);
+		bool propagate(vec<Lit> & conflict);
 		void buildMaxFlowTooHighReason(int node,vec<Lit> & conflict);
 		void buildMaxFlowTooLowReason(int node,vec<Lit> & conflict);
 		void buildForcedEdgeReason(int reach_node, int forced_edge_id,vec<Lit> & conflict);

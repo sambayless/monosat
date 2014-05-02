@@ -120,7 +120,7 @@ public:
 			return reach_lits[node];
 
 		}*/
-		bool propagate(vec<Assignment> & trail,vec<Lit> & conflict);
+		bool propagate(vec<Lit> & conflict);
 		void buildReachReason(int from, int to,vec<Lit> & conflict);
 		void buildNonReachReason(int from, int to,vec<Lit> & conflict);
 		void buildForcedEdgeReason(int from, int to, int forced_edge_id,vec<Lit> & conflict);

@@ -62,7 +62,7 @@ void printStats(Solver& solver)
     if (mem_used != 0) printf("Memory used           : %.2f MB\n", mem_used);
     printf("CPU time              : %g s\n", cpu_time);
 
-    solver.printStats();
+    solver.printStats(3);
 }
 
 

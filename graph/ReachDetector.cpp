@@ -20,6 +20,7 @@ ReachDetector::ReachDetector(int _detectorID, GraphTheorySolver * _outer, Dynami
 	opt_path=nullptr;
 	chokepoint_detector=nullptr;
 	first_reach_var = var_Undef;
+	stats_pure_skipped=0;
 	if(reachalg==ReachAlg::ALG_SAT){
 		 positiveReachStatus=nullptr;
 		 negativeReachStatus=nullptr;
@@ -222,12 +223,13 @@ void ReachDetector::addLit(int from, int to, Var outer_reach_var){
 		while(reach_lit_map.size()<= reach_var- first_reach_var ){
 			reach_lit_map.push(-1);
 		}
-
+		Detector::addLit(reachLit);
 		reach_lit_map[reach_var-first_reach_var]=to;
 	}else{
 		Lit r = reach_lits[to];
 		//force equality between the new lit and the old reach lit, in the SAT solver
 		outer->makeEqual(r,reachLit);
+
 	/*	outer->S->addClause(~r, reachLit);
 		outer->S->addClause(r, ~reachLit);*/
 	}
@@ -284,7 +286,7 @@ bool ReachDetector::ChokepointStatus::mustReach(int node){
 	return false;
 }
 bool ReachDetector::ChokepointStatus::operator() (int edge_id){
-	return detector.outer->edge_assignments[edge_id]==l_Undef;
+	return detector.outer->value(detector.outer->edge_list[ edge_id].v)==l_Undef;
 }
 
 void ReachDetector::preprocess(){
@@ -434,7 +436,7 @@ void ReachDetector::buildReachReason(int node,vec<Lit> & conflict){
 				    		//Note: the variable has to not only be assigned false, but assigned false earlier in the trail than the reach variable...
 
 
-				    		if(outer->edge_assignments[edge_num]==l_False){
+				    		if(outer->value(v)==l_False){
 				    			//note: we know we haven't seen this edge variable before, because we know we haven't visited this node before
 				    			//if we are already planning on visiting the from node, then we don't need to include it in the conflict (is this correct?)
 				    			//if(!seen[from])
@@ -481,7 +483,7 @@ void ReachDetector::buildReachReason(int node,vec<Lit> & conflict){
 					static int it = 0;
 					++it;
 
-					assert(outer->edge_assignments[forced_edge_id]==l_True);
+					assert(outer->value(outer->edge_list[forced_edge_id].v)==l_True);
 					Lit edgeLit =mkLit( outer->edge_list[forced_edge_id].v,false);
 
 					conflict.push(edgeLit);
@@ -566,7 +568,7 @@ void ReachDetector::buildReachReason(int node,vec<Lit> & conflict){
 						    		//Note: the variable has to not only be assigned false, but assigned false earlier in the trail than the reach variable...
 						    		int edge_num =outer->getEdgeID(v);// v-outer->min_edge_var;
 
-						    		if(edge_num == forced_edge_id || outer->edge_assignments[edge_num]==l_False){
+						    		if(edge_num == forced_edge_id || outer->value(v)==l_False){
 						    			//note: we know we haven't seen this edge variable before, because we know we haven't visited this node before
 						    			//if we are already planning on visiting the from node, then we don't need to include it in the conflict (is this correct?)
 						    			//if(!seen[from])
@@ -661,7 +663,7 @@ void ReachDetector::buildReachReason(int node,vec<Lit> & conflict){
 				}
 		}
 
-		bool ReachDetector::propagate(vec<Assignment> & trail,vec<Lit> & conflict){
+		bool ReachDetector::propagate(vec<Lit> & conflict){
 			if(!positive_reach_detector)
 				return true;
 			static int iter =0;
@@ -671,13 +673,20 @@ void ReachDetector::buildReachReason(int node,vec<Lit> & conflict){
 			if(check_positive){
 				double startdreachtime = rtime(2);
 				getChanged().clear();
-				positive_reach_detector->update();
+				if(!opt_detect_pure_theory_lits || unassigned_positives>0)
+					positive_reach_detector->update();
+				else{
+					outer->stats_pure_skipped++;
+				}
 				double reachUpdateElapsed = rtime(2)-startdreachtime;
 				outer->reachupdatetime+=reachUpdateElapsed;
 			}
 			if(check_negative){
 				double startunreachtime = rtime(2);
-				negative_reach_detector->update();
+				if(!opt_detect_pure_theory_lits || unassigned_negatives>0)
+					negative_reach_detector->update();
+				else
+					outer->stats_pure_skipped++;
 				double unreachUpdateElapsed = rtime(2)-startunreachtime;
 				outer->unreachupdatetime+=unreachUpdateElapsed;
 			}
@@ -695,7 +704,7 @@ void ReachDetector::buildReachReason(int node,vec<Lit> & conflict){
 						if(S->dbg_solver)
 							S->dbg_check_propagation(l);
 #endif
-						trail.push(Assignment(false,reach,detectorID,0,var(l)));
+						//trail.push(Assignment(false,reach,detectorID,0,var(l)));
 						if(reach)
 							outer->enqueue(l,reach_marker) ;
 						else
@@ -763,10 +772,10 @@ void ReachDetector::buildReachReason(int node,vec<Lit> & conflict){
 						Lit l = reach_lits[i];
 						if(l!=lit_Undef){
 							int u = getNode(var(l));
-							if(positive_reach_detector->connected(u)){
-								assert(outer->value(l)==l_True);
-							}else if (!negative_reach_detector->connected(u)){
-								assert(outer->value(l)==l_False);
+							if((!opt_detect_pure_theory_lits || unassigned_positives>0) && positive_reach_detector->connected_unsafe(u)){
+								assert(outer->dbg_value(l)==l_True);
+							}else if ((!opt_detect_pure_theory_lits || unassigned_negatives>0) && !negative_reach_detector->connected_unsafe(u)){
+								assert(outer->dbg_value(l)==l_False);
 							}
 						}
 

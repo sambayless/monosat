@@ -673,6 +673,9 @@ public:
 		for(int i = 0;i<g.nodes;i++){
 			int distance = dist[i];
 			int dbgdist = d.distance(i);
+			if(maxDistance>=0 && dbgdist>maxDistance){
+				dbgdist=INF;
+			}
 			if(distance!=dbgdist){
 				exit(4);
 			}

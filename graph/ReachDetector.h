@@ -79,11 +79,15 @@ public:
 		int stats_skipped_updates;
 		int stats_num_skipable_deletions;
 		double mod_percentage;
-
+		int stats_pure_skipped;
 		double stats_full_update_time;
 		double stats_fast_update_time;
 
-
+		void printStats(){
+			printf("Distance detector\n");
+			if(opt_detect_pure_theory_lits)
+				printf("Propagations skipped by pure literal detection: %d\n", stats_pure_skipped);
+		}
 		struct ReachStatus{
 			ReachDetector & detector;
 			bool polarity;
@@ -140,7 +144,7 @@ public:
 
 		}*/
 		void buildSATConstraints(int within_steps=-1);
-		bool propagate(vec<Assignment> & trail,vec<Lit> & conflict);
+		bool propagate(vec<Lit> & conflict);
 		void buildReachReason(int node,vec<Lit> & conflict);
 		void buildNonReachReason(int node,vec<Lit> & conflict);
 		void buildForcedEdgeReason(int reach_node, int forced_edge_id,vec<Lit> & conflict);
