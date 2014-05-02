@@ -42,7 +42,7 @@ public:
 
 	int source;
 	int INF;
-
+	int maxDistance;
 
 	vec<int> q;
 	vec<int> check;
@@ -84,7 +84,7 @@ public:
 
 
 	Distance(int s,DynamicGraph<EdgeStatus> & graph, Status & _status, int _reportPolarity=0 ):g(graph), status(_status), last_modification(-1),last_addition(-1),last_deletion(-1),history_qhead(0),last_history_clear(0),source(s),INF(0),reportPolarity(_reportPolarity){
-
+		maxDistance=-1;
 		mod_percentage=0.2;
 		stats_full_updates=0;
 		stats_fast_updates=0;
@@ -96,7 +96,12 @@ public:
 		stats_fast_failed_updates=0;
 	}
 	//Connectivity(const Connectivity& d):g(d.g), last_modification(-1),last_addition(-1),last_deletion(-1),history_qhead(0),last_history_clear(0),source(d.source),INF(0),mod_percentage(0.2),stats_full_updates(0),stats_fast_updates(0),stats_skip_deletes(0),stats_skipped_updates(0),stats_full_update_time(0),stats_fast_update_time(0){marked=false;};
-
+	void setMaxDistance(int _maxDistance){
+		if(_maxDistance<0){
+			maxDistance=INF;
+		}else
+			maxDistance=_maxDistance;
+	}
 
 	void setSource(int s){
 		source = s;
@@ -113,6 +118,8 @@ public:
 		dist.growTo(n);
 		prev.growTo(n);
 		INF=g.nodes+1;
+		if(maxDistance<0)
+			maxDistance=INF;
 	}
 
 
@@ -158,12 +165,13 @@ public:
 				int edgeID = adjacency[u][i].id;
 				int v = adjacency[u][i].node;
 				int dv = dist[v];
-				if(dist[v]>=INF){
-					dist[v]=d+1;
+				int alt = d+1;
+				if(alt>maxDistance)
+					alt=INF;//Abort BFS early
+				if(dist[v]>alt){
+					dist[v]=alt;
 					prev[v]=edgeID;
 					q.push_(v);
-				}else{
-					assert(dist[v]<=d+1);
 				}
 			}
 		}
@@ -252,6 +260,8 @@ public:
 			for(int i = 0;i<g.nodes;i++){
 				int distance = dist[i];
 				int dbgdist = d.dist[i];
+				if(dbgdist>maxDistance)
+					dbgdist=INF;
 				assert(distance==dbgdist);
 			}
 #endif

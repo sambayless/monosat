@@ -85,7 +85,6 @@ public:
 			maxDistance=INF;
 		}else
 			maxDistance=_maxDistance;
-
 	}
 
 	void setSource(int s){
