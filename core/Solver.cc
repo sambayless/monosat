@@ -66,8 +66,8 @@ Solver::Solver() :
 
     // Statistics: (formerly in 'SolverStats')
     //
-  , solves(0), starts(0), decisions(0), rnd_decisions(0), propagations(0), conflicts(0)
-  , dec_vars(0), clauses_literals(0), learnts_literals(0), max_literals(0), tot_literals(0)
+  , solves(0), starts(0), decisions(0), rnd_decisions(0), propagations(0), conflicts(0),stats_pure_lits(0),stats_pure_theory_lits(0),pure_literal_detections(0)
+  , dec_vars(0), clauses_literals(0), learnts_literals(0), max_literals(0), tot_literals(0),stats_pure_lit_time(0)
   , theory_index(0)
   , ok                 (true)
   , cla_inc            (1)
@@ -915,6 +915,87 @@ bool Solver::simplify()
     simpDB_assigns = nAssigns();
     simpDB_props   = clauses_literals + learnts_literals;   // (shouldn't depend on stats really, but it will do for now)
 
+    //Detect any theory literals that are occur only in positive or negative (or neither) polarity
+    if(opt_detect_pure_lits){
+    	//if(pure_literal_detections==0){
+
+    		pure_literal_detections++;
+			double startTime = rtime(2);
+			lit_counts.growTo(nVars()*2);
+			for(int i = 0;i<lit_counts.size();i++){
+				lit_counts[i].seen=false;
+			}
+			assert(decisionLevel()==0);
+
+			//intead of counting the number of occurence, just check if there are any occurences
+			for(Lit l:trail){
+				lit_counts[toInt(l)].seen=true;
+			}
+
+			for(CRef cr:clauses){
+				Clause & c = ca[cr];
+				for (Lit l:c){
+					lit_counts[toInt(l)].seen=true;
+				}
+			}
+			for(CRef cr:learnts){
+				Clause & c = ca[cr];
+				for (Lit l:c){
+					lit_counts[toInt(l)].seen=true;
+				}
+			}
+			for (Var v = 0;v<nVars();v++){
+
+
+				Lit l =mkLit(v,false);
+				if(!lit_counts[toInt(l)].occurs){
+					assert(!lit_counts[toInt(l)].seen);
+				}
+				if(!lit_counts[toInt(~l)].occurs){
+					assert(!lit_counts[toInt(~l)].seen);
+				}
+
+				if (!lit_counts[toInt(l)].occurs && !lit_counts[toInt(l)].seen){
+					lit_counts[toInt(l)].occurs=true;
+					stats_pure_lits++;
+					if(hasTheory(v)){
+						stats_pure_theory_lits++;
+						theories[getTheoryID(v)]->setLiteralOccurs(getTheoryLit(l),false);
+						setPolarity(v,false);
+					}else{
+						//we can safely assign this now...
+						if(value(l)==l_Undef){
+							uncheckedEnqueue(~l);
+						}
+					}
+				}
+				if(!lit_counts[toInt(~l)].occurs && !lit_counts[toInt(~l)].seen){
+					lit_counts[toInt(~l)].occurs=true;
+					stats_pure_lits++;
+					if(hasTheory(v)){
+						stats_pure_theory_lits++;
+						theories[getTheoryID(v)]->setLiteralOccurs(getTheoryLit(~l),false);
+						setPolarity(v,true);
+						if(!lit_counts[toInt(l)].occurs){
+							setDecisionVar(v,false);//If v is pure in both polarities, and is a theory var, then just don't assign it at all - it is unconstrained.
+							//This _should_ always be safe to do, if the theory semantics make sense...
+						}
+					}else{
+						//we can safely assign this now...
+						if(value(l)==l_Undef){
+							uncheckedEnqueue(l);
+						}
+					}
+				}
+
+				//Don't bother deciding this variable...
+
+
+			}
+			stats_pure_lit_time += rtime(2)-startTime;
+    	//}
+    }
+
     return true;
 }
 
@@ -1367,7 +1448,8 @@ lbool Solver::solve_()
 							GraphTheorySolver *g = (GraphTheorySolver*)t;
 					if(!g->check_solved()){
 						fprintf(stderr,"Error! Solution doesn't satisfy graph properties!\n");
-						exit(1);
+						fflush(stderr);
+						exit(3);
 					}
 				}
 #ifdef DEBUG_SOLVER

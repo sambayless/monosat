@@ -911,7 +911,7 @@ int ReachDetector::OptimalWeightEdgeStatus::operator [] (int edge) const {
 		return detector.outer->edge_list.size()*2;
 	}else if (val==l_True){
 		return 0;
-	}else if (val==l_Undef){
+	}else{
 		return 1;
 	}
 }

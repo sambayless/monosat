@@ -31,6 +31,10 @@ public:
 	}
 	//Lazily construct the reason clause explaining this propagation
 	virtual void buildReason(Lit p, vec<Lit> & reason)=0;
+	//Informs the theory solver about whether this literal (with this polarity!) ever occurs in its parent solver
+	virtual void setLiteralOccurs(Lit l, bool occurs){
+
+	}
 	virtual void printStats(int detailLevel=0){
 
 	}

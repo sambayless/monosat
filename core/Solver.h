@@ -137,9 +137,20 @@ public:
     }
 
     void printStats(int detail_level=0){
+		double cpu_time = cpuTime();
+		double mem_used = memUsedPeak();
+
+	    printf("restarts              : %" PRIu64 "\n", starts);
+		printf("conflicts             : %-12" PRIu64 "   (%.0f /sec)\n", conflicts   , conflicts   /cpu_time);
+		printf("decisions             : %-12" PRIu64 "   (%4.2f %% random) (%.0f /sec)\n", decisions, (float)rnd_decisions*100 / (float)decisions, decisions   /cpu_time);
+		printf("propagations          : %-12" PRIu64 "   (%.0f /sec)\n", propagations, propagations/cpu_time);
+		printf("conflict literals     : %-12" PRIu64 "   (%4.2f %% deleted)\n", tot_literals, (max_literals - tot_literals)*100 / (double)max_literals);
+		if(opt_detect_pure_theory_lits){
+			printf("pure literals     : %d (%d theory lits) (%d rounds, %f time)\n",stats_pure_lits, stats_pure_theory_lits,pure_literal_detections,stats_pure_lit_time);
+		}
 		for(int i = 0;i<theories.size();i++){
 			theories[i]->printStats(detail_level);
-			}
+		}
     }
 
     bool isTheoryCause(CRef cr){
@@ -185,6 +196,7 @@ public:
     	assert(!hasTheory(solverVar));
     	theory_vars[solverVar].theory=theory+1;
     	theory_vars[solverVar].theory_var=theoryVar;
+    	all_theory_vars.push(solverVar);
     	assert(hasTheory(solverVar));
     	assert(getTheoryID(solverVar)==theory);
     	assert(getTheoryVar(solverVar)==theoryVar);
@@ -316,6 +328,13 @@ public:
     vec<Lit> theory_conflict;
     vec<Theory*> theories;
     vec<Theory*> decidable_theories;
+    vec<Var> all_theory_vars;
+    struct LitCount{
+    	char occurs:1;
+    	char seen:1;
+    	LitCount():occurs(1),seen(0){ 	}
+    };
+    vec<LitCount> lit_counts;
     vec<CRef> markers;//a set of special clauses that can be recognized as pointers to theories
     vec<int> marker_theory;
     int theory_index;
@@ -361,8 +380,10 @@ public:
 
     // Statistics: (read-only member variable)
     //
-    uint64_t solves, starts, decisions, rnd_decisions, propagations, conflicts;
+    uint64_t solves, starts, decisions, rnd_decisions, propagations, conflicts,stats_pure_lits,stats_pure_theory_lits,pure_literal_detections;
     uint64_t dec_vars, clauses_literals, learnts_literals, max_literals, tot_literals;
+    double stats_pure_lit_time;
+
     Var last_dec;
 protected:
 

@@ -50,19 +50,11 @@ using namespace Minisat;
 
 void printStats(Solver& solver)
 {
-    double cpu_time = cpuTime();
-
-    double mem_used = memUsedPeak();
-
-    printf("restarts              : %" PRIu64 "\n", solver.starts);
-    printf("conflicts             : %-12" PRIu64 "   (%.0f /sec)\n", solver.conflicts   , solver.conflicts   /cpu_time);
-    printf("decisions             : %-12" PRIu64 "   (%4.2f %% random) (%.0f /sec)\n", solver.decisions, (float)solver.rnd_decisions*100 / (float)solver.decisions, solver.decisions   /cpu_time);
-    printf("propagations          : %-12" PRIu64 "   (%.0f /sec)\n", solver.propagations, solver.propagations/cpu_time);
-    printf("conflict literals     : %-12" PRIu64 "   (%4.2f %% deleted)\n", solver.tot_literals, (solver.max_literals - solver.tot_literals)*100 / (double)solver.max_literals);
-    if (mem_used != 0) printf("Memory used           : %.2f MB\n", mem_used);
-    printf("CPU time              : %g s\n", cpu_time);
-
+		double cpu_time = cpuTime();
+	    double mem_used = memUsedPeak();
     solver.printStats(3);
+    if (mem_used != 0) printf("Memory used           : %.2f MB\n", mem_used);
+   printf("CPU time              : %g s\n", cpu_time);
 }
 
 
@@ -572,7 +564,7 @@ int main(int argc, char** argv)
 						if(opt_check_solution){
 											if(!g->check_solved()){
 												fprintf(stderr,"Error! Solution doesn't satisfy graph properties!\n");
-												exit(1);
+												exit(3);
 											}
 										}
 						break;
@@ -583,7 +575,7 @@ int main(int argc, char** argv)
 					if(opt_check_solution){
 										if(!g->check_solved()){
 											fprintf(stderr,"Error! Solution doesn't satisfy graph properties!\n");
-											exit(1);
+											exit(3);
 										}
 									}
         		}
@@ -683,7 +675,7 @@ int main(int argc, char** argv)
 				if(opt_check_solution){
 							if(!g->check_solved()){
 								fprintf(stderr,"Error! Solution doesn't satisfy graph properties!\n");
-								exit(1);
+								exit(3);
 							}
 						}
 

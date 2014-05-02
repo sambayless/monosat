@@ -140,7 +140,9 @@ public:
 	//Data about local theory variables, and how they connect to the sat solver's variables
 	struct VarData{
 		int isEdge:1;
-		int detector_edge:31;//the detector this variable belongs to, or its edge number, if it is an edge variable
+		int occursPositive:1;
+		int occursNegative:1;
+		int detector_edge:29;//the detector this variable belongs to, or its edge number, if it is an edge variable
 		Var solverVar;
 	};
 
@@ -345,6 +347,8 @@ public:
 		Var v = vars.size();
 		vars.push();
 		vars[v].isEdge=false;
+		vars[v].occursPositive=true;
+		vars[v].occursNegative=true;
 		vars[v].detector_edge=-1;
 		vars[v].solverVar=s;
 		return v;
@@ -367,10 +371,10 @@ public:
 		return S->level(toSolver(v));
 	}
 	inline int decisionLevel(){
-		return S->decisionLevel();
+		return trail_lim.size(); //S->decisionLevel();
 	}
 	inline int nVars()const{
-		return S->nVars();
+		return vars.size();//S->nVars();
 	}
 	inline Var toSolver(Var v){
 		//return v;
@@ -852,11 +856,24 @@ public:
 			detectors[i]->preprocess();
 		}
 	}
+	void setLiteralOccurs(Lit l, bool occurs){
+		if(!occurs){
+
+			if(isEdgeVar(var(l))){
+				//don't do anything
+			}else{
+				//this is a graph property detector var
+				if(!sign(l) && vars[var(l)].occursPositive!=occurs)
+					detectors[getDetector(var(l))]->setOccurs(l,occurs);
+				else if(sign(l) && vars[var(l)].occursNegative!=occurs)
+					detectors[getDetector(var(l))]->setOccurs(l,occurs);
+			}
+		}
+	}
+
 	void enqueueTheory(Lit l){
 		Var v = var(l);
-		if(v==3){
-			int a=1;
-		}
+
 		int lev = level(v);
 
 		assert(decisionLevel()<=lev);
@@ -966,7 +983,23 @@ public:
 
 
 
-	bool solveTheory(vec<Lit> & conflict){return true;};
+	bool solveTheory(vec<Lit> & conflict){
+		if(opt_detect_pure_lits || opt_detect_pure_theory_lits){
+			//just to be safe, run one last run, with all literals marked as occuring.
+			//if this fails, this is a major error in the solver!
+			for(Var v = 0;v<nVars();v++){
+				if(!isEdgeVar(v)){
+					detectors[getDetector(v)]->setOccurs(mkLit(v,false),true);
+					detectors[getDetector(v)]->setOccurs(mkLit(v,true),true);
+				}
+			}
+			if(!propagateTheory(conflict)){
+				exit(3);
+			}
+		}
+
+		return propagateTheory(conflict);
+	};
 	void drawFull(int from, int to){
 			printf("digraph{\n");
 			for(int i = 0;i<nNodes();i++){

@@ -185,6 +185,17 @@ public:
 
     Lit          subsumes    (const Clause& other) const;
     void         strengthen  (Lit p);
+
+    //stl-style begin and end, to support C++11 range-based for loops
+    const Lit * begin () const
+    {
+        return &data[0].lit;
+    }
+
+    const Lit* end () const
+    {
+        return &data[size()].lit;
+    }
 };
 
 

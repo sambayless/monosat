@@ -35,7 +35,19 @@ public:
 
 	}
 	virtual Lit decide()=0;
-
+	virtual void setOccurs(Lit l, bool occurs){
+		if(!occurs){
+			 if(sign(l))
+			   unassigned_negatives--;
+			 else
+			   unassigned_positives--;
+		}else{
+			 if(sign(l))
+			   unassigned_negatives++;
+			 else
+			   unassigned_positives++;
+		}
+	}
 	virtual void assign(Lit l){
 		 if(sign(l))
 		   unassigned_negatives--;
