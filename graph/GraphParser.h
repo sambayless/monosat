@@ -152,7 +152,7 @@ static void readConnect(B& in, Solver& S, vec<GraphTheory*> & graphs) {
         	printf("PARSE ERROR! Edge variables must be >=0, was %d\n", reachVar), exit(3);
         }
         GraphTheory * graph = graphs[graphID];
-        while (reachVar+graph->nNodes() >= S.nVars()) S.newVar();
+        while (reachVar >= S.nVars()) S.newVar();
         graph->connects(from,to,reachVar);
 
 
@@ -183,7 +183,7 @@ static void readReach(B& in, Solver& S, vec<GraphTheory*> & graphs) {
         	printf("PARSE ERROR! Edge variables must be >=0, was %d\n", reachVar), exit(3);
         }
         GraphTheory * graph = graphs[graphID];
-        while (reachVar+graph->nNodes() >= S.nVars()) S.newVar();
+        while (reachVar >= S.nVars()) S.newVar();
         graph->reaches(from,to,reachVar);
 
 
@@ -213,7 +213,7 @@ static void readDistance(B& in, Solver& S, vec<GraphTheory*> & graphs) {
         	printf("PARSE ERROR! Edge variables must be >=0, was %d\n", reachVar), exit(3);
         }
         GraphTheory * graph = graphs[graphID];
-        while (reachVar+graph->nNodes() >= S.nVars()) S.newVar();
+        while (reachVar >= S.nVars()) S.newVar();
         graph->reaches(from,to,reachVar,steps);
 
 
@@ -243,7 +243,7 @@ static void readMinSpanningTreeConstraint(B& in, Solver& S, vec<GraphTheory*> & 
         	printf("PARSE ERROR! Edge variables must be >=0, was %d\n", reachVar), exit(3);
         }
         GraphTheory * graph = graphs[graphID];
-        while (reachVar+graph->nNodes() >= S.nVars()) S.newVar();
+        while (reachVar >= S.nVars()) S.newVar();
         graph->minimumSpanningTree(reachVar,maxweight);
 
 
@@ -273,7 +273,7 @@ static void readMinSpanningTreeEdgeConstraint(B& in, Solver& S, vec<GraphTheory*
         	printf("PARSE ERROR! Edge variables must be >=0, was %d\n", reachVar), exit(3);
         }
         GraphTheory * graph = graphs[graphID];
-        while (reachVar+graph->nNodes() >= S.nVars()) S.newVar();
+        while (reachVar >= S.nVars()) S.newVar();
         graph->edgeInMinimumSpanningTree(edgeVar,reachVar);
 
 
@@ -304,7 +304,7 @@ static void readMaxFlowConstraint(B& in, Solver& S, vec<GraphTheory*> & graphs) 
         	printf("PARSE ERROR! Edge variables must be >=0, was %d\n", reachVar), exit(3);
         }
         GraphTheory * graph = graphs[graphID];
-        while (reachVar+graph->nNodes() >= S.nVars()) S.newVar();
+        while (reachVar >= S.nVars()) S.newVar();
         graph->maxFlow(s,t,flow,reachVar);
 
 
@@ -335,7 +335,7 @@ static void readMinConnectedComponentsConstraint(B& in, Solver& S, vec<GraphTheo
         	printf("PARSE ERROR! Edge variables must be >=0, was %d\n", reachVar), exit(3);
         }
         GraphTheory * graph = graphs[graphID];
-        while (reachVar+graph->nNodes() >= S.nVars()) S.newVar();
+        while (reachVar >= S.nVars()) S.newVar();
         graph->minConnectedComponents(min_components,reachVar);
 }
 

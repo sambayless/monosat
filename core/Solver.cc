@@ -949,11 +949,21 @@ bool Solver::simplify()
 					int a=1;
 				}
 				Lit l =mkLit(v,false);
-				if(!lit_counts[toInt(l)].occurs){
-					assert(!lit_counts[toInt(l)].seen);
+				if(lit_counts[toInt(l)].seen && ! lit_counts[toInt(l)].occurs){
+					stats_pure_lits--;
+					lit_counts[toInt(l)].occurs=true;
+					if(hasTheory(v)){
+						stats_pure_theory_lits--;
+						theories[getTheoryID(v)]->setLiteralOccurs(getTheoryLit(l),true);
+					}
 				}
-				if(!lit_counts[toInt(~l)].occurs){
-					assert(!lit_counts[toInt(~l)].seen);
+				if(lit_counts[toInt(~l)].seen && ! lit_counts[toInt(~l)].occurs){
+					stats_pure_lits--;
+					lit_counts[toInt(~l)].occurs=true;
+					if(hasTheory(v)){
+						stats_pure_theory_lits--;
+						theories[getTheoryID(v)]->setLiteralOccurs(getTheoryLit(~l),true);
+					}
 				}
 
 				if (lit_counts[toInt(l)].occurs && !lit_counts[toInt(l)].seen){
@@ -965,8 +975,13 @@ bool Solver::simplify()
 						setPolarity(v,false);
 					}else{
 						//we can safely assign this now...
-						if(value(l)==l_Undef){
-							uncheckedEnqueue(~l);
+						if(!lit_counts[toInt(~l)].seen){
+							if(decision[v])
+								setDecisionVar(v,false);
+						}else{
+							if(value(l)==l_Undef){
+								uncheckedEnqueue(~l);
+							}
 						}
 					}
 				}
@@ -983,7 +998,10 @@ bool Solver::simplify()
 						}
 					}else{
 						//we can safely assign this now...
-						if(value(l)==l_Undef){
+						if(!lit_counts[toInt(l)].seen){
+							if(decision[v])
+								setDecisionVar(v,false);
+						}else if(value(l)==l_Undef){
 							uncheckedEnqueue(l);
 						}
 					}

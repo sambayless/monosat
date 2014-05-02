@@ -858,18 +858,16 @@ public:
 		}
 	}
 	void setLiteralOccurs(Lit l, bool occurs){
-		if(!occurs){
-
-			if(isEdgeVar(var(l))){
-				//don't do anything
-			}else{
-				//this is a graph property detector var
-				if(!sign(l) && vars[var(l)].occursPositive!=occurs)
-					detectors[getDetector(var(l))]->setOccurs(l,occurs);
-				else if(sign(l) && vars[var(l)].occursNegative!=occurs)
-					detectors[getDetector(var(l))]->setOccurs(l,occurs);
-			}
+		if(isEdgeVar(var(l))){
+			//don't do anything
+		}else{
+			//this is a graph property detector var
+			if(!sign(l) && vars[var(l)].occursPositive!=occurs)
+				detectors[getDetector(var(l))]->setOccurs(l,occurs);
+			else if(sign(l) && vars[var(l)].occursNegative!=occurs)
+				detectors[getDetector(var(l))]->setOccurs(l,occurs);
 		}
+
 	}
 
 	void enqueueTheory(Lit l){
