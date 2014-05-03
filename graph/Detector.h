@@ -70,8 +70,12 @@ public:
 	virtual ~Detector(){
 
 	}
-protected:
-	virtual void addLit(Lit l){
+
+/*	virtual void addLit(Lit l){
+		unassigned_negatives++;
+		unassigned_positives++;
+	}*/
+	virtual void addVar(Var v){
 		unassigned_negatives++;
 		unassigned_positives++;
 	}

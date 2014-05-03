@@ -27,14 +27,15 @@ Detector(_detectorID),outer(_outer),g(_g),antig(_antig),rnd_seed(seed),positive_
 			 no_undirected_cycle_marker=outer->newReasonMarker(getID());
 		//forced_reach_marker=outer->newReasonMarker(getID());
 }
-void CycleDetector::addCycleDetectorLit(bool directed, Var v){
+void CycleDetector::addCycleDetectorLit(bool directed, Var outer_reach_var){
+	Var v= outer->newVar(outer_reach_var,getID());
 	Lit l = mkLit(v,false);
 	g.invalidate();
 	antig.invalidate();
 	if(!directed){
 		if(undirected_cycle_lit==lit_Undef){
 			undirected_cycle_lit=l;
-			Detector::addLit(l);
+
 		}else{
 			outer->makeEqual(undirected_cycle_lit,l);
 			/*outer->S->addClause(undirected_cycle_lit, ~l);
@@ -43,7 +44,7 @@ void CycleDetector::addCycleDetectorLit(bool directed, Var v){
 	}else{
 		if(directed_cycle_lit==lit_Undef){
 			directed_cycle_lit=l;
-			Detector::addLit(l);
+
 		}else{
 			outer->makeEqual(directed_cycle_lit,l);
 /*			outer->S->addClause(directed_cycle_lit, ~l);

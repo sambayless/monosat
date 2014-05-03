@@ -200,6 +200,7 @@ void ReachDetector::addLit(int from, int to, Var outer_reach_var){
 	g.invalidate();
 	antig.invalidate();
 	Var reach_var = outer->newVar(outer_reach_var,getID());
+
 	if(first_reach_var==var_Undef){
 		first_reach_var=reach_var;
 	}else{
@@ -223,7 +224,7 @@ void ReachDetector::addLit(int from, int to, Var outer_reach_var){
 		while(reach_lit_map.size()<= reach_var- first_reach_var ){
 			reach_lit_map.push(-1);
 		}
-		Detector::addLit(reachLit);
+
 		reach_lit_map[reach_var-first_reach_var]=to;
 	}else{
 		Lit r = reach_lits[to];
@@ -667,7 +668,7 @@ void ReachDetector::buildReachReason(int node,vec<Lit> & conflict){
 			if(!positive_reach_detector)
 				return true;
 			static int iter =0;
-			if(++iter==46){
+			if(++iter==555){
 				int a=1;
 			}
 			if(check_positive){

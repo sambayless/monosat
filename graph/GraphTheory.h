@@ -364,7 +364,8 @@ public:
 		assigns.push(l_Undef);
 		S->setTheoryVar(solverVar,getTheoryIndex(),v);
 		assert(toSolver(v)==solverVar);
-
+		if(!isEdge)
+			detectors[detector]->addVar(v);
 		return v;
 	}
 	inline int level(Var v){
