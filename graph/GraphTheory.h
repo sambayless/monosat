@@ -131,7 +131,7 @@ public:
 
 	//vector of the weights for each edge
 	vec<int> edge_weights;
-
+	bool requiresPropagation;
 	MaxFlow * mc;
 	//MaxFlow * reachprop;
 
@@ -172,6 +172,7 @@ public:
 	int learnt_cut_clause_length;
 	int stats_pure_skipped;
 	int stats_mc_calls;
+	long stats_propagations_skipped;
 	vec<Lit> reach_cut;
 
 	struct CutStatus{
@@ -227,7 +228,7 @@ public:
 			stats_num_conflicts=0;
 			stats_num_reasons=0;
 			stats_decisions = 0;
-
+			stats_propagations_skipped=0;
 			reachupdatetime=0;
 			unreachupdatetime=0;
 			stats_initial_propagation_time=0;
@@ -239,6 +240,7 @@ public:
 			 num_learnt_cuts=0;
 			 learnt_cut_clause_length=0;
 			 component_detector=NULL;
+			 requiresPropagation=true;
 			 rnd_seed=opt_random_seed;
 
 			if(mincutalg==MinCutAlg::ALG_IBFS){
@@ -279,7 +281,7 @@ public:
 		printf("Min-cut Time: %f (%d calls, %f average, #Cuts: %d, AvgLength %f, total: %d)\n", mctime, stats_mc_calls,(mctime/(stats_mc_calls ? stats_mc_calls:1)),  num_learnt_cuts, (learnt_cut_clause_length /  ((float) num_learnt_cuts+1)),learnt_cut_clause_length);
 */
 
-		printf("Propagations: %ld (%f s, avg: %f s)\n",stats_propagations ,propagationtime, (propagationtime)/((double)stats_propagations+1));
+		printf("Propagations: %ld (%f s, avg: %f s, %ld skipped)\n",stats_propagations ,propagationtime, (propagationtime)/((double)stats_propagations+1),stats_propagations_skipped);
 		printf("Decisions: %ld (%f s, avg: %f s)\n",stats_decisions,stats_decision_time, (stats_decision_time)/((double)stats_decisions+1));
 		printf("Conflicts: %ld\n",stats_num_conflicts);
 		printf("Reasons: %ld (%f s, avg: %f s)\n",stats_num_reasons,stats_reason_time, (stats_reason_time)/((double)stats_num_reasons+1));
@@ -627,14 +629,14 @@ public:
 
 	void backtrackUntil(int level){
 		static int it = 0;
-		if(++it==28){
-			int a =1;
-		}
+
 		bool changed=false;
 		//need to remove and add edges in the two graphs accordingly.
 		if(trail_lim.size()>level){
+
 			int stop = trail_lim[level];
 			for(int i = trail.size()-1;i>=trail_lim[level];i--){
+
 				Assignment & e = trail[i];
 				assert(assigns[e.var]!=l_Undef);
 				if(e.isEdge){
@@ -660,6 +662,7 @@ public:
 
 		}
 		if(changed){
+			requiresPropagation=true;
 			g.markChanged();
 			antig.markChanged();
 			cutGraph.markChanged();
@@ -724,6 +727,7 @@ public:
 
 			trail.shrink(trail.size()-(i+1));
 			if(i>0){
+				requiresPropagation=true;
 				g.markChanged();
 				antig.markChanged();
 				cutGraph.markChanged();
@@ -887,9 +891,8 @@ public:
 		}
 		assert(assigns[var(l)]==l_Undef);
 		assigns[var(l)]=sign(l) ? l_False:l_True;
-		if(var(l)==20){
-			int a=1;
-		}
+		requiresPropagation=true;
+
 #ifndef NDEBUG
 		{
 			for(int i = 0;i<trail.size();i++){
@@ -931,9 +934,13 @@ public:
 		if(	++itp==62279){
 			int a =1;
 		}
-
+		stats_propagations++;
 		dbg_sync();
-
+		if(!requiresPropagation){
+			stats_propagations_skipped++;
+			assert(dbg_graphsUpToDate());
+			return true;
+		}
 
 		bool any_change = false;
 		double startproptime = rtime(1);
@@ -945,7 +952,7 @@ public:
 
 		//At level 0, need to propagate constant reaches/source nodes/edges...
 
-		stats_propagations++;
+
 		//stats_initial_propagation_time += rtime(1) - startproptime;
 		dbg_sync();
 		assert(dbg_graphsUpToDate());
@@ -965,6 +972,7 @@ public:
 
 		dbg_full_sync();
 
+		requiresPropagation=false;
 		g.clearChanged();
 		antig.clearChanged();
 		cutGraph.clearChanged();
@@ -975,13 +983,14 @@ public:
 		detectors_to_check.clear();
 
 		double elapsed = rtime(1)-startproptime;
-					propagationtime+=elapsed;
-					dbg_sync();
-					dbg_sync_reachability();
+		propagationtime+=elapsed;
+		dbg_sync();
+		dbg_sync_reachability();
 		return true;
 	};
 
 	bool solveTheory(vec<Lit> & conflict){
+		requiresPropagation=true;//Just to be on the safe side... but this shouldn't really be required.
 		bool ret = propagateTheory(conflict);
 		//Under normal conditions, this should _always_ hold (as propagateTheory should have been called and checked by the parent solver before getting to this point).
 		assert(ret);

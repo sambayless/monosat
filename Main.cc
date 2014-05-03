@@ -58,19 +58,26 @@ void printStats(Solver& solver)
 }
 
 
-static Solver* solver;
+static SimpSolver* solver;
 // Terminate by notifying the solver and back out gracefully. This is mainly to have a test-case
 // for this feature of the Solver as it may take longer than an immediate call to '_exit()'.
-static void SIGINT_interrupt(int signum) { solver->interrupt();   fflush(stdout);}
+static void SIGINT_interrupt(int signum) { solver->interrupt();
+printf("\n"); printf("*** INTERRUPTED ***\n");
+if (opt_verb > 0){
+    printStats(*solver);
+    printf("\n"); printf("*** INTERRUPTED ***\n"); }
+fflush(stdout);
+_exit(1);
+}
 
 // Note that '_exit()' rather than 'exit()' has to be used. The reason is that 'exit()' calls
 // destructors and may cause deadlocks if a malloc/free function happens to be running (these
 // functions are guarded by locks for multithreaded use).
 static void SIGINT_exit(int signum) {
     printf("\n"); printf("*** INTERRUPTED ***\n");
-    if (opt_verb > 0){
+/*    if (opt_verb > 0){
         printStats(*solver);
-        printf("\n"); printf("*** INTERRUPTED ***\n"); }
+        printf("\n"); printf("*** INTERRUPTED ***\n"); }*/
     fflush(stdout);
     _exit(1); }
 
@@ -280,6 +287,7 @@ int main(int argc, char** argv)
 #endif
          const char *error;
          SimpSolver S;
+         solver = &S;
          if (!pre) S.eliminate(true);
          S.max_decision_var = opt_restrict_decisions;
 #ifdef DEBUG_SOLVER
