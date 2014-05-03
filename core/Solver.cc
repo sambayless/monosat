@@ -41,7 +41,7 @@ Solver::Solver() :
 
     // Parameters (user settable):
     //
-    verbosity        (0)
+    verbosity        (opt_verb)
   , var_decay        (opt_var_decay)
   , clause_decay     (opt_clause_decay)
   , random_var_freq  (opt_random_var_freq)
@@ -66,7 +66,8 @@ Solver::Solver() :
 
     // Statistics: (formerly in 'SolverStats')
     //
-  , solves(0), starts(0), decisions(0), rnd_decisions(0), propagations(0), conflicts(0),stats_pure_lits(0),stats_pure_theory_lits(0),pure_literal_detections(0)
+  , solves(0), starts(0), decisions(0), rnd_decisions(0), propagations(0), conflicts(0),stats_pure_lits(0),stats_pure_theory_lits(0)
+  ,pure_literal_detections(0),stats_removed_clauses(0)
   , dec_vars(0), clauses_literals(0), learnts_literals(0), max_literals(0), tot_literals(0),stats_pure_lit_time(0)
   , theory_index(0)
   , ok                 (true)
@@ -853,9 +854,10 @@ void Solver::reduceDB()
     // and clauses with activity smaller than 'extra_lim':
     for (i = j = 0; i < learnts.size(); i++){
         Clause& c = ca[learnts[i]];
-        if (c.size() > 2 && !locked(c) && (i < learnts.size() / 2 || c.activity() < extra_lim))
+        if (c.size() > 2 && !locked(c) && (i < learnts.size() / 2 || c.activity() < extra_lim)){
+        	stats_removed_clauses++;
             removeClause(learnts[i]);
-        else
+        }else
             learnts[j++] = learnts[i];
     }
     learnts.shrink(i - j);
@@ -1060,8 +1062,9 @@ bool Solver::addConflictClause(vec<Lit> & ps, CRef & confl_out){
 			CRef cr = ca.alloc(ps, !opt_permanent_theory_conflicts);
 	    	if(opt_permanent_theory_conflicts)
 				clauses.push(cr);
-			else
+			else{
 				learnts.push(cr);
+			}
 
 			attachClause(cr);
 			confl_out=cr;
@@ -1135,7 +1138,7 @@ lbool Solver::search(int nof_conflicts)
             varDecayActivity();
             claDecayActivity();
 
-            if (--learntsize_adjust_cnt == 0){
+            if (--learntsize_adjust_cnt <= 0){
                 learntsize_adjust_confl *= learntsize_adjust_inc;
                 learntsize_adjust_cnt    = (int)learntsize_adjust_confl;
                 max_learnts             *= learntsize_inc;

@@ -979,7 +979,7 @@ public:
 
 		g.clearHistory();
 		antig.clearHistory();
-
+		cutGraph.clearHistory();
 		detectors_to_check.clear();
 
 		double elapsed = rtime(1)-startproptime;

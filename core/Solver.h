@@ -141,7 +141,7 @@ public:
 		double mem_used = memUsedPeak();
 
 	    printf("restarts              : %" PRIu64 "\n", starts);
-		printf("conflicts             : %-12" PRIu64 "   (%.0f /sec)\n", conflicts   , conflicts   /cpu_time);
+		printf("conflicts             : %-12" PRIu64 "   (%.0f /sec, %d learnts, %d removed)\n", conflicts   , conflicts   /cpu_time, learnts.size(),stats_removed_clauses);
 		printf("decisions             : %-12" PRIu64 "   (%4.2f %% random) (%.0f /sec)\n", decisions, (float)rnd_decisions*100 / (float)decisions, decisions   /cpu_time);
 		printf("propagations          : %-12" PRIu64 "   (%.0f /sec)\n", propagations, propagations/cpu_time);
 		printf("conflict literals     : %-12" PRIu64 "   (%4.2f %% deleted)\n", tot_literals, (max_literals - tot_literals)*100 / (double)max_literals);
@@ -380,7 +380,7 @@ public:
 
     // Statistics: (read-only member variable)
     //
-    uint64_t solves, starts, decisions, rnd_decisions, propagations, conflicts,stats_pure_lits,stats_pure_theory_lits,pure_literal_detections;
+    uint64_t solves, starts, decisions, rnd_decisions, propagations, conflicts,stats_pure_lits,stats_pure_theory_lits,pure_literal_detections,stats_removed_clauses;
     uint64_t dec_vars, clauses_literals, learnts_literals, max_literals, tot_literals;
     double stats_pure_lit_time;
 
