@@ -44,6 +44,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include <unordered_map>
 #include "simp/SimpSolver.h"
 #include "pb/PbTheory.h"
+#include "pb/PbParser.h"
 using namespace Minisat;
 
 //=================================================================================================

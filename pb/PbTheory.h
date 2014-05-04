@@ -30,7 +30,7 @@ class PbTheory: public Theory{
 	vec<Assignment> trail;
 	vec<int> trail_lim;
 
-	enum class PBType{
+	enum class PbType{
 		GT, GE,LT,LE,EQ
 	};
 
@@ -39,7 +39,7 @@ class PbTheory: public Theory{
 		vec<int> weights;
 		Lit rhs_lit;
 		int total;
-		PBType type;
+		PbType op;
 	};
 
 	vec<ConstraintToImplement> constraintsToImplement;
@@ -607,22 +607,35 @@ public:
 	 void implementConstraints(){
 		 for(ConstraintToImplement &c:constraintsToImplement){
 			 //convert to >= constraints
-			 if(c.type==PBType::GE){
+			 if(c.op==PbType::GE){
 				 //do nothing
-			 }else  if(c.type==PBType::GT){
+			 }else  if(c.op==PbType::GT){
 				 c.total +=1;
-			 }else if (c.type==PBType::LT){
+			 }else if (c.op==PbType::LT){
 				 c.rhs_lit = ~c.rhs_lit;
-			 }else if(c.type==PBType::LE){
+			 }else if(c.op==PbType::LE){
 				 c.total -=1;
 				 c.rhs_lit = ~c.rhs_lit;
-			 }else if(c.type==PBType::EQ){
+			 }else if(c.op==PbType::EQ){
 				greaterThanEq_implement(c.clause,c.weights,~c.rhs_lit,c.total+1);
 			 }
 			 greaterThanEq_implement(c.clause,c.weights,c.rhs_lit,c.total+1);
 		 }
 		 constraintsToImplement.clear();
 	 }
+
+	 //If the rhs_lit is lit_Undef, then this is an unconditional constraint
+	 void addConstraint(vec<Lit> & clause, vec<int> & weights, int rhs, Lit rhs_lit=lit_Undef , PbType op=PbType::GE){
+		 constraintsToImplement.push();
+		 assert(clause.size());
+		 assert(clause.size()==weights.size());
+		 clause.copyTo(constraintsToImplement.last().clause);
+		 weights.copyTo(constraintsToImplement.last().weights);
+		 constraintsToImplement.last().rhs_lit = rhs_lit;
+		 constraintsToImplement.last().total = rhs;
+		 constraintsToImplement.last().op = op;
+	 }
+
 	  void backtrackUntil(int level){
 		  bool changed=false;
 			//need to remove and add edges in the two graphs accordingly.
