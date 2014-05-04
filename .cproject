@@ -87,7 +87,8 @@
 						</toolChain>
 					</folderInfo>
 					<sourceEntries>
-						<entry excluding="smt|smtlib|tests|graph/kbtest.c|test/test_thorup.cpp|strings|graph/TreeReachDetector.cpp" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+						<entry excluding="pb|smt|smtlib|tests|graph/kbtest.c|test/test_thorup.cpp|strings|graph/TreeReachDetector.cpp" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="pb"/>
 						<entry excluding="test_ramal_reps.cpp|test_thorup.cpp|test_eulertree.cpp" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="tests"/>
 					</sourceEntries>
 				</configuration>
@@ -177,7 +178,8 @@
 						</toolChain>
 					</folderInfo>
 					<sourceEntries>
-						<entry excluding="smtlib|smt|tests|graph/kbtest.c|test/test_thorup.cpp|strings|graph/TreeReachDetector.cpp" flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name=""/>
+						<entry excluding="pb|smtlib|smt|tests|graph/kbtest.c|test/test_thorup.cpp|strings|graph/TreeReachDetector.cpp" flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name=""/>
+						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="pb"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="smt"/>
 						<entry excluding="test_ramal_reps.cpp|test_eulertree.cpp|test_thorup.cpp" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="tests"/>
 					</sourceEntries>
@@ -258,7 +260,8 @@
 						</toolChain>
 					</folderInfo>
 					<sourceEntries>
-						<entry excluding="smtlib|smt|tests|graph/kbtest.c|test/test_thorup.cpp|strings|schedule|graph/TreeReachDetector.cpp" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+						<entry excluding="pb|smtlib|smt|tests|graph/kbtest.c|test/test_thorup.cpp|strings|schedule|graph/TreeReachDetector.cpp" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="pb"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="smt"/>
 						<entry excluding="test_ramal_reps.cpp|test_eulertree.cpp|test_thorup.cpp" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="tests"/>
 					</sourceEntries>
@@ -340,7 +343,8 @@
 						</toolChain>
 					</folderInfo>
 					<sourceEntries>
-						<entry excluding="smtlib|smt|tests|graph/kbtest.c|test/test_thorup.cpp|strings|schedule|graph/TreeReachDetector.cpp" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+						<entry excluding="pb|smtlib|smt|tests|graph/kbtest.c|test/test_thorup.cpp|strings|schedule|graph/TreeReachDetector.cpp" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="pb"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="smt"/>
 						<entry excluding="test_ramal_reps.cpp|test_eulertree.cpp|test_thorup.cpp" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="tests"/>
 					</sourceEntries>
@@ -421,7 +425,8 @@
 						</toolChain>
 					</folderInfo>
 					<sourceEntries>
-						<entry excluding="smtlib|smt|tests|graph/kbtest.c|test/test_thorup.cpp|strings|schedule|graph/TreeReachDetector.cpp" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+						<entry excluding="pb|smtlib|smt|tests|graph/kbtest.c|test/test_thorup.cpp|strings|schedule|graph/TreeReachDetector.cpp" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="pb"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="smt"/>
 						<entry excluding="test_ramal_reps.cpp|test_eulertree.cpp|test_thorup.cpp" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="tests"/>
 					</sourceEntries>
@@ -512,7 +517,8 @@
 						</toolChain>
 					</folderInfo>
 					<sourceEntries>
-						<entry excluding="smtlib|smt|tests|graph/kbtest.c|test/test_thorup.cpp|Main.cc|strings|schedule|graph/TreeReachDetector.cpp" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+						<entry excluding="pb|smtlib|smt|tests|graph/kbtest.c|test/test_thorup.cpp|Main.cc|strings|schedule|graph/TreeReachDetector.cpp" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="pb"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="smt"/>
 						<entry excluding="test_ramal_reps.cpp|test_eulertree.cpp|test_thorup.cpp" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="tests"/>
 					</sourceEntries>
@@ -603,7 +609,8 @@
 						</toolChain>
 					</folderInfo>
 					<sourceEntries>
-						<entry excluding="smtlib|smt|tests|graph/kbtest.c|test/test_thorup.cpp|strings|schedule|graph/TreeReachDetector.cpp" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+						<entry excluding="pb|smtlib|smt|tests|graph/kbtest.c|test/test_thorup.cpp|strings|schedule|graph/TreeReachDetector.cpp" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="pb"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="smt"/>
 						<entry excluding="test_ramal_reps.cpp|test_eulertree.cpp|test_thorup.cpp" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="tests"/>
 					</sourceEntries>
@@ -693,7 +700,8 @@
 						</toolChain>
 					</folderInfo>
 					<sourceEntries>
-						<entry excluding="smtlib|smt|tests|graph/kbtest.c|test/test_thorup.cpp|strings|graph/TreeReachDetector.cpp" flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name=""/>
+						<entry excluding="pb|smtlib|smt|tests|graph/kbtest.c|test/test_thorup.cpp|strings|graph/TreeReachDetector.cpp" flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name=""/>
+						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="pb"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="smt"/>
 						<entry excluding="test_ramal_reps.cpp|test_eulertree.cpp|test_thorup.cpp" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="tests"/>
 					</sourceEntries>
@@ -787,7 +795,8 @@
 						</toolChain>
 					</folderInfo>
 					<sourceEntries>
-						<entry excluding="Main.cc|smt|smtlib|tests|graph/kbtest.c|test/test_thorup.cpp|strings|graph/TreeReachDetector.cpp" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+						<entry excluding="pb|Main.cc|smt|smtlib|tests|graph/kbtest.c|test/test_thorup.cpp|strings|graph/TreeReachDetector.cpp" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="pb"/>
 						<entry excluding="test_thorup.cpp|test_eulertree.cpp" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="tests"/>
 					</sourceEntries>
 				</configuration>

@@ -43,6 +43,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include <iterator>
 #include <unordered_map>
 #include "simp/SimpSolver.h"
+#include "pb/PbTheory.h"
 using namespace Minisat;
 
 //=================================================================================================
