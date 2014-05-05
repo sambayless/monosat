@@ -544,7 +544,7 @@ void Solver::analyzeFinal(Lit p, vec<Lit>& out_conflict)
 
 void Solver::uncheckedEnqueue(Lit p, CRef from)
 {
-	if(var(p)==0){
+	if(var(p)==62){
 		int a=1;
 	}
     assert(value(p) == l_Undef);
@@ -803,6 +803,7 @@ CRef Solver::propagate(bool propagate_theories)
 		    }
 		//propagate theories;
 		for(int i = 0;  propagate_theories && i<theories.size() && qhead == trail.size() && confl==CRef_Undef;i++){
+			theory_conflict.clear();
 			if(!theories[i]->propagateTheory(theory_conflict)){
 				if(!addConflictClause(theory_conflict,confl))
 					return confl;
@@ -1349,8 +1350,8 @@ lbool Solver::solve_()
 
 		if(opt_check_solution && theories.size()){
 			Theory * t = theories[0];
-							GraphTheorySolver *g = (GraphTheorySolver*)t;
-					if(!g->check_solved()){
+
+					if(!t->check_solved()){
 						fprintf(stderr,"Error! Solution doesn't satisfy graph properties!\n");
 						fflush(stderr);
 						exit(3);

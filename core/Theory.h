@@ -38,6 +38,9 @@ public:
 	virtual void printStats(int detailLevel=0){
 
 	}
+	virtual bool check_solved(){
+		return true;
+	}
 };
 
 }

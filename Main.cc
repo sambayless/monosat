@@ -128,6 +128,8 @@ int main(int argc, char** argv)
 
         BoolOption   pre    ("MAIN", "pre",    "Completely turn on/off any preprocessing.", true);
 
+        BoolOption opb("PB","opb","Parse the input as pseudo-boolean constraints in .opb format",false);
+
         parseOptions(argc, argv, true);
 
         bool using_symbols = strlen((const char* )opt_symbols)>0;
@@ -303,7 +305,10 @@ int main(int argc, char** argv)
                  printf("============================[ Problem Statistics ]=============================\n");
                  printf("|                                                                             |\n"); }
 
-             parse_GRAPH(in, S,using_symbols?&symbols:nullptr);
+             if(!opb)
+            	 parse_GRAPH(in, S,&symbols);
+             else
+            	 parse_PB(in,S,&symbols);
              gzclose(in);
 
              if(opt_verb>2){
@@ -596,8 +601,8 @@ int main(int argc, char** argv)
         if(ret==l_True){
         	if(!opt_csv)
         		printf("s SATISFIABLE\n");
-
-        	if(S.theories.size()){
+        	 if(!opb){
+        	if(S.theories.size() ){
 				Theory * t = S.theories[0];
 				GraphTheorySolver *g = (GraphTheorySolver*)t;
 				int width = sqrt(g->nNodes());
@@ -943,6 +948,27 @@ int main(int argc, char** argv)
 				fflush(sfile);
 				fclose(sfile);
 			}
+
+        	}else{
+        		//printf("s SATISFIABLE\n");
+
+        		//if(opt_witness){
+
+					printf("v ");
+					for(auto p:symbols){
+						Var v = p.first;
+						string & s = p.second;
+						if(S.model[v]==l_True){
+							printf("%s ",s.c_str());
+							//cout<<":- not "<< s<<".\n";
+						}else if (S.model[v]==l_False){
+							printf("-%s ",s.c_str());
+							//cout<<":- "<<s<<".\n";
+						}
+					}
+					printf("\n");
+				//}
+        	}
 
         }else if(ret==l_False){
         	printf("s UNSATISFIABLE\n");

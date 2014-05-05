@@ -21,15 +21,17 @@ namespace Minisat {
 
 template<class B, class Solver>
 static void parse_PB_main(B& in, Solver& S, vec<std::pair<int,std::string> > * symbols=NULL ) {
-	PbTheory * theory;
+	PbTheory * theory = new PbTheory(&S);
+    S.addTheory(theory);
 	vec<Lit> lits;
 	vec<int> weights;
     int vars    = 0;
     int clauses = 0;
     int cnt     = 0;
+    vec<bool> hasSymbol;
     //std::set<std::string> used_symbols;
     int line =0;
-    std::string symbol;
+
     for (;;){
     	line++;
         skipWhitespace(in);
@@ -47,6 +49,7 @@ static void parse_PB_main(B& in, Solver& S, vec<std::pair<int,std::string> > * s
 
 
 		   lits.clear();
+		   weights.clear();
 		   for (;;){
 			   skipWhitespace(in);
 			   if(*in=='>' || *in=='<' || *in=='='){
@@ -97,7 +100,7 @@ static void parse_PB_main(B& in, Solver& S, vec<std::pair<int,std::string> > * s
 				   skipWhitespace(in);
 				   //A variableID is the letter 'x' followed by an integer
 				   if(*in=='x'){
-
+					   ++in;
 				   }else{
 					   fprintf(stderr,"Parse ERROR at line %d! Expected variable id\n",line);
 					   exit(1);
@@ -110,17 +113,21 @@ static void parse_PB_main(B& in, Solver& S, vec<std::pair<int,std::string> > * s
 				   }
 				   Var v = parsed_ID - 1;
 
-				   while (var >= S.nVars()) S.newVar();
+				   while (v >= S.nVars()) S.newVar();
 				   lits.push(mkLit(v) );
 
 				   if(symbols){
-					    symbol.clear();
-					    stringstream ss(symbol);
-					    ss<<"x" << parsed_ID;
+					   hasSymbol.growTo(v+1);
+					   if(!hasSymbol[v]){
+						   hasSymbol[v]=true;
 
-		        		symbols->push();
-		        		symbols->last().first=v;
-		        		symbols->last().second=symbol;
+							stringstream ss;
+							ss<<"x" << parsed_ID;
+
+							symbols->push();
+							symbols->last().first=v;
+							symbols->last().second=ss.str();
+					   }
 				   }
 
 			   }
@@ -130,7 +137,7 @@ static void parse_PB_main(B& in, Solver& S, vec<std::pair<int,std::string> > * s
 			   fprintf(stderr,"Parse ERROR  at line %d! Line must end with semicolon\n",line);
 				exit(1);
 		   }
-
+		   ++in;
         }
 
     }
