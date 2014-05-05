@@ -142,7 +142,7 @@ class PbTheory: public Theory{
 
 	 			Lit sl = toSolver(l);
 	 			if( S->enqueue(sl,reason)){
-	 				//enqueueTheory(l);
+	 				enqueueTheory(l);
 	 				return true;
 	 			}else{
 	 				return false;
@@ -216,21 +216,23 @@ public:
 
  	 		stats_propagations++;
 
-
+ 	 		static int iter = 0;
  	 		double startproptime= rtime(2);
 
+ 	 		//This is wrong! Only need to visit each _clause_ that has any involved literals once per propagation round.
  	 		for(;qhead<trail.size();qhead++){
+
  	 			if(!trail[qhead].isLit)
  	 				continue;
- 	 			Lit l = toLit(trail[qhead].lit_clauseID);
- 	 			static int iter = 0;
- 	 			if(++iter==213){
+ 	 			Lit l2 = toLit(trail[qhead].lit_clauseID);
+
+ 	 			if(++iter==6){
  	 				int a=1;
  	 			}
- 	 			Var v= var(l);
+ 	 			Var v2= var(l2);
 
- 	 			assert(vars[v].clauseID>=0);
- 	 			int clauseID = vars[v].clauseID;
+ 	 			assert(vars[v2].clauseID>=0);
+ 	 			int clauseID = vars[v2].clauseID;
  	 			if(clauseID==1){
  	 				int a=1;
  	 			}
@@ -247,7 +249,7 @@ public:
  	 				continue;
  	 			}
 
- 	 			if(v == var(pbclause.rhs.lit)){
+ 	 			if(v2 == var(pbclause.rhs.lit)){
 
 
  	 			}else{
@@ -294,6 +296,7 @@ public:
 						//conflict
 						conflict.push(~rhs);
 						buildSumLTReason(clauseID,conflict);
+						 dbg_prove(pbclause,conflict);
 						toSolver(conflict);
 						return false;
 					}else if (rhs_val==l_False && underApprox>=total){
@@ -302,17 +305,20 @@ public:
 						conflict.push(rhs);
 
 						buildSumGEReason(clauseID,conflict);
+						 dbg_prove(pbclause,conflict);
 						toSolver(conflict);
 						return false;
 					}else if (underApprox>=total && rhs_val==l_Undef){
 						pbclause.isSatisfied=true;
 						pbclause.isOverEq=true;
-						trail.push({false,clauseID});
+						dbg_prop(pbclause,rhs);
+						//trail.push({false,clauseID});
 						enqueue(rhs,pbclause.reason);
 					}else if (overApprox<total && rhs_val==l_Undef){
 						pbclause.isSatisfied=true;
 						pbclause.isOverEq=false;
-						trail.push({false,clauseID});
+						dbg_prop(pbclause,~rhs);
+						//trail.push({false,clauseID});
 						enqueue(~rhs,pbclause.reason);
 					}else if(rhs_val==l_False ){
 						pbclause.isOverEq=false;
@@ -320,19 +326,40 @@ public:
 						for(PbElement e:pbclause.clause){
 							Lit l = e.lit;
 							if(value(l)==l_Undef && underApprox+e.weight>=total){
+								dbg_prop(pbclause,~l);
 								enqueue(~l,pbclause.reason);
 							}
 						}
 
 					}else if (rhs_val==l_True){
 						assert(n_Free>0);
-						if(n_Free==1){
-							assert(smallestUnassignedWeight==largestUnassignedWeight);
+						//if(n_Free==1){
+						if(overApprox - largestUnassignedWeight <total){
+							//then the largest unassigned weight is forced
+							//assert(smallestUnassignedWeight==largestUnassignedWeight);
 							assert(largestUnassigned!=lit_Undef);
-							assert(underApprox+largestUnassignedWeight>=total);//else the over approx would have triggered a conflict
+							//assert(underApprox+largestUnassignedWeight>=total);//else the over approx would have triggered a conflict
+							dbg_prop(pbclause,largestUnassigned);
 							enqueue(largestUnassigned,pbclause.reason);
+
+							//it may also be the case that the second largest weight is forced.
+							if(n_Free>1){
+								for(PbElement e:pbclause.clause){
+									Lit l = e.lit;
+									lbool val = value(l);
+									if(val==l_True){
+
+									}else if(val==l_Undef){
+										if(overApprox-e.weight<total){
+											dbg_prop(pbclause,e.lit);
+											enqueue(e.lit,pbclause.reason);
+										}
+									}
+								}
+							}
 						}
 					}
+
  	 			}
 
  	 		}
@@ -340,7 +367,7 @@ public:
 
  	 		double elapsed = rtime(2)-startproptime;
  	 		propagationtime+=elapsed;
-
+ 	 		dbg_fully_propped();
  	 		return true;
  	 	};
 
@@ -605,6 +632,86 @@ private:
 		  return rhs_lit;
 
 	 }
+ 	 void dbg_fully_propped(){
+#ifndef NDEBUG
+ 		for(PbClause & c:clauses){
+ 			dbg_fully_propped(c);
+
+ 		}
+#endif
+ 	 }
+
+ 	  void dbg_fully_propped(const PbClause & c){
+#ifndef NDEBUG
+
+ 		  vec<Lit> prove;
+ 		  for(PbElement p:c.clause){
+ 			  if(value(p.lit)==l_False){
+ 				  prove.push(~p.lit);
+ 			  }else if(value(p.lit)==l_True){
+ 				  prove.push(p.lit);
+ 			  }
+ 		  }
+
+ 		  if(value(c.rhs.lit)==l_False){
+ 			  prove.push(~c.rhs.lit);
+		  }else if(value(c.rhs.lit)==l_True){
+			  prove.push(c.rhs.lit);
+		  }
+
+
+ 		 dbg_sat(c,prove);
+
+
+		  for(PbElement p:c.clause){
+			 // if(var(p.lit)==23 || toInt(p.lit)==23){
+
+
+			  if(value(p.lit)==l_Undef){
+				  prove.push(p.lit);
+				  dbg_sat(c,prove);
+				  prove.pop();
+				  prove.push(~p.lit);
+				  dbg_sat(c,prove);
+				  prove.pop();
+
+			  }
+			// }
+		  }
+
+		  if(value(c.rhs.lit)==l_Undef){
+			  prove.push(c.rhs.lit);
+				  dbg_sat(c,prove);
+				  prove.pop();
+				  prove.push(~c.rhs.lit);
+				  dbg_sat(c,prove);
+				  prove.pop();
+		  }
+#endif
+ 	  }
+
+ 	  void dbg_prop(const PbClause & c,Lit e){
+#ifndef NDEBUG
+ 		  vec<Lit> prove;
+ 		  for(PbElement p:c.clause){
+ 			  if(value(p.lit)==l_False){
+ 				  prove.push(p.lit);
+ 			  }else if(value(p.lit)==l_True){
+ 				  prove.push(~p.lit);
+ 			  }
+ 		  }
+
+ 		  if(value(c.rhs.lit)==l_False){
+ 			  prove.push(c.rhs.lit);
+		  }else if(value(c.rhs.lit)==l_True){
+			  prove.push(~c.rhs.lit);
+		  }
+
+ 		 prove.push(e);
+ 		 dbg_prove(c,prove);
+
+#endif
+ 	  }
 
  	  void dbg_prove(const PbClause & c, const vec<Lit> & clause){
 #ifndef NDEBUG
@@ -665,6 +772,64 @@ private:
 #endif
  	  }
 
+ 	  void dbg_sat(const PbClause & c, const vec<Lit> & clause){
+#ifndef NDEBUG
+ 		 bool rhs_val = true;
+ 		 for(Lit l:clause){
+ 			 if(var(l)==var(c.rhs.lit)){
+ 				 if(l==c.rhs.lit){
+ 					 rhs_val=false;
+ 				 }else{
+ 					 assert(l==~c.rhs.lit);
+ 					 rhs_val=true;
+ 				 }
+ 			 }
+ 		 }
+ 		 FILE *f =  fopen("test.opb","w");
+ 		 for(PbElement & e:c.clause){
+ 			 fprintf(f,"%s%d x%d ",e.weight>=0 ? "+":"",e.weight,var(e.lit)+1);
+ 		 }
+
+ 		 if(rhs_val){
+ 			 fprintf(f," >= %d ;\n",c.rhs.weight);
+ 		 }else{
+ 			 fprintf(f," < %d ;\n",c.rhs.weight);
+ 		 }
+
+ 		 fflush(f);
+ 		// int r =system("minisat+ test.opb >/dev/null")>>8;
+ 		// assert(r==10);
+
+
+ 		 for(Lit l:clause){
+ 			 if(var(l)==var(c.rhs.lit)){
+
+ 			 }else{
+ 				 bool found=false;
+ 				 bool sign = false;
+ 				 for(PbElement & e:c.clause){
+ 					 if(e.lit == l){
+ 						 found=true;
+ 					 }else if(e.lit==~l){
+ 						 sign=true;
+ 						 found=true;
+ 					 }
+ 				 }
+ 				 assert(found);
+ 				 if(!sign){
+ 					 fprintf(f,"1 x%d >= 1 ;\n",var(l)+1);
+ 				 }else{
+ 					 fprintf(f,"1 x%d < 1 ;\n",var(l)+1);
+ 				 }
+
+ 			 }
+ 		 }
+ 		 fflush(f);
+ 		 fclose(f);
+ 		 int r =system("minisat+ test.opb >/dev/null")>>8;
+ 		 assert(r==10);
+#endif
+ 	  }
 public:
  	 void buildReason(Lit p, vec<Lit> & reason){
  		 CRef marker = S->reason(var(toSolver(p)));
