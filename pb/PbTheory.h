@@ -22,11 +22,11 @@ class PbTheory: public Theory{
 	Solver * S;
 	int theory_index;
 
-
+	int qhead=0;
 	//vec<Assignment> trail;
-	vec<int> trail;
-	//vec<int> trail_lim;
-
+	vec<Lit> trail;
+	vec<int> trail_lim;
+	vec<int> inq;
 	enum class PbType{
 		GT, GE,LT,LE,EQ
 	};
@@ -69,6 +69,7 @@ class PbTheory: public Theory{
 	Map<CRef,int> reasonMap;
 	vec<PbClause> clauses;
 	vec<VarData> vars;
+	vec<lbool> assigns;
 	vec<Lit> clause;
 	vec<int> weights;
 
@@ -96,6 +97,7 @@ class PbTheory: public Theory{
 	 		}
 
 	 		Var v = vars.size();
+	 		assigns.push(l_Undef);
 	 		vars.push();
 	 		vars[v].solverVar=solverVar;
 	 		vars[v].clauseID=clauseID;
@@ -130,17 +132,23 @@ class PbTheory: public Theory{
 	 			return S->level(toSolver(v));
 	 		}
 	 		inline lbool value(Var v){
-	 			return S->value(toSolver(v));
+				if(assigns[v]!=l_Undef){
+		 				assert(S->value(toSolver(v))==assigns[v]);
+		 			}
+	 			return assigns[v]; //S->value(toSolver(v));
 	 		}
 	 		inline lbool value(Lit l){
-	 			return S->value(toSolver(l));
+	 			if(assigns[var(l)]!=l_Undef){
+	 				assert(S->value(toSolver(var(l)))==assigns[var(l)]);
+	 			}
+	 			return assigns[var(l)]^sign(l);//S->value(toSolver(l));
 	 		}
 	 		inline bool enqueue(Lit l, CRef reason){
 
 
 	 			Lit sl = toSolver(l);
 	 			if( S->enqueue(sl,reason)){
-	 				//enqueueTheory(l);
+	 				enqueueTheory(l);
 	 				return true;
 	 			}else{
 	 				return false;
@@ -187,26 +195,31 @@ public:
  	    	theory_index=id;
  	    }
  		void newDecisionLevel(){
- 			//trail_lim.push(trail.size());
+ 			trail_lim.push(trail.size());
  		};
  		inline int decisionLevel(){
  			return S->decisionLevel();
  		}
  	 void enqueueTheory(Lit l){
  	 		Var v = var(l);
-
+ 	 		if(toInt(l)==13){
+ 	 			int a=1;
+ 	 		}
  	 		int lev = level(v);
 
  	 		assert(decisionLevel()<=lev);
-/*
+ 	 		if(value(l)!=l_Undef)
+ 	 			return;
  	 		while(lev>trail_lim.size()){
  	 			newDecisionLevel();
- 	 		}*/
+ 	 		}
  	 		int clauseID = vars[v].clauseID;
  	 		if(!clauses[clauseID].inQueue){
  	 			clauses[clauseID].inQueue=true;
- 	 			trail.push(clauseID);
+ 	 			inq.push(clauseID);
  	 		}
+ 	 		assigns[var(l)]=sign(l) ? l_False:l_True;
+ 	 		trail.push(l);
 			//trail.push({true,toInt(l)});
  	 	};
  	 	bool propagateTheory(vec<Lit> & conflict){
@@ -215,6 +228,10 @@ public:
  	 			stats_propagations_skipped++;
  	 			return true;
  	 		}*/
+ 	 		if(inq.size()==0){
+ 	 			dbg_fully_propped();
+ 	 			return true;
+ 	 		}
 
  	 		stats_propagations++;
 
@@ -224,12 +241,12 @@ public:
  	 		//This is wrong! Only need to visit each _clause_ that has any involved literals once per propagation round.
  	 		//for(int i = 0;i<trail.size();i++){
  	 			//int clauseID = trail[i];
- 	 		for(int clauseID = 0;clauseID<clauses.size();clauseID++){
-
+ 	 		//for(int clauseID = 0;clauseID<clauses.size();clauseID++){
+ 	 		for(int clauseID:inq){
  	 			PbClause & pbclause = clauses[clauseID];
  	 			//if(pbclause.isSatisfied)
  	 			//	continue;
- 	 			pbclause.inQueue=false;
+
  	 			Lit rhs = pbclause.rhs.lit;
  	 			lbool rhs_val = value(rhs);
  	 			if(pbclause.oneSided && rhs_val==l_False){
@@ -280,6 +297,8 @@ public:
 
 					}else if(rhs_val==l_True && overApprox<total){
 						//conflict
+						static int iter = 0;
+						++iter;
 						conflict.push(~rhs);
 						buildSumLTReason(clauseID,conflict);
 						 dbg_prove(pbclause,conflict);
@@ -330,7 +349,7 @@ public:
 							enqueue(largestUnassigned,pbclause.reason);
 
 							//it may also be the case that the second largest weight is forced.
-							/*if(n_Free>1){
+							if(n_Free>1){
 								for(PbElement e:pbclause.clause){
 									Lit l = e.lit;
 									lbool val = value(l);
@@ -343,15 +362,18 @@ public:
 										}
 									}
 								}
-							}*/
+							}
 						}
 					}
-
-
-
+					clauses[clauseID].inQueue=false;
  	 		}
 
- 	 		trail.clear();
+#ifndef NDEBUG
+ 	 		for(PbClause & c:clauses){
+ 	 			assert(!c.inQueue);
+ 	 		}
+#endif
+ 	 		inq.clear();
  	 		double elapsed = rtime(2)-startproptime;
  	 		propagationtime+=elapsed;
  	 		dbg_fully_propped();
@@ -380,7 +402,7 @@ private:
 					}
 
 					if(value(l)==l_True){
-						if(level(var(l))>0)
+						//if(level(var(l))>0)
 							conflict.push(~l);
 						underApprox +=e.weight;
 					}
@@ -407,7 +429,7 @@ private:
 					}
 
 					if(value(l)==l_False){
-						if(level(var(l))>0)
+						//if(level(var(l))>0)
 							conflict.push(l);
 					}else{
 						overApprox +=e.weight;
@@ -427,7 +449,7 @@ private:
  	 			for(PbElement e:pbclause.clause){
 						Lit l = e.lit;
 						if(value(l)==l_True){
-							if(level(var(l))>0)
+							//if(level(var(l))>0)
 								conflict.push(~l);
 							underApprox +=e.weight;
 						}else if(value(l)==l_Undef){
@@ -450,7 +472,7 @@ private:
 						}else if(value(l)==l_Undef){
 							unassignedWeight+=e.weight;
 						}else if(value(l)==l_False){
-							if(level(var(l))>0)
+							//if(level(var(l))>0)
 								conflict.push(l);
 						}
 					}
@@ -622,7 +644,7 @@ private:
  	 void dbg_fully_propped(){
 #ifndef NDEBUG
  		for(PbClause & c:clauses){
- 			//dbg_fully_propped(c);
+ 			dbg_fully_propped(c);
 
  		}
 #endif
@@ -819,6 +841,8 @@ private:
  	  }
 public:
  	 void buildReason(Lit p, vec<Lit> & reason){
+ 		 backtrackUntil(p);
+ 		 assert(value(p)==l_True);
  		 CRef marker = S->reason(var(toSolver(p)));
  		 assert(marker!=CRef_Undef);
  		 assert(reasonMap.has(marker));
@@ -894,28 +918,66 @@ public:
 	 }
 
 	  void backtrackUntil(int level){
-		  bool changed=false;
-		  trail.clear();
+		//  bool changed=false;
+	 		for(int clauseID:inq){
+	 			clauses[clauseID].inQueue=false;
+	 		}
+#ifndef NDEBUG
+	 		for(PbClause & c:clauses){
+	 			assert(!c.inQueue);
+	 		}
+#endif
+	 		inq.clear();
 			//need to remove and add edges in the two graphs accordingly.
-	/*		if(trail_lim.size()>level){
+			if(trail_lim.size()>level){
 				int stop = trail_lim[level];
 				for(int i = trail.size()-1;i>=trail_lim[level];i--){
-					//if(!trail[i].isLit){
-						int clauseID = trail[i];//.lit_clauseID;
-						assert(clauseID>=0);assert(clauseID<clauses.size());
-						assert(clauses[clauseID].isSatisfied);
-						clauses[clauseID].isSatisfied=false;
-						clauses[clauseID].isOverEq=false;
-						clauses[clauseID].inQueue=false;
-					//}
-					changed=true;
+					Lit l = trail[i];
+
+					assigns[var(l)]=l_Undef;
+					//changed=true;
 				}
 				trail.shrink(trail.size()-stop);
 				trail_lim.shrink(trail_lim.size()-level);
 				assert(trail_lim.size()==level);
 				if(qhead>trail.size())
 					qhead=trail.size();
-			}*/
+			}
+	  }
+
+	  void backtrackUntil(Lit p){
+	 		for(int clauseID:inq){
+	 			clauses[clauseID].inQueue=false;
+	 		}
+#ifndef NDEBUG
+	 		for(PbClause & c:clauses){
+	 			assert(!c.inQueue);
+	 		}
+#endif
+	 		inq.clear();
+			//need to remove and add edges in the two graphs accordingly.
+			if(value(p)!=l_Undef){
+				int i;
+				for(i = trail.size()-1;i>=0;i--){
+					Lit l = trail[i];
+
+					if(l==p){
+						i++;
+						break;
+					}else{
+						assert(var(l)!=var(p));
+					}
+
+					assigns[var(l)]=l_Undef;
+
+				}
+				trail.shrink(trail.size()-i);
+				while(trail_lim.size() && trail_lim.last()>=trail.size())
+						trail_lim.pop();
+				assert(trail_lim.size()==decisionLevel());
+				if(qhead>trail.size())
+					qhead=trail.size();
+			}
 	  }
 	  bool check_solved(){
 		  for(int i = 0;i<clauses.size();i++){
