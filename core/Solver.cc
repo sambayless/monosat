@@ -392,6 +392,7 @@ void Solver::analyze(CRef confl, vec<Lit>& out_learnt, int& out_btlevel)
 		   }
         // Select next clause to look at:
         while (!seen[var(trail[index--])]);
+        assert(index>=-1);
         p     = trail[index+1];
         confl = reason(var(p));
         if(isTheoryCause(confl)){
@@ -404,7 +405,10 @@ void Solver::analyze(CRef confl, vec<Lit>& out_learnt, int& out_btlevel)
     }while (pathC > 0);
     out_learnt[0] = ~p;
     dbg_check(out_learnt);
-
+#ifndef NDEBUG
+    for(Lit p:out_learnt)
+    	assert(value(p)==l_False);
+#endif
     // Simplify conflict clause:
     //
     int i, j;
@@ -455,6 +459,10 @@ void Solver::analyze(CRef confl, vec<Lit>& out_learnt, int& out_btlevel)
         out_learnt[1]     = p;
         out_btlevel       = level(var(p));
     }
+#ifndef NDEBUG
+    for(Lit p:out_learnt)
+    	assert(value(p)==l_False);
+#endif
     dbg_check(out_learnt);
     for (int j = 0; j < analyze_toclear.size(); j++) seen[var(analyze_toclear[j])] = 0;    // ('seen[]' is now cleared)
 }
@@ -1060,6 +1068,10 @@ bool Solver::addConflictClause(vec<Lit> & ps, CRef & confl_out){
 			}
 			//assert(max_lev>0);
 			cancelUntil(max_lev);
+#ifndef NDEBUG
+			for(int j = 0;j<ps.size();j++)
+				assert(value(ps[j])==l_False);
+#endif
 			CRef cr = ca.alloc(ps, !opt_permanent_theory_conflicts);
 	    	if(opt_permanent_theory_conflicts)
 				clauses.push(cr);
@@ -1125,6 +1137,7 @@ lbool Solver::search(int nof_conflicts)
                 if(value(learnt_clause[0])==l_Undef){
                 	uncheckedEnqueue(learnt_clause[0], cr);
                 }else{
+                	 assert(S);
                 	//this is _not_ an asserting clause, its a conflict that must be passed up to the super solver.
                 	 analyzeFinal(cr,lit_Undef,conflict);
 

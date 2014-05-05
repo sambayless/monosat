@@ -21,14 +21,11 @@ namespace Minisat {
 class PbTheory: public Theory{
 	Solver * S;
 	int theory_index;
-	int qhead=0;
-	struct Assignment{
-		int isLit:1;
-		int lit_clauseID:31;
-	};
 
-	vec<Assignment> trail;
-	vec<int> trail_lim;
+
+	//vec<Assignment> trail;
+	vec<int> trail;
+	//vec<int> trail_lim;
 
 	enum class PbType{
 		GT, GE,LT,LE,EQ
@@ -61,10 +58,11 @@ class PbTheory: public Theory{
 		bool oneSided;
 		bool isSatisfied;
 		bool isOverEq; //true iff the sum of the lhs is >= the rhs
+		bool inQueue;
 		PbElement rhs;
 		CRef reason;
 		vec<PbElement> clause;
-		PbClause():oneSided(false),isSatisfied(false){}
+		PbClause():oneSided(false),isSatisfied(false),isOverEq(false),inQueue(false){}
 	};
 	int firstCRef;
 	//Map reasons to clauseIDs
@@ -142,7 +140,7 @@ class PbTheory: public Theory{
 
 	 			Lit sl = toSolver(l);
 	 			if( S->enqueue(sl,reason)){
-	 				enqueueTheory(l);
+	 				//enqueueTheory(l);
 	 				return true;
 	 			}else{
 	 				return false;
@@ -189,10 +187,10 @@ public:
  	    	theory_index=id;
  	    }
  		void newDecisionLevel(){
- 			trail_lim.push(trail.size());
+ 			//trail_lim.push(trail.size());
  		};
  		inline int decisionLevel(){
- 			return trail_lim.size(); //S->decisionLevel();
+ 			return S->decisionLevel();
  		}
  	 void enqueueTheory(Lit l){
  	 		Var v = var(l);
@@ -200,19 +198,23 @@ public:
  	 		int lev = level(v);
 
  	 		assert(decisionLevel()<=lev);
-
+/*
  	 		while(lev>trail_lim.size()){
  	 			newDecisionLevel();
+ 	 		}*/
+ 	 		int clauseID = vars[v].clauseID;
+ 	 		if(!clauses[clauseID].inQueue){
+ 	 			clauses[clauseID].inQueue=true;
+ 	 			trail.push(clauseID);
  	 		}
-
-			trail.push({true,toInt(l)});
+			//trail.push({true,toInt(l)});
  	 	};
  	 	bool propagateTheory(vec<Lit> & conflict){
- 	 		assert(qhead<=trail.size());
- 	 		if(qhead==trail.size()){
+
+ /*	 		if(trail.size()==0){
  	 			stats_propagations_skipped++;
  	 			return true;
- 	 		}
+ 	 		}*/
 
  	 		stats_propagations++;
 
@@ -220,39 +222,23 @@ public:
  	 		double startproptime= rtime(2);
 
  	 		//This is wrong! Only need to visit each _clause_ that has any involved literals once per propagation round.
- 	 		for(;qhead<trail.size();qhead++){
+ 	 		//for(int i = 0;i<trail.size();i++){
+ 	 			//int clauseID = trail[i];
+ 	 		for(int clauseID = 0;clauseID<clauses.size();clauseID++){
 
- 	 			if(!trail[qhead].isLit)
- 	 				continue;
- 	 			Lit l2 = toLit(trail[qhead].lit_clauseID);
-
- 	 			if(++iter==6){
- 	 				int a=1;
- 	 			}
- 	 			Var v2= var(l2);
-
- 	 			assert(vars[v2].clauseID>=0);
- 	 			int clauseID = vars[v2].clauseID;
- 	 			if(clauseID==1){
- 	 				int a=1;
- 	 			}
  	 			PbClause & pbclause = clauses[clauseID];
- 	 			if(pbclause.isSatisfied)
- 	 				continue;
-
+ 	 			//if(pbclause.isSatisfied)
+ 	 			//	continue;
+ 	 			pbclause.inQueue=false;
  	 			Lit rhs = pbclause.rhs.lit;
  	 			lbool rhs_val = value(rhs);
  	 			if(pbclause.oneSided && rhs_val==l_False){
  	 				//this clause is free.
  	 				pbclause.isSatisfied=true;
- 	 				trail.push({false,clauseID});
+
  	 				continue;
  	 			}
 
- 	 			if(v2 == var(pbclause.rhs.lit)){
-
-
- 	 			}else{
 
 					unsigned int total = pbclause.rhs.weight;
 					//compute over and under approximations...
@@ -273,7 +259,7 @@ public:
 							unassignedWeight+=e.weight;
 							if(e.weight>largestUnassignedWeight){
 								largestUnassignedWeight=e.weight;
-								largestUnassigned = l;
+								largestUnassigned = e.lit;
 							}
 							if (e.weight<=smallestUnassignedWeight){
 								smallestUnassignedWeight=e.weight;
@@ -287,11 +273,11 @@ public:
 					if(rhs_val==l_True && underApprox>=total){
 						//this is a satisfied constraint
 						pbclause.isSatisfied=true;
-						trail.push({false,clauseID});
+
 					}else if(rhs_val==l_False && overApprox<total){
 						//this is a satisfied constraint
 						pbclause.isSatisfied=true;
-						trail.push({false,clauseID});
+
 					}else if(rhs_val==l_True && overApprox<total){
 						//conflict
 						conflict.push(~rhs);
@@ -333,6 +319,7 @@ public:
 
 					}else if (rhs_val==l_True){
 						assert(n_Free>0);
+						assert(overApprox>=total);
 						//if(n_Free==1){
 						if(overApprox - largestUnassignedWeight <total){
 							//then the largest unassigned weight is forced
@@ -343,7 +330,7 @@ public:
 							enqueue(largestUnassigned,pbclause.reason);
 
 							//it may also be the case that the second largest weight is forced.
-							if(n_Free>1){
+							/*if(n_Free>1){
 								for(PbElement e:pbclause.clause){
 									Lit l = e.lit;
 									lbool val = value(l);
@@ -356,15 +343,15 @@ public:
 										}
 									}
 								}
-							}
+							}*/
 						}
 					}
 
- 	 			}
+
 
  	 		}
 
-
+ 	 		trail.clear();
  	 		double elapsed = rtime(2)-startproptime;
  	 		propagationtime+=elapsed;
  	 		dbg_fully_propped();
@@ -375,7 +362,7 @@ private:
  	 		void buildElementForcedFalseReason(int clauseID, Lit element,vec<Lit> & conflict){
  	 			//the reason why a lit is forced to false is the set of true literals in the clause, and the rhs
  	 			PbClause & pbclause = clauses[clauseID];
-				assert(pbclause.isSatisfied);
+				//assert(pbclause.isSatisfied);
 				assert(value(pbclause.rhs.lit)==l_False);
 
 				conflict.push(pbclause.rhs.lit);
@@ -403,7 +390,7 @@ private:
  	 		void buildElementForcedTrueReason(int clauseID, Lit element,vec<Lit> & conflict){
  	 			//the reason why a lit is forced to false is the set of true literals in the clause, and the rhs
  	 			PbClause & pbclause = clauses[clauseID];
-				assert(pbclause.isSatisfied);
+				//assert(pbclause.isSatisfied);
 				assert(value(pbclause.rhs.lit)==l_True);
 				conflict.push(~pbclause.rhs.lit);
 
@@ -416,7 +403,7 @@ private:
 						assert(value(e.lit)==l_True);
 					}else{
 						assert(var(element)!=var(e.lit));
-						assert(value(l)!=l_Undef);
+						//assert(value(l)!=l_Undef);
 					}
 
 					if(value(l)==l_False){
@@ -427,13 +414,13 @@ private:
 					}
 
 				}
-				assert(overApprox>=pbclause.rhs.weight);
+				//assert(overApprox>=pbclause.rhs.weight);
 				assert(overApprox-forcedWeight <pbclause.rhs.weight);
 
  	 		}
  	 		void buildSumGEReason(int clauseID,vec<Lit> & conflict){
  	 			PbClause & pbclause = clauses[clauseID];
- 	 			assert(!pbclause.isSatisfied);
+ 	 			//assert(!pbclause.isSatisfied);
 
  	 			int underApprox = 0;
  	 			int unassignedWeight = 0;
@@ -452,7 +439,7 @@ private:
 
  	 		void buildSumLTReason(int clauseID,vec<Lit> & conflict){
  	 			PbClause & pbclause = clauses[clauseID];
- 	 			assert(!pbclause.isSatisfied);
+ 	 			//assert(!pbclause.isSatisfied);
 
  	 			int underApprox = 0;
  	 			int unassignedWeight = 0;
@@ -635,7 +622,7 @@ private:
  	 void dbg_fully_propped(){
 #ifndef NDEBUG
  		for(PbClause & c:clauses){
- 			dbg_fully_propped(c);
+ 			//dbg_fully_propped(c);
 
  		}
 #endif
@@ -726,7 +713,7 @@ private:
  				 }
  			 }
  		 }
- 		 FILE *f =  fopen("test.opb","w");
+ 		 FILE *f =  fopen("testa.opb","w");
  		 for(PbElement & e:c.clause){
  			 fprintf(f,"%s%d x%d ",e.weight>=0 ? "+":"",e.weight,var(e.lit)+1);
  		 }
@@ -738,7 +725,7 @@ private:
  		 }
 
  		 fflush(f);
- 		 int r =system("minisat+ test.opb >/dev/null")>>8;
+ 		 int r =system("minisat+ testa.opb >/dev/null")>>8;
  		 assert(r==10);
 
 
@@ -767,7 +754,7 @@ private:
  		 }
  		 fflush(f);
  		 fclose(f);
- 		 r =system("minisat+ test.opb >/dev/null")>>8;
+ 		 r =system("minisat+ testa.opb >/dev/null")>>8;
  		 assert(r==20);
 #endif
  	  }
@@ -785,7 +772,7 @@ private:
  				 }
  			 }
  		 }
- 		 FILE *f =  fopen("test.opb","w");
+ 		 FILE *f =  fopen("testa.opb","w");
  		 for(PbElement & e:c.clause){
  			 fprintf(f,"%s%d x%d ",e.weight>=0 ? "+":"",e.weight,var(e.lit)+1);
  		 }
@@ -797,7 +784,7 @@ private:
  		 }
 
  		 fflush(f);
- 		// int r =system("minisat+ test.opb >/dev/null")>>8;
+ 		// int r =system("minisat+ testa.opb >/dev/null")>>8;
  		// assert(r==10);
 
 
@@ -826,7 +813,7 @@ private:
  		 }
  		 fflush(f);
  		 fclose(f);
- 		 int r =system("minisat+ test.opb >/dev/null")>>8;
+ 		 int r =system("minisat+ testa.opb >/dev/null")>>8;
  		 assert(r==10);
 #endif
  	  }
@@ -855,6 +842,7 @@ public:
  				 buildElementForcedTrueReason(clauseID,p,reason);
  			 }
  		 }
+
  		 dbg_prove(pbclause,reason);
  		toSolver(reason);
  	 }
@@ -907,17 +895,19 @@ public:
 
 	  void backtrackUntil(int level){
 		  bool changed=false;
+		  trail.clear();
 			//need to remove and add edges in the two graphs accordingly.
-			if(trail_lim.size()>level){
+	/*		if(trail_lim.size()>level){
 				int stop = trail_lim[level];
 				for(int i = trail.size()-1;i>=trail_lim[level];i--){
-					if(!trail[i].isLit){
-						int clauseID = trail[i].lit_clauseID;
+					//if(!trail[i].isLit){
+						int clauseID = trail[i];//.lit_clauseID;
 						assert(clauseID>=0);assert(clauseID<clauses.size());
 						assert(clauses[clauseID].isSatisfied);
 						clauses[clauseID].isSatisfied=false;
 						clauses[clauseID].isOverEq=false;
-					}
+						clauses[clauseID].inQueue=false;
+					//}
 					changed=true;
 				}
 				trail.shrink(trail.size()-stop);
@@ -925,7 +915,7 @@ public:
 				assert(trail_lim.size()==level);
 				if(qhead>trail.size())
 					qhead=trail.size();
-			}
+			}*/
 	  }
 	  bool check_solved(){
 		  for(int i = 0;i<clauses.size();i++){
