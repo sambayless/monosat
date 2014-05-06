@@ -593,10 +593,13 @@ private:
  	 				if(S->value(l)==l_True){
  	 					//drop this literal, and subtract is total from the rhs
  	 					rhs-=w;
+ 	 					continue;
  	 				}else if (S->value(l)==l_False){
  	 					//then drop this literal
+ 	 					continue;
  	 				}else if(w==0){
  	 					//then drop this literal
+ 	 					continue;
  	 				}else if (w<0){
  	 					//then invert this literal and update the right hand side
  	 					w=-w;
@@ -647,6 +650,11 @@ private:
  	 				weights.clear();
  	 				S->addClause(rhs_lit);
  	 				return false;
+ 	 			}
+ 	 			if (clause.size()==0){
+ 	 				assert(weights.size()==0);
+ 	 				S->addClause(~rhs_lit);
+					return false;
  	 			}
  	 			{
 					//sort the lits by the sizes of their weights, in descending order (like clasp does)
