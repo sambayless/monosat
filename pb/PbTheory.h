@@ -17,6 +17,8 @@
 #include <cmath>
 namespace Minisat {
 
+static BoolOption   opt_dbg_prop        ("DEBUG", "prove-prop",        "", false);
+
 
 class PbTheory: public Theory{
 	Solver * S;
@@ -27,6 +29,7 @@ class PbTheory: public Theory{
 	vec<Lit> trail;
 	vec<int> trail_lim;
 	vec<int> inq;
+	vec<int> t_weights;
 	enum class PbType{
 		GT, GE,LT,LE,EQ
 	};
@@ -72,10 +75,12 @@ class PbTheory: public Theory{
 	vec<lbool> assigns;
 	vec<Lit> clause;
 	vec<int> weights;
-
+	vec<int> indices;
+	vec<Lit> tmp_clause;
+	vec<int> tmp_weights;
 	 double propagationtime;
 	 long stats_propagations,stats_propagations_skipped;
-
+	 long stats_shrink_removed = 0;
 /*	 Var newVar(){
 	 		Var s= S->newVar();
 	 		Var v = vars.size();
@@ -242,7 +247,8 @@ public:
  	 		//for(int i = 0;i<trail.size();i++){
  	 			//int clauseID = trail[i];
  	 		//for(int clauseID = 0;clauseID<clauses.size();clauseID++){
- 	 		for(int clauseID:inq){
+ 	 		while(inq.size()){
+ 	 			int clauseID = inq.last();
  	 			PbClause & pbclause = clauses[clauseID];
  	 			//if(pbclause.isSatisfied)
  	 			//	continue;
@@ -302,6 +308,7 @@ public:
 						conflict.push(~rhs);
 						buildSumLTReason(clauseID,conflict);
 						 dbg_prove(pbclause,conflict);
+						 dbg_min_conflict(pbclause,conflict);
 						toSolver(conflict);
 						return false;
 					}else if (rhs_val==l_False && underApprox>=total){
@@ -311,6 +318,7 @@ public:
 
 						buildSumGEReason(clauseID,conflict);
 						 dbg_prove(pbclause,conflict);
+						 dbg_min_conflict(pbclause,conflict);
 						toSolver(conflict);
 						return false;
 					}else if (underApprox>=total && rhs_val==l_Undef){
@@ -366,6 +374,7 @@ public:
 						}
 					}
 					clauses[clauseID].inQueue=false;
+					inq.pop();
  	 		}
 
 #ifndef NDEBUG
@@ -373,7 +382,7 @@ public:
  	 			assert(!c.inQueue);
  	 		}
 #endif
- 	 		inq.clear();
+
  	 		double elapsed = rtime(2)-startproptime;
  	 		propagationtime+=elapsed;
  	 		dbg_fully_propped();
@@ -415,9 +424,11 @@ private:
 				//assert(pbclause.isSatisfied);
 				assert(value(pbclause.rhs.lit)==l_True);
 				conflict.push(~pbclause.rhs.lit);
-
+				int startSize = conflict.size();
+				int rhs = pbclause.rhs.weight;
 				int overApprox = 0;
 				int forcedWeight = 0;
+				t_weights.clear();
 				for(PbElement e:pbclause.clause){
 					Lit l = e.lit;
 					if(e.lit ==element){
@@ -430,12 +441,34 @@ private:
 
 					if(value(l)==l_False){
 						//if(level(var(l))>0)
-							conflict.push(l);
+						assert(var(e.lit)!=var(element));
+
+						conflict.push(l);
+						if(opt_shrink_theory_conflicts)
+							t_weights.push(e.weight);
 					}else{
 						overApprox +=e.weight;
 					}
 
 				}
+
+				if(opt_shrink_theory_conflicts){
+					assert(t_weights.size()+startSize==conflict.size());
+					int i,j=startSize;
+					for(i=startSize;i<conflict.size();i++){
+						Lit l = conflict[i];
+						int w = t_weights[i-startSize];
+						if(overApprox-forcedWeight+w<rhs){
+							//then we can safely drop this from the conflict
+							stats_shrink_removed++;
+							overApprox+=w;
+						}else{
+							conflict[j++]=l;
+						}
+					}
+					conflict.shrink(i-j);
+				}
+
 				//assert(overApprox>=pbclause.rhs.weight);
 				assert(overApprox-forcedWeight <pbclause.rhs.weight);
 
@@ -462,7 +495,9 @@ private:
  	 		void buildSumLTReason(int clauseID,vec<Lit> & conflict){
  	 			PbClause & pbclause = clauses[clauseID];
  	 			//assert(!pbclause.isSatisfied);
-
+ 	 			t_weights.clear();
+ 	 			int startSize = conflict.size();
+ 	 			int rhs = pbclause.rhs.weight;
  	 			int underApprox = 0;
  	 			int unassignedWeight = 0;
  	 			for(PbElement e:pbclause.clause){
@@ -474,16 +509,82 @@ private:
 						}else if(value(l)==l_False){
 							//if(level(var(l))>0)
 								conflict.push(l);
+								if(opt_shrink_theory_conflicts)
+									t_weights.push(e.weight);
+
 						}
 					}
+ 	 			int overApprox = underApprox+unassignedWeight;
  	 			assert(underApprox+unassignedWeight<pbclause.rhs.weight);
+ 				if(opt_shrink_theory_conflicts){
+ 						assert(t_weights.size()+startSize==conflict.size());
+ 						int i,j=startSize;
+ 						for(i=startSize;i<conflict.size();i++){
+ 							Lit l = conflict[i];
+ 							int w = t_weights[i-startSize];
+ 							if(overApprox+w<rhs){
+ 								overApprox+=w;
+ 								stats_shrink_removed++;
+ 								//then we can safely drop this from the conflict
+ 							}else{
+ 								conflict[j++]=l;
+ 							}
+ 						}
+ 						conflict.shrink(i-j);
+ 					}
+
+
+ 				assert(overApprox<pbclause.rhs.weight);
  	 		}
 
+ 	 		struct sortByClause {
+ 	 			vec<Lit> & clause;
+ 	 			sortByClause(vec<Lit> & clause) : clause(clause) {}
+ 	 		    bool operator () (int x, int y) {
+ 	 		    	return toInt(clause[x])<toInt(clause[y]);
+ 	 		    }
+ 	 		};
+
+ 	 		struct sortByVec {
+ 	 			vec<int> & weights;
+ 	 			sortByVec(vec<int> & weights) : weights(weights) {}
+ 	 		    bool operator () (int x, int y) {
+ 	 		    	return weights[x]<weights[y];
+ 	 		    }
+ 	 		};
+
+ 	 		struct sortByVecDec {
+ 	 			vec<int> & weights;
+ 	 			sortByVecDec(vec<int> & weights) : weights(weights) {}
+ 	 		    bool operator () (int x, int y) {
+ 	 		    	return weights[x]>weights[y];
+ 	 		    }
+ 	 		};
  	 		//Follow the normalization guidelines from the minisatp paper.
  	 		bool normalize(vec<Lit> & clause,vec<int> & weights,  Lit & rhs_lit,int &rhs, bool oneSided=false){
  	 			int i,j=0;
  	 			assert(clause.size()==weights.size());
  	 			assert(S->decisionLevel()==0);
+
+ 	 			//sort the clause and weights by the literals in the clause; so we can easily merge variables
+ 	 			{
+					indices.clear();
+					for(int i = 0;i<clause.size();i++){
+						indices.push(i);
+					}
+					sort(indices,sortByClause(clause));
+
+					clause.copyTo(tmp_clause);
+					clause.clear();
+					weights.copyTo(tmp_weights);
+					weights.clear();
+					for(int i = 0;i<indices.size();i++){
+						int index = indices[i];
+						clause.push(tmp_clause[index]);
+						weights.push(tmp_weights[index]);
+					}
+				}
+ 	 			Lit last = lit_Undef;
  	 			for(i = 0;i<clause.size();i++){
  	 				Lit l = clause[i];
  	 				int w = weights[i];
@@ -497,14 +598,43 @@ private:
  	 					//then drop this literal
  	 				}else if (w<0){
  	 					//then invert this literal and update the right hand side
- 	 					weights[j]=-w;
- 	 					clause[j++]=~l;
- 	 					rhs+=-w;
+ 	 					w=-w;
+ 	 					l=~l;
+ 	 					assert(w>0);
+ 	 					rhs+=w;
  	 				}else{
  	 					//don't change
- 	 					weights[j]=w;
- 	 					clause[j++]=l;
  	 				}
+
+ 	 				if(w==0){
+ 	 					//drop this literal
+ 	 				}else if(l==last){
+ 	 					//merge these lits
+ 	 					assert(clause[j]==l);
+ 	 					weights[j]+=w;
+ 	 				}else if (l==~last){
+ 	 					assert(clause[j]==~l);
+						weights[j]-=w;
+						//may now need to invert this previous weight... this is ugly, can we avoid this?
+						if(weights[j]<0){
+							weights[j]=-weights[j];
+							clause[j]=~clause[j];
+							assert(weights[j]>0);
+							rhs+=weights[j];
+						}else if (weights[j]==0){
+							//drop this literal...
+							j--;
+						}
+ 	 				}else{
+						weights[j]=w;
+						clause[j++]=l;
+ 	 				}
+
+ 					if(j>0){
+						last= clause[j-1];
+					}else{
+						last = lit_Undef;
+					}
  	 			}
 
  	 			clause.shrink(i-j);
@@ -517,6 +647,25 @@ private:
  	 				S->addClause(rhs_lit);
  	 				return false;
  	 			}
+ 	 			{
+					//sort the lits by the sizes of their weights, in descending order (like clasp does)
+					indices.clear();
+					for(int i = 0;i<clause.size();i++){
+						indices.push(i);
+					}
+					sort(indices,sortByVecDec(weights));
+
+					clause.copyTo(tmp_clause);
+					clause.clear();
+					weights.copyTo(tmp_weights);
+					weights.clear();
+					for(int i = 0;i<indices.size();i++){
+						int index = indices[i];
+						clause.push(tmp_clause[index]);
+						weights.push(tmp_weights[index]);
+					}
+ 	 			}
+
 
  	 			for(int i = 0;i<weights.size();i++){
  	 				assert(weights[i]>0);
@@ -643,16 +792,77 @@ private:
 	 }
  	 void dbg_fully_propped(){
 #ifndef NDEBUG
+ 		 if(opt_dbg_prop){
  		for(PbClause & c:clauses){
  			dbg_fully_propped(c);
 
  		}
+ 		 }
 #endif
  	 }
-
- 	  void dbg_fully_propped(const PbClause & c){
+ 	 void dbg_min_conflict(const PbClause & c, vec<Lit> &conflict ){
 #ifndef NDEBUG
 
+ 		dbg_prove(c,conflict);
+ 		vec<Lit> t;
+ 		for(int i = 0;i<conflict.size();i++){
+ 			t.push(conflict[i]);
+ 		}
+ 		//dbg_unsat(c,t);
+ 		for(int i = 0;i<conflict.size();i++){
+ 			if(i!=2)
+ 				continue;
+ 			bool found= false;
+ 			for(int j = 0;j<c.clause.size();j++)
+ 				found|= var(c.clause[j].lit)==var(conflict[i]);
+ 			if(found){
+ 			t.clear();
+ 			for(int j = 0;j<conflict.size();j++){
+ 				if(j!=i){
+ 					t.push(conflict[j]);
+ 				}
+ 			}
+ 			dbg_unprove(c,t);
+ 			}
+ 		}
+#endif
+ 	 }
+ 	 void dbg_min_conflictb(const PbClause & c, vec<Lit> &conflict ){
+ 	#ifndef NDEBUG
+
+ 	 		dbg_prove(c,conflict);
+ 	 		vec<Lit> t;
+ 	 		for(int i = 0;i<conflict.size();i++){
+ 	 			t.push(conflict[i]);
+ 	 		}
+ 	 		for(int i = 0;i<c.clause.size();i++){
+ 	 			if(value(c.clause[i].lit)!=l_False){
+ 	 				printf("%d\n",c.clause[i].weight);
+ 	 			}
+ 	 		}
+ 	 		//dbg_unsat(c,t);
+ 	 		for(int i = 0;i<conflict.size();i++){
+ 	 			if(i!=2)
+ 	 				continue;
+ 	 			bool found= false;
+ 	 			for(int j = 0;j<c.clause.size();j++)
+ 	 				found|= var(c.clause[j].lit)==var(conflict[i]);
+ 	 			if(found){
+ 	 			t.clear();
+ 	 			for(int j = 0;j<conflict.size();j++){
+ 	 				if(j!=i){
+ 	 					t.push(conflict[j]);
+ 	 				}
+ 	 			}
+ 	 			dbg_unprove(c,t);
+ 	 			}
+ 	 		}
+ 	#endif
+ 	 	 }
+ 	  void dbg_fully_propped(const PbClause & c){
+#ifndef NDEBUG
+ 		  if(!opt_dbg_prop)
+ 			  return;
  		  vec<Lit> prove;
  		  for(PbElement p:c.clause){
  			  if(value(p.lit)==l_False){
@@ -724,6 +934,7 @@ private:
 
  	  void dbg_prove(const PbClause & c, const vec<Lit> & clause){
 #ifndef NDEBUG
+ 		  return ;
  		 bool rhs_val = true;
  		 for(Lit l:clause){
  			 if(var(l)==var(c.rhs.lit)){
@@ -780,17 +991,132 @@ private:
  		 assert(r==20);
 #endif
  	  }
+ 	 void dbg_unprove(const PbClause & c, const vec<Lit> & clause){
+ 	#ifndef NDEBUG
+ 	 		 bool rhs_val = true;
+ 	 		 for(Lit l:clause){
+ 	 			 if(var(l)==var(c.rhs.lit)){
+ 	 				 if(l==c.rhs.lit){
+ 	 					 rhs_val=false;
+ 	 				 }else{
+ 	 					 assert(l==~c.rhs.lit);
+ 	 					 rhs_val=true;
+ 	 				 }
+ 	 			 }
+ 	 		 }
+ 	 		 FILE *f =  fopen("testa.opb","w");
+ 	 		 for(PbElement & e:c.clause){
+ 	 			 fprintf(f,"%s%d x%d ",e.weight>=0 ? "+":"",e.weight,var(e.lit)+1);
+ 	 		 }
 
+ 	 		 if(rhs_val){
+ 	 			 fprintf(f," >= %d ;\n",c.rhs.weight);
+ 	 		 }else{
+ 	 			 fprintf(f," < %d ;\n",c.rhs.weight);
+ 	 		 }
+
+ 	 		 fflush(f);
+ 	 		 int r =system("minisat+ testa.opb >/dev/null")>>8;
+ 	 		 assert(r==10);
+
+
+ 	 		 for(Lit l:clause){
+ 	 			 if(var(l)==var(c.rhs.lit)){
+
+ 	 			 }else{
+ 	 				 bool found=false;
+ 	 				 bool sign = false;
+ 	 				 for(PbElement & e:c.clause){
+ 	 					 if(e.lit == l){
+ 	 						 found=true;
+ 	 					 }else if(e.lit==~l){
+ 	 						 sign=true;
+ 	 						 found=true;
+ 	 					 }
+ 	 				 }
+ 	 				 assert(found);
+ 	 				 if(!sign){
+ 	 					 fprintf(f,"1 x%d < 1 ;\n",var(l)+1);
+ 	 				 }else{
+ 	 					 fprintf(f,"1 x%d >= 1 ;\n",var(l)+1);
+ 	 				 }
+
+ 	 			 }
+ 	 		 }
+ 	 		 fflush(f);
+ 	 		 fclose(f);
+ 	 		 r =system("minisat+ testa.opb >/dev/null")>>8;
+ 	 		 assert(r==10);
+ 	#endif
+ 	 	  }
+ 	 void dbg_unsat(const PbClause & c, const vec<Lit> & clause){
+ 	#ifndef NDEBUG
+ 	 		 bool rhs_val = true;
+ 	 		 for(Lit l:clause){
+ 	 			 if(var(l)==var(c.rhs.lit)){
+ 	 				 if(l==c.rhs.lit){
+ 	 					 rhs_val=true;
+ 	 				 }else{
+ 	 					 assert(l==~c.rhs.lit);
+ 	 					 rhs_val=false;
+ 	 				 }
+ 	 			 }
+ 	 		 }
+ 	 		 FILE *f =  fopen("testa.opb","w");
+ 	 		 for(PbElement & e:c.clause){
+ 	 			 fprintf(f,"%s%d x%d ",e.weight>=0 ? "+":"",e.weight,var(e.lit)+1);
+ 	 		 }
+
+ 	 		 if(rhs_val){
+ 	 			 fprintf(f," >= %d ;\n",c.rhs.weight);
+ 	 		 }else{
+ 	 			 fprintf(f," < %d ;\n",c.rhs.weight);
+ 	 		 }
+
+ 	 		 fflush(f);
+ 	 		// int r =system("minisat+ testa.opb >/dev/null")>>8;
+ 	 		// assert(r==10);
+
+
+ 	 		 for(Lit l:clause){
+ 	 			 if(var(l)==var(c.rhs.lit)){
+
+ 	 			 }else{
+ 	 				 bool found=false;
+ 	 				 bool sign = false;
+ 	 				 for(PbElement & e:c.clause){
+ 	 					 if(e.lit == l){
+ 	 						 found=true;
+ 	 					 }else if(e.lit==~l){
+ 	 						 sign=true;
+ 	 						 found=true;
+ 	 					 }
+ 	 				 }
+ 	 				 assert(found);
+ 	 				 if(!sign){
+ 	 					 fprintf(f,"1 x%d >= 1 ;\n",var(l)+1);
+ 	 				 }else{
+ 	 					 fprintf(f,"1 x%d < 1 ;\n",var(l)+1);
+ 	 				 }
+
+ 	 			 }
+ 	 		 }
+ 	 		 fflush(f);
+ 	 		 fclose(f);
+ 	 		 int r =system("minisat+ testa.opb >/dev/null")>>8;
+ 	 		 assert(r==20);
+ 	#endif
+ 	 	  }
  	  void dbg_sat(const PbClause & c, const vec<Lit> & clause){
 #ifndef NDEBUG
  		 bool rhs_val = true;
  		 for(Lit l:clause){
  			 if(var(l)==var(c.rhs.lit)){
  				 if(l==c.rhs.lit){
- 					 rhs_val=false;
+ 					 rhs_val=true;
  				 }else{
  					 assert(l==~c.rhs.lit);
- 					 rhs_val=true;
+ 					 rhs_val=false;
  				 }
  			 }
  		 }
@@ -847,6 +1173,10 @@ public:
  		 assert(marker!=CRef_Undef);
  		 assert(reasonMap.has(marker));
  		 int clauseID = reasonMap[marker];
+ 		 static int iter = 0;
+ 		if( ++iter==13){
+ 			int a =1;
+ 		}
  		 PbClause & pbclause = clauses[clauseID];
  		reason.push(p);
  		 if(var(p)==var(pbclause.rhs.lit)){
@@ -868,11 +1198,14 @@ public:
  		 }
 
  		 dbg_prove(pbclause,reason);
+ 		//if( iter==13){
+ 		dbg_min_conflict(pbclause,reason);
+ 		//}
  		toSolver(reason);
  	 }
 
 	 void printStats(int detailLevel){
-
+		 printf("Shrink removed: %d\n",stats_shrink_removed);
 	}
 	 void preprocess(){
 
@@ -1093,7 +1426,7 @@ public:
 
 		int curgcd = gcd(of[0],of[1]);
 		for(int i = 2;i<of.size();i++){
-			curgcd = gcd(curgcd,of[2]);
+			curgcd = gcd(curgcd,of[i]);
 		}
 		return curgcd;
 	 }

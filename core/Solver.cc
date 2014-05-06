@@ -207,6 +207,7 @@ CRef Solver::attachClauseSafe(vec<Lit> & ps){
 				//find the highest level in the conflict (should be the current decision level, but we won't require that)
 
 				CRef cr = ca.alloc(ps, !opt_permanent_theory_conflicts);
+				ca[cr].setFromTheory(true);
 				if(opt_permanent_theory_conflicts)
 					clauses.push(cr);
 				else
@@ -851,7 +852,18 @@ struct reduceDB_lt {
     ClauseAllocator& ca;
     reduceDB_lt(ClauseAllocator& ca_) : ca(ca_) {}
     bool operator () (CRef x, CRef y) { 
-        return ca[x].size() > 2 && (ca[y].size() == 2 || ca[x].activity() < ca[y].activity()); } 
+    	return ca[x].size() > 2 && (ca[y].size() == 2  || ca[x].activity() < ca[y].activity());
+    	/*if(ca[x].size()==2)
+    		return false;
+    	if(ca[y].size()==2)
+    		return true;
+    	if(ca[x].fromTheory() && !ca[y].fromTheory())
+    		return true;
+    	if(ca[y].fromTheory() && ! ca[x].fromTheory())
+    		return false;
+    	return ca[x].activity() < ca[y].activity();*/
+    }
+
 };
 void Solver::reduceDB()
 {
@@ -1073,6 +1085,7 @@ bool Solver::addConflictClause(vec<Lit> & ps, CRef & confl_out){
 				assert(value(ps[j])==l_False);
 #endif
 			CRef cr = ca.alloc(ps, !opt_permanent_theory_conflicts);
+			ca[cr].setFromTheory(true);
 	    	if(opt_permanent_theory_conflicts)
 				clauses.push(cr);
 			else{
@@ -1158,10 +1171,10 @@ lbool Solver::search(int nof_conflicts)
                 max_learnts             *= learntsize_inc;
 
                 if (verbosity >= 1)
-                    printf("| %9d | %7d %8d %8d | %8d %8d %6.0f | %6.3f %% |\n", 
+                    printf("| %9d | %7d %8d %8d | %8d %8d %6.0f | %d %% |\n",
                            (int)conflicts, 
                            (int)dec_vars - (trail_lim.size() == 0 ? trail.size() : trail_lim[0]), nClauses(), (int)clauses_literals, 
-                           (int)max_learnts, nLearnts(), (double)learnts_literals/nLearnts(), progressEstimate()*100);
+                           (int)max_learnts, nLearnts(), (double)learnts_literals/nLearnts(), stats_removed_clauses);
             }
 
         }else{

@@ -38,7 +38,7 @@ static const char* _cat_graph ="GRAPH";
  BoolOption Minisat::opt_interpolate(_cat_sms,"interpolate","Store learnt interface clauses to form interpolants between modules",false);
  IntOption Minisat::opt_eager_prop(_cat_sms,"eager-prop","Controls whether unit propagation is allowed to cross subsolver boundaries. 0= Disable. 1= Enable. 2=Enable, but don't cross the last interpolant. 3= Enable, but don't cross the last interpolant, or any earlier solver. 4= Enable, but dont cross the last interpolant, or any earlier solver, unless they have already had their interpolants strengthened", 1, IntRange(0,5));
  IntOption Minisat::opt_subsearch(_cat_sms,"subsearch","Control how the solver performs search on the subsolvers: 0=abort as soon as a conflict backtracks past the supersolvers decisionlevel. 1=Abort only once a conflict on the super-interface variables is found, allowing backtracks past those variables in the process. 2=Abort only when the the super-solvers assignment is proven to be in conflict. 3=Don't continue subsearach if the subsolver has backtracked past super-solver decisions. 4=Don't continue past the last interpolant level if any solver has backtracked past a super solver's decisions",2,IntRange(0,4));
- BoolOption Minisat::opt_permanent_theory_conflicts(_cat_sms,"permanent-theory-conflicts","True if conflict clauses from theory solvers are treated as permanent clauses; false if they are treated as learnt clauses (that is, allowed to be deleted by the solver)",true);
+ BoolOption Minisat::opt_permanent_theory_conflicts(_cat_sms,"permanent-theory-conflicts","True if conflict clauses from theory solvers are treated as permanent clauses; false if they are treated as learnt clauses (that is, allowed to be deleted by the solver)",false);
 
  BoolOption Minisat::opt_graph(_cat_graph,"graph","Use graph theory solver",true);
  BoolOption Minisat::opt_inc_graph(_cat_graph,"inc","Use incremental graph reachability",false);
@@ -114,7 +114,7 @@ BoolOption Minisat::opt_skip_deletions(_cat_graph,"skip-deletions","",false);
 BoolOption Minisat::opt_skip_additions(_cat_graph,"skip-additions","",false);
 
 BoolOption  Minisat::opt_propagate_theories_during_simplification(_cat,"theory-prop-during-simp","Apply propagation to theory solvers during simplification. Can be very expensive (depending on the theory).",true);
-
+BoolOption Minisat::opt_shrink_theory_conflicts(_cat,"shrink-theory-conflicts","",true);
 
 MinCutAlg Minisat::mincutalg=MinCutAlg::ALG_EDMONSKARP ;
 ReachAlg Minisat::reachalg=ReachAlg::ALG_DFS;

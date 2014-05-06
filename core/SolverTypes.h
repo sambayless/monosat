@@ -128,7 +128,8 @@ class Clause {
         unsigned learnt    : 1;
         unsigned has_extra : 1;
         unsigned reloced   : 1;
-        unsigned size      : 27; }                            header;
+        unsigned fromTheory: 1;
+        unsigned size      : 26; }                            header;
     union { Lit lit; float act; uint32_t abs; CRef rel; } data[0];
 
     friend class ClauseAllocator;
@@ -141,6 +142,7 @@ class Clause {
         header.has_extra = use_extra;
         header.reloced   = 0;
         header.size      = ps.size();
+        header.fromTheory = 0;
 
         for (int i = 0; i < ps.size(); i++) 
             data[i].lit = ps[i];
@@ -169,6 +171,14 @@ public:
     uint32_t     mark        ()      const   { return header.mark; }
     void         mark        (uint32_t m)    { header.mark = m; }
     const Lit&   last        ()      const   { return data[header.size-1].lit; }
+
+    bool	fromTheory()const{
+    	return header.fromTheory;
+    }
+
+    void setFromTheory(bool t){
+    	header.fromTheory=t;
+    }
 
     bool         reloced     ()      const   { return header.reloced; }
     CRef         relocation  ()      const   { return data[0].rel; }
@@ -268,7 +278,7 @@ class ClauseAllocator : public RegionAllocator<uint32_t>
         
         cr = to.alloc(c, c.learnt());
         c.relocate(cr);
-        
+        to[cr].setFromTheory(c.fromTheory());
         // Copy extra data-fields: 
         // (This could be cleaned-up. Generalize Clause-constructor to be applicable here instead?)
         to[cr].mark(c.mark());

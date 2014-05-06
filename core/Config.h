@@ -84,6 +84,7 @@ extern BoolOption opt_compute_max_distance;
  extern BoolOption opt_detect_pure_theory_lits;
  extern BoolOption opt_detect_pure_lits;
  extern BoolOption opt_propagate_theories_during_simplification;
+ extern BoolOption opt_shrink_theory_conflicts;
 enum class ReachAlg{
 	 ALG_SAT,
 	 ALG_DFS,
