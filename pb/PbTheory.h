@@ -403,7 +403,7 @@ private:
 				int forcedWeight = 0;
 				for(PbElement e:pbclause.clause){
 					Lit l = e.lit;
-					if(e.lit ==element){
+					if(e.lit ==~element){
 						forcedWeight = e.weight;
 						assert(value(e.lit)==l_False);
 					}else{
@@ -422,6 +422,7 @@ private:
  	 			//the reason why a lit is forced to false is the set of true literals in the clause, and the rhs
  	 			PbClause & pbclause = clauses[clauseID];
 				//assert(pbclause.isSatisfied);
+ 	 			lbool v = value(pbclause.rhs.lit);
 				assert(value(pbclause.rhs.lit)==l_True);
 				conflict.push(~pbclause.rhs.lit);
 				int startSize = conflict.size();
@@ -742,7 +743,9 @@ private:
 			 }
 			  int clauseID = clauses.size();
 			  assert(total>0);
-
+			  if(clauseID==414){
+				  int a =1;
+			  }
 			 assert(weights.size()==clause.size());
 
 			  clauses.push();
@@ -1180,19 +1183,28 @@ public:
  		 PbClause & pbclause = clauses[clauseID];
  		reason.push(p);
  		 if(var(p)==var(pbclause.rhs.lit)){
- 			 if(value(p)==l_False)
+ 			 if(sign(p)==sign(pbclause.rhs.lit))
  				buildSumLTReason(clauseID,reason);
 			 else{
-				 assert(value(p)==l_True);
 				 buildSumGEReason(clauseID,reason);
 			 }
 
  		 }else{
+ 			 bool foundNeg = false;
+ 			 //it would be preferable to avoid this loop...
+ 			 for(int i = 0;i<pbclause.clause.size();i++){
+ 				 if(pbclause.clause[i].lit == p){
+ 					 break;
+ 				 }else if (pbclause.clause[i].lit == ~p){
+ 					 foundNeg=true;
+ 					 break;
+ 				 }
+ 			 }
  			 //this must be an element of the clause that was forced
- 			 if(value(p)==l_False)
+ 			 if(foundNeg)
  				 buildElementForcedFalseReason(clauseID,p,reason);
  			 else{
- 				 assert(value(p)==l_True);
+
  				 buildElementForcedTrueReason(clauseID,p,reason);
  			 }
  		 }
@@ -1217,6 +1229,7 @@ public:
 				 //this is an unconditional constraint
 				 c.rhs_lit = mkLit(S->newVar());
 				 S->addClause(c.rhs_lit);//constraint must hold.
+
 			 }
 			 if(c.op==PbType::GE){
 				 greaterThanEq_implement(c.clause,c.weights,c.rhs_lit,c.total);
@@ -1229,8 +1242,9 @@ public:
 
 				 greaterThanEq_implement(c.clause,c.weights,~c.rhs_lit,c.total-1);
 			 }else if(c.op==PbType::EQ){
+				 greaterThanEq_implement(c.clause,c.weights,c.rhs_lit,c.total);
 				greaterThanEq_implement(c.clause,c.weights,~c.rhs_lit,c.total+1);
-				 greaterThanEq_implement(c.clause,c.weights,c.rhs_lit,c.total+1);
+
 			 }
 
 		 }

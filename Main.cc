@@ -542,7 +542,12 @@ int main(int argc, char** argv)
 
 			   exit(0);
 		   }
-
+		if(symbols){
+			for (std::pair<int,string> p:symbols){
+				Var v = p.first;
+				S.setFrozen(v,true);//don't let the symbols get eliminated... this is probably a sub-optimal solution...
+			}
+		}
 		double before_pre_processing = rtime(0);
 		if(pre)
 			S.eliminate(true);
@@ -921,7 +926,7 @@ int main(int argc, char** argv)
 				printf("v ");
 				for(int v =0;v<S.nVars();v++){
 					if(S.model[v]==l_True){
-						printf("+%d ",(v+1));
+						printf("%d ",(v+1));
 					}else if(S.model[v]==l_False){
 						printf("%d ",-(v+1));
 					}/*else{
