@@ -31,16 +31,18 @@ class PbTheory: public Theory{
 	vec<int> inq;
 	vec<int> t_weights;
 	enum class PbType{
-		GT, GE,LT,LE,EQ
+		GT, GE,LT,LE,EQ,NE
 	};
 
 	struct ConstraintToImplement{
+		bool implemented=false;
 		vec<Lit> clause;
 		vec<int> weights;
 		Lit rhs_lit;
 		int total;
 		bool oneSided;
 		PbType op;
+
 	};
 
 	vec<ConstraintToImplement> constraintsToImplement;
@@ -65,9 +67,9 @@ class PbTheory: public Theory{
 		PbElement rhs;
 		CRef reason;
 		vec<PbElement> clause;
-		PbClause():oneSided(false),isSatisfied(false),isOverEq(false),inQueue(false){}
+		PbClause():oneSided(false),isSatisfied(false),isOverEq(false),inQueue(false),reason(CRef_Undef){}
 	};
-	int firstCRef;
+
 	//Map reasons to clauseIDs
 	Map<CRef,int> reasonMap;
 	vec<PbClause> clauses;
@@ -1232,6 +1234,9 @@ public:
 	}
 	 void implementConstraints(){
 		 for(ConstraintToImplement &c:constraintsToImplement){
+			 if(c.implemented)
+				 continue;
+			 c.implemented=true;
 			 //convert to >= constraints
 			 if(c.rhs_lit ==lit_Undef){
 				 //this is an unconditional constraint
@@ -1244,15 +1249,15 @@ public:
 			 }else  if(c.op==PbType::GT){
 				 greaterThanEq_implement(c.clause,c.weights,c.rhs_lit,c.total+1);
 			 }else if (c.op==PbType::LT){
-
 				 greaterThanEq_implement(c.clause,c.weights,~c.rhs_lit,c.total);
 			 }else if(c.op==PbType::LE){
-
-				 greaterThanEq_implement(c.clause,c.weights,~c.rhs_lit,c.total-1);
+				 greaterThanEq_implement(c.clause,c.weights,~c.rhs_lit,c.total+1);
 			 }else if(c.op==PbType::EQ){
 				 greaterThanEq_implement(c.clause,c.weights,c.rhs_lit,c.total);
-				greaterThanEq_implement(c.clause,c.weights,~c.rhs_lit,c.total+1);
+				 greaterThanEq_implement(c.clause,c.weights,~c.rhs_lit,c.total+1);
 
+			 }else if (c.op==PbType::NE){
+				 assert(false);//not yet supported..
 			 }
 
 		 }

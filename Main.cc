@@ -583,7 +583,7 @@ int main(int argc, char** argv)
 						assert(check);
 						if(opt_check_solution){
 											if(!g->check_solved()){
-												fprintf(stderr,"Error! Solution doesn't satisfy graph properties!\n");
+												fprintf(stderr,"Error! Solution doesn't satisfy theory properties!\n");
 												exit(3);
 											}
 										}
@@ -594,7 +594,7 @@ int main(int argc, char** argv)
 					prev_min = min;
 					if(opt_check_solution){
 										if(!g->check_solved()){
-											fprintf(stderr,"Error! Solution doesn't satisfy graph properties!\n");
+											fprintf(stderr,"Error! Solution doesn't satisfy theory properties!\n");
 											exit(3);
 										}
 									}
