@@ -433,7 +433,7 @@ static void readPB(B & in,vec<Lit> & lits, vec<int> & weights, Solver & S, PbThe
 		 head =  (parsed_lit > 0) ? mkLit(v) : ~mkLit(v) ;
 	 }
 	 assert(lits.size()==weights.size());
-	 pb->addConstraint(lits,weights,comparison,head,op,oneSided);
+	 pb->addConstraint(lits,weights,comparison,head,op,oneSided?PbTheory::ConstraintSide::Upper: PbTheory::ConstraintSide::Both);
 }
 
 template<class B, class Solver>

@@ -34,13 +34,24 @@ class PbTheory: public Theory{
 		GT, GE,LT,LE,EQ,NE
 	};
 
+	enum class ConstraintSide{Upper,Lower,Both};
+	ConstraintSide  invert(ConstraintSide  c) {
+		if(c==ConstraintSide::Upper)
+			return ConstraintSide::Lower;
+		else if (c==ConstraintSide::Lower){
+			return ConstraintSide::Upper;
+		}
+		return c;
+	}
+
 	struct ConstraintToImplement{
+
 		bool implemented=false;
 		vec<Lit> clause;
 		vec<int> weights;
 		Lit rhs_lit;
 		int total;
-		bool oneSided;
+		ConstraintSide side;
 		PbType op;
 
 	};
@@ -60,14 +71,14 @@ class PbTheory: public Theory{
 		unsigned int weight;
 	};
 	struct PbClause{
-		bool oneSided;
+		ConstraintSide side;
 		bool isSatisfied;
 		bool isOverEq; //true iff the sum of the lhs is >= the rhs
 		bool inQueue;
 		PbElement rhs;
 		CRef reason;
 		vec<PbElement> clause;
-		PbClause():oneSided(false),isSatisfied(false),isOverEq(false),inQueue(false),reason(CRef_Undef){}
+		PbClause():side(ConstraintSide::Both),isSatisfied(false),isOverEq(false),inQueue(false),reason(CRef_Undef){}
 	};
 
 	//Map reasons to clauseIDs
@@ -225,6 +236,7 @@ public:
  	 			clauses[clauseID].inQueue=true;
  	 			inq.push(clauseID);
  	 		}
+ 	 		assert(inq.contains(clauseID));
  	 		assigns[var(l)]=sign(l) ? l_False:l_True;
  	 		trail.push(l);
 			//trail.push({true,toInt(l)});
@@ -243,6 +255,7 @@ public:
  	 		stats_propagations++;
 
  	 		static int iter = 0;
+ 	 		++iter;
  	 		double startproptime= rtime(2);
 
  	 		//This is wrong! Only need to visit each _clause_ that has any involved literals once per propagation round.
@@ -252,16 +265,22 @@ public:
  	 		while(inq.size()){
  	 			int clauseID = inq.last();
  	 			PbClause & pbclause = clauses[clauseID];
+ 	 			assert(pbclause.inQueue);
  	 			//if(pbclause.isSatisfied)
  	 			//	continue;
 
  	 			Lit rhs = pbclause.rhs.lit;
  	 			lbool rhs_val = value(rhs);
- 	 			if(pbclause.oneSided && rhs_val==l_False){
+ 	 			if(pbclause.side== ConstraintSide::Upper && rhs_val==l_False){
  	 				//this clause is free.
- 	 				pbclause.isSatisfied=true;
-
+ 	 				//pbclause.isSatisfied=true;
+ 	 				pbclause.inQueue=false;
+ 	 				inq.pop();
  	 				continue;
+ 	 			}else if(pbclause.side== ConstraintSide::Upper && rhs_val==l_True){
+ 	 				pbclause.inQueue=false;
+					inq.pop();
+					continue;
  	 			}
 
 
@@ -297,47 +316,50 @@ public:
 					overApprox=underApprox+unassignedWeight;
 					if(rhs_val==l_True && underApprox>=total){
 						//this is a satisfied constraint
-						pbclause.isSatisfied=true;
+						//pbclause.isSatisfied=true;
 
 					}else if(rhs_val==l_False && overApprox<total){
 						//this is a satisfied constraint
-						pbclause.isSatisfied=true;
+						//pbclause.isSatisfied=true;
 
 					}else if(rhs_val==l_True && overApprox<total){
 						//conflict
+						assert(pbclause.side!= ConstraintSide::Lower);
 						static int iter = 0;
 						++iter;
 						conflict.push(~rhs);
 						buildSumLTReason(clauseID,conflict);
-						 dbg_prove(pbclause,conflict);
-						 dbg_min_conflict(pbclause,conflict);
+						dbg_prove(pbclause,conflict);
+						dbg_min_conflict(pbclause,conflict);
 						toSolver(conflict);
 						return false;
 					}else if (rhs_val==l_False && underApprox>=total){
 						//conflict
-						assert(!pbclause.oneSided);
+						assert(pbclause.side!= ConstraintSide::Upper);
 						conflict.push(rhs);
 
 						buildSumGEReason(clauseID,conflict);
-						 dbg_prove(pbclause,conflict);
-						 dbg_min_conflict(pbclause,conflict);
+						dbg_prove(pbclause,conflict);
+						dbg_min_conflict(pbclause,conflict);
 						toSolver(conflict);
 						return false;
 					}else if (underApprox>=total && rhs_val==l_Undef){
-						pbclause.isSatisfied=true;
-						pbclause.isOverEq=true;
+						//pbclause.isSatisfied=true;
+						//pbclause.isOverEq=true;
 						dbg_prop(pbclause,rhs);
 						//trail.push({false,clauseID});
 						enqueue(rhs,pbclause.reason);
 					}else if (overApprox<total && rhs_val==l_Undef){
-						pbclause.isSatisfied=true;
-						pbclause.isOverEq=false;
+						//pbclause.isSatisfied=true;
+						//pbclause.isOverEq=false;
 						dbg_prop(pbclause,~rhs);
 						//trail.push({false,clauseID});
 						enqueue(~rhs,pbclause.reason);
 					}else if(rhs_val==l_False ){
-						pbclause.isOverEq=false;
+						//pbclause.isOverEq=false;
 						//then _all_ unassigned lits whose weight would push the under approx over over the limit must be assigned to false
+						assert(pbclause.side !=  ConstraintSide::Upper);
+
 						for(PbElement e:pbclause.clause){
 							Lit l = e.lit;
 							if(value(l)==l_Undef && underApprox+e.weight>=total){
@@ -347,6 +369,7 @@ public:
 						}
 
 					}else if (rhs_val==l_True){
+						assert(pbclause.side!= ConstraintSide::Lower);
 						assert(n_Free>0);
 						assert(overApprox>=total);
 						//if(n_Free==1){
@@ -397,7 +420,7 @@ private:
  	 			PbClause & pbclause = clauses[clauseID];
 				//assert(pbclause.isSatisfied);
 				assert(value(pbclause.rhs.lit)==l_False);
-
+				assert(pbclause.side!= ConstraintSide::Upper);
 				conflict.push(pbclause.rhs.lit);
 
 				int underApprox = 0;
@@ -423,6 +446,7 @@ private:
  	 		void buildElementForcedTrueReason(int clauseID, Lit element,vec<Lit> & conflict){
  	 			//the reason why a lit is forced to false is the set of true literals in the clause, and the rhs
  	 			PbClause & pbclause = clauses[clauseID];
+ 	 			assert(pbclause.side!= ConstraintSide::Lower);
 				//assert(pbclause.isSatisfied);
  	 			lbool v = value(pbclause.rhs.lit);
 				assert(value(pbclause.rhs.lit)==l_True);
@@ -518,6 +542,9 @@ private:
 						}
 					}
  	 			int overApprox = underApprox+unassignedWeight;
+ 	 			if(underApprox+unassignedWeight>=pbclause.rhs.weight){
+ 	 				exit(4);
+ 	 			}
  	 			assert(underApprox+unassignedWeight<pbclause.rhs.weight);
  				if(opt_shrink_theory_conflicts){
  						assert(t_weights.size()+startSize==conflict.size());
@@ -564,7 +591,7 @@ private:
  	 		    }
  	 		};
  	 		//Follow the normalization guidelines from the minisatp paper.
- 	 		bool normalize(vec<Lit> & clause,vec<int> & weights,  Lit & rhs_lit,int &rhs, bool oneSided=false){
+ 	 		bool normalize(vec<Lit> & clause,vec<int> & weights,  Lit & rhs_lit,int &rhs,  ConstraintSide side){
  	 			int i,j=0;
  	 			assert(clause.size()==weights.size());
  	 			assert(S->decisionLevel()==0);
@@ -591,6 +618,14 @@ private:
  	 			for(i = 0;i<clause.size();i++){
  	 				Lit l = clause[i];
  	 				int w = weights[i];
+ 	 				assert(var(l)!=var(rhs_lit));
+ 	 				if (w<0){
+						//then invert this literal and update the right hand side
+						w=-w;
+						l=~l;
+						assert(w>0);
+						rhs+=w;
+					}
 
  	 				if(S->value(l)==l_True){
  	 					//drop this literal, and subtract is total from the rhs
@@ -602,12 +637,6 @@ private:
  	 				}else if(w==0){
  	 					//then drop this literal
  	 					continue;
- 	 				}else if (w<0){
- 	 					//then invert this literal and update the right hand side
- 	 					w=-w;
- 	 					l=~l;
- 	 					assert(w>0);
- 	 					rhs+=w;
  	 				}else{
  	 					//don't change
  	 				}
@@ -646,37 +675,21 @@ private:
  	 			clause.shrink(i-j);
  	 			weights.shrink(i-j);
 
- 	 			if(rhs<=0){
+ 	 			if(rhs<=0 ){
  	 				//then this is a trivially true constraint (even if the total weights are 0, because this is a >= constraint)
  	 				clause.clear();
  	 				weights.clear();
- 	 				S->addClause(rhs_lit);
+ 	 				if(side!=  ConstraintSide::Upper)
+ 	 					S->addClause(rhs_lit);
+ 	 				//if we are one sided, then any value for rhs_lit is acceptable
  	 				return false;
  	 			}
  	 			if (clause.size()==0){
- 	 				assert(weights.size()==0);
- 	 				S->addClause(~rhs_lit);
+					assert(weights.size()==0);
+					if(side!=  ConstraintSide::Lower)
+						S->addClause(~rhs_lit);
 					return false;
- 	 			}
- 	 			{
-					//sort the lits by the sizes of their weights, in descending order (like clasp does)
-					indices.clear();
-					for(int i = 0;i<clause.size();i++){
-						indices.push(i);
-					}
-					sort(indices,sortByVecDec(weights));
-
-					clause.copyTo(tmp_clause);
-					clause.clear();
-					weights.copyTo(tmp_weights);
-					weights.clear();
-					for(int i = 0;i<indices.size();i++){
-						int index = indices[i];
-						clause.push(tmp_clause[index]);
-						weights.push(tmp_weights[index]);
-					}
- 	 			}
-
+				}
 
  	 			for(int i = 0;i<weights.size();i++){
  	 				assert(weights[i]>0);
@@ -705,18 +718,21 @@ private:
  	 				//then this is a trivially unsat constraint
  	 				clause.clear();
  	 				weights.clear();
- 	 				S->addClause(~rhs_lit);
+ 	 				if(side!=  ConstraintSide::Lower)
+ 	 					S->addClause(~rhs_lit);
  	 				return false;
  	 			}
  	 			assert(clause.size()>0);//else weightTotal is 0;
 
  	 			//It is always the case that at most one element of the clause must be true, OR the value must be false.
  	 			//so we can learn this clause right away
- 				clause.push(~rhs_lit);
- 				S->addClause(clause);
-				clause.pop();
+ 	 			if(side!=  ConstraintSide::Lower){
+					clause.push(~rhs_lit);
+					S->addClause(clause);
+					clause.pop();
+ 	 			}
 
-				if(!oneSided){
+				if(side!= ConstraintSide::Upper){
 					//then enforce the other side of the constraint
 					for(int i = 0;i<clause.size();i++){
 						if(weights[i]>=rhs){
@@ -742,10 +758,10 @@ private:
  	 		}
 
 
- 	  Lit greaterThanEq_implement(const vec<Lit> & _clause,const vec<int> &_weights,  Lit rhs_lit,int total, bool oneSided=false){
+ 	  Lit greaterThanEq_implement(const vec<Lit> & _clause,const vec<int> &_weights,  Lit rhs_lit,int total, ConstraintSide side = ConstraintSide::Both){
  		  _clause.copyTo(clause);
  		  _weights.copyTo(weights);
-		  if(normalize(clause,weights,rhs_lit,total)){
+		  if(normalize(clause,weights,rhs_lit,total,side)){
 
 			 for(int w:weights){
 				 assert(w>0);
@@ -753,9 +769,7 @@ private:
 			 }
 			  int clauseID = clauses.size();
 			  assert(total>0);
-			  if(clauseID==414){
-				  int a =1;
-			  }
+
 			 assert(weights.size()==clause.size());
 
 			  clauses.push();
@@ -764,21 +778,9 @@ private:
 			  rhs_lit = mkLit(newVar(var(rhs_lit),clauseID,total,true) ,sign(rhs_lit));
 			  pbclause.rhs.lit = rhs_lit;
 			  pbclause.rhs.weight=(unsigned int) total;
-			  pbclause.oneSided = oneSided;
+			  pbclause.side = side;
 			  pbclause.reason = reason;
 			  reasonMap.insert(reason,clauseID);
-
-
-
-/*
-
-			  if(vars[var(rhs_lit)].clauseID>=0){
-				  //then create a new var
-				  Lit l = mkLit(newVar());
-				  makeEqual(l,rhs_lit);
-				  rhs_lit=l;
-			  }
-*/
 
 			  vars[var(rhs_lit)].clauseID = clauseID;
 			  vars[var(rhs_lit)].rhs = true;
@@ -788,16 +790,7 @@ private:
 				  l = mkLit(newVar(var(l),clauseID,weights[i]) ,sign(l));
 
 				  pbclause.clause.push({l,(unsigned int)weights[i]});
-				 /* if(vars[var(rhs_lit)].clauseID>=0){
-					  //then create a new var
-					  Lit l2 = mkLit(newVar());
-					  makeEqual(l,l2);
-					  l=l2;
-				  }*/
-	/*			  Var v= var(l);
-				  vars[v].clauseID = clauseID;
-				  vars[v].rhs = false;
-				  vars[v].weight=total;*/
+
 			  }
 		  }
 		  return rhs_lit;
@@ -805,12 +798,49 @@ private:
 	 }
  	 void dbg_fully_propped(){
 #ifndef NDEBUG
- 		 if(opt_dbg_prop){
- 		for(PbClause & c:clauses){
- 			dbg_fully_propped(c);
 
- 		}
+
+ 		 for(int i = 0;i<clauses.size();i++){
+ 			 int clauseID = i;
+
+ 			PbClause & c = clauses[i];
+ 			Lit rhsLit = c.rhs.lit;
+ 			int underApprox = 0;
+ 			int unassigned = 0;
+ 			int overApprox = 0;
+ 			int rhs = c.rhs.weight;
+ 			for(PbElement & e:c.clause){
+ 				if(value(e.lit)==l_True){
+ 					underApprox+=e.weight;
+ 				}else if (value(e.lit)==l_Undef){
+ 					unassigned+=e.weight;
+ 				}
+ 			}
+ 			overApprox = underApprox+unassigned;
+
+ 			if(value(rhsLit)==l_True){
+ 				assert(overApprox>=rhs);
+ 			}else if (value(rhsLit)==l_False){
+ 				if(c.side!= ConstraintSide::Upper){
+ 					assert(underApprox<rhs);
+ 				}
+ 			}
+ 			if(underApprox>=rhs){
+ 				assert(c.side== ConstraintSide::Upper || value(rhsLit)==l_True);
+ 			}else if(overApprox < rhs){
+ 				assert(value(rhsLit)==l_False);
+ 			}
+
+
+
  		 }
+
+ 		 if(opt_dbg_prop){
+ 		 		for(PbClause & c:clauses){
+ 		 			dbg_fully_propped(c);
+
+ 		 		}
+ 		 		 }
 #endif
  	 }
  	 void dbg_min_conflict(const PbClause & c, vec<Lit> &conflict ){
@@ -1194,9 +1224,9 @@ public:
  		reason.push(p);
  		 if(var(p)==var(pbclause.rhs.lit)){
  			 if(sign(p)==sign(pbclause.rhs.lit))
- 				buildSumLTReason(clauseID,reason);
+ 				buildSumGEReason(clauseID,reason);
 			 else{
-				 buildSumGEReason(clauseID,reason);
+				 buildSumLTReason(clauseID,reason);
 			 }
 
  		 }else{
@@ -1245,16 +1275,16 @@ public:
 
 			 }
 			 if(c.op==PbType::GE){
-				 greaterThanEq_implement(c.clause,c.weights,c.rhs_lit,c.total);
+				 greaterThanEq_implement(c.clause,c.weights,c.rhs_lit,c.total,c.side);
 			 }else  if(c.op==PbType::GT){
-				 greaterThanEq_implement(c.clause,c.weights,c.rhs_lit,c.total+1);
+				 greaterThanEq_implement(c.clause,c.weights,c.rhs_lit,c.total+1,c.side);
 			 }else if (c.op==PbType::LT){
-				 greaterThanEq_implement(c.clause,c.weights,~c.rhs_lit,c.total);
+				 greaterThanEq_implement(c.clause,c.weights,~c.rhs_lit,c.total,invert(c.side));
 			 }else if(c.op==PbType::LE){
-				 greaterThanEq_implement(c.clause,c.weights,~c.rhs_lit,c.total+1);
+				 greaterThanEq_implement(c.clause,c.weights,~c.rhs_lit,c.total+1,invert(c.side));
 			 }else if(c.op==PbType::EQ){
-				 greaterThanEq_implement(c.clause,c.weights,c.rhs_lit,c.total);
-				 greaterThanEq_implement(c.clause,c.weights,~c.rhs_lit,c.total+1);
+				 greaterThanEq_implement(c.clause,c.weights,c.rhs_lit,c.total,c.side);
+				 greaterThanEq_implement(c.clause,c.weights,~c.rhs_lit,c.total+1,invert(c.side));
 
 			 }else if (c.op==PbType::NE){
 				 assert(false);//not yet supported..
@@ -1265,7 +1295,7 @@ public:
 	 }
 
 	 //If the rhs_lit is lit_Undef, then this is an unconditional constraint
-	 void addConstraint(vec<Lit> & clause, vec<int> & weights, int rhs, Lit rhs_lit=lit_Undef , PbType op=PbType::GE, bool oneSided=false){
+	 void addConstraint(vec<Lit> & clause, vec<int> & weights, int rhs, Lit rhs_lit=lit_Undef , PbType op=PbType::GE, ConstraintSide side=ConstraintSide::Both){
 		 constraintsToImplement.push();
 		 assert(clause.size());
 		 assert(clause.size()==weights.size());
@@ -1274,7 +1304,7 @@ public:
 		 constraintsToImplement.last().rhs_lit = rhs_lit;
 		 constraintsToImplement.last().total = rhs;
 		 constraintsToImplement.last().op = op;
-		 constraintsToImplement.last().oneSided=oneSided;
+		 constraintsToImplement.last().side=side;
 	 }
 
 	  void backtrackUntil(int level){
@@ -1344,7 +1374,9 @@ public:
 			  PbClause & c = clauses[i];
 			  Lit rhs_lit = c.rhs.lit;
 			  lbool rhs_val = value(rhs_lit);
-			  if(c.oneSided && rhs_val==l_Undef){
+			  if(c.side==ConstraintSide::Upper && rhs_val==l_True){
+				 continue;//this constraint is unenforced
+			  }else if(c.side==ConstraintSide::Lower && rhs_val==l_False){
 				 continue;//this constraint is unenforced
 			  }
 
@@ -1354,10 +1386,10 @@ public:
 					  lhs+=e.weight;
 				  }
 			  }
-			  if(rhs_val==l_True && lhs<c.rhs.weight){
+			  if(rhs_val==l_True && lhs<c.rhs.weight  && c.side!=ConstraintSide::Lower){
 				  assert(false);
 				  return false;
-			  }else if(rhs_val==l_False && lhs>=c.rhs.weight){
+			  }else if(rhs_val==l_False && lhs>=c.rhs.weight && c.side != ConstraintSide::Upper){
 				  assert(false);
 				  return false;
 			  }
@@ -1368,7 +1400,9 @@ public:
 
 			  Lit rhs_lit = c.rhs_lit;
 			  lbool rhs_val = S->value(rhs_lit);
-			  if(c.oneSided && rhs_val==l_False){
+			  if(c.side==ConstraintSide::Upper && rhs_val==l_False){
+				 continue;//this constraint is unenforced
+			  }else  if(c.side==ConstraintSide::Lower && rhs_val==l_True){
 				 continue;//this constraint is unenforced
 			  }
 
@@ -1380,42 +1414,42 @@ public:
 				  }
 			  }
 			  if(c.op==PbType::GE){
-				  if(rhs_val==l_True && lhs<c.total){
+				  if(rhs_val==l_True && lhs<c.total && c.side!=ConstraintSide::Lower){
 					  assert(false);
 					  return false;
-				  }else if(rhs_val==l_False && lhs>=c.total){
+				  }else if(rhs_val==l_False && lhs>=c.total && c.side!=ConstraintSide::Upper){
 					  assert(false);
 					  return false;
 				  }
 			  }else if(c.op==PbType::GT){
-				  if(rhs_val==l_True && lhs<=c.total){
+				  if(rhs_val==l_True && lhs<=c.total && c.side!=ConstraintSide::Lower){
 					  assert(false);
 					  return false;
-				  }else if(rhs_val==l_False && lhs>c.total){
+				  }else if(rhs_val==l_False && lhs>c.total && c.side!=ConstraintSide::Upper){
 					  assert(false);
 					  return false;
 				  }
 			  }else if(c.op==PbType::LE){
-				  if(rhs_val==l_True && lhs>c.total){
+				  if(rhs_val==l_True && lhs>c.total && c.side!=ConstraintSide::Lower){
 					  assert(false);
 					  return false;
-				  }else if(rhs_val==l_False && lhs<=c.total){
+				  }else if(rhs_val==l_False && lhs<=c.total && c.side!=ConstraintSide::Upper){
 					  assert(false);
 					  return false;
 				  }
 			  }else if(c.op==PbType::LT){
-				  if(rhs_val==l_True && lhs>=c.total){
+				  if(rhs_val==l_True && lhs>=c.total && c.side!=ConstraintSide::Lower){
 					  assert(false);
 					  return false;
-				  }else if(rhs_val==l_False && lhs<c.total){
+				  }else if(rhs_val==l_False && lhs<c.total  && c.side!=ConstraintSide::Upper){
 					  assert(false);
 					  return false;
 				  }
 			  }else if(c.op==PbType::EQ){
-				  if(rhs_val==l_True && lhs!=c.total){
+				  if(rhs_val==l_True && lhs!=c.total && c.side!=ConstraintSide::Lower){
 					  assert(false);
 					  return false;
-				  }else if(rhs_val==l_False && lhs==c.total){
+				  }else if(rhs_val==l_False && lhs==c.total && c.side!=ConstraintSide::Upper){
 					  assert(false);
 					  return false;
 				  }
@@ -1428,6 +1462,11 @@ public:
 
 	 bool solveTheory(vec<Lit> & conflict){
 		 return propagateTheory(conflict);
+	 }
+
+	 void printSolution(){
+
+
 	 }
 
 	 static unsigned  int gcd (unsigned int a, unsigned int b) {

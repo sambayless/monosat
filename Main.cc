@@ -45,6 +45,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "simp/SimpSolver.h"
 #include "pb/PbTheory.h"
 #include "pb/PbParser.h"
+#include "mtl/Map.h"
 using namespace Minisat;
 
 //=================================================================================================
@@ -108,11 +109,7 @@ int main(int argc, char** argv)
         IntOption    cpu_lim("MAIN", "cpu-lim","Limit on CPU time allowed in seconds.\n", INT32_MAX, IntRange(0, INT32_MAX));
         IntOption    mem_lim("MAIN", "mem-lim","Limit on memory usage in megabytes.\n", INT32_MAX, IntRange(0, INT32_MAX));
         
-        IntOption    opt_width("GRAPH","width","Width of graph.\n", 0, IntRange(0, INT32_MAX));
-        IntOption    opt_height("GRAPH","height","Height of graph.\n", 0, IntRange(0, INT32_MAX));
-        IntOption    opt_bits("GRAPH","bits","Bits per position in graph.\n", 1, IntRange(0, INT32_MAX));
 
-        BoolOption	 opt_csv("GRAPH","csv","Output in CSV format",false);
 
         StringOption    opt_graph("GRAPH", "graph","Not currently used", "");
 
@@ -121,6 +118,8 @@ int main(int argc, char** argv)
         StringOption    opt_decidable("MAIN", "decidable-theories","Specify which graphs should make decisions on their own, in comma delimited format", "");
 
         StringOption 		opt_symbols("MAIN","symbols","Whether to read symbol lines (\"c var <variable number> <name>\") from the gnf","");
+
+        StringOption    opt_assume_symbols("MAIN","assume-symbols","read in symbols (in the format produced by the 'symbols' option) and treat them as assumptions","");
 
         BoolOption opt_id_graph("GRAPH","print-vars","Identify the variables in the graph, then quit\n",false);
 
@@ -548,6 +547,68 @@ int main(int argc, char** argv)
 				S.setFrozen(v,true);//don't let the symbols get eliminated... this is probably a sub-optimal solution...
 			}
 		}
+		if(strlen((const char* )opt_assume_symbols)>0){
+
+			std::ifstream infile((const char* )opt_assume_symbols);
+
+			std::string line;
+
+			std::unordered_map<string,int> symbolmap;
+			for(auto p:symbols){
+				symbolmap[p.second]=p.first;
+			}
+
+			while (std::getline(infile, line))
+			{
+				if(line[0]=='%')
+					continue;
+
+			    std::istringstream iss(line);
+
+			    string s1;
+			    string s2;
+			    string symbol;
+			    bool sign=true;
+			    iss>>s1 >> s2;
+			    if(s1.compare(":-")){
+			    	assert(false);
+			    	fprintf(stderr,"Bad assumption: %s\n",line.c_str());
+			    	exit(1);
+			    }else if(!s2.compare("not")){
+			    	//Then this is a _true_ assumption (yes, its intentionally backward...)
+			    	iss>>symbol;
+			    	sign=false;
+			    }else{
+			    	symbol=s2;
+			    }
+			    if(symbol.back()!='.'){
+			      	assert(false);
+					fprintf(stderr,"Bad assumption: %s\n",line.c_str());
+					exit(1);
+			    }
+			    symbol.pop_back();
+			    if(!symbolmap.count(symbol)){
+			    	assert(false);
+					fprintf(stderr,"Unmapped assumption symbol: %s\n",symbol.c_str());
+					exit(1);
+			    }
+			    int var = symbolmap[symbol];
+			    assert(var>=0);
+
+			    Lit a = mkLit(var,sign);
+			    assume.push(a);
+
+			    /*line.
+			    if(!line.compare(0, "2", ":-")){
+			    	iss>>
+			    }else{
+			    	assert(false);
+			    }*/
+
+
+			}
+		}
+
 		double before_pre_processing = rtime(0);
 		if(pre)
 			S.eliminate(true);
@@ -606,320 +667,8 @@ int main(int argc, char** argv)
         if(ret==l_True){
         	if(!opt_csv)
         		printf("s SATISFIABLE\n");
-        	 if(!opb){
-        	if(S.theories.size() ){
-				Theory * t = S.theories[0];
-				GraphTheorySolver *g = (GraphTheorySolver*)t;
-				int width = sqrt(g->nNodes());
-				if(opt_width>0){
-					width=opt_width;
-				}
-				int height =width;
-				if(opt_height>0){
-					height = opt_height;
-				}
-				int bits = 1;
-				if(opt_bits>0)
-						bits=opt_bits;
-				int v = 0;
-				//for (int i = 0;i<w;i++){
-				//	for(int j = 0;j<w;j++){
-				int lasty= 0;
-				int maxwidth = log10(pow(2, bits))+1; //highestbit(bits);
-				for(int n = 0;n<height*width*bits;n+=bits){
-					int x = n%(width*bits)/bits;
-					int y = n/(width*bits);
-					if(y > lasty)
-						printf("\n");
-#if not defined(__MINGW32__)
-						if (!opt_csv && isatty(fileno(stdout))){
-#else
-						if(false){
-#endif
-							unsigned long val = 0;
-							for(int j = 0;j<bits;j++){
-								if(S.model[n+j]==l_True){
-									val = val + (1<<j);
-								}
-							}
-
-							//if(val>0){
-								int backcolor = 0;
-								if(val>0){
-									backcolor=log2(val)+1;
-								}
-								if(backcolor<0){
-									int a=1;
-								}
-								int forecolor = 7;
-								if(backcolor>7){
-									backcolor=7;
-								}
-								if(backcolor==3 || backcolor==7){
-									forecolor=0;
-								}
-								printf("\033[1;4%dm\033[1;3%dm%*lu \033[0m",backcolor,forecolor,maxwidth,val);
-							//}else{
-								//printf("\033[1;44m\033[1;37m%*lu \033[0m",maxwidth,val);
-								//printf("\033[1;40m\033[1;30m%*lu \033[0m",maxwidth,val);
-							//}
-						}else if (opt_csv){
-							unsigned long val = 0;
-							for(int j = 0;j<bits;j++){
-								if(S.model[n+j]==l_True){
-									val = val + (1<<j);
-								}
-							}
-							printf("%*lu",maxwidth,val);
-							if (x<width-1){
-								printf(",");
-							}
-						}else{
-							unsigned long val = 0;
-							for(int j = 0;j<bits;j++){
-								if(S.model[n+j]==l_True){
-									val = val + (1<<j);
-								}
-							}
-							printf(" %*lu ",maxwidth,val);
-
-				/*			if(S.model[n]==l_True)
-								printf(" 1");
-							else
-								printf(" 0");*/
-						}
-
-					lasty=y;
-				}
-				printf("\n\n");
-				if(opt_check_solution){
-							if(!g->check_solved()){
-								fprintf(stderr,"Error! Solution doesn't satisfy graph properties!\n");
-								exit(3);
-							}
-						}
-
-				if(opt_print_reach){
-				 v = 0;
-				//for (int i = 0;i<w;i++){
-				//	for(int j = 0;j<w;j++){
-			/*	 lasty= 0;
-				for(int n = 0;n<g->nNodes();n++){
-					int x = n%width;
-					int y = n/width;
-					if(y > lasty)
-						printf("\n");
-#if not defined(__MINGW32__)
-						if (isatty(fileno(stdout))){
-#else
-						if(false){
-#endif
-
-							if(S.model[n]==l_True)
-								printf("\033[1;42m\033[1;37m%3d\033[0m",n);
-							else
-								printf("\033[1;44m\033[1;37m%3d\033[0m",n);
-						}else{
-
-							if(S.model[n]==l_True)
-								printf(" 1");
-							else
-								printf(" 0");
-						}
-
-					lasty=y;
-				}
-
-				printf("\n");printf("\n");
-				*/
-
-
-				for(int t = 0;t<S.theories.size();t++){
-					printf("Theory %d\n", t);
-					GraphTheorySolver *g = (GraphTheorySolver*)S.theories[t];
-					int nnodes = g->nNodes();
-
-					int maxw = log10(g->nNodes() )+1; //highestbit(bits);
-
-					{
-
-						for(int r = 0;r<g->reach_detectors.size();r++){
-
-							int width = sqrt(g->nNodes());
-							if(opt_width>0){
-									width=opt_width;
-								}
-								int height =width;
-								if(opt_height>0){
-									height = opt_height;
-								}
-							int lasty= 0;
-							int extra =  g->nNodes() % width ? (width- g->nNodes() % width ):0;
-							for(int n = 0;n<g->nNodes();n++){
-								int x = n%width;
-
-								int y = (n + extra )/width;
-								if(y > lasty)
-									printf("\n");
-
-								int v =var( g->reach_detectors[r]->reach_lits[n]);
-#if not defined(__MINGW32__)
-								if (isatty(fileno(stdout)))
-#else
-								if(false)
-#endif
-								{
-										if(S.model[v]==l_True)
-											printf("\033[1;42m\033[1;37m%4d\033[0m", v+1);
-										else
-											printf("\033[1;44m\033[1;37m%4d\033[0m",v+1);
-									}else{
-
-										if(S.model[v]==l_True)
-											printf(" 1");
-										else
-											printf(" 0");
-									}
-
-									lasty=y;
-								}
-								printf("\n");
-							}
-
-
-
-							//g->drawFull();
-
-							assert(g->dbg_solved());
-						}
-
-					{
-								for(int r = 0;r<g->distance_detectors.size();r++){
-
-											int width = sqrt(g->nNodes());
-											if(opt_width>0){
-													width=opt_width;
-												}
-												int height =width;
-												if(opt_height>0){
-													height = opt_height;
-												}
-											int lasty= 0;
-											int extra =  g->nNodes() % width ? (width- g->nNodes() % width ):0;
-											for(int n = 0;n<g->nNodes();n++){
-												int x = n%width;
-
-												int y = (n + extra )/width;
-												if(y > lasty)
-													printf("\n");
-
-												int d = g->distance_detectors[r]->positive_reach_detector->distance(n);
-												printf("%*d ",maxw,d);
-
-
-													lasty=y;
-												}
-												printf("\n");
-											}
-							}
-						if(g->mstDetector){
-								int min_weight = g->mstDetector->positive_reach_detector->weight();
-								printf("Min Spanning Tree Weight: %d\n",min_weight);
-								int width = sqrt(g->nNodes());
-								if(opt_width>0){
-										width=opt_width;
-									}
-									int height =width;
-									if(opt_height>0){
-										height = opt_height;
-									}
-								int lasty= 0;
-								vec<bool> down_edge;
-								int extra =  g->nNodes() % width ? (width- g->nNodes() % width ):0;
-								for(int n = 0;n<g->nNodes();n++){
-									int x = n%width;
-
-									int y = (n + extra )/width;
-									if(y > lasty){
-										printf("\n");
-
-										for(int i = 0;i<down_edge.size();i++){
-											if(down_edge[i]){
-												printf("|");
-											}else{
-												printf(" ");
-											}
-											printf(" ");
-										}
-										down_edge.clear();
-										printf("\n");
-									}
-									printf("*");
-									if(x<width-1){
-										int edge_left = g->getEdgeID(n,n+1);
-										Var edge_var = g->edge_list[edge_left].v;
-										if(S.value(edge_var)==l_True &&  g->mstDetector->positive_reach_detector->edgeInTree(edge_left)){
-											printf("-");
-										}else{
-											printf(" ");
-										}
-									}
-
-									if(y<height-1){
-											int edge_down = g->getEdgeID(n,n+width);
-											Var edge_var = g->edge_list[edge_down].v;
-											bool in_tree = g->mstDetector->positive_reach_detector->edgeInTree(edge_down);
-											if(S.value(edge_var)==l_True &&  in_tree){
-												down_edge.push(true);
-											}else{
-												down_edge.push(false);
-											}
-										}
-
-										lasty=y;
-									}
-									printf("\n");
-								}
-
-						if(g->component_detector){
-							int numComponents = g->component_detector->positive_reach_detector->numComponents();
-							printf("Number of connected components is: %d\n",numComponents);
-
-						}
-					}
-
-
-
-
-				}
-/*        		for(int r = 0;r<g->reach_detectors.size();r++){
-
-					int width = sqrt(g->nNodes());
-					int lasty= 0;
-					int extra =  g->nNodes() % width ? (width- g->nNodes() % width ):0;
-					for(int n = 0;n<g->nNodes();n++){
-						int x = n%width;
-
-						int y = (n + extra )/width;
-
-						int v =var( g->reach_detectors[r]->reach_lits[n]);
-						if(v==306){
-							int a =1;
-						}
-						if(S.model[v]==l_True){
-							assert(S.value(v)==l_True);
-							int node = g->reach_detectors[r]->getNode(v);
-							g->reach_detectors[r]->positive_reach_detector->dbg_path(node);
-							int  b=1;
-
-						}
-
-
-						lasty=y;
-					}
-					printf("\n");
-				}*/
-        	}
+        	 for(int i = 0;i<S.theories.size();i++)
+        		 S.theories[i]->printSolution();
 
 			if(opt_witness){
 
@@ -954,26 +703,21 @@ int main(int argc, char** argv)
 				fclose(sfile);
 			}
 
-        	}else{
-        		//printf("s SATISFIABLE\n");
-
-        		//if(opt_witness){
-
-					printf("v ");
-					for(auto p:symbols){
-						Var v = p.first;
-						string & s = p.second;
-						if(S.model[v]==l_True){
-							printf("%s ",s.c_str());
-							//cout<<":- not "<< s<<".\n";
-						}else if (S.model[v]==l_False){
-							printf("-%s ",s.c_str());
-							//cout<<":- "<<s<<".\n";
-						}
+			if(opb){
+				printf("v ");
+				for(auto p:symbols){
+					Var v = p.first;
+					string & s = p.second;
+					if(S.model[v]==l_True){
+						printf("%s ",s.c_str());
+						//cout<<":- not "<< s<<".\n";
+					}else if (S.model[v]==l_False){
+						printf("-%s ",s.c_str());
+						//cout<<":- "<<s<<".\n";
 					}
-					printf("\n");
-				//}
-        	}
+				}
+				printf("\n");
+			}
 
         }else if(ret==l_False){
         	printf("s UNSATISFIABLE\n");

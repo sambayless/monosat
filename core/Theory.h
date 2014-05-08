@@ -41,6 +41,9 @@ public:
 	virtual bool check_solved(){
 		return true;
 	}
+	virtual void printSolution(){
+
+	}
 };
 
 }

@@ -116,6 +116,12 @@ BoolOption Minisat::opt_skip_additions(_cat_graph,"skip-additions","",false);
 BoolOption  Minisat::opt_propagate_theories_during_simplification(_cat,"theory-prop-during-simp","Apply propagation to theory solvers during simplification. Can be very expensive (depending on the theory).",true);
 BoolOption Minisat::opt_shrink_theory_conflicts(_cat,"shrink-theory-conflicts","",true);
 
+IntOption     Minisat::opt_width("GRAPH","width","Width of graph.\n", 0, IntRange(0, INT32_MAX));
+    IntOption     Minisat::opt_height("GRAPH","height","Height of graph.\n", 0, IntRange(0, INT32_MAX));
+    IntOption     Minisat::opt_bits("GRAPH","bits","Bits per position in graph.\n", 1, IntRange(0, INT32_MAX));
+
+    BoolOption	  Minisat::opt_csv("GRAPH","csv","Output in CSV format",false);
+
 MinCutAlg Minisat::mincutalg=MinCutAlg::ALG_EDMONSKARP ;
 ReachAlg Minisat::reachalg=ReachAlg::ALG_DFS;
 ConnectivityAlg Minisat::undirectedalg=ConnectivityAlg::ALG_DFS;
