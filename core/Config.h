@@ -85,7 +85,7 @@ extern BoolOption opt_compute_max_distance;
  extern BoolOption opt_detect_pure_lits;
  extern BoolOption opt_propagate_theories_during_simplification;
  extern BoolOption opt_shrink_theory_conflicts;
-
+extern BoolOption opt_early_theory_prop;
  extern IntOption    opt_width;
  extern    IntOption    opt_height;
  extern   IntOption    opt_bits;

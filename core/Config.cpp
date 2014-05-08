@@ -33,6 +33,7 @@ static const char* _cat_graph ="GRAPH";
  IntOption Minisat::opt_time(_cat,"time","Detail level of timing benchmarks (these add some overhead)",1,IntRange(0,3));
 
  DoubleOption  Minisat::opt_random_theory_freq   (_cat, "rnd-theory-freq",    "The frequency with which the decision theory solvers are selected to make decisions", 1, DoubleRange(0, true, 1, true));
+ BoolOption  Minisat::opt_early_theory_prop   (_cat, "early-theory-prop",    "If false, the solver waits until all literals are propagated before propagating theories; if true, theories are propagated while the solver is still propagating literals", false);
 
 
  BoolOption Minisat::opt_interpolate(_cat_sms,"interpolate","Store learnt interface clauses to form interpolants between modules",false);

@@ -64,6 +64,8 @@ public:
    //Theory interface
     void addTheory(Theory*t){
     	theories.push(t);
+    	theory_queue.capacity(theories.size());
+    	in_theory_queue.push(false);
     	t->setTheoryIndex(theories.size()-1);
     	cancelUntil(0);
     	resetInitialPropagation();
@@ -82,6 +84,8 @@ public:
     }
 
     void detatchTheory(Theory*t){
+    	assert(decisionLevel()==0);
+    	assert(theory_queue.size()==0);
     	int i,j =0;
     	for(i = 0;i<theories.size();i++){
     		if(theories[i]==t){
@@ -102,9 +106,12 @@ public:
     			markers.shrink(k-l);
     		}else{
     			theories[j++]=theories[i];
+    			in_theory_queue[j++]=in_theory_queue[i];
     		}
     	}
     	theories.shrink(i-j);
+    	in_theory_queue.shrink(i-j);
+
     	cancelUntil(0);
     }
 
@@ -345,7 +352,8 @@ public:
     CRef cause_marker;
     int track_min_level;
     int initial_level;
-
+    vec<int> theory_queue;
+    vec<bool> in_theory_queue;
     int max_decision_var;
 
     Var max_super;

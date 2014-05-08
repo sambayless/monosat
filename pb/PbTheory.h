@@ -94,6 +94,8 @@ class PbTheory: public Theory{
 	 double propagationtime;
 	 long stats_propagations,stats_propagations_skipped;
 	 long stats_shrink_removed = 0;
+	 long stats_reasons = 0;
+	 long stats_conflicts=0;
 /*	 Var newVar(){
 	 		Var s= S->newVar();
 	 		Var v = vars.size();
@@ -332,6 +334,7 @@ public:
 						dbg_prove(pbclause,conflict);
 						dbg_min_conflict(pbclause,conflict);
 						toSolver(conflict);
+						stats_conflicts++;
 						return false;
 					}else if (rhs_val==l_False && underApprox>=total){
 						//conflict
@@ -342,6 +345,7 @@ public:
 						dbg_prove(pbclause,conflict);
 						dbg_min_conflict(pbclause,conflict);
 						toSolver(conflict);
+						stats_conflicts++;
 						return false;
 					}else if (underApprox>=total && rhs_val==l_Undef){
 						//pbclause.isSatisfied=true;
@@ -542,9 +546,7 @@ private:
 						}
 					}
  	 			int overApprox = underApprox+unassignedWeight;
- 	 			if(underApprox+unassignedWeight>=pbclause.rhs.weight){
- 	 				exit(4);
- 	 			}
+
  	 			assert(underApprox+unassignedWeight<pbclause.rhs.weight);
  				if(opt_shrink_theory_conflicts){
  						assert(t_weights.size()+startSize==conflict.size());
@@ -614,11 +616,13 @@ private:
 						weights.push(tmp_weights[index]);
 					}
 				}
+ 	 			bool replace_rhs=false;
  	 			Lit last = lit_Undef;
  	 			for(i = 0;i<clause.size();i++){
  	 				Lit l = clause[i];
  	 				int w = weights[i];
- 	 				assert(var(l)!=var(rhs_lit));
+
+
  	 				if (w<0){
 						//then invert this literal and update the right hand side
 						w=-w;
@@ -640,7 +644,8 @@ private:
  	 				}else{
  	 					//don't change
  	 				}
-
+ 	 				if(var(l)==var(rhs_lit))
+						replace_rhs=true;
  	 				if(w==0){
  	 					//drop this literal
  	 				}else if(l==last){
@@ -750,6 +755,16 @@ private:
  	 			}else{
  	 				assert(clause.size()>1);//because we divided by gcd...
  	 			}
+
+
+ 	 		 	if(replace_rhs){
+ 	 		 		//the theory solver doesn't support using the rhs variable in the clause itself, so swap this literal out
+ 	 		 		Lit new_rhs = mkLit( S->newVar());
+ 	 		 		S->addClause(new_rhs,~rhs_lit);
+ 	 		 		S->addClause(~new_rhs,rhs_lit);
+ 	 		 		rhs_lit = new_rhs;
+
+ 	 		 	}
 
  	 			// the minisatp paper suggests splitting the clause into a pb part and a pure-sat part by introducing a new variable
  	 			// might want to implement that in the future...
@@ -1215,6 +1230,8 @@ public:
  		 CRef marker = S->reason(var(toSolver(p)));
  		 assert(marker!=CRef_Undef);
  		 assert(reasonMap.has(marker));
+  		stats_reasons++;
+
  		 int clauseID = reasonMap[marker];
  		 static int iter = 0;
  		if( ++iter==13){
@@ -1257,7 +1274,10 @@ public:
  	 }
 
 	 void printStats(int detailLevel){
-		 printf("Shrink removed: %d\n",stats_shrink_removed);
+		 printf("PbTheory: %d clauses\n", clauses.size());
+		 printf("%d propagations (%d skipped)\n",stats_propagations,stats_propagations_skipped);
+		 printf("%d conflicts, %d reasons\n",stats_conflicts,stats_reasons);
+		 printf("Shrink removed %d lits from conflict clauses\n",stats_shrink_removed);
 	}
 	 void preprocess(){
 

@@ -303,7 +303,10 @@ void Solver::cancelUntil(int level) {
         if(decisionLevel()<track_min_level){
 			track_min_level=decisionLevel();
 		}
-
+        for(int i:theory_queue){
+        	in_theory_queue[i]=false;
+        }
+        theory_queue.clear();
         for(int i = 0;i<theories.size();i++){
 			theories[i]->backtrackUntil(level);
 		}
@@ -553,15 +556,18 @@ void Solver::analyzeFinal(Lit p, vec<Lit>& out_conflict)
 
 void Solver::uncheckedEnqueue(Lit p, CRef from)
 {
-	if(var(p)==62){
-		int a=1;
-	}
     assert(value(p) == l_Undef);
     assigns[var(p)] = lbool(!sign(p));
     vardata[var(p)] = mkVarData(from, decisionLevel());
     trail.push_(p);
     if(hasTheory(p)){
-    	theories[getTheoryID(p)]->enqueueTheory(getTheoryLit(p));
+    	int theoryID = getTheoryID(p);
+    	theories[theoryID]->enqueueTheory(getTheoryLit(p));
+    	if(!in_theory_queue[theoryID]){
+    		in_theory_queue[theoryID]=true;
+    		theory_queue.push(theoryID);
+    		assert(theory_queue.size()<=theories.size());
+    	}
     }
 }
 
@@ -751,6 +757,27 @@ CRef Solver::propagate(bool propagate_theories)
     do{
 
 		while (qhead < trail.size()){
+			if(opt_early_theory_prop){
+				//propagate theories;
+				while(propagate_theories && theory_queue.size() && confl==CRef_Undef){
+					theory_conflict.clear();
+					int theoryID = theory_queue.last();
+					theory_queue.pop();
+					if(!theories[theoryID]->propagateTheory(theory_conflict)){
+						if(!addConflictClause(theory_conflict,confl)){
+							in_theory_queue[theoryID]=false;
+							qhead = trail.size();
+							return confl;
+						}
+					}
+					in_theory_queue[theoryID]=false;//mark it removed from the queue here, so that the theory's own propagations cannot put it back in the queue.
+				}
+			}
+
+
+
+
+
 			Lit            p   = trail[qhead++];     // 'p' is enqueued fact to propagate.
 			vec<Watcher>&  ws  = watches[p];
 			Watcher        *i, *j, *end;
@@ -805,19 +832,31 @@ CRef Solver::propagate(bool propagate_theories)
 		    	for(int i = 0;i<qhead;i++){
 		    		Lit p = trail[i];
 		    		if(hasTheory(p)){
-		    			theories[getTheoryID(p)]->enqueueTheory(getTheoryLit(p));
+		    			int theoryID = getTheoryID(p);
+		    			theories[theoryID]->enqueueTheory(getTheoryLit(p));
+		    		  	if(!in_theory_queue[theoryID]){
+							in_theory_queue[theoryID]=true;
+							theory_queue.push(theoryID);
+						}
 		    		}
 		    	}
 		    	initialPropagate=false;
 		    }
-		//propagate theories;
-		for(int i = 0;  propagate_theories && i<theories.size() && qhead == trail.size() && confl==CRef_Undef;i++){
-			theory_conflict.clear();
-			if(!theories[i]->propagateTheory(theory_conflict)){
-				if(!addConflictClause(theory_conflict,confl))
-					return confl;
+			//propagate theories;
+			while(propagate_theories && theory_queue.size() && (opt_early_theory_prop || qhead == trail.size()) && confl==CRef_Undef){
+				theory_conflict.clear();
+
+				int theoryID = theory_queue.last();
+				theory_queue.pop();
+				if(!theories[theoryID]->propagateTheory(theory_conflict)){
+					if(!addConflictClause(theory_conflict,confl)){
+						in_theory_queue[theoryID]=false;
+						qhead = trail.size();
+						return confl;
+					}
+				}
+				in_theory_queue[theoryID]=false;//mark it removed from the queue here, so that the theory's own propagations cannot put it back in the queue.
 			}
-		}
 
 
 		//solve theories if this solver is completely assigned
@@ -1178,6 +1217,7 @@ lbool Solver::search(int nof_conflicts)
             }
 
         }else{
+        	assert(theory_queue.size()==0);
             if(opt_subsearch==0 &&  decisionLevel()< initial_level){
      			return l_Undef;//give up if we have backtracked past the super solvers decisions
      		  }else if(opt_subsearch==2 && S && confl==CRef_Undef){
