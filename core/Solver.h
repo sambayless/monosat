@@ -355,7 +355,8 @@ public:
     vec<int> theory_queue;
     vec<bool> in_theory_queue;
     int max_decision_var;
-
+    CRef tmp_clause=CRef_Undef;
+    int tmp_clause_sz=0;
     Var max_super;
     Var min_super;
     Var min_local;

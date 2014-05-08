@@ -205,16 +205,39 @@ CRef Solver::attachClauseSafe(vec<Lit> & ps){
 				return CRef_Undef;
 			}else{
 				//find the highest level in the conflict (should be the current decision level, but we won't require that)
+				if(ps.size() > opt_temporary_theory_reasons){
+						if(tmp_clause==CRef_Undef){
+							tmp_clause = ca.alloc(ps,false);
+							tmp_clause_sz=ps.size();
+						}else if(tmp_clause_sz<ps.size()){
+							ca[tmp_clause].mark(1);//is this needed?
+							ca.free(tmp_clause);
+							tmp_clause = ca.alloc(ps,false);
+							tmp_clause_sz=ps.size();
+						}else{
+							Clause & c = ca[tmp_clause];
+							assert(tmp_clause_sz>=ps.size());
+							assert(tmp_clause_sz>=c.size());
+							c.grow(tmp_clause_sz-c.size());
+							for(int i = 0;i<ps.size();i++){
+								c[i]=ps[i];
+							}
+							c.shrink(c.size()-ps.size());
+						}
 
-				CRef cr = ca.alloc(ps, !opt_permanent_theory_conflicts);
-				ca[cr].setFromTheory(true);
-				if(opt_permanent_theory_conflicts)
-					clauses.push(cr);
-				else
-					learnts.push(cr);
+						confl_out = tmp_clause;
+				}else{
+					CRef cr = ca.alloc(ps, !opt_permanent_theory_conflicts);
+					ca[cr].setFromTheory(true);
+					if(opt_permanent_theory_conflicts)
+						clauses.push(cr);
+					else
+						learnts.push(cr);
 
-				attachClause(cr);
-				confl_out=cr;
+					attachClause(cr);
+
+					confl_out=cr;
+				}
 				return confl_out;
 			}
 	}
@@ -753,7 +776,9 @@ CRef Solver::propagate(bool propagate_theories)
     CRef    confl     = CRef_Undef;
     int     num_props = 0;
     watches.cleanAll();
-
+    if(decisionLevel()==0 && ! propagate_theories){
+    	initialPropagate=true;//we will need to propagate this assignment to the theories at some point in the future.
+    }
     do{
 
 		while (qhead < trail.size()){
@@ -763,6 +788,7 @@ CRef Solver::propagate(bool propagate_theories)
 					theory_conflict.clear();
 					int theoryID = theory_queue.last();
 					theory_queue.pop();
+					in_theory_queue[theoryID]=false;
 					if(!theories[theoryID]->propagateTheory(theory_conflict)){
 						if(!addConflictClause(theory_conflict,confl)){
 							in_theory_queue[theoryID]=false;
@@ -770,7 +796,6 @@ CRef Solver::propagate(bool propagate_theories)
 							return confl;
 						}
 					}
-					in_theory_queue[theoryID]=false;//mark it removed from the queue here, so that the theory's own propagations cannot put it back in the queue.
 				}
 			}
 
@@ -834,11 +859,15 @@ CRef Solver::propagate(bool propagate_theories)
 		    		if(hasTheory(p)){
 		    			int theoryID = getTheoryID(p);
 		    			theories[theoryID]->enqueueTheory(getTheoryLit(p));
-		    		  	if(!in_theory_queue[theoryID]){
-							in_theory_queue[theoryID]=true;
-							theory_queue.push(theoryID);
-						}
+
 		    		}
+		    	}
+		    	//Have to check _all_ the theories, even if we haven't eneueued of their literals, in case they have constants to propagate up.
+		    	for(int theoryID = 0;theoryID<theories.size();theoryID++){
+		    		if(!in_theory_queue[theoryID]){
+						in_theory_queue[theoryID]=true;
+						theory_queue.push(theoryID);
+					}
 		    	}
 		    	initialPropagate=false;
 		    }
@@ -848,6 +877,7 @@ CRef Solver::propagate(bool propagate_theories)
 
 				int theoryID = theory_queue.last();
 				theory_queue.pop();
+				in_theory_queue[theoryID]=false;
 				if(!theories[theoryID]->propagateTheory(theory_conflict)){
 					if(!addConflictClause(theory_conflict,confl)){
 						in_theory_queue[theoryID]=false;
@@ -855,7 +885,6 @@ CRef Solver::propagate(bool propagate_theories)
 						return confl;
 					}
 				}
-				in_theory_queue[theoryID]=false;//mark it removed from the queue here, so that the theory's own propagations cannot put it back in the queue.
 			}
 
 
@@ -1123,16 +1152,41 @@ bool Solver::addConflictClause(vec<Lit> & ps, CRef & confl_out){
 			for(int j = 0;j<ps.size();j++)
 				assert(value(ps[j])==l_False);
 #endif
-			CRef cr = ca.alloc(ps, !opt_permanent_theory_conflicts);
-			ca[cr].setFromTheory(true);
-	    	if(opt_permanent_theory_conflicts)
-				clauses.push(cr);
-			else{
-				learnts.push(cr);
+			if(ps.size()> opt_temporary_theory_conflicts){
+				if(tmp_clause==CRef_Undef){
+					tmp_clause = ca.alloc(ps,false);
+					tmp_clause_sz=ps.size();
+				}else if(tmp_clause_sz<ps.size()){
+					ca[tmp_clause].mark(1);//is this needed?
+					ca.free(tmp_clause);
+					tmp_clause = ca.alloc(ps,false);
+					tmp_clause_sz=ps.size();
+				}else{
+					Clause & c = ca[tmp_clause];
+					assert(tmp_clause_sz>=ps.size());
+					assert(tmp_clause_sz>=c.size());
+					c.grow(tmp_clause_sz-c.size());
+					for(int i = 0;i<ps.size();i++){
+						c[i]=ps[i];
+					}
+					c.shrink(c.size()-ps.size());
+				}
+
+				confl_out = tmp_clause;
+			}else{
+
+				CRef cr = ca.alloc(ps, !opt_permanent_theory_conflicts);
+				ca[cr].setFromTheory(true);
+				if(opt_permanent_theory_conflicts)
+					clauses.push(cr);
+				else{
+					learnts.push(cr);
+				}
+
+				attachClause(cr);
+				confl_out=cr;
 			}
 
-			attachClause(cr);
-			confl_out=cr;
 			return false;
 		}
 	return true;
@@ -1562,6 +1616,11 @@ void Solver::toDimacs(FILE* f, const vec<Lit>& assumps)
 
 void Solver::relocAll(ClauseAllocator& to)
 {
+	if(tmp_clause!=CRef_Undef){
+	    ca[tmp_clause].mark(1);//is this needed?
+	    ca.free(tmp_clause);
+		tmp_clause = CRef_Undef;
+	}
 	//Re-allocate the 'theory markers'
 	vec<int> marker_theory_tmp;
 

@@ -76,6 +76,8 @@ extern BoolOption opt_optimize_mst;
 extern BoolOption opt_skip_deletions;
 extern BoolOption opt_skip_additions;
 extern BoolOption opt_permanent_theory_conflicts;
+extern IntOption opt_temporary_theory_conflicts;
+extern IntOption opt_temporary_theory_reasons;
 extern BoolOption opt_force_directed;
 extern BoolOption opt_decide_graph_chokepoints;
 extern IntOption opt_sort_graph_decisions;

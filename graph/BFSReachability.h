@@ -429,17 +429,20 @@ public:
 
 		if(last_modification>0 && g.modifications==last_modification){
 			stats_skipped_updates++;
+			assert(dbg_uptodate());
 			return;
 		}
 
 		if(last_modification>0 &&  last_deletion==g.deletions){
 			stats_num_skipable_deletions++;
 			if(opt_skip_deletions && reportPolarity<1){
+				assert(dbg_uptodate());
 				return;//I don't trust the correctness of these shortcuts
 			}
 		}
 		if(last_modification>0 &&  last_addition==g.additions){
 			if(opt_skip_additions && reportPolarity>-1){
+				assert(dbg_uptodate());
 				return;//I don't trust the correctness of these shortcuts
 			}
 		}

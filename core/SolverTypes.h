@@ -164,6 +164,13 @@ public:
 
 
     int          size        ()      const   { return header.size; }
+    //This is NOT safe. Only use this if it is guaranteed that the clause has enough extra allocated space
+    void		 grow(int i){
+    	assert(i>=0);
+    	 if (header.has_extra)
+    		 data[header.size+i] = data[header.size];
+    	 header.size += i;
+    }
     void         shrink      (int i)         { assert(i <= size()); if (header.has_extra) data[header.size-i] = data[header.size]; header.size -= i; }
     void         pop         ()              { shrink(1); }
     bool         learnt      ()      const   { return header.learnt; }

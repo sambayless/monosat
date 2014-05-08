@@ -774,8 +774,10 @@ void ReachDetector::buildReachReason(int node,vec<Lit> & conflict){
 						if(l!=lit_Undef){
 							int u = getNode(var(l));
 							if((!opt_detect_pure_theory_lits || unassigned_positives>0) && positive_reach_detector->connected_unsafe(u)){
+								assert(outer->value(l)==l_True);
 								assert(outer->dbg_value(l)==l_True);
 							}else if ((!opt_detect_pure_theory_lits || unassigned_negatives>0) && !negative_reach_detector->connected_unsafe(u)){
+								assert(outer->value(l)==l_False);
 								assert(outer->dbg_value(l)==l_False);
 							}
 						}
