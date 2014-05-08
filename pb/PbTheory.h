@@ -321,9 +321,10 @@ public:
 
 					unsigned int total = pbclause.rhs.weight;
 					//compute over and under approximations...
-					unsigned int underApprox=0;
-					unsigned int overApprox=0;
-					int n_Free=0;
+					unsigned int underApprox=pbclause.under;
+					int unassignedWeight = pbclause.unassigned;
+					unsigned int overApprox= pbclause.under+ pbclause.unassigned;
+				/*	int n_Free=0;
 					unsigned int unassignedWeight = 0;
 					unsigned int smallestUnassignedWeight = INT32_MAX;
 					unsigned int largestUnassignedWeight =0;
@@ -347,8 +348,8 @@ public:
 							int  a=1;
 						}
 					}
-
-					overApprox=underApprox+unassignedWeight;
+*/
+					//overApprox=underApprox+;
 					if(rhs_val==l_True && underApprox>=total){
 						//this is a satisfied constraint
 						//pbclause.isSatisfied=true;
@@ -407,32 +408,32 @@ public:
 
 					}else if (rhs_val==l_True){
 						assert(pbclause.side!= ConstraintSide::Lower);
-						assert(n_Free>0);
+						//assert(n_Free>0);
 						assert(overApprox>=total);
 						//if(n_Free==1){
-						if(overApprox - largestUnassignedWeight <total){
+						if(overApprox - 2 <total){
 							//then the largest unassigned weight is forced
 							//assert(smallestUnassignedWeight==largestUnassignedWeight);
-							assert(largestUnassigned!=lit_Undef);
+							/*assert(largestUnassigned!=lit_Undef);
 							//assert(underApprox+largestUnassignedWeight>=total);//else the over approx would have triggered a conflict
 							dbg_prop(pbclause,largestUnassigned);
 							enqueue(largestUnassigned,pbclause.reason);
 
 							//it may also be the case that the second largest weight is forced.
-							if(n_Free>1){
-								for(PbElement e:pbclause.clause){
-									Lit l = e.lit;
-									lbool val = value(l);
-									if(val==l_True){
+							if(n_Free>1){*/
+							for(PbElement e:pbclause.clause){
+								Lit l = e.lit;
+								lbool val = value(l);
+								if(val==l_True){
 
-									}else if(val==l_Undef){
-										if(overApprox-e.weight<total){
-											dbg_prop(pbclause,e.lit);
-											enqueue(e.lit,pbclause.reason);
-										}
+								}else if(val==l_Undef){
+									if(overApprox-e.weight<total){
+										dbg_prop(pbclause,e.lit);
+										enqueue(e.lit,pbclause.reason);
 									}
 								}
 							}
+							//}
 						}
 					}
 					clauses[clauseID].inQueue=false;
