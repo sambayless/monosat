@@ -61,10 +61,11 @@ class PbTheory: public Theory{
 	struct VarData{
 		//bool onesided;//whether this is a one-sided or two-sided pb constraint (if one sided, then if the output var is false, the constraint is simply unenforced)
 		Var solverVar;
+		int sign:1;
 		int rhs:1;
-		int clauseID:31;
+		int clauseID:30;
 		unsigned int weight;
-		VarData():solverVar(var_Undef),rhs(false),clauseID(-1),weight(0){}
+		VarData():solverVar(var_Undef),sign(0),rhs(false),clauseID(-1),weight(0){}
 	};
 	struct PbElement{
 		Lit lit;
@@ -72,13 +73,16 @@ class PbTheory: public Theory{
 	};
 	struct PbClause{
 		ConstraintSide side;
-		bool isSatisfied;
-		bool isOverEq; //true iff the sum of the lhs is >= the rhs
+		//bool isSatisfied;
+		//bool isOverEq; //true iff the sum of the lhs is >= the rhs
 		bool inQueue;
+		//maintain running counts of the under/over approximations of this clause.
+		long under;
+		long unassigned;
 		PbElement rhs;
 		CRef reason;
 		vec<PbElement> clause;
-		PbClause():side(ConstraintSide::Both),isSatisfied(false),isOverEq(false),inQueue(false),reason(CRef_Undef){}
+		PbClause():side(ConstraintSide::Both),under(0),unassigned(0),inQueue(false),reason(CRef_Undef){}
 	};
 
 	//Map reasons to clauseIDs
@@ -104,7 +108,7 @@ class PbTheory: public Theory{
 
 	 		return v;
 	 	}*/
-	 	Var newVar(Var solverVar, int clauseID, int weight, bool isRHS =false){
+	 	Var newVar(Var solverVar, int clauseID, int weight,bool sign, bool isRHS =false){
 	 		while(S->nVars()<=solverVar)
 	 				S->newVar();
 
@@ -122,6 +126,7 @@ class PbTheory: public Theory{
 	 		vars[v].solverVar=solverVar;
 	 		vars[v].clauseID=clauseID;
 	 		vars[v].weight=weight;
+	 		vars[v].sign=sign;
 	 		vars[v].rhs=isRHS;
 
 	 		S->setTheoryVar(solverVar,getTheoryIndex(),v);
@@ -222,9 +227,7 @@ public:
  		}
  	 void enqueueTheory(Lit l){
  	 		Var v = var(l);
- 	 		if(toInt(l)==13){
- 	 			int a=1;
- 	 		}
+
  	 		int lev = level(v);
 
  	 		assert(decisionLevel()<=lev);
@@ -233,14 +236,44 @@ public:
  	 		while(lev>trail_lim.size()){
  	 			newDecisionLevel();
  	 		}
- 	 		int clauseID = vars[v].clauseID;
- 	 		if(!clauses[clauseID].inQueue){
- 	 			clauses[clauseID].inQueue=true;
- 	 			inq.push(clauseID);
- 	 		}
- 	 		assert(inq.contains(clauseID));
+
  	 		assigns[var(l)]=sign(l) ? l_False:l_True;
  	 		trail.push(l);
+
+ 	 		int clauseID = vars[v].clauseID;
+
+ 	 		PbClause & c = clauses[clauseID];
+ 	 		bool q = false;
+ 	 		if(v==var(c.rhs.lit)){
+ 	 			q=true;
+ 	 		}else{
+ 	 			bool s = vars[v].sign;
+ 	 			c.unassigned -= vars[v].weight;
+ 	 			if(s==sign(l)){
+ 	 				//this is a positive assignment
+ 	 				c.under += vars[v].weight;
+ 	 				 if(c.under>= c.rhs.weight){
+						q=true;
+					}
+ 	 			}else{
+
+ 	 				if(c.under + c.unassigned < c.rhs.weight){
+						//this is in conflict; enqueue this clause
+						q=true;
+					}
+ 	 			}
+
+
+ 	 		}
+
+
+ 	 		if(q){
+				if(!c.inQueue){
+					c.inQueue=true;
+					inq.push(clauseID);
+				}
+				assert(inq.contains(clauseID));
+ 	 		}
 			//trail.push({true,toInt(l)});
  	 	};
  	 	bool propagateTheory(vec<Lit> & conflict){
@@ -790,7 +823,7 @@ private:
 			  clauses.push();
 			  CRef reason = S->newReasonMarker(this);
 			  PbClause & pbclause = clauses.last();
-			  rhs_lit = mkLit(newVar(var(rhs_lit),clauseID,total,true) ,sign(rhs_lit));
+			  rhs_lit = mkLit(newVar(var(rhs_lit),clauseID,total,sign(rhs_lit),true) ,sign(rhs_lit));
 			  pbclause.rhs.lit = rhs_lit;
 			  pbclause.rhs.weight=(unsigned int) total;
 			  pbclause.side = side;
@@ -802,10 +835,10 @@ private:
 			  vars[var(rhs_lit)].weight=total;
 			  for(int i = 0;i<clause.size();i++){
 				  Lit l = clause[i];
-				  l = mkLit(newVar(var(l),clauseID,weights[i]) ,sign(l));
+				  l = mkLit(newVar(var(l),clauseID,weights[i],sign(l)) ,sign(l));
 
 				  pbclause.clause.push({l,(unsigned int)weights[i]});
-
+				  pbclause.unassigned+=weights[i];
 			  }
 		  }
 		  return rhs_lit;
@@ -832,7 +865,8 @@ private:
  				}
  			}
  			overApprox = underApprox+unassigned;
-
+ 			assert(c.unassigned==unassigned);
+ 			assert(c.under==underApprox);
  			if(value(rhsLit)==l_True){
  				assert(overApprox>=rhs);
  			}else if (value(rhsLit)==l_False){
@@ -1223,6 +1257,7 @@ private:
  		 assert(r==10);
 #endif
  	  }
+
 public:
  	 void buildReason(Lit p, vec<Lit> & reason){
  		 backtrackUntil(p);
@@ -1345,7 +1380,17 @@ public:
 					Lit l = trail[i];
 
 					assigns[var(l)]=l_Undef;
-					//changed=true;
+					if(!vars[var(l)].rhs){
+						Var v =var(l);
+						bool s = vars[v].sign;
+						PbClause & c = clauses[vars[v].clauseID];
+						c.unassigned += vars[v].weight;
+						if(s==sign(l)){
+							c.under -= vars[v].weight;
+						}else{
+
+						}
+					}
 				}
 				trail.shrink(trail.size()-stop);
 				trail_lim.shrink(trail_lim.size()-level);
@@ -1379,7 +1424,17 @@ public:
 					}
 
 					assigns[var(l)]=l_Undef;
+					if(!vars[var(l)].rhs){
+						Var v =var(l);
+						bool s = vars[v].sign;
+						PbClause & c = clauses[vars[v].clauseID];
+						c.unassigned += vars[v].weight;
+						if(s==sign(l)){
+							c.under -= vars[v].weight;
+						}else{
 
+						}
+					}
 				}
 				trail.shrink(trail.size()-i);
 				while(trail_lim.size() && trail_lim.last()>=trail.size())
