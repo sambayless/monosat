@@ -312,7 +312,7 @@ public:
  	 				pbclause.inQueue=false;
  	 				inq.pop();
  	 				continue;
- 	 			}else if(pbclause.side== ConstraintSide::Upper && rhs_val==l_True){
+ 	 			}else if(pbclause.side== ConstraintSide::Lower && rhs_val==l_True){
  	 				pbclause.inQueue=false;
 					inq.pop();
 					continue;
@@ -869,7 +869,9 @@ private:
  			assert(c.unassigned==unassigned);
  			assert(c.under==underApprox);
  			if(value(rhsLit)==l_True){
+ 				if(c.side!= ConstraintSide::Lower){
  				assert(overApprox>=rhs);
+ 				}
  			}else if (value(rhsLit)==l_False){
  				if(c.side!= ConstraintSide::Upper){
  					assert(underApprox<rhs);
@@ -878,7 +880,7 @@ private:
  			if(underApprox>=rhs){
  				assert(c.side== ConstraintSide::Upper || value(rhsLit)==l_True);
  			}else if(overApprox < rhs){
- 				assert(value(rhsLit)==l_False);
+ 				assert(c.side== ConstraintSide::Lower || value(rhsLit)==l_False);
  			}
 
 
@@ -895,7 +897,7 @@ private:
  	 }
  	 void dbg_min_conflict(const PbClause & c, vec<Lit> &conflict ){
 #ifndef NDEBUG
-
+ 		 if(opt_shrink_theory_conflicts){
  		dbg_prove(c,conflict);
  		vec<Lit> t;
  		for(int i = 0;i<conflict.size();i++){
@@ -918,6 +920,7 @@ private:
  			dbg_unprove(c,t);
  			}
  		}
+ 		 }
 #endif
  	 }
  	 void dbg_min_conflictb(const PbClause & c, vec<Lit> &conflict ){

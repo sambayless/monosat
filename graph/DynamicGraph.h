@@ -64,7 +64,7 @@ public:
 	vec<EdgeChange> history;
 	//vec<char> edge_status;
 
-	DynamicGraph(EdgeStatus & _status):edge_status(_status), nodes(0),edges(0),modifications(0),additions(0),deletions(0),historyclears(0),next_id(0),is_changed(true){
+	DynamicGraph(EdgeStatus & _status=defaultStatus):edge_status(_status), nodes(0),edges(0),modifications(0),additions(0),deletions(0),historyclears(0),next_id(0),is_changed(true){
 #ifdef RECORD
 		outfile=nullptr;
 #endif

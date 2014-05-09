@@ -33,6 +33,7 @@ public:
 		GraphTheorySolver * outer;
 		 DynamicGraph<PositiveEdgeStatus> &g;
 		 DynamicGraph<NegativeEdgeStatus> &antig;
+		 DynamicGraph<> cutgraph;
 		int within;
 		int source;
 		double rnd_seed;
@@ -44,7 +45,7 @@ public:
 		Reach * positive_reach_detector;
 		Reach * negative_reach_detector;
 		Reach *  positive_path_detector;
-
+		Reach *  cutgraph_reach_detector;
 		vec<Lit>  reach_lits;
 		Var first_reach_var;
 		vec<int> order_vec;
@@ -70,6 +71,7 @@ public:
 			return changed;
 		}
 
+		vec<int> removed_edges;
 		//stats
 
 		int stats_full_updates;
@@ -80,13 +82,17 @@ public:
 		int stats_num_skipable_deletions;
 		double mod_percentage;
 		int stats_pure_skipped;
+		int stats_shrink_removed;
 		double stats_full_update_time;
 		double stats_fast_update_time;
 
 		void printStats(){
-			printf("Distance detector\n");
+			printf("Reach detector\n");
 			if(opt_detect_pure_theory_lits)
 				printf("Propagations skipped by pure literal detection: %d\n", stats_pure_skipped);
+			if(opt_shrink_theory_conflicts){
+				printf("%d lits removed by shrinking conflicts\n",stats_shrink_removed);
+			}
 		}
 		struct ReachStatus{
 			ReachDetector & detector;

@@ -77,7 +77,7 @@ Var SimpSolver::newVar(bool sign, bool dvar) {
 
     frozen    .push((char)false);
     eliminated.push((char)false);
-
+    assert(frozen.size()==nVars());
     if (use_simplification){
         n_occ     .push(0);
         n_occ     .push(0);

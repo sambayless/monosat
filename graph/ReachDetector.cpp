@@ -19,8 +19,11 @@ ReachDetector::ReachDetector(int _detectorID, GraphTheorySolver * _outer, Dynami
 	rnd_path=nullptr;
 	opt_path=nullptr;
 	chokepoint_detector=nullptr;
+	cutgraph_reach_detector=nullptr;
 	first_reach_var = var_Undef;
 	stats_pure_skipped=0;
+	stats_shrink_removed=0;
+
 	if(reachalg==ReachAlg::ALG_SAT){
 		 positiveReachStatus=nullptr;
 		 negativeReachStatus=nullptr;
@@ -37,7 +40,9 @@ ReachDetector::ReachDetector(int _detectorID, GraphTheorySolver * _outer, Dynami
 		 chokepoint_detector = new DFSReachability<NullEdgeStatus,NegativeEdgeStatus>(from,_antig,nullEdgeStatus,1);
 
 	}
-
+	if(opt_shrink_theory_conflicts){
+		cutgraph_reach_detector= new UnweightedRamalReps<NullEdgeStatus,DefaultEdgeStatus>(from,cutgraph,nullEdgeStatus,0);
+	}
 
 	 if(opt_use_random_path_for_decisions){
 		 rnd_weight.clear();
@@ -362,6 +367,7 @@ void ReachDetector::buildReachReason(int node,vec<Lit> & conflict){
 			int u = node;
 			//drawFull( non_reach_detectors[detector]->getSource(),u);
 			assert(outer->dbg_notreachable( source,u));
+			//assert(!negative_reach_detector->connected_unchecked(node));
 			double starttime = rtime(2);
 			outer->cutGraph.clearHistory();
 			outer->stats_mc_calls++;
@@ -462,7 +468,81 @@ void ReachDetector::buildReachReason(int node,vec<Lit> & conflict){
 				    }  while (to_visit.size());
 
 
+
+
 			}
+
+
+		    if(opt_shrink_theory_conflicts){
+		    //visit each edge lit in this initial conflict, and see if unreachability is preserved if we add the edge back in (temporarily)
+		    	int i,j=0;
+
+		    	while(cutgraph.nodes<g.nodes){
+		    		cutgraph.addNode();
+		    	}
+		    	while(cutgraph.nEdgeIDs()<g.nEdgeIDs()){
+		    		//if an edge hasn't been disabled at level 0, add it here.
+		    		int edgeID = cutgraph.nEdgeIDs();
+		    		Var v = outer->getEdgeVar(edgeID);
+		    		Edge & e = outer->edge_list[edgeID];
+					cutgraph.addEdge(e.from,e.to,edgeID);
+		    		if(outer->value(v)==l_False && outer->level(v)==0){
+		    			//permanently disabled edge
+		    			cutgraph.disableEdge(edgeID);
+		    		}
+
+
+		    	}
+
+#ifndef NDEBUG
+		    	for(int i = 0;i<g.nEdgeIDs();i++){
+		    		Var v = outer->getEdgeVar(i);
+					if(outer->value(v)==l_False && outer->level(v)==0){
+
+					}else
+						assert(cutgraph.edgeEnabled(i));
+		    	}
+#endif
+		    	removed_edges.clear();
+		    	for(i = 0;i<conflict.size();i++){
+					Lit l = conflict[i];
+					if(!sign(l) && outer->isEdgeVar(var(l))){
+						int edgeID = outer->getEdgeID(var(l));
+						cutgraph.disableEdge(edgeID);
+						removed_edges.push(edgeID);
+					}
+		    	}
+
+		    	for(i = 0;i<conflict.size();i++){
+		    		Lit l = conflict[i];
+		    		if(!sign(l) && outer->isEdgeVar(var(l))){
+		    			//check if the target is still unreachable if we add this lit back in
+		    			int edgeID = outer->getEdgeID(var(l));
+		    			assert(!antig.edgeEnabled(edgeID));
+		    			assert(!cutgraph.edgeEnabled(edgeID));
+		    			assert(!cutgraph_reach_detector->connected(node));
+		    			cutgraph.enableEdge(edgeID);
+		    			if(cutgraph_reach_detector->connected(node)){
+		    				cutgraph.disableEdge(edgeID);
+		    				conflict[j++]=l;
+		    			}else{
+		    				//we can drop this edge from the conflict.
+		    				stats_shrink_removed++;
+		    			}
+		    		}else{
+		    			conflict[j++]=l;
+		    		}
+
+		    	}
+		    	conflict.shrink(i-j);
+		    	//restore the state of the graph
+		    	for(int edgeID: removed_edges){
+		    		cutgraph.enableEdge(edgeID);
+		    	}
+
+		    	changed.clear();
+
+		    }
 
 			 outer->num_learnt_cuts++;
 			 outer->learnt_cut_clause_length+= (conflict.size()-1);

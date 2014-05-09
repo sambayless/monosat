@@ -116,7 +116,7 @@ BoolOption Minisat::opt_skip_deletions(_cat_graph,"skip-deletions","",false);
 BoolOption Minisat::opt_skip_additions(_cat_graph,"skip-additions","",false);
 
 BoolOption  Minisat::opt_propagate_theories_during_simplification(_cat,"theory-prop-during-simp","Apply propagation to theory solvers during simplification. Can be very expensive (depending on the theory).",true);
-BoolOption Minisat::opt_shrink_theory_conflicts(_cat,"shrink-theory-conflicts","",true);
+BoolOption Minisat::opt_shrink_theory_conflicts(_cat,"shrink-theory-conflicts","",false);
 
 IntOption     Minisat::opt_width("GRAPH","width","Width of graph.\n", 0, IntRange(0, INT32_MAX));
     IntOption     Minisat::opt_height("GRAPH","height","Height of graph.\n", 0, IntRange(0, INT32_MAX));

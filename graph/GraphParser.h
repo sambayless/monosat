@@ -531,6 +531,19 @@ static void parse_GRAPH_main(B& in, Solver& S, vec<std::pair<int,std::string> > 
         }
 
     }
+    //clear any unmapped symbols (have to do this _before_ implementing constraints, which may introduce new variables)
+    if(symbols){
+		int i,j=0;
+		for(i = 0;i<symbols->size();i++ ){
+			std::pair<int,string> p = (*symbols)[i];
+			Var v = p.first;
+			if(v<=S.nVars()){
+				//keep this symbol
+				(*symbols)[j++] = (*symbols)[i];
+			}
+		}
+		symbols->shrink(i-j);
+    }
     for(int i = 0;i<graphs.size();i++){
     	if(graphs[i])
     	   graphs[i]->implementConstraints();
