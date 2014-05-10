@@ -68,7 +68,7 @@ extern BoolOption opt_force_distance_solver;
 extern DoubleOption opt_allpairs_percentage;
 extern BoolOption opt_decide_graph_neg;
 extern BoolOption opt_decide_graph_pos;
-extern BoolOption opt_ignore_graph;
+extern BoolOption opt_ignore_theories;
 extern BoolOption opt_check_pure_theory_lits;
 extern BoolOption opt_mst_min_cut;
 extern BoolOption opt_connected_components_min_cut;

@@ -96,7 +96,7 @@ BoolOption Minisat::opt_decide_graph_neg(_cat_graph,"decide-graph-neg","",false)
 
 BoolOption Minisat::opt_decide_graph_pos(_cat_graph,"decide-graph-pos","",true);
 
-BoolOption Minisat::opt_ignore_graph(_cat_graph,"ignore-graph","",false);
+BoolOption Minisat::opt_ignore_theories(_cat_graph,"ignore-theories","",false);
 
 //BoolOption Minisat::opt_check_pure_theory_lits(_cat_graph,"pure-theory-lits","",false);
 

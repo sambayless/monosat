@@ -466,7 +466,7 @@ int main(int argc, char** argv)
 				printf("\n");
 		}
 
-		   if(opt_verb>0){
+		   if(opt_verb>0 && decidable.size()){
 			   printf("Decidable theories: ");
 		   }
 		   for(int i = 0;i<decidable.size();i++){
@@ -481,7 +481,7 @@ int main(int argc, char** argv)
 				   }
 			   S.decidable_theories.push(S.theories[t]);
 		   }
-		   if(opt_verb>0){
+		   if(opt_verb>0 && decidable.size()){
 				   printf("\n");
 			   }
 
@@ -541,12 +541,7 @@ int main(int argc, char** argv)
 
 			   exit(0);
 		   }
-		if(symbols){
-			for (std::pair<int,string> p:symbols){
-				Var v = p.first;
-				S.setFrozen(v,true);//don't let the symbols get eliminated... this is probably a sub-optimal solution...
-			}
-		}
+
 		if(strlen((const char* )opt_assume_symbols)>0){
 
 			std::ifstream infile((const char* )opt_assume_symbols);
@@ -610,8 +605,12 @@ int main(int argc, char** argv)
 		}
 
 		double before_pre_processing = rtime(0);
+		printf("simplify:\n");
+		fflush(stdout);
 		if(pre)
 			S.eliminate(true);
+		fflush(stdout);
+		//exit(0);
 		double preprocessing_time = rtime(0)-before_pre_processing;
 		if(opt_verb>0 && pre){
 			printf("Preprocessing time = %f\n", preprocessing_time);
@@ -697,6 +696,9 @@ int main(int argc, char** argv)
 					}else if (S.model[v]==l_False){
 						fprintf(sfile,":- %s.\n",s.c_str());
 						//cout<<":- "<<s<<".\n";
+					}else{
+						//this is unassigned
+						int a =1;
 					}
 				}
 				fflush(sfile);

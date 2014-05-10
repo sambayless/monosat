@@ -41,7 +41,7 @@ namespace Minisat {
 
 template<class B, class Solver>
 static void readDiGraph(B& in, Solver& S, vec<GraphTheory*> & graphs) {
-	if(opt_ignore_graph){
+	if(opt_ignore_theories){
 		skipLine(in);
 		return;
 	}
@@ -70,7 +70,7 @@ static void readDiGraph(B& in, Solver& S, vec<GraphTheory*> & graphs) {
 
 template<class B, class Solver>
 static void readEdge(B& in, Solver& S, vec<GraphTheory*> & graphs) {
-	if(opt_ignore_graph){
+	if(opt_ignore_theories){
 		skipLine(in);
 		return;
 	}
@@ -100,7 +100,7 @@ static void readEdge(B& in, Solver& S, vec<GraphTheory*> & graphs) {
 
 template<class B, class Solver>
 static void readWeightedEdge(B& in, Solver& S, vec<GraphTheory*> & graphs) {
-	if(opt_ignore_graph){
+	if(opt_ignore_theories){
 		skipLine(in);
 		return;
 	}
@@ -131,7 +131,7 @@ static void readWeightedEdge(B& in, Solver& S, vec<GraphTheory*> & graphs) {
 
 template<class B, class Solver>
 static void readConnect(B& in, Solver& S, vec<GraphTheory*> & graphs) {
-	if(opt_ignore_graph){
+	if(opt_ignore_theories){
 		skipLine(in);
 		return;
 	}
@@ -162,7 +162,7 @@ static void readConnect(B& in, Solver& S, vec<GraphTheory*> & graphs) {
 
 template<class B, class Solver>
 static void readReach(B& in, Solver& S, vec<GraphTheory*> & graphs) {
-	if(opt_ignore_graph){
+	if(opt_ignore_theories){
 		skipLine(in);
 		return;
 	}
@@ -192,7 +192,7 @@ static void readReach(B& in, Solver& S, vec<GraphTheory*> & graphs) {
 
 template<class B, class Solver>
 static void readDistance(B& in, Solver& S, vec<GraphTheory*> & graphs) {
-	if(opt_ignore_graph){
+	if(opt_ignore_theories){
 		skipLine(in);
 		return;
 	}
@@ -224,7 +224,7 @@ static void readDistance(B& in, Solver& S, vec<GraphTheory*> & graphs) {
 
 template<class B, class Solver>
 static void readMinSpanningTreeConstraint(B& in, Solver& S, vec<GraphTheory*> & graphs) {
-	if(opt_ignore_graph){
+	if(opt_ignore_theories){
 		skipLine(in);
 		return;
 	}
@@ -251,7 +251,7 @@ static void readMinSpanningTreeConstraint(B& in, Solver& S, vec<GraphTheory*> & 
 }
 template<class B, class Solver>
 static void readMinSpanningTreeEdgeConstraint(B& in, Solver& S, vec<GraphTheory*> & graphs) {
-	if(opt_ignore_graph){
+	if(opt_ignore_theories){
 		skipLine(in);
 		return;
 	}
@@ -283,7 +283,7 @@ static void readMinSpanningTreeEdgeConstraint(B& in, Solver& S, vec<GraphTheory*
 
 template<class B, class Solver>
 static void readMaxFlowConstraint(B& in, Solver& S, vec<GraphTheory*> & graphs) {
-	if(opt_ignore_graph){
+	if(opt_ignore_theories){
 		skipLine(in);
 		return;
 	}
@@ -316,7 +316,7 @@ static void readMaxFlowConstraint(B& in, Solver& S, vec<GraphTheory*> & graphs) 
 
 template<class B, class Solver>
 static void readMinConnectedComponentsConstraint(B& in, Solver& S, vec<GraphTheory*> & graphs) {
-	if(opt_ignore_graph){
+	if(opt_ignore_theories){
 		skipLine(in);
 		return;
 	}
@@ -342,6 +342,10 @@ static void readMinConnectedComponentsConstraint(B& in, Solver& S, vec<GraphTheo
 
 template<class B, class Solver>
 static void readPB(B & in,vec<Lit> & lits, vec<int> & weights, Solver & S, PbTheory * pb){
+	if(opt_ignore_theories){
+		skipLine(in);
+		return;
+	}
 	//pb constraints are in this form:
 	//first a size integer, >= 1
 	//then, a list of literals

@@ -579,10 +579,14 @@ void Solver::analyzeFinal(Lit p, vec<Lit>& out_conflict)
 
 void Solver::uncheckedEnqueue(Lit p, CRef from)
 {
+/*	if(dimacs(p)==376042){
+		int a=1;
+	}*/
     assert(value(p) == l_Undef);
     assigns[var(p)] = lbool(!sign(p));
     vardata[var(p)] = mkVarData(from, decisionLevel());
     trail.push_(p);
+    //printf("%d\n",dimacs(p));
     if(hasTheory(p)){
     	int theoryID = getTheoryID(p);
     	theories[theoryID]->enqueueTheory(getTheoryLit(p));
@@ -1318,7 +1322,7 @@ lbool Solver::search(int nof_conflicts)
                 }
             }
 
-            if(next==lit_Undef && drand(random_seed)<opt_random_theory_freq){
+            if(opt_decide_graph && next==lit_Undef && drand(random_seed)<opt_random_theory_freq){
 				/**
 				 * Give the theory solvers a chance to make decisions
 				 */
