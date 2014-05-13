@@ -558,6 +558,7 @@ void DistanceDetector::buildReachReason(int node,vec<Lit> & conflict){
 		bool DistanceDetector::propagate(vec<Lit> & conflict){
 			if(!positive_reach_detector)
 				return true;
+
 			static int iter = 0;
 			if(++iter==2){
 				int a=1;

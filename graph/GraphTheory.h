@@ -323,6 +323,10 @@ public:
 		S->addClause(~o1,o2);
 		S->addClause(o1, ~o2);
 	}
+	void makeEqualInSolver(Lit l1, Lit l2){
+		S->addClause(~l1,l2);
+		S->addClause(l1, ~l2);
+	}
 	void addClause(Lit l1){
 		Lit o1 = toSolver(l1);
 		S->addClause(o1);

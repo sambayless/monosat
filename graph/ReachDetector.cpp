@@ -13,26 +13,25 @@
 #include "core/Config.h"
 #include "DynamicConnectivity.h"
 ReachDetector::ReachDetector(int _detectorID, GraphTheorySolver * _outer, DynamicGraph<PositiveEdgeStatus> &_g, DynamicGraph<NegativeEdgeStatus> &_antig, int from,double seed):Detector(_detectorID),outer(_outer),g(_g),antig(_antig),within(-1),source(from),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL),opt_weight(*this),chokepoint_status(*this),chokepoint(chokepoint_status, _antig,source){
-	check_positive=true;
-	check_negative=true;
+
 	constraintsBuilt=-1;
 	rnd_path=nullptr;
 	opt_path=nullptr;
 	chokepoint_detector=nullptr;
 	cutgraph_reach_detector=nullptr;
+	 positiveReachStatus=nullptr;
+	 negativeReachStatus=nullptr;
+	 positive_reach_detector=nullptr;
+	 negative_reach_detector=nullptr;
+	 positive_path_detector=nullptr;
 	first_reach_var = var_Undef;
 	stats_pure_skipped=0;
 	stats_shrink_removed=0;
-
+	 reach_marker=CRef_Undef;
+	 non_reach_marker=CRef_Undef;
+	 forced_reach_marker=CRef_Undef;
 	if(reachalg==ReachAlg::ALG_SAT){
-		 positiveReachStatus=nullptr;
-		 negativeReachStatus=nullptr;
-		 positive_reach_detector=nullptr;
-		 negative_reach_detector=nullptr;
-		 positive_path_detector=nullptr;
-		 reach_marker=CRef_Undef;
-		 non_reach_marker=CRef_Undef;
-		 forced_reach_marker=CRef_Undef;
+
 		return;
 	}
 
@@ -60,59 +59,77 @@ ReachDetector::ReachDetector(int _detectorID, GraphTheorySolver * _outer, Dynami
 	 }
 
 	if(reachalg==ReachAlg::ALG_BFS){
-							positiveReachStatus = new ReachDetector::ReachStatus(*this,true);
-							negativeReachStatus = new ReachDetector::ReachStatus(*this,false);
-							positive_reach_detector = new BFSReachability<ReachDetector::ReachStatus,PositiveEdgeStatus>(from,_g,*(positiveReachStatus),1);
-							negative_reach_detector = new BFSReachability<ReachDetector::ReachStatus,NegativeEdgeStatus>(from,_antig,*(negativeReachStatus),-1);
-							if(opt_conflict_shortest_path)
-								positive_path_detector = new Distance<NullEdgeStatus,PositiveEdgeStatus>(from,_g,nullEdgeStatus,1);
-							else
-								positive_path_detector =positive_reach_detector;
-						}else if(reachalg==ReachAlg::ALG_DFS){
-							positiveReachStatus = new ReachDetector::ReachStatus(*this,true);
-							negativeReachStatus = new ReachDetector::ReachStatus(*this,false);
-							positive_reach_detector = new DFSReachability<ReachDetector::ReachStatus,PositiveEdgeStatus>(from,_g,*(positiveReachStatus),1);
-							negative_reach_detector = new DFSReachability<ReachDetector::ReachStatus,NegativeEdgeStatus>(from,_antig,*(negativeReachStatus),-1);
-							if(opt_conflict_shortest_path)
-								positive_path_detector = new Distance<NullEdgeStatus,PositiveEdgeStatus>(from,_g,nullEdgeStatus,1);
-							else
-								positive_path_detector =positive_reach_detector;
-						}else if(reachalg==ReachAlg::ALG_DISTANCE){
-							positiveReachStatus = new ReachDetector::ReachStatus(*this,true);
-							negativeReachStatus = new ReachDetector::ReachStatus(*this,false);
-							positive_reach_detector = new Distance<ReachDetector::ReachStatus,PositiveEdgeStatus>(from,_g,*(positiveReachStatus),1);
-							negative_reach_detector = new Distance<ReachDetector::ReachStatus,NegativeEdgeStatus>(from,_antig,*(negativeReachStatus),-1);
-							positive_path_detector = positive_reach_detector;
-						}else if(reachalg==ReachAlg::ALG_RAMAL_REPS){
-							positiveReachStatus = new ReachDetector::ReachStatus(*this,true);
-							negativeReachStatus = new ReachDetector::ReachStatus(*this,false);
-							positive_reach_detector = new UnweightedRamalReps<ReachDetector::ReachStatus,PositiveEdgeStatus>(from,_g,*(positiveReachStatus),1,false);
-							negative_reach_detector = new UnweightedRamalReps<ReachDetector::ReachStatus,NegativeEdgeStatus>(from,_antig,*(negativeReachStatus),-1,false);
-							positive_path_detector =  new Distance<NullEdgeStatus,PositiveEdgeStatus>(from,_g,nullEdgeStatus,1);
-						}/*else if (reachalg==ReachAlg::ALG_THORUP){
-							positiveReachStatus = new ReachDetector::ReachStatus(*this,true);
-							negativeReachStatus = new ReachDetector::ReachStatus(*this,false);
-							positive_reach_detector = new DynamicConnectivity<ReachDetector::ReachStatus,PositiveEdgeStatus>(_g,*(positiveReachStatus),1);
-							negative_reach_detector = new DynamicConnectivity<ReachDetector::ReachStatus,NegativeEdgeStatus>(_antig,*(negativeReachStatus),-1);
-							positive_path_detector = positive_reach_detector;
-							if(opt_conflict_shortest_path)
-								positive_path_detector = new Distance<NullEdgeStatus,PositiveEdgeStatus>(from,_g,nullEdgeStatus,1);
-							else
-								positive_path_detector =positive_reach_detector;
-						}*/else{
-							positive_reach_detector = new Dijkstra<PositiveEdgeStatus>(from,_g);
-							negative_reach_detector = new Dijkstra<NegativeEdgeStatus>(from,_antig);
-							positive_path_detector = positive_reach_detector;
-							//reach_detectors.last()->positive_dist_detector = new Dijkstra(from,g);
-						}
-	positive_reach_detector->setSource(source);
-	negative_reach_detector->setSource(source);
+		//if(!opt_encode_reach_underapprox_as_sat)
+		{
+			positiveReachStatus = new ReachDetector::ReachStatus(*this,true);
+			positive_reach_detector = new BFSReachability<ReachDetector::ReachStatus,PositiveEdgeStatus>(from,_g,*(positiveReachStatus),1);
+		}
+		negativeReachStatus = new ReachDetector::ReachStatus(*this,false);
+
+		negative_reach_detector = new BFSReachability<ReachDetector::ReachStatus,NegativeEdgeStatus>(from,_antig,*(negativeReachStatus),-1);
+		if(opt_conflict_shortest_path)
+			positive_path_detector = new Distance<NullEdgeStatus,PositiveEdgeStatus>(from,_g,nullEdgeStatus,1);
+		else
+			positive_path_detector =positive_reach_detector;
+	}else if(reachalg==ReachAlg::ALG_DFS){
+		//if(!opt_encode_reach_underapprox_as_sat)
+		{
+			positiveReachStatus = new ReachDetector::ReachStatus(*this,true);
+			positive_reach_detector = new DFSReachability<ReachDetector::ReachStatus,PositiveEdgeStatus>(from,_g,*(positiveReachStatus),1);
+		}
+		negativeReachStatus = new ReachDetector::ReachStatus(*this,false);
+		negative_reach_detector = new DFSReachability<ReachDetector::ReachStatus,NegativeEdgeStatus>(from,_antig,*(negativeReachStatus),-1);
+		if(opt_conflict_shortest_path)
+			positive_path_detector = new Distance<NullEdgeStatus,PositiveEdgeStatus>(from,_g,nullEdgeStatus,1);
+		else
+			positive_path_detector =positive_reach_detector;
+	}else if(reachalg==ReachAlg::ALG_DISTANCE){
+		//if(!opt_encode_reach_underapprox_as_sat)
+		{
+			positiveReachStatus = new ReachDetector::ReachStatus(*this,true);
+			positive_reach_detector = new Distance<ReachDetector::ReachStatus,PositiveEdgeStatus>(from,_g,*(positiveReachStatus),1);
+		}
+		negativeReachStatus = new ReachDetector::ReachStatus(*this,false);
+		negative_reach_detector = new Distance<ReachDetector::ReachStatus,NegativeEdgeStatus>(from,_antig,*(negativeReachStatus),-1);
+		positive_path_detector = positive_reach_detector;
+	}else if(reachalg==ReachAlg::ALG_RAMAL_REPS){
+		//if(!opt_encode_reach_underapprox_as_sat)
+		{
+			positiveReachStatus = new ReachDetector::ReachStatus(*this,true);
+			positive_reach_detector = new UnweightedRamalReps<ReachDetector::ReachStatus,PositiveEdgeStatus>(from,_g,*(positiveReachStatus),1,false);
+		}
+		negativeReachStatus = new ReachDetector::ReachStatus(*this,false);
+		negative_reach_detector = new UnweightedRamalReps<ReachDetector::ReachStatus,NegativeEdgeStatus>(from,_antig,*(negativeReachStatus),-1,false);
+		positive_path_detector =  new Distance<NullEdgeStatus,PositiveEdgeStatus>(from,_g,nullEdgeStatus,1);
+	}/*else if (reachalg==ReachAlg::ALG_THORUP){
+		positiveReachStatus = new ReachDetector::ReachStatus(*this,true);
+		negativeReachStatus = new ReachDetector::ReachStatus(*this,false);
+		positive_reach_detector = new DynamicConnectivity<ReachDetector::ReachStatus,PositiveEdgeStatus>(_g,*(positiveReachStatus),1);
+		negative_reach_detector = new DynamicConnectivity<ReachDetector::ReachStatus,NegativeEdgeStatus>(_antig,*(negativeReachStatus),-1);
+		positive_path_detector = positive_reach_detector;
+		if(opt_conflict_shortest_path)
+			positive_path_detector = new Distance<NullEdgeStatus,PositiveEdgeStatus>(from,_g,nullEdgeStatus,1);
+		else
+			positive_path_detector =positive_reach_detector;
+	}*/else{
+		//if(!opt_encode_reach_underapprox_as_sat)
+		{
+			positive_reach_detector = new Dijkstra<PositiveEdgeStatus>(from,_g);
+		}
+		negative_reach_detector = new Dijkstra<NegativeEdgeStatus>(from,_antig);
+		positive_path_detector = positive_reach_detector;
+		//reach_detectors.last()->positive_dist_detector = new Dijkstra(from,g);
+	}
+	if(positive_reach_detector)
+		positive_reach_detector->setSource(source);
+	if(negative_reach_detector)
+		negative_reach_detector->setSource(source);
 
 	reach_marker=outer->newReasonMarker(getID());
 	non_reach_marker=outer->newReasonMarker(getID());
 	forced_reach_marker=outer->newReasonMarker(getID());
 }
-void ReachDetector::buildSATConstraints(int within_steps){
+void ReachDetector::buildSATConstraints(bool onlyUnderApprox,int within_steps){
 	if(within_steps<0)
 		within_steps=g.nodes;
 	if(within_steps>g.nodes)
@@ -122,88 +139,167 @@ void ReachDetector::buildSATConstraints(int within_steps){
 	if(constraintsBuilt>=within_steps)
 		return;
 
+	//there is no reason to encode these variables in the theory solver!
 
+	if(!onlyUnderApprox){
+		assert(outer->decisionLevel()==0);
+		vec<Lit> c;
 
-	assert(outer->decisionLevel()==0);
-	vec<Lit> c;
-
-	if(constraintsBuilt<=0){
-		constraintsBuilt=0;
-		dist_lits.push();
-		Lit True = mkLit(outer->newVar());
-		outer->addClause(True);
-		assert(outer->value(True)==l_True);
-		Lit False = ~True;
-		assert(outer->value(False)==l_False);
-		for(int i = 0;i<g.nodes;i++){
-			dist_lits[0].push(False);
-		}
-		dist_lits[0][source]=True;
-	}
-
-	vec<Lit>  reaches;
-
-	vec<Lit> incomingEdges;
-	vec<Lit> incomingNodes;
-
-	//bellman-ford:
-	for (int i = constraintsBuilt;i<within_steps;i++){
-		dist_lits.last().copyTo(reaches);
-		dist_lits.push();
-		reaches.copyTo(dist_lits.last());
-		assert(outer->value( reaches[source])==l_True);
-		//For each edge:
-		for(int j = 0;j<g.nodes;j++){
-			Lit r_cur = reaches[j];
-
-			for(Edge & e: outer->inv_adj[j]){
-				//Edge e = outer->edges[j][k];
-				assert(e.to==j);
-				if(outer->value(dist_lits.last()[e.to])==l_True){
-					//do nothing
-				}else if (outer->value(reaches[e.from])==l_False){
-					//do nothing
-				}else{
-					Lit l = mkLit(e.v,false);
-
-					Lit r = mkLit( outer->newVar(), false);
-
-					c.clear();
-					c.push(~r);c.push(r_cur);c.push(l); //r -> (e.l or reaches[e.to])
-					outer->addClause(c);
-					c.clear();
-					c.push(~r);c.push(r_cur);c.push(reaches[e.from]); //r -> (reaches[e.from]) or reaches[e.to])
-					outer->addClause(c);
-					c.clear();
-					c.push(r);c.push(~r_cur); //~r -> ~reaches[e.to]
-					outer->addClause(c);
-					c.clear();
-					c.push(r);c.push(~reaches[e.from]);c.push(~l); //~r -> (~reaches[e.from] or ~e.l)
-					outer->addClause(c);
-					r_cur=r;
-
-				}
+		if(constraintsBuilt<=0){
+			constraintsBuilt=0;
+			dist_lits.push();
+			Lit True = mkLit(outer->newVar());
+			outer->addClause(True);
+			assert(outer->value(True)==l_True);
+			Lit False = ~True;
+			assert(outer->value(False)==l_False);
+			for(int i = 0;i<g.nodes;i++){
+				dist_lits[0].push(False);
 			}
-			dist_lits.last()[j]=r_cur;
-
+			dist_lits[0][source]=True;
 		}
-		assert(outer->value( dist_lits.last()[source])==l_True);
 
-	}
-	assert(dist_lits.size()==within_steps+1);
-	if(within_steps==g.nodes || within_steps==g.edges){
-		assert(reach_lits.size()==0);
-		for(Lit d: dist_lits.last()){
-			reach_lits.push(d);
+		vec<Lit>  reaches;
+
+		vec<Lit> incomingEdges;
+		vec<Lit> incomingNodes;
+
+		//bellman-ford:
+		for (int i = constraintsBuilt;i<within_steps;i++){
+			dist_lits.last().copyTo(reaches);
+			dist_lits.push();
+			reaches.copyTo(dist_lits.last());
+			assert(outer->value( reaches[source])==l_True);
+			//For each edge:
+			for(int j = 0;j<g.nodes;j++){
+				Lit r_cur = reaches[j];
+
+				for(Edge & e: outer->inv_adj[j]){
+					//Edge e = outer->edges[j][k];
+					assert(e.to==j);
+					if(outer->value(dist_lits.last()[e.to])==l_True){
+						//do nothing
+					}else if (outer->value(reaches[e.from])==l_False){
+						//do nothing
+					}else{
+						Lit l = mkLit(e.v,false);
+
+						Lit r = mkLit( outer->newVar(), false);
+
+						c.clear();
+						c.push(~r);c.push(r_cur);c.push(l); //r -> (e.l or reaches[e.to])
+						outer->addClause(c);
+						c.clear();
+						c.push(~r);c.push(r_cur);c.push(reaches[e.from]); //r -> (reaches[e.from]) or reaches[e.to])
+						outer->addClause(c);
+						c.clear();
+						c.push(r);c.push(~r_cur); //~r -> ~reaches[e.to]
+						outer->addClause(c);
+						c.clear();
+						c.push(r);c.push(~reaches[e.from]);c.push(~l); //~r -> (~reaches[e.from] or ~e.l)
+						outer->addClause(c);
+						r_cur=r;
+
+					}
+				}
+				dist_lits.last()[j]=r_cur;
+			}
+			assert(outer->value( dist_lits.last()[source])==l_True);
 		}
-		assert(outer->value( reach_lits[source])==l_True);
-	}
+		assert(dist_lits.size()==within_steps+1);
+		if(within_steps==g.nodes || within_steps==g.edges){
+			assert(reach_lits.size()==0);
+			for(Lit d: dist_lits.last()){
+				reach_lits.push(d);
+			}
+			assert(outer->value( reach_lits[source])==l_True);
+		}
 
-	constraintsBuilt=within_steps;
+		constraintsBuilt=within_steps;
+	}else{
+		if(!constraintsBuilt){
+		constraintsBuilt=g.nodes;
+
+		//for each node, it cannot be reachable if none of its incoming edges are enabled.
+		for(int n = 0;n<g.nodes;n++){
+			assert(reach_lits[n]==lit_Undef);
+			reach_lits[n] =mkLit(outer->newVar());
+		}
+
+		vec<Lit> c;
+		vec<Lit> t;
+		for(int n = 0;n<g.nodes;n++){
+
+			if(n==source){
+				outer->addClause(reach_lits[n]);//source node is unconditionally reachable
+			}else{
+				c.clear();
+				c.push(~reach_lits[n]);
+				for(auto edge:g.inverted_adjacency[n]){
+					int edgeID = edge.id;
+					int from = edge.node;
+					if(from!=n){
+						//ignore trivial cycles
+						Var v = outer->getEdgeVar(edgeID);
+						c.push(mkLit(v));
+					}
+				}
+
+				//Either an edge must be true, or the reach_lit must be false (unless this is the source reach node);
+				outer->addClause(c);
+				c.clear();
+				//either an incoming node must be true, or reach_lit must be false
+				c.push(~reach_lits[n]);
+				for(auto edge:g.inverted_adjacency[n]){
+					int edgeID = edge.id;
+					int from = edge.node;
+					if(from!=n){//ignore trivial cycles
+						c.push(reach_lits[from]);
+					}
+				}
+				//Either at least one incoming node must be true, or the reach_lit must be false (unless this is the source reach node);
+				outer->addClause(c);
+
+				//Either at least incoming edge AND its corresponding from node must BOTH be simultaneously true, or the node is must not be reachable
+				c.clear();
+				//either an incoming node must be true, or reach_lit must be false
+				c.push(~reach_lits[n]);
+				for(auto edge:g.inverted_adjacency[n]){
+					int edgeID = edge.id;
+					int from = edge.node;
+					if(from!=n){//ignore trivial cycles
+						Lit e =mkLit( outer->getEdgeVar(edgeID));
+						Lit incoming = reach_lits[from];
+
+						Lit andGate = mkLit(outer->newVar());
+						//Either the andgate is true, or at least one of e, incoming is false
+						outer->addClause(andGate,~incoming,~e);
+						//If andgate is true, incoming is true
+						outer->addClause(~andGate,incoming);
+						outer->addClause(~andGate,e);
+						c.push(andGate);
+					}
+				}
+				//Either one andGate must be true, or the reach_lit must be false
+				outer->addClause(c);
+			}
+		}
+		}
+	}
 }
 void ReachDetector::addLit(int from, int to, Var outer_reach_var){
+	while( reach_lits.size()<=to)
+			reach_lits.push(lit_Undef);
+	if(reach_lits[to]!=lit_Undef){
+		Lit r = reach_lits[to];
+		//force equality between the new lit and the old reach lit, in the SAT solver
+		outer->makeEqualInSolver(outer->toSolver(r),mkLit(outer_reach_var));
+		return;
+	}
+
 	g.invalidate();
 	antig.invalidate();
+
 	Var reach_var = outer->newVar(outer_reach_var,getID());
 
 	if(first_reach_var==var_Undef){
@@ -212,33 +308,31 @@ void ReachDetector::addLit(int from, int to, Var outer_reach_var){
 		assert(reach_var>=first_reach_var);
 	}
 	assert(from==source);
-
-	 if(reachalg==ReachAlg::ALG_SAT){
-		 buildSATConstraints();
+	 if(opt_encode_reach_underapprox_as_sat || !positive_reach_detector){
+		 buildSATConstraints(true);
+	 }
+	 if( !negative_reach_detector){
+		 buildSATConstraints(false);
 	 }
 
 
-	while( reach_lits.size()<=to)
-			reach_lits.push(lit_Undef);
 
 	Lit reachLit=mkLit(reach_var,false);
+	assert(reach_lits[to]==lit_Undef);
+	//if(reach_lits[to]==lit_Undef){
+	reach_lits[to] = reachLit;
 
-	if(reach_lits[to]==lit_Undef){
-		reach_lits[to] = reachLit;
-
-		while(reach_lit_map.size()<= reach_var- first_reach_var ){
-			reach_lit_map.push(-1);
-		}
-
-		reach_lit_map[reach_var-first_reach_var]=to;
-	}else{
-		Lit r = reach_lits[to];
-		//force equality between the new lit and the old reach lit, in the SAT solver
-		outer->makeEqual(r,reachLit);
-
-	/*	outer->S->addClause(~r, reachLit);
-		outer->S->addClause(r, ~reachLit);*/
+	while(reach_lit_map.size()<= reach_var- first_reach_var ){
+		reach_lit_map.push(-1);
 	}
+
+	reach_lit_map[reach_var-first_reach_var]=to;
+	/*}else{
+
+
+		outer->S->addClause(~r, reachLit);
+		outer->S->addClause(r, ~reachLit);
+	}*/
 }
 
 void ReachDetector::ReachStatus::setReachable(int u, bool reachable){
@@ -747,30 +841,28 @@ void ReachDetector::buildReachReason(int node,vec<Lit> & conflict){
 		bool ReachDetector::propagate(vec<Lit> & conflict){
 			if(!positive_reach_detector)
 				return true;
-			static int iter =0;
-			if(++iter==555){
-				int a=1;
+
+			getChanged().clear();
+
+			double startdreachtime = rtime(2);
+
+			if(!opt_detect_pure_theory_lits || unassigned_positives>0)
+				positive_reach_detector->update();
+			else{
+				outer->stats_pure_skipped++;
 			}
-			if(check_positive){
-				double startdreachtime = rtime(2);
-				getChanged().clear();
-				if(!opt_detect_pure_theory_lits || unassigned_positives>0)
-					positive_reach_detector->update();
-				else{
-					outer->stats_pure_skipped++;
-				}
-				double reachUpdateElapsed = rtime(2)-startdreachtime;
-				outer->reachupdatetime+=reachUpdateElapsed;
-			}
-			if(check_negative){
-				double startunreachtime = rtime(2);
-				if(!opt_detect_pure_theory_lits || unassigned_negatives>0)
-					negative_reach_detector->update();
-				else
-					outer->stats_pure_skipped++;
-				double unreachUpdateElapsed = rtime(2)-startunreachtime;
-				outer->unreachupdatetime+=unreachUpdateElapsed;
-			}
+			double reachUpdateElapsed = rtime(2)-startdreachtime;
+			outer->reachupdatetime+=reachUpdateElapsed;
+
+
+			double startunreachtime = rtime(2);
+			if(!opt_detect_pure_theory_lits || unassigned_negatives>0)
+				negative_reach_detector->update();
+			else
+				outer->stats_pure_skipped++;
+			double unreachUpdateElapsed = rtime(2)-startunreachtime;
+			outer->unreachupdatetime+=unreachUpdateElapsed;
+
 			for(int j = 0;j<getChanged().size();j++){
 					Lit l = getChanged()[j].l;
 					int u =  getChanged()[j].u;
@@ -818,8 +910,6 @@ void ReachDetector::buildReachReason(int node,vec<Lit> & conflict){
 
 
 						return false;
-					}else{
-						int  a=1;
 					}
 
 					if(opt_reach_prop){

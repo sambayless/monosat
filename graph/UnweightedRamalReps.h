@@ -603,6 +603,7 @@ public:
 			fprintf(g.outfile,"r %d\n", getSource());
 		}
 #endif
+
 		static int iteration = 0;
 		int local_it = ++iteration ;
 		if(local_it==671){
@@ -616,6 +617,7 @@ public:
 			dist.growTo(g.nodes,INF);
 			dist[getSource()]=0;
 			delta.growTo(g.nodes);
+			edgeInShortestPathGraph.growTo(g.nEdgeIDs());
 			node_changed.growTo(g.nodes);
 			changed.clear();
 			if(maxDistance<0)
@@ -627,7 +629,7 @@ public:
 				}
 			}
 		}
-		edgeInShortestPathGraph.growTo(g.nEdgeIDs());
+
 		if(last_history_clear!=g.historyclears){
 			history_qhead=0;
 			last_history_clear=g.historyclears;

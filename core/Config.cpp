@@ -30,7 +30,7 @@ static const char* _cat_graph ="GRAPH";
  DoubleOption  Minisat::opt_restart_inc       (_cat, "rinc",        "Restart interval increase factor", 2, DoubleRange(1, false, HUGE_VAL, false));
  DoubleOption  Minisat::opt_garbage_frac      (_cat, "gc-frac",     "The fraction of wasted memory allowed before a garbage collection is triggered",  0.20, DoubleRange(0, false, HUGE_VAL, false));
 
- IntOption Minisat::opt_time(_cat,"time","Detail level of timing benchmarks (these add some overhead)",1,IntRange(0,3));
+ IntOption Minisat::opt_time(_cat,"verb-time","Detail level of timing benchmarks (these add some overhead)",0,IntRange(0,3));
 
  DoubleOption  Minisat::opt_random_theory_freq   (_cat, "rnd-theory-freq",    "The frequency with which the decision theory solvers are selected to make decisions", 1, DoubleRange(0, true, 1, true));
  BoolOption  Minisat::opt_early_theory_prop   (_cat, "early-theory-prop",    "If false, the solver waits until all literals are propagated before propagating theories; if true, theories are propagated while the solver is still propagating literals", false);
@@ -77,6 +77,7 @@ BoolOption Minisat::opt_print_conflicts(_cat,"print-conflicts","",false);
 BoolOption Minisat::opt_rnd_phase(_cat,"rnd-phase","",false);
 BoolOption Minisat::opt_init_rnd_phase(_cat,"init-rnd-phase","",false);
 
+BoolOption Minisat::opt_encode_reach_underapprox_as_sat(_cat_graph,"reach-cnf","",false);
 BoolOption Minisat::opt_reach_prop(_cat_graph,"prop-reach","",false);
 
 BoolOption Minisat::opt_decide_graph(_cat_graph,"decide-graph","",false);
@@ -105,7 +106,7 @@ IntOption Minisat::opt_sort_graph_decisions(_cat_graph,"decide-graph-sort","0=do
 BoolOption Minisat::opt_rnd_order_graph_decisions(_cat_graph,"decide-graph-rnd-order","",false);
 
 
-BoolOption Minisat::opt_detect_pure_lits(_cat,"detect-pure-lits","Detect pure literals in the main solver (only during simplification, not during search)",true);
+BoolOption Minisat::opt_detect_pure_lits(_cat,"detect-pure-lits","Detect pure literals in the main solver (only during simplification, not during search)",false);
 
 BoolOption Minisat::opt_detect_pure_theory_lits(_cat,"detect-pure-theory-lits","Detect pure literals in the theory solvers",true);
 

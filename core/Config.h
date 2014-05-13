@@ -91,7 +91,7 @@ extern BoolOption opt_early_theory_prop;
  extern IntOption    opt_width;
  extern    IntOption    opt_height;
  extern   IntOption    opt_bits;
-
+extern BoolOption opt_encode_reach_underapprox_as_sat;
  extern   BoolOption	 opt_csv;
 
 enum class ReachAlg{

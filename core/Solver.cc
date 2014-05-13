@@ -1022,7 +1022,7 @@ bool Solver::simplify()
 			}
 			assert(decisionLevel()==0);
 
-			//intead of counting the number of occurence, just check if there are any occurences
+			//instead of counting the number of occurrences, just check if there are any occurences
 			for(Lit l:trail){
 				lit_counts[toInt(l)].seen=true;
 			}
@@ -1040,9 +1040,7 @@ bool Solver::simplify()
 				}
 			}
 			for (Var v = 0;v<nVars();v++){
-				if(v==7540){
-					int a=1;
-				}
+
 				Lit l =mkLit(v,false);
 				if(lit_counts[toInt(l)].seen && ! lit_counts[toInt(l)].occurs){
 					stats_pure_lits--;

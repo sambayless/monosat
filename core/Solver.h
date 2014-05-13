@@ -436,7 +436,7 @@ protected:
 			unsigned int theory:11;
 			unsigned int theory_var:21;
     		};
-    		unsigned int isTheoryVar; //true if non-zero
+    		unsigned int isTheoryVar; //true if non-zero - this property is ensured by adding 1 to theory_var
     	};
     	TheoryData():isTheoryVar(0){}
     	TheoryData(unsigned int theory,unsigned int theory_lit):theory(theory),theory_var(theory_lit){

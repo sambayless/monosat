@@ -122,8 +122,7 @@ public:
 		Reach * chokepoint_detector;
 		OptimalWeightEdgeStatus opt_weight;
 		WeightedDijkstra<NegativeEdgeStatus,OptimalWeightEdgeStatus> * opt_path;
-		bool check_positive;
-		bool check_negative;
+
 
 		struct ChokepointStatus{
 			ReachDetector & detector;
@@ -149,7 +148,7 @@ public:
 			return reach_lits[node];
 
 		}*/
-		void buildSATConstraints(int within_steps=-1);
+		void buildSATConstraints(bool onlyUnderApprox=false,int within_steps=-1);
 		bool propagate(vec<Lit> & conflict);
 		void buildReachReason(int node,vec<Lit> & conflict);
 		void buildNonReachReason(int node,vec<Lit> & conflict);
