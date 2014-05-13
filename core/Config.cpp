@@ -40,14 +40,14 @@ static const char* _cat_graph ="GRAPH";
  IntOption Minisat::opt_eager_prop(_cat_sms,"eager-prop","Controls whether unit propagation is allowed to cross subsolver boundaries. 0= Disable. 1= Enable. 2=Enable, but don't cross the last interpolant. 3= Enable, but don't cross the last interpolant, or any earlier solver. 4= Enable, but dont cross the last interpolant, or any earlier solver, unless they have already had their interpolants strengthened", 1, IntRange(0,5));
  IntOption Minisat::opt_subsearch(_cat_sms,"subsearch","Control how the solver performs search on the subsolvers: 0=abort as soon as a conflict backtracks past the supersolvers decisionlevel. 1=Abort only once a conflict on the super-interface variables is found, allowing backtracks past those variables in the process. 2=Abort only when the the super-solvers assignment is proven to be in conflict. 3=Don't continue subsearach if the subsolver has backtracked past super-solver decisions. 4=Don't continue past the last interpolant level if any solver has backtracked past a super solver's decisions",2,IntRange(0,4));
  BoolOption Minisat::opt_permanent_theory_conflicts(_cat_sms,"permanent-theory-conflicts","True if conflict clauses from theory solvers are treated as permanent clauses; false if they are treated as learnt clauses (that is, allowed to be deleted by the solver)",false);
-IntOption Minisat::opt_temporary_theory_conflicts(_cat_sms,"temporary-theory-conflicts","True if theory conflict clauses larger than this size should be discarded immediately.",3,IntRange(0, INT32_MAX));
-IntOption Minisat::opt_temporary_theory_reasons(_cat_sms,"temporary-theory-reasons","True if theory reason clauses larger than this size should be discarded immediately.",3,IntRange(0, INT32_MAX));
+IntOption Minisat::opt_temporary_theory_conflicts(_cat_sms,"temporary-theory-conflicts","True if theory conflict clauses larger than this size should be discarded immediately.",INT32_MAX,IntRange(0, INT32_MAX));
+IntOption Minisat::opt_temporary_theory_reasons(_cat_sms,"temporary-theory-reasons","True if theory reason clauses larger than this size should be discarded immediately.",INT32_MAX,IntRange(0, INT32_MAX));
  BoolOption Minisat::opt_graph(_cat_graph,"graph","Use graph theory solver",true);
  BoolOption Minisat::opt_inc_graph(_cat_graph,"inc","Use incremental graph reachability",false);
  IntOption Minisat::opt_dec_graph(_cat_graph,"dec","Use decremental graph reachability",0,IntRange(0, 2));
  StringOption Minisat::opt_min_cut_alg(_cat_graph,"mincut","Select max-flow/min-cut algorithm (edmondskarp, edmondskarp-adj, ibfs)","edmondskarp-adj");
- StringOption Minisat::opt_reach_alg(_cat_graph,"reach","Select reachability algorithm (bfs,dfs, dijkstra)","bfs");
- StringOption Minisat::opt_dist_alg(_cat_graph,"dist","Select reachability algorithm (bfs,dfs, dijkstra)","bfs");
+ StringOption Minisat::opt_reach_alg(_cat_graph,"reach","Select reachability algorithm (bfs,dfs, dijkstra,ramal-reps,sat)","ramal-reps");
+ StringOption Minisat::opt_dist_alg(_cat_graph,"dist","Select reachability algorithm (bfs,dfs, dijkstra,ramal-reps,sat)","ramal-reps");
 
  StringOption Minisat::opt_con_alg(_cat_graph,"connect","Select undirected reachability algorithm (bfs,dfs, dijkstra, thorup,sat)","bfs");
 StringOption Minisat::opt_undir_allpairs_alg(_cat_graph,"connect-allpairs","Select allpairs reachability algorithm (floyd-warshall,dijkstra, thorup)","floyd-warshall");
@@ -126,9 +126,9 @@ IntOption     Minisat::opt_width("GRAPH","width","Width of graph.\n", 0, IntRang
     BoolOption	  Minisat::opt_csv("GRAPH","csv","Output in CSV format",false);
 
 MinCutAlg Minisat::mincutalg=MinCutAlg::ALG_EDMONSKARP ;
-ReachAlg Minisat::reachalg=ReachAlg::ALG_DFS;
+ReachAlg Minisat::reachalg=ReachAlg::ALG_RAMAL_REPS;
 ConnectivityAlg Minisat::undirectedalg=ConnectivityAlg::ALG_DFS;
-DistAlg Minisat::distalg=DistAlg::ALG_DISTANCE;
+DistAlg Minisat::distalg=DistAlg::ALG_RAMAL_REPS;
 AllPairsAlg Minisat::allpairsalg=AllPairsAlg::ALG_DIJKSTRA_ALLPAIRS;
 AllPairsConnectivityAlg Minisat::undirected_allpairsalg=AllPairsConnectivityAlg::ALG_DIJKSTRA_ALLPAIRS;
 ComponentsAlg Minisat::componentsalg =ComponentsAlg::ALG_DISJOINT_SETS;
