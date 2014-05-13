@@ -59,7 +59,7 @@ ReachDetector::ReachDetector(int _detectorID, GraphTheorySolver * _outer, Dynami
 	 }
 
 	if(reachalg==ReachAlg::ALG_BFS){
-		//if(!opt_encode_reach_underapprox_as_sat)
+		if(!opt_encode_reach_underapprox_as_sat)
 		{
 			positiveReachStatus = new ReachDetector::ReachStatus(*this,true);
 			positive_reach_detector = new BFSReachability<ReachDetector::ReachStatus,PositiveEdgeStatus>(from,_g,*(positiveReachStatus),1);
@@ -72,7 +72,7 @@ ReachDetector::ReachDetector(int _detectorID, GraphTheorySolver * _outer, Dynami
 		else
 			positive_path_detector =positive_reach_detector;
 	}else if(reachalg==ReachAlg::ALG_DFS){
-		//if(!opt_encode_reach_underapprox_as_sat)
+		if(!opt_encode_reach_underapprox_as_sat)
 		{
 			positiveReachStatus = new ReachDetector::ReachStatus(*this,true);
 			positive_reach_detector = new DFSReachability<ReachDetector::ReachStatus,PositiveEdgeStatus>(from,_g,*(positiveReachStatus),1);
@@ -84,7 +84,7 @@ ReachDetector::ReachDetector(int _detectorID, GraphTheorySolver * _outer, Dynami
 		else
 			positive_path_detector =positive_reach_detector;
 	}else if(reachalg==ReachAlg::ALG_DISTANCE){
-		//if(!opt_encode_reach_underapprox_as_sat)
+		if(!opt_encode_reach_underapprox_as_sat)
 		{
 			positiveReachStatus = new ReachDetector::ReachStatus(*this,true);
 			positive_reach_detector = new Distance<ReachDetector::ReachStatus,PositiveEdgeStatus>(from,_g,*(positiveReachStatus),1);
@@ -93,7 +93,7 @@ ReachDetector::ReachDetector(int _detectorID, GraphTheorySolver * _outer, Dynami
 		negative_reach_detector = new Distance<ReachDetector::ReachStatus,NegativeEdgeStatus>(from,_antig,*(negativeReachStatus),-1);
 		positive_path_detector = positive_reach_detector;
 	}else if(reachalg==ReachAlg::ALG_RAMAL_REPS){
-		//if(!opt_encode_reach_underapprox_as_sat)
+		if(!opt_encode_reach_underapprox_as_sat)
 		{
 			positiveReachStatus = new ReachDetector::ReachStatus(*this,true);
 			positive_reach_detector = new UnweightedRamalReps<ReachDetector::ReachStatus,PositiveEdgeStatus>(from,_g,*(positiveReachStatus),1,false);
@@ -112,7 +112,7 @@ ReachDetector::ReachDetector(int _detectorID, GraphTheorySolver * _outer, Dynami
 		else
 			positive_path_detector =positive_reach_detector;
 	}*/else{
-		//if(!opt_encode_reach_underapprox_as_sat)
+		if(!opt_encode_reach_underapprox_as_sat)
 		{
 			positive_reach_detector = new Dijkstra<PositiveEdgeStatus>(from,_g);
 		}
@@ -217,19 +217,28 @@ void ReachDetector::buildSATConstraints(bool onlyUnderApprox,int within_steps){
 
 		constraintsBuilt=within_steps;
 	}else{
-		if(!constraintsBuilt){
+		if(constraintsBuilt<0){
 		constraintsBuilt=g.nodes;
 
 		//for each node, it cannot be reachable if none of its incoming edges are enabled.
 		for(int n = 0;n<g.nodes;n++){
-			assert(reach_lits[n]==lit_Undef);
-			reach_lits[n] =mkLit(outer->newVar());
+			if(reach_lits[n]==lit_Undef){
+				Var reach_var = outer->newVar(detectorID , true);
+				reach_lits[n] =mkLit(reach_var);//since this is _only_ the underapproximation, these variables _do_ need to be connected to the theory solver
+				while(reach_lit_map.size()<= reach_var- first_reach_var ){
+					reach_lit_map.push(-1);
+				}
+				reach_lit_map[reach_var-first_reach_var]=n;
+
+			}
 		}
 
 		vec<Lit> c;
 		vec<Lit> t;
 		for(int n = 0;n<g.nodes;n++){
-
+			if(n==53){
+				int a =1;
+			}
 			if(n==source){
 				outer->addClause(reach_lits[n]);//source node is unconditionally reachable
 			}else{
@@ -283,12 +292,25 @@ void ReachDetector::buildSATConstraints(bool onlyUnderApprox,int within_steps){
 				//Either one andGate must be true, or the reach_lit must be false
 				outer->addClause(c);
 			}
+
+			//If this node is reachable, the for each outgoing edge, if that edge is enabled, its to node must also be reachable
+			for(auto edge:g.adjacency[n]){
+				int edgeID = edge.id;
+				int to = edge.node;
+				if(to!=n){//ignore trivial cycles
+					Lit e =mkLit( outer->getEdgeVar(edgeID));
+					Lit outgoing = reach_lits[to];
+					outer->addClause(~reach_lits[n],~e, outgoing);
+				}
+			}
+
+
 		}
 		}
 	}
 }
 void ReachDetector::addLit(int from, int to, Var outer_reach_var){
-	while( reach_lits.size()<=to)
+	while( reach_lits.size()<=g.nodes)
 			reach_lits.push(lit_Undef);
 	if(reach_lits[to]!=lit_Undef){
 		Lit r = reach_lits[to];
@@ -307,6 +329,15 @@ void ReachDetector::addLit(int from, int to, Var outer_reach_var){
 	}else{
 		assert(reach_var>=first_reach_var);
 	}
+	Lit reachLit=mkLit(reach_var,false);
+	assert(reach_lits[to]==lit_Undef);
+	//if(reach_lits[to]==lit_Undef){
+	reach_lits[to] = reachLit;
+	while(reach_lit_map.size()<= reach_var- first_reach_var ){
+		reach_lit_map.push(-1);
+	}
+	reach_lit_map[reach_var-first_reach_var]=to;
+
 	assert(from==source);
 	 if(opt_encode_reach_underapprox_as_sat || !positive_reach_detector){
 		 buildSATConstraints(true);
@@ -317,16 +348,8 @@ void ReachDetector::addLit(int from, int to, Var outer_reach_var){
 
 
 
-	Lit reachLit=mkLit(reach_var,false);
-	assert(reach_lits[to]==lit_Undef);
-	//if(reach_lits[to]==lit_Undef){
-	reach_lits[to] = reachLit;
 
-	while(reach_lit_map.size()<= reach_var- first_reach_var ){
-		reach_lit_map.push(-1);
-	}
 
-	reach_lit_map[reach_var-first_reach_var]=to;
 	/*}else{
 
 
@@ -839,14 +862,13 @@ void ReachDetector::buildReachReason(int node,vec<Lit> & conflict){
 		}
 
 		bool ReachDetector::propagate(vec<Lit> & conflict){
-			if(!positive_reach_detector)
-				return true;
+
 
 			getChanged().clear();
 
 			double startdreachtime = rtime(2);
 
-			if(!opt_detect_pure_theory_lits || unassigned_positives>0)
+			if(positive_reach_detector && (!opt_detect_pure_theory_lits || unassigned_positives>0))
 				positive_reach_detector->update();
 			else{
 				outer->stats_pure_skipped++;
@@ -856,7 +878,7 @@ void ReachDetector::buildReachReason(int node,vec<Lit> & conflict){
 
 
 			double startunreachtime = rtime(2);
-			if(!opt_detect_pure_theory_lits || unassigned_negatives>0)
+			if(negative_reach_detector && (!opt_detect_pure_theory_lits || unassigned_negatives>0))
 				negative_reach_detector->update();
 			else
 				outer->stats_pure_skipped++;
@@ -943,10 +965,10 @@ void ReachDetector::buildReachReason(int node,vec<Lit> & conflict){
 						Lit l = reach_lits[i];
 						if(l!=lit_Undef){
 							int u = getNode(var(l));
-							if((!opt_detect_pure_theory_lits || unassigned_positives>0) && positive_reach_detector->connected_unsafe(u)){
+							if((positive_reach_detector && (!opt_detect_pure_theory_lits || unassigned_positives>0) && positive_reach_detector->connected_unsafe(u))){
 								assert(outer->value(l)==l_True);
 								assert(outer->dbg_value(l)==l_True);
-							}else if ((!opt_detect_pure_theory_lits || unassigned_negatives>0) && !negative_reach_detector->connected_unsafe(u)){
+							}else if (negative_reach_detector && ((!opt_detect_pure_theory_lits || unassigned_negatives>0) && !negative_reach_detector->connected_unsafe(u))){
 								assert(outer->value(l)==l_False);
 								assert(outer->dbg_value(l)==l_False);
 							}
@@ -958,7 +980,7 @@ void ReachDetector::buildReachReason(int node,vec<Lit> & conflict){
 		}
 
 bool ReachDetector::checkSatisfied(){
-	if(positive_reach_detector){
+	if(positive_reach_detector && negative_reach_detector){
 				for(int j = 0;j< reach_lits.size();j++){
 					Lit l = reach_lits[j];
 					if(l!=lit_Undef){
@@ -987,47 +1009,6 @@ bool ReachDetector::checkSatisfied(){
 		Dijkstra<PositiveEdgeStatus>over(source,antig) ;
 		under.update();
 		over.update();
-
-/*
-		printf("Edges: ");
-		for(Edge & e:outer->edge_list){
-			lbool assign = outer->value(e.v);
-			if(assign==l_True){
-				printf("%d:1, ",e.edgeID);
-			}else{
-				printf("%d:0, ",e.edgeID);
-			}
-		}
-		printf("\nConnected: ");
-		for(int n=0;n<g.nodes;n++){
-			if(n==28){
-				int a=1;
-			}
-			Lit r = reach_lits[n];
-			lbool l= outer->value(r);
-			if(under.connected(n) || l==l_True){
-				printf("%d: %s%s,",n,under.connected(n)?"y":"n",l==l_True?"y":"n");
-			}
-		}
-		printf("\n");
-
-
-		for(int i = 0;i<dist_lits.size();i++){
-			printf("Distance %d: ",i);
-			for(int n=0;n<g.nodes;n++){
-				if(n==28){
-					int a=1;
-				}
-				Lit r = dist_lits[i][n];
-				lbool l= outer->value(r);
-				if(under.distance(n)<=i || l==l_True){
-					printf("%d: %s%s,",n,under.distance(n)<=i?"y":"n",l==l_True?"y":"n");
-				}
-			}
-			printf("\n");
-		}
-*/
-
 
 		for(int j = 0;j< reach_lits.size();j++){
 			Lit l = reach_lits[j];

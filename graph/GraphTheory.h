@@ -348,18 +348,21 @@ public:
 		toSolver(t);
 		S->addClause(t);
 	}
-	Var newVar(){
+	Var newVar(int forDetector=-1, bool connectToTheory=false){
 		Var s= S->newVar();
-		Var v = vars.size();
+	/*	Var v = vars.size();
 		vars.push();
 		vars[v].isEdge=false;
 		vars[v].occursPositive=true;
 		vars[v].occursNegative=true;
 		vars[v].detector_edge=-1;
 		vars[v].solverVar=s;
-		return v;
+		if(connectToTheory){
+			S->setTheoryVar(s,getTheoryIndex(),v);
+		}*/
+		return newVar(s,forDetector,false,connectToTheory);
 	}
-	Var newVar(Var solverVar, int detector, bool isEdge=false){
+	Var newVar(Var solverVar, int detector, bool isEdge=false, bool connectToTheory=true){
 		while(S->nVars()<=solverVar)
 				S->newVar();
 		Var v = vars.size();
@@ -368,9 +371,11 @@ public:
 		vars[v].detector_edge=detector;
 		vars[v].solverVar=solverVar;
 		assigns.push(l_Undef);
-		S->setTheoryVar(solverVar,getTheoryIndex(),v);
-		assert(toSolver(v)==solverVar);
-		if(!isEdge)
+		if(connectToTheory){
+			S->setTheoryVar(solverVar,getTheoryIndex(),v);
+			assert(toSolver(v)==solverVar);
+		}
+		if(!isEdge && detector>=0)
 			detectors[detector]->addVar(v);
 		return v;
 	}
@@ -386,14 +391,14 @@ public:
 	inline Var toSolver(Var v){
 		//return v;
 		assert(v<vars.size());
-		assert(S->hasTheory(vars[v].solverVar));
-		assert(S->getTheoryVar(vars[v].solverVar)==v);
+		//assert(S->hasTheory(vars[v].solverVar));
+		//assert(S->getTheoryVar(vars[v].solverVar)==v);
 		return vars[v].solverVar;
 	}
 
 	inline Lit toSolver(Lit l){
-		assert(S->hasTheory(vars[var(l)].solverVar));
-		assert(S->getTheoryVar(vars[var(l)].solverVar)==var(l));
+		//assert(S->hasTheory(vars[var(l)].solverVar));
+		//assert(S->getTheoryVar(vars[var(l)].solverVar)==var(l));
 		return mkLit(vars[var(l)].solverVar,sign(l));
 	}
 
