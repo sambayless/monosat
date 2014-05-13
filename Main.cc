@@ -244,17 +244,16 @@ int main(int argc, char** argv)
 
 		    undirected_allpairsalg = AllPairsConnectivityAlg::ALG_DIJKSTRA_ALLPAIRS;
 
-			    if (!strcasecmp(opt_undir_allpairs_alg,"floyd-warshall")){
-			    	undirected_allpairsalg = AllPairsConnectivityAlg::ALG_FLOYDWARSHALL;
-			   		 }else if(!strcasecmp(opt_undir_allpairs_alg,"dijkstra")){
-			   			undirected_allpairsalg=AllPairsConnectivityAlg::ALG_DIJKSTRA_ALLPAIRS;
-
-				 }else  if (!strcasecmp(opt_undir_allpairs_alg,"thorup")){
-					 undirected_allpairsalg = AllPairsConnectivityAlg::ALG_THORUP;
-				 } else{
-					fprintf(stderr,"Error: unknown undirected allpairs reachability algorithm %s, aborting\n", ((string) opt_allpairs_alg).c_str());
-					exit(1);
-				 }
+			if (!strcasecmp(opt_undir_allpairs_alg,"floyd-warshall")){
+				undirected_allpairsalg = AllPairsConnectivityAlg::ALG_FLOYDWARSHALL;
+				 }else if(!strcasecmp(opt_undir_allpairs_alg,"dijkstra")){
+					undirected_allpairsalg=AllPairsConnectivityAlg::ALG_DIJKSTRA_ALLPAIRS;
+			 }else  if (!strcasecmp(opt_undir_allpairs_alg,"thorup")){
+				 undirected_allpairsalg = AllPairsConnectivityAlg::ALG_THORUP;
+			 } else{
+				fprintf(stderr,"Error: unknown undirected allpairs reachability algorithm %s, aborting\n", ((string) opt_allpairs_alg).c_str());
+				exit(1);
+			 }
 
         double initial_time = cpuTime();
 

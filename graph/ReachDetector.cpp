@@ -885,6 +885,10 @@ void ReachDetector::buildReachReason(int node,vec<Lit> & conflict){
 			double unreachUpdateElapsed = rtime(2)-startunreachtime;
 			outer->unreachupdatetime+=unreachUpdateElapsed;
 
+			if(opt_rnd_shuffle){
+				randomShuffle(rnd_seed, changed);
+			}
+
 			for(int j = 0;j<getChanged().size();j++){
 					Lit l = getChanged()[j].l;
 					int u =  getChanged()[j].u;
