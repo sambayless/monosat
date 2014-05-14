@@ -28,6 +28,7 @@ public:
 	int historyclears;
 	int next_id;
 	bool is_changed;
+	bool allocated=false;
 #ifdef RECORD
 	FILE * outfile;
 #endif
@@ -63,12 +64,19 @@ public:
 	};
 	vec<EdgeChange> history;
 	//vec<char> edge_status;
-
-	DynamicGraph(EdgeStatus & _status=defaultStatus):edge_status(_status), nodes(0),edges(0),modifications(0),additions(0),deletions(0),historyclears(0),next_id(0),is_changed(true){
+	DynamicGraph():edge_status(*new EdgeStatus()), nodes(0),edges(0),modifications(0),additions(0),deletions(0),historyclears(0),next_id(0),is_changed(true){
+		allocated=true;
+	}
+	DynamicGraph(EdgeStatus & _status):edge_status(_status), nodes(0),edges(0),modifications(0),additions(0),deletions(0),historyclears(0),next_id(0),is_changed(true){
 #ifdef RECORD
 		outfile=nullptr;
 #endif
-
+		allocated=false;
+	}
+	~DynamicGraph(){
+		if(allocated){
+			delete(&edge_status);
+		}
 	}
 	void addNodes(int n){
 		for(int i = 0;i<n;i++)

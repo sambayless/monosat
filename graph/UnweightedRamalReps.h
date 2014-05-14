@@ -131,6 +131,7 @@ public:
 		dbg_dist.growTo(g.nodes,INF);
 		dbg_delta.growTo(g.nodes);
 		dbg_dist[getSource()]=0;
+
 		struct DistCmp{
 			vec<int> & _dist;
 			 bool operator()(int a, int b)const{
@@ -186,7 +187,10 @@ public:
 
 		for(int u = 0;u<g.nodes;u++){
 			int d = dist[u];
+
+			int db = dbg_dist[u];
 			assert(dbg_dist[u]==dist[u]);
+
 			for(int i = 0;i<g.inverted_adjacency[u].size();i++){
 				if(!g.edgeEnabled( g.inverted_adjacency[u][i].id))
 					continue;

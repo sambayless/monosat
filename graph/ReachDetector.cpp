@@ -481,6 +481,9 @@ void ReachDetector::buildReachReason(int node,vec<Lit> & conflict){
 		void ReachDetector::buildNonReachReason(int node,vec<Lit> & conflict){
 			static int it = 0;
 			++it;
+			if(it==22){
+				int a=1;
+			}
 			int u = node;
 			//drawFull( non_reach_detectors[detector]->getSource(),u);
 			assert(outer->dbg_notreachable( source,u));
@@ -607,10 +610,8 @@ void ReachDetector::buildReachReason(int node,vec<Lit> & conflict){
 		    			//permanently disabled edge
 		    			cutgraph.disableEdge(edgeID);
 		    		}
-
-
 		    	}
-
+		    	cutgraph.drawFull();
 #ifndef NDEBUG
 		    	for(int i = 0;i<g.nEdgeIDs();i++){
 		    		Var v = outer->getEdgeVar(i);
@@ -629,7 +630,7 @@ void ReachDetector::buildReachReason(int node,vec<Lit> & conflict){
 						removed_edges.push(edgeID);
 					}
 		    	}
-
+		    	cutgraph.drawFull();
 		    	for(i = 0;i<conflict.size();i++){
 		    		Lit l = conflict[i];
 		    		if(!sign(l) && outer->isEdgeVar(var(l))){

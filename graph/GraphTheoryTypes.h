@@ -45,7 +45,7 @@ struct DefaultEdgeStatus{
 	}
 
 };
-extern DefaultEdgeStatus defaultStatus;
+//extern DefaultEdgeStatus defaultStatus;
 typedef DefaultEdgeStatus PositiveEdgeStatus;
 typedef DefaultEdgeStatus NegativeEdgeStatus;
 typedef DefaultEdgeStatus CutEdgeStatus;
