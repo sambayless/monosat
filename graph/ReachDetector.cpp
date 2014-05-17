@@ -12,6 +12,7 @@
 #include "GraphTheory.h"
 #include "core/Config.h"
 #include "DynamicConnectivity.h"
+#include "TarjansSCC.h"
 ReachDetector::ReachDetector(int _detectorID, GraphTheorySolver * _outer, DynamicGraph<PositiveEdgeStatus> &_g, DynamicGraph<NegativeEdgeStatus> &_antig, int from,double seed):Detector(_detectorID),outer(_outer),g(_g),antig(_antig),within(-1),source(from),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL),opt_weight(*this),chokepoint_status(*this),chokepoint(chokepoint_status, _antig,source){
 
 	constraintsBuilt=-1;
@@ -36,11 +37,11 @@ ReachDetector::ReachDetector(int _detectorID, GraphTheorySolver * _outer, Dynami
 	}
 
 	if(opt_decide_graph_chokepoints){
-		 chokepoint_detector = new DFSReachability<NullEdgeStatus,NegativeEdgeStatus>(from,_antig,nullEdgeStatus,1);
+		 chokepoint_detector = new DFSReachability<NullReachStatus,NegativeEdgeStatus>(from,_antig,nullReachStatus,1);
 
 	}
 	if(opt_shrink_theory_conflicts){
-		cutgraph_reach_detector= new UnweightedRamalReps<NullEdgeStatus,DefaultEdgeStatus>(from,cutgraph,nullEdgeStatus,0);
+		cutgraph_reach_detector= new UnweightedRamalReps<NullReachStatus,DefaultEdgeStatus>(from,cutgraph,nullReachStatus,0);
 	}
 
 	 if(opt_use_random_path_for_decisions){
@@ -57,14 +58,15 @@ ReachDetector::ReachDetector(int _detectorID, GraphTheorySolver * _outer, Dynami
 	 if(opt_use_optimal_path_for_decisions){
 		 opt_path = new WeightedDijkstra<NegativeEdgeStatus, OptimalWeightEdgeStatus >(from,_antig,opt_weight);
 	 }
-
+	 positiveReachStatus = new ReachDetector::ReachStatus(*this,true);
+	 negativeReachStatus = new ReachDetector::ReachStatus(*this,false);
 	if(reachalg==ReachAlg::ALG_BFS){
 		if(!opt_encode_reach_underapprox_as_sat)
 		{
-			positiveReachStatus = new ReachDetector::ReachStatus(*this,true);
+
 			positive_reach_detector = new BFSReachability<ReachDetector::ReachStatus,PositiveEdgeStatus>(from,_g,*(positiveReachStatus),1);
 		}
-		negativeReachStatus = new ReachDetector::ReachStatus(*this,false);
+
 
 		negative_reach_detector = new BFSReachability<ReachDetector::ReachStatus,NegativeEdgeStatus>(from,_antig,*(negativeReachStatus),-1);
 /*		if(opt_conflict_shortest_path)
@@ -74,36 +76,34 @@ ReachDetector::ReachDetector(int _detectorID, GraphTheorySolver * _outer, Dynami
 	}else if(reachalg==ReachAlg::ALG_DFS){
 		if(!opt_encode_reach_underapprox_as_sat)
 		{
-			positiveReachStatus = new ReachDetector::ReachStatus(*this,true);
+
 			positive_reach_detector = new DFSReachability<ReachDetector::ReachStatus,PositiveEdgeStatus>(from,_g,*(positiveReachStatus),1);
 		}
-		negativeReachStatus = new ReachDetector::ReachStatus(*this,false);
+
 		negative_reach_detector = new DFSReachability<ReachDetector::ReachStatus,NegativeEdgeStatus>(from,_antig,*(negativeReachStatus),-1);
 		if(opt_conflict_shortest_path)
-			positive_path_detector = new Distance<NullEdgeStatus,PositiveEdgeStatus>(from,_g,nullEdgeStatus,1);
+			positive_path_detector = new Distance<NullReachStatus,PositiveEdgeStatus>(from,_g,nullReachStatus,1);
 		else
 			positive_path_detector =positive_reach_detector;
 	}else if(reachalg==ReachAlg::ALG_DISTANCE){
 		if(!opt_encode_reach_underapprox_as_sat)
 		{
-			positiveReachStatus = new ReachDetector::ReachStatus(*this,true);
 			positive_reach_detector = new Distance<ReachDetector::ReachStatus,PositiveEdgeStatus>(from,_g,*(positiveReachStatus),1);
 		}
-		negativeReachStatus = new ReachDetector::ReachStatus(*this,false);
+
 		negative_reach_detector = new Distance<ReachDetector::ReachStatus,NegativeEdgeStatus>(from,_antig,*(negativeReachStatus),-1);
 		positive_path_detector = positive_reach_detector;
 	}else if(reachalg==ReachAlg::ALG_RAMAL_REPS){
 		if(!opt_encode_reach_underapprox_as_sat)
 		{
-			positiveReachStatus = new ReachDetector::ReachStatus(*this,true);
 			positive_reach_detector = new UnweightedRamalReps<ReachDetector::ReachStatus,PositiveEdgeStatus>(from,_g,*(positiveReachStatus),1,false);
 		}
-		negativeReachStatus = new ReachDetector::ReachStatus(*this,false);
+
 		negative_reach_detector = new UnweightedRamalReps<ReachDetector::ReachStatus,NegativeEdgeStatus>(from,_antig,*(negativeReachStatus),-1,false);
-		positive_path_detector = new Distance<NullEdgeStatus,PositiveEdgeStatus>(from,_g,nullEdgeStatus,1);
+		positive_path_detector = new Distance<NullReachStatus,PositiveEdgeStatus>(from,_g,nullReachStatus,1);
 	}/*else if (reachalg==ReachAlg::ALG_THORUP){
-		positiveReachStatus = new ReachDetector::ReachStatus(*this,true);
-		negativeReachStatus = new ReachDetector::ReachStatus(*this,false);
+
+
 		positive_reach_detector = new DynamicConnectivity<ReachDetector::ReachStatus,PositiveEdgeStatus>(_g,*(positiveReachStatus),1);
 		negative_reach_detector = new DynamicConnectivity<ReachDetector::ReachStatus,NegativeEdgeStatus>(_antig,*(negativeReachStatus),-1);
 		positive_path_detector = positive_reach_detector;
@@ -114,9 +114,9 @@ ReachDetector::ReachDetector(int _detectorID, GraphTheorySolver * _outer, Dynami
 	}*/else{
 		if(!opt_encode_reach_underapprox_as_sat)
 		{
-			positive_reach_detector = new Dijkstra<PositiveEdgeStatus>(from,_g);
+			positive_reach_detector = new Dijkstra<ReachDetector::ReachStatus,PositiveEdgeStatus>(from,_g,*positiveReachStatus,1);
 		}
-		negative_reach_detector = new Dijkstra<NegativeEdgeStatus>(from,_antig);
+		negative_reach_detector = new Dijkstra<ReachDetector::ReachStatus,NegativeEdgeStatus>(from,_antig,*negativeReachStatus,-1);
 		positive_path_detector = positive_reach_detector;
 		//reach_detectors.last()->positive_dist_detector = new Dijkstra(from,g);
 	}
@@ -662,8 +662,49 @@ void ReachDetector::buildReachReason(int node,vec<Lit> & conflict){
 
 		    }
 
-			 outer->num_learnt_cuts++;
-			 outer->learnt_cut_clause_length+= (conflict.size()-1);
+		    if(opt_learn_unreachable_component){
+		    	//Taking a page from clasp, instead of just learning that node u is unreachable unless one of these edges is flipped,
+		    	//we are going to learn that the whole strongly connected component attached to u is unreachable (if that component has more than one node, that is)
+		    	assert(conflict[0]==~reach_lits[node]);
+		    	vec<int> component;
+		    	vec<Lit> reach_component;
+		    	/*DFSReachability<> d(u,g);
+
+		    	*/
+		    	TarjansSCC<>::getSCC(node,g,component);
+		    	assert(component.contains(node));
+		    	for(int n:component){
+		    		if(reach_lits[n]!=lit_Undef)
+		    			reach_component.push(reach_lits[n]);
+		    	}
+		    	assert(reach_component.size());
+		    	if(reach_component.size()>1){
+		    		//create a new literal in the solver
+		    		Lit component_reachable = mkLit(outer->newVar());
+		    		conflict[0]=~component_reachable;
+		    		int lev = outer->decisionLevel();
+		    		outer->addConflictClause(conflict);
+		    		assert(outer->decisionLevel()==lev);
+		    		for(Lit l:reach_component){
+		    			if(l!=reach_lits[node]){
+							conflict.clear();
+							conflict.push(component_reachable);
+							conflict.push(~l);
+							outer->addConflictClause(conflict);
+							assert(outer->decisionLevel()==lev);
+		    			}
+		    		}
+		    		conflict.clear();
+		    		conflict.push(~reach_lits[node]);
+		    		conflict.push(component_reachable);
+
+		    	}else{
+		    		//just learn the normal conflict clause
+		    	}
+		    }
+
+			outer->num_learnt_cuts++;
+			outer->learnt_cut_clause_length+= (conflict.size()-1);
 
 			double elapsed = rtime(2)-starttime;
 			 outer->mctime+=elapsed;
@@ -1010,8 +1051,8 @@ bool ReachDetector::checkSatisfied(){
 					}
 				}
 	}else{
-		Dijkstra<PositiveEdgeStatus>under(source,g) ;
-		Dijkstra<PositiveEdgeStatus>over(source,antig) ;
+		Dijkstra<>under(source,g) ;
+		Dijkstra<>over(source,antig) ;
 		under.update();
 		over.update();
 

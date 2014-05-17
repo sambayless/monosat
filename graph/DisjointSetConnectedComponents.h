@@ -21,7 +21,7 @@ using namespace Minisat;
 
 
 
-template<class Status,class EdgeStatus=DefaultEdgeStatus>
+template<class Status=ConnectedComponents::NullConnectedComponentsStatus,class EdgeStatus=DefaultEdgeStatus>
 class DisjointSetsConnectedComponents:public ConnectedComponents{
 public:
 
@@ -34,7 +34,7 @@ public:
 	int history_qhead;
 
 	int last_history_clear;
-	bool hasParents;
+	bool hasParents=false;
 	int INF;
 	DisjointSets sets;
 
@@ -46,16 +46,16 @@ public:
 
 	//stats
 
-	int stats_full_updates;
-	int stats_fast_updates;
-	int stats_fast_failed_updates;
-	int stats_skip_deletes;
-	int stats_skipped_updates;
-	int stats_num_skipable_deletions;
-	double mod_percentage;
+	int stats_full_updates=0;
+	int stats_fast_updates=0;
+	int stats_fast_failed_updates=0;
+	int stats_skip_deletes=0;
+	int stats_skipped_updates=0;
+	int stats_num_skipable_deletions=0;
+	double mod_percentage=0.2;
 
-	double stats_full_update_time;
-	double stats_fast_update_time;
+	double stats_full_update_time=0;
+	double stats_fast_update_time=0;
 
 	struct DefaultReachStatus{
 			vec<bool> stat;
@@ -70,20 +70,12 @@ public:
 			};
 
 public:
-
-
 	DisjointSetsConnectedComponents(DynamicGraph<EdgeStatus> & graph, Status & _status, int _reportPolarity=0 ):g(graph), status(_status), last_modification(-1),last_addition(-1),last_deletion(-1),history_qhead(0),last_history_clear(0),INF(0),reportPolarity(_reportPolarity){
 
-		mod_percentage=0.2;
-		stats_full_updates=0;
-		stats_fast_updates=0;
-		stats_skip_deletes=0;
-		stats_skipped_updates=0;
-		stats_full_update_time=0;
-		stats_fast_update_time=0;
-		stats_num_skipable_deletions=0;
-		stats_fast_failed_updates=0;
-		hasParents=false;
+	}
+
+	DisjointSetsConnectedComponents(DynamicGraph<EdgeStatus> & graph,  int _reportPolarity=0 ):g(graph), status(nullConnectedComponentsStatus), last_modification(-1),last_addition(-1),last_deletion(-1),history_qhead(0),last_history_clear(0),INF(0),reportPolarity(_reportPolarity){
+
 	}
 
 	void setNodes(int n){

@@ -10,6 +10,20 @@
 
 #include "mtl/Vec.h"
 
+struct NullReachStatus{
+	void setReachable(int u, bool reachable){
+
+	}
+	bool isReachable(int u) const{
+		return false;
+	}
+
+	void setMininumDistance(int u, bool reachable, int distance){
+
+	}
+};
+extern NullReachStatus nullReachStatus;
+
 class Reach{
 public:
 

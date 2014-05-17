@@ -15,10 +15,13 @@
 #include "core/Config.h"
 
 namespace Minisat{
-template<class EdgeStatus=DefaultEdgeStatus, bool undirected=false >
+template<class Status=NullReachStatus,class EdgeStatus=DefaultEdgeStatus, bool undirected=false >
 class Dijkstra:public Reach{
 public:
 	DynamicGraph<EdgeStatus> & g;
+	Status &  status;
+	int reportPolarity;
+
 	int last_modification;
 	int last_addition;
 	int last_deletion;
@@ -33,8 +36,8 @@ public:
 
 
 
-	vec<int> old_dist;
-	vec<int> changed;
+	//vec<int> old_dist;
+	//vec<int> changed;
 
 	vec<int> dist;
 	vec<int> prev;
@@ -51,25 +54,26 @@ public:
 
 public:
 
-	int stats_full_updates;
-	int stats_fast_updates;
-	int stats_fast_failed_updates;
-	int stats_skip_deletes;
-	int stats_skipped_updates;
-	int stats_num_skipable_deletions;
+	int stats_full_updates=0;
+	int stats_fast_updates=0;
+	int stats_fast_failed_updates=0;
+	int stats_skip_deletes=0;
+	int stats_skipped_updates=0;
+	int stats_num_skipable_deletions=0;
 	double mod_percentage;
 
-	double stats_full_update_time;
-	double stats_fast_update_time;
-	Dijkstra(int s,DynamicGraph<EdgeStatus> & graph):g(graph), last_modification(-1),last_addition(-1),last_deletion(-1),history_qhead(0),last_history_clear(0),source(s),INF(0),q(DistCmp(dist)){
+	double stats_full_update_time=0;
+	double stats_fast_update_time=0;
+	Dijkstra(int s, DynamicGraph<EdgeStatus> & graph, Status & status, int reportPolarity=0):g(graph),status(status),reportPolarity(reportPolarity), last_modification(-1),last_addition(-1),last_deletion(-1),history_qhead(0),last_history_clear(0),source(s),INF(0),q(DistCmp(dist)){
 
 		mod_percentage=0.2;
-		stats_full_updates=0;
-		stats_fast_updates=0;
-		stats_skip_deletes=0;
-		stats_skipped_updates=0;
-		stats_full_update_time=0;
-		stats_fast_update_time=0;
+
+	}
+
+	Dijkstra(int s,DynamicGraph<EdgeStatus> & graph, int reportPolarity=0):g(graph),status(nullReachStatus),reportPolarity(reportPolarity), last_modification(-1),last_addition(-1),last_deletion(-1),history_qhead(0),last_history_clear(0),source(s),INF(0),q(DistCmp(dist)){
+
+		mod_percentage=0.2;
+
 	}
 	//Dijkstra(const Dijkstra& d):g(d.g), last_modification(-1),last_addition(-1),last_deletion(-1),history_qhead(0),last_history_clear(0),source(d.source),INF(0),q(DistCmp(dist)),stats_full_updates(0),stats_fast_updates(0),stats_skip_deletes(0),stats_skipped_updates(0),stats_full_update_time(0),stats_fast_update_time(0){marked=false;};
 
@@ -83,15 +87,15 @@ public:
 	int getSource(){
 		return source;
 	}
-
+/*
 	void updateFast(){
 		stats_fast_updates++;
 		double start_time = rtime(2);
 
 
 
-		/*for(int i = 0;i<g.nodes;i++)
-					changed.push(i);*/
+		for(int i = 0;i<g.nodes;i++)
+					changed.push(i);
 		assert(last_deletion==g.deletions);
 		last_modification=g.modifications;
 		last_addition=g.additions;
@@ -145,7 +149,7 @@ public:
 			}
 
 
-			/*
+
 			 *
 			 *
 			//Is this altered code still correct? Well, not for dijkstras, but probably for connectivity
@@ -160,7 +164,7 @@ public:
 					q.insert(v);
 			}
 			 *
-			 */
+
 
 		}
 		history_qhead=g.history.size();
@@ -192,14 +196,26 @@ public:
 
 			}
 		}
+
+		for(int u:changed){
+			if(reportPolarity<=0 && dist[u]>=INF){
+				status.setReachable(u,false);
+				status.setMininumDistance(u,dist[u]<INF,dist[u]);
+			}else if (reportPolarity>=0 && dist[u]<INF){
+				status.setReachable(u,true);
+				status.setMininumDistance(u,dist[u]<INF,dist[u]);
+			}
+		}
+		changed.clear();
+
 		stats_fast_update_time+=rtime(2)-start_time;
-	}
-	vec<int> & getChanged(){
+	}*/
+/*	vec<int> & getChanged(){
 		return changed;
 	}
 	void clearChanged(){
 		changed.clear();
-	}
+	}*/
 
 	void drawFull(){
 
@@ -276,10 +292,10 @@ public:
 		INF=g.nodes+1;
 		dist.growTo(g.nodes);
 		prev.growTo(g.nodes);
-		old_dist.growTo(g.nodes);
+		//old_dist.growTo(g.nodes);
 		q.clear();
 		for(int i = 0;i<g.nodes;i++){
-			old_dist[i]=last_modification > 0 ? dist[i]:INF;//this won't work properly if we added nodes...
+			//old_dist[i]=last_modification > 0 ? dist[i]:INF;//this won't work properly if we added nodes...
 			dist[i]=INF;
 			prev[i]=-1;
 		}
@@ -290,9 +306,9 @@ public:
 			int u = q.peakMin();
 			if(dist[u]==INF)
 				break;
-			if(old_dist[u]>=INF){
+			/*if(old_dist[u]>=INF){
 				changed.push(u);
-			}
+			}*/
 			q.removeMin();
 			for(int i = 0;i<adjacency[u].size();i++){
 				if(!g.edgeEnabled( adjacency[u][i].id))
@@ -311,17 +327,25 @@ public:
 			}
 		}
 
-		for(int u = 0;u<g.nodes;u++){
+	/*	for(int u = 0;u<g.nodes;u++){
 		//while(q.size()){
 			//iterate through the unreached nodes and check which ones were previously reached
 
 			if(last_modification <=0  || (old_dist[u]<INF && dist[u]>=INF)){
 				changed.push(u);
 			}
-		}
+		}*/
 		//}
 		assert(dbg_uptodate());
-
+		for(int u = 0;u<g.nodes;u++){
+			if(reportPolarity<=0 && dist[u]>=INF){
+				status.setReachable(u,false);
+				status.setMininumDistance(u,dist[u]<INF,dist[u]);
+			}else if (reportPolarity>=0 && dist[u]<INF){
+				status.setReachable(u,true);
+				status.setMininumDistance(u,dist[u]<INF,dist[u]);
+			}
+		}
 		last_modification=g.modifications;
 		last_deletion = g.deletions;
 		last_addition=g.additions;

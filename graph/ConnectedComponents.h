@@ -13,8 +13,16 @@
 class ConnectedComponents{
 public:
 
+	struct NullConnectedComponentsStatus{
+		void setConnected(int u, int v, bool connected){
 
+		}
+		void setComponents(int components){
 
+		}
+	};
+
+	static NullConnectedComponentsStatus nullConnectedComponentsStatus;
 
 
 	virtual ~ConnectedComponents(){};

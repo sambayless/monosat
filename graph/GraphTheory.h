@@ -137,6 +137,7 @@ public:
 
     vec<char> seen;
 	vec<int> to_visit;
+	vec<Lit> tmp_clause;
 	//Data about local theory variables, and how they connect to the sat solver's variables
 	struct VarData{
 		int isEdge:1;
@@ -343,10 +344,17 @@ public:
 		S->addClause(o1,o2,o3);
 	}
 	void addClause(vec<Lit> & c){
-		vec<Lit> t;
-		c.copyTo(t);
-		toSolver(t);
-		S->addClause(t);
+		tmp_clause.clear();
+		c.copyTo(tmp_clause);
+		toSolver(tmp_clause);
+		S->addClause(tmp_clause);
+	}
+	void addConflictClause(vec<Lit> & c){
+		tmp_clause.clear();
+		c.copyTo(tmp_clause);
+		toSolver(tmp_clause);
+		CRef ignore;
+		S->addConflictClause(tmp_clause,ignore);
 	}
 	Var newVar(int forDetector=-1, bool connectToTheory=false){
 		Var s= S->newVar();
@@ -784,7 +792,7 @@ public:
 #ifdef DEBUG_DIJKSTRA
 		DefaultEdgeStatus tmp;
 		if(undirected){
-			Dijkstra<DefaultEdgeStatus,true> d(from,g);
+			Dijkstra<NullReachStatus, DefaultEdgeStatus,true> d(from,g);
 			d.update();
 			return d.connected(to);
 		}else{
@@ -817,11 +825,11 @@ public:
 			}
 		}
 		if(undirected){
-			Dijkstra<DefaultEdgeStatus,true> d(from,g);
+			Dijkstra<NullReachStatus, DefaultEdgeStatus,true> d(from,g);
 
 			return !d.connected(to);
 		}else{
-			Dijkstra<DefaultEdgeStatus,false> d(from,g);
+			Dijkstra<NullReachStatus, DefaultEdgeStatus,false> d(from,g);
 
 					return !d.connected(to);
 		}
@@ -837,7 +845,7 @@ public:
 				continue;
 			Edge e = edge_list[i];
 			lbool val = value(e.v);
-			assert(edge_assignments[i]==val);
+
 			if(val==l_True || val==l_Undef){
 				assert(antig.edgeEnabled(i));
 				assert(antig.hasEdge(e.from,e.to));

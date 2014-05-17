@@ -47,25 +47,25 @@ Detector(_detectorID),outer(_outer),g(_g),antig(_antig),source(from),rnd_seed(se
 	 if(opt_use_optimal_path_for_decisions){
 		 opt_path = new WeightedDijkstra<NegativeEdgeStatus, OptimalWeightEdgeStatus >(from,_antig,opt_weight);
 	 }
+	 positiveReachStatus = new DistanceDetector::ReachStatus(*this,true);
+	 negativeReachStatus = new DistanceDetector::ReachStatus(*this,false);
 	if(distalg==DistAlg::ALG_DISTANCE){
-		positiveReachStatus = new DistanceDetector::ReachStatus(*this,true);
-		negativeReachStatus = new DistanceDetector::ReachStatus(*this,false);
+
 		positive_reach_detector = new Distance<DistanceDetector::ReachStatus,PositiveEdgeStatus>(from,_g,*(positiveReachStatus),0);
 		negative_reach_detector = new Distance<DistanceDetector::ReachStatus,NegativeEdgeStatus>(from,_antig,*(negativeReachStatus),0);
 		positive_path_detector = positive_reach_detector;
 		/*	if(opt_conflict_shortest_path)
 			reach_detectors.last()->positive_dist_detector = new Dijkstra<PositiveEdgeStatus>(from,g);*/
 	}else if (distalg==DistAlg::ALG_RAMAL_REPS){
-		positiveReachStatus = new DistanceDetector::ReachStatus(*this,true);
-		negativeReachStatus = new DistanceDetector::ReachStatus(*this,false);
+
 		positive_reach_detector = new UnweightedRamalReps<DistanceDetector::ReachStatus,PositiveEdgeStatus>(from,_g,*(positiveReachStatus),0);
 		negative_reach_detector = new UnweightedRamalReps<DistanceDetector::ReachStatus,NegativeEdgeStatus>(from,_antig,*(negativeReachStatus),0);
 
-		positive_path_detector =  new Distance<NullEdgeStatus,PositiveEdgeStatus>(from,_g,nullEdgeStatus,0);
+		positive_path_detector =  new Distance<NullReachStatus,PositiveEdgeStatus>(from,_g,nullReachStatus,0);
 	}else{
 
-		positive_reach_detector = new Dijkstra<PositiveEdgeStatus>(from,_g);
-		negative_reach_detector = new Dijkstra<NegativeEdgeStatus>(from,_antig);
+		positive_reach_detector = new Dijkstra<DistanceDetector::ReachStatus,PositiveEdgeStatus>(from,_g,*positiveReachStatus,0);
+		negative_reach_detector = new Dijkstra<DistanceDetector::ReachStatus,NegativeEdgeStatus>(from,_antig,*positiveReachStatus,0);
 		positive_path_detector = positive_reach_detector;
 		//reach_detectors.last()->positive_dist_detector = new Dijkstra(from,g);
 	}
@@ -695,8 +695,8 @@ bool DistanceDetector::checkSatisfied(){
 					}
 			}
 	}else{
-				Dijkstra<PositiveEdgeStatus>under(source,g) ;
-				Dijkstra<PositiveEdgeStatus>over(source,antig) ;
+				Dijkstra<>under(source,g) ;
+				Dijkstra<>over(source,antig) ;
 				under.update();
 				over.update();
 				for(int j = 0;j< full_dist_lits.size();j++){

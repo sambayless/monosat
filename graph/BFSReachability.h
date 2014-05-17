@@ -601,7 +601,7 @@ public:
 #ifdef DEBUG_DIJKSTRA
 		if(last_modification<=0)
 			return true;
-		Dijkstra<EdgeStatus,undirected> d(source,g);
+		Dijkstra<NullReachStatus,EdgeStatus,undirected> d(source,g);
 		d.update();
 		//drawFull();
 		for(int i = 0;i<g.nodes;i++){

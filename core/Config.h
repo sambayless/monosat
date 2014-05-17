@@ -94,6 +94,7 @@ extern BoolOption opt_early_theory_prop;
 extern BoolOption opt_encode_reach_underapprox_as_sat;
  extern   BoolOption	 opt_csv;
  extern BoolOption opt_rnd_shuffle;
+extern BoolOption opt_learn_unreachable_component;
 
 enum class ReachAlg{
 	 ALG_SAT,

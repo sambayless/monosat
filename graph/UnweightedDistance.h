@@ -9,19 +9,6 @@
 #include "Reach.h"
 namespace Minisat{
 
-struct NullEdgeStatus{
-	void setReachable(int u, bool reachable){
-
-	}
-	bool isReachable(int u) const{
-		return false;
-	}
-
-	void setMininumDistance(int u, bool reachable, int distance){
-
-	}
-};
-static NullEdgeStatus nullEdgeStatus;
 /**
  * Detect connectivity within a number of steps in unweighted, directed graphs
  */
@@ -253,7 +240,7 @@ public:
 #ifdef DEBUG_DIJKSTRA
 		if(last_modification<=0)
 			return true;
-		Dijkstra<EdgeStatus,undirected> d(source,g);
+		Dijkstra<NullReachStatus, EdgeStatus,undirected> d(source,g);
 		d.update();
 		//drawFull();
 

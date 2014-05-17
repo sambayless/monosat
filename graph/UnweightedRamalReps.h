@@ -709,7 +709,7 @@ public:
 		if(last_modification<0)
 			return true;
 		dbg_delta();
-		Dijkstra<EdgeStatus,false> d(source,g);
+		Dijkstra<NullReachStatus,EdgeStatus,false> d(source,g);
 
 		for(int i = 0;i<g.nodes;i++){
 			int distance = dist[i];
