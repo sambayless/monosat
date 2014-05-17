@@ -576,7 +576,7 @@ void DistanceDetector::buildReachReason(int node,vec<Lit> & conflict){
 
 		double startunreachtime = rtime(2);
 		if(!opt_detect_pure_theory_lits || unassigned_negatives>0)
-		  negative_reach_detector->update();
+  		    negative_reach_detector->update();
 		else
 			stats_pure_skipped++;
 		double unreachUpdateElapsed = rtime(2)-startunreachtime;

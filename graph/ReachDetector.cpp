@@ -67,10 +67,10 @@ ReachDetector::ReachDetector(int _detectorID, GraphTheorySolver * _outer, Dynami
 		negativeReachStatus = new ReachDetector::ReachStatus(*this,false);
 
 		negative_reach_detector = new BFSReachability<ReachDetector::ReachStatus,NegativeEdgeStatus>(from,_antig,*(negativeReachStatus),-1);
-		if(opt_conflict_shortest_path)
+/*		if(opt_conflict_shortest_path)
 			positive_path_detector = new Distance<NullEdgeStatus,PositiveEdgeStatus>(from,_g,nullEdgeStatus,1);
-		else
-			positive_path_detector =positive_reach_detector;
+		else*/
+		positive_path_detector =positive_reach_detector;
 	}else if(reachalg==ReachAlg::ALG_DFS){
 		if(!opt_encode_reach_underapprox_as_sat)
 		{
@@ -100,7 +100,7 @@ ReachDetector::ReachDetector(int _detectorID, GraphTheorySolver * _outer, Dynami
 		}
 		negativeReachStatus = new ReachDetector::ReachStatus(*this,false);
 		negative_reach_detector = new UnweightedRamalReps<ReachDetector::ReachStatus,NegativeEdgeStatus>(from,_antig,*(negativeReachStatus),-1,false);
-		positive_path_detector =  new Distance<NullEdgeStatus,PositiveEdgeStatus>(from,_g,nullEdgeStatus,1);
+		positive_path_detector = new Distance<NullEdgeStatus,PositiveEdgeStatus>(from,_g,nullEdgeStatus,1);
 	}/*else if (reachalg==ReachAlg::ALG_THORUP){
 		positiveReachStatus = new ReachDetector::ReachStatus(*this,true);
 		negativeReachStatus = new ReachDetector::ReachStatus(*this,false);
@@ -481,7 +481,7 @@ void ReachDetector::buildReachReason(int node,vec<Lit> & conflict){
 		void ReachDetector::buildNonReachReason(int node,vec<Lit> & conflict){
 			static int it = 0;
 			++it;
-			if(it==22){
+			if(it==2){
 				int a=1;
 			}
 			int u = node;
