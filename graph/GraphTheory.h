@@ -349,13 +349,20 @@ public:
 		toSolver(tmp_clause);
 		S->addClause(tmp_clause);
 	}
-	void addConflictClause(vec<Lit> & c){
+	void addClauseSafely(vec<Lit> & c){
+		tmp_clause.clear();
+		c.copyTo(tmp_clause);
+		toSolver(tmp_clause);
+
+		S->addClauseSafely(tmp_clause);
+	}
+	/*void addConflictClause(vec<Lit> & c){
 		tmp_clause.clear();
 		c.copyTo(tmp_clause);
 		toSolver(tmp_clause);
 		CRef ignore;
 		S->addConflictClause(tmp_clause,ignore);
-	}
+	}*/
 	Var newVar(int forDetector=-1, bool connectToTheory=false){
 		Var s= S->newVar();
 	/*	Var v = vars.size();
@@ -848,17 +855,17 @@ public:
 
 			if(val==l_True || val==l_Undef){
 				assert(antig.edgeEnabled(i));
-				assert(antig.hasEdge(e.from,e.to));
+				//assert(antig.hasEdge(e.from,e.to));
 			}else{
 				assert(!antig.edgeEnabled(i));
-				assert(!antig.hasEdge(e.from,e.to));
+				//assert(!antig.hasEdge(e.from,e.to));
 			}
 			if(val==l_True){
 				assert(g.edgeEnabled(i));
-				assert(g.hasEdge(e.from,e.to));
+				//assert(g.hasEdge(e.from,e.to));
 			}else{
 				assert(!g.edgeEnabled(i));
-				assert(!g.hasEdge(e.from,e.to));
+				//assert(!g.hasEdge(e.from,e.to));
 			}
 		}
 

@@ -480,6 +480,8 @@ protected:
     vec<Lit>            analyze_toclear;
     vec<Lit>            add_tmp;
 
+    vec<vec<Lit>> 		clauses_to_add;
+
     double              max_learnts;
     double              learntsize_adjust_confl;
     int                 learntsize_adjust_cnt;
@@ -508,6 +510,12 @@ protected:
 
     void 	buildReason(Lit p, vec<Lit> & reason);
     void backtrackUntil(int level);
+    //Add a clause to the clause database safely, even if the solver is in the middle of search, propagation, or clause analysis.
+    //(In reality, the clause will be added to the database sometime later)
+    void 	addClauseSafely(vec<Lit> & ps){
+    	clauses_to_add.push();
+    	ps.copyTo(clauses_to_add.last());
+    }
 public:
     void     cancelUntil      (int level);                                             // Backtrack until a certain level.
 protected:
@@ -550,7 +558,9 @@ public:
     double   progressEstimate ()      const; // DELETE THIS ?? IT'S NOT VERY USEFUL ...
 private:
     bool     withinBudget     ()      const;
-    bool 	addConflictClause(vec<Lit> & theory_conflict,CRef & confl_out);
+    bool 	addConflictClause(vec<Lit> & theory_conflict,CRef & confl_out, bool permanent=false);
+
+    bool	addDelayedClauses(CRef & conflict);
     // Static helpers:
     //
     inline void toSuper(vec<Lit> & from, vec<Lit> & to){

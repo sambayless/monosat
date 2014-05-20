@@ -662,7 +662,7 @@ void ReachDetector::buildReachReason(int node,vec<Lit> & conflict){
 
 		    }
 
-		    if(opt_learn_unreachable_component){
+		    if(opt_learn_unreachable_component && conflict.size()>1){
 		    	//Taking a page from clasp, instead of just learning that node u is unreachable unless one of these edges is flipped,
 		    	//we are going to learn that the whole strongly connected component attached to u is unreachable (if that component has more than one node, that is)
 		    	assert(conflict[0]==~reach_lits[node]);
@@ -671,33 +671,55 @@ void ReachDetector::buildReachReason(int node,vec<Lit> & conflict){
 		    	/*DFSReachability<> d(u,g);
 
 		    	*/
-		    	TarjansSCC<>::getSCC(node,g,component);
+		    	//antig.drawFull();
+		    	TarjansSCC<>::getSCC(node,antig,component);
 		    	assert(component.contains(node));
 		    	for(int n:component){
-		    		if(reach_lits[n]!=lit_Undef)
+		    		if(reach_lits[n]!=lit_Undef){
 		    			reach_component.push(reach_lits[n]);
+		    		}
 		    	}
 		    	assert(reach_component.size());
 		    	if(reach_component.size()>1){
 		    		//create a new literal in the solver
-		    		Lit component_reachable = mkLit(outer->newVar());
-		    		conflict[0]=~component_reachable;
-		    		int lev = outer->decisionLevel();
-		    		outer->addConflictClause(conflict);
-		    		assert(outer->decisionLevel()==lev);
-		    		for(Lit l:reach_component){
-		    			if(l!=reach_lits[node]){
-							conflict.clear();
-							conflict.push(component_reachable);
-							conflict.push(~l);
-							outer->addConflictClause(conflict);
-							assert(outer->decisionLevel()==lev);
-		    			}
-		    		}
-		    		conflict.clear();
-		    		conflict.push(~reach_lits[node]);
-		    		conflict.push(component_reachable);
 
+
+		    		//component must be reachable
+		    		bool must_be_reached=false;
+		    		for(Lit l:reach_component){
+						if(outer->value(l)==l_True && outer->level(var(l))==0){
+							must_be_reached=true;
+						}
+					}
+		    		extra_conflict.clear();
+
+		    		if(must_be_reached){
+
+		    			for(int i = 1;i<conflict.size();i++)
+		    				extra_conflict.push(conflict[i]);
+		    			outer->addClauseSafely(extra_conflict);
+		    			stats_learnt_components++;
+		    				    		stats_learnt_components_sz+=reach_component.size();
+		    		}else{
+
+		    			stats_learnt_components++;
+						stats_learnt_components_sz+=reach_component.size();
+						Lit component_reachable = mkLit(outer->newVar());
+						conflict.copyTo(extra_conflict);
+						extra_conflict[0]=~component_reachable;
+
+						outer->addClauseSafely(extra_conflict);
+
+						for(Lit l:reach_component){
+							if(outer->value(l)==l_True && outer->level(var(l))==0){
+								continue;
+							}
+							extra_conflict.clear();
+							extra_conflict.push(component_reachable);
+							extra_conflict.push(~l);
+							outer->addClauseSafely(extra_conflict);
+						}
+		    		}
 		    	}else{
 		    		//just learn the normal conflict clause
 		    	}
@@ -969,7 +991,7 @@ void ReachDetector::buildReachReason(int node,vec<Lit> & conflict){
 						}
 #ifdef DEBUG_GRAPH
 						for(int i = 0;i<conflict.size();i++)
-									 assert(outer->value(conflict[i])==l_False);
+									 assert(outer->dbg_value(conflict[i])==l_False);
 #endif
 #ifdef DEBUG_SOLVER
 						if(S->dbg_solver)

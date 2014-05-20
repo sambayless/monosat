@@ -231,9 +231,21 @@ CRef Solver::attachClauseSafe(vec<Lit> & ps){
 					ca[cr].setFromTheory(true);
 					if(opt_permanent_theory_conflicts)
 						clauses.push(cr);
-					else
+					else{
 						learnts.push(cr);
+				         if (--learntsize_adjust_cnt <= 0){
+							learntsize_adjust_confl *= learntsize_adjust_inc;
+							learntsize_adjust_cnt    = (int)learntsize_adjust_confl;
+							max_learnts             *= learntsize_inc;
 
+							if (verbosity >= 1)
+								printf("| %9d | %7d %8d %8d | %8d %8d %6.0f | %d removed |\n",
+									   (int)conflicts,
+									   (int)dec_vars - (trail_lim.size() == 0 ? trail.size() : trail_lim[0]), nClauses(), (int)clauses_literals,
+									   (int)max_learnts, nLearnts(), (double)learnts_literals/nLearnts(), stats_removed_clauses);
+						}
+
+					}
 					attachClause(cr);
 
 					confl_out=cr;
@@ -1065,15 +1077,15 @@ bool Solver::simplify()
 					if(hasTheory(v)){
 						stats_pure_theory_lits++;
 						theories[getTheoryID(v)]->setLiteralOccurs(getTheoryLit(l),false);
-						setPolarity(v,false);
+						//setPolarity(v,false);
 					}else{
 						//we can safely assign this now...
 						if(!lit_counts[toInt(~l)].seen){
-							if(decision[v])
-								setDecisionVar(v,false);
+						/*	if(decision[v])
+								setDecisionVar(v,false);*/
 						}else{
 							if(value(l)==l_Undef){
-								uncheckedEnqueue(~l);
+								//uncheckedEnqueue(~l);
 							}
 						}
 					}
@@ -1084,7 +1096,7 @@ bool Solver::simplify()
 					if(hasTheory(v)){
 						stats_pure_theory_lits++;
 						theories[getTheoryID(v)]->setLiteralOccurs(getTheoryLit(~l),false);
-						setPolarity(v,true);
+						//setPolarity(v,true);
 						if(!lit_counts[toInt(l)].occurs){
 							//setDecisionVar(v,false);//If v is pure in both polarities, and is a theory var, then just don't assign it at all - it is unconstrained.
 							//This _should_ be safe to do, if the theory semantics make sense... although there are some clause learning schemes that introduce previosuly unused literals that might break with this...
@@ -1092,18 +1104,17 @@ bool Solver::simplify()
 					}else{
 						//we can safely assign this now...
 						if(!lit_counts[toInt(l)].seen){
-							if(decision[v])
-								setDecisionVar(v,false);
+					/*		if(decision[v])
+								setDecisionVar(v,false);*/
 						}else if(value(l)==l_Undef){
-							uncheckedEnqueue(l);
+							//uncheckedEnqueue(l);
 						}
 					}
 				}
 
-				//Don't bother deciding this variable...
-
 
 			}
+			assert(stats_pure_lits<=nVars()*2);
 			stats_pure_lit_time += rtime(1)-startTime;
     	//}
     }
@@ -1111,7 +1122,9 @@ bool Solver::simplify()
     return true;
 }
 
-bool Solver::addConflictClause(vec<Lit> & ps, CRef & confl_out){
+
+
+bool Solver::addConflictClause(vec<Lit> & ps, CRef & confl_out, bool permanent){
 	dbg_check(theory_conflict);
 
     sort(ps);
@@ -1139,22 +1152,60 @@ bool Solver::addConflictClause(vec<Lit> & ps, CRef & confl_out){
 
 		}else{
 			//find the highest level in the conflict (should be the current decision level, but we won't require that)
+			bool conflicting = true;
+			int nfalse = 0;
 			int max_lev = 0;
+			bool satisfied = false;
+			int notFalsePos1=-1;
+			int notFalsePos2 = -1;
 			for(int j = 0;j<ps.size();j++){
 				assert(var(ps[j])<nVars());
-				assert(value(ps[j])==l_False);
-				int l = level(var(ps[j]));
-				if(l>max_lev){
-					max_lev=l;
+				//assert(value(ps[j])==l_False);
+				if(value(ps[j])==l_False){
+					nfalse++;
+				}else {
+					conflicting =false;
+					if(value(ps[j])==l_True)
+						satisfied=true;
+					if (notFalsePos1<0)
+						notFalsePos1 = j;
+					else if(notFalsePos2<0){
+						notFalsePos2 = j;
+					}
+				}
+				if(value(ps[j])!=l_Undef){
+					int l = level(var(ps[j]));
+					if(l>max_lev){
+						max_lev=l;
+					}
 				}
 			}
-			//assert(max_lev>0);
-			cancelUntil(max_lev);
+			if(!conflicting){
+				assert(notFalsePos1>=0);
+				if(notFalsePos1 >=0  && notFalsePos2>=0){
+					assert(notFalsePos1 != notFalsePos2);
+					if(notFalsePos1==1){
+						std::swap(ps[0],ps[notFalsePos2]);
+					}else{
+						std::swap(ps[0],ps[notFalsePos1]);
+						std::swap(ps[1],ps[notFalsePos2]);
+					}
+				}else{
+					std::swap(ps[0],ps[notFalsePos1]);
+				}
+				assert(value(ps[0])!=l_False);
+				if(notFalsePos2>=0){
+					assert(value(ps[1])!=l_False);
+				}
+			}
+
 #ifndef NDEBUG
-			for(int j = 0;j<ps.size();j++)
-				assert(value(ps[j])==l_False);
+			if(conflicting){
+				for(int j = 0;j<ps.size();j++)
+					assert(value(ps[j])==l_False);
+			}
 #endif
-			if(ps.size()> opt_temporary_theory_conflicts){
+			if(! permanent && ps.size()> opt_temporary_theory_conflicts){
 				if(tmp_clause==CRef_Undef){
 					tmp_clause = ca.alloc(ps,false);
 					tmp_clause_sz=ps.size();
@@ -1177,23 +1228,56 @@ bool Solver::addConflictClause(vec<Lit> & ps, CRef & confl_out){
 				confl_out = tmp_clause;
 			}else{
 
-				CRef cr = ca.alloc(ps, !opt_permanent_theory_conflicts);
+				CRef cr = ca.alloc(ps, !permanent && !opt_permanent_theory_conflicts);
 				ca[cr].setFromTheory(true);
-				if(opt_permanent_theory_conflicts)
+				if(permanent || opt_permanent_theory_conflicts)
 					clauses.push(cr);
 				else{
 					learnts.push(cr);
+			         if (--learntsize_adjust_cnt <= 0){
+						learntsize_adjust_confl *= learntsize_adjust_inc;
+						learntsize_adjust_cnt    = (int)learntsize_adjust_confl;
+						max_learnts             *= learntsize_inc;
+
+						if (verbosity >= 1)
+							printf("| %9d | %7d %8d %8d | %8d %8d %6.0f | %d removed |\n",
+								   (int)conflicts,
+								   (int)dec_vars - (trail_lim.size() == 0 ? trail.size() : trail_lim[0]), nClauses(), (int)clauses_literals,
+								   (int)max_learnts, nLearnts(), (double)learnts_literals/nLearnts(), stats_removed_clauses);
+					}
+
 				}
 
 				attachClause(cr);
 				confl_out=cr;
 			}
+			if(!satisfied)
+				cancelUntil(max_lev);
 
-			return false;
+			if (!satisfied && nfalse==ps.size()-1){
+				assert(value(ps[0])!=l_False);
+				assert(value(ps[1])==l_False);
+				if(value(ps[0])==l_Undef){
+					uncheckedEnqueue(ps[0],confl_out);
+				}
+				confl_out=CRef_Undef;
+			}
+			return !conflicting;
 		}
 	return true;
 }
 
+bool Solver::addDelayedClauses(CRef & conflict_out){
+	conflict_out=CRef_Undef;
+	while(clauses_to_add.size() && ok){
+		if(!addConflictClause(clauses_to_add.last(),conflict_out,true)){
+			clauses_to_add.pop();
+			return false;
+		}
+		clauses_to_add.pop();
+	}
+	return true;
+}
 
 /*_________________________________________________________________________________________________
 |
@@ -1274,6 +1358,10 @@ lbool Solver::search(int nof_conflicts)
 
         }else{
         	assert(theory_queue.size()==0);
+
+        	if(!addDelayedClauses(confl))
+        		goto conflict;
+
             if(opt_subsearch==0 &&  decisionLevel()< initial_level){
      			return l_Undef;//give up if we have backtracked past the super solvers decisions
      		  }else if(opt_subsearch==2 && S && confl==CRef_Undef){
@@ -1283,7 +1371,7 @@ lbool Solver::search(int nof_conflicts)
      					return l_False;
      				goto conflict;
      			}
-     		  }
+     		 }
 
             // NO CONFLICT
             if ((nof_conflicts >= 0 && conflictC >= nof_conflicts )|| !withinBudget()){

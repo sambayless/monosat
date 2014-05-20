@@ -70,21 +70,23 @@ public:
 		vec<Change> & getChanged(){
 			return changed;
 		}
-
+		vec<Lit> extra_conflict;
 		vec<int> removed_edges;
 		//stats
 
-		int stats_full_updates;
-		int stats_fast_updates;
-		int stats_fast_failed_updates;
-		int stats_skip_deletes;
-		int stats_skipped_updates;
-		int stats_num_skipable_deletions;
-		double mod_percentage;
-		int stats_pure_skipped;
-		int stats_shrink_removed;
-		double stats_full_update_time;
-		double stats_fast_update_time;
+		int stats_full_updates=0;
+		int stats_fast_updates=0;
+		int stats_fast_failed_updates=0;
+		int stats_skip_deletes=0;
+		int stats_skipped_updates=0;
+		int stats_num_skipable_deletions=0;
+		int stats_learnt_components = 0;
+		int stats_learnt_components_sz =0;
+		double mod_percentage=0.2;
+		int stats_pure_skipped=0;
+		int stats_shrink_removed=0;
+		double stats_full_update_time=0;
+		double stats_fast_update_time=0;
 
 		void printStats(){
 			printf("Reach detector\n");
@@ -92,6 +94,9 @@ public:
 				printf("Propagations skipped by pure literal detection: %d\n", stats_pure_skipped);
 			if(opt_shrink_theory_conflicts){
 				printf("%d lits removed by shrinking conflicts\n",stats_shrink_removed);
+			}
+			if(opt_learn_unreachable_component){
+				printf("%d components learned, average component size: %f\n",stats_learnt_components,stats_learnt_components_sz / (float)stats_learnt_components);
 			}
 		}
 		struct ReachStatus{
@@ -103,7 +108,6 @@ public:
 			}
 
 			void setMininumDistance(int u, bool reachable, int distance);
-
 
 			ReachStatus(ReachDetector & _outer, bool _polarity):detector(_outer), polarity(_polarity){}
 		};
