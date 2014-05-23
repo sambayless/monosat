@@ -120,6 +120,7 @@ BoolOption  Minisat::opt_propagate_theories_during_simplification(_cat,"theory-p
 BoolOption Minisat::opt_shrink_theory_conflicts(_cat,"shrink-theory-conflicts","",false);
 
 BoolOption Minisat::opt_rnd_shuffle(_cat_graph,"rnd-shuffle","Inject randomness into the solver by shuffling the order of propagation of graph constraints.",true);
+BoolOption Minisat::opt_components_learn_connect(_cat_graph, "components-learn-connect","",false);
 
 IntOption     Minisat::opt_width("GRAPH","width","Width of graph.\n", 0, IntRange(0, INT32_MAX));
     IntOption     Minisat::opt_height("GRAPH","height","Height of graph.\n", 0, IntRange(0, INT32_MAX));

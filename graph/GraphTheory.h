@@ -1558,8 +1558,9 @@ public:
 		}
 		MaxflowDetector *f = new MaxflowDetector(detectors.size(),this, g, antig,from,to,drand(rnd_seed)) ;
 		flow_detectors.push(f);
-		f->addFlowLit(max_flow,v);
 		detectors.push(f);
+		f->addFlowLit(max_flow,v);
+
 	}
 	void minConnectedComponents(int min_components, Var v){
 		if(!component_detector){
@@ -1853,7 +1854,7 @@ public:
 										}
 
 								if(component_detector){
-									int numComponents = component_detector->positive_reach_detector->numComponents();
+									int numComponents = component_detector->positive_component_detector->numComponents();
 									printf("Number of connected components is: %d\n",numComponents);
 
 								}

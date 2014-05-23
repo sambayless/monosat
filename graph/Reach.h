@@ -27,11 +27,6 @@ extern NullReachStatus nullReachStatus;
 class Reach{
 public:
 
-
-
-
-
-
 	virtual ~Reach(){};
 
 	virtual void setSource(int s)=0;

@@ -9,7 +9,7 @@
 #define CONNECTED_COMPONENTS_H_
 
 #include "mtl/Vec.h"
-
+#include <cstdio>
 class ConnectedComponents{
 public:
 
@@ -33,6 +33,10 @@ public:
 
 	virtual void update( )=0;
 
+	virtual void addConnectedCheck(int u, int v){
+		fprintf(stderr,"Connect checks not supported, aborting\n");
+		exit(3);
+	}
 
 	virtual int numComponents()=0;
 

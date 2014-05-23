@@ -421,19 +421,11 @@ void ReachDetector::preprocess(){
 void ReachDetector::buildReachReason(int node,vec<Lit> & conflict){
 			//drawFull();
 			Reach & d = *positive_path_detector;
-
-
 			double starttime = rtime(2);
 			d.update();
 
 			assert(outer->dbg_reachable(d.getSource(),node));
-		/*	if(!outer->dbg_reachable(d.getSource(),node)){
-				outer->drawFull();
 
-				//d.drawFull();
-
-				assert(false);
-			}*/
 			assert(d.connected_unchecked(node));
 			if(opt_learn_reaches ==0 || opt_learn_reaches==2){
 				int u = node;

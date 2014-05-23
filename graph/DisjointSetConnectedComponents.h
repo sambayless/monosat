@@ -41,7 +41,11 @@ public:
 	vec<int> q;
 	vec<int> check;
 	const int reportPolarity;
-
+	struct ConnectCheck{
+		int u;
+		int v;
+	};
+	vec<ConnectCheck> connectChecks;
 	//vec<char> old_seen;
 
 	//stats
@@ -87,6 +91,10 @@ public:
 
 	}
 
+	void addConnectedCheck(int u, int v){
+		connectChecks.push({u,v});
+	}
+
 	void update( ){
 		static int iteration = 0;
 		int local_it = ++iteration ;
@@ -104,9 +112,6 @@ public:
 		sets.Reset();
 		setNodes(g.nodes);
 
-
-
-
 		for(int i = 0;i<g.edges;i++){
 			if(g.edgeEnabled(i)){
 				int u = g.all_edges[i].from;
@@ -115,10 +120,18 @@ public:
 			}
 		}
 
-
-
 		status.setComponents(sets.NumSets());
 
+		for(auto c:connectChecks){
+			int u = c.u;
+			int v = c.v;
+			bool connected = sets.FindSet(u) == sets.FindSet(v);
+			if(reportPolarity>=0 && connected){
+				status.setConnected(u,v,true);
+			}else if (reportPolarity<=0 && !connected){
+				status.setConnected(u,v,false);
+			}
+		}
 
 
 		last_modification=g.modifications;

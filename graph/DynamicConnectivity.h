@@ -118,6 +118,8 @@ public:
 
 	}
 
+
+
 	void updateEdge(int u,int v,int edgeid, bool add){
 		if(edgeid==2){
 			int a=1;
