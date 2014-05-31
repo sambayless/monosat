@@ -73,6 +73,9 @@ public:
 		virtual ~MaxflowDetector(){
 
 		}
+		const char* getName(){
+			return "Max-flow Detector";
+		}
 };
 };
 #endif /* DistanceDetector_H_ */

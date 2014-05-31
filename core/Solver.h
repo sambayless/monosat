@@ -207,7 +207,7 @@ public:
     	assert(hasTheory(solverVar));
     	assert(getTheoryID(solverVar)==theory);
     	assert(getTheoryVar(solverVar)==theoryVar);
-    	assert(decisionLevel()==0);
+
     	if(value(solverVar)!=l_Undef)
     		initialPropagate=true;
 

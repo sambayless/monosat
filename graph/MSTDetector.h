@@ -109,6 +109,9 @@ public:
 		virtual ~MSTDetector(){
 
 		}
+		const char* getName(){
+			return "MST Detector";
+		}
 private:
 		void TarjanOLCA(int node, vec<Lit> & conflict);
 		bool walkback(int weight, int from, int to);

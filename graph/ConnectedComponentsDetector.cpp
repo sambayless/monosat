@@ -30,6 +30,23 @@ Detector(_detectorID),outer(_outer),g(_g),antig(_antig),rnd_seed(seed),positive_
 		not_connected_marker =outer->newReasonMarker(getID());
 
 }
+Lit ConnectedComponentsDetector::getConnectLit(int u, int v){
+		if(reachLits.size()>u && reachLits[u].size()>v && reachLits[u][v]!=lit_Undef){
+			return reachLits[u][v];
+		}
+		if(reachLits.size()<g.nodes){
+			reachLits.growTo(g.nodes);
+			for(int i = 0;i<reachLits.size();i++){
+				reachLits[i].growTo(g.nodes, lit_Undef);
+			}
+		}
+		Var connect_var = outer->newVar(getID(),true);
+		reachLits[u][v] = mkLit(connect_var);
+		reachLits[v][u] = reachLits[u][v];
+		reach_map.insert(connect_var, {u,v});
+		return reachLits[u][v];
+	}
+
 void ConnectedComponentsDetector::addConnectedLit(Var outer_reach_var,int node1, int node2){
 	g.invalidate();
 	antig.invalidate();
@@ -44,8 +61,8 @@ void ConnectedComponentsDetector::addConnectedLit(Var outer_reach_var,int node1,
 		assert(reachLits[node2][node1]==lit_Undef);
 		Var connect_var = outer->newVar(outer_reach_var,getID());
 		reachLits[node1][node2] = mkLit(connect_var);
-		reachLits[node1][node2] = reachLits[node2][node1];
-		reach_map[connect_var]={node1,node2};
+		reachLits [node2][node1]= reachLits[node1][node2];
+		reach_map.insert(connect_var, {node1,node2});
 	}else{
 		Lit r = reachLits[node1][node2];
 		//force equality between the new lit and the old reach lit, in the SAT solver
@@ -118,27 +135,26 @@ void ConnectedComponentsDetector::ConnectedComponentsStatus::setConnected(int u,
 
 void ConnectedComponentsDetector::ConnectedComponentsStatus::setComponents(int components){
 
-			for(int i = 0;i<detector.connected_components_lits.size();i++){
-				int min_components =  detector.connected_components_lits[i].min_components;
+	for(int i = 0;i<detector.connected_components_lits.size();i++){
+		int min_components =  detector.connected_components_lits[i].min_components;
 
-				Lit l = detector.connected_components_lits[i].l;
-				if(l!=lit_Undef){
+		Lit l = detector.connected_components_lits[i].l;
+		if(l!=lit_Undef){
 
-					assert(l!=lit_Undef);
-					if(components<=min_components && !polarity){
-						lbool assign = detector.outer->value(l);
-						if( assign!= l_False ){
-							detector.changed_weights.push({~l,min_components});
-						}
-					}else if(components>min_components && polarity){
-						lbool assign = detector.outer->value(l);
-						if( assign!= l_True ){
-							detector.changed_weights.push({l,min_components});
-						}
-					}
+			assert(l!=lit_Undef);
+			if(components<=min_components && !polarity){
+				lbool assign = detector.outer->value(l);
+				if( assign!= l_False ){
+					detector.changed_weights.push({~l,min_components});
+				}
+			}else if(components>min_components && polarity){
+				lbool assign = detector.outer->value(l);
+				if( assign!= l_True ){
+					detector.changed_weights.push({l,min_components});
 				}
 			}
-
+		}
+	}
 
 }
 
@@ -148,7 +164,6 @@ void ConnectedComponentsDetector::ConnectedComponentsStatus::setComponents(int c
 		void ConnectedComponentsDetector::buildMinComponentsTooLowReason(int min_components,vec<Lit> & conflict){
 
 			double starttime = rtime(2);
-
 
 			seen.clear();
 			seen.growTo(g.nodes);
@@ -184,171 +199,7 @@ void ConnectedComponentsDetector::ConnectedComponentsStatus::setComponents(int c
 			double elapsed = rtime(2)-starttime;
 			outer->pathtime+=elapsed;
 		}
-		void ConnectedComponentsDetector::buildNodesConnectedReason(int source, int node, vec<Lit> & conflict){
-					if(source>node){
-						std::swap(source,node);
-					}
 
-					Distance<NullReachStatus,DefaultEdgeStatus,true> d(source,g);
-					double starttime = rtime(2);
-					d.update();
-
-					assert(outer->dbg_reachable(source,node));
-					vec<Lit> & reach_lits = reachLits[source];
-
-					assert(d.connected_unchecked(node));
-					if(opt_learn_reaches ==0 || opt_learn_reaches==2){
-						int u = node;
-						int p;
-						while(( p = d.previous(u)) != -1){
-							Edge & edg = outer->edge_list[d.incomingEdge(u)]; //outer->edges[p][u];
-							Var e =edg.v;
-							lbool val = outer->value(e);
-							assert(outer->value(e)==l_True);
-							conflict.push(mkLit(e, true));
-							u = p;
-
-						}
-					}else{
-						//Instead of a complete path, we can learn reach variables, if they exist
-						int u = node;
-						int p;
-						while(( p = d.previous(u)) != -1){
-							Edge & edg = outer->edge_list[d.incomingEdge(u)]; //outer->edges[p][u];
-							Var e =edg.v;
-							lbool val = outer->value(e);
-							assert(outer->value(e)==l_True);
-							conflict.push(mkLit(e, true));
-							u = p;
-							if( u< reach_lits.size() && reach_lits[u]!=lit_Undef && outer->value(reach_lits[u])==l_True && outer->level(var(reach_lits[u]))< outer->decisionLevel()){
-								//A potential (fixed) problem with the above: reach lit can be false, but have been assigned after r in the trail, messing up clause learning if this is a reason clause...
-								//This is avoided by ensuring that L is lower level than the conflict.
-								Lit l =reach_lits[u];
-								assert(outer->value(l)==l_True);
-								conflict.push(~l);
-								break;
-							}
-						}
-
-					}
-
-					outer->num_learnt_paths++;
-					outer->learnt_path_clause_length+= (conflict.size()-1);
-					double elapsed = rtime(2)-starttime;
-					outer->pathtime+=elapsed;
-		}
-
-		void ConnectedComponentsDetector::buildNodesNotConnectedReason(int source, int node, vec<Lit> & conflict){
-				if(source>node){
-					std::swap(source,node);
-				}
-				assert(outer->dbg_notreachable( source,node));
-				//assert(!negative_reach_detector->connected_unchecked(node));
-				vec<Lit> & reach_lits = reachLits[source];
-				double starttime = rtime(2);
-				outer->cutGraph.clearHistory();
-				outer->stats_mc_calls++;
-				if(opt_conflict_min_cut){
-					if(mincutalg!= MinCutAlg::ALG_EDKARP_ADJ){
-						//ok, set the weights for each edge in the cut graph.
-						//Set edges to infinite weight if they are undef or true, and weight 1 otherwise.
-						for(int u = 0;u<outer->cutGraph.adjacency.size();u++){
-							for(int j = 0;j<outer->cutGraph.adjacency[u].size();j++){
-								int v = outer->cutGraph.adjacency[u][j].node;
-								Var var = outer->edges[u][v].v;
-								/*if(S->value(var)==l_False){
-									mc.setCapacity(u,v,1);
-								}else{*/
-								outer->mc->setCapacity(u,v,0xF0F0F0);
-								//}
-							}
-						}
-
-						//find any edges assigned to false, and set their capacity to 1
-						for(int i =0;i<outer->trail.size();i++){
-							if(outer->trail[i].isEdge && !outer->trail[i].assign){
-								outer->mc->setCapacity(outer->trail[i].from, outer->trail[i].to,1);
-							}
-						}
-					}
-					outer->cut.clear();
-
-					int f =outer->mc->minCut(source,node,outer->cut);
-					assert(f<0xF0F0F0); assert(f==outer->cut.size());//because edges are only ever infinity or 1
-					for(int i = 0;i<outer->cut.size();i++){
-						MaxFlow::Edge e = outer->cut[i];
-
-						Lit l = mkLit( outer->edges[e.u][e.v].v,false);
-						assert(outer->value(l)==l_False);
-						conflict.push(l);
-					}
-				}else{
-					//We could learn an arbitrary (non-infinite) cut here, or just the whole set of false edges
-					//or perhaps we can learn the actual 1-uip cut?
-
-
-						vec<int>& to_visit  = outer->to_visit;
-						vec<char>& seen  = outer->seen;
-
-						to_visit.clear();
-						to_visit.push(node);
-						seen.clear();
-						seen.growTo(outer->nNodes());
-						seen[node]=true;
-
-						do{
-
-							assert(to_visit.size());
-							int u = to_visit.last();
-							assert(u!=source);
-							to_visit.pop();
-							assert(seen[u]);
-							assert(!outer->dbg_reachable(source,u,false));
-							//assert(!negative_reach_detector->connected_unsafe(u));
-							//Ok, then add all its incoming disabled edges to the cut, and visit any unseen, non-disabled incoming edges
-							for(int i = 0;i<outer->inv_adj[u].size();i++){
-								int v = outer->inv_adj[u][i].v;
-								int from = outer->inv_adj[u][i].from;
-								int edge_num =outer->getEdgeID(v);// v-outer->min_edge_var;
-								if(from==u){
-									assert(outer->edge_list[edge_num].to == u);
-									assert(outer->edge_list[edge_num].from == u);
-									continue;//Self loops are allowed, but just make sure nothing got flipped around...
-								}
-								assert(from!=u);
-								assert(outer->inv_adj[u][i].to==u);
-								//Note: the variable has to not only be assigned false, but assigned false earlier in the trail than the reach variable...
-
-
-								if(outer->value(v)==l_False){
-									//note: we know we haven't seen this edge variable before, because we know we haven't visited this node before
-									//if we are already planning on visiting the from node, then we don't need to include it in the conflict (is this correct?)
-									//if(!seen[from])
-										conflict.push(mkLit(v,false));
-								}else{
-									assert(from!=source);
-									//even if it is undef? probably...
-									if(!seen[from]){
-										seen[from]=true;
-										if((opt_learn_reaches ==2 || opt_learn_reaches==3) && from< reach_lits.size() && reach_lits[from]!=lit_Undef && outer->value(reach_lits[from])==l_False  && outer->level(var(reach_lits[from]))< outer->decisionLevel())
-										{
-										//The problem with the above: reach lit can be false, but have been assigned after r in the trail, messing up clause learning if this is a reason clause...
-											Lit r = reach_lits[from];
-											assert(var(r)<outer->nVars());
-											assert(outer->value(r)==l_False);
-											conflict.push(r);
-										}else
-											to_visit.push(from);
-									}
-								}
-							}
-						}  while (to_visit.size());
-
-
-
-
-				}
-		}
 		void ConnectedComponentsDetector::buildMinComponentsTooHighReason(int min_components,vec<Lit> & conflict){
 			static int it = 0;
 						++it;
@@ -361,6 +212,7 @@ void ConnectedComponentsDetector::ConnectedComponentsStatus::setComponents(int c
 				positive_component_detector->update();
 				int numComponents = positive_component_detector->numComponents();
 				assert(numComponents>=min_components);
+
 
 					//IF the ConnectedComponents is disconnected, the reason is a separating cut between any two disconnected components.
 					//we can find one of these by identifying any two roots
@@ -416,9 +268,193 @@ void ConnectedComponentsDetector::ConnectedComponentsStatus::setComponents(int c
 
 					}
 
-					return;
+
+				if(opt_components_learn_connect){
+					vec<Lit> c;
+					c.push(conflict[0]);
+					//for each component, find the lowest valued node; learn that at least one of these lowest nodes must be connected to each other.
+					for(int i = 0;i<positive_component_detector->numComponents();i++){
+						int root1 = positive_component_detector->getComponent(i);
+						for(int j = i+1;j<positive_component_detector->numComponents();j++){
+							int root2 = positive_component_detector->getComponent(j);
+
+							Lit connect = getConnectLit(root1,root1);
+							c.push(connect);
+
+						}
+
+					}
+					outer->addClauseSafely(c);
+				}
+
 
 		}
+		void ConnectedComponentsDetector::buildNodesConnectedReason(int source, int node, vec<Lit> & conflict){
+						if(source>node){
+							std::swap(source,node);
+						}
+
+						Distance<NullReachStatus,DefaultEdgeStatus,true> d(source,g);
+						double starttime = rtime(2);
+						d.update();
+
+						assert(outer->dbg_reachable(source,node));
+						vec<Lit> & reach_lits = reachLits[source];
+
+						assert(d.connected_unchecked(node));
+						if(opt_learn_reaches ==0 || opt_learn_reaches==2){
+							int u = node;
+							int p;
+							while(( p = d.previous(u)) != -1){
+								Edge & edg = outer->edge_list[d.incomingEdge(u)]; //outer->edges[p][u];
+								Var e =edg.v;
+								lbool val = outer->value(e);
+								assert(outer->value(e)==l_True);
+								conflict.push(mkLit(e, true));
+								u = p;
+
+							}
+						}else{
+							//Instead of a complete path, we can learn reach variables, if they exist
+							int u = node;
+							int p;
+							while(( p = d.previous(u)) != -1){
+								Edge & edg = outer->edge_list[d.incomingEdge(u)]; //outer->edges[p][u];
+								Var e =edg.v;
+								lbool val = outer->value(e);
+								assert(outer->value(e)==l_True);
+								conflict.push(mkLit(e, true));
+								u = p;
+								if( u< reach_lits.size() && reach_lits[u]!=lit_Undef && outer->value(reach_lits[u])==l_True && outer->level(var(reach_lits[u]))< outer->decisionLevel()){
+									//A potential (fixed) problem with the above: reach lit can be false, but have been assigned after r in the trail, messing up clause learning if this is a reason clause...
+									//This is avoided by ensuring that L is lower level than the conflict.
+									Lit l =reach_lits[u];
+									assert(outer->value(l)==l_True);
+									conflict.push(~l);
+									break;
+								}
+							}
+
+						}
+
+						outer->num_learnt_paths++;
+						outer->learnt_path_clause_length+= (conflict.size()-1);
+						double elapsed = rtime(2)-starttime;
+						outer->pathtime+=elapsed;
+			}
+
+			void ConnectedComponentsDetector::buildNodesNotConnectedReason(int source, int node, vec<Lit> & conflict){
+					if(source>node){
+						std::swap(source,node);
+					}
+					assert(outer->dbg_notreachable( source,node));
+					//assert(!negative_reach_detector->connected_unchecked(node));
+					vec<Lit> & reach_lits = reachLits[source];
+					double starttime = rtime(2);
+					outer->cutGraph.clearHistory();
+					outer->stats_mc_calls++;
+					if(opt_conflict_min_cut){
+						if(mincutalg!= MinCutAlg::ALG_EDKARP_ADJ){
+							//ok, set the weights for each edge in the cut graph.
+							//Set edges to infinite weight if they are undef or true, and weight 1 otherwise.
+							for(int u = 0;u<outer->cutGraph.adjacency.size();u++){
+								for(int j = 0;j<outer->cutGraph.adjacency[u].size();j++){
+									int v = outer->cutGraph.adjacency[u][j].node;
+									Var var = outer->edges[u][v].v;
+									/*if(S->value(var)==l_False){
+										mc.setCapacity(u,v,1);
+									}else{*/
+									outer->mc->setCapacity(u,v,0xF0F0F0);
+									//}
+								}
+							}
+
+							//find any edges assigned to false, and set their capacity to 1
+							for(int i =0;i<outer->trail.size();i++){
+								if(outer->trail[i].isEdge && !outer->trail[i].assign){
+									outer->mc->setCapacity(outer->trail[i].from, outer->trail[i].to,1);
+								}
+							}
+						}
+						outer->cut.clear();
+
+						int f =outer->mc->minCut(source,node,outer->cut);
+						assert(f<0xF0F0F0); assert(f==outer->cut.size());//because edges are only ever infinity or 1
+						for(int i = 0;i<outer->cut.size();i++){
+							MaxFlow::Edge e = outer->cut[i];
+
+							Lit l = mkLit( outer->edges[e.u][e.v].v,false);
+							assert(outer->value(l)==l_False);
+							conflict.push(l);
+						}
+					}else{
+						//We could learn an arbitrary (non-infinite) cut here, or just the whole set of false edges
+						//or perhaps we can learn the actual 1-uip cut?
+
+
+							vec<int>& to_visit  = outer->to_visit;
+							vec<char>& seen  = outer->seen;
+
+							to_visit.clear();
+							to_visit.push(node);
+							seen.clear();
+							seen.growTo(outer->nNodes());
+							seen[node]=true;
+
+							do{
+
+								assert(to_visit.size());
+								int u = to_visit.last();
+								assert(u!=source);
+								to_visit.pop();
+								assert(seen[u]);
+								assert(!outer->dbg_reachable(source,u,false));
+								//assert(!negative_reach_detector->connected_unsafe(u));
+								//Ok, then add all its incoming disabled edges to the cut, and visit any unseen, non-disabled incoming edges
+								for(int i = 0;i<outer->inv_adj[u].size();i++){
+									int v = outer->inv_adj[u][i].v;
+									int from = outer->inv_adj[u][i].from;
+									int edge_num =outer->getEdgeID(v);// v-outer->min_edge_var;
+									if(from==u){
+										assert(outer->edge_list[edge_num].to == u);
+										assert(outer->edge_list[edge_num].from == u);
+										continue;//Self loops are allowed, but just make sure nothing got flipped around...
+									}
+									assert(from!=u);
+									assert(outer->inv_adj[u][i].to==u);
+									//Note: the variable has to not only be assigned false, but assigned false earlier in the trail than the reach variable...
+
+
+									if(outer->value(v)==l_False){
+										//note: we know we haven't seen this edge variable before, because we know we haven't visited this node before
+										//if we are already planning on visiting the from node, then we don't need to include it in the conflict (is this correct?)
+										//if(!seen[from])
+											conflict.push(mkLit(v,false));
+									}else{
+										assert(from!=source);
+										//even if it is undef? probably...
+										if(!seen[from]){
+											seen[from]=true;
+											if((opt_learn_reaches ==2 || opt_learn_reaches==3) && from< reach_lits.size() && reach_lits[from]!=lit_Undef && outer->value(reach_lits[from])==l_False  && outer->level(var(reach_lits[from]))< outer->decisionLevel())
+											{
+											//The problem with the above: reach lit can be false, but have been assigned after r in the trail, messing up clause learning if this is a reason clause...
+												Lit r = reach_lits[from];
+												assert(var(r)<outer->nVars());
+												assert(outer->value(r)==l_False);
+												conflict.push(r);
+											}else
+												to_visit.push(from);
+										}
+									}
+								}
+							}  while (to_visit.size());
+
+
+
+
+					}
+			}
+
 		void ConnectedComponentsDetector::buildReason(Lit p, vec<Lit> & reason, CRef marker){
 
 				if(marker==components_low_marker){

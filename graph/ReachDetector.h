@@ -89,14 +89,15 @@ public:
 		double stats_fast_update_time=0;
 
 		void printStats(){
-			printf("Reach detector\n");
+			//printf("Reach detector\n");
+			Detector::printStats();
 			if(opt_detect_pure_theory_lits)
-				printf("Propagations skipped by pure literal detection: %d\n", stats_pure_skipped);
+				printf("\tPropagations skipped by pure literal detection: %d\n", stats_pure_skipped);
 			if(opt_shrink_theory_conflicts){
-				printf("%d lits removed by shrinking conflicts\n",stats_shrink_removed);
+				printf("\t%d lits removed by shrinking conflicts\n",stats_shrink_removed);
 			}
 			if(opt_learn_unreachable_component){
-				printf("%d components learned, average component size: %f\n",stats_learnt_components,stats_learnt_components_sz / (float)stats_learnt_components);
+				printf("\t%d components learned, average component size: %f\n",stats_learnt_components,stats_learnt_components_sz / (float)stats_learnt_components);
 			}
 		}
 		struct ReachStatus{
@@ -167,6 +168,10 @@ public:
 		ReachDetector(int _detectorID, GraphTheorySolver * _outer, DynamicGraph<PositiveEdgeStatus> &_g, DynamicGraph<NegativeEdgeStatus> &_antig, int _source,double seed=1);//:Detector(_detectorID),outer(_outer),within(-1),source(_source),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL),chokepoint_status(*this),chokepoint(chokepoint_status, _antig,source){}
 		virtual ~ReachDetector(){
 
+		}
+
+		const char* getName(){
+			return "Reachability Detector";
 		}
 };
 };

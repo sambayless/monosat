@@ -146,9 +146,7 @@ public:
 				continue;
 			int u = g.getEdge(edge_id).from;
 			int v = g.getEdge(edge_id).to;
-			if(u==41 || v==41 || u==40 || v==42 || u==33 ||v==33 || u==32||v==32){
-				int a =1;
-			}
+
 			int set1 = sets.FindSet(u);
 			int set2 = sets.FindSet(v);
 			if(set1!=set2){
@@ -179,7 +177,7 @@ public:
 		}
 		//}
 
-		assert(dbg_uptodate());
+
 
 		last_modification=g.modifications;
 		last_deletion = g.deletions;
@@ -188,7 +186,7 @@ public:
 		history_qhead=g.history.size();
 		last_history_clear=g.historyclears;
 
-
+		assert(dbg_uptodate());
 
 		stats_full_update_time+=rtime(2)-startdupdatetime;;
 	}
@@ -254,6 +252,18 @@ public:
 	}
 
 	bool dbg_uptodate(){
+#ifndef NDEBUG
+		int sumweight = 0;
+		in_tree.growTo(g.nEdgeIDs());
+		for(int i = 0;i<g.edges;i++){
+			if(in_tree[i]){
+				sumweight+= g.getWeight(i);
+			}
+		}
+		assert(sumweight ==min_weight || min_weight==INF);
+
+
+#endif
 		return true;
 	};
 private:

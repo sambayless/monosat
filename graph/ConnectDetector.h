@@ -147,6 +147,9 @@ public:
 		virtual ~ConnectDetector(){
 
 		}
+		const char* getName(){
+			return "Connected Detector";
+		}
 };
 };
 #endif /* REACHDETECTOR_H_ */

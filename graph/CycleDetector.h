@@ -64,7 +64,9 @@ public:
 		virtual ~CycleDetector(){
 
 		}
-
+		const char* getName(){
+			return "Cycle Detector";
+		}
 };
 };
 #endif /* DistanceDetector_H_ */

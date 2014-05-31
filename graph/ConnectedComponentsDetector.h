@@ -116,7 +116,8 @@ public:
 		virtual ~ConnectedComponentsDetector(){
 
 		}
-
+private:
+		Lit getConnectLit(int u, int v);
 };
 };
 #endif /* DistanceDetector_H_ */

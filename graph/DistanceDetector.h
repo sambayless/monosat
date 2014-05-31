@@ -99,9 +99,10 @@ public:
 		}
 
 		void printStats(){
-			printf("Distance detector\n");
+			//printf("Distance detector\n");
+			Detector::printStats();
 			if(opt_detect_pure_theory_lits)
-				printf("Propagations skipped by pure literal detection: %d\n", stats_pure_skipped);
+				printf("\tPropagations skipped by pure literal detection: %d\n", stats_pure_skipped);
 		}
 
 	/*	Lit getLit(int node){
@@ -121,6 +122,9 @@ public:
 		DistanceDetector(int _detectorID, GraphTheorySolver * _outer, DynamicGraph<PositiveEdgeStatus> &_g, DynamicGraph<NegativeEdgeStatus> &_antig, int _source, int within_steps,double seed=1);//:Detector(_detectorID),outer(_outer),within(-1),source(_source),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL){}
 		virtual ~DistanceDetector(){
 
+		}
+		const char* getName(){
+			return "Shortest Path Detector";
 		}
 };
 };

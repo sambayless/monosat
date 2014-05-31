@@ -669,14 +669,18 @@ void MSTDetector::buildMinWeightTooSmallReason(int weight,vec<Lit> & conflict){
 		double startdreachtime = rtime(2);
 		changed_edges.clear();
 		changed_weights.clear();
+		stats_under_updates++;
 		positive_reach_detector->update();
 		double reachUpdateElapsed = rtime(2)-startdreachtime;
 		outer->reachupdatetime+=reachUpdateElapsed;
+		stats_under_update_time+=reachUpdateElapsed;
 
 		double startunreachtime = rtime(2);
+		stats_over_updates++;
 		negative_reach_detector->update();
 		double unreachUpdateElapsed = rtime(2)-startunreachtime;
 		outer->unreachupdatetime+=unreachUpdateElapsed;
+		stats_over_update_time+=unreachUpdateElapsed;
 
 		for(int j = 0;j<changed_weights.size();j++){
 			Lit l = changed_weights[j].l;
@@ -798,6 +802,7 @@ bool MSTDetector::checkSatisfied(){
 								edgeenabled = outer->value(v)==l_True ;
 							}
 							if(outer->value(l)==l_True){
+
 								assert(edgedisabled || positive_reach_detector->edgeInTree(edgeid));
 								if(! (edgedisabled || positive_reach_detector->edgeInTree(edgeid))){
 									return false;
@@ -820,6 +825,22 @@ bool MSTDetector::checkSatisfied(){
 
 							}
 						}
+					}
+					int sum_weight = 0;
+					for(int edgeid = 0;edgeid<g.edges;edgeid++){
+						if(positive_reach_detector->edgeInTree(edgeid)){
+							if(!negative_reach_detector->edgeInTree(edgeid)){
+								return false;
+							}
+							sum_weight+=outer->edge_weights[edgeid];
+							printf("edge(%d,%d,%d).\n",outer->edge_list[edgeid].from,outer->edge_list[edgeid].to,outer->edge_weights[edgeid]);
+						}else if(negative_reach_detector->edgeInTree(edgeid)){
+							return false;
+						}
+					}
+
+					if(sum_weight != positive_reach_detector->weight()){
+						return false;
 					}
 	return true;
 }

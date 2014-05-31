@@ -922,24 +922,32 @@ void ReachDetector::buildReachReason(int node,vec<Lit> & conflict){
 
 			getChanged().clear();
 
-			double startdreachtime = rtime(2);
 
-			if(positive_reach_detector && (!opt_detect_pure_theory_lits || unassigned_positives>0))
+
+			if(positive_reach_detector && (!opt_detect_pure_theory_lits || unassigned_positives>0)){
+				double startdreachtime = rtime(2);
+				stats_under_updates++;
 				positive_reach_detector->update();
-			else{
-				outer->stats_pure_skipped++;
+				double reachUpdateElapsed = rtime(2)-startdreachtime;
+				//outer->reachupdatetime+=reachUpdateElapsed;
+				stats_under_update_time+=rtime(2)-startdreachtime;
+			}else{
+				//outer->stats_pure_skipped++;
+				stats_skipped_under_updates++;
 			}
-			double reachUpdateElapsed = rtime(2)-startdreachtime;
-			outer->reachupdatetime+=reachUpdateElapsed;
 
 
-			double startunreachtime = rtime(2);
-			if(negative_reach_detector && (!opt_detect_pure_theory_lits || unassigned_negatives>0))
+
+			if(negative_reach_detector && (!opt_detect_pure_theory_lits || unassigned_negatives>0)){
+				double startunreachtime = rtime(2);
+				stats_over_updates++;
 				negative_reach_detector->update();
-			else
-				outer->stats_pure_skipped++;
-			double unreachUpdateElapsed = rtime(2)-startunreachtime;
-			outer->unreachupdatetime+=unreachUpdateElapsed;
+				double unreachUpdateElapsed = rtime(2)-startunreachtime;
+				//outer->unreachupdatetime+=unreachUpdateElapsed;
+				stats_over_update_time+=rtime(2)-startunreachtime;
+			}else
+				stats_skipped_over_updates++;
+
 
 			if(opt_rnd_shuffle){
 				randomShuffle(rnd_seed, changed);

@@ -132,6 +132,9 @@ public:
 		virtual ~AllPairsDetector(){
 
 		}
+		const char* getName(){
+			return "All-pairs Reachability Detector";
+		}
 };
 };
 #endif /* AllPairsDetector_H_ */

@@ -51,15 +51,14 @@ void MaxflowDetector::addFlowLit(int maxflow, Var outer_reach_var){
 	Lit reachLit=mkLit(reach_var,false);
 	bool found=false;
 
+	flow_lits.push();
+	flow_lits.last().l = reachLit;
+	flow_lits.last().max_flow=maxflow;
+	while(reach_lit_map.size()<= reach_var- first_reach_var ){
+		reach_lit_map.push(-1);
+	}
 
-		flow_lits.push();
-		flow_lits.last().l = reachLit;
-		flow_lits.last().max_flow=maxflow;
-		while(reach_lit_map.size()<= reach_var- first_reach_var ){
-			reach_lit_map.push(-1);
-		}
-
-		reach_lit_map[reach_var-first_reach_var]=flow_lits.size()-1;
+	reach_lit_map[reach_var-first_reach_var]=flow_lits.size()-1;
 
 }
 
@@ -211,27 +210,40 @@ void MaxflowDetector::buildMaxFlowTooHighReason(int flow,vec<Lit> & conflict){
 		}
 
 		bool MaxflowDetector::propagate(vec<Lit> & conflict){
+			if(flow_lits.size()==0){
+				return true;
+			}
 
+			long over_maxflow=-1;
+			long under_maxflow=-1;
 
-		double startdreachtime = rtime(2);
+			if(positive_detector && (!opt_detect_pure_theory_lits || unassigned_positives>0)){
+				double startdreachtime = rtime(2);
+				stats_under_updates++;
+				under_maxflow = positive_detector->maxFlow(source,target);
+				double reachUpdateElapsed = rtime(2)-startdreachtime;
+				stats_under_update_time+=reachUpdateElapsed;
+			}else
+				stats_skipped_under_updates++;
 
-		double reachUpdateElapsed = rtime(2)-startdreachtime;
-		outer->reachupdatetime+=reachUpdateElapsed;
+			if(negative_detector && (!opt_detect_pure_theory_lits || unassigned_negatives>0)){
+				double startunreachtime = rtime(2);
+				stats_over_updates++;
+				over_maxflow = negative_detector->maxFlow(source,target);
+				double unreachUpdateElapsed = rtime(2)-startunreachtime;
+				stats_over_update_time+=unreachUpdateElapsed;
+			}else
+				stats_skipped_over_updates++;
 
-		double startunreachtime = rtime(2);
-
-		double unreachUpdateElapsed = rtime(2)-startunreachtime;
-		outer->unreachupdatetime+=unreachUpdateElapsed;
-		for(int j = 0;j<flow_lits.size();j++){
+			for(int j = 0;j<flow_lits.size();j++){
 
 				DistLit f = flow_lits[j];
 				Lit l = f.l;
 				int maxflow = f.max_flow;
 				//int u = getNode(var(l));
-				int over_maxflow;
-				int under_maxflow;
 
-				if((under_maxflow=positive_detector->maxFlow(source,target))>=maxflow){
+
+				if(under_maxflow>=maxflow){
 					if(outer->value(l)==l_True){
 						//do nothing
 					}else if(outer->value(l)==l_Undef){
@@ -244,7 +256,7 @@ void MaxflowDetector::buildMaxFlowTooHighReason(int flow,vec<Lit> & conflict){
 						return false;
 					}
 
-				}else if((over_maxflow = negative_detector->maxFlow(source,target))<maxflow){
+				}else if(over_maxflow<maxflow){
 					if(outer->value(l)==l_False){
 						//do nothing
 					}else if(outer->value(l)==l_Undef){
@@ -261,7 +273,7 @@ void MaxflowDetector::buildMaxFlowTooHighReason(int flow,vec<Lit> & conflict){
 
 
 
-		}
+			}
 
 			return true;
 		}

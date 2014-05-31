@@ -615,7 +615,7 @@ int main(int argc, char** argv)
 			printf("Preprocessing time = %f\n", preprocessing_time);
 		}
         lbool ret=S.solve(assume)?l_True:l_False;
-        if(opt_optimize_mst && ret ==l_True){
+        if(opt_optimize_mst && ret ==l_True && S.theories.size()){
 
         	GraphTheorySolver * g = (GraphTheorySolver*)S.theories[0];
         	if(g->mstDetector){
