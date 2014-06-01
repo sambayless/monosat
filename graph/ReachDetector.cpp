@@ -919,10 +919,7 @@ void ReachDetector::buildReachReason(int node,vec<Lit> & conflict){
 
 		bool ReachDetector::propagate(vec<Lit> & conflict){
 
-
 			getChanged().clear();
-
-
 
 			if(positive_reach_detector && (!opt_detect_pure_theory_lits || unassigned_positives>0)){
 				double startdreachtime = rtime(2);
@@ -935,8 +932,6 @@ void ReachDetector::buildReachReason(int node,vec<Lit> & conflict){
 				//outer->stats_pure_skipped++;
 				stats_skipped_under_updates++;
 			}
-
-
 
 			if(negative_reach_detector && (!opt_detect_pure_theory_lits || unassigned_negatives>0)){
 				double startunreachtime = rtime(2);

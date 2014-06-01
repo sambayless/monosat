@@ -16,8 +16,8 @@ MaxflowDetector::MaxflowDetector(int _detectorID, GraphTheorySolver * _outer,  D
 Detector(_detectorID),outer(_outer),over_graph(_g),g(_g),antig(_antig),source(from),target(_target),rnd_seed(seed),positive_detector(NULL),negative_detector(NULL){
 	if(mincutalg==MinCutAlg::ALG_EDKARP_DYN){
 
-		positive_detector = new EdmondsKarpDynamic<vec<int>,PositiveEdgeStatus>(_g,outer->edge_weights);
-		negative_detector = new EdmondsKarpDynamic<vec<int>,NegativeEdgeStatus>(_antig,outer->edge_weights);
+		positive_detector = new EdmondsKarpDynamic<vec<int>,PositiveEdgeStatus>(_g,g.weights);
+		negative_detector = new EdmondsKarpDynamic<vec<int>,NegativeEdgeStatus>(_antig,_antig.weights);
 	}else if (mincutalg==MinCutAlg::ALG_EDKARP_ADJ){
 		positive_detector = new EdmondsKarpAdj<vec<int>,PositiveEdgeStatus>(_g,outer->edge_weights);
 		negative_detector = new EdmondsKarpAdj<vec<int>,NegativeEdgeStatus>(_antig,outer->edge_weights);

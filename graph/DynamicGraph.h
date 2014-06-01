@@ -46,7 +46,7 @@ public:
 		int to;
 		int id;
 		int weight;
-		FullEdge():from(-1),to(-1),id(-1),weight(-1){}
+		FullEdge():from(-1),to(-1),id(-1),weight(1){}
 		FullEdge(int from,int to, int id,int weight):from(from),to(to),id(id),weight(weight){}
 	};
 
@@ -124,7 +124,9 @@ public:
 		assert(edgeID<edge_status.size());
 		return edge_status[edgeID];
 	}
-
+	bool isEdge(int edgeID)const{
+		return edgeID<all_edges.size() && all_edges[edgeID].id ==edgeID;
+	}
 	//Instead of actually adding and removing edges, tag each edge with an 'enabled/disabled' label, and just expect reading algorithms to check and respect that label.
 	void addEdge(int from, int to, int id=-1, int weight=1){
 		assert(from<nodes);
@@ -139,7 +141,7 @@ public:
 			}
 		}
 
-		edges++;
+		edges=id+1;
 		adjacency[from].push({to,id});
 		adjacency_undirected[from].push({to,id});
 		adjacency_undirected[to].push({from,id});
@@ -147,7 +149,9 @@ public:
 		inverted_adjacency[to].push({from,id});
 		all_edges.growTo(id+1);
 		all_edges[id]={from,to,id,weight};
-		weights.push(weight);
+		weights.growTo(id+1,0);
+		weights[id]=weight;
+		//weights.push(weight);
 		modifications++;
 		additions=modifications;
 #ifdef RECORD
@@ -178,6 +182,7 @@ public:
 	void enableEdge(int from, int to, int id){
 		assert(id>=0);
 		assert(id<edge_status.size());
+		assert(isEdge(id));
 		if(edge_status[id]!=true){
 			edge_status.setStatus(id,true);
 
@@ -196,6 +201,7 @@ public:
 	bool undoEnableEdge( int id){
 		assert(id>=0);
 		assert(id<edge_status.size());
+		assert(isEdge(id));
 		if(!history.size())
 			return false;
 
@@ -218,6 +224,7 @@ public:
 	void disableEdge(int from, int to, int id){
 		assert(id>=0);
 		assert(id<edge_status.size());
+		assert(isEdge(id));
 		if(edge_status[id]!=false){
 			edge_status.setStatus(id,false);
 #ifdef RECORD
@@ -237,6 +244,7 @@ public:
 	bool undoDisableEdge( int id){
 		assert(id>=0);
 		assert(id<edge_status.size());
+		assert(isEdge(id));
 		if(!history.size())
 			return false;
 
@@ -276,7 +284,6 @@ public:
 				printf("n%d -> n%d [label=\"v%d\",color=\"%s\"]\n", i,u, id, s);
 				}
 			}
-
 			printf("}\n");
 #endif
 		}
@@ -330,6 +337,12 @@ public:
 		if(history.size()>1000){
 			history.clear();
 			historyclears++;
+#ifdef RECORD
+			if(outfile){
+				fprintf(outfile,"clearHistory\n");
+				fflush(outfile);
+			}
+#endif
 		}
 	}
 	//force a new modification
@@ -338,10 +351,23 @@ public:
 		additions=modifications;
 		modifications++;
 		deletions=modifications;
+
+#ifdef RECORD
+			if(outfile){
+				fprintf(outfile,"invalidate\n");
+				fflush(outfile);
+			}
+#endif
 	}
 
 	void markChanged(){
 		is_changed=true;
+#ifdef RECORD
+			if(outfile){
+				fprintf(outfile,"markChanged\n");
+				fflush(outfile);
+			}
+#endif
 	}
 	bool changed(){
 		return is_changed;
@@ -349,6 +375,12 @@ public:
 
 	void clearChanged(){
 		is_changed=false;
+#ifdef RECORD
+			if(outfile){
+				fprintf(outfile,"clearChanged\n");
+				fflush(outfile);
+			}
+#endif
 	}
 };
 
