@@ -12,7 +12,7 @@ using namespace Minisat;
 
 template<class EdgeStatus=vec<bool> >
 class EdmondsKarp:public MaxFlow{
-
+public:
 
 /*
     algorithm EdmondsKarp

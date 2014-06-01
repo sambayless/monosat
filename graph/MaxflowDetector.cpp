@@ -10,12 +10,13 @@
 #include "MaxflowDetector.h"
 #include "GraphTheory.h"
 #include "EdmondsKarpAdj.h"
+#include "EdmondsKarpDynamic.h"
 MaxflowDetector::MaxflowDetector(int _detectorID, GraphTheorySolver * _outer,  DynamicGraph<PositiveEdgeStatus> &_g,DynamicGraph<NegativeEdgeStatus> &_antig, int from, int _target,double seed):
 Detector(_detectorID),outer(_outer),over_graph(_g),g(_g),antig(_antig),source(from),target(_target),rnd_seed(seed),positive_detector(NULL),negative_detector(NULL){
 
 
-	positive_detector = new EdmondsKarpAdj<vec<int>,PositiveEdgeStatus>(_g,outer->edge_weights);
-	negative_detector = new EdmondsKarpAdj<vec<int>,NegativeEdgeStatus>(_antig,outer->edge_weights);
+	positive_detector = new EdmondsKarpDynamic<vec<int>,PositiveEdgeStatus>(_g,outer->edge_weights);
+	negative_detector = new EdmondsKarpDynamic<vec<int>,NegativeEdgeStatus>(_antig,outer->edge_weights);
 
 	//for(int i = 0;i<g)
 	//positive_detector->setAllEdgeCapacities(1);

@@ -75,13 +75,14 @@ void BFS(int v, int u,  vec<vec<int > > & adj,vec<int> & affected_out){
 		}
 	}
 }
-
+private:
 vec<vec<bool> > f;//flow
 vec<int> height;
 vec<int> excess;
 vec<bool> seen;
 
 int n;
+public:
 void push(int u, int v){
 	int send =!f[u][v];
 	if(send>excess[u]){

@@ -14,7 +14,7 @@ using namespace Minisat;
 #include <cstdio>
 #endif
 #ifndef NDEBUG
-//#define RECORD
+#define RECORD
 #endif
 template<class EdgeStatus=DefaultEdgeStatus >
 class DynamicGraph{
@@ -40,7 +40,7 @@ public:
 	vec<vec<Edge> > inverted_adjacency;//adj list
 
 	vec<vec<Edge> > adjacency_undirected;//adj list
-
+	vec<int> weights;
 	struct FullEdge{
 		int from;
 		int to;
@@ -66,6 +66,9 @@ public:
 	//vec<char> edge_status;
 	DynamicGraph():edge_status(*new EdgeStatus()), nodes(0),edges(0),modifications(0),additions(0),deletions(0),historyclears(0),next_id(0),is_changed(true){
 		allocated=true;
+#ifdef RECORD
+		outfile=nullptr;
+#endif
 	}
 	DynamicGraph(EdgeStatus & _status):edge_status(_status), nodes(0),edges(0),modifications(0),additions(0),deletions(0),historyclears(0),next_id(0),is_changed(true){
 #ifdef RECORD
@@ -126,6 +129,8 @@ public:
 	void addEdge(int from, int to, int id=-1, int weight=1){
 		assert(from<nodes);
 		assert(to<nodes);
+		assert(from>=0);
+		assert(to>=0);
 		if(id<0){
 			id = next_id++;
 		}else{
@@ -133,6 +138,7 @@ public:
 				next_id=id+1;
 			}
 		}
+
 		edges++;
 		adjacency[from].push({to,id});
 		adjacency_undirected[from].push({to,id});
@@ -141,6 +147,7 @@ public:
 		inverted_adjacency[to].push({from,id});
 		all_edges.growTo(id+1);
 		all_edges[id]={from,to,id,weight};
+		weights.push(weight);
 		modifications++;
 		additions=modifications;
 #ifdef RECORD

@@ -91,7 +91,7 @@
 					<sourceEntries>
 						<entry excluding="smtlib|smt|tests|graph/kbtest.c|test/test_thorup.cpp|pb|strings|asp|graph/TreeReachDetector.cpp" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="pb"/>
-						<entry excluding="test_ramal_reps.cpp|test_eulertree.cpp|test_thorup.cpp" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="tests"/>
+						<entry excluding="test_maxflow.cpp|test_ramal_reps.cpp|test_eulertree.cpp|test_thorup.cpp" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="tests"/>
 					</sourceEntries>
 				</configuration>
 			</storageModule>
@@ -798,7 +798,7 @@
 					<sourceEntries>
 						<entry excluding="asp|pb|Main.cc|smt|smtlib|tests|graph/kbtest.c|test/test_thorup.cpp|strings|graph/TreeReachDetector.cpp" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="pb"/>
-						<entry excluding="test_thorup.cpp|test_eulertree.cpp" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="tests"/>
+						<entry excluding="test_ramal_reps.cpp|test_thorup.cpp|test_eulertree.cpp" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="tests"/>
 					</sourceEntries>
 				</configuration>
 			</storageModule>

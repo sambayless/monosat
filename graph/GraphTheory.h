@@ -216,6 +216,11 @@ public:
 				sprintf(t,"TEST_GRAPH%d",id);
 				g.outfile=fopen(t,"w");
 			}
+			{
+						char t[30];
+						sprintf(t,"TEST_ANTI_GRAPH%d",id);
+						antig.outfile=fopen(t,"w");
+					}
 #endif
 			local_q=0;
 			theory_index=0;
