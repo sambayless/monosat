@@ -142,6 +142,7 @@ public:
     	int f = 0;
 
     	//C.growTo(g.nodes);
+/*
 #ifdef DEBUG_MAXFLOW
     	for(int i = 0;i<g.all_edges.size();i++){
     		int id = g.all_edges[i].id;
@@ -152,7 +153,9 @@ public:
     		ek.setCapacity(from,to,cap);
     	}
 #endif
+*/
       	if(last_modification>0 && g.modifications==last_modification){
+/*
 #ifdef DEBUG_MAXFLOW
     	int expected_flow =ek.maxFlow(s,t);
 #endif
@@ -160,6 +163,7 @@ public:
 #ifdef DEBUG_MAXFLOW
     	assert(curflow==expected_flow);
 #endif
+*/
         			return curflow;
         		}
     	if(rev.size()<g.all_edges.size()){
@@ -209,6 +213,7 @@ public:
                 v = u;
             }
         }
+/*
 #ifdef DEBUG_MAXFLOW
     	int expected_flow =ek.maxFlow(s,t);
 #endif
@@ -216,6 +221,7 @@ public:
 #ifdef DEBUG_MAXFLOW
     	assert(f==expected_flow);
 #endif
+*/
     	curflow=f;
 		last_modification=g.modifications;
 		last_deletion = g.deletions;
