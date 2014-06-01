@@ -45,7 +45,7 @@ IntOption Minisat::opt_temporary_theory_reasons(_cat_sms,"temporary-theory-reaso
  BoolOption Minisat::opt_graph(_cat_graph,"graph","Use graph theory solver",true);
  BoolOption Minisat::opt_inc_graph(_cat_graph,"inc","Use incremental graph reachability",false);
  IntOption Minisat::opt_dec_graph(_cat_graph,"dec","Use decremental graph reachability",0,IntRange(0, 2));
- StringOption Minisat::opt_min_cut_alg(_cat_graph,"mincut","Select max-flow/min-cut algorithm (edmondskarp, edmondskarp-adj, ibfs)","edmondskarp-adj");
+ StringOption Minisat::opt_min_cut_alg(_cat_graph,"mincut","Select max-flow/min-cut algorithm (edmondskarp, edmondskarp-adj, ibfs,edmondskarp-dynamic)","edmondskarp-dynamic");
  StringOption Minisat::opt_reach_alg(_cat_graph,"reach","Select reachability algorithm (bfs,dfs, dijkstra,ramal-reps,sat)","ramal-reps");
  StringOption Minisat::opt_dist_alg(_cat_graph,"dist","Select reachability algorithm (bfs,dfs, dijkstra,ramal-reps,sat)","ramal-reps");
 

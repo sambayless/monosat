@@ -10,13 +10,25 @@
 #include "MaxflowDetector.h"
 #include "GraphTheory.h"
 #include "EdmondsKarpAdj.h"
+#include "IBFS.h"
 #include "EdmondsKarpDynamic.h"
 MaxflowDetector::MaxflowDetector(int _detectorID, GraphTheorySolver * _outer,  DynamicGraph<PositiveEdgeStatus> &_g,DynamicGraph<NegativeEdgeStatus> &_antig, int from, int _target,double seed):
 Detector(_detectorID),outer(_outer),over_graph(_g),g(_g),antig(_antig),source(from),target(_target),rnd_seed(seed),positive_detector(NULL),negative_detector(NULL){
+	if(mincutalg==MinCutAlg::ALG_EDKARP_DYN){
 
+		positive_detector = new EdmondsKarpDynamic<vec<int>,PositiveEdgeStatus>(_g,outer->edge_weights);
+		negative_detector = new EdmondsKarpDynamic<vec<int>,NegativeEdgeStatus>(_antig,outer->edge_weights);
+	}else if (mincutalg==MinCutAlg::ALG_EDKARP_ADJ){
+		positive_detector = new EdmondsKarpAdj<vec<int>,PositiveEdgeStatus>(_g,outer->edge_weights);
+		negative_detector = new EdmondsKarpAdj<vec<int>,NegativeEdgeStatus>(_antig,outer->edge_weights);
+	}else if (mincutalg==MinCutAlg::ALG_IBFS){
+		positive_detector = new IBFS<PositiveEdgeStatus>(_g);
+		negative_detector = new IBFS<NegativeEdgeStatus>(_antig);
+	}else{
+		positive_detector = new EdmondsKarpAdj<vec<int>,PositiveEdgeStatus>(_g,outer->edge_weights);
+		negative_detector = new EdmondsKarpAdj<vec<int>,NegativeEdgeStatus>(_antig,outer->edge_weights);
+	}
 
-	positive_detector = new EdmondsKarpDynamic<vec<int>,PositiveEdgeStatus>(_g,outer->edge_weights);
-	negative_detector = new EdmondsKarpDynamic<vec<int>,NegativeEdgeStatus>(_antig,outer->edge_weights);
 
 	//for(int i = 0;i<g)
 	//positive_detector->setAllEdgeCapacities(1);
@@ -128,17 +140,44 @@ void MaxflowDetector::buildMaxFlowTooHighReason(int flow,vec<Lit> & conflict){
 			visit.push(target);
 			for(int k = 0;k<visit.size();k++){
 				int u = visit[k];
-				for(int i = 0;i<outer->inv_adj[u].size();i++){
-					int p = outer->inv_adj[u][i].from;
+				for(int i = 0;i<g.inverted_adjacency[u].size();i++){
+					int p = g.inverted_adjacency[u][i].node;
 					if(!seen[p]){
-						seen[p]=true;
-						int v = outer->inv_adj[u][i].v;
-						assert( outer->inv_adj[u][i].to==u);
+
+
+						int edgeid = g.inverted_adjacency[u][i].id;
+						int v = outer->getEdgeVar(edgeid);
+
+						//assert( g.inverted_adjacency[u][i].to==u);
 						if(outer->value(v)!=l_False){
 							//this is an enabled edge in the overapprox
-							int edgeid = outer->getEdgeID(v);
+
 							int residual_capacity = negative_detector->getEdgeResidualCapacity(edgeid);
 							if(residual_capacity>0){
+								seen[p]=true;
+								visit.push(p);
+							}
+						}else{
+							//this is a disabled edge, and we can add it to the cut.
+							//we're going to assume the edge has non-zero capacity here, otherwise we could exclude it (but it shouldn't really even be in this graph in that case, anyways).
+							conflict.push(mkLit(v,false));
+						}
+					}
+					//pred
+				}
+				//we are walking back in the RESIDUAL graph, which can mean backwards traversal of edges with flow!
+				for(int i = 0;i<g.adjacency[u].size();i++){
+					int p = g.adjacency[u][i].node;
+					if(!seen[p]){
+						int edgeid = g.adjacency[u][i].id;
+						int v = outer->getEdgeVar(edgeid);
+
+						//assert( g.inverted_adjacency[u][i].to==u);
+						if(outer->value(v)!=l_False){
+							//this is the residual capacity of the backwards edge in the residual graph - which is equal to the forwards flow on this edge!
+							int residual_capacity = negative_detector->getEdgeFlow(edgeid);
+							if(residual_capacity ){
+								seen[p]=true;
 								visit.push(p);
 							}
 						}else{
@@ -214,7 +253,10 @@ void MaxflowDetector::buildMaxFlowTooHighReason(int flow,vec<Lit> & conflict){
 			if(flow_lits.size()==0){
 				return true;
 			}
-
+			static int iter1=0;
+			if(++iter1==32){
+				int a=1;
+			}
 			long over_maxflow=-1;
 			long under_maxflow=-1;
 

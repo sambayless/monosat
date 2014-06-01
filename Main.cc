@@ -154,6 +154,8 @@ int main(int argc, char** argv)
         	mincutalg = MinCutAlg::ALG_EDKARP_ADJ;
         }else if (!strcasecmp(opt_min_cut_alg,"edmondskarp")){
         	mincutalg = MinCutAlg::ALG_EDMONSKARP;
+        }else if  (!strcasecmp(opt_min_cut_alg,"edmondskarp-dynamic")){
+        	mincutalg = MinCutAlg::ALG_EDKARP_DYN;
         }else{
         	fprintf(stderr,"Error: unknown max-flow/min-cut algorithm %s, aborting\n",((string)  opt_min_cut_alg).c_str());
         	exit(1);

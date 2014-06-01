@@ -27,7 +27,7 @@ public:
     //vec<vec<int> > C;
 
 	vec<int> F;
-	vec<int> rev;
+	//vec<int> rev;
 	//vec<int> C;
 
 	struct LocalEdge{
@@ -166,7 +166,7 @@ public:
 */
         			return curflow;
         		}
-    	if(rev.size()<g.all_edges.size()){
+    	/*if(rev.size()<g.all_edges.size()){
     		rev.clear();
 
     		rev.growTo(g.all_edges.size());
@@ -181,7 +181,7 @@ public:
     				}
     			}
     		}
-    	}
+    	}*/
     	F.clear();
     	F.growTo(g.all_edges.size());
     	prev.growTo(g.nodes);
@@ -206,9 +206,9 @@ public:
                 int u = prev[v].from;
                 int id = prev[v].id;
                 F[id] = F[id] + m;
-                if(rev[id]>-1){
+               /* if(rev[id]>-1){
                 	F[rev[id]]-=m;
-                }
+                }*/
                // F[v][u] = F[v][u] - m;
                 v = u;
             }
