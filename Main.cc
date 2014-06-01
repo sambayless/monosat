@@ -295,7 +295,7 @@ int main(int argc, char** argv)
          if (!pre) S.eliminate(true);
          S.max_decision_var = opt_restrict_decisions;
 #ifdef DEBUG_SOLVER
-         S.dbg_solver = new Solver();
+         S.dbg_solver = new Solver();S.dbg_solver.verbosity=0;
 #endif
          gzFile in = (argc == 1) ? gzdopen(0, "rb") : gzopen(argv[1], "rb");
              if (in == NULL)

@@ -35,6 +35,8 @@ public:
 		CRef forced_reach_marker;
 		MaxFlow * positive_detector;
 		MaxFlow * negative_detector;
+		MaxFlow * positive_conflict_detector;
+		MaxFlow * negative_conflict_detector;
 
 
 		//vec<Lit>  reach_lits;

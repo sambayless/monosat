@@ -6,6 +6,7 @@
 
 #include "MaxFlow.h"
 #include "mtl/Vec.h"
+#include "core/Config.h"
 using namespace std;
 using namespace Minisat;
 
@@ -33,6 +34,10 @@ public:
 	struct LocalEdge{
 		int from;
 		int id;
+		bool backward=false;
+		LocalEdge(int from=-1, int id=-1, bool backward=false):from(from),id(id),backward(backward){
+
+		}
 	};
 	int curflow;
     int last_modification;
@@ -83,7 +88,7 @@ public:
 
             	 //  int fr = F[id];
                    if (((c - F[id]) > 0) && (prev[v].from == -1)){
-                       prev[v] = {u,id};
+                       prev[v] = LocalEdge(u,id,false);
                        M[v] = min(M[u], c - F[id]);
                        if (v != t)
                            Q.push(v);
@@ -91,25 +96,26 @@ public:
                            return M[t];
                    }
                }
-               /*for (int i = 0;i<g.inverted_adjacency[u].size();i++){
-				   if(!g.edgeEnabled(g.inverted_adjacency[u][i].id))
-						continue;
-				   int v = g.inverted_adjacency[u][i].node;
-				   int id = g.inverted_adjacency[u][i].id;
-					///(If there is available capacity, and v is not seen before in search)
-				   int c = 0;
-				   int id_rev = rev[id];
-				   int f = F[id_rev];
 
-					if (((0 - f) > 0) && (prev[v].from == -1)){
-						prev[v] = {u,id_rev};
-						M[v] = min(M[u], c - f);
-						if (v != t)
-							Q.push(v);
-						else
-							return M[t];
-					}
-				}*/
+               for (int i = 0;i<g.inverted_adjacency[u].size();i++){
+            	   int id = g.inverted_adjacency[u][i].id;
+            	   if(!g.edgeEnabled(id))
+						continue;
+
+				   int v = g.inverted_adjacency[u][i].node;
+
+				   int f = 0;
+				   int c = F[id];
+
+					  if (((c - f) > 0) && (prev[v].from == -1)){
+						  prev[v] = LocalEdge(u,id,true);
+						  M[v] = min(M[u], c - f);
+						  if (v != t)
+							  Q.push(v);
+						  else
+							  return M[t];
+					  }
+				  }
            }
            return 0;
 
@@ -138,8 +144,48 @@ public:
     void setAllEdgeCapacities(int c){
 
     }
+    void dbg_print_graph(int from, int to){
+   #ifndef NDEBUG
+
+       		static int it = 0;
+       		if(++it==6){
+       			int a =1;
+       		}
+       		printf("Graph %d\n", it);
+       			printf("digraph{\n");
+       			for(int i = 0;i<g.nodes;i++){
+       				if(i==from){
+       					printf("n%d [label=\"From\", style=filled, fillcolor=blue]\n", i);
+       				}else if (i==to){
+       					printf("n%d [label=\"To\", style=filled, fillcolor=red]\n", i);
+       				}else
+       					printf("n%d\n", i);
+       			}
+
+       			for(int i = 0;i<g.edges;i++){
+       				if(g.edgeEnabled(i)){
+   						auto & e = g.all_edges[i];
+   						const char * s = "black";
+   						/*if(value(e.v)==l_True)
+   							s="blue";
+   						else if (value(e.v)==l_False)
+   							s="red";*/
+   						printf("n%d -> n%d [label=\"%d: %d/%d\",color=\"%s\"]\n", e.from,e.to, i, F[i],g.weights[i] , s);
+       				}
+       			}
+
+       			printf("}\n");
+   #endif
+       		}
+
     int maxFlow(int s, int t){
     	int f = 0;
+#ifdef RECORD
+		if(g.outfile && mincutalg==MinCutAlg::ALG_EDKARP_ADJ){
+			fprintf(g.outfile,"f %d %d\n", s,t);
+			fflush(g.outfile);
+		}
+#endif
 
     	//C.growTo(g.nodes);
 /*
@@ -205,13 +251,13 @@ public:
             while (v!=  s){
                 int u = prev[v].from;
                 int id = prev[v].id;
-                F[id] = F[id] + m;
-               /* if(rev[id]>-1){
-                	F[rev[id]]-=m;
-                }*/
-               // F[v][u] = F[v][u] - m;
+    			if(prev[v].backward){
+					F[id] = F[id] - m;
+				}else
+					F[id] = F[id] + m;
                 v = u;
             }
+
         }
 /*
 #ifdef DEBUG_MAXFLOW
@@ -222,6 +268,7 @@ public:
     	assert(f==expected_flow);
 #endif
 */
+        //dbg_print_graph(s,t);
     	curflow=f;
 		last_modification=g.modifications;
 		last_deletion = g.deletions;

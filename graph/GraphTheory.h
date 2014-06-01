@@ -261,7 +261,7 @@ public:
 			}
 
 #ifdef DEBUG_GRAPH
-		dbg=new Solver();
+		dbg=new Solver();dbg->verbosity=0;
 		dbg_graph = new TestGraph(dbg);
 #endif
 #ifdef DEBUG_SOLVER
@@ -929,6 +929,20 @@ public:
 			}
 		}
 #endif
+#ifdef RECORD
+		if(g.outfile){
+			fprintf(g.outfile,"enqueue %d\n", dimacs(l));
+
+			fprintf(g.outfile,"\n");
+			fflush(g.outfile);
+		}
+		if(antig.outfile){
+			fprintf(antig.outfile,"enqueue %d\n", dimacs(l));
+			fprintf(antig.outfile,"\n");
+				fflush(antig.outfile);
+			}
+#endif
+
 		//if(v>= min_edge_var && v<min_edge_var+edge_list.size())
 		if(isEdgeVar(var(l))){
 

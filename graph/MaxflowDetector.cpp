@@ -18,15 +18,23 @@ Detector(_detectorID),outer(_outer),over_graph(_g),g(_g),antig(_antig),source(fr
 
 		positive_detector = new EdmondsKarpDynamic<vec<int>,PositiveEdgeStatus>(_g,g.weights);
 		negative_detector = new EdmondsKarpDynamic<vec<int>,NegativeEdgeStatus>(_antig,_antig.weights);
+		positive_conflict_detector =new EdmondsKarpAdj<vec<int>,PositiveEdgeStatus>(_g,outer->edge_weights);
+		negative_conflict_detector = new EdmondsKarpAdj<vec<int>,NegativeEdgeStatus>(_antig,outer->edge_weights);
 	}else if (mincutalg==MinCutAlg::ALG_EDKARP_ADJ){
 		positive_detector = new EdmondsKarpAdj<vec<int>,PositiveEdgeStatus>(_g,outer->edge_weights);
 		negative_detector = new EdmondsKarpAdj<vec<int>,NegativeEdgeStatus>(_antig,outer->edge_weights);
+		positive_conflict_detector = positive_detector;
+		negative_conflict_detector = negative_detector;
 	}else if (mincutalg==MinCutAlg::ALG_IBFS){
 		positive_detector = new IBFS<PositiveEdgeStatus>(_g);
 		negative_detector = new IBFS<NegativeEdgeStatus>(_antig);
+		positive_conflict_detector = positive_detector;
+		negative_conflict_detector = negative_detector;
 	}else{
 		positive_detector = new EdmondsKarpAdj<vec<int>,PositiveEdgeStatus>(_g,outer->edge_weights);
 		negative_detector = new EdmondsKarpAdj<vec<int>,NegativeEdgeStatus>(_antig,outer->edge_weights);
+		positive_conflict_detector = positive_detector;
+		negative_conflict_detector = negative_detector;
 	}
 
 
@@ -82,51 +90,50 @@ void MaxflowDetector::addFlowLit(int maxflow, Var outer_reach_var){
 
 void MaxflowDetector::buildMaxFlowTooHighReason(int flow,vec<Lit> & conflict){
 			//drawFull();
-
-
 			double starttime = rtime(2);
-
-
-		tmp_cut.clear();
-			int actual_flow = positive_detector->maxFlow(source, target);
+			tmp_cut.clear();
+			int actual_flow = positive_conflict_detector->maxFlow(source, target);
 
 			//just collect the set of edges which have non-zero flow, and return them
 			//(Or, I could return a cut, probably)
 			for(int i = 0;i<outer->edge_list.size();i++){
-				if(positive_detector->getEdgeFlow(i)>0){
+				if(positive_conflict_detector->getEdgeFlow(i)>0){
 					Var v = outer->edge_list[i].v;
 					assert(outer->value(v)==l_True);
 					conflict.push(mkLit(v,true));
 				}
 			}
 
-
-			/*	if(!outer->dbg_reachable(source,node)){
-				outer->drawFull();
-				assert(false);
+#ifdef RECORD
+			sort(conflict);
+		if(g.outfile){
+			fprintf(g.outfile,"toohigh ");
+			for(int i = 0;i<conflict.size();i++){
+				fprintf(g.outfile,"%d,",dimacs(conflict[i]));
 			}
-			assert(d.connected_unchecked(node));
-
-			for(int i = 0;i<tmp_cut.size();i++){
-				int edgeid = tmp_cut[i].id;
-				Var v = outer->edge_list[edgeid].v;
-				Lit l = mkLit(v,false);
-				assert(outer->value(l)==l_True);
-				conflict.push(~l);
+			fprintf(g.outfile,"\n");
+			fflush(g.outfile);
+		}
+		if(antig.outfile){
+			fprintf(antig.outfile,"toohigh ");
+			for(int i = 0;i<conflict.size();i++){
+				fprintf(antig.outfile,"%d,",dimacs(conflict[i]));
 			}
-			int u = node;
-			int p;
-*/
+			fprintf(antig.outfile,"\n");
+				fflush(antig.outfile);
+			}
+#endif
+
 			outer->num_learnt_paths++;
 			outer->learnt_path_clause_length+= (conflict.size()-1);
 			double elapsed = rtime(2)-starttime;
 			outer->pathtime+=elapsed;
-
 		}
 		void MaxflowDetector::buildMaxFlowTooLowReason(int maxflow,vec<Lit> & conflict){
 			static int it = 0;
 			++it;
 			double starttime = rtime(2);
+
 
 			//drawFull( non_reach_detectors[detector]->getSource(),u);
 			//assert(outer->dbg_distance( source,u));
@@ -136,7 +143,7 @@ void MaxflowDetector::buildMaxFlowTooHighReason(int flow,vec<Lit> & conflict){
 			seen.clear();
 			seen.growTo(outer->nNodes());
 			visit.clear();
-			int foundflow = negative_detector->maxFlow(source,target);
+			int foundflow = negative_conflict_detector->maxFlow(source,target);
 			visit.push(target);
 			for(int k = 0;k<visit.size();k++){
 				int u = visit[k];
@@ -152,7 +159,7 @@ void MaxflowDetector::buildMaxFlowTooHighReason(int flow,vec<Lit> & conflict){
 						if(outer->value(v)!=l_False){
 							//this is an enabled edge in the overapprox
 
-							int residual_capacity = negative_detector->getEdgeResidualCapacity(edgeid);
+							int residual_capacity = negative_conflict_detector->getEdgeResidualCapacity(edgeid);
 							if(residual_capacity>0){
 								seen[p]=true;
 								visit.push(p);
@@ -175,7 +182,7 @@ void MaxflowDetector::buildMaxFlowTooHighReason(int flow,vec<Lit> & conflict){
 						//assert( g.inverted_adjacency[u][i].to==u);
 						if(outer->value(v)!=l_False){
 							//this is the residual capacity of the backwards edge in the residual graph - which is equal to the forwards flow on this edge!
-							int residual_capacity = negative_detector->getEdgeFlow(edgeid);
+							int residual_capacity = negative_conflict_detector->getEdgeFlow(edgeid);
 							if(residual_capacity ){
 								seen[p]=true;
 								visit.push(p);
@@ -190,7 +197,29 @@ void MaxflowDetector::buildMaxFlowTooHighReason(int flow,vec<Lit> & conflict){
 				}
 			}
 
-
+#ifdef RECORD
+			if(negative_detector!=negative_conflict_detector){
+				int foundflow2 = negative_detector->maxFlow(source,target);
+				assert(foundflow==foundflow2);
+			}
+			sort(conflict);
+		if(g.outfile){
+			fprintf(g.outfile,"toolow ");
+			for(int i = 0;i<conflict.size();i++){
+				fprintf(g.outfile,"%d,",dimacs(conflict[i]));
+			}
+			fprintf(g.outfile,"\n");
+			fflush(g.outfile);
+		}
+		if(antig.outfile){
+			fprintf(antig.outfile,"toolow ");
+			for(int i = 0;i<conflict.size();i++){
+				fprintf(antig.outfile,"%d,",dimacs(conflict[i]));
+			}
+			fprintf(antig.outfile,"\n");
+				fflush(antig.outfile);
+			}
+#endif
 			 outer->num_learnt_cuts++;
 			 outer->learnt_cut_clause_length+= (conflict.size()-1);
 
@@ -254,9 +283,20 @@ void MaxflowDetector::buildMaxFlowTooHighReason(int flow,vec<Lit> & conflict){
 				return true;
 			}
 			static int iter1=0;
-			if(++iter1==32){
+			if(++iter1==135){
 				int a=1;
 			}
+#ifdef RECORD
+		if(g.outfile){
+			fprintf(g.outfile,"iter %d\n",iter1);
+			fflush(g.outfile);
+		}
+		if(antig.outfile){
+					fprintf(antig.outfile,"iter %d\n",iter1);
+					fflush(antig.outfile);
+				}
+#endif
+
 			long over_maxflow=-1;
 			long under_maxflow=-1;
 
