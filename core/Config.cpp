@@ -45,7 +45,7 @@ IntOption Minisat::opt_temporary_theory_reasons(_cat_sms,"temporary-theory-reaso
  BoolOption Minisat::opt_graph(_cat_graph,"graph","Use graph theory solver",true);
  BoolOption Minisat::opt_inc_graph(_cat_graph,"inc","Use incremental graph reachability",false);
  IntOption Minisat::opt_dec_graph(_cat_graph,"dec","Use decremental graph reachability",0,IntRange(0, 2));
- StringOption Minisat::opt_min_cut_alg(_cat_graph,"mincut","Select max-flow/min-cut algorithm (edmondskarp, edmondskarp-adj, ibfs,edmondskarp-dynamic)","edmondskarp-adj");
+ StringOption Minisat::opt_min_cut_alg(_cat_graph,"mincut","Select max-flow/min-cut algorithm (edmondskarp, edmondskarp-adj, ibfs,edmondskarp-dynamic,dinics)","edmondskarp-adj");
  StringOption Minisat::opt_reach_alg(_cat_graph,"reach","Select reachability algorithm (bfs,dfs, dijkstra,ramal-reps,sat)","ramal-reps");
  StringOption Minisat::opt_dist_alg(_cat_graph,"dist","Select reachability algorithm (bfs,dfs, dijkstra,ramal-reps,sat)","ramal-reps");
 
@@ -121,6 +121,8 @@ BoolOption Minisat::opt_shrink_theory_conflicts(_cat,"shrink-theory-conflicts","
 
 BoolOption Minisat::opt_rnd_shuffle(_cat_graph,"rnd-shuffle","Inject randomness into the solver by shuffling the order of propagation of graph constraints.",true);
 BoolOption Minisat::opt_components_learn_connect(_cat_graph, "components-learn-connect","",false);
+
+BoolOption Minisat::opt_dinics_recursive(_cat_graph,"dinics-recursive","Use the recursive (default: iterative) Dinic's Maximum-flow implementation",false);
 
 IntOption     Minisat::opt_width("GRAPH","width","Width of graph.\n", 0, IntRange(0, INT32_MAX));
     IntOption     Minisat::opt_height("GRAPH","height","Height of graph.\n", 0, IntRange(0, INT32_MAX));

@@ -12,6 +12,8 @@
 #include "EdmondsKarpAdj.h"
 #include "IBFS.h"
 #include "EdmondsKarpDynamic.h"
+#include "Dinics.h"
+
 MaxflowDetector::MaxflowDetector(int _detectorID, GraphTheorySolver * _outer,  DynamicGraph<PositiveEdgeStatus> &_g,DynamicGraph<NegativeEdgeStatus> &_antig, int from, int _target,double seed):
 Detector(_detectorID),outer(_outer),over_graph(_g),g(_g),antig(_antig),source(from),target(_target),rnd_seed(seed),positive_detector(NULL),negative_detector(NULL){
 	if(mincutalg==MinCutAlg::ALG_EDKARP_DYN){

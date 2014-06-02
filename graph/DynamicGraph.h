@@ -102,6 +102,7 @@ public:
 		}
 		return false;
 	}
+
 	int addNode(){
 
 		adjacency.push();//adj list

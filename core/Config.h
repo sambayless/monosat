@@ -96,7 +96,7 @@ extern BoolOption opt_encode_reach_underapprox_as_sat;
  extern BoolOption opt_rnd_shuffle;
 extern BoolOption opt_components_learn_connect;
 extern BoolOption opt_learn_unreachable_component;
-
+extern BoolOption opt_dinics_recursive;
 enum class ReachAlg{
 	 ALG_SAT,
 	 ALG_DFS,
@@ -133,7 +133,8 @@ enum class MinCutAlg{
 	 ALG_EDMONSKARP,
 	 ALG_EDKARP_ADJ,
 	 ALG_IBFS,
-	 ALG_EDKARP_DYN
+	 ALG_EDKARP_DYN,
+	 ALG_DINICS
 };
 extern MinCutAlg mincutalg;
 enum class ComponentsAlg{

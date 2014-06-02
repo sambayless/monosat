@@ -1,36 +1,22 @@
-#ifndef EDMONDS_KARP_ADJ_H
-#define EDMONDS_KARP_ADJ_H
+#ifndef DINICS_H
+#define DINICS_H
 
-// Maximum Flow- Edmonds-Karp Algorithm
-// by Iraklis Karagkiozoglou <i.kar@windowslive.com>
 
 #include "MaxFlow.h"
 #include "mtl/Vec.h"
 #include "core/Config.h"
-#include "graph/EdmondsKarp.h"
+#include "graph/EdmondsKarpAdj.h"
+#include <algorithm>
+#include <climits>
 using namespace std;
 using namespace Minisat;
 
 template< class Capacity ,class EdgeStatus=vec<bool> >
-class EdmondsKarpAdj:public MaxFlow{
+class Dinics:public MaxFlow{
 
 public:
-/*
-    algorithm EdmondsKarp
-        input:
-            C[1..n, 1..n] (Capacity matrix)
-            E[1..n, 1..?] (Neighbour lists)
-            s             (Source)
-            t             (Sink)
-        output:
-            f             (Value of maximum flow)
-            F             (A matrix giving a legal flow with the maximum value)*/
-    //vec<vec<int> > F;//(Residual capacity from u to v is C[u,v] - F[u,v])
-    //vec<vec<int> > C;
 
 	vec<int> F;
-	//vec<int> rev;
-	//vec<int> C;
 
 	struct LocalEdge{
 		int from;
@@ -49,11 +35,15 @@ public:
     int last_history_clear;
     vec<LocalEdge> prev;
     vec<int> M;
+    vec<int> dist;
+    vec<int> pos;//position in the combined forward and backward adjacency list of each node in the DFS.
     DynamicGraph<EdgeStatus>& g;
     Capacity & capacity;
     int INF;
+    int src;
+    int dst;
 #ifdef DEBUG_MAXFLOW
-    	EdmondsKarp<EdgeStatus> ek;
+	EdmondsKarpAdj<Capacity, EdgeStatus> ek;
 #endif
     /*
      *            input:
@@ -123,9 +113,9 @@ public:
 
 	   }
 public:
-    EdmondsKarpAdj(DynamicGraph<EdgeStatus>& _g,Capacity & cap):g(_g),capacity(cap),INF(0xF0F0F0)
+    Dinics(DynamicGraph<EdgeStatus>& _g,Capacity & cap):g(_g),capacity(cap),INF(0xF0F0F0)
 #ifdef DEBUG_MAXFLOW
-    	,ek(_g)
+		,ek(_g,cap)
 #endif
     {
     	  curflow=0;
@@ -167,6 +157,9 @@ public:
        				if(g.edgeEnabled(i)){
    						auto & e = g.all_edges[i];
    						const char * s = "black";
+   						if(dist[e.to]==dist[e.from]+1){
+   							s="blue";
+   						}
    						/*if(value(e.v)==l_True)
    							s="blue";
    						else if (value(e.v)==l_False)
@@ -178,6 +171,150 @@ public:
        			printf("}\n");
    #endif
        		}
+    bool buildLevelGraph(int src, int dst) {
+    	dist.clear();
+    	dist.growTo(g.nodes,-1);
+        dist[src] = 0;
+        Q.push(src);
+        //Build the level graph using a simple BFS
+        for (int i = 0; i < Q.size(); i++) {
+            int u = Q[i];
+            for (int j = 0;j<g.adjacency[u].size();j++){
+            	int edgeID = g.adjacency[u][j].id;
+               	if(!g.edgeEnabled(edgeID))
+   						continue;
+               	int v =  g.adjacency[u][j].node;
+                if (dist[v] < 0 && F[edgeID] < capacity[edgeID]) {
+                    dist[v] = dist[u] + 1;
+                    Q.push(v);
+                }
+            }
+            for (int j = 0;j<g.inverted_adjacency[u].size();j++){
+            	int edgeID = g.inverted_adjacency[u][j].id;
+               	if(!g.edgeEnabled(edgeID))
+   						continue;
+               	int v =  g.inverted_adjacency[u][j].node;
+               	//this is a backward edge, so it has capacity exactly if the forward edge has flow
+                if (dist[v] < 0 && F[edgeID]) {
+                    dist[v] = dist[u] + 1;
+                    Q.push(v);
+                }
+            }
+        }
+        Q.clear();
+        return dist[dst] >= 0;
+    }
+
+    int findAugmentingPath(int u) {
+    	int m =0;
+    	assert(Q.size()==0);
+
+        Q.push(src);
+        M[src]=INT_MAX;
+        while(Q.size()){
+        	int u = Q.last();
+		    if (u == dst)
+		    	return M[u];
+		    bool found=false;
+			for (;pos[u]<g.adjacency[u].size();pos[u]++){
+				int edgeID = g.adjacency[u][pos[u]].id;
+				if(!g.edgeEnabled(edgeID))
+						continue;
+				int v =  g.adjacency[u][pos[u]].node;
+				if (dist[v] == dist[u] + 1 && F[edgeID] < capacity[edgeID]) {
+					//int df = dinic_dfs(v, min(f, capacity[edgeID] - F[edgeID]));
+					M[v] = min(M[u], capacity[edgeID] - F[edgeID]);
+					prev[v]=LocalEdge(u,edgeID,false);
+					if(v==dst){
+						//M[v] = min(M[u], capacity[edgeID] - F[id]);
+						m=M[dst];
+						pos[u]++;
+						break;
+					}else{
+						Q.push(v);
+						found=true;
+						pos[u]++;
+						break;
+					}
+				}
+			}
+			if(!found){
+				for (;pos[u]-g.adjacency[u].size() <g.inverted_adjacency[u].size();pos[u]++){
+					int edgeID = g.inverted_adjacency[u][pos[u]-g.adjacency[u].size()].id;
+					if(!g.edgeEnabled(edgeID))
+							continue;
+					int v =  g.inverted_adjacency[u][pos[u]-g.adjacency[u].size()].node;
+					//these are backwards edges, which have capacity exactly if the forward edge has non-zero flow
+					if (dist[v] == dist[u] + 1 && F[edgeID]) {
+						M[v] = min(M[u], F[edgeID]);
+						prev[v]=LocalEdge(u,edgeID,false);
+						if(v==dst){
+							m=M[dst];
+							pos[u]++;
+							break;
+						}else{
+							Q.push(v);
+							found=true;
+							pos[u]++;
+							break;
+						}
+					}
+				}
+			}
+			if(!found){
+				Q.pop();
+			}
+        }
+        Q.clear();
+        if(m>0){
+        	//we found an augmenting flow, so update all the edge flows correspondingly.
+			int v = dst;
+		   while (v!=  src){
+			   int u = prev[v].from;
+			   int id = prev[v].id;
+			   if(prev[v].backward){
+				   F[id] = F[id] - m;
+			   }else
+				   F[id] = F[id] + m;
+			   v = u;
+		   }
+        }
+        return m;
+    }
+
+    int findAugmentingPath_recursive(int u, int f) {
+            if (u == dst)
+                return f;
+
+            for (;pos[u]<g.adjacency[u].size();pos[u]++){
+    			int edgeID = g.adjacency[u][pos[u]].id;
+    			if(!g.edgeEnabled(edgeID))
+    					continue;
+    			int v =  g.adjacency[u][pos[u]].node;
+    			if (dist[v] == dist[u] + 1 && F[edgeID] < capacity[edgeID]) {
+    				int df = findAugmentingPath_recursive(v, min(f, capacity[edgeID] - F[edgeID]));
+    				if (df > 0) {
+    					F[edgeID] += df;
+    					return df;
+    				}
+    			}
+            }
+            for (;pos[u]-g.adjacency[u].size() <g.inverted_adjacency[u].size();pos[u]++){
+    			int edgeID = g.inverted_adjacency[u][pos[u]-g.adjacency[u].size()].id;
+    			if(!g.edgeEnabled(edgeID))
+    					continue;
+    			int v =  g.inverted_adjacency[u][pos[u]-g.adjacency[u].size()].node;
+    			//these are backwards edges, which have capacity exactly if the forward edge has non-zero flow
+    			if (dist[v] == dist[u] + 1 && F[edgeID]) {
+    				int df = findAugmentingPath_recursive(v, min(f, F[edgeID]));
+    				if (df > 0) {
+    					F[edgeID] -= df;
+    					return df;
+    				}
+    			}
+            }
+            return 0;
+        }
 
     int maxFlow(int s, int t){
     	int f = 0;
@@ -188,79 +325,38 @@ public:
 		}
 #endif
 
-    	//C.growTo(g.nodes);
-/*
-#ifdef DEBUG_MAXFLOW
-    	for(int i = 0;i<g.all_edges.size();i++){
-    		int id = g.all_edges[i].id;
-    		int cap = capacity[id];
-    		int from =  g.all_edges[i].from;
-    		int to =  g.all_edges[i].to;
 
-    		ek.setCapacity(from,to,cap);
-    	}
-#endif
-*/
       	if(last_modification>0 && g.modifications==last_modification){
-/*
-#ifdef DEBUG_MAXFLOW
-    	int expected_flow =ek.maxFlow(s,t);
-#endif
 
-#ifdef DEBUG_MAXFLOW
-    	assert(curflow==expected_flow);
-#endif
-*/
         			return curflow;
         		}
-    	/*if(rev.size()<g.all_edges.size()){
-    		rev.clear();
-
-    		rev.growTo(g.all_edges.size());
-    		for(int i = 0;i<g.all_edges.size();i++){
-    			rev[i]=-1;
-    			int from = g.all_edges[i].from;
-    			int to = g.all_edges[i].to;
-    			for(int j = 0;j<g.adjacency[to].size();j++){
-    				if(g.adjacency[to][j].node == from){
-    					rev[i]=g.adjacency[to][j].id;
-    					break;
-    				}
-    			}
-    		}
-    	}*/
+      	src=s;
+      	dst=t;
     	F.clear();
     	F.growTo(g.all_edges.size());
-    	prev.growTo(g.nodes);
+    	dist.clear();
+    	dist.growTo(g.nodes);
     	M.growTo(g.nodes);
+    	prev.growTo(g.nodes);
+    	f=0;
 
-    	for(int i = 0;i<g.nodes;i++){
-    		prev[i].from =-1;
-    		M[i]=0;
-    	}
-    	prev[s].from = -2;
-    	 M[s] = INF;
-        while(true){
-        	int m= BreadthFirstSearch(s,t);
+    	    while (buildLevelGraph(s,t)) {
+    	    	dbg_print_graph(s,t);
+    	    	pos.clear();pos.growTo(g.nodes);
+    	    	if(opt_dinics_recursive){
+					while (int delta = findAugmentingPath_recursive(s, INT_MAX)){
+						f += delta;
+						dbg_print_graph(s,t);
+					}
+    	    	}else{
+					while (int delta = findAugmentingPath(s)){
+						f += delta;
+						dbg_print_graph(s,t);
+					}
+    	    	}
+    	    }
 
-            if (m == 0)
-                break;
 
-            f = f + m;
-
-            int v = t;
-            while (v!=  s){
-                int u = prev[v].from;
-                int id = prev[v].id;
-    			if(prev[v].backward){
-					F[id] = F[id] - m;
-				}else
-					F[id] = F[id] + m;
-                v = u;
-            }
-
-        }
-/*
 #ifdef DEBUG_MAXFLOW
     	int expected_flow =ek.maxFlow(s,t);
 #endif
@@ -268,7 +364,7 @@ public:
 #ifdef DEBUG_MAXFLOW
     	assert(f==expected_flow);
 #endif
-*/
+
         //dbg_print_graph(s,t);
     	curflow=f;
 		last_modification=g.modifications;

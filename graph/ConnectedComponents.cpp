@@ -1,0 +1,2 @@
+#include "ConnectedComponents.h"
+ConnectedComponents::NullConnectedComponentsStatus ConnectedComponents::nullConnectedComponentsStatus;
