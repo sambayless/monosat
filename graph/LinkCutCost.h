@@ -197,6 +197,17 @@ class, and adjusting normalize() and update().
     Node* right;
     Node *parent;
     Node(int _id):id(_id),left(NULL),right(NULL),parent(NULL){};
+
+    void update() {
+    	min = cost;
+
+		if (left) {
+			min = std::min(min, left->min);
+		}
+		if (right) {
+			min = std::min(min, right->min);
+		}
+   }
   };
 
   int grossmin(Node * v){
@@ -242,13 +253,71 @@ private:
   void dbg_min(Node * v){
 	  if(!v)
 		  return;
+	  while (v->right != NULL) {
+	       v = v->right;
+	     }
 	  dbg_isGrossMin(v->min,v);
+  }
+  bool dbg_is_parent(Node * v, Node * p){
+	  if (v==p){
+		  return true;
+	  }
+	  while(v->parent){
+		  if(v->parent==p)
+			  return true;
+		  v=v->parent;
+	  }
+	  return false;
+  }
+
+  void dbg_print_forest(){
+#ifndef NDEBUG
+	  return;
+		printf("digraph{\n");
+		for(int i = 0;i<nodes.size();i++){
+			printf("n%d [label=\"%d: c%d, m%d\"]\n", i,i,nodes[i]->cost,nodes[i]->min);
+		}
+
+		for(int i = 0;i<nodes.size();i++){
+
+			Node * n = nodes[i];
+			if(n->parent){
+				const char * s = "black";
+				if(n==n->parent->left){
+					s="blue";
+					assert(n!=n->parent->right);
+				}
+
+				if(n==n->parent->right){
+					s="red";
+				}
+
+				/*if(value(e.v)==l_True)
+					s="blue";
+				else if (value(e.v)==l_False)
+					s="red";*/
+				printf("n%d -> n%d [label=\"%d: %d\",color=\"%s\"]\n", i,n->parent->id, i, n->cost, s);
+			}
+
+		}
+
+		printf("}\n");
+
+#endif
   }
 
   void dbg_isGrossMin(int min,Node * v){
+	  dbg_print_forest();
 	  int minGrossCost = grosscost(v);
 	  vec<Node*> Q;
-	  Q.push(v);
+	  for(int i = 0;i<nodes.size();i++){
+		  Node * y = nodes[i];
+		  if(dbg_is_parent(y,v)){
+			  minGrossCost = std::min(minGrossCost, grosscost(y));
+			  assert(minGrossCost>=v->min);
+		  }
+	  }
+	  /*Q.push(v);
 	  while(Q.size()){
 		  Node * w = Q.last();
 		  Q.pop();
@@ -258,7 +327,7 @@ private:
 
 		  if(w->left)
 			  Q.push(w->left);
-	  }
+	  }*/
 	  assert(minGrossCost == min);
   }
 public:
@@ -282,41 +351,22 @@ public:
   void rotR (Node* p) {
 	Node* q = p->parent;
 	Node* r = q->parent;
-	assert(q->left==p);assert(!r || r->left==q);
+
 	if ((q->left=p->right) != NULL){
 		q->left->parent = q;
-
-		p->min = std::min(p->cost,p->left?  p->left->cost:0);
-		q->min = std::min(q->cost, q->left->min);
-		q->min = std::min(q->min,q->right? q->right->min:0);
-	}else{
-		q->min = std::min(q->cost,q->right ? q->right->min:0);
 	}
 	p->right = q;
 	q->parent = p;
 
-	p->min = std::min(p->cost,q->min);
-	if(p->left){
-		p->min = std::min(p->min, p->left->min);
-	}
-
 	if ((p->parent=r) != NULL) {
 	    if (r->left == q){
 	    	r->left = p;
-	    	r->min = std::min(r->cost, p->min);
-	    	if(r->right){
-	    		r->min = std::min(r->min, r->right->min);
-	    	}
 	    }else if (r->right == q){
 	    	r->right = p;
-
-	    	r->min = std::min(r->cost, p->min);
-			if(r->left){
-				r->min = std::min(r->min, r->left->min);
-			}
 	    }
 	}
-	dbg_min(p);dbg_min(q);dbg_min(r);
+	q->update();
+
  }
 
   void rotL (Node* p) {
@@ -325,38 +375,18 @@ public:
 
 	if ((q->right=p->left) != NULL){
 		q->right->parent = q;
-
-		p->min = std::min(p->cost,p->right?  p->right->cost:0);
-		q->min = std::min(q->cost, q->right->min);
-		q->min = std::min(q->min,q->left? q->left->min:0);
-	}else{
-		q->min = std::min(q->cost,q->left ? q->left->min:0);
 	}
 	p->left = q;
 	q->parent = p;
 
-	p->min = std::min(p->cost,q->min);
-	if(p->right){
-		p->min = std::min(p->min, p->right->min);
-	}
-
 	if ((p->parent=r) != NULL) {
 	    if (r->left == q){
 	    	r->left = p;
-	    	r->min = std::min(r->cost, p->min);
-			if(r->left){
-				r->min = std::min(r->min, r->left->min);
-			}
 	    }else if (r->right == q){
 	    	r->right = p;
-
-	    	r->min = std::min(r->cost, p->min);
-			if(r->right){
-				r->min = std::min(r->min, r->right->min);
-			}
 	    }
 	}
-
+	q->update();
  }
 
   void splay(Node *p) {
@@ -375,6 +405,8 @@ public:
  		}
  	    }
  	}
+ 	p->update();
+
      }
   // Makes node x the root of the virtual tree, and also x is the leftmost
   // node in its splay tree
@@ -383,9 +415,11 @@ public:
     for (Node* y = x; y != NULL; y = y->parent) {
       splay(y);
       y->left = last;
+      y->update();
       last = y;
     }
     splay(x);
+    dbg_min(x);
     return last;
   }
 
@@ -431,12 +465,7 @@ public:
     x->parent = y;
     x->cost=cost;
     Node * z=x;
-    while(z->parent){
-    	if(z->parent->min> z->min){
-    		z->parent->min=z->min;
-    	}
-    	z=z->parent;
-    }
+
 
  /*   int parent_cost = 0;
     int gmin = 0;
@@ -479,7 +508,11 @@ public:
     	expose(x);
     	assert(x->right);//else, x is a root node
     	x->right->parent=nullptr;
+    	x->right->update();
     	x->right=nullptr;
+    	x->cost=0;
+    	x->update();
+    	setCount++;
 
     }
   /*  void _cut(Node *x, Node *y) {
@@ -511,7 +544,9 @@ public:
    }
 
    int findRoot(int x) {
-    return _findRoot(nodes[x])->id;
+    int r= _findRoot(nodes[x])->id;
+    dbg_min(nodes[x]);
+    return r;
   }
 
   // prerequisite: x and y are in distinct trees
@@ -521,6 +556,7 @@ public:
     	Node * xnode = nodes[x];
     	Node * ynode = nodes[y];
     	_link(xnode,ynode,cost);
+
   }
 
     bool connected(int x, int y) {
@@ -550,6 +586,7 @@ public:
 
     void cut(int x){
     	_cut(nodes[x]);
+    	dbg_min(nodes[x]);
     }
 
     /*void cut(int x, int y) {
