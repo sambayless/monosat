@@ -15,23 +15,8 @@ template< class Capacity ,class EdgeStatus=vec<bool> >
 class EdmondsKarpAdj:public MaxFlow{
 
 public:
-/*
-    algorithm EdmondsKarp
-        input:
-            C[1..n, 1..n] (Capacity matrix)
-            E[1..n, 1..?] (Neighbour lists)
-            s             (Source)
-            t             (Sink)
-        output:
-            f             (Value of maximum flow)
-            F             (A matrix giving a legal flow with the maximum value)*/
-    //vec<vec<int> > F;//(Residual capacity from u to v is C[u,v] - F[u,v])
-    //vec<vec<int> > C;
 
 	vec<int> F;
-	//vec<int> rev;
-	//vec<int> C;
-
 	struct LocalEdge{
 		int from;
 		int id;

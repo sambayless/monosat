@@ -364,7 +364,8 @@ void MaxflowDetector::buildMaxFlowTooHighReason(int flow,vec<Lit> & conflict){
 		}
 
 bool MaxflowDetector::checkSatisfied(){
-
+	EdmondsKarpAdj<vec<int>,PositiveEdgeStatus> positiveCheck(g,g.weights);
+	EdmondsKarpAdj<vec<int>,NegativeEdgeStatus> negativeCheck(antig,antig.weights);
 		for(int j = 0;j< flow_lits.size();j++){
 
 				Lit l = flow_lits[j].l;
@@ -374,18 +375,18 @@ bool MaxflowDetector::checkSatisfied(){
 					//int node =getNode(var(l));
 
 					if(outer->value(l)==l_True){
-						if(positive_detector->maxFlow(source,target)<dist){
+						if(positiveCheck.maxFlow(source,target)<dist){
 							return false;
 						}
 					}else if (outer->value(l)==l_False){
-						if( negative_detector->maxFlow(source,target)>=dist){
+						if( negativeCheck.maxFlow(source,target)>=dist){
 							return false;
 						}
 					}else{
-						if(positive_detector->maxFlow(source,target)>=dist){
+						if(positiveCheck.maxFlow(source,target)>=dist){
 							return false;
 						}
-						if(!negative_detector->maxFlow(source,target)<dist){
+						if(!negativeCheck.maxFlow(source,target)<dist){
 							return false;
 						}
 					}

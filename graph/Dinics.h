@@ -45,73 +45,8 @@ public:
 #ifdef DEBUG_MAXFLOW
 	EdmondsKarpAdj<Capacity, EdgeStatus> ek;
 #endif
-    /*
-     *            input:
-               C, E, s, t, F
-           output:
-               M[t]          (Capacity of path found)
-               P             (Parent table)
-     */
     vec<int> Q;
 
-
-
-
-    int  BreadthFirstSearch(int s, int t){
-     	for(int i = 0;i<g.nodes;i++)
-     		prev[i].from=-1;
-     	prev[s].from = -2;
-    	Q.clear();
-           Q.push(s);
-
-       	for(int j = 0;j<Q.size();j++){
-   			   int u = Q[j];
-
-               for (int i = 0;i<g.adjacency[u].size();i++){
-            	   if(!g.edgeEnabled(g.adjacency[u][i].id))
-						continue;
-            	   int id = g.adjacency[u][i].id;
-            	   int v = g.adjacency[u][i].node;
-                   ///(If there is available capacity, and v is not seen before in search)
-
-            	   int f = F[id];
-            	   int c = capacity[id];
-
-            	 //  int fr = F[id];
-                   if (((c - F[id]) > 0) && (prev[v].from == -1)){
-                       prev[v] = LocalEdge(u,id,false);
-                       M[v] = min(M[u], c - F[id]);
-                       if (v != t)
-                           Q.push(v);
-                       else
-                           return M[t];
-                   }
-               }
-
-               for (int i = 0;i<g.inverted_adjacency[u].size();i++){
-            	   int id = g.inverted_adjacency[u][i].id;
-            	   if(!g.edgeEnabled(id))
-						continue;
-
-				   int v = g.inverted_adjacency[u][i].node;
-
-				   int f = 0;
-				   int c = F[id];
-
-					  if (((c - f) > 0) && (prev[v].from == -1)){
-						  prev[v] = LocalEdge(u,id,true);
-						  M[v] = min(M[u], c - f);
-						  if (v != t)
-							  Q.push(v);
-						  else
-							  return M[t];
-					  }
-				  }
-           }
-           return 0;
-
-
-	   }
 public:
     Dinics(DynamicGraph<EdgeStatus>& _g,Capacity & cap):g(_g),capacity(cap),INF(0xF0F0F0)
 #ifdef DEBUG_MAXFLOW
@@ -222,7 +157,7 @@ public:
 						continue;
 				int v =  g.adjacency[u][pos[u]].node;
 				if (dist[v] == dist[u] + 1 && F[edgeID] < capacity[edgeID]) {
-					//int df = dinic_dfs(v, min(f, capacity[edgeID] - F[edgeID]));
+
 					M[v] = min(M[u], capacity[edgeID] - F[edgeID]);
 					prev[v]=LocalEdge(u,edgeID,false);
 					if(v==dst){
@@ -342,7 +277,7 @@ public:
 
     	    while (buildLevelGraph(s,t)) {
     	    	dbg_print_graph(s,t);
-    	    	pos.clear();pos.growTo(g.nodes);
+    	    	pos.clear();pos.growTo(g.nodes);//does this have to be done inside the inner well loop?
     	    	if(opt_dinics_recursive){
 					while (int delta = findAugmentingPath_recursive(s, INT_MAX)){
 						f += delta;

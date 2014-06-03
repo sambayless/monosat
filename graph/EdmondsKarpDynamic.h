@@ -12,26 +12,10 @@ using namespace Minisat;
 
 template< class Capacity ,class EdgeStatus=vec<bool> >
 class EdmondsKarpDynamic:public MaxFlow{
-
-
-/*
-    algorithm EdmondsKarp
-        input:
-            C[1..n, 1..n] (Capacity matrix)
-            E[1..n, 1..?] (Neighbour lists)
-            s             (Source)
-            t             (Sink)
-        output:
-            f             (Value of maximum flow)
-            F             (A matrix giving a legal flow with the maximum value)*/
-    //vec<vec<int> > F;//(Residual capacity from u to v is C[u,v] - F[u,v])
-    //vec<vec<int> > C;
-
 	int f = 0;
 	vec<int> F;
-	//vec<int> rev;
+
 	int shortCircuitFlow=0;
-	//vec<int> C;
 
 	struct LocalEdge{
 		int from;
