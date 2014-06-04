@@ -204,7 +204,7 @@ class, and adjusting normalize() and update().
 
 
   };
-  void setCost(Node *x,int cost){
+ /* void setCost(Node *x,int cost){
 	  assert(x->parent);//because this is an edge cost
 
 	  int pcost = grosscost(x->parent);
@@ -216,7 +216,7 @@ class, and adjusting normalize() and update().
 	  int dbgcost = grosscost(x);
 #endif
 	  assert(grosscost(x)==cost);
-  }
+  }*/
   int grossmin(Node * v){
 	  return v->min;
 	/*  int gmin = 0;
@@ -235,11 +235,8 @@ class, and adjusting normalize() and update().
 #ifndef NDEBUG
 	  int cp = v->cost;
 #endif
+	  expose(v);
 	  int cost = v->netcost;
-	  while (v->parent){
-		  v=v->parent;
-		  cost+=v->netcost;
-	  }
 	  assert(cost==cp);
 	  return cost;
 	  //return v->cost;
@@ -315,7 +312,7 @@ class, and adjusting normalize() and update().
 
   void dbg_print_forest(){
 #ifndef NDEBUG
-	 // return;
+	  return;
 		printf("digraph{\n");
 		for(int i = 0;i<nodes.size();i++){
 			printf("n%d [label=\"%d: c%d, m%d\"]\n", i,i,nodes[i]->netcost,nodes[i]->min);
@@ -406,10 +403,10 @@ class, and adjusting normalize() and update().
 	Node* q = p->parent;
 	Node* r = q->parent;
 #ifndef NDEBUG
-	int cp = grosscost(p);
-	int cq = grosscost(q);
+	int cp = p->cost;
+	int cq = q->cost;
 	//int cr = r? grosscost(r):0;
-	int cb = p->right? grosscost(p->right):0;
+	int cb = p->right? p->right->cost:0;
 #endif
 
 	//delta weight/minweight update rules from Klein and Mozes's Planarity, chapter 17
@@ -419,6 +416,8 @@ class, and adjusting normalize() and update().
 
 	if ((q->left=p->right) != nullptr){
 		q->left->parent = q;
+		q->left->netcost+=p->netcost;
+		q->left->netcost-=q->netcost;
 	}
 	p->right = q;
 	q->parent = p;
@@ -437,25 +436,21 @@ class, and adjusting normalize() and update().
 		q->left->netcost+=deltap;
 	}
 
-#ifndef NDEBUG
-	assert(grosscost(p)==cp);
-	assert(grosscost(q)==cq);
-	if(q->left)
-		assert(grosscost(q->left)==cb);
-#endif
+
 
 	update(q);
-
+	childChange(q);
+	childChange(p);
  }
 
   void rotL (Node* p) {
 	Node * q = p->parent;
 	Node * r = q->parent;
 #ifndef NDEBUG
-	int cp = grosscost(p);
-	int cq = grosscost(q);
+	int cp = p->cost;
+	int cq = q->cost;
 	//int cr = r? grosscost(r):0;
-	int cb = p->left? grosscost(p->left):0;
+	int cb = p->left? p->left->cost:0;
 #endif
 
 	int deltap = p->netcost;
@@ -464,6 +459,8 @@ class, and adjusting normalize() and update().
 
 	if ((q->right=p->left) != nullptr){
 		q->right->parent = q;
+		//q->right->netcost+=p->netcost;
+		//q->right->netcost-=q->netcost;
 	}
 	p->left = q;
 	q->parent = p;
@@ -482,20 +479,16 @@ class, and adjusting normalize() and update().
 		q->right->netcost+=deltap;
 	}
 
-#ifndef NDEBUG
-	assert(grosscost(p)==cp);
-	assert(grosscost(q)==cq);
-	if(q->right)
-		assert(grosscost(q->right)==cb);
-#endif
 
 	update(q);
+	childChange(q);
+	childChange(p);
  }
 
   void splay(Node *p) {
 #ifndef NDEBUG
 	  dbg_print_forest();
-	  int cp = grosscost(p);
+	  int cp = p->cost;
 #endif
  	while (!isRoot(p)) {
  	    Node* q = p->parent;
@@ -512,21 +505,48 @@ class, and adjusting normalize() and update().
  		}
  	    }
  	}
- 	assert(grosscost(p)==cp);
+
  	update(p);
 
      }
+  void childChange(Node * x){
+	  x->netmin = std::min(0,x->left? (x->left->netmin + x->left->netcost) :0);
+	  x->netmin = std::min(x->netmin,x->right? (x->right->netmin + x->right->netcost) :0);
+
+  }
+  	/* void dashedToSolid(Node * x,Node * p){
+  		 assert(x->parent==p);
+  		 assert(x!=p->right);
+  		 assert(x!=p->left);
+  		 assert(!p->parent);
+  		 x->netcost-= p->netcost;
+  	 }
+
+  	 void solidToDashed(Node * x){
+  		 assert(x->parent);
+  		 assert(!x->parent->parent);
+  		 x->netcost+=x->parent->netcost;
+  	 }
+  	 */
   // Makes node x the root of the virtual tree, and also x is the leftmost
   // node in its splay tree
    Node *expose(Node* x) {
-    Node *last = NULL;
+    Node *last = nullptr;
     for (Node* y = x; y != NULL; y = y->parent) {
       splay(y);
+      if(y->left){
+    	  y->left->netcost+=y->netcost;
+      }
       y->left = last;
+      if(last){
+    	  last->netcost-=y->netcost;
+      }
       update(y);
       last = y;
     }
+
     splay(x);
+
     dbg_min(x);
     dbg_all();
     return last;
@@ -562,6 +582,7 @@ class, and adjusting normalize() and update().
     Node* sX = _findRoot(x);
     assert(sY!=sX);//else this is a bug
     assert(x==sX);
+
 #endif
 
     setCount--;
@@ -572,9 +593,13 @@ class, and adjusting normalize() and update().
     assert(!x->parent);
     assert(x->cost==0);
     x->parent = y;
-    setCost(x,cost);
-    Node * z=x;
-
+    x->netcost=cost;
+#ifndef NDEBUG
+    x->cost=cost;
+#endif
+    //setCost(x,cost);
+    //Node * z=x;
+    //childChange(y);
     //update(y);
 
  /*   int parent_cost = 0;
@@ -618,11 +643,14 @@ class, and adjusting normalize() and update().
     void _cut(Node * x){
     	expose(x);
     	assert(x->right);//else, x is a root node
+    	x->right->netcost+=x->netcost;
     	x->right->parent=nullptr;
     	update(x->right);
+    	//childChange(x->right);
     	x->right=nullptr;
     	x->cost=0;
     	x->netcost=0;
+    	childChange(x);
     	update(x);
     	setCount++;
     	 dbg_all();
@@ -675,7 +703,7 @@ public:
     if (x == y)
       return true;
      Node * xnode = nodes[x];
- 	Node * ynode = nodes[y];
+ 	 Node * ynode = nodes[y];
      expose(xnode);
      expose(ynode);
 #ifndef NDEBUG
@@ -694,13 +722,14 @@ public:
 
     //Returns the cost of the edge connecting x to the tree; x must not be a root.
     int getCost(int x){
-    	assert(!isRoot(nodes[x]));
+
     	return grosscost(nodes[x]);
     }
 
     //Returns the lowest cost in the tree rooted at x.
     //x must be a root!
     int minCost(int x){
+    	expose(nodes[x]);
     	assert(x==findRoot(x));
     	return grossmin(nodes[x]);
     }
