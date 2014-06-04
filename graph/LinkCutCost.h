@@ -218,7 +218,9 @@ class, and adjusting normalize() and update().
 	  assert(grosscost(x)==cost);
   }*/
   int grossmin(Node * v){
-	  return v->min;
+	  expose(v);
+
+	  return v->netmin;
 	/*  int gmin = 0;
 	  while (v->parent){
 		  gmin+=v->netmin;
@@ -235,7 +237,13 @@ class, and adjusting normalize() and update().
 #ifndef NDEBUG
 	  int cp = v->cost;
 #endif
+	  static int citer = 0;
+	  if(++citer==5){
+		  int a =1;
+	  }
 	  expose(v);
+	  dbg_print_forest();
+	  int it = iter;
 	  int cost = v->netcost;
 	  assert(cost==cp);
 	  return cost;
@@ -309,10 +317,17 @@ class, and adjusting normalize() and update().
 	  }
 	  return false;
   }
-
+  int iter = 0;
   void dbg_print_forest(){
 #ifndef NDEBUG
 	  return;
+	 /* if(++iter<= 1415550){
+	 		 return;
+	 	  }
+	  if(iter== 1415555){
+		  int a =1;
+	  }*/
+
 		printf("digraph{\n");
 		for(int i = 0;i<nodes.size();i++){
 			printf("n%d [label=\"%d: c%d, m%d\"]\n", i,i,nodes[i]->netcost,nodes[i]->min);
@@ -343,6 +358,24 @@ class, and adjusting normalize() and update().
 
 		printf("}\n");
 
+#endif
+  }
+
+  void dbg_cost(Node * v){
+#ifndef NDEUBG
+	  if(!v)
+		  return;
+	  int c = v->netcost;
+	  Node * p =v;
+	  while(p->parent){
+		  if(p==p->parent->left || p==p->parent->right){
+			  p=p->parent;
+			  c+=p->netcost;
+		  }else{
+			  break;
+		  }
+	  }
+	  assert(c==v->cost);
 #endif
   }
 
@@ -400,6 +433,10 @@ class, and adjusting normalize() and update().
 */
 
   void rotR (Node* p) {
+	  static int riter=0;
+	if(++riter==23){
+		int a=1;
+	}
 	Node* q = p->parent;
 	Node* r = q->parent;
 #ifndef NDEBUG
@@ -407,6 +444,12 @@ class, and adjusting normalize() and update().
 	int cq = q->cost;
 	//int cr = r? grosscost(r):0;
 	int cb = p->right? p->right->cost:0;
+
+	if((p->id==60 && q->id==50) || (r && r->id==60 && p->id==50 ) ){
+		int a=1;
+	}
+	dbg_cost(q);dbg_cost(p); dbg_cost(r); dbg_cost(q->right);
+
 #endif
 
 	//delta weight/minweight update rules from Klein and Mozes's Planarity, chapter 17
@@ -416,19 +459,13 @@ class, and adjusting normalize() and update().
 
 	if ((q->left=p->right) != nullptr){
 		q->left->parent = q;
-		q->left->netcost+=p->netcost;
-		q->left->netcost-=q->netcost;
+		//q->left->netcost+=p->netcost;
+		//q->left->netcost-=q->netcost;
 	}
 	p->right = q;
 	q->parent = p;
 
-	if ((p->parent=r) != nullptr) {
-	    if (r->left == q){
-	    	r->left = p;
-	    }else if (r->right == q){
-	    	r->right = p;
-	    }
-	}
+
 
 	p->netcost+=deltaq;
 	q->netcost= -deltap;
@@ -436,14 +473,33 @@ class, and adjusting normalize() and update().
 		q->left->netcost+=deltap;
 	}
 
+	if ((p->parent=r) != nullptr) {
+	    if (r->left == q){
+	    	r->left = p;
+	    }else if (r->right == q){
+	    	r->right = p;
+	    }
+	   // p->netcost-=r->netcost;
+	}
 
 
 	update(q);
 	childChange(q);
 	childChange(p);
+	if(r){
+		childChange(r);//this may be unneeded, because the sum of r's children can't have changed...
+	}
+	if(q->netcost==27 || p->netcost==27){
+			int a=1;
+		}
+	dbg_cost(q);dbg_cost(p); dbg_cost(r); dbg_cost(q->right);
  }
 
   void rotL (Node* p) {
+	  static int liter=0;
+	if(++liter==16498){//16512
+		int a=1;
+	}
 	Node * q = p->parent;
 	Node * r = q->parent;
 #ifndef NDEBUG
@@ -451,6 +507,9 @@ class, and adjusting normalize() and update().
 	int cq = q->cost;
 	//int cr = r? grosscost(r):0;
 	int cb = p->left? p->left->cost:0;
+	if((p->id==60 && q->id==50) || (r && r->id==60 && p->id==50 ) ){
+		int a=1;
+	}
 #endif
 
 	int deltap = p->netcost;
@@ -471,6 +530,7 @@ class, and adjusting normalize() and update().
 	    }else if (r->right == q){
 	    	r->right = p;
 	    }
+	    //p->netcost-=r->netcost;
 	}
 
 	p->netcost+=deltaq;
@@ -483,6 +543,13 @@ class, and adjusting normalize() and update().
 	update(q);
 	childChange(q);
 	childChange(p);
+	if(r){
+		childChange(r);
+	}
+	if(q->netcost==27 || p->netcost==27){
+		int a=1;
+	}
+	dbg_cost(q);dbg_cost(p); dbg_cost(r); dbg_cost(q->right);
  }
 
   void splay(Node *p) {
@@ -512,7 +579,9 @@ class, and adjusting normalize() and update().
   void childChange(Node * x){
 	  x->netmin = std::min(0,x->left? (x->left->netmin + x->left->netcost) :0);
 	  x->netmin = std::min(x->netmin,x->right? (x->right->netmin + x->right->netcost) :0);
-
+	  if(x->netcost==27 && x->id==50){
+		  int a=1;
+	  }
   }
   	/* void dashedToSolid(Node * x,Node * p){
   		 assert(x->parent==p);
@@ -531,8 +600,13 @@ class, and adjusting normalize() and update().
   // Makes node x the root of the virtual tree, and also x is the leftmost
   // node in its splay tree
    Node *expose(Node* x) {
+	   static int itere = 0;
+	   if(++itere==75){
+		   int a=1;
+	   }
     Node *last = nullptr;
     for (Node* y = x; y != NULL; y = y->parent) {
+    	dbg_cost(y);
       splay(y);
       if(y->left){
     	  y->left->netcost+=y->netcost;
@@ -543,10 +617,16 @@ class, and adjusting normalize() and update().
       }
       update(y);
       last = y;
+      if(y->netcost==27){
+    	  int a=1;
+      }
     }
-
+    dbg_cost(x);
     splay(x);
-
+    if(x->netcost==27){
+     	  int a=1;
+       }
+    dbg_cost(x);
     dbg_min(x);
     dbg_all();
     return last;
@@ -587,13 +667,15 @@ class, and adjusting normalize() and update().
 
     setCount--;
     expose(x);
+    //expose(y);//need to expose y as well, otherwise netcost will get computed incorrectly below.
     int x_gross_min = grossmin(x);
     int parent_min = grossmin(y);
 
     assert(!x->parent);
     assert(x->cost==0);
     x->parent = y;
-    x->netcost=cost;
+    x->netcost= cost;// - y->netcost;
+   // assert(x->netcost+y->netcost == cost);
 #ifndef NDEBUG
     x->cost=cost;
 #endif
@@ -689,7 +771,7 @@ public:
     return r;
   }
 
-  // prerequisite: x and y are in distinct trees
+  // prerequisite: x and y are in distinct trees. y becomes the parent of x.
     void link(int x, int y, int cost = 0) {
     	if(x==y)
     		return;
@@ -729,8 +811,7 @@ public:
     //Returns the lowest cost in the tree rooted at x.
     //x must be a root!
     int minCost(int x){
-    	expose(nodes[x]);
-    	assert(x==findRoot(x));
+
     	return grossmin(nodes[x]);
     }
 
