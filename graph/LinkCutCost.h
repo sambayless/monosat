@@ -185,17 +185,19 @@ class, and adjusting normalize() and update().
 **/
 
  class LinkCutCost {
+	static const int INF = INT_MAX/2;
 	 int setCount;
   struct Node {
 	int id;
-	int netcost=0;//netcost=grosscost(v)-grossmin(v)   cost of the edge connecting this node to its parent.
+	int netcost=INF;//netcost=grosscost(v)-grossmin(v)   cost of the edge connecting this node to its parent.
 	int netmin=0;//netmin(v)=grossmin(v) if v is root, or grossmin(v)-grossmin(parent(v)) else   minimum cost of any edge below this one.
 
 
 #ifndef NDEBUG
-	int cost=0;
-	int min=0;
-	int dbg_min=0;
+	int cost=INF;
+	int min=INF;
+	int dbg_min=INF;
+	Node *dbg_parent=nullptr;
 #endif
 	Node* left;
     Node* right;
@@ -218,9 +220,10 @@ class, and adjusting normalize() and update().
 	  assert(grosscost(x)==cost);
   }*/
   int grossmin(Node * v){
+	  dbg_min(v);
 	  expose(v);
 
-	  return v->netmin;
+	  return v->netmin+v->netcost;
 	/*  int gmin = 0;
 	  while (v->parent){
 		  gmin+=v->netmin;
@@ -250,8 +253,8 @@ class, and adjusting normalize() and update().
 	  //return v->cost;
   }
   void update(Node * v) {
-
-     	int mincost = v->parent?v->cost:INT_MAX;
+#ifndef NDEBUG
+     	int mincost = v->cost;
 
  		if (v->left) {
  			mincost = std::min(mincost,v->left->min);
@@ -259,12 +262,12 @@ class, and adjusting normalize() and update().
  		if (v->right) {
  			mincost = std::min(mincost, v->right->min);
  		}
- 		if(mincost==INT_MAX)
+ 		if(mincost==INF)
  			mincost=0;
  		v->min=mincost;
- #ifndef NDEBUG
+
  		{
-			v->dbg_min =v->parent?v->cost:INT_MAX;
+			v->dbg_min =v->cost;
 
 			if (v->left) {
 				v->dbg_min = std::min(v->dbg_min, v->left->dbg_min);
@@ -272,7 +275,7 @@ class, and adjusting normalize() and update().
 			if (v->right) {
 				v->dbg_min = std::min(v->dbg_min, v->right->dbg_min);
 			}
-			if(v->dbg_min==INT_MAX)
+			if(v->dbg_min==INF)
 				v->dbg_min=0;
 			assert(v->dbg_min==v->min);
  		}
@@ -299,12 +302,76 @@ class, and adjusting normalize() and update().
 
 
   void dbg_min(Node * v){
+#ifndef NDEBUG
 	  if(!v)
 		  return;
-	  while (v->right != NULL) {
+	  if(v->parent){
+		  return;
+	  }
+
+	  int m = v->netmin;
+	  int dbg_min = v->cost;
+	  Node * p =v;
+
+	  int c = v->netcost;
+
+	  while(p->parent){
+		  if(p==p->parent->left || p==p->parent->right){
+			  p=p->parent;
+
+			  //m+=p->netmin;
+			  c+=p->netcost;
+
+		  }else{
+			  break;
+		  }
+	  }
+
+	  m+=c;//minw = delta_minw+w;
+
+	  p =v;
+	  dbg_min = std::min(dbg_min,p->cost);
+
+	  while(p->dbg_parent){
+		 // if(p==p->dbg_parent->left || p==p->dbg_parent->right){
+			  p=p->dbg_parent;
+
+			  dbg_min = std::min(dbg_min,p->cost);
+
+		 // }else{
+		//	  break;
+		 // }
+	  }
+
+	  int minGrossCost =v->cost;
+
+	  vec<Node*> Q;
+	  Q.push(v);
+	  while(Q.size()){
+		  Node * w = Q.last();
+		  Q.pop();
+		  minGrossCost = std::min(minGrossCost,w->cost);
+		  if(w->right)
+			  Q.push(w->right);
+
+		  if(w->left)
+			  Q.push(w->left);
+	  }
+	 // if(minGrossCost==INF)
+	//	  minGrossCost=0;
+	  assert(m==dbg_min);
+	  assert(m==minGrossCost);
+
+
+
+
+
+
+/*	  while (v->right != NULL) {
 	       v = v->right;
 	     }
-	  dbg_isGrossMin(v->min,v);
+	  dbg_isGrossMin(v->min,v);*/
+#endif
   }
   bool dbg_is_ancestor(Node * v, Node * p){
 	  if (v==p){
@@ -318,9 +385,11 @@ class, and adjusting normalize() and update().
 	  return false;
   }
   int iter = 0;
-  void dbg_print_forest(){
+ public:
+  void dbg_print_forest(bool force = false){
 #ifndef NDEBUG
-	  return;
+	 // if(!force)
+		  return;
 	 /* if(++iter<= 1415550){
 	 		 return;
 	 	  }
@@ -380,12 +449,13 @@ class, and adjusting normalize() and update().
   }
 
   void dbg_isGrossMin(int min,Node * v){
+#ifndef NDEBUG
 	  static int iter = 0;
 	  if(++iter==22349){
 		  int a=1;
 	  }
 	 // dbg_print_forest();
-	  int minGrossCost =v->parent?v->cost:INT_MAX;
+	  int minGrossCost =v->cost;
 
 	  vec<Node*> Q;
 	 /* for(int i = 0;i<nodes.size();i++){
@@ -399,22 +469,19 @@ class, and adjusting normalize() and update().
 	  while(Q.size()){
 		  Node * w = Q.last();
 		  Q.pop();
-		  minGrossCost = std::min(minGrossCost, w->parent?w->cost:INT_MAX);
+		  minGrossCost = std::min(minGrossCost, w->cost);
 		  if(w->right)
 			  Q.push(w->right);
 
 		  if(w->left)
 			  Q.push(w->left);
 	  }
-	  if(minGrossCost==INT_MAX)
+	  if(minGrossCost==INF)
 		  minGrossCost=0;
 	  assert(minGrossCost == min);
+#endif
   }
-  void dbg_all(){
-	  for(int i = 0;i<nodes.size();i++){
-		  dbg_min(nodes[i]);
-	  }
-  }
+
 
   vec<Node*> nodes;
   // Whether x is a root of a splay tree
@@ -487,12 +554,13 @@ class, and adjusting normalize() and update().
 	childChange(q);
 	childChange(p);
 	if(r){
-		childChange(r);//this may be unneeded, because the sum of r's children can't have changed...
+		//childChange(r);//this may be unneeded, because the sum of r's children can't have changed...
 	}
 	if(q->netcost==27 || p->netcost==27){
 			int a=1;
 		}
 	dbg_cost(q);dbg_cost(p); dbg_cost(r); dbg_cost(q->right);
+	//dbg_min(q);dbg_min(p);dbg_min(r); dbg_min(q->right);
  }
 
   void rotL (Node* p) {
@@ -544,12 +612,13 @@ class, and adjusting normalize() and update().
 	childChange(q);
 	childChange(p);
 	if(r){
-		childChange(r);
+		//childChange(r);
 	}
 	if(q->netcost==27 || p->netcost==27){
 		int a=1;
 	}
 	dbg_cost(q);dbg_cost(p); dbg_cost(r); dbg_cost(q->right);
+	//dbg_min(q);dbg_min(p);dbg_min(r); dbg_min(q->right);
  }
 
   void splay(Node *p) {
@@ -601,7 +670,7 @@ class, and adjusting normalize() and update().
   // node in its splay tree
    Node *expose(Node* x) {
 	   static int itere = 0;
-	   if(++itere==75){
+	   if(++itere==8){
 		   int a=1;
 	   }
     Node *last = nullptr;
@@ -615,6 +684,7 @@ class, and adjusting normalize() and update().
       if(last){
     	  last->netcost-=y->netcost;
       }
+      childChange(y);
       update(y);
       last = y;
       if(y->netcost==27){
@@ -628,7 +698,7 @@ class, and adjusting normalize() and update().
        }
     dbg_cost(x);
     dbg_min(x);
-    dbg_all();
+   // dbg_all();
     return last;
   }
 
@@ -667,17 +737,30 @@ class, and adjusting normalize() and update().
 
     setCount--;
     expose(x);
-    //expose(y);//need to expose y as well, otherwise netcost will get computed incorrectly below.
+    //expose(y);//need to expose y as well, otherwise netcost will get computed incorrectly below... nope, thats not true, because x doesn't become an attached child of y below
     int x_gross_min = grossmin(x);
     int parent_min = grossmin(y);
 
     assert(!x->parent);
-    assert(x->cost==0);
+    assert(x->cost==INF);
     x->parent = y;
     x->netcost= cost;// - y->netcost;
+#ifndef NDEBUG
+
+        if(x->left==nullptr && x->right==nullptr){
+        	assert(x->netmin==0);
+        	x->min=cost;
+        }else{
+        	x->min=std::min(x->min,cost);
+        }
+#endif
+    x->netmin = std::min(x->netmin,cost);
+
+
    // assert(x->netcost+y->netcost == cost);
 #ifndef NDEBUG
     x->cost=cost;
+	x->dbg_parent = y;
 #endif
     //setCost(x,cost);
     //Node * z=x;
@@ -712,7 +795,9 @@ class, and adjusting normalize() and update().
 
     assert(grosscost(x)==cost);
     assert(dbgSetCount());
-    dbg_all();
+    //dbg_min(x);
+    dbg_min(y);
+    //dbg_all();
   }
 
     bool _connected(Node* x, Node *y) {
@@ -730,12 +815,15 @@ class, and adjusting normalize() and update().
     	update(x->right);
     	//childChange(x->right);
     	x->right=nullptr;
-    	x->cost=0;
-    	x->netcost=0;
+    	x->netcost=INF;
+#ifndef NDEBUG
+    	x->cost=INF;
+    	x->dbg_parent = nullptr;
+#endif
     	childChange(x);
     	update(x);
     	setCount++;
-    	 dbg_all();
+    	// dbg_all();
     }
   /*  void _cut(Node *x, Node *y) {
     expose(x);
