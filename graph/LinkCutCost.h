@@ -7,182 +7,18 @@
 #include <algorithm>
 #include "mtl/Vec.h"
 using namespace Minisat;
-/**
-15-451 Algorithms
-Fall 2012
-D. Sleator
 
-Link/Cut trees    October 9, 2012
+#define NDEBUG_LINKCUT
+//This implementation of link/cut trees is based of a combination of D. Sleator's implementation (//http://codeforces.com/contest/117/submission/860934),
+//and the (extremely well presented!) version described by Klein and Mozes, in the Appendix of Planarity.
 
-Full paper at: http://www.cs.cmu.edu/~sleator/papers/self-adjusting.pdf
+//This link cut tree has been augmented to support operations for computing Maximum flows.
+//Specifically, each edge in the abstract tree (ie, NOT the underlying splay tree) has an associated cost.
+//For each node, we can compute in log time the cost of the edge connecting it to its parent, and also in log time compute
+//the minimum cost of any edge on the path from the node to its parent.
 
--------------------------------------------------------------------------
-
-The goal of link/cut trees is to represent a forest of trees under these
-kinds of operations:
-
-  link(p,q)   p is a tree root, and q is any node in another tree.
-              make p a child of q.
-
-  cut(p)      p is not a tree root.  Delete the edge from p to its
-              parent, thus separating the tree in two
-
-  path(p)     This just means to do something to the path from p to the
-              root of p's tree.  This could be counting its length,
-              finding the minimum cost edge on this path, adding a
-              constant to all the costs on this path, etc.  (Or, in this
-              case, it's going to be to toggle whether or not each edge
-              on this path is currently turned on.)  The operations
-              supportable are those you can do on a subsequence of nodes
-              in a binary search tree.
-
-  findroot(p) return the root of the tree containing p
-
-All of these operations are supported by link/cut trees in O(log n) time
-where n is the size of the tree.
-
-I'll use the terminology from our paper.  The "real tree" is the tree
-that the data structure is trying to represent.  It's the tree that the
-API presents to the user.  The "virtual tree" is the actual tree
-represented in the memory of the computer.  (We should probably should
-have reversed these two terms, to better fit the analogy with the real
-and virtual images in optics.)  The virtual tree has exactly the same
-set of nodes as the real tree, they're just linked together in a
-different way.
-
-The virtual tree has dashed and solid edges.  The connected components
-of solid edges are binary trees (I'll call them splay trees).  The splay
-tree is represented with the usual parent, left, and right and child
-pointers.  The root of each splay tree is linked via a dashed edge to
-some other node in the virtual tree.
-
-The relationship between the real tree and the virtual tree that
-represents it can be made clear by explaining how to transform the
-virtual tree into the real tree.  To do this, convert each splay tree
-into a path by traversing it in left to right order.  This is now a path
-of nodes up the real tree.  (In other words, if nodes a and b are in the
-same splay tree, and b is the successor of a, then a is a child of b in
-the real tree.)  The rightmost node of this path is linked to the node
-that is attached to the root of that splay tree by a dashed edge.
-
-Note that the real tree has been partitioned into solid paths (which
-always go up the tree from child to parent) and dashed edges.  This
-partitioning is determined by the algorithm and will change with time.
-It is not under the control of the client.
-
-Every node in the virtual tree has the usual parent, left, and right
-child pointers.  How do we tell if a node is a root of a splay tree?
-Easy.  It's a root if (1) its parent pointer is NULL or (2) if its
-parent's left and right children ARN'T it.  This is computed by the
-isroot() function below.
-
-Now that we know how to identify the root, it's easy to implement the
-splay(p) operation that takes a node p and splays it to the root of its
-splay tree.
-
-And using splay() we can implement expose(p), which transforms the
-virtual tree in a way that puts node p at the root of the virtual
-tree.  (The real tree, of course, does not change.)  Expose works by
-doing a sequence of splays and relinking operations, called splices.
-A splice converts the left solid edge down from a node to dashed and
-converts one of the dashed edges down from that node to solid.
-(Picture is really required to explain it.  Check out the code, which
-is quite short.)  After expose(p) the path from p to the root of the
-real tree consists of all the nodes to the right of p in its splay
-tree.  (Actually, the way the code below works, after expose(p), p is
-the root and also the leftmost node in its splay tree.)
-
-[The expose algorithm is the weakest part of these notes, that must be
-explained on the blackboard.]
-
-This design does not allow us to walk down the tree along the dashed
-edges.  But walking down is not necessary for the basic operations of
-expose, link, cut, path, findroot, etc.
-
-Theorem:
-  A sequence of m link/cut operations on starting from a set of n
-  separate nodes is O(m log n).
-
-Proof:
-  We need to assign a weight to each node so that we can carry out the
-  analysis using the access lemma for splay trees.  Recall from the
-  splay tree analysis that the size of a node is the total weight of
-  all nodes in the subtree rooted there.  We will define the weights
-  of the nodes so that the size of a node is the number of nodes in
-  the virtual tree rooted there.
-
-  To make this be the case, we simply assign the weight of a node to
-  be 1 (for itself) plus the sizes of all the subtrees connected to it
-  via dashed edges.  It's easy to see that with this definition of
-  weight, a splice operation does not change the sizes of any nodes,
-  and thus does not change the potential of the tree.
-
-  Recall that the rank of a node is the binary log of the size of the
-  node.  Let the potential function be (Sum rank(x)) for all nodes x.
-  Here is the access lemma:
-
-  Access Lemma: The amortized number of rotations done when splaying a
-  node x (of rank r(x)) in a tree rooted at t (of rank r(t)) is
-  bounded by 3(r(t) - r(x)) + 1.
-
-  We will focus on the cost of the expose() operation.  (The other
-  operations are easy to analyze using the bound (derived below) for
-  expose() combined with an analysis of the potential function changes
-  involved.)
-
-  Let the cost of expose() be measured as the number of edges on the
-  path from the exposed node to the root of the virtual tree.  (This
-  is exactly the same as the number of rotations done in the expose.)
-
-  We will prove that with this potential function, the amortized cost
-  of expose() is at most 12m(log n) + 2m.
-
-  Let's look at one expose().  Say that there are k splay operations
-  until p gets to the root (see the code below).  These splays are
-  called phase1 splays.  After this we splay q, this splay is a phase2
-  splay.
-
-  The cost of the phase1 splays telescope, because the starting size
-  of one splay is greater than the ending size of the previous splay.
-  So the cost of the phase1 splays is at most 3(log n) + k.
-
-  The phase2 splay costs amortized 3(log n)+1.  So the total amortized
-  cost of the expose is 6(log n)+k+1.  If we add this together for all
-  m expose() operations we can write:
-
-      total cost <= 6 m (log n) + m + (#splays in phase1)
-
-  Where the latter term comes from summing all the "k"s from each
-  expose() operation.  It remains to bound this term.
-
-  Consider a modified analysis of splaying where we do not count the
-  rotation done in the zig case.  In this case the access lemma bound
-  becomes 3(r(t) - r(x)).  The total modified cost of splaying in a
-  sequence of exposes is then at most 6 m (log n).  But the number of
-  phase1 splays is at most the true cost of the phase2 splays.  (This
-  is because if there are k phase1 splays in an expose() then the
-  corresponding phase2 splay does k rotations.)  So the true cost of
-  the phase2 splays is at most m more than the modified cost we
-  defined in this paragraph (there are at most m zigs that have to be
-  accounted for).  Thus:
-
-              (#splays in phase1) <= 6 m (log n) + m.
-
-  Putting this together gives us:
-
-                total cost <= 12 m (log n) + 2m
-
-  We should note in conclusion that the initial potential is 0 (all
-  the nodes are separate, so the sizes are all 1).  And the final
-  potential is positive.
-
-  QED.
-
-
-It should be fairly easy to modify the code below to support various
-different operations.  Most of the work should be in setting up the node
-class, and adjusting normalize() and update().
-**/
+//Note that is probably not the minimum cost that you might naturally expect the tree to compute: its is NOT the minimum cost of any node in the abstract tree beneath the node.
+//This is especially a point of potential confusion, given that the way this minimum path cost is computed is by finding the minimum cost of any node in the concrete splay tree beneath the node in question (after exposing it).
 
  class LinkCutCost {
 	static const int INF = INT_MAX/2;
@@ -193,7 +29,7 @@ class, and adjusting normalize() and update().
 	int netmin=0;//netmin(v)=grossmin(v) if v is root, or grossmin(v)-grossmin(parent(v)) else   minimum cost of any edge below this one.
 
 
-#ifndef NDEBUG
+#ifndef NDEBUG_LINKCUT
 	int cost=INF;
 	int min=INF;
 	int dbg_min=INF;
@@ -206,54 +42,30 @@ class, and adjusting normalize() and update().
 
 
   };
- /* void setCost(Node *x,int cost){
-	  assert(x->parent);//because this is an edge cost
 
-	  int pcost = grosscost(x->parent);
-	  x->netcost=cost-pcost;
-	  x->min = cost;
-
-#ifndef NDEBUG
-	  x->cost=cost;
-	  int dbgcost = grosscost(x);
-#endif
-	  assert(grosscost(x)==cost);
-  }*/
   int grossmin(Node * v){
 	  dbg_min(v);
 	  expose(v);
-
 	  return v->netmin+v->netcost;
-	/*  int gmin = 0;
-	  while (v->parent){
-		  gmin+=v->netmin;
-		  v=v->parent;
-	  }
-	  gmin+=v->netmin;
-	  assert(gmin==v->min);
-	  dbg_isGrossMin(gmin, v);
-	  return gmin;*/
   }
   int grosscost(Node * v){
 	  //int cost = v->netcost + grossmin(v);
 	  //assert(cost==v->cost);
-#ifndef NDEBUG
+#ifndef NDEBUG_LINKCUT
 	  int cp = v->cost;
 #endif
-	  static int citer = 0;
-	  if(++citer==5){
-		  int a =1;
-	  }
 	  expose(v);
 	  dbg_print_forest();
-	  int it = iter;
+	  //int it = iter;
 	  int cost = v->netcost;
+#ifndef NDEBUG_LINKCUT
 	  assert(cost==cp);
+#endif
 	  return cost;
 	  //return v->cost;
   }
   void update(Node * v) {
-#ifndef NDEBUG
+#ifndef NDEBUG_LINKCUT
      	int mincost = v->cost;
 
  		if (v->left) {
@@ -281,30 +93,33 @@ class, and adjusting normalize() and update().
  		}
  #endif
     }
-  //Update the costs on every edge of the tree from v to root v by delta. If v is root, this does nothing.
-  void updateTreeCost(Node * v, int delta){
-	  //expose(v);
 
-	  while(v->parent){
-		  v->cost-=delta;
+  //Update the costs on every edge in the path of the tree from v to root v by delta.
+  //has NO EFFECT if v is a root in the abstract tree (as roots have no edges on the path to themselves).
+  void updatePathCost(Node * v, int delta){
+	  expose(v);
+	  v->netcost+=delta;
+#ifndef NDEBUG_LINKCUT
+
+	  while(v->dbg_parent){
+		  v->cost+=delta;
 		  if(v->cost<v->min){
 			  v->min=v->cost;
 		  }
-		  if(v->parent->min > v->min){
-			  v->parent->min=v->min;
-		  }
-		  dbg_min(v);
-		  v=v->parent;
-	  }
 
+		  v=v->dbg_parent;
+	  }
+#endif
 	  dbg_min(v);
+
   }
 
 
   void dbg_min(Node * v){
-#ifndef NDEBUG
+#ifndef NDEBUG_LINKCUT
 	  if(!v)
 		  return;
+	  //This debug code only checks correctly if v is exposed!
 	  if(v->parent){
 		  return;
 	  }
@@ -333,14 +148,11 @@ class, and adjusting normalize() and update().
 	  dbg_min = std::min(dbg_min,p->cost);
 
 	  while(p->dbg_parent){
-		 // if(p==p->dbg_parent->left || p==p->dbg_parent->right){
+
 			  p=p->dbg_parent;
 
 			  dbg_min = std::min(dbg_min,p->cost);
 
-		 // }else{
-		//	  break;
-		 // }
 	  }
 
 	  int minGrossCost =v->cost;
@@ -384,10 +196,11 @@ class, and adjusting normalize() and update().
 	  }
 	  return false;
   }
-  int iter = 0;
- public:
+
+
   void dbg_print_forest(bool force = false){
-#ifndef NDEBUG
+#ifndef NDEBUG_LINKCUT
+	  int iter = 0;
 	 // if(!force)
 		  return;
 	 /* if(++iter<= 1415550){
@@ -431,7 +244,7 @@ class, and adjusting normalize() and update().
   }
 
   void dbg_cost(Node * v){
-#ifndef NDEUBG
+#ifndef NDEBUG_LINKCUT
 	  if(!v)
 		  return;
 	  int c = v->netcost;
@@ -448,8 +261,18 @@ class, and adjusting normalize() and update().
 #endif
   }
 
+  void dbg_all(){
+#ifndef NDEBUG_LINKCUT
+	  for(Node * v:nodes){
+		  expose(v);
+		  dbg_cost(v);
+		  dbg_min(v);
+	  }
+#endif
+  }
+
   void dbg_isGrossMin(int min,Node * v){
-#ifndef NDEBUG
+#ifndef NDEBUG_LINKCUT
 	  static int iter = 0;
 	  if(++iter==22349){
 		  int a=1;
@@ -506,7 +329,7 @@ class, and adjusting normalize() and update().
 	}
 	Node* q = p->parent;
 	Node* r = q->parent;
-#ifndef NDEBUG
+#ifndef NDEBUG_LINKCUT
 	int cp = p->cost;
 	int cq = q->cost;
 	//int cr = r? grosscost(r):0;
@@ -570,7 +393,7 @@ class, and adjusting normalize() and update().
 	}
 	Node * q = p->parent;
 	Node * r = q->parent;
-#ifndef NDEBUG
+#ifndef NDEBUG_LINKCUT
 	int cp = p->cost;
 	int cq = q->cost;
 	//int cr = r? grosscost(r):0;
@@ -622,7 +445,7 @@ class, and adjusting normalize() and update().
  }
 
   void splay(Node *p) {
-#ifndef NDEBUG
+#ifndef NDEBUG_LINKCUT
 	  dbg_print_forest();
 	  int cp = p->cost;
 #endif
@@ -727,7 +550,7 @@ class, and adjusting normalize() and update().
   // prerequisite: x and y are in distinct trees, AND x is the root of its tree
     void _link(Node* x, Node* y, int cost=0) {
     //assert (_findRoot(x) != _findRoot(y));
-#ifndef NDEBUG
+#ifndef NDEBUG_LINKCUT
 	Node* sY = _findRoot(y);
     Node* sX = _findRoot(x);
     assert(sY!=sX);//else this is a bug
@@ -742,10 +565,12 @@ class, and adjusting normalize() and update().
     int parent_min = grossmin(y);
 
     assert(!x->parent);
+#ifndef NDEBUG_LINKCUT
     assert(x->cost==INF);
+#endif
     x->parent = y;
     x->netcost= cost;// - y->netcost;
-#ifndef NDEBUG
+#ifndef NDEBUG_LINKCUT
 
         if(x->left==nullptr && x->right==nullptr){
         	assert(x->netmin==0);
@@ -756,48 +581,15 @@ class, and adjusting normalize() and update().
 #endif
     x->netmin = std::min(x->netmin,cost);
 
-
-   // assert(x->netcost+y->netcost == cost);
-#ifndef NDEBUG
+#ifndef NDEBUG_LINKCUT
     x->cost=cost;
 	x->dbg_parent = y;
 #endif
-    //setCost(x,cost);
-    //Node * z=x;
-    //childChange(y);
-    //update(y);
-
- /*   int parent_cost = 0;
-    int gmin = 0;
-    Node *v = y;
-	  while (v->parent){
-		  gmin+=v->netmin;
-		  v=v->parent;
-	  }
-	  gmin+=v->netmin;
-
-	 assert(gmin==grossmin(y));
-	 if(gmin < x_gross_min){
-		 //then we need to lower the whole minimum of the root
-		 assert(!v->parent);
-		 int diff = gmin-x_gross_min;
-
-		 v->netmin-=diff;
-	 }
-    grosscost(y);
-
-    Node * p = x->parent;
-    //fix grossmin
-
-
-    x->netmin =
-    x->netcost = cost- grosscost(x);*/
-
     assert(grosscost(x)==cost);
     assert(dbgSetCount());
-    //dbg_min(x);
+
     dbg_min(y);
-    //dbg_all();
+    dbg_all();
   }
 
     bool _connected(Node* x, Node *y) {
@@ -816,14 +608,14 @@ class, and adjusting normalize() and update().
     	//childChange(x->right);
     	x->right=nullptr;
     	x->netcost=INF;
-#ifndef NDEBUG
+#ifndef NDEBUG_LINKCUT
     	x->cost=INF;
     	x->dbg_parent = nullptr;
 #endif
     	childChange(x);
     	update(x);
     	setCount++;
-    	// dbg_all();
+    	dbg_all();
     }
   /*  void _cut(Node *x, Node *y) {
     expose(x);
@@ -876,7 +668,7 @@ public:
  	 Node * ynode = nodes[y];
      expose(xnode);
      expose(ynode);
-#ifndef NDEBUG
+#ifndef NDEBUG_LINKCUT
      int s1 = findRoot(x);
      int s2 = findRoot(y);
      bool dbg_connected = s1==s2;
@@ -904,8 +696,8 @@ public:
     }
 
     //updates the cost of each element in x's path to root.
-    void updatePathToRoot(int x, int delta){
-
+    void updateCostOfPathToRoot(int x, int delta){
+    	updatePathCost(nodes[x],delta);
     }
 
     void cut(int x){
@@ -913,11 +705,6 @@ public:
     	dbg_min(nodes[x]);
     }
 
-    /*void cut(int x, int y) {
-        Node * xnode = nodes[x];
-    	Node * ynode = nodes[y];
-    	_cut(xnode,ynode);
-  }*/
 
     int numRoots(){
     	assert(dbgSetCount());
