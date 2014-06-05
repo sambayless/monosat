@@ -754,9 +754,12 @@ public:
 
     void reset(){
     	for(int i = 0;i<nodes.size();i++){
-    		nodes[i]->parent=NULL;
+    		/*nodes[i]->parent=NULL;
     		nodes[i]->left=NULL;
-    		nodes[i]->right =NULL;
+    		nodes[i]->right =NULL;*/
+    		assert(nodes[i]->id==i);
+    		(*nodes[i]).~Node();
+    		new (nodes[i]) Node(i);
     	}
     	setCount= nodes.size();
     }

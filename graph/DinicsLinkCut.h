@@ -34,8 +34,8 @@ public:
 
     int history_qhead;
     int last_history_clear;
-    vec<LocalEdge> prev;
-    vec<int> M;
+    //vec<LocalEdge> prev;
+    //vec<int> M;
     //vec<int> dist;
     //vec<int> pos;//position in the combined forward and backward adjacency list of each node in the DFS.
     DynamicGraph<EdgeStatus>& g;
@@ -173,9 +173,9 @@ public:
     	F.clear();
     	F.growTo(g.all_edges.size());
 /*    	dist.clear();
-    	dist.growTo(g.nodes);*/
+    	dist.growTo(g.nodes);
     	M.growTo(g.nodes);
-    	prev.growTo(g.nodes);
+    	prev.growTo(g.nodes);*/
     	tree_edges.growTo(g.nodes);
     	f=0;
     	forest.reset();
@@ -259,6 +259,7 @@ public:
    		 			 assert(F[edgeID] + c<=capacity[edgeID]);
    		 			 F[edgeID] +=c;
    		 			 forest.cut(u);
+   		 			parentEdge[u]=-1;
    		 			 minC = forest.minCost(src);
    		 			forest.dbg_print_forest(true);
    		 		 }
@@ -267,8 +268,29 @@ public:
    		 		 //couldn't find any s-t augmenting path.
    		 		 //remove the vertex from the graph
    		 		 if(u==src){
-   		 			 //done - no paths remain
+   		 			 //done - no paths remain.
+   		 			 //Clean up the state of the tree:
+   		 			 for(int u = 0;u<g.nodes;u++){
+   		 				 if(parentEdge[u]>=0){
+							 int c = forest.getCost(u);
+							 int edgeID = parentEdge[u];
+							 if(tree_edges[edgeID].in_tree){
+								 F[edgeID]=capacity[edgeID]-c;
+							 }else{
+								 assert(tree_edges[edgeID].in_tree_backward);
+								 F[edgeID]=c;
+							 }
 
+							 forest.cut(u);
+							 parentEdge[u]=-1;
+   		 				 }
+   		 			 }
+   		 			 for(int i = 0;i<disabled.size();i++){
+   		 				 disabled[i]=false;
+   		 			 }
+   		 			 for(int i = 0;i<tree_edges.size();i++){
+   		 				 tree_edges[i] = EdgeInTree();
+   		 			 }
    		 			 break;
    		 		 }else{
    		 			 disabled[u]=true;
@@ -285,6 +307,7 @@ public:
 							F[edgeID]=residual_capacity;
 							assert(F[edgeID]>=0);
 							forest.cut(v);//this is a backward edge into u
+							parentEdge[v]=-1;
 						}
 					}
    					for(auto edge:g.inverted_adjacency[u]){
@@ -297,6 +320,7 @@ public:
 							F[edgeID]=capacity[edgeID] - residual_capacity;
 							assert(F[edgeID]>=0);
 							forest.cut(v);
+							parentEdge[v]=-1;
 						}
 					}
    		 		 }
@@ -304,21 +328,6 @@ public:
 
 
     	}
-    	  /*  while (buildLevelGraph(s,t)) {
-    	    	dbg_print_graph(s,t);
-    	    	pos.clear();pos.growTo(g.nodes);
-    	    	if(opt_dinics_recursive){
-					while (int delta = findAugmentingPath_recursive(s, INT_MAX)){
-						f += delta;
-						dbg_print_graph(s,t);
-					}
-    	    	}else{
-					while (int delta = findAugmentingPath(s)){
-						f += delta;
-						dbg_print_graph(s,t);
-					}
-    	    	}
-    	    }*/
 
 
 #ifdef DEBUG_MAXFLOW
