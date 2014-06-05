@@ -690,6 +690,9 @@ public:
     void link(int x, int y, int cost = 0) {
     	if(x==y)
     		return;
+    	if(x==39){
+    	    		int a=1;
+    	    	}
     	Node * xnode = nodes[x];
     	Node * ynode = nodes[y];
     	_link(xnode,ynode,cost);
@@ -742,6 +745,9 @@ public:
     }
 
     void cut(int x){
+    	if(x==39){
+    		int a=1;
+    	}
     	_cut(nodes[x]);
     	dbg_min(nodes[x]);
     }

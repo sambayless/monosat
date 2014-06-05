@@ -36,7 +36,7 @@ public:
     int last_history_clear;
     //vec<LocalEdge> prev;
     //vec<int> M;
-    //vec<int> dist;
+    vec<int> dist;
     //vec<int> pos;//position in the combined forward and backward adjacency list of each node in the DFS.
     DynamicGraph<EdgeStatus>& g;
     Capacity & capacity;
@@ -54,11 +54,11 @@ public:
     };
     vec<EdgeInTree> tree_edges;//for each edge.
     LinkCutCost forest;
-
+    vec<int> Q;
 #ifdef DEBUG_MAXFLOW
 	EdmondsKarpAdj<Capacity, EdgeStatus> ek;
 #endif
-    vec<int> Q;
+
 
 public:
     DinicsLinkCut(DynamicGraph<EdgeStatus>& _g,Capacity & cap):g(_g),capacity(cap),INF(0xF0F0F0)
@@ -119,7 +119,7 @@ public:
        			printf("}\n");
    #endif
        		}
-   /* bool buildLevelGraph(int src, int dst) {
+    bool buildLevelGraph(int src, int dst) {
     	dist.clear();
     	dist.growTo(g.nodes,-1);
         dist[src] = 0;
@@ -151,7 +151,161 @@ public:
         }
         Q.clear();
         return dist[dst] >= 0;
-    }*/
+    }
+
+    int findAugmentingPath(int src, int dst){
+
+    	int f = 0;
+    	while(true){
+			bool found=true;
+			bool foundPath = false;
+
+			dbg_print_graph(src,dst);
+			int u=forest.findRoot(src);
+			 while(found){
+					 found=false;
+					 //u = forest.findRoot(src);
+					if (u==dst){
+						foundPath=true;
+						break;
+					}else{
+						//extend the path
+
+						for(auto edge:g.adjacency[u]){
+							int edgeID = edge.id;
+							int v =  edge.node;
+							if((dist[v] != dist[u] + 1) ||  !g.edgeEnabled(edgeID) || disabled[v] || tree_edges[edgeID].disabled)
+									continue;
+
+							if (F[edgeID] < capacity[edgeID]) {
+								forest.link(u,v,capacity[edgeID]-F[edgeID]);
+								tree_edges[edgeID].in_tree=true;
+								parentEdge[u]=edgeID;
+								assert(forest.findRoot(u)==v);
+								found=true;
+								break;
+							}
+						}
+						if(!found){
+							for(auto edge:g.inverted_adjacency[u]){
+								int edgeID = edge.id;
+								int v = edge.node;
+								if((dist[v] != dist[u] + 1) ||  !g.edgeEnabled(edgeID)|| disabled[v] || tree_edges[edgeID].backward_disabled)
+										continue;
+
+								//these are backwards edges, which have capacity exactly if the forward edge has non-zero flow
+								if (F[edgeID]) {
+									forest.link(u,v,F[edgeID]);
+									tree_edges[edgeID].in_tree_backward=true;
+									parentEdge[u]=edgeID;
+									assert(forest.findRoot(u)==v);
+									found=true;
+									break;
+								}
+							}
+						}
+					}
+					u = forest.findRoot(src);
+			}
+			forest.dbg_print_forest(true);
+
+			assert(!found);
+			 if(foundPath){
+				 //found s-t augmenting path.
+				 //Find the minimum capacity of any edge from src to dst on that path
+				 int c = forest.minCost(src);
+				 //subtract that capacity from all edges on the path
+				 f+=c;
+				 forest.updateCostOfPathToRoot(src,-c);
+				 //delete edges with no remaining capacity
+				 forest.dbg_print_forest(true);
+				 int minC=0;
+				 while(minC==0){
+
+					 int u = forest.ancecstorFindMin(src);
+					forest.dbg_print_forest(true);
+					 assert(forest.getCost(u)==minC);
+					 int edgeID = parentEdge[u];
+					 if(tree_edges[edgeID].in_tree){
+						 assert(F[edgeID] + c<=capacity[edgeID]);
+						 F[edgeID] +=c;
+					 }else{
+						 assert(tree_edges[edgeID].in_tree_backward);
+						 assert(c<=F[edgeID]);
+						 F[edgeID] =c;
+					 }
+					 forest.cut(u);
+					parentEdge[u]=-1;
+					 minC = forest.minCost(src);
+					forest.dbg_print_forest(true);
+				 }
+
+			 }else{
+				 //couldn't find any s-t augmenting path.
+				 //remove the vertex from the graph
+				 if(u==src){
+					 //done - no paths remain.
+					 //Clean up the state of the tree:
+					 for(int u = 0;u<g.nodes;u++){
+						 if(parentEdge[u]>=0){
+							 int c = forest.getCost(u);
+							 int edgeID = parentEdge[u];
+							 if(tree_edges[edgeID].in_tree){
+								 F[edgeID]=capacity[edgeID]-c;
+							 }else{
+								 assert(tree_edges[edgeID].in_tree_backward);
+								 F[edgeID]=c;
+							 }
+
+							 forest.cut(u);
+							 parentEdge[u]=-1;
+						 }
+					 }
+					 for(int i = 0;i<disabled.size();i++){
+						 disabled[i]=false;
+					 }
+					 for(int i = 0;i<tree_edges.size();i++){
+						 tree_edges[i] = EdgeInTree();
+					 }
+					 break;
+				 }else{
+					 disabled[u]=true;
+					//forest.cut(u);
+					for(auto edge:g.adjacency[u]){
+						int edgeID = edge.id;
+						int v = edge.node;
+						if(!g.edgeEnabled(edgeID)|| disabled[v]  || tree_edges[edgeID].backward_disabled)
+								continue;
+						if(tree_edges[edgeID].in_tree_backward){
+							//need to remember the remaining flow on this edge...
+							assert(F[edgeID]>0);//else this edge wouldn't be in the tree
+							int residual_capacity = forest.getCost(v);
+							F[edgeID]=residual_capacity;
+							assert(F[edgeID]>=0);
+							forest.cut(v);//this is a backward edge into u
+							parentEdge[v]=-1;
+						}
+					}
+					for(auto edge:g.inverted_adjacency[u]){
+						int edgeID = edge.id;
+						int v = edge.node;
+						if(!g.edgeEnabled(edgeID) || disabled[v]  || tree_edges[edgeID].disabled)
+								continue;
+						if(tree_edges[edgeID].in_tree){
+							int residual_capacity = forest.getCost(v);
+							F[edgeID]=capacity[edgeID] - residual_capacity;
+							assert(F[edgeID]>=0);
+							forest.cut(v);
+							parentEdge[v]=-1;
+						}
+					}
+				 }
+			 }
+
+    	}
+
+		return f;
+    }
 
 
     int maxFlow(int s, int t){
@@ -172,162 +326,31 @@ public:
       	dst=t;
     	F.clear();
     	F.growTo(g.all_edges.size());
-/*    	dist.clear();
+    	dist.clear();
     	dist.growTo(g.nodes);
-    	M.growTo(g.nodes);
-    	prev.growTo(g.nodes);*/
-    	tree_edges.growTo(g.nodes);
+    	/*M.growTo(g.nodes);
+    	 prev.growTo(g.nodes);*/
+
     	f=0;
     	forest.reset();
     	while(forest.nNodes()<g.nodes)
     		forest.addNode();
-    	disabled.clear();
-    	disabled.growTo(g.nodes);
-
-    	parentEdge.growTo(g.nodes,-1);
-    	int u ;
-    	while(true){
-    		bool found=true;
-    		bool foundPath = false;
-
-    		dbg_print_graph(src,dst);
-    		u=forest.findRoot(src);
-   		 	 while(found){
-   		 		 	 found=false;
-   		 		 	 //u = forest.findRoot(src);
-					if (u==dst){
-						foundPath=true;
-						break;
-					}else{
-						//extend the path
-
-						for(auto edge:g.adjacency[u]){
-							int edgeID = edge.id;
-							int v =  edge.node;
-							if(!g.edgeEnabled(edgeID) || disabled[v] || tree_edges[edgeID].disabled)
-									continue;
-
-							if (F[edgeID] < capacity[edgeID]) {
-								forest.link(u,v,capacity[edgeID]-F[edgeID]);
-								tree_edges[edgeID].in_tree=true;
-								parentEdge[u]=edgeID;
-								assert(forest.findRoot(u)==v);
-								found=true;
-								break;
-							}
-						}
-						if(!found){
-							for(auto edge:g.inverted_adjacency[u]){
-								int edgeID = edge.id;
-								int v = edge.node;
-								if(!g.edgeEnabled(edgeID)|| disabled[v] || tree_edges[edgeID].backward_disabled)
-										continue;
-
-								//these are backwards edges, which have capacity exactly if the forward edge has non-zero flow
-								if (F[edgeID]) {
-									forest.link(u,v,F[edgeID]);
-									tree_edges[edgeID].in_tree_backward=true;
-									parentEdge[u]=edgeID;
-									assert(forest.findRoot(u)==v);
-									found=true;
-									break;
-								}
-							}
-						}
-					}
-					u = forest.findRoot(src);
-			}
-   		 	forest.dbg_print_forest(true);
-
-   		 	assert(!found);
-   		 	 if(foundPath){
-   		 		 //found s-t augmenting path.
-   		 		 //Find the minimum capacity of any edge from src to dst on that path
-   		 		 int c = forest.minCost(src);
-   		 		 //subtract that capacity from all edges on the path
-   		 		 f+=c;
-   		 		 forest.updateCostOfPathToRoot(src,-c);
-   		 		 //delete edges with no remaining capacity
-   		 		 forest.dbg_print_forest(true);
-   		 		 int minC=0;
-   		 		 while(minC==0){
-
-   		 			 int u = forest.ancecstorFindMin(src);
-   		 			forest.dbg_print_forest(true);
-   		 			 assert(forest.getCost(u)==minC);
-   		 			 int edgeID = parentEdge[u];
-   		 			 assert(F[edgeID] + c<=capacity[edgeID]);
-   		 			 F[edgeID] +=c;
-   		 			 forest.cut(u);
-   		 			parentEdge[u]=-1;
-   		 			 minC = forest.minCost(src);
-   		 			forest.dbg_print_forest(true);
-   		 		 }
-
-   		 	 }else{
-   		 		 //couldn't find any s-t augmenting path.
-   		 		 //remove the vertex from the graph
-   		 		 if(u==src){
-   		 			 //done - no paths remain.
-   		 			 //Clean up the state of the tree:
-   		 			 for(int u = 0;u<g.nodes;u++){
-   		 				 if(parentEdge[u]>=0){
-							 int c = forest.getCost(u);
-							 int edgeID = parentEdge[u];
-							 if(tree_edges[edgeID].in_tree){
-								 F[edgeID]=capacity[edgeID]-c;
-							 }else{
-								 assert(tree_edges[edgeID].in_tree_backward);
-								 F[edgeID]=c;
-							 }
-
-							 forest.cut(u);
-							 parentEdge[u]=-1;
-   		 				 }
-   		 			 }
-   		 			 for(int i = 0;i<disabled.size();i++){
-   		 				 disabled[i]=false;
-   		 			 }
-   		 			 for(int i = 0;i<tree_edges.size();i++){
-   		 				 tree_edges[i] = EdgeInTree();
-   		 			 }
-   		 			 break;
-   		 		 }else{
-   		 			 disabled[u]=true;
-   		 			//forest.cut(u);
-   		 			for(auto edge:g.adjacency[u]){
-						int edgeID = edge.id;
-						int v = edge.node;
-						if(!g.edgeEnabled(edgeID)|| disabled[v]  || tree_edges[edgeID].backward_disabled)
-								continue;
-						if(tree_edges[edgeID].in_tree_backward){
-							//need to remember the remaining flow on this edge...
-							assert(F[edgeID]>0);//else this edge wouldn't be in the tree
-							int residual_capacity = forest.getCost(v);
-							F[edgeID]=residual_capacity;
-							assert(F[edgeID]>=0);
-							forest.cut(v);//this is a backward edge into u
-							parentEdge[v]=-1;
-						}
-					}
-   					for(auto edge:g.inverted_adjacency[u]){
-						int edgeID = edge.id;
-						int v = edge.node;
-						if(!g.edgeEnabled(edgeID)|| disabled[v]  || tree_edges[edgeID].disabled)
-								continue;
-						if(tree_edges[edgeID].in_tree){
-							int residual_capacity = forest.getCost(v);
-							F[edgeID]=capacity[edgeID] - residual_capacity;
-							assert(F[edgeID]>=0);
-							forest.cut(v);
-							parentEdge[v]=-1;
-						}
-					}
-   		 		 }
-   		 	 }
 
 
-    	}
+	    while (buildLevelGraph(s,t)) {
+	    	dbg_print_graph(s,t);
+	    	disabled.clear();
+	        	disabled.growTo(g.nodes);
+	        	parentEdge.clear();
+	        	parentEdge.growTo(g.nodes,-1);
+	        	tree_edges.clear();
+	        	tree_edges.growTo(g.edges);
+	        	int delta = findAugmentingPath(src,dst);
+				f += delta;
+				dbg_print_graph(s,t);
+
+
+	    }
 
 
 #ifdef DEBUG_MAXFLOW
