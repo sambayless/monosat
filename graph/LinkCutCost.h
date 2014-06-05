@@ -7,8 +7,9 @@
 #include <algorithm>
 #include "mtl/Vec.h"
 using namespace Minisat;
-
+#ifdef NDEBUG
 #define NDEBUG_LINKCUT
+#endif
 //This implementation of link/cut trees is based of a combination of D. Sleator's implementation (//http://codeforces.com/contest/117/submission/860934),
 //and the (extremely well presented!) version described by Klein and Mozes, in the Appendix of Planarity.
 
@@ -101,10 +102,11 @@ using namespace Minisat;
 	  v->netcost+=delta;
 #ifndef NDEBUG_LINKCUT
 
-	  while(v->dbg_parent){
+	  while(v){
 		  v->cost+=delta;
 		  if(v->cost<v->min){
 			  v->min=v->cost;
+			  v->dbg_min=v->cost;
 		  }
 
 		  v=v->dbg_parent;
@@ -197,11 +199,11 @@ using namespace Minisat;
 	  return false;
   }
 
-
+public:
   void dbg_print_forest(bool force = false){
 #ifndef NDEBUG_LINKCUT
 	  int iter = 0;
-	 // if(!force)
+	  if(!force)
 		  return;
 	 /* if(++iter<= 1415550){
 	 		 return;
@@ -617,18 +619,51 @@ using namespace Minisat;
     	setCount++;
     	dbg_all();
     }
-  /*  void _cut(Node *x, Node *y) {
-    expose(x);
-    expose(y);
-    if( x->parent != NULL){
-    	setCount++;
-    }
-    assert(! (y->right != x || x->left != NULL || x->right != NULL));
 
-    y->right->parent = NULL;
-    y->right = NULL;
-    assert(dbgSetCount());
-  }*/
+    //u is the node to search from; a is a weight greater to or equal to the delta_minw(s)
+	//returns the rightmost (or leftmost, if leftdir is true) solid descendent v of u such that w(v) <= a+w(u)
+	Node* solidFind(Node * u, int alpha, bool leftdir){
+		assert(alpha>=u->netmin);
+		Node * u1 = u->left;
+		Node * u2 = u->right;
+		if(!leftdir){
+			std::swap(u1,u2);
+		}
+		if(u1 && (alpha-u1->netcost) >= u1->netmin){
+			return solidFind(u1,alpha-u1->netcost,leftdir);
+		}
+		if (alpha>=0){
+			splay(u);
+			return u;
+		}
+		return solidFind(u2,alpha-u2->netcost,leftdir);
+	}
+
+	//Find the ancestor of s with the lowest weight.
+	Node * ancecstorFindWeight(Node * u,int alpha, bool leftdir){
+		expose(u);
+		bool u_is_candidate = u->netcost <=alpha;
+		bool candidate_on_right = u->right && (u->right->netmin+u->right->netcost+u->netcost <= alpha);
+		if (u_is_candidate && (leftdir || !candidate_on_right)){
+			return u;
+		}
+		if(!candidate_on_right)
+			return nullptr;
+		return solidFind(u->right,alpha-u->right->netcost - u->netcost,leftdir);
+	}
+
+	Node * ancecstorFindMin(Node * u,bool leftdir){
+		expose(u);
+		int alpha = u->netcost+ u->netmin;
+		bool u_is_candidate = u->netcost <=alpha;
+		bool candidate_on_right = u->right && (u->right->netmin+u->right->netcost+u->netcost <= alpha);
+		if (u_is_candidate && (leftdir || !candidate_on_right)){
+			return u;
+		}
+		if(!candidate_on_right)
+			return nullptr;
+		return solidFind(u->right,alpha-u->right->netcost - u->netcost,leftdir);
+	}
 
 public:
     LinkCutCost():setCount(0){
@@ -693,6 +728,12 @@ public:
     int minCost(int x){
 
     	return grossmin(nodes[x]);
+    }
+
+    //Find the minimum weight ancestor of s that is either closest to root(s), or closest to s.
+    int ancecstorFindMin(int s, bool closestToRoot=true){
+    	Node * n = ancecstorFindMin(nodes[s],!closestToRoot);
+    	return n?  n->id:s;
     }
 
     //updates the cost of each element in x's path to root.
