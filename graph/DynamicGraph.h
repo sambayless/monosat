@@ -11,10 +11,8 @@
 #include "GraphTheoryTypes.h"
 using namespace Minisat;
 #ifndef NDEBUG
-#include <cstdio>
-#endif
-#ifndef NDEBUG
 #define RECORD
+#include <cstdio>
 #endif
 template<class EdgeStatus=DefaultEdgeStatus >
 class DynamicGraph{

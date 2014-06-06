@@ -285,6 +285,7 @@ public:
     				}
     			}
             }
+
             for (;pos[u]-g.adjacency[u].size() <g.inverted_adjacency[u].size();pos[u]++){
     			int edgeID = g.inverted_adjacency[u][pos[u]-g.adjacency[u].size()].id;
     			if(!g.edgeEnabled(edgeID))
