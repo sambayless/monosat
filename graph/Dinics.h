@@ -37,15 +37,18 @@ public:
     vec<int> M;
     vec<int> dist;
     vec<int> pos;//position in the combined forward and backward adjacency list of each node in the DFS.
+
     DynamicGraph<EdgeStatus>& g;
     Capacity & capacity;
     int INF;
     int src;
     int dst;
+    vec<int> Q;
+
 #ifdef DEBUG_MAXFLOW
+    vec<int> dbg_pos;
 	EdmondsKarpAdj<Capacity, EdgeStatus> ek;
 #endif
-    vec<int> Q;
 
 public:
     Dinitz(DynamicGraph<EdgeStatus>& _g,Capacity & cap):g(_g),capacity(cap),INF(0xF0F0F0)
@@ -157,17 +160,24 @@ public:
 						continue;
 				int v =  g.adjacency[u][pos[u]].node;
 				if (dist[v] == dist[u] + 1 && F[edgeID] < capacity[edgeID]) {
-
+					//printf("%d\n",edgeID);
+					found=true;
 					M[v] = min(M[u], capacity[edgeID] - F[edgeID]);
 					prev[v]=LocalEdge(u,edgeID,false);
 					if(v==dst){
 						//M[v] = min(M[u], capacity[edgeID] - F[id]);
 						m=M[dst];
-						pos[u]++;
+						assert(Q.last()==u);
+						Q.pop();
+						while(Q.size()){
+							pos[Q.last()]--;
+							Q.pop();
+						}
+						//pos[u]++;
 						break;
 					}else{
 						Q.push(v);
-						found=true;
+
 						pos[u]++;
 						break;
 					}
@@ -181,15 +191,21 @@ public:
 					int v =  g.inverted_adjacency[u][pos[u]-g.adjacency[u].size()].node;
 					//these are backwards edges, which have capacity exactly if the forward edge has non-zero flow
 					if (dist[v] == dist[u] + 1 && F[edgeID]) {
+						//printf("-%d\n",edgeID);
+						found=true;
 						M[v] = min(M[u], F[edgeID]);
 						prev[v]=LocalEdge(u,edgeID,false);
 						if(v==dst){
 							m=M[dst];
-							pos[u]++;
+							assert(Q.last()==u);
+							while(Q.size()){
+								pos[Q.last()]--;
+								Q.pop();
+							}
 							break;
 						}else{
 							Q.push(v);
-							found=true;
+
 							pos[u]++;
 							break;
 						}
@@ -216,7 +232,41 @@ public:
         }
         return m;
     }
+    int dbg_findAugmentingPath_recursive(int u, int f) {
+#ifndef NDEBUG
+                if (u == dst)
+                    return f;
 
+                for (;dbg_pos[u]<g.adjacency[u].size();dbg_pos[u]++){
+        			int edgeID = g.adjacency[u][dbg_pos[u]].id;
+        			if(!g.edgeEnabled(edgeID))
+        					continue;
+        			int v =  g.adjacency[u][dbg_pos[u]].node;
+        			if (dist[v] == dist[u] + 1 && F[edgeID] < capacity[edgeID]) {
+        				int df = dbg_findAugmentingPath_recursive(v, min(f, capacity[edgeID] - F[edgeID]));
+        				if (df > 0) {
+        					//F[edgeID] += df;
+        					return df;
+        				}
+        			}
+                }
+                for (;dbg_pos[u]-g.adjacency[u].size() <g.inverted_adjacency[u].size();dbg_pos[u]++){
+        			int edgeID = g.inverted_adjacency[u][dbg_pos[u]-g.adjacency[u].size()].id;
+        			if(!g.edgeEnabled(edgeID))
+        					continue;
+        			int v =  g.inverted_adjacency[u][dbg_pos[u]-g.adjacency[u].size()].node;
+        			//these are backwards edges, which have capacity exactly if the forward edge has non-zero flow
+        			if (dist[v] == dist[u] + 1 && F[edgeID]) {
+        				int df = dbg_findAugmentingPath_recursive(v, min(f, F[edgeID]));
+        				if (df > 0) {
+        					//F[edgeID] -= df;
+        					return df;
+        				}
+        			}
+                }
+#endif
+                return 0;
+            }
     int findAugmentingPath_recursive(int u, int f) {
             if (u == dst)
                 return f;
@@ -227,6 +277,7 @@ public:
     					continue;
     			int v =  g.adjacency[u][pos[u]].node;
     			if (dist[v] == dist[u] + 1 && F[edgeID] < capacity[edgeID]) {
+    				//printf("%d\n",edgeID);
     				int df = findAugmentingPath_recursive(v, min(f, capacity[edgeID] - F[edgeID]));
     				if (df > 0) {
     					F[edgeID] += df;
@@ -241,6 +292,7 @@ public:
     			int v =  g.inverted_adjacency[u][pos[u]-g.adjacency[u].size()].node;
     			//these are backwards edges, which have capacity exactly if the forward edge has non-zero flow
     			if (dist[v] == dist[u] + 1 && F[edgeID]) {
+    				//printf("-%d\n",edgeID);
     				int df = findAugmentingPath_recursive(v, min(f, F[edgeID]));
     				if (df > 0) {
     					F[edgeID] -= df;
@@ -278,15 +330,22 @@ public:
 		while (buildLevelGraph(s,t)) {
 			dbg_print_graph(s,t);
 			pos.clear();pos.growTo(g.nodes);//does this have to be done inside the inner well loop?
+#ifndef NDEBUG
+			dbg_pos.clear();dbg_pos.growTo(g.nodes);
+#endif
 			if(opt_dinics_recursive){
 				while (int delta = findAugmentingPath_recursive(s, INT_MAX)){
 					f += delta;
 					dbg_print_graph(s,t);
 				}
 			}else{
+				//int expect = dbg_findAugmentingPath_recursive(s,INT_MAX);
 				while (int delta = findAugmentingPath(s)){
+					//assert(delta==expect);
 					f += delta;
+
 					dbg_print_graph(s,t);
+					//expect = dbg_findAugmentingPath_recursive(s,INT_MAX);
 				}
 			}
 		}
