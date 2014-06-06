@@ -157,7 +157,19 @@ int main(int argc, char** argv)
         }else if  (!strcasecmp(opt_min_cut_alg,"edmondskarp-dynamic")){
         	mincutalg = MinCutAlg::ALG_EDKARP_DYN;
         }else if  (!strcasecmp(opt_min_cut_alg,"dinics")){
-        	mincutalg = MinCutAlg::ALG_DINICS;
+        	//Dinitz is also commonly spelled 'dinics' or 'Dinits', so accept those too...
+        	mincutalg = MinCutAlg::ALG_DINITZ;
+        }else if  (!strcasecmp(opt_min_cut_alg,"dinics-linkcut")){
+        	mincutalg = MinCutAlg::ALG_DINITZ_LINKCUT;
+        }else if  (!strcasecmp(opt_min_cut_alg,"dinitz")){
+        	mincutalg = MinCutAlg::ALG_DINITZ;
+        }else if  (!strcasecmp(opt_min_cut_alg,"dinitz-linkcut")){
+        	mincutalg = MinCutAlg::ALG_DINITZ_LINKCUT;
+        }else if  (!strcasecmp(opt_min_cut_alg,"dinits")){
+        	//Dinitz is also commonly spelled 'dinics' or 'Dinits', so accept those too...
+        	mincutalg = MinCutAlg::ALG_DINITZ;
+        }else if  (!strcasecmp(opt_min_cut_alg,"dinits-linkcut")){
+        	mincutalg = MinCutAlg::ALG_DINITZ_LINKCUT;
         }else{
         	fprintf(stderr,"Error: unknown max-flow/min-cut algorithm %s, aborting\n",((string)  opt_min_cut_alg).c_str());
         	exit(1);

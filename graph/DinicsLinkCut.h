@@ -13,7 +13,7 @@ using namespace std;
 using namespace Minisat;
 
 template< class Capacity ,class EdgeStatus=vec<bool> >
-class DinicsLinkCut:public MaxFlow{
+class DinitzLinkCut:public MaxFlow{
 
 public:
 
@@ -61,7 +61,7 @@ public:
 
 
 public:
-    DinicsLinkCut(DynamicGraph<EdgeStatus>& _g,Capacity & cap):g(_g),capacity(cap),INF(0xF0F0F0)
+    DinitzLinkCut(DynamicGraph<EdgeStatus>& _g,Capacity & cap):g(_g),capacity(cap),INF(0xF0F0F0)
 #ifdef DEBUG_MAXFLOW
 		,ek(_g,cap)
 #endif
@@ -85,7 +85,7 @@ public:
     }
     void dbg_print_graph(int from, int to){
    #ifndef NDEBUG
-
+    	return;
        		static int it = 0;
        		if(++it==6){
        			int a =1;
@@ -160,7 +160,7 @@ public:
 			bool found=true;
 			bool foundPath = false;
 
-			dbg_print_graph(src,dst);
+			//dbg_print_graph(src,dst);
 			int u=forest.findRoot(src);
 			 while(found){
 					 found=false;
@@ -207,7 +207,7 @@ public:
 					}
 					u = forest.findRoot(src);
 			}
-			forest.dbg_print_forest(true);
+			//forest.dbg_print_forest(true);
 
 			assert(!found);
 			 if(foundPath){
@@ -218,12 +218,12 @@ public:
 				 f+=c;
 				 forest.updateCostOfPathToRoot(src,-c);
 				 //delete edges with no remaining capacity
-				 forest.dbg_print_forest(true);
+				 //forest.dbg_print_forest(true);
 				 int minC=0;
 				 while(minC==0){
 
 					 int u = forest.ancecstorFindMin(src);
-					forest.dbg_print_forest(true);
+					//forest.dbg_print_forest(true);
 					 assert(forest.getCost(u)==minC);
 					 int edgeID = parentEdge[u];
 					 if(tree_edges[edgeID].in_tree){
@@ -237,7 +237,7 @@ public:
 					 forest.cut(u);
 					parentEdge[u]=-1;
 					 minC = forest.minCost(src);
-					forest.dbg_print_forest(true);
+					//forest.dbg_print_forest(true);
 				 }
 
 			 }else{
@@ -276,7 +276,7 @@ public:
 						int v = edge.node;
 						if(!g.edgeEnabled(edgeID)|| disabled[v]  || tree_edges[edgeID].backward_disabled)
 								continue;
-						if(tree_edges[edgeID].in_tree_backward){
+						if(parentEdge[v]==edgeID){
 							//need to remember the remaining flow on this edge...
 							assert(F[edgeID]>0);//else this edge wouldn't be in the tree
 							int residual_capacity = forest.getCost(v);
@@ -291,7 +291,7 @@ public:
 						int v = edge.node;
 						if(!g.edgeEnabled(edgeID) || disabled[v]  || tree_edges[edgeID].disabled)
 								continue;
-						if(tree_edges[edgeID].in_tree){
+						if(parentEdge[v]==edgeID){
 							int residual_capacity = forest.getCost(v);
 							F[edgeID]=capacity[edgeID] - residual_capacity;
 							assert(F[edgeID]>=0);

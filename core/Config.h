@@ -134,7 +134,8 @@ enum class MinCutAlg{
 	 ALG_EDKARP_ADJ,
 	 ALG_IBFS,
 	 ALG_EDKARP_DYN,
-	 ALG_DINICS
+	 ALG_DINITZ,
+	 ALG_DINITZ_LINKCUT
 };
 extern MinCutAlg mincutalg;
 enum class ComponentsAlg{

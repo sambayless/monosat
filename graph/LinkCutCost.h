@@ -494,10 +494,6 @@ public:
   // Makes node x the root of the virtual tree, and also x is the leftmost
   // node in its splay tree
    Node *expose(Node* x) {
-	   static int itere = 0;
-	   if(++itere==8){
-		   int a=1;
-	   }
     Node *last = nullptr;
     for (Node* y = x; y != NULL; y = y->parent) {
     	dbg_cost(y);

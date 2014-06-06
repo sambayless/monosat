@@ -13,6 +13,7 @@
 #include "IBFS.h"
 #include "EdmondsKarpDynamic.h"
 #include "Dinics.h"
+#include "DinicsLinkCut.h"
 
 MaxflowDetector::MaxflowDetector(int _detectorID, GraphTheorySolver * _outer,  DynamicGraph<PositiveEdgeStatus> &_g,DynamicGraph<NegativeEdgeStatus> &_antig, int from, int _target,double seed):
 Detector(_detectorID),outer(_outer),over_graph(_g),g(_g),antig(_antig),source(from),target(_target),rnd_seed(seed),positive_detector(NULL),negative_detector(NULL){
@@ -30,8 +31,18 @@ Detector(_detectorID),outer(_outer),over_graph(_g),g(_g),antig(_antig),source(fr
 	}else if (mincutalg==MinCutAlg::ALG_IBFS){
 		positive_detector = new IBFS<PositiveEdgeStatus>(_g);
 		negative_detector = new IBFS<NegativeEdgeStatus>(_antig);
-		positive_conflict_detector = positive_detector;
-		negative_conflict_detector = negative_detector;
+		positive_conflict_detector =new EdmondsKarpAdj<vec<int>,PositiveEdgeStatus>(_g,outer->edge_weights);
+		negative_conflict_detector = new EdmondsKarpAdj<vec<int>,NegativeEdgeStatus>(_antig,outer->edge_weights);
+	}else if (mincutalg==MinCutAlg::ALG_DINITZ){
+		positive_detector = new Dinitz<vec<int>,PositiveEdgeStatus>(_g,outer->edge_weights);
+		negative_detector = new Dinitz<vec<int>,NegativeEdgeStatus>(_antig,outer->edge_weights);
+		positive_conflict_detector =new EdmondsKarpAdj<vec<int>,PositiveEdgeStatus>(_g,outer->edge_weights);
+		negative_conflict_detector = new EdmondsKarpAdj<vec<int>,NegativeEdgeStatus>(_antig,outer->edge_weights);
+	}else if (mincutalg==MinCutAlg::ALG_DINITZ_LINKCUT){
+		positive_detector = new DinitzLinkCut<vec<int>,PositiveEdgeStatus>(_g,outer->edge_weights);
+		negative_detector = new DinitzLinkCut<vec<int>,NegativeEdgeStatus>(_antig,outer->edge_weights);
+		positive_conflict_detector =new EdmondsKarpAdj<vec<int>,PositiveEdgeStatus>(_g,outer->edge_weights);
+		negative_conflict_detector = new EdmondsKarpAdj<vec<int>,NegativeEdgeStatus>(_antig,outer->edge_weights);
 	}else{
 		positive_detector = new EdmondsKarpAdj<vec<int>,PositiveEdgeStatus>(_g,outer->edge_weights);
 		negative_detector = new EdmondsKarpAdj<vec<int>,NegativeEdgeStatus>(_antig,outer->edge_weights);
@@ -306,6 +317,7 @@ void MaxflowDetector::buildMaxFlowTooHighReason(int flow,vec<Lit> & conflict){
 				double startdreachtime = rtime(2);
 				stats_under_updates++;
 				under_maxflow = positive_detector->maxFlow(source,target);
+				assert(under_maxflow==positive_conflict_detector->maxFlow(source,target));
 				double reachUpdateElapsed = rtime(2)-startdreachtime;
 				stats_under_update_time+=reachUpdateElapsed;
 			}else
@@ -315,6 +327,7 @@ void MaxflowDetector::buildMaxFlowTooHighReason(int flow,vec<Lit> & conflict){
 				double startunreachtime = rtime(2);
 				stats_over_updates++;
 				over_maxflow = negative_detector->maxFlow(source,target);
+				assert(over_maxflow==negative_conflict_detector->maxFlow(source,target));
 				double unreachUpdateElapsed = rtime(2)-startunreachtime;
 				stats_over_update_time+=unreachUpdateElapsed;
 			}else

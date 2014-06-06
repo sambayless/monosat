@@ -12,7 +12,7 @@ using namespace std;
 using namespace Minisat;
 
 template< class Capacity ,class EdgeStatus=vec<bool> >
-class Dinics:public MaxFlow{
+class Dinitz:public MaxFlow{
 
 public:
 
@@ -48,7 +48,7 @@ public:
     vec<int> Q;
 
 public:
-    Dinics(DynamicGraph<EdgeStatus>& _g,Capacity & cap):g(_g),capacity(cap),INF(0xF0F0F0)
+    Dinitz(DynamicGraph<EdgeStatus>& _g,Capacity & cap):g(_g),capacity(cap),INF(0xF0F0F0)
 #ifdef DEBUG_MAXFLOW
 		,ek(_g,cap)
 #endif
@@ -72,7 +72,7 @@ public:
     }
     void dbg_print_graph(int from, int to){
    #ifndef NDEBUG
-
+    	return;
        		static int it = 0;
        		if(++it==6){
        			int a =1;
@@ -275,28 +275,25 @@ public:
     	prev.growTo(g.nodes);
     	f=0;
 
-    	    while (buildLevelGraph(s,t)) {
-    	    	dbg_print_graph(s,t);
-    	    	pos.clear();pos.growTo(g.nodes);//does this have to be done inside the inner well loop?
-    	    	if(opt_dinics_recursive){
-					while (int delta = findAugmentingPath_recursive(s, INT_MAX)){
-						f += delta;
-						dbg_print_graph(s,t);
-					}
-    	    	}else{
-					while (int delta = findAugmentingPath(s)){
-						f += delta;
-						dbg_print_graph(s,t);
-					}
-    	    	}
-    	    }
+		while (buildLevelGraph(s,t)) {
+			dbg_print_graph(s,t);
+			pos.clear();pos.growTo(g.nodes);//does this have to be done inside the inner well loop?
+			if(opt_dinics_recursive){
+				while (int delta = findAugmentingPath_recursive(s, INT_MAX)){
+					f += delta;
+					dbg_print_graph(s,t);
+				}
+			}else{
+				while (int delta = findAugmentingPath(s)){
+					f += delta;
+					dbg_print_graph(s,t);
+				}
+			}
+		}
 
 
 #ifdef DEBUG_MAXFLOW
     	int expected_flow =ek.maxFlow(s,t);
-#endif
-
-#ifdef DEBUG_MAXFLOW
     	assert(f==expected_flow);
 #endif
 
