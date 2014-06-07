@@ -25,10 +25,10 @@ using namespace Minisat;
 	static const int INF = INT_MAX/2;
 	 int setCount;
   struct Node {
-	int id=-1;
-	int netcost=INF;//netcost=grosscost(v)-grossmin(v)   cost of the edge connecting this node to its parent.
-	int netmin=0;//netmin(v)=grossmin(v) if v is root, or grossmin(v)-grossmin(parent(v)) else   minimum cost of any edge below this one.
-	bool hasRealParent=false;
+
+	int netcost=INF;//costs on the node are stored in 'delta' representation, following klein & mozes' description in the appendix in Planarity
+	int netmin=0;
+	bool hasRealParent=false;//used to skip splays in some cases.
 
 #ifndef NDEBUG_LINKCUT
 	int cost=INF;
@@ -40,7 +40,7 @@ using namespace Minisat;
 	int left=-1;
     int right=-1;
     int parent=-1;
-    Node(int id):id(id){
+    Node(int id){
 #ifndef NDEBUG
     	dbg_ID = id;
 #endif
@@ -210,7 +210,7 @@ using namespace Minisat;
 	  return false;
   }
 
-public:
+
   inline void dbg_print_forest(bool force = false){
 #ifndef NDEBUG_LINKCUT
 	  int iter = 0;
@@ -246,7 +246,7 @@ public:
 					s="blue";
 				else if (value(e.v)==l_False)
 					s="red";*/
-				printf("n%d . n%d [label=\"%d: %d\",color=\"%s\"]\n", i,nodes[n.parent].id, i, n.cost, s);
+				printf("n%d . n%d [label=\"%d: %d\",color=\"%s\"]\n", i,nodes[n.parent].dbg_ID, i, n.cost, s);
 			}
 
 		}
@@ -532,9 +532,6 @@ public:
 
     setCount--;
     expose(x);
-    //expose(y);//need to expose y as well, otherwise netcost will get computed incorrectly below... nope, thats not true, because x doesn't become an attached child of y below
-    //int x_gross_min = grossmin(x);
-    //int parent_min = grossmin(y);
 
     assert(nodes[x].parent==-1);
 #ifndef NDEBUG_LINKCUT
@@ -545,14 +542,14 @@ public:
     nodes[x].hasRealParent=true;
 #ifndef NDEBUG_LINKCUT
 
-        if(nodes[x].left==-1 && nodes[x].right==-1){
-        	assert(nodes[x].netmin==0);
-        	nodes[x].min=cost;
-        }else{
-        	nodes[x].min=std::min(nodes[x].min,cost);
-        }
+	if(nodes[x].left==-1 && nodes[x].right==-1){
+		assert(nodes[x].netmin==0);
+		nodes[x].min=cost;
+	}else{
+		nodes[x].min=std::min(nodes[x].min,cost);
+	}
 #endif
-        nodes[x].netmin = std::min(nodes[x].netmin,cost);
+	nodes[x].netmin = std::min(nodes[x].netmin,cost);
 
 #ifndef NDEBUG_LINKCUT
 	nodes[x].cost=cost;
@@ -646,20 +643,7 @@ public:
     bool connected(int x, int y) {
     if (x == y)
       return true;
-/*
-#ifndef NDEBUG_LINKCUT
-     bool hasParent = nodes[x].parent>-1;
-     int s1 = findRoot(x);
-     int s2 = findRoot(y);
-     bool dbg_connected = s1==s2;
-     if(dbg_connected){
-    	 assert(hasParent);
-     }else{
-    	 assert(!hasParent);
-     }
 
-#endif
-*/
      expose(x);
 	 expose(y);
      return nodes[x].parent != -1;
@@ -727,10 +711,6 @@ public:
 
     void reset(){
     	for(int i = 0;i<nodes.size();i++){
-    		/*nodes[i].parent=NULL;
-    		nodes[i].left=NULL;
-    		nodes[i].right =NULL;*/
-    		assert(nodes[i].id==i);
     		(nodes[i]).~Node();
     		new (&nodes[i]) Node(i);
     	}
