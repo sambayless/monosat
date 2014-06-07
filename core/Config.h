@@ -153,7 +153,7 @@ extern DistAlg distalg;
 
 extern IntOption opt_time;
 
-static double rtime(int level=1){
+static inline double rtime(int level=1){
 	if(level<=opt_time){
 		return cpuTime();
 	}else{

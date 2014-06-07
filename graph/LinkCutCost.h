@@ -28,7 +28,7 @@ using namespace Minisat;
 	int id;
 	int netcost=INF;//netcost=grosscost(v)-grossmin(v)   cost of the edge connecting this node to its parent.
 	int netmin=0;//netmin(v)=grossmin(v) if v is root, or grossmin(v)-grossmin(parent(v)) else   minimum cost of any edge below this one.
-
+	bool hasRealParent=false;
 
 #ifndef NDEBUG_LINKCUT
 	int cost=INF;
@@ -65,7 +65,7 @@ using namespace Minisat;
 	  return cost;
 	  //return v->cost;
   }
-  void update(Node * v) {
+  inline void update(Node * v) {
 #ifndef NDEBUG_LINKCUT
      	int mincost = v->cost;
 
@@ -200,7 +200,7 @@ using namespace Minisat;
   }
 
 public:
-  void dbg_print_forest(bool force = false){
+  inline void dbg_print_forest(bool force = false){
 #ifndef NDEBUG_LINKCUT
 	  int iter = 0;
 	  if(!force)
@@ -524,7 +524,9 @@ public:
   }
 
 
-   Node * _findRoot(Node * x) {
+  inline Node * _findRoot(Node * x) {
+	   if(!x->hasRealParent)
+		   return x;
     expose(x);
     while (x->right != NULL) {
       x = x->right;
@@ -568,6 +570,7 @@ public:
 #endif
     x->parent = y;
     x->netcost= cost;// - y->netcost;
+    x->hasRealParent=true;
 #ifndef NDEBUG_LINKCUT
 
         if(x->left==nullptr && x->right==nullptr){
@@ -606,6 +609,7 @@ public:
     	//childChange(x->right);
     	x->right=nullptr;
     	x->netcost=INF;
+    	x->hasRealParent=false;
 #ifndef NDEBUG_LINKCUT
     	x->cost=INF;
     	x->dbg_parent = nullptr;
@@ -686,9 +690,7 @@ public:
     void link(int x, int y, int cost = 0) {
     	if(x==y)
     		return;
-    	if(x==39){
-    	    		int a=1;
-    	    	}
+
     	Node * xnode = nodes[x];
     	Node * ynode = nodes[y];
     	_link(xnode,ynode,cost);
@@ -741,13 +743,13 @@ public:
     }
 
     void cut(int x){
-    	if(x==39){
-    		int a=1;
-    	}
-    	_cut(nodes[x]);
+      	_cut(nodes[x]);
     	dbg_min(nodes[x]);
     }
-
+    //True if u is a root in the forest
+    bool isRoot(int u){
+    	return !nodes[u]->hasRealParent;
+    }
 
     int numRoots(){
     	assert(dbgSetCount());
