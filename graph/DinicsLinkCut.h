@@ -68,8 +68,8 @@ public:
     struct Link{
     	int u;
     	int v;
-    	bool backward;
-    	int edgeID;
+    	bool backward:1;
+    	int edgeID:31;
     };
     vec<Link> toLink;
 #ifdef DEBUG_MAXFLOW
