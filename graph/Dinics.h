@@ -44,7 +44,8 @@ public:
     int src;
     int dst;
     vec<int> Q;
-
+    long stats_augmenting_rounds =0;
+    	long stats_rounds=0;
 #ifdef DEBUG_MAXFLOW
     vec<int> dbg_pos;
 	EdmondsKarpAdj<Capacity, EdgeStatus> ek;
@@ -65,6 +66,14 @@ public:
       	last_history_clear=-1;
     	//setAllEdgeCapacities(1);
     }
+
+    	void printStats(){
+    		printf("Dinics :\n");
+
+    		printf("Rounds: %d, Augmenting Rounds: %d\n",stats_rounds,stats_augmenting_rounds);
+    	}
+
+
     void setCapacity(int u, int w, int c){
     	//C.growTo(g.edges);
     	//C[ ]=c;
@@ -330,12 +339,14 @@ public:
 
 		while (buildLevelGraph(s,t)) {
 			dbg_print_graph(s,t);
-			pos.clear();pos.growTo(g.nodes);//does this have to be done inside the inner well loop?
+			stats_rounds++;
+			pos.clear();pos.growTo(g.nodes);
 #ifndef NDEBUG
 			dbg_pos.clear();dbg_pos.growTo(g.nodes);
 #endif
 			if(opt_dinics_recursive){
 				while (int delta = findAugmentingPath_recursive(s, INT_MAX)){
+					stats_augmenting_rounds++;
 					f += delta;
 					dbg_print_graph(s,t);
 				}
@@ -344,7 +355,7 @@ public:
 				while (int delta = findAugmentingPath(s)){
 					//assert(delta==expect);
 					f += delta;
-
+					stats_augmenting_rounds++;
 					dbg_print_graph(s,t);
 					//expect = dbg_findAugmentingPath_recursive(s,INT_MAX);
 				}

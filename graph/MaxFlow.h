@@ -20,6 +20,9 @@ public:
     virtual void setAllEdgeCapacities(int c)=0;
     virtual int maxFlow(int s, int t)=0;
 
+    virtual void printStats(){
+
+    }
 
     struct Edge {
     	int u;

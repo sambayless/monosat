@@ -30,7 +30,7 @@ static const char* _cat_graph ="GRAPH";
  DoubleOption  Minisat::opt_restart_inc       (_cat, "rinc",        "Restart interval increase factor", 2, DoubleRange(1, false, HUGE_VAL, false));
  DoubleOption  Minisat::opt_garbage_frac      (_cat, "gc-frac",     "The fraction of wasted memory allowed before a garbage collection is triggered",  0.20, DoubleRange(0, false, HUGE_VAL, false));
 
- IntOption Minisat::opt_time(_cat,"verb-time","Detail level of timing benchmarks (these add some overhead)",0,IntRange(0,3));
+ IntOption Minisat::opt_time(_cat,"verb-time","Detail level of timing benchmarks (these add some overhead)",0,IntRange(0,5));
 
  DoubleOption  Minisat::opt_random_theory_freq   (_cat, "rnd-theory-freq",    "The frequency with which the decision theory solvers are selected to make decisions", 1, DoubleRange(0, true, 1, true));
  BoolOption  Minisat::opt_early_theory_prop   (_cat, "early-theory-prop",    "If false, the solver waits until all literals are propagated before propagating theories; if true, theories are propagated while the solver is still propagating literals", false);
