@@ -680,7 +680,7 @@ public:
 	   return nodes.size();
    }
 
-   int findRoot(int x) {
+  inline int findRoot(int x) {
     int r= _findRoot(nodes[x])->id;
     dbg_min(nodes[x]);
     return r;

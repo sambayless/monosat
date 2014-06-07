@@ -48,8 +48,7 @@ public:
     	int edgeID;
     };
     vec<ParentEdge> parentEdge;
-   // vec<bool> disabled;
-    vec<bool> parent_edge_backward;
+
    /* struct EdgeInTree{
     	union{
     		char data;
@@ -527,7 +526,7 @@ public:
 					//forest.dbg_print_forest(true);
 					 assert(forest.getCost(u)==minC);
 					 int edgeID = parentEdge[u].edgeID;
-					 if(!parent_edge_backward[u]){
+					 if(!parentEdge[u].backward){
 						 assert(F[edgeID] + c<=capacity[edgeID]);
 						 F[edgeID] +=c;
 					 }else{
@@ -797,9 +796,8 @@ public:
 
 		parentEdge.clear();
 		parentEdge.growTo(g.nodes,{false,-1});
-		parent_edge_backward.clear();
-		parent_edge_backward.growTo(g.nodes);
 
+		toLink.capacity(g.nodes);
 
 	    while (buildLevelGraph(s,t)) {
 	    	stats_rounds++;
