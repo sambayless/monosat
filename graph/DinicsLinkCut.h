@@ -43,7 +43,11 @@ public:
     int INF;
     int src;
     int dst;
-    vec<int> parentEdge;
+    struct ParentEdge{
+    	bool backward;
+    	int edgeID;
+    };
+    vec<ParentEdge> parentEdge;
    // vec<bool> disabled;
     vec<bool> parent_edge_backward;
    /* struct EdgeInTree{
@@ -148,10 +152,10 @@ public:
    						}
    						int hasParent=false;
    						bool backwardParent=false;
-   						if(parentEdge[e.from]==i){
+   						if(parentEdge[e.from].edgeID==i){
    							hasParent=true;
    							s="red";
-   						}else if (parentEdge[e.to]==i){
+   						}else if (parentEdge[e.to].edgeID==i){
    							s="blue";
    							//hasParent=true;
    							backwardParent=true;
@@ -260,7 +264,7 @@ public:
     				 //++innerit;
     					 found=false;
     					 assert(dbg_isLinkRoot(u));
-    					 assert(parentEdge[u]==-1);
+    					 assert(parentEdge[u].edgeID==-1);
     					if (u==dst){
     						foundPath=true;
     						break;
@@ -273,7 +277,7 @@ public:
     							if((dist[v] != dist[u] + 1) ||  !g.edgeEnabled(edgeID) )
     									continue;
     							if (F[edgeID] < capacity[edgeID]) {
-    								 assert(parentEdge[u]==-1);
+    								 assert(parentEdge[u].edgeID==-1);
     								 assert(!dbg_hasLink(u));
     								toLink.push({u,v,false,edgeID});
     								u = forest.findRoot(v);
@@ -292,7 +296,7 @@ public:
 
     									//these are backwards edges, which have capacity exactly if the forward edge has non-zero flow
     									if (F[edgeID]) {
-    										 assert(parentEdge[u]==-1);
+    										 assert(parentEdge[u].edgeID==-1);
     										 assert(!dbg_hasLink(u));
     										toLink.push({u,v,true,edgeID});
     		    							u = forest.findRoot(v);
@@ -321,16 +325,18 @@ public:
     					 int v = e.v;
     					 int edgeID = e.edgeID;
     					 bool backward = e.backward;
-    					 assert(parentEdge[u]==-1);
+    					 assert(parentEdge[u].edgeID==-1);
     					 assert(edgeID>=0);
     					 if(backward){
     						 forest.link(u,v,F[edgeID]);
-    						 parent_edge_backward[u]=true;
-							 parentEdge[u]=edgeID;
+    						// parent_edge_backward[u]=true;
+							 parentEdge[u].edgeID=edgeID;
+							 parentEdge[u].backward=true;
     					 }else{
     						 forest.link(u,v,capacity[edgeID]-F[edgeID]);
-    						 parent_edge_backward[u]=false;
-							 parentEdge[u]=edgeID;
+    						 //parent_edge_backward[u]=false;
+    						 parentEdge[u].backward=false;
+							 parentEdge[u].edgeID=edgeID;
     					 }
     				 }
     				 toLink.clear();
@@ -348,9 +354,9 @@ public:
     				 while(minC==0){
     					 int u = forest.ancecstorFindMin(src);
     					 assert(forest.getCost(u)==minC);
-    					 int edgeID = parentEdge[u];
+    					 int edgeID = parentEdge[u].edgeID;
     					 assert(edgeID>=0);
-    					 if(!parent_edge_backward[u]){
+    					 if(!parentEdge[u].backward){
     						 assert(F[edgeID] + c<=capacity[edgeID]);
     						 F[edgeID] +=c;
     					 }else{
@@ -358,7 +364,7 @@ public:
     						 F[edgeID] =c;
     					 }
     					 forest.cut(u);
-    					 parentEdge[u]=-1;
+    					 parentEdge[u].edgeID=-1;
     					 minC = forest.minCost(src);
     				 }
     				 toLink.clear();
@@ -372,17 +378,17 @@ public:
     					 //done - no paths remain.
     					 //Clean up the state of the tree:
     					 for(int u = 0;u<g.nodes;u++){
-    						 if(parentEdge[u]>=0){
+    						 if(parentEdge[u].edgeID>=0){
     							 int c = forest.getCost(u);
-    							 int edgeID = parentEdge[u];
-    							 if(!parent_edge_backward[u]){
+    							 int edgeID = parentEdge[u].edgeID;
+    							 if(!parentEdge[u].backward){
     								 F[edgeID]=capacity[edgeID]-c;
     							 }else{
     								 F[edgeID]=c;
     							 }
 
     							 forest.cut(u);
-    							 parentEdge[u]=-1;
+    							 parentEdge[u].edgeID=-1;
     						 }
     					 }
 
@@ -402,14 +408,14 @@ public:
 								int v = edge.node;
 								if(!g.edgeEnabled(edgeID) )
 										continue;
-								if(parentEdge[v]==edgeID){
+								if(parentEdge[v].edgeID==edgeID){
 									//need to remember the remaining flow on this edge...
 									assert(F[edgeID]>0);//else this edge wouldn't be in the tree
 									int residual_capacity = forest.getCost(v);
 									F[edgeID]=residual_capacity;
 									assert(F[edgeID]>=0);
 									forest.cut(v);//this is a backward edge into u
-									parentEdge[v]=-1;
+									parentEdge[v].edgeID=-1;
 								}
 							}
 							for(auto edge:g.inverted_adjacency[u]){
@@ -417,12 +423,12 @@ public:
 								int v = edge.node;
 								if(!g.edgeEnabled(edgeID)  )
 										continue;
-								if(parentEdge[v]==edgeID){
+								if(parentEdge[v].edgeID==edgeID){
 									int residual_capacity = forest.getCost(v);
 									F[edgeID]=capacity[edgeID] - residual_capacity;
 									assert(F[edgeID]>=0);
 									forest.cut(v);
-									parentEdge[v]=-1;
+									parentEdge[v].edgeID=-1;
 								}
 							}
 							if(toLink.size()){
@@ -468,8 +474,8 @@ public:
 							if (F[edgeID] < capacity[edgeID]) {
 								forest.link(u,v,capacity[edgeID]-F[edgeID]);
 								//tree_edges[edgeID].in_tree=true;
-								parent_edge_backward[u]=false;
-								parentEdge[u]=edgeID;
+								parentEdge[u].backward=false;
+								parentEdge[u].edgeID=edgeID;
 								assert(forest.findRoot(u)==v);
 								u = forest.findRoot(v);
 								found=true;
@@ -488,8 +494,8 @@ public:
 									if (F[edgeID]) {
 										forest.link(u,v,F[edgeID]);
 										//tree_edges[edgeID].in_tree_backward=true;
-										parent_edge_backward[u]=true;
-										parentEdge[u]=edgeID;
+										parentEdge[u].backward=true;
+										parentEdge[u].edgeID=edgeID;
 										assert(forest.findRoot(u)==v);
 										u = forest.findRoot(v);
 										found=true;
@@ -520,7 +526,7 @@ public:
 					 int u = forest.ancecstorFindMin(src);
 					//forest.dbg_print_forest(true);
 					 assert(forest.getCost(u)==minC);
-					 int edgeID = parentEdge[u];
+					 int edgeID = parentEdge[u].edgeID;
 					 if(!parent_edge_backward[u]){
 						 assert(F[edgeID] + c<=capacity[edgeID]);
 						 F[edgeID] +=c;
@@ -530,7 +536,7 @@ public:
 						 F[edgeID] =c;
 					 }
 					 forest.cut(u);
-					parentEdge[u]=-1;
+					parentEdge[u].edgeID=-1;
 					 minC = forest.minCost(src);
 					//forest.dbg_print_forest(true);
 				 }
@@ -542,10 +548,10 @@ public:
 					 //done - no paths remain.
 					 //Clean up the state of the tree:
 					 for(int u = 0;u<g.nodes;u++){
-						 if(parentEdge[u]>=0){
+						 if(parentEdge[u].edgeID>=0){
 							 int c = forest.getCost(u);
-							 int edgeID = parentEdge[u];
-							 if(!parent_edge_backward[u]){
+							 int edgeID = parentEdge[u].edgeID;
+							 if(!parentEdge[u].backward){
 								 F[edgeID]=capacity[edgeID]-c;
 							 }else{
 
@@ -553,7 +559,7 @@ public:
 							 }
 
 							 forest.cut(u);
-							 parentEdge[u]=-1;
+							 parentEdge[u].edgeID=-1;
 						 }
 					 }
 				/*	 for(int i = 0;i<disabled.size();i++){
@@ -569,14 +575,14 @@ public:
 						int v = edge.node;
 						if(!g.edgeEnabled(edgeID) )
 								continue;
-						if(parentEdge[v]==edgeID){
+						if(parentEdge[v].edgeID==edgeID){
 							//need to remember the remaining flow on this edge...
 							assert(F[edgeID]>0);//else this edge wouldn't be in the tree
 							int residual_capacity = forest.getCost(v);
 							F[edgeID]=residual_capacity;
 							assert(F[edgeID]>=0);
 							forest.cut(v);//this is a backward edge into u
-							parentEdge[v]=-1;
+							parentEdge[v].edgeID=-1;
 						}
 					}
 					for(auto edge:g.inverted_adjacency[u]){
@@ -584,12 +590,12 @@ public:
 						int v = edge.node;
 						if(!g.edgeEnabled(edgeID)  )
 								continue;
-						if(parentEdge[v]==edgeID){
+						if(parentEdge[v].edgeID==edgeID){
 							int residual_capacity = forest.getCost(v);
 							F[edgeID]=capacity[edgeID] - residual_capacity;
 							assert(F[edgeID]>=0);
 							forest.cut(v);
-							parentEdge[v]=-1;
+							parentEdge[v].edgeID=-1;
 						}
 					}
 				 }
@@ -628,8 +634,8 @@ public:
     							if (F[edgeID] < capacity[edgeID]) {
     								forest.link(u,v,capacity[edgeID]-F[edgeID]);
     								//tree_edges[edgeID].in_tree=true;
-    								parent_edge_backward[u]=false;
-    								parentEdge[u]=edgeID;
+    								parentEdge[u].backward=false;
+    								parentEdge[u].edgeID=edgeID;
     								assert(forest.findRoot(u)==v);
     								found=true;
     								break;
@@ -645,9 +651,9 @@ public:
     								//these are backwards edges, which have capacity exactly if the forward edge has non-zero flow
     								if (F[edgeID]) {
     									forest.link(u,v,F[edgeID]);
-    									parent_edge_backward[u]=true;
+    									parentEdge[u].backward=true;
     									//tree_edges[edgeID].in_tree_backward=true;
-    									parentEdge[u]=edgeID;
+    									parentEdge[u].edgeID=edgeID;
     									assert(forest.findRoot(u)==v);
     									found=true;
     									break;
@@ -675,8 +681,8 @@ public:
     					 int u = forest.ancecstorFindMin(src);
     					//forest.dbg_print_forest(true);
     					 assert(forest.getCost(u)==minC);
-    					 int edgeID = parentEdge[u];
-    					 if(!parent_edge_backward[u]){
+    					 int edgeID = parentEdge[u].edgeID;
+    					 if(!parentEdge[u].edgeID){
     					 //if(tree_edges[edgeID].in_tree){
     						 assert(F[edgeID] + c<=capacity[edgeID]);
     						 F[edgeID] +=c;
@@ -686,7 +692,7 @@ public:
     						 F[edgeID] =c;
     					 }
     					 forest.cut(u);
-    					parentEdge[u]=-1;
+    					parentEdge[u].edgeID=-1;
     					 minC = forest.minCost(src);
     					//forest.dbg_print_forest(true);
     				 }
@@ -698,10 +704,10 @@ public:
     					 //done - no paths remain.
     					 //Clean up the state of the tree:
     					 for(int u = 0;u<g.nodes;u++){
-    						 if(parentEdge[u]>=0){
+    						 if(parentEdge[u].edgeID>=0){
     							 int c = forest.getCost(u);
-    							 int edgeID = parentEdge[u];
-    							 if(!parent_edge_backward[u]){
+    							 int edgeID = parentEdge[u].edgeID;
+    							 if(!parentEdge[u].edgeID){
     							// if(tree_edges[edgeID].in_tree){
     								 F[edgeID]=capacity[edgeID]-c;
     							 }else{
@@ -710,7 +716,7 @@ public:
     							 }
 
     							 forest.cut(u);
-    							 parentEdge[u]=-1;
+    							 parentEdge[u].edgeID=-1;
     						 }
     					 }
     				/*	 for(int i = 0;i<disabled.size();i++){
@@ -729,14 +735,14 @@ public:
     						int v = edge.node;
     						if(!g.edgeEnabled(edgeID))
     								continue;
-    						if(parentEdge[v]==edgeID){
+    						if(parentEdge[v].edgeID==edgeID){
     							//need to remember the remaining flow on this edge...
     							assert(F[edgeID]>0);//else this edge wouldn't be in the tree
     							int residual_capacity = forest.getCost(v);
     							F[edgeID]=residual_capacity;
     							assert(F[edgeID]>=0);
     							forest.cut(v);//this is a backward edge into u
-    							parentEdge[v]=-1;
+    							parentEdge[v].edgeID=-1;
     						}
     					}
     					for(auto edge:g.inverted_adjacency[u]){
@@ -744,12 +750,12 @@ public:
     						int v = edge.node;
     						if(!g.edgeEnabled(edgeID)  )
     								continue;
-    						if(parentEdge[v]==edgeID){
+    						if(parentEdge[v].edgeID==edgeID){
     							int residual_capacity = forest.getCost(v);
     							F[edgeID]=capacity[edgeID] - residual_capacity;
     							assert(F[edgeID]>=0);
     							forest.cut(v);
-    							parentEdge[v]=-1;
+    							parentEdge[v].edgeID=-1;
     						}
     					}
     				 }
@@ -790,7 +796,7 @@ public:
       	pos.clear();pos.growTo(g.nodes);
 
 		parentEdge.clear();
-		parentEdge.growTo(g.nodes,-1);
+		parentEdge.growTo(g.nodes,{false,-1});
 		parent_edge_backward.clear();
 		parent_edge_backward.growTo(g.nodes);
 
@@ -803,7 +809,7 @@ public:
 	    		pos[i]=0;
 
 	    	for(int i = 0;i<parentEdge.size();i++){
-	    		parentEdge[i]=-1;
+	    		parentEdge[i]={false,-1};
 	    	}
 
 			if(opt_dinics_recursive){
