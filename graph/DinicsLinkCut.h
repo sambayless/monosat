@@ -64,8 +64,8 @@ public:
     struct Link{
     	int u;
     	int v;
-    	int edgeID;
     	bool backward;
+    	int edgeID;
     };
     vec<Link> toLink;
 #ifdef DEBUG_MAXFLOW
@@ -79,12 +79,15 @@ public:
 	double totaltime=0;
 	long stats_augmenting_rounds =0;
 	long stats_rounds=0;
+	long stats_backtracks = 0;
+	long stats_avoided_backtracks=0;
 	void printStats(){
 		printf("Dinics Link Cut:\n");
 		printf("Total time: %f\n",totaltime);
 		printf("BFS Time: %f\n",bfstime);
 		printf("Augmenting Path Time: %f (search: %f, cleanup: %f)\n", augtime, augtime_search,augtime_cleanup);
 		printf("Rounds: %d, Augmenting Rounds: %d\n",stats_rounds,stats_augmenting_rounds);
+		printf("Backtracks %d (%d avoided)\n",stats_backtracks,stats_avoided_backtracks);
 	}
 
 public:
@@ -272,7 +275,7 @@ public:
     							if (F[edgeID] < capacity[edgeID]) {
     								 assert(parentEdge[u]==-1);
     								 assert(!dbg_hasLink(u));
-    								toLink.push({u,v,edgeID,false});
+    								toLink.push({u,v,false,edgeID});
     								u = forest.findRoot(v);
     								found=true;
     								//pos[u]++;
@@ -291,7 +294,7 @@ public:
     									if (F[edgeID]) {
     										 assert(parentEdge[u]==-1);
     										 assert(!dbg_hasLink(u));
-    										toLink.push({u,v,edgeID,true});
+    										toLink.push({u,v,true,edgeID});
     		    							u = forest.findRoot(v);
     										found=true;
     										//pos[u]++;
@@ -382,19 +385,18 @@ public:
     							 parentEdge[u]=-1;
     						 }
     					 }
-    				/*	 for(int i = 0;i<disabled.size();i++){
-    						 disabled[i]=false;
-    					 }*/
+
     					 toLink.clear();
 
     					 break;
     				 }else{
-    					// disabled[u]=true;
-    					 dist[u]=-1;
+    					 dist[u]=-1;//prevents u from being explored again.
     					 if(toLink.size() && u==toLink.last().v){
+    						 stats_avoided_backtracks++;
     						 u = toLink.last().u;
     						 toLink.pop();
     					 }else{
+    						stats_backtracks++;
 							for(auto edge:g.adjacency[u]){
 								int edgeID = edge.id;
 								int v = edge.node;
@@ -786,14 +788,12 @@ public:
     	while(forest.nNodes()<g.nodes)
     		forest.addNode();
       	pos.clear();pos.growTo(g.nodes);
-		//disabled.clear();
-		//disabled.growTo(g.nodes);
+
 		parentEdge.clear();
 		parentEdge.growTo(g.nodes,-1);
 		parent_edge_backward.clear();
 		parent_edge_backward.growTo(g.nodes);
-		//tree_edges.clear();
-		//tree_edges.growTo(g.edges);
+
 
 	    while (buildLevelGraph(s,t)) {
 	    	stats_rounds++;
@@ -801,16 +801,11 @@ public:
 	    	dbg_print_graph(s,t);
 	    	for(int i = 0;i<pos.size();i++)
 	    		pos[i]=0;
-	    	/*for(int i =0;i<disabled.size();i++){
-	    		disabled[i]=false;
-	    	}*/
+
 	    	for(int i = 0;i<parentEdge.size();i++){
 	    		parentEdge[i]=-1;
 	    	}
 
-	    	/*for(int i = 0;i<tree_edges.size();i++){
-	    		tree_edges[i].data=0;
-	    	}*/
 			if(opt_dinics_recursive){
 				int delta = findAugmentingPath_original(src,dst);
 				f += delta;
