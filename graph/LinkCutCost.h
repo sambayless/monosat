@@ -551,7 +551,7 @@ public:
 #ifndef NDEBUG_LINKCUT
 	Node* sY = _findRoot(y);
     Node* sX = _findRoot(x);
-    assert(sY!=sX);//else this is a bug
+    assert(sY!=sX);//else these are already linked.
     assert(x==sX);
 
 #endif
