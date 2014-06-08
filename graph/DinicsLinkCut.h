@@ -126,6 +126,8 @@ public:
        					printf("n%d [label=\"From\", style=filled, fillcolor=blue]\n", i);
        				}else if (i==to){
        					printf("n%d [label=\"To\", style=filled, fillcolor=red]\n", i);
+       				}else if (dist[i]==-1){
+       					printf("n%d [style=filled, fillcolor=gray]\n", i);
        				}else
        					printf("n%d\n", i);
        			}
@@ -263,7 +265,7 @@ public:
     				 //++innerit;
     					 found=false;
     					 assert(dbg_isLinkRoot(u));
-    					 assert(parentEdge[u].edgeID==-1);
+    					 //assert(parentEdge[u].edgeID==-1);
     					if (u==dst){
     						foundPath=true;
     						break;
@@ -276,7 +278,7 @@ public:
     							if((dist[v] != dist[u] + 1) ||  !g.edgeEnabled(edgeID) )
     									continue;
     							if (F[edgeID] < capacity[edgeID]) {
-    								 assert(parentEdge[u].edgeID==-1);
+    								// assert(parentEdge[u].edgeID==-1);
     								 assert(!dbg_hasLink(u));
     								toLink.push({u,v,false,edgeID});
     								u = forest.findRoot(v);
@@ -286,23 +288,23 @@ public:
     							}
     						}
     						 if(!found){
-    								for (;pos[u]-g.adjacency[u].size() <g.inverted_adjacency[u].size();pos[u]++){
-    									auto & edge = g.inverted_adjacency[u][pos[u]-g.adjacency[u].size()];
-    									int edgeID = edge.id;
-    									int v = edge.node;
-    									if((dist[v] != dist[u] + 1) ||  !g.edgeEnabled(edgeID) )
-    											continue;
+								for (;pos[u]-g.adjacency[u].size() <g.inverted_adjacency[u].size();pos[u]++){
+									auto & edge = g.inverted_adjacency[u][pos[u]-g.adjacency[u].size()];
+									int edgeID = edge.id;
+									int v = edge.node;
+									if((dist[v] != dist[u] + 1) ||  !g.edgeEnabled(edgeID) )
+											continue;
 
-    									//these are backwards edges, which have capacity exactly if the forward edge has non-zero flow
-    									if (F[edgeID]) {
-    										 assert(parentEdge[u].edgeID==-1);
-    										 assert(!dbg_hasLink(u));
-    										toLink.push({u,v,true,edgeID});
-    		    							u = forest.findRoot(v);
-    										found=true;
-    										//pos[u]++;
-    										break;
-    									}
+									//these are backwards edges, which have capacity exactly if the forward edge has non-zero flow
+									if (F[edgeID]) {
+										// assert(parentEdge[u].edgeID==-1);
+										 assert(!dbg_hasLink(u));
+										toLink.push({u,v,true,edgeID});
+										u = forest.findRoot(v);
+										found=true;
+										//pos[u]++;
+										break;
+									}
     							}
     						}
     					}
@@ -324,8 +326,9 @@ public:
     					 int v = e.v;
     					 int edgeID = e.edgeID;
     					 bool backward = e.backward;
-    					 assert(parentEdge[u].edgeID==-1);
+    					 //assert(parentEdge[u].edgeID==-1);
     					 assert(edgeID>=0);
+    					 assert(forest.findRoot(src)==u);
     					 if(backward){
     						 forest.link(u,v,F[edgeID]);
     						// parent_edge_backward[u]=true;
@@ -337,7 +340,10 @@ public:
     						 parentEdge[u].backward=false;
 							 parentEdge[u].edgeID=edgeID;
     					 }
+    					 assert(forest.findRoot(src)==forest.findRoot(v));
     				 }
+    				 static int iter = 0;
+    				 ++iter;
     				 toLink.clear();
     				 dbg_print_graph(src,dst);
     				 assert(forest.findRoot(src)==dst);
@@ -389,6 +395,7 @@ public:
     							 forest.cut(u);
     							 parentEdge[u].edgeID=-1;
     						 }
+    						 forest.undeleteNode(u);
     					 }
 
     					 toLink.clear();
@@ -402,7 +409,8 @@ public:
     						 toLink.pop();
     					 }else{
     						stats_backtracks++;
-							for(auto edge:g.adjacency[u]){
+    						forest.removeNode(u);
+							/*for(auto edge:g.adjacency[u]){
 								int edgeID = edge.id;
 								int v = edge.node;
 								if(!g.edgeEnabled(edgeID) )
@@ -429,7 +437,7 @@ public:
 									forest.cut(v);
 									parentEdge[v].edgeID=-1;
 								}
-							}
+							}*/
 							if(toLink.size()){
 								u = forest.findRoot(toLink.last().u);
 							}else{
@@ -785,9 +793,6 @@ public:
     	F.growTo(g.all_edges.size());
     	dist.clear();
     	dist.growTo(g.nodes);
-    	/*M.growTo(g.nodes);
-    	 prev.growTo(g.nodes);*/
-
     	f=0;
     	forest.reset();
     	while(forest.nNodes()<g.nodes)
@@ -797,7 +802,7 @@ public:
 		parentEdge.clear();
 		parentEdge.growTo(g.nodes,{false,-1});
 
-		toLink.capacity(g.nodes);
+		//toLink.capacity(g.nodes);
 
 	    while (buildLevelGraph(s,t)) {
 	    	stats_rounds++;

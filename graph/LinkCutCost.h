@@ -29,7 +29,7 @@ using namespace Minisat;
 	int netcost=INF;//costs on the node are stored in 'delta' representation, following klein & mozes' description in the appendix in Planarity
 	int netmin=0;
 	bool hasRealParent=false;//used to skip splays in some cases.
-
+	bool deleted=false;
 #ifndef NDEBUG_LINKCUT
 	int cost=INF;
 	int min=INF;
@@ -498,7 +498,11 @@ using namespace Minisat;
 	   return x;
     expose(x);
     while (nodes[x].right >-1) {
-      x = nodes[x].right;
+    	if(nodes[ nodes[x].right].deleted){
+    		cut(x);
+    		break;
+    	}
+        x = nodes[x].right;
     }
     //splay(x);
     return x;
@@ -529,7 +533,7 @@ using namespace Minisat;
     assert(x==sX);
 
 #endif
-
+    assert(!nodes[y].deleted);
     setCount--;
     expose(x);
 
@@ -569,26 +573,6 @@ using namespace Minisat;
     expose(y);
     return nodes[x].parent != -1;
   }
-    void _cut(int xID){
-    	Node & x = nodes[xID];
-    	expose(xID);
-    	assert(x.right>-1);//else, x is a root node
-    	nodes[x.right].netcost+=x.netcost;
-    	nodes[x.right].parent=-1;
-    	update(x.right);
-    	//childChange(x.right);
-    	x.right=-1;
-    	x.netcost=INF;
-    	x.hasRealParent=false;
-#ifndef NDEBUG_LINKCUT
-    	x.cost=INF;
-    	x.dbg_parent = -1;
-#endif
-    	childChange(xID);
-    	update(x);
-    	setCount++;
-    	dbg_all();
-    }
 
     //u is the node to search from; a is a weight greater to or equal to the delta_minw(s)
 	//returns the rightmost (or leftmost, if leftdir is true) solid descendent v of u such that w(v) <= a+w(u)
@@ -689,15 +673,44 @@ public:
 		return solidFind(p.right,alpha-nodes[p.right].netcost - p.netcost,leftdir);
 	}
 
+	void removeNode(int n){
+		assert(!nodes[n].deleted);
+		nodes[n].deleted=true;
+	}
+
+	void undeleteNode(int n){
+		nodes[n].deleted=false;
+	}
 
     //updates the cost of each element in x's path to root.
     void updateCostOfPathToRoot(int x, int delta){
     	updatePathCost(x,delta);
     }
 
-    void cut(int x){
-      	_cut(x);
-    	dbg_min(x);
+    void cut(int xID){
+		expose(xID);
+		Node & x = nodes[xID];
+		assert(isSplayRoot(xID));
+		if(x.right==-1){
+			//x is already a root node
+			return;
+		}
+		//assert(x.right>-1);//else, x is a root node
+		nodes[x.right].netcost+=x.netcost;
+		nodes[x.right].parent=-1;
+		update(x.right);
+		//childChange(x.right);
+		x.right=-1;
+		x.netcost=INF;
+		x.hasRealParent=false;
+#ifndef NDEBUG_LINKCUT
+		x.cost=INF;
+		x.dbg_parent = -1;
+#endif
+		childChange(xID);
+		update(x);
+		setCount++;
+		dbg_all();
     }
     //True if u is a root in the forest
     bool isRoot(int u){
