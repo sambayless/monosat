@@ -205,7 +205,7 @@ public:
 		if(numsets==0){
 			assert(min_weight==0);
 		}
-		status.setMinimumSpanningTree(min_weight);
+		status.setMinimumSpanningTree(numsets>1 ? INF: min_weight);
 		for(int i = 0;i<in_tree.size();i++){
 			//Note: for the tree edge detector, polarity is effectively reversed.
 			if(reportPolarity<1 && (!g.edgeEnabled(i) || in_tree[i]) ){
@@ -283,6 +283,12 @@ public:
 		if(numsets>1){
 			return INF;
 		}
+		return min_weight;
+	}
+
+	int forestWeight(){
+		update();
+		assert(dbg_uptodate());
 		return min_weight;
 	}
 

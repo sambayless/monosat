@@ -37,7 +37,10 @@ public:
 
 	virtual bool dbg_uptodate()=0;
 	virtual bool dbg_mst()=0;
+	//Total weight of the mst (or infinite, if the graph is disconnected)
 	virtual int weight()=0;
+	//Sum of the weight of the mst of each tree in the forest
+	virtual int forestWeight()=0;
 	virtual Minisat::vec<int> & getSpanningTree()=0;
 	virtual int getParent(int node)=0;
 	virtual int getParentEdge(int node)=0;

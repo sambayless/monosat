@@ -166,10 +166,10 @@ public:
 			}
 		}
 
-		if (sets.NumSets()>1)
-			min_weight=INF;
+/*		if (sets.NumSets()>1)
+			min_weight=INF;*/
 
-		status.setMinimumSpanningTree(min_weight);
+		status.setMinimumSpanningTree(sets.NumSets()>1 ? INF: min_weight);
 
 		//if(reportPolarity>-1){
 		for(int i = 0;i<in_tree.size();i++){
@@ -228,7 +228,13 @@ public:
 		update();
 
 		assert(dbg_uptodate());
-
+		if(sets.NumSets()>1)
+			return INF;
+		return min_weight;
+	}
+	int forestWeight(){
+		update();
+		assert(dbg_uptodate());
 		return min_weight;
 	}
 	 int numComponents(){

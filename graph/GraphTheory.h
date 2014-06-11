@@ -1558,6 +1558,10 @@ public:
 			mstDetector = new MSTDetector(detectors.size(),this, g, antig, this->edge_weights,drand(rnd_seed));
 			detectors.push(mstDetector);
 		}
+		if(!S->hasTheory(edgeVar) || (S->getTheoryID(edgeVar)!= getTheoryIndex()) || ! isEdgeVar(S->getTheoryVar(edgeVar)) ){
+			fprintf(stderr,"%d is not an edge variable for theory %d! Aborting\n",edgeVar+1, getTheoryIndex());
+			exit(1);
+		}
 		edgeVar = S->getTheoryVar(edgeVar);
 		int edgeid =getEdgeID(edgeVar);
 		assert(edgeid>=0);

@@ -8,6 +8,7 @@
 #include "DynamicGraph.h"
 #include "core/Config.h"
 #include "MinimumSpanningTree.h"
+#include "Kruskal.h"
 #include <algorithm>
 #include <limits>
 using namespace Minisat;
@@ -25,7 +26,7 @@ public:
 	int history_qhead;
 
 	int last_history_clear;
-	bool hasParents;
+
 	int INF;
 
 	vec<int> mst;
@@ -55,6 +56,7 @@ public:
 
 	int num_sets=0;
 
+	vec<int> edge_to_component;
 
 	vec<int> components;
 
@@ -69,7 +71,9 @@ public:
 				}
 				DefaultReachStatus(){}
 			};
-
+#ifndef NDEBUG
+	Kruskal<MinimumSpanningTree::NullStatus,EdgeStatus> dbg;
+#endif
 public:
 
 	int stats_full_updates;
@@ -83,8 +87,11 @@ public:
 	double stats_full_update_time;
 	double stats_fast_update_time;
 
-	SpiraPan(DynamicGraph<EdgeStatus> & graph, Status & status, int reportPolarity=0 ):g(graph), status(status), last_modification(-1),last_addition(-1),last_deletion(-1),history_qhead(0),last_history_clear(0),INF(0),reportPolarity(reportPolarity),Q(VertLt(component_weight)){
-
+	SpiraPan(DynamicGraph<EdgeStatus> & graph, Status & status, int reportPolarity=0 ):g(graph), status(status), last_modification(-1),last_addition(-1),last_deletion(-1),history_qhead(0),last_history_clear(0),INF(0),reportPolarity(reportPolarity),Q(VertLt(component_weight))
+#ifndef NDEBUG
+		,dbg(g,MinimumSpanningTree::nullStatus,0)
+#endif
+	{
 		mod_percentage=0.2;
 		stats_full_updates=0;
 		stats_fast_updates=0;
@@ -95,7 +102,7 @@ public:
 		stats_num_skipable_deletions=0;
 		stats_fast_failed_updates=0;
 		min_weight=-1;
-		hasParents=false;
+
 	}
 
 	void setNodes(int n){
@@ -104,9 +111,11 @@ public:
 		in_tree.growTo(g.nEdgeIDs());
 		seen.growTo(n);
 		INF=std::numeric_limits<int>::max();
+		component_weight.growTo(g.next_id);
+		parents.growTo(n,-1);
+		edge_to_component.growTo(n,-1);
 
-		parents.growTo(n);
-		parent_edges.growTo(n);
+		parent_edges.growTo(n,-1);
 	}
 /*
  * 	//chin houck insertion
@@ -160,8 +169,407 @@ public:
 
 	void dbg_parents(){
 #ifndef NDEBUG
+		//check that the parents don't cycle
+		for(int i = 0;i<g.nodes;i++){
+			int p = i;
+			int num_parents= 0;
+			while(p!=-1){
+				num_parents++;
+				if(parents[p]>-1){
+					int e = parent_edges[p];
+					int u = g.all_edges[e].from;
+					int v = g.all_edges[e].to;
+					assert(u==p || v==p);
+					assert(u==parents[p]||v==parents[p]);
+					assert(in_tree[e]);
+					assert(components[p]==components[i]);
+					assert(components[parents[p]]==components[i]);
+				}else{
+					assert(parent_edges[p]==-1);
+				}
 
+				p = parents[p];
+				assert(num_parents<g.nodes);
+
+			}
+
+		}
+		int n_components = 0;
+		//check that each component has a unique root
+		for(int c = 0;c<g.nodes;c++){
+			if(components[c]==c){
+				n_components++;
+				int root = c;
+				while(parents[root]>-1){
+					root = parents[root];
+				}
+
+				for(int i = 0;i<g.nodes;i++){
+					if(components[i]==c){
+						//check that the root of i is root
+						int p =i;
+						while(parents[p]>-1){
+							p = parents[p];
+						}
+						assert(p==root);
+					}
+				}
+
+			}
+		}
+		assert(n_components==num_sets);
 #endif
+	}
+
+	void addEdgeToMST(int edgeid){
+		int u = g.all_edges[edgeid].from;
+		int v = g.all_edges[edgeid].to;
+		int w = g.all_edges[edgeid].weight;
+		dbg_parents();
+		if(components[u] != components[v]){
+			//If u,v are in separate components, then this edge must be in the mst (and we need to fix the component markings)
+			in_tree[edgeid]=true;
+			num_sets--;
+			int higher_component = v;
+			int lower_component = u;
+			int new_c = components[u];
+			int old_c = components[v];
+			if(new_c>old_c){
+				std::swap(higher_component,lower_component);
+				std::swap(new_c,old_c);
+			}
+			//ok, now set every node in the higher component to be in the lower component with a simple dfs.
+			//fix the parents at the same time.
+			min_weight+=g.weights[edgeid];
+			assert(components[lower_component]==new_c);
+			assert(components[higher_component]==old_c);
+			components[higher_component]=new_c;
+			parents[higher_component]=lower_component;
+			parent_edges[higher_component]=edgeid;
+			q.clear();
+			q.push(higher_component);
+			while(q.size()){
+				int n = q.last(); q.pop();
+				for(auto & edge:g.adjacency_undirected[n]){
+					if(in_tree[edge.id]){
+						assert(g.edgeEnabled(edge.id));
+						int t = edge.node;
+						if(components[t]==old_c){
+							components[t]=new_c;
+							parents[t]=n;
+							parent_edges[t]=edge.id;
+							q.push(t);
+						}
+
+					}
+				}
+			}
+			dbg_parents();
+		}else{
+			dbg_parents();
+			assert(components[u]==components[v]);
+			if(parents[u]==v || parents[v]==u){
+				//If there is already another edge (u,v) that is in the tree, then we at most need to swap that edge out for this one.
+				//note that this can only be the case if u is the parent of v or vice versa
+				int p_edge = parent_edges[u];
+				if(parents[v]==u){
+					p_edge = parent_edges[v];
+				}
+				if(g.getWeight(p_edge)> g.getWeight(edgeid)){
+					//then swap these edges without changing anything else.
+					in_tree[p_edge]=false;
+					in_tree[edgeid]=true;
+					int delta = g.getWeight(p_edge)- g.getWeight(edgeid);
+					min_weight-=delta;
+					if(parents[v]==u){
+						assert(parent_edges[v]==p_edge);
+						parent_edges[v] = edgeid;
+					}else{
+						assert(parent_edges[u]==p_edge);
+						parent_edges[u] = edgeid;
+					}
+				}
+				dbg_parents();
+			}else{
+
+				//otherwise, find the cycle induced by adding this edge into the MST (by walking up the tree to find the LCA - if we are doing many insertions, could we swap this out for tarjan's OLCA?).
+				int p = u;
+
+				while(p>-1){
+					seen[p]=true;
+					p=parents[p];
+				}
+				int max_edge_weight = -1;
+				int max_edge = -1;
+				bool edge_on_left=false;//records which branch of the tree rooted at p the edge we are replacing is
+				p = v;
+				while(true){
+					assert(p>-1);//u and v must share a parent, because u and v are in the same connected component and we have already computed the mst.
+					if(seen[p]){
+						break;
+					}else{
+						if (parents[p]>-1 && g.getWeight( parent_edges[p]) > max_edge_weight){
+							assert( parent_edges[p]>-1);
+							max_edge_weight=g.weights[ parent_edges[p]];
+							max_edge = parent_edges[p];
+						}
+						p = parents[p];
+					}
+				}
+				assert(seen[p]);
+				int lca = p;//this is the lowest common parent of u and v.
+				 p = u;
+				while(p!=lca){
+					assert(seen[p]);
+					seen[p]=false;
+					if (parents[p]>-1 && g.getWeight( parent_edges[p]) > max_edge_weight){
+						assert( parent_edges[p]>-1);
+						max_edge_weight=g.weights[ parent_edges[p]];
+						max_edge = parent_edges[p];
+						edge_on_left=true;
+					}
+					p=parents[p];
+				}
+
+				//reset remaining 'seen' vars
+				assert(p==lca);
+				while (p>-1){
+					assert(seen[p]);
+					seen[p]=false;
+					p = parents[p];
+				}
+				assert(max_edge>-1);
+				if(max_edge_weight>g.getWeight(edgeid)){
+					//then swap out that edge with the new edge.
+					//this will also require us to repair parent edges in the cycle
+					min_weight-= max_edge_weight;
+					min_weight+= g.getWeight(edgeid);
+					in_tree[edgeid]=true;
+					in_tree[max_edge]=false;
+
+					int last_p;
+					if(edge_on_left){
+						p = u;
+						last_p = v;
+					}else{
+						p=v;
+						last_p = u;
+					}
+
+					int last_edge = edgeid;
+					while(parent_edges[p]!=max_edge){
+						assert(p>-1);
+						parents[p]=last_p;
+
+						last_p = p;
+						p = parents[p];
+					}
+					assert(parent_edges[p]==max_edge);
+					std::swap(parent_edges[v],last_edge);//re-orient the parents.
+					parents[p]=last_p;
+				}
+				dbg_parents();
+			}
+
+		}
+		dbg_parents();
+	}
+
+	void removeEdgeFromMST(int edgeid){
+		dbg_parents();
+		if(!in_tree[edgeid]){
+			//If an edge is disabled that was NOT in the MST, then no update is required.
+		}else{
+			//this is the 'tricky' case for mst.
+			//following Spira & Pan, each removed edge splits the spanning tree into separate components that are MST's for those components.
+			//we then basically run Prim's to stitch those components back together, if they can be stitched.
+
+			int u = g.all_edges[edgeid].from;
+			int v = g.all_edges[edgeid].to;
+
+			in_tree[edgeid]=false;
+			min_weight-=g.getWeight(edgeid);
+			num_sets++;
+
+			assert(components[u]==components[v]);
+			assert(parents[u]==v || parents[v]==u);
+			if(parents[u]==v){
+				parents[u]=-1;
+				parent_edges[u]=-1;
+			}else{
+				parents[v]=-1;
+				parent_edges[v]=-1;
+			}
+			//if we want to maintain the guarantee components are always assigned the lowest node number that they contain, we'd need to modify the code below a bit.
+			int new_c = u;
+
+			if(new_c == components[v]){
+				new_c=v;
+			}
+			int old_c = components[u];
+			components_to_visit.push(new_c);
+			assert(new_c!= components[u]);
+			components[new_c]=new_c;
+			assert(q.size()==0);
+			//relabel the components of the tree that has been split off.
+			q.clear();
+			q.push(new_c);
+			while(q.size()){
+				int n = q.last(); q.pop();
+				for(auto & edge:g.adjacency_undirected[n]){
+					if(in_tree[edge.id]){
+						assert(g.edgeEnabled(edge.id));
+						int t = edge.node;
+						if(components[t]==old_c){
+							components[t]=new_c;
+							q.push(t);
+						}
+					}
+				}
+			}
+
+		}
+		dbg_parents();
+	}
+
+	void prims(){
+		dbg_parents();
+		component_weight.clear();
+		component_weight.growTo(g.nodes,INF);
+		for(int i = 0;i<components_to_visit.size();i++){
+			int c = components_to_visit[i];
+			if(components[c]!=c){
+				//then this component has already been merged into another one, no need to visit it.
+				continue;
+			}
+			assert(c>=0);
+
+			//ok, try to connect u's component to v
+			//ideally, we'd use the smaller of these two components...
+			int smallest_edge=-1;
+			int smallest_weight = INF;
+			Q.insert(c);
+			int start_node = c;
+			//do a dfs to find all the edges leading out of this component.
+			while(Q.size()){
+				int cur_component = Q.removeMin();
+
+				int last_p = -1;
+				int last_edge = -1;
+
+				if(cur_component!=c){
+					//connect these two components together
+					int edgeid = edge_to_component[cur_component];
+					assert(g.getWeight(edgeid)==component_weight[cur_component]);
+					int u = g.all_edges[edgeid].from;
+					int v=  g.all_edges[edgeid].to;
+					assert(components[u]==c||components[v]==c);
+					assert(components[u]==cur_component||components[v]==cur_component);
+
+					last_edge=edgeid;
+					if(components[u]==cur_component){
+						//attach these components together using this edge.
+						//this will force us to re-root cur_component at u (this will happen during the dfs below)
+						start_node= u;
+						last_p = v;
+					}else{
+						start_node = v;
+						last_p=u;
+					}
+
+					num_sets--;
+					in_tree[edgeid]=true;
+					min_weight+=g.getWeight(edgeid);
+					parents[start_node]=last_p;
+					parent_edges[start_node]=edgeid;
+					assert(components[start_node]==cur_component);
+					components[start_node]=c;
+				}
+				component_weight[cur_component]=INF;
+				q.clear();
+				q.push(start_node);
+				//do a dfs over the component, finding all edges that leave the component. fix the parent edges in the same pass, if needed.
+				while(q.size()){
+					int n = q.last(); q.pop();
+					assert(components[n]==c);
+					for(auto & edge:g.adjacency_undirected[n]){
+						if(g.edgeEnabled(edge.id)){
+							int t = edge.node;
+							if(!in_tree[edge.id]){
+								assert(g.edgeEnabled(edge.id));
+								int ncomponent = components[t];
+								if(ncomponent!= c && ncomponent != cur_component){
+									int w = g.getWeight(edge.id);
+									if(w<component_weight[ncomponent]){
+
+										edge_to_component[ncomponent]=edge.id;
+										component_weight[ncomponent]= w;
+
+										Q.update(ncomponent);
+									}
+								}
+							}else if (components[t]==cur_component){
+								if(components[t]!=c){
+									components[t]=c;
+									parents[t]=n;
+									parent_edges[t]=edge.id;
+								}
+								if(!seen[t]){
+									seen[t]=true;
+									q.push(t);
+								}
+							}
+						}
+					}
+				}
+
+
+
+			}
+			seen.clear();
+			seen.growTo(g.nodes);
+			/*if(smallest_edge>-1){
+				num_sets--;
+				min_weight+=g.getWeight(smallest_edge);
+				assert(!in_tree[smallest_edge]);
+				in_tree[smallest_edge]=true;
+
+				//connect these two components together using this edge.
+				//this requires us to fix the parent edges.
+
+				int f = g.all_edges[smallest_edge].from;
+				int t = g.all_edges[smallest_edge].to;
+				assert(components[f]==c|| components[t]==c);
+
+				if(components[f]==c){
+					std::swap(f,t);
+				}
+				int new_c = c;
+				int old_c = components[f];
+				parents[f]=t;
+				components[f]=new_c;
+				parent_edges[f]=smallest_edge;
+				q.clear();
+				q.push(f);
+				while(q.size()){
+					int n = q.last(); q.pop();
+					assert(components[n]==new_c);
+					for(auto & edge:g.adjacency_undirected[n]){
+						if(in_tree[edge.id]){
+							assert(g.edgeEnabled(edge.id));
+							int t = edge.node;
+							if(components[t]==old_c){
+								components[t]=new_c;
+								q.push(t);
+							}
+							parents[t]=n;
+							parent_edges[t]=edge.id;
+						}
+					}
+				}
+			}*/
+		}
+		components_to_visit.clear();
 	}
 
 	void update( ){
@@ -177,7 +585,7 @@ public:
 					return;
 		if(last_modification<=0 || g.changed()){
 			INF=g.nodes+1;
-			hasParents=false;
+
 
 			setNodes(g.nodes);
 			seen.clear();
@@ -188,7 +596,10 @@ public:
 			for(int i = 0;i<g.nodes;i++)
 				components.push(i);
 			mst.clear();
+			parents.clear();
 			parents.growTo(g.nodes,-1);
+			parent_edges.clear();
+			parent_edges.growTo(g.edges,-1);
 			for(int i = 0;i<in_tree.size();i++)
 				in_tree[i]=false;
 		}
@@ -204,276 +615,20 @@ public:
 
 			int edgeid = g.history[i].id;
 			if(g.history[i].addition && g.edgeEnabled(edgeid) ){
-
-				int u = g.all_edges[edgeid].from;
-				int v = g.all_edges[edgeid].to;
-				int w = g.all_edges[edgeid].weight;
-				if(components[u] != components[v]){
-					//If u,v are in separate components, then this edge must be in the mst (and we need to fix the component markings)
-					in_tree[edgeid]=true;
-					num_sets--;
-					int higher_component = u;
-					int lower_component = v;
-					int new_c = components[u];
-					int old_c = components[v];
-					if(components[v]>components[u]){
-						std::swap(higher_component,lower_component);
-						std::swap(new_c,old_c);
-					}
-					//ok, now set every node in the higher component to be in the lower component with a simple dfs.
-					//fix the parents at the same time.
-					min_weight+=g.weights[edgeid];
-					parents[higher_component]=lower_component;
-					parent_edges[higher_component]=edgeid;
-					q.clear();
-					q.push(higher_component);
-					while(q.size()){
-						int n = q.last(); q.pop();
-						for(auto & edge:g.adjacency_undirected[n]){
-							if(in_tree[edge.id]){
-								assert(g.edgeEnabled(edge.id));
-								int t = edge.node;
-								if(components[t]==old_c){
-									components[t]==new_c;
-									q.push(t);
-								}
-								parents[t]=n;
-								parent_edges[t]=edge.id;
-							}
-						}
-					}
-					dbg_parents();
-				}else{
-					assert(components[u]==components[v]);
-					if(parents[u]==v || parents[v]==u){
-						//If there is already another edge (u,v) that is in the tree, then we at most need to swap that edge out for this one.
-						//note that this can only be the case if u is the parent of v or vice versa
-						int p_edge = parent_edges[u];
-						if(parents[v]==u){
-							p_edge = parent_edges[v];
-						}
-						if(g.getWeight(p_edge)> g.getWeight(edgeid)){
-							//then swap these edges without changing anything else.
-							in_tree[p_edge]=false;
-							in_tree[edgeid]=true;
-							int delta = g.getWeight(p_edge)- g.getWeight(edgeid);
-							min_weight-=delta;
-							if(parents[v]==u){
-								assert(parent_edges[v]==p_edge);
-								parent_edges[v] = edgeid;
-							}else{
-								assert(parent_edges[u]==p_edge);
-								parent_edges[u] = edgeid;
-							}
-						}
-					}else{
-
-						//otherwise, find the cycle induced by adding this edge into the MST (by walking up the tree to find the LCA - if we are doing many insertions, could we swap this out for tarjan's OLCA?).
-						int p = u;
-
-						while(p>-1){
-							seen[p]=true;
-							p=parents[p];
-						}
-						int min_edge_weight = INF;
-						int min_edge = -1;
-						bool edge_on_left=false;//records which branch of the tree rooted at p the edge we are replacing is
-						p = v;
-						while(true){
-							assert(p>-1);//u and v must share a parent, because u and v are in the same connected component and we have already computed the mst.
-							if(seen[p]){
-								break;
-							}else{
-								if (g.getWeight( parent_edges[p]) < min_edge_weight){
-									min_edge_weight=g.weights[ parent_edges[p]];
-									min_edge = parent_edges[p];
-								}
-								p = parents[p];
-							}
-						}
-						assert(seen[p]);
-						 p = u;
-						while(p>-1){
-							assert(seen[p]);
-							seen[p]=false;
-							if (g.getWeight( parent_edges[p]) < min_edge_weight){
-								min_edge_weight=g.weights[ parent_edges[p]];
-								min_edge = parent_edges[p];
-								edge_on_left=true;
-							}
-							p=parents[p];
-						}
-						if(min_edge_weight<g.getWeight(edgeid)){
-							//then swap out that edge with the new edge.
-							//this will also require us to repair parent edges in the cycle
-							in_tree[edgeid]=true;
-							in_tree[min_edge]=false;
-							int p;
-							int last_p;
-							if(edge_on_left){
-								p = u;
-								last_p = v;
-							}else{
-								p=v;
-								last_p = u;
-							}
-
-							int last_edge = edgeid;
-							while(parent_edges[p]!=min_edge){
-								parents[p]=last_p;
-								std::swap(parent_edges[v],last_edge);//re-orient the parents.
-								last_p = p;
-								p = parents[p];
-							}
-						}
-					}
-
-					dbg_parents();
-				}
+				addEdgeToMST(edgeid);
 			}else if (!g.history[i].addition &&  !g.edgeEnabled(edgeid)){
-				if(!in_tree[edgeid]){
-					//If an edge is disabled that was NOT in the MST, then no update is required.
-				}else{
-					//this is the 'tricky' case for mst.
-					//following Spira & Pan, each removed edge splits the spanning tree into separate components that are MST's for those components.
-					//we then basically run Prim's to stitch those components back together, if they can be stitched.
-
-					int u = g.all_edges[edgeid].from;
-					int v = g.all_edges[edgeid].to;
-
-					in_tree[edgeid]=false;
-					min_weight-=g.getWeight(edgeid);
-					num_sets++;
-
-					assert(components[u]==components[v]);
-					assert(parents[u]==v || parents[v]==u);
-					if(parents[u]==v){
-						parents[u]=-1;
-						parent_edges[u]=-1;
-					}else{
-						parents[v]=-1;
-						parent_edges[v]=-1;
-					}
-					//if we want to maintain the guarantee components are always assigned the lowest node number that they contain, we'd need to modify the code below a bit.
-					int new_c = u;
-
-					if(new_c == components[v]){
-						new_c=v;
-					}
-					int old_c = components[u];
-					components_to_visit.push(new_c);
-					assert(new_c!= components[u]);
-					assert(q.size()==0);
-					//relabel the components of the tree that has been split off.
-					q.clear();
-					q.push(new_c);
-					while(q.size()){
-						int n = q.last(); q.pop();
-						for(auto & edge:g.adjacency_undirected[n]){
-							if(in_tree[edge.id]){
-								assert(g.edgeEnabled(edge.id));
-								int t = edge.node;
-								if(components[t]==old_c){
-									components[t]=new_c;
-									q.push(t);
-								}
-							}
-						}
-					}
-
-				}
+				removeEdgeFromMST(edgeid);
 			}
 		}
-		if(components_to_visit.size()){
-			//execute Prim's (or Boruvka's?) on the connected components, using a heap.
+		prims();
 
+		dbg_parents();
+#ifndef NDEBUG
+		assert(min_weight==dbg.forestWeight());
+		assert(num_sets==dbg.numComponents());
+#endif
 
-				for(int i = 0;i<components_to_visit.size();i++){
-
-					int c = components_to_visit[i];
-					assert(c>=0);
-					assert(components[c]==c);
-					//ok, try to connect u's component to v
-					//ideally, we'd use the smaller of these two components...
-					int smallest_edge=-1;
-					int smallest_weight = INF;
-					Q.insert(c);
-
-						q.clear();
-						q.push(c);
-						while(q.size()){
-							int n = q.last(); q.pop();
-							for(auto & edge:g.adjacency_undirected[n]){
-								if(g.edgeEnabled(edge.id)){
-									int t = edge.node;
-									if(!in_tree[edge.id]){
-										assert(g.edgeEnabled(edge.id));
-										if(components[t]!= c){
-											if(g.getWeight(edge.id)<=smallest_weight){
-												smallest_weight = g.getWeight(edge.id);
-												smallest_edge = edge.id;
-											}
-										}
-									}else{
-										assert(components[t]==components[n]);
-										q.push(t);//no need to mark t as visited, as this is a tree, so it is acyclic
-									}
-								}
-							}
-						}
-
-
-
-					if(smallest_edge>-1){
-						num_sets--;
-						min_weight+=g.getWeight(smallest_edge);
-						assert(!in_tree[smallest_edge]);
-						in_tree[smallest_edge]=true;
-
-						//connect these two components together using this edge.
-						//this requires us to fix the parent edges.
-
-						int f = g.all_edges[smallest_edge].from;
-						int t = g.all_edges[smallest_edge].to;
-						assert(components[f]==c|| components[t]==c);
-
-						if(components[f]==c){
-							std::swap(f,t);
-						}
-						int new_c = c;
-						int old_c = components[f];
-						parents[f]=t;
-						components[f]=new_c;
-						parent_edges[f]=smallest_edge;
-						q.clear();
-						q.push(f);
-						while(q.size()){
-							int n = q.last(); q.pop();
-							assert(components[n]==new_c);
-							for(auto & edge:g.adjacency_undirected[n]){
-								if(in_tree[edge.id]){
-									assert(g.edgeEnabled(edge.id));
-									int t = edge.node;
-									if(components[t]==old_c){
-										components[t]==new_c;
-										q.push(t);
-									}
-									parents[t]=n;
-									parent_edges[t]=edge.id;
-								}
-							}
-						}
-
-					}
-
-				//}
-			}/*else{
-
-//replace the edges one by one, as described in Spira Pan 1975
-
-			}*/
-		}
-		components_to_visit.clear();
+		status.setMinimumSpanningTree(num_sets>1 ? INF: min_weight);
 		assert(dbg_uptodate());
 
 		last_modification=g.modifications;
@@ -518,6 +673,12 @@ public:
 			return min_weight;
 		else
 			return INF;
+	}
+
+	int forestWeight(){
+		update();
+		assert(dbg_uptodate());
+		return min_weight;
 	}
 	 int numComponents(){
 		 update();

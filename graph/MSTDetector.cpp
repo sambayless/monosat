@@ -28,7 +28,7 @@ Detector(_detectorID),outer(_outer),g(_g),antig(_antig),rnd_seed(seed),edge_weig
 			negative_reach_detector = new Prim<MSTDetector::MSTStatus,NegativeEdgeStatus>(_antig,*(negativeReachStatus),-1);
 
 		}else if (mstalg==MinSpanAlg::ALG_SPIRA_PAN){
-			positive_reach_detector = new SpiraPan<MSTDetector::MSTStatus,PositiveEdgeStatus>(_g,*(positiveReachStatus),1);
+			positive_reach_detector =  new Kruskal<MSTDetector::MSTStatus,PositiveEdgeStatus>(_g,*(positiveReachStatus),1);//new SpiraPan<MSTDetector::MSTStatus,PositiveEdgeStatus>(_g,*(positiveReachStatus),1);
 			negative_reach_detector = new SpiraPan<MSTDetector::MSTStatus,NegativeEdgeStatus>(_antig,*(negativeReachStatus),-1);
 
 		}
