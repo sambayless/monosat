@@ -776,17 +776,15 @@ public:
     int maxFlow(int s, int t){
     	int f = 0;
 #ifdef RECORD
-		if(g.outfile && mincutalg==MinCutAlg::ALG_EDKARP_ADJ){
+		if(g.outfile){
 			fprintf(g.outfile,"f %d %d\n", s,t);
 			fflush(g.outfile);
 		}
 #endif
 
-
       	if(last_modification>0 && g.modifications==last_modification){
-
-        			return curflow;
-        		}
+			return curflow;
+		}
       	src=s;
       	dst=t;
     	F.clear();
@@ -801,8 +799,6 @@ public:
 
 		parentEdge.clear();
 		parentEdge.growTo(g.nodes,{false,-1});
-
-		//toLink.capacity(g.nodes);
 
 	    while (buildLevelGraph(s,t)) {
 	    	stats_rounds++;
@@ -824,9 +820,7 @@ public:
 			}
 			dbg_print_graph(s,t);
 			augtime+=rtime(3)- start_time;
-
 	    }
-
 
 #ifdef DEBUG_MAXFLOW
     	int expected_flow =ek.maxFlow(s,t);
@@ -836,7 +830,6 @@ public:
     	assert(f==expected_flow);
 #endif
 
-        //dbg_print_graph(s,t);
     	curflow=f;
 		last_modification=g.modifications;
 		last_deletion = g.deletions;
@@ -859,9 +852,7 @@ public:
     	seen.clear();
     	seen.growTo(g.nodes);
     	seen[s]=true;
-    //	visited.clear();
-    	//visited.growTo(g.nodes);
-    //	visited[s]=true;
+
     	for(int j = 0;j<Q.size();j++){
 		   int u = Q[j];
 

@@ -9,6 +9,9 @@
 
 #include "MSTDetector.h"
 #include "GraphTheory.h"
+#include "Kruskal.h"
+#include "Prim.h"
+#include "SpiraPan.h"
 #include <limits>
 #include <set>
 MSTDetector::MSTDetector(int _detectorID, GraphTheorySolver * _outer,  DynamicGraph<PositiveEdgeStatus> &_g,DynamicGraph<NegativeEdgeStatus> &_antig ,vec<int> & _edge_weights,double seed):
@@ -17,8 +20,18 @@ Detector(_detectorID),outer(_outer),g(_g),antig(_antig),rnd_seed(seed),edge_weig
 	all_unique=true;
 		positiveReachStatus = new MSTDetector::MSTStatus(*this,true);
 		negativeReachStatus = new MSTDetector::MSTStatus(*this,false);
-		positive_reach_detector = new Kruskal<MSTDetector::MSTStatus,PositiveEdgeStatus>(_g,*(positiveReachStatus),edge_weights,1);
-		negative_reach_detector = new Kruskal<MSTDetector::MSTStatus,NegativeEdgeStatus>(_antig,*(negativeReachStatus),edge_weights,-1);
+		if(mstalg==MinSpanAlg::ALG_KRUSKAL){
+			positive_reach_detector = new Kruskal<MSTDetector::MSTStatus,PositiveEdgeStatus>(_g,*(positiveReachStatus),1);
+			negative_reach_detector = new Kruskal<MSTDetector::MSTStatus,NegativeEdgeStatus>(_antig,*(negativeReachStatus),-1);
+		}else if (mstalg==MinSpanAlg::ALG_PRIM){
+			positive_reach_detector = new Prim<MSTDetector::MSTStatus,PositiveEdgeStatus>(_g,*(positiveReachStatus),1);
+			negative_reach_detector = new Prim<MSTDetector::MSTStatus,NegativeEdgeStatus>(_antig,*(negativeReachStatus),-1);
+
+		}else if (mstalg==MinSpanAlg::ALG_SPIRA_PAN){
+			positive_reach_detector = new SpiraPan<MSTDetector::MSTStatus,PositiveEdgeStatus>(_g,*(positiveReachStatus),1);
+			negative_reach_detector = new SpiraPan<MSTDetector::MSTStatus,NegativeEdgeStatus>(_antig,*(negativeReachStatus),-1);
+
+		}
 
 		reach_marker=outer->newReasonMarker(getID());
 		non_reach_marker=outer->newReasonMarker(getID());
@@ -270,7 +283,7 @@ void MSTDetector::buildMinWeightTooSmallReason(int weight,vec<Lit> & conflict){
 			negative_reach_detector->update();
 			int mstweight = negative_reach_detector->weight();
 
-			if(negative_reach_detector->weight()==INF){
+			if(negative_reach_detector->weight()>=INF){
 				//IF the mst is disconnected, then we define it's weight to be infinite. In this case, the reason is a separating cut between any two disconnected components.
 				//we can find one of these by identifying any two roots
 

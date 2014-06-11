@@ -44,6 +44,7 @@ extern StringOption opt_con_alg;
 extern StringOption opt_allpairs_alg;
 extern StringOption opt_undir_allpairs_alg;
 extern StringOption opt_dist_alg;
+extern StringOption opt_mst_alg;
 
 extern StringOption opt_components_alg;
 extern BoolOption opt_check_solution;
@@ -97,6 +98,7 @@ extern BoolOption opt_encode_reach_underapprox_as_sat;
 extern BoolOption opt_components_learn_connect;
 extern BoolOption opt_learn_unreachable_component;
 extern BoolOption opt_dinics_recursive;
+extern IntOption opt_spira_use_heap_size;
 enum class ReachAlg{
 	 ALG_SAT,
 	 ALG_DFS,
@@ -138,6 +140,12 @@ enum class MinCutAlg{
 	 ALG_DINITZ_LINKCUT
 };
 extern MinCutAlg mincutalg;
+enum class MinSpanAlg{
+	 ALG_KRUSKAL,
+	 ALG_PRIM,
+	 ALG_SPIRA_PAN
+};
+extern MinSpanAlg mstalg;
 enum class ComponentsAlg{
 	ALG_DISJOINT_SETS
 

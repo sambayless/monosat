@@ -183,7 +183,18 @@ int main(int argc, char** argv)
 			fprintf(stderr,"Error: unknown connectivity algorithm %s, aborting\n", ((string) opt_components_alg).c_str());
 			exit(1);
 		 }
+		mstalg = MinSpanAlg::ALG_KRUSKAL;
 
+		 if(!strcasecmp(opt_mst_alg,"kruskal")){
+			 mstalg=MinSpanAlg::ALG_KRUSKAL;
+		 }else if(!strcasecmp(opt_mst_alg,"prim")){
+			 mstalg=MinSpanAlg::ALG_PRIM;
+		 }else if (!strcasecmp(opt_mst_alg,"spira-pan")){
+			 mstalg = MinSpanAlg::ALG_SPIRA_PAN;
+		 }else{
+			fprintf(stderr,"Error: unknown minimum spanning tree algorithm %s, aborting\n", ((string) opt_reach_alg).c_str());
+			exit(1);
+		 }
 
         reachalg = ReachAlg::ALG_BFS;
 

@@ -140,7 +140,7 @@ public:
 			}
 		}
 
-		edges=id+1;
+		edges=next_id;
 		adjacency[from].push({to,id});
 		adjacency_undirected[from].push({to,id});
 		adjacency_undirected[to].push({from,id});
@@ -163,11 +163,15 @@ public:
 		enableEdge(from,to,id);//default to enabled
 	}
 	int nEdgeIDs(){
-		return all_edges.size();
+		assert(edges==all_edges.size());
+		return edges;//all_edges.size();
 	}
-
+	vec<int> & getWeights(){
+		return weights;
+	}
 	int getWeight(int edgeID){
-		return all_edges[edgeID].weight;
+		return weights[edgeID];
+		//return all_edges[edgeID].weight;
 	}
 	FullEdge getEdge(int id){
 		return all_edges[id];

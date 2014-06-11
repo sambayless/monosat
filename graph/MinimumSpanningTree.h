@@ -10,15 +10,28 @@
 
 #include "mtl/Vec.h"
 
+
 class MinimumSpanningTree{
 public:
 
+	struct NullStatus{
+		void setMinimumSpanningTree(int min_weight){
+
+		}
+
+		void inMinimumSpanningTree(int edge, bool in_tree){
+
+		}
+	};
+	static NullStatus nullStatus;
 
 
 
 	virtual ~MinimumSpanningTree(){};
 
+	virtual void printStats(){
 
+	}
 
 	virtual void update( )=0;
 

@@ -14,7 +14,7 @@
 
 #include "core/SolverTypes.h"
 #include "mtl/Map.h"
-#include "Kruskal.h"
+
 #include "DisjointSets.h"
 #include "utils/System.h"
 #include "Detector.h"

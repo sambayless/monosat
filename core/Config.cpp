@@ -45,12 +45,13 @@ IntOption Minisat::opt_temporary_theory_reasons(_cat_sms,"temporary-theory-reaso
  BoolOption Minisat::opt_graph(_cat_graph,"graph","Use graph theory solver",true);
  BoolOption Minisat::opt_inc_graph(_cat_graph,"inc","Use incremental graph reachability",false);
  IntOption Minisat::opt_dec_graph(_cat_graph,"dec","Use decremental graph reachability",0,IntRange(0, 2));
- StringOption Minisat::opt_min_cut_alg(_cat_graph,"mincut","Select max-flow/min-cut algorithm (edmondskarp, edmondskarp-adj, ibfs,edmondskarp-dynamic,dinitz,dinitz-linkcut)","edmondskarp-adj");
+ StringOption Minisat::opt_min_cut_alg(_cat_graph,"maxflow","Select max s-t-flow algorithm (edmondskarp, edmondskarp-adj, ibfs,edmondskarp-dynamic,dinitz,dinitz-linkcut)","edmondskarp-dynamic");
  StringOption Minisat::opt_reach_alg(_cat_graph,"reach","Select reachability algorithm (bfs,dfs, dijkstra,ramal-reps,sat)","ramal-reps");
  StringOption Minisat::opt_dist_alg(_cat_graph,"dist","Select reachability algorithm (bfs,dfs, dijkstra,ramal-reps,sat)","ramal-reps");
 
  StringOption Minisat::opt_con_alg(_cat_graph,"connect","Select undirected reachability algorithm (bfs,dfs, dijkstra, thorup,sat)","bfs");
 StringOption Minisat::opt_undir_allpairs_alg(_cat_graph,"connect-allpairs","Select allpairs reachability algorithm (floyd-warshall,dijkstra, thorup)","floyd-warshall");
+StringOption Minisat::opt_mst_alg(_cat_graph,"mst","Select minimum spanning tree algorithm (kruskal,prim,spira-pan)","kruskal");
 
 StringOption Minisat::opt_allpairs_alg(_cat_graph,"allpairs","Select allpairs reachability algorithm (floyd-warshall,dijkstra)","floyd-warshall");
 StringOption Minisat::opt_components_alg(_cat_graph,"components","Select connected-components algorithm (disjoint-sets, link-cut)","disjoint-sets");
@@ -124,6 +125,8 @@ BoolOption Minisat::opt_components_learn_connect(_cat_graph, "components-learn-c
 
 BoolOption Minisat::opt_dinics_recursive(_cat_graph,"dinitz-recursive","Use the recursive (default: iterative) Dinic's Maximum-flow implementation",false);
 
+IntOption Minisat::opt_spira_use_heap_size(_cat_graph,"spira-use-heap-size","Minimum number of edges that must be disabled before using a heap in spira-pan",3,IntRange(0,INT32_MAX));
+
 IntOption     Minisat::opt_width("GRAPH","width","Width of graph.\n", 0, IntRange(0, INT32_MAX));
     IntOption     Minisat::opt_height("GRAPH","height","Height of graph.\n", 0, IntRange(0, INT32_MAX));
     IntOption     Minisat::opt_bits("GRAPH","bits","Bits per position in graph.\n", 1, IntRange(0, INT32_MAX));
@@ -137,3 +140,4 @@ DistAlg Minisat::distalg=DistAlg::ALG_RAMAL_REPS;
 AllPairsAlg Minisat::allpairsalg=AllPairsAlg::ALG_DIJKSTRA_ALLPAIRS;
 AllPairsConnectivityAlg Minisat::undirected_allpairsalg=AllPairsConnectivityAlg::ALG_DIJKSTRA_ALLPAIRS;
 ComponentsAlg Minisat::componentsalg =ComponentsAlg::ALG_DISJOINT_SETS;
+MinSpanAlg Minisat::mstalg = MinSpanAlg::ALG_KRUSKAL;

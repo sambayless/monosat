@@ -1,6 +1,6 @@
 
-#ifndef PRIMS_H_
-#define PRIMS_H_
+#ifndef KRUSKAL_H_
+#define KRUSKAL_H_
 
 #include "mtl/Vec.h"
 #include "mtl/Heap.h"
@@ -39,8 +39,8 @@ public:
 	vec<bool> in_tree;;
 	vec<int> parents;
 	vec<int> parent_edges;
-//	vec<int> changed;
-	vec<int> & edge_weights;
+
+
     struct EdgeLt {
         const vec<int>&  edge_weights;
 
@@ -80,7 +80,7 @@ public:
 	double stats_full_update_time;
 	double stats_fast_update_time;
 
-	Kruskal(DynamicGraph<EdgeStatus> & graph, Status & _status,vec<int> & _edge_weights, int _reportPolarity=0 ):g(graph), status(_status), last_modification(-1),last_addition(-1),last_deletion(-1),history_qhead(0),last_history_clear(0),INF(0),reportPolarity(_reportPolarity),edge_weights(_edge_weights),edge_heap(EdgeLt(edge_weights)){
+	Kruskal(DynamicGraph<EdgeStatus> & graph, Status & _status, int _reportPolarity=0 ):g(graph), status(_status), last_modification(-1),last_addition(-1),last_deletion(-1),history_qhead(0),last_history_clear(0),INF(0),reportPolarity(_reportPolarity),edge_heap(EdgeLt(g.weights)){
 
 		mod_percentage=0.2;
 		stats_full_updates=0;
@@ -109,7 +109,12 @@ public:
 	void update( ){
 		static int iteration = 0;
 		int local_it = ++iteration ;
-
+#ifdef RECORD
+		if(g.outfile && mstalg==MinSpanAlg::ALG_KRUSKAL){
+			fprintf(g.outfile,"m\n");
+			fflush(g.outfile);
+		}
+#endif
 		if(last_modification>0 && g.modifications==last_modification){
 			stats_skipped_updates++;
 			return;
@@ -135,7 +140,7 @@ public:
 					edge_list.push(i);
 
 			}
-			sort(edge_list,EdgeLt(edge_weights));
+			sort(edge_list,EdgeLt(g.weights));
 		}
 		for(int i = 0;i<in_tree.size();i++)
 			in_tree[i]=false;
@@ -155,7 +160,7 @@ public:
 				mst.push(edge_id);
 				//if(reportPolarity>-1)
 				//	status.inMinimumSpanningTree(edge_id,true);
-				min_weight+=getEdgeWeight(edge_id);
+				min_weight+=g.getWeight(edge_id);
 				sets.UnionSets(set1,set2);
 				assert(sets.FindSet(u)==sets.FindSet(v));
 			}
@@ -216,9 +221,7 @@ public:
 
 		return true;
 	}
-	int getEdgeWeight(int edgeID){
-		return edge_weights[edgeID];
-	}
+
 
 	int weight(){
 
