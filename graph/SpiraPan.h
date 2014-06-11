@@ -40,6 +40,7 @@ public:
 	vec<int> parents;
 	vec<int> parent_edges;
 	vec<int> components_to_visit;
+	vec<int> component_member;//pointer to one arbitrary member of each non-empty component
 	vec<int> component_weight;
     struct VertLt {
         const vec<int>&  keys;
@@ -57,7 +58,7 @@ public:
 	int num_sets=0;
 
 	vec<int> edge_to_component;
-
+	vec<int> empty_components;//list of component ids with no member nodes
 	vec<int> components;
 
 	struct DefaultReachStatus{
@@ -194,32 +195,34 @@ public:
 			}
 
 		}
-		int n_components = 0;
-		//check that each component has a unique root
-		for(int c = 0;c<g.nodes;c++){
-			if(components[c]==c){
-				n_components++;
-				int root = c;
-				while(parents[root]>-1){
-					root = parents[root];
-				}
 
-				for(int i = 0;i<g.nodes;i++){
-					if(components[i]==c){
-						//check that the root of i is root
-						int p =i;
-						while(parents[p]>-1){
-							p = parents[p];
-						}
-						assert(p==root);
-					}
-				}
+		vec<int> used_components;
+		for(int i = 0;i<g.nodes;i++){
+			if(!used_components.contains(components[i])){
+				used_components.push(components[i]);
 
 			}
 		}
-		assert(n_components==num_sets);
+
+		for(int c:used_components){
+			assert(!empty_components.contains(c));
+			assert(component_member[c]!=-1);
+			int m = component_member[c];
+			assert(components[m]== c);
+		}
+
+		for(int c :empty_components){
+			assert(!used_components.contains(c));
+			assert(component_member[c]==-1);
+		}
+
+
+
+
 #endif
 	}
+
+
 
 	void addEdgeToMST(int edgeid){
 		int u = g.all_edges[edgeid].from;
@@ -264,6 +267,8 @@ public:
 					}
 				}
 			}
+			component_member[old_c]=-1;
+			empty_components.push(old_c);
 			dbg_parents();
 		}else{
 			dbg_parents();
@@ -359,12 +364,14 @@ public:
 					int last_edge = edgeid;
 					while(parent_edges[p]!=max_edge){
 						assert(p>-1);
+						int next_p = parents[p];
+						std::swap(parent_edges[p],last_edge);//re-orient the parents.
 						parents[p]=last_p;
 						last_p = p;
-						p = parents[p];
+						p = next_p;
 					}
 					assert(parent_edges[p]==max_edge);
-					std::swap(parent_edges[v],last_edge);//re-orient the parents.
+					std::swap(parent_edges[p],last_edge);//re-orient the parents.
 					parents[p]=last_p;
 				}
 				dbg_parents();
@@ -379,9 +386,9 @@ public:
 		if(!in_tree[edgeid]){
 			//If an edge is disabled that was NOT in the MST, then no update is required.
 		}else{
-			//this is the 'tricky' case for mst.
+			//this is the 'tricky' case for dynamic mst.
 			//following Spira & Pan, each removed edge splits the spanning tree into separate components that are MST's for those components.
-			//we then basically run Prim's to stitch those components back together, if they can be stitched.
+			//after all edges that will be removed have been removed, we will run Prim's to stitch those components back together, if possible.
 
 			int u = g.all_edges[edgeid].from;
 			int v = g.all_edges[edgeid].to;
@@ -392,6 +399,7 @@ public:
 
 			assert(components[u]==components[v]);
 			assert(parents[u]==v || parents[v]==u);
+
 			if(parents[u]==v){
 				parents[u]=-1;
 				parent_edges[u]=-1;
@@ -399,20 +407,22 @@ public:
 				parents[v]=-1;
 				parent_edges[v]=-1;
 			}
+			int start_node= v;
 			//if we want to maintain the guarantee components are always assigned the lowest node number that they contain, we'd need to modify the code below a bit.
-			int new_c = u;
-
-			if(new_c == components[v]){
-				new_c=v;
-			}
+			assert(empty_components.size());
+			int new_c = empty_components.last();
+			empty_components.pop();
 			int old_c = components[u];
+			assert(component_member[new_c]==-1);
+			component_member[new_c]=start_node;
+			component_member[old_c]=u;
 			components_to_visit.push(new_c);
-			assert(new_c!= components[u]);
-			components[new_c]=new_c;
+
+			components[start_node]=new_c;
 			assert(q.size()==0);
 			//relabel the components of the tree that has been split off.
 			q.clear();
-			q.push(new_c);
+			q.push(start_node);
 			while(q.size()){
 				int n = q.last(); q.pop();
 				for(auto & edge:g.adjacency_undirected[n]){
@@ -437,18 +447,23 @@ public:
 		component_weight.growTo(g.nodes,INF);
 		for(int i = 0;i<components_to_visit.size();i++){
 			int c = components_to_visit[i];
-			if(components[c]!=c){
+			int start_node = component_member[c];
+			if(start_node==-1){
 				//then this component has already been merged into another one, no need to visit it.
 				continue;
 			}
 			assert(c>=0);
-
+#ifndef NDEBUG
+			for(int w:component_weight){
+				assert(w==INF);
+			}
+#endif
 			//ok, try to connect u's component to v
 			//ideally, we'd use the smaller of these two components...
 			int smallest_edge=-1;
 			int smallest_weight = INF;
 			Q.insert(c);
-			int start_node = c;
+
 			//do a dfs to find all the edges leading out of this component.
 			while(Q.size()){
 				int cur_component = Q.removeMin();
@@ -483,6 +498,8 @@ public:
 					parent_edges[start_node]=edgeid;
 					assert(components[start_node]==cur_component);
 					components[start_node]=c;
+					component_member[cur_component]=-1;
+					empty_components.push(cur_component);
 				}
 				component_weight[cur_component]=INF;
 				q.clear();
@@ -513,7 +530,7 @@ public:
 									parents[t]=n;
 									parent_edges[t]=edge.id;
 								}
-								if(!seen[t]){
+								if(!seen[t]){//can we avoid this seen check?
 									seen[t]=true;
 									q.push(t);
 								}
@@ -582,6 +599,7 @@ public:
 #endif
 		if(last_modification>0 && g.modifications==last_modification)
 					return;
+		assert(components_to_visit.size()==0);
 		if(last_modification<=0 || g.changed()){
 			INF=g.nodes+1;
 
@@ -591,9 +609,15 @@ public:
 			seen.growTo(g.nodes);
 			min_weight=0;
 			num_sets = g.nodes;
+			empty_components.clear();
 			components.clear();
-			for(int i = 0;i<g.nodes;i++)
+			for(int i = 0;i<g.nodes;i++){
 				components.push(i);
+				components_to_visit.push(i);
+			}
+			component_member.clear();
+			for(int i = 0;i<g.nodes;i++)
+				component_member.push(i);
 			mst.clear();
 			parents.clear();
 			parents.growTo(g.nodes,-1);
@@ -609,7 +633,7 @@ public:
 		}
 
 		double startdupdatetime = rtime(2);
-		assert(components_to_visit.size()==0);
+
 		for (int i = history_qhead;i<g.history.size();i++){
 
 			int edgeid = g.history[i].id;
@@ -704,6 +728,34 @@ public:
 
 	bool dbg_uptodate(){
 #ifndef NDEBUG
+
+
+		dbg_parents();
+		//int n_components = 0;
+		//check that each component has a unique root
+		for(int c = 0;c<g.nodes;c++){
+			if(component_member[c]>-1){
+				//n_components++;
+				int root = component_member[c];
+				while(parents[root]>-1){
+					root = parents[root];
+				}
+
+				for(int i = 0;i<g.nodes;i++){
+					if(components[i]==c){
+						//check that the root of i is root
+						int p =i;
+						while(parents[p]>-1){
+							p = parents[p];
+						}
+						assert(p==root);
+					}
+				}
+
+			}
+		}
+
+		assert(num_sets == g.nodes-empty_components.size());
 		int sumweight = 0;
 		in_tree.growTo(g.nEdgeIDs());
 		for(int i = 0;i<g.nEdgeIDs();i++){
@@ -711,9 +763,7 @@ public:
 				sumweight+= g.getWeight(i);
 			}
 		}
-		assert(sumweight ==min_weight || min_weight==INF);
-
-
+		assert(sumweight ==min_weight);
 #endif
 		return true;
 	};
