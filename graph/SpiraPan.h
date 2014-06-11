@@ -360,7 +360,6 @@ public:
 					while(parent_edges[p]!=max_edge){
 						assert(p>-1);
 						parents[p]=last_p;
-
 						last_p = p;
 						p = parents[p];
 					}
@@ -629,6 +628,16 @@ public:
 #endif
 
 		status.setMinimumSpanningTree(num_sets>1 ? INF: min_weight);
+
+		//if(reportPolarity>-1){
+		for(int i = 0;i<in_tree.size();i++){
+			//Note: for the tree edge detector, polarity is effectively reversed.
+			if(reportPolarity<1 && (!g.edgeEnabled(i) || in_tree[i]) ){
+				status.inMinimumSpanningTree(i,true);
+			}else if(reportPolarity>-1 && (g.edgeEnabled(i) && ! in_tree[i]) ){
+				status.inMinimumSpanningTree(i,false);
+			}
+		}
 		assert(dbg_uptodate());
 
 		last_modification=g.modifications;
