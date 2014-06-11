@@ -774,87 +774,91 @@ void MSTDetector::buildMinWeightTooSmallReason(int weight,vec<Lit> & conflict){
 		}
 
 bool MSTDetector::checkSatisfied(){
+	Kruskal<MinimumSpanningTree::NullStatus,PositiveEdgeStatus> positive_checker(g,MinimumSpanningTree::nullStatus,0);
+	Kruskal<MinimumSpanningTree::NullStatus,NegativeEdgeStatus> negative_checker(antig,MinimumSpanningTree::nullStatus,0);
+	positive_checker.update();
+	negative_checker.update();
+	for(int k = 0;k<weight_lits.size();k++){
+		Lit l = weight_lits[k].l;
+		int dist = weight_lits[k].min_weight;
+
+		if(l!=lit_Undef){
 
 
-					for(int k = 0;k<weight_lits.size();k++){
-						Lit l = weight_lits[k].l;
-						int dist = weight_lits[k].min_weight;
+			if(outer->value(l)==l_True){
+				if(positive_checker.weight()>dist){
+					return false;
+				}
+			}else if (outer->value(l)==l_False){
+				if( negative_checker.weight()<=dist){
+					return false;
+				}
+			}else{
+				if(positive_checker.weight()<=dist){
+					return false;
+				}
+				if(!negative_checker.weight()>dist){
+					return false;
+				}
+			}
+		}
+	}
 
-						if(l!=lit_Undef){
+	for(int k = 0;k< tree_edge_lits.size();k++){
+		Lit l = tree_edge_lits[k].l;
+		int edgeid = tree_edge_lits[k].edgeID;
 
+		if(l!=lit_Undef){
+			Var v = outer->edge_list[edgeid].v;
+			bool edgedisabled =true;
+			bool edgeenabled=false;
+			if(v>=0){
+				edgedisabled= outer->value(v)==l_False ;
+				edgeenabled = outer->value(v)==l_True ;
+			}
+			if(outer->value(l)==l_True){
 
-							if(outer->value(l)==l_True){
-								if(positive_reach_detector->weight()>dist){
-									return false;
-								}
-							}else if (outer->value(l)==l_False){
-								if( negative_reach_detector->weight()<=dist){
-									return false;
-								}
-							}else{
-								if(positive_reach_detector->weight()<=dist){
-									return false;
-								}
-								if(!negative_reach_detector->weight()>dist){
-									return false;
-								}
-							}
-						}
-					}
+				assert(edgedisabled || positive_checker.edgeInTree(edgeid));
+				if(! (edgedisabled || positive_checker.edgeInTree(edgeid))){
+					return false;
+				}
+			}else if (outer->value(l)==l_False){
+				if(edgedisabled)
+					return false;
 
-					for(int k = 0;k< tree_edge_lits.size();k++){
-						Lit l = tree_edge_lits[k].l;
-						int edgeid = tree_edge_lits[k].edgeID;
+				if( negative_checker.edgeInTree(edgeid)){
+					return false;
+				}
+			}else{
+				if(edgedisabled)
+					return false;
+				if( positive_checker.edgeInTree(edgeid)){
+					return false;
+				}
+				if(!negative_checker.edgeInTree(edgeid))
+					return false;
 
-						if(l!=lit_Undef){
-							Var v = outer->edge_list[edgeid].v;
-							bool edgedisabled =true;
-							bool edgeenabled=false;
-							if(v>=0){
-								edgedisabled= outer->value(v)==l_False ;
-								edgeenabled = outer->value(v)==l_True ;
-							}
-							if(outer->value(l)==l_True){
+			}
+		}
+	}
+	if(positive_checker.numComponents()==1){
+		int sum_weight = 0;
+		for(int edgeid = 0;edgeid<g.edges;edgeid++){
+			if(positive_checker.edgeInTree(edgeid)){
+				if(!negative_checker.edgeInTree(edgeid)){
+					return false;
+				}
+				sum_weight+=g.getWeight(edgeid);
+				printf("edge(%d,%d,%d).\n",outer->edge_list[edgeid].from,outer->edge_list[edgeid].to,outer->edge_weights[edgeid]);
+			}else if(negative_checker.edgeInTree(edgeid)){
+				return false;
+			}
+		}
 
-								assert(edgedisabled || positive_reach_detector->edgeInTree(edgeid));
-								if(! (edgedisabled || positive_reach_detector->edgeInTree(edgeid))){
-									return false;
-								}
-							}else if (outer->value(l)==l_False){
-								if(edgedisabled)
-									return false;
-
-								if( negative_reach_detector->edgeInTree(edgeid)){
-									return false;
-								}
-							}else{
-								if(edgedisabled)
-									return false;
-								if( positive_reach_detector->edgeInTree(edgeid)){
-									return false;
-								}
-								if(!negative_reach_detector->edgeInTree(edgeid))
-									return false;
-
-							}
-						}
-					}
-					int sum_weight = 0;
-					for(int edgeid = 0;edgeid<g.edges;edgeid++){
-						if(positive_reach_detector->edgeInTree(edgeid)){
-							if(!negative_reach_detector->edgeInTree(edgeid)){
-								return false;
-							}
-							sum_weight+=outer->edge_weights[edgeid];
-							printf("edge(%d,%d,%d).\n",outer->edge_list[edgeid].from,outer->edge_list[edgeid].to,outer->edge_weights[edgeid]);
-						}else if(negative_reach_detector->edgeInTree(edgeid)){
-							return false;
-						}
-					}
-
-					if(sum_weight != positive_reach_detector->weight()){
-						return false;
-					}
+		if(sum_weight != positive_checker.weight()){
+			return false;
+		}
+	}
 	return true;
 }
 Lit MSTDetector::decide(){

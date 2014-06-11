@@ -162,7 +162,6 @@ public:
 #ifndef NDEBUG
 
 #endif
-
 	}
 
 	void update( ){
