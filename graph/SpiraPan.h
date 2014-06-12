@@ -625,6 +625,8 @@ public:
 			parent_edges.growTo(g.edges,-1);
 			for(int i = 0;i<in_tree.size();i++)
 				in_tree[i]=false;
+			history_qhead=g.history.size();//have to skip any additions or deletions that are left here, as otherwise the tree wont be an MST at the beginning of the addEdgeToMST method, which is an error.
+
 		}
 
 		if(last_history_clear!=g.historyclears){
