@@ -510,9 +510,11 @@ public:
 				component_weight[cur_component]=INF;
 				q.clear();
 				q.push(start_node);
-				//do a dfs over the component, finding all edges that leave the component. fix the parent edges in the same pass, if needed.
-				while(q.size()){
-					int n = q.last(); q.pop();
+
+				//do a bfs over the component, finding all edges that leave the component. fix the parent edges in the same pass, if needed.
+				//could also do a dfs here - would it make a difference?
+				for(int i = 0;i<q.size();i++){
+					int n = q[i];
 					assert(components[n]==c);
 					for(auto & edge:g.adjacency_undirected[n]){
 						if(g.edgeEnabled(edge.id)){
@@ -544,52 +546,17 @@ public:
 						}
 					}
 				}
-
-
+				for(int s:q){
+					assert(seen[s]);
+					seen[s]=false;
+				}
+				q.clear();
+#ifndef NDEBUG
+				for(bool b:q)
+					assert(!b);
+#endif
 
 			}
-			seen.clear();
-			seen.growTo(g.nodes);
-			/*if(smallest_edge>-1){
-				num_sets--;
-				min_weight+=g.getWeight(smallest_edge);
-				assert(!in_tree[smallest_edge]);
-				in_tree[smallest_edge]=true;
-
-				//connect these two components together using this edge.
-				//this requires us to fix the parent edges.
-
-				int f = g.all_edges[smallest_edge].from;
-				int t = g.all_edges[smallest_edge].to;
-				assert(components[f]==c|| components[t]==c);
-
-				if(components[f]==c){
-					std::swap(f,t);
-				}
-				int new_c = c;
-				int old_c = components[f];
-				parents[f]=t;
-				components[f]=new_c;
-				parent_edges[f]=smallest_edge;
-				q.clear();
-				q.push(f);
-				while(q.size()){
-					int n = q.last(); q.pop();
-					assert(components[n]==new_c);
-					for(auto & edge:g.adjacency_undirected[n]){
-						if(in_tree[edge.id]){
-							assert(g.edgeEnabled(edge.id));
-							int t = edge.node;
-							if(components[t]==old_c){
-								components[t]=new_c;
-								q.push(t);
-							}
-							parents[t]=n;
-							parent_edges[t]=edge.id;
-						}
-					}
-				}
-			}*/
 		}
 		components_to_visit.clear();
 	}
