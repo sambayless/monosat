@@ -118,7 +118,7 @@ public:
 		in_tree.growTo(g.nEdgeIDs());
 		seen.growTo(n);
 		INF=std::numeric_limits<int>::max();
-		component_weight.growTo(g.next_id);
+		component_weight.growTo(g.nodes,INF);
 		parents.growTo(n,-1);
 		edge_to_component.growTo(n,-1);
 
@@ -449,8 +449,8 @@ public:
 
 	void prims(){
 		dbg_parents();
-		component_weight.clear();
-		component_weight.growTo(g.nodes,INF);
+		//component_weight.clear();
+
 		for(int i = 0;i<components_to_visit.size();i++){
 			int c = components_to_visit[i];
 			int start_node = component_member[c];
@@ -510,7 +510,7 @@ public:
 				component_weight[cur_component]=INF;
 				q.clear();
 				q.push(start_node);
-
+				seen[start_node]=true;
 				//do a bfs over the component, finding all edges that leave the component. fix the parent edges in the same pass, if needed.
 				//could also do a dfs here - would it make a difference?
 				for(int i = 0;i<q.size();i++){
@@ -588,6 +588,8 @@ public:
 				components.push(i);
 				components_to_visit.push(i);
 			}
+			component_weight.clear();
+			component_weight.growTo(g.nodes,INF);
 			component_member.clear();
 			for(int i = 0;i<g.nodes;i++)
 				component_member.push(i);
