@@ -190,7 +190,7 @@ public:
 				}
 
 				p = parents[p];
-				assert(num_parents<g.nodes);
+				assert(num_parents<=g.nodes);
 
 			}
 
