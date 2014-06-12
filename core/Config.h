@@ -98,7 +98,7 @@ extern BoolOption opt_encode_reach_underapprox_as_sat;
 extern BoolOption opt_components_learn_connect;
 extern BoolOption opt_learn_unreachable_component;
 extern BoolOption opt_dinics_recursive;
-extern IntOption opt_spira_use_heap_size;
+
 enum class ReachAlg{
 	 ALG_SAT,
 	 ALG_DFS,

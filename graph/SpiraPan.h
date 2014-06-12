@@ -13,6 +13,12 @@
 #include <limits>
 using namespace Minisat;
 
+/**
+ * This is an implementation of Spira and Pan's (1975) dynamic minimum spanning tree algorithm.
+ * We initialize the MST in new graphs using Prim's, and also use Prim's to connect separated components back
+ * together after a string of edge deletions (the original paper only considers a single edge deletion at a time, which
+ * is very ineficient if multiple edges are deleted at once).
+ */
 template<class Status,class EdgeStatus=DefaultEdgeStatus>
 class SpiraPan:public MinimumSpanningTree{
 public:

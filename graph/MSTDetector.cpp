@@ -849,7 +849,7 @@ bool MSTDetector::checkSatisfied(){
 					return false;
 				}
 				sum_weight+=g.getWeight(edgeid);
-				printf("edge(%d,%d,%d).\n",outer->edge_list[edgeid].from,outer->edge_list[edgeid].to,outer->edge_weights[edgeid]);
+				//printf("edge(%d,%d,%d).\n",outer->edge_list[edgeid].from,outer->edge_list[edgeid].to,outer->edge_weights[edgeid]);
 			}else if(negative_checker.edgeInTree(edgeid)){
 				return false;
 			}

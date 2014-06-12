@@ -51,7 +51,7 @@ IntOption Minisat::opt_temporary_theory_reasons(_cat_sms,"temporary-theory-reaso
 
  StringOption Minisat::opt_con_alg(_cat_graph,"connect","Select undirected reachability algorithm (bfs,dfs, dijkstra, thorup,sat)","bfs");
 StringOption Minisat::opt_undir_allpairs_alg(_cat_graph,"connect-allpairs","Select allpairs reachability algorithm (floyd-warshall,dijkstra, thorup)","floyd-warshall");
-StringOption Minisat::opt_mst_alg(_cat_graph,"mst","Select minimum spanning tree algorithm (kruskal,prim,spira-pan)","kruskal");
+StringOption Minisat::opt_mst_alg(_cat_graph,"mst","Select minimum spanning tree algorithm (kruskal,prim,spira-pan)","spira-pan");
 
 StringOption Minisat::opt_allpairs_alg(_cat_graph,"allpairs","Select allpairs reachability algorithm (floyd-warshall,dijkstra)","floyd-warshall");
 StringOption Minisat::opt_components_alg(_cat_graph,"components","Select connected-components algorithm (disjoint-sets, link-cut)","disjoint-sets");
@@ -124,8 +124,6 @@ BoolOption Minisat::opt_rnd_shuffle(_cat_graph,"rnd-shuffle","Inject randomness 
 BoolOption Minisat::opt_components_learn_connect(_cat_graph, "components-learn-connect","",false);
 
 BoolOption Minisat::opt_dinics_recursive(_cat_graph,"dinitz-recursive","Use the recursive (default: iterative) Dinic's Maximum-flow implementation",false);
-
-IntOption Minisat::opt_spira_use_heap_size(_cat_graph,"spira-use-heap-size","Minimum number of edges that must be disabled before using a heap in spira-pan",3,IntRange(0,INT32_MAX));
 
 IntOption     Minisat::opt_width("GRAPH","width","Width of graph.\n", 0, IntRange(0, INT32_MAX));
     IntOption     Minisat::opt_height("GRAPH","height","Height of graph.\n", 0, IntRange(0, INT32_MAX));

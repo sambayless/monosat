@@ -10,10 +10,10 @@
 #include "mtl/Vec.h"
 #include "GraphTheoryTypes.h"
 using namespace Minisat;
-#ifndef NDEBUG
+//#ifndef NDEBUG
 #define RECORD
 #include <cstdio>
-#endif
+//#endif
 template<class EdgeStatus=DefaultEdgeStatus >
 class DynamicGraph{
 public:
