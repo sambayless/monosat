@@ -367,6 +367,7 @@ public:
 
     // Mode of operation:
     //
+    bool 	  printed_header = false;
     int       verbosity;
     double    var_decay;
     double    clause_decay;

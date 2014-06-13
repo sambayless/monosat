@@ -652,7 +652,7 @@ int main(int argc, char** argv)
         		Var prev_min = var_Undef;
         		while(true){
         			printf("Optimizing minimum spanning tree (%d)...\n",mst_weight);
-        			if(mst_weight==6){
+        			if(mst_weight==588983){
         				int a=1;
         			}
         			S.cancelUntil(0);
@@ -667,6 +667,10 @@ int main(int argc, char** argv)
 						assume.push(mkLit(prev_min,false));
 						bool check = S.solve(assume);
 						assert(check);
+						if(!check){
+							fprintf(stderr,"Major Error! Instance is no longer satisfiable after removed assertition!\n");
+							exit(3);
+						}
 						if(opt_check_solution){
 											if(!g->check_solved()){
 												fprintf(stderr,"Error! Solution doesn't satisfy theory properties!\n");

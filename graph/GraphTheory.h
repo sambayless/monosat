@@ -1601,7 +1601,8 @@ public:
 	}
 
 	void printSolution(){
-
+		if(S->model.size()==0)
+			return;
 						int width = sqrt(nNodes());
 						if(opt_width>0){
 							width=opt_width;

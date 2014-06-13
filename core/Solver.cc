@@ -1521,7 +1521,9 @@ lbool Solver::solve_()
     learntsize_adjust_cnt     = (int)learntsize_adjust_confl;
     lbool   status            = l_Undef;
 
-    if (verbosity >= 1){
+    if (verbosity >= 1 && ! printed_header){
+    	//on repeated calls, don't print the header again
+    	printed_header=true;
         printf("============================[ Search Statistics ]==============================\n");
         printf("| Conflicts |          ORIGINAL         |          LEARNT          | Progress |\n");
         printf("|           |    Vars  Clauses Literals |    Limit  Clauses Lit/Cl |          |\n");
@@ -1552,8 +1554,6 @@ lbool Solver::solve_()
         }
     }
 
-    if (verbosity >= 1)
-        printf("===============================================================================\n");
 
 
     if (status == l_True){

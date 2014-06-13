@@ -35,6 +35,8 @@ public:
 
 		MinimumSpanningTree * positive_reach_detector;
 		MinimumSpanningTree * negative_reach_detector;
+		MinimumSpanningTree *  positive_conflict_detector;
+		MinimumSpanningTree * negative_conflict_detector;
 		//Reach *  positive_path_detector;
 
 		//vec<Lit>  reach_lits;

@@ -189,7 +189,11 @@ public:
 					assert(u==p || v==p);
 					assert(u==parents[p]||v==parents[p]);
 					assert(in_tree[e]);
+					int compi = components[i];
+					int compp = components[p];
 					assert(components[p]==components[i]);
+					int parent = parents[p];
+					int pc = components[parents[p]];
 					assert(components[parents[p]]==components[i]);
 				}else{
 					assert(parent_edges[p]==-1);
@@ -236,6 +240,7 @@ public:
 		int w = g.all_edges[edgeid].weight;
 		dbg_parents();
 		if(components[u] != components[v]){
+
 			//If u,v are in separate components, then this edge must be in the mst (and we need to fix the component markings)
 			in_tree[edgeid]=true;
 			num_sets--;
@@ -261,7 +266,7 @@ public:
 				int n = q.last(); q.pop();
 				for(auto & edge:g.adjacency_undirected[n]){
 					if(in_tree[edge.id]){
-						assert(g.edgeEnabled(edge.id));
+
 						int t = edge.node;
 						if(components[t]==old_c){
 							components[t]=new_c;
@@ -302,7 +307,6 @@ public:
 				}
 				dbg_parents();
 			}else{
-
 				//otherwise, find the cycle induced by adding this edge into the MST (by walking up the tree to find the LCA - if we are doing many insertions, could we swap this out for tarjan's OLCA?).
 				int p = u;
 
@@ -390,6 +394,7 @@ public:
 	void removeEdgeFromMST(int edgeid){
 		dbg_parents();
 		if(!in_tree[edgeid]){
+
 			//If an edge is disabled that was NOT in the MST, then no update is required.
 		}else{
 			//this is the 'tricky' case for dynamic mst.
@@ -432,8 +437,8 @@ public:
 			while(q.size()){
 				int n = q.last(); q.pop();
 				for(auto & edge:g.adjacency_undirected[n]){
-					if(in_tree[edge.id]){
-						assert(g.edgeEnabled(edge.id));
+					if(in_tree[edge.id] ){
+						//assert(g.edgeEnabled(edge.id));
 						int t = edge.node;
 						if(components[t]==old_c){
 							components[t]=new_c;
@@ -520,7 +525,7 @@ public:
 						if(g.edgeEnabled(edge.id)){
 							int t = edge.node;
 							if(!in_tree[edge.id]){
-								assert(g.edgeEnabled(edge.id));
+								//assert(g.edgeEnabled(edge.id));
 								int ncomponent = components[t];
 								if(ncomponent!= c && ncomponent != cur_component){
 									int w = g.getWeight(edge.id);
@@ -573,7 +578,7 @@ public:
 		if(last_modification>0 && g.modifications==last_modification)
 					return;
 		assert(components_to_visit.size()==0);
-		if(last_modification<=0 || g.changed()){
+		if(last_modification<=0 || g.changed() || last_history_clear!=g.historyclears){
 			INF=g.nodes+1;
 
 
@@ -600,14 +605,11 @@ public:
 			parent_edges.growTo(g.edges,-1);
 			for(int i = 0;i<in_tree.size();i++)
 				in_tree[i]=false;
+			last_history_clear=g.historyclears;
 			history_qhead=g.history.size();//have to skip any additions or deletions that are left here, as otherwise the tree wont be an MST at the beginning of the addEdgeToMST method, which is an error.
 
 		}
 
-		if(last_history_clear!=g.historyclears){
-			history_qhead=0;
-			last_history_clear=g.historyclears;
-		}
 
 		double startdupdatetime = rtime(2);
 
@@ -628,15 +630,19 @@ public:
 		assert(num_sets==dbg.numComponents());
 #endif
 
+
 		status.setMinimumSpanningTree(num_sets>1 ? INF: min_weight);
 
 		//if(reportPolarity>-1){
 		for(int i = 0;i<in_tree.size();i++){
+
 			//Note: for the tree edge detector, polarity is effectively reversed.
 			if(reportPolarity<1 && (!g.edgeEnabled(i) || in_tree[i]) ){
 				status.inMinimumSpanningTree(i,true);
+				assert(!g.edgeEnabled(i) || dbg.edgeInTree(i));
 			}else if(reportPolarity>-1 && (g.edgeEnabled(i) && ! in_tree[i]) ){
 				status.inMinimumSpanningTree(i,false);
+				assert(!dbg.edgeInTree(i));
 			}
 		}
 		assert(dbg_uptodate());
@@ -700,7 +706,14 @@ public:
 	}
 	int getRoot(int component=0){
 		update();
-		return parents[component];
+		int c = 0;
+		int nc = 0;
+		while(component_member[c]==-1 || nc++<component){
+			c++;
+		}
+		assert(component_member[c]>-1);
+		return component_member[c];
+		//return parents[component];
 	}
 
 	bool dbg_uptodate(){

@@ -14,23 +14,30 @@
 #include "SpiraPan.h"
 #include <limits>
 #include <set>
-MSTDetector::MSTDetector(int _detectorID, GraphTheorySolver * _outer,  DynamicGraph<PositiveEdgeStatus> &_g,DynamicGraph<NegativeEdgeStatus> &_antig ,vec<int> & _edge_weights,double seed):
-Detector(_detectorID),outer(_outer),g(_g),antig(_antig),rnd_seed(seed),edge_weights(_edge_weights),positive_reach_detector(NULL),negative_reach_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL){
+MSTDetector::MSTDetector(int detectorID, GraphTheorySolver * outer,  DynamicGraph<PositiveEdgeStatus> &g,DynamicGraph<NegativeEdgeStatus> &antig ,vec<int> & edge_weights,double seed):
+Detector(detectorID),outer(outer),g(g),antig(antig),rnd_seed(seed),edge_weights(edge_weights),positive_reach_detector(NULL),negative_reach_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL){
 	checked_unique=false;
 	all_unique=true;
 		positiveReachStatus = new MSTDetector::MSTStatus(*this,true);
 		negativeReachStatus = new MSTDetector::MSTStatus(*this,false);
+
 		if(mstalg==MinSpanAlg::ALG_KRUSKAL){
-			positive_reach_detector = new Kruskal<MSTDetector::MSTStatus,PositiveEdgeStatus>(_g,*(positiveReachStatus),1);
-			negative_reach_detector = new Kruskal<MSTDetector::MSTStatus,NegativeEdgeStatus>(_antig,*(negativeReachStatus),-1);
+			positive_reach_detector = new Kruskal<MSTDetector::MSTStatus,PositiveEdgeStatus>(g,*(positiveReachStatus),1);
+			negative_reach_detector = new Kruskal<MSTDetector::MSTStatus,NegativeEdgeStatus>(antig,*(negativeReachStatus),-1);
+			positive_conflict_detector = positive_reach_detector;
+			negative_conflict_detector = negative_reach_detector;
 		}else if (mstalg==MinSpanAlg::ALG_PRIM){
-			positive_reach_detector = new Prim<MSTDetector::MSTStatus,PositiveEdgeStatus>(_g,*(positiveReachStatus),1);
-			negative_reach_detector = new Prim<MSTDetector::MSTStatus,NegativeEdgeStatus>(_antig,*(negativeReachStatus),-1);
+			positive_reach_detector = new Prim<MSTDetector::MSTStatus,PositiveEdgeStatus>(g,*(positiveReachStatus),1);
+			negative_reach_detector = new Prim<MSTDetector::MSTStatus,NegativeEdgeStatus>(antig,*(negativeReachStatus),-1);
+			positive_conflict_detector = new Kruskal<MinimumSpanningTree::NullStatus,PositiveEdgeStatus>(g,MinimumSpanningTree::nullStatus,1);
+			negative_conflict_detector = new Kruskal<MinimumSpanningTree::NullStatus ,PositiveEdgeStatus>(antig,MinimumSpanningTree::nullStatus,-1);
 
 		}else if (mstalg==MinSpanAlg::ALG_SPIRA_PAN){
-			positive_reach_detector =  new Kruskal<MSTDetector::MSTStatus,PositiveEdgeStatus>(_g,*(positiveReachStatus),1);//new SpiraPan<MSTDetector::MSTStatus,PositiveEdgeStatus>(_g,*(positiveReachStatus),1);
-			negative_reach_detector = new SpiraPan<MSTDetector::MSTStatus,NegativeEdgeStatus>(_antig,*(negativeReachStatus),-1);
 
+			positive_reach_detector =  new SpiraPan<MSTDetector::MSTStatus,PositiveEdgeStatus>(g,*(positiveReachStatus),1);//new SpiraPan<MSTDetector::MSTStatus,PositiveEdgeStatus>(_g,*(positiveReachStatus),1);
+			negative_reach_detector = new SpiraPan<MSTDetector::MSTStatus,NegativeEdgeStatus>(antig,*(negativeReachStatus),-1);
+			positive_conflict_detector = new Kruskal<MinimumSpanningTree::NullStatus,PositiveEdgeStatus>(g,MinimumSpanningTree::nullStatus,1);
+			negative_conflict_detector = new Kruskal<MinimumSpanningTree::NullStatus ,PositiveEdgeStatus>(antig,MinimumSpanningTree::nullStatus,-1);
 		}
 
 		reach_marker=outer->newReasonMarker(getID());
@@ -186,7 +193,7 @@ void MSTDetector::MSTStatus::setMinimumSpanningTree(int weight){
 
 void MSTDetector::buildMinWeightTooSmallReason(int weight,vec<Lit> & conflict){
 
-			MinimumSpanningTree & d = *positive_reach_detector;
+			MinimumSpanningTree & d = *positive_conflict_detector;
 
 
 			double starttime = rtime(2);
@@ -213,9 +220,9 @@ void MSTDetector::buildMinWeightTooSmallReason(int weight,vec<Lit> & conflict){
 		bool MSTDetector::walkback(int min_weight, int from, int to){
 			int u = from;
 			while(u!=to && u != -1){
-				int p = negative_reach_detector->getParent(u);
+				int p = negative_conflict_detector->getParent(u);
 				if(p!=-1){
-				int edgeid = negative_reach_detector->getParentEdge(u);
+				int edgeid = negative_conflict_detector->getParentEdge(u);
 				int weight = edge_weights[edgeid];
 				if(weight>min_weight){
 					return true;
@@ -230,10 +237,10 @@ void MSTDetector::buildMinWeightTooSmallReason(int weight,vec<Lit> & conflict){
 			ancestors[node]=node;
 			for(int i = 0;i<antig.adjacency_undirected[node].size();i++){
 				int edgeid = antig.adjacency_undirected[node][i].id;
-				if(negative_reach_detector->edgeInTree(edgeid)){
+				if(negative_conflict_detector->edgeInTree(edgeid)){
 					assert(antig.edgeEnabled(edgeid));
 					int v = antig.adjacency_undirected[node][i].node;
-					if(negative_reach_detector->getParent(v)==node){
+					if(negative_conflict_detector->getParent(v)==node){
 						//u is a child of node in the minimum spanning tree
 						TarjanOLCA(v,conflict);
 						sets.UnionElements(node,v);
@@ -280,10 +287,10 @@ void MSTDetector::buildMinWeightTooSmallReason(int weight,vec<Lit> & conflict){
 			//assert(outer->dbg_distance( source,u));
 			double starttime = rtime(2);
 			int INF=std::numeric_limits<int>::max();
-			negative_reach_detector->update();
-			int mstweight = negative_reach_detector->weight();
+			negative_conflict_detector->update();
+			int mstweight = negative_conflict_detector->weight();
 
-			if(negative_reach_detector->weight()>=INF){
+			if(negative_conflict_detector->weight()>=INF){
 				//IF the mst is disconnected, then we define it's weight to be infinite. In this case, the reason is a separating cut between any two disconnected components.
 				//we can find one of these by identifying any two roots
 
@@ -295,8 +302,8 @@ void MSTDetector::buildMinWeightTooSmallReason(int weight,vec<Lit> & conflict){
 
 
 				assert(conflict.size()==1);
-				for(int i = 0;i<negative_reach_detector->numComponents();i++){
-					int root = negative_reach_detector->getRoot(i);
+				for(int i = 0;i<negative_conflict_detector->numComponents();i++){
+					int root = negative_conflict_detector->getRoot(i);
 					tmp_conflict.clear();
 					visit.clear();
 					//ok, now traverse the connected component in the tree below this root.
@@ -307,7 +314,7 @@ void MSTDetector::buildMinWeightTooSmallReason(int weight,vec<Lit> & conflict){
 					while(visit.size()){
 						int u = visit.last();
 						visit.pop();
-
+						assert(u>-1);
 						for(int i = 0;i<antig.adjacency_undirected[u].size();i++){
 							int edgeid = antig.adjacency_undirected[u][i].id;
 							if(antig.edgeEnabled(edgeid)){
@@ -362,8 +369,8 @@ void MSTDetector::buildMinWeightTooSmallReason(int weight,vec<Lit> & conflict){
 			//and to make that efficient we are going to use Tarjan's offline lca algorithm. This results in the convoluted code below.
 
 			int root = 0;
-			while(negative_reach_detector->getParent(root)!=-1){
-				root = negative_reach_detector->getParent(root);
+			while(negative_conflict_detector->getParent(root)!=-1){
+				root = negative_conflict_detector->getParent(root);
 			}
 			TarjanOLCA(root,conflict);
 #ifndef NDEBUG
@@ -385,9 +392,9 @@ void MSTDetector::buildMinWeightTooSmallReason(int weight,vec<Lit> & conflict){
 			int u = from;
 			int maxweight = 0;
 			while(u!=to && u !=-1){
-				int p = negative_reach_detector->getParent(u);
+				int p = negative_conflict_detector->getParent(u);
 				if(p!=-1){
-				int edgeid = negative_reach_detector->getParentEdge(u);
+				int edgeid = negative_conflict_detector->getParentEdge(u);
 				int weight = edge_weights[edgeid];
 				if(edgeid == edge_id){
 					assert(!found);//can't enounter the edge twice while traversing the cycle
@@ -409,9 +416,9 @@ void MSTDetector::buildMinWeightTooSmallReason(int weight,vec<Lit> & conflict){
 						int edgeid = antig.adjacency_undirected[node][i].id;
 						if(!antig.edgeEnabled(edgeid))
 							continue;
-						if(negative_reach_detector->edgeInTree(edgeid)){
+						if(negative_conflict_detector->edgeInTree(edgeid)){
 							int v = antig.adjacency_undirected[node][i].node;
-							if(negative_reach_detector->getParent(v)==node){
+							if(negative_conflict_detector->getParent(v)==node){
 								//u is a child of node in the minimum spanning tree
 								TarjanOLCA_edge(v,check_edgeid,lowest_endpoint,conflict);
 								sets.UnionElements(node,v);
@@ -465,33 +472,33 @@ void MSTDetector::buildMinWeightTooSmallReason(int weight,vec<Lit> & conflict){
 					seen.growTo(g.nodes);
 					int u = g.all_edges[edgeid].from;
 					int v = g.all_edges[edgeid].to;
-					positive_reach_detector->update();
+					positive_conflict_detector->update();
 					//assert(!g.edgeEnabled(edgeid));
-					assert(!positive_reach_detector->edgeInTree(edgeid));
+					assert(!positive_conflict_detector->edgeInTree(edgeid));
 					int r = u;
 					while(r != -1 ){
 						seen[r]=true;
-						r= positive_reach_detector->getParent(r);
+						r= positive_conflict_detector->getParent(r);
 
 					}
 					r=v;
 					while(! seen[r] && r !=-1){
-						r = positive_reach_detector->getParent(r);
+						r = positive_conflict_detector->getParent(r);
 
 					}
 					if(r==-1){
 						//then the mst is disconnected, but we can pretend it is connected with an edge of infinite weight directly to the root node of the other component.
-						assert(positive_reach_detector->numComponents()>1);
-						assert(positive_reach_detector->getComponent(u)!=positive_reach_detector->getComponent(v));
+						assert(positive_conflict_detector->numComponents()>1);
+						assert(positive_conflict_detector->getComponent(u)!=positive_conflict_detector->getComponent(v));
 					}
 					int lca = r;
 					r=u;
 					while(r!=lca){
 						assert(seen[r]);
 						seen[r]=false;
-						int p =  positive_reach_detector->getParent(r);
+						int p =  positive_conflict_detector->getParent(r);
 						if(p!=-1){
-							int edge = positive_reach_detector->getParentEdge(r);
+							int edge = positive_conflict_detector->getParentEdge(r);
 							assert(g.edgeEnabled(edge));
 							Var v = outer->edge_list[edge].v;
 							assert(outer->value(v)==l_True);
@@ -503,9 +510,9 @@ void MSTDetector::buildMinWeightTooSmallReason(int weight,vec<Lit> & conflict){
 					r=v;
 					while(r!=lca){
 						assert(!seen[r]);
-						int p =  positive_reach_detector->getParent(r);
+						int p =  positive_conflict_detector->getParent(r);
 						if(p!=-1){
-							int edge = positive_reach_detector->getParentEdge(r);
+							int edge = positive_conflict_detector->getParentEdge(r);
 							assert(g.edgeEnabled(edge));
 							Var v = outer->edge_list[edge].v;
 							assert(outer->value(v)==l_True);
@@ -518,7 +525,7 @@ void MSTDetector::buildMinWeightTooSmallReason(int weight,vec<Lit> & conflict){
 					while(r!=-1){
 						assert(seen[r] || r==lca);
 						seen[r]=false;
-						r = positive_reach_detector->getParent(r);
+						r = positive_conflict_detector->getParent(r);
 					}
 
 
@@ -547,8 +554,8 @@ void MSTDetector::buildMinWeightTooSmallReason(int weight,vec<Lit> & conflict){
 					//assert(outer->dbg_distance( source,u));
 					double starttime = rtime(2);
 					int INF=std::numeric_limits<int>::max();
-					negative_reach_detector->update();
-					assert(negative_reach_detector->edgeInTree(edgeid));
+					negative_conflict_detector->update();
+					assert(negative_conflict_detector->edgeInTree(edgeid));
 					sets.Reset();
 					sets.AddElements(g.nodes);
 
@@ -563,15 +570,15 @@ void MSTDetector::buildMinWeightTooSmallReason(int weight,vec<Lit> & conflict){
 					int u = g.all_edges[edgeid].from;
 					int v = g.all_edges[edgeid].to;
 					int lower_endpoint = u;
-					if(negative_reach_detector->getParent(v)==u){
+					if(negative_conflict_detector->getParent(v)==u){
 						lower_endpoint=v;
 					}else{
-						assert(negative_reach_detector->getParent(u)==v);
+						assert(negative_conflict_detector->getParent(u)==v);
 					}
 
 					int root = v;
-					while(negative_reach_detector->getParent(root)!=-1){
-						root = negative_reach_detector->getParent(root);
+					while(negative_conflict_detector->getParent(root)!=-1){
+						root = negative_conflict_detector->getParent(root);
 					}
 					TarjanOLCA_edge(root,edgeid, lower_endpoint,conflict);//run tarjan's off-line lowest common ancestor query from node 0, arbitrarily.
 
@@ -677,26 +684,36 @@ void MSTDetector::buildMinWeightTooSmallReason(int weight,vec<Lit> & conflict){
 		}
 
 		bool MSTDetector::propagate(vec<Lit> & conflict){
-
-
-		double startdreachtime = rtime(2);
-		changed_edges.clear();
+			static int it = 0;
+			if(++it==7){
+				int a = 1;
+			}
+			//printf("it %d: \n",it);
+			changed_edges.clear();
 		changed_weights.clear();
-		stats_under_updates++;
-		positive_reach_detector->update();
-		double reachUpdateElapsed = rtime(2)-startdreachtime;
-		outer->reachupdatetime+=reachUpdateElapsed;
-		stats_under_update_time+=reachUpdateElapsed;
+		if(positive_reach_detector && (!opt_detect_pure_theory_lits || unassigned_positives>0)){
+			double startdreachtime = rtime(2);
+			stats_under_updates++;
+			positive_reach_detector->update();
+			double reachUpdateElapsed = rtime(2)-startdreachtime;
+			stats_under_update_time+=reachUpdateElapsed;
+		}else
+			stats_skipped_under_updates++;
 
-		double startunreachtime = rtime(2);
-		stats_over_updates++;
-		negative_reach_detector->update();
-		double unreachUpdateElapsed = rtime(2)-startunreachtime;
-		outer->unreachupdatetime+=unreachUpdateElapsed;
-		stats_over_update_time+=unreachUpdateElapsed;
+		if(negative_reach_detector && (!opt_detect_pure_theory_lits || unassigned_negatives>0)){
+			double startunreachtime = rtime(2);
+			stats_over_updates++;
+			negative_reach_detector->update();
+			double unreachUpdateElapsed = rtime(2)-startunreachtime;
+			stats_over_update_time+=unreachUpdateElapsed;
+		}else
+			stats_skipped_over_updates++;
+
+
 
 		for(int j = 0;j<changed_weights.size();j++){
 			Lit l = changed_weights[j].l;
+			//printf("mst: %d\n",dimacs(l));
 			int weight = changed_weights[j].weight;
 
 			bool reach = !sign(l);
@@ -735,6 +752,7 @@ void MSTDetector::buildMinWeightTooSmallReason(int weight,vec<Lit> & conflict){
 
 		for(int j = 0;j<changed_edges.size();j++){
 					Lit l = changed_edges[j].l;
+					//printf("edge: %d\n",dimacs(l));
 					int edge = changed_edges[j].edgeID;
 					bool reach = !sign(l);
 					if(outer->value(l)==l_True){
@@ -817,7 +835,6 @@ bool MSTDetector::checkSatisfied(){
 				edgeenabled = outer->value(v)==l_True ;
 			}
 			if(outer->value(l)==l_True){
-
 				assert(edgedisabled || positive_checker.edgeInTree(edgeid));
 				if(! (edgedisabled || positive_checker.edgeInTree(edgeid))){
 					return false;
@@ -837,11 +854,10 @@ bool MSTDetector::checkSatisfied(){
 				}
 				if(!negative_checker.edgeInTree(edgeid))
 					return false;
-
 			}
 		}
 	}
-	if(positive_checker.numComponents()==1){
+	//if(positive_checker.numComponents()==1){
 		int sum_weight = 0;
 		for(int edgeid = 0;edgeid<g.edges;edgeid++){
 			if(positive_checker.edgeInTree(edgeid)){
@@ -855,10 +871,10 @@ bool MSTDetector::checkSatisfied(){
 			}
 		}
 
-		if(sum_weight != positive_checker.weight()){
+		if(sum_weight != positive_checker.forestWeight()){
 			return false;
 		}
-	}
+	//}
 	return true;
 }
 Lit MSTDetector::decide(){
