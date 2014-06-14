@@ -10,6 +10,7 @@
 
 #include <vector>
 #include <cstdio>
+
 namespace dgl{
 class ConnectedComponents{
 public:
@@ -35,8 +36,7 @@ public:
 	virtual void update( )=0;
 
 	virtual void addConnectedCheck(int u, int v){
-		fprintf(stderr,"Connect checks not supported, aborting\n");
-		exit(3);
+		fprintf(stderr, "conneted checks not supported!");
 	}
 
 	virtual int numComponents()=0;

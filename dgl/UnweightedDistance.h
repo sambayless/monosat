@@ -3,7 +3,7 @@
 #define DISTANCE_H_
 
 #include <vector>
-#include "mtl/Heap.h"
+#include "alg/Heap.h"
 #include "DynamicGraph.h"
 #include "core/Config.h"
 #include "Reach.h"
@@ -12,7 +12,7 @@ namespace dgl{
 /**
  * Detect connectivity within a number of steps in unweighted, directed graphs
  */
-template<class Status=NullReachStatus, bool undirected=false>
+template<class Status=Reach::NullStatus, bool undirected=false>
 class Distance:public Reach{
 public:
 
@@ -69,7 +69,7 @@ public:
 
 public:
 
-	Distance(int s,DynamicGraph & graph,  int _reportPolarity=0 ):g(graph), status(nullReachStatus), last_modification(-1),last_addition(-1),last_deletion(-1),history_qhead(0),last_history_clear(0),source(s),INF(0),reportPolarity(_reportPolarity){
+	Distance(int s,DynamicGraph & graph,  int _reportPolarity=0 ):g(graph), status(Reach::nullStatus), last_modification(-1),last_addition(-1),last_deletion(-1),history_qhead(0),last_history_clear(0),source(s),INF(0),reportPolarity(_reportPolarity){
 		maxDistance=-1;
 		mod_percentage=0.2;
 		stats_full_updates=0;
@@ -131,7 +131,7 @@ public:
 			return;
 		}
 		stats_full_updates++;
-		double startdupdatetime = rtime(2);
+		
 		if(last_deletion==g.deletions){
 			stats_num_skipable_deletions++;
 		}
@@ -193,7 +193,7 @@ public:
 
 
 
-		stats_full_update_time+=rtime(2)-startdupdatetime;;
+		;
 	}
 
 	bool dbg_path(int to){
@@ -252,7 +252,7 @@ public:
 #ifdef DEBUG_DIJKSTRA
 		if(last_modification<=0)
 			return true;
-		Dijkstra<NullReachStatus, undirected> d(source,g);
+		Dijkstra<Reach::NullStatus, undirected> d(source,g);
 		d.update();
 		//drawFull();
 

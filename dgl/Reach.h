@@ -10,22 +10,23 @@
 
 #include <vector>
 namespace dgl{
-struct NullReachStatus{
-	void setReachable(int u, bool reachable){
-
-	}
-	bool isReachable(int u) const{
-		return false;
-	}
-
-	void setMininumDistance(int u, bool reachable, int distance){
-
-	}
-};
-extern NullReachStatus nullReachStatus;
 
 class Reach{
 public:
+
+	struct NullStatus{
+		void setReachable(int u, bool reachable){
+
+		}
+		bool isReachable(int u) const{
+			return false;
+		}
+
+		void setMininumDistance(int u, bool reachable, int distance){
+
+		}
+	};
+	static NullStatus nullStatus;
 
 	virtual ~Reach(){};
 

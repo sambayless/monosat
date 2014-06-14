@@ -9,7 +9,7 @@
 #define UNWEIGHTED_RAMAL_REPS_H_
 
 #include <vector>
-#include "mtl/Heap.h"
+#include "alg/Heap.h"
 #include "DynamicGraph.h"
 #include "Reach.h"
 #include "Dijkstra.h"
@@ -645,7 +645,7 @@ public:
 				}
 			}
 		}
-		double startdupdatetime = rtime(2);
+		
 		for (int i = history_qhead;i<g.history.size();i++){
 			int edgeid = g.history[i].id;
 			if(g.history[i].addition && g.edgeEnabled(edgeid)){
@@ -680,7 +680,7 @@ public:
 		history_qhead=g.history.size();
 		last_history_clear=g.historyclears;
 		assert(dbg_uptodate());
-		stats_full_update_time+=rtime(2)-startdupdatetime;;
+		;
 	}
 	bool dbg_path(int to){
 #ifdef DEBUG_DIJKSTRA
@@ -709,7 +709,7 @@ public:
 		if(last_modification<0)
 			return true;
 		dbg_delta();
-		Dijkstra<NullReachStatus,false> d(source,g);
+		Dijkstra<Reach::NullStatus,false> d(source,g);
 
 		for(int i = 0;i<g.nodes;i++){
 			int distance = dist[i];

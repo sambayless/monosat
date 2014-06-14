@@ -47,7 +47,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "pb/PbParser.h"
 #include "mtl/Map.h"
 using namespace Minisat;
-
+using namespace std;
 //=================================================================================================
 
 
@@ -739,7 +739,7 @@ int main(int argc, char** argv)
 				printf("v ");
 				for(auto p:symbols){
 					Var v = p.first;
-					string & s = p.second;
+					std::string & s = p.second;
 					if(S.model[v]==l_True){
 						printf("%s ",s.c_str());
 						//cout<<":- not "<< s<<".\n";

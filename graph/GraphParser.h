@@ -18,6 +18,7 @@
 #include "core/Config.h"
 #include "pb/PbTheory.h"
 #include <set>
+#include <string>
 namespace Minisat {
 
 //=================================================================================================
@@ -539,7 +540,7 @@ static void parse_GRAPH_main(B& in, Solver& S, vec<std::pair<int,std::string> > 
     if(symbols){
 		int i,j=0;
 		for(i = 0;i<symbols->size();i++ ){
-			std::pair<int,string> p = (*symbols)[i];
+			std::pair<int,std::string> p = (*symbols)[i];
 			Var v = p.first;
 			if(v<=S.nVars()){
 				//keep this symbol

@@ -390,8 +390,6 @@ public:
 	}
 };
 
-static double rtime(int t){
-	return 0;
-}
+
 };
 #endif /* DYNAMICGRAPH_H_ */

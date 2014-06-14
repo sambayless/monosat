@@ -8,7 +8,7 @@
 #ifndef NAIVE_DYNAMICCONNECT_H_
 #define NAIVE_DYNAMICCONNECT_H_
 #include "DynamicConnectivityImpl.h"
-#include "DisjointSets.h"
+#include "alg/DisjointSets.h"
 #include <vector>
 #include "mtl/Sort.h"
 #include <cmath>

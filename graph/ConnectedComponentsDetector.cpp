@@ -295,7 +295,7 @@ void ConnectedComponentsDetector::ConnectedComponentsStatus::setComponents(int c
 							std::swap(source,node);
 						}
 
-						Distance<NullReachStatus,true> d(source,g);
+						Distance<Reach::NullStatus,true> d(source,g);
 						double starttime = rtime(2);
 						d.update();
 

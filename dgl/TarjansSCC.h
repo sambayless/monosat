@@ -10,11 +10,11 @@
 
 
 #include <vector>
-#include "mtl/Heap.h"
+#include "alg/Heap.h"
 #include "DynamicGraph.h"
 #include "core/Config.h"
 #include "ConnectedComponents.h"
-#include "DisjointSets.h"
+#include "alg/DisjointSets.h"
 #include <limits>
 #include <algorithm>
 
@@ -159,7 +159,7 @@ public:
 			return;
 		}
 		stats_full_updates++;
-		double startdupdatetime = rtime(2);
+		
 		if(last_deletion==g.deletions){
 			stats_num_skipable_deletions++;
 		}
@@ -184,7 +184,7 @@ public:
 
 		history_qhead=g.history.size();
 		last_history_clear=g.historyclears;
-		stats_full_update_time+=rtime(2)-startdupdatetime;;
+		;
 	}
 
 	bool connected(int from, int to){

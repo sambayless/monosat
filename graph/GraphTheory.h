@@ -802,7 +802,7 @@ public:
 #ifdef DEBUG_DIJKSTRA
 
 		if(undirected){
-			Dijkstra<NullReachStatus, true> d(from,g);
+			Dijkstra<Reach::NullStatus, true> d(from,g);
 			d.update();
 			return d.connected(to);
 		}else{
@@ -835,11 +835,11 @@ public:
 			}
 		}
 		if(undirected){
-			Dijkstra<NullReachStatus, true> d(from,g);
+			Dijkstra<Reach::NullStatus, true> d(from,g);
 
 			return !d.connected(to);
 		}else{
-			Dijkstra<NullReachStatus, false> d(from,g);
+			Dijkstra<Reach::NullStatus, false> d(from,g);
 
 					return !d.connected(to);
 		}

@@ -38,11 +38,11 @@ ReachDetector::ReachDetector(int _detectorID, GraphTheorySolver * _outer, Dynami
 	}
 
 	if(opt_decide_graph_chokepoints){
-		 chokepoint_detector = new DFSReachability<NullReachStatus>(from,_antig,nullReachStatus,1);
+		 chokepoint_detector = new DFSReachability<Reach::NullStatus>(from,_antig,Reach::nullStatus,1);
 
 	}
 	if(opt_shrink_theory_conflicts){
-		cutgraph_reach_detector= new UnweightedRamalReps<NullReachStatus>(from,cutgraph,nullReachStatus,0);
+		cutgraph_reach_detector= new UnweightedRamalReps<Reach::NullStatus>(from,cutgraph,Reach::nullStatus,0);
 	}
 
 	 if(opt_use_random_path_for_decisions){
@@ -83,7 +83,7 @@ ReachDetector::ReachDetector(int _detectorID, GraphTheorySolver * _outer, Dynami
 
 		negative_reach_detector = new DFSReachability<ReachDetector::ReachStatus>(from,_antig,*(negativeReachStatus),-1);
 		if(opt_conflict_shortest_path)
-			positive_path_detector = new Distance<NullReachStatus>(from,_g,nullReachStatus,1);
+			positive_path_detector = new Distance<Reach::NullStatus>(from,_g,Reach::nullStatus,1);
 		else
 			positive_path_detector =positive_reach_detector;
 	}else if(reachalg==ReachAlg::ALG_DISTANCE){
@@ -101,7 +101,7 @@ ReachDetector::ReachDetector(int _detectorID, GraphTheorySolver * _outer, Dynami
 		}
 
 		negative_reach_detector = new UnweightedRamalReps<ReachDetector::ReachStatus>(from,_antig,*(negativeReachStatus),-1,false);
-		positive_path_detector = new Distance<NullReachStatus>(from,_g,nullReachStatus,1);
+		positive_path_detector = new Distance<Reach::NullStatus>(from,_g,Reach::nullStatus,1);
 	}/*else if (reachalg==ReachAlg::ALG_THORUP){
 
 

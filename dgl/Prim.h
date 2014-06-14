@@ -3,7 +3,7 @@
 #define PRIMS_H_
 
 #include <vector>
-#include "mtl/Heap.h"
+#include "alg/Heap.h"
 #include "DynamicGraph.h"
 #include "core/Config.h"
 #include "MinimumSpanningTree.h"
@@ -129,7 +129,7 @@ public:
 		}
 
 		stats_full_updates++;
-		double startdupdatetime = rtime(2);
+		
 		if(last_deletion==g.deletions){
 			stats_num_skipable_deletions++;
 		}
@@ -225,7 +225,7 @@ public:
 
 
 
-		stats_full_update_time+=rtime(2)-startdupdatetime;;
+		;
 	}
 	std::vector<int> & getSpanningTree(){
 		update();

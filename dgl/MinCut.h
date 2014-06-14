@@ -10,7 +10,7 @@
 
 
 #include <vector>
-#include "mtl/Heap.h"
+#include "alg/Heap.h"
 #include "DynDijkstra.h"
 #include <set>
 //adapted from http://www.boost.org/doc/libs/1_46_1/boost/graph/stoer_wagner_min_cut.hpp

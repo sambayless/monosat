@@ -1,6 +1,6 @@
 #include "Reach.h"
-
-NullReachStatus  nullReachStatus;
+using namespace dgl;
+Reach::NullStatus Reach::nullStatus;
 
 
 

@@ -3,7 +3,7 @@
 #define SPIRA_PAN_H_
 
 #include <vector>
-#include "mtl/Heap.h"
+#include "alg/Heap.h"
 #include "mtl/Sort.h"
 #include "DynamicGraph.h"
 #include "core/Config.h"
@@ -612,7 +612,7 @@ public:
 		}
 
 
-		double startdupdatetime = rtime(2);
+		
 
 		for (int i = history_qhead;i<g.history.size();i++){
 
@@ -655,7 +655,7 @@ public:
 		history_qhead=g.history.size();
 		last_history_clear=g.historyclears;
 
-		stats_full_update_time+=rtime(2)-startdupdatetime;;
+		;
 	}
 	std::vector<int> & getSpanningTree(){
 		update();

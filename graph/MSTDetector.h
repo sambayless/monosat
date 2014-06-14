@@ -15,7 +15,7 @@
 #include "core/SolverTypes.h"
 #include "mtl/Map.h"
 
-#include "dgl/DisjointSets.h"
+#include "dgl/alg/DisjointSets.h"
 #include "utils/System.h"
 #include "Detector.h"
 

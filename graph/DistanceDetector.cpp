@@ -61,7 +61,7 @@ Detector(_detectorID),outer(_outer),g(_g),antig(_antig),source(from),rnd_seed(se
 		positive_reach_detector = new UnweightedRamalReps<DistanceDetector::ReachStatus>(from,_g,*(positiveReachStatus),0);
 		negative_reach_detector = new UnweightedRamalReps<DistanceDetector::ReachStatus>(from,_antig,*(negativeReachStatus),0);
 
-		positive_path_detector =  new Distance<NullReachStatus>(from,_g,nullReachStatus,0);
+		positive_path_detector =  new Distance<Reach::NullStatus>(from,_g,Reach::nullStatus,0);
 	}else{
 
 		positive_reach_detector = new Dijkstra<DistanceDetector::ReachStatus>(from,_g,*positiveReachStatus,0);

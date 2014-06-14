@@ -3,7 +3,7 @@
 #define BFSReachability_H_
 
 #include <vector>
-#include "mtl/Heap.h"
+#include "alg/Heap.h"
 #include "DynamicGraph.h"
 #include "core/Config.h"
 #include "Reach.h"
@@ -95,7 +95,7 @@ public:
 
 	/*void updateFast(){
 		stats_fast_updates++;
-		double start_time = rtime(2);
+		
 
 		assert(last_deletion==g.deletions);
 		last_modification=g.modifications;
@@ -137,7 +137,7 @@ public:
 				}
 			}
 		}
-		stats_fast_update_time+=rtime(2)-start_time;
+		
 	}*/
 /*	std::vector<int> & getChanged(){
 		return changed;
@@ -292,7 +292,7 @@ public:
 
 	}
 	bool update_additions(){
-		double startdupdatetime = rtime(2);
+		
 
 		if(g.historyclears!=last_history_clear){
 				last_history_clear=g.historyclears;
@@ -333,7 +333,7 @@ public:
 					//then deleting this edge has no impact on BFSReachability, so don't need to do anything
 				}else{
 					stats_fast_failed_updates++;
-					stats_fast_update_time+=rtime(2)-startdupdatetime;;
+
 					return false;
 				}
 
@@ -351,12 +351,12 @@ public:
 			history_qhead=g.history.size();
 			last_history_clear=g.historyclears;
 
-			stats_fast_update_time+=rtime(2)-startdupdatetime;;
+
 			return true;
 	}
 
 	bool incrementalUpdate(){
-			double startdupdatetime = rtime(2);
+			
 
 			if(g.historyclears!=last_history_clear){
 					last_history_clear=g.historyclears;
@@ -422,7 +422,7 @@ public:
 				history_qhead=g.history.size();
 				last_history_clear=g.historyclears;
 
-				stats_fast_update_time+=rtime(2)-startdupdatetime;;
+				
 				return true;
 		}
 
@@ -462,7 +462,7 @@ public:
 					return;
 			}else{
 				if(opt_dec_graph==1 && last_deletion < g.deletions){
-					double startddecupdatetime = rtime(2);
+
 					//scan through the deletions and check if any of them matter..
 					bool safe=true;
 					for(int i = history_qhead;i<g.history.size();i++){
@@ -485,7 +485,7 @@ public:
 					if(safe){
 						last_deletion=g.deletions;
 					}
-					stats_fast_update_time+=rtime(2)-startddecupdatetime;;
+
 				}
 
 				if(last_deletion==g.deletions){
@@ -497,7 +497,7 @@ public:
 		}
 
 		stats_full_updates++;
-		double startdupdatetime = rtime(2);
+		
 
 		q.clear();
 		for(int i = 0;i<g.nodes;i++){
@@ -546,7 +546,7 @@ public:
 
 
 
-		stats_full_update_time+=rtime(2)-startdupdatetime;;
+		;
 	}
 
 	bool dbg_path(int to){
@@ -605,7 +605,7 @@ public:
 #ifdef DEBUG_DIJKSTRA
 		if(last_modification<=0)
 			return true;
-		Dijkstra<NullReachStatus,undirected> d(source,g);
+		Dijkstra<Reach::NullStatus,undirected> d(source,g);
 		d.update();
 		//drawFull();
 		for(int i = 0;i<g.nodes;i++){

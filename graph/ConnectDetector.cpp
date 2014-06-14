@@ -58,7 +58,7 @@ ConnectDetector::ConnectDetector(int _detectorID, GraphTheorySolver * _outer, Dy
 		positive_reach_detector = new BFSReachability<ConnectDetector::ReachStatus,true>(from,_g,*(positiveReachStatus),1);
 		negative_reach_detector = new BFSReachability<ConnectDetector::ReachStatus,true>(from,_antig,*(negativeReachStatus),-1);
 		if(opt_conflict_shortest_path)
-			positive_path_detector = new Distance<NullReachStatus,true>(from,_g,nullReachStatus,1);
+			positive_path_detector = new Distance<Reach::NullStatus,true>(from,_g,Reach::nullStatus,1);
 		else
 			positive_path_detector =positive_reach_detector;
 	}else if(undirectedalg==ConnectivityAlg::ALG_DFS){
@@ -66,7 +66,7 @@ ConnectDetector::ConnectDetector(int _detectorID, GraphTheorySolver * _outer, Dy
 		positive_reach_detector = new DFSReachability<ConnectDetector::ReachStatus,true>(from,_g,*(positiveReachStatus),1);
 		negative_reach_detector = new DFSReachability<ConnectDetector::ReachStatus,true>(from,_antig,*(negativeReachStatus),-1);
 		if(opt_conflict_shortest_path)
-			positive_path_detector = new Distance<NullReachStatus,true>(from,_g,nullReachStatus,1);
+			positive_path_detector = new Distance<Reach::NullStatus,true>(from,_g,Reach::nullStatus,1);
 		else
 			positive_path_detector =positive_reach_detector;
 	}else if(undirectedalg==ConnectivityAlg::ALG_DISTANCE){
@@ -80,7 +80,7 @@ ConnectDetector::ConnectDetector(int _detectorID, GraphTheorySolver * _outer, Dy
 		negative_reach_detector = new DynamicConnectivity<ConnectDetector::ReachStatus>(_antig,*(negativeReachStatus),-1);
 		positive_path_detector = positive_reach_detector;
 		if(opt_conflict_shortest_path)
-			positive_path_detector = new Distance<NullReachStatus,true>(from,_g,nullReachStatus,1);
+			positive_path_detector = new Distance<Reach::NullStatus,true>(from,_g,Reach::nullStatus,1);
 		else
 			positive_path_detector =positive_reach_detector;
 	}else{
@@ -802,8 +802,8 @@ bool ConnectDetector::checkSatisfied(){
 					}
 				}
 	}else{
-		Dijkstra<NullReachStatus,true>under(source,g) ;
-		Dijkstra<NullReachStatus,true>over(source,antig) ;
+		Dijkstra<Reach::NullStatus,true>under(source,g) ;
+		Dijkstra<Reach::NullStatus,true>over(source,antig) ;
 		under.update();
 		over.update();
 

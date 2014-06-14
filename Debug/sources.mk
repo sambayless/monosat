@@ -26,6 +26,7 @@ SUBDIRS := \
 utils \
 simp \
 graph \
+dgl/alg \
 dgl \
 core \
 aiger \

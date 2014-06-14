@@ -3,7 +3,7 @@
 #define DYNAMIC_CONNECTIVITY_H_
 
 #include <vector>
-#include "mtl/Heap.h"
+#include "alg/Heap.h"
 #include "DynamicGraph.h"
 #include "alg/EulerTree.h"
 #include "alg/TreapCustom.h"

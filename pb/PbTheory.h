@@ -12,6 +12,7 @@
 
 #include "mtl/Vec.h"
 #include "mtl/Map.h"
+#include "mtl/Sort.h"
 #include "core/SolverTypes.h"
 #include "core/Theory.h"
 #include <cmath>

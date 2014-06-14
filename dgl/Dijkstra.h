@@ -15,7 +15,7 @@
 #include "core/Config.h"
 
 namespace dgl{
-template<class Status=NullReachStatus, bool undirected=false >
+template<class Status=Reach::NullStatus, bool undirected=false >
 class Dijkstra:public Reach{
 public:
 	DynamicGraph & g;
@@ -62,7 +62,7 @@ public:
 
 	}
 
-	Dijkstra(int s,DynamicGraph & graph, int reportPolarity=0):g(graph),status(nullReachStatus),reportPolarity(reportPolarity), last_modification(-1),last_addition(-1),last_deletion(-1),history_qhead(0),last_history_clear(0),source(s),INF(0),q(DistCmp(dist)){
+	Dijkstra(int s,DynamicGraph & graph, int reportPolarity=0):g(graph),status(Reach::nullStatus),reportPolarity(reportPolarity), last_modification(-1),last_addition(-1),last_deletion(-1),history_qhead(0),last_history_clear(0),source(s),INF(0),q(DistCmp(dist)){
 
 		mod_percentage=0.2;
 
@@ -82,7 +82,7 @@ public:
 /*
 	void updateFast(){
 		stats_fast_updates++;
-		double start_time = rtime(2);
+		
 
 
 
@@ -200,7 +200,7 @@ public:
 		}
 		changed.clear();
 
-		stats_fast_update_time+=rtime(2)-start_time;
+		
 	}*/
 /*	std::vector<int> & getChanged(){
 		return changed;
@@ -279,7 +279,7 @@ public:
 		}*/
 
 		stats_full_updates++;
-		double startdupdatetime = rtime(2);
+		
 
 		INF=g.nodes+1;
 		dist.resize(g.nodes);
@@ -345,7 +345,7 @@ public:
 		history_qhead=g.history.size();
 		last_history_clear=g.historyclears;
 
-		stats_full_update_time+=rtime(2)-startdupdatetime;
+		
 	}
 	bool dbg_path(int to){
 #ifdef DEBUG_DIJKSTRA

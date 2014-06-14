@@ -9,7 +9,7 @@
 #define WEIGHTED_DIJKSTRA_H_
 
 #include <vector>
-#include "mtl/Heap.h"
+#include "alg/Heap.h"
 #include "DynamicGraph.h"
 #include "Reach.h"
 #include <limits>
@@ -93,7 +93,7 @@ public:
 
 	void updateFast(){
 		stats_fast_updates++;
-		double start_time = rtime(2);
+		
 
 
 
@@ -205,7 +205,7 @@ public:
 
 			}
 		}
-		stats_fast_update_time+=rtime(2)-start_time;
+		
 	}
 	std::vector<int> & getChanged(){
 		return changed;
@@ -280,7 +280,7 @@ public:
 		}*/
 
 		stats_full_updates++;
-		double startdupdatetime = rtime(2);
+		
 
 		INF=g.nodes+1;
 		dist.resize(g.nodes);
@@ -339,7 +339,7 @@ public:
 		history_qhead=g.history.size();
 		last_history_clear=g.historyclears;
 
-		stats_full_update_time+=rtime(2)-startdupdatetime;;
+		;
 	}
 	bool dbg_path(int to){
 #ifdef DEBUG_DIJKSTRA
