@@ -167,14 +167,8 @@ void MSTDetector::MSTStatus::setMinimumSpanningTree(int weight){
 
 	for(int i = 0;i<detector.weight_lits.size();i++){
 		int min_weight =  detector.weight_lits[i].min_weight;
-		if(min_weight<10670 ){
-			int a= 1;
-		}
 		Lit l = detector.weight_lits[i].l;
 		if(l!=lit_Undef){
-			if(toInt(l)==7843){
-				int a =1;
-			}
 			assert(l!=lit_Undef);
 			if(min_weight<weight && !polarity){
 				lbool assign = detector.outer->value(l);
@@ -693,23 +687,26 @@ void MSTDetector::buildMinWeightTooSmallReason(int weight,vec<Lit> & conflict){
 			//printf("it %d: \n",it);
 			changed_edges.clear();
 		changed_weights.clear();
-		if(positive_reach_detector && (!opt_detect_pure_theory_lits || unassigned_positives>0)){
+		//NOTE! Cannot use pure theory lits here, because the edge literals and the mst weight literals are computed
+		//in opposed polarity by each detector! So unless we separate those unassigned counts out, we can't skip either...
+		//Fix this later if needed...
+		//if(positive_reach_detector && (!opt_detect_pure_theory_lits || unassigned_positives>0)){
 			double startdreachtime = rtime(2);
 			stats_under_updates++;
 			positive_reach_detector->update();
 			double reachUpdateElapsed = rtime(2)-startdreachtime;
 			stats_under_update_time+=reachUpdateElapsed;
-		}else
-			stats_skipped_under_updates++;
+		//}else
+		//	stats_skipped_under_updates++;
 
-		if(negative_reach_detector && (!opt_detect_pure_theory_lits || unassigned_negatives>0)){
+		//if(negative_reach_detector && (!opt_detect_pure_theory_lits || unassigned_negatives>0)){
 			double startunreachtime = rtime(2);
 			stats_over_updates++;
 			negative_reach_detector->update();
 			double unreachUpdateElapsed = rtime(2)-startunreachtime;
 			stats_over_update_time+=unreachUpdateElapsed;
-		}else
-			stats_skipped_over_updates++;
+		//}else
+		//	stats_skipped_over_updates++;
 
 
 
