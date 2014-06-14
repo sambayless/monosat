@@ -10,12 +10,12 @@
 #include "utils/System.h"
 
 #include "Graph.h"
-#include "MinimumSpanningTree.h"
+#include "dgl/MinimumSpanningTree.h"
 
 #include "core/SolverTypes.h"
 #include "mtl/Map.h"
 
-#include "DisjointSets.h"
+#include "dgl/DisjointSets.h"
 #include "utils/System.h"
 #include "Detector.h"
 namespace Minisat{

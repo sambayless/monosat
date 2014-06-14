@@ -9,11 +9,11 @@
 
 #include "MaxflowDetector.h"
 #include "GraphTheory.h"
-#include "EdmondsKarpAdj.h"
-#include "IBFS.h"
-#include "EdmondsKarpDynamic.h"
-#include "Dinics.h"
-#include "DinicsLinkCut.h"
+#include "dgl/EdmondsKarpAdj.h"
+#include "dgl/IBFS.h"
+#include "dgl/EdmondsKarpDynamic.h"
+#include "dgl/Dinics.h"
+#include "dgl/DinicsLinkCut.h"
 
 MaxflowDetector::MaxflowDetector(int _detectorID, GraphTheorySolver * _outer,  DynamicGraph<PositiveEdgeStatus> &_g,DynamicGraph<NegativeEdgeStatus> &_antig, int from, int _target,double seed):
 Detector(_detectorID),outer(_outer),over_graph(_g),g(_g),antig(_antig),source(from),target(_target),rnd_seed(seed),positive_detector(NULL),negative_detector(NULL){

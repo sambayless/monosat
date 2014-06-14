@@ -26,7 +26,7 @@ struct ConnectivityConstraint{
 	Var connect_var;
 };
 
-struct DefaultEdgeStatus{
+/*struct DefaultEdgeStatus{
 
 	vec<char> status;
 
@@ -44,11 +44,11 @@ struct DefaultEdgeStatus{
 		status.growTo(size);
 	}
 
-};
+};*/
 //extern DefaultEdgeStatus defaultStatus;
-typedef DefaultEdgeStatus PositiveEdgeStatus;
+/*typedef DefaultEdgeStatus PositiveEdgeStatus;
 typedef DefaultEdgeStatus NegativeEdgeStatus;
-typedef DefaultEdgeStatus CutEdgeStatus;
+typedef DefaultEdgeStatus CutEdgeStatus;*/
 
 	struct Assignment{
 		bool isEdge:1;

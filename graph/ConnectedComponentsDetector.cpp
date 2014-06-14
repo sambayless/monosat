@@ -9,8 +9,8 @@
 
 #include "ConnectedComponentsDetector.h"
 #include "GraphTheory.h"
-#include "UnweightedDistance.h"
-#include "Reach.h"
+#include "dgl/UnweightedDistance.h"
+#include "dgl/Reach.h"
 #include <limits>
 ConnectedComponentsDetector::ConnectedComponentsDetector(int _detectorID, GraphTheorySolver * _outer,  DynamicGraph<PositiveEdgeStatus> &_g,DynamicGraph<NegativeEdgeStatus> &_antig,double seed):
 Detector(_detectorID),outer(_outer),g(_g),antig(_antig),rnd_seed(seed),positive_component_detector(NULL),negative_component_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL){

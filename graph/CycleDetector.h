@@ -4,11 +4,11 @@
 #include "utils/System.h"
 
 #include "Graph.h"
-#include "ConnectedComponents.h"
-#include "Cycle.h"
+#include "dgl/ConnectedComponents.h"
+#include "dgl/Cycle.h"
 #include "core/SolverTypes.h"
 #include "mtl/Map.h"
-#include "DFSCycle.h"
+#include "dgl/DFSCycle.h"
 #include "utils/System.h"
 #include "Detector.h"
 namespace Minisat{

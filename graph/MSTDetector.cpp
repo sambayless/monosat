@@ -9,9 +9,9 @@
 
 #include "MSTDetector.h"
 #include "GraphTheory.h"
-#include "Kruskal.h"
-#include "Prim.h"
-#include "SpiraPan.h"
+#include "dgl/Kruskal.h"
+#include "dgl/Prim.h"
+#include "dgl/SpiraPan.h"
 #include <limits>
 #include <set>
 MSTDetector::MSTDetector(int detectorID, GraphTheorySolver * outer,  DynamicGraph<PositiveEdgeStatus> &g,DynamicGraph<NegativeEdgeStatus> &antig ,vec<int> & edge_weights,double seed):

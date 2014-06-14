@@ -10,7 +10,7 @@
 #include "utils/System.h"
 
 #include "Graph.h"
-#include "AllPairs.h"
+#include "dgl/AllPairs.h"
 
 #include "core/SolverTypes.h"
 #include "mtl/Map.h"

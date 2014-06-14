@@ -10,13 +10,13 @@
 #include "utils/System.h"
 
 #include "Graph.h"
-#include "Reach.h"
-#include "Dijkstra.h"
-#include "BFSReachability.h"
-#include "UnweightedDistance.h"
+#include "dgl/Reach.h"
+#include "dgl/Dijkstra.h"
+#include "dgl/BFS.h"
+#include "dgl/UnweightedDistance.h"
 #include "core/SolverTypes.h"
 #include "mtl/Map.h"
-#include "WeightedDijkstra.h"
+#include "dgl/WeightedDijkstra.h"
 
 #include "utils/System.h"
 #include "Detector.h"

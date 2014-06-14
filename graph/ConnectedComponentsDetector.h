@@ -10,13 +10,13 @@
 #include "utils/System.h"
 
 #include "Graph.h"
-#include "ConnectedComponents.h"
+#include "dgl/ConnectedComponents.h"
 
 #include "core/SolverTypes.h"
 #include "mtl/Map.h"
-#include "DisjointSetConnectedComponents.h"
+#include "dgl/DisjointSetConnectedComponents.h"
 
-#include "DisjointSets.h"
+#include "dgl/DisjointSets.h"
 #include "utils/System.h"
 #include "Detector.h"
 namespace Minisat{

@@ -8,11 +8,11 @@
 
 
 #include "ReachDetector.h"
-#include "UnweightedRamalReps.h"
+#include "dgl/UnweightedRamalReps.h"
 #include "GraphTheory.h"
 #include "core/Config.h"
-#include "DynamicConnectivity.h"
-#include "TarjansSCC.h"
+#include "dgl/DynamicConnectivity.h"
+#include "dgl/TarjansSCC.h"
 ReachDetector::ReachDetector(int _detectorID, GraphTheorySolver * _outer, DynamicGraph<PositiveEdgeStatus> &_g, DynamicGraph<NegativeEdgeStatus> &_antig, int from,double seed):Detector(_detectorID),outer(_outer),g(_g),antig(_antig),within(-1),source(from),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL),opt_weight(*this),chokepoint_status(*this),chokepoint(chokepoint_status, _antig,source){
 
 	constraintsBuilt=-1;

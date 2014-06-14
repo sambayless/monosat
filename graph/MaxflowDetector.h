@@ -10,8 +10,8 @@
 #include "utils/System.h"
 
 #include "Graph.h"
-#include "MaxFlow.h"
-#include "EdmondsKarp.h"
+#include "dgl/MaxFlow.h"
+#include "dgl/EdmondsKarp.h"
 #include "core/SolverTypes.h"
 #include "mtl/Map.h"
 
