@@ -10,7 +10,7 @@
 #include "DistanceDetector.h"
 #include "GraphTheory.h"
 #include "dgl/UnweightedRamalReps.h"
-
+using namespace Minisat;
 DistanceDetector::DistanceDetector(int _detectorID, GraphTheorySolver * _outer,  DynamicGraph &_g,DynamicGraph &_antig, int from, int within_steps ,double seed):
 Detector(_detectorID),outer(_outer),g(_g),antig(_antig),source(from),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL),opt_weight(*this){
 	max_distance=0;

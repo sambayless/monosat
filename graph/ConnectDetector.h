@@ -26,6 +26,7 @@
 
 #include "utils/System.h"
 #include "Detector.h"
+using namespace dgl;
 namespace Minisat{
 class GraphTheorySolver;
 class ConnectDetector:public Detector{

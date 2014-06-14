@@ -14,6 +14,8 @@
 #include "dgl/SpiraPan.h"
 #include <limits>
 #include <set>
+#include "core/Config.h"
+using namespace Minisat;
 MSTDetector::MSTDetector(int detectorID, GraphTheorySolver * outer,  DynamicGraph &g,DynamicGraph &antig ,vec<int> & edge_weights,double seed):
 Detector(detectorID),outer(outer),g(g),antig(antig),rnd_seed(seed),edge_weights(edge_weights),positive_reach_detector(NULL),negative_reach_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL){
 	checked_unique=false;
@@ -201,7 +203,7 @@ void MSTDetector::buildMinWeightTooSmallReason(int weight,vec<Lit> & conflict){
 			int minweight = d.weight();
 			assert(d.weight()<=weight);
 			//learn that at least one edge in the tree must be disabled (else, the minimum weight cannot be higher than the current weight)
-			vec<int> & mst = d.getSpanningTree();
+			std::vector<int> & mst = d.getSpanningTree();
 			for(int i = 0;i<mst.size();i++){
 				int edgeid = mst[i];
 				Var v = outer->edge_list[edgeid].v;

@@ -37,7 +37,7 @@ class EdmondsKarpDynamic:public MaxFlow{
     Capacity & capacity;
     int INF;
 #ifdef DEBUG_MAXFLOW
-    	EdmondsKarpAdj<Capacity, EdgeStatus> ek;
+    	EdmondsKarpAdj<Capacity> ek;
 #endif
     /*
      *            input:
@@ -76,7 +76,7 @@ class EdmondsKarpDynamic:public MaxFlow{
             	 //  int fr = F[id];
                    if (((c - F[id]) > 0) && (prev[v].from == -1)){
                        prev[v] = LocalEdge(u,id,false);
-                       M[v] = min(M[u], c - F[id]);
+                       M[v] = std::min(M[u], c - F[id]);
                        if (v != t)
                            Q.push_back(v);
                        else{
@@ -101,7 +101,7 @@ class EdmondsKarpDynamic:public MaxFlow{
 				 //  int fr = F[id];
 					  if (((c - f) > 0) && (prev[v].from == -1)){
 						  prev[v] = LocalEdge(u,id,true);
-						  M[v] = min(M[u], c - f);
+						  M[v] = std::min(M[u], c - f);
 				/*		  */
 						  if (v != t)
 							  Q.push_back(v);
@@ -123,7 +123,7 @@ class EdmondsKarpDynamic:public MaxFlow{
 
 
 public:
-    EdmondsKarpDynamic(DynamicGraph& _g,Capacity & cap):g(_g),reserve(cap),INF(0xF0F0F0)
+    EdmondsKarpDynamic(DynamicGraph& _g,Capacity & cap):g(_g),capacity(cap),INF(0xF0F0F0)
 #ifdef DEBUG_MAXFLOW
     	,ek(_g,cap)
 #endif
@@ -311,7 +311,7 @@ private:
 
     int maxFlow_residual(int s, int t, int bound){
 #ifndef NDEBUG
-    	DynamicGraph<> d;
+    	DynamicGraph d;
 		d.addNodes(g.nodes);
 		//std::vector<int> R;
 		for(int i = 0;i<g.edges;i++){
@@ -364,7 +364,7 @@ private:
     			dbg_print_graph(s,t,-1, -1);
     		}
 #ifndef NDEBUG
-			EdmondsKarpAdj<std::vector<int>, EdgeStatus> ek_check(d,d.weights);
+			EdmondsKarpAdj<std::vector<int>> ek_check(d,d.weights);
 
         		int expect =  ek_check.maxFlow(s,t);
         		assert(new_flow<=expect);
@@ -414,7 +414,7 @@ private:
 
 #ifndef NDEBUG
     		//EdmondsKarp<EdgeStatus> ek_check(g);
-    	 	 EdmondsKarpAdj<std::vector<int>, EdgeStatus> ek_check(g,g.weights);
+    	 	 EdmondsKarpAdj<std::vector<int>> ek_check(g,g.weights);
     		int expect =  ek_check.maxFlow(s,t);
     		assert(f==expect);
 #endif
@@ -437,7 +437,7 @@ private:
        				   int c = shortCircuitCapacity;
        				   if (((c - f) > 0)){
        					   prev[v] = {u,-1};
-						   M[v] = min(M[u], c -f);
+						   M[v] = std::min(M[u], c -f);
 						   if (v != t)
 							   Q.push_back(v);
 						   else
@@ -460,7 +460,7 @@ private:
                 	 //  int fr = F[id];
                        if (((c - f) > 0) && (prev[v].from == -1)){
                            prev[v] = LocalEdge(u,id,false);
-                           M[v] = min(M[u], c - f);
+                           M[v] = std::min(M[u], c - f);
                            if (v != t)
                                Q.push_back(v);
                            else
@@ -484,7 +484,7 @@ private:
 					 //  int fr = F[id];
 						  if (((c - f) > 0) && (prev[v].from == -1)){
 							  prev[v] = LocalEdge(u,id,true);
-							  M[v] = min(M[u], c - f);
+							  M[v] = std::min(M[u], c - f);
 							  if (v != t)
 								  Q.push_back(v);
 							  else
@@ -539,7 +539,7 @@ private:
     	//
     	int newFlow = 0;
 #ifndef NDEBUG
-    	 	DynamicGraph<> d;
+    	 	DynamicGraph d;
     	 	d.addNodes(g.nodes);
     	 	//std::vector<int> R;
     	 	for(int i = 0;i<g.edges;i++){
@@ -616,7 +616,7 @@ private:
     	 	if(shortCircuitFrom>=0){
     	 		d.addEdge(shortCircuitFrom,shortCircuitTo,d.edges,100);
     	 	}
-    		EdmondsKarpAdj<std::vector<int>, EdgeStatus> ek_check(d,d.weights);
+    		EdmondsKarpAdj<std::vector<int>> ek_check(d,d.weights);
 
     		int expect =  ek_check.maxFlow(s,t);
 

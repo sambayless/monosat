@@ -19,6 +19,7 @@
 #include "dgl/DisjointSets.h"
 #include "utils/System.h"
 #include "Detector.h"
+using namespace dgl;
 namespace Minisat{
 class GraphTheorySolver;
 class ConnectedComponentsDetector:public Detector{

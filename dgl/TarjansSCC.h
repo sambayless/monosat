@@ -99,7 +99,7 @@ public:
 		for(auto & edge:g.adjacency[node]){
 			if(g.edgeEnabled(edge.id)){
 				int to = edge.node;
-				assert(in_q[node]==q.contains(node));
+				assert(in_q[node]==(std::count( q.begin(),q.end(),node)));
 				if(indices[to]<0){
 					strongConnect(to,index,scc_out);
 					lowlink[node]=std::min(lowlink[node],lowlink[to]);
@@ -218,7 +218,7 @@ public:
 		int index=0;
 		s.strongConnect(node,index,&scc);
 		assert(scc.size());
-		assert(scc.contains(node));
+		assert(std::count( scc.begin(),scc.end(), node));
 	}
 
 };

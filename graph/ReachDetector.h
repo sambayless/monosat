@@ -26,6 +26,7 @@
 
 #include "utils/System.h"
 #include "Detector.h"
+using namespace dgl;
 namespace Minisat{
 class GraphTheorySolver;
 class ReachDetector:public Detector{
@@ -60,7 +61,7 @@ public:
 		vec<vec<Lit> > dist_lits;
 
 
-		vec<ForceReason> forced_edges;
+		std::vector<ForceReason> forced_edges;
 		struct Change{
 				Lit l;
 				int u;

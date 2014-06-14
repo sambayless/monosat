@@ -29,7 +29,7 @@ public:
     int last_modification;
     int last_deletion;
     int last_addition;
-
+    bool opt_dinics_recursive=false;
     int history_qhead;
     int last_history_clear;
     std::vector<LocalEdge> prev;
@@ -170,7 +170,7 @@ public:
 				if (dist[v] == dist[u] + 1 && F[edgeID] < capacity[edgeID]) {
 					//printf("%d\n",edgeID);
 					found=true;
-					M[v] = min(M[u], capacity[edgeID] - F[edgeID]);
+					M[v] = std::min(M[u], capacity[edgeID] - F[edgeID]);
 					prev[v]=LocalEdge(u,edgeID,false);
 					if(v==dst){
 						//M[v] = min(M[u], capacity[edgeID] - F[id]);
@@ -201,7 +201,7 @@ public:
 					if (dist[v] == dist[u] + 1 && F[edgeID]) {
 						//printf("-%d\n",edgeID);
 						found=true;
-						M[v] = min(M[u], F[edgeID]);
+						M[v] = std::min(M[u], F[edgeID]);
 						prev[v]=LocalEdge(u,edgeID,false);
 						if(v==dst){
 							m=M[dst];
@@ -265,7 +265,7 @@ public:
         			int v =  g.inverted_adjacency[u][dbg_pos[u]-g.adjacency[u].size()].node;
         			//these are backwards edges, which have capacity exactly if the forward edge has non-zero flow
         			if (dist[v] == dist[u] + 1 && F[edgeID]) {
-        				int df = dbg_findAugmentingPath_recursive(v, min(f, F[edgeID]));
+        				int df = dbg_findAugmentingPath_recursive(v, std::min(f, F[edgeID]));
         				if (df > 0) {
         					//F[edgeID] -= df;
         					return df;
@@ -286,7 +286,7 @@ public:
     			int v =  g.adjacency[u][pos[u]].node;
     			if (dist[v] == dist[u] + 1 && F[edgeID] < capacity[edgeID]) {
     				//printf("%d\n",edgeID);
-    				int df = findAugmentingPath_recursive(v, min(f, capacity[edgeID] - F[edgeID]));
+    				int df = findAugmentingPath_recursive(v, std::min(f, capacity[edgeID] - F[edgeID]));
     				if (df > 0) {
     					F[edgeID] += df;
     					return df;
@@ -302,7 +302,7 @@ public:
     			//these are backwards edges, which have capacity exactly if the forward edge has non-zero flow
     			if (dist[v] == dist[u] + 1 && F[edgeID]) {
     				//printf("-%d\n",edgeID);
-    				int df = findAugmentingPath_recursive(v, min(f, F[edgeID]));
+    				int df = findAugmentingPath_recursive(v, std::min(f, F[edgeID]));
     				if (df > 0) {
     					F[edgeID] -= df;
     					return df;
@@ -315,7 +315,7 @@ public:
     int maxFlow(int s, int t){
     	int f = 0;
 #ifdef RECORD
-		if(g.outfile && mincutalg==MinCutAlg::ALG_EDKARP_ADJ){
+		if(g.outfile ){
 			fprintf(g.outfile,"f %d %d\n", s,t);
 			fflush(g.outfile);
 		}

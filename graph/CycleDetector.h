@@ -11,7 +11,7 @@
 #include "dgl/DFSCycle.h"
 #include "utils/System.h"
 #include "Detector.h"
-
+using namespace dgl;
 namespace Minisat{
 class GraphTheorySolver;
 class CycleDetector:public Detector{

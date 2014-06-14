@@ -496,7 +496,7 @@ public:
 			}
 
 		}
-		sort(q,DistCmp(dist));
+		std::sort(q.begin(),q.end() ,DistCmp(dist));
 		int i=0,j=0;
 		while(i<q.size()||j<q2.size()){
 				int u;
@@ -709,7 +709,7 @@ public:
 		if(last_modification<0)
 			return true;
 		dbg_delta();
-		Dijkstra<NullReachStatus,EdgeStatus,false> d(source,g);
+		Dijkstra<NullReachStatus,false> d(source,g);
 
 		for(int i = 0;i<g.nodes;i++){
 			int distance = dist[i];

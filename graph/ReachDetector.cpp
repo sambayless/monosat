@@ -13,6 +13,7 @@
 #include "core/Config.h"
 #include "dgl/DynamicConnectivity.h"
 #include "dgl/TarjansSCC.h"
+using namespace Minisat;
 ReachDetector::ReachDetector(int _detectorID, GraphTheorySolver * _outer, DynamicGraph &_g, DynamicGraph &_antig, int from,double seed):Detector(_detectorID),outer(_outer),g(_g),antig(_antig),within(-1),source(from),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL),opt_weight(*this),chokepoint_status(*this),chokepoint(chokepoint_status, _antig,source){
 
 	constraintsBuilt=-1;
@@ -41,7 +42,7 @@ ReachDetector::ReachDetector(int _detectorID, GraphTheorySolver * _outer, Dynami
 
 	}
 	if(opt_shrink_theory_conflicts){
-		cutgraph_reach_detector= new UnweightedRamalReps<NullReachStatus,DefaultEdgeStatus>(from,cutgraph,nullReachStatus,0);
+		cutgraph_reach_detector= new UnweightedRamalReps<NullReachStatus>(from,cutgraph,nullReachStatus,0);
 	}
 
 	 if(opt_use_random_path_for_decisions){
@@ -658,14 +659,14 @@ void ReachDetector::buildReachReason(int node,vec<Lit> & conflict){
 		    	//Taking a page from clasp, instead of just learning that node u is unreachable unless one of these edges is flipped,
 		    	//we are going to learn that the whole strongly connected component attached to u is unreachable (if that component has more than one node, that is)
 		    	assert(conflict[0]==~reach_lits[node]);
-		    	vec<int> component;
+		    	std::vector<int> component;
 		    	vec<Lit> reach_component;
 		    	/*DFSReachability<> d(u,g);
 
 		    	*/
 		    	//antig.drawFull();
 		    	TarjansSCC<>::getSCC(node,antig,component);
-		    	assert(component.contains(node));
+		    	assert(std::count(component.begin(),component.end(),node));
 		    	for(int n:component){
 		    		if(reach_lits[n]!=lit_Undef){
 		    			reach_component.push(reach_lits[n]);

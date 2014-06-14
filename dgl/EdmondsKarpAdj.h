@@ -38,7 +38,7 @@ public:
     Capacity & capacity;
     int INF;
 #ifdef DEBUG_MAXFLOW
-    	EdmondsKarp<EdgeStatus> ek;
+    	EdmondsKarp ek;
 #endif
     /*
      *            input:
@@ -167,7 +167,7 @@ public:
     int maxFlow(int s, int t){
     	int f = 0;
 #ifdef RECORD
-		if(g.outfile && mincutalg==MinCutAlg::ALG_EDKARP_ADJ){
+		if(g.outfile){
 			fprintf(g.outfile,"f %d %d\n", s,t);
 			fflush(g.outfile);
 		}

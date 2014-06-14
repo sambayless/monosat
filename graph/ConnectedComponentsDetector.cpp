@@ -12,6 +12,7 @@
 #include "dgl/UnweightedDistance.h"
 #include "dgl/Reach.h"
 #include <limits>
+using namespace Minisat;
 ConnectedComponentsDetector::ConnectedComponentsDetector(int _detectorID, GraphTheorySolver * _outer,  DynamicGraph &_g,DynamicGraph &_antig,double seed):
 Detector(_detectorID),outer(_outer),g(_g),antig(_antig),rnd_seed(seed),positive_component_detector(NULL),negative_component_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL){
 
@@ -294,7 +295,7 @@ void ConnectedComponentsDetector::ConnectedComponentsStatus::setComponents(int c
 							std::swap(source,node);
 						}
 
-						Distance<NullReachStatus,DefaultEdgeStatus,true> d(source,g);
+						Distance<NullReachStatus,true> d(source,g);
 						double starttime = rtime(2);
 						d.update();
 

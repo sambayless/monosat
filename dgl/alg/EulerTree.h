@@ -229,7 +229,7 @@ private:
 
 
 				if(dbg_parent){
-					std::remove(dbg_parent->dbg_children.begin(),dbg_parent->dbg_children.end(),this )
+					std::remove(dbg_parent->dbg_children.begin(),dbg_parent->dbg_children.end(),this );
 					//dbg_parent->dbg_children.remove(this);
 					dbg_parent=nullptr;
 				}else{

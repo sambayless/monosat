@@ -75,7 +75,7 @@ public:
 
 
 	void addSource(int s){
-		assert(!sources.contains(s));
+		assert(!std::count( sources.begin(),sources.end(), s));
 		sources.push_back(s);
 
 		last_modification=-1;

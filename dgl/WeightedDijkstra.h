@@ -120,8 +120,8 @@ public:
 		for (int i = history_qhead;i<g.history.size();i++){
 			assert(g.history[i].addition); //NOTE: Currently, this is glitchy in some circumstances - specifically, ./modsat -rinc=1.05 -rnd-restart  -conflict-shortest-path  -no-conflict-min-cut   -rnd-init -rnd-seed=01231 -rnd-freq=0.01 /home/sam/data/gnf/unit_tests/unit_test_17_reduced.gnf can trigger this assertion!
 			int edgeID = g.history[i].id;
-			int u=g.history[i].u;
-			int v=g.history[i].v;
+			int u=g.all_edges[edgeID].from;
+			int v=g.all_edges[edgeID].to;
 			double alt = dist[u]+weight[u] ;
 			if(alt< dist[v]){
 
@@ -138,8 +138,8 @@ public:
 				else
 					q.decrease(v);
 			}else if (undirected){
-				int v=g.history[i].u;
-				int u=g.history[i].v;
+				int v=g.all_edges[edgeID].from;
+				int u=g.all_edges[edgeID].to;
 				double alt = dist[u]+weight[u] ;
 				if(alt< dist[v]){
 
@@ -185,8 +185,9 @@ public:
 			for(int i = 0;i<adjacency[u].size();i++){
 				if(!g.edgeEnabled(adjacency[u][i].id))
 					continue;
-				int v =adjacency[u][i].to;
+
 				int edgeID =  adjacency[u][i].id;
+				int v =  adjacency[u][i].node;
 				int alt = dist[u]+ weight[u];
 				if(alt<dist[v]){
 					if(dist[v]>=INF){

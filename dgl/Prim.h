@@ -115,7 +115,7 @@ public:
 		static int iteration = 0;
 		int local_it = ++iteration ;
 #ifdef RECORD
-		if(g.outfile && mstalg==MinSpanAlg::ALG_PRIM){
+		if(g.outfile){
 			fprintf(g.outfile,"m\n");
 			fflush(g.outfile);
 		}

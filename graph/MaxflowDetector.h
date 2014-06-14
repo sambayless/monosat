@@ -15,9 +15,9 @@
 #include "core/SolverTypes.h"
 #include "mtl/Map.h"
 
-
 #include "utils/System.h"
 #include "Detector.h"
+using namespace dgl;
 namespace Minisat{
 class GraphTheorySolver;
 class MaxflowDetector:public Detector{

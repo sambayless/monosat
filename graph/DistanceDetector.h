@@ -20,6 +20,7 @@
 
 #include "utils/System.h"
 #include "Detector.h"
+using namespace dgl;
 namespace Minisat{
 class GraphTheorySolver;
 class DistanceDetector:public Detector{

@@ -83,7 +83,7 @@ public:
 		sources.push_back(s);
 		changes.push_back({sourceNum,s});
 
-		transitive_closure.push_back();
+		transitive_closure.push_back({});
 		transitive_closure[sourceNum].resize(g.nodes);
 		transitive_closure[sourceNum][s].reachable=true;
 		transitive_closure[sourceNum][s].changed=true;
@@ -93,7 +93,7 @@ public:
 	}
 
 	void setSource(int s){
-		if(!sources.contains(s)){
+		if(!std::count(sources.begin(),sources.end(), s)){
 			addSource(s);
 		}
 		default_source_index = sources.size()-1;

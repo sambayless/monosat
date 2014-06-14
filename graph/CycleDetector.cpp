@@ -10,6 +10,7 @@
 #include "CycleDetector.h"
 #include "GraphTheory.h"
 #include <limits>
+using namespace Minisat;
 CycleDetector::CycleDetector(int _detectorID, GraphTheorySolver * _outer,  DynamicGraph &_g,DynamicGraph &_antig, bool detect_directed_cycles,double seed):
 Detector(_detectorID),outer(_outer),g(_g),antig(_antig),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL){
 
@@ -17,8 +18,8 @@ Detector(_detectorID),outer(_outer),g(_g),antig(_antig),rnd_seed(seed),positive_
 	directed_cycle_lit=lit_Undef;
 
 		//Note: these are _intentionalyl_ swapped
-		negative_reach_detector = new DFSCycle<PositiveEdgeStatus>(_g,detect_directed_cycles,1);
-		positive_reach_detector = new DFSCycle<NegativeEdgeStatus>(_antig,detect_directed_cycles,1);
+		negative_reach_detector = new DFSCycle(_g,detect_directed_cycles,1);
+		positive_reach_detector = new DFSCycle(_antig,detect_directed_cycles,1);
 
 		 directed_cycle_marker=outer->newReasonMarker(getID());
 			 no_directed_cycle_marker=outer->newReasonMarker(getID());
@@ -79,7 +80,7 @@ void CycleDetector::addCycleDetectorLit(bool directed, Var outer_reach_var){
 		void CycleDetector::buildUndirectedCycleReason(vec<Lit> & conflict){
 			assert(positive_reach_detector->hasUndirectedCycle());
 
-			vec<int> & cycle = positive_reach_detector->getUndirectedCycle();
+			std::vector<int> & cycle = positive_reach_detector->getUndirectedCycle();
 			for(int i = 0;i<cycle.size();i++){
 				int e = cycle[i];
 				Lit l = mkLit( outer->edge_list[e].v,false);
@@ -91,7 +92,7 @@ void CycleDetector::addCycleDetectorLit(bool directed, Var outer_reach_var){
 		void CycleDetector::buildDirectedCycleReason(vec<Lit> & conflict){
 			assert(positive_reach_detector->hasDirectedCycle());
 
-			vec<int> & cycle = positive_reach_detector->getDirectedCycle();
+			std::vector<int> & cycle= positive_reach_detector->getDirectedCycle();
 			for(int i = 0;i<cycle.size();i++){
 				int e = cycle[i];
 				Lit l = mkLit( outer->edge_list[e].v,false);

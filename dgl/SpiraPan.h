@@ -79,7 +79,7 @@ public:
 				DefaultReachStatus(){}
 			};
 #ifndef NDEBUG
-	Kruskal<MinimumSpanningTree::NullStatus,EdgeStatus> dbg;
+	Kruskal<MinimumSpanningTree::NullStatus> dbg;
 #endif
 public:
 
@@ -208,21 +208,22 @@ public:
 
 		std::vector<int> used_components;
 		for(int i = 0;i<g.nodes;i++){
-			if(!used_components.contains(components[i])){
+			if(!std::count(used_components.begin(),used_components.end(), components[i])){
 				used_components.push_back(components[i]);
 
 			}
 		}
 
 		for(int c:used_components){
-			assert(!empty_components.contains(c));
+			assert(!std::count(empty_components.begin(),empty_components.end(),c));
 			assert(component_member[c]!=-1);
 			int m = component_member[c];
 			assert(components[m]== c);
 		}
 
 		for(int c :empty_components){
-			assert(!used_components.contains(c));
+			//assert(!used_components.contains(c));
+			assert(!std::count(used_components.begin(),used_components.end(),c));
 			assert(component_member[c]==-1);
 		}
 
@@ -570,7 +571,7 @@ public:
 		static int iteration = 0;
 		int local_it = ++iteration ;
 #ifdef RECORD
-		if(g.outfile && mstalg==MinSpanAlg::ALG_SPIRA_PAN){
+		if(g.outfile ){
 			fprintf(g.outfile,"m\n");
 			fflush(g.outfile);
 		}

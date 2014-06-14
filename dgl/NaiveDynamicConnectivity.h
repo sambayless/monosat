@@ -96,7 +96,7 @@ void dbg_print(){
 					}
 				}
 			}
-			sort(node_set);
+			std::sort(node_set.begin(),node_set.end());
 			if(node_set.size()>1){
 			for(int n:node_set){
 				seen[n]=true;
@@ -115,7 +115,7 @@ void dbg_print(){
 
 void addNode(){
 	nodes++;
-	edges.push_back();
+	edges.push_back({});
 	sets.AddElements(1);
 }
 

@@ -109,7 +109,7 @@ public:
 		static int iteration = 0;
 		int local_it = ++iteration ;
 #ifdef RECORD
-		if(g.outfile && mstalg==MinSpanAlg::ALG_KRUSKAL){
+		if(g.outfile){
 			fprintf(g.outfile,"m\n");
 			fflush(g.outfile);
 		}
@@ -139,7 +139,7 @@ public:
 					edge_list.push_back(i);
 
 			}
-			sort(edge_list,EdgeLt(g.weights));
+			std::sort(edge_list.begin(),edge_list.end() ,EdgeLt(g.weights));
 		}
 		for(int i = 0;i<in_tree.size();i++)
 			in_tree[i]=false;
