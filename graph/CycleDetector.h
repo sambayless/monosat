@@ -11,14 +11,15 @@
 #include "dgl/DFSCycle.h"
 #include "utils/System.h"
 #include "Detector.h"
+
 namespace Minisat{
 class GraphTheorySolver;
 class CycleDetector:public Detector{
 public:
 		GraphTheorySolver * outer;
 		//int within;
-		DynamicGraph<PositiveEdgeStatus> & g;
-		DynamicGraph<NegativeEdgeStatus> & antig;
+		DynamicGraph & g;
+		DynamicGraph & antig;
 
 		double rnd_seed;
 		CRef directed_cycle_marker;
@@ -60,7 +61,7 @@ public:
 		Lit decide();
 		void addCycleDetectorLit(bool undirected, Var v);
 
-		CycleDetector(int _detectorID, GraphTheorySolver * _outer, DynamicGraph<PositiveEdgeStatus> &_g, DynamicGraph<NegativeEdgeStatus> &_antig, bool detect_directed_cycles=true,   double seed=1);//:Detector(_detectorID),outer(_outer),within(-1),source(_source),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL){}
+		CycleDetector(int _detectorID, GraphTheorySolver * _outer, DynamicGraph &_g, DynamicGraph &_antig, bool detect_directed_cycles=true,   double seed=1);//:Detector(_detectorID),outer(_outer),within(-1),source(_source),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL){}
 		virtual ~CycleDetector(){
 
 		}

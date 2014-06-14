@@ -15,11 +15,11 @@
 #include "Dijkstra.h"
 #include "core/Config.h"
 #include "mtl/Sort.h"
-
-template<class Status,class EdgeStatus=DefaultEdgeStatus>
+namespace dgl{
+template<class Status>
 class UnweightedRamalReps:public Reach{
 public:
-	DynamicGraph<EdgeStatus> & g;
+	DynamicGraph & g;
 	Status &  status;
 	int reportPolarity;
 	bool reportDistance;
@@ -37,26 +37,26 @@ public:
 
 
 
-	vec<int> old_dist;
-	vec<int> changed;
-	vec<bool> node_changed;
-	vec<int> dist;
-	vec<int> prev;
+	std::vector<int> old_dist;
+	std::vector<int> changed;
+	std::vector<bool> node_changed;
+	std::vector<int> dist;
+	std::vector<int> prev;
 	struct DistCmp{
-		vec<int> & _dist;
+		std::vector<int> & _dist;
 		 bool operator()(int a, int b)const{
 			return _dist[a]<_dist[b];
 		}
-		 DistCmp(vec<int> & d):_dist(d){};
+		 DistCmp(std::vector<int> & d):_dist(d){};
 	};
 	//Heap<DistCmp> q;
-	vec<bool> in_queue;
-	vec<bool> in_queue2;
-	vec<int> q;
-	vec<int> q2;
-	vec<int> edgeInShortestPathGraph;
-	vec<int> delta;
-	vec<int> changeset;
+	std::vector<bool> in_queue;
+	std::vector<bool> in_queue2;
+	std::vector<int> q;
+	std::vector<int> q2;
+	std::vector<int> edgeInShortestPathGraph;
+	std::vector<int> delta;
+	std::vector<int> changeset;
 public:
 
 	int stats_full_updates;
@@ -69,7 +69,7 @@ public:
 
 	double stats_full_update_time;
 	double stats_fast_update_time;
-	UnweightedRamalReps(int s,DynamicGraph<EdgeStatus> & graph,	Status &  status, int reportPolarity=0,bool reportDistance=true):g(graph),status(status),reportPolarity(reportPolarity),reportDistance(reportDistance), last_modification(-1),last_addition(-1),last_deletion(-1),history_qhead(0),last_history_clear(0),source(s),INF(-1){
+	UnweightedRamalReps(int s,DynamicGraph & graph,	Status &  status, int reportPolarity=0,bool reportDistance=true):g(graph),status(status),reportPolarity(reportPolarity),reportDistance(reportDistance), last_modification(-1),last_addition(-1),last_deletion(-1),history_qhead(0),last_history_clear(0),source(s),INF(-1){
 		maxDistance=-1;
 		mod_percentage=0.2;
 		stats_full_updates=0;
@@ -100,7 +100,7 @@ public:
 		return source;
 	}
 
-	vec<int> & getChanged(){
+	std::vector<int> & getChanged(){
 		return changed;
 	}
 	void clearChanged(){
@@ -126,18 +126,18 @@ public:
 			}
 		}
 
-		vec<int> dbg_delta;
-		vec<int> dbg_dist;
-		dbg_dist.growTo(g.nodes,INF);
-		dbg_delta.growTo(g.nodes);
+		std::vector<int> dbg_delta;
+		std::vector<int> dbg_dist;
+		dbg_dist.resize(g.nodes,INF);
+		dbg_delta.resize(g.nodes);
 		dbg_dist[getSource()]=0;
 
 		struct DistCmp{
-			vec<int> & _dist;
+			std::vector<int> & _dist;
 			 bool operator()(int a, int b)const{
 				return _dist[a]<_dist[b];
 			}
-			 DistCmp(vec<int> & d):_dist(d){};
+			 DistCmp(std::vector<int> & d):_dist(d){};
 		};
 		Heap<DistCmp> q(dbg_dist);
 
@@ -261,9 +261,9 @@ public:
 		dist[rv]=altw;
 
 		q.clear();
-		in_queue.clear();in_queue.growTo(g.nodes);
-		in_queue2.growTo(g.nodes);
-		q.push(rv);
+		in_queue.clear();in_queue.resize(g.nodes);
+		in_queue2.resize(g.nodes);
+		q.push_back(rv);
 		in_queue[rv]=true;
 
 		for(int i = 0;i<q.size();i++){
@@ -272,7 +272,7 @@ public:
 			assert(dist[u]<INF);
 			if(!node_changed[u]){
 				node_changed[u]=true;
-				changed.push(u);
+				changed.push_back(u);
 			}
 			delta[u]=0;
 			for(auto & e:g.inverted_adjacency[u]){
@@ -322,7 +322,7 @@ public:
 							if(!in_queue[s]){
 							//q.update(s);
 								dbg_Q_add(q,s);
-								q.push(s);
+								q.push_back(s);
 								in_queue[s]=true;
 							}
 							dbg_not_seen_q(q,s,i);
@@ -336,7 +336,7 @@ public:
 		}
 		dbg_delta_lite();
 	}
-	void dbg_not_seen_q(vec<int> & q, int u, int from){
+	void dbg_not_seen_q(std::vector<int> & q, int u, int from){
 		bool found = false;
 		for(int i = from;i<q.size();i++){
 			if(q[i]==u){
@@ -346,7 +346,7 @@ public:
 		}
 		assert(found);
 	}
-	void dbg_Q_add(vec<int> & q,int u){
+	void dbg_Q_add(std::vector<int> & q,int u){
 #ifndef NDEBUG
 		//assert(!in_queue[u]);
 		for(int v:q){
@@ -357,7 +357,7 @@ public:
 
 #endif
 	}
-	void dbg_Q_order(vec<int> & _q){
+	void dbg_Q_order(std::vector<int> & _q){
 #ifndef NDEBUG
 
 		for(int i = 1;i<_q.size();i++){
@@ -421,14 +421,14 @@ public:
 			return; //the shortest path hasn't changed in length, because there was an alternate route of the same length to this node.
 
 		in_queue.clear();
-		in_queue.growTo(g.nodes);
+		in_queue.resize(g.nodes);
 		in_queue2.clear();
-		in_queue2.growTo(g.nodes);
+		in_queue2.resize(g.nodes);
 		q.clear();
 		q2.clear();
 
 		changeset.clear();
-		changeset.push(rv);
+		changeset.push_back(rv);
 
 		//find all effected nodes whose shortest path lengths may now be increased (or that may have become unreachable)
 		for(int i = 0;i<changeset.size();i++){
@@ -446,7 +446,7 @@ public:
 						assert(delta[s]>0);
 						delta[s]--;
 						if(delta[s]==0){
-							changeset.push(s);
+							changeset.push_back(s);
 						}
 					}
 				}
@@ -478,20 +478,20 @@ public:
 			if(dist[u]<INF){
 				//q.insert(u);
 				//dbg_Q_add(q,u);
-				q.push(u);
+				q.push_back(u);
 				in_queue[u]=true;
 
 				if( reportPolarity>=0){
 					if(!node_changed[u]){
 						node_changed[u]=true;
-						changed.push(u);
+						changed.push_back(u);
 					}
 				}
 			}else if (reportPolarity<=0){
 				//call this even if we are reporting distance, because u hasn't been placed in the queue!
 				if(!node_changed[u]){
 					node_changed[u]=true;
-					changed.push(u);
+					changed.push_back(u);
 				}
 			}
 
@@ -523,7 +523,7 @@ public:
 					if(reportPolarity>=0){
 						if(!node_changed[u]){
 							node_changed[u]=true;
-							changed.push(u);
+							changed.push_back(u);
 						}
 					}
 				}
@@ -546,13 +546,13 @@ public:
 								//to become reachable here. This is ONLY possible because we are batching multiple edge incs/decs at once (otherwise it would be impossible for removing an edge to decrease the distance to a node).
 								if(!node_changed[s]){
 									node_changed[s]=true;
-									changed.push(s);
+									changed.push_back(s);
 								}
 							}
 							dist[s]=alt;
 							if(!in_queue2[s]){
 								dbg_Q_add(q2,s);
-								q2.push(s);
+								q2.push_back(s);
 								in_queue2[s]=true;
 							}
 
@@ -618,18 +618,18 @@ public:
 		if(last_modification<=0 || g.changed()){//Note for the future: there is probably room to improve this further.
 			stats_full_updates++;
 			INF=g.nodes+1;
-			dist.growTo(g.nodes,INF);
+			dist.resize(g.nodes,INF);
 			dist[getSource()]=0;
-			delta.growTo(g.nodes);
-			edgeInShortestPathGraph.growTo(g.nEdgeIDs());
-			node_changed.growTo(g.nodes);
+			delta.resize(g.nodes);
+			edgeInShortestPathGraph.resize(g.nEdgeIDs());
+			node_changed.resize(g.nodes);
 			changed.clear();
 			if(maxDistance<0)
 				maxDistance=INF;
 			for(int i = 0;i<g.nodes;i++){
 				if((dist[i]>=INF && reportPolarity<=0) || (dist[i]<INF && reportPolarity>=0)){
 				node_changed[i]=true;
-				changed.push(i);//On the first round, report status of all nodes.
+				changed.push_back(i);//On the first round, report status of all nodes.
 				}
 			}
 		}
@@ -772,5 +772,5 @@ public:
 		return g.all_edges[incomingEdge(t)].from;
 	}
 };
-
+};
 #endif /* DIJKSTRA_H_ */

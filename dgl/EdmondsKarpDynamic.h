@@ -8,11 +8,11 @@
 #include "EdmondsKarp.h"
 #include "EdmondsKarpAdj.h"
 
-
-template< class Capacity ,class EdgeStatus=vec<bool> >
+namespace dgl{
+template< class Capacity  >
 class EdmondsKarpDynamic:public MaxFlow{
 	int f = 0;
-	vec<int> F;
+	std::vector<int> F;
 
 	int shortCircuitFlow=0;
 
@@ -31,9 +31,9 @@ class EdmondsKarpDynamic:public MaxFlow{
 
     int history_qhead;
     int last_history_clear;
-    vec<LocalEdge> prev;
-    vec<int> M;
-    DynamicGraph<EdgeStatus>& g;
+    std::vector<LocalEdge> prev;
+    std::vector<int> M;
+    DynamicGraph& g;
     Capacity & capacity;
     int INF;
 #ifdef DEBUG_MAXFLOW
@@ -46,10 +46,10 @@ class EdmondsKarpDynamic:public MaxFlow{
                M[t]          (Capacity of path found)
                P             (Parent table)
      */
-    vec<int> Q;
+    std::vector<int> Q;
 
 
-    vec<bool> edge_enabled;
+    std::vector<bool> edge_enabled;
 
     int  BreadthFirstSearch(int s, int t,int bound=-1){
      	for(int i = 0;i<g.nodes;i++){//this has to go...
@@ -57,7 +57,7 @@ class EdmondsKarpDynamic:public MaxFlow{
      	}
      	prev[s].from = -2;
     	Q.clear();
-           Q.push(s);
+           Q.push_back(s);
            bool found = false;
          int old_m = M[s];
        	for(int j = 0;j<Q.size();j++){
@@ -78,7 +78,7 @@ class EdmondsKarpDynamic:public MaxFlow{
                        prev[v] = LocalEdge(u,id,false);
                        M[v] = min(M[u], c - F[id]);
                        if (v != t)
-                           Q.push(v);
+                           Q.push_back(v);
                        else{
                     	   found=true;
                     	   break;
@@ -104,7 +104,7 @@ class EdmondsKarpDynamic:public MaxFlow{
 						  M[v] = min(M[u], c - f);
 				/*		  */
 						  if (v != t)
-							  Q.push(v);
+							  Q.push_back(v);
 						  else{
 	                    	   found=true;
 	                    	   break;
@@ -123,7 +123,7 @@ class EdmondsKarpDynamic:public MaxFlow{
 
 
 public:
-    EdmondsKarpDynamic(DynamicGraph<EdgeStatus>& _g,Capacity & cap):g(_g),capacity(cap),INF(0xF0F0F0)
+    EdmondsKarpDynamic(DynamicGraph& _g,Capacity & cap):g(_g),reserve(cap),INF(0xF0F0F0)
 #ifdef DEBUG_MAXFLOW
     	,ek(_g,cap)
 #endif
@@ -138,7 +138,7 @@ public:
     	//setAllEdgeCapacities(1);
     }
     void setCapacity(int u, int w, int c){
-    	//C.growTo(g.edges);
+    	//C.resize(g.edges);
     	//C[ ]=c;
 
     }
@@ -158,7 +158,7 @@ public:
 		}
 #endif
 
-    	//C.growTo(g.nodes);
+    	//C.resize(g.nodes);
 #ifdef DEBUG_MAXFLOW
     	for(int i = 0;i<g.all_edges.size();i++){
     		int id = g.all_edges[i].id;
@@ -180,9 +180,9 @@ public:
         	return curflow;
         }else if (last_modification<=0 || g.historyclears!=last_history_clear  || g.changed()){
         	F.clear();
-        	F.growTo(g.all_edges.size());
-			prev.growTo(g.nodes);
-			M.growTo(g.nodes);
+        	F.resize(g.all_edges.size());
+			prev.resize(g.nodes);
+			M.resize(g.nodes);
 			f=0;
 			for(int i = 0;i<g.nodes;i++){
 				prev[i].from =-1;
@@ -190,7 +190,7 @@ public:
 			}
 			prev[s].from = -2;
 			 M[s] = INF;
-			 edge_enabled.growTo(g.edges);
+			 edge_enabled.resize(g.edges);
 			 for(int i = 0;i<g.edges;i++)
 				 edge_enabled[i]= g.isEdge(i) && g.edgeEnabled(i);
 
@@ -313,7 +313,7 @@ private:
 #ifndef NDEBUG
     	DynamicGraph<> d;
 		d.addNodes(g.nodes);
-		//vec<int> R;
+		//std::vector<int> R;
 		for(int i = 0;i<g.edges;i++){
 			if(g.isEdge(i)){
 				if(edge_enabled[i]){
@@ -364,7 +364,7 @@ private:
     			dbg_print_graph(s,t,-1, -1);
     		}
 #ifndef NDEBUG
-			EdmondsKarpAdj<vec<int>, EdgeStatus> ek_check(d,d.weights);
+			EdmondsKarpAdj<std::vector<int>, EdgeStatus> ek_check(d,d.weights);
 
         		int expect =  ek_check.maxFlow(s,t);
         		assert(new_flow<=expect);
@@ -414,7 +414,7 @@ private:
 
 #ifndef NDEBUG
     		//EdmondsKarp<EdgeStatus> ek_check(g);
-    	 	 EdmondsKarpAdj<vec<int>, EdgeStatus> ek_check(g,g.weights);
+    	 	 EdmondsKarpAdj<std::vector<int>, EdgeStatus> ek_check(g,g.weights);
     		int expect =  ek_check.maxFlow(s,t);
     		assert(f==expect);
 #endif
@@ -426,7 +426,7 @@ private:
          		prev[i].from=-1;
          	prev[s].from = -2;
         	Q.clear();
-            Q.push(s);
+            Q.push_back(s);
 
            	for(int j = 0;j<Q.size();j++){
        			   int u = Q[j];
@@ -439,7 +439,7 @@ private:
        					   prev[v] = {u,-1};
 						   M[v] = min(M[u], c -f);
 						   if (v != t)
-							   Q.push(v);
+							   Q.push_back(v);
 						   else
 							   return M[t];
 					   }
@@ -462,7 +462,7 @@ private:
                            prev[v] = LocalEdge(u,id,false);
                            M[v] = min(M[u], c - f);
                            if (v != t)
-                               Q.push(v);
+                               Q.push_back(v);
                            else
                                return M[t];
                        }
@@ -486,7 +486,7 @@ private:
 							  prev[v] = LocalEdge(u,id,true);
 							  M[v] = min(M[u], c - f);
 							  if (v != t)
-								  Q.push(v);
+								  Q.push_back(v);
 							  else
 								  return M[t];
 						  }
@@ -541,7 +541,7 @@ private:
 #ifndef NDEBUG
     	 	DynamicGraph<> d;
     	 	d.addNodes(g.nodes);
-    	 	//vec<int> R;
+    	 	//std::vector<int> R;
     	 	for(int i = 0;i<g.edges;i++){
     	 		if(edge_enabled[i]){
     	 			int r =capacity[i]-F[i];
@@ -616,7 +616,7 @@ private:
     	 	if(shortCircuitFrom>=0){
     	 		d.addEdge(shortCircuitFrom,shortCircuitTo,d.edges,100);
     	 	}
-    		EdmondsKarpAdj<vec<int>, EdgeStatus> ek_check(d,d.weights);
+    		EdmondsKarpAdj<std::vector<int>, EdgeStatus> ek_check(d,d.weights);
 
     		int expect =  ek_check.maxFlow(s,t);
 
@@ -667,16 +667,16 @@ private:
 #endif
     }
 
-    vec<bool> seen;
-    vec<bool> visited;
+    std::vector<bool> seen;
+    std::vector<bool> visited;
 public:
-    int minCut(int s, int t, vec<Edge> & cut){
+    int minCut(int s, int t, std::vector<Edge> & cut){
     	int f = maxFlow(s,t);
     	//ok, now find the cut
     	Q.clear();
-    	Q.push(s);
+    	Q.push_back(s);
     	seen.clear();
-    	seen.growTo(g.nodes);
+    	seen.resize(g.nodes);
     	seen[s]=true;
 
     	for(int j = 0;j<Q.size();j++){
@@ -688,9 +688,9 @@ public:
     			int v = g.adjacency[u][i].node;
     			int id = g.adjacency[u][i].id;
     			if(capacity[id] - F[id] == 0){
-    				cut.push(Edge{u,v,id});
+    				cut.push_back(Edge{u,v,id});
     			}else if(!seen[v]){
-    				Q.push(v);
+    				Q.push_back(v);
     				seen[v]=true;
     			}
     		}
@@ -702,7 +702,7 @@ public:
     			cut[j++]=cut[i];
     		}
     	}
-    	cut.shrink(i-j);
+    	cut.resize(j);
     	return f;
     }
     int getEdgeCapacity(int id){
@@ -711,12 +711,13 @@ public:
      }
     int getEdgeFlow(int id){
     	assert(g.edgeEnabled(id));
-    	return F[id];// capacity(id);
+    	return F[id];// reserve(id);
     }
     int getEdgeResidualCapacity(int id){
     	assert(g.edgeEnabled(id));
-    	return  capacity[id]-F[id];// capacity(id);
+    	return  capacity[id]-F[id];// reserve(id);
     }
+};
 };
 #endif
 

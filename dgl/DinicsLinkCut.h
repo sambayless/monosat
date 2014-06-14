@@ -10,13 +10,13 @@
 #include <algorithm>
 #include <climits>
 
-
-template< class Capacity ,class EdgeStatus=vec<bool> >
+namespace dgl{
+template< class Capacity>
 class DinitzLinkCut:public MaxFlow{
 
 public:
 
-	vec<int> F;
+	std::vector<int> F;
 
 	struct LocalEdge{
 		int from;
@@ -33,11 +33,11 @@ public:
 
     int history_qhead;
     int last_history_clear;
-    //vec<LocalEdge> prev;
-    //vec<int> M;
-    vec<int> dist;
-    vec<int> pos;//position in the combined forward and backward adjacency list of each node in the DFS.
-    DynamicGraph<EdgeStatus>& g;
+    //std::vector<LocalEdge> prev;
+    //std::vector<int> M;
+    std::vector<int> dist;
+    std::vector<int> pos;//position in the combined forward and backward adjacency list of each node in the DFS.
+    DynamicGraph& g;
     Capacity & capacity;
     int INF;
     int src;
@@ -46,7 +46,7 @@ public:
     	bool backward;
     	int edgeID;
     };
-    vec<ParentEdge> parentEdge;
+    std::vector<ParentEdge> parentEdge;
 
    /* struct EdgeInTree{
     	union{
@@ -60,18 +60,18 @@ public:
     	};
     	EdgeInTree():data(0){}
     };
-    vec<EdgeInTree> tree_edges;//for each edge.*/
+    std::vector<EdgeInTree> tree_edges;//for each edge.*/
     LinkCutCost forest;
-    vec<int> Q;
+    std::vector<int> Q;
     struct Link{
     	int u;
     	int v;
     	bool backward:1;
     	int edgeID:31;
     };
-    vec<Link> toLink;
+    std::vector<Link> toLink;
 #ifdef DEBUG_MAXFLOW
-	EdmondsKarpAdj<Capacity, EdgeStatus> ek;
+	EdmondsKarpAdj<Capacity> ek;
 #endif
 
 	double augtime=0;
@@ -93,7 +93,7 @@ public:
 	}
 
 public:
-    DinitzLinkCut(DynamicGraph<EdgeStatus>& _g,Capacity & cap):g(_g),capacity(cap),INF(0xF0F0F0)
+    DinitzLinkCut(DynamicGraph& _g,Capacity & cap):g(_g),capacity(cap),INF(0xF0F0F0)
 #ifdef DEBUG_MAXFLOW
 		,ek(_g,cap)
 #endif
@@ -108,7 +108,7 @@ public:
 
     }
     void setCapacity(int u, int w, int c){
-    	//C.growTo(g.edges);
+    	//C.resize(g.edges);
     	//C[ ]=c;
 
     }
@@ -180,9 +180,9 @@ public:
     bool buildLevelGraph(int src, int dst) {
     	double start_time = rtime(3);
     	dist.clear();
-    	dist.growTo(g.nodes,-1);
+    	dist.resize(g.nodes,-1);
         dist[src] = 0;
-        Q.push(src);
+        Q.push_back(src);
         //Build the level graph using a simple BFS
         for (int i = 0; i < Q.size(); i++) {
             int u = Q[i];
@@ -193,7 +193,7 @@ public:
                	int v =  g.adjacency[u][j].node;
                 if (dist[v] < 0 && F[edgeID] < capacity[edgeID]) {
                     dist[v] = dist[u] + 1;
-                    Q.push(v);
+                    Q.push_back(v);
                 }
             }
             for (int j = 0;j<g.inverted_adjacency[u].size();j++){
@@ -204,7 +204,7 @@ public:
                	//this is a backward edge, so it has capacity exactly if the forward edge has flow
                 if (dist[v] < 0 && F[edgeID]) {
                     dist[v] = dist[u] + 1;
-                    Q.push(v);
+                    Q.push_back(v);
                 }
             }
         }
@@ -279,7 +279,7 @@ public:
     							if (F[edgeID] < capacity[edgeID]) {
     								// assert(parentEdge[u].edgeID==-1);
     								 assert(!dbg_hasLink(u));
-    								toLink.push({u,v,false,edgeID});
+    								toLink.push_back({u,v,false,edgeID});
     								u = forest.findRoot(v);
     								found=true;
     								//pos[u]++;
@@ -298,7 +298,7 @@ public:
 									if (F[edgeID]) {
 										// assert(parentEdge[u].edgeID==-1);
 										 assert(!dbg_hasLink(u));
-										toLink.push({u,v,true,edgeID});
+										toLink.push_back({u,v,true,edgeID});
 										u = forest.findRoot(v);
 										found=true;
 										//pos[u]++;
@@ -402,10 +402,10 @@ public:
     					 break;
     				 }else{
     					 dist[u]=-1;//prevents u from being explored again.
-    					 if(toLink.size() && u==toLink.last().v){
+    					 if(toLink.size() && u==toLink.back().v){
     						 stats_avoided_backtracks++;
-    						 u = toLink.last().u;
-    						 toLink.pop();
+    						 u = toLink.back().u;
+    						 toLink.pop_back();
     					 }else{
     						stats_backtracks++;
     						forest.removeNode(u);
@@ -438,7 +438,7 @@ public:
 								}
 							}*/
 							if(toLink.size()){
-								u = forest.findRoot(toLink.last().u);
+								u = forest.findRoot(toLink.back().u);
 							}else{
 								u = forest.findRoot(src);
 							}
@@ -787,17 +787,17 @@ public:
       	src=s;
       	dst=t;
     	F.clear();
-    	F.growTo(g.all_edges.size());
+    	F.resize(g.all_edges.size());
     	dist.clear();
-    	dist.growTo(g.nodes);
+    	dist.resize(g.nodes);
     	f=0;
     	forest.reset();
     	while(forest.nNodes()<g.nodes)
     		forest.addNode();
-      	pos.clear();pos.growTo(g.nodes);
+      	pos.clear();pos.resize(g.nodes);
 
 		parentEdge.clear();
-		parentEdge.growTo(g.nodes,{false,-1});
+		parentEdge.resize(g.nodes,{false,-1});
 
 	    while (buildLevelGraph(s,t)) {
 	    	stats_rounds++;
@@ -840,16 +840,16 @@ public:
     }
 
 
-    vec<bool> seen;
-    vec<bool> visited;
+    std::vector<bool> seen;
+    std::vector<bool> visited;
 
-    int minCut(int s, int t, vec<Edge> & cut){
+    int minCut(int s, int t, std::vector<Edge> & cut){
     	int f = maxFlow(s,t);
     	//ok, now find the cut
     	Q.clear();
-    	Q.push(s);
+    	Q.push_back(s);
     	seen.clear();
-    	seen.growTo(g.nodes);
+    	seen.resize(g.nodes);
     	seen[s]=true;
 
     	for(int j = 0;j<Q.size();j++){
@@ -861,9 +861,9 @@ public:
     			int v = g.adjacency[u][i].node;
     			int id = g.adjacency[u][i].id;
     			if(capacity[id] - F[id] == 0){
-    				cut.push(Edge{u,v,id});
+    				cut.push_back(Edge{u,v,id});
     			}else if(!seen[v]){
-    				Q.push(v);
+    				Q.push_back(v);
     				seen[v]=true;
     			}
     		}
@@ -875,7 +875,7 @@ public:
     			cut[j++]=cut[i];
     		}
     	}
-    	cut.shrink(i-j);
+    	cut.resize(j);
     	return f;
     }
     int getEdgeCapacity(int id){
@@ -884,12 +884,13 @@ public:
      }
     int getEdgeFlow(int id){
     	assert(g.edgeEnabled(id));
-    	return F[id];// capacity(id);
+    	return F[id];// reserve(id);
     }
     int getEdgeResidualCapacity(int id){
     	assert(g.edgeEnabled(id));
-    	return  capacity[id]-F[id];// capacity(id);
+    	return  capacity[id]-F[id];// reserve(id);
     }
+};
 };
 #endif
 

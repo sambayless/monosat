@@ -12,12 +12,12 @@
 #include <limits>
 
 
-
-template<class Status,class EdgeStatus=DefaultEdgeStatus>
+namespace dgl{
+template<class Status>
 class Kruskal:public MinimumSpanningTree{
 public:
 
-	DynamicGraph<EdgeStatus> & g;
+	DynamicGraph & g;
 	Status &  status;
 	int last_modification;
 	int min_weight;
@@ -29,35 +29,35 @@ public:
 	bool hasParents;
 	int INF;
 	DisjointSets sets;
-	vec<int> mst;
-	vec<int> q;
-	vec<int> check;
+	std::vector<int> mst;
+	std::vector<int> q;
+	std::vector<int> check;
 	const int reportPolarity;
 
-	//vec<char> old_seen;
-	vec<bool> in_tree;;
-	vec<int> parents;
-	vec<int> parent_edges;
+	//std::vector<char> old_seen;
+	std::vector<bool> in_tree;;
+	std::vector<int> parents;
+	std::vector<int> parent_edges;
 
 
     struct EdgeLt {
-        const vec<int>&  edge_weights;
+        const std::vector<int>&  edge_weights;
 
         bool operator () (int x, int y) const {
         	return edge_weights[x]<edge_weights[y];
         }
-        EdgeLt(const vec<int>&  _edge_weights) : edge_weights(_edge_weights) { }
+        EdgeLt(const std::vector<int>&  _edge_weights) : edge_weights(_edge_weights) { }
     };
 
 	Heap<EdgeLt> edge_heap;
-	vec<int> edge_list;
+	std::vector<int> edge_list;
 
-	vec<int> prev;
+	std::vector<int> prev;
 
 	struct DefaultReachStatus{
-			vec<bool> stat;
+			std::vector<bool> stat;
 				void setReachable(int u, bool reachable){
-					stat.growTo(u+1);
+					stat.resize(u+1);
 					stat[u]=reachable;
 				}
 				bool isReachable(int u) const{
@@ -79,7 +79,7 @@ public:
 	double stats_full_update_time;
 	double stats_fast_update_time;
 
-	Kruskal(DynamicGraph<EdgeStatus> & graph, Status & _status, int _reportPolarity=0 ):g(graph), status(_status), last_modification(-1),last_addition(-1),last_deletion(-1),history_qhead(0),last_history_clear(0),INF(0),reportPolarity(_reportPolarity),edge_heap(EdgeLt(g.weights)){
+	Kruskal(DynamicGraph & graph, Status & _status, int _reportPolarity=0 ):g(graph), status(_status), last_modification(-1),last_addition(-1),last_deletion(-1),history_qhead(0),last_history_clear(0),INF(0),reportPolarity(_reportPolarity),edge_heap(EdgeLt(g.weights)){
 
 		mod_percentage=0.2;
 		stats_full_updates=0;
@@ -95,14 +95,14 @@ public:
 	}
 
 	void setNodes(int n){
-		q.capacity(n);
-		check.capacity(n);
-		in_tree.growTo(g.nEdgeIDs());
+		q.reserve(n);
+		check.reserve(n);
+		in_tree.resize(g.nEdgeIDs());
 
 		INF=std::numeric_limits<int>::max();
 		sets.AddElements(n);
-		parents.growTo(n);
-		parent_edges.growTo(n);
+		parents.resize(n);
+		parent_edges.resize(n);
 	}
 
 	void update( ){
@@ -136,7 +136,7 @@ public:
 			for(int i = 0;i<g.nEdgeIDs();i++){
 
 					//edge_heap.insert(i);
-					edge_list.push(i);
+					edge_list.push_back(i);
 
 			}
 			sort(edge_list,EdgeLt(g.weights));
@@ -156,7 +156,7 @@ public:
 			if(set1!=set2){
 				assert(g.edgeEnabled(edge_id));
 				in_tree[edge_id]=true;
-				mst.push(edge_id);
+				mst.push_back(edge_id);
 				//if(reportPolarity>-1)
 				//	status.inMinimumSpanningTree(edge_id,true);
 				min_weight+=g.getWeight(edge_id);
@@ -194,7 +194,7 @@ public:
 
 		stats_full_update_time+=rtime(2)-startdupdatetime;;
 	}
-	vec<int> & getSpanningTree(){
+	std::vector<int> & getSpanningTree(){
 		update();
 		return mst;
 	 }
@@ -262,7 +262,7 @@ public:
 	bool dbg_uptodate(){
 #ifndef NDEBUG
 		int sumweight = 0;
-		in_tree.growTo(g.nEdgeIDs());
+		in_tree.resize(g.nEdgeIDs());
 		for(int i = 0;i<g.edges;i++){
 			if(in_tree[i]){
 				sumweight+= g.getWeight(i);
@@ -286,12 +286,12 @@ private:
 		for(int i = 0;i<sets.NumSets();i++){
 			int root = sets.GetElement(i);//chose an element arbitrarily from the nth set.
 			int set = sets.FindSet(root);
-			q.push(root);
+			q.push_back(root);
 			assert(parents[root]==-1);
 			while(q.size()){
-				int u = q.last();
+				int u = q.back();
 				assert(sets.FindSet(u)==set);
-				q.pop();
+				q.pop_back();
 				for (int j = 0;j<g.adjacency_undirected[u].size();j++){
 					int edge = g.adjacency_undirected[u][j].id;
 					int to = g.adjacency_undirected[u][j].node;
@@ -307,7 +307,7 @@ private:
 							assert(sets.FindSet(to)==set);
 							parents[to]=u;
 							parent_edges[to] = edge;
-							q.push(to);
+							q.push_back(to);
 						}
 					}
 				}
@@ -326,5 +326,5 @@ private:
 */
 	}
 };
-
+};
 #endif

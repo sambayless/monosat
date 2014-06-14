@@ -11,12 +11,12 @@
 
 
 
-
-template<class Status,class EdgeStatus=DefaultEdgeStatus>
+namespace dgl{
+template<class Status>
 class Prim:public MinimumSpanningTree{
 public:
 
-	DynamicGraph<EdgeStatus> & g;
+	DynamicGraph & g;
 	Status &  status;
 	int last_modification;
 	int min_weight;
@@ -29,40 +29,40 @@ public:
 	int INF;
 
 
-	vec<int> q;
-	vec<int> check;
+	std::vector<int> q;
+	std::vector<int> check;
 	const int reportPolarity;
 
-	//vec<char> old_seen;
-	vec<char> seen;;
-//	vec<int> changed;
-	//vec<int> edge_weights;
-	vec<int> keys;
-	vec<int> parents;
-	vec<int> parent_edges;
+	//std::vector<char> old_seen;
+	std::vector<char> seen;;
+//	std::vector<int> changed;
+	//std::vector<int> edge_weights;
+	std::vector<int> keys;
+	std::vector<int> parents;
+	std::vector<int> parent_edges;
 	//int next_component;
-	vec<int> components;
-	vec<int> roots;
-	vec<bool> in_tree;
+	std::vector<int> components;
+	std::vector<int> roots;
+	std::vector<bool> in_tree;
 	int numsets;
     struct VertLt {
-        const vec<int>&  keys;
+        const std::vector<int>&  keys;
 
         bool operator () (int x, int y) const {
         	return keys[x]<keys[y];
         }
-        VertLt(const vec<int>&  _key) : keys(_key) { }
+        VertLt(const std::vector<int>&  _key) : keys(_key) { }
     };
     //bool hasComponents;
 	Heap<VertLt> Q;
 
-	vec<int> mst;
-	vec<int> prev;
+	std::vector<int> mst;
+	std::vector<int> prev;
 
 	struct DefaultReachStatus{
-		vec<bool> stat;
+		std::vector<bool> stat;
 		void setReachable(int u, bool reachable){
-			stat.growTo(u+1);
+			stat.resize(u+1);
 			stat[u]=reachable;
 		}
 		bool isReachable(int u) const{
@@ -84,7 +84,7 @@ public:
 	double stats_full_update_time;
 	double stats_fast_update_time;
 
-	Prim(DynamicGraph<EdgeStatus> & graph, Status & _status, int _reportPolarity=0 ):g(graph), status(_status), last_modification(-1),last_addition(-1),last_deletion(-1),history_qhead(0),last_history_clear(0),INF(0),reportPolarity(_reportPolarity),Q(VertLt(keys)){
+	Prim(DynamicGraph & graph, Status & _status, int _reportPolarity=0 ):g(graph), status(_status), last_modification(-1),last_addition(-1),last_deletion(-1),history_qhead(0),last_history_clear(0),INF(0),reportPolarity(_reportPolarity),Q(VertLt(keys)){
 
 		mod_percentage=0.2;
 		stats_full_updates=0;
@@ -100,15 +100,15 @@ public:
 	}
 
 	void setNodes(int n){
-		q.capacity(n);
-		check.capacity(n);
-		seen.growTo(n);
-		prev.growTo(n);
+		q.reserve(n);
+		check.reserve(n);
+		seen.resize(n);
+		prev.resize(n);
 		INF=std::numeric_limits<int>::max();
-		components.growTo(g.nodes);
-		parents.growTo(n);
-		keys.growTo(n);
-		parent_edges.growTo(n);
+		components.resize(g.nodes);
+		parents.resize(n);
+		keys.resize(n);
+		parent_edges.resize(n);
 	}
 
 	void update( ){
@@ -140,7 +140,7 @@ public:
 
 		mst.clear();
 
-		in_tree.clear();in_tree.growTo(g.edges);
+		in_tree.clear();in_tree.resize(g.edges);
 
 		for(int i = 0;i<g.nodes;i++){
 			parents[i]=-1;
@@ -153,7 +153,7 @@ public:
 		int root=0;
 		numsets=0;
 		seen.clear();
-		seen.growTo(g.nodes);
+		seen.resize(g.nodes);
 		min_weight=0;
 		//This outer loop is to get Prim's to compute the minimum spanning _forest_, in the case that the graph is disconnected.
 		while(n_seen<g.nodes){
@@ -171,7 +171,7 @@ public:
 					int edgeid = parent_edges[u];
 					assert(edgeid!=-1);
 					min_weight+=g.getWeight(edgeid);
-					mst.push(edgeid);
+					mst.push_back(edgeid);
 					in_tree[edgeid]=true;
 					components[u]=root;
 				}
@@ -227,7 +227,7 @@ public:
 
 		stats_full_update_time+=rtime(2)-startdupdatetime;;
 	}
-	vec<int> & getSpanningTree(){
+	std::vector<int> & getSpanningTree(){
 		update();
 		return mst;
 	 }
@@ -295,7 +295,7 @@ public:
 	bool dbg_uptodate(){
 #ifndef NDEBUG
 		int sumweight = 0;
-		in_tree.growTo(g.nEdgeIDs());
+		in_tree.resize(g.nEdgeIDs());
 		for(int i = 0;i<g.edges;i++){
 			if(in_tree[i]){
 				sumweight+= g.getWeight(i);
@@ -311,7 +311,7 @@ private:
 		if(!hasComponents){
 					hasComponents=true;
 					components.clear();
-					components.growTo(g.nodes,-1);
+					components.resize(g.nodes,-1);
 					next_component = 0;
 					roots.clear();
 					//root_list.clear();
@@ -327,5 +327,5 @@ private:
 	}*/
 
 };
-
+};
 #endif

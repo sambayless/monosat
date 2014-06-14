@@ -15,11 +15,11 @@
 #include "Dijkstra.h"
 #include "core/Config.h"
 
-
-template<class Status,class EdgeStatus=DefaultEdgeStatus>
+namespace dgl{
+template<class Status>
 class RamalReps:public Reach{
 public:
-	DynamicGraph<EdgeStatus> & g;
+	DynamicGraph & g;
 	Status &  status;
 	int reportPolarity;
 	bool reportDistance;
@@ -37,23 +37,23 @@ public:
 
 
 
-	vec<int> old_dist;
-	vec<int> changed;
-	vec<bool> node_changed;
-	vec<int> dist;
-	vec<int> prev;
+	std::vector<int> old_dist;
+	std::vector<int> changed;
+	std::vector<bool> node_changed;
+	std::vector<int> dist;
+	std::vector<int> prev;
 	struct DistCmp{
-		vec<int> & _dist;
+		std::vector<int> & _dist;
 		 bool operator()(int a, int b)const{
 			return _dist[a]<_dist[b];
 		}
-		 DistCmp(vec<int> & d):_dist(d){};
+		 DistCmp(std::vector<int> & d):_dist(d){};
 	};
 	Heap<DistCmp> q;
 
-	vec<int> edgeInShortestPathGraph;
-	vec<int> delta;
-	vec<int> changeset;
+	std::vector<int> edgeInShortestPathGraph;
+	std::vector<int> delta;
+	std::vector<int> changeset;
 public:
 
 	int stats_full_updates;
@@ -66,7 +66,7 @@ public:
 
 	double stats_full_update_time;
 	double stats_fast_update_time;
-	RamalReps(int s,DynamicGraph<EdgeStatus> & graph,	Status &  status, int reportPolarity=0,bool reportDistance=false):g(graph),status(status),reportPolarity(reportPolarity),reportDistance(reportDistance), last_modification(-1),last_addition(-1),last_deletion(-1),history_qhead(0),last_history_clear(0),source(s),INF(0),q(DistCmp(dist)){
+	RamalReps(int s,DynamicGraph & graph,	Status &  status, int reportPolarity=0,bool reportDistance=false):g(graph),status(status),reportPolarity(reportPolarity),reportDistance(reportDistance), last_modification(-1),last_addition(-1),last_deletion(-1),history_qhead(0),last_history_clear(0),source(s),INF(0),q(DistCmp(dist)){
 
 		mod_percentage=0.2;
 		stats_full_updates=0;
@@ -89,7 +89,7 @@ public:
 		return source;
 	}
 
-	vec<int> & getChanged(){
+	std::vector<int> & getChanged(){
 		return changed;
 	}
 	void clearChanged(){
@@ -111,17 +111,17 @@ public:
 			}
 		}
 
-		vec<int> dbg_delta;
-		vec<int> dbg_dist;
-		dbg_dist.growTo(g.nodes,INF);
-		dbg_delta.growTo(g.nodes);
+		std::vector<int> dbg_delta;
+		std::vector<int> dbg_dist;
+		dbg_dist.resize(g.nodes,INF);
+		dbg_delta.resize(g.nodes);
 		dbg_dist[getSource()]=0;
 		struct DistCmp{
-			vec<int> & _dist;
+			std::vector<int> & _dist;
 			 bool operator()(int a, int b)const{
 				return _dist[a]<_dist[b];
 			}
-			 DistCmp(vec<int> & d):_dist(d){};
+			 DistCmp(std::vector<int> & d):_dist(d){};
 		};
 		Heap<DistCmp> q(dbg_dist);
 
@@ -247,7 +247,7 @@ public:
 				}
 			if(!node_changed[u]){
 				node_changed[u]=true;
-				changed.push(u);
+				changed.push_back(u);
 			}
 			delta[u]=0;
 			for(auto & e:g.inverted_adjacency[u]){
@@ -334,7 +334,7 @@ public:
 
 		q.clear();
 		changeset.clear();
-		changeset.push(rv);
+		changeset.push_back(rv);
 
 		//find all effected nodes whose shortest path lengths may now be increased (or that may have become unreachable)
 		for(int i = 0;i<changeset.size();i++){
@@ -350,7 +350,7 @@ public:
 						assert(delta[s]>0);
 						delta[s]--;
 						if(delta[s]==0){
-							changeset.push(s);
+							changeset.push_back(s);
 						}
 					}
 				}
@@ -383,14 +383,14 @@ public:
 				if(!reportDistance && reportPolarity>=0){
 					if(!node_changed[u]){
 						node_changed[u]=true;
-						changed.push(u);
+						changed.push_back(u);
 					}
 				}
 			}else if ( reportPolarity<=0){
 				//have to mark this change even if we are reporting distanec, as u has not been added to the queue.
 				if(!node_changed[u]){
 					node_changed[u]=true;
-					changed.push(u);
+					changed.push_back(u);
 				}
 			}
 		}
@@ -402,13 +402,13 @@ public:
 					if(reportPolarity>=0){
 						if(!node_changed[u]){
 							node_changed[u]=true;
-							changed.push(u);
+							changed.push_back(u);
 						}
 					}
 				}else if (reportPolarity<=0){
 					if(!node_changed[u]){
 						node_changed[u]=true;
-						changed.push(u);
+						changed.push_back(u);
 					}
 				}
 			}
@@ -425,7 +425,7 @@ public:
 							//to become reachable here. This is ONLY possible because we are batching multiple edge incs/decs at once (otherwise it would be impossible for removing an edge to decrease the distance to a node).
 							if(!node_changed[s]){
 								node_changed[s]=true;
-								changed.push(s);
+								changed.push_back(s);
 							}
 						}
 
@@ -483,19 +483,19 @@ public:
 				return;
 		if(last_modification<=0 || g.changed()){
 			INF=g.nodes+1;
-			dist.growTo(g.nodes,INF);
+			dist.resize(g.nodes,INF);
 			dist[getSource()]=0;
-			delta.growTo(g.nodes);
-			node_changed.growTo(g.nodes,true);
+			delta.resize(g.nodes);
+			node_changed.resize(g.nodes,true);
 
 			for(int i = 0;i<g.nodes;i++){
 				if((dist[i]>=INF && reportPolarity<=0) || (dist[i]<INF && reportPolarity>=0)){
 				node_changed[i]=true;
-				changed.push(i);//On the first round, report status of all nodes.
+				changed.push_back(i);//On the first round, report status of all nodes.
 				}
 			}
 		}
-		edgeInShortestPathGraph.growTo(g.nEdgeIDs());
+		edgeInShortestPathGraph.resize(g.nEdgeIDs());
 		if(last_history_clear!=g.historyclears){
 			history_qhead=0;
 			last_history_clear=g.historyclears;
@@ -624,5 +624,5 @@ public:
 		return g.all_edges[incomingEdge(t)].from;
 	}
 };
-
+};
 #endif

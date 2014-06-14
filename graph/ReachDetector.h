@@ -31,9 +31,9 @@ class GraphTheorySolver;
 class ReachDetector:public Detector{
 public:
 		GraphTheorySolver * outer;
-		 DynamicGraph<PositiveEdgeStatus> &g;
-		 DynamicGraph<NegativeEdgeStatus> &antig;
-		 DynamicGraph<> cutgraph;
+		 DynamicGraph &g;
+		 DynamicGraph &antig;
+		 DynamicGraph cutgraph;
 		int within;
 		int source;
 		double rnd_seed;
@@ -115,7 +115,7 @@ public:
 		ReachStatus *positiveReachStatus;
 		ReachStatus *negativeReachStatus;
 
-		WeightedDijkstra<NegativeEdgeStatus,vec<double>> * rnd_path;
+		WeightedDijkstra<vec<double>> * rnd_path;
 		vec<double> rnd_weight;
 		struct OptimalWeightEdgeStatus{
 			ReachDetector & detector;
@@ -126,7 +126,7 @@ public:
 		};
 		Reach * chokepoint_detector;
 		OptimalWeightEdgeStatus opt_weight;
-		WeightedDijkstra<NegativeEdgeStatus,OptimalWeightEdgeStatus> * opt_path;
+		WeightedDijkstra<OptimalWeightEdgeStatus> * opt_path;
 
 
 		struct ChokepointStatus{
@@ -138,7 +138,7 @@ public:
 			}
 		}chokepoint_status;
 
-		Chokepoint<ChokepointStatus ,NegativeEdgeStatus> chokepoint;
+		Chokepoint<ChokepointStatus > chokepoint;
 
 		int getNode(Var reachVar){
 			assert(reachVar>=first_reach_var);
@@ -165,7 +165,7 @@ public:
 		void preprocess();
 		void dbg_sync_reachability();
 
-		ReachDetector(int _detectorID, GraphTheorySolver * _outer, DynamicGraph<PositiveEdgeStatus> &_g, DynamicGraph<NegativeEdgeStatus> &_antig, int _source,double seed=1);//:Detector(_detectorID),outer(_outer),within(-1),source(_source),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL),chokepoint_status(*this),chokepoint(chokepoint_status, _antig,source){}
+		ReachDetector(int _detectorID, GraphTheorySolver * _outer, DynamicGraph &_g, DynamicGraph &_antig, int _source,double seed=1);//:Detector(_detectorID),outer(_outer),within(-1),source(_source),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL),chokepoint_status(*this),chokepoint(chokepoint_status, _antig,source){}
 		virtual ~ReachDetector(){
 
 		}

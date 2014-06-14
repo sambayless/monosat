@@ -14,30 +14,30 @@
 #include "DynDijkstra.h"
 #include <set>
 //adapted from http://www.boost.org/doc/libs/1_46_1/boost/graph/stoer_wagner_min_cut.hpp
-using namespace Minisat;
+namespace dgl{
 //Finds a global min-weight-cut, over all possible s-t, NOT the expected normal s-t min-cut
 class MinCut{
 
-  	//  vec<vec<int> > & g ;
+  	//  std::vector<std::vector<int> > & g ;
 
 
   	 // int nodes;
-  	  //vec<vec<int> >& adj;
+  	  //std::vector<std::vector<int> >& adj;
   	  DynamicGraph & g;
-  	  vec<int> assignments;
-  	  vec<vec<float> > weight;//this is a full edge matrix
+  	  std::vector<int> assignments;
+  	  std::vector<std::vector<float> > weight;//this is a full edge matrix
 
-  //	  vec<vec<float> > cur_weight;//this is a full edge matrix
-  	  vec<float> keys;
-  	  vec<bool> parity;
+  //	  std::vector<std::vector<float> > cur_weight;//this is a full edge matrix
+  	  std::vector<float> keys;
+  	  std::vector<bool> parity;
 /*  	  struct Edge{
   		  int u;
   		  int v;
   		  float weight;
   	  };
-  	  vec<Edge> edges;*/
+  	  std::vector<Edge> edges;*/
   /*	 struct Comp {
-  		const vec<vec<float> >& _cur_weight;
+  		const std::vector<std::vector<float> >& _cur_weight;
   		        bool operator () (int x, int y) const {
   		        	assert(_cur_weight.size()==_cur_weight[0].size());
   		        	int xa = x/_cur_weight.size();
@@ -45,18 +45,18 @@ class MinCut{
   		        	int ya = y/_cur_weight.size();
 					int yb = y%_cur_weight.size();
   		        	return _cur_weight[xa][xb] > _cur_weight[ya][yb]; }
-  		      Comp(const vec<vec<float> > & cw) : _cur_weight(cw) { }
+  		      Comp(const std::vector<std::vector<float> > & cw) : _cur_weight(cw) { }
   	  	  };*/
  	 struct Comp {
-   		const vec<float> & _keys;
+   		const std::vector<float> & _keys;
    		        bool operator () (int x, int y) const {
    		        	return _keys[x]>_keys[y];
    		        }
-   		      Comp(const vec<float> & k) : _keys(k) { }
+   		      Comp(const std::vector<float> & k) : _keys(k) { }
    	  	  };
 	  Heap<Comp> pq;
   	//std::set<int> assignedVertices;
-	  vec<int> assignedVertices;
+	  std::vector<int> assignedVertices;
 
 
     /**
@@ -148,10 +148,10 @@ class MinCut{
 
 public:
  	MinCut(DynamicGraph & graph):g(graph),pq(Comp(keys)){
- 		  weight.growTo(g.nodes);
+ 		  weight.resize(g.nodes);
  				   weight.shrink(weight.size()-g.nodes);
  					  for(int v= 0 ;v<g.nodes;v++){
- 						  weight[v].growTo(g.nodes);
+ 						  weight[v].resize(g.nodes);
  						  weight[v].shrink(weight[v].size()-g.nodes);
  						  for(int w = 0;w<g.nodes;w++){
  							weight[v][w]=0;
@@ -187,10 +187,10 @@ public:
 
 	   int n = g.nodes;
 	   //full edge matrix
-	   /*cur_weight.growTo(g.nodes);
+	   /*cur_weight.resize(g.nodes);
 	   cur_weight.shrink(cur_weight.size()-g.nodes);
 	      for(int v= 0 ;v<g.nodes;v++){
-	    	  cur_weight[v].growTo(g.nodes);
+	    	  cur_weight[v].resize(g.nodes);
 	      	  cur_weight[v].shrink(cur_weight[v].size()-g.nodes);
 	      	  for(int w = 0;w<g.nodes;w++){
 	      		cur_weight[v][w]=0;
@@ -198,10 +198,10 @@ public:
 	      }*/
 
 
-	   keys.growTo(g.nodes);
-	   parity.growTo(g.nodes);
+	   keys.resize(g.nodes);
+	   parity.resize(g.nodes);
       // initialize `assignments` (all vertices are initially assigned to themselves)
-      assignments.growTo(g.nodes);
+      assignments.resize(g.nodes);
       for(int v= 0 ;v<g.nodes;v++)
     	  assignments[v]=v;
 
@@ -214,7 +214,7 @@ public:
     	  parity[v]=v==t?1:0;
 
       assignments[t]=s;
-      assignedVertices.push(t);
+      assignedVertices.push_back(t);
       --n;
 
       for (; n >= 2; --n) {
@@ -237,7 +237,7 @@ public:
         	}
         }
         if(assignments[t]==t)
-        	assignedVertices.push(t);
+        	assignedVertices.push_back(t);
         assignments[t]=s;
 
       }
@@ -249,10 +249,10 @@ public:
 
    void setWeight(int from, int to, float w){
 	   if(from>=weight.size() || to>=weight.size()){
-		   weight.growTo(g.nodes);
+		   weight.resize(g.nodes);
 		   weight.shrink(weight.size()-g.nodes);
 			  for(int v= 0 ;v<g.nodes;v++){
-				  weight[v].growTo(g.nodes);
+				  weight[v].resize(g.nodes);
 				  weight[v].shrink(weight[v].size()-g.nodes);
 				  for(int w = 0;w<g.nodes;w++){
 					weight[v][w]=0;
@@ -282,5 +282,6 @@ public:
    bool getPartition(int node){
 	   return parity[node];
    }
+};
 };
 #endif /* MAXFLOW_H_ */

@@ -17,12 +17,12 @@
 #include "ConnectedComponents.h"
 #include "DisjointSets.h"
 #include <limits>
-
-template<class Status=ConnectedComponents::NullConnectedComponentsStatus,class EdgeStatus=DefaultEdgeStatus>
+namespace dgl{
+template<class Status=ConnectedComponents::NullConnectedComponentsStatus>
 class DisjointSetsConnectedComponents:public ConnectedComponents{
 public:
 
-	DynamicGraph<EdgeStatus> & g;
+	DynamicGraph & g;
 	Status &  status;
 	int last_modification;
 
@@ -35,15 +35,15 @@ public:
 	int INF;
 	DisjointSets sets;
 
-	vec<int> q;
-	vec<int> check;
+	std::vector<int> q;
+	std::vector<int> check;
 	const int reportPolarity;
 	struct ConnectCheck{
 		int u;
 		int v;
 	};
-	vec<ConnectCheck> connectChecks;
-	//vec<char> old_seen;
+	std::vector<ConnectCheck> connectChecks;
+	//std::vector<char> old_seen;
 
 	//stats
 
@@ -59,9 +59,9 @@ public:
 	double stats_fast_update_time=0;
 
 	struct DefaultReachStatus{
-			vec<bool> stat;
+			std::vector<bool> stat;
 				void setReachable(int u, bool reachable){
-					stat.growTo(u+1);
+					stat.resize(u+1);
 					stat[u]=reachable;
 				}
 				bool isReachable(int u) const{
@@ -71,17 +71,17 @@ public:
 			};
 
 public:
-	DisjointSetsConnectedComponents(DynamicGraph<EdgeStatus> & graph, Status & _status, int _reportPolarity=0 ):g(graph), status(_status), last_modification(-1),last_addition(-1),last_deletion(-1),history_qhead(0),last_history_clear(0),INF(0),reportPolarity(_reportPolarity){
+	DisjointSetsConnectedComponents(DynamicGraph & graph, Status & _status, int _reportPolarity=0 ):g(graph), status(_status), last_modification(-1),last_addition(-1),last_deletion(-1),history_qhead(0),last_history_clear(0),INF(0),reportPolarity(_reportPolarity){
 
 	}
 
-	DisjointSetsConnectedComponents(DynamicGraph<EdgeStatus> & graph,  int _reportPolarity=0 ):g(graph), status(nullConnectedComponentsStatus), last_modification(-1),last_addition(-1),last_deletion(-1),history_qhead(0),last_history_clear(0),INF(0),reportPolarity(_reportPolarity){
+	DisjointSetsConnectedComponents(DynamicGraph & graph,  int _reportPolarity=0 ):g(graph), status(nullConnectedComponentsStatus), last_modification(-1),last_addition(-1),last_deletion(-1),history_qhead(0),last_history_clear(0),INF(0),reportPolarity(_reportPolarity){
 
 	}
 
 	void setNodes(int n){
-		q.capacity(n);
-		check.capacity(n);
+		q.reserve(n);
+		check.reserve(n);
 
 		INF=std::numeric_limits<int>::max();
 		sets.AddElements(n);
@@ -89,7 +89,7 @@ public:
 	}
 
 	void addConnectedCheck(int u, int v){
-		connectChecks.push({u,v});
+		connectChecks.push_back({u,v});
 	}
 
 	void update( ){
@@ -168,6 +168,6 @@ public:
 
 
 };
-
+};
 
 #endif /* DISJOINTSETCONNECTEDCOMPONENTS_H_ */

@@ -10,27 +10,27 @@
 
 #include <vector>
 
-
-void BFS(int v, int u,  vec<vec<int > > & adj,vec<int> & affected_out){
-	static vec<char> in_w;
-	static vec<char> in_affected;
+namespace dgl{
+void BFS(int v, int u,  std::vector<std::vector<int > > & adj,std::vector<int> & affected_out){
+	static std::vector<char> in_w;
+	static std::vector<char> in_affected;
 	affected_out.clear();
 	in_w.clear();
-	in_w.growTo(adj.size());
+	in_w.resize(adj.size());
 	in_w[v]=true;
 
 	in_affected.clear();
-	in_affected.growTo(adj.size());
+	in_affected.resize(adj.size());
 	in_affected[v]=true;
 
-	static vec<int> w;
+	static std::vector<int> w;
 	w.clear();
-	w.push(v);
+	w.push_back(v);
 	int n = adj.size();//number of nodes
 
 	while(w.size()){
-		int x = w.last();
-		w.pop();
+		int x = w.back();
+		w.pop_back();
 		if(x==u)
 			break;
 		for (int i = 0;i<adj[x].size();i++){
@@ -38,24 +38,24 @@ void BFS(int v, int u,  vec<vec<int > > & adj,vec<int> & affected_out){
 			//this is an edge from y to x
 			if (!in_affected[y]){
 				in_affected[y]=true;
-				affected_out.push(y);
+				affected_out.push_back(y);
 				if(!in_w[y]){
 					in_w[y]=true;
-					w.push(y);
+					w.push_back(y);
 				}
 			}
 		}
 	}
 }
 private:
-vec<vec<bool> > f;//flow
-vec<int> height;
-vec<int> excess;
-vec<bool> seen;
+std::vector<std::vector<bool> > f;//flow
+std::vector<int> height;
+std::vector<int> excess;
+std::vector<bool> seen;
 
 int n;
 public:
-void push(int u, int v){
+void push_back(int u, int v){
 	int send =!f[u][v];
 	if(send>excess[u]){
 		send=excess[u];
@@ -66,7 +66,7 @@ void push(int u, int v){
 	excess[v]+=send;
 }
 
-void relabel(int u,vec<vec<int > > & adj){
+void relabel(int u,std::vector<std::vector<int > > & adj){
 	int min_height = -1;
 	//for (int v = 0;v<n;v++){
 	for(int i = 0;i<adj[u].size();i++){
@@ -81,12 +81,12 @@ void relabel(int u,vec<vec<int > > & adj){
 	//}
 }
 
-void discharge(int u,vec<vec<int > > & adj){
+void discharge(int u,std::vector<std::vector<int > > & adj){
 	while (excess[u] > 0){
 		 if (seen[u] < n){
 			 int v = seen[u];
 			 if (!f[u][v] && (height[u] > height[v]))
-				 push(u, v);
+				 push_back(u, v);
 			 else
 				 seen[u] += 1;
 		 }else{ // we have checked all neighbours. must relabel
@@ -95,7 +95,7 @@ void discharge(int u,vec<vec<int > > & adj){
 		 }
 	}
 }
-void moveToFront(int i, vec<int> &A) {
+void moveToFront(int i, std::vector<int> &A) {
               int temp = A[i];
               int n;
               for (n = i; n > 0; n--){
@@ -103,25 +103,25 @@ void moveToFront(int i, vec<int> &A) {
               }
               A[0] = temp;
       }
-int relabel_to_front(vec<vec<int > > & adj,int s,int t,){
+int relabel_to_front(std::vector<std::vector<int > > & adj,int s,int t,){
 	//from wikipedia
 	int n = adj.size();
-	 seen.growTo(n);
-	 excess.growTo(n);
-	 height.growTo(n);
-	f.growTo(n);
+	 seen.resize(n);
+	 excess.resize(n);
+	 height.resize(n);
+	f.resize(n);
 	//residual capacity from u to v is C[u][v] - F[u][v]
-	vec<int> nodelist;
+	std::vector<int> nodelist;
 
 	for(int i = 0;i<n;i++){
 		if(i!=s && i != t)
-			nodelist.push(i);
+			nodelist.push_back(i);
 	}
 
 	height[s] = n;//    longest path from source to sink is less than n long
 	excess[s] = 0xF0F0F0F0; // # send as much flow as possible to neighbours of source
 	for(int v = 0;v<n;v++)
-		 push(s, v);
+		 push_back(s, v);
 
     int p = 0;
     while (p < n - 2) {
@@ -145,7 +145,7 @@ int relabel_to_front(vec<vec<int > > & adj,int s,int t,){
 }
 
 /*
-void push(int u, int v){
+void push_back(int u, int v){
 	int send = c[u][v]-f[u][v];
 	if(send>excess[u]){
 		send=excess[u];
@@ -173,7 +173,7 @@ void discharge(int u){
 		 if (seen[u] < n){
 			 int v = seen[u];
 			 if ((c[u][v] - f[u][v] > 0) && (height[u] > height[v]))
-				 push(u, v);
+				 push_back(u, v);
 			 else
 				 seen[u] += 1;
 		 }else{ // we have checked all neighbours. must relabel
@@ -182,7 +182,7 @@ void discharge(int u){
 		 }
 	}
 }
-void moveToFront(int i, vec<int> &A) {
+void moveToFront(int i, std::vector<int> &A) {
               int temp = A[i];
               int n;
               for (n = i; n > 0; n--){
@@ -190,25 +190,25 @@ void moveToFront(int i, vec<int> &A) {
               }
               A[0] = temp;
       }
-int relabel_to_front(vec<vec<int > > & adj,int s,int t,){
+int relabel_to_front(std::vector<std::vector<int > > & adj,int s,int t,){
 	//from wikipedia
 	int n = adj.size();
-	 seen.growTo(n);
-	 excess.growTo(n);
-	 height.growTo(n);
-	f.growTo(n);
+	 seen.resize(n);
+	 excess.resize(n);
+	 height.resize(n);
+	f.resize(n);
 	//residual capacity from u to v is C[u][v] - F[u][v]
-	vec<int> nodelist;
+	std::vector<int> nodelist;
 
 	for(int i = 0;i<n;i++){
 		if(i!=s && i != t)
-			nodelist.push(i);
+			nodelist.push_back(i);
 	}
 
 	height[s] = n;//    longest path from source to sink is less than n long
 	excess[s] = 0xF0F0F0F0; // # send as much flow as possible to neighbours of source
 	for(int v = 0;v<n;v++)
-		 push(s, v);
+		 push_back(s, v);
 
     int p = 0;
     while (p < n - 2) {
@@ -232,7 +232,7 @@ int relabel_to_front(vec<vec<int > > & adj,int s,int t,){
 }
 */
 
-
+};
 
 
 #endif /* FLOW_H_ */

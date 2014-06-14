@@ -8,20 +8,20 @@
 #include "EdmondsKarp.h"
 #endif
 
+namespace dgl{
 
-template<class EdgeStatus>
 class IBFS:public MaxFlow{
 
-    DynamicGraph<EdgeStatus>& g;
+    DynamicGraph& g;
     int INF;
 #ifdef DEBUG_MAXFLOW
-    	EdmondsKarp<EdgeStatus> ek;
+    	EdmondsKarp ek;
 #endif
 
-    vec<vec<int> > C;
+    std::vector<std::vector<int> > C;
     IBFSGraph<int,int,int>* ibfs ;
 public:
-    IBFS(DynamicGraph<EdgeStatus>& _g):g(_g),INF(0xF0F0F0)
+    IBFS(DynamicGraph& _g):g(_g),INF(0xF0F0F0)
 #ifdef DEBUG_MAXFLOW
     	,ek(_g)
 #endif
@@ -30,9 +30,9 @@ public:
     }
     void setCapacity(int u, int w, int c){
       	if(C.size()<g.nodes){
-        		C.growTo(g.nodes);
+        		C.resize(g.nodes);
         		for(int i = 0;i<g.nodes;i++){
-        			C[i].growTo(g.nodes);
+        			C[i].resize(g.nodes);
         		}
         	}
         	C[u][w]=c;
@@ -91,7 +91,7 @@ public:
     }
 
 
-    int minCut(int s, int t, vec<Edge> & cut){
+    int minCut(int s, int t, std::vector<Edge> & cut){
     	int f = maxFlow(s,t);
     	//ok, now find the cut
     	for(int u = 0;u<g.nodes;u++){
@@ -104,7 +104,7 @@ public:
 					int id =  g.adjacency[u][j].id;
 					if( ibfs->what_segment(v,IBFSGraph<int,int,int>::SOURCE) ==IBFSGraph<int,int,int>::SINK ){
 						//then this is on the cut
-						cut.push(Edge{u,v,id});
+						cut.push_back(Edge{u,v,id});
 					}
 				}
     		}
@@ -148,16 +148,16 @@ public:
     };
 
     DynamicGraph g;
-    vec<vec<int> > cap;
-    vec<vec<int> > f;
+    std::vector<std::vector<int> > cap;
+    std::vector<std::vector<int> > f;
     int edmondskarp(int source, int sink, int n){
         int max = 0;
-        static vec<int> q;
-        static vec<int> mins;
-        q.growTo(g.nodes);
-        mins.growTo(g.nodes);
-        vec<int> pre;
-        vec<int> ni;
+        static std::vector<int> q;
+        static std::vector<int> mins;
+        q.resize(g.nodes);
+        mins.resize(g.nodes);
+        std::vector<int> pre;
+        std::vector<int> ni;
         while(true){
             int   h=0,t=0,c,i,j,min=g.nodes;
 
@@ -191,6 +191,7 @@ public:
         return max;
     }
 */
+};
 };
 #endif
 

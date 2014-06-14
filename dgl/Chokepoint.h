@@ -8,28 +8,31 @@
 #define CHOKEPOINT_H_
 
 #include "DynamicGraph.h"
+
+namespace dgl{
+
 struct ForceReason{
 		int edge_id;
 		int node;
 	} ;
 
-template <class EdgeStatus,class GraphStatus>
+template <class EdgeStatus>
 class Chokepoint{
 
-	DynamicGraph<GraphStatus> & g;
+	DynamicGraph & g;
 	EdgeStatus & status;
 	int source;
-	vec<int> current;
-	vec<int> prev;
-	vec<int> queue;
-	vec<int> dist;
-	vec<bool> in_queue;
+	std::vector<int> current;
+	std::vector<int> prev;
+	std::vector<int> queue;
+	std::vector<int> dist;
+	std::vector<bool> in_queue;
 
 	static const int SOURCE = -3;
 	static const int UNDEF=-2;
 	static const int EMPTY=-1;
 public:
-	Chokepoint(EdgeStatus & _status,DynamicGraph<GraphStatus> & _graph, int _source):g(_graph),status(_status),source(_source)
+	Chokepoint(EdgeStatus & _status,DynamicGraph & _graph, int _source):g(_graph),status(_status),source(_source)
 	{
 
 	}
@@ -39,10 +42,10 @@ public:
 		in_queue.clear();
 		queue.clear();
 
-		current.growTo(g.nodes);
-		prev.growTo(g.nodes);
-		dist.growTo(g.nodes);
-		in_queue.growTo(g.nodes);
+		current.resize(g.nodes);
+		prev.resize(g.nodes);
+		dist.resize(g.nodes);
+		in_queue.resize(g.nodes);
 
 
 
@@ -57,7 +60,7 @@ public:
 		dist[source]=0;
 
 		in_queue[source]= 1;
-		queue.push(source);
+		queue.push_back(source);
 
 		for(int i = 0;i<queue.size();i++){
 			int u = queue[i];
@@ -144,7 +147,7 @@ public:
 								continue;
 
 						if(!in_queue[to]){
-							queue.push(to);
+							queue.push_back(to);
 							in_queue[to]=true;
 						}
 
@@ -158,14 +161,14 @@ public:
 
 	}
 
-	void collectForcedEdges(vec<ForceReason> & forced_ids){
+	void collectForcedEdges(std::vector<ForceReason> & forced_ids){
 		update();
 		for(int i = 0;i<g.nodes;i++){
 			if(status.mustReach(i)){
 				int u= i;
 				while(prev[u]>=0){
 					if(current[u]!=UNDEF){
-						forced_ids.push({current[u],i});
+						forced_ids.push_back({current[u],i});
 						current[u]=UNDEF;
 					}
 					int v = prev[u];
@@ -179,7 +182,7 @@ public:
 
 };
 
-
+};
 #endif
 
 

@@ -9,13 +9,13 @@
 #include "Reach.h"
 
 
+namespace dgl{
 
-
-template<class Status,class EdgeStatus=DefaultEdgeStatus, bool undirected=false>
+template<class Status, bool undirected=false>
 class DFSReachability:public Reach{
 public:
 
-	DynamicGraph<EdgeStatus> & g;
+	DynamicGraph & g;
 	Status &  status;
 	int last_modification;
 	int last_addition;
@@ -27,22 +27,26 @@ public:
 	int source;
 	int INF;
 
+	bool opt_skip_deletions=false;
+	bool opt_skip_additions=false;
+	bool opt_inc_graph=false;
+	int opt_dec_graph = 0;
 
-	vec<int> q;
-	vec<int> check;
+	std::vector<int> q;
+	std::vector<int> check;
 	const int reportPolarity;
 
-	//vec<char> old_seen;
-	vec<char> seen;
-//	vec<int> changed;
+	//std::vector<char> old_seen;
+	std::vector<char> seen;
+//	std::vector<int> changed;
 
 
-	vec<int> prev;
+	std::vector<int> prev;
 
 	struct DefaultReachStatus{
-			vec<bool> stat;
+			std::vector<bool> stat;
 				void setReachable(int u, bool reachable){
-					stat.growTo(u+1);
+					stat.resize(u+1);
 					stat[u]=reachable;
 				}
 				bool isReachable(int u) const{
@@ -64,7 +68,7 @@ public:
 	double stats_full_update_time;
 	double stats_fast_update_time;
 
-	DFSReachability(int s,DynamicGraph<EdgeStatus> & graph, Status & _status, int _reportPolarity=0 ):g(graph), status(_status), last_modification(-1),last_addition(-1),last_deletion(-1),history_qhead(0),last_history_clear(0),source(s),INF(0),reportPolarity(_reportPolarity){
+	DFSReachability(int s,DynamicGraph & graph, Status & _status, int _reportPolarity=0 ):g(graph), status(_status), last_modification(-1),last_addition(-1),last_deletion(-1),history_qhead(0),last_history_clear(0),source(s),INF(0),reportPolarity(_reportPolarity){
 
 		mod_percentage=0.2;
 		stats_full_updates=0;
@@ -97,8 +101,8 @@ public:
 		last_modification=g.modifications;
 		last_addition=g.additions;
 		INF=g.nodes+1;
-		seen.growTo(g.nodes);
-		prev.growTo(g.nodes);
+		seen.resize(g.nodes);
+		prev.resize(g.nodes);
 
 		if(lastaddlist!=g.addlistclears){
 			addition_qhead=0;
@@ -111,7 +115,7 @@ public:
 			int v=g.addition_list[i].v;
 
 			if(!seen[v]){
-				q.push(v);
+				q.push_back(v);
 				seen[v]=1;
 				prev[v]=u;
 			}
@@ -126,16 +130,16 @@ public:
 
 				if(!seen[v]){
 					//this was changed
-					changed.push(v);
+					changed.push_back(v);
 					seen[v]=1;
 					prev[v]=u;
-					q.push(v);
+					q.push_back(v);
 				}
 			}
 		}
 		stats_fast_update_time+=rtime(2)-start_time;
 	}*/
-/*	vec<int> & getChanged(){
+/*	std::vector<int> & getChanged(){
 		return changed;
 	}
 	void clearChanged(){
@@ -147,12 +151,12 @@ public:
 	 * WARNING: THIS FUNDAMENTALLY WONT WORK if there are any cycles in the graph!
 	 * inline void delete_update(int to){
 		q.clear();
-		q.push(to);
+		q.push_back(to);
 		seen[to]=0;
 		//Is this really safe? check it very carefully, it could easily be wrong
 		while(q.size()){
-			int u = q.last();
-			q.pop();
+			int u = q.back();
+			q.pop_back();
 			assert(!seen[u]);
 			for(int i = 0;i<g.inverted_adjacency[u].size();i++){
 				int v = g.inverted_adjacency[u][i];
@@ -181,27 +185,27 @@ public:
 	}*/
 
 	void setNodes(int n){
-		q.capacity(n);
-		check.capacity(n);
-		seen.growTo(n);
-		prev.growTo(n);
+		q.reserve(n);
+		check.reserve(n);
+		seen.resize(n);
+		prev.resize(n);
 		INF=g.nodes+1;
 	}
 
 	inline void add_update(int to, bool update){
 		q.clear();
-		q.push_(to);
+		q.push_back(to);
 		//while(q.size()){
 		auto & adjacency = undirected? g.adjacency_undirected:g.adjacency;
 		while(q.size()){
-			int u =q.last();
-			q.pop();
+			int u =q.back();
+			q.pop_back();
 			assert(seen[u]);
 			if(update)
 				status.setReachable(u,seen[u]);
 			//status.setReachable(u,true);
 			//if(!old_seen[u]){
-			//	changed.push(u);
+			//	changed.push_back(u);
 			//}
 			for(int i = 0;i< adjacency[u].size();i++){
 				if(!g.edgeEnabled(adjacency[u][i].id))
@@ -211,7 +215,7 @@ public:
 				if(!seen[v]){
 					seen[v]=1;
 					prev[v]=edgeID;
-					q.push_(v);
+					q.push_back(v);
 				}
 			}
 		}
@@ -220,16 +224,16 @@ public:
 
 	inline void delete_update(int to){
 		q.clear();
-		q.push_(to);
+		q.push_back(to);
 		seen[to]=false;
 		prev[to]=-1;
 		check.clear();
-		check.push_(to);
+		check.push_back(to);
 		//while(q.size()){
 		auto & adjacency = undirected? g.adjacency_undirected:g.adjacency;
 		while(q.size()){
-			int u = q.last();
-			q.pop();
+			int u = q.back();
+			q.pop_back();
 			assert(!seen[u]);
 
 			for(int i = 0;i< adjacency[u].size();i++){
@@ -240,8 +244,8 @@ public:
 				if(seen[v] && previous(v)==u){
 					seen[v]=0;
 					prev[v]=-1;
-					check.push_(v);
-					q.push_(v);
+					check.push_back(v);
+					q.push_back(v);
 
 				}
 			}
@@ -298,7 +302,7 @@ public:
 
 			assert(INF>g.nodes);
 			assert(seen.size()>=g.nodes);
-			//old_seen.growTo(g.nodes);
+			//old_seen.resize(g.nodes);
 			q.clear();
 
 			for(int i = history_qhead;i<g.history.size();i++){
@@ -358,7 +362,7 @@ public:
 
 				assert(INF>g.nodes);
 				assert(seen.size()>=g.nodes);
-				//old_seen.growTo(g.nodes);
+				//old_seen.resize(g.nodes);
 				q.clear();
 
 				for(int i = history_qhead;i<g.history.size();i++){
@@ -503,10 +507,10 @@ public:
 		}
 		seen[source]=1;
 		auto & adjacency = undirected? g.adjacency_undirected:g.adjacency;
-		q.push_(source);
+		q.push_back(source);
 		while(q.size()){
-			int u =q.last();
-			q.pop();
+			int u =q.back();
+			q.pop_back();
 			assert(seen[u]);
 			if(reportPolarity==1)
 				status.setReachable(u,true);
@@ -519,7 +523,7 @@ public:
 				if(!seen[v]){
 					seen[v]=1;
 					prev[v]=edgeid;
-					q.push_(v);
+					q.push_back(v);
 				}
 			}
 		}
@@ -669,5 +673,5 @@ public:
 	}
 
 };
-
+};
 #endif

@@ -8,12 +8,12 @@
 #include "core/Config.h"
 #include "Reach.h"
 
+namespace dgl{
 
-template<class EdgeStatus=DefaultEdgeStatus>
 class DFSCycle:public Cycle{
 public:
 
-	DynamicGraph<EdgeStatus> & g;
+	DynamicGraph & g;
 
 	bool directed;
 	int last_modification;
@@ -27,28 +27,28 @@ public:
 	int INF;
 
 
-	vec<int> q;
-	vec<int> check;
-	vec<int> path;
-	vec<int> cycle;
+	std::vector<int> q;
+	std::vector<int> check;
+	std::vector<int> path;
+	std::vector<int> cycle;
 
 	const int reportPolarity;
 
-	//vec<char> old_seen;
-	vec<bool> seen;
-	vec<bool> in_q;
+	//std::vector<char> old_seen;
+	std::vector<bool> seen;
+	std::vector<bool> in_q;
 
-//	vec<int> changed;
+//	std::vector<int> changed;
 
 	bool undirected_cycle;
 	bool directed_cycle;
 
-	vec<int> prev;
+	std::vector<int> prev;
 
 	struct DefaultReachStatus{
-			vec<bool> stat;
+			std::vector<bool> stat;
 				void setReachable(int u, bool reachable){
-					stat.growTo(u+1);
+					stat.resize(u+1);
 					stat[u]=reachable;
 				}
 				bool isReachable(int u) const{
@@ -60,7 +60,7 @@ public:
 public:
 
 
-	DFSCycle(DynamicGraph<EdgeStatus> & graph,bool _directed=true, int _reportPolarity=0 ):g(graph),directed(_directed), last_modification(-1),last_addition(-1),last_deletion(-1),history_qhead(0),last_history_clear(0),INF(0),reportPolarity(_reportPolarity){
+	DFSCycle(DynamicGraph & graph,bool _directed=true, int _reportPolarity=0 ):g(graph),directed(_directed), last_modification(-1),last_addition(-1),last_deletion(-1),history_qhead(0),last_history_clear(0),INF(0),reportPolarity(_reportPolarity){
 		marked=false;
 		mod_percentage=0.2;
 		stats_full_updates=0;
@@ -77,10 +77,10 @@ public:
 
 
 	void setNodes(int n){
-		q.capacity(n);
-		check.capacity(n);
-		seen.growTo(n);
-		prev.growTo(n);
+		q.reserve(n);
+		check.reserve(n);
+		seen.resize(n);
+		prev.resize(n);
 		INF=g.nodes+1;
 	}
 
@@ -117,12 +117,12 @@ public:
 		for(int k = 0;k<g.nodes;k++){//to handle disconnected graph
 			if(seen[k])
 				continue;
-			q.push_(k);
+			q.push_back(k);
 			while(q.size()){//dfs
-				int u = q.last();
+				int u = q.back();
 				if(in_q[u]){
-					q.pop();
-					path.pop();
+					q.pop_back();
+					path.pop_back();
 					in_q[u]=false;
 					continue;
 				}else{
@@ -141,8 +141,8 @@ public:
 					if(!seen[v]){
 						seen[v]=1;
 						prev[v]=u;
-						q.push_(v);
-						path.push(g.adjacency[u][i].id);
+						q.push_back(v);
+						path.push_back(g.adjacency[u][i].id);
 					}else{
 						if(!undirected_cycle){
 							//path.copyTo(cycle);
@@ -150,10 +150,10 @@ public:
 							assert(path.size()==q.size()-1);
 							for(int j = 1;j<q.size();j++){
 								if(in_q[j]){
-									cycle.push(path[j-1]);
+									cycle.push_back(path[j-1]);
 								}
 							}
-							cycle.push(g.adjacency[u][i].id);
+							cycle.push_back(g.adjacency[u][i].id);
 
 						}
 						undirected_cycle=true;
@@ -165,10 +165,10 @@ public:
 							assert(path.size()==q.size()-1);
 							for(int j = 1;j<q.size();j++){
 								if(in_q[j]){
-									cycle.push(path[j-1]);
+									cycle.push_back(path[j-1]);
 								}
 							}
-							cycle.push(g.adjacency[u][i].id);
+							cycle.push_back(g.adjacency[u][i].id);
 
 							break;
 						}
@@ -195,14 +195,14 @@ public:
 		return undirected_cycle;
 	}
 
-	vec<int> & getUndirectedCycle(){
+	std::vector<int> & getUndirectedCycle(){
 		update();
 		return cycle;
 	}
-	vec<int> & getDirectedCycle(){
+	std::vector<int> & getDirectedCycle(){
 		update();
 		return cycle;
 	}
 };
-
+};
 #endif

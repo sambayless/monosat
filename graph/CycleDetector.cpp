@@ -10,7 +10,7 @@
 #include "CycleDetector.h"
 #include "GraphTheory.h"
 #include <limits>
-CycleDetector::CycleDetector(int _detectorID, GraphTheorySolver * _outer,  DynamicGraph<PositiveEdgeStatus> &_g,DynamicGraph<NegativeEdgeStatus> &_antig, bool detect_directed_cycles,double seed):
+CycleDetector::CycleDetector(int _detectorID, GraphTheorySolver * _outer,  DynamicGraph &_g,DynamicGraph &_antig, bool detect_directed_cycles,double seed):
 Detector(_detectorID),outer(_outer),g(_g),antig(_antig),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL){
 
 	undirected_cycle_lit = lit_Undef;

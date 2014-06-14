@@ -25,8 +25,8 @@ class ConnectedComponentsDetector:public Detector{
 public:
 		GraphTheorySolver * outer;
 		//int within;
-		DynamicGraph<PositiveEdgeStatus> & g;
-		DynamicGraph<NegativeEdgeStatus> & antig;
+		DynamicGraph & g;
+		DynamicGraph & antig;
 
 		double rnd_seed;
 		CRef components_low_marker;
@@ -112,7 +112,7 @@ public:
 		void addTreeEdgeLit(int edge_id, Var reach_var);
 		void addConnectedComponentsLit(Var weight_var,int min_components);
 		void addConnectedLit(Var outer_weight_var,int node1, int node2);
-		ConnectedComponentsDetector(int _detectorID, GraphTheorySolver * _outer, DynamicGraph<PositiveEdgeStatus> &_g, DynamicGraph<NegativeEdgeStatus> &_antig,   double seed=1);//:Detector(_detectorID),outer(_outer),within(-1),source(_source),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL){}
+		ConnectedComponentsDetector(int _detectorID, GraphTheorySolver * _outer, DynamicGraph &_g, DynamicGraph &_antig,   double seed=1);//:Detector(_detectorID),outer(_outer),within(-1),source(_source),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL){}
 		virtual ~ConnectedComponentsDetector(){
 
 		}

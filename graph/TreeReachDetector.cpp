@@ -11,14 +11,14 @@
 #include "GraphTheory.h"
 #include "core/Config.h"
 
-TreeReachDetector::TreeReachDetector(int _detectorID, GraphTheorySolver * _outer, DynamicGraph<PositiveEdgeStatus> &_g, DynamicGraph<NegativeEdgeStatus> &_antig, int from,double seed):Detector(_detectorID),outer(_outer),g(_g),antig(_antig),within(-1),source(from),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),opt_weight(*this){
+TreeReachDetector::TreeReachDetector(int _detectorID, GraphTheorySolver * _outer, DynamicGraph &_g, DynamicGraph &_antig, int from,double seed):Detector(_detectorID),outer(_outer),g(_g),antig(_antig),within(-1),source(from),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),opt_weight(*this){
 	check_positive=true;
 	check_negative=true;
 	rnd_path=NULL;
 	opt_path=NULL;
 	 if(opt_use_random_path_for_decisions){
 		 rnd_weight.clear();
-		 rnd_path = new WeightedDijkstra<NegativeEdgeStatus, vec<double> >(from,_antig,rnd_weight);
+		 rnd_path = new WeightedDijkstra< vec<double> >(from,_antig,rnd_weight);
 		 for(int i=0;i<outer->edge_list.size();i++){
 			 double w = drand(rnd_seed);
 
@@ -28,7 +28,7 @@ TreeReachDetector::TreeReachDetector(int _detectorID, GraphTheorySolver * _outer
 	 }
 
 	 if(opt_use_optimal_path_for_decisions){
-		 opt_path = new WeightedDijkstra<NegativeEdgeStatus, OptimalWeightEdgeStatus >(from,_antig,opt_weight);
+		 opt_path = new WeightedDijkstra< OptimalWeightEdgeStatus >(from,_antig,opt_weight);
 	 }
 	positive_reach_detector = new LinkCutForest<PositiveEdgeStatus>(from,_g,1);
 	negative_reach_detector = new LinkCutForest<NegativeEdgeStatus>(from,_antig,-1);

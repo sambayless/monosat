@@ -11,7 +11,7 @@
 #include "GraphTheory.h"
 #include "core/Config.h"
 #include "dgl/DynamicConnectivity.h"
-ConnectDetector::ConnectDetector(int _detectorID, GraphTheorySolver * _outer, DynamicGraph<PositiveEdgeStatus> &_g, DynamicGraph<NegativeEdgeStatus> &_antig, int from,double seed):Detector(_detectorID),outer(_outer),g(_g),antig(_antig),within(-1),source(from),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL),opt_weight(*this),chokepoint_status(*this),chokepoint(chokepoint_status, _antig,source){
+ConnectDetector::ConnectDetector(int _detectorID, GraphTheorySolver * _outer, DynamicGraph &_g, DynamicGraph &_antig, int from,double seed):Detector(_detectorID),outer(_outer),g(_g),antig(_antig),within(-1),source(from),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL),opt_weight(*this),chokepoint_status(*this),chokepoint(chokepoint_status, _antig,source){
 	check_positive=true;
 	check_negative=true;
 	constraintsBuilt=-1;
@@ -39,7 +39,7 @@ ConnectDetector::ConnectDetector(int _detectorID, GraphTheorySolver * _outer, Dy
 
 	 if(opt_use_random_path_for_decisions){
 		 rnd_weight.clear();
-		 rnd_path = new WeightedDijkstra<NegativeEdgeStatus, vec<double> >(from,_antig,rnd_weight);
+		 rnd_path = new WeightedDijkstra< vec<double> >(from,_antig,rnd_weight);
 		 for(int i=0;i<outer->edge_list.size();i++){
 			 double w = drand(rnd_seed);
 
@@ -49,43 +49,43 @@ ConnectDetector::ConnectDetector(int _detectorID, GraphTheorySolver * _outer, Dy
 	 }
 
 	 if(opt_use_optimal_path_for_decisions){
-		 opt_path = new WeightedDijkstra<NegativeEdgeStatus, OptimalWeightEdgeStatus >(from,_antig,opt_weight);
+		 opt_path = new WeightedDijkstra< OptimalWeightEdgeStatus >(from,_antig,opt_weight);
 	 }
 		positiveReachStatus = new ConnectDetector::ReachStatus(*this,true);
 		negativeReachStatus = new ConnectDetector::ReachStatus(*this,false);
 	 if(undirectedalg ==ConnectivityAlg::ALG_BFS){
 
-		positive_reach_detector = new BFSReachability<ConnectDetector::ReachStatus,PositiveEdgeStatus,true>(from,_g,*(positiveReachStatus),1);
-		negative_reach_detector = new BFSReachability<ConnectDetector::ReachStatus,NegativeEdgeStatus,true>(from,_antig,*(negativeReachStatus),-1);
+		positive_reach_detector = new BFSReachability<ConnectDetector::ReachStatus,true>(from,_g,*(positiveReachStatus),1);
+		negative_reach_detector = new BFSReachability<ConnectDetector::ReachStatus,true>(from,_antig,*(negativeReachStatus),-1);
 		if(opt_conflict_shortest_path)
-			positive_path_detector = new Distance<NullReachStatus,PositiveEdgeStatus,true>(from,_g,nullReachStatus,1);
+			positive_path_detector = new Distance<NullReachStatus,true>(from,_g,nullReachStatus,1);
 		else
 			positive_path_detector =positive_reach_detector;
 	}else if(undirectedalg==ConnectivityAlg::ALG_DFS){
 
-		positive_reach_detector = new DFSReachability<ConnectDetector::ReachStatus,PositiveEdgeStatus,true>(from,_g,*(positiveReachStatus),1);
-		negative_reach_detector = new DFSReachability<ConnectDetector::ReachStatus,NegativeEdgeStatus,true>(from,_antig,*(negativeReachStatus),-1);
+		positive_reach_detector = new DFSReachability<ConnectDetector::ReachStatus,true>(from,_g,*(positiveReachStatus),1);
+		negative_reach_detector = new DFSReachability<ConnectDetector::ReachStatus,true>(from,_antig,*(negativeReachStatus),-1);
 		if(opt_conflict_shortest_path)
-			positive_path_detector = new Distance<NullReachStatus,PositiveEdgeStatus,true>(from,_g,nullReachStatus,1);
+			positive_path_detector = new Distance<NullReachStatus,true>(from,_g,nullReachStatus,1);
 		else
 			positive_path_detector =positive_reach_detector;
 	}else if(undirectedalg==ConnectivityAlg::ALG_DISTANCE){
 
-		positive_reach_detector = new Distance<ConnectDetector::ReachStatus,PositiveEdgeStatus,true>(from,_g,*(positiveReachStatus),1);
-		negative_reach_detector = new Distance<ConnectDetector::ReachStatus,NegativeEdgeStatus,true>(from,_antig,*(negativeReachStatus),-1);
+		positive_reach_detector = new Distance<ConnectDetector::ReachStatus,true>(from,_g,*(positiveReachStatus),1);
+		negative_reach_detector = new Distance<ConnectDetector::ReachStatus,true>(from,_antig,*(negativeReachStatus),-1);
 		positive_path_detector = positive_reach_detector;
 	}else if (undirectedalg==ConnectivityAlg::ALG_THORUP){
 
-		positive_reach_detector = new DynamicConnectivity<ConnectDetector::ReachStatus,PositiveEdgeStatus>(_g,*(positiveReachStatus),1);
-		negative_reach_detector = new DynamicConnectivity<ConnectDetector::ReachStatus,NegativeEdgeStatus>(_antig,*(negativeReachStatus),-1);
+		positive_reach_detector = new DynamicConnectivity<ConnectDetector::ReachStatus>(_g,*(positiveReachStatus),1);
+		negative_reach_detector = new DynamicConnectivity<ConnectDetector::ReachStatus>(_antig,*(negativeReachStatus),-1);
 		positive_path_detector = positive_reach_detector;
 		if(opt_conflict_shortest_path)
-			positive_path_detector = new Distance<NullReachStatus,PositiveEdgeStatus,true>(from,_g,nullReachStatus,1);
+			positive_path_detector = new Distance<NullReachStatus,true>(from,_g,nullReachStatus,1);
 		else
 			positive_path_detector =positive_reach_detector;
 	}else{
-		positive_reach_detector = new Dijkstra<ConnectDetector::ReachStatus, PositiveEdgeStatus,true>(from,_g,*positiveReachStatus);
-		negative_reach_detector = new Dijkstra<ConnectDetector::ReachStatus,NegativeEdgeStatus,true>(from,_antig,*negativeReachStatus);
+		positive_reach_detector = new Dijkstra<ConnectDetector::ReachStatus, true>(from,_g,*positiveReachStatus);
+		negative_reach_detector = new Dijkstra<ConnectDetector::ReachStatus,true>(from,_antig,*negativeReachStatus);
 		positive_path_detector = positive_reach_detector;
 		//reach_detectors.last()->positive_dist_detector = new Dijkstra(from,g);
 	}
@@ -802,8 +802,8 @@ bool ConnectDetector::checkSatisfied(){
 					}
 				}
 	}else{
-		Dijkstra<NullReachStatus,PositiveEdgeStatus,true>under(source,g) ;
-		Dijkstra<NullReachStatus,PositiveEdgeStatus,true>over(source,antig) ;
+		Dijkstra<NullReachStatus,true>under(source,g) ;
+		Dijkstra<NullReachStatus,true>over(source,antig) ;
 		under.update();
 		over.update();
 

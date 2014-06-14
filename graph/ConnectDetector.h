@@ -31,8 +31,8 @@ class GraphTheorySolver;
 class ConnectDetector:public Detector{
 public:
 		GraphTheorySolver * outer;
-		 DynamicGraph<PositiveEdgeStatus> &g;
-		 DynamicGraph<NegativeEdgeStatus> &antig;
+		 DynamicGraph &g;
+		 DynamicGraph &antig;
 		int within;
 		int source;
 		int constraintsBuilt;
@@ -53,7 +53,7 @@ public:
 		vec<int> force_reason;
 
 
-		vec<ForceReason> forced_edges;
+		std::vector<ForceReason> forced_edges;
 		struct Change{
 				Lit l;
 				int u;
@@ -93,7 +93,7 @@ public:
 		};
 		ReachStatus *positiveReachStatus;
 		ReachStatus *negativeReachStatus;
-		WeightedDijkstra<NegativeEdgeStatus,vec<double>> * rnd_path;
+		WeightedDijkstra<vec<double>> * rnd_path;
 		vec<double> rnd_weight;
 		struct OptimalWeightEdgeStatus{
 			ConnectDetector & detector;
@@ -103,7 +103,7 @@ public:
 
 		};
 		OptimalWeightEdgeStatus opt_weight;
-		WeightedDijkstra<NegativeEdgeStatus,OptimalWeightEdgeStatus> * opt_path;
+		WeightedDijkstra<OptimalWeightEdgeStatus> * opt_path;
 		bool check_positive;
 		bool check_negative;
 
@@ -116,7 +116,7 @@ public:
 			}
 		}chokepoint_status;
 
-		Chokepoint<ChokepointStatus ,NegativeEdgeStatus> chokepoint;
+		Chokepoint<ChokepointStatus> chokepoint;
 
 		int getNode(Var reachVar){
 			assert(reachVar>=first_reach_var);
@@ -126,11 +126,6 @@ public:
 			return reach_lit_map[index];
 		}
 
-	/*	Lit getLit(int node){
-
-			return reach_lits[node];
-
-		}*/
 		void buildSATConstraints(int distance=-1);
 		bool propagate(vec<Lit> & conflict);
 		void buildReachReason(int node,vec<Lit> & conflict);
@@ -143,7 +138,7 @@ public:
 		void preprocess();
 		void dbg_sync_reachability();
 
-		ConnectDetector(int _detectorID, GraphTheorySolver * _outer, DynamicGraph<PositiveEdgeStatus> &_g, DynamicGraph<NegativeEdgeStatus> &_antig, int _source,double seed=1);//:Detector(_detectorID),outer(_outer),within(-1),source(_source),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL),chokepoint_status(*this),chokepoint(chokepoint_status, _antig,source){}
+		ConnectDetector(int _detectorID, GraphTheorySolver * _outer, DynamicGraph &_g, DynamicGraph &_antig, int _source,double seed=1);//:Detector(_detectorID),outer(_outer),within(-1),source(_source),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL),chokepoint_status(*this),chokepoint(chokepoint_status, _antig,source){}
 		virtual ~ConnectDetector(){
 
 		}

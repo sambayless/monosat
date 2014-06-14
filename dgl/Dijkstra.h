@@ -9,7 +9,7 @@
 #define DIJKSTRA_H_
 
 #include <vector>
-#include <queue>
+#include "alg/Heap.h"
 #include "DynamicGraph.h"
 #include "Reach.h"
 #include "core/Config.h"
@@ -40,7 +40,7 @@ public:
 		}
 		 DistCmp(std::vector<int> & d):_dist(d){};
 	};
-	std::priority_queue<int, std::vector<int>, DistCmp> q;
+	Heap<DistCmp> q;
 
 
 
@@ -87,7 +87,7 @@ public:
 
 
 		for(int i = 0;i<g.nodes;i++)
-					changed.push(i);
+					changed.push_back(i);
 		assert(last_deletion==g.deletions);
 		last_modification=g.modifications;
 		last_addition=g.additions;
@@ -110,7 +110,7 @@ public:
 
 				if(dist[v]>=INF){
 					//this was changed
-					changed.push(v);
+					changed.push_back(v);
 				}
 
 				dist[v]=alt;
@@ -127,7 +127,7 @@ public:
 				if(alt< dist[v]){
 					if(dist[v]>=INF){
 						//this was changed
-						changed.push(v);
+						changed.push_back(v);
 					}
 
 					dist[v]=alt;
@@ -147,7 +147,7 @@ public:
 			//Is this altered code still correct? Well, not for dijkstras, but probably for connectivity
 			if(dist[v]>=INF){
 				//this was changed
-				changed.push(v);
+				changed.push_back(v);
 
 				dist[v]=alt;
 				prev[v]=u;
@@ -175,7 +175,7 @@ public:
 				if(alt<dist[v]){
 					if(dist[v]>=INF){
 						//this was changed
-						changed.push(v);
+						changed.push_back(v);
 					}
 
 					dist[v]=alt;
@@ -299,7 +299,7 @@ public:
 			if(dist[u]==INF)
 				break;
 			/*if(old_dist[u]>=INF){
-				changed.push(u);
+				changed.push_back(u);
 			}*/
 			q.removeMin();
 			for(int i = 0;i<adjacency[u].size();i++){
@@ -324,7 +324,7 @@ public:
 			//iterate through the unreached nodes and check which ones were previously reached
 
 			if(last_modification <=0  || (old_dist[u]<INF && dist[u]>=INF)){
-				changed.push(u);
+				changed.push_back(u);
 			}
 		}*/
 		//}

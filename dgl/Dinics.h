@@ -9,13 +9,13 @@
 #include <algorithm>
 #include <climits>
 
-
-template< class Capacity ,class EdgeStatus=vec<bool> >
+namespace dgl{
+template< class Capacity>
 class Dinitz:public MaxFlow{
 
 public:
 
-	vec<int> F;
+	std::vector<int> F;
 
 	struct LocalEdge{
 		int from;
@@ -32,26 +32,26 @@ public:
 
     int history_qhead;
     int last_history_clear;
-    vec<LocalEdge> prev;
-    vec<int> M;
-    vec<int> dist;
-    vec<int> pos;//position in the combined forward and backward adjacency list of each node in the DFS.
+    std::vector<LocalEdge> prev;
+    std::vector<int> M;
+    std::vector<int> dist;
+    std::vector<int> pos;//position in the combined forward and backward adjacency list of each node in the DFS.
 
-    DynamicGraph<EdgeStatus>& g;
+    DynamicGraph& g;
     Capacity & capacity;
     int INF;
     int src;
     int dst;
-    vec<int> Q;
+    std::vector<int> Q;
     long stats_augmenting_rounds =0;
     	long stats_rounds=0;
 #ifdef DEBUG_MAXFLOW
-    vec<int> dbg_pos;
-	EdmondsKarpAdj<Capacity, EdgeStatus> ek;
+    std::vector<int> dbg_pos;
+	EdmondsKarpAdj<Capacity> ek;
 #endif
 
 public:
-    Dinitz(DynamicGraph<EdgeStatus>& _g,Capacity & cap):g(_g),capacity(cap),INF(0xF0F0F0)
+    Dinitz(DynamicGraph& _g,Capacity & cap):g(_g),capacity(cap),INF(0xF0F0F0)
 #ifdef DEBUG_MAXFLOW
 		,ek(_g,cap)
 #endif
@@ -74,7 +74,7 @@ public:
 
 
     void setCapacity(int u, int w, int c){
-    	//C.growTo(g.edges);
+    	//C.resize(g.edges);
     	//C[ ]=c;
 
     }
@@ -119,9 +119,9 @@ public:
        		}
     bool buildLevelGraph(int src, int dst) {
     	dist.clear();
-    	dist.growTo(g.nodes,-1);
+    	dist.resize(g.nodes,-1);
         dist[src] = 0;
-        Q.push(src);
+        Q.push_back(src);
         //Build the level graph using a simple BFS
         for (int i = 0; i < Q.size(); i++) {
             int u = Q[i];
@@ -132,7 +132,7 @@ public:
                	int v =  g.adjacency[u][j].node;
                 if (dist[v] < 0 && F[edgeID] < capacity[edgeID]) {
                     dist[v] = dist[u] + 1;
-                    Q.push(v);
+                    Q.push_back(v);
                 }
             }
             for (int j = 0;j<g.inverted_adjacency[u].size();j++){
@@ -143,7 +143,7 @@ public:
                	//this is a backward edge, so it has capacity exactly if the forward edge has flow
                 if (dist[v] < 0 && F[edgeID]) {
                     dist[v] = dist[u] + 1;
-                    Q.push(v);
+                    Q.push_back(v);
                 }
             }
         }
@@ -155,10 +155,10 @@ public:
     	int m =0;
     	assert(Q.size()==0);
 
-        Q.push(src);
+        Q.push_back(src);
         M[src]=INT_MAX;
         while(Q.size()){
-        	int u = Q.last();
+        	int u = Q.back();
 		    if (u == dst)
 		    	return M[u];
 		    bool found=false;
@@ -175,16 +175,16 @@ public:
 					if(v==dst){
 						//M[v] = min(M[u], capacity[edgeID] - F[id]);
 						m=M[dst];
-						assert(Q.last()==u);
-						Q.pop();
+						assert(Q.back()==u);
+						Q.pop_back();
 						while(Q.size()){
-							pos[Q.last()]--;
-							Q.pop();
+							pos[Q.back()]--;
+							Q.pop_back();
 						}
 						//pos[u]++;
 						break;
 					}else{
-						Q.push(v);
+						Q.push_back(v);
 
 						pos[u]++;
 						break;
@@ -205,14 +205,14 @@ public:
 						prev[v]=LocalEdge(u,edgeID,false);
 						if(v==dst){
 							m=M[dst];
-							assert(Q.last()==u);
+							assert(Q.back()==u);
 							while(Q.size()){
-								pos[Q.last()]--;
-								Q.pop();
+								pos[Q.back()]--;
+								Q.pop_back();
 							}
 							break;
 						}else{
-							Q.push(v);
+							Q.push_back(v);
 
 							pos[u]++;
 							break;
@@ -221,7 +221,7 @@ public:
 				}
 			}
 			if(!found){
-				Q.pop();
+				Q.pop_back();
 			}
         }
         Q.clear();
@@ -329,19 +329,19 @@ public:
       	src=s;
       	dst=t;
     	F.clear();
-    	F.growTo(g.all_edges.size());
+    	F.resize(g.all_edges.size());
     	dist.clear();
-    	dist.growTo(g.nodes);
-    	M.growTo(g.nodes);
-    	prev.growTo(g.nodes);
+    	dist.resize(g.nodes);
+    	M.resize(g.nodes);
+    	prev.resize(g.nodes);
     	f=0;
 
 		while (buildLevelGraph(s,t)) {
 			dbg_print_graph(s,t);
 			stats_rounds++;
-			pos.clear();pos.growTo(g.nodes);
+			pos.clear();pos.resize(g.nodes);
 #ifndef NDEBUG
-			dbg_pos.clear();dbg_pos.growTo(g.nodes);
+			dbg_pos.clear();dbg_pos.resize(g.nodes);
 #endif
 			if(opt_dinics_recursive){
 				while (int delta = findAugmentingPath_recursive(s, INT_MAX)){
@@ -379,19 +379,19 @@ public:
     }
 
 
-    vec<bool> seen;
-    vec<bool> visited;
+    std::vector<bool> seen;
+    std::vector<bool> visited;
 
-    int minCut(int s, int t, vec<Edge> & cut){
+    int minCut(int s, int t, std::vector<Edge> & cut){
     	int f = maxFlow(s,t);
     	//ok, now find the cut
     	Q.clear();
-    	Q.push(s);
+    	Q.push_back(s);
     	seen.clear();
-    	seen.growTo(g.nodes);
+    	seen.resize(g.nodes);
     	seen[s]=true;
     //	visited.clear();
-    	//visited.growTo(g.nodes);
+    	//visited.resize(g.nodes);
     //	visited[s]=true;
     	for(int j = 0;j<Q.size();j++){
 		   int u = Q[j];
@@ -402,9 +402,9 @@ public:
     			int v = g.adjacency[u][i].node;
     			int id = g.adjacency[u][i].id;
     			if(capacity[id] - F[id] == 0){
-    				cut.push(Edge{u,v,id});
+    				cut.push_back(Edge{u,v,id});
     			}else if(!seen[v]){
-    				Q.push(v);
+    				Q.push_back(v);
     				seen[v]=true;
     			}
     		}
@@ -416,7 +416,7 @@ public:
     			cut[j++]=cut[i];
     		}
     	}
-    	cut.shrink(i-j);
+    	cut.resize(j);
     	return f;
     }
     int getEdgeCapacity(int id){
@@ -425,12 +425,13 @@ public:
      }
     int getEdgeFlow(int id){
     	assert(g.edgeEnabled(id));
-    	return F[id];// capacity(id);
+    	return F[id];// reserve(id);
     }
     int getEdgeResidualCapacity(int id){
     	assert(g.edgeEnabled(id));
-    	return  capacity[id]-F[id];// capacity(id);
+    	return  capacity[id]-F[id];// reserve(id);
     }
+};
 };
 #endif
 

@@ -25,8 +25,8 @@ class GraphTheorySolver;
 class DistanceDetector:public Detector{
 public:
 		GraphTheorySolver * outer;
-		 DynamicGraph<PositiveEdgeStatus> &g;
-		 DynamicGraph<NegativeEdgeStatus> &antig;
+		 DynamicGraph &g;
+		 DynamicGraph &antig;
 		//int within;
 		int source;
 		double rnd_seed;
@@ -64,7 +64,7 @@ public:
 		}
 		vec<double> rnd_weight;
 
-		WeightedDijkstra<NegativeEdgeStatus,vec<double>> * rnd_path;
+		WeightedDijkstra<vec<double>> * rnd_path;
 		struct OptimalWeightEdgeStatus{
 			DistanceDetector & detector;
 			int operator [] (int edge) const ;
@@ -73,7 +73,7 @@ public:
 
 		};
 		OptimalWeightEdgeStatus opt_weight;
-		WeightedDijkstra<NegativeEdgeStatus,OptimalWeightEdgeStatus> * opt_path;
+		WeightedDijkstra<OptimalWeightEdgeStatus> * opt_path;
 		struct ReachStatus{
 			DistanceDetector & detector;
 			bool polarity;
@@ -119,7 +119,7 @@ public:
 		bool checkSatisfied();
 		Lit decide();
 		void addLit(int from, int to, Var reach_var,int within_steps=-1);
-		DistanceDetector(int _detectorID, GraphTheorySolver * _outer, DynamicGraph<PositiveEdgeStatus> &_g, DynamicGraph<NegativeEdgeStatus> &_antig, int _source, int within_steps,double seed=1);//:Detector(_detectorID),outer(_outer),within(-1),source(_source),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL){}
+		DistanceDetector(int _detectorID, GraphTheorySolver * _outer, DynamicGraph &_g, DynamicGraph &_antig, int _source, int within_steps,double seed=1);//:Detector(_detectorID),outer(_outer),within(-1),source(_source),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL){}
 		virtual ~DistanceDetector(){
 
 		}

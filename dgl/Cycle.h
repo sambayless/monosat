@@ -9,7 +9,7 @@
 #define CYCLE_H_
 
 #include <vector>
-
+namespace dgl{
 class Cycle{
 public:
 
@@ -31,8 +31,8 @@ public:
 	virtual bool hasDirectedCycle()=0;
 	virtual bool hasUndirectedCycle()=0;
 	virtual void update( )=0;
-	virtual Minisat::vec<int> & getUndirectedCycle()=0;
-	virtual Minisat::vec<int> & getDirectedCycle()=0;
+	virtual std::vector<int> & getUndirectedCycle()=0;
+	virtual std::vector<int> & getDirectedCycle()=0;
 };
-
+};
 #endif /* REACH_H_ */

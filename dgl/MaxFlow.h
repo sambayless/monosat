@@ -6,7 +6,7 @@
 #include <climits>
 #include <vector>
 
-
+namespace dgl{
 class MaxFlow{
 public:
 
@@ -27,11 +27,12 @@ public:
     	int v;
     	int id;
     };
-    virtual int minCut(int s, int t, vec<Edge> & cut)=0;
+    virtual int minCut(int s, int t, std::vector<Edge> & cut)=0;
     virtual int getEdgeFlow(int edgeID)=0;
     virtual int getEdgeCapacity(int id)=0;
 
     virtual  int getEdgeResidualCapacity(int id)=0;
+};
 };
 #endif
 

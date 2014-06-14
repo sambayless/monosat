@@ -10,7 +10,7 @@
 
 #include "DynamicGraph.h"
 
-
+namespace dgl{
 class FloydWarshallCycle{
 	DynamicGraph & g;
 	int last_modification;
@@ -20,9 +20,9 @@ class FloydWarshallCycle{
 	int deletion_qhead;
 	int lastaddlist;
 	int lastdellist;
-	vec<vec<int > > dist;
-	vec<vec<int > > next;
-	vec<int> dist_changed;
+	std::vector<std::vector<int > > dist;
+	std::vector<std::vector<int > > next;
+	std::vector<int> dist_changed;
 	int INF;
 	int cycle_start;
 
@@ -35,13 +35,13 @@ private:
 
 	void floyd_warshal(){
 		INF = g.nodes+1;
-		dist.growTo(g.nodes);
-		next.growTo(g.nodes);
+		dist.resize(g.nodes);
+		next.resize(g.nodes);
 		for(int i = 0;i<dist.size();i++){
-			dist[i].growTo(g.nodes);
+			dist[i].resize(g.nodes);
 			for(int j = 0;j<dist[i].size();j++)
 				dist[i][j]=INF;
-			next[i].growTo(g.nodes);
+			next[i].resize(g.nodes);
 			for(int j = 0;j<next[i].size();j++)
 				next[i][j]=-1;
 
@@ -89,7 +89,7 @@ private:
 					last_modification=g.modifications;
 					last_addition=g.additions;
 					INF=g.nodes+1;
-					dist.growTo(g.nodes);
+					dist.resize(g.nodes);
 
 					if(lastaddlist!=g.addlistclears){
 						addition_qhead=0;
@@ -102,7 +102,7 @@ private:
 						int v=g.addition_list[i].v;
 
 						if( dist[u][v]>=INF){
-							dist_changed.push(u);
+							dist_changed.push_back(u);
 						}
 					}
 
@@ -139,10 +139,10 @@ private:
 	}
 private:
 	//From wikipedia; is there a non-recursive version of this?
-	void getPath(int i, int j, vec<int> & path_out){
+	void getPath(int i, int j, std::vector<int> & path_out){
 		int v = next[i][j];
 		if(v>0 && v != cycle_start){
-			path_out.push(v);
+			path_out.push_back(v);
 			getPath(i,v,path_out);
 			getPath(v,j,path_out);
 		}
@@ -150,14 +150,14 @@ private:
 public:
 
 	//Returns a minimum length cycle, if one exists
-	void getCycle(vec<int> & cycle_out){
+	void getCycle(std::vector<int> & cycle_out){
 		cycle_out.clear();
 		if(hasCycle()){
-			cycle_out.push(cycle_start);
+			cycle_out.push_back(cycle_start);
 			getPath(cycle_start,cycle_start,cycle_out);
 		}
 	}
 };
-
+};
 
 #endif /* CYCLE_H_ */

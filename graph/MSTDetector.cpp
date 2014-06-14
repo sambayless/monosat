@@ -14,7 +14,7 @@
 #include "dgl/SpiraPan.h"
 #include <limits>
 #include <set>
-MSTDetector::MSTDetector(int detectorID, GraphTheorySolver * outer,  DynamicGraph<PositiveEdgeStatus> &g,DynamicGraph<NegativeEdgeStatus> &antig ,vec<int> & edge_weights,double seed):
+MSTDetector::MSTDetector(int detectorID, GraphTheorySolver * outer,  DynamicGraph &g,DynamicGraph &antig ,vec<int> & edge_weights,double seed):
 Detector(detectorID),outer(outer),g(g),antig(antig),rnd_seed(seed),edge_weights(edge_weights),positive_reach_detector(NULL),negative_reach_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL){
 	checked_unique=false;
 	all_unique=true;
@@ -22,22 +22,22 @@ Detector(detectorID),outer(outer),g(g),antig(antig),rnd_seed(seed),edge_weights(
 		negativeReachStatus = new MSTDetector::MSTStatus(*this,false);
 
 		if(mstalg==MinSpanAlg::ALG_KRUSKAL){
-			positive_reach_detector = new Kruskal<MSTDetector::MSTStatus,PositiveEdgeStatus>(g,*(positiveReachStatus),1);
-			negative_reach_detector = new Kruskal<MSTDetector::MSTStatus,NegativeEdgeStatus>(antig,*(negativeReachStatus),-1);
+			positive_reach_detector = new Kruskal<MSTDetector::MSTStatus>(g,*(positiveReachStatus),1);
+			negative_reach_detector = new Kruskal<MSTDetector::MSTStatus>(antig,*(negativeReachStatus),-1);
 			positive_conflict_detector = positive_reach_detector;
 			negative_conflict_detector = negative_reach_detector;
 		}else if (mstalg==MinSpanAlg::ALG_PRIM){
-			positive_reach_detector = new Prim<MSTDetector::MSTStatus,PositiveEdgeStatus>(g,*(positiveReachStatus),1);
-			negative_reach_detector = new Prim<MSTDetector::MSTStatus,NegativeEdgeStatus>(antig,*(negativeReachStatus),-1);
-			positive_conflict_detector = new Kruskal<MinimumSpanningTree::NullStatus,PositiveEdgeStatus>(g,MinimumSpanningTree::nullStatus,1);
-			negative_conflict_detector = new Kruskal<MinimumSpanningTree::NullStatus ,PositiveEdgeStatus>(antig,MinimumSpanningTree::nullStatus,-1);
+			positive_reach_detector = new Prim<MSTDetector::MSTStatus>(g,*(positiveReachStatus),1);
+			negative_reach_detector = new Prim<MSTDetector::MSTStatus>(antig,*(negativeReachStatus),-1);
+			positive_conflict_detector = new Kruskal<MinimumSpanningTree::NullStatus>(g,MinimumSpanningTree::nullStatus,1);
+			negative_conflict_detector = new Kruskal<MinimumSpanningTree::NullStatus >(antig,MinimumSpanningTree::nullStatus,-1);
 
 		}else if (mstalg==MinSpanAlg::ALG_SPIRA_PAN){
 
-			positive_reach_detector =  new SpiraPan<MSTDetector::MSTStatus,PositiveEdgeStatus>(g,*(positiveReachStatus),1);//new SpiraPan<MSTDetector::MSTStatus,PositiveEdgeStatus>(_g,*(positiveReachStatus),1);
-			negative_reach_detector = new SpiraPan<MSTDetector::MSTStatus,NegativeEdgeStatus>(antig,*(negativeReachStatus),-1);
-			positive_conflict_detector = new Kruskal<MinimumSpanningTree::NullStatus,PositiveEdgeStatus>(g,MinimumSpanningTree::nullStatus,1);
-			negative_conflict_detector = new Kruskal<MinimumSpanningTree::NullStatus ,PositiveEdgeStatus>(antig,MinimumSpanningTree::nullStatus,-1);
+			positive_reach_detector =  new SpiraPan<MSTDetector::MSTStatus>(g,*(positiveReachStatus),1);//new SpiraPan<MSTDetector::MSTStatus>(_g,*(positiveReachStatus),1);
+			negative_reach_detector = new SpiraPan<MSTDetector::MSTStatus>(antig,*(negativeReachStatus),-1);
+			positive_conflict_detector = new Kruskal<MinimumSpanningTree::NullStatus>(g,MinimumSpanningTree::nullStatus,1);
+			negative_conflict_detector = new Kruskal<MinimumSpanningTree::NullStatus >(antig,MinimumSpanningTree::nullStatus,-1);
 		}
 
 		reach_marker=outer->newReasonMarker(getID());
@@ -792,8 +792,8 @@ void MSTDetector::buildMinWeightTooSmallReason(int weight,vec<Lit> & conflict){
 		}
 
 bool MSTDetector::checkSatisfied(){
-	Kruskal<MinimumSpanningTree::NullStatus,PositiveEdgeStatus> positive_checker(g,MinimumSpanningTree::nullStatus,0);
-	Kruskal<MinimumSpanningTree::NullStatus,NegativeEdgeStatus> negative_checker(antig,MinimumSpanningTree::nullStatus,0);
+	Kruskal<MinimumSpanningTree::NullStatus> positive_checker(g,MinimumSpanningTree::nullStatus,0);
+	Kruskal<MinimumSpanningTree::NullStatus> negative_checker(antig,MinimumSpanningTree::nullStatus,0);
 	positive_checker.update();
 	negative_checker.update();
 	for(int k = 0;k<weight_lits.size();k++){
@@ -879,9 +879,9 @@ bool MSTDetector::checkSatisfied(){
 }
 Lit MSTDetector::decide(){
 	/*MSTDetector *r =this;
-	MinimumSpanningTree<MSTDetector::MSTStatus,NegativeEdgeStatus> * over = (MinimumSpanningTree<MSTDetector::MSTStatus,NegativeEdgeStatus>*) r->negative_reach_detector;
+	MinimumSpanningTree<MSTDetector::MSTStatus> * over = (MinimumSpanningTree<MSTDetector::MSTStatus>*) r->negative_reach_detector;
 
-	MinimumSpanningTree<MSTDetector::MSTStatus,PositiveEdgeStatus> * under = (MinimumSpanningTree<MSTDetector::MSTStatus,PositiveEdgeStatus>*) r->positive_reach_detector;
+	MinimumSpanningTree<MSTDetector::MSTStatus> * under = (MinimumSpanningTree<MSTDetector::MSTStatus>*) r->positive_reach_detector;
 
 	//we can probably also do something similar, but with cuts, for nodes that are decided to be unreachable.
 

@@ -6,9 +6,10 @@
 
 #include "MaxFlow.h"
 #include <vector>
+#include <algorithm>
 #include "DynamicGraph.h"
+namespace dgl{
 
-template<class EdgeStatus=vec<bool> >
 class EdmondsKarp:public MaxFlow{
 public:
 
@@ -22,10 +23,10 @@ public:
         output:
             f             (Value of maximum flow)
             F             (A matrix giving a legal flow with the maximum value)*/
-    vec<vec<int> > F;//(Residual capacity from u to v is C[u,v] - F[u,v])
-    vec<vec<int> > C;
-    vec<int> P;
-    vec<int> M;
+    std::vector<std::vector<int> > F;//(Residual capacity from u to v is C[u,v] - F[u,v])
+    std::vector<std::vector<int> > C;
+    std::vector<int> P;
+    std::vector<int> M;
 
     int curflow;
 
@@ -36,7 +37,7 @@ public:
     int history_qhead;
     int last_history_clear;
 
-    DynamicGraph<EdgeStatus>& g;
+    DynamicGraph& g;
     int INF;
     /*
      *            input:
@@ -45,17 +46,17 @@ public:
                M[t]          (Capacity of path found)
                P             (Parent table)
      */
-    vec<int> Q;
+    std::vector<int> Q;
 
     int  BreadthFirstSearch(int s, int t){
      	for(int i = 0;i<g.nodes;i++)
 			P[i]=-1;
      	P[s] = -2;
     	Q.clear();
-           Q.push(s);
+           Q.push_back(s);
 
            //while (Q.size() > 0){
-        	   //int u =Q.last(); Q.pop();
+        	   //int u =Q.back(); Q.pop_back();
            for(int j = 0;j<Q.size();j++){
         	   int u = Q[j];
 
@@ -69,9 +70,9 @@ public:
 
                    if (((C[u][v] - F[u][v]) > 0) && (P[v] == -1)){
                        P[v] = u;
-                       M[v] = min(M[u], C[u][v] - F[u][v]);
+                       M[v] = std::min(M[u], C[u][v] - F[u][v]);
                        if (v != t)
-                           Q.push(v);
+                           Q.push_back(v);
                        else
                            return M[t];
                    }
@@ -87,9 +88,9 @@ public:
 
 					if (((C[u][v] - F[u][v]) > 0) && (P[v] == -1)){
 						P[v] = u;
-						M[v] = min(M[u], C[u][v] - F[u][v]);
+						M[v] = std::min(M[u], C[u][v] - F[u][v]);
 						if (v != t)
-							Q.push(v);
+							Q.push_back(v);
 						else
 							return M[t];
 					}
@@ -100,7 +101,7 @@ public:
 
 	   }
 public:
-    EdmondsKarp(DynamicGraph<EdgeStatus>& _g):g(_g),INF(0xF0F0F0)
+    EdmondsKarp(DynamicGraph& _g):g(_g),INF(0xF0F0F0)
     {
         curflow=-1;
 
@@ -114,9 +115,9 @@ public:
     }
     void setCapacity(int u, int w, int c){
     	if(C.size()<g.nodes){
-    		C.growTo(g.nodes);
+    		C.resize(g.nodes);
     		for(int i = 0;i<g.nodes;i++){
-    			C[i].growTo(g.nodes);
+    			C[i].resize(g.nodes);
     		}
     	}
     	C[u][w]=c;
@@ -136,16 +137,16 @@ public:
     			return curflow;
     		}
     	int f = 0;
-    	C.growTo(g.nodes);
-    	F.growTo(g.nodes);
-    	P.growTo(g.nodes);
-    	M.growTo(g.nodes);
+    	C.resize(g.nodes);
+    	F.resize(g.nodes);
+    	P.resize(g.nodes);
+    	M.resize(g.nodes);
 
     	for(int i = 0;i<g.nodes;i++){
     		P[i]=-1;
     		M[i]=0;
-    		F[i].growTo(g.nodes);
-    		C[i].growTo(g.nodes);
+    		F[i].resize(g.nodes);
+    		C[i].resize(g.nodes);
     		for(int j = 0;j<g.nodes;j++){
     			F[i][j]=0;
     		}
@@ -180,16 +181,16 @@ public:
     }
     int maxFlow(int s, int t, int max_length){
        	int f = 0;
-       	C.growTo(g.nodes);
-       	F.growTo(g.nodes);
-       	P.growTo(g.nodes);
-       	M.growTo(g.nodes);
+       	C.resize(g.nodes);
+       	F.resize(g.nodes);
+       	P.resize(g.nodes);
+       	M.resize(g.nodes);
 
        	for(int i = 0;i<g.nodes;i++){
        		P[i]=-1;
        		M[i]=0;
-       		F[i].growTo(g.nodes);
-       		C[i].growTo(g.nodes);
+       		F[i].resize(g.nodes);
+       		C[i].resize(g.nodes);
        		for(int j = 0;j<g.nodes;j++){
        			F[i][j]=0;
        		}
@@ -217,22 +218,22 @@ public:
            return f;
        }
 
-    vec<bool> seen;
-    vec<bool> visited;
+    std::vector<bool> seen;
+    std::vector<bool> visited;
 
-    bool minCut(int s, int t, int max_length, vec<Edge> & cut){
+    bool minCut(int s, int t, int max_length, std::vector<Edge> & cut){
     	int f = maxFlow(s,t,max_length);
     	if(f>max_length){
     		return false;
     	}
 		//ok, now find the cut
 		Q.clear();
-		Q.push(s);
+		Q.push_back(s);
 		seen.clear();
-		seen.growTo(g.nodes);
+		seen.resize(g.nodes);
 		seen[s]=true;
 	//	visited.clear();
-		//visited.growTo(g.nodes);
+		//visited.resize(g.nodes);
 	//	visited[s]=true;
 		for(int j = 0;j<Q.size();j++){
 		   int u = Q[j];
@@ -243,9 +244,9 @@ public:
 				int v = g.adjacency[u][i].node;
 				int id = g.adjacency[u][i].id;
 				if(C[u][v] - F[u][v] == 0){
-					cut.push(Edge{u,v,id});
+					cut.push_back(Edge{u,v,id});
 				}else if(!seen[v]){
-					Q.push(v);
+					Q.push_back(v);
 					seen[v]=true;
 				}
 			}
@@ -257,7 +258,7 @@ public:
 				cut[j++]=cut[i];
 			}
 		}
-		cut.shrink(i-j);
+		cut.resize(j);
 		return true;
     }
 
@@ -281,16 +282,16 @@ public:
 		return C[u][v]-F[u][v];
 
       }
-    int minCut(int s, int t, vec<Edge> & cut){
+    int minCut(int s, int t, std::vector<Edge> & cut){
     	int f = maxFlow(s,t);
     	//ok, now find the cut
     	Q.clear();
-    	Q.push(s);
+    	Q.push_back(s);
     	seen.clear();
-    	seen.growTo(g.nodes);
+    	seen.resize(g.nodes);
     	seen[s]=true;
     //	visited.clear();
-    	//visited.growTo(g.nodes);
+    	//visited.resize(g.nodes);
     //	visited[s]=true;
     	for(int j = 0;j<Q.size();j++){
 		   int u = Q[j];
@@ -301,9 +302,9 @@ public:
     			int v = g.adjacency[u][i].node;
 
     			if(C[u][v] - F[u][v] == 0){
-    				cut.push(Edge{u,v});
+    				cut.push_back(Edge{u,v});
     			}else if(!seen[v]){
-    				Q.push(v);
+    				Q.push_back(v);
     				seen[v]=true;
     			}
     		}
@@ -315,12 +316,12 @@ public:
     			cut[j++]=cut[i];
     		}
     	}
-    	cut.shrink(i-j);
+    	cut.resize(j);
     	return f;
     }
 
 
-
+};
 
 };
 #endif

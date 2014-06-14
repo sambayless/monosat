@@ -6,16 +6,17 @@
 
 #include "MaxFlow.h"
 #include <vector>
+#include <algorithm>
 #include "core/Config.h"
 #include "dgl/EdmondsKarp.h"
 
-
-template< class Capacity ,class EdgeStatus=vec<bool> >
+namespace dgl{
+template< class Capacity  >
 class EdmondsKarpAdj:public MaxFlow{
 
 public:
 
-	vec<int> F;
+	std::vector<int> F;
 	struct LocalEdge{
 		int from;
 		int id;
@@ -31,9 +32,9 @@ public:
 
     int history_qhead;
     int last_history_clear;
-    vec<LocalEdge> prev;
-    vec<int> M;
-    DynamicGraph<EdgeStatus>& g;
+    std::vector<LocalEdge> prev;
+    std::vector<int> M;
+    DynamicGraph& g;
     Capacity & capacity;
     int INF;
 #ifdef DEBUG_MAXFLOW
@@ -46,7 +47,7 @@ public:
                M[t]          (Capacity of path found)
                P             (Parent table)
      */
-    vec<int> Q;
+    std::vector<int> Q;
 
 
 
@@ -56,7 +57,7 @@ public:
      		prev[i].from=-1;
      	prev[s].from = -2;
     	Q.clear();
-           Q.push(s);
+           Q.push_back(s);
 
        	for(int j = 0;j<Q.size();j++){
    			   int u = Q[j];
@@ -74,9 +75,9 @@ public:
             	 //  int fr = F[id];
                    if (((c - F[id]) > 0) && (prev[v].from == -1)){
                        prev[v] = LocalEdge(u,id,false);
-                       M[v] = min(M[u], c - F[id]);
+                       M[v] = std::min(M[u], c - F[id]);
                        if (v != t)
-                           Q.push(v);
+                           Q.push_back(v);
                        else
                            return M[t];
                    }
@@ -94,9 +95,9 @@ public:
 
 					  if (((c - f) > 0) && (prev[v].from == -1)){
 						  prev[v] = LocalEdge(u,id,true);
-						  M[v] = min(M[u], c - f);
+						  M[v] = std::min(M[u], c - f);
 						  if (v != t)
-							  Q.push(v);
+							  Q.push_back(v);
 						  else
 							  return M[t];
 					  }
@@ -107,7 +108,7 @@ public:
 
 	   }
 public:
-    EdmondsKarpAdj(DynamicGraph<EdgeStatus>& _g,Capacity & cap):g(_g),capacity(cap),INF(0xF0F0F0)
+    EdmondsKarpAdj(DynamicGraph& _g,Capacity & cap):g(_g),capacity(cap),INF(0xF0F0F0)
 #ifdef DEBUG_MAXFLOW
     	,ek(_g)
 #endif
@@ -122,7 +123,7 @@ public:
     	//setAllEdgeCapacities(1);
     }
     void setCapacity(int u, int w, int c){
-    	//C.growTo(g.edges);
+    	//C.resize(g.edges);
     	//C[ ]=c;
 
     }
@@ -172,7 +173,7 @@ public:
 		}
 #endif
 
-    	//C.growTo(g.nodes);
+    	//C.resize(g.nodes);
 /*
 #ifdef DEBUG_MAXFLOW
     	for(int i = 0;i<g.all_edges.size();i++){
@@ -200,7 +201,7 @@ public:
     	/*if(rev.size()<g.all_edges.size()){
     		rev.clear();
 
-    		rev.growTo(g.all_edges.size());
+    		rev.resize(g.all_edges.size());
     		for(int i = 0;i<g.all_edges.size();i++){
     			rev[i]=-1;
     			int from = g.all_edges[i].from;
@@ -214,9 +215,9 @@ public:
     		}
     	}*/
     	F.clear();
-    	F.growTo(g.all_edges.size());
-    	prev.growTo(g.nodes);
-    	M.growTo(g.nodes);
+    	F.resize(g.all_edges.size());
+    	prev.resize(g.nodes);
+    	M.resize(g.nodes);
 
     	for(int i = 0;i<g.nodes;i++){
     		prev[i].from =-1;
@@ -265,19 +266,19 @@ public:
     }
 
 
-    vec<bool> seen;
-    vec<bool> visited;
+    std::vector<bool> seen;
+    std::vector<bool> visited;
 
-    int minCut(int s, int t, vec<Edge> & cut){
+    int minCut(int s, int t, std::vector<Edge> & cut){
     	int f = maxFlow(s,t);
     	//ok, now find the cut
     	Q.clear();
-    	Q.push(s);
+    	Q.push_back(s);
     	seen.clear();
-    	seen.growTo(g.nodes);
+    	seen.resize(g.nodes);
     	seen[s]=true;
     //	visited.clear();
-    	//visited.growTo(g.nodes);
+    	//visited.resize(g.nodes);
     //	visited[s]=true;
     	for(int j = 0;j<Q.size();j++){
 		   int u = Q[j];
@@ -288,9 +289,9 @@ public:
     			int v = g.adjacency[u][i].node;
     			int id = g.adjacency[u][i].id;
     			if(capacity[id] - F[id] == 0){
-    				cut.push(Edge{u,v,id});
+    				cut.push_back(Edge{u,v,id});
     			}else if(!seen[v]){
-    				Q.push(v);
+    				Q.push_back(v);
     				seen[v]=true;
     			}
     		}
@@ -302,7 +303,7 @@ public:
     			cut[j++]=cut[i];
     		}
     	}
-    	cut.shrink(i-j);
+    	cut.resize(j);
     	return f;
     }
     int getEdgeCapacity(int id){
@@ -311,12 +312,13 @@ public:
      }
     int getEdgeFlow(int id){
     	assert(g.edgeEnabled(id));
-    	return F[id];// capacity(id);
+    	return F[id];// reserve(id);
     }
     int getEdgeResidualCapacity(int id){
     	assert(g.edgeEnabled(id));
-    	return  capacity[id]-F[id];// capacity(id);
+    	return  capacity[id]-F[id];// reserve(id);
     }
+};
 };
 #endif
 

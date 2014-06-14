@@ -3,7 +3,7 @@
 
 #include <cstddef>
 #include <cassert>
-#include "mtl/Vec.h"
+#include <vector>
 /**
 15-451 Algorithms
 Fall 2012
@@ -782,7 +782,7 @@ class LinkCut {
     Node(int _id):id(_id), left(NULL),right(NULL),parent(NULL){};
   };
 
-  vec<Node*> nodes;
+  std::vector<Node*> nodes;
   // Whether x is a root of a splay tree
   bool isRoot(Node *x) {
     return x->parent == NULL || (x->parent->left != x && x->parent->right != x);
@@ -922,7 +922,7 @@ public:
    int addNode(){
 	   //return new Node();
 	   setCount++;
-	   nodes.push(new Node(nodes.size()));
+	   nodes.push_back(new Node(nodes.size()));
 	   return nodes.size()-1;
    }
    int nNodes(){

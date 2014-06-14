@@ -17,15 +17,13 @@
 #include "DisjointSets.h"
 #include <limits>
 #include <algorithm>
-using namespace Minisat;
 
-
-
-template<class Status=ConnectedComponents::NullConnectedComponentsStatus,class EdgeStatus=DefaultEdgeStatus>
+namespace dgl{
+template<class Status=ConnectedComponents::NullConnectedComponentsStatus>
 class TarjansSCC:public ConnectedComponents{
 public:
 
-	DynamicGraph<EdgeStatus> & g;
+	DynamicGraph & g;
 	Status &  status;
 	int last_modification;
 
@@ -43,18 +41,18 @@ public:
 		Component(int id, int next):id(id),next(next){}
 	};
 
-	vec<Component> scc; //the components of each node
+	std::vector<Component> scc; //the components of each node
 	struct SCC{
 		int sz;//size of the component
 		int element;//pointer to an arbitrary node in the scc.
 	};
-	vec<SCC> scc_set;
+	std::vector<SCC> scc_set;
 
-	vec<int> q;
+	std::vector<int> q;
 
-	vec<int> indices;
-	vec<int> lowlink;
-	vec<bool> in_q;
+	std::vector<int> indices;
+	std::vector<int> lowlink;
+	std::vector<bool> in_q;
 
 
 	int stats_full_updates=0;
@@ -69,25 +67,25 @@ public:
 	double stats_fast_update_time=0;
 
 public:
-	TarjansSCC(DynamicGraph<EdgeStatus> & graph):g(graph), status(nullConnectedComponentsStatus), last_modification(-1),last_addition(-1),last_deletion(-1),history_qhead(0),last_history_clear(0),INF(0){
+	TarjansSCC(DynamicGraph & graph):g(graph), status(nullConnectedComponentsStatus), last_modification(-1),last_addition(-1),last_deletion(-1),history_qhead(0),last_history_clear(0),INF(0){
 
 	}
 
-	TarjansSCC(DynamicGraph<EdgeStatus> & graph, Status & _status ):g(graph), status(_status), last_modification(-1),last_addition(-1),last_deletion(-1),history_qhead(0),last_history_clear(0),INF(0){
+	TarjansSCC(DynamicGraph & graph, Status & _status ):g(graph), status(_status), last_modification(-1),last_addition(-1),last_deletion(-1),history_qhead(0),last_history_clear(0),INF(0){
 
 	}
 
 	void setNodes(int n){
-		q.capacity(n);
-		in_q.growTo(n);
-		indices.growTo(n,-1);
-		lowlink.growTo(n,-1);
-		scc.growTo(n);
+		q.reserve(n);
+		in_q.resize(n);
+		indices.resize(n,-1);
+		lowlink.resize(n,-1);
+		scc.resize(n);
 		INF=std::numeric_limits<int>::max();
 	}
 
 
-	void strongConnect(int node, int & index, vec<int> * scc_out =nullptr){
+	void strongConnect(int node, int & index, std::vector<int> * scc_out =nullptr){
 		//Following wikipedia's pseudocode, from http://en.wikipedia.org/wiki/Tarjan%27s_strongly_connected_components_algorithm
 		assert(indices[node]<0);
 		assert(lowlink[node]<0);
@@ -95,7 +93,7 @@ public:
 		lowlink[node]=index;
 		index++;
 		assert(!in_q[node]);
-		q.push(node);
+		q.push_back(node);
 		in_q[node]=true;
 
 		for(auto & edge:g.adjacency[node]){
@@ -116,26 +114,26 @@ public:
 			int sccID = scc_set.size();
 			int sz = q.size();
 			assert(q.size());
-			int first = q.last();
-			scc_set.push({sz,first});
+			int first = q.back();
+			scc_set.push_back({sz,first});
 			if(scc_out){
 				scc_out->clear();
 			}
 			do{
-				int n = q.last();
+				int n = q.back();
 
-				q.pop();
+				q.pop_back();
 				assert(in_q[n]);
 				in_q[n]=false;
 				int next;
 				if(q.size() && n!=node){
-					next = q.last();
+					next = q.back();
 				}else{
 					next = first;
 				}
 				scc[n]={sccID,next};
 				if(scc_out){
-					scc_out->push(n);
+					scc_out->push_back(n);
 				}
 #ifndef NDEBUG
 				{
@@ -214,7 +212,7 @@ public:
 
 	//Compute the SCC for a single node.
 	//This is faster for one-shot scc computations from a single source than doing a full update().
-	static void getSCC(int node, DynamicGraph<EdgeStatus> & graph, vec<int>&scc ){
+	static void getSCC(int node, DynamicGraph & graph, std::vector<int>&scc ){
 		TarjansSCC<> s(graph);
 		s.setNodes(graph.nodes);
 		int index=0;
@@ -225,7 +223,7 @@ public:
 
 };
 
-
+};
 
 
 #endif /* TARJANSSCC_H_ */

@@ -11,11 +11,12 @@
 #include "DynamicConnectivityImpl.h"
 #include "alg/EulerTree.h"
 #include <cmath>
+#include <algorithm>
 #ifndef NDEBUG
 #include "mtl/Sort.h"
 #include "NaiveDynamicConnectivity.h"
 #endif
-
+namespace dgl{
 class ThorupDynamicConnectivity:public DynamicConnectivityImpl{
 
 #ifndef NDEBUG
@@ -36,15 +37,15 @@ struct Edge{
 	}
 };
 public:
-vec<Edge> edges;
-vec<bool> seen;
-vec<int> t_seen;
+std::vector<Edge> edges;
+std::vector<bool> seen;
+std::vector<int> t_seen;
 
 int nodes;
 
-vec<EulerTree> et;
+std::vector<EulerTree> et;
 //This is a list of _ALL_ incident edges to each node, except the ones that are actually in the forest, regardless of their level.
-vec<vec<int> > incident_edges;
+std::vector<std::vector<int> > incident_edges;
 private:
 
 int levels;
@@ -56,8 +57,8 @@ bool insert(int edgeID){
 	//fix these later
 
 
-	if (!et.last().connected(e.from,e.to)){
-		et.last().link(e.from,e.to,edgeID);
+	if (!et.back().connected(e.from,e.to)){
+		et.back().link(e.from,e.to,edgeID);
 		e.in_forest=true;
 		dbg_levels();
 		return true;
@@ -65,13 +66,13 @@ bool insert(int edgeID){
 		e.in_forest=false;
 		if(!e.incident_from){
 			e.incident_from=true;
-			assert(!incident_edges[e.from].contains(edgeID));
-			incident_edges[e.from].push(edgeID);
+			assert(!count(incident_edges[e.from].begin(),incident_edges[e.from].end(), edgeID));//assert(!incident_edges[e.from].contains(edgeID));
+			incident_edges[e.from].push_back(edgeID);
 		}
 		if(!e.incident_to){
 			e.incident_to=true;
-			assert(!incident_edges[e.to].contains(edgeID));
-			incident_edges[e.to].push(edgeID);
+			assert(!count(incident_edges[e.to].begin(),incident_edges[e.to].end(), edgeID));//assert(!incident_edges[e.to].contains(edgeID));
+			incident_edges[e.to].push_back(edgeID);
 		}
 		dbg_levels();
 		return false;
@@ -87,9 +88,9 @@ bool insert_unchecked(int edgeID, bool already_connected){
 	//fix these later
 	//assert(!incident_edges[e.from].contains(edgeID));
 	//assert(!incident_edges[e.to].contains(edgeID));
-	assert(et.last().connected(e.from,e.to)==already_connected);
+	assert(et.back().connected(e.from,e.to)==already_connected);
 	if (!already_connected){
-		et.last().link(e.from,e.to,edgeID);
+		et.back().link(e.from,e.to,edgeID);
 		e.in_forest=true;
 		dbg_levels();
 		return true;
@@ -97,13 +98,14 @@ bool insert_unchecked(int edgeID, bool already_connected){
 		e.in_forest=false;
 		if(!e.incident_from){
 			e.incident_from=true;
-			assert(!incident_edges[e.from].contains(edgeID));
-			incident_edges[e.from].push(edgeID);
+			//assert(!incident_edges[e.from].contains(edgeID));
+			assert(!count(incident_edges[e.from].begin(),incident_edges[e.from].end(), edgeID));
+			incident_edges[e.from].push_back(edgeID);
 		}
 		if(!e.incident_to){
 			e.incident_to=true;
-			assert(!incident_edges[e.to].contains(edgeID));
-			incident_edges[e.to].push(edgeID);
+			assert(!count(incident_edges[e.to].begin(),incident_edges[e.to].end(), edgeID));
+			incident_edges[e.to].push_back(edgeID);
 		}
 		dbg_levels();
 		return false;
@@ -143,7 +145,7 @@ void dbg_checkGraph(){
 	}
 	for(int i = 0;i<edges.size();i++){
 		if(edges[i].enabled){
-			assert(et.last().connected(edges[i].from,edges[i].to));
+			assert(et.back().connected(edges[i].from,edges[i].to));
 			//This is invariant 1 from the paper.
 			assert(et[edges[i].level].connected(edges[i].from,edges[i].to));
 
@@ -165,12 +167,12 @@ void dbg_checkGraph(){
 void dbg_incident(){
 #ifndef NDEBUG
 	for(int n = 0;n<nodes;n++){
-		vec<int> & incident = incident_edges[n];
-		vec<int> seen;
+		std::vector<int> & incident = incident_edges[n];
+		std::vector<int> seen;
 		for(int edge:incident){
 			//ensure no duplicates
-			assert(!seen.contains(edge));
-			seen.push(edge);
+			assert(!count(seen.begin(),seen.end(), edge));
+			seen.push_back(edge);
 			Edge & e =edges[edge];
 			assert(e.incident_from || e.incident_to);
 			if(n==e.from){
@@ -185,11 +187,11 @@ void dbg_incident(){
 
 	for(Edge & e:edges){
 		if(e.incident_from){
-			assert(incident_edges[e.from].contains(e.edgeID));
+			assert(count(incident_edges[e.from].begin(),incident_edges[e.from].end(), e.edgeID));//assert(incident_edges[e.from].contains(e.edgeID));
 		}
 
 		if(e.incident_to){
-			assert(incident_edges[e.to].contains(e.edgeID));
+			assert(count(incident_edges[e.to].begin(),incident_edges[e.to].end(), e.edgeID));
 		}
 	}
 
@@ -200,17 +202,17 @@ void dbg_incident(){
 
 void dbg_print(){
 #ifndef NDEBUG
-	vec<bool> seen;
-	seen.growTo(nodes);
+	std::vector<bool> seen;
+	seen.resize(nodes);
 	for(int n = 0;n<nodes;n++){
 		if(!seen[n]){
 			seen[n]=true;
-			vec<int> e;
+			std::vector<int> e;
 			getConnectedComponentEdges(n,e);
 
-			vec<int> node_set;
+			std::vector<int> node_set;
 			getConnectedComponent(n,node_set);
-			sort(node_set);
+			std::sort(node_set.begin(),node_set.end());
 			if(node_set.size()>1){
 			for(int n:node_set){
 				seen[n]=true;
@@ -292,8 +294,8 @@ bool visit(int w,int otherTreeVertex, int removedEdge, int level, int & replacem
 					}
 					incident_edges[w][j++]=incident_edges[w][k];
 				}
-				incident_edges[w].shrink(k-j);
-				assert(!incident_edges[w].contains(e.edgeID));
+				incident_edges[w].resize(j);
+				assert(!count(incident_edges[w].begin(),incident_edges[w].end(), e.edgeID));
 				replacementEdge=e.edgeID;
 				return true;
 			}else{
@@ -319,7 +321,7 @@ bool visit(int w,int otherTreeVertex, int removedEdge, int level, int & replacem
 		}
 		incident_edges[w][j++]=incident_edges[w][k];
 	}
-	incident_edges[w].shrink(k-j);
+	incident_edges[w].resize(j);
 	return false;
 
 }
@@ -338,7 +340,7 @@ bool cut(int edgeID){
 		assert(!et[i].connected(u,v));
 	}
 #endif
-	assert(et.last().connected(u,v));
+	assert(et.back().connected(u,v));
 	//find a replacement edge to connect u and v, if one exists
 	bool foundReplacement=false;
 	for(int i = e.level;!foundReplacement && i<levels;i++){
@@ -454,24 +456,24 @@ void dbg_levels(){
 
 void dbg_printTree(int level, int fromnode){
 #ifndef NDEBUG
-	vec<bool> dbg_seen;
-	dbg_seen.growTo(nodes);
-	vec<int> treenodes;
-	treenodes.push(fromnode);
+	std::vector<bool> dbg_seen;
+	dbg_seen.resize(nodes);
+	std::vector<int> treenodes;
+	treenodes.push_back(fromnode);
 	dbg_seen[fromnode]=true;
 	for(auto it = et[level].begin_half_edge_tour(fromnode);it != et[level].end_half_edge_tour();++it){
 		int cur_edge = *it;
 		Edge & treeEdge = edges[cur_edge];
 		if(!dbg_seen[treeEdge.from]){
 			dbg_seen[treeEdge.from]=true;
-			treenodes.push(treeEdge.from);
+			treenodes.push_back(treeEdge.from);
 		}
 		if(!dbg_seen[treeEdge.to]){
 			dbg_seen[treeEdge.to]=true;
-			treenodes.push(treeEdge.to);
+			treenodes.push_back(treeEdge.to);
 		}
 	}
-	sort(treenodes);
+	std::sort(treenodes.begin(),treenodes.end());
 	printf("tree level %d: ",level);
 	for(int i:treenodes){
 		printf("%d,",i);
@@ -493,33 +495,33 @@ ThorupDynamicConnectivity():nodes(0),levels(0){
 }
 bool connected(int u, int v){
 #ifndef NDEBUG
-/*	bool c = et.last().connected(u,v);
+/*	bool c = et.back().connected(u,v);
 	bool d= dbg.connected(u,v);
 	if(c!=d){
 	dbg.dbg_print();
 	dbg_print();
 	}*/
 #endif
-	assert(et.last().connected(u,v)==dbg.connected(u,v));
-	return et.last().connected(u,v);
+	assert(et.back().connected(u,v)==dbg.connected(u,v));
+	return et.back().connected(u,v);
 }
 
 int numComponents(){
-	assert(et.last().numComponents()==dbg.numComponents());
-	return et.last().numComponents();
+	assert(et.back().numComponents()==dbg.numComponents());
+	return et.back().numComponents();
 }
 
 int findRoot(int node){
-	return et.last().findRoot(node);
+	return et.back().findRoot(node);
 }
 
 void addNode(){
 	nodes++;
 
-	incident_edges.push();
-	seen.push();
+	incident_edges.push_back({});
+	seen.push_back({});
 	levels = (int)(floor(log(nodes)/log(2))+1);
-	et.growTo(levels);
+	et.resize(levels);
 	for(EulerTree & t:et){
 		while(t.nVertices()<nodes)
 			t.createVertex();
@@ -531,7 +533,7 @@ void addNode(){
 }
 
 void addEdge( int from, int to,int edgeID){
-	edges.growTo(edgeID+1);
+	edges.resize(edgeID+1);
 	if(edges[edgeID].edgeID==-1){
 		edges[edgeID].from=from;
 		edges[edgeID].to=to;
@@ -556,51 +558,51 @@ int nEdges()const{
 }
 
 //If from and to are connected, finds an ARBITRARY connecting path.
-void getPath(int from, int to, vec<int> & nodes_out){
+void getPath(int from, int to, std::vector<int> & nodes_out){
 	nodes_out.clear();
 	if(from==to){
-		nodes_out.push(from);
+		nodes_out.push_back(from);
 		return;
 	}else{
 		if(connected(from,to)){
 			//ok, walk through the tour until a path is found. But we also want to drop from this nodes that are not needed...
 			t_seen.clear();
-			t_seen.growTo(nodes);
+			t_seen.resize(nodes);
 			int curLevel = 1;
 			t_seen[from]=curLevel;
-			nodes_out.push(from);
+			nodes_out.push_back(from);
 
 
-			for(auto it = et.last().begin_half_edge_tour(from,true);it != et.last().end_half_edge_tour();++it){
+			for(auto it = et.back().begin_half_edge_tour(from,true);it != et.back().end_half_edge_tour();++it){
 				int cur_edge = *it;
 				Edge & treeEdge = edges[cur_edge];
 				assert(t_seen[treeEdge.to]==curLevel || t_seen[treeEdge.from]==curLevel);
 				if(t_seen[treeEdge.to] && t_seen[treeEdge.from]){
 					//this is a step back up the tree
-					nodes_out.pop();
+					nodes_out.pop_back();
 					curLevel--;
 					assert(t_seen[treeEdge.to]==curLevel || t_seen[treeEdge.from]==curLevel);
 				}else if(t_seen[treeEdge.to]==curLevel){
 					assert(!t_seen[treeEdge.from]);
 					curLevel++;
 					t_seen[treeEdge.from]=curLevel;
-					nodes_out.push(treeEdge.from);
+					nodes_out.push_back(treeEdge.from);
 				}else if(t_seen[treeEdge.from]==curLevel){
 					assert(!t_seen[treeEdge.to]);
 					curLevel++;
 					t_seen[treeEdge.to]=curLevel;
-					nodes_out.push(treeEdge.to);
+					nodes_out.push_back(treeEdge.to);
 				}
-				if(nodes_out.last()==to){
+				if(nodes_out.back()==to){
 					break;
 				}
 			}
 			t_seen.clear();
-			assert(nodes_out.last()==to);
+			assert(nodes_out.back()==to);
 		}
 	}
 }
-void getPathEdges(int from, int to, vec<int> & edges_out){
+void getPathEdges(int from, int to, std::vector<int> & edges_out){
 	edges_out.clear();
 	if(from==to){
 
@@ -609,30 +611,30 @@ void getPathEdges(int from, int to, vec<int> & edges_out){
 		if(connected(from,to)){
 			//ok, walk through the tour until a path is found. But we also want to drop from this nodes that are not needed...
 			t_seen.clear();
-			t_seen.growTo(nodes);
+			t_seen.resize(nodes);
 			int curLevel = 1;
 			t_seen[from]=curLevel;
 
 
-			for(auto it = et.last().begin_half_edge_tour(from,true);it != et.last().end_half_edge_tour();++it){
+			for(auto it = et.back().begin_half_edge_tour(from,true);it != et.back().end_half_edge_tour();++it){
 				int cur_edge = *it;
 				Edge & treeEdge = edges[cur_edge];
 				assert(t_seen[treeEdge.to]==curLevel || t_seen[treeEdge.from]==curLevel);
 				if(t_seen[treeEdge.to] && t_seen[treeEdge.from]){
 					//this is a step back up the tree
-					edges_out.pop();
+					edges_out.pop_back();
 					curLevel--;
 					assert(t_seen[treeEdge.to]==curLevel || t_seen[treeEdge.from]==curLevel);
 				}else if(t_seen[treeEdge.to]==curLevel){
 					assert(!t_seen[treeEdge.from]);
 					curLevel++;
 					t_seen[treeEdge.from]=curLevel;
-					edges_out.push(treeEdge.edgeID);
+					edges_out.push_back(treeEdge.edgeID);
 				}else if(t_seen[treeEdge.from]==curLevel){
 					assert(!t_seen[treeEdge.to]);
 					curLevel++;
 					t_seen[treeEdge.to]=curLevel;
-					edges_out.push(treeEdge.edgeID);
+					edges_out.push_back(treeEdge.edgeID);
 				}
 				if(treeEdge.from==to || treeEdge.to==to){
 						break;
@@ -643,22 +645,22 @@ void getPathEdges(int from, int to, vec<int> & edges_out){
 		}
 	}
 }
-void getConnectedComponent(int from, vec<int> & nodes_out){
+void getConnectedComponent(int from, std::vector<int> & nodes_out){
 	t_seen.clear();
-	t_seen.growTo(nodes);
+	t_seen.resize(nodes);
 	t_seen[from]=true;
 	nodes_out.clear();
-	nodes_out.push(from);
-	for(auto it = et.last().begin_half_edge_tour(from);it != et.last().end_half_edge_tour();++it){
+	nodes_out.push_back(from);
+	for(auto it = et.back().begin_half_edge_tour(from);it != et.back().end_half_edge_tour();++it){
 		int cur_edge = *it;
 		Edge & treeEdge = edges[cur_edge];
 		if(!t_seen[treeEdge.to]){
 			t_seen[treeEdge.to]=true;
-			nodes_out.push(treeEdge.to);
+			nodes_out.push_back(treeEdge.to);
 		}
 		if(!t_seen[treeEdge.from]){
 			t_seen[treeEdge.from]=true;
-			nodes_out.push(treeEdge.from);
+			nodes_out.push_back(treeEdge.from);
 		}
 	}
 #ifndef NDEBUG
@@ -679,15 +681,15 @@ void getConnectedComponent(int from, vec<int> & nodes_out){
 /**
  * If strict is true, then the edges of the component are oriented so they start at from
  */
-void getConnectedComponentEdges(int from, vec<int>& edges_out, bool strict=false){
+void getConnectedComponentEdges(int from, std::vector<int>& edges_out, bool strict=false){
 	t_seen.clear();
-	t_seen.growTo(edges.size());
-	for(auto it = et.last().begin_half_edge_tour(from,strict);it != et.last().end_half_edge_tour();++it){
+	t_seen.resize(edges.size());
+	for(auto it = et.back().begin_half_edge_tour(from,strict);it != et.back().end_half_edge_tour();++it){
 		int cur_edge = *it;
 		Edge & treeEdge = edges[cur_edge];
 		if(!t_seen[treeEdge.edgeID]){
 			t_seen[treeEdge.edgeID]=true;
-			edges_out.push(treeEdge.edgeID);
+			edges_out.push_back(treeEdge.edgeID);
 		}
 	}
 	t_seen.clear();
@@ -759,7 +761,7 @@ bool setEdgeEnabledUnchecked(int from, int to,int edgeID, bool connected){
 #endif
 	return changed;
 }
-
+};
 };
 
 #endif /* DYNAMICCONNECT_H_ */

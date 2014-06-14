@@ -10,7 +10,7 @@
 #ifndef DISJOINT_SETS_H
 #define DISJOINT_SETS_H
 #include <vector>
-
+namespace dgl{
 class DisjointSets
 {
 public:
@@ -63,9 +63,9 @@ private:
 	int m_numElements; // the number of elements currently in the DisjointSets data structure.
 	int m_numSets; // the number of sets currently in the DisjointSets data structure.
 
-	Minisat::vec<int> elements; // list of arbitrary elements, one from each set
-	Minisat::vec<bool> seen; // list of arbitrary elements, one from each set
-	Minisat::vec<Node> m_nodes; // the list of nodes representing the elements
+	std::vector<int> elements; // list of arbitrary elements, one from each set
+	std::vector<bool> seen; // list of arbitrary elements, one from each set
+	std::vector<Node> m_nodes; // the list of nodes representing the elements
 };
 
 /**
@@ -114,4 +114,5 @@ void Union(struct subset subsets[], int x, int y)
     }
 }
  */
+};
 #endif

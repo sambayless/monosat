@@ -8,16 +8,17 @@
 #include "core/Config.h"
 #include "Reach.h"
 
+namespace dgl{
 /**
  * Detect connectivity within a number of steps in unweighted, directed graphs
  */
-template<class Status=NullReachStatus,class EdgeStatus=DefaultEdgeStatus, bool undirected=false>
+template<class Status=NullReachStatus, bool undirected=false>
 class Distance:public Reach{
 public:
 
 
 
-	DynamicGraph<EdgeStatus> & g;
+	DynamicGraph & g;
 	Status &  status;
 	int last_modification;
 	int last_addition;
@@ -30,16 +31,16 @@ public:
 	int INF;
 	int maxDistance;
 
-	vec<int> q;
-	vec<int> check;
+	std::vector<int> q;
+	std::vector<int> check;
 	const int reportPolarity;
 
-	//vec<char> old_seen;
-	vec<int> dist;
-//	vec<int> changed;
+	//std::vector<char> old_seen;
+	std::vector<int> dist;
+//	std::vector<int> changed;
 
 
-	vec<int> prev;
+	std::vector<int> prev;
 
 	//stats
 
@@ -55,9 +56,9 @@ public:
 	double stats_fast_update_time;
 
 	struct DefaultReachStatus{
-			vec<bool> stat;
+			std::vector<bool> stat;
 				void setReachable(int u, bool reachable){
-					stat.growTo(u+1);
+					stat.resize(u+1);
 					stat[u]=reachable;
 				}
 				bool isReachable(int u) const{
@@ -68,7 +69,7 @@ public:
 
 public:
 
-	Distance(int s,DynamicGraph<EdgeStatus> & graph,  int _reportPolarity=0 ):g(graph), status(nullReachStatus), last_modification(-1),last_addition(-1),last_deletion(-1),history_qhead(0),last_history_clear(0),source(s),INF(0),reportPolarity(_reportPolarity){
+	Distance(int s,DynamicGraph & graph,  int _reportPolarity=0 ):g(graph), status(nullReachStatus), last_modification(-1),last_addition(-1),last_deletion(-1),history_qhead(0),last_history_clear(0),source(s),INF(0),reportPolarity(_reportPolarity){
 		maxDistance=-1;
 		mod_percentage=0.2;
 		stats_full_updates=0;
@@ -81,7 +82,7 @@ public:
 		stats_fast_failed_updates=0;
 	}
 
-	Distance(int s,DynamicGraph<EdgeStatus> & graph, Status & _status, int _reportPolarity=0 ):g(graph), status(_status), last_modification(-1),last_addition(-1),last_deletion(-1),history_qhead(0),last_history_clear(0),source(s),INF(0),reportPolarity(_reportPolarity){
+	Distance(int s,DynamicGraph & graph, Status & _status, int _reportPolarity=0 ):g(graph), status(_status), last_modification(-1),last_addition(-1),last_deletion(-1),history_qhead(0),last_history_clear(0),source(s),INF(0),reportPolarity(_reportPolarity){
 		maxDistance=-1;
 		mod_percentage=0.2;
 		stats_full_updates=0;
@@ -112,9 +113,9 @@ public:
 	}
 
 	void setNodes(int n){
-		q.capacity(n);
-		dist.growTo(n);
-		prev.growTo(n);
+		q.reserve(n);
+		dist.resize(n);
+		prev.resize(n);
 		INF=g.nodes+1;
 		if(maxDistance<0)
 			maxDistance=INF;
@@ -150,7 +151,7 @@ public:
 		}
 		auto & adjacency = undirected? g.adjacency_undirected:g.adjacency;
 		dist[source]=0;
-		q.push_(source);
+		q.push_back(source);
 		for (int i = 0;i<q.size();i++){
 			int u = q[i];
 			assert(dist[u]<INF);
@@ -169,7 +170,7 @@ public:
 				if(dist[v]>alt){
 					dist[v]=alt;
 					prev[v]=edgeID;
-					q.push_(v);
+					q.push_back(v);
 				}
 			}
 		}
@@ -313,5 +314,5 @@ public:
 	}
 
 };
-
+};
 #endif

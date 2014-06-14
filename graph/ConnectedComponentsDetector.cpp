@@ -12,7 +12,7 @@
 #include "dgl/UnweightedDistance.h"
 #include "dgl/Reach.h"
 #include <limits>
-ConnectedComponentsDetector::ConnectedComponentsDetector(int _detectorID, GraphTheorySolver * _outer,  DynamicGraph<PositiveEdgeStatus> &_g,DynamicGraph<NegativeEdgeStatus> &_antig,double seed):
+ConnectedComponentsDetector::ConnectedComponentsDetector(int _detectorID, GraphTheorySolver * _outer,  DynamicGraph &_g,DynamicGraph &_antig,double seed):
 Detector(_detectorID),outer(_outer),g(_g),antig(_antig),rnd_seed(seed),positive_component_detector(NULL),negative_component_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL){
 
 
@@ -20,8 +20,8 @@ Detector(_detectorID),outer(_outer),g(_g),antig(_antig),rnd_seed(seed),positive_
 		positiveReachStatus = new ConnectedComponentsDetector::ConnectedComponentsStatus(*this,true);
 		negativeReachStatus = new ConnectedComponentsDetector::ConnectedComponentsStatus(*this,false);
 		//Note: these are _intentionalyl_ swapped
-		negative_component_detector = new DisjointSetsConnectedComponents<ConnectedComponentsDetector::ConnectedComponentsStatus,PositiveEdgeStatus>(_g,*(negativeReachStatus),1);
-		positive_component_detector = new DisjointSetsConnectedComponents<ConnectedComponentsDetector::ConnectedComponentsStatus,NegativeEdgeStatus>(_antig,*(positiveReachStatus),1);
+		negative_component_detector = new DisjointSetsConnectedComponents<ConnectedComponentsDetector::ConnectedComponentsStatus>(_g,*(negativeReachStatus),1);
+		positive_component_detector = new DisjointSetsConnectedComponents<ConnectedComponentsDetector::ConnectedComponentsStatus>(_antig,*(positiveReachStatus),1);
 
 		components_low_marker=outer->newReasonMarker(getID());
 		components_high_marker=outer->newReasonMarker(getID());
@@ -631,9 +631,9 @@ bool ConnectedComponentsDetector::checkSatisfied(){
 }
 Lit ConnectedComponentsDetector::decide(){
 	/*ConnectedComponentsDetector *r =this;
-	MinimumSpanningTree<ConnectedComponentsDetector::ConnectedComponentsStatus,NegativeEdgeStatus> * over = (MinimumSpanningTree<ConnectedComponentsDetector::ConnectedComponentsStatus,NegativeEdgeStatus>*) r->negative_reach_detector;
+	MinimumSpanningTree<ConnectedComponentsDetector::ConnectedComponentsStatus> * over = (MinimumSpanningTree<ConnectedComponentsDetector::ConnectedComponentsStatus>*) r->negative_reach_detector;
 
-	MinimumSpanningTree<ConnectedComponentsDetector::ConnectedComponentsStatus,PositiveEdgeStatus> * under = (MinimumSpanningTree<ConnectedComponentsDetector::ConnectedComponentsStatus,PositiveEdgeStatus>*) r->positive_reach_detector;
+	MinimumSpanningTree<ConnectedComponentsDetector::ConnectedComponentsStatus> * under = (MinimumSpanningTree<ConnectedComponentsDetector::ConnectedComponentsStatus>*) r->positive_reach_detector;
 
 	//we can probably also do something similar, but with cuts, for nodes that are decided to be unreachable.
 

@@ -13,31 +13,31 @@
 #include "dgl/DijkstraAllPairs.h"
 #include "dgl/ThorupDynamicConnectivity.h"
 
-AllPairsDetector::AllPairsDetector(int _detectorID, GraphTheorySolver * _outer,  DynamicGraph<PositiveEdgeStatus> &_g,DynamicGraph<NegativeEdgeStatus> &_antig, double seed):
+AllPairsDetector::AllPairsDetector(int _detectorID, GraphTheorySolver * _outer,  DynamicGraph &_g,DynamicGraph &_antig, double seed):
 Detector(_detectorID),outer(_outer),g(_g),antig(_antig),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL){
 
 
 		positiveReachStatus = new AllPairsDetector::ReachStatus(*this,true);
 		negativeReachStatus = new AllPairsDetector::ReachStatus(*this,false);
 		if(allpairsalg==AllPairsAlg::ALG_FLOYDWARSHALL){
-			positive_reach_detector = new FloydWarshall<AllPairsDetector::ReachStatus,PositiveEdgeStatus>(_g,*(positiveReachStatus),1);
-			negative_reach_detector = new FloydWarshall<AllPairsDetector::ReachStatus,NegativeEdgeStatus>(_antig,*(negativeReachStatus),-1);
+			positive_reach_detector = new FloydWarshall<AllPairsDetector::ReachStatus>(_g,*(positiveReachStatus),1);
+			negative_reach_detector = new FloydWarshall<AllPairsDetector::ReachStatus>(_antig,*(negativeReachStatus),-1);
 			positive_path_detector = positive_reach_detector;
 		}/*else if (allpairsalg==ALG_THORUP_ALLPAIRS){
-			positive_reach_detector = new DynamicConnectivity<AllPairsDetector::ReachStatus,PositiveEdgeStatus>(_g,*(positiveReachStatus),1);
-			negative_reach_detector = new DynamicConnectivity<AllPairsDetector::ReachStatus,NegativeEdgeStatus>(_antig,*(negativeReachStatus),-1);
+			positive_reach_detector = new DynamicConnectivity<AllPairsDetector::ReachStatus>(_g,*(positiveReachStatus),1);
+			negative_reach_detector = new DynamicConnectivity<AllPairsDetector::ReachStatus>(_antig,*(negativeReachStatus),-1);
 			positive_path_detector = positive_reach_detector;
 		}*/else{
-			positive_reach_detector = new DijkstraAllPairs<AllPairsDetector::ReachStatus,PositiveEdgeStatus>(_g,*(positiveReachStatus),1);
-			negative_reach_detector = new DijkstraAllPairs<AllPairsDetector::ReachStatus,NegativeEdgeStatus>(_antig,*(negativeReachStatus),-1);
+			positive_reach_detector = new DijkstraAllPairs<AllPairsDetector::ReachStatus>(_g,*(positiveReachStatus),1);
+			negative_reach_detector = new DijkstraAllPairs<AllPairsDetector::ReachStatus>(_antig,*(negativeReachStatus),-1);
 			positive_path_detector = positive_reach_detector;
 		}
 		/*	if(opt_conflict_shortest_path)
 			reach_detectors.last()->positive_dist_detector = new Dijkstra<PositiveEdgeStatus>(from,g);*/
 #ifdef DEBUG_ALLPAIRS
 		{
-			dbg_positive_reach_detector = new DijkstraAllPairs<AllPairsDetector::IgnoreStatus,PositiveEdgeStatus>(_g,ignoreStatus,1);
-			dbg_negative_reach_detector = new DijkstraAllPairs<AllPairsDetector::IgnoreStatus,NegativeEdgeStatus>(_antig,ignoreStatus,-1);
+			dbg_positive_reach_detector = new DijkstraAllPairs<AllPairsDetector::IgnoreStatus>(_g,ignoreStatus,1);
+			dbg_negative_reach_detector = new DijkstraAllPairs<AllPairsDetector::IgnoreStatus>(_antig,ignoreStatus,-1);
 		}
 #endif
 	first_reach_var = var_Undef;
@@ -585,9 +585,9 @@ bool AllPairsDetector::checkSatisfied(){
 }
 Lit AllPairsDetector::decide(){
 
-	//AllPairs * over = (FloydWarshall<AllPairsDetector::ReachStatus,NegativeEdgeStatus>*) negative_reach_detector;
+	//AllPairs * over = (FloydWarshall<AllPairsDetector::ReachStatus>*) negative_reach_detector;
 
-	//FloydWarshall<AllPairsDetector::ReachStatus,PositiveEdgeStatus> * under = (FloydWarshall<AllPairsDetector::ReachStatus,PositiveEdgeStatus>*)positive_reach_detector;
+	//FloydWarshall<AllPairsDetector::ReachStatus> * under = (FloydWarshall<AllPairsDetector::ReachStatus>*)positive_reach_detector;
 
 	//we can probably also do something similar, but with cuts, for nodes that are decided to be unreachable.
 
@@ -638,34 +638,28 @@ Lit AllPairsDetector::decide(){
 
 							 p = j;
 							 last = j;
-							 if(tmp_path<=0){
-									exit(5);
-								}
+
 							 assert(tmp_path.size());
 							 int d = 0;
 								while(positive_reach_detector->distance(s,p)>(min_dist-d)){
-#ifdef DEBUG_ALLPAIRS
-									if(tmp_path<=0){
-										exit(5);
-									}
-#endif
-								    tmp_path.pop();
+
+								    tmp_path.pop_back();
 								    if(tmp_path.size()==0)
 								    	break;
 									last=p;
 									assert(p!=s);
 									assert(tmp_path.size());
-									int prev = tmp_path.last(); //negative_reach_detector->previous(s,p);
+									int prev = tmp_path.back(); //negative_reach_detector->previous(s,p);
 									d+=1;//for weighted graphs, this needs to be the weight of the edge.
 									p = prev;
 #ifdef DEBUG_ALLPAIRS
 					if(!negative_reach_detector->connected(s,p)){
 						assert(false);
-						exit(4);
+
 					}
 					if(!(negative_reach_detector->distance(s,p)<=min_dist-d)){
 						assert(false);
-						exit(4);
+
 					}
 #endif
 								}

@@ -10,6 +10,7 @@
 
 #include <vector>
 #include <cstdio>
+namespace dgl{
 class ConnectedComponents{
 public:
 
@@ -46,5 +47,5 @@ public:
 	virtual int getComponent(int node)=0;
 	virtual bool connected(int from, int to)=0;
 };
-
+};
 #endif /* MINIMUMSPANNINGTREE_H_ */

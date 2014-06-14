@@ -3,17 +3,17 @@
 #define DIJKSTRA_ALLPAIRS_H_
 
 #include <vector>
-#include "mtl/Heap.h"
+#include "alg/Heap.h"
 #include "DynamicGraph.h"
 #include "core/Config.h"
 #include "AllPairs.h"
 
-
-template<class Status,class EdgeStatus=DefaultEdgeStatus>
+namespace dgl{
+template<class Status>
 class DijkstraAllPairs:public AllPairs{
 public:
 
-	DynamicGraph<EdgeStatus> & g;
+	DynamicGraph & g;
 	Status & status;
 	int last_modification;
 	int last_addition;
@@ -23,21 +23,21 @@ public:
 	int last_history_clear;
 
 
-	vec<int> sources;
+	std::vector<int> sources;
 	int INF;
 
 
 
-	vec<int> check;
+	std::vector<int> check;
 	const int reportPolarity;
 
-	vec<vec<int> > dist;
-	vec<vec<int> >  prev;
+	std::vector<std::vector<int> > dist;
+	std::vector<std::vector<int> >  prev;
 
 	struct DefaultReachStatus{
-			vec<bool> stat;
+			std::vector<bool> stat;
 				void setReachable(int u, bool reachable){
-					stat.growTo(u+1);
+					stat.resize(u+1);
 					stat[u]=reachable;
 				}
 				bool isReachable(int u) const{
@@ -45,13 +45,13 @@ public:
 				}
 				DefaultReachStatus(){}
 			};
-	vec<int> * dist_ptr;
+	std::vector<int> * dist_ptr;
 	struct DistCmp{
-		vec<int> ** _dist;
+		std::vector<int> ** _dist;
 		 bool operator()(int a, int b)const{
 			return (**_dist)[a]<(**_dist)[b];
 		}
-		 DistCmp(vec<int> **d):_dist(d){};
+		 DistCmp(std::vector<int> **d):_dist(d){};
 	};
 
 	Heap<DistCmp> q;
@@ -68,7 +68,7 @@ public:
 	double stats_full_update_time;
 	double stats_fast_update_time;
 
-	DijkstraAllPairs(DynamicGraph<EdgeStatus> & graph,Status & _status,  int _reportPolarity=0 ):g(graph),status(_status), last_modification(-1),last_addition(-1),last_deletion(-1),history_qhead(0),last_history_clear(0),INF(0),reportPolarity(0),q(DistCmp(&dist_ptr)){
+	DijkstraAllPairs(DynamicGraph & graph,Status & _status,  int _reportPolarity=0 ):g(graph),status(_status), last_modification(-1),last_addition(-1),last_deletion(-1),history_qhead(0),last_history_clear(0),INF(0),reportPolarity(0),q(DistCmp(&dist_ptr)){
 
 		mod_percentage=0.2;
 		stats_full_updates=0;
@@ -83,8 +83,8 @@ public:
 
 
 	void addSource(int s){
-		assert(!sources.contains(s));
-		sources.push(s);
+		assert(!std::count( sources.begin(),sources.end(), s));
+		sources.push_back(s);
 
 		last_modification=-1;
 		last_addition=-1;
@@ -95,18 +95,18 @@ public:
 
 	void setNodes(int n){
 
-		check.capacity(n);
+		check.reserve(n);
 
 		INF=g.nodes+1;
 		if(dist.size()<n){
-			dist.growTo(n);
+			dist.resize(n);
 
 			for(int i =0;i<dist.size();i++)
-				dist[i].growTo(n);
+				dist[i].resize(n);
 
-			prev.growTo(n);
+			prev.resize(n);
 			for(int i =0;i<dist.size();i++)
-				prev[i].growTo(n);
+				prev[i].resize(n);
 		}
 	}
 
@@ -129,8 +129,8 @@ public:
 
 
 		setNodes(g.nodes);
-
 		q.clear();
+		//q.clear();
 		for(int i = 0;i<g.nodes;i++){
 			for(int j = 0;j<g.nodes;j++){
 				prev[i][j]=-1;
@@ -193,21 +193,21 @@ public:
 		stats_full_update_time+=rtime(2)-startdupdatetime;;
 	}
 
-	void getPath(int from, int to, vec<int> & path){
+	void getPath(int from, int to, std::vector<int> & path){
 		update();
 		assert(dist[from][to]<INF);
 		int d = dist[from][to];
 	/*	int intermediate = prev[from][to];
 		if(intermediate>-1){
 		getPath(from, intermediate, path);
-		path.push(intermediate);
+		path.push_back(intermediate);
 		getPath(intermediate,to,path);
 		}*/
 		path.clear();
-		path.push(to);
+		path.push_back(to);
 		while(prev[from][to]!=-1){
 			int p = prev[from][to];
-			path.push(p);
+			path.push_back(p);
 			to=p;
 		}
 
@@ -295,5 +295,5 @@ public:
 	}*/
 
 };
-
+};
 #endif

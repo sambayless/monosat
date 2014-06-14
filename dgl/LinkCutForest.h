@@ -12,13 +12,11 @@
 #include <limits>
 
 
-
-
-template<class EdgeStatus=DefaultEdgeStatus>
+namespace dgl{
 class LinkCutForest:public ConnectedComponents{
 public:
 
-	DynamicGraph<EdgeStatus> & g;
+	DynamicGraph & g;
 
 	int last_modification;
 
@@ -35,8 +33,8 @@ public:
 #ifndef NDEBUG
 	DisjointSets dbg_sets;
 #endif
-	vec<int> q;
-	vec<int> check;
+	std::vector<int> q;
+	std::vector<int> check;
 	const int reportPolarity;
 
 public:
@@ -52,7 +50,7 @@ public:
 	double stats_fast_update_time;
 	double mod_percentage;
 
-	LinkCutForest(DynamicGraph<EdgeStatus> & graph, int _reportPolarity=0 ):g(graph), last_modification(-1),last_addition(-1),last_deletion(-1),history_qhead(0),last_history_clear(0),INF(0),reportPolarity(_reportPolarity){
+	LinkCutForest(DynamicGraph & graph, int _reportPolarity=0 ):g(graph), last_modification(-1),last_addition(-1),last_deletion(-1),history_qhead(0),last_history_clear(0),INF(0),reportPolarity(_reportPolarity){
 
 		mod_percentage=0.2;
 		stats_full_updates=0;
@@ -68,8 +66,8 @@ public:
 	}
 
 	void setNodes(int n){
-		q.capacity(n);
-		check.capacity(n);
+		q.reserve(n);
+		check.reserve(n);
 
 		INF=std::numeric_limits<int>::max();
 		//sets.AddElements(n);
@@ -182,6 +180,6 @@ public:
 
 
 };
-
+};
 
 #endif /* DISJOINTSETCONNECTEDCOMPONENTS_H_ */

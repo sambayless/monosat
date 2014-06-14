@@ -6,17 +6,14 @@
 
 
 #include "TreapCustom.h"
-#include "mtl/Vec.h"
+#include <vector>
 #include <cstdio>
 #include <algorithm>
 #include "AugmentedSplayTree.h"
 #include "SearchTree.h"
-//#include "BTree.h"
-//#define dbg_print
-using namespace Minisat;
+
 
 class EulerTree{
-
 
 private:
 	struct EulerHalfEdge;
@@ -27,9 +24,9 @@ private:
 
 	Tree t;
 	//static EulerVertex * root;
-	vec<EulerVertex*> vertices;
-	vec<EulerHalfEdge*> forward_edges;
-	vec<EulerHalfEdge*> backward_edges;
+	std::vector<EulerVertex*> vertices;
+	std::vector<EulerHalfEdge*> forward_edges;
+	std::vector<EulerHalfEdge*> backward_edges;
 
 	struct EulerHalfEdge{
 		//Value value;
@@ -70,9 +67,9 @@ private:
 		EulerTree * owner;
 		//Note: in an euler-tour tree representation, these values are not explicitly maintained
 		EulerVertex * dbg_parent;
-		vec<EulerVertex*>dbg_children;
+		std::vector<EulerVertex*>dbg_children;
 		bool dbg_visited;
-		vec<EulerVertex*> dbg_children_t;
+		std::vector<EulerVertex*> dbg_children_t;
 #endif
 		EulerVertex():left_out(nullptr),right_in(nullptr),visited(false){
 
@@ -155,12 +152,12 @@ private:
 		}*/
 
 		//
-		void dbg_real_tour(vec<int> & tour_list){
+		void dbg_real_tour(std::vector<int> & tour_list){
 #ifndef NDEBUG
 			tour_list.clear();
 
 			if(isSingleton() ){
-				tour_list.push(index);
+				tour_list.push_back(index);
 				return;
 			}
 
@@ -170,7 +167,7 @@ private:
 #ifdef dbg_print
 				printf("(%d -> %d)",n->value->from->index,n->value->to->index);
 #endif
-				tour_list.push(n->value->from->index);
+				tour_list.push_back(n->value->from->index);
 				assert( n->next());
 
 				//printf("(%d,%d)\n",n->value->from->index,n->value->to->index);
@@ -181,8 +178,8 @@ private:
 #ifdef dbg_print
 			printf("(%d -> %d)\n",n->value->from->index,n->value->to->index);
 #endif
-			tour_list.push(n->value->from->index);
-			tour_list.push(n->value->to->index);
+			tour_list.push_back(n->value->from->index);
+			tour_list.push_back(n->value->to->index);
 #endif
 		}
 
@@ -201,12 +198,13 @@ private:
 		void dbg_make_parent(EulerVertex * new_parent){
 		#ifndef NDEBUG
 					if(new_parent){
-						assert(dbg_children.contains(new_parent));
-						dbg_children.remove(new_parent);
+						assert(std::count(dbg_children.begin(),dbg_children.end(),new_parent));
+
+						remove(dbg_children.begin(),dbg_children.end(),new_parent);
 						EulerVertex * p = dbg_parent;
 						dbg_parent=new_parent;
 						if(p){
-							dbg_children.push(p);
+							dbg_children.push_back(p);
 
 							p->dbg_make_parent(this);
 
@@ -218,7 +216,7 @@ private:
 		void dbg_make_root(){
 #ifndef NDEBUG
 			if(dbg_parent){
-				dbg_children.push(dbg_parent);
+				dbg_children.push_back(dbg_parent);
 				dbg_parent->dbg_make_parent(this);
 
 				dbg_parent=nullptr;
@@ -231,7 +229,8 @@ private:
 
 
 				if(dbg_parent){
-					dbg_parent->dbg_children.remove(this);
+					std::remove(dbg_parent->dbg_children.begin(),dbg_parent->dbg_children.end(),this )
+					//dbg_parent->dbg_children.remove(this);
 					dbg_parent=nullptr;
 				}else{
 					//do nothing
@@ -278,22 +277,22 @@ private:
 		void dbg_insert(EulerVertex* node) {
 #ifndef NDEBUG
 			assert(!node->dbg_parent);
-			dbg_children.push(node);
+			dbg_children.push_back(node);
 			node->dbg_parent=this;
 
 #endif
 		  }
-		void dbg_build_tour_helper(EulerVertex * r, vec<int> & tour){
+		void dbg_build_tour_helper(EulerVertex * r, std::vector<int> & tour){
 #ifndef NDEBUG
-			tour.push(r->index);
+			tour.push_back(r->index);
 					for(EulerVertex * c:r->dbg_children){
 						dbg_build_tour_helper(c,tour);
-						tour.push(r->index);
+						tour.push_back(r->index);
 
 					}
 #endif
 		}
-		void dbg_build_tour(EulerVertex * r, vec<int> & tour){
+		void dbg_build_tour(EulerVertex * r, std::vector<int> & tour){
 #ifndef NDEBUG
 			while(r->dbg_parent)
 				r=r->dbg_parent;
@@ -308,7 +307,8 @@ private:
 			assert(dbg_visited);
 			dbg_visited=false;
 			assert(dbg_children.size()==dbg_children_t.size());
-			dbg_children_t.copyTo(dbg_children);
+			dbg_children.clear();
+			dbg_children = dbg_children_t;
 			dbg_children_t.clear();
 			for(EulerVertex * v:dbg_children)
 				v->dbg_clear();
@@ -329,12 +329,12 @@ private:
 				dbgFrom=dbgFrom->dbg_parent;
 
 			assert(from->contains(dbgFrom));
-			vec<EulerVertex*> dbg_stack;
+			std::vector<EulerVertex*> dbg_stack;
 			dbgFrom->dbg_visited=true;
-			dbg_stack.push(dbgFrom);
+			dbg_stack.push_back(dbgFrom);
 			while(from && dbg_stack.size()){
 
-				EulerVertex* p = dbg_stack.last();
+				EulerVertex* p = dbg_stack.back();
 				bool found =false;
 				assert(p->incidentEdgeA());
 				assert(p->incidentEdgeB());
@@ -342,14 +342,14 @@ private:
 					if(!t->dbg_visited && from->contains(t)){
 						t->dbg_visited=true;
 						found=true;
-						dbg_stack.push(t);
-						p->dbg_children_t.push(t);
+						dbg_stack.push_back(t);
+						p->dbg_children_t.push_back(t);
 						from=from->node->next()->value;
 						break;
 					}
 				}
 				if(!found){
-					dbg_stack.pop();
+					dbg_stack.pop_back();
 					if(dbg_stack.size())
 						assert(from->contains(p->dbg_parent));
 					else{
@@ -368,9 +368,9 @@ private:
 
 
 				//build the tour
-				vec<int> dbg_tour;
+				std::vector<int> dbg_tour;
 				dbg_build_tour(this,dbg_tour);
-				vec<int> real_tour;
+				std::vector<int> real_tour;
 				dbg_real_tour(real_tour);
 				assert(dbg_tour.size()==real_tour.size());
 				/*for(int i = 0;i<real_tour.size();i++){
@@ -519,8 +519,8 @@ public:
 
 
 		  //Create half edges and link them to each other
-		  forward_edges.growTo(edgeID+1);
-		  backward_edges.growTo(edgeID+1);
+		  forward_edges.resize(edgeID+1);
+		  backward_edges.resize(edgeID+1);
 
 		  if(forward_edges[edgeID]==NULL){
 			  forward_edges[edgeID] = new EulerHalfEdge();
@@ -807,7 +807,7 @@ public:
 	}
 
 
-	void dbg_real_tour(EulerVertex* v, vec<int> & tour_out){
+	void dbg_real_tour(EulerVertex* v, std::vector<int> & tour_out){
 		v->dbg_real_tour(tour_out);
 	}
 
@@ -815,7 +815,7 @@ public:
 	void dbg_printTour(EulerVertex * v){
 		dbg_printDbgTour(v);
 
-		vec<int> tour_list;
+		std::vector<int> tour_list;
 		v->dbg_real_tour(tour_list);
 #ifdef dbg_print
 		printf("tour:");
@@ -835,7 +835,7 @@ public:
 	}
 
 	void dbg_printDbgTour(EulerVertex * v){
-		vec<int> tour_list;
+		std::vector<int> tour_list;
 		v->dbg_build_tour(v,tour_list);
 #ifdef dbg_print
 		printf("dbgtour:");
@@ -922,7 +922,7 @@ public:
 
 		bool backward;
 
-		//static vec<Tree::Node *>  iterator_stack;
+		//static std::vector<Tree::Node *>  iterator_stack;
 		iterator(EulerVertex * singleton):n(nullptr), start(singleton),backward(false){
 
 		}
@@ -1182,12 +1182,12 @@ public:
 	}
 	void createVertex() {
 	  nComponents++;
-	  vertices.push(new EulerVertex());
+	  vertices.push_back(new EulerVertex());
 #ifndef NDEBUG
-	  vertices.last()->owner = this;
+	  vertices.back()->owner = this;
 #endif
-	  vertices.last()->index = vertices.size()-1;
-	  //return vertices.last();
+	  vertices.back()->index = vertices.size()-1;
+	  //return vertices.back();
 	}
 	EulerTree(){
 		nComponents=0;

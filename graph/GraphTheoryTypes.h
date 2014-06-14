@@ -10,6 +10,7 @@
 
 #include "core/SolverTypes.h"
 #include "mtl/Rnd.h"
+
 namespace Minisat{
 
 struct ReachabilityConstraint{

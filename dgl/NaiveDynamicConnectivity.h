@@ -13,7 +13,7 @@
 #include "mtl/Sort.h"
 #include <cmath>
 
-
+namespace dgl{
 class NaiveDynamicConnectivity:public DynamicConnectivityImpl{
 
 
@@ -25,7 +25,7 @@ struct Edge{
 	bool enabled;
 };
 DisjointSets sets;
-vec<Edge> edges;
+std::vector<Edge> edges;
 int nodes;
 
 private:
@@ -81,18 +81,18 @@ int numComponents(){
 
 void dbg_print(){
 #ifndef NDEBUG
-	vec<bool> seen;
-	seen.growTo(nodes);
+	std::vector<bool> seen;
+	seen.resize(nodes);
 	for(int n = 0;n<nodes;n++){
 		if(!seen[n]){
 			seen[n]=true;
 
-			vec<int> node_set;
-			node_set.push(n);
+			std::vector<int> node_set;
+			node_set.push_back(n);
 			for(int j = 0;j<nodes;j++){
 				if(j!=n){
 					if(sets.FindSet(j)==sets.FindSet(n)){
-						node_set.push(j);
+						node_set.push_back(j);
 					}
 				}
 			}
@@ -115,12 +115,12 @@ void dbg_print(){
 
 void addNode(){
 	nodes++;
-	edges.push();
+	edges.push_back();
 	sets.AddElements(1);
 }
 
 void addEdge(int from, int to,int edgeID){
-	edges.growTo(edgeID+1);
+	edges.resize(edgeID+1);
 	edges[edgeID].from=from;
 	edges[edgeID].to=to;
 	edges[edgeID].enabled=false;
@@ -144,5 +144,5 @@ bool setEdgeEnabled(int from,int to,int edgeid, bool enabled){
 }
 
 };
-
+};
 #endif /* DYNAMICCONNECT_H_ */

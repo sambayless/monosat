@@ -10,7 +10,7 @@
 
 #include <vector>
 
-
+namespace dgl{
 class MinimumSpanningTree{
 public:
 
@@ -41,7 +41,7 @@ public:
 	virtual int weight()=0;
 	//Sum of the weight of the mst of each tree in the forest
 	virtual int forestWeight()=0;
-	virtual Minisat::vec<int> & getSpanningTree()=0;
+	virtual std::vector<int> & getSpanningTree()=0;
 	virtual int getParent(int node)=0;
 	virtual int getParentEdge(int node)=0;
 	virtual bool edgeInTree(int edgeid)=0;
@@ -49,5 +49,5 @@ public:
 	virtual int getComponent(int node)=0;
 	virtual int getRoot(int component=0)=0;
 };
-
+};
 #endif /* MINIMUMSPANNINGTREE_H_ */

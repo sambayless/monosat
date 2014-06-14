@@ -23,9 +23,9 @@ class GraphTheorySolver;
 class MaxflowDetector:public Detector{
 public:
 		GraphTheorySolver * outer;
-		DynamicGraph<PositiveEdgeStatus> & over_graph;
-		 DynamicGraph<PositiveEdgeStatus> &g;
-			 DynamicGraph<NegativeEdgeStatus> &antig;
+		DynamicGraph & over_graph;
+		 DynamicGraph &g;
+			 DynamicGraph &antig;
 		//int within;
 		int source;
 		int target;
@@ -71,7 +71,7 @@ public:
 		bool checkSatisfied();
 		Lit decide();
 		void addFlowLit(int max_flow,Var reach_var);
-		MaxflowDetector(int _detectorID, GraphTheorySolver * _outer, DynamicGraph<PositiveEdgeStatus> &_g, DynamicGraph<NegativeEdgeStatus> &_antig, int _source, int _target,double seed=1);//:Detector(_detectorID),outer(_outer),within(-1),source(_source),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL){}
+		MaxflowDetector(int _detectorID, GraphTheorySolver * _outer, DynamicGraph &_g, DynamicGraph &_antig, int _source, int _target,double seed=1);//:Detector(_detectorID),outer(_outer),within(-1),source(_source),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL){}
 		virtual ~MaxflowDetector(){
 
 		}

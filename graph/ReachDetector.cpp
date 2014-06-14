@@ -13,7 +13,7 @@
 #include "core/Config.h"
 #include "dgl/DynamicConnectivity.h"
 #include "dgl/TarjansSCC.h"
-ReachDetector::ReachDetector(int _detectorID, GraphTheorySolver * _outer, DynamicGraph<PositiveEdgeStatus> &_g, DynamicGraph<NegativeEdgeStatus> &_antig, int from,double seed):Detector(_detectorID),outer(_outer),g(_g),antig(_antig),within(-1),source(from),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL),opt_weight(*this),chokepoint_status(*this),chokepoint(chokepoint_status, _antig,source){
+ReachDetector::ReachDetector(int _detectorID, GraphTheorySolver * _outer, DynamicGraph &_g, DynamicGraph &_antig, int from,double seed):Detector(_detectorID),outer(_outer),g(_g),antig(_antig),within(-1),source(from),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL),opt_weight(*this),chokepoint_status(*this),chokepoint(chokepoint_status, _antig,source){
 
 	constraintsBuilt=-1;
 	rnd_path=nullptr;
@@ -37,7 +37,7 @@ ReachDetector::ReachDetector(int _detectorID, GraphTheorySolver * _outer, Dynami
 	}
 
 	if(opt_decide_graph_chokepoints){
-		 chokepoint_detector = new DFSReachability<NullReachStatus,NegativeEdgeStatus>(from,_antig,nullReachStatus,1);
+		 chokepoint_detector = new DFSReachability<NullReachStatus>(from,_antig,nullReachStatus,1);
 
 	}
 	if(opt_shrink_theory_conflicts){
@@ -46,7 +46,7 @@ ReachDetector::ReachDetector(int _detectorID, GraphTheorySolver * _outer, Dynami
 
 	 if(opt_use_random_path_for_decisions){
 		 rnd_weight.clear();
-		 rnd_path = new WeightedDijkstra<NegativeEdgeStatus, vec<double> >(from,_antig,rnd_weight);
+		 rnd_path = new WeightedDijkstra< vec<double> >(from,_antig,rnd_weight);
 		 for(int i=0;i<outer->edge_list.size();i++){
 			 double w = drand(rnd_seed);
 
@@ -56,7 +56,7 @@ ReachDetector::ReachDetector(int _detectorID, GraphTheorySolver * _outer, Dynami
 	 }
 
 	 if(opt_use_optimal_path_for_decisions){
-		 opt_path = new WeightedDijkstra<NegativeEdgeStatus, OptimalWeightEdgeStatus >(from,_antig,opt_weight);
+		 opt_path = new WeightedDijkstra< OptimalWeightEdgeStatus >(from,_antig,opt_weight);
 	 }
 	 positiveReachStatus = new ReachDetector::ReachStatus(*this,true);
 	 negativeReachStatus = new ReachDetector::ReachStatus(*this,false);
@@ -64,59 +64,59 @@ ReachDetector::ReachDetector(int _detectorID, GraphTheorySolver * _outer, Dynami
 		if(!opt_encode_reach_underapprox_as_sat)
 		{
 
-			positive_reach_detector = new BFSReachability<ReachDetector::ReachStatus,PositiveEdgeStatus>(from,_g,*(positiveReachStatus),1);
+			positive_reach_detector = new BFSReachability<ReachDetector::ReachStatus>(from,_g,*(positiveReachStatus),1);
 		}
 
 
-		negative_reach_detector = new BFSReachability<ReachDetector::ReachStatus,NegativeEdgeStatus>(from,_antig,*(negativeReachStatus),-1);
+		negative_reach_detector = new BFSReachability<ReachDetector::ReachStatus>(from,_antig,*(negativeReachStatus),-1);
 /*		if(opt_conflict_shortest_path)
-			positive_path_detector = new Distance<NullEdgeStatus,PositiveEdgeStatus>(from,_g,nullEdgeStatus,1);
+			positive_path_detector = new Distance<NullEdgeStatus>(from,_g,nullEdgeStatus,1);
 		else*/
 		positive_path_detector =positive_reach_detector;
 	}else if(reachalg==ReachAlg::ALG_DFS){
 		if(!opt_encode_reach_underapprox_as_sat)
 		{
 
-			positive_reach_detector = new DFSReachability<ReachDetector::ReachStatus,PositiveEdgeStatus>(from,_g,*(positiveReachStatus),1);
+			positive_reach_detector = new DFSReachability<ReachDetector::ReachStatus>(from,_g,*(positiveReachStatus),1);
 		}
 
-		negative_reach_detector = new DFSReachability<ReachDetector::ReachStatus,NegativeEdgeStatus>(from,_antig,*(negativeReachStatus),-1);
+		negative_reach_detector = new DFSReachability<ReachDetector::ReachStatus>(from,_antig,*(negativeReachStatus),-1);
 		if(opt_conflict_shortest_path)
-			positive_path_detector = new Distance<NullReachStatus,PositiveEdgeStatus>(from,_g,nullReachStatus,1);
+			positive_path_detector = new Distance<NullReachStatus>(from,_g,nullReachStatus,1);
 		else
 			positive_path_detector =positive_reach_detector;
 	}else if(reachalg==ReachAlg::ALG_DISTANCE){
 		if(!opt_encode_reach_underapprox_as_sat)
 		{
-			positive_reach_detector = new Distance<ReachDetector::ReachStatus,PositiveEdgeStatus>(from,_g,*(positiveReachStatus),1);
+			positive_reach_detector = new Distance<ReachDetector::ReachStatus>(from,_g,*(positiveReachStatus),1);
 		}
 
-		negative_reach_detector = new Distance<ReachDetector::ReachStatus,NegativeEdgeStatus>(from,_antig,*(negativeReachStatus),-1);
+		negative_reach_detector = new Distance<ReachDetector::ReachStatus>(from,_antig,*(negativeReachStatus),-1);
 		positive_path_detector = positive_reach_detector;
 	}else if(reachalg==ReachAlg::ALG_RAMAL_REPS){
 		if(!opt_encode_reach_underapprox_as_sat)
 		{
-			positive_reach_detector = new UnweightedRamalReps<ReachDetector::ReachStatus,PositiveEdgeStatus>(from,_g,*(positiveReachStatus),1,false);
+			positive_reach_detector = new UnweightedRamalReps<ReachDetector::ReachStatus>(from,_g,*(positiveReachStatus),1,false);
 		}
 
-		negative_reach_detector = new UnweightedRamalReps<ReachDetector::ReachStatus,NegativeEdgeStatus>(from,_antig,*(negativeReachStatus),-1,false);
-		positive_path_detector = new Distance<NullReachStatus,PositiveEdgeStatus>(from,_g,nullReachStatus,1);
+		negative_reach_detector = new UnweightedRamalReps<ReachDetector::ReachStatus>(from,_antig,*(negativeReachStatus),-1,false);
+		positive_path_detector = new Distance<NullReachStatus>(from,_g,nullReachStatus,1);
 	}/*else if (reachalg==ReachAlg::ALG_THORUP){
 
 
-		positive_reach_detector = new DynamicConnectivity<ReachDetector::ReachStatus,PositiveEdgeStatus>(_g,*(positiveReachStatus),1);
-		negative_reach_detector = new DynamicConnectivity<ReachDetector::ReachStatus,NegativeEdgeStatus>(_antig,*(negativeReachStatus),-1);
+		positive_reach_detector = new DynamicConnectivity<ReachDetector::ReachStatus>(_g,*(positiveReachStatus),1);
+		negative_reach_detector = new DynamicConnectivity<ReachDetector::ReachStatus>(_antig,*(negativeReachStatus),-1);
 		positive_path_detector = positive_reach_detector;
 		if(opt_conflict_shortest_path)
-			positive_path_detector = new Distance<NullEdgeStatus,PositiveEdgeStatus>(from,_g,nullEdgeStatus,1);
+			positive_path_detector = new Distance<NullEdgeStatus>(from,_g,nullEdgeStatus,1);
 		else
 			positive_path_detector =positive_reach_detector;
 	}*/else{
 		if(!opt_encode_reach_underapprox_as_sat)
 		{
-			positive_reach_detector = new Dijkstra<ReachDetector::ReachStatus,PositiveEdgeStatus>(from,_g,*positiveReachStatus,1);
+			positive_reach_detector = new Dijkstra<ReachDetector::ReachStatus>(from,_g,*positiveReachStatus,1);
 		}
-		negative_reach_detector = new Dijkstra<ReachDetector::ReachStatus,NegativeEdgeStatus>(from,_antig,*negativeReachStatus,-1);
+		negative_reach_detector = new Dijkstra<ReachDetector::ReachStatus>(from,_antig,*negativeReachStatus,-1);
 		positive_path_detector = positive_reach_detector;
 		//reach_detectors.last()->positive_dist_detector = new Dijkstra(from,g);
 	}

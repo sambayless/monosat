@@ -27,6 +27,8 @@
 #include "utils/System.h"
 #include "core/Solver.h"
 
+using namespace dgl;
+
 #ifdef DEBUG_GRAPH
 #include "TestGraph.h"
 #endif
@@ -38,7 +40,7 @@
 #include "MaxflowDetector.h"
 #include "ConnectedComponentsDetector.h"
 #include "CycleDetector.h"
-#include "TreeReachDetector.h"
+
 namespace Minisat{
 
 class GraphTheorySolver;
@@ -78,13 +80,9 @@ public:
 	vec<ConnectivityConstraint> unimplemented_connectivity_constraints;
 
 
-	PositiveEdgeStatus g_status;
-	NegativeEdgeStatus antig_status;
-	CutEdgeStatus cutGraph_status;
-
-	DynamicGraph<PositiveEdgeStatus> g;
-	DynamicGraph<NegativeEdgeStatus> antig;
-	DynamicGraph<CutEdgeStatus> cutGraph;
+	DynamicGraph g;
+	DynamicGraph antig;
+	DynamicGraph cutGraph;
 
 	//Var min_edge_var;
 	//int num_edges;
@@ -117,7 +115,7 @@ public:
 	vec<int> marker_map;
 
 
-	vec<MaxFlow::Edge> cut;
+	std::vector<MaxFlow::Edge> cut;
 
 	//Full matrix
 	vec<vec<Edge> > edges;
@@ -205,7 +203,7 @@ public:
 
 	}propCutStatus;
 
-	GraphTheorySolver(Solver * S_, int _id=-1):S(S_),id(_id),g(g_status),antig(antig_status) ,cutGraph(cutGraph_status),cutStatus(*this),propCutStatus(*this){
+	GraphTheorySolver(Solver * S_, int _id=-1):S(S_),id(_id),cutStatus(*this),propCutStatus(*this){
 		mstDetector = NULL;
 		//True = mkLit(S->newVar(),false);
 			//False=~True;
@@ -250,14 +248,14 @@ public:
 			 rnd_seed=opt_random_seed;
 
 			if(mincutalg==MinCutAlg::ALG_IBFS){
-				mc = new IBFS<CutEdgeStatus>(cutGraph);
+				mc = new IBFS(cutGraph);
 
 			}else if (mincutalg == MinCutAlg::ALG_EDKARP_ADJ){
 
-				mc = new EdmondsKarpAdj<CutStatus, CutEdgeStatus>(cutGraph,cutStatus);
+				mc = new EdmondsKarpAdj<CutStatus>(cutGraph,cutStatus);
 				//reachprop = new EdmondsKarpAdj<PropCutStatus, NegativeEdgeStatus>(antig,propCutStatus);
 			}else{
-				mc = new EdmondsKarp<CutEdgeStatus>(cutGraph);
+				mc = new EdmondsKarp(cutGraph);
 			}
 
 #ifdef DEBUG_GRAPH
@@ -802,9 +800,9 @@ public:
 
 	bool dbg_reachable(int from, int to, bool undirected=false){
 #ifdef DEBUG_DIJKSTRA
-		DefaultEdgeStatus tmp;
+
 		if(undirected){
-			Dijkstra<NullReachStatus, DefaultEdgeStatus,true> d(from,g);
+			Dijkstra<NullReachStatus, true> d(from,g);
 			d.update();
 			return d.connected(to);
 		}else{
@@ -822,8 +820,8 @@ public:
 
 #ifndef NDEBUG
 		//drawFull(from,to);
-		DefaultEdgeStatus tmp;
-		DynamicGraph<> g(tmp);
+
+		DynamicGraph g;
 		for(int i = 0;i<nNodes();i++){
 			g.addNode();
 		}
@@ -837,11 +835,11 @@ public:
 			}
 		}
 		if(undirected){
-			Dijkstra<NullReachStatus, DefaultEdgeStatus,true> d(from,g);
+			Dijkstra<NullReachStatus, true> d(from,g);
 
 			return !d.connected(to);
 		}else{
-			Dijkstra<NullReachStatus, DefaultEdgeStatus,false> d(from,g);
+			Dijkstra<NullReachStatus, false> d(from,g);
 
 					return !d.connected(to);
 		}

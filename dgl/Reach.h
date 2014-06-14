@@ -9,7 +9,7 @@
 #define REACH_H_
 
 #include <vector>
-
+namespace dgl{
 struct NullReachStatus{
 	void setReachable(int u, bool reachable){
 
@@ -48,5 +48,5 @@ public:
 
 	}
 };
-
+};
 #endif /* REACH_H_ */

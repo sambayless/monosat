@@ -15,37 +15,37 @@
 #include "dgl/Dinics.h"
 #include "dgl/DinicsLinkCut.h"
 
-MaxflowDetector::MaxflowDetector(int _detectorID, GraphTheorySolver * _outer,  DynamicGraph<PositiveEdgeStatus> &_g,DynamicGraph<NegativeEdgeStatus> &_antig, int from, int _target,double seed):
+MaxflowDetector::MaxflowDetector(int _detectorID, GraphTheorySolver * _outer,  DynamicGraph &_g,DynamicGraph &_antig, int from, int _target,double seed):
 Detector(_detectorID),outer(_outer),over_graph(_g),g(_g),antig(_antig),source(from),target(_target),rnd_seed(seed),positive_detector(NULL),negative_detector(NULL){
 	if(mincutalg==MinCutAlg::ALG_EDKARP_DYN){
 
-		positive_detector = new EdmondsKarpDynamic<vec<int>,PositiveEdgeStatus>(_g,g.weights);
-		negative_detector = new EdmondsKarpDynamic<vec<int>,NegativeEdgeStatus>(_antig,_antig.weights);
-		positive_conflict_detector =new EdmondsKarpAdj<vec<int>,PositiveEdgeStatus>(_g,outer->edge_weights);
-		negative_conflict_detector = new EdmondsKarpAdj<vec<int>,NegativeEdgeStatus>(_antig,outer->edge_weights);
+		positive_detector = new EdmondsKarpDynamic<vec<int>>(_g,g.weights);
+		negative_detector = new EdmondsKarpDynamic<vec<int>>(_antig,_antig.weights);
+		positive_conflict_detector =new EdmondsKarpAdj<vec<int>>(_g,outer->edge_weights);
+		negative_conflict_detector = new EdmondsKarpAdj<vec<int>>(_antig,outer->edge_weights);
 	}else if (mincutalg==MinCutAlg::ALG_EDKARP_ADJ){
-		positive_detector = new EdmondsKarpAdj<vec<int>,PositiveEdgeStatus>(_g,outer->edge_weights);
-		negative_detector = new EdmondsKarpAdj<vec<int>,NegativeEdgeStatus>(_antig,outer->edge_weights);
+		positive_detector = new EdmondsKarpAdj<vec<int>>(_g,outer->edge_weights);
+		negative_detector = new EdmondsKarpAdj<vec<int>>(_antig,outer->edge_weights);
 		positive_conflict_detector = positive_detector;
 		negative_conflict_detector = negative_detector;
 	}else if (mincutalg==MinCutAlg::ALG_IBFS){
 		positive_detector = new IBFS<PositiveEdgeStatus>(_g);
 		negative_detector = new IBFS<NegativeEdgeStatus>(_antig);
-		positive_conflict_detector =new EdmondsKarpAdj<vec<int>,PositiveEdgeStatus>(_g,outer->edge_weights);
-		negative_conflict_detector = new EdmondsKarpAdj<vec<int>,NegativeEdgeStatus>(_antig,outer->edge_weights);
+		positive_conflict_detector =new EdmondsKarpAdj<vec<int>>(_g,outer->edge_weights);
+		negative_conflict_detector = new EdmondsKarpAdj<vec<int>>(_antig,outer->edge_weights);
 	}else if (mincutalg==MinCutAlg::ALG_DINITZ){
-		positive_detector = new Dinitz<vec<int>,PositiveEdgeStatus>(_g,outer->edge_weights);
-		negative_detector = new Dinitz<vec<int>,NegativeEdgeStatus>(_antig,outer->edge_weights);
-		positive_conflict_detector =new EdmondsKarpAdj<vec<int>,PositiveEdgeStatus>(_g,outer->edge_weights);
-		negative_conflict_detector = new EdmondsKarpAdj<vec<int>,NegativeEdgeStatus>(_antig,outer->edge_weights);
+		positive_detector = new Dinitz<vec<int>>(_g,outer->edge_weights);
+		negative_detector = new Dinitz<vec<int>>(_antig,outer->edge_weights);
+		positive_conflict_detector =new EdmondsKarpAdj<vec<int>>(_g,outer->edge_weights);
+		negative_conflict_detector = new EdmondsKarpAdj<vec<int>>(_antig,outer->edge_weights);
 	}else if (mincutalg==MinCutAlg::ALG_DINITZ_LINKCUT){
-		positive_detector = new DinitzLinkCut<vec<int>,PositiveEdgeStatus>(_g,outer->edge_weights);
-		negative_detector = new DinitzLinkCut<vec<int>,NegativeEdgeStatus>(_antig,outer->edge_weights);
-		positive_conflict_detector =new EdmondsKarpAdj<vec<int>,PositiveEdgeStatus>(_g,outer->edge_weights);
-		negative_conflict_detector = new EdmondsKarpAdj<vec<int>,NegativeEdgeStatus>(_antig,outer->edge_weights);
+		positive_detector = new DinitzLinkCut<vec<int>>(_g,outer->edge_weights);
+		negative_detector = new DinitzLinkCut<vec<int>>(_antig,outer->edge_weights);
+		positive_conflict_detector =new EdmondsKarpAdj<vec<int>>(_g,outer->edge_weights);
+		negative_conflict_detector = new EdmondsKarpAdj<vec<int>>(_antig,outer->edge_weights);
 	}else{
-		positive_detector = new EdmondsKarpAdj<vec<int>,PositiveEdgeStatus>(_g,outer->edge_weights);
-		negative_detector = new EdmondsKarpAdj<vec<int>,NegativeEdgeStatus>(_antig,outer->edge_weights);
+		positive_detector = new EdmondsKarpAdj<vec<int>>(_g,outer->edge_weights);
+		negative_detector = new EdmondsKarpAdj<vec<int>>(_antig,outer->edge_weights);
 		positive_conflict_detector = positive_detector;
 		negative_conflict_detector = negative_detector;
 	}
@@ -377,8 +377,8 @@ void MaxflowDetector::buildMaxFlowTooHighReason(int flow,vec<Lit> & conflict){
 		}
 
 bool MaxflowDetector::checkSatisfied(){
-	EdmondsKarpAdj<vec<int>,PositiveEdgeStatus> positiveCheck(g,g.weights);
-	EdmondsKarpAdj<vec<int>,NegativeEdgeStatus> negativeCheck(antig,antig.weights);
+	EdmondsKarpAdj<vec<int>> positiveCheck(g,g.weights);
+	EdmondsKarpAdj<vec<int>> negativeCheck(antig,antig.weights);
 		for(int j = 0;j< flow_lits.size();j++){
 
 				Lit l = flow_lits[j].l;
@@ -410,9 +410,9 @@ bool MaxflowDetector::checkSatisfied(){
 }
 Lit MaxflowDetector::decide(){
 	/*MaxflowDetector *r =this;
-	Distance<MaxflowDetector::DetectorStatus,NegativeEdgeStatus> * over = (Distance<MaxflowDetector::DetectorStatus,NegativeEdgeStatus>*) r->negative_detector;
+	Distance<MaxflowDetector::DetectorStatus> * over = (Distance<MaxflowDetector::DetectorStatus>*) r->negative_detector;
 
-	Distance<MaxflowDetector::DetectorStatus,PositiveEdgeStatus> * under = (Distance<MaxflowDetector::DetectorStatus,PositiveEdgeStatus>*) r->positive_detector;
+	Distance<MaxflowDetector::DetectorStatus> * under = (Distance<MaxflowDetector::DetectorStatus>*) r->positive_detector;
 
 	//we can probably also do something similar, but with cuts, for nodes that are decided to be unreachable.
 

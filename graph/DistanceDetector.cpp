@@ -11,7 +11,7 @@
 #include "GraphTheory.h"
 #include "dgl/UnweightedRamalReps.h"
 
-DistanceDetector::DistanceDetector(int _detectorID, GraphTheorySolver * _outer,  DynamicGraph<PositiveEdgeStatus> &_g,DynamicGraph<NegativeEdgeStatus> &_antig, int from, int within_steps ,double seed):
+DistanceDetector::DistanceDetector(int _detectorID, GraphTheorySolver * _outer,  DynamicGraph &_g,DynamicGraph &_antig, int from, int within_steps ,double seed):
 Detector(_detectorID),outer(_outer),g(_g),antig(_antig),source(from),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL),opt_weight(*this){
 	max_distance=0;
 	rnd_path=NULL;
@@ -36,7 +36,7 @@ Detector(_detectorID),outer(_outer),g(_g),antig(_antig),source(from),rnd_seed(se
 
 	 if(opt_use_random_path_for_decisions){
 		 rnd_weight.clear();
-		 rnd_path = new WeightedDijkstra<NegativeEdgeStatus, vec<double> >(from,_antig,rnd_weight);
+		 rnd_path = new WeightedDijkstra< vec<double> >(from,_antig,rnd_weight);
 		 for(int i=0;i<outer->edge_list.size();i++){
 			 double w = drand(rnd_seed);
 
@@ -45,27 +45,27 @@ Detector(_detectorID),outer(_outer),g(_g),antig(_antig),source(from),rnd_seed(se
 
 	 }
 	 if(opt_use_optimal_path_for_decisions){
-		 opt_path = new WeightedDijkstra<NegativeEdgeStatus, OptimalWeightEdgeStatus >(from,_antig,opt_weight);
+		 opt_path = new WeightedDijkstra< OptimalWeightEdgeStatus >(from,_antig,opt_weight);
 	 }
 	 positiveReachStatus = new DistanceDetector::ReachStatus(*this,true);
 	 negativeReachStatus = new DistanceDetector::ReachStatus(*this,false);
 	if(distalg==DistAlg::ALG_DISTANCE){
 
-		positive_reach_detector = new Distance<DistanceDetector::ReachStatus,PositiveEdgeStatus>(from,_g,*(positiveReachStatus),0);
-		negative_reach_detector = new Distance<DistanceDetector::ReachStatus,NegativeEdgeStatus>(from,_antig,*(negativeReachStatus),0);
+		positive_reach_detector = new Distance<DistanceDetector::ReachStatus>(from,_g,*(positiveReachStatus),0);
+		negative_reach_detector = new Distance<DistanceDetector::ReachStatus>(from,_antig,*(negativeReachStatus),0);
 		positive_path_detector = positive_reach_detector;
 		/*	if(opt_conflict_shortest_path)
 			reach_detectors.last()->positive_dist_detector = new Dijkstra<PositiveEdgeStatus>(from,g);*/
 	}else if (distalg==DistAlg::ALG_RAMAL_REPS){
 
-		positive_reach_detector = new UnweightedRamalReps<DistanceDetector::ReachStatus,PositiveEdgeStatus>(from,_g,*(positiveReachStatus),0);
-		negative_reach_detector = new UnweightedRamalReps<DistanceDetector::ReachStatus,NegativeEdgeStatus>(from,_antig,*(negativeReachStatus),0);
+		positive_reach_detector = new UnweightedRamalReps<DistanceDetector::ReachStatus>(from,_g,*(positiveReachStatus),0);
+		negative_reach_detector = new UnweightedRamalReps<DistanceDetector::ReachStatus>(from,_antig,*(negativeReachStatus),0);
 
-		positive_path_detector =  new Distance<NullReachStatus,PositiveEdgeStatus>(from,_g,nullReachStatus,0);
+		positive_path_detector =  new Distance<NullReachStatus>(from,_g,nullReachStatus,0);
 	}else{
 
-		positive_reach_detector = new Dijkstra<DistanceDetector::ReachStatus,PositiveEdgeStatus>(from,_g,*positiveReachStatus,0);
-		negative_reach_detector = new Dijkstra<DistanceDetector::ReachStatus,NegativeEdgeStatus>(from,_antig,*positiveReachStatus,0);
+		positive_reach_detector = new Dijkstra<DistanceDetector::ReachStatus>(from,_g,*positiveReachStatus,0);
+		negative_reach_detector = new Dijkstra<DistanceDetector::ReachStatus>(from,_antig,*positiveReachStatus,0);
 		positive_path_detector = positive_reach_detector;
 		//reach_detectors.last()->positive_dist_detector = new Dijkstra(from,g);
 	}
@@ -761,9 +761,9 @@ Lit DistanceDetector::decide(){
 	if(!opt_decide_graph_distance || !negative_reach_detector)
 		return lit_Undef;
 	DistanceDetector *r =this;
-	Distance<DistanceDetector::ReachStatus,NegativeEdgeStatus> * over = (Distance<DistanceDetector::ReachStatus,NegativeEdgeStatus>*) r->negative_reach_detector;
+	Distance<DistanceDetector::ReachStatus> * over = (Distance<DistanceDetector::ReachStatus>*) r->negative_reach_detector;
 
-	Distance<DistanceDetector::ReachStatus,PositiveEdgeStatus> * under = (Distance<DistanceDetector::ReachStatus,PositiveEdgeStatus>*) r->positive_reach_detector;
+	Distance<DistanceDetector::ReachStatus> * under = (Distance<DistanceDetector::ReachStatus>*) r->positive_reach_detector;
 
 	//we can probably also do something similar, but with cuts, for nodes that are decided to be unreachable.
 

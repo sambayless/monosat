@@ -12,18 +12,18 @@
 #include <algorithm>
 #include <limits>
 
-
+namespace dgl{
 /**
  * This is an implementation of Spira and Pan's (1975) dynamic minimum spanning tree algorithm.
  * We initialize the MST in new graphs using Prim's, and also use Prim's to connect separated components back
  * together after a string of edge deletions (the original paper only considers a single edge deletion at a time, which
  * is very ineficient if multiple edges are deleted at once).
  */
-template<class Status,class EdgeStatus=DefaultEdgeStatus>
+template<class Status>
 class SpiraPan:public MinimumSpanningTree{
 public:
 
-	DynamicGraph<EdgeStatus> & g;
+	DynamicGraph & g;
 	Status &  status;
 	int last_modification;
 	int min_weight;
@@ -35,42 +35,42 @@ public:
 
 	int INF;
 
-	vec<int> mst;
-	vec<int> q;
-	vec<int> check;
+	std::vector<int> mst;
+	std::vector<int> q;
+	std::vector<int> check;
 	const int reportPolarity;
 
-	//vec<char> old_seen;
-	vec<bool> in_tree;
-	vec<bool> keep_in_tree;
-	vec<int> parents;
-	vec<int> parent_edges;
-	vec<int> components_to_visit;
-	vec<int> component_member;//pointer to one arbitrary member of each non-empty component
-	vec<int> component_weight;
+	//std::vector<char> old_seen;
+	std::vector<bool> in_tree;
+	std::vector<bool> keep_in_tree;
+	std::vector<int> parents;
+	std::vector<int> parent_edges;
+	std::vector<int> components_to_visit;
+	std::vector<int> component_member;//pointer to one arbitrary member of each non-empty component
+	std::vector<int> component_weight;
     struct VertLt {
-        const vec<int>&  keys;
+        const std::vector<int>&  keys;
 
         bool operator () (int x, int y) const {
         	return keys[x]<keys[y];
         }
-        VertLt(const vec<int>&  _key) : keys(_key) { }
+        VertLt(const std::vector<int>&  _key) : keys(_key) { }
     };
 
 	Heap<VertLt> Q;
 
-	vec<bool> seen;
+	std::vector<bool> seen;
 
 	int num_sets=0;
 
-	vec<int> edge_to_component;
-	vec<int> empty_components;//list of component ids with no member nodes
-	vec<int> components;
+	std::vector<int> edge_to_component;
+	std::vector<int> empty_components;//list of component ids with no member nodes
+	std::vector<int> components;
 
 	struct DefaultReachStatus{
-			vec<bool> stat;
+			std::vector<bool> stat;
 				void setReachable(int u, bool reachable){
-					stat.growTo(u+1);
+					stat.resize(u+1);
 					stat[u]=reachable;
 				}
 				bool isReachable(int u) const{
@@ -94,7 +94,7 @@ public:
 	double stats_full_update_time;
 	double stats_fast_update_time;
 
-	SpiraPan(DynamicGraph<EdgeStatus> & graph, Status & status, int reportPolarity=0 ):g(graph), status(status), last_modification(-1),last_addition(-1),last_deletion(-1),history_qhead(0),last_history_clear(0),INF(0),reportPolarity(reportPolarity),Q(VertLt(component_weight))
+	SpiraPan(DynamicGraph & graph, Status & status, int reportPolarity=0 ):g(graph), status(status), last_modification(-1),last_addition(-1),last_deletion(-1),history_qhead(0),last_history_clear(0),INF(0),reportPolarity(reportPolarity),Q(VertLt(component_weight))
 #ifndef NDEBUG
 		,dbg(g,MinimumSpanningTree::nullStatus,0)
 #endif
@@ -113,16 +113,16 @@ public:
 	}
 
 	void setNodes(int n){
-		q.capacity(n);
-		check.capacity(n);
-		in_tree.growTo(g.nEdgeIDs());
-		seen.growTo(n);
+		q.reserve(n);
+		check.reserve(n);
+		in_tree.resize(g.nEdgeIDs());
+		seen.resize(n);
 		INF=std::numeric_limits<int>::max();
-		component_weight.growTo(g.nodes,INF);
-		parents.growTo(n,-1);
-		edge_to_component.growTo(n,-1);
+		component_weight.resize(g.nodes,INF);
+		parents.resize(n,-1);
+		edge_to_component.resize(n,-1);
 
-		parent_edges.growTo(n,-1);
+		parent_edges.resize(n,-1);
 	}
 /*
  * 	//chin houck insertion
@@ -130,9 +130,9 @@ public:
 		if(g.adjacency_undirected[newNode].size()==0)
 			return;
 		marked.clear();
-		marked.growTo(g.nodes);
+		marked.resize(g.nodes);
 		incident_edges.clear();
-		incident_edges.growTo(g.nodes,-1);
+		incident_edges.resize(g.nodes,-1);
 		for(auto & edge:g.adjacency_undirected[newNode]){
 			incident_edges[edge.node]=edge.id;
 		}
@@ -206,10 +206,10 @@ public:
 
 		}
 
-		vec<int> used_components;
+		std::vector<int> used_components;
 		for(int i = 0;i<g.nodes;i++){
 			if(!used_components.contains(components[i])){
-				used_components.push(components[i]);
+				used_components.push_back(components[i]);
 
 			}
 		}
@@ -261,9 +261,9 @@ public:
 			parents[higher_component]=lower_component;
 			parent_edges[higher_component]=edgeid;
 			q.clear();
-			q.push(higher_component);
+			q.push_back(higher_component);
 			while(q.size()){
-				int n = q.last(); q.pop();
+				int n = q.back(); q.pop_back();
 				for(auto & edge:g.adjacency_undirected[n]){
 					if(in_tree[edge.id]){
 
@@ -272,14 +272,14 @@ public:
 							components[t]=new_c;
 							parents[t]=n;
 							parent_edges[t]=edge.id;
-							q.push(t);
+							q.push_back(t);
 						}
 
 					}
 				}
 			}
 			component_member[old_c]=-1;
-			empty_components.push(old_c);
+			empty_components.push_back(old_c);
 			dbg_parents();
 		}else{
 			dbg_parents();
@@ -421,28 +421,28 @@ public:
 			int start_node= v;
 			//if we want to maintain the guarantee components are always assigned the lowest node number that they contain, we'd need to modify the code below a bit.
 			assert(empty_components.size());
-			int new_c = empty_components.last();
-			empty_components.pop();
+			int new_c = empty_components.back();
+			empty_components.pop_back();
 			int old_c = components[u];
 			assert(component_member[new_c]==-1);
 			component_member[new_c]=start_node;
 			component_member[old_c]=u;
-			components_to_visit.push(new_c);
+			components_to_visit.push_back(new_c);
 
 			components[start_node]=new_c;
 			assert(q.size()==0);
 			//relabel the components of the tree that has been split off.
 			q.clear();
-			q.push(start_node);
+			q.push_back(start_node);
 			while(q.size()){
-				int n = q.last(); q.pop();
+				int n = q.back(); q.pop_back();
 				for(auto & edge:g.adjacency_undirected[n]){
 					if(in_tree[edge.id] ){
 						//assert(g.edgeEnabled(edge.id));
 						int t = edge.node;
 						if(components[t]==old_c){
 							components[t]=new_c;
-							q.push(t);
+							q.push_back(t);
 						}
 					}
 				}
@@ -510,11 +510,11 @@ public:
 					assert(components[start_node]==cur_component);
 					components[start_node]=c;
 					component_member[cur_component]=-1;
-					empty_components.push(cur_component);
+					empty_components.push_back(cur_component);
 				}
 				component_weight[cur_component]=INF;
 				q.clear();
-				q.push(start_node);
+				q.push_back(start_node);
 				seen[start_node]=true;
 				//do a bfs over the component, finding all edges that leave the component. fix the parent edges in the same pass, if needed.
 				//could also do a dfs here - would it make a difference?
@@ -545,7 +545,7 @@ public:
 								}
 								if(!seen[t]){//can we avoid this seen check?
 									seen[t]=true;
-									q.push(t);
+									q.push_back(t);
 								}
 							}
 						}
@@ -584,25 +584,25 @@ public:
 
 			setNodes(g.nodes);
 			seen.clear();
-			seen.growTo(g.nodes);
+			seen.resize(g.nodes);
 			min_weight=0;
 			num_sets = g.nodes;
 			empty_components.clear();
 			components.clear();
 			for(int i = 0;i<g.nodes;i++){
-				components.push(i);
-				components_to_visit.push(i);
+				components.push_back(i);
+				components_to_visit.push_back(i);
 			}
 			component_weight.clear();
-			component_weight.growTo(g.nodes,INF);
+			component_weight.resize(g.nodes,INF);
 			component_member.clear();
 			for(int i = 0;i<g.nodes;i++)
-				component_member.push(i);
+				component_member.push_back(i);
 			mst.clear();
 			parents.clear();
-			parents.growTo(g.nodes,-1);
+			parents.resize(g.nodes,-1);
 			parent_edges.clear();
-			parent_edges.growTo(g.edges,-1);
+			parent_edges.resize(g.edges,-1);
 			for(int i = 0;i<in_tree.size();i++)
 				in_tree[i]=false;
 			last_history_clear=g.historyclears;
@@ -656,7 +656,7 @@ public:
 
 		stats_full_update_time+=rtime(2)-startdupdatetime;;
 	}
-	vec<int> & getSpanningTree(){
+	std::vector<int> & getSpanningTree(){
 		update();
 		return mst;
 	 }
@@ -747,7 +747,7 @@ public:
 
 		assert(num_sets == g.nodes-empty_components.size());
 		int sumweight = 0;
-		in_tree.growTo(g.nEdgeIDs());
+		in_tree.resize(g.nEdgeIDs());
 		for(int i = 0;i<g.nEdgeIDs();i++){
 			if(in_tree[i]){
 				sumweight+= g.getWeight(i);
@@ -772,5 +772,5 @@ public:
 */
 
 };
-
+};
 #endif

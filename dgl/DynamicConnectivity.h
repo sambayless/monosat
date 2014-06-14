@@ -14,12 +14,12 @@
 
 
 
-
-template<class Status,class EdgeStatus=DefaultEdgeStatus>
+namespace dgl{
+template<class Status>
 class DynamicConnectivity:public Reach, public AllPairs,public ConnectedComponents{
 public:
 
-	DynamicGraph<EdgeStatus> & g;
+	DynamicGraph & g;
 	Status & status;
 	int last_modification;
 	int last_addition;
@@ -29,7 +29,7 @@ public:
 
 	int last_history_clear;
 	bool hasPrev;
-	vec<int> sources;
+	std::vector<int> sources;
 	//the transitive closure of the graph (only for components connected to one of the sources)
 	struct ClosureData{
 	//	int incomingEdge;
@@ -37,17 +37,17 @@ public:
 		char changed:1;
 		ClosureData():reachable(false),changed(false){}
 	};
-	vec<vec<ClosureData>> transitive_closure;
+	std::vector<std::vector<ClosureData>> transitive_closure;
 	struct Change{
 		int sourceNum;
 		int node;
 	};
-	vec<Change> changes;
-	vec<int> prev;
-	vec<int> path;
-	vec<int> u_component;
-	vec<int> v_component;
-	vec<int> component;
+	std::vector<Change> changes;
+	std::vector<int> prev;
+	std::vector<int> path;
+	std::vector<int> u_component;
+	std::vector<int> v_component;
+	std::vector<int> component;
 	int INF;
 
 	ThorupDynamicConnectivity t;
@@ -68,7 +68,7 @@ public:
 	double stats_full_update_time;
 	double stats_fast_update_time;
 
-	DynamicConnectivity(DynamicGraph<EdgeStatus> & graph,Status & status, int _reportPolarity=0 ):g(graph),status(status), last_modification(-1),last_addition(-1),last_deletion(-1),history_qhead(0),last_history_clear(0),INF(0),reportPolarity(_reportPolarity){
+	DynamicConnectivity(DynamicGraph & graph,Status & status, int _reportPolarity=0 ):g(graph),status(status), last_modification(-1),last_addition(-1),last_deletion(-1),history_qhead(0),last_history_clear(0),INF(0),reportPolarity(_reportPolarity){
 		stats_skipped_updates=0;
 		stats_full_updates=0;
 		stats_full_update_time=0;
@@ -80,11 +80,11 @@ public:
 
 	void addSource(int s){
 		int sourceNum = sources.size();
-		sources.push(s);
-		changes.push({sourceNum,s});
+		sources.push_back(s);
+		changes.push_back({sourceNum,s});
 
-		transitive_closure.push();
-		transitive_closure[sourceNum].growTo(g.nodes);
+		transitive_closure.push_back();
+		transitive_closure[sourceNum].resize(g.nodes);
 		transitive_closure[sourceNum][s].reachable=true;
 		transitive_closure[sourceNum][s].changed=true;
 		last_modification=-1;
@@ -110,10 +110,10 @@ public:
 
 		while(t.nNodes()< g.nodes){
 			t.addNode();
-			prev.push(-1);
+			prev.push_back(-1);
 		}
 		for(int i = 0;i<transitive_closure.size();i++){
-			transitive_closure[i].growTo(g.nodes);
+			transitive_closure[i].resize(g.nodes);
 		}
 
 	}
@@ -148,7 +148,7 @@ public:
 							transitive_closure[i][v].reachable=true;
 							if(!transitive_closure[i][v].changed){
 								transitive_closure[i][v].changed=true;
-								changes.push({i,v});
+								changes.push_back({i,v});
 							}
 
 							for(int edgeid:v_component){
@@ -166,7 +166,7 @@ public:
 
 								if(!transitive_closure[i][n].changed){
 									transitive_closure[i][n].changed=true;
-									changes.push({i,n});
+									changes.push_back({i,n});
 								}
 							}
 						}else if (transitive_closure[i][v].reachable &&! transitive_closure[i][u].reachable){
@@ -178,7 +178,7 @@ public:
 							transitive_closure[i][u].reachable=true;
 							if(!transitive_closure[i][u].changed){
 								transitive_closure[i][u].changed=true;
-								changes.push({i,u});
+								changes.push_back({i,u});
 							}
 
 
@@ -197,7 +197,7 @@ public:
 
 								if(!transitive_closure[i][n].changed){
 									transitive_closure[i][n].changed=true;
-									changes.push({i,n});
+									changes.push_back({i,n});
 								}
 							}
 						}
@@ -230,7 +230,7 @@ public:
 
 									if(!transitive_closure[i][n].changed){
 										transitive_closure[i][n].changed=true;
-										changes.push({i,n});
+										changes.push_back({i,n});
 									}
 								}
 							}else{
@@ -246,7 +246,7 @@ public:
 
 									if(!transitive_closure[i][n].changed){
 										transitive_closure[i][n].changed=true;
-										changes.push({i,n});
+										changes.push_back({i,n});
 									}
 								}
 							}
@@ -308,13 +308,13 @@ public:
 							transitive_closure[s][n].reachable=true;
 							if(!transitive_closure[s][n].changed){
 								transitive_closure[s][n].changed=true;
-								changes.push({s,n});
+								changes.push_back({s,n});
 							}
 						}else if (!connected && reportPolarity<=0){
 							transitive_closure[s][n].reachable=false;
 							if(!transitive_closure[s][n].changed){
 								transitive_closure[s][n].changed=true;
-								changes.push({s,n});
+								changes.push_back({s,n});
 							}
 						}
 					}
@@ -376,7 +376,7 @@ public:
 			changes.clear();
 #ifndef NDEBUG
 			{
-				for(vec<ClosureData> & v:transitive_closure)
+				for(std::vector<ClosureData> & v:transitive_closure)
 					for(ClosureData & c:v)
 						assert(!c.changed);
 			}
@@ -386,7 +386,7 @@ public:
 
 			if (default_source>=0){
 				prev.clear();
-				prev.growTo(g.nodes,-1);
+				prev.resize(g.nodes,-1);
 				//ok, traverse the nodes connected to this component
 				component.clear();
 				static int iter=0;
@@ -446,7 +446,7 @@ public:
 
 #endif
 	}
-	void dbg_path_edges(int from,int to, vec<int> & path){
+	void dbg_path_edges(int from,int to, std::vector<int> & path){
 #ifndef NDEBUG
 		assert(path.size());
 		int n = from;
@@ -467,11 +467,11 @@ public:
 		assert(n==to);
 #endif
 	}
-	void dbg_path(int from,int to, vec<int> & path){
+	void dbg_path(int from,int to, std::vector<int> & path){
 #ifndef NDEBUG
 		assert(path.size());
 		assert(path[0]==from);
-		assert(path.last()==to);
+		assert(path.back()==to);
 		for(int i = 1;i<path.size();i++){
 			int v = path[i];
 			int u = path[i-1];
@@ -510,7 +510,7 @@ public:
 		int distance_unsafe(int from,int to){
 			return t.connected(from,to) ? 0:INF ;
 		}
-		void getPath(int source, int to, vec<int> & path_store){
+		void getPath(int source, int to, std::vector<int> & path_store){
 			return t.getPath(source,to, path_store);
 		}
 
@@ -550,7 +550,7 @@ public:
 				dbg_path(getSource(),to,path);
 
 				prev.clear();
-				prev.growTo(g.nodes,-1);
+				prev.resize(g.nodes,-1);
 				assert(path[0]==getSource());
 				for(int i = 1;i<path.size();i++){
 					prev[path[i]]=path[i-1];
@@ -568,7 +568,7 @@ public:
 				 if(!hasPrev){
 					 hasPrev=true;
 					 prev.clear();
-					 prev.growTo(g.nodes,-1);
+					 prev.resize(g.nodes,-1);
 				 }
 				 if(prev[to]<0){
 					assert(t.connected(getSource(),to));
@@ -611,9 +611,9 @@ public:
 				return g.all_edges[edgeID].from;
 			}
 
-		 void getPath( int t, vec<int> & path_store){
+		 void getPath( int t, std::vector<int> & path_store){
 			 getPath(getSource(),t,  path_store);
 		 }
 };
-
+};
 #endif

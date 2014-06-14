@@ -13,11 +13,11 @@
 #include "DynamicGraph.h"
 #include "Reach.h"
 #include <limits>
-
-template<class EdgeStatus=DefaultEdgeStatus, class Weight=vec<double>, bool undirected=false >
+namespace dgl{
+template<class Weight=std::vector<double>, bool undirected=false >
 class WeightedDijkstra:public Reach{
 public:
-	DynamicGraph<EdgeStatus> & g;
+	DynamicGraph & g;
 	Weight & weight;
 	int last_modification;
 	int last_addition;
@@ -30,17 +30,17 @@ public:
 	double INF;
 
 
-	vec<int> old_dist;
-	vec<int> changed;
+	std::vector<int> old_dist;
+	std::vector<int> changed;
 
-	vec<double> dist;
-	vec<int> prev;
+	std::vector<double> dist;
+	std::vector<int> prev;
 	struct DistCmp{
-		vec<double> & _dist;
+		std::vector<double> & _dist;
 		 bool operator()(int a, int b)const{
 			return _dist[a]<_dist[b];
 		}
-		 DistCmp(vec<double> & d):_dist(d){};
+		 DistCmp(std::vector<double> & d):_dist(d){};
 	};
 	Heap<DistCmp> q;
 
@@ -59,7 +59,7 @@ public:
 
 	double stats_full_update_time;
 	double stats_fast_update_time;
-	WeightedDijkstra(int s,DynamicGraph<EdgeStatus> & graph, Weight & _weight):g(graph),weight(_weight), last_modification(-1),last_addition(-1),last_deletion(-1),history_qhead(0),last_history_clear(0),source(s),INF(0),q(DistCmp(dist)){
+	WeightedDijkstra(int s,DynamicGraph & graph, Weight & _weight):g(graph),weight(_weight), last_modification(-1),last_addition(-1),last_deletion(-1),history_qhead(0),last_history_clear(0),source(s),INF(0),q(DistCmp(dist)){
 
 		mod_percentage=0.2;
 		stats_full_updates=0;
@@ -74,7 +74,7 @@ public:
 
 /*	void setWeight(int node, double w){
 		while(weight.size()<=g.nodes){
-			weight.push(1);
+			weight.push_back(1);
 		}
 		weight[node]=w;
 
@@ -98,15 +98,15 @@ public:
 
 
 		/*for(int i = 0;i<g.nodes;i++)
-					changed.push(i);*/
+					changed.push_back(i);*/
 		assert(last_deletion==g.deletions);
 		last_modification=g.modifications;
 		last_addition=g.additions;
 
-		dist.growTo(g.nodes);
-		prev.growTo(g.nodes);
+		dist.resize(g.nodes);
+		prev.resize(g.nodes);
 		while(weight.size()<=g.nodes){
-			weight.push(1);
+			weight.push_back(1);
 		}
 
 
@@ -127,7 +127,7 @@ public:
 
 				if(dist[v]>=INF){
 					//this was changed
-					changed.push(v);
+					changed.push_back(v);
 				}
 
 				dist[v]=alt;
@@ -145,7 +145,7 @@ public:
 
 					if(dist[v]>=INF){
 						//this was changed
-						changed.push(v);
+						changed.push_back(v);
 					}
 
 					dist[v]=alt;
@@ -164,7 +164,7 @@ public:
 			//Is this altered code still correct? Well, not for dijkstras, but probably for connectivity
 			if(dist[v]>=INF){
 				//this was changed
-				changed.push(v);
+				changed.push_back(v);
 
 				dist[v]=alt;
 				prev[v]=u;
@@ -191,7 +191,7 @@ public:
 				if(alt<dist[v]){
 					if(dist[v]>=INF){
 						//this was changed
-						changed.push(v);
+						changed.push_back(v);
 					}
 
 					dist[v]=alt;
@@ -206,7 +206,7 @@ public:
 		}
 		stats_fast_update_time+=rtime(2)-start_time;
 	}
-	vec<int> & getChanged(){
+	std::vector<int> & getChanged(){
 		return changed;
 	}
 	void clearChanged(){
@@ -227,7 +227,7 @@ public:
 				return;
 		assert(weight.size()>=g.edges);
 /*		while(weight.size()<=g.nodes){
-				weight.push(1);
+				weight.push_back(1);
 			}*/
 		/*if (last_addition==g.additions && last_modification>0){
 			//if none of the deletions were to edges that were the previous edge of some shortest path, then we don't need to do anything
@@ -282,9 +282,9 @@ public:
 		double startdupdatetime = rtime(2);
 
 		INF=g.nodes+1;
-		dist.growTo(g.nodes);
-		prev.growTo(g.nodes);
-		old_dist.growTo(g.nodes);
+		dist.resize(g.nodes);
+		prev.resize(g.nodes);
+		old_dist.resize(g.nodes);
 		q.clear();
 		for(int i = 0;i<g.nodes;i++){
 			old_dist[i]=last_modification > 0 ? dist[i]:INF;//this won't work properly if we added nodes...
@@ -298,7 +298,7 @@ public:
 			if(dist[u]==INF)
 				break;
 			if(old_dist[u]>=INF){
-				changed.push(u);
+				changed.push_back(u);
 			}
 			q.removeMin();
 			for(int i = 0;i<g.adjacency[u].size();i++){
@@ -325,7 +325,7 @@ public:
 			//iterate through the unreached nodes and check which ones were previously reached
 
 			if(last_modification <=0  || (old_dist[u]<INF && dist[u]>=INF)){
-				changed.push(u);
+				changed.push_back(u);
 			}
 		}
 		//}
@@ -408,5 +408,5 @@ public:
 	}
 
 };
-
+};
 #endif /* DIJKSTRA_H_ */

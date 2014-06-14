@@ -14,7 +14,7 @@
 #define RECORD
 #include <cstdio>
 #endif
-
+namespace dgl{
 class DynamicGraph{
 public:
 	std::vector<bool> edge_status;
@@ -298,7 +298,7 @@ public:
 		assert(id>=0);
 		assert(id<edge_status.size());
 		{
-			vec<Edge>& adj= adjacency[from];
+			std::vector<Edge>& adj= adjacency[from];
 			int i,j = 0;
 			for(i = 0;i<adj.size();i++){
 				if(adj[i]==to){
@@ -307,7 +307,7 @@ public:
 					adj[j++]=adj[i];
 				}
 			}
-			adj.shrink(i-j);
+			adj.resize(j);
 		}
 
 		modifications++;
@@ -393,5 +393,5 @@ public:
 static double rtime(int t){
 	return 0;
 }
-
+};
 #endif /* DYNAMICGRAPH_H_ */

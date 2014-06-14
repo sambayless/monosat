@@ -9,13 +9,13 @@
 #include "AllPairs.h"
 #include "mtl/Sort.h"
 
+namespace dgl{
 
-
-template<class Status,class EdgeStatus=DefaultEdgeStatus>
+template<class Status>
 class FloydWarshall:public AllPairs{
 public:
 
-	DynamicGraph<EdgeStatus> & g;
+	DynamicGraph & g;
 	Status & status;
 	int last_modification;
 	int last_addition;
@@ -25,21 +25,21 @@ public:
 	int last_history_clear;
 
 
-	vec<int> sources;
+	std::vector<int> sources;
 	int INF;
 
-	vec<int> order;
-//	vec<int> q;
-//	vec<int> check;
+	std::vector<int> order;
+//	std::vector<int> q;
+//	std::vector<int> check;
 	const int reportPolarity;
 
-	vec<vec<int> > dist;
-	vec<vec<int> >  next;
+	std::vector<std::vector<int> > dist;
+	std::vector<std::vector<int> >  next;
 
 	struct DefaultReachStatus{
-			vec<bool> stat;
+			std::vector<bool> stat;
 				void setReachable(int u, bool reachable){
-					stat.growTo(u+1);
+					stat.resize(u+1);
 					stat[u]=reachable;
 				}
 				bool isReachable(int u) const{
@@ -60,7 +60,7 @@ public:
 	double stats_full_update_time;
 	double stats_fast_update_time;
 
-	FloydWarshall(DynamicGraph<EdgeStatus> & graph,Status & _status,  int _reportPolarity=0 ):g(graph),status(_status), last_modification(-1),last_addition(-1),last_deletion(-1),history_qhead(0),last_history_clear(0),INF(0),reportPolarity(0){
+	FloydWarshall(DynamicGraph & graph,Status & _status,  int _reportPolarity=0 ):g(graph),status(_status), last_modification(-1),last_addition(-1),last_deletion(-1),history_qhead(0),last_history_clear(0),INF(0),reportPolarity(0){
 
 		mod_percentage=0.2;
 		stats_full_updates=0;
@@ -76,7 +76,7 @@ public:
 
 	void addSource(int s){
 		assert(!sources.contains(s));
-		sources.push(s);
+		sources.push_back(s);
 
 		last_modification=-1;
 		last_addition=-1;
@@ -86,30 +86,30 @@ public:
 
 
 	void setNodes(int n){
-		//q.capacity(n);
-		//check.capacity(n);
+		//q.reserve(n);
+		//check.reserve(n);
 		order.clear();
 		for(int i =0;i<n;i++)
-			order.push(i);
+			order.push_back(i);
 		INF=g.nodes+1;
 		if(dist.size()<n){
-			dist.growTo(n);
+			dist.resize(n);
 
 			for(int i =0;i<dist.size();i++)
-				dist[i].growTo(n);
+				dist[i].resize(n);
 
-			next.growTo(n);
+			next.resize(n);
 			for(int i =0;i<dist.size();i++)
-				next[i].growTo(n);
+				next[i].resize(n);
 		}
 	}
 
 	struct lt_key{
-		vec<int> & _dist;
+		std::vector<int> & _dist;
 		 bool operator()(int a, int b)const{
 			return _dist[a]<_dist[b];
 		}
-		 lt_key(vec<int> & d):_dist(d){};
+		 lt_key(std::vector<int> & d):_dist(d){};
 	};
 	void update( ){
 		static int iteration = 0;
@@ -200,19 +200,19 @@ public:
 	}
 
 
-	void getPath(int from, int to, vec<int> & path){
+	void getPath(int from, int to, std::vector<int> & path){
 		update();
-		path.push(from);
+		path.push_back(from);
 		getPath_private(from,to,path);
-		assert(path.last()!=to);
-		path.push(to);
+		assert(path.back()!=to);
+		path.push_back(to);
 	}
-	void getPath_private(int from, int to, vec<int> & path){
+	void getPath_private(int from, int to, std::vector<int> & path){
 		assert(dist[from][to]<INF);
 		int intermediate = next[from][to];
 		if(intermediate>-1){
 			getPath_private(from, intermediate, path);
-			path.push(intermediate);
+			path.push_back(intermediate);
 			getPath_private(intermediate,to,path);
 
 		}
@@ -292,5 +292,5 @@ public:
 	}*/
 
 };
-
+};
 #endif
