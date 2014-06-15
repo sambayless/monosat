@@ -143,11 +143,14 @@ public:
 		adjacency[from].push_back({to,id});
 		adjacency_undirected[from].push_back({to,id});
 		adjacency_undirected[to].push_back({from,id});
-		edge_status.resize(id+1);
+		if(edge_status.size()<=id)
+			edge_status.resize(id+1);
 		inverted_adjacency[to].push_back({from,id});
-		all_edges.resize(id+1);
+		if(all_edges.size()<=id)
+			all_edges.resize(id+1);
 		all_edges[id]={from,to,id,weight};
-		weights.resize(id+1,0);
+		if(weights.size()<=id)
+			weights.resize(id+1,0);
 		weights[id]=weight;
 		//weights.push_back(weight);
 		modifications++;

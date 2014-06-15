@@ -58,17 +58,6 @@ public:
 	double stats_full_update_time=0;
 	double stats_fast_update_time=0;
 
-	struct DefaultReachStatus{
-			std::vector<bool> stat;
-				void setReachable(int u, bool reachable){
-					stat.resize(u+1);
-					stat[u]=reachable;
-				}
-				bool isReachable(int u) const{
-					return stat[u];
-				}
-				DefaultReachStatus(){}
-			};
 
 public:
 	DisjointSetsConnectedComponents(DynamicGraph & graph, Status & _status, int _reportPolarity=0 ):g(graph), status(_status), last_modification(-1),last_addition(-1),last_deletion(-1),history_qhead(0),last_history_clear(0),INF(0),reportPolarity(_reportPolarity){

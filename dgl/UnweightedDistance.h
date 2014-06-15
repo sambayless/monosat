@@ -55,17 +55,6 @@ public:
 	double stats_full_update_time;
 	double stats_fast_update_time;
 
-	struct DefaultReachStatus{
-			std::vector<bool> stat;
-				void setReachable(int u, bool reachable){
-					stat.resize(u+1);
-					stat[u]=reachable;
-				}
-				bool isReachable(int u) const{
-					return stat[u];
-				}
-				DefaultReachStatus(){}
-			};
 
 public:
 

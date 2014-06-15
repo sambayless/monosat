@@ -34,17 +34,6 @@ public:
 	std::vector<std::vector<int> > dist;
 	std::vector<std::vector<int> >  prev;
 
-	struct DefaultReachStatus{
-			std::vector<bool> stat;
-				void setReachable(int u, bool reachable){
-					stat.resize(u+1);
-					stat[u]=reachable;
-				}
-				bool isReachable(int u) const{
-					return stat[u];
-				}
-				DefaultReachStatus(){}
-			};
 	std::vector<int> * dist_ptr;
 	struct DistCmp{
 		std::vector<int> ** _dist;

@@ -519,9 +519,11 @@ public:
 
 
 		  //Create half edges and link them to each other
-		  forward_edges.resize(edgeID+1);
-		  backward_edges.resize(edgeID+1);
-
+		  if(forward_edges.size()<=edgeID){
+			  assert(backward_edges.size()<=edgeID);
+			  forward_edges.resize(edgeID+1);
+			  backward_edges.resize(edgeID+1);
+		  }
 		  if(forward_edges[edgeID]==NULL){
 			  forward_edges[edgeID] = new EulerHalfEdge();
 			  backward_edges[edgeID] = new EulerHalfEdge();

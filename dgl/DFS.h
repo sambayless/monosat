@@ -43,18 +43,6 @@ public:
 
 	std::vector<int> prev;
 
-	struct DefaultReachStatus{
-			std::vector<bool> stat;
-				void setReachable(int u, bool reachable){
-					stat.resize(u+1);
-					stat[u]=reachable;
-				}
-				bool isReachable(int u) const{
-					return stat[u];
-				}
-				DefaultReachStatus(){}
-			};
-
 public:
 
 	int stats_full_updates;

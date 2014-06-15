@@ -47,7 +47,7 @@ public:
 	std::vector<int> parent_edges;
 	std::vector<int> components_to_visit;
 	std::vector<int> component_member;//pointer to one arbitrary member of each non-empty component
-	std::vector<int> component_weight;
+	std::vector<int> component_edge_weight;
     struct VertLt {
         const std::vector<int>&  keys;
 
@@ -67,17 +67,7 @@ public:
 	std::vector<int> empty_components;//list of component ids with no member nodes
 	std::vector<int> components;
 
-	struct DefaultReachStatus{
-			std::vector<bool> stat;
-				void setReachable(int u, bool reachable){
-					stat.resize(u+1);
-					stat[u]=reachable;
-				}
-				bool isReachable(int u) const{
-					return stat[u];
-				}
-				DefaultReachStatus(){}
-			};
+
 #ifndef NDEBUG
 	Kruskal<MinimumSpanningTree::NullStatus> dbg;
 #endif
@@ -94,7 +84,7 @@ public:
 	double stats_full_update_time;
 	double stats_fast_update_time;
 
-	SpiraPan(DynamicGraph & graph, Status & status, int reportPolarity=0 ):g(graph), status(status), last_modification(-1),last_addition(-1),last_deletion(-1),history_qhead(0),last_history_clear(0),INF(0),reportPolarity(reportPolarity),Q(VertLt(component_weight))
+	SpiraPan(DynamicGraph & graph, Status & status, int reportPolarity=0 ):g(graph), status(status), last_modification(-1),last_addition(-1),last_deletion(-1),history_qhead(0),last_history_clear(0),INF(0),reportPolarity(reportPolarity),Q(VertLt(component_edge_weight))
 #ifndef NDEBUG
 		,dbg(g,MinimumSpanningTree::nullStatus,0)
 #endif
@@ -118,7 +108,7 @@ public:
 		in_tree.resize(g.nEdgeIDs());
 		seen.resize(n);
 		INF=std::numeric_limits<int>::max();
-		component_weight.resize(g.nodes,INF);
+		component_edge_weight.resize(g.nodes,INF);
 		parents.resize(n,-1);
 		edge_to_component.resize(n,-1);
 
@@ -466,7 +456,7 @@ public:
 			}
 			assert(c>=0);
 #ifndef NDEBUG
-			for(int w:component_weight){
+			for(int w:component_edge_weight){
 				assert(w==INF);
 			}
 #endif
@@ -486,7 +476,7 @@ public:
 				if(cur_component!=c){
 					//connect these two components together
 					int edgeid = edge_to_component[cur_component];
-					assert(g.getWeight(edgeid)==component_weight[cur_component]);
+					assert(g.getWeight(edgeid)==component_edge_weight[cur_component]);
 					int u = g.all_edges[edgeid].from;
 					int v=  g.all_edges[edgeid].to;
 					assert(components[u]==c||components[v]==c);
@@ -513,7 +503,7 @@ public:
 					component_member[cur_component]=-1;
 					empty_components.push_back(cur_component);
 				}
-				component_weight[cur_component]=INF;
+				component_edge_weight[cur_component]=INF;
 				q.clear();
 				q.push_back(start_node);
 				seen[start_node]=true;
@@ -530,10 +520,10 @@ public:
 								int ncomponent = components[t];
 								if(ncomponent!= c && ncomponent != cur_component){
 									int w = g.getWeight(edge.id);
-									if(w<component_weight[ncomponent]){
+									if(w<component_edge_weight[ncomponent]){
 
 										edge_to_component[ncomponent]=edge.id;
-										component_weight[ncomponent]= w;
+										component_edge_weight[ncomponent]= w;
 
 										Q.update(ncomponent);
 									}
@@ -594,8 +584,8 @@ public:
 				components.push_back(i);
 				components_to_visit.push_back(i);
 			}
-			component_weight.clear();
-			component_weight.resize(g.nodes,INF);
+			component_edge_weight.clear();
+			component_edge_weight.resize(g.nodes,INF);
 			component_member.clear();
 			for(int i = 0;i<g.nodes;i++)
 				component_member.push_back(i);

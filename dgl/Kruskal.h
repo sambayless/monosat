@@ -10,7 +10,7 @@
 #include "MinimumSpanningTree.h"
 #include "alg/DisjointSets.h"
 #include <limits>
-
+#include <algorithm>
 
 namespace dgl{
 template<class Status>
@@ -53,18 +53,6 @@ public:
 	std::vector<int> edge_list;
 
 	std::vector<int> prev;
-
-	struct DefaultReachStatus{
-			std::vector<bool> stat;
-				void setReachable(int u, bool reachable){
-					stat.resize(u+1);
-					stat[u]=reachable;
-				}
-				bool isReachable(int u) const{
-					return stat[u];
-				}
-				DefaultReachStatus(){}
-			};
 
 public:
 

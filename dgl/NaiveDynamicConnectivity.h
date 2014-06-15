@@ -120,7 +120,8 @@ void addNode(){
 }
 
 void addEdge(int from, int to,int edgeID){
-	edges.resize(edgeID+1);
+	if(edges.size()<=edgeID)
+		edges.resize(edgeID+1);
 	edges[edgeID].from=from;
 	edges[edgeID].to=to;
 	edges[edgeID].enabled=false;
