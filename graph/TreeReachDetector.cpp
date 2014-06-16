@@ -152,7 +152,7 @@ void TreeReachDetector::buildReachReason(int node,vec<Lit> & conflict){
 				if(mincutalg!= ALG_EDKARP_ADJ){
 					//ok, set the weights for each edge in the cut graph.
 					//Set edges to infinite weight if they are undef or true, and weight 1 otherwise.
-					for(int u = 0;u<outer->cutGraph.adjacency.size();u++){
+					for(int u = 0;u<outer->cutGraph.nodes();u++){
 						for(int j = 0;j<outer->cutGraph.adjacency[u].size();j++){
 							int v = outer->cutGraph.adjacency[u][j].node;
 							Var var = outer->edges[u][v].v;
@@ -282,7 +282,7 @@ void TreeReachDetector::buildReachReason(int node,vec<Lit> & conflict){
 						if(mincutalg!= ALG_EDKARP_ADJ){
 							//ok, set the weights for each edge in the cut graph.
 							//Set edges to infinite weight if they are undef or true, and weight 1 otherwise.
-							for(int u = 0;u<outer->cutGraph.adjacency.size();u++){
+							for(int u = 0;u<outer->cutGraph.nodes();u++){
 								for(int j = 0;j<outer->cutGraph.adjacency[u].size();j++){
 									int v = outer->cutGraph.adjacency[u][j].node;
 									Var var = outer->edges[u][v].v;

@@ -38,7 +38,7 @@ private:
 	std::vector<std::vector<Edge> > adjacency_list;//adj list
 	std::vector<std::vector<Edge> > inverted_adjacency_list;//adj list
 	std::vector<std::vector<Edge> > adjacency_undirected_list;//adj list
-	std::vector<int> weights;
+
 	struct FullEdge{
 		int from;
 		int to;
@@ -48,6 +48,7 @@ private:
 		FullEdge(int from,int to, int id,int weight):from(from),to(to),id(id),weight(weight){}
 	};
 public:
+	std::vector<int> weights;
 	std::vector<FullEdge> all_edges;
 
 	struct EdgeChange{
@@ -82,16 +83,16 @@ public:
 	}
 
 	bool hasEdge(int from, int to)const{
-		for(int i = 0;i< adjacency[from].size();i++){
-			if(adjacency[from][i].node==to && edgeEnabled(adjacency[from][i].id)){
+		for(int i = 0;i< adjacency_list[from].size();i++){
+			if(adjacency_list[from][i].node==to && edgeEnabled(adjacency_list[from][i].id)){
 				return true;
 			}
 		}
 		return false;
 	}
 	bool hasEdgeUndirected(int from, int to)const{
-		for(int i = 0;i< adjacency_undirected[from].size();i++){
-			if(adjacency_undirected[from][i].node==to && edgeEnabled(adjacency_undirected[from][i].id)){
+		for(int i = 0;i< adjacency_undirected_list[from].size();i++){
+			if(adjacency_undirected_list[from][i].node==to && edgeEnabled(adjacency_undirected_list[from][i].id)){
 				return true;
 			}
 		}
@@ -100,9 +101,9 @@ public:
 
 	int addNode(){
 
-		adjacency.push_back({});//adj list
-		adjacency_undirected.push_back({});
-		inverted_adjacency.push_back({});
+		adjacency_list.push_back({});//adj list
+		adjacency_undirected_list.push_back({});
+		inverted_adjacency_list.push_back({});
 		modifications++;
 		additions=modifications;
 		deletions=modifications;
@@ -138,12 +139,12 @@ public:
 		}
 
 		num_edges=next_id;
-		adjacency[from].push_back({to,id});
-		adjacency_undirected[from].push_back({to,id});
-		adjacency_undirected[to].push_back({from,id});
+		adjacency_list[from].push_back({to,id});
+		adjacency_undirected_list[from].push_back({to,id});
+		adjacency_undirected_list[to].push_back({from,id});
 		if(edge_status.size()<=id)
 			edge_status.resize(id+1);
-		inverted_adjacency[to].push_back({from,id});
+		inverted_adjacency_list[to].push_back({from,id});
 		if(all_edges.size()<=id)
 			all_edges.resize(id+1);
 		all_edges[id]={from,to,id,weight};
@@ -319,10 +320,10 @@ public:
 				printf("n%d\n", i);
 			}
 
-			for(int i = 0;i<adjacency.size();i++){
-				for(int j =0;j<adjacency[i].size();j++){
-				int id  =adjacency[i][j].id;
-				int u = adjacency[i][j].node;
+			for(int i = 0;i<adjacency_list.size();i++){
+				for(int j =0;j<adjacency_list[i].size();j++){
+				int id  =adjacency_list[i][j].id;
+				int u = adjacency_list[i][j].node;
 				const char * s = "black";
 				if( edgeEnabled(id))
 					s="blue";

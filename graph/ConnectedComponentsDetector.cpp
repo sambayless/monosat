@@ -181,9 +181,9 @@ void ConnectedComponentsDetector::ConnectedComponentsStatus::setComponents(int c
 					int u = visit.last();
 					visit.pop();
 
-					for(int i = 0;i<g.adjacency_undirected[u].size();i++){
-						int v = g.adjacency_undirected[u][i].node;
-						int edgeid =  g.adjacency_undirected[u][i].id;
+					for(int i = 0;i<g.nIncident(u);i++){
+						int v = g.incident(u,i).node;
+						int edgeid =  g.incident(u,i).id;
 						if( g.edgeEnabled(edgeid) && ! seen[v]){
 							seen[v]=true;
 							visit.push(v);
@@ -242,10 +242,10 @@ void ConnectedComponentsDetector::ConnectedComponentsStatus::setComponents(int c
 							int u = visit.last();
 							visit.pop();
 
-							for(int i = 0;i<antig.adjacency_undirected[u].size();i++){
-								int edgeid = antig.adjacency_undirected[u][i].id;
+							for(int i = 0;i<antig.nIncident(u,true);i++){
+								int edgeid = antig.incident(u,i).id;
 								if(antig.edgeEnabled(edgeid)){
-									int v = antig.adjacency_undirected[u][i].node;
+									int v = antig.incident(u,i).node;
 
 									if( ! seen[v]){
 										//u is a child of node in the minimum spanning tree
@@ -253,7 +253,7 @@ void ConnectedComponentsDetector::ConnectedComponentsStatus::setComponents(int c
 										visit.push(v);
 									}
 								}else if (!antig.edgeEnabled(edgeid)){
-									int v = antig.adjacency_undirected[u][i].node;
+									int v = antig.incident(u,i).node;
 									if( ! edge_in_clause[edgeid]){
 										edge_in_clause[edgeid]=true;
 										Var e =outer->edge_list[edgeid].v;
@@ -358,9 +358,9 @@ void ConnectedComponentsDetector::ConnectedComponentsStatus::setComponents(int c
 						if(mincutalg!= MinCutAlg::ALG_EDKARP_ADJ){
 							//ok, set the weights for each edge in the cut graph.
 							//Set edges to infinite weight if they are undef or true, and weight 1 otherwise.
-							for(int u = 0;u<outer->cutGraph.adjacency.size();u++){
-								for(int j = 0;j<outer->cutGraph.adjacency[u].size();j++){
-									int v = outer->cutGraph.adjacency[u][j].node;
+							for(int u = 0;u<outer->cutGraph.nodes();u++){
+								for(int j = 0;j<outer->cutGraph.nIncident(u);j++){
+									int v = outer->cutGraph.incident(u,j).node;
 									Var var = outer->edges[u][v].v;
 									/*if(S->value(var)==l_False){
 										mc.setCapacity(u,v,1);

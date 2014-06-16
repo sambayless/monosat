@@ -231,11 +231,11 @@ void MSTDetector::buildMinWeightTooSmallReason(int weight,vec<Lit> & conflict){
 
 		void MSTDetector::TarjanOLCA(int node,vec<Lit> & conflict){
 			ancestors[node]=node;
-			for(int i = 0;i<antig.adjacency_undirected[node].size();i++){
-				int edgeid = antig.adjacency_undirected[node][i].id;
+			for(int i = 0;i<antig.nIncident(node,true);i++){
+				int edgeid = antig.incident(node,i,true).id;
 				if(negative_conflict_detector->edgeInTree(edgeid)){
 					assert(antig.edgeEnabled(edgeid));
-					int v = antig.adjacency_undirected[node][i].node;
+					int v = antig.incident(node,i,true).node;
 					if(negative_conflict_detector->getParent(v)==node){
 						//u is a child of node in the minimum spanning tree
 						TarjanOLCA(v,conflict);
@@ -248,11 +248,11 @@ void MSTDetector::buildMinWeightTooSmallReason(int weight,vec<Lit> & conflict){
 			}
 			black[node]=true;
 			//now visit all _disabled_ edges of node
-			for(int i = 0;i<antig.adjacency_undirected[node].size();i++){
-				int edgeid = antig.adjacency_undirected[node][i].id;
+			for(int i = 0;i<antig.nIncident(node,true);i++){
+				int edgeid = antig.incident(node,i,true).id;
 				if(!antig.edgeEnabled(edgeid)){
 					//this is a disabled edge
-					int v = g.adjacency_undirected[node][i].node;
+					int v = g.incident(node,i,true).node;
 					if(black[v]){
 						int set = sets.FindSet(v);
 						int lowest_common_ancestor = ancestors[set];
@@ -311,10 +311,10 @@ void MSTDetector::buildMinWeightTooSmallReason(int weight,vec<Lit> & conflict){
 						int u = visit.last();
 						visit.pop();
 						assert(u>-1);
-						for(int i = 0;i<antig.adjacency_undirected[u].size();i++){
-							int edgeid = antig.adjacency_undirected[u][i].id;
+						for(int i = 0;i<antig.nIncident(u,true);i++){
+							int edgeid = antig.incident(u,i,true).id;
 							if(antig.edgeEnabled(edgeid)){
-								int v = antig.adjacency_undirected[u][i].node;
+								int v = antig.incident(u,i,true).node;
 
 								if( ! seen[v]){
 									//u is a child of node in the minimum spanning tree
@@ -322,7 +322,7 @@ void MSTDetector::buildMinWeightTooSmallReason(int weight,vec<Lit> & conflict){
 									visit.push(v);
 								}
 							}else if (!antig.edgeEnabled(edgeid)){
-								int v = antig.adjacency_undirected[u][i].node;
+								int v = antig.incident(u,i,true).node;
 
 								Var e =outer->edge_list[edgeid].v;
 								assert(outer->value(e)==l_False);
@@ -408,12 +408,12 @@ void MSTDetector::buildMinWeightTooSmallReason(int weight,vec<Lit> & conflict){
 
 		void MSTDetector::TarjanOLCA_edge(int node,int check_edgeid,int lowest_endpoint,vec<Lit> & conflict){
 					ancestors[node]=node;
-					for(int i = 0;i<antig.adjacency_undirected[node].size();i++){
-						int edgeid = antig.adjacency_undirected[node][i].id;
+					for(int i = 0;i<antig.nIncident(node,true);i++){
+						int edgeid = antig.incident(node,i,true).id;
 						if(!antig.edgeEnabled(edgeid))
 							continue;
 						if(negative_conflict_detector->edgeInTree(edgeid)){
-							int v = antig.adjacency_undirected[node][i].node;
+							int v = antig.incident(node,i,true).node;
 							if(negative_conflict_detector->getParent(v)==node){
 								//u is a child of node in the minimum spanning tree
 								TarjanOLCA_edge(v,check_edgeid,lowest_endpoint,conflict);
@@ -428,11 +428,11 @@ void MSTDetector::buildMinWeightTooSmallReason(int weight,vec<Lit> & conflict){
 					}
 					black[node]=true;
 					//now visit all _disabled_ edges of node
-					for(int i = 0;i<g.adjacency_undirected[node].size();i++){
-						int edgeid = g.adjacency_undirected[node][i].id;
+					for(int i = 0;i<g.nIncident(node,true);i++){
+						int edgeid = g.incident(node,i,true).id;
 						if(!antig.edgeEnabled(edgeid)){
 
-							int v = g.adjacency_undirected[node][i].node;
+							int v = g.incident(node,i,true).node;
 							if(black[v]){
 								int set = sets.FindSet(v);
 								int lowest_common_ancestor = ancestors[set];

@@ -348,9 +348,9 @@ void ConnectDetector::buildReachReason(int node,vec<Lit> & conflict){
 				if(mincutalg!= MinCutAlg::ALG_EDKARP_ADJ){
 					//ok, set the weights for each edge in the cut graph.
 					//Set edges to infinite weight if they are undef or true, and weight 1 otherwise.
-					for(int u = 0;u<outer->cutGraph.adjacency_undirected.size();u++){
-						for(int j = 0;j<outer->cutGraph.adjacency_undirected[u].size();j++){
-							int v = outer->cutGraph.adjacency_undirected[u][j].node;
+					for(int u = 0;u<outer->cutGraph.nodes();u++){
+						for(int j = 0;j<outer->cutGraph.nIncident(u,true);j++){
+							int v = outer->cutGraph.incident(u,j,true).node;
 							Var var = outer->edges[u][v].v;
 							/*if(S->value(var)==l_False){
 								mc.setCapacity(u,v,1);
@@ -488,9 +488,9 @@ void ConnectDetector::buildReachReason(int node,vec<Lit> & conflict){
 						if(mincutalg!= MinCutAlg::ALG_EDKARP_ADJ){
 							//ok, set the weights for each edge in the cut graph.
 							//Set edges to infinite weight if they are undef or true, and weight 1 otherwise.
-							for(int u = 0;u<outer->cutGraph.adjacency.size();u++){
-								for(int j = 0;j<outer->cutGraph.adjacency[u].size();j++){
-									int v = outer->cutGraph.adjacency[u][j].node;
+							for(int u = 0;u<outer->cutGraph.nodes();u++){
+								for(int j = 0;j<outer->cutGraph.nIncident(u);j++){
+									int v = outer->cutGraph.incident(u,j).node;
 									Var var = outer->edges[u][v].v;
 									/*if(S->value(var)==l_False){
 										mc.setCapacity(u,v,1);

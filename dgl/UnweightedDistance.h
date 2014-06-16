@@ -138,7 +138,7 @@ public:
 			dist[i]=INF;
 			prev[i]=-1;
 		}
-		auto & adjacency = undirected? g.adjacency_undirected:g.adjacency;
+
 		dist[source]=0;
 		q.push_back(source);
 		for (int i = 0;i<q.size();i++){
@@ -147,11 +147,11 @@ public:
 			if(reportPolarity>=0)
 				status.setMininumDistance(u,true,dist[u]);
 			int d = dist[u];
-			for(int i = 0;i<adjacency[u].size();i++){
-				if(!g.edgeEnabled(adjacency[u][i].id))
+			for(int i = 0;i<g.nIncident(u,undirected);i++){
+				if(!g.edgeEnabled(g.incident(u,i,undirected).id))
 					continue;
-				int edgeID = adjacency[u][i].id;
-				int v = adjacency[u][i].node;
+				int edgeID = g.incident(u,i,undirected).id;
+				int v = g.incident(u,i,undirected).node;
 				int dv = dist[v];
 				int alt = d+1;
 				if(alt>maxDistance)
@@ -218,11 +218,11 @@ public:
 
 
 				}
-				auto & adjacency = undirected? g.adjacency_undirected:g.adjacency;
-				for(int i = 0;i< adjacency.size();i++){
-					for(int j =0;j<adjacency[i].size();j++){
-					int id  =adjacency[i][j].id;
-					int u =  adjacency[i][j].node;
+
+				for(int i = 0;i< g.nodes();i++){
+					for(int j =0;j<g.nIncident(i,undirected);j++){
+					int id  = g.incident(i,j).id;
+					int u =  g.incident(i,j).node;
 					const char * s = "black";
 					if( g.edgeEnabled(id))
 						s="blue";

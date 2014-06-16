@@ -255,7 +255,8 @@ public:
 			q.push_back(higher_component);
 			while(q.size()){
 				int n = q.back(); q.pop_back();
-				for(auto & edge:g.adjacency_undirected[n]){
+				for(int i = 0;i<g.nIncident(n,true);i++){
+					auto & edge = g.incident(n,i,true);
 					if(in_tree[edge.id]){
 
 						int t = edge.node;
@@ -427,7 +428,9 @@ public:
 			q.push_back(start_node);
 			while(q.size()){
 				int n = q.back(); q.pop_back();
-				for(auto & edge:g.adjacency_undirected[n]){
+				//for(auto & edge:g.adjacency_undirected[n]){
+				for(int i = 0;i<g.nIncident(n,true);i++){
+					auto & edge = g.incident(n,i,true);
 					if(in_tree[edge.id] ){
 						//assert(g.edgeEnabled(edge.id));
 						int t = edge.node;
@@ -512,7 +515,8 @@ public:
 				for(int i = 0;i<q.size();i++){
 					int n = q[i];
 					assert(components[n]==c);
-					for(auto & edge:g.adjacency_undirected[n]){
+					for(int i = 0;i<g.nIncident(n,true);i++){
+						auto & edge = g.incident(n,i,true);
 						if(g.edgeEnabled(edge.id)){
 							int t = edge.node;
 							if(!in_tree[edge.id]){
