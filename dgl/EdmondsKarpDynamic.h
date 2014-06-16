@@ -255,7 +255,9 @@ public:
     		//recompute the s-t flow
     		if (needsReflow){
     			f = 0;
-    			for(auto edge:g.adjacency[s]){
+    			//for(auto edge:g.adjacency[s]){
+    			for(int i = 0;i<g.nIncident(s);i++){
+    				auto & edge = g.incident(s,i);
     				if (edge_enabled[edge.id]){
     					f+=F[edge.id];
     				}else{
@@ -263,7 +265,8 @@ public:
     				}
     			}
 #ifndef NDEBUG
-    			for(auto edge:g.inverted_adjacency[s]){
+    			for(int i = 0;i<g.nIncoming(s);i++){
+    				auto & edge = g.incoming(s,i);
     				//There shouldn't be any backwards flow to s in a maximum flow
     				assert(F[edge.id]==0);
 				}
@@ -560,7 +563,9 @@ private:
 			}
 
     		int stflow = 0;
-			for(auto edge:g.inverted_adjacency[s]){
+			//for(auto edge:g.inverted_adjacency[s]){
+    		for(int i = 0;i<g.nIncoming(s);i++){
+				auto & edge = g.incoming(s,i);
 				if (edge_enabled[edge.id]){
 					stflow+=F[edge.id];
 				}

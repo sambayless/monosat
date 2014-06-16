@@ -156,15 +156,15 @@ void MaxflowDetector::buildMaxFlowTooHighReason(int flow,vec<Lit> & conflict){
 			visit.push(target);
 			for(int k = 0;k<visit.size();k++){
 				int u = visit[k];
-				for(int i = 0;i<g.inverted_adjacency[u].size();i++){
-					int p = g.inverted_adjacency[u][i].node;
+				for(int i = 0;i<g.nIncoming(u);i++){
+					int p = g.incoming(u,i).node;
 					if(!seen[p]){
 
 
-						int edgeid = g.inverted_adjacency[u][i].id;
+						int edgeid = g.incoming(u,i).id;
 						int v = outer->getEdgeVar(edgeid);
 
-						//assert( g.inverted_adjacency[u][i].to==u);
+						//assert( g.incoming(u,i).to==u);
 						if(outer->value(v)!=l_False){
 							//this is an enabled edge in the overapprox
 
@@ -182,13 +182,13 @@ void MaxflowDetector::buildMaxFlowTooHighReason(int flow,vec<Lit> & conflict){
 					//pred
 				}
 				//we are walking back in the RESIDUAL graph, which can mean backwards traversal of edges with flow!
-				for(int i = 0;i<g.adjacency[u].size();i++){
-					int p = g.adjacency[u][i].node;
+				for(int i = 0;i<g.nIncident(u);i++){
+					int p = g.incident(u,i).node;
 					if(!seen[p]){
-						int edgeid = g.adjacency[u][i].id;
+						int edgeid = g.incident(u,i).id;
 						int v = outer->getEdgeVar(edgeid);
 
-						//assert( g.inverted_adjacency[u][i].to==u);
+						//assert( g.incoming(u,i).to==u);
 						if(outer->value(v)!=l_False){
 							//this is the residual capacity of the backwards edge in the residual graph - which is equal to the forwards flow on this edge!
 							int residual_capacity = negative_conflict_detector->getEdgeFlow(edgeid);

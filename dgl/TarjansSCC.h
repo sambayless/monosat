@@ -96,7 +96,9 @@ public:
 		q.push_back(node);
 		in_q[node]=true;
 
-		for(auto & edge:g.adjacency[node]){
+		//for(auto & edge:g.adjacency[node]){
+		for(int i = 0;i<g.nIncident(node);i++){
+			auto & edge = g.incident(node,i);
 			if(g.edgeEnabled(edge.id)){
 				int to = edge.node;
 				assert(in_q[node]==(std::count( q.begin(),q.end(),node)));
@@ -214,7 +216,7 @@ public:
 	//This is faster for one-shot scc computations from a single source than doing a full update().
 	static void getSCC(int node, DynamicGraph & graph, std::vector<int>&scc ){
 		TarjansSCC<> s(graph);
-		s.setNodes(graph.nodes);
+		s.setNodes(graph.nodes());
 		int index=0;
 		s.strongConnect(node,index,&scc);
 		assert(scc.size());

@@ -245,7 +245,9 @@ void ReachDetector::buildSATConstraints(bool onlyUnderApprox,int within_steps){
 			}else{
 				c.clear();
 				c.push(~reach_lits[n]);
-				for(auto edge:g.inverted_adjacency[n]){
+				//for(auto edge:g.inverted_adjacency[n]){
+				for(int i = 0;i<g.nIncoming(n);i++){
+					auto & edge = g.incoming(n,i);
 					int edgeID = edge.id;
 					int from = edge.node;
 					if(from!=n){
@@ -260,7 +262,8 @@ void ReachDetector::buildSATConstraints(bool onlyUnderApprox,int within_steps){
 				c.clear();
 				//either an incoming node must be true, or reach_lit must be false
 				c.push(~reach_lits[n]);
-				for(auto edge:g.inverted_adjacency[n]){
+				for(int i = 0;i<g.nIncoming(n);i++){
+					auto & edge = g.incoming(n,i);
 					int edgeID = edge.id;
 					int from = edge.node;
 					if(from!=n){//ignore trivial cycles
@@ -274,7 +277,8 @@ void ReachDetector::buildSATConstraints(bool onlyUnderApprox,int within_steps){
 				c.clear();
 				//either an incoming node must be true, or reach_lit must be false
 				c.push(~reach_lits[n]);
-				for(auto edge:g.inverted_adjacency[n]){
+				for(int i = 0;i<g.nIncoming(n);i++){
+					auto & edge = g.incoming(n,i);
 					int edgeID = edge.id;
 					int from = edge.node;
 					if(from!=n){//ignore trivial cycles
@@ -295,7 +299,8 @@ void ReachDetector::buildSATConstraints(bool onlyUnderApprox,int within_steps){
 			}
 
 			//If this node is reachable, the for each outgoing edge, if that edge is enabled, its to node must also be reachable
-			for(auto edge:g.adjacency[n]){
+			for(int i = 0;i<g.nIncident(n);i++){
+				auto & edge = g.incident(n,i);
 				int edgeID = edge.id;
 				int to = edge.node;
 				if(to!=n){//ignore trivial cycles
@@ -489,8 +494,8 @@ void ReachDetector::buildReachReason(int node,vec<Lit> & conflict){
 					//ok, set the weights for each edge in the cut graph.
 					//Set edges to infinite weight if they are undef or true, and weight 1 otherwise.
 					for(int u = 0;u<outer->cutGraph.nodes();u++){
-						for(int j = 0;j<outer->cutGraph.adjacency[u].size();j++){
-							int v = outer->cutGraph.adjacency[u][j].node;
+						for(int j = 0;j<outer->cutGraph.nIncident(u);j++){
+							int v = outer->cutGraph.incident(u,j).node;
 							Var var = outer->edges[u][v].v;
 							/*if(S->value(var)==l_False){
 								mc.setCapacity(u,v,1);
@@ -590,7 +595,7 @@ void ReachDetector::buildReachReason(int node,vec<Lit> & conflict){
 		    //visit each edge lit in this initial conflict, and see if unreachability is preserved if we add the edge back in (temporarily)
 		    	int i,j=0;
 
-		    	while(cutgraph.nodes<g.nodes()){
+		    	while(cutgraph.nodes()<g.nodes()){
 		    		cutgraph.addNode();
 		    	}
 		    	while(cutgraph.nEdgeIDs()<g.nEdgeIDs()){
@@ -761,8 +766,8 @@ void ReachDetector::buildReachReason(int node,vec<Lit> & conflict){
 							//ok, set the weights for each edge in the cut graph.
 							//Set edges to infinite weight if they are undef or true, and weight 1 otherwise.
 							for(int u = 0;u<outer->cutGraph.nodes();u++){
-								for(int j = 0;j<outer->cutGraph.adjacency[u].size();j++){
-									int v = outer->cutGraph.adjacency[u][j].node;
+								for(int j = 0;j<outer->cutGraph.nIncident(u);j++){
+									int v = outer->cutGraph.incident(u,j).node;
 									Var var = outer->edges[u][v].v;
 									/*if(S->value(var)==l_False){
 										mc.setCapacity(u,v,1);

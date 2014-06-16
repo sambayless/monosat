@@ -271,7 +271,8 @@ public:
     					}else{
     						//extend the path
     						 for (;pos[u]<g.nIncident(u);pos[u]++){
-    							auto & edge = g.adjacency[u][pos[u]];
+    							//auto & edge = g.adjacency[u][pos[u]];
+    							auto & edge = g.incident(u,pos[u]);
     							int edgeID = edge.id;
     							int v =  edge.node;
     							if((dist[v] != dist[u] + 1) ||  !g.edgeEnabled(edgeID) )
@@ -287,8 +288,9 @@ public:
     							}
     						}
     						 if(!found){
-								for (;pos[u]-g.nIncident(u) <g.nIncident(u,true);pos[u]++){
-									auto & edge = g.inverted_adjacency[u][pos[u]-g.nIncident(u)];
+								for (;pos[u]-g.nIncident(u) <g.nIncoming(u);pos[u]++){
+									//auto & edge = g.inverted_adjacency[u][pos[u]-g.nIncident(u)];
+									auto & edge = g.incoming(u,pos[u]-g.nIncident(u));
 									int edgeID = edge.id;
 									int v = edge.node;
 									if((dist[v] != dist[u] + 1) ||  !g.edgeEnabled(edgeID) )
@@ -471,7 +473,8 @@ public:
 						//extend the path
 
 						 for (;pos[u]<g.nIncident(u);pos[u]++){
-							auto & edge = g.adjacency[u][pos[u]];
+							//auto & edge = g.adjacency[u][pos[u]];
+							auto & edge = g.incident(u,pos[u]);
 							int edgeID = edge.id;
 							int v =  edge.node;
 							if((dist[v] != dist[u] + 1) ||  !g.edgeEnabled(edgeID) )
@@ -489,8 +492,9 @@ public:
 							}
 						}
 						 if(!found){
-								for (;pos[u]-g.nIncident(u) <g.nIncident(u,true);pos[u]++){
-									auto & edge = g.inverted_adjacency[u][pos[u]-g.nIncident(u)];
+								for (;pos[u]-g.nIncident(u) <g.nIncoming(u,true);pos[u]++){
+									//auto & edge = g.inverted_adjacency[u][pos[u]-g.nIncident(u)];
+									auto & edge = g.incoming(u,pos[u]-g.nIncident(u));
 									int edgeID = edge.id;
 									int v = edge.node;
 									if((dist[v] != dist[u] + 1) ||  !g.edgeEnabled(edgeID) )
@@ -576,7 +580,8 @@ public:
 				 }else{
 					// disabled[u]=true;
 					 dist[u]=-1;
-					for(auto edge:g.adjacency[u]){
+					 for(int i = 0;i<g.nIncident(u);i++){
+						auto & edge = g.incident(u,i);
 						int edgeID = edge.id;
 						int v = edge.node;
 						if(!g.edgeEnabled(edgeID) )
@@ -591,7 +596,8 @@ public:
 							parentEdge[v].edgeID=-1;
 						}
 					}
-					for(auto edge:g.inverted_adjacency[u]){
+					for(int i = 0;i<g.nIncoming(u);i++){
+						auto & edge = g.incoming(u,i);
 						int edgeID = edge.id;
 						int v = edge.node;
 						if(!g.edgeEnabled(edgeID)  )
@@ -631,7 +637,8 @@ public:
     					}else{
     						//extend the path
 
-    						for(auto edge:g.adjacency[u]){
+    						for(int i = 0;i<g.nIncident(u);i++){
+								auto & edge = g.incident(u,i);
     							int edgeID = edge.id;
     							int v =  edge.node;
     							if((dist[v] != dist[u] + 1) ||  !g.edgeEnabled(edgeID) )
@@ -648,7 +655,8 @@ public:
     							}
     						}
     						if(!found){
-    							for(auto edge:g.inverted_adjacency[u]){
+    							for(int i = 0;i<g.nIncoming(u);i++){
+									auto & edge = g.incoming(u,i);
     								int edgeID = edge.id;
     								int v = edge.node;
     								if((dist[v] != dist[u] + 1) ||  !g.edgeEnabled(edgeID) )
@@ -736,7 +744,9 @@ public:
     					 dist[u]=-1;
     					 //disabled[u]=true;
     					//forest.cut(u);
-    					for(auto edge:g.adjacency[u]){
+    					//for(auto edge:g.adjacency[u]){
+    					 for(int i = 0;i<g.nIncident(u);i++){
+    						auto & edge = g.incident(u,i);
     						int edgeID = edge.id;
     						int v = edge.node;
     						if(!g.edgeEnabled(edgeID))
@@ -751,7 +761,8 @@ public:
     							parentEdge[v].edgeID=-1;
     						}
     					}
-    					for(auto edge:g.inverted_adjacency[u]){
+    					 for(int i = 0;i<g.nIncoming(u);i++){
+							auto & edge = g.incoming(u,i);
     						int edgeID = edge.id;
     						int v = edge.node;
     						if(!g.edgeEnabled(edgeID)  )

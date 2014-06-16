@@ -138,8 +138,8 @@ public:
 		for(int i = start;i<q.size();i++){
 			int u = q[i];
 			assert(seen[u]);
-			for(int i = 0;i<g.adjacency[u].size();i++){
-				int v = g.adjacency[u][i];
+			for(int i = 0;i<g.nIncident(u);i++){
+				int v = g.incident(u,i);
 
 				if(!seen[v]){
 					//this was changed
@@ -180,16 +180,16 @@ public:
 				}
 			}
 			if(!seen[u]){
-				for(int i = 0;i<g.adjacency[u].size();i++){
-					int v = g.adjacency[u][i];
+				for(int i = 0;i<g.nIncident(u);i++){
+					int v = g.incident(u,i);
 					if(seen[v] && prev[v]==to){
 						seen[v]=0;
 					}
 				}
 			}else{
 #ifdef GRAPH_DEBUG
-				for(int i = 0;i<g.adjacency[u].size();i++){
-						int v = g.adjacency[u][i];
+				for(int i = 0;i<g.nIncident(u);i++){
+						int v = g.incident(u,i);
 						assert(seen[v]);
 				}
 #endif
@@ -215,10 +215,10 @@ public:
 			//if(!old_seen[u]){
 			//	changed.push(u);
 			//}
-			for(int i = 0;i<g.adjacency[u].size();i++){
-				if(!g.edgeEnabled( g.adjacency[u][i].id))
+			for(int i = 0;i<g.nIncident(u);i++){
+				if(!g.edgeEnabled( g.incident(u,i).id))
 					continue;
-				int v = g.adjacency[u][i].to;
+				int v = g.incident(u,i).to;
 				if(!seen[v]){
 					seen[v]=1;
 					prev[v]=u;
@@ -413,10 +413,10 @@ public:
 			if(reportPolarity>-1)
 				status.setReachable(u,true);
 
-			for(int i = 0;i<g.adjacency[u].size();i++){
-				if(!g.edgeEnabled( g.adjacency[u][i].id))
+			for(int i = 0;i<g.nIncident(u);i++){
+				if(!g.edgeEnabled( g.incident(u,i).id))
 					continue;
-				int v = g.adjacency[u][i].to;
+				int v = g.incident(u,i).to;
 
 				if(!seen[v]){
 					seen[v]=1;
