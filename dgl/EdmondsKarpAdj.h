@@ -83,12 +83,12 @@ public:
                    }
                }
 
-               for (int i = 0;i<g.nIncident(u,true);i++){
-            	   int id = g.incident(u,i,true).id;
+               for (int i = 0;i<g.nIncoming(u);i++){
+            	   int id = g.incoming(u,i).id;
             	   if(!g.edgeEnabled(id))
 						continue;
 
-				   int v = g.incident(u,i,true).node;
+				   int v = g.incoming(u,i).node;
 
 				   int f = 0;
 				   int c = F[id];

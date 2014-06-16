@@ -87,12 +87,12 @@ class EdmondsKarpDynamic:public MaxFlow{
                            //return M[t];
                    }
                }
-               for (int i = 0;i<g.nIncident(u,true);i++){
-				   int id = g.incident(u,i,true).id;
-				   if(!edge_enabled[(g.incident(u,i,true).id)])
+               for (int i = 0;i<g.nIncoming(u);i++){
+				   int id = g.incoming(u,i).id;
+				   if(!edge_enabled[(g.incoming(u,i).id)])
 						continue;
 
-				   int v = g.incident(u,i,true).node;
+				   int v = g.incoming(u,i).node;
 					  ///(If there is available capacity, and v is not seen before in search)
 
 				   int f = 0;
@@ -471,14 +471,12 @@ private:
                        }
                    }
 
-                   for (int i = 0;i<g.nIncident(u,true);i++){
-                	   int id = g.incident(u,i,true).id;
-					   if(!edge_enabled[(g.incident(u,i,true).id)])
+                   for (int i = 0;i<g.nIncoming(u);i++){
+                	   int id = g.incoming(u,i).id;
+					   if(!edge_enabled[(g.incoming(u,i).id)])
 							continue;
-					   if(id==27 || id==29){
-						   int a=1;
-					   }
-					   int v = g.incident(u,i,true).node;
+
+					   int v = g.incoming(u,i).node;
 						  ///(If there is available capacity, and v is not seen before in search)
 
 					   int f = 0;
@@ -644,10 +642,10 @@ private:
     	for(int u = 0;u<g.nodes();u++){
     		int inflow = 0;
     		int outflow = 0;
-            for (int i = 0;i<g.nIncident(u,true);i++){
-				   int id = g.incident(u,i,true).id;
+            for (int i = 0;i<g.nIncoming(u);i++){
+				   int id = g.incoming(u,i).id;
 				   assert(id<edge_enabled.size());
-				   if(!edge_enabled[(g.incident(u,i,true).id)])
+				   if(!edge_enabled[(g.incoming(u,i).id)])
 						continue;
 
 				   inflow+=F[id];

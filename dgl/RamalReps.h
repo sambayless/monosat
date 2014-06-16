@@ -133,11 +133,11 @@ public:
 				break;
 			dbg_delta[u]=0;
 
-			for(int i = 0;i<g.nIncident(u,true);i++){
-					if(!g.edgeEnabled( g.incident(u,i,true).id))
+			for(int i = 0;i<g.nIncoming(u);i++){
+					if(!g.edgeEnabled( g.incoming(u,i).id))
 						continue;
 
-					int edgeID = g.incident(u,i,true).id;
+					int edgeID = g.incoming(u,i).id;
 					int v = g.all_edges[edgeID].from;
 					int alt = dbg_dist[v]+ 1;
 					assert(alt>=dbg_dist[u]);
@@ -173,11 +173,11 @@ public:
 				int a=1;
 			}
 			assert(dbg_dist[u]==dist[u]);
-			for(int i = 0;i<g.nIncident(u,true);i++){
-				if(!g.edgeEnabled( g.incident(u,i,true).id))
+			for(int i = 0;i<g.nIncoming(u);i++){
+				if(!g.edgeEnabled( g.incoming(u,i).id))
 					continue;
 
-				int edgeID = g.incident(u,i,true).id;
+				int edgeID = g.incoming(u,i).id;
 				int v = g.all_edges[edgeID].from;
 				int alt = dbg_dist[v]+ 1;
 				assert(alt>=dbg_dist[u]);
@@ -250,7 +250,9 @@ public:
 				changed.push_back(u);
 			}
 			delta[u]=0;
-			for(auto & e:g.inverted_adjacency[u]){
+			//for(auto & e:g.inverted_adjacency[u]){
+			for(int i = 0;i<g.nIncoming(u);i++){
+				auto & e =g.incoming(u,i);
 				int adjID = e.id;
 				if (g.edgeEnabled(adjID)){
 
@@ -277,7 +279,8 @@ public:
 				}
 			}
 
-			for(auto & e:g.adjacency[u]){
+			for(int i = 0;i<g.nIncident(u);i++){
+				auto & e =g.incident(u,i);
 				int adjID = e.id;
 				if (g.edgeEnabled(adjID)){
 						assert(g.all_edges[adjID].from==u);
@@ -303,7 +306,8 @@ public:
 			int del = delta[u];
 			int d = dist[u];
 			int num_in = 0;
-			for(auto & e:g.inverted_adjacency[u]){
+			for(int i = 0;i<g.nIncoming(u);i++){
+				auto & e =g.incoming(u,i);
 				int adjID = e.id;
 				int from = g.all_edges[adjID].from;
 
@@ -340,7 +344,8 @@ public:
 		for(int i = 0;i<changeset.size();i++){
 			int u = changeset[i];
 			dist[u] = INF;
-			for(auto & e:g.adjacency[u]){
+			for(int i = 0;i<g.nIncident(u);i++){
+				auto & e =g.incident(u,i);
 				int adjID = e.id;
 				if (g.edgeEnabled(adjID)){
 					if(edgeInShortestPathGraph[adjID]){
@@ -360,7 +365,8 @@ public:
 		for (int i = 0;i<changeset.size();i++){
 			int u = changeset[i];
 			assert(dist[u]==INF);
-			for(auto & e:g.inverted_adjacency[u]){
+			for(int i = 0;i<g.nIncoming(u);i++){
+				auto & e =g.incoming(u,i);
 				int adjID = e.id;
 
 				if (g.edgeEnabled(adjID)){
@@ -412,7 +418,8 @@ public:
 					}
 				}
 			}
-			for(auto & e:g.adjacency[u]){
+			for(int i = 0;i<g.nIncident(u);i++){
+				auto & e =g.incident(u,i);
 				int adjID = e.id;
 				if (g.edgeEnabled(adjID)){
 					assert(g.all_edges[adjID].from==u);
@@ -438,7 +445,8 @@ public:
 				}
 			}
 
-			for(auto & e:g.inverted_adjacency[u]){
+			for(int i = 0;i<g.nIncoming(u);i++){
+				auto & e =g.incoming(u,i);
 				int adjID = e.id;
 				if (g.edgeEnabled(adjID)){
 
@@ -567,7 +575,7 @@ public:
 		if(last_modification<=0)
 			return true;
 		dbg_delta();
-		Dijkstra<EdgeStatus,false> d(source,g);
+		Dijkstra<false> d(source,g);
 
 		for(int i = 0;i<g.nodes();i++){
 			int distance = dist[i];

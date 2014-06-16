@@ -78,9 +78,9 @@ public:
 				current[u]=UNDEF;
 						prev[u]=UNDEF;
 
-				for(int j = 0;j<g.nIncident(u,true);j++){
-					int from = g.incident(u,j,true).node;
-					int id= g.incident(u,j,true).id;
+				for(int j = 0;j<g.nIncoming(u);j++){
+					int from = g.incoming(u,j).node;
+					int id= g.incoming(u,j).id;
 					if(!g.edgeEnabled(id))
 							continue;
 

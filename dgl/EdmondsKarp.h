@@ -78,10 +78,10 @@ public:
                    }
                }
                //Must also try reverse edges
-               for (int i = 0;i<g.nIncident(u,true);i++){
-				   if(!g.edgeEnabled(g.incident(u,i,true).id))
+               for (int i = 0;i<g.nIncoming(u);i++){
+				   if(!g.edgeEnabled(g.incoming(u,i).id))
 						continue;
-				   int v = g.incident(u,i,true).node;
+				   int v = g.incoming(u,i).node;
 					///(If there is available capacity, and v is not seen before in search)
 				   int c = C[u][v];
 				   int f = F[u][v];

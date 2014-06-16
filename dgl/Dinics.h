@@ -135,11 +135,11 @@ public:
                     Q.push_back(v);
                 }
             }
-            for (int j = 0;j<g.nIncident(u,true);j++){
-            	int edgeID = g.incident(u,j,true).id;
+            for (int j = 0;j<g.nIncoming(u);j++){
+            	int edgeID = g.incoming(u,j).id;
                	if(!g.edgeEnabled(edgeID))
    						continue;
-               	int v =  g.incident(u,j,true).node;
+               	int v =  g.incoming(u,j).node;
                	//this is a backward edge, so it has capacity exactly if the forward edge has flow
                 if (dist[v] < 0 && F[edgeID]) {
                     dist[v] = dist[u] + 1;

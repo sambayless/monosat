@@ -149,11 +149,11 @@ public:
 				break;
 			dbg_delta[u]=0;
 
-			for(int i = 0;i<g.nIncident(u,true);i++){
-					if(!g.edgeEnabled( g.incident(u,i,true).id))
+			for(int i = 0;i<g.nIncoming(u);i++){
+					if(!g.edgeEnabled( g.incoming(u,i).id))
 						continue;
 
-					int edgeID = g.incident(u,i,true).id;
+					int edgeID = g.incoming(u,i).id;
 					int v = g.all_edges[edgeID].from;
 					int alt = dbg_dist[v]+ 1;
 					if(maxDistance>=0 && alt>maxDistance)
@@ -191,11 +191,11 @@ public:
 			int db = dbg_dist[u];
 			assert(dbg_dist[u]==dist[u]);
 
-			for(int i = 0;i<g.nIncident(u,true);i++){
-				if(!g.edgeEnabled( g.incident(u,i,true).id))
+			for(int i = 0;i<g.nIncoming(u);i++){
+				if(!g.edgeEnabled( g.incoming(u,i).id))
 					continue;
 
-				int edgeID = g.incident(u,i,true).id;
+				int edgeID = g.incoming(u,i).id;
 				int v = g.all_edges[edgeID].from;
 				int alt = dbg_dist[v]+ 1;
 				int du = dbg_dist[u];
