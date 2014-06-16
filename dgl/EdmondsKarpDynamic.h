@@ -619,7 +619,7 @@ private:
 #ifndef NDEBUG
         	 dbg_print_graph(s,t,shortCircuitFrom, shortCircuitTo);
     	 	if(shortCircuitFrom>=0){
-    	 		d.addEdge(shortCircuitFrom,shortCircuitTo,d.edges,100);
+    	 		d.addEdge(shortCircuitFrom,shortCircuitTo,d.edges(),100);
     	 	}
     		EdmondsKarpAdj<std::vector<int>> ek_check(d,d.weights);
 
