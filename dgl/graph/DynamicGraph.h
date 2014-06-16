@@ -16,27 +16,28 @@
 #endif
 namespace dgl{
 class DynamicGraph{
-public:
+
 	std::vector<bool> edge_status;
-	int nodes;
-	int edges;
+	int num_nodes;
+	int num_edges;
+public:
 	int modifications;
 	int additions;
 	int deletions;
 	int historyclears;
+
+private:
 	int next_id;
 	bool is_changed;
 	//bool allocated=false;
-#ifdef RECORD
-	FILE * outfile;
-#endif
+
 	struct Edge{
 		int node;
 		int id;
 	};
-	std::vector<std::vector<Edge> > adjacency;//adj list
-	std::vector<std::vector<Edge> > inverted_adjacency;//adj list
-	std::vector<std::vector<Edge> > adjacency_undirected;//adj list
+	std::vector<std::vector<Edge> > adjacency_list;//adj list
+	std::vector<std::vector<Edge> > inverted_adjacency_list;//adj list
+	std::vector<std::vector<Edge> > adjacency_undirected_list;//adj list
 	std::vector<int> weights;
 	struct FullEdge{
 		int from;
@@ -46,7 +47,7 @@ public:
 		FullEdge():from(-1),to(-1),id(-1),weight(1){}
 		FullEdge(int from,int to, int id,int weight):from(from),to(to),id(id),weight(weight){}
 	};
-
+public:
 	std::vector<FullEdge> all_edges;
 
 	struct EdgeChange{
@@ -60,24 +61,21 @@ public:
 		int prev_mod;
 	};
 	std::vector<EdgeChange> history;
-
-	DynamicGraph():nodes(0),edges(0),modifications(0),additions(0),deletions(0),historyclears(0),next_id(0),is_changed(true){
+#ifdef RECORD
+	FILE * outfile;
+#endif
+public:
+	DynamicGraph():num_nodes(0),num_edges(0),modifications(0),additions(0),deletions(0),historyclears(0),next_id(0),is_changed(true){
 		//allocated=true;
 #ifdef RECORD
 		outfile=nullptr;
 #endif
 	}
-/*	DynamicGraph(): nodes(0),edges(0),modifications(0),additions(0),deletions(0),historyclears(0),next_id(0),is_changed(true){
-#ifdef RECORD
-		outfile=nullptr;
-#endif
-		//allocated=false;
-	}*/
+
 	~DynamicGraph(){
-	/*	if(allocated){
-			delete(&edge_status);
-		}*/
+
 	}
+
 	void addNodes(int n){
 		for(int i = 0;i<n;i++)
 			addNode();
@@ -111,11 +109,11 @@ public:
 		clearHistory();
 #ifdef RECORD
 			if(outfile){
-				fprintf(outfile,"node %d\n",nodes);
+				fprintf(outfile,"node %d\n",num_nodes);
 				fflush(outfile);
 			}
 #endif
-		return nodes++;
+		return num_nodes++;
 	}
 
 	bool edgeEnabled(int edgeID)const{
@@ -127,8 +125,8 @@ public:
 	}
 	//Instead of actually adding and removing edges, tag each edge with an 'enabled/disabled' label, and just expect reading algorithms to check and respect that label.
 	void addEdge(int from, int to, int id=-1, int weight=1){
-		assert(from<nodes);
-		assert(to<nodes);
+		assert(from<num_nodes);
+		assert(to<num_nodes);
 		assert(from>=0);
 		assert(to>=0);
 		if(id<0){
@@ -139,7 +137,7 @@ public:
 			}
 		}
 
-		edges=next_id;
+		num_edges=next_id;
 		adjacency[from].push_back({to,id});
 		adjacency_undirected[from].push_back({to,id});
 		adjacency_undirected[to].push_back({from,id});
@@ -165,8 +163,49 @@ public:
 		enableEdge(from,to,id);//default to enabled
 	}
 	int nEdgeIDs(){
-		assert(edges==all_edges.size());
-		return edges;//all_edges.size();
+		assert(num_edges==all_edges.size());
+		return num_edges;//all_edges.size();
+	}
+	inline int nodes()const{
+		return num_nodes;
+	}
+	inline int edges()const{
+		return num_edges;
+	}
+
+	inline int nIncident(int node, bool undirected=false){
+		assert(node>=0);assert(node<nodes());
+		if(undirected){
+			return adjacency_undirected_list[node].size();
+		}else{
+			return adjacency_list[node].size();
+		}
+	}
+
+	inline int nIncoming(int node, bool undirected=false){
+		assert(node>=0);assert(node<nodes());
+		if(undirected){
+			return adjacency_undirected_list[node].size();
+		}else{
+			return inverted_adjacency_list[node].size();
+		}
+	}
+
+	inline Edge & incident(int node, int i,bool undirected=false){
+		assert(node>=0);assert(node<nodes());assert(i<nIncident(node,undirected));
+		if(undirected){
+			return adjacency_undirected_list[node][i];
+		}else{
+			return adjacency_list[node][i];
+		}
+	}
+	inline Edge & incoming(int node, int i,bool undirected=false){
+		assert(node>=0);assert(node<nodes());assert(i<nIncoming(node,undirected));
+		if(undirected){
+			return adjacency_undirected_list[node][i];
+		}else{
+			return inverted_adjacency_list[node][i];
+		}
 	}
 	std::vector<int> & getWeights(){
 		return weights;
@@ -276,7 +315,7 @@ public:
 	void drawFull(){
 #ifndef NDEBUG
 			printf("digraph{\n");
-			for(int i = 0;i<nodes;i++){
+			for(int i = 0;i<num_nodes;i++){
 				printf("n%d\n", i);
 			}
 
@@ -305,7 +344,7 @@ public:
 			int i,j = 0;
 			for(i = 0;i<adj.size();i++){
 				if(adj[i]==to){
-					edges--;
+					num_edges--;
 				}else{
 					adj[j++]=adj[i];
 				}

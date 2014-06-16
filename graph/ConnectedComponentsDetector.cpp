@@ -35,10 +35,10 @@ Lit ConnectedComponentsDetector::getConnectLit(int u, int v){
 		if(reachLits.size()>u && reachLits[u].size()>v && reachLits[u][v]!=lit_Undef){
 			return reachLits[u][v];
 		}
-		if(reachLits.size()<g.nodes){
-			reachLits.growTo(g.nodes);
+		if(reachLits.size()<g.nodes()){
+			reachLits.growTo(g.nodes());
 			for(int i = 0;i<reachLits.size();i++){
-				reachLits[i].growTo(g.nodes, lit_Undef);
+				reachLits[i].growTo(g.nodes(), lit_Undef);
 			}
 		}
 		Var connect_var = outer->newVar(getID(),true);
@@ -51,10 +51,10 @@ Lit ConnectedComponentsDetector::getConnectLit(int u, int v){
 void ConnectedComponentsDetector::addConnectedLit(Var outer_reach_var,int node1, int node2){
 	g.invalidate();
 	antig.invalidate();
-	if(reachLits.size()<g.nodes){
-		reachLits.growTo(g.nodes);
+	if(reachLits.size()<g.nodes()){
+		reachLits.growTo(g.nodes());
 		for(int i = 0;i<reachLits.size();i++){
-			reachLits[i].growTo(g.nodes, lit_Undef);
+			reachLits[i].growTo(g.nodes(), lit_Undef);
 		}
 	}
 
@@ -167,7 +167,7 @@ void ConnectedComponentsDetector::ConnectedComponentsStatus::setComponents(int c
 			double starttime = rtime(2);
 
 			seen.clear();
-			seen.growTo(g.nodes);
+			seen.growTo(g.nodes());
 
 			visit.clear();
 			//ok,construct spanning forest from among the connected elements using dfs (we don't need to use kruskal's, as the graph is unweighted), and learn that at least one edge in that each must be disabled.
@@ -234,7 +234,7 @@ void ConnectedComponentsDetector::ConnectedComponentsStatus::setComponents(int c
 						visit.clear();
 						//ok, now traverse the connected component in the tree below this root.
 						seen.clear();
-						seen.growTo(g.nodes);
+						seen.growTo(g.nodes());
 
 						visit.push(root);
 						seen[root]=true;
@@ -411,7 +411,7 @@ void ConnectedComponentsDetector::ConnectedComponentsStatus::setComponents(int c
 								assert(seen[u]);
 								assert(!outer->dbg_reachable(source,u,false));
 								//assert(!negative_reach_detector->connected_unsafe(u));
-								//Ok, then add all its incoming disabled edges to the cut, and visit any unseen, non-disabled incoming edges
+								//Ok, then add all its incoming disabled edges to the cut, and visit any unseen, non-disabled incoming.edges()
 								for(int i = 0;i<outer->inv_adj[u].size();i++){
 									int v = outer->inv_adj[u][i].v;
 									int from = outer->inv_adj[u][i].from;
@@ -691,7 +691,7 @@ Lit ConnectedComponentsDetector::decide(){
 						//Randomly re-weight the graph sometimes
 						if(drand(rnd_seed)<opt_decide_graph_re_rnd){
 
-							for(int i=0;i<outer->g.nodes;i++){
+							for(int i=0;i<outer->g.nodes();i++){
 									 double w = drand(rnd_seed);
 									 w-=0.5;
 									 w*=w;

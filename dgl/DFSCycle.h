@@ -4,7 +4,7 @@
 
 #include <vector>
 #include "alg/Heap.h"
-#include "DynamicGraph.h"
+#include "graph/DynamicGraph.h"
 #include "core/Config.h"
 #include "Reach.h"
 
@@ -69,7 +69,7 @@ public:
 		check.reserve(n);
 		seen.resize(n);
 		prev.resize(n);
-		INF=g.nodes+1;
+		INF=g.nodes()+1;
 	}
 
 	void update( ){
@@ -88,13 +88,13 @@ public:
 			return;
 		}
 
-		setNodes(g.nodes);
+		setNodes(g.nodes());
 
 		stats_full_updates++;
 		
 
 		q.clear();
-		for(int i = 0;i<g.nodes;i++){
+		for(int i = 0;i<g.nodes();i++){
 			seen[i]=0;
 			in_q[i]=0;
 			prev[i]=-1;
@@ -102,7 +102,7 @@ public:
 
 		cycle.clear();
 		path.clear();
-		for(int k = 0;k<g.nodes;k++){//to handle disconnected graph
+		for(int k = 0;k<g.nodes();k++){//to handle disconnected graph
 			if(seen[k])
 				continue;
 			q.push_back(k);
@@ -121,16 +121,16 @@ public:
 				assert(seen[u]);
 
 
-				for(int i = 0;i<g.adjacency[u].size();i++){
-					if(!g.edgeEnabled( g.adjacency[u][i].id))
+				for(int i = 0;i<g.nIncident(u);i++){
+					if(!g.edgeEnabled( g.incident(u,i).id))
 						continue;
-					int v = g.adjacency[u][i].node;
+					int v = g.incident(u,i).node;
 
 					if(!seen[v]){
 						seen[v]=1;
 						prev[v]=u;
 						q.push_back(v);
-						path.push_back(g.adjacency[u][i].id);
+						path.push_back(g.incident(u,i).id);
 					}else{
 						if(!undirected_cycle){
 							//path.copyTo(cycle);
@@ -141,7 +141,7 @@ public:
 									cycle.push_back(path[j-1]);
 								}
 							}
-							cycle.push_back(g.adjacency[u][i].id);
+							cycle.push_back(g.incident(u,i).id);
 
 						}
 						undirected_cycle=true;
@@ -156,7 +156,7 @@ public:
 									cycle.push_back(path[j-1]);
 								}
 							}
-							cycle.push_back(g.adjacency[u][i].id);
+							cycle.push_back(g.incident(u,i).id);
 
 							break;
 						}

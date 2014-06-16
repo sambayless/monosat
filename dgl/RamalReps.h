@@ -10,7 +10,7 @@
 
 #include <vector>
 #include "alg/Heap.h"
-#include "DynamicGraph.h"
+#include "graph/DynamicGraph.h"
 #include "Reach.h"
 #include "Dijkstra.h"
 #include "core/Config.h"
@@ -103,7 +103,7 @@ public:
 	void dbg_delta(){
 #ifndef NDEBUG
 		dbg_delta_lite();
-		assert(delta.size()==g.nodes);
+		assert(delta.size()==g.nodes());
 
 		for(int i = 0;i<g.nEdgeIDs();i++){
 			if(!g.edgeEnabled(i)){
@@ -113,8 +113,8 @@ public:
 
 		std::vector<int> dbg_delta;
 		std::vector<int> dbg_dist;
-		dbg_dist.resize(g.nodes,INF);
-		dbg_delta.resize(g.nodes);
+		dbg_dist.resize(g.nodes(),INF);
+		dbg_delta.resize(g.nodes());
 		dbg_dist[getSource()]=0;
 		struct DistCmp{
 			std::vector<int> & _dist;
@@ -133,11 +133,11 @@ public:
 				break;
 			dbg_delta[u]=0;
 
-			for(int i = 0;i<g.inverted_adjacency[u].size();i++){
-					if(!g.edgeEnabled( g.inverted_adjacency[u][i].id))
+			for(int i = 0;i<g.nIncident(u,true);i++){
+					if(!g.edgeEnabled( g.incident(u,i,true).id))
 						continue;
 
-					int edgeID = g.inverted_adjacency[u][i].id;
+					int edgeID = g.incident(u,i,true).id;
 					int v = g.all_edges[edgeID].from;
 					int alt = dbg_dist[v]+ 1;
 					assert(alt>=dbg_dist[u]);
@@ -146,11 +146,11 @@ public:
 					}*/
 				}
 
-			for(int i = 0;i<g.adjacency[u].size();i++){
-				if(!g.edgeEnabled( g.adjacency[u][i].id))
+			for(int i = 0;i<g.nIncident(u);i++){
+				if(!g.edgeEnabled( g.incident(u,i).id))
 					continue;
 
-				int edgeID = g.adjacency[u][i].id;
+				int edgeID = g.incident(u,i).id;
 				int v = g.all_edges[edgeID].to;
 				int alt = dbg_dist[u]+ 1;
 				if(alt<dbg_dist[v]){
@@ -167,17 +167,17 @@ public:
 			}
 		}
 
-		for(int u = 0;u<g.nodes;u++){
+		for(int u = 0;u<g.nodes();u++){
 			int d = dist[u];
 			if(u==53){
 				int a=1;
 			}
 			assert(dbg_dist[u]==dist[u]);
-			for(int i = 0;i<g.inverted_adjacency[u].size();i++){
-				if(!g.edgeEnabled( g.inverted_adjacency[u][i].id))
+			for(int i = 0;i<g.nIncident(u,true);i++){
+				if(!g.edgeEnabled( g.incident(u,i,true).id))
 					continue;
 
-				int edgeID = g.inverted_adjacency[u][i].id;
+				int edgeID = g.incident(u,i,true).id;
 				int v = g.all_edges[edgeID].from;
 				int alt = dbg_dist[v]+ 1;
 				assert(alt>=dbg_dist[u]);
@@ -191,13 +191,13 @@ public:
 			}
 
 		}
-		for(int u = 0;u<g.nodes;u++){
+		for(int u = 0;u<g.nodes();u++){
 			int d = dist[u];
 			int d_expect = dbg_dist[u];
 			assert(d==dbg_dist[u]);
 
 		}
-		for(int u = 0;u<g.nodes;u++){
+		for(int u = 0;u<g.nodes();u++){
 			int d = delta[u];
 			int d_expect = dbg_delta[u];
 			assert(d==dbg_delta[u]);
@@ -299,7 +299,7 @@ public:
 	}
 	void dbg_delta_lite(){
 #ifndef NDEBUG
-		for(int u = 0;u<g.nodes;u++){
+		for(int u = 0;u<g.nodes();u++){
 			int del = delta[u];
 			int d = dist[u];
 			int num_in = 0;
@@ -482,13 +482,13 @@ public:
 		if(last_modification>0 && g.modifications==last_modification)
 				return;
 		if(last_modification<=0 || g.changed()){
-			INF=g.nodes+1;
-			dist.resize(g.nodes,INF);
+			INF=g.nodes()+1;
+			dist.resize(g.nodes(),INF);
 			dist[getSource()]=0;
-			delta.resize(g.nodes);
-			node_changed.resize(g.nodes,true);
+			delta.resize(g.nodes());
+			node_changed.resize(g.nodes(),true);
 
-			for(int i = 0;i<g.nodes;i++){
+			for(int i = 0;i<g.nodes();i++){
 				if((dist[i]>=INF && reportPolarity<=0) || (dist[i]<INF && reportPolarity>=0)){
 				node_changed[i]=true;
 				changed.push_back(i);//On the first round, report status of all nodes.
@@ -511,7 +511,7 @@ public:
 			}
 		}
 
-		//for(int i = 0;i<g.nodes;i++){
+		//for(int i = 0;i<g.nodes();i++){
 		//	int u=i;
 		for(int u:changed){
 			//int u = changed[i];
@@ -569,7 +569,7 @@ public:
 		dbg_delta();
 		Dijkstra<EdgeStatus,false> d(source,g);
 
-		for(int i = 0;i<g.nodes;i++){
+		for(int i = 0;i<g.nodes();i++){
 			int distance = dist[i];
 			int dbgdist = d.distance(i);
 			if(distance!=dbgdist){

@@ -10,7 +10,7 @@
 
 #include <vector>
 #include "alg/Heap.h"
-#include "DynamicGraph.h"
+#include "graph/DynamicGraph.h"
 #include "Reach.h"
 #include "Dijkstra.h"
 #include "core/Config.h"
@@ -115,7 +115,7 @@ public:
 #ifndef NDEBUG
 
 		dbg_delta_lite();
-		assert(delta.size()==g.nodes);
+		assert(delta.size()==g.nodes());
 
 		for(int i = 0;i<g.nEdgeIDs();i++){
 			if(!g.edgeEnabled(i)){
@@ -128,8 +128,8 @@ public:
 
 		std::vector<int> dbg_delta;
 		std::vector<int> dbg_dist;
-		dbg_dist.resize(g.nodes,INF);
-		dbg_delta.resize(g.nodes);
+		dbg_dist.resize(g.nodes(),INF);
+		dbg_delta.resize(g.nodes());
 		dbg_dist[getSource()]=0;
 
 		struct DistCmp{
@@ -149,11 +149,11 @@ public:
 				break;
 			dbg_delta[u]=0;
 
-			for(int i = 0;i<g.inverted_adjacency[u].size();i++){
-					if(!g.edgeEnabled( g.inverted_adjacency[u][i].id))
+			for(int i = 0;i<g.nIncident(u,true);i++){
+					if(!g.edgeEnabled( g.incident(u,i,true).id))
 						continue;
 
-					int edgeID = g.inverted_adjacency[u][i].id;
+					int edgeID = g.incident(u,i,true).id;
 					int v = g.all_edges[edgeID].from;
 					int alt = dbg_dist[v]+ 1;
 					if(maxDistance>=0 && alt>maxDistance)
@@ -164,11 +164,11 @@ public:
 					}*/
 				}
 
-			for(int i = 0;i<g.adjacency[u].size();i++){
-				if(!g.edgeEnabled( g.adjacency[u][i].id))
+			for(int i = 0;i<g.nIncident(u);i++){
+				if(!g.edgeEnabled( g.incident(u,i).id))
 					continue;
 
-				int edgeID = g.adjacency[u][i].id;
+				int edgeID = g.incident(u,i).id;
 				int v = g.all_edges[edgeID].to;
 				int alt = dbg_dist[u]+ 1;
 				if(maxDistance>=0 && alt>maxDistance)
@@ -185,17 +185,17 @@ public:
 			}
 		}
 
-		for(int u = 0;u<g.nodes;u++){
+		for(int u = 0;u<g.nodes();u++){
 			int d = dist[u];
 
 			int db = dbg_dist[u];
 			assert(dbg_dist[u]==dist[u]);
 
-			for(int i = 0;i<g.inverted_adjacency[u].size();i++){
-				if(!g.edgeEnabled( g.inverted_adjacency[u][i].id))
+			for(int i = 0;i<g.nIncident(u,true);i++){
+				if(!g.edgeEnabled( g.incident(u,i,true).id))
 					continue;
 
-				int edgeID = g.inverted_adjacency[u][i].id;
+				int edgeID = g.incident(u,i,true).id;
 				int v = g.all_edges[edgeID].from;
 				int alt = dbg_dist[v]+ 1;
 				int du = dbg_dist[u];
@@ -211,12 +211,12 @@ public:
 			}
 		}
 
-		for(int u = 0;u<g.nodes;u++){
+		for(int u = 0;u<g.nodes();u++){
 			int d = dist[u];
 			int d_expect = dbg_dist[u];
 			assert(d==dbg_dist[u]);
 		}
-		for(int u = 0;u<g.nodes;u++){
+		for(int u = 0;u<g.nodes();u++){
 			int du = dist[u];
 			if(dist[u]<INF){
 				int d = delta[u];
@@ -261,8 +261,8 @@ public:
 		dist[rv]=altw;
 
 		q.clear();
-		in_queue.clear();in_queue.resize(g.nodes);
-		in_queue2.resize(g.nodes);
+		in_queue.clear();in_queue.resize(g.nodes());
+		in_queue2.resize(g.nodes());
 		q.push_back(rv);
 		in_queue[rv]=true;
 
@@ -383,7 +383,7 @@ public:
 
 	void dbg_delta_lite(){
 #ifndef NDEBUG
-		for(int u = 0;u<g.nodes;u++){
+		for(int u = 0;u<g.nodes();u++){
 			int del = delta[u];
 			int d = dist[u];
 			int num_in = 0;
@@ -421,9 +421,9 @@ public:
 			return; //the shortest path hasn't changed in length, because there was an alternate route of the same length to this node.
 
 		in_queue.clear();
-		in_queue.resize(g.nodes);
+		in_queue.resize(g.nodes());
 		in_queue2.clear();
-		in_queue2.resize(g.nodes);
+		in_queue2.resize(g.nodes());
 		q.clear();
 		q2.clear();
 
@@ -617,16 +617,16 @@ public:
 				return;
 		if(last_modification<=0 || g.changed()){//Note for the future: there is probably room to improve this further.
 			stats_full_updates++;
-			INF=g.nodes+1;
-			dist.resize(g.nodes,INF);
+			INF=g.nodes()+1;
+			dist.resize(g.nodes(),INF);
 			dist[getSource()]=0;
-			delta.resize(g.nodes);
+			delta.resize(g.nodes());
 			edgeInShortestPathGraph.resize(g.nEdgeIDs());
-			node_changed.resize(g.nodes);
+			node_changed.resize(g.nodes());
 			changed.clear();
 			if(maxDistance<0)
 				maxDistance=INF;
-			for(int i = 0;i<g.nodes;i++){
+			for(int i = 0;i<g.nodes();i++){
 				if((dist[i]>=INF && reportPolarity<=0) || (dist[i]<INF && reportPolarity>=0)){
 				node_changed[i]=true;
 				changed.push_back(i);//On the first round, report status of all nodes.
@@ -637,7 +637,7 @@ public:
 		if(last_history_clear!=g.historyclears){
 			history_qhead=0;
 			last_history_clear=g.historyclears;
-			for(int edgeid = 0;edgeid<g.edges;edgeid++){
+			for(int edgeid = 0;edgeid<g.edges();edgeid++){
 				if(g.edgeEnabled(edgeid)){
 					GRRInc(edgeid);
 				}else{
@@ -655,7 +655,7 @@ public:
 			}
 		}
 
-		//for(int i = 0;i<g.nodes;i++){
+		//for(int i = 0;i<g.nodes();i++){
 		for(int u:changed){
 			//int u=i;
 			//int u = changed[i];
@@ -711,7 +711,7 @@ public:
 		dbg_delta();
 		Dijkstra<Reach::NullStatus,false> d(source,g);
 
-		for(int i = 0;i<g.nodes;i++){
+		for(int i = 0;i<g.nodes();i++){
 			int distance = dist[i];
 			if(maxDistance>=0 && distance>maxDistance){
 				distance=INF;

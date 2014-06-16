@@ -11,7 +11,7 @@
 #include "mtl/Vec.h"
 #include "mtl/Heap.h"
 #include "mtl/Alg.h"
-#include "dgl/DynamicGraph.h"
+#include "dgl/graph/DynamicGraph.h"
 #include "core/SolverTypes.h"
 #include "core/Theory.h"
 

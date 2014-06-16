@@ -4,7 +4,7 @@
 
 #include <vector>
 #include "alg/Heap.h"
-#include "DynamicGraph.h"
+#include "graph/DynamicGraph.h"
 #include "core/Config.h"
 #include "Reach.h"
 
@@ -89,9 +89,9 @@ public:
 		assert(last_deletion==g.deletions);
 		last_modification=g.modifications;
 		last_addition=g.additions;
-		INF=g.nodes+1;
-		seen.resize(g.nodes);
-		prev.resize(g.nodes);
+		INF=g.nodes()+1;
+		seen.resize(g.nodes());
+		prev.resize(g.nodes());
 
 		if(lastaddlist!=g.addlistclears){
 			addition_qhead=0;
@@ -114,8 +114,8 @@ public:
 		for(int i = start;i<q.size();i++){
 			int u = q[i];
 			assert(seen[u]);
-			for(int i = 0;i<g.adjacency[u].size();i++){
-				int v = g.adjacency[u][i];
+			for(int i = 0;i<g.nIncident(u);i++){
+				int v = g.incident(u,i);
 
 				if(!seen[v]){
 					//this was changed
@@ -147,8 +147,8 @@ public:
 			int u = q.back();
 			q.pop_back();
 			assert(!seen[u]);
-			for(int i = 0;i<g.inverted_adjacency[u].size();i++){
-				int v = g.inverted_adjacency[u][i];
+			for(int i = 0;i<g.nIncident(u,true);i++){
+				int v = g.incident(u,i,true);
 				if(seen[v]){
 					seen[v]=1;
 					//Then since to is still seen, we are up to date
@@ -156,16 +156,16 @@ public:
 				}
 			}
 			if(!seen[u]){
-				for(int i = 0;i<g.adjacency[u].size();i++){
-					int v = g.adjacency[u][i];
+				for(int i = 0;i<g.nIncident(u);i++){
+					int v = g.incident(u,i);
 					if(seen[v] && prev[v]==to){
 						seen[v]=0;
 					}
 				}
 			}else{
 #ifdef GRAPH_DEBUG
-				for(int i = 0;i<g.adjacency[u].size();i++){
-						int v = g.adjacency[u][i];
+				for(int i = 0;i<g.nIncident(u);i++){
+						int v = g.incident(u,i);
 						assert(seen[v]);
 				}
 #endif
@@ -178,13 +178,13 @@ public:
 		check.reserve(n);
 		seen.resize(n);
 		prev.resize(n);
-		INF=g.nodes+1;
+		INF=g.nodes()+1;
 	}
 
 	inline void add_update(int to, bool update){
 		q.clear();
 		q.push_back(to);
-		auto & adjacency = undirected? g.adjacency_undirected:g.adjacency;
+
 		//while(q.size()){
 		for(int i = 0;i<q.size();i++){
 			int u = q[i];
@@ -195,11 +195,11 @@ public:
 			//if(!old_seen[u]){
 			//	changed.push_back(u);
 			//}
-			for(int i = 0;i<adjacency[u].size();i++){
-				if(!g.edgeEnabled(adjacency[u][i].id))
+			for(int i = 0;i<g.nIncident(u,undirected);i++){
+				if(!g.edgeEnabled(g.incident(u,i,undirected).id))
 					continue;
-				int v =adjacency[u][i].node;
-				int edgeID = adjacency[u][i].id;
+				int v =g.incident(u,i,undirected).node;
+				int edgeID =g.incident(u,i,undirected).id;
 				if(!seen[v]){
 					seen[v]=1;
 					prev[v]=edgeID;
@@ -218,16 +218,16 @@ public:
 		prev[to]=-1;
 		check.clear();
 		check.push_back(to);
-		auto & adjacency = undirected? g.adjacency_undirected:g.adjacency;
+
 		//while(q.size()){
 		for(int i = 0;i<q.size();i++){
 			int u = q[i];
 			assert(!seen[u]);
 
-			for(int i = 0;i<adjacency[u].size();i++){
-/*				if(!g.edgeEnabled( g.adjacency[u][i].id))
+			for(int i = 0;i<g.nIncident(u,undirected);i++){
+/*				if(!g.edgeEnabled( g.incident(u,i).id))
 					continue;*/
-				int v =adjacency[u][i].node;
+				int v =g.incident(u,i,undirected).node;
 				if(seen[v] && previous(v)==u){
 					seen[v]=0;
 					prev[v]=-1;
@@ -243,11 +243,11 @@ public:
 			int u = check[i];
 			if(!seen[u]){
 				if(!undirected){
-					for(int i = 0;i<g.inverted_adjacency[u].size();i++){
+					for(int i = 0;i<g.nIncoming(u);i++){
 
-						if(g.edgeEnabled(g.inverted_adjacency[u][i].id)){
-							int from = g.inverted_adjacency[u][i].node;
-							int edgeID = g.inverted_adjacency[u][i].id;
+						if(g.edgeEnabled(g.incoming(u,i).id)){
+							int from =g.incoming(u,i).node;
+							int edgeID = g.incoming(u,i).id;
 							int to = u;
 							if(seen[from]){
 
@@ -260,11 +260,11 @@ public:
 						}
 					}
 				}else{
-					for(int i = 0;i<g.adjacency_undirected[u].size();i++){
+					for(int i = 0;i<g.nIncident(u,undirected);i++){
 
-							if(g.edgeEnabled(g.adjacency_undirected[u][i].id)){
-								int from = g.adjacency_undirected[u][i].node;
-								int edgeID = g.adjacency_undirected[u][i].id;
+							if(g.edgeEnabled(g.incident(u,i,undirected).id)){
+								int from = g.incident(u,i,undirected).node;
+								int edgeID = g.incident(u,i,undirected).id;
 								assert(from!=u);
 								int to = u;
 								if(seen[from]){
@@ -288,9 +288,9 @@ public:
 				history_qhead=0;
 			}
 
-			assert(INF>g.nodes);
-			assert(seen.size()>=g.nodes);
-			//old_seen.resize(g.nodes);
+			assert(INF>g.nodes());
+			assert(seen.size()>=g.nodes());
+			//old_seen.resize(g.nodes());
 			q.clear();
 
 			for(int i = history_qhead;i<g.history.size();i++){
@@ -352,9 +352,9 @@ public:
 					history_qhead=0;
 				}
 
-				assert(INF>g.nodes);
-				assert(seen.size()>=g.nodes);
-				//old_seen.resize(g.nodes);
+				assert(INF>g.nodes());
+				assert(seen.size()>=g.nodes());
+				//old_seen.resize(g.nodes());
 				q.clear();
 
 				for(int i = history_qhead;i<g.history.size();i++){
@@ -393,7 +393,7 @@ public:
 				}
 
 
-				for(int u = 0;u<g.nodes;u++){
+				for(int u = 0;u<g.nodes();u++){
 					status.setReachable(u,seen[u]);
 				}
 
@@ -440,12 +440,12 @@ public:
 			}
 		}
 
-		setNodes(g.nodes);
+		setNodes(g.nodes());
 
 		if(g.historyclears!=last_history_clear){
 			last_history_clear=g.historyclears;
 			history_qhead=0;
-		}else if(opt_inc_graph && last_modification>0 && (g.historyclears <= (last_history_clear+1))){// && (g.history.size()-history_qhead < g.edges*mod_percentage)){
+		}else if(opt_inc_graph && last_modification>0 && (g.historyclears <= (last_history_clear+1))){// && (g.history.size()-history_qhead < g.edges()*mod_percentage)){
 			if(opt_dec_graph==2){
 				if(incrementalUpdate())
 					return;
@@ -489,11 +489,11 @@ public:
 		
 
 		q.clear();
-		for(int i = 0;i<g.nodes;i++){
+		for(int i = 0;i<g.nodes();i++){
 			seen[i]=0;
 			prev[i]=-1;
 		}
-		auto & adjacency = undirected? g.adjacency_undirected:g.adjacency;
+
 		seen[source]=1;
 		q.push_back(source);
 		for (int i = 0;i<q.size();i++){
@@ -502,11 +502,11 @@ public:
 			if(reportPolarity==1)
 				status.setReachable(u,true);
 
-			for(int i = 0;i<adjacency[u].size();i++){
-				if(!g.edgeEnabled(adjacency[u][i].id))
+			for(int i = 0;i<g.nIncident(u,undirected);i++){
+				if(!g.edgeEnabled(g.incident(u,i,undirected).id))
 					continue;
-				int v =adjacency[u][i].node;
-				int edgeID = adjacency[u][i].id;
+				int v =g.incident(u,i,undirected).node;
+				int edgeID = g.incident(u,i,undirected).id;
 				if(!seen[v]){
 					seen[v]=1;
 					prev[v]=edgeID;
@@ -516,7 +516,7 @@ public:
 		}
 
 		if(reportPolarity<1){
-			for(int u = 0;u<g.nodes;u++){
+			for(int u = 0;u<g.nodes();u++){
 				if(!seen[u]){
 					status.setReachable(u,false);
 				}else if(reportPolarity==0){
@@ -561,7 +561,7 @@ public:
 	}
 	void drawFull(){
 				printf("digraph{\n");
-				for(int i = 0;i< g.nodes;i++){
+				for(int i = 0;i< g.nodes();i++){
 
 					if(seen[i]){
 						printf("n%d [fillcolor=blue style=filled]\n", i);
@@ -572,10 +572,10 @@ public:
 
 				}
 
-				for(int i = 0;i< g.adjacency.size();i++){
-					for(int j =0;j<g.adjacency[i].size();j++){
-					int id  =g.adjacency[i][j].id;
-					int u =  g.adjacency[i][j].node;
+				for(int i = 0;i< g.nodes();i++){
+					for(int j =0;j<g.nIncident(i,undirected);j++){
+					int id  =g.incident(i,j,undirected).id;
+					int u =  g.incident(i,j,undirected).node;
 					const char * s = "black";
 					if( g.edgeEnabled(id))
 						s="blue";
@@ -597,7 +597,7 @@ public:
 		Dijkstra<Reach::NullStatus,undirected> d(source,g);
 		d.update();
 		//drawFull();
-		for(int i = 0;i<g.nodes;i++){
+		for(int i = 0;i<g.nodes();i++){
 
 			int dbgdist = d.dist[i];
 			if(!seen[i]){

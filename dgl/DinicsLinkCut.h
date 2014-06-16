@@ -108,7 +108,7 @@ public:
 
     }
     void setCapacity(int u, int w, int c){
-    	//C.resize(g.edges);
+    	//C.resize(g.edges());
     	//C[ ]=c;
 
     }
@@ -120,7 +120,7 @@ public:
 
 
        			printf("digraph{\n");
-       			for(int i = 0;i<g.nodes;i++){
+       			for(int i = 0;i<g.nodes();i++){
        				if(i==from){
        					printf("n%d [label=\"From\", style=filled, fillcolor=blue]\n", i);
        				}else if (i==to){
@@ -131,7 +131,7 @@ public:
        					printf("n%d\n", i);
        			}
 
-       			for(int i = 0;i<g.edges;i++){
+       			for(int i = 0;i<g.edges();i++){
        				if(g.edgeEnabled(i)){
    						auto & e = g.all_edges[i];
    						const char * s = "black";
@@ -180,27 +180,27 @@ public:
     bool buildLevelGraph(int src, int dst) {
     	double start_time = rtime(3);
     	dist.clear();
-    	dist.resize(g.nodes,-1);
+    	dist.resize(g.nodes(),-1);
         dist[src] = 0;
         Q.push_back(src);
         //Build the level graph using a simple BFS
         for (int i = 0; i < Q.size(); i++) {
             int u = Q[i];
-            for (int j = 0;j<g.adjacency[u].size();j++){
-            	int edgeID = g.adjacency[u][j].id;
+            for (int j = 0;j<g.nIncident(u);j++){
+            	int edgeID = g.incident(u,j).id;
                	if(!g.edgeEnabled(edgeID))
    						continue;
-               	int v =  g.adjacency[u][j].node;
+               	int v =  g.incident(u,j).node;
                 if (dist[v] < 0 && F[edgeID] < capacity[edgeID]) {
                     dist[v] = dist[u] + 1;
                     Q.push_back(v);
                 }
             }
-            for (int j = 0;j<g.inverted_adjacency[u].size();j++){
-            	int edgeID = g.inverted_adjacency[u][j].id;
+            for (int j = 0;j<g.nIncident(u,true);j++){
+            	int edgeID = g.incident(u,j,true).id;
                	if(!g.edgeEnabled(edgeID))
    						continue;
-               	int v =  g.inverted_adjacency[u][j].node;
+               	int v =  g.incident(u,j,true).node;
                	//this is a backward edge, so it has capacity exactly if the forward edge has flow
                 if (dist[v] < 0 && F[edgeID]) {
                     dist[v] = dist[u] + 1;
@@ -270,7 +270,7 @@ public:
     						break;
     					}else{
     						//extend the path
-    						 for (;pos[u]<g.adjacency[u].size();pos[u]++){
+    						 for (;pos[u]<g.nIncident(u);pos[u]++){
     							auto & edge = g.adjacency[u][pos[u]];
     							int edgeID = edge.id;
     							int v =  edge.node;
@@ -287,8 +287,8 @@ public:
     							}
     						}
     						 if(!found){
-								for (;pos[u]-g.adjacency[u].size() <g.inverted_adjacency[u].size();pos[u]++){
-									auto & edge = g.inverted_adjacency[u][pos[u]-g.adjacency[u].size()];
+								for (;pos[u]-g.nIncident(u) <g.nIncident(u,true);pos[u]++){
+									auto & edge = g.inverted_adjacency[u][pos[u]-g.nIncident(u)];
 									int edgeID = edge.id;
 									int v = edge.node;
 									if((dist[v] != dist[u] + 1) ||  !g.edgeEnabled(edgeID) )
@@ -381,7 +381,7 @@ public:
     				 if(u==src){
     					 //done - no paths remain.
     					 //Clean up the state of the tree:
-    					 for(int u = 0;u<g.nodes;u++){
+    					 for(int u = 0;u<g.nodes();u++){
     						 if(parentEdge[u].edgeID>=0){
     							 int c = forest.getCost(u);
     							 int edgeID = parentEdge[u].edgeID;
@@ -470,7 +470,7 @@ public:
 					}else{
 						//extend the path
 
-						 for (;pos[u]<g.adjacency[u].size();pos[u]++){
+						 for (;pos[u]<g.nIncident(u);pos[u]++){
 							auto & edge = g.adjacency[u][pos[u]];
 							int edgeID = edge.id;
 							int v =  edge.node;
@@ -489,8 +489,8 @@ public:
 							}
 						}
 						 if(!found){
-								for (;pos[u]-g.adjacency[u].size() <g.inverted_adjacency[u].size();pos[u]++){
-									auto & edge = g.inverted_adjacency[u][pos[u]-g.adjacency[u].size()];
+								for (;pos[u]-g.nIncident(u) <g.nIncident(u,true);pos[u]++){
+									auto & edge = g.inverted_adjacency[u][pos[u]-g.nIncident(u)];
 									int edgeID = edge.id;
 									int v = edge.node;
 									if((dist[v] != dist[u] + 1) ||  !g.edgeEnabled(edgeID) )
@@ -553,7 +553,7 @@ public:
 				 if(u==src){
 					 //done - no paths remain.
 					 //Clean up the state of the tree:
-					 for(int u = 0;u<g.nodes;u++){
+					 for(int u = 0;u<g.nodes();u++){
 						 if(parentEdge[u].edgeID>=0){
 							 int c = forest.getCost(u);
 							 int edgeID = parentEdge[u].edgeID;
@@ -709,7 +709,7 @@ public:
     				 if(u==src){
     					 //done - no paths remain.
     					 //Clean up the state of the tree:
-    					 for(int u = 0;u<g.nodes;u++){
+    					 for(int u = 0;u<g.nodes();u++){
     						 if(parentEdge[u].edgeID>=0){
     							 int c = forest.getCost(u);
     							 int edgeID = parentEdge[u].edgeID;
@@ -789,15 +789,15 @@ public:
     	F.clear();
     	F.resize(g.all_edges.size());
     	dist.clear();
-    	dist.resize(g.nodes);
+    	dist.resize(g.nodes());
     	f=0;
     	forest.reset();
-    	while(forest.nNodes()<g.nodes)
+    	while(forest.nNodes()<g.nodes())
     		forest.addNode();
-      	pos.clear();pos.resize(g.nodes);
+      	pos.clear();pos.resize(g.nodes());
 
 		parentEdge.clear();
-		parentEdge.resize(g.nodes,{false,-1});
+		parentEdge.resize(g.nodes(),{false,-1});
 
 	    while (buildLevelGraph(s,t)) {
 	    	stats_rounds++;
@@ -849,17 +849,17 @@ public:
     	Q.clear();
     	Q.push_back(s);
     	seen.clear();
-    	seen.resize(g.nodes);
+    	seen.resize(g.nodes());
     	seen[s]=true;
 
     	for(int j = 0;j<Q.size();j++){
 		   int u = Q[j];
 
-    		for(int i = 0;i<g.adjacency[u].size();i++){
-    			if(!g.edgeEnabled(g.adjacency[u][i].id))
+    		for(int i = 0;i<g.nIncident(u);i++){
+    			if(!g.edgeEnabled(g.incident(u,i).id))
     				continue;
-    			int v = g.adjacency[u][i].node;
-    			int id = g.adjacency[u][i].id;
+    			int v = g.incident(u,i).node;
+    			int id = g.incident(u,i).id;
     			if(capacity[id] - F[id] == 0){
     				cut.push_back(Edge{u,v,id});
     			}else if(!seen[v]){

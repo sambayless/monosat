@@ -5,7 +5,7 @@
 #include <vector>
 #include "alg/Heap.h"
 #include "mtl/Sort.h"
-#include "DynamicGraph.h"
+#include "graph/DynamicGraph.h"
 #include "core/Config.h"
 #include "MinimumSpanningTree.h"
 #include "Kruskal.h"
@@ -108,7 +108,7 @@ public:
 		in_tree.resize(g.nEdgeIDs());
 		seen.resize(n);
 		INF=std::numeric_limits<int>::max();
-		component_edge_weight.resize(g.nodes,INF);
+		component_edge_weight.resize(g.nodes(),INF);
 		parents.resize(n,-1);
 		edge_to_component.resize(n,-1);
 
@@ -120,9 +120,9 @@ public:
 		if(g.adjacency_undirected[newNode].size()==0)
 			return;
 		marked.clear();
-		marked.resize(g.nodes);
+		marked.resize(g.nodes());
 		incident_edges.clear();
-		incident_edges.resize(g.nodes,-1);
+		incident_edges.resize(g.nodes(),-1);
 		for(auto & edge:g.adjacency_undirected[newNode]){
 			incident_edges[edge.node]=edge.id;
 		}
@@ -167,7 +167,7 @@ public:
 	void dbg_parents(){
 #ifndef NDEBUG
 		//check that the parents don't cycle
-		for(int i = 0;i<g.nodes;i++){
+		for(int i = 0;i<g.nodes();i++){
 			int p = i;
 			int num_parents= 0;
 			while(p!=-1){
@@ -190,14 +190,14 @@ public:
 				}
 
 				p = parents[p];
-				assert(num_parents<=g.nodes);
+				assert(num_parents<=g.nodes());
 
 			}
 
 		}
 
 		std::vector<int> used_components;
-		for(int i = 0;i<g.nodes;i++){
+		for(int i = 0;i<g.nodes();i++){
 			if(!std::count(used_components.begin(),used_components.end(), components[i])){
 				used_components.push_back(components[i]);
 
@@ -570,30 +570,30 @@ public:
 					return;
 		assert(components_to_visit.size()==0);
 		if(last_modification<=0 || g.changed() || last_history_clear!=g.historyclears){
-			INF=g.nodes+1;
+			INF=g.nodes()+1;
 
 
-			setNodes(g.nodes);
+			setNodes(g.nodes());
 			seen.clear();
-			seen.resize(g.nodes);
+			seen.resize(g.nodes());
 			min_weight=0;
-			num_sets = g.nodes;
+			num_sets = g.nodes();
 			empty_components.clear();
 			components.clear();
-			for(int i = 0;i<g.nodes;i++){
+			for(int i = 0;i<g.nodes();i++){
 				components.push_back(i);
 				components_to_visit.push_back(i);
 			}
 			component_edge_weight.clear();
-			component_edge_weight.resize(g.nodes,INF);
+			component_edge_weight.resize(g.nodes(),INF);
 			component_member.clear();
-			for(int i = 0;i<g.nodes;i++)
+			for(int i = 0;i<g.nodes();i++)
 				component_member.push_back(i);
 			mst.clear();
 			parents.clear();
-			parents.resize(g.nodes,-1);
+			parents.resize(g.nodes(),-1);
 			parent_edges.clear();
-			parent_edges.resize(g.edges,-1);
+			parent_edges.resize(g.edges(),-1);
 			for(int i = 0;i<in_tree.size();i++)
 				in_tree[i]=false;
 			last_history_clear=g.historyclears;
@@ -714,7 +714,7 @@ public:
 		dbg_parents();
 		//int n_components = 0;
 		//check that each component has a unique root
-		for(int c = 0;c<g.nodes;c++){
+		for(int c = 0;c<g.nodes();c++){
 			if(component_member[c]>-1){
 				//n_components++;
 				int root = component_member[c];
@@ -722,7 +722,7 @@ public:
 					root = parents[root];
 				}
 
-				for(int i = 0;i<g.nodes;i++){
+				for(int i = 0;i<g.nodes();i++){
 					if(components[i]==c){
 						//check that the root of i is root
 						int p =i;
@@ -736,7 +736,7 @@ public:
 			}
 		}
 
-		assert(num_sets == g.nodes-empty_components.size());
+		assert(num_sets == g.nodes()-empty_components.size());
 		int sumweight = 0;
 		in_tree.resize(g.nEdgeIDs());
 		for(int i = 0;i<g.nEdgeIDs();i++){

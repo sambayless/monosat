@@ -460,7 +460,7 @@ Lit MaxflowDetector::decide(){
 						//Randomly re-weight the graph sometimes
 						if(drand(rnd_seed)<opt_decide_graph_re_rnd){
 
-							for(int i=0;i<outer->g.nodes;i++){
+							for(int i=0;i<outer->g.nodes();i++){
 									 double w = drand(rnd_seed);
 									 w-=0.5;
 									 w*=w;

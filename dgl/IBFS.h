@@ -29,10 +29,10 @@ public:
     	ibfs=NULL;
     }
     void setCapacity(int u, int w, int c){
-      	if(C.size()<g.nodes){
-        		C.resize(g.nodes);
-        		for(int i = 0;i<g.nodes;i++){
-        			C[i].resize(g.nodes);
+      	if(C.size()<g.nodes()){
+        		C.resize(g.nodes());
+        		for(int i = 0;i<g.nodes();i++){
+        			C[i].resize(g.nodes());
         		}
         	}
         	C[u][w]=c;
@@ -41,11 +41,11 @@ public:
 #endif
     }
     void setAllEdgeCapacities(int c){
-    	for(int i = 0;i<g.nodes;i++){
-    		for(int j = 0;j<g.adjacency[i].size();j++){
-    			if(!g.edgeEnabled(g.adjacency[i][j].id))
+    	for(int i = 0;i<g.nodes();i++){
+    		for(int j = 0;j<g.nIncident(i);j++){
+    			if(!g.edgeEnabled(g.incident(i,j).id))
 						continue;
-    			setCapacity(i,g.adjacency[i][j].node,c);
+    			setCapacity(i,g.incident(i,j).node,c);
     		}
     	}
     }
@@ -61,8 +61,8 @@ public:
         		}
         	}
 
-    	ibfs =  new IBFSGraph<int,int,int>(g.nodes,edges) ;
-    	while(ibfs->nNodes < g.nodes){
+    	ibfs =  new IBFSGraph<int,int,int>(g.nodes(),edges) ;
+    	while(ibfs->nNodes < g.nodes()){
 			ibfs->add_node(1);
 		}
 
@@ -94,14 +94,14 @@ public:
     int minCut(int s, int t, std::vector<Edge> & cut){
     	int f = maxFlow(s,t);
     	//ok, now find the cut
-    	for(int u = 0;u<g.nodes;u++){
+    	for(int u = 0;u<g.nodes();u++){
     		IBFSGraph<int,int,int>::termtype utype = ibfs->what_segment(u,IBFSGraph<int,int,int>::SOURCE);
     		if(utype ==IBFSGraph<int,int,int>::SOURCE ){
-				for(int j = 0;j<g.adjacency[u].size();j++){
-					if(!g.edgeEnabled(g.adjacency[u][j].id))
+				for(int j = 0;j<g.nIncident(u);j++){
+					if(!g.edgeEnabled(g.incident(u,j).id))
 						continue;
-					int v = g.adjacency[u][j].node;
-					int id =  g.adjacency[u][j].id;
+					int v = g.incident(u,j).node;
+					int id =  g.incident(u,j).id;
 					if( ibfs->what_segment(v,IBFSGraph<int,int,int>::SOURCE) ==IBFSGraph<int,int,int>::SINK ){
 						//then this is on the cut
 						cut.push_back(Edge{u,v,id});
@@ -154,12 +154,12 @@ public:
         int max = 0;
         static std::vector<int> q;
         static std::vector<int> mins;
-        q.resize(g.nodes);
-        mins.resize(g.nodes);
+        q.resize(g.nodes());
+        mins.resize(g.nodes());
         std::vector<int> pre;
         std::vector<int> ni;
         while(true){
-            int   h=0,t=0,c,i,j,min=g.nodes;
+            int   h=0,t=0,c,i,j,min=g.nodes();
 
             int u; int w;
             q[t++]=source;

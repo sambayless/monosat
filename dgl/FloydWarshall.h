@@ -4,7 +4,7 @@
 
 #include <vector>
 #include "alg/Heap.h"
-#include "DynamicGraph.h"
+#include "graph/DynamicGraph.h"
 #include "core/Config.h"
 #include "AllPairs.h"
 #include "mtl/Sort.h"
@@ -79,7 +79,7 @@ public:
 		order.clear();
 		for(int i =0;i<n;i++)
 			order.push_back(i);
-		INF=g.nodes+1;
+		INF=g.nodes()+1;
 		if(dist.size()<n){
 			dist.resize(n);
 
@@ -112,11 +112,11 @@ public:
 			stats_num_skipable_deletions++;
 		}
 
-		setNodes(g.nodes);
+		setNodes(g.nodes());
 
 
-		for(int i = 0;i<g.nodes;i++){
-			for(int j = 0;j<g.nodes;j++){
+		for(int i = 0;i<g.nodes();i++){
+			for(int j = 0;j<g.nodes();j++){
 				next[i][j]=-1;
 				dist[i][j]=INF;
 			}
@@ -135,9 +135,9 @@ public:
 
 		//for(int l = 0;l<sources.size();l++){
 		//	int k = sources[l];
-		for(int k = 0;k<g.nodes;k++){
-			for(int i = 0;i<g.nodes;i++){
-				for (int j = 0;j<g.nodes;j++){
+		for(int k = 0;k<g.nodes();k++){
+			for(int i = 0;i<g.nodes();i++){
+				for (int j = 0;j<g.nodes();j++){
 					int d = dist[i][k] + dist[k][j];
 					if(d < dist[i][j]){
 						dist[i][j] = d;
@@ -164,7 +164,7 @@ public:
 					status.setMininumDistance(s,u,true,dist[s][u]);
 				}
 			}
-		/*	for(int u = 0;u<g.nodes;u++){
+		/*	for(int u = 0;u<g.nodes();u++){
 				if(dist[s][u]>=INF && reportPolarity<1){
 					//status.setReachable(s,u,false);
 					//status.setMininumDistance(s,u,false,INF);
@@ -211,7 +211,7 @@ public:
 	}
 	void drawFull(){
 				/*printf("digraph{\n");
-				for(int i = 0;i< g.nodes;i++){
+				for(int i = 0;i< g.nodes();i++){
 
 					if(seen[i]){
 						printf("n%d [fillcolor=blue style=filled]\n", i);
@@ -222,10 +222,10 @@ public:
 
 				}
 
-				for(int i = 0;i< g.adjacency.size();i++){
-					for(int j =0;j<g.adjacency[i].size();j++){
-					int id  =g.adjacency[i][j].id;
-					int u =  g.adjacency[i][j].node;
+				for(int i = 0;i< g.nodes();i++){
+					for(int j =0;j<g.nIncident(u);j++){
+					int id  =g.incident(i,j).id;
+					int u =  g.incident(i,j).node;
 					const char * s = "black";
 					if( g.edgeEnabled(id))
 						s="blue";

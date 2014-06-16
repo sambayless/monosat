@@ -10,7 +10,7 @@
 
 #include <vector>
 #include "alg/Heap.h"
-#include "DynamicGraph.h"
+#include "graph/DynamicGraph.h"
 #include "Reach.h"
 #include <limits>
 namespace dgl{
@@ -73,7 +73,7 @@ public:
 	//Dijkstra(const Dijkstra& d):g(d.g), last_modification(-1),last_addition(-1),last_deletion(-1),history_qhead(0),last_history_clear(0),source(d.source),INF(0),q(DistCmp(dist)),stats_full_updates(0),stats_fast_updates(0),stats_skip_deletes(0),stats_skipped_updates(0),stats_full_update_time(0),stats_fast_update_time(0){marked=false;};
 
 /*	void setWeight(int node, double w){
-		while(weight.size()<=g.nodes){
+		while(weight.size()<=g.nodes()){
 			weight.push_back(1);
 		}
 		weight[node]=w;
@@ -97,15 +97,15 @@ public:
 
 
 
-		/*for(int i = 0;i<g.nodes;i++)
+		/*for(int i = 0;i<g.nodes();i++)
 					changed.push_back(i);*/
 		assert(last_deletion==g.deletions);
 		last_modification=g.modifications;
 		last_addition=g.additions;
 
-		dist.resize(g.nodes);
-		prev.resize(g.nodes);
-		while(weight.size()<=g.nodes){
+		dist.resize(g.nodes());
+		prev.resize(g.nodes());
+		while(weight.size()<=g.nodes()){
 			weight.push_back(1);
 		}
 
@@ -177,17 +177,17 @@ public:
 
 		}
 		history_qhead=g.history.size();
-		auto & adjacency = undirected? g.adjacency_undirected:g.adjacency;
+
 		while(q.size()){
 			int u = q.removeMin();
 			if(dist[u]==INF)
 				break;
-			for(int i = 0;i<adjacency[u].size();i++){
-				if(!g.edgeEnabled(adjacency[u][i].id))
+			for(int i = 0;i<g.nIncident(u,undirected);i++){
+				if(!g.edgeEnabled(g.incident(u,i,undirected).id))
 					continue;
 
-				int edgeID =  adjacency[u][i].id;
-				int v =  adjacency[u][i].node;
+				int edgeID =  g.incident(u,i,undirected).id;
+				int v =  g.incident(u,i,undirected).node;
 				int alt = dist[u]+ weight[u];
 				if(alt<dist[v]){
 					if(dist[v]>=INF){
@@ -226,8 +226,8 @@ public:
 		}
 		if(last_modification>0 && g.modifications==last_modification)
 				return;
-		assert(weight.size()>=g.edges);
-/*		while(weight.size()<=g.nodes){
+		assert(weight.size()>=g.edges());
+/*		while(weight.size()<=g.nodes()){
 				weight.push_back(1);
 			}*/
 		/*if (last_addition==g.additions && last_modification>0){
@@ -282,12 +282,12 @@ public:
 		stats_full_updates++;
 		
 
-		INF=g.nodes+1;
-		dist.resize(g.nodes);
-		prev.resize(g.nodes);
-		old_dist.resize(g.nodes);
+		INF=g.nodes()+1;
+		dist.resize(g.nodes());
+		prev.resize(g.nodes());
+		old_dist.resize(g.nodes());
 		q.clear();
-		for(int i = 0;i<g.nodes;i++){
+		for(int i = 0;i<g.nodes();i++){
 			old_dist[i]=last_modification > 0 ? dist[i]:INF;//this won't work properly if we added nodes...
 			dist[i]=INF;
 			prev[i]=-1;
@@ -302,13 +302,13 @@ public:
 				changed.push_back(u);
 			}
 			q.removeMin();
-			for(int i = 0;i<g.adjacency[u].size();i++){
-				int edge =  g.adjacency[u][i].id;
+			for(int i = 0;i<g.nIncident(u);i++){
+				int edge =  g.incident(u,i).id;
 				if(!g.edgeEnabled(edge))
 					continue;
 
-				int v = g.adjacency[u][i].node;
-				int edgeID = g.adjacency[u][i].id;
+				int v = g.incident(u,i).node;
+				int edgeID = g.incident(u,i).id;
 				double alt = dist[u]+ weight[edge];
 				if(alt<dist[v]){
 					dist[v]=alt;
@@ -321,7 +321,7 @@ public:
 			}
 		}
 
-		for(int u = 0;u<g.nodes;u++){
+		for(int u = 0;u<g.nodes();u++){
 		//while(q.size()){
 			//iterate through the unreached nodes and check which ones were previously reached
 

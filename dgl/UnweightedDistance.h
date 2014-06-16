@@ -4,7 +4,7 @@
 
 #include <vector>
 #include "alg/Heap.h"
-#include "DynamicGraph.h"
+#include "graph/DynamicGraph.h"
 #include "core/Config.h"
 #include "Reach.h"
 
@@ -105,7 +105,7 @@ public:
 		q.reserve(n);
 		dist.resize(n);
 		prev.resize(n);
-		INF=g.nodes+1;
+		INF=g.nodes()+1;
 		if(maxDistance<0)
 			maxDistance=INF;
 	}
@@ -125,7 +125,7 @@ public:
 			stats_num_skipable_deletions++;
 		}
 
-		setNodes(g.nodes);
+		setNodes(g.nodes());
 
 		if(g.historyclears!=last_history_clear){
 			last_history_clear=g.historyclears;
@@ -134,7 +134,7 @@ public:
 
 
 		q.clear();
-		for(int i = 0;i<g.nodes;i++){
+		for(int i = 0;i<g.nodes();i++){
 			dist[i]=INF;
 			prev[i]=-1;
 		}
@@ -165,7 +165,7 @@ public:
 		}
 
 		if(reportPolarity<=0){
-			for(int u = 0;u<g.nodes;u++){
+			for(int u = 0;u<g.nodes();u++){
 				if(dist[u]>=INF){
 					status.setMininumDistance(u,dist[u]<INF,dist[u]);
 				}
@@ -208,7 +208,7 @@ public:
 	}
 	void drawFull(){
 				printf("digraph{\n");
-				for(int i = 0;i< g.nodes;i++){
+				for(int i = 0;i< g.nodes();i++){
 
 					if(dist[i]<INF){
 						printf("n%d [label=\"n%d %d \" fillcolor=blue style=filled]\n", i,i,dist[i]);
@@ -245,7 +245,7 @@ public:
 		d.update();
 		//drawFull();
 
-			for(int i = 0;i<g.nodes;i++){
+			for(int i = 0;i<g.nodes();i++){
 				int distance = dist[i];
 				int dbgdist = d.dist[i];
 				if(dbgdist>maxDistance)

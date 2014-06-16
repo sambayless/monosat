@@ -81,11 +81,11 @@ Detector(_detectorID),outer(_outer),g(_g),antig(_antig),source(from),rnd_seed(se
 
 void DistanceDetector::buildSATConstraints(int within_steps){
 	if(within_steps<0)
-		within_steps=g.nodes;
-	if(within_steps>g.nodes)
-		within_steps=g.nodes;
-	if(within_steps>g.edges)
-		within_steps=g.edges;
+		within_steps=g.nodes();
+	if(within_steps>g.nodes())
+		within_steps=g.nodes();
+	if(within_steps>g.edges())
+		within_steps=g.edges();
 	if(constraintsBuilt>=within_steps)
 		return;
 
@@ -101,7 +101,7 @@ void DistanceDetector::buildSATConstraints(int within_steps){
 		outer->addClause(True);
 		assert(outer->value(True)==l_True);
 		Lit False = ~True;
-		for(int i = 0;i<g.nodes;i++){
+		for(int i = 0;i<g.nodes();i++){
 			full_dist_lits[0].push(False);
 		}
 		full_dist_lits[0][source]=True;
@@ -116,7 +116,7 @@ void DistanceDetector::buildSATConstraints(int within_steps){
 		reaches.copyTo(full_dist_lits.last());
 		assert(outer->value( reaches[source])==l_True);
 		//For each edge:
-		for(int j = 0;j<g.nodes;j++){
+		for(int j = 0;j<g.nodes();j++){
 			Lit r_cur = reaches[j];
 
 			for(Edge & e: outer->inv_adj[j]){
@@ -164,10 +164,10 @@ void DistanceDetector::addLit(int from, int to, Var outer_reach_var,int within_s
 	}
 	assert(from==source);
 	assert(within_steps>=0);
-	if(within_steps>g.nodes)
-		within_steps=g.nodes;
+	if(within_steps>g.nodes())
+		within_steps=g.nodes();
 	if(within_steps<0)
-		within_steps=g.nodes;
+		within_steps=g.nodes();
 
 	if(within_steps>=max_distance){
 		max_distance=within_steps;
@@ -238,8 +238,8 @@ void DistanceDetector::ReachStatus::setReachable(int u, bool reachable){
 			}
 
 void DistanceDetector::ReachStatus::setMininumDistance(int u, bool reachable, int distance){
-	assert(reachable ==(distance<detector.outer->g.nodes));
-	if(distance<=detector.outer->g.nodes){
+	assert(reachable ==(distance<detector.outer->g.nodes()));
+	if(distance<=detector.outer->g.nodes()){
 		setReachable(u,reachable);
 	}
 
@@ -364,7 +364,7 @@ void DistanceDetector::buildReachReason(int node,vec<Lit> & conflict){
 				    	to_visit.pop();
 				    	assert(seen[u]);
 				    	//assert(negative_reach_detector->distance_unsafe(u)>d);
-				    	//Ok, then add all its incoming disabled edges to the cut, and visit any unseen, non-disabled incoming edges
+				    	//Ok, then add all its incoming disabled edges to the cut, and visit any unseen, non-disabled incoming.edges()
 				    	for(int i = 0;i<outer->inv_adj[u].size();i++){
 				    		int v = outer->inv_adj[u][i].v;
 				    		int from = outer->inv_adj[u][i].from;
@@ -459,7 +459,7 @@ void DistanceDetector::buildReachReason(int node,vec<Lit> & conflict){
 					to_visit.pop();
 					assert(seen[u]);
 					assert(!negative_reach_detector->connected_unsafe(u));
-					//Ok, then add all its incoming disabled edges to the cut, and visit any unseen, non-disabled incoming edges
+					//Ok, then add all its incoming disabled edges to the cut, and visit any unseen, non-disabled incoming.edges()
 					for(int i = 0;i<outer->inv_adj[u].size();i++){
 						int v = outer->inv_adj[u][i].v;
 						int from = outer->inv_adj[u][i].from;

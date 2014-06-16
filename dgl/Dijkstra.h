@@ -10,7 +10,7 @@
 
 #include <vector>
 #include "alg/Heap.h"
-#include "DynamicGraph.h"
+#include "graph/DynamicGraph.h"
 #include "Reach.h"
 #include "core/Config.h"
 
@@ -86,14 +86,14 @@ public:
 
 
 
-		for(int i = 0;i<g.nodes;i++)
+		for(int i = 0;i<g.nodes();i++)
 					changed.push_back(i);
 		assert(last_deletion==g.deletions);
 		last_modification=g.modifications;
 		last_addition=g.additions;
-		INF=g.nodes+1;
-		dist.resize(g.nodes);
-		prev.resize(g.nodes);
+		INF=g.nodes()+1;
+		dist.resize(g.nodes());
+		prev.resize(g.nodes());
 		q.clear();
 		if(last_history_clear!=g.historyclears){
 			history_qhead=0;
@@ -281,17 +281,17 @@ public:
 		stats_full_updates++;
 		
 
-		INF=g.nodes+1;
-		dist.resize(g.nodes);
-		prev.resize(g.nodes);
-		//old_dist.resize(g.nodes);
+		INF=g.nodes()+1;
+		dist.resize(g.nodes());
+		prev.resize(g.nodes());
+		//old_dist.resize(g.nodes());
 		q.clear();
-		for(int i = 0;i<g.nodes;i++){
+		for(int i = 0;i<g.nodes();i++){
 			//old_dist[i]=last_modification > 0 ? dist[i]:INF;//this won't work properly if we added nodes...
 			dist[i]=INF;
 			prev[i]=-1;
 		}
-		auto & adjacency = undirected? g.adjacency_undirected:g.adjacency;
+
 		dist[source]=0;
 		q.insert(source);
 		while(q.size()){
@@ -302,11 +302,11 @@ public:
 				changed.push_back(u);
 			}*/
 			q.removeMin();
-			for(int i = 0;i<adjacency[u].size();i++){
-				if(!g.edgeEnabled( adjacency[u][i].id))
+			for(int i = 0;i<g.nIncident(u,undirected) ;i++){
+				if(!g.edgeEnabled(g.incident(u,i,undirected).id))
 					continue;
-				int edgeID = adjacency[u][i].id;
-				int v = adjacency[u][i].node;
+				int edgeID = g.incident(u,i,undirected).id;
+				int v = g.incident(u,i,undirected).node;
 				int alt = dist[u]+ 1;
 				if(alt<dist[v]){
 					dist[v]=alt;
@@ -319,7 +319,7 @@ public:
 			}
 		}
 
-	/*	for(int u = 0;u<g.nodes;u++){
+	/*	for(int u = 0;u<g.nodes();u++){
 		//while(q.size()){
 			//iterate through the unreached nodes and check which ones were previously reached
 
@@ -329,7 +329,7 @@ public:
 		}*/
 		//}
 		assert(dbg_uptodate());
-		for(int u = 0;u<g.nodes;u++){
+		for(int u = 0;u<g.nodes();u++){
 			if(reportPolarity<=0 && dist[u]>=INF){
 				status.setReachable(u,false);
 				status.setMininumDistance(u,dist[u]<INF,dist[u]);
@@ -373,20 +373,20 @@ public:
 		if(last_modification<=0)
 			return true;
 	/*	DynamicGraph gdbg;
-		for(int i = 0;i<g.nodes;i++){
+		for(int i = 0;i<g.nodes();i++){
 			gdbg.addNode();
 		}
 
-		for(int i = 0;i<g.adjacency.size();i++){
-			for(int j = 0;j<g.adjacency[i].size();j++){
-				int u = g.adjacency[i][j];
+		for(int i = 0;i<g.nodes();i++){
+			for(int j = 0;j<g.nIncident(u);j++){
+				int u = g.incident(i,j);
 				gdbg.addEdge(i,u);
 			}
 		}*/
 
 	/*	Dijkstra d(source,g);
 		d.update();
-		for(int i = 0;i<g.nodes;i++){
+		for(int i = 0;i<g.nodes();i++){
 			int distance = dist[i];
 			int dbgdist = d.dist[i];
 			assert(distance==dbgdist);

@@ -52,7 +52,7 @@ class EdmondsKarpDynamic:public MaxFlow{
     std::vector<bool> edge_enabled;
 
     int  BreadthFirstSearch(int s, int t,int bound=-1){
-     	for(int i = 0;i<g.nodes;i++){//this has to go...
+     	for(int i = 0;i<g.nodes();i++){//this has to go...
      		prev[i].from=-1;
      	}
      	prev[s].from = -2;
@@ -63,11 +63,11 @@ class EdmondsKarpDynamic:public MaxFlow{
        	for(int j = 0;j<Q.size();j++){
    			   int u = Q[j];
 
-               for (int i = 0;i<g.adjacency[u].size();i++){
-            	   if(!edge_enabled[g.adjacency[u][i].id])
+               for (int i = 0;i<g.nIncident(u);i++){
+            	   if(!edge_enabled[g.incident(u,i).id])
 						continue;
-            	   int id = g.adjacency[u][i].id;
-            	   int v = g.adjacency[u][i].node;
+            	   int id = g.incident(u,i).id;
+            	   int v = g.incident(u,i).node;
                    ///(If there is available capacity, and v is not seen before in search)
 
             	   int f = F[id];
@@ -87,12 +87,12 @@ class EdmondsKarpDynamic:public MaxFlow{
                            //return M[t];
                    }
                }
-               for (int i = 0;i<g.inverted_adjacency[u].size();i++){
-				   int id = g.inverted_adjacency[u][i].id;
-				   if(!edge_enabled[(g.inverted_adjacency[u][i].id)])
+               for (int i = 0;i<g.nIncident(u,true);i++){
+				   int id = g.incident(u,i,true).id;
+				   if(!edge_enabled[(g.incident(u,i,true).id)])
 						continue;
 
-				   int v = g.inverted_adjacency[u][i].node;
+				   int v = g.incident(u,i,true).node;
 					  ///(If there is available capacity, and v is not seen before in search)
 
 				   int f = 0;
@@ -138,7 +138,7 @@ public:
     	//setAllEdgeCapacities(1);
     }
     void setCapacity(int u, int w, int c){
-    	//C.resize(g.edges);
+    	//C.resize(g.edges());
     	//C[ ]=c;
 
     }
@@ -158,7 +158,7 @@ public:
 		}
 #endif
 
-    	//C.resize(g.nodes);
+    	//C.resize(g.nodes());
 #ifdef DEBUG_MAXFLOW
     	for(int i = 0;i<g.all_edges.size();i++){
     		int id = g.all_edges[i].id;
@@ -181,17 +181,17 @@ public:
         }else if (last_modification<=0 || g.historyclears!=last_history_clear  || g.changed()){
         	F.clear();
         	F.resize(g.all_edges.size());
-			prev.resize(g.nodes);
-			M.resize(g.nodes);
+			prev.resize(g.nodes());
+			M.resize(g.nodes());
 			f=0;
-			for(int i = 0;i<g.nodes;i++){
+			for(int i = 0;i<g.nodes();i++){
 				prev[i].from =-1;
 				M[i]=0;
 			}
 			prev[s].from = -2;
 			 M[s] = INF;
-			 edge_enabled.resize(g.edges);
-			 for(int i = 0;i<g.edges;i++)
+			 edge_enabled.resize(g.edges());
+			 for(int i = 0;i<g.edges();i++)
 				 edge_enabled[i]= g.isEdge(i) && g.edgeEnabled(i);
 
 			 dbg_print_graph(s,t,-1, -1);
@@ -200,7 +200,7 @@ public:
         }
 
 #ifdef DEBUG_MAXFLOW
-    	for(int i = 0;i<g.edges;i++){
+    	for(int i = 0;i<g.edges();i++){
 			if(edge_enabled[i]){
 				int fi = F[i];
 				assert(F[i]<= capacity[i]);
@@ -279,7 +279,7 @@ public:
    		dbg_print_graph(s,t,-1, -1);
 #ifdef DEBUG_MAXFLOW
     	assert(f==expected_flow);
-    	for(int i = 0;i<g.edges;i++){
+    	for(int i = 0;i<g.edges();i++){
 			if(g.edgeEnabled(i)){
 				int fi = F[i];
 				assert(F[i]<= capacity[i]);
@@ -290,8 +290,8 @@ public:
 #endif
 
 #ifndef NDEBUG
-    	assert(edge_enabled.size()==g.edges);
-    	for(int i = 0;i<g.edges;i++)
+    	assert(edge_enabled.size()==g.edges());
+    	for(int i = 0;i<g.edges();i++)
     		assert(edge_enabled[i]==g.edgeEnabled(i));
     	dbg_check_flow(s,t);
 #endif
@@ -312,9 +312,9 @@ private:
     int maxFlow_residual(int s, int t, int bound){
 #ifndef NDEBUG
     	DynamicGraph d;
-		d.addNodes(g.nodes);
+		d.addNodes(g.nodes());
 		//std::vector<int> R;
-		for(int i = 0;i<g.edges;i++){
+		for(int i = 0;i<g.edges();i++){
 			if(g.isEdge(i)){
 				if(edge_enabled[i]){
 					int r =capacity[i]-F[i];
@@ -325,7 +325,7 @@ private:
 				}
 			}
 		}
-		for(int i = 0;i<g.edges;i++){
+		for(int i = 0;i<g.edges();i++){
 			if(edge_enabled[i]){
 				if(F[i]>0){
 					d.addEdge(g.all_edges[i].to,g.all_edges[i].from,-1,F[i]);
@@ -422,7 +422,7 @@ private:
     }
 
     int  BreadthFirstSearch(int s, int t, int shortCircuitFrom, int shortCircuitTo, int shortCircuitCapacity, int & shortCircuitFlow){
-         	for(int i = 0;i<g.nodes;i++)//this has to go...
+         	for(int i = 0;i<g.nodes();i++)//this has to go...
          		prev[i].from=-1;
          	prev[s].from = -2;
         	Q.clear();
@@ -445,11 +445,11 @@ private:
 					   }
        			   }
 
-                   for (int i = 0;i<g.adjacency[u].size();i++){
-                	   if(!edge_enabled[g.adjacency[u][i].id])
+                   for (int i = 0;i<g.nIncident(u);i++){
+                	   if(!edge_enabled[g.incident(u,i).id])
     						continue;
-                	   int id = g.adjacency[u][i].id;
-                	   int v = g.adjacency[u][i].node;
+                	   int id = g.incident(u,i).id;
+                	   int v = g.incident(u,i).node;
                        ///(If there is available capacity, and v is not seen before in search)
                 	   if(id==27 || id==29){
                 							   int a=1;
@@ -468,14 +468,14 @@ private:
                        }
                    }
 
-                   for (int i = 0;i<g.inverted_adjacency[u].size();i++){
-                	   int id = g.inverted_adjacency[u][i].id;
-					   if(!edge_enabled[(g.inverted_adjacency[u][i].id)])
+                   for (int i = 0;i<g.nIncident(u,true);i++){
+                	   int id = g.incident(u,i,true).id;
+					   if(!edge_enabled[(g.incident(u,i,true).id)])
 							continue;
 					   if(id==27 || id==29){
 						   int a=1;
 					   }
-					   int v = g.inverted_adjacency[u][i].node;
+					   int v = g.incident(u,i,true).node;
 						  ///(If there is available capacity, and v is not seen before in search)
 
 					   int f = 0;
@@ -506,7 +506,7 @@ private:
     		}
     		printf("Graph %d\n", it);
     			printf("digraph{\n");
-    			for(int i = 0;i<g.nodes;i++){
+    			for(int i = 0;i<g.nodes();i++){
     				if(i==from){
     					printf("n%d [label=\"From\", style=filled, fillcolor=blue]\n", i);
     				}else if (i==to){
@@ -515,7 +515,7 @@ private:
     					printf("n%d\n", i);
     			}
 
-    			for(int i = 0;i<g.edges;i++){
+    			for(int i = 0;i<g.edges();i++){
     				if(edge_enabled[i]){
 						auto & e = g.all_edges[i];
 						const char * s = "black";
@@ -540,9 +540,9 @@ private:
     	int newFlow = 0;
 #ifndef NDEBUG
     	 	DynamicGraph d;
-    	 	d.addNodes(g.nodes);
+    	 	d.addNodes(g.nodes());
     	 	//std::vector<int> R;
-    	 	for(int i = 0;i<g.edges;i++){
+    	 	for(int i = 0;i<g.edges();i++){
     	 		if(edge_enabled[i]){
     	 			int r =capacity[i]-F[i];
     	 			d.addEdge(g.all_edges[i].from,g.all_edges[i].to,g.all_edges[i].id,r);
@@ -551,7 +551,7 @@ private:
     	 			d.disableEdge(g.all_edges[i].id);
     	 		}
     	 	}
-    		for(int i = 0;i<g.edges;i++){
+    		for(int i = 0;i<g.edges();i++){
 				if(edge_enabled[i]){
 					if(F[i]>0){
 						d.addEdge(g.all_edges[i].to,g.all_edges[i].from,-1,F[i]);
@@ -623,7 +623,7 @@ private:
 
     		assert(newFlow<=expect);
 
-    		for(int i = 0;i<g.edges;i++){
+    		for(int i = 0;i<g.edges();i++){
 
 					int fi = F[i];
 					assert(F[i]<= capacity[i]);
@@ -636,21 +636,21 @@ private:
 
     void dbg_check_flow(int s, int t){
 #ifndef NDEBUG
-    	for(int u = 0;u<g.nodes;u++){
+    	for(int u = 0;u<g.nodes();u++){
     		int inflow = 0;
     		int outflow = 0;
-            for (int i = 0;i<g.inverted_adjacency[u].size();i++){
-				   int id = g.inverted_adjacency[u][i].id;
+            for (int i = 0;i<g.nIncident(u,true);i++){
+				   int id = g.incident(u,i,true).id;
 				   assert(id<edge_enabled.size());
-				   if(!edge_enabled[(g.inverted_adjacency[u][i].id)])
+				   if(!edge_enabled[(g.incident(u,i,true).id)])
 						continue;
 
 				   inflow+=F[id];
             }
-            for (int i = 0;i<g.adjacency[u].size();i++){
-				   int id = g.adjacency[u][i].id;
+            for (int i = 0;i<g.nIncident(u);i++){
+				   int id = g.incident(u,i).id;
 				   assert(id<edge_enabled.size());
-				   if(!edge_enabled[(g.adjacency[u][i].id)])
+				   if(!edge_enabled[(g.incident(u,i).id)])
 						continue;
 
 				   outflow+=F[id];
@@ -676,17 +676,17 @@ public:
     	Q.clear();
     	Q.push_back(s);
     	seen.clear();
-    	seen.resize(g.nodes);
+    	seen.resize(g.nodes());
     	seen[s]=true;
 
     	for(int j = 0;j<Q.size();j++){
 		   int u = Q[j];
 
-    		for(int i = 0;i<g.adjacency[u].size();i++){
-    			if(!g.edgeEnabled(g.adjacency[u][i].id))
+    		for(int i = 0;i<g.nIncident(u);i++){
+    			if(!g.edgeEnabled(g.incident(u,i).id))
     				continue;
-    			int v = g.adjacency[u][i].node;
-    			int id = g.adjacency[u][i].id;
+    			int v = g.incident(u,i).node;
+    			int id = g.incident(u,i).id;
     			if(capacity[id] - F[id] == 0){
     				cut.push_back(Edge{u,v,id});
     			}else if(!seen[v]){

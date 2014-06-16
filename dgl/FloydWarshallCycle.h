@@ -8,7 +8,7 @@
 #ifndef FLOYD_WARSHALL_CYCLE_H_
 #define FLOYD_WARSHALL_CYCLE_H_
 
-#include "DynamicGraph.h"
+#include "graph/DynamicGraph.h"
 
 namespace dgl{
 class FloydWarshallCycle{
@@ -34,30 +34,30 @@ public:
 private:
 
 	void floyd_warshal(){
-		INF = g.nodes+1;
-		dist.resize(g.nodes);
-		next.resize(g.nodes);
+		INF = g.nodes()+1;
+		dist.resize(g.nodes());
+		next.resize(g.nodes());
 		for(int i = 0;i<dist.size();i++){
-			dist[i].resize(g.nodes);
+			dist[i].resize(g.nodes());
 			for(int j = 0;j<dist[i].size();j++)
 				dist[i][j]=INF;
-			next[i].resize(g.nodes);
+			next[i].resize(g.nodes());
 			for(int j = 0;j<next[i].size();j++)
 				next[i][j]=-1;
 
 		}
 
-		for(int u = 0;u<g.adjacency.size();u++){
-			for(int j = 0;j<g.adjacency[u].size();j++){
+		for(int u = 0;u<g.nodes();u++){
+			for(int j = 0;j<g.nIncident(u);j++){
 				int v = g.adjacency[j];
 				dist[u][v]=1;
 			}
 		}
 
 		//Apply floyd-warshal
-		for(int i = 0;i<g.nodes;i++)
-			for(int j = 0;j<g.nodes;j++)
-				for(int k = 0;k<g.nodes;k++){
+		for(int i = 0;i<g.nodes();i++)
+			for(int j = 0;j<g.nodes();j++)
+				for(int k = 0;k<g.nodes();k++){
 					if (dist[j][i] + dist[i][k] < dist[j][k]){
 						dist[j][k] = dist[j][i] + dist[i][k];
 						next[j][k]=i;
@@ -69,7 +69,7 @@ private:
 		//If any vertex has a path to itself < INF, then it is part of a cycle. The minimum cycle is the lowest of these.
 		cycle_start = -1;
 		int min_cycle_length = INF;
-		for(int i = 0;i<g.nodes;i++){
+		for(int i = 0;i<g.nodes();i++){
 			if(dist[i][i]<min_cycle_length){
 				min_cycle_length=dist[i][i];
 				cycle_start=i;
@@ -88,8 +88,8 @@ private:
 			assert(last_deletion==g.deletions);
 					last_modification=g.modifications;
 					last_addition=g.additions;
-					INF=g.nodes+1;
-					dist.resize(g.nodes);
+					INF=g.nodes()+1;
+					dist.resize(g.nodes());
 
 					if(lastaddlist!=g.addlistclears){
 						addition_qhead=0;
@@ -106,7 +106,7 @@ private:
 						}
 					}
 
-					//else if(dist_changed.size()> g.nodes/3){
+					//else if(dist_changed.size()> g.nodes()/3){
 					if(dist_changed.size())
 						floyd_warshal();
 					/*}else{

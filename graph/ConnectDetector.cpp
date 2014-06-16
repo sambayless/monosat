@@ -99,11 +99,11 @@ ConnectDetector::ConnectDetector(int _detectorID, GraphTheorySolver * _outer, Dy
 
 void ConnectDetector::buildSATConstraints(int within_steps){
 	if(within_steps<0)
-		within_steps=g.nodes;
-	if(within_steps>g.nodes)
-		within_steps=g.nodes;
-	if(within_steps>g.edges)
-		within_steps=g.edges;
+		within_steps=g.nodes();
+	if(within_steps>g.nodes())
+		within_steps=g.nodes();
+	if(within_steps>g.edges())
+		within_steps=g.edges();
 	if(constraintsBuilt>=within_steps)
 		return;
 
@@ -119,7 +119,7 @@ void ConnectDetector::buildSATConstraints(int within_steps){
 		outer->addClause(True);
 		assert(outer->value(True)==l_True);
 		Lit False = ~True;
-		for(int i = 0;i<g.nodes;i++){
+		for(int i = 0;i<g.nodes();i++){
 			dist_lits[0].push(False);
 		}
 		dist_lits[0][source]=True;
@@ -176,7 +176,7 @@ void ConnectDetector::buildSATConstraints(int within_steps){
 
 	}
 
-	if(within_steps==g.nodes || within_steps==g.edges){
+	if(within_steps==g.nodes() || within_steps==g.edges()){
 		assert(reach_lits.size()==0);
 		for(Lit d: dist_lits.last()){
 			reach_lits.push(d);
@@ -241,12 +241,12 @@ void ConnectDetector::ReachStatus::setReachable(int u, bool reachable){
 }
 
 void ConnectDetector::ReachStatus::setMininumDistance(int u, bool reachable, int distance){
-	assert(reachable ==(distance<detector.outer->g.nodes));
+	assert(reachable ==(distance<detector.outer->g.nodes()));
 	setReachable(u,reachable);
 
 /*	if(u<detector.dist_lits.size()){
 		assert(distance>=0);
-		assert(distance<detector.outer->g.nodes);
+		assert(distance<detector.outer->g.nodes());
 		for(int i = 0;i<detector.dist_lits[u].size();i++){
 			int d =  detector.dist_lits[u][i].min_distance;
 			Lit l = detector.dist_lits[u][i].l;
@@ -401,7 +401,7 @@ void ConnectDetector::buildReachReason(int node,vec<Lit> & conflict){
 				    	to_visit.pop();
 				    	assert(seen[u]);
 				    	assert(!negative_reach_detector->connected_unsafe(u));
-				    	//Ok, then add all its incoming disabled edges to the cut, and visit any unseen, non-disabled incoming edges
+				    	//Ok, then add all its incoming disabled edges to the cut, and visit any unseen, non-disabled incoming.edges()
 				    	for(int i = 0;i<outer->undirected_adj[u].size();i++){
 				    		int v = outer->undirected_adj[u][i].v;
 				    		int from = outer->undirected_adj[u][i].from;
@@ -542,7 +542,7 @@ void ConnectDetector::buildReachReason(int node,vec<Lit> & conflict){
 						    	to_visit.pop();
 						    	assert(seen[u]);
 						    	assert(!negative_reach_detector->connected_unsafe(u));
-						    	//Ok, then add all its incoming disabled edges to the cut, and visit any unseen, non-disabled incoming edges
+						    	//Ok, then add all its incoming disabled edges to the cut, and visit any unseen, non-disabled incoming.edges()
 						    	for(int i = 0;i<outer->undirected_adj[u].size();i++){
 						    		int v = outer->undirected_adj[u][i].v;
 						    		int from = outer->undirected_adj[u][i].from;

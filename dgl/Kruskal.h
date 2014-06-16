@@ -5,7 +5,7 @@
 #include <vector>
 #include "alg/Heap.h"
 #include "mtl/Sort.h"
-#include "DynamicGraph.h"
+#include "graph/DynamicGraph.h"
 #include "core/Config.h"
 #include "MinimumSpanningTree.h"
 #include "alg/DisjointSets.h"
@@ -113,7 +113,7 @@ public:
 		}
 		hasParents=false;
 		sets.Reset();
-		setNodes(g.nodes);
+		setNodes(g.nodes());
 
 		min_weight=0;
 
@@ -251,7 +251,7 @@ public:
 #ifndef NDEBUG
 		int sumweight = 0;
 		in_tree.resize(g.nEdgeIDs());
-		for(int i = 0;i<g.edges;i++){
+		for(int i = 0;i<g.edges();i++){
 			if(in_tree[i]){
 				sumweight+= g.getWeight(i);
 			}

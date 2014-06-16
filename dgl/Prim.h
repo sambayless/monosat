@@ -4,7 +4,7 @@
 
 #include <vector>
 #include "alg/Heap.h"
-#include "DynamicGraph.h"
+#include "graph/DynamicGraph.h"
 #include "core/Config.h"
 #include "MinimumSpanningTree.h"
 #include <limits>
@@ -94,7 +94,7 @@ public:
 		seen.resize(n);
 		prev.resize(n);
 		INF=std::numeric_limits<int>::max();
-		components.resize(g.nodes);
+		components.resize(g.nodes());
 		parents.resize(n);
 		keys.resize(n);
 		parent_edges.resize(n);
@@ -123,15 +123,15 @@ public:
 			stats_num_skipable_deletions++;
 		}
 
-		setNodes(g.nodes);
+		setNodes(g.nodes());
 
 		min_weight=0;
 
 		mst.clear();
 
-		in_tree.clear();in_tree.resize(g.edges);
+		in_tree.clear();in_tree.resize(g.edges());
 
-		for(int i = 0;i<g.nodes;i++){
+		for(int i = 0;i<g.nodes();i++){
 			parents[i]=-1;
 			parent_edges[i]=-1;//not really needed
 			components[i]=i;
@@ -142,11 +142,11 @@ public:
 		int root=0;
 		numsets=0;
 		seen.clear();
-		seen.resize(g.nodes);
+		seen.resize(g.nodes());
 		min_weight=0;
 		//This outer loop is to get Prim's to compute the minimum spanning _forest_, in the case that the graph is disconnected.
-		while(n_seen<g.nodes){
-			for(;root<g.nodes && seen[root];root++);//find the first unseen node
+		while(n_seen<g.nodes()){
+			for(;root<g.nodes() && seen[root];root++);//find the first unseen node
 			components[root]=root;
 			Q.insert(root);//arbitrary first node to examine
 			numsets++;
@@ -184,7 +184,7 @@ public:
 		}
 
 
-/*		for(int i = 0;i<g.nodes;i++){
+/*		for(int i = 0;i<g.nodes();i++){
 			if(parents[i] ==-1) {
 				numsets++;
 			}
@@ -285,7 +285,7 @@ public:
 #ifndef NDEBUG
 		int sumweight = 0;
 		in_tree.resize(g.nEdgeIDs());
-		for(int i = 0;i<g.edges;i++){
+		for(int i = 0;i<g.edges();i++){
 			if(in_tree[i]){
 				sumweight+= g.getWeight(i);
 			}
@@ -300,7 +300,7 @@ private:
 		if(!hasComponents){
 					hasComponents=true;
 					components.clear();
-					components.resize(g.nodes,-1);
+					components.resize(g.nodes(),-1);
 					next_component = 0;
 					roots.clear();
 					//root_list.clear();

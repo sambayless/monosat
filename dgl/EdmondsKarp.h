@@ -7,7 +7,7 @@
 #include "MaxFlow.h"
 #include <vector>
 #include <algorithm>
-#include "DynamicGraph.h"
+#include "graph/DynamicGraph.h"
 namespace dgl{
 
 class EdmondsKarp:public MaxFlow{
@@ -49,7 +49,7 @@ public:
     std::vector<int> Q;
 
     int  BreadthFirstSearch(int s, int t){
-     	for(int i = 0;i<g.nodes;i++)
+     	for(int i = 0;i<g.nodes();i++)
 			P[i]=-1;
      	P[s] = -2;
     	Q.clear();
@@ -60,10 +60,10 @@ public:
            for(int j = 0;j<Q.size();j++){
         	   int u = Q[j];
 
-               for (int i = 0;i<g.adjacency[u].size();i++){
-            	   if(!g.edgeEnabled(g.adjacency[u][i].id))
+               for (int i = 0;i<g.nIncident(u);i++){
+            	   if(!g.edgeEnabled(g.incident(u,i).id))
 						continue;
-            	   int v = g.adjacency[u][i].node;
+            	   int v = g.incident(u,i).node;
                    ///(If there is available capacity, and v is not seen before in search)
             	   int c = C[u][v];
             	   int f = F[u][v];
@@ -78,10 +78,10 @@ public:
                    }
                }
                //Must also try reverse edges
-               for (int i = 0;i<g.inverted_adjacency[u].size();i++){
-				   if(!g.edgeEnabled(g.inverted_adjacency[u][i].id))
+               for (int i = 0;i<g.nIncident(u,true);i++){
+				   if(!g.edgeEnabled(g.incident(u,i,true).id))
 						continue;
-				   int v = g.inverted_adjacency[u][i].node;
+				   int v = g.incident(u,i,true).node;
 					///(If there is available capacity, and v is not seen before in search)
 				   int c = C[u][v];
 				   int f = F[u][v];
@@ -114,20 +114,20 @@ public:
     	setAllEdgeCapacities(1);
     }
     void setCapacity(int u, int w, int c){
-    	if(C.size()<g.nodes){
-    		C.resize(g.nodes);
-    		for(int i = 0;i<g.nodes;i++){
-    			C[i].resize(g.nodes);
+    	if(C.size()<g.nodes()){
+    		C.resize(g.nodes());
+    		for(int i = 0;i<g.nodes();i++){
+    			C[i].resize(g.nodes());
     		}
     	}
     	C[u][w]=c;
     }
     void setAllEdgeCapacities(int c){
-    	for(int i = 0;i<g.nodes;i++){
-    		for(int j = 0;j<g.adjacency[i].size();j++){
-    			if(!g.edgeEnabled(g.adjacency[i][j].id))
+    	for(int i = 0;i<g.nodes();i++){
+    		for(int j = 0;j<g.nIncident(i);j++){
+    			if(!g.edgeEnabled(g.incident(i,j).id))
 						continue;
-    			setCapacity(i,g.adjacency[i][j].node,c);
+    			setCapacity(i,g.incident(i,j).node,c);
     		}
     	}
     }
@@ -137,17 +137,17 @@ public:
     			return curflow;
     		}
     	int f = 0;
-    	C.resize(g.nodes);
-    	F.resize(g.nodes);
-    	P.resize(g.nodes);
-    	M.resize(g.nodes);
+    	C.resize(g.nodes());
+    	F.resize(g.nodes());
+    	P.resize(g.nodes());
+    	M.resize(g.nodes());
 
-    	for(int i = 0;i<g.nodes;i++){
+    	for(int i = 0;i<g.nodes();i++){
     		P[i]=-1;
     		M[i]=0;
-    		F[i].resize(g.nodes);
-    		C[i].resize(g.nodes);
-    		for(int j = 0;j<g.nodes;j++){
+    		F[i].resize(g.nodes());
+    		C[i].resize(g.nodes());
+    		for(int j = 0;j<g.nodes();j++){
     			F[i][j]=0;
     		}
     	}
@@ -181,17 +181,17 @@ public:
     }
     int maxFlow(int s, int t, int max_length){
        	int f = 0;
-       	C.resize(g.nodes);
-       	F.resize(g.nodes);
-       	P.resize(g.nodes);
-       	M.resize(g.nodes);
+       	C.resize(g.nodes());
+       	F.resize(g.nodes());
+       	P.resize(g.nodes());
+       	M.resize(g.nodes());
 
-       	for(int i = 0;i<g.nodes;i++){
+       	for(int i = 0;i<g.nodes();i++){
        		P[i]=-1;
        		M[i]=0;
-       		F[i].resize(g.nodes);
-       		C[i].resize(g.nodes);
-       		for(int j = 0;j<g.nodes;j++){
+       		F[i].resize(g.nodes());
+       		C[i].resize(g.nodes());
+       		for(int j = 0;j<g.nodes();j++){
        			F[i][j]=0;
        		}
        	}
@@ -230,19 +230,19 @@ public:
 		Q.clear();
 		Q.push_back(s);
 		seen.clear();
-		seen.resize(g.nodes);
+		seen.resize(g.nodes());
 		seen[s]=true;
 	//	visited.clear();
-		//visited.resize(g.nodes);
+		//visited.resize(g.nodes());
 	//	visited[s]=true;
 		for(int j = 0;j<Q.size();j++){
 		   int u = Q[j];
 
-			for(int i = 0;i<g.adjacency[u].size();i++){
-				if(!g.edgeEnabled(g.adjacency[u][i].id))
+			for(int i = 0;i<g.nIncident(u);i++){
+				if(!g.edgeEnabled(g.incident(u,i).id))
 					continue;
-				int v = g.adjacency[u][i].node;
-				int id = g.adjacency[u][i].id;
+				int v = g.incident(u,i).node;
+				int id = g.incident(u,i).id;
 				if(C[u][v] - F[u][v] == 0){
 					cut.push_back(Edge{u,v,id});
 				}else if(!seen[v]){
@@ -288,18 +288,18 @@ public:
     	Q.clear();
     	Q.push_back(s);
     	seen.clear();
-    	seen.resize(g.nodes);
+    	seen.resize(g.nodes());
     	seen[s]=true;
     //	visited.clear();
-    	//visited.resize(g.nodes);
+    	//visited.resize(g.nodes());
     //	visited[s]=true;
     	for(int j = 0;j<Q.size();j++){
 		   int u = Q[j];
 
-    		for(int i = 0;i<g.adjacency[u].size();i++){
-    			if(!g.edgeEnabled(g.adjacency[u][i].id))
+    		for(int i = 0;i<g.nIncident(u);i++){
+    			if(!g.edgeEnabled(g.incident(u,i).id))
     				continue;
-    			int v = g.adjacency[u][i].node;
+    			int v = g.incident(u,i).node;
 
     			if(C[u][v] - F[u][v] == 0){
     				cut.push_back(Edge{u,v});

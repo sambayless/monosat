@@ -11,7 +11,7 @@
 
 #include <vector>
 #include "alg/Heap.h"
-#include "DynamicGraph.h"
+#include "graph/DynamicGraph.h"
 #include "core/Config.h"
 #include "ConnectedComponents.h"
 #include "alg/DisjointSets.h"
@@ -164,14 +164,14 @@ public:
 			stats_num_skipable_deletions++;
 		}
 
-		setNodes(g.nodes);
+		setNodes(g.nodes());
 		scc_set.clear();
 		q.clear();
-		for(int i = 0;i<g.nodes;i++){
+		for(int i = 0;i<g.nodes();i++){
 			indices[i]=-1;
 		}
 		int index =0;
-		for(int i = 0;i<g.nodes;i++){
+		for(int i = 0;i<g.nodes();i++){
 			if(indices[i]<0){
 				strongConnect(i,index);
 			}

@@ -12,7 +12,7 @@
 
 #include <vector>
 #include "alg/Heap.h"
-#include "DynamicGraph.h"
+#include "graph/DynamicGraph.h"
 #include "core/Config.h"
 #include "ConnectedComponents.h"
 #include "alg/DisjointSets.h"
@@ -96,9 +96,9 @@ public:
 		}
 		hasParents=false;
 		sets.Reset();
-		setNodes(g.nodes);
+		setNodes(g.nodes());
 
-		for(int i = 0;i<g.edges;i++){
+		for(int i = 0;i<g.edges();i++){
 			if(g.edgeEnabled(i)){
 				int u = g.all_edges[i].from;
 				int v = g.all_edges[i].to;

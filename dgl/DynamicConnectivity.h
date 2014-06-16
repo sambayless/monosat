@@ -4,7 +4,7 @@
 
 #include <vector>
 #include "alg/Heap.h"
-#include "DynamicGraph.h"
+#include "graph/DynamicGraph.h"
 #include "alg/EulerTree.h"
 #include "alg/TreapCustom.h"
 #include "core/Config.h"
@@ -84,7 +84,7 @@ public:
 		changes.push_back({sourceNum,s});
 
 		transitive_closure.push_back({});
-		transitive_closure[sourceNum].resize(g.nodes);
+		transitive_closure[sourceNum].resize(g.nodes());
 		transitive_closure[sourceNum][s].reachable=true;
 		transitive_closure[sourceNum][s].changed=true;
 		last_modification=-1;
@@ -106,14 +106,14 @@ public:
 
 	void setNodes(int n){
 
-		INF=g.nodes+1;
+		INF=g.nodes()+1;
 
-		while(t.nNodes()< g.nodes){
+		while(t.nNodes()< g.nodes()){
 			t.addNode();
 			prev.push_back(-1);
 		}
 		for(int i = 0;i<transitive_closure.size();i++){
-			transitive_closure[i].resize(g.nodes);
+			transitive_closure[i].resize(g.nodes());
 		}
 
 	}
@@ -274,13 +274,13 @@ public:
 			}
 			stats_full_updates++;//1416
 
-			setNodes(g.nodes);
+			setNodes(g.nodes());
 			hasPrev=false;
 
 	#ifndef NDEBUG
 			dbg_sets.Reset();
 
-			dbg_sets.AddElements(g.nodes);
+			dbg_sets.AddElements(g.nodes());
 
 			for(int i = 0;i<g.all_edges.size();i++){
 				if(g.edgeEnabled(i) && g.all_edges[i].id>=0){
@@ -302,7 +302,7 @@ public:
 				//initialize the transitive closure.
 				for(int s = 0;s<sources.size();s++){
 					int source = sources[s];
-					for(int n = 0;n<g.nodes;n++){
+					for(int n = 0;n<g.nodes();n++){
 						bool connected = t.connected(source,n);
 						if(connected && reportPolarity>=0){
 							transitive_closure[s][n].reachable=true;
@@ -343,7 +343,7 @@ public:
 
 			}
 #ifndef NDEBUG
-				for(int i = 0;i<g.edges;i++){
+				for(int i = 0;i<g.edges();i++){
 					if(g.all_edges[i].id>=0){
 					assert(t.edges[i].edgeID==g.all_edges[i].id);
 					assert(t.edges[i].from==g.all_edges[i].from);
@@ -351,8 +351,8 @@ public:
 					assert(t.edgeEnabled(i)==g.edgeEnabled(i));
 					}
 				}
-				for(int i = 0;i<g.nodes;i++){
-					for(int j = 0;j<g.nodes;j++){
+				for(int i = 0;i<g.nodes();i++){
+					for(int j = 0;j<g.nodes();j++){
 						bool dbg_connected = dbg_sets.FindSet(i)==dbg_sets.FindSet(j);
 						assert(dbg_connected == t.connected(i,j));
 					}
@@ -386,7 +386,7 @@ public:
 
 			if (default_source>=0){
 				prev.clear();
-				prev.resize(g.nodes,-1);
+				prev.resize(g.nodes(),-1);
 				//ok, traverse the nodes connected to this component
 				component.clear();
 				static int iter=0;
@@ -402,7 +402,7 @@ public:
 				if(reportPolarity<=0){
 					sort(component);
 					int nextpos = 0;
-					for(int v = 0;v<g.nodes;v++){
+					for(int v = 0;v<g.nodes();v++){
 						if(nextpos<component.size() && v==component[nextpos]){
 							nextpos++;
 							assert(dbg_sets.FindSet(v)==dbg_sets.FindSet(default_source));
@@ -550,7 +550,7 @@ public:
 				dbg_path(getSource(),to,path);
 
 				prev.clear();
-				prev.resize(g.nodes,-1);
+				prev.resize(g.nodes(),-1);
 				assert(path[0]==getSource());
 				for(int i = 1;i<path.size();i++){
 					prev[path[i]]=path[i-1];
@@ -568,7 +568,7 @@ public:
 				 if(!hasPrev){
 					 hasPrev=true;
 					 prev.clear();
-					 prev.resize(g.nodes,-1);
+					 prev.resize(g.nodes(),-1);
 				 }
 				 if(prev[to]<0){
 					assert(t.connected(getSource(),to));

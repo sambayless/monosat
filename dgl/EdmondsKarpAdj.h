@@ -53,7 +53,7 @@ public:
 
 
     int  BreadthFirstSearch(int s, int t){
-     	for(int i = 0;i<g.nodes;i++)
+     	for(int i = 0;i<g.nodes();i++)
      		prev[i].from=-1;
      	prev[s].from = -2;
     	Q.clear();
@@ -62,11 +62,11 @@ public:
        	for(int j = 0;j<Q.size();j++){
    			   int u = Q[j];
 
-               for (int i = 0;i<g.adjacency[u].size();i++){
-            	   if(!g.edgeEnabled(g.adjacency[u][i].id))
+               for (int i = 0;i<g.nIncident(u);i++){
+            	   if(!g.edgeEnabled(g.incident(u,i).id))
 						continue;
-            	   int id = g.adjacency[u][i].id;
-            	   int v = g.adjacency[u][i].node;
+            	   int id = g.incident(u,i).id;
+            	   int v = g.incident(u,i).node;
                    ///(If there is available capacity, and v is not seen before in search)
 
             	   int f = F[id];
@@ -83,12 +83,12 @@ public:
                    }
                }
 
-               for (int i = 0;i<g.inverted_adjacency[u].size();i++){
-            	   int id = g.inverted_adjacency[u][i].id;
+               for (int i = 0;i<g.nIncident(u,true);i++){
+            	   int id = g.incident(u,i,true).id;
             	   if(!g.edgeEnabled(id))
 						continue;
 
-				   int v = g.inverted_adjacency[u][i].node;
+				   int v = g.incident(u,i,true).node;
 
 				   int f = 0;
 				   int c = F[id];
@@ -123,7 +123,7 @@ public:
     	//setAllEdgeCapacities(1);
     }
     void setCapacity(int u, int w, int c){
-    	//C.resize(g.edges);
+    	//C.resize(g.edges());
     	//C[ ]=c;
 
     }
@@ -139,7 +139,7 @@ public:
        		}
        		printf("Graph %d\n", it);
        			printf("digraph{\n");
-       			for(int i = 0;i<g.nodes;i++){
+       			for(int i = 0;i<g.nodes();i++){
        				if(i==from){
        					printf("n%d [label=\"From\", style=filled, fillcolor=blue]\n", i);
        				}else if (i==to){
@@ -148,7 +148,7 @@ public:
        					printf("n%d\n", i);
        			}
 
-       			for(int i = 0;i<g.edges;i++){
+       			for(int i = 0;i<g.edges();i++){
        				if(g.edgeEnabled(i)){
    						auto & e = g.all_edges[i];
    						const char * s = "black";
@@ -173,7 +173,7 @@ public:
 		}
 #endif
 
-    	//C.resize(g.nodes);
+    	//C.resize(g.nodes());
 /*
 #ifdef DEBUG_MAXFLOW
     	for(int i = 0;i<g.all_edges.size();i++){
@@ -216,10 +216,10 @@ public:
     	}*/
     	F.clear();
     	F.resize(g.all_edges.size());
-    	prev.resize(g.nodes);
-    	M.resize(g.nodes);
+    	prev.resize(g.nodes());
+    	M.resize(g.nodes());
 
-    	for(int i = 0;i<g.nodes;i++){
+    	for(int i = 0;i<g.nodes();i++){
     		prev[i].from =-1;
     		M[i]=0;
     	}
@@ -275,19 +275,19 @@ public:
     	Q.clear();
     	Q.push_back(s);
     	seen.clear();
-    	seen.resize(g.nodes);
+    	seen.resize(g.nodes());
     	seen[s]=true;
     //	visited.clear();
-    	//visited.resize(g.nodes);
+    	//visited.resize(g.nodes());
     //	visited[s]=true;
     	for(int j = 0;j<Q.size();j++){
 		   int u = Q[j];
 
-    		for(int i = 0;i<g.adjacency[u].size();i++){
-    			if(!g.edgeEnabled(g.adjacency[u][i].id))
+    		for(int i = 0;i<g.nIncident(u);i++){
+    			if(!g.edgeEnabled(g.incident(u,i).id))
     				continue;
-    			int v = g.adjacency[u][i].node;
-    			int id = g.adjacency[u][i].id;
+    			int v = g.incident(u,i).node;
+    			int id = g.incident(u,i).id;
     			if(capacity[id] - F[id] == 0){
     				cut.push_back(Edge{u,v,id});
     			}else if(!seen[v]){

@@ -95,7 +95,7 @@ class MinCut{
 
       assert(pq.empty());
 
-      for(int v = 0;v<g.nodes;v++){
+      for(int v = 0;v<g.nodes();v++){
     	  if (v ==assignments[v]) {
     		  keys[v]=0;
     		  pq.update(v);
@@ -116,8 +116,8 @@ class MinCut{
         s = t; t = u;
 
 
-        	for(int j = 0;j<g.adjacency[u].size();j++){
-        		int q = g.adjacency[u][j];
+        	for(int j = 0;j<g.nIncident(u);j++){
+        		int q = g.incident(u,j);
         		int v = assignments[q];
         		if(pq.inHeap(v)){
 
@@ -148,12 +148,12 @@ class MinCut{
 
 public:
  	MinCut(DynamicGraph & graph):g(graph),pq(Comp(keys)){
- 		  weight.resize(g.nodes);
- 				   weight.shrink(weight.size()-g.nodes);
- 					  for(int v= 0 ;v<g.nodes;v++){
- 						  weight[v].resize(g.nodes);
- 						  weight[v].shrink(weight[v].size()-g.nodes);
- 						  for(int w = 0;w<g.nodes;w++){
+ 		  weight.resize(g.nodes());
+ 				   weight.shrink(weight.size()-g.nodes());
+ 					  for(int v= 0 ;v<g.nodes();v++){
+ 						  weight[v].resize(g.nodes());
+ 						  weight[v].shrink(weight[v].size()-g.nodes());
+ 						  for(int w = 0;w<g.nodes();w++){
  							weight[v][w]=0;
  						  }
  					  }
@@ -185,24 +185,24 @@ public:
 
 
 
-	   int n = g.nodes;
+	   int n = g.nodes();
 	   //full edge matrix
-	   /*cur_weight.resize(g.nodes);
-	   cur_weight.shrink(cur_weight.size()-g.nodes);
-	      for(int v= 0 ;v<g.nodes;v++){
-	    	  cur_weight[v].resize(g.nodes);
-	      	  cur_weight[v].shrink(cur_weight[v].size()-g.nodes);
-	      	  for(int w = 0;w<g.nodes;w++){
+	   /*cur_weight.resize(g.nodes());
+	   cur_weight.shrink(cur_weight.size()-g.nodes());
+	      for(int v= 0 ;v<g.nodes();v++){
+	    	  cur_weight[v].resize(g.nodes());
+	      	  cur_weight[v].shrink(cur_weight[v].size()-g.nodes());
+	      	  for(int w = 0;w<g.nodes();w++){
 	      		cur_weight[v][w]=0;
 	      	  }
 	      }*/
 
 
-	   keys.resize(g.nodes);
-	   parity.resize(g.nodes);
+	   keys.resize(g.nodes());
+	   parity.resize(g.nodes());
       // initialize `assignments` (all vertices are initially assigned to themselves)
-      assignments.resize(g.nodes);
-      for(int v= 0 ;v<g.nodes;v++)
+      assignments.resize(g.nodes());
+      for(int v= 0 ;v<g.nodes();v++)
     	  assignments[v]=v;
 
 
@@ -210,7 +210,7 @@ public:
 
      stoer_wagner_phase(s, t, bestW);
       assert(s != t);
-      for(int v=0;v<g.nodes;v++)
+      for(int v=0;v<g.nodes();v++)
     	  parity[v]=v==t?1:0;
 
       assignments[t]=s;
@@ -223,14 +223,14 @@ public:
         assert(s != t);
 
         if (w < bestW) {
-        	for(int v = 0;v<g.nodes;v++){
+        	for(int v = 0;v<g.nodes();v++){
         		parity[v]=assignments[v]==t?1:0;
         		if(assignments[v]==t)// all vertices that were assigned to t are now assigned to s
         			assignments[v]=s;
         	}
           bestW = w;
         } else {
-        	for(int v = 0;v<g.nodes;v++){
+        	for(int v = 0;v<g.nodes();v++){
         		if(assignments[v]==t)
         			assignments[v]=s;// all vertices that were assigned to t are now assigned to s
 
@@ -249,12 +249,12 @@ public:
 
    void setWeight(int from, int to, float w){
 	   if(from>=weight.size() || to>=weight.size()){
-		   weight.resize(g.nodes);
-		   weight.shrink(weight.size()-g.nodes);
-			  for(int v= 0 ;v<g.nodes;v++){
-				  weight[v].resize(g.nodes);
-				  weight[v].shrink(weight[v].size()-g.nodes);
-				  for(int w = 0;w<g.nodes;w++){
+		   weight.resize(g.nodes());
+		   weight.shrink(weight.size()-g.nodes());
+			  for(int v= 0 ;v<g.nodes();v++){
+				  weight[v].resize(g.nodes());
+				  weight[v].shrink(weight[v].size()-g.nodes());
+				  for(int w = 0;w<g.nodes();w++){
 					weight[v][w]=0;
 				  }
 			  }
@@ -271,9 +271,9 @@ public:
    }
    void initEdgeWeights(float w){
 	zeroAllWeights();
-	   for(int i = 0;i<g.adjacency.size();i++){
-		   for(int j = 0;j<g.adjacency[i].size();j++){
-			   int w = g.adjacency[i][j];
+	   for(int i = 0;i<g.nodes();i++){
+		   for(int j = 0;j<g.nIncident(u);j++){
+			   int w = g.incident(i,j);
 			   setWeight(i,w,1);
 		   }
 	   }

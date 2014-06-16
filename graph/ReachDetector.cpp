@@ -132,11 +132,11 @@ ReachDetector::ReachDetector(int _detectorID, GraphTheorySolver * _outer, Dynami
 }
 void ReachDetector::buildSATConstraints(bool onlyUnderApprox,int within_steps){
 	if(within_steps<0)
-		within_steps=g.nodes;
-	if(within_steps>g.nodes)
-		within_steps=g.nodes;
-	if(within_steps>g.edges)
-		within_steps=g.edges;
+		within_steps=g.nodes();
+	if(within_steps>g.nodes())
+		within_steps=g.nodes();
+	if(within_steps>g.edges())
+		within_steps=g.edges();
 	if(constraintsBuilt>=within_steps)
 		return;
 
@@ -154,7 +154,7 @@ void ReachDetector::buildSATConstraints(bool onlyUnderApprox,int within_steps){
 			assert(outer->value(True)==l_True);
 			Lit False = ~True;
 			assert(outer->value(False)==l_False);
-			for(int i = 0;i<g.nodes;i++){
+			for(int i = 0;i<g.nodes();i++){
 				dist_lits[0].push(False);
 			}
 			dist_lits[0][source]=True;
@@ -172,7 +172,7 @@ void ReachDetector::buildSATConstraints(bool onlyUnderApprox,int within_steps){
 			reaches.copyTo(dist_lits.last());
 			assert(outer->value( reaches[source])==l_True);
 			//For each edge:
-			for(int j = 0;j<g.nodes;j++){
+			for(int j = 0;j<g.nodes();j++){
 				Lit r_cur = reaches[j];
 
 				for(Edge & e: outer->inv_adj[j]){
@@ -208,7 +208,7 @@ void ReachDetector::buildSATConstraints(bool onlyUnderApprox,int within_steps){
 			assert(outer->value( dist_lits.last()[source])==l_True);
 		}
 		assert(dist_lits.size()==within_steps+1);
-		if(within_steps==g.nodes || within_steps==g.edges){
+		if(within_steps==g.nodes() || within_steps==g.edges()){
 			assert(reach_lits.size()==0);
 			for(Lit d: dist_lits.last()){
 				reach_lits.push(d);
@@ -219,10 +219,10 @@ void ReachDetector::buildSATConstraints(bool onlyUnderApprox,int within_steps){
 		constraintsBuilt=within_steps;
 	}else{
 		if(constraintsBuilt<0){
-		constraintsBuilt=g.nodes;
+		constraintsBuilt=g.nodes();
 
-		//for each node, it cannot be reachable if none of its incoming edges are enabled.
-		for(int n = 0;n<g.nodes;n++){
+		//for each node, it cannot be reachable if none of its incoming.edges() are enabled.
+		for(int n = 0;n<g.nodes();n++){
 			if(reach_lits[n]==lit_Undef){
 				Var reach_var = outer->newVar(detectorID , true);
 				reach_lits[n] =mkLit(reach_var);//since this is _only_ the underapproximation, these variables _do_ need to be connected to the theory solver
@@ -236,7 +236,7 @@ void ReachDetector::buildSATConstraints(bool onlyUnderApprox,int within_steps){
 
 		vec<Lit> c;
 		vec<Lit> t;
-		for(int n = 0;n<g.nodes;n++){
+		for(int n = 0;n<g.nodes();n++){
 			if(n==53){
 				int a =1;
 			}
@@ -311,7 +311,7 @@ void ReachDetector::buildSATConstraints(bool onlyUnderApprox,int within_steps){
 	}
 }
 void ReachDetector::addLit(int from, int to, Var outer_reach_var){
-	while( reach_lits.size()<=g.nodes)
+	while( reach_lits.size()<=g.nodes())
 			reach_lits.push(lit_Undef);
 	if(reach_lits[to]!=lit_Undef){
 		Lit r = reach_lits[to];
@@ -377,12 +377,12 @@ void ReachDetector::ReachStatus::setReachable(int u, bool reachable){
 			}
 
 void ReachDetector::ReachStatus::setMininumDistance(int u, bool reachable, int distance){
-	/*assert(reachable ==(distance<detector.outer->g.nodes));
+	/*assert(reachable ==(distance<detector.outer->g.nodes()));
 	setReachable(u,reachable);
 
 	if(u<detector.dist_lits.size()){
 		assert(distance>=0);
-		assert(distance<detector.outer->g.nodes);
+		assert(distance<detector.outer->g.nodes());
 		for(int i = 0;i<detector.dist_lits[u].size();i++){
 			int d =  detector.dist_lits[u][i].min_distance;
 			Lit l = detector.dist_lits[u][i].l;
@@ -541,7 +541,7 @@ void ReachDetector::buildReachReason(int node,vec<Lit> & conflict){
 				    	assert(seen[u]);
 				    	assert(!outer->dbg_reachable(source,u,false));
 				    	//assert(!negative_reach_detector->connected_unsafe(u));
-				    	//Ok, then add all its incoming disabled edges to the cut, and visit any unseen, non-disabled incoming edges
+				    	//Ok, then add all its incoming disabled edges to the cut, and visit any unseen, non-disabled incoming.edges()
 				    	for(int i = 0;i<outer->inv_adj[u].size();i++){
 				    		int v = outer->inv_adj[u][i].v;
 				    		int from = outer->inv_adj[u][i].from;
@@ -590,7 +590,7 @@ void ReachDetector::buildReachReason(int node,vec<Lit> & conflict){
 		    //visit each edge lit in this initial conflict, and see if unreachability is preserved if we add the edge back in (temporarily)
 		    	int i,j=0;
 
-		    	while(cutgraph.nodes<g.nodes){
+		    	while(cutgraph.nodes<g.nodes()){
 		    		cutgraph.addNode();
 		    	}
 		    	while(cutgraph.nEdgeIDs()<g.nEdgeIDs()){
@@ -814,7 +814,7 @@ void ReachDetector::buildReachReason(int node,vec<Lit> & conflict){
 						    	to_visit.pop();
 						    	assert(seen[u]);
 						    	assert(!negative_reach_detector->connected_unsafe(u));
-						    	//Ok, then add all its incoming disabled edges to the cut, and visit any unseen, non-disabled incoming edges
+						    	//Ok, then add all its incoming disabled edges to the cut, and visit any unseen, non-disabled incoming.edges()
 						    	for(int i = 0;i<outer->inv_adj[u].size();i++){
 						    		int v = outer->inv_adj[u][i].v;
 						    		int from = outer->inv_adj[u][i].from;

@@ -113,9 +113,9 @@ public:
 		assert(last_deletion==g.deletions);
 		last_modification=g.modifications;
 		last_addition=g.additions;
-		INF=g.nodes+1;
-		seen.growTo(g.nodes);
-		prev.growTo(g.nodes);
+		INF=g.nodes()+1;
+		seen.growTo(g.nodes());
+		prev.growTo(g.nodes());
 
 		if(lastaddlist!=g.addlistclears){
 			addition_qhead=0;
@@ -201,7 +201,7 @@ public:
 		q.capacity(n);
 		seen.growTo(n);
 		prev.growTo(n);
-		INF=g.nodes+1;
+		INF=g.nodes()+1;
 	}
 
 	inline void add_update(int to){
@@ -235,9 +235,9 @@ public:
 				history_qhead=0;
 			}
 
-			assert(INF>g.nodes);
-			assert(seen.size()>=g.nodes);
-			//old_seen.growTo(g.nodes);
+			assert(INF>g.nodes());
+			assert(seen.size()>=g.nodes());
+			//old_seen.growTo(g.nodes());
 			q.clear();
 
 			for(int i = history_qhead;i<g.history.size();i++){
@@ -314,7 +314,7 @@ public:
 					//then deleting this edge has no impact on connectivity, so don't need to do anything
 				}else{
 
-					//IF no other incoming edges are seen, then this might be a safe deletion (but we'd need to update any outgoing edges that have to as their previous...)
+					//IF no other incoming.edges() are seen, then this might be a safe deletion (but we'd need to update any outgoing.edges() that have to as their previous...)
 
 					//Incremental update failed.
 					stats_fast_update_time+=rtime(2)-startdupdatetime;;
@@ -327,7 +327,7 @@ public:
 		stats_fast_updates++;
 		history_qhead = g.history.size();
 
-		for(int u = 0;u<g.nodes;u++){
+		for(int u = 0;u<g.nodes();u++){
 			if(last_modification <=0  || (old_seen[u]==1 && seen[u]==0)){
 				changed.push(u);
 			}
@@ -362,12 +362,12 @@ public:
 			stats_num_skipable_deletions++;
 		}
 
-		setNodes(g.nodes);
+		setNodes(g.nodes());
 
 		if(g.historyclears!=last_history_clear){
 			last_history_clear=g.historyclears;
 			history_qhead=0;
-		}else if(opt_inc_graph && last_modification>0 && (g.historyclears <= (last_history_clear+1))){// && (g.history.size()-history_qhead < g.edges*mod_percentage)){
+		}else if(opt_inc_graph && last_modification>0 && (g.historyclears <= (last_history_clear+1))){// && (g.history.size()-history_qhead < g.edges()*mod_percentage)){
 			if(opt_dec_graph && last_deletion < g.deletions){
 				double startddecupdatetime = rtime(2);
 				//scan through the deletions and check if any of them matter..
@@ -401,7 +401,7 @@ public:
 
 
 		q.clear();
-		for(int i = 0;i<g.nodes;i++){
+		for(int i = 0;i<g.nodes();i++){
 			seen[i]=0;
 			prev[i]=-1;
 		}
@@ -427,7 +427,7 @@ public:
 		}
 
 		if(reportPolarity<1){
-			for(int u = 0;u<g.nodes;u++){
+			for(int u = 0;u<g.nodes();u++){
 				if(!seen[u]){
 					status.setReachable(u,false);
 				}
@@ -475,7 +475,7 @@ public:
 			return true;
 		Dijkstra<EdgeStatus> d(source,g);
 		d.update();
-		for(int i = 0;i<g.nodes;i++){
+		for(int i = 0;i<g.nodes();i++){
 
 			int dbgdist = d.dist[i];
 			if(!seen[i])

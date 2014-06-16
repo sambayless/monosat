@@ -7,7 +7,7 @@
 #ifndef CHOKEPOINT_H_
 #define CHOKEPOINT_H_
 
-#include "DynamicGraph.h"
+#include "graph/DynamicGraph.h"
 
 namespace dgl{
 
@@ -42,14 +42,14 @@ public:
 		in_queue.clear();
 		queue.clear();
 
-		current.resize(g.nodes);
-		prev.resize(g.nodes);
-		dist.resize(g.nodes);
-		in_queue.resize(g.nodes);
+		current.resize(g.nodes());
+		prev.resize(g.nodes());
+		dist.resize(g.nodes());
+		in_queue.resize(g.nodes());
 
 
 
-		for(int i = 0;i<g.nodes;i++){
+		for(int i = 0;i<g.nodes();i++){
 			prev[i]=UNDEF;
 			current[i]=UNDEF;
 			dist[i]=UNDEF;
@@ -78,9 +78,9 @@ public:
 				current[u]=UNDEF;
 						prev[u]=UNDEF;
 
-				for(int j = 0;j<g.inverted_adjacency[u].size();j++){
-					int from = g.inverted_adjacency[u][j].node;
-					int id= g.inverted_adjacency[u][j].id;
+				for(int j = 0;j<g.nIncident(u,true);j++){
+					int from = g.incident(u,j,true).node;
+					int id= g.incident(u,j,true).id;
 					if(!g.edgeEnabled(id))
 							continue;
 
@@ -134,15 +134,15 @@ public:
 
 				}
 			}
-				//ok, if we changed anything, update all outgoing edges
+				//ok, if we changed anything, update all outgoing.edges()
 
 				if(dist[u]!= old_dist || u==source){
 					assert(dist[u]>=0);
 
 
-					for(int j = 0;j<g.adjacency[u].size();j++){
-						int to = g.adjacency[u][j].node;
-						int id= g.adjacency[u][j].id;
+					for(int j = 0;j<g.nIncident(u);j++){
+						int to = g.incident(u,j).node;
+						int id= g.incident(u,j).id;
 						if(!g.edgeEnabled(id))
 								continue;
 
@@ -163,7 +163,7 @@ public:
 
 	void collectForcedEdges(std::vector<ForceReason> & forced_ids){
 		update();
-		for(int i = 0;i<g.nodes;i++){
+		for(int i = 0;i<g.nodes();i++){
 			if(status.mustReach(i)){
 				int u= i;
 				while(prev[u]>=0){

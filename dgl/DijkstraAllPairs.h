@@ -4,7 +4,7 @@
 
 #include <vector>
 #include "alg/Heap.h"
-#include "DynamicGraph.h"
+#include "graph/DynamicGraph.h"
 #include "core/Config.h"
 #include "AllPairs.h"
 
@@ -86,7 +86,7 @@ public:
 
 		check.reserve(n);
 
-		INF=g.nodes+1;
+		INF=g.nodes()+1;
 		if(dist.size()<n){
 			dist.resize(n);
 
@@ -112,14 +112,14 @@ public:
 		if(last_deletion==g.deletions){
 			stats_num_skipable_deletions++;
 		}
-		INF=g.nodes+1;
+		INF=g.nodes()+1;
 		stats_full_updates++;
 
-		setNodes(g.nodes);
+		setNodes(g.nodes());
 		q.clear();
 		//q.clear();
-		for(int i = 0;i<g.nodes;i++){
-			for(int j = 0;j<g.nodes;j++){
+		for(int i = 0;i<g.nodes();i++){
+			for(int j = 0;j<g.nodes();j++){
 				prev[i][j]=-1;
 				dist[i][j]=INF;
 			}
@@ -139,10 +139,10 @@ public:
 					break;
 
 				q.removeMin();
-				for(int i = 0;i<g.adjacency[u].size();i++){
-					if(!g.edgeEnabled( g.adjacency[u][i].id))
+				for(int i = 0;i<g.nIncident(u);i++){
+					if(!g.edgeEnabled( g.incident(u,i).id))
 						continue;
-					int v = g.adjacency[u][i].node;
+					int v = g.incident(u,i).node;
 					int alt = dist[source][u]+ 1;
 					if(alt<dist[source][v]){
 						dist[source][v]=alt;
@@ -158,7 +158,7 @@ public:
 
 		for(int i = 0;i<sources.size();i++){
 			int s = sources[i];
-			for(int u = 0;u<g.nodes;u++){
+			for(int u = 0;u<g.nodes();u++){
 				if(dist[s][u]>=INF && reportPolarity<1){
 					status.setReachable(s,u,false);
 					status.setMininumDistance(s,u,false,INF);
@@ -214,7 +214,7 @@ public:
 	}
 	void drawFull(){
 				/*printf("digraph{\n");
-				for(int i = 0;i< g.nodes;i++){
+				for(int i = 0;i< g.nodes();i++){
 
 					if(seen[i]){
 						printf("n%d [fillcolor=blue style=filled]\n", i);
@@ -225,10 +225,10 @@ public:
 
 				}
 
-				for(int i = 0;i< g.adjacency.size();i++){
-					for(int j =0;j<g.adjacency[i].size();j++){
-					int id  =g.adjacency[i][j].id;
-					int u =  g.adjacency[i][j].node;
+				for(int i = 0;i< g.nodes();i++){
+					for(int j =0;j<g.nIncident(u);j++){
+					int id  =g.incident(i,j).id;
+					int u =  g.incident(i,j).node;
 					const char * s = "black";
 					if( g.edgeEnabled(id))
 						s="blue";

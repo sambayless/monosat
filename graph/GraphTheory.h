@@ -488,7 +488,7 @@ public:
 			 newNode();
 	 }
 	int nNodes(){
-		return g.nodes;
+		return g.nodes();
 	}
 	bool isNode(int n){
 		return n>=0 && n<nNodes();
@@ -1259,9 +1259,9 @@ public:
 			if(S->dbg_solver)
 				shadow_dbg->reaches(from,  to,reach_var,within_steps);
 	#endif
-				assert(from<g.nodes);
+				assert(from<g.nodes());
 				if(within_steps<=-1)
-					within_steps = g.nodes;
+					within_steps = g.nodes();
 
 				if (dist_info[from].source<0){
 					DistanceDetector * d =new DistanceDetector(detectors.size(), this,g,antig,from,within_steps,drand(rnd_seed));
@@ -1387,8 +1387,8 @@ public:
 				if(S->dbg_solver)
 					shadow_dbg->reaches(from,  to,reach_var,within_steps);
 		#endif
-					assert(from<g.nodes);
-					if(within_steps>g.nodes)
+					assert(from<g.nodes());
+					if(within_steps>g.nodes())
 						within_steps=-1;
 
 					if (reach_info[from].source<0){
@@ -1441,8 +1441,8 @@ public:
 		if(S->dbg_solver)
 			shadow_dbg->connects(from,  to,reach_var,within_steps);
 #endif
-			assert(from<g.nodes);
-			if(within_steps>g.nodes)
+			assert(from<g.nodes());
+			if(within_steps>g.nodes())
 				within_steps=-1;
 
 			if (connect_info[from].source<0){
@@ -1483,8 +1483,8 @@ public:
 			if(S->dbg_solver)
 				shadow_dbg->reaches(from,  to,reach_var,within_steps);
 	#endif
-				assert(from<g.nodes);
-				if(within_steps>g.nodes)
+				assert(from<g.nodes());
+				if(within_steps>g.nodes())
 					within_steps=-1;
 
 				if (reach_info[from].source<0){
@@ -1530,13 +1530,13 @@ public:
 	    }
 
 	void reachesAny(int from, Var firstVar,int within_steps=-1){
-		for(int i = 0;i<g.nodes;i++){
+		for(int i = 0;i<g.nodes();i++){
 			reaches(from,i,firstVar+i,within_steps);
 		}
 	}
 
 	void reachesAny(int from, vec<Lit> & reachlits_out,int within_steps=-1){
-		for(int i = 0;i<g.nodes;i++){
+		for(int i = 0;i<g.nodes();i++){
 			Var reachVar = S->newVar();
 			//reaches(from,i,reachVar,within_steps);
 			reaches(from,i,reachVar,within_steps);

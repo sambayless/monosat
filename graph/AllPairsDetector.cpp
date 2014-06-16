@@ -126,8 +126,8 @@ void AllPairsDetector::ReachStatus::setReachable(int from,int u, bool reachable)
 			}
 
 void AllPairsDetector::ReachStatus::setMininumDistance(int from, int u, bool reachable, int distance){
-	assert(reachable ==(distance<detector.outer->g.nodes));
-	if(distance<=detector.outer->g.nodes){
+	assert(reachable ==(distance<detector.outer->g.nodes()));
+	if(distance<=detector.outer->g.nodes()){
 		setReachable(from,u,reachable);
 	}
 
@@ -245,7 +245,7 @@ void AllPairsDetector::buildReachReason(int source, int to,vec<Lit> & conflict){
 				    	to_visit.pop();
 				    	assert(seen[u]);
 				    	//assert(negative_reach_detector->distance_unsafe(u)>d);
-				    	//Ok, then add all its incoming disabled edges to the cut, and visit any unseen, non-disabled incoming edges
+				    	//Ok, then add all its incoming disabled edges to the cut, and visit any unseen, non-disabled incoming.edges()
 				    	for(int i = 0;i<outer->inv_adj[u].size();i++){
 				    		int v = outer->inv_adj[u][i].v;
 				    		int from = outer->inv_adj[u][i].from;
@@ -330,7 +330,7 @@ void AllPairsDetector::buildReachReason(int source, int to,vec<Lit> & conflict){
 						to_visit.pop();
 						assert(seen[u]);
 						assert(!negative_reach_detector->connected_unsafe(source,u));
-						//Ok, then add all its incoming disabled edges to the cut, and visit any unseen, non-disabled incoming edges
+						//Ok, then add all its incoming disabled edges to the cut, and visit any unseen, non-disabled incoming.edges()
 						for(int i = 0;i<outer->inv_adj[u].size();i++){
 							int v = outer->inv_adj[u][i].v;
 							int from = outer->inv_adj[u][i].from;
@@ -666,10 +666,10 @@ Lit AllPairsDetector::decide(){
 
 						}
 
-						for(int k = 0;k<outer->antig.adjacency[p].size();k++){
-							int to = outer->antig.adjacency[p][k].node;
+						for(int k = 0;k<outer->antig.nIncident(p);k++){
+							int to = outer->antig.incident(p,k).node;
 							if (to==last){
-								Var v =outer->edge_list[ outer->antig.adjacency[p][k].id].v;
+								Var v =outer->edge_list[ outer->antig.incident(p,k).id].v;
 								if(outer->value(v)==l_Undef){
 									return mkLit(v,false);
 								}else{

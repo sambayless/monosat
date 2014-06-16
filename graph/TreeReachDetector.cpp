@@ -204,7 +204,7 @@ void TreeReachDetector::buildReachReason(int node,vec<Lit> & conflict){
 				    	to_visit.pop();
 				    	assert(seen[u]);
 				    	assert(!negative_reach_detector->connected_unsafe(u));
-				    	//Ok, then add all its incoming disabled edges to the cut, and visit any unseen, non-disabled incoming edges
+				    	//Ok, then add all its incoming disabled edges to the cut, and visit any unseen, non-disabled incoming.edges()
 				    	for(int i = 0;i<outer->inv_adj[u].size();i++){
 				    		int v = outer->inv_adj[u][i].v;
 				    		int from = outer->inv_adj[u][i].from;
@@ -336,7 +336,7 @@ void TreeReachDetector::buildReachReason(int node,vec<Lit> & conflict){
 						    	to_visit.pop();
 						    	assert(seen[u]);
 						    	assert(!negative_reach_detector->connected_unsafe(u));
-						    	//Ok, then add all its incoming disabled edges to the cut, and visit any unseen, non-disabled incoming edges
+						    	//Ok, then add all its incoming disabled edges to the cut, and visit any unseen, non-disabled incoming.edges()
 						    	for(int i = 0;i<outer->inv_adj[u].size();i++){
 						    		int v = outer->inv_adj[u][i].v;
 						    		int from = outer->inv_adj[u][i].from;

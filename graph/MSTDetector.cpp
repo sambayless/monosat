@@ -305,7 +305,7 @@ void MSTDetector::buildMinWeightTooSmallReason(int weight,vec<Lit> & conflict){
 					//ok, now traverse the connected component in the tree below this root.
 					visit.push(root);
 					seen.clear();
-					seen.growTo(g.nodes);
+					seen.growTo(g.nodes());
 					seen[root]=true;
 					while(visit.size()){
 						int u = visit.last();
@@ -350,11 +350,11 @@ void MSTDetector::buildMinWeightTooSmallReason(int weight,vec<Lit> & conflict){
 			}
 
 			ancestors.clear();
-			ancestors.growTo(g.nodes,-1);
+			ancestors.growTo(g.nodes(),-1);
 			black.clear();
-			black.growTo(g.nodes);
+			black.growTo(g.nodes());
 			sets.Reset();
-			sets.AddElements(g.nodes);
+			sets.AddElements(g.nodes());
 
 			//Noah's algorithm for finding a minimal necessary set of edges to add to decrease the weight of the tree
 			//all we are doing here is visiting each disabled edge, then examining the cycle that would be created in the minimum spanning tree if we were to
@@ -465,7 +465,7 @@ void MSTDetector::buildMinWeightTooSmallReason(int weight,vec<Lit> & conflict){
 					//the reason that an edge is NOT in the minimum spanning tree is the paths to lca from either edge. So long as all those edges are in the tree, each of which is <= weight to this edge,
 					//this edge cannot be in the mst.
 					seen.clear();
-					seen.growTo(g.nodes);
+					seen.growTo(g.nodes());
 					int u = g.all_edges[edgeid].from;
 					int v = g.all_edges[edgeid].to;
 					positive_conflict_detector->update();
@@ -542,10 +542,10 @@ void MSTDetector::buildMinWeightTooSmallReason(int weight,vec<Lit> & conflict){
 						int a=1;;
 					}
 					ancestors.clear();
-					ancestors.growTo(g.nodes,-1);
+					ancestors.growTo(g.nodes(),-1);
 
 					black.clear();
-					black.growTo(g.nodes);
+					black.growTo(g.nodes());
 					//drawFull( non_reach_detectors[detector]->getSource(),u);
 					//assert(outer->dbg_distance( source,u));
 					double starttime = rtime(2);
@@ -553,7 +553,7 @@ void MSTDetector::buildMinWeightTooSmallReason(int weight,vec<Lit> & conflict){
 					negative_conflict_detector->update();
 					assert(negative_conflict_detector->edgeInTree(edgeid));
 					sets.Reset();
-					sets.AddElements(g.nodes);
+					sets.AddElements(g.nodes());
 
 
 					//Noah's algorithm for finding a minimal necessary set of edges to add to decrease the weight of the tree
@@ -858,7 +858,7 @@ bool MSTDetector::checkSatisfied(){
 	}
 	//if(positive_checker.numComponents()==1){
 		int sum_weight = 0;
-		for(int edgeid = 0;edgeid<g.edges;edgeid++){
+		for(int edgeid = 0;edgeid<g.edges();edgeid++){
 			if(positive_checker.edgeInTree(edgeid)){
 				if(!negative_checker.edgeInTree(edgeid)){
 					return false;
@@ -937,7 +937,7 @@ Lit MSTDetector::decide(){
 						//Randomly re-weight the graph sometimes
 						if(drand(rnd_seed)<opt_decide_graph_re_rnd){
 
-							for(int i=0;i<outer->g.nodes;i++){
+							for(int i=0;i<outer->g.nodes();i++){
 									 double w = drand(rnd_seed);
 									 w-=0.5;
 									 w*=w;
