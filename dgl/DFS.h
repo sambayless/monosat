@@ -146,8 +146,8 @@ public:
 			int u = q.back();
 			q.pop_back();
 			assert(!seen[u]);
-			for(int i = 0;i<g.nIncident(u,true);i++){
-				int v = g.incident(u,i,true);
+			for(int i = 0;i<g.nIncoming(u);i++){
+				int v = g.incoming(u,i);
 				if(seen[v]){
 					seen[v]=1;
 					//Then since to is still seen, we are up to date

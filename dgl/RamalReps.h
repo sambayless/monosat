@@ -14,7 +14,7 @@
 #include "Reach.h"
 #include "Dijkstra.h"
 #include "core/Config.h"
-
+#include <algorithm>
 namespace dgl{
 template<class Status>
 class RamalReps:public Reach{
@@ -216,14 +216,10 @@ public:
 			return;
 		int ru =  g.all_edges[edgeID].from;
 		int rv =  g.all_edges[edgeID].to;
-		if(rv==63){
-				int a=1;
-			}
+
 		int rdv = dist[rv];
 		int rdu = dist[ru];
-		if(rv==1 ){
-			int a =1;
-		}
+
 		int weight = 1;
 		if(dist[rv]<dist[ru]+weight)
 			return;
@@ -242,9 +238,7 @@ public:
 		while(q.size()){
 
 			int u = q.removeMin();
-			if(u==63 || u==55){
-					int a=1;
-				}
+
 			if(!node_changed[u]){
 				node_changed[u]=true;
 				changed.push_back(u);

@@ -15,6 +15,7 @@
 #include "Dijkstra.h"
 #include "core/Config.h"
 #include "mtl/Sort.h"
+#include <algorithm>
 namespace dgl{
 template<class Status>
 class UnweightedRamalReps:public Reach{
@@ -276,8 +277,8 @@ public:
 			}
 			delta[u]=0;
 			//for(auto & e:g.inverted_adjacency[u]){
-			for(int i = 0;i<g.nIncoming(u);i++){
-				auto & e = g.incoming(u,i);
+			for(int j = 0;j<g.nIncoming(u);j++){
+				auto & e = g.incoming(u,j);
 				int adjID = e.id;
 				if (g.edgeEnabled(adjID)){
 
@@ -308,8 +309,8 @@ public:
 				}
 			}
 
-		for(int i = 0;i<g.nIncident(u);i++){
-			auto & e = g.incident(u,i);
+			for(int j = 0;j<g.nIncident(u);j++){
+				auto & e = g.incident(u,j);
 				int adjID = e.id;
 				if (g.edgeEnabled(adjID)){
 						assert(g.all_edges[adjID].from==u);
@@ -689,7 +690,7 @@ public:
 		history_qhead=g.history.size();
 		last_history_clear=g.historyclears;
 		assert(dbg_uptodate());
-		;
+		
 	}
 	bool dbg_path(int to){
 #ifdef DEBUG_DIJKSTRA

@@ -192,7 +192,7 @@ int main(int argc, char** argv)
 		 }else if (!strcasecmp(opt_mst_alg,"spira-pan")){
 			 mstalg = MinSpanAlg::ALG_SPIRA_PAN;
 		 }else{
-			fprintf(stderr,"Error: unknown minimum spanning tree algorithm %s, aborting\n", ((string) opt_reach_alg).c_str());
+			fprintf(stderr,"Error: unknown minimum spanning tree algorithm %s, aborting\n", ((string) opt_mst_alg).c_str());
 			exit(1);
 		 }
 
@@ -229,7 +229,7 @@ int main(int argc, char** argv)
 		 }else if (!strcasecmp(opt_dist_alg,"ramal-reps")){
 			 distalg = DistAlg::ALG_RAMAL_REPS;
 		 }else{
-			fprintf(stderr,"Error: unknown distance algorithm %s, aborting\n", ((string) opt_reach_alg).c_str());
+			fprintf(stderr,"Error: unknown distance algorithm %s, aborting\n", ((string) opt_dist_alg).c_str());
 			exit(1);
 		 }
 
