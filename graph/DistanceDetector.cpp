@@ -65,7 +65,7 @@ Detector(_detectorID),outer(_outer),g(_g),antig(_antig),source(from),rnd_seed(se
 	}else{
 
 		positive_reach_detector = new Dijkstra<DistanceDetector::ReachStatus>(from,_g,*positiveReachStatus,0);
-		negative_reach_detector = new Dijkstra<DistanceDetector::ReachStatus>(from,_antig,*positiveReachStatus,0);
+		negative_reach_detector = new Dijkstra<DistanceDetector::ReachStatus>(from,_antig,*negativeReachStatus,0);
 		positive_path_detector = positive_reach_detector;
 		//reach_detectors.last()->positive_dist_detector = new Dijkstra(from,g);
 	}
