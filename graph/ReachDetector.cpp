@@ -867,8 +867,6 @@ void ReachDetector::buildReachReason(int node,vec<Lit> & conflict){
 				}
 
 		void ReachDetector::buildReason(Lit p, vec<Lit> & reason, CRef marker){
-
-
 				if(marker==reach_marker){
 					reason.push(p);
 				//	double startpathtime = rtime(2);
