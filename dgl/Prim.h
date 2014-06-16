@@ -164,11 +164,11 @@ public:
 					in_tree[edgeid]=true;
 					components[u]=root;
 				}
-				for(int j = 0;j< g.adjacency_undirected[u].size();j++){
-					int edgeid = g.adjacency_undirected[u][j].id;
+				for(int j = 0;j< g.nIncident(u,true);j++){
+					int edgeid = g.incident(u,j,true).id;
 					if(!g.edgeEnabled(edgeid))
 						continue;
-					int v = g.adjacency_undirected[u][j].node;
+					int v = g.incident(u,j,true).node;
 					if(!seen[v]){
 						int w = g.getWeight(edgeid);
 						if(w<keys[v]){

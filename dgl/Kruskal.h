@@ -280,9 +280,9 @@ private:
 				int u = q.back();
 				assert(sets.FindSet(u)==set);
 				q.pop_back();
-				for (int j = 0;j<g.adjacency_undirected[u].size();j++){
-					int edge = g.adjacency_undirected[u][j].id;
-					int to = g.adjacency_undirected[u][j].node;
+				for (int j = 0;j<g.nIncident(u,true);j++){
+					int edge = g.incident(u,j,true).id;
+					int to = g.incident(u,j,true).node;
 					if(edge<0)
 						continue;
 					if(edge>=in_tree.size())
