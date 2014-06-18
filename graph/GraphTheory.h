@@ -40,7 +40,7 @@ using namespace dgl;
 #include "MaxflowDetector.h"
 #include "ConnectedComponentsDetector.h"
 #include "CycleDetector.h"
-
+#include "SteinerDetector.h"
 namespace Minisat{
 
 class GraphTheorySolver;
@@ -80,6 +80,8 @@ public:
 	vec<ConnectivityConstraint> unimplemented_connectivity_constraints;
 
 
+
+
 	DynamicGraph g;
 	DynamicGraph antig;
 	DynamicGraph cutGraph;
@@ -111,6 +113,7 @@ public:
 	vec<MaxflowDetector*> flow_detectors;
 	ConnectedComponentsDetector* component_detector;
 	CycleDetector * cycle_detector;
+	vec<SteinerDetector*>  steiner_detectors;
 
 	vec<int> marker_map;
 
@@ -1597,6 +1600,36 @@ public:
 		}
 		cycle_detector->addCycleDetectorLit(directed,v);
 	}
+
+	void steinerApprox(int steinerTreeID, int weight, Var outerVar){
+		if(steinerTreeID >= steiner_detectors.size()){
+			fprintf(stderr,"invalid steinerTreeID %d\n", steinerTreeID);
+			exit(1);
+		}
+		steiner_detectors[steinerTreeID]->addWeightLit(weight,outerVar);
+	}
+
+	void addSteinerTree(vec<int> terminals, vec<Var> terminal_vars, int steinerTreeID){
+		steiner_detectors.growTo(steinerTreeID+1);
+		assert(!steiner_detectors[steinerTreeID]);
+		steiner_detectors[steinerTreeID]= new SteinerDetector(detectors.size(),this, g, antig,drand(rnd_seed));
+		assert(terminals.size()==terminal_vars.size());
+		for(int i =0;i<terminals.size();i++){
+			steiner_detectors[steinerTreeID]->addTerminalNode(terminals[i],terminal_vars[i]);
+		}
+	}
+
+/*	void inTerminalSet(int node, int terminalSet, Var outerVar){
+		terminalSets.growTo(terminalSet+1);
+		while(terminalSets[terminalSet].nodes()<node){
+			terminalSets[terminalSet].addNode();
+		}
+		Var v= newVar(outerVar,node,true);
+		Lit l = mkLit(v,false);
+		if(terminalSets[terminalSet].getNodeVar(node)<0){
+			terminalSets[terminalSet].setNodeVar(v);
+		}
+	}*/
 
 	void printSolution(){
 		if(S->model.size()==0)

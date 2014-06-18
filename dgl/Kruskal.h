@@ -13,7 +13,7 @@
 #include <algorithm>
 
 namespace dgl{
-template<class Status>
+template<class Status=MinimumSpanningTree::NullStatus>
 class Kruskal:public MinimumSpanningTree{
 public:
 
@@ -67,7 +67,7 @@ public:
 	double stats_full_update_time;
 	double stats_fast_update_time;
 
-	Kruskal(DynamicGraph & graph, Status & _status, int _reportPolarity=0 ):g(graph), status(_status), last_modification(-1),last_addition(-1),last_deletion(-1),history_qhead(0),last_history_clear(0),INF(0),reportPolarity(_reportPolarity),edge_heap(EdgeLt(g.weights)){
+	Kruskal(DynamicGraph & graph, Status & _status=MinimumSpanningTree::nullStatus, int _reportPolarity=0 ):g(graph), status(_status), last_modification(-1),last_addition(-1),last_deletion(-1),history_qhead(0),last_history_clear(0),INF(0),reportPolarity(_reportPolarity),edge_heap(EdgeLt(g.weights)){
 
 		mod_percentage=0.2;
 		stats_full_updates=0;
