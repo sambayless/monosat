@@ -1606,7 +1606,7 @@ public:
 		steiner_detectors.growTo(steinerTreeID+1);
 		assert(!steiner_detectors[steinerTreeID]);
 		steiner_detectors[steinerTreeID]= new SteinerDetector(detectors.size(),this, g, antig,drand(rnd_seed));
-
+		detectors.push(steiner_detectors[steinerTreeID]);
 		for(int i =0;i<terminals.size();i++){
 			steiner_detectors[steinerTreeID]->addTerminalNode(terminals[i].first,terminals[i].second);
 		}

@@ -216,9 +216,7 @@ public:
 	void update( ){
 		static int iteration = 0;
 		int local_it = ++iteration ;
-		if(local_it==17513){
-			int a =1;
-		}
+
 		if(last_modification>0 && g.modifications==last_modification)
 				return;
 

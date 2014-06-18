@@ -345,6 +345,9 @@ struct SteinerStruct{
 	int id;
 	vec<std::pair<int, Var> > terminals;
 	vec<std::pair<int,Var> > weight_constraints;
+	SteinerStruct(int id):id(id){
+
+	}
 };
 
 /*template<class B, class Solver>
@@ -375,7 +378,7 @@ static void readSteinerTreeDeclaration(B& in, Solver& S, vec<GraphTheory*> & gra
         steiners[graphID][steinerID] = new SteinerStruct{steinerID};
 }*/
 template<class B, class Solver>
-static void readSteinerTreeTerminal(B& in, Solver& S, vec<GraphTheory*> & graphs, vec<vec<SteinerStruct*>> steiners) {
+static void readSteinerTreeTerminal(B& in, Solver& S, vec<GraphTheory*> & graphs, vec<vec<SteinerStruct*>>& steiners) {
 	if(opt_ignore_theories){
 		skipLine(in);
 		return;
@@ -383,9 +386,7 @@ static void readSteinerTreeTerminal(B& in, Solver& S, vec<GraphTheory*> & graphs
 	//steiner_terminal graphID steinerID node var
 	//Declares that the specified node in graphID is a terminal in the steiner tree (conditioned on var being assigned to true)
 
-	if(!eagerMatch(in,"steiner_terminal")){
-    	printf("PARSE ERROR! Unexpected char: %c\n", *in), exit(3);
-    }
+
 
 	int graphID = parseInt(in);
 	int steinerID = parseInt(in);
@@ -394,23 +395,22 @@ static void readSteinerTreeTerminal(B& in, Solver& S, vec<GraphTheory*> & graphs
 	if(graphID <0 || graphID>=graphs.size() || !graphs[graphID]){
 		printf("PARSE ERROR! Undeclared graph identifier %d \n",graphID), exit(3);
 	}
-
+    steiners.growTo(graphs.size());
+    steiners[graphID].growTo(steinerID+1);
 	if(!steiners[graphID][steinerID]){
-		steiners[graphID][steinerID] = new SteinerStruct{steinerID};
+		steiners[graphID][steinerID] = new SteinerStruct(steinerID);
 	}
 	steiners[graphID][steinerID]->terminals.push({node,var});
 
 }
 template<class B, class Solver>
-static void readSteinerTreeConstraint(B& in, Solver& S, vec<GraphTheory*> & graphs, vec<vec<SteinerStruct*>> steiners) {
+static void readSteinerTreeConstraint(B& in, Solver& S, vec<GraphTheory*> & graphs, vec<vec<SteinerStruct*>>& steiners) {
 	if(opt_ignore_theories){
 		skipLine(in);
 		return;
 	}
 	//steiner_minweight graphID steinerID maxweight var is a minimum spanning tree weight constraint: var is true iff the minimum steiner tree of the graph is <= maxweight
-    if(!eagerMatch(in,"steiner_minweight")){
-    	printf("PARSE ERROR! Unexpected char: %c\n", *in), exit(3);
-    }
+
 	int graphID = parseInt(in);
 	int steinerID = parseInt(in);
 	int maxweight = parseInt(in);
@@ -418,7 +418,8 @@ static void readSteinerTreeConstraint(B& in, Solver& S, vec<GraphTheory*> & grap
 	if(graphID <0 || graphID>=graphs.size() || !graphs[graphID]){
 		printf("PARSE ERROR! Undeclared graph identifier %d \n",graphID), exit(3);
 	}
-
+    steiners.growTo(graphs.size());
+    steiners[graphID].growTo(steinerID+1);
 	if(!steiners[graphID][steinerID]){
 		steiners[graphID][steinerID] = new SteinerStruct{steinerID};
 	}
@@ -607,6 +608,21 @@ static void parse_GRAPH_main(B& in, Solver& S, vec<std::pair<int,std::string> > 
             readMaxFlowConstraint(in, S,graphs);
         }else if (*in == 'n'){
             readMinConnectedComponentsConstraint(in, S,graphs);
+        }else if (*in == 's'){
+        	if(!eagerMatch(in,"steiner_")){
+        		printf("PARSE ERROR! Unexpected char: %c\n", *in), exit(3);
+        	}
+        	if(*in=='t'){
+        		if(!eagerMatch(in,"terminal")){
+        			printf("PARSE ERROR! Unexpected char: %c\n", *in), exit(3);
+				}
+        		readSteinerTreeTerminal(in,S,graphs, steiners);
+        	}else if (*in=='m'){
+          		if(!eagerMatch(in,"minweight")){
+          			printf("PARSE ERROR! Unexpected char: %c\n", *in), exit(3);
+    				}
+        		readSteinerTreeConstraint(in,S,graphs, steiners);
+        	}
         }else if (*in == 'o'){
         	//Pseudoboolean constraint: o is for opb... can't use p, unfortunately...
         	if(!pbtheory){
@@ -637,9 +653,12 @@ static void parse_GRAPH_main(B& in, Solver& S, vec<std::pair<int,std::string> > 
 
     for(int gid = 0;gid<steiners.size();gid++){
     	for(auto & steiner:steiners[gid]){
-    		graphs[gid]->addSteinerTree(steiner->terminals,steiner->id);
-    		for(auto & weight : steiner->weight_constraints){
-    			graphs[gid]->addSteinerWeightConstraint(steiner->id, weight.first,weight.second);
+    		if(steiner){
+				graphs[gid]->addSteinerTree(steiner->terminals,steiner->id);
+				for(auto & weight : steiner->weight_constraints){
+					graphs[gid]->addSteinerWeightConstraint(steiner->id, weight.first,weight.second);
+				}
+				delete(steiner);
     		}
     	}
     }
