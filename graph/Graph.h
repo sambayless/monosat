@@ -44,6 +44,8 @@ public:
 	virtual void edgeInMinimumSpanningTree(Var edgeVar, Var var)=0;
 	virtual void maxFlow(int from, int to, int max_flow, Var v)=0;
 	virtual void minConnectedComponents(int min_components, Var v)=0;
+	virtual void addSteinerTree(const vec<std::pair<int, Var> > & terminals, int steinerTreeID)=0;
+	virtual void addSteinerWeightConstraint(int steinerTreeID, int weight, Var outerVar)=0;
 };
 
 class Graph{

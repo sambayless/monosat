@@ -327,6 +327,15 @@ public:
 
 
 	}
+
+	void addSteinerTree(const vec<std::pair<int, Var> > & terminals, int steinerTreeID){
+		printf("Warning: steiner tree constraints are not implemented, and will be left unconstrained\n");
+
+	}
+	void addSteinerWeightConstraint(int steinerTreeID, int weight, Var outerVar){
+		printf("Warning: steiner tree constraints are not implemented, and will be left unconstrained\n");
+
+	}
 };
 
 };
