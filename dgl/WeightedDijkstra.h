@@ -30,7 +30,7 @@ public:
 	double INF;
 
 
-	std::vector<int> old_dist;
+	std::vector<double> old_dist;
 	std::vector<int> changed;
 
 	std::vector<double> dist;
@@ -282,10 +282,10 @@ public:
 		stats_full_updates++;
 		
 
-		INF=g.nodes()+1;
-		dist.resize(g.nodes());
+
+		dist.resize(g.nodes(),INF);
 		prev.resize(g.nodes());
-		old_dist.resize(g.nodes());
+		old_dist.resize(g.nodes(),INF);
 		q.clear();
 		for(int i = 0;i<g.nodes();i++){
 			old_dist[i]=last_modification > 0 ? dist[i]:INF;//this won't work properly if we added nodes...
@@ -302,14 +302,14 @@ public:
 				changed.push_back(u);
 			}
 			q.removeMin();
-			for(int i = 0;i<g.nIncident(u);i++){
-				int edge =  g.incident(u,i).id;
-				if(!g.edgeEnabled(edge))
+			for(int i = 0;i<g.nIncident(u,undirected);i++){
+				int edgeID =  g.incident(u,i,undirected).id;
+				if(!g.edgeEnabled(edgeID))
 					continue;
 
-				int v = g.incident(u,i).node;
-				int edgeID = g.incident(u,i).id;
-				double alt = dist[u]+ weight[edge];
+				int v = g.incident(u,i,undirected).node;
+
+				double alt = dist[u]+ weight[edgeID];
 				if(alt<dist[v]){
 					dist[v]=alt;
 					prev[v]=edgeID;

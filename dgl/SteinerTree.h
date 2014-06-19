@@ -38,6 +38,9 @@ public:
 	//Total weight of the steiner tree (or infinite, if the graph is disconnected)
 	virtual int weight()=0;
 
+	virtual bool disconnected()=0;
+
+	virtual void getSteinerTree(std::vector<int> & edges)=0;
 };
 };
 #endif /* MINIMUMSPANNINGTREE_H_ */

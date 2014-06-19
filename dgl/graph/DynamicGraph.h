@@ -313,7 +313,7 @@ public:
 		return false;
 	}
 
-	void drawFull(){
+	void drawFull(bool showWeights=false){
 #ifndef NDEBUG
 			printf("digraph{\n");
 			for(int i = 0;i<num_nodes;i++){
@@ -329,8 +329,11 @@ public:
 					s="blue";
 				else
 					s="red";
-
-				printf("n%d -> n%d [label=\"v%d\",color=\"%s\"]\n", i,u, id, s);
+				if(showWeights){
+					printf("n%d -> n%d [label=\"v%d w=%d\",color=\"%s\"]\n", i,u, id,getWeight(id), s);
+				}else{
+					printf("n%d -> n%d [label=\"v%d\",color=\"%s\"]\n", i,u, id, s);
+				}
 				}
 			}
 			printf("}\n");

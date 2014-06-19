@@ -101,7 +101,9 @@ public:
 
 		virtual void assign(Lit l){
 			 Detector::assign(l);
-			 if(int node =terminal_var_map[var(l)]>=0){
+			 if(var(l)<terminal_var_map.size()){
+			 int node =terminal_var_map[var(l)];
+			 if(node>=0){
 				 if(sign(l)){
 					 underTerminalSet.setNodeEnabled(node,false);
 					 overTerminalSet.setNodeEnabled(node,false);
@@ -110,12 +112,16 @@ public:
 					 overTerminalSet.setNodeEnabled(node,true);
 				 }
 			 }
+			 }
 		}
 		virtual	 void unassign(Lit l){
 			 Detector::unassign(l);
-			 if(int node =terminal_var_map[var(l)]>=0){
+			 if(var(l)<terminal_var_map.size()){
+			 int node =terminal_var_map[var(l)];
+			 if(node>=0){
 				 underTerminalSet.setNodeEnabled(node,false);
 				 overTerminalSet.setNodeEnabled(node,true);
+			 }
 			 }
 		}
 

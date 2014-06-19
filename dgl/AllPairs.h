@@ -6,6 +6,19 @@
 namespace dgl{
 class AllPairs{
 public:
+
+	struct NullStatus{
+		void setReachable(int u, int v, bool reachable){
+
+		}
+		void setMininumDistance(int u,int v,bool reachable,int distance){
+
+		}
+
+	};
+	static NullStatus nullStatus;
+
+
 	virtual ~AllPairs(){};
 
 	virtual void addSource(int s)=0;
