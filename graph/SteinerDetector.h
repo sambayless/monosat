@@ -80,7 +80,7 @@ public:
 			bool polarity;
 
 			void setMinimumSteinerTree(int weight);
-
+			void setMinimumSteinerTree(double weight);
 			SteinerStatus(SteinerDetector & _outer, bool _polarity):detector(_outer), polarity(_polarity){}
 		};
 

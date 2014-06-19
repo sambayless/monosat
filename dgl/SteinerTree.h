@@ -21,6 +21,9 @@ public:
 		void setMinimumSteinerTree(int min_weight){
 
 		}
+		void setMinimumSteinerTree(double min_weight){
+
+			}
 
 	};
 	static NullStatus nullStatus;
