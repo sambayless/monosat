@@ -99,6 +99,7 @@ extern BoolOption opt_components_learn_connect;
 extern BoolOption opt_learn_unreachable_component;
 extern BoolOption opt_dinics_recursive;
 
+
 enum class ReachAlg{
 	 ALG_SAT,
 	 ALG_DFS,
@@ -157,6 +158,8 @@ enum class DistAlg{
 	 ALG_DISTANCE,
 	 ALG_RAMAL_REPS
 };
+
+
 extern DistAlg distalg;
 
 extern IntOption opt_time;
