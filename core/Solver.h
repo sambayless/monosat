@@ -38,7 +38,7 @@ class Solver:public Theory {
 public:
 	friend class Theory;
 	friend class GraphTheorySolver;
-	friend class GeometryTheorySolver;
+	template<unsigned int D, class T> friend class GeometryTheorySolver;
 #ifdef DEBUG_SOLVER
 	Solver * dbg_solver;
 #endif

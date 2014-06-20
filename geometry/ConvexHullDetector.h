@@ -51,51 +51,7 @@ public:
 		void buildPointContainedReason(vec<Lit> & conflict);
 		void buildPointNotContainedReason(vec<Lit> & conflict);
 
-	    void backtrackUntil(int level){
-	    	 assert(qhead<outer->S->trail.size());
-			 for (int c = qhead; c >= outer->S->trail_lim[level]; c--){
-				Lit l = outer->S->trail[c];
-				Var      x  = var(outer->S->trail[c]);
-				int pointIndex = x-lowest_point_var;
-				if(pointIndex>=0 && pointIndex<point_lit_map.size() && point_lit_map[pointIndex]!=-1){
-					//then this is an assignment to a hull point;
-					int pointID = point_lit_map[pointIndex];
-					if(sign(l)){
-						//this point is excluded from the hull
-						assert(!under.isEnabled(pointID));
-						over.setPointEnabled(pointID,true);
-					}else{
-						assert(over.isEnabled(pointID));
-						under.setPointEnabled(pointID,false);
-					}
-				}
-			 }
-			qhead = outer->S->trail_lim[level];
-		}
-		virtual void backtrackUntil(Lit p){
-	    	 assert(qhead<outer->S->trail.size());
-			 for ( ; qhead >= 0; qhead--){
-				Lit l = outer->S->trail[qhead];
-				if(l==p){
-					break;
-				}
-				Var      x  = var(l);
-				int pointIndex = x-lowest_point_var;
-				if(pointIndex>=0 && pointIndex<point_lit_map.size() && point_lit_map[pointIndex]!=-1){
-					//then this is an assignment to a hull point;
-					int pointID = point_lit_map[pointIndex];
-					if(sign(l)){
-						//this point is excluded from the hull
-						assert(!under.isEnabled(pointID));
-						over.setPointEnabled(pointID,true);
-					}else{
-						assert(over.isEnabled(pointID));
-						under.setPointEnabled(pointID,false);
-					}
-				}
-			 }
 
-		}
 		void buildReason(Lit p, vec<Lit> & reason, CRef marker);
 		bool checkSatisfied();
 		Lit decide();

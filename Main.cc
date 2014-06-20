@@ -46,6 +46,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "pb/PbTheory.h"
 #include "pb/PbParser.h"
 #include "mtl/Map.h"
+#include "geometry/GeometryTheory.h"
 using namespace Minisat;
 using namespace std;
 //=================================================================================================

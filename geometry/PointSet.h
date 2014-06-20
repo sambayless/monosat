@@ -27,6 +27,16 @@ public:
 	bool isEnabled(int pointID){
 		return enabled[pointID];
 	}
+	bool pointEnabled(int pointID){
+		return  enabled[pointID];
+	}
+	void disablePoint(int pointID){
+		setPointEnabled(pointID, false);
+	}
+	void enablePoint(int pointID){
+		setPointEnabled(pointID, true);
+	}
+
 	void setPointEnabled(int pointID, bool _enabled){
 		if(isEnabled(pointID)==_enabled)
 			return;
@@ -47,10 +57,20 @@ public:
 		}
 	}
 
-	int addPoint(const Point<D,T> & P){
+	int addPoint(const Point<D,T> & P, int pointID){
 		points.push(P);
 		enabled.push(false);
 		return points.size()-1;
+	}
+
+	void clearHistory(){
+
+	}
+	void clearChanged(){
+
+	}
+	void markChanged(){
+
 	}
 };
 

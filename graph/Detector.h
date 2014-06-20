@@ -20,8 +20,8 @@ public:
 
 	int detectorID;
 
-	int unassigned_positives;
-	int unassigned_negatives;
+	int unassigned_positives=0;
+	int unassigned_negatives=0;
 
 	//Stats
 	double stats_under_update_time=0;
