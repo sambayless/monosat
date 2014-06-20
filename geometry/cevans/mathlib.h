@@ -16,7 +16,7 @@ using namespace std;
 #include "zero.h"
 
 #define PI 3.1415926535897932384626433
-
+namespace cevans{
 
 /** Mape the variable to be inside [0.0,1.0]. */
 template< typename T >
@@ -1121,6 +1121,7 @@ boolc solver<T>::d2linearequ
 }
 
 
+};
 
 #endif
 

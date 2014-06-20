@@ -17,11 +17,12 @@
 #include "core/Config.h"
 #include "GeometryDetector.h"
 #include "PointSet.h"
+#include "ConvexHullDetector.h"
 #ifndef NDEBUG
 #include <cstdio>
 #endif
 
-namespace Minisat{
+using namespace Minisat;
 
 template<unsigned int D, class T=double>
 class GeometryTheorySolver:public Theory{
@@ -58,6 +59,7 @@ public:
 	vec<int> trail_lim;
 
 	vec<GeometryDetector*> detectors;
+	ConvexHullDetector<D,T>* convexHull=nullptr;
 
 	vec<int> marker_map;
 
@@ -328,7 +330,7 @@ public:
 				Lit l = S->getTheoryLit(S->trail[i]);
 				Var v =  var(l);
 				if(isPointVar(v)){
-					Point & e = points[getPointID(v)];
+					PointData & e = points[getPointID(v)];
 					c.push(l);
 				}
 
@@ -570,11 +572,11 @@ public:
 		}
 #endif
 #ifdef RECORD
-		if(g.outfile){
-			fprintf(g.outfile,"enqueue %d\n", dimacs(l));
+		if(under.outfile){
+			fprintf(under.outfile,"enqueue %d\n", dimacs(l));
 
-			fprintf(g.outfile,"\n");
-			fflush(g.outfile);
+			fprintf(under.outfile,"\n");
+			fflush(under.outfile);
 		}
 		if(over.outfile){
 			fprintf(over.outfile,"enqueue %d\n", dimacs(l));
@@ -809,10 +811,25 @@ public:
 	void printSolution(){
 
 	}
-	void createConvexHull(int id);
-	void addHullPoint(int id,Lit l, vec<double> & point);
-};
 
+	void assertConvexHullArea(int areaGreaterThan, Var outerVar){
+		if(!convexHull){
+			int detectorID = detectors.size();
+			convexHull = new ConvexHullDetector<D,T>(detectorID,this,drand(rnd_seed));
+			detectors.push(convexHull);
+		}
+
+		convexHull->addAreaDetectorLit(areaGreaterThan,outerVar);
+	}
+	void assertConvexHullContains(Point<D,T> point, Var outerVar){
+		if(!convexHull){
+			int detectorID = detectors.size();
+			convexHull = new ConvexHullDetector<D,T>(detectorID,this,drand(rnd_seed));
+			detectors.push(convexHull);
+		}
+
+		convexHull->addPointContainmentLit(point,outerVar);
+	}
 
 };
 

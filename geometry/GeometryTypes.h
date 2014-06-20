@@ -189,7 +189,8 @@ struct SortLexicographic{
 };
 
 
-
+template<unsigned int D, class T>
+class GeometryTheorySolver;
 
 
 #endif /* GEOMETRY_TYPES_H_ */

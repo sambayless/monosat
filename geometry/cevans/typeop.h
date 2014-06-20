@@ -1,6 +1,6 @@
 #ifndef TYPEOP_H
 #define TYPEOP_H
-
+namespace cevans{
 /*!
 \brief Template type operator class.
 
@@ -122,6 +122,7 @@ public:
 //        How can a functions return type be extracted?
 
 
+};
 
 
 #endif

@@ -27,11 +27,6 @@
 #include "utils/System.h"
 #include "core/Solver.h"
 
-using namespace dgl;
-
-#ifdef DEBUG_GRAPH
-#include "TestGraph.h"
-#endif
 #include "AllPairsDetector.h"
 #include "ReachDetector.h"
 #include "ConnectDetector.h"
@@ -41,6 +36,12 @@ using namespace dgl;
 #include "ConnectedComponentsDetector.h"
 #include "CycleDetector.h"
 #include "SteinerDetector.h"
+
+#ifdef DEBUG_GRAPH
+#include "TestGraph.h"
+#endif
+
+using namespace dgl;
 namespace Minisat{
 
 class GraphTheorySolver;

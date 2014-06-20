@@ -9,7 +9,7 @@ using namespace std;
 #include "partitionspace.h"
 #include "mathlib.h"
 #include "zero.h"
-
+namespace cevans{
 /*!
 <TODO> Rewrite half-space storing only one point p0 and
  the normal.
@@ -286,6 +286,7 @@ boolc halfspaceD2<PT,PD>::clip
 }
 
 
+};
 
 #endif
 

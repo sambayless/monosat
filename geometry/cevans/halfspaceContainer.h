@@ -5,7 +5,7 @@
 #include <iostream>
 using namespace std;
 
-
+namespace cevans{
 /*!
 \brief Half space and a container of integer indexes to 
        points.
@@ -77,6 +77,7 @@ void halfspaceContainer<HS,PT>::isInsideOrOnBoundary
   }
 }
 
+};
 #endif
 
 

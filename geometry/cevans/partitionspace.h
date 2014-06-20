@@ -5,7 +5,7 @@
 using namespace std;
 
 #include "typedefs.h"
-
+namespace cevans{
 /*!
 \brief A partition of a continuous n-dimension space.
 
@@ -106,6 +106,7 @@ void partitionspace<PT>::classify
 }
 
 
+};
 #endif
 
 

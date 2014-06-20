@@ -8,7 +8,7 @@ using namespace std;
 #include "partitionspace.h"
 #include "mathlib.h"
 
-
+namespace cevans{
 /*!
 \brief Define a 3D half space with three ordered points.
 
@@ -160,6 +160,7 @@ void halfspaceD3<PT,PD>::set
 }
 
 
+};
 #endif
 
 

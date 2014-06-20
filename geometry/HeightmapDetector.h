@@ -13,7 +13,7 @@ using namespace Minisat;
 template<unsigned int D, class T=double>
 class HeightmapDetector:public GeometryDetector{
 public:
-		GeometryTheorySolver * outer;
+		GeometryTheorySolver<D,T> * outer;
 		//int within;
 		Heightmap<D,T>* over_hull;
 		Heightmap<D,T>* under_hull;

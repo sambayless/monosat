@@ -11,7 +11,7 @@ using namespace std;
 #include "indextable.h"
 #include "typedefs.h"
 #include "typeop.h"
-
+namespace cevans{
 /*!
 \brief Compute the 2D convex hull of points.
 
@@ -223,6 +223,7 @@ quickhull2Drandomized<PT,D>::quickhull2Drandomized
 }
 
 
+};
 
 #endif
 

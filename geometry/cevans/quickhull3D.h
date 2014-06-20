@@ -12,7 +12,7 @@ using namespace std;
 
 #include "halfspaceContainer.h"
 #include "indextable.h"
-
+namespace cevans{
 
 /*!
 \brief Compute the 3D convex hull of points.
@@ -317,7 +317,7 @@ quickhull3Drandomized<PT,D>::quickhull3Drandomized
 }
 */
 
-
+};
 
 
 #endif

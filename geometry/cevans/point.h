@@ -10,7 +10,7 @@
 using namespace std;
 
 #include "typedefs.h"
-
+namespace cevans{
 // TODO -= issues: general template conflicting with same type.
 
 //  Multiplication and Memory Management Coupled,
@@ -610,5 +610,6 @@ void point3<T>::serializeInverseBrackets(stringc & s)
   serializeInverse(s2);
 }
 
+};
 #endif
 

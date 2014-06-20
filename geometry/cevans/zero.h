@@ -2,7 +2,7 @@
 #define ZERO_H
 
 #include "typedefs.h"
-
+namespace cevans{
 /*!
 \brief A small number.
 
@@ -45,7 +45,7 @@ public:
 };
 
 
-
+};
 
 
 #endif

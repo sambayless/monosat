@@ -6,7 +6,7 @@
 #include <sstream>
 using namespace std;
 
-
+namespace cevans{
 
 
 void trianglearea
@@ -466,6 +466,7 @@ void integersetdiff
 
 
 
+};
 
 
 

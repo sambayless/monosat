@@ -6,7 +6,7 @@
 
 using namespace std;
 
-
+namespace cevans{
 /*!
 \brief Sort a vector without altering the original vector.
 An array of indexes are sorted.
@@ -141,5 +141,6 @@ void vectorshuffle
 
 
 
+};
  
 #endif

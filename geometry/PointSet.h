@@ -72,6 +72,9 @@ public:
 	void markChanged(){
 
 	}
+	void invalidate(){
+
+	}
 };
 
 
