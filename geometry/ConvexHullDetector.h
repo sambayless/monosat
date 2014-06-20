@@ -135,7 +135,7 @@ GeometryDetector(_detectorID),outer(_outer),rnd_seed(seed){
 
 	point_contained_marker=outer->newReasonMarker(getID());
 	point_not_contained_marker=outer->newReasonMarker(getID());
-	if(hullAlg==ALG_QUICKHULL){
+	if(hullAlg== ConvexHullAlg::ALG_QUICKHULL){
 		if(D==2){
 			over_hull = new QuickConvexHull<D,T>(over);
 			under_hull = new QuickConvexHull<D,T>(under);
@@ -143,7 +143,7 @@ GeometryDetector(_detectorID),outer(_outer),rnd_seed(seed){
 			over_hull = new QuickConvexHull<D,T>(over); //new MonotoneConvexHull<D,T>(over);
 			under_hull = new QuickConvexHull<D,T>(under);
 		}
-	}else if (hullAlg==ALG_MONOTONE_HULL){
+	}else if (hullAlg== ConvexHullAlg::ALG_MONOTONE_HULL){
 		if(D==2){
 			over_hull = new MonotoneConvexHull<D,T>(over);
 			under_hull = new MonotoneConvexHull<D,T>(under);

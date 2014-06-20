@@ -41,7 +41,7 @@ Solver::Solver() :
 
     // Parameters (user settable):
     //
-    verbosity        (0)
+    verbosity        (opt_verb)
   , var_decay        (opt_var_decay)
   , clause_decay     (opt_clause_decay)
   , random_var_freq  (opt_random_var_freq)
@@ -66,9 +66,10 @@ Solver::Solver() :
 
     // Statistics: (formerly in 'SolverStats')
     //
-  , solves(0), starts(0), decisions(0), rnd_decisions(0), propagations(0), conflicts(0)
-  , dec_vars(0), clauses_literals(0), learnts_literals(0), max_literals(0), tot_literals(0)
-
+  , solves(0), starts(0), decisions(0), rnd_decisions(0), propagations(0), conflicts(0),stats_pure_lits(0),stats_pure_theory_lits(0)
+  ,pure_literal_detections(0),stats_removed_clauses(0)
+  , dec_vars(0), clauses_literals(0), learnts_literals(0), max_literals(0), tot_literals(0),stats_pure_lit_time(0)
+  , theory_index(0)
   , ok                 (true)
   , cla_inc            (1)
   , var_inc            (1)
@@ -124,7 +125,7 @@ Var Solver::newVar(bool sign, bool dvar)
     assigns  .push(l_Undef);
     vardata  .push(mkVarData(CRef_Undef, 0));
     priority.push(0);
-
+    theory_vars.push();
     activity .push(rnd_init_act ? drand(random_seed) * 0.00001 : 0);
     seen     .push(0);
     polarity .push(opt_init_rnd_phase ? irand(random_seed,1) : sign);
@@ -165,8 +166,8 @@ bool Solver::addClause_(vec<Lit>& ps)
         return ok = false;
     else if (ps.size() == 1){
         uncheckedEnqueue(ps[0]);
-        ok = (propagate() == CRef_Undef); //do NOT propagate theory solvers here (ie, do not call propagateAll(), just propagate()), or else adding unit clauses can become very expensive in some circumstances (such as when constructing the initial CNF for example)
-        //instead we are going to reset the qhead in the solve_() function, which is a hackish solution to force propagateAll to be called later and will entail some (small) duplicated effort.
+        ok = (propagate(false) == CRef_Undef); //do NOT propagate theory solvers here, or else adding unit clauses can become very expensive in some circumstances (such as when constructing the initial CNF for example)
+
         return ok;
     }else{
         CRef cr = ca.alloc(ps, false);
@@ -177,8 +178,83 @@ bool Solver::addClause_(vec<Lit>& ps)
     return true;
 }
 
+CRef Solver::attachClauseSafe(vec<Lit> & ps){
 
-void Solver::attachClause(CRef cr) {
+		//sort(ps);
+		Lit p; int i, j;
+		for (i = j = 0, p = lit_Undef; i < ps.size(); i++)
+			if (((value(ps[i]) == l_True && level(var(ps[i]))==0) )|| ps[i] == ~p)
+				return CRef_Undef;
+			else if ((value(ps[i]) != l_False || level(var(ps[i]))!=0 ) && ps[i] != p)
+				ps[j++] = p = ps[i];
+		ps.shrink(i - j);
+
+		CRef confl_out=CRef_Undef;
+		if(ps.size()==0){
+				ok=false;
+				cancelUntil(0);
+				return CRef_Undef;
+			}else if(ps.size()==1){
+				cancelUntil(0);
+				assert(var(ps[0])<nVars());
+				dbg_check_propagation(ps[0]);
+				if(!enqueue(ps[0])){
+					ok=false;
+
+				}
+				return CRef_Undef;
+			}else{
+				//find the highest level in the conflict (should be the current decision level, but we won't require that)
+				if(ps.size() > opt_temporary_theory_reasons){
+						if(tmp_clause==CRef_Undef){
+							tmp_clause = ca.alloc(ps,false);
+							tmp_clause_sz=ps.size();
+						}else if(tmp_clause_sz<ps.size()){
+							ca[tmp_clause].mark(1);//is this needed?
+							ca.free(tmp_clause);
+							tmp_clause = ca.alloc(ps,false);
+							tmp_clause_sz=ps.size();
+						}else{
+							Clause & c = ca[tmp_clause];
+							assert(tmp_clause_sz>=ps.size());
+							assert(tmp_clause_sz>=c.size());
+							c.grow(tmp_clause_sz-c.size());
+							for(int i = 0;i<ps.size();i++){
+								c[i]=ps[i];
+							}
+							c.shrink(c.size()-ps.size());
+						}
+
+						confl_out = tmp_clause;
+				}else{
+					CRef cr = ca.alloc(ps, !opt_permanent_theory_conflicts);
+					ca[cr].setFromTheory(true);
+					if(opt_permanent_theory_conflicts)
+						clauses.push(cr);
+					else{
+						learnts.push(cr);
+				         if (--learntsize_adjust_cnt <= 0){
+							learntsize_adjust_confl *= learntsize_adjust_inc;
+							learntsize_adjust_cnt    = (int)learntsize_adjust_confl;
+							max_learnts             *= learntsize_inc;
+
+							if (verbosity >= 1)
+								printf("| %9d | %7d %8d %8d | %8d %8d %6.0f | %d removed |\n",
+									   (int)conflicts,
+									   (int)dec_vars - (trail_lim.size() == 0 ? trail.size() : trail_lim[0]), nClauses(), (int)clauses_literals,
+									   (int)max_learnts, nLearnts(), (double)learnts_literals/nLearnts(), stats_removed_clauses);
+						}
+
+					}
+					attachClause(cr);
+
+					confl_out=cr;
+				}
+				return confl_out;
+			}
+	}
+
+	void Solver::attachClause(CRef cr) {
     const Clause& c = ca[cr];
     assert(c.size() > 1);
 
@@ -273,6 +349,14 @@ void Solver::cancelUntil(int level) {
 			track_min_level=decisionLevel();
 		}
 
+        for(int i:theory_queue){
+        	in_theory_queue[i]=false;
+        }
+        theory_queue.clear();
+        for(int i = 0;i<theories.size();i++){
+			theories[i]->backtrackUntil(level);
+		}
+
     }
 }
 
@@ -360,6 +444,7 @@ void Solver::analyze(CRef confl, vec<Lit>& out_learnt, int& out_btlevel)
 		   }
         // Select next clause to look at:
         while (!seen[var(trail[index--])]);
+        assert(index>=-1);
         p     = trail[index+1];
         confl = reason(var(p));
         if(isTheoryCause(confl)){
@@ -372,7 +457,10 @@ void Solver::analyze(CRef confl, vec<Lit>& out_learnt, int& out_btlevel)
     }while (pathC > 0);
     out_learnt[0] = ~p;
     dbg_check(out_learnt);
-
+#ifndef NDEBUG
+    for(Lit p:out_learnt)
+    	assert(value(p)==l_False);
+#endif
     // Simplify conflict clause:
     //
     int i, j;
@@ -423,6 +511,10 @@ void Solver::analyze(CRef confl, vec<Lit>& out_learnt, int& out_btlevel)
         out_learnt[1]     = p;
         out_btlevel       = level(var(p));
     }
+#ifndef NDEBUG
+    for(Lit p:out_learnt)
+    	assert(value(p)==l_False);
+#endif
     dbg_check(out_learnt);
     for (int j = 0; j < analyze_toclear.size(); j++) seen[var(analyze_toclear[j])] = 0;    // ('seen[]' is now cleared)
 }
@@ -512,13 +604,23 @@ void Solver::analyzeFinal(Lit p, vec<Lit>& out_conflict)
 
 void Solver::uncheckedEnqueue(Lit p, CRef from)
 {
+/*	if(dimacs(p)==376042){
+		int a=1;
+	}*/
     assert(value(p) == l_Undef);
     assigns[var(p)] = lbool(!sign(p));
-    if(from==4145547160){
-    	int a=1;
-    }
     vardata[var(p)] = mkVarData(from, decisionLevel());
     trail.push_(p);
+    //printf("%d\n",dimacs(p));
+    if(hasTheory(p)){
+    	int theoryID = getTheoryID(p);
+    	theories[theoryID]->enqueueTheory(getTheoryLit(p));
+    	if(!in_theory_queue[theoryID]){
+    		in_theory_queue[theoryID]=true;
+    		theory_queue.push(theoryID);
+    		assert(theory_queue.size()<=theories.size());
+    	}
+    }
 }
 
 void Solver::analyzeFinal(CRef confl, Lit skip_lit, vec<Lit>& out_conflict)
@@ -579,6 +681,10 @@ void Solver::analyzeFinal(CRef confl, Lit skip_lit, vec<Lit>& out_conflict)
 		toSuper(reason,reason);
 		interpolant.push();
 		reason.copyTo( interpolant.last());//Add this clause into the interpolant vector
+	}
+
+	void Solver::enqueueTheory(Lit l){
+
 	}
 
 	//Propagate assignments from the super solver's interface variables to this solver (and, if this solver makes further assignments to the interface, pass those back to the super solver)
@@ -699,10 +805,33 @@ CRef Solver::propagate(bool propagate_theories)
     CRef    confl     = CRef_Undef;
     int     num_props = 0;
     watches.cleanAll();
-
+    if(decisionLevel()==0 && ! propagate_theories){
+    	initialPropagate=true;//we will need to propagate this assignment to the theories at some point in the future.
+    }
     do{
 
 		while (qhead < trail.size()){
+			if(opt_early_theory_prop){
+				//propagate theories;
+				while(propagate_theories && theory_queue.size() && confl==CRef_Undef){
+					theory_conflict.clear();
+					int theoryID = theory_queue.last();
+					theory_queue.pop();
+					in_theory_queue[theoryID]=false;
+					if(!theories[theoryID]->propagateTheory(theory_conflict)){
+						if(!addConflictClause(theory_conflict,confl)){
+							in_theory_queue[theoryID]=false;
+							qhead = trail.size();
+							return confl;
+						}
+					}
+				}
+			}
+
+
+
+
+
 			Lit            p   = trail[qhead++];     // 'p' is enqueued fact to propagate.
 			vec<Watcher>&  ws  = watches[p];
 			Watcher        *i, *j, *end;
@@ -752,13 +881,44 @@ CRef Solver::propagate(bool propagate_theories)
 			ws.shrink(i - j);
 		}
 
-		//propagate theories;
-		for(int i = 0;  propagate_theories && i<theories.size() && qhead == trail.size() && confl==CRef_Undef;i++){
-			if(!theories[i]->propagateTheory(theory_conflict)){
-				if(!addConflictClause(theory_conflict,confl))
-					return confl;
+		  if(initialPropagate && propagate_theories){
+		    	assert(decisionLevel()==0);
+		    	//propagate any as yet unpropagated literals to each theory
+		    	for(int i = 0;i<qhead;i++){
+		    		Lit p = trail[i];
+		    		if(hasTheory(p)){
+		    			int theoryID = getTheoryID(p);
+		    			theories[theoryID]->enqueueTheory(getTheoryLit(p));
+
+		    		}
+		    	}
+		    	//Have to check _all_ the theories, even if we haven't eneueued of their literals, in case they have constants to propagate up.
+		    	for(int theoryID = 0;theoryID<theories.size();theoryID++){
+		    		if(!in_theory_queue[theoryID]){
+						in_theory_queue[theoryID]=true;
+						theory_queue.push(theoryID);
+					}
+		    	}
+		    	initialPropagate=false;
+		    }
+			//propagate theories;
+			while(propagate_theories && theory_queue.size() && (opt_early_theory_prop || qhead == trail.size()) && confl==CRef_Undef){
+				theory_conflict.clear();
+				static int iter = 0;
+				if(++iter==32){
+					int a=1;
+				}
+				int theoryID = theory_queue.last();
+				theory_queue.pop();
+				in_theory_queue[theoryID]=false;
+				if(!theories[theoryID]->propagateTheory(theory_conflict)){
+					if(!addConflictClause(theory_conflict,confl)){
+						in_theory_queue[theoryID]=false;
+						qhead = trail.size();
+						return confl;
+					}
+				}
 			}
-		}
 
 
 		//solve theories if this solver is completely assigned
@@ -793,7 +953,18 @@ struct reduceDB_lt {
     ClauseAllocator& ca;
     reduceDB_lt(ClauseAllocator& ca_) : ca(ca_) {}
     bool operator () (CRef x, CRef y) { 
-        return ca[x].size() > 2 && (ca[y].size() == 2 || ca[x].activity() < ca[y].activity()); } 
+    	return ca[x].size() > 2 && (ca[y].size() == 2  || ca[x].activity() < ca[y].activity());
+    	/*if(ca[x].size()==2)
+    		return false;
+    	if(ca[y].size()==2)
+    		return true;
+    	if(ca[x].fromTheory() && !ca[y].fromTheory())
+    		return true;
+    	if(ca[y].fromTheory() && ! ca[x].fromTheory())
+    		return false;
+    	return ca[x].activity() < ca[y].activity();*/
+    }
+
 };
 void Solver::reduceDB()
 {
@@ -805,9 +976,10 @@ void Solver::reduceDB()
     // and clauses with activity smaller than 'extra_lim':
     for (i = j = 0; i < learnts.size(); i++){
         Clause& c = ca[learnts[i]];
-        if (c.size() > 2 && !locked(c) && (i < learnts.size() / 2 || c.activity() < extra_lim))
+        if (c.size() > 2 && !locked(c) && (i < learnts.size() / 2 || c.activity() < extra_lim)){
+        	stats_removed_clauses++;
             removeClause(learnts[i]);
-        else
+        }else
             learnts[j++] = learnts[i];
     }
     learnts.shrink(i - j);
@@ -851,7 +1023,7 @@ bool Solver::simplify()
 {
     assert(decisionLevel() == 0);
 
-    if (!ok || propagate(false) != CRef_Undef)
+    if (!ok || propagate() != CRef_Undef || !ok)//yes, the second ok check is now required, because propagation of a theory can make the solver unsat at this point...
         return ok = false;
 
     if (nAssigns() == simpDB_assigns || (simpDB_props > 0))
@@ -867,10 +1039,109 @@ bool Solver::simplify()
     simpDB_assigns = nAssigns();
     simpDB_props   = clauses_literals + learnts_literals;   // (shouldn't depend on stats really, but it will do for now)
 
+    //Detect any theory literals that are occur only in positive or negative (or neither) polarity
+    if(opt_detect_pure_lits){
+    	//if(pure_literal_detections==0){
+
+    		pure_literal_detections++;
+			double startTime = rtime(1);
+			lit_counts.growTo(nVars()*2);
+			for(int i = 0;i<lit_counts.size();i++){
+				lit_counts[i].seen=false;
+			}
+			assert(decisionLevel()==0);
+
+			//instead of counting the number of occurrences, just check if there are any occurences
+			for(Lit l:trail){
+				lit_counts[toInt(l)].seen=true;
+			}
+
+			for(CRef cr:clauses){
+				Clause & c = ca[cr];
+				for (Lit l:c){
+					lit_counts[toInt(l)].seen=true;
+				}
+			}
+			for(CRef cr:learnts){
+				Clause & c = ca[cr];
+				for (Lit l:c){
+					lit_counts[toInt(l)].seen=true;
+				}
+			}
+			for (Var v = 0;v<nVars();v++){
+
+				Lit l =mkLit(v,false);
+				if(lit_counts[toInt(l)].seen && ! lit_counts[toInt(l)].occurs){
+					stats_pure_lits--;
+					lit_counts[toInt(l)].occurs=true;
+					if(hasTheory(v)){
+						stats_pure_theory_lits--;
+						theories[getTheoryID(v)]->setLiteralOccurs(getTheoryLit(l),true);
+					}
+				}
+				if(lit_counts[toInt(~l)].seen && ! lit_counts[toInt(~l)].occurs){
+					stats_pure_lits--;
+					lit_counts[toInt(~l)].occurs=true;
+					if(hasTheory(v)){
+						stats_pure_theory_lits--;
+						theories[getTheoryID(v)]->setLiteralOccurs(getTheoryLit(~l),true);
+					}
+				}
+
+				if (lit_counts[toInt(l)].occurs && !lit_counts[toInt(l)].seen){
+					lit_counts[toInt(l)].occurs=false;
+					stats_pure_lits++;
+					if(hasTheory(v)){
+						stats_pure_theory_lits++;
+						theories[getTheoryID(v)]->setLiteralOccurs(getTheoryLit(l),false);
+						//setPolarity(v,false);
+					}else{
+						//we can safely assign this now...
+						if(!lit_counts[toInt(~l)].seen){
+						/*	if(decision[v])
+								setDecisionVar(v,false);*/
+						}else{
+							if(value(l)==l_Undef){
+								//uncheckedEnqueue(~l);
+							}
+						}
+					}
+				}
+				if(lit_counts[toInt(~l)].occurs && !lit_counts[toInt(~l)].seen){
+					lit_counts[toInt(~l)].occurs=false;
+					stats_pure_lits++;
+					if(hasTheory(v)){
+						stats_pure_theory_lits++;
+						theories[getTheoryID(v)]->setLiteralOccurs(getTheoryLit(~l),false);
+						//setPolarity(v,true);
+						if(!lit_counts[toInt(l)].occurs){
+							//setDecisionVar(v,false);//If v is pure in both polarities, and is a theory var, then just don't assign it at all - it is unconstrained.
+							//This _should_ be safe to do, if the theory semantics make sense... although there are some clause learning schemes that introduce previosuly unused literals that might break with this...
+						}
+					}else{
+						//we can safely assign this now...
+						if(!lit_counts[toInt(l)].seen){
+					/*		if(decision[v])
+								setDecisionVar(v,false);*/
+						}else if(value(l)==l_Undef){
+							//uncheckedEnqueue(l);
+						}
+					}
+				}
+
+
+			}
+			assert(stats_pure_lits<=nVars()*2);
+			stats_pure_lit_time += rtime(1)-startTime;
+    	//}
+    }
+
     return true;
 }
 
-bool Solver::addConflictClause(vec<Lit> & ps, CRef & confl_out){
+
+
+bool Solver::addConflictClause(vec<Lit> & ps, CRef & confl_out, bool permanent){
 	dbg_check(theory_conflict);
 
     sort(ps);
@@ -898,30 +1169,132 @@ bool Solver::addConflictClause(vec<Lit> & ps, CRef & confl_out){
 
 		}else{
 			//find the highest level in the conflict (should be the current decision level, but we won't require that)
+			bool conflicting = true;
+			int nfalse = 0;
 			int max_lev = 0;
+			bool satisfied = false;
+			int notFalsePos1=-1;
+			int notFalsePos2 = -1;
 			for(int j = 0;j<ps.size();j++){
 				assert(var(ps[j])<nVars());
-				assert(value(ps[j])==l_False);
-				int l = level(var(ps[j]));
-				if(l>max_lev){
-					max_lev=l;
+				//assert(value(ps[j])==l_False);
+				if(value(ps[j])==l_False){
+					nfalse++;
+				}else {
+					conflicting =false;
+					if(value(ps[j])==l_True)
+						satisfied=true;
+					if (notFalsePos1<0)
+						notFalsePos1 = j;
+					else if(notFalsePos2<0){
+						notFalsePos2 = j;
+					}
+				}
+				if(value(ps[j])!=l_Undef){
+					int l = level(var(ps[j]));
+					if(l>max_lev){
+						max_lev=l;
+					}
 				}
 			}
-			//assert(max_lev>0);
-			cancelUntil(max_lev);
-			CRef cr = ca.alloc(ps, !opt_permanent_theory_conflicts);
-	    	if(opt_permanent_theory_conflicts)
-				clauses.push(cr);
-			else
-				learnts.push(cr);
+			if(!conflicting){
+				assert(notFalsePos1>=0);
+				if(notFalsePos1 >=0  && notFalsePos2>=0){
+					assert(notFalsePos1 != notFalsePos2);
+					if(notFalsePos1==1){
+						std::swap(ps[0],ps[notFalsePos2]);
+					}else{
+						std::swap(ps[0],ps[notFalsePos1]);
+						std::swap(ps[1],ps[notFalsePos2]);
+					}
+				}else{
+					std::swap(ps[0],ps[notFalsePos1]);
+				}
+				assert(value(ps[0])!=l_False);
+				if(notFalsePos2>=0){
+					assert(value(ps[1])!=l_False);
+				}
+			}
 
-			attachClause(cr);
-			confl_out=cr;
-			return false;
+#ifndef NDEBUG
+			if(conflicting){
+				for(int j = 0;j<ps.size();j++)
+					assert(value(ps[j])==l_False);
+			}
+#endif
+			if(! permanent && ps.size()> opt_temporary_theory_conflicts){
+				if(tmp_clause==CRef_Undef){
+					tmp_clause = ca.alloc(ps,false);
+					tmp_clause_sz=ps.size();
+				}else if(tmp_clause_sz<ps.size()){
+					ca[tmp_clause].mark(1);//is this needed?
+					ca.free(tmp_clause);
+					tmp_clause = ca.alloc(ps,false);
+					tmp_clause_sz=ps.size();
+				}else{
+					Clause & c = ca[tmp_clause];
+					assert(tmp_clause_sz>=ps.size());
+					assert(tmp_clause_sz>=c.size());
+					c.grow(tmp_clause_sz-c.size());
+					for(int i = 0;i<ps.size();i++){
+						c[i]=ps[i];
+					}
+					c.shrink(c.size()-ps.size());
+				}
+
+				confl_out = tmp_clause;
+			}else{
+
+				CRef cr = ca.alloc(ps, !permanent && !opt_permanent_theory_conflicts);
+				ca[cr].setFromTheory(true);
+				if(permanent || opt_permanent_theory_conflicts)
+					clauses.push(cr);
+				else{
+					learnts.push(cr);
+			         if (--learntsize_adjust_cnt <= 0){
+						learntsize_adjust_confl *= learntsize_adjust_inc;
+						learntsize_adjust_cnt    = (int)learntsize_adjust_confl;
+						max_learnts             *= learntsize_inc;
+
+						if (verbosity >= 1)
+							printf("| %9d | %7d %8d %8d | %8d %8d %6.0f | %d removed |\n",
+								   (int)conflicts,
+								   (int)dec_vars - (trail_lim.size() == 0 ? trail.size() : trail_lim[0]), nClauses(), (int)clauses_literals,
+								   (int)max_learnts, nLearnts(), (double)learnts_literals/nLearnts(), stats_removed_clauses);
+					}
+
+				}
+
+				attachClause(cr);
+				confl_out=cr;
+			}
+			if(!satisfied)
+				cancelUntil(max_lev);
+
+			if (!satisfied && nfalse==ps.size()-1){
+				assert(value(ps[0])!=l_False);
+				assert(value(ps[1])==l_False);
+				if(value(ps[0])==l_Undef){
+					uncheckedEnqueue(ps[0],confl_out);
+				}
+				confl_out=CRef_Undef;
+			}
+			return !conflicting;
 		}
 	return true;
 }
 
+bool Solver::addDelayedClauses(CRef & conflict_out){
+	conflict_out=CRef_Undef;
+	while(clauses_to_add.size() && ok){
+		if(!addConflictClause(clauses_to_add.last(),conflict_out,true)){
+			clauses_to_add.pop();
+			return false;
+		}
+		clauses_to_add.pop();
+	}
+	return true;
+}
 
 /*_________________________________________________________________________________________________
 |
@@ -957,93 +1330,6 @@ lbool Solver::search(int nof_conflicts)
             learnt_clause.clear();
             analyze(confl, learnt_clause, backtrack_level);
 
-            if(opt_print_conflicts){
-            	printf("Conflict:\n");
-                           	Theory * t = theories[0];
-           					GraphTheorySolver *g = (GraphTheorySolver*)t;
-           					int width = sqrt(g->nNodes());
-
-                           //	exit(1);
-
-                           	if(opt_print_reach){
-                           				int  v = 0;
-
-
-                           				printf("\n");
-                           				for(int t = 0;t<theories.size();t++){
-                           					printf("Theory %d\n", t);
-                           					GraphTheorySolver *g = (GraphTheorySolver*)theories[t];
-
-                           					for(int r = 0;r<g->reach_detectors.size();r++){
-
-                           						int width = sqrt(g->nNodes());
-                           						int lasty= 0;
-                           						int extra =  g->nNodes() % width ? (width- g->nNodes() % width ):0;
-                           						for(int n = 0;n<g->nNodes();n++){
-                           							int x = n%width;
-
-                           							int y = (n + extra )/width;
-                           							if(y > lasty)
-                           								printf("\n");
-
-                           							int v =var( g->reach_detectors[r]->reach_lits[n]);
-                           							bool isany = false;
-                           							for(int i = 0;i<learnt_clause.size();i++){
-                           								if(var(learnt_clause[i])==v)
-                           									isany=true;
-                           							}
-                           							if(isany){
-                           								printf("\033[1;41m\033[1;37m x\033[0m");
-                           							}else if(value(v)==l_True)
-           												printf("\033[1;42m\033[1;37m 1\033[0m");
-           											else if(value(v)==l_False)
-           												printf("\033[1;44m\033[1;37m 0\033[0m");
-           											else{
-           												printf("\033[1;43m\033[1;37m-1\033[0m");
-           											}
-
-                           							lasty=y;
-                           						}
-                           						printf("\n");
-                           					}
-
-
-
-                           					//g->drawFull();
-
-                           					assert(g->dbg_solved());
-                           				}
-                           			 	printf("\n");
-                           				}
-
-                           	int lasty= -1;
-                           	                           	for(int n = 0;n<g->nNodes();n++){
-                           	                           					int x = n%width;
-                           	                           					int y = n/width;
-                           	                           					if(y > lasty)
-                           	                           						printf("\n");
-                           	           									if (isatty(fileno(stdout))){
-                           	           									bool isany = false;
-																			for(int i = 0;i<learnt_clause.size();i++){
-																				if(var(learnt_clause[i])==n)
-																					isany=true;
-																			}
-																			if(isany){
-																				printf("\033[1;41m\033[1;37m x\033[0m");
-																			}else if(value(n)==l_True)
-                           	           											printf("\033[1;42m\033[1;37m 1\033[0m");
-                           	           										else if(value(n)==l_False)
-                           	           											printf("\033[1;44m\033[1;37m 0\033[0m");
-                           	           										else{
-                           	           											printf("\033[1;43m\033[1;37m-1\033[0m");
-                           	           										}
-                           	           									}
-                           	           									lasty=y;
-                           	                           	}
-                           	                           	printf("\n\n");
-                           }
-
-
             cancelUntil(backtrack_level);
 
             //this is now slightly more complicated, if there are multiple lits implied by the super solver in the current decision level:
@@ -1060,6 +1346,7 @@ lbool Solver::search(int nof_conflicts)
                 if(value(learnt_clause[0])==l_Undef){
                 	uncheckedEnqueue(learnt_clause[0], cr);
                 }else{
+                	 assert(S);
                 	//this is _not_ an asserting clause, its a conflict that must be passed up to the super solver.
                 	 analyzeFinal(cr,lit_Undef,conflict);
 
@@ -1074,19 +1361,24 @@ lbool Solver::search(int nof_conflicts)
             varDecayActivity();
             claDecayActivity();
 
-            if (--learntsize_adjust_cnt == 0){
+            if (--learntsize_adjust_cnt <= 0){
                 learntsize_adjust_confl *= learntsize_adjust_inc;
                 learntsize_adjust_cnt    = (int)learntsize_adjust_confl;
                 max_learnts             *= learntsize_inc;
 
                 if (verbosity >= 1)
-                    printf("| %9d | %7d %8d %8d | %8d %8d %6.0f | %6.3f %% |\n", 
+                    printf("| %9d | %7d %8d %8d | %8d %8d %6.0f | %d removed |\n",
                            (int)conflicts, 
                            (int)dec_vars - (trail_lim.size() == 0 ? trail.size() : trail_lim[0]), nClauses(), (int)clauses_literals, 
-                           (int)max_learnts, nLearnts(), (double)learnts_literals/nLearnts(), progressEstimate()*100);
+                           (int)max_learnts, nLearnts(), (double)learnts_literals/nLearnts(), stats_removed_clauses);
             }
 
         }else{
+        	assert(theory_queue.size()==0);
+
+        	if(!addDelayedClauses(confl))
+        		goto conflict;
+
             if(opt_subsearch==0 &&  decisionLevel()< initial_level){
      			return l_Undef;//give up if we have backtracked past the super solvers decisions
      		  }else if(opt_subsearch==2 && S && confl==CRef_Undef){
@@ -1096,7 +1388,7 @@ lbool Solver::search(int nof_conflicts)
      					return l_False;
      				goto conflict;
      			}
-     		  }
+     		 }
 
             // NO CONFLICT
             if ((nof_conflicts >= 0 && conflictC >= nof_conflicts )|| !withinBudget()){
@@ -1133,14 +1425,16 @@ lbool Solver::search(int nof_conflicts)
                 }
             }
 
-            /**
-             * Give the theory solvers a chance to make decisions
-             */
-			for(int i = 0;i<decidable_theories.size() && next==lit_Undef;i++){
+            if(opt_decide_graph && next==lit_Undef && drand(random_seed)<opt_random_theory_freq){
+				/**
+				 * Give the theory solvers a chance to make decisions
+				 */
+				for(int i = 0;i<decidable_theories.size() && next==lit_Undef;i++){
 
-					next = decidable_theories[i]->decideTheory();
+						next = decidable_theories[i]->decideTheory();
 
-			}
+				}
+            }
 
             if (next == lit_Undef){
                 // New variable decision:
@@ -1148,78 +1442,6 @@ lbool Solver::search(int nof_conflicts)
                 next = pickBranchLit();
                // int p = priority[var(next)];
 
-               /* if(last_dec!= var_Undef && theories.size() && priority[var(next)]<priority[last_dec]){
-
-                	Theory * t = theories[0];
-					GraphTheorySolver *g = (GraphTheorySolver*)t;
-					int width = sqrt(g->nNodes());
-					int lasty= -1;
-                	for(int n = 0;n<g->nNodes();n++){
-                					int x = n%width;
-                					int y = n/width;
-                					if(y > lasty)
-                						printf("\n");
-									if (isatty(fileno(stdout))){
-
-										if(value(n)==l_True)
-											printf("\033[1;42m\033[1;37m 1\033[0m");
-										else if(value(n)==l_False)
-											printf("\033[1;44m\033[1;37m 0\033[0m");
-										else{
-											printf("\033[1;43m\033[1;37m-1\033[0m");
-										}
-									}
-									lasty=y;
-                	}
-                	printf("\n\n");
-                //	exit(1);
-
-                	if(opt_print_reach){
-                				int  v = 0;
-
-
-                				printf("\n");
-                				for(int t = 0;t<theories.size();t++){
-                					printf("Theory %d\n", t);
-                					GraphTheorySolver *g = (GraphTheorySolver*)theories[t];
-
-                					for(int r = 0;r<g->reach_detectors.size();r++){
-
-                						int width = sqrt(g->nNodes());
-                						int lasty= 0;
-                						int extra =  g->nNodes() % width ? (width- g->nNodes() % width ):0;
-                						for(int n = 0;n<g->nNodes();n++){
-                							int x = n%width;
-
-                							int y = (n + extra )/width;
-                							if(y > lasty)
-                								printf("\n");
-
-                							int v =var( g->reach_detectors[r]->reach_lits[n]);
-                							if(value(v)==l_True)
-												printf("\033[1;42m\033[1;37m 1\033[0m");
-											else if(value(v)==l_False)
-												printf("\033[1;44m\033[1;37m 0\033[0m");
-											else{
-												printf("\033[1;43m\033[1;37m-1\033[0m");
-											}
-
-                							lasty=y;
-                						}
-                						printf("\n");
-                					}
-
-
-
-                					//g->drawFull();
-
-                					assert(g->dbg_solved());
-                				}
-
-                				}
-
-                }
-*/
                 if (next == lit_Undef){
 
                 	//solve theories if this solver is completely assigned
@@ -1312,7 +1534,9 @@ lbool Solver::solve_()
     learntsize_adjust_cnt     = (int)learntsize_adjust_confl;
     lbool   status            = l_Undef;
 
-    if (verbosity >= 1){
+    if (verbosity >= 1 && ! printed_header){
+    	//on repeated calls, don't print the header again
+    	printed_header=true;
         printf("============================[ Search Statistics ]==============================\n");
         printf("| Conflicts |          ORIGINAL         |          LEARNT          | Progress |\n");
         printf("|           |    Vars  Clauses Literals |    Limit  Clauses Lit/Cl |          |\n");
@@ -1343,8 +1567,6 @@ lbool Solver::solve_()
         }
     }
 
-    if (verbosity >= 1)
-        printf("===============================================================================\n");
 
 
     if (status == l_True){
@@ -1354,10 +1576,11 @@ lbool Solver::solve_()
 
 		if(opt_check_solution && theories.size()){
 			Theory * t = theories[0];
-							GraphTheorySolver *g = (GraphTheorySolver*)t;
-					if(!g->check_solved()){
+
+					if(!t->check_solved()){
 						fprintf(stderr,"Error! Solution doesn't satisfy graph properties!\n");
-						exit(1);
+						fflush(stderr);
+						exit(3);
 					}
 				}
 #ifdef DEBUG_SOLVER
@@ -1499,6 +1722,11 @@ void Solver::toDimacs(FILE* f, const vec<Lit>& assumps)
 
 void Solver::relocAll(ClauseAllocator& to)
 {
+	if(tmp_clause!=CRef_Undef){
+	    ca[tmp_clause].mark(1);//is this needed?
+	    ca.free(tmp_clause);
+		tmp_clause = CRef_Undef;
+	}
 	//Re-allocate the 'theory markers'
 	vec<int> marker_theory_tmp;
 

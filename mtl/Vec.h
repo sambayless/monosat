@@ -61,7 +61,7 @@ public:
 
     // Size operations:
     int      size     (void) const     { return sz; }
-    void     shrink   (int nelems)     { assert(nelems <= sz); for (int i = 0; i < nelems; i++) sz--, data[sz].~T(); }
+    void     shrink   (int nelems)     { assert(nelems>=0); assert(nelems <= sz); for (int i = 0; i < nelems; i++) sz--, data[sz].~T(); }
     void     shrink_  (int nelems)     { assert(nelems <= sz); sz -= nelems; }
     int      capacity (void) const     { return cap; }
     void     capacity (int min_cap);
@@ -108,6 +108,20 @@ public:
     		}
     	}
     	return false;
+    }
+
+    //remove all instances of the given element, if it exists
+    bool remove(const T& element){
+    	int i,j=0;
+    	for(i = 0;i<sz;i++){
+    		if(data[i]==element){
+
+    		}else{
+    			data[j++]=data[i];
+    		}
+    	}
+    	shrink(i-j);
+    	return j<i;
     }
 };
 

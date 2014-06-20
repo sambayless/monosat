@@ -29,12 +29,9 @@ graph \
 geometry/cevans \
 geometry/bitmap \
 geometry \
-coverage/utils \
-coverage/core \
-coverage/aiger \
-coverage \
+dgl/alg \
+dgl \
 core \
 aiger \
 . \
-Klee/aiger \
 

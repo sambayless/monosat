@@ -29,6 +29,8 @@ graph \
 geometry/cevans \
 geometry/bitmap \
 geometry \
+dgl/alg \
+dgl \
 core \
 aiger \
 . \

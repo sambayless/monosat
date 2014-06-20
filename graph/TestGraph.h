@@ -29,6 +29,7 @@ private:
 	Lit True;
 	Solver * S;
 	int id;
+    int theory_index;
 public:
 	TestGraph(Solver * S_, int _id=0):S(S_),id(_id){
 		True = mkLit(S->newVar(),false);
@@ -36,6 +37,15 @@ public:
 			S->addClause(True);
 			nodes=0;
 
+
+	}
+    int getTheoryIndex(){
+    	return theory_index;
+    }
+    void setTheoryIndex(int id){
+    	theory_index=id;
+    }
+	void printStats(int detailLevel){
 
 	}
      ~TestGraph(){};
@@ -61,7 +71,7 @@ public:
 	void newDecisionLevel(){};
 	bool propagateTheory(vec<Lit> & conflict){return true;};
 	bool solveTheory(vec<Lit> & conflict){return true;};
-
+	void enqueueTheory(Lit l){};
 	void buildReason(Lit p, vec<Lit> & reason){};
 	void implementConstraints(){
 
@@ -92,6 +102,9 @@ public:
     		edge_weights.push(weight);
     		return l;
     	}
+	void connects(int from,int to, Var reach_var,int within_steps=-1){
+
+	}
     vec<Lit> c;
 	void reachesAny(int from, vec<Lit> & reaches,int within_steps=-1){
 		if(within_steps<0){
@@ -312,6 +325,15 @@ public:
 	void minConnectedComponents(int min_components, Var v){
 		printf("Warning: max flow/mincut constraints are not implemented, and will be left unconstrained\n");
 
+
+	}
+
+	void addSteinerTree(const vec<std::pair<int, Var> > & terminals, int steinerTreeID){
+		printf("Warning: steiner tree constraints are not implemented, and will be left unconstrained\n");
+
+	}
+	void addSteinerWeightConstraint(int steinerTreeID, int weight, Var outerVar){
+		printf("Warning: steiner tree constraints are not implemented, and will be left unconstrained\n");
 
 	}
 };

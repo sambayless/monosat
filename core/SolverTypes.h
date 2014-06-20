@@ -128,7 +128,8 @@ class Clause {
         unsigned learnt    : 1;
         unsigned has_extra : 1;
         unsigned reloced   : 1;
-        unsigned size      : 27; }                            header;
+        unsigned fromTheory: 1;
+        unsigned size      : 26; }                            header;
     union { Lit lit; float act; uint32_t abs; CRef rel; } data[0];
 
     friend class ClauseAllocator;
@@ -141,6 +142,7 @@ class Clause {
         header.has_extra = use_extra;
         header.reloced   = 0;
         header.size      = ps.size();
+        header.fromTheory = 0;
 
         for (int i = 0; i < ps.size(); i++) 
             data[i].lit = ps[i];
@@ -162,6 +164,13 @@ public:
 
 
     int          size        ()      const   { return header.size; }
+    //This is NOT safe. Only use this if it is guaranteed that the clause has enough extra allocated space
+    void		 grow(int i){
+    	assert(i>=0);
+    	 if (header.has_extra)
+    		 data[header.size+i] = data[header.size];
+    	 header.size += i;
+    }
     void         shrink      (int i)         { assert(i <= size()); if (header.has_extra) data[header.size-i] = data[header.size]; header.size -= i; }
     void         pop         ()              { shrink(1); }
     bool         learnt      ()      const   { return header.learnt; }
@@ -169,6 +178,14 @@ public:
     uint32_t     mark        ()      const   { return header.mark; }
     void         mark        (uint32_t m)    { header.mark = m; }
     const Lit&   last        ()      const   { return data[header.size-1].lit; }
+
+    bool	fromTheory()const{
+    	return header.fromTheory;
+    }
+
+    void setFromTheory(bool t){
+    	header.fromTheory=t;
+    }
 
     bool         reloced     ()      const   { return header.reloced; }
     CRef         relocation  ()      const   { return data[0].rel; }
@@ -185,6 +202,17 @@ public:
 
     Lit          subsumes    (const Clause& other) const;
     void         strengthen  (Lit p);
+
+    //stl-style begin and end, to support C++11 range-based for loops
+    const Lit * begin () const
+    {
+        return &data[0].lit;
+    }
+
+    const Lit* end () const
+    {
+        return &data[size()].lit;
+    }
 };
 
 
@@ -257,7 +285,7 @@ class ClauseAllocator : public RegionAllocator<uint32_t>
         
         cr = to.alloc(c, c.learnt());
         c.relocate(cr);
-        
+        to[cr].setFromTheory(c.fromTheory());
         // Copy extra data-fields: 
         // (This could be cleaned-up. Generalize Clause-constructor to be applicable here instead?)
         to[cr].mark(c.mark());

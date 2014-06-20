@@ -10,22 +10,22 @@
 #include "utils/System.h"
 
 #include "Graph.h"
-#include "MaxFlow.h"
-#include "EdmondsKarp.h"
+#include "dgl/MaxFlow.h"
+#include "dgl/EdmondsKarp.h"
 #include "core/SolverTypes.h"
 #include "mtl/Map.h"
 
-
 #include "utils/System.h"
 #include "Detector.h"
+using namespace dgl;
 namespace Minisat{
 class GraphTheorySolver;
 class MaxflowDetector:public Detector{
 public:
 		GraphTheorySolver * outer;
-		DynamicGraph<PositiveEdgeStatus> & over_graph;
-		 DynamicGraph<PositiveEdgeStatus> &g;
-			 DynamicGraph<NegativeEdgeStatus> &antig;
+		DynamicGraph & over_graph;
+		 DynamicGraph &g;
+			 DynamicGraph &antig;
 		//int within;
 		int source;
 		int target;
@@ -35,6 +35,8 @@ public:
 		CRef forced_reach_marker;
 		MaxFlow * positive_detector;
 		MaxFlow * negative_detector;
+		MaxFlow * positive_conflict_detector;
+		MaxFlow * negative_conflict_detector;
 
 
 		//vec<Lit>  reach_lits;
@@ -61,7 +63,7 @@ public:
 			return reach_lit_map[index];
 		}*/
 
-		bool propagate(vec<Assignment> & trail,vec<Lit> & conflict);
+		bool propagate(vec<Lit> & conflict);
 		void buildMaxFlowTooHighReason(int node,vec<Lit> & conflict);
 		void buildMaxFlowTooLowReason(int node,vec<Lit> & conflict);
 		void buildForcedEdgeReason(int reach_node, int forced_edge_id,vec<Lit> & conflict);
@@ -69,9 +71,12 @@ public:
 		bool checkSatisfied();
 		Lit decide();
 		void addFlowLit(int max_flow,Var reach_var);
-		MaxflowDetector(int _detectorID, GraphTheorySolver * _outer, DynamicGraph<PositiveEdgeStatus> &_g, DynamicGraph<NegativeEdgeStatus> &_antig, int _source, int _target,double seed=1);//:Detector(_detectorID),outer(_outer),within(-1),source(_source),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL){}
+		MaxflowDetector(int _detectorID, GraphTheorySolver * _outer, DynamicGraph &_g, DynamicGraph &_antig, int _source, int _target,double seed=1);//:Detector(_detectorID),outer(_outer),within(-1),source(_source),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL){}
 		virtual ~MaxflowDetector(){
 
+		}
+		const char* getName(){
+			return "Max-flow Detector";
 		}
 };
 };

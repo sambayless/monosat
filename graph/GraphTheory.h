@@ -11,46 +11,47 @@
 #include "utils/System.h"
 #include "core/Theory.h"
 #include "Graph.h"
-#include "Reach.h"
-#include "Dijkstra.h"
-#include "Connectivity.h"
-#include "Distance.h"
+#include "dgl/Reach.h"
+#include "dgl/Dijkstra.h"
+#include "dgl/BFS.h"
+#include "dgl/UnweightedDistance.h"
 #include "core/SolverTypes.h"
 #include "mtl/Map.h"
-#include "MaxFlow.h"
-#include "IBFS.h"
-#include "EdmondsKarp.h"
-#include "EdmondsKarpAdj.h"
-#include "Chokepoint.h"
-#include "WeightedDijkstra.h"
+#include "dgl/MaxFlow.h"
+#include "dgl/IBFS.h"
+#include "dgl/EdmondsKarp.h"
+#include "dgl/EdmondsKarpAdj.h"
+#include "dgl/Chokepoint.h"
+#include "dgl/WeightedDijkstra.h"
 #include "GraphTheoryTypes.h"
 #include "utils/System.h"
 #include "core/Solver.h"
+
+using namespace dgl;
 
 #ifdef DEBUG_GRAPH
 #include "TestGraph.h"
 #endif
 #include "AllPairsDetector.h"
 #include "ReachDetector.h"
+#include "ConnectDetector.h"
 #include "DistanceDetector.h"
 #include "MSTDetector.h"
 #include "MaxflowDetector.h"
 #include "ConnectedComponentsDetector.h"
 #include "CycleDetector.h"
+#include "SteinerDetector.h"
 namespace Minisat{
 
 class GraphTheorySolver;
 
+#ifndef NDEBUG
+#include <cstdio>
+#endif
 
 #ifdef DEBUG_SOLVER
 #include "TestGraph.h"
 #endif
-
-
-
-
-
-
 
 class GraphTheorySolver:public GraphTheory{
 public:
@@ -59,8 +60,9 @@ public:
 	Lit False;
 	Lit True;
 	int local_q;
-
+private:
 	Solver * S;
+public:
 	int id;
 #ifdef DEBUG_GRAPH
 	Solver * dbg;
@@ -71,29 +73,24 @@ public:
 #endif
 
 
-	vec<lbool> edge_assignments;
+	vec<lbool> assigns;
 
 	MSTDetector * mstDetector;
-	vec<ReachabilityConstraint> unimplemented_graph_constraints;
+	vec<ReachabilityConstraint> unimplemented_reachability_constraints;
+	vec<ConnectivityConstraint> unimplemented_connectivity_constraints;
 
 
-	PositiveEdgeStatus g_status;
-	NegativeEdgeStatus antig_status;
-	CutEdgeStatus cutGraph_status;
 
-	DynamicGraph<PositiveEdgeStatus> g;
-	DynamicGraph<NegativeEdgeStatus> antig;
-	DynamicGraph<CutEdgeStatus> cutGraph;
 
-	Var min_edge_var;
-	int num_edges;
+	DynamicGraph g;
+	DynamicGraph antig;
+	DynamicGraph cutGraph;
+
+	//Var min_edge_var;
+	//int num_edges;
 
 	vec<Assignment> trail;
 	vec<int> trail_lim;
-
-
-
-
 
 
 	struct ReachInfo{
@@ -107,37 +104,52 @@ public:
 
 	vec<ReachInfo> dist_info;
 	vec<ReachInfo> reach_info;
+	vec<ReachInfo> connect_info;
 public:
 	vec<Detector*> detectors;
 	vec<ReachDetector*> reach_detectors;
+	vec<ConnectDetector*> connect_detectors;
 	vec<DistanceDetector*> distance_detectors;
 	vec<MaxflowDetector*> flow_detectors;
 	ConnectedComponentsDetector* component_detector;
 	CycleDetector * cycle_detector;
+	vec<SteinerDetector*>  steiner_detectors;
 
 	vec<int> marker_map;
 
 
-	vec<MaxFlow::Edge> cut;
+	std::vector<MaxFlow::Edge> cut;
 
 	//Full matrix
 	vec<vec<Edge> > edges;
 
+
+
 	//Just a list of the edges
 	vec<Edge> edge_list;
-
+	vec<vec<Edge> > undirected_adj;
 	vec<vec<Edge> > inv_adj;
 
 	//vector of the weights for each edge
 	vec<int> edge_weights;
-
+	bool requiresPropagation;
 	MaxFlow * mc;
 	//MaxFlow * reachprop;
 
     vec<char> seen;
 	vec<int> to_visit;
+	vec<Lit> tmp_clause;
+	//Data about local theory variables, and how they connect to the sat solver's variables
+	struct VarData{
+		int isEdge:1;
+		int occursPositive:1;
+		int occursNegative:1;
+		int detector_edge:29;//the detector this variable belongs to, or its edge number, if it is an edge variable
+		Var solverVar;
+	};
 
-
+	vec<VarData> vars;
+	int theory_index;
 public:
 
 	double mctime;
@@ -145,6 +157,11 @@ public:
 	double unreachtime;
 	double pathtime;
 	double propagationtime;
+	long stats_propagations;
+	long stats_num_conflicts;
+	long stats_decisions;
+	long stats_num_reasons;
+
 	double reachupdatetime;
 	double unreachupdatetime;
 	double stats_initial_propagation_time;
@@ -155,15 +172,16 @@ public:
 	int learnt_path_clause_length;
 	int num_learnt_cuts;
 	int learnt_cut_clause_length;
-
+	int stats_pure_skipped;
 	int stats_mc_calls;
+	long stats_propagations_skipped;
 	vec<Lit> reach_cut;
 
 	struct CutStatus{
 		GraphTheorySolver & outer;
 		int operator [] (int id) const {
 
-			if(outer.edge_assignments[id]==l_False){
+			if(outer.value(outer.edge_list[id].v) ==l_False){
 				return 1;
 			}else{
 				return 0xF0F0F0;
@@ -177,10 +195,10 @@ public:
 		GraphTheorySolver & outer;
 		int operator () (int id) const {
 
-			if(outer.edge_assignments[id]==l_Undef){
+			if(outer.value(outer.edge_list[id].v) ==l_Undef){
 				return 1;
 			}else{
-				assert(outer.edge_assignments[id]==l_True);
+				assert(outer.value(outer.edge_list[id].v)==l_True);
 				return 0xF0F0F0;
 			}
 		}
@@ -188,19 +206,36 @@ public:
 
 	}propCutStatus;
 
-	GraphTheorySolver(Solver * S_, int _id=-1):S(S_),id(_id),g(g_status),antig(antig_status) ,cutGraph(cutGraph_status),cutStatus(*this),propCutStatus(*this){
+	GraphTheorySolver(Solver * S_, int _id=-1):S(S_),id(_id),cutStatus(*this),propCutStatus(*this){
 		mstDetector = NULL;
-		True = mkLit(S->newVar(),false);
-			False=~True;
-			S->addClause(True);
-			num_edges=0;
+		//True = mkLit(S->newVar(),false);
+			//False=~True;
+			//S->addClause(True);
+#ifdef RECORD
+			{
+				char t[30];
+				sprintf(t,"TEST_GRAPH%d",id);
+				g.outfile=fopen(t,"w");
+			}
+			{
+						char t[30];
+						sprintf(t,"TEST_ANTI_GRAPH%d",id);
+						antig.outfile=fopen(t,"w");
+					}
+#endif
 			local_q=0;
+			theory_index=0;
 			mctime=0;
 			stats_mc_calls=0;
 			reachtime=0;
 			unreachtime=0;
 			pathtime=0;
 			propagationtime=0;
+			stats_propagations=0;
+			stats_num_conflicts=0;
+			stats_num_reasons=0;
+			stats_decisions = 0;
+			stats_propagations_skipped=0;
 			reachupdatetime=0;
 			unreachupdatetime=0;
 			stats_initial_propagation_time=0;
@@ -212,21 +247,22 @@ public:
 			 num_learnt_cuts=0;
 			 learnt_cut_clause_length=0;
 			 component_detector=NULL;
+			 requiresPropagation=true;
 			 rnd_seed=opt_random_seed;
 
-			if(mincutalg==ALG_IBFS){
-				mc = new IBFS<CutEdgeStatus>(cutGraph);
+			if(mincutalg==MinCutAlg::ALG_IBFS){
+				mc = new IBFS(cutGraph);
 
-			}else if (mincutalg == ALG_EDKARP_ADJ){
+			}else if (mincutalg == MinCutAlg::ALG_EDKARP_ADJ){
 
-				mc = new EdmondsKarpAdj<CutStatus, CutEdgeStatus>(cutGraph,cutStatus);
+				mc = new EdmondsKarpAdj<CutStatus>(cutGraph,cutStatus);
 				//reachprop = new EdmondsKarpAdj<PropCutStatus, NegativeEdgeStatus>(antig,propCutStatus);
 			}else{
-				mc = new EdmondsKarp<CutEdgeStatus>(cutGraph);
+				mc = new EdmondsKarp(cutGraph);
 			}
 
 #ifdef DEBUG_GRAPH
-		dbg=new Solver();
+		dbg=new Solver();dbg->verbosity=0;
 		dbg_graph = new TestGraph(dbg);
 #endif
 #ifdef DEBUG_SOLVER
@@ -235,59 +271,195 @@ public:
 #endif
 	}
 
-	int getGraphID(){
-		return id;
-	}
-	void printStats(){
+	void printStats(int detailLevel){
+		if(detailLevel>0){
+			for(Detector * d:detectors)
+				d->printStats();
+		}
 
 		printf("Graph stats:\n");
-		printf("Decision Time: %f\n", stats_decision_time);
+/*		printf("Decision Time: %f\n", stats_decision_time);
 		printf("Prop Time: %f (initial: %f)\n", propagationtime,stats_initial_propagation_time);
-		printf("Conflict Time: %f (initial: %f)\n", stats_reason_time,stats_reason_initial_time);
+		printf("Conflict Time: %f (initial: %f)\n", stats_reason_time,stats_reason_initial_time);*/
 
-		printf("Reach Time: %f (update Time: %f)\n", reachtime,reachupdatetime);
+	/*	printf("Reach Time: %f (update Time: %f)\n", reachtime,reachupdatetime);
 		printf("Unreach Time: %f (Update Time: %f)\n", unreachtime,unreachupdatetime);
 		printf("Path Time: %f (#Paths: %d, AvgLength %f, total: %d)\n", pathtime, num_learnt_paths, (learnt_path_clause_length /  ((float) num_learnt_paths+1)),learnt_path_clause_length);
 		printf("Min-cut Time: %f (%d calls, %f average, #Cuts: %d, AvgLength %f, total: %d)\n", mctime, stats_mc_calls,(mctime/(stats_mc_calls ? stats_mc_calls:1)),  num_learnt_cuts, (learnt_cut_clause_length /  ((float) num_learnt_cuts+1)),learnt_cut_clause_length);
+*/
 
-		int stats_full_updates=0;
-		int stats_fast_updates=0;
-		int stats_failed_fast_updates=0;
-		int stats_skip_deletes=0;
-		int stats_skipped_updates=0;
-		int skipable_deletions = 0;
-		double stats_full_update_time=0;
-		double stats_fast_update_time=0;
-
-		for(int i = 0;i<reach_detectors.size();i++){
-			skipable_deletions+=reach_detectors[i]->positive_reach_detector->stats_num_skipable_deletions;
-			skipable_deletions+=reach_detectors[i]->negative_reach_detector->stats_num_skipable_deletions;
-
-			stats_failed_fast_updates+=reach_detectors[i]->positive_reach_detector->stats_fast_failed_updates;
-			stats_failed_fast_updates+=reach_detectors[i]->negative_reach_detector->stats_fast_failed_updates;
-
-			stats_full_updates+=reach_detectors[i]->positive_reach_detector->stats_full_updates;
-			stats_fast_updates+=reach_detectors[i]->positive_reach_detector->stats_fast_updates;
-			stats_skip_deletes+=reach_detectors[i]->positive_reach_detector->stats_skip_deletes;
-			stats_skipped_updates+=reach_detectors[i]->positive_reach_detector->stats_skipped_updates;
-
-			stats_full_update_time+=reach_detectors[i]->positive_reach_detector->stats_full_update_time;
-			stats_fast_update_time+=reach_detectors[i]->positive_reach_detector->stats_fast_update_time;
-
-			stats_full_updates+=reach_detectors[i]->negative_reach_detector->stats_full_updates;
-			stats_fast_updates+=reach_detectors[i]->negative_reach_detector->stats_fast_updates;
-			stats_skip_deletes+=reach_detectors[i]->negative_reach_detector->stats_skip_deletes;
-			stats_skipped_updates+=reach_detectors[i]->negative_reach_detector->stats_skipped_updates;
-
-			stats_full_update_time+=reach_detectors[i]->negative_reach_detector->stats_full_update_time;
-			stats_fast_update_time+=reach_detectors[i]->negative_reach_detector->stats_fast_update_time;
-		}
-
-		printf("Dijkstra Full Updates: %d (time: %f, average: %f)\n",stats_full_updates, stats_full_update_time,(stats_full_update_time/(stats_full_updates ? stats_full_updates:1)));
-		printf("Dijkstra Fast Updates: %d (time: %f, average: %f, failed: %d)\n",stats_fast_updates, stats_fast_update_time,(stats_fast_update_time/(stats_fast_updates ? stats_fast_updates:1)),stats_failed_fast_updates);
-		printf("Dijkstra Skipped Updates: %d (deletionSkips: %d, skipable deletes %d)\n",stats_skipped_updates, stats_skip_deletes,skipable_deletions);
-
+		printf("Propagations: %ld (%f s, avg: %f s, %ld skipped)\n",stats_propagations ,propagationtime, (propagationtime)/((double)stats_propagations+1),stats_propagations_skipped);
+		printf("Decisions: %ld (%f s, avg: %f s)\n",stats_decisions,stats_decision_time, (stats_decision_time)/((double)stats_decisions+1));
+		printf("Conflicts: %ld\n",stats_num_conflicts);
+		printf("Reasons: %ld (%f s, avg: %f s)\n",stats_num_reasons,stats_reason_time, (stats_reason_time)/((double)stats_num_reasons+1));
+		fflush(stdout);
 	}
+
+	inline int getTheoryIndex(){
+	    	return theory_index;
+	    }
+	  inline  void setTheoryIndex(int id){
+	    	theory_index=id;
+	    }
+	inline int getGraphID(){
+		return id;
+	}
+	inline bool isEdgeVar(Var v){
+		assert(v<vars.size());
+		return vars[v].isEdge;
+	}
+	inline int getEdgeID(Var v){
+		assert(isEdgeVar(v));
+		return vars[v].detector_edge;
+	}
+	inline int getDetector(Var v){
+		assert(!isEdgeVar(v));
+		return vars[v].detector_edge;
+	}
+
+	inline Var getEdgeVar(int edgeID){
+		Var v = edge_list[edgeID].v;
+		assert(v<vars.size());
+		assert(vars[v].isEdge);
+		return v;
+	}
+
+	void makeEqual(Lit l1, Lit l2){
+		Lit o1 = toSolver(l1);
+		Lit o2 = toSolver(l2);
+		S->addClause(~o1,o2);
+		S->addClause(o1, ~o2);
+	}
+	void makeEqualInSolver(Lit l1, Lit l2){
+		S->addClause(~l1,l2);
+		S->addClause(l1, ~l2);
+	}
+	void addClause(Lit l1){
+		Lit o1 = toSolver(l1);
+		S->addClause(o1);
+	}
+	void addClause(Lit l1, Lit l2){
+		Lit o1 = toSolver(l1);
+		Lit o2 = toSolver(l2);
+		S->addClause(o1,o2);
+	}
+	void addClause(Lit l1, Lit l2, Lit l3){
+		Lit o1 = toSolver(l1);
+		Lit o2 = toSolver(l2);
+		Lit o3 = toSolver(l3);
+		S->addClause(o1,o2,o3);
+	}
+	void addClause(vec<Lit> & c){
+		tmp_clause.clear();
+		c.copyTo(tmp_clause);
+		toSolver(tmp_clause);
+		S->addClause(tmp_clause);
+	}
+	void addClauseSafely(vec<Lit> & c){
+		tmp_clause.clear();
+		c.copyTo(tmp_clause);
+		toSolver(tmp_clause);
+
+		S->addClauseSafely(tmp_clause);
+	}
+	/*void addConflictClause(vec<Lit> & c){
+		tmp_clause.clear();
+		c.copyTo(tmp_clause);
+		toSolver(tmp_clause);
+		CRef ignore;
+		S->addConflictClause(tmp_clause,ignore);
+	}*/
+	Var newVar(int forDetector=-1, bool connectToTheory=false){
+		Var s= S->newVar();
+	/*	Var v = vars.size();
+		vars.push();
+		vars[v].isEdge=false;
+		vars[v].occursPositive=true;
+		vars[v].occursNegative=true;
+		vars[v].detector_edge=-1;
+		vars[v].solverVar=s;
+		if(connectToTheory){
+			S->setTheoryVar(s,getTheoryIndex(),v);
+		}*/
+		return newVar(s,forDetector,false,connectToTheory);
+	}
+	Var newVar(Var solverVar, int detector, bool isEdge=false, bool connectToTheory=true){
+		while(S->nVars()<=solverVar)
+				S->newVar();
+		Var v = vars.size();
+		vars.push();
+		vars[v].isEdge=isEdge;
+		vars[v].detector_edge=detector;
+		vars[v].solverVar=solverVar;
+		assigns.push(l_Undef);
+		if(connectToTheory){
+			S->setTheoryVar(solverVar,getTheoryIndex(),v);
+			assert(toSolver(v)==solverVar);
+		}
+		if(!isEdge && detector>=0)
+			detectors[detector]->addVar(v);
+		return v;
+	}
+	inline int level(Var v){
+		return S->level(toSolver(v));
+	}
+	inline int decisionLevel(){
+		return trail_lim.size(); //S->decisionLevel();
+	}
+	inline int nVars()const{
+		return vars.size();//S->nVars();
+	}
+	inline Var toSolver(Var v){
+		//return v;
+		assert(v<vars.size());
+		//assert(S->hasTheory(vars[v].solverVar));
+		//assert(S->getTheoryVar(vars[v].solverVar)==v);
+		return vars[v].solverVar;
+	}
+
+	inline Lit toSolver(Lit l){
+		//assert(S->hasTheory(vars[var(l)].solverVar));
+		//assert(S->getTheoryVar(vars[var(l)].solverVar)==var(l));
+		return mkLit(vars[var(l)].solverVar,sign(l));
+	}
+
+	void toSolver(vec<Lit> & c){
+		for(int i = 0;i<c.size();i++){
+			c[i]=toSolver(c[i]);
+		}
+	}
+
+	inline lbool value(Var v){
+		if(assigns[v]!=l_Undef)
+			assert(S->value(toSolver(v))==assigns[v]);
+
+		return assigns[v]; //S->value(toSolver(v));
+	}
+	inline lbool value(Lit l){
+		if(assigns[var(l)]!=l_Undef){
+			assert(S->value(toSolver(l))==  (assigns[var(l)]^ sign(l)));
+		}
+		return assigns[var(l)]^ sign(l);;//S->value(toSolver(l));
+	}
+	inline lbool dbg_value(Var v){
+		return S->value(toSolver(v));
+	}
+	inline lbool dbg_value(Lit l){
+		return S->value(toSolver(l));
+	}
+	inline bool enqueue(Lit l, CRef reason){
+		assert(assigns[var(l)]==l_Undef);
+
+		Lit sl = toSolver(l);
+		if( S->enqueue(sl,reason)){
+			enqueueTheory(l);
+			return true;
+		}else{
+			return false;
+		}
+	}
+
+
 
      ~GraphTheorySolver(){};
 	 int newNode(){
@@ -302,7 +474,9 @@ public:
 		 for(int i = 0;i<edges.size();i++)
 			 edges[i].growTo(edges.size());
 		 inv_adj.push();
+		 undirected_adj.push();
 		 reach_info.push();
+		 connect_info.push();
 		 dist_info.push();
 		 antig.addNode();
 		 cutGraph.addNode();
@@ -317,7 +491,7 @@ public:
 			 newNode();
 	 }
 	int nNodes(){
-		return g.nodes;
+		return g.nodes();
 	}
 	bool isNode(int n){
 		return n>=0 && n<nNodes();
@@ -325,7 +499,7 @@ public:
 
 #ifdef DEBUG_GRAPH
 		bool dbg_clause(const vec<Lit> &conflict){
-
+#ifndef NDEBUG
 			static vec<Lit> c;
 			c.clear();
 			for(int i = 0;i<conflict.size();i++)
@@ -333,27 +507,34 @@ public:
 		//	assert(dbg->solve());
 			bool res = dbg->solve(c);
 			assert(~res);
-
+#endif
 			return true;
 		}
 		bool dbg_propgation(Lit l){
-
+#ifndef NDEBUG
 			static vec<Lit> c;
 			c.clear();
 			for(int i = 0;i<S->trail.size() ;i++){
-				Lit l = S->trail[i];
-				Var v = var(l);
-				if(v>=min_edge_var && v<min_edge_var+num_edges){
+				if(!S->hasTheory(S->trail[i]) || S->getTheoryID(S->trail[i])!= getTheoryIndex())
+					continue;
+				Lit l = S->getTheoryLit(S->trail[i]);
+				Var v =  var(l);
+				if(isEdgeVar(v)){
+					Edge & e = edge_list[getEdgeID(v)];
+					c.push(l);
+				}
+
+		/*		if(v>=min_edge_var && v<min_edge_var+num_edges){
 					if(edge_list[v-min_edge_var].v<0)
 								continue;
 					Edge e = edge_list[v-min_edge_var];
 					c.push(l);
-				}
+				}*/
 			}
 			c.push(~l);
-			bool res = dbg->solve(c);
-			assert(~res);
-
+			//bool res = dbg->solve(c);
+			//assert(~res);
+#endif
 			return true;
 		}
 #endif
@@ -367,10 +548,36 @@ public:
 #endif
 	}
 	void dbg_sync(){
-#ifdef DEBUG_GRAPH
-		static vec<lbool> assigned;
-		assigned.clear();
-		for(int i = 0;i<edge_list.size();i++)
+#ifdef DEBUG_DIJKSTRA
+
+		for(int i = 0;i<assigns.size();i++){
+			lbool val = assigns[i];
+
+			if(val!=l_Undef){
+				bool found=false;
+				for(int j = 0;j<trail.size();j++){
+					if(trail[j].var==i){
+						assert(!found);
+						assert(trail[j].assign== (val==l_True));
+						found=true;
+					}
+				}
+				assert(found);
+			}else{
+				for(int j = 0;j<trail.size();j++){
+					if(trail[j].var==i){
+						assert(false);
+					}
+				}
+			}
+			if(val!=l_Undef)
+					assert(val==S->value(toSolver(i)));
+		}
+		/*static vec<lbool> assigned;
+		assigned.clear();*.
+
+
+		/*for(int i = 0;i<edge_list.size();i++)
 			assigned.push(l_Undef);
 		int lev = 0;
 		int j =0;
@@ -384,10 +591,10 @@ public:
 			if(e.isEdge){
 
 				Lit l = mkLit( e.var,!e.assign);
-				assert(S->value(l)==l_True);
-				int expected_level = S->level(var(l));
-				assert(S->level(var(l))==lev);
-				int edge_num = e.var-min_edge_var;
+				assert(value(l)==l_True);
+				int expected_level = level(var(l));
+				assert(level(var(l))==lev);
+				int edge_num = getEdgeID(e.var); //e.var-min_edge_var;
 				if(edge_list[edge_num].v<0)
 							continue;
 				assert(assigned[edge_num]==l_Undef);
@@ -401,16 +608,24 @@ public:
 		}
 
 		for(int i = 0;i<assigned.size();i++){
-			assert(edge_assignments[i]== assigned[i]);
+			assert(ass[i]== assigned[i]);
 		}
 
 		for(int i = 0;i<S->trail.size();i++){
 
 			Lit l = S->trail[i];
+			if(S->getTheoryID(l)==getTheoryIndex()){
+				l = S->getTheoryLit(l);
 			Var v = var(l);
 
-			int lev = S->level(v);
-
+			int lev = level(v);
+			if(isEdgeVar(v)){
+				int edge_num = getEdgeID(v);
+				if(edge_list[edge_num].v<0)
+					continue;
+				lbool assigned_val=assigned[edge_num];
+				assert(assigned_val== (sign(l)?l_False:l_True));
+			}
 			if(v>= min_edge_var && v<min_edge_var+num_edges){
 				int edge_num = v-min_edge_var;
 				if(edge_list[edge_num].v<0)
@@ -419,35 +634,57 @@ public:
 				assert(assigned_val== (sign(l)?l_False:l_True));
 			}
 
-		}
-
+			}
+		}*/
 
 
 #endif
 	}
+	void dbg_full_sync(){
+	#ifdef DEBUG_GRAPH
+			dbg_sync();
+			for(int i =0;i<edge_list.size();i++){
+
+				if(edge_list[i].edgeID>=0 && g.edgeEnabled(i)){
+					assert(value(edge_list[i].v)==l_True);
+				}else if (edge_list[i].edgeID>=0 &&  !antig.edgeEnabled(i)){
+					assert(value(edge_list[i].v)==l_False);
+				}
+			}
+
+	#endif
+		}
+	
+	
 
 	void backtrackUntil(int level){
 		static int it = 0;
-		if(++it==28){
-			int a =1;
-		}
+
+		bool changed=false;
 		//need to remove and add edges in the two graphs accordingly.
 		if(trail_lim.size()>level){
+
 			int stop = trail_lim[level];
 			for(int i = trail.size()-1;i>=trail_lim[level];i--){
-				Assignment e = trail[i];
-				if(e.isEdge){
 
-					int edge_num = e.var-min_edge_var;
-					assert(edge_assignments[edge_num]!=l_Undef);
-					edge_assignments[edge_num]=l_Undef;
+				Assignment & e = trail[i];
+				assert(assigns[e.var]!=l_Undef);
+				if(e.isEdge){
+					assert(dbg_value(e.var)==l_Undef);
+					int edge_num = getEdgeID(e.var); //e.var-min_edge_var;
+
 					if(e.assign){
 						g.disableEdge(e.from,e.to, edge_num);
 					}else{
 						antig.enableEdge(e.from,e.to,edge_num);
 						assert(antig.hasEdge(e.from,e.to));
 					}
+				}else{
+				  //This is a reachability literal				  
+				  detectors[getDetector(e.var)]->unassign(mkLit(e.var,!e.assign));
 				}
+				assigns[e.var]=l_Undef;
+				changed=true;
 			}
 			trail.shrink(trail.size()-stop);
 			trail_lim.shrink(trail_lim.size()-level);
@@ -455,9 +692,14 @@ public:
 
 
 		}
-
-		if(local_q>S->qhead)
-			local_q=S->qhead;
+		if(changed){
+			requiresPropagation=true;
+			g.markChanged();
+			antig.markChanged();
+			cutGraph.markChanged();
+		}
+/*		if(local_q>S->qhead)
+			local_q=S->qhead;*/
 		assert(dbg_graphsUpToDate());
 		/*for(int i = 0;i<reach_detectors.size();i++){
 			if(reach_detectors[i]->positive_reach_detector)
@@ -474,15 +716,18 @@ public:
 	Lit decideTheory(){
 		if(!opt_decide_graph)
 			return lit_Undef;
-		double start = cpuTime();
+		double start = rtime(1);
+
+		dbg_full_sync();
 		for(int i = 0;i<detectors.size();i++){
 			Detector * r = detectors[i];
 			Lit l =r->decide();
-			if(l!=lit_Undef)
-				return l;
-
+			if(l!=lit_Undef){
+				stats_decisions++;
+				return toSolver(l);
+			}
 		}
-		stats_decision_time += cpuTime() - start;
+		stats_decision_time += rtime(1) - start;
 		return lit_Undef;
 	}
 
@@ -492,9 +737,9 @@ public:
 			for(;i>=0;i--){
 				Assignment e = trail[i];
 				if(e.isEdge){
-					int edge_num = e.var-min_edge_var;
-					assert(edge_assignments[edge_num]!=l_Undef);
-					edge_assignments[edge_num]=l_Undef;
+					int edge_num = getEdgeID(e.var); //e.var-min_edge_var;
+					assert(assigns[e.var]!=l_Undef);
+					assigns[e.var]=l_Undef;
 					if(e.assign){
 						g.disableEdge(e.from,e.to, edge_num);
 					}else{
@@ -506,10 +751,19 @@ public:
 						assert(sign(p)!=e.assign);
 						break;
 					}
+					assigns[e.var]=l_Undef;
+					detectors[getDetector(e.var)]->unassign(mkLit(e.var,!e.assign));
 				}
 			}
 
 			trail.shrink(trail.size()-(i+1));
+			if(i>0){
+				requiresPropagation=true;
+				g.markChanged();
+				antig.markChanged();
+				cutGraph.markChanged();
+			}
+
 			//while(trail_lim.size() && trail_lim.last()>=trail.size())
 			//	trail_lim.pop();
 
@@ -526,59 +780,52 @@ public:
 	};
 
 	void buildReason(Lit p, vec<Lit> & reason){
-		CRef marker = S->reason(var(p));
+		CRef marker = S->reason(var(toSolver(p)));
 		assert(marker != CRef_Undef);
 		int pos = CRef_Undef- marker;
 		int d = marker_map[pos];
-		double initial_start = cpuTime();
+		//double initial_start = rtime(1);
+		double start = rtime(1);
 		backtrackUntil(p);
 
-		double start = cpuTime();
+
 
 		assert(d<detectors.size());
 		detectors[d]->buildReason(p,reason,marker);
-		double finish = cpuTime();
+		toSolver(reason);
+		double finish = rtime(1);
 		stats_reason_time+=finish-start;
-		stats_reason_initial_time+=start-initial_start;
+		stats_num_reasons++;
+		//stats_reason_initial_time+=start-initial_start;
 
 	}
 
 
 
-	bool dbg_reachable(int from, int to){
-#ifdef DEBUG_GRAPH
-		DefaultEdgeStatus tmp;
-		/*DynamicGraph<> gtest(tmp);
-		for(int i = 0;i<nNodes();i++){
-			gtest.addNode();
+	bool dbg_reachable(int from, int to, bool undirected=false){
+#ifdef DEBUG_DIJKSTRA
+
+		if(undirected){
+			Dijkstra<Reach::NullStatus, true> d(from,g);
+			d.update();
+			return d.connected(to);
+		}else{
+			Dijkstra<> d(from,g);
+			d.update();
+			return d.connected(to);
 		}
 
-		for(int i = 0;i<edge_list.size();i++){
-			if(edge_list[i].v<0)
-				continue;
-			Edge e  = edge_list[i];
-			if(S->assigns[e.v]==l_True){
-				gtest.addEdge(e.from,e.to);
-				assert(g.edgeEnabled(e.v));
-			}else{
-				assert(!g.edgeEnabled(e.v));
-			}
-		}*/
-
-		Dijkstra<> d(from,g);
-		d.update();
-		return d.connected(to);
 #else
 		return true;
 #endif
 	}
 
-	bool dbg_notreachable(int from, int to){
+	bool dbg_notreachable(int from, int to, bool undirected=false){
 
-#ifdef DEBUG_GRAPH
+#ifndef NDEBUG
 		//drawFull(from,to);
-		DefaultEdgeStatus tmp;
-		DynamicGraph<> g(tmp);
+
+		DynamicGraph g;
 		for(int i = 0;i<nNodes();i++){
 			g.addNode();
 		}
@@ -587,17 +834,22 @@ public:
 			if(edge_list[i].v<0)
 						continue;
 			Edge e  = edge_list[i];
-			if(S->assigns[e.v]!=l_False){
+			if(value(e.v)!=l_False){
 				g.addEdge(e.from,e.to);
 			}
 		}
+		if(undirected){
+			Dijkstra<Reach::NullStatus, true> d(from,g);
 
-		Dijkstra<> d(from,g);
+			return !d.connected(to);
+		}else{
+			Dijkstra<Reach::NullStatus, false> d(from,g);
 
-		return !d.connected(to);
-#else
-		return true;
+					return !d.connected(to);
+		}
 #endif
+		return true;
+
 	}
 
 	bool dbg_graphsUpToDate(){
@@ -606,21 +858,21 @@ public:
 			if(edge_list[i].v<0)
 				continue;
 			Edge e = edge_list[i];
-			lbool val = S->value(e.v);
-			assert(edge_assignments[i]==val);
+			lbool val = value(e.v);
+
 			if(val==l_True || val==l_Undef){
 				assert(antig.edgeEnabled(i));
-				assert(antig.hasEdge(e.from,e.to));
+				//assert(antig.hasEdge(e.from,e.to));
 			}else{
 				assert(!antig.edgeEnabled(i));
-				assert(!antig.hasEdge(e.from,e.to));
+				//assert(!antig.hasEdge(e.from,e.to));
 			}
 			if(val==l_True){
 				assert(g.edgeEnabled(i));
-				assert(g.hasEdge(e.from,e.to));
+				//assert(g.hasEdge(e.from,e.to));
 			}else{
 				assert(!g.edgeEnabled(i));
-				assert(!g.hasEdge(e.from,e.to));
+				//assert(!g.hasEdge(e.from,e.to));
 			}
 		}
 
@@ -628,28 +880,115 @@ public:
 		return true;
 	}
 
-	int getEdgeID(Var v){
+/*	int getEdgeID(Var v){
 		assert(v>= min_edge_var && v<min_edge_var+edge_list.size());
 
 						//this is an edge assignment
 		int edge_num = v-min_edge_var;
 		return edge_num;
-	}
+	}*/
 
 	void preprocess(){
 		for (int i = 0;i<detectors.size();i++){
 			detectors[i]->preprocess();
 		}
 	}
+	void setLiteralOccurs(Lit l, bool occurs){
+		if(isEdgeVar(var(l))){
+			//don't do anything
+		}else{
+			//this is a graph property detector var
+			if(!sign(l) && vars[var(l)].occursPositive!=occurs)
+				detectors[getDetector(var(l))]->setOccurs(l,occurs);
+			else if(sign(l) && vars[var(l)].occursNegative!=occurs)
+				detectors[getDetector(var(l))]->setOccurs(l,occurs);
+		}
 
+	}
+
+	void enqueueTheory(Lit l){
+		Var v = var(l);
+
+		int lev = level(v);
+
+		assert(decisionLevel()<=lev);
+
+		while(lev>trail_lim.size()){
+			newDecisionLevel();
+		}
+
+		if(assigns[var(l)]!=l_Undef){
+			return;//this is already enqueued.
+		}
+		assert(assigns[var(l)]==l_Undef);
+		assigns[var(l)]=sign(l) ? l_False:l_True;
+		requiresPropagation=true;
+
+#ifndef NDEBUG
+		{
+			for(int i = 0;i<trail.size();i++){
+				assert(trail[i].var !=v);
+			}
+		}
+#endif
+#ifdef RECORD
+		if(g.outfile){
+			fprintf(g.outfile,"enqueue %d\n", dimacs(l));
+
+			fprintf(g.outfile,"\n");
+			fflush(g.outfile);
+		}
+		if(antig.outfile){
+			fprintf(antig.outfile,"enqueue %d\n", dimacs(l));
+			fprintf(antig.outfile,"\n");
+				fflush(antig.outfile);
+			}
+#endif
+
+		//if(v>= min_edge_var && v<min_edge_var+edge_list.size())
+		if(isEdgeVar(var(l))){
+
+			//this is an edge assignment
+			int edge_num = getEdgeID(var(l)); //v-min_edge_var;
+			assert(edge_list[edge_num].v==var(l));
+
+			int from = edge_list[edge_num].from;
+			int to = edge_list[edge_num].to;
+			trail.push({true,!sign(l), from,to,v});
+
+			Assignment e = trail.last();
+			assert(e.from==from);
+			assert(e.to==to);
+
+			if (!sign(l)){
+				g.enableEdge(from,to,edge_num);
+			}else{
+				antig.disableEdge(from,to,edge_num);
+			}
+
+		}else{
+
+			trail.push({false,!sign(l), 0,0,v});
+			//this is an assignment to a non-edge atom. (eg, a reachability assertion)
+			detectors[getDetector(var(l))]->assign(l);
+		}
+
+	};
 	bool propagateTheory(vec<Lit> & conflict){
 		static int itp = 0;
-		if(	++itp==2){
+		if(	++itp==62279){
 			int a =1;
+		}
+		stats_propagations++;
+		dbg_sync();
+		if(!requiresPropagation){
+			stats_propagations_skipped++;
+			assert(dbg_graphsUpToDate());
+			return true;
 		}
 
 		bool any_change = false;
-		double startproptime = cpuTime();
+		double startproptime = rtime(1);
 		static vec<int> detectors_to_check;
 
 		conflict.clear();
@@ -658,70 +997,51 @@ public:
 
 		//At level 0, need to propagate constant reaches/source nodes/edges...
 
-		while(local_q<S->qhead){
-			Lit l = S->trail[local_q++];
-			Var v = var(l);
 
-			int lev = S->level(v);
-			while(lev>trail_lim.size()){
-				newDecisionLevel();
-			}
-			if(v>= min_edge_var && v<min_edge_var+edge_list.size()){
+		//stats_initial_propagation_time += rtime(1) - startproptime;
+		dbg_sync();
+		assert(dbg_graphsUpToDate());
 
-				//this is an edge assignment
-				int edge_num = v-min_edge_var;
-				if(edge_list[edge_num].v<0)
-					continue;
-				int from = edge_list[edge_num].from;
-				int to = edge_list[edge_num].to;
-				trail.push({true,!sign(l), from,to,v});
-				assert(edge_assignments[edge_num]==l_Undef);
-				edge_assignments[edge_num]=sign(l) ? l_False:l_True;
-				Assignment e = trail.last();
-				assert(e.from==from);
-				assert(e.to==to);
-
-				if (!sign(l)){
-
-					g.enableEdge(from,to,edge_num);
-				}else{
-					antig.disableEdge(from,to,edge_num);
-
-				}
+		for(int d = 0;d<detectors.size();d++){
+			assert(conflict.size()==0);
+			bool r =detectors[d]->propagate(conflict);
+			if(!r){
+				stats_num_conflicts++;
+				toSolver(conflict);
+				propagationtime+= rtime(1)-startproptime;
+				return false;
 			}
 		}
-		stats_initial_propagation_time += cpuTime() - startproptime;
-		dbg_sync();
-			assert(dbg_graphsUpToDate());
-
-			for(int d = 0;d<detectors.size();d++){
-				assert(conflict.size()==0);
-				bool r =detectors[d]->propagate(trail,conflict);
-				if(!r){
-					propagationtime+= cpuTime()-startproptime;
-					return false;
-				}
-			}
 
 
 
+		dbg_full_sync();
 
+		requiresPropagation=false;
+		g.clearChanged();
+		antig.clearChanged();
+		cutGraph.clearChanged();
 
 		g.clearHistory();
 		antig.clearHistory();
-
+		cutGraph.clearHistory();
 		detectors_to_check.clear();
 
-		double elapsed = cpuTime()-startproptime;
-					propagationtime+=elapsed;
-					dbg_sync();
-					dbg_sync_reachability();
+		double elapsed = rtime(1)-startproptime;
+		propagationtime+=elapsed;
+		dbg_sync();
+		dbg_sync_reachability();
 		return true;
 	};
 
+	bool solveTheory(vec<Lit> & conflict){
+		requiresPropagation=true;//Just to be on the safe side... but this shouldn't really be required.
+		bool ret = propagateTheory(conflict);
+		//Under normal conditions, this should _always_ hold (as propagateTheory should have been called and checked by the parent solver before getting to this point).
+		assert(ret);
+		return ret;
+	};
 
-
-	bool solveTheory(vec<Lit> & conflict){return true;};
 	void drawFull(int from, int to){
 			printf("digraph{\n");
 			for(int i = 0;i<nNodes();i++){
@@ -738,9 +1058,9 @@ public:
 							continue;
 				Edge & e = edge_list[i];
 				const char * s = "black";
-				if(S->value(e.v)==l_True)
+				if(value(e.v)==l_True)
 					s="blue";
-				else if (S->value(e.v)==l_False)
+				else if (value(e.v)==l_False)
 					s="red";
 				printf("n%d -> n%d [label=\"v%d\",color=\"%s\"]\n", e.from,e.to, e.v, s);
 			}
@@ -756,9 +1076,9 @@ public:
 		for(int i = 0;i<edge_list.size();i++){
 			Edge & e = edge_list[i];
 			const char * s = "black";
-			if(S->value(e.v)==l_True)
+			if(value(e.v)==l_True)
 				s="blue";
-			else if (S->value(e.v)==l_False)
+			else if (value(e.v)==l_False)
 				s="red";
 			else{
 				int  a=1;
@@ -770,35 +1090,50 @@ public:
 	}
 
 	bool check_solved(){
+		if(opt_print_graph){
+			drawFull();
+		}
 		for(int i = 0;i<edge_list.size();i++){
 			if(edge_list[i].v<0)
 						continue;
 			Edge & e = edge_list[i];
-			lbool val = S->value(e.v);
+			lbool val = value(e.v);
 			if(val==l_Undef){
 				return false;
 			}
 
 			if(val==l_True){
-				if(!g.hasEdge(e.from,e.to)){
+			/*	if(!g.hasEdge(e.from,e.to)){
 					return false;
 				}
 				if(!antig.hasEdge(e.from,e.to)){
 					return false;
+				}*/
+				if(!g.edgeEnabled(e.edgeID)){
+					return false;
+				}
+				if(!antig.edgeEnabled(e.edgeID)){
+					return false;
 				}
 			}else{
-				if(g.hasEdge(e.from,e.to)){
+				/*if(g.hasEdge(e.from,e.to)){
+					return false;
+				}*/
+				if(g.edgeEnabled(e.edgeID)){
 					return false;
 				}
-				if(antig.hasEdge(e.from,e.to)){
+				if(antig.edgeEnabled(e.edgeID)){
 					return false;
 				}
+				/*if(antig.hasEdge(e.from,e.to)){
+					return false;
+				}*/
 
 			}
 
 
 		}
-		for(int i = 0;i<detectors.size();i++){
+   		for(int i = 0;i<detectors.size();i++){
 			if(!detectors[i]->checkSatisfied()){
 				return false;
 			}
@@ -812,7 +1147,7 @@ public:
 			if(edge_list[i].v<0)
 						continue;
 			Edge & e = edge_list[i];
-			lbool val = S->value(e.v);
+			lbool val = value(e.v);
 			assert(val!=l_Undef);
 
 			if(val==l_True){
@@ -833,9 +1168,9 @@ public:
 				if(l!=lit_Undef){
 					int node = d->getNode(var(l));
 
-					if(S->value(l)==l_True){
+					if(value(l)==l_True){
 						assert(d->positive_reach_detector->connected(node));
-					}else if (S->value(l)==l_False){
+					}else if (value(l)==l_False){
 						assert(! d->negative_reach_detector->connected(node));
 					}else{
 						assert(!d->positive_reach_detector->connected(node));
@@ -851,7 +1186,9 @@ public:
 	void drawCurrent(){
 
 	}
-
+	int nEdges(){
+		return edge_list.size();
+	}
 	CRef newReasonMarker(int detectorID){
 		CRef reasonMarker = S->newReasonMarker(this);
 		int mnum = CRef_Undef- reasonMarker;
@@ -860,33 +1197,41 @@ public:
 		return reasonMarker;
 	}
 
-	Lit newEdge(int from,int to, Var v = var_Undef, int weight=1)
+	Lit newEdge(int from,int to, Var outerVar = var_Undef, int weight=1)
     {
+		assert(outerVar!=var_Undef);
+	/*	if(outerVar==var_Undef)
+			outerVar = S->newVar();*/
 
-		if(v==var_Undef)
-			v = S->newVar();
 #ifdef DEBUG_GRAPH
-		 dbg_graph->newEdge(from,to,v);
+		 dbg_graph->newEdge(from,to,outerVar);
 #endif
 #ifdef DEBUG_SOLVER
 		if(S->dbg_solver)
-			shadow_dbg->newEdge(from,to,v);
+			shadow_dbg->newEdge(from,to,outerVar);
 #endif
+		int index = edge_list.size();
+		edge_list.push();
+		Var v = newVar(outerVar,index,true);
+
+/*
 		if(num_edges>0){
 		}else
 			min_edge_var=v;
 
-		int index = v-min_edge_var;
-
+		int index = v-min_edge_var;*/
+/*
 		while(edge_list.size()<=index){
-			edge_list.push({-1,-1,-1,-1,1});
-			edge_assignments.push(l_Undef);
-		}
+			edge_list.push({-1,-1,-1,-1,-1,1});
+			assigns.push(l_Undef);
+		}*/
+		undirected_adj[to].push({v,outerVar,from,to,index,weight});
+		undirected_adj[from].push({v,outerVar,to,from,index,weight});
+		inv_adj[to].push({v,outerVar,from,to,index,weight});
 
-		inv_adj[to].push({v,from,to,index,weight});
-
-		num_edges++;
+		//num_edges++;
 		edge_list[index].v =v;
+		edge_list[index].outerVar =outerVar;
 		edge_list[index].from=from;
 		edge_list[index].to =to;
 		edge_list[index].edgeID=index;
@@ -894,11 +1239,12 @@ public:
 
 		edge_weights.push(weight);
 
-		edges[from][to]= {v,from,to,index,weight};
+		edges[from][to]= {v,outerVar,from,to,index,weight};
 		g.addEdge(from,to,index,weight);
 		g.disableEdge(from,to, index);
 		antig.addEdge(from,to,index,weight);
 		cutGraph.addEdge(from,to,index,weight);
+
     	return mkLit(v,false);
     }
 	int getEdgeID(int from, int to){
@@ -917,9 +1263,9 @@ public:
 			if(S->dbg_solver)
 				shadow_dbg->reaches(from,  to,reach_var,within_steps);
 	#endif
-				assert(from<g.nodes);
+				assert(from<g.nodes());
 				if(within_steps<=-1)
-					within_steps = g.nodes;
+					within_steps = g.nodes();
 
 				if (dist_info[from].source<0){
 					DistanceDetector * d =new DistanceDetector(detectors.size(), this,g,antig,from,within_steps,drand(rnd_seed));
@@ -954,43 +1300,87 @@ public:
 		    }
 
 	void implementConstraints(){
+		if(!S->okay())
+			return;
 		if(opt_allpairs_percentage>=1){
-			for(int i = 0;i<unimplemented_graph_constraints.size();i++){
-				ReachabilityConstraint c = unimplemented_graph_constraints[i];
+			for(int i = 0;i<unimplemented_reachability_constraints.size();i++){
+				ReachabilityConstraint c = unimplemented_reachability_constraints[i];
 				reaches_private(c.from,c.to,c.reach_var,c.distance);
 			}
+			for(int i = 0;i<unimplemented_connectivity_constraints.size();i++){
+				ConnectivityConstraint c = unimplemented_connectivity_constraints[i];
+				connects_private(c.from,c.to,c.connect_var,c.distance);
+			}
 		}else if (opt_allpairs_percentage==0){
-			for(int i = 0;i<unimplemented_graph_constraints.size();i++){
-				ReachabilityConstraint c = unimplemented_graph_constraints[i];
+			for(int i = 0;i<unimplemented_reachability_constraints.size();i++){
+				ReachabilityConstraint c = unimplemented_reachability_constraints[i];
 				allpairs(c.from,c.to,c.reach_var,c.distance);
 			}
+			for(int i = 0;i<unimplemented_connectivity_constraints.size();i++){
+				ConnectivityConstraint c = unimplemented_connectivity_constraints[i];
+				allpairs_undirected(c.from,c.to,c.connect_var,c.distance);
+			}
 		}else{
-			vec<bool> seen;
-			int count=0;
-			seen.growTo(nNodes());
-			for(int i = 0;i<unimplemented_graph_constraints.size();i++){
-						ReachabilityConstraint c = unimplemented_graph_constraints[i];
-						if(!seen[c.from]){
-							seen[c.from]=true;
-							count++;
+			{
+				vec<bool> seen;
+				int count=0;
+				seen.growTo(nNodes());
+				for(int i = 0;i<unimplemented_reachability_constraints.size();i++){
+							ReachabilityConstraint c = unimplemented_reachability_constraints[i];
+							if(!seen[c.from]){
+								seen[c.from]=true;
+								count++;
+							}
 						}
-					}
-			double frac = ((double)count)/((double)nNodes());
+				double frac = ((double)count)/((double)nNodes());
 
-			if (opt_verb>0 && frac>=opt_allpairs_percentage){
-				printf("Allpairs solver triggered for graph %d by percentage of source nodes: %d/%d=%f>%f\n",getGraphID() ,count,nNodes(),frac,(double)opt_allpairs_percentage);
+				if (opt_verb>0 && frac>=opt_allpairs_percentage){
+					printf("Allpairs solver triggered for graph %d by percentage of source nodes: %d/%d=%f>%f\n",getGraphID() ,count,nNodes(),frac,(double)opt_allpairs_percentage);
+				}
+
+				for(int i = 0;i<unimplemented_reachability_constraints.size();i++){
+					ReachabilityConstraint c = unimplemented_reachability_constraints[i];
+					if(frac>=opt_allpairs_percentage)
+						allpairs(c.from,c.to,c.reach_var,c.distance);
+					else
+						reaches_private(c.from,c.to,c.reach_var,c.distance);
+				}
 			}
 
-			for(int i = 0;i<unimplemented_graph_constraints.size();i++){
-									ReachabilityConstraint c = unimplemented_graph_constraints[i];
-									if(frac>=opt_allpairs_percentage)
-										allpairs(c.from,c.to,c.reach_var,c.distance);
-									else
-										reaches_private(c.from,c.to,c.reach_var,c.distance);
-								}
+			{
+				vec<bool> seen;
+				int count=0;
+				seen.growTo(nNodes());
+				for(int i = 0;i<unimplemented_connectivity_constraints.size();i++){
+					ConnectivityConstraint c = unimplemented_connectivity_constraints[i];
+							if(!seen[c.from]){
+								seen[c.from]=true;
+								count++;
+							}
+						}
+				double frac = ((double)count)/((double)nNodes());
+
+				if (opt_verb>0 && frac>=opt_allpairs_percentage){
+					printf("Allpairs-undirected solver triggered for graph %d by percentage of source nodes: %d/%d=%f>%f\n",getGraphID() ,count,nNodes(),frac,(double)opt_allpairs_percentage);
+				}
+
+				for(int i = 0;i<unimplemented_connectivity_constraints.size();i++){
+					ConnectivityConstraint c = unimplemented_connectivity_constraints[i];
+					if(frac>=opt_allpairs_percentage)
+						allpairs_undirected(c.from,c.to,c.connect_var,c.distance);
+					else
+						connects_private(c.from,c.to,c.connect_var,c.distance);
+				}
+			}
 		}
-		unimplemented_graph_constraints.clear();
+		unimplemented_reachability_constraints.clear();
+
+
 	}
+	void allpairs_undirected(int from, int to, Var reach_var,int within_steps=-1){
+
+	}
+
 	void allpairs(int from, int to, Var reach_var,int within_steps=-1){
 				//for now, reachesWithinSteps to be called instead
 
@@ -1001,8 +1391,8 @@ public:
 				if(S->dbg_solver)
 					shadow_dbg->reaches(from,  to,reach_var,within_steps);
 		#endif
-					assert(from<g.nodes);
-					if(within_steps>g.nodes)
+					assert(from<g.nodes());
+					if(within_steps>g.nodes())
 						within_steps=-1;
 
 					if (reach_info[from].source<0){
@@ -1039,6 +1429,50 @@ public:
 
 
 			    }
+	void connects_private(int from, int to, Var reach_var,int within_steps=-1){
+		//for now, reachesWithinSteps to be called instead
+		if(within_steps>=0 || opt_force_distance_solver){
+			//reachesWithinSteps(from,to,reach_var,within_steps);
+			printf("Not supported yet\n");
+			exit(1);
+			return;
+		}
+
+#ifdef DEBUG_GRAPH
+		 dbg_graph->connects(from,  to,reach_var,within_steps);
+#endif
+#ifdef DEBUG_SOLVER
+		if(S->dbg_solver)
+			shadow_dbg->connects(from,  to,reach_var,within_steps);
+#endif
+			assert(from<g.nodes());
+			if(within_steps>g.nodes())
+				within_steps=-1;
+
+			if (connect_info[from].source<0){
+
+					ConnectDetector*rd = new ConnectDetector(detectors.size(), this,g,antig,from,drand(rnd_seed));
+					detectors.push(rd);
+					connect_detectors.push(rd);
+
+				assert(detectors.last()->getID()==detectors.size()-1);
+
+
+				connect_info[from].source=from;
+				connect_info[from].detector=detectors.last();
+
+				//reach_detectors.last()->within=within_steps;
+
+			}
+
+			ConnectDetector * d = (ConnectDetector*) connect_info[from].detector;
+			assert(d);
+			assert(within_steps==-1);
+			d->addLit(from,to,reach_var);
+
+
+	}
+
 	void reaches_private(int from, int to, Var reach_var,int within_steps=-1){
 			//for now, reachesWithinSteps to be called instead
 			if(within_steps>=0 || opt_force_distance_solver){
@@ -1053,8 +1487,8 @@ public:
 			if(S->dbg_solver)
 				shadow_dbg->reaches(from,  to,reach_var,within_steps);
 	#endif
-				assert(from<g.nodes);
-				if(within_steps>g.nodes)
+				assert(from<g.nodes());
+				if(within_steps>g.nodes())
 					within_steps=-1;
 
 				if (reach_info[from].source<0){
@@ -1082,26 +1516,31 @@ public:
 
 				ReachDetector * d = (ReachDetector*) reach_info[from].detector;
 				assert(d);
-
-				d->addLit(from,to,reach_var,within_steps);
+				assert(within_steps==-1);
+				d->addLit(from,to,reach_var);
 
 
 		    }
 
+	//Undirected reachability query
+	void connects(int from, int to, Var connect_var, int within_steps=-1){
+		unimplemented_connectivity_constraints.push({from,to,within_steps,connect_var});
+	}
+
 	void reaches(int from, int to, Var reach_var,int within_steps=-1){
-			unimplemented_graph_constraints.push({from,to,within_steps,reach_var});
+			unimplemented_reachability_constraints.push({from,to,within_steps,reach_var});
 			//to allow us to alter the solving algorithm based on the number and type of constraints, we aren't implementing them here directly any more - instead,
 			//we just store the constraints in this vector, then implement them later when 'implementConstraints' is called.
 	    }
 
 	void reachesAny(int from, Var firstVar,int within_steps=-1){
-		for(int i = 0;i<g.nodes;i++){
+		for(int i = 0;i<g.nodes();i++){
 			reaches(from,i,firstVar+i,within_steps);
 		}
 	}
 
 	void reachesAny(int from, vec<Lit> & reachlits_out,int within_steps=-1){
-		for(int i = 0;i<g.nodes;i++){
+		for(int i = 0;i<g.nodes();i++){
 			Var reachVar = S->newVar();
 			//reaches(from,i,reachVar,within_steps);
 			reaches(from,i,reachVar,within_steps);
@@ -1121,6 +1560,11 @@ public:
 			mstDetector = new MSTDetector(detectors.size(),this, g, antig, this->edge_weights,drand(rnd_seed));
 			detectors.push(mstDetector);
 		}
+		if(!S->hasTheory(edgeVar) || (S->getTheoryID(edgeVar)!= getTheoryIndex()) || ! isEdgeVar(S->getTheoryVar(edgeVar)) ){
+			fprintf(stderr,"%d is not an edge variable for theory %d! Aborting\n",edgeVar+1, getTheoryIndex());
+			exit(1);
+		}
+		edgeVar = S->getTheoryVar(edgeVar);
 		int edgeid =getEdgeID(edgeVar);
 		assert(edgeid>=0);
 		if(edge_list[edgeid].v==var_Undef){
@@ -1139,8 +1583,9 @@ public:
 		}
 		MaxflowDetector *f = new MaxflowDetector(detectors.size(),this, g, antig,from,to,drand(rnd_seed)) ;
 		flow_detectors.push(f);
-		f->addFlowLit(max_flow,v);
 		detectors.push(f);
+		f->addFlowLit(max_flow,v);
+
 	}
 	void minConnectedComponents(int min_components, Var v){
 		if(!component_detector){
@@ -1156,6 +1601,355 @@ public:
 		}
 		cycle_detector->addCycleDetectorLit(directed,v);
 	}
+
+
+	void addSteinerTree(const vec<std::pair<int, Var> > & terminals, int steinerTreeID){
+		steiner_detectors.growTo(steinerTreeID+1);
+		assert(!steiner_detectors[steinerTreeID]);
+		steiner_detectors[steinerTreeID]= new SteinerDetector(detectors.size(),this, g, antig,drand(rnd_seed));
+		detectors.push(steiner_detectors[steinerTreeID]);
+		for(int i =0;i<terminals.size();i++){
+			steiner_detectors[steinerTreeID]->addTerminalNode(terminals[i].first,terminals[i].second);
+		}
+	}
+
+	void addSteinerWeightConstraint(int steinerTreeID, int weight, Var outerVar){
+		if(steinerTreeID >= steiner_detectors.size()){
+			fprintf(stderr,"invalid steinerTreeID %d\n", steinerTreeID);
+			exit(1);
+		}
+		steiner_detectors[steinerTreeID]->addWeightLit(weight,outerVar);
+	}
+
+/*	void inTerminalSet(int node, int terminalSet, Var outerVar){
+		terminalSets.growTo(terminalSet+1);
+		while(terminalSets[terminalSet].nodes()<node){
+			terminalSets[terminalSet].addNode();
+		}
+		Var v= newVar(outerVar,node,true);
+		Lit l = mkLit(v,false);
+		if(terminalSets[terminalSet].getNodeVar(node)<0){
+			terminalSets[terminalSet].setNodeVar(v);
+		}
+	}*/
+
+	void printSolution(){
+		if(S->model.size()==0)
+			return;
+						int width = sqrt(nNodes());
+						if(opt_width>0){
+							width=opt_width;
+						}
+						int height =width;
+						if(opt_height>0){
+							height = opt_height;
+						}
+						int bits = 1;
+						if(opt_bits>0)
+								bits=opt_bits;
+						int v = 0;
+						//for (int i = 0;i<w;i++){
+						//	for(int j = 0;j<w;j++){
+						int lasty= 0;
+
+						int maxwidth = log10(pow(2, bits))+1; //highestbit(bits);
+						if(getTheoryIndex()==0){
+						for(int n = 0;n<height*width*bits;n+=bits){
+							int x = n%(width*bits)/bits;
+							int y = n/(width*bits);
+							if(y > lasty)
+								printf("\n");
+		#if not defined(__MINGW32__)
+								if (!opt_csv && isatty(fileno(stdout))){
+		#else
+								if(false){
+		#endif
+									unsigned long val = 0;
+									for(int j = 0;j<bits;j++){
+										if(S->model[n+j]==l_True){
+											val = val + (1<<j);
+										}
+									}
+
+									//if(val>0){
+										int backcolor = 0;
+										if(val>0){
+											backcolor=log2(val)+1;
+										}
+										if(backcolor<0){
+											int a=1;
+										}
+										int forecolor = 7;
+										if(backcolor>7){
+											backcolor=7;
+										}
+										if(backcolor==3 || backcolor==7){
+											forecolor=0;
+										}
+										printf("\033[1;4%dm\033[1;3%dm%*lu \033[0m",backcolor,forecolor,maxwidth,val);
+									//}else{
+										//printf("\033[1;44m\033[1;37m%*lu \033[0m",maxwidth,val);
+										//printf("\033[1;40m\033[1;30m%*lu \033[0m",maxwidth,val);
+									//}
+								}else if (opt_csv){
+									unsigned long val = 0;
+									for(int j = 0;j<bits;j++){
+										if(S->model[n+j]==l_True){
+											val = val + (1<<j);
+										}
+									}
+									printf("%*lu",maxwidth,val);
+									if (x<width-1){
+										printf(",");
+									}
+								}else{
+									unsigned long val = 0;
+									for(int j = 0;j<bits;j++){
+										if(S->model[n+j]==l_True){
+											val = val + (1<<j);
+										}
+									}
+									printf(" %*lu ",maxwidth,val);
+
+						/*			if(S.model[n]==l_True)
+										printf(" 1");
+									else
+										printf(" 0");*/
+								}
+
+							lasty=y;
+						}
+						printf("\n\n");
+						}
+						if(opt_check_solution){
+									if(!check_solved()){
+										fprintf(stderr,"Error! Solution doesn't satisfy graph properties!\n");
+										exit(3);
+									}
+								}
+
+						if(opt_print_reach){
+						 v = 0;
+						//for (int i = 0;i<w;i++){
+						//	for(int j = 0;j<w;j++){
+					/*	 lasty= 0;
+						for(int n = 0;n<nNodes();n++){
+							int x = n%width;
+							int y = n/width;
+							if(y > lasty)
+								printf("\n");
+		#if not defined(__MINGW32__)
+								if (isatty(fileno(stdout))){
+		#else
+								if(false){
+		#endif
+
+									if(S.model[n]==l_True)
+										printf("\033[1;42m\033[1;37m%3d\033[0m",n);
+									else
+										printf("\033[1;44m\033[1;37m%3d\033[0m",n);
+								}else{
+
+									if(S.model[n]==l_True)
+										printf(" 1");
+									else
+										printf(" 0");
+								}
+
+							lasty=y;
+						}
+
+						printf("\n");printf("\n");
+						*/
+
+
+
+							printf("Theory %d\n", getTheoryIndex());
+
+							int nnodes = nNodes();
+
+							int maxw = log10(nNodes() )+1; //highestbit(bits);
+
+							{
+
+								for(int r = 0;r<reach_detectors.size();r++){
+
+									int width = sqrt(nNodes());
+									if(opt_width>0){
+											width=opt_width;
+										}
+										int height =width;
+										if(opt_height>0){
+											height = opt_height;
+										}
+									int lasty= 0;
+									int extra =  nNodes() % width ? (width- nNodes() % width ):0;
+									for(int n = 0;n<nNodes();n++){
+										int x = n%width;
+
+										int y = (n + extra )/width;
+										if(y > lasty)
+											printf("\n");
+
+										int v =var( reach_detectors[r]->reach_lits[n]);
+		#if not defined(__MINGW32__)
+										if (isatty(fileno(stdout)))
+		#else
+										if(false)
+		#endif
+										{
+												if(value(v)==l_True)
+													printf("\033[1;42m\033[1;37m%4d\033[0m", v+1);
+												else
+													printf("\033[1;44m\033[1;37m%4d\033[0m",v+1);
+											}else{
+
+												if(value(v)==l_True)
+													printf(" 1");
+												else
+													printf(" 0");
+											}
+
+											lasty=y;
+										}
+										printf("\n");
+									}
+
+
+
+									//drawFull();
+
+									assert(dbg_solved());
+								}
+
+							{
+										for(int r = 0;r<distance_detectors.size();r++){
+
+													int width = sqrt(nNodes());
+													if(opt_width>0){
+															width=opt_width;
+														}
+														int height =width;
+														if(opt_height>0){
+															height = opt_height;
+														}
+													int lasty= 0;
+													int extra =  nNodes() % width ? (width- nNodes() % width ):0;
+													for(int n = 0;n<nNodes();n++){
+														int x = n%width;
+
+														int y = (n + extra )/width;
+														if(y > lasty)
+															printf("\n");
+
+														int d = distance_detectors[r]->positive_reach_detector->distance(n);
+														printf("%*d ",maxw,d);
+
+
+															lasty=y;
+														}
+														printf("\n");
+													}
+									}
+								if(mstDetector){
+										int min_weight = mstDetector->positive_reach_detector->weight();
+										printf("Min Spanning Tree Weight: %d\n",min_weight);
+										int width = sqrt(nNodes());
+										if(opt_width>0){
+												width=opt_width;
+											}
+											int height =width;
+											if(opt_height>0){
+												height = opt_height;
+											}
+										int lasty= 0;
+										vec<bool> down_edge;
+										int extra =  nNodes() % width ? (width- nNodes() % width ):0;
+										for(int n = 0;n<nNodes();n++){
+											int x = n%width;
+
+											int y = (n + extra )/width;
+											if(y > lasty){
+												printf("\n");
+
+												for(int i = 0;i<down_edge.size();i++){
+													if(down_edge[i]){
+														printf("|");
+													}else{
+														printf(" ");
+													}
+													printf(" ");
+												}
+												down_edge.clear();
+												printf("\n");
+											}
+											printf("*");
+											if(x<width-1){
+												int edge_left = getEdgeID(n,n+1);
+												Var edge_var = edge_list[edge_left].v;
+												if(value(edge_var)==l_True &&  mstDetector->positive_reach_detector->edgeInTree(edge_left)){
+													printf("-");
+												}else{
+													printf(" ");
+												}
+											}
+
+											if(y<height-1){
+													int edge_down = getEdgeID(n,n+width);
+													Var edge_var = edge_list[edge_down].v;
+													bool in_tree = mstDetector->positive_reach_detector->edgeInTree(edge_down);
+													if(value(edge_var)==l_True &&  in_tree){
+														down_edge.push(true);
+													}else{
+														down_edge.push(false);
+													}
+												}
+
+												lasty=y;
+											}
+											printf("\n");
+										}
+
+								if(component_detector){
+									int numComponents = component_detector->positive_component_detector->numComponents();
+									printf("Number of connected components is: %d\n",numComponents);
+
+								}
+
+
+
+
+
+						}
+		/*        		for(int r = 0;r<reach_detectors.size();r++){
+
+							int width = sqrt(nNodes());
+							int lasty= 0;
+							int extra =  nNodes() % width ? (width- nNodes() % width ):0;
+							for(int n = 0;n<nNodes();n++){
+								int x = n%width;
+
+								int y = (n + extra )/width;
+
+								int v =var( reach_detectors[r]->reach_lits[n]);
+								if(v==306){
+									int a =1;
+								}
+								if(S.model[v]==l_True){
+									assert(S.value(v)==l_True);
+									int node = reach_detectors[r]->getNode(v);
+									reach_detectors[r]->positive_reach_detector->dbg_path(node);
+									int  b=1;
+
+								}
+
+
+								lasty=y;
+							}
+							printf("\n");
+						}*/
+	}
+
 };
 
 };

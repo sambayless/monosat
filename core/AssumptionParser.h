@@ -22,11 +22,12 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #define Assumption_Parser_h
 #include <unordered_map>
 #include <stdio.h>
-
+#include <string>
 #include "utils/ParseUtils.h"
 #include "core/SolverTypes.h"
 #include "mtl/Vec.h"
 #include "mtl/Sort.h"
+using namespace std;
 namespace Minisat {
 
 //=================================================================================================

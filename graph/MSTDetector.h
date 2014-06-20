@@ -10,22 +10,24 @@
 #include "utils/System.h"
 
 #include "Graph.h"
-#include "MinimumSpanningTree.h"
+#include "dgl/MinimumSpanningTree.h"
 
 #include "core/SolverTypes.h"
 #include "mtl/Map.h"
-#include "Kruskal.h"
-#include "DisjointSets.h"
+
+#include "dgl/alg/DisjointSets.h"
 #include "utils/System.h"
 #include "Detector.h"
+
+using namespace dgl;
 namespace Minisat{
 class GraphTheorySolver;
 class MSTDetector:public Detector{
 public:
 		GraphTheorySolver * outer;
 		//int within;
-		DynamicGraph<PositiveEdgeStatus> & g;
-		DynamicGraph<NegativeEdgeStatus> & antig;
+		DynamicGraph & g;
+		DynamicGraph & antig;
 
 		double rnd_seed;
 		CRef reach_marker;
@@ -35,6 +37,8 @@ public:
 
 		MinimumSpanningTree * positive_reach_detector;
 		MinimumSpanningTree * negative_reach_detector;
+		MinimumSpanningTree *  positive_conflict_detector;
+		MinimumSpanningTree * negative_conflict_detector;
 		//Reach *  positive_path_detector;
 
 		//vec<Lit>  reach_lits;
@@ -93,7 +97,7 @@ public:
 
 
 
-		bool propagate(vec<Assignment> & trail,vec<Lit> & conflict);
+		bool propagate(vec<Lit> & conflict);
 		void buildMinWeightTooSmallReason(int weight,vec<Lit> & conflict);
 		void buildMinWeightTooLargeReason(int weight,vec<Lit> & conflict);
 		void buildEdgeInTreeReason(int edge,vec<Lit> & conflict);
@@ -105,9 +109,12 @@ public:
 		void addTreeEdgeLit(int edge_id, Var reach_var);
 		void addWeightLit(Var weight_var,int min_weight);
 
-		MSTDetector(int _detectorID, GraphTheorySolver * _outer, DynamicGraph<PositiveEdgeStatus> &_g, DynamicGraph<NegativeEdgeStatus> &_antig, vec<int> & _edge_weights,  double seed=1);//:Detector(_detectorID),outer(_outer),within(-1),source(_source),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL){}
+		MSTDetector(int _detectorID, GraphTheorySolver * _outer, DynamicGraph &_g, DynamicGraph &_antig, vec<int> & _edge_weights,  double seed=1);//:Detector(_detectorID),outer(_outer),within(-1),source(_source),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL){}
 		virtual ~MSTDetector(){
 
+		}
+		const char* getName(){
+			return "MST Detector";
 		}
 private:
 		void TarjanOLCA(int node, vec<Lit> & conflict);

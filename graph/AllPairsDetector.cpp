@@ -9,30 +9,35 @@
 
 #include "AllPairsDetector.h"
 #include "GraphTheory.h"
+#include "dgl/FloydWarshall.h"
+#include "dgl/DijkstraAllPairs.h"
+#include "dgl/ThorupDynamicConnectivity.h"
 
-
-
-AllPairsDetector::AllPairsDetector(int _detectorID, GraphTheorySolver * _outer,  DynamicGraph<PositiveEdgeStatus> &_g,DynamicGraph<NegativeEdgeStatus> &_antig, int within_steps ,double seed):
-Detector(_detectorID),outer(_outer),g(_g),antig(_antig),within(within_steps),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL){
+AllPairsDetector::AllPairsDetector(int _detectorID, GraphTheorySolver * _outer,  DynamicGraph &_g,DynamicGraph &_antig, double seed):
+Detector(_detectorID),outer(_outer),g(_g),antig(_antig),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL){
 
 
 		positiveReachStatus = new AllPairsDetector::ReachStatus(*this,true);
 		negativeReachStatus = new AllPairsDetector::ReachStatus(*this,false);
-		if(allpairsalg==ALG_FLOYDWARSHALL){
-			positive_reach_detector = new FloydWarshall<AllPairsDetector::ReachStatus,PositiveEdgeStatus>(_g,*(positiveReachStatus),1);
-			negative_reach_detector = new FloydWarshall<AllPairsDetector::ReachStatus,NegativeEdgeStatus>(_antig,*(negativeReachStatus),-1);
+		if(allpairsalg==AllPairsAlg::ALG_FLOYDWARSHALL){
+			positive_reach_detector = new FloydWarshall<AllPairsDetector::ReachStatus>(_g,*(positiveReachStatus),1);
+			negative_reach_detector = new FloydWarshall<AllPairsDetector::ReachStatus>(_antig,*(negativeReachStatus),-1);
 			positive_path_detector = positive_reach_detector;
-		}else{
-			positive_reach_detector = new DijkstraAllPairs<AllPairsDetector::ReachStatus,PositiveEdgeStatus>(_g,*(positiveReachStatus),1);
-			negative_reach_detector = new DijkstraAllPairs<AllPairsDetector::ReachStatus,NegativeEdgeStatus>(_antig,*(negativeReachStatus),-1);
+		}/*else if (allpairsalg==ALG_THORUP_ALLPAIRS){
+			positive_reach_detector = new DynamicConnectivity<AllPairsDetector::ReachStatus>(_g,*(positiveReachStatus),1);
+			negative_reach_detector = new DynamicConnectivity<AllPairsDetector::ReachStatus>(_antig,*(negativeReachStatus),-1);
+			positive_path_detector = positive_reach_detector;
+		}*/else{
+			positive_reach_detector = new DijkstraAllPairs<AllPairsDetector::ReachStatus>(_g,*(positiveReachStatus),1);
+			negative_reach_detector = new DijkstraAllPairs<AllPairsDetector::ReachStatus>(_antig,*(negativeReachStatus),-1);
 			positive_path_detector = positive_reach_detector;
 		}
 		/*	if(opt_conflict_shortest_path)
 			reach_detectors.last()->positive_dist_detector = new Dijkstra<PositiveEdgeStatus>(from,g);*/
 #ifdef DEBUG_ALLPAIRS
 		{
-			dbg_positive_reach_detector = new DijkstraAllPairs<AllPairsDetector::IgnoreStatus,PositiveEdgeStatus>(_g,ignoreStatus,1);
-			dbg_negative_reach_detector = new DijkstraAllPairs<AllPairsDetector::IgnoreStatus,NegativeEdgeStatus>(_antig,ignoreStatus,-1);
+			dbg_positive_reach_detector = new DijkstraAllPairs<AllPairsDetector::IgnoreStatus>(_g,ignoreStatus,1);
+			dbg_negative_reach_detector = new DijkstraAllPairs<AllPairsDetector::IgnoreStatus>(_antig,ignoreStatus,-1);
 		}
 #endif
 	first_reach_var = var_Undef;
@@ -43,9 +48,12 @@ Detector(_detectorID),outer(_outer),g(_g),antig(_antig),within(within_steps),rnd
 
 
 
-void AllPairsDetector::addLit(int from, int to, Var reach_var,int within_steps){
+void AllPairsDetector::addLit(int from, int to, Var outer_reach_var,int within_steps){
 	g.invalidate();
 	antig.invalidate();
+
+	Var reach_var = outer->newVar(outer_reach_var,getID());
+
 	if(first_reach_var==var_Undef){
 		first_reach_var=reach_var;
 	}else{
@@ -64,8 +72,9 @@ void AllPairsDetector::addLit(int from, int to, Var reach_var,int within_steps){
 	//while( dist_lits[to].size()<=within_steps)
 	//	dist_lits[to].push({lit_Undef,-1});
 
-	while(outer->S->nVars()<=reach_var)
-		outer->S->newVar();
+	/*while(outer->S->nVars()<=reach_var)
+		outer->S->newVar();*/
+
 
 	if(!installed_sources[from]){
 		installed_sources[from]=true;
@@ -85,8 +94,7 @@ void AllPairsDetector::addLit(int from, int to, Var reach_var,int within_steps){
 			found=true;
 			Lit r = dist_lits[from][to][i].l;
 			//force equality between the new lit and the old reach lit, in the SAT solver
-			outer->S->addClause(~r, reachLit);
-			outer->S->addClause(r, ~reachLit);
+			outer->makeEqual(r,reachLit);
 		}
 	}
 	if(!found){
@@ -109,7 +117,7 @@ void AllPairsDetector::ReachStatus::setReachable(int from,int u, bool reachable)
 			/*	if(polarity==reachable && u<detector.reach_lits.size()){
 					Lit l = detector.reach_lits[u];
 					if(l!=lit_Undef){
-						lbool assign = detector.outer->S->value(l);
+						lbool assign = detector.outer->value(l);
 						if(assign!= (reachable? l_True:l_False )){
 							detector.changed.push({reachable? l:~l,u});
 						}
@@ -118,8 +126,8 @@ void AllPairsDetector::ReachStatus::setReachable(int from,int u, bool reachable)
 			}
 
 void AllPairsDetector::ReachStatus::setMininumDistance(int from, int u, bool reachable, int distance){
-	assert(reachable ==(distance<detector.outer->g.nodes));
-	if(distance<=detector.outer->g.nodes){
+	assert(reachable ==(distance<detector.outer->g.nodes()));
+	if(distance<=detector.outer->g.nodes()){
 		setReachable(from,u,reachable);
 	}
 
@@ -134,12 +142,12 @@ void AllPairsDetector::ReachStatus::setMininumDistance(int from, int u, bool rea
 
 					assert(l!=lit_Undef);
 					if(d<distance && !polarity){
-						lbool assign = detector.outer->S->value(l);
+						lbool assign = detector.outer->value(l);
 						if( assign!= l_False ){
 							detector.changed.push({~l,u,from});
 						}
 					}else if(d>=distance && polarity){
-						lbool assign = detector.outer->S->value(l);
+						lbool assign = detector.outer->value(l);
 						if( assign!= l_True ){
 							detector.changed.push({l,u,from});
 						}
@@ -159,7 +167,7 @@ void AllPairsDetector::buildReachReason(int source, int to,vec<Lit> & conflict){
 				int a =1;
 			}
 
-			double starttime = cpuTime();
+			double starttime = rtime(2);
 			d.update();
 
 			tmp_path.clear();
@@ -183,14 +191,14 @@ void AllPairsDetector::buildReachReason(int source, int to,vec<Lit> & conflict){
 					assert(p!=-1);
 					Edge edg = outer->edges[p][u];
 					Var e =outer->edges[p][u].v;
-					lbool val = outer->S->value(e);
-					assert(outer->S->value(e)==l_True);
+					lbool val = outer->value(e);
+					assert(outer->value(e)==l_True);
 #ifdef DEBUG_ALLPAIRS
 					if(!dbg_positive_reach_detector->connected(source,p)){
 						assert(false);
 						exit(4);
 					}
-					if(outer->S->value(e)!=l_True){//otherwise, this can't be part of the returned learnt clause.
+					if(outer->value(e)!=l_True){//otherwise, this can't be part of the returned learnt clause.
 						printf("iter %d\n", iter);
 						exit(6);
 					}
@@ -202,7 +210,7 @@ void AllPairsDetector::buildReachReason(int source, int to,vec<Lit> & conflict){
 			}
 			outer->num_learnt_paths++;
 			outer->learnt_path_clause_length+= (conflict.size()-1);
-			double elapsed = cpuTime()-starttime;
+			double elapsed = rtime(2)-starttime;
 			outer->pathtime+=elapsed;
 	#ifdef DEBUG_GRAPH
 			 assert(outer->dbg_clause(conflict));
@@ -215,7 +223,7 @@ void AllPairsDetector::buildReachReason(int source, int to,vec<Lit> & conflict){
 			int u = node;
 			//drawFull( non_reach_detectors[detector]->getSource(),u);
 			//assert(outer->dbg_distance( source,u));
-			double starttime = cpuTime();
+			double starttime = rtime(2);
 			outer->cutGraph.clearHistory();
 			outer->stats_mc_calls++;
 			{
@@ -237,16 +245,16 @@ void AllPairsDetector::buildReachReason(int source, int to,vec<Lit> & conflict){
 				    	to_visit.pop();
 				    	assert(seen[u]);
 				    	//assert(negative_reach_detector->distance_unsafe(u)>d);
-				    	//Ok, then add all its incoming disabled edges to the cut, and visit any unseen, non-disabled incoming edges
+				    	//Ok, then add all its incoming disabled edges to the cut, and visit any unseen, non-disabled incoming.edges()
 				    	for(int i = 0;i<outer->inv_adj[u].size();i++){
 				    		int v = outer->inv_adj[u][i].v;
 				    		int from = outer->inv_adj[u][i].from;
 				    		assert(from!=u);
 				    		assert(outer->inv_adj[u][i].to==u);
 				    		//Note: the variable has to not only be assigned false, but assigned false earlier in the trail than the reach variable...
-				    		int edge_num = v-outer->min_edge_var;
+				    		int edge_num =outer->getEdgeID(v);// v-outer->min_edge_var;
 
-				    		if(outer->edge_assignments[edge_num]==l_False){
+				    		if(outer->value(v)==l_False){
 				    			//note: we know we haven't seen this edge variable before, because we know we haven't visited this node before
 				    			//if we are already planning on visiting the from node, then we don't need to include it in the conflict (is this correct?)
 				    			//if(!seen[from])
@@ -269,7 +277,7 @@ void AllPairsDetector::buildReachReason(int source, int to,vec<Lit> & conflict){
 			 outer->num_learnt_cuts++;
 			 outer->learnt_cut_clause_length+= (conflict.size()-1);
 
-			double elapsed = cpuTime()-starttime;
+			double elapsed = rtime(2)-starttime;
 			 outer->mctime+=elapsed;
 
 	#ifdef DEBUG_GRAPH
@@ -286,7 +294,7 @@ void AllPairsDetector::buildReachReason(int source, int to,vec<Lit> & conflict){
 					static int it = 0;
 					++it;
 
-					assert(outer->edge_assignments[forced_edge_id]==l_True);
+					assert(outer->assigns[ outer->edge_list[forced_edge_id].v]==l_True);
 					Lit edgeLit =mkLit( outer->edge_list[forced_edge_id].v,false);
 
 					conflict.push(edgeLit);
@@ -298,15 +306,12 @@ void AllPairsDetector::buildReachReason(int source, int to,vec<Lit> & conflict){
 					int u = to;
 					//drawFull( non_reach_detectors[detector]->getSource(),u);
 					assert(outer->dbg_notreachable( source,u));
-					double starttime = cpuTime();
+					double starttime = rtime(2);
 					outer->cutGraph.clearHistory();
 					outer->stats_mc_calls++;
 
-
-
 					//We could learn an arbitrary (non-infinite) cut here, or just the whole set of false edges
 					//or perhaps we can learn the actual 1-uip cut?
-
 
 					vec<int>& to_visit  = outer->to_visit;
 					vec<char>& seen  = outer->seen;
@@ -325,16 +330,16 @@ void AllPairsDetector::buildReachReason(int source, int to,vec<Lit> & conflict){
 						to_visit.pop();
 						assert(seen[u]);
 						assert(!negative_reach_detector->connected_unsafe(source,u));
-						//Ok, then add all its incoming disabled edges to the cut, and visit any unseen, non-disabled incoming edges
+						//Ok, then add all its incoming disabled edges to the cut, and visit any unseen, non-disabled incoming.edges()
 						for(int i = 0;i<outer->inv_adj[u].size();i++){
 							int v = outer->inv_adj[u][i].v;
 							int from = outer->inv_adj[u][i].from;
 							assert(from!=u);
 							assert(outer->inv_adj[u][i].to==u);
 							//Note: the variable has to not only be assigned false, but assigned false earlier in the trail than the reach variable...
-							int edge_num = v-outer->min_edge_var;
+							int edge_num = outer->getEdgeID(v);//v-outer->min_edge_var;
 
-							if(edge_num == forced_edge_id || outer->edge_assignments[edge_num]==l_False){
+							if(edge_num == forced_edge_id || outer->assigns[ outer->edge_list[forced_edge_id].v]==l_False){
 								//note: we know we haven't seen this edge variable before, because we know we haven't visited this node before
 								//if we are already planning on visiting the from node, then we don't need to include it in the conflict (is this correct?)
 								//if(!seen[from])
@@ -356,7 +361,7 @@ void AllPairsDetector::buildReachReason(int source, int to,vec<Lit> & conflict){
 					 outer->num_learnt_cuts++;
 					 outer->learnt_cut_clause_length+= (conflict.size()-1);
 
-					double elapsed = cpuTime()-starttime;
+					double elapsed = rtime(2)-starttime;
 					 outer->mctime+=elapsed;
 
 			#ifdef DEBUG_GRAPH
@@ -369,7 +374,7 @@ void AllPairsDetector::buildReachReason(int source, int to,vec<Lit> & conflict){
 
 				if(marker==reach_marker){
 					reason.push(p);
-				//	double startpathtime = cpuTime();
+				//	double startpathtime = rtime(2);
 
 					/*Dijkstra & detector = *reach_detectors[d]->positive_dist_detector;
 					//the reason is a path from s to p(provided by d)
@@ -394,7 +399,7 @@ void AllPairsDetector::buildReachReason(int source, int to,vec<Lit> & conflict){
 				 assert(outer->dbg_clause(reason));
 
 		#endif
-					//double elapsed = cpuTime()-startpathtime;
+					//double elapsed = rtime(2)-startpathtime;
 				//	pathtime+=elapsed;
 				}else if(marker==non_reach_marker){
 					reason.push(p);
@@ -414,7 +419,7 @@ void AllPairsDetector::buildReachReason(int source, int to,vec<Lit> & conflict){
 				}else if (marker==forced_reach_marker){
 					Var v = var(p);
 					//The forced variable is an EDGE that was forced.
-					int forced_edge_id =v- outer->min_edge_var;
+					int forced_edge_id = outer->getEdgeID(v); //v- outer->min_edge_var;
 					//The corresponding node that is the reason it was forced
 					int reach_node=force_reason[forced_edge_id];
 					int source = getSource(v);
@@ -424,18 +429,18 @@ void AllPairsDetector::buildReachReason(int source, int to,vec<Lit> & conflict){
 				}
 		}
 
-		bool AllPairsDetector::propagate(vec<Assignment> & trail,vec<Lit> & conflict){
+		bool AllPairsDetector::propagate(vec<Lit> & conflict){
 
 
-		double startdreachtime = cpuTime();
+		double startdreachtime = rtime(2);
 		getChanged().clear();
 		positive_reach_detector->update();
-		double reachUpdateElapsed = cpuTime()-startdreachtime;
+		double reachUpdateElapsed = rtime(2)-startdreachtime;
 		outer->reachupdatetime+=reachUpdateElapsed;
 
-		double startunreachtime = cpuTime();
+		double startunreachtime = rtime(2);
 		negative_reach_detector->update();
-		double unreachUpdateElapsed = cpuTime()-startunreachtime;
+		double unreachUpdateElapsed = rtime(2)-startunreachtime;
 		outer->unreachupdatetime+=unreachUpdateElapsed;
 
 		for(int j = 0;j<getChanged().size();j++){
@@ -444,9 +449,9 @@ void AllPairsDetector::buildReachReason(int source, int to,vec<Lit> & conflict){
 				int source = getChanged()[j].source;
 				bool reach = !sign(l);
 
-				if(outer->S->value(l)==l_True){
+				if(outer->value(l)==l_True){
 					//do nothing
-				}else if(outer->S->value(l)==l_Undef){
+				}else if(outer->value(l)==l_Undef){
 #ifdef DEBUG_GRAPH
 					assert(outer->dbg_propgation(l));
 #endif
@@ -454,13 +459,13 @@ void AllPairsDetector::buildReachReason(int source, int to,vec<Lit> & conflict){
 					if(S->dbg_solver)
 						S->dbg_check_propagation(l);
 #endif
-					trail.push(Assignment(false,reach,detectorID,0,var(l)));
+					//trail.push(Assignment(false,reach,detectorID,0,var(l)));
 					if(reach)
-						outer->S->uncheckedEnqueue(l,reach_marker) ;
+						outer->enqueue(l,reach_marker) ;
 					else
-						outer->S->uncheckedEnqueue(l,non_reach_marker) ;
+						outer->enqueue(l,non_reach_marker) ;
 
-				}else if (outer->S->value(l)==l_False){
+				}else if (outer->value(l)==l_False){
 					conflict.push(l);
 
 					if(reach){
@@ -478,7 +483,7 @@ void AllPairsDetector::buildReachReason(int source, int to,vec<Lit> & conflict){
 					}
 #ifdef DEBUG_GRAPH
 					for(int i = 0;i<conflict.size();i++)
-								 assert(outer->S->value(conflict[i])==l_False);
+								 assert(outer->value(conflict[i])==l_False);
 #endif
 #ifdef DEBUG_SOLVER
 					if(S->dbg_solver)
@@ -531,10 +536,10 @@ void AllPairsDetector::buildReachReason(int source, int to,vec<Lit> & conflict){
 							if(l!=lit_Undef){
 								int u = getNode(var(l));
 								if(positive_reach_detector->distance_unsafe(s,u)<=dist){
-									assert(outer->S->value(l)==l_True);
+									assert(outer->value(l)==l_True);
 								}else if (negative_reach_detector->distance_unsafe(s,u)>dist){
 									int d =negative_reach_detector->distance_unsafe(s,u);
-									assert(outer->S->value(l)==l_False);
+									assert(outer->value(l)==l_False);
 								}
 							}
 						}
@@ -556,11 +561,11 @@ bool AllPairsDetector::checkSatisfied(){
 						if(l!=lit_Undef){
 							int node =getNode(var(l));
 
-							if(outer->S->value(l)==l_True){
+							if(outer->value(l)==l_True){
 								if(positive_reach_detector->distance(s,node)>dist){
 									return false;
 								}
-							}else if (outer->S->value(l)==l_False){
+							}else if (outer->value(l)==l_False){
 								if( negative_reach_detector->distance(s,node)<=dist){
 									return false;
 								}
@@ -580,9 +585,9 @@ bool AllPairsDetector::checkSatisfied(){
 }
 Lit AllPairsDetector::decide(){
 
-	//AllPairs * over = (FloydWarshall<AllPairsDetector::ReachStatus,NegativeEdgeStatus>*) negative_reach_detector;
+	//AllPairs * over = (FloydWarshall<AllPairsDetector::ReachStatus>*) negative_reach_detector;
 
-	//FloydWarshall<AllPairsDetector::ReachStatus,PositiveEdgeStatus> * under = (FloydWarshall<AllPairsDetector::ReachStatus,PositiveEdgeStatus>*)positive_reach_detector;
+	//FloydWarshall<AllPairsDetector::ReachStatus> * under = (FloydWarshall<AllPairsDetector::ReachStatus>*)positive_reach_detector;
 
 	//we can probably also do something similar, but with cuts, for nodes that are decided to be unreachable.
 
@@ -599,7 +604,7 @@ Lit AllPairsDetector::decide(){
 				if(l==lit_Undef)
 					continue;
 				int j = getNode(var(l));
-				if(outer->S->value(l)==l_True){
+				if(outer->value(l)==l_True){
 					//if(S->level(var(l))>0)
 					//	continue;
 
@@ -633,48 +638,42 @@ Lit AllPairsDetector::decide(){
 
 							 p = j;
 							 last = j;
-							 if(tmp_path<=0){
-									exit(5);
-								}
+
 							 assert(tmp_path.size());
 							 int d = 0;
 								while(positive_reach_detector->distance(s,p)>(min_dist-d)){
-#ifdef DEBUG_ALLPAIRS
-									if(tmp_path<=0){
-										exit(5);
-									}
-#endif
-								    tmp_path.pop();
+
+								    tmp_path.pop_back();
 								    if(tmp_path.size()==0)
 								    	break;
 									last=p;
 									assert(p!=s);
 									assert(tmp_path.size());
-									int prev = tmp_path.last(); //negative_reach_detector->previous(s,p);
+									int prev = tmp_path.back(); //negative_reach_detector->previous(s,p);
 									d+=1;//for weighted graphs, this needs to be the weight of the edge.
 									p = prev;
 #ifdef DEBUG_ALLPAIRS
 					if(!negative_reach_detector->connected(s,p)){
 						assert(false);
-						exit(4);
+
 					}
 					if(!(negative_reach_detector->distance(s,p)<=min_dist-d)){
 						assert(false);
-						exit(4);
+
 					}
 #endif
 								}
 
 						}
 
-						for(int k = 0;k<outer->antig.adjacency[p].size();k++){
-							int to = outer->antig.adjacency[p][k].node;
+						for(int k = 0;k<outer->antig.nIncident(p);k++){
+							int to = outer->antig.incident(p,k).node;
 							if (to==last){
-								Var v =outer->edge_list[ outer->antig.adjacency[p][k].id].v;
-								if(outer->S->value(v)==l_Undef){
+								Var v =outer->edge_list[ outer->antig.incident(p,k).id].v;
+								if(outer->value(v)==l_Undef){
 									return mkLit(v,false);
 								}else{
-									assert(outer->S->value(v)!=l_True);
+									assert(outer->value(v)!=l_True);
 								}
 							}
 						}

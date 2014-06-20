@@ -10,6 +10,7 @@
 
 #include "core/SolverTypes.h"
 #include "mtl/Rnd.h"
+
 namespace Minisat{
 
 struct ReachabilityConstraint{
@@ -19,7 +20,14 @@ struct ReachabilityConstraint{
 	Var reach_var;
 };
 
-struct DefaultEdgeStatus{
+struct ConnectivityConstraint{
+	int from;
+	int to;
+	int distance;
+	Var connect_var;
+};
+
+/*struct DefaultEdgeStatus{
 
 	vec<char> status;
 
@@ -37,11 +45,11 @@ struct DefaultEdgeStatus{
 		status.growTo(size);
 	}
 
-};
-
-typedef DefaultEdgeStatus PositiveEdgeStatus;
+};*/
+//extern DefaultEdgeStatus defaultStatus;
+/*typedef DefaultEdgeStatus PositiveEdgeStatus;
 typedef DefaultEdgeStatus NegativeEdgeStatus;
-typedef DefaultEdgeStatus CutEdgeStatus;
+typedef DefaultEdgeStatus CutEdgeStatus;*/
 
 	struct Assignment{
 		bool isEdge:1;
@@ -58,10 +66,17 @@ typedef DefaultEdgeStatus CutEdgeStatus;
 	};
 	struct Edge{
 		Var v;
+		Var outerVar;
 		int from;
 		int to;
 		int edgeID;
 		int weight;
+		Edge(Var v, Var outerVar,int from,int to, int edgeID, int weight=0):v(v),outerVar(outerVar),from(from),to(to),edgeID(edgeID),weight(weight){
+
+		}
+		Edge():v(var_Undef),outerVar(var_Undef),from(-1),to(-1),edgeID(-1),weight(0){
+
+		}
 	};
 
 };

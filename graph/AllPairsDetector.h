@@ -10,22 +10,22 @@
 #include "utils/System.h"
 
 #include "Graph.h"
-#include "AllPairs.h"
-#include "FloydWarshall.h"
-#include "DijkstraAllPairs.h"
+#include "dgl/AllPairs.h"
+#include <vector>
 #include "core/SolverTypes.h"
 #include "mtl/Map.h"
 
 //#define DEBUG_ALLPAIRS
 #include "utils/System.h"
 #include "Detector.h"
+using namespace dgl;
 namespace Minisat{
 class GraphTheorySolver;
 class AllPairsDetector:public Detector{
 public:
 		GraphTheorySolver * outer;
-		 DynamicGraph<PositiveEdgeStatus> &g;
-			 DynamicGraph<NegativeEdgeStatus> &antig;
+		 DynamicGraph &g;
+		 DynamicGraph &antig;
 		int within;
 
 		double rnd_seed;
@@ -57,7 +57,7 @@ public:
 		vec<vec<vec<DistLit> >> dist_lits;
 		vec<DistLit> reach_lit_map;
 
-		vec<int> tmp_path;
+		std::vector<int> tmp_path;
 
 		struct Change{
 				Lit l;
@@ -86,6 +86,9 @@ public:
 		struct ReachStatus{
 			AllPairsDetector & detector;
 			bool polarity;
+			void setReachable(int from, bool reachable){
+				//for compatability with reach algs
+			}
 			void setReachable(int from,int u, bool reachable);
 			bool isReachable(int from,int u) const{
 				return false;
@@ -118,7 +121,7 @@ public:
 			return reach_lits[node];
 
 		}*/
-		bool propagate(vec<Assignment> & trail,vec<Lit> & conflict);
+		bool propagate(vec<Lit> & conflict);
 		void buildReachReason(int from, int to,vec<Lit> & conflict);
 		void buildNonReachReason(int from, int to,vec<Lit> & conflict);
 		void buildForcedEdgeReason(int from, int to, int forced_edge_id,vec<Lit> & conflict);
@@ -126,9 +129,12 @@ public:
 		bool checkSatisfied();
 		Lit decide();
 		void addLit(int from, int to, Var reach_var,int within_steps=-1);
-		AllPairsDetector(int _detectorID, GraphTheorySolver * _outer, DynamicGraph<PositiveEdgeStatus> &_g, DynamicGraph<NegativeEdgeStatus> &_antig,  int within_steps,double seed=1);//:Detector(_detectorID),outer(_outer),within(-1),source(_source),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL){}
+		AllPairsDetector(int _detectorID, GraphTheorySolver * _outer, DynamicGraph &_g, DynamicGraph &_antig, double seed=1);//:Detector(_detectorID),outer(_outer),within(-1),source(_source),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL){}
 		virtual ~AllPairsDetector(){
 
+		}
+		const char* getName(){
+			return "All-pairs Reachability Detector";
 		}
 };
 };

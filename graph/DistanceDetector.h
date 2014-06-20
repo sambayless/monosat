@@ -10,26 +10,28 @@
 #include "utils/System.h"
 
 #include "Graph.h"
-#include "Reach.h"
-#include "Dijkstra.h"
-#include "Connectivity.h"
-#include "Distance.h"
+#include "dgl/Reach.h"
+#include "dgl/Dijkstra.h"
+#include "dgl/BFS.h"
+#include "dgl/UnweightedDistance.h"
 #include "core/SolverTypes.h"
 #include "mtl/Map.h"
-#include "WeightedDijkstra.h"
+#include "dgl/WeightedDijkstra.h"
 
 #include "utils/System.h"
 #include "Detector.h"
+using namespace dgl;
 namespace Minisat{
 class GraphTheorySolver;
 class DistanceDetector:public Detector{
 public:
 		GraphTheorySolver * outer;
-		 DynamicGraph<PositiveEdgeStatus> &g;
-			 DynamicGraph<NegativeEdgeStatus> &antig;
+		 DynamicGraph &g;
+		 DynamicGraph &antig;
 		//int within;
 		int source;
 		double rnd_seed;
+		int constraintsBuilt;
 		CRef reach_marker;
 		CRef non_reach_marker;
 		CRef forced_reach_marker;
@@ -41,6 +43,10 @@ public:
 		Var first_reach_var;
 		vec<int> reach_lit_map;
 		vec<int> force_reason;
+		int max_distance;
+
+		int stats_pure_skipped;
+		vec<vec<Lit> > full_dist_lits;
 
 		struct DistLit{
 			Lit l;
@@ -59,7 +65,7 @@ public:
 		}
 		vec<double> rnd_weight;
 
-		WeightedDijkstra<NegativeEdgeStatus,vec<double>> * rnd_path;
+		WeightedDijkstra<vec<double>> * rnd_path;
 		struct OptimalWeightEdgeStatus{
 			DistanceDetector & detector;
 			int operator [] (int edge) const ;
@@ -68,7 +74,7 @@ public:
 
 		};
 		OptimalWeightEdgeStatus opt_weight;
-		WeightedDijkstra<NegativeEdgeStatus,OptimalWeightEdgeStatus> * opt_path;
+		WeightedDijkstra<OptimalWeightEdgeStatus> * opt_path;
 		struct ReachStatus{
 			DistanceDetector & detector;
 			bool polarity;
@@ -93,12 +99,20 @@ public:
 			return reach_lit_map[index];
 		}
 
+		void printStats(){
+			//printf("Distance detector\n");
+			Detector::printStats();
+			if(opt_detect_pure_theory_lits)
+				printf("\tPropagations skipped by pure literal detection: %d\n", stats_pure_skipped);
+		}
+
 	/*	Lit getLit(int node){
 
 			return reach_lits[node];
 
 		}*/
-		bool propagate(vec<Assignment> & trail,vec<Lit> & conflict);
+		void buildSATConstraints(int distance=-1);
+		bool propagate(vec<Lit> & conflict);
 		void buildReachReason(int node,vec<Lit> & conflict);
 		void buildNonReachReason(int node,vec<Lit> & conflict);
 		void buildForcedEdgeReason(int reach_node, int forced_edge_id,vec<Lit> & conflict);
@@ -106,9 +120,12 @@ public:
 		bool checkSatisfied();
 		Lit decide();
 		void addLit(int from, int to, Var reach_var,int within_steps=-1);
-		DistanceDetector(int _detectorID, GraphTheorySolver * _outer, DynamicGraph<PositiveEdgeStatus> &_g, DynamicGraph<NegativeEdgeStatus> &_antig, int _source, int within_steps,double seed=1);//:Detector(_detectorID),outer(_outer),within(-1),source(_source),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL){}
+		DistanceDetector(int _detectorID, GraphTheorySolver * _outer, DynamicGraph &_g, DynamicGraph &_antig, int _source, int within_steps,double seed=1);//:Detector(_detectorID),outer(_outer),within(-1),source(_source),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL){}
 		virtual ~DistanceDetector(){
 
+		}
+		const char* getName(){
+			return "Shortest Path Detector";
 		}
 };
 };

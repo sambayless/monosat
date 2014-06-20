@@ -42,40 +42,45 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include <algorithm>
 #include <iterator>
 #include <unordered_map>
+#include "simp/SimpSolver.h"
+#include "pb/PbTheory.h"
+#include "pb/PbParser.h"
+#include "mtl/Map.h"
 using namespace Minisat;
-
+using namespace std;
 //=================================================================================================
 
 
 void printStats(Solver& solver)
 {
-    double cpu_time = cpuTime();
-
-    double mem_used = memUsedPeak();
-
-    printf("restarts              : %" PRIu64 "\n", solver.starts);
-    printf("conflicts             : %-12" PRIu64 "   (%.0f /sec)\n", solver.conflicts   , solver.conflicts   /cpu_time);
-    printf("decisions             : %-12" PRIu64 "   (%4.2f %% random) (%.0f /sec)\n", solver.decisions, (float)solver.rnd_decisions*100 / (float)solver.decisions, solver.decisions   /cpu_time);
-    printf("propagations          : %-12" PRIu64 "   (%.0f /sec)\n", solver.propagations, solver.propagations/cpu_time);
-    printf("conflict literals     : %-12" PRIu64 "   (%4.2f %% deleted)\n", solver.tot_literals, (solver.max_literals - solver.tot_literals)*100 / (double)solver.max_literals);
+		double cpu_time = cpuTime();
+	    double mem_used = memUsedPeak();
+    solver.printStats(3);
     if (mem_used != 0) printf("Memory used           : %.2f MB\n", mem_used);
-    printf("CPU time              : %g s\n", cpu_time);
+   printf("CPU time              : %g s\n", cpu_time);
 }
 
 
-static Solver* solver;
+static SimpSolver* solver;
 // Terminate by notifying the solver and back out gracefully. This is mainly to have a test-case
 // for this feature of the Solver as it may take longer than an immediate call to '_exit()'.
-static void SIGINT_interrupt(int signum) { solver->interrupt();   fflush(stdout);}
+static void SIGINT_interrupt(int signum) { solver->interrupt();
+printf("\n"); printf("*** INTERRUPTED ***\n");
+if (opt_verb > 0){
+    printStats(*solver);
+    printf("\n"); printf("*** INTERRUPTED ***\n"); }
+fflush(stdout);
+_exit(1);
+}
 
 // Note that '_exit()' rather than 'exit()' has to be used. The reason is that 'exit()' calls
 // destructors and may cause deadlocks if a malloc/free function happens to be running (these
 // functions are guarded by locks for multithreaded use).
 static void SIGINT_exit(int signum) {
     printf("\n"); printf("*** INTERRUPTED ***\n");
-    if (opt_verb > 0){
+/*    if (opt_verb > 0){
         printStats(*solver);
-        printf("\n"); printf("*** INTERRUPTED ***\n"); }
+        printf("\n"); printf("*** INTERRUPTED ***\n"); }*/
     fflush(stdout);
     _exit(1); }
 
@@ -104,11 +109,7 @@ int main(int argc, char** argv)
         IntOption    cpu_lim("MAIN", "cpu-lim","Limit on CPU time allowed in seconds.\n", INT32_MAX, IntRange(0, INT32_MAX));
         IntOption    mem_lim("MAIN", "mem-lim","Limit on memory usage in megabytes.\n", INT32_MAX, IntRange(0, INT32_MAX));
         
-        IntOption    opt_width("GRAPH","width","Width of graph.\n", 0, IntRange(0, INT32_MAX));
-        IntOption    opt_height("GRAPH","height","Height of graph.\n", 0, IntRange(0, INT32_MAX));
-        IntOption    opt_bits("GRAPH","bits","Bits per position in graph.\n", 1, IntRange(0, INT32_MAX));
 
-        BoolOption	 opt_csv("GRAPH","csv","Output in CSV format",false);
 
         StringOption    opt_graph("GRAPH", "graph","Not currently used", "");
 
@@ -116,15 +117,21 @@ int main(int argc, char** argv)
 
         StringOption    opt_decidable("MAIN", "decidable-theories","Specify which graphs should make decisions on their own, in comma delimited format", "");
 
-        BoolOption 		opt_symbols("MAIN","read-symbols","Whether to read symbol lines (\"c var <variable number> <name>\") from the gnf",true);
+        StringOption 		opt_symbols("MAIN","symbols","Whether to read symbol lines (\"c var <variable number> <name>\") from the gnf","");
+
+        StringOption    opt_assume_symbols("MAIN","assume-symbols","read in symbols (in the format produced by the 'symbols' option) and treat them as assumptions","");
 
         BoolOption opt_id_graph("GRAPH","print-vars","Identify the variables in the graph, then quit\n",false);
 
         BoolOption opt_witness("MAIN","witness","print solution",false);
 
+        BoolOption   pre    ("MAIN", "pre",    "Completely turn on/off any preprocessing.", true);
 
+        BoolOption opb("PB","opb","Parse the input as pseudo-boolean constraints in .opb format",false);
 
         parseOptions(argc, argv, true);
+
+        bool using_symbols = strlen((const char* )opt_symbols)>0;
 
         if(opt_csv){
            	opt_verb=0;
@@ -138,55 +145,142 @@ int main(int argc, char** argv)
 
         vec<std::pair<int,string> > symbols;
 
-        mincutalg = ALG_EDMONSKARP;
+        mincutalg = MinCutAlg::ALG_EDMONSKARP;
 
         if(!strcasecmp(opt_min_cut_alg,"ibfs")){
-        	mincutalg=ALG_IBFS;
+        	mincutalg=MinCutAlg::ALG_IBFS;
 
         }else if (!strcasecmp(opt_min_cut_alg,"edmondskarp-adj")){
-        	mincutalg = ALG_EDKARP_ADJ;
+        	mincutalg = MinCutAlg::ALG_EDKARP_ADJ;
         }else if (!strcasecmp(opt_min_cut_alg,"edmondskarp")){
-        	mincutalg = ALG_EDMONSKARP;
+        	mincutalg = MinCutAlg::ALG_EDMONSKARP;
+        }else if  (!strcasecmp(opt_min_cut_alg,"edmondskarp-dynamic")){
+        	mincutalg = MinCutAlg::ALG_EDKARP_DYN;
+        }else if  (!strcasecmp(opt_min_cut_alg,"dinics")){
+        	//Dinitz is also commonly spelled 'dinics' or 'Dinits', so accept those too...
+        	mincutalg = MinCutAlg::ALG_DINITZ;
+        }else if  (!strcasecmp(opt_min_cut_alg,"dinics-linkcut")){
+        	mincutalg = MinCutAlg::ALG_DINITZ_LINKCUT;
+        }else if  (!strcasecmp(opt_min_cut_alg,"dinitz")){
+        	mincutalg = MinCutAlg::ALG_DINITZ;
+        }else if  (!strcasecmp(opt_min_cut_alg,"dinitz-linkcut")){
+        	mincutalg = MinCutAlg::ALG_DINITZ_LINKCUT;
+        }else if  (!strcasecmp(opt_min_cut_alg,"dinits")){
+        	//Dinitz is also commonly spelled 'dinics' or 'Dinits', so accept those too...
+        	mincutalg = MinCutAlg::ALG_DINITZ;
+        }else if  (!strcasecmp(opt_min_cut_alg,"dinits-linkcut")){
+        	mincutalg = MinCutAlg::ALG_DINITZ_LINKCUT;
         }else{
         	fprintf(stderr,"Error: unknown max-flow/min-cut algorithm %s, aborting\n",((string)  opt_min_cut_alg).c_str());
         	exit(1);
         }
 
-       componentsalg =ALG_DISJOINT_SETS;
+       componentsalg =ComponentsAlg::ALG_DISJOINT_SETS;
 
 		 if(!strcasecmp(opt_components_alg,"disjoint-sets")){
-			componentsalg=ALG_DISJOINT_SETS;
+			componentsalg=ComponentsAlg::ALG_DISJOINT_SETS;
 		 }else{
 			fprintf(stderr,"Error: unknown connectivity algorithm %s, aborting\n", ((string) opt_components_alg).c_str());
 			exit(1);
 		 }
+		mstalg = MinSpanAlg::ALG_KRUSKAL;
 
+		 if(!strcasecmp(opt_mst_alg,"kruskal")){
+			 mstalg=MinSpanAlg::ALG_KRUSKAL;
+		 }else if(!strcasecmp(opt_mst_alg,"prim")){
+			 mstalg=MinSpanAlg::ALG_PRIM;
+		 }else if (!strcasecmp(opt_mst_alg,"spira-pan")){
+			 mstalg = MinSpanAlg::ALG_SPIRA_PAN;
+		 }else{
+			fprintf(stderr,"Error: unknown minimum spanning tree algorithm %s, aborting\n", ((string) opt_mst_alg).c_str());
+			exit(1);
+		 }
 
-        reachalg = ALG_BFS;
+        reachalg = ReachAlg::ALG_BFS;
 
 		 if(!strcasecmp(opt_reach_alg,"dijkstra")){
-			reachalg=ALG_DIJKSTRA;
+			reachalg=ReachAlg::ALG_DIJKSTRA;
 
 		 }else if(!strcasecmp(opt_reach_alg,"bfs")){
-			reachalg=ALG_BFS;
+			reachalg=ReachAlg::ALG_BFS;
 
 		 }else if (!strcasecmp(opt_reach_alg,"dfs")){
-			 reachalg = ALG_DFS;
+			 reachalg = ReachAlg::ALG_DFS;
+		 }else if (!strcasecmp(opt_reach_alg,"sat")){
+			 reachalg = ReachAlg::ALG_SAT;
+		 }else if (!strcasecmp(opt_reach_alg,"ramal-reps")){
+			 reachalg = ReachAlg::ALG_RAMAL_REPS;
 		 }else{
 			fprintf(stderr,"Error: unknown reachability algorithm %s, aborting\n", ((string) opt_reach_alg).c_str());
 			exit(1);
 		 }
-		    allpairsalg = ALG_DIJKSTRA_ALLPAIRS;
+
+
+		 distalg = DistAlg::ALG_DISTANCE;
+
+		 if(!strcasecmp(opt_dist_alg,"dijkstra")){
+			 distalg=DistAlg::ALG_DIJKSTRA;
+
+		 }else if(!strcasecmp(opt_dist_alg,"bfs")){
+			 distalg=DistAlg::ALG_DISTANCE;
+
+		 }else if (!strcasecmp(opt_dist_alg,"sat")){
+			 distalg = DistAlg::ALG_SAT;
+		 }else if (!strcasecmp(opt_dist_alg,"ramal-reps")){
+			 distalg = DistAlg::ALG_RAMAL_REPS;
+		 }else{
+			fprintf(stderr,"Error: unknown distance algorithm %s, aborting\n", ((string) opt_dist_alg).c_str());
+			exit(1);
+		 }
+
+
+
+		 undirectedalg = ConnectivityAlg::ALG_BFS;
+
+		 if(!strcasecmp(opt_con_alg,"dijkstra")){
+			 undirectedalg=ConnectivityAlg::ALG_DIJKSTRA;
+
+		 }else if(!strcasecmp(opt_con_alg,"bfs")){
+			 undirectedalg=ConnectivityAlg::ALG_BFS;
+
+		 }else if (!strcasecmp(opt_con_alg,"dfs")){
+			 undirectedalg = ConnectivityAlg::ALG_DFS;
+		 }else if (!strcasecmp(opt_con_alg,"sat")){
+			 undirectedalg = ConnectivityAlg::ALG_SAT;
+		 }else  if (!strcasecmp(opt_con_alg,"thorup")){
+			 undirectedalg = ConnectivityAlg::ALG_THORUP;
+		 }/*else if (!strcasecmp(opt_con_alg,"ramal-reps")){
+			 undirectedalg = ConnectivityAlg::ALG_RAMAL_REPS;
+		 } */else{
+			fprintf(stderr,"Error: unknown undirected reachability algorithm %s, aborting\n", ((string) opt_reach_alg).c_str());
+			exit(1);
+		 }
+
+		    allpairsalg = AllPairsAlg::ALG_DIJKSTRA_ALLPAIRS;
 
 		    if (!strcasecmp(opt_allpairs_alg,"floyd-warshall")){
-		    		allpairsalg = ALG_FLOYDWARSHALL;
+		    		allpairsalg = AllPairsAlg::ALG_FLOYDWARSHALL;
 		   		 }else if(!strcasecmp(opt_allpairs_alg,"dijkstra")){
-		   			allpairsalg=ALG_DIJKSTRA_ALLPAIRS;
+		   			allpairsalg=AllPairsAlg::ALG_DIJKSTRA_ALLPAIRS;
 
-			 }else{
-					fprintf(stderr,"Error: unknown allpairs reachability algorithm %s, aborting\n", ((string) opt_allpairs_alg).c_str());
-					exit(1);
-				 }
+			 } else{
+				fprintf(stderr,"Error: unknown allpairs reachability algorithm %s, aborting\n", ((string) opt_allpairs_alg).c_str());
+				exit(1);
+			 }
+
+
+		    undirected_allpairsalg = AllPairsConnectivityAlg::ALG_DIJKSTRA_ALLPAIRS;
+
+			if (!strcasecmp(opt_undir_allpairs_alg,"floyd-warshall")){
+				undirected_allpairsalg = AllPairsConnectivityAlg::ALG_FLOYDWARSHALL;
+				 }else if(!strcasecmp(opt_undir_allpairs_alg,"dijkstra")){
+					undirected_allpairsalg=AllPairsConnectivityAlg::ALG_DIJKSTRA_ALLPAIRS;
+			 }else  if (!strcasecmp(opt_undir_allpairs_alg,"thorup")){
+				 undirected_allpairsalg = AllPairsConnectivityAlg::ALG_THORUP;
+			 } else{
+				fprintf(stderr,"Error: unknown undirected allpairs reachability algorithm %s, aborting\n", ((string) opt_allpairs_alg).c_str());
+				exit(1);
+			 }
 
         double initial_time = cpuTime();
 
@@ -221,10 +315,12 @@ int main(int argc, char** argv)
             } }
 #endif
          const char *error;
-         Solver S;
+         SimpSolver S;
+         solver = &S;
+         if (!pre) S.eliminate(true);
          S.max_decision_var = opt_restrict_decisions;
 #ifdef DEBUG_SOLVER
-         S.dbg_solver = new Solver();
+         S.dbg_solver = new Solver();S.dbg_solver.verbosity=0;
 #endif
          gzFile in = (argc == 1) ? gzdopen(0, "rb") : gzopen(argv[1], "rb");
              if (in == NULL)
@@ -234,7 +330,10 @@ int main(int argc, char** argv)
                  printf("============================[ Problem Statistics ]=============================\n");
                  printf("|                                                                             |\n"); }
 
-             parse_GRAPH(in, S,opt_symbols?&symbols:NULL);
+             if(!opb)
+            	 parse_GRAPH(in, S,&symbols);
+             else
+            	 parse_PB(in,S,&symbols);
              gzclose(in);
 
              if(opt_verb>2){
@@ -340,7 +439,7 @@ int main(int argc, char** argv)
 
 
 			    std::unordered_map<std::string, int> symbol_table;
-			    if(opt_symbols){
+			    if(using_symbols){
 			    	for (int i = 0;i<symbols.size();i++){
 			    		int var = symbols[i].first;
 			    		string symbol = symbols[i].second;
@@ -393,7 +492,7 @@ int main(int argc, char** argv)
 				printf("\n");
 		}
 
-		   if(opt_verb>0){
+		   if(opt_verb>0 && decidable.size()){
 			   printf("Decidable theories: ");
 		   }
 		   for(int i = 0;i<decidable.size();i++){
@@ -408,7 +507,7 @@ int main(int argc, char** argv)
 				   }
 			   S.decidable_theories.push(S.theories[t]);
 		   }
-		   if(opt_verb>0){
+		   if(opt_verb>0 && decidable.size()){
 				   printf("\n");
 			   }
 
@@ -469,8 +568,81 @@ int main(int argc, char** argv)
 			   exit(0);
 		   }
 
+		if(strlen((const char* )opt_assume_symbols)>0){
+
+			std::ifstream infile((const char* )opt_assume_symbols);
+
+			std::string line;
+
+			std::unordered_map<string,int> symbolmap;
+			for(auto p:symbols){
+				symbolmap[p.second]=p.first;
+			}
+
+			while (std::getline(infile, line))
+			{
+				if(line[0]=='%')
+					continue;
+
+			    std::istringstream iss(line);
+
+			    string s1;
+			    string s2;
+			    string symbol;
+			    bool sign=true;
+			    iss>>s1 >> s2;
+			    if(s1.compare(":-")){
+			    	assert(false);
+			    	fprintf(stderr,"Bad assumption: %s\n",line.c_str());
+			    	exit(1);
+			    }else if(!s2.compare("not")){
+			    	//Then this is a _true_ assumption (yes, its intentionally backward...)
+			    	iss>>symbol;
+			    	sign=false;
+			    }else{
+			    	symbol=s2;
+			    }
+			    if(symbol.back()!='.'){
+			      	assert(false);
+					fprintf(stderr,"Bad assumption: %s\n",line.c_str());
+					exit(1);
+			    }
+			    symbol.pop_back();
+			    if(!symbolmap.count(symbol)){
+			    	assert(false);
+					fprintf(stderr,"Unmapped assumption symbol: %s\n",symbol.c_str());
+					exit(1);
+			    }
+			    int var = symbolmap[symbol];
+			    assert(var>=0);
+
+			    Lit a = mkLit(var,sign);
+			    assume.push(a);
+
+			    /*line.
+			    if(!line.compare(0, "2", ":-")){
+			    	iss>>
+			    }else{
+			    	assert(false);
+			    }*/
+
+
+			}
+		}
+
+		double before_pre_processing = rtime(0);
+		printf("simplify:\n");
+		fflush(stdout);
+		if(pre)
+			S.eliminate(true);
+		fflush(stdout);
+		//exit(0);
+		double preprocessing_time = rtime(0)-before_pre_processing;
+		if(opt_verb>0 && pre){
+			printf("Preprocessing time = %f\n", preprocessing_time);
+		}
         lbool ret=S.solve(assume)?l_True:l_False;
-        if(opt_optimize_mst && ret ==l_True){
+        if(opt_optimize_mst && ret ==l_True && S.theories.size()){
 
         	GraphTheorySolver * g = (GraphTheorySolver*)S.theories[0];
         	if(g->mstDetector){
@@ -480,7 +652,7 @@ int main(int argc, char** argv)
         		Var prev_min = var_Undef;
         		while(true){
         			printf("Optimizing minimum spanning tree (%d)...\n",mst_weight);
-        			if(mst_weight==6){
+        			if(mst_weight==588983){
         				int a=1;
         			}
         			S.cancelUntil(0);
@@ -495,10 +667,14 @@ int main(int argc, char** argv)
 						assume.push(mkLit(prev_min,false));
 						bool check = S.solve(assume);
 						assert(check);
+						if(!check){
+							fprintf(stderr,"Major Error! Instance is no longer satisfiable after removed assertition!\n");
+							exit(3);
+						}
 						if(opt_check_solution){
 											if(!g->check_solved()){
-												fprintf(stderr,"Error! Solution doesn't satisfy graph properties!\n");
-												exit(1);
+												fprintf(stderr,"Error! Solution doesn't satisfy theory properties!\n");
+												exit(3);
 											}
 										}
 						break;
@@ -508,8 +684,8 @@ int main(int argc, char** argv)
 					prev_min = min;
 					if(opt_check_solution){
 										if(!g->check_solved()){
-											fprintf(stderr,"Error! Solution doesn't satisfy graph properties!\n");
-											exit(1);
+											fprintf(stderr,"Error! Solution doesn't satisfy theory properties!\n");
+											exit(3);
 										}
 									}
         		}
@@ -520,327 +696,15 @@ int main(int argc, char** argv)
         if(ret==l_True){
         	if(!opt_csv)
         		printf("s SATISFIABLE\n");
-
-        	if(S.theories.size()){
-				Theory * t = S.theories[0];
-				GraphTheorySolver *g = (GraphTheorySolver*)t;
-				int width = sqrt(g->nNodes());
-				if(opt_width>0){
-					width=opt_width;
-				}
-				int height =width;
-				if(opt_height>0){
-					height = opt_height;
-				}
-				int bits = 1;
-				if(opt_bits>0)
-						bits=opt_bits;
-				int v = 0;
-				//for (int i = 0;i<w;i++){
-				//	for(int j = 0;j<w;j++){
-				int lasty= 0;
-				int maxwidth = log10(pow(2, bits))+1; //highestbit(bits);
-				for(int n = 0;n<height*width*bits;n+=bits){
-					int x = n%(width*bits)/bits;
-					int y = n/(width*bits);
-					if(y > lasty)
-						printf("\n");
-#if not defined(__MINGW32__)
-						if (!opt_csv && isatty(fileno(stdout))){
-#else
-						if(false){
-#endif
-							unsigned long val = 0;
-							for(int j = 0;j<bits;j++){
-								if(S.model[n+j]==l_True){
-									val = val + (1<<j);
-								}
-							}
-
-							//if(val>0){
-								int backcolor = 0;
-								if(val>0){
-									backcolor=log2(val)+1;
-								}
-								if(backcolor<0){
-									int a=1;
-								}
-								int forecolor = 7;
-								if(backcolor>7){
-									backcolor=7;
-								}
-								if(backcolor==3 || backcolor==7){
-									forecolor=0;
-								}
-								printf("\033[1;4%dm\033[1;3%dm%*lu \033[0m",backcolor,forecolor,maxwidth,val);
-							//}else{
-								//printf("\033[1;44m\033[1;37m%*lu \033[0m",maxwidth,val);
-								//printf("\033[1;40m\033[1;30m%*lu \033[0m",maxwidth,val);
-							//}
-						}else if (opt_csv){
-							unsigned long val = 0;
-							for(int j = 0;j<bits;j++){
-								if(S.model[n+j]==l_True){
-									val = val + (1<<j);
-								}
-							}
-							printf("%*lu",maxwidth,val);
-							if (x<width-1){
-								printf(",");
-							}
-						}else{
-							unsigned long val = 0;
-							for(int j = 0;j<bits;j++){
-								if(S.model[n+j]==l_True){
-									val = val + (1<<j);
-								}
-							}
-							printf(" %*lu ",maxwidth,val);
-
-				/*			if(S.model[n]==l_True)
-								printf(" 1");
-							else
-								printf(" 0");*/
-						}
-
-					lasty=y;
-				}
-				printf("\n\n");
-				if(opt_check_solution){
-							if(!g->check_solved()){
-								fprintf(stderr,"Error! Solution doesn't satisfy graph properties!\n");
-								exit(1);
-							}
-						}
-
-				if(opt_print_reach){
-				 v = 0;
-				//for (int i = 0;i<w;i++){
-				//	for(int j = 0;j<w;j++){
-			/*	 lasty= 0;
-				for(int n = 0;n<g->nNodes();n++){
-					int x = n%width;
-					int y = n/width;
-					if(y > lasty)
-						printf("\n");
-#if not defined(__MINGW32__)
-						if (isatty(fileno(stdout))){
-#else
-						if(false){
-#endif
-
-							if(S.model[n]==l_True)
-								printf("\033[1;42m\033[1;37m%3d\033[0m",n);
-							else
-								printf("\033[1;44m\033[1;37m%3d\033[0m",n);
-						}else{
-
-							if(S.model[n]==l_True)
-								printf(" 1");
-							else
-								printf(" 0");
-						}
-
-					lasty=y;
-				}
-
-				printf("\n");printf("\n");
-				*/
-
-
-				for(int t = 0;t<S.theories.size();t++){
-					printf("Theory %d\n", t);
-					GraphTheorySolver *g = (GraphTheorySolver*)S.theories[t];
-					int nnodes = g->nNodes();
-
-					int maxw = log10(g->nNodes() )+1; //highestbit(bits);
-
-					{
-
-						for(int r = 0;r<g->reach_detectors.size();r++){
-
-							int width = sqrt(g->nNodes());
-							if(opt_width>0){
-									width=opt_width;
-								}
-								int height =width;
-								if(opt_height>0){
-									height = opt_height;
-								}
-							int lasty= 0;
-							int extra =  g->nNodes() % width ? (width- g->nNodes() % width ):0;
-							for(int n = 0;n<g->nNodes();n++){
-								int x = n%width;
-
-								int y = (n + extra )/width;
-								if(y > lasty)
-									printf("\n");
-
-								int v =var( g->reach_detectors[r]->reach_lits[n]);
-#if not defined(__MINGW32__)
-								if (isatty(fileno(stdout)))
-#else
-								if(false)
-#endif
-								{
-										if(S.model[v]==l_True)
-											printf("\033[1;42m\033[1;37m%4d\033[0m", v+1);
-										else
-											printf("\033[1;44m\033[1;37m%4d\033[0m",v+1);
-									}else{
-
-										if(S.model[v]==l_True)
-											printf(" 1");
-										else
-											printf(" 0");
-									}
-
-									lasty=y;
-								}
-								printf("\n");
-							}
-
-
-
-							//g->drawFull();
-
-							assert(g->dbg_solved());
-						}
-
-					{
-								for(int r = 0;r<g->distance_detectors.size();r++){
-
-											int width = sqrt(g->nNodes());
-											if(opt_width>0){
-													width=opt_width;
-												}
-												int height =width;
-												if(opt_height>0){
-													height = opt_height;
-												}
-											int lasty= 0;
-											int extra =  g->nNodes() % width ? (width- g->nNodes() % width ):0;
-											for(int n = 0;n<g->nNodes();n++){
-												int x = n%width;
-
-												int y = (n + extra )/width;
-												if(y > lasty)
-													printf("\n");
-
-												int d = g->distance_detectors[r]->positive_reach_detector->distance(n);
-												printf("%*d ",maxw,d);
-
-
-													lasty=y;
-												}
-												printf("\n");
-											}
-							}
-						if(g->mstDetector){
-								int min_weight = g->mstDetector->positive_reach_detector->weight();
-								printf("Min Spanning Tree Weight: %d\n",min_weight);
-								int width = sqrt(g->nNodes());
-								if(opt_width>0){
-										width=opt_width;
-									}
-									int height =width;
-									if(opt_height>0){
-										height = opt_height;
-									}
-								int lasty= 0;
-								vec<bool> down_edge;
-								int extra =  g->nNodes() % width ? (width- g->nNodes() % width ):0;
-								for(int n = 0;n<g->nNodes();n++){
-									int x = n%width;
-
-									int y = (n + extra )/width;
-									if(y > lasty){
-										printf("\n");
-
-										for(int i = 0;i<down_edge.size();i++){
-											if(down_edge[i]){
-												printf("|");
-											}else{
-												printf(" ");
-											}
-											printf(" ");
-										}
-										down_edge.clear();
-										printf("\n");
-									}
-									printf("*");
-									if(x<width-1){
-										int edge_left = g->getEdgeID(n,n+1);
-										Var edge_var = g->edge_list[edge_left].v;
-										if(S.value(edge_var)==l_True &&  g->mstDetector->positive_reach_detector->edgeInTree(edge_left)){
-											printf("-");
-										}else{
-											printf(" ");
-										}
-									}
-
-									if(y<height-1){
-											int edge_down = g->getEdgeID(n,n+width);
-											Var edge_var = g->edge_list[edge_down].v;
-											bool in_tree = g->mstDetector->positive_reach_detector->edgeInTree(edge_down);
-											if(S.value(edge_var)==l_True &&  in_tree){
-												down_edge.push(true);
-											}else{
-												down_edge.push(false);
-											}
-										}
-
-										lasty=y;
-									}
-									printf("\n");
-								}
-
-						if(g->component_detector){
-							int numComponents = g->component_detector->positive_reach_detector->numComponents();
-							printf("Number of connected components is: %d\n",numComponents);
-
-						}
-					}
-
-
-
-
-				}
-/*        		for(int r = 0;r<g->reach_detectors.size();r++){
-
-					int width = sqrt(g->nNodes());
-					int lasty= 0;
-					int extra =  g->nNodes() % width ? (width- g->nNodes() % width ):0;
-					for(int n = 0;n<g->nNodes();n++){
-						int x = n%width;
-
-						int y = (n + extra )/width;
-
-						int v =var( g->reach_detectors[r]->reach_lits[n]);
-						if(v==306){
-							int a =1;
-						}
-						if(S.model[v]==l_True){
-							assert(S.value(v)==l_True);
-							int node = g->reach_detectors[r]->getNode(v);
-							g->reach_detectors[r]->positive_reach_detector->dbg_path(node);
-							int  b=1;
-
-						}
-
-
-						lasty=y;
-					}
-					printf("\n");
-				}*/
-        	}
+        	 for(int i = 0;i<S.theories.size();i++)
+        		 S.theories[i]->printSolution();
 
 			if(opt_witness){
 
 				printf("v ");
 				for(int v =0;v<S.nVars();v++){
 					if(S.model[v]==l_True){
-						printf("+%d ",(v+1));
+						printf("%d ",(v+1));
 					}else if(S.model[v]==l_False){
 						printf("%d ",-(v+1));
 					}/*else{
@@ -850,6 +714,43 @@ int main(int argc, char** argv)
 				printf("0\n");
 			}
 
+			if(using_symbols){
+				FILE * sfile = fopen(opt_symbols,"w");
+				fprintf(sfile,"%% Generated by monosat\n");
+				for(auto p:symbols){
+					Var v = p.first;
+					string & s = p.second;
+					if(S.model[v]==l_True){
+						fprintf(sfile,":- not %s.\n",s.c_str());
+						//cout<<":- not "<< s<<".\n";
+					}else if (S.model[v]==l_False){
+						fprintf(sfile,":- %s.\n",s.c_str());
+						//cout<<":- "<<s<<".\n";
+					}else{
+						//this is unassigned
+						int a =1;
+					}
+				}
+				fflush(sfile);
+				fclose(sfile);
+			}
+
+			if(opb){
+				printf("v ");
+				for(auto p:symbols){
+					Var v = p.first;
+					std::string & s = p.second;
+					if(S.model[v]==l_True){
+						printf("%s ",s.c_str());
+						//cout<<":- not "<< s<<".\n";
+					}else if (S.model[v]==l_False){
+						printf("-%s ",s.c_str());
+						//cout<<":- "<<s<<".\n";
+					}
+				}
+				printf("\n");
+			}
+
         }else if(ret==l_False){
         	printf("s UNSATISFIABLE\n");
         }else{
@@ -857,11 +758,7 @@ int main(int argc, char** argv)
         }
 		if(opt_verb>0){
 			printStats(S);
-			for(int i = 0;i<S.theories.size();i++){
-				Theory * t = S.theories[i];
-				GraphTheorySolver *g = (GraphTheorySolver*)t;
-				g->printStats();
-			}
+
 		}
         fflush(stdout);
 #ifdef NDEBUG
