@@ -114,7 +114,7 @@
 					<folderInfo id="cdt.managedbuild.config.gnu.exe.release.1052123975." name="/" resourcePath="">
 						<toolChain id="cdt.managedbuild.toolchain.gnu.exe.release.783734880" name="Linux GCC" superClass="cdt.managedbuild.toolchain.gnu.exe.release">
 							<targetPlatform id="cdt.managedbuild.target.gnu.platform.exe.release.1533205493" name="Debug Platform" superClass="cdt.managedbuild.target.gnu.platform.exe.release"/>
-							<builder buildPath="${workspace_loc:/Minisat2/Release}" id="cdt.managedbuild.target.gnu.builder.exe.release.1332841149" keepEnvironmentInBuildfile="false" managedBuildOn="true" name="Gnu Make Builder" superClass="cdt.managedbuild.target.gnu.builder.exe.release">
+							<builder buildPath="${workspace_loc:/Minisat2/Release}" id="cdt.managedbuild.target.gnu.builder.exe.release.1332841149" keepEnvironmentInBuildfile="false" managedBuildOn="true" name="Gnu Make Builder" parallelBuildOn="true" parallelizationNumber="3" superClass="cdt.managedbuild.target.gnu.builder.exe.release">
 								<outputEntries>
 									<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="outputPath" name="Debug"/>
 									<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="outputPath" name="Release"/>
@@ -922,6 +922,7 @@
 		<configuration configurationName="Klee">
 			<resource resourceType="PROJECT" workspacePath="/modsat"/>
 		</configuration>
+		<configuration configurationName="TestRelease"/>
 		<configuration configurationName="coverage">
 			<resource resourceType="PROJECT" workspacePath="/modsat"/>
 		</configuration>
