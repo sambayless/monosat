@@ -16,7 +16,7 @@
 #include "dgl/FloydWarshall.h"
 #include "core/Config.h"
 #include "dgl/alg/DisjointSets.h"
-#include "GeoSteiner.h"
+
 using namespace Minisat;
 SteinerDetector::SteinerDetector(int detectorID, GraphTheorySolver * outer,  DynamicGraph &g,DynamicGraph &antig ,double seed):
 Detector(detectorID),outer(outer),g(g),antig(antig),rnd_seed(seed),edge_weights(edge_weights),positive_reach_detector(NULL),negative_reach_detector(NULL){

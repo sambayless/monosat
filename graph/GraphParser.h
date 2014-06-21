@@ -17,13 +17,32 @@
 #include "graph/TestGraph.h"
 #include "core/Config.h"
 #include "pb/PbTheory.h"
+#include "core/Dimacs.h"
 #include <set>
 #include <string>
 namespace Minisat {
 
+struct SteinerStruct{
+	int id;
+	vec<std::pair<int, Var> > terminals;
+	vec<std::pair<int,Var> > weight_constraints;
+	SteinerStruct(int id):id(id){
+
+	}
+};
+
 //=================================================================================================
 // GRAPH Parser:
-
+template<class B, class Solver>
+class GraphParser:public Parser<B,Solver>{
+	vec<std::pair<int,std::string> > * symbols=nullptr;
+	vec<GraphTheory*> graphs;
+	vec<vec<SteinerStruct*>> steiners;
+	PbTheory * pbtheory=nullptr;
+	std::string symbol;
+	vec<int> weights;
+	vec<Lit> lits;
+	int count=0;
 //Each graph file has the following (ascii) format:
 
 //p graph\n
@@ -40,8 +59,7 @@ namespace Minisat {
 //If lit is 0 or 1, this is a constant edge (0 for false, 1 for true)
 //r g u w var is a reach query: var is true if can u reach w in graph g, false otherwise
 
-template<class B, class Solver>
-static void readDiGraph(B& in, Solver& S, vec<GraphTheory*> & graphs) {
+ void readDiGraph(B& in, Solver& S, vec<GraphTheory*> & graphs) {
 	if(opt_ignore_theories){
 		skipLine(in);
 		return;
@@ -69,8 +87,7 @@ static void readDiGraph(B& in, Solver& S, vec<GraphTheory*> & graphs) {
       //  return ev;
 }
 
-template<class B, class Solver>
-static void readEdge(B& in, Solver& S, vec<GraphTheory*> & graphs) {
+ void readEdge(B& in, Solver& S, vec<GraphTheory*> & graphs) {
 	if(opt_ignore_theories){
 		skipLine(in);
 		return;
@@ -99,8 +116,7 @@ static void readEdge(B& in, Solver& S, vec<GraphTheory*> & graphs) {
 
 }
 
-template<class B, class Solver>
-static void readWeightedEdge(B& in, Solver& S, vec<GraphTheory*> & graphs) {
+ void readWeightedEdge(B& in, Solver& S, vec<GraphTheory*> & graphs) {
 	if(opt_ignore_theories){
 		skipLine(in);
 		return;
@@ -130,8 +146,7 @@ static void readWeightedEdge(B& in, Solver& S, vec<GraphTheory*> & graphs) {
 
 }
 
-template<class B, class Solver>
-static void readConnect(B& in, Solver& S, vec<GraphTheory*> & graphs) {
+ void readConnect(B& in, Solver& S, vec<GraphTheory*> & graphs) {
 	if(opt_ignore_theories){
 		skipLine(in);
 		return;
@@ -161,8 +176,7 @@ static void readConnect(B& in, Solver& S, vec<GraphTheory*> & graphs) {
 }
 
 
-template<class B, class Solver>
-static void readReach(B& in, Solver& S, vec<GraphTheory*> & graphs) {
+ void readReach(B& in, Solver& S, vec<GraphTheory*> & graphs) {
 	if(opt_ignore_theories){
 		skipLine(in);
 		return;
@@ -191,8 +205,7 @@ static void readReach(B& in, Solver& S, vec<GraphTheory*> & graphs) {
 
 }
 
-template<class B, class Solver>
-static void readDistance(B& in, Solver& S, vec<GraphTheory*> & graphs) {
+ void readDistance(B& in, Solver& S, vec<GraphTheory*> & graphs) {
 	if(opt_ignore_theories){
 		skipLine(in);
 		return;
@@ -223,8 +236,7 @@ static void readDistance(B& in, Solver& S, vec<GraphTheory*> & graphs) {
 
 
 
-template<class B, class Solver>
-static void readMinSpanningTreeConstraint(B& in, Solver& S, vec<GraphTheory*> & graphs) {
+ void readMinSpanningTreeConstraint(B& in, Solver& S, vec<GraphTheory*> & graphs) {
 	if(opt_ignore_theories){
 		skipLine(in);
 		return;
@@ -250,8 +262,7 @@ static void readMinSpanningTreeConstraint(B& in, Solver& S, vec<GraphTheory*> & 
 
 
 }
-template<class B, class Solver>
-static void readMinSpanningTreeEdgeConstraint(B& in, Solver& S, vec<GraphTheory*> & graphs) {
+ void readMinSpanningTreeEdgeConstraint(B& in, Solver& S, vec<GraphTheory*> & graphs) {
 	if(opt_ignore_theories){
 		skipLine(in);
 		return;
@@ -282,8 +293,7 @@ static void readMinSpanningTreeEdgeConstraint(B& in, Solver& S, vec<GraphTheory*
 }
 
 
-template<class B, class Solver>
-static void readMaxFlowConstraint(B& in, Solver& S, vec<GraphTheory*> & graphs) {
+ void readMaxFlowConstraint(B& in, Solver& S, vec<GraphTheory*> & graphs) {
 	if(opt_ignore_theories){
 		skipLine(in);
 		return;
@@ -315,8 +325,7 @@ static void readMaxFlowConstraint(B& in, Solver& S, vec<GraphTheory*> & graphs) 
 
 
 
-template<class B, class Solver>
-static void readMinConnectedComponentsConstraint(B& in, Solver& S, vec<GraphTheory*> & graphs) {
+ void readMinConnectedComponentsConstraint(B& in, Solver& S, vec<GraphTheory*> & graphs) {
 	if(opt_ignore_theories){
 		skipLine(in);
 		return;
@@ -341,17 +350,8 @@ static void readMinConnectedComponentsConstraint(B& in, Solver& S, vec<GraphTheo
         graph->minConnectedComponents(min_components,reachVar);
 }
 
-struct SteinerStruct{
-	int id;
-	vec<std::pair<int, Var> > terminals;
-	vec<std::pair<int,Var> > weight_constraints;
-	SteinerStruct(int id):id(id){
 
-	}
-};
-
-/*template<class B, class Solver>
-static void readSteinerTreeDeclaration(B& in, Solver& S, vec<GraphTheory*> & graphs, vec<vec<SteinerStruct*>> steiners) {
+/* void readSteinerTreeDeclaration(B& in, Solver& S, vec<GraphTheory*> & graphs, vec<vec<SteinerStruct*>> steiners) {
 	if(opt_ignore_theories){
 		skipLine(in);
 		return;
@@ -377,8 +377,7 @@ static void readSteinerTreeDeclaration(B& in, Solver& S, vec<GraphTheory*> & gra
         }
         steiners[graphID][steinerID] = new SteinerStruct{steinerID};
 }*/
-template<class B, class Solver>
-static void readSteinerTreeTerminal(B& in, Solver& S, vec<GraphTheory*> & graphs, vec<vec<SteinerStruct*>>& steiners) {
+ void readSteinerTreeTerminal(B& in, Solver& S, vec<GraphTheory*> & graphs, vec<vec<SteinerStruct*>>& steiners) {
 	if(opt_ignore_theories){
 		skipLine(in);
 		return;
@@ -403,8 +402,7 @@ static void readSteinerTreeTerminal(B& in, Solver& S, vec<GraphTheory*> & graphs
 	steiners[graphID][steinerID]->terminals.push({node,var});
 
 }
-template<class B, class Solver>
-static void readSteinerTreeConstraint(B& in, Solver& S, vec<GraphTheory*> & graphs, vec<vec<SteinerStruct*>>& steiners) {
+ void readSteinerTreeConstraint(B& in, Solver& S, vec<GraphTheory*> & graphs, vec<vec<SteinerStruct*>>& steiners) {
 	if(opt_ignore_theories){
 		skipLine(in);
 		return;
@@ -426,8 +424,7 @@ static void readSteinerTreeConstraint(B& in, Solver& S, vec<GraphTheory*> & grap
 	steiners[graphID][steinerID]->weight_constraints.push({maxweight,var});
 }
 
-template<class B, class Solver>
-static void readPB(B & in,vec<Lit> & lits, vec<int> & weights, Solver & S, PbTheory * pb){
+ void readPB(B & in,vec<Lit> & lits, vec<int> & weights, Solver & S, PbTheory * pb){
 	if(opt_ignore_theories){
 		skipLine(in);
 		return;
@@ -526,162 +523,168 @@ static void readPB(B & in,vec<Lit> & lits, vec<int> & weights, Solver & S, PbThe
 	 pb->addConstraint(lits,weights,comparison,head,op,oneSided?PbTheory::ConstraintSide::Upper: PbTheory::ConstraintSide::Both);
 }
 
-template<class B, class Solver>
-static void parse_GRAPH_main(B& in, Solver& S, vec<std::pair<int,std::string> > * symbols=NULL ) {
-	vec<GraphTheory*> graphs;
-	vec<vec<SteinerStruct*>> steiners;
-	PbTheory * pbtheory=nullptr;
-	vec<Lit> lits;
-	vec<int> weights;
-    int vars    = 0;
-    int clauses = 0;
-    int cnt     = 0;
-    //std::set<std::string> used_symbols;
-    std::string symbol;
-    for (;;){
-        skipWhitespace(in);
-        if (*in == EOF) break;
-        else if (*in == 'p'){
-        	skipLine(in);
 
-        } else if (*in == 'c'){
-        	if(symbols && eagerMatch(in,"c var ")){
-        		//this is a variable symbol map
-        		skipWhitespace(in);
-        		int v = parseInt(in);
-        		if(v<=0){
-        			printf("PARSE ERROR! Variables must be positive: %c\n", *in), exit(3);
-        		}
 
-        		v--; //subtract one to get the variable id
 
-        		symbol.clear();
-        		skipWhitespace(in);
-        		while(*in != '\n' && ! isWhitespace(*in)){
-        			symbol.push_back(*in);
-        			++in;
-        		}
-        		if(symbol.size()==0){
-        			printf("PARSE ERROR! Empty symbol: %c\n", *in), exit(3);
-        		}
-     /*   		if(symbols && used_symbols.count(symbol)){
-        			printf("PARSE ERROR! Duplicated symbol: %c\n", *symbol.c_str()), exit(3);
-        		}
-        		used_symbols.insert(symbol);*/
+public:
 
-        		symbols->push();
-        		symbols->last().first=v;
-        		symbols->last().second=symbol;
-        		skipLine(in);
-        	}else{
-        		//just a comment
-        		skipLine(in);
-        	}
-        } else if (*in == 'p'){
-            skipLine(in);
-        }else if (*in == 'g'){
-        	++in;
-        	skipWhitespace(in);
-        	if(*in=='d'){
-        		//for now, only digraphs are supported
-        		 readDiGraph(in, S,graphs);
-        	}else{
-        		printf("PARSE ERROR! Unexpected char: %c\n", *in), exit(3);
-        	}
-        }else if (*in == 'e'){
-            cnt++;
-            readEdge(in, S,graphs);
-        }else if (*in == 'w'){
-            cnt++;
-            readWeightedEdge(in, S,graphs);
-        }else if (*in == 'r'){
-            readReach(in, S,graphs);
-        }else if (*in == 'u'){
-            readConnect(in, S,graphs);
-        }else if (*in == 'd'){
-            readDistance(in, S,graphs);
-        }else if (*in == 'm'){
-            readMinSpanningTreeConstraint(in, S,graphs);
-        }else if (*in == 'x'){
-            readMinSpanningTreeEdgeConstraint(in, S,graphs);
-        }else if (*in == 'f'){
-            readMaxFlowConstraint(in, S,graphs);
-        }else if (*in == 'n'){
-            readMinConnectedComponentsConstraint(in, S,graphs);
-        }else if (*in == 's'){
-        	if(!eagerMatch(in,"steiner_")){
-        		printf("PARSE ERROR! Unexpected char: %c\n", *in), exit(3);
-        	}
-        	if(*in=='t'){
-        		if(!eagerMatch(in,"terminal")){
-        			printf("PARSE ERROR! Unexpected char: %c\n", *in), exit(3);
+ bool parseLine(B& in, Solver& S){
+
+
+
+		skipWhitespace(in);
+		if (*in == EOF)
+			return false;
+		else if (*in == 'p'){
+			return false;
+
+		} else if (*in == 'c'){
+			if(symbols && match(in,"c var ")){
+
+				//this is a variable symbol map
+				skipWhitespace(in);
+				int v = parseInt(in);
+				if(v<=0){
+					printf("PARSE ERROR! Variables must be positive: %c\n", *in), exit(3);
 				}
-        		readSteinerTreeTerminal(in,S,graphs, steiners);
-        	}else if (*in=='m'){
-          		if(!eagerMatch(in,"minweight")){
-          			printf("PARSE ERROR! Unexpected char: %c\n", *in), exit(3);
-    				}
-        		readSteinerTreeConstraint(in,S,graphs, steiners);
-        	}
-        }else if (*in == 'o'){
-        	//Pseudoboolean constraint: o is for opb... can't use p, unfortunately...
-        	if(!pbtheory){
-        		pbtheory = new PbTheory(&S);
-        	    S.addTheory(pbtheory);
-        	}
-        	readPB(in,lits,weights,S,pbtheory);
-        }else{
-            cnt++;
-            readClause(in, S, lits);
-            S.addClause_(lits);
-        }
 
-    }
-    //clear any unmapped symbols (have to do this _before_ implementing constraints, which may introduce new variables)
-    if(symbols){
-		int i,j=0;
-		for(i = 0;i<symbols->size();i++ ){
-			std::pair<int,std::string> p = (*symbols)[i];
-			Var v = p.first;
-			if(v<=S.nVars()){
-				//keep this symbol
-				(*symbols)[j++] = (*symbols)[i];
+				v--; //subtract one to get the variable id
+
+				symbol.clear();
+				skipWhitespace(in);
+				while(*in != '\n' && ! isWhitespace(*in)){
+					symbol.push_back(*in);
+					++in;
+				}
+				if(symbol.size()==0){
+					printf("PARSE ERROR! Empty symbol: %c\n", *in), exit(3);
+				}
+	 /*   		if(symbols && used_symbols.count(symbol)){
+					printf("PARSE ERROR! Duplicated symbol: %c\n", *symbol.c_str()), exit(3);
+				}
+				used_symbols.insert(symbol);*/
+
+				symbols->push();
+				symbols->last().first=v;
+				symbols->last().second=symbol;
+				return true;
+			}else{
+				//just a comment
+				return false;
 			}
-		}
-		symbols->shrink(i-j);
-    }
-
-    for(int gid = 0;gid<steiners.size();gid++){
-    	for(auto & steiner:steiners[gid]){
-    		if(steiner){
-				graphs[gid]->addSteinerTree(steiner->terminals,steiner->id);
-				for(auto & weight : steiner->weight_constraints){
-					graphs[gid]->addSteinerWeightConstraint(steiner->id, weight.first,weight.second);
+		} else if (*in == 'p'){
+			return false;
+		}else if (*in == 'g'){
+			++in;
+			skipWhitespace(in);
+			if(*in=='d'){
+				//for now, only digraphs are supported
+				 readDiGraph(in, S,graphs);
+			}else{
+				printf("PARSE ERROR! Unexpected char: %c\n", *in), exit(3);
+			}
+			return true;
+		}else if (*in == 'e'){
+			count++;
+			readEdge(in, S,graphs);
+			return true;
+		}else if (*in == 'w'){
+			count++;
+			readWeightedEdge(in, S,graphs);
+			return true;
+		}else if (*in == 'r'){
+			readReach(in, S,graphs);
+			return true;
+		}else if (*in == 'u'){
+			readConnect(in, S,graphs);
+			return true;
+		}else if (*in == 'd'){
+			readDistance(in, S,graphs);
+			return true;
+		}else if (*in == 'm'){
+			readMinSpanningTreeConstraint(in, S,graphs);
+			return true;
+		}else if (*in == 'x'){
+			readMinSpanningTreeEdgeConstraint(in, S,graphs);
+			return true;
+		}else if (*in == 'f'){
+			readMaxFlowConstraint(in, S,graphs);
+			return true;
+		}else if (*in == 'n'){
+			readMinConnectedComponentsConstraint(in, S,graphs);
+			return true;
+		}else if (*in == 's'){
+			if(!eagerMatch(in,"steiner_")){
+				printf("PARSE ERROR! Unexpected char: %c\n", *in), exit(3);
+			}
+			if(*in=='t'){
+				if(!eagerMatch(in,"terminal")){
+					printf("PARSE ERROR! Unexpected char: %c\n", *in), exit(3);
 				}
-				delete(steiner);
-    		}
-    	}
-    }
+				readSteinerTreeTerminal(in,S,graphs, steiners);
+			}else if (*in=='m'){
+				if(!eagerMatch(in,"minweight")){
+					printf("PARSE ERROR! Unexpected char: %c\n", *in), exit(3);
+					}
+				readSteinerTreeConstraint(in,S,graphs, steiners);
+			}
+			return true;
+		}else if (*in == 'o'){
+			//Pseudoboolean constraint: o is for opb... can't use p, unfortunately...
+			if(!pbtheory){
+				pbtheory = new PbTheory(&S);
+				S.addTheory(pbtheory);
+			}
+			readPB(in,lits,weights,S,pbtheory);
+			return true;
+		}
+		return false;
+ }
 
-    for(int i = 0;i<graphs.size();i++){
-    	if(graphs[i])
-    	   graphs[i]->implementConstraints();
-    }
-    if(pbtheory)
-    	pbtheory->implementConstraints();
-}
+ void implementConstraints(Solver & S){
 
-// Inserts problem into solver.
-//
-template<class Solver>
-static void parse_GRAPH(gzFile input_stream, Solver& S, vec<std::pair<int,std::string> > * symbols=NULL) {
-    StreamBuffer in(input_stream);
-    parse_GRAPH_main(in, S,symbols);
+	    //clear any unmapped symbols (have to do this _before_ implementing constraints, which may introduce new variables)
+	    if(symbols){
+			int i,j=0;
+			for(i = 0;i<symbols->size();i++ ){
+				std::pair<int,std::string> p = (*symbols)[i];
+				Var v = p.first;
+				if(v<=S.nVars()){
+					//keep this symbol
+					(*symbols)[j++] = (*symbols)[i];
+				}
+			}
+			symbols->shrink(i-j);
+	    }
 
-}
+	    for(int gid = 0;gid<steiners.size();gid++){
+	    	for(auto & steiner:steiners[gid]){
+	    		if(steiner){
+					graphs[gid]->addSteinerTree(steiner->terminals,steiner->id);
+					for(auto & weight : steiner->weight_constraints){
+						graphs[gid]->addSteinerWeightConstraint(steiner->id, weight.first,weight.second);
+					}
+					delete(steiner);
+	    		}
+	    	}
+	    }
+
+	    for(int i = 0;i<graphs.size();i++){
+	    	if(graphs[i])
+	    	   graphs[i]->implementConstraints();
+	    }
+	    if(pbtheory)
+	    	pbtheory->implementConstraints();
+ }
+
+ void setSymbols(vec<std::pair<int,std::string> > * symbols){
+	 this->symbols = symbols;
+ }
+
+};
 
 //=================================================================================================
-}
+};
 
 
 

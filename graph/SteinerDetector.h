@@ -38,9 +38,6 @@ public:
 		CRef reach_edge_marker;
 		CRef non_reach_edge_marker;
 
-;
-
-
 		SteinerTree * positive_reach_detector;
 		SteinerTree * negative_reach_detector;
 		SteinerTree *  positive_conflict_detector;

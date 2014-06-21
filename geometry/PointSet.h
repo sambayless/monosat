@@ -13,6 +13,7 @@ class PointSet{
 	vec<Point<D,T>> points;
 	vec<bool> enabled;
 	int sz;
+	int num_enabled= 0;
 public:
 
 	int dimension(){
@@ -23,6 +24,9 @@ public:
 	}
 	int fullSize()const{
 		return points.size();
+	}
+	int nEnabled() const{
+		return num_enabled;
 	}
 	bool isEnabled(int pointID){
 		return enabled[pointID];
@@ -42,9 +46,9 @@ public:
 			return;
 		enabled[pointID]=_enabled;
 		if(enabled){
-			sz++;
+			num_enabled++;
 		}else{
-			sz--;
+			num_enabled--;
 		}
 	}
 
@@ -60,9 +64,11 @@ public:
 	int addPoint(const Point<D,T> & P, int pointID){
 		points.push(P);
 		enabled.push(false);
+		sz++;
 		return points.size()-1;
 	}
-
+    const Point<D,T>& operator [] (int index) const { return points[index]; }
+    Point<D,T>&       operator [] (int index)       { return points[index]; }
 	void clearHistory(){
 
 	}

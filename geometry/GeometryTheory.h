@@ -18,6 +18,7 @@
 #include "GeometryDetector.h"
 #include "PointSet.h"
 #include "ConvexHullDetector.h"
+#include "GeometrySteinerDetector.h"
 #ifndef NDEBUG
 #include <cstdio>
 #endif
@@ -60,7 +61,7 @@ public:
 
 	vec<GeometryDetector*> detectors;
 	ConvexHullDetector<D,T>* convexHull=nullptr;
-
+ 	GeometricSteinerDetector<D,T> * steinerTree=nullptr;
 	vec<int> marker_map;
 
 	bool requiresPropagation;
@@ -628,13 +629,7 @@ public:
 		static vec<int> detectors_to_check;
 
 		conflict.clear();
-		//Can probably speed this up alot by a) constant propagating reaches that I care about at level 0, and b) Removing all detectors for nodes that appear only in the opposite polarity (or not at all) in the cnf.
-		//That second one especially.
 
-		//At level 0, need to propagate constant reaches/source nodes/points...
-
-
-		//stats_initial_propagation_time += rtime(1) - startproptime;
 		dbg_sync();
 		assert(dbg_graphsUpToDate());
 
@@ -803,8 +798,6 @@ public:
 	void implementConstraints(){
 		if(!S->okay())
 			return;
-
-
 	}
 
 
@@ -812,7 +805,7 @@ public:
 
 	}
 
-	void assertConvexHullArea(int areaGreaterThan, Var outerVar){
+	void convexHullArea(int areaGreaterThan, Var outerVar){
 		if(!convexHull){
 			int detectorID = detectors.size();
 			convexHull = new ConvexHullDetector<D,T>(detectorID,this,drand(rnd_seed));
@@ -821,7 +814,7 @@ public:
 
 		convexHull->addAreaDetectorLit(areaGreaterThan,outerVar);
 	}
-	void assertConvexHullContains(Point<D,T> point, Var outerVar){
+	void convexHullContains(Point<D,T> point, Var outerVar){
 		if(!convexHull){
 			int detectorID = detectors.size();
 			convexHull = new ConvexHullDetector<D,T>(detectorID,this,drand(rnd_seed));
@@ -829,6 +822,15 @@ public:
 		}
 
 		convexHull->addPointContainmentLit(point,outerVar);
+	}
+	void euclidianSteinerTreeSize(int sizeLessThan, Var outerVar){
+		if(!steinerTree){
+			int detectorID = detectors.size();
+			steinerTree = new GeometricSteinerDetector<D,T>(detectorID,this,drand(rnd_seed));
+			detectors.push(steinerTree);
+		}
+
+		steinerTree->addAreaDetectorLit(sizeLessThan,outerVar);
 	}
 
 };

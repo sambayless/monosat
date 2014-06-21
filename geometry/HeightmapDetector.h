@@ -47,7 +47,7 @@ public:
 		void buildAreaLTReason(T area,vec<Lit> & conflict);
 		void buildPointContainedReason(vec<Lit> & conflict);
 		void buildPointNotContainedReason(vec<Lit> & conflict);
-
+/*
 	    void backtrackUntil(int level){
 	    	 assert(qhead<outer->S->trail.size());
 			 for (int c = qhead; c >= outer->S->trail_lim[level]; c--){
@@ -92,7 +92,7 @@ public:
 				}
 			 }
 
-		}
+		}*/
 		void buildReason(Lit p, vec<Lit> & reason, CRef marker);
 		bool checkSatisfied();
 		Lit decide();
