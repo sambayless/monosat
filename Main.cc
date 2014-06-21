@@ -332,9 +332,9 @@ int main(int argc, char** argv)
                  printf("|                                                                             |\n"); }
 
              Dimacs<StreamBuffer,SimpSolver> parser;
-             GraphParser<char*,SimpSolver> graphParser;
+             GraphParser<char *, SimpSolver> graphParser;
              graphParser.setSymbols(&symbols);
-             parser.addParser(& graphParser);
+             parser.addParser(&graphParser);
              parser.parse_DIMACS(in,S);
 
              gzclose(in);
@@ -346,7 +346,6 @@ int main(int argc, char** argv)
             		 std::cout<<"Symbol: " << (v+1) << " = " << s <<"\n";
             	 }
              }
-
 
          // Change to signal-handlers that will only notify the solver and allow it to terminate
            // voluntarily:

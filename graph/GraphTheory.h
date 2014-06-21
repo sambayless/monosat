@@ -50,9 +50,6 @@ class GraphTheorySolver;
 #include <cstdio>
 #endif
 
-#ifdef DEBUG_SOLVER
-#include "TestGraph.h"
-#endif
 
 class GraphTheorySolver:public GraphTheory{
 public:
@@ -65,13 +62,7 @@ private:
 	Solver * S;
 public:
 	int id;
-#ifdef DEBUG_GRAPH
-	Solver * dbg;
-	TestGraph *dbg_graph;
-#endif
-#ifdef DEBUG_SOLVER
-	TestGraph * shadow_dbg;
-#endif
+
 
 
 	vec<lbool> assigns;
@@ -262,14 +253,7 @@ public:
 				mc = new EdmondsKarp(cutGraph);
 			}
 
-#ifdef DEBUG_GRAPH
-		dbg=new Solver();dbg->verbosity=0;
-		dbg_graph = new TestGraph(dbg);
-#endif
-#ifdef DEBUG_SOLVER
-		if(S->dbg_solver)
-			shadow_dbg = new TestGraph(S->dbg_solver);
-#endif
+
 	}
 
 	void printStats(int detailLevel){
@@ -464,13 +448,7 @@ public:
 
      ~GraphTheorySolver(){};
 	 int newNode(){
-#ifdef DEBUG_GRAPH
-		 dbg_graph->newNode();
-#endif
-#ifdef DEBUG_SOLVER
-		if(S->dbg_solver)
-			shadow_dbg->newNode();
-#endif
+
 		 edges.push();
 		 for(int i = 0;i<edges.size();i++)
 			 edges[i].growTo(edges.size());
@@ -498,19 +476,7 @@ public:
 		return n>=0 && n<nNodes();
 	}
 
-#ifdef DEBUG_GRAPH
-		bool dbg_clause(const vec<Lit> &conflict){
-#ifndef NDEBUG
-			static vec<Lit> c;
-			c.clear();
-			for(int i = 0;i<conflict.size();i++)
-				c.push(~conflict[i]);
-		//	assert(dbg->solve());
-			bool res = dbg->solve(c);
-			assert(~res);
-#endif
-			return true;
-		}
+
 		bool dbg_propgation(Lit l){
 #ifndef NDEBUG
 			static vec<Lit> c;
@@ -538,7 +504,7 @@ public:
 #endif
 			return true;
 		}
-#endif
+
 	void	dbg_sync_reachability(){
 #ifdef DEBUG_GRAPH
 
@@ -1204,13 +1170,6 @@ public:
 	/*	if(outerVar==var_Undef)
 			outerVar = S->newVar();*/
 
-#ifdef DEBUG_GRAPH
-		 dbg_graph->newEdge(from,to,outerVar);
-#endif
-#ifdef DEBUG_SOLVER
-		if(S->dbg_solver)
-			shadow_dbg->newEdge(from,to,outerVar);
-#endif
 		int index = edge_list.size();
 		edge_list.push();
 		Var v = newVar(outerVar,index,true);
@@ -1257,13 +1216,6 @@ public:
 	}
 	void reachesWithinSteps(int from, int to, Var reach_var, int within_steps){
 
-	#ifdef DEBUG_GRAPH
-			 dbg_graph->reaches(from,  to,reach_var,within_steps);
-	#endif
-	#ifdef DEBUG_SOLVER
-			if(S->dbg_solver)
-				shadow_dbg->reaches(from,  to,reach_var,within_steps);
-	#endif
 				assert(from<g.nodes());
 				if(within_steps<=-1)
 					within_steps = g.nodes();
@@ -1385,13 +1337,6 @@ public:
 	void allpairs(int from, int to, Var reach_var,int within_steps=-1){
 				//for now, reachesWithinSteps to be called instead
 
-		#ifdef DEBUG_GRAPH
-				 dbg_graph->reaches(from,  to,reach_var,within_steps);
-		#endif
-		#ifdef DEBUG_SOLVER
-				if(S->dbg_solver)
-					shadow_dbg->reaches(from,  to,reach_var,within_steps);
-		#endif
 					assert(from<g.nodes());
 					if(within_steps>g.nodes())
 						within_steps=-1;
@@ -1439,13 +1384,7 @@ public:
 			return;
 		}
 
-#ifdef DEBUG_GRAPH
-		 dbg_graph->connects(from,  to,reach_var,within_steps);
-#endif
-#ifdef DEBUG_SOLVER
-		if(S->dbg_solver)
-			shadow_dbg->connects(from,  to,reach_var,within_steps);
-#endif
+
 			assert(from<g.nodes());
 			if(within_steps>g.nodes())
 				within_steps=-1;
@@ -1481,13 +1420,6 @@ public:
 				return;
 			}
 
-	#ifdef DEBUG_GRAPH
-			 dbg_graph->reaches(from,  to,reach_var,within_steps);
-	#endif
-	#ifdef DEBUG_SOLVER
-			if(S->dbg_solver)
-				shadow_dbg->reaches(from,  to,reach_var,within_steps);
-	#endif
 				assert(from<g.nodes());
 				if(within_steps>g.nodes())
 					within_steps=-1;

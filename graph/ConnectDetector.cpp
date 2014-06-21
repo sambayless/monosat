@@ -331,9 +331,7 @@ void ConnectDetector::buildReachReason(int node,vec<Lit> & conflict){
 			outer->learnt_path_clause_length+= (conflict.size()-1);
 			double elapsed = cpuTime()-starttime;
 			outer->pathtime+=elapsed;
-	#ifdef DEBUG_GRAPH
-			assert(outer->dbg_clause(conflict));
-	#endif
+
 		}
 		void ConnectDetector::buildNonReachReason(int node,vec<Lit> & conflict){
 			static int it = 0;
@@ -452,9 +450,6 @@ void ConnectDetector::buildReachReason(int node,vec<Lit> & conflict){
 			double elapsed = cpuTime()-starttime;
 			 outer->mctime+=elapsed;
 
-	#ifdef DEBUG_GRAPH
-			 assert(outer->dbg_clause(conflict));
-	#endif
 		}
 
 		/**
@@ -584,9 +579,6 @@ void ConnectDetector::buildReachReason(int node,vec<Lit> & conflict){
 					double elapsed = cpuTime()-starttime;
 					 outer->mctime+=elapsed;
 
-			#ifdef DEBUG_GRAPH
-					 assert(outer->dbg_clause(conflict));
-			#endif
 				}
 
 		void ConnectDetector::buildReason(Lit p, vec<Lit> & reason, CRef marker){
@@ -614,10 +606,6 @@ void ConnectDetector::buildReachReason(int node,vec<Lit> & conflict){
 					int u =getNode(v);
 					buildReachReason(u,reason);
 
-		#ifdef DEBUG_GRAPH
-				 assert(outer->dbg_clause(reason));
-
-		#endif
 					//double elapsed = cpuTime()-startpathtime;
 				//	pathtime+=elapsed;
 				}else if(marker==non_reach_marker){

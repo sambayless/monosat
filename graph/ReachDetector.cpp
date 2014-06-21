@@ -471,10 +471,7 @@ void ReachDetector::buildReachReason(int node,vec<Lit> & conflict){
 			outer->learnt_path_clause_length+= (conflict.size()-1);
 			double elapsed = rtime(2)-starttime;
 			outer->pathtime+=elapsed;
-	#ifdef DEBUG_GRAPH
-			 assert(outer->dbg_clause(conflict));
 
-	#endif
 		}
 		void ReachDetector::buildNonReachReason(int node,vec<Lit> & conflict){
 			static int it = 0;
@@ -729,9 +726,7 @@ void ReachDetector::buildReachReason(int node,vec<Lit> & conflict){
 			double elapsed = rtime(2)-starttime;
 			 outer->mctime+=elapsed;
 
-	#ifdef DEBUG_GRAPH
-			 assert(outer->dbg_clause(conflict));
-	#endif
+
 		}
 
 		/**
@@ -861,9 +856,7 @@ void ReachDetector::buildReachReason(int node,vec<Lit> & conflict){
 					double elapsed = rtime(2)-starttime;
 					 outer->mctime+=elapsed;
 
-			#ifdef DEBUG_GRAPH
-					 assert(outer->dbg_clause(conflict));
-			#endif
+
 				}
 
 		void ReachDetector::buildReason(Lit p, vec<Lit> & reason, CRef marker){
@@ -889,10 +882,7 @@ void ReachDetector::buildReachReason(int node,vec<Lit> & conflict){
 					int u =getNode(v);
 					buildReachReason(u,reason);
 
-		#ifdef DEBUG_GRAPH
-				 assert(outer->dbg_clause(reason));
 
-		#endif
 					//double elapsed = rtime(2)-startpathtime;
 				//	pathtime+=elapsed;
 				}else if(marker==non_reach_marker){

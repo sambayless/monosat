@@ -100,19 +100,25 @@ private:
 			skipWhitespace(in);
 			if (*in == EOF)
 				break;
-			if (*in == 'c' || *in == 'p'){
-				skipLine(in);
-			} else{
-				readLine(linebuf,in);
-
-				if (parseLine(linebuf.begin(),S)){
-					//do nothing
+			readLine(linebuf,in);
+			if (parseLine(linebuf.begin(),S)){
+				//do nothing
+			}else if (linebuf[0] == 'p'){
+				char * b =linebuf.begin();
+				if (eagerMatch(b, "p cnf")){
+					vars    = parseInt(b);
+					clauses = parseInt(b);
 				}else{
-					//if nothing else works, attempt to parse this line as a clause.
-					cnt++;
-					readClause(linebuf.begin(), S, lits);
-					S.addClause_(lits);
+					printf("PARSE ERROR! Unexpected char: %c\n", *in), exit(3);
 				}
+			}else if (linebuf[0] == 'c'){
+				//comment line
+				skipLine(in);
+			}else{
+				//if nothing else works, attempt to parse this line as a clause.
+				cnt++;
+				readClause(linebuf.begin(), S, lits);
+				S.addClause_(lits);
 			}
 		}
 		if (vars != S.nVars())

@@ -535,10 +535,7 @@ public:
 		skipWhitespace(in);
 		if (*in == EOF)
 			return false;
-		else if (*in == 'p'){
-			return false;
-
-		} else if (*in == 'c'){
+		else if (*in == 'c'){
 			if(symbols && match(in,"c var ")){
 
 				//this is a variable symbol map
@@ -573,6 +570,10 @@ public:
 				return false;
 			}
 		} else if (*in == 'p'){
+			if(match(in,"p graph")){
+				//these lines are not currently useful...
+				return true;
+			}
 			return false;
 		}else if (*in == 'g'){
 			++in;
