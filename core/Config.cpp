@@ -17,11 +17,9 @@ int dbg_total_iterations=0;
 static const char* _cat = "CORE";
 static const char* _cat_sms = "SMS";
 static const char* _cat_graph ="GRAPH";
-
 static const char* _cat_geom ="GEOMETRY";
 
  IntOption Minisat::opt_verb("MAIN","verb", "Verbosity level (0=silent, 1=some, 2=more).",1,IntRange(0,3));
-
  DoubleOption  Minisat::opt_var_decay         (_cat, "var-decay",   "The variable activity decay factor",            0.95,     DoubleRange(0, false, 1, false));
  DoubleOption  Minisat::opt_clause_decay      (_cat, "cla-decay",   "The clause activity decay factor",              0.999,    DoubleRange(0, false, 1, false));
  DoubleOption  Minisat::opt_random_var_freq   (_cat, "rnd-freq",    "The frequency with which the decision heuristic tries to choose a random variable", 0, DoubleRange(0, true, 1, true));
@@ -150,4 +148,3 @@ AllPairsAlg Minisat::allpairsalg=AllPairsAlg::ALG_DIJKSTRA_ALLPAIRS;
 AllPairsConnectivityAlg Minisat::undirected_allpairsalg=AllPairsConnectivityAlg::ALG_DIJKSTRA_ALLPAIRS;
 ComponentsAlg Minisat::componentsalg =ComponentsAlg::ALG_DISJOINT_SETS;
 MinSpanAlg Minisat::mstalg = MinSpanAlg::ALG_KRUSKAL;
-

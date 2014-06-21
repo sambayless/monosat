@@ -153,7 +153,6 @@ enum class ComponentsAlg{
 };
 extern ComponentsAlg componentsalg;
 
-
 enum class ConvexHullAlg{
 	ALG_MONOTONE_HULL,
 	ALG_QUICKHULL
@@ -180,8 +179,6 @@ static inline double rtime(int level=1){
 		return 0;
 	}
 }
-
-
 
 }
 
