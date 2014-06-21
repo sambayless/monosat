@@ -257,11 +257,6 @@ CRef Solver::attachClauseSafe(vec<Lit> & ps){
 	void Solver::attachClause(CRef cr) {
     const Clause& c = ca[cr];
     assert(c.size() > 1);
-
-    if(c.size()<2){
-    	exit(4);
-    }
-
 #ifndef NDEBUG
     for(int p = 0;p<=1;p++)
 		if(value(c[p])==l_False && level(var(c[p]))==0){
@@ -323,11 +318,6 @@ bool Solver::satisfied(const Clause& c) const {
 //
 void Solver::cancelUntil(int level) {
     if (decisionLevel() > level){
-
-        for(int i = 0;i<theories.size();i++){
-			theories[i]->backtrackUntil(level);
-		}
-
         for (int c = trail.size()-1; c >= trail_lim[level]; c--){
             Var      x  = var(trail[c]);
             assigns [x] = l_Undef;
@@ -348,7 +338,6 @@ void Solver::cancelUntil(int level) {
         if(decisionLevel()<track_min_level){
 			track_min_level=decisionLevel();
 		}
-
         for(int i:theory_queue){
         	in_theory_queue[i]=false;
         }
@@ -356,14 +345,12 @@ void Solver::cancelUntil(int level) {
         for(int i = 0;i<theories.size();i++){
 			theories[i]->backtrackUntil(level);
 		}
-
     }
 }
 
 void Solver::backtrackUntil(int level){
-	int backtrackTo = S->trail_lim[level];
-	if(backtrackTo <super_qhead)
-		super_qhead =backtrackTo;
+	if(S->trail.size()<super_qhead)
+		super_qhead =S->trail.size();
 }
 
 //=================================================================================================

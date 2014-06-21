@@ -307,10 +307,8 @@ public:
     int     nClauses   ()      const;       // The current number of original clauses.
     int     nLearnts   ()      const;       // The current number of learnt clauses.
     int     nVars      ()      const;       // The current number of variables.
-
     int		nUnassignedVars()  const;		// The number of variables left to assign. Does not include variables that are not decision vars!
     int     nFreeVars  ()      const;		// The number of non-unit variables
-
 
     // Resource contraints:
     //
@@ -462,12 +460,9 @@ protected:
     vec<char>           polarity;         // The preferred polarity of each variable.
     vec<char>           decision;         // Declares if a variable is eligible for selection in the decision heuristic.
     vec<int>			priority;		  // Static, lexicographic heuristic
-
     vec<TheoryData>     theory_vars;
-
     vec<Lit>            trail;            // Assignment stack; stores all assigments made in the order they were made.
     vec<int>            trail_lim;        // Separator indices for different decision levels in 'trail'.
-protected:
     vec<VarData>        vardata;          // Stores reason and level for each variable.
     int                 qhead;            // Head of queue (as index into the trail -- no more explicit propagation queue in MiniSat).
     int                 simpDB_assigns;   // Number of top-level assignments since last execution of 'simplify()'.
@@ -721,9 +716,7 @@ inline int      Solver::nClauses      ()      const   { return clauses.size(); }
 inline int      Solver::nLearnts      ()      const   { return learnts.size(); }
 inline int      Solver::nVars         ()      const   { return vardata.size(); }
 inline int 	    Solver::nUnassignedVars()	  const	  { return (int)dec_vars - trail.size();}
-
 inline int      Solver::nFreeVars     ()      const   { return (int)dec_vars - ((trail_lim.size() == 0) ? trail.size() : trail_lim[0]); }
-
 inline void     Solver::setPolarity   (Var v, bool b) { polarity[v] = b; }
 inline void     Solver::setDecisionVar(Var v, bool b) 
 { 
