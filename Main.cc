@@ -330,10 +330,16 @@ int main(int argc, char** argv)
                  printf("============================[ Problem Statistics ]=============================\n");
                  printf("|                                                                             |\n"); }
 
+             Dimacs<StreamBuffer,SimpSolver> parser;
+             GraphParser<char *, SimpSolver> graphParser;
+             graphParser.setSymbols(&symbols);
+             parser.addParser(&graphParser);
+             parser.parse_DIMACS(in,S);
+/*
              if(!opb)
             	 parse_GRAPH(in, S,&symbols);
              else
-            	 parse_PB(in,S,&symbols);
+            	 parse_PB(in,S,&symbols);*/
              gzclose(in);
 
              if(opt_verb>2){
@@ -343,12 +349,12 @@ int main(int argc, char** argv)
             		 std::cout<<"Symbol: " << (v+1) << " = " << s <<"\n";
             	 }
              }
-
+/*
              if(strlen(graphstr)){
 				 gzFile gin =gzopen(graphstr, "rb");
 				parse_GRAPH(gin,S);
 				gzclose(gin);
-             }
+             }*/
 
          // Change to signal-handlers that will only notify the solver and allow it to terminate
            // voluntarily:
