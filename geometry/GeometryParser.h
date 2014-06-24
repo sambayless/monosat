@@ -5,14 +5,15 @@
  *      Author: sam
  */
 
-#ifndef GRAPH_PARSER_H_
-#define GRAPH_PARSER_H_
+#ifndef GEOMETRY_PARSER_H_
+#define GEOMETRY_PARSER_H_
 
 
 #include <stdio.h>
 
 #include "utils/ParseUtils.h"
 #include "graph/GraphParser.h"
+#include "geometry/GeometryTypes.h"
 #include "core/SolverTypes.h"
 #include "geometry/GeometryTheory.h"
 #include "core/Dimacs.h"
@@ -23,65 +24,91 @@ namespace Minisat {
 // GEOMETRY Parser:
 template<class B, class Solver>
 class GeometryParser:public Parser<B,Solver>{
+	vec<GeometryTheorySolver<1>*> space_1D;
+	GeometryTheorySolver<2> * space_2D=nullptr;
+	GeometryTheorySolver<3> * space_3D=nullptr;
+	vec<char> tmp_str;
+	struct ParsePoint{
+		Var var;
+		vec<double> position;
+	};
 
-	GeometryTheorySolver * space_2D=nullptr;
-	GeometryTheorySolver * space_3D=nullptr;
+	vec<vec<ParsePoint>> pointsets;
 
+	struct ConvexHullArea{
+		int pointsetID;
+		double area;
+		Var v;
+	};
 
-void readConvexHull(B& in, Solver& S, GeometryTheorySolver* G) {
+	vec<ConvexHullArea> convex_hull_areas;
 
+	struct ConvexHullPointContained{
+		int pointsetID;
+		ParsePoint point;
 
-    if(!eagerMatch(in,"hull")){
-    	 printf("PARSE ERROR! Unexpected char: %c\n", *in), exit(3);
-    }
+	};
 
+	vec<ConvexHullPointContained> convex_hull_point_containments;
 
-	int hullID = parseInt(in); //ID of the hull
+	struct ConvexHullPoint{
+		int pointsetID;
+		Var pointVar;
+		Var pointOnHull;
+	};
+
+	vec<ConvexHullPoint> convex_hull_points;
+	void readPoint(B& in, Solver& S ) {
+
+		int pointsetID = parseInt(in);
+		int d = parseInt(in);
+		pointsets.growTo(pointsetID+1);
+		pointsets[pointsetID].push();
+		ParsePoint & point = pointsets[pointsetID].last();
+		for(int i = 0;i<d;i++){
+			double p = parseDouble(in,tmp_str);
+			point.position.push(p);
+		}
+		int v = parseInt(in);
+		point.var = v-1;
+		while ( point.var >= S.nVars()) S.newVar();
+	}
+
+void readConvexHullArea(B& in, Solver& S) {
+
+    //hull_area_lt pointsetID area var
+	int pointset = parseInt(in); //ID of the hull
+	double area =  parseDouble(in,tmp_str);
+	int var = parseInt(in)-1;
+
+	convex_hull_areas.push({pointset,area,var});
+}
+void readConvexHullPointContained(B& in, Solver& S) {
+
+    //hull_point_contained pointsetID D p1 p2 ... pD var
+
+    convex_hull_point_containments.push();
+    ParsePoint & point = convex_hull_point_containments.last().point;
+	int pointsetID = parseInt(in);
 	int d = parseInt(in);
-	G->createConvexHull(hullID,d);
-
-}
-
-void readHullPoint(B& in, Solver& S,GeometryTheorySolver* G,vec<int> & point ) {
-	if(opt_ignore_graph){
-		skipLine(in);
-		return;
+	for(int i = 0;i<d;i++){
+		int p = parseInt(in);
+		point.position.push(p);
 	}
-	 if(!eagerMatch(in,"hullpoint")){
-    	printf("PARSE ERROR! Unexpected char: %c\n", *in), exit(3);
-    }
-    ++in;
-    point.clear();
-        int hullID = parseInt(in);
-        int d = parseInt(in);
-        int hullVar = parseInt(in)-1;
-        for(int i = 0;i<d;i++){
-        	int p = parseInt(in);
-        	point.push(p);
-        }
-
-        G->addHullPoint(hullID,mkLit(hullVar,false), point);
-
+	int v = parseInt(in)-1;
+	point.var = v;
+	convex_hull_point_containments.last().pointsetID = pointsetID;
 }
-void readConvexHullPointContained(B& in, Solver& S,GeometryTheorySolver* G,vec<int> & point ) {
-	if(opt_ignore_graph){
-		skipLine(in);
-		return;
-	}
+void readConvexHullPointOnHull(B& in, Solver& S) {
 
-    ++in;
-    point.clear();
-        int pID = parseInt(in);
-        int d = parseInt(in);
-        int containedVar = parseInt(in)-1;
-        for(int i = 0;i<d;i++){
-        	int p = parseInt(in);
-        	point.push(p);
-        }
+    //point_on_hull pointsetID pointVar var
 
-        G->addPointContainmentLit(pID,mkLit(containedVar,false), point);
-
+	int pointsetID = parseInt(in);
+	int pointVar = parseInt(in)-1;
+	int var = parseInt(in)-1;
+	convex_hull_points.push({pointsetID,pointVar, var});
 }
+
 public:
 
  bool parseLine(B& in, Solver& S){
@@ -93,10 +120,13 @@ public:
 			return false;
 		}else if (match(in,"point")){
 			//add a point to a point set
+			readPoint(in,S);
 		}else if (match(in,"convex_hull_area_lt")){
-
+			readConvexHullArea(in,S);
 		}else if (match(in,"convex_hull_containment")){
-
+			readConvexHullPointContained(in,S);
+		}else if (match(in,"point_on_convex_hull")){
+			readConvexHullPointContained(in,S);
 		}else if (match(in,"heightmap_volume")){
 
 		}else if (match(in, "euclidian_steiner_tree_weight")){
@@ -108,6 +138,35 @@ public:
  }
 
  void implementConstraints(Solver & S){
+	 //build point sets in their appropriate spaces.
+	 //for now, we only support up to 3 dimensions
+	 for(int i = 0;i<pointsets.size();i++){
+		 vec<ParsePoint> & pointset = pointsets[i];
+		 if(pointset.size()==0)
+			 continue;
+		 ParsePoint & firstP = pointset[0];
+		 int D = firstP.position.size();
+
+		 if(D==1){
+			 space_1D.growTo(i+1,nullptr);
+			 if(!space_1D[i]){
+				 space_1D[i] = new GeometryTheorySolver<1>(&S);
+				 S.addTheory(space_1D[i]);
+			 }
+		 }
+
+		 for(ParsePoint & p:pointset){
+			 if(p.position.size()!=D){
+				 fprintf(stderr,"All points in a pointset must have the same dimensionality\n");
+				 exit(3);
+			 }
+			 if(D==1){
+				 Point<1,double> pnt(p.position);
+				 space_1D[i]->newPoint(pnt,p.var);
+			 }
+		 }
+
+	 }
 
  }
 

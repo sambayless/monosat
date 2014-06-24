@@ -146,7 +146,7 @@ public:
 
 	void printStats(int detailLevel){
 		if(detailLevel>0){
-			for(Detector * d:detectors)
+			for(GeometryDetector * d:detectors)
 				d->printStats();
 		}
 
@@ -352,10 +352,10 @@ public:
 			dbg_sync();
 			for(int i =0;i<points.size();i++){
 
-				if(points[i].pointID>=0 && under.isEnabled(i)){
-					assert(value(points[i].v)==l_True);
-				}else if (points[i].pointID>=0 &&  !over.isEnabled(i)){
-					assert(value(points[i].v)==l_False);
+				if(points[i].id>=0 && under.isEnabled(i)){
+					assert(value(points[i].var)==l_True);
+				}else if (points[i].id>=0 &&  !over.isEnabled(i)){
+					assert(value(points[i].var)==l_False);
 				}
 			}
 
@@ -384,7 +384,7 @@ public:
 						under.disablePoint( point_num);
 					}else{
 						over.enablePoint(point_num);
-						assert(over.hasPoint(e.pointID));
+						//assert(over.hasPoint(e.pointID));
 					}
 				}else{
 				  //This is a reachability literal
@@ -414,7 +414,7 @@ public:
 
 		dbg_full_sync();
 		for(int i = 0;i<detectors.size();i++){
-			Detector * r = detectors[i];
+			GeometryDetector * r = detectors[i];
 			Lit l =r->decide();
 			if(l!=lit_Undef){
 				stats_decisions++;
@@ -496,7 +496,7 @@ public:
 	bool dbg_graphsUpToDate(){
 #ifdef DEBUG_GRAPH
 		for(int i = 0;i<points.size();i++){
-			if(points[i].v<0)
+			if(points[i].var<0)
 				continue;
 			PointData e = points[i];
 			lbool val = value(e.var);
@@ -572,6 +572,7 @@ public:
 			}
 		}
 #endif
+/*
 #ifdef RECORD
 		if(under.outfile){
 			fprintf(under.outfile,"enqueue %d\n", dimacs(l));
@@ -585,6 +586,7 @@ public:
 				fflush(over.outfile);
 			}
 #endif
+*/
 
 		//if(v>= min_point_var && v<min_point_var+points.size())
 		if(isPointVar(var(l))){
@@ -594,7 +596,7 @@ public:
 			assert(points[pointID].var==var(l));
 
 
-			trail.push({true,!sign(l), pointID});
+			trail.push(Assignment(true,!sign(l), pointID,var(l)));
 
 			Assignment e = trail.last();
 			if (!sign(l)){
@@ -605,7 +607,7 @@ public:
 
 		}else{
 
-			trail.push({false,!sign(l), 0,0,v});
+			trail.push(Assignment(false,!sign(l), 0,v));
 			//this is an assignment to a non-point atom. (eg, a reachability assertion)
 			detectors[getDetector(var(l))]->assign(l);
 		}
@@ -779,7 +781,7 @@ public:
 
 		//num_points++;
 		points[index].var =v;
-		points[index].outerVar =outerVar;
+		//points[index].outerVar =outerVar;
 		points[index].point=point;
 
 		points[index].id=index;
@@ -787,7 +789,7 @@ public:
 
 
 		under.addPoint(point,index);
-		under.disablePoint(point, index);
+		under.disablePoint(index);
 		over.addPoint(point,index);
 
     	return mkLit(v,false);

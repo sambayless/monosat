@@ -8,7 +8,7 @@
 #ifndef GEOMETRY_DETECTOR_H_
 #define GEOMETRY_DETECTOR_H_
 #include "core/SolverTypes.h"
-#include "GeometryTypes.h"
+
 #include "mtl/Vec.h"
 using namespace Minisat;
 
@@ -27,6 +27,9 @@ public:
 	virtual void buildReason(Lit p, vec<Lit> & reason, CRef marker)=0;
 	virtual bool checkSatisfied()=0;
 	virtual void backtrackUntil(int level){
+
+	}
+	virtual void printStats(){
 
 	}
 	virtual void backtrackUntil(Lit p){

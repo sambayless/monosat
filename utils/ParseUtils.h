@@ -25,7 +25,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include <stdio.h>
 
 #include <zlib.h>
-
+#include "mtl/Vec.h"
 namespace Minisat {
 
 //-------------------------------------------------------------------------------------------------
@@ -93,6 +93,21 @@ static int parseInt(B& in) {
         val = val*10 + (*in - '0'),
         ++in;
     return neg ? -val : val; }
+
+template<class B>
+static double parseDouble(B& in, vec<char> & tmp) {
+    int     val = 0;
+    bool    neg = false;
+    skipWhitespace(in);
+    tmp.clear();
+    while (*in=='+' || *in=='-' || *in=='.' || (*in >= '0' && *in <= '9')){
+    	tmp.push(*in);
+    	++in;
+    }
+
+
+    return strtod(&tmp[0],nullptr);
+}
 
 
 // String matching: in case of a match the input iterator will be advanced the corresponding

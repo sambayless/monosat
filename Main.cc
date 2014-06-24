@@ -47,6 +47,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "pb/PbParser.h"
 #include "mtl/Map.h"
 #include "geometry/GeometryTheory.h"
+#include "geometry/GeometryParser.h"
 using namespace Minisat;
 using namespace std;
 //=================================================================================================
@@ -333,8 +334,11 @@ int main(int argc, char** argv)
 
              Dimacs<StreamBuffer,SimpSolver> parser;
              GraphParser<char *, SimpSolver> graphParser;
+
              graphParser.setSymbols(&symbols);
              parser.addParser(&graphParser);
+             GeometryParser<char *, SimpSolver> geometryParser;
+             parser.addParser(&geometryParser);
              parser.parse_DIMACS(in,S);
 
              gzclose(in);
