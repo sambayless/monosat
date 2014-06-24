@@ -810,7 +810,7 @@ public:
 	void convexHullArea(int areaGreaterThan, Var outerVar){
 		if(!convexHull){
 			int detectorID = detectors.size();
-			convexHull = new ConvexHullDetector<D,T>(detectorID,this,drand(rnd_seed));
+			convexHull = new ConvexHullDetector<D,T>(detectorID,under, over,this,drand(rnd_seed));
 			detectors.push(convexHull);
 		}
 
@@ -819,7 +819,7 @@ public:
 	void convexHullContains(Point<D,T> point, Var outerVar){
 		if(!convexHull){
 			int detectorID = detectors.size();
-			convexHull = new ConvexHullDetector<D,T>(detectorID,this,drand(rnd_seed));
+			convexHull = new ConvexHullDetector<D,T>(detectorID,under, over,this,drand(rnd_seed));
 			detectors.push(convexHull);
 		}
 

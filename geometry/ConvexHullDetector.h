@@ -3,15 +3,16 @@
 #define CONVEX_DETECTOR_H_
 #include "core/SolverTypes.h"
 #include "PointSet.h"
-#include "GeometryDetector.h"
 #include "GeometryTheory.h"
+#include "GeometryDetector.h"
+
 #include "ConvexHull.h"
 #include "MonotoneConvexHull.h"
 #include "QuickConvexHull.h"
 #include "Polygon.h"
 using namespace Minisat;
 
-template<unsigned int D, class T=double>
+template<unsigned int D, class T>
 class ConvexHullDetector:public GeometryDetector{
 public:
 		GeometryTheorySolver<D,T> * outer;
@@ -45,7 +46,7 @@ public:
 		int qhead;
 
 
-		bool propagate(vec<Lit> & trail,vec<Lit> & conflict);
+		bool propagate(vec<Lit> & conflict);
 		void buildAreaGEQReason(T area, vec<Lit> & conflict);
 		void buildAreaLTReason(T area,vec<Lit> & conflict);
 		void buildPointContainedReason(vec<Lit> & conflict);
@@ -64,6 +65,7 @@ public:
 		}
 
 };
+
 
 template<unsigned int D, class T>
 ConvexHullDetector<D,T>::ConvexHullDetector(int detectorID,PointSet<D,T> & under, PointSet<D,T> & over, GeometryTheorySolver<D,T> * outer,double seed):
@@ -127,25 +129,8 @@ void ConvexHullDetector<D,T>::buildReason(Lit p, vec<Lit> & reason, CRef marker)
 }
 
 template<unsigned int D, class T>
-bool ConvexHullDetector<D,T>::propagate(vec<Lit> & trail,vec<Lit> & conflict){
+bool ConvexHullDetector<D,T>::propagate(vec<Lit> & conflict){
 	bool any_changed=false;
-	for(;qhead<trail.size();qhead++){
-		Lit l = trail[qhead];
-		int pointIndex = var(l)-lowest_point_var;
-		if(pointIndex>=0 && pointIndex<point_lit_map.size() && point_lit_map[pointIndex]!=-1){
-			any_changed=true;
-			//then this is an assignment to a hull point;
-			int pointID = point_lit_map[pointIndex];
-			if(sign(l)){
-				//this point is excluded from the hull
-				assert(!under.isEnabled(pointID));
-				over.setPointEnabled(pointID,false);
-			}else{
-				assert(over.isEnabled(pointID));
-				under.setPointEnabled(pointID,true);
-			}
-		}
-	}
 
 	if(any_changed){
 
@@ -164,12 +149,12 @@ bool ConvexHullDetector<D,T>::propagate(vec<Lit> & trail,vec<Lit> & conflict){
 				T areaGEQ = areaDetectors[i].areaGreaterEqThan;
 				if(under_area>=areaGEQ){
 					//l is true
-					if(outer->S->value(l)==l_True){
+					if(outer->value(l)==l_True){
 						//do nothing
-					}else if(outer->S->value(l)==l_Undef){
+					}else if(outer->value(l)==l_Undef){
 
-						outer->S->uncheckedEnqueue(l,area_geq_marker) ;
-					}else if (outer->S->value(l)==l_False){
+						outer->enqueue(l,area_geq_marker) ;
+					}else if (outer->value(l)==l_False){
 						conflict.push(l);
 						//buildAreaGEQReason(under_area,conflict);
 						return false;
@@ -177,11 +162,11 @@ bool ConvexHullDetector<D,T>::propagate(vec<Lit> & trail,vec<Lit> & conflict){
 				}else if (over_area<areaGEQ){
 					l=~l;
 					//l is true
-					if(outer->S->value(l)==l_True){
+					if(outer->value(l)==l_True){
 						//do nothing
-					}else if(outer->S->value(l)==l_Undef){
-						outer->S->uncheckedEnqueue(l,area_not_geq_marker) ;
-					}else if (outer->S->value(l)==l_False){
+					}else if(outer->value(l)==l_Undef){
+						outer->enqueue(l,area_not_geq_marker) ;
+					}else if (outer->value(l)==l_False){
 						conflict.push(l);
 						//buildAreaLTReason(over_area,conflict);
 						return false;
@@ -200,12 +185,12 @@ bool ConvexHullDetector<D,T>::propagate(vec<Lit> & trail,vec<Lit> & conflict){
 
 			if(p_under.contains(point)){
 				//l is true
-				if(outer->S->value(l)==l_True){
+				if(outer->value(l)==l_True){
 					//do nothing
-				}else if(outer->S->value(l)==l_Undef){
+				}else if(outer->value(l)==l_Undef){
 
-					outer->S->uncheckedEnqueue(l,point_contained_marker) ;
-				}else if (outer->S->value(l)==l_False){
+					outer->enqueue(l,point_contained_marker) ;
+				}else if (outer->value(l)==l_False){
 					conflict.push(l);
 					//buildAreaGEQReason(under_area,conflict);
 					return false;
@@ -213,11 +198,11 @@ bool ConvexHullDetector<D,T>::propagate(vec<Lit> & trail,vec<Lit> & conflict){
 			}else if (!p_over.contains(point)){
 				l=~l;
 				//l is true
-				if(outer->S->value(l)==l_True){
+				if(outer->value(l)==l_True){
 					//do nothing
-				}else if(outer->S->value(l)==l_Undef){
-					outer->S->uncheckedEnqueue(l,point_not_contained_marker) ;
-				}else if (outer->S->value(l)==l_False){
+				}else if(outer->value(l)==l_Undef){
+					outer->enqueue(l,point_not_contained_marker) ;
+				}else if (outer->value(l)==l_False){
 					conflict.push(l);
 					//buildAreaLTReason(over_area,conflict);
 					return false;
@@ -238,6 +223,21 @@ Lit ConvexHullDetector<D,T>::decide(){
 	return lit_Undef;
 }
 
+template<unsigned int D, class T>
+void ConvexHullDetector<D,T>::buildAreaGEQReason(T area, vec<Lit> & conflict){
 
+}
+template<unsigned int D, class T>
+void ConvexHullDetector<D,T>::buildAreaLTReason(T area,vec<Lit> & conflict){
+
+}
+template<unsigned int D, class T>
+void ConvexHullDetector<D,T>::buildPointContainedReason(vec<Lit> & conflict){
+
+}
+template<unsigned int D, class T>
+void ConvexHullDetector<D,T>::buildPointNotContainedReason(vec<Lit> & conflict){
+
+}
 
 #endif

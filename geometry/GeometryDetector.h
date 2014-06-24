@@ -22,10 +22,12 @@ public:
 	int getID(){
 		return detectorID;
 	}
-	virtual void addPointContainmentLit(Lit l,vec<double> & point)=0;
+
 	virtual bool propagate(vec<Lit> & conflict)=0;
 	virtual void buildReason(Lit p, vec<Lit> & reason, CRef marker)=0;
-	virtual bool checkSatisfied()=0;
+	virtual bool checkSatisfied(){
+		return true;
+	}
 	virtual void backtrackUntil(int level){
 
 	}
@@ -39,7 +41,9 @@ public:
 	virtual void preprocess(){
 
 	}
-	virtual Lit decide()=0;
+	virtual Lit decide(){
+		return lit_Undef;
+	}
 	//virtual vec<int> & getLitMap();
 	GeometryDetector(int _detectorID):detectorID(_detectorID){};
 	virtual ~GeometryDetector(){

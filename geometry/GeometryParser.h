@@ -24,9 +24,9 @@ namespace Minisat {
 // GEOMETRY Parser:
 template<class B, class Solver>
 class GeometryParser:public Parser<B,Solver>{
-	vec<GeometryTheorySolver<1>*> space_1D;
-	GeometryTheorySolver<2> * space_2D=nullptr;
-	GeometryTheorySolver<3> * space_3D=nullptr;
+	vec<GeometryTheorySolver<1,double>*> space_1D;
+	vec<GeometryTheorySolver<2,double>*> space_2D;
+	//vec<GeometryTheorySolver<3,double>*> space_3D;
 	vec<char> tmp_str;
 	struct ParsePoint{
 		Var var;
@@ -140,6 +140,7 @@ public:
  void implementConstraints(Solver & S){
 	 //build point sets in their appropriate spaces.
 	 //for now, we only support up to 3 dimensions
+	 vec<int> pointsetDim;
 	 for(int i = 0;i<pointsets.size();i++){
 		 vec<ParsePoint> & pointset = pointsets[i];
 		 if(pointset.size()==0)
@@ -150,11 +151,29 @@ public:
 		 if(D==1){
 			 space_1D.growTo(i+1,nullptr);
 			 if(!space_1D[i]){
-				 space_1D[i] = new GeometryTheorySolver<1>(&S);
+				 space_1D[i] = new GeometryTheorySolver<1,double>(&S);
 				 S.addTheory(space_1D[i]);
 			 }
+		 }else if (D==2){
+			 space_2D.growTo(i+1,nullptr);
+			 if(!space_2D[i]){
+				 space_2D[i] = new GeometryTheorySolver<2,double>(&S);
+				 S.addTheory(space_2D[i]);
+			 }
+		 }/*else if (D==3){
+			 space_3D.growTo(i+1,nullptr);
+			 if(!space_3D[i]){
+				 space_3D[i] = new GeometryTheorySolver<3,double>(&S);
+				 S.addTheory(space_3D[i]);
+			 }
+		 }*/else{
+
+			 fprintf(stderr,"Only points of dimension 1 and 2 currently supported (found point %d of dimension %d), aborting\n", i,D);
+			 exit(3);
 		 }
 
+		 pointsetDim.growTo(i+1,-1);
+		 pointsetDim[i]=D;
 		 for(ParsePoint & p:pointset){
 			 if(p.position.size()!=D){
 				 fprintf(stderr,"All points in a pointset must have the same dimensionality\n");
@@ -163,11 +182,71 @@ public:
 			 if(D==1){
 				 Point<1,double> pnt(p.position);
 				 space_1D[i]->newPoint(pnt,p.var);
+			 }else if(D==2){
+				 Point<2,double> pnt(p.position);
+				 space_2D[i]->newPoint(pnt,p.var);
+			 }/*else if(D==3){
+				 Point<3,double> pnt(p.position);
+				 space_3D[i]->newPoint(pnt,p.var);
+			 }*/else{
+				 assert(false);
 			 }
+		 }
+	 }
+
+	 for (auto & c: convex_hull_areas){
+		 if(c.pointsetID>=pointsetDim.size() || c.pointsetID<0 || pointsetDim[c.pointsetID]<0){
+			 fprintf(stderr,"Bad pointsetID %d\n", c.pointsetID);
+		 }
+		 int D = pointsetDim[c.pointsetID];
+		 if(D==1){
+			 space_1D[c.pointsetID]->convexHullArea(c.area,c.v);
+		 }else if(D==2){
+			 space_2D[c.pointsetID]->convexHullArea(c.area,c.v);
+		 }/*else if(D==3){
+			 space_3D[c.pointsetID]->convexHullArea(c.area,c.v);
+		 }*/else{
+			 assert(false);
+		 }
+
+	 }
+	 for (auto & c: convex_hull_point_containments){
+		 if(c.pointsetID>=pointsetDim.size() || c.pointsetID<0 || pointsetDim[c.pointsetID]<0){
+			 fprintf(stderr,"Bad pointsetID %d\n", c.pointsetID);
+		 }
+		 int D = pointsetDim[c.pointsetID];
+
+		 if(D==1){
+			 Point<1,double> pnt(c.point.position);
+			 space_1D[c.pointsetID]->convexHullContains(pnt, c.point.var);
+		 }else if(D==2){
+			 Point<2,double> pnt(c.point.position);
+			 space_2D[c.pointsetID]->convexHullContains(pnt, c.point.var);
+		 }/*else if(D==3){
+			 Point<3,double> pnt(c.point.position);
+			 space_3D[c.pointsetID]->convexHullContains(pnt, c.point.var);
+		 }*/else{
+			 assert(false);
 		 }
 
 	 }
 
+	 for (auto & c: convex_hull_points){
+		 if(c.pointsetID>=pointsetDim.size() || c.pointsetID<0 || pointsetDim[c.pointsetID]<0){
+			 fprintf(stderr,"Bad pointsetID %d\n", c.pointsetID);
+		 }
+		 int D = pointsetDim[c.pointsetID];
+		 if(D==1){
+			 space_1D[c.pointsetID]->convexHullContains(c.pointVar,c.pointOnHull);
+		 }else if(D==2){
+			 space_2D[c.pointsetID]->convexHullContains(c.pointVar,c.pointOnHull);
+		 }/*else if(D==3){
+			 space_3D[c.pointsetID]->convexHullContains(c.pointVar,c.pointOnHull);
+		 }*/else{
+			 assert(false);
+		 }
+
+	 }
  }
 
 };

@@ -29,6 +29,8 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "core/SolverTypes.h"
 #include "core/Theory.h"
 #include "core/Config.h"
+template<unsigned int D, class T> class GeometryTheorySolver;
+
 namespace Minisat {
 
 //=================================================================================================
