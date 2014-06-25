@@ -783,15 +783,11 @@ public:
 		points.push();
 		Var v = newVar(outerVar,index,true);
 
-
 		//num_points++;
 		points[index].var =v;
 		//points[index].outerVar =outerVar;
 		points[index].point=point;
-
 		points[index].id=index;
-
-
 
 		under.addPoint(point,index);
 		under.disablePoint(index);
@@ -800,13 +796,10 @@ public:
     	return mkLit(v,false);
     }
 
-
-
 	void implementConstraints(){
 		if(!S->okay())
 			return;
 	}
-
 
 	void printSolution(){
 
@@ -818,18 +811,18 @@ public:
 			convexHull = new ConvexHullDetector<D,T>(detectorID,under, over,this,drand(rnd_seed));
 			detectors.push(convexHull);
 		}
-
 		convexHull->addAreaDetectorLit(areaGreaterThan,outerVar);
 	}
+
 	void convexHullContains(Point<D,T> point, Var outerVar){
 		if(!convexHull){
 			int detectorID = detectors.size();
 			convexHull = new ConvexHullDetector<D,T>(detectorID,under, over,this,drand(rnd_seed));
 			detectors.push(convexHull);
 		}
-
 		convexHull->addPointContainmentLit(point,outerVar);
 	}
+
 	void euclidianSteinerTreeSize(int sizeLessThan, Var outerVar){
 		if(!steinerTree){
 			int detectorID = detectors.size();

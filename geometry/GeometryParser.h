@@ -120,7 +120,7 @@ public:
 			//add a point to a point set
 			readPoint(in,S);
 
-		}else if (match(in,"convex_hull_area_lt")){
+		}else if (match(in,"convex_hull_area_gt")){
 			readConvexHullArea(in,S);
 		}else if (match(in,"convex_hull_containment")){
 			readConvexHullPointContained(in,S);

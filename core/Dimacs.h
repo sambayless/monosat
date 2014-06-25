@@ -86,6 +86,7 @@ private:
 				++in;
 			}
 		  }
+		  linebuf.push(0);
 		  return true;
 	}
 

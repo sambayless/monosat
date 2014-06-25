@@ -104,7 +104,7 @@ static double parseDouble(B& in, vec<char> & tmp) {
     	tmp.push(*in);
     	++in;
     }
-
+    tmp.push(0);
 
     return strtod(&tmp[0],nullptr);
 }
