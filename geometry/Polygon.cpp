@@ -8,19 +8,37 @@
 #include "Polygon.h"
 #include "mtl/Vec.h"
 #include "mtl/Sort.h"
+#include <cmath>
 //Note that this is subject to rounding errors. It also might only be correct for convex polygons.
 //Also, this is only correct for planar (non-self-intersecting) polygons.
 template<>
 double Polygon<2,double>::getArea(){
-	 vec<Point2D> &  w = getVertices();
+	vec<Point2D> &  points = getVertices();
+
 	double sum = 0;
-	for (int i = 1;i<w.size();i++){
-		Point2D prev = w[i-1];
-		Point2D cur = w[i];
+	for (int i = 0;i<points.size();i++){
+		Point2D& prev = i>0? points[i-1]: points.last();
+		Point2D& cur = points[i];
 		sum += prev[0]*cur[1]-cur[0]*prev[1];
 	}
-	return sum/2.0;
+	return std::abs(sum/2.0);
 }
+
+template<>
+bool Polygon<2,double>::contains(Point<2,double> & point){
+	vec<Point2D> &  points = getVertices();
+	int i;
+	  int j;
+	  bool result = false;
+	  for (i = 0, j = points.size() - 1; i < points.size(); j = i++) {
+		if ((points[i].y > point.y) != (points[j].y > point.y) &&
+			(point.x < (points[j].x - points[i].x) * (point.y - points[i].y) / (points[j].y-points[i].y) + points[i].x)) {
+		  result = !result;
+		 }
+	  }
+	  return result;
+}
+
 //Note that this is subject to rounding errors.
 template<>
 double Polygon<2,double>::getPerimeter(){
@@ -104,9 +122,17 @@ void Polygon<2,double>::reorderVertices(){
 	for(int i =0;i<vertices.size();i++){
 		vertices[i] = oldPoints[points_clockwise[i]];
 	}
+
 	vertices_clockwise=true;
 }
+template<>
+bool Polygon<1,double>::contains(Point<1,double> & point){
 
+}
+template<>
+void Polygon<1,double>::reorderVertices(){
+
+}
 template<>
 double Polygon<1,double>::getArea(){
 	 return 0;

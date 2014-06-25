@@ -26,6 +26,7 @@ template<>
 void QuickConvexHull<3,double>::update(){
 	vec<Point3D> points;
 	pointSet.getEnabledPoints(points);
+	sort(points,SortLexicographic<3,double>());
 	std::vector<Point3D> pointvec;
 	for(int i =0;i<points.size();i++)
 		pointvec.push_back(points[i]);
@@ -39,6 +40,7 @@ template<>
 void QuickConvexHull<2,double>::update(){
 	vec<Point2D> points;
 	pointSet.getEnabledPoints(points);
+	sort(points,SortLexicographic<2,double>());//not sure if this is required or not...
 	std::vector<Point2D> pointvec;
 	for(int i =0;i<points.size();i++)
 		pointvec.push_back(points[i]);

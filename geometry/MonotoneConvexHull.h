@@ -18,6 +18,7 @@ class MonotoneConvexHull:public ConvexHull<D,T>{
 
 	PointSet<D,T> & pointSet;
 	ConvexPolygon<D,T> hull;
+
 public:
 	MonotoneConvexHull(PointSet<D,T> & p):pointSet(p){
 
@@ -31,6 +32,7 @@ public:
 		update();
 		return hull;
 	}
+
 private:
 	T cross(const Point<D,T> &O, const Point<D,T> &A, const Point<D,T> &B);
 };

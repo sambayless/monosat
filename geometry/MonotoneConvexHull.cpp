@@ -13,14 +13,29 @@ void MonotoneConvexHull<1,double>::update(){
 }
 template<>
 void MonotoneConvexHull<2,double>::update(){
+
 		vec<Point2D> points;
 		pointSet.getEnabledPoints(points);
 		sort(points,SortLexicographic<2,double>());
 		hull.clear();
 		vec<Point2D> & list = hull.getVertices();
-		list.push(points[0]);
-		list.push(points[1]);
-		for (int i = 3;i<points.size();i++){
+
+
+		// Build lower hull
+		for (int i = 0; i < points.size(); ++i) {
+			if(list.size()>=2 && cross(list[list.size()-2],list[list.size()-1],points[i])<=0)
+				list.pop();
+			list.push(points[i]);
+		}
+
+		// Build upper hull
+		for (int i =points.size()-2, t = list.size()+1; i >= 0; i--) {
+			while (list.size() >= t && cross(list[list.size()-2],list[list.size()-1],points[i])<=0)
+				list.pop();
+			list.push(points[i]);
+		}
+
+		/*for (int i = 2;i<points.size();i++){
 
 			while(list.size()>2){
 				//check if the last three points do not make a right turn:
@@ -45,9 +60,10 @@ void MonotoneConvexHull<2,double>::update(){
 				}
 
 			}
-		}
-		assert(list[0]==list.last());
-
+		}*/
+		assert(list.size()==0 || ( list[0]==list.last()));
+		if(list.size())
+			list.pop();//for now, we aren't replicating the first vertex at the end of the polygon.
 	}
 
 template<>
@@ -59,7 +75,7 @@ double MonotoneConvexHull<2,double>::getArea(){
 	for (int i = 0;i<pointSet.getClockwisePoints().size();i++){
 		int pid = pointSet.getClockwisePoints()[i];
 		if(pointSet.pointEnabled(pid)){
-			if(prevPID){
+			if(prevPID>=0){
 				auto & p = pointSet[pid];
 				auto & prev = pointSet[prevPID];
 				area+=prev.x *p.y - prev.y*p.x;

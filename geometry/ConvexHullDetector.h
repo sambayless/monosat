@@ -156,7 +156,7 @@ bool ConvexHullDetector<D,T>::propagate(vec<Lit> & conflict){
 						outer->enqueue(l,area_geq_marker) ;
 					}else if (outer->value(l)==l_False){
 						conflict.push(l);
-						//buildAreaGEQReason(under_area,conflict);
+						buildAreaGEQReason(under_area,conflict);
 						return false;
 					}
 				}else if (over_area<areaGEQ){
@@ -168,7 +168,7 @@ bool ConvexHullDetector<D,T>::propagate(vec<Lit> & conflict){
 						outer->enqueue(l,area_not_geq_marker) ;
 					}else if (outer->value(l)==l_False){
 						conflict.push(l);
-						//buildAreaLTReason(over_area,conflict);
+						buildAreaLTReason(over_area,conflict);
 						return false;
 					}
 				}
@@ -215,12 +215,18 @@ bool ConvexHullDetector<D,T>::propagate(vec<Lit> & conflict){
 template<unsigned int D, class T>
 bool ConvexHullDetector<D,T>::checkSatisfied(){
 
-
-	/*for (auto & p:over.getEnabledPoints()){
-
-	}*/
+	vec<Point<D,T>> enabled_points;
+/*	for (auto & p:over.getEnabledPoints(enabled_points)){
+		printf("(%f, %f)",p.x,p.y);
+	}
+	printf("\n");*/
 	MonotoneConvexHull<D,T> cv(over);
-	T area = cv.getArea();
+
+	T area = cv.getHull().getArea();
+	T expectOver = over_hull->getHull().getArea();
+	T expectUnder =under_hull->getHull().getArea();
+	assert(equal_epsilon(area, expectOver));
+	assert(equal_epsilon(area, expectUnder));
 	for(auto & a: areaDetectors){
 		T area_cmp = a.areaGreaterEqThan;
 		Lit l = a.l;
@@ -245,11 +251,22 @@ Lit ConvexHullDetector<D,T>::decide(){
 
 template<unsigned int D, class T>
 void ConvexHullDetector<D,T>::buildAreaGEQReason(T area, vec<Lit> & conflict){
+	//the reason that the area is greater or equal to the current value is the set of points in the convex hull (all of which are enabled).
+	for(auto & p:under_hull->getHull()){
+		int pID = p.getID();
+		assert(under.pointEnabled(pID));
+		conflict.push(mkLit(outer->getPointVar(pID),false));
 
+	}
 }
 template<unsigned int D, class T>
 void ConvexHullDetector<D,T>::buildAreaLTReason(T area,vec<Lit> & conflict){
-
+	//the reason that the area is less than some value is that some point that is OUTSIDE the convex hull is not enabled.
+	for(int i = 0;i<over.size();i++){
+		if(!over.pointEnabled(i) && ! over_hull->getHull().contains(over[i])){
+			conflict.push(mkLit(outer->getPointVar(i),false));
+		}
+	}
 }
 template<unsigned int D, class T>
 void ConvexHullDetector<D,T>::buildPointContainedReason(vec<Lit> & conflict){

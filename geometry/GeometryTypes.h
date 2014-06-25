@@ -12,14 +12,54 @@
 #include "mtl/Rnd.h"
 #include <cmath>
 #include <algorithm>
+
 using namespace Minisat;
 
+/**
+ * c++14 version:
+ * template <typename T> constexpr T epsilon;
+
+template <> constexpr float  epsilon<float>  = 0.001f;
+template <> constexpr double epsilon<double> = 0.000001;
+ */
+template <typename T> struct epsilon;
+
+template <> struct epsilon<float>
+{
+private:
+    float const value = 0.000001f;
+public:
+
+    operator double()const{return value;}
+};
+
+template <> struct epsilon<double>
+{
+private:
+    double const value = 0.000000001;
+public:
+
+    operator double()const{return value;}
+};
+
+
+
+
+template<class T> bool equal_epsilon(T a, T b);
+
+template<> inline bool equal_epsilon(double a, double b){
+	return std::abs(a-b)<=epsilon<double>();
+}
+template<> inline bool equal_epsilon(float a, float b){
+	return std::abs(a-b)<=epsilon<float>();
+}
 
 template<unsigned int D, class T=double>
 struct Point{
 	int size()const{
 		return D;
 	}
+	int id=-1;//optional identifier variable
 	T vector[D];
 	T & x;
 	T & y;
@@ -36,40 +76,50 @@ struct Point{
     	}
     	return true;
     }*/
-    Point():x(vector[0]),y(vector[1]),z(vector[2]){
+    Point():id(-1),x(vector[0]),y(vector[1]),z(vector[2]){
     	for(int i = 0;i<D;i++){
     		new (&vector[i]) T();
     	}
     }
-    Point(const vec<T> & list  ):x(vector[0]),y(vector[1]),z(vector[2]){
+    Point(const vec<T> & list  ):id(-1),x(vector[0]),y(vector[1]),z(vector[2]){
     	for(int i = 0;i<D;i++){
     		vector[i] = list[i];
     	}
     }
     //Copy constructor
-    Point(const Point<D,T> & v):x(vector[0]),y(vector[1]),z(vector[2]){
+    Point(const Point<D,T> & v):id(v.id),x(vector[0]),y(vector[1]),z(vector[2]){
     	assert(v.size()==D);
     	for(int i = 0;i<D;i++){
     		new (&vector[i]) T(v[i]);
     	}
     }
 
-    Point( std::initializer_list<T> list ):x(vector[0]),y(vector[1]),z(vector[2]){
+    Point( std::initializer_list<T> list ):id(-1),x(vector[0]),y(vector[1]),z(vector[2]){
     	assert(list.size()==size());
     	vector=list;
     }
     template<typename... Ts>
-    Point( Ts... args ):vector{args...},x(vector[0]),y(vector[1]),z(vector[2]){
+    Point( Ts... args ):id(-1),vector{args...},x(vector[0]),y(vector[1]),z(vector[2]){
     	int a =1;
     }
     Point& operator=(const Point & v)
     {
+    	id=v.id;
     	for(int i = 0;i<D;i++){
 			new (&vector[i]) T(v[i]);
 		}
       return *this;
     }
-
+    int getID()const{
+    	assert(hasID());
+    	return id;
+    }
+    bool hasID()const{
+    	return id>=0;
+    }
+    void setID(int id){
+    	this->id=id;
+    }
     T dot(const Point<D,T> & other){
     	T sum=T();
     	for (int i = 0;i<D;i++){

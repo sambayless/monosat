@@ -12,6 +12,8 @@ template<>
 bool ConvexPolygon<2,double>::contains(Point<2,double> & point){
 	//From http://demonstrations.wolfram.com/AnEfficientTestForAPointToBeInAConvexPolygon/
 	 vec<Point<2,double> > &  w = getVertices();
+	 if(w.size()<3)
+		 return false;
 	 //note: this can also compute the area (which is the sum of p2[0]*p1[1] - p1[0]*p2[1]); could potentially combine these...
 	 for(int i = 1;i<w.size();i++){
 		 Point<2,double> p1 = w[i-1]-point;

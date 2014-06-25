@@ -25,9 +25,8 @@ public:
 	virtual ShapeType getType(){
 		return POLYGON;
 	}
-	virtual bool contains(Point<D,T> & point){
-		return false;
-	}
+	virtual bool contains(Point<D,T> & point);
+
 	virtual bool intersects(Shape<D,T> & s){
 		return false;
 	}
@@ -54,13 +53,15 @@ public:
 	}
 
 	//Returns the vertices of the polygon, in clockwise order.
-	//Note: for convenience, the first point of the wrap is also the last point (it is duplicated).
+
 	vec<Point<D,T> > & getVertices(){
 		if(!vertices_clockwise){
 			reorderVertices();
 		}
 		return vertices;
 	}
+
+
 	void updateCircleBound();
 	virtual T getArea();
 	virtual T getPerimeter();
@@ -68,7 +69,65 @@ public:
 
 	void reorderVertices();
 
+
+
+	//Note: for convenience, the first point of the wrap is also the last point (it is duplicated).
+	template< class ValueType >
+	struct wrap_iterator {
+	    ValueType &operator*() { return verts[pos%verts.size()]; }
+
+
+
+	    wrap_iterator operator++() { wrap_iterator i = *this; pos++; return i; }
+	    wrap_iterator operator++(int ignore) { pos++; return *this; }
+	    ValueType* operator->() { return &verts[pos%verts.size()]; }
+	    bool operator==(const wrap_iterator& rhs) { return pos == rhs.pos; }
+	    bool operator!=(const wrap_iterator& rhs) { return pos != rhs.pos; }
+
+	    int pos=0;
+	    vec<ValueType> & verts;
+
+
+	    wrap_iterator( vec<ValueType> & verts, int pos):verts(verts){}; // private constructor for begin, end
+	};
+
+	typedef wrap_iterator<  Point<D,T> > iterator;
+	typedef wrap_iterator<  Point<D,T> const > const_iterator;
+public:
+	 iterator begin()
+	{
+		 return iterator(getVertices(),0);
+	}
+
+	iterator end()
+	{
+		return iterator(getVertices(),getVertices().size());
+	}
+
+	iterator end_wrap()
+	{
+		return iterator(getVertices(),getVertices().size()+1);
+	}
+
+/*	 const_iterator begin() const
+	{
+		 return const_iterator(vertices,0);
+	}
+
+	const_iterator end() const
+	{
+		return const_iterator(vertices,vertices.size());
+	}
+
+	const_iterator end_wrap() const
+	{
+		return const_iterator(vertices,vertices.size()+1);
+	}*/
 };
+
+template<>
+bool Polygon<2,double>::contains(Point<2,double> & point);
+
 template<>
 void Polygon<2,double>::reorderVertices();
 

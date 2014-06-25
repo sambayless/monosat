@@ -18,7 +18,7 @@ class ConvexHull{
 public:
 	virtual void update()=0;
 	virtual ConvexPolygon<D,T> & getHull()=0;
-	virtual T getArea()=0;
+	//virtual T getArea()=0;
 	virtual ~ConvexHull(){
 
 	}

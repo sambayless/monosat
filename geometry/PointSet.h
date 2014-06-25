@@ -65,17 +65,21 @@ public:
 		}
 	}
 
-	void getEnabledPoints(vec<Point<D>> & points_out){
+	vec<Point<D>> & getEnabledPoints(vec<Point<D>> & points_out){
 		points_out.clear();
 		for(int i = 0;i<points.size();i++){
 			if(isEnabled(i)){
 				points_out.push(points[i]);
 			}
 		}
+		return points_out;
 	}
 
-	int addPoint(const Point<D,T> & P, int pointID){
+	int addPoint(const Point<D,T> & P, int pointID=-1){
+		if(pointID<0)
+			pointID=points.size();
 		points.push(P);
+		points.last().setID(pointID);
 		enabled.push(false);
 		hasClockwise=false;
 		sz++;
