@@ -11,9 +11,14 @@ template<unsigned int D,class T=double>
 class PointSet{
 	//Dimension of this shape
 	vec<Point<D,T>> points;
+	bool hasClockwise = false;
+	vec<int> points_clockwise;
 	vec<bool> enabled;
 	int sz;
 	int num_enabled= 0;
+
+	void buildClockwise();
+
 public:
 
 	int dimension(){
@@ -41,6 +46,14 @@ public:
 		setPointEnabled(pointID, true);
 	}
 
+	//returns indices of all points (including disabled points!) in clockwise order
+	vec<int> & getClockwisePoints(){
+		if(!hasClockwise){
+			buildClockwise();
+		}
+		return points_clockwise;
+	}
+
 	void setPointEnabled(int pointID, bool _enabled){
 		if(isEnabled(pointID)==_enabled)
 			return;
@@ -64,9 +77,11 @@ public:
 	int addPoint(const Point<D,T> & P, int pointID){
 		points.push(P);
 		enabled.push(false);
+		hasClockwise=false;
 		sz++;
 		return points.size()-1;
 	}
+
     const Point<D,T>& operator [] (int index) const { return points[index]; }
     Point<D,T>&       operator [] (int index)       { return points[index]; }
 	void clearHistory(){
@@ -83,6 +98,7 @@ public:
 	}
 };
 
-
+template<>
+void PointSet<2,double>::buildClockwise();
 
 #endif /* SHAPE_H_ */

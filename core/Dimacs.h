@@ -113,7 +113,7 @@ private:
 				}
 			}else if (linebuf[0] == 'c'){
 				//comment line
-				skipLine(in);
+				//skipLine(in);
 			}else{
 				//if nothing else works, attempt to parse this line as a clause.
 				cnt++;

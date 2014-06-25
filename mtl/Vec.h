@@ -71,8 +71,8 @@ public:
 
     // Stack interface:
     void     push  (void)              { if (sz == cap) capacity(sz+1); new (&data[sz]) T(); sz++; }
-    void     push  (const T& elem)     { if (sz == cap) capacity(sz+1); data[sz++] = elem; }
-    void     push_ (const T& elem)     { assert(sz < cap); data[sz++] = elem; }
+    void     push  (const T& elem)     { if (sz == cap) capacity(sz+1); new (&data[sz++]) T(elem); }//fix to ensure that constructor is properly called on the newly created instance
+    void     push_ (const T& elem)     { assert(sz < cap); new (&data[sz++]) T(elem);  }
     void     pop   (void)              { assert(sz > 0); sz--, data[sz].~T(); }
     // NOTE: it seems possible that overflow can happen in the 'sz+1' expression of 'push()', but
     // in fact it can not since it requires that 'cap' is equal to INT_MAX. This in turn can not

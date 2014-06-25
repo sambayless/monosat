@@ -20,6 +20,7 @@ public:
 	vec<Point<D,T>> vertices;
 	Point<D,T> circleCenter;//should generalize this to an arbitrary bounding volume...
 	T circleRadius;
+	bool vertices_clockwise=false;
 	virtual ~Polygon(){};
 	virtual ShapeType getType(){
 		return POLYGON;
@@ -33,6 +34,9 @@ public:
 
 
 	void update(){
+		if(!vertices_clockwise){
+			reorderVertices();
+		}
 		updateCircleBound();
 	}
 
@@ -43,15 +47,31 @@ public:
 	int size(){
 		return vertices.size();
 	}
+
+	void addVertex(Point<D,T> & p){
+		vertices_clockwise=false;
+		vertices.push(p);
+	}
+
 	//Returns the vertices of the polygon, in clockwise order.
 	//Note: for convenience, the first point of the wrap is also the last point (it is duplicated).
 	vec<Point<D,T> > & getVertices(){
+		if(!vertices_clockwise){
+			reorderVertices();
+		}
 		return vertices;
 	}
 	void updateCircleBound();
 	virtual T getArea();
 	virtual T getPerimeter();
+	private:
+
+	void reorderVertices();
+
 };
+template<>
+void Polygon<2,double>::reorderVertices();
+
 template<>
 double Polygon<2,double>::getArea();
 

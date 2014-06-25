@@ -43,3 +43,13 @@ bool ConvexPolygon<2,double>::intersects(Shape<2,double> & shape){
 	}
 	 return true;
 }
+template<>
+bool ConvexPolygon<1,double>::contains(Point<1,double> & point){
+	return false;
+}
+
+
+template<>
+bool ConvexPolygon<1,double>::intersects(Shape<1,double> & shape){
+	return false;
+}

@@ -60,7 +60,7 @@ struct Point{
     }
     template<typename... Ts>
     Point( Ts... args ):vector{args...},x(vector[0]),y(vector[1]),z(vector[2]){
-
+    	int a =1;
     }
     Point& operator=(const Point & v)
     {

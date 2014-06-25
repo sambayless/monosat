@@ -679,7 +679,12 @@ public:
 	}
 
 	bool check_solved(){
+		for(int i = 0;i<vars.size();i++){
+			if(value(i)!= dbg_value(vars[i].solverVar)){
+				return false;
+			}
 
+		}
 		for(int i = 0;i<points.size();i++){
 			if(points[i].var<0)
 						continue;
@@ -791,7 +796,7 @@ public:
 		under.addPoint(point,index);
 		under.disablePoint(index);
 		over.addPoint(point,index);
-
+		over.enablePoint(index);
     	return mkLit(v,false);
     }
 

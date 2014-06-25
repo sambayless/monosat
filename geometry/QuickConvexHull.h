@@ -26,16 +26,21 @@ public:
 
 	void update();
 
-
+	T getArea();
 
 	ConvexPolygon<D> & getHull(){
-
+		update();
 		return hull;
 	}
 
 };
 template<>
+void QuickConvexHull<1,double>::update();
+template<>
 void QuickConvexHull<2,double>::update();
 template<>
 void QuickConvexHull<3,double>::update();
+
+template<>
+double QuickConvexHull<2,double>::getArea();
 #endif

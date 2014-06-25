@@ -102,7 +102,8 @@ void ConvexHullDetector<D,T>::addPointContainmentLit(Point<D,T> p,Var outerVar){
 	}
 
 template<unsigned int D, class T>
-void ConvexHullDetector<D,T>::addAreaDetectorLit(double areaGreaterEqThan, Var v){
+void ConvexHullDetector<D,T>::addAreaDetectorLit(double areaGreaterEqThan, Var outerVar){
+	Var v = outer->newVar(outerVar,getID());
 	Lit l = mkLit(v,false);
 
 	areaDetectors.push({areaGreaterEqThan,l});
@@ -130,9 +131,8 @@ void ConvexHullDetector<D,T>::buildReason(Lit p, vec<Lit> & reason, CRef marker)
 
 template<unsigned int D, class T>
 bool ConvexHullDetector<D,T>::propagate(vec<Lit> & conflict){
-	bool any_changed=false;
 
-	if(any_changed){
+
 
 		over_hull->update();
 
@@ -209,11 +209,31 @@ bool ConvexHullDetector<D,T>::propagate(vec<Lit> & conflict){
 				}
 			}
 		}
-	}
+
 		return true;
 	}
 template<unsigned int D, class T>
 bool ConvexHullDetector<D,T>::checkSatisfied(){
+
+
+	/*for (auto & p:over.getEnabledPoints()){
+
+	}*/
+	MonotoneConvexHull<D,T> cv(over);
+	T area = cv.getArea();
+	for(auto & a: areaDetectors){
+		T area_cmp = a.areaGreaterEqThan;
+		Lit l = a.l;
+		if(outer->value(l)==l_True){
+			if(area_cmp>=area){
+				return false;
+			}
+		}else if(outer->value(l)==l_False){
+			if(area_cmp<area){
+				return false;
+			}
+		}
+	}
 
 	return true;
 }

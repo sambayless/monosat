@@ -25,10 +25,10 @@ public:
 
 	void update();
 
-
+	T getArea();
 
 	ConvexPolygon<D> & getHull(){
-
+		update();
 		return hull;
 	}
 private:
@@ -45,8 +45,16 @@ inline double MonotoneConvexHull<2,double>::cross(const Point2D &O, const Point2
 	return (A[0] - O[0]) * (B[1] - O[1]) - (A[1] - O[1]) * (B[0] - O[0]);
 }
 template<>
+void MonotoneConvexHull<1,double>::update();
+template<>
 void MonotoneConvexHull<2,double>::update();
 template<>
 void MonotoneConvexHull<3,double>::update();
+
+template<>
+double MonotoneConvexHull<2,double>::getArea();
+
+template<>
+double MonotoneConvexHull<1,double>::getArea();
 
 #endif

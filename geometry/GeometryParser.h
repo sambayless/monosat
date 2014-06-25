@@ -116,11 +116,10 @@ public:
 		skipWhitespace(in);
 		if (*in == EOF)
 			return false;
-		else if (*in == 'p'){
-			return false;
-		}else if (match(in,"point")){
+		else if (match(in,"point")){
 			//add a point to a point set
 			readPoint(in,S);
+
 		}else if (match(in,"convex_hull_area_lt")){
 			readConvexHullArea(in,S);
 		}else if (match(in,"convex_hull_containment")){
@@ -133,8 +132,10 @@ public:
 
 		}else if (match(in, "rectilinear_steiner_tree_weight")){
 
+		}else{
+			return false;
 		}
-		return false;
+		return true;
  }
 
  void implementConstraints(Solver & S){

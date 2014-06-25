@@ -8,6 +8,10 @@
 #include "MonotoneConvexHull.h"
 #include "mtl/Sort.h"
 template<>
+void MonotoneConvexHull<1,double>::update(){
+
+}
+template<>
 void MonotoneConvexHull<2,double>::update(){
 		vec<Point2D> points;
 		pointSet.getEnabledPoints(points);
@@ -46,4 +50,27 @@ void MonotoneConvexHull<2,double>::update(){
 
 	}
 
+template<>
+double MonotoneConvexHull<2,double>::getArea(){
+	double area = 0;
+	//traverse the polygons in clockwise order and compute the determinant
+	//is there a better way to do this?
+	int prevPID = -1;
+	for (int i = 0;i<pointSet.getClockwisePoints().size();i++){
+		int pid = pointSet.getClockwisePoints()[i];
+		if(pointSet.pointEnabled(pid)){
+			if(prevPID){
+				auto & p = pointSet[pid];
+				auto & prev = pointSet[prevPID];
+				area+=prev.x *p.y - prev.y*p.x;
+			}
+			prevPID = pid;
+		}
+	}
+	return area/2.0;
+}
 
+template<>
+double MonotoneConvexHull<1,double>::getArea(){
+	return 0;
+}
