@@ -6,6 +6,7 @@
  */
 #include "GeometryTypes.h"
 #include "MonotoneConvexHull.h"
+#include<algorithm>
 #include "mtl/Sort.h"
 template<>
 void MonotoneConvexHull<1,double>::update(){
@@ -14,25 +15,25 @@ void MonotoneConvexHull<1,double>::update(){
 template<>
 void MonotoneConvexHull<2,double>::update(){
 
-		vec<Point2D> points;
+		std::vector<Point2D> points;
 		pointSet.getEnabledPoints(points);
-		sort(points,SortLexicographic<2,double>());
+		std::sort(points.begin(),points.end(),SortLexicographic<2,double>());
 		hull.clear();
-		vec<Point2D> & list = hull.getVertices();
+		std::vector<Point2D> & list = hull.getVertices();
 
 
 		// Build lower hull
 		for (int i = 0; i < points.size(); ++i) {
 			if(list.size()>=2 && cross(list[list.size()-2],list[list.size()-1],points[i])<=0)
-				list.pop();
-			list.push(points[i]);
+				list.pop_back();
+			list.push_back(points[i]);
 		}
 
 		// Build upper hull
 		for (int i =points.size()-2, t = list.size()+1; i >= 0; i--) {
 			while (list.size() >= t && cross(list[list.size()-2],list[list.size()-1],points[i])<=0)
-				list.pop();
-			list.push(points[i]);
+				list.pop_back();
+			list.push_back(points[i]);
 		}
 
 		/*for (int i = 2;i<points.size();i++){
@@ -61,9 +62,9 @@ void MonotoneConvexHull<2,double>::update(){
 
 			}
 		}*/
-		assert(list.size()==0 || ( list[0]==list.last()));
+		assert(list.size()==0 || ( list[0]==list.back()));
 		if(list.size())
-			list.pop();//for now, we aren't replicating the first vertex at the end of the polygon.
+			list.pop_back();//for now, we aren't replicating the first vertex at the end of the polygon.
 	}
 
 template<>

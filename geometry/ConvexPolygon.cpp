@@ -12,7 +12,7 @@ template<>
 bool ConvexPolygon<2,double>::containsInRange(const Point<2,double> & point, int firstVertex,int lastVertex){
 	//From http://demonstrations.wolfram.com/AnEfficientTestForAPointToBeInAConvexPolygon/
 	//this is correct _only_ for convex polygons
-	 vec<Point<2,double> > &  w = getVertices();
+	 std::vector<Point<2,double> > &  w = getVertices();
 	 if(w.size()<3)
 		 return false;
 	 if(lastVertex<0)
@@ -35,7 +35,7 @@ bool ConvexPolygon<2,double>::intersects(Shape<2,double> & shape){
 	if(shape.getType()==CONVEX_POLYGON){
 		ConvexPolygon & c = *(ConvexPolygon*) &shape;
 		//From http://demonstrations.wolfram.com/AnEfficientTestForAPointToBeInAConvexPolygon/
-		 vec<Point<2,double> > &  w = getVertices();
+		 std::vector<Point<2,double> > &  w = getVertices();
 		 //note: this can also compute the area (which is the sum of p2[0]*p1[1] - p1[0]*p2[1]); could potentially combine these...
 	/*	 for(int i = 1;i<w.size();i++){
 			 Point<2,double> p1 = w[i-1]-point;

@@ -10,6 +10,7 @@
 #include <initializer_list>
 #include "core/SolverTypes.h"
 #include "mtl/Rnd.h"
+#include "mtl/Vec.h"
 #include <cmath>
 #include <algorithm>
 
@@ -171,7 +172,7 @@ struct Point{
     	return ret;
     }
     //Note that this computes a DOUBLE. Should enforce that is a safe underapproximation of the real distance between these points (that is, the actual distance is guaranteed to be >= the returned value)
-    double distance_underapprox(Point<D,T> other){
+    double distance_underapprox(const Point<D,T> other){
     	T sum=T(0);
     	for(int i =0;i<D;i++){
     		T difference = (vector[i]-other[i]);
@@ -180,6 +181,12 @@ struct Point{
     	double distance = sqrt((double)sum);
     	return distance;
     }
+};
+namespace Minisat{
+template<unsigned int D,class T>
+class vec<::Point<D,T>>;
+	//static_assert(false,"mtl vec cannot be used to store Points (as they are not reallocatable)");
+
 };
 template<unsigned int D, class T=double>
 inline bool operator==(const Point<D,T>& lhs, const Point<D,T>& rhs){
@@ -218,7 +225,7 @@ typedef Point<3,double> Point3D;
 template<unsigned int D,class T=double>
 struct SortBy{
 	int sortOn;
-	bool operator()(Point<D,T> & a,Point<D,T> & b)const{
+	bool operator()(const Point<D,T> & a,const Point<D,T> & b)const{
 		return a[sortOn]<b[sortOn];
 	}
 	SortBy(int dimensionToSort):sortOn(dimensionToSort){}
@@ -227,7 +234,7 @@ struct SortBy{
 template<unsigned int D,class T=double>
 struct SortLexicographic{
 
-	bool operator()(Point<D,T> & a,Point<D,T> & b)const{
+	bool operator()(const Point<D,T> & a,const Point<D,T> & b)const{
 		for(int i =0;i<D;i++)
 			if(a[i]<b[i])
 				return true;

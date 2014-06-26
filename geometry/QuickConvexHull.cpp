@@ -11,7 +11,8 @@
 #include <vector>
 #include "GeometryTypes.h"
 #include "MonotoneConvexHull.h"
-#include "mtl/Sort.h"
+#include <vector>
+#include <algorithm>
 
 #include "cevans/quickhull3D.h"
 #include "cevans/quickhull2D.h"
@@ -24,13 +25,13 @@ void QuickConvexHull<1,double>::update(){
 }
 template<>
 void QuickConvexHull<3,double>::update(){
-	vec<Point3D> points;
+	std::vector<Point3D> points;
 	pointSet.getEnabledPoints(points);
-	sort(points,SortLexicographic<3,double>());
-	std::vector<Point3D> pointvec;
+	std::sort(points.begin(),points.end(),SortLexicographic<3,double>());
+/*	std::vector<Point3D> pointvec;
 	for(int i =0;i<points.size();i++)
-		pointvec.push_back(points[i]);
-	 cevans::quickhull3D<Point3D,double>  hull(pointvec);
+		pointvec.push_back(points[i]);*/
+	 cevans::quickhull3D<Point3D,double>  hull(points);
 	for(int i = 0;i<hull.boundary.size();i++){
 		printf("%d ",hull.boundary[i]);
 	}
@@ -38,13 +39,13 @@ void QuickConvexHull<3,double>::update(){
 }
 template<>
 void QuickConvexHull<2,double>::update(){
-	vec<Point2D> points;
+	std::vector<Point2D> points;
 	pointSet.getEnabledPoints(points);
-	sort(points,SortLexicographic<2,double>());//not sure if this is required or not...
-	std::vector<Point2D> pointvec;
+	std::sort(points.begin(),points.end(),SortLexicographic<2,double>());//not sure if this is required or not...
+/*	std::vector<Point2D> pointvec;
 	for(int i =0;i<points.size();i++)
-		pointvec.push_back(points[i]);
-	 cevans::quickhull2D<Point2D,double>  chull(pointvec);
+		pointvec.push_back(points[i]);*/
+	 cevans::quickhull2D<Point2D,double>  chull(points);
 	hull.clear();
 	for(int i = 0;i<chull.boundary.size();i++){
 		//printf("%d ",chull.boundary[i]);

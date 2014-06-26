@@ -1,19 +1,18 @@
 
 #ifndef POINTSET_H_
 #define POINTSET_H_
-#include "mtl/Vec.h"
+#include <vector>
 #include "GeometryTypes.h"
-using namespace Minisat;
 /**
  * A dynamic point set
  */
 template<unsigned int D,class T=double>
 class PointSet{
 	//Dimension of this shape
-	vec<Point<D,T>> points;
+	std::vector<Point<D,T>> points;
 	bool hasClockwise = false;
-	vec<int> points_clockwise;
-	vec<bool> enabled;
+	std::vector<int> points_clockwise;
+	std::vector<bool> enabled;
 	int sz;
 	int num_enabled= 0;
 
@@ -47,7 +46,7 @@ public:
 	}
 
 	//returns indices of all points (including disabled points!) in clockwise order
-	vec<int> & getClockwisePoints(){
+	std::vector<int> & getClockwisePoints(){
 		if(!hasClockwise){
 			buildClockwise();
 		}
@@ -58,18 +57,18 @@ public:
 		if(isEnabled(pointID)==_enabled)
 			return;
 		enabled[pointID]=_enabled;
-		if(enabled){
+		if(_enabled){
 			num_enabled++;
 		}else{
 			num_enabled--;
 		}
 	}
 
-	vec<Point<D>> & getEnabledPoints(vec<Point<D>> & points_out){
+	std::vector<Point<D>> & getEnabledPoints(std::vector<Point<D>> & points_out){
 		points_out.clear();
 		for(int i = 0;i<points.size();i++){
 			if(isEnabled(i)){
-				points_out.push(points[i]);
+				points_out.push_back(points[i]);
 			}
 		}
 		return points_out;
@@ -78,9 +77,9 @@ public:
 	int addPoint(const Point<D,T> & P, int pointID=-1){
 		if(pointID<0)
 			pointID=points.size();
-		points.push(P);
-		points.last().setID(pointID);
-		enabled.push(false);
+		points.push_back(P);
+		points.back().setID(pointID);
+		enabled.push_back(false);
 		hasClockwise=false;
 		sz++;
 		return pointID;

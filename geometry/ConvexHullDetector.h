@@ -67,7 +67,7 @@ public:
 
 		}
 private:
-		void findFarPoints(Line<D,T> & testline,vec<Point<D,T> > & test_set,vec<Point<D,T> > & min_set,ConvexPolygon<D,T> &hull){
+		void findFarPoints(Line<D,T> & testline,std::vector<Point<D,T> > & test_set,std::vector<Point<D,T> > & min_set,ConvexPolygon<D,T> &hull){
 			test_set.clear();
 			T hullside =0;
 			for(int i =0;hullside==0 && i<hull.getVertices().size();i++){
@@ -77,7 +77,7 @@ private:
 			for(int i = 0;i<over.size();i++){
 				if(!over.pointEnabled(i)){
 					if(testline.whichSide(over[i])!=hullside){
-						test_set.push(over[i]);
+						test_set.push_back(over[i]);
 						if(hasSet && test_set.size()>=min_set.size()){
 							return;//shortcut
 						}
@@ -86,7 +86,8 @@ private:
 			}
 			if(test_set.size()<min_set.size() || !hasSet){
 				hasSet=true;
-				test_set.copyTo(min_set);
+				min_set = test_set;
+				//test_set.copyTo(min_set);
 			}
 		}
 
@@ -103,7 +104,7 @@ private:
 			assert(first_vertex!=last_vertex);
 			assert(polygon.containsInRange(point,first_vertex,last_vertex));
 			triangle_out.clear();
-			vec<Point<2,T>> & polygon_vertices = polygon.getVertices();
+			std::vector<Point<2,T>> & polygon_vertices = polygon.getVertices();
 			Point<2,T> & a = polygon_vertices[first_vertex];
 			Point<2,T> & b = polygon_vertices[last_vertex];
 			int mid_point = 0;
@@ -325,7 +326,7 @@ bool ConvexHullDetector<D,T>::propagate(vec<Lit> & conflict){
 template<unsigned int D, class T>
 bool ConvexHullDetector<D,T>::checkSatisfied(){
 
-	vec<Point<D,T>> enabled_points;
+	std::vector<Point<D,T>> enabled_points;
 /*	for (auto & p:over.getEnabledPoints(enabled_points)){
 		printf("(%f, %f)",p.x,p.y);
 	}
@@ -393,4 +394,5 @@ void ConvexHullDetector<2,double>::buildPointContainedReason(const Point<2,doubl
 
 template<>
 void ConvexHullDetector<2,double>::buildPointNotContainedReason(const Point<2,double> & s, vec<Lit> & conflict);
+
 #endif

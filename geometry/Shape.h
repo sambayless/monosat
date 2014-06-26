@@ -7,7 +7,7 @@
 
 #ifndef SHAPE_H_
 #define SHAPE_H_
-#include "mtl/Vec.h"
+#include <vector>
 #include "GeometryTypes.h"
 
 enum ShapeType{

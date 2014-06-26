@@ -17,13 +17,13 @@ template<unsigned int D,class T=double>
 class GridHeightmap:public Heightmap<D,T>{
 	int width;
 	int depth;
-	vec<vec<Point<D,T> > > grid;
+	std::vector<std::vector<Point<D,T> > > grid;
 	Polygon<D,T> heightmesh;
 	GridHeightmap(int width_, int depth_):width(width_),depth(depth_){
 
 		for(int i = 0;i<width;i++){
 			grid.push();
-			vec<Point<D,T>> &v = grid.last();
+			std::vector<Point<D,T>> &v = grid.back();
 			for(int j = 0;j<depth;j++){
 				v.push({i,j,-1});
 			}

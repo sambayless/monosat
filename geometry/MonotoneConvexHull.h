@@ -10,7 +10,7 @@
 #define MONOTONE_CONVEXHULL_H_
 #include "ConvexHull.h"
 #include "PointSet.h"
-#include "mtl/Sort.h"
+
 using namespace Minisat;
 
 template<unsigned int D,class T=double>

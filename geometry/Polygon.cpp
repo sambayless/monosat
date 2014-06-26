@@ -6,18 +6,17 @@
  */
 
 #include "Polygon.h"
-#include "mtl/Vec.h"
-#include "mtl/Sort.h"
 #include <cmath>
+#include <algorithm>
 //Note that this is subject to rounding errors. It also might only be correct for convex polygons.
 //Also, this is only correct for planar (non-self-intersecting) polygons.
 template<>
 double Polygon<2,double>::getArea(){
-	vec<Point2D> &  points = getVertices();
+	std::vector<Point2D> &  points = getVertices();
 
 	double sum = 0;
 	for (int i = 0;i<points.size();i++){
-		Point2D& prev = i>0? points[i-1]: points.last();
+		Point2D& prev = i>0? points[i-1]: points.back();
 		Point2D& cur = points[i];
 		sum += prev[0]*cur[1]-cur[0]*prev[1];
 	}
@@ -26,7 +25,7 @@ double Polygon<2,double>::getArea(){
 
 template<>
 bool Polygon<2,double>::contains(const Point<2,double> & point){
-	vec<Point2D> &  points = getVertices();
+	std::vector<Point2D> &  points = getVertices();
 	int i;
 	  int j;
 	  bool result = false;
@@ -42,7 +41,7 @@ bool Polygon<2,double>::contains(const Point<2,double> & point){
 //Note that this is subject to rounding errors.
 template<>
 double Polygon<2,double>::getPerimeter(){
-	vec<Point2D> & w = getVertices();
+	std::vector<Point2D> & w = getVertices();
 	double sum = 0;
 	for (int i = 1;i<w.size();i++){
 		Point2D prev = w[i-1];
@@ -69,10 +68,10 @@ void Polygon<2,double>::reorderVertices(){
 	//from http://stackoverflow.com/a/6989383
 
 	struct clockwise_lt{
-		const vec<Point<2,double>> & points;
+		const std::vector<Point<2,double>> & points;
 		double centerX;
 		double centerY;
-		clockwise_lt(const vec<Point<2,double>> & points,double centerX, double centerY):points(points),centerX(centerX),centerY(centerY){
+		clockwise_lt(const std::vector<Point<2,double>> & points,double centerX, double centerY):points(points),centerX(centerX),centerY(centerY){
 
 		}
 
@@ -107,17 +106,17 @@ void Polygon<2,double>::reorderVertices(){
 		}
 	};
 	//this should ideally be avoided...
-	static vec<int> points_clockwise;
+	static std::vector<int> points_clockwise;
 	points_clockwise.clear();
 	for(int i =0;i<vertices.size();i++){
-		points_clockwise.push(i);
+		points_clockwise.push_back(i);
 	}
-	sort(points_clockwise,clockwise_lt(vertices,centerX,centerY));
+	std::sort(points_clockwise.begin(), points_clockwise.end(),clockwise_lt(vertices,centerX,centerY));
 	//do this in place later
-	static vec<Point<2,double>> oldPoints;
+	static std::vector<Point<2,double>> oldPoints;
 	oldPoints.clear();
 	for(int i =0;i<vertices.size();i++){
-		oldPoints.push(vertices[i]);
+		oldPoints.push_back(vertices[i]);
 	}
 	for(int i =0;i<vertices.size();i++){
 		vertices[i] = oldPoints[points_clockwise[i]];

@@ -1,5 +1,5 @@
 #include "PointSet.h"
-#include "mtl/Sort.h"
+#include <algorithm>
 template<>
 void PointSet<2,double>::buildClockwise(){
 	points_clockwise.clear();
@@ -15,10 +15,10 @@ void PointSet<2,double>::buildClockwise(){
 	//from http://stackoverflow.com/a/6989383
 
 	struct clockwise_lt{
-		const vec<Point<2,double>> & points;
+		const std::vector<Point<2,double>> & points;
 		double centerX;
 		double centerY;
-		clockwise_lt(const vec<Point<2,double>> & points,double centerX, double centerY):points(points),centerX(centerX),centerY(centerY){
+		clockwise_lt(const std::vector<Point<2,double>> & points,double centerX, double centerY):points(points),centerX(centerX),centerY(centerY){
 
 		}
 
@@ -53,8 +53,8 @@ void PointSet<2,double>::buildClockwise(){
 		}
 	};
 	for(int i =0;i<points.size();i++){
-		points_clockwise.push(i);
+		points_clockwise.push_back(i);
 	}
-	sort(points_clockwise,clockwise_lt(points,centerX,centerY));
+	std::sort(points_clockwise.begin(),points_clockwise.end() ,clockwise_lt(points,centerX,centerY));
 	hasClockwise=true;
 }

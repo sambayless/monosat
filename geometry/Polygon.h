@@ -17,7 +17,7 @@ template<unsigned int D,class T=double>
 class Polygon:public Shape<D>{
 public:
 	//List of vertices in clockwise order
-	vec<Point<D,T>> vertices;
+	std::vector<Point<D,T>> vertices;
 	Point<D,T> circleCenter;//should generalize this to an arbitrary bounding volume...
 	T circleRadius;
 	bool vertices_clockwise=false;
@@ -52,11 +52,11 @@ public:
 
 	void addVertex(Point<D,T> & p){
 		vertices_clockwise=false;
-		vertices.push(p);
+		vertices.push_back(p);
 	}
 	//add a vertex, assuming that it will preserve clockwise order
 	void addVertexUnchecked(Point<D,T> & p){
-		vertices.push(p);
+		vertices.push_back(p);
 		assert(dbg_orderClockwise());
 	}
 
@@ -70,7 +70,7 @@ public:
 
 	//Returns the vertices of the polygon, in clockwise order.
 
-	vec<Point<D,T> > & getVertices(){
+	std::vector<Point<D,T> > & getVertices(){
 		if(!vertices_clockwise){
 			reorderVertices();
 		}
@@ -105,10 +105,10 @@ public:
 	    bool operator!=(const wrap_iterator& rhs) { return pos != rhs.pos; }
 
 	    int pos=0;
-	    vec<ValueType> & verts;
+	    std::vector<ValueType> & verts;
 
 
-	    wrap_iterator( vec<ValueType> & verts, int pos):verts(verts){}; // private constructor for begin, end
+	    wrap_iterator( std::vector<ValueType> & verts, int pos):verts(verts){}; // private constructor for begin, end
 	};
 
 	typedef wrap_iterator<  Point<D,T> > iterator;
