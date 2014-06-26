@@ -110,7 +110,7 @@ private:
 	    std::vector<ValueType> & verts;
 
 
-	    wrap_iterator( std::vector<ValueType> & verts, int pos):verts(verts){}; // private constructor for begin, end
+	    wrap_iterator( std::vector<ValueType> & verts, int pos):verts(verts),pos(pos){}; // private constructor for begin, end
 	};
 
 	typedef wrap_iterator<  Point<D,T> > iterator;
