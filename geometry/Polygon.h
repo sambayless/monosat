@@ -51,6 +51,19 @@ public:
 		vertices_clockwise=false;
 		vertices.push(p);
 	}
+	//add a vertex, assuming that it will preserve clockwise order
+	void addVertexUnchecked(Point<D,T> & p){
+		vertices.push(p);
+		assert(dbg_orderClockwise());
+	}
+
+	void popVertex(){
+		vertices.pop();
+	}
+
+	void clearVertices(){
+		vertices.clear();
+	}
 
 	//Returns the vertices of the polygon, in clockwise order.
 
@@ -66,6 +79,10 @@ public:
 	virtual T getArea();
 	virtual T getPerimeter();
 	private:
+
+	bool dbg_orderClockwise(){
+		return true;
+	}
 
 	void reorderVertices();
 

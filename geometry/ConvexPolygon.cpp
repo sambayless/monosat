@@ -9,14 +9,17 @@
 #include "mtl/Vec.h"
 
 template<>
-bool ConvexPolygon<2,double>::contains(Point<2,double> & point){
+bool ConvexPolygon<2,double>::contains(Point<2,double> & point, int firstVertex,int lastVertex){
 	//From http://demonstrations.wolfram.com/AnEfficientTestForAPointToBeInAConvexPolygon/
+	//this is correct _only_ for convex polygons
 	 vec<Point<2,double> > &  w = getVertices();
 	 if(w.size()<3)
 		 return false;
+	 if(lastVertex<0)
+		 lastVertex=w.size()-1;
 	 //note: this can also compute the area (which is the sum of p2[0]*p1[1] - p1[0]*p2[1]); could potentially combine these...
-	 for(int i = 1;i<w.size();i++){
-		 Point<2,double> p1 = w[i-1]-point;
+	 for(int i = firstVertex;i!=lastVertex;i=(i+1% w.size() )){
+		 Point<2,double> p1 = i>0 ? (w[i-1]-point):((w[lastVertex]-point));
 		 Point<2,double> p2 = w[i]-point;
 		 bool contained = (p2[0]*p1[1] - p1[0]*p2[1]) >0;
 		 if(!contained){
@@ -46,7 +49,7 @@ bool ConvexPolygon<2,double>::intersects(Shape<2,double> & shape){
 	 return true;
 }
 template<>
-bool ConvexPolygon<1,double>::contains(Point<1,double> & point){
+bool ConvexPolygon<1,double>::contains(Point<1,double> & point, int firstVertex,int lastVertex){
 	return false;
 }
 

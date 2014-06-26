@@ -83,7 +83,7 @@ public:
 		enabled.push(false);
 		hasClockwise=false;
 		sz++;
-		return points.size()-1;
+		return pointID;
 	}
 
     const Point<D,T>& operator [] (int index) const { return points[index]; }
