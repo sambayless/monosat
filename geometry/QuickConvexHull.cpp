@@ -31,27 +31,42 @@ void QuickConvexHull<3,double>::update(){
 /*	std::vector<Point3D> pointvec;
 	for(int i =0;i<points.size();i++)
 		pointvec.push_back(points[i]);*/
-	 cevans::quickhull3D<Point3D,double>  hull(points);
-	for(int i = 0;i<hull.boundary.size();i++){
-		printf("%d ",hull.boundary[i]);
+	 cevans::quickhull3D<Point3D,double>  chull(points);
+	for(int i = 0;i<chull.boundary.size();i++){
+		printf("%d ",chull.boundary[i]);
 	}
 	printf("\n");
+
 }
 template<>
 void QuickConvexHull<2,double>::update(){
 	std::vector<Point2D> points;
 	pointSet.getEnabledPoints(points);
+	if(points.size()<3){
+		//edge case...
+		hull.clear();
+		for (auto & p:points)
+			hull.addVertex(p);
+	}else{
 	std::sort(points.begin(),points.end(),SortLexicographic<2,double>());//not sure if this is required or not...
-/*	std::vector<Point2D> pointvec;
-	for(int i =0;i<points.size();i++)
-		pointvec.push_back(points[i]);*/
-	 cevans::quickhull2D<Point2D,double>  chull(points);
-	hull.clear();
-	for(int i = 0;i<chull.boundary.size();i++){
-		//printf("%d ",chull.boundary[i]);
-		hull.addVertex(points[chull.boundary[i]]);
-	}
 
+		 cevans::quickhull2D<Point2D,double>  chull(points);
+		hull.clear();
+		for(int i = 0;i<chull.boundary.size();i++){
+			//printf("%d ",chull.boundary[i]);
+			hull.addVertex(points[chull.boundary[i]]);
+		}
+	}
+#ifndef NDEBUG
+		for(int i = 0;i<pointSet.size();i++){
+			Point<2,double> & p = pointSet[i];
+			if(!pointSet.pointEnabled(i)){
+
+			}else{
+				assert(hull.contains(p));
+			}
+		}
+#endif
 
 
 }

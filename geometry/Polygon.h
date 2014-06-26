@@ -74,6 +74,7 @@ public:
 		if(!vertices_clockwise){
 			reorderVertices();
 		}
+		dbg_orderClockwise();
 		return vertices;
 	}
 
@@ -81,13 +82,14 @@ public:
 	void updateCircleBound();
 	virtual T getArea();
 	virtual T getPerimeter();
-	private:
-
+	//put the vertices into clockwise order
+	void reorderVertices();
+protected:
 	bool dbg_orderClockwise(){
 		return true;
 	}
+private:
 
-	void reorderVertices();
 
 
 
@@ -145,6 +147,23 @@ public:
 	}*/
 };
 
+template<>
+inline bool Polygon<2,double>::dbg_orderClockwise(){
+#ifndef NDEBUG
+	//from http://stackoverflow.com/a/1165943
+	if(vertices_clockwise){
+		double sum = 0;
+		for(int i = 0;i<vertices.size();i++){
+			Point<2,double> & a = i>0? vertices[i-1]:vertices.back();
+			Point<2,double> & b = vertices[i];
+			sum+= (b.x - a.x)*(b.y+a.y);
+		}
+		assert(sum>=0);
+	}
+
+#endif
+	return true;
+}
 template<>
 bool Polygon<2,double>::contains(const Point<2,double> & point);
 

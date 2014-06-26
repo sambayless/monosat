@@ -19,6 +19,9 @@ void MonotoneConvexHull<2,double>::update(){
 		pointSet.getEnabledPoints(points);
 		std::sort(points.begin(),points.end(),SortLexicographic<2,double>());
 		hull.clear();
+
+		if(points.size()>=3){
+
 		std::vector<Point2D> & list = hull.getVertices();
 
 
@@ -36,35 +39,24 @@ void MonotoneConvexHull<2,double>::update(){
 			list.push_back(points[i]);
 		}
 
-		/*for (int i = 2;i<points.size();i++){
-
-			while(list.size()>2){
-				//check if the last three points do not make a right turn:
-				if(cross(list[list.size()-2],list[list.size()-1],points[i])>=0){
-					list.pop();
-				}else{
-					list.push(points[i]);
-					break;
-				}
-
-			}
-		}
-		int cursize = list.size();
-		for (int i = points.size()-2;i>=0;i--){
-			while(list.size()>cursize){
-				//check if the last three points do not make a right turn:
-				if(cross(list[list.size()-2],list[list.size()-1],points[i])>=0){
-					list.pop();
-				}else{
-					list.push(points[i]);
-					break;
-				}
-
-			}
-		}*/
 		assert(list.size()==0 || ( list[0]==list.back()));
 		if(list.size())
 			list.pop_back();//for now, we aren't replicating the first vertex at the end of the polygon.
+		hull.reorderVertices();
+		}else{
+			for(auto & p:points)
+				hull.addVertex(p);
+		}
+#ifndef NDEBUG
+		for(int i = 0;i<pointSet.size();i++){
+			Point<2,double> & p = pointSet[i];
+			if(!pointSet.pointEnabled(i)){
+
+			}else{
+				assert(hull.contains(p));
+			}
+		}
+#endif
 	}
 
 template<>

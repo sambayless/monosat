@@ -38,7 +38,7 @@ public:
 	bool intersects(Shape<D,T> & s);
 
 	//> 0 if the point is 'right' of the line, <0 if 'left' of the line, 0 if exactly on the line.
-	T whichSide(const Point<D,T> & point);
+	int whichSide(const Point<D,T> & point);
 
 };
 
@@ -67,8 +67,11 @@ public:
 	bool intersects(Shape<2,T> & s);
 
 	//> 0 if the point is 'right' of the line, <0 if 'left' of the line, 0 if exactly on the line.
-	T whichSide(const Point<2,T> & point){
-		return cross(b,a,point);
+	int whichSide(const Point<2,T> & point){
+		T val= cross(b,a,point);
+		if(val==0)
+			return 0;
+		return val>0?1:-1;
 		//return ((b.x - a.x)*(point.y - a.y) - (b.y - a.y)*(point.x - a.x));
 	}
 private:

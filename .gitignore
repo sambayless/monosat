@@ -7,4 +7,5 @@ Static/*
 Win32/*
 Win64/*
 DbgRelease/*
-
+TestRelease/*
+Test/*

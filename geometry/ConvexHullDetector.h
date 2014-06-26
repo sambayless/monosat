@@ -243,7 +243,10 @@ void ConvexHullDetector<D,T>::buildReason(Lit p, vec<Lit> & reason, CRef marker)
 template<unsigned int D, class T>
 bool ConvexHullDetector<D,T>::propagate(vec<Lit> & conflict){
 
-
+	static int iter = 0;
+	if(++iter==9){
+		int a=1;
+	}
 
 		over_hull->update();
 
@@ -332,10 +335,10 @@ bool ConvexHullDetector<D,T>::checkSatisfied(){
 	}
 	printf("\n");*/
 	MonotoneConvexHull<D,T> cv(over);
-
-	T area = cv.getHull().getArea();
 	T expectOver = over_hull->getHull().getArea();
 	T expectUnder =under_hull->getHull().getArea();
+	T area = cv.getHull().getArea();
+
 	assert(equal_epsilon(area, expectOver));
 	assert(equal_epsilon(area, expectUnder));
 	for(auto & a: areaDetectors){

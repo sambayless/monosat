@@ -54,8 +54,7 @@ double Polygon<2,double>::getPerimeter(){
 }
 template<>
 void Polygon<2,double>::reorderVertices(){
-	if(vertices_clockwise)
-		return;
+
 	double centerX = 0;
 	double centerY = 0;
 	for(auto & p:vertices){
@@ -123,6 +122,7 @@ void Polygon<2,double>::reorderVertices(){
 	}
 
 	vertices_clockwise=true;
+	assert(dbg_orderClockwise());
 }
 template<>
 bool Polygon<1,double>::contains(const Point<1,double> & point){
