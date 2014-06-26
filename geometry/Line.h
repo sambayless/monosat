@@ -34,11 +34,11 @@ public:
 		return LINE;
 	}
 
-	bool contains(Point<D,T> & point);
+	bool contains(const Point<D,T> & point);
 	bool intersects(Shape<D,T> & s);
 
 	//> 0 if the point is 'right' of the line, <0 if 'left' of the line, 0 if exactly on the line.
-	T whichSide(Point<D,T> & point);
+	T whichSide(const Point<D,T> & point);
 
 };
 
@@ -63,11 +63,11 @@ public:
 	ShapeType getType(){
 		return LINE;
 	}
-	bool contains(Point<2,T> & point);
+	bool contains(const Point<2,T> & point);
 	bool intersects(Shape<2,T> & s);
 
 	//> 0 if the point is 'right' of the line, <0 if 'left' of the line, 0 if exactly on the line.
-	T whichSide(Point<2,T> & point){
+	T whichSide(const Point<2,T> & point){
 		return cross(b,a,point);
 		//return ((b.x - a.x)*(point.y - a.y) - (b.y - a.y)*(point.x - a.x));
 	}
@@ -79,7 +79,7 @@ private:
 };
 
 template<class T>
-bool Line<2,T>::contains(Point<2,T> & point){
+bool Line<2,T>::contains(const Point<2,T> & point){
 	return cross(a,b,point)==0;//is this correct?
 }
 
@@ -110,6 +110,7 @@ bool Line<2,T>::intersects(Shape<2,T> & s){
 		}
 		return false;
 	}
+	return false;
 }
 
 #endif

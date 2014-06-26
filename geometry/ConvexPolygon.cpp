@@ -9,7 +9,7 @@
 #include "mtl/Vec.h"
 
 template<>
-bool ConvexPolygon<2,double>::contains(Point<2,double> & point, int firstVertex,int lastVertex){
+bool ConvexPolygon<2,double>::containsInRange(const Point<2,double> & point, int firstVertex,int lastVertex){
 	//From http://demonstrations.wolfram.com/AnEfficientTestForAPointToBeInAConvexPolygon/
 	//this is correct _only_ for convex polygons
 	 vec<Point<2,double> > &  w = getVertices();
@@ -49,8 +49,21 @@ bool ConvexPolygon<2,double>::intersects(Shape<2,double> & shape){
 	 return true;
 }
 template<>
-bool ConvexPolygon<1,double>::contains(Point<1,double> & point, int firstVertex,int lastVertex){
+bool ConvexPolygon<1,double>::containsInRange(const Point<1,double> & point, int firstVertex,int lastVertex){
 	return false;
+}
+template<>
+bool ConvexPolygon<1,double>::contains(const Point<1,double> & point){
+	return containsInRange(point,0,this->size()-1);
+}
+template<>
+bool ConvexPolygon<2,double>::contains(const Point<2,double> & point){
+	return containsInRange(point,0,this->size()-1);
+}
+template<unsigned int D,class T>
+bool ConvexPolygon<D,T>::contains(const Point<D,T> & point)
+{
+	return containsInRange(point,0,this->size()-1);
 }
 
 

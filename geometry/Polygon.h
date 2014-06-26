@@ -25,12 +25,15 @@ public:
 	virtual ShapeType getType(){
 		return POLYGON;
 	}
-	virtual bool contains(Point<D,T> & point);
+	virtual bool contains(const Point<D,T> & point);
 
 	virtual bool intersects(Shape<D,T> & s){
 		return false;
 	}
 
+	int size()const {
+		return vertices.size();
+	}
 
 	void update(){
 		if(!vertices_clockwise){
@@ -143,7 +146,7 @@ public:
 };
 
 template<>
-bool Polygon<2,double>::contains(Point<2,double> & point);
+bool Polygon<2,double>::contains(const Point<2,double> & point);
 
 template<>
 void Polygon<2,double>::reorderVertices();

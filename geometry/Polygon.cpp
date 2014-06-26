@@ -25,7 +25,7 @@ double Polygon<2,double>::getArea(){
 }
 
 template<>
-bool Polygon<2,double>::contains(Point<2,double> & point){
+bool Polygon<2,double>::contains(const Point<2,double> & point){
 	vec<Point2D> &  points = getVertices();
 	int i;
 	  int j;
@@ -126,7 +126,7 @@ void Polygon<2,double>::reorderVertices(){
 	vertices_clockwise=true;
 }
 template<>
-bool Polygon<1,double>::contains(Point<1,double> & point){
+bool Polygon<1,double>::contains(const Point<1,double> & point){
 
 }
 template<>

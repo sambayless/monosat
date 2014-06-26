@@ -3,15 +3,16 @@
 #define CONVEX_DETECTOR_H_
 #include "core/SolverTypes.h"
 #include "PointSet.h"
-#include "GeometryTheory.h"
 #include "GeometryDetector.h"
-
+#include "core/Config.h"
 #include "ConvexHull.h"
 #include "MonotoneConvexHull.h"
 #include "QuickConvexHull.h"
 #include "Polygon.h"
 #include "Line.h"
 using namespace Minisat;
+
+
 
 template<unsigned int D, class T>
 class ConvexHullDetector:public GeometryDetector{
@@ -69,8 +70,8 @@ private:
 		void findFarPoints(Line<D,T> & testline,vec<Point<D,T> > & test_set,vec<Point<D,T> > & min_set,ConvexPolygon<D,T> &hull){
 			test_set.clear();
 			T hullside =0;
-			for(int i =0;hullside==0 && i<hull.getVerticeS().size();i++){
-				hullside =testline.whichSide()(hull.getVertices()[i]);
+			for(int i =0;hullside==0 && i<hull.getVertices().size();i++){
+				hullside =testline.whichSide(hull.getVertices()[i]);
 			}
 			assert(hullside!=0);
 			for(int i = 0;i<over.size();i++){
@@ -89,7 +90,7 @@ private:
 			}
 		}
 
-		void findContainingTriangle2d_helper(ConvexPolygon<D,T> & polygon, int first_vertex, int last_vertex, Point<D,T> & point, ConvexPolygon<D,T> & triangle_out){
+		void findContainingTriangle2d_helper(ConvexPolygon<2,T> & polygon, int first_vertex, int last_vertex,const Point<2,T> & point, ConvexPolygon<2,T> & triangle_out){
 			//recurse on this segment of the polygon, finding a triangle that contains the point.
 			//precondition: the point is contained in this convex segment of the polygon
 
@@ -100,7 +101,7 @@ private:
 			 //When recursing, 2 of the three vertices are already selected (they are the vertices from the existing triangle), so we only have to pick one more vertex.
 			 //Since we already know that the point isn't on the other side of those two vertices, we only have to check two sides in the case where the point is not contained.
 			assert(first_vertex!=last_vertex);
-			assert(polygon.contains(point,first_vertex,last_vertex));
+			assert(polygon.containsInRange(point,first_vertex,last_vertex));
 			triangle_out.clear();
 			vec<Point<2,T>> & polygon_vertices = polygon.getVertices();
 			Point<2,T> & a = polygon_vertices[first_vertex];
@@ -123,20 +124,20 @@ private:
 				assert(testLine.whichSide(point)!= 0);//else we would have already found the point
 
 				if(testLine.whichSide(point)!= testLine.whichSide(b)){
-					 findContainingTriangle2d_helper(polygon_vertices,first_vertex,mid_point,point,triangle_out);
+					 findContainingTriangle2d_helper(polygon,first_vertex,mid_point,point,triangle_out);
 				}else{
 #ifndef NDEBUG
 					Line<2,T> dbgLine(b,c);
 					assert(dbgLine.whichSide(point)!= 0);//else we would have already found the point
 					assert(dbgLine.whichSide(point)!= dbgLine.whichSide(a));
 #endif
-					findContainingTriangle2d_helper(polygon_vertices,mid_point,last_vertex,point,triangle_out);
+					findContainingTriangle2d_helper(polygon,mid_point,last_vertex,point,triangle_out);
 				}
 			}
 
 		}
 
-		void findContainingTriangle2d( ConvexPolygon<D,T> & polygon,  Point<2,T> & point, ConvexPolygon<2,T> & triangle_out){
+		void findContainingTriangle2d( ConvexPolygon<D,T> & polygon,const Point<D,T> & point, ConvexPolygon<D,T> & triangle_out){
 			assert(polygon.contains(point));
 
 			findContainingTriangle2d_helper(polygon,0,polygon.getVertices().size()-1,point,triangle_out);
@@ -187,18 +188,13 @@ GeometryDetector(detectorID),outer(outer),under(under),over(over),rnd_seed(seed)
 	point_contained_marker=outer->newReasonMarker(getID());
 	point_not_contained_marker=outer->newReasonMarker(getID());
 	if(hullAlg== ConvexHullAlg::ALG_QUICKHULL){
-		if(D==2){
-			over_hull = new QuickConvexHull<D,T>(over);
-			under_hull = new QuickConvexHull<D,T>(under);
-		}else if (D==3){
-			over_hull = new QuickConvexHull<D,T>(over); //new MonotoneConvexHull<D,T>(over);
-			under_hull = new QuickConvexHull<D,T>(under);
-		}
+		over_hull = new QuickConvexHull<D,T>(over);
+		under_hull = new QuickConvexHull<D,T>(under);
 	}else if (hullAlg== ConvexHullAlg::ALG_MONOTONE_HULL){
-		if(D==2){
-			over_hull = new MonotoneConvexHull<D,T>(over);
-			under_hull = new MonotoneConvexHull<D,T>(under);
-		}
+
+		over_hull = new MonotoneConvexHull<D,T>(over);
+		under_hull = new MonotoneConvexHull<D,T>(under);
+
 	}
 	lowest_point_var=var_Undef;
 	qhead=0;
@@ -292,7 +288,7 @@ bool ConvexHullDetector<D,T>::propagate(vec<Lit> & conflict){
 		}
 		//If we are making many queries, it is probably worth it to pre-process the polygon and then make the queries.
 		for(int i =0;i<pointContainedLits.size();i++){
-			Point<D,T> point = pointContainedLits[i].p;
+			Point<D,T> & point = pointContainedLits[i].p;
 			Lit l = pointContainedLits[i].l;
 			ConvexPolygon<D,T> & p_over = over_hull->getHull();
 			ConvexPolygon<D,T> & p_under = under_hull->getHull();
@@ -306,7 +302,7 @@ bool ConvexHullDetector<D,T>::propagate(vec<Lit> & conflict){
 					outer->enqueue(l,point_contained_marker) ;
 				}else if (outer->value(l)==l_False){
 					conflict.push(l);
-					//buildAreaGEQReason(under_area,conflict);
+					buildPointContainedReason(point,conflict);
 					return false;
 				}
 			}else if (!p_over.contains(point)){
@@ -318,7 +314,7 @@ bool ConvexHullDetector<D,T>::propagate(vec<Lit> & conflict){
 					outer->enqueue(l,point_not_contained_marker) ;
 				}else if (outer->value(l)==l_False){
 					conflict.push(l);
-					//buildAreaLTReason(over_area,conflict);
+					buildPointNotContainedReason(point,conflict);
 					return false;
 				}
 			}
@@ -383,117 +379,18 @@ void ConvexHullDetector<D,T>::buildAreaLTReason(T area,vec<Lit> & conflict){
 	}
 }
 template<unsigned int D, class T>
-void ConvexHullDetector<D,T>::buildPointContainedReason(const Point<D,T> & s,vec<Lit> & conflict){
-	//A point is contained because there exists three enabled points that form a containing triangle
-	//(might have to handle the edge case of a 2 point hull depending on how we interpret such a hull)
-	//its not immediately clear how we would pick which 3 points to include, given that there may be a choice
-	ConvexPolygon<D,T> &hull = under_hull->getHull();
-	assert(hull.contains(s));
+void ConvexHullDetector<D,T>::buildPointContainedReason(const Point<D,T> & s, vec<Lit> & conflict){
 
-	if(D==2){
-		ConvexPolygon<D,T> triangle;
-		findContainingTriangle2d(hull,s,triangle);
-		assert(triangle.contains(s));
-		for(auto & p: triangle){
-			int id = p.getID();
-			Var v = outer->getPointVar(id);
-			assert(outer->value(v)==l_True);
-			conflict.push(mkLit(v,true));
-		}
-	}else{
-		assert(false);//not yet implemented
-	}
-
-/*
-	 //Set the first vertex of the containing triangle to be (arbitrarily) point 0.
-	 //then walk around the hull until we find a vertex that is on the other side of the point - that will be vertex 2.
-	 //then we continue on to find vertex 3
-
-	 //note: this can also compute the area (which is the sum of p2[0]*p1[1] - p1[0]*p2[1]); could potentially combine these...
-	 for(int i = 1;i<w.size();i++){
-		 Point<2,double> p1 = i>0 ? (w[i-1]-s):((w.last()-s));
-		 Point<2,double> p2 = w[i]-s;
-		 bool contained = (p2[0]*p1[1] - p1[0]*p2[1]) >0;
-		 if(!contained){
-			 return false;
-		 }
-	 }*/
 }
 
-template<unsigned int D,class T>
+template<unsigned int D, class T>
 void ConvexHullDetector<D,T>::buildPointNotContainedReason(const Point<D,T> & s, vec<Lit> & conflict){
-	//find ANY line/plane/hyperplane that passes through s, and does NOT intersect the hull.
-	//let the side of the plane that contains the hull be the 'near' side
-	//any set of points that are strictly on the near side of the plane (not including points on the plane itself)
-	//will also have a convex hull that is strictly on the near side of the plane.
-	//it follows that at least one point that is either on the plane, or on the 'far' side of the plane, must be included in the point set
-	//in order for p to be contained in the convex hull.
-
-	//we can pick any plane; for now, we will search for a plane that minimizes the number of points on the far side (or on the plane exactly)
-
-	//first, find the extreme points of the hull relative to the point.
-	//we could find this by adding the point to the pointset and finding the convex hull, and then finding the neighbours of the point...
-
-
-	//for 2D, we do this by forming the line (s,p), where p is any disabled point. Then we check if that line intersects the hull; if it doesn't
-	if(D==2){
-		Line<D,T> testline;
-
-
-		testline.a = s;
-		ConvexPolygon<D,T> &hull = over_hull->getHull();
-		Line<D,T> top_line;
-		Line<D,T> bottom_line;
-		top_line.a = s;
-		bottom_line.a=s;
-		top_line.b = hull.getVertices()[0];
-		bottom_line.b = hull.getVertices().last();
-		/*PointSet<D,T> pt;
-		pt.addPoint(s,0);
-		pt.setPointEnabled(0,true);
-		if(over.pointEnabled(i)){
-			int id = pt.addPoint(over[i]);
-			pt.setPointEnabled(id,true)
-		}
-		MonotoneConvexHull<D,T> mt(pt);
-		*/
-		vec<Point<D,T> > min_set;
-		vec<Point<D,T> > test_set;
-		hasSet=false;
-
-		for(int i = 0;i<over.size();i++){
-			Point<D,T> & p = over[i];
-			if(!over.pointEnabled(i)){
-				if(!hull.contains(p)){
-					testline.b = p;
-
-					//now check to see if test line intersects the hull (it can still intersect on the otherside
-					if(!testline.intersects(hull)){
-						//then this is a point outside the hull that we can try testing.
-						findFarPoints(testline,test_set,min_set,hull);
-					}
-				}
-			}else{
-				assert(hull.contains(p));
-			}
-		}
-		//find the extreme points on the hull itself
-		for(auto & p:hull.getVertices()){
-			if(top_line.whichSide(p)>=0){
-				top_line.b=p;
-			}
-
-			if(bottom_line.whichSide(p)<=0){
-				bottom_line.b=p;
-			}
-		}
-		findFarPoints(top_line,test_set,min_set,hull);
-		findFarPoints(bottom_line,test_set,min_set,hull);
-
-	}else{
-		assert(false);//not yet implemented
-	}
 
 }
 
+template<>
+void ConvexHullDetector<2,double>::buildPointContainedReason(const Point<2,double> & s,vec<Lit> & conflict);
+
+template<>
+void ConvexHullDetector<2,double>::buildPointNotContainedReason(const Point<2,double> & s, vec<Lit> & conflict);
 #endif

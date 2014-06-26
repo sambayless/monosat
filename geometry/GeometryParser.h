@@ -92,7 +92,7 @@ void readConvexHullPointContained(B& in, Solver& S) {
 	int pointsetID = parseInt(in);
 	int d = parseInt(in);
 	for(int i = 0;i<d;i++){
-		int p = parseInt(in);
+		int p = parseDouble(in,tmp_str);
 		point.position.push(p);
 	}
 	int v = parseInt(in)-1;
