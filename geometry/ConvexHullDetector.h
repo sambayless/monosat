@@ -30,16 +30,26 @@ public:
 		CRef point_not_contained_marker;
 		CRef area_geq_marker;
 		CRef area_not_geq_marker;
+		CRef point_on_hull_marker;
+		CRef point_not_on_hull_marker;
 
 		Var lowest_point_var;
 		vec<int> point_lit_map;
 		vec<Lit> lit_point_map;
-
+		vec<bool> under_hull_members;
+		vec<bool> over_hull_members;
 		struct PointContainedLit{
 			Point<D,T> p;
 			Lit l;
 		};
 		vec<PointContainedLit> pointContainedLits;
+		struct PointOnHullLit{
+			Var pointVar;
+			Point<D,T> p;
+			Lit l;
+		};
+		vec<PointOnHullLit> pointOnHullLits;
+
 		struct AreaLit{
 			T areaGreaterEqThan;
 			Lit l;
@@ -54,20 +64,21 @@ public:
 		void buildAreaLTReason(T area,vec<Lit> & conflict);
 		void buildPointContainedReason(const Point<D,T> & p,vec<Lit> & conflict);
 		void buildPointNotContainedReason(const Point<D,T> & p,vec<Lit> & conflict);
-
+		void buildPointOnHullOrDisabledReason(Var pointVar,const Point<D,T> & p, vec<Lit> & conflict);
+		void buildPointNotOnHullOrDisabledReason(Var pointVar,const Point<D,T> & p, vec<Lit> & conflict);
 
 		void buildReason(Lit p, vec<Lit> & reason, CRef marker);
 		bool checkSatisfied();
 		Lit decide();
 		void addAreaDetectorLit(double areaGreaterEqThan, Var v);
 		void addPointContainmentLit(Point<D,T> p,Var outerVar);
-
+		void addPointOnHullLit(Var pointVar,Var outerVar);
 		ConvexHullDetector(int detectorID,PointSet<D,T> & under, PointSet<D,T> & over, GeometryTheorySolver<D,T> * outer,  double seed=1);
 		virtual ~ConvexHullDetector(){
 
 		}
 private:
-		void findFarPoints(Line<D,T> & testline,std::vector<Point<D,T> > & test_set,std::vector<Point<D,T> > & min_set,ConvexPolygon<D,T> &hull){
+		void findFarPoints(Line<D,T> & testline, bool includeCollinearPoints,std::vector<Point<D,T> > & test_set,std::vector<Point<D,T> > & min_set,ConvexPolygon<D,T> &hull){
 			test_set.clear();
 			T hullside =0;
 			for(int i =0;hullside==0 && i<hull.getVertices().size();i++){
@@ -76,7 +87,8 @@ private:
 			assert(hullside!=0);
 			for(int i = 0;i<over.size();i++){
 				if(!over.pointEnabled(i)){
-					if(testline.whichSide(over[i])!=hullside){
+					int side = testline.whichSide(over[i]);
+					if(side!=hullside && (includeCollinearPoints ||side!=0)){
 						test_set.push_back(over[i]);
 						if(hasSet && test_set.size()>=min_set.size()){
 							return;//shortcut
@@ -188,6 +200,12 @@ GeometryDetector(detectorID),outer(outer),under(under),over(over),rnd_seed(seed)
 
 	point_contained_marker=outer->newReasonMarker(getID());
 	point_not_contained_marker=outer->newReasonMarker(getID());
+
+	point_on_hull_marker=outer->newReasonMarker(getID());
+	point_not_on_hull_marker=outer->newReasonMarker(getID());
+	area_geq_marker=outer->newReasonMarker(getID());
+	area_not_geq_marker=outer->newReasonMarker(getID());
+
 	if(hullAlg== ConvexHullAlg::ALG_QUICKHULL){
 		over_hull = new QuickConvexHull<D,T>(over);
 		under_hull = new QuickConvexHull<D,T>(under);
@@ -224,20 +242,66 @@ void ConvexHullDetector<D,T>::addAreaDetectorLit(double areaGreaterEqThan, Var o
 
 template<unsigned int D, class T>
 void ConvexHullDetector<D,T>::buildReason(Lit p, vec<Lit> & reason, CRef marker){
+		reason.push(p);
+		if(marker==area_geq_marker){
 
-		if(marker==point_contained_marker){
-			reason.push(p);
+			for(auto & a:areaDetectors){
+				if(var(a.l)==var(p)){
+					buildAreaGEQReason(a.areaGreaterEqThan, reason);
+					return;
+				}
+			}
 
-			//buildPointContainedReason(reason);
+
+		}else if(marker==area_not_geq_marker){
+			for(auto & a:areaDetectors){
+				if(var(a.l)==var(p)){
+					buildAreaLTReason(a.areaGreaterEqThan, reason);
+					return;
+				}
+			}
+
+		}else if(marker==point_contained_marker){
+			for(auto & a:pointContainedLits){
+				if(var(a.l)==var(p)){
+					buildPointContainedReason(a.p, reason);
+					return;
+				}
+			}
+
 
 		}else if(marker==point_not_contained_marker){
-			reason.push(p);
+			for(auto & a:pointContainedLits){
+				if(var(a.l)==var(p)){
+					buildPointNotContainedReason(a.p, reason);
+					return;
+				}
+			}
 
-			//buildPointNotContainedReason(reason);
+
+
+		}else if(marker==point_on_hull_marker){
+			for(auto & a:pointOnHullLits){
+				if(var(a.l)==var(p)){
+					buildPointOnHullOrDisabledReason(a.pointVar,a.p, reason);
+					return;
+				}
+			}
+
+
+		}else if(marker==point_not_on_hull_marker){
+			for(auto & a:pointOnHullLits){
+				if(var(a.l)==var(p)){
+					buildPointNotOnHullOrDisabledReason(a.pointVar,a.p, reason);
+					return;
+				}
+			}
+
 
 		}else{
 			assert(false);
 		}
+		assert(false);
 }
 
 template<unsigned int D, class T>
@@ -290,12 +354,13 @@ bool ConvexHullDetector<D,T>::propagate(vec<Lit> & conflict){
 
 			}
 		}
+		ConvexPolygon<D,T> & p_over = over_hull->getHull();
+		ConvexPolygon<D,T> & p_under = under_hull->getHull();
 		//If we are making many queries, it is probably worth it to pre-process the polygon and then make the queries.
 		for(int i =0;i<pointContainedLits.size();i++){
 			Point<D,T> & point = pointContainedLits[i].p;
 			Lit l = pointContainedLits[i].l;
-			ConvexPolygon<D,T> & p_over = over_hull->getHull();
-			ConvexPolygon<D,T> & p_under = under_hull->getHull();
+
 
 			if(p_under.contains(point)){
 				//l is true
@@ -323,7 +388,63 @@ bool ConvexHullDetector<D,T>::propagate(vec<Lit> & conflict){
 				}
 			}
 		}
+		if(pointOnHullLits.size()){
+#ifndef NDEBUG
+			for(bool b:under_hull_members)
+				assert(!b);
+			for(bool b:over_hull_members)
+				assert(!b);
+#endif
+			under_hull_members.growTo(over.size());
+			over_hull_members.growTo(under.size());
+			for(auto & p:p_under){
+				under_hull_members[p.getID()]=true;
+			}
+			for(auto & p:p_over){
+				over_hull_members[p.getID()]=true;
+			}
+			for(int i =0;i<pointOnHullLits.size();i++){
+				Point<D,T> & point = pointOnHullLits[i].p;
+				Lit l = pointOnHullLits[i].l;
 
+				//check if a point is a member of the hull
+
+				bool under_member=under_hull_members[point.getID()];
+				bool over_member=over_hull_members[point.getID()];
+
+				if(!under.pointEnabled(point.getID()) ||under_member){
+					//l is true
+					if(outer->value(l)==l_True){
+						//do nothing
+					}else if(outer->value(l)==l_Undef){
+
+						outer->enqueue(l,point_contained_marker) ;
+					}else if (outer->value(l)==l_False){
+						conflict.push(l);
+						buildPointOnHullOrDisabledReason( pointOnHullLits[i].pointVar, point,conflict);
+						return false;
+					}
+				}else if (!over_member){
+					l=~l;
+					//l is true
+					if(outer->value(l)==l_True){
+						//do nothing
+					}else if(outer->value(l)==l_Undef){
+						outer->enqueue(l,point_not_contained_marker) ;
+					}else if (outer->value(l)==l_False){
+						conflict.push(l);
+						buildPointNotOnHullOrDisabledReason(pointOnHullLits[i].pointVar,point,conflict);
+						return false;
+					}
+				}
+			}
+			for(auto & p:p_under){
+				under_hull_members[p.getID()]=false;
+			}
+			for(auto & p:p_over){
+				over_hull_members[p.getID()]=false;
+			}
+		}
 		return true;
 	}
 template<unsigned int D, class T>
@@ -391,10 +512,22 @@ template<unsigned int D, class T>
 void ConvexHullDetector<D,T>::buildPointNotContainedReason(const Point<D,T> & s, vec<Lit> & conflict){
 
 }
+template<unsigned int D, class T>
+void ConvexHullDetector<D,T>::buildPointOnHullOrDisabledReason(Var pointVar,const Point<D,T> & p, vec<Lit> & conflict){
+
+}
+
+template<unsigned int D, class T>
+void ConvexHullDetector<D,T>::buildPointNotOnHullOrDisabledReason(Var pointVar,const Point<D,T> & p, vec<Lit> & conflict){
+
+}
 
 template<>
+void ConvexHullDetector<2,double>::buildPointOnHullOrDisabledReason(Var pointVar,const Point<2,double> & p, vec<Lit> & conflict);
+template< >
+void ConvexHullDetector<2,double>::buildPointNotOnHullOrDisabledReason(Var pointVar,const Point<2,double> & p, vec<Lit> & conflict);
+template<>
 void ConvexHullDetector<2,double>::buildPointContainedReason(const Point<2,double> & s,vec<Lit> & conflict);
-
 template<>
 void ConvexHullDetector<2,double>::buildPointNotContainedReason(const Point<2,double> & s, vec<Lit> & conflict);
 
