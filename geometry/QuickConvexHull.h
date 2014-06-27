@@ -12,9 +12,10 @@
 #include "PointSet.h"
 #include "mtl/Sort.h"
 #include "cevans/quickhull3D.h"
+#include <gmpxx.h>
 using namespace Minisat;
 
-template<unsigned int D,class T=double>
+template<unsigned int D,class T>
 class QuickConvexHull:public ConvexHull<D,T>{
 
 	PointSet<D,T> & pointSet;
@@ -28,7 +29,7 @@ public:
 
 	T getArea();
 
-	ConvexPolygon<D> & getHull(){
+	ConvexPolygon<D,T> & getHull(){
 		update();
 		return hull;
 	}
@@ -43,4 +44,10 @@ void QuickConvexHull<3,double>::update();
 
 template<>
 double QuickConvexHull<2,double>::getArea();
+
+template<>
+void QuickConvexHull<2,mpq_class>::update();
+
+template<>
+mpq_class QuickConvexHull<2,mpq_class>::getArea();
 #endif

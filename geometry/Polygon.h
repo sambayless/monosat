@@ -9,12 +9,12 @@
 #define POLYGON_H_
 #include <math.h>
 #include "Shape.h"
-
+#include <gmpxx.h>
 /**
  * A concrete polygon (or, for D>2, a polytope)
  */
-template<unsigned int D,class T=double>
-class Polygon:public Shape<D>{
+template<unsigned int D,class T>
+class Polygon:public Shape<D,T>{
 public:
 	//List of vertices in clockwise order
 	std::vector<Point<D,T>> vertices;
@@ -175,6 +175,38 @@ double Polygon<2,double>::getArea();
 
 template<>
 double Polygon<2,double>::getPerimeter();
+
+
+
+template<>
+inline bool Polygon<2,mpq_class>::dbg_orderClockwise(){
+#ifndef NDEBUG
+	//from http://stackoverflow.com/a/1165943
+	if(vertices_clockwise){
+		double sum = 0;
+		for(int i = 0;i<vertices.size();i++){
+			Point<2,double> & a = i>0? vertices[i-1]:vertices.back();
+			Point<2,double> & b = vertices[i];
+			sum+= (b.x - a.x)*(b.y+a.y);
+		}
+		assert(sum>=0);
+	}
+
+#endif
+	return true;
+}
+template<>
+bool Polygon<2,mpq_class>::contains(const Point<2,mpq_class> & point);
+
+template<>
+void Polygon<2,mpq_class>::reorderVertices();
+
+template<>
+mpq_class Polygon<2,mpq_class>::getArea();
+
+template<>
+mpq_class Polygon<2,mpq_class>::getPerimeter();
+
 
 template<unsigned int D,class T>
 void Polygon<D,T>::updateCircleBound(){

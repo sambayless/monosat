@@ -19,6 +19,18 @@
 #include "cevans/zero.h"
 template<>
  double cevans::zero<double>::val = 1E-10;
+
+template<>
+void QuickConvexHull<2,mpq_class>::update(){
+	assert(false);
+}
+
+template<>
+mpq_class QuickConvexHull<2,mpq_class>::getArea(){
+	assert(false);
+	return 0;
+}
+
 template<>
 void QuickConvexHull<1,double>::update(){
 

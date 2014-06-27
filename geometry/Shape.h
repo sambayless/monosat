@@ -16,7 +16,7 @@ enum ShapeType{
 /**
  * A concrete shape
  */
-template<unsigned int D,class T=double>
+template<unsigned int D,class T>
 class Shape{
 
 public:

@@ -17,6 +17,7 @@ NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FO
 DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT
 OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 **************************************************************************************************/
+#include <gmpxx.h>
 #include <fstream>
 #include <errno.h>
 #include <stdio.h>
@@ -337,7 +338,7 @@ int main(int argc, char** argv)
 
              graphParser.setSymbols(&symbols);
              parser.addParser(&graphParser);
-             GeometryParser<char *, SimpSolver> geometryParser;
+             GeometryParser<char *, SimpSolver,mpq_class> geometryParser;
              parser.addParser(&geometryParser);
              parser.parse_DIMACS(in,S);
 

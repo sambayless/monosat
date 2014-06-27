@@ -10,10 +10,10 @@
 #define MONOTONE_CONVEXHULL_H_
 #include "ConvexHull.h"
 #include "PointSet.h"
-
+#include <gmpxx.h>
 using namespace Minisat;
 
-template<unsigned int D,class T=double>
+template<unsigned int D,class T>
 class MonotoneConvexHull:public ConvexHull<D,T>{
 
 	PointSet<D,T> & pointSet;
@@ -28,7 +28,7 @@ public:
 
 	T getArea();
 
-	ConvexPolygon<D> & getHull(){
+	ConvexPolygon<D,T> & getHull(){
 		update();
 		return hull;
 	}
@@ -58,5 +58,15 @@ double MonotoneConvexHull<2,double>::getArea();
 
 template<>
 double MonotoneConvexHull<1,double>::getArea();
+
+
+template<>
+inline mpq_class MonotoneConvexHull<2,mpq_class>::cross(const Point<2,mpq_class> &O, const Point<2,mpq_class> &A, const Point<2,mpq_class> &B)
+{
+	return (A[0] - O[0]) * (B[1] - O[1]) - (A[1] - O[1]) * (B[0] - O[0]);
+}
+
+template<>
+void MonotoneConvexHull<2,mpq_class>::update();
 
 #endif

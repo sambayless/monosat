@@ -126,7 +126,7 @@ void Polygon<2,double>::reorderVertices(){
 }
 template<>
 bool Polygon<1,double>::contains(const Point<1,double> & point){
-
+	return false;
 }
 template<>
 void Polygon<1,double>::reorderVertices(){
@@ -160,3 +160,22 @@ Vector2D edgeIntersection(Vector2D a, Vector2D b, Vector2D c, Vector2D d){
         return a * (1 - t) + t * b;
     }
 }*/
+template<>
+bool Polygon<2,mpq_class>::contains(const Point<2,mpq_class> & point){
+	return false;
+}
+
+template<>
+void Polygon<2,mpq_class>::reorderVertices(){
+
+}
+
+template<>
+mpq_class Polygon<2,mpq_class>::getArea(){
+	return 0;
+}
+
+template<>
+mpq_class Polygon<2,mpq_class>::getPerimeter(){
+	return 0;
+}

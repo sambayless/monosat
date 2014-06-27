@@ -12,8 +12,8 @@
 /**
  * A line
  */
-template<unsigned int D,class T=double>
-class Line:public Shape<D>{
+template<unsigned int D,class T>
+class Line:public Shape<D,T>{
 public:
 	//A line is defined by two non-equal points that it passes through
 	Point<D,T> a;

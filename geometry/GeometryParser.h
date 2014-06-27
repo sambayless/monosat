@@ -10,7 +10,7 @@
 
 
 #include <stdio.h>
-
+#include <gmpxx.h>
 #include "utils/ParseUtils.h"
 #include "graph/GraphParser.h"
 #include "geometry/GeometryTypes.h"
@@ -22,15 +22,15 @@ namespace Minisat {
 
 
 // GEOMETRY Parser:
-template<class B, class Solver>
+template<class B, class Solver, class T=double>
 class GeometryParser:public Parser<B,Solver>{
-	vec<GeometryTheorySolver<1,double>*> space_1D;
-	vec<GeometryTheorySolver<2,double>*> space_2D;
+	//vec<GeometryTheorySolver<1,mpq_class>*> space_1D;
+	vec<GeometryTheorySolver<2,T>*> space_2D;
 	//vec<GeometryTheorySolver<3,double>*> space_3D;
 	vec<char> tmp_str;
 	struct ParsePoint{
 		Var var;
-		vec<double> position;
+		vec<T> position;
 	};
 
 	vec<vec<ParsePoint>> pointsets;
@@ -150,15 +150,15 @@ public:
 		 int D = firstP.position.size();
 
 		 if(D==1){
-			 space_1D.growTo(i+1,nullptr);
+			/* space_1D.growTo(i+1,nullptr);
 			 if(!space_1D[i]){
 				 space_1D[i] = new GeometryTheorySolver<1,double>(&S);
 				 S.addTheory(space_1D[i]);
-			 }
+			 }*/
 		 }else if (D==2){
 			 space_2D.growTo(i+1,nullptr);
 			 if(!space_2D[i]){
-				 space_2D[i] = new GeometryTheorySolver<2,double>(&S);
+				 space_2D[i] = new GeometryTheorySolver<2,T>(&S);
 				 S.addTheory(space_2D[i]);
 			 }
 		 }/*else if (D==3){
@@ -181,10 +181,10 @@ public:
 				 exit(3);
 			 }
 			 if(D==1){
-				 Point<1,double> pnt(p.position);
-				 space_1D[i]->newPoint(pnt,p.var);
+				/* Point<1,double> pnt(p.position);
+				 space_1D[i]->newPoint(pnt,p.var);*/
 			 }else if(D==2){
-				 Point<2,double> pnt(p.position);
+				 Point<2,T> pnt(p.position);
 				 space_2D[i]->newPoint(pnt,p.var);
 			 }/*else if(D==3){
 				 Point<3,double> pnt(p.position);
@@ -201,7 +201,7 @@ public:
 		 }
 		 int D = pointsetDim[c.pointsetID];
 		 if(D==1){
-			 space_1D[c.pointsetID]->convexHullArea(c.area,c.v);
+			// space_1D[c.pointsetID]->convexHullArea(c.area,c.v);
 		 }else if(D==2){
 			 space_2D[c.pointsetID]->convexHullArea(c.area,c.v);
 		 }/*else if(D==3){
@@ -218,10 +218,10 @@ public:
 		 int D = pointsetDim[c.pointsetID];
 
 		 if(D==1){
-			 Point<1,double> pnt(c.point.position);
-			 space_1D[c.pointsetID]->convexHullContains(pnt, c.point.var);
+			 Point<1,T> pnt(c.point.position);
+			// space_1D[c.pointsetID]->convexHullContains(pnt, c.point.var);
 		 }else if(D==2){
-			 Point<2,double> pnt(c.point.position);
+			 Point<2,T> pnt(c.point.position);
 			 space_2D[c.pointsetID]->convexHullContains(pnt, c.point.var);
 		 }/*else if(D==3){
 			 Point<3,double> pnt(c.point.position);
@@ -238,7 +238,7 @@ public:
 		 }
 		 int D = pointsetDim[c.pointsetID];
 		 if(D==1){
-			 space_1D[c.pointsetID]->convexHullContains(c.pointVar,c.pointOnHull);
+			 //space_1D[c.pointsetID]->convexHullContains(c.pointVar,c.pointOnHull);
 		 }else if(D==2){
 			 space_2D[c.pointsetID]->convexHullContains(c.pointVar,c.pointOnHull);
 		 }/*else if(D==3){

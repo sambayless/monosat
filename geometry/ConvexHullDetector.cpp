@@ -223,3 +223,23 @@ void ConvexHullDetector<2,double>::buildPointNotOnHullOrDisabledReason(Var point
 
 
 }
+
+template<>
+void ConvexHullDetector<2,mpq_class>::buildPointContainedReason(const Point<2,mpq_class> & s,vec<Lit> & conflict){
+	assert(false);
+}
+
+template<>
+void ConvexHullDetector<2,mpq_class>::buildPointNotContainedReason(const Point<2,mpq_class> & s, vec<Lit> & conflict){
+	assert(false);
+}
+
+template<>
+void ConvexHullDetector<2,mpq_class>::buildPointOnHullOrDisabledReason(Var pointVar,const Point<2,mpq_class> & s, vec<Lit> & conflict){
+	assert(false);
+}
+
+template< >
+void ConvexHullDetector<2,mpq_class>::buildPointNotOnHullOrDisabledReason(Var pointVar,const Point<2,mpq_class> & s, vec<Lit> & conflict){
+	assert(false);
+}

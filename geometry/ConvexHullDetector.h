@@ -318,8 +318,8 @@ bool ConvexHullDetector<D,T>::propagate(vec<Lit> & conflict){
 
 		if(areaDetectors.size()){
 
-			double over_area = over_hull->getHull().getArea();
-			double under_area = under_hull->getHull().getArea();
+			T over_area = over_hull->getHull().getArea();
+			T under_area = under_hull->getHull().getArea();
 			assert(under_area<=over_area);
 			for(int i = 0;i<areaDetectors.size();i++){
 

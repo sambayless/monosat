@@ -83,3 +83,13 @@ template<>
 double MonotoneConvexHull<1,double>::getArea(){
 	return 0;
 }
+template<>
+void MonotoneConvexHull<2,mpq_class>::update(){
+	assert(false);
+}
+
+template<>
+mpq_class MonotoneConvexHull<2,mpq_class>::getArea(){
+	assert(false);
+	return 0;
+}
