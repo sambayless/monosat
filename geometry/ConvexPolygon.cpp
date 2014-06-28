@@ -27,6 +27,7 @@ bool ConvexPolygon<2,mpq_class>::containsInRange(const Point<2,mpq_class> & poin
 	 for(int i = firstVertex;i!=lastVertex;i=(i+1% w.size() )){
 		 Point<2,mpq_class> p1 = i>0 ? (w[i-1]-point):((w[lastVertex]-point));
 		 Point<2,mpq_class> p2 = w[i]-point;
+		 mpq_class t =  (p2[0]*p1[1] - p1[0]*p2[1]);
 		 bool contained = (p2[0]*p1[1] - p1[0]*p2[1]) >=0;
 		 if(!contained){
 			 return false;

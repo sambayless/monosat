@@ -6,8 +6,10 @@
  */
 #include "GeometryTypes.h"
 #include "MonotoneConvexHull.h"
-#include<algorithm>
+#include <algorithm>
 #include "mtl/Sort.h"
+#include <iostream>
+
 template<>
 void MonotoneConvexHull<1,double>::update(){
 
@@ -23,11 +25,14 @@ void MonotoneConvexHull<2,double>::update(){
 		if(points.size()>=3){
 
 		std::vector<Point2D> & list = hull.getVertices();
-
+/*		for(auto & p:points){
+			std::cout << "("<<p.x << "," << p.y << "), ";
+		}
+		std::cout<<"\n";*/
 
 		// Build lower hull
 		for (int i = 0; i < points.size(); ++i) {
-			if(list.size()>=2 && cross(list[list.size()-2],list[list.size()-1],points[i])<=0)
+			while(list.size()>=2 && cross(list[list.size()-2],list[list.size()-1],points[i])<=0)
 				list.pop_back();
 			list.push_back(points[i]);
 		}
@@ -43,6 +48,10 @@ void MonotoneConvexHull<2,double>::update(){
 		if(list.size())
 			list.pop_back();//for now, we aren't replicating the first vertex at the end of the polygon.
 		hull.reorderVertices();
+/*		for(auto & p:list){
+			std::cout << "("<<p.x << "," << p.y << "), ";
+		}
+		std::cout<<"\n";*/
 		}else{
 			for(auto & p:points)
 				hull.addVertex(p);
@@ -75,7 +84,7 @@ void MonotoneConvexHull<2,mpq_class>::update(){
 
 		// Build lower hull
 		for (int i = 0; i < points.size(); ++i) {
-			if(list.size()>=2 && cross(list[list.size()-2],list[list.size()-1],points[i])<=0)
+			while(list.size()>=2 && cross(list[list.size()-2],list[list.size()-1],points[i])<=0)
 				list.pop_back();
 			list.push_back(points[i]);
 		}
@@ -90,6 +99,10 @@ void MonotoneConvexHull<2,mpq_class>::update(){
 		assert(list.size()==0 || ( list[0]==list.back()));
 		if(list.size())
 			list.pop_back();//for now, we aren't replicating the first vertex at the end of the polygon.
+		for(auto & p:list){
+			std::cout<<p.x << "," << p.y << " ";
+		}
+		std::cout<<"\n";
 		hull.reorderVertices();
 		}else{
 			for(auto & p:points)

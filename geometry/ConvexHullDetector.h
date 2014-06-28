@@ -317,11 +317,11 @@ bool ConvexHullDetector<D,T>::propagate(vec<Lit> & conflict){
 		under_hull->update();
 
 		if(areaDetectors.size()){
-
+			T test = 3.1;
 			T over_area = over_hull->getHull().getArea();
 			T under_area = under_hull->getHull().getArea();
-			double tover =  over_area.get_d();
-			double tunder = under_area.get_d();
+			//double tover =  over_area.get_d();
+			//double tunder = under_area.get_d();
 			assert(under_area<=over_area);
 			for(int i = 0;i<areaDetectors.size();i++){
 
@@ -492,7 +492,9 @@ void ConvexHullDetector<D,T>::buildAreaGEQReason(T area, vec<Lit> & conflict){
 	for(auto & p:under_hull->getHull()){
 		int pID = p.getID();
 		assert(under.pointEnabled(pID));
-		conflict.push(mkLit(outer->getPointVar(pID),false));
+		Lit l = mkLit(outer->getPointVar(pID),true);
+		assert(outer->value(l)==l_False);
+		conflict.push(l);
 
 	}
 }

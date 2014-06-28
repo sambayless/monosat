@@ -19,6 +19,8 @@
 #include "core/Dimacs.h"
 #include "core/Config.h"
 
+
+
 namespace Minisat {
 
 
@@ -58,6 +60,19 @@ class GeometryParser:public Parser<B,Solver>{
 		Var pointOnHull;
 	};
 
+	void parsePoint(B &in, int d, ParsePoint & point){
+		//for now, points are given as 32-bit integers. This is less convenient than, say, floats, but makes parsing much easier.
+		//in the future, we could also support inputting arbitrary precision integers... but for now, we aren't going to.
+
+		//is there a better way to read in an arbitrary-sized vector of points?
+		for(int i = 0;i<d;i++){
+
+			int n = parseInt(in);
+			//double p = parseDouble(in,tmp_str);
+			point.position.push((T)n);
+		}
+	}
+
 	vec<ConvexHullPoint> convex_hull_points;
 	void readPoint(B& in, Solver& S ) {
 
@@ -67,16 +82,9 @@ class GeometryParser:public Parser<B,Solver>{
 		int d = parseInt(in);
 		pointsets.growTo(pointsetID+1);
 		pointsets[pointsetID].push();
-		stringstream ss(in);
-
+		//stringstream ss(in);
 		ParsePoint & point = pointsets[pointsetID].last();
-
-		for(int i = 0;i<d;i++){
-			//double p = parseDouble(in,tmp_str);
-			T p;
-			ss>>p;
-			point.position.push(p);
-		}
+		parsePoint(in,d,point);
 
 		point.var = v-1;
 		while ( point.var >= S.nVars()) S.newVar();
@@ -102,13 +110,20 @@ void readConvexHullPointContained(B& in, Solver& S) {
 	int pointsetID = parseInt(in);
 	int v = parseInt(in)-1;
 	int d = parseInt(in);
-	stringstream ss(in);
+	parsePoint(in,d,point);
 
-	for(int i = 0;i<d;i++){
-		T p;
+	//stringstream ss(in);
+/*	for(int i = 0;i<d;i++){
+		//skipWhitespace(in);
+		long n = parseInt(in);
+		//double p = parseDouble(in,tmp_str);
+		point.position.push((T)n);
+	}*/
+/*	for(int i = 0;i<d;i++){
+
 		ss>>p;
 		point.position.push(p);
-	}
+	}*/
 
 	point.var = v;
 	convex_hull_point_containments.last().pointsetID = pointsetID;
