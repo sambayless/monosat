@@ -70,7 +70,7 @@ public:
 		void buildReason(Lit p, vec<Lit> & reason, CRef marker);
 		bool checkSatisfied();
 		Lit decide();
-		void addAreaDetectorLit(double areaGreaterEqThan, Var v);
+		void addAreaDetectorLit(T areaGreaterEqThan, Var v);
 		void addPointContainmentLit(Point<D,T> p,Var outerVar);
 		void addPointOnHullLit(Var pointVar,Var outerVar);
 		ConvexHullDetector(int detectorID,PointSet<D,T> & under, PointSet<D,T> & over, GeometryTheorySolver<D,T> * outer,  double seed=1);
@@ -231,7 +231,7 @@ void ConvexHullDetector<D,T>::addPointContainmentLit(Point<D,T> p,Var outerVar){
 	}
 
 template<unsigned int D, class T>
-void ConvexHullDetector<D,T>::addAreaDetectorLit(double areaGreaterEqThan, Var outerVar){
+void ConvexHullDetector<D,T>::addAreaDetectorLit(T areaGreaterEqThan, Var outerVar){
 	Var v = outer->newVar(outerVar,getID());
 	Lit l = mkLit(v,false);
 
@@ -320,6 +320,8 @@ bool ConvexHullDetector<D,T>::propagate(vec<Lit> & conflict){
 
 			T over_area = over_hull->getHull().getArea();
 			T under_area = under_hull->getHull().getArea();
+			double tover =  over_area.get_d();
+			double tunder = under_area.get_d();
 			assert(under_area<=over_area);
 			for(int i = 0;i<areaDetectors.size();i++){
 
@@ -530,5 +532,15 @@ template<>
 void ConvexHullDetector<2,double>::buildPointContainedReason(const Point<2,double> & s,vec<Lit> & conflict);
 template<>
 void ConvexHullDetector<2,double>::buildPointNotContainedReason(const Point<2,double> & s, vec<Lit> & conflict);
+
+
+template<>
+void ConvexHullDetector<2,mpq_class>::buildPointOnHullOrDisabledReason(Var pointVar,const Point<2,mpq_class> & p, vec<Lit> & conflict);
+template< >
+void ConvexHullDetector<2,mpq_class>::buildPointNotOnHullOrDisabledReason(Var pointVar,const Point<2,mpq_class> & p, vec<Lit> & conflict);
+template<>
+void ConvexHullDetector<2,mpq_class>::buildPointContainedReason(const Point<2,mpq_class> & s,vec<Lit> & conflict);
+template<>
+void ConvexHullDetector<2,mpq_class>::buildPointNotContainedReason(const Point<2,mpq_class> & s, vec<Lit> & conflict);
 
 #endif

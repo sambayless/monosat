@@ -119,9 +119,9 @@ BoolOption Minisat::opt_optimize_mst(_cat_graph,"opt-mst","Find the solution tha
 BoolOption Minisat::opt_skip_deletions(_cat_graph,"skip-deletions","",false);
 BoolOption Minisat::opt_skip_additions(_cat_graph,"skip-additions","",false);
 
-StringOption Minisat::opt_hull_alg(_cat_geom,"hull","Select convex-hull algorithm (monotone,quick)","quick");
+StringOption Minisat::opt_hull_alg(_cat_geom,"hull","Select convex-hull algorithm (monotone,quick)","monotone");
 
-ConvexHullAlg Minisat::hullAlg=ConvexHullAlg::ALG_QUICKHULL;
+ConvexHullAlg Minisat::hullAlg=ConvexHullAlg::ALG_MONOTONE_HULL;
 
 
 

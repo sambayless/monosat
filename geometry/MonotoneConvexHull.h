@@ -26,7 +26,6 @@ public:
 
 	void update();
 
-	T getArea();
 
 	ConvexPolygon<D,T> & getHull(){
 		update();
@@ -52,12 +51,6 @@ template<>
 void MonotoneConvexHull<2,double>::update();
 template<>
 void MonotoneConvexHull<3,double>::update();
-
-template<>
-double MonotoneConvexHull<2,double>::getArea();
-
-template<>
-double MonotoneConvexHull<1,double>::getArea();
 
 
 template<>

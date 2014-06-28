@@ -4,5 +4,5 @@
 
 USER_OBJS :=
 
-LIBS := -lz -lm
+LIBS := -lz -lm -lgmp -lgmpxx
 

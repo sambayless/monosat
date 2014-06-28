@@ -19,17 +19,41 @@
 #include "cevans/zero.h"
 template<>
  double cevans::zero<double>::val = 1E-10;
-
+template<>
+mpq_class cevans::zero<mpq_class>::val = mpq_class(0);
 template<>
 void QuickConvexHull<2,mpq_class>::update(){
-	assert(false);
+	std::vector<Point<2,mpq_class>> points;
+		pointSet.getEnabledPoints(points);
+		if(points.size()<3){
+			//edge case...
+			hull.clear();
+			for (auto & p:points)
+				hull.addVertex(p);
+		}else{
+		std::sort(points.begin(),points.end(),SortLexicographic<2,mpq_class>());//not sure if this is required or not...
+
+			 cevans::quickhull2D<Point<2,mpq_class>,mpq_class>  chull(points);
+			hull.clear();
+			for(int i = 0;i<chull.boundary.size();i++){
+				//printf("%d ",chull.boundary[i]);
+				hull.addVertex(points[chull.boundary[i]]);
+			}
+		}
+	#ifndef NDEBUG
+			for(int i = 0;i<pointSet.size();i++){
+				Point<2,mpq_class> & p = pointSet[i];
+				if(!pointSet.pointEnabled(i)){
+
+				}else{
+					assert(hull.contains(p));
+				}
+			}
+	#endif
+
 }
 
-template<>
-mpq_class QuickConvexHull<2,mpq_class>::getArea(){
-	assert(false);
-	return 0;
-}
+
 
 template<>
 void QuickConvexHull<1,double>::update(){
@@ -81,28 +105,5 @@ void QuickConvexHull<2,double>::update(){
 #endif
 
 
-}
-template<>
-double QuickConvexHull<1,double>::getArea(){
-	return 0;
-}
-template<>
-double QuickConvexHull<2,double>::getArea(){
-	double area = 0;
-	//traverse the polygons in clockwise order and compute the determinant
-	//is there a better way to do this?
-	int prevPID = -1;
-	for (int i = 0;i<pointSet.getClockwisePoints().size();i++){
-		int pid = pointSet.getClockwisePoints()[i];
-		if(pointSet.pointEnabled(pid)){
-			if(prevPID){
-				auto & p = pointSet[pid];
-				auto & prev = pointSet[prevPID];
-				area+=prev.x *p.y - prev.y*p.x;
-			}
-			prevPID = pid;
-		}
-	}
-	return area/2.0;
 }
 

@@ -64,7 +64,7 @@ public:
 		}
 	}
 
-	std::vector<Point<D>> & getEnabledPoints(std::vector<Point<D>> & points_out){
+	std::vector<Point<D,T>> & getEnabledPoints(std::vector<Point<D,T>> & points_out){
 		points_out.clear();
 		for(int i = 0;i<points.size();i++){
 			if(isEnabled(i)){

@@ -13,6 +13,7 @@
 #include "mtl/Vec.h"
 #include <cmath>
 #include <algorithm>
+#include <gmpxx.h>
 
 using namespace Minisat;
 
@@ -44,10 +45,23 @@ public:
 };
 
 
+template <> struct epsilon<mpq_class>
+{
+private:
+	mpq_class const value = mpq_class(0);
+public:
+
+    operator mpq_class()const{return value;}
+};
+
 
 
 template<class T> bool equal_epsilon(T a, T b);
 
+template<> inline bool equal_epsilon(mpq_class a, mpq_class b){
+	return a==b;//mpq_class is exact
+	//return std::abs(a-b)<=epsilon<mpq_class>();
+}
 template<> inline bool equal_epsilon(double a, double b){
 	return std::abs(a-b)<=epsilon<double>();
 }
@@ -55,7 +69,7 @@ template<> inline bool equal_epsilon(float a, float b){
 	return std::abs(a-b)<=epsilon<float>();
 }
 
-template<unsigned int D, class T=double>
+template<unsigned int D, class T>
 struct Point{
 	int size()const{
 		return D;

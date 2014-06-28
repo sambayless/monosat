@@ -183,10 +183,10 @@ inline bool Polygon<2,mpq_class>::dbg_orderClockwise(){
 #ifndef NDEBUG
 	//from http://stackoverflow.com/a/1165943
 	if(vertices_clockwise){
-		double sum = 0;
+		mpq_class sum = 0;
 		for(int i = 0;i<vertices.size();i++){
-			Point<2,double> & a = i>0? vertices[i-1]:vertices.back();
-			Point<2,double> & b = vertices[i];
+			Point<2,mpq_class> & a = i>0? vertices[i-1]:vertices.back();
+			Point<2,mpq_class> & b = vertices[i];
 			sum+= (b.x - a.x)*(b.y+a.y);
 		}
 		assert(sum>=0);

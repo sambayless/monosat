@@ -805,7 +805,7 @@ public:
 
 	}
 
-	void convexHullArea(int areaGreaterThan, Var outerVar){
+	void convexHullArea(T areaGreaterThan, Var outerVar){
 		if(!convexHull){
 			int detectorID = detectors.size();
 			convexHull = new ConvexHullDetector<D,T>(detectorID,under, over,this,drand(rnd_seed));

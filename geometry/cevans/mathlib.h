@@ -621,9 +621,9 @@ boolc circleLine::intersection2D
 
   PT B(q1-q0);
 
-  doublec a = B.dot();
-  doublec b = q0.dot(B)*2.0;
-  doublec c = q0.dot()-radius*radius;
+  auto a = B.dot();
+  auto b = q0.dot(B)*2.0;
+  auto c = q0.dot()-radius*radius;
   double t0;
   double t1;
   bool res;
@@ -647,11 +647,11 @@ boolc d2matsolve
   T const & c
 )
 {
-  doublec det = a0.x*a1.y - a1.x*a0.y;
+  auto det = a0.x*a1.y - a1.x*a0.y;
   if (det==0.0)
     return false;
 
-  doublec detInv = 1.0/det;
+  auto detInv = 1.0/det;
 
   x.x = (c.x*a1.y - c.y*a1.x)*detInv;
   x.y = (c.y*a0.x - c.x*a0.y)*detInv;
@@ -668,11 +668,11 @@ boolc d2matsolve3D
   T const & c
 )
 {
-  double det = a0.x*a1.y - a1.x*a0.y;
+  auto det = a0.x*a1.y - a1.x*a0.y;
   // <TODO> make this test dependent on number.
   if (det!=0.0)
   {
-    doublec detInv = 1.0/det;
+    auto detInv = 1.0/det;
 
     x.x = (c.x*a1.y - c.y*a1.x)*detInv;
     x.y = (c.y*a0.x - c.x*a0.y)*detInv;
@@ -683,7 +683,7 @@ boolc d2matsolve3D
   det = a0.x*a1.z - a1.x*a0.z;
   if (det!=0.0)
   {
-    doublec detInv = 1.0/det;
+	  auto detInv = 1.0/det;
 
     x.x = (c.x*a1.z - c.z*a1.x)*detInv;
     x.y = (c.z*a0.x - c.x*a0.z)*detInv;
@@ -694,7 +694,7 @@ boolc d2matsolve3D
   det = a0.y*a1.z - a1.y*a0.z;
   if (det!=0.0)
   {
-    doublec detInv = 1.0/det;
+	  auto detInv = 1.0/det;
 
     x.x = (c.y*a1.z - c.z*a1.y)*detInv;
     x.y = (c.z*a0.y - c.x*a0.z)*detInv;

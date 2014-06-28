@@ -18,6 +18,7 @@
 #include "geometry/GeometryTheory.h"
 #include "core/Dimacs.h"
 #include "core/Config.h"
+
 namespace Minisat {
 
 
@@ -37,7 +38,7 @@ class GeometryParser:public Parser<B,Solver>{
 
 	struct ConvexHullArea{
 		int pointsetID;
-		double area;
+		T area;
 		Var v;
 	};
 
@@ -61,15 +62,22 @@ class GeometryParser:public Parser<B,Solver>{
 	void readPoint(B& in, Solver& S ) {
 
 		int pointsetID = parseInt(in);
+
+		int v = parseInt(in);
 		int d = parseInt(in);
 		pointsets.growTo(pointsetID+1);
 		pointsets[pointsetID].push();
+		stringstream ss(in);
+
 		ParsePoint & point = pointsets[pointsetID].last();
+
 		for(int i = 0;i<d;i++){
-			double p = parseDouble(in,tmp_str);
+			//double p = parseDouble(in,tmp_str);
+			T p;
+			ss>>p;
 			point.position.push(p);
 		}
-		int v = parseInt(in);
+
 		point.var = v-1;
 		while ( point.var >= S.nVars()) S.newVar();
 	}
@@ -78,9 +86,11 @@ void readConvexHullArea(B& in, Solver& S) {
 
     //hull_area_lt pointsetID area var
 	int pointset = parseInt(in); //ID of the hull
-	double area =  parseDouble(in,tmp_str);
 	int var = parseInt(in)-1;
-
+	stringstream ss(in);
+	T area;
+	ss>>area;
+	//T area =  parseDouble(in,tmp_str);
 	convex_hull_areas.push({pointset,area,var});
 }
 void readConvexHullPointContained(B& in, Solver& S) {
@@ -90,12 +100,16 @@ void readConvexHullPointContained(B& in, Solver& S) {
     convex_hull_point_containments.push();
     ParsePoint & point = convex_hull_point_containments.last().point;
 	int pointsetID = parseInt(in);
+	int v = parseInt(in)-1;
 	int d = parseInt(in);
+	stringstream ss(in);
+
 	for(int i = 0;i<d;i++){
-		int p = parseDouble(in,tmp_str);
+		T p;
+		ss>>p;
 		point.position.push(p);
 	}
-	int v = parseInt(in)-1;
+
 	point.var = v;
 	convex_hull_point_containments.last().pointsetID = pointsetID;
 }

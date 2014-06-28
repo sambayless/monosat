@@ -27,7 +27,7 @@ public:
 
 	void update();
 
-	T getArea();
+
 
 	ConvexPolygon<D,T> & getHull(){
 		update();
@@ -42,12 +42,9 @@ void QuickConvexHull<2,double>::update();
 template<>
 void QuickConvexHull<3,double>::update();
 
-template<>
-double QuickConvexHull<2,double>::getArea();
 
 template<>
 void QuickConvexHull<2,mpq_class>::update();
 
-template<>
-mpq_class QuickConvexHull<2,mpq_class>::getArea();
+
 #endif
