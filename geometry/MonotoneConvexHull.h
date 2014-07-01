@@ -11,7 +11,7 @@
 #include "ConvexHull.h"
 #include "PointSet.h"
 #include <gmpxx.h>
-using namespace Minisat;
+
 
 template<unsigned int D,class T>
 class MonotoneConvexHull:public ConvexHull<D,T>{

@@ -77,7 +77,22 @@ public:
 		dbg_orderClockwise();
 		return vertices;
 	}
-
+    const Point<D,T>& operator [] (int index) const {
+    	index = index %vertices.size();
+    	if(index<0){
+    		index+=vertices.size();
+    	}
+    	assert(index>=0);assert(index<vertices.size());
+    	return vertices[index];
+    }
+    Point<D,T>&       operator [] (int index)       {
+    	index = index %vertices.size();
+    	if(index<0){
+    		index+=vertices.size();
+    	}
+    	assert(index>=0);assert(index<vertices.size());
+    	return vertices[index];
+    }
 
 	void updateCircleBound();
 	virtual T getArea();

@@ -7,7 +7,7 @@
 #include "GeometryTypes.h"
 #include "MonotoneConvexHull.h"
 #include <algorithm>
-#include "mtl/Sort.h"
+
 #include <iostream>
 
 template<>

@@ -11,7 +11,7 @@
 #include "ConvexPolygon.h"
 
 
-namespace Minisat{
+
 
 template<unsigned int D,class T=double>
 class ConvexHull{
@@ -24,5 +24,5 @@ public:
 	}
 };
 
-};
+
 #endif /* CONVEXHULL_H_ */
