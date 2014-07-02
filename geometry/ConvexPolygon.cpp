@@ -36,23 +36,193 @@ bool ConvexPolygon<2,mpq_class>::containsInRange(const Point<2,mpq_class> & poin
 	 return true;
 }
 
+template<>
+bool ConvexPolygon<2,double>::intersects(Shape<2,double> & shape){
+	if(shape.getType()==CONVEX_POLYGON){
+		ConvexPolygon<2,double> & c = *(ConvexPolygon<2,double> *) &shape;
+		if(c.size()<size()){
+			return c.intersects(*this);
+		}
 
+		if(size()==0 || c.size()==0){
+			return false;
+		}else if (size()==1){
+			if(c.size()==1){
+				//then the two vertices are considered to collide if they are identical
+				return (*this)[0]==c[0];
+			}else{
+				return c.contains((*this)[0]);
+			}
+		}else if (c.size()==1){
+			return contains(c[0]);
+		}
+
+
+		 std::vector<Point<2,double> > &  w = getVertices();
+
+		 //Separating Axis Theorem for collision detection between two convex polygons
+		 //loop through each edge in _each_ polygon and project both polygons onto that edge's normal.
+		 //If any of the projections are non-intersection, then these don't collide; else, they do collide
+		 for(int i = 0;i<size();i++){
+			 auto & p = (*this)[i];
+			 auto & prev = (*this)[i-1];
+			 Point<2,double> edge = p-prev;
+			 Point<2,double> un_normalized_normal(-edge.y, edge.x);
+
+			 //now project both polygons onto to this normal and see if they overlap, by finding the minimum and maximum distances
+			 //Note that since we are NOT normalizing the normal vector, the projection is distorted along that vector
+			 //(this still allows us to check overlaps, but means that the minimum distance found between the two shapes may be incorrect)
+			 double left = std::numeric_limits<double>::max();
+			 double right = std::numeric_limits<double>::min();
+			 for (auto & p:*this){
+				 double projection = un_normalized_normal.dot(p);
+				 if (projection < left) {
+					  left = projection;
+				 } else if (projection > right) {
+					  right = projection;
+				 }
+			 }
+			 bool overlaps = false;
+			 for (auto & p:c){
+				 double projection = un_normalized_normal.dot(p);
+				 if (projection >= left && projection <= right ) {
+					 overlaps=true;
+					 break;
+				 }
+			 }
+			 if(!overlaps){
+				 return false;
+			 }
+		 }
+
+		 //now test the axis produced by the other polygon
+		 for(int i = 0;i<c.size();i++){
+			 auto & p = (*this)[i];
+			 auto & prev = (*this)[i-1];
+			 Point<2,double> edge = p-prev;
+			 Point<2,double> un_normalized_normal(-edge.y, edge.x);
+
+			 double left = std::numeric_limits<double>::max();
+			 double right = std::numeric_limits<double>::min();
+			 for (auto & p:*this){
+				 double projection = un_normalized_normal.dot(p);
+				 if (projection < left) {
+					  left = projection;
+				 } else if (projection > right) {
+					  right = projection;
+				 }
+			 }
+			 bool overlaps = false;
+			 for (auto & p:c){
+				 double projection = un_normalized_normal.dot(p);
+				 if (projection >= left && projection <= right ) {
+					 overlaps=true;
+					 break;
+				 }
+			 }
+			 if(!overlaps){
+				 return false;
+			 }
+		 }
+		 //If no axis overlapped, then they did in fact intersect
+		 return true;
+
+	}
+	assert(false);
+	return false;
+}
 
 template<>
 bool ConvexPolygon<2,mpq_class>::intersects(Shape<2,mpq_class> & shape){
 	if(shape.getType()==CONVEX_POLYGON){
-		ConvexPolygon & c = *(ConvexPolygon*) &shape;
-		//From http://demonstrations.wolfram.com/AnEfficientTestForAPointToBeInAConvexPolygon/
+		ConvexPolygon<2,mpq_class> & c = *(ConvexPolygon<2,mpq_class>*) &shape;
+		if(c.size()<size()){
+			return c.intersects(*this);
+		}
+
+		if(size()==0 || c.size()==0){
+			return false;
+		}else if (size()==1){
+			if(c.size()==1){
+				//then the two vertices are considered to collide if they are identical
+				return (*this)[0]==c[0];
+			}else{
+				return c.contains((*this)[0]);
+			}
+		}else if (c.size()==1){
+			return contains(c[0]);
+		}
+
+
 		 std::vector<Point<2,mpq_class> > &  w = getVertices();
-		 //note: this can also compute the area (which is the sum of p2[0]*p1[1] - p1[0]*p2[1]); could potentially combine these...
-	/*	 for(int i = 1;i<w.size();i++){
-			 Point<2,double> p1 = w[i-1]-point;
-			 Point<2,double> p2 = w[i]-point;
-			 bool contained = (p2[0]*p1[1] - p1[0]*p2[1]) >0;
-			 if(!contained){
+
+		 //Separating Axis Theorem for collision detection between two convex polygons
+		 //loop through each edge in _each_ polygon and project both polygons onto that edge's normal.
+		 //If any of the projections are non-intersection, then these don't collide; else, they do collide
+		 for(int i = 0;i<size();i++){
+			 auto & p = (*this)[i];
+			 auto & prev = (*this)[i-1];
+			 Point<2,mpq_class> edge = p-prev;
+			 Point<2,mpq_class> un_normalized_normal(-edge.y, edge.x);
+
+			 //now project both polygons onto to this normal and see if they overlap, by finding the minimum and maximum distances
+			 //Note that since we are NOT normalizing the normal vector, the projection is distorted along that vector
+			 //(this still allows us to check overlaps, but means that the minimum distance found between the two shapes may be incorrect)
+			 mpq_class left = std::numeric_limits<mpq_class>::max();
+			 mpq_class right = std::numeric_limits<mpq_class>::min();
+			 for (auto & p:*this){
+				 mpq_class projection = un_normalized_normal.dot(p);
+				 if (projection < left) {
+					  left = projection;
+				 } else if (projection > right) {
+					  right = projection;
+				 }
+			 }
+			 bool overlaps = false;
+			 for (auto & p:c){
+				 mpq_class projection = un_normalized_normal.dot(p);
+				 if (projection >= left && projection <= right ) {
+					 overlaps=true;
+					 break;
+				 }
+			 }
+			 if(!overlaps){
 				 return false;
 			 }
-		 }*/
+		 }
+
+		 //now test the axis produced by the other polygon
+		 for(int i = 0;i<c.size();i++){
+			 auto & p = (*this)[i];
+			 auto & prev = (*this)[i-1];
+			 Point<2,mpq_class> edge = p-prev;
+			 Point<2,mpq_class> un_normalized_normal(-edge.y, edge.x);
+
+			 mpq_class left = std::numeric_limits<mpq_class>::max();
+			 mpq_class right = std::numeric_limits<mpq_class>::min();
+			 for (auto & p:*this){
+				 mpq_class projection = un_normalized_normal.dot(p);
+				 if (projection < left) {
+					  left = projection;
+				 } else if (projection > right) {
+					  right = projection;
+				 }
+			 }
+			 bool overlaps = false;
+			 for (auto & p:c){
+				 mpq_class projection = un_normalized_normal.dot(p);
+				 if (projection >= left && projection <= right ) {
+					 overlaps=true;
+					 break;
+				 }
+			 }
+			 if(!overlaps){
+				 return false;
+			 }
+		 }
+		 //If no axis overlapped, then they did in fact intersect
+		 return true;
+
 	}
 	assert(false);
 	return false;
@@ -90,24 +260,7 @@ bool ConvexPolygon<2,double>::containsInRange(const Point<2,double> & point, int
 }
 
 
-template<>
-bool ConvexPolygon<2,double>::intersects(Shape<2,double> & shape){
-	if(shape.getType()==CONVEX_POLYGON){
-		ConvexPolygon & c = *(ConvexPolygon*) &shape;
-		//From http://demonstrations.wolfram.com/AnEfficientTestForAPointToBeInAConvexPolygon/
-		 std::vector<Point<2,double> > &  w = getVertices();
-		 //note: this can also compute the area (which is the sum of p2[0]*p1[1] - p1[0]*p2[1]); could potentially combine these...
-	/*	 for(int i = 1;i<w.size();i++){
-			 Point<2,double> p1 = w[i-1]-point;
-			 Point<2,double> p2 = w[i]-point;
-			 bool contained = (p2[0]*p1[1] - p1[0]*p2[1]) >0;
-			 if(!contained){
-				 return false;
-			 }
-		 }*/
-	}
-	 return true;
-}
+
 template<>
 bool ConvexPolygon<1,double>::containsInRange(const Point<1,double> & point, int firstVertex,int lastVertex){
 	return false;

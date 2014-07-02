@@ -59,6 +59,14 @@ class GeometryParser:public Parser<B,Solver>{
 		Var pointVar;
 		Var pointOnHull;
 	};
+	vec<ConvexHullPoint> convex_hull_points;
+
+	struct ConvexHullsIntersection{
+		int pointsetID1;
+		int pointsetID2;
+		Var pointOnHull;
+	};
+	vec<ConvexHullsIntersection> convex_hulls_intersect;
 
 	void parsePoint(B &in, int d, ParsePoint & point){
 		//for now, points are given as 32-bit integers. This is less convenient than, say, floats, but makes parsing much easier.
@@ -73,7 +81,7 @@ class GeometryParser:public Parser<B,Solver>{
 		}
 	}
 
-	vec<ConvexHullPoint> convex_hull_points;
+
 	void readPoint(B& in, Solver& S ) {
 
 		int pointsetID = parseInt(in);
@@ -101,6 +109,7 @@ void readConvexHullArea(B& in, Solver& S) {
 	//T area =  parseDouble(in,tmp_str);
 	convex_hull_areas.push({pointset,area,var});
 }
+
 void readConvexHullPointContained(B& in, Solver& S) {
 
     //hull_point_contained pointsetID D p1 p2 ... pD var
@@ -138,6 +147,19 @@ void readConvexHullPointOnHull(B& in, Solver& S) {
 	convex_hull_points.push({pointsetID,pointVar, var});
 }
 
+
+void readConvexHullsIntersect(B& in, Solver& S) {
+
+    //hulls_intersect pointsetID1 pointsetID2 var
+	//v is true iff the two convex hulls intersect
+	int pointsetID1 = parseInt(in);
+	int pointsetID2 = parseInt(in);
+	int v = parseInt(in)-1;
+	convex_hulls_intersect.push({pointsetID1,pointsetID2,v});
+
+
+}
+
 public:
 
  bool parseLine(B& in, Solver& S){
@@ -155,6 +177,8 @@ public:
 			readConvexHullPointContained(in,S);
 		}else if (match(in,"point_on_convex_hull")){
 			readConvexHullPointContained(in,S);
+		}else if (match(in,"convex_hulls_intersect")){
+			readConvexHullsIntersect(in,S);
 		}else if (match(in,"heightmap_volume")){
 
 		}else if (match(in, "euclidian_steiner_tree_weight")){
@@ -277,6 +301,30 @@ public:
 		 }
 
 	 }
+
+	 for (auto & c:convex_hulls_intersect){
+		 if(c.pointsetID1>=pointsetDim.size() || c.pointsetID1<0 || pointsetDim[c.pointsetID1]<0){
+			 fprintf(stderr,"Bad pointsetID %d\n", c.pointsetID1);
+		 }
+		 if(c.pointsetID2>=pointsetDim.size() || c.pointsetID2<0 || pointsetDim[c.pointsetID2]<0){
+			 fprintf(stderr,"Bad pointsetID %d\n", c.pointsetID2);
+		 }
+		 int D = pointsetDim[c.pointsetID1];
+		 if( pointsetDim[c.pointsetID2] != D){
+			 fprintf(stderr,"Cannot intersect convex hulls in different dimensions (%d has dimension %d, while %d has dimension %d)\n",c.pointsetID1,D, c.pointsetID2, pointsetDim[c.pointsetID2]);
+		 }
+		 if(D==1){
+
+		 }else if(D==2){
+
+			 space_2D[c.pointsetID]->convexHullsIntersect(c.pointsetID1,c.pointsetID2,c.var);
+		 }else{
+			 assert(false);
+		 }
+
+
+	 }
+
  }
 
 };

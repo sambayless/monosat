@@ -652,7 +652,6 @@ public:
 		under.clearChanged();
 		over.clearChanged();
 
-
 		under.clearHistory();
 		over.clearHistory();
 

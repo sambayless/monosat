@@ -26,6 +26,7 @@ SUBDIRS := \
 utils \
 simp \
 graph \
+geometry/polypartition \
 geometry/cevans \
 geometry/bitmap \
 geometry \

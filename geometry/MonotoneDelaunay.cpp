@@ -153,9 +153,7 @@ void  MonotoneDelaynay<2,double>::buildMonotonePolygons(){
 					//if helper(ei-1) is a merge vertex
 					if(helpers[v.polygonID][prevID].type==MERGE) {
 						//Insert the diagonal connecting vi to helper(ei-1) in D.
-						int helperIndex =  helpers[v.polygonID][prevID].index;
-						monotonePolygons[v.index].next =helperIndex;
-						monotonePolygons[helperIndex].prev = v.index;
+						addDiagonal(v.index,helpers[v.polygonID][prevID].index);
 					}
 					//Delete ei-1 from T
 					edgeTree.erase({v.polygonID,prevID});
@@ -251,6 +249,20 @@ void  MonotoneDelaynay<2,double>::buildMonotonePolygons(){
 	}
 	sorted.clear();
 
+}
+
+template<>
+void  MonotoneDelaynay<2,double>::addDiagonal(int fromIndex, int toIndex){
+		/*
+		//Following the polypartition implementation, we are going to do this by creating two NEW vertices
+		//which will then end up in separate partitioned polygons
+		MonotoneVertex & from = monotonePolygons[fromIndex];
+		MonotoneVertex & to = monotonePolygons[toIndex];
+		from.next = to.index;
+		to.prev = from.index;
+		*/
+		monotonePolygons[fromIndex].diagonals.push(toIndex);
+		//monotonePolygons[toIndex].diagonals.push(fromIndex);//this is not needed
 }
 
 template<>

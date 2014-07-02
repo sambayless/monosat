@@ -21,8 +21,9 @@ class MonotoneDelaynay:public Delaunay<D,T>{
 	struct MonotoneVertex{
 		int polygonID;
 		int pointID;
-		int prev=-1;
-		int next=-1;
+		vec<int> diagonals;//indices of diagonally connected vertices
+		//int prev=-1;
+		//int next=-1;
 		bool seen=false;
 		MonotoneVertex(int polygonID, int pointID,int nextID, int prevID):polygonID(polygonID),pointID(pointID),prev(prevID),next(nextID){};
 	};
@@ -51,6 +52,7 @@ public:
 private:
 	void buildMonotonePolygons();
 	void triangulate();
+	void addDiagonal(int from, int to);
 	inline bool convex(Point<D,T>& p1, Point<D,T>& p2, Point<D,T>& p3) {
 		return ((p3.y-p1.y)*(p2.x-p1.x)-(p3.x-p1.x)*(p2.y-p1.y)) > 0;
 	}
