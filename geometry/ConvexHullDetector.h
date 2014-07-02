@@ -512,7 +512,7 @@ void ConvexHullDetector<D,T>::buildAreaLTReason(T area,vec<Lit> & conflict){
 	//the reason that the area is less than some value is that some point that is OUTSIDE the convex hull is not enabled.
 	for(int i = 0;i<over.size();i++){
 		if(!over.pointEnabled(i) && ! over_hull->getHull().contains(over[i])){
-			conflict.push(mkLit(outer->getPointVar(i),false));
+			conflict.push(mkLit(outer->getPointVar(over[i].getID()),false));
 		}
 	}
 }
