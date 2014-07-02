@@ -28,7 +28,7 @@ namespace Minisat {
 template<class B, class Solver, class T=double>
 class GeometryParser:public Parser<B,Solver>{
 	//vec<GeometryTheorySolver<1,mpq_class>*> space_1D;
-	vec<GeometryTheorySolver<2,T>*> space_2D;
+	GeometryTheorySolver<2,T> *space_2D=nullptr;
 	//vec<GeometryTheorySolver<3,double>*> space_3D;
 	vec<char> tmp_str;
 	struct ParsePoint{
@@ -64,7 +64,7 @@ class GeometryParser:public Parser<B,Solver>{
 	struct ConvexHullsIntersection{
 		int pointsetID1;
 		int pointsetID2;
-		Var pointOnHull;
+		Var var;
 	};
 	vec<ConvexHullsIntersection> convex_hulls_intersect;
 
@@ -209,10 +209,10 @@ public:
 				 S.addTheory(space_1D[i]);
 			 }*/
 		 }else if (D==2){
-			 space_2D.growTo(i+1,nullptr);
-			 if(!space_2D[i]){
-				 space_2D[i] = new GeometryTheorySolver<2,T>(&S);
-				 S.addTheory(space_2D[i]);
+
+			 if(!space_2D){
+				 space_2D = new GeometryTheorySolver<2,T>(&S);
+				 S.addTheory(space_2D);
 			 }
 		 }/*else if (D==3){
 			 space_3D.growTo(i+1,nullptr);
@@ -238,7 +238,7 @@ public:
 				 space_1D[i]->newPoint(pnt,p.var);*/
 			 }else if(D==2){
 				 Point<2,T> pnt(p.position);
-				 space_2D[i]->newPoint(pnt,p.var);
+				 space_2D->newPoint(i,pnt,p.var);
 			 }/*else if(D==3){
 				 Point<3,double> pnt(p.position);
 				 space_3D[i]->newPoint(pnt,p.var);
@@ -256,7 +256,7 @@ public:
 		 if(D==1){
 			// space_1D[c.pointsetID]->convexHullArea(c.area,c.v);
 		 }else if(D==2){
-			 space_2D[c.pointsetID]->convexHullArea(c.area,c.v);
+			 space_2D->convexHullArea(c.pointsetID,c.area,c.v);
 		 }/*else if(D==3){
 			 space_3D[c.pointsetID]->convexHullArea(c.area,c.v);
 		 }*/else{
@@ -275,7 +275,7 @@ public:
 			// space_1D[c.pointsetID]->convexHullContains(pnt, c.point.var);
 		 }else if(D==2){
 			 Point<2,T> pnt(c.point.position);
-			 space_2D[c.pointsetID]->convexHullContains(pnt, c.point.var);
+			 space_2D->convexHullContains(c.pointsetID,pnt, c.point.var);
 		 }/*else if(D==3){
 			 Point<3,double> pnt(c.point.position);
 			 space_3D[c.pointsetID]->convexHullContains(pnt, c.point.var);
@@ -293,7 +293,14 @@ public:
 		 if(D==1){
 			 //space_1D[c.pointsetID]->convexHullContains(c.pointVar,c.pointOnHull);
 		 }else if(D==2){
-			 space_2D[c.pointsetID]->convexHullContains(c.pointVar,c.pointOnHull);
+			 Var theoryVar = S.getTheoryVar(c.pointVar);
+			 int pointID = space_2D->getPointID(theoryVar);
+			 int pointset = space_2D->getPointset(pointID);
+			 assert(pointset == c.pointsetID);
+			 int pointIndex = space_2D->getPointsetIndex(pointID);
+
+			 assert(pointIndex>=0);
+			 space_2D->pointOnHull(c.pointsetID,pointIndex,c.pointOnHull);
 		 }/*else if(D==3){
 			 space_3D[c.pointsetID]->convexHullContains(c.pointVar,c.pointOnHull);
 		 }*/else{
@@ -317,7 +324,7 @@ public:
 
 		 }else if(D==2){
 
-			 space_2D[c.pointsetID]->convexHullsIntersect(c.pointsetID1,c.pointsetID2,c.var);
+			 space_2D->convexHullsIntersect(c.pointsetID1,c.pointsetID2,c.var);
 		 }else{
 			 assert(false);
 		 }

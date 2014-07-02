@@ -45,6 +45,7 @@ public:
 		vec<PointContainedLit> pointContainedLits;
 		struct PointOnHullLit{
 			Var pointVar;
+			int pointIndex;
 			Point<D,T> p;
 			Lit l;
 		};
@@ -72,7 +73,7 @@ public:
 		Lit decide();
 		void addAreaDetectorLit(T areaGreaterEqThan, Var v);
 		void addPointContainmentLit(Point<D,T> p,Var outerVar);
-		void addPointOnHullLit(Var pointVar,Var outerVar);
+		void addPointOnHullLit(int pointsetIndex,Var outerVar);
 		ConvexHullDetector(int detectorID,PointSet<D,T> & under, PointSet<D,T> & over, GeometryTheorySolver<D,T> * outer,  double seed=1);
 		virtual ~ConvexHullDetector(){
 
@@ -237,6 +238,14 @@ void ConvexHullDetector<D,T>::addAreaDetectorLit(T areaGreaterEqThan, Var outerV
 
 	areaDetectors.push({areaGreaterEqThan,l});
 
+}
+template<unsigned int D, class T>
+void ConvexHullDetector<D,T>::addPointOnHullLit(int pointsetIndex, Var outerVar){
+	Var v = outer->newVar(outerVar,getID());
+	Lit l = mkLit(v,false);
+	Point<D,T> & point = under[pointsetIndex];
+	Var pointsetVar = outer->getPointVar(point.getID());
+	pointOnHullLits.push({pointsetVar,pointsetIndex,point,outerVar});
 }
 
 

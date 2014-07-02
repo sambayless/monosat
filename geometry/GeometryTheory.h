@@ -42,8 +42,8 @@ public:
 
 	vec<lbool> assigns;
 
-	PointSet<D,T> under;
-	PointSet<D,T> over;
+	vec<PointSet<D,T> >under_sets;
+	vec<PointSet<D,T> > over_sets;
 	struct Assignment{
 		bool isPoint:1;
 		bool assign:1;
@@ -60,8 +60,9 @@ public:
 	vec<int> trail_lim;
 
 	vec<GeometryDetector*> detectors;
-	ConvexHullDetector<D,T>* convexHull=nullptr;
- 	GeometricSteinerDetector<D,T> * steinerTree=nullptr;
+	vec<ConvexHullDetector<D,T>*> convexHullDetectors;
+	vec<GeometricSteinerDetector<D,T>*> steinerTreeDetectors;
+
 	vec<int> marker_map;
 
 	bool requiresPropagation;
@@ -80,6 +81,8 @@ public:
 	};
 	struct PointData{
 		int id;
+		int pointset;
+		int pointset_index;
 		Var var;
 		Point<D,T> point;
 	};
@@ -167,7 +170,9 @@ public:
 		printf("Reasons: %ld (%f s, avg: %f s)\n",stats_num_reasons,stats_reason_time, (stats_reason_time)/((double)stats_num_reasons+1));
 		fflush(stdout);
 	}
-
+	inline int nPointSets()const{
+		return under_sets.size();
+	}
 	inline int getTheoryIndex(){
 	    	return theory_index;
 	    }
@@ -185,12 +190,28 @@ public:
 		assert(isPointVar(v));
 		return vars[v].detector_point;
 	}
+
+	inline int  getPointsetIndex(int pointID){
+		return points[pointID].pointset_index;
+	}
+
+	inline int getPointset(int pointID){
+		return points[pointID].pointset;
+	}
+
 	inline int getDetector(Var v){
 		assert(!isPointVar(v));
 		return vars[v].detector_point;
 	}
 
 	inline Var getPointVar(int pointID){
+		Var v = points[pointID].var;
+		assert(v<vars.size());
+		assert(vars[v].isPoint);
+		return v;
+	}
+	inline Var getPointVar(int pointset, int pointsetIndex){
+		int pointID = under_sets[pointset][pointsetIndex].getID();
 		Var v = points[pointID].var;
 		assert(v<vars.size());
 		assert(vars[v].isPoint);
@@ -350,11 +371,13 @@ public:
 	void dbg_full_sync(){
 	#ifndef NDEBUG
 			dbg_sync();
-			for(int i =0;i<points.size();i++){
 
-				if(points[i].id>=0 && under.isEnabled(i)){
+			for(int i =0;i<points.size();i++){
+				int pointset = getPointset(i);
+				int pointsetIndex = getPointsetIndex(i);
+				if(points[i].id>=0 && under_sets[pointset].isEnabled(pointsetIndex)){
 					assert(value(points[i].var)==l_True);
-				}else if (points[i].id>=0 &&  !over.isEnabled(i)){
+				}else if (points[i].id>=0 &&  !over_sets[pointset].isEnabled(pointsetIndex)){
 					assert(value(points[i].var)==l_False);
 				}
 			}
@@ -379,11 +402,12 @@ public:
 				if(e.isPoint){
 					assert(dbg_value(e.var)==l_Undef);
 					int point_num = getPointID(e.var); //e.var-min_point_var;
-
+					int pointSet = points[point_num].pointset;
+					int pointsetIndex = getPointsetIndex(point_num);
 					if(e.assign){
-						under.disablePoint( point_num);
+						under_sets[pointSet].disablePoint(pointsetIndex);
 					}else{
-						over.enablePoint(point_num);
+						over_sets[pointSet].enablePoint(pointsetIndex);
 						//assert(over.hasPoint(e.pointID));
 					}
 				}else{
@@ -432,12 +456,14 @@ public:
 				Assignment e = trail[i];
 				if(e.isPoint){
 					int point_num = getPointID(e.var); //e.var-min_point_var;
+					int pointSet = points[point_num].pointset;
+					int pointsetIndex = getPointsetIndex(point_num);
 					assert(assigns[e.var]!=l_Undef);
 					assigns[e.var]=l_Undef;
 					if(e.assign){
-						under.disablePoint(point_num);
+						under_sets[pointSet].disablePoint(pointsetIndex);
 					}else{
-						over.enablePoint(point_num);
+						over_sets[pointSet].enablePoint(pointsetIndex);
 
 					}
 				}else{
@@ -500,19 +526,19 @@ public:
 				continue;
 			PointData e = points[i];
 			lbool val = value(e.var);
-
+			int pointSet = e.pointset;
 			if(val==l_True || val==l_Undef){
-				assert(over.pointEnabled(e.id));
+				assert(over_sets[pointSet].pointEnabled(e.id));
 
 			}else{
-				assert(!over.pointEnabled(e.id));
+				assert(!over_sets[pointSet].pointEnabled(e.id));
 
 			}
 			if(val==l_True){
-				assert(under.pointEnabled(e.id));
+				assert(under_sets[pointSet].pointEnabled(e.id));
 
 			}else{
-				assert(!under.pointEnabled(e.id));
+				assert(!under_sets[pointSet].pointEnabled(e.id));
 
 			}
 		}
@@ -595,14 +621,16 @@ public:
 			int pointID = getPointID(var(l)); //v-min_point_var;
 			assert(points[pointID].var==var(l));
 
-
+			int pointsetIndex = getPointsetIndex(pointID);
+			int pointsetID = getPointset(pointID);
 			trail.push(Assignment(true,!sign(l), pointID,var(l)));
 
 			Assignment e = trail.last();
+			int pointSet = points[pointID].pointset;
 			if (!sign(l)){
-				under.enablePoint(pointID);
+				under_sets[pointSet].enablePoint(pointsetIndex);
 			}else{
-				over.disablePoint(pointID);
+				over_sets[pointSet].disablePoint(pointsetIndex);
 			}
 
 		}else{
@@ -649,12 +677,13 @@ public:
 		dbg_full_sync();
 
 		requiresPropagation=false;
-		under.clearChanged();
-		over.clearChanged();
+		/*
+		under_sets[pointSet].clearChanged();
+		over_sets[pointSet].clearChanged();
 
 		under.clearHistory();
 		over.clearHistory();
-
+		 */
 		detectors_to_check.clear();
 
 		double elapsed = rtime(1)-startproptime;
@@ -692,7 +721,7 @@ public:
 			if(val==l_Undef){
 				return false;
 			}
-
+			int pointset = e.pointset;
 			if(val==l_True){
 			/*	if(!g.haspoint(e.from,e.to)){
 					return false;
@@ -700,20 +729,20 @@ public:
 				if(!over.haspoint(e.from,e.to)){
 					return false;
 				}*/
-				if(!under.pointEnabled(e.id)){
+				if(!under_sets[pointset].pointEnabled(e.id)){
 					return false;
 				}
-				if(!over.pointEnabled(e.id)){
+				if(!over_sets[pointset].pointEnabled(e.id)){
 					return false;
 				}
 			}else{
 				/*if(g.haspoint(e.from,e.to)){
 					return false;
 				}*/
-				if(under.pointEnabled(e.id)){
+				if(under_sets[pointset].pointEnabled(e.id)){
 					return false;
 				}
-				if(over.pointEnabled(e.id)){
+				if(over_sets[pointset].pointEnabled(e.id)){
 					return false;
 				}
 				/*if(over.haspoint(e.from,e.to)){
@@ -740,13 +769,13 @@ public:
 			PointData & e = points[i];
 			lbool val = value(e.var);
 			assert(val!=l_Undef);
-
+			int pointset = e.pointset;
 			if(val==l_True){
-				assert(under.pointEnabled(e.id));
-				assert(over.haspoint(e.id));
+				assert(under_sets[pointset].pointEnabled(e.pointset_index));
+				assert(over_sets[pointset].haspoint(e.pointset_index));
 			}else{
-				assert(!under.haspoint(e.id));
-				assert(!over.haspoint(e.id));
+				assert(!under_sets[pointset].haspoint(e.pointset_index));
+				assert(!over_sets[pointset].haspoint(e.pointset_index));
 			}
 
 
@@ -771,7 +800,7 @@ public:
 		return reasonMarker;
 	}
 
-	Lit newPoint(Point<D,T> point, Var outerVar = var_Undef)
+	Lit newPoint(int pointSet,Point<D,T> point, Var outerVar = var_Undef)
     {
 		assert(outerVar!=var_Undef);
 	/*	if(outerVar==var_Undef)
@@ -787,11 +816,15 @@ public:
 		//points[index].outerVar =outerVar;
 		points[index].point=point;
 		points[index].id=index;
-
-		under.addPoint(point,index);
-		under.disablePoint(index);
-		over.addPoint(point,index);
-		over.enablePoint(index);
+		points[index].pointset = pointSet;
+		under_sets.growTo(pointSet+1);
+		over_sets.growTo(pointSet+1);
+		int pointsetIndex= under_sets[pointSet].addPoint(point);
+		points[index].pointset_index =pointsetIndex;
+		under_sets[pointSet].disablePoint(pointsetIndex);
+		int pointsetIndex2 = over_sets[pointSet].addPoint(point);
+		assert(pointsetIndex== pointsetIndex2);
+		over_sets[pointSet].enablePoint(pointsetIndex);
     	return mkLit(v,false);
     }
 
@@ -804,32 +837,54 @@ public:
 
 	}
 
-	void convexHullArea(T areaGreaterThan, Var outerVar){
-		if(!convexHull){
+	void convexHullArea(int pointSet,T areaGreaterThan, Var outerVar){
+		convexHullDetectors.growTo(nPointSets(),nullptr);
+		if(!convexHullDetectors[pointSet]){
 			int detectorID = detectors.size();
-			convexHull = new ConvexHullDetector<D,T>(detectorID,under, over,this,drand(rnd_seed));
+			auto * convexHull = new ConvexHullDetector<D,T>(detectorID,under_sets[pointSet], over_sets[pointSet],this,drand(rnd_seed));
+			convexHullDetectors[pointSet]=convexHull;
 			detectors.push(convexHull);
 		}
-		convexHull->addAreaDetectorLit(areaGreaterThan,outerVar);
+		convexHullDetectors[pointSet]->addAreaDetectorLit(areaGreaterThan,outerVar);
 	}
 
-	void convexHullContains(Point<D,T> point, Var outerVar){
-		if(!convexHull){
+	void convexHullContains(int pointSet,Point<D,T> point, Var outerVar){
+		convexHullDetectors.growTo(nPointSets(),nullptr);
+		if(!convexHullDetectors[pointSet]){
 			int detectorID = detectors.size();
-			convexHull = new ConvexHullDetector<D,T>(detectorID,under, over,this,drand(rnd_seed));
+			auto * convexHull = new ConvexHullDetector<D,T>(detectorID,under_sets[pointSet], over_sets[pointSet],this,drand(rnd_seed));
+			convexHullDetectors[pointSet]=convexHull;
 			detectors.push(convexHull);
 		}
-		convexHull->addPointContainmentLit(point,outerVar);
+		convexHullDetectors[pointSet]->addPointContainmentLit(point,outerVar);
 	}
 
-	void euclidianSteinerTreeSize(int sizeLessThan, Var outerVar){
-		if(!steinerTree){
+	void pointOnHull(int pointSet,int pointIndex,Var outerVar){
+		convexHullDetectors.growTo(nPointSets(),nullptr);
+		if(!convexHullDetectors[pointSet]){
 			int detectorID = detectors.size();
-			steinerTree = new GeometricSteinerDetector<D,T>(detectorID,this,drand(rnd_seed));
+			auto * convexHull = new ConvexHullDetector<D,T>(detectorID,under_sets[pointSet], over_sets[pointSet],this,drand(rnd_seed));
+			convexHullDetectors[pointSet]=convexHull;
+			detectors.push(convexHull);
+		}
+
+		convexHullDetectors[pointSet]->addPointOnHullLit(pointIndex,outerVar);
+	}
+
+	void convexHullsIntersect(int pointSet1,int pointSet2 , Var outerVar){
+
+	}
+
+	void euclidianSteinerTreeSize(int pointSet, int sizeLessThan, Var outerVar){
+		steinerTreeDetectors.growTo(nPointSets(),nullptr);
+		if(!steinerTreeDetectors[pointSet]){
+			int detectorID = detectors.size();
+			auto * steinerTree = new GeometricSteinerDetector<D,T>(detectorID,this,drand(rnd_seed));
+			steinerTreeDetectors[pointSet]=steinerTree;
 			detectors.push(steinerTree);
 		}
 
-		steinerTree->addAreaDetectorLit(sizeLessThan,outerVar);
+		steinerTreeDetectors[pointSet]->addAreaDetectorLit(sizeLessThan,outerVar);
 	}
 
 };
