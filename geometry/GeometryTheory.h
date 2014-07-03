@@ -62,6 +62,7 @@ public:
 	vec<GeometryDetector*> detectors;
 	vec<ConvexHullDetector<D,T>*> convexHullDetectors;
 	vec<GeometricSteinerDetector<D,T>*> steinerTreeDetectors;
+	vec<ConvexHullCollisionDetector<D,T>*> collisionDetectors;
 
 	vec<int> marker_map;
 
@@ -817,8 +818,13 @@ public:
 		points[index].point=point;
 		points[index].id=index;
 		points[index].pointset = pointSet;
-		under_sets.growTo(pointSet+1);
-		over_sets.growTo(pointSet+1);
+		while(under_sets.size()<=pointSet){
+			under_sets.push(under_sets.size());
+		}
+		while(over_sets.size()<=pointSet){
+			over_sets.push(over_sets.size());
+		}
+
 		int pointsetIndex= under_sets[pointSet].addPoint(point);
 		points[index].pointset_index =pointsetIndex;
 		under_sets[pointSet].disablePoint(pointsetIndex);

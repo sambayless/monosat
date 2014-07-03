@@ -57,7 +57,6 @@ public:
 		};
 		vec<AreaLit> areaDetectors;
 
-		int qhead;
 
 
 		bool propagate(vec<Lit> & conflict);
@@ -217,7 +216,7 @@ GeometryDetector(detectorID),outer(outer),under(under),over(over),rnd_seed(seed)
 
 	}
 	lowest_point_var=var_Undef;
-	qhead=0;
+
 }
 
 

@@ -13,18 +13,24 @@ class PointSet{
 	bool hasClockwise = false;
 	std::vector<int> points_clockwise;
 	std::vector<bool> enabled;
-	int sz;
+	int id;
+
 	int num_enabled= 0;
 
 	void buildClockwise();
 
 public:
+	PointSet(int id=-1):id(id){
 
+	}
+	int getID(){
+		return id;
+	}
 	int dimension(){
 		return D;
 	}
 	int size()const{
-		return sz;
+		return points.size();
 	}
 	int fullSize()const{
 		return points.size();
@@ -81,7 +87,7 @@ public:
 		points.back().setID(pointID);
 		enabled.push_back(false);
 		hasClockwise=false;
-		sz++;
+
 		return pointID;
 	}
 

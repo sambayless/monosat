@@ -11,7 +11,7 @@
 #include "GeometryTypes.h"
 
 enum ShapeType{
-	CONVEX_POLYGON,POLYGON,SHAPE,PLANE,LINE
+	CONVEX_POLYGON,POLYGON,SHAPE,PLANE,LINE,LINE_SEGMENT
 };
 /**
  * A concrete shape

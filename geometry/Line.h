@@ -43,7 +43,7 @@ public:
 };
 
 template<class T>
-class Line<2,T>{
+class Line<2,T>:public Shape<2,T>{
 public:
 	Point<2,T> a;
 	Point<2,T> b;

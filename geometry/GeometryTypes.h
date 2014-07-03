@@ -56,7 +56,14 @@ public:
 
 
 
-template<class T> bool equal_epsilon(T a, T b);
+template<class T> inline bool equal_epsilon(T a, T b);
+template<class T> inline bool eq_epsilon(T a){
+	return std::abs(a)<=epsilon<T>();
+}
+template<class T> inline bool gt_epsilon(T a){
+	return std::abs(a)>epsilon<T>();
+}
+
 
 template<> inline bool equal_epsilon(mpq_class a, mpq_class b){
 	return a==b;//mpq_class is exact
