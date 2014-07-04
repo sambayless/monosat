@@ -54,6 +54,15 @@ class GeometryParser:public Parser<B,Solver>{
 
 	vec<ConvexHullPointContained> convex_hull_point_containments;
 
+	struct ConvexHullLineIntersection{
+		int pointsetID;
+		Var var;
+		ParsePoint p;
+		ParsePoint q;
+	};
+
+	vec<ConvexHullLineIntersection> convex_hull_line_intersections;
+
 	struct ConvexHullPoint{
 		int pointsetID;
 		Var pointVar;
@@ -109,10 +118,39 @@ void readConvexHullArea(B& in, Solver& S) {
 	//T area =  parseDouble(in,tmp_str);
 	convex_hull_areas.push({pointset,area,var});
 }
+void readConvexHullIntersectsLine(B& in, Solver& S){
+	//convex_hull_intersects_line pointsetID var D p1 p2 ... qD q1 q2 ... qD
 
+	convex_hull_line_intersections.push();
+	ParsePoint & p = convex_hull_line_intersections.last().p;
+	ParsePoint & q = convex_hull_line_intersections.last().q;
+	int pointsetID = parseInt(in);
+	int v = parseInt(in)-1;
+	convex_hull_line_intersections.last().pointsetID = pointsetID;
+	convex_hull_line_intersections.last().var = var;
+	int d = parseInt(in);
+	parsePoint(in,d,p);
+	parsePoint(in,d,q);
+
+	//stringstream ss(in);
+/*	for(int i = 0;i<d;i++){
+		//skipWhitespace(in);
+		long n = parseInt(in);
+		//double p = parseDouble(in,tmp_str);
+		point.position.push((T)n);
+	}*/
+/*	for(int i = 0;i<d;i++){
+
+		ss>>p;
+		point.position.push(p);
+	}*/
+
+
+
+}
 void readConvexHullPointContained(B& in, Solver& S) {
 
-    //hull_point_contained pointsetID D p1 p2 ... pD var
+    //hull_point_contained pointsetID var D p1 p2 ... pD
 
     convex_hull_point_containments.push();
     ParsePoint & point = convex_hull_point_containments.last().point;
@@ -175,6 +213,8 @@ public:
 			readConvexHullArea(in,S);
 		}else if (match(in,"convex_hull_containment")){
 			readConvexHullPointContained(in,S);
+		}else if (match(in,"convex_hull_intersects_line")){
+			readConvexHullIntersectsLine(in,S);
 		}else if (match(in,"point_on_convex_hull")){
 			readConvexHullPointContained(in,S);
 		}else if (match(in,"convex_hulls_intersect")){
@@ -282,7 +322,27 @@ public:
 		 }*/else{
 			 assert(false);
 		 }
+	 }
 
+	 for (auto & c:convex_hull_line_intersections){
+		 if(c.pointsetID>=pointsetDim.size() || c.pointsetID<0 || pointsetDim[c.pointsetID]<0){
+			 fprintf(stderr,"Bad pointsetID %d\n", c.pointsetID);
+		 }
+		 int D = pointsetDim[c.pointsetID];
+
+		 if(D==1){
+			 Point<1,T> pnt(c.point.position);
+			// space_1D[c.pointsetID]->convexHullContains(pnt, c.point.var);
+		 }else if(D==2){
+			 Point<2,T> p(c.p.position);
+			 Point<2,T> q(c.q.position);
+			 space_2D->convexHullIntersectsLine(c.pointsetID,p,q,c.var);
+		 }/*else if(D==3){
+			 Point<3,double> pnt(c.point.position);
+			 space_3D[c.pointsetID]->convexHullContains(pnt, c.point.var);
+		 }*/else{
+			 assert(false);
+		 }
 	 }
 
 	 for (auto & c: convex_hull_points){

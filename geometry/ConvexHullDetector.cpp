@@ -330,6 +330,217 @@ void ConvexHullDetector<2,mpq_class>::buildPointNotContainedReason(const Point<2
 }
 
 template<>
+void ConvexHullDetector<2,mpq_class>::buildLineIntersectsReason(LineSegment<2,mpq_class> & s, vec<Lit> & conflict){
+	//If the two polygons intersect, there are two possible cases (these are not mutually exclusive)
+	//1) 1 polygon has at least one point contained in the other polygon. Learn that either that point must be disabled, or at least
+	//		one point from its containing triangle must be disabled (as in the point containment theory).
+	//2) There exists an edge (or, more generally, a line segment between any two vertices, as opposed to just an edge) from each poygon,
+	//		such that the two edges intersect. Learn that one of the end points must be disabled.
+	ConvexPolygon<2, mpq_class> & hull = under_hull->getHull();
+
+	//First, check to see if either end point is contained within the convex hull
+	if(hull.contains( s.a)){
+		//find a containing triangle around one of these points
+		ConvexPolygon<2,mpq_class> triangle;
+		findContainingTriangle2d(hull,s.a,triangle);
+		assert(triangle.contains(s.a));
+		for(auto & p: triangle){
+			int id = p.getID();
+			Var v = outer->getPointVar(id);
+			assert(outer->value(v)==l_True);
+			conflict.push(mkLit(v,true));
+		}
+	}else if  (hull.contains(s.b)){
+		ConvexPolygon<2,mpq_class> triangle;
+		findContainingTriangle2d(hull,s.b,triangle);
+		assert(triangle.contains(s.b));
+		for(auto & p: triangle){
+			int id = p.getID();
+			Var v = outer->getPointVar(id);
+			assert(outer->value(v)==l_True);
+			conflict.push(mkLit(v,true));
+		}
+	}
+
+	//If neither endpoint is contained, then it may still be the case that the line segment intersects the hull (if it passes through at least one edge of the hull).
+	//So, iterate through the edges and find one that intersects the line
+
+	for(int i = 0; i<hull.size();i++){
+		Point<2,mpq_class> & prev = hull[i-1];
+		Point<2,mpq_class> & p = hull[i];
+		LineSegment<2,mpq_class> edge(prev,p);
+
+		if(edge.intersects(s)){
+			//learn that one of the endpoints of the intersecting line must be disabled
+			conflict.push(~mkLit(outer->getPointVar(prev.getID())));
+			conflict.push(~mkLit(outer->getPointVar(p.getID())));
+
+			return;
+		}
+
+	}
+}
+template<>
+void ConvexHullDetector<2,mpq_class>::buildLineNotIntersectsReason( LineSegment<2,mpq_class> & s, vec<Lit> & conflict){
+		ConvexPolygon<2, mpq_class> & hull = under_hull->getHull();
+
+
+		if(hull.size()==0){
+			//then the reason that the shapes don't collide is that at least one of them must be enabled
+			//can we improve on this?
+			for(int i = 0;i<over.size();i++){
+				if(!over.pointEnabled(i)){
+					Lit l = mkLit( outer->getPointVar(over[i].getID()));
+					assert(outer->value(l)==l_False);
+					conflict.push(l);
+				}
+			}
+		}else if (hull.size()==1){
+			//can we improve on this?
+			for(int i = 0;i<over.size();i++){
+				if(!over.pointEnabled(i)){
+					Lit l = mkLit( outer->getPointVar(over[i].getID()));
+					assert(outer->value(l)==l_False);
+					conflict.push(l);
+				}
+			}
+		}
+
+		//the reason that the two convex hulls do NOT collide is that there exists a separating axis between them.
+		//Find that axis, and then find all the positions of the disabled points of both polygons along that axis.
+		//let hull be left of h2.
+		//Then either some disabled point in hull that is to the right of the rightmost point in hull must be enabled,
+		//or some disabled point in h2 that is to the left of the leftmost point in h2 must be enabled.
+
+		//Note: It may be possible to improve on this analysis!
+		vec<std::pair<Point<2,mpq_class> ,mpq_class>>  projection1;
+		findSeparatingAxis(hull,s,over,projection1);
+
+		 mpq_class leftmost1 = std::numeric_limits<mpq_class>::max();
+		 mpq_class rightmost1 = std::numeric_limits<mpq_class>::min();
+
+		for(auto & p:projection1){
+			int pID = p.first.getID();
+			int pointset = outer->getPointset(pID);
+			assert(pointset==over1.getID());
+			int pointsetIndex = outer->getPointsetIndex(pID);
+			if(over1.pointEnabled(pointsetIndex)){
+				if(p.second<leftmost1)
+					leftmost1 = p.second;
+				if(p.second>rightmost1)
+					rightmost1 = p.second;
+			}
+		}
+
+		 mpq_class leftmost2 = std::numeric_limits<mpq_class>::max();
+		 mpq_class rightmost2 = std::numeric_limits<mpq_class>::min();
+
+		for(auto & p:projection2){
+			int pID = p.first.getID();
+			int pointset = outer->getPointset(pID);
+			int pointsetIndex = outer->getPointsetIndex(pID);
+			assert(pointset==over2.getID());
+			if(over2.pointEnabled(pointsetIndex)){
+			if(p.second<leftmost2)
+				leftmost2 = p.second;
+			if(p.second>rightmost2)
+				rightmost2 = p.second;
+			}
+		}
+
+		assert(rightmost1<leftmost2 || rightmost2<leftmost1);
+		bool hull_is_left=rightmost1<leftmost2;
+
+		for(auto & p:projection1){
+			int pID = p.first.getID();
+			int pointset = outer->getPointset(pID);
+			int pointsetIndex = outer->getPointsetIndex(pID);
+			assert(pointset==over1.getID());
+			if(!over1.pointEnabled(pointsetIndex)){
+				if(hull_is_left ? (p.second>rightmost1):((p.second<leftmost1))){
+					//then if we enable this point, the two hulls will move closer to each other.
+					//we can probably improve on this, by only considering points that are also >= the rightmost _disabled_ point of pointset2...
+
+					Lit l = mkLit(outer->getPointVar(pID));
+					assert(outer->value(l)==l_False);
+					conflict.push(l);
+				}
+			}
+		}
+		for(auto & p:projection2){
+			int pID = p.first.getID();
+			int pointset = outer->getPointset(pID);
+			int pointsetIndex = outer->getPointsetIndex(pID);
+			assert(pointset==over2.getID());
+			if(!over2.pointEnabled(pointsetIndex)){
+				if(hull_is_left ? (p.second<leftmost2):((p.second>rightmost2))){
+					//then if we enable this point, the two hulls will move closer to each other.
+					//we can probably improve on this, by only considering points that are also >= the rightmost _disabled_ point of pointset2...
+					Lit l = mkLit(outer->getPointVar(pID));
+					assert(outer->value(l)==l_False);
+					conflict.push(l);
+				}
+			}
+		}
+
+};
+template<>
+void ConvexHullDetector<2,double>::buildLineIntersectsReason( LineSegment<2,double> & s, vec<Lit> & conflict){
+	//If the two polygons intersect, there are two possible cases (these are not mutually exclusive)
+	//1) 1 polygon has at least one point contained in the other polygon. Learn that either that point must be disabled, or at least
+	//		one point from its containing triangle must be disabled (as in the point containment theory).
+	//2) There exists an edge (or, more generally, a line segment between any two vertices, as opposed to just an edge) from each poygon,
+	//		such that the two edges intersect. Learn that one of the end points must be disabled.
+	ConvexPolygon<2, double> & hull = under_hull->getHull();
+
+	//First, check to see if either end point is contained within the convex hull
+	if(hull.contains( s.a)){
+		//find a containing triangle around one of these points
+		ConvexPolygon<2,double> triangle;
+		findContainingTriangle2d(hull,s.a,triangle);
+		assert(triangle.contains(s.a));
+		for(auto & p: triangle){
+			int id = p.getID();
+			Var v = outer->getPointVar(id);
+			assert(outer->value(v)==l_True);
+			conflict.push(mkLit(v,true));
+		}
+	}else if  (hull.contains(s.b)){
+		ConvexPolygon<2,double> triangle;
+		findContainingTriangle2d(hull,s.b,triangle);
+		assert(triangle.contains(s.b));
+		for(auto & p: triangle){
+			int id = p.getID();
+			Var v = outer->getPointVar(id);
+			assert(outer->value(v)==l_True);
+			conflict.push(mkLit(v,true));
+		}
+	}
+
+	//If neither endpoint is contained, then it may still be the case that the line segment intersects the hull (if it passes through at least one edge of the hull).
+	//So, iterate through the edges and find one that intersects the line
+
+	for(int i = 0; i<hull.size();i++){
+		Point<2,double> & prev = hull[i-1];
+		Point<2,double> & p = hull[i];
+		LineSegment<2,double> edge(prev,p);
+
+		if(edge.intersects(s)){
+			//learn that one of the endpoints of the intersecting line must be disabled
+			conflict.push(~mkLit(outer->getPointVar(prev.getID())));
+			conflict.push(~mkLit(outer->getPointVar(p.getID())));
+
+			return;
+		}
+
+	}
+}
+template<>
+void ConvexHullDetector<2,double>::buildLineNotIntersectsReason( LineSegment<2,double> & s, vec<Lit> & conflict){
+
+}
+
+template<>
 void ConvexHullDetector<2,mpq_class>::buildPointOnHullOrDisabledReason(Var pointVar,const Point<2,mpq_class> & s, vec<Lit> & conflict){
 	//If the point IS on the hull (or disabled), it is either because it is currently disabled...
 

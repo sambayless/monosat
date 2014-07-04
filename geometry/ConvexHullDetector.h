@@ -9,6 +9,7 @@
 #include "MonotoneConvexHull.h"
 #include "QuickConvexHull.h"
 #include "Polygon.h"
+#include "LineSegment.h"
 #include "Line.h"
 using namespace Minisat;
 
@@ -28,6 +29,8 @@ public:
 		double rnd_seed;
 		CRef point_contained_marker;
 		CRef point_not_contained_marker;
+		CRef line_intersection_marker;
+		CRef line_not_intersection_marker;
 		CRef area_geq_marker;
 		CRef area_not_geq_marker;
 		CRef point_on_hull_marker;
@@ -43,6 +46,13 @@ public:
 			Lit l;
 		};
 		vec<PointContainedLit> pointContainedLits;
+
+		struct LineIntersectionLit{
+			LineSegment<D,T> line;
+			Lit l;
+		};
+		vec<LineIntersectionLit> lineIntersectionLits;
+
 		struct PointOnHullLit{
 			Var pointVar;
 			int pointIndex;
@@ -50,6 +60,8 @@ public:
 			Lit l;
 		};
 		vec<PointOnHullLit> pointOnHullLits;
+
+
 
 		struct AreaLit{
 			T areaGreaterEqThan;
@@ -66,6 +78,9 @@ public:
 		void buildPointNotContainedReason(const Point<D,T> & p,vec<Lit> & conflict);
 		void buildPointOnHullOrDisabledReason(Var pointVar,const Point<D,T> & p, vec<Lit> & conflict);
 		void buildPointNotOnHullOrDisabledReason(Var pointVar,const Point<D,T> & p, vec<Lit> & conflict);
+		void buildLineIntersectsReason(LineSegment<D,T> & line,vec<Lit> & conflict);
+		void buildLineNotIntersectsReason(LineSegment<D,T> & line,vec<Lit> & conflict);
+
 
 		void buildReason(Lit p, vec<Lit> & reason, CRef marker);
 		bool checkSatisfied();
@@ -73,6 +88,7 @@ public:
 		void addAreaDetectorLit(T areaGreaterEqThan, Var v);
 		void addPointContainmentLit(Point<D,T> p,Var outerVar);
 		void addPointOnHullLit(int pointsetIndex,Var outerVar);
+		void addLineIntersection(LineSegment<D,T> line, Var outerVar);
 		ConvexHullDetector(int detectorID,PointSet<D,T> & under, PointSet<D,T> & over, GeometryTheorySolver<D,T> * outer,  double seed=1);
 		virtual ~ConvexHullDetector(){
 
@@ -200,11 +216,12 @@ GeometryDetector(detectorID),outer(outer),under(under),over(over),rnd_seed(seed)
 
 	point_contained_marker=outer->newReasonMarker(getID());
 	point_not_contained_marker=outer->newReasonMarker(getID());
-
 	point_on_hull_marker=outer->newReasonMarker(getID());
 	point_not_on_hull_marker=outer->newReasonMarker(getID());
 	area_geq_marker=outer->newReasonMarker(getID());
 	area_not_geq_marker=outer->newReasonMarker(getID());
+	line_intersection_marker=outer->newReasonMarker(getID());
+	line_not_intersection_marker=outer->newReasonMarker(getID());
 
 	if(hullAlg== ConvexHullAlg::ALG_QUICKHULL){
 		over_hull = new QuickConvexHull<D,T>(over);
@@ -229,6 +246,16 @@ void ConvexHullDetector<D,T>::addPointContainmentLit(Point<D,T> p,Var outerVar){
 		Var containVar = outer->newVar(outerVar,getID());
 		pointContainedLits.push({p,mkLit(containVar,false)});
 	}
+
+template<unsigned int D, class T>
+void ConvexHullDetector<D,T>::addLineIntersection(LineSegment<D,T> line, Var outerVar){
+
+	under.invalidate();
+	over.invalidate();
+
+	Var containVar = outer->newVar(outerVar,getID());
+	lineIntersectionLits.push({line,mkLit(containVar,false)});
+}
 
 template<unsigned int D, class T>
 void ConvexHullDetector<D,T>::addAreaDetectorLit(T areaGreaterEqThan, Var outerVar){
@@ -398,6 +425,36 @@ bool ConvexHullDetector<D,T>::propagate(vec<Lit> & conflict){
 				}
 			}
 		}
+		for(int i =0;i<lineIntersectionLits.size();i++){
+			LineSegment<D,T> & line = lineIntersectionLits[i].p;
+			Lit l = lineIntersectionLits[i].l;
+
+			if(p_under.intersects(line)){
+				//l is true
+				if(outer->value(l)==l_True){
+					//do nothing
+				}else if(outer->value(l)==l_Undef){
+
+					outer->enqueue(l,line_intersection_marker) ;
+				}else if (outer->value(l)==l_False){
+					conflict.push(l);
+					buildLineIntersectsReason(line,conflict);
+					return false;
+				}
+			}else if (!p_over.intersects(line)){
+				l=~l;
+				//l is true
+				if(outer->value(l)==l_True){
+					//do nothing
+				}else if(outer->value(l)==l_Undef){
+					outer->enqueue(l,line_not_intersection_marker) ;
+				}else if (outer->value(l)==l_False){
+					conflict.push(l);
+					buildlineNotIntersectsReason(line,conflict);
+					return false;
+				}
+			}
+		}
 		if(pointOnHullLits.size()){
 #ifndef NDEBUG
 			for(bool b:under_hull_members)
@@ -524,6 +581,17 @@ template<unsigned int D, class T>
 void ConvexHullDetector<D,T>::buildPointNotContainedReason(const Point<D,T> & s, vec<Lit> & conflict){
 
 }
+
+template<unsigned int D, class T>
+void ConvexHullDetector<D,T>::buildLineIntersectsReason( LineSegment<D,T> & s, vec<Lit> & conflict){
+
+}
+
+template<unsigned int D, class T>
+void ConvexHullDetector<D,T>::buildLineNotIntersectsReason( LineSegment<D,T> & s, vec<Lit> & conflict){
+
+}
+
 template<unsigned int D, class T>
 void ConvexHullDetector<D,T>::buildPointOnHullOrDisabledReason(Var pointVar,const Point<D,T> & p, vec<Lit> & conflict){
 
@@ -552,5 +620,16 @@ template<>
 void ConvexHullDetector<2,mpq_class>::buildPointContainedReason(const Point<2,mpq_class> & s,vec<Lit> & conflict);
 template<>
 void ConvexHullDetector<2,mpq_class>::buildPointNotContainedReason(const Point<2,mpq_class> & s, vec<Lit> & conflict);
+
+
+template<>
+void ConvexHullDetector<2,mpq_class>::buildLineIntersectsReason( LineSegment<2,mpq_class> & s, vec<Lit> & conflict);
+template<>
+void ConvexHullDetector<2,mpq_class>::buildLineNotIntersectsReason( LineSegment<2,mpq_class> & s, vec<Lit> & conflict);
+template<>
+void ConvexHullDetector<2,double>::buildLineIntersectsReason( LineSegment<2,double> & s, vec<Lit> & conflict);
+template<>
+void ConvexHullDetector<2,double>::buildLineNotIntersectsReason( LineSegment<2,double> & s, vec<Lit> & conflict);
+
 
 #endif

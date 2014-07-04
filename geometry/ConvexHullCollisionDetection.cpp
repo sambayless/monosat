@@ -38,7 +38,7 @@ void ConvexHullCollisionDetector<2, mpq_class>::buildCollisionReason(vec<Lit> & 
 		}
 	}
 
-	//if no intersecting line segment was found, then it follows that one of the polygons is wholy contained in the other.
+	//if no intersecting line segment was found, then it follows that one of the polygons is wholly contained in the other.
 	//so treat this as a contained point problem - pick one of the points in the contained polygon (arbitrarily), and a containing triangle
 	//from the other polygon, and learn that one of these 4 points must be disabled.
 

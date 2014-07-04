@@ -66,6 +66,7 @@ public:
 	bool contains(const Point<2,T> & point);
 	bool intersects(Shape<2,T> & s);
 
+	bool intersects(Line<2,T> & other, Point<2,T> & intersection, bool & colinear);
 	//> 0 if the point is 'right' of the line, <0 if 'left' of the line, 0 if exactly on the line.
 	int whichSide(const Point<2,T> & point){
 		T val= cross(b,a,point);
@@ -86,6 +87,36 @@ bool Line<2,T>::contains(const Point<2,T> & point){
 	return cross(a,b,point)==0;//is this correct?
 }
 
+template<class T>
+bool Line<2,T>::intersects(Line<2,T> & other, Point<2,T> & intersection, bool & colinear){
+
+	//from http://stackoverflow.com/a/565282
+	overlapping=false;
+	bool intersecting=false;
+	auto & p = a;
+	Point<2,T> r = b-a;
+	Point<2,T> & q = other.a;
+	Point<2,T> s = other.b - other.a;
+
+	T rs = cross2d(r,s);
+	T qpr = cross2d(q-p,r);
+
+	if(eq_epsilon(rs)){
+		if(eq_epsilon(qpr)){
+			//If r × s = 0 and (q − p) × r = 0, the two lines are collinear
+			colinear=true;
+		}else{
+			//If r × s = 0 and (q − p) × r ≠ 0, then the two lines are parallel and non-intersecting.
+		}
+	}else{
+		T t = cross2d((q - p),  s) / (cross2d(r , s));
+		intersecting=true;
+		intersection =r;
+		intersection*=t;
+		intersection+=p;
+	}
+	return overlapping || intersecting;
+}
 template<class T>
 bool Line<2,T>::intersects(Shape<2,T> & s){
 	if(s.getType()==LINE){

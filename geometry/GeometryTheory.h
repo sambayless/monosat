@@ -877,6 +877,18 @@ public:
 		convexHullDetectors[pointSet]->addPointOnHullLit(pointIndex,outerVar);
 	}
 
+	void convexHullIntersectsLine(int pointSet,Point<D,T> p,Point<D,T> q,Var outerVar){
+		convexHullDetectors.growTo(nPointSets(),nullptr);
+		if(!convexHullDetectors[pointSet]){
+			int detectorID = detectors.size();
+			auto * convexHull = new ConvexHullDetector<D,T>(detectorID,under_sets[pointSet], over_sets[pointSet],this,drand(rnd_seed));
+			convexHullDetectors[pointSet]=convexHull;
+			detectors.push(convexHull);
+		}
+
+		convexHullDetectors[pointSet]->addLineIntersection(LineSegment<D,T>(p,q),outerVar);
+	}
+
 	void convexHullsIntersect(int pointSet1,int pointSet2 , Var outerVar){
 
 	}
