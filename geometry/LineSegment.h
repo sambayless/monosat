@@ -9,8 +9,9 @@
 #include <math.h>
 #include "Shape.h"
 #include "mtl/Vec.h"
+#include "Line.h"
 /**
- * A line
+ * A line segment defined by two end-points
  */
 template<unsigned int D,class T>
 class LineSegment:public Shape<D,T>{
@@ -71,15 +72,7 @@ public:
 		return val>0?1:-1;
 		//return ((b.x - a.x)*(point.y - a.y) - (b.y - a.y)*(point.x - a.x));
 	}
-private:
-	T cross(const Point<2,T> &O, const Point<2,T>  &A, const Point<2,T>  &B)
-	{
-		return (A[0] - O[0]) * (B[1] - O[1]) - (A[1] - O[1]) * (B[0] - O[0]);
-	}
 
-	static T cross2d(const Point<2,T> &A, const Point<2,T>  &B){
-		return A.x*B.y - A.y*B.x;
-	}
 };
 
 template<class T>

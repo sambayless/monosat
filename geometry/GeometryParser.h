@@ -18,8 +18,8 @@
 #include "geometry/GeometryTheory.h"
 #include "core/Dimacs.h"
 #include "core/Config.h"
-
-
+#include "mtl/Vec.h"
+#include <vector>
 
 namespace Minisat {
 
@@ -46,6 +46,7 @@ class GeometryParser:public Parser<B,Solver>{
 
 	vec<ConvexHullArea> convex_hull_areas;
 
+/*
 	struct ConvexHullPointContained{
 		int pointsetID;
 		ParsePoint point;
@@ -53,15 +54,24 @@ class GeometryParser:public Parser<B,Solver>{
 	};
 
 	vec<ConvexHullPointContained> convex_hull_point_containments;
+*/
 
-	struct ConvexHullLineIntersection{
+/*	struct ConvexHullLineIntersection{
 		int pointsetID;
 		Var var;
 		ParsePoint p;
 		ParsePoint q;
 	};
 
-	vec<ConvexHullLineIntersection> convex_hull_line_intersections;
+	vec<ConvexHullLineIntersection> convex_hull_line_intersections;*/
+
+	struct ConvexHullPolygonIntersection{
+		int pointsetID;
+		Var var;
+		vec<ParsePoint> points;
+	};
+
+	vec<ConvexHullPolygonIntersection> convex_hull_polygon_intersections;
 
 	struct ConvexHullPoint{
 		int pointsetID;
@@ -118,7 +128,26 @@ void readConvexHullArea(B& in, Solver& S) {
 	//T area =  parseDouble(in,tmp_str);
 	convex_hull_areas.push({pointset,area,var});
 }
-void readConvexHullIntersectsLine(B& in, Solver& S){
+void readConvexHullIntersectsPolygon(B& in, Solver& S){
+	//convex_hull_intersects_polygon pointsetID var NumPoints D p1 p2 ... pD q1 q2 ... qD ...
+
+	convex_hull_polygon_intersections.push();
+
+
+	int pointsetID = parseInt(in);
+	int v = parseInt(in)-1;
+	convex_hull_polygon_intersections.last().pointsetID = pointsetID;
+	convex_hull_polygon_intersections.last().var = v;
+	int numPoints = parseInt(in);
+
+	int d = parseInt(in);
+	for(int i = 0;i<numPoints;i++)
+		convex_hull_polygon_intersections.last().points.push();
+		ParsePoint & p = convex_hull_polygon_intersections.last().points.last();
+		parsePoint(in,d,p);
+
+}
+/*void readConvexHullIntersectsLine(B& in, Solver& S){
 	//convex_hull_intersects_line pointsetID var D p1 p2 ... qD q1 q2 ... qD
 
 	convex_hull_line_intersections.push();
@@ -127,27 +156,28 @@ void readConvexHullIntersectsLine(B& in, Solver& S){
 	int pointsetID = parseInt(in);
 	int v = parseInt(in)-1;
 	convex_hull_line_intersections.last().pointsetID = pointsetID;
-	convex_hull_line_intersections.last().var = var;
+	convex_hull_line_intersections.last().var = v;
 	int d = parseInt(in);
 	parsePoint(in,d,p);
 	parsePoint(in,d,q);
 
 	//stringstream ss(in);
-/*	for(int i = 0;i<d;i++){
+	for(int i = 0;i<d;i++){
 		//skipWhitespace(in);
 		long n = parseInt(in);
 		//double p = parseDouble(in,tmp_str);
 		point.position.push((T)n);
-	}*/
-/*	for(int i = 0;i<d;i++){
+	}
+	for(int i = 0;i<d;i++){
 
 		ss>>p;
 		point.position.push(p);
-	}*/
+	}
 
 
 
-}
+}*/
+/*
 void readConvexHullPointContained(B& in, Solver& S) {
 
     //hull_point_contained pointsetID var D p1 p2 ... pD
@@ -160,21 +190,21 @@ void readConvexHullPointContained(B& in, Solver& S) {
 	parsePoint(in,d,point);
 
 	//stringstream ss(in);
-/*	for(int i = 0;i<d;i++){
+	for(int i = 0;i<d;i++){
 		//skipWhitespace(in);
 		long n = parseInt(in);
 		//double p = parseDouble(in,tmp_str);
 		point.position.push((T)n);
-	}*/
-/*	for(int i = 0;i<d;i++){
+	}
+	for(int i = 0;i<d;i++){
 
 		ss>>p;
 		point.position.push(p);
-	}*/
+	}
 
 	point.var = v;
 	convex_hull_point_containments.last().pointsetID = pointsetID;
-}
+}*/
 void readConvexHullPointOnHull(B& in, Solver& S) {
 
     //point_on_hull pointsetID pointVar var
@@ -211,12 +241,15 @@ public:
 
 		}else if (match(in,"convex_hull_area_gt")){
 			readConvexHullArea(in,S);
-		}else if (match(in,"convex_hull_containment")){
+		}/*else if (match(in,"convex_hull_containment")){
 			readConvexHullPointContained(in,S);
 		}else if (match(in,"convex_hull_intersects_line")){
 			readConvexHullIntersectsLine(in,S);
+		}*/
+		else if (match(in,"convex_hull_intersects_polygon")){
+			readConvexHullIntersectsPolygon(in,S);
 		}else if (match(in,"point_on_convex_hull")){
-			readConvexHullPointContained(in,S);
+			readConvexHullPointOnHull(in,S);
 		}else if (match(in,"convex_hulls_intersect")){
 			readConvexHullsIntersect(in,S);
 		}else if (match(in,"heightmap_volume")){
@@ -304,7 +337,29 @@ public:
 		 }
 
 	 }
-	 for (auto & c: convex_hull_point_containments){
+	 for (auto & c: convex_hull_polygon_intersections){
+	 		 if(c.pointsetID>=pointsetDim.size() || c.pointsetID<0 || pointsetDim[c.pointsetID]<0){
+	 			 fprintf(stderr,"Bad pointsetID %d\n", c.pointsetID);
+	 		 }
+	 		 int D = pointsetDim[c.pointsetID];
+
+	 		 if(D==1){
+
+	 			// space_1D[c.pointsetID]->convexHullContains(pnt, c.point.var);
+	 		 }else if(D==2){
+
+	 			 std::vector<Point<2,T> > p2;
+	 			 for(ParsePoint &p:c.points){
+	 				p2.push_back(p.position);
+	 			 }
+	 			 space_2D->convexHullIntersectsPolygon(c.pointsetID,p2, c.var);
+	 		 }else if(D==3){
+
+	 		 }else{
+	 			 assert(false);
+	 		 }
+	 	 }
+/*	 for (auto & c: convex_hull_point_containments){
 		 if(c.pointsetID>=pointsetDim.size() || c.pointsetID<0 || pointsetDim[c.pointsetID]<0){
 			 fprintf(stderr,"Bad pointsetID %d\n", c.pointsetID);
 		 }
@@ -316,34 +371,34 @@ public:
 		 }else if(D==2){
 			 Point<2,T> pnt(c.point.position);
 			 space_2D->convexHullContains(c.pointsetID,pnt, c.point.var);
-		 }/*else if(D==3){
+		 }else if(D==3){
 			 Point<3,double> pnt(c.point.position);
 			 space_3D[c.pointsetID]->convexHullContains(pnt, c.point.var);
-		 }*/else{
+		 }else{
 			 assert(false);
 		 }
-	 }
+	 }*/
 
-	 for (auto & c:convex_hull_line_intersections){
+/*	 for (auto & c:convex_hull_line_intersections){
 		 if(c.pointsetID>=pointsetDim.size() || c.pointsetID<0 || pointsetDim[c.pointsetID]<0){
 			 fprintf(stderr,"Bad pointsetID %d\n", c.pointsetID);
 		 }
 		 int D = pointsetDim[c.pointsetID];
 
 		 if(D==1){
-			 Point<1,T> pnt(c.point.position);
+			// Point<1,T> pnt(c.point.position);
 			// space_1D[c.pointsetID]->convexHullContains(pnt, c.point.var);
 		 }else if(D==2){
 			 Point<2,T> p(c.p.position);
 			 Point<2,T> q(c.q.position);
 			 space_2D->convexHullIntersectsLine(c.pointsetID,p,q,c.var);
-		 }/*else if(D==3){
+		 }else if(D==3){
 			 Point<3,double> pnt(c.point.position);
 			 space_3D[c.pointsetID]->convexHullContains(pnt, c.point.var);
-		 }*/else{
+		 }else{
 			 assert(false);
 		 }
-	 }
+	 }*/
 
 	 for (auto & c: convex_hull_points){
 		 if(c.pointsetID>=pointsetDim.size() || c.pointsetID<0 || pointsetDim[c.pointsetID]<0){

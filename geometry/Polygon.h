@@ -17,6 +17,7 @@ template<unsigned int D,class T>
 class Polygon:public Shape<D,T>{
 public:
 	//List of vertices in clockwise order
+
 	std::vector<Point<D,T>> vertices;
 	Point<D,T> circleCenter;//should generalize this to an arbitrary bounding volume...
 	T circleRadius;
@@ -99,10 +100,21 @@ public:
 	virtual T getPerimeter();
 	//put the vertices into clockwise order
 	void reorderVertices();
+
 protected:
 	bool dbg_orderClockwise(){
 		return true;
 	}
+	T cross(const Point<2,T> &O, const Point<2,T>  &A, const Point<2,T>  &B)
+	{
+		return (A[0] - O[0]) * (B[1] - O[1]) - (A[1] - O[1]) * (B[0] - O[0]);
+	}
+
+	static T cross2d(const Point<2,T> &A, const Point<2,T>  &B){
+		return A.x*B.y - A.y*B.x;
+	}
+
+
 private:
 
 

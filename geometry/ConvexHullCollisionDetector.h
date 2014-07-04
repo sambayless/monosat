@@ -1,5 +1,5 @@
-#ifndef COLLISION_DETECTOR_H_
-#define COLLISION_DETECTOR_H_
+#ifndef CONVEX_HULL_COLLISION_DETECTOR_H_
+#define CONVEX_HULL_COLLISION_DETECTOR_H_
 
 #include "core/SolverTypes.h"
 #include "PointSet.h"
@@ -11,6 +11,7 @@
 #include "Polygon.h"
 #include "Line.h"
 #include "ConvexHullDetector.h"
+
 using namespace Minisat;
 
 

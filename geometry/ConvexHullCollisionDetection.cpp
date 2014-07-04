@@ -1,6 +1,6 @@
 #include "ConvexHullCollisionDetector.h"
 #include "LineSegment.h"
-
+#include "GeometryTheory.h"
 
 template<>
 void ConvexHullCollisionDetector<2, mpq_class>::buildCollisionReason(vec<Lit> & conflict){
@@ -222,7 +222,19 @@ bool ConvexHullCollisionDetector<2, mpq_class>::findSeparatingAxis(ConvexPolygon
 	if(h1.size()==0 || h2.size()==0){
 		return false;
 	}else if (h1.size()==1 && h2.size()==1){
-		return false;
+		 Point<2,mpq_class> un_normalized_normal = h2[0]-h1[0];
+		 //now place all the remaining (disabled) points on the axis as well
+		 for(int i = 0;i<pointset1.size();i++){
+				 auto & p = pointset1[i];
+				 mpq_class projection = un_normalized_normal.dot(p);
+				 projection_out1.push({p,projection});
+		 }
+		 for(int i = 0;i<pointset2.size();i++){
+				 auto & p = pointset2[i];
+				 mpq_class projection = un_normalized_normal.dot(p);
+				 projection_out2.push({p,projection});
+		 }
+		return true;
 	}
 
 

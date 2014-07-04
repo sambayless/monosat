@@ -75,11 +75,7 @@ public:
 		return val>0?1:-1;
 		//return ((b.x - a.x)*(point.y - a.y) - (b.y - a.y)*(point.x - a.x));
 	}
-private:
-	T cross(const Point<2,T> &O, const Point<2,T>  &A, const Point<2,T>  &B)
-	{
-		return (A[0] - O[0]) * (B[1] - O[1]) - (A[1] - O[1]) * (B[0] - O[0]);
-	}
+
 };
 
 template<class T>
@@ -88,10 +84,10 @@ bool Line<2,T>::contains(const Point<2,T> & point){
 }
 
 template<class T>
-bool Line<2,T>::intersects(Line<2,T> & other, Point<2,T> & intersection, bool & colinear){
+bool Line<2,T>::intersects(Line<2,T> & other, Point<2,T> & intersection, bool & collinear){
 
 	//from http://stackoverflow.com/a/565282
-	overlapping=false;
+	collinear=false;
 	bool intersecting=false;
 	auto & p = a;
 	Point<2,T> r = b-a;
@@ -104,7 +100,7 @@ bool Line<2,T>::intersects(Line<2,T> & other, Point<2,T> & intersection, bool & 
 	if(eq_epsilon(rs)){
 		if(eq_epsilon(qpr)){
 			//If r × s = 0 and (q − p) × r = 0, the two lines are collinear
-			colinear=true;
+			collinear=true;
 		}else{
 			//If r × s = 0 and (q − p) × r ≠ 0, then the two lines are parallel and non-intersecting.
 		}
@@ -115,7 +111,7 @@ bool Line<2,T>::intersects(Line<2,T> & other, Point<2,T> & intersection, bool & 
 		intersection*=t;
 		intersection+=p;
 	}
-	return overlapping || intersecting;
+	return collinear || intersecting;
 }
 template<class T>
 bool Line<2,T>::intersects(Shape<2,T> & s){

@@ -11,6 +11,7 @@
 #include "core/SolverTypes.h"
 #include "mtl/Rnd.h"
 #include "mtl/Vec.h"
+#include <vector>
 #include <cmath>
 #include <algorithm>
 #include <gmpxx.h>
@@ -29,7 +30,7 @@ template <typename T> struct epsilon;
 template <> struct epsilon<float>
 {
 private:
-    float const value = 0.000001f;
+	 float const value = 0.000001f;
 public:
 
     operator double()const{return value;}
@@ -38,20 +39,20 @@ public:
 template <> struct epsilon<double>
 {
 private:
-    double const value = 0.000000001;
+	 double const value = 0.000000001;
 public:
 
-    operator double()const{return value;}
+     operator double ()const{return value;}
 };
 
 
 template <> struct epsilon<mpq_class>
 {
 private:
-	mpq_class const value = mpq_class(0);
+	 const mpq_class  value = mpq_class(0);
 public:
 
-    operator mpq_class()const{return value;}
+	 operator mpq_class ()const{return value;}
 };
 
 
@@ -63,7 +64,9 @@ template<class T> inline bool eq_epsilon(T a){
 template<class T> inline bool gt_epsilon(T a){
 	return std::abs(a)>epsilon<T>();
 }
-
+template<> inline bool eq_epsilon(mpq_class a){
+	return abs(a)<=(mpq_class)epsilon<mpq_class>();
+}
 
 template<> inline bool equal_epsilon(mpq_class a, mpq_class b){
 	return a==b;//mpq_class is exact
@@ -76,6 +79,7 @@ template<> inline bool equal_epsilon(float a, float b){
 	return std::abs(a-b)<=epsilon<float>();
 }
 
+//NOTE: Points cannot be copied using realloc, and so cannot be stored in mtl::vec!
 template<unsigned int D, class T>
 struct Point{
 	int size()const{
@@ -91,19 +95,19 @@ struct Point{
     const T& operator [] (int index) const {assert(index<D);assert(index>=0); return vector[index];}
     T&       operator [] (int index)       {assert(index<D);assert(index>=0);  return vector[index];}
 
-/*    bool operator == (const Point<D,T> & other)const{
-    	for(int i = 0;i<D;i++){
-    		if(vector[i]!= other[i])
-    			return false;
-    	}
-    	return true;
-    }*/
     Point():id(-1),x(vector[0]),y(vector[1]),z(vector[2]){
     	for(int i = 0;i<D;i++){
     		new (&vector[i]) T();
     	}
     }
+    Point(const std::vector<T> & list  ):id(-1),x(vector[0]),y(vector[1]),z(vector[2]){
+    	assert(list.size()==D);
+    	for(int i = 0;i<D;i++){
+    		vector[i] = list[i];
+    	}
+    }
     Point(const vec<T> & list  ):id(-1),x(vector[0]),y(vector[1]),z(vector[2]){
+    	assert(list.size()==D);
     	for(int i = 0;i<D;i++){
     		vector[i] = list[i];
     	}
@@ -154,6 +158,7 @@ struct Point{
     		vector[i]=0;
     	}
     }
+
     Point<D,T> &       operator += (const Point<D,T>& other) {
     	for(int i = 0;i<D;i++){
     		vector[i]+=other[i];
@@ -217,7 +222,10 @@ inline bool operator==(const Point<D,T>& lhs, const Point<D,T>& rhs){
 	}
 	return true;
 }
-
+template<unsigned int D, class T=double>
+inline bool operator!=(const Point<D,T>& lhs, const Point<D,T>& rhs){
+	return !(lhs==rhs);
+}
 template<unsigned int D, class T=double>
 inline Point<D,T> operator+(const Point<D,T> &a, const Point<D,T> &b)
 {
@@ -265,7 +273,69 @@ struct SortLexicographic{
 	}
 
 };
+template<class T>
+static T cross(const Point<2,T> &O, const Point<2,T>  &A, const Point<2,T>  &B)
+{
+	return (A[0] - O[0]) * (B[1] - O[1]) - (A[1] - O[1]) * (B[0] - O[0]);
+}
 
+template<class T>
+static T cross2d(const Point<2,T> &A, const Point<2,T>  &B){
+	return A.x*B.y - A.y*B.x;
+}
+
+enum class Winding{
+	CLOCKWISE,COUNTER_CLOCKWISE, NEITHER
+};
+
+template<class T>
+static Winding computeWinding(const std::vector<Point<2,T>> & points) {
+	bool everCW = false;
+	bool everCCW = false;
+	T sum = 0;
+	for(int i = 0;i<points.size();i++){
+		const Point<2,T> & prev = i>0?points[i-1]:points.back();
+		const Point<2,T> & p = points[i];
+
+		sum +=(cross2d(prev,p)>0);
+	}
+	if(sum>0)
+		return Winding::CLOCKWISE;
+	else if (sum<0){
+		return Winding::COUNTER_CLOCKWISE;
+	}else if (sum==0){
+		return Winding::NEITHER;
+	}
+}
+template<class T>
+static bool isClockwise(const std::vector<Point<2,T>> & points) {
+	return computeWinding(points)!=Winding::COUNTER_CLOCKWISE;
+}
+template<class T>
+static bool isCounterClockwise(const vec<Point<2,T>> & points) {
+	return computeWinding(points)!=Winding::CLOCKWISE;
+}
+template<class T>
+static bool isConvex(const std::vector<Point<2,T>> & points){
+	if(!isClockwise(points)){
+		return false;
+	}
+	bool seenPositive=false;
+	bool seenNegative=false;
+	for(int i = 0;i<points.size();i++){
+		const Point<2,T> & prev = i>0?points[i-1]:points.back();
+		const Point<2,T> & p = points[i];
+		const Point<2,T> & next = i<points.size()-1 ?  points[i+1]:points[0];
+		Point<2,T> a = p-prev;
+		Point<2,T> b = next-p;
+		T s = cross2d(a,b);
+		seenPositive |= s>0;
+		seenNegative |= s<0;
+		if(seenPositive && seenNegative)
+			return false;
+	}
+	return true;
+}
 
 template<unsigned int D, class T>
 class GeometryTheorySolver;

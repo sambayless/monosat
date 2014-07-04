@@ -18,6 +18,7 @@
 #include "GeometryDetector.h"
 #include "PointSet.h"
 #include "ConvexHullDetector.h"
+#include "ConvexHullCollisionDetector.h"
 #include "GeometrySteinerDetector.h"
 #ifndef NDEBUG
 #include <cstdio>
@@ -877,7 +878,7 @@ public:
 		convexHullDetectors[pointSet]->addPointOnHullLit(pointIndex,outerVar);
 	}
 
-	void convexHullIntersectsLine(int pointSet,Point<D,T> p,Point<D,T> q,Var outerVar){
+/*	void convexHullIntersectsLine(int pointSet,Point<D,T> p,Point<D,T> q,Var outerVar){
 		convexHullDetectors.growTo(nPointSets(),nullptr);
 		if(!convexHullDetectors[pointSet]){
 			int detectorID = detectors.size();
@@ -887,8 +888,35 @@ public:
 		}
 
 		convexHullDetectors[pointSet]->addLineIntersection(LineSegment<D,T>(p,q),outerVar);
-	}
+	}*/
 
+	void convexHullIntersectsPolygon(int pointSet,std::vector<Point<D,T>> & points,Var outerVar){
+		//For now, polygon must be a simple, CONVEX polygon with clockwise winding
+
+		convexHullDetectors.growTo(nPointSets(),nullptr);
+		if(!convexHullDetectors[pointSet]){
+			int detectorID = detectors.size();
+			auto * convexHull = new ConvexHullDetector<D,T>(detectorID,under_sets[pointSet], over_sets[pointSet],this,drand(rnd_seed));
+			convexHullDetectors[pointSet]=convexHull;
+			detectors.push(convexHull);
+		}
+		if (computeWinding(points)==Winding::COUNTER_CLOCKWISE){
+			fprintf(stderr,"Winding must be clockwise, aborting\n");
+			exit(1);
+		}
+		if (!isConvex(points)){
+			fprintf(stderr,"Polygon must be convex, aborting\n");
+			exit(1);
+		}
+		ConvexPolygon<D,T> polygon;
+		for (auto & p:points){
+			polygon.addVertex(p);
+		}
+		if(polygon.size()==1){
+			convexHullDetectors[pointSet]->addPointContainmentLit(polygon[0],outerVar);
+		}else
+			convexHullDetectors[pointSet]->addConvexIntersection(polygon,outerVar);
+	}
 	void convexHullsIntersect(int pointSet1,int pointSet2 , Var outerVar){
 
 	}
