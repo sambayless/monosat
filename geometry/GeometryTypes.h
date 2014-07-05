@@ -92,8 +92,8 @@ struct Point{
 	T & z;
 
     // Vector interface:
-    const T& operator [] (int index) const {assert(index<D);assert(index>=0); return vector[index];}
-    T&       operator [] (int index)       {assert(index<D);assert(index>=0);  return vector[index];}
+    const T& operator [] (int index) const {assert(&x==&vector[0]);assert(&y==&vector[1]);assert(&z==&vector[2]); assert(index<D);assert(index>=0); return vector[index];}
+    T&       operator [] (int index)       {assert(&x==&vector[0]);assert(&y==&vector[1]);assert(&z==&vector[2]);assert(index<D);assert(index>=0);  return vector[index];}
 
     Point():id(-1),x(vector[0]),y(vector[1]),z(vector[2]){
     	for(int i = 0;i<D;i++){
@@ -138,6 +138,7 @@ struct Point{
     }
     int getID()const{
     	assert(hasID());
+    	assert(&x==&vector[0]);assert(&y==&vector[1]);assert(&z==&vector[2]);
     	return id;
     }
     bool hasID()const{

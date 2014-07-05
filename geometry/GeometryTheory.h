@@ -88,8 +88,8 @@ public:
 		Var var;
 		Point<D,T> point;
 	};
-	vec<VarData> vars;
-	vec<PointData> points;
+	std::vector<VarData> vars;
+	std::vector<PointData> points;
 	int theory_index;
 public:
 
@@ -268,7 +268,7 @@ public:
 		while(S->nVars()<=solverVar)
 				S->newVar();
 		Var v = vars.size();
-		vars.push();
+		vars.push_back(VarData());
 		vars[v].isPoint=isPoint;
 		vars[v].detector_point=detector;
 		vars[v].solverVar=solverVar;
@@ -810,7 +810,7 @@ public:
 
 
 		int index = points.size();
-		points.push();
+		points.push_back(PointData());
 		Var v = newVar(outerVar,index,true);
 
 		//num_points++;
