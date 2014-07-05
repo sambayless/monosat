@@ -11,6 +11,7 @@
 #include "Polygon.h"
 #include "LineSegment.h"
 #include "Line.h"
+#include <vector>
 using namespace Minisat;
 
 template<unsigned int D, class T>
@@ -27,8 +28,8 @@ public:
 		double rnd_seed;
 		CRef point_contained_marker;
 		CRef point_not_contained_marker;
-		CRef line_intersection_marker;
-		CRef line_not_intersection_marker;
+		CRef convex_intersection_marker;
+		CRef convex_not_intersection_marker;
 		CRef area_geq_marker;
 		CRef area_not_geq_marker;
 		CRef point_on_hull_marker;
@@ -43,7 +44,7 @@ public:
 			Point<D,T> p;
 			Lit l;
 		};
-		vec<PointContainedLit> pointContainedLits;
+		std::vector<PointContainedLit> pointContainedLits;
 
 		/*struct LineIntersectionLit{
 			LineSegment<D,T> line;
@@ -55,7 +56,7 @@ public:
 			ConvexPolygon<D,T> polygon;
 			Lit l;
 		};
-		vec<ConvexIntersectionLit> convexIntersectionLits;
+		std::vector<ConvexIntersectionLit> convexIntersectionLits;
 
 		struct PointOnHullLit{
 			Var pointVar;
@@ -63,15 +64,13 @@ public:
 			Point<D,T> p;
 			Lit l;
 		};
-		vec<PointOnHullLit> pointOnHullLits;
-
-
+		std::vector<PointOnHullLit> pointOnHullLits;
 
 		struct AreaLit{
 			T areaGreaterEqThan;
 			Lit l;
 		};
-		vec<AreaLit> areaDetectors;
+		std::vector<AreaLit> areaDetectors;
 
 		bool propagate(vec<Lit> & conflict);
 		void buildAreaGEQReason(T area, vec<Lit> & conflict);
@@ -195,8 +194,8 @@ GeometryDetector(detectorID),outer(outer),under(under),over(over),rnd_seed(seed)
 	point_not_on_hull_marker=outer->newReasonMarker(getID());
 	area_geq_marker=outer->newReasonMarker(getID());
 	area_not_geq_marker=outer->newReasonMarker(getID());
-	line_intersection_marker=outer->newReasonMarker(getID());
-	line_not_intersection_marker=outer->newReasonMarker(getID());
+	convex_intersection_marker=outer->newReasonMarker(getID());
+	convex_not_intersection_marker=outer->newReasonMarker(getID());
 
 	if(hullAlg== ConvexHullAlg::ALG_QUICKHULL){
 		over_hull = new QuickConvexHull<D,T>(over);
@@ -219,7 +218,7 @@ void ConvexHullDetector<D,T>::addPointContainmentLit(Point<D,T> p,Var outerVar){
 		over.invalidate();
 
 		Var containVar = outer->newVar(outerVar,getID());
-		pointContainedLits.push({p,mkLit(containVar,false)});
+		pointContainedLits.push_back({p,mkLit(containVar,false)});
 	}
 
 /*template<unsigned int D, class T>
@@ -239,7 +238,7 @@ void ConvexHullDetector<D,T>::addConvexIntersection(ConvexPolygon<D,T> polygon, 
 	over.invalidate();
 
 	Var containVar = outer->newVar(outerVar,getID());
-	convexIntersectionLits.push({polygon,mkLit(containVar,false)});
+	convexIntersectionLits.push_back({polygon,mkLit(containVar,false)});
 }
 
 template<unsigned int D, class T>
@@ -247,7 +246,7 @@ void ConvexHullDetector<D,T>::addAreaDetectorLit(T areaGreaterEqThan, Var outerV
 	Var v = outer->newVar(outerVar,getID());
 	Lit l = mkLit(v,false);
 
-	areaDetectors.push({areaGreaterEqThan,l});
+	areaDetectors.push_back({areaGreaterEqThan,l});
 
 }
 template<unsigned int D, class T>
@@ -256,7 +255,7 @@ void ConvexHullDetector<D,T>::addPointOnHullLit(int pointsetIndex, Var outerVar)
 	Lit l = mkLit(v,false);
 	Point<D,T> & point = under[pointsetIndex];
 	Var pointsetVar = outer->getPointVar(point.getID());
-	pointOnHullLits.push({pointsetVar,pointsetIndex,point,outerVar});
+	pointOnHullLits.push_back({pointsetVar,pointsetIndex,point,outerVar});
 }
 
 
@@ -300,6 +299,22 @@ void ConvexHullDetector<D,T>::buildReason(Lit p, vec<Lit> & reason, CRef marker)
 
 
 
+		}else if(marker==convex_intersection_marker){
+			for(auto & a:convexIntersectionLits){
+				if(var(a.l)==var(p)){
+					buildConvexIntersectsReason(a.polygon, reason);
+					return;
+				}
+			}
+
+
+		}else if(marker==convex_not_intersection_marker){
+			for(auto & a:convexIntersectionLits){
+				if(var(a.l)==var(p)){
+					buildConvexNotIntersectsReason(a.polygon, reason);
+					return;
+				}
+			}
 		}else if(marker==point_on_hull_marker){
 			for(auto & a:pointOnHullLits){
 				if(var(a.l)==var(p)){
@@ -307,8 +322,6 @@ void ConvexHullDetector<D,T>::buildReason(Lit p, vec<Lit> & reason, CRef marker)
 					return;
 				}
 			}
-
-
 		}else if(marker==point_not_on_hull_marker){
 			for(auto & a:pointOnHullLits){
 				if(var(a.l)==var(p)){
@@ -316,8 +329,6 @@ void ConvexHullDetector<D,T>::buildReason(Lit p, vec<Lit> & reason, CRef marker)
 					return;
 				}
 			}
-
-
 		}else{
 			assert(false);
 		}
@@ -417,7 +428,7 @@ bool ConvexHullDetector<D,T>::propagate(vec<Lit> & conflict){
 					//do nothing
 				}else if(outer->value(l)==l_Undef){
 
-					outer->enqueue(l,line_intersection_marker) ;
+					outer->enqueue(l,convex_intersection_marker) ;
 				}else if (outer->value(l)==l_False){
 					conflict.push(l);
 					buildConvexIntersectsReason(polygon,conflict);
@@ -429,7 +440,7 @@ bool ConvexHullDetector<D,T>::propagate(vec<Lit> & conflict){
 				if(outer->value(l)==l_True){
 					//do nothing
 				}else if(outer->value(l)==l_Undef){
-					outer->enqueue(l,line_not_intersection_marker) ;
+					outer->enqueue(l,convex_not_intersection_marker) ;
 				}else if (outer->value(l)==l_False){
 					conflict.push(l);
 					buildConvexNotIntersectsReason(polygon,conflict);

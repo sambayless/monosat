@@ -199,9 +199,7 @@ void ConvexHullCollisionDetector<D,T>::buildReason(Lit p, vec<Lit> & reason, CRe
 	}else{
 		assert(false);
 	}
-
 }
-
 
 template<unsigned int D, class T>
 bool ConvexHullCollisionDetector<D,T>::checkSatisfied(){
