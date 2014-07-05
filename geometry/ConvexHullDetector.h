@@ -333,7 +333,6 @@ bool ConvexHullDetector<D,T>::propagate(vec<Lit> & conflict){
 	}
 
 		over_hull->update();
-
 		under_hull->update();
 
 		if(areaDetectors.size()){
@@ -372,17 +371,15 @@ bool ConvexHullDetector<D,T>::propagate(vec<Lit> & conflict){
 						return false;
 					}
 				}
-
-
 			}
 		}
+
 		ConvexPolygon<D,T> & p_over = over_hull->getHull();
 		ConvexPolygon<D,T> & p_under = under_hull->getHull();
 		//If we are making many queries, it is probably worth it to pre-process the polygon and then make the queries.
 		for(int i =0;i<pointContainedLits.size();i++){
 			Point<D,T> & point = pointContainedLits[i].p;
 			Lit l = pointContainedLits[i].l;
-
 
 			if(p_under.contains(point)){
 				//l is true
@@ -508,8 +505,10 @@ bool ConvexHullDetector<D,T>::checkSatisfied(){
 	}
 	printf("\n");*/
 	MonotoneConvexHull<D,T> cv(over);
-	T expectOver = over_hull->getHull().getArea();
-	T expectUnder =under_hull->getHull().getArea();
+	ConvexPolygon<D,T> & h_under = over_hull->getHull();
+	ConvexPolygon<D,T> & h_over = over_hull->getHull();
+	T expectOver = h_under.getArea();
+	T expectUnder =h_over.getArea();
 	T area = cv.getHull().getArea();
 
 	assert(equal_epsilon(area, expectOver));
@@ -527,7 +526,57 @@ bool ConvexHullDetector<D,T>::checkSatisfied(){
 			}
 		}
 	}
+	for(auto & a:pointContainedLits){
 
+		Lit l = a.l;
+		if(outer->value(l)==l_True){
+			if(!h_under.contains(a.p)){
+				return false;
+			}
+		}else if(outer->value(l)==l_False){
+			if(h_over.contains(a.p)){
+				return false;
+			}
+		}
+	}
+	for(auto & a:convexIntersectionLits){
+
+		Lit l = a.l;
+		if(outer->value(l)==l_True){
+			if(!h_under.intersects(a.polygon)){
+				return false;
+			}
+		}else if(outer->value(l)==l_False){
+			if(h_over.intersects(a.polygon)){
+				return false;
+			}
+		}
+	}
+	for(auto & a:pointOnHullLits){
+		Lit l = a.l;
+		if(outer->value(l)==l_True){
+			bool hasPoint = false;
+			for(auto & p:h_under){
+				if(p.getID()==a.p.getID()){
+					hasPoint=true;
+					break;
+				}
+			}
+			if(!hasPoint)
+				return false;
+
+		}else if(outer->value(l)==l_False){
+			bool hasPoint = false;
+			for(auto & p:h_over){
+				if(p.getID()==a.p.getID()){
+					hasPoint=true;
+					break;
+				}
+			}
+			if(!hasPoint)
+				return false;
+		}
+	}
 	return true;
 }
 template<unsigned int D, class T>

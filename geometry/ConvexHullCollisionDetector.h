@@ -215,7 +215,7 @@ bool ConvexHullCollisionDetector<D,T>::checkSatisfied(){
 				return false;
 			}
 		}else if (outer->value(collisionLit)==l_False){
-			if(h2_under.intersects(h2_over)){
+			if(h1_over.intersects(h2_over)){
 				return false;
 			}
 		}
