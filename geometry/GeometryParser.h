@@ -141,11 +141,11 @@ void readConvexHullIntersectsPolygon(B& in, Solver& S){
 	int numPoints = parseInt(in);
 
 	int d = parseInt(in);
-	for(int i = 0;i<numPoints;i++)
+	for(int i = 0;i<numPoints;i++){
 		convex_hull_polygon_intersections.last().points.push();
 		ParsePoint & p = convex_hull_polygon_intersections.last().points.last();
 		parsePoint(in,d,p);
-
+	}
 }
 /*void readConvexHullIntersectsLine(B& in, Solver& S){
 	//convex_hull_intersects_line pointsetID var D p1 p2 ... qD q1 q2 ... qD

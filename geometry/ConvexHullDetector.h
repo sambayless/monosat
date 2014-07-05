@@ -97,6 +97,8 @@ public:
 		virtual ~ConvexHullDetector(){
 
 		}
+
+		void buildConvexIntersectsReason2d();
 private:
 		void findFarPoints(Line<D,T> & testline, bool includeCollinearPoints,std::vector<Point<D,T> > & test_set,std::vector<Point<D,T> > & min_set,ConvexPolygon<D,T> &hull){
 			test_set.clear();
@@ -176,44 +178,9 @@ private:
 			findContainingTriangle2d_helper(polygon,0,polygon.getVertices().size()-1,point,triangle_out);
 		}
 
-		/*
-
-		void findContainingTriangle2d( ConvexPolygon<D,T> & polygon,  Point<2,T> & point, ConvexPolygon<2,T> & triangle_out){
-			 //Noah's algorithm: pick 3 equidistant (in terms of index in the list of vertices) vertices.
-			 //Check if they contain the point; if they do, return them.
-			 //Else, check which of the three sides of the triangle the point is on. Recurse on that sub polygon.
-
-			 //In this implementation, when recursing, 2 of the three vertices are already selected (they are the vertices from the existing triangle), so we only have to pick one more vertex.
-			 //Since we already know that the point isn't on the other side of those two vertices, we only have to check two sides in the case where the point is not contained.
-			 vec<Point<2,T>> & polygon_vertices = polygon.getVertices();
-			 int skip = polygon_vertices.size()/3;
-			 Point<2,T> & a = w[0];
-			 Point<2,T> & b = w[skip];
-			 Point<2,T> & c = w[2*skip];
-
-			 triangle_out.clear();
-			 triangle_out.addVertex(a);triangle_out.addVertex(b); triangle_out.addVertex(c);
-			 if(triangle_out.contains(point)){
-				 return;
-			 }
-			 //Check which of the three sides of the triangle contains the point
-			 Line<2,T> testLine;
-			 testLine.a = a;
-			 testLine.b = b;
-			 if(testLine.whichSide(point)!= testLine.whichSide(c)){
-				 findContainingTriangle2d_helper(polygon_vertices,0,skip,point,triangle_out);
-				 return;
-			 }
-			 testLine.a = b;
-			 testLine.b = c;
-			 if(testLine.whichSide(point)!= testLine.whichSide(c)){
-				 findContainingTriangle2d_helper(polygon_vertices,skip,2*skip,point,triangle_out);
-				 return;
-			 }
-			 findContainingTriangle2d_helper(polygon_vertices,2*skip,0,point,triangle_out);
-		}*/
-
-		bool findSeparatingAxis(ConvexPolygon<D, T> & hull1, ConvexPolygon<D, T> & hull2, PointSet<D,T> & pointset1, vec<std::pair<Point<D,T> ,T>>  &projection_out, vec<std::pair<Point<D,T> ,T>>  &projection_out2);
+		bool findSeparatingAxis2d(ConvexPolygon<2, T> & hull1, ConvexPolygon<2, T> & hull2, PointSet<2,T> & pointset1, vec<std::pair<Point<2,T> ,T>>  &projection_out, vec<std::pair<Point<2,T> ,T>>  &projection_out2);
+		void buildConvexIntersectsReason2d(ConvexPolygon<2,T> & line,vec<Lit> & conflict);
+		void buildConvexNotIntersectsReason2d(ConvexPolygon<2,T> & line,vec<Lit> & conflict);
 
 };
 
@@ -360,7 +327,7 @@ template<unsigned int D, class T>
 bool ConvexHullDetector<D,T>::propagate(vec<Lit> & conflict){
 
 	static int iter = 0;
-	if(++iter==9){
+	if(++iter==10){
 		int a=1;
 	}
 
@@ -610,14 +577,17 @@ void ConvexHullDetector<D,T>::buildLineNotIntersectsReason( LineSegment<D,T> & s
 }
 
 template<unsigned int D, class T>
-void ConvexHullDetector<D,T>::buildConvexIntersectsReason(ConvexPolygon<D,T> & line,vec<Lit> & conflict){
-
+void ConvexHullDetector<D,T>::buildConvexIntersectsReason(ConvexPolygon<D,T> & polygon,vec<Lit> & conflict){
+	if(D==2){
+		buildConvexIntersectsReason2d((ConvexPolygon<2,T>&)polygon,conflict);
+	}
 }
 template<unsigned int D, class T>
-void ConvexHullDetector<D,T>::buildConvexNotIntersectsReason(ConvexPolygon<D,T> & line,vec<Lit> & conflict){
-
+void ConvexHullDetector<D,T>::buildConvexNotIntersectsReason(ConvexPolygon<D,T> & polygon,vec<Lit> & conflict){
+	if(D==2){
+		buildConvexNotIntersectsReason2d((ConvexPolygon<2,T>&)polygon,conflict);
+	}
 }
-
 
 template<unsigned int D, class T>
 void ConvexHullDetector<D,T>::buildPointOnHullOrDisabledReason(Var pointVar,const Point<D,T> & p, vec<Lit> & conflict){
@@ -629,9 +599,306 @@ void ConvexHullDetector<D,T>::buildPointNotOnHullOrDisabledReason(Var pointVar,c
 
 }
 
+
 template<unsigned int D, class T>
-bool ConvexHullDetector<D,T>::findSeparatingAxis(ConvexPolygon<D,T> & hull1, ConvexPolygon<D,T> & hull2, PointSet<D,T> & pointset1, vec<std::pair<Point<D,T>,T>>  &projection_out, vec<std::pair<Point<D,T> ,T>>  &projection_out2){
-	return false;
+void ConvexHullDetector<D,T>::buildConvexNotIntersectsReason2d(ConvexPolygon<2,T> & polygon,vec<Lit> & conflict){
+	ConvexPolygon<2, T> & h1 = over_hull->getHull();
+	ConvexPolygon<2, T> & h2 = polygon;
+	assert(!h1.intersects(h2));assert(!h2.intersects(h1));
+
+	if(h1.size()==0){
+		//then the reason that the shapes don't collide is that at least one point in each of them must be enabled
+		//can we improve on this?
+		for(int i = 0;i<h1.size();i++){
+			if(!over.pointEnabled(i)){
+				Lit l = mkLit( outer->getPointVar(over[i].getID()));
+				assert(outer->value(l)==l_False);
+				conflict.push(l);
+			}
+		}
+	}else if (h2.size()==0){
+		return;
+	}else if (h2.size()==1){
+		buildPointNotContainedReason(h2[0], conflict);
+	}else if (h1.size()==1 ){
+		assert(h1[0]!=h2[0]);//identical points are considered to collide
+	}
+
+	//the reason that the two convex hulls do NOT collide is that there exists a separating axis between them.
+	//Find that axis, and then find all the positions of the disabled points of both polygons along that axis.
+	//let h1 be left of h2.
+	//Then either some disabled point in h1 that is to the right of the rightmost point in h1 must be enabled,
+	//or some disabled point in h2 that is to the left of the leftmost point in h2 must be enabled.
+
+	//Note: It may be possible to improve on this analysis!
+	vec<std::pair<Point<2,T> ,T>>  projection;
+	vec<std::pair<Point<2,T> ,T>>  projection2;
+	bool found = findSeparatingAxis2d(h1,h2,over, projection,projection2);
+	assert(found);
+	T leftmost1 = std::numeric_limits<T>::infinity();
+	T rightmost1 = -std::numeric_limits<T>::infinity();
+
+	for(auto & p:projection){
+		int pID = p.first.getID();
+		int pointset = outer->getPointset(pID);
+		assert(pointset==over.getID());
+		int pointsetIndex = outer->getPointsetIndex(pID);
+		if(over.pointEnabled(pointsetIndex)){
+			if(p.second<leftmost1)
+				leftmost1 = p.second;
+			if(p.second>rightmost1)
+				rightmost1 = p.second;
+		}
+	}
+
+	T leftmost2 = std::numeric_limits<T>::infinity();
+	T rightmost2 = -std::numeric_limits<T>::infinity();
+
+	for(auto & p:projection2){
+		if(p.second<leftmost2)
+			leftmost2 = p.second;
+		if(p.second>rightmost2)
+			rightmost2 = p.second;
+	}
+
+	assert(rightmost1<leftmost2 || rightmost2<leftmost1);
+	bool h1_is_left=rightmost1<leftmost2;
+
+	for(auto & p:projection){
+		int pID = p.first.getID();
+		int pointset = outer->getPointset(pID);
+		int pointsetIndex = outer->getPointsetIndex(pID);
+		assert(pointset==over.getID());
+		if(!over.pointEnabled(pointsetIndex)){
+			if(h1_is_left ? (p.second>rightmost1):((p.second<leftmost1))){
+				//then if we enable this point, the two hulls will move closer to each other.
+				//we can probably improve on this, by only considering points that are also >= the rightmost _disabled_ point of pointset2...
+
+				Lit l = mkLit(outer->getPointVar(pID));
+				assert(outer->value(l)==l_False);
+				conflict.push(l);
+			}
+		}
+	}
+
+}
+
+
+template<unsigned int D, class T>
+void ConvexHullDetector<D,T>::buildConvexIntersectsReason2d(ConvexPolygon<2,T> & polygon,vec<Lit> & conflict){
+	//If the two polygons intersect, there are two possible cases (these are not mutually exclusive)
+	//1) 1 polygon has at least one point contained in the other polygon. Learn that either that point must be disabled, or at least
+	//		one point from its containing triangle must be disabled (as in the point containment theory).
+	//2) There exists an edge (or, more generally, a line segment between any two vertices, as opposed to just an edge) from each poygon,
+	//		such that the two edges intersect. Learn that one of the end points must be disabled.
+	ConvexPolygon<2, T> & h1 = under_hull->getHull();
+	ConvexPolygon<2, T> & h2 = polygon;
+
+
+	//so, first, check each edge segment to see if there is an intersecting line.
+	//I'm doing this first, on the hypothesis that these line intersection constraints may form better learned clauses.
+	//(since cases 1 and 2 overlap, we have to make a choice about which to favour...)
+
+	//it is probably possible to improve on this quadratic time search...
+	for(int i = 0; i<h1.size();i++){
+		Point<2,T> & prev = h1[i-1];
+		Point<2,T> & p = h1[i];
+		LineSegment<2,T> edge1(prev,p);
+		for(int j = 0;  j<h2.size();j++){
+			Point<2,T> & prev2 = h1[i-1];
+			Point<2,T> & p2 = h1[i];
+			LineSegment<2,T> edge2(prev2,p2);
+			if(edge1.intersects(edge2)){
+				//learn that one of the endpoints of the intersecting lines must be disabled
+				conflict.push(~mkLit(outer->getPointVar(prev.getID())));
+				conflict.push(~mkLit(outer->getPointVar(p.getID())));
+				return;
+			}
+		}
+	}
+
+	//if no intersecting line segment was found, then it follows that one of the polygons is wholly contained in the other.
+	//so treat this as a contained point problem - pick one of the points in the contained polygon (arbitrarily), and a containing triangle
+	//from the other polygon, and learn that one of these 4 points must be disabled.
+
+
+	for(int i = 0; i<h1.size();i++){
+		if(h2.contains(h1[i])){
+			ConvexPolygon<2,T> triangle;
+			findContainingTriangle2d(h2,h1[i],triangle);
+			assert(triangle.contains(h1[i]));
+			conflict.push(~mkLit(outer->getPointVar(h1[i].getID())));
+			return;
+		}
+	}
+
+	for(int i = 0; i<h2.size();i++){
+		if(h1.contains(h2[i])){
+			ConvexPolygon<2,T> triangle;
+			findContainingTriangle2d(h1,h2[i],triangle);
+			assert(triangle.contains(h2[i]));
+			for(auto & p: triangle){
+				int id = p.getID();
+				Var v = outer->getPointVar(id);
+				assert(outer->value(v)==l_True);
+				conflict.push(mkLit(v,true));
+			}
+			return;
+		}
+	}
+}
+
+template<unsigned int D, class T>
+bool ConvexHullDetector<D,T>::findSeparatingAxis2d(ConvexPolygon<2,T> & hull1, ConvexPolygon<2,T> & hull2, PointSet<2,T> & pointset1, vec<std::pair<Point<2,T>,T>>  &projection_out1, vec<std::pair<Point<2,T> ,T>>  &projection_out2){
+
+	ConvexPolygon<2, T> & h1 = (hull1.size()<=hull2.size())?hull1:hull2;
+	ConvexPolygon<2, T> & h2 = (hull1.size()<=hull2.size())?hull2:hull1;
+
+	projection_out1.clear();
+	projection_out2.clear();
+	if(h1.size()==0 || h2.size()==0){
+		return false;
+	}else if (h1.size()==1 && h2.size()==1){
+		 Point<2,T> un_normalized_normal = h2[0]-h1[0];
+		 //now place all the remaining (disabled) points on the axis as well
+		 for(int i = 0;i<pointset1.size();i++){
+			 auto & p = pointset1[i];
+			 T projection = un_normalized_normal.dot(p);
+			 projection_out1.push({p,projection});
+		 }
+		 for(int i = 0;i<h2.size();i++){
+			 auto & p = h2[i];
+			 T projection = un_normalized_normal.dot(p);
+			 projection_out2.push({p,projection});
+		 }
+		return true;
+	}
+
+
+	 std::vector<Point<2,T> > &  w = h1.getVertices();
+
+	 //Separating Axis Theorem for collision detection between two convex polygons
+	 //loop through each edge in _each_ polygon and project both polygons onto that edge's normal.
+	 //If any of the projections are non-intersection, then these don't collide; else, they do collide
+	 if(h1.size()>1){
+	 for(int i = 0;i<h1.size();i++){
+		 auto & p = h1[i];
+		 auto & prev = (h1)[i-1];
+		 Point<2,T> edge = p-prev;
+		 Point<2,T> un_normalized_normal(-edge.y, edge.x);
+		 projection_out1.clear();
+		 projection_out2.clear();
+		 //now project both polygons onto to this normal and see if they overlap, by finding the minimum and maximum distances
+		 //Note that since we are NOT normalizing the normal vector, the projection is distorted along that vector
+		 //(this still allows us to check overlaps, but means that the minimum distance found between the two shapes may be incorrect)
+		 T left = std::numeric_limits<T>::infinity();
+		 T right = -std::numeric_limits<T>::infinity();
+		 for (auto & p:h1){
+			 T projection = un_normalized_normal.dot(p);
+			 projection_out1.push({p,projection});
+			 if (projection < left) {
+				  left = projection;
+			 }
+			 if (projection > right) {
+				  right = projection;
+			 }
+		 }
+		 bool seenLeft = false;
+		 bool seenRight=false;
+		 bool overlaps = false;
+
+		 for (auto & p:h2){
+			 T projection = un_normalized_normal.dot(p);
+			 projection_out2.push({p,projection});
+			 if (projection >= left && projection <= right ) {
+				 overlaps=true;
+				 break;
+			 }else if (projection < left ){
+				 seenLeft=true;
+				 if(seenRight){
+					 break;
+				 }
+			 }else if (projection>right){
+				 seenRight=true;
+				 if (seenLeft){
+					 break;
+				 }
+			 }
+		 }
+
+
+		 if(!overlaps && !(seenLeft&&seenRight)){
+			 //now place all the remaining (disabled) points on the axis as well
+			 for(int i = 0;i<pointset1.size();i++){
+				 if(!pointset1.pointEnabled(i)){
+					 auto & p = pointset1[i];
+					 T projection = un_normalized_normal.dot(p);
+					 projection_out1.push({p,projection});
+				 }
+			 }
+
+			 return true;
+		 }
+	 }
+	 }
+	 if(h2.size()>1){
+	 //now test the axis produced by the other polygon
+	 for(int i = 0;i<h2.size();i++){
+		 auto & p = (h2)[i];
+		 auto & prev = (h2)[i-1];
+		 Point<2,T> edge = p-prev;
+		 Point<2,T> un_normalized_normal(-edge.y, edge.x);
+		 projection_out1.clear();
+		 projection_out2.clear();
+		 T left = std::numeric_limits<T>::infinity();
+		 T right = -std::numeric_limits<T>::infinity();
+		 for (auto & p:h2){
+			 T projection = un_normalized_normal.dot(p);
+			 projection_out2.push({p,projection});
+			 if (projection < left) {
+				  left = projection;
+			 }
+			 if (projection > right) {
+				  right = projection;
+			 }
+		 }
+
+		 bool seenLeft = false;
+		 bool seenRight=false;
+		 bool overlaps = false;
+		 for (auto & p:h1){
+			 T projection = un_normalized_normal.dot(p);
+			 projection_out1.push({p,projection});
+			 if (projection >= left && projection <= right ) {
+				 overlaps=true;
+				 break;
+			 }else if (projection < left ){
+				 seenLeft=true;
+				 if(seenRight){
+					 break;
+				 }
+			 }else if (projection>right){
+				 seenRight=true;
+				 if (seenLeft){
+					 break;
+				 }
+			 }
+		 }
+		 if(!overlaps && !(seenLeft&&seenRight)){
+			 for(int i = 0;i<pointset1.size();i++){
+				 if(!pointset1.pointEnabled(i)){
+					 auto & p = pointset1[i];
+					 T projection = un_normalized_normal.dot(p);
+					 projection_out1.push({p,projection});
+				 }
+			 }
+			 return true;
+		 }
+	 }
+	 }
+	 projection_out1.clear();
+	 projection_out2.clear();
+	 return false;
 }
 
 template<>
@@ -652,13 +919,6 @@ template<>
 void ConvexHullDetector<2,mpq_class>::buildPointContainedReason(const Point<2,mpq_class> & s,vec<Lit> & conflict);
 template<>
 void ConvexHullDetector<2,mpq_class>::buildPointNotContainedReason(const Point<2,mpq_class> & s, vec<Lit> & conflict);
-template<>
-void ConvexHullDetector<2,mpq_class>::buildConvexIntersectsReason(ConvexPolygon<2,mpq_class> & line,vec<Lit> & conflict);
-template<>
-void ConvexHullDetector<2,mpq_class>::buildConvexNotIntersectsReason(ConvexPolygon<2,mpq_class> & line,vec<Lit> & conflict);
-
-template<>
-bool ConvexHullDetector<2, mpq_class>::findSeparatingAxis(ConvexPolygon<2, mpq_class> & hull1, ConvexPolygon<2, mpq_class> & hull2, PointSet<2,mpq_class> & pointset1, vec<std::pair<Point<2,mpq_class> ,mpq_class>>  &projection_out, vec<std::pair<Point<2,mpq_class> ,mpq_class>>  &projection_out2);
 
 template<>
 void ConvexHullDetector<2,mpq_class>::buildLineIntersectsReason( LineSegment<2,mpq_class> & s, vec<Lit> & conflict);
@@ -668,11 +928,7 @@ template<>
 void ConvexHullDetector<2,double>::buildLineIntersectsReason( LineSegment<2,double> & s, vec<Lit> & conflict);
 template<>
 void ConvexHullDetector<2,double>::buildLineNotIntersectsReason( LineSegment<2,double> & s, vec<Lit> & conflict);
-template<>
-void ConvexHullDetector<2,double>::buildConvexIntersectsReason(ConvexPolygon<2,double> & line,vec<Lit> & conflict);
-template<>
-void ConvexHullDetector<2,double>::buildConvexNotIntersectsReason(ConvexPolygon<2,double> & line,vec<Lit> & conflict);
-template<>
-bool ConvexHullDetector<2, double>::findSeparatingAxis(ConvexPolygon<2, double> & hull1, ConvexPolygon<2, double> & hull2, PointSet<2,double> & pointset1, vec<std::pair<Point<2,double> ,double>>  &projection_out, vec<std::pair<Point<2,double> ,double>>  &projection_out2);
+
+
 
 #endif

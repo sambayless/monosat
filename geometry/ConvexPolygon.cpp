@@ -72,25 +72,38 @@ bool ConvexPolygon<2,double>::intersects(Shape<2,double> & shape){
 			 //now project both polygons onto to this normal and see if they overlap, by finding the minimum and maximum distances
 			 //Note that since we are NOT normalizing the normal vector, the projection is distorted along that vector
 			 //(this still allows us to check overlaps, but means that the minimum distance found between the two shapes may be incorrect)
-			 double left = std::numeric_limits<double>::max();
-			 double right = std::numeric_limits<double>::min();
+			 double left = std::numeric_limits<double>::infinity();
+			 double right = -std::numeric_limits<double>::infinity();
 			 for (auto & p:*this){
 				 double projection = un_normalized_normal.dot(p);
 				 if (projection < left) {
 					  left = projection;
-				 } else if (projection > right) {
+				 }
+				 if (projection > right) {
 					  right = projection;
 				 }
 			 }
 			 bool overlaps = false;
+			 bool seenLeft = false;
+			 bool seenRight=true;
 			 for (auto & p:c){
 				 double projection = un_normalized_normal.dot(p);
 				 if (projection >= left && projection <= right ) {
 					 overlaps=true;
 					 break;
+				 }else if (projection < left ){
+					 seenLeft=true;
+					 if(seenRight){
+						 break;
+					 }
+				 }else if (projection>right){
+					 seenRight=true;
+					 if (seenLeft){
+						 break;
+					 }
 				 }
 			 }
-			 if(!overlaps){
+			 if(!overlaps && !(seenLeft&&seenRight)){
 				 return false;
 			 }
 		 }
@@ -102,25 +115,38 @@ bool ConvexPolygon<2,double>::intersects(Shape<2,double> & shape){
 			 Point<2,double> edge = p-prev;
 			 Point<2,double> un_normalized_normal(-edge.y, edge.x);
 
-			 double left = std::numeric_limits<double>::max();
-			 double right = std::numeric_limits<double>::min();
+			 double left = std::numeric_limits<double>::infinity();
+			 double right = -std::numeric_limits<double>::infinity();
 			 for (auto & p:*this){
 				 double projection = un_normalized_normal.dot(p);
 				 if (projection < left) {
 					  left = projection;
-				 } else if (projection > right) {
+				 }
+				 if (projection > right) {
 					  right = projection;
 				 }
 			 }
+			 bool seenLeft = false;
+			 bool seenRight=true;
 			 bool overlaps = false;
 			 for (auto & p:c){
 				 double projection = un_normalized_normal.dot(p);
 				 if (projection >= left && projection <= right ) {
 					 overlaps=true;
 					 break;
+				 }else if (projection < left ){
+					 seenLeft=true;
+					 if(seenRight){
+						 break;
+					 }
+				 }else if (projection>right){
+					 seenRight=true;
+					 if (seenLeft){
+						 break;
+					 }
 				 }
 			 }
-			 if(!overlaps){
+			 if(!overlaps && !(seenLeft&&seenRight)){
 				 return false;
 			 }
 		 }
@@ -135,7 +161,7 @@ bool ConvexPolygon<2,double>::intersects(Shape<2,double> & shape){
 template<>
 bool ConvexPolygon<2,mpq_class>::intersects(Shape<2,mpq_class> & shape){
 	if(shape.getType()==CONVEX_POLYGON){
-		ConvexPolygon<2,mpq_class> & c = *(ConvexPolygon<2,mpq_class>*) &shape;
+		ConvexPolygon<2,mpq_class> & c = *(ConvexPolygon<2,mpq_class> *) &shape;
 		if(c.size()<size()){
 			return c.intersects(*this);
 		}
@@ -168,25 +194,38 @@ bool ConvexPolygon<2,mpq_class>::intersects(Shape<2,mpq_class> & shape){
 			 //now project both polygons onto to this normal and see if they overlap, by finding the minimum and maximum distances
 			 //Note that since we are NOT normalizing the normal vector, the projection is distorted along that vector
 			 //(this still allows us to check overlaps, but means that the minimum distance found between the two shapes may be incorrect)
-			 mpq_class left = std::numeric_limits<mpq_class>::max();
-			 mpq_class right = std::numeric_limits<mpq_class>::min();
+			 mpq_class left = std::numeric_limits<mpq_class>::infinity();
+			 mpq_class right = -std::numeric_limits<mpq_class>::infinity();
 			 for (auto & p:*this){
 				 mpq_class projection = un_normalized_normal.dot(p);
 				 if (projection < left) {
 					  left = projection;
-				 } else if (projection > right) {
+				 }
+				 if (projection > right) {
 					  right = projection;
 				 }
 			 }
 			 bool overlaps = false;
+			 bool seenLeft = false;
+			 bool seenRight=true;
 			 for (auto & p:c){
 				 mpq_class projection = un_normalized_normal.dot(p);
 				 if (projection >= left && projection <= right ) {
 					 overlaps=true;
 					 break;
+				 }else if (projection < left ){
+					 seenLeft=true;
+					 if(seenRight){
+						 break;
+					 }
+				 }else if (projection>right){
+					 seenRight=true;
+					 if (seenLeft){
+						 break;
+					 }
 				 }
 			 }
-			 if(!overlaps){
+			 if(!overlaps && !(seenLeft&&seenRight)){
 				 return false;
 			 }
 		 }
@@ -198,25 +237,38 @@ bool ConvexPolygon<2,mpq_class>::intersects(Shape<2,mpq_class> & shape){
 			 Point<2,mpq_class> edge = p-prev;
 			 Point<2,mpq_class> un_normalized_normal(-edge.y, edge.x);
 
-			 mpq_class left = std::numeric_limits<mpq_class>::max();
-			 mpq_class right = std::numeric_limits<mpq_class>::min();
+			 mpq_class left = std::numeric_limits<mpq_class>::infinity();
+			 mpq_class right = -std::numeric_limits<mpq_class>::infinity();
 			 for (auto & p:*this){
 				 mpq_class projection = un_normalized_normal.dot(p);
 				 if (projection < left) {
 					  left = projection;
-				 } else if (projection > right) {
+				 }
+				 if (projection > right) {
 					  right = projection;
 				 }
 			 }
+			 bool seenLeft = false;
+			 bool seenRight=true;
 			 bool overlaps = false;
 			 for (auto & p:c){
 				 mpq_class projection = un_normalized_normal.dot(p);
 				 if (projection >= left && projection <= right ) {
 					 overlaps=true;
 					 break;
+				 }else if (projection < left ){
+					 seenLeft=true;
+					 if(seenRight){
+						 break;
+					 }
+				 }else if (projection>right){
+					 seenRight=true;
+					 if (seenLeft){
+						 break;
+					 }
 				 }
 			 }
-			 if(!overlaps){
+			 if(!overlaps && !(seenLeft&&seenRight)){
 				 return false;
 			 }
 		 }
