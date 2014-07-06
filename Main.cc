@@ -338,7 +338,7 @@ int main(int argc, char** argv)
 
              graphParser.setSymbols(&symbols);
              parser.addParser(&graphParser);
-             GeometryParser<char *, SimpSolver,mpq_class> geometryParser2;
+             //GeometryParser<char *, SimpSolver,mpq_class> geometryParser2;
              GeometryParser<char *, SimpSolver,double> geometryParser;
              parser.addParser(&geometryParser);
              parser.parse_DIMACS(in,S);

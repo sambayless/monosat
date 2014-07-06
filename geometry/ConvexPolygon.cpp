@@ -7,27 +7,60 @@
 
 #include "ConvexPolygon.h"
 #include "mtl/Vec.h"
+#include <cmath>
 template<>
 bool ConvexPolygon<2,mpq_class>::containsInRange(const Point<2,mpq_class> & point, int firstVertex,int lastVertex){
 	//From http://demonstrations.wolfram.com/AnEfficientTestForAPointToBeInAConvexPolygon/
 	//this is correct _only_ for convex polygons
 	 std::vector<Point<2,mpq_class> > &  w = getVertices();
-	 dbg_orderClockwise();
 	 if(w.size()==0)
 		 return false;
-	 else if(w.size()==1){
-		 return w[0]==point;
-	 }/*else if (w.size()==2){
-		 //true if the point is between (inclusive) the other two points.
-
-	 }*/
 	 if(lastVertex<0)
 		 lastVertex=w.size()-1;
+	 assert(lastVertex>=0);
+	 int n_verts = lastVertex-firstVertex+1;
+	 if(lastVertex<firstVertex){
+		 n_verts = lastVertex + ( w.size() - firstVertex );
+	 }
+	 assert(n_verts<=w.size());
+	 dbg_orderClockwise();
+	 if(n_verts==0)
+		 return false;
+	 else if(n_verts==1){
+		 assert(lastVertex==firstVertex);
+		 return w[firstVertex]==point;
+	 }else if (n_verts==2){
+		 assert(lastVertex!=firstVertex);
+		 //from http://stackoverflow.com/a/11908158
+		 //true if the point is between (inclusive) the other two points.
+		 auto p1 = w[firstVertex];
+		 auto p2 = w[lastVertex];
+		 //check if the point lies on this line
+		 if(crossDif(point, p1,p2)==0){
+			 mpq_class dxl =p2.x-p1.x;
+			 mpq_class dyl =p2.y-p1.y;
+
+			 //check if the point is between the end points
+			 if (abs(dxl) >= abs(dyl))
+			   return dxl > 0 ?
+					   p1.x <= point.x && point.x <= p2.x :
+					   p2.x <= point.x && point.x <= p1.x;
+			 else
+			   return dyl > 0 ?
+					   p1.y <= point.y && point.y <= p2.y :
+					   p2.y <= point.y && point.y <= p1.y;
+		 }
+		 return false;
+	 }
+
+	 int endVertex = (lastVertex+1)% w.size();
+		//From http://demonstrations.wolfram.com/AnEfficientTestForAPointToBeInAConvexPolygon/
+		//this is correct _only_ for convex polygons
 	 //note: this can also compute the area (which is the sum of p2[0]*p1[1] - p1[0]*p2[1]); could potentially combine these...
-	 for(int i = firstVertex;i!=lastVertex;i=(i+1% w.size() )){
-		 Point<2,mpq_class> p1 = i>0 ? (w[i-1]-point):((w[lastVertex]-point));
+	 for(int n = 0;n<n_verts;n++){
+		 int i = (firstVertex+i)% w.size();
+		 Point<2,mpq_class> p1 = i>0 ? (w[i-1]-point):((w.back()-point));
 		 Point<2,mpq_class> p2 = w[i]-point;
-		 mpq_class t =  (p2[0]*p1[1] - p1[0]*p2[1]);
 		 bool contained = (p2[0]*p1[1] - p1[0]*p2[1]) >=0;
 		 if(!contained){
 			 return false;
@@ -285,23 +318,55 @@ bool ConvexPolygon<2,mpq_class>::contains(const Point<2,mpq_class> & point){
 }
 template<>
 bool ConvexPolygon<2,double>::containsInRange(const Point<2,double> & point, int firstVertex,int lastVertex){
-	//From http://demonstrations.wolfram.com/AnEfficientTestForAPointToBeInAConvexPolygon/
-	//this is correct _only_ for convex polygons
+
 	 std::vector<Point<2,double> > &  w = getVertices();
-	 dbg_orderClockwise();
 	 if(w.size()==0)
 		 return false;
-	 else if(w.size()==1){
-		 return w[0]==point;
-	 }/*else if (w.size()==2){
-		 //true if the point is between (inclusive) the other two points.
-
-	 }*/
 	 if(lastVertex<0)
-		 lastVertex=w.size()-1;
+		 lastVertex+=w.size();
+	 assert(lastVertex>=0);
+	 int n_verts = lastVertex-firstVertex+1;
+	 if(lastVertex<firstVertex){
+		 n_verts = lastVertex + ( w.size() - firstVertex );
+	 }
+	 assert(n_verts<=w.size());
+	 dbg_orderClockwise();
+	 if(n_verts==0)
+		 return false;
+	 else if(n_verts==1){
+		 assert(lastVertex==firstVertex);
+		 return w[firstVertex]==point;
+	 }else if (n_verts==2){
+		 assert(lastVertex!=firstVertex);
+		 //from http://stackoverflow.com/a/11908158
+		 //true if the point is between (inclusive) the other two points.
+		 auto p1 = w[firstVertex];
+		 auto p2 = w[lastVertex];
+		 //check if the point lies on this line
+		 if(crossDif(point, p1,p2)==0){
+			 double dxl =p2.x-p1.x;
+			 double dyl =p2.y-p1.y;
+
+			 //check if the point is between the end points
+			 if (abs(dxl) >= abs(dyl))
+			   return dxl > 0 ?
+					   p1.x <= point.x && point.x <= p2.x :
+					   p2.x <= point.x && point.x <= p1.x;
+			 else
+			   return dyl > 0 ?
+					   p1.y <= point.y && point.y <= p2.y :
+					   p2.y <= point.y && point.y <= p1.y;
+		 }
+		 return false;
+	 }
+
+	 int endVertex = (lastVertex+1)% w.size();
+		//From http://demonstrations.wolfram.com/AnEfficientTestForAPointToBeInAConvexPolygon/
+		//this is correct _only_ for convex polygons
 	 //note: this can also compute the area (which is the sum of p2[0]*p1[1] - p1[0]*p2[1]); could potentially combine these...
-	 for(int i = firstVertex;i!=lastVertex;i=(i+1% w.size() )){
-		 Point<2,double> p1 = i>0 ? (w[i-1]-point):((w[lastVertex]-point));
+	 for(int n = 0;n<n_verts;n++){
+		 int i = (firstVertex+n)% w.size();
+		 Point<2,double> p1 = i>0 ? (w[i-1]-point):((w.back()-point));
 		 Point<2,double> p2 = w[i]-point;
 		 bool contained = (p2[0]*p1[1] - p1[0]*p2[1]) >=0;
 		 if(!contained){

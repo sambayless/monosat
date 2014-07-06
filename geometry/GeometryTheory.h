@@ -368,7 +368,18 @@ public:
 
 
 	void dbg_sync(){
+#ifndef NDEBUG
+		int sz = vars.size();
+		for(int i = 0;i<vars.size();i++){
+			Var v = vars[i].solverVar;
+			lbool val = value(i);
+			lbool exp = dbg_value(i);
 
+					if(value(i)!= S->value(vars[i].solverVar)){
+						assert(false);
+					}
+				}
+#endif
 	}
 	void dbg_full_sync(){
 	#ifndef NDEBUG
@@ -577,7 +588,7 @@ public:
 
 	void enqueueTheory(Lit l){
 		Var v = var(l);
-
+		assert(S->value(toSolver(l))==l_True);
 		int lev = level(v);
 
 		assert(decisionLevel()<=lev);
@@ -709,11 +720,11 @@ public:
 	}
 
 	bool check_solved(){
+		dbg_full_sync();
 		for(int i = 0;i<vars.size();i++){
-			if(value(i)!= dbg_value(vars[i].solverVar)){
+			if(value(i)!= dbg_value(i)){
 				return false;
 			}
-
 		}
 		for(int i = 0;i<points.size();i++){
 			if(points[i].var<0)

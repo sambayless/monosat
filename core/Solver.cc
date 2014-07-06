@@ -787,8 +787,10 @@ void Solver::analyzeFinal(CRef confl, Lit skip_lit, vec<Lit>& out_conflict)
 |________________________________________________________________________________________________@*/
 CRef Solver::propagate(bool propagate_theories)
 {
-	if( qhead==trail.size() && !initialPropagate)
+	if( qhead==trail.size() && !initialPropagate){
+		assert(!theory_queue.size());
 		return CRef_Undef;
+	}
     CRef    confl     = CRef_Undef;
     int     num_props = 0;
     watches.cleanAll();
@@ -1306,10 +1308,14 @@ lbool Solver::search(int nof_conflicts)
     starts++;
     last_dec= var_Undef;
     for (;;){
+    	static int iter =0;
+    	if(++iter==5){
+    		int a=1;
+    	}
     	propagate:
         CRef confl = propagate();
         conflict:
-        if (confl != CRef_Undef){
+        if (!okay() || (confl != CRef_Undef)){
             // CONFLICT
             conflicts++; conflictC++;
             if (decisionLevel() == 0)
@@ -1565,7 +1571,7 @@ lbool Solver::solve_()
 			Theory * t = theories[0];
 
 					if(!t->check_solved()){
-						fprintf(stderr,"Error! Solution doesn't satisfy graph properties!\n");
+						fprintf(stderr,"Error! Solution doesn't satisfy theory properties!\n");
 						fflush(stderr);
 						exit(3);
 					}

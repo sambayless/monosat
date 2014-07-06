@@ -69,7 +69,7 @@ public:
 	bool intersects(Line<2,T> & other, Point<2,T> & intersection, bool & colinear);
 	//> 0 if the point is 'right' of the line, <0 if 'left' of the line, 0 if exactly on the line.
 	int whichSide(const Point<2,T> & point){
-		T val= cross(b,a,point);
+		T val= crossDif(b,a,point);
 		if(val==0)
 			return 0;
 		return val>0?1:-1;
@@ -80,7 +80,7 @@ public:
 
 template<class T>
 bool Line<2,T>::contains(const Point<2,T> & point){
-	return cross(a,b,point)==0;//is this correct?
+	return crossDif(a,b,point)==0;//is this correct?
 }
 
 template<class T>

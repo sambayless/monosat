@@ -99,18 +99,21 @@ struct Point{
     	for(int i = 0;i<D;i++){
     		new (&vector[i]) T();
     	}
+    	assert(&x==&vector[0]);assert(&y==&vector[1]);assert(&z==&vector[2]);
     }
     Point(const std::vector<T> & list  ):id(-1),x(vector[0]),y(vector[1]),z(vector[2]){
     	assert(list.size()==D);
     	for(int i = 0;i<D;i++){
     		vector[i] = list[i];
     	}
+    	assert(&x==&vector[0]);assert(&y==&vector[1]);assert(&z==&vector[2]);
     }
     Point(const vec<T> & list  ):id(-1),x(vector[0]),y(vector[1]),z(vector[2]){
     	assert(list.size()==D);
     	for(int i = 0;i<D;i++){
     		vector[i] = list[i];
     	}
+    	assert(&x==&vector[0]);assert(&y==&vector[1]);assert(&z==&vector[2]);
     }
     //Copy constructor
     Point(const Point<D,T> & v):id(v.id),x(vector[0]),y(vector[1]),z(vector[2]){
@@ -118,15 +121,17 @@ struct Point{
     	for(int i = 0;i<D;i++){
     		new (&vector[i]) T(v[i]);
     	}
+    	assert(&x==&vector[0]);assert(&y==&vector[1]);assert(&z==&vector[2]);
     }
 
     Point( std::initializer_list<T> list ):id(-1),x(vector[0]),y(vector[1]),z(vector[2]){
     	assert(list.size()==size());
     	vector=list;
+    	assert(&x==&vector[0]);assert(&y==&vector[1]);assert(&z==&vector[2]);
     }
     template<typename... Ts>
     Point( Ts... args ):id(-1),vector{args...},x(vector[0]),y(vector[1]),z(vector[2]){
-    	int a =1;
+    	assert(&x==&vector[0]);assert(&y==&vector[1]);assert(&z==&vector[2]);
     }
     Point& operator=(const Point & v)
     {
@@ -134,6 +139,7 @@ struct Point{
     	for(int i = 0;i<D;i++){
 			new (&vector[i]) T(v[i]);
 		}
+    	assert(&x==&vector[0]);assert(&y==&vector[1]);assert(&z==&vector[2]);
       return *this;
     }
     int getID()const{
@@ -152,6 +158,7 @@ struct Point{
     	for (int i = 0;i<D;i++){
     		sum += vector[i]*other[i];
     	}
+    	assert(&x==&vector[0]);assert(&y==&vector[1]);assert(&z==&vector[2]);
     	return sum;
     }
     void zero(){
@@ -275,7 +282,7 @@ struct SortLexicographic{
 
 };
 template<class T>
-static T cross(const Point<2,T> &O, const Point<2,T>  &A, const Point<2,T>  &B)
+static T crossDif(const Point<2,T> &O, const Point<2,T>  &A, const Point<2,T>  &B)
 {
 	return (A[0] - O[0]) * (B[1] - O[1]) - (A[1] - O[1]) * (B[0] - O[0]);
 }

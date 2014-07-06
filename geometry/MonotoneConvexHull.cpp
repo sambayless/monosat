@@ -16,7 +16,10 @@ void MonotoneConvexHull<1,double>::update(){
 }
 template<>
 void MonotoneConvexHull<2,double>::update(){
-
+		static int iter = 0;
+		if(++iter==193){
+			int a=1;
+		}
 		std::vector<Point2D> points;
 		pointSet.getEnabledPoints(points);
 		std::sort(points.begin(),points.end(),SortLexicographic<2,double>());
@@ -48,10 +51,19 @@ void MonotoneConvexHull<2,double>::update(){
 		if(list.size())
 			list.pop_back();//for now, we aren't replicating the first vertex at the end of the polygon.
 		hull.reorderVertices();
-/*		for(auto & p:list){
+		std::cout<<"Hull: ";
+		for(auto & p:list){
 			std::cout << "("<<p.x << "," << p.y << "), ";
 		}
-		std::cout<<"\n";*/
+		std::cout<<"\n";
+		printf("Contains: ");
+		for(int i = 0;i<pointSet.size();i++){
+			if(pointSet.pointEnabled(i)){
+				auto & p = pointSet[i];
+				std::cout << "("<<p.x << "," << p.y << "), ";
+			}
+		}
+		printf("\n");
 		}else{
 			for(auto & p:points)
 				hull.addVertex(p);
