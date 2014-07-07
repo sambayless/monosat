@@ -67,14 +67,18 @@ public:
 	int size(){
 		return vertices.size();
 	}
-
-	void addVertex(Point<D,T> & p){
+	void addVertex(Point<D,T> p){
 		vertices_clockwise=false;
 		bounds_uptodate=false;
 		vertices.push_back(p);
 	}
+/*	void addVertex(Point<D,T> & p){
+		vertices_clockwise=false;
+		bounds_uptodate=false;
+		vertices.push_back(p);
+	}*/
 	//add a vertex, assuming that it will preserve clockwise order
-	void addVertexUnchecked(Point<D,T> & p){
+	void addVertexUnchecked(Point<D,T>  p){
 		vertices.push_back(p);
 		assert(dbg_orderClockwise());
 		assert(dbg_boundsUpToDate());
@@ -147,14 +151,28 @@ public:
 		}
 		return bound->contains(p);
 	}
-	static bool pointInTriangle2d(const Point<D,T> & p,const Point<D,T> & p1,const Point<D,T> & p2, const Point<D,T> &p3){
+	static bool pointInTriangle2d(const Point<D,T> & p,const Point<D,T> & p0,const Point<D,T> & p1, const Point<D,T> &p2){
+		//from http://stackoverflow.com/a/14382692
+		assert(dbg_orderClockwise2dTri(p0,p1,p2));
+
+		T s = (p2.y*p0.x - p2.x*p0.y + (p0.y - p2.y)*p.x + (p2.x - p0.x)*p.y);
+		T t = (p2.x*p1.y - p2.y*p1.x + (p2.y - p1.y)*p.x + (p1.x - p2.x)*p.y);
+		T area2 =  (-p1.y*p0.x + p2.y*(-p1.x + p0.x) + p2.x*(p1.y - p0.y) + p1.x*p0.y);
+		assert(area2>=0);
+		return s>=0 && t>=0 && (s+t<=area2);
 		//from http://stackoverflow.com/a/13301035
-		T alpha = ((p2.y - p3.y)*(p.x - p3.x) + (p3.x - p2.x)*(p.y - p3.y)) /
-		        ((p2.y - p3.y)*(p1.x - p3.x) + (p3.x - p2.x)*(p1.y - p3.y));
-		T beta = ((p3.y - p1.y)*(p.x - p3.x) + (p1.x - p3.x)*(p.y - p3.y)) /
-		       ((p2.y - p3.y)*(p1.x - p3.x) + (p3.x - p2.x)*(p1.y - p3.y));
-		T gamma = 1 - alpha - beta;
-		return (alpha>=0 && beta>=0 && gamma>=0);//should these be > or >=? for inclusive or exclusive containment?
+	/*	T dif23y = p2.y - p3.y;
+		T dif32x = p3.x - p2.x;
+		T dif13y = p1.y - p3.y;
+		T dif13x = p1.x - p3.x;
+		T dif03x = p.x - p3.x;
+		T dif03y = p.y - p3.y;
+		T alpha = (dif23y*(dif03x) + dif32x*(dif03y)) /
+		        (dif23y*(dif13x) + dif32x*(dif13y));
+		T beta = ((p3.y - p1.y)*(dif03x) + (dif13x)*(dif03y)) /
+		       (dif23y*(dif13x) + dif32x*(dif13y));
+		//T gamma = 1 - alpha - beta;
+		return (alpha>=0 && beta>=0 && (( alpha + beta)<=1) ) //&& gamma>=0);//should these be > or >=? for inclusive or exclusive containment?*/
 
 	}
 protected:
@@ -166,15 +184,26 @@ protected:
 		return true;
 	}
 
-	T cross(const Point<2,T> &O, const Point<2,T>  &A, const Point<2,T>  &B)
-	{
-		return (A[0] - O[0]) * (B[1] - O[1]) - (A[1] - O[1]) * (B[0] - O[0]);
-	}
+	static bool dbg_orderClockwise2dTri(Point<2,T> p1,Point<2,T> p2,Point<2,T> p3){
+	#ifndef NDEBUG
+		std::vector<Point<2,T>> points;
+		points.push_back(p1);
+		points.push_back(p2);
+		points.push_back(p3);
 
-	static T cross2d(const Point<2,T> &A, const Point<2,T>  &B){
-		return A.x*B.y - A.y*B.x;
-	}
 
+			T sum = 0;
+			for(int i = 0;i<points.size();i++){
+				Point<2,T> & a = i>0? points[i-1]:points.back();
+				Point<2,T> & b = points[i];
+				sum+= (b.x - a.x)*(b.y+a.y);
+			}
+			assert(sum>=0);
+			return sum>=0;
+
+	#endif
+		return true;
+	}
 private:
 
 	T getArea2d();
@@ -456,7 +485,6 @@ void Polygon<D,T>::reorderVertices2d(){
 
 	assert(dbg_orderClockwise());
 }
-
 
 
 template<>

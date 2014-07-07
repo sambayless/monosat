@@ -32,12 +32,56 @@ private:
 	bool containsInRange2d(const Point<2,T> & point, int firstVertex,int lastVertex);
 	bool containsInSplit2d(const Point<2,T> & point, int firstVertex,int lastVertex);
 	bool containsInSplit2d_helper(const Point<2,T> & point, int firstVertex,int lastVertex, ConvexPolygon<2,T> & triangle_out);
+	static bool dbg_orderClockwise2dTri(Point<2,T> p1,Point<2,T> p2,Point<2,T> p3){
+	#ifndef NDEBUG
+		std::vector<Point<2,T>> points;
+		points.push_back(p1);
+		points.push_back(p2);
+		points.push_back(p3);
 
+
+			T sum = 0;
+			for(int i = 0;i<points.size();i++){
+				Point<2,T> & a = i>0? points[i-1]:points.back();
+				Point<2,T> & b = points[i];
+				sum+= (b.x - a.x)*(b.y+a.y);
+			}
+			assert(sum>=0);
+			return sum>=0;
+
+	#endif
+		return true;
+	}
 };
 
 template<unsigned int D,class T>
 bool ConvexPolygon<D,T>::contains(const Point<D,T> & point)
 {
+
+
+/*	ConvexPolygon<2,T> test;
+	test.addVertex(Point<2,T> (0,0));
+	test.addVertex(Point<2,T> (1,1));
+	test.addVertex(Point<2,T> (2,0));
+
+	Point<2,T> testPoint(0.5,0.5);
+	Point<2,T> testPointLeftMid(-1,0.5);
+	Point<2,T> testPointRightMid(3,0.5);
+	Point<2,T> testPointAbove(1,2);
+	Point<2,T> testPointBelow(1,-1);
+
+	Point<2,T> testLeftBottom(-1,0);
+	Point<2,T> testRightBottom(3,0);
+	static ConvexPolygon<2,T> ignore;
+	bool t1 = test.containsInSplit2d_helper(testPoint, 0,2, ignore);
+	bool t2 = test.containsInSplit2d_helper(testPointLeftMid, 0,2, ignore);
+	bool t3 = test.containsInSplit2d_helper(testPointRightMid, 0,2, ignore);
+	bool t4 = test.containsInSplit2d_helper(testPointAbove, 0,2, ignore);
+	bool t5 = test.containsInSplit2d_helper(testPointBelow, 0,2, ignore);
+	bool t6 = test.containsInSplit2d_helper(testLeftBottom, 0,2, ignore);
+	bool t7 = test.containsInSplit2d_helper(testRightBottom, 0,2, ignore);*/
+
+
 	static int iter = 0;
 	if(++iter==309222){
 		int a=1;
@@ -181,32 +225,62 @@ bool ConvexPolygon<D,T>::containsInSplit2d_helper(const Point<2,T> & point,int f
 	assert(mid_point != last_vertex);assert(mid_point!=first_vertex);
 	/**/
 
+	//compute the barycentric coordinates of this point
+	auto & p0 = c;//b;
+	auto & p1 = a;//c;
+	auto & p2 = b;//a;
 
 
-	if(Polygon<D,T>::pointInTriangle2d(point,a,c,b)){
+	assert(dbg_orderClockwise2dTri(p2,p1,p0));//intentionally reversing winding here, because the formula below is counter clockwise.
+	T s = (p0.y*p2.x - p0.x*p2.y + (p2.y - p0.y)*point.x + (p0.x - p2.x)*point.y);
+	T t = (p0.x*p1.y - p0.y*p1.x + (p0.y - p1.y)*point.x + (p1.x - p0.x)*point.y);
+	T area2 =  (-p1.y*p2.x + p0.y*(-p1.x + p2.x) + p0.x*(p1.y - p2.y) + p1.x*p2.y); assert(area2>=0);
+	/*T s = (a.y*b.x - a.x*b.y + (b.y - a.y)*point.x + (a.x - b.x)*point.y);
+	T t = (a.x*c.y - a.y*c.x + (a.y - c.y)*point.x + (c.x - a.x)*point.y);*/
+	//T gamma = 1-s-t;
+	bool contained = ( s>=0 && t>=0 && (s+t<=area2));
+
+	if(contained){
 		triangle_out.clear();
 		triangle_out.addVertexUnchecked(a);
 		triangle_out.addVertexUnchecked(c);
 		triangle_out.addVertexUnchecked(b);
+		assert(triangle_out.contains(point));
 		return true;//we are done
 	}else{
+#ifndef NDEBUG
+		ConvexPolygon<D,T> dbg_poly;
+		dbg_poly.addVertexUnchecked(a);
+		dbg_poly.addVertexUnchecked(c);
+		dbg_poly.addVertexUnchecked(b);
+		assert(!dbg_poly.contains(point));
+
+#endif
+/*
+
 		Line<2,T> testLine(a,c);
+		Line<2,T> testLine2(b,c);
+		Line<2,T> testLine3(a,b);
+
+		int as = testLine.whichSide(point);
+		int ab = testLine2.whichSide(point);
+		int ac = testLine3.whichSide(point);
+
 		assert(testLine.whichSide(point)!= 0);//else we would have already found the point
-
-		if(testLine.whichSide(point)!= testLine.whichSide(b)){
+*/
+		if(t<0 && s>=0){
+			//point is either between first_vertex,mid_point, or not in the triangle
 			return containsInSplit2d_helper(point,first_vertex,mid_point,triangle_out);
+		}else if (s<0 && t>=0){
+			//point is either between first_vertex,mid_point, or not in the triangle
+			return containsInSplit2d_helper(point,mid_point,last_vertex,triangle_out);
 		}else{
-			testLine.a = b;
-			assert(testLine.whichSide(point)!= 0);//else we would have already found the point
-			if(testLine.whichSide(point)!= testLine.whichSide(a)){
-				return containsInSplit2d_helper(point,mid_point,last_vertex,triangle_out);
-			}else{
-				assert(!containsInRange(point,first_vertex,last_vertex));
-				return false;//this point is not contained.
-			}
-
+			//point is not contained.
+			assert(!containsInRange(point,first_vertex,last_vertex));
+			return false;//this point is not contained.
 
 		}
+
 	}
 }
 
