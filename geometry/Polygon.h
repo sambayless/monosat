@@ -44,6 +44,11 @@ public:
 		return false;
 	}
 
+	virtual bool findContainingConvex(const Point<D,T> & point,Polygon<D,T> & polygon_out){
+		assert(false);
+		return false;
+	}
+
 	virtual bool intersects(Shape<D,T> & s){
 		assert(false);
 		return false;

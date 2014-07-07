@@ -9,6 +9,7 @@
 #include "mtl/Vec.h"
 #include <cmath>
 
+
 template<>
 bool ConvexPolygon<2,double>::intersects(Shape<2,double> & shape){
 	if(shape.getType()==CONVEX_POLYGON){

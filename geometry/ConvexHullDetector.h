@@ -43,8 +43,13 @@ public:
 		struct PointContainedLit{
 			Point<D,T> p;
 			Lit l;
+			//indices of 3 containing vertices in the under approximation that contain this point (or -1 if no such triangle exists).
+			ConvexPolygon<D,T> under_containing_triangle;
+			ConvexPolygon<D,T> over_containing_triangle;
 		};
 		std::vector<PointContainedLit> pointContainedLits;
+
+
 
 		/*struct LineIntersectionLit{
 			LineSegment<D,T> line;
@@ -71,6 +76,21 @@ public:
 			Lit l;
 		};
 		std::vector<AreaLit> areaDetectors;
+
+		static long stats_propagations;
+		static long stats_bound_checks;
+		static long stats_bounds_skips_under;
+		static long stats_bounds_skips_over;
+		static long stats_under_clause_length;
+		static long stats_over_clause_length;
+		static long stats_under_clauses;
+		static long stats_over_clauses;
+		void printStats(){
+			printf("Convex hull %d:\n", getID());
+			printf("propagations: %d\n", stats_propagations);
+			printf("bound checks %d (skipped under,over: %d,%d)\n",stats_bound_checks,stats_bounds_skips_under,stats_bounds_skips_over);
+			printf("containment: bounds skipped %d, triangle skipped %d, checks %d, %d depth\n", ConvexPolygon<D,T>::stats_bounds_avoided, ConvexPolygon<D,T>::stats_triangle_avoided,  ConvexPolygon<D,T>::stats_split_full_checks, ConvexPolygon<D,T>::stats_split_checks_depths );
+		}
 
 		bool propagate(vec<Lit> & conflict);
 		void buildAreaGEQReason(T area, vec<Lit> & conflict);
@@ -225,7 +245,44 @@ private:
 		void buildPointNotContainedReason2d(const Point<2,T> & p,vec<Lit> & conflict);
 		void buildPointOnHullOrDisabledReason2d(Var pointVar,const Point<2,T> & p, vec<Lit> & conflict);
 		void buildPointNotOnHullOrDisabledReason2d(Var pointVar,const Point<2,T> & p, vec<Lit> & conflict);
+		inline bool checkContainingTriangle(ConvexPolygon<D, T> & containing,const Point<2,T> & point, ConvexPolygon<D,T> & hull, PointSet<D,T> & pointset){
+			if(containing.size()==0)
+				return false;
+			for (auto &p: containing){
+				int index = outer->getPointsetIndex(p.getID());
+				if(!pointset.pointEnabled(index)){
+					containing.clear();
+					return false;
+				}
+			}
+			assert(containing.contains(point));
+			assert(hull.contains(point));
+			if(&pointset==&under){
+				stats_bounds_skips_under++;
+			}else if (&pointset==&over){
+				stats_bounds_skips_over++;
+			}
+			return true;
+
+		}
 };
+template<unsigned int D, class T>
+long ConvexHullDetector<D,T>::stats_bounds_skips_under=0;
+template<unsigned int D, class T>
+long ConvexHullDetector<D,T>::stats_bounds_skips_over=0;
+template<unsigned int D, class T>
+long ConvexHullDetector<D,T>::stats_propagations=0;
+template<unsigned int D, class T>
+long ConvexHullDetector<D,T>::stats_bound_checks=0;
+
+template<unsigned int D, class T>
+long ConvexHullDetector<D,T>::stats_under_clause_length=0;
+template<unsigned int D, class T>
+long ConvexHullDetector<D,T>::stats_over_clause_length=0;
+template<unsigned int D, class T>
+long ConvexHullDetector<D,T>::stats_under_clauses=0;
+template<unsigned int D, class T>
+long ConvexHullDetector<D,T>::stats_over_clauses=0;
 
 template<unsigned int D, class T>
 ConvexHullDetector<D,T>::ConvexHullDetector(int detectorID,PointSet<D,T> & under, PointSet<D,T> & over, GeometryTheorySolver<D,T> * outer,double seed):
@@ -385,7 +442,7 @@ bool ConvexHullDetector<D,T>::propagate(vec<Lit> & conflict){
 	if(++iter==10){
 		int a=1;
 	}
-
+	stats_propagations++;
 	over_hull->update();
 	under_hull->update();
 
@@ -440,11 +497,14 @@ bool ConvexHullDetector<D,T>::propagate(vec<Lit> & conflict){
 	}
 	printf("\n");*/
 	//If we are making many queries, it is probably worth it to pre-process the polygon and then make the queries.
+
+
 	for(int i =0;i<pointContainedLits.size();i++){
 		Point<D,T> & point = pointContainedLits[i].p;
+		stats_bound_checks++;
 		Lit l = pointContainedLits[i].l;
 
-		if(p_under.contains(point)){
+		if(checkContainingTriangle(pointContainedLits[i].under_containing_triangle,point,p_under,under) || p_under.findContainingConvex(point,pointContainedLits[i].under_containing_triangle)){
 			//l is true
 			if(outer->value(l)==l_True){
 				//do nothing
@@ -456,7 +516,8 @@ bool ConvexHullDetector<D,T>::propagate(vec<Lit> & conflict){
 				buildPointContainedReason(point,conflict);
 				return false;
 			}
-		}else if (!p_over.contains(point)){
+		}else if (!checkContainingTriangle(pointContainedLits[i].over_containing_triangle,point,p_over, over) && !p_over.findContainingConvex(point,pointContainedLits[i].over_containing_triangle)){
+		//}else if (!p_over.contains(point)){
 			l=~l;
 			//l is true
 			if(outer->value(l)==l_True){
@@ -737,6 +798,8 @@ void ConvexHullDetector<D,T>::buildPointContainedReason2d(const Point<2,T> & s, 
 		assert(outer->value(v)==l_True);
 		conflict.push(mkLit(v,true));
 	}
+	stats_under_clauses++;
+	stats_under_clause_length+=conflict.size();
 }
 
 template<unsigned int D, class T>
@@ -769,13 +832,15 @@ void ConvexHullDetector<D,T>::buildPointNotContainedReason2d(const Point<2,T> & 
 	//edge cases:
 
 	if(hull.size()<=1){
-		//then we just report that _some_ disabled vertex must be enabled
+		//then we just report that _some_ disabled vertex must be enabled. For hull.size()==1, we can do better than this using the Separating axis theorem.
 		for(int i = 0;i<over.size();i++){
 			Point<2,T> & p = over[i];
 			if(!over.pointEnabled(i)){
 				conflict.push(mkLit( outer->getPointVar(p.getID()),false));
 			}
 		}
+		stats_over_clauses++;
+		stats_over_clause_length+=conflict.size();
 		return;
 	}/*else if(hull.size()==2){
 		//then we just report that some disabled vertex on the same side of the line as this vertex must be disabled.
@@ -843,7 +908,8 @@ void ConvexHullDetector<D,T>::buildPointNotContainedReason2d(const Point<2,T> & 
 		conflict.push(l);
 
 	}
-
+	stats_over_clauses++;
+	stats_over_clause_length+=conflict.size();
 }
 template<unsigned int D, class T>
 void ConvexHullDetector<D,T>::buildPointOnHullOrDisabledReason2d(Var pointVar,const Point<2,T> & s, vec<Lit> & conflict){

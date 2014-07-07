@@ -17,12 +17,19 @@
 template<unsigned int D,class T>
 class ConvexPolygon:public Polygon<D,T>{
 public:
-
+	static long stats_triangle_avoided;
+	static long stats_bounds_avoided;
+	static long stats_split_checks;
+	static long stats_contain_checks;
+	static long stats_split_full_checks;
+	static long stats_split_checks_depths;
 	virtual ~ConvexPolygon(){};
 	virtual ShapeType getType(){
 		return CONVEX_POLYGON;
 	}
 	bool contains(const Point<D,T> & point);
+	bool findContainingConvex(const Point<D,T> & point,Polygon<D,T> & polygon_out);
+
 	bool containsInRange(const Point<D,T> & point, int firstVertex=0,int lastVertex=-1);
 	bool containsInSplit(const Point<D,T> & point, int firstVertex=0,int lastVertex=-1);
 	bool intersects(Shape<D,T> & s);
@@ -30,8 +37,8 @@ public:
 
 private:
 	bool containsInRange2d(const Point<2,T> & point, int firstVertex,int lastVertex);
-	bool containsInSplit2d(const Point<2,T> & point, int firstVertex,int lastVertex);
-	bool containsInSplit2d_helper(const Point<2,T> & point, int firstVertex,int lastVertex, ConvexPolygon<2,T> & triangle_out);
+	bool containsInSplit2d(const Point<2,T> & point, int firstVertex,int lastVertex, ConvexPolygon<2,T> & triangle_out);
+	bool containsInSplit2d_helper(const Point<2,T> & point, int firstVertex,int lastVertex, ConvexPolygon<2,T> & triangle_out, int depth);
 	static bool dbg_orderClockwise2dTri(Point<2,T> p1,Point<2,T> p2,Point<2,T> p3){
 	#ifndef NDEBUG
 		std::vector<Point<2,T>> points;
@@ -55,33 +62,55 @@ private:
 };
 
 template<unsigned int D,class T>
+long ConvexPolygon<D,T>::stats_triangle_avoided=0;
+template<unsigned int D,class T>
+long ConvexPolygon<D,T>::stats_bounds_avoided=0;
+template<unsigned int D,class T>
+long ConvexPolygon<D,T>::stats_split_checks=0;
+template<unsigned int D,class T>
+long ConvexPolygon<D,T>::stats_contain_checks=0;
+template<unsigned int D,class T>
+long ConvexPolygon<D,T>::stats_split_full_checks=0;
+
+template<unsigned int D,class T>
+long ConvexPolygon<D,T>::stats_split_checks_depths=0;
+
+template<unsigned int D,class T>
+bool ConvexPolygon<D,T>::findContainingConvex(const Point<D,T> & point,Polygon<D,T> & polygon_out){
+	polygon_out.clear();
+	stats_contain_checks++;
+	if(Polygon<D,T>::size()==3){
+		if(D==2){
+			stats_triangle_avoided++;
+			if( Polygon<D,T>::pointInTriangle2d(point,Polygon<D,T>::vertices[0],Polygon<D,T>::vertices[1],Polygon<D,T>::vertices[2])){
+				polygon_out.addVertexUnchecked(Polygon<D,T>::vertices[0]);
+				polygon_out.addVertexUnchecked(Polygon<D,T>::vertices[1]);
+				polygon_out.addVertexUnchecked(Polygon<D,T>::vertices[2]);
+
+				return true;
+			}else{
+				return false;
+			}
+		}
+	}
+	if(!Polygon<D,T>::boundContains(point)){
+		assert(!containsInRange(point,0,this->size()-1));
+		stats_bounds_avoided++;
+		return false;
+	}
+
+	if(D==2){
+		return containsInSplit2d((const Point<2,T> &) point, 0,this->size()-1,(ConvexPolygon<D,T> &)polygon_out);
+	}else{
+		assert(false);
+	}
+	return false;
+}
+
+template<unsigned int D,class T>
 bool ConvexPolygon<D,T>::contains(const Point<D,T> & point)
 {
-
-
-/*	ConvexPolygon<2,T> test;
-	test.addVertex(Point<2,T> (0,0));
-	test.addVertex(Point<2,T> (1,1));
-	test.addVertex(Point<2,T> (2,0));
-
-	Point<2,T> testPoint(0.5,0.5);
-	Point<2,T> testPointLeftMid(-1,0.5);
-	Point<2,T> testPointRightMid(3,0.5);
-	Point<2,T> testPointAbove(1,2);
-	Point<2,T> testPointBelow(1,-1);
-
-	Point<2,T> testLeftBottom(-1,0);
-	Point<2,T> testRightBottom(3,0);
-	static ConvexPolygon<2,T> ignore;
-	bool t1 = test.containsInSplit2d_helper(testPoint, 0,2, ignore);
-	bool t2 = test.containsInSplit2d_helper(testPointLeftMid, 0,2, ignore);
-	bool t3 = test.containsInSplit2d_helper(testPointRightMid, 0,2, ignore);
-	bool t4 = test.containsInSplit2d_helper(testPointAbove, 0,2, ignore);
-	bool t5 = test.containsInSplit2d_helper(testPointBelow, 0,2, ignore);
-	bool t6 = test.containsInSplit2d_helper(testLeftBottom, 0,2, ignore);
-	bool t7 = test.containsInSplit2d_helper(testRightBottom, 0,2, ignore);*/
-
-
+	//stats_contain_checks++;
 	static int iter = 0;
 	if(++iter==309222){
 		int a=1;
@@ -93,6 +122,7 @@ bool ConvexPolygon<D,T>::contains(const Point<D,T> & point)
 	if(!Polygon<D,T>::boundContains(point)){
 		//bool b = Polygon<D,T>::boundContains(point);
 		assert(!containsInRange(point,0,this->size()-1));
+		//stats_bounds_avoided++;
 		return false;
 	}
 
@@ -117,7 +147,8 @@ template<unsigned int D,class T>
 bool ConvexPolygon<D,T>::containsInSplit(const Point<D,T> & point, int firstVertex,int lastVertex)
 {
 	if(D==2){
-		return containsInSplit2d((const Point<2,T> &) point, firstVertex,lastVertex);
+		static ConvexPolygon<2,T> ignore;
+		return containsInSplit2d((const Point<2,T> &) point, firstVertex,lastVertex,ignore);
 	}else{
 		assert(false);
 	}
@@ -125,8 +156,10 @@ bool ConvexPolygon<D,T>::containsInSplit(const Point<D,T> & point, int firstVert
 }
 
 template<unsigned int D,class T>
-bool ConvexPolygon<D,T>::containsInSplit2d(const Point<2,T> & point, int firstVertex,int lastVertex){
+bool ConvexPolygon<D,T>::containsInSplit2d(const Point<2,T> & point, int firstVertex,int lastVertex, ConvexPolygon<2,T> & triangle_out){
+	 stats_split_checks++;
 	 std::vector<Point<2,T> > &  w = (std::vector<Point<2,T> > & ) Polygon<D,T>::getVertices();
+	 triangle_out.clear();
 	 if(w.size()==0)
 		 return false;
 	 if(lastVertex<0)
@@ -142,7 +175,11 @@ bool ConvexPolygon<D,T>::containsInSplit2d(const Point<2,T> & point, int firstVe
 		 return false;
 	 else if(n_verts==1){
 		 assert(lastVertex==firstVertex);
-		 return w[firstVertex]==point;
+		 if( w[firstVertex]==point){
+			 triangle_out.addVertex(w[firstVertex]);
+			 return true;
+		 }
+		 return false;
 	 }else if (n_verts==2){
 		 assert(lastVertex!=firstVertex);
 		 //from http://stackoverflow.com/a/11908158
@@ -153,30 +190,42 @@ bool ConvexPolygon<D,T>::containsInSplit2d(const Point<2,T> & point, int firstVe
 		 if(crossDif(point, p1,p2)==0){
 			 T dxl =p2.x-p1.x;
 			 T dyl =p2.y-p1.y;
-
+			 bool contains;
 			 //check if the point is between the end points
 			 if (abs(dxl) >= abs(dyl))
-			   return dxl > 0 ?
+			    contains = dxl > 0 ?
 					   p1.x <= point.x && point.x <= p2.x :
 					   p2.x <= point.x && point.x <= p1.x;
 			 else
-			   return dyl > 0 ?
+			    contains = dyl > 0 ?
 					   p1.y <= point.y && point.y <= p2.y :
 					   p2.y <= point.y && point.y <= p1.y;
+
+		     if(contains){
+			    triangle_out.addVertex(w[firstVertex]);
+			    triangle_out.addVertex(w[lastVertex]);
+		     }
+			 return contains;
 		 }
 		 return false;
 	 }else if (n_verts==3){
-		 return containsInRange(point,firstVertex,lastVertex);
+		 bool contains= containsInRange(point,firstVertex,lastVertex);
+		 if(contains){
+			 triangle_out.addVertex(w[firstVertex]);
+			 triangle_out.addVertex(w[firstVertex+1]);
+			 triangle_out.addVertex(w[firstVertex+2]);
+		 }
+		 return contains;
 	 }
+	 stats_split_full_checks++;
 
-	static ConvexPolygon<2,T> ignore;
-	bool res= containsInSplit2d_helper(point, firstVertex,lastVertex, ignore);
+	bool res= containsInSplit2d_helper(point, firstVertex,lastVertex, triangle_out,1);
 	assert(res== containsInRange(point,firstVertex,lastVertex));
 	return res;
 
 }
 template<unsigned int D,class T>
-bool ConvexPolygon<D,T>::containsInSplit2d_helper(const Point<2,T> & point,int first_vertex, int last_vertex, ConvexPolygon<2,T> & triangle_out){
+bool ConvexPolygon<D,T>::containsInSplit2d_helper(const Point<2,T> & point,int first_vertex, int last_vertex, ConvexPolygon<2,T> & triangle_out, int depth){
 	//recurse on this segment of the polygon, finding a triangle that contains the point.
 	//precondition: the point is contained in this convex segment of the polygon
 
@@ -187,12 +236,12 @@ bool ConvexPolygon<D,T>::containsInSplit2d_helper(const Point<2,T> & point,int f
 	 //When recursing, 2 of the three vertices are already selected (they are the vertices from the existing triangle), so we only have to pick one more vertex.
 	 //Since we already know that the point isn't on the other side of those two vertices, we only have to check two sides in the case where the point is not contained.
 	assert(first_vertex!=last_vertex);
-
+/*
 	static int iter = 0;
 	if(++iter==66722){
 		int a=1;
 	}
-	int it = iter;
+	int it = iter;*/
 
 
 
@@ -201,6 +250,7 @@ bool ConvexPolygon<D,T>::containsInSplit2d_helper(const Point<2,T> & point,int f
 	Point<2,T> & b = polygon_vertices[last_vertex];
 	assert(first_vertex<last_vertex);
 	if(first_vertex+1==last_vertex) {
+		stats_split_checks_depths+=depth;
 		//Then this is a line. depending on our notion of containment, we either give up, or test if the line contains this point
 		triangle_out.clear();
 		triangle_out.addVertexUnchecked(a);
@@ -246,6 +296,7 @@ bool ConvexPolygon<D,T>::containsInSplit2d_helper(const Point<2,T> & point,int f
 		triangle_out.addVertexUnchecked(c);
 		triangle_out.addVertexUnchecked(b);
 		assert(triangle_out.contains(point));
+		stats_split_checks_depths+=depth;
 		return true;//we are done
 	}else{
 #ifndef NDEBUG
@@ -270,11 +321,12 @@ bool ConvexPolygon<D,T>::containsInSplit2d_helper(const Point<2,T> & point,int f
 */
 		if(t<0 && s>=0){
 			//point is either between first_vertex,mid_point, or not in the triangle
-			return containsInSplit2d_helper(point,first_vertex,mid_point,triangle_out);
+			return containsInSplit2d_helper(point,first_vertex,mid_point,triangle_out,depth+1);
 		}else if (s<0 && t>=0){
 			//point is either between first_vertex,mid_point, or not in the triangle
-			return containsInSplit2d_helper(point,mid_point,last_vertex,triangle_out);
+			return containsInSplit2d_helper(point,mid_point,last_vertex,triangle_out,depth+1);
 		}else{
+			stats_split_checks_depths+=depth;
 			//point is not contained.
 			assert(!containsInRange(point,first_vertex,last_vertex));
 			return false;//this point is not contained.
