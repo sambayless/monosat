@@ -541,17 +541,15 @@ public:
 			lbool val = value(e.var);
 			int pointSet = e.pointset;
 			if(val==l_True || val==l_Undef){
-				assert(over_sets[pointSet].pointEnabled(e.id));
-
+				assert(over_sets[pointSet].pointEnabled(e.pointset_index));
 			}else{
-				assert(!over_sets[pointSet].pointEnabled(e.id));
-
+				assert(!over_sets[pointSet].pointEnabled(e.pointset_index));
 			}
 			if(val==l_True){
-				assert(under_sets[pointSet].pointEnabled(e.id));
+				assert(under_sets[pointSet].pointEnabled(e.pointset_index));
 
 			}else{
-				assert(!under_sets[pointSet].pointEnabled(e.id));
+				assert(!under_sets[pointSet].pointEnabled(e.pointset_index));
 
 			}
 		}
@@ -742,20 +740,20 @@ public:
 				if(!over.haspoint(e.from,e.to)){
 					return false;
 				}*/
-				if(!under_sets[pointset].pointEnabled(e.id)){
+				if(!under_sets[pointset].pointEnabled(e.pointset_index)){
 					return false;
 				}
-				if(!over_sets[pointset].pointEnabled(e.id)){
+				if(!over_sets[pointset].pointEnabled(e.pointset_index)){
 					return false;
 				}
 			}else{
 				/*if(g.haspoint(e.from,e.to)){
 					return false;
 				}*/
-				if(under_sets[pointset].pointEnabled(e.id)){
+				if(under_sets[pointset].pointEnabled(e.pointset_index)){
 					return false;
 				}
-				if(over_sets[pointset].pointEnabled(e.id)){
+				if(over_sets[pointset].pointEnabled(e.pointset_index)){
 					return false;
 				}
 				/*if(over.haspoint(e.from,e.to)){
@@ -813,7 +811,7 @@ public:
 		return reasonMarker;
 	}
 
-	Lit newPoint(int pointSet,Point<D,T> point, Var outerVar = var_Undef)
+	Lit newPoint(int pointSet,Point<D,T> _point, Var outerVar = var_Undef)
     {
 		assert(outerVar!=var_Undef);
 	/*	if(outerVar==var_Undef)
@@ -827,7 +825,8 @@ public:
 		//num_points++;
 		points[index].var =v;
 		//points[index].outerVar =outerVar;
-		points[index].point=point;
+		points[index].point=_point;
+		points[index].point.setID(index);
 		points[index].id=index;
 		points[index].pointset = pointSet;
 		while(under_sets.size()<=pointSet){
@@ -837,10 +836,10 @@ public:
 			over_sets.push(over_sets.size());
 		}
 
-		int pointsetIndex= under_sets[pointSet].addPoint(point);
+		int pointsetIndex= under_sets[pointSet].addPoint(points[index].point);
 		points[index].pointset_index =pointsetIndex;
 		under_sets[pointSet].disablePoint(pointsetIndex);
-		int pointsetIndex2 = over_sets[pointSet].addPoint(point);
+		int pointsetIndex2 = over_sets[pointSet].addPoint(points[index].point);
 		assert(pointsetIndex== pointsetIndex2);
 		over_sets[pointSet].enablePoint(pointsetIndex);
     	return mkLit(v,false);

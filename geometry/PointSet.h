@@ -14,7 +14,7 @@ class PointSet{
 	std::vector<int> points_clockwise;
 	std::vector<bool> enabled;
 	int id;
-
+	long modifications = 0;
 	int num_enabled= 0;
 
 	void buildClockwise();
@@ -62,6 +62,7 @@ public:
 	void setPointEnabled(int pointID, bool _enabled){
 		if(isEnabled(pointID)==_enabled)
 			return;
+		modifications++;
 		enabled[pointID]=_enabled;
 		if(_enabled){
 			num_enabled++;
@@ -80,19 +81,23 @@ public:
 		return points_out;
 	}
 
-	int addPoint(const Point<D,T> & P, int pointID=-1){
-		if(pointID<0)
-			pointID=points.size();
+	int addPoint(const Point<D,T> & P){
+
 		points.push_back(P);
-		points.back().setID(pointID);
+
 		enabled.push_back(false);
 		hasClockwise=false;
 
-		return pointID;
+		return points.size()-1;
 	}
 
     const Point<D,T>& operator [] (int index) const { return points[index]; }
     Point<D,T>&       operator [] (int index)       { return points[index]; }
+
+    long getModifications()const{
+    	return modifications;
+    }
+
 	void clearHistory(){
 
 	}
@@ -103,7 +108,7 @@ public:
 
 	}
 	void invalidate(){
-
+		modifications++;
 	}
 };
 

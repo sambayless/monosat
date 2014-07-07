@@ -9,6 +9,7 @@
 #include <math.h>
 #include "Shape.h"
 #include "mtl/Vec.h"
+#include "ConvexPolygon.h"
 /**
  * A line
  */
@@ -121,7 +122,7 @@ bool Line<2,T>::intersects(Shape<2,T> & s){
 	}else if(s.getType()==CONVEX_POLYGON){
 		//a line intersects a convex polygon if it can find two points on opposite sides of the line.
 		//there may be more efficient tests we could apply.
-		ConvexPolygon<2,T> & poly = (ConvexPolygon<2,T> &)s;
+		Polygon<2,T> & poly = (Polygon<2,T> &)s;
 		bool found_left = false;
 		bool found_right = false;
 		for(auto& p:poly){

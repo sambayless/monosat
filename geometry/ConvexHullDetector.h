@@ -207,7 +207,14 @@ private:
 
 		void findContainingTriangle2d( ConvexPolygon<D,T> & polygon,const Point<D,T> & point, ConvexPolygon<D,T> & triangle_out){
 			assert(polygon.contains(point));
+			triangle_out.clear();
 			int sz = polygon.getVertices().size();
+			if(sz<=3){
+				for (auto & p:polygon){
+					triangle_out.addVertex(p);
+				}
+				return;
+			}
 			findContainingTriangle2d_helper(polygon,0,sz-1,point,triangle_out);
 		}
 
@@ -423,7 +430,7 @@ bool ConvexHullDetector<D,T>::propagate(vec<Lit> & conflict){
 
 	ConvexPolygon<D,T> & p_over = over_hull->getHull();
 	ConvexPolygon<D,T> & p_under = under_hull->getHull();
-	printf("under: ");
+	/*printf("under: ");
 	for(auto & p:p_under){
 		printf("(%f,%f),",p.x,p.y);
 	}
@@ -431,7 +438,7 @@ bool ConvexHullDetector<D,T>::propagate(vec<Lit> & conflict){
 	for(auto & p:p_over){
 		printf("(%f,%f),",p.x,p.y);
 	}
-	printf("\n");
+	printf("\n");*/
 	//If we are making many queries, it is probably worth it to pre-process the polygon and then make the queries.
 	for(int i =0;i<pointContainedLits.size();i++){
 		Point<D,T> & point = pointContainedLits[i].p;
@@ -560,9 +567,9 @@ bool ConvexHullDetector<D,T>::checkSatisfied(){
 	MonotoneConvexHull<D,T> cv(over);
 	ConvexPolygon<D,T> & h_under = over_hull->getHull();
 	ConvexPolygon<D,T> & h_over = over_hull->getHull();
-
+	printf("Hull %d: ", getID());
 	for (auto & p:h_under){
-		printf("(%f, %f),",p.x,p.y);
+		cout << "(" << p.x <<","<<p.y <<")";
 	}
 	printf("\n");
 
@@ -719,11 +726,11 @@ void ConvexHullDetector<D,T>::buildPointContainedReason2d(const Point<2,T> & s, 
 	ConvexPolygon<2,T> triangle;
 	findContainingTriangle2d(hull,s,triangle);
 	assert(triangle.contains(s));
-	printf("Learn must disable one of: ");
+/*	printf("Learn must disable one of: ");
 	for(auto & p:triangle){
 		printf("(%f, %f),", p.x,p.y);
 	}
-	printf("\n");
+	printf("\n");*/
 	for(auto & p: triangle){
 		int id = p.getID();
 		Var v = outer->getPointVar(id);
@@ -823,11 +830,11 @@ void ConvexHullDetector<D,T>::buildPointNotContainedReason2d(const Point<2,T> & 
 	findFarPoints(top_line,true,test_set,min_set,hull);
 
 	findFarPoints(bottom_line,true,test_set,min_set,hull);
-	printf("Learn must add: ");
+/*	printf("Learn must add: ");
 	for(auto & p:min_set){
 		printf("(%f, %f), ", p.x,p.y);
 	}
-	printf("\n");
+	printf("\n");*/
 	for(int i = 0;i<min_set.size();i++){
 		Point<2,T> & p = min_set[i];
 		assert(!over.pointEnabled(p.getID()));

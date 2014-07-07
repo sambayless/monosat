@@ -148,3 +148,5 @@ AllPairsAlg Minisat::allpairsalg=AllPairsAlg::ALG_DIJKSTRA_ALLPAIRS;
 AllPairsConnectivityAlg Minisat::undirected_allpairsalg=AllPairsConnectivityAlg::ALG_DIJKSTRA_ALLPAIRS;
 ComponentsAlg Minisat::componentsalg =ComponentsAlg::ALG_DISJOINT_SETS;
 MinSpanAlg Minisat::mstalg = MinSpanAlg::ALG_KRUSKAL;
+
+PointInPolygonAlg Minisat::pipalg = PointInPolygonAlg::ALG_RECURSIVE_SPLIT;

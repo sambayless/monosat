@@ -325,7 +325,12 @@ public:
 		 if(c.pointsetID>=pointsetDim.size() || c.pointsetID<0 || pointsetDim[c.pointsetID]<0){
 			 fprintf(stderr,"Bad pointsetID %d\n", c.pointsetID);
 		 }
+		 if(c.pointsetID<0 || c.pointsetID>=pointsetDim.size() || pointsetDim[c.pointsetID]<0){
+			 fprintf(stderr,"Pointset %d is undefined, aborting!",c.pointsetID);
+			 exit(1);
+		 }
 		 int D = pointsetDim[c.pointsetID];
+
 		 if(D==1){
 			// space_1D[c.pointsetID]->convexHullArea(c.area,c.v);
 		 }else if(D==2){
@@ -340,6 +345,10 @@ public:
 	 for (auto & c: convex_hull_polygon_intersections){
 	 		 if(c.pointsetID>=pointsetDim.size() || c.pointsetID<0 || pointsetDim[c.pointsetID]<0){
 	 			 fprintf(stderr,"Bad pointsetID %d\n", c.pointsetID);
+	 		 }
+	 		 if(c.pointsetID<0 || c.pointsetID>=pointsetDim.size() || pointsetDim[c.pointsetID]<0){
+	 			 fprintf(stderr,"Pointset %d is undefined, aborting!",c.pointsetID);
+	 			 exit(1);
 	 		 }
 	 		 int D = pointsetDim[c.pointsetID];
 
@@ -404,7 +413,12 @@ public:
 		 if(c.pointsetID>=pointsetDim.size() || c.pointsetID<0 || pointsetDim[c.pointsetID]<0){
 			 fprintf(stderr,"Bad pointsetID %d\n", c.pointsetID);
 		 }
+		 if(c.pointsetID<0 || c.pointsetID>=pointsetDim.size() || pointsetDim[c.pointsetID]<0){
+			 fprintf(stderr,"Pointset %d is undefined, aborting!",c.pointsetID);
+			 exit(1);
+		 }
 		 int D = pointsetDim[c.pointsetID];
+
 		 if(D==1){
 			 //space_1D[c.pointsetID]->convexHullContains(c.pointVar,c.pointOnHull);
 		 }else if(D==2){
@@ -425,13 +439,14 @@ public:
 	 }
 
 	 for (auto & c:convex_hulls_intersect){
-		 if(c.pointsetID1>=pointsetDim.size() || c.pointsetID1<0 || pointsetDim[c.pointsetID1]<0){
+		 if(c.pointsetID1 < 0 || c.pointsetID1>=pointsetDim.size() || c.pointsetID1<0 || pointsetDim[c.pointsetID1]<0){
 			 fprintf(stderr,"Bad pointsetID %d\n", c.pointsetID1);
 		 }
-		 if(c.pointsetID2>=pointsetDim.size() || c.pointsetID2<0 || pointsetDim[c.pointsetID2]<0){
+		 if(c.pointsetID2< 0 || c.pointsetID2>=pointsetDim.size() || c.pointsetID2<0 || pointsetDim[c.pointsetID2]<0){
 			 fprintf(stderr,"Bad pointsetID %d\n", c.pointsetID2);
 		 }
 		 int D = pointsetDim[c.pointsetID1];
+
 		 if( pointsetDim[c.pointsetID2] != D){
 			 fprintf(stderr,"Cannot intersect convex hulls in different dimensions (%d has dimension %d, while %d has dimension %d)\n",c.pointsetID1,D, c.pointsetID2, pointsetDim[c.pointsetID2]);
 		 }

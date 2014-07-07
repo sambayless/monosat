@@ -99,6 +99,13 @@ extern BoolOption opt_components_learn_connect;
 extern BoolOption opt_learn_unreachable_component;
 extern BoolOption opt_dinics_recursive;
 extern StringOption opt_hull_alg;
+extern StringOption opt_convex_pip;
+
+enum class PointInPolygonAlg{
+	 ALG_FULL,
+	 ALG_RECURSIVE_SPLIT
+};
+extern PointInPolygonAlg pipalg;
 
 enum class ReachAlg{
 	 ALG_SAT,
