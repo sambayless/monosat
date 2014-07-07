@@ -96,7 +96,7 @@ struct Point{
     T&       operator [] (int index)       {assert(&x==&vector[0]);assert(&y==&vector[1]);assert(&z==&vector[2]);assert(index<D);assert(index>=0);  return vector[index];}
 
     Point():id(-1),x(vector[0]),y(vector[1]),z(vector[2]){
-    /*	for(int i = 0;i<D;i++){
+    /*	for(int i = 0;i<D;i++){//this is not required; it is already built-in to the constructor.
     		new (&vector[i]) T();
     	}*/
     	assert(&x==&vector[0]);assert(&y==&vector[1]);assert(&z==&vector[2]);
@@ -109,7 +109,6 @@ struct Point{
     Point(const std::vector<T> & list  ):id(-1),x(vector[0]),y(vector[1]),z(vector[2]){
     	assert(list.size()==D);
     	for(int i = 0;i<D;i++){
-    		//vector[i] = list[i];
     		vector[i].~T();
 			new (&vector[i]) T(list[i]);
     	}
@@ -120,7 +119,6 @@ struct Point{
     	for(int i = 0;i<D;i++){
     		vector[i].~T();
 			new (&vector[i]) T(list[i]);
-    		//vector[i] = list[i];
     	}
     	assert(&x==&vector[0]);assert(&y==&vector[1]);assert(&z==&vector[2]);
     }
