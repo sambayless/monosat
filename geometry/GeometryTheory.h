@@ -149,6 +149,12 @@ public:
 
 	}
 
+	~GeometryTheorySolver(){
+		for (auto * d:detectors){
+			delete(d);
+		}
+	}
+
 	void printStats(int detailLevel){
 		if(detailLevel>0){
 			for(GeometryDetector * d:detectors)
@@ -342,7 +348,6 @@ public:
 
 
 
-     ~GeometryTheorySolver(){};
 
 		bool dbg_propgation(Lit l){
 #ifndef NDEBUG

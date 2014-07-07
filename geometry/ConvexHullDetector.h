@@ -22,8 +22,8 @@ public:
 		//int within;
 		PointSet<D,T> & under;
 		PointSet<D,T> & over;
-		ConvexHull<D,T>* under_hull;
-		ConvexHull<D,T>* over_hull;
+		ConvexHull<D,T>* under_hull=nullptr;
+		ConvexHull<D,T>* over_hull=nullptr;
 
 		double rnd_seed;
 		CRef point_contained_marker;
@@ -48,7 +48,6 @@ public:
 			ConvexPolygon<D,T> over_containing_triangle;
 		};
 		std::vector<PointContainedLit> pointContainedLits;
-
 
 
 		/*struct LineIntersectionLit{
@@ -109,11 +108,15 @@ public:
 		void addPointContainmentLit(Point<D,T> p,Var outerVar);
 		void addPointOnHullLit(int pointsetIndex,Var outerVar);
 		//void addLineIntersection(LineSegment<D,T> line, Var outerVar);
-		void addConvexIntersection(ConvexPolygon<D,T> polygon, Var outerVar);
+		void addConvexIntersection(ConvexPolygon<D,T> &polygon, Var outerVar);
 		ConvexHullDetector(int detectorID,PointSet<D,T> & under, PointSet<D,T> & over, GeometryTheorySolver<D,T> * outer,  double seed=1);
-		virtual ~ConvexHullDetector(){
+		~ConvexHullDetector(){
+			if(under_hull)
+				delete(under_hull);
+			if(over_hull)
+				delete(over_hull);
+		 }
 
-		}
 
 		void buildConvexIntersectsReason2d();
 private:
@@ -332,7 +335,7 @@ void ConvexHullDetector<D,T>::addLineIntersection(LineSegment<D,T> line, Var out
 }*/
 
 template<unsigned int D, class T>
-void ConvexHullDetector<D,T>::addConvexIntersection(ConvexPolygon<D,T> polygon, Var outerVar){
+void ConvexHullDetector<D,T>::addConvexIntersection(ConvexPolygon<D,T> & polygon, Var outerVar){
 
 	under.invalidate();
 	over.invalidate();
@@ -902,7 +905,8 @@ void ConvexHullDetector<D,T>::buildPointNotContainedReason2d(const Point<2,T> & 
 	printf("\n");*/
 	for(int i = 0;i<min_set.size();i++){
 		Point<2,T> & p = min_set[i];
-		assert(!over.pointEnabled(p.getID()));
+		assert(p.getID()>=0);
+		assert(!over.pointEnabled(outer->getPointsetIndex(p.getID())));
 		Lit l = mkLit( outer->getPointVar(p.getID()),false);
 		assert(outer->value(l)==l_False);
 		conflict.push(l);

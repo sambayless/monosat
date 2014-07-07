@@ -101,6 +101,9 @@ Solver::Solver() :
 
 Solver::~Solver()
 {
+	for(Theory * t:theories){
+		delete(t);
+	}
 }
 
 

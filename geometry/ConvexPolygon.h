@@ -23,6 +23,10 @@ public:
 	static long stats_contain_checks;
 	static long stats_split_full_checks;
 	static long stats_split_checks_depths;
+	ConvexPolygon():Polygon<D,T>(){
+
+	}
+
 	virtual ~ConvexPolygon(){};
 	virtual ShapeType getType(){
 		return CONVEX_POLYGON;

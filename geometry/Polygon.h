@@ -24,7 +24,19 @@ public:
 	BoundingVolume<D,T> * bound=nullptr;
 	bool vertices_clockwise=false;
 	bool bounds_uptodate=false;
-	virtual ~Polygon(){};
+	Polygon(){
+
+	}
+	explicit Polygon(const Polygon&from){
+		vertices=from.vertices;
+	}
+
+	virtual ~Polygon(){
+		if(bound!=nullptr){
+			delete(bound);
+			bound=nullptr;
+		}
+	};
 	virtual ShapeType getType(){
 		return POLYGON;
 	}
@@ -147,7 +159,7 @@ public:
 			assert(false);
 	}
 
-	bool boundContains(const Point<D,T> & p){
+	inline bool boundContains(const Point<D,T> & p){
 		if(!bound)
 			return true;
 		if(!bounds_uptodate){
@@ -210,7 +222,9 @@ protected:
 		return true;
 	}
 private:
-
+	// copy ops are private to prevent copying
+	//Polygon(const Polygon& from); // no implementation
+	Polygon& operator=(const Polygon& from); // no implementation
 	T getArea2d();
 	T getPerimeter2d();
 	//put the vertices into clockwise order

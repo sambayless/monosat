@@ -39,9 +39,11 @@ public:
 		return num_enabled;
 	}
 	bool isEnabled(int pointID){
+		assert(pointID>=0);assert(pointID<enabled.size());
 		return enabled[pointID];
 	}
 	bool pointEnabled(int pointID){
+		assert(pointID>=0);assert(pointID<enabled.size());
 		return  enabled[pointID];
 	}
 	void disablePoint(int pointID){
@@ -60,6 +62,7 @@ public:
 	}
 
 	void setPointEnabled(int pointID, bool _enabled){
+		assert(pointID>=0);assert(pointID<enabled.size());
 		if(isEnabled(pointID)==_enabled)
 			return;
 		modifications++;
