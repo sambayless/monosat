@@ -261,8 +261,8 @@ bool ConvexPolygon<D,T>::containsInRange2d(const Point<2,T> & point, int firstVe
 		//this is correct _only_ for convex polygons
 	 //note: this can also compute the area (which is the sum of p2[0]*p1[1] - p1[0]*p2[1]); could potentially combine these...
 	 for(int n = 0;n<n_verts;n++){
-		 int i = (firstVertex+i)% w.size();
-		 Point<2,T> p1 = i>0 ? (w[i-1]-point):((w.back()-point));
+		 int i = (firstVertex+n)% w.size();
+		 Point<2,T> p1 = (i>0 ? w[i-1]:w.back()) - point;
 		 Point<2,T> p2 = w[i]-point;
 		 bool contained = (p2[0]*p1[1] - p1[0]*p2[1]) >=0;
 		 if(!contained){
