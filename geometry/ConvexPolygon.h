@@ -275,7 +275,7 @@ bool ConvexPolygon<D,T>::contains(const Point<D,T> & point,NConvexPolygon<D,T> &
 			}
 		}
 	}
-	if(!Polygon<D,T>::boundContains(point)){
+	if(!this->boundContains(point)){
 		assert(!containsInRange(point,0,this->size()-1));
 		stats_bounds_avoided++;
 		return false;
