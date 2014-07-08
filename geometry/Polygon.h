@@ -259,8 +259,8 @@ public:
 	//add a vertex, assuming that it will preserve clockwise order
 	void addVertexUnchecked(Point<D,T>  p){
 		vertices.push_back(p);
-		assert(dbg_orderClockwise());
-		assert(dbg_boundsUpToDate());
+		assert(this->dbg_orderClockwise());
+		assert(this->dbg_boundsUpToDate());
 	}
 
 	void popVertex(){
@@ -322,11 +322,11 @@ inline bool Polygon<D,T>::dbg_orderClockwise2d(){
 #ifndef NDEBUG
 	//from http://stackoverflow.com/a/1165943
 	if(vertices_clockwise){
-		double sum = 0;
+		T sum = 0;
 		for(int i = 0;i<size();i++){
 			Point<2,T> & a =(Point<2,T> & )  (i>0? (*this)[i-1]:back());
 			Point<2,T> & b =(Point<2,T> & ) (*this)[i];
-			sum+= (b.x - a.x)*(b.y+a.y);
+			sum += (b.x - a.x)*(b.y+a.y);
 		}
 		assert(sum>=0);
 	}
@@ -508,7 +508,7 @@ void NPolygon<D,T>::reorderVertices2d(){
 	}
 
 
-	assert(dbg_orderClockwise());
+	assert(this->dbg_orderClockwise());
 }
 
 

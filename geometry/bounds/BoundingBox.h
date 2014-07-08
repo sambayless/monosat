@@ -76,14 +76,14 @@ public:
 private:
 	bool dbg_uptodate(){
 #ifndef NDEBUG
-		std::vector<Point<D,T>>& vertices  = toBound.getVertices();
+		//std::vector<Point<D,T>>& vertices  = toBound.getVertices();
 		Point<D,T> dbg_max;
 		Point<D,T> dbg_min;
 		for (int i = 0;i<D;i++){
 			dbg_max[i]=-std::numeric_limits<T>::infinity();
 			dbg_min[i]=std::numeric_limits<T>::infinity();
 		}
-		for (auto & p:vertices){
+		for (auto & p:toBound){
 			for (int i = 0;i<D;i++){
 				if(p[i]>dbg_max[i])
 					dbg_max[i]=p[i];

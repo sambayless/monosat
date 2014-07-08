@@ -193,8 +193,8 @@ public:
 	//add a vertex, assuming that it will preserve clockwise order
 	void addVertexUnchecked(Point<D,T>  p){
 		vertices.push_back(p);
-		assert(dbg_orderClockwise());
-		assert(dbg_boundsUpToDate());
+		assert(this->dbg_orderClockwise());
+		assert(this->dbg_boundsUpToDate());
 	}
 
 	void popVertex(){
@@ -484,7 +484,7 @@ bool ConvexPolygon<D,T>::containsInSplit2d_helper(const Point<2,T> & point,int f
 		return true;//we are done
 	}else{
 #ifndef NDEBUG
-		ConvexPolygon<D,T> dbg_poly;
+		NConvexPolygon<D,T> dbg_poly;
 		dbg_poly.addVertexUnchecked(a);
 		dbg_poly.addVertexUnchecked(c);
 		dbg_poly.addVertexUnchecked(b);
@@ -852,7 +852,7 @@ void NConvexPolygon<D,T>::reorderVertices2d(){
 		vertices[i] = oldPoints[points_clockwise[i]];
 	}
 
-	assert(dbg_orderClockwise());
+	assert(this->dbg_orderClockwise());
 }
 
 

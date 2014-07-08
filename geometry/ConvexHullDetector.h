@@ -280,7 +280,7 @@ private:
 			return true;
 
 		}
-		inline bool checkLineIntersection(NConvexPolygon<D, T> & containing,const LineSegment<2,T> & line, ConvexPolygon<D,T> & hull, PointSet<D,T> & pointset){
+		inline bool checkLineIntersection(NConvexPolygon<D, T> & containing, LineSegment<D,T> & line, ConvexPolygon<D,T> & hull, PointSet<D,T> & pointset){
 			if(containing.size()==0)
 				return false;
 			for (auto &p: containing){
