@@ -929,8 +929,10 @@ public:
 		}
 		if(polygon.size()==1){
 			convexHullDetectors[pointSet]->addPointContainmentLit(polygon[0],outerVar);
+		}else if (polygon.size()==2){
+			convexHullDetectors[pointSet]->addLineIntersectionLit(LineSegment<D,T>(polygon[0],polygon[1]),outerVar);
 		}else
-			convexHullDetectors[pointSet]->addConvexIntersection(polygon,outerVar);
+			convexHullDetectors[pointSet]->addConvexIntersectionLit(polygon,outerVar);
 	}
 	void convexHullsIntersect(int pointSet1,int pointSet2 , Var outerVar){
 

@@ -77,6 +77,7 @@ public:
 		//return ((b.x - a.x)*(point.y - a.y) - (b.y - a.y)*(point.x - a.x));
 	}
 
+
 };
 
 template<class T>
@@ -117,8 +118,18 @@ bool Line<2,T>::intersects(Line<2,T> & other, Point<2,T> & intersection, bool & 
 template<class T>
 bool Line<2,T>::intersects(Shape<2,T> & s){
 	if(s.getType()==LINE){
-		//they intersect if not collinear
-
+		//Is this correct? This hasn't been tested.
+		Line<2,T> & other = (Line<2,T> & ) s;
+		T side1 = crossDif(a,b,other.a);
+		if(side1==0)
+			return true;//point is exactly on the line
+		T side2 = crossDif(a,b,other.b);
+		if(side2==0)
+			return true;//point is exactly on the line
+		if(side1!=side2){
+			return true;//the lines must intersect;
+		}
+		return false;
 	}else if(s.getType()==CONVEX_POLYGON){
 		//a line intersects a convex polygon if it can find two points on opposite sides of the line.
 		//there may be more efficient tests we could apply.

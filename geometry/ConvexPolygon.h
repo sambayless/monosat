@@ -40,15 +40,17 @@ public:
 		return CONVEX_POLYGON;
 	}
 	bool contains(const Point<D,T> & point);
-	bool findContainingConvex(const Point<D,T> & point,NConvexPolygon<D,T> & polygon_out);
+	bool contains(const Point<D,T> & point,NConvexPolygon<D,T> & polygon_out);
 
 	bool containsInRange(const Point<D,T> & point, int firstVertex=0,int lastVertex=-1);
 	bool containsInSplit(const Point<D,T> & point, int firstVertex=0,int lastVertex=-1);
 	bool intersects(Shape<D,T> & s);
 
+	bool intersects(Shape<D,T> & s, NConvexPolygon<D,T> & polygon_out);
 
 private:
 	bool intersects2d(Shape<2,T> & s);
+	bool intersects2d(Shape<2,T> & s, NConvexPolygon<2,T> & polygon_out);
 	bool edgesIntersectLine2d(LineSegment<2,T> & check, LineSegment<2,T> & intersection);
 	bool containsInRange2d(const Point<2,T> & point, int firstVertex,int lastVertex);
 	bool containsInSplit2d(const Point<2,T> & point, int firstVertex,int lastVertex, NConvexPolygon<2,T> & triangle_out);
@@ -256,7 +258,7 @@ private:
 
 
 template<unsigned int D,class T>
-bool ConvexPolygon<D,T>::findContainingConvex(const Point<D,T> & point,NConvexPolygon<D,T> & polygon_out){
+bool ConvexPolygon<D,T>::contains(const Point<D,T> & point,NConvexPolygon<D,T> & polygon_out){
 	polygon_out.clear();
 	stats_contain_checks++;
 	if(this->size()==3){
@@ -582,6 +584,16 @@ bool ConvexPolygon<D,T>::containsInRange2d(const Point<2,T> & point, int firstVe
 }
 
 template<unsigned int D,class T>
+bool ConvexPolygon<D,T>::intersects(Shape<D,T> & shape,NConvexPolygon<D,T> & out){
+	out.clear();
+	if(D==2){
+		return intersects2d((Shape<2,T> &) shape,(NConvexPolygon<2,T> &)out);
+	}else{
+		assert(false);
+	}
+	return false;
+}
+template<unsigned int D,class T>
 bool ConvexPolygon<D,T>::intersects(Shape<D,T> & shape){
 	if(D==2){
 		return intersects2d((Shape<2,T> &) shape);
@@ -590,6 +602,7 @@ bool ConvexPolygon<D,T>::intersects(Shape<D,T> & shape){
 	}
 	return false;
 }
+
 
 template<unsigned int D,class T>
 bool ConvexPolygon<D,T>::edgesIntersectLine2d(LineSegment<2,T> & check,LineSegment<2,T> & out){
@@ -741,6 +754,29 @@ bool ConvexPolygon<D,T>::intersects2d(Shape<2,T> & shape){
 	return false;
 }
 
+template<unsigned int D,class T>
+bool ConvexPolygon<D,T>::intersects2d(Shape<2,T> & shape, NConvexPolygon<2,T> & out){
+	if(shape.getType()==LINE_SEGMENT){
+		LineSegment<2,T> & line = (LineSegment<2,T> &)shape;
+
+		//first, check if either end point is contained
+		if(this->contains(line.a,out) || this->contains(line.b,out))
+			return true;
+		static LineSegment<2,T>  store;
+		//the line may still intersect even if neither end point is contained.
+		//we could apply the SAT here. But instead, we're going to walk around the edges of the convex shape, and see if any of the edges intersect this line.
+		bool r = edgesIntersectLine2d(line,store);
+		if(r){
+			out.addVertex(store.a);
+			out.addVertex(store.b);
+		}
+		return r;
+
+
+	}
+	assert(false);
+	return false;
+}
 
 //put the vertices into clockwise order
 template<unsigned int D,class T>

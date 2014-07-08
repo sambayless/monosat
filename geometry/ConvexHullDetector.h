@@ -58,6 +58,8 @@ public:
 		struct LineIntersectionLit{
 			LineSegment<D,T> line;
 			Lit l;
+			NConvexPolygon<D,T> under_intersecting_polygon;
+			NConvexPolygon<D,T> over_intersecting_polygon;
 		};
 		vec<LineIntersectionLit> lineIntersectionLits;
 
@@ -116,8 +118,8 @@ public:
 		void addPointContainmentLit(Point<D,T> p,Var outerVar);
 		void addPointOnHullLit(int pointsetIndex,Var outerVar);
 		//void addLineIntersection(LineSegment<D,T> line, Var outerVar);
-		void addConvexIntersection(NConvexPolygon<D,T> &polygon, Var outerVar);
-		void addLineIntersection(LineSegment<D,T> line, Var outerVar);
+		void addConvexIntersectionLit(NConvexPolygon<D,T> &polygon, Var outerVar);
+		void addLineIntersectionLit(LineSegment<D,T> line, Var outerVar);
 
 		ConvexHullDetector(int detectorID,PointSet<D,T> & under, PointSet<D,T> & over, GeometryTheorySolver<D,T> * outer,  double seed=1);
 		~ConvexHullDetector(){
@@ -278,6 +280,26 @@ private:
 			return true;
 
 		}
+		inline bool checkLineIntersection(NConvexPolygon<D, T> & containing,const LineSegment<2,T> & line, ConvexPolygon<D,T> & hull, PointSet<D,T> & pointset){
+			if(containing.size()==0)
+				return false;
+			for (auto &p: containing){
+				int index = outer->getPointsetIndex(p.getID());
+				if(!pointset.pointEnabled(index)){
+					containing.clear();
+					return false;
+				}
+			}
+			assert(containing.intersects(line));
+			assert(hull.intersects(line));
+			if(&pointset==&under){
+				stats_bounds_skips_under++;
+			}else if (&pointset==&over){
+				stats_bounds_skips_over++;
+			}
+			return true;
+
+		}
 };
 template<unsigned int D, class T>
 long ConvexHullDetector<D,T>::stats_bounds_skips_under=0;
@@ -338,7 +360,7 @@ void ConvexHullDetector<D,T>::addPointContainmentLit(Point<D,T> p,Var outerVar){
 	}
 
 template<unsigned int D, class T>
-void ConvexHullDetector<D,T>::addLineIntersection(LineSegment<D,T> line, Var outerVar){
+void ConvexHullDetector<D,T>::addLineIntersectionLit(LineSegment<D,T> line, Var outerVar){
 
 	under.invalidate();
 	over.invalidate();
@@ -348,7 +370,7 @@ void ConvexHullDetector<D,T>::addLineIntersection(LineSegment<D,T> line, Var out
 }
 
 template<unsigned int D, class T>
-void ConvexHullDetector<D,T>::addConvexIntersection(NConvexPolygon<D,T> & polygon, Var outerVar){
+void ConvexHullDetector<D,T>::addConvexIntersectionLit(NConvexPolygon<D,T> & polygon, Var outerVar){
 
 	under.invalidate();
 	over.invalidate();
@@ -520,7 +542,7 @@ bool ConvexHullDetector<D,T>::propagate(vec<Lit> & conflict){
 		stats_bound_checks++;
 		Lit l = pointContainedLits[i].l;
 
-		if(checkContainingTriangle(pointContainedLits[i].under_containing_triangle,point,p_under,under) || p_under.findContainingConvex(point,pointContainedLits[i].under_containing_triangle)){
+		if(checkContainingTriangle(pointContainedLits[i].under_containing_triangle,point,p_under,under) || p_under.contains(point,pointContainedLits[i].under_containing_triangle)){
 			//l is true
 			if(outer->value(l)==l_True){
 				//do nothing
@@ -532,7 +554,7 @@ bool ConvexHullDetector<D,T>::propagate(vec<Lit> & conflict){
 				buildPointContainedReason(point,conflict);
 				return false;
 			}
-		}else if (!checkContainingTriangle(pointContainedLits[i].over_containing_triangle,point,p_over, over) && !p_over.findContainingConvex(point,pointContainedLits[i].over_containing_triangle)){
+		}else if (!checkContainingTriangle(pointContainedLits[i].over_containing_triangle,point,p_over, over) && !p_over.contains(point,pointContainedLits[i].over_containing_triangle)){
 		//}else if (!p_over.contains(point)){
 			l=~l;
 			//l is true
@@ -551,7 +573,8 @@ bool ConvexHullDetector<D,T>::propagate(vec<Lit> & conflict){
 		LineSegment<D,T> & line = lineIntersectionLits[i].line;
 		Lit l = lineIntersectionLits[i].l;
 
-		if(p_under.intersects(line)){
+		//if(p_under.intersects(line,)){
+		if(!checkLineIntersection(pointContainedLits[i].under_containing_triangle,line,p_under,under) && !p_under.intersects(line,lineIntersectionLits[i].under_intersecting_polygon)){
 			//l is true
 			if(outer->value(l)==l_True){
 				//do nothing
@@ -563,7 +586,8 @@ bool ConvexHullDetector<D,T>::propagate(vec<Lit> & conflict){
 				buildLineIntersectsReason(line,conflict);
 				return false;
 			}
-		}else if (!p_over.intersects(line)){
+		}else if (!checkLineIntersection(pointContainedLits[i].over_containing_triangle,line,p_over, over) && !p_over.intersects(line,lineIntersectionLits[i].over_intersecting_polygon)){
+		//}else if (!p_over.intersects(line)){
 			l=~l;
 			//l is true
 			if(outer->value(l)==l_True){

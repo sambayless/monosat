@@ -182,11 +182,43 @@ bool LineSegment<2,T>::intersects(Shape<2,T> & shape){
 	if(shape.getType()==LINE_SEGMENT){
 
 		LineSegment<2,T> & other = (LineSegment<2,T> &)shape;
-		bool ignoreb;
-		static Point<2,T> ignore;
-		return intersects(other,ignore,ignoreb);
+		//from http://martin-thoma.com/how-to-check-if-two-line-segments-intersect/
+
+		//first, check whether bounding boxes intersect
+		if(other.a.x < a.x && other.b.x < b.x){
+			return false;
+		}
+		if(other.a.x > a.x && other.b.x > b.x){
+			return false;
+		}
+		if(other.a.y < a.y && other.b.y < b.y){
+			return false;
+		}
+		if(other.a.y > a.y && other.b.y > b.y){
+			return false;
+		}
 
 
+		T side1 = crossDif(a,b,other.a);
+		if(side1==0)
+			return true;//point is exactly on the line
+		T side2 = crossDif(a,b,other.b);
+		if(side2==0)
+			return true;//point is exactly on the line
+		if((side1 > 0) !=  (side2 > 0)){
+			return true;//the lines might intersect;
+		}
+		Point<2,T> diff = b-a;
+		Point<2,T> check = other.a - a;
+
+		if(cross2d(diff,check)<0){
+			return true;
+		}
+		check = other.b - a;
+		if(cross2d(diff,check)<0){
+			return true;
+		}
+		return false;
 	}else if(shape.getType()==CONVEX_POLYGON){
 		return shape.intersects(*this);
 	}

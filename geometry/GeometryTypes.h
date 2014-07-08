@@ -235,7 +235,7 @@ class vec<::Point<D,T>>;
 	//static_assert(false,"mtl vec cannot be used to store Points (as they are not reallocatable)");
 
 };
-template<unsigned int D, class T=double>
+template<unsigned int D, class T>
 inline bool operator==(const Point<D,T>& lhs, const Point<D,T>& rhs){
 	for(int i = 0;i<D;i++){
 		if(lhs[i]!= rhs[i])
@@ -243,11 +243,11 @@ inline bool operator==(const Point<D,T>& lhs, const Point<D,T>& rhs){
 	}
 	return true;
 }
-template<unsigned int D, class T=double>
+template<unsigned int D, class T>
 inline bool operator!=(const Point<D,T>& lhs, const Point<D,T>& rhs){
 	return !(lhs==rhs);
 }
-template<unsigned int D, class T=double>
+template<unsigned int D, class T>
 inline Point<D,T> operator+(const Point<D,T> &a, const Point<D,T> &b)
 {
 	Point<D,T> p;
@@ -257,7 +257,7 @@ inline Point<D,T> operator+(const Point<D,T> &a, const Point<D,T> &b)
     return p;
 }
 
-template<unsigned int D, class T=double>
+template<unsigned int D, class T>
 inline Point<D,T> operator-(const Point<D,T> &a, const Point<D,T> &b)
 {
 	Point<D,T> p;
@@ -272,7 +272,7 @@ inline Point<D,T> operator-(const Point<D,T> &a, const Point<D,T> &b)
 typedef Point<2,double> Point2D;
 typedef Point<3,double> Point3D;
 
-template<unsigned int D,class T=double>
+template<unsigned int D,class T>
 struct SortBy{
 	int sortOn;
 	bool operator()(const Point<D,T> & a,const Point<D,T> & b)const{
@@ -281,7 +281,7 @@ struct SortBy{
 	SortBy(int dimensionToSort):sortOn(dimensionToSort){}
 };
 
-template<unsigned int D,class T=double>
+template<unsigned int D,class T>
 struct SortLexicographic{
 
 	bool operator()(const Point<D,T> & a,const Point<D,T> & b)const{
