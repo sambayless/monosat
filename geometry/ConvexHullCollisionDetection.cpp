@@ -128,8 +128,8 @@ void ConvexHullCollisionDetector<2, mpq_class>::buildNotCollisionReason(vec<Lit>
 	//or some disabled point in h2 that is to the left of the leftmost point in h2 must be enabled.
 
 	//Note: It may be possible to improve on this analysis!
-	vec<std::pair<Point<2,mpq_class> ,mpq_class>>  projection1;
-	vec<std::pair<Point<2,mpq_class> ,mpq_class>>  projection2;
+	std::vector<std::pair<Point<2,mpq_class> ,mpq_class>>  projection1;
+	std::vector<std::pair<Point<2,mpq_class> ,mpq_class>>  projection2;
 	findSeparatingAxis(h1,h2,over1,over2, projection1,projection2);
 
 	 mpq_class leftmost1 = std::numeric_limits<mpq_class>::max();
@@ -211,11 +211,11 @@ void ConvexHullCollisionDetector<2, double>::buildNotCollisionReason(vec<Lit> & 
 
 }
 template<>
-bool ConvexHullCollisionDetector<2, mpq_class>::findSeparatingAxis(ConvexPolygon<2, mpq_class> & hull1, ConvexPolygon<2, mpq_class> & hull2, PointSet<2,mpq_class> & pointset1, PointSet<2,mpq_class> & pointset2, vec<std::pair<Point<2,mpq_class> ,mpq_class>>  &projection_out1_t,vec<std::pair<Point<2,mpq_class> ,mpq_class>>  &projection_out2_t){
+bool ConvexHullCollisionDetector<2, mpq_class>::findSeparatingAxis(ConvexPolygon<2, mpq_class> & hull1, ConvexPolygon<2, mpq_class> & hull2, PointSet<2,mpq_class> & pointset1, PointSet<2,mpq_class> & pointset2, std::vector<std::pair<Point<2,mpq_class> ,mpq_class>>  &projection_out1_t,std::vector<std::pair<Point<2,mpq_class> ,mpq_class>>  &projection_out2_t){
 	ConvexPolygon<2, mpq_class> & h1 = (hull1.size()<=hull2.size())?hull1:hull2;
 	ConvexPolygon<2, mpq_class> & h2 = (hull1.size()<=hull2.size())?hull2:hull1;
-	vec<std::pair<Point<2,mpq_class> ,mpq_class>>  &projection_out1 = (hull1.size()<=hull2.size())?projection_out1_t:projection_out2_t;
-	vec<std::pair<Point<2,mpq_class> ,mpq_class>>  &projection_out2 = (hull1.size()<=hull2.size())?projection_out2_t:projection_out1_t;
+	std::vector<std::pair<Point<2,mpq_class> ,mpq_class>>  &projection_out1 = (hull1.size()<=hull2.size())?projection_out1_t:projection_out2_t;
+	std::vector<std::pair<Point<2,mpq_class> ,mpq_class>>  &projection_out2 = (hull1.size()<=hull2.size())?projection_out2_t:projection_out1_t;
 
 	projection_out1.clear();
 	projection_out2.clear();
@@ -227,12 +227,12 @@ bool ConvexHullCollisionDetector<2, mpq_class>::findSeparatingAxis(ConvexPolygon
 		 for(int i = 0;i<pointset1.size();i++){
 				 auto & p = pointset1[i];
 				 mpq_class projection = un_normalized_normal.dot(p);
-				 projection_out1.push({p,projection});
+				 projection_out1.push_back({p,projection});
 		 }
 		 for(int i = 0;i<pointset2.size();i++){
 				 auto & p = pointset2[i];
 				 mpq_class projection = un_normalized_normal.dot(p);
-				 projection_out2.push({p,projection});
+				 projection_out2.push_back({p,projection});
 		 }
 		return true;
 	}
@@ -257,7 +257,7 @@ bool ConvexHullCollisionDetector<2, mpq_class>::findSeparatingAxis(ConvexPolygon
 		 mpq_class right = std::numeric_limits<mpq_class>::min();
 		 for (auto & p:h1){
 			 mpq_class projection = un_normalized_normal.dot(p);
-			 projection_out1.push({p,projection});
+			 projection_out1.push_back({p,projection});
 			 if (projection < left) {
 				  left = projection;
 			 } else if (projection > right) {
@@ -267,7 +267,7 @@ bool ConvexHullCollisionDetector<2, mpq_class>::findSeparatingAxis(ConvexPolygon
 		 bool overlaps = false;
 		 for (auto & p:h2){
 			 mpq_class projection = un_normalized_normal.dot(p);
-			 projection_out2.push({p,projection});
+			 projection_out2.push_back({p,projection});
 			 if (projection >= left && projection <= right ) {
 				 overlaps=true;
 				 break;
@@ -279,14 +279,14 @@ bool ConvexHullCollisionDetector<2, mpq_class>::findSeparatingAxis(ConvexPolygon
 				 if(!pointset1.pointEnabled(i)){
 					 auto & p = pointset1[i];
 					 mpq_class projection = un_normalized_normal.dot(p);
-					 projection_out1.push({p,projection});
+					 projection_out1.push_back({p,projection});
 				 }
 			 }
 			 for(int i = 0;i<pointset2.size();i++){
 				 if(!pointset2.pointEnabled(i)){
 					 auto & p = pointset2[i];
 					 mpq_class projection = un_normalized_normal.dot(p);
-					 projection_out2.push({p,projection});
+					 projection_out2.push_back({p,projection});
 				 }
 			 }
 			 return true;
@@ -305,7 +305,7 @@ bool ConvexHullCollisionDetector<2, mpq_class>::findSeparatingAxis(ConvexPolygon
 		 mpq_class right = std::numeric_limits<mpq_class>::min();
 		 for (auto & p:h1){
 			 mpq_class projection = un_normalized_normal.dot(p);
-			 projection_out1.push({p,projection});
+			 projection_out1.push_back({p,projection});
 			 if (projection < left) {
 				  left = projection;
 			 } else if (projection > right) {
@@ -315,7 +315,7 @@ bool ConvexHullCollisionDetector<2, mpq_class>::findSeparatingAxis(ConvexPolygon
 		 bool overlaps = false;
 		 for (auto & p:h2){
 			 mpq_class projection = un_normalized_normal.dot(p);
-			 projection_out2.push({p,projection});
+			 projection_out2.push_back({p,projection});
 			 if (projection >= left && projection <= right ) {
 				 overlaps=true;
 				 break;
@@ -326,14 +326,14 @@ bool ConvexHullCollisionDetector<2, mpq_class>::findSeparatingAxis(ConvexPolygon
 				 if(!pointset1.pointEnabled(i)){
 					 auto & p = pointset1[i];
 					 mpq_class projection = un_normalized_normal.dot(p);
-					 projection_out1.push({p,projection});
+					 projection_out1.push_back({p,projection});
 				 }
 			 }
 			 for(int i = 0;i<pointset2.size();i++){
 				 if(!pointset2.pointEnabled(i)){
 					 auto & p = pointset2[i];
 					 mpq_class projection = un_normalized_normal.dot(p);
-					 projection_out2.push({p,projection});
+					 projection_out2.push_back({p,projection});
 				 }
 			 }
 			 return true;

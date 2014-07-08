@@ -15,6 +15,7 @@
 #include <cmath>
 #include <algorithm>
 #include <gmpxx.h>
+#include <iostream>
 
 using namespace Minisat;
 
@@ -266,8 +267,15 @@ inline Point<D,T> operator-(const Point<D,T> &a, const Point<D,T> &b)
 	}
     return p;
 }
-
-
+template<unsigned int D,class T>
+std::ostream & operator<<(std::ostream & str, Point<D,T> const & p) {
+  str<<"(";
+  for (int i =0;i<D-1;i++){
+	  str<< p[i]<<",";
+  }
+  str<<p[p.size()-1] <<")";
+  return str;
+}
 
 typedef Point<2,double> Point2D;
 typedef Point<3,double> Point3D;

@@ -59,7 +59,7 @@ public:
 
 		ConvexHullCollisionDetector(int detectorID,GeometryTheorySolver<D,T> * outer,PointSet<D,T> & under1, PointSet<D,T> & over1,PointSet<D,T> & under2, PointSet<D,T> & over2,ConvexHullDetector<D,T> & hull1_under,ConvexHullDetector<D,T> & hull1_over,ConvexHullDetector<D,T> & hull2_under,ConvexHullDetector<D,T> & hull2_over, double seed=1);
 private:
-		bool findSeparatingAxis(ConvexPolygon<D,T> & h1, ConvexPolygon<D,T> & h2, PointSet<2,mpq_class> & pointset1, PointSet<2,mpq_class> & pointset2,  vec<std::pair<Point<2,mpq_class> ,mpq_class>>  &projection_out1,vec<std::pair<Point<2,mpq_class> ,mpq_class>>  &projection_out2);
+		bool findSeparatingAxis(ConvexPolygon<D,T> & h1, ConvexPolygon<D,T> & h2, PointSet<2,mpq_class> & pointset1, PointSet<2,mpq_class> & pointset2,  std::vector<std::pair<Point<2,mpq_class> ,mpq_class>>  &projection_out1,std::vector<std::pair<Point<2,mpq_class> ,mpq_class>>  &projection_out2);
 
 
 		void findContainingTriangle2d_helper(ConvexPolygon<2,T> & polygon, int first_vertex, int last_vertex,const Point<2,T> & point, NConvexPolygon<2,T> & triangle_out){
@@ -234,7 +234,7 @@ template<>
 void ConvexHullCollisionDetector<2, double>::buildNotCollisionReason(vec<Lit> & conflict);
 
 template<>
-bool ConvexHullCollisionDetector<2, mpq_class>::findSeparatingAxis(ConvexPolygon<2, mpq_class> & h1, ConvexPolygon<2, mpq_class> & h2, PointSet<2,mpq_class> & pointset1, PointSet<2,mpq_class> & pointset2,  vec<std::pair<Point<2,mpq_class> ,mpq_class>>  &projection_out1,vec<std::pair<Point<2,mpq_class> ,mpq_class>>  &projection_out2);
+bool ConvexHullCollisionDetector<2, mpq_class>::findSeparatingAxis(ConvexPolygon<2, mpq_class> & h1, ConvexPolygon<2, mpq_class> & h2, PointSet<2,mpq_class> & pointset1, PointSet<2,mpq_class> & pointset2,  std::vector<std::pair<Point<2,mpq_class> ,mpq_class>>  &projection_out1,std::vector<std::pair<Point<2,mpq_class> ,mpq_class>>  &projection_out2);
 
 
 #endif

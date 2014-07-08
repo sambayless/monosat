@@ -253,7 +253,7 @@ private:
 			findContainingTriangle2d_helper(polygon,0,sz-1,point,triangle_out);
 		}
 
-		bool findSeparatingAxis2d(ConvexPolygon<2, T> & hull1, ConvexPolygon<2, T> & hull2, PointSet<2,T> & pointset1, vec<std::pair<Point<2,T> ,T>>  &projection_out, vec<std::pair<Point<2,T> ,T>>  &projection_out2);
+		bool findSeparatingAxis2d(ConvexPolygon<2, T> & hull1, ConvexPolygon<2, T> & hull2, PointSet<2,T> & pointset1, std::vector<std::pair<Point<2,T> ,T>>  &projection_out, std::vector<std::pair<Point<2,T> ,T>>  &projection_out2);
 		void buildConvexIntersectsReason2d(ConvexPolygon<2,T> & line,vec<Lit> & conflict);
 		void buildConvexNotIntersectsReason2d(ConvexPolygon<2,T> & line,vec<Lit> & conflict);
 		void buildPointContainedReason2d(const Point<2,T> & p,vec<Lit> & conflict);
@@ -477,7 +477,7 @@ template<unsigned int D, class T>
 bool ConvexHullDetector<D,T>::propagate(vec<Lit> & conflict){
 
 	static int iter = 0;
-	if(++iter==10){
+	if(++iter==510){
 		int a=1;
 	}
 	stats_propagations++;
@@ -542,6 +542,7 @@ bool ConvexHullDetector<D,T>::propagate(vec<Lit> & conflict){
 		stats_bound_checks++;
 		Lit l = pointContainedLits[i].l;
 
+		//Before doing a full, expensive check for containment, check if the triangle of points that contained this point last time (if there were such points) are all still enabled (in which case, containment is guaranteed).
 		if(checkContainingTriangle(pointContainedLits[i].under_containing_triangle,point,p_under,under) || p_under.contains(point,pointContainedLits[i].under_containing_triangle)){
 			//l is true
 			if(outer->value(l)==l_True){
@@ -570,10 +571,12 @@ bool ConvexHullDetector<D,T>::propagate(vec<Lit> & conflict){
 		}
 	}
 	for(int i =0;i<lineIntersectionLits.size();i++){
+		if(i==68){
+			int a =1;
+		}
 		LineSegment<D,T> & line = lineIntersectionLits[i].line;
 		Lit l = lineIntersectionLits[i].l;
-		//bool p = p_under.intersects(line);
-		//if(p_under.intersects(line,)){
+
 		if(checkLineIntersection(lineIntersectionLits[i].under_intersecting_polygon,line,p_under,under) || p_under.intersects(line,lineIntersectionLits[i].under_intersecting_polygon)){
 			//l is true
 			if(outer->value(l)==l_True){
@@ -1114,7 +1117,17 @@ template<unsigned int D, class T>
 void ConvexHullDetector<D,T>::buildConvexNotIntersectsReason2d(ConvexPolygon<2,T> & polygon,vec<Lit> & conflict){
 	ConvexPolygon<2, T> & h1 = over_hull->getHull();
 	ConvexPolygon<2, T> & h2 = polygon;
-	assert(!h1.intersects(h2));assert(!h2.intersects(h1));
+	printf("h1: ");
+	for (auto & p:h1){
+		cout<<p << " ";
+	}
+	printf("\nh2: ");
+	for (auto & p:h2){
+		cout<<p << " ";
+	}
+	printf("\n");
+	assert(!h1.intersects(h2));
+	assert(!h2.intersects(h1));
 
 	if(h1.size()==0){
 		//then the reason that the shapes don't collide is that at least one point in each of them must be enabled
@@ -1141,8 +1154,8 @@ void ConvexHullDetector<D,T>::buildConvexNotIntersectsReason2d(ConvexPolygon<2,T
 	//or some disabled point in h2 that is to the left of the leftmost point in h2 must be enabled.
 
 	//Note: It may be possible to improve on this analysis!
-	vec<std::pair<Point<2,T> ,T>>  projection;
-	vec<std::pair<Point<2,T> ,T>>  projection2;
+	std::vector<std::pair<Point<2,T> ,T>>  projection;
+	std::vector<std::pair<Point<2,T> ,T>>  projection2;
 	bool found = findSeparatingAxis2d(h1,h2,over, projection,projection2);
 	assert(found);
 	T leftmost1 = std::numeric_limits<T>::infinity();
@@ -1259,10 +1272,12 @@ void ConvexHullDetector<D,T>::buildConvexIntersectsReason2d(ConvexPolygon<2,T> &
 }
 
 template<unsigned int D, class T>
-bool ConvexHullDetector<D,T>::findSeparatingAxis2d(ConvexPolygon<2,T> & hull1, ConvexPolygon<2,T> & hull2, PointSet<2,T> & pointset1, vec<std::pair<Point<2,T>,T>>  &projection_out1, vec<std::pair<Point<2,T> ,T>>  &projection_out2){
+bool ConvexHullDetector<D,T>::findSeparatingAxis2d(ConvexPolygon<2,T> & hull1, ConvexPolygon<2,T> & hull2, PointSet<2,T> & pointset1, std::vector<std::pair<Point<2,T>,T>>  &projection_out1_t, std::vector<std::pair<Point<2,T> ,T>>  &projection_out2_t){
 
 	ConvexPolygon<2, T> & h1 = (hull1.size()<=hull2.size())?hull1:hull2;
 	ConvexPolygon<2, T> & h2 = (hull1.size()<=hull2.size())?hull2:hull1;
+	std::vector<std::pair<Point<2,T>,T>>  &projection_out1 =  (hull1.size()<=hull2.size())?projection_out1_t:projection_out2_t;
+	std::vector<std::pair<Point<2,T>,T>>  &projection_out2 =  (hull1.size()<=hull2.size())?projection_out2_t:projection_out1_t;
 
 	projection_out1.clear();
 	projection_out2.clear();
@@ -1274,12 +1289,12 @@ bool ConvexHullDetector<D,T>::findSeparatingAxis2d(ConvexPolygon<2,T> & hull1, C
 		 for(int i = 0;i<pointset1.size();i++){
 			 auto & p = pointset1[i];
 			 T projection = un_normalized_normal.dot(p);
-			 projection_out1.push({p,projection});
+			 projection_out1.push_back({p,projection});
 		 }
 		 for(int i = 0;i<h2.size();i++){
 			 auto & p = h2[i];
 			 T projection = un_normalized_normal.dot(p);
-			 projection_out2.push({p,projection});
+			 projection_out2.push_back({p,projection});
 		 }
 		return true;
 	}
@@ -1303,7 +1318,7 @@ bool ConvexHullDetector<D,T>::findSeparatingAxis2d(ConvexPolygon<2,T> & hull1, C
 		 T right = -std::numeric_limits<T>::infinity();
 		 for (auto & p:h1){
 			 T projection = un_normalized_normal.dot(p);
-			 projection_out1.push({p,projection});
+			 projection_out1.push_back({p,projection});
 			 if (projection < left) {
 				  left = projection;
 			 }
@@ -1317,7 +1332,7 @@ bool ConvexHullDetector<D,T>::findSeparatingAxis2d(ConvexPolygon<2,T> & hull1, C
 
 		 for (auto & p:h2){
 			 T projection = un_normalized_normal.dot(p);
-			 projection_out2.push({p,projection});
+			 projection_out2.push_back({p,projection});
 			 if (projection >= left && projection <= right ) {
 				 overlaps=true;
 				 break;
@@ -1341,7 +1356,11 @@ bool ConvexHullDetector<D,T>::findSeparatingAxis2d(ConvexPolygon<2,T> & hull1, C
 				 if(!pointset1.pointEnabled(i)){
 					 auto & p = pointset1[i];
 					 T projection = un_normalized_normal.dot(p);
-					 projection_out1.push({p,projection});
+					 if(hull1.size()<=hull2.size()){
+						 projection_out1.push_back({p,projection});
+					 } else{
+						 projection_out2.push_back({p,projection});
+					 }
 				 }
 			 }
 
@@ -1362,7 +1381,7 @@ bool ConvexHullDetector<D,T>::findSeparatingAxis2d(ConvexPolygon<2,T> & hull1, C
 		 T right = -std::numeric_limits<T>::infinity();
 		 for (auto & p:h2){
 			 T projection = un_normalized_normal.dot(p);
-			 projection_out2.push({p,projection});
+			 projection_out2.push_back({p,projection});
 			 if (projection < left) {
 				  left = projection;
 			 }
@@ -1376,7 +1395,7 @@ bool ConvexHullDetector<D,T>::findSeparatingAxis2d(ConvexPolygon<2,T> & hull1, C
 		 bool overlaps = false;
 		 for (auto & p:h1){
 			 T projection = un_normalized_normal.dot(p);
-			 projection_out1.push({p,projection});
+			 projection_out1.push_back({p,projection});
 			 if (projection >= left && projection <= right ) {
 				 overlaps=true;
 				 break;
@@ -1397,7 +1416,11 @@ bool ConvexHullDetector<D,T>::findSeparatingAxis2d(ConvexPolygon<2,T> & hull1, C
 				 if(!pointset1.pointEnabled(i)){
 					 auto & p = pointset1[i];
 					 T projection = un_normalized_normal.dot(p);
-					 projection_out1.push({p,projection});
+					 if(hull1.size()<=hull2.size()){
+						 projection_out1.push_back({p,projection});
+					 } else{
+						 projection_out2.push_back({p,projection});
+					 }
 				 }
 			 }
 			 return true;

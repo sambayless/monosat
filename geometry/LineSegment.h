@@ -185,7 +185,9 @@ bool LineSegment<2,T>::intersects(Shape<2,T> & shape){
 		//from http://martin-thoma.com/how-to-check-if-two-line-segments-intersect/
 
 		//first, check whether bounding boxes intersect
-		if(other.a.x < a.x && other.b.x < b.x){
+/*		T minX = min(a.x, b.y);
+		T minY = min(a.y,b.y);
+		if(other.a.x < minX && other.b.x < minX){
 			return false;
 		}
 		if(other.a.x > a.x && other.b.x > b.x){
@@ -196,7 +198,7 @@ bool LineSegment<2,T>::intersects(Shape<2,T> & shape){
 		}
 		if(other.a.y > a.y && other.b.y > b.y){
 			return false;
-		}
+		}*/
 
 
 		T side1 = crossDif(a,b,other.a);
