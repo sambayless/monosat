@@ -572,9 +572,9 @@ bool ConvexHullDetector<D,T>::propagate(vec<Lit> & conflict){
 	for(int i =0;i<lineIntersectionLits.size();i++){
 		LineSegment<D,T> & line = lineIntersectionLits[i].line;
 		Lit l = lineIntersectionLits[i].l;
-		bool p = p_under.intersects(line);
+		//bool p = p_under.intersects(line);
 		//if(p_under.intersects(line,)){
-		if(!checkLineIntersection(lineIntersectionLits[i].under_intersecting_polygon,line,p_under,under) && !p_under.intersects(line,lineIntersectionLits[i].under_intersecting_polygon)){
+		if(checkLineIntersection(lineIntersectionLits[i].under_intersecting_polygon,line,p_under,under) || p_under.intersects(line,lineIntersectionLits[i].under_intersecting_polygon)){
 			//l is true
 			if(outer->value(l)==l_True){
 				//do nothing
