@@ -131,6 +131,7 @@ int main(int argc, char** argv)
         BoolOption   pre    ("MAIN", "pre",    "Completely turn on/off any preprocessing.", true);
 
         BoolOption opb("PB","opb","Parse the input as pseudo-boolean constraints in .opb format",false);
+        BoolOption precise("GEOM","precise","Solve geometry using precise rational arithmetic (instead of unsound, but faster, floating point arithmetic)",true);
 
         parseOptions(argc, argv, true);
 
@@ -338,11 +339,16 @@ int main(int argc, char** argv)
 
              graphParser.setSymbols(&symbols);
              parser.addParser(&graphParser);
-             //GeometryParser<char *, SimpSolver,mpq_class> geometryParser2;
-             GeometryParser<char *, SimpSolver,mpq_class> geometryParser;
-             parser.addParser(&geometryParser);
-             parser.parse_DIMACS(in,S);
 
+             if(precise){
+				 GeometryParser<char *, SimpSolver,mpq_class> geometryParser;
+				 parser.addParser(&geometryParser);
+				 parser.parse_DIMACS(in,S);
+             }else{
+            	 GeometryParser<char *, SimpSolver,double> geometryParser;
+				  parser.addParser(&geometryParser);
+				  parser.parse_DIMACS(in,S);
+             }
              gzclose(in);
 
              if(opt_verb>2){
