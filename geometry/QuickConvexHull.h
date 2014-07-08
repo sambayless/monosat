@@ -13,13 +13,14 @@
 #include "mtl/Sort.h"
 #include "cevans/quickhull3D.h"
 #include <gmpxx.h>
+#include "ConvexPolygon.h"
 using namespace Minisat;
 
 template<unsigned int D,class T>
 class QuickConvexHull:public ConvexHull<D,T>{
 
 	PointSet<D,T> & pointSet;
-	ConvexPolygon<D,T> hull;
+	NConvexPolygon<D,T> hull;
 public:
 	QuickConvexHull(PointSet<D,T> & p):pointSet(p){
 

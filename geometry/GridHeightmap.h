@@ -18,7 +18,7 @@ class GridHeightmap:public Heightmap<D,T>{
 	int width;
 	int depth;
 	std::vector<std::vector<Point<D,T> > > grid;
-	Polygon<D,T> heightmesh;
+	NPolygon<D,T> heightmesh;
 	GridHeightmap(int width_, int depth_):width(width_),depth(depth_){
 
 		for(int i = 0;i<width;i++){

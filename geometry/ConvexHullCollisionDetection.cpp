@@ -45,7 +45,7 @@ void ConvexHullCollisionDetector<2, mpq_class>::buildCollisionReason(vec<Lit> & 
 
 	for(int i = 0; i<h1.size();i++){
 		if(h2.contains(h1[i])){
-			static ConvexPolygon<2,mpq_class> triangle;
+			static NConvexPolygon<2,mpq_class> triangle;
 			findContainingTriangle2d(h2,h1[i],triangle);
 			assert(triangle.contains(h1[i]));
 			conflict.push(~mkLit(outer->getPointVar(h1[i].getID())));
@@ -61,7 +61,7 @@ void ConvexHullCollisionDetector<2, mpq_class>::buildCollisionReason(vec<Lit> & 
 
 	for(int i = 0; i<h2.size();i++){
 		if(h1.contains(h2[i])){
-			static ConvexPolygon<2,mpq_class> triangle;
+			static NConvexPolygon<2,mpq_class> triangle;
 			findContainingTriangle2d(h1,h2[i],triangle);
 			assert(triangle.contains(h2[i]));
 			conflict.push(~mkLit(outer->getPointVar(h2[i].getID())));
@@ -238,7 +238,7 @@ bool ConvexHullCollisionDetector<2, mpq_class>::findSeparatingAxis(ConvexPolygon
 	}
 
 
-	 std::vector<Point<2,mpq_class> > &  w = h1.getVertices();
+	 //std::vector<Point<2,mpq_class> > &  w = h1.getVertices();
 
 	 //Separating Axis Theorem for collision detection between two convex polygons
 	 //loop through each edge in _each_ polygon and project both polygons onto that edge's normal.

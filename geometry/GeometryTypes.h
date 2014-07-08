@@ -55,6 +55,10 @@ public:
 	 operator mpq_class ()const{return value;}
 };
 
+//This may have rounding errors! Use carefully!
+inline mpq_class sqrt(mpq_class v){
+	return (mpq_class) sqrt((mpf_class)v);
+}
 
 
 template<class T> inline bool equal_epsilon(T a, T b);

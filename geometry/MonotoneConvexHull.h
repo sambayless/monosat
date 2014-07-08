@@ -14,12 +14,13 @@
 #include "bounds/BoundingBox.h"
 #include <algorithm>
 #include <iostream>
+#include "ConvexPolygon.h"
 
 template<unsigned int D,class T>
 class MonotoneConvexHull:public ConvexHull<D,T>{
 
 	PointSet<D,T> & pointSet;
-	ConvexPolygon<D,T> hull;
+	NConvexPolygon<D,T> hull;
 	long lastModification=-1;
 public:
 	MonotoneConvexHull(PointSet<D,T> & p):pointSet(p){

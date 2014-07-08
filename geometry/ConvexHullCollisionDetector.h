@@ -62,7 +62,7 @@ private:
 		bool findSeparatingAxis(ConvexPolygon<D,T> & h1, ConvexPolygon<D,T> & h2, PointSet<2,mpq_class> & pointset1, PointSet<2,mpq_class> & pointset2,  vec<std::pair<Point<2,mpq_class> ,mpq_class>>  &projection_out1,vec<std::pair<Point<2,mpq_class> ,mpq_class>>  &projection_out2);
 
 
-		void findContainingTriangle2d_helper(ConvexPolygon<2,T> & polygon, int first_vertex, int last_vertex,const Point<2,T> & point, ConvexPolygon<2,T> & triangle_out){
+		void findContainingTriangle2d_helper(ConvexPolygon<2,T> & polygon, int first_vertex, int last_vertex,const Point<2,T> & point, NConvexPolygon<2,T> & triangle_out){
 			//recurse on this segment of the polygon, finding a triangle that contains the point.
 			//precondition: the point is contained in this convex segment of the polygon
 
@@ -75,7 +75,7 @@ private:
 			assert(first_vertex!=last_vertex);
 			assert(polygon.containsInRange(point,first_vertex,last_vertex));
 			triangle_out.clear();
-			std::vector<Point<2,T>> & polygon_vertices = polygon.getVertices();
+			ConvexPolygon<2,T> & polygon_vertices =(ConvexPolygon<2,T> &) *this;
 			Point<2,T> & a = polygon_vertices[first_vertex];
 			Point<2,T> & b = polygon_vertices[last_vertex];
 			int mid_point = 0;
@@ -109,10 +109,10 @@ private:
 
 		}
 
-		void findContainingTriangle2d( ConvexPolygon<D,T> & polygon,const Point<D,T> & point, ConvexPolygon<D,T> & triangle_out){
+		void findContainingTriangle2d( ConvexPolygon<D,T> & polygon,const Point<D,T> & point, NConvexPolygon<D,T> & triangle_out){
 			assert(polygon.contains(point));
 
-			findContainingTriangle2d_helper(polygon,0,polygon.getVertices().size()-1,point,triangle_out);
+			findContainingTriangle2d_helper(polygon,0,polygon.size()-1,point,triangle_out);
 		}
 
 };

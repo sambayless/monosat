@@ -30,6 +30,8 @@ public:
 		CRef point_not_contained_marker;
 		CRef convex_intersection_marker;
 		CRef convex_not_intersection_marker;
+		CRef line_intersection_marker;
+		CRef line_not_intersection_marker;
 		CRef area_geq_marker;
 		CRef area_not_geq_marker;
 		CRef point_on_hull_marker;
@@ -40,24 +42,27 @@ public:
 		vec<Lit> lit_point_map;
 		vec<bool> under_hull_members;
 		vec<bool> over_hull_members;
+
+		NConvexPolygon<D,T> tmp_polygon;
+
 		struct PointContainedLit{
 			Point<D,T> p;
 			Lit l;
 			//indices of 3 containing vertices in the under approximation that contain this point (or -1 if no such triangle exists).
-			ConvexPolygon<D,T> under_containing_triangle;
-			ConvexPolygon<D,T> over_containing_triangle;
+			NConvexPolygon<D,T> under_containing_triangle;
+			NConvexPolygon<D,T> over_containing_triangle;
 		};
 		std::vector<PointContainedLit> pointContainedLits;
 
 
-		/*struct LineIntersectionLit{
+		struct LineIntersectionLit{
 			LineSegment<D,T> line;
 			Lit l;
 		};
-		vec<LineIntersectionLit> lineIntersectionLits;*/
+		vec<LineIntersectionLit> lineIntersectionLits;
 
 		struct ConvexIntersectionLit{
-			ConvexPolygon<D,T> polygon;
+			NConvexPolygon<D,T> polygon;
 			Lit l;
 		};
 		std::vector<ConvexIntersectionLit> convexIntersectionLits;
@@ -101,6 +106,9 @@ public:
 		void buildConvexIntersectsReason(ConvexPolygon<D,T> & polygon,vec<Lit> & conflict);
 		void buildConvexNotIntersectsReason(ConvexPolygon<D,T> & polygon,vec<Lit> & conflict);
 
+		void buildLineIntersectsReason(LineSegment<D,T> & polygon,vec<Lit> & conflict);
+		void buildLineNotIntersectsReason(LineSegment<D,T> & polygon,vec<Lit> & conflict);
+
 		void buildReason(Lit p, vec<Lit> & reason, CRef marker);
 		bool checkSatisfied();
 		Lit decide();
@@ -108,7 +116,9 @@ public:
 		void addPointContainmentLit(Point<D,T> p,Var outerVar);
 		void addPointOnHullLit(int pointsetIndex,Var outerVar);
 		//void addLineIntersection(LineSegment<D,T> line, Var outerVar);
-		void addConvexIntersection(ConvexPolygon<D,T> &polygon, Var outerVar);
+		void addConvexIntersection(NConvexPolygon<D,T> &polygon, Var outerVar);
+		void addLineIntersection(LineSegment<D,T> line, Var outerVar);
+
 		ConvexHullDetector(int detectorID,PointSet<D,T> & under, PointSet<D,T> & over, GeometryTheorySolver<D,T> * outer,  double seed=1);
 		~ConvexHullDetector(){
 			if(under_hull)
@@ -123,8 +133,8 @@ private:
 		void findFarPoints(Line<D,T> & testline, bool includeCollinearPoints,std::vector<Point<D,T> > & test_set,std::vector<Point<D,T> > & min_set,ConvexPolygon<D,T> &hull){
 			test_set.clear();
 			T hullside =0;
-			for(int i =0;hullside==0 && i<hull.getVertices().size();i++){
-				hullside =testline.whichSide(hull.getVertices()[i]);
+			for(int i =0;hullside==0 && i<hull.size();i++){
+				hullside =testline.whichSide(hull[i]);
 			}
 			assert(hullside!=0);
 			for(int i = 0;i<over.size();i++){
@@ -162,7 +172,7 @@ private:
 
 		}
 
-		void findContainingTriangle2d_helper(ConvexPolygon<2,T> & polygon, int first_vertex, int last_vertex,const Point<2,T> & point, ConvexPolygon<2,T> & triangle_out){
+		void findContainingTriangle2d_helper(ConvexPolygon<2,T> & polygon, int first_vertex, int last_vertex,const Point<2,T> & point, NConvexPolygon<2,T> & triangle_out){
 			//recurse on this segment of the polygon, finding a triangle that contains the point.
 			//precondition: the point is contained in this convex segment of the polygon
 
@@ -178,9 +188,9 @@ private:
 
 			assert(polygon.containsInRange(point,first_vertex,last_vertex));
 			triangle_out.clear();
-			std::vector<Point<2,T>> & polygon_vertices = polygon.getVertices();
-			Point<2,T> & a = polygon_vertices[first_vertex];
-			Point<2,T> & b = polygon_vertices[last_vertex];
+
+			Point<2,T> & a = polygon[first_vertex];
+			Point<2,T> & b = polygon[last_vertex];
 			assert(first_vertex<last_vertex);
 			if(first_vertex+1==last_vertex) {
 				//Then this is a line. depending on our notion of containment, we either give up, or test if the line contains this point
@@ -202,7 +212,7 @@ private:
 			}else{
 				mid_point = (first_vertex-last_vertex)/2 + last_vertex;
 			}
-			Point<2,T> & c = polygon_vertices[mid_point];
+			Point<2,T> & c = polygon[mid_point];
 			assert(mid_point != last_vertex);assert(mid_point!=first_vertex);
 			triangle_out.addVertexUnchecked(a);
 			triangle_out.addVertexUnchecked(c);
@@ -228,10 +238,10 @@ private:
 
 		}
 
-		void findContainingTriangle2d( ConvexPolygon<D,T> & polygon,const Point<D,T> & point, ConvexPolygon<D,T> & triangle_out){
+		void findContainingTriangle2d( ConvexPolygon<D,T> & polygon,const Point<D,T> & point, NConvexPolygon<D,T> & triangle_out){
 			assert(polygon.contains(point));
 			triangle_out.clear();
-			int sz = polygon.getVertices().size();
+			int sz = polygon.size();
 			if(sz<=3){
 				for (auto & p:polygon){
 					triangle_out.addVertex(p);
@@ -248,7 +258,7 @@ private:
 		void buildPointNotContainedReason2d(const Point<2,T> & p,vec<Lit> & conflict);
 		void buildPointOnHullOrDisabledReason2d(Var pointVar,const Point<2,T> & p, vec<Lit> & conflict);
 		void buildPointNotOnHullOrDisabledReason2d(Var pointVar,const Point<2,T> & p, vec<Lit> & conflict);
-		inline bool checkContainingTriangle(ConvexPolygon<D, T> & containing,const Point<2,T> & point, ConvexPolygon<D,T> & hull, PointSet<D,T> & pointset){
+		inline bool checkContainingTriangle(NConvexPolygon<D, T> & containing,const Point<2,T> & point, ConvexPolygon<D,T> & hull, PointSet<D,T> & pointset){
 			if(containing.size()==0)
 				return false;
 			for (auto &p: containing){
@@ -299,6 +309,9 @@ GeometryDetector(detectorID),outer(outer),under(under),over(over),rnd_seed(seed)
 	area_not_geq_marker=outer->newReasonMarker(getID());
 	convex_intersection_marker=outer->newReasonMarker(getID());
 	convex_not_intersection_marker=outer->newReasonMarker(getID());
+	line_intersection_marker=outer->newReasonMarker(getID());
+	line_not_intersection_marker=outer->newReasonMarker(getID());
+
 
 	if(hullAlg== ConvexHullAlg::ALG_QUICKHULL){
 		over_hull = new QuickConvexHull<D,T>(over);
@@ -324,7 +337,7 @@ void ConvexHullDetector<D,T>::addPointContainmentLit(Point<D,T> p,Var outerVar){
 		pointContainedLits.push_back({p,mkLit(containVar,false)});
 	}
 
-/*template<unsigned int D, class T>
+template<unsigned int D, class T>
 void ConvexHullDetector<D,T>::addLineIntersection(LineSegment<D,T> line, Var outerVar){
 
 	under.invalidate();
@@ -332,10 +345,10 @@ void ConvexHullDetector<D,T>::addLineIntersection(LineSegment<D,T> line, Var out
 
 	Var containVar = outer->newVar(outerVar,getID());
 	lineIntersectionLits.push({line,mkLit(containVar,false)});
-}*/
+}
 
 template<unsigned int D, class T>
-void ConvexHullDetector<D,T>::addConvexIntersection(ConvexPolygon<D,T> & polygon, Var outerVar){
+void ConvexHullDetector<D,T>::addConvexIntersection(NConvexPolygon<D,T> & polygon, Var outerVar){
 
 	under.invalidate();
 	over.invalidate();
@@ -534,6 +547,37 @@ bool ConvexHullDetector<D,T>::propagate(vec<Lit> & conflict){
 			}
 		}
 	}
+	for(int i =0;i<lineIntersectionLits.size();i++){
+		LineSegment<D,T> & line = lineIntersectionLits[i].line;
+		Lit l = lineIntersectionLits[i].l;
+
+		if(p_under.intersects(line)){
+			//l is true
+			if(outer->value(l)==l_True){
+				//do nothing
+			}else if(outer->value(l)==l_Undef){
+
+				outer->enqueue(l,line_intersection_marker) ;
+			}else if (outer->value(l)==l_False){
+				conflict.push(l);
+				buildLineIntersectsReason(line,conflict);
+				return false;
+			}
+		}else if (!p_over.intersects(line)){
+			l=~l;
+			//l is true
+			if(outer->value(l)==l_True){
+				//do nothing
+			}else if(outer->value(l)==l_Undef){
+				outer->enqueue(l,line_not_intersection_marker) ;
+			}else if (outer->value(l)==l_False){
+				conflict.push(l);
+				buildLineNotIntersectsReason(line,conflict);
+				return false;
+			}
+		}
+	}
+
 	for(int i =0;i<convexIntersectionLits.size();i++){
 		ConvexPolygon<D,T> & polygon = convexIntersectionLits[i].polygon;
 		Lit l = convexIntersectionLits[i].l;
@@ -750,7 +794,20 @@ void ConvexHullDetector<D,T>::buildPointNotContainedReason(const Point<D,T> & s,
 		buildPointNotContainedReason2d((const Point<2,T>&)s,conflict);
 	}
 }
-
+template<unsigned int D, class T>
+void ConvexHullDetector<D,T>::buildLineIntersectsReason(LineSegment<D,T> & line,vec<Lit> & conflict){
+	tmp_polygon.clear();
+	tmp_polygon.addVertex(line.a);
+	tmp_polygon.addVertex(line.b);
+	buildConvexIntersectsReason(tmp_polygon,conflict);
+}
+template<unsigned int D, class T>
+void ConvexHullDetector<D,T>::buildLineNotIntersectsReason(LineSegment<D,T> & line,vec<Lit> & conflict){
+	tmp_polygon.clear();
+	tmp_polygon.addVertex(line.a);
+	tmp_polygon.addVertex(line.b);
+	buildConvexNotIntersectsReason(tmp_polygon,conflict);
+}
 
 template<unsigned int D, class T>
 void ConvexHullDetector<D,T>::buildConvexIntersectsReason(ConvexPolygon<D,T> & polygon,vec<Lit> & conflict){
@@ -787,7 +844,7 @@ void ConvexHullDetector<D,T>::buildPointContainedReason2d(const Point<2,T> & s, 
 	ConvexPolygon<2,T> &hull = under_hull->getHull();
 	assert(hull.contains(s));
 
-	ConvexPolygon<2,T> triangle;
+	NConvexPolygon<2,T> triangle;
 	findContainingTriangle2d(hull,s,triangle);
 	assert(triangle.contains(s));
 /*	printf("Learn must disable one of: ");
@@ -861,8 +918,8 @@ void ConvexHullDetector<D,T>::buildPointNotContainedReason2d(const Point<2,T> & 
 	Line<2,T> bottom_line;
 	top_line.a = s;
 	bottom_line.a=s;
-	top_line.b = hull.getVertices()[0];
-	bottom_line.b = hull.getVertices().back();
+	top_line.b = hull[0];
+	bottom_line.b = hull.back();
 
 	std::vector<Point<2,T> > min_set;
 	std::vector<Point<2,T> > test_set;
@@ -885,7 +942,7 @@ void ConvexHullDetector<D,T>::buildPointNotContainedReason2d(const Point<2,T> & 
 		}
 	}
 	//find the extreme points on the hull itself
-	for(auto & p:hull.getVertices()){
+	for(auto & p:hull){
 		if(top_line.whichSide(p)>=0){
 			top_line.b=p;
 		}
@@ -954,8 +1011,8 @@ void ConvexHullDetector<D,T>::buildPointOnHullOrDisabledReason2d(Var pointVar,co
 	Line<2,T> bottom_line;
 	top_line.a = s;
 	bottom_line.a=s;
-	top_line.b = hull.getVertices()[0];
-	bottom_line.b = hull.getVertices().back();
+	top_line.b = hull[0];
+	bottom_line.b = hull.back();
 
 	std::vector<Point<2,T> > min_set;
 	std::vector<Point<2,T> > test_set;
@@ -981,7 +1038,7 @@ void ConvexHullDetector<D,T>::buildPointOnHullOrDisabledReason2d(Var pointVar,co
 		}
 	}
 	//find the extreme points on the hull itself
-	for(auto & p:hull.getVertices()){
+	for(auto & p:hull){
 		if(top_line.whichSide(p)>=0){
 			top_line.b=p;
 		}
@@ -1016,7 +1073,7 @@ void ConvexHullDetector<D,T>::buildPointNotOnHullOrDisabledReason2d(Var pointVar
 	for(auto & p:hull)
 		assert(p.getID()!=s.getID());
 #endif
-	ConvexPolygon<2,T> triangle;
+	NConvexPolygon<2,T> triangle;
 	findContainingTriangle2d(hull,s,triangle);
 	assert(triangle.contains(s));
 	for(auto & p: triangle){
@@ -1153,7 +1210,7 @@ void ConvexHullDetector<D,T>::buildConvexIntersectsReason2d(ConvexPolygon<2,T> &
 
 	for(int i = 0; i<h1.size();i++){
 		if(h2.contains(h1[i])){
-			ConvexPolygon<2,T> triangle;
+			NConvexPolygon<2,T> triangle;
 			findContainingTriangle2d(h2,h1[i],triangle);
 			assert(triangle.contains(h1[i]));
 			conflict.push(~mkLit(outer->getPointVar(h1[i].getID())));
@@ -1163,7 +1220,7 @@ void ConvexHullDetector<D,T>::buildConvexIntersectsReason2d(ConvexPolygon<2,T> &
 
 	for(int i = 0; i<h2.size();i++){
 		if(h1.contains(h2[i])){
-			ConvexPolygon<2,T> triangle;
+			NConvexPolygon<2,T> triangle;
 			findContainingTriangle2d(h1,h2[i],triangle);
 			assert(triangle.contains(h2[i]));
 			for(auto & p: triangle){
@@ -1203,8 +1260,6 @@ bool ConvexHullDetector<D,T>::findSeparatingAxis2d(ConvexPolygon<2,T> & hull1, C
 		return true;
 	}
 
-
-	 std::vector<Point<2,T> > &  w = h1.getVertices();
 
 	 //Separating Axis Theorem for collision detection between two convex polygons
 	 //loop through each edge in _each_ polygon and project both polygons onto that edge's normal.

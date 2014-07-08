@@ -923,7 +923,7 @@ public:
 			fprintf(stderr,"Polygon must be convex, aborting\n");
 			exit(1);
 		}
-		ConvexPolygon<D,T> polygon;
+		NConvexPolygon<D,T> polygon;
 		for (auto & p:points){
 			polygon.addVertex(p);
 		}

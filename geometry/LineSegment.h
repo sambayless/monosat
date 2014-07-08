@@ -188,8 +188,7 @@ bool LineSegment<2,T>::intersects(Shape<2,T> & shape){
 
 
 	}else if(shape.getType()==CONVEX_POLYGON){
-
-		return false;
+		return shape.intersects(*this);
 	}
 	return false;
 }
