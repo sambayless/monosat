@@ -34,8 +34,8 @@ public:
 	}
 
 
-	virtual bool contains(const Point<D,T> & point)=0;
-	virtual bool intersects(Shape<D,T> & s)=0;
+	virtual bool contains(const Point<D,T> & point, bool inclusive)=0;
+	virtual bool intersects(Shape<D,T> & s, bool inclusive)=0;
 
 
 };

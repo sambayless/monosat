@@ -35,8 +35,8 @@ public:
 		return LINE;
 	}
 
-	bool contains(const Point<D,T> & point);
-	bool intersects(Shape<D,T> & s);
+	bool contains(const Point<D,T> & point, bool inclusive);
+	bool intersects(Shape<D,T> & s, bool inclusive);
 
 	//> 0 if the point is 'right' of the line, <0 if 'left' of the line, 0 if exactly on the line.
 	int whichSide(const Point<D,T> & point);
@@ -64,10 +64,10 @@ public:
 	ShapeType getType(){
 		return LINE;
 	}
-	bool contains(const Point<2,T> & point);
-	bool intersects(Shape<2,T> & s);
+	bool contains(const Point<2,T> & point, bool inclusive);
+	bool intersects(Shape<2,T> & s, bool inclusive);
 
-	bool intersects(Line<2,T> & other, Point<2,T> & intersection, bool & colinear);
+	bool intersects(Line<2,T> & other, Point<2,T> & intersection, bool & colinear, bool inclusive);
 	//> 0 if the point is 'right' of the line, <0 if 'left' of the line, 0 if exactly on the line.
 	int whichSide(const Point<2,T> & point){
 		T val= crossDif(b,a,point);
@@ -81,12 +81,14 @@ public:
 };
 
 template<class T>
-bool Line<2,T>::contains(const Point<2,T> & point){
+bool Line<2,T>::contains(const Point<2,T> & point, bool inclusive){
+	if(!inclusive)
+		return false;
 	return crossDif(a,b,point)==0;//is this correct?
 }
 
 template<class T>
-bool Line<2,T>::intersects(Line<2,T> & other, Point<2,T> & intersection, bool & collinear){
+bool Line<2,T>::intersects(Line<2,T> & other, Point<2,T> & intersection, bool & collinear, bool inclusive){
 
 	//from http://stackoverflow.com/a/565282
 	collinear=false;
@@ -116,7 +118,7 @@ bool Line<2,T>::intersects(Line<2,T> & other, Point<2,T> & intersection, bool & 
 	return collinear || intersecting;
 }
 template<class T>
-bool Line<2,T>::intersects(Shape<2,T> & s){
+bool Line<2,T>::intersects(Shape<2,T> & s, bool inclusive){
 	if(s.getType()==LINE){
 		//Is this correct? This hasn't been tested.
 		Line<2,T> & other = (Line<2,T> & ) s;

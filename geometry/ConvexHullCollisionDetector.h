@@ -47,7 +47,8 @@ public:
 
 		Lit collisionLit=lit_Undef;
 		Lit intersectionLit = lit_Undef;
-
+		Lit collisionLitExclusive=lit_Undef;
+		Lit intersectionLitExclusive = lit_Undef;
 		bool propagate(vec<Lit> & conflict);
 		void buildCollisionReason(vec<Lit> & conflict);
 		void buildNotCollisionReason(vec<Lit> & conflict);
@@ -62,7 +63,7 @@ private:
 		bool findSeparatingAxis(ConvexPolygon<D,T> & h1, ConvexPolygon<D,T> & h2, PointSet<2,mpq_class> & pointset1, PointSet<2,mpq_class> & pointset2,  std::vector<std::pair<Point<2,mpq_class> ,mpq_class>>  &projection_out1,std::vector<std::pair<Point<2,mpq_class> ,mpq_class>>  &projection_out2);
 
 
-		void findContainingTriangle2d_helper(ConvexPolygon<2,T> & polygon, int first_vertex, int last_vertex,const Point<2,T> & point, NConvexPolygon<2,T> & triangle_out){
+		void findContainingTriangle2d_helper(ConvexPolygon<2,T> & polygon, int first_vertex, int last_vertex,const Point<2,T> & point, NConvexPolygon<2,T> & triangle_out, bool inclusive){
 			//recurse on this segment of the polygon, finding a triangle that contains the point.
 			//precondition: the point is contained in this convex segment of the polygon
 
@@ -89,30 +90,30 @@ private:
 			triangle_out.addVertexUnchecked(b);
 			triangle_out.addVertexUnchecked(c);
 
-			if(triangle_out.contains(point))
+			if(triangle_out.contains(point,inclusive))
 				return;//we are done
 			else{
 				Line<2,T> testLine(a,c);
 				assert(testLine.whichSide(point)!= 0);//else we would have already found the point
 
 				if(testLine.whichSide(point)!= testLine.whichSide(b)){
-					 findContainingTriangle2d_helper(polygon,first_vertex,mid_point,point,triangle_out);
+					 findContainingTriangle2d_helper(polygon,first_vertex,mid_point,point,triangle_out,inclusive);
 				}else{
 #ifndef NDEBUG
 					Line<2,T> dbgLine(b,c);
 					assert(dbgLine.whichSide(point)!= 0);//else we would have already found the point
 					assert(dbgLine.whichSide(point)!= dbgLine.whichSide(a));
 #endif
-					findContainingTriangle2d_helper(polygon,mid_point,last_vertex,point,triangle_out);
+					findContainingTriangle2d_helper(polygon,mid_point,last_vertex,point,triangle_out,inclusive);
 				}
 			}
 
 		}
 
-		void findContainingTriangle2d( ConvexPolygon<D,T> & polygon,const Point<D,T> & point, NConvexPolygon<D,T> & triangle_out){
-			assert(polygon.contains(point));
+		void findContainingTriangle2d( ConvexPolygon<D,T> & polygon,const Point<D,T> & point, NConvexPolygon<D,T> & triangle_out, bool inclusive){
+			assert(polygon.contains(point, inclusive));
 
-			findContainingTriangle2d_helper(polygon,0,polygon.size()-1,point,triangle_out);
+			findContainingTriangle2d_helper(polygon,0,polygon.size()-1,point,triangle_out, inclusive);
 		}
 
 };

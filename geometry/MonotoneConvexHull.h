@@ -54,7 +54,7 @@ public:
 				Point<D,T> & dt = pointSet[index];
 
 				if(pointSet.history[i].addition && pointSet.pointEnabled(index)){
-					if (!hull.contains(dt)){
+					if (!hull.contains(dt,true)){
 						needsUpdate=true;
 						break;
 					}
@@ -100,7 +100,7 @@ private:
 		if(!pointSet.pointEnabled(i)){
 
 		}else{
-			assert(hull.contains(p));
+			assert(hull.contains(p,true));
 		}
 	}
 #endif

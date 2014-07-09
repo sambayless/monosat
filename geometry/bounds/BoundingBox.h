@@ -27,8 +27,8 @@ public:
 		return BOUNDING_BOX;
 	}
 	void update();
-	bool contains(const Point<D,T> & point);
-	bool intersects(Shape<D,T> & s);
+	bool contains(const Point<D,T> & point, bool inclusive=true);
+	bool intersects(Shape<D,T> & s, bool inclusive=true);
 };
 template<unsigned int D,class T>
 class BoundingBox<D,T,Polygon<D,T>>:public BoundingVolume<D,T>{
@@ -58,17 +58,26 @@ public:
 			}
 		}
 	}
-	bool contains(const Point<D,T> & point){
+	bool contains(const Point<D,T> & point, bool inclusive=true){
 		assert(dbg_uptodate());
-		for (int i = 0;i<D;i++){
-			if(point[i]>max_point[i])
-				return false;
-			if(point[i]<min_point[i])
-				return false;
+		if(inclusive){
+			for (int i = 0;i<D;i++){
+				if(point[i]>max_point[i])
+					return false;
+				if(point[i]<min_point[i])
+					return false;
+			}
+		}else{
+			for (int i = 0;i<D;i++){
+				if(point[i]>=max_point[i])
+					return false;
+				if(point[i]<=min_point[i])
+					return false;
+			}
 		}
 		return true;
 	}
-	bool intersects(Shape<D,T> & s){
+	bool intersects(Shape<D,T> & s, bool inclusive=true){
 		assert(false);//not yet implemented
 		return false;
 	}

@@ -34,7 +34,7 @@ public:
 		return LINE_SEGMENT;
 	}
 
-	bool contains(const Point<D,T> & point);
+	bool contains(const Point<D,T> & point, bool inclusive);
 	bool intersects(Shape<D,T> & s);
 
 	//> 0 if the point is 'right' of the line, <0 if 'left' of the line, 0 if exactly on the line.
@@ -60,11 +60,11 @@ public:
 	ShapeType getType(){
 		return LINE_SEGMENT;
 	}
-	bool contains(const Point<2,T> & point);
-	bool intersects(Shape<2,T> & s);
+	bool contains(const Point<2,T> & point, bool inclusive);
+	bool intersects(Shape<2,T> & s, bool inclusive);
 
-	bool intersects(LineSegment<2,T> & line, Point<2,T> & intersection, bool & overlapping);
-	bool intersects(Line<2,T> & line, Point<2,T> & intersection, bool & overlapping);
+	bool intersects(LineSegment<2,T> & line, Point<2,T> & intersection, bool & overlapping, bool inclusive);
+	bool intersects(Line<2,T> & line, Point<2,T> & intersection, bool & overlapping, bool inclusive);
 	//> 0 if the point is 'right' of the line, <0 if 'left' of the line, 0 if exactly on the line.
 	int whichSide(const Point<2,T> & point){
 		T val= cross(b,a,point);
@@ -75,16 +75,18 @@ public:
 	}
 private:
 
-	static bool mightIntersect(LineSegment<2,T> & l1,LineSegment<2,T> &l2);
+	static bool mightIntersect(LineSegment<2,T> & l1,LineSegment<2,T> &l2, bool inclusive);
 };
 
 template<class T>
-bool LineSegment<2,T>::contains(const Point<2,T> & point){
+bool LineSegment<2,T>::contains(const Point<2,T> & point, bool inclusive){
+	if(!inclusive)
+		return false;
 	return false;
 }
 
 template<class T>
-bool LineSegment<2,T>::intersects(Line<2,T> & other, Point<2,T> & intersection, bool & overlapping){
+bool LineSegment<2,T>::intersects(Line<2,T> & other, Point<2,T> & intersection, bool & overlapping, bool inclusive){
 
 	//from http://stackoverflow.com/a/565282
 	overlapping=false;
@@ -130,7 +132,7 @@ bool LineSegment<2,T>::intersects(Line<2,T> & other, Point<2,T> & intersection, 
 	return overlapping || intersecting;
 }
 template<class T>
-bool LineSegment<2,T>::intersects(LineSegment<2,T> & other, Point<2,T> & intersection, bool & overlapping){
+bool LineSegment<2,T>::intersects(LineSegment<2,T> & other, Point<2,T> & intersection, bool & overlapping, bool inclusive){
 
 	//from http://stackoverflow.com/a/565282
 	overlapping=false;
@@ -182,7 +184,7 @@ bool LineSegment<2,T>::intersects(LineSegment<2,T> & other, Point<2,T> & interse
 }
 
 template<class T>
-bool LineSegment<2,T>::mightIntersect(LineSegment<2,T> & l1,LineSegment<2,T> &l2){
+bool LineSegment<2,T>::mightIntersect(LineSegment<2,T> & l1,LineSegment<2,T> &l2, bool inclusive){
 
 	T side1 = crossDif(l1.a,l1.b,l2.a);
 	if(side1==0)
@@ -207,7 +209,7 @@ bool LineSegment<2,T>::mightIntersect(LineSegment<2,T> & l1,LineSegment<2,T> &l2
 }
 
 template<class T>
-bool LineSegment<2,T>::intersects(Shape<2,T> & shape){
+bool LineSegment<2,T>::intersects(Shape<2,T> & shape, bool inclusive){
 	if(shape.getType()==LINE_SEGMENT){
 
 		LineSegment<2,T> & other = (LineSegment<2,T> &)shape;
@@ -231,9 +233,9 @@ bool LineSegment<2,T>::intersects(Shape<2,T> & shape){
 			return false;
 		}
 
-		return mightIntersect(*this,other) && mightIntersect(other,*this);
+		return mightIntersect(*this,other,inclusive) && mightIntersect(other,*this,inclusive);
 	}else if(shape.getType()==CONVEX_POLYGON){
-		return shape.intersects(*this);
+		return shape.intersects(*this, inclusive);
 	}
 	return false;
 }

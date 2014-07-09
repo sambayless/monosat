@@ -44,12 +44,12 @@ public:
 	}
 
 
-	virtual bool contains(const Point<D,T> & point){
-		if(!boundContains(point)){
+	virtual bool contains(const Point<D,T> & point, bool inclusive=true){
+		if(!boundContains(point,inclusive)){
 			return false;
 		}
 		if(D==2){
-			return contains2d((const Point<2,T> &)point);
+			return contains2d((const Point<2,T> &)point,inclusive);
 		}
 		assert(false);
 		return false;
@@ -57,7 +57,7 @@ public:
 
 	//virtual bool findContainingConvex(const Point<D,T> & point,NPolygon<D,T> & polygon_out)=0;
 
-	virtual bool intersects(Shape<D,T> & s){
+	virtual bool intersects(Shape<D,T> & s, bool inclusive=true){
 		assert(false);
 		return false;
 	}
@@ -96,16 +96,16 @@ public:
 			assert(false);
 	}
 
-	inline bool boundContains(const Point<D,T> & p){
+	inline bool boundContains(const Point<D,T> & p, bool inclusive=true){
 		if(!bound)
 			return true;
 		if(!bounds_uptodate){
 			bounds_uptodate=true;
 			bound->update();
 		}
-		return bound->contains(p);
+		return bound->contains(p,inclusive);
 	}
-	static bool pointInTriangle2d(const Point<D,T> & p,const Point<D,T> & p0,const Point<D,T> & p1, const Point<D,T> &p2){
+	static bool pointInTriangle2d(const Point<D,T> & p,const Point<D,T> & p0,const Point<D,T> & p1, const Point<D,T> &p2, bool inclusive){
 		//from http://stackoverflow.com/a/14382692
 		assert(dbg_orderClockwise2dTri(p0,p1,p2));
 
@@ -113,7 +113,10 @@ public:
 		T t = (p2.x*p1.y - p2.y*p1.x + (p2.y - p1.y)*p.x + (p1.x - p2.x)*p.y);
 		T area2 =  (-p1.y*p0.x + p2.y*(-p1.x + p0.x) + p2.x*(p1.y - p0.y) + p1.x*p0.y);
 		assert(area2>=0);
-		return s>=0 && t>=0 && (s+t<=area2);
+		if(inclusive)
+			return s>=0 && t>=0 && (s+t<=area2);
+		else
+			return s>0 && t>0 && (s+t<area2);
 		//from http://stackoverflow.com/a/13301035
 	/*	T dif23y = p2.y - p3.y;
 		T dif32x = p3.x - p2.x;
@@ -168,7 +171,7 @@ protected:
 	//put the vertices into clockwise order
 	void reorderVertices2d();
 
-	bool contains2d(const Point<2,T> & point);
+	bool contains2d(const Point<2,T> & point, bool inclusive);
 
 	//Note: for convenience, the first point of the wrap is also the last point (it is duplicated).
 
@@ -358,7 +361,7 @@ T Polygon<D,T>::getArea2d(){
 }
 
 template<unsigned int D,class T>
-bool Polygon<D,T>::contains2d(const Point<2,T> & point){
+bool Polygon<D,T>::contains2d(const Point<2,T> & point, bool inclusive){
 
  int i;
   int j;

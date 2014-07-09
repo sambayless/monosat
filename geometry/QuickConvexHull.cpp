@@ -46,7 +46,7 @@ void QuickConvexHull<2,mpq_class>::update(){
 				if(!pointSet.pointEnabled(i)){
 
 				}else{
-					assert(hull.contains(p));
+					assert(hull.contains(p,true));
 				}
 			}
 	#endif
@@ -99,7 +99,7 @@ void QuickConvexHull<2,double>::update(){
 			if(!pointSet.pointEnabled(i)){
 
 			}else{
-				assert(hull.contains(p));
+				assert(hull.contains(p,true));
 			}
 		}
 #endif

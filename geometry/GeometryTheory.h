@@ -720,7 +720,6 @@ public:
 #endif
 		dbg_full_sync();
 
-
 		detectors_to_check.clear();
 
 		double elapsed = rtime(1)-startproptime;
@@ -942,7 +941,7 @@ public:
 		convexHullDetectors[pointSet]->addLineIntersection(LineSegment<D,T>(p,q),outerVar);
 	}*/
 
-	void convexHullIntersectsPolygon(int pointSet,std::vector<Point<D,T>> & points,Var outerVar){
+	void convexHullIntersectsPolygon(int pointSet,std::vector<Point<D,T>> & points,Var outerVar, bool inclusive=true){
 		//For now, polygon must be a simple, CONVEX polygon with clockwise winding
 
 		convexHullDetectors.growTo(nPointSets(),nullptr);
@@ -966,11 +965,11 @@ public:
 			polygon.addVertex(p);
 		}
 		if(polygon.size()==1){
-			convexHullDetectors[pointSet]->addPointContainmentLit(polygon[0],outerVar);
+			convexHullDetectors[pointSet]->addPointContainmentLit(polygon[0],outerVar,inclusive);
 		}else if (polygon.size()==2){
-			convexHullDetectors[pointSet]->addLineIntersectionLit(LineSegment<D,T>(polygon[0],polygon[1]),outerVar);
+			convexHullDetectors[pointSet]->addLineIntersectionLit(LineSegment<D,T>(polygon[0],polygon[1]),outerVar,inclusive);
 		}else
-			convexHullDetectors[pointSet]->addConvexIntersectionLit(polygon,outerVar);
+			convexHullDetectors[pointSet]->addConvexIntersectionLit(polygon,outerVar,inclusive);
 	}
 	void convexHullsIntersect(int pointSet1,int pointSet2 , Var outerVar){
 

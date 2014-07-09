@@ -39,22 +39,22 @@ public:
 	virtual ShapeType getType(){
 		return CONVEX_POLYGON;
 	}
-	bool contains(const Point<D,T> & point);
-	bool contains(const Point<D,T> & point,NConvexPolygon<D,T> & polygon_out);
+	bool contains(const Point<D,T> & point, bool inclusive);
+	bool contains(const Point<D,T> & point,NConvexPolygon<D,T> & polygon_out, bool inclusive);
 
-	bool containsInRange(const Point<D,T> & point, int firstVertex=0,int lastVertex=-1);
-	bool containsInSplit(const Point<D,T> & point, int firstVertex=0,int lastVertex=-1);
-	bool intersects(Shape<D,T> & s);
+	bool containsInRange(const Point<D,T> & point, bool inclusive, int firstVertex=0,int lastVertex=-1);
+	bool containsInSplit(const Point<D,T> & point, bool inclusive, int firstVertex=0,int lastVertex=-1);
+	bool intersects(Shape<D,T> & s, bool inclusive);
 
-	bool intersects(Shape<D,T> & s, NConvexPolygon<D,T> & polygon_out);
+	bool intersects(Shape<D,T> & s, NConvexPolygon<D,T> & polygon_out, bool inclusive);
 
 private:
-	bool intersects2d(Shape<2,T> & s);
-	bool intersects2d(Shape<2,T> & s, NConvexPolygon<2,T> & polygon_out);
-	bool edgesIntersectLine2d(LineSegment<2,T> & check, LineSegment<2,T> & intersection);
-	bool containsInRange2d(const Point<2,T> & point, int firstVertex,int lastVertex);
-	bool containsInSplit2d(const Point<2,T> & point, int firstVertex,int lastVertex, NConvexPolygon<2,T> & triangle_out);
-	bool containsInSplit2d_helper(const Point<2,T> & point, int firstVertex,int lastVertex, NConvexPolygon<2,T> & triangle_out, int depth);
+	bool intersects2d(Shape<2,T> & s, bool inclusive);
+	bool intersects2d(Shape<2,T> & s, NConvexPolygon<2,T> & polygon_out, bool inclusive);
+	bool edgesIntersectLine2d(LineSegment<2,T> & check, LineSegment<2,T> & intersection, bool inclusive);
+	bool containsInRange2d(const Point<2,T> & point, int firstVertex,int lastVertex, bool inclusive);
+	bool containsInSplit2d(const Point<2,T> & point, int firstVertex,int lastVertex, NConvexPolygon<2,T> & triangle_out, bool inclusive);
+	bool containsInSplit2d_helper(const Point<2,T> & point, int firstVertex,int lastVertex, NConvexPolygon<2,T> & triangle_out, int depth, bool inclusive);
 	static bool dbg_orderClockwise2dTri(Point<2,T> p1,Point<2,T> p2,Point<2,T> p3){
 	#ifndef NDEBUG
 		std::vector<Point<2,T>> points;
@@ -274,13 +274,13 @@ std::ostream & operator<<(std::ostream & str, Triangle<D,T>  & polygon){
 }
 
 template<unsigned int D,class T>
-bool ConvexPolygon<D,T>::contains(const Point<D,T> & point,NConvexPolygon<D,T> & polygon_out){
+bool ConvexPolygon<D,T>::contains(const Point<D,T> & point,NConvexPolygon<D,T> & polygon_out, bool inclusive){
 	polygon_out.clear();
 	stats_contain_checks++;
 	if(this->size()==3){
 		if(D==2){
 			stats_triangle_avoided++;
-			if(  this->pointInTriangle2d(point,(*this)[0],(*this)[1],(*this)[2])){
+			if(  this->pointInTriangle2d(point,(*this)[0],(*this)[1],(*this)[2],inclusive)){
 				polygon_out.addVertexUnchecked((*this)[0]);
 				polygon_out.addVertexUnchecked((*this)[1]);
 				polygon_out.addVertexUnchecked((*this)[2]);
@@ -298,7 +298,7 @@ bool ConvexPolygon<D,T>::contains(const Point<D,T> & point,NConvexPolygon<D,T> &
 	}
 
 	if(D==2){
-		return containsInSplit2d((const Point<2,T> &) point, 0,this->size()-1,(NConvexPolygon<D,T> &)polygon_out);
+		return containsInSplit2d((const Point<2,T> &) point, 0,this->size()-1,(NConvexPolygon<D,T> &)polygon_out,inclusive);
 	}else{
 		assert(false);
 	}
@@ -306,7 +306,7 @@ bool ConvexPolygon<D,T>::contains(const Point<D,T> & point,NConvexPolygon<D,T> &
 }
 
 template<unsigned int D,class T>
-bool ConvexPolygon<D,T>::contains(const Point<D,T> & point)
+bool ConvexPolygon<D,T>::contains(const Point<D,T> & point, bool inclusive)
 {
 	//stats_contain_checks++;
 	static int iter = 0;
@@ -315,38 +315,38 @@ bool ConvexPolygon<D,T>::contains(const Point<D,T> & point)
 	}
 	if( this->size()==3){
 		if(D== 2)
-			return this->pointInTriangle2d(point,(*this)[0],(*this)[1],(*this)[2]);
+			return this->pointInTriangle2d(point,(*this)[0],(*this)[1],(*this)[2],inclusive);
 	}
-	if(!this->boundContains(point)){
+	if(!this->boundContains(point,inclusive)){
 		//bool b = Polygon<D,T>::boundContains(point);
-		assert(!containsInRange(point,0,this->size()-1));
+		assert(!containsInRange(point,0,this->size()-1,inclusive));
 		//stats_bounds_avoided++;
 		return false;
 	}
 
 	if(Minisat::pipalg == PointInPolygonAlg::ALG_RECURSIVE_SPLIT){
 
-		return containsInSplit(point,0,this->size()-1);
+		return containsInSplit(point,0,this->size()-1,inclusive);
 	}else{
-		return containsInRange(point,0,this->size()-1);
+		return containsInRange(point,0,this->size()-1,inclusive);
 	}
 }
 template<unsigned int D,class T>
-bool ConvexPolygon<D,T>::containsInRange(const Point<D,T> & point, int firstVertex,int lastVertex)
+bool ConvexPolygon<D,T>::containsInRange(const Point<D,T> & point, bool inclusive, int firstVertex,int lastVertex)
 {
 	if(D==2){
-		return containsInRange2d((const Point<2,T> &) point, firstVertex,lastVertex);
+		return containsInRange2d((const Point<2,T> &) point, firstVertex,lastVertex,inclusive);
 	}else{
 		assert(false);
 	}
 	return false;
 }
 template<unsigned int D,class T>
-bool ConvexPolygon<D,T>::containsInSplit(const Point<D,T> & point, int firstVertex,int lastVertex)
+bool ConvexPolygon<D,T>::containsInSplit(const Point<D,T> & point, bool inclusive, int firstVertex,int lastVertex)
 {
 	if(D==2){
 		static NConvexPolygon<2,T> ignore;
-		return containsInSplit2d((const Point<2,T> &) point, firstVertex,lastVertex,ignore);
+		return containsInSplit2d((const Point<2,T> &) point,firstVertex,lastVertex,ignore,inclusive);
 	}else{
 		assert(false);
 	}
@@ -354,7 +354,7 @@ bool ConvexPolygon<D,T>::containsInSplit(const Point<D,T> & point, int firstVert
 }
 
 template<unsigned int D,class T>
-bool ConvexPolygon<D,T>::containsInSplit2d(const Point<2,T> & point, int firstVertex,int lastVertex, NConvexPolygon<2,T> & triangle_out){
+bool ConvexPolygon<D,T>::containsInSplit2d(const Point<2,T> & point, int firstVertex,int lastVertex, NConvexPolygon<2,T> & triangle_out, bool inclusive){
 	 stats_split_checks++;
 	 //std::vector<Point<2,T> > &  w = (std::vector<Point<2,T> > & ) Polygon<D,T>::getVertices();
 	 ConvexPolygon<2,T> & w = (ConvexPolygon<2,T> &) *this;
@@ -418,13 +418,13 @@ bool ConvexPolygon<D,T>::containsInSplit2d(const Point<2,T> & point, int firstVe
 	 }
 	 stats_split_full_checks++;
 
-	bool res= containsInSplit2d_helper(point, firstVertex,lastVertex, triangle_out,1);
-	assert(res== containsInRange(point,firstVertex,lastVertex));
+	bool res= containsInSplit2d_helper(point, firstVertex,lastVertex, triangle_out,1,inclusive);
+	assert(res== containsInRange(point,firstVertex,lastVertex,inclusive));
 	return res;
 
 }
 template<unsigned int D,class T>
-bool ConvexPolygon<D,T>::containsInSplit2d_helper(const Point<2,T> & point,int first_vertex, int last_vertex, NConvexPolygon<2,T> & triangle_out, int depth){
+bool ConvexPolygon<D,T>::containsInSplit2d_helper(const Point<2,T> & point,int first_vertex, int last_vertex, NConvexPolygon<2,T> & triangle_out, int depth, bool inclusive){
 	//recurse on this segment of the polygon, finding a triangle that contains the point.
 	//precondition: the point is contained in this convex segment of the polygon
 
@@ -455,7 +455,8 @@ bool ConvexPolygon<D,T>::containsInSplit2d_helper(const Point<2,T> & point,int f
 		triangle_out.clear();
 		triangle_out.addVertexUnchecked(a);
 		triangle_out.addVertexUnchecked(b);
-		if(triangle_out.contains(point)){
+		printf("WARNING!\n");
+		if(triangle_out.contains(point,inclusive)){
 			return true;
 		}else{
 			triangle_out.clear();//give up
@@ -488,14 +489,18 @@ bool ConvexPolygon<D,T>::containsInSplit2d_helper(const Point<2,T> & point,int f
 	/*T s = (a.y*b.x - a.x*b.y + (b.y - a.y)*point.x + (a.x - b.x)*point.y);
 	T t = (a.x*c.y - a.y*c.x + (a.y - c.y)*point.x + (c.x - a.x)*point.y);*/
 	//T gamma = 1-s-t;
-	bool contained = ( s>=0 && t>=0 && (s+t<=area2));
+	bool contained;
+	if(inclusive)
+		contained= ( s>=0 && t>=0 && (s+t<=area2));
+	else
+		contained= ( s>0 && t>0 && (s+t<area2));
 
 	if(contained){
 		triangle_out.clear();
 		triangle_out.addVertexUnchecked(a);
 		triangle_out.addVertexUnchecked(c);
 		triangle_out.addVertexUnchecked(b);
-		assert(triangle_out.contains(point));
+		assert(triangle_out.contains(point,inclusive));
 		stats_split_checks_depths+=depth;
 		return true;//we are done
 	}else{
@@ -504,7 +509,7 @@ bool ConvexPolygon<D,T>::containsInSplit2d_helper(const Point<2,T> & point,int f
 		dbg_poly.addVertexUnchecked(a);
 		dbg_poly.addVertexUnchecked(c);
 		dbg_poly.addVertexUnchecked(b);
-		assert(!dbg_poly.contains(point));
+		assert(!dbg_poly.contains(point,inclusive));
 
 #endif
 /*
@@ -521,14 +526,14 @@ bool ConvexPolygon<D,T>::containsInSplit2d_helper(const Point<2,T> & point,int f
 */
 		if(t<0 && s>=0){
 			//point is either between first_vertex,mid_point, or not in the triangle
-			return containsInSplit2d_helper(point,first_vertex,mid_point,triangle_out,depth+1);
+			return containsInSplit2d_helper(point,first_vertex,mid_point,triangle_out,depth+1,inclusive);
 		}else if (s<0 && t>=0){
 			//point is either between first_vertex,mid_point, or not in the triangle
-			return containsInSplit2d_helper(point,mid_point,last_vertex,triangle_out,depth+1);
+			return containsInSplit2d_helper(point,mid_point,last_vertex,triangle_out,depth+1,inclusive);
 		}else{
 			stats_split_checks_depths+=depth;
 			//point is not contained.
-			assert(!containsInRange(point,first_vertex,last_vertex));
+			assert(!containsInRange(point,first_vertex,last_vertex,inclusive));
 			return false;//this point is not contained.
 
 		}
@@ -538,7 +543,7 @@ bool ConvexPolygon<D,T>::containsInSplit2d_helper(const Point<2,T> & point,int f
 
 
 template<unsigned int D,class T>
-bool ConvexPolygon<D,T>::containsInRange2d(const Point<2,T> & point, int firstVertex,int lastVertex){
+bool ConvexPolygon<D,T>::containsInRange2d(const Point<2,T> & point, int firstVertex,int lastVertex, bool inclusive){
 	//From http://demonstrations.wolfram.com/AnEfficientTestForAPointToBeInAConvexPolygon/
 	//this is correct _only_ for convex polygons
 	 //std::vector<Point<2,T> > &  w = (std::vector<Point<2,T> > & ) Polygon<D,T>::getVertices();
@@ -600,19 +605,19 @@ bool ConvexPolygon<D,T>::containsInRange2d(const Point<2,T> & point, int firstVe
 }
 
 template<unsigned int D,class T>
-bool ConvexPolygon<D,T>::intersects(Shape<D,T> & shape,NConvexPolygon<D,T> & out){
+bool ConvexPolygon<D,T>::intersects(Shape<D,T> & shape,NConvexPolygon<D,T> & out, bool inclusive){
 	out.clear();
 	if(D==2){
-		return intersects2d((Shape<2,T> &) shape,(NConvexPolygon<2,T> &)out);
+		return intersects2d((Shape<2,T> &) shape,(NConvexPolygon<2,T> &)out,inclusive);
 	}else{
 		assert(false);
 	}
 	return false;
 }
 template<unsigned int D,class T>
-bool ConvexPolygon<D,T>::intersects(Shape<D,T> & shape){
+bool ConvexPolygon<D,T>::intersects(Shape<D,T> & shape, bool inclusive){
 	if(D==2){
-		return intersects2d((Shape<2,T> &) shape);
+		return intersects2d((Shape<2,T> &) shape,inclusive);
 	}else{
 		assert(false);
 	}
@@ -621,7 +626,7 @@ bool ConvexPolygon<D,T>::intersects(Shape<D,T> & shape){
 
 
 template<unsigned int D,class T>
-bool ConvexPolygon<D,T>::edgesIntersectLine2d(LineSegment<2,T> & check,LineSegment<2,T> & out){
+bool ConvexPolygon<D,T>::edgesIntersectLine2d(LineSegment<2,T> & check,LineSegment<2,T> & out, bool inclusive){
 	// std::vector<Point<2,T> > &  w = this->getVertices();
 	ConvexPolygon<2,T> & w = (ConvexPolygon<2,T>&)*this;
 	for(int i = 0;i<w.size();i++){
@@ -629,7 +634,7 @@ bool ConvexPolygon<D,T>::edgesIntersectLine2d(LineSegment<2,T> & check,LineSegme
 		Point<2,T> & p = w[i];
 		out.a = prev;
 		out.b = p;
-		if(check.intersects(out)){
+		if(check.intersects(out,inclusive)){
 			return true;
 		}
 	}
@@ -637,23 +642,23 @@ bool ConvexPolygon<D,T>::edgesIntersectLine2d(LineSegment<2,T> & check,LineSegme
 }
 
 template<unsigned int D,class T>
-bool ConvexPolygon<D,T>::intersects2d(Shape<2,T> & shape){
+bool ConvexPolygon<D,T>::intersects2d(Shape<2,T> & shape, bool inclusive){
 	if(shape.getType()==LINE_SEGMENT){
 		LineSegment<2,T> & line = (LineSegment<2,T> &)shape;
 
 		//first, check if either end point is contained
-		if(this->contains2d(line.a) || this->contains2d(line.b))
+		if(this->contains(line.a,inclusive) || this->contains(line.b,inclusive))
 			return true;
 		static LineSegment<2,T>  ignore;
 		//the line may still intersect even if neither end point is contained.
 		//we could apply the SAT here. But instead, we're going to walk around the edges of the convex shape, and see if any of the edges intersect this line.
-		return edgesIntersectLine2d(line,ignore);
+		return edgesIntersectLine2d(line,ignore, inclusive);
 
 
 	}else if(shape.getType()==CONVEX_POLYGON){
 		ConvexPolygon<2,T> & c = (ConvexPolygon<2,T>&) shape;
 		if(c.size()<this->size()){
-			return c.intersects(*this);
+			return c.intersects(*this,inclusive);
 		}
 
 		if(this->size()==0 || c.size()==0){
@@ -663,10 +668,10 @@ bool ConvexPolygon<D,T>::intersects2d(Shape<2,T> & shape){
 				//then the two vertices are considered to collide if they are identical
 				return (*this)[0]==c[0];
 			}else{
-				return c.contains((*this)[0]);
+				return c.contains((*this)[0],inclusive);
 			}
 		}else if (c.size()==1){
-			return contains(c[0]);
+			return contains(c[0],inclusive);
 		}
 
 
@@ -700,18 +705,35 @@ bool ConvexPolygon<D,T>::intersects2d(Shape<2,T> & shape){
 			 bool seenRight=true;
 			 for (auto & p:c){
 				 T projection = un_normalized_normal.dot(p);
-				 if (projection >= left && projection <= right ) {
-					 overlaps=true;
-					 break;
-				 }else if (projection < left ){
-					 seenLeft=true;
-					 if(seenRight){
+				 if(inclusive){
+					 if (projection >= left && projection <= right ) {
+						 overlaps=true;
 						 break;
+					 }else if (projection < left ){
+						 seenLeft=true;
+						 if(seenRight){
+							 break;
+						 }
+					 }else if (projection>right){
+						 seenRight=true;
+						 if (seenLeft){
+							 break;
+						 }
 					 }
-				 }else if (projection>right){
-					 seenRight=true;
-					 if (seenLeft){
+				 }else{
+					 if (projection > left && projection < right ) {
+						 overlaps=true;
 						 break;
+					 }else if (projection <= left ){
+						 seenLeft=true;
+						 if(seenRight){
+							 break;
+						 }
+					 }else if (projection>=right){
+						 seenRight=true;
+						 if (seenLeft){
+							 break;
+						 }
 					 }
 				 }
 			 }
@@ -743,18 +765,35 @@ bool ConvexPolygon<D,T>::intersects2d(Shape<2,T> & shape){
 			 bool overlaps = false;
 			 for (auto & p:*this){
 				 T projection = un_normalized_normal.dot(p);
-				 if (projection >= left && projection <= right ) {
-					 overlaps=true;
-					 break;
-				 }else if (projection < left ){
-					 seenLeft=true;
-					 if(seenRight){
+				 if(inclusive){
+					 if (projection >= left && projection <= right ) {
+						 overlaps=true;
 						 break;
+					 }else if (projection < left ){
+						 seenLeft=true;
+						 if(seenRight){
+							 break;
+						 }
+					 }else if (projection>right){
+						 seenRight=true;
+						 if (seenLeft){
+							 break;
+						 }
 					 }
-				 }else if (projection>right){
-					 seenRight=true;
-					 if (seenLeft){
+				 }else{
+					 if (projection > left && projection < right ) {
+						 overlaps=true;
 						 break;
+					 }else if (projection <= left ){
+						 seenLeft=true;
+						 if(seenRight){
+							 break;
+						 }
+					 }else if (projection >= right){
+						 seenRight=true;
+						 if (seenLeft){
+							 break;
+						 }
 					 }
 				 }
 			 }
@@ -771,21 +810,21 @@ bool ConvexPolygon<D,T>::intersects2d(Shape<2,T> & shape){
 }
 
 template<unsigned int D,class T>
-bool ConvexPolygon<D,T>::intersects2d(Shape<2,T> & shape, NConvexPolygon<2,T> & out){
+bool ConvexPolygon<D,T>::intersects2d(Shape<2,T> & shape, NConvexPolygon<2,T> & out, bool inclusive){
 	if(this->size()==0)
 		return false;
 	if(shape.getType()==LINE_SEGMENT){
 		LineSegment<2,T> & line = (LineSegment<2,T> &)shape;
 
 		//first, check if either end point is contained
-		if(this->contains(line.a,out) || this->contains(line.b,out))
+		if(this->contains(line.a,out,inclusive) || this->contains(line.b,out,inclusive))
 			return true;
 		if(this->size()==1)
 			return false;//only endpoint containment is possible
 		static LineSegment<2,T>  store;
 		//the line may still intersect even if neither end point is contained.
 		//we could apply the SAT here. But instead, we're going to walk around the edges of the convex shape, and see if any of the edges intersect this line.
-		bool r = edgesIntersectLine2d(line,store);
+		bool r = edgesIntersectLine2d(line,store,inclusive);
 		if(r){
 			out.addVertex(store.a);
 			out.addVertex(store.b);
@@ -795,12 +834,12 @@ bool ConvexPolygon<D,T>::intersects2d(Shape<2,T> & shape, NConvexPolygon<2,T> & 
 		NConvexPolygon<2,T> test;
 		test.addVertex(line.a);
 		test.addVertex(line.b);
-		if(this->intersects2d(test)!=r){
+		if(this->intersects2d(test,inclusive)!=r){
 			std::cout<<line<<"\n";
 			std::cout<<(*this)<<"\n";
-			edgesIntersectLine2d(line,store);
+			edgesIntersectLine2d(line,store,inclusive);
 		}
-		assert(this->intersects2d(test)==r);
+		assert(this->intersects2d(test,inclusive)==r);
 #endif
 		return r;
 

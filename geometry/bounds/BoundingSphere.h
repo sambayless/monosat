@@ -22,8 +22,8 @@ public:
 		return BOUNDING_SPHERE;
 	}
 	void update();
-	bool contains(const Point<D,T> & point);
-	bool intersects(Shape<D,T> & s);
+	bool contains(const Point<D,T> & point, bool inclusive=true);
+	bool intersects(Shape<D,T> & s, bool inclusive=true);
 };
 template<unsigned int D,class T>
 class BoundingSphere<D,T,Polygon<D,T>>:public BoundingVolume<D,T>{
@@ -53,10 +53,14 @@ public:
 			}
 		}
 	}
-	bool contains(const Point<D,T> & point){
-		return point.distance_underapprox(circleCenter)<=circleRadius;
+	bool contains(const Point<D,T> & point, bool inclusive=true){
+		if(inclusive){
+			return point.distance_underapprox(circleCenter)<=circleRadius;
+		}else{
+			return point.distance_underapprox(circleCenter)<circleRadius;
+		}
 	}
-	bool intersects(Shape<D,T> & s){
+	bool intersects(Shape<D,T> & s, bool inclusive=true){
 		assert(false);//not yet implemented
 		return false;
 	}

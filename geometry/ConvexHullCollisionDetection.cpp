@@ -27,7 +27,7 @@ void ConvexHullCollisionDetector<2, mpq_class>::buildCollisionReason(vec<Lit> & 
 			Point<2,mpq_class> & prev2 = h1[i-1];
 			Point<2,mpq_class> & p2 = h1[i];
 			LineSegment<2,mpq_class> edge2(prev2,p2);
-			if(edge1.intersects(edge2)){
+			if(edge1.intersects(edge2,true)){
 				//learn that one of the endpoints of these two intersecting lines must be disabled
 				conflict.push(~mkLit(outer->getPointVar(prev.getID())));
 				conflict.push(~mkLit(outer->getPointVar(p.getID())));
@@ -44,10 +44,10 @@ void ConvexHullCollisionDetector<2, mpq_class>::buildCollisionReason(vec<Lit> & 
 
 
 	for(int i = 0; i<h1.size();i++){
-		if(h2.contains(h1[i])){
+		if(h2.contains(h1[i],true)){
 			static NConvexPolygon<2,mpq_class> triangle;
-			findContainingTriangle2d(h2,h1[i],triangle);
-			assert(triangle.contains(h1[i]));
+			findContainingTriangle2d(h2,h1[i],triangle,true);
+			assert(triangle.contains(h1[i],true));
 			conflict.push(~mkLit(outer->getPointVar(h1[i].getID())));
 			for(auto & p: triangle){
 				int id = p.getID();
@@ -60,10 +60,10 @@ void ConvexHullCollisionDetector<2, mpq_class>::buildCollisionReason(vec<Lit> & 
 	}
 
 	for(int i = 0; i<h2.size();i++){
-		if(h1.contains(h2[i])){
+		if(h1.contains(h2[i],true)){
 			static NConvexPolygon<2,mpq_class> triangle;
-			findContainingTriangle2d(h1,h2[i],triangle);
-			assert(triangle.contains(h2[i]));
+			findContainingTriangle2d(h1,h2[i],triangle,true);
+			assert(triangle.contains(h2[i],true));
 			conflict.push(~mkLit(outer->getPointVar(h2[i].getID())));
 			for(auto & p: triangle){
 				int id = p.getID();
