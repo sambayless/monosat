@@ -12,7 +12,7 @@
 #include "core/Config.h"
 #include "Line.h"
 #include "LineSegment.h"
-
+#include <iostream>
 template<unsigned int D,class T>
 class NConvexPolygon;
 
@@ -217,19 +217,19 @@ public:
 		return vertices;
 	}
 	const Point<D,T>& operator [] (int index) const {
-		index = index %vertices.size();
+		index = index %size();
 		if(index<0){
-			index+=vertices.size();
+			index+=size();
 		}
-		assert(index>=0);assert(index<vertices.size());
+		assert(index>=0);assert(index<size());
 		return vertices[index];
 	}
 	Point<D,T>&       operator [] (int index)       {
-		index = index %vertices.size();
+		index = index %size();
 		if(index<0){
-			index+=vertices.size();
+			index+=size();
 		}
-		assert(index>=0);assert(index<vertices.size());
+		assert(index>=0);assert(index<size());
 		return vertices[index];
 	}
 
@@ -253,9 +253,25 @@ private:
 
 
 
+template<unsigned int D,class T>
+std::ostream & operator<<(std::ostream & str, ConvexPolygon<D,T>  & polygon){
+	str << "ConvexPolygon=[";
+	for (const auto & p:polygon){
+		str<<p <<",";
+	}
+	str<<"]";
+	return str;
+}
 
-
-
+template<unsigned int D,class T>
+std::ostream & operator<<(std::ostream & str, Triangle<D,T>  & polygon){
+	str << "Triangle=[";
+	for (const auto & p:polygon){
+		str<<p <<",";
+	}
+	str<<"]";
+	return str;
+}
 
 template<unsigned int D,class T>
 bool ConvexPolygon<D,T>::contains(const Point<D,T> & point,NConvexPolygon<D,T> & polygon_out){
@@ -705,15 +721,15 @@ bool ConvexPolygon<D,T>::intersects2d(Shape<2,T> & shape){
 		 }
 
 		 //now test the axis produced by the other polygon
-		 for(int i = 0;i<c.size();i++){
-			 auto & p = (*this)[i];
-			 auto & prev = (*this)[i-1];
+		 for(int j = 0;j<c.size();j++){
+			 auto & p = c[j];
+			 auto & prev =c[j-1];
 			 Point<2,T> edge = p-prev;
 			 Point<2,T> un_normalized_normal(-edge.y, edge.x);
 
 			 T left = std::numeric_limits<T>::infinity();
 			 T right = -std::numeric_limits<T>::infinity();
-			 for (auto & p:*this){
+			 for (auto & p:c){
 				 T projection = un_normalized_normal.dot(p);
 				 if (projection < left) {
 					  left = projection;
@@ -725,7 +741,7 @@ bool ConvexPolygon<D,T>::intersects2d(Shape<2,T> & shape){
 			 bool seenLeft = false;
 			 bool seenRight=true;
 			 bool overlaps = false;
-			 for (auto & p:c){
+			 for (auto & p:*this){
 				 T projection = un_normalized_normal.dot(p);
 				 if (projection >= left && projection <= right ) {
 					 overlaps=true;
@@ -756,12 +772,16 @@ bool ConvexPolygon<D,T>::intersects2d(Shape<2,T> & shape){
 
 template<unsigned int D,class T>
 bool ConvexPolygon<D,T>::intersects2d(Shape<2,T> & shape, NConvexPolygon<2,T> & out){
+	if(this->size()==0)
+		return false;
 	if(shape.getType()==LINE_SEGMENT){
 		LineSegment<2,T> & line = (LineSegment<2,T> &)shape;
 
 		//first, check if either end point is contained
 		if(this->contains(line.a,out) || this->contains(line.b,out))
 			return true;
+		if(this->size()==1)
+			return false;//only endpoint containment is possible
 		static LineSegment<2,T>  store;
 		//the line may still intersect even if neither end point is contained.
 		//we could apply the SAT here. But instead, we're going to walk around the edges of the convex shape, and see if any of the edges intersect this line.
@@ -769,7 +789,19 @@ bool ConvexPolygon<D,T>::intersects2d(Shape<2,T> & shape, NConvexPolygon<2,T> & 
 		if(r){
 			out.addVertex(store.a);
 			out.addVertex(store.b);
+
 		}
+#ifndef NDEBUG
+		NConvexPolygon<2,T> test;
+		test.addVertex(line.a);
+		test.addVertex(line.b);
+		if(this->intersects2d(test)!=r){
+			std::cout<<line<<"\n";
+			std::cout<<(*this)<<"\n";
+			edgesIntersectLine2d(line,store);
+		}
+		assert(this->intersects2d(test)==r);
+#endif
 		return r;
 
 

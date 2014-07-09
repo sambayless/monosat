@@ -11,6 +11,7 @@
 #include "Shape.h"
 #include <gmpxx.h>
 #include "bounds/BoundingVolume.h"
+#include <iostream>
 /**
  * A concrete polygon (or, for D>2, a polytope)
  */
@@ -283,19 +284,19 @@ public:
 		return vertices;
 	}
     const Point<D,T>& operator [] (int index) const {
-    	index = index %vertices.size();
+    	index = index %size();
     	if(index<0){
-    		index+=vertices.size();
+    		index+=size();
     	}
-    	assert(index>=0);assert(index<vertices.size());
+    	assert(index>=0);assert(index<size());
     	return vertices[index];
     }
     Point<D,T>&       operator [] (int index)       {
-    	index = index %vertices.size();
+    	index = index %size();
     	if(index<0){
-    		index+=vertices.size();
+    		index+=size();
     	}
-    	assert(index>=0);assert(index<vertices.size());
+    	assert(index>=0);assert(index<size());
     	return vertices[index];
     }
 
@@ -316,7 +317,15 @@ private:
 	void reorderVertices2d();
 
 };
-
+template<unsigned int D,class T>
+std::ostream & operator<<(std::ostream & str, NPolygon<D,T>  & polygon){
+	str << "Polygon=[";
+	for (const auto & p:polygon){
+		str<<p <<",";
+	}
+	str<<"]";
+	return str;
+}
 template<unsigned int D,class T>
 inline bool Polygon<D,T>::dbg_orderClockwise2d(){
 #ifndef NDEBUG

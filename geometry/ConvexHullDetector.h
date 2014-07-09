@@ -477,7 +477,7 @@ template<unsigned int D, class T>
 bool ConvexHullDetector<D,T>::propagate(vec<Lit> & conflict){
 
 	static int iter = 0;
-	if(++iter==510){
+	if(++iter==1090){
 		int a=1;
 	}
 	stats_propagations++;
@@ -571,7 +571,7 @@ bool ConvexHullDetector<D,T>::propagate(vec<Lit> & conflict){
 		}
 	}
 	for(int i =0;i<lineIntersectionLits.size();i++){
-		if(i==68){
+		if(i==60){
 			int a =1;
 		}
 		LineSegment<D,T> & line = lineIntersectionLits[i].line;
@@ -1217,11 +1217,20 @@ void ConvexHullDetector<D,T>::buildConvexIntersectsReason2d(ConvexPolygon<2,T> &
 	ConvexPolygon<2, T> & h1 = under_hull->getHull();
 	ConvexPolygon<2, T> & h2 = polygon;
 
-
+	printf("h1: ");
+	for (auto & p:h1){
+		cout<<p << " ";
+	}
+	printf("\nh2: ");
+	for (auto & p:h2){
+		cout<<p << " ";
+	}
+	printf("\n");
 	//so, first, check each edge segment to see if there is an intersecting line.
 	//I'm doing this first, on the hypothesis that these line intersection constraints may form better learned clauses.
 	//(since cases 1 and 2 overlap, we have to make a choice about which to favour...)
-
+	assert(h1.intersects(h2));
+	assert(h2.intersects(h1));
 	//it is probably possible to improve on this quadratic time search...
 	for(int i = 0; i<h1.size();i++){
 		Point<2,T> & prev = h1[i-1];

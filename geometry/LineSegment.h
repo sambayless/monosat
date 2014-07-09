@@ -6,10 +6,11 @@
  */
 #ifndef LINE_SEGMENT_H_
 #define LINE_SEGMENT_H_
-#include <math.h>
+#include <cmath>
 #include "Shape.h"
 #include "mtl/Vec.h"
 #include "Line.h"
+#include <algorithm>
 /**
  * A line segment defined by two end-points
  */
@@ -72,7 +73,9 @@ public:
 		return val>0?1:-1;
 		//return ((b.x - a.x)*(point.y - a.y) - (b.y - a.y)*(point.x - a.x));
 	}
+private:
 
+	static bool mightIntersect(LineSegment<2,T> & l1,LineSegment<2,T> &l2);
 };
 
 template<class T>
@@ -177,6 +180,32 @@ bool LineSegment<2,T>::intersects(LineSegment<2,T> & other, Point<2,T> & interse
 	}
 	return overlapping || intersecting;
 }
+
+template<class T>
+bool LineSegment<2,T>::mightIntersect(LineSegment<2,T> & l1,LineSegment<2,T> &l2){
+
+	T side1 = crossDif(l1.a,l1.b,l2.a);
+	if(side1==0)
+		return true;//point is exactly on the line
+	T side2 = crossDif(l1.a,l1.b,l2.b);
+	if(side2==0)
+		return true;//point is exactly on the line
+	if((side1 > 0) !=  (side2 > 0)){
+		return true;//the lines might intersect;
+	}
+	Point<2,T> diff = l1.b-l1.a;
+	Point<2,T> check = l2.a - l1.a;
+	bool isARight = cross2d(diff,check)<0;
+
+	check = l2.b - l1.a;
+	bool isBRight = cross2d(diff,check)<0;
+
+	if( isARight != isBRight){
+		return true;
+	}
+	return false;
+}
+
 template<class T>
 bool LineSegment<2,T>::intersects(Shape<2,T> & shape){
 	if(shape.getType()==LINE_SEGMENT){
@@ -184,49 +213,35 @@ bool LineSegment<2,T>::intersects(Shape<2,T> & shape){
 		LineSegment<2,T> & other = (LineSegment<2,T> &)shape;
 		//from http://martin-thoma.com/how-to-check-if-two-line-segments-intersect/
 
-		//first, check whether bounding boxes intersect
-/*		T minX = min(a.x, b.y);
-		T minY = min(a.y,b.y);
+		//first, check whether bounding boxes intersect. This appears to be necessary for the correctness of this method (as opposed to just being an optimization)
+		T minX = std::min(a.x, b.x);
+		T minY = std::min(a.y,b.y);
+		T maxX = std::max(a.x,b.x);
+		T maxY = std::max(a.y,b.y);
 		if(other.a.x < minX && other.b.x < minX){
 			return false;
 		}
-		if(other.a.x > a.x && other.b.x > b.x){
+		if(other.a.x > maxX && other.b.x > maxX){
 			return false;
 		}
-		if(other.a.y < a.y && other.b.y < b.y){
+		if(other.a.y < minY && other.b.y < minY){
 			return false;
 		}
-		if(other.a.y > a.y && other.b.y > b.y){
+		if(other.a.y > maxY && other.b.y > maxY){
 			return false;
-		}*/
-
-
-		T side1 = crossDif(a,b,other.a);
-		if(side1==0)
-			return true;//point is exactly on the line
-		T side2 = crossDif(a,b,other.b);
-		if(side2==0)
-			return true;//point is exactly on the line
-		if((side1 > 0) !=  (side2 > 0)){
-			return true;//the lines might intersect;
 		}
-		Point<2,T> diff = b-a;
-		Point<2,T> check = other.a - a;
 
-		if(cross2d(diff,check)<0){
-			return true;
-		}
-		check = other.b - a;
-		if(cross2d(diff,check)<0){
-			return true;
-		}
-		return false;
+		return mightIntersect(*this,other) && mightIntersect(other,*this);
 	}else if(shape.getType()==CONVEX_POLYGON){
 		return shape.intersects(*this);
 	}
 	return false;
 }
-
+template<unsigned int D,class T>
+std::ostream & operator<<(std::ostream & str, LineSegment<D,T> const & p){
+	str << "Line=[" << p.a <<","<<p.b<<"]";
+	return str;
+}
 #endif
 
 

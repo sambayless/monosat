@@ -33,6 +33,7 @@ public:
 		return SHAPE;
 	}
 
+
 	virtual bool contains(const Point<D,T> & point)=0;
 	virtual bool intersects(Shape<D,T> & s)=0;
 
