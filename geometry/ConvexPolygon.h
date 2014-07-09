@@ -684,8 +684,8 @@ bool ConvexPolygon<D,T>::intersects2d(Shape<2,T> & shape){
 			 //now project both polygons onto to this normal and see if they overlap, by finding the minimum and maximum distances
 			 //Note that since we are NOT normalizing the normal vector, the projection is distorted along that vector
 			 //(this still allows us to check overlaps, but means that the minimum distance found between the two shapes may be incorrect)
-			 T left = std::numeric_limits<T>::infinity();
-			 T right = -std::numeric_limits<T>::infinity();
+			 T left = numeric<T>::infinity();
+			 T right = -numeric<T>::infinity();
 			 for (auto & p:*this){
 				 T projection = un_normalized_normal.dot(p);
 				 if (projection < left) {
@@ -727,8 +727,8 @@ bool ConvexPolygon<D,T>::intersects2d(Shape<2,T> & shape){
 			 Point<2,T> edge = p-prev;
 			 Point<2,T> un_normalized_normal(-edge.y, edge.x);
 
-			 T left = std::numeric_limits<T>::infinity();
-			 T right = -std::numeric_limits<T>::infinity();
+			 T left = numeric<T>::infinity();
+			 T right = -numeric<T>::infinity();
 			 for (auto & p:c){
 				 T projection = un_normalized_normal.dot(p);
 				 if (projection < left) {

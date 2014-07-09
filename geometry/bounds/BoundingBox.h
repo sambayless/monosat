@@ -46,8 +46,8 @@ public:
 	void update(){
 
 		for (int i = 0;i<D;i++){
-			max_point[i]=-std::numeric_limits<T>::infinity();
-			min_point[i]=std::numeric_limits<T>::infinity();
+			max_point[i]=-numeric<T>::infinity();
+			min_point[i]=numeric<T>::infinity();
 		}
 		for (auto & p:toBound){
 			for (int i = 0;i<D;i++){
@@ -80,8 +80,8 @@ private:
 		Point<D,T> dbg_max;
 		Point<D,T> dbg_min;
 		for (int i = 0;i<D;i++){
-			dbg_max[i]=-std::numeric_limits<T>::infinity();
-			dbg_min[i]=std::numeric_limits<T>::infinity();
+			dbg_max[i]=-numeric<T>::infinity();
+			dbg_min[i]=numeric<T>::infinity();
 		}
 		for (auto & p:toBound){
 			for (int i = 0;i<D;i++){

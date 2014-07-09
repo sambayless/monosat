@@ -132,8 +132,8 @@ void ConvexHullCollisionDetector<2, mpq_class>::buildNotCollisionReason(vec<Lit>
 	std::vector<std::pair<Point<2,mpq_class> ,mpq_class>>  projection2;
 	findSeparatingAxis(h1,h2,over1,over2, projection1,projection2);
 
-	 mpq_class leftmost1 = std::numeric_limits<mpq_class>::max();
-	 mpq_class rightmost1 = std::numeric_limits<mpq_class>::min();
+	 mpq_class leftmost1 = numeric<mpq_class>::infinity();
+	 mpq_class rightmost1 = -numeric<mpq_class>::infinity();
 
 	for(auto & p:projection1){
 		int pID = p.first.getID();
@@ -148,8 +148,8 @@ void ConvexHullCollisionDetector<2, mpq_class>::buildNotCollisionReason(vec<Lit>
 		}
 	}
 
-	 mpq_class leftmost2 = std::numeric_limits<mpq_class>::max();
-	 mpq_class rightmost2 = std::numeric_limits<mpq_class>::min();
+	 mpq_class leftmost2 = numeric<mpq_class>::infinity();
+	 mpq_class rightmost2 = -numeric<mpq_class>::infinity();
 
 	for(auto & p:projection2){
 		int pID = p.first.getID();
@@ -253,8 +253,8 @@ bool ConvexHullCollisionDetector<2, mpq_class>::findSeparatingAxis(ConvexPolygon
 		 //now project both polygons onto to this normal and see if they overlap, by finding the minimum and maximum distances
 		 //Note that since we are NOT normalizing the normal vector, the projection is distorted along that vector
 		 //(this still allows us to check overlaps, but means that the minimum distance found between the two shapes may be incorrect)
-		 mpq_class left = std::numeric_limits<mpq_class>::max();
-		 mpq_class right = std::numeric_limits<mpq_class>::min();
+		 mpq_class left = numeric<mpq_class>::infinity();
+		 mpq_class right = -numeric<mpq_class>::infinity();
 		 for (auto & p:h1){
 			 mpq_class projection = un_normalized_normal.dot(p);
 			 projection_out1.push_back({p,projection});
@@ -301,8 +301,8 @@ bool ConvexHullCollisionDetector<2, mpq_class>::findSeparatingAxis(ConvexPolygon
 		 Point<2,mpq_class> un_normalized_normal(-edge.y, edge.x);
 		 projection_out1.clear();
 		 projection_out2.clear();
-		 mpq_class left = std::numeric_limits<mpq_class>::max();
-		 mpq_class right = std::numeric_limits<mpq_class>::min();
+		 mpq_class left = numeric<mpq_class>::infinity();
+		 mpq_class right = -numeric<mpq_class>::infinity();
 		 for (auto & p:h1){
 			 mpq_class projection = un_normalized_normal.dot(p);
 			 projection_out1.push_back({p,projection});

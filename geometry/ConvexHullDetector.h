@@ -1,6 +1,7 @@
 
 #ifndef CONVEX_DETECTOR_H_
 #define CONVEX_DETECTOR_H_
+#include "GeometryTypes.h"
 #include "core/SolverTypes.h"
 #include "PointSet.h"
 #include "GeometryDetector.h"
@@ -1158,8 +1159,8 @@ void ConvexHullDetector<D,T>::buildConvexNotIntersectsReason2d(ConvexPolygon<2,T
 	std::vector<std::pair<Point<2,T> ,T>>  projection2;
 	bool found = findSeparatingAxis2d(h1,h2,over, projection,projection2);
 	assert(found);
-	T leftmost1 = std::numeric_limits<T>::infinity();
-	T rightmost1 = -std::numeric_limits<T>::infinity();
+	T leftmost1 = numeric<T>::infinity();
+	T rightmost1 = -numeric<T>::infinity();
 
 	for(auto & p:projection){
 		int pID = p.first.getID();
@@ -1174,8 +1175,8 @@ void ConvexHullDetector<D,T>::buildConvexNotIntersectsReason2d(ConvexPolygon<2,T
 		}
 	}
 
-	T leftmost2 = std::numeric_limits<T>::infinity();
-	T rightmost2 = -std::numeric_limits<T>::infinity();
+	T leftmost2 = numeric<T>::infinity();
+	T rightmost2 = -numeric<T>::infinity();
 
 	for(auto & p:projection2){
 		if(p.second<leftmost2)
@@ -1323,8 +1324,8 @@ bool ConvexHullDetector<D,T>::findSeparatingAxis2d(ConvexPolygon<2,T> & hull1, C
 		 //now project both polygons onto to this normal and see if they overlap, by finding the minimum and maximum distances
 		 //Note that since we are NOT normalizing the normal vector, the projection is distorted along that vector
 		 //(this still allows us to check overlaps, but means that the minimum distance found between the two shapes may be incorrect)
-		 T left = std::numeric_limits<T>::infinity();
-		 T right = -std::numeric_limits<T>::infinity();
+		 T left = numeric<T>::infinity();
+		 T right = -numeric<T>::infinity();
 		 for (auto & p:h1){
 			 T projection = un_normalized_normal.dot(p);
 			 projection_out1.push_back({p,projection});
@@ -1386,8 +1387,9 @@ bool ConvexHullDetector<D,T>::findSeparatingAxis2d(ConvexPolygon<2,T> & hull1, C
 		 Point<2,T> un_normalized_normal(-edge.y, edge.x);
 		 projection_out1.clear();
 		 projection_out2.clear();
-		 T left = std::numeric_limits<T>::infinity();
-		 T right = -std::numeric_limits<T>::infinity();
+
+		 T left =numeric<T>::infinity();//we can't use this, because although these are defined for gmp mpq class, in at least the current release, they are meaningless.
+		 T right = -numeric<T>::infinity();
 		 for (auto & p:h2){
 			 T projection = un_normalized_normal.dot(p);
 			 projection_out2.push_back({p,projection});

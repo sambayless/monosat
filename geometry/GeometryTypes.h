@@ -56,6 +56,21 @@ public:
 	 operator mpq_class ()const{return value;}
 };
 
+template<typename T> struct numeric{
+    static T inf;
+
+    //Provides a useable 'infinity' value, which is (hopefully!) larger than any in use.
+    //This wrapper is required for dealing with gmp, which doesn't currently provided inf/nan values.
+	static T infinity() {
+		if(std::numeric_limits<T>::has_infinity)
+			return std::numeric_limits<T>::infinity();
+		else{
+			return inf;
+		}
+	}
+};
+template<typename T> T  numeric<T>::inf=std::numeric_limits<long>::max();//hopefully large enough for common use cases...
+
 //This may have rounding errors! Use carefully!
 inline mpq_class sqrt(mpq_class v){
 	return (mpq_class) sqrt((mpf_class)v);
