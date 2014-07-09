@@ -14,11 +14,24 @@ class PointSet{
 	std::vector<int> points_clockwise;
 	std::vector<bool> enabled;
 	int id;
+public:
 	long modifications = 0;
 	int num_enabled= 0;
 
-	void buildClockwise();
+	int additions=0;
+	int deletions=0;
+	int historyclears=0;
+	bool is_changed=0;
 
+	void buildClockwise();
+	struct PointsetChange{
+		bool addition;
+		int id;
+
+		int mod;
+		int prev_mod;
+	};
+	std::vector<PointsetChange> history;
 public:
 	PointSet(int id=-1):id(id){
 
@@ -68,8 +81,12 @@ public:
 		modifications++;
 		enabled[pointID]=_enabled;
 		if(_enabled){
+			additions=modifications;
+			history.push_back({true,pointID,modifications,additions});
 			num_enabled++;
 		}else{
+			deletions=modifications;
+			history.push_back({false,pointID,modifications,deletions});
 			num_enabled--;
 		}
 	}
@@ -90,7 +107,8 @@ public:
 
 		enabled.push_back(false);
 		hasClockwise=false;
-
+		modifications++;
+		deletions=modifications;
 		return points.size()-1;
 	}
 
@@ -102,16 +120,30 @@ public:
     }
 
 	void clearHistory(){
-
+		if(history.size()>10000){
+			history.clear();
+			historyclears++;
+		}
 	}
-	void clearChanged(){
 
-	}
-	void markChanged(){
-
-	}
+	//force a new modification
 	void invalidate(){
 		modifications++;
+		additions=modifications;
+		modifications++;
+		deletions=modifications;
+	}
+
+	void markChanged(){
+		is_changed=true;
+	}
+
+	bool changed(){
+		return is_changed;
+	}
+
+	void clearChanged(){
+		is_changed=false;
 	}
 };
 

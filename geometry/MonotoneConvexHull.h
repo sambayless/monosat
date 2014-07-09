@@ -21,18 +21,63 @@ class MonotoneConvexHull:public ConvexHull<D,T>{
 
 	PointSet<D,T> & pointSet;
 	NConvexPolygon<D,T> hull;
-	long lastModification=-1;
+	long last_modification=-1;
+
+	int last_addition=0;
+	int last_deletion=0;
+	int history_qhead=0;
+	int last_history_clear=0;
 public:
+	long stats_skipped_updates=0;
+	long stats_updates =0;
 	MonotoneConvexHull(PointSet<D,T> & p):pointSet(p){
 		hull.setBoundingVolume(new BoundingBox<D,T,Polygon<D,T>>(hull));
 	}
 
 	void update(){
 
-		if(pointSet.getModifications()<=lastModification){
+		if(pointSet.getModifications()<=last_modification){
+			//stats_skipped_updates++;
+			assert(dbg_uptodate());
 			return;
 		}
-		lastModification=pointSet.getModifications();
+		last_modification=pointSet.getModifications();
+
+		if(pointSet.historyclears!=last_history_clear){
+			last_history_clear=pointSet.historyclears;
+			history_qhead=0;
+		}else if(last_modification>0 && (pointSet.historyclears <= (last_history_clear+1))){
+			//check if the newly enabled points are inside the hull, or if the newly disabled points are members of the hull. If not, then skip update.
+			bool needsUpdate=false;
+			for(int i = history_qhead;i<pointSet.history.size();i++){
+				int index = pointSet.history[i].id;
+				Point<D,T> & dt = pointSet[index];
+
+				if(pointSet.history[i].addition && pointSet.pointEnabled(index)){
+					if (!hull.contains(dt)){
+						needsUpdate=true;
+						break;
+					}
+				}else if(!pointSet.history[i].addition && !pointSet.pointEnabled(index)){
+					for(int i = 0;i<hull.size();i++){
+						if(hull[i].getID()==dt.getID()){
+							//if a point is disabled, but it wasn't on the hull, then it must have been contained in the hull, so we don't need to update the hull.
+							needsUpdate=true;
+							break;
+						}
+					}
+				}
+			}
+			history_qhead=pointSet.history.size();
+			if(!needsUpdate){
+				stats_skipped_updates++;
+				assert(dbg_uptodate());
+				return;
+			}
+		}
+
+		stats_updates++;
+
 		if(D==2){
 			update2d();
 			return;
@@ -47,28 +92,38 @@ public:
 	}
 
 private:
-	T cross(const Point<D,T> &O, const Point<D,T> &A, const Point<D,T> &B);
 
+	bool dbg_uptodate(){
+#ifndef NDEBUG
+	for(int i = 0;i<pointSet.size();i++){
+		Point<2,T> & p = pointSet[i];
+		if(!pointSet.pointEnabled(i)){
+
+		}else{
+			assert(hull.contains(p));
+		}
+	}
+#endif
+		return true;
+	}
 	void update2d();
 };
 
-// 2D cross product of OA and OB vectors, i.e. z-component of their 3D cross product.
-// Returns a positive value, if OAB makes a counter-clockwise turn,
-// negative for clockwise turn, and zero if the points are collinear.
-//from http://en.wikibooks.org/wiki/Algorithm_Implementation/Geometry/Convex_hull/Monotone_chain
-template<>
-inline double MonotoneConvexHull<2,double>::cross(const Point2D &O, const Point2D &A, const Point2D &B)
-{
-	return (A[0] - O[0]) * (B[1] - O[1]) - (A[1] - O[1]) * (B[0] - O[0]);
-}
 
 
 template<unsigned int D,class T>
 void MonotoneConvexHull<D,T>::update2d(){
 
+	//bool requires_update=false;
+
+
 
 	std::vector<Point<D,T>> _points;
 	pointSet.getEnabledPoints(_points);
+
+
+
+
 	std::vector<Point<2,T>> & points = (std::vector<Point<2,T>> &)_points;
 
 	std::sort(points.begin(),points.end(),SortLexicographic<2,T>());
@@ -81,14 +136,14 @@ void MonotoneConvexHull<D,T>::update2d(){
 
 	// Build lower hull
 	for (int i = 0; i < points.size(); ++i) {
-		while(list.size()>=2 && cross(list[list.size()-2],list[list.size()-1],points[i])<=0)
+		while(list.size()>=2 && crossDif(list[list.size()-2],list[list.size()-1],points[i])<=0)
 			list.pop_back();
 		list.push_back(points[i]);
 	}
 
 	// Build upper hull
 	for (int i =points.size()-2, t = list.size()+1; i >= 0; i--) {
-		while (list.size() >= t && cross(list[list.size()-2],list[list.size()-1],points[i])<=0)
+		while (list.size() >= t && crossDif(list[list.size()-2],list[list.size()-1],points[i])<=0)
 			list.pop_back();
 		list.push_back(points[i]);
 	}
@@ -106,24 +161,11 @@ void MonotoneConvexHull<D,T>::update2d(){
 			hull.addVertex(p);
 	}
 	hull.update();
-#ifndef NDEBUG
-	for(int i = 0;i<pointSet.size();i++){
-		Point<2,T> & p = pointSet[i];
-		if(!pointSet.pointEnabled(i)){
-
-		}else{
-			assert(hull.contains(p));
-		}
-	}
-#endif
+	assert(dbg_uptodate());
 
 }
 
-template<>
-inline mpq_class MonotoneConvexHull<2,mpq_class>::cross(const Point<2,mpq_class> &O, const Point<2,mpq_class> &A, const Point<2,mpq_class> &B)
-{
-	return (A[0] - O[0]) * (B[1] - O[1]) - (A[1] - O[1]) * (B[0] - O[0]);
-}
+
 
 
 #endif

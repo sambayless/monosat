@@ -693,13 +693,13 @@ public:
 		dbg_full_sync();
 
 		requiresPropagation=false;
-		/*
-		under_sets[pointSet].clearChanged();
-		over_sets[pointSet].clearChanged();
+		for (int i = 0;i<under_sets.size();i++){
+			under_sets[i].clearChanged();
+			over_sets[i].clearChanged();
 
-		under.clearHistory();
-		over.clearHistory();
-		 */
+			under_sets[i].clearHistory();
+			over_sets[i].clearHistory();
+		}
 		detectors_to_check.clear();
 
 		double elapsed = rtime(1)-startproptime;

@@ -97,6 +97,7 @@ public:
 			printf("propagations: %d\n", stats_propagations);
 			printf("bound checks %d (skipped under,over: %d,%d)\n",stats_bound_checks,stats_bounds_skips_under,stats_bounds_skips_over);
 			printf("containment: bounds skipped %d, triangle skipped %d, checks %d, %d depth\n", ConvexPolygon<D,T>::stats_bounds_avoided, ConvexPolygon<D,T>::stats_triangle_avoided,  ConvexPolygon<D,T>::stats_split_full_checks, ConvexPolygon<D,T>::stats_split_checks_depths );
+			printf("Skipped updates: %d/%d under, %d/%d over\n", ((MonotoneConvexHull<D,T>*) under_hull)->stats_skipped_updates,((MonotoneConvexHull<D,T>*) under_hull)->stats_updates,((MonotoneConvexHull<D,T>*) over_hull)->stats_skipped_updates,((MonotoneConvexHull<D,T>*) under_hull)->stats_updates);
 		}
 
 		bool propagate(vec<Lit> & conflict);
@@ -536,8 +537,24 @@ bool ConvexHullDetector<D,T>::propagate(vec<Lit> & conflict){
 	}
 	printf("\n");*/
 	//If we are making many queries, it is probably worth it to pre-process the polygon and then make the queries.
-
-
+#ifndef NDEBUG
+	cout<<"Round "<<iter<<", " << getID() << ":\n";
+	cout<<"enabled_" << getID() << " = [";
+	for (int i = 0;i<under.size();i++){
+		if(under.pointEnabled(i)){
+			cout<< under[i] <<", ";
+		}
+	}
+	cout<<"]\ndisabled_" << getID() << " = [";
+	for (int i = 0;i<over.size();i++){
+		if(!over.pointEnabled(i)){
+			cout<< over[i] <<", ";
+		}
+	}
+	cout<<"]\n";
+	cout <<"under_" << getID() << " = " << under_hull->getHull() << "\n";
+	cout<<"over_" << getID() << " = " << over_hull->getHull()<< "\n";
+#endif
 	for(int i =0;i<pointContainedLits.size();i++){
 		Point<D,T> & point = pointContainedLits[i].p;
 		stats_bound_checks++;
@@ -1118,7 +1135,7 @@ template<unsigned int D, class T>
 void ConvexHullDetector<D,T>::buildConvexNotIntersectsReason2d(ConvexPolygon<2,T> & polygon,vec<Lit> & conflict){
 	ConvexPolygon<2, T> & h1 = over_hull->getHull();
 	ConvexPolygon<2, T> & h2 = polygon;
-	printf("h1: ");
+	/*printf("h1: ");
 	for (auto & p:h1){
 		cout<<p << " ";
 	}
@@ -1126,7 +1143,7 @@ void ConvexHullDetector<D,T>::buildConvexNotIntersectsReason2d(ConvexPolygon<2,T
 	for (auto & p:h2){
 		cout<<p << " ";
 	}
-	printf("\n");
+	printf("\n");*/
 	assert(!h1.intersects(h2));
 	assert(!h2.intersects(h1));
 
@@ -1218,7 +1235,7 @@ void ConvexHullDetector<D,T>::buildConvexIntersectsReason2d(ConvexPolygon<2,T> &
 	ConvexPolygon<2, T> & h1 = under_hull->getHull();
 	ConvexPolygon<2, T> & h2 = polygon;
 
-	printf("h1: ");
+	/*printf("h1: ");
 	for (auto & p:h1){
 		cout<<p << " ";
 	}
@@ -1226,7 +1243,7 @@ void ConvexHullDetector<D,T>::buildConvexIntersectsReason2d(ConvexPolygon<2,T> &
 	for (auto & p:h2){
 		cout<<p << " ";
 	}
-	printf("\n");
+	printf("\n");*/
 	//so, first, check each edge segment to see if there is an intersecting line.
 	//I'm doing this first, on the hypothesis that these line intersection constraints may form better learned clauses.
 	//(since cases 1 and 2 overlap, we have to make a choice about which to favour...)
