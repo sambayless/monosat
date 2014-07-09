@@ -67,6 +67,7 @@ class GeometryParser:public Parser<B,Solver>{
 
 	struct ConvexHullPolygonIntersection{
 		int pointsetID;
+		bool inclusive;
 		Var var;
 		vec<ParsePoint> points;
 	};
@@ -128,11 +129,11 @@ void readConvexHullArea(B& in, Solver& S) {
 	//T area =  parseDouble(in,tmp_str);
 	convex_hull_areas.push({pointset,area,var});
 }
-void readConvexHullIntersectsPolygon(B& in, Solver& S){
+void readConvexHullIntersectsPolygon(B& in, Solver& S, bool inclusive){
 	//convex_hull_intersects_polygon pointsetID var NumPoints D p1 p2 ... pD q1 q2 ... qD ...
 
 	convex_hull_polygon_intersections.push();
-
+	convex_hull_polygon_intersections.last().inclusive=inclusive;
 
 	int pointsetID = parseInt(in);
 	int v = parseInt(in)-1;
@@ -246,8 +247,10 @@ public:
 		}else if (match(in,"convex_hull_intersects_line")){
 			readConvexHullIntersectsLine(in,S);
 		}*/
-		else if (match(in,"convex_hull_intersects_polygon")){
-			readConvexHullIntersectsPolygon(in,S);
+		else if (match(in,"convex_hull_collides_polygon")){
+			readConvexHullIntersectsPolygon(in,S,true);
+		}else if (match(in,"convex_hull_intersects_polygon")){
+			readConvexHullIntersectsPolygon(in,S,false);
 		}else if (match(in,"point_on_convex_hull")){
 			readConvexHullPointOnHull(in,S);
 		}else if (match(in,"convex_hulls_intersect")){
@@ -361,7 +364,7 @@ public:
 	 			 for(ParsePoint &p:c.points){
 	 				p2.push_back(p.position);
 	 			 }
-	 			 space_2D->convexHullIntersectsPolygon(c.pointsetID,p2, c.var);
+	 			 space_2D->convexHullIntersectsPolygon(c.pointsetID,p2, c.var,c.inclusive);
 	 		 }else if(D==3){
 
 	 		 }else{

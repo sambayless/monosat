@@ -84,7 +84,7 @@ template<class T>
 bool Line<2,T>::contains(const Point<2,T> & point, bool inclusive){
 	if(!inclusive)
 		return false;
-	return crossDif(a,b,point)==0;//is this correct?
+	return eq_epsilon(crossDif(a,b,point));
 }
 
 template<class T>
@@ -115,7 +115,11 @@ bool Line<2,T>::intersects(Line<2,T> & other, Point<2,T> & intersection, bool & 
 		intersection*=t;
 		intersection+=p;
 	}
-	return collinear || intersecting;
+	if(inclusive){
+		return collinear || intersecting;
+	}else{
+		return intersecting;
+	}
 }
 template<class T>
 bool Line<2,T>::intersects(Shape<2,T> & s, bool inclusive){
@@ -124,10 +128,10 @@ bool Line<2,T>::intersects(Shape<2,T> & s, bool inclusive){
 		Line<2,T> & other = (Line<2,T> & ) s;
 		T side1 = crossDif(a,b,other.a);
 		if(side1==0)
-			return true;//point is exactly on the line
+			return inclusive;//point is exactly on the line
 		T side2 = crossDif(a,b,other.b);
 		if(side2==0)
-			return true;//point is exactly on the line
+			return inclusive;//point is exactly on the line
 		if(side1!=side2){
 			return true;//the lines must intersect;
 		}
@@ -140,13 +144,13 @@ bool Line<2,T>::intersects(Shape<2,T> & s, bool inclusive){
 		bool found_right = false;
 		for(auto& p:poly){
 			T side = whichSide(p);
-			if(side==0){
+			if(side==0 && inclusive){
 				return true;
 			}else if (side>0){
 				found_right=true;
 				if(found_left)
 					return true;
-			}else{
+			}else if (side<0){
 				found_left=true;
 				if(found_right)
 					return true;

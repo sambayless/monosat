@@ -76,13 +76,23 @@ public:
 private:
 
 	static bool mightIntersect(LineSegment<2,T> & l1,LineSegment<2,T> &l2, bool inclusive);
+	static bool mightContain(Point<2,T> & l1,LineSegment<2,T> &l2, bool inclusive);
 };
 
 template<class T>
 bool LineSegment<2,T>::contains(const Point<2,T> & point, bool inclusive){
 	if(!inclusive)
 		return false;
-	return false;
+	//adapted from http://stackoverflow.com/a/328122
+	if(!eq_epsilon(crossDif(a,b,point))){
+		return false;
+	}
+	T minX = std::min(a.x, b.x);
+	T minY = std::min(a.y,b.y);
+	T maxX = std::max(a.x,b.x);
+	T maxY = std::max(a.y,b.y);
+
+	return point.x <= maxX && point.x >= minX && point.y <= maxY && point.y >= minY;
 }
 
 template<class T>
@@ -150,6 +160,10 @@ bool LineSegment<2,T>::intersects(LineSegment<2,T> & other, Point<2,T> & interse
 		if(eq_epsilon(qpr)){
 			//If r × s = 0 and (q − p) × r = 0, then the two lines are collinear.
 			//If in addition, either 0 <= (q − p) · r <= r · r or 0 <= (p − q) · s ≤ s · s, then the two lines are overlapping.
+			//How should overlapping line segments be treated for the purposes of inclusive/exclusive intersectiong?
+			if(!inclusive)
+				return false;
+
 			bool overlapping=false;
 			T test = (q-p).dot(r);
 			if(0<=test && test<r.dot(r)){
@@ -169,8 +183,15 @@ bool LineSegment<2,T>::intersects(LineSegment<2,T> & other, Point<2,T> & interse
 
 		T t = cross2d((q - p),  s) / (cross2d(r , s));
 		T u = cross2d((q - p), r) / cross2d(r, s);
-		if(0<=t && t<=1 && 0<= u && u<=1){
+
+		if(inclusive && 0<=t && t<=1 && 0<= u && u<=1){
 			//If r × s ≠ 0 and 0 ≤ t ≤ 1 and 0 ≤ u ≤ 1, the two line segments meet at the point p + t r = q + u s.
+			intersecting=true;
+			//intersection = p + (r*t);
+			intersection =r;
+			intersection*=t;
+			intersection+=p;
+		}else if(!inclusive && 0<t && t<1 && 0< u && u<1){
 			intersecting=true;
 			//intersection = p + (r*t);
 			intersection =r;
@@ -180,18 +201,24 @@ bool LineSegment<2,T>::intersects(LineSegment<2,T> & other, Point<2,T> & interse
 			//Otherwise, the two line segments are not parallel but do not intersect.
 		}
 	}
-	return overlapping || intersecting;
+	if(inclusive)
+		return overlapping || intersecting;
+	else
+		return intersecting;
+
 }
+
+
 
 template<class T>
 bool LineSegment<2,T>::mightIntersect(LineSegment<2,T> & l1,LineSegment<2,T> &l2, bool inclusive){
 
 	T side1 = crossDif(l1.a,l1.b,l2.a);
 	if(side1==0)
-		return true;//point is exactly on the line
+		return inclusive;//point is exactly on the line
 	T side2 = crossDif(l1.a,l1.b,l2.b);
 	if(side2==0)
-		return true;//point is exactly on the line
+		return inclusive;//point is exactly on the line
 	if((side1 > 0) !=  (side2 > 0)){
 		return true;//the lines might intersect;
 	}
@@ -220,19 +247,33 @@ bool LineSegment<2,T>::intersects(Shape<2,T> & shape, bool inclusive){
 		T minY = std::min(a.y,b.y);
 		T maxX = std::max(a.x,b.x);
 		T maxY = std::max(a.y,b.y);
-		if(other.a.x < minX && other.b.x < minX){
-			return false;
+		if(inclusive){
+			if(other.a.x < minX && other.b.x < minX){
+				return false;
+			}
+			if(other.a.x > maxX && other.b.x > maxX){
+				return false;
+			}
+			if(other.a.y < minY && other.b.y < minY){
+				return false;
+			}
+			if(other.a.y > maxY && other.b.y > maxY){
+				return false;
+			}
+		}else{
+			if(other.a.x <= minX && other.b.x <= minX){
+				return false;
+			}
+			if(other.a.x >= maxX && other.b.x >= maxX){
+				return false;
+			}
+			if(other.a.y <= minY && other.b.y <= minY){
+				return false;
+			}
+			if(other.a.y >= maxY && other.b.y >= maxY){
+				return false;
+			}
 		}
-		if(other.a.x > maxX && other.b.x > maxX){
-			return false;
-		}
-		if(other.a.y < minY && other.b.y < minY){
-			return false;
-		}
-		if(other.a.y > maxY && other.b.y > maxY){
-			return false;
-		}
-
 		return mightIntersect(*this,other,inclusive) && mightIntersect(other,*this,inclusive);
 	}else if(shape.getType()==CONVEX_POLYGON){
 		return shape.intersects(*this, inclusive);

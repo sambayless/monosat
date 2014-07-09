@@ -324,6 +324,12 @@ static T crossDif(const Point<2,T> &O, const Point<2,T>  &A, const Point<2,T>  &
 }
 
 template<class T>
+static T dotDif(const Point<2,T> &A, const Point<2,T>  &B, const Point<2,T>  &C)
+{
+	return (C[0] - A[0]) * (B[0] - A[0]) + (C[1] - A[1]) * (B[1] - A[1]);
+}
+
+template<class T>
 static T cross2d(const Point<2,T> &A, const Point<2,T>  &B){
 	return A.x*B.y - A.y*B.x;
 }

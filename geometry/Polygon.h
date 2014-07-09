@@ -113,10 +113,11 @@ public:
 		T t = (p2.x*p1.y - p2.y*p1.x + (p2.y - p1.y)*p.x + (p1.x - p2.x)*p.y);
 		T area2 =  (-p1.y*p0.x + p2.y*(-p1.x + p0.x) + p2.x*(p1.y - p0.y) + p1.x*p0.y);
 		assert(area2>=0);
-		if(inclusive)
+		if(inclusive){
 			return s>=0 && t>=0 && (s+t<=area2);
-		else
+		}else{
 			return s>0 && t>0 && (s+t<area2);
+		}
 		//from http://stackoverflow.com/a/13301035
 	/*	T dif23y = p2.y - p3.y;
 		T dif32x = p3.x - p2.x;

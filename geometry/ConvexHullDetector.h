@@ -177,8 +177,6 @@ private:
 					}
 				}
 			}
-
-
 		}
 
 		void findContainingTriangle2d_helper(ConvexPolygon<2,T> & polygon, int first_vertex, int last_vertex,const Point<2,T> & point, NConvexPolygon<2,T> & triangle_out, bool inclusive){
@@ -195,7 +193,7 @@ private:
 
 
 
-			assert(polygon.containsInRange(point,first_vertex,last_vertex));
+			assert(polygon.containsInRange(point,first_vertex,last_vertex, inclusive));
 			triangle_out.clear();
 
 			Point<2,T> & a = polygon[first_vertex];
@@ -1002,7 +1000,7 @@ void ConvexHullDetector<D,T>::buildPointNotContainedReason2d(const Point<2,T> & 
 				}
 			}
 		}else{
-			assert(hull.contains(p,inclusive));
+			assert(hull.contains(p,true));
 		}
 	}
 	//find the extreme points on the hull itself
@@ -1176,6 +1174,7 @@ void ConvexHullDetector<D,T>::buildConvexNotIntersectsReason2d(ConvexPolygon<2,T
 				conflict.push(l);
 			}
 		}
+		return;
 	}else if (h2.size()==0){
 		return;
 	}else if (h2.size()==1){

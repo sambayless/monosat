@@ -74,7 +74,7 @@ private:
 			 //When recursing, 2 of the three vertices are already selected (they are the vertices from the existing triangle), so we only have to pick one more vertex.
 			 //Since we already know that the point isn't on the other side of those two vertices, we only have to check two sides in the case where the point is not contained.
 			assert(first_vertex!=last_vertex);
-			assert(polygon.containsInRange(point,first_vertex,last_vertex));
+			assert(polygon.containsInRange(point,first_vertex,last_vertex, inclusive));
 			triangle_out.clear();
 			ConvexPolygon<2,T> & polygon_vertices =(ConvexPolygon<2,T> &) *this;
 			Point<2,T> & a = polygon_vertices[first_vertex];
