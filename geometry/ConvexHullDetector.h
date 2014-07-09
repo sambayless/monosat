@@ -716,9 +716,9 @@ template<unsigned int D, class T>
 bool ConvexHullDetector<D,T>::checkSatisfied(){
 
 	std::vector<Point<D,T>> enabled_points;
-
-	MonotoneConvexHull<D,T> cv(over);
-	ConvexPolygon<D,T> & h_under = over_hull->getHull();
+	MonotoneConvexHull<D,T> cv_under(under);
+	MonotoneConvexHull<D,T> cv_over(over);
+	ConvexPolygon<D,T> & h_under =under_hull->getHull();
 	ConvexPolygon<D,T> & h_over = over_hull->getHull();
 	printf("Hull %d: ", getID());
 	for (auto & p:h_under){
@@ -726,21 +726,21 @@ bool ConvexHullDetector<D,T>::checkSatisfied(){
 	}
 	printf("\n");
 
-	T expectOver = h_under.getArea();
-	T expectUnder =h_over.getArea();
-	T area = cv.getHull().getArea();
-
-	assert(equal_epsilon(area, expectOver));
-	assert(equal_epsilon(area, expectUnder));
+	//T expectOver = h_under.getArea();
+	//T expectUnder =h_over.getArea();
+	T area_under = cv_under.getHull().getArea();
+	T area_over = cv_over.getHull().getArea();
+	//assert(equal_epsilon(area, expectOver));
+	//assert(equal_epsilon(area, expectUnder));
 	for(auto & a: areaDetectors){
 		T area_cmp = a.areaGreaterEqThan;
 		Lit l = a.l;
 		if(outer->value(l)==l_True){
-			if(area_cmp>=area){
+			if(area_cmp>=area_over){
 				return false;
 			}
 		}else if(outer->value(l)==l_False){
-			if(area_cmp<area){
+			if(area_cmp<area_under){
 				return false;
 			}
 		}
@@ -749,11 +749,24 @@ bool ConvexHullDetector<D,T>::checkSatisfied(){
 
 		Lit l = a.l;
 		if(outer->value(l)==l_True){
-			if(!h_under.contains(a.p)){
+			if(!h_over.contains(a.p)){
 				return false;
 			}
 		}else if(outer->value(l)==l_False){
-			if(h_over.contains(a.p)){
+			if(h_under.contains(a.p)){
+				return false;
+			}
+		}
+	}
+	for(auto & a:lineIntersectionLits){
+
+		Lit l = a.l;
+		if(outer->value(l)==l_True){
+			if(!h_over.intersects(a.line)){
+				return false;
+			}
+		}else if(outer->value(l)==l_False){
+			if(h_under.intersects(a.line)){
 				return false;
 			}
 		}
@@ -762,11 +775,11 @@ bool ConvexHullDetector<D,T>::checkSatisfied(){
 
 		Lit l = a.l;
 		if(outer->value(l)==l_True){
-			if(!h_under.intersects(a.polygon)){
+			if(!h_over.intersects(a.polygon)){
 				return false;
 			}
 		}else if(outer->value(l)==l_False){
-			if(h_over.intersects(a.polygon)){
+			if(h_under.intersects(a.polygon)){
 				return false;
 			}
 		}

@@ -60,6 +60,7 @@ public:
 	vec<Assignment> trail;
 	vec<int> trail_lim;
 
+	vec<vec<GeometryDetector*>> pointsetDetectors;
 	vec<GeometryDetector*> detectors;
 	vec<ConvexHullDetector<D,T>*> convexHullDetectors;
 	vec<GeometricSteinerDetector<D,T>*> steinerTreeDetectors;
@@ -67,11 +68,14 @@ public:
 
 	vec<int> marker_map;
 
-	bool requiresPropagation;
+	//bool anyRequiresPropagation=true;
+	vec<bool> requiresPropagation;
+	vec<int> toPropagate;
 
 	vec<char> seen;
 	vec<int> to_visit;
 	vec<Lit> tmp_clause;
+
 
 	//Data about local theory variables, and how they connect to the sat solver's variables
 	struct VarData{
@@ -144,7 +148,7 @@ public:
 			 num_learnt_cuts=0;
 			 learnt_cut_clause_length=0;
 
-			 requiresPropagation=true;
+
 			 rnd_seed=opt_random_seed;
 
 	}
@@ -441,10 +445,11 @@ public:
 
 
 		}
-		if(changed){
-			requiresPropagation=true;
-
+		//is this correct?
+		for(int i:toPropagate){
+			requiresPropagation[i]=false;
 		}
+		toPropagate.clear();
 
 		assert(dbg_graphsUpToDate());
 	};
@@ -495,10 +500,11 @@ public:
 			}
 
 			trail.shrink(trail.size()-(i+1));
-			if(i>0){
-				requiresPropagation=true;
-
+			//is this correct?
+			for(int i:toPropagate){
+				requiresPropagation[i]=false;
 			}
+			toPropagate.clear();
 
 			//while(trail_lim.size() && trail_lim.last()>=trail.size())
 			//	trail_lim.pop();
@@ -605,7 +611,8 @@ public:
 		}
 		assert(assigns[var(l)]==l_Undef);
 		assigns[var(l)]=sign(l) ? l_False:l_True;
-		requiresPropagation=true;
+
+
 
 #ifndef NDEBUG
 		{
@@ -633,6 +640,7 @@ public:
 		//if(v>= min_point_var && v<min_point_var+points.size())
 		if(isPointVar(var(l))){
 
+
 			//this is an point assignment
 			int pointID = getPointID(var(l)); //v-min_point_var;
 			assert(points[pointID].var==var(l));
@@ -641,6 +649,11 @@ public:
 			int pointsetID = getPointset(pointID);
 			trail.push(Assignment(true,!sign(l), pointID,var(l)));
 
+			if(!requiresPropagation[pointsetID]){
+				toPropagate.push(pointsetID);
+				//anyRequiresPropagation=true;
+				requiresPropagation[pointsetID]=true;
+			}
 			Assignment e = trail.last();
 			int pointSet = points[pointID].pointset;
 			if (!sign(l)){
@@ -664,7 +677,7 @@ public:
 		}
 		stats_propagations++;
 		dbg_sync();
-		if(!requiresPropagation){
+		if(!toPropagate.size()){
 			stats_propagations_skipped++;
 			assert(dbg_graphsUpToDate());
 			return true;
@@ -679,27 +692,35 @@ public:
 		dbg_sync();
 		assert(dbg_graphsUpToDate());
 
-		for(int d = 0;d<detectors.size();d++){
-			assert(conflict.size()==0);
-			bool r =detectors[d]->propagate(conflict);
-			if(!r){
-				stats_num_conflicts++;
-				toSolver(conflict);
-				propagationtime+= rtime(1)-startproptime;
-				return false;
-			}
-		}
+		while (toPropagate.size()){
+			int pointset = toPropagate.last();
 
+			for(GeometryDetector * d: pointsetDetectors[pointset]){
+				assert(conflict.size()==0);
+				bool r =d->propagate(conflict);
+				if(!r){
+					stats_num_conflicts++;
+					toSolver(conflict);
+					propagationtime+= rtime(1)-startproptime;
+					return false;
+				}
+			}
+			toPropagate.pop();
+			requiresPropagation[pointset]=false;
+			under_sets[pointset].clearChanged();
+			over_sets[pointset].clearChanged();
+
+			under_sets[pointset].clearHistory();
+			over_sets[pointset].clearHistory();
+		}
+#ifndef NDEBUG
+		for(int i = 0;i<detectors.size();i++){
+			assert(detectors[i]->checkSatisfied());
+		}
+#endif
 		dbg_full_sync();
 
-		requiresPropagation=false;
-		for (int i = 0;i<under_sets.size();i++){
-			under_sets[i].clearChanged();
-			over_sets[i].clearChanged();
 
-			under_sets[i].clearHistory();
-			over_sets[i].clearHistory();
-		}
 		detectors_to_check.clear();
 
 		double elapsed = rtime(1)-startproptime;
@@ -710,7 +731,11 @@ public:
 	};
 
 	bool solveTheory(vec<Lit> & conflict){
-		requiresPropagation=true;//Just to be on the safe side... but this shouldn't really be required.
+
+		for(int i = 0;i<nPointSets();i++){
+			//Just to be on the safe side... but this shouldn't really be required.
+			requiresPropagation[i]=true;
+		}
 		bool ret = propagateTheory(conflict);
 		//Under normal conditions, this should _always_ hold (as propagateTheory should have been called and checked by the parent solver before getting to this point).
 		assert(ret);
@@ -825,6 +850,7 @@ public:
 
 		int index = points.size();
 		points.push_back(PointData());
+
 		Var v = newVar(outerVar,index,true);
 
 		//num_points++;
@@ -847,6 +873,14 @@ public:
 		int pointsetIndex2 = over_sets[pointSet].addPoint(points[index].point);
 		assert(pointsetIndex== pointsetIndex2);
 		over_sets[pointSet].enablePoint(pointsetIndex);
+
+		pointsetDetectors.growTo(nPointSets());
+		//anyRequiresPropagation=true;
+		requiresPropagation.growTo(nPointSets(),false);
+		if(!requiresPropagation[pointSet]){
+			requiresPropagation[pointSet]=true;
+			toPropagate.push(pointSet);
+		}
     	return mkLit(v,false);
     }
 
@@ -864,6 +898,7 @@ public:
 		if(!convexHullDetectors[pointSet]){
 			int detectorID = detectors.size();
 			auto * convexHull = new ConvexHullDetector<D,T>(detectorID,under_sets[pointSet], over_sets[pointSet],this,drand(rnd_seed));
+			pointsetDetectors[pointSet].push(convexHull);
 			convexHullDetectors[pointSet]=convexHull;
 			detectors.push(convexHull);
 		}
@@ -875,6 +910,7 @@ public:
 		if(!convexHullDetectors[pointSet]){
 			int detectorID = detectors.size();
 			auto * convexHull = new ConvexHullDetector<D,T>(detectorID,under_sets[pointSet], over_sets[pointSet],this,drand(rnd_seed));
+			pointsetDetectors[pointSet].push(convexHull);
 			convexHullDetectors[pointSet]=convexHull;
 			detectors.push(convexHull);
 		}
@@ -886,6 +922,7 @@ public:
 		if(!convexHullDetectors[pointSet]){
 			int detectorID = detectors.size();
 			auto * convexHull = new ConvexHullDetector<D,T>(detectorID,under_sets[pointSet], over_sets[pointSet],this,drand(rnd_seed));
+			pointsetDetectors[pointSet].push(convexHull);
 			convexHullDetectors[pointSet]=convexHull;
 			detectors.push(convexHull);
 		}
@@ -913,6 +950,7 @@ public:
 			int detectorID = detectors.size();
 			auto * convexHull = new ConvexHullDetector<D,T>(detectorID,under_sets[pointSet], over_sets[pointSet],this,drand(rnd_seed));
 			convexHullDetectors[pointSet]=convexHull;
+			pointsetDetectors[pointSet].push(convexHull);
 			detectors.push(convexHull);
 		}
 		if (computeWinding(points)==Winding::COUNTER_CLOCKWISE){
@@ -943,6 +981,7 @@ public:
 		if(!steinerTreeDetectors[pointSet]){
 			int detectorID = detectors.size();
 			auto * steinerTree = new GeometricSteinerDetector<D,T>(detectorID,this,drand(rnd_seed));
+			pointsetDetectors[pointSet].push(steinerTree);
 			steinerTreeDetectors[pointSet]=steinerTree;
 			detectors.push(steinerTree);
 		}
