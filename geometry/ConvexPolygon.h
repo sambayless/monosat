@@ -53,8 +53,8 @@ private:
 	bool intersects2d(Shape<2,T> & s, NConvexPolygon<2,T> & polygon_out, bool inclusive);
 	bool edgesIntersectLine2d(LineSegment<2,T> & check, LineSegment<2,T> & intersection, bool inclusive);
 	bool containsInRange2d(const Point<2,T> & point, int firstVertex,int lastVertex, bool inclusive);
-	bool containsInSplit2d(const Point<2,T> & point, int firstVertex,int lastVertex, NConvexPolygon<2,T> & triangle_out, bool inclusive);
-	bool containsInSplit2d_helper(const Point<2,T> & point, int firstVertex,int lastVertex, NConvexPolygon<2,T> & triangle_out, int depth, bool inclusive);
+	bool containsInSplit2d(const Point<2,T> & point, int firstVertex,int lastVertex, NConvexPolygon<2,T> & polygon_out, bool inclusive);
+	bool containsInSplit2d_helper(const Point<2,T> & point, int firstVertex,int lastVertex, NConvexPolygon<2,T> & polygon_out, int depth, bool inclusive);
 	static bool dbg_orderClockwise2dTri(Point<2,T> p1,Point<2,T> p2,Point<2,T> p3){
 	#ifndef NDEBUG
 		std::vector<Point<2,T>> points;
@@ -334,6 +334,7 @@ bool ConvexPolygon<D,T>::contains(const Point<D,T> & point, bool inclusive)
 template<unsigned int D,class T>
 bool ConvexPolygon<D,T>::containsInRange(const Point<D,T> & point, int firstVertex,int lastVertex, bool inclusive)
 {
+	this->update();
 	if(D==2){
 		return containsInRange2d((const Point<2,T> &) point, firstVertex,lastVertex,inclusive);
 	}else{
@@ -344,6 +345,7 @@ bool ConvexPolygon<D,T>::containsInRange(const Point<D,T> & point, int firstVert
 template<unsigned int D,class T>
 bool ConvexPolygon<D,T>::containsInSplit(const Point<D,T> & point,  int firstVertex,int lastVertex,bool inclusive)
 {
+	this->update();
 	if(D==2){
 		static NConvexPolygon<2,T> ignore;
 		return containsInSplit2d((const Point<2,T> &) point,firstVertex,lastVertex,ignore,inclusive);
@@ -354,11 +356,11 @@ bool ConvexPolygon<D,T>::containsInSplit(const Point<D,T> & point,  int firstVer
 }
 
 template<unsigned int D,class T>
-bool ConvexPolygon<D,T>::containsInSplit2d(const Point<2,T> & point, int firstVertex,int lastVertex, NConvexPolygon<2,T> & triangle_out, bool inclusive){
+bool ConvexPolygon<D,T>::containsInSplit2d(const Point<2,T> & point, int firstVertex,int lastVertex, NConvexPolygon<2,T> & polygon_out, bool inclusive){
 	 stats_split_checks++;
 	 //std::vector<Point<2,T> > &  w = (std::vector<Point<2,T> > & ) Polygon<D,T>::getVertices();
 	 ConvexPolygon<2,T> & w = (ConvexPolygon<2,T> &) *this;
-	 triangle_out.clear();
+	 polygon_out.clear();
 	 if(w.size()==0)
 		 return false;
 	 if(lastVertex<0)
@@ -373,13 +375,17 @@ bool ConvexPolygon<D,T>::containsInSplit2d(const Point<2,T> & point, int firstVe
 	 if(n_verts==0)
 		 return false;
 	 else if(n_verts==1){
+		 if(!inclusive)
+			 return false;
 		 assert(lastVertex==firstVertex);
 		 if( w[firstVertex]==point){
-			 triangle_out.addVertex(w[firstVertex]);
+			 polygon_out.addVertex(w[firstVertex]);
 			 return true;
 		 }
 		 return false;
 	 }else if (n_verts==2){
+		 if(!inclusive)
+			 return false;
 		 assert(lastVertex!=firstVertex);
 		 //from http://stackoverflow.com/a/11908158
 		 //true if the point is between (inclusive) the other two points.
@@ -401,8 +407,8 @@ bool ConvexPolygon<D,T>::containsInSplit2d(const Point<2,T> & point, int firstVe
 					   p2.y <= point.y && point.y <= p1.y;
 
 		     if(contains){
-			    triangle_out.addVertex(w[firstVertex]);
-			    triangle_out.addVertex(w[lastVertex]);
+		    	 polygon_out.addVertex(w[firstVertex]);
+		    	 polygon_out.addVertex(w[lastVertex]);
 		     }
 			 return contains;
 		 }
@@ -410,15 +416,83 @@ bool ConvexPolygon<D,T>::containsInSplit2d(const Point<2,T> & point, int firstVe
 	 }else if (n_verts==3){
 		 bool contains= containsInRange(point,firstVertex,lastVertex, inclusive);
 		 if(contains){
-			 triangle_out.addVertex(w[firstVertex]);
-			 triangle_out.addVertex(w[firstVertex+1]);
-			 triangle_out.addVertex(w[firstVertex+2]);
+			 polygon_out.addVertex(w[firstVertex]);
+			 polygon_out.addVertex(w[firstVertex+1]);
+			 polygon_out.addVertex(w[firstVertex+2]);
 		 }
 		 return contains;
 	 }
 	 stats_split_full_checks++;
 
-	bool res= containsInSplit2d_helper(point, firstVertex,lastVertex, triangle_out,1,inclusive);
+	bool res= containsInSplit2d_helper(point, firstVertex,lastVertex, polygon_out,1,inclusive);
+	if(res && !inclusive){
+		//do an extra check to correct for edge cases.
+		assert(polygon_out.contains(point,true));
+		if(!polygon_out.contains(point,false)){
+			//then there are two possibilities. Either the point is exactly on an edge of the polygon (in whch case it is not contained unless we are being inclsuvie)
+			//OR, we can expan the triangle into a quadrilateral that _does_ contain the point.
+			//so, check which of the three edges of the triangle the point is lying on (if it is on a vertex of the triangle, then it must be of the border of the polygon, so it is not included)
+			assert(polygon_out.size()==3);
+			int containing_edge=-1;
+			for(int i = 0;i<polygon_out.size();i++){
+				Point<2,T> & prev = polygon_out[i-1];
+				Point<2,T> & p = polygon_out[i];
+				if(eq_epsilon(crossDif(prev,p,point))){
+					containing_edge=i;
+					break;
+				}
+			}
+			assert(containing_edge>=0);
+			int pIndex = -1;
+			int prevIndex = -1;
+			int nIndex = -1;
+			//now check whether that edge is on the border of the polygon
+			for(int i = 0;i<this->size();i++){
+				Point<2,T> & prev = (*this)[i-1];
+				Point<2,T> & p = (*this)[i];
+				if(p.getID()== polygon_out[containing_edge].getID()){
+						pIndex=i;
+				}else if (p.getID()==polygon_out[containing_edge-1].getID()){
+					prevIndex=i;
+				}else if (p.getID()==polygon_out[containing_edge+1].getID()){
+					nIndex=i;
+				}
+			}
+			if(pIndex<prevIndex){
+				std::swap(pIndex,prevIndex);
+			}
+			if((pIndex-prevIndex) % this->size()==1){
+				//The containing edge is on the border of the polygon, so the point is NOT contained exclusively within the polygon.
+				res=false;
+				polygon_out.clear();
+
+			}else{
+				//None of the edges of the hull contain the point, so the containing edge is interior to the polygon - meaning that the point is exclusively contained in the polygon, but that the current containing triangle
+				//either needs to be swapped for some other triangle, or widened to a quadrilateral.
+				//(since there exist edge cases where NO internal triangle will exclusively contain the point, we will just widen to a quadrilateral, here.)
+				assert(prevIndex<pIndex);
+				assert(pIndex>-1);
+				assert(prevIndex>-1);
+				assert(nIndex>-1);
+				assert(pIndex!=prevIndex);
+				assert(pIndex!=nIndex);
+
+				if(prevIndex<nIndex && nIndex<pIndex){
+					//ok, pick any vertex outside of pIndex, prevIndex in order to expand the quadrilateral to contain point
+					assert((nIndex+1) % this->size() != prevIndex);
+					polygon_out.addVertex((*this)[pIndex+1]);
+				}else{
+					assert(nIndex<prevIndex || nIndex>pIndex);
+					assert((pIndex-1) % this->size() != prevIndex);
+					polygon_out.addVertex((*this)[pIndex-1]);
+				}
+				assert(polygon_out.containsInRange(point,0,polygon_out.size()-1,true));
+				assert(polygon_out.containsInRange(point,0,polygon_out.size()-1,false));
+			}
+
+		}
+	}
+
 	assert(res== containsInRange(point,firstVertex,lastVertex,inclusive));
 	return res;
 
@@ -451,11 +525,13 @@ bool ConvexPolygon<D,T>::containsInSplit2d_helper(const Point<2,T> & point,int f
 	assert(first_vertex<last_vertex);
 	if(first_vertex+1==last_vertex) {
 		stats_split_checks_depths+=depth;
+		if(!inclusive){
+			return false;
+		}
 		//Then this is a line. depending on our notion of containment, we either give up, or test if the line contains this point
 		triangle_out.clear();
 		triangle_out.addVertexUnchecked(a);
 		triangle_out.addVertexUnchecked(b);
-		printf("WARNING!\n");
 		if(triangle_out.contains(point,inclusive)){
 			return true;
 		}else{
@@ -490,17 +566,19 @@ bool ConvexPolygon<D,T>::containsInSplit2d_helper(const Point<2,T> & point,int f
 	T t = (a.x*c.y - a.y*c.x + (a.y - c.y)*point.x + (c.x - a.x)*point.y);*/
 	//T gamma = 1-s-t;
 	bool contained;
-	if(inclusive)
-		contained= ( s>=0 && t>=0 && (s+t<=area2));
-	else
-		contained= ( s>0 && t>0 && (s+t<area2));
+
+	//checks for inclusiveness will be done outside this method
+	//if(inclusive)
+	contained= ( s>=0 && t>=0 && (s+t<=area2));
+	//else
+	//	contained= ( s>0 && t>0 && (s+t<area2));
 
 	if(contained){
 		triangle_out.clear();
 		triangle_out.addVertexUnchecked(a);
 		triangle_out.addVertexUnchecked(c);
 		triangle_out.addVertexUnchecked(b);
-		assert(triangle_out.contains(point,inclusive));
+		assert(triangle_out.contains(point,true));
 		stats_split_checks_depths+=depth;
 		return true;//we are done
 	}else{
@@ -509,7 +587,7 @@ bool ConvexPolygon<D,T>::containsInSplit2d_helper(const Point<2,T> & point,int f
 		dbg_poly.addVertexUnchecked(a);
 		dbg_poly.addVertexUnchecked(c);
 		dbg_poly.addVertexUnchecked(b);
-		assert(!dbg_poly.contains(point,inclusive));
+		assert(!dbg_poly.contains(point,true));
 
 #endif
 /*
@@ -735,12 +813,12 @@ bool ConvexPolygon<D,T>::intersects2d(Shape<2,T> & shape, bool inclusive){
 					 if (projection > left && projection < right ) {
 						 overlaps=true;
 						 break;
-					 }else if (projection <= left ){
+					 }else if (projection < left ){
 						 seenLeft=true;
 						 if(seenRight){
 							 break;
 						 }
-					 }else if (projection>=right){
+					 }else if (projection>right){
 						 seenRight=true;
 						 if (seenLeft){
 							 break;
@@ -795,12 +873,12 @@ bool ConvexPolygon<D,T>::intersects2d(Shape<2,T> & shape, bool inclusive){
 					 if (projection > left && projection < right ) {
 						 overlaps=true;
 						 break;
-					 }else if (projection <= left ){
+					 }else if (projection < left ){
 						 seenLeft=true;
 						 if(seenRight){
 							 break;
 						 }
-					 }else if (projection >= right){
+					 }else if (projection > right){
 						 seenRight=true;
 						 if (seenLeft){
 							 break;

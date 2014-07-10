@@ -179,85 +179,6 @@ private:
 			}
 		}
 
-		void findContainingTriangle2d_helper(ConvexPolygon<2,T> & polygon, int first_vertex, int last_vertex,const Point<2,T> & point, NConvexPolygon<2,T> & triangle_out, bool inclusive){
-			//recurse on this segment of the polygon, finding a triangle that contains the point.
-			//precondition: the point is contained in this convex segment of the polygon
-
-			//Noah's algorithm: pick 3 vertices in the polygon. 2 of them are adjacent, and the third is arbitrary (but should probably be the index that is farthest in both directions from the adjacent vertices)
-			 //Check if they contain the point; if they do, return them.
-			 //Else, check which of the two sides of the triangle with the non-adjacent vertex the point is on. Recurse on that sub polygon.
-
-			 //When recursing, 2 of the three vertices are already selected (they are the vertices from the existing triangle), so we only have to pick one more vertex.
-			 //Since we already know that the point isn't on the other side of those two vertices, we only have to check two sides in the case where the point is not contained.
-			assert(first_vertex!=last_vertex);
-
-
-
-			assert(polygon.containsInRange(point,first_vertex,last_vertex, inclusive));
-			triangle_out.clear();
-
-			Point<2,T> & a = polygon[first_vertex];
-			Point<2,T> & b = polygon[last_vertex];
-			assert(first_vertex<last_vertex);
-			if(first_vertex+1==last_vertex) {
-				//Then this is a line. depending on our notion of containment, we either give up, or test if the line contains this point
-				triangle_out.addVertexUnchecked(a);
-				triangle_out.addVertexUnchecked(b);
-				printf("Warning!");
-				if(triangle_out.contains(point,inclusive)){
-					return;
-				}else{
-					triangle_out.clear();//give up
-				}
-
-				return;
-			}
-
-
-			int mid_point = 0;
-			if(first_vertex<last_vertex){
-				mid_point = (last_vertex-first_vertex)/2 + first_vertex;
-			}else{
-				mid_point = (first_vertex-last_vertex)/2 + last_vertex;
-			}
-			Point<2,T> & c = polygon[mid_point];
-			assert(mid_point != last_vertex);assert(mid_point!=first_vertex);
-			triangle_out.addVertexUnchecked(a);
-			triangle_out.addVertexUnchecked(c);
-			triangle_out.addVertexUnchecked(b);
-
-			if(triangle_out.contains(point,inclusive))
-				return;//we are done
-			else{
-				Line<2,T> testLine(a,c);
-				assert(testLine.whichSide(point)!= 0);//else we would have already found the point
-
-				if(testLine.whichSide(point)!= testLine.whichSide(b)){
-					 findContainingTriangle2d_helper(polygon,first_vertex,mid_point,point,triangle_out,inclusive);
-				}else{
-#ifndef NDEBUG
-					Line<2,T> dbgLine(b,c);
-					assert(dbgLine.whichSide(point)!= 0);//else we would have already found the point
-					assert(dbgLine.whichSide(point)!= dbgLine.whichSide(a));
-#endif
-					findContainingTriangle2d_helper(polygon,mid_point,last_vertex,point,triangle_out,inclusive);
-				}
-			}
-
-		}
-
-		void findContainingTriangle2d( ConvexPolygon<D,T> & polygon,const Point<D,T> & point, NConvexPolygon<D,T> & triangle_out, bool inclusive){
-			assert(polygon.contains(point,inclusive));
-			triangle_out.clear();
-			int sz = polygon.size();
-			if(sz<=3){
-				for (auto & p:polygon){
-					triangle_out.addVertex(p);
-				}
-				return;
-			}
-			findContainingTriangle2d_helper(polygon,0,sz-1,point,triangle_out,inclusive);
-		}
 
 		bool findSeparatingAxis2d(ConvexPolygon<2, T> & hull1, ConvexPolygon<2, T> & hull2, PointSet<2,T> & pointset1, std::vector<std::pair<Point<2,T> ,T>>  &projection_out, std::vector<std::pair<Point<2,T> ,T>>  &projection_out2, bool inclusive);
 		void buildConvexIntersectsReason2d(ConvexPolygon<2,T> & line,vec<Lit> & conflict, bool inclusive);
@@ -907,7 +828,8 @@ void ConvexHullDetector<D,T>::buildPointContainedReason2d(const Point<2,T> & s, 
 	assert(hull.contains(s,inclusive));
 
 	NConvexPolygon<2,T> triangle;
-	findContainingTriangle2d(hull,s,triangle,inclusive);
+	hull.contains(s,triangle,inclusive);
+
 	assert(triangle.contains(s,inclusive));
 /*	printf("Learn must disable one of: ");
 	for(auto & p:triangle){
@@ -1136,7 +1058,8 @@ void ConvexHullDetector<D,T>::buildPointNotOnHullOrDisabledReason2d(Var pointVar
 		assert(p.getID()!=s.getID());
 #endif
 	NConvexPolygon<2,T> triangle;
-	findContainingTriangle2d(hull,s,triangle,true);
+	hull.contains(s,triangle,true);
+	//findContainingTriangle2d(hull,s,triangle,true);
 	assert(triangle.contains(s,true));
 	for(auto & p: triangle){
 		int id = p.getID();
@@ -1293,7 +1216,8 @@ void ConvexHullDetector<D,T>::buildConvexIntersectsReason2d(ConvexPolygon<2,T> &
 	for(int i = 0; i<h1.size();i++){
 		if(h2.contains(h1[i],inclusive)){
 			NConvexPolygon<2,T> triangle;
-			findContainingTriangle2d(h2,h1[i],triangle,inclusive);
+			h2.contains(h1[i],triangle,inclusive);
+			//findContainingTriangle2d(h2,h1[i],triangle,inclusive);
 			assert(triangle.contains(h1[i],inclusive));
 			conflict.push(~mkLit(outer->getPointVar(h1[i].getID())));
 			return;
@@ -1303,7 +1227,8 @@ void ConvexHullDetector<D,T>::buildConvexIntersectsReason2d(ConvexPolygon<2,T> &
 	for(int i = 0; i<h2.size();i++){
 		if(h1.contains(h2[i],inclusive)){
 			NConvexPolygon<2,T> triangle;
-			findContainingTriangle2d(h1,h2[i],triangle,inclusive);
+			h1.contains(h2[i],triangle,inclusive);
+			//findContainingTriangle2d(h1,h2[i],triangle,inclusive);
 			assert(triangle.contains(h2[i],inclusive));
 			for(auto & p: triangle){
 				int id = p.getID();
@@ -1329,6 +1254,7 @@ bool ConvexHullDetector<D,T>::findSeparatingAxis2d(ConvexPolygon<2,T> & hull1, C
 	if(h1.size()==0 || h2.size()==0){
 		return false;
 	}else if (h1.size()==1 && h2.size()==1){
+		//what is the correct response for exclusive collisions, here?
 		 Point<2,T> un_normalized_normal = h2[0]-h1[0];
 		 //now place all the remaining (disabled) points on the axis as well
 		 for(int i = 0;i<pointset1.size();i++){
@@ -1378,18 +1304,35 @@ bool ConvexHullDetector<D,T>::findSeparatingAxis2d(ConvexPolygon<2,T> & hull1, C
 		 for (auto & p:h2){
 			 T projection = un_normalized_normal.dot(p);
 			 projection_out2.push_back({p,projection});
-			 if (projection >= left && projection <= right ) {
-				 overlaps=true;
-				 break;
-			 }else if (projection < left ){
-				 seenLeft=true;
-				 if(seenRight){
+			 if(inclusive){
+				 if (projection >= left && projection <= right ) {
+					 overlaps=true;
 					 break;
+				 }else if (projection < left ){
+					 seenLeft=true;
+					 if(seenRight){
+						 break;
+					 }
+				 }else if (projection>right){
+					 seenRight=true;
+					 if (seenLeft){
+						 break;
+					 }
 				 }
-			 }else if (projection>right){
-				 seenRight=true;
-				 if (seenLeft){
+			 }else{
+				 if (projection > left && projection < right ) {
+					 overlaps=true;
 					 break;
+				 }else if (projection < left ){
+					 seenLeft=true;
+					 if(seenRight){
+						 break;
+					 }
+				 }else if (projection>right){
+					 seenRight=true;
+					 if (seenLeft){
+						 break;
+					 }
 				 }
 			 }
 		 }
@@ -1442,18 +1385,35 @@ bool ConvexHullDetector<D,T>::findSeparatingAxis2d(ConvexPolygon<2,T> & hull1, C
 		 for (auto & p:h1){
 			 T projection = un_normalized_normal.dot(p);
 			 projection_out1.push_back({p,projection});
-			 if (projection >= left && projection <= right ) {
-				 overlaps=true;
-				 break;
-			 }else if (projection < left ){
-				 seenLeft=true;
-				 if(seenRight){
+			 if(inclusive){
+				 if (projection >= left && projection <= right ) {
+					 overlaps=true;
 					 break;
+				 }else if (projection < left ){
+					 seenLeft=true;
+					 if(seenRight){
+						 break;
+					 }
+				 }else if (projection>right){
+					 seenRight=true;
+					 if (seenLeft){
+						 break;
+					 }
 				 }
-			 }else if (projection>right){
-				 seenRight=true;
-				 if (seenLeft){
+			 }else{
+				 if (projection > left && projection < right ) {
+					 overlaps=true;
 					 break;
+				 }else if (projection < left ){
+					 seenLeft=true;
+					 if(seenRight){
+						 break;
+					 }
+				 }else if (projection>right){
+					 seenRight=true;
+					 if (seenLeft){
+						 break;
+					 }
 				 }
 			 }
 		 }

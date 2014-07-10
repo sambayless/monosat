@@ -67,7 +67,7 @@ public:
 	bool intersects(Line<2,T> & line, Point<2,T> & intersection, bool & overlapping, bool inclusive);
 	//> 0 if the point is 'right' of the line, <0 if 'left' of the line, 0 if exactly on the line.
 	int whichSide(const Point<2,T> & point){
-		T val= cross(b,a,point);
+		T val= crossDif(b,a,point);
 		if(val==0)
 			return 0;
 		return val>0?1:-1;
