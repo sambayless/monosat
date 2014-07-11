@@ -825,14 +825,15 @@ bool ConvexPolygon<D,T>::intersects2d(Shape<2,T> & shape, bool inclusive){
 					  right = projection;
 				 }
 			 }
-			 bool overlaps = false;
+
 			 bool seenLeft = false;
 			 bool seenRight=false;
 			 for (auto & p:c){
 				 T projection = un_normalized_normal.dot(p);
 				 if(inclusive){
 					 if (projection >= left && projection <= right ) {
-						 overlaps=true;
+						 seenRight=true;
+						 seenLeft=true;
 						 break;
 					 }else if (projection < left ){
 						 seenLeft=true;
@@ -852,29 +853,22 @@ bool ConvexPolygon<D,T>::intersects2d(Shape<2,T> & shape, bool inclusive){
 						 break;
 					 }
 				 }else{
-					 if (projection > left && projection < right ) {
-						 overlaps=true;
-						 break;
-					 }else if (projection < left ){
-						 seenLeft=true;
-						 if(seenRight){
-							 break;
-						 }
-					 }else if (projection>right){
+					 if(projection>left){
 						 seenRight=true;
 						 if (seenLeft){
 							 break;
 						 }
-					 }else if (seenLeft && projection > left ){
-						 seenRight=true;
-						 break;
-					 }else if (seenRight && projection < right ){
-						 seenRight=true;
-						 break;
 					 }
+					 if (projection<right){
+						 seenLeft=true;
+						 if(seenRight){
+							 break;
+						 }
+					 }
+
 				 }
 			 }
-			 if(!overlaps && !(seenLeft&&seenRight)){
+			 if(!(seenLeft&&seenRight)){
 				 return false;
 			 }
 		 }
@@ -900,12 +894,13 @@ bool ConvexPolygon<D,T>::intersects2d(Shape<2,T> & shape, bool inclusive){
 			 }
 			 bool seenLeft = false;
 			 bool seenRight=false;
-			 bool overlaps = false;
+
 			 for (auto & p:*this){
 				 T projection = un_normalized_normal.dot(p);
 				 if(inclusive){
 					 if (projection >= left && projection <= right ) {
-						 overlaps=true;
+						 seenRight=true;
+						 seenLeft=true;
 						 break;
 					 }else if (projection < left ){
 						 seenLeft=true;
@@ -925,29 +920,22 @@ bool ConvexPolygon<D,T>::intersects2d(Shape<2,T> & shape, bool inclusive){
 						 break;
 					 }
 				 }else{
-					 if (projection > left && projection < right ) {
-						 overlaps=true;
-						 break;
-					 }else if (projection <= left ){
-						 seenLeft=true;
-						 if(seenRight){
-							 break;
-						 }
-					 }else if (projection >= right){
+					 if(projection>left){
 						 seenRight=true;
 						 if (seenLeft){
 							 break;
 						 }
-					 }else if (seenLeft && projection > left ){
-						 seenRight=true;
-						 break;
-					 }else if (seenRight && projection < right ){
-						 seenRight=true;
-						 break;
 					 }
+					 if (projection<right){
+						 seenLeft=true;
+						 if(seenRight){
+							 break;
+						 }
+					 }
+
 				 }
 			 }
-			 if(!overlaps && !(seenLeft&&seenRight)){
+			 if(!(seenLeft&&seenRight)){
 				 return false;
 			 }
 		 }

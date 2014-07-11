@@ -459,8 +459,8 @@ void ConvexHullCollisionDetector<D,T>::buildNotCollisionReason2d(vec<Lit> & conf
 	//Note: It may be possible to improve on this analysis!
 	std::vector<std::pair<Point<2,T> ,T>>  projection1;
 	std::vector<std::pair<Point<2,T> ,T>>  projection2;
-	findSeparatingAxis(h1,h2,over1,over2, projection1,projection2,inclusive);
-
+	bool check = findSeparatingAxis(h1,h2,over1,over2, projection1,projection2,inclusive);
+	assert(check);
 	 T leftmost1 = numeric<T>::infinity();
 	 T rightmost1 = -numeric<T>::infinity();
 
@@ -495,12 +495,27 @@ void ConvexHullCollisionDetector<D,T>::buildNotCollisionReason2d(vec<Lit> & conf
 	}
 
 
-	if(inclusive)
+	bool h1_is_left;
+	bool h1_is_right;
+	if(inclusive){
 		assert(rightmost1<leftmost2 || rightmost2<leftmost1);
-	else
+		h1_is_left=rightmost1<leftmost2;
+		h1_is_right=rightmost1>leftmost2;
+	}else{
 		assert(rightmost1<=leftmost2 || rightmost2<=leftmost1);
+		h1_is_left=rightmost1<=leftmost2;
+		h1_is_right=rightmost1>=leftmost2;
+	}
 
-	bool h1_is_left=rightmost1<leftmost2;
+	bool h2_is_left;
+	bool h2_is_right;
+	if(inclusive){
+		h2_is_left=rightmost1>leftmost2;
+		h2_is_right=rightmost1<leftmost2;
+	}else{
+		h2_is_left=rightmost1>=leftmost2;
+		h2_is_right=rightmost1<=leftmost2;
+	}
 
 	for(auto & p:projection1){
 		int pID = p.first.getID();
@@ -508,10 +523,14 @@ void ConvexHullCollisionDetector<D,T>::buildNotCollisionReason2d(vec<Lit> & conf
 		int pointsetIndex = outer->getPointsetIndex(pID);
 
 		if(!over1.pointEnabled(pointsetIndex)){
-			if(h1_is_left ? (p.second>rightmost1):((p.second<leftmost1))){
+			if(h1_is_left && p.second>rightmost1){
 				//then if we enable this point, the two hulls will move closer to each other.
 				//we can probably improve on this, by only considering points that are also >= the rightmost _disabled_ point of pointset2...
-
+				Lit l = mkLit(outer->getPointVar(pID));
+				assert(outer->value(l)==l_False);
+				conflict.push(l);
+			}
+			if(h1_is_right && p.second<leftmost1){
 				Lit l = mkLit(outer->getPointVar(pID));
 				assert(outer->value(l)==l_False);
 				conflict.push(l);
@@ -524,9 +543,14 @@ void ConvexHullCollisionDetector<D,T>::buildNotCollisionReason2d(vec<Lit> & conf
 		int pointsetIndex = outer->getPointsetIndex(pID);
 
 		if(!over2.pointEnabled(pointsetIndex)){
-			if(h1_is_left ? (p.second<leftmost2):((p.second>rightmost2))){
+			if(h2_is_left && p.second>rightmost2){
 				//then if we enable this point, the two hulls will move closer to each other.
 				//we can probably improve on this, by only considering points that are also >= the rightmost _disabled_ point of pointset2...
+				Lit l = mkLit(outer->getPointVar(pID));
+				assert(outer->value(l)==l_False);
+				conflict.push(l);
+			}
+			if(h2_is_right && p.second<leftmost2){
 				Lit l = mkLit(outer->getPointVar(pID));
 				assert(outer->value(l)==l_False);
 				conflict.push(l);
@@ -595,11 +619,12 @@ bool ConvexHullCollisionDetector<D, T>::findSeparatingAxis2d(ConvexPolygon<2, T>
 		 bool seenRight=false;
 		 bool overlaps = false;
 		 for (auto & p:h2){
-			 T projection = un_normalized_normal.dot(p);
-			 projection_out2.push_back({p,projection});
-			 if(inclusive){
+				 T projection = un_normalized_normal.dot(p);
+				 projection_out2.push_back({p,projection});
+				 if(inclusive){
 				 if (projection >= left && projection <= right ) {
-					 overlaps=true;
+					 seenRight=true;
+					 seenLeft=true;
 					 break;
 				 }else if (projection < left ){
 					 seenLeft=true;
@@ -619,29 +644,22 @@ bool ConvexHullCollisionDetector<D, T>::findSeparatingAxis2d(ConvexPolygon<2, T>
 					 break;
 				 }
 			 }else{
-				 if (projection > left && projection < right ) {
-					 overlaps=true;
-					 break;
-				 }else if (projection <= left ){
-					 seenLeft=true;
-					 if(seenRight){
-						 break;
-					 }
-				 }else if (projection>=right){
+				 if(projection>left){
 					 seenRight=true;
 					 if (seenLeft){
 						 break;
 					 }
-				 }else if (seenLeft && projection > left ){
-					 seenRight=true;
-					 break;
-				 }else if (seenRight && projection < right ){
-					 seenRight=true;
-					 break;
 				 }
+				 if (projection<right){
+					 seenLeft=true;
+					 if(seenRight){
+						 break;
+					 }
+				 }
+
 			 }
 		 }
-		 if(!overlaps && !(seenLeft&&seenRight)){
+		 if(!(seenLeft&&seenRight)){
 			 //now place all the remaining (disabled) points on the axis as well
 			 for(int i = 0;i<pointset1.size();i++){
 				 if(!pointset1.pointEnabled(i)){
@@ -689,9 +707,10 @@ bool ConvexHullCollisionDetector<D, T>::findSeparatingAxis2d(ConvexPolygon<2, T>
 		 for (auto & p:h1){
 			 T projection = un_normalized_normal.dot(p);
 			 projection_out1.push_back({p,projection});
-		  	 if(inclusive){
+			 if(inclusive){
 				 if (projection >= left && projection <= right ) {
-					 overlaps=true;
+					 seenRight=true;
+					 seenLeft=true;
 					 break;
 				 }else if (projection < left ){
 					 seenLeft=true;
@@ -711,29 +730,22 @@ bool ConvexHullCollisionDetector<D, T>::findSeparatingAxis2d(ConvexPolygon<2, T>
 					 break;
 				 }
 			 }else{
-				 if (projection > left && projection < right ) {
-					 overlaps=true;
-					 break;
-				 }else if (projection <= left ){
-					 seenLeft=true;
-					 if(seenRight){
-						 break;
-					 }
-				 }else if (projection>=right){
+				 if(projection>left){
 					 seenRight=true;
 					 if (seenLeft){
 						 break;
 					 }
-				 }else if (seenLeft && projection > left ){
-					 seenRight=true;
-					 break;
-				 }else if (seenRight && projection < right ){
-					 seenRight=true;
-					 break;
 				 }
+				 if (projection<right){
+					 seenLeft=true;
+					 if(seenRight){
+						 break;
+					 }
+				 }
+
 			 }
 		 }
-		 if(!overlaps && !(seenLeft&&seenRight)){
+		 if(!(seenLeft&&seenRight)){
 			 for(int i = 0;i<pointset1.size();i++){
 				 if(!pointset1.pointEnabled(i)){
 					 auto & p = pointset1[i];

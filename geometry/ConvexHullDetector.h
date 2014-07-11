@@ -1149,12 +1149,17 @@ void ConvexHullDetector<D,T>::buildConvexNotIntersectsReason2d(ConvexPolygon<2,T
 		if(p.second>rightmost2)
 			rightmost2 = p.second;
 	}
-
-	if(inclusive)
+	bool h1_is_left;
+	bool h1_is_right;
+	if(inclusive){
 		assert(rightmost1<leftmost2 || rightmost2<leftmost1);
-	else
+		h1_is_left=rightmost1<leftmost2;
+		h1_is_right=rightmost1>leftmost2;
+	}else{
 		assert(rightmost1<=leftmost2 || rightmost2<=leftmost1);
-	bool h1_is_left=rightmost1<leftmost2;
+		h1_is_left=rightmost1<=leftmost2;
+		h1_is_right=rightmost1>=leftmost2;
+	}
 
 	for(auto & p:projection){
 		int pID = p.first.getID();
@@ -1162,13 +1167,19 @@ void ConvexHullDetector<D,T>::buildConvexNotIntersectsReason2d(ConvexPolygon<2,T
 		int pointsetIndex = outer->getPointsetIndex(pID);
 		assert(pointset==over.getID());
 		if(!over.pointEnabled(pointsetIndex)){
-			if(h1_is_left ? (p.second>rightmost1):((p.second<leftmost1))){
-				//then if we enable this point, the two hulls will move closer to each other.
-				//we can probably improve on this, by only considering points that are also >= the rightmost _disabled_ point of pointset2...
-
-				Lit l = mkLit(outer->getPointVar(pID));
-				assert(outer->value(l)==l_False);
-				conflict.push(l);
+			if(!over.pointEnabled(pointsetIndex)){
+				if(h1_is_left && p.second>rightmost1){
+					//then if we enable this point, the two hulls will move closer to each other.
+					//we can probably improve on this, by only considering points that are also >= the rightmost _disabled_ point of pointset2...
+					Lit l = mkLit(outer->getPointVar(pID));
+					assert(outer->value(l)==l_False);
+					conflict.push(l);
+				}
+				if(h1_is_right && p.second<leftmost1){
+					Lit l = mkLit(outer->getPointVar(pID));
+					assert(outer->value(l)==l_False);
+					conflict.push(l);
+				}
 			}
 		}
 	}
@@ -1309,58 +1320,52 @@ bool ConvexHullDetector<D,T>::findSeparatingAxis2d(ConvexPolygon<2,T> & hull1, C
 		 }
 		 bool seenLeft = false;
 		 bool seenRight=false;
-		 bool overlaps = false;
+
 
 		 for (auto & p:h2){
 			 T projection = un_normalized_normal.dot(p);
 			 projection_out2.push_back({p,projection});
 			 if(inclusive){
-				 if (projection >= left && projection <= right ) {
-					 overlaps=true;
-					 break;
-				 }else if (projection < left ){
-					 seenLeft=true;
-					 if(seenRight){
-						 break;
-					 }
-				 }else if (projection>right){
-					 seenRight=true;
-					 if (seenLeft){
-						 break;
-					 }
-				 }else if (seenLeft && projection > left ){
-					 seenRight=true;
-					 break;
-				 }else if (seenRight && projection < right ){
-					 seenRight=true;
+			 if (projection >= left && projection <= right ) {
+				 seenRight=true;
+				 seenLeft=true;
+				 break;
+			 }else if (projection < left ){
+				 seenLeft=true;
+				 if(seenRight){
 					 break;
 				 }
-			 }else{
-				 if (projection > left && projection < right ) {
-					 overlaps=true;
+			 }else if (projection>right){
+				 seenRight=true;
+				 if (seenLeft){
 					 break;
-				 }else if (projection <= left ){
-					 seenLeft=true;
-					 if(seenRight){
-						 break;
-					 }
-				 }else if (projection>=right){
-					 seenRight=true;
-					 if (seenLeft){
-						 break;
-					 }
-				 }else if (seenLeft && projection > left ){
-					 seenRight=true;
-					 break;
-				 }else if (seenRight && projection < right ){
-					 seenRight=true;
+				 }
+			 }else if (seenLeft && projection > left ){
+				 seenRight=true;
+				 break;
+			 }else if (seenRight && projection < right ){
+				 seenRight=true;
+				 break;
+			 }
+		 }else{
+			 if(projection>left){
+				 seenRight=true;
+				 if (seenLeft){
 					 break;
 				 }
 			 }
+			 if (projection<right){
+				 seenLeft=true;
+				 if(seenRight){
+					 break;
+				 }
+			 }
+
+		 }
 		 }
 
 
-		 if(!overlaps && !(seenLeft&&seenRight)){
+		 if(!(seenLeft&&seenRight)){
 			 //now place all the remaining (disabled) points on the axis as well
 			 for(int i = 0;i<pointset1.size();i++){
 				 if(!pointset1.pointEnabled(i)){
@@ -1408,50 +1413,44 @@ bool ConvexHullDetector<D,T>::findSeparatingAxis2d(ConvexPolygon<2,T> & hull1, C
 			 T projection = un_normalized_normal.dot(p);
 			 projection_out1.push_back({p,projection});
 			 if(inclusive){
-				 if (projection >= left && projection <= right ) {
-					 overlaps=true;
-					 break;
-				 }else if (projection < left ){
-					 seenLeft=true;
-					 if(seenRight){
-						 break;
-					 }
-				 }else if (projection>right){
-					 seenRight=true;
-					 if (seenLeft){
-						 break;
-					 }
-				 }else if (seenLeft && projection > left ){
-					 seenRight=true;
-					 break;
-				 }else if (seenRight && projection < right ){
-					 seenRight=true;
+			 if (projection >= left && projection <= right ) {
+				 seenRight=true;
+				 seenLeft=true;
+				 break;
+			 }else if (projection < left ){
+				 seenLeft=true;
+				 if(seenRight){
 					 break;
 				 }
-			 }else{
-				 if (projection > left && projection < right ) {
-					 overlaps=true;
+			 }else if (projection>right){
+				 seenRight=true;
+				 if (seenLeft){
 					 break;
-				 }else if (projection <= left ){
-					 seenLeft=true;
-					 if(seenRight){
-						 break;
-					 }
-				 }else if (projection>=right){
-					 seenRight=true;
-					 if (seenLeft){
-						 break;
-					 }
-				 }else if (seenLeft && projection > left ){
-					 seenRight=true;
-					 break;
-				 }else if (seenRight && projection < right ){
-					 seenRight=true;
+				 }
+			 }else if (seenLeft && projection > left ){
+				 seenRight=true;
+				 break;
+			 }else if (seenRight && projection < right ){
+				 seenRight=true;
+				 break;
+			 }
+		 }else{
+			 if(projection>left){
+				 seenRight=true;
+				 if (seenLeft){
 					 break;
 				 }
 			 }
+			 if (projection<right){
+				 seenLeft=true;
+				 if(seenRight){
+					 break;
+				 }
+			 }
+
 		 }
-		 if(!overlaps && !(seenLeft&&seenRight)){
+		 }
+		 if(!(seenLeft&&seenRight)){
 			 for(int i = 0;i<pointset1.size();i++){
 				 if(!pointset1.pointEnabled(i)){
 					 auto & p = pointset1[i];
