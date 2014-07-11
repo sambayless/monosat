@@ -136,6 +136,13 @@ public:
 				delete(over_hull);
 		 }
 
+		ConvexHull<D,T>* getConvexHull(bool overApprox){
+			if(overApprox){
+				return over_hull;
+			}else{
+				return under_hull;
+			}
+		}
 
 
 private:

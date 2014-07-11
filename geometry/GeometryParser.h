@@ -85,6 +85,7 @@ class GeometryParser:public Parser<B,Solver>{
 		int pointsetID1;
 		int pointsetID2;
 		Var var;
+		bool inclusive;
 	};
 	vec<ConvexHullsIntersection> convex_hulls_intersect;
 
@@ -217,14 +218,14 @@ void readConvexHullPointOnHull(B& in, Solver& S) {
 }
 
 
-void readConvexHullsIntersect(B& in, Solver& S) {
+void readConvexHullsIntersect(B& in, Solver& S, bool inclusive) {
 
     //hulls_intersect pointsetID1 pointsetID2 var
 	//v is true iff the two convex hulls intersect
 	int pointsetID1 = parseInt(in);
 	int pointsetID2 = parseInt(in);
 	int v = parseInt(in)-1;
-	convex_hulls_intersect.push({pointsetID1,pointsetID2,v});
+	convex_hulls_intersect.push({pointsetID1,pointsetID2,v,inclusive});
 
 
 }
@@ -254,7 +255,9 @@ public:
 		}else if (match(in,"point_on_convex_hull")){
 			readConvexHullPointOnHull(in,S);
 		}else if (match(in,"convex_hulls_intersect")){
-			readConvexHullsIntersect(in,S);
+			readConvexHullsIntersect(in,S,false);
+		}else if (match(in,"convex_hulls_collide")){
+			readConvexHullsIntersect(in,S,true);
 		}else if (match(in,"heightmap_volume")){
 
 		}else if (match(in, "euclidian_steiner_tree_weight")){
@@ -457,7 +460,7 @@ public:
 
 		 }else if(D==2){
 
-			 space_2D->convexHullsIntersect(c.pointsetID1,c.pointsetID2,c.var);
+			 space_2D->convexHullsIntersect(c.pointsetID1,c.pointsetID2,c.var, c.inclusive);
 		 }else{
 			 assert(false);
 		 }
