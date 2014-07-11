@@ -769,10 +769,11 @@ bool ConvexPolygon<D,T>::intersects2d(Shape<2,T> & shape, bool inclusive){
 		 //Separating Axis Theorem for collision detection between two convex polygons
 		 //loop through each edge in _each_ polygon and project both polygons onto that edge's normal.
 		 //If any of the projections are non-intersection, then these don't collide; else, they do collide
+		if(this->size()>1){
 		 for(int i = 0;i<this->size();i++){
-			 auto & p = (*this)[i];
+			 auto & cur = (*this)[i];
 			 auto & prev = (*this)[i-1];
-			 Point<2,T> edge = p-prev;
+			 Point<2,T> edge = cur-prev;
 			 Point<2,T> un_normalized_normal(-edge.y, edge.x);
 
 			 //now project both polygons onto to this normal and see if they overlap, by finding the minimum and maximum distances
@@ -808,6 +809,12 @@ bool ConvexPolygon<D,T>::intersects2d(Shape<2,T> & shape, bool inclusive){
 						 if (seenLeft){
 							 break;
 						 }
+					 }else if (seenLeft && projection > left ){
+						 seenRight=true;
+						 break;
+					 }else if (seenRight && projection < right ){
+						 seenRight=true;
+						 break;
 					 }
 				 }else{
 					 if (projection > left && projection < right ) {
@@ -823,6 +830,12 @@ bool ConvexPolygon<D,T>::intersects2d(Shape<2,T> & shape, bool inclusive){
 						 if (seenLeft){
 							 break;
 						 }
+					 }else if (seenLeft && projection > left ){
+						 seenRight=true;
+						 break;
+					 }else if (seenRight && projection < right ){
+						 seenRight=true;
+						 break;
 					 }
 				 }
 			 }
@@ -830,12 +843,13 @@ bool ConvexPolygon<D,T>::intersects2d(Shape<2,T> & shape, bool inclusive){
 				 return false;
 			 }
 		 }
-
+		}
+		if(c.size()>1){
 		 //now test the axis produced by the other polygon
 		 for(int j = 0;j<c.size();j++){
-			 auto & p = c[j];
+			 auto & cur = c[j];
 			 auto & prev =c[j-1];
-			 Point<2,T> edge = p-prev;
+			 Point<2,T> edge =cur-prev;
 			 Point<2,T> un_normalized_normal(-edge.y, edge.x);
 
 			 T left = numeric<T>::infinity();
@@ -868,21 +882,33 @@ bool ConvexPolygon<D,T>::intersects2d(Shape<2,T> & shape, bool inclusive){
 						 if (seenLeft){
 							 break;
 						 }
+					 }else if (seenLeft && projection > left ){
+						 seenRight=true;
+						 break;
+					 }else if (seenRight && projection < right ){
+						 seenRight=true;
+						 break;
 					 }
 				 }else{
 					 if (projection > left && projection < right ) {
 						 overlaps=true;
 						 break;
-					 }else if (projection < left ){
+					 }else if (projection <= left ){
 						 seenLeft=true;
 						 if(seenRight){
 							 break;
 						 }
-					 }else if (projection > right){
+					 }else if (projection >= right){
 						 seenRight=true;
 						 if (seenLeft){
 							 break;
 						 }
+					 }else if (seenLeft && projection > left ){
+						 seenRight=true;
+						 break;
+					 }else if (seenRight && projection < right ){
+						 seenRight=true;
+						 break;
 					 }
 				 }
 			 }
@@ -892,7 +918,7 @@ bool ConvexPolygon<D,T>::intersects2d(Shape<2,T> & shape, bool inclusive){
 		 }
 		 //If no axis overlapped, then they did in fact intersect
 		 return true;
-
+		}
 	}
 	assert(false);
 	return false;

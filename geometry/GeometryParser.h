@@ -447,9 +447,11 @@ public:
 	 for (auto & c:convex_hulls_intersect){
 		 if(c.pointsetID1 < 0 || c.pointsetID1>=pointsetDim.size() || c.pointsetID1<0 || pointsetDim[c.pointsetID1]<0){
 			 fprintf(stderr,"Bad pointsetID %d\n", c.pointsetID1);
+			 exit(3);
 		 }
 		 if(c.pointsetID2< 0 || c.pointsetID2>=pointsetDim.size() || c.pointsetID2<0 || pointsetDim[c.pointsetID2]<0){
 			 fprintf(stderr,"Bad pointsetID %d\n", c.pointsetID2);
+			 exit(3);
 		 }
 		 int D = pointsetDim[c.pointsetID1];
 

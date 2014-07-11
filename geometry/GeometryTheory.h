@@ -675,7 +675,7 @@ public:
 	};
 	bool propagateTheory(vec<Lit> & conflict){
 		static int itp = 0;
-		if(	++itp==62279){
+		if(	++itp==14){
 			int a =1;
 		}
 		stats_propagations++;
