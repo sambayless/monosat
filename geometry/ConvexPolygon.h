@@ -51,7 +51,7 @@ public:
 private:
 	bool intersects2d(Shape<2,T> & s, bool inclusive);
 	bool intersects2d(Shape<2,T> & s, NConvexPolygon<2,T> & polygon_out, bool inclusive);
-	bool edgesIntersectLine2d(LineSegment<2,T> & check, LineSegment<2,T> & intersection, bool inclusive);
+	bool edgesIntersectLine2d(LineSegment<2,T> & check, NConvexPolygon<2,T> & intersection, bool inclusive);
 	bool containsInRange2d(const Point<2,T> & point, int firstVertex,int lastVertex, bool inclusive);
 	bool containsInSplit2d(const Point<2,T> & point, int firstVertex,int lastVertex, NConvexPolygon<2,T> & polygon_out, bool inclusive);
 	bool containsInSplit2d_helper(const Point<2,T> & point, int firstVertex,int lastVertex, NConvexPolygon<2,T> & polygon_out, int depth, bool inclusive);
@@ -429,8 +429,8 @@ bool ConvexPolygon<D,T>::containsInSplit2d(const Point<2,T> & point, int firstVe
 		//do an extra check to correct for edge cases.
 		assert(polygon_out.contains(point,true));
 		if(!polygon_out.contains(point,false)){
-			//then there are two possibilities. Either the point is exactly on an edge of the polygon (in whch case it is not contained unless we are being inclsuvie)
-			//OR, we can expan the triangle into a quadrilateral that _does_ contain the point.
+			//then there are two possibilities. Either the point is exactly on an edge of the polygon (in whch case it is not contained unless we are being inclusive)
+			//OR, we can expand the triangle into a quadrilateral that _does_ contain the point.
 			//so, check which of the three edges of the triangle the point is lying on (if it is on a vertex of the triangle, then it must be of the border of the polygon, so it is not included)
 			assert(polygon_out.size()==3);
 			int containing_edge=-1;
@@ -439,6 +439,13 @@ bool ConvexPolygon<D,T>::containsInSplit2d(const Point<2,T> & point, int firstVe
 				Point<2,T> & p = polygon_out[i];
 				if(eq_epsilon(crossDif(prev,p,point))){
 					containing_edge=i;
+					//check if it is on a vertex exactly
+					if(point==p || point==prev){
+						//point is exactly on a vertex, so is not included
+						polygon_out.clear();
+						return false;
+					}
+
 					break;
 				}
 			}
@@ -486,6 +493,10 @@ bool ConvexPolygon<D,T>::containsInSplit2d(const Point<2,T> & point, int firstVe
 					assert((pIndex-1) % this->size() != prevIndex);
 					polygon_out.addVertex((*this)[pIndex-1]);
 				}
+				std::cout<<*this<<"\n";
+				std::cout << polygon_out<< "\n";
+				std::cout <<point<<"\n";
+
 				assert(polygon_out.containsInRange(point,0,polygon_out.size()-1,true));
 				assert(polygon_out.containsInRange(point,0,polygon_out.size()-1,false));
 			}
@@ -710,15 +721,37 @@ bool ConvexPolygon<D,T>::intersects(Shape<D,T> & shape, bool inclusive){
 
 
 template<unsigned int D,class T>
-bool ConvexPolygon<D,T>::edgesIntersectLine2d(LineSegment<2,T> & check,LineSegment<2,T> & out, bool inclusive){
+bool ConvexPolygon<D,T>::edgesIntersectLine2d(LineSegment<2,T> & check,NConvexPolygon<2,T> & out, bool inclusive){
 	// std::vector<Point<2,T> > &  w = this->getVertices();
 	ConvexPolygon<2,T> & w = (ConvexPolygon<2,T>&)*this;
+
+	if(!inclusive && w.size()>2){
+		//There is an edge case here where both end points of the line are exactly on vertices or edges of the polygon,
+		//and the line also crosses through the polygon.
+		//to check whether this occurs, pick any point on the line that is not an endpoint, and see if they collide.
+		Point<2,T> mid = (check.a + check.b)/2;
+		if(this->contains(mid,out,inclusive)){
+			return true;
+		}
+		/*if(check.intersects(out,true)){
+			if(!seenContainedLine){
+				seenContainedLine=true;
+			}else{
+				return true;
+			}
+		}*/
+	}
+	out.clear();
+	static LineSegment<2,T> test;
+	bool seenContainedLine=false;
 	for(int i = 0;i<w.size();i++){
 		Point<2,T> & prev = i>0 ?  w[i-1]:w.back();
 		Point<2,T> & p = w[i];
-		out.a = prev;
-		out.b = p;
-		if(check.intersects(out,inclusive)){
+		test.a = prev;
+		test.b = p;
+		if(check.intersects(test,inclusive)){
+			out.addVertex(prev);
+			out.addVertex(p);
 			return true;
 		}
 	}
@@ -727,13 +760,15 @@ bool ConvexPolygon<D,T>::edgesIntersectLine2d(LineSegment<2,T> & check,LineSegme
 
 template<unsigned int D,class T>
 bool ConvexPolygon<D,T>::intersects2d(Shape<2,T> & shape, bool inclusive){
+	if(this->size()==0)
+		return false;
 	if(shape.getType()==LINE_SEGMENT){
 		LineSegment<2,T> & line = (LineSegment<2,T> &)shape;
 
 		//first, check if either end point is contained
 		if(this->contains(line.a,inclusive) || this->contains(line.b,inclusive))
 			return true;
-		static LineSegment<2,T>  ignore;
+		static NConvexPolygon<2,T>  ignore;
 		//the line may still intersect even if neither end point is contained.
 		//we could apply the SAT here. But instead, we're going to walk around the edges of the convex shape, and see if any of the edges intersect this line.
 		return edgesIntersectLine2d(line,ignore, inclusive);
@@ -937,15 +972,12 @@ bool ConvexPolygon<D,T>::intersects2d(Shape<2,T> & shape, NConvexPolygon<2,T> & 
 		if(this->size()==1){
 			return line.contains((*this)[0],inclusive);
 		}
-		static LineSegment<2,T>  store;
+
+
 		//the line may still intersect even if neither end point is contained.
 		//we could apply the SAT here. But instead, we're going to walk around the edges of the convex shape, and see if any of the edges intersect this line.
-		bool r = edgesIntersectLine2d(line,store,inclusive);
-		if(r){
-			out.addVertex(store.a);
-			out.addVertex(store.b);
+		bool r = edgesIntersectLine2d(line,out,inclusive);
 
-		}
 #ifndef NDEBUG
 		NConvexPolygon<2,T> test;
 		test.addVertex(line.a);
@@ -953,7 +985,7 @@ bool ConvexPolygon<D,T>::intersects2d(Shape<2,T> & shape, NConvexPolygon<2,T> & 
 		if(this->intersects2d(test,inclusive)!=r){
 			std::cout<<line<<"\n";
 			std::cout<<(*this)<<"\n";
-			edgesIntersectLine2d(line,store,inclusive);
+			edgesIntersectLine2d(line,out,inclusive);
 		}
 		assert(this->intersects2d(test,inclusive)==r);
 #endif

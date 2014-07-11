@@ -1150,7 +1150,10 @@ void ConvexHullDetector<D,T>::buildConvexNotIntersectsReason2d(ConvexPolygon<2,T
 			rightmost2 = p.second;
 	}
 
-	assert(rightmost1<leftmost2 || rightmost2<leftmost1);
+	if(inclusive)
+		assert(rightmost1<leftmost2 || rightmost2<leftmost1);
+	else
+		assert(rightmost1<=leftmost2 || rightmost2<=leftmost1);
 	bool h1_is_left=rightmost1<leftmost2;
 
 	for(auto & p:projection){
@@ -1325,21 +1328,33 @@ bool ConvexHullDetector<D,T>::findSeparatingAxis2d(ConvexPolygon<2,T> & hull1, C
 					 if (seenLeft){
 						 break;
 					 }
+				 }else if (seenLeft && projection > left ){
+					 seenRight=true;
+					 break;
+				 }else if (seenRight && projection < right ){
+					 seenRight=true;
+					 break;
 				 }
 			 }else{
 				 if (projection > left && projection < right ) {
 					 overlaps=true;
 					 break;
-				 }else if (projection < left ){
+				 }else if (projection <= left ){
 					 seenLeft=true;
 					 if(seenRight){
 						 break;
 					 }
-				 }else if (projection>right){
+				 }else if (projection>=right){
 					 seenRight=true;
 					 if (seenLeft){
 						 break;
 					 }
+				 }else if (seenLeft && projection > left ){
+					 seenRight=true;
+					 break;
+				 }else if (seenRight && projection < right ){
+					 seenRight=true;
+					 break;
 				 }
 			 }
 		 }
@@ -1406,21 +1421,33 @@ bool ConvexHullDetector<D,T>::findSeparatingAxis2d(ConvexPolygon<2,T> & hull1, C
 					 if (seenLeft){
 						 break;
 					 }
+				 }else if (seenLeft && projection > left ){
+					 seenRight=true;
+					 break;
+				 }else if (seenRight && projection < right ){
+					 seenRight=true;
+					 break;
 				 }
 			 }else{
 				 if (projection > left && projection < right ) {
 					 overlaps=true;
 					 break;
-				 }else if (projection < left ){
+				 }else if (projection <= left ){
 					 seenLeft=true;
 					 if(seenRight){
 						 break;
 					 }
-				 }else if (projection>right){
+				 }else if (projection>=right){
 					 seenRight=true;
 					 if (seenLeft){
 						 break;
 					 }
+				 }else if (seenLeft && projection > left ){
+					 seenRight=true;
+					 break;
+				 }else if (seenRight && projection < right ){
+					 seenRight=true;
+					 break;
 				 }
 			 }
 		 }

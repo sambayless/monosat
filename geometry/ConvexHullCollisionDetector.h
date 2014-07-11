@@ -611,21 +611,33 @@ bool ConvexHullCollisionDetector<D, T>::findSeparatingAxis2d(ConvexPolygon<2, T>
 					 if (seenLeft){
 						 break;
 					 }
+				 }else if (seenLeft && projection > left ){
+					 seenRight=true;
+					 break;
+				 }else if (seenRight && projection < right ){
+					 seenRight=true;
+					 break;
 				 }
 			 }else{
 				 if (projection > left && projection < right ) {
 					 overlaps=true;
 					 break;
-				 }else if (projection < left ){
+				 }else if (projection <= left ){
 					 seenLeft=true;
 					 if(seenRight){
 						 break;
 					 }
-				 }else if (projection>right){
+				 }else if (projection>=right){
 					 seenRight=true;
 					 if (seenLeft){
 						 break;
 					 }
+				 }else if (seenLeft && projection > left ){
+					 seenRight=true;
+					 break;
+				 }else if (seenRight && projection < right ){
+					 seenRight=true;
+					 break;
 				 }
 			 }
 		 }
@@ -691,21 +703,33 @@ bool ConvexHullCollisionDetector<D, T>::findSeparatingAxis2d(ConvexPolygon<2, T>
 					 if (seenLeft){
 						 break;
 					 }
+				 }else if (seenLeft && projection > left ){
+					 seenRight=true;
+					 break;
+				 }else if (seenRight && projection < right ){
+					 seenRight=true;
+					 break;
 				 }
 			 }else{
 				 if (projection > left && projection < right ) {
 					 overlaps=true;
 					 break;
-				 }else if (projection < left ){
+				 }else if (projection <= left ){
 					 seenLeft=true;
 					 if(seenRight){
 						 break;
 					 }
-				 }else if (projection>right){
+				 }else if (projection>=right){
 					 seenRight=true;
 					 if (seenLeft){
 						 break;
 					 }
+				 }else if (seenLeft && projection > left ){
+					 seenRight=true;
+					 break;
+				 }else if (seenRight && projection < right ){
+					 seenRight=true;
+					 break;
 				 }
 			 }
 		 }
