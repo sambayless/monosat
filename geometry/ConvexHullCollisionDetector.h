@@ -423,6 +423,7 @@ void ConvexHullCollisionDetector<D,T>::buildNotCollisionReason2d(vec<Lit> & conf
 				conflict.push(l);
 			}
 		}
+		return;
 	}else if (h2.size()==0){
 		for(int i = 0;i<over2.size();i++){
 			if(!over2.pointEnabled(i)){
@@ -431,6 +432,7 @@ void ConvexHullCollisionDetector<D,T>::buildNotCollisionReason2d(vec<Lit> & conf
 				conflict.push(l);
 			}
 		}
+		return;
 	}else if (h1.size()==1 && h2.size()==1){
 		assert(h1[0]!=h2[0]);//identical points are considered to collide
 		//can we improve on this?
@@ -448,6 +450,7 @@ void ConvexHullCollisionDetector<D,T>::buildNotCollisionReason2d(vec<Lit> & conf
 				conflict.push(l);
 			}
 		}
+		return;
 	}
 
 	//the reason that the two convex hulls do NOT collide is that there exists a separating axis between them.
