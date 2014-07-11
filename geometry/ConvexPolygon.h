@@ -313,6 +313,12 @@ bool ConvexPolygon<D,T>::contains(const Point<D,T> & point, bool inclusive)
 	if(++iter==309222){
 		int a=1;
 	}
+	if(this->size()==1){
+		if(inclusive){
+			return (*this)[0]==point;
+		}else
+			return false;
+	}
 	if( this->size()==3){
 		if(D== 2)
 			return this->pointInTriangle2d(point,(*this)[0],(*this)[1],(*this)[2],inclusive);
@@ -783,7 +789,8 @@ bool ConvexPolygon<D,T>::intersects2d(Shape<2,T> & shape, bool inclusive){
 		if(this->size()==0 || c.size()==0){
 			return false;
 		}else if (this->size()==1){
-			if(!inclusive){
+			return c.contains((*this)[0],inclusive);
+		/*	if(!inclusive){
 				return false;
 			}
 			if(c.size()==1){
@@ -791,7 +798,7 @@ bool ConvexPolygon<D,T>::intersects2d(Shape<2,T> & shape, bool inclusive){
 				return (*this)[0]==c[0];
 			}else{
 				return c.contains((*this)[0],inclusive);
-			}
+			}*/
 		}else if (c.size()==1){
 			if(!inclusive)
 				return false;
