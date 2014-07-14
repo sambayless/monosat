@@ -195,10 +195,10 @@ bool ConvexHullCollisionDetector<D,T>::propagate(vec<Lit> & conflict){
 		auto & h1_over =  convexHullDetectors[c.pointSet1]->getConvexHull(true)->getHull();
 		auto & h2_under = convexHullDetectors[c.pointSet2]->getConvexHull(false)->getHull();
 		auto & h2_over = convexHullDetectors[c.pointSet2]->getConvexHull(true)->getHull();
-		cout<<h1_under << "\n";
+/*		cout<<h1_under << "\n";
 		cout << h2_under<<"\n";
 		cout<<h1_over << "\n";
-		cout << h2_over<<"\n";
+		cout << h2_over<<"\n";*/
 		if(c.inclusiveLit!=lit_Undef){
 			if(h1_under.intersects(h2_under,true)){
 				Lit l = c.inclusiveLit;

@@ -518,7 +518,8 @@ public:
 				skipWhitespace(in);
 				int v = parseInt(in);
 				if(v<=0){
-					printf("PARSE ERROR! Variables must be positive: %c\n", *in), exit(3);
+					//printf("PARSE ERROR! Variables must be positive: %c\n", *in), exit(3);
+					v = -v;
 				}
 
 				v--; //subtract one to get the variable id

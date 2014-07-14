@@ -11,11 +11,12 @@
 #include "mtl/Vec.h"
 #include "Line.h"
 #include <algorithm>
+#include "ConvexPolygon.h"
 /**
  * A line segment defined by two end-points
  */
 template<unsigned int D,class T>
-class LineSegment:public Shape<D,T>{
+class LineSegment:public ConvexPolygon<D,T>{
 public:
 	//A line segment is defined by two end-points that it passes through
 	Point<D,T> a;
@@ -39,11 +40,44 @@ public:
 
 	//> 0 if the point is 'right' of the line, <0 if 'left' of the line, 0 if exactly on the line.
 	int whichSide(const Point<D,T> & point);
+	int size()const{
+		return 2;
+	}
+	void update(){
+
+	}
+
+	const Point<D,T>& operator [] (int index) const {
+		index = index %size();
+		if(index<0){
+			index+=size();
+		}
+		assert(index>=0);assert(index<size());
+		if(index==0){
+			return a;
+		}else{
+			assert(index==1);
+			return b;
+		}
+	}
+	Point<D,T>&       operator [] (int index)       {
+		index = index %size();
+		if(index<0){
+			index+=size();
+		}
+		assert(index>=0);assert(index<size());
+		if(index==0){
+			return a;
+		}else{
+			assert(index==1);
+			return b;
+		}
+	}
 
 };
 
 template<class T>
-class LineSegment<2,T>:public Shape<2,T>{
+class LineSegment<2,T>:public ConvexPolygon<2,T>{
 public:
 	Point<2,T> a;
 	Point<2,T> b;
@@ -73,6 +107,41 @@ public:
 		return val>0?1:-1;
 		//return ((b.x - a.x)*(point.y - a.y) - (b.y - a.y)*(point.x - a.x));
 	}
+
+	int size()const{
+		return 2;
+	}
+	void update(){
+
+	}
+
+	const Point<2,T>& operator [] (int index) const {
+		index = index %size();
+		if(index<0){
+			index+=size();
+		}
+		assert(index>=0);assert(index<size());
+		if(index==0){
+			return a;
+		}else{
+			assert(index==1);
+			return b;
+		}
+	}
+	Point<2,T>&       operator [] (int index)       {
+		index = index %size();
+		if(index<0){
+			index+=size();
+		}
+		assert(index>=0);assert(index<size());
+		if(index==0){
+			return a;
+		}else{
+			assert(index==1);
+			return b;
+		}
+	}
+
 private:
 
 	static bool mightIntersect(LineSegment<2,T> & l1,LineSegment<2,T> &l2, bool inclusive);

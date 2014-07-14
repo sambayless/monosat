@@ -11,7 +11,7 @@
 #include <gmpxx.h>
 #include "core/Config.h"
 #include "Line.h"
-#include "LineSegment.h"
+
 #include <iostream>
 template<unsigned int D,class T>
 class NConvexPolygon;
@@ -19,6 +19,9 @@ class NConvexPolygon;
 template<unsigned int D,class T>
 class Triangle;
 
+
+template<unsigned int D,class T>
+class LineSegment;
 /**
  * A concrete, convex polygon (or, for D>2, a polytope)
  */
@@ -151,6 +154,7 @@ public:
 
 };
 
+#include "LineSegment.h"
 
 template<unsigned int D,class T>
 class NConvexPolygon:public ConvexPolygon<D,T>{
@@ -474,37 +478,62 @@ bool ConvexPolygon<D,T>::containsInSplit2d(const Point<2,T> & point, int firstVe
 			if(pIndex<prevIndex){
 				std::swap(pIndex,prevIndex);
 			}
-			if((pIndex-prevIndex) % this->size()==1){
+
+			if(( (pIndex+1)%this->size() == prevIndex ||  (pIndex-1)%this->size() == prevIndex ) || ((*this)[pIndex+1]==(*this)[prevIndex] ||(*this)[pIndex-1]==(*this)[prevIndex])){
 				//The containing edge is on the border of the polygon, so the point is NOT contained exclusively within the polygon.
+				//Note that there is a corner case here, if there are two or more IDENTICAL points in the convex hull. In this case, it is possible for the
+				//point to be exactly on an edge, but for the indices of those points (in clockwise order) to not be adjacent.
+				//So it really is necessary to check the actual values of the points in the above check.
 				res=false;
 				polygon_out.clear();
 
 			}else{
-				//None of the edges of the hull contain the point, so the containing edge is interior to the polygon - meaning that the point is exclusively contained in the polygon, but that the current containing triangle
-				//either needs to be swapped for some other triangle, or widened to a quadrilateral.
-				//(since there exist edge cases where NO internal triangle will exclusively contain the point, we will just widen to a quadrilateral, here.)
-				assert(prevIndex<pIndex);
-				assert(pIndex>-1);
-				assert(prevIndex>-1);
-				assert(nIndex>-1);
-				assert(pIndex!=prevIndex);
-				assert(pIndex!=nIndex);
 
-				if(prevIndex<nIndex && nIndex<pIndex){
-					//ok, pick any vertex outside of pIndex, prevIndex in order to expand the quadrilateral to contain point
-					assert((nIndex+1) % this->size() != prevIndex);
-					polygon_out.addVertex((*this)[pIndex+1]);
-				}else{
-					assert(nIndex<prevIndex || nIndex>pIndex);
-					assert((pIndex-1) % this->size() != prevIndex);
-					polygon_out.addVertex((*this)[pIndex-1]);
+
+				if (res){
+					//None of the edges of the hull contain the point, so the containing edge is interior to the polygon - meaning that the point is exclusively contained in the polygon, but that the current containing triangle
+					//either needs to be swapped for some other triangle, or widened to a quadrilateral.
+					//(since there exist edge cases where NO internal triangle will exclusively contain the point, we will just widen to a quadrilateral, here.)
+					assert(prevIndex<pIndex);
+					assert(pIndex>-1);
+					assert(prevIndex>-1);
+					assert(nIndex>-1);
+					assert(pIndex!=prevIndex);
+					assert(pIndex!=nIndex);
+
+					if(prevIndex<nIndex && nIndex<pIndex){
+						//ok, pick any vertex outside of pIndex, prevIndex in order to expand the quadrilateral to contain point
+						assert((nIndex+1) % this->size() != prevIndex);
+						//We *should* be able to pick any vertex outside that range -
+						//However, there is a corner case when the convex hull contains two identical points, in which case we don't get containment.
+						int newIndex = pIndex+1;
+
+						while((*this)[newIndex] == (*this)[pIndex]){
+							newIndex=(newIndex+1) % this->size();
+						}
+						assert((*this)[newIndex] != (*this)[pIndex]);
+						assert((*this)[newIndex] != (*this)[prevIndex]);
+						polygon_out.addVertex((*this)[newIndex]);
+					}else{
+						assert(nIndex<prevIndex || nIndex>pIndex);
+						assert((pIndex-1) % this->size() != prevIndex);
+
+						int newIndex = pIndex-1;
+
+						while((*this)[newIndex] == (*this)[pIndex]){
+							newIndex=(newIndex-1) % this->size();
+						}
+						assert((*this)[newIndex] != (*this)[pIndex]);
+						assert((*this)[newIndex] != (*this)[prevIndex]);
+						polygon_out.addVertex((*this)[newIndex]);
+					}
+				/*	std::cout<<*this<<"\n";
+					std::cout << polygon_out<< "\n";
+					std::cout <<point<<"\n";*/
+
+					assert(polygon_out.containsInRange(point,0,polygon_out.size()-1,true));
+					assert(polygon_out.containsInRange(point,0,polygon_out.size()-1,false));
 				}
-				std::cout<<*this<<"\n";
-				std::cout << polygon_out<< "\n";
-				std::cout <<point<<"\n";
-
-				assert(polygon_out.containsInRange(point,0,polygon_out.size()-1,true));
-				assert(polygon_out.containsInRange(point,0,polygon_out.size()-1,false));
 			}
 
 		}
@@ -978,8 +1007,8 @@ bool ConvexPolygon<D,T>::intersects2d(Shape<2,T> & shape, NConvexPolygon<2,T> & 
 		test.addVertex(line.a);
 		test.addVertex(line.b);
 		if(this->intersects2d(test,inclusive)!=r){
-			std::cout<<line<<"\n";
-			std::cout<<(*this)<<"\n";
+		/*	std::cout<<line<<"\n";
+			std::cout<<(*this)<<"\n";*/
 			edgesIntersectLine2d(line,out,inclusive);
 		}
 		assert(this->intersects2d(test,inclusive)==r);
