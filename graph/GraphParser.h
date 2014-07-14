@@ -66,10 +66,6 @@ class GraphParser:public Parser<B,Solver>{
 	}
 
     int     g, n,e, ev;
-    if(!eagerMatch(in,"digraph")){
-    	 printf("PARSE ERROR! Unexpected char: %c\n", *in), exit(3);
-    }
-
 
         n = parseInt(in);//num nodes
         e = parseInt(in);//num edges (I'm ignoring this currently)
@@ -92,9 +88,7 @@ class GraphParser:public Parser<B,Solver>{
 		skipLine(in);
 		return;
 	}
-    if(*in != 'e'){
-    	printf("PARSE ERROR! Unexpected char: %c\n", *in), exit(3);
-    }
+
     ++in;
 
         int graphID = parseInt(in);
@@ -121,9 +115,7 @@ class GraphParser:public Parser<B,Solver>{
 		skipLine(in);
 		return;
 	}
-    if(*in != 'w'){
-    	printf("PARSE ERROR! Unexpected char: %c\n", *in), exit(3);
-    }
+
     ++in;
 
         int graphID = parseInt(in);
@@ -151,10 +143,8 @@ class GraphParser:public Parser<B,Solver>{
 		skipLine(in);
 		return;
 	}
-	//u g u w var is an undirected reachability query: var is true if can u reach w in graph g, false otherwise
-    if(*in != 'u'){
-    	printf("PARSE ERROR! Unexpected char: %c\n", *in), exit(3);
-    }
+	//reach_undirected graphid u w var is an undirected reachability query: var is true if can u reach w in graph g, false otherwise
+
     ++in;
 
         int graphID = parseInt(in);
@@ -181,10 +171,8 @@ class GraphParser:public Parser<B,Solver>{
 		skipLine(in);
 		return;
 	}
-	//r g u w var is a reach query: var is true if can u reach w in graph g, false otherwise
-    if(*in != 'r'){
-    	printf("PARSE ERROR! Unexpected char: %c\n", *in), exit(3);
-    }
+	//reach grachID u w var is a reach query: var is true if can u reach w in graph g, false otherwise
+
     ++in;
 
         int graphID = parseInt(in);
@@ -210,10 +198,8 @@ class GraphParser:public Parser<B,Solver>{
 		skipLine(in);
 		return;
 	}
-	//d g u w var dist is a reach query: var is true if can u reach w in graph g, false otherwise
-    if(*in != 'd'){
-    	printf("PARSE ERROR! Unexpected char: %c\n", *in), exit(3);
-    }
+	//distance_lt grachID u w var dist is a reach query: var is true if can u reach w in graph g, false otherwise
+
     ++in;
 
         int graphID = parseInt(in);
@@ -241,10 +227,8 @@ class GraphParser:public Parser<B,Solver>{
 		skipLine(in);
 		return;
 	}
-	//m g maxweight var is a minimum spanning tree weight constraint: var is true if the mst of the graph is <= maxweight
-    if(*in != 'm'){
-    	printf("PARSE ERROR! Unexpected char: %c\n", *in), exit(3);
-    }
+	//mst_weight_lt grachID maxweight var is a minimum spanning tree weight constraint: var is true if the mst of the graph is <= maxweight
+
     ++in;
 
         int graphID = parseInt(in);
@@ -267,11 +251,9 @@ class GraphParser:public Parser<B,Solver>{
 		skipLine(in);
 		return;
 	}
-	//x g u v var is a minimum spanning tree EDGE constraint: var is true if the UNIQUE mst of the tree includes the UNDIRECTED edge from u to v. (directed graphs will be treated as undirected here)
+	//mst_edge grachID u v var is a minimum spanning tree EDGE constraint: var is true if the UNIQUE mst of the tree includes the UNDIRECTED edge from u to v. (directed graphs will be treated as undirected here)
 	//Note that if there are multiple edges from u to v, this constraint is true if any of them are in the mst.
-    if(*in != 'x'){
-    	printf("PARSE ERROR! Unexpected char: %c\n", *in), exit(3);
-    }
+
     ++in;
 
         int graphID = parseInt(in);
@@ -298,10 +280,8 @@ class GraphParser:public Parser<B,Solver>{
 		skipLine(in);
 		return;
 	}
-	//f g s t flow var is a max flow constraint, true if the max flow is >= var
-    if(*in != 'f'){
-    	printf("PARSE ERROR! Unexpected char: %c\n", *in), exit(3);
-    }
+	//max_flow_gt grachID s t flow var is a max flow constraint, true if the max flow is >= var
+
     ++in;
 
         int graphID = parseInt(in);
@@ -330,10 +310,8 @@ class GraphParser:public Parser<B,Solver>{
 		skipLine(in);
 		return;
 	}
-	//n g min_components var is a minimum connected component count constraint, true if the max flow is >= var
-    if(*in != 'n'){
-    	printf("PARSE ERROR! Unexpected char: %c\n", *in), exit(3);
-    }
+	//connected_component_count_lt grachID min_components var is a minimum connected component count constraint, true if the max flow is >= var
+
     ++in;
 
         int graphID = parseInt(in);
@@ -441,10 +419,8 @@ class GraphParser:public Parser<B,Solver>{
 	//If 1, then this is a one sided constraint, which is enforced if the final literal is true, and otherwise has no effect.
 	//If 2, then this is a two sided constraint: if the final literal is false, then the condtion is enforced to be false.
 
-	//o <size> lit1 lit2 ... [0 | <size>weight1 weight2 ...] 'op' total 2 headLiteral
-	 if(!eagerMatch(in,"o")){
-		 printf("PARSE ERROR! Unexpected char: %c\n", *in), exit(3);
-	 }
+	//pb_lt <size> lit1 lit2 ... [0 | <size>weight1 weight2 ...] 'op' total 2 headLiteral
+
 	 lits.clear();
 	 weights.clear();
 	 int size =  parseInt(in);
@@ -569,49 +545,43 @@ public:
 				//just a comment
 				return false;
 			}
-		} else if (*in == 'p'){
-			if(match(in,"p graph")){
-				//these lines are not currently useful...
-				return true;
-			}
-			return false;
-		}else if (*in == 'g'){
+		}else if (match(in,"digraph")){
 			++in;
 			skipWhitespace(in);
-			if(*in=='d'){
+			//if(*in=='d'){
 				//for now, only digraphs are supported
 				 readDiGraph(in, S,graphs);
-			}else{
-				printf("PARSE ERROR! Unexpected char: %c\n", *in), exit(3);
-			}
+			//}else{
+			//	printf("PARSE ERROR! Unexpected char: %c\n", *in), exit(3);
+			//}
 			return true;
-		}else if (*in == 'e'){
+		}else if (match(in,"edge")){
 			count++;
 			readEdge(in, S,graphs);
 			return true;
-		}else if (*in == 'w'){
+		}else if (match(in,"weighted_edge")){
 			count++;
 			readWeightedEdge(in, S,graphs);
 			return true;
-		}else if (*in == 'r'){
-			readReach(in, S,graphs);
-			return true;
-		}else if (*in == 'u'){
+		}else if (match(in,"connect")){
 			readConnect(in, S,graphs);
 			return true;
-		}else if (*in == 'd'){
+		}else if (match(in,"reach")){
+			readReach(in, S,graphs);
+			return true;
+		}else if (match(in, "distance_lt")){
 			readDistance(in, S,graphs);
 			return true;
-		}else if (*in == 'm'){
+		}else if (match(in,"mst_weight_lt")){
 			readMinSpanningTreeConstraint(in, S,graphs);
 			return true;
-		}else if (*in == 'x'){
+		}else if (match(in, "mst_edge")){
 			readMinSpanningTreeEdgeConstraint(in, S,graphs);
 			return true;
-		}else if (*in == 'f'){
+		}else if (match(in, "max_flow_gt")){
 			readMaxFlowConstraint(in, S,graphs);
 			return true;
-		}else if (*in == 'n'){
+		}else if (match(in,"connected_component_count_lt")){
 			readMinConnectedComponentsConstraint(in, S,graphs);
 			return true;
 		}else if (*in == 's'){
@@ -630,7 +600,7 @@ public:
 				readSteinerTreeConstraint(in,S,graphs, steiners);
 			}
 			return true;
-		}else if (*in == 'o'){
+		}else if (match(in, "pb_lt")){
 			//Pseudoboolean constraint: o is for opb... can't use p, unfortunately...
 			if(!pbtheory){
 				pbtheory = new PbTheory(&S);
