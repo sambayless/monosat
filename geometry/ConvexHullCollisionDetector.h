@@ -343,7 +343,8 @@ void ConvexHullCollisionDetector<D,T>::buildCollisionReason2d(vec<Lit> & conflic
 	ConvexPolygon<2, T> & h1 =(ConvexPolygon<2, T> &) convexHullDetectors[pointSet1]->getConvexHull(false)->getHull();
 	ConvexPolygon<2, T> & h2 = (ConvexPolygon<2, T> &) convexHullDetectors[pointSet2]->getConvexHull(false)->getHull();
 
-
+	assert(h1.intersects(h2,inclusive));
+	assert(h2.intersects(h1,inclusive));
 	//so, first, check each edge segment to see if there is an intersecting line.
 	//I'm doing this first, on the hypothesis that these line intersection constraints may form better learned clauses.
 	//(since cases 1 and 2 overlap, we have to make a choice about which to favour...)
@@ -354,10 +355,10 @@ void ConvexHullCollisionDetector<D,T>::buildCollisionReason2d(vec<Lit> & conflic
 		Point<2,T> & p = h1[i];
 		LineSegment<2,T> edge1(prev,p);
 		for(int j = 0;  j<h2.size();j++){
-			Point<2,T> & prev2 = h1[i-1];
-			Point<2,T> & p2 = h1[i];
+			Point<2,T> & prev2 = h2[j-1];
+			Point<2,T> & p2 = h2[j];
 			LineSegment<2,T> edge2(prev2,p2);
-			if(edge1.intersects(edge2,true)){
+			if(edge1.intersects(edge2,inclusive)){
 				//learn that one of the endpoints of these two intersecting lines must be disabled
 				conflict.push(~mkLit(outer->getPointVar(prev.getID())));
 				conflict.push(~mkLit(outer->getPointVar(p.getID())));
@@ -374,10 +375,10 @@ void ConvexHullCollisionDetector<D,T>::buildCollisionReason2d(vec<Lit> & conflic
 
 
 	for(int i = 0; i<h1.size();i++){
-		if(h2.contains(h1[i],true)){
+		if(h2.contains(h1[i],inclusive)){
 			static NConvexPolygon<2,T> triangle;
-			findContainingTriangle2d(h2,h1[i],triangle,true);
-			assert(triangle.contains(h1[i],true));
+			//findContainingTriangle2d(h2,h1[i],triangle,inclusive);
+			triangle.contains(h1[i],triangle,inclusive);
 			conflict.push(~mkLit(outer->getPointVar(h1[i].getID())));
 			for(auto & p: triangle){
 				int id = p.getID();
@@ -390,10 +391,10 @@ void ConvexHullCollisionDetector<D,T>::buildCollisionReason2d(vec<Lit> & conflic
 	}
 
 	for(int i = 0; i<h2.size();i++){
-		if(h1.contains(h2[i],true)){
+		if(h1.contains(h2[i],inclusive)){
 			static NConvexPolygon<2,T> triangle;
-			findContainingTriangle2d(h1,h2[i],triangle,true);
-			assert(triangle.contains(h2[i],true));
+			//findContainingTriangle2d(h1,h2[i],triangle,inclusive);
+			triangle.contains(h2[i],triangle,inclusive);
 			conflict.push(~mkLit(outer->getPointVar(h2[i].getID())));
 			for(auto & p: triangle){
 				int id = p.getID();

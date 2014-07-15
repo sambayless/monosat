@@ -893,13 +893,14 @@ CRef Solver::propagate(bool propagate_theories)
 		    	}
 		    	initialPropagate=false;
 		    }
+			static int iter = 0;
+					if(++iter==2987){
+						int a=1;
+					}
 			//propagate theories;
 			while(propagate_theories && theory_queue.size() && (opt_early_theory_prop || qhead == trail.size()) && confl==CRef_Undef){
 				theory_conflict.clear();
-				static int iter = 0;
-				if(++iter==32){
-					int a=1;
-				}
+
 				int theoryID = theory_queue.last();
 				theory_queue.pop();
 				in_theory_queue[theoryID]=false;

@@ -235,12 +235,8 @@ public:
  bool parseLine(B& in, Solver& S){
 
 		skipWhitespace(in);
-		if (*in == EOF)
+		if (*in == EOF){
 			return false;
-		else if (match(in,"point")){
-			//add a point to a point set
-			readPoint(in,S);
-
 		}else if (match(in,"convex_hull_area_gt")){
 			readConvexHullArea(in,S);
 		}/*else if (match(in,"convex_hull_containment")){
@@ -263,6 +259,10 @@ public:
 		}else if (match(in, "euclidian_steiner_tree_weight")){
 
 		}else if (match(in, "rectilinear_steiner_tree_weight")){
+
+		}else if (match(in,"point")){
+			//add a point to a point set
+			readPoint(in,S);
 
 		}else{
 			return false;
@@ -428,6 +428,10 @@ public:
 		 if(D==1){
 			 //space_1D[c.pointsetID]->convexHullContains(c.pointVar,c.pointOnHull);
 		 }else if(D==2){
+			 if(!S.hasTheory(c.pointVar)){
+				 fprintf(stderr,"Variable %d is not a point variable, aborting!",c.pointVar);
+				 exit(3);
+			 }
 			 Var theoryVar = S.getTheoryVar(c.pointVar);
 			 int pointID = space_2D->getPointID(theoryVar);
 			 int pointset = space_2D->getPointset(pointID);
