@@ -43,19 +43,19 @@ public:
 		return CONVEX_POLYGON;
 	}
 	bool contains(const Point<D,T> & point, bool inclusive);
-	bool contains(const Point<D,T> & point,NConvexPolygon<D,T> & polygon_out, bool inclusive);
+	bool contains(const Point<D,T> & point,NConvexPolygon<D,T> * polygon_out, bool inclusive);
 
 	bool containsInRange(const Point<D,T> & point, int firstVertex,int lastVertex, bool inclusive, bool excludeVertices=false);
 	bool containsInSplit(const Point<D,T> & point, int firstVertex,int lastVertex, bool inclusive, bool excludeVertices=false);
 	bool intersects(Shape<D,T> & s, bool inclusive);
 
-	bool intersects(Shape<D,T> & s, NConvexPolygon<D,T> & polygon_out, bool inclusive);
+	bool intersects(Shape<D,T> & s, NConvexPolygon<D,T> * polygon_out_this, NConvexPolygon<D,T> * polygon_out_other, bool inclusive);
 	bool intersectsExcludingVertices(Shape<D,T> & s, NConvexPolygon<D,T> & polygon_out, bool inclusive);
 	bool containsExcludingVertices(const Point<D,T> & point,NConvexPolygon<D,T> & polygon_out, bool inclusive);
 private:
-	bool intersects2d(Shape<2,T> & s, bool inclusive, bool ignore_vertices=false);
-	bool intersects2d(Shape<2,T> & s, NConvexPolygon<2,T> & polygon_out, bool inclusive, bool ignore_vertices=false);
-	bool edgesIntersectLine2d(LineSegment<2,T> & check, NConvexPolygon<2,T> & intersection, bool inclusive);
+	//bool intersects2d(Shape<2,T> & s, bool inclusive, bool ignore_vertices=false);
+	bool intersects2d(Shape<2,T> & s, NConvexPolygon<2,T> * polygon_out_this, NConvexPolygon<2,T> * polygon_out_other, bool inclusive, bool ignore_vertices=false);
+	bool edgesIntersectLine2d(LineSegment<2,T> & check, NConvexPolygon<2,T> * intersection, bool inclusive);
 	bool containsInRange2d(const Point<2,T> & point, int firstVertex,int lastVertex, bool inclusive, bool excludeVertices);
 	bool containsInSplit2d(const Point<2,T> & point, int firstVertex,int lastVertex, NConvexPolygon<2,T> & polygon_out, bool inclusive, bool excludeVertices=false);
 	bool containsInSplit2d_helper(const Point<2,T> & point, int firstVertex,int lastVertex, NConvexPolygon<2,T> & polygon_out, int depth, bool inclusive, bool excludeVertices);
@@ -277,17 +277,19 @@ std::ostream & operator<<(std::ostream & str, Triangle<D,T>  & polygon){
 }
 
 template<unsigned int D,class T>
-bool ConvexPolygon<D,T>::contains(const Point<D,T> & point,NConvexPolygon<D,T> & polygon_out, bool inclusive){
-	polygon_out.clear();
+bool ConvexPolygon<D,T>::contains(const Point<D,T> & point,NConvexPolygon<D,T> * polygon_out, bool inclusive){
+	if(polygon_out)
+		polygon_out->clear();
 	stats_contain_checks++;
 	if(this->size()==3){
 		if(D==2){
 			stats_triangle_avoided++;
 			if(  this->pointInTriangle2d(point,(*this)[0],(*this)[1],(*this)[2],inclusive)){
-				polygon_out.addVertexUnchecked((*this)[0]);
-				polygon_out.addVertexUnchecked((*this)[1]);
-				polygon_out.addVertexUnchecked((*this)[2]);
-
+				if(polygon_out){
+					polygon_out->addVertexUnchecked((*this)[0]);
+					polygon_out->addVertexUnchecked((*this)[1]);
+					polygon_out->addVertexUnchecked((*this)[2]);
+				}
 				return true;
 			}else{
 				return false;
@@ -301,7 +303,12 @@ bool ConvexPolygon<D,T>::contains(const Point<D,T> & point,NConvexPolygon<D,T> &
 	}
 
 	if(D==2){
-		return containsInSplit2d((const Point<2,T> &) point, 0,this->size()-1,(NConvexPolygon<D,T> &)polygon_out,inclusive);
+		if(polygon_out)
+			return containsInSplit2d((const Point<2,T> &) point, 0,this->size()-1,*polygon_out,inclusive);
+		else{
+			NConvexPolygon<2,T> ignore;
+			return containsInSplit2d((const Point<2,T> &) point, 0,this->size()-1,ignore,inclusive);
+		}
 	}else{
 		assert(false);
 	}
@@ -311,7 +318,8 @@ bool ConvexPolygon<D,T>::contains(const Point<D,T> & point,NConvexPolygon<D,T> &
 template<unsigned int D,class T>
 bool ConvexPolygon<D,T>::contains(const Point<D,T> & point, bool inclusive)
 {
-	//stats_contain_checks++;
+	return contains(point, nullptr,inclusive);
+/*	//stats_contain_checks++;
 	static int iter = 0;
 	if(++iter==309222){
 		int a=1;
@@ -338,7 +346,7 @@ bool ConvexPolygon<D,T>::contains(const Point<D,T> & point, bool inclusive)
 		return containsInSplit(point,0,this->size()-1,inclusive);
 	}else{
 		return containsInRange(point,0,this->size()-1,inclusive);
-	}
+	}*/
 }
 template<unsigned int D,class T>
 bool ConvexPolygon<D,T>::containsInRange(const Point<D,T> & point, int firstVertex,int lastVertex, bool inclusive, bool excludeVertices)
@@ -785,10 +793,15 @@ bool ConvexPolygon<D,T>::intersectsExcludingVertices(Shape<D,T> & shape,NConvexP
 
 
 template<unsigned int D,class T>
-bool ConvexPolygon<D,T>::intersects(Shape<D,T> & shape,NConvexPolygon<D,T> & out, bool inclusive){
-	out.clear();
+bool ConvexPolygon<D,T>::intersects(Shape<D,T> & shape,NConvexPolygon<D,T> * polygon_out_this,NConvexPolygon<D,T> * polygon_out_other, bool inclusive){
+	if(polygon_out_this){
+		polygon_out_this->clear();
+	}
+	if(polygon_out_other){
+		polygon_out_other->clear();
+	}
 	if(D==2){
-		return intersects2d((Shape<2,T> &) shape,(NConvexPolygon<2,T> &)out,inclusive);
+		return intersects2d((Shape<2,T> &) shape,polygon_out_this,polygon_out_other,inclusive);
 	}else{
 		assert(false);
 	}
@@ -797,7 +810,7 @@ bool ConvexPolygon<D,T>::intersects(Shape<D,T> & shape,NConvexPolygon<D,T> & out
 template<unsigned int D,class T>
 bool ConvexPolygon<D,T>::intersects(Shape<D,T> & shape, bool inclusive){
 	if(D==2){
-		return intersects2d((Shape<2,T> &) shape,inclusive);
+		return intersects2d((Shape<2,T> &) shape,nullptr,nullptr,inclusive);
 	}else{
 		assert(false);
 	}
@@ -806,7 +819,7 @@ bool ConvexPolygon<D,T>::intersects(Shape<D,T> & shape, bool inclusive){
 
 
 template<unsigned int D,class T>
-bool ConvexPolygon<D,T>::edgesIntersectLine2d(LineSegment<2,T> & check,NConvexPolygon<2,T> & out, bool inclusive){
+bool ConvexPolygon<D,T>::edgesIntersectLine2d(LineSegment<2,T> & check,NConvexPolygon<2,T> * out, bool inclusive){
 	// std::vector<Point<2,T> > &  w = this->getVertices();
 	ConvexPolygon<2,T> & w = (ConvexPolygon<2,T>&)*this;
 
@@ -818,15 +831,9 @@ bool ConvexPolygon<D,T>::edgesIntersectLine2d(LineSegment<2,T> & check,NConvexPo
 		if(this->contains(mid,out,inclusive)){
 			return true;
 		}
-		/*if(check.intersects(out,true)){
-			if(!seenContainedLine){
-				seenContainedLine=true;
-			}else{
-				return true;
-			}
-		}*/
 	}
-	out.clear();
+	if(out)
+		out->clear();
 	static LineSegment<2,T> test;
 	bool seenContainedLine=false;
 	for(int i = 0;i<w.size();i++){
@@ -835,13 +842,16 @@ bool ConvexPolygon<D,T>::edgesIntersectLine2d(LineSegment<2,T> & check,NConvexPo
 		test.a = prev;
 		test.b = p;
 		if(check.intersects(test,inclusive)){
-			out.addVertex(prev);
-			out.addVertex(p);
+			if(out){
+				out->addVertex(prev);
+				out->addVertex(p);
+			}
 			return true;
 		}
 	}
 	return false;
 }
+/*
 
 template<unsigned int D,class T>
 bool ConvexPolygon<D,T>::intersects2d(Shape<2,T> & shape, bool inclusive, bool ignore_vertices){
@@ -853,6 +863,11 @@ bool ConvexPolygon<D,T>::intersects2d(Shape<2,T> & shape, bool inclusive, bool i
 		//first, check if either end point is contained
 		if(this->contains(line.a,inclusive) || this->contains(line.b,inclusive))
 			return true;
+		if(this->size()==1){
+			if(ignore_vertices)
+				return false;
+				return line.contains((*this)[0],inclusive);
+			}
 		static NConvexPolygon<2,T>  ignore;
 		//the line may still intersect even if neither end point is contained.
 		//we could apply the SAT here. But instead, we're going to walk around the edges of the convex shape, and see if any of the edges intersect this line.
@@ -869,7 +884,7 @@ bool ConvexPolygon<D,T>::intersects2d(Shape<2,T> & shape, bool inclusive, bool i
 			return false;
 		}else if (this->size()==1){
 			return c.contains((*this)[0],inclusive);
-		/*	if(!inclusive){
+			if(!inclusive){
 				return false;
 			}
 			if(c.size()==1){
@@ -877,7 +892,7 @@ bool ConvexPolygon<D,T>::intersects2d(Shape<2,T> & shape, bool inclusive, bool i
 				return (*this)[0]==c[0];
 			}else{
 				return c.contains((*this)[0],inclusive);
-			}*/
+			}
 		}else if (c.size()==1){
 			if(!inclusive)
 				return false;
@@ -1032,40 +1047,417 @@ bool ConvexPolygon<D,T>::intersects2d(Shape<2,T> & shape, bool inclusive, bool i
 	assert(false);
 	return false;
 }
+*/
 
 template<unsigned int D,class T>
-bool ConvexPolygon<D,T>::intersects2d(Shape<2,T> & shape, NConvexPolygon<2,T> & out, bool inclusive, bool ignore_vertices){
+bool ConvexPolygon<D,T>::intersects2d(Shape<2,T> & shape, NConvexPolygon<2,T> * polygon_out_this,NConvexPolygon<2,T> * polygon_out_other, bool inclusive, bool ignore_vertices){
+	static int iter = 0;
+	++iter;
 	if(this->size()==0)
 		return false;
 	if(shape.getType()==LINE_SEGMENT){
 		LineSegment<2,T> & line = (LineSegment<2,T> &)shape;
 
 		//first, check if either end point is contained
-		if(this->contains(line.a,out,inclusive) || this->contains(line.b,out,inclusive))
+		if(this->contains(line.a,polygon_out_this,inclusive) || this->contains(line.b,polygon_out_this,inclusive)){
+			if(polygon_out_other){
+				polygon_out_other->clear();
+				polygon_out_other->addVertex(line[0]);
+				polygon_out_other->addVertex(line[1]);
+			}
 			return true;
-		if(this->size()==1){
-			return line.contains((*this)[0],inclusive);
 		}
-
+		if(this->size()==1){
+			if(ignore_vertices)
+				return false;
+			if( line.contains((*this)[0],inclusive)){
+				if(polygon_out_this){
+					polygon_out_this->clear();
+					polygon_out_this->addVertex((*this)[0]);
+				}
+				if(polygon_out_other){
+					polygon_out_other->clear();
+					polygon_out_other->addVertex(line[0]);
+					polygon_out_other->addVertex(line[1]);
+				}
+				return true;
+			}
+			return false;
+		}
 
 		//the line may still intersect even if neither end point is contained.
 		//we could apply the SAT here. But instead, we're going to walk around the edges of the convex shape, and see if any of the edges intersect this line.
-		bool r = edgesIntersectLine2d(line,out,inclusive);
-
+		bool r = edgesIntersectLine2d(line,polygon_out_this,inclusive);
+		if(r && polygon_out_other){
+			polygon_out_other->clear();
+			polygon_out_other->addVertex(line[0]);
+			polygon_out_other->addVertex(line[1]);
+		}
 #ifndef NDEBUG
 		NConvexPolygon<2,T> test;
 		test.addVertex(line.a);
 		test.addVertex(line.b);
-		if(this->intersects2d(test,inclusive)!=r){
+		if(this->intersects2d(test,nullptr,nullptr,inclusive)!=r){
 		/*	std::cout<<line<<"\n";
 			std::cout<<(*this)<<"\n";*/
-			edgesIntersectLine2d(line,out,inclusive);
+			edgesIntersectLine2d(line,nullptr,inclusive);
 		}
-		assert(this->intersects2d(test,inclusive)==r);
+		assert(this->intersects2d(test,nullptr,nullptr,inclusive)==r);
 #endif
 		return r;
 
 
+	}else if(shape.getType()==CONVEX_POLYGON){
+		ConvexPolygon<2,T> & c = (ConvexPolygon<2,T>&) shape;
+		if(c.size()<this->size()){
+			return c.intersects(*this,polygon_out_other,polygon_out_this,inclusive);
+		}
+
+		if(this->size()==0 || c.size()==0){
+			return false;
+		}else if (this->size()==1){
+			if( c.contains((*this)[0],polygon_out_other,inclusive)){
+				if(polygon_out_this){
+					polygon_out_this->clear();
+					polygon_out_this->addVertex((*this)[0]);
+				}
+			}else{
+				return false;
+			}
+/*			if(!inclusive){
+				return false;
+			}
+			if(c.size()==1){
+				//then the two vertices are considered to collide if they are identical
+				return (*this)[0]==c[0];
+			}else{
+				return c.contains((*this)[0],inclusive);
+			}*/
+		}else if (c.size()==1){
+			if(!inclusive)
+				return false;
+			if( contains(c[0],polygon_out_this,inclusive)){
+				if(polygon_out_other){
+					polygon_out_other->clear();
+					polygon_out_other->addVertex(c[0]);
+				}
+			}
+		}
+
+		ConvexPolygon<2,T> &  w = (ConvexPolygon<2,T>&)*this;
+
+		 //Separating Axis Theorem for collision detection between two convex polygons
+		 //loop through each edge in _each_ polygon and project both polygons onto that edge's normal.
+		 //If any of the projections are non-intersection, then these don't collide; else, they do collide
+		if(this->size()>1){
+		 for(int i = 0;i<this->size();i++){
+			 auto & cur = (*this)[i];
+			 auto & prev = (*this)[i-1];
+			 Point<2,T> edge = cur-prev;
+			 Point<2,T> un_normalized_normal(-edge.y, edge.x);
+
+			 //now project both polygons onto to this normal and see if they overlap, by finding the minimum and maximum distances
+			 //Note that since we are NOT normalizing the normal vector, the projection is distorted along that vector
+			 //(this still allows us to check overlaps, but means that the minimum distance found between the two shapes may be incorrect)
+			 T left = numeric<T>::infinity();
+			 T right = -numeric<T>::infinity();
+			 for (auto & p:*this){
+				 T projection = un_normalized_normal.dot(p);
+				 if (projection < left) {
+					  left = projection;
+				 }
+				 if (projection > right) {
+					  right = projection;
+				 }
+			 }
+
+			 bool seenLeft = false;
+			 bool seenRight=false;
+			 for (auto & p:c){
+				 T projection = un_normalized_normal.dot(p);
+				 if(inclusive){
+					 if (projection >= left && projection <= right ) {
+						 seenRight=true;
+						 seenLeft=true;
+						 break;
+					 }else if (projection < left ){
+						 seenLeft=true;
+						 if(seenRight){
+							 break;
+						 }
+					 }else if (projection>right){
+						 seenRight=true;
+						 if (seenLeft){
+							 break;
+						 }
+					 }else if (seenLeft && projection > left ){
+						 seenRight=true;
+						 break;
+					 }else if (seenRight && projection < right ){
+						 seenRight=true;
+						 break;
+					 }
+				 }else{
+					 if(projection>left){
+						 seenRight=true;
+						 if (seenLeft){
+							 break;
+						 }
+					 }
+					 if (projection<right){
+						 seenLeft=true;
+						 if(seenRight){
+							 break;
+						 }
+					 }
+
+				 }
+			 }
+			 if(!(seenLeft&&seenRight)){
+				 return false;
+			 }
+		 }
+		}
+		if(c.size()>1){
+		 //now test the axis produced by the other polygon
+		 for(int j = 0;j<c.size();j++){
+			 auto & cur = c[j];
+			 auto & prev =c[j-1];
+			 Point<2,T> edge =cur-prev;
+			 Point<2,T> un_normalized_normal(-edge.y, edge.x);
+
+			 T left = numeric<T>::infinity();
+			 T right = -numeric<T>::infinity();
+			 for (auto & p:c){
+				 T projection = un_normalized_normal.dot(p);
+				 if (projection < left) {
+					  left = projection;
+				 }
+				 if (projection > right) {
+					  right = projection;
+				 }
+			 }
+			 bool seenLeft = false;
+			 bool seenRight=false;
+
+			 for (auto & p:*this){
+				 T projection = un_normalized_normal.dot(p);
+				 if(inclusive){
+					 if (projection >= left && projection <= right ) {
+						 seenRight=true;
+						 seenLeft=true;
+						 break;
+					 }else if (projection < left ){
+						 seenLeft=true;
+						 if(seenRight){
+							 break;
+						 }
+					 }else if (projection>right){
+						 seenRight=true;
+						 if (seenLeft){
+							 break;
+						 }
+					 }else if (seenLeft && projection > left ){
+						 seenRight=true;
+						 break;
+					 }else if (seenRight && projection < right ){
+						 seenRight=true;
+						 break;
+					 }
+				 }else{
+					 if(projection>left){
+						 seenRight=true;
+						 if (seenLeft){
+							 break;
+						 }
+					 }
+					 if (projection<right){
+						 seenLeft=true;
+						 if(seenRight){
+							 break;
+						 }
+					 }
+
+				 }
+			 }
+			 if(!(seenLeft&&seenRight)){
+				 return false;
+			 }
+		 }
+		 //If no axis overlapped, then they did in fact intersect
+
+		 //find minimal subsets of the polygons that are sufficient to intersect
+		 if(polygon_out_this || polygon_out_other){
+			 if(polygon_out_this)
+				 polygon_out_this->clear();
+			 if(polygon_out_other)
+				 polygon_out_other->clear();
+
+			 //there are several possibilities for collisions, depending on whether we are inclusive of edges/vertices or not.
+			 ConvexPolygon<2,T> & h1 = *this;
+			 ConvexPolygon<2,T> & h2 = c;
+
+			 for(int i = 0; i<h1.size();i++){
+				Point<2,T> & prev = h1[i-1];
+				Point<2,T> & p = h1[i];
+				LineSegment<2,T> edge1(prev,p);
+				for(int j = 0;  j<h2.size();j++){
+					Point<2,T> & prev2 = h2[j-1];
+					Point<2,T> & p2 = h2[j];
+					LineSegment<2,T> edge2(prev2,p2);
+					if((inclusive || !edge1.collinear(edge2.a, edge2.b)) && edge1.intersects(edge2,inclusive)){
+						if(polygon_out_this){
+							polygon_out_this->addVertex(prev);
+							polygon_out_this->addVertex(p);
+						}
+						if(polygon_out_other){
+							polygon_out_other->addVertex(prev2);
+							polygon_out_other->addVertex(p2);
+						}
+						return true;
+					}
+				}
+			}
+
+			//if no intersecting line segment was found, then it follows that one of the polygons is wholly contained in the other.
+			//so treat this as a contained point problem - pick one of the points in the contained polygon (arbitrarily), and a containing triangle
+			//from the other polygon, and learn that one of these 4 points must be disabled.
+
+			for(int i = 0; i<h1.size();i++){
+				if(h2.contains(h1[i],polygon_out_other,inclusive)){
+					if(polygon_out_this){
+						polygon_out_this->addVertex(h1[i]);
+					}
+					return true;
+				}
+			}
+
+			for(int i = 0; i<h2.size();i++){
+				if(h1.contains(h2[i],polygon_out_this,inclusive)){
+					if(polygon_out_other){
+						polygon_out_other->addVertex(h2[i]);
+					}
+					return true;
+				}
+			}
+
+			assert(!inclusive);
+			//if collisions are not inclusive, then there are two more possibilities - that one of the polygons has an edge that cleaves the other polygon in two, but whose endpoints are exactly on the edges of the other polygon
+			//or, that the the two polygons are identical. that possibility can be accounted for by finding any three identical points in the two polygons.
+
+			//find that cleaving edge, and then find, from the other polygon, two vertices that form a line that crosses through the first line (can we really always find two such vertices?).
+			//
+			for(int i = 0; i<h1.size();i++){
+				//
+
+				Point<2,T> mid = (h1[i-1] +  h1[i])/2;
+				if(h2.contains(mid,inclusive)){
+					//then this is the cleaving line.
+					if(polygon_out_this){
+						polygon_out_this->addVertex(h1[i-1]);
+						polygon_out_this->addVertex(h1[i]);
+					}
+					//now find two vertices of h2 that form a line that intersects this one. the vertices will come from separate sides of h2.
+					if(polygon_out_other){
+						static LineSegment<2,T> line1;
+						line1.a = h1[i-1];
+						line1.b = h1[i];
+						bool found_left=false;
+						bool found_right=false;
+						//any vertex that is left of the line, and any vertex that is right of the line, will do.
+						for (int j = 0;j<h2.size();j++){
+							Point<2,T> & p = h2[j];
+							int side = line1.whichSide(p);
+							if(side<0 && ! found_left){
+								found_left=true;
+								polygon_out_other->addVertex(p);
+								if(found_right){
+									return true;
+								}
+							}else if(side>0 && ! found_right){
+								found_right=true;
+								polygon_out_other->addVertex(p);
+								if(found_left){
+									return true;
+								}
+							}
+						}
+						assert(false);
+					}
+
+					return true;
+				}
+			}
+			//now try the other polygon
+			for(int i = 0; i<h2.size();i++){
+				Point<2,T> mid = (h2[i-1] +  h2[i])/2;
+				if(h1.contains(mid,inclusive)){
+					//then this is the cleaving line.
+					if(polygon_out_other){
+						polygon_out_other->addVertex(h2[i-1]);
+						polygon_out_other->addVertex(h2[i]);
+					}
+					//now find two vertices of h2 that form a line that intersects this one. the vertices will come from separate sides of h2.
+					if(polygon_out_this){
+						static LineSegment<2,T> line1;
+						line1.a = h2[i-1];
+						line1.b = h2[i];
+						bool found_left=false;
+						bool found_right=false;
+						//any vertex that is left of the line, and any vertex that is right of the line, will do.
+						for (int j = 0;j<h1.size();j++){
+							Point<2,T> & p = h1[j];
+							int side = line1.whichSide(p);
+							if(side<0 && ! found_left){
+								found_left=true;
+								polygon_out_this->addVertex(p);
+								if(found_right){
+									return true;
+								}
+							}else if(side>0 && ! found_right){
+								found_right=true;
+								polygon_out_this->addVertex(p);
+								if(found_left){
+									return true;
+								}
+							}
+						}
+						assert(false);
+					}
+					return true;
+				}
+			}
+
+			//the two polygons are identical. pick any three identical points to form two intersecting triangles.
+			int count=0;
+			//this probably doesn't have to be quadratic
+			for(int i = 0; i<h1.size();i++){
+				Point<2,T> & p = h1[i];
+
+				for(int j = 0;  j<h2.size();j++){
+					Point<2,T> & p2 = h2[j];
+					if(p==p2){
+						if(polygon_out_this){
+							polygon_out_this->addVertex(h1[i]);
+						}
+						if(polygon_out_other){
+							polygon_out_other->addVertex(h2[j]);
+						}
+						if(++count==3){
+							return true;
+						}
+						break;
+					}
+				}
+			}
+
+
+			assert(false);
+			exit(4);
+		 }
+
+		 return true;
+		}
 	}
 	assert(false);
 	return false;

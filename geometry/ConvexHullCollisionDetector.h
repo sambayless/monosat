@@ -341,7 +341,9 @@ void ConvexHullCollisionDetector<D,T>::buildCollisionReason2d(vec<Lit> & conflic
 	//2) There exists an edge (or, more generally, a line segment between any two vertices, as opposed to just an edge) from each poygon,
 	//		such that the two edges intersect. Learn that one of the end points must be disabled.
 	//Note that if we are NOT considering edge points to to collide, then these conditions can miss collisions, and we have to add the following case.
-	//3) There exist three vertices that are shared between the two hulls.
+
+	//3) There exist two vertices that are shared between those hulls, such that those vertices split one of the polygons into two peices.
+	//   Find those vertices, then find two more, from the split polygon, such that the two lines these 4 vertices form cross each other.
 
 
 
@@ -350,11 +352,26 @@ void ConvexHullCollisionDetector<D,T>::buildCollisionReason2d(vec<Lit> & conflic
 
 	assert(h1.intersects(h2,inclusive));
 	assert(h2.intersects(h1,inclusive));
+
+	static NConvexPolygon<2,T> intersect1;
+	static NConvexPolygon<2,T> intersect2;
+	intersect1.clear();
+	intersect2.clear();
+	bool check = h1.intersects(h2,&intersect1,&intersect2,inclusive);
+	assert(check);
+
+	for(auto & p:intersect1){
+		conflict.push(~mkLit(outer->getPointVar(p.getID())));
+	}
+	for(auto & p:intersect2){
+		conflict.push(~mkLit(outer->getPointVar(p.getID())));
+	}
+
 	//so, first, check each edge segment to see if there is an intersecting line.
 	//I'm doing this first, on the hypothesis that these line intersection constraints may form better learned clauses.
 	//(since cases 1 and 2 overlap, we have to make a choice about which to favour...)
 
-	//it is probably possible to improve on this quadratic time search...
+	/*//it is probably possible to improve on this quadratic time search...
 	for(int i = 0; i<h1.size();i++){
 		Point<2,T> & prev = h1[i-1];
 		Point<2,T> & p = h1[i];
@@ -384,7 +401,7 @@ void ConvexHullCollisionDetector<D,T>::buildCollisionReason2d(vec<Lit> & conflic
 			static NConvexPolygon<2,T> triangle;
 			triangle.clear();
 			//findContainingTriangle2d(h2,h1[i],triangle,inclusive);
-			h2.contains(h1[i],triangle,inclusive);
+			h2.contains(h1[i],&triangle,inclusive);
 			conflict.push(~mkLit(outer->getPointVar(h1[i].getID())));
 			for(auto & p: triangle){
 				int id = p.getID();
@@ -401,7 +418,7 @@ void ConvexHullCollisionDetector<D,T>::buildCollisionReason2d(vec<Lit> & conflic
 			static NConvexPolygon<2,T> triangle;
 			triangle.clear();
 			//findContainingTriangle2d(h1,h2[i],triangle,inclusive);
-			h1.contains(h2[i],triangle,inclusive);
+			h1.contains(h2[i],&triangle,inclusive);
 			conflict.push(~mkLit(outer->getPointVar(h2[i].getID())));
 			for(auto & p: triangle){
 				int id = p.getID();
@@ -439,7 +456,14 @@ void ConvexHullCollisionDetector<D,T>::buildCollisionReason2d(vec<Lit> & conflic
 			}
 		}
 	}
-	assert(false);
+
+
+	//This condition can only be reached if the collision is not inclusive of the edges/vertices.
+	//3) There exist two vertices that are shared between those hulls, such that those vertices split one of the polygons into two peices.
+	//   Find those vertices, then find two more, from the split polygon, such that the two lines these 4 vertices form cross each other.
+
+	h1.intersects(h2,inclusive);*/
+
 }
 
 template<unsigned int D, class T>

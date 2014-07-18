@@ -514,7 +514,7 @@ bool ConvexHullDetector<D,T>::propagate(vec<Lit> & conflict){
 		Lit l = pointContainedLits[i].l;
 
 		//Before doing a full, expensive check for containment, check if the triangle of points that contained this point last time (if there were such points) are all still enabled (in which case, containment is guaranteed).
-		if(checkContainingTriangle(pointContainedLits[i].under_containing_triangle,point,p_under,under) || p_under.contains(point,pointContainedLits[i].under_containing_triangle,pointContainedLits[i].inclusive)){
+		if(checkContainingTriangle(pointContainedLits[i].under_containing_triangle,point,p_under,under) || p_under.contains(point,&pointContainedLits[i].under_containing_triangle,pointContainedLits[i].inclusive)){
 			//l is true
 			if(outer->value(l)==l_True){
 				//do nothing
@@ -526,7 +526,7 @@ bool ConvexHullDetector<D,T>::propagate(vec<Lit> & conflict){
 				buildPointContainedReason(point,conflict,pointContainedLits[i].inclusive);
 				return false;
 			}
-		}else if (!checkContainingTriangle(pointContainedLits[i].over_containing_triangle,point,p_over, over) && !p_over.contains(point,pointContainedLits[i].over_containing_triangle,pointContainedLits[i].inclusive)){
+		}else if (!checkContainingTriangle(pointContainedLits[i].over_containing_triangle,point,p_over, over) && !p_over.contains(point,&pointContainedLits[i].over_containing_triangle,pointContainedLits[i].inclusive)){
 		//}else if (!p_over.contains(point)){
 			l=~l;
 			//l is true
@@ -546,7 +546,7 @@ bool ConvexHullDetector<D,T>::propagate(vec<Lit> & conflict){
 		LineSegment<D,T> & line = lineIntersectionLits[i].line;
 		Lit l = lineIntersectionLits[i].l;
 
-		if(checkLineIntersection(lineIntersectionLits[i].under_intersecting_polygon,line,p_under,under) || p_under.intersects(line,lineIntersectionLits[i].under_intersecting_polygon,lineIntersectionLits[i].inclusive)){
+		if(checkLineIntersection(lineIntersectionLits[i].under_intersecting_polygon,line,p_under,under) || p_under.intersects(line,&lineIntersectionLits[i].under_intersecting_polygon,nullptr,lineIntersectionLits[i].inclusive)){
 			//l is true
 			if(outer->value(l)==l_True){
 				//do nothing
@@ -558,7 +558,7 @@ bool ConvexHullDetector<D,T>::propagate(vec<Lit> & conflict){
 				buildLineIntersectsReason(line,conflict,lineIntersectionLits[i].inclusive);
 				return false;
 			}
-		}else if (!checkLineIntersection(lineIntersectionLits[i].over_intersecting_polygon,line,p_over, over) && !p_over.intersects(line,lineIntersectionLits[i].over_intersecting_polygon,lineIntersectionLits[i].inclusive)){
+		}else if (!checkLineIntersection(lineIntersectionLits[i].over_intersecting_polygon,line,p_over, over) && !p_over.intersects(line,&lineIntersectionLits[i].over_intersecting_polygon,nullptr,lineIntersectionLits[i].inclusive)){
 		//}else if (!p_over.intersects(line)){
 			l=~l;
 			//l is true
@@ -688,14 +688,14 @@ bool ConvexHullDetector<D,T>::checkSatisfied(){
 	//assert(equal_epsilon(area, expectOver));
 	//assert(equal_epsilon(area, expectUnder));
 	for(auto & a: areaDetectors){
-		T area_cmp = a.areaGreaterEqThan;
+		T & area_cmp = a.areaGreaterEqThan;
 		Lit l = a.l;
 		if(outer->value(l)==l_True){
-			if(area_cmp>=area_over){
+			if(area_over <area_cmp){
 				return false;
 			}
 		}else if(outer->value(l)==l_False){
-			if(area_cmp<area_under){
+			if(area_under>=area_cmp){
 				return false;
 			}
 		}
@@ -869,7 +869,7 @@ void ConvexHullDetector<D,T>::buildPointContainedReason2d(const Point<2,T> & s, 
 	assert(hull.contains(s,inclusive));
 
 	NConvexPolygon<2,T> triangle;
-	hull.contains(s,triangle,inclusive);
+	hull.contains(s,&triangle,inclusive);
 
 	assert(triangle.contains(s,inclusive));
 /*	printf("Learn must disable one of: ");
@@ -1137,7 +1137,7 @@ void ConvexHullDetector<D,T>::buildPointNotOnHullOrDisabledReason2d(Var pointVar
 		assert(p.getID()!=s.getID());
 #endif
 	NConvexPolygon<2,T> triangle;
-	hull.contains(s,triangle,true);
+	hull.contains(s,&triangle,true);
 	//findContainingTriangle2d(hull,s,triangle,true);
 	assert(triangle.contains(s,true));
 	for(auto & p: triangle){
@@ -1273,7 +1273,7 @@ void ConvexHullDetector<D,T>::buildConvexIntersectsReason2d(ConvexPolygon<2,T> &
 	//		such that the two edges intersect. Learn that one of the end points must be disabled.
 	ConvexPolygon<2, T> & h1 = under_hull->getHull();
 	ConvexPolygon<2, T> & h2 = polygon;
-
+	//h1.intersects(h2,inclusive);
 	/*printf("h1: ");
 	for (auto & p:h1){
 		cout<<p << " ";
@@ -1288,8 +1288,19 @@ void ConvexHullDetector<D,T>::buildConvexIntersectsReason2d(ConvexPolygon<2,T> &
 	//(since cases 1 and 2 overlap, we have to make a choice about which to favour...)
 	assert(h1.intersects(h2,inclusive));
 	assert(h2.intersects(h1,inclusive));
+	static NConvexPolygon<2,T> intersect1;
+
+	intersect1.clear();
+
+	bool check = h1.intersects(h2,&intersect1,nullptr,inclusive);
+	assert(check);
+
+	for(auto & p:intersect1){
+		conflict.push(~mkLit(outer->getPointVar(p.getID())));
+	}
+
 	//it is probably possible to improve on this quadratic time search...
-	for(int i = 0; i<h1.size();i++){
+	/*for(int i = 0; i<h1.size();i++){
 		Point<2,T> & prev = h1[i-1];
 		Point<2,T> & p = h1[i];
 		LineSegment<2,T> edge1(prev,p);
@@ -1314,7 +1325,7 @@ void ConvexHullDetector<D,T>::buildConvexIntersectsReason2d(ConvexPolygon<2,T> &
 	for(int i = 0; i<h1.size();i++){
 		if(h2.contains(h1[i],inclusive)){
 			static NConvexPolygon<2,T> triangle;
-			h2.contains(h1[i],triangle,inclusive);
+			h2.contains(h1[i],&triangle,inclusive);
 			//findContainingTriangle2d(h2,h1[i],triangle,inclusive);
 			assert(triangle.contains(h1[i],inclusive));
 			conflict.push(~mkLit(outer->getPointVar(h1[i].getID())));
@@ -1325,7 +1336,7 @@ void ConvexHullDetector<D,T>::buildConvexIntersectsReason2d(ConvexPolygon<2,T> &
 	for(int i = 0; i<h2.size();i++){
 		if(h1.contains(h2[i],inclusive)){
 			static NConvexPolygon<2,T> triangle;
-			h1.contains(h2[i],triangle,inclusive);
+			h1.contains(h2[i],&triangle,inclusive);
 			//findContainingTriangle2d(h1,h2[i],triangle,inclusive);
 			assert(triangle.contains(h2[i],inclusive));
 			for(auto & p: triangle){
@@ -1338,6 +1349,10 @@ void ConvexHullDetector<D,T>::buildConvexIntersectsReason2d(ConvexPolygon<2,T> &
 			return;
 		}
 	}
+*/
+	//if collisions are not inclusive, then there is one more possibility - that the polygons collide, but only on edges whose endpoints are shared with each other.
+	//so, find a line that intersects the polygon, whose endpoints are exactly on the polygon. the collision
+
 	assert(conflict.size());
 }
 

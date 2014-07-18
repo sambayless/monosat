@@ -676,7 +676,7 @@ public:
 	};
 	bool propagateTheory(vec<Lit> & conflict){
 		static int itp = 0;
-		if(	++itp==1167861){
+		if(	++itp==5434462){
 			int a =1;
 		}
 		stats_propagations++;
@@ -705,10 +705,6 @@ public:
 				if(!r){
 					stats_num_conflicts++;
 					toSolver(conflict);
-					if(conflict.size()==1){
-						assert(false);
-						exit(4);//though this is technically possible, it most likely is a bug.
-					}
 					propagationtime+= rtime(1)-startproptime;
 					return false;
 				}

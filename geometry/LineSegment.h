@@ -40,6 +40,9 @@ public:
 
 	//> 0 if the point is 'right' of the line, <0 if 'left' of the line, 0 if exactly on the line.
 	int whichSide(const Point<D,T> & point);
+	bool collinear(const  Point<D,T> & a,  const Point<D,T> &b){
+		return contains(a, true) || contains(b,true);
+	}
 	int size()const{
 		return 2;
 	}
@@ -107,7 +110,9 @@ public:
 		return val>0?1:-1;
 		//return ((b.x - a.x)*(point.y - a.y) - (b.y - a.y)*(point.x - a.x));
 	}
-
+	bool collinear(const  Point<2,T> & a,  const Point<2,T> &b){
+		return contains(a, true) || contains(b,true);
+	}
 	int size()const{
 		return 2;
 	}
