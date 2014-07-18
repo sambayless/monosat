@@ -62,6 +62,7 @@ static void randomShuffle(double& seed, vec<vec<T> >& xs)
 }
 
 
+
 //=================================================================================================
 } // namespace Minisat
 #endif

@@ -430,17 +430,47 @@ template<unsigned int D, class T>
 bool ConvexHullDetector<D,T>::propagate(vec<Lit> & conflict){
 
 	static int iter = 0;
-	if(++iter==1090){
+	if(++iter==5764){
 		int a=1;
 	}
 	stats_propagations++;
 	over_hull->update();
 	under_hull->update();
+	ConvexPolygon<D,T> & p_over = over_hull->getHull();
+	ConvexPolygon<D,T> & p_under = under_hull->getHull();
+	/*printf("under: ");
+	for(auto & p:p_under){
+		printf("(%f,%f),",p.x,p.y);
+	}
+	printf("\nOver ");
+	for(auto & p:p_over){
+		printf("(%f,%f),",p.x,p.y);
+	}
+	printf("\n");*/
+
+#ifndef NDEBUG
+	cout<<"Round "<<iter<<", " << getID() << ":\n";
+	cout<<"enabled_" << getID() << " = [";
+	for (int i = 0;i<under.size();i++){
+		if(under.pointEnabled(i)){
+			cout<< under[i] <<", ";
+		}
+	}
+	cout<<"]\ndisabled_" << getID() << " = [";
+	for (int i = 0;i<over.size();i++){
+		if(!over.pointEnabled(i)){
+			cout<< over[i] <<", ";
+		}
+	}
+	cout<<"]\n";
+	cout <<"under_" << getID() << " = " << under_hull->getHull() << "\n";
+	cout<<"over_" << getID() << " = " << over_hull->getHull()<< "\n";
+#endif
 
 	if(areaDetectors.size()){
-		T test = 3.1;
-		T over_area = over_hull->getHull().getArea();
-		T under_area = under_hull->getHull().getArea();
+
+		T over_area = p_over.getArea();
+		T under_area = p_under.getArea();
 		//double tover =  over_area.get_d();
 		//double tunder = under_area.get_d();
 		assert(under_area<=over_area);
@@ -476,36 +506,8 @@ bool ConvexHullDetector<D,T>::propagate(vec<Lit> & conflict){
 		}
 	}
 
-	ConvexPolygon<D,T> & p_over = over_hull->getHull();
-	ConvexPolygon<D,T> & p_under = under_hull->getHull();
-	/*printf("under: ");
-	for(auto & p:p_under){
-		printf("(%f,%f),",p.x,p.y);
-	}
-	printf("\nOver ");
-	for(auto & p:p_over){
-		printf("(%f,%f),",p.x,p.y);
-	}
-	printf("\n");*/
-	//If we are making many queries, it is probably worth it to pre-process the polygon and then make the queries.
-#ifndef NDEBUG
-	cout<<"Round "<<iter<<", " << getID() << ":\n";
-	cout<<"enabled_" << getID() << " = [";
-	for (int i = 0;i<under.size();i++){
-		if(under.pointEnabled(i)){
-			cout<< under[i] <<", ";
-		}
-	}
-	cout<<"]\ndisabled_" << getID() << " = [";
-	for (int i = 0;i<over.size();i++){
-		if(!over.pointEnabled(i)){
-			cout<< over[i] <<", ";
-		}
-	}
-	cout<<"]\n";
-	cout <<"under_" << getID() << " = " << under_hull->getHull() << "\n";
-	cout<<"over_" << getID() << " = " << over_hull->getHull()<< "\n";
-#endif
+
+
 	for(int i =0;i<pointContainedLits.size();i++){
 		Point<D,T> & point = pointContainedLits[i].p;
 		stats_bound_checks++;
@@ -540,9 +542,7 @@ bool ConvexHullDetector<D,T>::propagate(vec<Lit> & conflict){
 		}
 	}
 	for(int i =0;i<lineIntersectionLits.size();i++){
-		if(i==60){
-			int a =1;
-		}
+
 		LineSegment<D,T> & line = lineIntersectionLits[i].line;
 		Lit l = lineIntersectionLits[i].l;
 
@@ -1399,7 +1399,6 @@ bool ConvexHullDetector<D,T>::findSeparatingAxis2d(ConvexPolygon<2,T> & hull1, C
 		 }
 		 bool seenLeft = false;
 		 bool seenRight=false;
-
 
 		 for (auto & p:h2){
 			 T projection = un_normalized_normal.dot(p);

@@ -894,7 +894,7 @@ CRef Solver::propagate(bool propagate_theories)
 		    	initialPropagate=false;
 		    }
 			static int iter = 0;
-					if(++iter==2987){
+					if(++iter==1452024){
 						int a=1;
 					}
 			//propagate theories;
@@ -1136,7 +1136,6 @@ bool Solver::simplify()
 
 bool Solver::addConflictClause(vec<Lit> & ps, CRef & confl_out, bool permanent){
 	dbg_check(theory_conflict);
-
     sort(ps);
     Lit p; int i, j;
     for (i = j = 0, p = lit_Undef; i < ps.size(); i++)

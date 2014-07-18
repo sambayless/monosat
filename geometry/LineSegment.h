@@ -274,10 +274,7 @@ bool LineSegment<2,T>::intersects(LineSegment<2,T> & other, Point<2,T> & interse
 		return overlapping || intersecting;
 	else
 		return intersecting;
-
 }
-
-
 
 template<class T>
 bool LineSegment<2,T>::mightIntersect(LineSegment<2,T> & l1,LineSegment<2,T> &l2, bool inclusive){

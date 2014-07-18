@@ -387,6 +387,16 @@ static bool isConvex(const std::vector<Point<2,T>> & points){
 	return true;
 }
 
+template<class T>
+static void randomShuffle(double& seed, T* start, T* end)
+{
+	int size = end-start;
+    for (int i = 0; i < size; i++){
+        int pick = i + irand(seed,size - i);
+        std::swap( start[i], start[pick]);
+    }
+}
+
 template<unsigned int D, class T>
 class GeometryTheorySolver;
 

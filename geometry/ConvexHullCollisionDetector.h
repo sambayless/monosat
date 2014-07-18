@@ -340,6 +340,11 @@ void ConvexHullCollisionDetector<D,T>::buildCollisionReason2d(vec<Lit> & conflic
 	//		one point from its containing triangle must be disabled (as in the point containment theory).
 	//2) There exists an edge (or, more generally, a line segment between any two vertices, as opposed to just an edge) from each poygon,
 	//		such that the two edges intersect. Learn that one of the end points must be disabled.
+	//Note that if we are NOT considering edge points to to collide, then these conditions can miss collisions, and we have to add the following case.
+	//3) There exist three vertices that are shared between the two hulls.
+
+
+
 	ConvexPolygon<2, T> & h1 =(ConvexPolygon<2, T> &) convexHullDetectors[pointSet1]->getConvexHull(false)->getHull();
 	ConvexPolygon<2, T> & h2 = (ConvexPolygon<2, T> &) convexHullDetectors[pointSet2]->getConvexHull(false)->getHull();
 
@@ -377,8 +382,9 @@ void ConvexHullCollisionDetector<D,T>::buildCollisionReason2d(vec<Lit> & conflic
 	for(int i = 0; i<h1.size();i++){
 		if(h2.contains(h1[i],inclusive)){
 			static NConvexPolygon<2,T> triangle;
+			triangle.clear();
 			//findContainingTriangle2d(h2,h1[i],triangle,inclusive);
-			triangle.contains(h1[i],triangle,inclusive);
+			h2.contains(h1[i],triangle,inclusive);
 			conflict.push(~mkLit(outer->getPointVar(h1[i].getID())));
 			for(auto & p: triangle){
 				int id = p.getID();
@@ -393,8 +399,9 @@ void ConvexHullCollisionDetector<D,T>::buildCollisionReason2d(vec<Lit> & conflic
 	for(int i = 0; i<h2.size();i++){
 		if(h1.contains(h2[i],inclusive)){
 			static NConvexPolygon<2,T> triangle;
+			triangle.clear();
 			//findContainingTriangle2d(h1,h2[i],triangle,inclusive);
-			triangle.contains(h2[i],triangle,inclusive);
+			h1.contains(h2[i],triangle,inclusive);
 			conflict.push(~mkLit(outer->getPointVar(h2[i].getID())));
 			for(auto & p: triangle){
 				int id = p.getID();
@@ -405,6 +412,34 @@ void ConvexHullCollisionDetector<D,T>::buildCollisionReason2d(vec<Lit> & conflic
 			return;
 		}
 	}
+	assert(!inclusive);
+	int count=0;
+	//this probably doesn't have to be quadratic
+	for(int i = 0; i<h1.size();i++){
+		Point<2,T> & p = h1[i];
+
+		for(int j = 0;  j<h2.size();j++){
+			Point<2,T> & p2 = h2[j];
+			if(p==p2){
+				{
+					int id = p.getID();
+					Var v = outer->getPointVar(id);
+					assert(outer->value(v)==l_True);
+					conflict.push(mkLit(v,true));
+				}
+				{
+					int id = p2.getID();
+					Var v = outer->getPointVar(id);
+					assert(outer->value(v)==l_True);
+					conflict.push(mkLit(v,true));
+				}
+				if(count++==3){
+					return;
+				}
+			}
+		}
+	}
+	assert(false);
 }
 
 template<unsigned int D, class T>
