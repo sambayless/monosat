@@ -676,14 +676,33 @@ public:
 	};
 	bool propagateTheory(vec<Lit> & conflict){
 		static int itp = 0;
-		if(	++itp==5434462){
+		if(	++itp>=955880){
 			int a =1;
+			cout<<"pause\n";
+			for(int i = 0;i<vars.size();i++){
+				if(value(i)!= dbg_value(i)){
+					cout << "Error! Theory unsolved or out of sync: theory var " << i;
+
+					if(isPointVar(i)){
+						cout << " for point " << getPointID(i) << " " << points[ getPointID(i) ].point;
+					}else{
+						cout << " for detector " << getDetector(i);
+					}
+					cout << " has value " << toInt(value(i)) << " but expected value was " << toInt(dbg_value(i));
+					cout<< "!\n";
+
+				}
+			}
 		}
 		stats_propagations++;
 		dbg_sync();
 		if(!toPropagate.size()){
 			stats_propagations_skipped++;
 			assert(dbg_graphsUpToDate());
+			if(value(446) != dbg_value(446)){
+				cout<<itp<<"\n";
+				exit(3);
+			}
 			return true;
 		}
 
@@ -737,18 +756,25 @@ public:
 
 		detectors_to_check.clear();
 
+
 		double elapsed = rtime(1)-startproptime;
 		propagationtime+=elapsed;
 		dbg_sync();
-
+		if(value(446) != dbg_value(446)){
+			cout<<itp<<"\n";
+					exit(3);
+				}
 		return true;
 	};
 
 	bool solveTheory(vec<Lit> & conflict){
 
 		for(int i = 0;i<nPointSets();i++){
-			//Just to be on the safe side... but this shouldn't really be required.
-			requiresPropagation[i]=true;
+			//Just to be on the safe side, force all detectors to propagate... this shouldn't really be required.
+			if(!requiresPropagation[i]){
+				toPropagate.push(i);
+				requiresPropagation[i]=true;
+			}
 		}
 		bool ret = propagateTheory(conflict);
 		//Under normal conditions, this should _always_ hold (as propagateTheory should have been called and checked by the parent solver before getting to this point).
@@ -765,7 +791,15 @@ public:
 		dbg_full_sync();
 		for(int i = 0;i<vars.size();i++){
 			if(value(i)!= dbg_value(i)){
-				cout << "Error! Theory unsolved or out of sync!\n";
+				cout << "Error! Theory unsolved or out of sync: theory var " << i;
+
+				if(isPointVar(i)){
+					cout << " for point " << getPointID(i) << " " << points[ getPointID(i) ].point;
+				}else{
+					cout << " for detector " << getDetector(i);
+				}
+				cout << " has value " << toInt(value(i)) << " but expected value was " << toInt(dbg_value(i));
+				cout<< "!\n";
 				return false;
 			}
 		}
