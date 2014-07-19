@@ -9,10 +9,39 @@
 #define BOUNDINGSPHERE_H_
 #include "../Polygon.h"
 #include <vector>
-template<unsigned int D,class T, class Bound>
-class BoundingSphere:public BoundingVolume<D,T>{
+
+template<unsigned int D,class T>
+class AbstractBoundingSphere:public BoundingVolume<D,T>{
+protected:
 	Point<D,T> circleCenter;
 	T circleRadius;
+public:
+	AbstractBoundingSphere(){
+
+	}
+	virtual ~AbstractBoundingSphere(){
+
+	}
+	ShapeType getType(){
+		return BOUNDING_SPHERE;
+	}
+	virtual void update()=0;
+	bool contains(const Point<D,T> & point, bool inclusive=true){
+		if(inclusive){
+			return point.distance_underapprox(circleCenter)<=circleRadius;
+		}else{
+			return point.distance_underapprox(circleCenter)<circleRadius;
+		}
+	}
+	bool intersects(Shape<D,T> & s, bool inclusive=true){
+		assert(false);//not yet implemented
+		return false;
+	}
+};
+
+template<unsigned int D,class T, class Bound>
+class BoundingSphere:public AbstractBoundingSphere<D,T>{
+
 	Bound & toBound;
 public:
 	BoundingSphere(Bound & toBound):toBound(toBound){
@@ -22,11 +51,10 @@ public:
 		return BOUNDING_SPHERE;
 	}
 	void update();
-	bool contains(const Point<D,T> & point, bool inclusive=true);
-	bool intersects(Shape<D,T> & s, bool inclusive=true);
+
 };
 template<unsigned int D,class T>
-class BoundingSphere<D,T,Polygon<D,T>>:public BoundingVolume<D,T>{
+class BoundingSphere<D,T,Polygon<D,T>>:public AbstractBoundingSphere<D,T>{
 	Point<D,T> circleCenter;
 	T circleRadius;
 	Polygon<D,T> & toBound;
@@ -37,7 +65,7 @@ public:
 	ShapeType getType(){
 		return BOUNDING_SPHERE;
 	}
-	virtual void update(){
+	void update(){
 		circleCenter.zero();
 		std::vector<Point<D,T>> & vertices  = toBound.getVertices();
 
@@ -53,17 +81,7 @@ public:
 			}
 		}
 	}
-	bool contains(const Point<D,T> & point, bool inclusive=true){
-		if(inclusive){
-			return point.distance_underapprox(circleCenter)<=circleRadius;
-		}else{
-			return point.distance_underapprox(circleCenter)<circleRadius;
-		}
-	}
-	bool intersects(Shape<D,T> & s, bool inclusive=true){
-		assert(false);//not yet implemented
-		return false;
-	}
+
 };
 
 

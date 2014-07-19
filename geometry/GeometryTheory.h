@@ -723,10 +723,6 @@ public:
 			if(!r){
 				stats_num_conflicts++;
 				toSolver(conflict);
-				if(conflict.size()==1){
-					assert(false);
-					exit(4);//though this is technically possible, it most likely is a bug.
-				}
 				propagationtime+= rtime(1)-startproptime;
 				return false;
 			}
@@ -769,6 +765,7 @@ public:
 		dbg_full_sync();
 		for(int i = 0;i<vars.size();i++){
 			if(value(i)!= dbg_value(i)){
+				cout << "Error! Theory unsolved or out of sync!\n";
 				return false;
 			}
 		}
@@ -778,6 +775,7 @@ public:
 			PointData & e = points[i];
 			lbool val = value(e.var);
 			if(val==l_Undef){
+				cout << "Error! Theory unsolved!\n";
 				return false;
 			}
 			int pointset = e.pointset;
@@ -789,9 +787,11 @@ public:
 					return false;
 				}*/
 				if(!under_sets[pointset].pointEnabled(e.pointset_index)){
+					cout << "Error! Theory out of sync!\n";
 					return false;
 				}
 				if(!over_sets[pointset].pointEnabled(e.pointset_index)){
+					cout << "Error! Theory out of sync!\n";
 					return false;
 				}
 			}else{
@@ -799,9 +799,11 @@ public:
 					return false;
 				}*/
 				if(under_sets[pointset].pointEnabled(e.pointset_index)){
+					cout << "Error! Theory out of sync!\n";
 					return false;
 				}
 				if(over_sets[pointset].pointEnabled(e.pointset_index)){
+					cout << "Error! Theory out of sync!\n";
 					return false;
 				}
 				/*if(over.haspoint(e.from,e.to)){
@@ -814,6 +816,7 @@ public:
 		}
    		for(int i = 0;i<detectors.size();i++){
 			if(!detectors[i]->checkSatisfied()){
+				cout << "Error! Detector " << i << " unsatisfied\n";
 				return false;
 			}
 		}

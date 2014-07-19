@@ -145,7 +145,13 @@ public:
 				return under_hull;
 			}
 		}
-
+		ConvexHull<D,T>* getPointset(bool overApprox){
+			if(overApprox){
+				return over;
+			}else{
+				return under;
+			}
+		}
 
 private:
 		void findFarPoints(Line<D,T> & testline, std::vector<Point<D,T> > & test_set,std::vector<Point<D,T> > & min_set,ConvexPolygon<D,T> &hull,bool includeCollinearPoints){
@@ -197,7 +203,7 @@ private:
 		void buildPointNotContainedReason2d(const Point<2,T> & p,vec<Lit> & conflict, bool inclusive);
 		void buildPointOnHullOrDisabledReason2d(Var pointVar,const Point<2,T> & p, vec<Lit> & conflict);
 		void buildPointNotOnHullOrDisabledReason2d(Var pointVar,const Point<2,T> & p, vec<Lit> & conflict);
-		inline bool checkContainingTriangle(NConvexPolygon<D, T> & containing,const Point<2,T> & point, ConvexPolygon<D,T> & hull, PointSet<D,T> & pointset){
+		inline bool checkContainingTriangle(NConvexPolygon<D, T> & containing,const Point<2,T> & point, ConvexPolygon<D,T> & hull, PointSet<D,T> & pointset, bool inclusive){
 			if(containing.size()==0)
 				return false;
 			for (auto &p: containing){
@@ -207,8 +213,8 @@ private:
 					return false;
 				}
 			}
-			assert(containing.contains(point,true));
-			assert(hull.contains(point,true));
+			assert(containing.contains(point,inclusive));
+			assert(hull.contains(point,inclusive));
 			if(&pointset==&under){
 				stats_bounds_skips_under++;
 			}else if (&pointset==&over){
@@ -217,7 +223,7 @@ private:
 			return true;
 
 		}
-		inline bool checkLineIntersection(NConvexPolygon<D, T> & containing, LineSegment<D,T> & line, ConvexPolygon<D,T> & hull, PointSet<D,T> & pointset){
+		inline bool checkLineIntersection(NConvexPolygon<D, T> & containing, LineSegment<D,T> & line, ConvexPolygon<D,T> & hull, PointSet<D,T> & pointset, bool inclusive){
 			if(containing.size()==0)
 				return false;
 			for (auto &p: containing){
@@ -227,8 +233,8 @@ private:
 					return false;
 				}
 			}
-			assert(containing.intersects(line,true));
-			assert(hull.intersects(line,true));
+			assert(containing.intersects(line,inclusive));
+			assert(hull.intersects(line,inclusive));
 			if(&pointset==&under){
 				stats_bounds_skips_under++;
 			}else if (&pointset==&over){
@@ -514,7 +520,7 @@ bool ConvexHullDetector<D,T>::propagate(vec<Lit> & conflict){
 		Lit l = pointContainedLits[i].l;
 
 		//Before doing a full, expensive check for containment, check if the triangle of points that contained this point last time (if there were such points) are all still enabled (in which case, containment is guaranteed).
-		if(checkContainingTriangle(pointContainedLits[i].under_containing_triangle,point,p_under,under) || p_under.contains(point,&pointContainedLits[i].under_containing_triangle,pointContainedLits[i].inclusive)){
+		if(checkContainingTriangle(pointContainedLits[i].under_containing_triangle,point,p_under,under,pointContainedLits[i].inclusive) || p_under.contains(point,&pointContainedLits[i].under_containing_triangle,pointContainedLits[i].inclusive)){
 			//l is true
 			if(outer->value(l)==l_True){
 				//do nothing
@@ -526,7 +532,7 @@ bool ConvexHullDetector<D,T>::propagate(vec<Lit> & conflict){
 				buildPointContainedReason(point,conflict,pointContainedLits[i].inclusive);
 				return false;
 			}
-		}else if (!checkContainingTriangle(pointContainedLits[i].over_containing_triangle,point,p_over, over) && !p_over.contains(point,&pointContainedLits[i].over_containing_triangle,pointContainedLits[i].inclusive)){
+		}else if (!checkContainingTriangle(pointContainedLits[i].over_containing_triangle,point,p_over, over,pointContainedLits[i].inclusive) && !p_over.contains(point,&pointContainedLits[i].over_containing_triangle,pointContainedLits[i].inclusive)){
 		//}else if (!p_over.contains(point)){
 			l=~l;
 			//l is true
@@ -546,7 +552,7 @@ bool ConvexHullDetector<D,T>::propagate(vec<Lit> & conflict){
 		LineSegment<D,T> & line = lineIntersectionLits[i].line;
 		Lit l = lineIntersectionLits[i].l;
 
-		if(checkLineIntersection(lineIntersectionLits[i].under_intersecting_polygon,line,p_under,under) || p_under.intersects(line,&lineIntersectionLits[i].under_intersecting_polygon,nullptr,lineIntersectionLits[i].inclusive)){
+		if(checkLineIntersection(lineIntersectionLits[i].under_intersecting_polygon,line,p_under,under,lineIntersectionLits[i].inclusive) || p_under.intersects(line,&lineIntersectionLits[i].under_intersecting_polygon,nullptr,lineIntersectionLits[i].inclusive)){
 			//l is true
 			if(outer->value(l)==l_True){
 				//do nothing
@@ -558,7 +564,7 @@ bool ConvexHullDetector<D,T>::propagate(vec<Lit> & conflict){
 				buildLineIntersectsReason(line,conflict,lineIntersectionLits[i].inclusive);
 				return false;
 			}
-		}else if (!checkLineIntersection(lineIntersectionLits[i].over_intersecting_polygon,line,p_over, over) && !p_over.intersects(line,&lineIntersectionLits[i].over_intersecting_polygon,nullptr,lineIntersectionLits[i].inclusive)){
+		}else if (!checkLineIntersection(lineIntersectionLits[i].over_intersecting_polygon,line,p_over, over,lineIntersectionLits[i].inclusive) && !p_over.intersects(line,&lineIntersectionLits[i].over_intersecting_polygon,nullptr,lineIntersectionLits[i].inclusive)){
 		//}else if (!p_over.intersects(line)){
 			l=~l;
 			//l is true
@@ -692,10 +698,13 @@ bool ConvexHullDetector<D,T>::checkSatisfied(){
 		Lit l = a.l;
 		if(outer->value(l)==l_True){
 			if(area_over <area_cmp){
+
+				cout << getID() << "Failed on area under" << area_over << "," << area_cmp <<"\n";
 				return false;
 			}
 		}else if(outer->value(l)==l_False){
 			if(area_under>=area_cmp){
+				cout << getID() << "Failed on area over" << area_over << "," << area_cmp <<"\n";
 				return false;
 			}
 		}
@@ -705,10 +714,12 @@ bool ConvexHullDetector<D,T>::checkSatisfied(){
 		Lit l = a.l;
 		if(outer->value(l)==l_True){
 			if(!h_over.contains(a.p,a.inclusive)){
+				cout << getID() << "Failed on point inclusion " << a.p << ", inclusive " << a.inclusive <<"\n";
 				return false;
 			}
 		}else if(outer->value(l)==l_False){
 			if(h_under.contains(a.p,a.inclusive)){
+				cout << getID() << "Failed on point exclusion " << a.p << ", inclusive " << a.inclusive <<"\n";
 				return false;
 			}
 		}
@@ -718,10 +729,12 @@ bool ConvexHullDetector<D,T>::checkSatisfied(){
 		Lit l = a.l;
 		if(outer->value(l)==l_True){
 			if(!h_over.intersects(a.line,a.inclusive)){
+				cout << getID() << "Failed on line inclusion " << a.line << ", inclusive " << a.inclusive <<"\n";
 				return false;
 			}
 		}else if(outer->value(l)==l_False){
 			if(h_under.intersects(a.line,a.inclusive)){
+				cout << getID() << "Failed on line exclusion " << a.line << ", inclusive " << a.inclusive <<"\n";
 				return false;
 			}
 		}
@@ -731,10 +744,12 @@ bool ConvexHullDetector<D,T>::checkSatisfied(){
 		Lit l = a.l;
 		if(outer->value(l)==l_True){
 			if(!h_over.intersects(a.polygon,a.inclusive)){
+				cout << getID() << "Failed on polygon inclusion " << a.polygon << ", inclusive " << a.inclusive <<"\n";
 				return false;
 			}
 		}else if(outer->value(l)==l_False){
 			if(h_under.intersects(a.polygon,a.inclusive)){
+				cout << getID() << "Failed on polygon exclusion " << a.polygon << ", inclusive " << a.inclusive <<"\n";
 				return false;
 			}
 		}
@@ -744,6 +759,7 @@ bool ConvexHullDetector<D,T>::checkSatisfied(){
 		//If the point is disabled, then it is counted as being in the hull.
 		if(!over.pointEnabled(outer->getPointsetIndex(a.p.getID()))){
 			if(outer->value(l)==l_False){
+				cout << getID() << "Failed on point-in-hull exclusion " << a.p <<"\n";
 				return false;
 			}else{
 				continue;
@@ -757,8 +773,10 @@ bool ConvexHullDetector<D,T>::checkSatisfied(){
 					break;
 				}
 			}
-			if(!hasPoint)
+			if(!hasPoint){
+				cout << getID() << "Failed on point-in-hull exclusion " << a.p <<"\n";
 				return false;
+			}
 
 		}else if(outer->value(l)==l_False){
 			/*bool hasPoint = false;
@@ -771,6 +789,7 @@ bool ConvexHullDetector<D,T>::checkSatisfied(){
 			if(hasPoint)
 				return false;*/
 			if(!h_under.contains(a.p,false)){
+				cout << getID() << "Failed on point-in-hull inclusion " << a.p <<"\n";
 				return false;
 			}
 		}

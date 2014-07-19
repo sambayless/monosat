@@ -204,7 +204,7 @@ public:
 	}
 
 	void popVertex(){
-		vertices.pop();
+		vertices.pop_back();
 		this->bounds_uptodate=false;
 	}
 
@@ -1052,9 +1052,23 @@ bool ConvexPolygon<D,T>::intersects2d(Shape<2,T> & shape, bool inclusive, bool i
 template<unsigned int D,class T>
 bool ConvexPolygon<D,T>::intersects2d(Shape<2,T> & shape, NConvexPolygon<2,T> * polygon_out_this,NConvexPolygon<2,T> * polygon_out_other, bool inclusive, bool ignore_vertices){
 	static int iter = 0;
-	++iter;
+	if(++iter==27117){
+		int a =1;
+	}
 	if(this->size()==0)
 		return false;
+
+	if(!this->boundIntersects(shape,inclusive)){
+#ifndef NDEBUG
+		NConvexPolygon<2,T> t;
+		for (auto & p:*this){
+			t.addVertex(p);
+		}
+		assert(!t.intersects2d(shape,nullptr,nullptr,inclusive,ignore_vertices));
+#endif
+		return false;
+	}
+
 	if(shape.getType()==LINE_SEGMENT){
 		LineSegment<2,T> & line = (LineSegment<2,T> &)shape;
 
@@ -1121,6 +1135,7 @@ bool ConvexPolygon<D,T>::intersects2d(Shape<2,T> & shape, NConvexPolygon<2,T> * 
 					polygon_out_this->clear();
 					polygon_out_this->addVertex((*this)[0]);
 				}
+				return true;
 			}else{
 				return false;
 			}
@@ -1141,6 +1156,9 @@ bool ConvexPolygon<D,T>::intersects2d(Shape<2,T> & shape, NConvexPolygon<2,T> * 
 					polygon_out_other->clear();
 					polygon_out_other->addVertex(c[0]);
 				}
+				return true;
+			}else{
+				return false;
 			}
 		}
 
@@ -1322,7 +1340,7 @@ bool ConvexPolygon<D,T>::intersects2d(Shape<2,T> & shape, NConvexPolygon<2,T> * 
 			//if no intersecting line segment was found, then it follows that one of the polygons is wholly contained in the other.
 			//so treat this as a contained point problem - pick one of the points in the contained polygon (arbitrarily), and a containing triangle
 			//from the other polygon, and learn that one of these 4 points must be disabled.
-
+			//Note that this may fail if collisions are not inclusive of the edges/vertices.
 			for(int i = 0; i<h1.size();i++){
 				if(h2.contains(h1[i],polygon_out_other,inclusive)){
 					if(polygon_out_this){
@@ -1347,87 +1365,91 @@ bool ConvexPolygon<D,T>::intersects2d(Shape<2,T> & shape, NConvexPolygon<2,T> * 
 
 			//find that cleaving edge, and then find, from the other polygon, two vertices that form a line that crosses through the first line (can we really always find two such vertices?).
 			//
-			for(int i = 0; i<h1.size();i++){
-				//
+			for (int hull = 0;hull<2;hull++){
+				ConvexPolygon<2,T> & hull1 = hull?h2:h1;
+				ConvexPolygon<2,T> & hull2 = hull?h1:h2;
+				NConvexPolygon<2,T> * polygon_out_1 = hull?polygon_out_other:polygon_out_this;
+				NConvexPolygon<2,T> * polygon_out_2 = hull?polygon_out_this:polygon_out_other;
 
-				Point<2,T> mid = (h1[i-1] +  h1[i])/2;
-				if(h2.contains(mid,inclusive)){
-					//then this is the cleaving line.
-					if(polygon_out_this){
-						polygon_out_this->addVertex(h1[i-1]);
-						polygon_out_this->addVertex(h1[i]);
-					}
-					//now find two vertices of h2 that form a line that intersects this one. the vertices will come from separate sides of h2.
-					if(polygon_out_other){
-						static LineSegment<2,T> line1;
-						line1.a = h1[i-1];
-						line1.b = h1[i];
-						bool found_left=false;
-						bool found_right=false;
-						//any vertex that is left of the line, and any vertex that is right of the line, will do.
-						for (int j = 0;j<h2.size();j++){
-							Point<2,T> & p = h2[j];
-							int side = line1.whichSide(p);
-							if(side<0 && ! found_left){
-								found_left=true;
-								polygon_out_other->addVertex(p);
-								if(found_right){
-									return true;
-								}
-							}else if(side>0 && ! found_right){
-								found_right=true;
-								polygon_out_other->addVertex(p);
-								if(found_left){
-									return true;
+				for(int i = 0; i<hull1.size();i++){
+					Point<2,T> mid = (hull1[i-1] +  hull1[i])/2;
+					if(hull2.contains(mid,inclusive)){
+						//then this is may be a cleaving line.
+						if(polygon_out_1){
+							polygon_out_1->clear();
+							polygon_out_1->addVertex(hull1[i-1]);
+							polygon_out_1->addVertex(hull1[i]);
+
+						}
+						//now find two vertices of h2 that form a line that intersects this one. the vertices will come from separate sides of h2.
+						if(polygon_out_2){
+							polygon_out_2->clear();
+							static LineSegment<2,T> line1;
+
+							line1.a = hull1[i-1];
+							line1.b = hull1[i];
+							bool found_left=false;
+							bool found_right=false;
+							for (int j = 0;j<hull2.size();j++){
+								Point<2,T> & p = hull2[j];
+								int side = line1.whichSide(p);
+								if(side<0 && ! found_left){
+									found_left=true;
+									polygon_out_2->addVertex(p);
+									if(found_right){
+										break;
+									}
+								}else if(side>0 && ! found_right){
+									found_right=true;
+									polygon_out_2->addVertex(p);
+									if(found_left){
+										break;
+									}
 								}
 							}
-						}
-						assert(false);
-					}
 
-					return true;
-				}
-			}
-			//now try the other polygon
-			for(int i = 0; i<h2.size();i++){
-				Point<2,T> mid = (h2[i-1] +  h2[i])/2;
-				if(h1.contains(mid,inclusive)){
-					//then this is the cleaving line.
-					if(polygon_out_other){
-						polygon_out_other->addVertex(h2[i-1]);
-						polygon_out_other->addVertex(h2[i]);
-					}
-					//now find two vertices of h2 that form a line that intersects this one. the vertices will come from separate sides of h2.
-					if(polygon_out_this){
-						static LineSegment<2,T> line1;
-						line1.a = h2[i-1];
-						line1.b = h2[i];
-						bool found_left=false;
-						bool found_right=false;
-						//any vertex that is left of the line, and any vertex that is right of the line, will do.
-						for (int j = 0;j<h1.size();j++){
-							Point<2,T> & p = h1[j];
-							int side = line1.whichSide(p);
-							if(side<0 && ! found_left){
-								found_left=true;
-								polygon_out_this->addVertex(p);
-								if(found_right){
-									return true;
+							if(found_left && found_right){
+								assert(line1.intersects(*polygon_out_2,true));
+								//there is still one more possibility - which is that the line segment we have found through the vertices to the left and right of the cleaving line
+								//cross the cleaving line exactly at an endpoint.
+								//in that case, if the collision is not inclusive, then we can resolve this by finding any point from h2 that is not collinear with that line.
+								if(!inclusive && !line1.intersects(*polygon_out_2,false)){
+									static LineSegment<2,T> line2;
+									line2.a = (*polygon_out_2)[0];
+									line2.b = (*polygon_out_2)[1];
+									bool found=false;
+									for (int j = 0;j<hull2.size();j++){
+										Point<2,T> & p = hull2[j];
+										int side = line2.whichSide(p);
+										if(side!=0){
+											polygon_out_2->addVertex(p);
+											found=true;
+											break;
+										}
+									}
+									assert(found);
+									assert(polygon_out_2->intersects(line1,false));
+									if(!found){
+										exit(4);//this shouldn't be possible for convex polygons!
+									}
 								}
-							}else if(side>0 && ! found_right){
-								found_right=true;
-								polygon_out_this->addVertex(p);
-								if(found_left){
-									return true;
-								}
+							}else{
+								//then we need to look for a different line.
+								assert(false);//is this actually a reachable case? It shouldn't be, because we are only reaching this code if polygon_out_other is non-null, and that is an optional parameter.
+								exit(4);
 							}
+							return true;
 						}
-						assert(false);
 					}
-					return true;
 				}
 			}
-
+			if(polygon_out_this){
+				polygon_out_this->clear();
+			}
+			if(polygon_out_other){
+				polygon_out_other->clear();
+			}
+			//one (hopefully) final possibility is that
 			//the two polygons are identical. pick any three identical points to form two intersecting triangles.
 			int count=0;
 			//this probably doesn't have to be quadratic
@@ -1450,7 +1472,163 @@ bool ConvexPolygon<D,T>::intersects2d(Shape<2,T> & shape, NConvexPolygon<2,T> * 
 					}
 				}
 			}
+			if(polygon_out_this){
+				polygon_out_this->clear();
+			}
+			if(polygon_out_other){
+				polygon_out_other->clear();
+			}
+		/*	for(int i = 0; i<h1.size();i++){
+				//
 
+				Point<2,T> mid = (h1[i-1] +  h1[i])/2;
+				if(h2.contains(mid,inclusive)){
+					//then this is may be a cleaving line.
+					if(polygon_out_this){
+						polygon_out_other->clear();
+						polygon_out_this->addVertex(h1[i-1]);
+						polygon_out_this->addVertex(h1[i]);
+					}
+					//now find two vertices of h2 that form a line that intersects this one. the vertices will come from separate sides of h2.
+					if(polygon_out_other){
+						static LineSegment<2,T> line1;
+						line1.a = h1[i-1];
+						line1.b = h1[i];
+						bool found_left=false;
+						bool found_right=false;
+						//previously, the test here was that any vertex that is left of the line, and any vertex that is right of the line, will do.
+						//but that fails if both points form a line that passes through an endpoint of this line.
+						//so for now I am falling back on an ugly complete search. this should be improved later.
+						for (int j = 0;j<h2.size();j++){
+							Point<2,T> & p = h2[j];
+							for (int k = j+1;k<h2.size();k++){
+								Point<2,T> & p2 = h2[k];
+								static LineSegment<2,T> line2;
+								line2.a = p;
+								line2.b = p2;
+								if(line1.intersects(line2,false)){
+									polygon_out_other->addVertex(p);
+									polygon_out_other->addVertex(p2);
+									return true;
+								}
+							}
+							int side = line1.whichSide(p);
+							if(side<0 && ! found_left){
+								found_left=true;
+								polygon_out_other->addVertex(p);
+								if(found_right){
+									return true;
+								}
+							}else if(side>0 && ! found_right){
+								found_right=true;
+								polygon_out_other->addVertex(p);
+								if(found_left){
+									return true;
+								}
+							}
+						}
+
+					}
+
+				}
+			}
+			//now try the other polygon
+			for(int i = 0; i<h2.size();i++){
+				Point<2,T> mid = (h2[i-1] +  h2[i])/2;
+				if(h1.contains(mid,inclusive)){
+					//then this may be a cleaving line.
+					if(polygon_out_other){
+						polygon_out_other->clear();
+						polygon_out_other->addVertex(h2[i-1]);
+						polygon_out_other->addVertex(h2[i]);
+					}
+					//now find two vertices of h1 that form a line that intersects this one. the vertices will come from separate sides of h2.
+					if(polygon_out_this){
+						static LineSegment<2,T> line1;
+						line1.a = h2[i-1];
+						line1.b = h2[i];
+						bool found_left=false;
+						bool found_right=false;
+						//any vertex that is left of the line, and any vertex that is right of the line, will do.
+						for (int j = 0;j<h1.size();j++){
+								Point<2,T> & p = h1[j];
+								for (int k = j+1;k<h1.size();k++){
+									Point<2,T> & p2 = h1[k];
+									static LineSegment<2,T> line2;
+									line2.a = p;
+									line2.b = p2;
+									if(line1.intersects(line2,false)){
+										polygon_out_other->addVertex(p);
+										polygon_out_other->addVertex(p2);
+										return true;
+									}
+								}
+							}
+
+					}
+
+				}
+			}
+
+
+
+			//one more possibility (hopefully the last!) is that one of the polygons forms a line (possibly with multiple identical points on the end points!)
+			//where both ends of the line fall on edges of the outer polygon, and the outer polygon is exactly a triangle (again, possibly with repeated points).
+
+			//in this case, none of the above conditions will succeed. Again, this is only an issue if collisions are not inlcusive of edges/vertices
+
+			int unique_count1 = 1;
+			int unique_count2 = 1;
+			if(polygon_out_this){
+				polygon_out_this->clear();
+				polygon_out_this->addVertex(h1[0]);
+			}
+			if(polygon_out_other){
+				polygon_out_other->clear();
+				polygon_out_other->addVertex(h2[0]);
+			}
+			//this only works because the hulls are already sorted
+
+			for(int i = 1; i<h1.size();i++){
+				if(h1[i]!=h1[i-1]){
+					if(polygon_out_this){
+						polygon_out_this->addVertex(h1[i]);
+					}
+					unique_count1++;
+				}
+			}
+			if(h1[-1]==h1[0]){
+				unique_count1--;
+				if(polygon_out_this){
+					polygon_out_this->popVertex();
+				}
+			}
+
+			for(int i = 1; i<h2.size();i++){
+				if(h2[i]!=h2[i-1]){
+					if(polygon_out_other){
+						polygon_out_other->addVertex(h2[i]);
+					}
+					unique_count2++;
+				}
+			}
+			if(h2[-1]==h2[0]){
+				unique_count2--;
+				if(polygon_out_other){
+					polygon_out_other->popVertex();
+				}
+			}
+
+			assert((unique_count1==3 && unique_count2==2) ||(unique_count1==2 && unique_count2==3));
+
+			if(unique_count1==3 && unique_count2==2){
+				return true;
+			}else if (unique_count2==3 && unique_count1==2){
+				return true;
+			}*/
+			std::cout<<"Failed to handle intersection, aborting.\n";
+			std::cout<<h1<<"\n";
+			std::cout<<h2<<"\n";
 
 			assert(false);
 			exit(4);
@@ -1460,6 +1638,7 @@ bool ConvexPolygon<D,T>::intersects2d(Shape<2,T> & shape, NConvexPolygon<2,T> * 
 		}
 	}
 	assert(false);
+	exit(4);
 	return false;
 }
 

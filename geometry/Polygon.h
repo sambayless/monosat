@@ -43,6 +43,18 @@ public:
 		this->bound=bound;
 	}
 
+	bool hasBound()const{
+		return bound;
+	}
+
+	BoundingVolume<D,T> * getBound(){
+		if(!bounds_uptodate){
+			bounds_uptodate=true;
+			bound->update();
+		}
+		return bound;
+	}
+
 
 	virtual bool contains(const Point<D,T> & point, bool inclusive=true){
 		if(!boundContains(point,inclusive)){
@@ -104,6 +116,15 @@ public:
 			bound->update();
 		}
 		return bound->contains(p,inclusive);
+	}
+	inline bool boundIntersects(Shape<D,T> & p, bool inclusive=true){
+		if(!bound)
+			return true;
+		if(!bounds_uptodate){
+			bounds_uptodate=true;
+			bound->update();
+		}
+		return bound->intersects(p,inclusive);
 	}
 	static bool pointInTriangle2d(const Point<D,T> & p,const Point<D,T> & p0,const Point<D,T> & p1, const Point<D,T> &p2, bool inclusive){
 		//from http://stackoverflow.com/a/14382692
