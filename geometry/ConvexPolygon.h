@@ -34,6 +34,8 @@ public:
 	static long stats_contain_checks;
 	static long stats_split_full_checks;
 	static long stats_split_checks_depths;
+	static long stats_bounds_intersections_avoided;
+	static long stats_intersections;
 	ConvexPolygon():Polygon<D,T>(){
 
 	}
@@ -86,6 +88,8 @@ long ConvexPolygon<D,T>::stats_triangle_avoided=0;
 template<unsigned int D,class T>
 long ConvexPolygon<D,T>::stats_bounds_avoided=0;
 template<unsigned int D,class T>
+long ConvexPolygon<D,T>::stats_bounds_intersections_avoided=0;
+template<unsigned int D,class T>
 long ConvexPolygon<D,T>::stats_split_checks=0;
 template<unsigned int D,class T>
 long ConvexPolygon<D,T>::stats_contain_checks=0;
@@ -95,6 +99,8 @@ long ConvexPolygon<D,T>::stats_split_full_checks=0;
 template<unsigned int D,class T>
 long ConvexPolygon<D,T>::stats_split_checks_depths=0;
 
+template<unsigned int D,class T>
+long ConvexPolygon<D,T>::stats_intersections=0;
 
 
 /**
@@ -1052,7 +1058,7 @@ bool ConvexPolygon<D,T>::intersects2d(Shape<2,T> & shape, bool inclusive, bool i
 template<unsigned int D,class T>
 bool ConvexPolygon<D,T>::intersects2d(Shape<2,T> & shape, NConvexPolygon<2,T> * polygon_out_this,NConvexPolygon<2,T> * polygon_out_other, bool inclusive, bool ignore_vertices){
 	static int iter = 0;
-	if(++iter==27117){
+	if(++iter==5091018){
 		int a =1;
 	}
 	if(this->size()==0)
@@ -1066,9 +1072,10 @@ bool ConvexPolygon<D,T>::intersects2d(Shape<2,T> & shape, NConvexPolygon<2,T> * 
 		}
 		assert(!t.intersects2d(shape,nullptr,nullptr,inclusive,ignore_vertices));
 #endif
+		stats_bounds_intersections_avoided++;
 		return false;
 	}
-
+	stats_intersections++;
 	if(shape.getType()==LINE_SEGMENT){
 		LineSegment<2,T> & line = (LineSegment<2,T> &)shape;
 
@@ -1107,13 +1114,85 @@ bool ConvexPolygon<D,T>::intersects2d(Shape<2,T> & shape, NConvexPolygon<2,T> * 
 			polygon_out_other->addVertex(line[0]);
 			polygon_out_other->addVertex(line[1]);
 		}
+
+		if(!inclusive && ! r && this->size()>3){
+			//If collisions are not inclusive, AND no edge was intersected, it is still possible that the line directly passes through (or ends at)
+			//two vertices of the polygon, so long as this polygon isn't a triangle (note that it can still be a triangle if it has more than 3 points, but some of them are exactly on an edge or are identical).
+			if(polygon_out_this){
+				polygon_out_this->clear();
+			}
+			//so, check to see if there are two vertices that are on the line segment (inclusively).
+			//if so, then widen the containing polygon wtih vertices to the left and right of the line, if possible (if it isn't possible, then there is no collision).
+			int first = -1;
+			int second =-1;
+			for(int i = 0;i<this->size();i++){
+				Point<2,T> & p = (*this)[i];
+				if (first<0 || (*this)[first]!=p){
+					if(line.contains(p,true)){//this check is intentionally inclusive
+						if(first<0){
+							first=i;
+						}else{
+							second = i;
+							break;
+						}
+					}
+				}
+			}
+			if(first>=0 && second>=0){
+				Point<2,T> & p1 =  (*this)[first];
+				Point<2,T> & p2 =  (*this)[second];
+
+				int outer = -1;
+				int inner = -1;
+				//then this MAY be a (non-inclusive) collision, so long as p1 p2 is not an edge of the polygon.
+				for(int i = first+1;i<second;i++){
+					Point<2,T> & p = (*this)[i];
+					if(line.whichSide(p)!=0){
+						inner = i;
+						break;
+					}
+				}
+				if(inner>-1){
+					for(int i = second+1; i< this->size()+first;i++){
+						Point<2,T> & p = (*this)[i];
+						if(line.whichSide(p)!=0){
+							outer = i;
+							break;
+						}
+					}
+
+					if(outer >-1){
+						//then the line passes through the convex polygon exactly at a vertex, but is not collinear with an edge.
+						//further more, these 4 points form an intersecting polygon.
+						r=true;
+						if(polygon_out_this){
+							polygon_out_this->clear();
+							polygon_out_this->addVertex((*this)[first]);
+							polygon_out_this->addVertex((*this)[inner]);
+							polygon_out_this->addVertex((*this)[second]);
+							polygon_out_this->addVertex((*this)[outer]);
+						}
+						if(polygon_out_other){
+							polygon_out_other->clear();
+							polygon_out_other->addVertex(line[0]);
+							polygon_out_other->addVertex(line[1]);
+						}
+
+					}
+
+				}
+
+			}
+		}
+
+
 #ifndef NDEBUG
 		NConvexPolygon<2,T> test;
 		test.addVertex(line.a);
 		test.addVertex(line.b);
 		if(this->intersects2d(test,nullptr,nullptr,inclusive)!=r){
-		/*	std::cout<<line<<"\n";
-			std::cout<<(*this)<<"\n";*/
+			std::cout<<line<<"\n";
+			std::cout<<(*this)<<"\n";
 			edgesIntersectLine2d(line,nullptr,inclusive);
 		}
 		assert(this->intersects2d(test,nullptr,nullptr,inclusive)==r);

@@ -676,7 +676,8 @@ public:
 	};
 	bool propagateTheory(vec<Lit> & conflict){
 		static int itp = 0;
-		if(	++itp>=955880){
+		++itp;
+		/*if(	++itp>=955880){
 			int a =1;
 			cout<<"pause\n";
 			for(int i = 0;i<vars.size();i++){
@@ -693,16 +694,12 @@ public:
 
 				}
 			}
-		}
+		}*/
 		stats_propagations++;
 		dbg_sync();
 		if(!toPropagate.size()){
 			stats_propagations_skipped++;
 			assert(dbg_graphsUpToDate());
-			if(value(446) != dbg_value(446)){
-				cout<<itp<<"\n";
-				exit(3);
-			}
 			return true;
 		}
 
@@ -755,15 +752,35 @@ public:
 		dbg_full_sync();
 
 		detectors_to_check.clear();
+	/*	if(	itp>=955879){
+				int a =1;
+				cout<<"pause after\n";
+				for(int i = 0;i<vars.size();i++){
+					if(value(i)!= dbg_value(i)){
+						cout << "Error! Theory unsolved or out of sync: theory var " << i;
 
+						if(isPointVar(i)){
+							cout << " for point " << getPointID(i) << " " << points[ getPointID(i) ].point;
+						}else{
+							cout << " for detector " << getDetector(i);
+						}
+						cout << " has value " << toInt(value(i)) << " but expected value was " << toInt(dbg_value(i));
+						cout<< "!\n";
+
+					}
+				}
+				for(int i = 0;i<detectors.size();i++){
+					if(!detectors[i]->checkSatisfied()){
+						cout<< "detector " << i << "unsat\n";
+						exit(3);
+					}
+						}
+			}*/
 
 		double elapsed = rtime(1)-startproptime;
 		propagationtime+=elapsed;
 		dbg_sync();
-		if(value(446) != dbg_value(446)){
-			cout<<itp<<"\n";
-					exit(3);
-				}
+
 		return true;
 	};
 

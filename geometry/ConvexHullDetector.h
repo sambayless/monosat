@@ -97,6 +97,9 @@ public:
 		static long stats_over_clause_length;
 		static long stats_under_clauses;
 		static long stats_over_clauses;
+		static long stats_line_intersection_skips_under;
+		static long stats_line_intersection_skips_over;
+
 		void printStats(){
 			printf("Convex hull %d: ", getID());
 			cout<<under_hull->getHull()<<"\n";
@@ -104,6 +107,8 @@ public:
 			printf("propagations: %d\n", stats_propagations);
 			printf("bound checks %d (skipped under,over: %d,%d)\n",stats_bound_checks,stats_bounds_skips_under,stats_bounds_skips_over);
 			printf("containment: bounds skipped %d, triangle skipped %d, checks %d, %d depth\n", ConvexPolygon<D,T>::stats_bounds_avoided, ConvexPolygon<D,T>::stats_triangle_avoided,  ConvexPolygon<D,T>::stats_split_full_checks, ConvexPolygon<D,T>::stats_split_checks_depths );
+			printf("intersections: bounds skipped %d, checks skipped under: %d, skipped over: %d\n", ConvexPolygon<D,T>::stats_bounds_intersections_avoided,stats_line_intersection_skips_under,stats_line_intersection_skips_over);
+
 			printf("Skipped updates: %d/%d under, %d/%d over\n", ((MonotoneConvexHull<D,T>*) under_hull)->stats_skipped_updates,((MonotoneConvexHull<D,T>*) under_hull)->stats_updates,((MonotoneConvexHull<D,T>*) over_hull)->stats_skipped_updates,((MonotoneConvexHull<D,T>*) under_hull)->stats_updates);
 		}
 
@@ -236,9 +241,9 @@ private:
 			assert(containing.intersects(line,inclusive));
 			assert(hull.intersects(line,inclusive));
 			if(&pointset==&under){
-				stats_bounds_skips_under++;
+				stats_line_intersection_skips_under++;
 			}else if (&pointset==&over){
-				stats_bounds_skips_over++;
+				stats_line_intersection_skips_over++;
 			}
 			return true;
 
@@ -248,6 +253,12 @@ template<unsigned int D, class T>
 long ConvexHullDetector<D,T>::stats_bounds_skips_under=0;
 template<unsigned int D, class T>
 long ConvexHullDetector<D,T>::stats_bounds_skips_over=0;
+
+template<unsigned int D, class T>
+long ConvexHullDetector<D,T>::stats_line_intersection_skips_under=0;
+template<unsigned int D, class T>
+long ConvexHullDetector<D,T>::stats_line_intersection_skips_over=0;
+
 template<unsigned int D, class T>
 long ConvexHullDetector<D,T>::stats_propagations=0;
 template<unsigned int D, class T>
@@ -712,13 +723,13 @@ bool ConvexHullDetector<D,T>::checkSatisfied(){
 	for(auto & a:pointContainedLits){
 
 		Lit l = a.l;
-		if(outer->value(l)==l_True){
-			if(!h_over.contains(a.p,a.inclusive)){
+		if(!h_over.contains(a.p,a.inclusive)){
+			if(outer->value(l)!=l_False){
 				cout << getID() << "Failed on point inclusion " << a.p << ", inclusive " << a.inclusive <<"\n";
 				return false;
 			}
-		}else if(outer->value(l)==l_False){
-			if(h_under.contains(a.p,a.inclusive)){
+		}else if(h_under.contains(a.p,a.inclusive)){
+			if(outer->value(l)!=l_True){
 				cout << getID() << "Failed on point exclusion " << a.p << ", inclusive " << a.inclusive <<"\n";
 				return false;
 			}
@@ -727,32 +738,44 @@ bool ConvexHullDetector<D,T>::checkSatisfied(){
 	for(auto & a:lineIntersectionLits){
 
 		Lit l = a.l;
-		if(outer->value(l)==l_True){
-			if(!h_over.intersects(a.line,a.inclusive)){
-				cout << getID() << "Failed on line inclusion " << a.line << ", inclusive " << a.inclusive <<"\n";
-				return false;
+		if(!h_over.intersects(a.line,a.inclusive)){
+				if(outer->value(l)!=l_False){
+					cout << getID() << "Failed on line inclusion " << a.line << ", inclusive " << a.inclusive <<"\n";
+					return false;
+				}
+			}else if(h_under.intersects(a.line,a.inclusive)){
+				if(outer->value(l)!=l_True){
+					cout << getID() << "Failed on line exclusion " << a.line << ", inclusive " << a.inclusive <<"\n";
+					return false;
+				}
 			}
-		}else if(outer->value(l)==l_False){
-			if(h_under.intersects(a.line,a.inclusive)){
-				cout << getID() << "Failed on line exclusion " << a.line << ", inclusive " << a.inclusive <<"\n";
-				return false;
-			}
-		}
+
 	}
 	for(auto & a:convexIntersectionLits){
 
 		Lit l = a.l;
-		if(outer->value(l)==l_True){
-			if(!h_over.intersects(a.polygon,a.inclusive)){
+		if(!h_over.intersects(a.polygon,a.inclusive)){
+			if(outer->value(l)!=l_False){
 				cout << getID() << "Failed on polygon inclusion " << a.polygon << ", inclusive " << a.inclusive <<"\n";
 				return false;
 			}
-		}else if(outer->value(l)==l_False){
-			if(h_under.intersects(a.polygon,a.inclusive)){
+		}else if(h_under.intersects(a.polygon,a.inclusive)){
+			if(outer->value(l)!=l_True){
 				cout << getID() << "Failed on polygon exclusion " << a.polygon << ", inclusive " << a.inclusive <<"\n";
 				return false;
 			}
 		}
+	/*	if(outer->value(l)==l_True){
+			if(!h_under.intersects(a.polygon,a.inclusive)){
+				cout << getID() << "Failed on polygon inclusion " << a.polygon << ", inclusive " << a.inclusive <<"\n";
+				return false;
+			}
+		}else if(outer->value(l)==l_False){
+			if(h_over.intersects(a.polygon,a.inclusive)){
+				cout << getID() << "Failed on polygon exclusion " << a.polygon << ", inclusive " << a.inclusive <<"\n";
+				return false;
+			}
+		}*/
 	}
 	for(auto & a:pointOnHullLits){
 		Lit l = a.l;
@@ -1211,10 +1234,15 @@ void ConvexHullDetector<D,T>::buildConvexNotIntersectsReason2d(ConvexPolygon<2,T
 	//or some disabled point in h2 that is to the left of the leftmost point in h2 must be enabled.
 
 	//Note: It may be possible to improve on this analysis!
-	std::vector<std::pair<Point<2,T> ,T>>  projection;
-	std::vector<std::pair<Point<2,T> ,T>>  projection2;
+	static std::vector<std::pair<Point<2,T> ,T>>  projection;projection.clear();
+	static std::vector<std::pair<Point<2,T> ,T>>  projection2;projection2.clear();
 	bool found = findSeparatingAxis2d(h1,h2,over, projection,projection2,inclusive);
 	assert(found);
+	if(!found || (projection.size()==0 || projection2.size()==0)){
+		cout<<h1<<"\n";
+		cout<<h2<<"\n";
+		exit(4);
+	}
 	T leftmost1 = numeric<T>::infinity();
 	T rightmost1 = -numeric<T>::infinity();
 
@@ -1313,7 +1341,9 @@ void ConvexHullDetector<D,T>::buildConvexIntersectsReason2d(ConvexPolygon<2,T> &
 
 	bool check = h1.intersects(h2,&intersect1,nullptr,inclusive);
 	assert(check);
-
+	if(!check || intersect1.size()==0){
+		exit(3);
+	}
 	for(auto & p:intersect1){
 		conflict.push(~mkLit(outer->getPointVar(p.getID())));
 	}

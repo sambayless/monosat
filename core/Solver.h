@@ -250,6 +250,10 @@ public:
 #endif
 
     	CRef reason  = attachClauseSafe(theory_reason);
+    	if(theory_reason.size()<2){
+    		assert(false);
+    		exit(5);
+    	}
 		vardata[var(p)]=mkVarData(reason,level(var(p)));
 		return reason;
     }
