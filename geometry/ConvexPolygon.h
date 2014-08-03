@@ -54,6 +54,36 @@ public:
 	bool intersects(Shape<D,T> & s, NConvexPolygon<D,T> * polygon_out_this, NConvexPolygon<D,T> * polygon_out_other, bool inclusive);
 	bool intersectsExcludingVertices(Shape<D,T> & s, NConvexPolygon<D,T> & polygon_out, bool inclusive);
 	bool containsExcludingVertices(const Point<D,T> & point,NConvexPolygon<D,T> & polygon_out, bool inclusive);
+
+	//Binary Operations
+	virtual Polygon<D,T> * binary_overlay(Polygon<D,T>  * b,NPolygon<D,T>  * store=nullptr){
+		return nullptr;
+	}
+	virtual Polygon<D,T> * binary_union(Polygon<D,T>  * b,NPolygon<D,T>  * store=nullptr){
+		return nullptr;
+	}
+	virtual Polygon<D,T>  * binary_intersect(Polygon<D,T>  * b,NPolygon<D,T>  * store=nullptr){
+		return nullptr;
+	}
+	virtual Polygon<D,T>  * binary_difference(Polygon<D,T>  * b,NPolygon<D,T>  * store=nullptr){
+		return nullptr;
+	}
+	virtual Polygon<D,T>  * binary_minkowski_sum(Polygon<D,T>  * b,NPolygon<D,T>  * store=nullptr){
+		return nullptr;
+	}
+
+	virtual Polygon<D,T>  * binary_union(ConvexPolygon<D,T>  * b,NPolygon<D,T>  * store=nullptr){
+		return nullptr;
+	}
+	virtual Polygon<D,T>  * binary_intersect(ConvexPolygon<D,T>  * b,NPolygon<D,T>  * store=nullptr){
+		return nullptr;
+	}
+	virtual Polygon<D,T>  * binary_difference(ConvexPolygon<D,T>  * b,NPolygon<D,T>  * store=nullptr){
+		return nullptr;
+	}
+	virtual Polygon<D,T>  * binary_minkowski_sum(ConvexPolygon<D,T>  * b,NPolygon<D,T>  * store=nullptr){
+		return nullptr;
+	}
 private:
 	//bool intersects2d(Shape<2,T> & s, bool inclusive, bool ignore_vertices=false);
 	bool intersects2d(Shape<2,T> & s, NConvexPolygon<2,T> * polygon_out_this, NConvexPolygon<2,T> * polygon_out_other, bool inclusive, bool ignore_vertices=false);
@@ -101,6 +131,8 @@ long ConvexPolygon<D,T>::stats_split_checks_depths=0;
 
 template<unsigned int D,class T>
 long ConvexPolygon<D,T>::stats_intersections=0;
+
+
 
 
 /**
@@ -169,11 +201,28 @@ public:
 
 	std::vector<Point<D,T>> vertices;
 
-
 	NConvexPolygon():ConvexPolygon<D,T>(){
 
 	}
+/*	explicit NConvexPolygon(NPolygon<D,T> & from):vertices(from.vertices){
 
+	}*/
+/*	explicit NConvexPolygon(NPolygon<D,T> & from):vertices(from.vertices){
+		//should check that this really is convex here
+	}*/
+	//explicit operator NPolygon<D,T>() { NPolygon<D,T>(vertices); };
+	//NConvexPolygon & operator=( NPolygon<D,T> & from){ return *this;}
+	//
+	explicit operator NPolygon<D,T>*() {return reinterpret_cast<NPolygon<D,T>*>(this);}
+	explicit operator NPolygon<D,T>() {return reinterpret_cast<NPolygon<D,T>>(*this);} //{return *static_cast< NPolygon<D,T>*> (this);}
+	explicit NConvexPolygon(const ConvexPolygon<D,T>&from){
+		//vertices=from.vertices;
+		this->vertices_clockwise=false;
+		this->bounds_uptodate=false;
+		for (auto & p:from){
+			vertices.push_back(p);
+		}
+	}
 	virtual ~NConvexPolygon(){};
 
 	int size()const {

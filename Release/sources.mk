@@ -27,6 +27,7 @@ utils \
 simp \
 graph \
 geometry/polypartition \
+geometry/cgal \
 geometry/cevans \
 geometry/bitmap \
 geometry \

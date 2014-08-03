@@ -397,6 +397,10 @@ static void randomShuffle(double& seed, T* start, T* end)
     }
 }
 
+enum class PolygonOperationType{
+	op_union, op_difference, op_intersect, op_minkowski_sum
+};
+
 template<unsigned int D, class T>
 class GeometryTheorySolver;
 

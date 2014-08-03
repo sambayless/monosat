@@ -6,8 +6,3 @@
  */
 
 #include "ConvexPolygon.h"
-#include "mtl/Vec.h"
-#include <cmath>
-
-
-

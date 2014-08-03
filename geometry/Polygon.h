@@ -12,6 +12,13 @@
 #include <gmpxx.h>
 #include "bounds/BoundingVolume.h"
 #include <iostream>
+
+template<unsigned int D,class T>
+class NPolygon;
+
+template<unsigned int D,class T>
+class NConvexPolygon;
+
 /**
  * A concrete polygon (or, for D>2, a polytope)
  */
@@ -73,6 +80,22 @@ public:
 		assert(false);
 		return false;
 	}
+	bool contains(const Point<D,T> & point,NConvexPolygon<D,T> * polygon_out, bool inclusive){
+		if(!boundContains(point,inclusive)){
+			return false;
+		}
+		if(D==2){
+			return contains2d((const Point<2,T> &)point,inclusive);
+		}
+		assert(false);
+		return false;
+	}
+
+	bool intersects(Shape<D,T> & s, NConvexPolygon<D,T> * polygon_out_this, NConvexPolygon<D,T> * polygon_out_other, bool inclusive){
+		assert(false);
+		return false;
+	}
+
 
 	virtual int size()const=0;
 	virtual void update()=0;
@@ -227,13 +250,44 @@ public:
 	{
 		return iterator(*this,size());
 	}
+	iterator begin() const
+	{
+		 return iterator(*this,0);
+	}
 
+	iterator end() const
+	{
+		return iterator(*this,size());
+	}
 	iterator end_wrap()
 	{
 		return iterator(*this,size()+1);
 	}
 
+/*	virtual Polygon * binary_overlay(Polygon * b,NPolygon<D,T>  * store=nullptr){
+		return nullptr;
+	}*/
+	//Binary Operations
+	virtual Polygon * binary_union(Polygon * b,NPolygon<D,T> * store=nullptr);/*{
+		if(D==2){
+			return binary_union2d((Polygon<2,T>*) b,(NPolygon<2,T> *)store);
+		}
+		assert(false);
+		return nullptr;
+	}*/
+	virtual Polygon * binary_intersect(Polygon * b,NPolygon<D,T>  * store=nullptr);
+	virtual Polygon * binary_difference(Polygon * b,NPolygon<D,T>  * store=nullptr);
+	virtual Polygon * binary_minkowski_sum(Polygon * b,NPolygon<D,T>  * store=nullptr);
+/*
+private:
+	virtual Polygon<2,T> * binary_union2d(Polygon<2,T>  * b,NPolygon<2,T> * store);
+	virtual Polygon<2,T>  * binary_intersect2d(Polygon<2,T>  * b,NPolygon<2,T>  * store);
+	virtual Polygon<2,T>  * binary_difference2d(Polygon<2,T>  * b,NPolygon<2,T>  * store);
+	virtual Polygon<2,T>  * binary_minkowski_sum2d(Polygon<2,T>  * b,NPolygon<2,T>  * store);*/
 };
+/*template<unsigned int D,class T>
+Polygon<2,T> * Polygon<D,T>::binary_union2d(Polygon<2,T>  * b,NPolygon<2,T>  * store);*/
+
 template<unsigned int D,class T>
 class NPolygon:public Polygon<D,T>{
 public:
@@ -249,10 +303,20 @@ public:
 	virtual ~NPolygon(){
 
 	}
-	explicit NPolygon(const NPolygon&from){
-		vertices=from.vertices;
+	explicit NPolygon(const Polygon<D,T>&from){
+		//vertices=from.vertices;
+		this->vertices_clockwise=false;
+		this->bounds_uptodate=false;
+		for (auto & p:from){
+			vertices.push_back(p);
+		}
 	}
 
+	explicit NPolygon(const NPolygon&from):vertices(from.vertices){
+		//vertices=from.vertices;
+	}
+	explicit operator NConvexPolygon<D,T>*() {assert(isConvex(*this->vertices)); return reinterpret_cast<NConvexPolygon<D,T>*>(this);}
+	explicit operator NConvexPolygon<D,T>() {assert(isConvex(*this->vertices));return reinterpret_cast<NConvexPolygon<D,T>>(*this);}
 	virtual ShapeType getType(){
 		return POLYGON;
 	}
@@ -270,6 +334,7 @@ public:
 
 	void clear(){
 		vertices.clear();
+		this->bounds_uptodate=false;
 	}
 
 	void addVertex(Point<D,T> p){
@@ -294,10 +359,6 @@ public:
 		this->bounds_uptodate=false;
 	}
 
-	void clearVertices(){
-		vertices.clear();
-		this->bounds_uptodate=false;
-	}
 
 	//Returns the vertices of the polygon, in clockwise order.
 
@@ -556,6 +617,25 @@ void NPolygon<D,T>::reorderVertices2d(){
 	assert(this->dbg_orderClockwise());
 }
 
+
+
+template<>
+Polygon<2,double> * Polygon<2,double>::binary_union(Polygon<2,double>  * b,NPolygon<2,double>  * store);
+template<>
+Polygon<2,double> * Polygon<2,double>::binary_intersect(Polygon<2,double>  * b,NPolygon<2,double>  * store);
+template<>
+Polygon<2,double> * Polygon<2,double>::binary_difference(Polygon<2,double>  * b,NPolygon<2,double>  * store);
+template<>
+Polygon<2,double> * Polygon<2,double>::binary_minkowski_sum(Polygon<2,double>  * b,NPolygon<2,double>  * store);
+
+template<>
+Polygon<2,mpq_class> * Polygon<2,mpq_class>::binary_union(Polygon<2,mpq_class>  * b,NPolygon<2,mpq_class>  * store);
+template<>
+Polygon<2,mpq_class> * Polygon<2,mpq_class>::binary_intersect(Polygon<2,mpq_class>  * b,NPolygon<2,mpq_class>  * store);
+template<>
+Polygon<2,mpq_class> * Polygon<2,mpq_class>::binary_difference(Polygon<2,mpq_class>  * b,NPolygon<2,mpq_class>  * store);
+template<>
+Polygon<2,mpq_class> * Polygon<2,mpq_class>::binary_minkowski_sum(Polygon<2,mpq_class>  * b,NPolygon<2,mpq_class>  * store);
 
 
 

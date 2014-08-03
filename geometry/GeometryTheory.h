@@ -20,6 +20,7 @@
 #include "ConvexHullDetector.h"
 #include "ConvexHullCollisionDetector.h"
 #include "GeometrySteinerDetector.h"
+#include "SymbolicPolygon.h"
 #ifndef NDEBUG
 #include <cstdio>
 #endif
@@ -77,6 +78,7 @@ public:
 	vec<int> to_visit;
 	vec<Lit> tmp_clause;
 
+	std::vector<SymbolicPolygon<D,T>*> polygons;
 
 	//Data about local theory variables, and how they connect to the sat solver's variables
 	struct VarData{
@@ -122,7 +124,6 @@ public:
 	int stats_mc_calls;
 	long stats_propagations_skipped;
 	vec<Lit> reach_cut;
-
 
 	GeometryTheorySolver(Solver * S_, int _id=-1):S(S_),id(_id){
 			local_q=0;
@@ -1084,6 +1085,62 @@ public:
 		steinerTreeDetectors[pointSet]->addAreaDetectorLit(sizeLessThan,outerVar);
 	}
 
+	void polygon_operation(int pointsetID,int pointsetID1,int pointsetID2,PolygonOperationType operation){
+		if(polygons.size()<=pointsetID){
+			polygons.resize(pointsetID+1);
+		}
+
+		SymbolicPolygon<D,T> * a = polygons[pointsetID1];
+		SymbolicPolygon<D,T> * b = polygons[pointsetID2];
+		if(!a){
+			fprintf(stderr,"Undefined polygon %d\n",pointsetID1);
+			assert(false);
+			exit(1);
+		}
+		if(!b){
+			fprintf(stderr,"Undefined polygon %d\n",pointsetID2);
+			assert(false);
+			exit(1);
+		}
+		int detectorID = detectors.size();
+		polygons[pointsetID]=(new BinaryOperationPolygon<D,T>(*a,*b,operation,detectorID,this,drand(rnd_seed)));
+		detectors.push_back(polygons[pointsetID]);
+
+	}
+	void conditional_polygon(int pointsetID,int pointsetIDthen,int pointsetIDelse,Lit conditional){
+		if(polygons.size()<=pointsetID){
+			polygons.resize(pointsetID+1);
+		}
+
+		SymbolicPolygon<D,T> * thn = polygons[pointsetIDthen];
+		SymbolicPolygon<D,T> * els = polygons[pointsetIDelse];
+		if(!thn){
+			fprintf(stderr,"Undefined polygon %d\n",pointsetIDthen);
+			assert(false);
+			exit(1);
+		}
+		if(!els){
+			fprintf(stderr,"Undefined polygon %d\n",pointsetIDelse);
+			assert(false);
+			exit(1);
+		}
+		int detectorID = detectors.size();
+		polygons[pointsetID]=(new ConditionalPolygon<D,T>(conditional,*thn,*els,detectorID,this,drand(rnd_seed)));
+		detectors.push_back(polygons[pointsetID]);
+	}
+	void constant_polygon(int pointsetID,std::vector<Point<D,T>> & points){
+		if(polygons.size()<=pointsetID){
+			polygons.resize(pointsetID+1);
+		}
+		NConvexPolygon<D,T> *polygon = new NConvexPolygon<D,T>();
+		for (auto & p:points){
+			polygon->addVertex(p);
+		}
+
+		int detectorID = detectors.size();
+		polygons[pointsetID]=(new ConstantPolygon<D,T>(polygon,detectorID,this,drand(rnd_seed)) );
+		detectors.push_back(polygons[pointsetID]);
+	}
 };
 
 

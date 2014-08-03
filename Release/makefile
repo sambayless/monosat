@@ -12,6 +12,7 @@ RM := rm -rf
 -include simp/subdir.mk
 -include graph/subdir.mk
 -include geometry/polypartition/subdir.mk
+-include geometry/cgal/subdir.mk
 -include geometry/cevans/subdir.mk
 -include geometry/bitmap/subdir.mk
 -include geometry/subdir.mk
@@ -54,7 +55,7 @@ all: modsat
 modsat: $(OBJS) $(USER_OBJS)
 	@echo 'Building target: $@'
 	@echo 'Invoking: GCC C++ Linker'
-	g++  -o "modsat" $(OBJS) $(USER_OBJS) $(LIBS)
+	g++ -L.././lib -o "modsat" $(OBJS) $(USER_OBJS) $(LIBS)
 	@echo 'Finished building target: $@'
 	@echo ' '
 

@@ -89,6 +89,32 @@ class GeometryParser:public Parser<B,Solver>{
 	};
 	vec<ConvexHullsIntersection> convex_hulls_intersect;
 
+	struct ConstantPolygon{
+		int pointsetID;
+		vec<ParsePoint> points;
+	};
+
+	vec<ConstantPolygon> constant_polygons;
+
+	struct PolygonOperation{
+		int pointsetID;
+		int pointsetID1;
+		int pointsetID2;
+
+		PolygonOperationType operation;
+	};
+
+	vec<PolygonOperation> polygon_operations;
+
+	struct ConditionalPolygon{
+		int pointsetID;
+		int pointsetID1;
+		int pointsetID2;
+		Lit conditional;
+	};
+
+	vec<ConditionalPolygon> conditional_polygons;
+
 	void parsePoint(B &in, int d, ParsePoint & point){
 		//for now, points are given as 32-bit integers. This is less convenient than, say, floats, but makes parsing much easier.
 		//in the future, we could also support inputting arbitrary precision integers... but for now, we aren't going to.
@@ -230,6 +256,71 @@ void readConvexHullsIntersect(B& in, Solver& S, bool inclusive) {
 
 }
 
+void read_polygon(B& in, Solver& S) {
+	constant_polygons.push();
+
+	int polygonID = parseInt(in);
+	constant_polygons.last().pointsetID=polygonID;
+
+	int numPoints = parseInt(in);
+	int d = parseInt(in);
+	for(int i = 0;i<numPoints;i++){
+		constant_polygons.last().points.push();
+		ParsePoint & p = convex_hull_polygon_intersections.last().points.last();
+		parsePoint(in,d,p);
+	}
+
+	int v = parseInt(in)-1;
+
+}
+
+
+void read_polygon_operation(B& in, Solver& S) {
+    //hulls_intersect pointsetID1 pointsetID2 var
+	//v is true iff the two convex hulls intersect
+	int pointsetID = parseInt(in);
+	int pointsetID1 = parseInt(in);
+	int pointsetID2 = parseInt(in);
+	PolygonOperationType op;
+	if(match(in,"union")){
+		op=PolygonOperationType::op_union;
+	}else if(match(in,"intersect")){
+		op=PolygonOperationType::op_intersect;
+	}else if(match(in,"difference")){
+		op=PolygonOperationType::op_difference;
+	}else if(match(in,"minkowski_sum")){
+		op=PolygonOperationType::op_minkowski_sum;
+	}else{
+		fprintf(stderr,"Unrecognized polygon operation %s, aborting\n",*in);
+		exit(1);
+	}
+
+	int v = parseInt(in)-1;
+	polygon_operations.push({pointsetID,pointsetID1,pointsetID2,op});
+}
+
+
+void read_conditional_polygon(B& in, Solver& S) {
+	int pointsetID = parseInt(in);
+	int pointsetID1 = parseInt(in);
+	int pointsetID2 = parseInt(in);
+
+	int v = parseInt(in);
+	bool sign;
+	int var;
+	if(v<0){
+		sign=true;
+		var = (-v)-1;
+	}else{
+		sign=false;
+		var = v-1;
+	}
+	while(S.nVars()<=var){
+		S.newVar();
+	}
+	conditional_polygons.push({pointsetID,pointsetID1,pointsetID2,mkLit(var,sign)});
+}
+
 public:
 
  bool parseLine(B& in, Solver& S){
@@ -254,6 +345,12 @@ public:
 			readConvexHullsIntersect(in,S,false);
 		}else if (match(in,"convex_hulls_collide")){
 			readConvexHullsIntersect(in,S,true);
+		}else if (match(in,"constant_polygon")){
+			read_polygon(in,S);
+		}else if (match(in,"conditional_polgon")){
+			read_conditional_polygon(in,S);
+		}else if (match(in,"polygon_operation")){
+			read_polygon_operation(in,S);
 		}else if (match(in,"heightmap_volume")){
 
 		}else if (match(in, "euclidian_steiner_tree_weight")){
@@ -475,6 +572,93 @@ public:
 
 
 	 }
+	 for (auto & c:constant_polygons){
+		 if(c.pointsetID < 0 || c.pointsetID>=pointsetDim.size() || c.pointsetID<0 || pointsetDim[c.pointsetID]<0){
+			 fprintf(stderr,"Bad pointsetID %d\n", c.pointsetID);
+			 exit(2);
+		 }
+		 int pointsetID;
+		 vec<ParsePoint> points;
+
+		 int D = pointsetDim[c.pointsetID];
+
+		 if(D==1){
+
+		 }else if(D==2){
+			 std::vector<Point<2,T> > polygon;
+			 for(ParsePoint &p:c.points){
+				 polygon.push_back(p.position);
+			 }
+			 space_2D->constant_polygon (c.pointsetID,polygon);
+		 }else{
+			 assert(false);
+		 }
+	 }
+
+	 for (auto & c:conditional_polygons){
+		 if(c.pointsetID < 0 || c.pointsetID>=pointsetDim.size() || c.pointsetID<0 || pointsetDim[c.pointsetID]<0){
+			 fprintf(stderr,"Bad pointsetID %d\n", c.pointsetID);
+			 exit(2);
+		 }
+		 if(c.pointsetID1 < 0 || c.pointsetID1>=pointsetDim.size() || c.pointsetID1<0 || pointsetDim[c.pointsetID1]<0){
+			 fprintf(stderr,"Bad pointsetID %d\n", c.pointsetID1);
+			 exit(2);
+		 }
+		 if(c.pointsetID2< 0 || c.pointsetID2>=pointsetDim.size() || c.pointsetID2<0 || pointsetDim[c.pointsetID2]<0){
+			 fprintf(stderr,"Bad pointsetID %d\n", c.pointsetID2);
+			 exit(2);
+		 }
+
+		 int D = pointsetDim[c.pointsetID];
+
+		 if( pointsetDim[c.pointsetID1] != D){
+			 fprintf(stderr,"Cannot intersect convex hulls in different dimensions (%d has dimension %d, while %d has dimension %d)\n",c.pointsetID,D, c.pointsetID1, pointsetDim[c.pointsetID1]);
+		 }
+
+		 if( pointsetDim[c.pointsetID2] != D){
+			 fprintf(stderr,"Cannot intersect convex hulls in different dimensions (%d has dimension %d, while %d has dimension %d)\n",c.pointsetID,D, c.pointsetID2, pointsetDim[c.pointsetID2]);
+		 }
+		 if(D==1){
+
+		 }else if(D==2){
+			 space_2D->conditional_polygon(c.pointsetID,c.pointsetID1,c.pointsetID2,c.conditional);
+		 }else{
+			 assert(false);
+		 }
+	 }
+
+	 for (auto & c:polygon_operations){
+		 if(c.pointsetID < 0 || c.pointsetID>=pointsetDim.size() || c.pointsetID<0 || pointsetDim[c.pointsetID]<0){
+			 fprintf(stderr,"Bad pointsetID %d\n", c.pointsetID);
+			 exit(2);
+		 }
+		 if(c.pointsetID1 < 0 || c.pointsetID1>=pointsetDim.size() || c.pointsetID1<0 || pointsetDim[c.pointsetID1]<0){
+			 fprintf(stderr,"Bad pointsetID %d\n", c.pointsetID1);
+			 exit(2);
+		 }
+		 if(c.pointsetID2< 0 || c.pointsetID2>=pointsetDim.size() || c.pointsetID2<0 || pointsetDim[c.pointsetID2]<0){
+			 fprintf(stderr,"Bad pointsetID %d\n", c.pointsetID2);
+			 exit(2);
+		 }
+
+		 int D = pointsetDim[c.pointsetID];
+
+		 if( pointsetDim[c.pointsetID1] != D){
+			 fprintf(stderr,"Cannot intersect convex hulls in different dimensions (%d has dimension %d, while %d has dimension %d)\n",c.pointsetID,D, c.pointsetID1, pointsetDim[c.pointsetID1]);
+		 }
+
+		 if( pointsetDim[c.pointsetID2] != D){
+			 fprintf(stderr,"Cannot intersect convex hulls in different dimensions (%d has dimension %d, while %d has dimension %d)\n",c.pointsetID,D, c.pointsetID2, pointsetDim[c.pointsetID2]);
+		 }
+		 if(D==1){
+
+		 }else if(D==2){
+			 space_2D->polygon_operation(c.pointsetID,c.pointsetID1,c.pointsetID2,c.operation);
+		 }else{
+			 assert(false);
+		 }
+	 }
+
 
  }
 
