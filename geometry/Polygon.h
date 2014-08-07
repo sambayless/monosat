@@ -268,16 +268,17 @@ public:
 		return nullptr;
 	}*/
 	//Binary Operations
-	virtual Polygon * binary_union(Polygon * b,NPolygon<D,T> * store=nullptr);/*{
+	virtual Polygon * binary_union(Polygon & b,NPolygon<D,T> * store=nullptr);/*{
 		if(D==2){
 			return binary_union2d((Polygon<2,T>*) b,(NPolygon<2,T> *)store);
 		}
 		assert(false);
 		return nullptr;
 	}*/
-	virtual Polygon * binary_intersect(Polygon * b,NPolygon<D,T>  * store=nullptr);
-	virtual Polygon * binary_difference(Polygon * b,NPolygon<D,T>  * store=nullptr);
-	virtual Polygon * binary_minkowski_sum(Polygon * b,NPolygon<D,T>  * store=nullptr);
+	virtual Polygon * binary_intersect(Polygon & b,NPolygon<D,T>  * store=nullptr);
+	virtual Polygon * binary_difference(Polygon & b,NPolygon<D,T>  * store=nullptr);
+	virtual Polygon * binary_minkowski_sum(Polygon & b,NPolygon<D,T>  * store=nullptr);
+	virtual Polygon * translate(const Point<D,T> & translation,NPolygon<D,T>  * store=nullptr);
 /*
 private:
 	virtual Polygon<2,T> * binary_union2d(Polygon<2,T>  * b,NPolygon<2,T> * store);
@@ -617,25 +618,36 @@ void NPolygon<D,T>::reorderVertices2d(){
 	assert(this->dbg_orderClockwise());
 }
 
+template<unsigned int D,class T>
+Polygon<D,T> *  Polygon<D,T>::translate(const Point<D,T> & translation,NPolygon<D,T>  * store){
+	if(!store){
+		store = new NPolygon<D,T>();
+	}else{
+		store->clear();
+	}
+	for (const auto & p:*this){
+		store->addVertex(p+translation);
+	}
+	return store;
+}
 
+template<>
+Polygon<2,double> * Polygon<2,double>::binary_union(Polygon<2,double>  & b,NPolygon<2,double>  * store);
+template<>
+Polygon<2,double> * Polygon<2,double>::binary_intersect(Polygon<2,double>  & b,NPolygon<2,double>  * store);
+template<>
+Polygon<2,double> * Polygon<2,double>::binary_difference(Polygon<2,double>  & b,NPolygon<2,double>  * store);
+template<>
+Polygon<2,double> * Polygon<2,double>::binary_minkowski_sum(Polygon<2,double>  & b,NPolygon<2,double>  * store);
 
 template<>
-Polygon<2,double> * Polygon<2,double>::binary_union(Polygon<2,double>  * b,NPolygon<2,double>  * store);
+Polygon<2,mpq_class> * Polygon<2,mpq_class>::binary_union(Polygon<2,mpq_class>  & b,NPolygon<2,mpq_class>  * store);
 template<>
-Polygon<2,double> * Polygon<2,double>::binary_intersect(Polygon<2,double>  * b,NPolygon<2,double>  * store);
+Polygon<2,mpq_class> * Polygon<2,mpq_class>::binary_intersect(Polygon<2,mpq_class>  & b,NPolygon<2,mpq_class>  * store);
 template<>
-Polygon<2,double> * Polygon<2,double>::binary_difference(Polygon<2,double>  * b,NPolygon<2,double>  * store);
+Polygon<2,mpq_class> * Polygon<2,mpq_class>::binary_difference(Polygon<2,mpq_class>  & b,NPolygon<2,mpq_class>  * store);
 template<>
-Polygon<2,double> * Polygon<2,double>::binary_minkowski_sum(Polygon<2,double>  * b,NPolygon<2,double>  * store);
-
-template<>
-Polygon<2,mpq_class> * Polygon<2,mpq_class>::binary_union(Polygon<2,mpq_class>  * b,NPolygon<2,mpq_class>  * store);
-template<>
-Polygon<2,mpq_class> * Polygon<2,mpq_class>::binary_intersect(Polygon<2,mpq_class>  * b,NPolygon<2,mpq_class>  * store);
-template<>
-Polygon<2,mpq_class> * Polygon<2,mpq_class>::binary_difference(Polygon<2,mpq_class>  * b,NPolygon<2,mpq_class>  * store);
-template<>
-Polygon<2,mpq_class> * Polygon<2,mpq_class>::binary_minkowski_sum(Polygon<2,mpq_class>  * b,NPolygon<2,mpq_class>  * store);
+Polygon<2,mpq_class> * Polygon<2,mpq_class>::binary_minkowski_sum(Polygon<2,mpq_class>  & b,NPolygon<2,mpq_class>  * store);
 
 
 

@@ -27,7 +27,7 @@
 
 
 template<>
-Polygon<2,mpq_class> * Polygon<2,mpq_class>::binary_union(Polygon<2,mpq_class>  * b,NPolygon<2,mpq_class>  * store){
+Polygon<2,mpq_class> * Polygon<2,mpq_class>::binary_union(Polygon<2,mpq_class>  & b,NPolygon<2,mpq_class>  * store){
 	typedef CGAL::Cartesian<CGAL::Gmpq>                Kernel;
 	typedef  CGAL::Cartesian<CGAL::Gmpq>::Point_2                             Point_2;
 	typedef CGAL::Polygon_2<Kernel>                     Polygon_2;
@@ -40,7 +40,7 @@ Polygon<2,mpq_class> * Polygon<2,mpq_class>::binary_union(Polygon<2,mpq_class>  
 	}
 	static Polygon_2 P2;
 	P2.clear();
-	for (auto & p:*b){
+	for (auto & p:b){
 		P2.push_back (Point_2 (p.x.get_mpq_t(), p.y.get_mpq_t()));
 	}
 
@@ -66,7 +66,7 @@ Polygon<2,mpq_class> * Polygon<2,mpq_class>::binary_union(Polygon<2,mpq_class>  
 }
 
 template<>
-Polygon<2,mpq_class> * Polygon<2,mpq_class>::binary_intersect(Polygon<2,mpq_class>  * b,NPolygon<2,mpq_class>  * store){
+Polygon<2,mpq_class> * Polygon<2,mpq_class>::binary_intersect(Polygon<2,mpq_class>  & b,NPolygon<2,mpq_class>  * store){
 	typedef CGAL::Cartesian<CGAL::Gmpq>                Kernel;
 	typedef Kernel::Point_2                             Point_2;
 	typedef CGAL::Polygon_2<Kernel>                     Polygon_2;
@@ -79,7 +79,7 @@ Polygon<2,mpq_class> * Polygon<2,mpq_class>::binary_intersect(Polygon<2,mpq_clas
 	}
 	static Polygon_2 P2;
 	P2.clear();
-	for (auto & p:*b){
+	for (auto & p:b){
 		P2.push_back (Point_2 (p.x.get_mpq_t(), p.y.get_mpq_t()));
 	}
 
@@ -105,7 +105,7 @@ Polygon<2,mpq_class> * Polygon<2,mpq_class>::binary_intersect(Polygon<2,mpq_clas
 	return store;
 }
 template<>
-Polygon<2,mpq_class> * Polygon<2,mpq_class>::binary_difference(Polygon<2,mpq_class>  * b,NPolygon<2,mpq_class>  * store){
+Polygon<2,mpq_class> * Polygon<2,mpq_class>::binary_difference(Polygon<2,mpq_class>  & b,NPolygon<2,mpq_class>  * store){
 	typedef CGAL::Cartesian<CGAL::Gmpq>                Kernel;
 	typedef Kernel::Point_2                             Point_2;
 	typedef CGAL::Polygon_2<Kernel>                     Polygon_2;
@@ -118,7 +118,7 @@ Polygon<2,mpq_class> * Polygon<2,mpq_class>::binary_difference(Polygon<2,mpq_cla
 	}
 	static Polygon_2 P2;
 	P2.clear();
-	for (auto & p:*b){
+	for (auto & p:b){
 		P2.push_back (Point_2 (p.x.get_mpq_t(), p.y.get_mpq_t()));
 	}
 
@@ -144,7 +144,7 @@ Polygon<2,mpq_class> * Polygon<2,mpq_class>::binary_difference(Polygon<2,mpq_cla
 	return store;
 }
 template<>
-Polygon<2,mpq_class> * Polygon<2,mpq_class>::binary_minkowski_sum(Polygon<2,mpq_class>  * b,NPolygon<2,mpq_class>  * store){
+Polygon<2,mpq_class> * Polygon<2,mpq_class>::binary_minkowski_sum(Polygon<2,mpq_class>  & b,NPolygon<2,mpq_class>  * store){
 	typedef CGAL::Cartesian<CGAL::Gmpq>                Kernel;
 	typedef Kernel::Point_2                             Point_2;
 	typedef CGAL::Polygon_2<Kernel>                     Polygon_2;
@@ -157,7 +157,7 @@ Polygon<2,mpq_class> * Polygon<2,mpq_class>::binary_minkowski_sum(Polygon<2,mpq_
 	}
 	static Polygon_2 P2;
 	P2.clear();
-	for (auto & p:*b){
+	for (auto & p:b){
 		P2.push_back (Point_2 (p.x.get_mpq_t(), p.y.get_mpq_t()));
 	}
 
@@ -179,7 +179,7 @@ Polygon<2,mpq_class> * Polygon<2,mpq_class>::binary_minkowski_sum(Polygon<2,mpq_
 	return store;
 }
 template<>
-Polygon<2,double> * Polygon<2,double>::binary_union(Polygon<2,double>  * b,NPolygon<2,double>  * store){
+Polygon<2,double> * Polygon<2,double>::binary_union(Polygon<2,double>  & b,NPolygon<2,double>  * store){
 
 	typedef CGAL::Cartesian<double>                Kernel;
 	typedef Kernel::Point_2                             Point_2;
@@ -193,7 +193,7 @@ Polygon<2,double> * Polygon<2,double>::binary_union(Polygon<2,double>  * b,NPoly
 	}
 	static Polygon_2 P2;
 	P2.clear();
-	for (auto & p:*b){
+	for (auto & p:b){
 		P2.push_back (Point_2 (p.x, p.y));
 	}
 
@@ -218,7 +218,7 @@ Polygon<2,double> * Polygon<2,double>::binary_union(Polygon<2,double>  * b,NPoly
 	return store;
 }
 template<>
-Polygon<2,double> * Polygon<2,double>::binary_intersect(Polygon<2,double>  * b,NPolygon<2,double>  * store){
+Polygon<2,double> * Polygon<2,double>::binary_intersect(Polygon<2,double>  & b,NPolygon<2,double>  * store){
 	typedef CGAL::Cartesian<double>                Kernel;
 	typedef Kernel::Point_2                             Point_2;
 	typedef CGAL::Polygon_2<Kernel>                     Polygon_2;
@@ -231,7 +231,7 @@ Polygon<2,double> * Polygon<2,double>::binary_intersect(Polygon<2,double>  * b,N
 	}
 	static Polygon_2 P2;
 	P2.clear();
-	for (auto & p:*b){
+	for (auto & p:b){
 		P2.push_back (Point_2 (p.x, p.y));
 	}
 
@@ -257,7 +257,7 @@ Polygon<2,double> * Polygon<2,double>::binary_intersect(Polygon<2,double>  * b,N
 	return store;
 }
 template<>
-Polygon<2,double> * Polygon<2,double>::binary_difference(Polygon<2,double>  * b,NPolygon<2,double>  * store){
+Polygon<2,double> * Polygon<2,double>::binary_difference(Polygon<2,double>  & b,NPolygon<2,double>  * store){
 	typedef CGAL::Cartesian<double>                Kernel;
 	typedef Kernel::Point_2                             Point_2;
 	typedef CGAL::Polygon_2<Kernel>                     Polygon_2;
@@ -270,7 +270,7 @@ Polygon<2,double> * Polygon<2,double>::binary_difference(Polygon<2,double>  * b,
 	}
 	static Polygon_2 P2;
 	P2.clear();
-	for (auto & p:*b){
+	for (auto & p:b){
 		P2.push_back (Point_2 (p.x, p.y));
 	}
 
@@ -296,7 +296,7 @@ Polygon<2,double> * Polygon<2,double>::binary_difference(Polygon<2,double>  * b,
 	return store;
 }
 template<>
-Polygon<2,double> * Polygon<2,double>::binary_minkowski_sum(Polygon<2,double>  * b,NPolygon<2,double>  * store){
+Polygon<2,double> * Polygon<2,double>::binary_minkowski_sum(Polygon<2,double>  & b,NPolygon<2,double>  * store){
 	typedef CGAL::Cartesian<double>                Kernel;
 	typedef Kernel::Point_2                             Point_2;
 	typedef CGAL::Polygon_2<Kernel>                     Polygon_2;
@@ -309,7 +309,7 @@ Polygon<2,double> * Polygon<2,double>::binary_minkowski_sum(Polygon<2,double>  *
 	}
 	static Polygon_2 P2;
 	P2.clear();
-	for (auto & p:*b){
+	for (auto & p:b){
 		P2.push_back (Point_2 (p.x, p.y));
 	}
 

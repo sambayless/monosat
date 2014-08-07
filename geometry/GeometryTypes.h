@@ -182,7 +182,7 @@ struct Point{
     void setID(int id){
     	this->id=id;
     }
-    T dot(const Point<D,T> & other){
+    T dot(const Point<D,T> & other)const{
     	T sum=T();
     	for (int i = 0;i<D;i++){
     		sum += vector[i]*other[i];

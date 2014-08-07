@@ -134,6 +134,8 @@ BoolOption Minisat::opt_components_learn_connect(_cat_graph, "components-learn-c
 
 BoolOption Minisat::opt_dinics_recursive(_cat_graph,"dinitz-recursive","Use the recursive (default: iterative) Dinic's Maximum-flow implementation",false);
 
+BoolOption Minisat::opt_minimize_collision_clauses(_cat_geom,"minimize-collision-clauses","",false);
+
 IntOption     Minisat::opt_width("GRAPH","width","Width of graph.\n", 0, IntRange(0, INT32_MAX));
     IntOption     Minisat::opt_height("GRAPH","height","Height of graph.\n", 0, IntRange(0, INT32_MAX));
     IntOption     Minisat::opt_bits("GRAPH","bits","Bits per position in graph.\n", 1, IntRange(0, INT32_MAX));

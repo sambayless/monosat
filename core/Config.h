@@ -98,6 +98,8 @@ extern BoolOption opt_encode_reach_underapprox_as_sat;
 extern BoolOption opt_components_learn_connect;
 extern BoolOption opt_learn_unreachable_component;
 extern BoolOption opt_dinics_recursive;
+extern BoolOption opt_minimize_collision_clauses;
+
 extern StringOption opt_hull_alg;
 extern StringOption opt_convex_pip;
 

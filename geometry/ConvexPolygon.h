@@ -56,34 +56,35 @@ public:
 	bool containsExcludingVertices(const Point<D,T> & point,NConvexPolygon<D,T> & polygon_out, bool inclusive);
 
 	//Binary Operations
-	virtual Polygon<D,T> * binary_overlay(Polygon<D,T>  * b,NPolygon<D,T>  * store=nullptr){
+	virtual Polygon<D,T> * binary_overlay(Polygon<D,T>  & b,NPolygon<D,T>  * store=nullptr){
 		return nullptr;
 	}
-	virtual Polygon<D,T> * binary_union(Polygon<D,T>  * b,NPolygon<D,T>  * store=nullptr){
+	virtual Polygon<D,T> * binary_union(Polygon<D,T>  & b,NPolygon<D,T>  * store=nullptr){
 		return nullptr;
 	}
-	virtual Polygon<D,T>  * binary_intersect(Polygon<D,T>  * b,NPolygon<D,T>  * store=nullptr){
+	virtual Polygon<D,T>  * binary_intersect(Polygon<D,T>  & b,NPolygon<D,T>  * store=nullptr){
 		return nullptr;
 	}
-	virtual Polygon<D,T>  * binary_difference(Polygon<D,T>  * b,NPolygon<D,T>  * store=nullptr){
+	virtual Polygon<D,T>  * binary_difference(Polygon<D,T>  & b,NPolygon<D,T>  * store=nullptr){
 		return nullptr;
 	}
-	virtual Polygon<D,T>  * binary_minkowski_sum(Polygon<D,T>  * b,NPolygon<D,T>  * store=nullptr){
+	virtual Polygon<D,T>  * binary_minkowski_sum(Polygon<D,T>  & b,NPolygon<D,T>  * store=nullptr){
 		return nullptr;
 	}
 
-	virtual Polygon<D,T>  * binary_union(ConvexPolygon<D,T>  * b,NPolygon<D,T>  * store=nullptr){
+	virtual Polygon<D,T>  * binary_union(ConvexPolygon<D,T>  & b,NPolygon<D,T>  * store=nullptr){
 		return nullptr;
 	}
-	virtual Polygon<D,T>  * binary_intersect(ConvexPolygon<D,T>  * b,NPolygon<D,T>  * store=nullptr){
+	virtual Polygon<D,T>  * binary_intersect(ConvexPolygon<D,T>  & b,NPolygon<D,T>  * store=nullptr){
 		return nullptr;
 	}
-	virtual Polygon<D,T>  * binary_difference(ConvexPolygon<D,T>  * b,NPolygon<D,T>  * store=nullptr){
+	virtual Polygon<D,T>  * binary_difference(ConvexPolygon<D,T>  & b,NPolygon<D,T>  * store=nullptr){
 		return nullptr;
 	}
-	virtual Polygon<D,T>  * binary_minkowski_sum(ConvexPolygon<D,T>  * b,NPolygon<D,T>  * store=nullptr){
+	virtual Polygon<D,T>  * binary_minkowski_sum(ConvexPolygon<D,T>  & b,NPolygon<D,T>  * store=nullptr){
 		return nullptr;
 	}
+
 private:
 	//bool intersects2d(Shape<2,T> & s, bool inclusive, bool ignore_vertices=false);
 	bool intersects2d(Shape<2,T> & s, NConvexPolygon<2,T> * polygon_out_this, NConvexPolygon<2,T> * polygon_out_other, bool inclusive, bool ignore_vertices=false);
@@ -869,7 +870,7 @@ bool ConvexPolygon<D,T>::intersects(Shape<D,T> & shape, bool inclusive){
 	}else{
 		assert(false);
 	}
-	return false;
+	return Polygon<D,T>::intersects(shape,inclusive);
 }
 
 
