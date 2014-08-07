@@ -29,7 +29,7 @@
 template<>
 Polygon<2,mpq_class> * Polygon<2,mpq_class>::binary_union(Polygon<2,mpq_class>  * b,NPolygon<2,mpq_class>  * store){
 	typedef CGAL::Cartesian<CGAL::Gmpq>                Kernel;
-	typedef Kernel::Point_2                             Point_2;
+	typedef  CGAL::Cartesian<CGAL::Gmpq>::Point_2                             Point_2;
 	typedef CGAL::Polygon_2<Kernel>                     Polygon_2;
 	typedef CGAL::Polygon_with_holes_2<Kernel>          Polygon_with_holes_2;
 
