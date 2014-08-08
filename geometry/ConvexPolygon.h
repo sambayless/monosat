@@ -85,6 +85,10 @@ public:
 		return nullptr;
 	}
 
+	bool isConvex(){
+		return true;
+	}
+
 private:
 	//bool intersects2d(Shape<2,T> & s, bool inclusive, bool ignore_vertices=false);
 	bool intersects2d(Shape<2,T> & s, NConvexPolygon<2,T> * polygon_out_this, NConvexPolygon<2,T> * polygon_out_other, bool inclusive, bool ignore_vertices=false);

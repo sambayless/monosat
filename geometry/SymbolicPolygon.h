@@ -37,7 +37,7 @@ private:
 	CRef point_on_hull_marker=CRef_Undef;
 	CRef point_not_on_hull_marker=CRef_Undef;
 
-	Var lowest_point_var;
+	Var lowest_point_var=var_Undef;
 	vec<int> point_lit_map;
 	vec<Lit> lit_point_map;
 	vec<bool> under_hull_members;
@@ -323,8 +323,8 @@ public:
 
 	}
 
-	virtual void buildAreaGEQReason(T area, vec<Lit> & conflict)=0;
-	virtual void buildAreaLTReason(T area,vec<Lit> & conflict)=0;
+	virtual void buildAreaGTReason(T area, vec<Lit> & conflict)=0;
+	virtual void buildAreaLEQReason(T area,vec<Lit> & conflict)=0;
 	virtual void buildPointContainedReason(const Point<D,T> & s, vec<Lit> & conflict, bool inclusive)=0;
 	virtual void buildPointNotContainedReason(const Point<D,T> & s, vec<Lit> & conflict, bool inclusive)=0;
 	virtual void buildIntersectsReason(Shape<D,T> & p,vec<Lit> & conflict, bool inclusive)=0;
@@ -374,12 +374,12 @@ public:
 	Polygon<D,T>& getUnderApprox(){
 		return *polygon;
 	}
-	void buildAreaGEQReason(T area, vec<Lit> & conflict){
+	void buildAreaGTReason(T area, vec<Lit> & conflict){
 		assert(polygon->getArea()>=area);
 		//this polygon is constant, so learn nothing.
 	}
 
-	void buildAreaLTReason(T area,vec<Lit> & conflict){
+	void buildAreaLEQReason(T area,vec<Lit> & conflict){
 		assert(polygon->getArea()<area);
 		//this polygon is constant, so learn nothing.
 	}
@@ -423,8 +423,9 @@ class BinaryOperationPolygon:public SymbolicPolygon<D,T>{
 	PolygonOperationType operation;
 	NPolygon<D,T> over_approx;
 	NPolygon<D,T> under_approx;
-	NPolygon<D,T> translate_tmp;
-
+	NPolygon<D,T> polygon_tmp;
+	HalfPlane<D,T> tmp_plane;
+	std::vector<HalfPlane<D,T>> tmp_planes;
 	Polygon<D,T> & applyOperation(Polygon<D,T> & p_a, Polygon<D,T> & p_b, NPolygon<D,T> * store){
 		switch (operation){
 			case PolygonOperationType::op_union:{
@@ -464,11 +465,61 @@ public:
 			return applyOperation(a.getUnderApprox(),b.getUnderApprox(),&under_approx);
 	}
 
-	void buildAreaGEQReason(T area, vec<Lit> & conflict){
-
+	void buildAreaGTReason(T area, vec<Lit> & conflict){
+		switch (operation){
+			case PolygonOperationType::op_union:{
+				//either need to get larger
+				a.buildAreaGTReason(0,conflict);
+				b.buildAreaGTReason(0,conflict);
+			}break;
+			case PolygonOperationType::op_intersect:{
+				//both need to get larger
+				a.buildAreaGTReason(0,conflict);
+				b.buildAreaGTReason(0,conflict);
+			}break;
+			case PolygonOperationType::op_difference:{
+				//T intersect_area = a.getOverApprox().binary_intersect(b.getUnderApprox()).getArea();
+				//a has to get larger, or b has to get smaller.
+				a.buildAreaGTReason(0,conflict);
+				b.buildAreaLEQReason(0,conflict);
+			}break;
+				case PolygonOperationType::op_minkowski_sum:{
+					//either need to get larger
+					a.buildAreaGTReason(0,conflict);
+					b.buildAreaGTReason(0,conflict);
+			}break;
+			default:
+				assert(false);
+				break;
+		}
 	}
-	void buildAreaLTReason(T area,vec<Lit> & conflict){
-
+	void buildAreaLEQReason(T area,vec<Lit> & conflict){
+		switch (operation){
+			case PolygonOperationType::op_union:{
+				//either need to get larger
+				a.buildAreaLEQReason(0,conflict);
+				b.buildAreaLEQReason(0,conflict);
+			}break;
+			case PolygonOperationType::op_intersect:{
+				//both need to get larger
+				a.buildAreaLEQReason(0,conflict);
+				b.buildAreaLEQReason(0,conflict);
+			}break;
+			case PolygonOperationType::op_difference:{
+				//T intersect_area = a.getOverApprox().binary_intersect(b.getUnderApprox()).getArea();
+				//a has to get larger, or b has to get smaller.
+				a.buildAreaLEQReason(0,conflict);
+				b.buildAreaGTReason(0,conflict);
+			}break;
+				case PolygonOperationType::op_minkowski_sum:{
+					//either need to get larger
+					a.buildAreaLEQReason(0,conflict);
+					b.buildAreaLEQReason(0,conflict);
+			}break;
+			default:
+				assert(false);
+				break;
+		}
 	}
 
 	void buildIntersectsReason(Shape<D,T> & hp,vec<Lit> & conflict, bool inclusive){
@@ -501,6 +552,8 @@ public:
 					buildMinkowskiHalfPlaneIntersectReason((HalfPlane<D,T>&)hp,conflict,inclusive);
 				}else if(hp.getType()==CONVEX_POLYGON){
 					buildMinkowskiConvexIntersectReason((ConvexPolygon<D,T>&)hp,conflict,inclusive);
+				}else if(hp.getType()==POLYGON){
+					buildMinkowskiNonConvexIntersectReason((Polygon<D,T>&)hp,conflict,inclusive);
 				}else{
 					assert(false);
 					fprintf(stderr,"unimplemented collision learning\n");
@@ -645,6 +698,12 @@ public:
 			case PolygonOperationType::op_minkowski_sum:{
 				//the reason that A + B does not contain point s is that
 				//(A-s) does not intersect B
+				Polygon<D,T> &translatedB = *b.getOverApprox().translate(s,&translate_tmp);
+				assert(!translatedB.intersects(*a.getOverApprox(),inclusive));
+				a.buildNotIntersectsReason(translatedB,conflict,inclusive);
+				Polygon<D,T> &translatedA = *a.getOverApprox().translate(s,&translate_tmp);
+				assert(!translatedA.intersects(*b.getOverApprox(),inclusive));
+				b.buildNotIntersectsReason(translatedA,conflict,inclusive);
 			}break;
 			default:
 				assert(false);
@@ -652,15 +711,245 @@ public:
 		}
 	}
 
-	void buildMinkowskiConvexIntersectReason(ConvexPolygon<D,T> & hp, vec<Lit> & conflict, bool inclusive){
+	void buildMinkowskiPolygonIntersectReason(Polygon<D,T> & hp, vec<Lit> & conflict, bool inclusive){
 		assert(getUnderApprox().intersects(hp));
 		assert(operation== PolygonOperationType::op_minkowski_sum);
 
+		Polygon<D,T> & addition = a.getOverApprox().binary_minkowski_sum(h2,  polygon_tmp);
+		assert(addition.intersects(b.getOverApprox()));
+		b.buildIntersectsReason(addition,conflict,inclusive);
+
+		addition = b.getOverApprox().binary_minkowski_sum(h2,  polygon_tmp);
+		assert(addition.intersects(a.getOverApprox()));
+		a.buildIntersectsReason(addition,conflict,inclusive);
 
 	}
-	void buildMinkowskiConvexNotIntersectReason(ConvexPolygon<D,T> & hp, vec<Lit> & conflict, bool inclusive){
-		assert(!getOverApprox().intersects(hp,inclusive));
+	void buildMinkowskiPolygonNotIntersectReason(Polygon<D,T> & h2, vec<Lit> & conflict, bool inclusive){
+		assert(!getOverApprox().intersects(h2,inclusive));
 		assert(operation==PolygonOperationType::op_minkowski_sum);
+
+	/*	//first, attempt to find a separating axis. This is not guaranteed to exist unless both polygons are convex
+		Polygon<D,T> & h1 = getOverApprox();
+		 //Separating Axis Theorem for collision detection between two convex polygons
+		 //loop through each edge in _each_ polygon and project both polygons onto that edge's normal.
+		 //If any of the projections are non-intersection, then these don't collide; else, they do collide
+		if(h2.size()==0){
+			//no intersection is possible
+			return;
+		}else if (h2.size()==1){
+			if(!inclusive){
+				return;
+			}else{
+				buildPointNotContainedReason(h2[0],conflict,inclusive);
+				return;
+			}
+		}else if(h1.size()==0){
+			//not sure how to handle best this.
+			buildAreaLEQReason(0,conflict);
+			return;
+		}
+
+		 for(int i = 0;i<h1.size();i++){
+			 auto & p = h1[i];
+			 auto & prev = (h1)[i-1];
+			 Point<2,T> edge = p-prev;
+			 Point<2,T> un_normalized_normal(-edge.y, edge.x);
+
+			 //now project both polygons onto to this normal and see if they overlap, by finding the minimum and maximum distances
+			 //Note that since we are NOT normalizing the normal vector, the projection is distorted along that vector
+			 //(this still allows us to check overlaps, but means that the minimum distance found between the two shapes may be incorrect)
+			 T left = numeric<T>::infinity();
+			 T right = -numeric<T>::infinity();
+			 for (auto & p:h1){
+				 T projection = un_normalized_normal.dot(p);
+				 //projection_out1.push_back({p,projection});
+				 if (projection < left) {
+					  left = projection;
+				 }
+				 if (projection > right) {
+					  right = projection;
+				 }
+			 }
+			 bool seenLeft = false;
+			 bool seenRight=false;
+			 T h2_min = numeric<T>::infinity();
+			 T h2_max = -numeric<T>::infinity();
+
+			 for (auto & p:h2){
+				 T projection = un_normalized_normal.dot(p);
+				 //projection_out2.push_back({p,projection});
+				 if(projection< h2_min){
+					 h2_min=projection;
+				 }
+				 if(projection> h2_max){
+					 h2_max=projection;
+				 }
+				 if(inclusive){
+				 if (projection >= left && projection <= right ) {
+					 seenRight=true;
+					 seenLeft=true;
+					 break;
+				 }else if (projection < left ){
+					 seenLeft=true;
+					 if(seenRight){
+						 break;
+					 }
+				 }else if (projection>right){
+					 seenRight=true;
+					 if (seenLeft){
+						 break;
+					 }
+				 }else if (seenLeft && projection > left ){
+					 seenRight=true;
+					 break;
+				 }else if (seenRight && projection < right ){
+					 seenRight=true;
+					 break;
+				 }
+			 }else{
+				 if(projection>left){
+					 seenRight=true;
+					 if (seenLeft){
+						 break;
+					 }
+				 }
+				 if (projection<right){
+					 seenLeft=true;
+					 if(seenRight){
+						 break;
+					 }
+				 }
+			 }
+			 }
+
+			 if(!(seenLeft&&seenRight)){
+				 //this is a separating axis
+				 HalfPlane<D,T> & hp = tmp_plane;
+				 hp.normal = un_normalized_normal;
+				 assert(seenLeft||seenRight);
+				 if(seen_left){
+					 hp.distance = h2_max;
+				 }else{
+					 hp.distance = h2_min;
+				 }
+
+				 this->buildIntersectsReason(hp,conflict,inclusive);
+				 return;
+			 }
+
+		 }
+
+		 //now test the axis produced by the other polygon
+		 for(int i = 0;i<h2.size();i++){
+			 auto & p = (h2)[i];
+			 auto & prev = (h2)[i-1];
+			 Point<2,T> edge = p-prev;
+			 Point<2,T> un_normalized_normal(-edge.y, edge.x);
+
+
+			 T left =numeric<T>::infinity();
+			 T right = -numeric<T>::infinity();
+			 for (auto & p:h2){
+				 T projection = un_normalized_normal.dot(p);
+
+				 if (projection < left) {
+					  left = projection;
+				 }
+				 if (projection > right) {
+					  right = projection;
+				 }
+			 }
+			 T h1_min = numeric<T>::infinity();
+			 T h1_max = -numeric<T>::infinity();
+			 bool seenLeft = false;
+			 bool seenRight=false;
+			 bool overlaps = false;
+			 for (auto & p:h1){
+				 T projection = un_normalized_normal.dot(p);
+				 if(inclusive){
+				 if (projection >= left && projection <= right ) {
+					 seenRight=true;
+					 seenLeft=true;
+					 break;
+				 }else if (projection < left ){
+					 seenLeft=true;
+					 if(seenRight){
+						 break;
+					 }
+				 }else if (projection>right){
+					 seenRight=true;
+					 if (seenLeft){
+						 break;
+					 }
+				 }else if (seenLeft && projection > left ){
+					 seenRight=true;
+					 break;
+				 }else if (seenRight && projection < right ){
+					 seenRight=true;
+					 break;
+				 }
+			 }else{
+				 if(projection>left){
+					 seenRight=true;
+					 if (seenLeft){
+						 break;
+					 }
+				 }
+				 if (projection<right){
+					 seenLeft=true;
+					 if(seenRight){
+						 break;
+					 }
+				 }
+
+			 }
+			 }
+			 if(!(seenLeft&&seenRight)){
+				 //this is a separating axis
+				 HalfPlane<D,T> & hp = tmp_plane;
+				 hp.normal = un_normalized_normal;
+				 assert(seenLeft||seenRight);
+				 if(seen_left){
+					 hp.distance = right;
+				 }else{
+					 hp.distance = left;
+				 }
+				 this->buildIntersectsReason(hp,conflict,inclusive);
+				 return;
+			 }
+		 }
+
+		assert(!this->getOverApprox().isConvex() || !h2.isConvex());
+*/
+		//hopefully the following is correct:
+		//a + b not intersects h2 <--> a not intersects h2+b, and b not intersects h2+a
+
+		Polygon<D,T> & addition = a.getOverApprox().binary_minkowski_sum(h2,  polygon_tmp);
+		assert(!addition.intersects(b.getOverApprox()));
+		b.buildNotIntersectsReason(addition,conflict,inclusive);
+
+		addition = b.getOverApprox().binary_minkowski_sum(h2,  polygon_tmp);
+		assert(!addition.intersects(a.getOverApprox()));
+		a.buildNotIntersectsReason(addition,conflict,inclusive);
+
+		//if either or both shape is not convex, then I will handle that by finding a set of half planes that contain h2 and not h1
+		//then for each halfplane_i in that set, form  (this intersect ((union half planes) - halfplane_i)), build the reason for that partition not to intersect b.
+		/*if(tmp_planes.size()<h2.size()-1){
+			tmp_planes.resize(h2.size()-1);
+		}
+		//build half planes around each edge
+		for(int i = 0;i<h2.size();i++){
+			auto & p0 = h2[i-1];
+			auto & p1 = h2[i];
+			Point<2,T> edge = p1-p0;
+			Point<2,T> un_normalized_normal(-edge.y, edge.x);
+			tmp_planes[i].normal.x = -edge.y;
+			tmp_planes[i].normal.x = edge.x;
+			tmp_planes[i].distance=p0.dot(un_normalized_normal);
+			assert(!tmp_planes[i].intersetcs(h1,inclusive));
+			assert(tmp_planes[i].intersetcs(h2,true));
+		}
+*/
 
 
 	}
@@ -767,10 +1056,10 @@ public:
 		return *thn.getUnderApprox().binary_intersect(els.getUnderApprox(),&under_approx);
 	}
 
-	void buildAreaGEQReason(T area, vec<Lit> & conflict){
+	void buildAreaGTReason(T area, vec<Lit> & conflict){
 
 	}
-	void buildAreaLTReason(T area,vec<Lit> & conflict){
+	void buildAreaLEQReason(T area,vec<Lit> & conflict){
 
 	}
 	void buildPointContainedReason(const Point<D,T> & s, vec<Lit> & conflict, bool inclusive){
@@ -778,14 +1067,14 @@ public:
 		lbool val = this->solver->value(condition);
 		if(val==l_True){
 			thn.buildPointContainedReason(s,conflict,inclusive);
-			if(opt_minimize_collision_clauses){
+			if(opt_minimize_collision_clauses && !els.getUnderApprox().contains(s,inclusive)){
 				els.buildPointContainedReason(s,conflict,inclusive);
 			}else{
 				conflict.push(~condition);
 			}
 		}else if (val==l_False){
 			els.buildPointContainedReason(s,conflict,inclusive);
-			if(opt_minimize_collision_clauses){
+			if(opt_minimize_collision_clauses  && !thn.getUnderApprox().contains(s,inclusive)){
 				thn.buildPointContainedReason(s,conflict,inclusive);
 			}else{
 				conflict.push(condition);
@@ -807,14 +1096,14 @@ public:
 		lbool val = this->solver->value(condition);
 		if(val==l_True){
 			thn.buildPointNotContainedReason(hp,conflict,inclusive);
-			if(opt_minimize_collision_clauses){
+			if(opt_minimize_collision_clauses && !els.getOverApprox().contains(hp,inclusive)){
 				els.buildPointNotContainedReason(hp,conflict,inclusive);
 			}else{
 				conflict.push(~condition);
 			}
 		}else if (val==l_False){
 			els.buildPointNotContainedReason(hp,conflict,inclusive);
-			if(opt_minimize_collision_clauses){
+			if(opt_minimize_collision_clauses && !thn.getOverApprox().contains(hp,inclusive)){
 				thn.buildPointNotContainedReason(hp,conflict,inclusive);
 			}else{
 				conflict.push(condition);
@@ -833,21 +1122,19 @@ public:
 		}
 	}
 
-
-
 	void buildIntersectsReason(Shape<D,T> & hp,vec<Lit> & conflict, bool inclusive){
 		assert(getUnderApprox().intersects(hp,inclusive));
 		lbool val = this->solver->value(condition);
 		if(val==l_True){
 			thn.buildIntersectsReason(hp,conflict,inclusive);
-			if(opt_minimize_collision_clauses){
+			if(opt_minimize_collision_clauses && !els.getUnderApprox().intersects(hp,inclusive)){
 				els.buildIntersectsReason(hp,conflict,inclusive);
 			}else{
 				conflict.push(~condition);
 			}
 		}else if (val==l_False){
 			els.buildIntersectsReason(hp,conflict,inclusive);
-			if(opt_minimize_collision_clauses){
+			if(opt_minimize_collision_clauses && !thn.getUnderApprox().intersects(hp,inclusive)){
 				thn.buildIntersectsReason(hp,conflict,inclusive);
 			}else{
 				conflict.push(condition);
@@ -869,14 +1156,14 @@ public:
 		lbool val = this->solver->value(condition);
 		if(val==l_True){
 			thn.buildNotIntersectsReason(hp,conflict,inclusive);
-			if(opt_minimize_collision_clauses){
+			if(opt_minimize_collision_clauses && !els.getOverApprox().intersects(hp,inclusive)){
 				els.buildNotIntersectsReason(hp,conflict,inclusive);
 			}else{
 				conflict.push(~condition);
 			}
 		}else if (val==l_False){
 			els.buildNotIntersectsReason(hp,conflict,inclusive);
-			if(opt_minimize_collision_clauses){
+			if(opt_minimize_collision_clauses && !thn.getOverApprox().intersects(hp,inclusive)){
 				thn.buildNotIntersectsReason(hp,conflict,inclusive);
 			}else{
 				conflict.push(condition);
