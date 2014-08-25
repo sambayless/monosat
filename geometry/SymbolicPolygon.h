@@ -230,7 +230,7 @@ public:
 						solver->enqueue(l,area_geq_marker) ;
 					}else if (solver->value(l)==l_False){
 						conflict.push(l);
-						buildAreaGEQReason(under_area,conflict);
+						buildAreaGTReason(under_area,conflict);
 						return false;
 					}
 				}else if (over_area<areaGEQ){
@@ -242,7 +242,7 @@ public:
 						solver->enqueue(l,area_not_geq_marker) ;
 					}else if (solver->value(l)==l_False){
 						conflict.push(l);
-						buildAreaLTReason(over_area,conflict);
+						buildAreaLEQReason(over_area,conflict);
 						return false;
 					}
 				}
@@ -424,6 +424,7 @@ class BinaryOperationPolygon:public SymbolicPolygon<D,T>{
 	NPolygon<D,T> over_approx;
 	NPolygon<D,T> under_approx;
 	NPolygon<D,T> polygon_tmp;
+	NPolygon<D,T> polygon_tmp2;
 	HalfPlane<D,T> tmp_plane;
 	std::vector<HalfPlane<D,T>> tmp_planes;
 	Polygon<D,T> & applyOperation(Polygon<D,T> & p_a, Polygon<D,T> & p_b, NPolygon<D,T> * store){
@@ -550,15 +551,17 @@ public:
 				case PolygonOperationType::op_minkowski_sum:{
 				if(hp.getType()==HALF_PLANE){
 					buildMinkowskiHalfPlaneIntersectReason((HalfPlane<D,T>&)hp,conflict,inclusive);
-				}else if(hp.getType()==CONVEX_POLYGON){
-					buildMinkowskiConvexIntersectReason((ConvexPolygon<D,T>&)hp,conflict,inclusive);
-				}else if(hp.getType()==POLYGON){
-					buildMinkowskiNonConvexIntersectReason((Polygon<D,T>&)hp,conflict,inclusive);
-				}else{
+				}else if(hp.getType()==LINE){
 					assert(false);
 					fprintf(stderr,"unimplemented collision learning\n");
 					exit(3);
-				}
+				}else{
+					buildMinkowskiPolygonIntersectReason((Polygon<D,T>&)hp,conflict,inclusive);
+				}/*else{
+					assert(false);
+					fprintf(stderr,"unimplemented collision learning\n");
+					exit(3);
+				}*/
 			}break;
 			default:
 				assert(false);
@@ -603,13 +606,17 @@ public:
 			case PolygonOperationType::op_minkowski_sum:{
 				if(hp.getType()==HALF_PLANE){
 					buildMinkowskiHalfPlaneNotIntersectReason((HalfPlane<D,T>&)hp,conflict,inclusive);
-				}else if(hp.getType()==CONVEX_POLYGON){
-					buildMinkowskiConvexNotIntersectReason((ConvexPolygon<D,T>&)hp,conflict,inclusive);
-				}else{
+				}else if(hp.getType()==LINE){
 					assert(false);
 					fprintf(stderr,"unimplemented collision learning\n");
 					exit(3);
-				}
+				}else{
+					buildMinkowskiPolygonNotIntersectReason((Polygon<D,T>&)hp,conflict,inclusive);
+				}/*else{
+					assert(false);
+					fprintf(stderr,"unimplemented collision learning\n");
+					exit(3);
+				}*/
 			}break;
 			default:
 				assert(false);
@@ -647,10 +654,10 @@ public:
 				//(A-s) intersects B
 				//or, equivalently, (B-s) intersects A
 
-				Polygon<D,T> &translatedB = *b.getUnderApprox().translate(s,&translate_tmp);
+				Polygon<D,T> &translatedB = *b.getUnderApprox().translate(s,&polygon_tmp);
 				assert(translatedB.intersects(*a.getUnderApprox(),inclusive));
 				a.buildIntersectsReason(translatedB,conflict,inclusive);
-				Polygon<D,T> &translatedA = *a.getUnderApprox().translate(s,&translate_tmp);
+				Polygon<D,T> &translatedA = *a.getUnderApprox().translate(s,&polygon_tmp);
 				assert(translatedA.intersects(*b.getUnderApprox(),inclusive));
 				b.buildIntersectsReason(translatedA,conflict,inclusive);
 
@@ -698,10 +705,10 @@ public:
 			case PolygonOperationType::op_minkowski_sum:{
 				//the reason that A + B does not contain point s is that
 				//(A-s) does not intersect B
-				Polygon<D,T> &translatedB = *b.getOverApprox().translate(s,&translate_tmp);
+				Polygon<D,T> &translatedB = *b.getOverApprox().translate(s,&polygon_tmp);
 				assert(!translatedB.intersects(*a.getOverApprox(),inclusive));
 				a.buildNotIntersectsReason(translatedB,conflict,inclusive);
-				Polygon<D,T> &translatedA = *a.getOverApprox().translate(s,&translate_tmp);
+				Polygon<D,T> &translatedA = *a.getOverApprox().translate(s,&polygon_tmp);
 				assert(!translatedA.intersects(*b.getOverApprox(),inclusive));
 				b.buildNotIntersectsReason(translatedA,conflict,inclusive);
 			}break;
@@ -715,19 +722,30 @@ public:
 		assert(getUnderApprox().intersects(hp));
 		assert(operation== PolygonOperationType::op_minkowski_sum);
 
-		Polygon<D,T> & addition = a.getOverApprox().binary_minkowski_sum(h2,  polygon_tmp);
+		//Two polygons a, b intersect if the minkowski sum of a and the inverse of b contains the (0,0):
+		// a + (-b) contains 0
+		//The minkowski sum of a and b is associative.
+		//so ((a+b) + -c) contains 0 <==> (a + (b+ -c)) contains 0
+		Polygon<D,T> & inverse = *hp.inverse(&polygon_tmp2);
+		Polygon<D,T> & addition = *a.getOverApprox().binary_minkowski_sum(inverse,  &polygon_tmp);
 		assert(addition.intersects(b.getOverApprox()));
 		b.buildIntersectsReason(addition,conflict,inclusive);
 
-		addition = b.getOverApprox().binary_minkowski_sum(h2,  polygon_tmp);
+		addition = *b.getOverApprox().binary_minkowski_sum(inverse,  &polygon_tmp);
 		assert(addition.intersects(a.getOverApprox()));
 		a.buildIntersectsReason(addition,conflict,inclusive);
-
 	}
 	void buildMinkowskiPolygonNotIntersectReason(Polygon<D,T> & h2, vec<Lit> & conflict, bool inclusive){
 		assert(!getOverApprox().intersects(h2,inclusive));
 		assert(operation==PolygonOperationType::op_minkowski_sum);
+		Polygon<D,T> & inverse = *hp.inverse(&polygon_tmp2);
+		Polygon<D,T> & addition = *a.getOverApprox().binary_minkowski_sum(inverse,  &polygon_tmp);
+		assert(!addition.intersects(b.getOverApprox()));
+		b.buildNotIntersectsReason(addition,conflict,inclusive);
 
+		addition = *b.getOverApprox().binary_minkowski_sum(inverse,  &polygon_tmp);
+		assert(!addition.intersects(a.getOverApprox()));
+		a.buildNotIntersectsReason(addition,conflict,inclusive);
 	/*	//first, attempt to find a separating axis. This is not guaranteed to exist unless both polygons are convex
 		Polygon<D,T> & h1 = getOverApprox();
 		 //Separating Axis Theorem for collision detection between two convex polygons
@@ -921,16 +939,9 @@ public:
 
 		assert(!this->getOverApprox().isConvex() || !h2.isConvex());
 */
-		//hopefully the following is correct:
-		//a + b not intersects h2 <--> a not intersects h2+b, and b not intersects h2+a
+		//or is the following correct:
+		//a + b not intersects h2 <--> a not intersects h2+(inverted b), and b not intersects h2+(inverted a)
 
-		Polygon<D,T> & addition = a.getOverApprox().binary_minkowski_sum(h2,  polygon_tmp);
-		assert(!addition.intersects(b.getOverApprox()));
-		b.buildNotIntersectsReason(addition,conflict,inclusive);
-
-		addition = b.getOverApprox().binary_minkowski_sum(h2,  polygon_tmp);
-		assert(!addition.intersects(a.getOverApprox()));
-		a.buildNotIntersectsReason(addition,conflict,inclusive);
 
 		//if either or both shape is not convex, then I will handle that by finding a set of half planes that contain h2 and not h1
 		//then for each halfplane_i in that set, form  (this intersect ((union half planes) - halfplane_i)), build the reason for that partition not to intersect b.

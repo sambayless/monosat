@@ -279,7 +279,7 @@ public:
 	virtual Polygon * binary_difference(Polygon & b,NPolygon<D,T>  * store=nullptr);
 	virtual Polygon * binary_minkowski_sum(Polygon & b,NPolygon<D,T>  * store=nullptr);
 	virtual Polygon * translate(const Point<D,T> & translation,NPolygon<D,T>  * store=nullptr);
-
+	virtual Polygon * inverse(NPolygon<D,T>  * store=nullptr);
 	virtual bool isConvex(){
 		bool seenPositive=false;
 		bool seenNegative=false;
@@ -649,6 +649,19 @@ Polygon<D,T> *  Polygon<D,T>::translate(const Point<D,T> & translation,NPolygon<
 	}
 	return store;
 }
+template<unsigned int D,class T>
+Polygon<D,T> *  Polygon<D,T>::inverse(NPolygon<D,T>  * store){
+	if(!store){
+		store = new NPolygon<D,T>();
+	}else{
+		store->clear();
+	}
+	for (const auto & p:*this){
+		store->addVertex(-p);
+	}
+	return store;
+}
+
 
 template<>
 Polygon<2,double> * Polygon<2,double>::binary_union(Polygon<2,double>  & b,NPolygon<2,double>  * store);

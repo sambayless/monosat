@@ -151,7 +151,10 @@ struct Point{
     	}
     	assert(&x==&vector[0]);assert(&y==&vector[1]);assert(&z==&vector[2]);
     }
-
+    //c++11 move constructor
+     Point& operator=(Point&& rhs){
+     	return *this;
+     }
     Point( std::initializer_list<T> list ):id(-1),x(vector[0]),y(vector[1]),z(vector[2]){
     	assert(list.size()==size());
     	vector=list;
@@ -171,6 +174,9 @@ struct Point{
     	assert(&x==&vector[0]);assert(&y==&vector[1]);assert(&z==&vector[2]);
       return *this;
     }
+
+
+
     int getID()const{
     	assert(hasID());
     	assert(&x==&vector[0]);assert(&y==&vector[1]);assert(&z==&vector[2]);
@@ -194,6 +200,14 @@ struct Point{
     	for(int i = 0;i<D;i++){
     		vector[i]=0;
     	}
+    }
+
+    Point<D,T>  operator-()const  {
+      Point<D,T> p;
+      for(int i = 0;i<D;i++){
+			p[i]+= -(*this)[i];
+	  }
+      return p;
     }
 
     Point<D,T> &       operator += (const Point<D,T>& other) {
