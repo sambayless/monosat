@@ -173,7 +173,7 @@ void DistanceDetector::addLit(int from, int to, Var outer_reach_var,int within_s
 		max_distance=within_steps;
 		if(opt_compute_max_distance){
 			positive_reach_detector->setMaxDistance(max_distance);
-			negative_reach_detector->setMaxDistance(max_distance-1);
+			negative_reach_detector->setMaxDistance(max_distance);
 			positive_path_detector->setMaxDistance(max_distance);
 		}
 	}
