@@ -34,7 +34,7 @@ public:
 	int source;
 	int INF;
 
-	int maxDistance;
+	int maxDistance=-1;
 
 
 
