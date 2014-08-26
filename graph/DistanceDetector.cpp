@@ -247,18 +247,18 @@ void DistanceDetector::ReachStatus::setMininumDistance(int u, bool reachable, in
 			assert(distance>=0);
 
 			for(int i = 0;i<detector.dist_lits[u].size();i++){
-				int d =  detector.dist_lits[u][i].min_distance;
+				int min_distance =  detector.dist_lits[u][i].min_distance;
 
 				Lit l = detector.dist_lits[u][i].l;
 				if(l!=lit_Undef){
 
 					assert(l!=lit_Undef);
-					if(d<distance && !polarity){
+					if(distance>min_distance && !polarity){
 						lbool assign = detector.outer->value(l);
 						if( assign!= l_False ){
 							detector.changed.push({~l,u});
 						}
-					}else if(d>=distance && polarity){
+					}else if(distance<=min_distance && polarity){
 						lbool assign = detector.outer->value(l);
 						if( assign!= l_True ){
 							detector.changed.push({l,u});
@@ -611,7 +611,7 @@ void DistanceDetector::buildReachReason(int node,vec<Lit> & conflict){
 
 					//conflict
 					//The reason is a path in g from to s in d
-					buildReachReason(u,conflict);
+						buildReachReason(u,conflict);
 					//add it to s
 					//return it as a conflict
 

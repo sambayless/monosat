@@ -4,5 +4,5 @@
 
 USER_OBJS :=
 
-LIBS := -lz -lm -lgmp -lgmpxx
+LIBS := -lz -lm -lgmp -lgmpxx -lCGAL_Core -lCGAL
 

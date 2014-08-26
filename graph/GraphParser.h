@@ -193,7 +193,7 @@ class GraphParser:public Parser<B,Solver>{
 
 }
 
- void readDistance(B& in, Solver& S, vec<GraphTheory*> & graphs) {
+ void readDistance(B& in, Solver& S, vec<GraphTheory*> & graphs, bool leq=false) {
 	if(opt_ignore_theories){
 		skipLine(in);
 		return;
@@ -215,7 +215,10 @@ class GraphParser:public Parser<B,Solver>{
         }
         GraphTheory * graph = graphs[graphID];
         while (reachVar >= S.nVars()) S.newVar();
-        graph->reaches(from,to,reachVar,steps);
+        if(leq)
+        	graph->reaches(from,to,reachVar,steps);
+        else
+        	graph->reaches(from,to,reachVar,steps-1);
 
 
 }
@@ -572,6 +575,9 @@ public:
 			return true;
 		}else if (match(in, "distance_lt")){
 			readDistance(in, S,graphs);
+			return true;
+		}else if (match(in, "distance_leq")){
+			readDistance(in, S,graphs,true);
 			return true;
 		}else if (match(in,"mst_weight_lt")){
 			readMinSpanningTreeConstraint(in, S,graphs);
