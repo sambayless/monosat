@@ -21,6 +21,13 @@
 #include <CGAL/Polygon_2.h>
 #include <CGAL/Polygon_with_holes_2.h>
 
+
+#include <CGAL/Partition_traits_2.h>
+#include <CGAL/partition_2.h>
+
+#include <cassert>
+
+
 //implementing these functions using the CGAL library for now
 
 
@@ -330,8 +337,145 @@ Polygon<2,double> * Polygon<2,double>::binary_minkowski_sum(Polygon<2,double>  &
 
 	return store;
 }
+#include <CGAL/Exact_predicates_inexact_constructions_kernel.h>
+#include <CGAL/Partition_traits_2.h>
+#include <CGAL/partition_2.h>
+#include <CGAL/point_generators_2.h>
+#include <CGAL/random_polygon_2.h>
+#include <cassert>
+#include <list>
+
+template<>
+void Polygon<2,double>::convexDecomposition2d(std::vector<NPolygon<2,double>> & store, bool optimal){
+	store.clear();
+	typedef CGAL::Exact_predicates_inexact_constructions_kernel K;
+	typedef CGAL::Partition_traits_2<K> Traits;
+	typedef Traits::Point_2 Point_2;
+	typedef Traits::Polygon_2 Polygon_2;
+
+	Traits partition_traits;
+
+	Polygon_2 polygon;
+	std::list<Polygon_2> partition_polys;
+	for (auto & p:*this){
+		polygon.push_back(Point_2 (p.x, p.y));
+	}
+
+	if(!optimal){
+		CGAL::approx_convex_partition_2(polygon.vertices_begin(), polygon.vertices_end(), std::back_inserter(partition_polys),partition_traits);
+	}else{
+		CGAL::optimal_convex_partition_2(polygon.vertices_begin(), polygon.vertices_end(), std::back_inserter(partition_polys),partition_traits);
+	}
+	assert(CGAL::convex_partition_is_valid_2(polygon.vertices_begin(),	polygon.vertices_end(),	partition_polys.begin(),	partition_polys.end(),	partition_traits));
+
+	for (auto & p:partition_polys){
+		store.push_back(NPolygon<2,double>());
+		/*for (auto & it = p.vertices_begin(); it != p.vertices_end();++it){
+			store.back().addVertex(Point<2,double>((*it).x,(*it).y));
+		}*/
+	  for (auto iter = p.vertices_begin();iter!= p.vertices_end();++iter){
+		  Point_2 & v = *iter;
+		  store.back().addVertex(Point<2,double>(v[0],v[1]));
+	  }
+
+	}
+
+}
+
+template<>
+void Polygon<2,mpq_class>::convexDecomposition2d(std::vector<NPolygon<2,mpq_class>> & store, bool optimal){
+	typedef CGAL::Cartesian<CGAL::Gmpq>                Kernel;
+	typedef  CGAL::Cartesian<CGAL::Gmpq>::Point_2                             Point_2;
+	//typedef CGAL::Polygon_2<Kernel>                     Polygon_2;
+	typedef CGAL::Partition_traits_2<Kernel> Traits;
+	typedef Traits::Point_2 Point_2;
+	typedef Traits::Polygon_2 Polygon_2;
+
+	Traits partition_traits;
+	Polygon_2 polygon;
+	std::list<Polygon_2> partition_polys;
+	for (auto & p:*this){
+		polygon.push_back (Point_2 (p.x.get_mpq_t(), p.y.get_mpq_t()));
+	}
+
+	if(!optimal){
+		CGAL::approx_convex_partition_2(polygon.vertices_begin(), polygon.vertices_end(), std::back_inserter(partition_polys),partition_traits);
+	}else{
+		CGAL::optimal_convex_partition_2(polygon.vertices_begin(), polygon.vertices_end(), std::back_inserter(partition_polys),partition_traits);
+	}
+	assert(CGAL::convex_partition_is_valid_2(polygon.vertices_begin(),	polygon.vertices_end(),	partition_polys.begin(),	partition_polys.end(),	partition_traits));
+
+	for (auto & p:partition_polys){
+		store.push_back(NPolygon<2,mpq_class>());
+		  for (auto iter = p.vertices_begin();iter!= p.vertices_end();++iter){
+			  Point_2 & v = *iter;
+			  store.back().addVertex(Point<2,mpq_class>(mpq_class( v[0].mpq()),mpq_class(v[1].mpq())));
+		  }
+	}
+}
 
 
+template<>
+void Polygon<2,double>::monotoneDecomposition2d(std::vector<NPolygon<2,double>> & store){
+	store.clear();
+	typedef CGAL::Exact_predicates_inexact_constructions_kernel K;
+	typedef CGAL::Partition_traits_2<K> Traits;
+	typedef Traits::Point_2 Point_2;
+	typedef Traits::Polygon_2 Polygon_2;
 
+	Traits partition_traits;
+
+	Polygon_2 polygon;
+	std::list<Polygon_2> partition_polys;
+	for (auto & p:*this){
+		polygon.push_back(Point_2 (p.x, p.y));
+	}
+
+
+	CGAL::y_monotone_partition_2(polygon.vertices_begin(), polygon.vertices_end(), std::back_inserter(partition_polys),partition_traits);
+
+
+	for (auto & p:partition_polys){
+		store.push_back(NPolygon<2,double>());
+		/*for (auto & it = p.vertices_begin(); it != p.vertices_end();++it){
+			store.back().addVertex(Point<2,double>((*it).x,(*it).y));
+		}*/
+	  for (auto iter = p.vertices_begin();iter!= p.vertices_end();++iter){
+		  Point_2 & v = *iter;
+		  store.back().addVertex(Point<2,double>(v[0],v[1]));
+	  }
+
+	}
+
+}
+
+
+template<>
+void Polygon<2,mpq_class>::monotoneDecomposition2d(std::vector<NPolygon<2,mpq_class>> & store){
+	typedef CGAL::Cartesian<CGAL::Gmpq>                Kernel;
+	typedef  CGAL::Cartesian<CGAL::Gmpq>::Point_2                             Point_2;
+	//typedef CGAL::Polygon_2<Kernel>                     Polygon_2;
+	typedef CGAL::Partition_traits_2<Kernel> Traits;
+	typedef Traits::Point_2 Point_2;
+	typedef Traits::Polygon_2 Polygon_2;
+
+	Traits partition_traits;
+	Polygon_2 polygon;
+	std::list<Polygon_2> partition_polys;
+	for (auto & p:*this){
+		polygon.push_back (Point_2 (p.x.get_mpq_t(), p.y.get_mpq_t()));
+	}
+
+	CGAL::y_monotone_partition_2(polygon.vertices_begin(), polygon.vertices_end(), std::back_inserter(partition_polys),partition_traits);
+
+
+	for (auto & p:partition_polys){
+		store.push_back(NPolygon<2,mpq_class>());
+		  for (auto iter = p.vertices_begin();iter!= p.vertices_end();++iter){
+			  Point_2 & v = *iter;
+			  store.back().addVertex(Point<2,mpq_class>(mpq_class( v[0].mpq()),mpq_class(v[1].mpq())));
+		  }
+	}
+}
 
 

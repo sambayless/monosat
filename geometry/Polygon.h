@@ -12,6 +12,7 @@
 #include <gmpxx.h>
 #include "bounds/BoundingVolume.h"
 #include <iostream>
+#include <vector>
 
 template<unsigned int D,class T>
 class NPolygon;
@@ -279,7 +280,13 @@ public:
 	virtual Polygon * binary_difference(Polygon & b,NPolygon<D,T>  * store=nullptr);
 	virtual Polygon * binary_minkowski_sum(Polygon & b,NPolygon<D,T>  * store=nullptr);
 	virtual Polygon * translate(const Point<D,T> & translation,NPolygon<D,T>  * store=nullptr);
+
+	//This is the polygon inversion operator as commonly defined in robot motion planning,
+	//which really means that it is reflected across the x/y plane. See the 'negate' operation for the plane-the polygon operation;
 	virtual Polygon * inverse(NPolygon<D,T>  * store=nullptr);
+
+	virtual Polygon * negate(NPolygon<D,T>  * store=nullptr);
+
 	virtual bool isConvex(){
 		bool seenPositive=false;
 		bool seenNegative=false;
@@ -297,6 +304,25 @@ public:
 		}
 		return true;
 	}
+
+	virtual void convexDecomposition(std::vector<NPolygon<2,T>> & store, bool optimal=false){
+		if(D==2){
+			convexDecomposition2d(store,optimal);
+		}else{
+			assert(false);
+		}
+	}
+
+	virtual void monotoneDecomposition(std::vector<NPolygon<2,T>> & store){
+		if(D==2){
+			monotoneDecomposition2d(store);
+		}else{
+			assert(false);
+		}
+	}
+private:
+	void convexDecomposition2d(std::vector<NPolygon<2,T>> & store, bool optimal);
+	void monotoneDecomposition2d(std::vector<NPolygon<2,T>> & store);
 
 /*
 private:
@@ -661,6 +687,34 @@ Polygon<D,T> *  Polygon<D,T>::inverse(NPolygon<D,T>  * store){
 	}
 	return store;
 }
+template<unsigned int D,class T>
+Polygon<D,T> *  Polygon<D,T>::negate(NPolygon<D,T>  * store){
+	//a negated polygon is really just represented by reversing the winding.
+	if(!store){
+		store = new NPolygon<D,T>();
+	}else{
+		store->clear();
+	}
+	for(int i = size()-1;i>=0;i--){
+		const auto & p = (*this)[i];
+		store->addVertex(p);
+	}
+	store->vertices_clockwise=true;
+	return store;
+}
+
+template<>
+void Polygon<2,double>::convexDecomposition2d(std::vector<NPolygon<2,double>> & store, bool optimal);
+
+template<>
+void Polygon<2,mpq_class>::convexDecomposition2d(std::vector<NPolygon<2,mpq_class>> & store, bool optimal);
+
+template<>
+void Polygon<2,double>::monotoneDecomposition2d(std::vector<NPolygon<2,double>> & store);
+
+template<>
+void Polygon<2,mpq_class>::monotoneDecomposition2d(std::vector<NPolygon<2,mpq_class>> & store);
+
 
 
 template<>
@@ -680,7 +734,6 @@ template<>
 Polygon<2,mpq_class> * Polygon<2,mpq_class>::binary_difference(Polygon<2,mpq_class>  & b,NPolygon<2,mpq_class>  * store);
 template<>
 Polygon<2,mpq_class> * Polygon<2,mpq_class>::binary_minkowski_sum(Polygon<2,mpq_class>  & b,NPolygon<2,mpq_class>  * store);
-
 
 
 

@@ -99,6 +99,7 @@ public:
 	}
 	bool contains(const Point<2,T> & point, bool inclusive);
 	bool intersects(Shape<2,T> & s, bool inclusive);
+	bool intersects(Shape<2,T> & s,Point<2,T> & intersection, bool inclusive);
 
 	bool intersects(LineSegment<2,T> & line, Point<2,T> & intersection, bool & overlapping, bool inclusive);
 	bool intersects(Line<2,T> & line, Point<2,T> & intersection, bool & overlapping, bool inclusive);
@@ -161,6 +162,7 @@ bool LineSegment<2,T>::contains(const Point<2,T> & point, bool inclusive){
 	if(!eq_epsilon(crossDif(a,b,point))){
 		return false;
 	}
+	//this can be sped up
 	T minX = std::min(a.x, b.x);
 	T minY = std::min(a.y,b.y);
 	T maxX = std::max(a.x,b.x);
@@ -305,7 +307,50 @@ bool LineSegment<2,T>::mightIntersect(LineSegment<2,T> & l1,LineSegment<2,T> &l2
 	}
 	return false;
 }
+template<class T>
+bool LineSegment<2,T>::intersects(Shape<2,T> & shape, Point<2,T> & intersection, bool inclusive){
+	if(shape.getType()==LINE){
+		bool ignore;
+		return this->intersects((Line<2,T> &)shape,intersection,ignore,inclusive);
+	}else if(shape.getType()==LINE_SEGMENT){
+		bool ignore;
+		return this->intersects((Line<2,T> &)shape,intersection,ignore,inclusive);
+	}else if  (shape.getType()==CONVEX_POLYGON ||shape.getType()==POLYGON){
+		Polygon<2,T> & polygon = (Polygon<2,T> &)shape;
+		LineSegment<2,T> & line = *this;
 
+			//find the point closest to a that is in the polygon (if any).
+			//of course, this is arbitrary - we could equally well return _any_ point of intersection, which may in many cases be a better idea...
+			//first check if the origin itself is contained
+			if(polygon.contains(a,inclusive)){
+				intersection=a;
+				return true;
+			}
+
+			//ok, now test each line segment of the polygon against the ray
+			static LineSegment<2,T> check;
+			static Point<2,T> point;
+			static Point<2,T> line_test;
+			bool found=false;
+			line_test = b-a;
+			static T least_distance= numeric<T>::inf;
+			for (int i = 0;i<polygon.size();i++){
+				check.a = polygon[i-1];
+				check.b = polygon[i];
+				if(intersects(check,point,inclusive)){
+					T distance = line_test.dot(point);
+					assert(distance>=0);
+					if(distance<least_distance){
+						least_distance=distance;
+						intersection=point;
+						found=true;
+					}
+				}
+			}
+			return found;
+	}
+
+}
 template<class T>
 bool LineSegment<2,T>::intersects(Shape<2,T> & shape, bool inclusive){
 	if(shape.getType()==LINE_SEGMENT){

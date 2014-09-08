@@ -7,6 +7,9 @@
 
 #ifndef SYMBOLIC_POLYGON
 #define SYMBOLIC_POLYGON
+
+#include <assert.h>
+#include <vector>
 #include "Polygon.h"
 #include "GeometryDetector.h"
 #include "GeometryTypes.h"
@@ -18,11 +21,13 @@
 #include "LineSegment.h"
 #include "Line.h"
 #include "HalfPlane.h"
-#include <vector>
+#include "SymbolicScalar.h"
+#include "Ray.h"
+
 template<unsigned int D,class T>
 class SymbolicPolygon:public GeometryDetector{
 protected:
-	GeometryTheorySolver<D,T> * solver;
+	TheorySolver * solver;
 	double rnd_seed;
 private:
 
@@ -46,6 +51,7 @@ private:
 	bool requires_propagation=false;
 
 	NConvexPolygon<D,T> tmp_polygon;
+	HalfPlane<2,T> separating_halfplane;
 
 	struct PointContainedLit{
 		Point<D,T> p;
@@ -120,12 +126,16 @@ private:
 
 public:
 
-	SymbolicPolygon(int detectorID,GeometryTheorySolver<D,T> * solver,  double seed=1):GeometryDetector(detectorID),solver(solver),rnd_seed(seed){
+	SymbolicPolygon(int detectorID,TheorySolver * solver,  double seed=1):GeometryDetector(detectorID),solver(solver),rnd_seed(seed){
 
 	}
 
 	virtual ~SymbolicPolygon(){
 
+	}
+
+	virtual bool isConstant(){
+		return false;
 	}
 
 	virtual Polygon<D,T>& getOverApprox()=0;
@@ -330,6 +340,191 @@ public:
 	virtual void buildIntersectsReason(Shape<D,T> & p,vec<Lit> & conflict, bool inclusive)=0;
 	virtual void buildNotIntersectsReason(Shape<D,T> & p,vec<Lit> & conflict, bool inclusive)=0;
 
+	Shape<D,T> & findSeparatingRegion(Polygon<D,T> & p1, Polygon<D,T> & p2, bool inclusive, bool favourP2=false){
+		assert(!p1.intersects(p2,false));
+		if(D==2){
+			Shape<D,T>&   s = (Shape<D,T>& ) findSeparatingRegion2D((Polygon<2,T>& )p1,(Polygon<2,T>& )p2,inclusive,favourP2);
+			assert(s.intersects(p1,true));
+			assert(!s.intersects(p2,inclusive));
+			return s;
+		}
+		assert(false);
+	}
+private:
+
+	//Find a separating region that completely contains p1, and doesn't contain p2.
+	Shape<2,T> & findSeparatingRegion2d(Polygon<2,T> & p1, Polygon<2,T> & p2, bool inclusive, bool favourP2=false){
+		//first, attempt to find a separating plane.
+		if(findSeparatingHalfPlane2d(p1,p2,separating_halfplane,inclusive,favourP2)){
+			return separating_halfplane;
+		}
+		//try to find a 'low complexity' separating region that divides these in half.
+
+		//strategy: decompose both polygons into convex polygons. Find separating planes between each pair.
+		//Then find all the intersection points between these planes. The separating region will be selected from among those points.
+
+	/*	static std::vector<NPolygon<2,T>> decomposition1;
+		p1.convexDecomposition(decomposition1);
+
+		static std::vector<NPolygon<2,T>> decomposition2;
+		p2.convexDecomposition(decomposition2);
+
+		//now, for all pairs (p1,p2) find separating planes
+
+		static std::vector<HalfPlane<2,T>> planes;
+		//continue to add separating half planes until p1 and p2 are fully separated.
+		//how do you add separating planes?
+		for (auto & convex1:decomposition1){
+			assert(convex1.isConvex());
+			for (auto & convex2:decomposition2){
+				assert(convex2.isConvex());
+				planes.push_back();
+				findSeparatingHalfPlane2d(p1,p2,planes.back(),inclusive,favourP2);
+
+			}
+		}*/
+
+		//if nothing else works, return either p1 or p2. These are always valid separating regions.
+		if(favourP2){
+			return p2.inverse() ;
+		}else{
+			return p1;
+		}
+
+	}
+	//Only guaranteed to succeed if p1 and p2 are both convex; MAY succeed otherwise.
+	//returns a half plane that is between the two polygons; an effort will be made to place it either in the middle, or closest to p2
+	bool findSeparatingHalfPlane2D(Polygon<2,T> & p1, Polygon<2,T> & p2, HalfPlane<2,T> & store, bool inclusive, bool favourP2=false){
+
+			if(p1.size()==0 || p2.size()==0){
+				return false;
+			}else if (p1.size()==1 && p2.size()==1){
+				 Point<2,T> un_normalized_normal = p2[0]-p1[0];
+				 store.normal = un_normalized_normal;
+				 if(favourP2){
+					 //place the half plane as close as possible to p2.
+					 store.distance = store.normal.dot(p2[0]);
+				 }else{
+					 //place the half plane in between p1 and p2
+					 store.distance = (store.normal.dot(p2[0])+store.normal.dot(p1[0]))/2;
+				 }
+				return true;
+			}
+			for (int q = 0;q<2;q++){
+				Polygon<2, T> & h1 = q==0 ? p1 : p2; //(p1.size()<=p2.size())?p1:p2;
+				Polygon<2, T> & h2 = q==1 ?  p1 : p2; //(p1.size()<=p2.size())?p2:p1;
+					 //Separating Axis Theorem for collision detection between two convex polygons
+					 //loop through each edge in _each_ polygon and project both polygons onto that edge's normal.
+					 //If any of the projections are non-intersection, then these don't collide; else, they do collide
+					 if(h1.size()>1){
+						for(int i = 0;i<h1.size();i++){
+						 auto & p = h1[i];
+						 auto & prev = h1[i-1];
+						 Point<2,T> edge = p-prev;
+						 Point<2,T> un_normalized_normal(-edge.y, edge.x);
+
+						 //now project both polygons onto to this normal and see if they overlap, by finding the minimum and maximum distances
+						 //Note that since we are NOT normalizing the normal vector, the projection is distorted along that vector
+						 //(this still allows us to check overlaps, but means that the minimum distance found between the two shapes may be incorrect)
+						 T left = numeric<T>::infinity();
+						 T right = -numeric<T>::infinity();
+						 for (auto & p:h1){
+							 T projection = un_normalized_normal.dot(p);
+							 if (projection < left) {
+								  left = projection;
+							 }
+							if (projection > right) {
+								  right = projection;
+							 }
+						 }
+
+						 bool seenLeft = false;
+						 bool seenRight=false;
+						 bool overlaps = false;
+
+						 T left_h2 = numeric<T>::infinity();
+						 T right_h2 = -numeric<T>::infinity();
+
+						 for (auto & p:h2){
+								 T projection = un_normalized_normal.dot(p);
+								 if(inclusive){
+									 if (projection >= left && projection <= right ) {
+										 seenRight=true;
+										 seenLeft=true;
+										 break;
+									 }else if (projection < left ){
+										 seenLeft=true;
+										 if(seenRight){
+											 break;
+										 }
+									 }else if (projection>right){
+										 seenRight=true;
+										 if (seenLeft){
+											 break;
+										 }
+									 }else if (seenLeft && projection > left ){
+										 seenRight=true;
+										 break;
+									 }else if (seenRight && projection < right ){
+										 seenRight=true;
+										 break;
+									 }
+							 }else{
+								 if(projection>left){
+									 seenRight=true;
+									 if (seenLeft){
+										 break;
+									 }
+								 }
+								 if (projection<right){
+									 seenLeft=true;
+									 if(seenRight){
+										 break;
+									 }
+								 }
+							 }
+
+								 if (projection < left_h2) {
+									 left_h2 = projection;
+								 }
+								if (projection > right_h2) {
+									right_h2 = projection;
+								 }
+
+						 }
+						 if(!(seenLeft&&seenRight)){
+							 store.normal = un_normalized_normal;
+							 if(favourP2){
+								 if(q==0){
+									 if(seenLeft){
+										 store.distance = left_h2;
+									 }else{
+										 store.distance = right_h2;
+									 }
+								 }else{
+									 if(seenLeft){
+										 store.distance = left;
+									 }else{
+										 store.distance = right;
+									 }
+								 }
+							 }else{
+								 if(seenLeft){
+									 store.distance = (left+left_h2)/2;
+								 }else{
+									 store.distance = (right+right_h2)/2;
+								 }
+							 }
+
+							 return true;
+						 }
+					 }
+				}
+			}
+
+			 return false;
+
+	}
 };
 
 template<unsigned int D, class T>
@@ -364,7 +559,7 @@ class ConstantPolygon:public SymbolicPolygon<D,T>{
 
 public:
 
-	ConstantPolygon(Polygon<D,T>* polygon,int detectorID,GeometryTheorySolver<D,T> * solver,  double seed=1): SymbolicPolygon<D,T>(detectorID,solver,seed), polygon(polygon){
+	ConstantPolygon(Polygon<D,T>* polygon,int detectorID,TheorySolver * solver,  double seed=1): SymbolicPolygon<D,T>(detectorID,solver,seed), polygon(polygon){
 
 	}
 
@@ -379,6 +574,9 @@ public:
 		//this polygon is constant, so learn nothing.
 	}
 
+	bool isConstant(){
+		return true;
+	}
 	void buildAreaLEQReason(T area,vec<Lit> & conflict){
 		assert(polygon->getArea()<area);
 		//this polygon is constant, so learn nothing.
@@ -449,10 +647,12 @@ class BinaryOperationPolygon:public SymbolicPolygon<D,T>{
 
 public:
 
-	BinaryOperationPolygon(SymbolicPolygon<D,T> & a, SymbolicPolygon<D,T> & b,PolygonOperationType operation,int detectorID,GeometryTheorySolver<D,T> * solver,  double seed=1): SymbolicPolygon<D,T>(detectorID,solver,seed),  a(a),b(b),operation(operation){
+	BinaryOperationPolygon(SymbolicPolygon<D,T> & a, SymbolicPolygon<D,T> & b,PolygonOperationType operation,int detectorID,TheorySolver * solver,  double seed=1): SymbolicPolygon<D,T>(detectorID,solver,seed),  a(a),b(b),operation(operation){
 
 	}
-
+	bool isConstant(){
+		return a.isConstant() && b.isConstant();
+	}
 	Polygon<D,T> & getOverApprox(){
 		if(operation==PolygonOperationType::op_difference){
 			return *a.getOverApprox().binary_difference(b.getUnderApprox(),&over_approx);
@@ -738,7 +938,7 @@ public:
 	void buildMinkowskiPolygonNotIntersectReason(Polygon<D,T> & h2, vec<Lit> & conflict, bool inclusive){
 		assert(!getOverApprox().intersects(h2,inclusive));
 		assert(operation==PolygonOperationType::op_minkowski_sum);
-		Polygon<D,T> & inverse = *hp.inverse(&polygon_tmp2);
+		Polygon<D,T> & inverse = *h2.inverse(&polygon_tmp2);
 		Polygon<D,T> & addition = *a.getOverApprox().binary_minkowski_sum(inverse,  &polygon_tmp);
 		assert(!addition.intersects(b.getOverApprox()));
 		b.buildNotIntersectsReason(addition,conflict,inclusive);
@@ -1042,8 +1242,19 @@ class ConditionalPolygon:public SymbolicPolygon<D,T>{
 	NPolygon<D,T> under_approx;
 public:
 
-	ConditionalPolygon(Lit condition, SymbolicPolygon<D,T> & thn, SymbolicPolygon<D,T> & els,int detectorID,GeometryTheorySolver<D,T> * solver,  double seed=1): SymbolicPolygon<D,T>(detectorID,solver,seed), thn(thn),els(els){
+	ConditionalPolygon(Lit condition, SymbolicPolygon<D,T> & thn, SymbolicPolygon<D,T> & els,int detectorID,TheorySolver * solver,  double seed=1): SymbolicPolygon<D,T>(detectorID,solver,seed), thn(thn),els(els){
 		condition= mkLit( this->solver->newVar(var(condition),this->getID()),sign(condition));
+	}
+
+	bool isConstant(){
+		if (this->solver->isConstant(condition)){
+			if(this->solver->value(condition)==l_True){
+				return thn.isConstant();
+			}else{
+				return els.isConstant();
+			}
+		}
+		return false;
 	}
 
 	Polygon<D,T>& getOverApprox(){
@@ -1195,7 +1406,257 @@ public:
 
 };
 
+template<unsigned int D,class T>
+class TranslatedPolygon:public SymbolicPolygon<D,T>{
 
+	SymbolicPolygon<D,T> & p;
+
+	Point<D,T> axis;
+
+	NPolygon<D,T> over_approx;
+	NPolygon<D,T> under_approx;
+	SymbolicScalar<T> & translation;
+	//The idea here (suggested by Jacob Bayless) applies only to convex polygons; you can extrude the polygon infinitely far in the axis of translation in one direction, then separately in the other direction.
+	//now you can translate those two around independently, and point containment in either of them is monotonic; you can then assert (outside the theory solver)
+	//that those two polygons have the same positions, and take the intersection of them, to recover the original translated polygon
+
+	//we cannot directly apply this to concave polygons - but we don't need to.
+	//So long as all concave polygons are the product of a union/difference of convex polygons, we can apply the translation to those convex polygons instead.
+	bool isConstant(){
+		return translation.isConstant()&& p.isConstant();
+	}
+
+};
+
+template<unsigned int D,class T>
+class ExtrudedPolygon:public SymbolicPolygon<D,T>{
+
+	SymbolicPolygon<D,T> & polygon;
+
+	Point<D,T> axis;//this is constant
+
+	NPolygon<D,T> over_approx;
+	NPolygon<D,T> under_approx;
+
+	SymbolicScalar<T> & extrusion_amount;
+
+	Polygon<D,T> & extrude(Polygon<D,T> & polygon, T & amount,NPolygon<D,T> & store){
+		//Given an input polygon, the output is a polygon with twice as many vertices.
+
+		return store;
+	}
+
+public:
+	//Extrudes a polygon a fixed or variable distance along a fixed axis.
+	ExtrudedPolygon(SymbolicPolygon<D,T> & polygon,SymbolicScalar<T> & extrusion_amount,Point<D,T> axis,int detectorID,TheorySolver * solver,  double seed=1): SymbolicPolygon<D,T>(detectorID,solver,seed), polygon(polygon),extrusion_amount(extrusion_amount),axis(axis){
+
+	}
+
+	Polygon<D,T>& getOverApprox(){
+		return extrude( polygon.getOverApprox(), extrusion_amount.getOverApprox(),over_approx);
+	}
+	Polygon<D,T>& getUnderApprox(){
+		return extrude( polygon.getUnderApprox(), extrusion_amount.getUnderApprox(),under_approx);
+	}
+	void buildAreaGTReason(T area, vec<Lit> & conflict){
+		assert(polygon->getArea()>=area);
+
+	}
+	bool isConstant(){
+		return extrusion_amount.isConstant()&& polygon.isConstant();
+	}
+	void buildAreaLEQReason(T area,vec<Lit> & conflict){
+		assert(polygon->getArea()<area);
+
+	}
+
+	void buildPointContainedReason(const Point<D,T> & s, vec<Lit> & conflict, bool inclusive){
+		assert(polygon->contains(s,inclusive));
+
+	}
+	void buildPointNotContainedReason(const Point<D,T> & s, vec<Lit> & conflict, bool inclusive){
+
+	}
+	void buildIntersectsReason(Shape<D,T> & p,vec<Lit> & conflict, bool inclusive){
+		//It is not enough to just cast rays from each point of polygon - it is possible for the shape to intersect the extruded shape
+		//without intersecting a casted ray.
+
+		//I haven't tested this yet, but my hope is that if I raycast from all the vertices in _both_ polygons, then all intersections will
+		//be caught - though this only works for tests against polygons.
+
+		//alternatively, we should be able to find the closest point of intersection on the shape, and cast a ray
+		//from that point to somewhere in the polygon, and figure out the extrusion depth that way. That seems like it should always
+		//work, but it much more involved.
+
+		T & under_extent = this->extrusion_amount.getUnderApprox();
+
+		if(under_extent==0){
+			//this is the original polygon
+			polygon.buildIntersectsReason(p,conflict,inclusive);
+			return;
+		}else{
+
+		}
+
+		if(p.getType()==POLYGON || p.getType()==CONVEX_POLYGON){// || p.getType()==LINE_SEGMENT){
+			Polygon<D,T> & p2 = (Polygon<D,T> &)p;
+
+			static LineSegment<D,T> check;
+			static Point<D,T> intersection;
+			for(auto & p:polygon->getUnderApprox()){
+				//cast a ray from this point in the direction of the extrusion, and see if it intersects
+				check.a = p;
+				check.b = check.a + this->axis*under_extent;
+			/*	if(under_extent>0){
+					check.b = ray.a+this->axis;
+				}else{
+					assert(under_extent!=0);
+					ray.b = ray.a-this->axis;
+				}*/
+
+				if(check.intersects(p,intersection,true)){
+					//then this is a sufficient condition to explain the collision.
+					//so long as this vertex is contained in the polygon, and the extrusion amount doesn't lower, then this collision will remain.
+					//there are many ways to consider optimizing how we split this constraint up to optimize clause learning, below is just the easiest
+
+					T length = check.dot(intersection);
+					assert(length<=under_extent);
+					if(!inclusive){
+						assert(length<under_extent);
+					}
+					//the reason for the collision is that
+					//either the extrusion amount must be less than length
+					this->extrusion_amount.buildValueGreaterThanReason(length,conflict,inclusive);
+					//OR this vertex must no longer be contained in the polygon
+					this->polygon.buildPointContainedReason(p,conflict,true);
+
+					return;
+				}
+			}
+
+			//if no ray cast from this polygon intersected the other polygon, it is still posible that a ray cast from the other polygon could intersect this one.
+
+			for(auto & p:p2){
+				//cast a ray from this point in the direction of the extrusion, and see if it intersects
+				check.a = p;
+				check.b = check.a - this->axis*under_extent;
+			/*	if(under_extent>0){
+					check.b = ray.a+this->axis;
+				}else{
+					assert(under_extent!=0);
+					ray.b = ray.a-this->axis;
+				}*/
+
+				if(check.intersects(this->polygon,intersection,true)){
+					//then this is a sufficient condition to explain the collision.
+					//so long as this vertex is contained in the polygon, and the extrusion amount doesn't lower, then this collision will remain.
+					//there are many ways to consider optimizing how we split this constraint up to optimize clause learning, below is just the easiest
+
+					T length = check.dot(intersection);
+					assert(length<=under_extent);
+					if(!inclusive){
+						assert(length<under_extent);
+					}
+					//the reason for the collision is that
+					//either the extrusion amount must be less than length
+					this->extrusion_amount.buildValueGreaterThanReason(length,conflict,inclusive);
+					//OR the intersection point must no longer be contained in the polygon
+					this->polygon.buildPointContainedReason(intersection,conflict,true);
+
+					return;
+				}
+			}
+
+			assert(false);
+		}
+		assert(false);
+	}
+
+	//Analyze why this extrusion amount applied to two CONSTANT, non symbolic shapes, is not sufficient to make them intersect.
+	void analyzeExtrusionNotIntersectsReason(Polygon<D,T> & from, Shape<D,T> & to, SymbolicScalar<T> & extrusion_distance, Point<D,T> & axis, vec<Lit> & conflict, bool inclusive){
+		if(to.getType()==POLYGON || to.getType()==CONVEX_POLYGON){// || p.getType()==LINE_SEGMENT){
+			Polygon<D,T> & p2 = (Polygon<D,T> &)to;
+			T min_required_length = numeric<T>::inf;
+			bool any_intersect=false;
+
+			static Ray<D,T> check;
+			static Point<D,T> intersection;
+
+			for(auto & p:from.getUnderApprox()){
+				//cast a ray from this point in the direction of the extrusion, and see if it intersects
+				check.a = p;
+				check.b = check.a + axis;
+
+				if(check.intersects(p,intersection,true)){
+					//then this is a sufficient condition to explain the collision.
+					//so long as this vertex is contained in the polygon, and the extrusion amount doesn't lower, then this collision will remain.
+					//there are many ways to consider optimizing how we split this constraint up to optimize clause learning, below is just the easiest
+					any_intersect=true;
+					T length = check.dot(intersection);
+					if(length<min_required_length){
+						min_required_length=length;
+					}
+				}
+			}
+
+			//if no ray cast from this polygon intersected the other polygon, it is still posible that a ray cast from the other polygon could intersect this one.
+
+			for(auto & p:p2){
+				//cast a ray from this point in the direction of the extrusion, and see if it intersects
+				check.a = p;
+				check.b = check.a - axis;
+
+				if(check.intersects(from,intersection,true)){
+					//then this is a sufficient condition to explain the collision.
+					//so long as this vertex is contained in the polygon, and the extrusion amount doesn't lower, then this collision will remain.
+					//there are many ways to consider optimizing how we split this constraint up to optimize clause learning, below is just the easiest
+					any_intersect=true;
+					T length = check.dot(intersection);
+					if(length<min_required_length){
+						min_required_length=length;
+					}
+				}
+			}
+			if(any_intersect){
+				assert(min_required_length< numeric<T>::inf);
+				//the extrusion amount must be _atleast_ this length to cause a collision between these two constant polygons.
+				assert(extrusion_distance.getOverApprox()<min_required_length);
+
+				extrusion_distance.buildValueLessThanReason(min_required_length,conflict,inclusive);
+
+			}else{
+				assert(min_required_length== numeric<T>::inf);
+				//no amount of extrusion along this axis will cause these two to collide
+			}
+		}
+	}
+
+	void buildNotIntersectsReason(Shape<D,T> & p,vec<Lit> & conflict, bool inclusive){
+		T & over_extent = this->extrusion_amount.getOverApprox();
+		assert(!polygon.getOverApprox().intersects(p,inclusive));
+		//one part of the reason for the non-intersection is always that the underlying polygon doesn't intersect ...
+
+		//actually, the correct way to do this, is to convert this into constant shape p, extrueded, doesn't intersect the symbolic polygon.
+		//find a separating polygon bewteen these, and then deal with them independently.
+
+
+		if(polygon.isConstant() ){
+
+			analyzeExtrusionNotIntersectsReason(polygon.getOverApprox(),p,extrusion_amount,this->axis,conflict,inclusive);
+		}else if (extrusion_amount.isConstant() || over_extent==0){
+			//the over_extent==0 check is only correct is negative extrusions are not allowed.
+			polygon.buildNotIntersectsReason(p,conflict,inclusive);
+		}else{
+			//need to separate these two and test them individually.
+
+			//convert this into an analysis of why constant shape p, extruded along -axis, doesn't intersect the symbolic polygon.
+			//find a constant separating polygon between these, and then deal with them independently.
+
+
+
+		}
+	}
+};
 
 #endif
 

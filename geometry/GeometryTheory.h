@@ -10,6 +10,7 @@
 
 #include "utils/System.h"
 #include "core/Theory.h"
+#include "core/TheorySolver.h"
 #include "mtl/Map.h"
 #include "GeometryTypes.h"
 #include "utils/System.h"
@@ -22,13 +23,14 @@
 #include "GeometrySteinerDetector.h"
 #include "SymbolicPolygon.h"
 #ifndef NDEBUG
+
 #include <cstdio>
 #endif
 
 using namespace Minisat;
 
 template<unsigned int D, class T=double>
-class GeometryTheorySolver:public Theory{
+class GeometryTheorySolver:public Theory,public TheorySolver{
 
 public:
 
@@ -337,6 +339,10 @@ public:
 		}
 		return assigns[var(l)]^ sign(l);;//S->value(toSolver(l));
 	}
+	inline bool isConstant(Var v){
+		return value(v)!=l_Undef && S->level(v)==0;
+	}
+
 	inline lbool dbg_value(Var v){
 		return S->value(toSolver(v));
 	}

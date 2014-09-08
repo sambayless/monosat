@@ -11,6 +11,7 @@
 #include "utils/System.h"
 #include "core/Theory.h"
 #include "Graph.h"
+#include "core/TheorySolver.h"
 #include "dgl/Reach.h"
 #include "dgl/Dijkstra.h"
 #include "dgl/BFS.h"
@@ -51,7 +52,7 @@ class GraphTheorySolver;
 #endif
 
 
-class GraphTheorySolver:public GraphTheory{
+class GraphTheorySolver:public GraphTheory,public TheorySolver{
 public:
 
 	double rnd_seed;
@@ -426,6 +427,10 @@ public:
 		}
 		return assigns[var(l)]^ sign(l);;//S->value(toSolver(l));
 	}
+	inline bool isConstant(Var v){
+		return value(v)!=l_Undef && S->level(v)==0;
+	}
+
 	inline lbool dbg_value(Var v){
 		return S->value(toSolver(v));
 	}
