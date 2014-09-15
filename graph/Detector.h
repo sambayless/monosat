@@ -50,6 +50,7 @@ public:
 			printf("\tUnder-approx updates: %d (%d skipped) (%f s total, %f s avg)\n", stats_under_updates,stats_skipped_under_updates,(double)stats_under_update_time, (double)stats_under_update_time/(double)(stats_under_updates+1) );
 			printf("\tOver-approx updates: %d (%d skipped)  (%f s total, %f s avg)\n", stats_over_updates,stats_skipped_over_updates,(double)stats_over_update_time, (double)stats_over_update_time/(double)(stats_over_updates+1) );
 
+
 		}
 	}
 	virtual bool propagate(vec<Lit> & conflict)=0;
