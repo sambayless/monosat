@@ -355,6 +355,7 @@ public:
 		CRef ignore;
 		S->addConflictClause(tmp_clause,ignore);
 	}*/
+
 	Var newVar(int forDetector=-1, bool connectToTheory=false){
 		Var s= S->newVar();
 	/*	Var v = vars.size();
@@ -369,7 +370,10 @@ public:
 		}*/
 		return newVar(s,forDetector,false,connectToTheory);
 	}
-	Var newVar(Var solverVar, int detector, bool isEdge=false, bool connectToTheory=true){
+	Var newVar(Var solverVar, int detector){
+		return newVar(solverVar,detector,false,true);
+	}
+	Var newVar(Var solverVar, int detector, bool isEdge, bool connectToTheory=true){
 		while(S->nVars()<=solverVar)
 				S->newVar();
 		Var v = vars.size();

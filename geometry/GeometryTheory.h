@@ -281,7 +281,10 @@ public:
 
 		return newVar(s,forDetector,false,connectToTheory);
 	}
-	Var newVar(Var solverVar, int detector, bool isPoint=false, bool connectToTheory=true){
+	Var newVar(Var solverVar, int detector){
+		return newVar(solverVar,detector,false,true);
+	}
+	Var newVar(Var solverVar, int detector, bool isPoint, bool connectToTheory=true){
 		while(S->nVars()<=solverVar)
 				S->newVar();
 		Var v = vars.size();
