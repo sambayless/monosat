@@ -566,7 +566,9 @@ int main(int argc, char** argv)
 							lasty=y;
 						}
 						printf("\n\n");
-
+						/*for(auto & d:g->detectors){
+							d->printGraph(width,height);
+						}*/
 
 
 

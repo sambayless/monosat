@@ -669,7 +669,9 @@ bool DistanceDetector::checkSatisfied(){
 					for(int k = 0;k<dist_lits[j].size();k++){
 						Lit l = dist_lits[j][k].l;
 						int dist = dist_lits[j][k].min_distance;
-
+						if(dist>5){
+							int a = 1;
+						}
 						if(l!=lit_Undef){
 							int node =getNode(var(l));
 

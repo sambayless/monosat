@@ -1789,6 +1789,62 @@ public:
 														printf("\n");
 													}
 									}
+
+							{
+								for(int r = 0;r<flow_detectors.size();r++){
+
+								int width = sqrt(nNodes());
+								if(opt_width>0){
+										width=opt_width;
+									}
+									int height =width;
+									if(opt_height>0){
+										height = opt_height;
+									}
+									int lasty= 0;
+									int extra =  nNodes() % width ? (width- nNodes() % width ):0;
+									for(int n = 0;n<nNodes();n++){
+										int x = n%width;
+
+										int y = (n )/width;
+										if(y > lasty)
+											printf("\n");
+										int total_flow = 0;
+										for(int e = 0;e<g.edges();e++){
+											if(g.getEdge(e).to==n){
+												total_flow+=flow_detectors[r]->positive_detector->getEdgeFlow(e);
+
+											}
+										}
+
+										printf("%*d ",maxw,total_flow);
+											lasty=y;
+										}
+										printf("\n");
+
+										for(int n = 0;n<nNodes();n++){
+												int x = n%width;
+
+												int y = (n )/width;
+												if(y > lasty)
+													printf("\n");
+												int total_flow = 0;
+												for(int e = 0;e<g.edges();e++){
+													if(g.getEdge(e).to==n){
+														int flow = flow_detectors[r]->positive_detector->getEdgeFlow(e);
+														if(flow>0){
+															printf("flow (%d,%d) %d to %d\n",x,y, g.getEdge(e).from,g.getEdge(e).to);
+														}
+													}
+												}
+
+
+												lasty=y;
+											}
+									printf("\n");
+								}
+							}
+
 								if(mstDetector){
 										int min_weight = mstDetector->positive_reach_detector->weight();
 										printf("Min Spanning Tree Weight: %d\n",min_weight);

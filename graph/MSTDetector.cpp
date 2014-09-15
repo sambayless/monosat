@@ -301,7 +301,7 @@ void MSTDetector::buildMinWeightTooSmallReason(int weight,vec<Lit> & conflict){
 				for(int i = 0;i<negative_conflict_detector->numComponents();i++){
 					int root = negative_conflict_detector->getRoot(i);
 					tmp_conflict.clear();
-					int set = sets.FindSet(root);
+					int set =negative_conflict_detector->getComponent(root); //sets.FindSet(root);
 					visit.clear();
 					//ok, now traverse the connected component in the tree below this root.
 					visit.push(root);
@@ -316,7 +316,7 @@ void MSTDetector::buildMinWeightTooSmallReason(int weight,vec<Lit> & conflict){
 							int edgeid = antig.incident(u,i,true).id;
 							if(antig.edgeEnabled(edgeid)){
 								int v = antig.incident(u,i,true).node;
-								assert(sets.FindSet(v)==set);
+								assert(negative_conflict_detector->getComponent(v)==set);
 								if( ! seen[v]){
 									//u is a child of node in the minimum spanning tree
 									seen[v]=true;
@@ -324,7 +324,7 @@ void MSTDetector::buildMinWeightTooSmallReason(int weight,vec<Lit> & conflict){
 								}
 							}else if (!antig.edgeEnabled(edgeid)){
 								int v = antig.incident(u,i,true).node;
-								if(sets.FindSet(v)!=set){
+								if(negative_conflict_detector->getComponent(v)!=set){
 									//Then this edge is on the cut between this component and the other components
 									Var e =outer->edge_list[edgeid].v;
 									assert(outer->value(e)==l_False);
