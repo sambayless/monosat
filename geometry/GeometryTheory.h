@@ -22,10 +22,8 @@
 #include "ConvexHullCollisionDetector.h"
 #include "GeometrySteinerDetector.h"
 #include "SymbolicPolygon.h"
-#ifndef NDEBUG
-
 #include <cstdio>
-#endif
+
 
 using namespace Minisat;
 
@@ -1149,6 +1147,45 @@ public:
 		int detectorID = detectors.size();
 		polygons[pointsetID]=(new ConstantPolygon<D,T>(polygon,detectorID,this,drand(rnd_seed)) );
 		detectors.push_back(polygons[pointsetID]);
+	}
+	void constant_rectangle(int pointsetID,Point<D,T> &a,Point<D,T> &b){
+		if(polygons.size()<=pointsetID){
+			polygons.resize(pointsetID+1);
+		}
+		int detectorID = detectors.size();
+		polygons[pointsetID]=(new ConstantPolygon<D,T>(new Rectangle<D,T>(a,b), detectorID,this,drand(rnd_seed)) );
+		detectors.push_back(polygons[pointsetID]);
+	}
+	void polygon_intersects(int polygonID1,int polygonID2,bool inclusive, Var v){
+
+		if(polygonID1==polygonID2){
+			if(!inclusive){
+				//a polygon intersects itself non-inclusivly exactly if its area is non-zero
+				//polygon_area_gt(polygonID1,v);
+			}else{
+				//a polygon intersects itself inclusively if it is not the null polygon;
+				//polygon_not_null(polygonID1,v);
+			}
+			return;
+		}else if (polygonID1>polygonID2){
+			std::swap(polygonID1,polygonID2);
+		}
+
+		if(polygonID1 >= polygons.size() ||  !polygons[polygonID1]){
+			fprintf(stderr,"Polygon ID %d not defined, aborting\n", polygonID1);
+			exit(1);
+		}
+		if(polygonID2 >= polygons.size() ||  !polygons[polygonID2]){
+			fprintf(stderr,"Polygon ID %d not defined, aborting\n", polygonID2);
+			exit(1);
+		}
+		SymbolicPolygon<D,T> * p1 = polygons[polygonID1];
+		SymbolicPolygon<D,T> * p2 = polygons[polygonID2];
+
+
+
+		p1->addIntersectionLit(p2,v,inclusive);
+
 	}
 };
 

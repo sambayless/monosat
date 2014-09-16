@@ -89,12 +89,29 @@ class GeometryParser:public Parser<B,Solver>{
 	};
 	vec<ConvexHullsIntersection> convex_hulls_intersect;
 
+	struct PolygonInfo{
+		int id;
+		int dimension;
+	};
+
+	vec<PolygonInfo> polygons;
+
 	struct ConstantPolygon{
 		int pointsetID;
 		vec<ParsePoint> points;
 	};
 
 	vec<ConstantPolygon> constant_polygons;
+
+	struct ConstantRectangle{
+		//An axis alligned rectangle defined by two points (top left, bottom right)
+		int polygonID;
+
+		ParsePoint a;
+		ParsePoint b;
+	};
+
+	vec<ConstantRectangle> constant_rectangles;
 
 	struct PolygonOperation{
 		int pointsetID;
@@ -103,8 +120,25 @@ class GeometryParser:public Parser<B,Solver>{
 
 		PolygonOperationType operation;
 	};
-
 	vec<PolygonOperation> polygon_operations;
+	struct PolygonIntersection{
+
+		int polygonID1;
+		int polygonID2;
+		bool inclusive;
+		Var v;
+	};
+	vec<PolygonIntersection> polygon_intersections;
+
+	struct PolygonAreaLT{
+
+		int polygonID1;
+		bool inclusive;
+		Var v;
+	};
+
+
+	vec<PolygonAreaLT> polygon_area_lt;
 
 	struct ConditionalPolygon{
 		int pointsetID;
@@ -256,6 +290,37 @@ void readConvexHullsIntersect(B& in, Solver& S, bool inclusive) {
 
 }
 
+void read_rectangle(B& in, Solver& S) {
+	constant_rectangles.push();
+
+	int polygonID = parseInt(in);
+/*	if(polygons.contains(polygonID)){
+		fprintf(stderr,"PolygonID %d redefined, aborting\n",polygonID);
+		exit(1);
+	}*/
+
+
+	constant_rectangles.last().pointsetID=polygonID;
+	int d = parseInt(in);
+	//constant_rectangles.last().width = parseInt(in);
+	//constant_rectangles.last().height = parseInt(in);
+	parsePoint(in,d, constant_rectangles.last().a);
+	parsePoint(in,d, constant_rectangles.last().b);
+	polygons.push({polygonID,d});
+
+}
+
+void read_polygon_intersection(B& in, Solver& S, bool inclusive){
+	int polygonID1 = parseInt(in);
+	int polygonID2 = parseInt(in);
+	int v = parseInt(in)-1;
+	polygon_intersections.push({polygonID1,polygonID2, inclusive,v});
+}
+void read_polygon_area_lt(B& in, Solver& S, bool inclusive){
+	int polygonID = parseInt(in);
+	int v = parseInt(in)-1;
+	polygon_area_lt.push({polygonID, inclusive,v});
+}
 void read_polygon(B& in, Solver& S) {
 	constant_polygons.push();
 
@@ -345,9 +410,19 @@ public:
 			readConvexHullsIntersect(in,S,false);
 		}else if (match(in,"convex_hulls_collide")){
 			readConvexHullsIntersect(in,S,true);
+		}else if (match(in,"rectangle")){
+			read_rectangle(in,S);
+		}else if (match(in,"overlap")){
+			read_polygon_intersection(in,S,true);
+		}else if (match(in,"intersect")){
+			read_polygon_intersection(in,S,false);
+		}else if (match(in,"area_lt")){
+			read_polygon_area_lt(in,S,false);
+		}else if (match(in,"area_leq")){
+			read_polygon_area_lt(in,S,true);
 		}else if (match(in,"constant_polygon")){
 			read_polygon(in,S);
-		}else if (match(in,"conditional_polgon")){
+		}else if (match(in,"conditional_polygon")){
 			read_conditional_polygon(in,S);
 		}else if (match(in,"polygon_operation")){
 			read_polygon_operation(in,S);
@@ -423,6 +498,8 @@ public:
 			 }
 		 }
 	 }
+
+
 
 	 for (auto & c: convex_hull_areas){
 		 if(c.pointsetID>=pointsetDim.size() || c.pointsetID<0 || pointsetDim[c.pointsetID]<0){
@@ -572,6 +649,29 @@ public:
 
 
 	 }
+	 for (auto & c:constant_rectangles){
+		 if(c.polygonID < 0 || c.polygonID>=pointsetDim.size() || c.polygonID<0 || pointsetDim[c.polygonID]<0){
+			 fprintf(stderr,"Bad polygonID %d\n", c.polygonID);
+			 exit(2);
+		 }
+
+		 vec<ParsePoint> points;
+
+		 int D = pointsetDim[c.polygonID];
+
+		 if(D==1){
+
+		 }else if(D==2){
+			 Point<2,T> a=c.a.position;
+			 Point<2,T> b=c.b.position;
+			 space_2D->constant_rectangle(c.pointsetID,a,b);
+			 //space_2D->constant_rectangle(c.pointsetID,c.width,c.height,center);
+		 }else{
+			 assert(false);
+		 }
+	 }
+
+
 	 for (auto & c:constant_polygons){
 		 if(c.pointsetID < 0 || c.pointsetID>=pointsetDim.size() || c.pointsetID<0 || pointsetDim[c.pointsetID]<0){
 			 fprintf(stderr,"Bad pointsetID %d\n", c.pointsetID);
@@ -658,6 +758,37 @@ public:
 			 assert(false);
 		 }
 	 }
+
+
+	 //now that we have defined all the polygons, build predicates
+
+	 for (auto & c:polygon_intersections){
+		 if(c.polygonID1 < 0 || c.polygonID1>=pointsetDim.size() || c.polygonID1<0 || pointsetDim[c.polygonID1]<0){
+			 fprintf(stderr,"Bad polygonID %d\n", c.polygonID1);
+			 exit(2);
+		 }
+		 if(c.polygonID2 < 0 || c.polygonID2>=pointsetDim.size() || c.polygonID2<0 || pointsetDim[c.polygonID2]<0){
+			 fprintf(stderr,"Bad polygonID %d\n", c.polygonID2);
+			 exit(2);
+		 }
+
+		 int pointsetID;
+		 vec<ParsePoint> points;
+
+		 int D = pointsetDim[c.polygonID1];
+
+		 if( pointsetDim[c.polygonID2] != D){
+			 fprintf(stderr,"Cannot intersect convex hulls in different dimensions (%d has dimension %d, while %d has dimension %d)\n",c.polygonID1,D, c.polygonID2, pointsetDim[c.polygonID2]);
+		 }
+		 if(D==1){
+
+		 }else if(D==2){
+			 space_2D->polygon_intersects(c.polygonID1,c.polygonID2,c.inclusive,c.v);
+		 }else{
+			 assert(false);
+		 }
+	 }
+
 
 
  }

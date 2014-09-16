@@ -20,6 +20,7 @@ class DynamicGraph{
 	std::vector<bool> edge_status;
 	int num_nodes;
 	int num_edges;
+	bool all_edges_unit=true;
 public:
 	int modifications;
 	int additions;
@@ -151,6 +152,7 @@ public:
 		if(weights.size()<=id)
 			weights.resize(id+1,0);
 		weights[id]=weight;
+		all_edges_unit &= (weight==1);
 		//weights.push_back(weight);
 		modifications++;
 		additions=modifications;
@@ -173,7 +175,9 @@ public:
 	inline int edges()const{
 		return num_edges;
 	}
-
+	inline bool allEdgesUnitWeight()const{
+		return all_edges_unit;
+	}
 	inline int nIncident(int node, bool undirected=false){
 		assert(node>=0);assert(node<nodes());
 		if(undirected){

@@ -151,7 +151,7 @@ long ConvexPolygon<D,T>::stats_intersections=0;
 template<unsigned int D,class T>
 class Triangle:public ConvexPolygon<D,T>{
 public:
-	//A line segment is defined by two end-points that it passes through
+
 	Point<D,T> a;
 	Point<D,T> b;
 	Point<D,T> c;
@@ -203,6 +203,69 @@ public:
 
 };
 
+/**
+ * An axis-alligned rectangle defined by two points
+ */
+template<unsigned int D,class T>
+class Rectangle:public ConvexPolygon<D,T>{
+public:
+
+	Point<D,T> a;
+	Point<D,T> b;
+	Point<D,T> c;
+	Point<D,T> d;
+	Rectangle(){
+
+	}
+	Rectangle(const Point<D,T> & a, const Point<D,T> & b):a(a),b(a.x,b.y),c(b),d(b.x,a.y){
+
+	}
+	int size()const {
+		return 4;
+	}
+
+	void update(){
+		this->bounds_uptodate=false;
+	}
+
+	const Point<D,T>& operator [] (int index) const {
+		index = index %size();
+		if(index<0){
+			index+=size();
+		}
+		assert(index>=0);assert(index<size());
+		if(index==0){
+			return a;
+		}else if (index==1){
+			return b;
+		}else if (index==2){
+			assert(index==2);
+			return c;
+		}else{
+			assert(index==3);
+			return d;
+		}
+	}
+	Point<D,T>&       operator [] (int index)       {
+		index = index %size();
+		if(index<0){
+			index+=size();
+		}
+		assert(index>=0);assert(index<size());
+		if(index==0){
+			return a;
+		}else if (index==1){
+			return b;
+		}else if (index==2){
+			assert(index==2);
+			return c;
+		}else{
+			assert(index==3);
+			return d;
+		}
+	}
+
+};
 #include "LineSegment.h"
 
 template<unsigned int D,class T>

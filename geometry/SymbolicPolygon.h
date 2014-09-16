@@ -82,6 +82,13 @@ private:
 	};
 	std::vector<ConvexIntersectionLit> convexIntersectionLits;
 
+	struct SymbolicIntersectionLit{
+		SymbolicPolygon<D,T> & polygon;
+		Lit l;
+		bool inclusive;
+	};
+	std::vector<SymbolicIntersectionLit> symbolic_intersection_lits;
+
 	struct PointOnHullLit{
 		Var pointVar;
 		int pointIndex;
@@ -158,7 +165,11 @@ public:
 		lineIntersectionLits.push_back({line,mkLit(containVar,false),inclusive});
 		init_lits();
 	}
-
+	void addIntersectionLit(SymbolicPolygon<D,T> & symbolicPolygon, Var solverVar, bool inclusive){
+		Var containVar = solver->newVar(solverVar,getID());
+		symbolic_intersection_lits.push_back({symbolicPolygon,mkLit(containVar,false),inclusive});
+		init_lits();
+	}
 	void addConvexIntersectionLit(NConvexPolygon<D,T> & polygon, Var solverVar, bool inclusive){
 		Var containVar = solver->newVar(solverVar,getID());
 		convexIntersectionLits.push_back({polygon,mkLit(containVar,false),inclusive});
@@ -553,6 +564,7 @@ long SymbolicPolygon<D,T>::stats_over_clauses=0;
 
 
 
+
 template<unsigned int D,class T>
 class ConstantPolygon:public SymbolicPolygon<D,T>{
 	Polygon<D,T>* polygon;
@@ -561,6 +573,10 @@ public:
 
 	ConstantPolygon(Polygon<D,T>* polygon,int detectorID,TheorySolver * solver,  double seed=1): SymbolicPolygon<D,T>(detectorID,solver,seed), polygon(polygon){
 
+	}
+
+	~ConstantPolygon(){
+		delete(polygon);
 	}
 
 	Polygon<D,T>& getOverApprox(){
@@ -606,6 +622,7 @@ public:
 
 
 };
+
 
 /*
 enum class BinaryPolygonOperation{
@@ -832,7 +849,7 @@ public:
 				if(a.getUnderApprox().contains(s,inclusive)){
 					a.buildPointContainedReason(s, conflict,inclusive);
 				}else{
-					assert(b.getUnderApprox()->contains(s,inclusive));
+					assert(b.getUnderApprox().contains(s,inclusive));
 					b.buildPointContainedReason(s, conflict,inclusive);
 				}
 			}break;
@@ -854,11 +871,11 @@ public:
 				//(A-s) intersects B
 				//or, equivalently, (B-s) intersects A
 
-				Polygon<D,T> &translatedB = *b.getUnderApprox().translate(s,&polygon_tmp);
-				assert(translatedB.intersects(*a.getUnderApprox(),inclusive));
+				Polygon<D,T> &translatedB =*( b.getUnderApprox().translate(s,&polygon_tmp));
+				assert(translatedB.intersects(a.getUnderApprox(),inclusive));
 				a.buildIntersectsReason(translatedB,conflict,inclusive);
-				Polygon<D,T> &translatedA = *a.getUnderApprox().translate(s,&polygon_tmp);
-				assert(translatedA.intersects(*b.getUnderApprox(),inclusive));
+				Polygon<D,T> &translatedA =*( a.getUnderApprox().translate(s,&polygon_tmp));
+				assert(translatedA.intersects(b.getUnderApprox(),inclusive));
 				b.buildIntersectsReason(translatedA,conflict,inclusive);
 
 			}break;
@@ -905,11 +922,11 @@ public:
 			case PolygonOperationType::op_minkowski_sum:{
 				//the reason that A + B does not contain point s is that
 				//(A-s) does not intersect B
-				Polygon<D,T> &translatedB = *b.getOverApprox().translate(s,&polygon_tmp);
-				assert(!translatedB.intersects(*a.getOverApprox(),inclusive));
+				Polygon<D,T> &translatedB =*( b.getOverApprox().translate(s,&polygon_tmp));
+				assert(!translatedB.intersects(a.getOverApprox(),inclusive));
 				a.buildNotIntersectsReason(translatedB,conflict,inclusive);
-				Polygon<D,T> &translatedA = *a.getOverApprox().translate(s,&polygon_tmp);
-				assert(!translatedA.intersects(*b.getOverApprox(),inclusive));
+				Polygon<D,T> &translatedA = *(a.getOverApprox().translate(s,&polygon_tmp));
+				assert(!translatedA.intersects(b.getOverApprox(),inclusive));
 				b.buildNotIntersectsReason(translatedA,conflict,inclusive);
 			}break;
 			default:
