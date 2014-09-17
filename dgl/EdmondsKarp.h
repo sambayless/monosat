@@ -26,9 +26,9 @@ public:
     std::vector<std::vector<Weight> > F;//(Residual capacity from u to v is C[u,v] - F[u,v])
     std::vector<std::vector<Weight> > C;
     std::vector<int> P;
-    std::vector<int> M;
+    std::vector<Weight> M;
 
-    int curflow;
+    Weight curflow;
 
     int last_modification;
     int last_deletion;
@@ -38,7 +38,7 @@ public:
     int last_history_clear;
 
     DynamicGraph& g;
-    int INF;
+    Weight INF;
     /*
      *            input:
                C, E, s, t, F
@@ -70,7 +70,8 @@ public:
 
                    if (((C[u][v] - F[u][v]) > 0) && (P[v] == -1)){
                        P[v] = u;
-                       M[v] = std::min(M[u], C[u][v] - F[u][v]);
+                       Weight b = C[u][v] - F[u][v];
+                       M[v] = std::min(M[u], b);
                        if (v != t)
                            Q.push_back(v);
                        else
@@ -83,12 +84,13 @@ public:
 						continue;
 				   int v = g.incoming(u,i).node;
 					///(If there is available capacity, and v is not seen before in search)
-				   int c = C[u][v];
-				   int f = F[u][v];
+				   Weight c = C[u][v];
+				   Weight f = F[u][v];
 
 					if (((C[u][v] - F[u][v]) > 0) && (P[v] == -1)){
 						P[v] = u;
-						M[v] = std::min(M[u], C[u][v] - F[u][v]);
+						Weight b = C[u][v] - F[u][v];
+						M[v] = std::min(M[u], b);//C[u][v] - F[u][v]);
 						if (v != t)
 							Q.push_back(v);
 						else
@@ -131,7 +133,7 @@ public:
     		}
     	}
     }
-    int maxFlow(int s, int t){
+    Weight maxFlow(int s, int t){
     	if(last_modification>0 && g.modifications==last_modification){
 
     			return curflow;
@@ -154,7 +156,7 @@ public:
     	P[s] = -2;
     	 M[s] = INF;
         while(true){
-        	int m= BreadthFirstSearch(s,t);
+        	Weight m= BreadthFirstSearch(s,t);
 
             if (m == 0)
                 break;
@@ -262,20 +264,20 @@ public:
 		return true;
     }
 
-    int getEdgeFlow(int edgeid){
+    Weight getEdgeFlow(int edgeid){
     	assert(g.edgeEnabled(edgeid));
     	int u = g.all_edges[edgeid].from;
     	int v = g.all_edges[edgeid].to;
     	return F[u][v];
     }
-    int getEdgeCapacity(int id){
+    Weight getEdgeCapacity(int id){
     	assert(g.edgeEnabled(id));
     	int u = g.all_edges[id].from;
     	int v = g.all_edges[id].to;
     	return C[u][v];
        }
 
-      int getEdgeResidualCapacity(int id){
+    Weight getEdgeResidualCapacity(int id){
     	  assert(g.edgeEnabled(id));
 		int u = g.all_edges[id].from;
 		int v = g.all_edges[id].to;

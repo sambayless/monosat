@@ -285,11 +285,11 @@ public:
 
 	bool dbg_uptodate(){
 #ifndef NDEBUG
-		int sumweight = 0;
+		Weight sumweight = 0;
 		in_tree.resize(g.nEdgeIDs());
 		for(int i = 0;i<g.edges();i++){
 			if(in_tree[i]){
-				sumweight+= g.getWeight(i);
+				sumweight+= weights[i];
 			}
 		}
 		assert(sumweight ==min_weight || min_weight==INF);

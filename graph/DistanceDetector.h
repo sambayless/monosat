@@ -9,7 +9,8 @@
 #define DISTANCEETECTOR_H_
 #include "utils/System.h"
 
-#include "Graph.h"
+#include "GraphTheoryTypes.h"
+#include "dgl/graph/DynamicGraph.h"
 #include "dgl/Reach.h"
 #include "dgl/Distance.h"
 #include "dgl/Dijkstra.h"

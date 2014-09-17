@@ -10,7 +10,7 @@
 
 #include "utils/System.h"
 #include "core/Theory.h"
-#include "Graph.h"
+
 #include "dgl/Reach.h"
 #include "dgl/Dijkstra.h"
 #include "dgl/BFS.h"
@@ -42,9 +42,6 @@
 #include <cstdlib>
 #include <unistd.h>
 
-#ifdef DEBUG_GRAPH
-#include "TestGraph.h"
-#endif
 
 using namespace dgl;
 namespace Minisat{
@@ -54,7 +51,7 @@ class GraphTheorySolver;
 
 
 
-class GraphTheorySolver:public GraphTheory{
+class GraphTheorySolver:public Theory{
 public:
 
 	double rnd_seed;
@@ -66,7 +63,7 @@ private:
 public:
 	int id;
 
-
+	bool rational_edges=false;
 
 	vec<lbool> assigns;
 
@@ -1168,12 +1165,52 @@ public:
 		marker_map[mnum] = detectorID;
 		return reasonMarker;
 	}
+	Lit newEdge(int from,int to, Var outerVar, mpq_class & weight){
+		/*assert(outerVar!=var_Undef);
+		rational_edges=true;
 
+		int index = edge_list.size();
+		edge_list.push();
+		Var v = newVar(outerVar,index,true);
+
+		undirected_adj[to].push({v,outerVar,from,to,index,weight});
+		undirected_adj[from].push({v,outerVar,to,from,index,weight});
+		inv_adj[to].push({v,outerVar,from,to,index,weight});
+
+		//num_edges++;
+		edge_list[index].v =v;
+		edge_list[index].outerVar =outerVar;
+		edge_list[index].from=from;
+		edge_list[index].to =to;
+		edge_list[index].edgeID=index;
+		edge_list[index].weight=weight;
+		if(edge_weights.size()<=index){
+			edge_weights.resize(index+1);
+		}
+		edge_weights[index]=1;
+
+		if(rational_weights.size()<=index){
+			rational_weights.resize(index+1);
+		}
+		rational_weights[index]=weight;
+
+		edges[from][to]= {v,outerVar,from,to,index,1};
+		g.addEdge(from,to,index,weight);
+		g.disableEdge(from,to, index);
+		antig.addEdge(from,to,index,weight);
+		cutGraph.addEdge(from,to,index,weight);
+
+		return mkLit(v,false);*/
+	}
 	Lit newEdge(int from,int to, Var outerVar = var_Undef, int weight=1)
     {
 		assert(outerVar!=var_Undef);
 	/*	if(outerVar==var_Undef)
 			outerVar = S->newVar();*/
+
+		if(rational_edges){
+			return newEdge(from,to,outerVar,weight);
+		}
 
 		int index = edge_list.size();
 		edge_list.push();

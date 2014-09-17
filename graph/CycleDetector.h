@@ -3,7 +3,8 @@
 #define CYCLE_DETECTOR_H_
 #include "utils/System.h"
 
-#include "Graph.h"
+#include "GraphTheoryTypes.h"
+#include "dgl/graph/DynamicGraph.h"
 #include "dgl/ConnectedComponents.h"
 #include "dgl/Cycle.h"
 #include "core/SolverTypes.h"

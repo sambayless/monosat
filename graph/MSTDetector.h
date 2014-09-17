@@ -9,7 +9,8 @@
 #define MST_DETECTOR_H_
 #include "utils/System.h"
 
-#include "Graph.h"
+#include "GraphTheoryTypes.h"
+#include "dgl/graph/DynamicGraph.h"
 #include "dgl/MinimumSpanningTree.h"
 
 #include "core/SolverTypes.h"

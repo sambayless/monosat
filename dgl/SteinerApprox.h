@@ -235,7 +235,7 @@ public:
 				s="blue";
 			}
 
-			printf("n%d -> n%d [label=\"v%d w=%d\",color=\"%s\"]\n", i,u, id,g.getWeight(id), s);
+			//printf("n%d -> n%d [label=\"v%d w=%d\",color=\"%s\"]\n", i,u, id,g.getWeight(id), s);
 
 			}
 		}

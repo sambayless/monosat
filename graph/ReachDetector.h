@@ -8,8 +8,8 @@
 #ifndef REACHDETECTOR_H_
 #define REACHDETECTOR_H_
 #include "utils/System.h"
-
-#include "Graph.h"
+#include "GraphTheoryTypes.h"
+#include "dgl/graph/DynamicGraph.h"
 #include "dgl/Reach.h"
 #include "dgl/Dijkstra.h"
 #include "dgl/BFS.h"

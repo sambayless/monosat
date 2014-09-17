@@ -9,7 +9,8 @@
 #define ALLPAIRSDETECTOR_H_
 #include "utils/System.h"
 
-#include "Graph.h"
+#include "GraphTheoryTypes.h"
+#include "dgl/graph/DynamicGraph.h"
 #include "dgl/AllPairs.h"
 #include <vector>
 #include "core/SolverTypes.h"

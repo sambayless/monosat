@@ -8,8 +8,8 @@
 #ifndef CONNECTED_COMPONENTS_DETECTOR_H_
 #define CONNECTED_COMPONENTS_DETECTOR_H_
 #include "utils/System.h"
-
-#include "Graph.h"
+#include "GraphTheoryTypes.h"
+#include "dgl/graph/DynamicGraph.h"
 #include "dgl/ConnectedComponents.h"
 
 #include "core/SolverTypes.h"

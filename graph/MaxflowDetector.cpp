@@ -213,7 +213,7 @@ template<typename Weight>
 
 #ifdef RECORD
 			if(negative_detector!=negative_conflict_detector){
-				int foundflow2 = negative_detector->maxFlow(source,target);
+				Weight foundflow2 = negative_detector->maxFlow(source,target);
 				assert(foundflow==foundflow2);
 			}
 			std::sort(conflict.begin(),conflict.end());

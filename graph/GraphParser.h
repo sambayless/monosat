@@ -14,12 +14,14 @@
 #include "utils/ParseUtils.h"
 #include "core/SolverTypes.h"
 #include "graph/GraphTheory.h"
-#include "graph/TestGraph.h"
+
 #include "core/Config.h"
 #include "pb/PbTheory.h"
 #include "core/Dimacs.h"
+#include <gmpxx.h>
 #include <set>
 #include <string>
+#include <sstream>
 namespace Minisat {
 
 struct SteinerStruct{
@@ -36,7 +38,7 @@ struct SteinerStruct{
 template<class B, class Solver>
 class GraphParser:public Parser<B,Solver>{
 	vec<std::pair<int,std::string> > * symbols=nullptr;
-	vec<GraphTheory*> graphs;
+	vec<GraphTheorySolver*> graphs;
 	vec<vec<SteinerStruct*>> steiners;
 	PbTheory * pbtheory=nullptr;
 	std::string symbol;
@@ -59,7 +61,7 @@ class GraphParser:public Parser<B,Solver>{
 //If lit is 0 or 1, this is a constant edge (0 for false, 1 for true)
 //r g u w var is a reach query: var is true if can u reach w in graph g, false otherwise
 
- void readDiGraph(B& in, Solver& S, vec<GraphTheory*> & graphs) {
+ void readDiGraph(B& in, Solver& S, vec<GraphTheorySolver*> & graphs) {
 	if(opt_ignore_theories){
 		skipLine(in);
 		return;
@@ -71,11 +73,10 @@ class GraphParser:public Parser<B,Solver>{
         e = parseInt(in);//num edges (I'm ignoring this currently)
       //  ev = parseInt(in);//the variable of the first graph edge.
         g=parseInt(in);//id of the graph
-        GraphTheory * graph = NULL;
-        if(opt_graph)
-        	graph= new GraphTheorySolver(&S,g);
-        else
-        	graph= new TestGraph(&S);
+        GraphTheorySolver * graph = NULL;
+
+		graph= new GraphTheorySolver(&S,g);
+
         graph->newNodes(n);
         graphs.growTo(g+1);
         graphs[g]=graph;
@@ -83,7 +84,7 @@ class GraphParser:public Parser<B,Solver>{
       //  return ev;
 }
 
- void readEdge(B& in, Solver& S, vec<GraphTheory*> & graphs) {
+ void readEdge(B& in, Solver& S, vec<GraphTheorySolver*> & graphs) {
 	if(opt_ignore_theories){
 		skipLine(in);
 		return;
@@ -104,13 +105,13 @@ class GraphParser:public Parser<B,Solver>{
         if(edgeVar<0){
         	printf("PARSE ERROR! Edge variables must be >=0, was %d\n", edgeVar), exit(3);
         }
-        GraphTheory * graph = graphs[graphID];
+        GraphTheorySolver * graph = graphs[graphID];
         while (edgeVar >= S.nVars()) S.newVar();
         graph->newEdge(from,to,edgeVar);
 
 }
 
- void readWeightedEdge(B& in, Solver& S, vec<GraphTheory*> & graphs) {
+ void readWeightedEdge(B& in, Solver& S, vec<GraphTheorySolver*> & graphs) {
 	if(opt_ignore_theories){
 		skipLine(in);
 		return;
@@ -132,13 +133,55 @@ class GraphParser:public Parser<B,Solver>{
         if(edgeVar<0){
         	printf("PARSE ERROR! Edge variables must be >=0, was %d\n", edgeVar), exit(3);
         }
-        GraphTheory * graph = graphs[graphID];
+        GraphTheorySolver * graph = graphs[graphID];
+        while (edgeVar >= S.nVars()) S.newVar();
+        graph->newEdge(from,to,edgeVar,weight);
+
+}
+ void readRationalWeightedEdge(B& in, Solver& S, vec<GraphTheorySolver*> & graphs) {
+	if(opt_ignore_theories){
+		skipLine(in);
+		return;
+	}
+
+    ++in;
+
+        int graphID = parseInt(in);
+        int from = parseInt(in);
+        int to=parseInt(in);
+        int edgeVar = parseInt(in)-1;
+        std::stringstream ss;
+    	skipWhitespace(in);
+		while(*in != '\n' && ! isWhitespace(*in)){
+			ss<<(*in);
+			++in;
+		}
+        mpz_class weight_numerator = ss.str();
+        ss.clear();
+        skipWhitespace(in);
+		while(*in != '\n' && ! isWhitespace(*in)){
+			ss<<(*in);
+			++in;
+		}
+		mpz_class weight_denominator = ss.str();
+		mpq_class weight(weight_numerator,weight_denominator);
+        //long weight_denominator = parseInt(in);
+        /*if(edgeVar==-1){
+        	edgeVar=edge_var++-1;
+        }*/
+        if(graphID <0 || graphID>=graphs.size() || !graphs[graphID]){
+        	printf("PARSE ERROR! Undeclared graph identifier %d for edge %d\n",graphID, edgeVar), exit(3);
+        }
+        if(edgeVar<0){
+        	printf("PARSE ERROR! Edge variables must be >=0, was %d\n", edgeVar), exit(3);
+        }
+        GraphTheorySolver * graph = graphs[graphID];
         while (edgeVar >= S.nVars()) S.newVar();
         graph->newEdge(from,to,edgeVar,weight);
 
 }
 
- void readConnect(B& in, Solver& S, vec<GraphTheory*> & graphs) {
+ void readConnect(B& in, Solver& S, vec<GraphTheorySolver*> & graphs) {
 	if(opt_ignore_theories){
 		skipLine(in);
 		return;
@@ -158,7 +201,7 @@ class GraphParser:public Parser<B,Solver>{
         if(reachVar<0){
         	printf("PARSE ERROR! Edge variables must be >=0, was %d\n", reachVar), exit(3);
         }
-        GraphTheory * graph = graphs[graphID];
+        GraphTheorySolver * graph = graphs[graphID];
         while (reachVar >= S.nVars()) S.newVar();
         graph->connects(from,to,reachVar);
 
@@ -166,7 +209,7 @@ class GraphParser:public Parser<B,Solver>{
 }
 
 
- void readReach(B& in, Solver& S, vec<GraphTheory*> & graphs) {
+ void readReach(B& in, Solver& S, vec<GraphTheorySolver*> & graphs) {
 	if(opt_ignore_theories){
 		skipLine(in);
 		return;
@@ -186,14 +229,14 @@ class GraphParser:public Parser<B,Solver>{
         if(reachVar<0){
         	printf("PARSE ERROR! Edge variables must be >=0, was %d\n", reachVar), exit(3);
         }
-        GraphTheory * graph = graphs[graphID];
+        GraphTheorySolver * graph = graphs[graphID];
         while (reachVar >= S.nVars()) S.newVar();
         graph->reaches(from,to,reachVar);
 
 
 }
 
- void readDistance(B& in, Solver& S, vec<GraphTheory*> & graphs, bool leq=false) {
+ void readDistance(B& in, Solver& S, vec<GraphTheorySolver*> & graphs, bool leq=false) {
 	if(opt_ignore_theories){
 		skipLine(in);
 		return;
@@ -213,7 +256,7 @@ class GraphParser:public Parser<B,Solver>{
 	if(reachVar<0){
 		printf("PARSE ERROR! Edge variables must be >=0, was %d\n", reachVar), exit(3);
 	}
-	GraphTheory * graph = graphs[graphID];
+	GraphTheorySolver * graph = graphs[graphID];
 	while (reachVar >= S.nVars()) S.newVar();
 	if(leq)
 		graph->reaches(from,to,reachVar,steps);
@@ -225,7 +268,7 @@ class GraphParser:public Parser<B,Solver>{
 
 
 
- void readMinSpanningTreeConstraint(B& in, Solver& S, vec<GraphTheory*> & graphs) {
+ void readMinSpanningTreeConstraint(B& in, Solver& S, vec<GraphTheorySolver*> & graphs) {
 	if(opt_ignore_theories){
 		skipLine(in);
 		return;
@@ -243,13 +286,13 @@ class GraphParser:public Parser<B,Solver>{
         if(reachVar<0){
         	printf("PARSE ERROR! Edge variables must be >=0, was %d\n", reachVar), exit(3);
         }
-        GraphTheory * graph = graphs[graphID];
+        GraphTheorySolver * graph = graphs[graphID];
         while (reachVar >= S.nVars()) S.newVar();
         graph->minimumSpanningTree(reachVar,maxweight);
 
 
 }
- void readMinSpanningTreeEdgeConstraint(B& in, Solver& S, vec<GraphTheory*> & graphs) {
+ void readMinSpanningTreeEdgeConstraint(B& in, Solver& S, vec<GraphTheorySolver*> & graphs) {
 	if(opt_ignore_theories){
 		skipLine(in);
 		return;
@@ -270,7 +313,7 @@ class GraphParser:public Parser<B,Solver>{
         if(reachVar<0){
         	printf("PARSE ERROR! Edge variables must be >=0, was %d\n", reachVar), exit(3);
         }
-        GraphTheory * graph = graphs[graphID];
+        GraphTheorySolver * graph = graphs[graphID];
         while (reachVar >= S.nVars()) S.newVar();
         graph->edgeInMinimumSpanningTree(edgeVar,reachVar);
 
@@ -278,7 +321,7 @@ class GraphParser:public Parser<B,Solver>{
 }
 
 
- void readMaxFlowConstraint(B& in, Solver& S, vec<GraphTheory*> & graphs) {
+ void readMaxFlowConstraint(B& in, Solver& S, vec<GraphTheorySolver*> & graphs) {
 	if(opt_ignore_theories){
 		skipLine(in);
 		return;
@@ -298,7 +341,7 @@ class GraphParser:public Parser<B,Solver>{
         if(reachVar<0){
         	printf("PARSE ERROR! Edge variables must be >=0, was %d\n", reachVar), exit(3);
         }
-        GraphTheory * graph = graphs[graphID];
+        GraphTheorySolver * graph = graphs[graphID];
         while (reachVar >= S.nVars()) S.newVar();
         graph->maxFlow(s,t,flow,reachVar);
 
@@ -308,7 +351,7 @@ class GraphParser:public Parser<B,Solver>{
 
 
 
- void readMinConnectedComponentsConstraint(B& in, Solver& S, vec<GraphTheory*> & graphs) {
+ void readMinConnectedComponentsConstraint(B& in, Solver& S, vec<GraphTheorySolver*> & graphs) {
 	if(opt_ignore_theories){
 		skipLine(in);
 		return;
@@ -326,13 +369,13 @@ class GraphParser:public Parser<B,Solver>{
         if(reachVar<0){
         	printf("PARSE ERROR! Edge variables must be >=0, was %d\n", reachVar), exit(3);
         }
-        GraphTheory * graph = graphs[graphID];
+        GraphTheorySolver * graph = graphs[graphID];
         while (reachVar >= S.nVars()) S.newVar();
         graph->minConnectedComponents(min_components,reachVar);
 }
 
 
-/* void readSteinerTreeDeclaration(B& in, Solver& S, vec<GraphTheory*> & graphs, vec<vec<SteinerStruct*>> steiners) {
+/* void readSteinerTreeDeclaration(B& in, Solver& S, vec<GraphTheorySolver*> & graphs, vec<vec<SteinerStruct*>> steiners) {
 	if(opt_ignore_theories){
 		skipLine(in);
 		return;
@@ -358,7 +401,7 @@ class GraphParser:public Parser<B,Solver>{
         }
         steiners[graphID][steinerID] = new SteinerStruct{steinerID};
 }*/
- void readSteinerTreeTerminal(B& in, Solver& S, vec<GraphTheory*> & graphs, vec<vec<SteinerStruct*>>& steiners) {
+ void readSteinerTreeTerminal(B& in, Solver& S, vec<GraphTheorySolver*> & graphs, vec<vec<SteinerStruct*>>& steiners) {
 	if(opt_ignore_theories){
 		skipLine(in);
 		return;
@@ -383,7 +426,7 @@ class GraphParser:public Parser<B,Solver>{
 	steiners[graphID][steinerID]->terminals.push({node,var});
 
 }
- void readSteinerTreeConstraint(B& in, Solver& S, vec<GraphTheory*> & graphs, vec<vec<SteinerStruct*>>& steiners) {
+ void readSteinerTreeConstraint(B& in, Solver& S, vec<GraphTheorySolver*> & graphs, vec<vec<SteinerStruct*>>& steiners) {
 	if(opt_ignore_theories){
 		skipLine(in);
 		return;

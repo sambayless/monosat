@@ -70,7 +70,7 @@ public:
 
 
 #ifndef NDEBUG
-	Kruskal<MinimumSpanningTree::NullStatus> dbg;
+	 Kruskal<typename MinimumSpanningTree<Weight>::NullStatus,Weight> dbg;
 #endif
 public:
 
@@ -87,7 +87,7 @@ public:
 
 	SpiraPan(DynamicGraph & graph,std::vector<Weight> & weights, Status & status, int reportPolarity=0 ):g(graph),weights(weights), status(status), last_modification(-1),last_addition(-1),last_deletion(-1),history_qhead(0),last_history_clear(0),INF(0),reportPolarity(reportPolarity),Q(VertLt(component_edge_weight))
 #ifndef NDEBUG
-		,dbg(g,MinimumSpanningTree<Weight>::nullStatus,0)
+		,dbg(g,weights,MinimumSpanningTree<Weight>::nullStatus,0)
 #endif
 	{
 		mod_percentage=0.2;
@@ -463,7 +463,7 @@ public:
 			}
 			assert(c>=0);
 #ifndef NDEBUG
-			for(int w:component_edge_weight){
+			for(auto w:component_edge_weight){
 				assert(w==INF);
 			}
 #endif
@@ -747,11 +747,11 @@ public:
 		}
 
 		assert(num_sets == g.nodes()-empty_components.size());
-		int sumweight = 0;
+		Weight sumweight = 0;
 		in_tree.resize(g.nEdgeIDs());
 		for(int i = 0;i<g.nEdgeIDs();i++){
 			if(in_tree[i]){
-				sumweight+= g.getWeight(i);
+				sumweight+= weights[i];
 			}
 		}
 		assert(sumweight ==min_weight);

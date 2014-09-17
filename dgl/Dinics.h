@@ -47,7 +47,7 @@ public:
     	long stats_rounds=0;
 #ifdef DEBUG_MAXFLOW
     std::vector<int> dbg_pos;
-	EdmondsKarpAdj<Capacity> ek;
+	EdmondsKarpAdj<Capacity,Weight> ek;
 #endif
 
 public:
@@ -110,7 +110,7 @@ public:
    							s="blue";
    						else if (value(e.v)==l_False)
    							s="red";*/
-   						printf("n%d -> n%d [label=\"%d: %d/%d\",color=\"%s\"]\n", e.from,e.to, i, F[i],g.weights[i] , s);
+   						//printf("n%d -> n%d [label=\"%d: %d/%d\",color=\"%s\"]\n", e.from,e.to, i, F[i],g.weights[i] , s);
        				}
        			}
 

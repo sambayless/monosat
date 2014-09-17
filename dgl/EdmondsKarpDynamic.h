@@ -37,7 +37,7 @@ class EdmondsKarpDynamic:public MaxFlow<Weight>{
     Capacity & capacity;
     Weight INF;
 #ifdef DEBUG_MAXFLOW
-    	EdmondsKarpAdj<Capacity> ek;
+    	EdmondsKarpAdj<Capacity,Weight> ek;
 #endif
     /*
      *            input:
@@ -165,7 +165,7 @@ public:
 #ifdef DEBUG_MAXFLOW
     	for(int i = 0;i<g.all_edges.size();i++){
     		int id = g.all_edges[i].id;
-    		int cap = capacity[id];
+    		Weight cap = capacity[id];
     		int from =  g.all_edges[i].from;
     		int to =  g.all_edges[i].to;
 
@@ -205,7 +205,7 @@ public:
 #ifdef DEBUG_MAXFLOW
     	for(int i = 0;i<g.edges();i++){
 			if(edge_enabled[i]){
-				int fi = F[i];
+				Weight fi = F[i];
 				assert(F[i]<= capacity[i]);
 			}else{
 				assert(F[i]==0);
@@ -287,7 +287,7 @@ public:
     	assert(f==expected_flow);
     	for(int i = 0;i<g.edges();i++){
 			if(g.edgeEnabled(i)){
-				int fi = F[i];
+				Weight fi = F[i];
 				assert(F[i]<= capacity[i]);
 			}else{
 				assert(F[i]==0);
@@ -323,8 +323,8 @@ private:
 		for(int i = 0;i<g.edges();i++){
 			if(g.isEdge(i)){
 				if(edge_enabled[i]){
-					int r =capacity[i]-F[i];
-					d.addEdge(g.all_edges[i].from,g.all_edges[i].to,g.all_edges[i].id,r);
+					Weight r =capacity[i]-F[i];
+					d.addEdge(g.all_edges[i].from,g.all_edges[i].to,g.all_edges[i].id);//,r);
 				}else  {
 					d.addEdge(g.all_edges[i].from,g.all_edges[i].to,g.all_edges[i].id,0);
 					d.disableEdge(g.all_edges[i].id);
@@ -334,7 +334,7 @@ private:
 		for(int i = 0;i<g.edges();i++){
 			if(edge_enabled[i]){
 				if(F[i]>0){
-					d.addEdge(g.all_edges[i].to,g.all_edges[i].from,-1,F[i]);
+					d.addEdge(g.all_edges[i].to,g.all_edges[i].from,-1);//,F[i]);
 				}
 			}
 		}
@@ -370,7 +370,7 @@ private:
     			dbg_print_graph(s,t,-1, -1);
     		}
 #ifndef NDEBUG
-			EdmondsKarpAdj<std::vector<Weight>,Weight> ek_check(d,d.weights);
+			EdmondsKarpAdj<std::vector<Weight>,Weight> ek_check(d,capacity);
 
 				Weight expect =  ek_check.maxFlow(s,t);
         		assert(new_flow<=expect);
@@ -420,8 +420,8 @@ private:
 
 #ifndef NDEBUG
     		//EdmondsKarp<EdgeStatus> ek_check(g);
-    	 	 EdmondsKarpAdj<std::vector<int>> ek_check(g,g.weights);
-    		int expect =  ek_check.maxFlow(s,t);
+    	 	 EdmondsKarpAdj<std::vector<Weight>,Weight> ek_check(g,capacity);
+    		Weight expect =  ek_check.maxFlow(s,t);
     		assert(f==expect);
 #endif
     	 return f;
@@ -530,12 +530,12 @@ private:
 							s="blue";
 						else if (value(e.v)==l_False)
 							s="red";*/
-						printf("n%d -> n%d [label=\"%d: %d/%d\",color=\"%s\"]\n", e.from,e.to, i, F[i],g.weights[i] , s);
+						//printf("n%d -> n%d [label=\"%d: %d/%d\",color=\"%s\"]\n", e.from,e.to, i, F[i],g.weights[i] , s);
     				}
     			}
 
     			if(shortCircuitFrom>=0){
-    				printf("n%d -> n%d [label=\"%d: %d/%d\",color=\"black\"]\n", shortCircuitFrom,shortCircuitTo, -1, shortCircuitFlow,-1 );
+    				//printf("n%d -> n%d [label=\"%d: %d/%d\",color=\"black\"]\n", shortCircuitFrom,shortCircuitTo, -1, shortCircuitFlow,-1 );
     			}
 
     			printf("}\n");
@@ -546,13 +546,13 @@ private:
     	//
     	Weight newFlow = 0;
 #ifndef NDEBUG
-    	 	DynamicGraph d;
+/*    	 	DynamicGraph d;
     	 	d.addNodes(g.nodes());
     	 	//std::vector<int> R;
     	 	for(int i = 0;i<g.edges();i++){
     	 		if(edge_enabled[i]){
-    	 			int r =capacity[i]-F[i];
-    	 			d.addEdge(g.all_edges[i].from,g.all_edges[i].to,g.all_edges[i].id,r);
+    	 			Weight r =capacity[i]-F[i];
+    	 			d.addEdge(g.all_edges[i].from,g.all_edges[i].to,g.all_edges[i].id);//,r);
     	 		}else if(g.isEdge(i)){
     	 			d.addEdge(g.all_edges[i].from,g.all_edges[i].to,g.all_edges[i].id,0);
     	 			d.disableEdge(g.all_edges[i].id);
@@ -573,7 +573,7 @@ private:
 				if (edge_enabled[edge.id]){
 					stflow+=F[edge.id];
 				}
-			}
+			}*/
 
 #endif
 
@@ -622,10 +622,10 @@ private:
     		}
 #ifndef NDEBUG
         	 dbg_print_graph(s,t,shortCircuitFrom, shortCircuitTo);
-    	 	if(shortCircuitFrom>=0){
+    	 /*	if(shortCircuitFrom>=0){
     	 		d.addEdge(shortCircuitFrom,shortCircuitTo,d.edges(),100);
     	 	}
-    		EdmondsKarpAdj<std::vector<Weight>,Weight> ek_check(d,d.weights);
+    		EdmondsKarpAdj<std::vector<Weight>,Weight> ek_check(d,capacity);
 
     		Weight expect =  ek_check.maxFlow(s,t);
 
@@ -637,7 +637,7 @@ private:
 					Weight fi = F[i];
 					assert(F[i]<= capacity[i]);
 
-    		}
+    		}*/
 
 #endif
         	 return newFlow;

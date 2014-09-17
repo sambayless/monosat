@@ -9,7 +9,8 @@
 #define MAXFLOWDETECTOR_H_
 #include "utils/System.h"
 
-#include "Graph.h"
+#include "GraphTheoryTypes.h"
+#include "dgl/graph/DynamicGraph.h"
 #include "dgl/MaxFlow.h"
 #include "dgl/EdmondsKarp.h"
 #include "core/SolverTypes.h"
