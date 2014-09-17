@@ -22,7 +22,7 @@ using namespace Minisat;
 
 
 template<typename Weight>
-SteinerDetector<Weight>::SteinerDetector(int detectorID, GraphTheorySolver * outer,std::vector<Weight> &weights,  DynamicGraph &g,DynamicGraph &antig ,double seed):
+SteinerDetector<Weight>::SteinerDetector(int detectorID, GraphTheorySolver<Weight> * outer,std::vector<Weight> &weights,  DynamicGraph &g,DynamicGraph &antig ,double seed):
 Detector(detectorID),outer(outer),g(g),antig(antig),rnd_seed(seed),weights(weights),positive_reach_detector(NULL),negative_reach_detector(NULL){
 	checked_unique=false;
 	all_unique=true;

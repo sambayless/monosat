@@ -19,43 +19,56 @@
 #include "core/SolverTypes.h"
 #include "mtl/Map.h"
 #include "dgl/WeightedDijkstra.h"
-
+#include <gmpxx.h>
 #include "utils/System.h"
 #include "Detector.h"
+#include <vector>
 using namespace dgl;
 namespace Minisat{
+template<typename Weight>
 class GraphTheorySolver;
+
+
+
+template<typename Weight>
 class DistanceDetector:public Detector{
 public:
-		GraphTheorySolver * outer;
+		GraphTheorySolver<Weight> * outer;
 		 DynamicGraph &g;
 		 DynamicGraph &antig;
+		 std::vector<Weight> & weights;
 		//int within;
 		int source;
 		double rnd_seed;
 		int constraintsBuilt;
 		CRef reach_marker;
 		CRef non_reach_marker;
+		CRef weighted_reach_marker;
+		CRef weighted_non_reach_marker;
 		CRef forced_reach_marker;
 		Distance<int> * positive_reach_detector;
 		Distance<int> * negative_reach_detector;
+
+		Distance<Weight> * positive_weighted_distance_detector;
+		Distance<Weight> * negative_weighted_distance_detector;
+
 		Reach *  positive_path_detector;
 
 		//vec<Lit>  reach_lits;
 		Var first_reach_var;
 		vec<int> reach_lit_map;
 		vec<int> force_reason;
-		int max_distance;
+		int max_unweighted_distance;
 
 		int stats_pure_skipped;
-		vec<vec<Lit> > full_dist_lits;
+		vec<vec<Lit> > unweighted_sat_lits;
 
-		struct DistLit{
+		struct UnweightedDistLit{
 			Lit l;
-			int min_distance;
+			int min_unweighted_distance;
 
 		};
-		vec<vec<DistLit> > dist_lits;
+		vec<vec<UnweightedDistLit> > unweighted_dist_lits;
 		struct Change{
 				Lit l;
 				int u;
@@ -87,12 +100,24 @@ public:
 
 			void setMininumDistance(int u, bool reachable, int distance);
 
-
 			ReachStatus(DistanceDetector & _outer, bool _polarity):detector(_outer), polarity(_polarity){}
+		};
+		struct DistanceStatus{
+			DistanceDetector & detector;
+			bool polarity;
+			void setReachable(int u, bool reachable);
+			bool isReachable(int u) const{
+				return false;
+			}
+
+			void setMininumDistance(int u, bool reachable, Weight& distance);
+
+			DistanceStatus(DistanceDetector & _outer, bool _polarity):detector(_outer), polarity(_polarity){}
 		};
 		ReachStatus *positiveReachStatus;
 		ReachStatus *negativeReachStatus;
-
+		DistanceStatus *positiveDistanceStatus;
+		DistanceStatus *negativeDistanceStatus;
 		int getNode(Var reachVar){
 			assert(reachVar>=first_reach_var);
 			int index = reachVar-first_reach_var;
@@ -113,7 +138,7 @@ public:
 			return reach_lits[node];
 
 		}*/
-		void buildSATConstraints(int distance=-1);
+
 		bool propagate(vec<Lit> & conflict);
 		void buildReachReason(int node,vec<Lit> & conflict);
 		void buildNonReachReason(int node,vec<Lit> & conflict);
@@ -121,14 +146,17 @@ public:
 		void buildReason(Lit p, vec<Lit> & reason, CRef marker);
 		bool checkSatisfied();
 		Lit decide();
-		void addLit(int from, int to, Var reach_var,int within_steps=-1);
-		DistanceDetector(int _detectorID, GraphTheorySolver * _outer, DynamicGraph &_g, DynamicGraph &_antig, int _source, int within_steps,double seed=1);//:Detector(_detectorID),outer(_outer),within(-1),source(_source),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL){}
+		void addUnweightedShortestPathLit(int from, int to, Var reach_var,int within_steps=-1);
+		void addWeightedShortestPathLit(int from, int to, Var reach_var,Weight within_distance);
+		DistanceDetector(int _detectorID, GraphTheorySolver<Weight> * _outer, std::vector<Weight> & weights, DynamicGraph &_g, DynamicGraph &_antig, int _source, int within_steps,double seed=1);//:Detector(_detectorID),outer(_outer),within(-1),source(_source),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL){}
 		virtual ~DistanceDetector(){
 
 		}
 		const char* getName(){
 			return "Shortest Path Detector";
 		}
+private:
+		void buildSATConstraints(int distance=-1);
 };
 };
 #endif /* DistanceDetector_H_ */

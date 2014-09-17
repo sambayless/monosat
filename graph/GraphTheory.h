@@ -45,12 +45,12 @@
 
 using namespace dgl;
 namespace Minisat{
-
+template<typename Weight>
 class GraphTheorySolver;
 
 
 
-
+template<typename Weight>
 class GraphTheorySolver:public Theory{
 public:
 
@@ -63,11 +63,11 @@ private:
 public:
 	int id;
 
-	bool rational_edges=false;
 
+	bool all_edges_unit=true;
 	vec<lbool> assigns;
 
-	MSTDetector<int> * mstDetector;
+	MSTDetector<Weight> * mstDetector;
 	vec<ReachabilityConstraint> unimplemented_reachability_constraints;
 	vec<ConnectivityConstraint> unimplemented_connectivity_constraints;
 
@@ -99,13 +99,13 @@ public:
 	vec<ReachInfo> connect_info;
 public:
 	vec<Detector*> detectors;
-	vec<ReachDetector*> reach_detectors;
-	vec<ConnectDetector*> connect_detectors;
-	vec<DistanceDetector*> distance_detectors;
-	vec<MaxflowDetector<int>*> flow_detectors;
-	ConnectedComponentsDetector* component_detector;
-	CycleDetector * cycle_detector;
-	vec<SteinerDetector<int>*>  steiner_detectors;
+	vec<ReachDetector<Weight>*> reach_detectors;
+	vec<ConnectDetector<Weight>*> connect_detectors;
+	vec<DistanceDetector<Weight>*> distance_detectors;
+	vec<MaxflowDetector<Weight>*> flow_detectors;
+	ConnectedComponentsDetector<Weight>* component_detector;
+	CycleDetector<Weight> * cycle_detector;
+	vec<SteinerDetector<Weight>*>  steiner_detectors;
 
 	vec<int> marker_map;
 
@@ -123,7 +123,7 @@ public:
 	vec<vec<Edge> > inv_adj;
 
 	//vector of the weights for each edge
-	std::vector<int> edge_weights;
+	std::vector<Weight> edge_weights;
 	//Some algorithms support computations using rational weights (or capacities).
 	std::vector<mpq_class> rational_weights;
 	bool requiresPropagation;
@@ -1165,53 +1165,15 @@ public:
 		marker_map[mnum] = detectorID;
 		return reasonMarker;
 	}
-	Lit newEdge(int from,int to, Var outerVar, mpq_class & weight){
-		/*assert(outerVar!=var_Undef);
-		rational_edges=true;
 
-		int index = edge_list.size();
-		edge_list.push();
-		Var v = newVar(outerVar,index,true);
-
-		undirected_adj[to].push({v,outerVar,from,to,index,weight});
-		undirected_adj[from].push({v,outerVar,to,from,index,weight});
-		inv_adj[to].push({v,outerVar,from,to,index,weight});
-
-		//num_edges++;
-		edge_list[index].v =v;
-		edge_list[index].outerVar =outerVar;
-		edge_list[index].from=from;
-		edge_list[index].to =to;
-		edge_list[index].edgeID=index;
-		edge_list[index].weight=weight;
-		if(edge_weights.size()<=index){
-			edge_weights.resize(index+1);
-		}
-		edge_weights[index]=1;
-
-		if(rational_weights.size()<=index){
-			rational_weights.resize(index+1);
-		}
-		rational_weights[index]=weight;
-
-		edges[from][to]= {v,outerVar,from,to,index,1};
-		g.addEdge(from,to,index,weight);
-		g.disableEdge(from,to, index);
-		antig.addEdge(from,to,index,weight);
-		cutGraph.addEdge(from,to,index,weight);
-
-		return mkLit(v,false);*/
-	}
-	Lit newEdge(int from,int to, Var outerVar = var_Undef, int weight=1)
+	Lit newEdge(int from,int to, Var outerVar = var_Undef, Weight weight=1)
     {
 		assert(outerVar!=var_Undef);
 	/*	if(outerVar==var_Undef)
 			outerVar = S->newVar();*/
 
-		if(rational_edges){
-			return newEdge(from,to,outerVar,weight);
-		}
 
+		all_edges_unit&=(weight==1);
 		int index = edge_list.size();
 		edge_list.push();
 		Var v = newVar(outerVar,index,true);
@@ -1258,14 +1220,15 @@ public:
 	int getWeight(int edgeID){
 		return edge_list[edgeID].weight;
 	}
-	void reachesWithinSteps(int from, int to, Var reach_var, int within_steps){
+	void reachesWithinSteps(int from, int to, Var reach_var, Weight within_steps){
 
 				assert(from<g.nodes());
 				if(within_steps<=-1)
 					within_steps = g.nodes();
 
 				if (dist_info[from].source<0){
-					DistanceDetector * d =new DistanceDetector(detectors.size(), this,g,antig,from,within_steps,drand(rnd_seed));
+
+					DistanceDetector<Weight> * d =new DistanceDetector<Weight>(detectors.size(), this,edge_weights,g,antig,from,within_steps,drand(rnd_seed));
 					detectors.push(d);
 					//reach_detectors.push(reach_detectors.last());
 					distance_detectors.push(d);
@@ -1288,7 +1251,7 @@ public:
 
 				}
 
-				DistanceDetector * d = (DistanceDetector*)dist_info[from].detector;
+				DistanceDetector<Weight>  * d = (DistanceDetector<Weight>*)dist_info[from].detector;
 				assert(d);
 
 				d->addLit(from,to,reach_var,within_steps);
@@ -1388,7 +1351,7 @@ public:
 					if (reach_info[from].source<0){
 
 
-						detectors.push(new AllPairsDetector(detectors.size(), this,g,antig,drand(rnd_seed)));
+						detectors.push(new AllPairsDetector<Weight>(detectors.size(), this,g,antig,drand(rnd_seed)));
 							//reach_detectors.push(reach_detectors.last());
 
 
@@ -1412,7 +1375,7 @@ public:
 
 					}
 
-					AllPairsDetector * d =(AllPairsDetector*) reach_info[from].detector;
+					AllPairsDetector<Weight> * d =(AllPairsDetector<Weight>*) reach_info[from].detector;
 					assert(d);
 
 					d->addLit(from,to,reach_var,within_steps);
@@ -1435,7 +1398,7 @@ public:
 
 			if (connect_info[from].source<0){
 
-					ConnectDetector*rd = new ConnectDetector(detectors.size(), this,g,antig,from,drand(rnd_seed));
+					ConnectDetector<Weight>*rd = new ConnectDetector<Weight>(detectors.size(), this,g,antig,from,drand(rnd_seed));
 					detectors.push(rd);
 					connect_detectors.push(rd);
 
@@ -1449,7 +1412,7 @@ public:
 
 			}
 
-			ConnectDetector * d = (ConnectDetector*) connect_info[from].detector;
+			ConnectDetector<Weight> * d = (ConnectDetector<Weight>*) connect_info[from].detector;
 			assert(d);
 			assert(within_steps==-1);
 			d->addLit(from,to,reach_var);
@@ -1457,7 +1420,7 @@ public:
 
 	}
 
-	void reaches_private(int from, int to, Var reach_var,int within_steps=-1){
+	void reaches_private(int from, int to, Var reach_var,Weight within_steps=-1){
 			//for now, reachesWithinSteps to be called instead
 			if(within_steps>=0 || opt_force_distance_solver){
 				reachesWithinSteps(from,to,reach_var,within_steps);
@@ -1472,7 +1435,7 @@ public:
 
 
 
-						ReachDetector*rd = new ReachDetector(detectors.size(), this,g,antig,from,drand(rnd_seed));
+						ReachDetector<Weight>*rd = new ReachDetector<Weight>(detectors.size(), this,g,antig,from,drand(rnd_seed));
 						detectors.push(rd);
 						reach_detectors.push(rd);
 
@@ -1491,7 +1454,7 @@ public:
 
 				}
 
-				ReachDetector * d = (ReachDetector*) reach_info[from].detector;
+				ReachDetector<Weight> * d = (ReachDetector<Weight>*) reach_info[from].detector;
 				assert(d);
 				assert(within_steps==-1);
 				d->addLit(from,to,reach_var);
@@ -1566,14 +1529,14 @@ public:
 	}
 	void minConnectedComponents(int min_components, Var v){
 		if(!component_detector){
-			component_detector = new  ConnectedComponentsDetector(detectors.size(),this, g, antig,drand(rnd_seed));
+			component_detector = new  ConnectedComponentsDetector<Weight>(detectors.size(),this, g, antig,drand(rnd_seed));
 			detectors.push(component_detector);
 		}
 		component_detector->addConnectedComponentsLit(v,min_components);
 	}
 	void detectCycle(bool directed, Var v){
 		if(!cycle_detector){
-			cycle_detector = new  CycleDetector(detectors.size(),this, g, antig,true,drand(rnd_seed));
+			cycle_detector = new  CycleDetector<Weight>(detectors.size(),this, g, antig,true,drand(rnd_seed));
 			detectors.push(cycle_detector);
 		}
 		cycle_detector->addCycleDetectorLit(directed,v);
@@ -1583,14 +1546,14 @@ public:
 	void addSteinerTree(const vec<std::pair<int, Var> > & terminals, int steinerTreeID){
 		steiner_detectors.growTo(steinerTreeID+1);
 		assert(!steiner_detectors[steinerTreeID]);
-		steiner_detectors[steinerTreeID]= new SteinerDetector<int>(detectors.size(),this,edge_weights, g, antig,drand(rnd_seed));
+		steiner_detectors[steinerTreeID]= new SteinerDetector<Weight>(detectors.size(),this,edge_weights, g, antig,drand(rnd_seed));
 		detectors.push(steiner_detectors[steinerTreeID]);
 		for(int i =0;i<terminals.size();i++){
 			steiner_detectors[steinerTreeID]->addTerminalNode(terminals[i].first,terminals[i].second);
 		}
 	}
 
-	void addSteinerWeightConstraint(int steinerTreeID, int weight, Var outerVar){
+	void addSteinerWeightConstraint(int steinerTreeID, Weight weight, Var outerVar){
 		if(steinerTreeID >= steiner_detectors.size()){
 			fprintf(stderr,"invalid steinerTreeID %d\n", steinerTreeID);
 			exit(1);

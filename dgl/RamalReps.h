@@ -221,8 +221,8 @@ public:
 		int ru =  g.all_edges[edgeID].from;
 		int rv =  g.all_edges[edgeID].to;
 
-		int rdv = dist[rv];
-		int rdu = dist[ru];
+		Weight & rdv = dist[rv];
+		Weight & rdu = dist[ru];
 
 		Weight& weight = weights[edgeID];
 		if(dist[rv]<dist[ru]+weight)
@@ -257,8 +257,8 @@ public:
 						assert(g.all_edges[adjID].to==u);
 						int v =g.all_edges[adjID].from;
 						Weight & w = weights[adjID];//assume a weight of one for now
-						int du = dist[u];
-						int dv = dist[v];
+						Weight & du = dist[u];
+						Weight & dv = dist[v];
 						if(dist[u]==dist[v]+w ){
 							edgeInShortestPathGraph[adjID]=true;
 							delta[u]++;
@@ -284,8 +284,8 @@ public:
 						assert(g.all_edges[adjID].from==u);
 						int s =g.all_edges[adjID].to;
 						Weight & w = weights[adjID];//assume a weight of one for now
-						int du = dist[u];
-						int ds = dist[s];
+						Weight & du = dist[u];
+						Weight & ds = dist[s];
 						if(dist[s]>dist[u]+w){
 							dist[s]=dist[u]+w;
 							q.update(s);
@@ -450,8 +450,8 @@ public:
 
 						assert(g.all_edges[adjID].to==u);
 						int v =g.all_edges[adjID].from;
-						int dv = dist[v];
-						int du = dist[u];
+						Weight & dv = dist[v];
+						Weight & du = dist[u];
 						bool edgeIn = edgeInShortestPathGraph[adjID];
 						Weight & w = weights[adjID];//assume a weight of one for now
 						if(dist[u]==dist[v]+w && ! edgeInShortestPathGraph[adjID]){
@@ -489,7 +489,7 @@ public:
 				return;
 		if(last_modification<=0 || g.changed()){
 			INF=1;//g.nodes()+1;
-			for(auto & w:weights):
+			for(Weight & w:weights)
 				INF+=w;
 			dist.resize(g.nodes(),INF);
 			dist[getSource()]=0;

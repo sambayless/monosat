@@ -20,11 +20,12 @@
 #include "Detector.h"
 using namespace dgl;
 namespace Minisat{
+template<typename Weight>
 class GraphTheorySolver;
 template<typename Weight=int>
 class MaxflowDetector:public Detector{
 public:
-		GraphTheorySolver * outer;
+		GraphTheorySolver<Weight> * outer;
 		std::vector<Weight> capacities;
 		DynamicGraph & over_graph;
 		 DynamicGraph &g;
@@ -74,7 +75,7 @@ public:
 		bool checkSatisfied();
 		Lit decide();
 		void addFlowLit(Weight max_flow,Var reach_var);
-		MaxflowDetector(int _detectorID, GraphTheorySolver * _outer,std::vector<Weight> & capacities, DynamicGraph &_g, DynamicGraph &_antig, int _source, int _target,double seed=1);//:Detector(_detectorID),outer(_outer),within(-1),source(_source),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL){}
+		MaxflowDetector(int _detectorID, GraphTheorySolver<Weight> * _outer,std::vector<Weight> & capacities, DynamicGraph &_g, DynamicGraph &_antig, int _source, int _target,double seed=1);//:Detector(_detectorID),outer(_outer),within(-1),source(_source),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL){}
 		virtual ~MaxflowDetector(){
 
 		}

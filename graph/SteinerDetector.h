@@ -22,11 +22,12 @@
 
 using namespace dgl;
 namespace Minisat{
+template<typename Weight>
 class GraphTheorySolver;
 template<typename Weight=int>
 class SteinerDetector:public Detector{
 public:
-		GraphTheorySolver * outer;
+		GraphTheorySolver<Weight> * outer;
 		std::vector<Weight>& weights;
 		DynamicGraph & g;
 		DynamicGraph & antig;
@@ -95,7 +96,7 @@ public:
 
 		void addWeightLit(Weight &min_weight,Var weight_var);
 		void addTerminalNode(int node,Var theoryVar);
-		SteinerDetector(int _detectorID, GraphTheorySolver * _outer,std::vector<Weight>& weights, DynamicGraph &_g, DynamicGraph &_antig,  double seed=1);//:Detector(_detectorID),outer(_outer),within(-1),source(_source),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL){}
+		SteinerDetector(int _detectorID, GraphTheorySolver<Weight> * _outer,std::vector<Weight>& weights, DynamicGraph &_g, DynamicGraph &_antig,  double seed=1);//:Detector(_detectorID),outer(_outer),within(-1),source(_source),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL){}
 
 		virtual void assign(Lit l){
 			 Detector::assign(l);

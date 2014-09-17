@@ -13,7 +13,8 @@
 #include "dgl/DynamicConnectivity.h"
 #include "dgl/Distance.h"
 #include "dgl/Dijkstra.h"
-ConnectDetector::ConnectDetector(int _detectorID, GraphTheorySolver * _outer, DynamicGraph &_g, DynamicGraph &_antig, int from,double seed):Detector(_detectorID),outer(_outer),g(_g),antig(_antig),within(-1),source(from),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL),chokepoint_status(*this),chokepoint(chokepoint_status, _antig,source){
+template<typename Weight>
+ConnectDetector<Weight>::ConnectDetector(int _detectorID, GraphTheorySolver<Weight> * _outer, DynamicGraph &_g, DynamicGraph &_antig, int from,double seed):Detector(_detectorID),outer(_outer),g(_g),antig(_antig),within(-1),source(from),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL),chokepoint_status(*this),chokepoint(chokepoint_status, _antig,source){
 	check_positive=true;
 	check_negative=true;
 	constraintsBuilt=-1;
@@ -51,41 +52,41 @@ ConnectDetector::ConnectDetector(int _detectorID, GraphTheorySolver * _outer, Dy
 /*	 if(opt_use_optimal_path_for_decisions){
 		 opt_path = new WeightedDijkstra< double >(from,_antig,opt_weight);
 	 }*/
-		positiveReachStatus = new ConnectDetector::ReachStatus(*this,true);
-		negativeReachStatus = new ConnectDetector::ReachStatus(*this,false);
+		positiveReachStatus = new ConnectDetector<Weight>::ReachStatus(*this,true);
+		negativeReachStatus = new ConnectDetector<Weight>::ReachStatus(*this,false);
 	 if(undirectedalg ==ConnectivityAlg::ALG_BFS){
 
-		positive_reach_detector = new BFSReachability<ConnectDetector::ReachStatus,true>(from,_g,*(positiveReachStatus),1);
-		negative_reach_detector = new BFSReachability<ConnectDetector::ReachStatus,true>(from,_antig,*(negativeReachStatus),-1);
+		positive_reach_detector = new BFSReachability<ConnectDetector<Weight>::ReachStatus,true>(from,_g,*(positiveReachStatus),1);
+		negative_reach_detector = new BFSReachability<ConnectDetector<Weight>::ReachStatus,true>(from,_antig,*(negativeReachStatus),-1);
 		if(opt_conflict_shortest_path)
 			positive_path_detector = new UnweightedBFS<Reach::NullStatus,true>(from,_g,Reach::nullStatus,1);
 		else
 			positive_path_detector =positive_reach_detector;
 	}else if(undirectedalg==ConnectivityAlg::ALG_DFS){
 
-		positive_reach_detector = new DFSReachability<ConnectDetector::ReachStatus,true>(from,_g,*(positiveReachStatus),1);
-		negative_reach_detector = new DFSReachability<ConnectDetector::ReachStatus,true>(from,_antig,*(negativeReachStatus),-1);
+		positive_reach_detector = new DFSReachability<ConnectDetector<Weight>::ReachStatus,true>(from,_g,*(positiveReachStatus),1);
+		negative_reach_detector = new DFSReachability<ConnectDetector<Weight>::ReachStatus,true>(from,_antig,*(negativeReachStatus),-1);
 		if(opt_conflict_shortest_path)
 			positive_path_detector = new UnweightedBFS<Reach::NullStatus,true>(from,_g,Reach::nullStatus,1);
 		else
 			positive_path_detector =positive_reach_detector;
 	}else if(undirectedalg==ConnectivityAlg::ALG_DISTANCE){
 
-		positive_reach_detector = new UnweightedBFS<ConnectDetector::ReachStatus,true>(from,_g,*(positiveReachStatus),1);
-		negative_reach_detector = new UnweightedBFS<ConnectDetector::ReachStatus,true>(from,_antig,*(negativeReachStatus),-1);
+		positive_reach_detector = new UnweightedBFS<ConnectDetector<Weight>::ReachStatus,true>(from,_g,*(positiveReachStatus),1);
+		negative_reach_detector = new UnweightedBFS<ConnectDetector<Weight>::ReachStatus,true>(from,_antig,*(negativeReachStatus),-1);
 		positive_path_detector = positive_reach_detector;
 	}else if (undirectedalg==ConnectivityAlg::ALG_THORUP){
 
-		positive_reach_detector = new DynamicConnectivity<ConnectDetector::ReachStatus>(_g,*(positiveReachStatus),1);
-		negative_reach_detector = new DynamicConnectivity<ConnectDetector::ReachStatus>(_antig,*(negativeReachStatus),-1);
+		positive_reach_detector = new DynamicConnectivity<ConnectDetector<Weight>::ReachStatus>(_g,*(positiveReachStatus),1);
+		negative_reach_detector = new DynamicConnectivity<ConnectDetector<Weight>::ReachStatus>(_antig,*(negativeReachStatus),-1);
 		positive_path_detector = positive_reach_detector;
 		if(opt_conflict_shortest_path)
 			positive_path_detector = new UnweightedBFS<Reach::NullStatus,true>(from,_g,Reach::nullStatus,1);
 		else
 			positive_path_detector =positive_reach_detector;
 	}else{
-		positive_reach_detector = new Dijkstra<ConnectDetector::ReachStatus, true>(from,_g,*positiveReachStatus);
-		negative_reach_detector = new Dijkstra<ConnectDetector::ReachStatus,true>(from,_antig,*negativeReachStatus);
+		positive_reach_detector = new Dijkstra<ConnectDetector<Weight>::ReachStatus, true>(from,_g,*positiveReachStatus);
+		negative_reach_detector = new Dijkstra<ConnectDetector<Weight>::ReachStatus,true>(from,_antig,*negativeReachStatus);
 		positive_path_detector = positive_reach_detector;
 		//reach_detectors.last()->positive_dist_detector = new Dijkstra(from,g);
 	}
@@ -96,8 +97,8 @@ ConnectDetector::ConnectDetector(int _detectorID, GraphTheorySolver * _outer, Dy
 	non_reach_marker=outer->newReasonMarker(getID());
 	forced_reach_marker=outer->newReasonMarker(getID());
 }
-
-void ConnectDetector::buildSATConstraints(int within_steps){
+template<typename Weight>
+void ConnectDetector<Weight>::buildSATConstraints(int within_steps){
 	if(within_steps<0)
 		within_steps=g.nodes();
 	if(within_steps>g.nodes())
@@ -184,8 +185,8 @@ void ConnectDetector::buildSATConstraints(int within_steps){
 	}
 	constraintsBuilt=within_steps;
 }
-
-void ConnectDetector::addLit(int from, int to, Var outer_reach_var){
+template<typename Weight>
+void ConnectDetector<Weight>::addLit(int from, int to, Var outer_reach_var){
 	g.invalidate();
 	antig.invalidate();
 	Var reach_var = outer->newVar(outer_reach_var,getID());
@@ -222,8 +223,8 @@ void ConnectDetector::addLit(int from, int to, Var outer_reach_var){
 		outer->S->addClause(r, ~reachLit);*/
 	}
 }
-
-void ConnectDetector::ReachStatus::setReachable(int u, bool reachable){
+template<typename Weight>
+void ConnectDetector<Weight>::ReachStatus::setReachable(int u, bool reachable){
 	if(reachable){
 		assert(!detector.outer->dbg_notreachable( detector.source,u,true));
 	}else{
@@ -239,8 +240,8 @@ void ConnectDetector::ReachStatus::setReachable(int u, bool reachable){
 		}
 	}
 }
-
-void ConnectDetector::ReachStatus::setMininumDistance(int u, bool reachable, int distance){
+template<typename Weight>
+void ConnectDetector<Weight>::ReachStatus::setMininumDistance(int u, bool reachable, int distance){
 	assert(reachable ==(distance<detector.outer->g.nodes()));
 	setReachable(u,reachable);
 
@@ -265,25 +266,26 @@ void ConnectDetector::ReachStatus::setMininumDistance(int u, bool reachable, int
 		}
 	}*/
 }
-
-bool ConnectDetector::ChokepointStatus::mustReach(int node){
+template<typename Weight>
+bool ConnectDetector<Weight>::ChokepointStatus::mustReach(int node){
 	Lit l =  detector.reach_lits[node];
 	if(l!=lit_Undef){
 		return detector.outer->value(l)==l_True;
 	}
 	return false;
 }
-bool ConnectDetector::ChokepointStatus::operator() (int edge_id){
+template<typename Weight>
+bool ConnectDetector<Weight>::ChokepointStatus::operator() (int edge_id){
 	return detector.outer->value(detector.outer->edge_list[ edge_id].v)==l_Undef;
 }
-
-void ConnectDetector::preprocess(){
+template<typename Weight>
+void ConnectDetector<Weight>::preprocess(){
 	//vec<bool> pure;
 	//pure.growTo(reach_lits.size());
 	//can check if all reach lits appear in only one polarity in the solver constraints; if so, then we can disable either check_positive or check_negative
 }
-
-void ConnectDetector::buildReachReason(int node,vec<Lit> & conflict){
+template<typename Weight>
+void ConnectDetector<Weight>::buildReachReason(int node,vec<Lit> & conflict){
 			//drawFull();
 			Reach & d = *positive_path_detector;
 
@@ -333,7 +335,8 @@ void ConnectDetector::buildReachReason(int node,vec<Lit> & conflict){
 			outer->pathtime+=elapsed;
 
 		}
-		void ConnectDetector::buildNonReachReason(int node,vec<Lit> & conflict){
+template<typename Weight>
+		void ConnectDetector<Weight>::buildNonReachReason(int node,vec<Lit> & conflict){
 			static int it = 0;
 			++it;
 			int u = node;
@@ -457,7 +460,8 @@ void ConnectDetector::buildReachReason(int node,vec<Lit> & conflict){
 		 * The reason is that _IF_ that edge is false, THEN there is a cut of disabled edges between source and target
 		 * So, create the graph that has that edge (temporarily) assigned false, and find a min-cut in it...
 		 */
-		void ConnectDetector::buildForcedEdgeReason(int reach_node, int forced_edge_id,vec<Lit> & conflict){
+		template<typename Weight>
+		void ConnectDetector<Weight>::buildForcedEdgeReason(int reach_node, int forced_edge_id,vec<Lit> & conflict){
 					static int it = 0;
 					++it;
 
@@ -580,8 +584,8 @@ void ConnectDetector::buildReachReason(int node,vec<Lit> & conflict){
 					 outer->mctime+=elapsed;
 
 				}
-
-		void ConnectDetector::buildReason(Lit p, vec<Lit> & reason, CRef marker){
+		template<typename Weight>
+		void ConnectDetector<Weight>::buildReason(Lit p, vec<Lit> & reason, CRef marker){
 
 
 				if(marker==reach_marker){
@@ -634,7 +638,8 @@ void ConnectDetector::buildReachReason(int node,vec<Lit> & conflict){
 				}
 		}
 		static int iter = 0;
-		bool ConnectDetector::propagate(vec<Lit> & conflict){
+		template<typename Weight>
+		bool ConnectDetector<Weight>::propagate(vec<Lit> & conflict){
 			if(!positive_reach_detector)
 				return true;
 
@@ -763,8 +768,8 @@ void ConnectDetector::buildReachReason(int node,vec<Lit> & conflict){
 
 			return true;
 		}
-
-bool ConnectDetector::checkSatisfied(){
+		template<typename Weight>
+bool ConnectDetector<Weight>::checkSatisfied(){
 	if(positive_reach_detector){
 				for(int j = 0;j< reach_lits.size();j++){
 					Lit l = reach_lits[j];
@@ -821,8 +826,8 @@ bool ConnectDetector::checkSatisfied(){
 	}
 	return true;
 }
-
-void ConnectDetector::dbg_sync_reachability(){
+		template<typename Weight>
+void ConnectDetector<Weight>::dbg_sync_reachability(){
 #ifndef NDEBUG
 	if(!positive_reach_detector)
 			return;
@@ -843,7 +848,7 @@ void ConnectDetector::dbg_sync_reachability(){
 	}
 
 /*
-int ConnectDetector::OptimalWeightEdgeStatus::operator [] (int edge) const {
+int ConnectDetector<Weight>::OptimalWeightEdgeStatus::operator [] (int edge) const {
 	Var v = detector.outer->edge_list[edge].v;
 	lbool val = detector.outer->value(v);
 	if(val==l_False){
@@ -855,12 +860,12 @@ int ConnectDetector::OptimalWeightEdgeStatus::operator [] (int edge) const {
 		return 1;
 	}
 }
-int ConnectDetector::OptimalWeightEdgeStatus::size()const{
+int ConnectDetector<Weight>::OptimalWeightEdgeStatus::size()const{
 	return detector.outer->edge_list.size();
 }*/
 
-
-Lit ConnectDetector::decide(){
+		template<typename Weight>
+Lit ConnectDetector<Weight>::decide(){
 	if(!negative_reach_detector)
 		return lit_Undef;
 	auto * over = negative_reach_detector;
@@ -1095,4 +1100,6 @@ Lit ConnectDetector::decide(){
 	return lit_Undef;
 };
 
-
+template class ConnectDetector<int>;
+#include <gmpxx.h>
+template class ConnectDetector<mpq_class>;

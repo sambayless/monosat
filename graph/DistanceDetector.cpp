@@ -11,10 +11,13 @@
 #include "GraphTheory.h"
 #include "dgl/UnweightedRamalReps.h"
 #include "dgl/UnweightedDistance.h"
+#include "dgl/RamalReps.h"
+#include <gmpxx.h>
 using namespace Minisat;
-DistanceDetector::DistanceDetector(int _detectorID, GraphTheorySolver * _outer,  DynamicGraph &_g,DynamicGraph &_antig, int from, int within_steps ,double seed):
-Detector(_detectorID),outer(_outer),g(_g),antig(_antig),source(from),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL){
-	max_distance=0;
+template<typename Weight>
+DistanceDetector<Weight>::DistanceDetector(int _detectorID, GraphTheorySolver<Weight> * _outer,std::vector<Weight> & weights,  DynamicGraph &_g,DynamicGraph &_antig, int from, int within_steps ,double seed):
+Detector(_detectorID),outer(_outer),weights(weights),g(_g),antig(_antig),source(from),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL){
+	max_unweighted_distance=0;
 	rnd_path=NULL;
 
 	constraintsBuilt=-1;
@@ -29,7 +32,8 @@ Detector(_detectorID),outer(_outer),g(_g),antig(_antig),source(from),rnd_seed(se
 		 reach_marker=CRef_Undef;
 		 non_reach_marker=CRef_Undef;
 		 forced_reach_marker=CRef_Undef;
-
+		 weighted_reach_marker=CRef_Undef;
+		 weighted_non_reach_marker=CRef_Undef;
 		 //we are just going to directly enforce these constraints in the original SAT solver, so _nothing_ will end up happening in this detector (except for creating the clauses needed to enforce these constraints).
 
 		 return;
@@ -48,39 +52,51 @@ Detector(_detectorID),outer(_outer),g(_g),antig(_antig),source(from),rnd_seed(se
 	/* if(opt_use_optimal_path_for_decisions){
 		 opt_path = new WeightedDijkstra< OptimalWeightEdgeStatus >(from,_antig,opt_weight);
 	 }*/
-	 positiveReachStatus = new DistanceDetector::ReachStatus(*this,true);
-	 negativeReachStatus = new DistanceDetector::ReachStatus(*this,false);
-	if(distalg==DistAlg::ALG_DISTANCE){
+	 positiveReachStatus = new DistanceDetector<Weight>::ReachStatus(*this,true);
+	 negativeReachStatus = new DistanceDetector<Weight>::ReachStatus(*this,false);
 
-		positive_reach_detector = new UnweightedBFS<DistanceDetector::ReachStatus>(from,_g,*(positiveReachStatus),0);
-		negative_reach_detector = new UnweightedBFS<DistanceDetector::ReachStatus>(from,_antig,*(negativeReachStatus),0);
-		positive_path_detector = positive_reach_detector;
+	//select the unweighted distance detectors
+	if(distalg==DistAlg::ALG_DISTANCE){
+		if(outer->all_edges_unit){
+			positive_reach_detector = new UnweightedBFS<DistanceDetector<Weight>::ReachStatus>(from,_g,*(positiveReachStatus),0);
+			negative_reach_detector = new UnweightedBFS<DistanceDetector<Weight>::ReachStatus>(from,_antig,*(negativeReachStatus),0);
+			positive_path_detector = positive_reach_detector;
+		}else{
+			positive_reach_detector = new Dijkstra<DistanceDetector<Weight>::ReachStatus>(from,_g,*positiveReachStatus,0);
+			negative_reach_detector = new Dijkstra<DistanceDetector<Weight>::ReachStatus>(from,_antig,*negativeReachStatus,0);
+			positive_path_detector =  new UnweightedBFS<Reach::NullStatus>(from,_g,Reach::nullStatus,0);
+		}
+
 		/*	if(opt_conflict_shortest_path)
 			reach_detectors.last()->positive_dist_detector = new Dijkstra<PositiveEdgeStatus>(from,g);*/
 	}else if (distalg==DistAlg::ALG_RAMAL_REPS){
-
-		positive_reach_detector = new UnweightedRamalReps<DistanceDetector::ReachStatus>(from,_g,*(positiveReachStatus),0);
-		negative_reach_detector = new UnweightedRamalReps<DistanceDetector::ReachStatus>(from,_antig,*(negativeReachStatus),0);
-
+		positive_reach_detector = new UnweightedRamalReps<typename DistanceDetector<Weight>::ReachStatus>(from,_g,*(positiveReachStatus),0);
+		negative_reach_detector = new UnweightedRamalReps<typename DistanceDetector<Weight>::ReachStatus>(from,_antig,*(negativeReachStatus),0);
 		positive_path_detector =  new UnweightedBFS<Reach::NullStatus>(from,_g,Reach::nullStatus,0);
 	}else{
-
-		positive_reach_detector = new Dijkstra<DistanceDetector::ReachStatus>(from,_g,*positiveReachStatus,0);
-		negative_reach_detector = new Dijkstra<DistanceDetector::ReachStatus>(from,_antig,*negativeReachStatus,0);
+		positive_reach_detector = new Dijkstra<typename DistanceDetector<Weight>::ReachStatus>(from,_g,*positiveReachStatus,0);
+		negative_reach_detector = new Dijkstra<typename DistanceDetector<Weight>::ReachStatus>(from,_antig,*negativeReachStatus,0);
 		positive_path_detector = positive_reach_detector;
 		//reach_detectors.last()->positive_dist_detector = new Dijkstra(from,g);
 	}
+
+	//select the _weighted_ distance detectors
+	 positiveDistanceStatus = new DistanceDetector<Weight>::DistanceStatus(*this,true);
+	 negativeDistanceStatus = new DistanceDetector<Weight>::DistanceStatus(*this,false);
+	positive_weighted_distance_detector = new RamalReps<typename DistanceDetector<Weight>::DistanceStatus,Weight>(from,_g,weights,*(positiveDistanceStatus),0);
+	negative_weighted_distance_detector = new RamalReps<typename DistanceDetector<Weight>::DistanceStatus,Weight>(from,_antig,weights,*(negativeDistanceStatus),0);
+
 
 
 	reach_marker=outer->newReasonMarker(getID());
 	non_reach_marker=outer->newReasonMarker(getID());
 	forced_reach_marker=outer->newReasonMarker(getID());
-
-
+	weighted_reach_marker=outer->newReasonMarker(getID());
+	weighted_non_reach_marker=outer->newReasonMarker(getID());
 }
 
-
-void DistanceDetector::buildSATConstraints(int within_steps){
+template<typename Weight>
+void DistanceDetector<Weight>::buildSATConstraints(int within_steps){
 	if(within_steps<0)
 		within_steps=g.nodes();
 	if(within_steps>g.nodes())
@@ -97,31 +113,31 @@ void DistanceDetector::buildSATConstraints(int within_steps){
 
 	if(constraintsBuilt<=0){
 		constraintsBuilt=0;
-		full_dist_lits.push();
+		unweighted_dist_lits.push();
 		Lit True = mkLit(outer->newVar());
 		outer->addClause(True);
 		assert(outer->value(True)==l_True);
 		Lit False = ~True;
 		for(int i = 0;i<g.nodes();i++){
-			full_dist_lits[0].push(False);
+			unweighted_sat_lits[0].push(False);
 		}
-		full_dist_lits[0][source]=True;
+		unweighted_sat_lits[0][source]=True;
 	}
 
 	vec<Lit> reaches;
 
 	//bellman-ford:
 	for (int i = constraintsBuilt;i<within_steps;i++){
-		full_dist_lits.last().copyTo(reaches);
-		full_dist_lits.push();
-		reaches.copyTo(full_dist_lits.last());
+		unweighted_sat_lits.last().copyTo(reaches);
+		unweighted_sat_lits.push();
+		reaches.copyTo(unweighted_sat_lits.last());
 		assert(outer->value( reaches[source])==l_True);
 		//For each edge:
 		for(int j = 0;j<g.nodes();j++){
 			Lit r_cur = reaches[j];
 
 			for(Edge & e: outer->inv_adj[j]){
-					if(outer->value(full_dist_lits.last()[e.to])==l_True){
+					if(outer->value(unweighted_sat_lits.last()[e.to])==l_True){
 						//do nothing
 					}else if (outer->value(reaches[e.from])==l_False){
 						//do nothing
@@ -145,7 +161,7 @@ void DistanceDetector::buildSATConstraints(int within_steps){
 
 					}
 			}
-			full_dist_lits.last()[j]=r_cur   ;//reaches[e.to] == (var & reaches[e.from])| reaches[e.to];
+			unweighted_sat_lits.last()[j]=r_cur   ;//reaches[e.to] == (var & reaches[e.from])| reaches[e.to];
 		}
 
 	}
@@ -153,7 +169,14 @@ void DistanceDetector::buildSATConstraints(int within_steps){
 	constraintsBuilt=within_steps;
 }
 
-void DistanceDetector::addLit(int from, int to, Var outer_reach_var,int within_steps){
+
+template<typename Weight>
+void DistanceDetector<Weight>::addWeightedShortestPathLit(int from, int to, Var reach_var,Weight within_distance){
+
+}
+
+template<typename Weight>
+void DistanceDetector<Weight>::addUnweightedShortestPathLit(int from, int to, Var outer_reach_var,int within_steps){
 	g.invalidate();
 		antig.invalidate();
 	Var reach_var= outer->newVar(outer_reach_var,getID());
@@ -170,11 +193,11 @@ void DistanceDetector::addLit(int from, int to, Var outer_reach_var,int within_s
 	if(within_steps<0)
 		within_steps=g.nodes();
 
-	if(within_steps>=max_distance){
-		max_distance=within_steps;
+	if(within_steps>=max_unweighted_distance){
+		max_unweighted_distance=within_steps;
 		if(opt_compute_max_distance){
-			positive_reach_detector->setMaxDistance(max_distance);
-			negative_reach_detector->setMaxDistance(max_distance);
+			positive_reach_detector->setMaxDistance(max_unweighted_distance);
+			negative_reach_detector->setMaxDistance(max_unweighted_distance);
 			//positive_path_detector->setMaxDistance(max_distance);
 		}
 	}
@@ -184,24 +207,24 @@ void DistanceDetector::addLit(int from, int to, Var outer_reach_var,int within_s
 	 if(distalg ==DistAlg::ALG_SAT){
 		 buildSATConstraints(within_steps);
 
-		if(full_dist_lits.size() >=within_steps){
+		if(unweighted_sat_lits.size() >=within_steps){
 			//then we are using the sat encoding and can directly look up its corresponding distance lit
 
-			Lit r = full_dist_lits[within_steps][to];
+			Lit r = unweighted_sat_lits[within_steps][to];
 			//force equality between the new lit and the old reach lit, in the SAT solver
 			outer->makeEqual(r,reachLit);
 		}
 		return;
 	 }
 
-		while( dist_lits.size()<=to)
-			dist_lits.push();
+		while( unweighted_dist_lits.size()<=to)
+			unweighted_dist_lits.push();
 
 	bool found=false;
-	for(int i = 0;i<dist_lits[to].size();i++){
-		if(dist_lits[to][i].min_distance==within_steps){
+	for(int i = 0;i<unweighted_dist_lits[to].size();i++){
+		if(unweighted_dist_lits[to][i].min_unweighted_distance==within_steps){
 			found=true;
-			Lit r = dist_lits[to][i].l;
+			Lit r = unweighted_dist_lits[to][i].l;
 			//force equality between the new lit and the old reach lit, in the SAT solver
 			outer->makeEqual(r,reachLit);
 			/*outer->S->addClause(~r, reachLit);
@@ -212,9 +235,9 @@ void DistanceDetector::addLit(int from, int to, Var outer_reach_var,int within_s
 
 
 	if(!found){
-		dist_lits[to].push();
-		dist_lits[to].last().l = reachLit;
-		dist_lits[to].last().min_distance=within_steps;
+		unweighted_dist_lits[to].push();
+		unweighted_dist_lits[to].last().l = reachLit;
+		unweighted_dist_lits[to].last().min_unweighted_distance=within_steps;
 		while(reach_lit_map.size()<= reach_var- first_reach_var ){
 			reach_lit_map.push(-1);
 		}
@@ -225,32 +248,32 @@ void DistanceDetector::addLit(int from, int to, Var outer_reach_var,int within_s
 
 
 }
-
-void DistanceDetector::ReachStatus::setReachable(int u, bool reachable){
-			/*	if(polarity==reachable && u<detector.reach_lits.size()){
-					Lit l = detector.reach_lits[u];
-					if(l!=lit_Undef){
-						lbool assign = detector.outer->value(l);
-						if(assign!= (reachable? l_True:l_False )){
-							detector.changed.push({reachable? l:~l,u});
-						}
-					}
-				}*/
+template<typename Weight>
+void DistanceDetector<Weight>::ReachStatus::setReachable(int u, bool reachable){
+/*	if(polarity==reachable && u<detector.reach_lits.size()){
+		Lit l = detector.reach_lits[u];
+		if(l!=lit_Undef){
+			lbool assign = detector.outer->value(l);
+			if(assign!= (reachable? l_True:l_False )){
+				detector.changed.push({reachable? l:~l,u});
 			}
-
-void DistanceDetector::ReachStatus::setMininumDistance(int u, bool reachable, int distance){
+		}
+	}*/
+}
+template<typename Weight>
+void DistanceDetector<Weight>::ReachStatus::setMininumDistance(int u, bool reachable, int  distance){
 	assert(reachable ==(distance<detector.outer->g.nodes()));
 	if(distance<=detector.outer->g.nodes()){
 		setReachable(u,reachable);
 	}
 
-		if(u<detector.dist_lits.size()){
+		if(u<detector.unweighted_dist_lits.size()){
 			assert(distance>=0);
 
-			for(int i = 0;i<detector.dist_lits[u].size();i++){
-				int min_distance =  detector.dist_lits[u][i].min_distance;
+			for(int i = 0;i<detector.unweighted_dist_lits[u].size();i++){
+				int& min_distance =  detector.unweighted_dist_lits[u][i].min_unweighted_distance;
 
-				Lit l = detector.dist_lits[u][i].l;
+				Lit l = detector.unweighted_dist_lits[u][i].l;
 				if(l!=lit_Undef){
 
 					assert(l!=lit_Undef);
@@ -271,8 +294,20 @@ void DistanceDetector::ReachStatus::setMininumDistance(int u, bool reachable, in
 
 }
 
+template<typename Weight>
+void DistanceDetector<Weight>::DistanceStatus::setReachable(int u, bool reachable){
 
-void DistanceDetector::buildReachReason(int node,vec<Lit> & conflict){
+}
+template<typename Weight>
+void DistanceDetector<Weight>::DistanceStatus::setMininumDistance(int u, bool reachable, Weight & distance){
+
+
+
+
+}
+
+template<typename Weight>
+void DistanceDetector<Weight>::buildReachReason(int node,vec<Lit> & conflict){
 			//drawFull();
 			Reach & d = *positive_path_detector;
 
@@ -334,7 +369,8 @@ void DistanceDetector::buildReachReason(int node,vec<Lit> & conflict){
 			outer->pathtime+=elapsed;
 
 		}
-		void DistanceDetector::buildNonReachReason(int node,vec<Lit> & conflict){
+template<typename Weight>
+		void DistanceDetector<Weight>::buildNonReachReason(int node,vec<Lit> & conflict){
 			static int it = 0;
 			++it;
 			int u = node;
@@ -411,7 +447,8 @@ void DistanceDetector::buildReachReason(int node,vec<Lit> & conflict){
 		 * The reason is that _IF_ that edge is false, THEN there is a cut of disabled edges between source and target
 		 * So, create the graph that has that edge (temporarily) assigned false, and find a min-cut in it...
 		 */
-		void DistanceDetector::buildForcedEdgeReason(int reach_node, int forced_edge_id,vec<Lit> & conflict){
+template<typename Weight>
+		void DistanceDetector<Weight>::buildForcedEdgeReason(int reach_node, int forced_edge_id,vec<Lit> & conflict){
 					static int it = 0;
 					++it;
 
@@ -491,8 +528,8 @@ void DistanceDetector::buildReachReason(int node,vec<Lit> & conflict){
 
 
 				}
-
-		void DistanceDetector::buildReason(Lit p, vec<Lit> & reason, CRef marker){
+template<typename Weight>
+		void DistanceDetector<Weight>::buildReason(Lit p, vec<Lit> & reason, CRef marker){
 
 
 				if(marker==reach_marker){
@@ -545,8 +582,8 @@ void DistanceDetector::buildReachReason(int node,vec<Lit> & conflict){
 					assert(false);
 				}
 		}
-
-		bool DistanceDetector::propagate(vec<Lit> & conflict){
+template<typename Weight>
+		bool DistanceDetector<Weight>::propagate(vec<Lit> & conflict){
 			if(!positive_reach_detector)
 				return true;
 
@@ -639,10 +676,10 @@ void DistanceDetector::buildReachReason(int node,vec<Lit> & conflict){
 			}
 
 			#ifdef DEBUG_DIJKSTRA
-					for(int i = 0;i<dist_lits.size();i++){
-						for(int j = 0;j<dist_lits[i].size();j++){
-							Lit l = dist_lits[i][j].l;
-							int dist =  dist_lits[i][j].min_distance;
+					for(int i = 0;i<unweighted_dist_lits.size();i++){
+						for(int j = 0;j<unweighted_dist_lits[i].size();j++){
+							Lit l = unweighted_dist_lits[i][j].l;
+							int dist =  unweighted_dist_lits[i][j].min_unweighted_distance;
 							if(l!=lit_Undef){
 								int u = getNode(var(l));
 								if((!opt_detect_pure_theory_lits || unassigned_positives>0) && positive_reach_detector->distance_unsafe(u)<=dist){
@@ -663,13 +700,13 @@ void DistanceDetector::buildReachReason(int node,vec<Lit> & conflict){
 			#endif
 			return true;
 		}
-
-bool DistanceDetector::checkSatisfied(){
+template<typename Weight>
+bool DistanceDetector<Weight>::checkSatisfied(){
 	if(positive_reach_detector){
-				for(int j = 0;j< dist_lits.size();j++){
-					for(int k = 0;k<dist_lits[j].size();k++){
-						Lit l = dist_lits[j][k].l;
-						int dist = dist_lits[j][k].min_distance;
+				for(int j = 0;j< unweighted_dist_lits.size();j++){
+					for(int k = 0;k<unweighted_dist_lits[j].size();k++){
+						Lit l = unweighted_dist_lits[j][k].l;
+						int dist = unweighted_dist_lits[j][k].min_unweighted_distance;
 						if(dist>5){
 							int a = 1;
 						}
@@ -700,9 +737,9 @@ bool DistanceDetector::checkSatisfied(){
 				Dijkstra<>over(source,antig) ;
 				under.update();
 				over.update();
-				for(int j = 0;j< full_dist_lits.size();j++){
-						for(int k = 0;k<full_dist_lits[j].size();k++){
-							Lit l = full_dist_lits[j][k];
+				for(int j = 0;j< unweighted_sat_lits.size();j++){
+						for(int k = 0;k<unweighted_sat_lits[j].size();k++){
+							Lit l = unweighted_sat_lits[j][k];
 							int dist =j;
 
 							if(l!=lit_Undef){
@@ -732,7 +769,7 @@ bool DistanceDetector::checkSatisfied(){
 }
 
 /*
-int DistanceDetector::OptimalWeightEdgeStatus::operator [] (int edge) const {
+int DistanceDetector<Weight>::OptimalWeightEdgeStatus::operator [] (int edge) const {
 	Var v = detector.outer->edge_list[edge].v;
 	lbool val = detector.outer->value(v);
 	if(val==l_False){
@@ -746,13 +783,13 @@ int DistanceDetector::OptimalWeightEdgeStatus::operator [] (int edge) const {
 	}
 }
 
-int DistanceDetector::OptimalWeightEdgeStatus::size()const{
+int DistanceDetector<Weight>::OptimalWeightEdgeStatus::size()const{
 	return detector.outer->edge_list.size();
 }
 */
 
-
-Lit DistanceDetector::decide(){
+template<typename Weight>
+Lit DistanceDetector<Weight>::decide(){
 	if(!opt_decide_graph_distance || !negative_reach_detector)
 		return lit_Undef;
 	DistanceDetector *r =this;
@@ -770,10 +807,10 @@ Lit DistanceDetector::decide(){
 
 	}*/
 
-	for(int k = 0;k<dist_lits.size();k++){
-		for(int n = 0;n<dist_lits[k].size();n++){
-			Lit l = dist_lits[k][n].l;
-			int min_dist = dist_lits[k][n].min_distance;
+	for(int k = 0;k<unweighted_dist_lits.size();k++){
+		for(int n = 0;n<unweighted_dist_lits[k].size();n++){
+			Lit l = unweighted_dist_lits[k][n].l;
+			int min_dist = unweighted_dist_lits[k][n].min_unweighted_distance;
 			if(l==lit_Undef)
 				continue;
 			int j = r->getNode(var(l));
@@ -918,4 +955,6 @@ Lit DistanceDetector::decide(){
 	return lit_Undef;
 };
 
-
+template class DistanceDetector<int>;
+#include <gmpxx.h>
+template class DistanceDetector<mpq_class>;
