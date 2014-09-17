@@ -18,7 +18,7 @@
 #include <algorithm>
 namespace dgl{
 template<class Status>
-class UnweightedRamalReps:public Reach{
+class UnweightedRamalReps:public Distance<int>{
 public:
 	DynamicGraph & g;
 	Status &  status;
@@ -756,12 +756,12 @@ public:
 
 		return dist[t]<INF;
 	}
-	int distance(int t){
+	int& distance(int t){
 		if(last_modification!=g.modifications)
 					update();
 		return dist[t];
 	}
-	int distance_unsafe(int t){
+	int& distance_unsafe(int t){
 		if(connected_unsafe(t))
 			return dist[t];
 		else

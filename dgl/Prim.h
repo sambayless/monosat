@@ -12,21 +12,23 @@
 
 
 namespace dgl{
-template<class Status>
-class Prim:public MinimumSpanningTree{
+
+template<class Status,typename Weight=int>
+class Prim:public MinimumSpanningTree<Weight>{
 public:
 
 	DynamicGraph & g;
+	std::vector<Weight> & weights;
 	Status &  status;
 	int last_modification;
-	int min_weight;
+	Weight min_weight;
 	int last_addition;
 	int last_deletion;
 	int history_qhead;
 
 	int last_history_clear;
 
-	int INF;
+	Weight INF;
 
 
 	std::vector<int> q;
@@ -37,7 +39,7 @@ public:
 	std::vector<char> seen;;
 //	std::vector<int> changed;
 	//std::vector<int> edge_weights;
-	std::vector<int> keys;
+	std::vector<Weight> keys;
 	std::vector<int> parents;
 	std::vector<int> parent_edges;
 	//int next_component;
@@ -46,12 +48,12 @@ public:
 	std::vector<bool> in_tree;
 	int numsets;
     struct VertLt {
-        const std::vector<int>&  keys;
+        const std::vector<Weight>&  keys;
 
         bool operator () (int x, int y) const {
         	return keys[x]<keys[y];
         }
-        VertLt(const std::vector<int>&  _key) : keys(_key) { }
+        VertLt(const std::vector<Weight>&  _key) : keys(_key) { }
     };
     //bool hasComponents;
 	Heap<VertLt> Q;
@@ -73,7 +75,7 @@ public:
 	double stats_full_update_time;
 	double stats_fast_update_time;
 
-	Prim(DynamicGraph & graph, Status & _status, int _reportPolarity=0 ):g(graph), status(_status), last_modification(-1),last_addition(-1),last_deletion(-1),history_qhead(0),last_history_clear(0),INF(0),reportPolarity(_reportPolarity),Q(VertLt(keys)){
+	Prim(DynamicGraph & graph,std::vector<Weight> & weights, Status & _status, int _reportPolarity=0 ):g(graph),weights(weights), status(_status), last_modification(-1),last_addition(-1),last_deletion(-1),history_qhead(0),last_history_clear(0),INF(0),reportPolarity(_reportPolarity),Q(VertLt(keys)){
 
 		mod_percentage=0.2;
 		stats_full_updates=0;
@@ -135,7 +137,7 @@ public:
 			parents[i]=-1;
 			parent_edges[i]=-1;//not really needed
 			components[i]=i;
-			int key = INF;
+			Weight key = INF;
 			keys[i]=key;
 		}
 		int n_seen=0;
@@ -159,7 +161,7 @@ public:
 					assert(parent!=-1);
 					int edgeid = parent_edges[u];
 					assert(edgeid!=-1);
-					min_weight+=g.getWeight(edgeid);
+					min_weight+=weights[edgeid];
 					mst.push_back(edgeid);
 					in_tree[edgeid]=true;
 					components[u]=root;
@@ -170,7 +172,7 @@ public:
 						continue;
 					int v = g.incident(u,j,true).node;
 					if(!seen[v]){
-						int w = g.getWeight(edgeid);
+						Weight & w = weights[edgeid];
 						if(w<keys[v]){
 							parents[v]=u;
 							parent_edges[v]=edgeid;
@@ -265,7 +267,7 @@ public:
 		return 0;*/
 	}
 
-	int weight(){
+	Weight& weight(){
 		update();
 
 		assert(dbg_uptodate());
@@ -275,7 +277,7 @@ public:
 		return min_weight;
 	}
 
-	int forestWeight(){
+	Weight& forestWeight(){
 		update();
 		assert(dbg_uptodate());
 		return min_weight;

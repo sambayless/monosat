@@ -12,14 +12,17 @@
 #include "alg/Heap.h"
 #include "graph/DynamicGraph.h"
 #include "Reach.h"
+#include "Distance.h"
 #include "Dijkstra.h"
 #include "core/Config.h"
 #include <algorithm>
+
 namespace dgl{
-template<class Status>
-class RamalReps:public Reach{
+template<class Status,typename Weight = int>
+class RamalReps:public Distance<Weight>{
 public:
 	DynamicGraph & g;
+	std::vector<Weight> & weights;
 	Status &  status;
 	int reportPolarity;
 	bool reportDistance;
@@ -31,23 +34,23 @@ public:
 	int last_history_clear;
 
 	int source;
-	int INF;
+	Weight INF;
 
 
 
 
 
-	std::vector<int> old_dist;
+	std::vector<Weight> old_dist;
 	std::vector<int> changed;
 	std::vector<bool> node_changed;
-	std::vector<int> dist;
+	std::vector<Weight> dist;
 	std::vector<int> prev;
 	struct DistCmp{
-		std::vector<int> & _dist;
+		std::vector<Weight> & _dist;
 		 bool operator()(int a, int b)const{
 			return _dist[a]<_dist[b];
 		}
-		 DistCmp(std::vector<int> & d):_dist(d){};
+		 DistCmp(std::vector<Weight> & d):_dist(d){};
 	};
 	Heap<DistCmp> q;
 
@@ -66,7 +69,7 @@ public:
 
 	double stats_full_update_time;
 	double stats_fast_update_time;
-	RamalReps(int s,DynamicGraph & graph,	Status &  status, int reportPolarity=0,bool reportDistance=false):g(graph),status(status),reportPolarity(reportPolarity),reportDistance(reportDistance), last_modification(-1),last_addition(-1),last_deletion(-1),history_qhead(0),last_history_clear(0),source(s),INF(0),q(DistCmp(dist)){
+	RamalReps(int s,DynamicGraph & graph,std::vector<Weight> & weights,	Status &  status, int reportPolarity=0,bool reportDistance=false):g(graph),weights(weights),status(status),reportPolarity(reportPolarity),reportDistance(reportDistance), last_modification(-1),last_addition(-1),last_deletion(-1),history_qhead(0),last_history_clear(0),source(s),INF(0),q(DistCmp(dist)){
 
 		mod_percentage=0.2;
 		stats_full_updates=0;
@@ -111,17 +114,17 @@ public:
 			}
 		}
 
-		std::vector<int> dbg_delta;
-		std::vector<int> dbg_dist;
+		std::vector<Weight> dbg_delta;
+		std::vector<Weight> dbg_dist;
 		dbg_dist.resize(g.nodes(),INF);
 		dbg_delta.resize(g.nodes());
 		dbg_dist[getSource()]=0;
 		struct DistCmp{
-			std::vector<int> & _dist;
+			std::vector<Weight> & _dist;
 			 bool operator()(int a, int b)const{
 				return _dist[a]<_dist[b];
 			}
-			 DistCmp(std::vector<int> & d):_dist(d){};
+			 DistCmp(std::vector<Weight> & d):_dist(d){};
 		};
 		Heap<DistCmp> q(dbg_dist);
 
@@ -139,7 +142,7 @@ public:
 
 					int edgeID = g.incoming(u,i).id;
 					int v = g.all_edges[edgeID].from;
-					int alt = dbg_dist[v]+ 1;
+					Weight alt = dbg_dist[v]+ weights[edgeID];
 					assert(alt>=dbg_dist[u]);
 				/*	if (alt==dbg_dist[u]){
 						dbg_delta[u]++;
@@ -152,7 +155,7 @@ public:
 
 				int edgeID = g.incident(u,i).id;
 				int v = g.all_edges[edgeID].to;
-				int alt = dbg_dist[u]+ 1;
+				Weight alt = dbg_dist[u]+ weights[edgeID];
 				if(alt<dbg_dist[v]){
 
 					dbg_dist[v]=alt;
@@ -179,10 +182,11 @@ public:
 
 				int edgeID = g.incoming(u,i).id;
 				int v = g.all_edges[edgeID].from;
-				int alt = dbg_dist[v]+ 1;
+
+				Weight alt = dbg_dist[v]+ weights[edgeID];
 				assert(alt>=dbg_dist[u]);
 				if(alt==dbg_dist[u]){
-					dbg_delta[u]++;
+					dbg_delta[u]++;//is this right?
 					assert(edgeInShortestPathGraph[edgeID]);
 				}else{
 					assert(!edgeInShortestPathGraph[edgeID]);
@@ -192,14 +196,14 @@ public:
 
 		}
 		for(int u = 0;u<g.nodes();u++){
-			int d = dist[u];
-			int d_expect = dbg_dist[u];
+			Weight& d = dist[u];
+			Weight& d_expect = dbg_dist[u];
 			assert(d==dbg_dist[u]);
 
 		}
 		for(int u = 0;u<g.nodes();u++){
-			int d = delta[u];
-			int d_expect = dbg_delta[u];
+			Weight& d = delta[u];
+			Weight& d_expect = dbg_delta[u];
 			assert(d==dbg_delta[u]);
 
 		}
@@ -220,7 +224,7 @@ public:
 		int rdv = dist[rv];
 		int rdu = dist[ru];
 
-		int weight = 1;
+		Weight& weight = weights[edgeID];
 		if(dist[rv]<dist[ru]+weight)
 			return;
 		else if (dist[rv]==dist[ru]+weight ){
@@ -252,7 +256,7 @@ public:
 
 						assert(g.all_edges[adjID].to==u);
 						int v =g.all_edges[adjID].from;
-						int w = 1;//assume a weight of one for now
+						Weight & w = weights[adjID];//assume a weight of one for now
 						int du = dist[u];
 						int dv = dist[v];
 						if(dist[u]==dist[v]+w ){
@@ -279,7 +283,7 @@ public:
 				if (g.edgeEnabled(adjID)){
 						assert(g.all_edges[adjID].from==u);
 						int s =g.all_edges[adjID].to;
-						int w = 1;//assume a weight of one for now
+						Weight & w = weights[adjID];//assume a weight of one for now
 						int du = dist[u];
 						int ds = dist[s];
 						if(dist[s]>dist[u]+w){
@@ -366,8 +370,8 @@ public:
 				if (g.edgeEnabled(adjID)){
 					assert(g.all_edges[adjID].to==u);
 					int v =g.all_edges[adjID].from;
-					int w = 1;//assume a weight of one for now
-					int alt = dist[v]+w;
+					Weight & w = weights[adjID];//assume a weight of one for now
+					Weight alt = dist[v]+w;
 					assert(!edgeInShortestPathGraph[adjID]);
 					if(dist[u]>alt){
 						dist[u]=alt;
@@ -418,8 +422,8 @@ public:
 				if (g.edgeEnabled(adjID)){
 					assert(g.all_edges[adjID].from==u);
 					int s =g.all_edges[adjID].to;
-					int w = 1;//assume a weight of one for now
-					int alt = dist[u]+w;
+					Weight w = weights[adjID];//assume a weight of one for now
+					Weight alt = dist[u]+w;
 					if(dist[s]>alt){
 						if(reportPolarity>=0 && dist[s]>=0){
 							//This check is needed (in addition to the above), because even if we are NOT reporting distances, it is possible for a node that was previously not reachable
@@ -449,7 +453,7 @@ public:
 						int dv = dist[v];
 						int du = dist[u];
 						bool edgeIn = edgeInShortestPathGraph[adjID];
-						int w = 1;//assume a weight of one for now
+						Weight & w = weights[adjID];//assume a weight of one for now
 						if(dist[u]==dist[v]+w && ! edgeInShortestPathGraph[adjID]){
 							assert(!edgeInShortestPathGraph[adjID]);
 							edgeInShortestPathGraph[adjID]=true;
@@ -484,7 +488,9 @@ public:
 		if(last_modification>0 && g.modifications==last_modification)
 				return;
 		if(last_modification<=0 || g.changed()){
-			INF=g.nodes()+1;
+			INF=1;//g.nodes()+1;
+			for(auto & w:weights):
+				INF+=w;
 			dist.resize(g.nodes(),INF);
 			dist[getSource()]=0;
 			delta.resize(g.nodes());
@@ -564,23 +570,7 @@ public:
 		return true;
 	}
 	bool dbg_uptodate(){
-//#ifdef DEBUG_GRAPH
-#ifdef DEBUG_DIJKSTRA
-		if(last_modification<=0)
-			return true;
-		dbg_delta();
-		Dijkstra<false> d(source,g);
 
-		for(int i = 0;i<g.nodes();i++){
-			int distance = dist[i];
-			int dbgdist = d.distance(i);
-			if(distance!=dbgdist){
-				assert(false);
-				exit(4);
-			}
-		}
-//#endif
-#endif
 		return true;
 	}
 
@@ -600,12 +590,12 @@ public:
 
 		return dist[t]<INF;
 	}
-	int distance(int t){
+	Weight & distance(int t){
 		if(last_modification!=g.modifications)
 					update();
 		return dist[t];
 	}
-	int distance_unsafe(int t){
+	Weight &distance_unsafe(int t){
 		if(connected_unsafe(t))
 			return dist[t];
 		else

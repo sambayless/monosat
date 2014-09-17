@@ -94,17 +94,10 @@ public:
 		};
 		ReachStatus *positiveReachStatus;
 		ReachStatus *negativeReachStatus;
-		WeightedDijkstra<vec<double>> * rnd_path;
-		vec<double> rnd_weight;
-		struct OptimalWeightEdgeStatus{
-			ConnectDetector & detector;
-			int operator [] (int edge) const ;
-			int size()const;
-			OptimalWeightEdgeStatus(ConnectDetector & _outer):detector(_outer){}
+		WeightedDijkstra<double> * rnd_path;
+		std::vector<double> rnd_weight;
 
-		};
-		OptimalWeightEdgeStatus opt_weight;
-		WeightedDijkstra<OptimalWeightEdgeStatus> * opt_path;
+		//WeightedDijkstra<double> * opt_path;
 		bool check_positive;
 		bool check_negative;
 

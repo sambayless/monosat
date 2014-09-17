@@ -48,7 +48,7 @@ private:
 		FullEdge(int from,int to, int id,int weight):from(from),to(to),id(id),weight(weight){}
 	};
 public:
-	std::vector<int> weights;
+	//std::vector<int> weights;
 	std::vector<FullEdge> all_edges;
 
 	struct EdgeChange{
@@ -148,9 +148,9 @@ public:
 		if(all_edges.size()<=id)
 			all_edges.resize(id+1);
 		all_edges[id]={from,to,id,weight};
-		if(weights.size()<=id)
-			weights.resize(id+1,0);
-		weights[id]=weight;
+		//if(weights.size()<=id)
+		//	weights.resize(id+1,0);
+		//weights[id]=weight;
 		//weights.push_back(weight);
 		modifications++;
 		additions=modifications;
@@ -208,13 +208,13 @@ public:
 			return inverted_adjacency_list[node][i];
 		}
 	}
-	std::vector<int> & getWeights(){
+/*	std::vector<int> & getWeights(){
 		return weights;
 	}
 	int getWeight(int edgeID){
 		return weights[edgeID];
 		//return all_edges[edgeID].weight;
-	}
+	}*/
 	FullEdge getEdge(int id){
 		return all_edges[id];
 	}
@@ -329,11 +329,11 @@ public:
 					s="blue";
 				else
 					s="red";
-				if(showWeights){
-					printf("n%d -> n%d [label=\"v%d w=%d\",color=\"%s\"]\n", i,u, id,getWeight(id), s);
-				}else{
+				//if(showWeights){
+				//	printf("n%d -> n%d [label=\"v%d w=%d\",color=\"%s\"]\n", i,u, id,getWeight(id), s);
+				//}else{
 					printf("n%d -> n%d [label=\"v%d\",color=\"%s\"]\n", i,u, id, s);
-				}
+				//}
 				}
 			}
 			printf("}\n");

@@ -12,7 +12,7 @@
 
 namespace dgl{
 template< class Capacity>
-class DinitzLinkCut:public MaxFlow{
+class DinitzLinkCut:public MaxFlow<int>{
 
 public:
 

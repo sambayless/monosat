@@ -36,6 +36,11 @@
 #include "ConnectedComponentsDetector.h"
 #include "CycleDetector.h"
 #include "SteinerDetector.h"
+#include <vector>
+#include <gmpxx.h>
+#include <cstdio>
+#include <cstdlib>
+#include <unistd.h>
 
 #ifdef DEBUG_GRAPH
 #include "TestGraph.h"
@@ -46,9 +51,7 @@ namespace Minisat{
 
 class GraphTheorySolver;
 
-#ifndef NDEBUG
-#include <cstdio>
-#endif
+
 
 
 class GraphTheorySolver:public GraphTheory{
@@ -67,7 +70,7 @@ public:
 
 	vec<lbool> assigns;
 
-	MSTDetector * mstDetector;
+	MSTDetector<int> * mstDetector;
 	vec<ReachabilityConstraint> unimplemented_reachability_constraints;
 	vec<ConnectivityConstraint> unimplemented_connectivity_constraints;
 
@@ -102,15 +105,15 @@ public:
 	vec<ReachDetector*> reach_detectors;
 	vec<ConnectDetector*> connect_detectors;
 	vec<DistanceDetector*> distance_detectors;
-	vec<MaxflowDetector*> flow_detectors;
+	vec<MaxflowDetector<int>*> flow_detectors;
 	ConnectedComponentsDetector* component_detector;
 	CycleDetector * cycle_detector;
-	vec<SteinerDetector*>  steiner_detectors;
+	vec<SteinerDetector<int>*>  steiner_detectors;
 
 	vec<int> marker_map;
 
 
-	std::vector<MaxFlow::Edge> cut;
+	std::vector<MaxFlowEdge> cut;
 
 	//Full matrix
 	vec<vec<Edge> > edges;
@@ -123,9 +126,11 @@ public:
 	vec<vec<Edge> > inv_adj;
 
 	//vector of the weights for each edge
-	vec<int> edge_weights;
+	std::vector<int> edge_weights;
+	//Some algorithms support computations using rational weights (or capacities).
+	std::vector<mpq_class> rational_weights;
 	bool requiresPropagation;
-	MaxFlow * mc;
+	MaxFlow<int> * mc;
 	//MaxFlow * reachprop;
 
     vec<char> seen;
@@ -247,10 +252,10 @@ public:
 
 			}else if (mincutalg == MinCutAlg::ALG_EDKARP_ADJ){
 
-				mc = new EdmondsKarpAdj<CutStatus>(cutGraph,cutStatus);
+				mc = new EdmondsKarpAdj<CutStatus,int>(cutGraph, cutStatus);
 				//reachprop = new EdmondsKarpAdj<PropCutStatus, NegativeEdgeStatus>(antig,propCutStatus);
 			}else{
-				mc = new EdmondsKarp(cutGraph);
+				mc = new EdmondsKarp<int>(cutGraph);
 			}
 
 
@@ -1196,8 +1201,10 @@ public:
 		edge_list[index].to =to;
 		edge_list[index].edgeID=index;
 		edge_list[index].weight=weight;
-
-		edge_weights.push(weight);
+		if(edge_weights.size()<=index){
+			edge_weights.resize(index+1);
+		}
+		edge_weights[index]=weight;
 
 		edges[from][to]= {v,outerVar,from,to,index,weight};
 		g.addEdge(from,to,index,weight);
@@ -1483,14 +1490,14 @@ public:
 	//v will be true if the minimum weight is <= the specified value
 	void minimumSpanningTree(Var v, int minimum_weight){
 		if(!mstDetector){
-			mstDetector = new MSTDetector(detectors.size(),this, g, antig, this->edge_weights,drand(rnd_seed));
+			mstDetector = new MSTDetector<int>(detectors.size(),this, g, antig, edge_weights,drand(rnd_seed));
 			detectors.push(mstDetector);
 		}
 		mstDetector->addWeightLit(v,minimum_weight);
 	}
 	void edgeInMinimumSpanningTree(Var edgeVar, Var var){
 		if(!mstDetector){
-			mstDetector = new MSTDetector(detectors.size(),this, g, antig, this->edge_weights,drand(rnd_seed));
+			mstDetector = new MSTDetector<int>(detectors.size(),this, g, antig, edge_weights,drand(rnd_seed));
 			detectors.push(mstDetector);
 		}
 		if(!S->hasTheory(edgeVar) || (S->getTheoryID(edgeVar)!= getTheoryIndex()) || ! isEdgeVar(S->getTheoryVar(edgeVar)) ){
@@ -1514,7 +1521,7 @@ public:
 				return;
 			}
 		}
-		MaxflowDetector *f = new MaxflowDetector(detectors.size(),this, g, antig,from,to,drand(rnd_seed)) ;
+		MaxflowDetector<> *f = new MaxflowDetector<int>(detectors.size(),this,edge_weights, g, antig,from,to,drand(rnd_seed)) ;
 		flow_detectors.push(f);
 		detectors.push(f);
 		f->addFlowLit(max_flow,v);
@@ -1539,7 +1546,7 @@ public:
 	void addSteinerTree(const vec<std::pair<int, Var> > & terminals, int steinerTreeID){
 		steiner_detectors.growTo(steinerTreeID+1);
 		assert(!steiner_detectors[steinerTreeID]);
-		steiner_detectors[steinerTreeID]= new SteinerDetector(detectors.size(),this, g, antig,drand(rnd_seed));
+		steiner_detectors[steinerTreeID]= new SteinerDetector<int>(detectors.size(),this,edge_weights, g, antig,drand(rnd_seed));
 		detectors.push(steiner_detectors[steinerTreeID]);
 		for(int i =0;i<terminals.size();i++){
 			steiner_detectors[steinerTreeID]->addTerminalNode(terminals[i].first,terminals[i].second);

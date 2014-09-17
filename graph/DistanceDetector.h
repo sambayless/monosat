@@ -11,6 +11,7 @@
 
 #include "Graph.h"
 #include "dgl/Reach.h"
+#include "dgl/Distance.h"
 #include "dgl/Dijkstra.h"
 #include "dgl/BFS.h"
 #include "dgl/UnweightedDistance.h"
@@ -35,8 +36,8 @@ public:
 		CRef reach_marker;
 		CRef non_reach_marker;
 		CRef forced_reach_marker;
-		Reach * positive_reach_detector;
-		Reach * negative_reach_detector;
+		Distance<int> * positive_reach_detector;
+		Distance<int> * negative_reach_detector;
 		Reach *  positive_path_detector;
 
 		//vec<Lit>  reach_lits;
@@ -63,18 +64,18 @@ public:
 		vec<Change> & getChanged(){
 			return changed;
 		}
-		vec<double> rnd_weight;
+		std::vector<double> rnd_weight;
 
-		WeightedDijkstra<vec<double>> * rnd_path;
-		struct OptimalWeightEdgeStatus{
+		WeightedDijkstra<double> * rnd_path;
+		/*struct OptimalWeightEdgeStatus{
 			DistanceDetector & detector;
 			int operator [] (int edge) const ;
 			int size() const;
 			OptimalWeightEdgeStatus(DistanceDetector & _outer):detector(_outer){}
 
-		};
-		OptimalWeightEdgeStatus opt_weight;
-		WeightedDijkstra<OptimalWeightEdgeStatus> * opt_path;
+		};*/
+		//OptimalWeightEdgeStatus opt_weight;
+		//WeightedDijkstra<OptimalWeightEdgeStatus> * opt_path;
 		struct ReachStatus{
 			DistanceDetector & detector;
 			bool polarity;

@@ -11,11 +11,12 @@
 #include <vector>
 
 namespace dgl{
+template<typename Weight=int>
 class MinimumSpanningTree{
 public:
 
 	struct NullStatus{
-		void setMinimumSpanningTree(int min_weight){
+		void setMinimumSpanningTree(Weight& min_weight){
 
 		}
 
@@ -38,9 +39,9 @@ public:
 	virtual bool dbg_uptodate()=0;
 	virtual bool dbg_mst()=0;
 	//Total weight of the mst (or infinite, if the graph is disconnected)
-	virtual int weight()=0;
+	virtual Weight& weight()=0;
 	//Sum of the weight of the mst of each tree in the forest
-	virtual int forestWeight()=0;
+	virtual Weight& forestWeight()=0;
 	virtual std::vector<int> & getSpanningTree()=0;
 	virtual int getParent(int node)=0;
 	virtual int getParentEdge(int node)=0;
@@ -49,5 +50,8 @@ public:
 	virtual int getComponent(int node)=0;
 	virtual int getRoot(int component=0)=0;
 };
+template<typename Weight>
+typename MinimumSpanningTree<Weight>::NullStatus  MinimumSpanningTree<Weight>::nullStatus;
 };
+
 #endif /* MINIMUMSPANNINGTREE_H_ */

@@ -116,19 +116,19 @@ public:
 		ReachStatus *positiveReachStatus;
 		ReachStatus *negativeReachStatus;
 
-		WeightedDijkstra<vec<double>> * rnd_path;
-		vec<double> rnd_weight;
-		struct OptimalWeightEdgeStatus{
+		WeightedDijkstra<double> * rnd_path;
+		std::vector<double> rnd_weight;
+		/*struct OptimalWeightEdgeStatus{
 			ReachDetector & detector;
 			int operator [] (int edge) const ;
 			int size()const;
 			OptimalWeightEdgeStatus(ReachDetector & _outer):detector(_outer){}
 
 		};
-		Reach * chokepoint_detector;
-		OptimalWeightEdgeStatus opt_weight;
-		WeightedDijkstra<OptimalWeightEdgeStatus> * opt_path;
 
+		OptimalWeightEdgeStatus opt_weight;
+		WeightedDijkstra<OptimalWeightEdgeStatus> * opt_path;*/
+		Reach * chokepoint_detector;
 
 		struct ChokepointStatus{
 			ReachDetector & detector;

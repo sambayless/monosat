@@ -295,7 +295,7 @@ void ConnectedComponentsDetector::ConnectedComponentsStatus::setComponents(int c
 							std::swap(source,node);
 						}
 
-						Distance<Reach::NullStatus,true> d(source,g);
+						UnweightedBFS<Reach::NullStatus,true> d(source,g);
 						double starttime = rtime(2);
 						d.update();
 
@@ -382,7 +382,7 @@ void ConnectedComponentsDetector::ConnectedComponentsStatus::setComponents(int c
 						int f =outer->mc->minCut(source,node,outer->cut);
 						assert(f<0xF0F0F0); assert(f==outer->cut.size());//because edges are only ever infinity or 1
 						for(int i = 0;i<outer->cut.size();i++){
-							MaxFlow::Edge e = outer->cut[i];
+							MaxFlowEdge e = outer->cut[i];
 
 							Lit l = mkLit( outer->edges[e.u][e.v].v,false);
 							assert(outer->value(l)==l_False);

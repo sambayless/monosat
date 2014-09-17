@@ -11,12 +11,12 @@
 #include "dgl/EdmondsKarp.h"
 
 namespace dgl{
-template< class Capacity  >
-class EdmondsKarpAdj:public MaxFlow{
+template< class Capacity, typename Weight=int  >
+class EdmondsKarpAdj:public MaxFlow<Weight>{
 
 public:
 
-	std::vector<int> F;
+	std::vector<Weight> F;
 	struct LocalEdge{
 		int from;
 		int id;
@@ -25,7 +25,7 @@ public:
 
 		}
 	};
-	int curflow;
+	Weight curflow;
     int last_modification;
     int last_deletion;
     int last_addition;
@@ -33,12 +33,12 @@ public:
     int history_qhead;
     int last_history_clear;
     std::vector<LocalEdge> prev;
-    std::vector<int> M;
+    std::vector<Weight> M;
     DynamicGraph& g;
     Capacity & capacity;
-    int INF;
+    Weight INF;
 #ifdef DEBUG_MAXFLOW
-    	EdmondsKarp ek;
+    	EdmondsKarp<Weight> ek;
 #endif
     /*
      *            input:
@@ -52,7 +52,7 @@ public:
 
 
 
-    int  BreadthFirstSearch(int s, int t){
+    Weight  BreadthFirstSearch(int s, int t){
      	for(int i = 0;i<g.nodes();i++)
      		prev[i].from=-1;
      	prev[s].from = -2;
@@ -69,13 +69,14 @@ public:
             	   int v = g.incident(u,i).node;
                    ///(If there is available capacity, and v is not seen before in search)
 
-            	   int f = F[id];
-            	   int c = capacity[id];
+            	   Weight &f = F[id];
+            	   Weight  c = capacity[id];
 
             	 //  int fr = F[id];
                    if (((c - F[id]) > 0) && (prev[v].from == -1)){
                        prev[v] = LocalEdge(u,id,false);
-                       M[v] = std::min(M[u], c - F[id]);
+                       Weight b=c - F[id];
+                       M[v] = std::min(M[u],b );
                        if (v != t)
                            Q.push_back(v);
                        else
@@ -90,12 +91,13 @@ public:
 
 				   int v = g.incoming(u,i).node;
 
-				   int f = 0;
-				   int c = F[id];
+				   Weight f = 0;
+				   Weight& c = F[id];
 
 					  if (((c - f) > 0) && (prev[v].from == -1)){
 						  prev[v] = LocalEdge(u,id,true);
-						  M[v] = std::min(M[u], c - f);
+						  Weight b = c-f;
+						  M[v] = std::min(M[u], b);
 						  if (v != t)
 							  Q.push_back(v);
 						  else
@@ -121,13 +123,14 @@ public:
       	history_qhead=-1;
       	last_history_clear=-1;
     	//setAllEdgeCapacities(1);
+
     }
-    void setCapacity(int u, int w, int c){
+    void setCapacity(int u, int w, Weight c){
     	//C.resize(g.edges());
     	//C[ ]=c;
 
     }
-    void setAllEdgeCapacities(int c){
+    void setAllEdgeCapacities(Weight c){
 
     }
     void dbg_print_graph(int from, int to){
@@ -164,8 +167,8 @@ public:
    #endif
        		}
 
-    int maxFlow(int s, int t){
-    	int f = 0;
+    Weight maxFlow(int s, int t){
+    	Weight f = 0;
 #ifdef RECORD
 		if(g.outfile){
 			fprintf(g.outfile,"f %d %d\n", s,t);
@@ -226,7 +229,7 @@ public:
     	prev[s].from = -2;
     	 M[s] = INF;
         while(true){
-        	int m= BreadthFirstSearch(s,t);
+        	Weight m= BreadthFirstSearch(s,t);
 
             if (m == 0)
                 break;
@@ -269,8 +272,8 @@ public:
     std::vector<bool> seen;
     std::vector<bool> visited;
 
-    int minCut(int s, int t, std::vector<Edge> & cut){
-    	int f = maxFlow(s,t);
+    Weight minCut(int s, int t, std::vector<MaxFlowEdge> & cut){
+    	Weight f = maxFlow(s,t);
     	//ok, now find the cut
     	Q.clear();
     	Q.push_back(s);
@@ -289,7 +292,7 @@ public:
     			int v = g.incident(u,i).node;
     			int id = g.incident(u,i).id;
     			if(capacity[id] - F[id] == 0){
-    				cut.push_back(Edge{u,v,id});
+    				cut.push_back(MaxFlowEdge{u,v,id});
     			}else if(!seen[v]){
     				Q.push_back(v);
     				seen[v]=true;
@@ -306,15 +309,15 @@ public:
     	cut.resize(j);
     	return f;
     }
-    int getEdgeCapacity(int id){
+    Weight getEdgeCapacity(int id){
      	assert(g.edgeEnabled(id));
      	return capacity[id];
      }
-    int getEdgeFlow(int id){
+    Weight getEdgeFlow(int id){
     	assert(g.edgeEnabled(id));
     	return F[id];// reserve(id);
     }
-    int getEdgeResidualCapacity(int id){
+    Weight getEdgeResidualCapacity(int id){
     	assert(g.edgeEnabled(id));
     	return  capacity[id]-F[id];// reserve(id);
     }

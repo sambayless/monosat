@@ -26,7 +26,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include <vector>
 
 
-
+namespace dgl{
 //=================================================================================================
 // A heap implementation with support for decrease/increase key.
 
@@ -151,5 +151,5 @@ class Heap {
 
 //=================================================================================================
 };
-
+};
 #endif

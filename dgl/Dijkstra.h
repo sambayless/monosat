@@ -12,11 +12,12 @@
 #include "alg/Heap.h"
 #include "graph/DynamicGraph.h"
 #include "Reach.h"
+#include "Distance.h"
 #include "core/Config.h"
 
 namespace dgl{
 template<class Status=Reach::NullStatus, bool undirected=false >
-class Dijkstra:public Reach{
+class Dijkstra:public Distance<int>{
 public:
 	DynamicGraph & g;
 	Status &  status;
@@ -408,12 +409,12 @@ public:
 
 		return dist[t]<INF;
 	}
-	int distance(int t){
+	int & distance(int t){
 		if(last_modification!=g.modifications)
 					update();
 		return dist[t];
 	}
-	int distance_unsafe(int t){
+	int &distance_unsafe(int t){
 		if(connected_unsafe(t))
 			return dist[t];
 		else

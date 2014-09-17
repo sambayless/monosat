@@ -10,12 +10,12 @@
 
 namespace dgl{
 
-class IBFS:public MaxFlow{
+class IBFS:public MaxFlow<int>{
 
     DynamicGraph& g;
     int INF;
 #ifdef DEBUG_MAXFLOW
-    	EdmondsKarp ek;
+    	EdmondsKarp<int> ek;
 #endif
 
     std::vector<std::vector<int> > C;
@@ -91,7 +91,7 @@ public:
     }
 
 
-    int minCut(int s, int t, std::vector<Edge> & cut){
+    int minCut(int s, int t, std::vector<MaxFlowEdge> & cut){
     	int f = maxFlow(s,t);
     	//ok, now find the cut
     	for(int u = 0;u<g.nodes();u++){
@@ -104,7 +104,7 @@ public:
 					int id =  g.incident(u,j).id;
 					if( ibfs->what_segment(v,IBFSGraph<int,int,int>::SOURCE) ==IBFSGraph<int,int,int>::SINK ){
 						//then this is on the cut
-						cut.push_back(Edge{u,v,id});
+						cut.push_back(MaxFlowEdge{u,v,id});
 					}
 				}
     		}

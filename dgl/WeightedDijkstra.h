@@ -14,11 +14,11 @@
 #include "Reach.h"
 #include <limits>
 namespace dgl{
-template<class Weight=std::vector<double>, bool undirected=false >
-class WeightedDijkstra:public Reach{
+template<class Weight=double, bool undirected=false >
+class WeightedDijkstra:public Distance<Weight>{
 public:
 	DynamicGraph & g;
-	Weight & weight;
+	std::vector<Weight> & weights;
 	int last_modification;
 	int last_addition;
 	int last_deletion;
@@ -27,24 +27,22 @@ public:
 	int last_history_clear;
 
 	int source;
-	double INF;
+	Weight INF;
 
 
-	std::vector<double> old_dist;
+	std::vector<Weight> old_dist;
 	std::vector<int> changed;
 
-	std::vector<double> dist;
+	std::vector<Weight> dist;
 	std::vector<int> prev;
 	struct DistCmp{
-		std::vector<double> & _dist;
+		std::vector<Weight> & _dist;
 		 bool operator()(int a, int b)const{
 			return _dist[a]<_dist[b];
 		}
-		 DistCmp(std::vector<double> & d):_dist(d){};
+		 DistCmp(std::vector<Weight> & d):_dist(d){};
 	};
 	Heap<DistCmp> q;
-
-
 
 public:
 	//stats
@@ -59,7 +57,7 @@ public:
 
 	double stats_full_update_time;
 	double stats_fast_update_time;
-	WeightedDijkstra(int s,DynamicGraph & graph, Weight & _weight):g(graph),weight(_weight), last_modification(-1),last_addition(-1),last_deletion(-1),history_qhead(0),last_history_clear(0),source(s),INF(0),q(DistCmp(dist)){
+	WeightedDijkstra(int s,DynamicGraph & graph,std::vector<Weight> & weights):g(graph),weights(weights), last_modification(-1),last_addition(-1),last_deletion(-1),history_qhead(0),last_history_clear(0),source(s),INF(0),q(DistCmp(dist)){
 
 		mod_percentage=0.2;
 		stats_full_updates=0;
@@ -68,7 +66,7 @@ public:
 		stats_skipped_updates=0;
 		stats_full_update_time=0;
 		stats_fast_update_time=0;
-		INF= std::numeric_limits<double>::infinity();
+		INF= std::numeric_limits<Weight>::infinity();
 	}
 	//Dijkstra(const Dijkstra& d):g(d.g), last_modification(-1),last_addition(-1),last_deletion(-1),history_qhead(0),last_history_clear(0),source(d.source),INF(0),q(DistCmp(dist)),stats_full_updates(0),stats_fast_updates(0),stats_skip_deletes(0),stats_skipped_updates(0),stats_full_update_time(0),stats_fast_update_time(0){marked=false;};
 
@@ -105,8 +103,8 @@ public:
 
 		dist.resize(g.nodes());
 		prev.resize(g.nodes());
-		while(weight.size()<=g.nodes()){
-			weight.push_back(1);
+		while(weights.size()<=g.nodes()){
+			weights.push_back(1);
 		}
 
 
@@ -122,7 +120,7 @@ public:
 			int edgeID = g.history[i].id;
 			int u=g.all_edges[edgeID].from;
 			int v=g.all_edges[edgeID].to;
-			double alt = dist[u]+weight[u] ;
+			Weight alt = dist[u]+weights[u] ;
 			if(alt< dist[v]){
 
 				if(dist[v]>=INF){
@@ -140,7 +138,7 @@ public:
 			}else if (undirected){
 				int v=g.all_edges[edgeID].from;
 				int u=g.all_edges[edgeID].to;
-				double alt = dist[u]+weight[u] ;
+				Weight alt = dist[u]+weights[u] ;
 				if(alt< dist[v]){
 
 					if(dist[v]>=INF){
@@ -188,7 +186,7 @@ public:
 
 				int edgeID =  g.incident(u,i,undirected).id;
 				int v =  g.incident(u,i,undirected).node;
-				int alt = dist[u]+ weight[u];
+				Weight alt = dist[u]+ weights[u];
 				if(alt<dist[v]){
 					if(dist[v]>=INF){
 						//this was changed
@@ -226,7 +224,7 @@ public:
 		}
 		if(last_modification>0 && g.modifications==last_modification)
 				return;
-		assert(weight.size()>=g.edges());
+		assert(weights.size()>=g.edges());
 /*		while(weight.size()<=g.nodes()){
 				weight.push_back(1);
 			}*/
@@ -309,7 +307,7 @@ public:
 
 				int v = g.incident(u,i,undirected).node;
 
-				double alt = dist[u]+ weight[edgeID];
+				Weight alt = dist[u]+ weights[edgeID];
 				if(alt<dist[v]){
 					dist[v]=alt;
 					prev[v]=edgeID;
@@ -382,12 +380,12 @@ public:
 
 		return dist[t]<INF;
 	}
-	int distance(int t){
+	Weight & distance(int t){
 		if(last_modification!=g.modifications)
 					update();
 		return dist[t];
 	}
-	int distance_unsafe(int t){
+	Weight & distance_unsafe(int t){
 		if(connected_unsafe(t))
 			return dist[t];
 		else

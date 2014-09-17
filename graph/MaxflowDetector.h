@@ -20,12 +20,14 @@
 using namespace dgl;
 namespace Minisat{
 class GraphTheorySolver;
+template<typename Weight=int>
 class MaxflowDetector:public Detector{
 public:
 		GraphTheorySolver * outer;
+		std::vector<Weight> capacities;
 		DynamicGraph & over_graph;
 		 DynamicGraph &g;
-			 DynamicGraph &antig;
+		 DynamicGraph &antig;
 		//int within;
 		int source;
 		int target;
@@ -33,10 +35,10 @@ public:
 		CRef reach_marker;
 		CRef non_reach_marker;
 		CRef forced_reach_marker;
-		MaxFlow * positive_detector;
-		MaxFlow * negative_detector;
-		MaxFlow * positive_conflict_detector;
-		MaxFlow * negative_conflict_detector;
+		MaxFlow<Weight>* positive_detector;
+		MaxFlow<Weight> * negative_detector;
+		MaxFlow<Weight> * positive_conflict_detector;
+		MaxFlow<Weight> * negative_conflict_detector;
 
 
 		//vec<Lit>  reach_lits;
@@ -46,13 +48,13 @@ public:
 
 		struct DistLit{
 			Lit l;
-			int max_flow;
+			Weight max_flow;
 
 		};
 		vec<DistLit> flow_lits;
 
 
-		vec<MaxFlow::Edge> tmp_cut;
+		vec<MaxFlowEdge> tmp_cut;
 		vec<int> visit;
 		vec<bool> seen;
 /*		int getNode(Var reachVar){
@@ -64,14 +66,14 @@ public:
 		}*/
 
 		bool propagate(vec<Lit> & conflict);
-		void buildMaxFlowTooHighReason(int node,vec<Lit> & conflict);
-		void buildMaxFlowTooLowReason(int node,vec<Lit> & conflict);
+		void buildMaxFlowTooHighReason(Weight flow,vec<Lit> & conflict);
+		void buildMaxFlowTooLowReason(Weight flow,vec<Lit> & conflict);
 		void buildForcedEdgeReason(int reach_node, int forced_edge_id,vec<Lit> & conflict);
 		void buildReason(Lit p, vec<Lit> & reason, CRef marker);
 		bool checkSatisfied();
 		Lit decide();
-		void addFlowLit(int max_flow,Var reach_var);
-		MaxflowDetector(int _detectorID, GraphTheorySolver * _outer, DynamicGraph &_g, DynamicGraph &_antig, int _source, int _target,double seed=1);//:Detector(_detectorID),outer(_outer),within(-1),source(_source),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL){}
+		void addFlowLit(Weight max_flow,Var reach_var);
+		MaxflowDetector(int _detectorID, GraphTheorySolver * _outer,std::vector<Weight> & capacities, DynamicGraph &_g, DynamicGraph &_antig, int _source, int _target,double seed=1);//:Detector(_detectorID),outer(_outer),within(-1),source(_source),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL){}
 		virtual ~MaxflowDetector(){
 
 		}
@@ -80,4 +82,6 @@ public:
 		}
 };
 };
+
+
 #endif /* DistanceDetector_H_ */

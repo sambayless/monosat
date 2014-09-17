@@ -13,21 +13,22 @@
 #include <algorithm>
 
 namespace dgl{
-template<class Status=MinimumSpanningTree::NullStatus>
-class Kruskal:public MinimumSpanningTree{
+template<class Status, typename Weight=int>
+class Kruskal:public MinimumSpanningTree<Weight>{
 public:
 
 	DynamicGraph & g;
+	std::vector<Weight>&weights;
 	Status &  status;
 	int last_modification;
-	int min_weight;
+	Weight min_weight;
 	int last_addition;
 	int last_deletion;
 	int history_qhead;
 
 	int last_history_clear;
 	bool hasParents;
-	int INF;
+	Weight INF;
 	DisjointSets sets;
 	std::vector<int> mst;
 	std::vector<int> q;
@@ -41,12 +42,12 @@ public:
 
 
     struct EdgeLt {
-        const std::vector<int>&  edge_weights;
+        const std::vector<Weight>&  edge_weights;
 
         bool operator () (int x, int y) const {
         	return edge_weights[x]<edge_weights[y];
         }
-        EdgeLt(const std::vector<int>&  _edge_weights) : edge_weights(_edge_weights) { }
+        EdgeLt(const std::vector<Weight>&  _edge_weights) : edge_weights(_edge_weights) { }
     };
 
 	Heap<EdgeLt> edge_heap;
@@ -67,7 +68,7 @@ public:
 	double stats_full_update_time;
 	double stats_fast_update_time;
 
-	Kruskal(DynamicGraph & graph, Status & _status=MinimumSpanningTree::nullStatus, int _reportPolarity=0 ):g(graph), status(_status), last_modification(-1),last_addition(-1),last_deletion(-1),history_qhead(0),last_history_clear(0),INF(0),reportPolarity(_reportPolarity),edge_heap(EdgeLt(g.weights)){
+	Kruskal(DynamicGraph & graph,std::vector<Weight> & weights,  Status & _status=MinimumSpanningTree<Weight>::nullStatus, int _reportPolarity=0 ):g(graph),weights(weights), status(_status), last_modification(-1),last_addition(-1),last_deletion(-1),history_qhead(0),last_history_clear(0),INF(0),reportPolarity(_reportPolarity),edge_heap(EdgeLt(weights)){
 
 		mod_percentage=0.2;
 		stats_full_updates=0;
@@ -127,7 +128,7 @@ public:
 					edge_list.push_back(i);
 
 			}
-			std::sort(edge_list.begin(),edge_list.end() ,EdgeLt(g.weights));
+			std::sort(edge_list.begin(),edge_list.end() ,EdgeLt(weights));
 		}
 		for(int i = 0;i<in_tree.size();i++)
 			in_tree[i]=false;
@@ -147,7 +148,7 @@ public:
 				mst.push_back(edge_id);
 				//if(reportPolarity>-1)
 				//	status.inMinimumSpanningTree(edge_id,true);
-				min_weight+=g.getWeight(edge_id);
+				min_weight+=weights[edge_id];
 				sets.UnionSets(set1,set2);
 				assert(sets.FindSet(u)==sets.FindSet(v));
 			}
@@ -210,7 +211,7 @@ public:
 	}
 
 
-	int weight(){
+	Weight& weight(){
 
 		update();
 
@@ -219,7 +220,7 @@ public:
 			return INF;
 		return min_weight;
 	}
-	int forestWeight(){
+	Weight& forestWeight(){
 		update();
 		assert(dbg_uptodate());
 		return min_weight;

@@ -11,15 +11,15 @@
 #include "GraphTheory.h"
 #include "core/Config.h"
 #include "dgl/DynamicConnectivity.h"
-ConnectDetector::ConnectDetector(int _detectorID, GraphTheorySolver * _outer, DynamicGraph &_g, DynamicGraph &_antig, int from,double seed):Detector(_detectorID),outer(_outer),g(_g),antig(_antig),within(-1),source(from),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL),opt_weight(*this),chokepoint_status(*this),chokepoint(chokepoint_status, _antig,source){
+#include "dgl/Distance.h"
+#include "dgl/Dijkstra.h"
+ConnectDetector::ConnectDetector(int _detectorID, GraphTheorySolver * _outer, DynamicGraph &_g, DynamicGraph &_antig, int from,double seed):Detector(_detectorID),outer(_outer),g(_g),antig(_antig),within(-1),source(from),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL),chokepoint_status(*this),chokepoint(chokepoint_status, _antig,source){
 	check_positive=true;
 	check_negative=true;
 	constraintsBuilt=-1;
 	first_reach_var = var_Undef;
 
 	rnd_path=nullptr;
-	opt_path=nullptr;
-
 
 	 if(undirectedalg ==ConnectivityAlg::ALG_SAT){
 		 positiveReachStatus=nullptr;
@@ -39,18 +39,18 @@ ConnectDetector::ConnectDetector(int _detectorID, GraphTheorySolver * _outer, Dy
 
 	 if(opt_use_random_path_for_decisions){
 		 rnd_weight.clear();
-		 rnd_path = new WeightedDijkstra< vec<double> >(from,_antig,rnd_weight);
+		 rnd_path = new WeightedDijkstra< double >(from,_antig,rnd_weight);
 		 for(int i=0;i<outer->edge_list.size();i++){
 			 double w = drand(rnd_seed);
 
-			 rnd_weight.push(w);
+			 rnd_weight.push_back(w);
 		 }
 
 	 }
 
-	 if(opt_use_optimal_path_for_decisions){
-		 opt_path = new WeightedDijkstra< OptimalWeightEdgeStatus >(from,_antig,opt_weight);
-	 }
+/*	 if(opt_use_optimal_path_for_decisions){
+		 opt_path = new WeightedDijkstra< double >(from,_antig,opt_weight);
+	 }*/
 		positiveReachStatus = new ConnectDetector::ReachStatus(*this,true);
 		negativeReachStatus = new ConnectDetector::ReachStatus(*this,false);
 	 if(undirectedalg ==ConnectivityAlg::ALG_BFS){
@@ -58,7 +58,7 @@ ConnectDetector::ConnectDetector(int _detectorID, GraphTheorySolver * _outer, Dy
 		positive_reach_detector = new BFSReachability<ConnectDetector::ReachStatus,true>(from,_g,*(positiveReachStatus),1);
 		negative_reach_detector = new BFSReachability<ConnectDetector::ReachStatus,true>(from,_antig,*(negativeReachStatus),-1);
 		if(opt_conflict_shortest_path)
-			positive_path_detector = new Distance<Reach::NullStatus,true>(from,_g,Reach::nullStatus,1);
+			positive_path_detector = new UnweightedBFS<Reach::NullStatus,true>(from,_g,Reach::nullStatus,1);
 		else
 			positive_path_detector =positive_reach_detector;
 	}else if(undirectedalg==ConnectivityAlg::ALG_DFS){
@@ -66,13 +66,13 @@ ConnectDetector::ConnectDetector(int _detectorID, GraphTheorySolver * _outer, Dy
 		positive_reach_detector = new DFSReachability<ConnectDetector::ReachStatus,true>(from,_g,*(positiveReachStatus),1);
 		negative_reach_detector = new DFSReachability<ConnectDetector::ReachStatus,true>(from,_antig,*(negativeReachStatus),-1);
 		if(opt_conflict_shortest_path)
-			positive_path_detector = new Distance<Reach::NullStatus,true>(from,_g,Reach::nullStatus,1);
+			positive_path_detector = new UnweightedBFS<Reach::NullStatus,true>(from,_g,Reach::nullStatus,1);
 		else
 			positive_path_detector =positive_reach_detector;
 	}else if(undirectedalg==ConnectivityAlg::ALG_DISTANCE){
 
-		positive_reach_detector = new Distance<ConnectDetector::ReachStatus,true>(from,_g,*(positiveReachStatus),1);
-		negative_reach_detector = new Distance<ConnectDetector::ReachStatus,true>(from,_antig,*(negativeReachStatus),-1);
+		positive_reach_detector = new UnweightedBFS<ConnectDetector::ReachStatus,true>(from,_g,*(positiveReachStatus),1);
+		negative_reach_detector = new UnweightedBFS<ConnectDetector::ReachStatus,true>(from,_antig,*(negativeReachStatus),-1);
 		positive_path_detector = positive_reach_detector;
 	}else if (undirectedalg==ConnectivityAlg::ALG_THORUP){
 
@@ -80,7 +80,7 @@ ConnectDetector::ConnectDetector(int _detectorID, GraphTheorySolver * _outer, Dy
 		negative_reach_detector = new DynamicConnectivity<ConnectDetector::ReachStatus>(_antig,*(negativeReachStatus),-1);
 		positive_path_detector = positive_reach_detector;
 		if(opt_conflict_shortest_path)
-			positive_path_detector = new Distance<Reach::NullStatus,true>(from,_g,Reach::nullStatus,1);
+			positive_path_detector = new UnweightedBFS<Reach::NullStatus,true>(from,_g,Reach::nullStatus,1);
 		else
 			positive_path_detector =positive_reach_detector;
 	}else{
@@ -371,7 +371,7 @@ void ConnectDetector::buildReachReason(int node,vec<Lit> & conflict){
 				int f =outer->mc->minCut(source,node,outer->cut);
 				assert(f<0xF0F0F0); assert(f==outer->cut.size());//because edges are only ever infinity or 1
 				for(int i = 0;i<outer->cut.size();i++){
-					MaxFlow::Edge e = outer->cut[i];
+					MaxFlowEdge e = outer->cut[i];
 
 					Lit l = mkLit( outer->edges[e.u][e.v].v,false);
 					assert(outer->value(l)==l_False);
@@ -509,7 +509,7 @@ void ConnectDetector::buildReachReason(int node,vec<Lit> & conflict){
 						int f =outer->mc->minCut(source,reach_node,outer->cut);
 						assert(f<0xF0F0F0); assert(f==outer->cut.size());//because edges are only ever infinity or 1
 						for(int i = 0;i<outer->cut.size();i++){
-							MaxFlow::Edge e = outer->cut[i];
+							MaxFlowEdge e = outer->cut[i];
 
 							Lit l = mkLit( outer->edges[e.u][e.v].v,false);
 							assert(outer->value(l)==l_False);
@@ -842,7 +842,7 @@ void ConnectDetector::dbg_sync_reachability(){
 #endif
 	}
 
-
+/*
 int ConnectDetector::OptimalWeightEdgeStatus::operator [] (int edge) const {
 	Var v = detector.outer->edge_list[edge].v;
 	lbool val = detector.outer->value(v);
@@ -857,7 +857,7 @@ int ConnectDetector::OptimalWeightEdgeStatus::operator [] (int edge) const {
 }
 int ConnectDetector::OptimalWeightEdgeStatus::size()const{
 	return detector.outer->edge_list.size();
-}
+}*/
 
 
 Lit ConnectDetector::decide(){
@@ -891,7 +891,7 @@ Lit ConnectDetector::decide(){
 				int last=j;
 				int last_edge=-1;
 				if(!opt_use_random_path_for_decisions){
-					if(opt_use_optimal_path_for_decisions){
+					/*if(opt_use_optimal_path_for_decisions){
 						//ok, read back the path from the over to find a candidate edge we can decide
 						//find the earliest unconnected node on this path
 						opt_path->update();
@@ -906,7 +906,7 @@ Lit ConnectDetector::decide(){
 							p = prev;
 
 						}
-					}else{
+					}else*/{
 						//ok, read back the path from the over to find a candidate edge we can decide
 						//find the earliest unconnected node on this path
 						over->update();
