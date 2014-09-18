@@ -841,7 +841,7 @@ template<typename Weight>
 		}
 template<typename Weight>
 bool DistanceDetector<Weight>::checkSatisfied(){
-	if(positive_reach_detector){
+/*	if(positive_reach_detector){
 				for(int j = 0;j< unweighted_dist_lits.size();j++){
 					for(int k = 0;k<unweighted_dist_lits[j].size();k++){
 						Lit l = unweighted_dist_lits[j][k].l;
@@ -871,7 +871,7 @@ bool DistanceDetector<Weight>::checkSatisfied(){
 						}
 					}
 			}
-	}else{
+	}else{*/
 				Dijkstra<>under(source,g) ;
 				Dijkstra<>over(source,antig) ;
 				under.update();
@@ -903,7 +903,41 @@ bool DistanceDetector<Weight>::checkSatisfied(){
 							}
 						}
 				}
-			}
+
+				//now, check for weighted distance lits
+				for(auto & dist_lit:weighted_dist_lits){
+					Lit l = dist_lit.l;
+					int to = dist_lit.u;
+					Weight & min_dist =  dist_lit.min_distance;
+					if(positive_weighted_distance_detector->distance(to)<=min_dist){
+						if(outer->value(l)==l_True){
+							//do nothing
+						}else if (outer->value(l)==l_Undef){
+							outer->enqueue(l,weighted_reach_marker) ;
+						}else if (outer->value(l)==l_False){
+							//conflict
+							conflict.push(l);
+							buildDistanceLEQReason(to,min_dist,conflict);
+							return false;
+						}
+					}
+					if(negative_weighted_distance_detector->distance(to)>min_dist){
+						if(outer->value(~l)==l_True){
+							//do nothing
+						}else if (outer->value(~l)==l_Undef){
+							outer->enqueue(~l,weighted_non_reach_marker) ;
+						}else if (outer->value(~l)==l_False){
+							//conflict
+							conflict.push(~l);
+							buildDistanceGTReason(to,min_dist,conflict);
+							return false;
+						}
+					}
+
+				}
+
+
+		//	}
 	return true;
 }
 
