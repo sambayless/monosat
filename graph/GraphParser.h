@@ -137,22 +137,19 @@ class GraphParser:public Parser<B,Solver>{
 
 }
 
- void readIntegerWeightedEdge(B& in, Solver& S) {
+ void readWeightedEdge(B& in, Solver& S) {
 	if(opt_ignore_theories){
 		skipLine(in);
 		return;
 	}
 
     ++in;
-
+    	static vec<char> tmp;
         int graphID = parseInt(in);
         int from = parseInt(in);
         int to=parseInt(in);
         int edgeVar = parseInt(in)-1;
-        int weight = parseInt(in);
-        /*if(edgeVar==-1){
-        	edgeVar=edge_var++-1;
-        }*/
+
         if(graphID <0 || graphID>=graphs.size() ){
         	printf("PARSE ERROR! Undeclared graph identifier %d for edge %d\n",graphID, edgeVar), exit(3);
         }
@@ -162,103 +159,22 @@ class GraphParser:public Parser<B,Solver>{
         while (edgeVar >= S.nVars()) S.newVar();
 
         if(graphs[graphID]){
+            int weight = parseInt(in);
             graphs[graphID]->newEdge(from,to,edgeVar,weight);
         }else if (graphs_float[graphID]){
+        	double weight = parseDouble(in,tmp);
         	graphs_float[graphID]->newEdge(from,to,edgeVar,weight);
         }else if(graphs_rational[graphID]){
-        	graphs_rational[graphID]->newEdge(from,to,edgeVar,weight);
-        }else{
-        	printf("PARSE ERROR! Undeclared graph identifier %d for edge %d\n",graphID, edgeVar), exit(3);
-        	exit(1);
-        }
+            std::stringstream ss;
+        	skipWhitespace(in);
+        	//rational can be either a plain integer, or a rational in the form '123/456'
+    		while(*in != '\n'){
+    			ss<<(*in);
+    			++in;
+    		}
+    		mpq_class weight(ss.str());
+    		weight.canonicalize();
 
-}
- void readFloatWeightedEdge(B& in, Solver& S) {
-	if(opt_ignore_theories){
-		skipLine(in);
-		return;
-	}
-
-    ++in;
-	static vec<char> tmp;
-	int graphID = parseInt(in);
-	int from = parseInt(in);
-	int to=parseInt(in);
-	int edgeVar = parseInt(in)-1;
-	double weight = parseDouble(in,tmp);
-
-
-	if(graphID <0 || graphID>=graphs.size() || !graphs[graphID]){
-		printf("PARSE ERROR! Undeclared graph identifier %d for edge %d\n",graphID, edgeVar), exit(3);
-	}
-	if(edgeVar<0){
-		printf("PARSE ERROR! Edge variables must be >=0, was %d\n", edgeVar), exit(3);
-	}
-	while (edgeVar >= S.nVars()) S.newVar();
-
-	if(graphs[graphID]){
-		printf("PARSE ERROR! Floating point and rational edge weights cannot be added to integer-weight graphs, aborting\n",graphID, edgeVar), exit(3);
-		exit(1);
-	}else if (graphs_float[graphID]){
-		graphs_float[graphID]->newEdge(from,to,edgeVar,weight);
-	}else if(graphs_rational[graphID]){
-		graphs_rational[graphID]->newEdge(from,to,edgeVar,weight);
-	}else{
-		printf("PARSE ERROR! Undeclared graph identifier %d for edge %d\n",graphID, edgeVar), exit(3);
-		exit(1);
-	}
-
-}
-
-
- void readRationalWeightedEdge(B& in, Solver& S) {
-	if(opt_ignore_theories){
-		skipLine(in);
-		return;
-	}
-
-    ++in;
-
-        int graphID = parseInt(in);
-        int from = parseInt(in);
-        int to=parseInt(in);
-        int edgeVar = parseInt(in)-1;
-        std::stringstream ss;
-    	skipWhitespace(in);
-    	//rational can be either a plain integer, or a rational in the form '123/456'
-		while(*in != '\n'){
-			ss<<(*in);
-			++in;
-		}
-		mpq_class weight(ss.str());
-		weight.canonicalize();
-/*        mpz_class weight_numerator = ss.str();
-        ss.clear();
-        skipWhitespace(in);
-		while(*in != '\n' && ! isWhitespace(*in)){
-			ss<<(*in);
-			++in;
-		}
-		mpz_class weight_denominator = ss.str();
-		mpq_class weight(weight_numerator,weight_denominator);*/
-        //long weight_denominator = parseInt(in);
-        /*if(edgeVar==-1){
-        	edgeVar=edge_var++-1;
-        }*/
-        if(graphID <0 || graphID>=graphs.size() ){
-        	printf("PARSE ERROR! Undeclared graph identifier %d for edge %d\n",graphID, edgeVar), exit(3);
-        }
-        if(edgeVar<0){
-        	printf("PARSE ERROR! Edge variables must be >=0, was %d\n", edgeVar), exit(3);
-        }
-        while (edgeVar >= S.nVars()) S.newVar();
-
-        if(graphs[graphID]){
-        	printf("PARSE ERROR! Floating point and rational edge weights cannot be added to integer-weight graphs, aborting\n",graphID, edgeVar), exit(3);
-            exit(1);
-        }else if (graphs_float[graphID]){
-        	graphs_float[graphID]->newEdge(from,to,edgeVar,weight.get_d());
-        }else if(graphs_rational[graphID]){
         	graphs_rational[graphID]->newEdge(from,to,edgeVar,weight);
         }else{
         	printf("PARSE ERROR! Undeclared graph identifier %d for edge %d\n",graphID, edgeVar), exit(3);
@@ -317,7 +233,7 @@ class GraphParser:public Parser<B,Solver>{
        // int steps = parseInt(in);
          int to=parseInt(in);
         int reachVar = parseInt(in)-1;
-        if(graphID <0 || graphID>=graphs.size() || !graphs[graphID]){
+        if(graphID <0 || graphID>=graphs.size()){
         	printf("PARSE ERROR! Undeclared graph identifier %d for edge %d\n",graphID, reachVar), exit(3);
         }
         if(reachVar<0){
@@ -352,14 +268,131 @@ class GraphParser:public Parser<B,Solver>{
 	 int to=parseInt(in);
 	int reachVar = parseInt(in)-1;
 	int steps = parseInt(in);
-	if(graphID <0 || graphID>=graphs.size() || !graphs[graphID]){
+	if(graphID <0 || graphID>=graphs.size()){
 		printf("PARSE ERROR! Undeclared graph identifier %d for edge %d\n",graphID, reachVar), exit(3);
 	}
 	if(reachVar<0){
 		printf("PARSE ERROR! Edge variables must be >=0, was %d\n", reachVar), exit(3);
 	}
 
+	if(graphs[graphID]){
+		graphs[graphID]->reaches(from,to,reachVar,steps);
+	}else if (graphs_float[graphID]){
+		graphs_float[graphID]->reaches(from,to,reachVar,steps);
+	}else if(graphs_rational[graphID]){
+		graphs_rational[graphID]->reaches(from,to,reachVar,steps);
+	}else{
+		printf("PARSE ERROR! Undeclared graph identifier %d\n",graphID), exit(3);
+		exit(1);
+	}
 }
+ void readDistanceInt(B& in, Solver& S,  bool leq=false) {
+	if(opt_ignore_theories){
+		skipLine(in);
+		return;
+	}
+	//distance_lt grachID u w var dist is a reach query: var is true if can u reach w in graph g, false otherwise
+
+    ++in;
+    static vec<char> tmp;
+	int graphID = parseInt(in);
+	int from = parseInt(in);
+	 int to=parseInt(in);
+	int reachVar = parseInt(in)-1;
+	int distance = parseInt(in);
+	if(graphID <0 || graphID>=graphs.size()){
+		printf("PARSE ERROR! Undeclared graph identifier %d for edge %d\n",graphID, reachVar), exit(3);
+	}
+	if(reachVar<0){
+		printf("PARSE ERROR! Edge variables must be >=0, was %d\n", reachVar), exit(3);
+	}
+
+	if(graphs[graphID]){
+		graphs[graphID]->reachesWithinDistance(from,to,reachVar,distance);
+	}else if (graphs_float[graphID]){
+		graphs_float[graphID]->reachesWithinDistance(from,to,reachVar,distance);
+	}else if(graphs_rational[graphID]){
+		graphs_rational[graphID]->reachesWithinDistance(from,to,reachVar,distance);
+	}else{
+		printf("PARSE ERROR! Undeclared graph identifier %d\n",graphID), exit(3);
+		exit(1);
+	}
+}
+ void readDistanceFloat(B& in, Solver& S,  bool leq=false) {
+	if(opt_ignore_theories){
+		skipLine(in);
+		return;
+	}
+	//distance_lt grachID u w var dist is a reach query: var is true if can u reach w in graph g, false otherwise
+
+    ++in;
+    static vec<char> tmp;
+	int graphID = parseInt(in);
+	int from = parseInt(in);
+	 int to=parseInt(in);
+	int reachVar = parseInt(in)-1;
+	double distance = parseDouble(in,tmp);
+	if(graphID <0 || graphID>=graphs.size()){
+		printf("PARSE ERROR! Undeclared graph identifier %d for edge %d\n",graphID, reachVar), exit(3);
+	}
+	if(reachVar<0){
+		printf("PARSE ERROR! Edge variables must be >=0, was %d\n", reachVar), exit(3);
+	}
+
+	if(graphs[graphID]){
+		printf("PARSE ERROR! Floating point distance constraints cannot be added to integer-weight graphs, aborting\n",graphID), exit(3);
+	}else if (graphs_float[graphID]){
+		graphs_float[graphID]->reachesWithinDistance(from,to,reachVar,distance);
+	}else if(graphs_rational[graphID]){
+		graphs_rational[graphID]->reachesWithinDistance(from,to,reachVar,distance);
+	}else{
+		printf("PARSE ERROR! Undeclared graph identifier %d\n",graphID), exit(3);
+		exit(1);
+	}
+}
+ void readDistanceRational(B& in, Solver& S,  bool leq=false) {
+ 	if(opt_ignore_theories){
+ 		skipLine(in);
+ 		return;
+ 	}
+ 	//distance_lt grachID u w var dist is a reach query: var is true if can u reach w in graph g, false otherwise
+
+     ++in;
+
+ 	int graphID = parseInt(in);
+ 	int from = parseInt(in);
+ 	 int to=parseInt(in);
+ 	int reachVar = parseInt(in)-1;
+ 	std::stringstream ss;
+	skipWhitespace(in);
+	//rational can be either a plain integer, or a rational in the form '123/456'
+	while(*in != '\n'){
+		ss<<(*in);
+		++in;
+	}
+	mpq_class weight(ss.str());
+	weight.canonicalize();
+
+ 	if(graphID <0 || graphID>=graphs.size() ){
+ 		printf("PARSE ERROR! Undeclared graph identifier %d for edge %d\n",graphID, reachVar), exit(3);
+ 	}
+ 	if(reachVar<0){
+ 		printf("PARSE ERROR! Edge variables must be >=0, was %d\n", reachVar), exit(3);
+ 	}
+
+	if(graphs[graphID]){
+		printf("PARSE ERROR! Rational distance constraints cannot be added to integer-weight graphs, aborting\n",graphID), exit(3);
+
+	}else if (graphs_float[graphID]){
+
+		graphs_float[graphID]->reachesWithinDistance(from,to,reachVar,weight.get_d());
+	}else if(graphs_rational[graphID]){
+		graphs_rational[graphID]->reachesWithinDistance(from,to,reachVar,weight);
+	}else{
+		printf("PARSE ERROR! Undeclared graph identifier %d\n",graphID), exit(3);
+		exit(1);
+	}
+ }
 
 
 
@@ -375,7 +408,7 @@ class GraphParser:public Parser<B,Solver>{
         int graphID = parseInt(in);
         int maxweight = parseInt(in);
         int reachVar = parseInt(in)-1;
-        if(graphID <0 || graphID>=graphs.size() || !graphs[graphID]){
+        if(graphID <0 || graphID>=graphs.size()){
         	printf("PARSE ERROR! Undeclared graph identifier %d for edge %d\n",graphID, reachVar), exit(3);
         }
         if(reachVar<0){
@@ -410,7 +443,7 @@ class GraphParser:public Parser<B,Solver>{
         //int from = parseInt(in);
         //int to = parseInt(in);
         int reachVar = parseInt(in)-1;
-        if(graphID <0 || graphID>=graphs.size() || !graphs[graphID]){
+        if(graphID <0 || graphID>=graphs.size()){
         	printf("PARSE ERROR! Undeclared graph identifier %d for edge %d\n",graphID, reachVar), exit(3);
         }
         if(reachVar<0){
@@ -446,7 +479,7 @@ class GraphParser:public Parser<B,Solver>{
         int t = parseInt(in);
         int flow = parseInt(in);
         int reachVar = parseInt(in)-1;
-        if(graphID <0 || graphID>=graphs.size() || !graphs[graphID]){
+        if(graphID <0 || graphID>=graphs.size()){
         	printf("PARSE ERROR! Undeclared graph identifier %d for edge %d\n",graphID, reachVar), exit(3);
         }
         if(reachVar<0){
@@ -482,7 +515,7 @@ class GraphParser:public Parser<B,Solver>{
         int graphID = parseInt(in);
         int min_components = parseInt(in);
         int reachVar = parseInt(in)-1;
-        if(graphID <0 || graphID>=graphs.size() || !graphs[graphID]){
+        if(graphID <0 || graphID>=graphs.size()){
         	printf("PARSE ERROR! Undeclared graph identifier %d for edge %d\n",graphID, reachVar), exit(3);
         }
         if(reachVar<0){
@@ -519,7 +552,7 @@ class GraphParser:public Parser<B,Solver>{
         int graphID = parseInt(in);
         int steinerID = parseInt(in);
 
-        if(graphID <0 || graphID>=graphs.size() || !graphs[graphID]){
+        if(graphID <0 || graphID>=graphs.size()){
          	printf("PARSE ERROR! Undeclared graph identifier %d\n",graphID), exit(3);
          }
 
@@ -544,7 +577,7 @@ class GraphParser:public Parser<B,Solver>{
 	int steinerID = parseInt(in);
 	int node = parseInt(in);
 	int var = parseInt(in)-1;
-	if(graphID <0 || graphID>=graphs.size() || !graphs[graphID]){
+	if(graphID <0 || graphID>=graphs.size()){
 		printf("PARSE ERROR! Undeclared graph identifier %d \n",graphID), exit(3);
 	}
     steiners.growTo(graphs.size());
@@ -566,7 +599,7 @@ class GraphParser:public Parser<B,Solver>{
 	int steinerID = parseInt(in);
 	int maxweight = parseInt(in);
 	int var = parseInt(in)-1;
-	if(graphID <0 || graphID>=graphs.size() || !graphs[graphID]){
+	if(graphID <0 || graphID>=graphs.size()){
 		printf("PARSE ERROR! Undeclared graph identifier %d \n",graphID), exit(3);
 	}
     steiners.growTo(graphs.size());
@@ -722,6 +755,7 @@ public:
 				return false;
 			}
 		}else if (match(in,"digraph")){
+			skipWhitespace(in);
 			if(match(in,"int")){
 				 readDiGraph(in,GraphType::INTEGER, S);
 			}else if(match(in,"float")){
@@ -732,7 +766,7 @@ public:
 				//assume the graph is integer
 				 readDiGraph(in,GraphType::INTEGER, S);
 			}
-			++in;
+
 			skipWhitespace(in);
 			//if(*in=='d'){
 				//for now, only digraphs are supported
@@ -747,9 +781,9 @@ public:
 			return true;
 		}else if (match(in,"weighted_edge")){
 			count++;
-			readIntegerWeightedEdge(in, S);
+			readWeightedEdge(in, S);
 			return true;
-		}else if (match(in,"float_edge")){
+		}/*else if (match(in,"float_edge")){
 			count++;
 			readFloatWeightedEdge(in, S);
 			return true;
@@ -757,7 +791,7 @@ public:
 			count++;
 			readRationalWeightedEdge(in, S);
 			return true;
-		}else if (match(in,"connect")){
+		}*/else if (match(in,"connect")){
 			readConnect(in, S);
 			return true;
 		}else if (match(in,"reach")){
@@ -768,6 +802,18 @@ public:
 			return true;
 		}else if (match(in, "distance_leq")){
 			readDistance(in, S,true);
+			return true;
+		}else if (match(in, "distance_rational_lt")){
+			readDistanceRational(in, S);
+			return true;
+		}else if (match(in, "distance_rational_leq")){
+			readDistanceRational(in, S,true);
+			return true;
+		}else if (match(in, "distance_float_lt")){
+			readDistanceFloat(in, S);
+			return true;
+		}else if (match(in, "distance_float_leq")){
+			readDistanceFloat(in, S,true);
 			return true;
 		}else if (match(in,"mst_weight_lt")){
 			readMinSpanningTreeConstraint(in, S);

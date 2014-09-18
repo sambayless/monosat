@@ -69,6 +69,18 @@ public:
 
 		};
 		vec<vec<UnweightedDistLit> > unweighted_dist_lits;
+
+
+		struct WeightedDistLit{
+			Lit l;
+			int u;
+			Weight min_distance;
+			bool operator <(WeightedDistLit & b)const{
+				return min_distance<b.min_distance;
+			}
+		};
+		vec<WeightedDistLit> weighted_dist_lits;
+
 		struct Change{
 				Lit l;
 				int u;
@@ -142,6 +154,8 @@ public:
 		bool propagate(vec<Lit> & conflict);
 		void buildReachReason(int node,vec<Lit> & conflict);
 		void buildNonReachReason(int node,vec<Lit> & conflict);
+		void buildDistanceLEQReason(int to,Weight & min_distance,vec<Lit> & conflict);
+		void buildDistanceGTReason(int to,Weight & min_distance,vec<Lit> & conflict);
 		void buildForcedEdgeReason(int reach_node, int forced_edge_id,vec<Lit> & conflict);
 		void buildReason(Lit p, vec<Lit> & reason, CRef marker);
 		bool checkSatisfied();
@@ -158,5 +172,6 @@ public:
 private:
 		void buildSATConstraints(int distance=-1);
 };
+
 };
 #endif /* DistanceDetector_H_ */

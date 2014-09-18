@@ -508,6 +508,7 @@ public:
 		}
 
 	void	dbg_sync_reachability(){
+/*
 #ifdef DEBUG_GRAPH
 
 		for(int i = 0;i<reach_detectors.size();i++){
@@ -515,6 +516,7 @@ public:
 			d->dbg_sync_reachability();
 		}
 #endif
+*/
 	}
 	void dbg_sync(){
 #ifdef DEBUG_DIJKSTRA
@@ -1242,7 +1244,7 @@ public:
 
 
 		    }
-	void reachesWithinDistance(int from, int to, Var reach_var, Weight& distance){
+	void reachesWithinDistance(int from, int to, Var reach_var, Weight distance){
 
 					assert(from<g.nodes());
 

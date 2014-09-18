@@ -302,14 +302,14 @@ public:
 #ifndef NDEBUG
 		for(int u = 0;u<g.nodes();u++){
 			int del = delta[u];
-			int d = dist[u];
+			Weight d = dist[u];
 			int num_in = 0;
 			for(int i = 0;i<g.nIncoming(u);i++){
 				auto & e =g.incoming(u,i);
 				int adjID = e.id;
 				int from = g.all_edges[adjID].from;
 
-				int dfrom = dist[from];
+				Weight dfrom = dist[from];
 				if(edgeInShortestPathGraph[adjID])
 					num_in++;
 			}

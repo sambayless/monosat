@@ -171,14 +171,19 @@ void DistanceDetector<Weight>::buildSATConstraints(int within_steps){
 
 
 template<typename Weight>
-void DistanceDetector<Weight>::addWeightedShortestPathLit(int from, int to, Var reach_var,Weight within_distance){
-
+void DistanceDetector<Weight>::addWeightedShortestPathLit(int from, int to, Var outer_reach_var,Weight within_distance){
+	g.invalidate();
+	antig.invalidate();
+	Var reach_var= outer->newVar(outer_reach_var,getID());
+	assert(from==source);
+	weighted_dist_lits.push(WeightedDistLit{mkLit(reach_var),to,within_distance});
+	//sort(weighted_dist_lits);
 }
 
 template<typename Weight>
 void DistanceDetector<Weight>::addUnweightedShortestPathLit(int from, int to, Var outer_reach_var,int within_steps){
 	g.invalidate();
-		antig.invalidate();
+	antig.invalidate();
 	Var reach_var= outer->newVar(outer_reach_var,getID());
 
 	if(first_reach_var==var_Undef){
@@ -370,77 +375,177 @@ void DistanceDetector<Weight>::buildReachReason(int node,vec<Lit> & conflict){
 
 		}
 template<typename Weight>
-		void DistanceDetector<Weight>::buildNonReachReason(int node,vec<Lit> & conflict){
-			static int it = 0;
-			++it;
-			int u = node;
-			//drawFull( non_reach_detectors[detector]->getSource(),u);
-			//assert(outer->dbg_distance( source,u));
-			double starttime = rtime(2);
-			outer->cutGraph.clearHistory();
-			outer->stats_mc_calls++;
-			{
+void DistanceDetector<Weight>::buildNonReachReason(int node,vec<Lit> & conflict){
+	static int it = 0;
+	++it;
+	int u = node;
+	//drawFull( non_reach_detectors[detector]->getSource(),u);
+	//assert(outer->dbg_distance( source,u));
+	double starttime = rtime(2);
+	outer->cutGraph.clearHistory();
+	outer->stats_mc_calls++;
+	{
 
-					vec<int>& to_visit  = outer->to_visit;
-					vec<char>& seen  = outer->seen;
+			vec<int>& to_visit  = outer->to_visit;
+			vec<char>& seen  = outer->seen;
 
-				    to_visit.clear();
-				    to_visit.push(node);
-				    seen.clear();
-					seen.growTo(outer->nNodes());
-				    seen[node]=true;
+			to_visit.clear();
+			to_visit.push(node);
+			seen.clear();
+			seen.growTo(outer->nNodes());
+			seen[node]=true;
 
-				    do{
+			do{
 
-				    	assert(to_visit.size());
-				    	int u = to_visit.last();
-				    	assert(u!=source);
-				    	to_visit.pop();
-				    	assert(seen[u]);
-				    	//assert(negative_reach_detector->distance_unsafe(u)>d);
-				    	//Ok, then add all its incoming disabled edges to the cut, and visit any unseen, non-disabled incoming.edges()
-				    	for(int i = 0;i<outer->inv_adj[u].size();i++){
-				    		int v = outer->inv_adj[u][i].v;
-				    		int from = outer->inv_adj[u][i].from;
-				    		assert(outer->inv_adj[u][i].to==u);
-				    		//Note: the variable has to not only be assigned false, but assigned false earlier in the trail than the reach variable...
-				    		int edge_num =outer->getEdgeID(v);// v-outer->min_edge_var;
+				assert(to_visit.size());
+				int u = to_visit.last();
+				assert(u!=source);
+				to_visit.pop();
+				assert(seen[u]);
+				//assert(negative_reach_detector->distance_unsafe(u)>d);
+				//Ok, then add all its incoming disabled edges to the cut, and visit any unseen, non-disabled incoming.edges()
+				for(int i = 0;i<outer->inv_adj[u].size();i++){
+					int v = outer->inv_adj[u][i].v;
+					int from = outer->inv_adj[u][i].from;
+					assert(outer->inv_adj[u][i].to==u);
+					//Note: the variable has to not only be assigned false, but assigned false earlier in the trail than the reach variable...
+					int edge_num =outer->getEdgeID(v);// v-outer->min_edge_var;
 
-							if(from==u){
-								assert(outer->edge_list[edge_num].to == u);
-								assert(outer->edge_list[edge_num].from == u);
-								continue;//Self loops are allowed, but just make sure nothing got flipped around...
-							}
-							assert(from!=u);
+					if(from==u){
+						assert(outer->edge_list[edge_num].to == u);
+						assert(outer->edge_list[edge_num].from == u);
+						continue;//Self loops are allowed, but just make sure nothing got flipped around...
+					}
+					assert(from!=u);
 
-				    		if(outer->value(v)==l_False){
-				    			//note: we know we haven't seen this edge variable before, because we know we haven't visited this node before
-				    			//if we are already planning on visiting the from node, then we don't need to include it in the conflict (is this correct?)
-				    			//if(!seen[from])
-				    				conflict.push(mkLit(v,false));
-				    		}else if (from!=source){
-				    			//for distance analysis, we _can_ end up reaching source.
+					if(outer->value(v)==l_False){
+						//note: we know we haven't seen this edge variable before, because we know we haven't visited this node before
+						//if we are already planning on visiting the from node, then we don't need to include it in the conflict (is this correct?)
+						//if(!seen[from])
+							conflict.push(mkLit(v,false));
+					}else if (from!=source){
+						//for distance analysis, we _can_ end up reaching source.
 
-				    			//even if it is undef? probably...
-				    			if(!seen[from]){
-				    				seen[from]=true;
-				    				to_visit.push(from);
-				    			}
-				    		}
-				    	}
-				    }  while (to_visit.size());
-
-
-			}
-
-			 outer->num_learnt_cuts++;
-			 outer->learnt_cut_clause_length+= (conflict.size()-1);
-
-			double elapsed = rtime(2)-starttime;
-			 outer->mctime+=elapsed;
+						//even if it is undef? probably...
+						if(!seen[from]){
+							seen[from]=true;
+							to_visit.push(from);
+						}
+					}
+				}
+			}  while (to_visit.size());
 
 
+	}
+
+	 outer->num_learnt_cuts++;
+	 outer->learnt_cut_clause_length+= (conflict.size()-1);
+
+	double elapsed = rtime(2)-starttime;
+	 outer->mctime+=elapsed;
+
+
+}
+
+template<typename Weight>
+void DistanceDetector<Weight>::buildDistanceLEQReason(int to,Weight & min_distance,vec<Lit> & conflict){
+
+	Distance<Weight> & d = *positive_weighted_distance_detector;
+	double starttime = rtime(2);
+	d.update();
+	assert(outer->dbg_reachable(d.getSource(),to));
+	assert(positive_reach_detector->connected(to));
+	assert(positive_weighted_distance_detector->distance(to)<=min_distance);
+	assert(d.connected_unchecked(to));
+	//the reason that the distance is less than or equal to min_distance is because the shortest path is less than this weight
+	{
+		int u = to;
+		int p;
+		while(( p = d.previous(u)) != -1){
+			Edge & edg = outer->edge_list[d.incomingEdge(u)]; //outer->edges[p][u];
+			Var e =edg.v;
+			lbool val = outer->value(e);
+			assert(outer->value(e)==l_True);
+			conflict.push(mkLit(e, true));
+			u = p;
 		}
+	}
+	outer->num_learnt_paths++;
+	outer->learnt_path_clause_length+= (conflict.size()-1);
+	double elapsed = rtime(2)-starttime;
+	outer->pathtime+=elapsed;
+
+}
+
+template<typename Weight>
+void DistanceDetector<Weight>::buildDistanceGTReason(int to,Weight & min_distance,vec<Lit> & conflict){
+	static int it = 0;
+	++it;
+	int u = to;
+
+	double starttime = rtime(2);
+
+	{
+
+		vec<int>& to_visit  = outer->to_visit;
+		vec<char>& seen  = outer->seen;
+
+		to_visit.clear();
+		to_visit.push(to);
+		seen.clear();
+		seen.growTo(outer->nNodes());
+		seen[to]=true;
+
+		do{
+
+			assert(to_visit.size());
+			int u = to_visit.last();
+			assert(u!=source);
+			to_visit.pop();
+			assert(seen[u]);
+			//add all of this node's incoming disabled edges to the cut, and visit any unseen, non-disabled incoming.edges()
+			for(int i = 0;i<outer->inv_adj[u].size();i++){
+				int v = outer->inv_adj[u][i].v;
+				int from = outer->inv_adj[u][i].from;
+				assert(outer->inv_adj[u][i].to==u);
+				//Note: the variable has to not only be assigned false, but assigned false earlier in the trail than the reach variable...
+				int edge_num =outer->getEdgeID(v);// v-outer->min_edge_var;
+
+				if(from==u){
+					assert(outer->edge_list[edge_num].to == u);
+					assert(outer->edge_list[edge_num].from == u);
+					continue;//Self loops are allowed, but just make sure nothing got flipped around...
+				}
+				assert(from!=u);
+
+				if(outer->value(v)==l_False){
+					//note: we know we haven't seen this edge variable before, because we know we haven't visited this node before
+					//if we are already planning on visiting the from node, then we don't need to include it in the conflict (is this correct?)
+					//if(!seen[from])
+						conflict.push(mkLit(v,false));
+				}else if (from!=source){
+					//for distance analysis, we _can_ end up reaching source.
+
+					//even if it is undef? probably...
+					if(!seen[from]){
+						seen[from]=true;
+						to_visit.push(from);
+					}
+				}
+			}
+		}  while (to_visit.size());
+
+
+	}
+
+	 outer->num_learnt_cuts++;
+	 outer->learnt_cut_clause_length+= (conflict.size()-1);
+
+	double elapsed = rtime(2)-starttime;
+	 outer->mctime+=elapsed;
+
+
+}
 
 		/**
 		 * Explain why an edge was forced (to true).
@@ -674,6 +779,40 @@ template<typename Weight>
 				}
 
 			}
+
+		//now, check for weighted distance lits
+		for(auto & dist_lit:weighted_dist_lits){
+			Lit l = dist_lit.l;
+			int to = dist_lit.u;
+			Weight & min_dist =  dist_lit.min_distance;
+			if(positive_weighted_distance_detector->distance(to)<=min_dist){
+				if(outer->value(l)==l_True){
+					//do nothing
+				}else if (outer->value(l)==l_Undef){
+					outer->enqueue(l,weighted_reach_marker) ;
+				}else if (outer->value(l)==l_False){
+					//conflict
+					conflict.push(l);
+					buildDistanceLEQReason(to,min_dist,conflict);
+					return false;
+				}
+			}
+			if(negative_weighted_distance_detector->distance(to)>min_dist){
+				if(outer->value(~l)==l_True){
+					//do nothing
+				}else if (outer->value(~l)==l_Undef){
+					outer->enqueue(~l,weighted_non_reach_marker) ;
+				}else if (outer->value(~l)==l_False){
+					//conflict
+					conflict.push(~l);
+					buildDistanceGTReason(to,min_dist,conflict);
+					return false;
+				}
+			}
+
+		}
+
+
 
 			#ifdef DEBUG_DIJKSTRA
 					for(int i = 0;i<unweighted_dist_lits.size();i++){
