@@ -1475,5 +1475,6 @@ Lit ReachDetector<Weight>::decide(){
 };
 
 template class ReachDetector<int>;
+template class ReachDetector<double>;
 #include <gmpxx.h>
 template class ReachDetector<mpq_class>;

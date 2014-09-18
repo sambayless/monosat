@@ -520,5 +520,6 @@ Lit MaxflowDetector<Weight>::decide(){
 
 
 template class MaxflowDetector<int>;
+template class MaxflowDetector<double>;
 #include <gmpxx.h>
 template class MaxflowDetector<mpq_class>;

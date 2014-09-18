@@ -47,6 +47,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "pb/PbTheory.h"
 #include "pb/PbParser.h"
 #include "mtl/Map.h"
+#include "graph/GraphTheory.h"
 #include "geometry/GeometryTheory.h"
 #include "geometry/GeometryParser.h"
 using namespace Minisat;
@@ -520,64 +521,6 @@ int main(int argc, char** argv)
 				   printf("\n");
 			   }
 
-		   if(opt_id_graph){
-			   if(S.theories.size()){
-
-					   printf("Graph Variables:\n");
-						Theory * t = S.theories[0];
-						GraphTheorySolver *g = (GraphTheorySolver*)t;
-						int width = sqrt(g->nNodes());
-						if(opt_width>0){
-							width=opt_width;
-						}
-						int height =width;
-						if(opt_height>0){
-							height = opt_height;
-						}
-
-						int v = 0;
-						//for (int i = 0;i<w;i++){
-						//	for(int j = 0;j<w;j++){
-						int lasty= 0;
-						for(int n = 0;n<height*width;n++){
-							int x = n%width;
-							int y = n/width;
-							if(y > lasty)
-								printf("\n");
-
-
-							printf("%4d", n+1);
-
-							Lit l = mkLit(n,false);
-							if(assume.contains(l)){
-								printf("+");
-							}else{
-								l=~l;
-								if(assume.contains(l)){
-									printf("-");
-								}else{
-									printf(" ");
-								}
-							}
-
-							if (x<width-1){
-								printf(",");
-							}
-							lasty=y;
-						}
-						printf("\n\n");
-						/*for(auto & d:g->detectors){
-							d->printGraph(width,height);
-						}*/
-
-
-
-				}else{
-					printf("No graph to identify\n");
-				}
-
-			   exit(0);
-		   }
 
 		if(strlen((const char* )opt_assume_symbols)>0){
 
@@ -655,7 +598,7 @@ int main(int argc, char** argv)
         lbool ret=S.solve(assume)?l_True:l_False;
         if(opt_optimize_mst && ret ==l_True && S.theories.size()){
 
-        	GraphTheorySolver * g = (GraphTheorySolver*)S.theories[0];
+        	Minisat::GraphTheorySolver<int> * g = (Minisat::GraphTheorySolver<int>*)S.theories[0];
         	if(g->mstDetector){
 
         		int mst_weight = g->mstDetector->positive_reach_detector->weight();

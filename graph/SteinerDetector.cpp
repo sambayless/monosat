@@ -439,5 +439,6 @@ Lit SteinerDetector<Weight>::decide(){
 	return lit_Undef;
 };
 template class SteinerDetector<int>;
+template class SteinerDetector<double>;
 #include <gmpxx.h>
 template class SteinerDetector<mpq_class>;

@@ -676,6 +676,7 @@ Lit AllPairsDetector<Weight>::decide(){
 	return lit_Undef;
 };
 template class AllPairsDetector<int>;
+template class AllPairsDetector<double>;
 #include <gmpxx.h>
 template class AllPairsDetector<mpq_class>;
 

@@ -1189,9 +1189,9 @@ public:
 			edge_list.push({-1,-1,-1,-1,-1,1});
 			assigns.push(l_Undef);
 		}*/
-		undirected_adj[to].push({v,outerVar,from,to,index,weight});
-		undirected_adj[from].push({v,outerVar,to,from,index,weight});
-		inv_adj[to].push({v,outerVar,from,to,index,weight});
+		undirected_adj[to].push({v,outerVar,from,to,index});
+		undirected_adj[from].push({v,outerVar,to,from,index});
+		inv_adj[to].push({v,outerVar,from,to,index});
 
 		//num_edges++;
 		edge_list[index].v =v;
@@ -1199,17 +1199,17 @@ public:
 		edge_list[index].from=from;
 		edge_list[index].to =to;
 		edge_list[index].edgeID=index;
-		edge_list[index].weight=weight;
+		//edge_list[index].weight=weight;
 		if(edge_weights.size()<=index){
 			edge_weights.resize(index+1);
 		}
 		edge_weights[index]=weight;
 
-		edges[from][to]= {v,outerVar,from,to,index,weight};
-		g.addEdge(from,to,index,weight);
+		edges[from][to]= {v,outerVar,from,to,index};
+		g.addEdge(from,to,index);
 		g.disableEdge(from,to, index);
-		antig.addEdge(from,to,index,weight);
-		cutGraph.addEdge(from,to,index,weight);
+		antig.addEdge(from,to,index);
+		cutGraph.addEdge(from,to,index);
 
     	return mkLit(v,false);
     }
@@ -1217,48 +1217,52 @@ public:
 		assert(edges[from][to].edgeID>=0);
 		return edges[from][to].edgeID;
 	}
-	int getWeight(int edgeID){
-		return edge_list[edgeID].weight;
+	Weight getWeight(int edgeID){
+		return edge_weights[edgeID].weight;
 	}
-	void reachesWithinSteps(int from, int to, Var reach_var, Weight within_steps){
+	void reachesWithinSteps(int from, int to, Var reach_var, int within_steps){
 
 				assert(from<g.nodes());
 				if(within_steps<=-1)
 					within_steps = g.nodes();
 
 				if (dist_info[from].source<0){
-
-					DistanceDetector<Weight> * d =new DistanceDetector<Weight>(detectors.size(), this,edge_weights,g,antig,from,within_steps,drand(rnd_seed));
+					DistanceDetector<Weight> * d =new DistanceDetector<Weight>(detectors.size(), this,edge_weights,g,antig,from,drand(rnd_seed));
 					detectors.push(d);
-					//reach_detectors.push(reach_detectors.last());
 					distance_detectors.push(d);
-					//detectors.push(new DistanceDetector(detectors.size(), this,g,antig,from,within_steps,drand(rnd_seed)));
-						//reach_detectors.push(reach_detectors.last());
-
 					assert(detectors.last()->getID()==detectors.size()-1);
-
-
-
-
-
-					//reach_detectors.last()->negative_dist_detector = new Dijkstra(from,antig);
-					//reach_detectors.last()->source=from;
-
 					dist_info[from].source=from;
 					dist_info[from].detector=detectors.last();
-
-					//reach_detectors.last()->within=within_steps;
-
 				}
 
 				DistanceDetector<Weight>  * d = (DistanceDetector<Weight>*)dist_info[from].detector;
 				assert(d);
 
-				d->addLit(from,to,reach_var,within_steps);
+				d->addUnweightedShortestPathLit(from,to,reach_var,within_steps);
 
 
 		    }
+	void reachesWithinDistance(int from, int to, Var reach_var, Weight& distance){
 
+					assert(from<g.nodes());
+
+
+					if (dist_info[from].source<0){
+						DistanceDetector<Weight> * d =new DistanceDetector<Weight>(detectors.size(), this,edge_weights,g,antig,from,drand(rnd_seed));
+						detectors.push(d);
+						distance_detectors.push(d);
+						assert(detectors.last()->getID()==detectors.size()-1);
+						dist_info[from].source=from;
+						dist_info[from].detector=detectors.last();
+					}
+
+					DistanceDetector<Weight>  * d = (DistanceDetector<Weight>*)dist_info[from].detector;
+					assert(d);
+
+					d->addWeightedShortestPathLit(from,to,reach_var,distance);
+
+
+			    }
 	void implementConstraints(){
 		if(!S->okay())
 			return;
@@ -1488,16 +1492,16 @@ public:
 		}
     }
 	//v will be true if the minimum weight is <= the specified value
-	void minimumSpanningTree(Var v, int minimum_weight){
+	void minimumSpanningTree(Var v, Weight minimum_weight){
 		if(!mstDetector){
-			mstDetector = new MSTDetector<int>(detectors.size(),this, g, antig, edge_weights,drand(rnd_seed));
+			mstDetector = new MSTDetector<Weight>(detectors.size(),this, g, antig, edge_weights,drand(rnd_seed));
 			detectors.push(mstDetector);
 		}
 		mstDetector->addWeightLit(v,minimum_weight);
 	}
 	void edgeInMinimumSpanningTree(Var edgeVar, Var var){
 		if(!mstDetector){
-			mstDetector = new MSTDetector<int>(detectors.size(),this, g, antig, edge_weights,drand(rnd_seed));
+			mstDetector = new MSTDetector<Weight>(detectors.size(),this, g, antig, edge_weights,drand(rnd_seed));
 			detectors.push(mstDetector);
 		}
 		if(!S->hasTheory(edgeVar) || (S->getTheoryID(edgeVar)!= getTheoryIndex()) || ! isEdgeVar(S->getTheoryVar(edgeVar)) ){
@@ -1521,7 +1525,7 @@ public:
 				return;
 			}
 		}
-		MaxflowDetector<> *f = new MaxflowDetector<int>(detectors.size(),this,edge_weights, g, antig,from,to,drand(rnd_seed)) ;
+		MaxflowDetector<Weight> *f = new MaxflowDetector<Weight>(detectors.size(),this,edge_weights, g, antig,from,to,drand(rnd_seed)) ;
 		flow_detectors.push(f);
 		detectors.push(f);
 		f->addFlowLit(max_flow,v);
@@ -1811,7 +1815,7 @@ public:
 										int y = (n )/width;
 										if(y > lasty)
 											printf("\n");
-										int total_flow = 0;
+										Weight total_flow = 0;
 										for(int e = 0;e<g.edges();e++){
 											if(g.getEdge(e).to==n){
 												total_flow+=flow_detectors[r]->positive_detector->getEdgeFlow(e);
@@ -1819,7 +1823,8 @@ public:
 											}
 										}
 
-										printf("%*d ",maxw,total_flow);
+										//printf("%*d ",maxw,total_flow);
+										std::cout<<total_flow<<" ";
 											lasty=y;
 										}
 										printf("\n");
@@ -1833,7 +1838,7 @@ public:
 												int total_flow = 0;
 												for(int e = 0;e<g.edges();e++){
 													if(g.getEdge(e).to==n){
-														int flow = flow_detectors[r]->positive_detector->getEdgeFlow(e);
+														Weight flow = flow_detectors[r]->positive_detector->getEdgeFlow(e);
 														if(flow>0){
 															printf("flow (%d,%d) %d to %d\n",x,y, g.getEdge(e).from,g.getEdge(e).to);
 														}
@@ -1848,8 +1853,9 @@ public:
 							}
 
 								if(mstDetector){
-										int min_weight = mstDetector->positive_reach_detector->weight();
-										printf("Min Spanning Tree Weight: %d\n",min_weight);
+										Weight min_weight = mstDetector->positive_reach_detector->weight();
+										//printf("Min Spanning Tree Weight: %d\n",min_weight);
+										std::cout<<"Min Spanning Tree Weight: " << min_weight <<"\n";
 										int width = sqrt(nNodes());
 										if(opt_width>0){
 												width=opt_width;

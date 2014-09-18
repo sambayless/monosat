@@ -1051,5 +1051,6 @@ return lit_Undef;
 };
 
 template class MSTDetector<int>;
+template class MSTDetector<double>;
 #include <gmpxx.h>
 template class MSTDetector<mpq_class>;

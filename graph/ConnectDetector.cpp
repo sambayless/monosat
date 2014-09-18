@@ -1101,5 +1101,6 @@ Lit ConnectDetector<Weight>::decide(){
 };
 
 template class ConnectDetector<int>;
+template class ConnectDetector<double>;
 #include <gmpxx.h>
 template class ConnectDetector<mpq_class>;

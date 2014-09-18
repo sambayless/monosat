@@ -20,25 +20,23 @@ class DynamicGraph{
 	std::vector<bool> edge_status;
 	int num_nodes;
 	int num_edges;
+	int next_id;
+	bool is_changed;
 public:
 	int modifications;
 	int additions;
 	int deletions;
 	int historyclears;
 
-private:
-	int next_id;
-	bool is_changed;
-	//bool allocated=false;
 
 	struct Edge{
 		int node;
 		int id;
 	};
-	std::vector<std::vector<Edge> > adjacency_list;//adj list
-	std::vector<std::vector<Edge> > inverted_adjacency_list;//adj list
-	std::vector<std::vector<Edge> > adjacency_undirected_list;//adj list
-
+	std::vector<std::vector<Edge> > adjacency_list;
+	std::vector<std::vector<Edge> > inverted_adjacency_list;
+	std::vector<std::vector<Edge> > adjacency_undirected_list;
+public:
 	struct FullEdge{
 		int from;
 		int to;
@@ -47,7 +45,7 @@ private:
 		FullEdge():from(-1),to(-1),id(-1),weight(1){}
 		FullEdge(int from,int to, int id,int weight):from(from),to(to),id(id),weight(weight){}
 	};
-public:
+
 	//std::vector<int> weights;
 	std::vector<FullEdge> all_edges;
 

@@ -38,7 +38,14 @@ struct SteinerStruct{
 template<class B, class Solver>
 class GraphParser:public Parser<B,Solver>{
 	vec<std::pair<int,std::string> > * symbols=nullptr;
-	vec<GraphTheorySolver*> graphs;
+	vec<GraphTheorySolver<int>*> graphs;
+	vec<GraphTheorySolver<double>*> graphs_float;
+	vec<GraphTheorySolver<mpq_class>*> graphs_rational;
+
+	enum class GraphType{
+		INTEGER,FLOAT,RATIONAL
+	};
+
 	vec<vec<SteinerStruct*>> steiners;
 	PbTheory * pbtheory=nullptr;
 	std::string symbol;
@@ -61,7 +68,7 @@ class GraphParser:public Parser<B,Solver>{
 //If lit is 0 or 1, this is a constant edge (0 for false, 1 for true)
 //r g u w var is a reach query: var is true if can u reach w in graph g, false otherwise
 
- void readDiGraph(B& in, Solver& S, vec<GraphTheorySolver*> & graphs) {
+ void readDiGraph(B& in, GraphType graph_type, Solver& S) {
 	if(opt_ignore_theories){
 		skipLine(in);
 		return;
@@ -73,18 +80,29 @@ class GraphParser:public Parser<B,Solver>{
         e = parseInt(in);//num edges (I'm ignoring this currently)
       //  ev = parseInt(in);//the variable of the first graph edge.
         g=parseInt(in);//id of the graph
-        GraphTheorySolver * graph = NULL;
-
-		graph= new GraphTheorySolver(&S,g);
-
-        graph->newNodes(n);
         graphs.growTo(g+1);
-        graphs[g]=graph;
-        S.addTheory(graph);
+        graphs_float.growTo(g+1);
+        graphs_rational.growTo(g+1);
+        if(graph_type==GraphType::INTEGER){
+			GraphTheorySolver<int> *graph= new GraphTheorySolver<int>(&S,g);
+			graph->newNodes(n);
+			graphs[g]=graph;
+			S.addTheory(graph);
+        }else if(graph_type==GraphType::FLOAT){
+			GraphTheorySolver<double> *graph= new GraphTheorySolver<double>(&S,g);
+			graph->newNodes(n);
+			graphs_float[g]=graph;
+			S.addTheory(graph);
+        }else if(graph_type==GraphType::RATIONAL){
+			GraphTheorySolver<mpq_class> *graph= new GraphTheorySolver<mpq_class>(&S,g);
+			graph->newNodes(n);
+			graphs_rational[g]=graph;
+			S.addTheory(graph);
+        }
       //  return ev;
 }
 
- void readEdge(B& in, Solver& S, vec<GraphTheorySolver*> & graphs) {
+ void readEdge(B& in, Solver& S) {
 	if(opt_ignore_theories){
 		skipLine(in);
 		return;
@@ -96,22 +114,30 @@ class GraphParser:public Parser<B,Solver>{
         int from = parseInt(in);
         int to=parseInt(in);
         int edgeVar = parseInt(in)-1;
-        /*if(edgeVar==-1){
-        	edgeVar=edge_var++-1;
-        }*/
-        if(graphID <0 || graphID>=graphs.size() || !graphs[graphID]){
+
+        if(graphID <0 || graphID>=graphs.size()){
         	printf("PARSE ERROR! Undeclared graph identifier %d for edge %d\n",graphID, edgeVar), exit(3);
         }
         if(edgeVar<0){
         	printf("PARSE ERROR! Edge variables must be >=0, was %d\n", edgeVar), exit(3);
         }
-        GraphTheorySolver * graph = graphs[graphID];
         while (edgeVar >= S.nVars()) S.newVar();
-        graph->newEdge(from,to,edgeVar);
+
+        if(graphs[graphID]){
+            graphs[graphID]->newEdge(from,to,edgeVar);
+        }else if (graphs_float[graphID]){
+        	graphs_float[graphID]->newEdge(from,to,edgeVar);
+        }else if(graphs_rational[graphID]){
+        	graphs_rational[graphID]->newEdge(from,to,edgeVar);
+        }else{
+        	printf("PARSE ERROR! Undeclared graph identifier %d for edge %d\n",graphID, edgeVar), exit(3);
+        	exit(1);
+        }
+
 
 }
 
- void readWeightedEdge(B& in, Solver& S, vec<GraphTheorySolver*> & graphs) {
+ void readIntegerWeightedEdge(B& in, Solver& S) {
 	if(opt_ignore_theories){
 		skipLine(in);
 		return;
@@ -127,18 +153,65 @@ class GraphParser:public Parser<B,Solver>{
         /*if(edgeVar==-1){
         	edgeVar=edge_var++-1;
         }*/
-        if(graphID <0 || graphID>=graphs.size() || !graphs[graphID]){
+        if(graphID <0 || graphID>=graphs.size() ){
         	printf("PARSE ERROR! Undeclared graph identifier %d for edge %d\n",graphID, edgeVar), exit(3);
         }
         if(edgeVar<0){
         	printf("PARSE ERROR! Edge variables must be >=0, was %d\n", edgeVar), exit(3);
         }
-        GraphTheorySolver * graph = graphs[graphID];
         while (edgeVar >= S.nVars()) S.newVar();
-        graph->newEdge(from,to,edgeVar,weight);
+
+        if(graphs[graphID]){
+            graphs[graphID]->newEdge(from,to,edgeVar,weight);
+        }else if (graphs_float[graphID]){
+        	graphs_float[graphID]->newEdge(from,to,edgeVar,weight);
+        }else if(graphs_rational[graphID]){
+        	graphs_rational[graphID]->newEdge(from,to,edgeVar,weight);
+        }else{
+        	printf("PARSE ERROR! Undeclared graph identifier %d for edge %d\n",graphID, edgeVar), exit(3);
+        	exit(1);
+        }
 
 }
- void readRationalWeightedEdge(B& in, Solver& S, vec<GraphTheorySolver*> & graphs) {
+ void readFloatWeightedEdge(B& in, Solver& S) {
+	if(opt_ignore_theories){
+		skipLine(in);
+		return;
+	}
+
+    ++in;
+	static vec<char> tmp;
+	int graphID = parseInt(in);
+	int from = parseInt(in);
+	int to=parseInt(in);
+	int edgeVar = parseInt(in)-1;
+	double weight = parseDouble(in,tmp);
+
+
+	if(graphID <0 || graphID>=graphs.size() || !graphs[graphID]){
+		printf("PARSE ERROR! Undeclared graph identifier %d for edge %d\n",graphID, edgeVar), exit(3);
+	}
+	if(edgeVar<0){
+		printf("PARSE ERROR! Edge variables must be >=0, was %d\n", edgeVar), exit(3);
+	}
+	while (edgeVar >= S.nVars()) S.newVar();
+
+	if(graphs[graphID]){
+		printf("PARSE ERROR! Floating point and rational edge weights cannot be added to integer-weight graphs, aborting\n",graphID, edgeVar), exit(3);
+		exit(1);
+	}else if (graphs_float[graphID]){
+		graphs_float[graphID]->newEdge(from,to,edgeVar,weight);
+	}else if(graphs_rational[graphID]){
+		graphs_rational[graphID]->newEdge(from,to,edgeVar,weight);
+	}else{
+		printf("PARSE ERROR! Undeclared graph identifier %d for edge %d\n",graphID, edgeVar), exit(3);
+		exit(1);
+	}
+
+}
+
+
+ void readRationalWeightedEdge(B& in, Solver& S) {
 	if(opt_ignore_theories){
 		skipLine(in);
 		return;
@@ -152,11 +225,14 @@ class GraphParser:public Parser<B,Solver>{
         int edgeVar = parseInt(in)-1;
         std::stringstream ss;
     	skipWhitespace(in);
-		while(*in != '\n' && ! isWhitespace(*in)){
+    	//rational can be either a plain integer, or a rational in the form '123/456'
+		while(*in != '\n'){
 			ss<<(*in);
 			++in;
 		}
-        mpz_class weight_numerator = ss.str();
+		mpq_class weight(ss.str());
+		weight.canonicalize();
+/*        mpz_class weight_numerator = ss.str();
         ss.clear();
         skipWhitespace(in);
 		while(*in != '\n' && ! isWhitespace(*in)){
@@ -164,24 +240,34 @@ class GraphParser:public Parser<B,Solver>{
 			++in;
 		}
 		mpz_class weight_denominator = ss.str();
-		mpq_class weight(weight_numerator,weight_denominator);
+		mpq_class weight(weight_numerator,weight_denominator);*/
         //long weight_denominator = parseInt(in);
         /*if(edgeVar==-1){
         	edgeVar=edge_var++-1;
         }*/
-        if(graphID <0 || graphID>=graphs.size() || !graphs[graphID]){
+        if(graphID <0 || graphID>=graphs.size() ){
         	printf("PARSE ERROR! Undeclared graph identifier %d for edge %d\n",graphID, edgeVar), exit(3);
         }
         if(edgeVar<0){
         	printf("PARSE ERROR! Edge variables must be >=0, was %d\n", edgeVar), exit(3);
         }
-        GraphTheorySolver * graph = graphs[graphID];
         while (edgeVar >= S.nVars()) S.newVar();
-        graph->newEdge(from,to,edgeVar,weight);
+
+        if(graphs[graphID]){
+        	printf("PARSE ERROR! Floating point and rational edge weights cannot be added to integer-weight graphs, aborting\n",graphID, edgeVar), exit(3);
+            exit(1);
+        }else if (graphs_float[graphID]){
+        	graphs_float[graphID]->newEdge(from,to,edgeVar,weight.get_d());
+        }else if(graphs_rational[graphID]){
+        	graphs_rational[graphID]->newEdge(from,to,edgeVar,weight);
+        }else{
+        	printf("PARSE ERROR! Undeclared graph identifier %d for edge %d\n",graphID, edgeVar), exit(3);
+        	exit(1);
+        }
 
 }
 
- void readConnect(B& in, Solver& S, vec<GraphTheorySolver*> & graphs) {
+ void readConnect(B& in, Solver& S) {
 	if(opt_ignore_theories){
 		skipLine(in);
 		return;
@@ -190,26 +276,34 @@ class GraphParser:public Parser<B,Solver>{
 
     ++in;
 
-        int graphID = parseInt(in);
-        int from = parseInt(in);
-       // int steps = parseInt(in);
-         int to=parseInt(in);
-        int reachVar = parseInt(in)-1;
-        if(graphID <0 || graphID>=graphs.size() || !graphs[graphID]){
-        	printf("PARSE ERROR! Undeclared graph identifier %d for edge %d\n",graphID, reachVar), exit(3);
-        }
-        if(reachVar<0){
-        	printf("PARSE ERROR! Edge variables must be >=0, was %d\n", reachVar), exit(3);
-        }
-        GraphTheorySolver * graph = graphs[graphID];
-        while (reachVar >= S.nVars()) S.newVar();
-        graph->connects(from,to,reachVar);
+	int graphID = parseInt(in);
+	int from = parseInt(in);
+   // int steps = parseInt(in);
+	 int to=parseInt(in);
+	int reachVar = parseInt(in)-1;
+	if(graphID <0 || graphID>=graphs.size()){
+		printf("PARSE ERROR! Undeclared graph identifier %d for edge %d\n",graphID, reachVar), exit(3);
+	}
+	if(reachVar<0){
+		printf("PARSE ERROR! Edge variables must be >=0, was %d\n", reachVar), exit(3);
+	}
 
+	while (reachVar >= S.nVars()) S.newVar();
 
+	if(graphs[graphID]){
+		graphs[graphID]->connects(from,to,reachVar);
+	}else if (graphs_float[graphID]){
+		graphs_float[graphID]->connects(from,to,reachVar);
+	}else if(graphs_rational[graphID]){
+		graphs_rational[graphID]->connects(from,to,reachVar);
+	}else{
+		printf("PARSE ERROR! Undeclared graph identifier %d\n",graphID), exit(3);
+		exit(1);
+	}
 }
 
 
- void readReach(B& in, Solver& S, vec<GraphTheorySolver*> & graphs) {
+ void readReach(B& in, Solver& S) {
 	if(opt_ignore_theories){
 		skipLine(in);
 		return;
@@ -229,14 +323,22 @@ class GraphParser:public Parser<B,Solver>{
         if(reachVar<0){
         	printf("PARSE ERROR! Edge variables must be >=0, was %d\n", reachVar), exit(3);
         }
-        GraphTheorySolver * graph = graphs[graphID];
-        while (reachVar >= S.nVars()) S.newVar();
-        graph->reaches(from,to,reachVar);
 
+    	while (reachVar >= S.nVars()) S.newVar();
 
+    	if(graphs[graphID]){
+    		graphs[graphID]->reaches(from,to,reachVar);
+    	}else if (graphs_float[graphID]){
+    		graphs_float[graphID]->reaches(from,to,reachVar);
+    	}else if(graphs_rational[graphID]){
+    		graphs_rational[graphID]->reaches(from,to,reachVar);
+    	}else{
+    		printf("PARSE ERROR! Undeclared graph identifier %d\n",graphID), exit(3);
+    		exit(1);
+    	}
 }
 
- void readDistance(B& in, Solver& S, vec<GraphTheorySolver*> & graphs, bool leq=false) {
+ void readDistance(B& in, Solver& S,  bool leq=false) {
 	if(opt_ignore_theories){
 		skipLine(in);
 		return;
@@ -256,19 +358,12 @@ class GraphParser:public Parser<B,Solver>{
 	if(reachVar<0){
 		printf("PARSE ERROR! Edge variables must be >=0, was %d\n", reachVar), exit(3);
 	}
-	GraphTheorySolver * graph = graphs[graphID];
-	while (reachVar >= S.nVars()) S.newVar();
-	if(leq)
-		graph->reaches(from,to,reachVar,steps);
-	else
-		graph->reaches(from,to,reachVar,steps-1);
-
 
 }
 
 
 
- void readMinSpanningTreeConstraint(B& in, Solver& S, vec<GraphTheorySolver*> & graphs) {
+ void readMinSpanningTreeConstraint(B& in, Solver& S) {
 	if(opt_ignore_theories){
 		skipLine(in);
 		return;
@@ -286,13 +381,21 @@ class GraphParser:public Parser<B,Solver>{
         if(reachVar<0){
         	printf("PARSE ERROR! Edge variables must be >=0, was %d\n", reachVar), exit(3);
         }
-        GraphTheorySolver * graph = graphs[graphID];
-        while (reachVar >= S.nVars()) S.newVar();
-        graph->minimumSpanningTree(reachVar,maxweight);
 
+	while (reachVar >= S.nVars()) S.newVar();
 
+	if(graphs[graphID]){
+		graphs[graphID]->minimumSpanningTree(reachVar,maxweight);
+	}else if (graphs_float[graphID]){
+		graphs_float[graphID]->minimumSpanningTree(reachVar,maxweight);
+	}else if(graphs_rational[graphID]){
+		graphs_rational[graphID]->minimumSpanningTree(reachVar,maxweight);
+	}else{
+		printf("PARSE ERROR! Undeclared graph identifier %d\n",graphID), exit(3);
+		exit(1);
+	}
 }
- void readMinSpanningTreeEdgeConstraint(B& in, Solver& S, vec<GraphTheorySolver*> & graphs) {
+ void readMinSpanningTreeEdgeConstraint(B& in, Solver& S) {
 	if(opt_ignore_theories){
 		skipLine(in);
 		return;
@@ -313,15 +416,23 @@ class GraphParser:public Parser<B,Solver>{
         if(reachVar<0){
         	printf("PARSE ERROR! Edge variables must be >=0, was %d\n", reachVar), exit(3);
         }
-        GraphTheorySolver * graph = graphs[graphID];
-        while (reachVar >= S.nVars()) S.newVar();
-        graph->edgeInMinimumSpanningTree(edgeVar,reachVar);
 
+    	while (reachVar >= S.nVars()) S.newVar();
 
+    	if(graphs[graphID]){
+    		graphs[graphID]->edgeInMinimumSpanningTree(edgeVar,reachVar);
+    	}else if (graphs_float[graphID]){
+    		graphs_float[graphID]->edgeInMinimumSpanningTree(edgeVar,reachVar);
+    	}else if(graphs_rational[graphID]){
+    		graphs_rational[graphID]->edgeInMinimumSpanningTree(edgeVar,reachVar);
+    	}else{
+    		printf("PARSE ERROR! Undeclared graph identifier %d\n",graphID), exit(3);
+    		exit(1);
+    	}
 }
 
 
- void readMaxFlowConstraint(B& in, Solver& S, vec<GraphTheorySolver*> & graphs) {
+ void readMaxFlowConstraint(B& in, Solver& S) {
 	if(opt_ignore_theories){
 		skipLine(in);
 		return;
@@ -341,17 +452,25 @@ class GraphParser:public Parser<B,Solver>{
         if(reachVar<0){
         	printf("PARSE ERROR! Edge variables must be >=0, was %d\n", reachVar), exit(3);
         }
-        GraphTheorySolver * graph = graphs[graphID];
-        while (reachVar >= S.nVars()) S.newVar();
-        graph->maxFlow(s,t,flow,reachVar);
 
+	while (reachVar >= S.nVars()) S.newVar();
 
+	if(graphs[graphID]){
+		graphs[graphID]->maxFlow(s,t,flow,reachVar);
+	}else if (graphs_float[graphID]){
+		graphs_float[graphID]->maxFlow(s,t,flow,reachVar);
+	}else if(graphs_rational[graphID]){
+		graphs_rational[graphID]->maxFlow(s,t,flow,reachVar);
+	}else{
+		printf("PARSE ERROR! Undeclared graph identifier %d\n",graphID), exit(3);
+		exit(1);
+	}
 }
 
 
 
 
- void readMinConnectedComponentsConstraint(B& in, Solver& S, vec<GraphTheorySolver*> & graphs) {
+ void readMinConnectedComponentsConstraint(B& in, Solver& S) {
 	if(opt_ignore_theories){
 		skipLine(in);
 		return;
@@ -369,9 +488,19 @@ class GraphParser:public Parser<B,Solver>{
         if(reachVar<0){
         	printf("PARSE ERROR! Edge variables must be >=0, was %d\n", reachVar), exit(3);
         }
-        GraphTheorySolver * graph = graphs[graphID];
-        while (reachVar >= S.nVars()) S.newVar();
-        graph->minConnectedComponents(min_components,reachVar);
+
+	while (reachVar >= S.nVars()) S.newVar();
+
+	if(graphs[graphID]){
+		graphs[graphID]->minConnectedComponents(min_components,reachVar);
+	}else if (graphs_float[graphID]){
+		graphs_float[graphID]->minConnectedComponents(min_components,reachVar);
+	}else if(graphs_rational[graphID]){
+		graphs_rational[graphID]->minConnectedComponents(min_components,reachVar);
+	}else{
+		printf("PARSE ERROR! Undeclared graph identifier %d\n",graphID), exit(3);
+		exit(1);
+	}
 }
 
 
@@ -401,7 +530,7 @@ class GraphParser:public Parser<B,Solver>{
         }
         steiners[graphID][steinerID] = new SteinerStruct{steinerID};
 }*/
- void readSteinerTreeTerminal(B& in, Solver& S, vec<GraphTheorySolver*> & graphs, vec<vec<SteinerStruct*>>& steiners) {
+ void readSteinerTreeTerminal(B& in, Solver& S) {
 	if(opt_ignore_theories){
 		skipLine(in);
 		return;
@@ -426,7 +555,7 @@ class GraphParser:public Parser<B,Solver>{
 	steiners[graphID][steinerID]->terminals.push({node,var});
 
 }
- void readSteinerTreeConstraint(B& in, Solver& S, vec<GraphTheorySolver*> & graphs, vec<vec<SteinerStruct*>>& steiners) {
+ void readSteinerTreeConstraint(B& in, Solver& S) {
 	if(opt_ignore_theories){
 		skipLine(in);
 		return;
@@ -593,46 +722,64 @@ public:
 				return false;
 			}
 		}else if (match(in,"digraph")){
+			if(match(in,"int")){
+				 readDiGraph(in,GraphType::INTEGER, S);
+			}else if(match(in,"float")){
+				 readDiGraph(in,GraphType::FLOAT, S);
+			}else if(match(in,"rational")){
+				 readDiGraph(in,GraphType::RATIONAL, S);
+			}else{
+				//assume the graph is integer
+				 readDiGraph(in,GraphType::INTEGER, S);
+			}
 			++in;
 			skipWhitespace(in);
 			//if(*in=='d'){
 				//for now, only digraphs are supported
-				 readDiGraph(in, S,graphs);
+
 			//}else{
 			//	printf("PARSE ERROR! Unexpected char: %c\n", *in), exit(3);
 			//}
 			return true;
 		}else if (match(in,"edge")){
 			count++;
-			readEdge(in, S,graphs);
+			readEdge(in, S);
 			return true;
 		}else if (match(in,"weighted_edge")){
 			count++;
-			readWeightedEdge(in, S,graphs);
+			readIntegerWeightedEdge(in, S);
+			return true;
+		}else if (match(in,"float_edge")){
+			count++;
+			readFloatWeightedEdge(in, S);
+			return true;
+		}else if (match(in,"rational_edge")){
+			count++;
+			readRationalWeightedEdge(in, S);
 			return true;
 		}else if (match(in,"connect")){
-			readConnect(in, S,graphs);
+			readConnect(in, S);
 			return true;
 		}else if (match(in,"reach")){
-			readReach(in, S,graphs);
+			readReach(in, S);
 			return true;
 		}else if (match(in, "distance_lt")){
-			readDistance(in, S,graphs);
+			readDistance(in, S);
 			return true;
 		}else if (match(in, "distance_leq")){
-			readDistance(in, S,graphs,true);
+			readDistance(in, S,true);
 			return true;
 		}else if (match(in,"mst_weight_lt")){
-			readMinSpanningTreeConstraint(in, S,graphs);
+			readMinSpanningTreeConstraint(in, S);
 			return true;
 		}else if (match(in, "mst_edge")){
-			readMinSpanningTreeEdgeConstraint(in, S,graphs);
+			readMinSpanningTreeEdgeConstraint(in, S);
 			return true;
 		}else if (match(in, "max_flow_gt")){
-			readMaxFlowConstraint(in, S,graphs);
+			readMaxFlowConstraint(in, S);
 			return true;
 		}else if (match(in,"connected_component_count_lt")){
-			readMinConnectedComponentsConstraint(in, S,graphs);
+			readMinConnectedComponentsConstraint(in, S);
 			return true;
 		}else if (*in == 's'){
 			if(!eagerMatch(in,"steiner_")){
@@ -642,12 +789,12 @@ public:
 				if(!eagerMatch(in,"terminal")){
 					printf("PARSE ERROR! Unexpected char: %c\n", *in), exit(3);
 				}
-				readSteinerTreeTerminal(in,S,graphs, steiners);
+				readSteinerTreeTerminal(in,S);
 			}else if (*in=='m'){
 				if(!eagerMatch(in,"minweight")){
 					printf("PARSE ERROR! Unexpected char: %c\n", *in), exit(3);
 					}
-				readSteinerTreeConstraint(in,S,graphs, steiners);
+				readSteinerTreeConstraint(in,S);
 			}
 			return true;
 		}else if (match(in, "pb_lt")){
