@@ -85,8 +85,8 @@ ConnectDetector<Weight>::ConnectDetector(int _detectorID, GraphTheorySolver<Weig
 		else
 			positive_path_detector =positive_reach_detector;
 	}else{
-		positive_reach_detector = new Dijkstra<ConnectDetector<Weight>::ReachStatus, true>(from,_g,*positiveReachStatus);
-		negative_reach_detector = new Dijkstra<ConnectDetector<Weight>::ReachStatus,true>(from,_antig,*negativeReachStatus);
+		positive_reach_detector = new UnweightedDijkstra<ConnectDetector<Weight>::ReachStatus, true>(from,_g,*positiveReachStatus);
+		negative_reach_detector = new UnweightedDijkstra<ConnectDetector<Weight>::ReachStatus,true>(from,_antig,*negativeReachStatus);
 		positive_path_detector = positive_reach_detector;
 		//reach_detectors.last()->positive_dist_detector = new Dijkstra(from,g);
 	}
@@ -795,8 +795,8 @@ bool ConnectDetector<Weight>::checkSatisfied(){
 					}
 				}
 	}else{
-		Dijkstra<Reach::NullStatus,true>under(source,g) ;
-		Dijkstra<Reach::NullStatus,true>over(source,antig) ;
+		UnweightedDijkstra<Reach::NullStatus,true>under(source,g) ;
+		UnweightedDijkstra<Reach::NullStatus,true>over(source,antig) ;
 		under.update();
 		over.update();
 

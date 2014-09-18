@@ -117,9 +117,9 @@ ReachDetector<Weight>::ReachDetector(int _detectorID, GraphTheorySolver<Weight> 
 	}*/else{
 		if(!opt_encode_reach_underapprox_as_sat)
 		{
-			positive_reach_detector = new Dijkstra<ReachDetector<Weight>::ReachStatus>(from,_g,*positiveReachStatus,1);
+			positive_reach_detector = new UnweightedDijkstra<ReachDetector<Weight>::ReachStatus>(from,_g,*positiveReachStatus,1);
 		}
-		negative_reach_detector = new Dijkstra<ReachDetector<Weight>::ReachStatus>(from,_antig,*negativeReachStatus,-1);
+		negative_reach_detector = new UnweightedDijkstra<ReachDetector<Weight>::ReachStatus>(from,_antig,*negativeReachStatus,-1);
 		positive_path_detector = positive_reach_detector;
 		//reach_detectors.last()->positive_dist_detector = new Dijkstra(from,g);
 	}
@@ -1069,8 +1069,8 @@ bool ReachDetector<Weight>::checkSatisfied(){
 					}
 				}
 	}else{
-		Dijkstra<>under(source,g) ;
-		Dijkstra<>over(source,antig) ;
+		UnweightedDijkstra<>under(source,g) ;
+		UnweightedDijkstra<>over(source,antig) ;
 		under.update();
 		over.update();
 

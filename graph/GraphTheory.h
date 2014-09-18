@@ -777,11 +777,11 @@ public:
 #ifdef DEBUG_DIJKSTRA
 
 		if(undirected){
-			Dijkstra<Reach::NullStatus, true> d(from,g);
+			UnweightedDijkstra<Reach::NullStatus, true> d(from,g);
 			d.update();
 			return d.connected(to);
 		}else{
-			Dijkstra<> d(from,g);
+			UnweightedDijkstra<> d(from,g);
 			d.update();
 			return d.connected(to);
 		}
@@ -810,11 +810,11 @@ public:
 			}
 		}
 		if(undirected){
-			Dijkstra<Reach::NullStatus, true> d(from,g);
+			UnweightedDijkstra<Reach::NullStatus, true> d(from,g);
 
 			return !d.connected(to);
 		}else{
-			Dijkstra<Reach::NullStatus, false> d(from,g);
+			UnweightedDijkstra<Reach::NullStatus, false> d(from,g);
 
 					return !d.connected(to);
 		}

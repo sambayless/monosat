@@ -62,8 +62,8 @@ Detector(_detectorID),outer(_outer),weights(weights),g(_g),antig(_antig),source(
 			negative_reach_detector = new UnweightedBFS<DistanceDetector<Weight>::ReachStatus>(from,_antig,*(negativeReachStatus),0);
 			positive_path_detector = positive_reach_detector;
 		}else{
-			positive_reach_detector = new Dijkstra<DistanceDetector<Weight>::ReachStatus>(from,_g,*positiveReachStatus,0);
-			negative_reach_detector = new Dijkstra<DistanceDetector<Weight>::ReachStatus>(from,_antig,*negativeReachStatus,0);
+			positive_reach_detector = new UnweightedDijkstra<DistanceDetector<Weight>::ReachStatus>(from,_g,*positiveReachStatus,0);
+			negative_reach_detector = new UnweightedDijkstra<DistanceDetector<Weight>::ReachStatus>(from,_antig,*negativeReachStatus,0);
 			positive_path_detector =  new UnweightedBFS<Reach::NullStatus>(from,_g,Reach::nullStatus,0);
 		}
 
@@ -74,8 +74,8 @@ Detector(_detectorID),outer(_outer),weights(weights),g(_g),antig(_antig),source(
 		negative_reach_detector = new UnweightedRamalReps<typename DistanceDetector<Weight>::ReachStatus>(from,_antig,*(negativeReachStatus),0);
 		positive_path_detector =  new UnweightedBFS<Reach::NullStatus>(from,_g,Reach::nullStatus,0);
 	}else{
-		positive_reach_detector = new Dijkstra<typename DistanceDetector<Weight>::ReachStatus>(from,_g,*positiveReachStatus,0);
-		negative_reach_detector = new Dijkstra<typename DistanceDetector<Weight>::ReachStatus>(from,_antig,*negativeReachStatus,0);
+		positive_reach_detector = new UnweightedDijkstra<typename DistanceDetector<Weight>::ReachStatus>(from,_g,*positiveReachStatus,0);
+		negative_reach_detector = new UnweightedDijkstra<typename DistanceDetector<Weight>::ReachStatus>(from,_antig,*negativeReachStatus,0);
 		positive_path_detector = positive_reach_detector;
 		//reach_detectors.last()->positive_dist_detector = new Dijkstra(from,g);
 	}
@@ -83,9 +83,16 @@ Detector(_detectorID),outer(_outer),weights(weights),g(_g),antig(_antig),source(
 	//select the _weighted_ distance detectors
 	 positiveDistanceStatus = new DistanceDetector<Weight>::DistanceStatus(*this,true);
 	 negativeDistanceStatus = new DistanceDetector<Weight>::DistanceStatus(*this,false);
-	positive_weighted_distance_detector = new RamalReps<typename DistanceDetector<Weight>::DistanceStatus,Weight>(from,_g,weights,*(positiveDistanceStatus),0);
-	negative_weighted_distance_detector = new RamalReps<typename DistanceDetector<Weight>::DistanceStatus,Weight>(from,_antig,weights,*(negativeDistanceStatus),0);
 
+
+	 if (distalg==DistAlg::ALG_RAMAL_REPS){
+		positive_weighted_distance_detector = new RamalReps<Weight,typename DistanceDetector<Weight>::DistanceStatus>(from,_g,weights,*(positiveDistanceStatus),0);
+		negative_weighted_distance_detector = new RamalReps<Weight,typename DistanceDetector<Weight>::DistanceStatus>(from,_antig,weights,*(negativeDistanceStatus),0);
+	 }else{
+		 positive_weighted_distance_detector = new Dijkstra<Weight,typename DistanceDetector<Weight>::DistanceStatus>(from,_g,weights,*positiveDistanceStatus,0);
+		 negative_weighted_distance_detector = new Dijkstra<Weight,typename DistanceDetector<Weight>::DistanceStatus>(from,_antig,weights,*negativeDistanceStatus,0);
+
+	 }
 
 
 	reach_marker=outer->newReasonMarker(getID());
@@ -872,70 +879,70 @@ bool DistanceDetector<Weight>::checkSatisfied(){
 					}
 			}
 	}else{*/
-				Dijkstra<>under(source,g) ;
-				Dijkstra<>over(source,antig) ;
-				under.update();
-				over.update();
-				for(int j = 0;j< unweighted_sat_lits.size();j++){
-						for(int k = 0;k<unweighted_sat_lits[j].size();k++){
-							Lit l = unweighted_sat_lits[j][k];
-							int dist =j;
+		{
+			UnweightedDijkstra<>under(source,g) ;
+			UnweightedDijkstra<>over(source,antig) ;
+			under.update();
+			over.update();
+			for(int j = 0;j< unweighted_sat_lits.size();j++){
+					for(int k = 0;k<unweighted_sat_lits[j].size();k++){
+						Lit l = unweighted_sat_lits[j][k];
+						int dist =j;
 
-							if(l!=lit_Undef){
-								int node =k;
+						if(l!=lit_Undef){
+							int node =k;
 
-								if(outer->value(l)==l_True){
-									if(under.distance(node)>dist){
-										return false;
-									}
-								}else if (outer->value(l)==l_False){
-									if( over.distance(node)<=dist){
-										return false;
-									}
-								}else{
-									if(under.distance(node)<=dist){
-										return false;
-									}
-									if(!over.distance(node)>dist){
-										return false;
-									}
+							if(outer->value(l)==l_True){
+								if(under.distance(node)>dist){
+									return false;
+								}
+							}else if (outer->value(l)==l_False){
+								if( over.distance(node)<=dist){
+									return false;
+								}
+							}else{
+								if(under.distance(node)<=dist){
+									return false;
+								}
+								if(!over.distance(node)>dist){
+									return false;
 								}
 							}
 						}
-				}
-
-				//now, check for weighted distance lits
-				for(auto & dist_lit:weighted_dist_lits){
-					Lit l = dist_lit.l;
-					int to = dist_lit.u;
-					Weight & min_dist =  dist_lit.min_distance;
-					if(positive_weighted_distance_detector->distance(to)<=min_dist){
-						if(outer->value(l)==l_True){
-							//do nothing
-						}else if (outer->value(l)==l_Undef){
-							outer->enqueue(l,weighted_reach_marker) ;
-						}else if (outer->value(l)==l_False){
-							//conflict
-							conflict.push(l);
-							buildDistanceLEQReason(to,min_dist,conflict);
-							return false;
-						}
 					}
-					if(negative_weighted_distance_detector->distance(to)>min_dist){
-						if(outer->value(~l)==l_True){
-							//do nothing
-						}else if (outer->value(~l)==l_Undef){
-							outer->enqueue(~l,weighted_non_reach_marker) ;
-						}else if (outer->value(~l)==l_False){
-							//conflict
-							conflict.push(~l);
-							buildDistanceGTReason(to,min_dist,conflict);
-							return false;
-						}
+			}
+		}
+		{
+			Dijkstra<Weight>under(source,g,weights) ;
+			Dijkstra<Weight>over(source,antig,weights) ;
+			under.update();
+			over.update();
+			//now, check for weighted distance lits
+			for(auto & dist_lit:weighted_dist_lits){
+				Lit l = dist_lit.l;
+				int to = dist_lit.u;
+				Weight & min_dist =  dist_lit.min_distance;
+				if(under.distance(to)<=min_dist){
+					if(outer->value(l)==l_True){
+						//do nothing
+					}else if (outer->value(l)==l_Undef){
+						outer->enqueue(l,weighted_reach_marker) ;
+					}else if (outer->value(l)==l_False){
+						return false;
 					}
-
 				}
+				if(over.distance(to)>min_dist){
+					if(outer->value(~l)==l_True){
+						//do nothing
+					}else if (outer->value(~l)==l_Undef){
+						outer->enqueue(~l,weighted_non_reach_marker) ;
+					}else if (outer->value(~l)==l_False){
 
+						return false;
+					}
+				}
+			}
+		}
 
 		//	}
 	return true;

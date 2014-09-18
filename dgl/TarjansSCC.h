@@ -139,9 +139,9 @@ public:
 				}
 #ifndef NDEBUG
 				{
-					Dijkstra<> d(node,g);
+					UnweightedDijkstra<> d(node,g);
 					assert(d.connected(n));
-					Dijkstra<> d2(n,g);
+					UnweightedDijkstra<> d2(n,g);
 					assert(d2.connected(node));
 				}
 #endif

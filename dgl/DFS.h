@@ -575,7 +575,7 @@ public:
 #ifdef DEBUG_DIJKSTRA
 		if(last_modification<=0)
 			return true;
-		Dijkstra<> d(source,g);
+		UnweightedDijkstra<> d(source,g);
 		d.update();
 		//drawFull();
 		for(int i = 0;i<g.nodes();i++){

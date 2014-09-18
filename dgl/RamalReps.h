@@ -18,7 +18,7 @@
 #include <algorithm>
 
 namespace dgl{
-template<class Status,typename Weight = int>
+template<typename Weight = int,class Status=typename Distance<Weight>::NullStatus>
 class RamalReps:public Distance<Weight>{
 public:
 	DynamicGraph & g;

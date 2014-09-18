@@ -241,7 +241,7 @@ public:
 #ifdef DEBUG_DIJKSTRA
 		if(last_modification<=0)
 			return true;
-		Dijkstra<Reach::NullStatus, undirected> d(source,g);
+		UnweightedDijkstra<Reach::NullStatus, undirected> d(source,g);
 		d.update();
 		//drawFull();
 
