@@ -617,13 +617,13 @@ public:
 		if(connected(t))
 			return 1;
 		else
-			return INF;
+			return -1;
 	}
 	int distance_unsafe(int t){
 		if(connected_unsafe(t))
 			return 1;
 		else
-			return INF;
+			return -1;
 	}
 	int incomingEdge(int t){
 		assert(t>=0 && t<prev.size());

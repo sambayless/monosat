@@ -100,7 +100,7 @@ static double parseDouble(B& in, vec<char> & tmp) {
     bool    neg = false;
     skipWhitespace(in);
     tmp.clear();
-    while (*in=='+' || *in=='-' || *in=='.' || (*in >= '0' && *in <= '9')){
+    while (*in=='+' || *in=='-' || *in=='.' || *in=='E' || *in=='e'  || (*in >= '0' && *in <= '9')){
     	tmp.push(*in);
     	++in;
     }

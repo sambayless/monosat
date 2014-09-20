@@ -51,7 +51,7 @@ public:
 
 		Distance<Weight> * positive_weighted_distance_detector;
 		Distance<Weight> * negative_weighted_distance_detector;
-
+		Distance<Weight> * positive_weighted_path_detector;
 		Reach *  positive_path_detector;
 
 		//vec<Lit>  reach_lits;

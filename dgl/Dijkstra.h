@@ -271,13 +271,15 @@ public:
 	Weight & distance(int t){
 		if(last_modification!=g.modifications)
 					update();
-		return dist[t];
+		if(connected_unsafe(t))
+			return dist[t];
+		return this->unreachable();
 	}
 	Weight &distance_unsafe(int t){
 		if(connected_unsafe(t))
 			return dist[t];
 		else
-			return INF;
+			return this->unreachable();
 	}
 	int incomingEdge(int t){
 		assert(t>=0 && t<prev.size());
@@ -692,13 +694,15 @@ public:
 	int & distance(int t){
 		if(last_modification!=g.modifications)
 					update();
-		return dist[t];
+		if(connected_unsafe(t))
+			return dist[t];
+		return this->unreachable();
 	}
 	int &distance_unsafe(int t){
 		if(connected_unsafe(t))
 			return dist[t];
 		else
-			return INF;
+			return this->unreachable();//return INF;
 	}
 	int incomingEdge(int t){
 		assert(t>=0 && t<prev.size());

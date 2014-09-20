@@ -114,7 +114,7 @@ public:
 			}
 		}
 
-		std::vector<Weight> dbg_delta;
+		std::vector<int> dbg_delta;
 		std::vector<Weight> dbg_dist;
 		dbg_dist.resize(g.nodes(),INF);
 		dbg_delta.resize(g.nodes());
@@ -171,10 +171,8 @@ public:
 		}
 
 		for(int u = 0;u<g.nodes();u++){
-			int d = dist[u];
-			if(u==53){
-				int a=1;
-			}
+			Weight & d = dist[u];
+
 			assert(dbg_dist[u]==dist[u]);
 			for(int i = 0;i<g.nIncoming(u);i++){
 				if(!g.edgeEnabled( g.incoming(u,i).id))
@@ -202,8 +200,8 @@ public:
 
 		}
 		for(int u = 0;u<g.nodes();u++){
-			Weight& d = delta[u];
-			Weight& d_expect = dbg_delta[u];
+			int d = delta[u];
+			int d_expect = dbg_delta[u];
 			assert(d==dbg_delta[u]);
 
 		}
@@ -570,7 +568,27 @@ public:
 		return true;
 	}
 	bool dbg_uptodate(){
+#ifdef DEBUG_DIJKSTRA
+		if(last_modification<0)
+			return true;
+		dbg_delta();
+		Dijkstra<Weight> d(source,g,weights);
 
+		for(int i = 0;i<g.nodes();i++){
+			Weight dis = dist[i];
+			bool c = i<dist.size() && dist[i]<INF;
+			if(!c)
+				dis = this->unreachable();
+
+			Weight dbgdist = d.distance(i);
+
+			if(dis!=dbgdist){
+				assert(false);
+				exit(4);
+			}
+		}
+//#endif
+#endif
 		return true;
 	}
 
@@ -593,27 +611,35 @@ public:
 	Weight & distance(int t){
 		if(last_modification!=g.modifications)
 					update();
-		return dist[t];
+		if(connected_unsafe(t))
+			return dist[t];
+		else
+			return this->unreachable();
 	}
 	Weight &distance_unsafe(int t){
 		if(connected_unsafe(t))
 			return dist[t];
 		else
-			return INF;
+			return this->unreachable();;
 	}
 	int incomingEdge(int t){
-
+/*
 		assert(false);//not yet implemented...
 		assert(t>=0 && t<prev.size());
 		assert(prev[t]>=-1 );
-		return prev[t];
+		return prev[t];*/
+		//not supported
+		assert(false);
+		exit(1);
 	}
 	int previous(int t){
-		if(prev[t]<0)
+		/*if(prev[t]<0)
 			return -1;
 
 		assert(g.all_edges[incomingEdge(t)].to==t);
-		return g.all_edges[incomingEdge(t)].from;
+		return g.all_edges[incomingEdge(t)].from;*/
+		assert(false);
+		exit(1);
 	}
 };
 };

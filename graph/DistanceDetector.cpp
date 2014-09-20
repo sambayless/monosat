@@ -88,10 +88,11 @@ Detector(_detectorID),outer(_outer),weights(weights),g(_g),antig(_antig),source(
 	 if (distalg==DistAlg::ALG_RAMAL_REPS){
 		positive_weighted_distance_detector = new RamalReps<Weight,typename DistanceDetector<Weight>::DistanceStatus>(from,_g,weights,*(positiveDistanceStatus),0);
 		negative_weighted_distance_detector = new RamalReps<Weight,typename DistanceDetector<Weight>::DistanceStatus>(from,_antig,weights,*(negativeDistanceStatus),0);
+		 positive_weighted_path_detector =  new Dijkstra<Weight>(from,_g,weights);
 	 }else{
 		 positive_weighted_distance_detector = new Dijkstra<Weight,typename DistanceDetector<Weight>::DistanceStatus>(from,_g,weights,*positiveDistanceStatus,0);
 		 negative_weighted_distance_detector = new Dijkstra<Weight,typename DistanceDetector<Weight>::DistanceStatus>(from,_antig,weights,*negativeDistanceStatus,0);
-
+		 positive_weighted_path_detector = positive_weighted_distance_detector;
 	 }
 
 
@@ -289,12 +290,12 @@ void DistanceDetector<Weight>::ReachStatus::setMininumDistance(int u, bool reach
 				if(l!=lit_Undef){
 
 					assert(l!=lit_Undef);
-					if(distance>min_distance && !polarity){
+					if(!polarity && (!reachable || (distance>min_distance))){
 						lbool assign = detector.outer->value(l);
 						if( assign!= l_False ){
 							detector.changed.push({~l,u});
 						}
-					}else if(distance<=min_distance && polarity){
+					}else if(polarity && reachable && (distance<=min_distance)){
 						lbool assign = detector.outer->value(l);
 						if( assign!= l_True ){
 							detector.changed.push({l,u});
@@ -457,12 +458,13 @@ void DistanceDetector<Weight>::buildNonReachReason(int node,vec<Lit> & conflict)
 template<typename Weight>
 void DistanceDetector<Weight>::buildDistanceLEQReason(int to,Weight & min_distance,vec<Lit> & conflict){
 
-	Distance<Weight> & d = *positive_weighted_distance_detector;
+	Distance<Weight> & d = *positive_weighted_path_detector;
+	Weight & actual_dist = positive_weighted_distance_detector->distance(to);
 	double starttime = rtime(2);
 	d.update();
 	assert(outer->dbg_reachable(d.getSource(),to));
 	assert(positive_reach_detector->connected(to));
-	assert(positive_weighted_distance_detector->distance(to)<=min_distance);
+	assert(positive_weighted_distance_detector->distance(to)<=min_distance && positive_weighted_distance_detector->distance(to)!=positive_weighted_distance_detector->unreachable());
 	assert(d.connected_unchecked(to));
 	//the reason that the distance is less than or equal to min_distance is because the shortest path is less than this weight
 	{
@@ -489,7 +491,20 @@ void DistanceDetector<Weight>::buildDistanceGTReason(int to,Weight & min_distanc
 	static int it = 0;
 	++it;
 	int u = to;
-
+#ifndef NDEBUG
+	Weight & actual_dist = negative_weighted_distance_detector->distance(to);
+	/*for(auto & e:antig.all_edges){
+		if(antig.edgeEnabled(e.id)){
+			printf("nxg.add_edge(%d,%d,weight=",e.from,e.to);
+			std::cout<<outer->getWeight(e.id)<<")\n";
+		}
+	}*/
+	bool connected = negative_weighted_distance_detector->connected(to);
+	Dijkstra<Weight> d(source,antig,weights);
+	Weight & expected = d.distance(to);
+	assert(expected==actual_dist);
+	assert(!negative_weighted_distance_detector->connected(to) || actual_dist>min_distance);
+#endif
 	double starttime = rtime(2);
 
 	{
@@ -792,7 +807,7 @@ template<typename Weight>
 			Lit l = dist_lit.l;
 			int to = dist_lit.u;
 			Weight & min_dist =  dist_lit.min_distance;
-			if(positive_weighted_distance_detector->distance(to)<=min_dist){
+			if(positive_weighted_distance_detector->connected(to) && positive_weighted_distance_detector->distance(to)<=min_dist){
 				if(outer->value(l)==l_True){
 					//do nothing
 				}else if (outer->value(l)==l_Undef){
@@ -804,7 +819,7 @@ template<typename Weight>
 					return false;
 				}
 			}
-			if(negative_weighted_distance_detector->distance(to)>min_dist){
+			if(! negative_weighted_distance_detector->connected(to) || negative_weighted_distance_detector->distance(to)>min_dist){
 				if(outer->value(~l)==l_True){
 					//do nothing
 				}else if (outer->value(~l)==l_Undef){
@@ -922,7 +937,9 @@ bool DistanceDetector<Weight>::checkSatisfied(){
 				Lit l = dist_lit.l;
 				int to = dist_lit.u;
 				Weight & min_dist =  dist_lit.min_distance;
-				if(under.distance(to)<=min_dist){
+				Weight & under_dist = under.distance(to);
+				Weight & over_dist = over.distance(to);
+				if(under.connected(to) && under_dist<=min_dist){
 					if(outer->value(l)==l_True){
 						//do nothing
 					}else if (outer->value(l)==l_Undef){
@@ -931,7 +948,7 @@ bool DistanceDetector<Weight>::checkSatisfied(){
 						return false;
 					}
 				}
-				if(over.distance(to)>min_dist){
+				if(!over.connected(to) || over_dist>min_dist){
 					if(outer->value(~l)==l_True){
 						//do nothing
 					}else if (outer->value(~l)==l_Undef){
@@ -942,6 +959,7 @@ bool DistanceDetector<Weight>::checkSatisfied(){
 					}
 				}
 			}
+
 		}
 
 		//	}

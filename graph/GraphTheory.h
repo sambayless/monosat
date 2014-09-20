@@ -1220,7 +1220,7 @@ public:
 		return edges[from][to].edgeID;
 	}
 	Weight getWeight(int edgeID){
-		return edge_weights[edgeID].weight;
+		return edge_weights[edgeID];
 	}
 	void reachesWithinSteps(int from, int to, Var reach_var, int within_steps){
 
