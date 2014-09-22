@@ -828,13 +828,13 @@ Lit ConvexHullDetector<D,T>::decide(){
 template<unsigned int D, class T>
 void ConvexHullDetector<D,T>::buildAreaGEQReason(T area, vec<Lit> & conflict){
 	//the reason that the area is greater or equal to the current value is the set of points in the convex hull (all of which are enabled).
+	assert(under_hull->getHull().getArea()>=area);
+	under_hull->update();
 	for(auto & p:under_hull->getHull()){
 		int pID = p.getID();
-		assert(under.pointEnabled(pID));
 		Lit l = mkLit(outer->getPointVar(pID),true);
 		assert(outer->value(l)==l_False);
 		conflict.push(l);
-
 	}
 }
 template<unsigned int D, class T>
@@ -1205,6 +1205,12 @@ void ConvexHullDetector<D,T>::buildConvexNotIntersectsReason2d(ConvexPolygon<2,T
 		cout<<p << " ";
 	}
 	printf("\n");*/
+
+	static int iter = 0;
+	if(++iter==18){
+		int a=1;
+	}
+
 	assert(!h1.intersects(h2,inclusive));
 	assert(!h2.intersects(h1,inclusive));
 
@@ -1239,8 +1245,9 @@ void ConvexHullDetector<D,T>::buildConvexNotIntersectsReason2d(ConvexPolygon<2,T
 	bool found = findSeparatingAxis2d(h1,h2,over, projection,projection2,inclusive);
 	assert(found);
 	if(!found || (projection.size()==0 || projection2.size()==0)){
+		cout<<"Error! Failed to find separating axis between hulls! Aborting.\n";
 		cout<<h1<<"\n";
-		cout<<h2<<"\n";
+		cout<<h2<<"\n";cout<<iter<<"\n";
 		exit(4);
 	}
 	T leftmost1 = numeric<T>::infinity();

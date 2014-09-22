@@ -244,7 +244,7 @@ public:
         return m;
     }
     Weight dbg_findAugmentingPath_recursive(int u, Weight f) {
-#ifndef NDEBUG
+#ifdef DEBUG_MAXFLOW
                 if (u == dst)
                     return f;
 
@@ -346,7 +346,7 @@ public:
 			dbg_print_graph(s,t);
 			stats_rounds++;
 			pos.clear();pos.resize(g.nodes());
-#ifndef NDEBUG
+#ifdef DEBUG_MAXFLOW
 			dbg_pos.clear();dbg_pos.resize(g.nodes());
 #endif
 			if(opt_dinics_recursive){

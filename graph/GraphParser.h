@@ -170,6 +170,7 @@ class GraphParser:public Parser<B,Solver>{
             int weight = parseInt(in);
             graphs[graphID]->newEdge(from,to,edgeVar,weight);
         }else if (graphs_float[graphID]){
+        	//float can be either a plain integer, or a rational in the form '123/456', or a floating point in decimal format
         	double weight = parseDouble(in,tmp);
         	skipWhitespace(in);
         	if(*in=='/'){
@@ -179,17 +180,30 @@ class GraphParser:public Parser<B,Solver>{
         	}
         	graphs_float[graphID]->newEdge(from,to,edgeVar,weight);
         }else if(graphs_rational[graphID]){
+        	//rational can be either a plain integer, or a rational in the form '123/456', or a floating point value
             std::stringstream ss;
         	skipWhitespace(in);
-        	//rational can be either a plain integer, or a rational in the form '123/456'
+
     		while(*in != '\n'){
     			ss<<(*in);
     			++in;
     		}
-    		mpq_class weight(ss.str());
-    		weight.canonicalize();
 
-        	graphs_rational[graphID]->newEdge(from,to,edgeVar,weight);
+    		//first, try to interpret this string as a double:
+    		try
+    		{
+    		    double value = std::stod(ss.str());
+    		    mpq_class weight(value);
+				weight.canonicalize();
+				graphs_rational[graphID]->newEdge(from,to,edgeVar,weight);
+    		}
+    		catch(std::exception& e)
+    		{
+        		//if that fails, attempt to read it in directly as an fraction:
+        		mpq_class weight(ss.str());
+        		weight.canonicalize();
+        	  	graphs_rational[graphID]->newEdge(from,to,edgeVar,weight);
+    		}
         }else{
         	printf("PARSE ERROR! Undeclared graph identifier %d for edge %d\n",graphID, edgeVar), exit(3);
         	exit(1);
@@ -336,14 +350,27 @@ class GraphParser:public Parser<B,Solver>{
 	}else if(graphs_rational[graphID]){
 	 	std::stringstream ss;
 		skipWhitespace(in);
-		//rational can be either a plain integer, or a rational in the form '123/456'
+		//rational can be either a plain integer, or a rational in the form '123/456', or a floating point value
 		while(*in != '\n'){
 			ss<<(*in);
 			++in;
 		}
-		mpq_class weight(ss.str());
-		weight.canonicalize();
-		graphs_rational[graphID]->reachesWithinDistance(from,to,reachVar,weight);
+		//first, try to interpret this string as a double:
+		try
+		{
+		    double value = std::stod(ss.str());
+		    mpq_class weight(value);
+			weight.canonicalize();
+			graphs_rational[graphID]->reachesWithinDistance(from,to,reachVar,weight);
+		}
+		catch(std::exception& e)
+		{
+    		//if that fails, attempt to read it in directly as an fraction:
+			mpq_class weight(ss.str());
+			weight.canonicalize();
+			graphs_rational[graphID]->reachesWithinDistance(from,to,reachVar,weight);
+		}
+
 	}else{
 		printf("PARSE ERROR! Undeclared graph identifier %d\n",graphID), exit(3);
 		exit(1);

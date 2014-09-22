@@ -1796,7 +1796,13 @@ public:
 															lasty=y;
 														}
 														printf("\n");
+
+
+														distance_detectors[r]->printSolution();
+
 													}
+
+
 									}
 
 							{

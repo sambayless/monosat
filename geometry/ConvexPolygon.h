@@ -250,6 +250,7 @@ public:
 			assert(false);
 	}
 
+
 private:
 	// copy ops are private to prevent copying
 	//Polygon(const Polygon& from); // no implementation
@@ -828,7 +829,11 @@ template<unsigned int D,class T>
 bool ConvexPolygon<D,T>::edgesIntersectLine2d(LineSegment<2,T> & check,NConvexPolygon<2,T> * out, bool inclusive){
 	// std::vector<Point<2,T> > &  w = this->getVertices();
 	ConvexPolygon<2,T> & w = (ConvexPolygon<2,T>&)*this;
-
+	static int iter = 0;
+	++iter;
+	if(iter ==724347){
+		int a =1;
+	}
 	if(!inclusive && w.size()>2){
 		//There is an edge case here where both end points of the line are exactly on vertices or edges of the polygon,
 		//and the line also crosses through the polygon.
@@ -847,12 +852,23 @@ bool ConvexPolygon<D,T>::edgesIntersectLine2d(LineSegment<2,T> & check,NConvexPo
 		Point<2,T> & p = w[i];
 		test.a = prev;
 		test.b = p;
+		//Have to be VERY careful about inclusive, here. A point that crosses through the polygon by passing through a vertex may still intersect the shape even if it collision detection is not inclusive!
 		if(check.intersects(test,inclusive)){
 			if(out){
 				out->addVertex(prev);
 				out->addVertex(p);
 			}
 			return true;
+		}else if (!inclusive){
+			//we need to check if the endpoint is contained inside the line (exclusively of the endpoints)
+			if(p != check.a && p != check.b && check.contains(p,true)){
+				if(out){
+					out->addVertex(p);
+				}
+				return true;
+			}
+			//there is also the case where both ends of check are vertices of the polygon, but the line still passes through the interior of the polygon.
+			//that is handled elsewhere in the collision code.
 		}
 	}
 	return false;
@@ -1058,7 +1074,7 @@ bool ConvexPolygon<D,T>::intersects2d(Shape<2,T> & shape, bool inclusive, bool i
 template<unsigned int D,class T>
 bool ConvexPolygon<D,T>::intersects2d(Shape<2,T> & shape, NConvexPolygon<2,T> * polygon_out_this,NConvexPolygon<2,T> * polygon_out_other, bool inclusive, bool ignore_vertices){
 	static int iter = 0;
-	if(++iter==5091018){
+	if(++iter==15289172){
 		int a =1;
 	}
 	if(this->size()==0)
@@ -1108,6 +1124,8 @@ bool ConvexPolygon<D,T>::intersects2d(Shape<2,T> & shape, NConvexPolygon<2,T> * 
 
 		//the line may still intersect even if neither end point is contained.
 		//we could apply the SAT here. But instead, we're going to walk around the edges of the convex shape, and see if any of the edges intersect this line.
+		//Have to be VERY careful about inclusive, here. A point that crosses through the polygon by passing through a vertex may still intersect the shape even if it is not inclusive!
+
 		bool r = edgesIntersectLine2d(line,polygon_out_this,inclusive);
 		if(r && polygon_out_other){
 			polygon_out_other->clear();
@@ -1406,11 +1424,14 @@ bool ConvexPolygon<D,T>::intersects2d(Shape<2,T> & shape, NConvexPolygon<2,T> * 
 						if(polygon_out_this){
 							polygon_out_this->addVertex(prev);
 							polygon_out_this->addVertex(p);
+							assert(polygon_out_this->orderClockwise());
 						}
 						if(polygon_out_other){
 							polygon_out_other->addVertex(prev2);
 							polygon_out_other->addVertex(p2);
+							assert(polygon_out_other->orderClockwise());
 						}
+
 						return true;
 					}
 				}
@@ -1425,6 +1446,7 @@ bool ConvexPolygon<D,T>::intersects2d(Shape<2,T> & shape, NConvexPolygon<2,T> * 
 					if(polygon_out_this){
 						polygon_out_this->addVertex(h1[i]);
 					}
+					assert(polygon_out_this->orderClockwise());
 					return true;
 				}
 			}
@@ -1434,6 +1456,7 @@ bool ConvexPolygon<D,T>::intersects2d(Shape<2,T> & shape, NConvexPolygon<2,T> * 
 					if(polygon_out_other){
 						polygon_out_other->addVertex(h2[i]);
 					}
+					assert(polygon_out_other->orderClockwise());
 					return true;
 				}
 			}
@@ -1486,7 +1509,7 @@ bool ConvexPolygon<D,T>::intersects2d(Shape<2,T> & shape, NConvexPolygon<2,T> * 
 									}
 								}
 							}
-
+							assert(polygon_out_2->orderClockwise());
 							if(found_left && found_right){
 								assert(line1.intersects(*polygon_out_2,true));
 								//there is still one more possibility - which is that the line segment we have found through the vertices to the left and right of the cleaving line
@@ -1496,16 +1519,25 @@ bool ConvexPolygon<D,T>::intersects2d(Shape<2,T> & shape, NConvexPolygon<2,T> * 
 									static LineSegment<2,T> line2;
 									line2.a = (*polygon_out_2)[0];
 									line2.b = (*polygon_out_2)[1];
+									assert(hull2.dbg_orderClockwise());
+									assert(hull2.orderClockwise());
 									bool found=false;
 									for (int j = 0;j<hull2.size();j++){
 										Point<2,T> & p = hull2[j];
 										int side = line2.whichSide(p);
 										if(side!=0){
 											polygon_out_2->addVertex(p);
+											//We need to reorder the vertices of polygon 2 to put them back into clockwise order if we add a point.
+											polygon_out_2->reorderVertices();
 											found=true;
 											break;
 										}
 									}
+
+									assert(polygon_out_2->orderClockwise());
+									//assert(polygon_out_2->dbg_orderClockwise());
+									//polygon_out_2->reorderVertices();
+									assert(polygon_out_2->dbg_orderClockwise());
 									assert(found);
 									assert(polygon_out_2->intersects(line1,false));
 									if(!found){
@@ -1545,6 +1577,8 @@ bool ConvexPolygon<D,T>::intersects2d(Shape<2,T> & shape, NConvexPolygon<2,T> * 
 							polygon_out_other->addVertex(h2[j]);
 						}
 						if(++count==3){
+							polygon_out_other->reorderVertices();
+							polygon_out_this->reorderVertices();
 							return true;
 						}
 						break;

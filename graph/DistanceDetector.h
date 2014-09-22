@@ -154,6 +154,8 @@ public:
 			}
 		}
 
+		 void printSolution();
+
 	/*	Lit getLit(int node){
 
 			return reach_lits[node];

@@ -7,12 +7,19 @@
 
 
 
-#include "DistanceDetector.h"
-#include "GraphTheory.h"
-#include "dgl/UnweightedRamalReps.h"
-#include "dgl/UnweightedDistance.h"
-#include "dgl/RamalReps.h"
-#include <gmpxx.h>
+#include <core/Config.h>
+#include <dgl/RamalReps.h>
+#include <dgl/UnweightedRamalReps.h>
+#include <graph/DistanceDetector.h>
+#include <graph/GraphTheory.h>
+#include <mtl/Rnd.h>
+#include <mtl/Vec.h>
+#include <utils/Options.h>
+//#include "dgl/UnweightedDistance.h"
+#include <cassert>
+#include <cstdlib>
+#include <iostream>
+
 using namespace Minisat;
 template<typename Weight>
 DistanceDetector<Weight>::DistanceDetector(int _detectorID, GraphTheorySolver<Weight> * _outer,std::vector<Weight> & weights,  DynamicGraph &_g,DynamicGraph &_antig, int from, double seed):
@@ -453,7 +460,50 @@ void DistanceDetector<Weight>::buildNonReachReason(int node,vec<Lit> & conflict)
 	double elapsed = rtime(2)-starttime;
 	 outer->mctime+=elapsed;
 
+}
 
+template<typename Weight>
+void DistanceDetector<Weight>::printSolution(){
+	 if(opt_verb>1){
+		 vec<bool> to_show;
+		 to_show.growTo(g.nodes());
+		 for(auto & w:weighted_dist_lits){
+			 to_show[w.u]=true;
+		 }
+
+		 for(int to = 0;to<g.nodes();to++){
+			 if(!to_show[to])
+				 continue;
+
+			Distance<Weight> & d = *positive_weighted_path_detector;
+			Weight & actual_dist = positive_weighted_distance_detector->distance(to);
+			std::cout<<"Shortest Weighted Path " << source <<"->"<<to<<" is " << actual_dist<<": ";
+			 //std::cout<< "Weighted Distance Constraint " <<dimacs(w.l) << " (" << source <<"->" << w.u << ") <=" << w.min_distance ;
+			 positive_weighted_path_detector->update();
+
+			 if(positive_weighted_path_detector->connected(to) ){
+				 vec<int> path;
+				int u = to;
+				path.push(u);
+				int p;
+				while(( p = d.previous(u)) != -1){
+					Edge & edg = outer->edge_list[d.incomingEdge(u)]; //outer->edges[p][u];
+					path.push(p);
+					u = p;
+				}
+
+
+				for(int i = path.size()-1;i>=0;i--){
+					std::cout<<path[i] <<",";
+				}
+				std::cout<<'\n';
+			 }else{
+				 std::cout<<": FALSE\n";
+			 }
+		 }
+
+
+	 }
 }
 
 template<typename Weight>

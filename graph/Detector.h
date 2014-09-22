@@ -53,6 +53,11 @@ public:
 
 		}
 	}
+
+	virtual void printSolution(){
+
+	}
+
 	virtual bool propagate(vec<Lit> & conflict)=0;
 	/*virtual void buildReachReason(int node,vec<Lit> & conflict)=0;
 	virtual void buildNonReachReason(int node,vec<Lit> & conflict)=0;
