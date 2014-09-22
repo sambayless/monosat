@@ -60,7 +60,12 @@ public:
 		vec<int> force_reason;
 		int max_unweighted_distance;
 
-		int stats_pure_skipped;
+		int stats_pure_skipped=0;
+		long stats_distance_gt_reasons=0;
+		long stats_distance_leq_reasons=0;
+		long stats_unweighted_gt_reasons=0;
+		long stats_unweighted_leq_reasons=0;
+
 		vec<vec<Lit> > unweighted_sat_lits;
 
 		struct UnweightedDistLit{
@@ -141,8 +146,12 @@ public:
 		void printStats(){
 			//printf("Distance detector\n");
 			Detector::printStats();
-			if(opt_detect_pure_theory_lits)
-				printf("\tPropagations skipped by pure literal detection: %d\n", stats_pure_skipped);
+			if(opt_verb>0){
+				if(opt_detect_pure_theory_lits)
+					printf("\tPropagations skipped by pure literal detection: %d\n", stats_pure_skipped);
+				printf("\tUnweighted Reasons (leq,gt): %d,%d\n",stats_unweighted_leq_reasons,stats_unweighted_gt_reasons);
+				printf("\tWeighted Reasons (leq,gt): %d,%d\n",stats_distance_leq_reasons,stats_distance_gt_reasons);
+			}
 		}
 
 	/*	Lit getLit(int node){

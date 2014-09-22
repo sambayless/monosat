@@ -323,7 +323,7 @@ template<typename Weight>
 void DistanceDetector<Weight>::buildReachReason(int node,vec<Lit> & conflict){
 			//drawFull();
 			Reach & d = *positive_path_detector;
-
+			stats_unweighted_leq_reasons++;
 
 			double starttime = rtime(2);
 			d.update();
@@ -385,6 +385,7 @@ void DistanceDetector<Weight>::buildReachReason(int node,vec<Lit> & conflict){
 template<typename Weight>
 void DistanceDetector<Weight>::buildNonReachReason(int node,vec<Lit> & conflict){
 	static int it = 0;
+	stats_unweighted_gt_reasons++;
 	++it;
 	int u = node;
 	//drawFull( non_reach_detectors[detector]->getSource(),u);
@@ -457,7 +458,7 @@ void DistanceDetector<Weight>::buildNonReachReason(int node,vec<Lit> & conflict)
 
 template<typename Weight>
 void DistanceDetector<Weight>::buildDistanceLEQReason(int to,Weight & min_distance,vec<Lit> & conflict){
-
+	stats_distance_leq_reasons++;
 	Distance<Weight> & d = *positive_weighted_path_detector;
 	Weight & actual_dist = positive_weighted_distance_detector->distance(to);
 	double starttime = rtime(2);
@@ -489,9 +490,10 @@ void DistanceDetector<Weight>::buildDistanceLEQReason(int to,Weight & min_distan
 template<typename Weight>
 void DistanceDetector<Weight>::buildDistanceGTReason(int to,Weight & min_distance,vec<Lit> & conflict){
 	static int it = 0;
+	stats_distance_gt_reasons++;
 	++it;
 	int u = to;
-#ifndef NDEBUG
+
 	Weight & actual_dist = negative_weighted_distance_detector->distance(to);
 	/*for(auto & e:antig.all_edges){
 		if(antig.edgeEnabled(e.id)){
@@ -500,6 +502,7 @@ void DistanceDetector<Weight>::buildDistanceGTReason(int to,Weight & min_distanc
 		}
 	}*/
 	bool connected = negative_weighted_distance_detector->connected(to);
+#ifndef NDEBUG
 	Dijkstra<Weight> d(source,antig,weights);
 	Weight & expected = d.distance(to);
 	assert(expected==actual_dist);
@@ -715,9 +718,11 @@ template<typename Weight>
 				return true;
 
 			static int iter = 0;
-			if(++iter==2){
+			if(++iter==1624){//18303
 				int a=1;
 			}
+
+		//printf("iter %d\n",iter);
 
 		getChanged().clear();
 		if(!opt_detect_pure_theory_lits || unassigned_positives>0){
@@ -802,11 +807,19 @@ template<typename Weight>
 
 			}
 
+		if(opt_rnd_shuffle && weighted_dist_lits.size()){
+			randomShuffle(rnd_seed, weighted_dist_lits);
+		}
 		//now, check for weighted distance lits
 		for(auto & dist_lit:weighted_dist_lits){
 			Lit l = dist_lit.l;
 			int to = dist_lit.u;
+			if(iter==22 && to==154){
+				int a =1;
+			}
 			Weight & min_dist =  dist_lit.min_distance;
+			Weight & over_dist = positive_weighted_distance_detector->distance(to);
+			Weight & under_dist = negative_weighted_distance_detector->distance(to);
 			if(positive_weighted_distance_detector->connected(to) && positive_weighted_distance_detector->distance(to)<=min_dist){
 				if(outer->value(l)==l_True){
 					//do nothing

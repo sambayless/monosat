@@ -894,8 +894,9 @@ public:
 		assert(assigns[var(l)]==l_Undef);
 		assigns[var(l)]=sign(l) ? l_False:l_True;
 		requiresPropagation=true;
-
+		//printf("enqueue %d\n", dimacs(l));
 #ifndef NDEBUG
+
 		{
 			for(int i = 0;i<trail.size();i++){
 				assert(trail[i].var !=v);

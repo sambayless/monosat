@@ -45,7 +45,7 @@ class GraphParser:public Parser<B,Solver>{
 	enum class GraphType{
 		INTEGER,FLOAT,RATIONAL
 	};
-
+	bool precise;
 	vec<vec<SteinerStruct*>> steiners;
 	PbTheory * pbtheory=nullptr;
 	std::string symbol;
@@ -68,37 +68,45 @@ class GraphParser:public Parser<B,Solver>{
 //If lit is 0 or 1, this is a constant edge (0 for false, 1 for true)
 //r g u w var is a reach query: var is true if can u reach w in graph g, false otherwise
 
+
+
  void readDiGraph(B& in, GraphType graph_type, Solver& S) {
 	if(opt_ignore_theories){
 		skipLine(in);
 		return;
 	}
 
+	if(!precise){
+		if(graph_type==GraphType::RATIONAL){
+			graph_type=GraphType::FLOAT;
+		}
+	}
+
     int     g, n,e, ev;
 
-        n = parseInt(in);//num nodes
-        e = parseInt(in);//num edges (I'm ignoring this currently)
-      //  ev = parseInt(in);//the variable of the first graph edge.
-        g=parseInt(in);//id of the graph
-        graphs.growTo(g+1);
-        graphs_float.growTo(g+1);
-        graphs_rational.growTo(g+1);
-        if(graph_type==GraphType::INTEGER){
-			GraphTheorySolver<int> *graph= new GraphTheorySolver<int>(&S,g);
-			graph->newNodes(n);
-			graphs[g]=graph;
-			S.addTheory(graph);
-        }else if(graph_type==GraphType::FLOAT){
-			GraphTheorySolver<double> *graph= new GraphTheorySolver<double>(&S,g);
-			graph->newNodes(n);
-			graphs_float[g]=graph;
-			S.addTheory(graph);
-        }else if(graph_type==GraphType::RATIONAL){
-			GraphTheorySolver<mpq_class> *graph= new GraphTheorySolver<mpq_class>(&S,g);
-			graph->newNodes(n);
-			graphs_rational[g]=graph;
-			S.addTheory(graph);
-        }
+	n = parseInt(in);//num nodes
+	e = parseInt(in);//num edges (I'm ignoring this currently)
+  //  ev = parseInt(in);//the variable of the first graph edge.
+	g=parseInt(in);//id of the graph
+	graphs.growTo(g+1);
+	graphs_float.growTo(g+1);
+	graphs_rational.growTo(g+1);
+	if(graph_type==GraphType::INTEGER){
+		GraphTheorySolver<int> *graph= new GraphTheorySolver<int>(&S,g);
+		graph->newNodes(n);
+		graphs[g]=graph;
+		S.addTheory(graph);
+	}else if(graph_type==GraphType::FLOAT){
+		GraphTheorySolver<double> *graph= new GraphTheorySolver<double>(&S,g);
+		graph->newNodes(n);
+		graphs_float[g]=graph;
+		S.addTheory(graph);
+	}else if(graph_type==GraphType::RATIONAL){
+		GraphTheorySolver<mpq_class> *graph= new GraphTheorySolver<mpq_class>(&S,g);
+		graph->newNodes(n);
+		graphs_rational[g]=graph;
+		S.addTheory(graph);
+	}
       //  return ev;
 }
 
@@ -163,6 +171,12 @@ class GraphParser:public Parser<B,Solver>{
             graphs[graphID]->newEdge(from,to,edgeVar,weight);
         }else if (graphs_float[graphID]){
         	double weight = parseDouble(in,tmp);
+        	skipWhitespace(in);
+        	if(*in=='/'){
+        		++in;
+        		double denom =  parseDouble(in,tmp);
+        		weight/=denom;
+        	}
         	graphs_float[graphID]->newEdge(from,to,edgeVar,weight);
         }else if(graphs_rational[graphID]){
             std::stringstream ss;
@@ -286,7 +300,7 @@ class GraphParser:public Parser<B,Solver>{
 		exit(1);
 	}
 }
- void readDistanceInt(B& in, Solver& S,  bool leq=false) {
+ void readShortestPath(B& in, Solver& S,  bool leq=false) {
 	if(opt_ignore_theories){
 		skipLine(in);
 		return;
@@ -299,7 +313,7 @@ class GraphParser:public Parser<B,Solver>{
 	int from = parseInt(in);
 	 int to=parseInt(in);
 	int reachVar = parseInt(in)-1;
-	int distance = parseInt(in);
+
 	if(graphID <0 || graphID>=graphs.size()){
 		printf("PARSE ERROR! Undeclared graph identifier %d for edge %d\n",graphID, reachVar), exit(3);
 	}
@@ -308,16 +322,34 @@ class GraphParser:public Parser<B,Solver>{
 	}
 
 	if(graphs[graphID]){
-		graphs[graphID]->reachesWithinDistance(from,to,reachVar,distance);
+		int weight = parseInt(in);
+		graphs[graphID]->reachesWithinDistance(from,to,reachVar,weight);
 	}else if (graphs_float[graphID]){
-		graphs_float[graphID]->reachesWithinDistance(from,to,reachVar,distance);
+		double weight = parseDouble(in,tmp);
+    	skipWhitespace(in);
+    	if(*in=='/'){
+    		++in;
+    		double denom =  parseDouble(in,tmp);
+    		weight/=denom;
+    	}
+		graphs_float[graphID]->reachesWithinDistance(from,to,reachVar,weight);
 	}else if(graphs_rational[graphID]){
-		graphs_rational[graphID]->reachesWithinDistance(from,to,reachVar,distance);
+	 	std::stringstream ss;
+		skipWhitespace(in);
+		//rational can be either a plain integer, or a rational in the form '123/456'
+		while(*in != '\n'){
+			ss<<(*in);
+			++in;
+		}
+		mpq_class weight(ss.str());
+		weight.canonicalize();
+		graphs_rational[graphID]->reachesWithinDistance(from,to,reachVar,weight);
 	}else{
 		printf("PARSE ERROR! Undeclared graph identifier %d\n",graphID), exit(3);
 		exit(1);
 	}
 }
+ /*
  void readDistanceFloat(B& in, Solver& S,  bool leq=false) {
 	if(opt_ignore_theories){
 		skipLine(in);
@@ -349,7 +381,8 @@ class GraphParser:public Parser<B,Solver>{
 		printf("PARSE ERROR! Undeclared graph identifier %d\n",graphID), exit(3);
 		exit(1);
 	}
-}
+}*/
+ /*
  void readDistanceRational(B& in, Solver& S,  bool leq=false) {
  	if(opt_ignore_theories){
  		skipLine(in);
@@ -393,7 +426,7 @@ class GraphParser:public Parser<B,Solver>{
 		exit(1);
 	}
  }
-
+*/
 
 
  void readMinSpanningTreeConstraint(B& in, Solver& S) {
@@ -711,7 +744,9 @@ class GraphParser:public Parser<B,Solver>{
 
 
 public:
+ GraphParser(bool precise=true):precise(precise){
 
+ }
  bool parseLine(B& in, Solver& S){
 
 
@@ -803,7 +838,14 @@ public:
 		}else if (match(in, "distance_leq")){
 			readDistance(in, S,true);
 			return true;
-		}else if (match(in, "distance_rational_lt")){
+		}else if (match(in, "weighted_distance_lt")){
+			readShortestPath(in, S);
+			return true;
+		}else if (match(in, "weighted_distance_leq")){
+			readShortestPath(in, S,true);
+			return true;
+		}
+		/*else if (match(in, "distance_rational_lt")){
 			readDistanceRational(in, S);
 			return true;
 		}else if (match(in, "distance_rational_leq")){
@@ -815,7 +857,7 @@ public:
 		}else if (match(in, "distance_float_leq")){
 			readDistanceFloat(in, S,true);
 			return true;
-		}else if (match(in,"mst_weight_lt")){
+		}*/else if (match(in,"mst_weight_lt")){
 			readMinSpanningTreeConstraint(in, S);
 			return true;
 		}else if (match(in, "mst_edge")){

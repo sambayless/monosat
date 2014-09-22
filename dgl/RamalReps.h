@@ -548,7 +548,7 @@ public:
 
 	bool dbg_path(int to){
 #ifdef DEBUG_DIJKSTRA
-		assert(connected(to));
+	/*	assert(connected(to));
 		if(to == source){
 			return true;
 		}
@@ -561,7 +561,7 @@ public:
 			return false;
 		}
 
-		return dbg_path(p);
+		return dbg_path(p);*/
 
 
 #endif
@@ -569,7 +569,7 @@ public:
 	}
 	bool dbg_uptodate(){
 #ifdef DEBUG_DIJKSTRA
-		if(last_modification<0)
+		/*if(last_modification<0)
 			return true;
 		dbg_delta();
 		Dijkstra<Weight> d(source,g,weights);
@@ -586,7 +586,7 @@ public:
 				assert(false);
 				exit(4);
 			}
-		}
+		}*/
 //#endif
 #endif
 		return true;

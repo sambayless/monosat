@@ -336,7 +336,7 @@ int main(int argc, char** argv)
                  printf("|                                                                             |\n"); }
 
              Dimacs<StreamBuffer,SimpSolver> parser;
-             GraphParser<char *, SimpSolver> graphParser;
+             GraphParser<char *, SimpSolver> graphParser(precise);
 
              graphParser.setSymbols(&symbols);
              parser.addParser(&graphParser);
