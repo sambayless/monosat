@@ -1205,11 +1205,13 @@ void ConvexHullDetector<D,T>::buildConvexNotIntersectsReason2d(ConvexPolygon<2,T
 		cout<<p << " ";
 	}
 	printf("\n");*/
+/*
 
 	static int iter = 0;
 	if(++iter==18){
 		int a=1;
 	}
+*/
 
 	assert(!h1.intersects(h2,inclusive));
 	assert(!h2.intersects(h1,inclusive));
@@ -1247,7 +1249,7 @@ void ConvexHullDetector<D,T>::buildConvexNotIntersectsReason2d(ConvexPolygon<2,T
 	if(!found || (projection.size()==0 || projection2.size()==0)){
 		cout<<"Error! Failed to find separating axis between hulls! Aborting.\n";
 		cout<<h1<<"\n";
-		cout<<h2<<"\n";cout<<iter<<"\n";
+		cout<<h2<<"\n";
 		exit(4);
 	}
 	T leftmost1 = numeric<T>::infinity();
