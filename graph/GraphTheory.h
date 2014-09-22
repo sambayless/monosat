@@ -1427,7 +1427,7 @@ public:
 
 	}
 
-	void reaches_private(int from, int to, Var reach_var,Weight within_steps=-1){
+	void reaches_private(int from, int to, Var reach_var,int within_steps=-1){
 			//for now, reachesWithinSteps to be called instead
 			if(within_steps>=0 || opt_force_distance_solver){
 				reachesWithinSteps(from,to,reach_var,within_steps);

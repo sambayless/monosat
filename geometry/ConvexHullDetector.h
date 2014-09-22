@@ -111,7 +111,10 @@ public:
 
 			printf("Skipped updates: %d/%d under, %d/%d over\n", ((MonotoneConvexHull<D,T>*) under_hull)->stats_skipped_updates,((MonotoneConvexHull<D,T>*) under_hull)->stats_updates,((MonotoneConvexHull<D,T>*) over_hull)->stats_skipped_updates,((MonotoneConvexHull<D,T>*) under_hull)->stats_updates);
 		}
-
+		void printSolution(){
+			printf("Convex hull %d: ", getID());
+			cout<<under_hull->getHull()<<"\n";
+		}
 		bool propagate(vec<Lit> & conflict);
 		void buildAreaGEQReason(T area, vec<Lit> & conflict);
 		void buildAreaLTReason(T area,vec<Lit> & conflict);

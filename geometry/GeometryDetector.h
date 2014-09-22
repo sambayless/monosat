@@ -34,6 +34,9 @@ public:
 	virtual void printStats(){
 
 	}
+	virtual void printSolution(){
+
+	}
 	virtual void backtrackUntil(Lit p){
 
 	}

@@ -196,6 +196,7 @@ public:
 		this->vertices_clockwise=false;
 		this->bounds_uptodate=false;
 		vertices.push_back(p);
+		this->distinct_vertices=-1;
 	}
 /*	void addVertex(Point<D,T> & p){
 		vertices_clockwise=false;
@@ -204,9 +205,17 @@ public:
 	}*/
 	//add a vertex, assuming that it will preserve clockwise order
 	void addVertexUnchecked(Point<D,T>  p){
+		if(vertices.size()){
+			if(p!=vertices[0] && p!=  vertices.back()){
+				this->distinct_vertices++;
+			}
+		}else{
+			this->distinct_vertices=1;
+		}
 		vertices.push_back(p);
 		assert(this->dbg_orderClockwise());
 		assert(this->dbg_boundsUpToDate());
+		assert(this->dbg_distinctVertexCount());
 	}
 
 	void popVertex(){
@@ -489,11 +498,11 @@ bool ConvexPolygon<D,T>::containsInSplit2d(const Point<2,T> & point, int firstVe
 			for(int i = 0;i<this->size();i++){
 				Point<2,T> & prev = (*this)[i-1];
 				Point<2,T> & p = (*this)[i];
-				if(p.getID()== polygon_out[containing_edge].getID()){
+				if(p== polygon_out[containing_edge]){
 						pIndex=i;
-				}else if (p.getID()==polygon_out[containing_edge-1].getID()){
+				}else if (p==polygon_out[containing_edge-1]){
 					prevIndex=i;
-				}else if (p.getID()==polygon_out[containing_edge+1].getID()){
+				}else if (p==polygon_out[containing_edge+1]){
 					nIndex=i;
 				}
 			}
@@ -855,14 +864,19 @@ bool ConvexPolygon<D,T>::edgesIntersectLine2d(LineSegment<2,T> & check,NConvexPo
 				out->addVertex(p);
 			}
 			return true;
-		}else if (!inclusive){
+		}else if (!inclusive ){
 			//we need to check if the endpoint is contained inside the line (exclusively of the endpoints)
-			if(p != check.a && p != check.b && check.contains(p,true)){
-				if(out){
-					out->addVertex(p);
+
+		/*	if(p != check.a && p != check.b && check.contains(p,true)){
+				//this is a non-inclusive collision UNLESS this polygon has <= two distinct points.
+				if(this->distinctVertices()>2){
+
+					if(out){
+						out->addVertex(p);
+					}
+					return true;
 				}
-				return true;
-			}
+			}*/
 			//there is also the case where both ends of check are vertices of the polygon, but the line still passes through the interior of the polygon.
 			//that is handled elsewhere in the collision code.
 		}
@@ -1129,15 +1143,61 @@ bool ConvexPolygon<D,T>::intersects2d(Shape<2,T> & shape, NConvexPolygon<2,T> * 
 			polygon_out_other->addVertex(line[1]);
 		}
 
-		if(!inclusive && ! r && this->size()>3){
+		if(!inclusive && ! r && this->size()>=3){
 			//If collisions are not inclusive, AND no edge was intersected, it is still possible that the line directly passes through (or ends at)
-			//two vertices of the polygon, so long as this polygon isn't a triangle (note that it can still be a triangle if it has more than 3 points, but some of them are exactly on an edge or are identical).
+			//two vertices of the polygon, or two edges of the polygon, so long as this polygon isn't a triangle (note that it can still be a triangle if it has more than 3 points, but some of them are exactly on an edge or are identical).
 			if(polygon_out_this){
 				polygon_out_this->clear();
 			}
-			//so, check to see if there are two vertices that are on the line segment (inclusively).
+
+			//First, if the line's endpoints lie on two different edges of the polygon, then the midpoint of the line must be contained.
+			Point<2,T> midpoint = (line.a + line.b)/2;
+			if(this->contains(midpoint,polygon_out_this,inclusive)){
+				if(polygon_out_other){
+					polygon_out_other->clear();
+					polygon_out_other->addVertex(line[0]);
+					polygon_out_other->addVertex(line[1]);
+				}
+				return true;
+			}
+
+			//ok, then the line must pass through atleast one vertex of the polygon. The other end may ALSO pass through a vertex, or may land directly on an edge.
+
+			//so first, find a vertex of the polygon that is on the line.
+
+			for(int i = 0;i<this->size();i++){
+				Point<2,T> & p = (*this)[i];
+				if(line.contains(p,true)){//this check is intentionally inclusive
+					//now form midpoints between this vertex and the two other ends of the line.
+					if(line.a != p){
+						Point<2,T> midpoint = (line.a + p)/2;
+						if(this->contains(midpoint,polygon_out_this,inclusive)){
+							if(polygon_out_other){
+								polygon_out_other->clear();
+								polygon_out_other->addVertex(line[0]);
+								polygon_out_other->addVertex(line[1]);
+							}
+							return true;
+						}
+					}
+					if(line.b != p){
+						Point<2,T> midpoint = (line.b + p)/2;
+						if(this->contains(midpoint,polygon_out_this,inclusive)){
+							if(polygon_out_other){
+								polygon_out_other->clear();
+								polygon_out_other->addVertex(line[0]);
+								polygon_out_other->addVertex(line[1]);
+							}
+							return true;
+						}
+					}
+				}
+			}
+
+
+			//check to see if there are two vertices that are on the line segment (inclusively).
 			//if so, then widen the containing polygon wtih vertices to the left and right of the line, if possible (if it isn't possible, then there is no collision).
-			int first = -1;
+			/*int first = -1;
 			int second =-1;
 			for(int i = 0;i<this->size();i++){
 				Point<2,T> & p = (*this)[i];
@@ -1196,7 +1256,7 @@ bool ConvexPolygon<D,T>::intersects2d(Shape<2,T> & shape, NConvexPolygon<2,T> * 
 
 				}
 
-			}
+			}*/
 		}
 
 

@@ -547,7 +547,7 @@ template<typename Weight>
 				    	assert(u!=source);
 				    	to_visit.pop();
 				    	assert(seen[u]);
-				    	assert(!outer->dbg_reachable(source,u,false));
+						assert(outer->dbg_notreachable( source,u));
 				    	//assert(!negative_reach_detector->connected_unsafe(u));
 				    	//Ok, then add all its incoming disabled edges to the cut, and visit any unseen, non-disabled incoming.edges()
 				    	for(int i = 0;i<outer->inv_adj[u].size();i++){

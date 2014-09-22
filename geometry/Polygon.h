@@ -23,8 +23,11 @@ public:
 
 
 	BoundingVolume<D,T> * bound=nullptr;
+protected:
+	int distinct_vertices=-1;
 	bool vertices_clockwise=false;
 	bool bounds_uptodate=false;
+public:
 	Polygon(){
 
 	}
@@ -100,12 +103,33 @@ public:
 			assert(false);
 		return 0;
 	}
-	//put the vertices into clockwise order
-	void reorderVertices(){
-		if(D==2){
-			reorderVertices2d();
-		}else
-			assert(false);
+
+
+	int distinctVertices(){
+		if(distinct_vertices<0){
+			if(!vertices_clockwise){
+				int same_count = 0;
+				for (int i = 0;i<size();i++){
+					for (int j = i+1;j<size();j++){
+						if((*this)[i]==(*this)[j]){
+							same_count++;
+						}
+					}
+				}
+				distinct_vertices=size()-same_count;
+			}else{
+				assert(vertices_clockwise);
+				assert(dbg_orderClockwise());
+				distinct_vertices=0;
+				for(int i =0;i<size();i++){
+					if((*this)[i]!=(*this)[i-1]){
+						distinct_vertices++;
+					}
+				}
+			}
+		}
+		assert(dbg_distinctVertexCount());
+		return distinct_vertices;
 	}
 
 	inline bool boundContains(const Point<D,T> & p, bool inclusive=true){
@@ -172,6 +196,23 @@ protected:
 	}
 	bool dbg_orderClockwise2d()const;
 	bool dbg_boundsUpToDate(){
+		return true;
+	}
+
+	bool dbg_distinctVertexCount()const{
+#ifndef NDEBUG
+		if(distinct_vertices>=0){
+			int same_count = 0;
+			for (int i = 0;i<size();i++){
+				for (int j = i+1;j<size();j++){
+					if((*this)[i]==(*this)[j]){
+						same_count++;
+					}
+				}
+			}
+			assert(size()- same_count==distinct_vertices);
+		}
+#endif
 		return true;
 	}
 
@@ -286,6 +327,7 @@ public:
 		this->vertices_clockwise=false;
 		this->bounds_uptodate=false;
 		vertices.push_back(p);
+		this->distinct_vertices=-1;
 	}
 /*	void addVertex(Point<D,T> & p){
 		vertices_clockwise=false;
@@ -294,9 +336,18 @@ public:
 	}*/
 	//add a vertex, assuming that it will preserve clockwise order
 	void addVertexUnchecked(Point<D,T>  p){
+		if(vertices.size()){
+			if(p!=vertices[0] && p!=  vertices.last()){
+				this->distinct_vertices++;
+			}
+		}else{
+			this->distinct_vertices=1;
+		}
 		vertices.push_back(p);
+
 		assert(this->dbg_orderClockwise());
 		assert(this->dbg_boundsUpToDate());
+		assert(this->dbg_distinctVertexCount());
 	}
 
 	void popVertex(){
@@ -507,6 +558,7 @@ T Polygon<D,T>::getPerimeter2d(){
 	return sum;
 }
 
+
 //put the vertices into clockwise order
 template<unsigned int D,class T>
 void NPolygon<D,T>::reorderVertices2d(){
@@ -514,6 +566,7 @@ void NPolygon<D,T>::reorderVertices2d(){
 	if (vertices.size()<=2){
 		return;
 	}
+
 	T centerX = 0;
 	T centerY = 0;
 	std::vector< Point<2,T>> &  w =(std::vector< Point<2,T>> &) vertices;
@@ -574,6 +627,8 @@ void NPolygon<D,T>::reorderVertices2d(){
 	//do this in place later
 	static std::vector<Point<2,T>> oldPoints;
 	oldPoints.clear();
+	assert(vertices.size()>0);
+
 	for(int i =0;i<vertices.size();i++){
 		oldPoints.push_back(vertices[i]);
 	}
@@ -583,6 +638,7 @@ void NPolygon<D,T>::reorderVertices2d(){
 
 
 	assert(this->dbg_orderClockwise());
+	assert(this->dbg_distinctVertexCount());
 }
 
 

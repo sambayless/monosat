@@ -926,38 +926,39 @@ template<typename Weight>
 		}
 template<typename Weight>
 bool DistanceDetector<Weight>::checkSatisfied(){
-/*	if(positive_reach_detector){
-				for(int j = 0;j< unweighted_dist_lits.size();j++){
-					for(int k = 0;k<unweighted_dist_lits[j].size();k++){
-						Lit l = unweighted_dist_lits[j][k].l;
-						int dist = unweighted_dist_lits[j][k].min_unweighted_distance;
-						if(dist>5){
-							int a = 1;
-						}
-						if(l!=lit_Undef){
-							int node =getNode(var(l));
 
-							if(outer->value(l)==l_True){
-								if(positive_reach_detector->distance(node)>dist){
-									return false;
-								}
-							}else if (outer->value(l)==l_False){
-								if( negative_reach_detector->distance(node)<=dist){
-									return false;
-								}
-							}else{
-								if(positive_reach_detector->distance(node)<=dist){
-									return false;
-								}
-								if(!negative_reach_detector->distance(node)>dist){
-									return false;
-								}
+			for(int j = 0;j< unweighted_dist_lits.size();j++){
+				for(int k = 0;k<unweighted_dist_lits[j].size();k++){
+					Lit l = unweighted_dist_lits[j][k].l;
+					int dist = unweighted_dist_lits[j][k].min_unweighted_distance;
+					if(dist>5){
+						int a = 1;
+					}
+					if(l!=lit_Undef){
+						int node =getNode(var(l));
+
+						if(outer->value(l)==l_True){
+							if(positive_reach_detector->distance(node)>dist){
+								return false;
+							}
+						}else if (outer->value(l)==l_False){
+							if( negative_reach_detector->distance(node)<=dist){
+								return false;
+							}
+						}else{
+							if(positive_reach_detector->distance(node)<=dist){
+								return false;
+							}
+							if(!negative_reach_detector->distance(node)>dist){
+								return false;
 							}
 						}
 					}
-			}
-	}else{*/
-		{
+				}
+		}
+
+	/*else{/
+		/*{
 			UnweightedDijkstra<>under(source,g) ;
 			UnweightedDijkstra<>over(source,antig) ;
 			under.update();
@@ -989,7 +990,7 @@ bool DistanceDetector<Weight>::checkSatisfied(){
 						}
 					}
 			}
-		}
+		}*/
 		{
 			Dijkstra<Weight>under(source,g,weights) ;
 			Dijkstra<Weight>over(source,antig,weights) ;

@@ -292,6 +292,7 @@ int main(int argc, char** argv)
         const char * graphstr = opt_graph;
 
 
+		//p1.intersectsExcludingVertices(p2,&p_out, false);
         // Use signal handlers that forcibly quit until the solver will be able to respond to
         // interrupts:
 #if not defined(__MINGW32__)
@@ -327,6 +328,8 @@ int main(int argc, char** argv)
 #ifdef DEBUG_SOLVER
          S.dbg_solver = new Solver();S.dbg_solver.verbosity=0;
 #endif
+
+
          gzFile in = (argc == 1) ? gzdopen(0, "rb") : gzopen(argv[1], "rb");
              if (in == NULL)
                  printf("ERROR! Could not open file: %s\n", argc == 1 ? "<stdin>" : argv[1]), exit(1);

@@ -956,6 +956,14 @@ public:
 	    	if(graphs[i])
 	    	   graphs[i]->implementConstraints();
 	    }
+	    for(int i = 0;i<graphs_float.size();i++){
+	    	if(graphs_float[i])
+	    		graphs_float[i]->implementConstraints();
+	    }
+	    for(int i = 0;i<graphs_rational.size();i++){
+	    	if(graphs_rational[i])
+	    		graphs_rational[i]->implementConstraints();
+	    }
 	    if(pbtheory)
 	    	pbtheory->implementConstraints();
  }

@@ -600,7 +600,11 @@ public:
 		}
 
 	}
-
+	void printSolution(){
+		for (GeometryDetector* d:detectors){
+			d->printSolution();
+		}
+	}
 	void enqueueTheory(Lit l){
 		Var v = var(l);
 		assert(S->value(toSolver(l))==l_True);
@@ -965,9 +969,6 @@ public:
 			return;
 	}
 
-	void printSolution(){
-
-	}
 
 	void convexHullArea(int pointSet,T areaGreaterThan, Var outerVar){
 		if(convexHullDetectors.size()<nPointSets())
