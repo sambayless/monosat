@@ -1576,7 +1576,7 @@ bool ConvexPolygon<D,T>::intersects2d(Shape<2,T> & shape, NConvexPolygon<2,T> * 
 					testline.a = hull1[i-1];
 					testline.b = hull1[i];
 
-					bool intersect = hull2.intersects(testline,polygon_out_1,polygon_out_2,inclusive);
+					bool intersect = hull2.intersects(testline,polygon_out_2,polygon_out_1,inclusive);
 					if(intersect){
 						return true;
 					}
