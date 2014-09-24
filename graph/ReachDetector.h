@@ -163,6 +163,7 @@ public:
 		void buildForcedEdgeReason(int reach_node, int forced_edge_id,vec<Lit> & conflict);
 		void buildReason(Lit p, vec<Lit> & reason, CRef marker);
 		bool checkSatisfied();
+		void printSolution();
 		void addLit(int from, int to, Var reach_var);
 		Lit decide();
 		void preprocess();

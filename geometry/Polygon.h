@@ -412,7 +412,15 @@ std::ostream & operator<<(std::ostream & str, NPolygon<D,T>  & polygon){
 	str<<"]";
 	return str;
 }
-
+template<unsigned int D,class T>
+std::ostream & operator<<(std::ostream & str, Polygon<D,T>  & polygon){
+	str << "Polygon=[";
+	for (const auto & p:polygon){
+		str<<p <<",";
+	}
+	str<<"]";
+	return str;
+}
 template<unsigned int D,class T>
 inline bool Polygon<D,T>::orderClockwise2d() const{
 

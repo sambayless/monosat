@@ -1042,6 +1042,60 @@ template<typename Weight>
 			#endif
 			return true;
 		}
+
+template<typename Weight>
+void ReachDetector<Weight>::printSolution(){
+
+		 vec<bool> to_show;
+		 to_show.growTo(g.nodes());
+/*		 for (int n = 0;n<dist_lits.size();n++){
+			 for (auto & l:dist_lits[n]){
+				 if(l!=lit_Undef){
+					 to_show[n]=true;
+				 }
+			 }
+		 }*/
+		 for(Lit l : reach_lits){
+
+			 int to = reach_lit_map[var(l)-first_reach_var];
+			 to_show[to]=true;
+		 }
+
+		 for(int to = 0;to<g.nodes();to++){
+			 if(!to_show[to])
+				 continue;
+
+			Reach & d = *positive_path_detector;
+			d.update();
+
+			std::cout<<"Reaching Path " << source <<"->"<<to<<" is : ";
+			 //std::cout<< "Weighted Distance Constraint " <<dimacs(w.l) << " (" << source <<"->" << w.u << ") <=" << w.min_distance ;
+
+
+			 if(d.connected(to) ){
+				 vec<int> path;
+				int u = to;
+				path.push(u);
+				int p;
+				while(( p = d.previous(u)) != -1){
+					Edge & edg = outer->edge_list[d.incomingEdge(u)]; //outer->edges[p][u];
+					path.push(p);
+					u = p;
+				}
+
+
+				for(int i = path.size()-1;i>=0;i--){
+					std::cout<<path[i] <<",";
+				}
+				std::cout<<'\n';
+			 }else{
+				 std::cout<<": FALSE\n";
+			 }
+		 }
+
+
+
+}
 template<typename Weight>
 bool ReachDetector<Weight>::checkSatisfied(){
 	if(positive_reach_detector && negative_reach_detector){

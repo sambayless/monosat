@@ -464,24 +464,25 @@ void DistanceDetector<Weight>::buildNonReachReason(int node,vec<Lit> & conflict)
 
 template<typename Weight>
 void DistanceDetector<Weight>::printSolution(){
-	 if(opt_verb>1){
+
 		 vec<bool> to_show;
 		 to_show.growTo(g.nodes());
 		 for(auto & w:weighted_dist_lits){
 			 to_show[w.u]=true;
 		 }
-
+		 positive_weighted_path_detector->update();
 		 for(int to = 0;to<g.nodes();to++){
 			 if(!to_show[to])
 				 continue;
 
 			Distance<Weight> & d = *positive_weighted_path_detector;
-			Weight & actual_dist = positive_weighted_distance_detector->distance(to);
+			d.update();
+			Weight & actual_dist = d.distance(to);
 			std::cout<<"Shortest Weighted Path " << source <<"->"<<to<<" is " << actual_dist<<": ";
 			 //std::cout<< "Weighted Distance Constraint " <<dimacs(w.l) << " (" << source <<"->" << w.u << ") <=" << w.min_distance ;
-			 positive_weighted_path_detector->update();
 
-			 if(positive_weighted_path_detector->connected(to) ){
+
+			 if(d.connected(to) ){
 				 vec<int> path;
 				int u = to;
 				path.push(u);
@@ -503,13 +504,14 @@ void DistanceDetector<Weight>::printSolution(){
 		 }
 
 
-	 }
+
 }
 
 template<typename Weight>
 void DistanceDetector<Weight>::buildDistanceLEQReason(int to,Weight & min_distance,vec<Lit> & conflict){
 	stats_distance_leq_reasons++;
 	Distance<Weight> & d = *positive_weighted_path_detector;
+	positive_weighted_distance_detector->update();
 	Weight & actual_dist = positive_weighted_distance_detector->distance(to);
 	double starttime = rtime(2);
 	d.update();
@@ -517,6 +519,10 @@ void DistanceDetector<Weight>::buildDistanceLEQReason(int to,Weight & min_distan
 	assert(positive_reach_detector->connected(to));
 	assert(positive_weighted_distance_detector->distance(to)<=min_distance && positive_weighted_distance_detector->distance(to)!=positive_weighted_distance_detector->unreachable());
 	assert(d.connected_unchecked(to));
+	if(!d.connected(to) || d.distance(to)>min_distance){
+		fprintf(stderr,"Error in shortest path detector, aborting\n");
+		exit(4);
+	}
 	//the reason that the distance is less than or equal to min_distance is because the shortest path is less than this weight
 	{
 		int u = to;
@@ -864,9 +870,6 @@ template<typename Weight>
 		for(auto & dist_lit:weighted_dist_lits){
 			Lit l = dist_lit.l;
 			int to = dist_lit.u;
-			if(iter==22 && to==154){
-				int a =1;
-			}
 			Weight & min_dist =  dist_lit.min_distance;
 			Weight & over_dist = positive_weighted_distance_detector->distance(to);
 			Weight & under_dist = negative_weighted_distance_detector->distance(to);

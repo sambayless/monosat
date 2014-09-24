@@ -838,7 +838,7 @@ template<unsigned int D,class T>
 bool ConvexPolygon<D,T>::edgesIntersectLine2d(LineSegment<2,T> & check,NConvexPolygon<2,T> * out, bool inclusive){
 	// std::vector<Point<2,T> > &  w = this->getVertices();
 	ConvexPolygon<2,T> & w = (ConvexPolygon<2,T>&)*this;
-
+	assert(check.a != check.b);
 	if(!inclusive && w.size()>2){
 		//There is an edge case here where both end points of the line are exactly on vertices or edges of the polygon,
 		//and the line also crosses through the polygon.
@@ -1084,7 +1084,7 @@ bool ConvexPolygon<D,T>::intersects2d(Shape<2,T> & shape, bool inclusive, bool i
 template<unsigned int D,class T>
 bool ConvexPolygon<D,T>::intersects2d(Shape<2,T> & shape, NConvexPolygon<2,T> * polygon_out_this,NConvexPolygon<2,T> * polygon_out_other, bool inclusive, bool ignore_vertices){
 	static int iter = 0;
-	if(++iter==15289172){
+	if(++iter==3){
 		int a =1;
 	}
 	if(this->size()==0)
@@ -1104,6 +1104,18 @@ bool ConvexPolygon<D,T>::intersects2d(Shape<2,T> & shape, NConvexPolygon<2,T> * 
 	stats_intersections++;
 	if(shape.getType()==LINE_SEGMENT){
 		LineSegment<2,T> & line = (LineSegment<2,T> &)shape;
+
+		if(line.a == line.b){
+			//treat this line segment as a point.
+			if( this->contains(line.a,polygon_out_this,inclusive)){
+				if(polygon_out_other){
+					polygon_out_other->clear();
+					polygon_out_other->addVertex(line[0]);
+				}
+				return true;
+			}
+			return false;
+		}
 
 		//first, check if either end point is contained
 		if(this->contains(line.a,polygon_out_this,inclusive) || this->contains(line.b,polygon_out_this,inclusive)){

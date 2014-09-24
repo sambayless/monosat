@@ -1739,6 +1739,7 @@ public:
 											printf("\n");
 
 										int v =var( reach_detectors[r]->reach_lits[n]);
+										if(v>=0){
 		#if not defined(__MINGW32__)
 										if (isatty(fileno(stdout)))
 		#else
@@ -1758,7 +1759,10 @@ public:
 											}
 
 											lasty=y;
+										}else{
+											printf("  ");
 										}
+									}
 										printf("\n");
 									}
 
