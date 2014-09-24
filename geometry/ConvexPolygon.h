@@ -86,6 +86,7 @@ public:
 	}
 
 	bool isConvex(){
+		assert(dbg_Convex());
 		return true;
 	}
 
@@ -101,6 +102,26 @@ private:
 	bool containsInRange2d(const Point<2,T> & point, int firstVertex,int lastVertex, bool inclusive, bool excludeVertices);
 	bool containsInSplit2d(const Point<2,T> & point, int firstVertex,int lastVertex, NConvexPolygon<2,T> & polygon_out, bool inclusive, bool excludeVertices=false);
 	bool containsInSplit2d_helper(const Point<2,T> & point, int firstVertex,int lastVertex, NConvexPolygon<2,T> & polygon_out, int depth, bool inclusive, bool excludeVertices);
+	bool dbg_Convex(){
+#ifndef NDEBUG
+		bool seenPositive=false;
+		bool seenNegative=false;
+		for(int i = 0;i<this->size();i++){
+			const Point<2,T> & prev = i>0?(*this)[i-1]:(*this).back();
+			const Point<2,T> & p = (*this)[i];
+			const Point<2,T> & next = i<this->size()-1 ?  (*this)[i+1]:(*this)[0];
+			Point<2,T> a = p-prev;
+			Point<2,T> b = next-p;
+			T s = cross2d(a,b);
+			seenPositive |= s>0;
+			seenNegative |= s<0;
+			if(seenPositive && seenNegative)
+				return false;
+		}
+		return true;
+#endif
+		return true;
+	}
 	static bool dbg_orderClockwise2dTri(Point<2,T> p1,Point<2,T> p2,Point<2,T> p3){
 	#ifndef NDEBUG
 		std::vector<Point<2,T>> points;
@@ -419,6 +440,8 @@ bool ConvexPolygon<D,T>::contains(const Point<D,T> & point,NConvexPolygon<D,T> *
 	if(polygon_out)
 		polygon_out->clear();
 	stats_contain_checks++;
+	assert(this->dbg_orderClockwise());
+	assert(this->isConvex());
 	if(this->size()==3){
 		if(D==2){
 			stats_triangle_avoided++;
@@ -513,6 +536,8 @@ bool ConvexPolygon<D,T>::containsInSplit(const Point<D,T> & point,  int firstVer
 template<unsigned int D,class T>
 bool ConvexPolygon<D,T>::containsInSplit2d(const Point<2,T> & point, int firstVertex,int lastVertex, NConvexPolygon<2,T> & polygon_out, bool inclusive ,bool excludeVertices){
 	 stats_split_checks++;
+	 assert(this->dbg_orderClockwise2d());
+	 assert(this->isConvex());
 	 //std::vector<Point<2,T> > &  w = (std::vector<Point<2,T> > & ) Polygon<D,T>::getVertices();
 	 ConvexPolygon<2,T> & w = (ConvexPolygon<2,T> &) *this;
 	 polygon_out.clear();
@@ -691,7 +716,14 @@ bool ConvexPolygon<D,T>::containsInSplit2d(const Point<2,T> & point, int firstVe
 
 		}
 	}
-
+#ifndef NDEBUG
+	bool expect =  containsInRange(point,firstVertex,lastVertex,inclusive);
+	if(expect!=res){
+		std::cout<<"Point containment failure: expected " << expect << " but found " << res << "\n";
+		std::cout<<point<<"\n";
+		std::cout<< (*this)<<"\n";
+	}
+#endif
 	assert(res== containsInRange(point,firstVertex,lastVertex,inclusive));
 	return res;
 

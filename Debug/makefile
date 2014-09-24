@@ -55,7 +55,7 @@ all: modsat
 modsat: $(OBJS) $(USER_OBJS)
 	@echo 'Building target: $@'
 	@echo 'Invoking: GCC C++ Linker'
-	g++ -L../. -L.././lib -static -o "modsat" $(OBJS) $(USER_OBJS) $(LIBS)
+	g++  -o "modsat" $(OBJS) $(USER_OBJS) $(LIBS) -L.././lib -lz -lm -Wl,-Bstatic -lCGAL_Core -lCGAL  -Wl,-Bdynamic  -lgmpxx -lgmp -lboost_thread -lpthread -lboost_system
 	@echo 'Finished building target: $@'
 	@echo ' '
 

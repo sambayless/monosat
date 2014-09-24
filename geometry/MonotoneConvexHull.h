@@ -95,6 +95,7 @@ private:
 
 	bool dbg_uptodate(){
 #ifndef NDEBUG
+		assert(hull.isConvex());
 	for(int i = 0;i<pointSet.size();i++){
 		Point<2,T> & p = pointSet[i];
 		if(!pointSet.pointEnabled(i)){
