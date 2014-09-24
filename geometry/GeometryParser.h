@@ -300,7 +300,7 @@ void read_rectangle(B& in, Solver& S) {
 	}*/
 
 
-	constant_rectangles.last().pointsetID=polygonID;
+	constant_rectangles.last().polygonID=polygonID;
 	int d = parseInt(in);
 	//constant_rectangles.last().width = parseInt(in);
 	//constant_rectangles.last().height = parseInt(in);
@@ -664,7 +664,7 @@ public:
 		 }else if(D==2){
 			 Point<2,T> a=c.a.position;
 			 Point<2,T> b=c.b.position;
-			 space_2D->constant_rectangle(c.pointsetID,a,b);
+			 space_2D->constant_rectangle(c.polygonID,a,b);
 			 //space_2D->constant_rectangle(c.pointsetID,c.width,c.height,center);
 		 }else{
 			 assert(false);

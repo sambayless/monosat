@@ -11,7 +11,7 @@
 #include <gmpxx.h>
 #include "core/Config.h"
 #include "Line.h"
-
+#include <vector>
 #include <iostream>
 template<unsigned int D,class T>
 class NConvexPolygon;

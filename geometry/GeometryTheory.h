@@ -1187,7 +1187,7 @@ public:
 
 
 
-		p1->addIntersectionLit(p2,v,inclusive);
+		//p1->addIntersectionLit(p2,v,inclusive);
 
 	}
 };
