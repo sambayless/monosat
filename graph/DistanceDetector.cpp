@@ -929,30 +929,31 @@ template<typename Weight>
 		}
 template<typename Weight>
 bool DistanceDetector<Weight>::checkSatisfied(){
-
+			UnweightedDijkstra<>under(source,g) ;
+			UnweightedDijkstra<>over(source,antig) ;
+			under.update();
+			over.update();
 			for(int j = 0;j< unweighted_dist_lits.size();j++){
 				for(int k = 0;k<unweighted_dist_lits[j].size();k++){
 					Lit l = unweighted_dist_lits[j][k].l;
 					int dist = unweighted_dist_lits[j][k].min_unweighted_distance;
-					if(dist>5){
-						int a = 1;
-					}
+
 					if(l!=lit_Undef){
 						int node =getNode(var(l));
 
 						if(outer->value(l)==l_True){
-							if(positive_reach_detector->distance(node)>dist){
+							if(!under.connected(node) || under.distance(node)>dist){
 								return false;
 							}
 						}else if (outer->value(l)==l_False){
-							if( negative_reach_detector->distance(node)<=dist){
+							if(under.connected(node)  &&  over.distance(node)<=dist){
 								return false;
 							}
 						}else{
-							if(positive_reach_detector->distance(node)<=dist){
+							if(under.connected(node) && under.distance(node)<=dist){
 								return false;
 							}
-							if(!negative_reach_detector->distance(node)>dist){
+							if(!over.connected(node) || over.distance(node)>dist){
 								return false;
 							}
 						}
