@@ -101,7 +101,7 @@ private:
 		if(!pointSet.pointEnabled(i)){
 
 		}else{
-			assert(hull.contains(p,true));
+		//	assert(hull.contains(p,true));
 		}
 	}
 /*	for (auto & p:hull){

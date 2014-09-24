@@ -723,6 +723,9 @@ bool ConvexPolygon<D,T>::containsInSplit2d(const Point<2,T> & point, int firstVe
 		std::cout<<point<<"\n";
 		std::cout<< (*this)<<"\n";
 	}
+	if(res){
+		assert(polygon_out.contains(point,inclusive));
+	}
 #endif
 	assert(res== containsInRange(point,firstVertex,lastVertex,inclusive));
 	return res;

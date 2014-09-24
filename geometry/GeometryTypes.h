@@ -16,6 +16,7 @@
 #include <algorithm>
 #include <gmpxx.h>
 #include <iostream>
+#include <utility>
 
 using namespace Minisat;
 
@@ -153,7 +154,14 @@ struct Point{
     }
     //c++11 move constructor
      Point& operator=(Point&& rhs){
-     	return *this;
+    	 if(this != & rhs){
+    		 id=rhs.id;
+    		 rhs.id = -1;
+    		 for(int i = 0;i<D;i++){
+    			 vector[i] =std::move(rhs.vector[i]);
+    		 }
+    	 }
+    	 return *this;
      }
     Point( std::initializer_list<T> list ):id(-1),x(vector[0]),y(vector[1]),z(vector[2]){
     	assert(list.size()==size());
