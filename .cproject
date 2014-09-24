@@ -38,6 +38,7 @@
 								<option id="gnu.cpp.compiler.exe.debug.option.debugging.level.2139208579" name="Debug Level" superClass="gnu.cpp.compiler.exe.debug.option.debugging.level" useByScannerDiscovery="false" value="gnu.cpp.compiler.debugging.level.max" valueType="enumerated"/>
 								<option id="gnu.cpp.compiler.option.preprocessor.def.678603444" name="Defined symbols (-D)" superClass="gnu.cpp.compiler.option.preprocessor.def" useByScannerDiscovery="false" valueType="definedSymbols">
 									<listOptionValue builtIn="false" value="__STDC_LIMIT_MACROS"/>
+									<listOptionValue builtIn="false" value="DEBUG_MAXFLOW"/>
 									<listOptionValue builtIn="false" value="__STDC_FORMAT_MACROS"/>
 								</option>
 								<option id="gnu.cpp.compiler.option.include.paths.1554597876" name="Include paths (-I)" superClass="gnu.cpp.compiler.option.include.paths" useByScannerDiscovery="false" valueType="includePath">
@@ -92,7 +93,7 @@
 						<entry excluding="tests|pb|cgal|strings|geometry/MonotoneDelaunay.cpp|dgl|smt|smtlib|graph/kbtest.c|polypartition|test/test_thorup.cpp|alg|asp|graph/TreeReachDetector.cpp" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="dgl"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="pb"/>
-						<entry excluding="test_ramal_reps_weighted.cpp|test_collisions.cpp|test_dinics_linkcut.cpp|test_spirapan.cpp|test_ramal_reps.cpp|test_edmondskarp.cpp|test_thorup.cpp|test_linkcuttree.cpp|test_eulertree.cpp|test_dinics.cpp|test_maxflow.cpp" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="tests"/>
+						<entry excluding="test_edmondskarp_dynamic.cpp|test_ramal_reps_weighted.cpp|test_collisions.cpp|test_dinics_linkcut.cpp|test_spirapan.cpp|test_ramal_reps.cpp|test_edmondskarp.cpp|test_thorup.cpp|test_linkcuttree.cpp|test_eulertree.cpp|test_dinics.cpp|test_maxflow.cpp" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="tests"/>
 					</sourceEntries>
 				</configuration>
 			</storageModule>
@@ -192,7 +193,7 @@
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="dgl"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="pb"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="smt"/>
-						<entry excluding="test_ramal_reps_weighted.cpp|test_collisions.cpp|test_spirapan.cpp|test_edmondskarp.cpp|test_dinics_linkcut.cpp|test_linkcuttree.cpp|test_dinics.cpp|test_maxflow.cpp|test_ramal_reps.cpp|test_eulertree.cpp|test_thorup.cpp" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="tests"/>
+						<entry excluding="test_edmondskarp_dynamic.cpp|test_ramal_reps_weighted.cpp|test_collisions.cpp|test_spirapan.cpp|test_edmondskarp.cpp|test_dinics_linkcut.cpp|test_linkcuttree.cpp|test_dinics.cpp|test_maxflow.cpp|test_ramal_reps.cpp|test_eulertree.cpp|test_thorup.cpp" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="tests"/>
 					</sourceEntries>
 				</configuration>
 			</storageModule>
@@ -282,7 +283,7 @@
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="dgl"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="pb"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="smt"/>
-						<entry excluding="test_ramal_reps_weighted.cpp|test_collisions.cpp|test_spirapan.cpp|test_edmondskarp.cpp|test_dinics_linkcut.cpp|test_linkcuttree.cpp|test_dinics.cpp|test_maxflow.cpp|test_ramal_reps.cpp|test_eulertree.cpp|test_thorup.cpp" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="tests"/>
+						<entry excluding="test_edmondskarp_dynamic.cpp|test_ramal_reps_weighted.cpp|test_collisions.cpp|test_spirapan.cpp|test_edmondskarp.cpp|test_dinics_linkcut.cpp|test_linkcuttree.cpp|test_dinics.cpp|test_maxflow.cpp|test_ramal_reps.cpp|test_eulertree.cpp|test_thorup.cpp" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="tests"/>
 					</sourceEntries>
 				</configuration>
 			</storageModule>
@@ -368,7 +369,7 @@
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="dgl"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="pb"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="smt"/>
-						<entry excluding="test_ramal_reps_weighted.cpp|test_collisions.cpp|test_spirapan.cpp|test_edmondskarp.cpp|test_dinics_linkcut.cpp|test_linkcuttree.cpp|test_dinics.cpp|test_maxflow.cpp|test_ramal_reps.cpp|test_eulertree.cpp|test_thorup.cpp" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="tests"/>
+						<entry excluding="test_edmondskarp_dynamic.cpp|test_ramal_reps_weighted.cpp|test_collisions.cpp|test_spirapan.cpp|test_edmondskarp.cpp|test_dinics_linkcut.cpp|test_linkcuttree.cpp|test_dinics.cpp|test_maxflow.cpp|test_ramal_reps.cpp|test_eulertree.cpp|test_thorup.cpp" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="tests"/>
 					</sourceEntries>
 				</configuration>
 			</storageModule>
@@ -458,7 +459,7 @@
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="dgl"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="pb"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="smt"/>
-						<entry excluding="test_ramal_reps_weighted.cpp|test_collisions.cpp|test_spirapan.cpp|test_edmondskarp.cpp|test_dinics_linkcut.cpp|test_linkcuttree.cpp|test_dinics.cpp|test_maxflow.cpp|test_ramal_reps.cpp|test_eulertree.cpp|test_thorup.cpp" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="tests"/>
+						<entry excluding="test_edmondskarp_dynamic.cpp|test_ramal_reps_weighted.cpp|test_collisions.cpp|test_spirapan.cpp|test_edmondskarp.cpp|test_dinics_linkcut.cpp|test_linkcuttree.cpp|test_dinics.cpp|test_maxflow.cpp|test_ramal_reps.cpp|test_eulertree.cpp|test_thorup.cpp" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="tests"/>
 					</sourceEntries>
 				</configuration>
 			</storageModule>
@@ -556,7 +557,7 @@
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="dgl"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="pb"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="smt"/>
-						<entry excluding="test_ramal_reps_weighted.cpp|test_collisions.cpp|test_spirapan.cpp|test_edmondskarp.cpp|test_dinics_linkcut.cpp|test_linkcuttree.cpp|test_dinics.cpp|test_maxflow.cpp|test_ramal_reps.cpp|test_eulertree.cpp|test_thorup.cpp" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="tests"/>
+						<entry excluding="test_edmondskarp_dynamic.cpp|test_ramal_reps_weighted.cpp|test_collisions.cpp|test_spirapan.cpp|test_edmondskarp.cpp|test_dinics_linkcut.cpp|test_linkcuttree.cpp|test_dinics.cpp|test_maxflow.cpp|test_ramal_reps.cpp|test_eulertree.cpp|test_thorup.cpp" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="tests"/>
 					</sourceEntries>
 				</configuration>
 			</storageModule>
@@ -654,7 +655,7 @@
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="dgl"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="pb"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="smt"/>
-						<entry excluding="test_ramal_reps_weighted.cpp|test_collisions.cpp|test_spirapan.cpp|test_edmondskarp.cpp|test_dinics_linkcut.cpp|test_linkcuttree.cpp|test_dinics.cpp|test_maxflow.cpp|test_ramal_reps.cpp|test_eulertree.cpp|test_thorup.cpp" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="tests"/>
+						<entry excluding="test_edmondskarp_dynamic.cpp|test_ramal_reps_weighted.cpp|test_collisions.cpp|test_spirapan.cpp|test_edmondskarp.cpp|test_dinics_linkcut.cpp|test_linkcuttree.cpp|test_dinics.cpp|test_maxflow.cpp|test_ramal_reps.cpp|test_eulertree.cpp|test_thorup.cpp" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="tests"/>
 					</sourceEntries>
 				</configuration>
 			</storageModule>
@@ -753,7 +754,7 @@
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="dgl"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="pb"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="smt"/>
-						<entry excluding="test_ramal_reps_weighted.cpp|test_collisions.cpp|test_spirapan.cpp|test_edmondskarp.cpp|test_dinics_linkcut.cpp|test_linkcuttree.cpp|test_dinics.cpp|test_maxflow.cpp|test_ramal_reps.cpp|test_eulertree.cpp|test_thorup.cpp" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="tests"/>
+						<entry excluding="test_edmondskarp_dynamic.cpp|test_ramal_reps_weighted.cpp|test_collisions.cpp|test_spirapan.cpp|test_edmondskarp.cpp|test_dinics_linkcut.cpp|test_linkcuttree.cpp|test_dinics.cpp|test_maxflow.cpp|test_ramal_reps.cpp|test_eulertree.cpp|test_thorup.cpp" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="tests"/>
 					</sourceEntries>
 				</configuration>
 			</storageModule>
@@ -856,7 +857,7 @@
 						<entry excluding="geometry/cgal|cgal|geometry/MonotoneDelaunay.cpp|polypartition|alg|dgl|asp|pb|Main.cc|smt|smtlib|tests|graph/kbtest.c|test/test_thorup.cpp|strings|graph/TreeReachDetector.cpp" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="dgl"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="pb"/>
-						<entry excluding="test_ramal_reps_weighted.cpp|test_ramal_reps.cpp|test_spirapan.cpp|test_dinics_linkcut.cpp|test_linkcuttree.cpp|test_dinics.cpp|test_edmondskarp.cpp|test_eulertree.cpp|test_maxflow.cpp|test_thorup.cpp" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="tests"/>
+						<entry excluding="test_edmondskarp.cpp|test_collisions.cpp|test_ramal_reps_weighted.cpp|test_ramal_reps.cpp|test_spirapan.cpp|test_dinics_linkcut.cpp|test_linkcuttree.cpp|test_dinics.cpp|test_eulertree.cpp|test_maxflow.cpp|test_thorup.cpp" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="tests"/>
 					</sourceEntries>
 				</configuration>
 			</storageModule>
@@ -954,7 +955,7 @@
 						<entry excluding="geometry/cgal|cgal|geometry/MonotoneDelaunay.cpp|polypartition|alg|dgl|asp|pb|Main.cc|smt|smtlib|tests|graph/kbtest.c|test/test_thorup.cpp|strings|graph/TreeReachDetector.cpp" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="dgl"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="pb"/>
-						<entry excluding="test_ramal_reps_weighted.cpp|test_collisions.cpp|test_maxflow.cpp|test_edmondskarp.cpp|test_dinics.cpp|test_dinics_linkcut.cpp|test_linkcuttree.cpp|test_eulertree.cpp|test_ramal_reps.cpp|test_thorup.cpp" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="tests"/>
+						<entry excluding="test_edmondskarp_dynamic.cpp|test_ramal_reps_weighted.cpp|test_collisions.cpp|test_maxflow.cpp|test_edmondskarp.cpp|test_dinics.cpp|test_dinics_linkcut.cpp|test_linkcuttree.cpp|test_eulertree.cpp|test_ramal_reps.cpp|test_thorup.cpp" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="tests"/>
 					</sourceEntries>
 				</configuration>
 			</storageModule>

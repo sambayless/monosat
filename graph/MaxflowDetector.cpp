@@ -338,7 +338,7 @@ template<typename Weight>
 
 				DistLit f = flow_lits[j];
 				Lit l = f.l;
-				Weight maxflow = f.max_flow;
+				Weight& maxflow = f.max_flow;
 				//int u = getNode(var(l));
 
 

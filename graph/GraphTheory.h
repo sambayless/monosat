@@ -41,7 +41,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <unistd.h>
-
+#include <sstream>
 
 using namespace dgl;
 namespace Minisat{
@@ -1213,7 +1213,20 @@ public:
 		g.disableEdge(from,to, index);
 		antig.addEdge(from,to,index);
 		cutGraph.addEdge(from,to,index);
-
+#ifdef RECORD
+		if(g.outfile){
+			std::stringstream wt;
+			wt<<weight;
+			fprintf(g.outfile,"edge_weight %d %s\n", index,wt.str().c_str());
+			fflush(g.outfile);
+		}
+		if(antig.outfile){
+			std::stringstream wt;
+			wt<<weight;
+			fprintf(antig.outfile,"edge_weight %d %s\n", index,wt.str().c_str());
+			fflush(antig.outfile);
+		}
+#endif
     	return mkLit(v,false);
     }
 	int getEdgeID(int from, int to){

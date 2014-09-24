@@ -32,9 +32,9 @@ public:
 
     virtual Weight minCut(int s, int t, std::vector<MaxFlowEdge> & cut)=0;
     virtual Weight getEdgeFlow(int edgeID)=0;
-    virtual Weight getEdgeCapacity(int id)=0;
+    virtual Weight  getEdgeCapacity(int id)=0;
 
-    virtual  Weight getEdgeResidualCapacity(int id)=0;
+    virtual  Weight  getEdgeResidualCapacity(int id)=0;
 };
 };
 #endif

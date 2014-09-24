@@ -151,7 +151,7 @@ public:
     Weight maxFlow(int s, int t){
     	//see http://cstheory.stackexchange.com/a/10186
     	static int it = 0;
-    	if(++it==32){
+    	if(++it==56){
     		int a=1;
     	}
 #ifdef RECORD
@@ -316,17 +316,20 @@ public:
 private:
 
     Weight maxFlow_residual(int s, int t, Weight & bound){
+/*
 #ifndef NDEBUG
     	DynamicGraph d;
 		d.addNodes(g.nodes());
-		//std::vector<int> R;
+		std::vector<Weight> weights;
 		for(int i = 0;i<g.edges();i++){
 			if(g.isEdge(i)){
 				if(edge_enabled[i]){
 					Weight r =capacity[i]-F[i];
 					d.addEdge(g.all_edges[i].from,g.all_edges[i].to,g.all_edges[i].id);//,r);
+					weights.push_back(r);
 				}else  {
 					d.addEdge(g.all_edges[i].from,g.all_edges[i].to,g.all_edges[i].id,0);
+					weights.push_back(0);
 					d.disableEdge(g.all_edges[i].id);
 				}
 			}
@@ -335,10 +338,12 @@ private:
 			if(edge_enabled[i]){
 				if(F[i]>0){
 					d.addEdge(g.all_edges[i].to,g.all_edges[i].from,-1);//,F[i]);
+					weights.push_back(-1);
 				}
 			}
 		}
 #endif
+*/
 		Weight new_flow = 0;
         	 while(true){
         		 dbg_print_graph(s,t,-1, -1);
@@ -369,12 +374,14 @@ private:
     			}
     			dbg_print_graph(s,t,-1, -1);
     		}
+/*
 #ifndef NDEBUG
-			EdmondsKarpAdj<std::vector<Weight>,Weight> ek_check(d,capacity);
+			EdmondsKarpAdj<std::vector<Weight>,Weight> ek_check(d,weights);
 
 				Weight expect =  ek_check.maxFlow(s,t);
         		assert(new_flow<=expect);
     #endif
+*/
 
         	 return new_flow;
         }
