@@ -8,8 +8,8 @@
 #ifndef CONNECTED_COMPONENTS_DETECTOR_H_
 #define CONNECTED_COMPONENTS_DETECTOR_H_
 #include "utils/System.h"
-
-#include "Graph.h"
+#include "GraphTheoryTypes.h"
+#include "dgl/graph/DynamicGraph.h"
 #include "dgl/ConnectedComponents.h"
 
 #include "core/SolverTypes.h"
@@ -21,10 +21,12 @@
 #include "Detector.h"
 using namespace dgl;
 namespace Minisat{
+template<typename Weight>
 class GraphTheorySolver;
+template<typename Weight>
 class ConnectedComponentsDetector:public Detector{
 public:
-		GraphTheorySolver * outer;
+		GraphTheorySolver<Weight> * outer;
 		//int within;
 		DynamicGraph & g;
 		DynamicGraph & antig;
@@ -113,7 +115,7 @@ public:
 		void addTreeEdgeLit(int edge_id, Var reach_var);
 		void addConnectedComponentsLit(Var weight_var,int min_components);
 		void addConnectedLit(Var outer_weight_var,int node1, int node2);
-		ConnectedComponentsDetector(int _detectorID, GraphTheorySolver * _outer, DynamicGraph &_g, DynamicGraph &_antig,   double seed=1);//:Detector(_detectorID),outer(_outer),within(-1),source(_source),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL){}
+		ConnectedComponentsDetector(int _detectorID, GraphTheorySolver<Weight> * _outer, DynamicGraph &_g, DynamicGraph &_antig,   double seed=1);//:Detector(_detectorID),outer(_outer),within(-1),source(_source),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL){}
 		virtual ~ConnectedComponentsDetector(){
 
 		}

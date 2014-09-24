@@ -30,7 +30,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "core/Theory.h"
 #include "core/Config.h"
 template<unsigned int D, class T> class GeometryTheorySolver;
-
+template<typename Weight> class GraphTheorySolver;
 namespace Minisat {
 
 //=================================================================================================
@@ -39,7 +39,7 @@ namespace Minisat {
 class Solver:public Theory {
 public:
 	friend class Theory;
-	friend class GraphTheorySolver;
+	template<typename Weight> friend class GraphTheorySolver;
 	template<unsigned int D, class T> friend class GeometryTheorySolver;
 #ifdef DEBUG_SOLVER
 	Solver * dbg_solver;

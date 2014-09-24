@@ -7,31 +7,34 @@
 #include <vector>
 
 namespace dgl{
+struct MaxFlowEdge {
+	int u;
+	int v;
+	int id;
+};
+
+template<typename Weight=int>
 class MaxFlow{
 public:
 
 
 	virtual ~MaxFlow(){};
 
-    virtual void setCapacity(int u, int w, int c)=0;
+    virtual void setCapacity(int u, int w, Weight c)=0;
 
-    virtual void setAllEdgeCapacities(int c)=0;
-    virtual int maxFlow(int s, int t)=0;
+    virtual void setAllEdgeCapacities(Weight c)=0;
+    virtual Weight maxFlow(int s, int t)=0;
 
     virtual void printStats(){
 
     }
 
-    struct Edge {
-    	int u;
-    	int v;
-    	int id;
-    };
-    virtual int minCut(int s, int t, std::vector<Edge> & cut)=0;
-    virtual int getEdgeFlow(int edgeID)=0;
-    virtual int getEdgeCapacity(int id)=0;
 
-    virtual  int getEdgeResidualCapacity(int id)=0;
+    virtual Weight minCut(int s, int t, std::vector<MaxFlowEdge> & cut)=0;
+    virtual Weight getEdgeFlow(int edgeID)=0;
+    virtual Weight  getEdgeCapacity(int id)=0;
+
+    virtual  Weight  getEdgeResidualCapacity(int id)=0;
 };
 };
 #endif

@@ -10,12 +10,12 @@
 #include <climits>
 
 namespace dgl{
-template< class Capacity>
-class Dinitz:public MaxFlow{
+template< class Capacity, typename Weight=int>
+class Dinitz:public MaxFlow<Weight>{
 
 public:
 
-	std::vector<int> F;
+	std::vector<Weight> F;
 
 	struct LocalEdge{
 		int from;
@@ -25,7 +25,7 @@ public:
 
 		}
 	};
-	int curflow;
+	Weight curflow;
     int last_modification;
     int last_deletion;
     int last_addition;
@@ -33,13 +33,13 @@ public:
     int history_qhead;
     int last_history_clear;
     std::vector<LocalEdge> prev;
-    std::vector<int> M;
+    std::vector<Weight> M;
     std::vector<int> dist;
     std::vector<int> pos;//position in the combined forward and backward adjacency list of each node in the DFS.
 
     DynamicGraph& g;
     Capacity & capacity;
-    int INF;
+    Weight INF;
     int src;
     int dst;
     std::vector<int> Q;
@@ -47,7 +47,7 @@ public:
     	long stats_rounds=0;
 #ifdef DEBUG_MAXFLOW
     std::vector<int> dbg_pos;
-	EdmondsKarpAdj<Capacity> ek;
+	EdmondsKarpAdj<Capacity,Weight> ek;
 #endif
 
 public:
@@ -73,12 +73,12 @@ public:
     	}
 
 
-    void setCapacity(int u, int w, int c){
+    void setCapacity(int u, int w, Weight c){
     	//C.resize(g.edges());
     	//C[ ]=c;
 
     }
-    void setAllEdgeCapacities(int c){
+    void setAllEdgeCapacities(Weight c){
 
     }
     void dbg_print_graph(int from, int to){
@@ -110,7 +110,7 @@ public:
    							s="blue";
    						else if (value(e.v)==l_False)
    							s="red";*/
-   						printf("n%d -> n%d [label=\"%d: %d/%d\",color=\"%s\"]\n", e.from,e.to, i, F[i],g.weights[i] , s);
+   						//printf("n%d -> n%d [label=\"%d: %d/%d\",color=\"%s\"]\n", e.from,e.to, i, F[i],g.weights[i] , s);
        				}
        			}
 
@@ -151,8 +151,8 @@ public:
         return dist[dst] >= 0;
     }
 
-    int findAugmentingPath(int u) {
-    	int m =0;
+    Weight findAugmentingPath(int u) {
+    	Weight m =0;
     	assert(Q.size()==0);
 
         Q.push_back(src);
@@ -171,7 +171,8 @@ public:
 				if (dist[v] == dist[u] + 1 && F[edgeID] < capacity[edgeID]) {
 					//printf("%d\n",edgeID);
 					found=true;
-					M[v] = std::min(M[u], capacity[edgeID] - F[edgeID]);
+					Weight c = capacity[edgeID] - F[edgeID];
+					M[v] = std::min(M[u], c);
 					prev[v]=LocalEdge(u,edgeID,false);
 					if(v==dst){
 						//M[v] = min(M[u], capacity[edgeID] - F[id]);
@@ -242,8 +243,8 @@ public:
         }
         return m;
     }
-    int dbg_findAugmentingPath_recursive(int u, int f) {
-#ifndef NDEBUG
+    Weight dbg_findAugmentingPath_recursive(int u, Weight f) {
+#ifdef DEBUG_MAXFLOW
                 if (u == dst)
                     return f;
 
@@ -277,7 +278,7 @@ public:
 #endif
                 return 0;
             }
-    int findAugmentingPath_recursive(int u, int f) {
+    Weight findAugmentingPath_recursive(int u, Weight f) {
             if (u == dst)
                 return f;
 
@@ -289,7 +290,8 @@ public:
     			int v =  g.incident(u,pos[u]).node;
     			if (dist[v] == dist[u] + 1 && F[edgeID] < capacity[edgeID]) {
     				//printf("%d\n",edgeID);
-    				int df = findAugmentingPath_recursive(v, std::min(f, capacity[edgeID] - F[edgeID]));
+    				Weight c= capacity[edgeID] - F[edgeID];
+    				Weight df = findAugmentingPath_recursive(v, std::min(f, c));
     				if (df > 0) {
     					F[edgeID] += df;
     					return df;
@@ -306,7 +308,7 @@ public:
     			//these are backwards edges, which have capacity exactly if the forward edge has non-zero flow
     			if (dist[v] == dist[u] + 1 && F[edgeID]) {
     				//printf("-%d\n",edgeID);
-    				int df = findAugmentingPath_recursive(v, std::min(f, F[edgeID]));
+    				Weight df = findAugmentingPath_recursive(v, std::min(f, F[edgeID]));
     				if (df > 0) {
     					F[edgeID] -= df;
     					return df;
@@ -316,8 +318,8 @@ public:
             return 0;
         }
 
-    int maxFlow(int s, int t){
-    	int f = 0;
+    Weight maxFlow(int s, int t){
+    	Weight f = 0;
 #ifdef RECORD
 		if(g.outfile ){
 			fprintf(g.outfile,"f %d %d\n", s,t);
@@ -344,18 +346,18 @@ public:
 			dbg_print_graph(s,t);
 			stats_rounds++;
 			pos.clear();pos.resize(g.nodes());
-#ifndef NDEBUG
+#ifdef DEBUG_MAXFLOW
 			dbg_pos.clear();dbg_pos.resize(g.nodes());
 #endif
 			if(opt_dinics_recursive){
-				while (int delta = findAugmentingPath_recursive(s, INT_MAX)){
+				while (Weight delta = findAugmentingPath_recursive(s, INF)){
 					stats_augmenting_rounds++;
 					f += delta;
 					dbg_print_graph(s,t);
 				}
 			}else{
 				//int expect = dbg_findAugmentingPath_recursive(s,INT_MAX);
-				while (int delta = findAugmentingPath(s)){
+				while (Weight delta = findAugmentingPath(s)){
 					//assert(delta==expect);
 					f += delta;
 					stats_augmenting_rounds++;
@@ -367,7 +369,7 @@ public:
 
 
 #ifdef DEBUG_MAXFLOW
-    	int expected_flow =ek.maxFlow(s,t);
+		Weight expected_flow =ek.maxFlow(s,t);
     	assert(f==expected_flow);
 #endif
 
@@ -386,8 +388,8 @@ public:
     std::vector<bool> seen;
     std::vector<bool> visited;
 
-    int minCut(int s, int t, std::vector<Edge> & cut){
-    	int f = maxFlow(s,t);
+    Weight minCut(int s, int t, std::vector<MaxFlowEdge> & cut){
+    	Weight f = maxFlow(s,t);
     	//ok, now find the cut
     	Q.clear();
     	Q.push_back(s);
@@ -406,7 +408,7 @@ public:
     			int v = g.incident(u,i).node;
     			int id = g.incident(u,i).id;
     			if(capacity[id] - F[id] == 0){
-    				cut.push_back(Edge{u,v,id});
+    				cut.push_back(MaxFlowEdge{u,v,id});
     			}else if(!seen[v]){
     				Q.push_back(v);
     				seen[v]=true;
@@ -423,15 +425,15 @@ public:
     	cut.resize(j);
     	return f;
     }
-    int getEdgeCapacity(int id){
+    Weight getEdgeCapacity(int id){
      	assert(g.edgeEnabled(id));
      	return capacity[id];
      }
-    int getEdgeFlow(int id){
+    Weight getEdgeFlow(int id){
     	assert(g.edgeEnabled(id));
     	return F[id];// reserve(id);
     }
-    int getEdgeResidualCapacity(int id){
+    Weight getEdgeResidualCapacity(int id){
     	assert(g.edgeEnabled(id));
     	return  capacity[id]-F[id];// reserve(id);
     }

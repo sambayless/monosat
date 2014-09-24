@@ -7,14 +7,14 @@
 #include <vector>
 #include "EdmondsKarp.h"
 #include "EdmondsKarpAdj.h"
-
+#include <algorithm>
 namespace dgl{
-template< class Capacity  >
-class EdmondsKarpDynamic:public MaxFlow{
-	int f = 0;
-	std::vector<int> F;
+template< class Capacity,typename Weight  >
+class EdmondsKarpDynamic:public MaxFlow<Weight>{
+	Weight f = 0;
+	std::vector<Weight> F;
 
-	int shortCircuitFlow=0;
+	Weight shortCircuitFlow=0;
 
 	struct LocalEdge{
 		int from;
@@ -24,7 +24,7 @@ class EdmondsKarpDynamic:public MaxFlow{
 
 			}
 	};
-	int curflow;
+	Weight curflow;
     int last_modification;
     int last_deletion;
     int last_addition;
@@ -32,12 +32,12 @@ class EdmondsKarpDynamic:public MaxFlow{
     int history_qhead;
     int last_history_clear;
     std::vector<LocalEdge> prev;
-    std::vector<int> M;
+    std::vector<Weight> M;
     DynamicGraph& g;
     Capacity & capacity;
-    int INF;
+    Weight INF;
 #ifdef DEBUG_MAXFLOW
-    	EdmondsKarpAdj<Capacity> ek;
+    	EdmondsKarpAdj<Capacity,Weight> ek;
 #endif
     /*
      *            input:
@@ -51,7 +51,7 @@ class EdmondsKarpDynamic:public MaxFlow{
 
     std::vector<bool> edge_enabled;
 
-    int  BreadthFirstSearch(int s, int t,int bound=-1){
+    Weight  BreadthFirstSearch(int s, int t,Weight bound=-1){
      	for(int i = 0;i<g.nodes();i++){//this has to go...
      		prev[i].from=-1;
      	}
@@ -59,7 +59,7 @@ class EdmondsKarpDynamic:public MaxFlow{
     	Q.clear();
            Q.push_back(s);
            bool found = false;
-         int old_m = M[s];
+           Weight& old_m = M[s];
        	for(int j = 0;j<Q.size();j++){
    			   int u = Q[j];
 
@@ -70,13 +70,14 @@ class EdmondsKarpDynamic:public MaxFlow{
             	   int v = g.incident(u,i).node;
                    ///(If there is available capacity, and v is not seen before in search)
 
-            	   int f = F[id];
-            	   int c = capacity[id];
+            	   Weight& f = F[id];
+            	   Weight c = capacity[id];
 
             	 //  int fr = F[id];
                    if (((c - F[id]) > 0) && (prev[v].from == -1)){
                        prev[v] = LocalEdge(u,id,false);
-                       M[v] = std::min(M[u], c - F[id]);
+                       Weight b= c-F[id];
+                       M[v] = std::min(M[u],b);
                        if (v != t)
                            Q.push_back(v);
                        else{
@@ -95,13 +96,15 @@ class EdmondsKarpDynamic:public MaxFlow{
 				   int v = g.incoming(u,i).node;
 					  ///(If there is available capacity, and v is not seen before in search)
 
-				   int f = 0;
-				   int c = F[id];
+				   Weight f = 0;
+				   Weight c = F[id];
 
 				 //  int fr = F[id];
 					  if (((c - f) > 0) && (prev[v].from == -1)){
 						  prev[v] = LocalEdge(u,id,true);
-						  M[v] = std::min(M[u], c - f);
+
+						  Weight b= c-f;
+						  M[v] = std::min(M[u],b);
 				/*		  */
 						  if (v != t)
 							  Q.push_back(v);
@@ -137,18 +140,18 @@ public:
       	last_history_clear=-1;
     	//setAllEdgeCapacities(1);
     }
-    void setCapacity(int u, int w, int c){
+    void setCapacity(int u, int w, Weight c){
     	//C.resize(g.edges());
     	//C[ ]=c;
 
     }
-    void setAllEdgeCapacities(int c){
+    void setAllEdgeCapacities(Weight c){
 
     }
-    int maxFlow(int s, int t){
+    Weight maxFlow(int s, int t){
     	//see http://cstheory.stackexchange.com/a/10186
     	static int it = 0;
-    	if(++it==32){
+    	if(++it==56){
     		int a=1;
     	}
 #ifdef RECORD
@@ -162,7 +165,7 @@ public:
 #ifdef DEBUG_MAXFLOW
     	for(int i = 0;i<g.all_edges.size();i++){
     		int id = g.all_edges[i].id;
-    		int cap = capacity[id];
+    		Weight cap = capacity[id];
     		int from =  g.all_edges[i].from;
     		int to =  g.all_edges[i].to;
 
@@ -171,7 +174,7 @@ public:
 #endif
       	if(last_modification>0 && g.modifications==last_modification){
 #ifdef DEBUG_MAXFLOW
-      		int expected_flow =ek.maxFlow(s,t);
+      		Weight expected_flow =ek.maxFlow(s,t);
 #endif
 
 #ifdef DEBUG_MAXFLOW
@@ -202,7 +205,7 @@ public:
 #ifdef DEBUG_MAXFLOW
     	for(int i = 0;i<g.edges();i++){
 			if(edge_enabled[i]){
-				int fi = F[i];
+				Weight fi = F[i];
 				assert(F[i]<= capacity[i]);
 			}else{
 				assert(F[i]==0);
@@ -220,7 +223,7 @@ public:
     			}else if (!g.history[i].addition &&  !g.edgeEnabled(edgeid)){
     				//assert(edge_enabled[edgeid]);
     				edge_enabled[edgeid]=false;
-    				int fv = F[edgeid]; //g.all_edges[edgeid].from;
+    				Weight fv = F[edgeid]; //g.all_edges[edgeid].from;
     				if(fv==0){
     					//do nothing.
     				}else{
@@ -234,13 +237,13 @@ public:
     						fv = -fv;
     					}
     					assert(fv>0);
-    					int flow = maxFlow_residual(u,v, fv);//fix this!
+    					Weight flow = maxFlow_residual(u,v, fv);//fix this!
     					assert(flow<=fv);
     					if(flow==fv){
     						//then we are ok.
     					}else{
     						//the total flow in the network has to be decreased by delta.
-    						int delta = fv- flow;
+    						Weight delta = fv- flow;
     						assert(delta>0);
     						needsReflow=true;
     						//temporarily connect s and t by an arc of infinite capacity and run maxflow algorithm again from vin to vout
@@ -277,14 +280,14 @@ public:
     			f = maxFlow_p(s,t);
 
 #ifdef DEBUG_MAXFLOW
-    	int expected_flow =ek.maxFlow(s,t);
+    		Weight expected_flow =ek.maxFlow(s,t);
 #endif
    		dbg_print_graph(s,t,-1, -1);
 #ifdef DEBUG_MAXFLOW
     	assert(f==expected_flow);
     	for(int i = 0;i<g.edges();i++){
 			if(g.edgeEnabled(i)){
-				int fi = F[i];
+				Weight fi = F[i];
 				assert(F[i]<= capacity[i]);
 			}else{
 				assert(F[i]==0);
@@ -312,18 +315,21 @@ public:
 
 private:
 
-    int maxFlow_residual(int s, int t, int bound){
+    Weight maxFlow_residual(int s, int t, Weight & bound){
+/*
 #ifndef NDEBUG
     	DynamicGraph d;
 		d.addNodes(g.nodes());
-		//std::vector<int> R;
+		std::vector<Weight> weights;
 		for(int i = 0;i<g.edges();i++){
 			if(g.isEdge(i)){
 				if(edge_enabled[i]){
-					int r =capacity[i]-F[i];
-					d.addEdge(g.all_edges[i].from,g.all_edges[i].to,g.all_edges[i].id,r);
+					Weight r =capacity[i]-F[i];
+					d.addEdge(g.all_edges[i].from,g.all_edges[i].to,g.all_edges[i].id);//,r);
+					weights.push_back(r);
 				}else  {
 					d.addEdge(g.all_edges[i].from,g.all_edges[i].to,g.all_edges[i].id,0);
+					weights.push_back(0);
 					d.disableEdge(g.all_edges[i].id);
 				}
 			}
@@ -331,15 +337,17 @@ private:
 		for(int i = 0;i<g.edges();i++){
 			if(edge_enabled[i]){
 				if(F[i]>0){
-					d.addEdge(g.all_edges[i].to,g.all_edges[i].from,-1,F[i]);
+					d.addEdge(g.all_edges[i].to,g.all_edges[i].from,-1);//,F[i]);
+					weights.push_back(-1);
 				}
 			}
 		}
 #endif
-    	int new_flow = 0;
+*/
+		Weight new_flow = 0;
         	 while(true){
         		 dbg_print_graph(s,t,-1, -1);
-    			int m= BreadthFirstSearch(s,t,bound);
+        		 Weight m= BreadthFirstSearch(s,t,bound);
     			if(bound >=0 && new_flow+m>bound){
 					m=bound-new_flow;
 				}
@@ -366,20 +374,22 @@ private:
     			}
     			dbg_print_graph(s,t,-1, -1);
     		}
+/*
 #ifndef NDEBUG
-			EdmondsKarpAdj<std::vector<int>> ek_check(d,d.weights);
+			EdmondsKarpAdj<std::vector<Weight>,Weight> ek_check(d,weights);
 
-        		int expect =  ek_check.maxFlow(s,t);
+				Weight expect =  ek_check.maxFlow(s,t);
         		assert(new_flow<=expect);
     #endif
+*/
 
         	 return new_flow;
         }
 
-    int maxFlow_p(int s, int t){
+    Weight maxFlow_p(int s, int t){
     	dbg_print_graph(s,t,-1, -1);
     	 while(true){
-			int m= BreadthFirstSearch(s,t);
+    		 Weight m= BreadthFirstSearch(s,t);
 
 			if (m == 0)
 				break;
@@ -417,14 +427,14 @@ private:
 
 #ifndef NDEBUG
     		//EdmondsKarp<EdgeStatus> ek_check(g);
-    	 	 EdmondsKarpAdj<std::vector<int>> ek_check(g,g.weights);
-    		int expect =  ek_check.maxFlow(s,t);
+    	 	 EdmondsKarpAdj<std::vector<Weight>,Weight> ek_check(g,capacity);
+    		Weight expect =  ek_check.maxFlow(s,t);
     		assert(f==expect);
 #endif
     	 return f;
     }
 
-    int  BreadthFirstSearch(int s, int t, int shortCircuitFrom, int shortCircuitTo, int shortCircuitCapacity, int & shortCircuitFlow){
+    Weight  BreadthFirstSearch(int s, int t, int shortCircuitFrom, int shortCircuitTo, Weight& shortCircuitCapacity, Weight & shortCircuitFlow){
          	for(int i = 0;i<g.nodes();i++)//this has to go...
          		prev[i].from=-1;
          	prev[s].from = -2;
@@ -436,11 +446,12 @@ private:
 
        			   if(u==shortCircuitFrom){
        				   int v = shortCircuitTo;
-       				   int f = shortCircuitFlow;
-       				   int c = shortCircuitCapacity;
+       				   Weight f = shortCircuitFlow;
+       				   Weight c = shortCircuitCapacity;
        				   if (((c - f) > 0)){
        					   prev[v] = {u,-1};
-						   M[v] = std::min(M[u], c -f);
+       					   Weight b = c-f;
+						   M[v] = std::min(M[u], b);
 						   if (v != t)
 							   Q.push_back(v);
 						   else
@@ -457,13 +468,14 @@ private:
                 	   if(id==27 || id==29){
                 							   int a=1;
                 						   }
-                	   int f = F[id];
-                	   int c = capacity[id];
+                	   Weight f = F[id];
+                	   Weight& c = capacity[id];
 
                 	 //  int fr = F[id];
                        if (((c - f) > 0) && (prev[v].from == -1)){
                            prev[v] = LocalEdge(u,id,false);
-                           M[v] = std::min(M[u], c - f);
+                           Weight b = c-f;
+                           M[v] = std::min(M[u], b);
                            if (v != t)
                                Q.push_back(v);
                            else
@@ -479,13 +491,14 @@ private:
 					   int v = g.incoming(u,i).node;
 						  ///(If there is available capacity, and v is not seen before in search)
 
-					   int f = 0;
-					   int c = F[id];
+					   Weight f = 0;
+					   Weight& c = F[id];
 
 					 //  int fr = F[id];
 						  if (((c - f) > 0) && (prev[v].from == -1)){
 							  prev[v] = LocalEdge(u,id,true);
-							  M[v] = std::min(M[u], c - f);
+							  Weight b = c-f;
+							  M[v] = std::min(M[u],b);
 							  if (v != t)
 								  Q.push_back(v);
 							  else
@@ -498,7 +511,7 @@ private:
 
 
     	   }
-    void dbg_print_graph(int from, int to, int shortCircuitFrom=-1, int shortCircuitTo=-1){
+    void dbg_print_graph(int from, int to, Weight shortCircuitFrom=-1, Weight shortCircuitTo=-1){
 #ifndef NDEBUG
     	return;
     		static int it = 0;
@@ -524,29 +537,29 @@ private:
 							s="blue";
 						else if (value(e.v)==l_False)
 							s="red";*/
-						printf("n%d -> n%d [label=\"%d: %d/%d\",color=\"%s\"]\n", e.from,e.to, i, F[i],g.weights[i] , s);
+						//printf("n%d -> n%d [label=\"%d: %d/%d\",color=\"%s\"]\n", e.from,e.to, i, F[i],g.weights[i] , s);
     				}
     			}
 
     			if(shortCircuitFrom>=0){
-    				printf("n%d -> n%d [label=\"%d: %d/%d\",color=\"black\"]\n", shortCircuitFrom,shortCircuitTo, -1, shortCircuitFlow,-1 );
+    				//printf("n%d -> n%d [label=\"%d: %d/%d\",color=\"black\"]\n", shortCircuitFrom,shortCircuitTo, -1, shortCircuitFlow,-1 );
     			}
 
     			printf("}\n");
 #endif
     		}
 
-    int maxFlow_p(int s, int t, int shortCircuitFrom, int shortCircuitTo, int bound){
+    Weight maxFlow_p(int s, int t, int shortCircuitFrom, int shortCircuitTo, Weight & bound){
     	//
-    	int newFlow = 0;
+    	Weight newFlow = 0;
 #ifndef NDEBUG
-    	 	DynamicGraph d;
+/*    	 	DynamicGraph d;
     	 	d.addNodes(g.nodes());
     	 	//std::vector<int> R;
     	 	for(int i = 0;i<g.edges();i++){
     	 		if(edge_enabled[i]){
-    	 			int r =capacity[i]-F[i];
-    	 			d.addEdge(g.all_edges[i].from,g.all_edges[i].to,g.all_edges[i].id,r);
+    	 			Weight r =capacity[i]-F[i];
+    	 			d.addEdge(g.all_edges[i].from,g.all_edges[i].to,g.all_edges[i].id);//,r);
     	 		}else if(g.isEdge(i)){
     	 			d.addEdge(g.all_edges[i].from,g.all_edges[i].to,g.all_edges[i].id,0);
     	 			d.disableEdge(g.all_edges[i].id);
@@ -567,14 +580,14 @@ private:
 				if (edge_enabled[edge.id]){
 					stflow+=F[edge.id];
 				}
-			}
+			}*/
 
 #endif
 
     	shortCircuitFlow=0;
         	 while(true){
         		 dbg_print_graph(s,t,shortCircuitFrom, shortCircuitTo);
-    			int m= BreadthFirstSearch(s,t,shortCircuitFrom,shortCircuitTo,bound,shortCircuitFlow);
+    			Weight m= BreadthFirstSearch(s,t,shortCircuitFrom,shortCircuitTo,bound,shortCircuitFlow);
     			if(bound >=0 && newFlow+m>bound){
 						m=bound-newFlow;
 					}
@@ -616,22 +629,22 @@ private:
     		}
 #ifndef NDEBUG
         	 dbg_print_graph(s,t,shortCircuitFrom, shortCircuitTo);
-    	 	if(shortCircuitFrom>=0){
+    	 /*	if(shortCircuitFrom>=0){
     	 		d.addEdge(shortCircuitFrom,shortCircuitTo,d.edges(),100);
     	 	}
-    		EdmondsKarpAdj<std::vector<int>> ek_check(d,d.weights);
+    		EdmondsKarpAdj<std::vector<Weight>,Weight> ek_check(d,capacity);
 
-    		int expect =  ek_check.maxFlow(s,t);
+    		Weight expect =  ek_check.maxFlow(s,t);
 
 
     		assert(newFlow<=expect);
 
     		for(int i = 0;i<g.edges();i++){
 
-					int fi = F[i];
+					Weight fi = F[i];
 					assert(F[i]<= capacity[i]);
 
-    		}
+    		}*/
 
 #endif
         	 return newFlow;
@@ -640,8 +653,8 @@ private:
     void dbg_check_flow(int s, int t){
 #ifndef NDEBUG
     	for(int u = 0;u<g.nodes();u++){
-    		int inflow = 0;
-    		int outflow = 0;
+    		Weight inflow = 0;
+    		Weight outflow = 0;
             for (int i = 0;i<g.nIncoming(u);i++){
 				   int id = g.incoming(u,i).id;
 				   assert(id<edge_enabled.size());
@@ -673,8 +686,8 @@ private:
     std::vector<bool> seen;
     std::vector<bool> visited;
 public:
-    int minCut(int s, int t, std::vector<Edge> & cut){
-    	int f = maxFlow(s,t);
+    Weight minCut(int s, int t, std::vector<MaxFlowEdge> & cut){
+    	Weight f = maxFlow(s,t);
     	//ok, now find the cut
     	Q.clear();
     	Q.push_back(s);
@@ -691,7 +704,7 @@ public:
     			int v = g.incident(u,i).node;
     			int id = g.incident(u,i).id;
     			if(capacity[id] - F[id] == 0){
-    				cut.push_back(Edge{u,v,id});
+    				cut.push_back(MaxFlowEdge{u,v,id});
     			}else if(!seen[v]){
     				Q.push_back(v);
     				seen[v]=true;
@@ -708,15 +721,15 @@ public:
     	cut.resize(j);
     	return f;
     }
-    int getEdgeCapacity(int id){
+    Weight getEdgeCapacity(int id){
      	assert(g.edgeEnabled(id));
      	return capacity[id];
      }
-    int getEdgeFlow(int id){
+    Weight getEdgeFlow(int id){
     	assert(g.edgeEnabled(id));
     	return F[id];// reserve(id);
     }
-    int getEdgeResidualCapacity(int id){
+    Weight getEdgeResidualCapacity(int id){
     	assert(g.edgeEnabled(id));
     	return  capacity[id]-F[id];// reserve(id);
     }

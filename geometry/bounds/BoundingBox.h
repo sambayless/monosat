@@ -90,6 +90,11 @@ public:
 	private:
 
 		bool intersectsLine2d(LineSegment<2,T> & line, bool inclusive){
+			if(line.a == line.b){
+				//this is really a point - and it will cause problems below, because the line has no sides.
+				return this->contains(line.a,inclusive);
+			}
+
 			//check if the corners of the box are all on the same side of the line segment
 			int side = (line.whichSide(max_point));
 			if(side==0 && inclusive){

@@ -10,8 +10,7 @@
 
 #include "utils/System.h"
 #include "core/Theory.h"
-#include "Graph.h"
-#include "core/TheorySolver.h"
+
 #include "dgl/Reach.h"
 #include "dgl/Dijkstra.h"
 #include "dgl/BFS.h"
@@ -37,22 +36,22 @@
 #include "ConnectedComponentsDetector.h"
 #include "CycleDetector.h"
 #include "SteinerDetector.h"
-
-#ifdef DEBUG_GRAPH
-#include "TestGraph.h"
-#endif
+#include <vector>
+#include <gmpxx.h>
+#include <cstdio>
+#include <cstdlib>
+#include <unistd.h>
+#include <sstream>
 
 using namespace dgl;
 namespace Minisat{
-
+template<typename Weight>
 class GraphTheorySolver;
 
-#ifndef NDEBUG
-#include <cstdio>
-#endif
 
 
-class GraphTheorySolver:public GraphTheory,public TheorySolver{
+template<typename Weight>
+class GraphTheorySolver:public Theory{
 public:
 
 	double rnd_seed;
@@ -65,10 +64,10 @@ public:
 	int id;
 
 
-
+	bool all_edges_unit=true;
 	vec<lbool> assigns;
 
-	MSTDetector * mstDetector;
+	MSTDetector<Weight> * mstDetector;
 	vec<ReachabilityConstraint> unimplemented_reachability_constraints;
 	vec<ConnectivityConstraint> unimplemented_connectivity_constraints;
 
@@ -100,18 +99,18 @@ public:
 	vec<ReachInfo> connect_info;
 public:
 	vec<Detector*> detectors;
-	vec<ReachDetector*> reach_detectors;
-	vec<ConnectDetector*> connect_detectors;
-	vec<DistanceDetector*> distance_detectors;
-	vec<MaxflowDetector*> flow_detectors;
-	ConnectedComponentsDetector* component_detector;
-	CycleDetector * cycle_detector;
-	vec<SteinerDetector*>  steiner_detectors;
+	vec<ReachDetector<Weight>*> reach_detectors;
+	vec<ConnectDetector<Weight>*> connect_detectors;
+	vec<DistanceDetector<Weight>*> distance_detectors;
+	vec<MaxflowDetector<Weight>*> flow_detectors;
+	ConnectedComponentsDetector<Weight>* component_detector;
+	CycleDetector<Weight> * cycle_detector;
+	vec<SteinerDetector<Weight>*>  steiner_detectors;
 
 	vec<int> marker_map;
 
 
-	std::vector<MaxFlow::Edge> cut;
+	std::vector<MaxFlowEdge> cut;
 
 	//Full matrix
 	vec<vec<Edge> > edges;
@@ -124,9 +123,11 @@ public:
 	vec<vec<Edge> > inv_adj;
 
 	//vector of the weights for each edge
-	vec<int> edge_weights;
+	std::vector<Weight> edge_weights;
+	//Some algorithms support computations using rational weights (or capacities).
+	std::vector<mpq_class> rational_weights;
 	bool requiresPropagation;
-	MaxFlow * mc;
+	MaxFlow<int> * mc;
 	//MaxFlow * reachprop;
 
     vec<char> seen;
@@ -248,10 +249,10 @@ public:
 
 			}else if (mincutalg == MinCutAlg::ALG_EDKARP_ADJ){
 
-				mc = new EdmondsKarpAdj<CutStatus>(cutGraph,cutStatus);
+				mc = new EdmondsKarpAdj<CutStatus,int>(cutGraph, cutStatus);
 				//reachprop = new EdmondsKarpAdj<PropCutStatus, NegativeEdgeStatus>(antig,propCutStatus);
 			}else{
-				mc = new EdmondsKarp(cutGraph);
+				mc = new EdmondsKarp<int>(cutGraph);
 			}
 
 
@@ -515,6 +516,7 @@ public:
 		}
 
 	void	dbg_sync_reachability(){
+/*
 #ifdef DEBUG_GRAPH
 
 		for(int i = 0;i<reach_detectors.size();i++){
@@ -522,6 +524,7 @@ public:
 			d->dbg_sync_reachability();
 		}
 #endif
+*/
 	}
 	void dbg_sync(){
 #ifdef DEBUG_DIJKSTRA
@@ -782,11 +785,11 @@ public:
 #ifdef DEBUG_DIJKSTRA
 
 		if(undirected){
-			Dijkstra<Reach::NullStatus, true> d(from,g);
+			UnweightedDijkstra<Reach::NullStatus, true> d(from,g);
 			d.update();
 			return d.connected(to);
 		}else{
-			Dijkstra<> d(from,g);
+			UnweightedDijkstra<> d(from,g);
 			d.update();
 			return d.connected(to);
 		}
@@ -815,11 +818,11 @@ public:
 			}
 		}
 		if(undirected){
-			Dijkstra<Reach::NullStatus, true> d(from,g);
+			UnweightedDijkstra<Reach::NullStatus, true> d(from,g);
 
 			return !d.connected(to);
 		}else{
-			Dijkstra<Reach::NullStatus, false> d(from,g);
+			UnweightedDijkstra<Reach::NullStatus, false> d(from,g);
 
 					return !d.connected(to);
 		}
@@ -899,8 +902,9 @@ public:
 		assert(assigns[var(l)]==l_Undef);
 		assigns[var(l)]=sign(l) ? l_False:l_True;
 		requiresPropagation=true;
-
+		//printf("enqueue %d\n", dimacs(l));
 #ifndef NDEBUG
+
 		{
 			for(int i = 0;i<trail.size();i++){
 				assert(trail[i].var !=v);
@@ -1173,12 +1177,14 @@ public:
 		return reasonMarker;
 	}
 
-	Lit newEdge(int from,int to, Var outerVar = var_Undef, int weight=1)
+	Lit newEdge(int from,int to, Var outerVar = var_Undef, Weight weight=1)
     {
 		assert(outerVar!=var_Undef);
 	/*	if(outerVar==var_Undef)
 			outerVar = S->newVar();*/
 
+
+		all_edges_unit&=(weight==1);
 		int index = edge_list.size();
 		edge_list.push();
 		Var v = newVar(outerVar,index,true);
@@ -1194,9 +1200,9 @@ public:
 			edge_list.push({-1,-1,-1,-1,-1,1});
 			assigns.push(l_Undef);
 		}*/
-		undirected_adj[to].push({v,outerVar,from,to,index,weight});
-		undirected_adj[from].push({v,outerVar,to,from,index,weight});
-		inv_adj[to].push({v,outerVar,from,to,index,weight});
+		undirected_adj[to].push({v,outerVar,from,to,index});
+		undirected_adj[from].push({v,outerVar,to,from,index});
+		inv_adj[to].push({v,outerVar,from,to,index});
 
 		//num_edges++;
 		edge_list[index].v =v;
@@ -1204,24 +1210,39 @@ public:
 		edge_list[index].from=from;
 		edge_list[index].to =to;
 		edge_list[index].edgeID=index;
-		edge_list[index].weight=weight;
+		//edge_list[index].weight=weight;
+		if(edge_weights.size()<=index){
+			edge_weights.resize(index+1);
+		}
+		edge_weights[index]=weight;
 
-		edge_weights.push(weight);
-
-		edges[from][to]= {v,outerVar,from,to,index,weight};
-		g.addEdge(from,to,index,weight);
+		edges[from][to]= {v,outerVar,from,to,index};
+		g.addEdge(from,to,index);
 		g.disableEdge(from,to, index);
-		antig.addEdge(from,to,index,weight);
-		cutGraph.addEdge(from,to,index,weight);
-
+		antig.addEdge(from,to,index);
+		cutGraph.addEdge(from,to,index);
+#ifdef RECORD
+		if(g.outfile){
+			std::stringstream wt;
+			wt<<weight;
+			fprintf(g.outfile,"edge_weight %d %s\n", index,wt.str().c_str());
+			fflush(g.outfile);
+		}
+		if(antig.outfile){
+			std::stringstream wt;
+			wt<<weight;
+			fprintf(antig.outfile,"edge_weight %d %s\n", index,wt.str().c_str());
+			fflush(antig.outfile);
+		}
+#endif
     	return mkLit(v,false);
     }
 	int getEdgeID(int from, int to){
 		assert(edges[from][to].edgeID>=0);
 		return edges[from][to].edgeID;
 	}
-	int getWeight(int edgeID){
-		return edge_list[edgeID].weight;
+	Weight getWeight(int edgeID){
+		return edge_weights[edgeID];
 	}
 	void reachesWithinSteps(int from, int to, Var reach_var, int within_steps){
 
@@ -1230,37 +1251,42 @@ public:
 					within_steps = g.nodes();
 
 				if (dist_info[from].source<0){
-					DistanceDetector * d =new DistanceDetector(detectors.size(), this,g,antig,from,within_steps,drand(rnd_seed));
+					DistanceDetector<Weight> * d =new DistanceDetector<Weight>(detectors.size(), this,edge_weights,g,antig,from,drand(rnd_seed));
 					detectors.push(d);
-					//reach_detectors.push(reach_detectors.last());
 					distance_detectors.push(d);
-					//detectors.push(new DistanceDetector(detectors.size(), this,g,antig,from,within_steps,drand(rnd_seed)));
-						//reach_detectors.push(reach_detectors.last());
-
 					assert(detectors.last()->getID()==detectors.size()-1);
-
-
-
-
-
-					//reach_detectors.last()->negative_dist_detector = new Dijkstra(from,antig);
-					//reach_detectors.last()->source=from;
-
 					dist_info[from].source=from;
 					dist_info[from].detector=detectors.last();
-
-					//reach_detectors.last()->within=within_steps;
-
 				}
 
-				DistanceDetector * d = (DistanceDetector*)dist_info[from].detector;
+				DistanceDetector<Weight>  * d = (DistanceDetector<Weight>*)dist_info[from].detector;
 				assert(d);
 
-				d->addLit(from,to,reach_var,within_steps);
+				d->addUnweightedShortestPathLit(from,to,reach_var,within_steps);
 
 
 		    }
+	void reachesWithinDistance(int from, int to, Var reach_var, Weight distance){
 
+					assert(from<g.nodes());
+
+
+					if (dist_info[from].source<0){
+						DistanceDetector<Weight> * d =new DistanceDetector<Weight>(detectors.size(), this,edge_weights,g,antig,from,drand(rnd_seed));
+						detectors.push(d);
+						distance_detectors.push(d);
+						assert(detectors.last()->getID()==detectors.size()-1);
+						dist_info[from].source=from;
+						dist_info[from].detector=detectors.last();
+					}
+
+					DistanceDetector<Weight>  * d = (DistanceDetector<Weight>*)dist_info[from].detector;
+					assert(d);
+
+					d->addWeightedShortestPathLit(from,to,reach_var,distance);
+
+
+			    }
 	void implementConstraints(){
 		if(!S->okay())
 			return;
@@ -1353,7 +1379,7 @@ public:
 					if (reach_info[from].source<0){
 
 
-						detectors.push(new AllPairsDetector(detectors.size(), this,g,antig,drand(rnd_seed)));
+						detectors.push(new AllPairsDetector<Weight>(detectors.size(), this,g,antig,drand(rnd_seed)));
 							//reach_detectors.push(reach_detectors.last());
 
 
@@ -1377,7 +1403,7 @@ public:
 
 					}
 
-					AllPairsDetector * d =(AllPairsDetector*) reach_info[from].detector;
+					AllPairsDetector<Weight> * d =(AllPairsDetector<Weight>*) reach_info[from].detector;
 					assert(d);
 
 					d->addLit(from,to,reach_var,within_steps);
@@ -1400,7 +1426,7 @@ public:
 
 			if (connect_info[from].source<0){
 
-					ConnectDetector*rd = new ConnectDetector(detectors.size(), this,g,antig,from,drand(rnd_seed));
+					ConnectDetector<Weight>*rd = new ConnectDetector<Weight>(detectors.size(), this,g,antig,from,drand(rnd_seed));
 					detectors.push(rd);
 					connect_detectors.push(rd);
 
@@ -1414,7 +1440,7 @@ public:
 
 			}
 
-			ConnectDetector * d = (ConnectDetector*) connect_info[from].detector;
+			ConnectDetector<Weight> * d = (ConnectDetector<Weight>*) connect_info[from].detector;
 			assert(d);
 			assert(within_steps==-1);
 			d->addLit(from,to,reach_var);
@@ -1437,7 +1463,7 @@ public:
 
 
 
-						ReachDetector*rd = new ReachDetector(detectors.size(), this,g,antig,from,drand(rnd_seed));
+						ReachDetector<Weight>*rd = new ReachDetector<Weight>(detectors.size(), this,g,antig,from,drand(rnd_seed));
 						detectors.push(rd);
 						reach_detectors.push(rd);
 
@@ -1456,7 +1482,7 @@ public:
 
 				}
 
-				ReachDetector * d = (ReachDetector*) reach_info[from].detector;
+				ReachDetector<Weight> * d = (ReachDetector<Weight>*) reach_info[from].detector;
 				assert(d);
 				assert(within_steps==-1);
 				d->addLit(from,to,reach_var);
@@ -1490,16 +1516,16 @@ public:
 		}
     }
 	//v will be true if the minimum weight is <= the specified value
-	void minimumSpanningTree(Var v, int minimum_weight){
+	void minimumSpanningTree(Var v, Weight minimum_weight){
 		if(!mstDetector){
-			mstDetector = new MSTDetector(detectors.size(),this, g, antig, this->edge_weights,drand(rnd_seed));
+			mstDetector = new MSTDetector<Weight>(detectors.size(),this, g, antig, edge_weights,drand(rnd_seed));
 			detectors.push(mstDetector);
 		}
 		mstDetector->addWeightLit(v,minimum_weight);
 	}
 	void edgeInMinimumSpanningTree(Var edgeVar, Var var){
 		if(!mstDetector){
-			mstDetector = new MSTDetector(detectors.size(),this, g, antig, this->edge_weights,drand(rnd_seed));
+			mstDetector = new MSTDetector<Weight>(detectors.size(),this, g, antig, edge_weights,drand(rnd_seed));
 			detectors.push(mstDetector);
 		}
 		if(!S->hasTheory(edgeVar) || (S->getTheoryID(edgeVar)!= getTheoryIndex()) || ! isEdgeVar(S->getTheoryVar(edgeVar)) ){
@@ -1523,7 +1549,7 @@ public:
 				return;
 			}
 		}
-		MaxflowDetector *f = new MaxflowDetector(detectors.size(),this, g, antig,from,to,drand(rnd_seed)) ;
+		MaxflowDetector<Weight> *f = new MaxflowDetector<Weight>(detectors.size(),this,edge_weights, g, antig,from,to,drand(rnd_seed)) ;
 		flow_detectors.push(f);
 		detectors.push(f);
 		f->addFlowLit(max_flow,v);
@@ -1531,14 +1557,14 @@ public:
 	}
 	void minConnectedComponents(int min_components, Var v){
 		if(!component_detector){
-			component_detector = new  ConnectedComponentsDetector(detectors.size(),this, g, antig,drand(rnd_seed));
+			component_detector = new  ConnectedComponentsDetector<Weight>(detectors.size(),this, g, antig,drand(rnd_seed));
 			detectors.push(component_detector);
 		}
 		component_detector->addConnectedComponentsLit(v,min_components);
 	}
 	void detectCycle(bool directed, Var v){
 		if(!cycle_detector){
-			cycle_detector = new  CycleDetector(detectors.size(),this, g, antig,true,drand(rnd_seed));
+			cycle_detector = new  CycleDetector<Weight>(detectors.size(),this, g, antig,true,drand(rnd_seed));
 			detectors.push(cycle_detector);
 		}
 		cycle_detector->addCycleDetectorLit(directed,v);
@@ -1548,14 +1574,14 @@ public:
 	void addSteinerTree(const vec<std::pair<int, Var> > & terminals, int steinerTreeID){
 		steiner_detectors.growTo(steinerTreeID+1);
 		assert(!steiner_detectors[steinerTreeID]);
-		steiner_detectors[steinerTreeID]= new SteinerDetector(detectors.size(),this, g, antig,drand(rnd_seed));
+		steiner_detectors[steinerTreeID]= new SteinerDetector<Weight>(detectors.size(),this,edge_weights, g, antig,drand(rnd_seed));
 		detectors.push(steiner_detectors[steinerTreeID]);
 		for(int i =0;i<terminals.size();i++){
 			steiner_detectors[steinerTreeID]->addTerminalNode(terminals[i].first,terminals[i].second);
 		}
 	}
 
-	void addSteinerWeightConstraint(int steinerTreeID, int weight, Var outerVar){
+	void addSteinerWeightConstraint(int steinerTreeID, Weight weight, Var outerVar){
 		if(steinerTreeID >= steiner_detectors.size()){
 			fprintf(stderr,"invalid steinerTreeID %d\n", steinerTreeID);
 			exit(1);
@@ -1734,6 +1760,7 @@ public:
 											printf("\n");
 
 										int v =var( reach_detectors[r]->reach_lits[n]);
+										if(v>=0){
 		#if not defined(__MINGW32__)
 										if (isatty(fileno(stdout)))
 		#else
@@ -1753,7 +1780,10 @@ public:
 											}
 
 											lasty=y;
+										}else{
+											printf("  ");
 										}
+									}
 										printf("\n");
 									}
 
@@ -1791,7 +1821,13 @@ public:
 															lasty=y;
 														}
 														printf("\n");
+
+
+														distance_detectors[r]->printSolution();
+
 													}
+
+
 									}
 
 							{
@@ -1813,7 +1849,7 @@ public:
 										int y = (n )/width;
 										if(y > lasty)
 											printf("\n");
-										int total_flow = 0;
+										Weight total_flow = 0;
 										for(int e = 0;e<g.edges();e++){
 											if(g.getEdge(e).to==n){
 												total_flow+=flow_detectors[r]->positive_detector->getEdgeFlow(e);
@@ -1821,7 +1857,8 @@ public:
 											}
 										}
 
-										printf("%*d ",maxw,total_flow);
+										//printf("%*d ",maxw,total_flow);
+										std::cout<<total_flow<<" ";
 											lasty=y;
 										}
 										printf("\n");
@@ -1835,7 +1872,7 @@ public:
 												int total_flow = 0;
 												for(int e = 0;e<g.edges();e++){
 													if(g.getEdge(e).to==n){
-														int flow = flow_detectors[r]->positive_detector->getEdgeFlow(e);
+														Weight flow = flow_detectors[r]->positive_detector->getEdgeFlow(e);
 														if(flow>0){
 															printf("flow (%d,%d) %d to %d\n",x,y, g.getEdge(e).from,g.getEdge(e).to);
 														}
@@ -1849,9 +1886,10 @@ public:
 								}
 							}
 
-								if(mstDetector){
-										int min_weight = mstDetector->positive_reach_detector->weight();
-										printf("Min Spanning Tree Weight: %d\n",min_weight);
+							/*	if(mstDetector){
+										Weight min_weight = mstDetector->positive_reach_detector->weight();
+										//printf("Min Spanning Tree Weight: %d\n",min_weight);
+										std::cout<<"Min Spanning Tree Weight: " << min_weight <<"\n";
 										int width = sqrt(nNodes());
 										if(opt_width>0){
 												width=opt_width;
@@ -1907,7 +1945,7 @@ public:
 											}
 											printf("\n");
 										}
-
+*/
 								if(component_detector){
 									int numComponents = component_detector->positive_component_detector->numComponents();
 									printf("Number of connected components is: %d\n",numComponents);

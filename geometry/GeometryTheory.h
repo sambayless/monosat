@@ -390,6 +390,7 @@ public:
 
 	void dbg_sync(){
 #ifndef NDEBUG
+		return;
 		int sz = vars.size();
 		for(int i = 0;i<vars.size();i++){
 			Var v = vars[i].solverVar;
@@ -557,6 +558,7 @@ public:
 
 	bool dbg_graphsUpToDate(){
 #ifdef DEBUG_GRAPH
+		return true;
 		for(int i = 0;i<points.size();i++){
 			if(points[i].var<0)
 				continue;
@@ -606,7 +608,11 @@ public:
 		}
 
 	}
-
+	void printSolution(){
+		for (GeometryDetector* d:detectors){
+			d->printSolution();
+		}
+	}
 	void enqueueTheory(Lit l){
 		Var v = var(l);
 		assert(S->value(toSolver(l))==l_True);
@@ -627,11 +633,11 @@ public:
 
 
 #ifndef NDEBUG
-		{
+		/*{
 			for(int i = 0;i<trail.size();i++){
 				assert(trail[i].var !=v);
 			}
-		}
+		}*/
 #endif
 /*
 #ifdef RECORD
@@ -753,9 +759,9 @@ public:
 		}
 
 #ifndef NDEBUG
-		for(int i = 0;i<detectors.size();i++){
+		/*for(int i = 0;i<detectors.size();i++){
 			assert(detectors[i]->checkSatisfied());
-		}
+		}*/
 #endif
 		dbg_full_sync();
 
@@ -971,9 +977,6 @@ public:
 			return;
 	}
 
-	void printSolution(){
-
-	}
 
 	void convexHullArea(int pointSet,T areaGreaterThan, Var outerVar){
 		if(convexHullDetectors.size()<nPointSets())

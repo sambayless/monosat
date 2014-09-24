@@ -13,15 +13,13 @@
 namespace dgl{
 
 
-
+template<typename Weight=int>
 class SteinerTree{
 public:
 
 	struct NullStatus{
-		void setMinimumSteinerTree(int min_weight){
 
-		}
-		void setMinimumSteinerTree(double min_weight){
+		void setMinimumSteinerTree(Weight min_weight){
 
 			}
 
@@ -39,11 +37,13 @@ public:
 	virtual void update( )=0;
 
 	//Total weight of the steiner tree (or infinite, if the graph is disconnected)
-	virtual int weight()=0;
+	virtual Weight& weight()=0;
 
 	virtual bool disconnected()=0;
 
 	virtual void getSteinerTree(std::vector<int> & edges)=0;
 };
+template<typename Weight>
+typename SteinerTree<Weight>::NullStatus  SteinerTree<Weight>::nullStatus;
 };
 #endif /* MINIMUMSPANNINGTREE_H_ */

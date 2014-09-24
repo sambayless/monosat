@@ -15,37 +15,41 @@
 #include "dgl/Dinics.h"
 #include "dgl/DinicsLinkCut.h"
 using namespace Minisat;
-MaxflowDetector::MaxflowDetector(int _detectorID, GraphTheorySolver * _outer,  DynamicGraph &_g,DynamicGraph &_antig, int from, int _target,double seed):
-Detector(_detectorID),outer(_outer),over_graph(_g),g(_g),antig(_antig),source(from),target(_target),rnd_seed(seed),positive_detector(NULL),negative_detector(NULL){
+
+
+
+template<typename Weight>
+MaxflowDetector<Weight>::MaxflowDetector(int _detectorID, GraphTheorySolver<Weight> * _outer,std::vector<Weight> & capacities,  DynamicGraph &_g,DynamicGraph &_antig, int from, int _target,double seed):
+Detector(_detectorID),outer(_outer),capacities(capacities),over_graph(_g),g(_g),antig(_antig),source(from),target(_target),rnd_seed(seed),positive_detector(NULL),negative_detector(NULL){
 	if(mincutalg==MinCutAlg::ALG_EDKARP_DYN){
 
-		positive_detector = new EdmondsKarpDynamic<std::vector<int>>(_g,g.getWeights());
-		negative_detector = new EdmondsKarpDynamic<std::vector<int>>(_antig,_antig.getWeights());
-		positive_conflict_detector =new EdmondsKarpAdj<std::vector<int>>(_g,g.getWeights());
-		negative_conflict_detector = new EdmondsKarpAdj<std::vector<int>>(_antig,antig.getWeights());
+		positive_detector = new EdmondsKarpDynamic<std::vector<Weight>,Weight>(_g,capacities);
+		negative_detector = new EdmondsKarpDynamic<std::vector<Weight>,Weight>(_antig,capacities);
+		positive_conflict_detector =new EdmondsKarpAdj<std::vector<Weight>,Weight>(_g,capacities);
+		negative_conflict_detector = new EdmondsKarpAdj<std::vector<Weight>,Weight>(_antig,capacities);
 	}else if (mincutalg==MinCutAlg::ALG_EDKARP_ADJ){
-		positive_detector = new EdmondsKarpAdj<std::vector<int>>(_g,g.getWeights());
-		negative_detector = new EdmondsKarpAdj<std::vector<int>>(_antig,antig.getWeights());
+		positive_detector = new EdmondsKarpAdj<std::vector<Weight>,Weight>(_g,capacities);
+		negative_detector = new EdmondsKarpAdj<std::vector<Weight>,Weight>(_antig,capacities);
 		positive_conflict_detector = positive_detector;
 		negative_conflict_detector = negative_detector;
-	}else if (mincutalg==MinCutAlg::ALG_IBFS){
+	}/*else if (mincutalg==MinCutAlg::ALG_IBFS){
 		positive_detector = new IBFS(_g);
 		negative_detector = new IBFS(_antig);
-		positive_conflict_detector =new EdmondsKarpAdj<std::vector<int>>(_g,g.getWeights());
-		negative_conflict_detector = new EdmondsKarpAdj<std::vector<int>>(_antig,antig.getWeights());
-	}else if (mincutalg==MinCutAlg::ALG_DINITZ){
-		positive_detector = new Dinitz<std::vector<int>>(_g,g.getWeights());
-		negative_detector = new Dinitz<std::vector<int>>(_antig,antig.getWeights());
-		positive_conflict_detector =new EdmondsKarpAdj<std::vector<int>>(_g,g.getWeights());
-		negative_conflict_detector = new EdmondsKarpAdj<std::vector<int>>(_antig,antig.getWeights());
-	}else if (mincutalg==MinCutAlg::ALG_DINITZ_LINKCUT){
-		positive_detector = new DinitzLinkCut<std::vector<int>>(_g,g.getWeights());
-		negative_detector = new DinitzLinkCut<std::vector<int>>(_antig,antig.getWeights());
-		positive_conflict_detector =new EdmondsKarpAdj<std::vector<int>>(_g,g.getWeights());
-		negative_conflict_detector = new EdmondsKarpAdj<std::vector<int>>(_antig,antig.getWeights());
-	}else{
-		positive_detector = new EdmondsKarpAdj<std::vector<int>>(_g,g.getWeights());
-		negative_detector = new EdmondsKarpAdj<std::vector<int>>(_antig,antig.getWeights());
+		positive_conflict_detector =new EdmondsKarpAdj<std::vector<Weight>,Weight>(_g,capacities);
+		negative_conflict_detector = new EdmondsKarpAdj<std::vector<Weight>,Weight>(_antig,capacities);
+	}*/else if (mincutalg==MinCutAlg::ALG_DINITZ){
+		positive_detector = new Dinitz<std::vector<Weight>,Weight>(_g,capacities);
+		negative_detector = new Dinitz<std::vector<Weight>,Weight>(_antig,capacities);
+		positive_conflict_detector =new EdmondsKarpAdj<std::vector<Weight>,Weight>(_g,capacities);
+		negative_conflict_detector = new EdmondsKarpAdj<std::vector<Weight>,Weight>(_antig,capacities);
+	}/*else if (mincutalg==MinCutAlg::ALG_DINITZ_LINKCUT){
+		positive_detector = new DinitzLinkCut<std::vector<int>>(_g,capacities);
+		negative_detector = new DinitzLinkCut<std::vector<int>>(_antig,capacities);
+		positive_conflict_detector =new EdmondsKarpAdj<std::vector<Weight>,Weight>(_g,capacities);
+		negative_conflict_detector = new EdmondsKarpAdj<std::vector<Weight>,Weight>(_antig,capacities);
+	}*/else{
+		positive_detector = new EdmondsKarpAdj<std::vector<Weight>,Weight>(_g,capacities);
+		negative_detector = new EdmondsKarpAdj<std::vector<Weight>,Weight>(_antig,capacities);
 		positive_conflict_detector = positive_detector;
 		negative_conflict_detector = negative_detector;
 	}
@@ -57,8 +61,8 @@ Detector(_detectorID),outer(_outer),over_graph(_g),g(_g),antig(_antig),source(fr
 }
 
 
-
-void MaxflowDetector::addFlowLit(int maxflow, Var outer_reach_var){
+template<typename Weight>
+void MaxflowDetector<Weight>::addFlowLit(Weight maxflow, Var outer_reach_var){
 	g.invalidate();
 	antig.invalidate();
 	Var reach_var = outer->newVar(outer_reach_var,getID());
@@ -96,12 +100,12 @@ void MaxflowDetector::addFlowLit(int maxflow, Var outer_reach_var){
 
 
 
-
-void MaxflowDetector::buildMaxFlowTooHighReason(int flow,vec<Lit> & conflict){
+template<typename Weight>
+void MaxflowDetector<Weight>::buildMaxFlowTooHighReason(Weight flow,vec<Lit> & conflict){
 			//drawFull();
 			double starttime = rtime(2);
 			tmp_cut.clear();
-			int actual_flow = positive_conflict_detector->maxFlow(source, target);
+			Weight actual_flow = positive_conflict_detector->maxFlow(source, target);
 
 			//just collect the set of edges which have non-zero flow, and return them
 			//(Or, I could return a cut, probably)
@@ -138,7 +142,8 @@ void MaxflowDetector::buildMaxFlowTooHighReason(int flow,vec<Lit> & conflict){
 			double elapsed = rtime(2)-starttime;
 			outer->pathtime+=elapsed;
 		}
-		void MaxflowDetector::buildMaxFlowTooLowReason(int maxflow,vec<Lit> & conflict){
+template<typename Weight>
+		void MaxflowDetector<Weight>::buildMaxFlowTooLowReason(Weight maxflow,vec<Lit> & conflict){
 			static int it = 0;
 			++it;
 			double starttime = rtime(2);
@@ -152,7 +157,7 @@ void MaxflowDetector::buildMaxFlowTooHighReason(int flow,vec<Lit> & conflict){
 			seen.clear();
 			seen.growTo(outer->nNodes());
 			visit.clear();
-			int foundflow = negative_conflict_detector->maxFlow(source,target);
+			Weight foundflow = negative_conflict_detector->maxFlow(source,target);
 			visit.push(target);
 			for(int k = 0;k<visit.size();k++){
 				int u = visit[k];
@@ -168,7 +173,7 @@ void MaxflowDetector::buildMaxFlowTooHighReason(int flow,vec<Lit> & conflict){
 						if(outer->value(v)!=l_False){
 							//this is an enabled edge in the overapprox
 
-							int residual_capacity = negative_conflict_detector->getEdgeResidualCapacity(edgeid);
+							Weight residual_capacity = negative_conflict_detector->getEdgeResidualCapacity(edgeid);
 							if(residual_capacity>0){
 								seen[p]=true;
 								visit.push(p);
@@ -191,7 +196,7 @@ void MaxflowDetector::buildMaxFlowTooHighReason(int flow,vec<Lit> & conflict){
 						//assert( g.incoming(u,i).to==u);
 						if(outer->value(v)!=l_False){
 							//this is the residual capacity of the backwards edge in the residual graph - which is equal to the forwards flow on this edge!
-							int residual_capacity = negative_conflict_detector->getEdgeFlow(edgeid);
+							Weight residual_capacity = negative_conflict_detector->getEdgeFlow(edgeid);
 							if(residual_capacity ){
 								seen[p]=true;
 								visit.push(p);
@@ -208,7 +213,7 @@ void MaxflowDetector::buildMaxFlowTooHighReason(int flow,vec<Lit> & conflict){
 
 #ifdef RECORD
 			if(negative_detector!=negative_conflict_detector){
-				int foundflow2 = negative_detector->maxFlow(source,target);
+				Weight foundflow2 = negative_detector->maxFlow(source,target);
 				assert(foundflow==foundflow2);
 			}
 			std::sort(conflict.begin(),conflict.end());
@@ -237,8 +242,8 @@ void MaxflowDetector::buildMaxFlowTooHighReason(int flow,vec<Lit> & conflict){
 
 		}
 
-
-		void MaxflowDetector::buildReason(Lit p, vec<Lit> & reason, CRef marker){
+template<typename Weight>
+		void MaxflowDetector<Weight>::buildReason(Lit p, vec<Lit> & reason, CRef marker){
 
 
 				if(marker==reach_marker){
@@ -260,7 +265,7 @@ void MaxflowDetector::buildMaxFlowTooHighReason(int flow,vec<Lit> & conflict){
 						u=w;
 					}*/
 					Var v = var(p);
-					int flow = flow_lits[reach_lit_map[v-first_reach_var]].max_flow;
+					Weight flow = flow_lits[reach_lit_map[v-first_reach_var]].max_flow;
 					//int u =getNode(v);
 					buildMaxFlowTooHighReason(flow,reason);
 
@@ -278,7 +283,7 @@ void MaxflowDetector::buildMaxFlowTooHighReason(int flow,vec<Lit> & conflict){
 
 
 					Var v = var(p);
-					int flow = flow_lits[reach_lit_map[v-first_reach_var]].max_flow;
+					Weight flow = flow_lits[reach_lit_map[v-first_reach_var]].max_flow;
 					//int t = getNode(v); // v- var(reach_lits[d][0]);
 					buildMaxFlowTooLowReason(flow,reason);
 
@@ -286,8 +291,8 @@ void MaxflowDetector::buildMaxFlowTooHighReason(int flow,vec<Lit> & conflict){
 					assert(false);
 				}
 		}
-
-		bool MaxflowDetector::propagate(vec<Lit> & conflict){
+		template<typename Weight>
+		bool MaxflowDetector<Weight>::propagate(vec<Lit> & conflict){
 			if(flow_lits.size()==0){
 				return true;
 			}
@@ -306,8 +311,8 @@ void MaxflowDetector::buildMaxFlowTooHighReason(int flow,vec<Lit> & conflict){
 				}
 #endif
 
-			long over_maxflow=-1;
-			long under_maxflow=-1;
+			Weight over_maxflow=-1;
+			Weight under_maxflow=-1;
 
 			if(positive_detector && (!opt_detect_pure_theory_lits || unassigned_positives>0)){
 				double startdreachtime = rtime(2);
@@ -333,7 +338,7 @@ void MaxflowDetector::buildMaxFlowTooHighReason(int flow,vec<Lit> & conflict){
 
 				DistLit f = flow_lits[j];
 				Lit l = f.l;
-				int maxflow = f.max_flow;
+				Weight& maxflow = f.max_flow;
 				//int u = getNode(var(l));
 
 
@@ -371,14 +376,14 @@ void MaxflowDetector::buildMaxFlowTooHighReason(int flow,vec<Lit> & conflict){
 
 			return true;
 		}
-
-bool MaxflowDetector::checkSatisfied(){
-	EdmondsKarpAdj<std::vector<int>> positiveCheck(g,g.weights);
-	EdmondsKarpAdj<std::vector<int>> negativeCheck(antig,antig.weights);
+		template<typename Weight>
+bool MaxflowDetector<Weight>::checkSatisfied(){
+	EdmondsKarpAdj<std::vector<Weight>,Weight> positiveCheck(g,capacities);
+	EdmondsKarpAdj<std::vector<Weight>,Weight> negativeCheck(antig,capacities);
 		for(int j = 0;j< flow_lits.size();j++){
 
 				Lit l = flow_lits[j].l;
-				int dist = flow_lits[j].max_flow;
+				Weight dist = flow_lits[j].max_flow;
 
 				if(l!=lit_Undef){
 					//int node =getNode(var(l));
@@ -404,11 +409,12 @@ bool MaxflowDetector::checkSatisfied(){
 		}
 	return true;
 }
-Lit MaxflowDetector::decide(){
+template<typename Weight>
+Lit MaxflowDetector<Weight>::decide(){
 	/*MaxflowDetector *r =this;
-	Distance<MaxflowDetector::DetectorStatus> * over = (Distance<MaxflowDetector::DetectorStatus>*) r->negative_detector;
+	Distance<MaxflowDetector<Weight>::DetectorStatus> * over = (Distance<MaxflowDetector<Weight>::DetectorStatus>*) r->negative_detector;
 
-	Distance<MaxflowDetector::DetectorStatus> * under = (Distance<MaxflowDetector::DetectorStatus>*) r->positive_detector;
+	Distance<MaxflowDetector<Weight>::DetectorStatus> * under = (Distance<MaxflowDetector<Weight>::DetectorStatus>*) r->positive_detector;
 
 	//we can probably also do something similar, but with cuts, for nodes that are decided to be unreachable.
 
@@ -513,3 +519,7 @@ Lit MaxflowDetector::decide(){
 };
 
 
+template class MaxflowDetector<int>;
+template class MaxflowDetector<double>;
+#include <gmpxx.h>
+template class MaxflowDetector<mpq_class>;

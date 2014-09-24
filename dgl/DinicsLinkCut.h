@@ -12,7 +12,7 @@
 
 namespace dgl{
 template< class Capacity>
-class DinitzLinkCut:public MaxFlow{
+class DinitzLinkCut:public MaxFlow<int>{
 
 public:
 
@@ -170,7 +170,7 @@ public:
    							s="blue";
    						else if (value(e.v)==l_False)
    							s="red";*/
-   						printf("n%d -> n%d [label=\"%d: %d/%d\",color=\"%s\"]\n", e.from,e.to, i, F[i],g.weights[i] , s);
+   						//printf("n%d -> n%d [label=\"%d: %d/%d\",color=\"%s\"]\n", e.from,e.to, i, F[i],g.weights[i] , s);
        				}
        			}
 

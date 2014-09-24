@@ -8,8 +8,8 @@
 #ifndef REACHDETECTOR_H_
 #define REACHDETECTOR_H_
 #include "utils/System.h"
-
-#include "Graph.h"
+#include "GraphTheoryTypes.h"
+#include "dgl/graph/DynamicGraph.h"
 #include "dgl/Reach.h"
 #include "dgl/Dijkstra.h"
 #include "dgl/BFS.h"
@@ -28,10 +28,12 @@
 #include "Detector.h"
 using namespace dgl;
 namespace Minisat{
+template<typename Weight>
 class GraphTheorySolver;
+template<typename Weight>
 class ReachDetector:public Detector{
 public:
-		GraphTheorySolver * outer;
+		GraphTheorySolver<Weight> * outer;
 		 DynamicGraph &g;
 		 DynamicGraph &antig;
 		 DynamicGraph cutgraph;
@@ -116,19 +118,19 @@ public:
 		ReachStatus *positiveReachStatus;
 		ReachStatus *negativeReachStatus;
 
-		WeightedDijkstra<vec<double>> * rnd_path;
-		vec<double> rnd_weight;
-		struct OptimalWeightEdgeStatus{
+		WeightedDijkstra<double> * rnd_path;
+		std::vector<double> rnd_weight;
+		/*struct OptimalWeightEdgeStatus{
 			ReachDetector & detector;
 			int operator [] (int edge) const ;
 			int size()const;
 			OptimalWeightEdgeStatus(ReachDetector & _outer):detector(_outer){}
 
 		};
-		Reach * chokepoint_detector;
-		OptimalWeightEdgeStatus opt_weight;
-		WeightedDijkstra<OptimalWeightEdgeStatus> * opt_path;
 
+		OptimalWeightEdgeStatus opt_weight;
+		WeightedDijkstra<OptimalWeightEdgeStatus> * opt_path;*/
+		Reach * chokepoint_detector;
 
 		struct ChokepointStatus{
 			ReachDetector & detector;
@@ -161,12 +163,13 @@ public:
 		void buildForcedEdgeReason(int reach_node, int forced_edge_id,vec<Lit> & conflict);
 		void buildReason(Lit p, vec<Lit> & reason, CRef marker);
 		bool checkSatisfied();
+		void printSolution();
 		void addLit(int from, int to, Var reach_var);
 		Lit decide();
 		void preprocess();
 		void dbg_sync_reachability();
 
-		ReachDetector(int _detectorID, GraphTheorySolver * _outer, DynamicGraph &_g, DynamicGraph &_antig, int _source,double seed=1);//:Detector(_detectorID),outer(_outer),within(-1),source(_source),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL),chokepoint_status(*this),chokepoint(chokepoint_status, _antig,source){}
+		ReachDetector(int _detectorID, GraphTheorySolver<Weight> * _outer, DynamicGraph &_g, DynamicGraph &_antig, int _source,double seed=1);//:Detector(_detectorID),outer(_outer),within(-1),source(_source),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL),chokepoint_status(*this),chokepoint(chokepoint_status, _antig,source){}
 		virtual ~ReachDetector(){
 
 		}

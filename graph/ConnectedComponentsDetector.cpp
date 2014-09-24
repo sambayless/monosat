@@ -13,16 +13,17 @@
 #include "dgl/Reach.h"
 #include <limits>
 using namespace Minisat;
-ConnectedComponentsDetector::ConnectedComponentsDetector(int _detectorID, GraphTheorySolver * _outer,  DynamicGraph &_g,DynamicGraph &_antig,double seed):
+template<typename Weight>
+ConnectedComponentsDetector<Weight>::ConnectedComponentsDetector(int _detectorID, GraphTheorySolver<Weight> * _outer,  DynamicGraph &_g,DynamicGraph &_antig,double seed):
 Detector(_detectorID),outer(_outer),g(_g),antig(_antig),rnd_seed(seed),positive_component_detector(NULL),negative_component_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL){
 
 
 
-		positiveReachStatus = new ConnectedComponentsDetector::ConnectedComponentsStatus(*this,true);
-		negativeReachStatus = new ConnectedComponentsDetector::ConnectedComponentsStatus(*this,false);
+		positiveReachStatus = new ConnectedComponentsDetector<Weight>::ConnectedComponentsStatus(*this,true);
+		negativeReachStatus = new ConnectedComponentsDetector<Weight>::ConnectedComponentsStatus(*this,false);
 		//Note: these are _intentionalyl_ swapped
-		negative_component_detector = new DisjointSetsConnectedComponents<ConnectedComponentsDetector::ConnectedComponentsStatus>(_g,*(negativeReachStatus),1);
-		positive_component_detector = new DisjointSetsConnectedComponents<ConnectedComponentsDetector::ConnectedComponentsStatus>(_antig,*(positiveReachStatus),1);
+		negative_component_detector = new DisjointSetsConnectedComponents<ConnectedComponentsDetector<Weight>::ConnectedComponentsStatus>(_g,*(negativeReachStatus),1);
+		positive_component_detector = new DisjointSetsConnectedComponents<ConnectedComponentsDetector<Weight>::ConnectedComponentsStatus>(_antig,*(positiveReachStatus),1);
 
 		components_low_marker=outer->newReasonMarker(getID());
 		components_high_marker=outer->newReasonMarker(getID());
@@ -31,7 +32,8 @@ Detector(_detectorID),outer(_outer),g(_g),antig(_antig),rnd_seed(seed),positive_
 		not_connected_marker =outer->newReasonMarker(getID());
 
 }
-Lit ConnectedComponentsDetector::getConnectLit(int u, int v){
+template<typename Weight>
+Lit ConnectedComponentsDetector<Weight>::getConnectLit(int u, int v){
 		if(reachLits.size()>u && reachLits[u].size()>v && reachLits[u][v]!=lit_Undef){
 			return reachLits[u][v];
 		}
@@ -47,8 +49,8 @@ Lit ConnectedComponentsDetector::getConnectLit(int u, int v){
 		reach_map.insert(connect_var, {u,v});
 		return reachLits[u][v];
 	}
-
-void ConnectedComponentsDetector::addConnectedLit(Var outer_reach_var,int node1, int node2){
+template<typename Weight>
+void ConnectedComponentsDetector<Weight>::addConnectedLit(Var outer_reach_var,int node1, int node2){
 	g.invalidate();
 	antig.invalidate();
 	if(reachLits.size()<g.nodes()){
@@ -71,8 +73,8 @@ void ConnectedComponentsDetector::addConnectedLit(Var outer_reach_var,int node1,
 	}
 	assert(reachLits[node1][node2]==reachLits[node2][node1]);
 }
-
-void ConnectedComponentsDetector::addConnectedComponentsLit(Var outer_weight_var,int min_components){
+template<typename Weight>
+void ConnectedComponentsDetector<Weight>::addConnectedComponentsLit(Var outer_weight_var,int min_components){
 
 	g.invalidate();
 	antig.invalidate();
@@ -111,14 +113,15 @@ void ConnectedComponentsDetector::addConnectedComponentsLit(Var outer_weight_var
 
 
 
-/*void ConnectedComponentsDetector::ConnectedComponentsStatus::setConnected(int edgeid, bool in_tree){
+/*void ConnectedComponentsDetector<Weight>::ConnectedComponentsStatus::setConnected(int edgeid, bool in_tree){
 	if(edgeid<detector.tree_edge_lits.size()){
 		Lit l = detector.tree_edge_lits[edgeid].l;
 		if(l!=lit_Undef)
 			detector.changed_edges.push({in_tree? l:~l,edgeid});
 	}
 }*/
-void ConnectedComponentsDetector::ConnectedComponentsStatus::setConnected(int u, int v, bool connected){
+template<typename Weight>
+void ConnectedComponentsDetector<Weight>::ConnectedComponentsStatus::setConnected(int u, int v, bool connected){
 	if(u>v){
 		std::swap(u,v);
 	}
@@ -133,8 +136,8 @@ void ConnectedComponentsDetector::ConnectedComponentsStatus::setConnected(int u,
 			detector.changed.push({connected? l:~l,u,v});
 	}
 }
-
-void ConnectedComponentsDetector::ConnectedComponentsStatus::setComponents(int components){
+template<typename Weight>
+void ConnectedComponentsDetector<Weight>::ConnectedComponentsStatus::setComponents(int components){
 
 	for(int i = 0;i<detector.connected_components_lits.size();i++){
 		int min_components =  detector.connected_components_lits[i].min_components;
@@ -161,8 +164,8 @@ void ConnectedComponentsDetector::ConnectedComponentsStatus::setComponents(int c
 
 
 
-
-		void ConnectedComponentsDetector::buildMinComponentsTooLowReason(int min_components,vec<Lit> & conflict){
+template<typename Weight>
+		void ConnectedComponentsDetector<Weight>::buildMinComponentsTooLowReason(int min_components,vec<Lit> & conflict){
 
 			double starttime = rtime(2);
 
@@ -200,8 +203,8 @@ void ConnectedComponentsDetector::ConnectedComponentsStatus::setComponents(int c
 			double elapsed = rtime(2)-starttime;
 			outer->pathtime+=elapsed;
 		}
-
-		void ConnectedComponentsDetector::buildMinComponentsTooHighReason(int min_components,vec<Lit> & conflict){
+template<typename Weight>
+		void ConnectedComponentsDetector<Weight>::buildMinComponentsTooHighReason(int min_components,vec<Lit> & conflict){
 			static int it = 0;
 						++it;
 
@@ -290,12 +293,13 @@ void ConnectedComponentsDetector::ConnectedComponentsStatus::setComponents(int c
 
 
 		}
-		void ConnectedComponentsDetector::buildNodesConnectedReason(int source, int node, vec<Lit> & conflict){
+template<typename Weight>
+		void ConnectedComponentsDetector<Weight>::buildNodesConnectedReason(int source, int node, vec<Lit> & conflict){
 						if(source>node){
 							std::swap(source,node);
 						}
 
-						Distance<Reach::NullStatus,true> d(source,g);
+						UnweightedBFS<Reach::NullStatus,true> d(source,g);
 						double starttime = rtime(2);
 						d.update();
 
@@ -343,8 +347,8 @@ void ConnectedComponentsDetector::ConnectedComponentsStatus::setComponents(int c
 						double elapsed = rtime(2)-starttime;
 						outer->pathtime+=elapsed;
 			}
-
-			void ConnectedComponentsDetector::buildNodesNotConnectedReason(int source, int node, vec<Lit> & conflict){
+template<typename Weight>
+			void ConnectedComponentsDetector<Weight>::buildNodesNotConnectedReason(int source, int node, vec<Lit> & conflict){
 					if(source>node){
 						std::swap(source,node);
 					}
@@ -382,7 +386,7 @@ void ConnectedComponentsDetector::ConnectedComponentsStatus::setComponents(int c
 						int f =outer->mc->minCut(source,node,outer->cut);
 						assert(f<0xF0F0F0); assert(f==outer->cut.size());//because edges are only ever infinity or 1
 						for(int i = 0;i<outer->cut.size();i++){
-							MaxFlow::Edge e = outer->cut[i];
+							MaxFlowEdge e = outer->cut[i];
 
 							Lit l = mkLit( outer->edges[e.u][e.v].v,false);
 							assert(outer->value(l)==l_False);
@@ -455,8 +459,8 @@ void ConnectedComponentsDetector::ConnectedComponentsStatus::setComponents(int c
 
 					}
 			}
-
-		void ConnectedComponentsDetector::buildReason(Lit p, vec<Lit> & reason, CRef marker){
+template<typename Weight>
+		void ConnectedComponentsDetector<Weight>::buildReason(Lit p, vec<Lit> & reason, CRef marker){
 
 				if(marker==components_low_marker){
 					reason.push(p);
@@ -514,8 +518,8 @@ void ConnectedComponentsDetector::ConnectedComponentsStatus::setComponents(int c
 					assert(false);
 				}
 		}
-
-		bool ConnectedComponentsDetector::propagate(vec<Lit> & conflict){
+template<typename Weight>
+		bool ConnectedComponentsDetector<Weight>::propagate(vec<Lit> & conflict){
 
 
 
@@ -598,8 +602,8 @@ void ConnectedComponentsDetector::ConnectedComponentsStatus::setComponents(int c
 		}
 			return true;
 		}
-
-bool ConnectedComponentsDetector::checkSatisfied(){
+template<typename Weight>
+bool ConnectedComponentsDetector<Weight>::checkSatisfied(){
 	int numConnected = positive_component_detector->numComponents();
 	int numConnectedOver = negative_component_detector->numComponents();
 					for(int k = 0;k<connected_components_lits.size();k++){
@@ -630,11 +634,12 @@ bool ConnectedComponentsDetector::checkSatisfied(){
 
 	return true;
 }
-Lit ConnectedComponentsDetector::decide(){
+template<typename Weight>
+Lit ConnectedComponentsDetector<Weight>::decide(){
 	/*ConnectedComponentsDetector *r =this;
-	MinimumSpanningTree<ConnectedComponentsDetector::ConnectedComponentsStatus> * over = (MinimumSpanningTree<ConnectedComponentsDetector::ConnectedComponentsStatus>*) r->negative_reach_detector;
+	MinimumSpanningTree<ConnectedComponentsDetector<Weight>::ConnectedComponentsStatus> * over = (MinimumSpanningTree<ConnectedComponentsDetector<Weight>::ConnectedComponentsStatus>*) r->negative_reach_detector;
 
-	MinimumSpanningTree<ConnectedComponentsDetector::ConnectedComponentsStatus> * under = (MinimumSpanningTree<ConnectedComponentsDetector::ConnectedComponentsStatus>*) r->positive_reach_detector;
+	MinimumSpanningTree<ConnectedComponentsDetector<Weight>::ConnectedComponentsStatus> * under = (MinimumSpanningTree<ConnectedComponentsDetector<Weight>::ConnectedComponentsStatus>*) r->positive_reach_detector;
 
 	//we can probably also do something similar, but with cuts, for nodes that are decided to be unreachable.
 
@@ -792,5 +797,8 @@ Lit ConnectedComponentsDetector::decide(){
 	}*/
 	return lit_Undef;
 };
-
+template class ConnectedComponentsDetector<int>;
+template class ConnectedComponentsDetector<double>;
+#include <gmpxx.h>
+template class ConnectedComponentsDetector<mpq_class>;
 

@@ -9,8 +9,8 @@
 #include <algorithm>
 #include "graph/DynamicGraph.h"
 namespace dgl{
-
-class EdmondsKarp:public MaxFlow{
+template<typename Weight=int>
+class EdmondsKarp:public MaxFlow<Weight>{
 public:
 
 /*
@@ -23,12 +23,12 @@ public:
         output:
             f             (Value of maximum flow)
             F             (A matrix giving a legal flow with the maximum value)*/
-    std::vector<std::vector<int> > F;//(Residual capacity from u to v is C[u,v] - F[u,v])
-    std::vector<std::vector<int> > C;
+    std::vector<std::vector<Weight> > F;//(Residual capacity from u to v is C[u,v] - F[u,v])
+    std::vector<std::vector<Weight> > C;
     std::vector<int> P;
-    std::vector<int> M;
+    std::vector<Weight> M;
 
-    int curflow;
+    Weight curflow;
 
     int last_modification;
     int last_deletion;
@@ -38,7 +38,7 @@ public:
     int last_history_clear;
 
     DynamicGraph& g;
-    int INF;
+    Weight INF;
     /*
      *            input:
                C, E, s, t, F
@@ -48,7 +48,7 @@ public:
      */
     std::vector<int> Q;
 
-    int  BreadthFirstSearch(int s, int t){
+    Weight  BreadthFirstSearch(int s, int t){
      	for(int i = 0;i<g.nodes();i++)
 			P[i]=-1;
      	P[s] = -2;
@@ -65,12 +65,13 @@ public:
 						continue;
             	   int v = g.incident(u,i).node;
                    ///(If there is available capacity, and v is not seen before in search)
-            	   int c = C[u][v];
-            	   int f = F[u][v];
+            	   Weight c = C[u][v];
+            	   Weight f = F[u][v];
 
                    if (((C[u][v] - F[u][v]) > 0) && (P[v] == -1)){
                        P[v] = u;
-                       M[v] = std::min(M[u], C[u][v] - F[u][v]);
+                       Weight b = C[u][v] - F[u][v];
+                       M[v] = std::min(M[u], b);
                        if (v != t)
                            Q.push_back(v);
                        else
@@ -83,12 +84,13 @@ public:
 						continue;
 				   int v = g.incoming(u,i).node;
 					///(If there is available capacity, and v is not seen before in search)
-				   int c = C[u][v];
-				   int f = F[u][v];
+				   Weight c = C[u][v];
+				   Weight f = F[u][v];
 
 					if (((C[u][v] - F[u][v]) > 0) && (P[v] == -1)){
 						P[v] = u;
-						M[v] = std::min(M[u], C[u][v] - F[u][v]);
+						Weight b = C[u][v] - F[u][v];
+						M[v] = std::min(M[u], b);//C[u][v] - F[u][v]);
 						if (v != t)
 							Q.push_back(v);
 						else
@@ -113,7 +115,7 @@ public:
     	last_history_clear=-1;
     	setAllEdgeCapacities(1);
     }
-    void setCapacity(int u, int w, int c){
+    void setCapacity(int u, int w, Weight c){
     	if(C.size()<g.nodes()){
     		C.resize(g.nodes());
     		for(int i = 0;i<g.nodes();i++){
@@ -122,7 +124,7 @@ public:
     	}
     	C[u][w]=c;
     }
-    void setAllEdgeCapacities(int c){
+    void setAllEdgeCapacities(Weight c){
     	for(int i = 0;i<g.nodes();i++){
     		for(int j = 0;j<g.nIncident(i);j++){
     			if(!g.edgeEnabled(g.incident(i,j).id))
@@ -131,12 +133,12 @@ public:
     		}
     	}
     }
-    int maxFlow(int s, int t){
+    Weight maxFlow(int s, int t){
     	if(last_modification>0 && g.modifications==last_modification){
 
     			return curflow;
     		}
-    	int f = 0;
+    	Weight f = 0;
     	C.resize(g.nodes());
     	F.resize(g.nodes());
     	P.resize(g.nodes());
@@ -154,7 +156,7 @@ public:
     	P[s] = -2;
     	 M[s] = INF;
         while(true){
-        	int m= BreadthFirstSearch(s,t);
+        	Weight m= BreadthFirstSearch(s,t);
 
             if (m == 0)
                 break;
@@ -179,8 +181,8 @@ public:
 		last_history_clear=g.historyclears;
         return f;
     }
-    int maxFlow(int s, int t, int max_length){
-       	int f = 0;
+    Weight maxFlow(int s, int t, int max_length){
+    	Weight f = 0;
        	C.resize(g.nodes());
        	F.resize(g.nodes());
        	P.resize(g.nodes());
@@ -221,8 +223,8 @@ public:
     std::vector<bool> seen;
     std::vector<bool> visited;
 
-    bool minCut(int s, int t, int max_length, std::vector<Edge> & cut){
-    	int f = maxFlow(s,t,max_length);
+    bool minCut(int s, int t, int max_length, std::vector<MaxFlowEdge> & cut){
+    	Weight f = maxFlow(s,t,max_length);
     	if(f>max_length){
     		return false;
     	}
@@ -244,7 +246,7 @@ public:
 				int v = g.incident(u,i).node;
 				int id = g.incident(u,i).id;
 				if(C[u][v] - F[u][v] == 0){
-					cut.push_back(Edge{u,v,id});
+					cut.push_back(MaxFlowEdge{u,v,id});
 				}else if(!seen[v]){
 					Q.push_back(v);
 					seen[v]=true;
@@ -262,28 +264,28 @@ public:
 		return true;
     }
 
-    int getEdgeFlow(int edgeid){
+    Weight getEdgeFlow(int edgeid){
     	assert(g.edgeEnabled(edgeid));
     	int u = g.all_edges[edgeid].from;
     	int v = g.all_edges[edgeid].to;
     	return F[u][v];
     }
-    int getEdgeCapacity(int id){
+    Weight getEdgeCapacity(int id){
     	assert(g.edgeEnabled(id));
     	int u = g.all_edges[id].from;
     	int v = g.all_edges[id].to;
     	return C[u][v];
        }
 
-      int getEdgeResidualCapacity(int id){
+    Weight getEdgeResidualCapacity(int id){
     	  assert(g.edgeEnabled(id));
 		int u = g.all_edges[id].from;
 		int v = g.all_edges[id].to;
 		return C[u][v]-F[u][v];
 
       }
-    int minCut(int s, int t, std::vector<Edge> & cut){
-    	int f = maxFlow(s,t);
+      Weight minCut(int s, int t, std::vector<MaxFlowEdge> & cut){
+    	Weight f = maxFlow(s,t);
     	//ok, now find the cut
     	Q.clear();
     	Q.push_back(s);
@@ -302,7 +304,7 @@ public:
     			int v = g.incident(u,i).node;
 
     			if(C[u][v] - F[u][v] == 0){
-    				cut.push_back(Edge{u,v});
+    				cut.push_back(MaxFlowEdge{u,v});
     			}else if(!seen[v]){
     				Q.push_back(v);
     				seen[v]=true;

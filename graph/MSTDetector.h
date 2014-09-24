@@ -9,7 +9,8 @@
 #define MST_DETECTOR_H_
 #include "utils/System.h"
 
-#include "Graph.h"
+#include "GraphTheoryTypes.h"
+#include "dgl/graph/DynamicGraph.h"
 #include "dgl/MinimumSpanningTree.h"
 
 #include "core/SolverTypes.h"
@@ -21,10 +22,12 @@
 
 using namespace dgl;
 namespace Minisat{
+template<typename Weight>
 class GraphTheorySolver;
+template<typename Weight=int>
 class MSTDetector:public Detector{
 public:
-		GraphTheorySolver * outer;
+		GraphTheorySolver<Weight> * outer;
 		//int within;
 		DynamicGraph & g;
 		DynamicGraph & antig;
@@ -35,20 +38,20 @@ public:
 		CRef reach_edge_marker;
 		CRef non_reach_edge_marker;
 
-		MinimumSpanningTree * positive_reach_detector;
-		MinimumSpanningTree * negative_reach_detector;
-		MinimumSpanningTree *  positive_conflict_detector;
-		MinimumSpanningTree * negative_conflict_detector;
+		MinimumSpanningTree<Weight> * positive_reach_detector;
+		MinimumSpanningTree<Weight> * negative_reach_detector;
+		MinimumSpanningTree<Weight> *  positive_conflict_detector;
+		MinimumSpanningTree<Weight> * negative_conflict_detector;
 		//Reach *  positive_path_detector;
 
 		//vec<Lit>  reach_lits;
 
-		Map<float,int> weight_lit_map;
+		//Map<float,int> weight_lit_map;
 		vec<int> force_reason;
-		vec<int> & edge_weights;
+		std::vector<Weight> & edge_weights;
 		struct MSTWeightLit{
 			Lit l;
-			int min_weight;
+			Weight min_weight;
 			MSTWeightLit():l(lit_Undef),min_weight(-1){}
 		};
 		bool checked_unique;
@@ -64,7 +67,7 @@ public:
 		Var first_reach_var;
 		struct ChangedWeight{
 			Lit l;
-			int weight;
+			Weight weight;
 		};
 		vec<ChangedWeight> changed_weights;
 
@@ -87,7 +90,7 @@ public:
 			MSTDetector & detector;
 			bool polarity;
 
-			void setMinimumSpanningTree(int weight);
+			void setMinimumSpanningTree(Weight& weight);
 			void inMinimumSpanningTree(int edgeID, bool in_tree);
 
 			MSTStatus(MSTDetector & _outer, bool _polarity):detector(_outer), polarity(_polarity){}
@@ -98,8 +101,8 @@ public:
 
 
 		bool propagate(vec<Lit> & conflict);
-		void buildMinWeightTooSmallReason(int weight,vec<Lit> & conflict);
-		void buildMinWeightTooLargeReason(int weight,vec<Lit> & conflict);
+		void buildMinWeightTooSmallReason(Weight & weight,vec<Lit> & conflict);
+		void buildMinWeightTooLargeReason(Weight & weight,vec<Lit> & conflict);
 		void buildEdgeInTreeReason(int edge,vec<Lit> & conflict);
 		void buildEdgeNotInTreeReason(int edge,vec<Lit> & conflict);
 		//void buildForcedMinWeightReason(int reach_node, int forced_edge_id,vec<Lit> & conflict);
@@ -107,9 +110,9 @@ public:
 		bool checkSatisfied();
 		Lit decide();
 		void addTreeEdgeLit(int edge_id, Var reach_var);
-		void addWeightLit(Var weight_var,int min_weight);
+		void addWeightLit(Var weight_var,Weight & min_weight);
 
-		MSTDetector(int _detectorID, GraphTheorySolver * _outer, DynamicGraph &_g, DynamicGraph &_antig, vec<int> & _edge_weights,  double seed=1);//:Detector(_detectorID),outer(_outer),within(-1),source(_source),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL){}
+		MSTDetector(int _detectorID, GraphTheorySolver<Weight> * _outer, DynamicGraph &_g, DynamicGraph &_antig, std::vector<Weight> & _edge_weights,  double seed=1);//:Detector(_detectorID),outer(_outer),within(-1),source(_source),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL){}
 		virtual ~MSTDetector(){
 
 		}
@@ -118,9 +121,12 @@ public:
 		}
 private:
 		void TarjanOLCA(int node, vec<Lit> & conflict);
-		bool walkback(int weight, int from, int to);
+		bool walkback(Weight & weight, int from, int to);
 		void TarjanOLCA_edge(int node, int edgeid,int lowest_endpoint, vec<Lit> & conflict);
-		int walkback_edge(int weight,int edgeid, int from, int to, bool &found);
+		Weight walkback_edge(Weight &weight,int edgeid, int from, int to, bool &found);
 };
 };
+
+
+
 #endif /* DistanceDetector_H_ */

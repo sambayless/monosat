@@ -1,19 +1,19 @@
 
-#ifndef DISTANCE_H_
-#define DISTANCE_H_
+#ifndef UNWEIGHTED_BFS_H_
+#define UNWEIGHTED_BFS_H_
 
 #include <vector>
 #include "alg/Heap.h"
 #include "graph/DynamicGraph.h"
 #include "core/Config.h"
 #include "Reach.h"
-
+#include "Distance.h"
 namespace dgl{
 /**
  * Detect connectivity within a number of steps in unweighted, directed graphs
  */
 template<class Status=Reach::NullStatus, bool undirected=false>
-class Distance:public Reach{
+class UnweightedBFS:public Distance<int>{
 public:
 
 
@@ -58,7 +58,7 @@ public:
 
 public:
 
-	Distance(int s,DynamicGraph & graph,  int _reportPolarity=0 ):g(graph), status(Reach::nullStatus), last_modification(-1),last_addition(-1),last_deletion(-1),history_qhead(0),last_history_clear(0),source(s),INF(0),reportPolarity(_reportPolarity){
+	UnweightedBFS(int s,DynamicGraph & graph,  int _reportPolarity=0 ):g(graph), status(Reach::nullStatus), last_modification(-1),last_addition(-1),last_deletion(-1),history_qhead(0),last_history_clear(0),source(s),INF(0),reportPolarity(_reportPolarity){
 		maxDistance=-1;
 		mod_percentage=0.2;
 		stats_full_updates=0;
@@ -71,7 +71,7 @@ public:
 		stats_fast_failed_updates=0;
 	}
 
-	Distance(int s,DynamicGraph & graph, Status & _status, int _reportPolarity=0 ):g(graph), status(_status), last_modification(-1),last_addition(-1),last_deletion(-1),history_qhead(0),last_history_clear(0),source(s),INF(0),reportPolarity(_reportPolarity){
+	UnweightedBFS(int s,DynamicGraph & graph, Status & _status, int _reportPolarity=0 ):g(graph), status(_status), last_modification(-1),last_addition(-1),last_deletion(-1),history_qhead(0),last_history_clear(0),source(s),INF(0),reportPolarity(_reportPolarity){
 		maxDistance=-1;
 		mod_percentage=0.2;
 		stats_full_updates=0;
@@ -241,7 +241,7 @@ public:
 #ifdef DEBUG_DIJKSTRA
 		if(last_modification<=0)
 			return true;
-		Dijkstra<Reach::NullStatus, undirected> d(source,g);
+		UnweightedDijkstra<Reach::NullStatus, undirected> d(source,g);
 		d.update();
 		//drawFull();
 
@@ -272,14 +272,14 @@ public:
 		return dist[t]<INF;
 	}
 
-	int distance(int t){
+	int & distance(int t){
 		if(connected(t)){
 			return dist[t];
 		}else{
 			return INF;
 		}
 	}
-	int distance_unsafe(int t){
+	int & distance_unsafe(int t){
 		if(connected_unsafe(t))
 			return dist[t];
 		else

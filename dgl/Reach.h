@@ -25,6 +25,7 @@ public:
 		void setMininumDistance(int u, bool reachable, int distance){
 
 		}
+
 	};
 	static NullStatus nullStatus;
 
@@ -40,14 +41,14 @@ public:
 	virtual bool connected_unsafe(int t)=0;
 	virtual bool connected_unchecked(int t)=0;
 	virtual bool connected( int t)=0;
-	virtual int distance( int t)=0;
-	virtual int distance_unsafe(int t)=0;
+	//virtual int distance( int t)=0;
+	//virtual int distance_unsafe(int t)=0;
 	virtual int previous( int node)=0;
 	virtual int incomingEdge( int node)=0;
 	//The maximum distance to compute up to.
-	virtual void setMaxDistance(int maxDistance){
+/*	virtual void setMaxDistance(int maxDistance){
 
-	}
+	}*/
 };
 };
 #endif /* REACH_H_ */

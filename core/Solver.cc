@@ -594,9 +594,6 @@ void Solver::analyzeFinal(Lit p, vec<Lit>& out_conflict)
 
 void Solver::uncheckedEnqueue(Lit p, CRef from)
 {
-/*	if(dimacs(p)==376042){
-		int a=1;
-	}*/
     assert(value(p) == l_Undef);
     assigns[var(p)] = lbool(!sign(p));
     vardata[var(p)] = mkVarData(from, decisionLevel());
@@ -1576,7 +1573,7 @@ lbool Solver::solve_()
 					if(!t->check_solved()){
 						fprintf(stderr,"Error! Solution doesn't satisfy theory properties!\n");
 						fflush(stderr);
-						exit(3);
+						exit(4);
 					}
 				}
 #ifdef DEBUG_SOLVER

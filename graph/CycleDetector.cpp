@@ -11,7 +11,8 @@
 #include "GraphTheory.h"
 #include <limits>
 using namespace Minisat;
-CycleDetector::CycleDetector(int _detectorID, GraphTheorySolver * _outer,  DynamicGraph &_g,DynamicGraph &_antig, bool detect_directed_cycles,double seed):
+template<typename Weight>
+CycleDetector<Weight>::CycleDetector(int _detectorID, GraphTheorySolver<Weight> * _outer,  DynamicGraph &_g,DynamicGraph &_antig, bool detect_directed_cycles,double seed):
 Detector(_detectorID),outer(_outer),g(_g),antig(_antig),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL){
 
 	undirected_cycle_lit = lit_Undef;
@@ -28,7 +29,8 @@ Detector(_detectorID),outer(_outer),g(_g),antig(_antig),rnd_seed(seed),positive_
 			 no_undirected_cycle_marker=outer->newReasonMarker(getID());
 		//forced_reach_marker=outer->newReasonMarker(getID());
 }
-void CycleDetector::addCycleDetectorLit(bool directed, Var outer_reach_var){
+template<typename Weight>
+void CycleDetector<Weight>::addCycleDetectorLit(bool directed, Var outer_reach_var){
 	Var v= outer->newVar(outer_reach_var,getID());
 	Lit l = mkLit(v,false);
 	g.invalidate();
@@ -53,8 +55,8 @@ void CycleDetector::addCycleDetectorLit(bool directed, Var outer_reach_var){
 		}
 	}
 }
-
-		void CycleDetector::buildNoUndirectedCycleReason(vec<Lit> & conflict){
+template<typename Weight>
+		void CycleDetector<Weight>::buildNoUndirectedCycleReason(vec<Lit> & conflict){
 			//its clear that we can do better than this, but its also not clear how to do so efficiently...
 			//for now, learn the trivial clause...
 			for(int i = 0;i<outer->edge_list.size();i++){
@@ -64,7 +66,8 @@ void CycleDetector::addCycleDetectorLit(bool directed, Var outer_reach_var){
 				}
 			}
 		}
-		void CycleDetector::buildNoDirectedCycleReason(vec<Lit> & conflict){
+template<typename Weight>
+		void CycleDetector<Weight>::buildNoDirectedCycleReason(vec<Lit> & conflict){
 			//its clear that we can do better than this, but its also not clear how to do so efficiently...
 			//for now, learn the trivial clause...
 			for(int i = 0;i<outer->edge_list.size();i++){
@@ -76,8 +79,8 @@ void CycleDetector::addCycleDetectorLit(bool directed, Var outer_reach_var){
 
 		}
 
-
-		void CycleDetector::buildUndirectedCycleReason(vec<Lit> & conflict){
+template<typename Weight>
+		void CycleDetector<Weight>::buildUndirectedCycleReason(vec<Lit> & conflict){
 			assert(positive_reach_detector->hasUndirectedCycle());
 
 			std::vector<int> & cycle = positive_reach_detector->getUndirectedCycle();
@@ -89,7 +92,8 @@ void CycleDetector::addCycleDetectorLit(bool directed, Var outer_reach_var){
 			}
 
 		}
-		void CycleDetector::buildDirectedCycleReason(vec<Lit> & conflict){
+template<typename Weight>
+		void CycleDetector<Weight>::buildDirectedCycleReason(vec<Lit> & conflict){
 			assert(positive_reach_detector->hasDirectedCycle());
 
 			std::vector<int> & cycle= positive_reach_detector->getDirectedCycle();
@@ -101,8 +105,8 @@ void CycleDetector::addCycleDetectorLit(bool directed, Var outer_reach_var){
 			}
 
 		}
-
-		void CycleDetector::buildReason(Lit p, vec<Lit> & reason, CRef marker){
+template<typename Weight>
+		void CycleDetector<Weight>::buildReason(Lit p, vec<Lit> & reason, CRef marker){
 
 				if(marker==directed_cycle_marker){
 					reason.push(p);
@@ -128,8 +132,8 @@ void CycleDetector::addCycleDetectorLit(bool directed, Var outer_reach_var){
 					assert(false);
 				}
 		}
-
-		bool CycleDetector::propagate(vec<Lit> & conflict){
+template<typename Weight>
+		bool CycleDetector<Weight>::propagate(vec<Lit> & conflict){
 
 
 		double startdreachtime = rtime(2);
@@ -207,14 +211,18 @@ void CycleDetector::addCycleDetectorLit(bool directed, Var outer_reach_var){
 		}
 			return true;
 		}
-
-bool CycleDetector::checkSatisfied(){
+template<typename Weight>
+bool CycleDetector<Weight>::checkSatisfied(){
 
 	return true;
 }
-Lit CycleDetector::decide(){
+template<typename Weight>
+Lit CycleDetector<Weight>::decide(){
 
 	return lit_Undef;
 };
 
-
+template class CycleDetector<int>;
+template class CycleDetector<double>;
+#include <gmpxx.h>
+template class CycleDetector<mpq_class>;

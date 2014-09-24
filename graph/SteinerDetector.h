@@ -8,8 +8,8 @@
 #ifndef STEINER_DETECTOR_H_
 #define STEINER_DETECTOR_H_
 #include "utils/System.h"
-
-#include "Graph.h"
+#include "GraphTheoryTypes.h"
+#include "dgl/graph/DynamicGraph.h"
 #include "dgl/MinimumSpanningTree.h"
 #include "dgl/SteinerTree.h"
 #include "core/SolverTypes.h"
@@ -22,11 +22,13 @@
 
 using namespace dgl;
 namespace Minisat{
+template<typename Weight>
 class GraphTheorySolver;
+template<typename Weight=int>
 class SteinerDetector:public Detector{
 public:
-		GraphTheorySolver * outer;
-
+		GraphTheorySolver<Weight> * outer;
+		std::vector<Weight>& weights;
 		DynamicGraph & g;
 		DynamicGraph & antig;
 
@@ -38,20 +40,20 @@ public:
 		CRef reach_edge_marker;
 		CRef non_reach_edge_marker;
 
-		SteinerTree * positive_reach_detector;
-		SteinerTree * negative_reach_detector;
-		SteinerTree *  positive_conflict_detector;
-		SteinerTree * negative_conflict_detector;
+		SteinerTree<Weight> * positive_reach_detector;
+		SteinerTree<Weight> * negative_reach_detector;
+		SteinerTree<Weight> *  positive_conflict_detector;
+		SteinerTree<Weight> * negative_conflict_detector;
 
 		vec<Var> terminal_map;
 		vec<int> terminal_var_map;
 
-		Map<float,int> weight_lit_map;
+		//Map<float,int> weight_lit_map;
 
-		vec<int> & edge_weights;
+
 		struct WeightLit{
 			Lit l;
-			int min_weight;
+			Weight min_weight;
 			WeightLit():l(lit_Undef),min_weight(-1){}
 		};
 		bool checked_unique;
@@ -61,7 +63,7 @@ public:
 		Var first_reach_var;
 		struct ChangedWeight{
 			Lit l;
-			int weight;
+			Weight weight;
 		};
 		vec<ChangedWeight> changed_weights;
 		vec<Var> tmp_nodes;
@@ -76,8 +78,8 @@ public:
 			SteinerDetector & detector;
 			bool polarity;
 
-			void setMinimumSteinerTree(int weight);
-			void setMinimumSteinerTree(double weight);
+			void setMinimumSteinerTree(Weight & weight);
+
 			SteinerStatus(SteinerDetector & _outer, bool _polarity):detector(_outer), polarity(_polarity){}
 		};
 
@@ -85,16 +87,16 @@ public:
 		SteinerStatus *positiveStatus;
 
 		bool propagate(vec<Lit> & conflict);
-		void buildMinWeightTooSmallReason(int weight,vec<Lit> & conflict);
-		void buildMinWeightTooLargeReason(int weight,vec<Lit> & conflict);
+		void buildMinWeightTooSmallReason(Weight & weight,vec<Lit> & conflict);
+		void buildMinWeightTooLargeReason(Weight & weight,vec<Lit> & conflict);
 
 		void buildReason(Lit p, vec<Lit> & reason, CRef marker);
 		bool checkSatisfied();
 		Lit decide();
 
-		void addWeightLit(Var weight_var,int min_weight);
+		void addWeightLit(Weight &min_weight,Var weight_var);
 		void addTerminalNode(int node,Var theoryVar);
-		SteinerDetector(int _detectorID, GraphTheorySolver * _outer, DynamicGraph &_g, DynamicGraph &_antig,  double seed=1);//:Detector(_detectorID),outer(_outer),within(-1),source(_source),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL){}
+		SteinerDetector(int _detectorID, GraphTheorySolver<Weight> * _outer,std::vector<Weight>& weights, DynamicGraph &_g, DynamicGraph &_antig,  double seed=1);//:Detector(_detectorID),outer(_outer),within(-1),source(_source),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL){}
 
 		virtual void assign(Lit l){
 			 Detector::assign(l);

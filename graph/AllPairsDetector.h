@@ -9,7 +9,8 @@
 #define ALLPAIRSDETECTOR_H_
 #include "utils/System.h"
 
-#include "Graph.h"
+#include "GraphTheoryTypes.h"
+#include "dgl/graph/DynamicGraph.h"
 #include "dgl/AllPairs.h"
 #include <vector>
 #include "core/SolverTypes.h"
@@ -20,10 +21,12 @@
 #include "Detector.h"
 using namespace dgl;
 namespace Minisat{
+template<typename Weight>
 class GraphTheorySolver;
+template<typename Weight>
 class AllPairsDetector:public Detector{
 public:
-		GraphTheorySolver * outer;
+		GraphTheorySolver<Weight> * outer;
 		 DynamicGraph &g;
 		 DynamicGraph &antig;
 		int within;
@@ -129,7 +132,7 @@ public:
 		bool checkSatisfied();
 		Lit decide();
 		void addLit(int from, int to, Var reach_var,int within_steps=-1);
-		AllPairsDetector(int _detectorID, GraphTheorySolver * _outer, DynamicGraph &_g, DynamicGraph &_antig, double seed=1);//:Detector(_detectorID),outer(_outer),within(-1),source(_source),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL){}
+		AllPairsDetector(int _detectorID, GraphTheorySolver<Weight> * _outer, DynamicGraph &_g, DynamicGraph &_antig, double seed=1);//:Detector(_detectorID),outer(_outer),within(-1),source(_source),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL){}
 		virtual ~AllPairsDetector(){
 
 		}

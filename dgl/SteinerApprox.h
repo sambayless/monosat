@@ -24,18 +24,20 @@
 #include <algorithm>
 #include "WeightedDijkstra.h"
 #include "Kruskal.h"
+#include "Distance.h"
 
 namespace dgl{
-template<class TerminalSet, class Status=SteinerTree::NullStatus>
-class SteinerApprox:public SteinerTree{
+template<class TerminalSet, class Status,typename Weight=int>
+class SteinerApprox:public SteinerTree<Weight>{
 public:
 
 	DynamicGraph & g;
+	std::vector<Weight> weights;
 	TerminalSet & terminals;
 	Status &  status;
 
 	int last_modification;
-	int min_weight=0;
+	Weight min_weight=0;
 	bool is_disconnected=false;
 	int last_addition;
 	int last_deletion;
@@ -43,7 +45,7 @@ public:
 
 	int last_history_clear;
 
-	int INF;
+	Weight INF;
 
 	const int reportPolarity;
 	std::vector<bool> in_tree;
@@ -61,7 +63,7 @@ public:
 	double stats_full_update_time;
 	double stats_fast_update_time;
 
-	SteinerApprox(DynamicGraph & graph,TerminalSet & terminals, Status & _status, int _reportPolarity=0 ):g(graph),terminals(terminals), status(_status), last_modification(-1),last_addition(-1),last_deletion(-1),history_qhead(0),last_history_clear(0),INF(0),reportPolarity(_reportPolarity){
+	SteinerApprox(DynamicGraph & graph,std::vector<Weight> weights,TerminalSet & terminals, Status & _status, int _reportPolarity=0 ):g(graph),weights(weights),terminals(terminals), status(_status), last_modification(-1),last_addition(-1),last_deletion(-1),history_qhead(0),last_history_clear(0),INF(0),reportPolarity(_reportPolarity){
 
 		mod_percentage=0.2;
 		stats_full_updates=0;
@@ -109,18 +111,20 @@ public:
 		tree_edges.clear();
 		is_disconnected=false;
 		if(terminals.numEnabled()>1){
-			std::vector<Reach*> reaches;
+			std::vector<Distance<Weight>*> reaches;
 
 			//construct the metric closure of GL on the set of terminal nodes.
 			//i.e., find the shortest path between each terminal node; then form a graph with one edge for each such path...
 			DynamicGraph induced;
+
 			for(int i = 0;i<g.nodes();i++){
 				induced.addNode();
+
 			}
 
 			//This can be made much more efficient...
 			for(int i = 0;i<terminals.nodes();i++){
-				reaches.push_back(new WeightedDijkstra<std::vector<int>, true>(i,g,g.getWeights()));
+				reaches.push_back(new WeightedDijkstra<Weight>(i,g,weights));
 			};
 			for(int i = 0;i<terminals.nodes();i++){
 				if (terminals.nodeEnabled(i)){
@@ -130,8 +134,9 @@ public:
 						assert(reaches[i]->connected(n)==reaches[n]->connected(i));
 						if (n!=i && terminals.nodeEnabled(n)){
 							if( reaches[i]->connected(n)){
-								int dist = reaches[i]->distance(n);
-								induced.addEdge(i,n,-1,dist);
+								Weight & dist = reaches[i]->distance(n);
+								//temporarily disabled - need to add this back!
+								//induced.addEdge(i,n,-1,dist);
 							}else{
 								is_disconnected=true;
 							}
@@ -140,7 +145,7 @@ public:
 				}
 			}
 
-			Kruskal<> mst(induced);
+			Kruskal<typename MinimumSpanningTree<Weight>::NullStatus, Weight> mst(induced,weights);
 			min_weight=0;
 
 			for (int & edgeID:mst.getSpanningTree()){
@@ -162,7 +167,7 @@ public:
 						last = p;
 					}else if (first<0){
 						in_tree[p]=true;
-						min_weight+=g.getWeight(pathEdge);
+						min_weight+=weights[pathEdge];
 						tree_edges.push_back(pathEdge);
 					}
 					p= reaches[u]->previous(p);
@@ -230,7 +235,7 @@ public:
 				s="blue";
 			}
 
-			printf("n%d -> n%d [label=\"v%d w=%d\",color=\"%s\"]\n", i,u, id,g.getWeight(id), s);
+			//printf("n%d -> n%d [label=\"v%d w=%d\",color=\"%s\"]\n", i,u, id,g.getWeight(id), s);
 
 			}
 		}
@@ -238,7 +243,7 @@ public:
 #endif
 	}
 
-	int weight(){
+	Weight &weight(){
 
 		update();
 

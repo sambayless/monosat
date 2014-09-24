@@ -103,6 +103,11 @@ private:
 			assert(hull.contains(p,true));
 		}
 	}
+/*	for (auto & p:hull){
+
+		assert(p == pointSet[p.getID()]);
+		assert(pointSet.pointEnabled(p.getID()));
+	}*/
 #endif
 		return true;
 	}

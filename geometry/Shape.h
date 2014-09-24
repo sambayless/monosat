@@ -41,7 +41,13 @@ public:
 
 
 };
-
+template<unsigned int D,class T>
+std::ostream & operator<<(std::ostream & str, Shape<D,T>  & shape){
+	str << "Shape=";
+	str<<shape.getType();
+	str<<"";
+	return str;
+}
 
 
 #endif /* SHAPE_H_ */

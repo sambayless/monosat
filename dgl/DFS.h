@@ -575,7 +575,7 @@ public:
 #ifdef DEBUG_DIJKSTRA
 		if(last_modification<=0)
 			return true;
-		Dijkstra<> d(source,g);
+		UnweightedDijkstra<> d(source,g);
 		d.update();
 		//drawFull();
 		for(int i = 0;i<g.nodes();i++){
@@ -617,13 +617,13 @@ public:
 		if(connected(t))
 			return 1;
 		else
-			return INF;
+			return -1;
 	}
 	int distance_unsafe(int t){
 		if(connected_unsafe(t))
 			return 1;
 		else
-			return INF;
+			return -1;
 	}
 	int incomingEdge(int t){
 		assert(t>=0 && t<prev.size());

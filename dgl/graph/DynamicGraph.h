@@ -20,26 +20,24 @@ class DynamicGraph{
 	std::vector<bool> edge_status;
 	int num_nodes;
 	int num_edges;
-	bool all_edges_unit=true;
+	int next_id;
+	bool is_changed;
+
 public:
 	int modifications;
 	int additions;
 	int deletions;
 	int historyclears;
 
-private:
-	int next_id;
-	bool is_changed;
-	//bool allocated=false;
 
 	struct Edge{
 		int node;
 		int id;
 	};
-	std::vector<std::vector<Edge> > adjacency_list;//adj list
-	std::vector<std::vector<Edge> > inverted_adjacency_list;//adj list
-	std::vector<std::vector<Edge> > adjacency_undirected_list;//adj list
-
+	std::vector<std::vector<Edge> > adjacency_list;
+	std::vector<std::vector<Edge> > inverted_adjacency_list;
+	std::vector<std::vector<Edge> > adjacency_undirected_list;
+public:
 	struct FullEdge{
 		int from;
 		int to;
@@ -48,8 +46,8 @@ private:
 		FullEdge():from(-1),to(-1),id(-1),weight(1){}
 		FullEdge(int from,int to, int id,int weight):from(from),to(to),id(id),weight(weight){}
 	};
-public:
-	std::vector<int> weights;
+
+	//std::vector<int> weights;
 	std::vector<FullEdge> all_edges;
 
 	struct EdgeChange{
@@ -149,10 +147,11 @@ public:
 		if(all_edges.size()<=id)
 			all_edges.resize(id+1);
 		all_edges[id]={from,to,id,weight};
-		if(weights.size()<=id)
-			weights.resize(id+1,0);
-		weights[id]=weight;
-		all_edges_unit &= (weight==1);
+
+		//if(weights.size()<=id)
+		//	weights.resize(id+1,0);
+		//weights[id]=weight;
+
 		//weights.push_back(weight);
 		modifications++;
 		additions=modifications;
@@ -175,9 +174,9 @@ public:
 	inline int edges()const{
 		return num_edges;
 	}
-	inline bool allEdgesUnitWeight()const{
+/*	inline bool allEdgesUnitWeight()const{
 		return all_edges_unit;
-	}
+	}*/
 	inline int nIncident(int node, bool undirected=false){
 		assert(node>=0);assert(node<nodes());
 		if(undirected){
@@ -212,13 +211,13 @@ public:
 			return inverted_adjacency_list[node][i];
 		}
 	}
-	std::vector<int> & getWeights(){
+/*	std::vector<int> & getWeights(){
 		return weights;
 	}
 	int getWeight(int edgeID){
 		return weights[edgeID];
 		//return all_edges[edgeID].weight;
-	}
+	}*/
 	FullEdge getEdge(int id){
 		return all_edges[id];
 	}
@@ -333,11 +332,11 @@ public:
 					s="blue";
 				else
 					s="red";
-				if(showWeights){
-					printf("n%d -> n%d [label=\"v%d w=%d\",color=\"%s\"]\n", i,u, id,getWeight(id), s);
-				}else{
+				//if(showWeights){
+				//	printf("n%d -> n%d [label=\"v%d w=%d\",color=\"%s\"]\n", i,u, id,getWeight(id), s);
+				//}else{
 					printf("n%d -> n%d [label=\"v%d\",color=\"%s\"]\n", i,u, id, s);
-				}
+				//}
 				}
 			}
 			printf("}\n");

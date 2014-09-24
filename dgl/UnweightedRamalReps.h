@@ -18,7 +18,7 @@
 #include <algorithm>
 namespace dgl{
 template<class Status>
-class UnweightedRamalReps:public Reach{
+class UnweightedRamalReps:public Distance<int>{
 public:
 	DynamicGraph & g;
 	Status &  status;
@@ -719,18 +719,21 @@ public:
 		if(last_modification<0)
 			return true;
 		dbg_delta();
-		Dijkstra<Reach::NullStatus,false> d(source,g);
+		UnweightedDijkstra<Reach::NullStatus,false> d(source,g);
 
 		for(int i = 0;i<g.nodes();i++){
-			int distance = dist[i];
-			if(maxDistance>=0 && distance>maxDistance){
-				distance=INF;
+			int dis = dist[i];
+			bool c = i<dist.size() && dist[i]<INF;
+			if(!c)
+				dis = this->unreachable();
+			if(maxDistance>=0 && dis>maxDistance){
+				dis=-1;
 			}
 			int dbgdist = d.distance(i);
 			if(maxDistance>=0 && dbgdist>maxDistance){
-				dbgdist=INF;
+				dbgdist=-1;
 			}
-			if(distance!=dbgdist){
+			if(dis!=dbgdist){
 				assert(false);
 				exit(4);
 			}
@@ -756,30 +759,37 @@ public:
 
 		return dist[t]<INF;
 	}
-	int distance(int t){
+	int& distance(int t){
 		if(last_modification!=g.modifications)
 					update();
-		return dist[t];
-	}
-	int distance_unsafe(int t){
 		if(connected_unsafe(t))
 			return dist[t];
 		else
-			return INF;
+			return this->unreachable();
+	}
+	int& distance_unsafe(int t){
+		if(connected_unsafe(t))
+			return dist[t];
+		else
+			return this->unreachable();
 	}
 	int incomingEdge(int t){
-
+/*
 		assert(false);//not yet implemented...
 		assert(t>=0 && t<prev.size());
 		assert(prev[t]>=-1 );
-		return prev[t];
+		return prev[t];*/
+		assert(false);
+		exit(1);
 	}
 	int previous(int t){
-		if(prev[t]<0)
+/*		if(prev[t]<0)
 			return -1;
 
 		assert(g.all_edges[incomingEdge(t)].to==t);
-		return g.all_edges[incomingEdge(t)].from;
+		return g.all_edges[incomingEdge(t)].from;*/
+		assert(false);
+		exit(1);
 	}
 };
 };

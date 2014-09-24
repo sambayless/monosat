@@ -18,16 +18,20 @@
 #include "dgl/alg/DisjointSets.h"
 
 using namespace Minisat;
-SteinerDetector::SteinerDetector(int detectorID, GraphTheorySolver * outer,  DynamicGraph &g,DynamicGraph &antig ,double seed):
-Detector(detectorID),outer(outer),g(g),antig(antig),rnd_seed(seed),edge_weights(edge_weights),positive_reach_detector(NULL),negative_reach_detector(NULL){
+
+
+
+template<typename Weight>
+SteinerDetector<Weight>::SteinerDetector(int detectorID, GraphTheorySolver<Weight> * outer,std::vector<Weight> &weights,  DynamicGraph &g,DynamicGraph &antig ,double seed):
+Detector(detectorID),outer(outer),g(g),antig(antig),rnd_seed(seed),weights(weights),positive_reach_detector(NULL),negative_reach_detector(NULL){
 	checked_unique=false;
 	all_unique=true;
-	positiveStatus = new SteinerDetector::SteinerStatus(*this,true);
-	negativeStatus = new SteinerDetector::SteinerStatus(*this,false);
+	positiveStatus = new SteinerDetector<Weight>::SteinerStatus(*this,true);
+	negativeStatus = new SteinerDetector<Weight>::SteinerStatus(*this,false);
 
 	//NOTE: the terminal sets are intentionally swapped, in order to preserve monotonicity
-	positive_reach_detector =  new SteinerApprox<DynamicNodes,SteinerDetector::SteinerStatus>(g,overTerminalSet,*positiveStatus,1);//new SpiraPan<SteinerDetector::MSTStatus>(_g,*(positiveReachStatus),1);
-	negative_reach_detector = new SteinerApprox<DynamicNodes,SteinerDetector::SteinerStatus>(antig,underTerminalSet,*negativeStatus,-1);
+	positive_reach_detector =  new SteinerApprox<DynamicNodes,SteinerDetector<Weight>::SteinerStatus,Weight>(g,weights,overTerminalSet,*positiveStatus,1);//new SpiraPan<SteinerDetector<Weight>::MSTStatus>(_g,*(positiveReachStatus),1);
+	negative_reach_detector = new SteinerApprox<DynamicNodes,SteinerDetector<Weight>::SteinerStatus,Weight>(antig,weights,underTerminalSet,*negativeStatus,-1);
 
 
 	reach_marker=outer->newReasonMarker(getID());
@@ -37,8 +41,8 @@ Detector(detectorID),outer(outer),g(g),antig(antig),rnd_seed(seed),edge_weights(
 	non_reach_edge_marker=outer->newReasonMarker(getID());
 	first_reach_var=var_Undef;
 }
-
-void SteinerDetector::addTerminalNode(int node, Var outer_Var){
+template<typename Weight>
+void SteinerDetector<Weight>::addTerminalNode(int node, Var outer_Var){
 	Var var = outer->newVar(outer_Var,getID());
 	underTerminalSet.addNode(node);
 	underTerminalSet.setNodeEnabled(node,false);
@@ -50,8 +54,8 @@ void SteinerDetector::addTerminalNode(int node, Var outer_Var){
 	terminal_var_map.growTo(var+1,-1);
 	terminal_var_map[var]=node;
 }
-
-void SteinerDetector::addWeightLit(int min_weight,Var outer_weight_var){
+template<typename Weight>
+void SteinerDetector<Weight>::addWeightLit(Weight& min_weight,Var outer_weight_var){
 	g.invalidate();
 	antig.invalidate();
 
@@ -82,11 +86,11 @@ void SteinerDetector::addWeightLit(int min_weight,Var outer_weight_var){
 
 
 }
-
-void SteinerDetector::SteinerStatus::setMinimumSteinerTree(int weight){
+template<typename Weight>
+void SteinerDetector<Weight>::SteinerStatus::setMinimumSteinerTree(Weight& weight){
 
 	for(int i = 0;i<detector.weight_lits.size();i++){
-		int min_weight =  detector.weight_lits[i].min_weight;
+		Weight & min_weight =  detector.weight_lits[i].min_weight;
 		Lit l = detector.weight_lits[i].l;
 		if(l!=lit_Undef){
 			assert(l!=lit_Undef);
@@ -105,29 +109,8 @@ void SteinerDetector::SteinerStatus::setMinimumSteinerTree(int weight){
 	}
 
 }
-void SteinerDetector::SteinerStatus::setMinimumSteinerTree(double weight){
-
-	for(int i = 0;i<detector.weight_lits.size();i++){
-		int min_weight =  detector.weight_lits[i].min_weight;
-		Lit l = detector.weight_lits[i].l;
-		if(l!=lit_Undef){
-			assert(l!=lit_Undef);
-			if(min_weight<weight && !polarity){
-				lbool assign = detector.outer->value(l);
-				if( assign!= l_False ){
-					detector.changed_weights.push({~l,min_weight});
-				}
-			}else if(min_weight>=weight && polarity){
-				lbool assign = detector.outer->value(l);
-				if( assign!= l_True ){
-					detector.changed_weights.push({l,min_weight});
-				}
-			}
-		}
-	}
-
-}
-	void SteinerDetector::buildMinWeightTooSmallReason(int weight,vec<Lit> & conflict){
+template<typename Weight>
+	void SteinerDetector<Weight>::buildMinWeightTooSmallReason(Weight & weight,vec<Lit> & conflict){
 			//if the weight is too small, then either an edge has to be enabled, or a terminal node that is currently disabled has to be enabled.
 			for(int i = 0;i< underTerminalSet.nodes();i++){
 				if(!underTerminalSet.nodeEnabled(i) && terminal_map[i]!=var_Undef){
@@ -143,8 +126,8 @@ void SteinerDetector::SteinerStatus::setMinimumSteinerTree(double weight){
 
 		}
 
-
-		void SteinerDetector::buildMinWeightTooLargeReason(int weight,vec<Lit> & conflict){
+template<typename Weight>
+		void SteinerDetector<Weight>::buildMinWeightTooLargeReason(Weight &weight,vec<Lit> & conflict){
 			assert(negative_reach_detector->disconnected() || negative_reach_detector->weight()>weight);
 			//if the weight is too large, then either an edge has to be enabled, or a terminal node that is currently enabled has to be disabled.
 			for(int i = 0;i<overTerminalSet.nodes();i++){
@@ -265,7 +248,7 @@ void SteinerDetector::SteinerStatus::setMinimumSteinerTree(double weight){
 				if(antig.isEdge(i) && !antig.edgeEnabled(i)){
 					int u = antig.getEdge(i).from;
 					int v = antig.getEdge(i).to;
-					if (antig.getWeight(i) < fw.distance(u,v)){
+					if (weights[i] < fw.distance(u,v)){
 						//then adding this edge can potentially decrease the steiner tree
 						//(there is probably an additional test we can do to include fewer edges...)
 						conflict.push(mkLit( outer->getEdgeVar(i),false));
@@ -299,14 +282,14 @@ void SteinerDetector::SteinerStatus::setMinimumSteinerTree(double weight){
 
 
 
-
-		void SteinerDetector::buildReason(Lit p, vec<Lit> & reason, CRef marker){
+template<typename Weight>
+		void SteinerDetector<Weight>::buildReason(Lit p, vec<Lit> & reason, CRef marker){
 
 				if(marker==reach_marker){
 					reason.push(p);
 
 					Var v = var(p);
-					int weight=-1;
+					Weight weight=-1;
 					//could swap this out for a map if there are lots of lits..
 					for(int i = 0;i<weight_lits.size();i++){
 						if(var(weight_lits[i].l)==v){
@@ -331,7 +314,7 @@ void SteinerDetector::SteinerStatus::setMinimumSteinerTree(double weight){
 
 					Var v = var(p);
 
-					int weight=-1;
+					Weight weight=-1;
 					//could swap this out for a map if there are lots of lits..
 					for(int i = 0;i<weight_lits.size();i++){
 						if(var(weight_lits[i].l)==v){
@@ -347,8 +330,8 @@ void SteinerDetector::SteinerStatus::setMinimumSteinerTree(double weight){
 					assert(false);
 				}
 		}
-
-		bool SteinerDetector::propagate(vec<Lit> & conflict){
+template<typename Weight>
+		bool SteinerDetector<Weight>::propagate(vec<Lit> & conflict){
 			static int it = 0;
 			if(++it==7){
 				int a = 1;
@@ -374,7 +357,7 @@ void SteinerDetector::SteinerStatus::setMinimumSteinerTree(double weight){
 		for(int j = 0;j<changed_weights.size();j++){
 			Lit l = changed_weights[j].l;
 			//printf("mst: %d\n",dimacs(l));
-			int weight = changed_weights[j].weight;
+			Weight weight = changed_weights[j].weight;
 
 			bool reach = !sign(l);
 			if(outer->value(l)==l_True){
@@ -412,19 +395,19 @@ void SteinerDetector::SteinerStatus::setMinimumSteinerTree(double weight){
 
 			return true;
 		}
-
-bool SteinerDetector::checkSatisfied(){
+template<typename Weight>
+bool SteinerDetector<Weight>::checkSatisfied(){
 
 	assert(underTerminalSet.numEnabled()==overTerminalSet.numEnabled());
 
-	SteinerApprox<DynamicNodes,SteinerTree::NullStatus> positive_checker(g,overTerminalSet,SteinerTree::nullStatus,0);
-	SteinerApprox<DynamicNodes,SteinerTree::NullStatus> negative_checker(antig,underTerminalSet,SteinerTree::nullStatus,0);
+	SteinerApprox<DynamicNodes,typename SteinerTree<Weight>::NullStatus,Weight> positive_checker(g,weights,overTerminalSet,SteinerTree<Weight>::nullStatus,0);
+	SteinerApprox<DynamicNodes,typename SteinerTree<Weight>::NullStatus,Weight> negative_checker(antig,weights,underTerminalSet,SteinerTree<Weight>::nullStatus,0);
 	positive_checker.update();
 	negative_checker.update();
-	int w = positive_checker.weight();
+	Weight & w = positive_checker.weight();
 	for(int k = 0;k<weight_lits.size();k++){
 		Lit l = weight_lits[k].l;
-		int dist = weight_lits[k].min_weight;
+		Weight dist = weight_lits[k].min_weight;
 
 		if(l!=lit_Undef){
 
@@ -450,9 +433,12 @@ bool SteinerDetector::checkSatisfied(){
 
 	return true;
 }
-Lit SteinerDetector::decide(){
+template<typename Weight>
+Lit SteinerDetector<Weight>::decide(){
 
 	return lit_Undef;
 };
-
-
+template class SteinerDetector<int>;
+template class SteinerDetector<double>;
+#include <gmpxx.h>
+template class SteinerDetector<mpq_class>;
