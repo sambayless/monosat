@@ -95,7 +95,7 @@ public:
 		check.reserve(n);
 		seen.resize(n);
 		prev.resize(n);
-		INF=std::numeric_limits<int>::max();
+		//INF=std::numeric_limits<int>::max();
 		components.resize(g.nodes());
 		parents.resize(n);
 		keys.resize(n);
@@ -118,7 +118,12 @@ public:
 			stats_skipped_updates++;
 			return;
 		}
+		if(last_modification<=0 || g.changed() || last_history_clear!=g.historyclears){
+			INF=1;//g.nodes()+1;
 
+			for (auto & w:weights)
+				INF+=w;
+		}
 		stats_full_updates++;
 		
 		if(last_deletion==g.deletions){

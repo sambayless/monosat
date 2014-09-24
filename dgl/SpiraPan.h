@@ -108,7 +108,7 @@ public:
 		check.reserve(n);
 		in_tree.resize(g.nEdgeIDs());
 		seen.resize(n);
-		INF=std::numeric_limits<int>::max();
+		//INF=std::numeric_limits<int>::max();
 		while(component_edge_weight.size()<=g.nodes()){
 			component_edge_weight.push_back(INF);
 		}

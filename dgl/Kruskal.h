@@ -88,7 +88,7 @@ public:
 		check.reserve(n);
 		in_tree.resize(g.nEdgeIDs());
 
-		INF=std::numeric_limits<int>::max();
+		//INF=std::numeric_limits<int>::max();
 		sets.AddElements(n);
 		parents.resize(n);
 		parent_edges.resize(n);
@@ -108,14 +108,19 @@ public:
 			return;
 		}
 		stats_full_updates++;
-		
+
 		if(last_deletion==g.deletions){
 			stats_num_skipable_deletions++;
 		}
 		hasParents=false;
 		sets.Reset();
-		setNodes(g.nodes());
+		if(last_modification<=0 || g.changed() || last_history_clear!=g.historyclears){
+			INF=1;//g.nodes()+1;
 
+			for (auto & w:weights)
+				INF+=w;
+		}
+		setNodes(g.nodes());
 		min_weight=0;
 
 		mst.clear();

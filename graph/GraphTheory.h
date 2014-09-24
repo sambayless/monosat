@@ -1865,7 +1865,7 @@ public:
 								}
 							}
 
-								if(mstDetector){
+							/*	if(mstDetector){
 										Weight min_weight = mstDetector->positive_reach_detector->weight();
 										//printf("Min Spanning Tree Weight: %d\n",min_weight);
 										std::cout<<"Min Spanning Tree Weight: " << min_weight <<"\n";
@@ -1924,7 +1924,7 @@ public:
 											}
 											printf("\n");
 										}
-
+*/
 								if(component_detector){
 									int numComponents = component_detector->positive_component_detector->numComponents();
 									printf("Number of connected components is: %d\n",numComponents);
