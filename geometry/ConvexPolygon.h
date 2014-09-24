@@ -68,6 +68,23 @@ private:
 	bool containsInSplit2d(const Point<2,T> & point, int firstVertex,int lastVertex, NConvexPolygon<2,T> & polygon_out, bool inclusive, bool excludeVertices=false);
 	bool containsInSplit2d_helper(const Point<2,T> & point, int firstVertex,int lastVertex, NConvexPolygon<2,T> & polygon_out, int depth, bool inclusive, bool excludeVertices);
 	bool dbg_Convex(){
+#ifndef NDEBUG
+		bool seenPositive=false;
+		bool seenNegative=false;
+		for(int i = 0;i<this->size();i++){
+			const Point<2,T> & prev = i>0?(*this)[i-1]:(*this).back();
+			const Point<2,T> & p = (*this)[i];
+			const Point<2,T> & next = i<this->size()-1 ?  (*this)[i+1]:(*this)[0];
+			Point<2,T> a = p-prev;
+			Point<2,T> b = next-p;
+			T s = cross2d(a,b);
+			seenPositive |= s>0;
+			seenNegative |= s<0;
+			if(seenPositive && seenNegative)
+				return false;
+		}
+#endif
+		return true;
 
 	}
 

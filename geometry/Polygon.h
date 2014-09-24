@@ -394,6 +394,23 @@ public:
 			assert(false);
 	}
 
+	virtual bool isConvex(){
+		bool seenPositive=false;
+		bool seenNegative=false;
+		for(int i = 0;i<size();i++){
+			const Point<2,T> & prev = i>0?(*this)[i-1]:(*this).back();
+			const Point<2,T> & p = (*this)[i];
+			const Point<2,T> & next = i<size()-1 ?  (*this)[i+1]:(*this)[0];
+			Point<2,T> a = p-prev;
+			Point<2,T> b = next-p;
+			T s = cross2d(a,b);
+			seenPositive |= s>0;
+			seenNegative |= s<0;
+			if(seenPositive && seenNegative)
+				return false;
+		}
+		return true;
+	}
 private:
 	// copy ops are private to prevent copying
 	//Polygon(const Polygon& from); // no implementation

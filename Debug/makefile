@@ -12,7 +12,6 @@ RM := rm -rf
 -include simp/subdir.mk
 -include graph/subdir.mk
 -include geometry/polypartition/subdir.mk
--include geometry/cgal/subdir.mk
 -include geometry/cevans/subdir.mk
 -include geometry/bitmap/subdir.mk
 -include geometry/subdir.mk
