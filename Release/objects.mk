@@ -4,5 +4,5 @@
 
 USER_OBJS :=
 
-LIBS := -lz -lm -lgmp -lgmpxx -lCGAL_Core -lCGAL
+LIBS := -lz -lm -lgmpxx -lgmp -lCGAL_Core -lCGAL -lboost_thread -lboost_system -lpthread
 

@@ -169,12 +169,15 @@
 								<option id="gnu.cpp.link.option.libs.2024205441" name="Libraries (-l)" superClass="gnu.cpp.link.option.libs" valueType="libs">
 									<listOptionValue builtIn="false" value="z"/>
 									<listOptionValue builtIn="false" value="m"/>
-									<listOptionValue builtIn="false" srcPrefixMapping="" srcRootPath="" value="gmp"/>
 									<listOptionValue builtIn="false" srcPrefixMapping="" srcRootPath="" value="gmpxx"/>
+									<listOptionValue builtIn="false" srcPrefixMapping="" srcRootPath="" value="gmp"/>
 									<listOptionValue builtIn="false" srcPrefixMapping="" srcRootPath="" value="CGAL_Core"/>
 									<listOptionValue builtIn="false" srcPrefixMapping="" srcRootPath="" value="CGAL"/>
+									<listOptionValue builtIn="false" srcPrefixMapping="" srcRootPath="" value="boost_thread"/>
+									<listOptionValue builtIn="false" srcPrefixMapping="" srcRootPath="" value="boost_system"/>
+									<listOptionValue builtIn="false" srcPrefixMapping="" srcRootPath="" value="pthread"/>
 								</option>
-								<option id="gnu.cpp.link.option.flags.979290315" name="Linker flags" superClass="gnu.cpp.link.option.flags" value="" valueType="string"/>
+								<option id="gnu.cpp.link.option.flags.979290315" name="Linker flags" superClass="gnu.cpp.link.option.flags" value="-static-libgcc -Wl,-Bstatic" valueType="string"/>
 								<option id="gnu.cpp.link.option.paths.1063550757" name="Library search path (-L)" superClass="gnu.cpp.link.option.paths" valueType="libPaths">
 									<listOptionValue builtIn="false" value=".././lib"/>
 									<listOptionValue builtIn="false" value=".././lib"/>
