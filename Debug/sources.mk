@@ -35,4 +35,5 @@ dgl \
 core \
 aiger \
 . \
+geometry/cgal \
 

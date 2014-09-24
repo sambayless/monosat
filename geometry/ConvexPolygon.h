@@ -54,6 +54,12 @@ public:
 	bool intersects(Shape<D,T> & s, NConvexPolygon<D,T> * polygon_out_this, NConvexPolygon<D,T> * polygon_out_other, bool inclusive);
 	bool intersectsExcludingVertices(Shape<D,T> & s, NConvexPolygon<D,T> & polygon_out, bool inclusive);
 	bool containsExcludingVertices(const Point<D,T> & point,NConvexPolygon<D,T> & polygon_out, bool inclusive);
+
+	bool isConvex(){
+		assert(dbg_Convex());
+		return true;
+	}
+
 private:
 	//bool intersects2d(Shape<2,T> & s, bool inclusive, bool ignore_vertices=false);
 	bool intersects2d(Shape<2,T> & s, NConvexPolygon<2,T> * polygon_out_this, NConvexPolygon<2,T> * polygon_out_other, bool inclusive, bool ignore_vertices=false);
@@ -61,6 +67,10 @@ private:
 	bool containsInRange2d(const Point<2,T> & point, int firstVertex,int lastVertex, bool inclusive, bool excludeVertices);
 	bool containsInSplit2d(const Point<2,T> & point, int firstVertex,int lastVertex, NConvexPolygon<2,T> & polygon_out, bool inclusive, bool excludeVertices=false);
 	bool containsInSplit2d_helper(const Point<2,T> & point, int firstVertex,int lastVertex, NConvexPolygon<2,T> & polygon_out, int depth, bool inclusive, bool excludeVertices);
+	bool dbg_Convex(){
+
+	}
+
 	static bool dbg_orderClockwise2dTri(Point<2,T> p1,Point<2,T> p2,Point<2,T> p3){
 	#ifndef NDEBUG
 		std::vector<Point<2,T>> points;
