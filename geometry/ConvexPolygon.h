@@ -1176,10 +1176,32 @@ bool ConvexPolygon<D,T>::intersects2d(Shape<2,T> & shape, NConvexPolygon<2,T> * 
 			//ok, then the line must pass through atleast one vertex of the polygon. The other end may ALSO pass through a vertex, or may land directly on an edge.
 
 			//so first, find a vertex of the polygon that is on the line.
+			int first_pass_vertex=-1;
 
 			for(int i = 0;i<this->size();i++){
 				Point<2,T> & p = (*this)[i];
 				if(line.contains(p,true)){//this check is intentionally inclusive
+					if(first_pass_vertex==-1){
+						first_pass_vertex=i;
+					}else{
+						//If the line passes through two vertices, then it may be that neither midpoint contacts them.
+						//so in that case, we can still check if two non-equal vertices are contained in the line.
+						if(p!=(*this)[first_pass_vertex]){
+							//the line passes through two vertices.
+							//so long as they do not form an edge of the hull, then this is an exclusive collision.
+
+							Point<2,T> midpoint = ((*this)[first_pass_vertex] + p)/2;
+							if(this->contains(midpoint,polygon_out_this,inclusive)){
+								if(polygon_out_other){
+									polygon_out_other->clear();
+									polygon_out_other->addVertex(line[0]);
+									polygon_out_other->addVertex(line[1]);
+								}
+								return true;
+							}
+
+						}
+					}
 					//now form midpoints between this vertex and the two other ends of the line.
 					if(line.a != p){
 						Point<2,T> midpoint = (line.a + p)/2;
@@ -1203,6 +1225,7 @@ bool ConvexPolygon<D,T>::intersects2d(Shape<2,T> & shape, NConvexPolygon<2,T> * 
 							return true;
 						}
 					}
+
 				}
 			}
 

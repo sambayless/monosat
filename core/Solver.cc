@@ -1573,7 +1573,7 @@ lbool Solver::solve_()
 					if(!t->check_solved()){
 						fprintf(stderr,"Error! Solution doesn't satisfy theory properties!\n");
 						fflush(stderr);
-						exit(3);
+						exit(4);
 					}
 				}
 #ifdef DEBUG_SOLVER
