@@ -487,8 +487,14 @@ public:
 				return;
 		if(last_modification<=0 || g.changed()){
 			INF=1;//g.nodes()+1;
-			for(Weight & w:weights)
+			for(Weight & w:weights){
+				if(w<=0){
+					//Note: in the future, we could implement the DFMN algorithm (Maintaining Shortest Paths in Digraphs with Arbitrary Arc Weights: An Experimental Study), which does support negative length weights, but is slower than RR.
+					fprintf(stderr,"Ramalingham-Reps doesn't support zero-weight edges (select a different distance algorithm, such as dijkstra).\n");
+					exit(1);
+				}
 				INF+=w;
+			}
 			dist.resize(g.nodes(),INF);
 			dist[getSource()]=0;
 			delta.resize(g.nodes());
