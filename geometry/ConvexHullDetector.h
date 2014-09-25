@@ -8,6 +8,7 @@
 #include "core/Config.h"
 #include "ConvexHull.h"
 #include "MonotoneConvexHull.h"
+#include "SymbolicPolygon.h"
 #include "QuickConvexHull.h"
 #include "Polygon.h"
 #include "LineSegment.h"
@@ -16,17 +17,17 @@
 using namespace Minisat;
 
 template<unsigned int D, class T>
-class ConvexHullDetector:public GeometryDetector{
+class ConvexHullDetector:public SymbolicPolygon<D,T>{
 		bool hasSet=false;
 public:
-		GeometryTheorySolver<D,T> * outer;
+
 		//int within;
 		PointSet<D,T> & under;
 		PointSet<D,T> & over;
 		ConvexHull<D,T>* under_hull=nullptr;
 		ConvexHull<D,T>* over_hull=nullptr;
 
-		double rnd_seed;
+
 		CRef point_contained_marker;
 		CRef point_not_contained_marker;
 		CRef convex_intersection_marker;
@@ -101,7 +102,7 @@ public:
 		static long stats_line_intersection_skips_over;
 
 		void printStats(){
-			printf("Convex hull %d: ", getID());
+			printf("Convex hull %d: ", this->getID());
 			cout<<under_hull->getHull()<<"\n";
 
 			printf("propagations: %d\n", stats_propagations);
@@ -112,7 +113,7 @@ public:
 			printf("Skipped updates: %d/%d under, %d/%d over\n", ((MonotoneConvexHull<D,T>*) under_hull)->stats_skipped_updates,((MonotoneConvexHull<D,T>*) under_hull)->stats_updates,((MonotoneConvexHull<D,T>*) over_hull)->stats_skipped_updates,((MonotoneConvexHull<D,T>*) under_hull)->stats_updates);
 		}
 		void printSolution(){
-			printf("Convex hull %d: ", getID());
+			printf("Convex hull %d: ", this->getID());
 			cout<<under_hull->getHull()<<"\n";
 		}
 		bool propagate(vec<Lit> & conflict);
@@ -215,7 +216,7 @@ private:
 			if(containing.size()==0)
 				return false;
 			for (auto &p: containing){
-				int index = outer->getPointsetIndex(p.getID());
+				int index = this->outer->getPointsetIndex(p.getID());
 				if(!pointset.pointEnabled(index)){
 					containing.clear();
 					return false;
@@ -235,7 +236,7 @@ private:
 			if(containing.size()==0)
 				return false;
 			for (auto &p: containing){
-				int index = outer->getPointsetIndex(p.getID());
+				int index = this->outer->getPointsetIndex(p.getID());
 				if(!pointset.pointEnabled(index)){
 					containing.clear();
 					return false;
@@ -278,18 +279,8 @@ long ConvexHullDetector<D,T>::stats_over_clauses=0;
 
 template<unsigned int D, class T>
 ConvexHullDetector<D,T>::ConvexHullDetector(int detectorID,PointSet<D,T> & under, PointSet<D,T> & over, GeometryTheorySolver<D,T> * outer,double seed):
-GeometryDetector(detectorID),outer(outer),under(under),over(over),rnd_seed(seed){
+SymbolicPolygon<D,T>(detectorID,outer,seed),under(under),over(over){
 
-	point_contained_marker=outer->newReasonMarker(getID());
-	point_not_contained_marker=outer->newReasonMarker(getID());
-	point_on_hull_marker=outer->newReasonMarker(getID());
-	point_not_on_hull_marker=outer->newReasonMarker(getID());
-	area_geq_marker=outer->newReasonMarker(getID());
-	area_not_geq_marker=outer->newReasonMarker(getID());
-	convex_intersection_marker=outer->newReasonMarker(getID());
-	convex_not_intersection_marker=outer->newReasonMarker(getID());
-	line_intersection_marker=outer->newReasonMarker(getID());
-	line_not_intersection_marker=outer->newReasonMarker(getID());
 
 
 	if(hullAlg== ConvexHullAlg::ALG_QUICKHULL){
@@ -305,6 +296,7 @@ GeometryDetector(detectorID),outer(outer),under(under),over(over),rnd_seed(seed)
 
 }
 
+/*
 
 template<unsigned int D, class T>
 void ConvexHullDetector<D,T>::addPointContainmentLit(Point<D,T> p,Var outerVar, bool inclusive){
@@ -352,6 +344,7 @@ void ConvexHullDetector<D,T>::addPointOnHullLit(int pointsetIndex, Var outerVar)
 	Var pointsetVar = outer->getPointVar(point.getID());
 	pointOnHullLits.push_back({pointsetVar,pointsetIndex,point,v});
 }
+*/
 
 
 template<unsigned int D, class T>
@@ -469,22 +462,22 @@ bool ConvexHullDetector<D,T>::propagate(vec<Lit> & conflict){
 	printf("\n");*/
 
 #ifndef NDEBUG
-	cout<<"Round "<<iter<<", " << getID() << ":\n";
-	cout<<"enabled_" << getID() << " = [";
+	cout<<"Round "<<iter<<", " << this->getID() << ":\n";
+	cout<<"enabled_" << this->getID() << " = [";
 	for (int i = 0;i<under.size();i++){
 		if(under.pointEnabled(i)){
 			cout<< under[i] <<", ";
 		}
 	}
-	cout<<"]\ndisabled_" << getID() << " = [";
+	cout<<"]\ndisabled_" << this->getID() << " = [";
 	for (int i = 0;i<over.size();i++){
 		if(!over.pointEnabled(i)){
 			cout<< over[i] <<", ";
 		}
 	}
 	cout<<"]\n";
-	cout <<"under_" << getID() << " = " << under_hull->getHull() << "\n";
-	cout<<"over_" << getID() << " = " << over_hull->getHull()<< "\n";
+	cout <<"under_" << this->getID() << " = " << under_hull->getHull() << "\n";
+	cout<<"over_" << this->getID() << " = " << over_hull->getHull()<< "\n";
 #endif
 
 	if(areaDetectors.size()){
@@ -500,7 +493,7 @@ bool ConvexHullDetector<D,T>::propagate(vec<Lit> & conflict){
 			T areaGEQ = areaDetectors[i].areaGreaterEqThan;
 			if(under_area>=areaGEQ){
 				//l is true
-				if(outer->value(l)==l_True){
+				if(this->outer->value(l)==l_True){
 					//do nothing
 				}else if(outer->value(l)==l_Undef){
 
@@ -513,7 +506,7 @@ bool ConvexHullDetector<D,T>::propagate(vec<Lit> & conflict){
 			}else if (over_area<areaGEQ){
 				l=~l;
 				//l is true
-				if(outer->value(l)==l_True){
+				if(this->outer->value(l)==l_True){
 					//do nothing
 				}else if(outer->value(l)==l_Undef){
 					outer->enqueue(l,area_not_geq_marker) ;
@@ -536,12 +529,12 @@ bool ConvexHullDetector<D,T>::propagate(vec<Lit> & conflict){
 		//Before doing a full, expensive check for containment, check if the triangle of points that contained this point last time (if there were such points) are all still enabled (in which case, containment is guaranteed).
 		if(checkContainingTriangle(pointContainedLits[i].under_containing_triangle,point,p_under,under,pointContainedLits[i].inclusive) || p_under.contains(point,&pointContainedLits[i].under_containing_triangle,pointContainedLits[i].inclusive)){
 			//l is true
-			if(outer->value(l)==l_True){
+			if(this->outer->value(l)==l_True){
 				//do nothing
-			}else if(outer->value(l)==l_Undef){
+			}else if(this->outer->value(l)==l_Undef){
 
 				outer->enqueue(l,point_contained_marker) ;
-			}else if (outer->value(l)==l_False){
+			}else if (this->outer->value(l)==l_False){
 				conflict.push(l);
 				buildPointContainedReason(point,conflict,pointContainedLits[i].inclusive);
 				return false;
@@ -550,11 +543,11 @@ bool ConvexHullDetector<D,T>::propagate(vec<Lit> & conflict){
 		//}else if (!p_over.contains(point)){
 			l=~l;
 			//l is true
-			if(outer->value(l)==l_True){
+			if(this->outer->value(l)==l_True){
 				//do nothing
-			}else if(outer->value(l)==l_Undef){
+			}else if(this->outer->value(l)==l_Undef){
 				outer->enqueue(l,point_not_contained_marker);
-			}else if (outer->value(l)==l_False){
+			}else if (this->outer->value(l)==l_False){
 				conflict.push(l);
 				buildPointNotContainedReason(point,conflict,pointContainedLits[i].inclusive);
 				return false;
@@ -568,12 +561,12 @@ bool ConvexHullDetector<D,T>::propagate(vec<Lit> & conflict){
 
 		if(checkLineIntersection(lineIntersectionLits[i].under_intersecting_polygon,line,p_under,under,lineIntersectionLits[i].inclusive) || p_under.intersects(line,&lineIntersectionLits[i].under_intersecting_polygon,nullptr,lineIntersectionLits[i].inclusive)){
 			//l is true
-			if(outer->value(l)==l_True){
+			if(this->outer->value(l)==l_True){
 				//do nothing
-			}else if(outer->value(l)==l_Undef){
+			}else if(this->outer->value(l)==l_Undef){
 
 				outer->enqueue(l,line_intersection_marker) ;
-			}else if (outer->value(l)==l_False){
+			}else if (this->outer->value(l)==l_False){
 				conflict.push(l);
 				buildLineIntersectsReason(line,conflict,lineIntersectionLits[i].inclusive);
 				return false;
@@ -582,11 +575,11 @@ bool ConvexHullDetector<D,T>::propagate(vec<Lit> & conflict){
 		//}else if (!p_over.intersects(line)){
 			l=~l;
 			//l is true
-			if(outer->value(l)==l_True){
+			if(this->outer->value(l)==l_True){
 				//do nothing
-			}else if(outer->value(l)==l_Undef){
+			}else if(this->outer->value(l)==l_Undef){
 				outer->enqueue(l,line_not_intersection_marker) ;
-			}else if (outer->value(l)==l_False){
+			}else if (this->outer->value(l)==l_False){
 				conflict.push(l);
 				buildLineNotIntersectsReason(line,conflict,lineIntersectionLits[i].inclusive);
 				return false;
@@ -600,12 +593,12 @@ bool ConvexHullDetector<D,T>::propagate(vec<Lit> & conflict){
 
 		if(p_under.intersects(polygon,convexIntersectionLits[i].inclusive)){
 			//l is true
-			if(outer->value(l)==l_True){
+			if(this->outer->value(l)==l_True){
 				//do nothing
-			}else if(outer->value(l)==l_Undef){
+			}else if(this->outer->value(l)==l_Undef){
 
 				outer->enqueue(l,convex_intersection_marker) ;
-			}else if (outer->value(l)==l_False){
+			}else if (this->outer->value(l)==l_False){
 				conflict.push(l);
 				buildConvexIntersectsReason(polygon,conflict,convexIntersectionLits[i].inclusive);
 				return false;
@@ -613,11 +606,11 @@ bool ConvexHullDetector<D,T>::propagate(vec<Lit> & conflict){
 		}else if (!p_over.intersects(polygon,convexIntersectionLits[i].inclusive)){
 			l=~l;
 			//l is true
-			if(outer->value(l)==l_True){
+			if(this->outer->value(l)==l_True){
 				//do nothing
-			}else if(outer->value(l)==l_Undef){
+			}else if(this->outer->value(l)==l_Undef){
 				outer->enqueue(l,convex_not_intersection_marker) ;
-			}else if (outer->value(l)==l_False){
+			}else if (this->outer->value(l)==l_False){
 				conflict.push(l);
 				buildConvexNotIntersectsReason(polygon,conflict,convexIntersectionLits[i].inclusive);
 				return false;
@@ -634,11 +627,11 @@ bool ConvexHullDetector<D,T>::propagate(vec<Lit> & conflict){
 		under_hull_members.growTo(under.size());
 		over_hull_members.growTo(over.size());
 		for(auto & p:p_under){
-			int pointsetIndex = outer->getPointsetIndex(p.getID());
+			int pointsetIndex = this->outer->getPointsetIndex(p.getID());
 			under_hull_members[pointsetIndex]=true;
 		}
 		for(auto & p:p_over){
-			int pointsetIndex = outer->getPointsetIndex(p.getID());
+			int pointsetIndex = this->outer->getPointsetIndex(p.getID());
 			over_hull_members[pointsetIndex]=true;
 		}
 		for(int i =0;i<pointOnHullLits.size();i++){
@@ -646,19 +639,19 @@ bool ConvexHullDetector<D,T>::propagate(vec<Lit> & conflict){
 			Lit l = pointOnHullLits[i].l;
 
 			//check if a point is a member of the hull
-			int pointsetIndex = outer->getPointsetIndex(point.getID());
+			int pointsetIndex = this->outer->getPointsetIndex(point.getID());
 			bool under_member=under_hull_members[pointsetIndex];
 			bool over_member=over_hull_members[pointsetIndex];
 
 			//this is backward, I think...
 			if(!over.pointEnabled(pointsetIndex) ||under_member){
 				//l is true
-				if(outer->value(l)==l_True){
+				if(this->outer->value(l)==l_True){
 					//do nothing
-				}else if(outer->value(l)==l_Undef){
+				}else if(this->outer->value(l)==l_Undef){
 
 					outer->enqueue(l,point_contained_marker) ;
-				}else if (outer->value(l)==l_False){
+				}else if (this->outer->value(l)==l_False){
 					conflict.push(l);
 					buildPointOnHullOrDisabledReason( pointOnHullLits[i].pointVar, point,conflict);
 					return false;
@@ -667,11 +660,11 @@ bool ConvexHullDetector<D,T>::propagate(vec<Lit> & conflict){
 				assert(p_over.contains(point,false));
 				l=~l;
 				//l is true
-				if(outer->value(l)==l_True){
+				if(this->outer->value(l)==l_True){
 					//do nothing
-				}else if(outer->value(l)==l_Undef){
+				}else if(this->outer->value(l)==l_Undef){
 					outer->enqueue(l,point_not_contained_marker) ;
-				}else if (outer->value(l)==l_False){
+				}else if (this->outer->value(l)==l_False){
 					conflict.push(l);
 					buildPointNotOnHullOrDisabledReason(pointOnHullLits[i].pointVar,point,conflict);
 					return false;
@@ -695,7 +688,7 @@ bool ConvexHullDetector<D,T>::checkSatisfied(){
 	MonotoneConvexHull<D,T> cv_over(over);
 	ConvexPolygon<D,T> & h_under =under_hull->getHull();
 	ConvexPolygon<D,T> & h_over = over_hull->getHull();
-/*	printf("Hull %d: ", getID());
+/*	printf("Hull %d: ", this->getID());
 	for (auto & p:h_under){
 		cout << "(" << p.x <<","<<p.y <<")";
 	}
@@ -710,15 +703,15 @@ bool ConvexHullDetector<D,T>::checkSatisfied(){
 	for(auto & a: areaDetectors){
 		T & area_cmp = a.areaGreaterEqThan;
 		Lit l = a.l;
-		if(outer->value(l)==l_True){
+		if(this->outer->value(l)==l_True){
 			if(area_over <area_cmp){
 
-				cout << getID() << "Failed on area under" << area_over << "," << area_cmp <<"\n";
+				cout << this->getID() << "Failed on area under" << area_over << "," << area_cmp <<"\n";
 				return false;
 			}
-		}else if(outer->value(l)==l_False){
+		}else if(this->outer->value(l)==l_False){
 			if(area_under>=area_cmp){
-				cout << getID() << "Failed on area over" << area_over << "," << area_cmp <<"\n";
+				cout << this->getID() << "Failed on area over" << area_over << "," << area_cmp <<"\n";
 				return false;
 			}
 		}
@@ -727,13 +720,13 @@ bool ConvexHullDetector<D,T>::checkSatisfied(){
 
 		Lit l = a.l;
 		if(!h_over.contains(a.p,a.inclusive)){
-			if(outer->value(l)!=l_False){
-				cout << getID() << "Failed on point inclusion " << a.p << ", inclusive " << a.inclusive <<"\n";
+			if(this->outer->value(l)!=l_False){
+				cout << this->getID() << "Failed on point inclusion " << a.p << ", inclusive " << a.inclusive <<"\n";
 				return false;
 			}
 		}else if(h_under.contains(a.p,a.inclusive)){
-			if(outer->value(l)!=l_True){
-				cout << getID() << "Failed on point exclusion " << a.p << ", inclusive " << a.inclusive <<"\n";
+			if(this->outer->value(l)!=l_True){
+				cout << this->getID() << "Failed on point exclusion " << a.p << ", inclusive " << a.inclusive <<"\n";
 				return false;
 			}
 		}
@@ -742,13 +735,13 @@ bool ConvexHullDetector<D,T>::checkSatisfied(){
 
 		Lit l = a.l;
 		if(!h_over.intersects(a.line,a.inclusive)){
-				if(outer->value(l)!=l_False){
-					cout << getID() << "Failed on line inclusion " << a.line << ", inclusive " << a.inclusive <<"\n";
+				if(this->outer->value(l)!=l_False){
+					cout << this->getID() << "Failed on line inclusion " << a.line << ", inclusive " << a.inclusive <<"\n";
 					return false;
 				}
 			}else if(h_under.intersects(a.line,a.inclusive)){
-				if(outer->value(l)!=l_True){
-					cout << getID() << "Failed on line exclusion " << a.line << ", inclusive " << a.inclusive <<"\n";
+				if(this->outer->value(l)!=l_True){
+					cout << this->getID() << "Failed on line exclusion " << a.line << ", inclusive " << a.inclusive <<"\n";
 					return false;
 				}
 			}
@@ -758,24 +751,24 @@ bool ConvexHullDetector<D,T>::checkSatisfied(){
 
 		Lit l = a.l;
 		if(!h_over.intersects(a.polygon,a.inclusive)){
-			if(outer->value(l)!=l_False){
-				cout << getID() << "Failed on polygon inclusion " << a.polygon << ", inclusive " << a.inclusive <<"\n";
+			if(this->outer->value(l)!=l_False){
+				cout << this->getID() << "Failed on polygon inclusion " << a.polygon << ", inclusive " << a.inclusive <<"\n";
 				return false;
 			}
 		}else if(h_under.intersects(a.polygon,a.inclusive)){
-			if(outer->value(l)!=l_True){
-				cout << getID() << "Failed on polygon exclusion " << a.polygon << ", inclusive " << a.inclusive <<"\n";
+			if(this->outer->value(l)!=l_True){
+				cout << this->getID() << "Failed on polygon exclusion " << a.polygon << ", inclusive " << a.inclusive <<"\n";
 				return false;
 			}
 		}
-	/*	if(outer->value(l)==l_True){
+	/*	if(this->outer->value(l)==l_True){
 			if(!h_under.intersects(a.polygon,a.inclusive)){
-				cout << getID() << "Failed on polygon inclusion " << a.polygon << ", inclusive " << a.inclusive <<"\n";
+				cout << this->getID() << "Failed on polygon inclusion " << a.polygon << ", inclusive " << a.inclusive <<"\n";
 				return false;
 			}
-		}else if(outer->value(l)==l_False){
+		}else if(this->outer->value(l)==l_False){
 			if(h_over.intersects(a.polygon,a.inclusive)){
-				cout << getID() << "Failed on polygon exclusion " << a.polygon << ", inclusive " << a.inclusive <<"\n";
+				cout << this->getID() << "Failed on polygon exclusion " << a.polygon << ", inclusive " << a.inclusive <<"\n";
 				return false;
 			}
 		}*/
@@ -783,15 +776,15 @@ bool ConvexHullDetector<D,T>::checkSatisfied(){
 	for(auto & a:pointOnHullLits){
 		Lit l = a.l;
 		//If the point is disabled, then it is counted as being in the hull.
-		if(!over.pointEnabled(outer->getPointsetIndex(a.p.getID()))){
-			if(outer->value(l)==l_False){
-				cout << getID() << "Failed on point-in-hull exclusion " << a.p <<"\n";
+		if(!over.pointEnabled(this->outer->getPointsetIndex(a.p.getID()))){
+			if(this->outer->value(l)==l_False){
+				cout << this->getID() << "Failed on point-in-hull exclusion " << a.p <<"\n";
 				return false;
 			}else{
 				continue;
 			}
 		}
-		if(outer->value(l)==l_True){
+		if(this->outer->value(l)==l_True){
 			bool hasPoint = false;
 			for(auto & p:h_over){
 				if(p.getID()==a.p.getID()){
@@ -800,11 +793,11 @@ bool ConvexHullDetector<D,T>::checkSatisfied(){
 				}
 			}
 			if(!hasPoint){
-				cout << getID() << "Failed on point-in-hull exclusion " << a.p <<"\n";
+				cout << this->getID() << "Failed on point-in-hull exclusion " << a.p <<"\n";
 				return false;
 			}
 
-		}else if(outer->value(l)==l_False){
+		}else if(this->outer->value(l)==l_False){
 			/*bool hasPoint = false;
 			for(auto & p:h_under){
 				if(p.getID()==a.p.getID()){
@@ -815,7 +808,7 @@ bool ConvexHullDetector<D,T>::checkSatisfied(){
 			if(hasPoint)
 				return false;*/
 			if(!h_under.contains(a.p,false)){
-				cout << getID() << "Failed on point-in-hull inclusion " << a.p <<"\n";
+				cout << this->getID() << "Failed on point-in-hull inclusion " << a.p <<"\n";
 				return false;
 			}
 		}
@@ -835,8 +828,8 @@ void ConvexHullDetector<D,T>::buildAreaGEQReason(T area, vec<Lit> & conflict){
 	under_hull->update();
 	for(auto & p:under_hull->getHull()){
 		int pID = p.getID();
-		Lit l = mkLit(outer->getPointVar(pID),true);
-		assert(outer->value(l)==l_False);
+		Lit l = mkLit(this->outer->getPointVar(pID),true);
+		assert(this->outer->value(l)==l_False);
 		conflict.push(l);
 	}
 }
@@ -845,7 +838,7 @@ void ConvexHullDetector<D,T>::buildAreaLTReason(T area,vec<Lit> & conflict){
 	//the reason that the area is less than some value is that some point that is OUTSIDE the convex hull is not enabled.
 	for(int i = 0;i<over.size();i++){
 		if(!over.pointEnabled(i) && ! over_hull->getHull().contains(over[i],true)){
-			conflict.push(mkLit(outer->getPointVar(over[i].getID()),false));
+			conflict.push(mkLit(this->outer->getPointVar(over[i].getID()),false));
 		}
 	}
 }
@@ -924,8 +917,8 @@ void ConvexHullDetector<D,T>::buildPointContainedReason2d(const Point<2,T> & s, 
 	printf("\n");*/
 	for(auto & p: triangle){
 		int id = p.getID();
-		Var v = outer->getPointVar(id);
-		assert(outer->value(v)==l_True);
+		Var v = this->outer->getPointVar(id);
+		assert(this->outer->value(v)==l_True);
 		conflict.push(mkLit(v,true));
 	}
 	stats_under_clauses++;
@@ -966,7 +959,7 @@ void ConvexHullDetector<D,T>::buildPointNotContainedReason2d(const Point<2,T> & 
 		for(int i = 0;i<over.size();i++){
 			Point<2,T> & p = over[i];
 			if(!over.pointEnabled(i)){
-				conflict.push(mkLit( outer->getPointVar(p.getID()),false));
+				conflict.push(mkLit( this->outer->getPointVar(p.getID()),false));
 			}
 		}
 		stats_over_clauses++;
@@ -1011,9 +1004,9 @@ void ConvexHullDetector<D,T>::buildPointNotContainedReason2d(const Point<2,T> & 
 				assert(!hull.contains(p,inclusive));
 				Point<2,T> & p = over[i];
 				assert(p.getID()>=0);
-				assert(!over.pointEnabled(outer->getPointsetIndex(p.getID())));
-				Lit l = mkLit( outer->getPointVar(p.getID()),false);
-				assert(outer->value(l)==l_False);
+				assert(!over.pointEnabled(this->outer->getPointsetIndex(p.getID())));
+				Lit l = mkLit( this->outer->getPointVar(p.getID()),false);
+				assert(this->outer->value(l)==l_False);
 				conflict.push(l);
 			}else{
 				assert(hull.contains(p,true));
@@ -1071,9 +1064,9 @@ void ConvexHullDetector<D,T>::buildPointNotContainedReason2d(const Point<2,T> & 
 	for(int i = 0;i<min_set.size();i++){
 		Point<2,T> & p = min_set[i];
 		assert(p.getID()>=0);
-		assert(!over.pointEnabled(outer->getPointsetIndex(p.getID())));
-		Lit l = mkLit( outer->getPointVar(p.getID()),false);
-		assert(outer->value(l)==l_False);
+		assert(!over.pointEnabled(this->outer->getPointsetIndex(p.getID())));
+		Lit l = mkLit( this->outer->getPointVar(p.getID()),false);
+		assert(this->outer->value(l)==l_False);
 		conflict.push(l);
 
 	}
@@ -1084,10 +1077,10 @@ template<unsigned int D, class T>
 void ConvexHullDetector<D,T>::buildPointOnHullOrDisabledReason2d(Var pointVar,const Point<2,T> & s, vec<Lit> & conflict){
 	//If the point IS on the hull (or disabled), it is either because it is currently disabled...
 
-	assert(outer->getPointVar(s.getID())==pointVar);
+	assert(this->outer->getPointVar(s.getID())==pointVar);
 	Lit enabledLit = mkLit(pointVar,false);
 
-	if(outer->value(enabledLit)==l_False){
+	if(this->outer->value(enabledLit)==l_False){
 		conflict.push(enabledLit);
 		return;
 	}
@@ -1109,7 +1102,7 @@ void ConvexHullDetector<D,T>::buildPointOnHullOrDisabledReason2d(Var pointVar,co
 		for(int i = 0;i<over.size();i++){
 			Point<2,T> & p = over[i];
 			if(!over.pointEnabled(i)){
-				conflict.push(mkLit( outer->getPointVar(p.getID()),false));
+				conflict.push(mkLit( this->outer->getPointVar(p.getID()),false));
 			}
 		}
 		return;
@@ -1161,8 +1154,8 @@ void ConvexHullDetector<D,T>::buildPointOnHullOrDisabledReason2d(Var pointVar,co
 	for(int i = 0;i<min_set.size();i++){
 		Point<2,T> & p = min_set[i];
 		assert(!over.pointEnabled(p.getID()));
-		Lit l = mkLit( outer->getPointVar(p.getID()),false);
-		assert(outer->value(l)==l_False);
+		Lit l = mkLit( this->outer->getPointVar(p.getID()),false);
+		assert(this->outer->value(l)==l_False);
 		conflict.push(l);
 
 	}
@@ -1171,9 +1164,9 @@ void ConvexHullDetector<D,T>::buildPointOnHullOrDisabledReason2d(Var pointVar,co
 template<unsigned int D, class T>
 void ConvexHullDetector<D,T>::buildPointNotOnHullOrDisabledReason2d(Var pointVar,const Point<2,T> & s, vec<Lit> & conflict){
 	//If the point is not (on the hull or disabled), it is because it is both currently enabled...
-	assert(outer->getPointVar(s.getID())==pointVar);
+	assert(this->outer->getPointVar(s.getID())==pointVar);
 	Lit enabledLit = mkLit(pointVar,false);
-	assert(outer->value(enabledLit)==l_True);
+	assert(this->outer->value(enabledLit)==l_True);
 	conflict.push(~enabledLit);
 	//AND, it is because there exist three other enabled points that form a triangle that contain this point:
 	ConvexPolygon<2,T> &hull = under_hull->getHull();
@@ -1187,8 +1180,8 @@ void ConvexHullDetector<D,T>::buildPointNotOnHullOrDisabledReason2d(Var pointVar
 	assert(triangle.contains(s,true));
 	for(auto & p: triangle){
 		int id = p.getID();
-		Var v = outer->getPointVar(id);
-		assert(outer->value(v)==l_True);
+		Var v = this->outer->getPointVar(id);
+		assert(this->outer->value(v)==l_True);
 		conflict.push(mkLit(v,true));
 	}
 
@@ -1224,8 +1217,8 @@ void ConvexHullDetector<D,T>::buildConvexNotIntersectsReason2d(ConvexPolygon<2,T
 		//can we improve on this?
 		for(int i = 0;i<h1.size();i++){
 			if(!over.pointEnabled(i)){
-				Lit l = mkLit( outer->getPointVar(over[i].getID()));
-				assert(outer->value(l)==l_False);
+				Lit l = mkLit( this->outer->getPointVar(over[i].getID()));
+				assert(this->outer->value(l)==l_False);
 				conflict.push(l);
 			}
 		}
@@ -1260,9 +1253,9 @@ void ConvexHullDetector<D,T>::buildConvexNotIntersectsReason2d(ConvexPolygon<2,T
 
 	for(auto & p:projection){
 		int pID = p.first.getID();
-		int pointset = outer->getPointset(pID);
+		int pointset = this->outer->getPointset(pID);
 		assert(pointset==over.getID());
-		int pointsetIndex = outer->getPointsetIndex(pID);
+		int pointsetIndex = this->outer->getPointsetIndex(pID);
 		if(over.pointEnabled(pointsetIndex)){
 			if(p.second<leftmost1)
 				leftmost1 = p.second;
@@ -1294,21 +1287,21 @@ void ConvexHullDetector<D,T>::buildConvexNotIntersectsReason2d(ConvexPolygon<2,T
 
 	for(auto & p:projection){
 		int pID = p.first.getID();
-		int pointset = outer->getPointset(pID);
-		int pointsetIndex = outer->getPointsetIndex(pID);
+		int pointset = this->outer->getPointset(pID);
+		int pointsetIndex = this->outer->getPointsetIndex(pID);
 		assert(pointset==over.getID());
 		if(!over.pointEnabled(pointsetIndex)){
 			if(!over.pointEnabled(pointsetIndex)){
 				if(h1_is_left && p.second>rightmost1){
 					//then if we enable this point, the two hulls will move closer to each other.
 					//we can probably improve on this, by only considering points that are also >= the rightmost _disabled_ point of pointset2...
-					Lit l = mkLit(outer->getPointVar(pID));
-					assert(outer->value(l)==l_False);
+					Lit l = mkLit(this->outer->getPointVar(pID));
+					assert(this->outer->value(l)==l_False);
 					conflict.push(l);
 				}
 				if(h1_is_right && p.second<leftmost1){
-					Lit l = mkLit(outer->getPointVar(pID));
-					assert(outer->value(l)==l_False);
+					Lit l = mkLit(this->outer->getPointVar(pID));
+					assert(this->outer->value(l)==l_False);
 					conflict.push(l);
 				}
 			}
@@ -1357,7 +1350,7 @@ void ConvexHullDetector<D,T>::buildConvexIntersectsReason2d(ConvexPolygon<2,T> &
 		exit(3);
 	}
 	for(auto & p:intersect1){
-		conflict.push(~mkLit(outer->getPointVar(p.getID())));
+		conflict.push(~mkLit(this->outer->getPointVar(p.getID())));
 	}
 
 	//it is probably possible to improve on this quadratic time search...
@@ -1371,8 +1364,8 @@ void ConvexHullDetector<D,T>::buildConvexIntersectsReason2d(ConvexPolygon<2,T> &
 			LineSegment<2,T> edge2(prev2,p2);
 			if(edge1.intersects(edge2,inclusive)){
 				//learn that one of the endpoints of the intersecting lines must be disabled
-				conflict.push(~mkLit(outer->getPointVar(prev.getID())));
-				conflict.push(~mkLit(outer->getPointVar(p.getID())));
+				conflict.push(~mkLit(this->outer->getPointVar(prev.getID())));
+				conflict.push(~mkLit(this->outer->getPointVar(p.getID())));
 				return;
 			}
 		}
@@ -1389,7 +1382,7 @@ void ConvexHullDetector<D,T>::buildConvexIntersectsReason2d(ConvexPolygon<2,T> &
 			h2.contains(h1[i],&triangle,inclusive);
 			//findContainingTriangle2d(h2,h1[i],triangle,inclusive);
 			assert(triangle.contains(h1[i],inclusive));
-			conflict.push(~mkLit(outer->getPointVar(h1[i].getID())));
+			conflict.push(~mkLit(this->outer->getPointVar(h1[i].getID())));
 			return;
 		}
 	}
@@ -1402,7 +1395,7 @@ void ConvexHullDetector<D,T>::buildConvexIntersectsReason2d(ConvexPolygon<2,T> &
 			assert(triangle.contains(h2[i],inclusive));
 			for(auto & p: triangle){
 				int id = p.getID();
-				Var v = outer->getPointVar(id);
+				Var v = this->outer->getPointVar(id);
 				assert(outer->value(v)==l_True);
 				conflict.push(mkLit(v,true));
 			}
