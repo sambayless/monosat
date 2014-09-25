@@ -205,11 +205,11 @@ private:
       // on the second argument, so if -fno-rounding-math, the compiler optimizes
       // the 2 negations and we get wrong rounding.
       typename Interval_nt<>::Internal_protector P;
-      CGAL_assertion_msg(-CGAL_IA_MUL(-1.1, 10.1) != CGAL_IA_MUL(1.1, 10.1),
+     /* CGAL_assertion_msg(-CGAL_IA_MUL(-1.1, 10.1) != CGAL_IA_MUL(1.1, 10.1),
                          "Wrong rounding: did you forget the  -frounding-math  option if you use GCC (or  -fp-model strict  for Intel)?");
       CGAL_assertion_msg(-CGAL_IA_DIV(-1., 10) != CGAL_IA_DIV(1., 10),
                          "Wrong rounding: did you forget the  -frounding-math  option if you use GCC (or  -fp-model strict  for Intel)?");
-    }
+*/    }
   };
 
 #ifndef CGAL_DISABLE_ROUNDING_MATH_CHECK
