@@ -10,7 +10,7 @@
 
 #include "BitmapGenerator.h"
 #include "mtl/Rnd.h"
-using namespace Minisat;
+using namespace Monosat;
 
 class TreeGenerator:public BitmapGenerator{
 

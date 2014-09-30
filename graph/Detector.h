@@ -12,7 +12,7 @@
 #include "mtl/Vec.h"
 #include "core/Config.h"
 #include <cstdio>
-namespace Minisat{
+namespace Monosat{
 
 class Detector{
 public:

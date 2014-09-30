@@ -22,7 +22,7 @@
 #include <set>
 #include <string>
 #include <sstream>
-namespace Minisat {
+namespace Monosat {
 
 struct SteinerStruct{
 	int id;

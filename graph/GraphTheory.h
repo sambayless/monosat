@@ -44,7 +44,7 @@
 #include <sstream>
 
 using namespace dgl;
-namespace Minisat{
+namespace Monosat{
 template<typename Weight>
 class GraphTheorySolver;
 

@@ -13,7 +13,7 @@
 #include "LineSegment.h"
 #include "Line.h"
 #include <vector>
-using namespace Minisat;
+using namespace Monosat;
 
 template<unsigned int D, class T>
 class ConvexHullDetector:public GeometryDetector{

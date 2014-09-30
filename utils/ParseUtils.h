@@ -26,7 +26,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 #include <zlib.h>
 #include "mtl/Vec.h"
-namespace Minisat {
+namespace Monosat {
 
 //-------------------------------------------------------------------------------------------------
 // A simple buffered character stream class:

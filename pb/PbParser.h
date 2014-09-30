@@ -16,7 +16,7 @@
 #include "pb/PbTheory.h"
 #include "core/Config.h"
 #include <set>
-namespace Minisat {
+namespace Monosat {
 
 
 template<class B, class Solver>

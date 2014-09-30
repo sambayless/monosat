@@ -11,7 +11,7 @@
 #include "mtl/Vec.h"
 #include "PointSet.h"
 //A simple heightmap composed of regularly spaced rectangular prisms
-namespace Minisat{
+namespace Monosat{
 
 template<unsigned int D,class T=double>
 class GridHeightmap:public Heightmap<D,T>{

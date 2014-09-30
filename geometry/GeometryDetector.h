@@ -10,7 +10,7 @@
 #include "core/SolverTypes.h"
 
 #include "mtl/Vec.h"
-using namespace Minisat;
+using namespace Monosat;
 
 class GeometryDetector{
 public:

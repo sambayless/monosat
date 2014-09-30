@@ -11,7 +11,7 @@
 
 #include "BitmapGenerator.h"
 #include "../Polygon.h"
-using namespace Minisat;
+using namespace Monosat;
 
 class PolygonGenerator:public BitmapGenerator{
 	//Polygon<2,int> p;

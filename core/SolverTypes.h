@@ -1,4 +1,5 @@
 /***********************************************************************************[SolverTypes.h]
+MonoSAT -- Copyright (c) 2014, Sam Bayless
 Copyright (c) 2003-2006, Niklas Een, Niklas Sorensson
 Copyright (c) 2007-2010, Niklas Sorensson
 
@@ -30,7 +31,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "mtl/Map.h"
 #include "mtl/Alloc.h"
 
-namespace Minisat {
+namespace Monosat {
 
 //=================================================================================================
 // Variables, literals, lifted booleans, clauses:

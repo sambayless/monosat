@@ -21,7 +21,7 @@
 #include "mtl/Vec.h"
 #include <vector>
 
-namespace Minisat {
+namespace Monosat {
 
 
 // GEOMETRY Parser:

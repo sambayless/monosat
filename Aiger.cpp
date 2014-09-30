@@ -12,7 +12,7 @@ extern "C" {
 #include "aiger/aiger.h"
 }
 #include <map>
-using namespace Minisat;
+using namespace Monosat;
 
 static int
 lit2int (aiger * mgr, unsigned a, int startVar)

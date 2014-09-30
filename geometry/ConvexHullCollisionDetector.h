@@ -12,7 +12,7 @@
 #include "Line.h"
 #include "ConvexHullDetector.h"
 #include <vector>
-using namespace Minisat;
+using namespace Monosat;
 
 
 

@@ -14,7 +14,7 @@
 #include "core/Config.h"
 #include "dgl/DynamicConnectivity.h"
 #include "dgl/TarjansSCC.h"
-using namespace Minisat;
+using namespace Monosat;
 template<typename Weight>
 ReachDetector<Weight>::ReachDetector(int _detectorID, GraphTheorySolver<Weight> * _outer, DynamicGraph &_g, DynamicGraph &_antig, int from,double seed):Detector(_detectorID),outer(_outer),g(_g),antig(_antig),within(-1),source(from),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL),chokepoint_status(*this),chokepoint(chokepoint_status, _antig,source){
 

@@ -10,7 +10,7 @@
 
 #include "../GeometryTypes.h"
 #include "Bitmap.h"
-using namespace Minisat;
+using namespace Monosat;
 
 class BitmapGenerator{
 

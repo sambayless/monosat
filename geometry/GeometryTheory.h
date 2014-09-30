@@ -24,7 +24,7 @@
 #include <cstdio>
 #endif
 
-using namespace Minisat;
+using namespace Monosat;
 
 template<unsigned int D, class T=double>
 class GeometryTheorySolver:public Theory{

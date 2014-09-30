@@ -6,7 +6,7 @@
 #include <climits>
 #include <algorithm>
 #include "mtl/Vec.h"
-using namespace Minisat;
+using namespace Monosat;
 #ifdef NDEBUG
 #define NDEBUG_LINKCUT
 #endif

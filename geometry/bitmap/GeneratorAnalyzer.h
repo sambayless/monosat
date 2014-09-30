@@ -12,7 +12,7 @@
 
 #include "../GeometryTypes.h"
 #include "mtl/Vec.h"
-using namespace Minisat;
+using namespace Monosat;
 
 //Given a generator as input, constructs a model of the under and over approximations over a range of parameter values
 class GeneratorAnalyzer{

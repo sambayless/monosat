@@ -17,7 +17,7 @@
 #include <iostream>
 #include <set>
 #include "core/Config.h"
-using namespace Minisat;
+using namespace Monosat;
 
 
 

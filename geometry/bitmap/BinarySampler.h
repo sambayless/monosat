@@ -14,7 +14,7 @@
 #include "mtl/Rnd.h"
 #include <algorithm>
 #include <cmath>
-using namespace Minisat;
+using namespace Monosat;
 
 //Takes a high-dimensional generator and creates a version with a down-sampled and normalized parameter space
 class BinarySampler:public BitmapGenerator{

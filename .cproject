@@ -90,7 +90,7 @@
 						</toolChain>
 					</folderInfo>
 					<sourceEntries>
-						<entry excluding="tests|pb|cgal|strings|geometry/MonotoneDelaunay.cpp|dgl|smt|smtlib|graph/kbtest.c|polypartition|test/test_thorup.cpp|alg|asp|graph/TreeReachDetector.cpp" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+						<entry excluding="resources|tests|pb|cgal|strings|geometry/MonotoneDelaunay.cpp|dgl|smt|smtlib|graph/kbtest.c|polypartition|test/test_thorup.cpp|alg|asp|graph/TreeReachDetector.cpp" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="dgl"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="pb"/>
 						<entry excluding="test_edmondskarp_dynamic.cpp|test_ramal_reps_weighted.cpp|test_collisions.cpp|test_dinics_linkcut.cpp|test_spirapan.cpp|test_ramal_reps.cpp|test_edmondskarp.cpp|test_thorup.cpp|test_linkcuttree.cpp|test_eulertree.cpp|test_dinics.cpp|test_maxflow.cpp" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="tests"/>
@@ -189,7 +189,7 @@
 						</toolChain>
 					</folderInfo>
 					<sourceEntries>
-						<entry excluding="geometry/cgal|cgal|geometry/MonotoneDelaunay.cpp|polypartition|alg|dgl|asp|pb|smtlib|smt|tests|graph/kbtest.c|test/test_thorup.cpp|strings|graph/TreeReachDetector.cpp" flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name=""/>
+						<entry excluding="resources|geometry/cgal|cgal|geometry/MonotoneDelaunay.cpp|polypartition|alg|dgl|asp|pb|smtlib|smt|tests|graph/kbtest.c|test/test_thorup.cpp|strings|graph/TreeReachDetector.cpp" flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name=""/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="dgl"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="pb"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="smt"/>
@@ -279,7 +279,7 @@
 						</toolChain>
 					</folderInfo>
 					<sourceEntries>
-						<entry excluding="geometry/cgal|cgal|geometry/MonotoneDelaunay.cpp|polypartition|alg|dgl|asp|pb|smtlib|smt|tests|graph/kbtest.c|test/test_thorup.cpp|strings|schedule|graph/TreeReachDetector.cpp" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+						<entry excluding="resources|geometry/cgal|cgal|geometry/MonotoneDelaunay.cpp|polypartition|alg|dgl|asp|pb|smtlib|smt|tests|graph/kbtest.c|test/test_thorup.cpp|strings|schedule|graph/TreeReachDetector.cpp" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="dgl"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="pb"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="smt"/>
@@ -365,7 +365,7 @@
 						</toolChain>
 					</folderInfo>
 					<sourceEntries>
-						<entry excluding="geometry/cgal|cgal|geometry/MonotoneDelaunay.cpp|polypartition|alg|dgl|asp|pb|smtlib|smt|tests|graph/kbtest.c|test/test_thorup.cpp|strings|schedule|graph/TreeReachDetector.cpp" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+						<entry excluding="resources|geometry/cgal|cgal|geometry/MonotoneDelaunay.cpp|polypartition|alg|dgl|asp|pb|smtlib|smt|tests|graph/kbtest.c|test/test_thorup.cpp|strings|schedule|graph/TreeReachDetector.cpp" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="dgl"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="pb"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="smt"/>
@@ -455,7 +455,7 @@
 						</toolChain>
 					</folderInfo>
 					<sourceEntries>
-						<entry excluding="geometry/cgal|cgal|geometry/MonotoneDelaunay.cpp|polypartition|alg|dgl|asp|pb|smtlib|smt|tests|graph/kbtest.c|test/test_thorup.cpp|strings|schedule|graph/TreeReachDetector.cpp" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+						<entry excluding="resources|geometry/cgal|cgal|geometry/MonotoneDelaunay.cpp|polypartition|alg|dgl|asp|pb|smtlib|smt|tests|graph/kbtest.c|test/test_thorup.cpp|strings|schedule|graph/TreeReachDetector.cpp" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="dgl"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="pb"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="smt"/>
@@ -553,7 +553,7 @@
 						</toolChain>
 					</folderInfo>
 					<sourceEntries>
-						<entry excluding="geometry/cgal|cgal|geometry/MonotoneDelaunay.cpp|polypartition|alg|dgl|asp|pb|smtlib|smt|tests|graph/kbtest.c|test/test_thorup.cpp|Main.cc|strings|schedule|graph/TreeReachDetector.cpp" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+						<entry excluding="resources|geometry/cgal|cgal|geometry/MonotoneDelaunay.cpp|polypartition|alg|dgl|asp|pb|smtlib|smt|tests|graph/kbtest.c|test/test_thorup.cpp|Main.cc|strings|schedule|graph/TreeReachDetector.cpp" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="dgl"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="pb"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="smt"/>
@@ -651,7 +651,7 @@
 						</toolChain>
 					</folderInfo>
 					<sourceEntries>
-						<entry excluding="geometry/cgal|cgal|geometry/MonotoneDelaunay.cpp|polypartition|alg|dgl|asp|pb|smtlib|smt|tests|graph/kbtest.c|test/test_thorup.cpp|strings|schedule|graph/TreeReachDetector.cpp" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+						<entry excluding="resources|geometry/cgal|cgal|geometry/MonotoneDelaunay.cpp|polypartition|alg|dgl|asp|pb|smtlib|smt|tests|graph/kbtest.c|test/test_thorup.cpp|strings|schedule|graph/TreeReachDetector.cpp" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="dgl"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="pb"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="smt"/>
@@ -750,7 +750,7 @@
 						</toolChain>
 					</folderInfo>
 					<sourceEntries>
-						<entry excluding="geometry/cgal|cgal|geometry/MonotoneDelaunay.cpp|polypartition|alg|dgl|asp|pb|smtlib|smt|tests|graph/kbtest.c|test/test_thorup.cpp|strings|graph/TreeReachDetector.cpp" flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name=""/>
+						<entry excluding="resources|geometry/cgal|cgal|geometry/MonotoneDelaunay.cpp|polypartition|alg|dgl|asp|pb|smtlib|smt|tests|graph/kbtest.c|test/test_thorup.cpp|strings|graph/TreeReachDetector.cpp" flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name=""/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="dgl"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="pb"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="smt"/>
@@ -854,7 +854,7 @@
 						</toolChain>
 					</folderInfo>
 					<sourceEntries>
-						<entry excluding="geometry/cgal|cgal|geometry/MonotoneDelaunay.cpp|polypartition|alg|dgl|asp|pb|Main.cc|smt|smtlib|tests|graph/kbtest.c|test/test_thorup.cpp|strings|graph/TreeReachDetector.cpp" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+						<entry excluding="resources|geometry/cgal|cgal|geometry/MonotoneDelaunay.cpp|polypartition|alg|dgl|asp|pb|Main.cc|smt|smtlib|tests|graph/kbtest.c|test/test_thorup.cpp|strings|graph/TreeReachDetector.cpp" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="dgl"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="pb"/>
 						<entry excluding="test_edmondskarp.cpp|test_collisions.cpp|test_ramal_reps_weighted.cpp|test_ramal_reps.cpp|test_spirapan.cpp|test_dinics_linkcut.cpp|test_linkcuttree.cpp|test_dinics.cpp|test_eulertree.cpp|test_maxflow.cpp|test_thorup.cpp" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="tests"/>
@@ -952,7 +952,7 @@
 						</toolChain>
 					</folderInfo>
 					<sourceEntries>
-						<entry excluding="geometry/cgal|cgal|geometry/MonotoneDelaunay.cpp|polypartition|alg|dgl|asp|pb|Main.cc|smt|smtlib|tests|graph/kbtest.c|test/test_thorup.cpp|strings|graph/TreeReachDetector.cpp" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+						<entry excluding="resources|geometry/cgal|cgal|geometry/MonotoneDelaunay.cpp|polypartition|alg|dgl|asp|pb|Main.cc|smt|smtlib|tests|graph/kbtest.c|test/test_thorup.cpp|strings|graph/TreeReachDetector.cpp" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="dgl"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="pb"/>
 						<entry excluding="test_edmondskarp_dynamic.cpp|test_ramal_reps_weighted.cpp|test_collisions.cpp|test_maxflow.cpp|test_edmondskarp.cpp|test_dinics.cpp|test_dinics_linkcut.cpp|test_linkcuttree.cpp|test_eulertree.cpp|test_ramal_reps.cpp|test_thorup.cpp" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="tests"/>

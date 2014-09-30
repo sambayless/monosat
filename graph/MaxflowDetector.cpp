@@ -14,7 +14,7 @@
 #include "dgl/EdmondsKarpDynamic.h"
 #include "dgl/Dinics.h"
 #include "dgl/DinicsLinkCut.h"
-using namespace Minisat;
+using namespace Monosat;
 
 
 

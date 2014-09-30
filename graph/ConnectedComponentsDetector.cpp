@@ -12,7 +12,7 @@
 #include "dgl/UnweightedDistance.h"
 #include "dgl/Reach.h"
 #include <limits>
-using namespace Minisat;
+using namespace Monosat;
 template<typename Weight>
 ConnectedComponentsDetector<Weight>::ConnectedComponentsDetector(int _detectorID, GraphTheorySolver<Weight> * _outer,  DynamicGraph &_g,DynamicGraph &_antig,double seed):
 Detector(_detectorID),outer(_outer),g(_g),antig(_antig),rnd_seed(seed),positive_component_detector(NULL),negative_component_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL){

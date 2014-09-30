@@ -11,7 +11,7 @@
 #include "core/SolverTypes.h"
 #include "mtl/Rnd.h"
 
-namespace Minisat{
+namespace Monosat{
 
 struct ReachabilityConstraint{
 	int from;

@@ -21,7 +21,7 @@
 #include "Detector.h"
 
 using namespace dgl;
-namespace Minisat{
+namespace Monosat{
 template<typename Weight>
 class GraphTheorySolver;
 template<typename Weight=int>

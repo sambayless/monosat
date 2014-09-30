@@ -8,7 +8,7 @@
 #ifndef DYNCON_H_
 #define DYNCON_H_
 #include "mtl/Vec.h"
-using namespace Minisat;
+using namespace Monosat;
 class dDynamicGraph{
 	struct edge{
 		int level;

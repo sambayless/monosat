@@ -11,7 +11,7 @@
 
 #include "../GeometryTypes.h"
 #include "mtl/Vec.h"
-using namespace Minisat;
+using namespace Monosat;
 
 class Bitmap{
 	int m_width;

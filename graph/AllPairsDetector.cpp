@@ -12,6 +12,7 @@
 #include "dgl/FloydWarshall.h"
 #include "dgl/DijkstraAllPairs.h"
 #include "dgl/ThorupDynamicConnectivity.h"
+using namespace Monosat;
 template<typename Weight>
 AllPairsDetector<Weight>::AllPairsDetector(int _detectorID, GraphTheorySolver<Weight> * _outer,  DynamicGraph &_g,DynamicGraph &_antig, double seed):
 Detector(_detectorID),outer(_outer),g(_g),antig(_antig),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL){

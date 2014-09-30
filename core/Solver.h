@@ -1,4 +1,5 @@
 /****************************************************************************************[Solver.h]
+MonoSAT -- Copyright (c) 2014, Sam Bayless
 Copyright (c) 2003-2006, Niklas Een, Niklas Sorensson
 Copyright (c) 2007-2010, Niklas Sorensson
 
@@ -31,11 +32,11 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "core/Config.h"
 template<unsigned int D, class T> class GeometryTheorySolver;
 template<typename Weight> class GraphTheorySolver;
-namespace Minisat {
+namespace Monosat {
 
 //=================================================================================================
 // Solver -- the main class:
-
+// The MiniSAT Boolean SAT solver, extended to provided basic SMT support.
 class Solver:public Theory {
 public:
 	friend class Theory;

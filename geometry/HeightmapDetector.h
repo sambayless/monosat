@@ -8,7 +8,7 @@
 #include "Heightmap.h"
 
 #include "Polygon.h"
-using namespace Minisat;
+using namespace Monosat;
 
 template<unsigned int D, class T=double>
 class HeightmapDetector:public GeometryDetector{

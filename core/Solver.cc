@@ -1,4 +1,5 @@
 /***************************************************************************************[Solver.cc]
+MonoSAT -- Copyright (c) 2014, Sam Bayless
 Copyright (c) 2003-2006, Niklas Een, Niklas Sorensson
 Copyright (c) 2007-2010, Niklas Sorensson
 
@@ -25,11 +26,11 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "core/Config.h"
 #include "graph/GraphTheory.h"
 #include <unistd.h>
-using namespace Minisat;
+using namespace Monosat;
 
 //=================================================================================================
 // Options:
-
+// Collected in Config.h
 
 
 

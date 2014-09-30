@@ -17,7 +17,7 @@
 #include <gmpxx.h>
 #include <iostream>
 
-using namespace Minisat;
+using namespace Monosat;
 
 /**
  * c++14 version:
@@ -245,7 +245,7 @@ struct Point{
     	return distance;
     }
 };
-namespace Minisat{
+namespace Monosat{
 template<unsigned int D,class T>
 class vec<::Point<D,T>>;
 	//static_assert(false,"mtl vec cannot be used to store Points (as they are not reallocatable)");

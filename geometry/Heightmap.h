@@ -11,7 +11,7 @@
 #include "Polygon.h"
 
 
-namespace Minisat{
+namespace Monosat{
 
 template<unsigned int D,class T=double>
 class Heightmap{

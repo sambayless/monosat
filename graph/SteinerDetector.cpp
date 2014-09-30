@@ -17,7 +17,7 @@
 #include "core/Config.h"
 #include "dgl/alg/DisjointSets.h"
 
-using namespace Minisat;
+using namespace Monosat;
 
 
 

@@ -29,12 +29,10 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "utils/System.h"
 #include "utils/ParseUtils.h"
 #include "utils/Options.h"
-#include "Aiger.h"
 #include "graph/GraphParser.h"
 #include "core/Dimacs.h"
 #include "core/AssumptionParser.h"
 #include "core/Solver.h"
-#include "Aiger.h"
 #include "core/Config.h"
 #include <unistd.h>
 #include <sys/time.h>
@@ -50,7 +48,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "graph/GraphTheory.h"
 #include "geometry/GeometryTheory.h"
 #include "geometry/GeometryParser.h"
-using namespace Minisat;
+using namespace Monosat;
 using namespace std;
 //=================================================================================================
 
@@ -369,7 +367,6 @@ int main(int argc, char** argv)
            signal(SIGINT, SIGINT_interrupt);
            signal(SIGXCPU,SIGINT_interrupt);
 #endif
-     //      printf("Solving circuit with %d gates, %d latches, %d inputs, %d outputs\n", aiger->num_ands, aiger->num_latches, aiger->num_inputs, aiger->num_outputs);
 
            const char * priority_file = opt_priority;
            if(strlen(priority_file)>0){
@@ -601,7 +598,7 @@ int main(int argc, char** argv)
         lbool ret=S.solve(assume)?l_True:l_False;
         if(opt_optimize_mst && ret ==l_True && S.theories.size()){
 
-        	Minisat::GraphTheorySolver<int> * g = (Minisat::GraphTheorySolver<int>*)S.theories[0];
+        	Monosat::GraphTheorySolver<int> * g = (Monosat::GraphTheorySolver<int>*)S.theories[0];
         	if(g->mstDetector){
 
         		int mst_weight = g->mstDetector->positive_reach_detector->weight();

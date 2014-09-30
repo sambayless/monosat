@@ -10,7 +10,7 @@
 
 
 #include "BitmapGenerator.h"
-using namespace Minisat;
+using namespace Monosat;
 
 class CircleGenerator:public BitmapGenerator{
 

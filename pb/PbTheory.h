@@ -16,7 +16,7 @@
 #include "core/SolverTypes.h"
 #include "core/Theory.h"
 #include <cmath>
-namespace Minisat {
+namespace Monosat {
 
 static BoolOption   opt_dbg_prop        ("DEBUG", "prove-prop",        "", false);
 

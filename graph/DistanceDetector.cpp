@@ -20,7 +20,7 @@
 #include <cstdlib>
 #include <iostream>
 
-using namespace Minisat;
+using namespace Monosat;
 template<typename Weight>
 DistanceDetector<Weight>::DistanceDetector(int _detectorID, GraphTheorySolver<Weight> * _outer,std::vector<Weight> & weights,  DynamicGraph &_g,DynamicGraph &_antig, int from, double seed):
 Detector(_detectorID),outer(_outer),weights(weights),g(_g),antig(_antig),source(from),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL){

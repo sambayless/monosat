@@ -8,27 +8,28 @@
 #ifndef ALLPAIRSDETECTOR_H_
 #define ALLPAIRSDETECTOR_H_
 #include "utils/System.h"
-
 #include "GraphTheoryTypes.h"
 #include "dgl/graph/DynamicGraph.h"
 #include "dgl/AllPairs.h"
 #include <vector>
 #include "core/SolverTypes.h"
 #include "mtl/Map.h"
-
-//#define DEBUG_ALLPAIRS
 #include "utils/System.h"
 #include "Detector.h"
+
+
+//#define DEBUG_ALLPAIRS
+
 using namespace dgl;
-namespace Minisat{
+namespace Monosat{
 template<typename Weight>
 class GraphTheorySolver;
 template<typename Weight>
 class AllPairsDetector:public Detector{
 public:
 		GraphTheorySolver<Weight> * outer;
-		 DynamicGraph &g;
-		 DynamicGraph &antig;
+		DynamicGraph &g;
+		DynamicGraph &antig;
 		int within;
 
 		double rnd_seed;

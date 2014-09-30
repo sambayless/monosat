@@ -14,7 +14,7 @@
 #include "cevans/quickhull3D.h"
 #include <gmpxx.h>
 #include "ConvexPolygon.h"
-using namespace Minisat;
+using namespace Monosat;
 
 template<unsigned int D,class T>
 class QuickConvexHull:public ConvexHull<D,T>{

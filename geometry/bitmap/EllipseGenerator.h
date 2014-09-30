@@ -8,7 +8,7 @@
 #ifndef ELLIPSE_GENERATOR_H_
 #define ELLIPSE_GENERATOR_H_
 #include "BitmapGenerator.h"
-using namespace Minisat;
+using namespace Monosat;
 
 class EllipseGenerator:public BitmapGenerator{
 
