@@ -1,4 +1,7 @@
 /***********************************************************************************[SimpSolver.cc]
+The MIT License (MIT)
+
+Copyright (c) 2014, 	 Sam Bayless
 Copyright (c) 2006,      Niklas Een, Niklas Sorensson
 Copyright (c) 2007-2010, Niklas Sorensson
 
