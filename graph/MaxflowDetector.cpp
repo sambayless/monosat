@@ -23,12 +23,26 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "MaxflowDetector.h"
 #include "GraphTheory.h"
 #include "dgl/EdmondsKarpAdj.h"
-#include "dgl/IBFS.h"
+
 #include "dgl/EdmondsKarpDynamic.h"
 #include "dgl/Dinics.h"
 #include "dgl/DinicsLinkCut.h"
 using namespace Monosat;
 
+template<>
+void MaxflowDetector<int>::buildDinitzLinkCut(){
+	positive_detector =  new DinitzLinkCut<std::vector<int>>(g,capacities);
+	negative_detector = new DinitzLinkCut<std::vector<int>>(antig,capacities);
+}
+
+template<typename Weight>
+void MaxflowDetector<Weight>::buildDinitzLinkCut(){
+	positive_detector =  nullptr;
+	negative_detector = nullptr;
+	assert(false);
+	fprintf(stderr,"Warning: Dinitz Link/Cut Tree implementation only supports unweighted or integer weight graphs, aborting!\n");
+	exit(1);
+}
 
 
 template<typename Weight>
@@ -55,12 +69,12 @@ Detector(_detectorID),outer(_outer),capacities(capacities),over_graph(_g),g(_g),
 		negative_detector = new Dinitz<std::vector<Weight>,Weight>(_antig,capacities);
 		positive_conflict_detector =new EdmondsKarpAdj<std::vector<Weight>,Weight>(_g,capacities);
 		negative_conflict_detector = new EdmondsKarpAdj<std::vector<Weight>,Weight>(_antig,capacities);
-	}/*else if (mincutalg==MinCutAlg::ALG_DINITZ_LINKCUT){
-		positive_detector = new DinitzLinkCut<std::vector<int>>(_g,capacities);
-		negative_detector = new DinitzLinkCut<std::vector<int>>(_antig,capacities);
+	}else if (mincutalg==MinCutAlg::ALG_DINITZ_LINKCUT){
+		//link-cut tree currently only supports ints (enforcing this using tempalte specialization...).
+		buildDinitzLinkCut();
 		positive_conflict_detector =new EdmondsKarpAdj<std::vector<Weight>,Weight>(_g,capacities);
 		negative_conflict_detector = new EdmondsKarpAdj<std::vector<Weight>,Weight>(_antig,capacities);
-	}*/else{
+	}else{
 		positive_detector = new EdmondsKarpAdj<std::vector<Weight>,Weight>(_g,capacities);
 		negative_detector = new EdmondsKarpAdj<std::vector<Weight>,Weight>(_antig,capacities);
 		positive_conflict_detector = positive_detector;
@@ -389,7 +403,7 @@ template<typename Weight>
 
 			return true;
 		}
-		template<typename Weight>
+template<typename Weight>
 bool MaxflowDetector<Weight>::checkSatisfied(){
 	EdmondsKarpAdj<std::vector<Weight>,Weight> positiveCheck(g,capacities);
 	EdmondsKarpAdj<std::vector<Weight>,Weight> negativeCheck(antig,capacities);
@@ -422,6 +436,62 @@ bool MaxflowDetector<Weight>::checkSatisfied(){
 		}
 	return true;
 }
+template<typename Weight>
+void MaxflowDetector<Weight>::printSolution(){
+
+	printf("Maximum %d->%d flow in graph %d: \n", this->source,this->target,this->outer->getGraphID());
+	if(opt_verb>0){
+		int maxw = log10(outer->nNodes() )+1;
+		int width = sqrt(outer->nNodes());
+		if(opt_width>0){
+				width=opt_width;
+		}
+			int height =width;
+			if(opt_height>0){
+				height = opt_height;
+			}
+
+			int lasty= 0;
+			int extra =  outer->nNodes() % width ? (width- outer->nNodes() % width ):0;
+			for(int n = 0;n<outer->nNodes();n++){
+				int x = n%width;
+
+				int y = (n )/width;
+				if(y > lasty)
+					printf("\n");
+				Weight total_flow = 0;
+				for(int e = 0;e<g.edges();e++){
+					if(g.getEdge(e).to==n && g.edgeEnabled(e)){
+						total_flow+=positive_detector->getEdgeFlow(e);
+
+					}
+				}
+
+				//printf("%*d ",maxw,total_flow);
+				std::cout<<total_flow<<" ";
+					lasty=y;
+				}
+				printf("\n");
+
+				for(int n = 0;n<outer->nNodes();n++){
+
+					int total_flow = 0;
+					for(int e = 0;e<g.edges();e++){
+						if(g.getEdge(e).to==n && g.edgeEnabled(e)){
+							Weight flow = positive_detector->getEdgeFlow(e);
+							if(flow>0){
+								printf("flow  %d to %d = ", g.getEdge(e).from,g.getEdge(e).to);
+								std::cout<<flow<<"\n";
+							}
+						}
+					}
+
+				}
+				printf("\n");
+	}
+
+}
+
 template<typename Weight>
 Lit MaxflowDetector<Weight>::decide(){
 	/*MaxflowDetector *r =this;

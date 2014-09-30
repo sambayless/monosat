@@ -181,7 +181,7 @@ public:
 /*		if (sets.NumSets()>1)
 			min_weight=INF;*/
 
-		status.setMinimumSpanningTree(sets.NumSets()>1 ? INF: min_weight);
+		status.setMinimumSpanningTree(sets.NumSets()>1 ? INF: min_weight,sets.NumSets()<=1);
 
 		//if(reportPolarity>-1){
 		for(int i = 0;i<in_tree.size();i++){

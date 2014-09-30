@@ -477,7 +477,7 @@ void DistanceDetector<Weight>::buildNonReachReason(int node,vec<Lit> & conflict)
 
 template<typename Weight>
 void DistanceDetector<Weight>::printSolution(){
-
+	 if(opt_verb>0){
 		 vec<bool> to_show;
 		 to_show.growTo(g.nodes());
 		 for(auto & w:weighted_dist_lits){
@@ -516,7 +516,35 @@ void DistanceDetector<Weight>::printSolution(){
 			 }
 		 }
 
+		int width = sqrt(outer->nNodes());
+		int maxw = log10(outer->nNodes() )+1; //highestbit(bits);
+		if(opt_width>0){
+				width=opt_width;
+			}
+			int height =width;
+			if(opt_height>0){
+				height = opt_height;
+			}
+		int lasty= 0;
+		int extra =  outer->nNodes() % width ? (width- outer->nNodes() % width ):0;
+		for(int n = 0;n<outer->nNodes();n++){
+			int x = n%width;
 
+			int y = (n + extra )/width;
+			if(y > lasty)
+				printf("\n");
+
+			int d = positive_reach_detector->distance(n);
+			printf("%*d ",maxw,d);
+
+
+				lasty=y;
+			}
+			printf("\n");
+
+
+
+	}
 
 }
 

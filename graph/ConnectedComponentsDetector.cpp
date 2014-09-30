@@ -614,6 +614,15 @@ template<typename Weight>
 		}
 			return true;
 		}
+
+template<typename Weight>
+void ConnectedComponentsDetector<Weight>::printSolution(){
+	if(opt_verb>0){
+		int numComponents =  positive_component_detector->numComponents();
+		printf("Number of connected components (graph %d) is: %d\n",outer->getGraphID(),numComponents);
+	}
+}
+
 template<typename Weight>
 bool ConnectedComponentsDetector<Weight>::checkSatisfied(){
 	int numConnected = positive_component_detector->numComponents();

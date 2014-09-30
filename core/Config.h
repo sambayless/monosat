@@ -157,7 +157,7 @@ extern AllPairsConnectivityAlg undirected_allpairsalg;
 enum class MinCutAlg{
 	 ALG_EDMONSKARP,
 	 ALG_EDKARP_ADJ,
-	 ALG_IBFS,
+	// ALG_IBFS,
 	 ALG_EDKARP_DYN,
 	 ALG_DINITZ,
 	 ALG_DINITZ_LINKCUT

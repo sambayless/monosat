@@ -137,6 +137,7 @@ public:
 
     }
     void dbg_print_graph(int from, int to){
+/*
    #ifndef NDEBUG
 
 
@@ -184,19 +185,20 @@ public:
 
    						assert(!(hasParent && link));
 
-   						/*if(dist[e.to]==dist[e.from]+1){
+   						if(dist[e.to]==dist[e.from]+1){
    							s="blue";
-   						}*/
-   						/*if(value(e.v)==l_True)
+   						}
+   						if(value(e.v)==l_True)
    							s="blue";
    						else if (value(e.v)==l_False)
-   							s="red";*/
+   							s="red";
    						//printf("n%d -> n%d [label=\"%d: %d/%d\",color=\"%s\"]\n", e.from,e.to, i, F[i],g.weights[i] , s);
        				}
        			}
 
        			printf("}\n");
    #endif
+*/
        		}
     bool buildLevelGraph(int src, int dst) {
     	double start_time = rtime(3);
@@ -256,9 +258,9 @@ public:
     			break;
     		}
     	}
-    	if(u!=v){
+    	/*if(u!=v){
     		dbg_print_graph(src,dst);
-    	}
+    	}*/
     	assert(u==v);
     	return u==v;
 #endif
@@ -875,7 +877,7 @@ public:
     std::vector<bool> seen;
     std::vector<bool> visited;
 
-    int minCut(int s, int t, std::vector<Edge> & cut){
+    int minCut(int s, int t, std::vector<dgl::MaxFlowEdge> & cut){
     	int f = maxFlow(s,t);
     	//ok, now find the cut
     	Q.clear();
@@ -893,7 +895,7 @@ public:
     			int v = g.incident(u,i).node;
     			int id = g.incident(u,i).id;
     			if(capacity[id] - F[id] == 0){
-    				cut.push_back(Edge{u,v,id});
+    				cut.push_back(dgl::MaxFlowEdge{u,v,id});
     			}else if(!seen[v]){
     				Q.push_back(v);
     				seen[v]=true;

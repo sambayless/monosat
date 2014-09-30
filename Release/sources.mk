@@ -33,6 +33,5 @@ geometry \
 dgl/alg \
 dgl \
 core \
-aiger \
 . \
 

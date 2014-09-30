@@ -116,8 +116,6 @@ int main(int argc, char** argv)
         
 
 
-        StringOption    opt_graph("GRAPH", "graph","Not currently used", "");
-
         StringOption    opt_assume("MAIN", "assume","Specify a file of assumptions, with one literal or symbol per line", "");
 
         StringOption    opt_decidable("MAIN", "decidable-theories","Specify which graphs should make decisions on their own, in comma delimited format", "");
@@ -153,10 +151,11 @@ int main(int argc, char** argv)
 
         mincutalg = MinCutAlg::ALG_EDMONSKARP;
 
-        if(!strcasecmp(opt_min_cut_alg,"ibfs")){
+        /*if(!strcasecmp(opt_min_cut_alg,"ibfs")){
         	mincutalg=MinCutAlg::ALG_IBFS;
 
-        }else if (!strcasecmp(opt_min_cut_alg,"edmondskarp-adj")){
+        }else */
+        if (!strcasecmp(opt_min_cut_alg,"edmondskarp-adj")){
         	mincutalg = MinCutAlg::ALG_EDKARP_ADJ;
         }else if (!strcasecmp(opt_min_cut_alg,"edmondskarp")){
         	mincutalg = MinCutAlg::ALG_EDMONSKARP;
@@ -290,10 +289,9 @@ int main(int argc, char** argv)
 
         double initial_time = cpuTime();
 
-        const char * graphstr = opt_graph;
 
 
-		//p1.intersectsExcludingVertices(p2,&p_out, false);
+
         // Use signal handlers that forcibly quit until the solver will be able to respond to
         // interrupts:
 #if not defined(__MINGW32__)
@@ -576,12 +574,6 @@ int main(int argc, char** argv)
 			    Lit a = mkLit(var,sign);
 			    assume.push(a);
 
-			    /*line.
-			    if(!line.compare(0, "2", ":-")){
-			    	iss>>
-			    }else{
-			    	assert(false);
-			    }*/
 
 
 			}
@@ -599,62 +591,10 @@ int main(int argc, char** argv)
 			printf("Preprocessing time = %f\n", preprocessing_time);
 		}
         lbool ret=S.solve(assume)?l_True:l_False;
-        if(opt_optimize_mst && ret ==l_True && S.theories.size()){
-
-        	Monosat::GraphTheorySolver<int> * g = (Monosat::GraphTheorySolver<int>*)S.theories[0];
-        	if(g->mstDetector){
-
-        		int mst_weight = g->mstDetector->positive_reach_detector->weight();
-
-        		Var prev_min = var_Undef;
-        		while(true){
-        			printf("Optimizing minimum spanning tree (%d)...\n",mst_weight);
-        			if(mst_weight==588983){
-        				int a=1;
-        			}
-        			S.cancelUntil(0);
-					Var min = S.newVar(true,false);
-					if(min==3921){
-						int a=1;
-					}
-					g->minimumSpanningTree(min,mst_weight-1);
-					assume.push(mkLit(min,false));
-					if(!S.solve(assume)){
-						assume.pop();
-						assume.push(mkLit(prev_min,false));
-						bool check = S.solve(assume);
-						assert(check);
-						if(!check){
-							fprintf(stderr,"Major Error! Instance is no longer satisfiable after removed assertition!\n");
-							exit(3);
-						}
-						if(opt_check_solution){
-											if(!g->check_solved()){
-												fprintf(stderr,"Error! Solution doesn't satisfy theory properties!\n");
-												exit(3);
-											}
-										}
-						break;
-					}
-					mst_weight = g->mstDetector->positive_reach_detector->weight();
-					assume.pop();
-					prev_min = min;
-					if(opt_check_solution){
-										if(!g->check_solved()){
-											fprintf(stderr,"Error! Solution doesn't satisfy theory properties!\n");
-											exit(3);
-										}
-									}
-        		}
-
-        	}
-		}
 
         if(ret==l_True){
         	if(!opt_csv)
         		printf("s SATISFIABLE\n");
-        	 for(int i = 0;i<S.theories.size();i++)
-        		 S.theories[i]->printSolution();
 
 			if(opt_witness){
 
@@ -664,9 +604,7 @@ int main(int argc, char** argv)
 						printf("%d ",(v+1));
 					}else if(S.model[v]==l_False){
 						printf("%d ",-(v+1));
-					}/*else{
-						printf("%d,",0);
-					}*/
+					}
 				}
 				printf("0\n");
 			}
@@ -708,6 +646,9 @@ int main(int argc, char** argv)
 				printf("\n");
 			}
 
+			 for(int i = 0;i<S.theories.size();i++)
+				 S.theories[i]->printSolution();
+
         }else if(ret==l_False){
         	printf("s UNSATISFIABLE\n");
         }else{
@@ -718,11 +659,7 @@ int main(int argc, char** argv)
 
 		}
         fflush(stdout);
-/*
-#ifdef NDEBUG
-        exit(ret == l_True ? 10 : ret == l_False ? 20 : 0);     // (faster than "return", which will invoke the destructor for 'Solver')
-#else
-*/
+
         return (ret == l_True ? 10 : ret == l_False ? 20 : 0);
 //#endif
     } catch (OutOfMemoryException&){

@@ -87,6 +87,7 @@ public:
 		void buildReason(Lit p, vec<Lit> & reason, CRef marker);
 		bool checkSatisfied();
 		Lit decide();
+		void printSolution();
 		void addFlowLit(Weight max_flow,Var reach_var);
 		MaxflowDetector(int _detectorID, GraphTheorySolver<Weight> * _outer,std::vector<Weight> & capacities, DynamicGraph &_g, DynamicGraph &_antig, int _source, int _target,double seed=1);//:Detector(_detectorID),outer(_outer),within(-1),source(_source),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL){}
 		virtual ~MaxflowDetector(){
@@ -95,7 +96,12 @@ public:
 		const char* getName(){
 			return "Max-flow Detector";
 		}
+private:
+		void buildDinitzLinkCut();
 };
+template<>
+void MaxflowDetector<int>::buildDinitzLinkCut();
+
 };
 
 

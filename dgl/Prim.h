@@ -220,7 +220,7 @@ public:
 		if(numsets==0){
 			assert(min_weight==0);
 		}
-		status.setMinimumSpanningTree(numsets>1 ? INF: min_weight);
+		status.setMinimumSpanningTree(numsets>1 ? INF: min_weight,numsets<=1);
 		for(int i = 0;i<in_tree.size();i++){
 			//Note: for the tree edge detector, polarity is effectively reversed.
 			if(reportPolarity<1 && (!g.edgeEnabled(i) || in_tree[i]) ){

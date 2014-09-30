@@ -2,7 +2,7 @@
 The MIT License (MIT)
 
 Copyright (c) 2014, Sam Bayless
-Copyright (c) 2011, D. Sleator
+Copyright (c) 2011, Danny Sleator
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
 associated documentation files (the "Software"), to deal in the Software without restriction,
@@ -27,12 +27,10 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include <cassert>
 #include <vector>
 
-//Link-Cut Tree (http://www.cs.cmu.edu/~sleator/papers/self-adjusting.pdf) implementation.
-//This is a C++ adaptation of Sleator's implementation (http://codeforces.com/contest/117/submission/860934),
-//which is itself based on  Fan Haoqiang's code: http://builtinclz.abcz8.com/showcode.php?id=2011/IOI2011/elephants.cpp
+//Link-Cut Tree,
+//This is a C++ adaptation of Danny Sleator's (public domain) java-implementation (see http://codeforces.com/contest/117/submission/860934), used with permission from the author.
 
 //Watch out - LinkCut cannot by itself implement a dynamic disjoint-set data structure - you need more for that.
-
  class LinkCut {
 	 int setCount;
   struct Node {

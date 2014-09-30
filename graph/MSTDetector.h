@@ -103,7 +103,7 @@ public:
 			MSTDetector & detector;
 			bool polarity;
 
-			void setMinimumSpanningTree(Weight& weight);
+			void setMinimumSpanningTree(Weight& weight, bool connected);
 			void inMinimumSpanningTree(int edgeID, bool in_tree);
 
 			MSTStatus(MSTDetector & _outer, bool _polarity):detector(_outer), polarity(_polarity){}
@@ -124,7 +124,7 @@ public:
 		Lit decide();
 		void addTreeEdgeLit(int edge_id, Var reach_var);
 		void addWeightLit(Var weight_var,Weight & min_weight);
-
+		void printSolution();
 		MSTDetector(int _detectorID, GraphTheorySolver<Weight> * _outer, DynamicGraph &_g, DynamicGraph &_antig, std::vector<Weight> & _edge_weights,  double seed=1);//:Detector(_detectorID),outer(_outer),within(-1),source(_source),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL){}
 		virtual ~MSTDetector(){
 

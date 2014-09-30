@@ -31,7 +31,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "core/SolverTypes.h"
 #include "mtl/Map.h"
 #include "dgl/MaxFlow.h"
-#include "dgl/IBFS.h"
+
 #include "dgl/EdmondsKarp.h"
 #include "dgl/EdmondsKarpAdj.h"
 #include "dgl/Chokepoint.h"
@@ -116,6 +116,8 @@ public:
 				printf("\t%d components learned, average component size: %f\n",stats_learnt_components,stats_learnt_components_sz / (float)stats_learnt_components);
 			}
 		}
+
+
 		struct ReachStatus{
 			ReachDetector & detector;
 			bool polarity;

@@ -182,19 +182,19 @@ void MSTDetector<Weight>::MSTStatus::inMinimumSpanningTree(int edgeid, bool in_t
 	}
 }
 template<typename Weight>
-void MSTDetector<Weight>::MSTStatus::setMinimumSpanningTree(Weight & weight){
+void MSTDetector<Weight>::MSTStatus::setMinimumSpanningTree(Weight & weight, bool connected){
 
 	for(int i = 0;i<detector.weight_lits.size();i++){
 		Weight & min_weight =  detector.weight_lits[i].min_weight;
 		Lit l = detector.weight_lits[i].l;
 		if(l!=lit_Undef){
 			assert(l!=lit_Undef);
-			if(min_weight<weight && !polarity){
+			if((!connected ||   weight>min_weight) && !polarity){
 				lbool assign = detector.outer->value(l);
 				if( assign!= l_False ){
 					detector.changed_weights.push({~l,min_weight});
 				}
-			}else if(min_weight>=weight && polarity){
+			}else if((connected && weight<=min_weight) && polarity){
 				lbool assign = detector.outer->value(l);
 				if( assign!= l_True ){
 					detector.changed_weights.push({l,min_weight});
@@ -301,15 +301,16 @@ void MSTDetector<Weight>::buildMinWeightTooLargeReason(Weight & weight,vec<Lit> 
 	//drawFull( non_reach_detectors[detector]->getSource(),u);
 	//assert(outer->dbg_distance( source,u));
 	double starttime = rtime(2);
-	int INF=std::numeric_limits<int>::max();
+
 	negative_conflict_detector->update();
+
 	Weight & mstweight = negative_conflict_detector->weight();
 
-	if(negative_conflict_detector->weight()>=INF){
+	if(negative_conflict_detector->numComponents()>1){
 		//IF the mst is disconnected, then we define it's weight to be infinite. In this case, the reason is a separating cut between any two disconnected components.
 		//we can find one of these by identifying any two roots
 
-		int min_conflict = INF;
+		int min_conflict = -1;
 
 		//walk back down from the each root to find a separating cut of disabled edge.
 		//return the smallest such cut.
@@ -353,7 +354,7 @@ void MSTDetector<Weight>::buildMinWeightTooLargeReason(Weight & weight,vec<Lit> 
 				}
 			}
 
-				if(tmp_conflict.size()<min_conflict){
+				if(min_conflict==-1|| tmp_conflict.size()<min_conflict){
 					min_conflict = tmp_conflict.size();
 					conflict.shrink(conflict.size()-1);//keep only the first conflict element, which is the constraint lit
 					assert(conflict.size()==1);
@@ -821,23 +822,23 @@ negative_checker.update();
 for(int k = 0;k<weight_lits.size();k++){
 	Lit l = weight_lits[k].l;
 	Weight & dist = weight_lits[k].min_weight;
-
+	bool connected = positive_checker.numComponents()<=1;
 	if(l!=lit_Undef){
 
 
 		if(outer->value(l)==l_True){
-			if(positive_checker.weight()>dist){
+			if(!connected || positive_checker.weight()>dist){
 				return false;
 			}
 		}else if (outer->value(l)==l_False){
-			if( negative_checker.weight()<=dist){
+			if(connected && negative_checker.weight()<=dist){
 				return false;
 			}
 		}else{
-			if(positive_checker.weight()<=dist){
+			if(connected && positive_checker.weight()<=dist){
 				return false;
 			}
-			if(!negative_checker.weight()>dist){
+			if(!connected || negative_checker.weight()>dist){
 				return false;
 			}
 		}
@@ -899,6 +900,56 @@ for(int k = 0;k< tree_edge_lits.size();k++){
 //}
 return true;
 }
+template<typename Weight>
+void MSTDetector<Weight>::printSolution(){
+	if(opt_verb>0){
+
+		if(positive_reach_detector->numComponents()>1){
+			printf("Min Spanning Tree is disconnected (%d components)\n",positive_reach_detector->numComponents());
+			Weight min_weight =positive_reach_detector->forestWeight();
+			std::cout<<"Min Spanning Forest Weight: " << min_weight <<"\n";
+
+		}else{
+			Weight min_weight = positive_reach_detector->weight();
+			std::cout<<"Min Spanning Tree Weight: " << min_weight <<"\n";
+		}
+
+		int maxw = log10(outer->nNodes() )+1;
+		int width = sqrt(outer->nNodes());
+		if(opt_width>0){
+				width=opt_width;
+		}
+		int height =width;
+		if(opt_height>0){
+			height = opt_height;
+		}
+
+		int lasty= 0;
+		int extra =  outer->nNodes() % width ? (width- outer->nNodes() % width ):0;
+		for(int n = 0;n<outer->nNodes();n++){
+			int x = n%width;
+
+			int y = (n )/width;
+			if(y > lasty)
+				printf("\n");
+			bool in_tree=false;
+			for(int e = 0;e<g.edges();e++){
+				if(g.getEdge(e).to==n && g.edgeEnabled(e) && this->positive_reach_detector->edgeInTree(e)){
+					in_tree=true;
+					break;
+				}
+			}
+			if(in_tree){
+				printf("-");
+			}else{
+				printf(" ");
+			}
+		}
+		printf("\n");
+
+	}
+}
+
 template<typename Weight>
 Lit MSTDetector<Weight>::decide(){
 /*MSTDetector *r =this;

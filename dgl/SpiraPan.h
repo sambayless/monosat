@@ -652,7 +652,7 @@ public:
 #endif
 
 
-		status.setMinimumSpanningTree(num_sets>1 ? INF: min_weight);
+		status.setMinimumSpanningTree(num_sets>1 ? INF: min_weight,num_sets<=1);
 
 		//if(reportPolarity>-1){
 		for(int i = 0;i<in_tree.size();i++){

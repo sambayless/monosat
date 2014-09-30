@@ -30,7 +30,7 @@ class MinimumSpanningTree{
 public:
 
 	struct NullStatus{
-		void setMinimumSpanningTree(Weight& min_weight){
+		void setMinimumSpanningTree(Weight& min_weight, bool connected){
 
 		}
 

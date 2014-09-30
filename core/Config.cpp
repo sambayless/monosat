@@ -60,7 +60,7 @@ IntOption Monosat::opt_temporary_theory_reasons(_cat_sms,"temporary-theory-reaso
  BoolOption Monosat::opt_graph(_cat_graph,"graph","Use graph theory solver",true);
  BoolOption Monosat::opt_inc_graph(_cat_graph,"inc","Use incremental graph reachability",false);
  IntOption Monosat::opt_dec_graph(_cat_graph,"dec","Use decremental graph reachability",0,IntRange(0, 2));
- StringOption Monosat::opt_min_cut_alg(_cat_graph,"maxflow","Select max s-t-flow algorithm (edmondskarp, edmondskarp-adj, ibfs,edmondskarp-dynamic,dinitz,dinitz-linkcut)","edmondskarp-dynamic");
+ StringOption Monosat::opt_min_cut_alg(_cat_graph,"maxflow","Select max s-t-flow algorithm (edmondskarp, edmondskarp-adj, edmondskarp-dynamic,dinitz,dinitz-linkcut)","edmondskarp-dynamic");//ibfs
  StringOption Monosat::opt_reach_alg(_cat_graph,"reach","Select reachability algorithm (bfs,dfs, dijkstra,ramal-reps,sat)","ramal-reps");
  StringOption Monosat::opt_dist_alg(_cat_graph,"dist","Select reachability algorithm (bfs,dfs, dijkstra,ramal-reps,sat)","ramal-reps");
 
