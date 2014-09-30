@@ -15,10 +15,10 @@
 #include "dgl/Distance.h"
 #include "dgl/Dijkstra.h"
 #include "dgl/BFS.h"
-#include "dgl/UnweightedDistance.h"
+
 #include "core/SolverTypes.h"
 #include "mtl/Map.h"
-#include "dgl/WeightedDijkstra.h"
+#include "WeightedDijkstra.h"
 #include <gmpxx.h>
 #include "utils/System.h"
 #include "Detector.h"

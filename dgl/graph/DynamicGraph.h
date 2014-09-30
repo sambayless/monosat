@@ -1,9 +1,23 @@
-/*
- * DynamicGraph.h
- *
- *  Created on: 2013-07-15
- *      Author: sam
- */
+/****************************************************************************************[Solver.h]
+The MIT License (MIT)
+
+Copyright (c) 2014, Sam Bayless
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
+associated documentation files (the "Software"), to deal in the Software without restriction,
+including without limitation the rights to use, copy, modify, merge, publish, distribute,
+sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all copies or
+substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT
+NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT
+OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+**************************************************************************************************/
 
 #ifndef DYNAMICGRAPH_H_
 #define DYNAMICGRAPH_H_
@@ -11,10 +25,26 @@
 #include "graph/GraphTheoryTypes.h"
 
 #ifndef NDEBUG
-#define RECORD
+//Used to track graph operations for debugging purposes - you can probably ignore this.
+//#define RECORD
 #include <cstdio>
 #endif
+
 namespace dgl{
+
+/**
+ * A dynamic graph.
+ * It supports efficiently recomputing graph properties as edges are added and removed ('enabled' and 'disabled').
+ *
+ * DynamicGraph expects all edges (and all nodes) that it will ever use to be added in advance, after which
+ * those (already declared) edges can be efficiently enabled or disabled.
+ *
+ * Although it also allows adding new edges (and new nodes) dynamically, this library is not optimized for that use case;
+ * adding new edges or nodes (as opposed to enabling or disabling existing edges) will typically cause all properties to be
+ * recomputed from scratch.
+ *
+ * Most algorithms in the library are optimized for moderate sized, sparsely connected graphs (<10,000 edges/nodes).
+ */
 class DynamicGraph{
 
 	std::vector<bool> edge_status;
@@ -41,9 +71,9 @@ public:
 		int from;
 		int to;
 		int id;
-		int weight;
-		FullEdge():from(-1),to(-1),id(-1),weight(1){}
-		FullEdge(int from,int to, int id,int weight):from(from),to(to),id(id),weight(weight){}
+		//int weight;
+		FullEdge():from(-1),to(-1),id(-1){}//,weight(1){}
+		FullEdge(int from,int to, int id):from(from),to(to),id(id){}//,weight(weight){}
 	};
 
 	//std::vector<int> weights;
@@ -123,7 +153,7 @@ public:
 		return edgeID<all_edges.size() && all_edges[edgeID].id ==edgeID;
 	}
 	//Instead of actually adding and removing edges, tag each edge with an 'enabled/disabled' label, and just expect reading algorithms to check and respect that label.
-	void addEdge(int from, int to, int id=-1, int weight=1){
+	void addEdge(int from, int to, int id=-1){//, int weight=1
 		assert(from<num_nodes);
 		assert(to<num_nodes);
 		assert(from>=0);
@@ -145,7 +175,7 @@ public:
 		inverted_adjacency_list[to].push_back({from,id});
 		if(all_edges.size()<=id)
 			all_edges.resize(id+1);
-		all_edges[id]={from,to,id,weight};
+		all_edges[id]={from,to,id};//,weight};
 		//if(weights.size()<=id)
 		//	weights.resize(id+1,0);
 		//weights[id]=weight;
@@ -154,7 +184,7 @@ public:
 		additions=modifications;
 #ifdef RECORD
 			if(outfile){
-				fprintf(outfile,"edge %d %d %d %d\n",from,to,weight, id+1);
+				fprintf(outfile,"edge %d %d %d %d\n",from,to,1, id+1);
 				fflush(outfile);
 			}
 #endif
@@ -337,27 +367,7 @@ public:
 			printf("}\n");
 #endif
 		}
-	//Removes _all_ edges (from, to)
-	/*void removeEdge(int from, int to, int id){
-		assert(id>=0);
-		assert(id<edge_status.size());
-		{
-			std::vector<Edge>& adj= adjacency[from];
-			int i,j = 0;
-			for(i = 0;i<adj.size();i++){
-				if(adj[i]==to){
-					num_edges--;
-				}else{
-					adj[j++]=adj[i];
-				}
-			}
-			adj.resize(j);
-		}
 
-		modifications++;
-		deletions=modifications;
-		history.push_back({false,from,to,id,modifications});
-	}*/
 
 	bool rewindHistory(int steps){
 

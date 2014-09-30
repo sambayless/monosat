@@ -9,7 +9,7 @@
 
 #include <core/Config.h>
 #include <dgl/RamalReps.h>
-#include <dgl/UnweightedRamalReps.h>
+
 #include <graph/DistanceDetector.h>
 #include <graph/GraphTheory.h>
 #include <mtl/Rnd.h>

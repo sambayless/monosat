@@ -9,7 +9,7 @@
 
 #include "ConnectedComponentsDetector.h"
 #include "GraphTheory.h"
-#include "dgl/UnweightedDistance.h"
+#include "dgl/BFS.h"
 #include "dgl/Reach.h"
 #include <limits>
 using namespace Monosat;

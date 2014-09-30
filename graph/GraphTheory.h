@@ -14,7 +14,7 @@
 #include "dgl/Reach.h"
 #include "dgl/Dijkstra.h"
 #include "dgl/BFS.h"
-#include "dgl/UnweightedDistance.h"
+
 #include "core/SolverTypes.h"
 #include "mtl/Map.h"
 #include "dgl/MaxFlow.h"
@@ -22,7 +22,7 @@
 #include "dgl/EdmondsKarp.h"
 #include "dgl/EdmondsKarpAdj.h"
 #include "dgl/Chokepoint.h"
-#include "dgl/WeightedDijkstra.h"
+#include "WeightedDijkstra.h"
 #include "GraphTheoryTypes.h"
 #include "utils/System.h"
 #include "core/Solver.h"

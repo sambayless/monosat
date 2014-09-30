@@ -8,8 +8,8 @@
 
 
 #include "ReachDetector.h"
-#include "dgl/UnweightedRamalReps.h"
-#include "dgl/UnweightedDistance.h"
+#include "dgl/RamalReps.h"
+#include "dgl/BFS.h"
 #include "GraphTheory.h"
 #include "core/Config.h"
 #include "dgl/DynamicConnectivity.h"
