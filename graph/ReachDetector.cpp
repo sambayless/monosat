@@ -1060,17 +1060,10 @@ void ReachDetector<Weight>::printSolution(){
 	if(opt_verb>0){
 		 vec<bool> to_show;
 		 to_show.growTo(g.nodes());
-/*		 for (int n = 0;n<dist_lits.size();n++){
-			 for (auto & l:dist_lits[n]){
-				 if(l!=lit_Undef){
-					 to_show[n]=true;
-				 }
-			 }
-		 }*/
+
 		 for(Lit l : reach_lits){
 			 if(l!=lit_Undef){
 				 int to = reach_lit_map[var(l)-first_reach_var];
-
 				 to_show[to]=true;
 			 }
 		 }
