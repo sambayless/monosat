@@ -411,7 +411,7 @@ public:
 		additions=modifications;
 		modifications++;
 		deletions=modifications;
-
+		is_changed=true;
 #ifdef RECORD
 			if(outfile){
 				fprintf(outfile,"invalidate\n");

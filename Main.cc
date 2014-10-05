@@ -119,6 +119,12 @@ int main(int argc, char** argv)
         StringOption    opt_assume("MAIN", "assume","Specify a file of assumptions, with one literal or symbol per line", "");
 
         StringOption    opt_decidable("MAIN", "decidable-theories","Specify which graphs should make decisions on their own, in comma delimited format", "");
+        IntOption    	opt_min_decision_var("MAIN", "min-decision-var","Restrict decisions to variables >= this one",1);
+        IntOption    	opt_max_decision_var("MAIN", "max-decision-var","Restrict decisions to variables <= this one (ignore if 0)",0);
+
+        IntOption    	opt_min_priority_decision_var("MAIN", "min-priority-var","Make decisions on variables in the range min-priority-var..max-priority-var first",1);
+        IntOption    	opt_max_priority_decision_var("MAIN", "max-priority-var","Make decisions on variables in the range min-priority-var..max-priority-var first (set max-priority-var to 0 to set it to infinite)",0);
+
 
         StringOption 		opt_symbols("MAIN","symbols","Whether to read symbol lines (\"c var <variable number> <name>\") from the gnf","");
 
@@ -127,7 +133,7 @@ int main(int argc, char** argv)
         BoolOption opt_id_graph("GRAPH","print-vars","Identify the variables in the graph, then quit\n",false);
 
         BoolOption opt_witness("MAIN","witness","print solution",false);
-
+        StringOption opt_witness_file("MAIN","witness-file","write witness to file","");
         BoolOption   pre    ("MAIN", "pre",    "Completely turn on/off any preprocessing.", true);
 
         BoolOption opb("PB","opb","Parse the input as pseudo-boolean constraints in .opb format",false);
@@ -211,7 +217,7 @@ int main(int argc, char** argv)
 
 		 }else if (!strcasecmp(opt_reach_alg,"dfs")){
 			 reachalg = ReachAlg::ALG_DFS;
-		 }else if (!strcasecmp(opt_reach_alg,"sat")){
+		 }else if (!strcasecmp(opt_reach_alg,"cnf")){
 			 reachalg = ReachAlg::ALG_SAT;
 		 }else if (!strcasecmp(opt_reach_alg,"ramal-reps")){
 			 reachalg = ReachAlg::ALG_RAMAL_REPS;
@@ -229,7 +235,7 @@ int main(int argc, char** argv)
 		 }else if(!strcasecmp(opt_dist_alg,"bfs")){
 			 distalg=DistAlg::ALG_DISTANCE;
 
-		 }else if (!strcasecmp(opt_dist_alg,"sat")){
+		 }else if (!strcasecmp(opt_dist_alg,"cnf")){
 			 distalg = DistAlg::ALG_SAT;
 		 }else if (!strcasecmp(opt_dist_alg,"ramal-reps")){
 			 distalg = DistAlg::ALG_RAMAL_REPS;
@@ -250,7 +256,7 @@ int main(int argc, char** argv)
 
 		 }else if (!strcasecmp(opt_con_alg,"dfs")){
 			 undirectedalg = ConnectivityAlg::ALG_DFS;
-		 }else if (!strcasecmp(opt_con_alg,"sat")){
+		 }else if (!strcasecmp(opt_con_alg,"cnf")){
 			 undirectedalg = ConnectivityAlg::ALG_SAT;
 		 }else  if (!strcasecmp(opt_con_alg,"thorup")){
 			 undirectedalg = ConnectivityAlg::ALG_THORUP;
@@ -322,8 +328,17 @@ int main(int argc, char** argv)
          const char *error;
          SimpSolver S;
          solver = &S;
+         S.min_decision_var = opt_min_decision_var-1;
+         S.max_decision_var = opt_max_decision_var-1;
+         S.min_priority_var = opt_min_priority_decision_var-1;
+         S.max_priority_var = opt_max_priority_decision_var-1;
+
+
+         if(opt_min_decision_var>0 || opt_max_decision_var>0){
+        	 printf("Decision variables restricted to the range (%ld..%ld), which means a result of satisfiable may not be trustworthy.\n",(uint)opt_min_decision_var,(uint)opt_max_decision_var);
+         }
          if (!pre) S.eliminate(true);
-         S.max_decision_var = opt_restrict_decisions;
+
 #ifdef DEBUG_SOLVER
          S.dbg_solver = new Solver();S.dbg_solver.verbosity=0;
 #endif
@@ -593,8 +608,24 @@ int main(int argc, char** argv)
         lbool ret=S.solve(assume)?l_True:l_False;
 
         if(ret==l_True){
-        	if(!opt_csv)
-        		printf("s SATISFIABLE\n");
+
+        	if(strlen(opt_witness_file) >0){
+        		FILE * f = fopen(opt_witness_file,"w");
+			   if(f){
+					fprintf(f,"v ");
+					for(int v =0;v<S.nVars();v++){
+						if(S.model[v]==l_True){
+							fprintf(f,"%d ",(v+1));
+						}else if(S.model[v]==l_False){
+							fprintf(f,"%d ",-(v+1));
+						}
+					}
+					fprintf(f,"0\n");
+				   fclose(f);
+			   }else{
+				   fprintf(stderr,"Failed to write witness to file!\n");
+			   }
+        	}
 
 			if(opt_witness){
 
@@ -646,9 +677,11 @@ int main(int argc, char** argv)
 				printf("\n");
 			}
 
-			 for(int i = 0;i<S.theories.size();i++)
+			for(int i = 0;i<S.theories.size();i++)
 				 S.theories[i]->printSolution();
 
+			if(!opt_csv)
+				printf("s SATISFIABLE\n");
         }else if(ret==l_False){
         	printf("s UNSATISFIABLE\n");
         }else{

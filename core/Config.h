@@ -49,7 +49,7 @@ extern BoolOption opt_inc_graph;
 extern IntOption opt_dec_graph;
 extern BoolOption opt_conflict_shortest_path;
 extern BoolOption opt_conflict_min_cut;
-extern IntOption opt_restrict_decisions;
+
 
 extern StringOption opt_min_cut_alg;
 extern StringOption opt_reach_alg;
@@ -72,7 +72,7 @@ extern BoolOption opt_rnd_phase;
 extern BoolOption opt_init_rnd_phase;
 
 extern BoolOption opt_reach_prop;
-extern BoolOption opt_decide_graph;
+extern BoolOption opt_decide_theories;
 extern BoolOption opt_decide_graph_distance;
 extern BoolOption opt_use_random_path_for_decisions;
 extern BoolOption opt_use_optimal_path_for_decisions;

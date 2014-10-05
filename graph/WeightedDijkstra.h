@@ -60,7 +60,7 @@ public:
 		}
 		 DistCmp(std::vector<Weight> & d):_dist(d){};
 	};
-	Heap<DistCmp> q;
+	dgl::Heap<DistCmp> q;
 
 public:
 	//stats

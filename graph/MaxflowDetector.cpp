@@ -441,6 +441,7 @@ void MaxflowDetector<Weight>::printSolution(){
 
 	printf("Maximum %d->%d flow in graph %d: \n", this->source,this->target,this->outer->getGraphID());
 	if(opt_verb>0){
+		positive_detector->maxFlow(source,target);
 		int maxw = log10(outer->nNodes() )+1;
 		int width = sqrt(outer->nNodes());
 		if(opt_width>0){

@@ -137,7 +137,7 @@ public:
     		}
     	}
     }
-    Weight maxFlow(int s, int t){
+    const  Weight maxFlow(int s, int t){
     	if(last_modification>0 && g.modifications==last_modification){
 
     			return curflow;
@@ -185,7 +185,7 @@ public:
 		last_history_clear=g.historyclears;
         return f;
     }
-    Weight maxFlow(int s, int t, int max_length){
+    const  Weight maxFlow(int s, int t, int max_length){
     	Weight f = 0;
        	C.resize(g.nodes());
        	F.resize(g.nodes());
@@ -268,61 +268,83 @@ public:
 		return true;
     }
 
-    Weight getEdgeFlow(int edgeid){
+    const Weight getEdgeFlow(int edgeid){
     	assert(g.edgeEnabled(edgeid));
     	int u = g.all_edges[edgeid].from;
     	int v = g.all_edges[edgeid].to;
     	return F[u][v];
     }
-    Weight getEdgeCapacity(int id){
+    const  Weight getEdgeCapacity(int id){
     	assert(g.edgeEnabled(id));
     	int u = g.all_edges[id].from;
     	int v = g.all_edges[id].to;
     	return C[u][v];
        }
 
-    Weight getEdgeResidualCapacity(int id){
+    const  Weight getEdgeResidualCapacity(int id){
     	  assert(g.edgeEnabled(id));
 		int u = g.all_edges[id].from;
 		int v = g.all_edges[id].to;
 		return C[u][v]-F[u][v];
 
       }
-      Weight minCut(int s, int t, std::vector<MaxFlowEdge> & cut){
+    const  Weight minCut(int s, int t, std::vector<MaxFlowEdge> & cut){
     	Weight f = maxFlow(s,t);
     	//ok, now find the cut
     	Q.clear();
-    	Q.push_back(s);
-    	seen.clear();
-    	seen.resize(g.nodes());
-    	seen[s]=true;
-    //	visited.clear();
-    	//visited.resize(g.nodes());
-    //	visited[s]=true;
-    	for(int j = 0;j<Q.size();j++){
+		Q.push_back(s);
+		seen.clear();
+		seen.resize(g.nodes());
+		seen[s]=true;
+
+		//explore the residual graph
+		for(int j = 0;j<Q.size();j++){
 		   int u = Q[j];
 
-    		for(int i = 0;i<g.nIncident(u);i++){
-    			if(!g.edgeEnabled(g.incident(u,i).id))
-    				continue;
-    			int v = g.incident(u,i).node;
+			for(int i = 0;i<g.nIncident(u);i++){
+				if(!g.edgeEnabled(g.incident(u,i).id))
+					continue;
+				int v = g.incident(u,i).node;
+				int id = g.incident(u,i).id;
+				if(C[u][v] - F[u][v] == 0){
+					cut.push_back(MaxFlowEdge{u,v,id});//potential element of the cut
+				}else if(!seen[v]){
+					Q.push_back(v);
+					seen[v]=true;
+				}
+			}
+			for(int i = 0;i<g.nIncoming(u);i++){
+				if(!g.edgeEnabled(g.incoming(u,i).id))
+					continue;
+				int v = g.incoming(u,i).node;
+				int id = g.incoming(u,i).id;
+				if(F[v][u] == 0){
 
-    			if(C[u][v] - F[u][v] == 0){
-    				cut.push_back(MaxFlowEdge{u,v});
-    			}else if(!seen[v]){
-    				Q.push_back(v);
-    				seen[v]=true;
-    			}
-    		}
-    	}
-    	//Now remove any edges that lead to vertices that we ended up visiting
-    	int i, j = 0;
-    	for( i = 0;i<cut.size();i++){
-    		if(!seen[cut[i].v]){
-    			cut[j++]=cut[i];
-    		}
-    	}
-    	cut.resize(j);
+				}else if(!seen[v]){
+					Q.push_back(v);
+					seen[v]=true;
+				}
+			}
+		}
+		//Now keep only the edges from a seen vertex to an unseen vertex
+		int i, j = 0;
+		for( i = 0;i<cut.size();i++){
+			if(!seen[cut[i].v] && seen[cut[i].u]){
+				cut[j++]=cut[i];
+			}
+		}
+		cut.resize(j);
+#ifndef NDEBUG
+		Weight dbg_sum = 0;
+		for(int i = 0;i<cut.size();i++){
+			int id = cut[i].id;
+			int u = cut[i].u;
+			int v = cut[i].v;
+			assert(F[u][v]==C[u][v]);
+			dbg_sum+=F[u][v];
+		}
+		assert(dbg_sum==f);
+#endif
     	return f;
     }
 

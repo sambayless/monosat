@@ -364,7 +364,10 @@ public:
     int initial_level;
     vec<int> theory_queue;
     vec<bool> in_theory_queue;
-    int max_decision_var;
+    int min_decision_var=0;
+    int max_decision_var=-1;
+    int min_priority_var=0;
+    int max_priority_var=-1;
     CRef tmp_clause=CRef_Undef;
     int tmp_clause_sz=0;
     Var max_super;

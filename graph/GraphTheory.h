@@ -35,6 +35,10 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 #include "dgl/EdmondsKarp.h"
 #include "dgl/EdmondsKarpAdj.h"
+#include "dgl/EdmondsKarpDynamic.h"
+#include "dgl/Dinics.h"
+#include "dgl/DinicsLinkCut.h"
+
 #include "dgl/Chokepoint.h"
 #include "WeightedDijkstra.h"
 #include "GraphTheoryTypes.h"
@@ -186,14 +190,20 @@ public:
 	vec<Lit> reach_cut;
 
 	struct CutStatus{
+		int one=1;
+		int inf= 0xFFFF;
 		GraphTheorySolver & outer;
-		int operator [] (int id) const {
+
+		const int &operator [] (int id) const {
 
 			if(outer.value(outer.edge_list[id].v) ==l_False){
-				return 1;
+				return one;
 			}else{
-				return 0xF0F0F0;
+				return inf;
 			}
+		}
+		int size()const{
+			return outer.edge_list.size();
 		}
 		CutStatus(GraphTheorySolver & _outer):outer(_outer){}
 
@@ -258,14 +268,19 @@ public:
 			 requiresPropagation=true;
 			 rnd_seed=opt_random_seed;
 
-			 if (mincutalg == MinCutAlg::ALG_EDKARP_ADJ){
-
+			if(mincutalg==MinCutAlg::ALG_EDKARP_DYN){
+				 mc = new EdmondsKarpDynamic<CutStatus,int>(cutGraph, cutStatus);
+			}else if (mincutalg==MinCutAlg::ALG_EDKARP_ADJ){
 				mc = new EdmondsKarpAdj<CutStatus,int>(cutGraph, cutStatus);
-				//reachprop = new EdmondsKarpAdj<PropCutStatus, NegativeEdgeStatus>(antig,propCutStatus);
-			}else{
-				mc = new EdmondsKarp<int>(cutGraph);
-			}
+			}else if (mincutalg==MinCutAlg::ALG_DINITZ){
+				mc = new Dinitz<CutStatus,int>(cutGraph, cutStatus);
 
+			}else if (mincutalg==MinCutAlg::ALG_DINITZ_LINKCUT){
+				//link-cut tree currently only supports ints (enforcing this using tempalte specialization...).
+				mc = new DinitzLinkCut<CutStatus>(cutGraph, cutStatus);
+			}else{
+				mc = new EdmondsKarpAdj<CutStatus,int>(cutGraph, cutStatus);
+			}
 
 	}
 
@@ -696,7 +711,7 @@ public:
 	};
 
 	Lit decideTheory(){
-		if(!opt_decide_graph)
+		if(!opt_decide_theories)
 			return lit_Undef;
 		double start = rtime(1);
 

@@ -30,7 +30,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "alg/LinkCutCost.h"
 #include <algorithm>
 #include <climits>
-
+//Implementation of the Link/Cut Tree (aka Dynamic Tree) max-flow algorithm from Sleator and Tarjan, 1983).
 namespace dgl{
 template< class Capacity>
 class DinitzLinkCut:public MaxFlow<int>{
@@ -137,9 +137,9 @@ public:
 
     }
     void dbg_print_graph(int from, int to){
-/*
-   #ifndef NDEBUG
 
+   #ifndef NDEBUG
+    	return;
 
        			printf("digraph{\n");
        			for(int i = 0;i<g.nodes();i++){
@@ -183,22 +183,19 @@ public:
    							backwardParent=true;
    						}
 
-   						assert(!(hasParent && link));
+   						//assert(!(hasParent && link));
 
    						if(dist[e.to]==dist[e.from]+1){
    							s="blue";
    						}
-   						if(value(e.v)==l_True)
-   							s="blue";
-   						else if (value(e.v)==l_False)
-   							s="red";
-   						//printf("n%d -> n%d [label=\"%d: %d/%d\",color=\"%s\"]\n", e.from,e.to, i, F[i],g.weights[i] , s);
+
+   						std::cout<<"n" << e.from <<" -> n" << e.to << " [label=\"" << i <<": " <<  F[i]<<"/" << capacity[i]  << "\" color=\"" << s<<"\"]\n";
        				}
        			}
 
        			printf("}\n");
    #endif
-*/
+
        		}
     bool buildLevelGraph(int src, int dst) {
     	double start_time = rtime(3);
@@ -463,7 +460,7 @@ public:
 								}
 							}*/
 							if(toLink.size()){
-								u = forest.findRoot(toLink.back().u);
+								u = forest.findRoot(toLink.back().v);//should this be u or v?
 							}else{
 								u = forest.findRoot(src);
 							}
@@ -806,7 +803,7 @@ public:
     		return f;
         }
 
-    int maxFlow(int s, int t){
+    const  int maxFlow(int s, int t){
     	int f = 0;
 #ifdef RECORD
 		if(g.outfile){
@@ -877,50 +874,72 @@ public:
     std::vector<bool> seen;
     std::vector<bool> visited;
 
-    int minCut(int s, int t, std::vector<dgl::MaxFlowEdge> & cut){
-    	int f = maxFlow(s,t);
+    const  int minCut(int s, int t, std::vector<dgl::MaxFlowEdge> & cut){
+    	const int f = maxFlow(s,t);
     	//ok, now find the cut
     	Q.clear();
-    	Q.push_back(s);
-    	seen.clear();
-    	seen.resize(g.nodes());
-    	seen[s]=true;
+		Q.push_back(s);
+		seen.clear();
+		seen.resize(g.nodes());
+		seen[s]=true;
 
-    	for(int j = 0;j<Q.size();j++){
+		//explore the residual graph
+		for(int j = 0;j<Q.size();j++){
 		   int u = Q[j];
 
-    		for(int i = 0;i<g.nIncident(u);i++){
-    			if(!g.edgeEnabled(g.incident(u,i).id))
-    				continue;
-    			int v = g.incident(u,i).node;
-    			int id = g.incident(u,i).id;
-    			if(capacity[id] - F[id] == 0){
-    				cut.push_back(dgl::MaxFlowEdge{u,v,id});
-    			}else if(!seen[v]){
-    				Q.push_back(v);
-    				seen[v]=true;
-    			}
-    		}
-    	}
-    	//Now remove any edges that lead to vertices that we ended up visiting
-    	int i, j = 0;
-    	for( i = 0;i<cut.size();i++){
-    		if(!seen[cut[i].v]){
-    			cut[j++]=cut[i];
-    		}
-    	}
-    	cut.resize(j);
+			for(int i = 0;i<g.nIncident(u);i++){
+				if(!g.edgeEnabled(g.incident(u,i).id))
+					continue;
+				int v = g.incident(u,i).node;
+				int id = g.incident(u,i).id;
+				if(capacity[id] - F[id] == 0){
+					cut.push_back(MaxFlowEdge{u,v,id});//potential element of the cut
+				}else if(!seen[v]){
+					Q.push_back(v);
+					seen[v]=true;
+				}
+			}
+			for(int i = 0;i<g.nIncoming(u);i++){
+				if(!g.edgeEnabled(g.incoming(u,i).id))
+					continue;
+				int v = g.incoming(u,i).node;
+				int id = g.incoming(u,i).id;
+				if(F[id] == 0){
+
+				}else if(!seen[v]){
+					Q.push_back(v);
+					seen[v]=true;
+				}
+			}
+		}
+		//Now keep only the edges from a seen vertex to an unseen vertex
+		int i, j = 0;
+		for( i = 0;i<cut.size();i++){
+			if(!seen[cut[i].v] && seen[cut[i].u]){
+				cut[j++]=cut[i];
+			}
+		}
+		cut.resize(j);
+#ifndef NDEBUG
+		int dbg_sum = 0;
+		for(int i = 0;i<cut.size();i++){
+			int id = cut[i].id;
+			assert(F[id]==capacity[id]);
+			dbg_sum+=F[id];
+		}
+		assert(dbg_sum==f);
+#endif
     	return f;
     }
-    int getEdgeCapacity(int id){
+    const  int getEdgeCapacity(int id){
      	assert(g.edgeEnabled(id));
      	return capacity[id];
      }
-    int getEdgeFlow(int id){
+    const  int getEdgeFlow(int id){
     	assert(g.edgeEnabled(id));
     	return F[id];// reserve(id);
     }
-    int getEdgeResidualCapacity(int id){
+    const  int getEdgeResidualCapacity(int id){
     	assert(g.edgeEnabled(id));
     	return  capacity[id]-F[id];// reserve(id);
     }

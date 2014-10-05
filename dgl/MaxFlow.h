@@ -43,18 +43,18 @@ public:
     virtual void setCapacity(int u, int w, Weight c)=0;
 
     virtual void setAllEdgeCapacities(Weight c)=0;
-    virtual Weight maxFlow(int s, int t)=0;
+    virtual const  Weight maxFlow(int s, int t)=0;
 
     virtual void printStats(){
 
     }
 
 
-    virtual Weight minCut(int s, int t, std::vector<MaxFlowEdge> & cut)=0;
-    virtual Weight getEdgeFlow(int edgeID)=0;
-    virtual Weight  getEdgeCapacity(int id)=0;
+    virtual const Weight minCut(int s, int t, std::vector<MaxFlowEdge> & cut)=0;
+    virtual const Weight getEdgeFlow(int edgeID)=0;
+    virtual const Weight  getEdgeCapacity(int id)=0;
 
-    virtual  Weight  getEdgeResidualCapacity(int id)=0;
+    virtual const  Weight  getEdgeResidualCapacity(int id)=0;
 };
 };
 #endif

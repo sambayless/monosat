@@ -474,7 +474,7 @@ public:
 	};
 
 	Lit decideTheory(){
-		if(!opt_decide_graph)
+		if(!opt_decide_theories)
 			return lit_Undef;
 		double start = rtime(1);
 

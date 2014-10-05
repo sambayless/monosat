@@ -95,7 +95,6 @@ Solver::Solver() :
 	,super_offset(-1)
 ,local_qhead(0)
 {
-	max_decision_var=0;
 #ifdef DEBUG_SOLVER
 	dbg_solver=NULL;
 #endif
@@ -130,7 +129,12 @@ Var Solver::newVar(bool sign, bool dvar)
     watches  .init(mkLit(v, true ));
     assigns  .push(l_Undef);
     vardata  .push(mkVarData(CRef_Undef, 0));
-    priority.push(0);
+    int p = 0;
+    if(max_decision_var>0 && v>max_decision_var)
+    	p=1;
+    if(v<min_decision_var)
+    	p=1;
+    priority.push(p);
     theory_vars.push();
     activity .push(rnd_init_act ? drand(random_seed) * 0.00001 : 0);
     seen     .push(0);
@@ -139,7 +143,8 @@ Var Solver::newVar(bool sign, bool dvar)
     trail    .capacity(v+1);
     if(max_decision_var>0 && v>max_decision_var)
     	dvar=false;
-
+    if(v<min_decision_var)
+    	dvar=false;
     setDecisionVar(v, dvar);
     return v;
 }
@@ -1421,7 +1426,7 @@ lbool Solver::search(int nof_conflicts)
                 }
             }
 
-            if(opt_decide_graph && next==lit_Undef && drand(random_seed)<opt_random_theory_freq){
+            if(opt_decide_theories && next==lit_Undef && drand(random_seed)<opt_random_theory_freq){
 				/**
 				 * Give the theory solvers a chance to make decisions
 				 */

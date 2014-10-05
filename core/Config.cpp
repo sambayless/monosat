@@ -61,10 +61,10 @@ IntOption Monosat::opt_temporary_theory_reasons(_cat_sms,"temporary-theory-reaso
  BoolOption Monosat::opt_inc_graph(_cat_graph,"inc","Use incremental graph reachability",false);
  IntOption Monosat::opt_dec_graph(_cat_graph,"dec","Use decremental graph reachability",0,IntRange(0, 2));
  StringOption Monosat::opt_min_cut_alg(_cat_graph,"maxflow","Select max s-t-flow algorithm (edmondskarp, edmondskarp-adj, edmondskarp-dynamic,dinitz,dinitz-linkcut)","edmondskarp-dynamic");//ibfs
- StringOption Monosat::opt_reach_alg(_cat_graph,"reach","Select reachability algorithm (bfs,dfs, dijkstra,ramal-reps,sat)","ramal-reps");
- StringOption Monosat::opt_dist_alg(_cat_graph,"dist","Select reachability algorithm (bfs,dfs, dijkstra,ramal-reps,sat)","ramal-reps");
+ StringOption Monosat::opt_reach_alg(_cat_graph,"reach","Select reachability algorithm (bfs,dfs, dijkstra,ramal-reps,cnf)","ramal-reps");
+ StringOption Monosat::opt_dist_alg(_cat_graph,"dist","Select reachability algorithm (bfs,dfs, dijkstra,ramal-reps,cnf)","ramal-reps");
 
- StringOption Monosat::opt_con_alg(_cat_graph,"connect","Select undirected reachability algorithm (bfs,dfs, dijkstra, thorup,sat)","bfs");
+ StringOption Monosat::opt_con_alg(_cat_graph,"connect","Select undirected reachability algorithm (bfs,dfs, dijkstra, thorup,cnf)","bfs");
 StringOption Monosat::opt_undir_allpairs_alg(_cat_graph,"connect-allpairs","Select allpairs reachability algorithm (floyd-warshall,dijkstra, thorup)","floyd-warshall");
 StringOption Monosat::opt_mst_alg(_cat_graph,"mst","Select minimum spanning tree algorithm (kruskal,prim,spira-pan)","spira-pan");
 
@@ -72,7 +72,6 @@ StringOption Monosat::opt_allpairs_alg(_cat_graph,"allpairs","Select allpairs re
 StringOption Monosat::opt_components_alg(_cat_graph,"components","Select connected-components algorithm (disjoint-sets, link-cut)","disjoint-sets");
   BoolOption Monosat::opt_conflict_shortest_path(_cat_graph,"conflict-shortest-path","Use shortest path (instead of arbitrary path) for conflict resolution",true);
   BoolOption Monosat::opt_conflict_min_cut(_cat_graph,"conflict-min-cut","Use min-cut (instead of arbitrary cut) for conflict resolution",false);
-IntOption Monosat::opt_restrict_decisions(_cat_graph,"decisions","Restrict decisions to the first n variables (0 to disable)",0);
 
 BoolOption Monosat::opt_check_solution(_cat_graph,"check-solution","Double check solution",true);
 BoolOption Monosat::opt_print_reach(_cat_graph,"print-reach","Print reachability graphs",false);
@@ -93,10 +92,10 @@ BoolOption Monosat::opt_print_conflicts(_cat,"print-conflicts","",false);
 BoolOption Monosat::opt_rnd_phase(_cat,"rnd-phase","",false);
 BoolOption Monosat::opt_init_rnd_phase(_cat,"init-rnd-phase","",false);
 
-BoolOption Monosat::opt_encode_reach_underapprox_as_sat(_cat_graph,"reach-cnf","",false);
+BoolOption Monosat::opt_encode_reach_underapprox_as_sat(_cat_graph,"reach-underapprox-cnf","Compute the under-approximate side of reachability constraints using CNF (only requires linear number of constraints), instead of the chosen algorithm",false);
 BoolOption Monosat::opt_reach_prop(_cat_graph,"prop-reach","",false);
 
-BoolOption Monosat::opt_decide_graph(_cat_graph,"decide-graph","",false);
+BoolOption Monosat::opt_decide_theories(_cat_graph,"decide-theories","",false);
 BoolOption Monosat::opt_decide_graph_distance(_cat_graph,"decide-graph-dist","",false);
 
 BoolOption Monosat::opt_use_random_path_for_decisions(_cat_graph,"decide-graph-rnd","",false);

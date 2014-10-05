@@ -53,7 +53,8 @@ public:
 		int within;
 		int source;
 		double rnd_seed;
-		int constraintsBuilt;
+		int constraintsBuiltOver=-1;
+		int constraintsBuiltUnder=-1;
 		CRef reach_marker;
 		CRef non_reach_marker;
 		CRef forced_reach_marker;
@@ -61,6 +62,7 @@ public:
 		Reach * positive_reach_detector;
 		Reach * negative_reach_detector;
 		Reach *  positive_path_detector;
+		Reach * negative_path_detector;
 		Reach *  cutgraph_reach_detector;
 		vec<Lit>  reach_lits;
 		Var first_reach_var;

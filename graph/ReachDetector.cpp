@@ -28,9 +28,9 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "dgl/TarjansSCC.h"
 using namespace Monosat;
 template<typename Weight>
-ReachDetector<Weight>::ReachDetector(int _detectorID, GraphTheorySolver<Weight> * _outer, DynamicGraph &_g, DynamicGraph &_antig, int from,double seed):Detector(_detectorID),outer(_outer),g(_g),antig(_antig),within(-1),source(from),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL),chokepoint_status(*this),chokepoint(chokepoint_status, _antig,source){
+ReachDetector<Weight>::ReachDetector(int _detectorID, GraphTheorySolver<Weight> * _outer, DynamicGraph &_g, DynamicGraph &_antig, int from,double seed):Detector(_detectorID),outer(_outer),g(_g),antig(_antig),within(-1),source(from),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),negative_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL),chokepoint_status(*this),chokepoint(chokepoint_status, _antig,source){
 
-	constraintsBuilt=-1;
+
 	rnd_path=nullptr;
 	//opt_path=nullptr;
 	chokepoint_detector=nullptr;
@@ -40,6 +40,7 @@ ReachDetector<Weight>::ReachDetector(int _detectorID, GraphTheorySolver<Weight> 
 	 positive_reach_detector=nullptr;
 	 negative_reach_detector=nullptr;
 	 positive_path_detector=nullptr;
+	 negative_path_detector=nullptr;
 	first_reach_var = var_Undef;
 	stats_pure_skipped=0;
 	stats_shrink_removed=0;
@@ -47,7 +48,9 @@ ReachDetector<Weight>::ReachDetector(int _detectorID, GraphTheorySolver<Weight> 
 	 non_reach_marker=CRef_Undef;
 	 forced_reach_marker=CRef_Undef;
 	if(reachalg==ReachAlg::ALG_SAT){
-
+		//to print out the solution
+		positive_path_detector = new UnweightedBFS<Reach::NullStatus>(from,_g,Reach::nullStatus,1);
+		negative_path_detector = new UnweightedBFS<Reach::NullStatus>(from,_antig,Reach::nullStatus,-1);
 		return;
 	}
 
@@ -88,6 +91,7 @@ ReachDetector<Weight>::ReachDetector(int _detectorID, GraphTheorySolver<Weight> 
 			positive_path_detector = new Distance<NullEdgeStatus>(from,_g,nullEdgeStatus,1);
 		else*/
 		positive_path_detector =positive_reach_detector;
+		negative_path_detector = negative_reach_detector;
 	}else if(reachalg==ReachAlg::ALG_DFS){
 		if(!opt_encode_reach_underapprox_as_sat)
 		{
@@ -100,6 +104,7 @@ ReachDetector<Weight>::ReachDetector(int _detectorID, GraphTheorySolver<Weight> 
 			positive_path_detector = new UnweightedBFS<Reach::NullStatus>(from,_g,Reach::nullStatus,1);
 		else
 			positive_path_detector =positive_reach_detector;
+		negative_path_detector =negative_reach_detector;
 	}else if(reachalg==ReachAlg::ALG_DISTANCE){
 		if(!opt_encode_reach_underapprox_as_sat)
 		{
@@ -108,6 +113,7 @@ ReachDetector<Weight>::ReachDetector(int _detectorID, GraphTheorySolver<Weight> 
 
 		negative_reach_detector = new UnweightedBFS<ReachDetector<Weight>::ReachStatus>(from,_antig,*(negativeReachStatus),-1);
 		positive_path_detector = positive_reach_detector;
+		negative_path_detector =negative_reach_detector;
 	}else if(reachalg==ReachAlg::ALG_RAMAL_REPS){
 		if(!opt_encode_reach_underapprox_as_sat)
 		{
@@ -116,6 +122,7 @@ ReachDetector<Weight>::ReachDetector(int _detectorID, GraphTheorySolver<Weight> 
 
 		negative_reach_detector = new UnweightedRamalReps<ReachDetector<Weight>::ReachStatus>(from,_antig,*(negativeReachStatus),-1,false);
 		positive_path_detector = new UnweightedBFS<Reach::NullStatus>(from,_g,Reach::nullStatus,1);
+		negative_path_detector = new UnweightedBFS<Reach::NullStatus>(from,_antig,Reach::nullStatus,-1);
 	}/*else if (reachalg==ReachAlg::ALG_THORUP){
 
 
@@ -133,6 +140,7 @@ ReachDetector<Weight>::ReachDetector(int _detectorID, GraphTheorySolver<Weight> 
 		}
 		negative_reach_detector = new UnweightedDijkstra<ReachDetector<Weight>::ReachStatus>(from,_antig,*negativeReachStatus,-1);
 		positive_path_detector = positive_reach_detector;
+		negative_path_detector =negative_reach_detector;
 		//reach_detectors.last()->positive_dist_detector = new Dijkstra(from,g);
 	}
 	if(positive_reach_detector)
@@ -152,7 +160,9 @@ void ReachDetector<Weight>::buildSATConstraints(bool onlyUnderApprox,int within_
 		within_steps=g.nodes();
 	if(within_steps>g.edges())
 		within_steps=g.edges();
-	if(constraintsBuilt>=within_steps)
+	if(onlyUnderApprox && constraintsBuiltUnder>=within_steps)
+		return;
+	if(!onlyUnderApprox && constraintsBuiltOver>=within_steps)
 		return;
 
 	//there is no reason to encode these variables in the theory solver!
@@ -161,14 +171,14 @@ void ReachDetector<Weight>::buildSATConstraints(bool onlyUnderApprox,int within_
 		assert(outer->decisionLevel()==0);
 		vec<Lit> c;
 
-		if(constraintsBuilt<=0){
-			constraintsBuilt=0;
+		if(constraintsBuiltOver<=0){
+			constraintsBuiltOver=0;
 			dist_lits.push();
 			Lit True = mkLit(outer->newVar());
 			outer->addClause(True);
-			assert(outer->value(True)==l_True);
+
 			Lit False = ~True;
-			assert(outer->value(False)==l_False);
+
 			for(int i = 0;i<g.nodes();i++){
 				dist_lits[0].push(False);
 			}
@@ -181,11 +191,11 @@ void ReachDetector<Weight>::buildSATConstraints(bool onlyUnderApprox,int within_
 		vec<Lit> incomingNodes;
 
 		//bellman-ford:
-		for (int i = constraintsBuilt;i<within_steps;i++){
+		for (int i = constraintsBuiltOver;i<within_steps;i++){
 			dist_lits.last().copyTo(reaches);
 			dist_lits.push();
 			reaches.copyTo(dist_lits.last());
-			assert(outer->value( reaches[source])==l_True);
+
 			//For each edge:
 			for(int j = 0;j<g.nodes();j++){
 				Lit r_cur = reaches[j];
@@ -220,21 +230,27 @@ void ReachDetector<Weight>::buildSATConstraints(bool onlyUnderApprox,int within_
 				}
 				dist_lits.last()[j]=r_cur;
 			}
-			assert(outer->value( dist_lits.last()[source])==l_True);
+
 		}
 		assert(dist_lits.size()==within_steps+1);
 		if(within_steps==g.nodes() || within_steps==g.edges()){
-			assert(reach_lits.size()==0);
-			for(Lit d: dist_lits.last()){
-				reach_lits.push(d);
+			reach_lits.growTo(g.nodes());
+
+			for(int i =0;i<dist_lits.last().size();i++){
+				Lit d = dist_lits.last()[i];
+				if(reach_lits[i]==lit_Undef){
+					reach_lits[i]=d;
+				}else{
+					outer->makeEqual(reach_lits[i],d);
+				}
 			}
-			assert(outer->value( reach_lits[source])==l_True);
+
 		}
 
-		constraintsBuilt=within_steps;
+		constraintsBuiltOver=within_steps;
 	}else{
-		if(constraintsBuilt<0){
-		constraintsBuilt=g.nodes();
+		if(constraintsBuiltUnder<0){
+			constraintsBuiltUnder=g.nodes();
 
 		//for each node, it cannot be reachable if none of its incoming.edges() are enabled.
 		for(int n = 0;n<g.nodes();n++){
@@ -252,9 +268,7 @@ void ReachDetector<Weight>::buildSATConstraints(bool onlyUnderApprox,int within_
 		vec<Lit> c;
 		vec<Lit> t;
 		for(int n = 0;n<g.nodes();n++){
-			if(n==53){
-				int a =1;
-			}
+
 			if(n==source){
 				outer->addClause(reach_lits[n]);//source node is unconditionally reachable
 			}else{
@@ -494,7 +508,7 @@ template<typename Weight>
 		void ReachDetector<Weight>::buildNonReachReason(int node,vec<Lit> & conflict){
 			static int it = 0;
 			++it;
-			if(it==2){
+			if(it==31){
 				int a=1;
 			}
 			int u = node;
@@ -503,9 +517,10 @@ template<typename Weight>
 			//assert(!negative_reach_detector->connected_unchecked(node));
 			double starttime = rtime(2);
 			outer->cutGraph.clearHistory();
+			outer->cutGraph.invalidate();
 			outer->stats_mc_calls++;
 			if(opt_conflict_min_cut){
-				if(mincutalg!= MinCutAlg::ALG_EDKARP_ADJ){
+				if(mincutalg== MinCutAlg::ALG_EDMONSKARP){
 					//ok, set the weights for each edge in the cut graph.
 					//Set edges to infinite weight if they are undef or true, and weight 1 otherwise.
 					for(int u = 0;u<outer->cutGraph.nodes();u++){
@@ -515,7 +530,7 @@ template<typename Weight>
 							/*if(S->value(var)==l_False){
 								mc.setCapacity(u,v,1);
 							}else{*/
-							outer->mc->setCapacity(u,v,0xF0F0F0);
+							outer->mc->setCapacity(u,v,0x0FF0F0);
 							//}
 						}
 					}
@@ -528,8 +543,9 @@ template<typename Weight>
 					}
 				}
 				outer->cut.clear();
-
+				antig.drawFull();
 				int f =outer->mc->minCut(source,node,outer->cut);
+
 				assert(f<0xF0F0F0); assert(f==outer->cut.size());//because edges are only ever infinity or 1
 				for(int i = 0;i<outer->cut.size();i++){
 					MaxFlowEdge e = outer->cut[i];
@@ -1198,7 +1214,7 @@ template<typename Weight>
 Lit ReachDetector<Weight>::decide(){
 	if(!negative_reach_detector)
 		return lit_Undef;
-	auto * over =negative_reach_detector;
+	auto * over =negative_path_detector;
 
 	auto * under = positive_reach_detector;
 
