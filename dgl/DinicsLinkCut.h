@@ -350,6 +350,8 @@ public:
     					 //assert(parentEdge[u].edgeID==-1);
     					 assert(edgeID>=0);
     					 assert(forest.findRoot(src)==u);
+    					 assert(capacity[edgeID]>=F[edgeID]);
+    					 assert(F[edgeID]>=0);
     					 if(backward){
     						 forest.link(u,v,F[edgeID]);
     						// parent_edge_backward[u]=true;
@@ -387,7 +389,7 @@ public:
     						 F[edgeID] +=c;
     					 }else{
     						 assert(c<=F[edgeID]);
-    						 F[edgeID] =c;
+    						 F[edgeID] -=c;
     					 }
     					 forest.cut(u);
     					 parentEdge[u].edgeID=-1;
@@ -405,8 +407,10 @@ public:
     					 //Clean up the state of the tree:
     					 for(int u = 0;u<g.nodes();u++){
     						 if(parentEdge[u].edgeID>=0){
+    							 assert(!forest.isRoot(u));
     							 int c = forest.getCost(u);
-    							 int edgeID = parentEdge[u].edgeID;
+
+    							 int edgeID = parentEdge[u].edgeID;assert(c<=capacity[edgeID]);
     							 if(!parentEdge[u].backward){
     								 F[edgeID]=capacity[edgeID]-c;
     							 }else{
@@ -431,7 +435,8 @@ public:
     					 }else{
     						stats_backtracks++;
     						forest.removeNode(u);
-							/*for(auto edge:g.adjacency[u]){
+							for(int i = 0;i<g.nIncident(u);i++){
+								auto & edge = g.incident(u,i,false);
 								int edgeID = edge.id;
 								int v = edge.node;
 								if(!g.edgeEnabled(edgeID) )
@@ -446,7 +451,8 @@ public:
 									parentEdge[v].edgeID=-1;
 								}
 							}
-							for(auto edge:g.inverted_adjacency[u]){
+							for(int i = 0;i<g.nIncoming(u);i++){
+								auto & edge = g.incoming(u,i,false);
 								int edgeID = edge.id;
 								int v = edge.node;
 								if(!g.edgeEnabled(edgeID)  )
@@ -458,7 +464,7 @@ public:
 									forest.cut(v);
 									parentEdge[v].edgeID=-1;
 								}
-							}*/
+							}
 							if(toLink.size()){
 								u = forest.findRoot(toLink.back().v);//should this be u or v?
 							}else{
@@ -563,7 +569,7 @@ public:
 					 }else{
 
 						 assert(c<=F[edgeID]);
-						 F[edgeID] =c;
+						 F[edgeID] -=c;
 					 }
 					 forest.cut(u);
 					parentEdge[u].edgeID=-1;
@@ -716,14 +722,14 @@ public:
     					//forest.dbg_print_forest(true);
     					 assert(forest.getCost(u)==minC);
     					 int edgeID = parentEdge[u].edgeID;
-    					 if(!parentEdge[u].edgeID){
+    					 if(!parentEdge[u].backward){
     					 //if(tree_edges[edgeID].in_tree){
     						 assert(F[edgeID] + c<=capacity[edgeID]);
     						 F[edgeID] +=c;
     					 }else{
     						 //assert(tree_edges[edgeID].in_tree_backward);
     						 assert(c<=F[edgeID]);
-    						 F[edgeID] =c;
+    						 F[edgeID] -=c;
     					 }
     					 forest.cut(u);
     					parentEdge[u].edgeID=-1;

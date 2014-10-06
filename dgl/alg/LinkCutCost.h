@@ -643,6 +643,7 @@ public:
     	if(x==y)
     		return;
     	_link(x,y,cost);
+
   }
 
     bool connected(int x, int y) {
@@ -656,6 +657,7 @@ public:
 
     //Returns the cost of the edge connecting x to the tree; x must not be a root.
     int getCost(int x){
+    	assert(!isRoot(x));
     	return grosscost(x);
     }
 

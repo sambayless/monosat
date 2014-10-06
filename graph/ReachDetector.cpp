@@ -508,7 +508,7 @@ template<typename Weight>
 		void ReachDetector<Weight>::buildNonReachReason(int node,vec<Lit> & conflict){
 			static int it = 0;
 			++it;
-			if(it==31){
+			if(it==4){
 				int a=1;
 			}
 			int u = node;
