@@ -255,7 +255,12 @@ void ReachDetector<Weight>::buildSATConstraints(bool onlyUnderApprox,int within_
 		//for each node, it cannot be reachable if none of its incoming.edges() are enabled.
 		for(int n = 0;n<g.nodes();n++){
 			if(reach_lits[n]==lit_Undef){
-				Var reach_var = outer->newVar(detectorID , true);
+				Var reach_var;
+				if(this->positive_reach_detector || this->negative_reach_detector)
+					reach_var= outer->newVar(detectorID , true);
+				else{
+					reach_var= outer->newVar(-1, false);
+				}
 				reach_lits[n] =mkLit(reach_var);//since this is _only_ the underapproximation, these variables _do_ need to be connected to the theory solver
 				while(reach_lit_map.size()<= reach_var- first_reach_var ){
 					reach_lit_map.push(-1);
@@ -346,8 +351,11 @@ void ReachDetector<Weight>::buildSATConstraints(bool onlyUnderApprox,int within_
 }
 template<typename Weight>
 void ReachDetector<Weight>::addLit(int from, int to, Var outer_reach_var){
-	while( reach_lits.size()<=g.nodes())
+	while( reach_lits.size()<g.nodes())
 			reach_lits.push(lit_Undef);
+	while(original_reach_lits.size()<g.nodes())
+		original_reach_lits.push(false);
+	original_reach_lits[to]=true;
 	if(reach_lits[to]!=lit_Undef){
 		Lit r = reach_lits[to];
 		//force equality between the new lit and the old reach lit, in the SAT solver
@@ -498,6 +506,7 @@ void ReachDetector<Weight>::buildReachReason(int node,vec<Lit> & conflict){
 				}
 
 			}
+			stats_under_conflicts++;
 			outer->num_learnt_paths++;
 			outer->learnt_path_clause_length+= (conflict.size()-1);
 			double elapsed = rtime(2)-starttime;
@@ -512,6 +521,7 @@ template<typename Weight>
 				int a=1;
 			}
 			int u = node;
+			stats_over_conflicts++;
 			//drawFull( non_reach_detectors[detector]->getSource(),u);
 			assert(outer->dbg_notreachable( source,u));
 			//assert(!negative_reach_detector->connected_unchecked(node));
@@ -1077,7 +1087,10 @@ void ReachDetector<Weight>::printSolution(){
 		 vec<bool> to_show;
 		 to_show.growTo(g.nodes());
 
-		 for(Lit l : reach_lits){
+		 for (int i = 0;i<reach_lits.size();i++){
+			 if(!original_reach_lits[i])//only print paths to nodes that the user asked for (this matters if we are using a CNF reachability encoding, which may have invented extra reach lits)
+				 continue;
+			 Lit l = reach_lits[i];
 			 if(l!=lit_Undef){
 				 int to = reach_lit_map[var(l)-first_reach_var];
 				 to_show[to]=true;
@@ -1215,9 +1228,9 @@ Lit ReachDetector<Weight>::decide(){
 	if(!negative_reach_detector)
 		return lit_Undef;
 	auto * over =negative_path_detector;
-
 	auto * under = positive_reach_detector;
-
+	if(!positive_reach_detector)
+		under = positive_path_detector;
 
 	/*if(opt_decide_graph_chokepoints){
 

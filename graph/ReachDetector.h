@@ -64,6 +64,7 @@ public:
 		Reach *  positive_path_detector;
 		Reach * negative_path_detector;
 		Reach *  cutgraph_reach_detector;
+		vec<bool> original_reach_lits;
 		vec<Lit>  reach_lits;
 		Var first_reach_var;
 		vec<int> order_vec;

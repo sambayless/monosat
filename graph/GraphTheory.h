@@ -721,6 +721,7 @@ public:
 			Lit l =r->decide();
 			if(l!=lit_Undef){
 				stats_decisions++;
+				r->stats_decisions++;
 				return toSolver(l);
 			}
 		}

@@ -163,7 +163,7 @@ void MaxflowDetector<Weight>::buildMaxFlowTooHighReason(Weight flow,vec<Lit> & c
 				fflush(antig.outfile);
 			}
 #endif
-
+			stats_under_conflicts++;
 			outer->num_learnt_paths++;
 			outer->learnt_path_clause_length+= (conflict.size()-1);
 			double elapsed = rtime(2)-starttime;
@@ -263,7 +263,7 @@ template<typename Weight>
 #endif
 			 outer->num_learnt_cuts++;
 			 outer->learnt_cut_clause_length+= (conflict.size()-1);
-
+			 stats_over_conflicts++;
 			double elapsed = rtime(2)-starttime;
 			 outer->mctime+=elapsed;
 
@@ -495,6 +495,9 @@ void MaxflowDetector<Weight>::printSolution(){
 
 template<typename Weight>
 Lit MaxflowDetector<Weight>::decide(){
+
+
+
 	/*MaxflowDetector *r =this;
 	Distance<MaxflowDetector<Weight>::DetectorStatus> * over = (Distance<MaxflowDetector<Weight>::DetectorStatus>*) r->negative_detector;
 

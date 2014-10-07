@@ -50,7 +50,7 @@ public:
 	long stats_over_conflict_time=0;
 	long stats_skipped_under_updates=0;
 	long stats_skipped_over_updates=0;
-
+	long stats_decisions=0;
 	int getID(){
 		return detectorID;
 	}
@@ -65,7 +65,8 @@ public:
 			//printf("Updates: %d (under), %d over\n", stats_under_updates, stats_over_updates);
 			printf("\tUnder-approx updates: %d (%d skipped) (%f s total, %f s avg)\n", stats_under_updates,stats_skipped_under_updates,(double)stats_under_update_time, (double)stats_under_update_time/(double)(stats_under_updates+1) );
 			printf("\tOver-approx updates: %d (%d skipped)  (%f s total, %f s avg)\n", stats_over_updates,stats_skipped_over_updates,(double)stats_over_update_time, (double)stats_over_update_time/(double)(stats_over_updates+1) );
-
+			printf("\tTheory Decisions: %d\n",stats_decisions);
+			printf("\tConflicts (over,under): %d, %d\n",stats_under_conflicts,stats_over_conflicts );
 
 		}
 	}
