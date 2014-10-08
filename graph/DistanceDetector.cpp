@@ -1136,6 +1136,7 @@ Lit DistanceDetector<Weight>::decide(){
 
 					int p =j;
 					int last=j;
+					int last_edge= -1;
 					if(!opt_use_random_path_for_decisions)
 					{
 						//ok, read back the path from the over to find a candidate edge we can decide
@@ -1149,6 +1150,7 @@ Lit DistanceDetector<Weight>::decide(){
 							last=p;
 							assert(p!=r->source);
 							int prev = over->previous(p);
+							last_edge = over->incomingEdge(p);
 							assert(over->distance(p)<=min_dist-dist);
 							dist+=1;//should really be weighted
 							p = prev;
@@ -1176,8 +1178,10 @@ Lit DistanceDetector<Weight>::decide(){
 						while(!under->connected(p)){
 
 							last=p;
+
 							assert(p!=source);
 							int prev = rnd_path->previous(p);
+							last_edge = rnd_path->incomingEdge(p);
 							p = prev;
 							assert(p>=0);
 						}
@@ -1194,7 +1198,9 @@ Lit DistanceDetector<Weight>::decide(){
 					assert(over->connected(p));*/
 					assert(p>-1);
 					if(p>-1){
-					Var v = outer->edges[p][last].v;
+						assert(outer->edge_list[last_edge].from == p);
+						assert(outer->edge_list[last_edge].to == last);
+						Var v = outer->getEdgeVar(last_edge); ///outer->edges[p][last].v;
 					if(outer->value(v)==l_Undef){
 						return mkLit(v,false);
 					}else{
@@ -1234,7 +1240,10 @@ Lit DistanceDetector<Weight>::decide(){
 							last=p;
 							assert(p!=source);
 							int prev = over->previous(p);
-							Var v = outer->edges[prev][p].v;
+							int edgeid = over->incomingEdge(p);
+							assert(outer->edge_list[edgeid].from == prev);
+							assert(outer->edge_list[edgeid].to == p);
+							Var v = outer->getEdgeVar(edgeid); //outer->edges[prev][p].v;
 							if(outer->value(v)==l_Undef){
 								//if(opt_use_random_path_for_decisions)
 								//	tmp_nodes.push(v);

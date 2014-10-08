@@ -153,7 +153,7 @@ public:
 		return edgeID<all_edges.size() && all_edges[edgeID].id ==edgeID;
 	}
 	//Instead of actually adding and removing edges, tag each edge with an 'enabled/disabled' label, and just expect reading algorithms to check and respect that label.
-	void addEdge(int from, int to, int id=-1){//, int weight=1
+	int addEdge(int from, int to, int id=-1){//, int weight=1
 		assert(from<num_nodes);
 		assert(to<num_nodes);
 		assert(from>=0);
@@ -190,6 +190,7 @@ public:
 #endif
 //		history.push_back({true,id,modifications});
 		enableEdge(from,to,id);//default to enabled
+		return id;
 	}
 	int nEdgeIDs(){
 		assert(num_edges==all_edges.size());

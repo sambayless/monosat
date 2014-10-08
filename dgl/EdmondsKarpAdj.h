@@ -148,7 +148,7 @@ public:
     }
     void dbg_print_graph(int from, int to){
    #ifndef NDEBUG
-    	return;
+
        		static int it = 0;
        		if(++it==6){
        			int a =1;
@@ -227,6 +227,7 @@ public:
     			}
     		}
     	}*/
+
     	F.clear();
     	F.resize(g.all_edges.size());
     	prev.resize(g.nodes());
@@ -272,7 +273,7 @@ public:
 		last_modification=g.modifications;
 		last_deletion = g.deletions;
 		last_addition=g.additions;
-
+		dbg_print_graph(s,t);
 		history_qhead=g.history.size();
 		last_history_clear=g.historyclears;
         return f;

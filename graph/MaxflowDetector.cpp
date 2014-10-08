@@ -49,16 +49,19 @@ template<typename Weight>
 MaxflowDetector<Weight>::MaxflowDetector(int _detectorID, GraphTheorySolver<Weight> * _outer,std::vector<Weight> & capacities,  DynamicGraph &_g,DynamicGraph &_antig, int from, int _target,double seed):
 Detector(_detectorID),outer(_outer),capacities(capacities),over_graph(_g),g(_g),antig(_antig),source(from),target(_target),rnd_seed(seed),positive_detector(NULL),negative_detector(NULL){
 	if(mincutalg==MinCutAlg::ALG_EDKARP_DYN){
-
 		positive_detector = new EdmondsKarpDynamic<std::vector<Weight>,Weight>(_g,capacities);
 		negative_detector = new EdmondsKarpDynamic<std::vector<Weight>,Weight>(_antig,capacities);
-		positive_conflict_detector =new EdmondsKarpAdj<std::vector<Weight>,Weight>(_g,capacities);
-		negative_conflict_detector = new EdmondsKarpAdj<std::vector<Weight>,Weight>(_antig,capacities);
+		positive_conflict_detector =positive_detector;//new EdmondsKarpAdj<std::vector<Weight>,Weight>(_g,capacities);
+		negative_conflict_detector =negative_detector;// new EdmondsKarpAdj<std::vector<Weight>,Weight>(_antig,capacities);
+		if(opt_conflict_min_cut)
+				learn_cut = new EdmondsKarpAdj<std::vector<int>,int>(learn_graph,learn_caps);
 	}else if (mincutalg==MinCutAlg::ALG_EDKARP_ADJ){
 		positive_detector = new EdmondsKarpAdj<std::vector<Weight>,Weight>(_g,capacities);
 		negative_detector = new EdmondsKarpAdj<std::vector<Weight>,Weight>(_antig,capacities);
 		positive_conflict_detector = positive_detector;
 		negative_conflict_detector = negative_detector;
+		if(opt_conflict_min_cut)
+				learn_cut = new EdmondsKarpAdj<std::vector<int>,int>(learn_graph,learn_caps);
 	}/*else if (mincutalg==MinCutAlg::ALG_IBFS){
 		positive_detector = new IBFS(_g);
 		negative_detector = new IBFS(_antig);
@@ -67,19 +70,30 @@ Detector(_detectorID),outer(_outer),capacities(capacities),over_graph(_g),g(_g),
 	}*/else if (mincutalg==MinCutAlg::ALG_DINITZ){
 		positive_detector = new Dinitz<std::vector<Weight>,Weight>(_g,capacities);
 		negative_detector = new Dinitz<std::vector<Weight>,Weight>(_antig,capacities);
-		positive_conflict_detector =new EdmondsKarpAdj<std::vector<Weight>,Weight>(_g,capacities);
-		negative_conflict_detector = new EdmondsKarpAdj<std::vector<Weight>,Weight>(_antig,capacities);
+		positive_conflict_detector = positive_detector;// new EdmondsKarpAdj<std::vector<Weight>,Weight>(_g,capacities);
+		negative_conflict_detector = negative_detector;//new EdmondsKarpAdj<std::vector<Weight>,Weight>(_antig,capacities);
+		if(opt_conflict_min_cut)
+				learn_cut = new Dinitz<std::vector<int>,int>(learn_graph,learn_caps);
 	}else if (mincutalg==MinCutAlg::ALG_DINITZ_LINKCUT){
 		//link-cut tree currently only supports ints (enforcing this using tempalte specialization...).
 		buildDinitzLinkCut();
-		positive_conflict_detector =new EdmondsKarpAdj<std::vector<Weight>,Weight>(_g,capacities);
+		positive_conflict_detector = new EdmondsKarpAdj<std::vector<Weight>,Weight>(_g,capacities);
 		negative_conflict_detector = new EdmondsKarpAdj<std::vector<Weight>,Weight>(_antig,capacities);
+		if(opt_conflict_min_cut)
+				learn_cut = new DinitzLinkCut<std::vector<int>>(learn_graph,learn_caps);
 	}else{
 		positive_detector = new EdmondsKarpAdj<std::vector<Weight>,Weight>(_g,capacities);
 		negative_detector = new EdmondsKarpAdj<std::vector<Weight>,Weight>(_antig,capacities);
 		positive_conflict_detector = positive_detector;
 		negative_conflict_detector = negative_detector;
+		if(opt_conflict_min_cut)
+				learn_cut = new EdmondsKarpAdj<std::vector<int>,int>(learn_graph,learn_caps);
 	}
+
+
+
+
+
 
 	first_reach_var = var_Undef;
 	reach_marker=outer->newReasonMarker(getID());
@@ -136,11 +150,13 @@ void MaxflowDetector<Weight>::buildMaxFlowTooHighReason(Weight flow,vec<Lit> & c
 
 			//just collect the set of edges which have non-zero flow, and return them
 			//(Or, I could return a cut, probably)
-			for(int i = 0;i<outer->edge_list.size();i++){
-				if(positive_conflict_detector->getEdgeFlow(i)>0){
-					Var v = outer->edge_list[i].v;
-					assert(outer->value(v)==l_True);
-					conflict.push(mkLit(v,true));
+			for(int i = 0;i<g.edges();i++){
+				if(g.edgeEnabled(i)){
+					if(positive_conflict_detector->getEdgeFlow(i)>0){
+						Var v = outer->edge_list[i].v;
+						assert(outer->value(v)==l_True);
+						conflict.push(mkLit(v,true));
+					}
 				}
 			}
 
@@ -173,8 +189,90 @@ template<typename Weight>
 		void MaxflowDetector<Weight>::buildMaxFlowTooLowReason(Weight maxflow,vec<Lit> & conflict){
 			static int it = 0;
 			++it;
+			if(it==22){
+				int a=1;
+			}
 			double starttime = rtime(2);
+			if(opt_conflict_min_cut){
+				Weight foundflow = negative_conflict_detector->maxFlow(source,target);
+				//find a minimal s-t cut in the residual graph.
+				//to do so, first construct the residual graph
+				int INF=0x0FF0F0;
+				//for each edge in the original graph, need to add a forward and backward edge here.
+				if(learn_graph.nodes()<g.nodes()){
+					while(learn_graph.nodes()<g.nodes())
+						learn_graph.addNode();
 
+					for (auto & e:g.all_edges){
+						learn_graph.addEdge(e.from,e.to);
+					}
+					back_edges.growTo(g.edges());
+					for (auto & e:g.all_edges){
+						back_edges[e.id] = learn_graph.addEdge(e.to,e.from);
+					}
+					learn_caps.resize(learn_graph.edges());
+				}
+
+				//now, set learn_graph to the residual graph
+				for (auto & e:g.all_edges){
+					int from = e.from;
+					int to = e.to;
+					int v = outer->getEdgeVar(e.id);
+					lbool val =outer->value(v);
+					if(val!=l_False){
+						Weight flow = negative_conflict_detector->getEdgeFlow(e.id);
+						Weight capacity =  negative_conflict_detector->getEdgeCapacity(e.id);
+						if(capacity==0){
+							learn_graph.disableEdge(e.id);
+							learn_graph.disableEdge(back_edges[e.id]);
+						}else{
+							if(flow>0){
+								//then there is capacity in the backward edge in the residual graph
+								int back_edge = back_edges[e.id];
+								learn_graph.enableEdge(back_edges[e.id]);
+								learn_caps[back_edge] = INF;
+							}else{
+								learn_graph.disableEdge(back_edges[e.id]);
+							}
+							if (flow<capacity){
+								//then there is capacity in the forward edge in the residual graph
+								learn_caps[e.id] = INF;
+								learn_graph.enableEdge(e.id);
+							}else{
+								learn_graph.disableEdge(e.id);
+							}
+						}
+					}else{
+
+						learn_graph.enableEdge(e.id);
+						learn_graph.disableEdge(back_edges[e.id]);
+						learn_caps[e.id] = 1;
+					}
+				}
+				learn_graph.invalidate();
+				learn_graph.drawFull(true);
+				outer->cut.clear();
+				antig.drawFull(true);
+				int f =learn_cut->minCut(source,target,outer->cut);
+				if(f<0x0FF0F0){
+					assert(f<0xF0F0F0); assert(f==outer->cut.size());//because edges are only ever infinity or 1
+					for(int i = 0;i<outer->cut.size();i++){
+						MaxFlowEdge e = outer->cut[i];
+
+						Lit l = mkLit( outer->getEdgeVar(e.id),false);
+						assert(outer->value(l)==l_False);
+						conflict.push(l);
+					}
+				}else{
+					int a=1;
+					//there is no way to increase the max flow.
+				}
+
+				 outer->num_learnt_cuts++;
+				 outer->learnt_cut_clause_length+= (conflict.size()-1);
+				 stats_over_conflicts++;
+				return;
+			}
 
 			//drawFull( non_reach_detectors[detector]->getSource(),u);
 			//assert(outer->dbg_distance( source,u));
@@ -438,10 +536,11 @@ bool MaxflowDetector<Weight>::checkSatisfied(){
 }
 template<typename Weight>
 void MaxflowDetector<Weight>::printSolution(){
-
-	printf("Maximum %d->%d flow in graph %d: \n", this->source,this->target,this->outer->getGraphID());
+	Weight f = positive_detector->maxFlow(source,target);
+	printf("Maximum %d->%d flow in graph %d is ", this->source,this->target,this->outer->getGraphID());
+	std::cout<<f <<"\n";
 	if(opt_verb>0){
-		positive_detector->maxFlow(source,target);
+
 		int maxw = log10(outer->nNodes() )+1;
 		int width = sqrt(outer->nNodes());
 		if(opt_width>0){
@@ -495,114 +594,175 @@ void MaxflowDetector<Weight>::printSolution(){
 
 template<typename Weight>
 Lit MaxflowDetector<Weight>::decide(){
+	auto * over =negative_conflict_detector;
+		auto * under = positive_conflict_detector;
 
+		Weight under_flow = under->maxFlow(source,target) ;
+		Weight over_flow = over->maxFlow(source,target) ;
 
-
-	/*MaxflowDetector *r =this;
-	Distance<MaxflowDetector<Weight>::DetectorStatus> * over = (Distance<MaxflowDetector<Weight>::DetectorStatus>*) r->negative_detector;
-
-	Distance<MaxflowDetector<Weight>::DetectorStatus> * under = (Distance<MaxflowDetector<Weight>::DetectorStatus>*) r->positive_detector;
-
-	//we can probably also do something similar, but with cuts, for nodes that are decided to be unreachable.
-
-	//ok, for each node that is assigned reachable, but that is not actually reachable in the under approx, decide an edge on a feasible path
-
-	//this can be obviously more efficient
-	//for(int j = 0;j<nNodes();j++){
-	for(int k = 0;k<flow_lits.size();k++){
-		for(int n = 0;n<flow_lits[k].size();n++){
-			Lit l = flow_lits[k][n].l;
-			int min_dist = flow_lits[k][n].min_distance;
+		for(int k = 0;k<flow_lits.size();k++){
+			Lit l =flow_lits[k].l;
 			if(l==lit_Undef)
 				continue;
-			int j = r->getNode(var(l));
-			if(outer->value(l)==l_True){
-				//if(S->level(var(l))>0)
-				//	continue;
 
-				assert(over->distance(j)<=min_dist);//else we would already be in conflict before this decision was attempted!
-				if(under->distance(j)>min_dist){
-					//then lets try to connect this
-					static vec<bool> print_path;
+			Weight & required_flow = flow_lits[k].max_flow;
 
-					assert(over->connected(j));//Else, we would already be in conflict
+			if(outer->value(l)==l_True && opt_decide_graph_pos){
+				assert(over_flow>=required_flow);
+				if(under_flow <over_flow){
+					//then decide an unassigned edge of the currently selected flow
 
 
-					int p =j;
-					int last=j;
-					//if(!opt_use_random_path_for_decisions)
-					{
-						//ok, read back the path from the over to find a candidate edge we can decide
-						//find the earliest unconnected node on this path
-						over->update();
-						 p = j;
-						 last = j;
-						 int dist = 0;
-						while(under->distance(p)>=min_dist-dist){
+					if(opt_conflict_dfs){
+						//do a dfs to find that edge. Could start from either the source or the target.
+						prev.clear();
+						prev.growTo(antig.nodes(),-1);
 
-							last=p;
-							assert(p!=r->source);
-							int prev = over->previous(p);
-							assert(over->distance(p)<=min_dist-dist);
-							dist+=1;//should really be weighted
-							p = prev;
+						q.clear();
 
-						}
-					}else{
-					//This won't work (without modification) because we need to constrain these paths to ones of maximum real distance < min_dist.
-						//Randomly re-weight the graph sometimes
-						if(drand(rnd_seed)<opt_decide_graph_re_rnd){
+						if(opt_conflict_from_source){
 
-							for(int i=0;i<outer->g.nodes();i++){
-									 double w = drand(rnd_seed);
-									 w-=0.5;
-									 w*=w;
-									 //printf("%f (%f),",w,rnd_seed);
-									 rnd_path->setWeight(i,w);
-								 }
-						}
-						 rnd_path->update();
-						//derive a random path in the graph
-						 p = j;
-						 last = j;
-						 assert( rnd_path->connected(p));
-						while(!under->connected(p)){
+							q.push_back(source);
 
-							last=p;
-							assert(p!=source);
-							int prev = rnd_path->previous(p);
-							p = prev;
-							assert(p>=0);
-						}
-
-					}
-
-
-
-					//ok, now pick some edge p->last that will connect p to last;
-					assert(!under->connected(last));
-					assert(under->connected(p));
-
-					assert(over->connected(last));
-					assert(over->connected(p));
-
-					for(int k = 0;k<outer->antig.adjacency[p].size();k++){
-						int to = outer->antig.adjacency[p][k].node;
-						if (to==last){
-							Var v =outer->edge_list[ outer->antig.adjacency[p][k].id].v;
-							if(outer->value(v)==l_Undef){
-								return mkLit(v,false);
-							}else{
-								assert(outer->value(v)!=l_True);
+							while(q.size()){
+								int u =q.back();
+								q.pop_back();
+								if(u!=source){
+									assert(prev[u]!=-1);
+									Var v = outer->getEdgeVar(prev[u]);
+									assert(outer->value(v)!=l_False);
+									if(outer->value(v)==l_Undef){
+										return mkLit(v,false);
+									}
+								}
+								for(int i = 0;i<antig.nIncident(u) ;i++){
+									if(!antig.edgeEnabled(antig.incident(u,i).id))
+										continue;
+									int v =antig.incident(u,i).node;
+									int edgeid= antig.incident(u,i).id;
+									if (over->getEdgeFlow(edgeid)>0){
+										if(prev[v]==-1 && v != source){
+											prev[v]=edgeid;
+											q.push_back(v);
+										}
+									}
+								}
+							}
+						}else{
+							q.push_back(target);
+							while(q.size()){
+								int u =q.back();
+								q.pop_back();
+								if(u!=target){
+									assert(prev[u]!=-1);
+									Var v = outer->getEdgeVar(prev[u]);
+									assert(outer->value(v)!=l_False);
+									if(outer->value(v)==l_Undef){
+										return mkLit(v,false);
+									}
+								}
+								for(int i = 0;i<antig.nIncoming(u) ;i++){
+									if(!antig.edgeEnabled(antig.incoming(u,i).id))
+										continue;
+									int v =antig.incoming(u,i).node;
+									int edgeid= antig.incoming(u,i).id;
+									if (over->getEdgeFlow(edgeid)>0){
+										if(prev[v]==-1 && v != target){
+											prev[v]=edgeid;
+											q.push_back(v);
+										}
+									}
+								}
 							}
 						}
+					}else{
+
+						prev.clear();
+						prev.growTo(antig.nodes(),-1);
+
+						dist.clear();
+						dist.growTo(antig.nodes(),-1);
+
+						q.clear();
+
+						if(opt_conflict_from_source){
+							dist[source]=0;
+							q.push_back(source);
+							//do a bfs to find that edge. Could start from either the source or the target.
+							for (int i = 0;i<q.size();i++){
+								int u = q[i];
+								assert(dist[u]>-1);
+								if(u!=source){
+									assert(prev[u]!=-1);
+									Var v = outer->getEdgeVar(prev[u]);
+									assert(outer->value(v)!=l_False);
+									if(outer->value(v)==l_Undef){
+										return mkLit(v,false);
+									}
+								}
+								int d = dist[u];
+								for(int i = 0;i<antig.nIncident(u);i++){
+									if(!antig.edgeEnabled(antig.incident(u,i).id))
+										continue;
+									int edgeID = antig.incident(u,i).id;
+									int v = antig.incident(u,i).node;
+									int dv = dist[v];
+									int alt = d+1;
+									if (over->getEdgeFlow(edgeID)>0){
+										if(dist[v]<0 || dist[v]>alt){
+											dist[v]=alt;
+											prev[v]=edgeID;
+											q.push_back(v);
+										}
+									}
+								}
+							}
+						}else{
+							dist[target]=0;
+							q.push_back(target);
+							//do a bfs to find that edge. Could start from either the source or the target.
+							for (int i = 0;i<q.size();i++){
+								int u = q[i];
+								assert(dist[u]>-1);
+								if(u!=target){
+									assert(prev[u]!=-1);
+									Var v = outer->getEdgeVar(prev[u]);
+									assert(outer->value(v)!=l_False);
+									if(outer->value(v)==l_Undef){
+										return mkLit(v,false);
+									}
+								}
+								int d = dist[u];
+								for(int i = 0;i<antig.nIncoming(u);i++){
+									if(!antig.edgeEnabled(antig.incoming(u,i).id))
+										continue;
+									int edgeID = antig.incoming(u,i).id;
+									int v = antig.incoming(u,i).node;
+									int dv = dist[v];
+									int alt = d+1;
+									if (over->getEdgeFlow(edgeID)>0){
+										if(dist[v]<0 || dist[v]>alt){
+											dist[v]=alt;
+											prev[v]=edgeID;
+											q.push_back(v);
+										}
+									}
+								}
+							}
+						}
+
 					}
 
 				}
+			}else if(outer->value(l)==l_False && opt_decide_graph_neg){
+
+
+
 			}
+
 		}
-	}*/
-	return lit_Undef;
+
+		return lit_Undef;
 };
 
 

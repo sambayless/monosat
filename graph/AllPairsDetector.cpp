@@ -200,22 +200,13 @@ void AllPairsDetector<Weight>::buildReachReason(int source, int to,vec<Lit> & co
 
 				//while(( p = d.previous(u)) != -1){
 				for(int i = tmp_path.size()-2;i>=0;i--){
-					int p = tmp_path[i];
-					assert(p!=-1);
-					Edge edg = outer->edges[p][u];
-					Var e =outer->edges[p][u].v;
+					int edge_id = tmp_path[i];
+					int p = outer->edge_list[edge_id].from;
+
+					Var e =outer->getEdgeVar(edge_id);
 					lbool val = outer->value(e);
 					assert(outer->value(e)==l_True);
-#ifdef DEBUG_ALLPAIRS
-					if(!dbg_positive_reach_detector->connected(source,p)){
-						assert(false);
-						exit(4);
-					}
-					if(outer->value(e)!=l_True){//otherwise, this can't be part of the returned learnt clause.
-						printf("iter %d\n", iter);
-						exit(6);
-					}
-#endif
+
 					conflict.push(mkLit(e, true));
 					u = p;
 

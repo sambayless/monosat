@@ -54,7 +54,12 @@ public:
 		MaxFlow<Weight> * negative_detector;
 		MaxFlow<Weight> * positive_conflict_detector;
 		MaxFlow<Weight> * negative_conflict_detector;
+		std::vector<int> q;
 
+		DynamicGraph learn_graph;
+		vec<int> back_edges;
+		std::vector<int> learn_caps;
+		MaxFlow<int> * learn_cut=nullptr;
 
 		//vec<Lit>  reach_lits;
 		Var first_reach_var;
@@ -72,6 +77,8 @@ public:
 		vec<MaxFlowEdge> tmp_cut;
 		vec<int> visit;
 		vec<bool> seen;
+		vec<int> prev;
+		vec<int> dist;
 /*		int getNode(Var reachVar){
 			assert(reachVar>=first_reach_var);
 			int index = reachVar-first_reach_var;

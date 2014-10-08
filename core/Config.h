@@ -114,7 +114,9 @@ extern BoolOption opt_dinics_recursive;
 extern StringOption opt_hull_alg;
 extern StringOption opt_convex_pip;
 
-
+extern BoolOption opt_conflict_dfs;
+extern BoolOption opt_conflict_from_source;
+extern BoolOption opt_allow_reach_decisions;
 
 enum class PointInPolygonAlg{
 	 ALG_FULL,

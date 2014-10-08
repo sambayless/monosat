@@ -366,7 +366,8 @@ template<typename Weight>
 					for(int u = 0;u<outer->cutGraph.nodes();u++){
 						for(int j = 0;j<outer->cutGraph.nIncident(u,true);j++){
 							int v = outer->cutGraph.incident(u,j,true).node;
-							Var var = outer->edges[u][v].v;
+							int edgeid = outer->cutGraph.incident(u,j,true).id;
+							Var var = outer->getEdgeVar(edgeid);
 							/*if(S->value(var)==l_False){
 								mc.setCapacity(u,v,1);
 							}else{*/
@@ -390,7 +391,7 @@ template<typename Weight>
 				for(int i = 0;i<outer->cut.size();i++){
 					MaxFlowEdge e = outer->cut[i];
 
-					Lit l = mkLit( outer->edges[e.u][e.v].v,false);
+					Lit l = mkLit( outer->getEdgeVar(e.id) ,false);
 					assert(outer->value(l)==l_False);
 					conflict.push(l);
 				}
@@ -504,7 +505,8 @@ template<typename Weight>
 							for(int u = 0;u<outer->cutGraph.nodes();u++){
 								for(int j = 0;j<outer->cutGraph.nIncident(u);j++){
 									int v = outer->cutGraph.incident(u,j).node;
-									Var var = outer->edges[u][v].v;
+									int edgeid =  outer->cutGraph.incident(u,j).id;
+									Var var = outer->getEdgeVar(edgeid);
 									/*if(S->value(var)==l_False){
 										mc.setCapacity(u,v,1);
 									}else{*/
@@ -529,7 +531,7 @@ template<typename Weight>
 						for(int i = 0;i<outer->cut.size();i++){
 							MaxFlowEdge e = outer->cut[i];
 
-							Lit l = mkLit( outer->edges[e.u][e.v].v,false);
+							Lit l = mkLit(outer->getEdgeVar(e.id)  ,false);
 							assert(outer->value(l)==l_False);
 							conflict.push(l);
 						}

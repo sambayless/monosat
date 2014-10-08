@@ -131,7 +131,7 @@ public:
 	std::vector<MaxFlowEdge> cut;
 
 	//Full matrix
-	vec<vec<Edge> > edges;
+	//vec<vec<Edge> > edges;
 
 
 
@@ -477,9 +477,9 @@ public:
      ~GraphTheorySolver(){};
 	 int newNode(){
 
-		 edges.push();
+		/* edges.push();
 		 for(int i = 0;i<edges.size();i++)
-			 edges[i].growTo(edges.size());
+			 edges[i].growTo(edges.size());*/
 		 inv_adj.push();
 		 undirected_adj.push();
 		 reach_info.push();
@@ -1235,7 +1235,7 @@ public:
 		}
 		edge_weights[index]=weight;
 
-		edges[from][to]= {v,outerVar,from,to,index};
+		//edges[from][to]= {v,outerVar,from,to,index};
 		g.addEdge(from,to,index);
 		g.disableEdge(from,to, index);
 		antig.addEdge(from,to,index);
@@ -1256,10 +1256,10 @@ public:
 #endif
     	return mkLit(v,false);
     }
-	int getEdgeID(int from, int to){
+/*	int getEdgeID(int from, int to){
 		assert(edges[from][to].edgeID>=0);
 		return edges[from][to].edgeID;
-	}
+	}*/
 	Weight getWeight(int edgeID){
 		return edge_weights[edgeID];
 	}

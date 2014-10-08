@@ -131,7 +131,13 @@ BoolOption Monosat::opt_optimize_mst(_cat_graph,"opt-mst","Find the solution tha
 BoolOption Monosat::opt_skip_deletions(_cat_graph,"skip-deletions","",false);
 BoolOption Monosat::opt_skip_additions(_cat_graph,"skip-additions","",false);
 
+BoolOption Monosat::opt_allow_reach_decisions(_cat_graph,"allow-reach-decision","",true);
+
 StringOption Monosat::opt_hull_alg(_cat_geom,"hull","Select convex-hull algorithm (monotone,quick)","monotone");
+
+
+BoolOption Monosat::opt_conflict_dfs(_cat_graph,"conflict-dfs","Use a DFS (instead of a BFS) to find the conflict cut",true);
+BoolOption Monosat::opt_conflict_from_source(_cat_graph,"conflict-from-source","Search from the source (instead of back from the target) to find the conflict cut",false);
 
 ConvexHullAlg Monosat::hullAlg=ConvexHullAlg::ALG_MONOTONE_HULL;
 

@@ -51,7 +51,7 @@ public:
 	virtual bool connected(int from,int t)=0;
 	virtual int distance(int from,int t)=0;
 	virtual int distance_unsafe(int from,int t)=0;
-
+	//Return a path of edges from source to 'to'
 	virtual void getPath(int source, int to, std::vector<int> & path_store)=0;
 };
 };
