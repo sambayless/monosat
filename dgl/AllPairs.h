@@ -40,7 +40,7 @@ public:
 
 
 	virtual ~AllPairs(){};
-
+	virtual int numUpdates()const=0;
 	virtual void addSource(int s)=0;
 
 	virtual void update( )=0;

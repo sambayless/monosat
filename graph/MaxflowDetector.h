@@ -54,6 +54,9 @@ public:
 		MaxFlow<Weight> * negative_detector;
 		MaxFlow<Weight> * positive_conflict_detector;
 		MaxFlow<Weight> * negative_conflict_detector;
+		int last_decision_status=-1;
+		Lit last_decision_lit = lit_Undef;
+		vec<Lit> to_decide;
 		std::vector<int> q;
 
 		DynamicGraph learn_graph;
@@ -86,7 +89,10 @@ public:
 			assert(reach_lit_map[index]>=0);
 			return reach_lit_map[index];
 		}*/
-
+		void backtrack(int level){
+			to_decide.clear();
+			last_decision_status=-1;
+		}
 		bool propagate(vec<Lit> & conflict);
 		void buildMaxFlowTooHighReason(Weight flow,vec<Lit> & conflict);
 		void buildMaxFlowTooLowReason(Weight flow,vec<Lit> & conflict);

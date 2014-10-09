@@ -1235,6 +1235,14 @@ Lit ReachDetector<Weight>::decide(){
 	auto * under = positive_reach_detector;
 	if(!positive_reach_detector)
 		under = positive_path_detector;
+	if(to_decide.size() && last_decision_status== over->numUpdates()){
+		while(to_decide.size()){
+			Lit l = to_decide.last();
+			to_decide.pop();
+			if(outer->value(l)==l_Undef)
+				return l;
+		}
+	}
 
 	/*if(opt_decide_graph_chokepoints){
 
@@ -1302,6 +1310,8 @@ Lit ReachDetector<Weight>::decide(){
 			if(over->connected(j) && !under->connected(j)){
 				//then lets try to connect this
 				static vec<bool> print_path;
+				to_decide.clear();
+				last_decision_status = over->numUpdates();
 
 				assert(over->connected(j));//Else, we would already be in conflict
 				int p =j;
@@ -1334,6 +1344,10 @@ Lit ReachDetector<Weight>::decide(){
 							last=p;
 							assert(p!=source);
 							last_edge=over->incomingEdge(p);
+							Var edge_var = outer->getEdgeVar(last_edge);
+							if(outer->value(edge_var)==l_Undef){
+								to_decide.push(mkLit(edge_var,false));
+							}
 							int prev = over->previous(p);
 							p = prev;
 
@@ -1362,110 +1376,25 @@ Lit ReachDetector<Weight>::decide(){
 						last=p;
 						assert(p!=source);
 						last_edge=rnd_path->incomingEdge(p);
+						Var edge_var = outer->getEdgeVar(last_edge);
+						if(outer->value(edge_var)==l_Undef){
+							to_decide.push(mkLit(edge_var,false));
+						}
 						int prev =rnd_path->previous(p);
 						p = prev;
 						assert(p>=0);
 					}
 
 				}
-
-				if(outer->level(var(l))==0 && opt_print_decision_path){
-					print_path.clear();
-					print_path.growTo(outer->nNodes());
-
-					if(!opt_use_random_path_for_decisions){
-											//ok, read back the path from the over to find a candidate edge we can decide
-											//find the earliest unconnected node on this path
-						over->update();
-						int p = j;
-
-						while(p!=source){
-							if(opt_print_decision_path)
-								print_path[p]=true;
-
-
-							assert(p!=source);
-							int prev = over->previous(p);
-							p = prev;
-
-						}
-					}else{
-
-
-						int p = j;
-
-						while(p!=source){
-							if(opt_print_decision_path)
-								print_path[p]=true;
-
-
-							assert(p!=source);
-							int prev =rnd_path->previous(p);
-							p = prev;
-
-						}
-					}
-
-					if(opt_print_decision_path){
-						printf("From %d to %d:\n",source,j);
-						int width = sqrt(outer->nNodes());
-
-
-						int v = 0;
-						//for (int i = 0;i<w;i++){
-						//	for(int j = 0;j<w;j++){
-						int lasty= 0;
-						for(int n = 0;n<outer->nNodes();n++){
-							int x = n%width;
-							int y = n/width;
-							if(y > lasty)
-								printf("\n");
-
-							if(n==j){
-								printf("* ");
-							}else if (n==source){
-								printf("#");
-							}else{
-
-								if(print_path[n]){
-									printf("+ ");
-								}else{
-									printf("- ");
-								}
-							}
-
-							lasty=y;
-						}
-						printf("\n\n");
+				if(to_decide.size() && last_decision_status== over->numUpdates()){
+					while(to_decide.size()){
+						Lit l = to_decide.last();
+						to_decide.pop();
+						if(outer->value(l)==l_Undef)
+							return l;
 					}
 				}
-
-				//ok, now pick some edge p->last that will connect p to last;
-			/*	assert(!under->connected(last));
-				assert(under->connected(p));
-
-				assert(over->connected(last));
-				assert(over->connected(p));*/
-				assert(last_edge>=0);
-				assert(outer->edge_list[last_edge].edgeID==last_edge);
-				Var v = outer->edge_list[last_edge].v;
-				if(outer->value(v)==l_Undef){
-					return mkLit(v,false);
-				}else{
-					assert(outer->value(v)!=l_True);
-				}
-			/*	for(int k = 0;k<outer->antig.adjacency[p].size();k++){
-					int to = outer->antig.adjacency[p][k].node;
-					if (to==last){
-						Var v =outer->edge_list[ outer->antig.adjacency[p][k].id].v;
-						if(outer->value(v)==l_Undef){
-							return mkLit(v,false);
-						}else{
-							assert(outer->value(v)!=l_True);
-						}
-					}
-				}*/
-
+				
 			}
 		}else if(outer->value(l)==l_False && opt_decide_graph_neg){
 
@@ -1476,6 +1405,9 @@ Lit ReachDetector<Weight>::decide(){
 				if(over->connected(j) && ! under->connected(j)){
 					//then lets try to disconnect this node from source by walking back along the path in the over approx, and disabling the first unassigned edge we see.
 					//(there must be at least one such edge, else the variable would be connected in the under approximation as well - in which case it would already have been propagated.
+
+					to_decide.clear();
+					last_decision_status = over->numUpdates();
 					int p = j;
 					int last = j;
 					while(!under->connected(p)){
@@ -1485,16 +1417,23 @@ Lit ReachDetector<Weight>::decide(){
 						int incoming_edge = over->incomingEdge(p);
 						Var v = outer->edge_list[incoming_edge].v;
 						if(outer->value(v)==l_Undef){
-							return mkLit(v,true);
+							to_decide.push( mkLit(v,true));
 						}else{
 							assert(outer->value(v)!=l_False);
 						}
 						p = prev;
-
+					}
+					if(to_decide.size() && last_decision_status== over->numUpdates()){
+					while(to_decide.size()){
+						Lit l = to_decide.last();
+						to_decide.pop();
+						if(outer->value(l)==l_Undef)
+							return l;
+					}
 					}
 
-
 				}
+
 
 		}
 

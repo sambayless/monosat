@@ -338,7 +338,10 @@ public:
             }
             return 0;
         }
-
+	long num_updates=0;
+	int numUpdates()const{
+		return num_updates;
+	}
     const Weight maxFlow(int s, int t){
     	Weight f = 0;
 #ifdef RECORD
@@ -396,6 +399,7 @@ public:
 
         //dbg_print_graph(s,t);
     	curflow=f;
+    	num_updates++;
 		last_modification=g.modifications;
 		last_deletion = g.deletions;
 		last_addition=g.additions;

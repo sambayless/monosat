@@ -102,7 +102,10 @@ public:
 	void drawFull(){
 
 	}
-
+	long num_updates=0;
+	int numUpdates()const{
+		return num_updates;
+	}
 	void update( ){
 		static int iteration = 0;
 		int local_it = ++iteration ;
@@ -210,6 +213,7 @@ public:
 				status.setMininumDistance(u,dist[u]<INF,dist[u]);
 			}
 		}
+		num_updates++;
 		last_modification=g.modifications;
 		last_deletion = g.deletions;
 		last_addition=g.additions;
@@ -509,7 +513,10 @@ public:
 	void drawFull(){
 
 	}
-
+	long num_updates=0;
+	int numUpdates()const{
+		return num_updates;
+	}
 	void update( ){
 		static int iteration = 0;
 		int local_it = ++iteration ;
@@ -633,6 +640,7 @@ public:
 				status.setMininumDistance(u,dist[u]<INF,dist[u]);
 			}
 		}
+		num_updates++;
 		last_modification=g.modifications;
 		last_deletion = g.deletions;
 		last_addition=g.additions;

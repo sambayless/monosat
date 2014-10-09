@@ -148,7 +148,7 @@ public:
     }
     void dbg_print_graph(int from, int to){
    #ifndef NDEBUG
-
+    	return;
        		static int it = 0;
        		if(++it==6){
        			int a =1;
@@ -176,7 +176,10 @@ public:
        			printf("}\n");
    #endif
        		}
-
+	long num_updates=0;
+	int numUpdates()const{
+		return num_updates;
+	}
     const Weight maxFlow(int s, int t){
     	Weight f = 0;
 #ifdef RECORD
@@ -270,6 +273,7 @@ public:
 */
         //dbg_print_graph(s,t);
     	curflow=f;
+    	num_updates++;
 		last_modification=g.modifications;
 		last_deletion = g.deletions;
 		last_addition=g.additions;

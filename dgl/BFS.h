@@ -435,7 +435,10 @@ public:
 				return true;
 		}
 
-
+	long num_updates=0;
+	int numUpdates()const{
+		return num_updates;
+	}
 	void update( ){
 		static int iteration = 0;
 		int local_it = ++iteration ;
@@ -545,7 +548,7 @@ public:
 			}
 		}
 		assert(dbg_uptodate());
-
+		num_updates++;
 		last_modification=g.modifications;
 		last_deletion = g.deletions;
 		last_addition=g.additions;
@@ -780,7 +783,10 @@ public:
 		if(maxDistance<0)
 			maxDistance=INF;
 	}
-
+	long num_updates=0;
+	int numUpdates()const{
+		return num_updates;
+	}
 
 	void update( ){
 		static int iteration = 0;
@@ -843,7 +849,7 @@ public:
 			}
 		}
 		assert(dbg_uptodate());
-
+		num_updates++;
 		last_modification=g.modifications;
 		last_deletion = g.deletions;
 		last_addition=g.additions;

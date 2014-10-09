@@ -169,6 +169,11 @@ public:
     void setAllEdgeCapacities(Weight c){
 
     }
+	long num_updates=0;
+	int numUpdates()const{
+		return num_updates;
+	}
+
     const  Weight maxFlow(int s, int t){
     	//see http://cstheory.stackexchange.com/a/10186
     	static int it = 0;
@@ -324,6 +329,7 @@ public:
 #endif
 
     	curflow=f;
+    	num_updates++;
 		last_modification=g.modifications;
 		last_deletion = g.deletions;
 		last_addition=g.additions;

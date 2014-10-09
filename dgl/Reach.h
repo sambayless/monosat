@@ -43,6 +43,7 @@ public:
 	};
 	static NullStatus nullStatus;
 
+	virtual int numUpdates()const=0;
 	virtual ~Reach(){};
 
 	virtual void setSource(int s)=0;

@@ -47,7 +47,7 @@ public:
 	virtual void printStats(){
 
 	}
-
+	virtual int numUpdates()const=0;
 	virtual void update( )=0;
 
 	virtual bool dbg_uptodate()=0;

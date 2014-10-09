@@ -688,12 +688,18 @@ public:
 			assert(trail_lim.size()==level);
 
 
-		}
-		if(changed){
-			requiresPropagation=true;
-			g.markChanged();
-			antig.markChanged();
-			cutGraph.markChanged();
+
+
+			if(changed){
+				requiresPropagation=true;
+				g.markChanged();
+				antig.markChanged();
+				cutGraph.markChanged();
+			}
+
+			for (Detector * d:detectors){
+				d->backtrack(level);
+			}
 		}
 /*		if(local_q>S->qhead)
 			local_q=S->qhead;*/
@@ -731,6 +737,7 @@ public:
 
 	void backtrackUntil(Lit p){
 			//need to remove and add edges in the two graphs accordingly.
+
 			int i = trail.size()-1;
 			for(;i>=0;i--){
 				Assignment e = trail[i];
@@ -761,7 +768,9 @@ public:
 				antig.markChanged();
 				cutGraph.markChanged();
 			}
-
+			for (Detector * d:detectors){
+				d->backtrack(this->decisionLevel());
+			}
 			//while(trail_lim.size() && trail_lim.last()>=trail.size())
 			//	trail_lim.pop();
 

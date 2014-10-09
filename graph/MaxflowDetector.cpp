@@ -600,6 +600,16 @@ Lit MaxflowDetector<Weight>::decide(){
 		Weight under_flow = under->maxFlow(source,target) ;
 		Weight over_flow = over->maxFlow(source,target) ;
 
+		if(to_decide.size() && last_decision_status== over->numUpdates()){
+			while(to_decide.size()){
+				Lit l = to_decide.last();
+				to_decide.pop();
+				if(outer->value(l)==l_Undef)
+					return l;
+			}
+		}
+
+
 		for(int k = 0;k<flow_lits.size();k++){
 			Lit l =flow_lits[k].l;
 			if(l==lit_Undef)
@@ -610,9 +620,10 @@ Lit MaxflowDetector<Weight>::decide(){
 			if(outer->value(l)==l_True && opt_decide_graph_pos){
 				assert(over_flow>=required_flow);
 				if(under_flow <over_flow){
+
 					//then decide an unassigned edge of the currently selected flow
-
-
+					to_decide.clear();
+					last_decision_status= over->numUpdates();
 					if(opt_conflict_dfs){
 						//do a dfs to find that edge. Could start from either the source or the target.
 						prev.clear();
@@ -632,7 +643,8 @@ Lit MaxflowDetector<Weight>::decide(){
 									Var v = outer->getEdgeVar(prev[u]);
 									assert(outer->value(v)!=l_False);
 									if(outer->value(v)==l_Undef){
-										return mkLit(v,false);
+										to_decide.push(mkLit(v,false));
+										//return mkLit(v,false);
 									}
 								}
 								for(int i = 0;i<antig.nIncident(u) ;i++){
@@ -658,7 +670,7 @@ Lit MaxflowDetector<Weight>::decide(){
 									Var v = outer->getEdgeVar(prev[u]);
 									assert(outer->value(v)!=l_False);
 									if(outer->value(v)==l_Undef){
-										return mkLit(v,false);
+										to_decide.push(mkLit(v,false));
 									}
 								}
 								for(int i = 0;i<antig.nIncoming(u) ;i++){
@@ -697,7 +709,7 @@ Lit MaxflowDetector<Weight>::decide(){
 									Var v = outer->getEdgeVar(prev[u]);
 									assert(outer->value(v)!=l_False);
 									if(outer->value(v)==l_Undef){
-										return mkLit(v,false);
+										to_decide.push(mkLit(v,false));
 									}
 								}
 								int d = dist[u];
@@ -729,7 +741,7 @@ Lit MaxflowDetector<Weight>::decide(){
 									Var v = outer->getEdgeVar(prev[u]);
 									assert(outer->value(v)!=l_False);
 									if(outer->value(v)==l_Undef){
-										return mkLit(v,false);
+										to_decide.push(mkLit(v,false));
 									}
 								}
 								int d = dist[u];
@@ -750,16 +762,21 @@ Lit MaxflowDetector<Weight>::decide(){
 								}
 							}
 						}
-
 					}
-
 				}
 			}else if(outer->value(l)==l_False && opt_decide_graph_neg){
 
 
 
 			}
-
+			if(to_decide.size() && last_decision_status== over->numUpdates()){
+				while(to_decide.size()){
+					Lit l = to_decide.last();
+					to_decide.pop();
+					if(outer->value(l)==l_Undef)
+						return l;
+				}
+			}
 		}
 
 		return lit_Undef;

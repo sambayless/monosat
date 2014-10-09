@@ -137,6 +137,10 @@ public:
     		}
     	}
     }
+	long num_updates=0;
+	int numUpdates()const{
+		return num_updates;
+	}
     const  Weight maxFlow(int s, int t){
     	if(last_modification>0 && g.modifications==last_modification){
 
@@ -176,7 +180,7 @@ public:
             }
         }
         curflow=f;
-
+        num_updates++;
 		last_modification=g.modifications;
 		last_deletion = g.deletions;
 		last_addition=g.additions;

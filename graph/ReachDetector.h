@@ -70,6 +70,9 @@ public:
 		vec<int> order_vec;
 		vec<int> reach_lit_map;
 		vec<int> force_reason;
+
+		vec<Lit> to_decide;
+		int last_decision_status=-1;
 /*
 		struct DistLit{
 			Lit l;
@@ -168,7 +171,10 @@ public:
 			assert(reach_lit_map[index]>=0);
 			return reach_lit_map[index];
 		}
-
+		void backtrack(int level){
+			to_decide.clear();
+			last_decision_status=-1;
+		}
 	/*	Lit getLit(int node){
 
 			return reach_lits[node];

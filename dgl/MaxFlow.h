@@ -44,7 +44,7 @@ public:
 
     virtual void setAllEdgeCapacities(Weight c)=0;
     virtual const  Weight maxFlow(int s, int t)=0;
-
+    virtual int numUpdates()const=0;
     virtual void printStats(){
 
     }

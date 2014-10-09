@@ -484,7 +484,10 @@ public:
 	}
 
 
-
+	long num_updates=0;
+	int numUpdates()const{
+		return num_updates;
+	}
 
 	void update( ){
 #ifdef RECORD
@@ -555,7 +558,7 @@ public:
 		changed.clear();
 		//}
 		assert(dbg_uptodate());
-
+		num_updates++;
 		last_modification=g.modifications;
 		last_deletion = g.deletions;
 		last_addition=g.additions;
@@ -1254,7 +1257,10 @@ public:
 		dbg_delta_lite();
 	}
 
-
+	long num_updates=0;
+	int numUpdates()const{
+		return num_updates;
+	}
 
 
 	void update( ){
@@ -1328,7 +1334,7 @@ public:
 		changed.clear();
 		//}
 		dbg_delta();
-
+		num_updates++;
 		last_modification=g.modifications;
 		last_deletion = g.deletions;
 		last_addition=g.additions;

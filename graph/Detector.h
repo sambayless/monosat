@@ -51,6 +51,9 @@ public:
 	long stats_skipped_under_updates=0;
 	long stats_skipped_over_updates=0;
 	long stats_decisions=0;
+
+
+
 	int getID(){
 		return detectorID;
 	}
@@ -83,6 +86,9 @@ public:
 	virtual bool checkSatisfied()=0;
 	virtual void preprocess(){
 
+	}
+	virtual void backtrack(int level){
+		//do nothing
 	}
 	virtual Lit decide()=0;
 	virtual void setOccurs(Lit l, bool occurs){

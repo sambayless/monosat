@@ -808,7 +808,10 @@ public:
 
     		return f;
         }
-
+	long num_updates=0;
+	int numUpdates()const{
+		return num_updates;
+	}
     const  int maxFlow(int s, int t){
     	int f = 0;
 #ifdef RECORD
@@ -867,6 +870,7 @@ public:
 #endif
 
     	curflow=f;
+    	num_updates++;
 		last_modification=g.modifications;
 		last_deletion = g.deletions;
 		last_addition=g.additions;

@@ -106,7 +106,10 @@ public:
 	int getSource(){
 		return source;
 	}
-
+	long num_updates=0;
+	int numUpdates()const{
+		return num_updates;
+	}
 	void updateFast(){
 		stats_fast_updates++;
 		
@@ -116,6 +119,7 @@ public:
 		/*for(int i = 0;i<g.nodes();i++)
 					changed.push_back(i);*/
 		assert(last_deletion==g.deletions);
+		num_updates++;
 		last_modification=g.modifications;
 		last_addition=g.additions;
 
@@ -347,7 +351,7 @@ public:
 		}
 		//}
 		assert(dbg_uptodate());
-
+		num_updates++;
 		last_modification=g.modifications;
 		last_deletion = g.deletions;
 		last_addition=g.additions;

@@ -281,6 +281,10 @@ public:
 	DisjointSets dbg_sets;
 #endif
 	int iteration;
+	long num_updates=0;
+	int numUpdates()const{
+		return num_updates;
+	}
 	void update(){
 
 
@@ -440,7 +444,7 @@ public:
 
 			assert(dbg_sets.NumSets()== t.numComponents());
 
-
+			num_updates++;
 			last_modification=g.modifications;
 			last_deletion = g.deletions;
 			last_addition=g.additions;

@@ -119,6 +119,12 @@ public:
 		}
 		 lt_key(std::vector<int> & d):_dist(d){};
 	};
+
+	long num_updates=0;
+	int numUpdates()const{
+		return num_updates;
+	}
+
 	void update( ){
 
 		stats_full_updates++;
@@ -195,7 +201,7 @@ public:
 			}*/
 		}
 		assert(dbg_uptodate());
-
+		num_updates++;
 		last_modification=g.modifications;
 		last_deletion = g.deletions;
 		last_addition=g.additions;
