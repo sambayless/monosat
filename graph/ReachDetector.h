@@ -59,11 +59,12 @@ public:
 		CRef non_reach_marker;
 		CRef forced_reach_marker;
 
-		Reach * positive_reach_detector;
-		Reach * negative_reach_detector;
-		Reach *  positive_path_detector;
-		Reach * negative_path_detector;
-		Reach *  cutgraph_reach_detector;
+		Reach * positive_reach_detector=nullptr;
+		Reach * negative_reach_detector=nullptr;
+		Reach *  positive_path_detector=nullptr;
+		Reach * negative_path_detector=nullptr;
+		Reach *  cutgraph_reach_detector=nullptr;
+		Distance<int> * negative_distance_detector=nullptr;
 		vec<bool> original_reach_lits;
 		vec<Lit>  reach_lits;
 		Var first_reach_var;

@@ -85,13 +85,11 @@ ReachDetector<Weight>::ReachDetector(int _detectorID, GraphTheorySolver<Weight> 
 			positive_reach_detector = new BFSReachability<ReachDetector<Weight>::ReachStatus>(from,_g,*(positiveReachStatus),1);
 		}
 
-
 		negative_reach_detector = new BFSReachability<ReachDetector<Weight>::ReachStatus>(from,_antig,*(negativeReachStatus),-1);
-/*		if(opt_conflict_shortest_path)
-			positive_path_detector = new Distance<NullEdgeStatus>(from,_g,nullEdgeStatus,1);
-		else*/
+
 		positive_path_detector =positive_reach_detector;
 		negative_path_detector = negative_reach_detector;
+		negative_distance_detector = (Distance<int> *) negative_path_detector;
 	}else if(reachalg==ReachAlg::ALG_DFS){
 		if(!opt_encode_reach_underapprox_as_sat)
 		{
@@ -104,6 +102,8 @@ ReachDetector<Weight>::ReachDetector(int _detectorID, GraphTheorySolver<Weight> 
 			positive_path_detector = new UnweightedBFS<Reach::NullStatus>(from,_g,Reach::nullStatus,1);
 		else
 			positive_path_detector =positive_reach_detector;
+
+		negative_distance_detector  =new UnweightedBFS<Reach::NullStatus>(from,_antig,Reach::nullStatus,-1);
 		negative_path_detector =negative_reach_detector;
 	}else if(reachalg==ReachAlg::ALG_DISTANCE){
 		if(!opt_encode_reach_underapprox_as_sat)
@@ -114,6 +114,7 @@ ReachDetector<Weight>::ReachDetector(int _detectorID, GraphTheorySolver<Weight> 
 		negative_reach_detector = new UnweightedBFS<ReachDetector<Weight>::ReachStatus>(from,_antig,*(negativeReachStatus),-1);
 		positive_path_detector = positive_reach_detector;
 		negative_path_detector =negative_reach_detector;
+		negative_distance_detector = (Distance<int> *) negative_path_detector;
 	}else if(reachalg==ReachAlg::ALG_RAMAL_REPS){
 		if(!opt_encode_reach_underapprox_as_sat)
 		{
@@ -123,6 +124,7 @@ ReachDetector<Weight>::ReachDetector(int _detectorID, GraphTheorySolver<Weight> 
 		negative_reach_detector = new UnweightedRamalReps<ReachDetector<Weight>::ReachStatus>(from,_antig,*(negativeReachStatus),-1,false);
 		positive_path_detector = new UnweightedBFS<Reach::NullStatus>(from,_g,Reach::nullStatus,1);
 		negative_path_detector = new UnweightedBFS<Reach::NullStatus>(from,_antig,Reach::nullStatus,-1);
+		negative_distance_detector =(Distance<int> *) negative_path_detector;
 	}/*else if (reachalg==ReachAlg::ALG_THORUP){
 
 
@@ -141,6 +143,7 @@ ReachDetector<Weight>::ReachDetector(int _detectorID, GraphTheorySolver<Weight> 
 		negative_reach_detector = new UnweightedDijkstra<ReachDetector<Weight>::ReachStatus>(from,_antig,*negativeReachStatus,-1);
 		positive_path_detector = positive_reach_detector;
 		negative_path_detector =negative_reach_detector;
+		negative_distance_detector =(Distance<int> *)  negative_path_detector;
 		//reach_detectors.last()->positive_dist_detector = new Dijkstra(from,g);
 	}
 	if(positive_reach_detector)
@@ -526,10 +529,88 @@ template<typename Weight>
 			assert(outer->dbg_notreachable( source,u));
 			//assert(!negative_reach_detector->connected_unchecked(node));
 			double starttime = rtime(2);
-			outer->cutGraph.clearHistory();
-			outer->cutGraph.invalidate();
-			outer->stats_mc_calls++;
-			if(opt_conflict_min_cut){
+
+			/*if(opt_conflict_1uip){
+				auto & dist = *negative_distance_detector;
+				//learn the actual 1-uip cut? Hopefully that is what this does...
+				vec<int>& to_visit  = outer->to_visit;
+				vec<char>& seen  = outer->seen;
+				int pathC=0;
+				int path_must_visit = 0;
+				to_visit.clear();
+				to_visit.push(node);
+				seen.clear();
+				seen.growTo(outer->nNodes());
+				seen[node]=true;
+				antig.drawFull();
+				int last_dist = dist.distance(u);
+				path_must_visit=1;
+				do{
+
+					assert(to_visit.size());
+					int u = to_visit.last();
+#ifndef NDEBUG
+					assert(dist.distance(u)<= last_dist);
+					last_dist = dist.distance(u);//you need to be visiting these nodes in decreasing distance, or else you may miss the 1uip.
+#endif
+					assert(u!=source);
+					to_visit.pop();
+					assert(seen[u]);
+					if(seen[u]==1){
+						path_must_visit--;
+					}else{
+						assert(seen[u]==2);
+						pathC--;
+					}
+
+					assert(outer->dbg_notreachable( source,u));
+					//assert(!negative_reach_detector->connected_unsafe(u));
+					//Ok, then add all its incoming disabled edges to the cut, and visit any unseen, non-disabled incoming.edges()
+					for(int i = 0;i<outer->inv_adj[u].size();i++){
+						int v = outer->inv_adj[u][i].v;
+						int from = outer->inv_adj[u][i].from;
+						int edge_num =outer->getEdgeID(v);// v-outer->min_edge_var;
+						if(from==u){
+							assert(outer->edge_list[edge_num].to == u);
+							assert(outer->edge_list[edge_num].from == u);
+							continue;//Self loops are allowed, but just make sure nothing got flipped around...
+						}
+						assert(from!=u);
+						assert(outer->inv_adj[u][i].to==u);
+						//Note: the variable has to not only be assigned false, but assigned false earlier in the trail than the reach variable...
+
+
+						if(outer->value(v)==l_False){
+							//note: we know we haven't seen this edge variable before, because we know we haven't visited this node before
+							//if we are already planning on visiting the from node, then we don't need to include it in the conflict (is this correct?)
+							//if(!seen[from])
+							if ( outer->level(v) >= outer->decisionLevel()){
+									if(!seen[from]){
+										pathC++;
+										seen[from]=2;
+										to_visit.push(from);
+									}
+								}else{
+									conflict.push(mkLit(v,false));
+								}
+						}else{
+							assert(from!=source);
+							//even if it is undef? probably...
+							if(!seen[from]){
+								seen[from]=1;
+								path_must_visit++;
+								to_visit.push(from);
+							}
+						}
+					}
+				}  while (path_must_visit>0 || pathC>1);
+
+
+
+			}else*/ if(opt_conflict_min_cut){
+				outer->stats_mc_calls++;
+				outer->cutGraph.clearHistory();
+				outer->cutGraph.invalidate();
 				if(mincutalg== MinCutAlg::ALG_EDMONSKARP){
 					//ok, set the weights for each edge in the cut graph.
 					//Set edges to infinite weight if they are undef or true, and weight 1 otherwise.
@@ -637,7 +718,8 @@ template<typename Weight>
 		    if(opt_shrink_theory_conflicts){
 		    //visit each edge lit in this initial conflict, and see if unreachability is preserved if we add the edge back in (temporarily)
 		    	int i,j=0;
-
+				outer->cutGraph.clearHistory();
+				outer->cutGraph.invalidate();
 		    	while(cutgraph.nodes()<g.nodes()){
 		    		cutgraph.addNode();
 		    	}

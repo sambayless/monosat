@@ -70,8 +70,10 @@ StringOption Monosat::opt_mst_alg(_cat_graph,"mst","Select minimum spanning tree
 
 StringOption Monosat::opt_allpairs_alg(_cat_graph,"allpairs","Select allpairs reachability algorithm (floyd-warshall,dijkstra)","floyd-warshall");
 StringOption Monosat::opt_components_alg(_cat_graph,"components","Select connected-components algorithm (disjoint-sets, link-cut)","disjoint-sets");
-  BoolOption Monosat::opt_conflict_shortest_path(_cat_graph,"conflict-shortest-path","Use shortest path (instead of arbitrary path) for conflict resolution",true);
-  BoolOption Monosat::opt_conflict_min_cut(_cat_graph,"conflict-min-cut","Use min-cut (instead of arbitrary cut) for conflict resolution",false);
+  BoolOption Monosat::opt_conflict_shortest_path(_cat_graph,"conflict-shortest-path","Use shortest path (instead of arbitrary path) for conflict resolution (in theories that support this)",true);
+  BoolOption Monosat::opt_conflict_min_cut(_cat_graph,"conflict-min-cut","Use min-cut (instead of arbitrary cut) for conflict resolution (in theories that support this)",false);
+  BoolOption Monosat::opt_conflict_1uip(_cat_graph,"conflict-1uip","Use 1 uip (instead of arbitrary or min cut) for conflict resolution (in theories that support this)",false);
+
 
 BoolOption Monosat::opt_check_solution(_cat_graph,"check-solution","Double check solution",true);
 BoolOption Monosat::opt_print_reach(_cat_graph,"print-reach","Print reachability graphs",false);

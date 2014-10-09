@@ -117,6 +117,7 @@ extern StringOption opt_convex_pip;
 extern BoolOption opt_conflict_dfs;
 extern BoolOption opt_conflict_from_source;
 extern BoolOption opt_allow_reach_decisions;
+extern BoolOption opt_conflict_1uip;
 
 enum class PointInPolygonAlg{
 	 ALG_FULL,
