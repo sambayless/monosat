@@ -161,28 +161,30 @@ int main(int argc, char** argv)
         	mincutalg=MinCutAlg::ALG_IBFS;
 
         }else */
-        if (!strcasecmp(opt_min_cut_alg,"edmondskarp-adj")){
+        if (!strcasecmp(opt_maxflow_alg,"edmondskarp-adj")){
         	mincutalg = MinCutAlg::ALG_EDKARP_ADJ;
-        }else if (!strcasecmp(opt_min_cut_alg,"edmondskarp")){
+        }else if (!strcasecmp(opt_maxflow_alg,"edmondskarp")){
         	mincutalg = MinCutAlg::ALG_EDMONSKARP;
-        }else if  (!strcasecmp(opt_min_cut_alg,"edmondskarp-dynamic")){
+        }else if  (!strcasecmp(opt_maxflow_alg,"edmondskarp-dynamic")){
         	mincutalg = MinCutAlg::ALG_EDKARP_DYN;
-        }else if  (!strcasecmp(opt_min_cut_alg,"dinics")){
+        }else if  (!strcasecmp(opt_maxflow_alg,"dinics")){
         	//Dinitz is also commonly spelled 'dinics' or 'Dinits', so accept those too...
         	mincutalg = MinCutAlg::ALG_DINITZ;
-        }else if  (!strcasecmp(opt_min_cut_alg,"dinics-linkcut")){
+        }else if  (!strcasecmp(opt_maxflow_alg,"dinics-linkcut")){
         	mincutalg = MinCutAlg::ALG_DINITZ_LINKCUT;
-        }else if  (!strcasecmp(opt_min_cut_alg,"dinitz")){
+        }else if  (!strcasecmp(opt_maxflow_alg,"dinitz")){
         	mincutalg = MinCutAlg::ALG_DINITZ;
-        }else if  (!strcasecmp(opt_min_cut_alg,"dinitz-linkcut")){
+        }else if  (!strcasecmp(opt_maxflow_alg,"dinitz-linkcut")){
         	mincutalg = MinCutAlg::ALG_DINITZ_LINKCUT;
-        }else if  (!strcasecmp(opt_min_cut_alg,"dinits")){
+        }else if  (!strcasecmp(opt_maxflow_alg,"dinits")){
         	//Dinitz is also commonly spelled 'dinics' or 'Dinits', so accept those too...
         	mincutalg = MinCutAlg::ALG_DINITZ;
-        }else if  (!strcasecmp(opt_min_cut_alg,"dinits-linkcut")){
+        }else if  (!strcasecmp(opt_maxflow_alg,"dinits-linkcut")){
         	mincutalg = MinCutAlg::ALG_DINITZ_LINKCUT;
+        }else if (!strcasecmp(opt_maxflow_alg,"kohli-torr")){
+        	mincutalg = MinCutAlg::ALG_KOHLI_TORR;
         }else{
-        	fprintf(stderr,"Error: unknown max-flow/min-cut algorithm %s, aborting\n",((string)  opt_min_cut_alg).c_str());
+        	fprintf(stderr,"Error: unknown max-flow/min-cut algorithm %s, aborting\n",((string)  opt_maxflow_alg).c_str());
         	exit(1);
         }
 

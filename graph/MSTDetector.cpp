@@ -709,8 +709,8 @@ bool MSTDetector<Weight>::propagate(vec<Lit> & conflict){
 		int a = 1;
 	}
 	//printf("it %d: \n",it);
-	changed_edges.clear();
-changed_weights.clear();
+//	changed_edges.clear();
+//changed_weights.clear();
 //NOTE! Cannot use pure theory lits here, because the edge literals and the mst weight literals are computed
 //in opposed polarity by each detector! So unless we separate those unassigned counts out, we can't skip either...
 //Fix this later if needed...

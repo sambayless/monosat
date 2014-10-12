@@ -18,7 +18,7 @@ NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FO
 DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT
 OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 **************************************************************************************************/
-
+#include "mtl/Vec.h"
 #include "ReachDetector.h"
 #include "dgl/RamalReps.h"
 #include "dgl/BFS.h"
@@ -49,8 +49,12 @@ ReachDetector<Weight>::ReachDetector(int _detectorID, GraphTheorySolver<Weight> 
 	 forced_reach_marker=CRef_Undef;
 	if(reachalg==ReachAlg::ALG_SAT){
 		//to print out the solution
+		//positive_reach_detector = new ReachDetector::CNFReachability(*this,false);
+		//negative_reach_detector = new ReachDetector::CNFReachability(*this,true);
+
 		positive_path_detector = new UnweightedBFS<Reach::NullStatus>(from,_g,Reach::nullStatus,1);
 		negative_path_detector = new UnweightedBFS<Reach::NullStatus>(from,_antig,Reach::nullStatus,-1);
+		positive_fast_reach_detector = positive_path_detector;
 		return;
 	}
 
@@ -81,8 +85,10 @@ ReachDetector<Weight>::ReachDetector(int _detectorID, GraphTheorySolver<Weight> 
 	if(reachalg==ReachAlg::ALG_BFS){
 		if(!opt_encode_reach_underapprox_as_sat)
 		{
-
 			positive_reach_detector = new BFSReachability<ReachDetector<Weight>::ReachStatus>(from,_g,*(positiveReachStatus),1);
+		}else{
+			positive_fast_reach_detector = new BFSReachability<ReachDetector<Weight>::ReachStatus>(from,_g,*(positiveReachStatus),1);
+			//positive_reach_detector = new ReachDetector::CNFReachability(*this,false);
 		}
 
 		negative_reach_detector = new BFSReachability<ReachDetector<Weight>::ReachStatus>(from,_antig,*(negativeReachStatus),-1);
@@ -93,8 +99,10 @@ ReachDetector<Weight>::ReachDetector(int _detectorID, GraphTheorySolver<Weight> 
 	}else if(reachalg==ReachAlg::ALG_DFS){
 		if(!opt_encode_reach_underapprox_as_sat)
 		{
-
 			positive_reach_detector = new DFSReachability<ReachDetector<Weight>::ReachStatus>(from,_g,*(positiveReachStatus),1);
+		}else{
+			positive_fast_reach_detector = new DFSReachability<ReachDetector<Weight>::ReachStatus>(from,_g,*(positiveReachStatus),1);
+			//positive_reach_detector = new ReachDetector::CNFReachability(*this,false);
 		}
 
 		negative_reach_detector = new DFSReachability<ReachDetector<Weight>::ReachStatus>(from,_antig,*(negativeReachStatus),-1);
@@ -109,6 +117,9 @@ ReachDetector<Weight>::ReachDetector(int _detectorID, GraphTheorySolver<Weight> 
 		if(!opt_encode_reach_underapprox_as_sat)
 		{
 			positive_reach_detector = new UnweightedBFS<ReachDetector<Weight>::ReachStatus>(from,_g,*(positiveReachStatus),1);
+		}else{
+			positive_fast_reach_detector = new UnweightedBFS<ReachDetector<Weight>::ReachStatus>(from,_g,*(positiveReachStatus),1);
+			//positive_reach_detector = new ReachDetector::CNFReachability(*this,false);
 		}
 
 		negative_reach_detector = new UnweightedBFS<ReachDetector<Weight>::ReachStatus>(from,_antig,*(negativeReachStatus),-1);
@@ -119,6 +130,9 @@ ReachDetector<Weight>::ReachDetector(int _detectorID, GraphTheorySolver<Weight> 
 		if(!opt_encode_reach_underapprox_as_sat)
 		{
 			positive_reach_detector = new UnweightedRamalReps<ReachDetector<Weight>::ReachStatus>(from,_g,*(positiveReachStatus),1,false);
+		}else{
+			positive_fast_reach_detector= new UnweightedRamalReps<ReachDetector<Weight>::ReachStatus>(from,_g,*(positiveReachStatus),1,false);
+			//positive_reach_detector = new ReachDetector::CNFReachability(*this,false);
 		}
 
 		negative_reach_detector = new UnweightedRamalReps<ReachDetector<Weight>::ReachStatus>(from,_antig,*(negativeReachStatus),-1,false);
@@ -139,6 +153,9 @@ ReachDetector<Weight>::ReachDetector(int _detectorID, GraphTheorySolver<Weight> 
 		if(!opt_encode_reach_underapprox_as_sat)
 		{
 			positive_reach_detector = new UnweightedDijkstra<ReachDetector<Weight>::ReachStatus>(from,_g,*positiveReachStatus,1);
+		}else{
+			positive_fast_reach_detector = new UnweightedDijkstra<ReachDetector<Weight>::ReachStatus>(from,_g,*positiveReachStatus,1);
+			//positive_reach_detector = new ReachDetector::CNFReachability(*this,false);
 		}
 		negative_reach_detector = new UnweightedDijkstra<ReachDetector<Weight>::ReachStatus>(from,_antig,*negativeReachStatus,-1);
 		positive_path_detector = positive_reach_detector;
@@ -146,6 +163,9 @@ ReachDetector<Weight>::ReachDetector(int _detectorID, GraphTheorySolver<Weight> 
 		negative_distance_detector =(Distance<int> *)  negative_path_detector;
 		//reach_detectors.last()->positive_dist_detector = new Dijkstra(from,g);
 	}
+	if(positive_reach_detector && ! positive_fast_reach_detector)
+		positive_fast_reach_detector = positive_reach_detector;
+
 	if(positive_reach_detector)
 		positive_reach_detector->setSource(source);
 	if(negative_reach_detector)
@@ -358,6 +378,7 @@ void ReachDetector<Weight>::addLit(int from, int to, Var outer_reach_var){
 			reach_lits.push(lit_Undef);
 	while(original_reach_lits.size()<g.nodes())
 		original_reach_lits.push(false);
+
 	original_reach_lits[to]=true;
 	if(reach_lits[to]!=lit_Undef){
 		Lit r = reach_lits[to];
@@ -392,17 +413,6 @@ void ReachDetector<Weight>::addLit(int from, int to, Var outer_reach_var){
 	 if( !negative_reach_detector){
 		 buildSATConstraints(false);
 	 }
-
-
-
-
-
-	/*}else{
-
-
-		outer->S->addClause(~r, reachLit);
-		outer->S->addClause(r, ~reachLit);
-	}*/
 }
 template<typename Weight>
 void ReachDetector<Weight>::ReachStatus::setReachable(int u, bool reachable){
@@ -411,12 +421,16 @@ void ReachDetector<Weight>::ReachStatus::setReachable(int u, bool reachable){
 				}else{
 					assert(detector.outer->dbg_notreachable( detector.source,u));
 				}
+				if(u==249){
+					int a =1;
+				}
 				if(polarity==reachable && u<detector.reach_lits.size()){
 					Lit l = detector.reach_lits[u];
-					if(l!=lit_Undef){
+					if(l!=lit_Undef && !detector.is_changed[u]){
 						lbool assign = detector.outer->value(l);
 						if(assign!= (reachable? l_True:l_False )){
-							detector.changed.push({reachable? l:~l,u});
+							detector.is_changed[u]=true;
+							detector.changed.push({var(l),u});
 						}
 					}
 				}
@@ -461,6 +475,7 @@ bool ReachDetector<Weight>::ChokepointStatus::operator() (int edge_id){
 }
 template<typename Weight>
 void ReachDetector<Weight>::preprocess(){
+
 	//vec<bool> pure;
 	//pure.growTo(reach_lits.size());
 	//can check if all reach lits appear in only one polarity in the solver constraints; if so, then we can disable either check_positive or check_negative
@@ -781,7 +796,7 @@ template<typename Weight>
 		    		cutgraph.enableEdge(edgeID);
 		    	}
 
-		    	changed.clear();
+
 
 		    }
 
@@ -1043,8 +1058,11 @@ template<typename Weight>
 		}
 template<typename Weight>
 		bool ReachDetector<Weight>::propagate(vec<Lit> & conflict){
-
-			getChanged().clear();
+			static int iter = 0;
+			if(++iter==87){
+				int a=1;
+			}
+			is_changed.growTo(g.nodes());
 
 			if(positive_reach_detector && (!opt_detect_pure_theory_lits || unassigned_positives>0)){
 				double startdreachtime = rtime(2);
@@ -1073,9 +1091,22 @@ template<typename Weight>
 				randomShuffle(rnd_seed, changed);
 			}
 
-			for(int j = 0;j<getChanged().size();j++){
-					Lit l = getChanged()[j].l;
-					int u =  getChanged()[j].u;
+			while(changed.size()){
+					Var v = changed.last().v;
+					int u =  changed.last().u;
+					Lit l;
+
+					if(positive_reach_detector && positive_reach_detector->connected(u)){
+						l = mkLit(v,false);
+					}else if (negative_reach_detector && !negative_reach_detector->connected(u)){
+						l = mkLit(v,true);
+					}else{
+						is_changed[u]=false;
+						changed.pop();
+						//this can happen if the changed node's reachability status was reported before a backtrack in the solver.
+						continue;
+					}
+
 					bool reach = !sign(l);
 					if(outer->value(l)==l_True){
 						//do nothing
@@ -1092,7 +1123,6 @@ template<typename Weight>
 							outer->enqueue(l,reach_marker) ;
 						else
 							outer->enqueue(l,non_reach_marker) ;
-
 					}else if (outer->value(l)==l_False){
 						conflict.push(l);
 
@@ -1145,7 +1175,8 @@ template<typename Weight>
 						}
 
 					}
-
+					is_changed[u]=false;
+					changed.pop();
 				}
 
 			#ifdef DEBUG_DIJKSTRA
@@ -1216,59 +1247,35 @@ void ReachDetector<Weight>::printSolution(){
 }
 template<typename Weight>
 bool ReachDetector<Weight>::checkSatisfied(){
-	if(positive_reach_detector && negative_reach_detector){
-				for(int j = 0;j< reach_lits.size();j++){
-					Lit l = reach_lits[j];
-					if(l!=lit_Undef){
-						int node =getNode(var(l));
 
-						if(outer->value(l)==l_True){
-							if(!positive_reach_detector->connected(node)){
-								return false;
-							}
-						}else if (outer->value(l)==l_False){
-							if( negative_reach_detector->connected(node)){
-								return false;
-							}
-						}else{
-							if(positive_reach_detector->connected(node)){
-								return false;
-							}
-							if(!negative_reach_detector->connected(node)){
-								return false;
-							}
-						}
-					}
+	UnweightedDijkstra<>under(source,g) ;
+	UnweightedDijkstra<>over(source,antig) ;
+	under.update();
+	over.update();
+
+	for(int j = 0;j< reach_lits.size();j++){
+		Lit l = reach_lits[j];
+		if(l!=lit_Undef){
+			int node =j;
+			if(outer->value(l)==l_True){
+				if(!under.connected(node)){
+					return false;
 				}
-	}else{
-		UnweightedDijkstra<>under(source,g) ;
-		UnweightedDijkstra<>over(source,antig) ;
-		under.update();
-		over.update();
-
-		for(int j = 0;j< reach_lits.size();j++){
-			Lit l = reach_lits[j];
-			if(l!=lit_Undef){
-				int node =j;
-				if(outer->value(l)==l_True){
-					if(!under.connected(node)){
-						return false;
-					}
-				}else if (outer->value(l)==l_False){
-					if( over.connected(node)){
-						return false;
-					}
-				}else{
-					if(over.connected(node)){
-						return false;
-					}
-					if(!under.connected(node)){
-						return false;
-					}
+			}else if (outer->value(l)==l_False){
+				if( over.connected(node)){
+					return false;
+				}
+			}else{
+				if(over.connected(node)){
+					return false;
+				}
+				if(!under.connected(node)){
+					return false;
 				}
 			}
 		}
 	}
+
 	return true;
 }
 template<typename Weight>
@@ -1311,18 +1318,34 @@ int ReachDetector<Weight>::OptimalWeightEdgeStatus::size()const{
 
 template<typename Weight>
 Lit ReachDetector<Weight>::decide(){
-	if(!negative_reach_detector || !opt_allow_reach_decisions)
+	if(!opt_allow_reach_decisions)
 		return lit_Undef;
-	auto * over =negative_path_detector;
-	auto * under = positive_reach_detector;
-	if(!positive_reach_detector)
-		under = positive_path_detector;
-	if(to_decide.size() && last_decision_status== over->numUpdates()){
+	double startdecidetime = rtime(2);
+	auto * over_reach = negative_reach_detector;
+	auto * under_reach = positive_reach_detector;
+
+	if(!under_reach){
+		under_reach = positive_fast_reach_detector;
+	}
+
+	auto * over_path =negative_path_detector;
+	auto * under_path = positive_reach_detector;
+	if(!under_path){
+		under_path = positive_path_detector;
+	}
+	assert(under_path);
+	assert(over_path);
+	assert(over_reach);
+	assert(under_reach);
+
+	if(to_decide.size() && last_decision_status== over_path->numUpdates()){
 		while(to_decide.size()){
 			Lit l = to_decide.last();
 			to_decide.pop();
-			if(outer->value(l)==l_Undef)
+			if(outer->value(l)==l_Undef){
+				stats_decide_time+= rtime(2)-startdecidetime;
 				return l;
+			}
 		}
 	}
 
@@ -1388,14 +1411,14 @@ Lit ReachDetector<Weight>::decide(){
 		if(outer->value(l)==l_True && opt_decide_graph_pos){
 			//if(S->level(var(l))>0)
 			//	continue;
-			assert(over->connected(j));
-			if(over->connected(j) && !under->connected(j)){
+			assert(over_path->connected(j));
+			if(over_reach->connected(j) && !under_reach->connected(j) ){
 				//then lets try to connect this
 				static vec<bool> print_path;
 				to_decide.clear();
-				last_decision_status = over->numUpdates();
+				last_decision_status = over_path->numUpdates();
 
-				assert(over->connected(j));//Else, we would already be in conflict
+				assert(over_path->connected(j));//Else, we would already be in conflict
 				int p =j;
 				int last_edge=-1;
 				int last=j;
@@ -1418,19 +1441,19 @@ Lit ReachDetector<Weight>::decide(){
 					}else*/{
 						//ok, read back the path from the over to find a candidate edge we can decide
 						//find the earliest unconnected node on this path
-						over->update();
+						over_path->update();
 						 p = j;
 						 last = j;
-						while(!under->connected(p)){
+						while(!under_reach->connected(p)){
 
 							last=p;
 							assert(p!=source);
-							last_edge=over->incomingEdge(p);
+							last_edge=over_path->incomingEdge(p);
 							Var edge_var = outer->getEdgeVar(last_edge);
 							if(outer->value(edge_var)==l_Undef){
 								to_decide.push(mkLit(edge_var,false));
 							}
-							int prev = over->previous(p);
+							int prev = over_path->previous(p);
 							p = prev;
 
 						}
@@ -1453,7 +1476,7 @@ Lit ReachDetector<Weight>::decide(){
 					 p = j;
 					 last = j;
 					 assert(rnd_path->connected(p));
-					while(!under->connected(p)){
+					while(!under_reach->connected(p)){
 
 						last=p;
 						assert(p!=source);
@@ -1468,12 +1491,14 @@ Lit ReachDetector<Weight>::decide(){
 					}
 
 				}
-				if(to_decide.size() && last_decision_status== over->numUpdates()){
+				if(to_decide.size() && last_decision_status== over_path->numUpdates()){
 					while(to_decide.size()){
 						Lit l = to_decide.last();
 						to_decide.pop();
-						if(outer->value(l)==l_Undef)
+						if(outer->value(l)==l_Undef){
+							stats_decide_time+= rtime(2)-startdecidetime;
 							return l;
+						}
 					}
 				}
 				
@@ -1482,21 +1507,21 @@ Lit ReachDetector<Weight>::decide(){
 
 
 				//for each negated reachability constraint, we can find a cut through the unassigned edges in the over-approx and disable one of those edges.
-				assert(!under->connected(j));
-				over->update();
-				if(over->connected(j) && ! under->connected(j)){
+				assert(!under_path->connected(j));
+				over_path->update();
+				if(over_reach->connected(j) && ! under_reach->connected(j)){
 					//then lets try to disconnect this node from source by walking back along the path in the over approx, and disabling the first unassigned edge we see.
 					//(there must be at least one such edge, else the variable would be connected in the under approximation as well - in which case it would already have been propagated.
 
 					to_decide.clear();
-					last_decision_status = over->numUpdates();
+					last_decision_status = over_path->numUpdates();
 					int p = j;
 					int last = j;
-					while(!under->connected(p)){
+					while(!under_reach->connected(p)){
 						last=p;
 						assert(p!=source);
-						int prev = over->previous(p);
-						int incoming_edge = over->incomingEdge(p);
+						int prev = over_path->previous(p);
+						int incoming_edge = over_path->incomingEdge(p);
 						Var v = outer->edge_list[incoming_edge].v;
 						if(outer->value(v)==l_Undef){
 							to_decide.push( mkLit(v,true));
@@ -1505,12 +1530,14 @@ Lit ReachDetector<Weight>::decide(){
 						}
 						p = prev;
 					}
-					if(to_decide.size() && last_decision_status== over->numUpdates()){
+					if(to_decide.size() && last_decision_status== over_path->numUpdates()){
 					while(to_decide.size()){
 						Lit l = to_decide.last();
 						to_decide.pop();
-						if(outer->value(l)==l_Undef)
+						if(outer->value(l)==l_Undef){
+							stats_decide_time+= rtime(2)-startdecidetime;
 							return l;
+						}
 					}
 					}
 
@@ -1532,26 +1559,26 @@ Lit ReachDetector<Weight>::decide(){
 				if(outer->value(l)==l_True && opt_decide_graph_pos){
 					//if(S->level(var(l))>0)
 					//	continue;
-					assert(over->connected(j));
-					if(over->connected(j) && !under->connected(j)){
+					assert(over_path->connected(j));
+					if(over_reach->connected(j) && !under_reach->connected(j)){
 						//then lets try to connect this
-						assert(over->connected(j));//Else, we would already be in conflict
+						assert(over_path->connected(j));//Else, we would already be in conflict
 						int p =j;
 						int last_edge=-1;
 						int last=j;
 						//ok, read back the path from the over to find a candidate edge we can decide
 						//find the earliest unconnected node on this path
 						int dist=0;
-						over->update();
+						over_path->update();
 						 p = j;
 						 last = j;
-						while(!under->connected(p)){
+						while(!under_reach->connected(p)){
 							dist++;
 							last=p;
 							assert(p!=source);
-							last_edge=over->incomingEdge(p);
+							last_edge=over_path->incomingEdge(p);
 							assert(outer->value( outer->edge_list[last_edge].v)==l_Undef);
-							int prev = over->previous(p);
+							int prev = over_path->previous(p);
 							p = prev;
 
 						}
@@ -1575,6 +1602,7 @@ Lit ReachDetector<Weight>::decide(){
 			assert(outer->edge_list[edgeID_to_assign].edgeID==edgeID_to_assign);
 			Var v = outer->edge_list[edgeID_to_assign].v;
 			if(outer->value(v)==l_Undef){
+				stats_decide_time+= rtime(2)-startdecidetime;
 				return mkLit(v,false);
 			}else{
 				assert(outer->value(v)!=l_True);
@@ -1582,6 +1610,7 @@ Lit ReachDetector<Weight>::decide(){
 		}
 
 	}
+	stats_decide_time+= rtime(2)-startdecidetime;
 	return lit_Undef;
 };
 

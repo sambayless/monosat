@@ -36,6 +36,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "dgl/EdmondsKarp.h"
 #include "dgl/EdmondsKarpAdj.h"
 #include "dgl/EdmondsKarpDynamic.h"
+#include "dgl/KohliTorr.h"
 #include "dgl/Dinics.h"
 #include "dgl/DinicsLinkCut.h"
 
@@ -278,6 +279,8 @@ public:
 			}else if (mincutalg==MinCutAlg::ALG_DINITZ_LINKCUT){
 				//link-cut tree currently only supports ints (enforcing this using tempalte specialization...).
 				mc = new DinitzLinkCut<CutStatus>(cutGraph, cutStatus);
+			}else if (mincutalg==MinCutAlg::ALG_KOHLI_TORR){
+				 mc = new KohliTorr<CutStatus,int>(cutGraph, cutStatus);
 			}else{
 				mc = new EdmondsKarpAdj<CutStatus,int>(cutGraph, cutStatus);
 			}
@@ -692,9 +695,9 @@ public:
 
 			if(changed){
 				requiresPropagation=true;
-				g.markChanged();
+/*				g.markChanged();
 				antig.markChanged();
-				cutGraph.markChanged();
+				cutGraph.markChanged();*/
 			}
 
 			for (Detector * d:detectors){
@@ -762,12 +765,12 @@ public:
 			}
 
 			trail.shrink(trail.size()-(i+1));
-			if(i>0){
+			//if(i>0){
 				requiresPropagation=true;
-				g.markChanged();
+	/*			g.markChanged();
 				antig.markChanged();
-				cutGraph.markChanged();
-			}
+				cutGraph.markChanged();*/
+			//}
 			for (Detector * d:detectors){
 				d->backtrack(this->decisionLevel());
 			}

@@ -300,29 +300,31 @@ void DistanceDetector<Weight>::ReachStatus::setMininumDistance(int u, bool reach
 		setReachable(u,reachable);
 	}
 
-		if(u<detector.unweighted_dist_lits.size()){
+		if(u<detector.unweighted_dist_lits.size() && detector.unweighted_dist_lits[u].size()){
 			assert(distance>=0);
 
-			for(int i = 0;i<detector.unweighted_dist_lits[u].size();i++){
-				int& min_distance =  detector.unweighted_dist_lits[u][i].min_unweighted_distance;
+			//for(int i = 0;i<detector.unweighted_dist_lits[u].size();i++){
+				//int& min_distance =  detector.unweighted_dist_lits[u][i].min_unweighted_distance;
 
-				Lit l = detector.unweighted_dist_lits[u][i].l;
-				if(l!=lit_Undef){
+				//Lit l = detector.unweighted_dist_lits[u][i].l;
+				if( !detector.is_changed[u]){
 
-					assert(l!=lit_Undef);
-					if(!polarity && (!reachable || (distance>min_distance))){
-						lbool assign = detector.outer->value(l);
-						if( assign!= l_False ){
-							detector.changed.push({~l,u});
-						}
-					}else if(polarity && reachable && (distance<=min_distance)){
-						lbool assign = detector.outer->value(l);
-						if( assign!= l_True ){
-							detector.changed.push({l,u});
-						}
+
+					if(!polarity){// && (!reachable || (distance>min_distance))){
+						//lbool assign = detector.outer->value(l);
+						//if( assign!= l_False ){
+							detector.is_changed[u]=true;
+							detector.changed.push({u});//{var(l),u,min_distance});
+						//}
+					}else if(polarity){// && reachable && (distance<=min_distance)){
+						//lbool assign = detector.outer->value(l);
+						//if( assign!= l_True ){
+							detector.is_changed[u]=true;
+							detector.changed.push({u});//{var(l),u,min_distance});
+						//}
 					}
 				}
-			}
+			//}
 		}
 
 }
@@ -818,10 +820,10 @@ template<typename Weight>
 			if(++iter==1624){//18303
 				int a=1;
 			}
-
+		is_changed.growTo(g.nodes());
 		//printf("iter %d\n",iter);
 
-		getChanged().clear();
+		//getChanged().clear();
 		if(!opt_detect_pure_theory_lits || unassigned_positives>0){
 			double startdreachtime = rtime(2);
 			stats_under_updates++;
@@ -851,57 +853,73 @@ template<typename Weight>
 			randomShuffle(rnd_seed, changed);
 		}
 
-		for(int j = 0;j<getChanged().size();j++){
-				Lit l = getChanged()[j].l;
-				int u =  getChanged()[j].u;
-				bool reach = !sign(l);
-				if(outer->value(l)==l_True){
-					//do nothing
-				}else if(outer->value(l)==l_Undef){
-#ifdef DEBUG_GRAPH
-					assert(outer->dbg_propgation(l));
-#endif
-#ifdef DEBUG_SOLVER
-					if(S->dbg_solver)
-						S->dbg_check_propagation(l);
-#endif
+		while(changed.size()){
 
-					if(reach)
-						outer->enqueue(l,reach_marker) ;
-					else
-						outer->enqueue(l,non_reach_marker) ;
+				int u =  changed.last().u;
+				for(int i = 0;i<unweighted_dist_lits[u].size();i++){
+					int& min_distance =  unweighted_dist_lits[u][i].min_unweighted_distance;
 
-				}else if (outer->value(l)==l_False){
-					conflict.push(l);
+					Var v =var( unweighted_dist_lits[u][i].l);
+					Lit l;
 
-					if(reach){
-
-					//conflict
-					//The reason is a path in g from to s in d
-						buildReachReason(u,conflict);
-					//add it to s
-					//return it as a conflict
-
+					if(positive_reach_detector && positive_reach_detector->connected(u) && positive_reach_detector->distance(u)<=min_distance){
+						l = mkLit(v,false);
+					}else if (negative_reach_detector && (!negative_reach_detector->connected(u) || negative_reach_detector->distance(u)>min_distance)){
+						l = mkLit(v,true);
 					}else{
-						//The reason is a cut separating s from t
-						buildNonReachReason(u,conflict);
-
+						continue;
 					}
-#ifdef DEBUG_GRAPH
-					for(int i = 0;i<conflict.size();i++)
-								 assert(outer->value(conflict[i])==l_False);
-#endif
-#ifdef DEBUG_SOLVER
-					if(S->dbg_solver)
-						S->dbg_check(conflict);
-#endif
+
+					bool reach = !sign(l);
+					if(outer->value(l)==l_True){
+						//do nothing
+					}else if(outer->value(l)==l_Undef){
+	#ifdef DEBUG_GRAPH
+						assert(outer->dbg_propgation(l));
+	#endif
+	#ifdef DEBUG_SOLVER
+						if(S->dbg_solver)
+							S->dbg_check_propagation(l);
+	#endif
+
+						if(reach)
+							outer->enqueue(l,reach_marker) ;
+						else
+							outer->enqueue(l,non_reach_marker) ;
+
+					}else if (outer->value(l)==l_False){
+						conflict.push(l);
+
+						if(reach){
+
+						//conflict
+						//The reason is a path in g from to s in d
+							buildReachReason(u,conflict);
+						//add it to s
+						//return it as a conflict
+
+						}else{
+							//The reason is a cut separating s from t
+							buildNonReachReason(u,conflict);
+
+						}
+	#ifdef DEBUG_GRAPH
+						for(int i = 0;i<conflict.size();i++)
+									 assert(outer->value(conflict[i])==l_False);
+	#endif
+	#ifdef DEBUG_SOLVER
+						if(S->dbg_solver)
+							S->dbg_check(conflict);
+	#endif
 
 
-					return false;
-				}else{
-					int  a=1;
+						return false;
+					}else{
+						int  a=1;
+					}
 				}
-
+				is_changed[u]=false;
+				changed.pop();
 			}
 
 		if(opt_rnd_shuffle && weighted_dist_lits.size()){
@@ -950,12 +968,12 @@ template<typename Weight>
 							int dist =  unweighted_dist_lits[i][j].min_unweighted_distance;
 							if(l!=lit_Undef){
 								int u = getNode(var(l));
-								if((!opt_detect_pure_theory_lits || unassigned_positives>0) && positive_reach_detector->distance_unsafe(u)<=dist){
+								if((!opt_detect_pure_theory_lits || unassigned_positives>0) && positive_reach_detector->connected(u) && positive_reach_detector->distance_unsafe(u)<=dist){
 									if(outer->dbg_value(l)!=l_True){
 										assert(false);
 										exit(3);
 									}
-								}else if ((!opt_detect_pure_theory_lits || unassigned_negatives>0) && negative_reach_detector->distance_unsafe(u)>dist){
+								}else if ((!opt_detect_pure_theory_lits || unassigned_negatives>0) && (!negative_reach_detector->connected(u) || negative_reach_detector->distance_unsafe(u)>dist)){
 									int d =negative_reach_detector->distance_unsafe(u);
 									if(outer->dbg_value(l)!=l_False){
 										assert(false);

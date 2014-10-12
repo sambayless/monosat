@@ -23,7 +23,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "MaxflowDetector.h"
 #include "GraphTheory.h"
 #include "dgl/EdmondsKarpAdj.h"
-
+#include "dgl/KohliTorr.h"
 #include "dgl/EdmondsKarpDynamic.h"
 #include "dgl/Dinics.h"
 #include "dgl/DinicsLinkCut.h"
@@ -81,6 +81,13 @@ Detector(_detectorID),outer(_outer),capacities(capacities),over_graph(_g),g(_g),
 		negative_conflict_detector = new EdmondsKarpAdj<std::vector<Weight>,Weight>(_antig,capacities);
 		if(opt_conflict_min_cut)
 				learn_cut = new DinitzLinkCut<std::vector<int>>(learn_graph,learn_caps);
+	}else if (mincutalg==MinCutAlg::ALG_KOHLI_TORR){
+		positive_detector = new KohliTorr<std::vector<Weight>,Weight>(_g,capacities);
+		negative_detector = new KohliTorr<std::vector<Weight>,Weight>(_antig,capacities);
+		positive_conflict_detector = new EdmondsKarpAdj<std::vector<Weight>,Weight>(_g,capacities);
+		negative_conflict_detector = new EdmondsKarpAdj<std::vector<Weight>,Weight>(_antig,capacities);
+		if(opt_conflict_min_cut)
+				learn_cut = new EdmondsKarpAdj<std::vector<int>,int>(learn_graph,learn_caps);
 	}else{
 		positive_detector = new EdmondsKarpAdj<std::vector<Weight>,Weight>(_g,capacities);
 		negative_detector = new EdmondsKarpAdj<std::vector<Weight>,Weight>(_antig,capacities);
@@ -594,6 +601,9 @@ void MaxflowDetector<Weight>::printSolution(){
 
 template<typename Weight>
 Lit MaxflowDetector<Weight>::decide(){
+	static int it =0;
+	++it;
+	double startdecidetime = rtime(2);
 	auto * over =negative_conflict_detector;
 		auto * under = positive_conflict_detector;
 
@@ -604,8 +614,10 @@ Lit MaxflowDetector<Weight>::decide(){
 			while(to_decide.size()){
 				Lit l = to_decide.last();
 				to_decide.pop();
-				if(outer->value(l)==l_Undef)
+				if(outer->value(l)==l_Undef){
+					stats_decide_time+=  rtime(2)-startdecidetime;
 					return l;
+				}
 			}
 		}
 
@@ -619,17 +631,40 @@ Lit MaxflowDetector<Weight>::decide(){
 
 			if(outer->value(l)==l_True && opt_decide_graph_pos){
 				assert(over_flow>=required_flow);
-				if(under_flow <over_flow){
+
+#ifndef NDEBUG
+				static vec<bool> dbg_expect;
+				int dbg_count = 0;
+				dbg_expect.clear();
+				dbg_expect.growTo(g.edges());
+				for(int edgeID = 0;edgeID<g.edges();edgeID++){
+					lbool val = outer->value(outer->getEdgeVar(edgeID));
+					if(val==l_Undef){
+						if(over->getEdgeFlow(edgeID)>0){
+							dbg_expect[edgeID]=true;
+							dbg_count++;
+						}
+					}else if (val == l_False){
+						assert(over->getEdgeFlow(edgeID)==0);
+					}
+				}
+#endif
+
+				if(under_flow <required_flow){
 
 					//then decide an unassigned edge of the currently selected flow
 					to_decide.clear();
 					last_decision_status= over->numUpdates();
+
+					seen.clear();
+					seen.growTo(antig.nodes(),false);
+					q.clear();
+
 					if(opt_conflict_dfs){
 						//do a dfs to find that edge. Could start from either the source or the target.
-						prev.clear();
-						prev.growTo(antig.nodes(),-1);
 
-						q.clear();
+
+
 
 						if(opt_conflict_from_source){
 
@@ -638,23 +673,18 @@ Lit MaxflowDetector<Weight>::decide(){
 							while(q.size()){
 								int u =q.back();
 								q.pop_back();
-								if(u!=source){
-									assert(prev[u]!=-1);
-									Var v = outer->getEdgeVar(prev[u]);
-									assert(outer->value(v)!=l_False);
-									if(outer->value(v)==l_Undef){
-										to_decide.push(mkLit(v,false));
-										//return mkLit(v,false);
-									}
-								}
 								for(int i = 0;i<antig.nIncident(u) ;i++){
 									if(!antig.edgeEnabled(antig.incident(u,i).id))
 										continue;
 									int v =antig.incident(u,i).node;
-									int edgeid= antig.incident(u,i).id;
-									if (over->getEdgeFlow(edgeid)>0){
-										if(prev[v]==-1 && v != source){
-											prev[v]=edgeid;
+									int edgeID= antig.incident(u,i).id;
+									if (over->getEdgeFlow(edgeID)>0){
+										Var var = outer->getEdgeVar(edgeID);
+										if(outer->value(var)==l_Undef){
+											to_decide.push(mkLit(var,false));
+										}
+										if(!seen[v]){
+											seen[v]=true;
 											q.push_back(v);
 										}
 									}
@@ -665,22 +695,18 @@ Lit MaxflowDetector<Weight>::decide(){
 							while(q.size()){
 								int u =q.back();
 								q.pop_back();
-								if(u!=target){
-									assert(prev[u]!=-1);
-									Var v = outer->getEdgeVar(prev[u]);
-									assert(outer->value(v)!=l_False);
-									if(outer->value(v)==l_Undef){
-										to_decide.push(mkLit(v,false));
-									}
-								}
 								for(int i = 0;i<antig.nIncoming(u) ;i++){
 									if(!antig.edgeEnabled(antig.incoming(u,i).id))
 										continue;
 									int v =antig.incoming(u,i).node;
-									int edgeid= antig.incoming(u,i).id;
-									if (over->getEdgeFlow(edgeid)>0){
-										if(prev[v]==-1 && v != target){
-											prev[v]=edgeid;
+									int edgeID= antig.incoming(u,i).id;
+									if (over->getEdgeFlow(edgeID)>0){
+										Var var = outer->getEdgeVar(edgeID);
+										if(outer->value(var)==l_Undef){
+											to_decide.push(mkLit(var,false));
+										}
+										if(!seen[v]){
+											seen[v]=true;
 											q.push_back(v);
 										}
 									}
@@ -688,74 +714,47 @@ Lit MaxflowDetector<Weight>::decide(){
 							}
 						}
 					}else{
-
-						prev.clear();
-						prev.growTo(antig.nodes(),-1);
-
-						dist.clear();
-						dist.growTo(antig.nodes(),-1);
-
-						q.clear();
-
 						if(opt_conflict_from_source){
-							dist[source]=0;
 							q.push_back(source);
 							//do a bfs to find that edge. Could start from either the source or the target.
 							for (int i = 0;i<q.size();i++){
 								int u = q[i];
-								assert(dist[u]>-1);
-								if(u!=source){
-									assert(prev[u]!=-1);
-									Var v = outer->getEdgeVar(prev[u]);
-									assert(outer->value(v)!=l_False);
-									if(outer->value(v)==l_Undef){
-										to_decide.push(mkLit(v,false));
-									}
-								}
-								int d = dist[u];
 								for(int i = 0;i<antig.nIncident(u);i++){
 									if(!antig.edgeEnabled(antig.incident(u,i).id))
 										continue;
 									int edgeID = antig.incident(u,i).id;
 									int v = antig.incident(u,i).node;
-									int dv = dist[v];
-									int alt = d+1;
 									if (over->getEdgeFlow(edgeID)>0){
-										if(dist[v]<0 || dist[v]>alt){
-											dist[v]=alt;
-											prev[v]=edgeID;
+										Var var = outer->getEdgeVar(edgeID);
+										assert(outer->value(var)!=l_False);
+										if(outer->value(var)==l_Undef){
+											to_decide.push(mkLit(var,false));
+										}
+										if(!seen[v]){
+											seen[v]=true;
 											q.push_back(v);
 										}
 									}
 								}
 							}
 						}else{
-							dist[target]=0;
 							q.push_back(target);
 							//do a bfs to find that edge. Could start from either the source or the target.
 							for (int i = 0;i<q.size();i++){
 								int u = q[i];
-								assert(dist[u]>-1);
-								if(u!=target){
-									assert(prev[u]!=-1);
-									Var v = outer->getEdgeVar(prev[u]);
-									assert(outer->value(v)!=l_False);
-									if(outer->value(v)==l_Undef){
-										to_decide.push(mkLit(v,false));
-									}
-								}
-								int d = dist[u];
 								for(int i = 0;i<antig.nIncoming(u);i++){
 									if(!antig.edgeEnabled(antig.incoming(u,i).id))
 										continue;
 									int edgeID = antig.incoming(u,i).id;
 									int v = antig.incoming(u,i).node;
-									int dv = dist[v];
-									int alt = d+1;
 									if (over->getEdgeFlow(edgeID)>0){
-										if(dist[v]<0 || dist[v]>alt){
-											dist[v]=alt;
-											prev[v]=edgeID;
+										Var var = outer->getEdgeVar(edgeID);
+										assert(outer->value(var)!=l_False);
+										if(outer->value(var)==l_Undef){
+											to_decide.push(mkLit(var,false));
+										}
+										if(!seen[v]){
+											seen[v]=true;
 											q.push_back(v);
 										}
 									}
@@ -763,7 +762,11 @@ Lit MaxflowDetector<Weight>::decide(){
 							}
 						}
 					}
+					assert(to_decide.size()==dbg_count);
+
+
 				}
+
 			}else if(outer->value(l)==l_False && opt_decide_graph_neg){
 
 
@@ -773,12 +776,14 @@ Lit MaxflowDetector<Weight>::decide(){
 				while(to_decide.size()){
 					Lit l = to_decide.last();
 					to_decide.pop();
-					if(outer->value(l)==l_Undef)
+					if(outer->value(l)==l_Undef){
+						stats_decide_time+= rtime(2)-startdecidetime;
 						return l;
+					}
 				}
 			}
 		}
-
+		stats_decide_time+= rtime(2)-startdecidetime;
 		return lit_Undef;
 };
 

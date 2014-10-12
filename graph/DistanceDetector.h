@@ -101,14 +101,14 @@ public:
 		vec<WeightedDistLit> weighted_dist_lits;
 
 		struct Change{
-				Lit l;
+				//Var v;
 				int u;
+				//int min_distance;
 			};
 		vec<Change> changed;
+		vec<bool> is_changed;
 		vec<Var> tmp_nodes;
-		vec<Change> & getChanged(){
-			return changed;
-		}
+
 		std::vector<double> rnd_weight;
 
 		WeightedDijkstra<double> * rnd_path;
@@ -175,7 +175,21 @@ public:
 			return reach_lits[node];
 
 		}*/
+		void backtrack(int level){
 
+		}
+		void unassign(Lit l){
+			 Detector::unassign(l);
+			 int index = var(l)-first_reach_var;
+
+			 if(index>=0 && index < reach_lit_map.size() && reach_lit_map[index]!=-1){
+				 int node=reach_lit_map[index];
+				 if(!is_changed[node]){
+					 changed.push({node});
+					 is_changed[node]=true;
+				 }
+			 }
+		}
 		bool propagate(vec<Lit> & conflict);
 		void buildReachReason(int node,vec<Lit> & conflict);
 		void buildNonReachReason(int node,vec<Lit> & conflict);

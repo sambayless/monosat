@@ -80,8 +80,8 @@ public:
 		vec<MaxFlowEdge> tmp_cut;
 		vec<int> visit;
 		vec<bool> seen;
-		vec<int> prev;
-		vec<int> dist;
+		//vec<int> prev;
+		//vec<int> dist;
 /*		int getNode(Var reachVar){
 			assert(reachVar>=first_reach_var);
 			int index = reachVar-first_reach_var;

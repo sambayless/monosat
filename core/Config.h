@@ -51,7 +51,7 @@ extern BoolOption opt_conflict_shortest_path;
 extern BoolOption opt_conflict_min_cut;
 
 
-extern StringOption opt_min_cut_alg;
+extern StringOption opt_maxflow_alg;
 extern StringOption opt_reach_alg;
 extern StringOption opt_con_alg;
 extern StringOption opt_allpairs_alg;
@@ -160,10 +160,11 @@ extern AllPairsConnectivityAlg undirected_allpairsalg;
 enum class MinCutAlg{
 	 ALG_EDMONSKARP,
 	 ALG_EDKARP_ADJ,
-	// ALG_IBFS,
+	// ALG_IBFS, //omitted for licensing reasons
 	 ALG_EDKARP_DYN,
 	 ALG_DINITZ,
-	 ALG_DINITZ_LINKCUT
+	 ALG_DINITZ_LINKCUT,
+	 ALG_KOHLI_TORR
 };
 extern MinCutAlg mincutalg;
 enum class MinSpanAlg{

@@ -55,6 +55,7 @@ public:
 		double rnd_seed;
 		int constraintsBuiltOver=-1;
 		int constraintsBuiltUnder=-1;
+
 		CRef reach_marker;
 		CRef non_reach_marker;
 		CRef forced_reach_marker;
@@ -64,6 +65,7 @@ public:
 		Reach *  positive_path_detector=nullptr;
 		Reach * negative_path_detector=nullptr;
 		Reach *  cutgraph_reach_detector=nullptr;
+		Reach * positive_fast_reach_detector=nullptr;
 		Distance<int> * negative_distance_detector=nullptr;
 		vec<bool> original_reach_lits;
 		vec<Lit>  reach_lits;
@@ -85,14 +87,13 @@ public:
 
 		std::vector<ForceReason> forced_edges;
 		struct Change{
-				Lit l;
+				Var v;
 				int u;
 			};
+		vec<bool> is_changed;
 		vec<Change> changed;
 
-		vec<Change> & getChanged(){
-			return changed;
-		}
+
 		vec<Lit> extra_conflict;
 		vec<int> removed_edges;
 		//stats
@@ -165,6 +166,65 @@ public:
 
 		Chokepoint<ChokepointStatus > chokepoint;
 
+		//This class can stand in as a reach algorithm if we have encoded reachability directly into the cnf.
+		class CNFReachability:public Reach{
+			ReachDetector & detector;
+			bool over_approx;
+			int num_updates=0;
+
+		public:
+			CNFReachability(ReachDetector & _outer, bool over_approx):detector(_outer), over_approx(over_approx){
+
+			}
+			int numUpdates()const{
+				return num_updates;
+			}
+
+			void update( ){
+				num_updates++;
+			}
+			void setSource(int s){
+				assert(s==detector.source);
+			}
+			int getSource(){
+				return detector.source;
+			}
+
+			 bool connected_unsafe(int t){
+				 return connected(t);
+			 }
+			 bool connected_unchecked(int t){
+				 return connected(t);
+			 }
+			 bool connected( int t){
+				 assert(detector.reach_lits[t]!=lit_Undef);
+				 if(over_approx)
+					 return detector.outer->value(detector.reach_lits[t])!=l_False;
+				 else
+					 return detector.outer->value(detector.reach_lits[t])==l_True;
+			 }
+			 int previous( int node){
+				 assert(false);
+				 exit(3);//not supported
+			 }
+			 int incomingEdge( int node){
+				 assert(false);
+				 exit(3);//not supported
+			 }
+
+		};
+		void unassign(Lit l){
+			 Detector::unassign(l);
+			 int index = var(l)-first_reach_var;
+			 if(index>=0 && index < reach_lit_map.size() && reach_lit_map[index]!=-1){
+				 int node=reach_lit_map[index];
+				 if(!is_changed[node]){
+					 changed.push({var(l),node});
+					 is_changed[node]=true;
+				 }
+			 }
+		}
+
 		int getNode(Var reachVar){
 			assert(reachVar>=first_reach_var);
 			int index = reachVar-first_reach_var;
@@ -175,12 +235,14 @@ public:
 		void backtrack(int level){
 			to_decide.clear();
 			last_decision_status=-1;
+
 		}
 	/*	Lit getLit(int node){
 
 			return reach_lits[node];
 
 		}*/
+
 		void buildSATConstraints(bool onlyUnderApprox=false,int within_steps=-1);
 		bool propagate(vec<Lit> & conflict);
 		void buildReachReason(int node,vec<Lit> & conflict);
