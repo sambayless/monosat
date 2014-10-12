@@ -1,7 +1,6 @@
 /****************************************************************************************[Solver.h]
 The MIT License (MIT)
 
-Copyright (c) 2014, Sam Bayless
 Copyright (c) 2006, Emil Stefanov
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
@@ -24,7 +23,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 // Author: Emil Stefanov
 // Date: 03/28/06
 // Implementaton is as described in http://en.wikipedia.org/wiki/Disjoint-set_data_structure
-// Modified for dgl by Sam Bayless
+// Released under the MIT license by Emil Stefanov (http://www.emilstefanov.net/Projects/DisjointSets.aspx)
 
 #include <cassert>
 #include <cstddef>

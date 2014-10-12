@@ -60,13 +60,7 @@ class EdmondsKarpDynamic:public MaxFlow<Weight>{
 #ifdef DEBUG_MAXFLOW
     	EdmondsKarpAdj<Capacity,Weight> ek;
 #endif
-    /*
-     *            input:
-               C, E, s, t, F
-           output:
-               M[t]          (Capacity of path found)
-               P             (Parent table)
-     */
+
     std::vector<int> Q;
 
 

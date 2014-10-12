@@ -135,6 +135,7 @@ public:
 		modifications++;
 		additions=modifications;
 		deletions=modifications;
+		markChanged();
 		clearHistory();
 #ifdef RECORD
 			if(outfile){
@@ -182,6 +183,7 @@ public:
 		//weights.push_back(weight);
 		modifications++;
 		additions=modifications;
+		markChanged();
 #ifdef RECORD
 			if(outfile){
 				fprintf(outfile,"edge %d %d %d %d\n",from,to,1, id+1);
