@@ -336,7 +336,7 @@ int main(int argc, char** argv)
          S.max_priority_var = opt_max_priority_decision_var-1;
 
 
-         if(opt_min_decision_var>0 || opt_max_decision_var>0){
+         if(opt_min_decision_var>1 || opt_max_decision_var>0){
         	 printf("Decision variables restricted to the range (%ld..%ld), which means a result of satisfiable may not be trustworthy.\n",(uint)opt_min_decision_var,(uint)opt_max_decision_var);
          }
          if (!pre) S.eliminate(true);

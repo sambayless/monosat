@@ -84,8 +84,8 @@ Detector(_detectorID),outer(_outer),capacities(capacities),over_graph(_g),g(_g),
 	}else if (mincutalg==MinCutAlg::ALG_KOHLI_TORR){
 		positive_detector = new KohliTorr<std::vector<Weight>,Weight>(_g,capacities);
 		negative_detector = new KohliTorr<std::vector<Weight>,Weight>(_antig,capacities);
-		positive_conflict_detector = new EdmondsKarpAdj<std::vector<Weight>,Weight>(_g,capacities);
-		negative_conflict_detector = new EdmondsKarpAdj<std::vector<Weight>,Weight>(_antig,capacities);
+		positive_conflict_detector = new EdmondsKarpDynamic<std::vector<Weight>,Weight>(_g,capacities);
+		negative_conflict_detector = new EdmondsKarpDynamic<std::vector<Weight>,Weight>(_antig,capacities);
 		if(opt_conflict_min_cut)
 				learn_cut = new EdmondsKarpAdj<std::vector<int>,int>(learn_graph,learn_caps);
 	}else{
@@ -543,7 +543,7 @@ bool MaxflowDetector<Weight>::checkSatisfied(){
 }
 template<typename Weight>
 void MaxflowDetector<Weight>::printSolution(){
-	Weight f = positive_detector->maxFlow(source,target);
+	Weight f = positive_conflict_detector->maxFlow(source,target);
 	printf("Maximum %d->%d flow in graph %d is ", this->source,this->target,this->outer->getGraphID());
 	std::cout<<f <<"\n";
 	if(opt_verb>0){
@@ -569,7 +569,7 @@ void MaxflowDetector<Weight>::printSolution(){
 				Weight total_flow = 0;
 				for(int e = 0;e<g.edges();e++){
 					if(g.getEdge(e).to==n && g.edgeEnabled(e)){
-						total_flow+=positive_detector->getEdgeFlow(e);
+						total_flow+=positive_conflict_detector->getEdgeFlow(e);
 
 					}
 				}
@@ -585,7 +585,7 @@ void MaxflowDetector<Weight>::printSolution(){
 					int total_flow = 0;
 					for(int e = 0;e<g.edges();e++){
 						if(g.getEdge(e).to==n && g.edgeEnabled(e)){
-							Weight flow = positive_detector->getEdgeFlow(e);
+							Weight flow = positive_conflict_detector->getEdgeFlow(e);
 							if(flow>0){
 								printf("flow  %d to %d = ", g.getEdge(e).from,g.getEdge(e).to);
 								std::cout<<flow<<"\n";

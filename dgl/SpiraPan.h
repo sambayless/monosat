@@ -31,6 +31,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "Kruskal.h"
 #include <algorithm>
 #include <limits>
+#include <iostream>
 
 namespace dgl{
 /**
@@ -67,6 +68,7 @@ public:
 	std::vector<int> parents;
 	std::vector<int> parent_edges;
 	std::vector<int> components_to_visit;
+	std::vector<bool> component_needs_visit;
 	std::vector<int> component_member;//pointer to one arbitrary member of each non-empty component
 	std::vector<Weight> component_edge_weight;
     struct VertLt {
@@ -267,6 +269,22 @@ public:
 				std::swap(higher_component,lower_component);
 				std::swap(new_c,old_c);
 			}
+
+			if(component_needs_visit[old_c]){
+#ifndef NDEBUG
+				bool found=false;
+				for(int i :components_to_visit){
+					if(i==old_c)
+						found=true;
+				}
+				assert(found);
+#endif
+				if(!component_needs_visit[new_c]){
+					component_needs_visit[new_c]=true;
+					components_to_visit.push_back(new_c);
+				}
+				//component_needs_visit[old_c]=false; //dont do this, because the component has not yet been removed from the components to visit list.
+			}
 			//ok, now set every node in the higher component to be in the lower component with a simple dfs.
 			//fix the parents at the same time.
 			min_weight+=weights[edgeid];
@@ -444,7 +462,7 @@ public:
 			component_member[new_c]=start_node;
 			component_member[old_c]=u;
 			components_to_visit.push_back(new_c);
-
+			component_needs_visit[new_c]=true;
 			components[start_node]=new_c;
 			assert(q.size()==0);
 			//relabel the components of the tree that has been split off.
@@ -477,10 +495,12 @@ public:
 		for(int i = 0;i<components_to_visit.size();i++){
 			int c = components_to_visit[i];
 			int start_node = component_member[c];
+
 			if(start_node==-1){
 				//then this component has already been merged into another one, no need to visit it.
 				continue;
 			}
+			component_needs_visit[c]=false;//because we just visited this component
 			assert(c>=0);
 #ifndef NDEBUG
 			for(auto w:component_edge_weight){
@@ -597,8 +617,11 @@ public:
 			fflush(g.outfile);
 		}
 #endif
-		if(last_modification>0 && g.modifications==last_modification)
-					return;
+		if(last_modification>0 && g.modifications==last_modification){
+			assert(min_weight==dbg.forestWeight());
+			assert(num_sets==dbg.numComponents());
+			return;
+		}
 		assert(components_to_visit.size()==0);
 		if(last_modification<=0 || g.changed() || last_history_clear!=g.historyclears){
 			INF=1;//g.nodes()+1;
@@ -610,10 +633,14 @@ public:
 			min_weight=0;
 			num_sets = g.nodes();
 			empty_components.clear();
+			component_needs_visit.clear();
+			for(int i = 0;i<g.nodes();i++)
+				component_needs_visit.push_back(false);
 			components.clear();
 			for(int i = 0;i<g.nodes();i++){
 				components.push_back(i);
 				components_to_visit.push_back(i);
+				component_needs_visit[i]=true;
 			}
 			component_edge_weight.clear();
 			while(component_edge_weight.size()<=g.nodes()){
@@ -622,6 +649,7 @@ public:
 			component_member.clear();
 			for(int i = 0;i<g.nodes();i++)
 				component_member.push_back(i);
+
 			mst.clear();
 			parents.clear();
 			parents.resize(g.nodes(),-1);
@@ -636,7 +664,7 @@ public:
 
 
 		
-
+		//std::cout<<"Weight " << min_weight << " Components " << num_sets << " Dbg Weight: " << dbg.forestWeight() << " Components " << dbg.numComponents() <<"\n";
 		for (int i = history_qhead;i<g.history.size();i++){
 
 			int edgeid = g.history[i].id;
@@ -645,9 +673,11 @@ public:
 			}else if (!g.history[i].addition &&  !g.edgeEnabled(edgeid)){
 				removeEdgeFromMST(edgeid);
 			}
+			//std::cout<<"Weight " << min_weight << " Components " << num_sets << " Dbg Weight: " << dbg.forestWeight() << " Components " << dbg.numComponents() <<"\n";
 		}
 		prims();
-
+		//std::cout<<"Weight " << min_weight << " Components " << num_sets << " Dbg Weight: " << dbg.forestWeight() << " Components " << dbg.numComponents() <<"\n";
+		//g.drawFull(true);
 		dbg_parents();
 #ifndef NDEBUG
 		assert(min_weight==dbg.forestWeight());

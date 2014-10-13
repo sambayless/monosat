@@ -817,12 +817,12 @@ template<typename Weight>
 				return true;
 
 			static int iter = 0;
-			if(++iter==1624){//18303
+			if(++iter==267){//18303
 				int a=1;
 			}
 		is_changed.growTo(g.nodes());
 		//printf("iter %d\n",iter);
-
+		bool skipped_positive = false;
 		//getChanged().clear();
 		if(!opt_detect_pure_theory_lits || unassigned_positives>0){
 			double startdreachtime = rtime(2);
@@ -830,13 +830,14 @@ template<typename Weight>
 			positive_reach_detector->update();
 			double reachUpdateElapsed = rtime(2)-startdreachtime;
 			stats_under_update_time+=reachUpdateElapsed;
-		}else
+		}else{
+			skipped_positive=true;
 			stats_skipped_under_updates++;
 			//stats_pure_skipped++;
-
+		}
 
 		//  outer->reachupdatetime+=reachUpdateElapsed;
-
+		bool skipped_negative=false;
 
 		if(!opt_detect_pure_theory_lits || unassigned_negatives>0){
 			double startunreachtime = rtime(2);
@@ -844,9 +845,10 @@ template<typename Weight>
   		    negative_reach_detector->update();
   			double unreachUpdateElapsed = rtime(2)-startunreachtime;
   			stats_over_update_time+=unreachUpdateElapsed;
-		}else
+		}else{
+			skipped_negative=true;
 			stats_skipped_over_updates++;
-
+		}
 		//outer->unreachupdatetime+=unreachUpdateElapsed;
 
 		if(opt_rnd_shuffle){
@@ -854,17 +856,21 @@ template<typename Weight>
 		}
 
 		while(changed.size()){
-
+				int sz = changed.size();
 				int u =  changed.last().u;
+				if(u==3){
+					int a=1;
+				}
+				assert(is_changed[u]);
 				for(int i = 0;i<unweighted_dist_lits[u].size();i++){
 					int& min_distance =  unweighted_dist_lits[u][i].min_unweighted_distance;
 
 					Var v =var( unweighted_dist_lits[u][i].l);
 					Lit l;
 
-					if(positive_reach_detector && positive_reach_detector->connected(u) && positive_reach_detector->distance(u)<=min_distance){
+					if(positive_reach_detector && !skipped_positive && positive_reach_detector->connected(u) && positive_reach_detector->distance(u)<=min_distance){
 						l = mkLit(v,false);
-					}else if (negative_reach_detector && (!negative_reach_detector->connected(u) || negative_reach_detector->distance(u)>min_distance)){
+					}else if (negative_reach_detector && ! skipped_negative && (!negative_reach_detector->connected(u) || negative_reach_detector->distance(u)>min_distance)){
 						l = mkLit(v,true);
 					}else{
 						continue;
@@ -918,6 +924,8 @@ template<typename Weight>
 						int  a=1;
 					}
 				}
+				assert(sz==changed.size());
+				assert(changed.last().u == u);
 				is_changed[u]=false;
 				changed.pop();
 			}

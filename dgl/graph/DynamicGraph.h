@@ -26,7 +26,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 #ifndef NDEBUG
 //Used to track graph operations for debugging purposes - you can probably ignore this.
-//#define RECORD
+#define RECORD
 #include <cstdio>
 #endif
 
@@ -152,6 +152,9 @@ public:
 	}
 	bool isEdge(int edgeID)const{
 		return edgeID<all_edges.size() && all_edges[edgeID].id ==edgeID;
+	}
+	bool hasEdge(int edgeID) const{
+		return isEdge(edgeID);
 	}
 	//Instead of actually adding and removing edges, tag each edge with an 'enabled/disabled' label, and just expect reading algorithms to check and respect that label.
 	int addEdge(int from, int to, int id=-1){//, int weight=1

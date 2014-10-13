@@ -1063,7 +1063,7 @@ template<typename Weight>
 				int a=1;
 			}
 			is_changed.growTo(g.nodes());
-
+			bool skipped_positive=false;
 			if(positive_reach_detector && (!opt_detect_pure_theory_lits || unassigned_positives>0)){
 				double startdreachtime = rtime(2);
 				stats_under_updates++;
@@ -1072,10 +1072,11 @@ template<typename Weight>
 				//outer->reachupdatetime+=reachUpdateElapsed;
 				stats_under_update_time+=rtime(2)-startdreachtime;
 			}else{
+				skipped_positive=true;
 				//outer->stats_pure_skipped++;
 				stats_skipped_under_updates++;
 			}
-
+			bool skipped_negative=false;
 			if(negative_reach_detector && (!opt_detect_pure_theory_lits || unassigned_negatives>0)){
 				double startunreachtime = rtime(2);
 				stats_over_updates++;
@@ -1083,24 +1084,29 @@ template<typename Weight>
 				double unreachUpdateElapsed = rtime(2)-startunreachtime;
 				//outer->unreachupdatetime+=unreachUpdateElapsed;
 				stats_over_update_time+=rtime(2)-startunreachtime;
-			}else
+			}else{
+				skipped_negative=true;
 				stats_skipped_over_updates++;
-
+			}
 
 			if(opt_rnd_shuffle){
 				randomShuffle(rnd_seed, changed);
 			}
 
 			while(changed.size()){
+					int sz = changed.size();
 					Var v = changed.last().v;
 					int u =  changed.last().u;
+					assert(is_changed[u]);
 					Lit l;
 
-					if(positive_reach_detector && positive_reach_detector->connected(u)){
+					if(positive_reach_detector && !skipped_positive && positive_reach_detector->connected(u)){
 						l = mkLit(v,false);
-					}else if (negative_reach_detector && !negative_reach_detector->connected(u)){
+					}else if (negative_reach_detector &&!skipped_negative && !negative_reach_detector->connected(u)){
 						l = mkLit(v,true);
 					}else{
+						assert(sz==changed.size());
+						assert(changed.last().u == u);
 						is_changed[u]=false;
 						changed.pop();
 						//this can happen if the changed node's reachability status was reported before a backtrack in the solver.
@@ -1175,6 +1181,8 @@ template<typename Weight>
 						}
 
 					}
+					assert(sz==changed.size());//This can be really tricky - if you are not careful, an a reach detector's update phase was skipped at the beginning of propagate, then if the reach detector is called during propagate it can push a change onto the list, which can cause the wrong item to be removed here.
+					assert(changed.last().u == u);
 					is_changed[u]=false;
 					changed.pop();
 				}

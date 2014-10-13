@@ -56,7 +56,8 @@ public:
 		MinimumSpanningTree<Weight> *  positive_conflict_detector;
 		MinimumSpanningTree<Weight> * negative_conflict_detector;
 		//Reach *  positive_path_detector;
-
+		Weight lowest_weight_lit=-1;
+		Weight highest_weight_lit=-1;
 		//vec<Lit>  reach_lits;
 
 		//Map<float,int> weight_lit_map;
@@ -78,16 +79,19 @@ public:
 		vec<int> tree_edge_lits_map;
 		vec<MSTEdgeLit>  tree_edge_lits;
 		Var first_reach_var;
+/*
 		struct ChangedWeight{
 			Lit l;
 			Weight weight;
 		};
 		vec<ChangedWeight> changed_weights;
+*/
 
 		struct ChangedEdge{
-			Lit l;
+			Var v;
 			int edgeID;
 		};
+		vec<bool> is_edge_changed;
 		vec<ChangedEdge> changed_edges;
 
 		vec<Var> tmp_nodes;
@@ -111,7 +115,17 @@ public:
 		MSTStatus *positiveReachStatus;
 		MSTStatus *negativeReachStatus;
 
-
+		void unassign(Lit l){
+			 Detector::unassign(l);
+			 int index = var(l)-first_reach_var;
+			 if(index>=0 && index < tree_edge_lits_map.size() && tree_edge_lits_map[index]!=-1){
+				 int edgeID=tree_edge_lits_map[index];
+				 if(!is_edge_changed[edgeID]){
+					 changed_edges.push({var(l),edgeID});
+					 is_edge_changed[edgeID]=true;
+				 }
+			 }
+		}
 
 		bool propagate(vec<Lit> & conflict);
 		void buildMinWeightTooSmallReason(Weight & weight,vec<Lit> & conflict);

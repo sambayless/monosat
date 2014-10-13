@@ -280,7 +280,8 @@ public:
 				//link-cut tree currently only supports ints (enforcing this using tempalte specialization...).
 				mc = new DinitzLinkCut<CutStatus>(cutGraph, cutStatus);
 			}else if (mincutalg==MinCutAlg::ALG_KOHLI_TORR){
-				 mc = new KohliTorr<CutStatus,int>(cutGraph, cutStatus);
+				//cannot use kohli torr for conflict analysis, because it doesn't provide edge flow information.
+				 mc = new EdmondsKarpDynamic<CutStatus,int>(cutGraph, cutStatus);
 			}else{
 				mc = new EdmondsKarpAdj<CutStatus,int>(cutGraph, cutStatus);
 			}

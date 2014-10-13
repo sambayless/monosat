@@ -62,7 +62,6 @@ class KohliTorr:public MaxFlow<Weight>{
     	EdmondsKarpAdj<Capacity,Weight> ek;
 #endif
 
-    int added_edges=0;
     Weight max_capacity =0;
 
     std::vector<bool> edge_enabled;
@@ -129,7 +128,7 @@ public:
         	return curflow;
         }else if (last_modification<=0 || g.historyclears!=last_history_clear  || g.changed()){
         	edge_enabled.clear();
-        	added_edges=0;
+
         	if(!kt){
         		kt = new kohli_torr::Graph<Weight,Weight,Weight> (g.nodes(),g.edges());
         	  	kt->maxflow(false);//just to initialize things.
@@ -141,19 +140,24 @@ public:
         		int node_id= kt->add_node();
         		assert(node_id==kt->get_node_num()-1);
         	}
+        	edge_enabled.resize(g.edges(),false);
+        	for(int edgeID = 0;edgeID<g.edges();edgeID++){
 
-        	while(added_edges < g.edges()){
-        		int edgeID = added_edges;
-        		edge_enabled.push_back(false);
+        		if(!g.hasEdge(edgeID))
+        			continue;
+
         		max_capacity+=capacity[edgeID];
         		int from = g.getEdge(edgeID).from;
         		int to = g.getEdge(edgeID).to;
+        		edge_enabled[edgeID]=false;
         		if(!kt->has_edge(from,to)){
         			kt->add_edge(from,to,0,0);
-        			//kt->edit_edge_inc(from,to,-capacity[edgeID],0);
-        		}
 
-        		added_edges++;
+        		}
+        		if(g.edgeEnabled(edgeID)){
+        			edge_enabled[edgeID]=true;
+        			kt->edit_edge_inc(from,to,capacity[edgeID],0);
+        		}
         	}
         	kt->edit_tweights(s,max_capacity,0);
         	kt->edit_tweights(t,0,max_capacity);
@@ -190,7 +194,7 @@ public:
 
 
 #ifndef NDEBUG
-    	assert(edge_enabled.size()==g.edges());
+
     	for(int i = 0;i<g.edges();i++)
     		assert(edge_enabled[i]==g.edgeEnabled(i));
     	dbg_check_flow(s,t);

@@ -76,7 +76,12 @@ void MSTDetector<Weight>::addWeightLit(Var outer_weight_var,Weight & min_weight)
 	//while( dist_lits[to].size()<=within_steps)
 	//	dist_lits[to].push({lit_Undef,-1});
 	Var weight_var = outer->newVar(outer_weight_var,getID());
-
+	if(lowest_weight_lit<0 || min_weight<lowest_weight_lit){
+		lowest_weight_lit = min_weight;
+	}
+	if(min_weight>highest_weight_lit){
+		highest_weight_lit = min_weight;
+	}
 	Lit reachLit=mkLit(weight_var,false);
 	bool found=false;
 	for(int i = 0;i<weight_lits.size();i++){
@@ -170,13 +175,18 @@ void MSTDetector<Weight>::MSTStatus::inMinimumSpanningTree(int edgeid, bool in_t
 		Lit l = detector.tree_edge_lits[edgeid].l;
 		//Note: for the tree edge detector, polarity is effectively reversed.
 		if(l!=lit_Undef){
-			if(!polarity && in_tree)
-				detector.changed_edges.push({l,edgeid});
-			else if (polarity && !in_tree){
-
-				Var edgevar = detector.outer->edge_list[edgeid].v;
-				assert(detector.outer->value(edgevar)!=l_False);//else the edge counts as in the tree
-				detector.changed_edges.push({~l,edgeid});
+			if(!polarity && in_tree){
+				if(!detector.is_edge_changed[edgeid]){
+					detector.is_edge_changed[edgeid]=true;
+					detector.changed_edges.push({var(l),edgeid});
+				}
+			}else if (polarity && !in_tree){
+				if(!detector.is_edge_changed[edgeid]){
+					detector.is_edge_changed[edgeid]=true;
+					Var edgevar = detector.outer->edge_list[edgeid].v;
+					assert(detector.outer->value(edgevar)!=l_False);//else the edge counts as in the tree
+					detector.changed_edges.push({edgevar,edgeid});
+				}
 			}
 		}
 	}
@@ -184,7 +194,7 @@ void MSTDetector<Weight>::MSTStatus::inMinimumSpanningTree(int edgeid, bool in_t
 template<typename Weight>
 void MSTDetector<Weight>::MSTStatus::setMinimumSpanningTree(Weight & weight, bool connected){
 
-	for(int i = 0;i<detector.weight_lits.size();i++){
+	/*for(int i = 0;i<detector.weight_lits.size();i++){
 		Weight & min_weight =  detector.weight_lits[i].min_weight;
 		Lit l = detector.weight_lits[i].l;
 		if(l!=lit_Undef){
@@ -201,7 +211,7 @@ void MSTDetector<Weight>::MSTStatus::setMinimumSpanningTree(Weight & weight, boo
 				}
 			}
 		}
-	}
+	}*/
 
 }
 
@@ -708,6 +718,7 @@ bool MSTDetector<Weight>::propagate(vec<Lit> & conflict){
 	if(++it==7){
 		int a = 1;
 	}
+	is_edge_changed.growTo(g.edges());
 	//printf("it %d: \n",it);
 //	changed_edges.clear();
 //changed_weights.clear();
@@ -732,51 +743,82 @@ bool MSTDetector<Weight>::propagate(vec<Lit> & conflict){
 //}else
 //	stats_skipped_over_updates++;
 
+Weight & under_weight =positive_reach_detector->weight();
+Weight & over_weight =negative_reach_detector->weight();
+if(weight_lits.size() && ( under_weight>=lowest_weight_lit || over_weight<=highest_weight_lit)){
+	//Probably should do a binary search here.
+	for(int j = 0;j<weight_lits.size();j++){
+		Lit l = weight_lits[j].l;
+		//printf("mst: %d\n",dimacs(l));
+		Weight min_weight = weight_lits[j].min_weight;
 
-
-for(int j = 0;j<changed_weights.size();j++){
-	Lit l = changed_weights[j].l;
-	//printf("mst: %d\n",dimacs(l));
-	Weight weight = changed_weights[j].weight;
-
-	bool reach = !sign(l);
-	if(outer->value(l)==l_True){
-		//do nothing
-	}else if(outer->value(l)==l_Undef){
-		//trail.push(Assignment(false,reach,detectorID,0,var(l)));
-		if(reach)
-			outer->enqueue(l,reach_marker) ;
-		else
-			outer->enqueue(l,non_reach_marker) ;
-
-	}else if (outer->value(l)==l_False){
-		conflict.push(l);
-
-		if(reach){
-
-		//conflict
-		//The reason is a path in g from to s in d
-			buildMinWeightTooSmallReason(weight,conflict);
-		//add it to s
-		//return it as a conflict
-
+		if(under_weight<=min_weight){
+			//dont flip sign
+		}else if (over_weight>min_weight){
+			l=~l;//flip sign
 		}else{
-
-			buildMinWeightTooLargeReason(weight,conflict);
-
+			//try the next edge weight
+			continue;
 		}
 
-		return false;
-	}else{
-		int  a=1;
-	}
+		bool reach = !sign(l);
+		if(outer->value(l)==l_True){
+			//do nothing
+		}else if(outer->value(l)==l_Undef){
+			//trail.push(Assignment(false,reach,detectorID,0,var(l)));
+			if(reach)
+				outer->enqueue(l,reach_marker) ;
+			else
+				outer->enqueue(l,non_reach_marker) ;
 
+		}else if (outer->value(l)==l_False){
+			conflict.push(l);
+
+			if(reach){
+
+			//conflict
+			//The reason is a path in g from to s in d
+				buildMinWeightTooSmallReason(min_weight,conflict);
+			//add it to s
+			//return it as a conflict
+
+			}else{
+
+				buildMinWeightTooLargeReason(min_weight,conflict);
+
+			}
+
+			return false;
+		}else{
+			int  a=1;
+		}
+
+	}
 }
 
-for(int j = 0;j<changed_edges.size();j++){
-			Lit l = changed_edges[j].l;
-			//printf("edge: %d\n",dimacs(l));
-			int edge = changed_edges[j].edgeID;
+while(changed_edges.size()){
+	int sz= changed_edges.size();
+			Var v = changed_edges.last().v;
+			int edgeID =  changed_edges.last().edgeID;
+			assert(is_edge_changed[edgeID]);
+			Lit l;
+			Var edgevar = outer->edge_list[edgeID].v;
+			lbool edge_val = outer->value(edgevar);
+			if(negative_reach_detector && (!antig.edgeEnabled(edgeID) || negative_reach_detector->edgeInTree(edgeID)) ){
+				l = mkLit(v,false);
+			}else if (positive_reach_detector && g.edgeEnabled(edgeID) && !positive_reach_detector->edgeInTree(edgeID)){
+
+				assert(outer->value(edgevar)!=l_False);//else the edge counts as in the tree
+				l = mkLit(v,true);
+			}else{
+				assert(changed_edges.size()==sz);
+				assert(changed_edges.last().edgeID==edgeID);
+				is_edge_changed[edgeID]=false;
+				changed_edges.pop();
+				//this can happen if the changed node's reachability status was reported before a backtrack in the solver.
+				continue;
+			}
+
 			bool reach = !sign(l);
 			if(outer->value(l)==l_True){
 				//do nothing
@@ -794,14 +836,14 @@ for(int j = 0;j<changed_edges.size();j++){
 
 				//conflict
 				//The reason is a path in g from to s in d
-					buildEdgeInTreeReason(edge,conflict);
+					buildEdgeInTreeReason(edgeID,conflict);
 
 				//add it to s
 				//return it as a conflict
 
 				}else{
 
-					buildEdgeNotInTreeReason(edge,conflict);
+					buildEdgeNotInTreeReason(edgeID,conflict);
 
 				}
 
@@ -809,7 +851,10 @@ for(int j = 0;j<changed_edges.size();j++){
 			}else{
 				int  a=1;
 			}
-
+			assert(changed_edges.size()==sz);
+			assert(changed_edges.last().edgeID==edgeID);
+			is_edge_changed[edgeID]=false;
+			changed_edges.pop();
 		}
 	return true;
 }
