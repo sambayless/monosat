@@ -745,16 +745,16 @@ bool MSTDetector<Weight>::propagate(vec<Lit> & conflict){
 
 Weight & under_weight =positive_reach_detector->weight();
 Weight & over_weight =negative_reach_detector->weight();
-if(weight_lits.size() && ( under_weight>=lowest_weight_lit || over_weight<=highest_weight_lit)){
+if(weight_lits.size() && ( (under_weight>=lowest_weight_lit || positive_reach_detector->numComponents()>1 ) || ( over_weight<=highest_weight_lit && negative_reach_detector->numComponents()<=1))){
 	//Probably should do a binary search here.
 	for(int j = 0;j<weight_lits.size();j++){
 		Lit l = weight_lits[j].l;
 		//printf("mst: %d\n",dimacs(l));
 		Weight min_weight = weight_lits[j].min_weight;
 
-		if(under_weight<=min_weight){
+		if(under_weight<=min_weight && positive_reach_detector->numComponents()<=1){
 			//dont flip sign
-		}else if (over_weight>min_weight){
+		}else if (over_weight>min_weight || negative_reach_detector->numComponents()>1){
 			l=~l;//flip sign
 		}else{
 			//try the next edge weight
