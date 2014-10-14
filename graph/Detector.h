@@ -46,12 +46,12 @@ public:
 	long stats_over_updates=0;
 	long stats_under_conflicts=0;
 	long stats_over_conflicts=0;
-	long stats_under_conflict_time=0;
-	long stats_over_conflict_time=0;
+	double stats_under_conflict_time=0;
+	double stats_over_conflict_time=0;
 	long stats_skipped_under_updates=0;
 	long stats_skipped_over_updates=0;
 	long stats_decisions=0;
-	long stats_decide_time=0;
+	double stats_decide_time=0;
 
 
 

@@ -55,6 +55,8 @@ class KohliTorr:public MaxFlow<Weight>{
     int history_qhead;
     int last_history_clear;
 
+
+
     DynamicGraph& g;
     Capacity & capacity;
     Weight INF;

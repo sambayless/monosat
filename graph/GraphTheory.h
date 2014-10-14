@@ -732,6 +732,7 @@ public:
 			if(l!=lit_Undef){
 				stats_decisions++;
 				r->stats_decisions++;
+				stats_decision_time += rtime(1) - start;
 				return toSolver(l);
 			}
 		}

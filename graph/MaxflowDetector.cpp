@@ -607,8 +607,8 @@ Lit MaxflowDetector<Weight>::decide(){
 	auto * over =negative_conflict_detector;
 		auto * under = positive_conflict_detector;
 
-		Weight under_flow = under->maxFlow(source,target) ;
-		Weight over_flow = over->maxFlow(source,target) ;
+		//Weight under_flow = under->maxFlow(source,target) ;
+
 
 		if(to_decide.size() && last_decision_status== over->numUpdates()){
 			while(to_decide.size()){
@@ -620,7 +620,7 @@ Lit MaxflowDetector<Weight>::decide(){
 				}
 			}
 		}
-
+		Weight over_flow = over->maxFlow(source,target) ;
 
 		for(int k = 0;k<flow_lits.size();k++){
 			Lit l =flow_lits[k].l;
@@ -649,8 +649,11 @@ Lit MaxflowDetector<Weight>::decide(){
 					}
 				}
 #endif
+				//in principle we can do this check, and it can avoid un-needed decisions - but if we are detecting pure theory literals,
+				//then we might not have computed the underflow yet, and it is probably too expensive to compute here in that case.
 
-				if(under_flow <required_flow){
+				//if(under_flow <required_flow)
+				{
 
 					//then decide an unassigned edge of the currently selected flow
 					to_decide.clear();
