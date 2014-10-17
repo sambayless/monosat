@@ -51,11 +51,13 @@ class KohliTorr:public MaxFlow<Weight>{
     int last_modification;
     int last_deletion;
     int last_addition;
-
+    std::vector<int> tmp_edges;
     int history_qhead;
     int last_history_clear;
 
+    typedef  typename kohli_torr::Graph<Weight,Weight,Weight>::arc_id arc;
 
+    std::vector<int> arc_map; //map from edgeids to arcs (note: this may be many to one)
 
     DynamicGraph& g;
     Capacity & capacity;
@@ -107,7 +109,7 @@ public:
 			fflush(g.outfile);
 		}
 #endif
-
+		dbg_print_graph(s,t);
     	//C.resize(g.nodes());
 #ifdef DEBUG_MAXFLOW
     	for(int i = 0;i<g.all_edges.size();i++){
@@ -143,6 +145,8 @@ public:
         		assert(node_id==kt->get_node_num()-1);
         	}
         	edge_enabled.resize(g.edges(),false);
+        	arc_map.clear();
+        	arc_map.resize(g.edges(),-1);
         	for(int edgeID = 0;edgeID<g.edges();edgeID++){
 
         		if(!g.hasEdge(edgeID))
@@ -153,8 +157,18 @@ public:
         		int to = g.getEdge(edgeID).to;
         		edge_enabled[edgeID]=false;
         		if(!kt->has_edge(from,to)){
-        			kt->add_edge(from,to,0,0);
-
+        			assert(arc_map[edgeID]==-1);
+        			int arc_id = kt->add_edge(from,to,0,0);
+        			arc_map[edgeID]=arc_id;
+        			//set the corresponding arc for each other from-to edge
+					for(int i = 0;i<g.nIncident(from,true);i++){
+						int edgeid = g.incident(from,i,true).id;
+						if(g.getEdge(edgeid).from==from && g.getEdge(edgeid).to==to){
+							arc_map[edgeid]=arc_id;
+						}else if  (g.getEdge(edgeid).from==to && g.getEdge(edgeid).to==from){
+							arc_map[edgeid]=arc_id+1;//the reverse arc is always stored right after the forward arc
+						}
+					}
         		}
         		if(g.edgeEnabled(edgeID)){
         			edge_enabled[edgeID]=true;
@@ -192,7 +206,7 @@ public:
 #ifdef DEBUG_MAXFLOW
     		Weight expected_flow =ek.maxFlow(s,t);
 #endif
-   		dbg_print_graph(s,t,-1, -1);
+   		dbg_print_graph(s,t);
 
 
 #ifndef NDEBUG
@@ -218,9 +232,10 @@ private:
 
 
 
-    void dbg_print_graph(int from, int to, Weight shortCircuitFrom=-1, Weight shortCircuitTo=-1){
+    void dbg_print_graph(int from, int to){
 #ifndef NDEBUG
-    	return;
+    	if(edge_enabled.size()<g.edges())
+    		return;
     		static int it = 0;
     		if(++it==6){
     			int a =1;
@@ -237,16 +252,12 @@ private:
     			}
 
     			for(int i = 0;i<g.edges();i++){
-    			/*	if(edge_enabled[i]){
+    				if(edge_enabled[i]){
 						auto & e = g.all_edges[i];
 						const char * s = "black";
-						//std::cout<<"n" << e.from <<" -> n" << e.to << " [label=\"" << i <<": " <<  F[i]<<"/" << capacity[i]  << "\" color=\"" << s<<"\"]\n";
+						std::cout<<"n" << e.from <<" -> n" << e.to << " [label=\"" << i <<": " << getEdgeFlow(e.id) <<"/" << capacity[i]  << "\" color=\"" << s<<"\"]\n";
 						//printf("n%d -> n%d [label=\"%d: %d/%d\",color=\"%s\"]\n", e.from,e.to, i, F[i],capacity[i] , s);
-    				}*/
-    			}
-
-    			if(shortCircuitFrom>=0){
-    				//printf("n%d -> n%d [label=\"%d: %d/%d\",color=\"black\"]\n", shortCircuitFrom,shortCircuitTo, -1, shortCircuitFlow,-1 );
+    				}
     			}
 
     			printf("}\n");
@@ -262,6 +273,7 @@ private:
 public:
     const Weight minCut(int s, int t, std::vector<MaxFlowEdge> & cut){
     	Weight f = maxFlow(s,t);
+    	assert(false);
     	//ok, now find the cut
 /*
     	Q.clear();
@@ -323,19 +335,79 @@ public:
      	assert(g.edgeEnabled(id));
      	return capacity[id];
      }
-    const Weight getEdgeFlow(int id){
-    	assert(g.edgeEnabled(id));
-    	assert(false);
-		exit(3);
-    	//return F[id];// reserve(id);
+    const Weight getEdgeFlow(int flow_edge){
+
+    	//we need to pick, possibly arbitrarily (but deterministically), which of the edges have flow
+    	int arc_id = arc_map[flow_edge];
+    	assert(arc_id>=0);
+    	arc a = kt->get_arc(arc_id);
+    	Weight start_cap = kt->get_ecap(a) ;
+    	Weight end_cap = kt->get_rcap(a);
+    	Weight remaining_flow = kt->get_ecap(a) - kt->get_rcap(a);
+		int from = g.getEdge(flow_edge).from;
+		int to = g.getEdge(flow_edge).to;
+
+		for(int i = 0;i<g.nIncident(from,true);i++){
+			int edgeid = g.incident(from,i,true).id;
+			if(g.edgeEnabled(edgeid) &&  ((g.getEdge(edgeid).from==from && g.getEdge(edgeid).to==to))){
+				assert(arc_map[edgeid] == arc_id);
+				Weight & edge_cap = capacity[edgeid];
+				if(edgeid==flow_edge){
+					if(remaining_flow>=edge_cap)
+						return edge_cap;
+					else
+						return remaining_flow;
+				}
+				if(remaining_flow>=edge_cap){
+					remaining_flow-=edge_cap;
+				}
+				if(remaining_flow<=0){
+					return 0;
+				}
+			}
+		}
+
+		//there may be multiple edges. Assign to the low-id's first?
+		/*tmp_edges.clear();
+		//we can probably arrange to avoid this, but for now, sorting by edge id to ensure deterministic results.
+		for(int i = 0;i<g.nIncident(from,true);i++){
+			int edgeid = g.incident(from,i,true).id;
+			if(g.edgeEnabled(edgeid) &&  ((g.getEdge(edgeid).from==from && g.getEdge(edgeid).to==to) || (g.getEdge(edgeid).from==to && g.getEdge(edgeid).to==from))){
+				assert(arc_map[edgeid]==arc_id);
+				tmp_edges.push_back(edgeid);
+			}
+		}
+		if(tmp_edges.size()<=1){
+			if(tmp_edges.size()==0){
+				return 0;
+			}else{
+				return remaining_flow;
+			}
+		}
+		if(tmp_edges.size()>1){
+			 std::sort (tmp_edges.begin(), tmp_edges.end());
+		}
+
+		for(int i = 0;i<tmp_edges.size();i++){
+			int e = tmp_edges[i];
+			Weight & edge_cap = capacity[e];
+			if(e==edgeID){
+				if(remaining_flow>=edge_cap)
+					return edge_cap;
+				else
+					return remaining_flow;
+			}
+			if(remaining_flow>=edge_cap){
+				remaining_flow-=edge_cap;
+			}
+			if(remaining_flow<=0){
+				return 0;
+			}
+		}*/
     	return 0;
     }
     const Weight getEdgeResidualCapacity(int id){
-    	assert(g.edgeEnabled(id));
-    	assert(false);
-    	exit(3);
-    	//return  capacity[id]-F[id];// reserve(id);
-    	return 0;
+    	return getEdgeCapacity(id)-getEdgeFlow(id);
     }
 };
 };

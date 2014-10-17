@@ -84,8 +84,8 @@ Detector(_detectorID),outer(_outer),capacities(capacities),over_graph(_g),g(_g),
 	}else if (mincutalg==MinCutAlg::ALG_KOHLI_TORR){
 		positive_detector = new KohliTorr<std::vector<Weight>,Weight>(_g,capacities);
 		negative_detector = new KohliTorr<std::vector<Weight>,Weight>(_antig,capacities);
-		positive_conflict_detector = new EdmondsKarpDynamic<std::vector<Weight>,Weight>(_g,capacities);
-		negative_conflict_detector = new EdmondsKarpDynamic<std::vector<Weight>,Weight>(_antig,capacities);
+		positive_conflict_detector = positive_detector;//new EdmondsKarpDynamic<std::vector<Weight>,Weight>(_g,capacities);
+		negative_conflict_detector =negative_detector;//new EdmondsKarpDynamic<std::vector<Weight>,Weight>(_antig,capacities);
 		if(opt_conflict_min_cut)
 				learn_cut = new EdmondsKarpAdj<std::vector<int>,int>(learn_graph,learn_caps);
 	}else{
@@ -645,7 +645,7 @@ Lit MaxflowDetector<Weight>::decide(){
 							dbg_count++;
 						}
 					}else if (val == l_False){
-						assert(over->getEdgeFlow(edgeID)==0);
+						//assert(over->getEdgeFlow(edgeID)==0);
 					}
 				}
 #endif
@@ -765,7 +765,7 @@ Lit MaxflowDetector<Weight>::decide(){
 							}
 						}
 					}
-					assert(to_decide.size()==dbg_count);
+					//assert(to_decide.size()==dbg_count);
 
 
 				}

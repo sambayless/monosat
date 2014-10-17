@@ -107,6 +107,10 @@ namespace kohli_torr{
 //
 template <typename captype, typename tcaptype, typename flowtype> class Graph
 {
+
+	struct node;
+	struct arc;
+
 public:
 	typedef enum
 	{
@@ -114,7 +118,7 @@ public:
 		SINK	= 1
 	} termtype; // terminals 
 	typedef int node_id;
-
+	typedef arc* arc_id;
 	/////////////////////////////////////////////////////////////////////////
 	//                     BASIC INTERFACE FUNCTIONS                       //
 	//              (should be enough for most applications)               //
@@ -145,7 +149,7 @@ public:
 
 	// Adds a bidirectional edge between 'i' and 'j' with the weights 'cap' and 'rev_cap'.
 	// IMPORTANT: see note about the constructor 
-	void add_edge(node_id i, node_id j, captype cap, captype rev_cap);
+	int add_edge(node_id i, node_id j, captype cap, captype rev_cap);
 
 	// Adds new edges 'SOURCE->i' and 'i->SINK' with corresponding weights.
 	// Can be called multiple times for each node.
@@ -173,10 +177,7 @@ public:
 	//       ADVANCED INTERFACE FUNCTIONS       //
 	//      (provide access to the graph)       //
 	//////////////////////////////////////////////
-private:
-	struct node;
-	struct arc;
-public:
+
 
 	////////////////////////////
 	// 1. Reallocating graph. //
@@ -204,12 +205,18 @@ public:
 	// the first arc returned will be i->j, and the second j->i.
 	// If there are no more arcs, then the function can still be called, but
 	// the returned arc_id is undetermined.
-	typedef arc* arc_id;
+
 	arc_id get_first_arc();
+	arc_id get_arc(int index){
+		return &arcs[index];
+	}
+
+
 	arc_id get_next_arc(arc_id a);
 
 	// other functions for reading graph structure
 	int get_node_num() { return node_num; }
+	//returns number of arcs
 	int get_arc_num() { return (int)(arc_last - arcs); }
 	void get_arc_ends(arc_id a, node_id& i, node_id& j); // returns i,j to that a = i->j
 
@@ -221,7 +228,8 @@ public:
 	tcaptype get_trcap(node_id i); 
 	// returns residual capacity of arc a
 	captype get_rcap(arc* a);
-
+	captype get_ecap(arc* a);
+	captype get_flow(arc* a);//added by Sam
 	/////////////////////////////////////////////////////////////////
 	// 4. Functions for setting residual capacities.               //
 	//    NOTE: If these functions are used, the value of the flow //
@@ -471,7 +479,7 @@ template <typename captype, typename tcaptype, typename flowtype>
 }
 
 template <typename captype, typename tcaptype, typename flowtype> 
-	inline void Graph<captype,tcaptype,flowtype>::add_edge(node_id _i, node_id _j, captype cap, captype rev_cap)
+	inline int Graph<captype,tcaptype,flowtype>::add_edge(node_id _i, node_id _j, captype cap, captype rev_cap)
 {
 	assert(_i >= 0 && _i < node_num);
 	assert(_j >= 0 && _j < node_num);
@@ -499,7 +507,7 @@ template <typename captype, typename tcaptype, typename flowtype>
 	a_rev -> r_cap = rev_cap;
 	a -> e_cap = cap;
 	a_rev -> e_cap = rev_cap;
-
+	return a-arcs;
 }
 
 template <typename captype, typename tcaptype, typename flowtype> 
@@ -534,6 +542,18 @@ template <typename captype, typename tcaptype, typename flowtype>
 {
 	assert(a >= arcs && a < arc_last);
 	return a->r_cap;
+}
+template <typename captype, typename tcaptype, typename flowtype>
+	inline captype Graph<captype,tcaptype,flowtype>::get_ecap(arc* a)
+{
+	assert(a >= arcs && a < arc_last);
+	return a->e_cap;
+}
+template <typename captype, typename tcaptype, typename flowtype>
+	inline captype Graph<captype,tcaptype,flowtype>::get_flow(arc* a)
+{
+	assert(a >= arcs && a < arc_last);
+	return a->e_cap-a->r_cap;
 }
 
 template <typename captype, typename tcaptype, typename flowtype> 
