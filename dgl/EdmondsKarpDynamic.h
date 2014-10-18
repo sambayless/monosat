@@ -532,6 +532,7 @@ private:
 
 
     	   }
+
     void dbg_print_graph(int from, int to, Weight shortCircuitFrom=-1, Weight shortCircuitTo=-1){
 #ifndef NDEBUG
     	return;

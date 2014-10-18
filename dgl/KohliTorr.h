@@ -306,6 +306,13 @@ private:
 
     	//apply edmonds karp to the current flow.
     	Weight maxflow = kt->maxflow(true,nullptr);
+    	dbg_print_graph(source,sink);
+    	kt->clear_t_edges(source, sink);
+    	dbg_print_graph(source,sink);
+      	//kt->edit_tweights(source,max_capacity,0);
+		//kt->edit_tweights(sink,0,max_capacity);
+    	/*
+
     	DynamicGraph tmp_g;
     	for(int i = 0;i<g.nodes();i++){
     		tmp_g.addNode();
@@ -331,9 +338,11 @@ private:
     	for(int i = 0;i<g.nodes();i++){
     		Weight f = kt->get_trcap(i);
     		if(f<0){
+    			//there is flow from the source node to this node.
     			tmp_g.addEdge(s,i);
 				capacities.push_back(-f);
     		}else if (f>0){
+    			//there is flow from this node to the sink node.
     			tmp_g.addEdge(i,t);
 				capacities.push_back(f);
     		}
@@ -341,7 +350,7 @@ private:
     	EdmondsKarpAdj<std::vector<Weight>, Weight> tmp_ed (tmp_g,capacities);
     	Weight mf = tmp_ed.maxFlow(s,t);
 
-
+*/
     	//tmp_ed.dbg_print_graph(s,t);
     	//hopefully this will avoid a search.
     	/*std::vector<Weight> flow;
@@ -362,66 +371,65 @@ private:
     	}*/
 
     }
+    std::vector<int> Q;
 
 public:
     const Weight minCut(int s, int t, std::vector<MaxFlowEdge> & cut){
     	Weight f = maxFlow(s,t);
     	calc_flow();
-    	//ok, now find the cut
-/*
     	Q.clear();
-    	Q.push_back(s);
-    	seen.clear();
-    	seen.resize(g.nodes());
-    	seen[s]=true;
-    	dbg_print_graph(s,t);
-    	//explore the residual graph
-    	for(int j = 0;j<Q.size();j++){
+		Q.push_back(s);
+		seen.clear();
+		seen.resize(g.nodes());
+		seen[s]=true;
+		dbg_print_graph(s,t);
+		//explore the residual graph
+		for(int j = 0;j<Q.size();j++){
 		   int u = Q[j];
 
-    		for(int i = 0;i<g.nIncident(u);i++){
-    			if(!g.edgeEnabled(g.incident(u,i).id))
-    				continue;
-    			int v = g.incident(u,i).node;
-    			int id = g.incident(u,i).id;
-    			if(capacity[id] - F[id] == 0){
-    				cut.push_back(MaxFlowEdge{u,v,id});//potential element of the cut
-    			}else if(!seen[v]){
-    				Q.push_back(v);
-    				seen[v]=true;
-    			}
-    		}
-    		for(int i = 0;i<g.nIncoming(u);i++){
+			for(int i = 0;i<g.nIncident(u);i++){
+				if(!g.edgeEnabled(g.incident(u,i).id))
+					continue;
+				int v = g.incident(u,i).node;
+				int id = g.incident(u,i).id;
+				if(getEdgeResidualCapacity(id) == 0){
+					cut.push_back(MaxFlowEdge{u,v,id});//potential element of the cut
+				}else if(!seen[v]){
+					Q.push_back(v);
+					seen[v]=true;
+				}
+			}
+			for(int i = 0;i<g.nIncoming(u);i++){
 				if(!g.edgeEnabled(g.incoming(u,i).id))
 					continue;
 				int v = g.incoming(u,i).node;
 				int id = g.incoming(u,i).id;
-				if(F[id] == 0){
+				if(getEdgeFlow(id) == 0){
 
 				}else if(!seen[v]){
 					Q.push_back(v);
 					seen[v]=true;
 				}
 			}
-    	}
-    	//Now keep only the edges from a seen vertex to an unseen vertex
-    	int i, j = 0;
-    	for( i = 0;i<cut.size();i++){
-    		if(!seen[cut[i].v] && seen[cut[i].u]){
-    			cut[j++]=cut[i];
-    		}
-    	}
-    	cut.resize(j);
+		}
+		//Now keep only the edges from a seen vertex to an unseen vertex
+		int i, j = 0;
+		for( i = 0;i<cut.size();i++){
+			if(!seen[cut[i].v] && seen[cut[i].u]){
+				cut[j++]=cut[i];
+			}
+		}
+		cut.resize(j);
 #ifndef NDEBUG
 		Weight dbg_sum = 0;
 		for(int i = 0;i<cut.size();i++){
 			int id = cut[i].id;
-			assert(F[id]==capacity[id]);
-			dbg_sum+=F[id];
+			assert(getEdgeFlow(id)==capacity[id]);
+			dbg_sum+=getEdgeFlow(id);
 		}
 		assert(dbg_sum==f);
 #endif
-*/
+
     	return f;
     }
     const Weight getEdgeCapacity(int id){
