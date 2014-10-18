@@ -74,7 +74,7 @@ class KohliTorr:public MaxFlow<Weight>{
     Weight max_capacity =0;
 
     std::vector<bool> edge_enabled;
-
+    bool flow_needs_recalc=true;
 
 public:
     KohliTorr(DynamicGraph& _g,Capacity & cap):g(_g),capacity(cap),INF(0xF0F0F0)
@@ -188,7 +188,7 @@ public:
 
 
         }
-
+      	flow_needs_recalc=true;
       	assert(kt);
 
     	bool added_Edges=false;
@@ -242,6 +242,7 @@ private:
 
     void dbg_print_graph(int from, int to){
 #ifndef NDEBUG
+    	return;
     	if(edge_enabled.size()<g.edges())
     		return;
     		static int it = 0;
@@ -268,7 +269,7 @@ private:
     				if(edge_enabled[i]){
 						auto & e = g.all_edges[i];
 						const char * s = "black";
-						std::cout<<"n" << e.from <<" -> n" << e.to << " [label=\"" << i <<": " << getEdgeFlow(e.id) <<"/" << capacity[i] << "(" << getBackFlow(e.id) << ")"  << "\" color=\"" << s<<"\"]\n";
+						std::cout<<"n" << e.from <<" -> n" << e.to << " [label=\"" << i <<": " << getEdgeFlow(e.id) <<"/" << capacity[i]  << "\" color=\"" << s<<"\"]\n";
 						//printf("n%d -> n%d [label=\"%d: %d/%d\",color=\"%s\"]\n", e.from,e.to, i, F[i],capacity[i] , s);
     				}
     			}
@@ -302,75 +303,18 @@ private:
     std::vector<bool> visited;
 
 
-    void calc_flow(){
-
+    inline void calc_flow(){
+    	if(!flow_needs_recalc)
+    		return;
+    	flow_needs_recalc=false;
     	//apply edmonds karp to the current flow.
     	Weight maxflow = kt->maxflow(true,nullptr);
     	dbg_print_graph(source,sink);
     	kt->clear_t_edges(source, sink);
     	dbg_print_graph(source,sink);
-      	//kt->edit_tweights(source,max_capacity,0);
-		//kt->edit_tweights(sink,0,max_capacity);
-    	/*
-
-    	DynamicGraph tmp_g;
-    	for(int i = 0;i<g.nodes();i++){
-    		tmp_g.addNode();
-    	}
-    	//add external source and target node
-    	int s = tmp_g.addNode();
-    	int t = tmp_g.addNode();
-    	std::vector<Weight> capacities;
-    	for(int i = 0;i<kt->get_arc_num();i++){
-    		arc a = kt->get_arc(i);
-    		Weight w = kt->get_ecap(a) - kt->get_rcap(a);
-    		if(w>0){
-    			int from=-1;
-    			int to = -1;
-    			kt->get_arc_ends(a,from,to);
-    			tmp_g.addEdge(from,to);
-    			capacities.push_back(w);
-    		}
-    	}
-    	tmp_g.addEdge(sink,source);
-    	capacities.push_back(INF);
-    	//now add extra s->t edges, subtracting the actual max flow
-    	for(int i = 0;i<g.nodes();i++){
-    		Weight f = kt->get_trcap(i);
-    		if(f<0){
-    			//there is flow from the source node to this node.
-    			tmp_g.addEdge(s,i);
-				capacities.push_back(-f);
-    		}else if (f>0){
-    			//there is flow from this node to the sink node.
-    			tmp_g.addEdge(i,t);
-				capacities.push_back(f);
-    		}
-    	}
-    	EdmondsKarpAdj<std::vector<Weight>, Weight> tmp_ed (tmp_g,capacities);
-    	Weight mf = tmp_ed.maxFlow(s,t);
-
-*/
-    	//tmp_ed.dbg_print_graph(s,t);
-    	//hopefully this will avoid a search.
-    	/*std::vector<Weight> flow;
-    	flow.resize(g.edges());
-
-    	for (int i = 0;i<kt->get_arc_num();i++){
-    		kt->set_extra_flow(kt->get_arc(i),0);//reset the extra flow
-    	}
-
-    	for(int i = 0;i<g.nodes();i++){
-    		Weight w = kt->get_trcap(i);
-    		if(w<0){
-    			//this is added flow from source to the node. need to subtract it from the residual graph
-    			//assert(kt->what_segment(i,KT_SOURCE)==KT_SINK);
-    			//push the
-
-    		}
-    	}*/
 
     }
+
     std::vector<int> Q;
 
 public:
@@ -436,19 +380,10 @@ public:
      	assert(g.edgeEnabled(id));
      	return capacity[id];
      }
-private:
-    const Weight getBackFlow(int flow_edge){
-    	int arc_id = arc_map[flow_edge];
-    	arc a = kt->get_arc(arc_id);
-    	arc rev = kt->get_reverse(a);
-    	Weight start_cap = kt->get_ecap(rev) ;
-    	Weight end_cap = kt->get_rcap(rev);
-    	Weight remaining_flow = kt->get_ecap(rev) - kt->get_rcap(rev);
-    	return remaining_flow;
-    }
+
 public:
     const Weight getEdgeFlow(int flow_edge){
-
+    	calc_flow();
     	//we need to pick, possibly arbitrarily (but deterministically), which of the edges have flow
     	int arc_id = arc_map[flow_edge];
     	assert(arc_id>=0);
@@ -481,43 +416,6 @@ public:
 			}
 		}
 
-		//there may be multiple edges. Assign to the low-id's first?
-		/*tmp_edges.clear();
-		//we can probably arrange to avoid this, but for now, sorting by edge id to ensure deterministic results.
-		for(int i = 0;i<g.nIncident(from,true);i++){
-			int edgeid = g.incident(from,i,true).id;
-			if(g.edgeEnabled(edgeid) &&  ((g.getEdge(edgeid).from==from && g.getEdge(edgeid).to==to) || (g.getEdge(edgeid).from==to && g.getEdge(edgeid).to==from))){
-				assert(arc_map[edgeid]==arc_id);
-				tmp_edges.push_back(edgeid);
-			}
-		}
-		if(tmp_edges.size()<=1){
-			if(tmp_edges.size()==0){
-				return 0;
-			}else{
-				return remaining_flow;
-			}
-		}
-		if(tmp_edges.size()>1){
-			 std::sort (tmp_edges.begin(), tmp_edges.end());
-		}
-
-		for(int i = 0;i<tmp_edges.size();i++){
-			int e = tmp_edges[i];
-			Weight & edge_cap = capacity[e];
-			if(e==edgeID){
-				if(remaining_flow>=edge_cap)
-					return edge_cap;
-				else
-					return remaining_flow;
-			}
-			if(remaining_flow>=edge_cap){
-				remaining_flow-=edge_cap;
-			}
-			if(remaining_flow<=0){
-				return 0;
-			}
-		}*/
     	return 0;
     }
     const Weight getEdgeResidualCapacity(int id){
