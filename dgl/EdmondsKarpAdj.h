@@ -148,7 +148,7 @@ public:
     }
     void dbg_print_graph(int from, int to){
    #ifndef NDEBUG
-    	return;
+
        		static int it = 0;
        		if(++it==6){
        			int a =1;

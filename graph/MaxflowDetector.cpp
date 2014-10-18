@@ -290,6 +290,8 @@ template<typename Weight>
 			seen.growTo(outer->nNodes());
 			visit.clear();
 			Weight foundflow = negative_conflict_detector->maxFlow(source,target);
+			std::vector<MaxFlowEdge> ignore;
+			negative_conflict_detector->minCut(source,target,ignore);
 			visit.push(target);
 			for(int k = 0;k<visit.size();k++){
 				int u = visit[k];

@@ -706,6 +706,14 @@ private:
 public:
     const Weight minCut(int s, int t, std::vector<MaxFlowEdge> & cut){
     	Weight f = maxFlow(s,t);
+    	//can this be improved upon, for example as described in this stack overflow?
+    	//http://cstheory.stackexchange.com/a/17337
+    	//When looking for augmenting paths, you do a traversal, in which you use some form of queue of as-yet-unvisited nodes (in the Edmonds-Karp version, you use BFS, which means a FIFO queue). In the last iteration, you can't reach t from s (this is the termination criterion, after all). At this point, the set of nodes you reached forms the s-part of the cut, while the nodes you didn't reach form the t-part.
+    	//The leaf nodes of your traversal tree form the “fringe” of the s-part, while the nodes in your traversal queue form the fringe of the t-part, and what you want is the set of edges from the s-fringe to the t-fringe. This can also easily be maintained during traversal: Just add an edge to the cut when it is examined, and leads to an unvisited node, and remove it if it is traversed (so its target becomes visited). Then, once Ford-Fulkerson is finished, you'll have your min-cut (or, rather, one of them) right there. The running time will be (asymptotically) identical to Ford-Fulkerson (or Edmonds-Karp or whatever version you're using), which should give you what you were looking for.
+
+
+
+
     	//ok, now find the cut
     	Q.clear();
     	Q.push_back(s);
