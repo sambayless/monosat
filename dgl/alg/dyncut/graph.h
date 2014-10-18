@@ -450,15 +450,15 @@ private:
 	std::vector<arc*> prev;
 	std::vector<flowtype> M;
 	arc fake_arc;
-	int edmonds_karp_bfs(flowtype & store_flow, int source_node, int sink_node){
+	/*int edmonds_karp_bfs(flowtype & store_flow, int source_node, int sink_node, bool backward){
 		prev.resize(this->get_node_num(),nullptr);
 		M.resize(this->get_node_num(),0);
 		for(int i =0;i<Q.size();i++){
 			int u = Q[i];
 
 			prev[u]=nullptr;
-	/*		assert(M[u]>0);
-			M[u]=INF;*/
+			assert(M[u]>0);
+			M[u]=INF;
 		}
 #ifndef NDEBUG
 		for(int i = 0;i<this->get_node_num();i++)
@@ -466,33 +466,50 @@ private:
 #endif
 		Q.clear();
 		//first, deal with the source node
-		/*for(int i = 0;i<get_node_num();i++){
-			tcaptype & t_edge_flow = nodes[i].tr_cap;
-			if(t_edge_flow<0){
-				//there is flow from the source node to this node.
-				//which we want to eliminate.
-				//so treat this as capacity on this edge
-				prev[i] = nullptr;
-				M[i] = -t_edge_flow;
-				Q.push_back(i);
+
+		if(!backward){
+			for(int i = 0;i<t_edge_nodes.size();i++){
+				int u = t_edge_nodes[i];
+				if(u==sink_node)
+					continue;
+				assert(nodes[u].in_t_edges_set);
+				tcaptype & t_edge_flow = nodes[u].tr_cap;
+				if(t_edge_flow<0){
+					//there is flow from the source node to this node.
+					//which we want to eliminate.
+					//so treat this as capacity on this edge
+					prev[u] = nullptr;
+					M[u] = -t_edge_flow;
+					Q.push_back(u);
+				}
 			}
-		}*/
-		for(int i = 0;i<t_edge_nodes.size();i++){
-			int u = t_edge_nodes[i];
-			/*if(u==sink_node)
-				continue;*/
-			assert(nodes[u].in_t_edges_set);
-			tcaptype & t_edge_flow = nodes[u].tr_cap;
-			if(t_edge_flow<0){
+		}else{
+
+			tcaptype & s_edge_flow = nodes[source_node].tr_cap;
+			if (s_edge_flow>0){
 				//there is flow from the source node to this node.
 				//which we want to eliminate.
 				//so treat this as capacity on this edge
-				prev[u] = nullptr;
-				M[u] = -t_edge_flow;
-				Q.push_back(u);
+				prev[source_node] = nullptr;
+				M[source_node] = s_edge_flow;
+				Q.push_back(source_node);
+			}
+			for(int i = 0;i<s_edge_nodes.size();i++){
+				int u = s_edge_nodes[i];
+				if(u==sink_node)
+					continue;
+				assert(nodes[u].in_s_edges_set);
+				tcaptype & s_edge_flow = nodes[u].tr_cap;
+				if (s_edge_flow>0){
+					//there is flow from the source node to this node.
+					//which we want to eliminate.
+					//so treat this as capacity on this edge
+					prev[u] = nullptr;
+					M[u] = s_edge_flow;
+					Q.push_back(u);
+				}
 			}
 		}
-
 
 		for(int j = 0;j<Q.size();j++){
 			   int u = Q[j];
@@ -500,6 +517,103 @@ private:
 			   //first check if this node has capacity to the sink.
 			   tcaptype & t_edge_flow = nodes[u].tr_cap;
 			   if(t_edge_flow>0){
+				   if(!backward || u!=source_node){
+					   store_flow = std::min(M[u],t_edge_flow);
+					   return u;
+				   }
+			   }
+
+			   if(!backward && u==sink_node){
+				   //connect the sink node to the source node with infinite capacity
+				   int to = source_node;
+				   if(prev[to] == nullptr){
+					   prev[to]=&fake_arc;
+					   M[to] = M[u];
+					   Q.push_back(to);
+				   }
+			   }
+
+			   arc * a = nodes[u].first;
+			   while(a){
+				   int to = a->head - nodes;
+				   if(prev[to] == nullptr){
+
+					   flowtype f = a->e_cap-a->r_cap;
+					   if( f>0){
+						   prev[to]=a;
+						   M[to] = std::min(M[u],f);
+						   Q.push_back(to);
+					   }
+				   }
+				   a=a->next;
+			   }
+		   }
+		   store_flow= 0;
+		   return -2;
+	   }*/
+	int edmonds_karp_bfs(flowtype & store_flow, int source_node, int sink_node, bool backward){
+		prev.resize(this->get_node_num(),nullptr);
+		M.resize(this->get_node_num(),0);
+		for(int i =0;i<Q.size();i++){
+			int u = Q[i];
+
+			prev[u]=nullptr;
+
+		}
+#ifndef NDEBUG
+		for(int i = 0;i<this->get_node_num();i++)
+			assert(prev[i]==nullptr);
+#endif
+		Q.clear();
+		if(!backward){
+			for(int i = 0;i<t_edge_nodes.size();i++){
+				int u = t_edge_nodes[i];
+				if(source_node==sink_node && u==source_node)
+					continue;
+				assert(nodes[u].in_t_edges_set);
+				tcaptype & t_edge_flow = nodes[u].tr_cap;
+				if(t_edge_flow<0){
+					//there is flow from the source node to this node.
+					//which we want to eliminate.
+					//so treat this as capacity on this edge
+					prev[u] = nullptr;
+					M[u] = -t_edge_flow;
+					Q.push_back(u);
+				}
+			}
+		}else{
+			for(int i = 0;i<s_edge_nodes.size();i++){
+				int u = s_edge_nodes[i];
+				if(source_node==sink_node && u==source_node)
+					continue;
+				assert(nodes[u].in_s_edges_set);
+				tcaptype & s_edge_flow = nodes[u].tr_cap;
+				if (s_edge_flow>0){
+					//there is flow from the source node to this node.
+					//which we want to eliminate.
+					//so treat this as capacity on this edge
+					prev[u] = nullptr;
+					M[u] = s_edge_flow;
+					Q.push_back(u);
+				}
+			}
+		}
+
+		for(int j = 0;j<Q.size();j++){
+			   int u = Q[j];
+
+			   //first check if this node has capacity to the sink.
+			   tcaptype & t_edge_flow = nodes[u].tr_cap;
+			   if(!backward && ((source_node!=sink_node && t_edge_flow>0) )){
+				   store_flow = std::min(M[u],t_edge_flow);
+				   return u;
+			   }else if(!backward && source_node==sink_node && u ==sink_node){
+				   assert(t_edge_flow<0);
+				   tcaptype s_edge_flow = -t_edge_flow;
+				   store_flow = std::min(M[u],s_edge_flow);
+				   return u;
+			   }else   if(backward && source_node==sink_node &&  u==sink_node){
+
 				   store_flow = std::min(M[u],t_edge_flow);
 				   return u;
 			   }
@@ -520,9 +634,14 @@ private:
 				   if(prev[to] == nullptr){
 
 					   flowtype f = a->e_cap-a->r_cap;
-					   if(f>0){
+					   if(!backward && f>0){
 						   prev[to]=a;
 						   M[to] = std::min(M[u],f);
+						   Q.push_back(to);
+					   }else if(backward && f<0){
+						   tcaptype fb =-f;
+						   prev[to]=a;
+						   M[to] = std::min(M[u],fb);
 						   Q.push_back(to);
 					   }
 				   }
@@ -541,10 +660,16 @@ public:
 		for(int i = 0;i<get_node_num();i++){
 			tcaptype & t_edge_flow = nodes[i].tr_cap;
 			if(t_edge_flow<0){
-				if(i!=sink_node){//the sink node will be skipped anyhow, so it doesnt need to be in the t_edges_set.
+				//if(i!=sink_node){//the sink node will be skipped anyhow, so it doesnt need to be in the t_edges_set.
 				assert(nodes[i].in_t_edges_set);
 				assert(std::find(t_edge_nodes.begin(), t_edge_nodes.end(), i) != t_edge_nodes.end());
-				}
+				//}
+			}
+			if(t_edge_flow>0){
+				//if(i!=sink_node){//the sink node will be skipped anyhow, so it doesnt need to be in the t_edges_set.
+				assert(nodes[i].in_s_edges_set);
+				assert(std::find(s_edge_nodes.begin(), s_edge_nodes.end(), i) != s_edge_nodes.end());
+				//}
 			}
 		}
 		{
@@ -559,7 +684,7 @@ public:
 		nodes[sink_node].tr_cap = ( nodes[sink_node].t_cap-nodes[sink_node].tr_cap+ total_flow);
 		nodes[source_node].tr_cap= ( nodes[source_node].t_cap-nodes[source_node].tr_cap- total_flow);
         while(true){
-        	int node= edmonds_karp_bfs(f,source_node, sink_node);
+        	int node= edmonds_karp_bfs(f,source_node, sink_node,false);
 
             if (node<0)
                 break;
@@ -580,14 +705,66 @@ public:
                 assert(edge->sister->r_cap>=f);
                 edge->sister->r_cap-=f;
                 int u =  edge->sister->head-nodes;
-
                 v = u;
-
             }
             assert(nodes[v].tr_cap<=-f);
             nodes[v].tr_cap+=f;
-
         }
+
+        while(true){
+        	int node= edmonds_karp_bfs(f,source_node,source_node, true);
+
+            if (node<0)
+                break;
+            assert(f>0);
+            assert( nodes[node].tr_cap>=f);
+            nodes[node].tr_cap-=f;
+            int v = node;
+            while (prev[v]){
+                arc* edge = prev[v];
+                if(edge==&fake_arc){
+                	//then this is the inserted, infinite capacity arc between the sink and source nodes.
+                	assert(v==source_node);
+                	v = sink_node;
+                	continue;
+                }
+                assert(edge->r_cap>=f);
+                edge->r_cap-=f;//remove this flow from this edge by adding it to its remaining capacity;
+
+                edge->sister->r_cap+=f;
+                int u =  edge->sister->head-nodes;
+                v = u;
+            }
+            assert(nodes[v].tr_cap>=f);
+            nodes[v].tr_cap-=f;
+        }
+        while(true){
+			int node= edmonds_karp_bfs(f,sink_node,sink_node, false);
+
+			   if (node<0)
+				   break;
+			   assert(f>0);
+			   assert( nodes[node].tr_cap>=f);
+			   nodes[node].tr_cap-=f;
+			   int v = node;
+			   while (prev[v]){
+				   arc* edge = prev[v];
+				   if(edge==&fake_arc){
+					//then this is the inserted, infinite capacity arc between the sink and source nodes.
+					assert(v==source_node);
+					v = sink_node;
+					continue;
+				   }
+				   assert(edge->e_cap-edge->r_cap>=f);
+				  edge->r_cap+=f;//remove this flow from this edge by adding it to its remaining capacity;
+				  assert(edge->sister->r_cap>=f);
+				  edge->sister->r_cap-=f;
+				  int u =  edge->sister->head-nodes;
+				  v = u;
+			   }
+	            assert(nodes[v].tr_cap<=-f);
+	            nodes[v].tr_cap+=f;
+		   }
 		nodes[sink_node].tr_cap = ( nodes[sink_node].t_cap+ total_flow);
 		nodes[source_node].tr_cap= ( nodes[source_node].t_cap-total_flow);
 #ifndef NDEBUG
@@ -610,7 +787,17 @@ public:
         }
         t_edge_nodes.resize(j);
 
-
+    	j=0;
+		for(i = 0;i<s_edge_nodes.size();i++){
+			int u = s_edge_nodes[i];
+			if(nodes[u].tr_cap<=0){
+				assert(nodes[u].in_s_edges_set);
+				nodes[u].in_s_edges_set=0;
+			}else{
+				s_edge_nodes[j++] =u;
+			}
+		}
+		s_edge_nodes.resize(j);
 
 	}
 
@@ -1078,7 +1265,7 @@ void Graph<captype,tcaptype,flowtype>::edit_edge_inc(node_id from, node_id to, c
 							nodes[to].in_t_edges_set=1;
 							t_edge_nodes.push_back(to);
 						}
-						if(!nodes[from].in_s_edges_set && nodes[from].tr_cap<0 ){
+						if(!nodes[from].in_s_edges_set && nodes[from].tr_cap>0 ){
 							nodes[from].in_s_edges_set=1;
 							s_edge_nodes.push_back(from);
 						}
@@ -1127,7 +1314,7 @@ void Graph<captype,tcaptype,flowtype>::edit_edge_inc(node_id from, node_id to, c
 							nodes[to].in_t_edges_set=1;
 							t_edge_nodes.push_back(to);
 						}
-						if(!nodes[from].in_s_edges_set && nodes[from].tr_cap<0 ){
+						if(!nodes[from].in_s_edges_set && nodes[from].tr_cap>0 ){
 							nodes[from].in_s_edges_set=1;
 							s_edge_nodes.push_back(from);
 						}
@@ -1223,7 +1410,7 @@ void Graph<captype,tcaptype,flowtype>::edit_edge(node_id from, node_id to, capty
 						nodes[to].in_t_edges_set=1;
 						t_edge_nodes.push_back(to);
 					}
-					if(!nodes[from].in_s_edges_set && nodes[from].tr_cap<0 ){
+					if(!nodes[from].in_s_edges_set && nodes[from].tr_cap>0 ){
 						nodes[from].in_s_edges_set=1;
 						s_edge_nodes.push_back(from);
 					}
@@ -1270,7 +1457,7 @@ void Graph<captype,tcaptype,flowtype>::edit_edge(node_id from, node_id to, capty
 						nodes[to].in_t_edges_set=1;
 						t_edge_nodes.push_back(to);
 					}
-					if(!nodes[from].in_s_edges_set && nodes[from].tr_cap<0 ){
+					if(!nodes[from].in_s_edges_set && nodes[from].tr_cap>0 ){
 						nodes[from].in_s_edges_set=1;
 						s_edge_nodes.push_back(from);
 					}
@@ -1337,7 +1524,7 @@ void Graph<captype,tcaptype,flowtype>::edit_edge_wt(node_id from, node_id to, ca
 				nodes[to].in_t_edges_set=1;
 				t_edge_nodes.push_back(to);
 			}
-			if(!nodes[from].in_s_edges_set && nodes[from].tr_cap<0 ){
+			if(!nodes[from].in_s_edges_set && nodes[from].tr_cap>0 ){
 				nodes[from].in_s_edges_set=1;
 				s_edge_nodes.push_back(from);
 			}
@@ -1636,7 +1823,7 @@ template <typename captype, typename tcaptype, typename flowtype>
 		}
 	}
 	i -> tr_cap -= bottleneck;
-	assert(bottleneck<=0);
+	assert(bottleneck>=0);
 	if (!i->tr_cap)
 	{
 		set_orphan_front(i); // add i to the beginning of the adoption list
