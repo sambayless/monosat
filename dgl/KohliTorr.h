@@ -28,8 +28,9 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "MaxFlow.h"
 #include <vector>
 #include "alg/dyncut/graph.h"
-#include "EdmondsKarpAdj.h"
+#include "EdmondsKarpDynamic.h"
 #include <algorithm>
+
 namespace dgl{
 template< class Capacity,typename Weight  >
 class KohliTorr:public MaxFlow<Weight>{
@@ -68,7 +69,7 @@ class KohliTorr:public MaxFlow<Weight>{
     static const auto  KT_SOURCE = kohli_torr::Graph<Weight,Weight,Weight>::SOURCE;
     static const auto  KT_SINK = kohli_torr::Graph<Weight,Weight,Weight>::SINK;
 #ifdef DEBUG_MAXFLOW
-    	EdmondsKarpAdj<Capacity,Weight> ek;
+    	EdmondsKarpDynamic<Capacity,Weight> ek;
 #endif
 
     Weight max_capacity =0;
@@ -136,6 +137,9 @@ public:
 
 #ifdef DEBUG_MAXFLOW
       		assert(curflow==expected_flow);
+      		if(curflow != expected_flow){
+      			exit(4);
+      		}
 #endif
         	return curflow;
         }else if (last_modification<=0 || g.historyclears!=last_history_clear  || g.changed()){
@@ -213,6 +217,9 @@ public:
 
 #ifdef DEBUG_MAXFLOW
     		Weight expected_flow =ek.maxFlow(s,t);
+    		if(f != expected_flow){
+				exit(4);
+			}
 #endif
    		dbg_print_graph(s,t);
 
@@ -221,9 +228,9 @@ public:
 
     	for(int i = 0;i<g.edges();i++)
     		assert(edge_enabled[i]==g.edgeEnabled(i));
-    	dbg_check_flow(s,t);
-#endif
 
+#endif
+    	dbg_check_flow(s,t);
     	curflow=f;
     	num_updates++;
 		last_modification=g.modifications;
@@ -294,9 +301,55 @@ private:
     			printf("}\n");
 #endif
     		}
-
+    void bassert(bool c){
+    	if (!c){
+    		exit(4);
+    	}
+    }
     void dbg_check_flow(int s, int t){
+#ifndef NDEBUG
+    	//check that the flow is legal
+    	for(int i = 0;i<g.edges();i++){
+    		Weight flow = getEdgeFlow(i);
+    		bassert(flow>=0);
+    		bassert(flow<=capacity[i]);
+    		if(flow!=0){
+    			bassert(g.edgeEnabled(i));
+    		}
+    	}
 
+    	for(int n = 0;n<g.nodes();n++){
+    		Weight flow_in = 0;
+    		Weight flow_out = 0;
+    		for(int i = 0;i<g.nIncident(n);i++){
+    			int edge = g.incident(n,i).id;
+    			if(g.edgeEnabled(edge)){
+    				Weight flow = getEdgeFlow(edge);
+    				bassert(flow>=0);
+    				flow_out+=flow;
+    			}
+    		}
+    		for(int i = 0;i<g.nIncoming(n);i++){
+				int edge = g.incoming(n,i).id;
+				if(g.edgeEnabled(edge)){
+					Weight flow = getEdgeFlow(edge);
+					bassert(flow>=0);
+					flow_in+=flow;
+				}
+			}
+    		if(n==s){
+    			bassert(flow_in==0);
+    			bassert(flow_out==f);
+    		}else if (n==t){
+    			bassert(flow_out==0);
+				bassert(flow_in==f);
+    		}else{
+    			bassert(flow_in==flow_out);
+    		}
+
+    	}
+
+#endif
     }
 
     std::vector<bool> seen;
@@ -312,7 +365,8 @@ private:
     	dbg_print_graph(source,sink);
     	kt->clear_t_edges(source, sink);
     	dbg_print_graph(source,sink);
-
+    	dbg_check_flow(source,sink);
+    	assert(kt->maxflow(true,nullptr) == maxflow);
     }
 
     std::vector<int> Q;
@@ -395,7 +449,7 @@ public:
     		return 0;
 		int from = g.getEdge(flow_edge).from;
 		int to = g.getEdge(flow_edge).to;
-
+		//for(int i = g.nIncident(from,true)-1;i>=0;i--){
 		for(int i = 0;i<g.nIncident(from,true);i++){
 			int edgeid = g.incident(from,i,true).id;
 			if(g.edgeEnabled(edgeid) &&  ((g.getEdge(edgeid).from==from && g.getEdge(edgeid).to==to))){

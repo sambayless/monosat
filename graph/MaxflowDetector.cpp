@@ -84,8 +84,14 @@ Detector(_detectorID),outer(_outer),capacities(capacities),over_graph(_g),g(_g),
 	}else if (mincutalg==MinCutAlg::ALG_KOHLI_TORR){
 		positive_detector = new KohliTorr<std::vector<Weight>,Weight>(_g,capacities);
 		negative_detector = new KohliTorr<std::vector<Weight>,Weight>(_antig,capacities);
-		positive_conflict_detector = positive_detector;//new EdmondsKarpDynamic<std::vector<Weight>,Weight>(_g,capacities);
-		negative_conflict_detector =negative_detector;//new EdmondsKarpDynamic<std::vector<Weight>,Weight>(_antig,capacities);
+		if(opt_use_kt_for_conflicts){
+			positive_conflict_detector = positive_detector;//new EdmondsKarpDynamic<std::vector<Weight>,Weight>(_g,capacities);
+			negative_conflict_detector =negative_detector;//new EdmondsKarpDynamic<std::vector<Weight>,Weight>(_antig,capacities);
+		}else{
+			//for reasons I don't yet understand, kohli-torr seems to produce maxflows that work very poorly as theory-decisions for some problems.
+			positive_conflict_detector =new EdmondsKarpDynamic<std::vector<Weight>,Weight>(_g,capacities);
+			negative_conflict_detector = new EdmondsKarpDynamic<std::vector<Weight>,Weight>(_antig,capacities);
+		}
 		if(opt_conflict_min_cut)
 				learn_cut = new EdmondsKarpAdj<std::vector<int>,int>(learn_graph,learn_caps);
 	}else{
@@ -191,6 +197,8 @@ void MaxflowDetector<Weight>::buildMaxFlowTooHighReason(Weight flow,vec<Lit> & c
 			outer->learnt_path_clause_length+= (conflict.size()-1);
 			double elapsed = rtime(2)-starttime;
 			outer->pathtime+=elapsed;
+
+			stats_under_conflict_time+=elapsed;
 		}
 template<typename Weight>
 		void MaxflowDetector<Weight>::buildMaxFlowTooLowReason(Weight maxflow,vec<Lit> & conflict){
@@ -257,9 +265,9 @@ template<typename Weight>
 					}
 				}
 				learn_graph.invalidate();
-				learn_graph.drawFull(true);
+				//learn_graph.drawFull(true);
 				outer->cut.clear();
-				antig.drawFull(true);
+				//antig.drawFull(true);
 				int f =learn_cut->minCut(source,target,outer->cut);
 				if(f<0x0FF0F0){
 					assert(f<0xF0F0F0); assert(f==outer->cut.size());//because edges are only ever infinity or 1
@@ -278,6 +286,8 @@ template<typename Weight>
 				 outer->num_learnt_cuts++;
 				 outer->learnt_cut_clause_length+= (conflict.size()-1);
 				 stats_over_conflicts++;
+					double elapsed = rtime(2)-starttime;
+					stats_over_conflict_time+=elapsed;
 				return;
 			}
 
@@ -371,8 +381,8 @@ template<typename Weight>
 			 outer->num_learnt_cuts++;
 			 outer->learnt_cut_clause_length+= (conflict.size()-1);
 			 stats_over_conflicts++;
-			double elapsed = rtime(2)-starttime;
-			 outer->mctime+=elapsed;
+			 double elapsed = rtime(2)-starttime;
+			 stats_over_conflict_time+=elapsed;
 
 		}
 

@@ -236,15 +236,6 @@ public:
 	captype get_ecap(arc* a);
 	captype get_flow(arc* a);//added by Sam
 
-	//added by Sam
-	flowtype get_extra_flow(arc*a){
-		return a->extra_flow;
-	}
-
-	//added by Sam
-	void set_extra_flow(arc*a, flowtype f){
-		a->extra_flow=f;
-	}
 	/////////////////////////////////////////////////////////////////
 	// 4. Functions for setting residual capacities.               //
 	//    NOTE: If these functions are used, the value of the flow //
@@ -390,7 +381,6 @@ private:
 
 		captype		r_cap;		// residual capacity
 		captype		e_cap;		// original capacity
-		flowtype    extra_flow;		// added by sam. Stores the difference between the nominal flow (e_cap-r_cap) of this arc in the reparameterized graph, and the actual flow in the original graph.
 	};
 
 	struct nodeptr
@@ -584,7 +574,6 @@ public:
 
 #endif
 		captype bridge_capacity = -( nodes[sink_node].t_cap-nodes[sink_node].tr_cap+ total_flow);
-
 		nodes[sink_node].tr_cap =0;//( nodes[sink_node].t_cap-nodes[sink_node].tr_cap+ total_flow);
 		nodes[source_node].tr_cap=0;// ( nodes[source_node].t_cap-nodes[source_node].tr_cap- total_flow);
         while(true){

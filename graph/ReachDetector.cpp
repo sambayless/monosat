@@ -529,7 +529,7 @@ void ReachDetector<Weight>::buildReachReason(int node,vec<Lit> & conflict){
 			outer->learnt_path_clause_length+= (conflict.size()-1);
 			double elapsed = rtime(2)-starttime;
 			outer->pathtime+=elapsed;
-
+			 stats_under_conflict_time+=elapsed;
 		}
 template<typename Weight>
 		void ReachDetector<Weight>::buildNonReachReason(int node,vec<Lit> & conflict){
@@ -651,7 +651,7 @@ template<typename Weight>
 				}
 
 				outer->cut.clear();
-				antig.drawFull();
+				//antig.drawFull();
 				int f =outer->mc->minCut(source,node,outer->cut);
 
 				assert(f<0xF0F0F0); assert(f==outer->cut.size());//because edges are only ever infinity or 1
@@ -749,7 +749,7 @@ template<typename Weight>
 		    			cutgraph.disableEdge(edgeID);
 		    		}
 		    	}
-		    	cutgraph.drawFull();
+		    	//cutgraph.drawFull();
 #ifndef NDEBUG
 		    	for(int i = 0;i<g.nEdgeIDs();i++){
 		    		Var v = outer->getEdgeVar(i);
@@ -768,7 +768,7 @@ template<typename Weight>
 						removed_edges.push(edgeID);
 					}
 		    	}
-		    	cutgraph.drawFull();
+		    	//cutgraph.drawFull();
 		    	for(i = 0;i<conflict.size();i++){
 		    		Lit l = conflict[i];
 		    		if(!sign(l) && outer->isEdgeVar(var(l))){
@@ -868,7 +868,7 @@ template<typename Weight>
 
 			double elapsed = rtime(2)-starttime;
 			 outer->mctime+=elapsed;
-
+			 stats_over_conflict_time+=elapsed;
 
 		}
 
