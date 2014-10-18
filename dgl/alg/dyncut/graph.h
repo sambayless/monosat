@@ -551,7 +551,7 @@ private:
 		   store_flow= 0;
 		   return -2;
 	   }*/
-	int edmonds_karp_bfs(flowtype & store_flow, int source_node, int sink_node, bool backward){
+	int edmonds_karp_bfs(flowtype & store_flow, int source_node, int sink_node, captype & bridge_capacity, bool backward){
 		prev.resize(this->get_node_num(),nullptr);
 		M.resize(this->get_node_num(),0);
 		for(int i =0;i<Q.size();i++){
@@ -608,22 +608,22 @@ private:
 				   store_flow = std::min(M[u],t_edge_flow);
 				   return u;
 			   }else if(!backward && source_node==sink_node && u ==sink_node){
-				   assert(t_edge_flow<0);
-				   tcaptype s_edge_flow = -t_edge_flow;
-				   store_flow = std::min(M[u],s_edge_flow);
+				  // assert(t_edge_flow<0);
+				  // tcaptype s_edge_flow = -t_edge_flow;
+				   store_flow =M[u]; //std::min(M[u],s_edge_flow);
 				   return u;
 			   }else   if(backward && source_node==sink_node &&  u==sink_node){
 
-				   store_flow = std::min(M[u],t_edge_flow);
+				   store_flow =M[u];// std::min(M[u],t_edge_flow);
 				   return u;
 			   }
 
 			   if(u==sink_node){
 				   //connect the sink node to the source node with infinite capacity
 				   int to = source_node;
-				   if(prev[to] == nullptr){
+				   if(prev[to] == nullptr && bridge_capacity>0){
 					   prev[to]=&fake_arc;
-					   M[to] = M[u];
+					   M[to] = std::min(M[u],bridge_capacity);
 					   Q.push_back(to);
 				   }
 			   }
@@ -679,12 +679,12 @@ public:
 		tcaptype cr2 = nodes[source_node].tr_cap;
 		}
 #endif
+		captype bridge_capacity = -( nodes[sink_node].t_cap-nodes[sink_node].tr_cap+ total_flow);
 
-
-		nodes[sink_node].tr_cap = ( nodes[sink_node].t_cap-nodes[sink_node].tr_cap+ total_flow);
-		nodes[source_node].tr_cap= ( nodes[source_node].t_cap-nodes[source_node].tr_cap- total_flow);
+		nodes[sink_node].tr_cap =0;//( nodes[sink_node].t_cap-nodes[sink_node].tr_cap+ total_flow);
+		nodes[source_node].tr_cap=0;// ( nodes[source_node].t_cap-nodes[source_node].tr_cap- total_flow);
         while(true){
-        	int node= edmonds_karp_bfs(f,source_node, sink_node,false);
+        	int node= edmonds_karp_bfs(f,source_node, sink_node,bridge_capacity,false);
 
             if (node<0)
                 break;
@@ -697,6 +697,8 @@ public:
                 if(edge==&fake_arc){
                 	//then this is the inserted, infinite capacity arc between the sink and source nodes.
                 	assert(v==source_node);
+                	assert(bridge_capacity>=f);
+                	bridge_capacity-=f;
                 	v = sink_node;
                 	continue;
                 }
@@ -712,19 +714,21 @@ public:
         }
 
         while(true){
-        	int node= edmonds_karp_bfs(f,source_node,source_node, true);
+        	int node= edmonds_karp_bfs(f,source_node,source_node,bridge_capacity, true);
 
             if (node<0)
                 break;
             assert(f>0);
-            assert( nodes[node].tr_cap>=f);
-            nodes[node].tr_cap-=f;
+    /*        assert( nodes[node].tr_cap>=f);
+            nodes[node].tr_cap-=f;*/
             int v = node;
             while (prev[v]){
                 arc* edge = prev[v];
                 if(edge==&fake_arc){
                 	//then this is the inserted, infinite capacity arc between the sink and source nodes.
                 	assert(v==source_node);
+                	assert(bridge_capacity>=f);
+					bridge_capacity-=f;
                 	v = sink_node;
                 	continue;
                 }
@@ -739,19 +743,21 @@ public:
             nodes[v].tr_cap-=f;
         }
         while(true){
-			int node= edmonds_karp_bfs(f,sink_node,sink_node, false);
+			int node= edmonds_karp_bfs(f,sink_node,sink_node,bridge_capacity, false);
 
 			   if (node<0)
 				   break;
 			   assert(f>0);
-			   assert( nodes[node].tr_cap>=f);
-			   nodes[node].tr_cap-=f;
+		/*	   assert( nodes[node].tr_cap>=f);
+			   nodes[node].tr_cap-=f;*/
 			   int v = node;
 			   while (prev[v]){
 				   arc* edge = prev[v];
 				   if(edge==&fake_arc){
 					//then this is the inserted, infinite capacity arc between the sink and source nodes.
 					assert(v==source_node);
+					assert(bridge_capacity>=f);
+					bridge_capacity-=f;
 					v = sink_node;
 					continue;
 				   }
