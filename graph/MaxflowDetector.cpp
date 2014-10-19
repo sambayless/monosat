@@ -47,7 +47,7 @@ void MaxflowDetector<Weight>::buildDinitzLinkCut(){
 
 template<typename Weight>
 MaxflowDetector<Weight>::MaxflowDetector(int _detectorID, GraphTheorySolver<Weight> * _outer,std::vector<Weight> & capacities,  DynamicGraph &_g,DynamicGraph &_antig, int from, int _target,double seed):
-Detector(_detectorID),outer(_outer),capacities(capacities),over_graph(_g),g(_g),antig(_antig),rnd_seed(seed),positive_detector(NULL),negative_detector(NULL){
+Detector(_detectorID),outer(_outer),capacities(capacities),over_graph(_g),g(_g),antig(_antig),source(from),target(_target),rnd_seed(seed),positive_detector(NULL),negative_detector(NULL){
 
 	if(mincutalg==MinCutAlg::ALG_EDKARP_DYN){
 		positive_detector = new EdmondsKarpDynamic<std::vector<Weight>,Weight>(_g,capacities);
@@ -623,7 +623,18 @@ Lit MaxflowDetector<Weight>::decide(){
 		//Weight under_flow = under->maxFlow(source,target) ;
 
 
-		if(to_decide.size() && last_decision_status== over->numUpdates()){
+		if(to_decide.size()){
+			if(last_decision_status!= over->numUpdates()){
+				//check if any literal has been assigned false; if none of them have, then this decision set is still safe to use.
+				for(Lit l:to_decide){
+					if(outer->value(l)==l_False){
+						to_decide.clear();
+						break;
+					}
+				}
+				last_decision_status=over->numUpdates();
+			}
+
 			while(to_decide.size()){
 				Lit l = to_decide.last();
 				to_decide.pop();
@@ -633,6 +644,7 @@ Lit MaxflowDetector<Weight>::decide(){
 				}
 			}
 		}
+
 		Weight over_flow = over->maxFlow(source,target) ;
 
 		for(int k = 0;k<flow_lits.size();k++){

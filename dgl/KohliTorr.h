@@ -356,11 +356,21 @@ private:
 				}
 			}
     		if(n==s){
-    			bassert(flow_in==0);
-    			bassert(flow_out==f);
+    			if(!backward_maxflow){
+    	   			bassert(flow_in==0);
+    	   			bassert(flow_out==f);
+    			}else{
+    	   			bassert(flow_in==0);
+					bassert(flow_out==f);
+    			}
     		}else if (n==t){
-    			bassert(flow_out==0);
-				bassert(flow_in==f);
+    			if(!backward_maxflow){
+    				bassert(flow_out==0);
+					bassert(flow_in==f);
+    			}else{
+    				bassert(flow_out==0);
+					bassert(flow_in==f);
+    			}
     		}else{
     			bassert(flow_in==flow_out);
     		}
@@ -380,10 +390,18 @@ private:
     	flow_needs_recalc=false;
     	//apply edmonds karp to the current flow.
     	Weight maxflow = kt->maxflow(true,nullptr);
-    	dbg_print_graph(source,sink);
-    	kt->clear_t_edges(source, sink);
-    	dbg_print_graph(source,sink);
-    	dbg_check_flow(source,sink);
+    	if(backward_maxflow){
+        	dbg_print_graph(sink,source);
+        	kt->clear_t_edges(sink,source);
+        	dbg_print_graph(sink,source);
+        	dbg_check_flow(source,sink);
+    	}else{
+        	dbg_print_graph(source,sink);
+        	kt->clear_t_edges(source, sink);
+        	dbg_print_graph(source,sink);
+        	dbg_check_flow(source,sink);
+    	}
+
     	assert(kt->maxflow(true,nullptr) == maxflow);
     }
 
@@ -459,7 +477,12 @@ public:
     	//we need to pick, possibly arbitrarily (but deterministically), which of the edges have flow
     	int arc_id = arc_map[flow_edge];
     	assert(arc_id>=0);
-    	arc a = kt->get_arc(arc_id);
+    	arc a;
+    	if(!backward_maxflow){
+    		a= kt->get_arc(arc_id);
+    	}else{
+    		a= kt->get_reverse( kt->get_arc(arc_id));
+    	}
     	Weight start_cap = kt->get_ecap(a) ;
     	Weight end_cap = kt->get_rcap(a);
     	Weight remaining_flow = kt->get_ecap(a) - kt->get_rcap(a);
