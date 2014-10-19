@@ -621,9 +621,11 @@ Lit MaxflowDetector<Weight>::decide(){
 		auto * under = positive_conflict_detector;
 
 		//Weight under_flow = under->maxFlow(source,target) ;
+		if(last_decision_status!= over->numUpdates())
+			to_decide.clear();
 
-
-		if(to_decide.size()){
+		if(to_decide.size() ){
+/*
 			if(last_decision_status!= over->numUpdates()){
 				//check if any literal has been assigned false; if none of them have, then this decision set is still safe to use.
 				for(Lit l:to_decide){
@@ -634,6 +636,7 @@ Lit MaxflowDetector<Weight>::decide(){
 				}
 				last_decision_status=over->numUpdates();
 			}
+*/
 
 			while(to_decide.size()){
 				Lit l = to_decide.last();
@@ -644,8 +647,8 @@ Lit MaxflowDetector<Weight>::decide(){
 				}
 			}
 		}
-
-		Weight over_flow = over->maxFlow(source,target) ;
+		//Weight under_flow = positive_detector->maxFlow(source,target);//intentionally not using the conflict detector; it isn't required.
+		Weight over_flow = negative_detector->maxFlow(source,target) ;
 
 		for(int k = 0;k<flow_lits.size();k++){
 			Lit l =flow_lits[k].l;
@@ -682,6 +685,7 @@ Lit MaxflowDetector<Weight>::decide(){
 
 					//then decide an unassigned edge of the currently selected flow
 					to_decide.clear();
+					over->maxFlow(source,target);
 					last_decision_status= over->numUpdates();
 
 					seen.clear();
@@ -690,10 +694,6 @@ Lit MaxflowDetector<Weight>::decide(){
 
 					if(opt_conflict_dfs){
 						//do a dfs to find that edge. Could start from either the source or the target.
-
-
-
-
 						if(opt_conflict_from_source){
 
 							q.push_back(source);
@@ -791,10 +791,7 @@ Lit MaxflowDetector<Weight>::decide(){
 						}
 					}
 					//assert(to_decide.size()==dbg_count);
-
-
 				}
-
 			}else if(outer->value(l)==l_False && opt_decide_graph_neg){
 
 
