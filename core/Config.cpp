@@ -141,6 +141,8 @@ StringOption Monosat::opt_hull_alg(_cat_geom,"hull","Select convex-hull algorith
 BoolOption Monosat::opt_conflict_dfs(_cat_graph,"conflict-dfs","Use a DFS (instead of a BFS) to find the conflict cut",true);
 BoolOption Monosat::opt_conflict_from_source(_cat_graph,"conflict-from-source","Search from the source (instead of back from the target) to find the conflict cut",false);
 BoolOption Monosat::opt_use_kt_for_conflicts(_cat_graph,"use-kt-for-conflict","When kohli-torr is selected as the maximum flow algorithm, also use kohli-torr for conflcits and decisions (instead of edmonds karp)",false);
+BoolOption Monosat::opt_maxflow_backward(_cat_graph,"maxflow-backward","Reverse source,sink, and all edge capacities when computing maxflow (this can force different flow assignments by individual algorithms, but doesn't effect the set of valid solutions)",false);
+
 
 
 

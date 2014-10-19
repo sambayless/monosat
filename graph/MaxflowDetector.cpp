@@ -47,7 +47,8 @@ void MaxflowDetector<Weight>::buildDinitzLinkCut(){
 
 template<typename Weight>
 MaxflowDetector<Weight>::MaxflowDetector(int _detectorID, GraphTheorySolver<Weight> * _outer,std::vector<Weight> & capacities,  DynamicGraph &_g,DynamicGraph &_antig, int from, int _target,double seed):
-Detector(_detectorID),outer(_outer),capacities(capacities),over_graph(_g),g(_g),antig(_antig),source(from),target(_target),rnd_seed(seed),positive_detector(NULL),negative_detector(NULL){
+Detector(_detectorID),outer(_outer),capacities(capacities),over_graph(_g),g(_g),antig(_antig),rnd_seed(seed),positive_detector(NULL),negative_detector(NULL){
+
 	if(mincutalg==MinCutAlg::ALG_EDKARP_DYN){
 		positive_detector = new EdmondsKarpDynamic<std::vector<Weight>,Weight>(_g,capacities);
 		negative_detector = new EdmondsKarpDynamic<std::vector<Weight>,Weight>(_antig,capacities);
@@ -82,8 +83,8 @@ Detector(_detectorID),outer(_outer),capacities(capacities),over_graph(_g),g(_g),
 		if(opt_conflict_min_cut)
 				learn_cut = new DinitzLinkCut<std::vector<int>>(learn_graph,learn_caps);
 	}else if (mincutalg==MinCutAlg::ALG_KOHLI_TORR){
-		positive_detector = new KohliTorr<std::vector<Weight>,Weight>(_g,capacities);
-		negative_detector = new KohliTorr<std::vector<Weight>,Weight>(_antig,capacities);
+		positive_detector = new KohliTorr<std::vector<Weight>,Weight>(_g,capacities,opt_maxflow_backward);
+		negative_detector = new KohliTorr<std::vector<Weight>,Weight>(_antig,capacities,opt_maxflow_backward);
 		if(opt_use_kt_for_conflicts){
 			positive_conflict_detector = positive_detector;//new EdmondsKarpDynamic<std::vector<Weight>,Weight>(_g,capacities);
 			negative_conflict_detector =negative_detector;//new EdmondsKarpDynamic<std::vector<Weight>,Weight>(_antig,capacities);

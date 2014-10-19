@@ -119,6 +119,7 @@ extern BoolOption opt_conflict_from_source;
 extern BoolOption opt_allow_reach_decisions;
 extern BoolOption opt_conflict_1uip;
 extern BoolOption opt_use_kt_for_conflicts;
+extern BoolOption opt_maxflow_backward;
 
 enum class PointInPolygonAlg{
 	 ALG_FULL,

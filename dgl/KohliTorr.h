@@ -57,6 +57,7 @@ class KohliTorr:public MaxFlow<Weight>{
     std::vector<int> tmp_edges;
     int history_qhead;
     int last_history_clear;
+    bool backward_maxflow=false;
 
     typedef  typename kohli_torr::Graph<Weight,Weight,Weight>::arc_id arc;
 
@@ -78,7 +79,7 @@ class KohliTorr:public MaxFlow<Weight>{
     bool flow_needs_recalc=true;
 
 public:
-    KohliTorr(DynamicGraph& _g,Capacity & cap):g(_g),capacity(cap),INF(0xF0F0F0)
+    KohliTorr(DynamicGraph& _g,Capacity & cap,bool backward_maxflow=false):g(_g),capacity(cap),backward_maxflow(backward_maxflow),INF(0xF0F0F0)
 #ifdef DEBUG_MAXFLOW
     	,ek(_g,cap)
 #endif
@@ -184,11 +185,21 @@ public:
         		}
         		if(g.edgeEnabled(edgeID)){
         			edge_enabled[edgeID]=true;
-        			kt->edit_edge_inc(from,to,capacity[edgeID],0);
+        			if(!backward_maxflow){
+        				kt->edit_edge_inc(from,to,capacity[edgeID],0);
+        			}else{
+        				kt->edit_edge_inc(to,from,capacity[edgeID],0);
+        			}
         		}
         	}
-        	kt->edit_tweights(s,max_capacity,0);
-        	kt->edit_tweights(t,0,max_capacity);
+        	if(!backward_maxflow){
+        		kt->edit_tweights(s,max_capacity,0);
+				kt->edit_tweights(t,0,max_capacity);
+        	}else{
+        		kt->edit_tweights(t,max_capacity,0);
+				kt->edit_tweights(s,0,max_capacity);
+        	}
+
 
 
         }
@@ -203,12 +214,19 @@ public:
     			if(g.history[i].addition && g.edgeEnabled(edgeid) && !edge_enabled[edgeid]){
     				added_Edges=true;
     				edge_enabled[edgeid]=true;
-    				kt->edit_edge_inc(g.getEdge(edgeid).from,g.getEdge(edgeid).to,capacity[edgeid],0);
-
+    				if(!backward_maxflow){
+    					kt->edit_edge_inc(g.getEdge(edgeid).from,g.getEdge(edgeid).to,capacity[edgeid],0);
+    				}else{
+    					kt->edit_edge_inc(g.getEdge(edgeid).to,g.getEdge(edgeid).from,capacity[edgeid],0);
+    				}
     			}else if (!g.history[i].addition &&  !g.edgeEnabled(edgeid) && edge_enabled[edgeid]){
     				assert(edge_enabled[edgeid]);
     				edge_enabled[edgeid]=false;
-    				kt->edit_edge_inc(g.getEdge(edgeid).from,g.getEdge(edgeid).to,-capacity[edgeid],0);
+    				if(!backward_maxflow){
+    					kt->edit_edge_inc(g.getEdge(edgeid).from,g.getEdge(edgeid).to,-capacity[edgeid],0);
+    				}else{
+    					kt->edit_edge_inc(g.getEdge(edgeid).to,g.getEdge(edgeid).from,-capacity[edgeid],0);
+    				}
     			}
     		}
 
