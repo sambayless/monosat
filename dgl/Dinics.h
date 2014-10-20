@@ -63,6 +63,8 @@ public:
     Weight INF;
     int src;
     int dst;
+    int source=-1;
+    int sink=-1;
     std::vector<int> Q;
     long stats_augmenting_rounds =0;
     	long stats_rounds=0;
@@ -72,9 +74,9 @@ public:
 #endif
 
 public:
-    Dinitz(DynamicGraph& _g,Capacity & cap):g(_g),capacity(cap),INF(0xF0F0F0)
+    Dinitz(DynamicGraph& _g,Capacity & cap,int source=-1,int sink=-1):g(_g),capacity(cap),source(source),sink(sink),INF(0xF0F0F0)
 #ifdef DEBUG_MAXFLOW
-		,ek(_g,cap)
+		,ek(_g,cap,source,sink)
 #endif
     {
     	  curflow=0;
@@ -342,6 +344,9 @@ public:
 	int numUpdates()const{
 		return num_updates;
 	}
+    const Weight update(){
+    	return maxFlow(source,sink);
+    }
     const Weight maxFlow(int s, int t){
     	Weight f = 0;
 #ifdef RECORD
@@ -412,7 +417,9 @@ public:
 
     std::vector<bool> seen;
     std::vector<bool> visited;
-
+    const Weight minCut( std::vector<MaxFlowEdge> & cut){
+    	return minCut(source,sink,cut);
+    }
     const  Weight minCut(int s, int t, std::vector<MaxFlowEdge> & cut){
     	const Weight f = maxFlow(s,t);
     	//ok, now find the cut

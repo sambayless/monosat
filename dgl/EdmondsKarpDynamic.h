@@ -56,7 +56,10 @@ class EdmondsKarpDynamic:public MaxFlow<Weight>{
     std::vector<Weight> M;
     DynamicGraph& g;
     Capacity & capacity;
+    bool allow_flow_cycles=false;
     Weight INF;
+	int source=-1;
+	int sink=-1;
 #ifdef DEBUG_MAXFLOW
     	EdmondsKarpAdj<Capacity,Weight> ek;
 #endif
@@ -141,9 +144,9 @@ class EdmondsKarpDynamic:public MaxFlow<Weight>{
 
 
 public:
-    EdmondsKarpDynamic(DynamicGraph& _g,Capacity & cap):g(_g),capacity(cap),INF(0xF0F0F0)
+    EdmondsKarpDynamic(DynamicGraph& _g,Capacity & cap,int source,int sink):g(_g),capacity(cap),source(source),sink(sink),INF(0xF0F0F0)
 #ifdef DEBUG_MAXFLOW
-    	,ek(_g,cap)
+    	,ek(_g,cap,source,sink)
 #endif
     {
     	  curflow=0;
@@ -168,7 +171,9 @@ public:
 		return num_updates;
 	}
 
-    const  Weight maxFlow(int s, int t){
+    const  Weight update(){
+    	int s = source;
+    	int t = sink;
     	//see http://cstheory.stackexchange.com/a/10186
     	static int it = 0;
     	if(++it==56){
@@ -287,12 +292,33 @@ public:
     					assert(F[edge.id]==0);
     				}
     			}
+    			dbg_print_graph(s,t,-1, -1);
 #ifndef NDEBUG
-    			for(int i = 0;i<g.nIncoming(s);i++){
-    				auto & edge = g.incoming(s,i);
-    				//There shouldn't be any backwards flow to s in a maximum flow
-    				assert(F[edge.id]==0);
-				}
+    			if(!allow_flow_cycles){
+					for(int i = 0;i<g.nIncoming(s);i++){
+						auto & edge = g.incoming(s,i);
+						//There shouldn't be any backwards flow to s in a maximum flow, unless there is a spurious flow cycle
+						//(which doesn't normally happen in edmonds karp, but can be introduced by dynamic updates sometimes)
+						assert(F[edge.id]==0);
+					}
+    			}else{
+    				Weight in_flow=0;
+    				for(int i = 0;i<g.nIncoming(s);i++){
+						auto & edge = g.incoming(s,i);
+						//There shouldn't be any backwards flow to s in a maximum flow, unless there is a spurious flow cycle
+						//(which doesn't normally happen in edmonds karp, but can be introduced by dynamic updates sometimes)
+						in_flow+=F[edge.id];
+					}
+    				Weight out_flow=0;
+    				for(int i = 0;i<g.nIncident(s);i++){
+						auto & edge = g.incident(s,i);
+						//There shouldn't be any backwards flow to s in a maximum flow, unless there is a spurious flow cycle
+						//(which doesn't normally happen in edmonds karp, but can be introduced by dynamic updates sometimes)
+						out_flow+=F[edge.id];
+					}
+    				assert(out_flow>=in_flow);
+    				assert(f==out_flow-in_flow);
+    			}
 #endif
     		}
     		dbg_check_flow(s,t);
@@ -455,7 +481,11 @@ private:
     	 return f;
     }
 
-    Weight  BreadthFirstSearch(int s, int t, int shortCircuitFrom, int shortCircuitTo, Weight& shortCircuitCapacity, Weight & shortCircuitFlow){
+    /**
+     * If allow_flow_cycles is false, then flow will only be allowed to flow on edges in the residual graph whose back edges currently have flow (non-residual) graph.
+     *
+     */
+    Weight  BreadthFirstSearch(int s, int t, int shortCircuitFrom, int shortCircuitTo, Weight& shortCircuitCapacity, Weight & shortCircuitFlow, bool allow_flow_cycles=true){
          	for(int i = 0;i<g.nodes();i++)//this has to go...
          		prev[i].from=-1;
          	prev[s].from = -2;
@@ -480,30 +510,6 @@ private:
 					   }
        			   }
 
-                   for (int i = 0;i<g.nIncident(u);i++){
-                	   if(!edge_enabled[g.incident(u,i).id])
-    						continue;
-                	   int id = g.incident(u,i).id;
-                	   int v = g.incident(u,i).node;
-                       ///(If there is available capacity, and v is not seen before in search)
-                	   if(id==27 || id==29){
-                							   int a=1;
-                						   }
-                	   Weight f = F[id];
-                	   const Weight& c = capacity[id];
-
-                	 //  int fr = F[id];
-                       if (((c - f) > 0) && (prev[v].from == -1)){
-                           prev[v] = LocalEdge(u,id,false);
-                           Weight b = c-f;
-                           M[v] = std::min(M[u], b);
-                           if (v != t)
-                               Q.push_back(v);
-                           else
-                               return M[t];
-                       }
-                   }
-
                    for (int i = 0;i<g.nIncoming(u);i++){
                 	   int id = g.incoming(u,i).id;
 					   if(!edge_enabled[(g.incoming(u,i).id)])
@@ -527,6 +533,33 @@ private:
 						  }
 					  }
 
+                   if(allow_flow_cycles){
+					   for (int i = 0;i<g.nIncident(u);i++){
+						   if(!edge_enabled[g.incident(u,i).id])
+								continue;
+						   int id = g.incident(u,i).id;
+						   int v = g.incident(u,i).node;
+						   ///(If there is available capacity, and v is not seen before in search)
+						   if(id==27 || id==29){
+												   int a=1;
+											   }
+						   Weight f = F[id];
+						   const Weight& c = capacity[id];
+
+						 //  int fr = F[id];
+						   if (((c - f) > 0) && (prev[v].from == -1)){
+							   prev[v] = LocalEdge(u,id,false);
+							   Weight b = c-f;
+
+							   M[v] = std::min(M[u], b);
+							   if (v != t)
+								   Q.push_back(v);
+							   else
+								   return M[t];
+						   }
+					   }
+				   }
+
                }
                return 0;
 
@@ -535,7 +568,7 @@ private:
 
     void dbg_print_graph(int from, int to, Weight shortCircuitFrom=-1, Weight shortCircuitTo=-1){
 #ifndef NDEBUG
-    	return;
+
     		static int it = 0;
     		if(++it==6){
     			int a =1;
@@ -606,7 +639,10 @@ private:
     	shortCircuitFlow=0;
         	 while(true){
         		 dbg_print_graph(s,t,shortCircuitFrom, shortCircuitTo);
-    			Weight m= BreadthFirstSearch(s,t,shortCircuitFrom,shortCircuitTo,bound,shortCircuitFlow);
+
+    			Weight m= BreadthFirstSearch(s,t,shortCircuitFrom,shortCircuitTo,bound,shortCircuitFlow,allow_flow_cycles);
+
+
     			if(bound >=0 && newFlow+m>bound){
 						m=bound-newFlow;
 					}
@@ -705,14 +741,15 @@ private:
     std::vector<bool> seen;
     std::vector<bool> visited;
 public:
-    const Weight minCut(int s, int t, std::vector<MaxFlowEdge> & cut){
-    	Weight f = maxFlow(s,t);
+    const Weight minCut( std::vector<MaxFlowEdge> & cut){
+    	Weight f = this->maxFlow();
     	//can this be improved upon, for example as described in this stack overflow?
     	//http://cstheory.stackexchange.com/a/17337
     	//When looking for augmenting paths, you do a traversal, in which you use some form of queue of as-yet-unvisited nodes (in the Edmonds-Karp version, you use BFS, which means a FIFO queue). In the last iteration, you can't reach t from s (this is the termination criterion, after all). At this point, the set of nodes you reached forms the s-part of the cut, while the nodes you didn't reach form the t-part.
     	//The leaf nodes of your traversal tree form the “fringe” of the s-part, while the nodes in your traversal queue form the fringe of the t-part, and what you want is the set of edges from the s-fringe to the t-fringe. This can also easily be maintained during traversal: Just add an edge to the cut when it is examined, and leads to an unvisited node, and remove it if it is traversed (so its target becomes visited). Then, once Ford-Fulkerson is finished, you'll have your min-cut (or, rather, one of them) right there. The running time will be (asymptotically) identical to Ford-Fulkerson (or Edmonds-Karp or whatever version you're using), which should give you what you were looking for.
 
-
+    	int s = source;
+    	int t = sink;
 
 
     	//ok, now find the cut

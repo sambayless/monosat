@@ -70,7 +70,7 @@ public:
 			printf("\tUnder-approx updates: %d (%d skipped) (%f s total, %f s avg)\n", stats_under_updates,stats_skipped_under_updates,(double)stats_under_update_time, (double)stats_under_update_time/(double)(stats_under_updates+1) );
 			printf("\tOver-approx updates: %d (%d skipped)  (%f s total, %f s avg)\n", stats_over_updates,stats_skipped_over_updates,(double)stats_over_update_time, (double)stats_over_update_time/(double)(stats_over_updates+1) );
 			printf("\tTheory Decisions: %d (%f s total, %f s avg)\n",stats_decisions,(double)stats_decide_time,(double)stats_decide_time/(double)(stats_decisions+1));
-			printf("\tConflicts (over,under), (over time %f s, under time %f s): %d, %d\n",stats_under_conflicts,stats_over_conflicts ,stats_over_conflict_time,stats_under_conflict_time );
+			printf("\tConflicts (under,over): %d, %d, (under time %f s, over time %f s)\n",stats_under_conflicts,stats_over_conflicts ,stats_under_conflict_time,stats_over_conflict_time );
 
 		}
 	}

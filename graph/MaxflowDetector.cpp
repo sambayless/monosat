@@ -31,8 +31,8 @@ using namespace Monosat;
 
 template<>
 void MaxflowDetector<int>::buildDinitzLinkCut(){
-	positive_detector =  new DinitzLinkCut<std::vector<int>>(g,capacities);
-	negative_detector = new DinitzLinkCut<std::vector<int>>(antig,capacities);
+	positive_detector =  new DinitzLinkCut<std::vector<int>>(g,capacities,source,target);
+	negative_detector = new DinitzLinkCut<std::vector<int>>(antig,capacities,source,target);
 }
 
 template<typename Weight>
@@ -50,58 +50,58 @@ MaxflowDetector<Weight>::MaxflowDetector(int _detectorID, GraphTheorySolver<Weig
 Detector(_detectorID),outer(_outer),capacities(capacities),over_graph(_g),g(_g),antig(_antig),source(from),target(_target),rnd_seed(seed),positive_detector(NULL),negative_detector(NULL){
 
 	if(mincutalg==MinCutAlg::ALG_EDKARP_DYN){
-		positive_detector = new EdmondsKarpDynamic<std::vector<Weight>,Weight>(_g,capacities);
-		negative_detector = new EdmondsKarpDynamic<std::vector<Weight>,Weight>(_antig,capacities);
+		positive_detector = new EdmondsKarpDynamic<std::vector<Weight>,Weight>(_g,capacities,source,target);
+		negative_detector = new EdmondsKarpDynamic<std::vector<Weight>,Weight>(_antig,capacities,source,target);
 		positive_conflict_detector =positive_detector;//new EdmondsKarpAdj<std::vector<Weight>,Weight>(_g,capacities);
 		negative_conflict_detector =negative_detector;// new EdmondsKarpAdj<std::vector<Weight>,Weight>(_antig,capacities);
 		if(opt_conflict_min_cut)
-				learn_cut = new EdmondsKarpAdj<std::vector<int>,int>(learn_graph,learn_caps);
+				learn_cut = new EdmondsKarpAdj<std::vector<int>,int>(learn_graph,learn_caps,source,target);
 	}else if (mincutalg==MinCutAlg::ALG_EDKARP_ADJ){
-		positive_detector = new EdmondsKarpAdj<std::vector<Weight>,Weight>(_g,capacities);
-		negative_detector = new EdmondsKarpAdj<std::vector<Weight>,Weight>(_antig,capacities);
+		positive_detector = new EdmondsKarpAdj<std::vector<Weight>,Weight>(_g,capacities,source,target);
+		negative_detector = new EdmondsKarpAdj<std::vector<Weight>,Weight>(_antig,capacities,source,target);
 		positive_conflict_detector = positive_detector;
 		negative_conflict_detector = negative_detector;
 		if(opt_conflict_min_cut)
-				learn_cut = new EdmondsKarpAdj<std::vector<int>,int>(learn_graph,learn_caps);
+				learn_cut = new EdmondsKarpAdj<std::vector<int>,int>(learn_graph,learn_caps,source,target);
 	}/*else if (mincutalg==MinCutAlg::ALG_IBFS){
 		positive_detector = new IBFS(_g);
 		negative_detector = new IBFS(_antig);
 		positive_conflict_detector =new EdmondsKarpAdj<std::vector<Weight>,Weight>(_g,capacities);
 		negative_conflict_detector = new EdmondsKarpAdj<std::vector<Weight>,Weight>(_antig,capacities);
 	}*/else if (mincutalg==MinCutAlg::ALG_DINITZ){
-		positive_detector = new Dinitz<std::vector<Weight>,Weight>(_g,capacities);
-		negative_detector = new Dinitz<std::vector<Weight>,Weight>(_antig,capacities);
+		positive_detector = new Dinitz<std::vector<Weight>,Weight>(_g,capacities,source,target);
+		negative_detector = new Dinitz<std::vector<Weight>,Weight>(_antig,capacities,source,target);
 		positive_conflict_detector = positive_detector;// new EdmondsKarpAdj<std::vector<Weight>,Weight>(_g,capacities);
 		negative_conflict_detector = negative_detector;//new EdmondsKarpAdj<std::vector<Weight>,Weight>(_antig,capacities);
 		if(opt_conflict_min_cut)
-				learn_cut = new Dinitz<std::vector<int>,int>(learn_graph,learn_caps);
+				learn_cut = new Dinitz<std::vector<int>,int>(learn_graph,learn_caps,source,target);
 	}else if (mincutalg==MinCutAlg::ALG_DINITZ_LINKCUT){
 		//link-cut tree currently only supports ints (enforcing this using tempalte specialization...).
 		buildDinitzLinkCut();
-		positive_conflict_detector = new EdmondsKarpAdj<std::vector<Weight>,Weight>(_g,capacities);
-		negative_conflict_detector = new EdmondsKarpAdj<std::vector<Weight>,Weight>(_antig,capacities);
+		positive_conflict_detector = new EdmondsKarpAdj<std::vector<Weight>,Weight>(_g,capacities,source,target);
+		negative_conflict_detector = new EdmondsKarpAdj<std::vector<Weight>,Weight>(_antig,capacities,source,target);
 		if(opt_conflict_min_cut)
-				learn_cut = new DinitzLinkCut<std::vector<int>>(learn_graph,learn_caps);
+				learn_cut = new DinitzLinkCut<std::vector<int>>(learn_graph,learn_caps,source,target);
 	}else if (mincutalg==MinCutAlg::ALG_KOHLI_TORR){
-		positive_detector = new KohliTorr<std::vector<Weight>,Weight>(_g,capacities,opt_maxflow_backward);
-		negative_detector = new KohliTorr<std::vector<Weight>,Weight>(_antig,capacities,opt_maxflow_backward);
+		positive_detector = new KohliTorr<std::vector<Weight>,Weight>(_g,capacities,opt_maxflow_backward,source,target);
+		negative_detector = new KohliTorr<std::vector<Weight>,Weight>(_antig,capacities,opt_maxflow_backward,source,target);
 		if(opt_use_kt_for_conflicts){
 			positive_conflict_detector = positive_detector;//new EdmondsKarpDynamic<std::vector<Weight>,Weight>(_g,capacities);
 			negative_conflict_detector =negative_detector;//new EdmondsKarpDynamic<std::vector<Weight>,Weight>(_antig,capacities);
 		}else{
 			//for reasons I don't yet understand, kohli-torr seems to produce maxflows that work very poorly as theory-decisions for some problems.
-			positive_conflict_detector =new EdmondsKarpDynamic<std::vector<Weight>,Weight>(_g,capacities);
-			negative_conflict_detector = new EdmondsKarpDynamic<std::vector<Weight>,Weight>(_antig,capacities);
+			positive_conflict_detector =new EdmondsKarpDynamic<std::vector<Weight>,Weight>(_g,capacities,source,target);
+			negative_conflict_detector = new EdmondsKarpDynamic<std::vector<Weight>,Weight>(_antig,capacities,source,target);
 		}
 		if(opt_conflict_min_cut)
-				learn_cut = new EdmondsKarpAdj<std::vector<int>,int>(learn_graph,learn_caps);
+				learn_cut = new EdmondsKarpAdj<std::vector<int>,int>(learn_graph,learn_caps,source,target);
 	}else{
-		positive_detector = new EdmondsKarpAdj<std::vector<Weight>,Weight>(_g,capacities);
-		negative_detector = new EdmondsKarpAdj<std::vector<Weight>,Weight>(_antig,capacities);
+		positive_detector = new EdmondsKarpAdj<std::vector<Weight>,Weight>(_g,capacities,source,target);
+		negative_detector = new EdmondsKarpAdj<std::vector<Weight>,Weight>(_antig,capacities,source,target);
 		positive_conflict_detector = positive_detector;
 		negative_conflict_detector = negative_detector;
 		if(opt_conflict_min_cut)
-				learn_cut = new EdmondsKarpAdj<std::vector<int>,int>(learn_graph,learn_caps);
+				learn_cut = new EdmondsKarpAdj<std::vector<int>,int>(learn_graph,learn_caps,source,target);
 	}
 
 
@@ -160,7 +160,7 @@ void MaxflowDetector<Weight>::buildMaxFlowTooHighReason(Weight flow,vec<Lit> & c
 			//drawFull();
 			double starttime = rtime(2);
 			tmp_cut.clear();
-			Weight actual_flow = positive_conflict_detector->maxFlow(source, target);
+			Weight actual_flow = positive_conflict_detector->maxFlow();
 
 			//just collect the set of edges which have non-zero flow, and return them
 			//(Or, I could return a cut, probably)
@@ -210,7 +210,7 @@ template<typename Weight>
 			}
 			double starttime = rtime(2);
 			if(opt_conflict_min_cut){
-				Weight foundflow = negative_conflict_detector->maxFlow(source,target);
+				Weight foundflow = negative_conflict_detector->maxFlow();
 				//find a minimal s-t cut in the residual graph.
 				//to do so, first construct the residual graph
 				int INF=0x0FF0F0;
@@ -269,7 +269,7 @@ template<typename Weight>
 				//learn_graph.drawFull(true);
 				outer->cut.clear();
 				//antig.drawFull(true);
-				int f =learn_cut->minCut(source,target,outer->cut);
+				int f =learn_cut->minCut(outer->cut);
 				if(f<0x0FF0F0){
 					assert(f<0xF0F0F0); assert(f==outer->cut.size());//because edges are only ever infinity or 1
 					for(int i = 0;i<outer->cut.size();i++){
@@ -300,9 +300,9 @@ template<typename Weight>
 			seen.clear();
 			seen.growTo(outer->nNodes());
 			visit.clear();
-			Weight foundflow = negative_conflict_detector->maxFlow(source,target);
-			std::vector<MaxFlowEdge> ignore;
-			negative_conflict_detector->minCut(source,target,ignore);
+			Weight foundflow = negative_conflict_detector->maxFlow();
+/*			std::vector<MaxFlowEdge> ignore;
+			negative_conflict_detector->minCut(ignore);*/
 			visit.push(target);
 			for(int k = 0;k<visit.size();k++){
 				int u = visit[k];
@@ -358,7 +358,7 @@ template<typename Weight>
 
 #ifdef RECORD
 			if(negative_detector!=negative_conflict_detector){
-				Weight foundflow2 = negative_detector->maxFlow(source,target);
+				Weight foundflow2 = negative_detector->maxFlow();
 				assert(foundflow==foundflow2);
 			}
 			std::sort(conflict.begin(),conflict.end());
@@ -462,8 +462,8 @@ template<typename Weight>
 			if(positive_detector && (!opt_detect_pure_theory_lits || unassigned_positives>0)){
 				double startdreachtime = rtime(2);
 				stats_under_updates++;
-				under_maxflow = positive_detector->maxFlow(source,target);
-				assert(under_maxflow==positive_conflict_detector->maxFlow(source,target));
+				under_maxflow = positive_detector->maxFlow();
+				assert(under_maxflow==positive_conflict_detector->maxFlow());
 				double reachUpdateElapsed = rtime(2)-startdreachtime;
 				stats_under_update_time+=reachUpdateElapsed;
 			}else
@@ -472,8 +472,8 @@ template<typename Weight>
 			if(negative_detector && (!opt_detect_pure_theory_lits || unassigned_negatives>0)){
 				double startunreachtime = rtime(2);
 				stats_over_updates++;
-				over_maxflow = negative_detector->maxFlow(source,target);
-				assert(over_maxflow==negative_conflict_detector->maxFlow(source,target));
+				over_maxflow = negative_detector->maxFlow();
+				assert(over_maxflow==negative_conflict_detector->maxFlow());
 				double unreachUpdateElapsed = rtime(2)-startunreachtime;
 				stats_over_update_time+=unreachUpdateElapsed;
 			}else
@@ -523,8 +523,8 @@ template<typename Weight>
 		}
 template<typename Weight>
 bool MaxflowDetector<Weight>::checkSatisfied(){
-	EdmondsKarpAdj<std::vector<Weight>,Weight> positiveCheck(g,capacities);
-	EdmondsKarpAdj<std::vector<Weight>,Weight> negativeCheck(antig,capacities);
+	EdmondsKarpAdj<std::vector<Weight>,Weight> positiveCheck(g,capacities,source,target);
+	EdmondsKarpAdj<std::vector<Weight>,Weight> negativeCheck(antig,capacities,source,target);
 		for(int j = 0;j< flow_lits.size();j++){
 
 				Lit l = flow_lits[j].l;
@@ -534,18 +534,18 @@ bool MaxflowDetector<Weight>::checkSatisfied(){
 					//int node =getNode(var(l));
 
 					if(outer->value(l)==l_True){
-						if(positiveCheck.maxFlow(source,target)<dist){
+						if(positiveCheck.maxFlow()<dist){
 							return false;
 						}
 					}else if (outer->value(l)==l_False){
-						if( negativeCheck.maxFlow(source,target)>=dist){
+						if( negativeCheck.maxFlow()>=dist){
 							return false;
 						}
 					}else{
-						if(positiveCheck.maxFlow(source,target)>=dist){
+						if(positiveCheck.maxFlow()>=dist){
 							return false;
 						}
-						if(!negativeCheck.maxFlow(source,target)<dist){
+						if(!negativeCheck.maxFlow()<dist){
 							return false;
 						}
 					}
@@ -556,7 +556,7 @@ bool MaxflowDetector<Weight>::checkSatisfied(){
 }
 template<typename Weight>
 void MaxflowDetector<Weight>::printSolution(){
-	Weight f = positive_conflict_detector->maxFlow(source,target);
+	Weight f = positive_conflict_detector->maxFlow();
 	printf("Maximum %d->%d flow in graph %d is ", this->source,this->target,this->outer->getGraphID());
 	std::cout<<f <<"\n";
 	if(opt_verb>0){
@@ -648,7 +648,7 @@ Lit MaxflowDetector<Weight>::decide(){
 			}
 		}
 		//Weight under_flow = positive_detector->maxFlow(source,target);//intentionally not using the conflict detector; it isn't required.
-		Weight over_flow = negative_detector->maxFlow(source,target) ;
+		Weight over_flow = negative_detector->maxFlow() ;
 
 		for(int k = 0;k<flow_lits.size();k++){
 			Lit l =flow_lits[k].l;
@@ -685,7 +685,7 @@ Lit MaxflowDetector<Weight>::decide(){
 
 					//then decide an unassigned edge of the currently selected flow
 					to_decide.clear();
-					over->maxFlow(source,target);
+					over->maxFlow();
 					last_decision_status= over->numUpdates();
 
 					seen.clear();

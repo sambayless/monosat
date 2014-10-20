@@ -48,7 +48,8 @@ public:
     int last_modification;
     int last_deletion;
     int last_addition;
-
+	int source=-1;
+	int sink=-1;
     int history_qhead;
     int last_history_clear;
     std::vector<LocalEdge> prev;
@@ -123,9 +124,9 @@ public:
 
 	   }
 public:
-    EdmondsKarpAdj(DynamicGraph& _g,Capacity & cap):g(_g),capacity(cap),INF(0xF0F0F0)
+    EdmondsKarpAdj(DynamicGraph& _g,Capacity & cap,int source=-1,int sink=-1):g(_g),capacity(cap),source(source),sink(sink),INF(0xF0F0F0)
 #ifdef DEBUG_MAXFLOW
-    	,ek(_g)
+    	,ek(_g,source,sink)
 #endif
     {
     	  curflow=0;
@@ -180,6 +181,13 @@ public:
 	int numUpdates()const{
 		return num_updates;
 	}
+
+    const Weight update(){
+    	return maxFlow(source,sink);
+    }
+    const Weight maxFlow(){
+    	return this->maxFlow(source,sink);
+    }
     const Weight maxFlow(int s, int t){
     	Weight f = 0;
 #ifdef RECORD
@@ -286,7 +294,9 @@ public:
 
     std::vector<bool> seen;
     std::vector<bool> visited;
-
+    const Weight minCut( std::vector<MaxFlowEdge> & cut){
+    	return minCut(source,sink,cut);
+    }
     const Weight minCut(int s, int t, std::vector<MaxFlowEdge> & cut){
     	const Weight f = maxFlow(s,t);
     	//ok, now find the cut

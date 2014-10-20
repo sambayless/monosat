@@ -79,9 +79,9 @@ class KohliTorr:public MaxFlow<Weight>{
     bool flow_needs_recalc=true;
 
 public:
-    KohliTorr(DynamicGraph& _g,Capacity & cap,bool backward_maxflow=false):g(_g),capacity(cap),backward_maxflow(backward_maxflow),INF(0xF0F0F0)
+    KohliTorr(DynamicGraph& _g,Capacity & cap, int source, int sink,bool backward_maxflow=false):g(_g),capacity(cap),source(source),sink(sink),backward_maxflow(backward_maxflow),INF(0xF0F0F0)
 #ifdef DEBUG_MAXFLOW
-    	,ek(_g,cap)
+    	,ek(_g,cap,source,sink)
 #endif
     {
     	  curflow=0;
@@ -104,9 +104,9 @@ public:
 		return num_updates;
 	}
 
-    const  Weight maxFlow(int s, int t){
-    	source=s;
-    	sink=t;
+    const  Weight update(){
+    	int s =source;
+    	int t = sink;
 
     	//see http://cstheory.stackexchange.com/a/10186
     	static int it = 0;
@@ -119,7 +119,7 @@ public:
 			fflush(g.outfile);
 		}
 #endif
-		dbg_print_graph(s,t);
+
     	//C.resize(g.nodes());
 #ifdef DEBUG_MAXFLOW
     	for(int i = 0;i<g.all_edges.size();i++){
@@ -133,7 +133,7 @@ public:
 #endif
       	if(last_modification>0 && g.modifications==last_modification){
 #ifdef DEBUG_MAXFLOW
-      		Weight expected_flow =ek.maxFlow(s,t);
+      		Weight expected_flow =ek.maxFlow();
 #endif
 
 #ifdef DEBUG_MAXFLOW
@@ -169,6 +169,8 @@ public:
         		int from = g.getEdge(edgeID).from;
         		int to = g.getEdge(edgeID).to;
         		edge_enabled[edgeID]=false;
+        		if(from==to)
+        			continue;//skip self edges.
         		if(!kt->has_edge(from,to)){
         			assert(arc_map[edgeID]==-1);
         			int arc_id = kt->add_edge(from,to,0,0);
@@ -234,7 +236,7 @@ public:
 
 
 #ifdef DEBUG_MAXFLOW
-    		Weight expected_flow =ek.maxFlow(s,t);
+    		Weight expected_flow =ek.maxFlow();
     		if(f != expected_flow){
 				exit(4);
 			}
@@ -267,7 +269,7 @@ private:
 
     void dbg_print_graph(int from, int to){
 #ifndef NDEBUG
-    	return;
+
     	if(edge_enabled.size()<g.edges())
     		return;
     		static int it = 0;
@@ -391,14 +393,14 @@ private:
     	//apply edmonds karp to the current flow.
     	Weight maxflow = kt->maxflow(true,nullptr);
     	if(backward_maxflow){
-        	dbg_print_graph(sink,source);
+
         	kt->clear_t_edges(sink,source);
-        	dbg_print_graph(sink,source);
+
         	dbg_check_flow(source,sink);
     	}else{
-        	dbg_print_graph(source,sink);
+
         	kt->clear_t_edges(source, sink);
-        	dbg_print_graph(source,sink);
+
         	dbg_check_flow(source,sink);
     	}
 
@@ -408,8 +410,10 @@ private:
     std::vector<int> Q;
 
 public:
-    const Weight minCut(int s, int t, std::vector<MaxFlowEdge> & cut){
-    	Weight f = maxFlow(s,t);
+    const Weight minCut( std::vector<MaxFlowEdge> & cut){
+    	Weight f = this->maxFlow();
+    	int s = source;
+    	int t = sink;
     	calc_flow();
     	Q.clear();
 		Q.push_back(s);
@@ -473,6 +477,9 @@ public:
 
 public:
     const Weight getEdgeFlow(int flow_edge){
+    	if(g.getEdge(flow_edge).from==g.getEdge(flow_edge).to)
+    		return 0;//self edges have no flow.
+
     	calc_flow();
     	//we need to pick, possibly arbitrarily (but deterministically), which of the edges have flow
     	int arc_id = arc_map[flow_edge];
@@ -495,7 +502,7 @@ public:
 			int edgeid = g.incident(from,i,true).id;
 			if(g.edgeEnabled(edgeid) &&  ((g.getEdge(edgeid).from==from && g.getEdge(edgeid).to==to))){
 				assert(arc_map[edgeid] == arc_id);
-				Weight & edge_cap = capacity[edgeid];
+				Weight  edge_cap = capacity[edgeid];
 				if(edgeid==flow_edge){
 					if(remaining_flow>=edge_cap)
 						return edge_cap;

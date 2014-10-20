@@ -28,7 +28,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "dgl/TarjansSCC.h"
 using namespace Monosat;
 template<typename Weight>
-ReachDetector<Weight>::ReachDetector(int _detectorID, GraphTheorySolver<Weight> * _outer, DynamicGraph &_g, DynamicGraph &_antig, int from,double seed):Detector(_detectorID),outer(_outer),g(_g),antig(_antig),within(-1),source(from),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),negative_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL),chokepoint_status(*this),chokepoint(chokepoint_status, _antig,source){
+ReachDetector<Weight>::ReachDetector(int _detectorID, GraphTheorySolver<Weight> * _outer, DynamicGraph &_g, DynamicGraph &_antig, int from,double seed):Detector(_detectorID),outer(_outer),g(_g),antig(_antig),within(-1),source(from),rnd_seed(seed),cutStatus(*this),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),negative_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL),chokepoint_status(*this),chokepoint(chokepoint_status, _antig,source){
 
 
 	rnd_path=nullptr;
@@ -165,6 +165,9 @@ ReachDetector<Weight>::ReachDetector(int _detectorID, GraphTheorySolver<Weight> 
 	}
 	if(positive_reach_detector && ! positive_fast_reach_detector)
 		positive_fast_reach_detector = positive_reach_detector;
+
+
+
 
 	if(positive_reach_detector)
 		positive_reach_detector->setSource(source);
@@ -413,6 +416,38 @@ void ReachDetector<Weight>::addLit(int from, int to, Var outer_reach_var){
 	 if( !negative_reach_detector){
 		 buildSATConstraints(false);
 	 }
+	 if(opt_conflict_min_cut){
+		conflict_flows.resize(g.nodes(),nullptr);
+		if(!conflict_flows[to]){
+			MaxFlow<int> * conflict_flow_t=nullptr;
+				if(mincutalg==MinCutAlg::ALG_EDKARP_DYN){
+					conflict_flow_t = new EdmondsKarpDynamic<CutStatus,int>(outer->cutGraph, cutStatus,source,to);
+				}else if (mincutalg==MinCutAlg::ALG_EDKARP_ADJ){
+
+					conflict_flow_t = new EdmondsKarpAdj<CutStatus,int>(outer->cutGraph, cutStatus,source,to);
+
+				}else if (mincutalg==MinCutAlg::ALG_DINITZ){
+
+					conflict_flow_t = new Dinitz<CutStatus,int>(outer->cutGraph, cutStatus,source,to);
+
+				}else if (mincutalg==MinCutAlg::ALG_DINITZ_LINKCUT){
+					//link-cut tree currently only supports ints (enforcing this using tempalte specialization...).
+
+					conflict_flow_t = new DinitzLinkCut<CutStatus>(outer->cutGraph, cutStatus,source,to);
+
+				}else if (mincutalg==MinCutAlg::ALG_KOHLI_TORR){
+					if(opt_use_kt_for_conflicts){
+						conflict_flow_t = new KohliTorr<CutStatus,int>(outer->cutGraph, cutStatus,source,to);
+					}else
+						conflict_flow_t = new EdmondsKarpDynamic<CutStatus,int>(outer->cutGraph, cutStatus,source,to);
+				}else{
+
+					conflict_flow_t = new EdmondsKarpAdj<CutStatus,int>(outer->cutGraph, cutStatus,source,to);
+
+				}
+			conflict_flows[to]=conflict_flow_t;
+		}
+	 }
 }
 template<typename Weight>
 void ReachDetector<Weight>::ReachStatus::setReachable(int u, bool reachable){
@@ -622,43 +657,20 @@ template<typename Weight>
 
 
 
-			}else*/ if(opt_conflict_min_cut){
-				outer->stats_mc_calls++;
-				outer->cutGraph.clearHistory();
-				outer->cutGraph.invalidate();
-				if(mincutalg== MinCutAlg::ALG_EDMONSKARP){
-					//ok, set the weights for each edge in the cut graph.
-					//Set edges to infinite weight if they are undef or true, and weight 1 otherwise.
-					for(int u = 0;u<outer->cutGraph.nodes();u++){
-						for(int j = 0;j<outer->cutGraph.nIncident(u);j++){
-							int v = outer->cutGraph.incident(u,j).node;
-							int edgeid =  outer->cutGraph.incident(u,j).id;
-							Var var = outer->getEdgeVar(edgeid);
-							/*if(S->value(var)==l_False){
-								mc.setCapacity(u,v,1);
-							}else{*/
-							outer->mc->setCapacity(u,v,0x0FF0F0);
-							//}
-						}
-					}
+			}else*/
+			if(opt_conflict_min_cut && conflict_flows[node]){
+				antig.drawFull();
+				cut.clear();
 
-					//find any edges assigned to false, and set their capacity to 1
-					for(int i =0;i<outer->trail.size();i++){
-						if(outer->trail[i].isEdge && !outer->trail[i].assign){
-							outer->mc->setCapacity(outer->trail[i].from, outer->trail[i].to,1);
-						}
-					}
-				}
+				int f =conflict_flows[node]->minCut(cut);
 
-				outer->cut.clear();
-				//antig.drawFull();
-				int f =outer->mc->minCut(source,node,outer->cut);
-
-				assert(f<0xF0F0F0); assert(f==outer->cut.size());//because edges are only ever infinity or 1
-				for(int i = 0;i<outer->cut.size();i++){
-					MaxFlowEdge e = outer->cut[i];
-
-					Lit l = mkLit(outer->getEdgeVar(e.id),false);
+				assert(f==cut.size());//because edges are only ever infinity or 1
+				assert(f<0xFFFF);
+				for(int i = 0;i<cut.size();i++){
+					MaxFlowEdge e = cut[i];
+					int cut_id = e.id;
+					assert(cut_id%2==0);
+					Lit l = mkLit(outer->getEdgeVar(cut_id/2),false);
 					assert(outer->value(l)==l_False);
 					conflict.push(l);
 				}
@@ -732,7 +744,7 @@ template<typename Weight>
 
 		    if(opt_shrink_theory_conflicts){
 		    //visit each edge lit in this initial conflict, and see if unreachability is preserved if we add the edge back in (temporarily)
-		    	int i,j=0;
+		    /*	int i,j=0;
 				outer->cutGraph.clearHistory();
 				outer->cutGraph.invalidate();
 		    	while(cutgraph.nodes()<g.nodes()){
@@ -796,7 +808,7 @@ template<typename Weight>
 		    		cutgraph.enableEdge(edgeID);
 		    	}
 
-
+*/
 
 		    }
 
@@ -900,7 +912,7 @@ template<typename Weight>
 
 
 
-					if(opt_conflict_min_cut){
+					/*if(opt_conflict_min_cut){
 						if(mincutalg!= MinCutAlg::ALG_EDKARP_ADJ){
 							//ok, set the weights for each edge in the cut graph.
 							//Set edges to infinite weight if they are undef or true, and weight 1 otherwise.
@@ -910,9 +922,9 @@ template<typename Weight>
 									int edgeid =  outer->cutGraph.incident(u,j).id;
 									Var var = outer->getEdgeVar(edgeid);
 									//Var var = outer->edges[u][v].v;
-									/*if(S->value(var)==l_False){
+									if(S->value(var)==l_False){
 										mc.setCapacity(u,v,1);
-									}else{*/
+									}else{
 									outer->mc->setCapacity(u,v,0xF0F0F0);
 									//}
 								}
@@ -938,7 +950,7 @@ template<typename Weight>
 							assert(outer->value(l)==l_False);
 							conflict.push(l);
 						}
-					}else{
+					}else*/{
 						//We could learn an arbitrary (non-infinite) cut here, or just the whole set of false edges
 						//or perhaps we can learn the actual 1-uip cut?
 

@@ -51,7 +51,8 @@ public:
     int last_modification;
     int last_deletion;
     int last_addition;
-
+    int source=-1;
+    int sink=-1;
     int history_qhead;
     int last_history_clear;
     //std::vector<LocalEdge> prev;
@@ -114,9 +115,9 @@ public:
 	}
 
 public:
-    DinitzLinkCut(DynamicGraph& _g,Capacity & cap):g(_g),capacity(cap),INF(0xF0F0F0)
+    DinitzLinkCut(DynamicGraph& _g,Capacity & cap,int source=-1,int sink=-1):g(_g),capacity(cap),source(source),sink(sink),INF(0xF0F0F0)
 #ifdef DEBUG_MAXFLOW
-		,ek(_g,cap)
+		,ek(_g,cap,source,sink)
 #endif
     {
     	  curflow=0;
@@ -812,6 +813,9 @@ public:
 	int numUpdates()const{
 		return num_updates;
 	}
+   const int update(){
+		return maxFlow(source,sink);
+	}
     const  int maxFlow(int s, int t){
     	int f = 0;
 #ifdef RECORD
@@ -883,7 +887,9 @@ public:
 
     std::vector<bool> seen;
     std::vector<bool> visited;
-
+    const int minCut( std::vector<MaxFlowEdge> & cut){
+    	return minCut(source,sink,cut);
+    }
     const  int minCut(int s, int t, std::vector<dgl::MaxFlowEdge> & cut){
     	const int f = maxFlow(s,t);
     	//ok, now find the cut

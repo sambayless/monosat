@@ -46,7 +46,8 @@ public:
 
     int history_qhead;
     int last_history_clear;
-
+    int source=-1;
+    int sink=-1;
     DynamicGraph& g;
     Weight INF;
 
@@ -107,7 +108,7 @@ public:
 
 	   }
 public:
-    EdmondsKarp(DynamicGraph& _g):g(_g),INF(0xF0F0F0)
+    EdmondsKarp(DynamicGraph& _g,int source=-1,int sink=-1):g(_g),source(source),sink(sink),INF(0xF0F0F0)
     {
         curflow=-1;
 
@@ -141,6 +142,12 @@ public:
 	int numUpdates()const{
 		return num_updates;
 	}
+
+
+    const Weight update(){
+    	return maxFlow(source,sink);
+    }
+
     const  Weight maxFlow(int s, int t){
     	if(last_modification>0 && g.modifications==last_modification){
 
@@ -230,7 +237,9 @@ public:
 
     std::vector<bool> seen;
     std::vector<bool> visited;
-
+    const Weight minCut( std::vector<MaxFlowEdge> & cut){
+    	return minCut(source,sink,cut);
+    }
     bool minCut(int s, int t, int max_length, std::vector<MaxFlowEdge> & cut){
     	Weight f = maxFlow(s,t,max_length);
     	if(f>max_length){

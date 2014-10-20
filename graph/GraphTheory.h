@@ -95,6 +95,14 @@ public:
 
 	DynamicGraph g;
 	DynamicGraph antig;
+	/**
+	 * The cutgraph is (optionally) used for conflict analysis by some graph theories.
+	 * It has two edges for every edge in the real graph (with indices edgeID*2 and edgeID*2+1).
+	 * If edge ID is assigned to FALSE, then edge ID*2 is assigned to enabled in the cutgraph, and
+	 * edge ID*2+1 is disabled.
+	 * Otherwise, if edge ID is unassigned or true, then edge ID*2 is disabled in the cutgraph, and
+	 * edge ID*2+1 is enabled.
+	 */
 	DynamicGraph cutGraph;
 
 	//Var min_edge_var;
@@ -146,7 +154,7 @@ public:
 	//Some algorithms support computations using rational weights (or capacities).
 	std::vector<mpq_class> rational_weights;
 	bool requiresPropagation;
-	MaxFlow<int> * mc;
+	//MaxFlow<int> * mc;
 	//MaxFlow * reachprop;
 
     vec<char> seen;
@@ -196,12 +204,12 @@ public:
 		GraphTheorySolver & outer;
 
 		const int &operator [] (int id) const {
-
-			if(outer.value(outer.edge_list[id].v) ==l_False){
+			return one;
+			/*if(outer.value(outer.edge_list[id].v) ==l_False){
 				return one;
 			}else{
 				return inf;
-			}
+			}*/
 		}
 		int size()const{
 			return outer.edge_list.size();
@@ -241,6 +249,11 @@ public:
 						sprintf(t,"TEST_ANTI_GRAPH%d",id);
 						antig.outfile=fopen(t,"w");
 					}
+			{
+				char t[30];
+				sprintf(t,"TEST_CUT_GRAPH%d",id);
+				cutGraph.outfile=fopen(t,"w");
+			}
 #endif
 			local_q=0;
 			theory_index=0;
@@ -269,7 +282,7 @@ public:
 			 requiresPropagation=true;
 			 rnd_seed=opt_random_seed;
 
-			if(mincutalg==MinCutAlg::ALG_EDKARP_DYN){
+	/*		if(mincutalg==MinCutAlg::ALG_EDKARP_DYN){
 				 mc = new EdmondsKarpDynamic<CutStatus,int>(cutGraph, cutStatus);
 			}else if (mincutalg==MinCutAlg::ALG_EDKARP_ADJ){
 				mc = new EdmondsKarpAdj<CutStatus,int>(cutGraph, cutStatus);
@@ -280,11 +293,13 @@ public:
 				//link-cut tree currently only supports ints (enforcing this using tempalte specialization...).
 				mc = new DinitzLinkCut<CutStatus>(cutGraph, cutStatus);
 			}else if (mincutalg==MinCutAlg::ALG_KOHLI_TORR){
-				//cannot use kohli torr for conflict analysis, because it doesn't provide edge flow information.
-				 mc = new EdmondsKarpDynamic<CutStatus,int>(cutGraph, cutStatus);
+				if(opt_use_kt_for_conflicts){
+					 mc = new KohliTorr<CutStatus,int>(cutGraph, cutStatus);
+				}else
+					mc = new EdmondsKarpDynamic<CutStatus,int>(cutGraph, cutStatus);
 			}else{
 				mc = new EdmondsKarpAdj<CutStatus,int>(cutGraph, cutStatus);
-			}
+			}*/
 
 	}
 
@@ -549,6 +564,17 @@ public:
 */
 	}
 	void dbg_sync(){
+#ifndef NDEBUG
+		for(int i = 0;i<edge_list.size();i++){
+			if(value(edge_list[i].v)==l_False){
+				assert(cutGraph.edgeEnabled(i*2));
+				assert(!cutGraph.edgeEnabled(i*2+1));
+			}else{
+				assert(!cutGraph.edgeEnabled(i*2));
+				assert(cutGraph.edgeEnabled(i*2+1));
+			}
+		}
+#endif
 #ifdef DEBUG_DIJKSTRA
 
 		for(int i = 0;i<assigns.size();i++){
@@ -676,9 +702,16 @@ public:
 
 					if(e.assign){
 						g.disableEdge(e.from,e.to, edge_num);
+						assert(!cutGraph.edgeEnabled(edge_num*2));
 					}else{
 						antig.enableEdge(e.from,e.to,edge_num);
 						assert(antig.hasEdge(e.from,e.to));
+						if(opt_conflict_min_cut){
+							assert(cutGraph.edgeEnabled(edge_num*2));
+							cutGraph.disableEdge(e.from,e.to,edge_num*2);
+							assert(!cutGraph.edgeEnabled(edge_num*2+1));
+							cutGraph.enableEdge(e.from,e.to,edge_num*2+1);
+						}
 					}
 				}else{
 				  //This is a reachability literal				  
@@ -752,9 +785,17 @@ public:
 					assigns[e.var]=l_Undef;
 					if(e.assign){
 						g.disableEdge(e.from,e.to, edge_num);
+
+						assert(!cutGraph.edgeEnabled(edge_num*2));
 					}else{
 						antig.enableEdge(e.from,e.to,edge_num);
 						assert(antig.hasEdge(e.from,e.to));
+						if(opt_conflict_min_cut){
+							assert(cutGraph.edgeEnabled(edge_num*2));
+							cutGraph.disableEdge(e.from,e.to,edge_num*2);
+							assert(!cutGraph.edgeEnabled(edge_num*2+1));
+							cutGraph.enableEdge(e.from,e.to,edge_num*2+1);
+						}
 					}
 				}else{
 					if(var(p)==e.var){
@@ -778,7 +819,7 @@ public:
 			}
 			//while(trail_lim.size() && trail_lim.last()>=trail.size())
 			//	trail_lim.pop();
-
+			dbg_sync();
 	/*		for(int i = 0;i<reach_detectors.size();i++){
 					if(reach_detectors[i]->positive_reach_detector)
 						reach_detectors[i]->positive_reach_detector->update();
@@ -936,14 +977,15 @@ public:
 		assigns[var(l)]=sign(l) ? l_False:l_True;
 		requiresPropagation=true;
 		//printf("enqueue %d\n", dimacs(l));
-#ifndef NDEBUG
 
+#ifndef NDEBUG
 		{
 			for(int i = 0;i<trail.size();i++){
 				assert(trail[i].var !=v);
 			}
 		}
 #endif
+
 #ifdef RECORD
 		if(g.outfile){
 			fprintf(g.outfile,"enqueue %d\n", dimacs(l));
@@ -955,10 +997,10 @@ public:
 			fprintf(antig.outfile,"enqueue %d\n", dimacs(l));
 			fprintf(antig.outfile,"\n");
 				fflush(antig.outfile);
-			}
+		}
 #endif
 
-		//if(v>= min_edge_var && v<min_edge_var+edge_list.size())
+
 		if(isEdgeVar(var(l))){
 
 			//this is an edge assignment
@@ -977,6 +1019,12 @@ public:
 				g.enableEdge(from,to,edge_num);
 			}else{
 				antig.disableEdge(from,to,edge_num);
+				if(opt_conflict_min_cut){
+					assert(cutGraph.edgeEnabled(edge_num*2+1));
+					assert(!cutGraph.edgeEnabled(edge_num*2));
+					cutGraph.enableEdge(e.from,e.to,edge_num*2);
+					cutGraph.disableEdge(e.from,e.to,edge_num*2+1);
+				}
 			}
 
 		}else{
@@ -1253,7 +1301,10 @@ public:
 		g.addEdge(from,to,index);
 		g.disableEdge(from,to, index);
 		antig.addEdge(from,to,index);
-		cutGraph.addEdge(from,to,index);
+		cutGraph.addEdge(from,to,index*2);
+		cutGraph.addEdge(from,to,index*2+1);
+		cutGraph.disableEdge(from,to,index*2);
+
 #ifdef RECORD
 		if(g.outfile){
 			std::stringstream wt;
@@ -1266,6 +1317,12 @@ public:
 			wt<<weight;
 			fprintf(antig.outfile,"edge_weight %d %s\n", index,wt.str().c_str());
 			fflush(antig.outfile);
+		}
+		if(cutGraph.outfile){
+
+			fprintf(cutGraph.outfile,"edge_weight %d %d\n", index*2,1);
+			fprintf(cutGraph.outfile,"edge_weight %d %d\n", index*2+1,0xFFFF);
+			fflush(cutGraph.outfile);
 		}
 #endif
     	return mkLit(v,false);

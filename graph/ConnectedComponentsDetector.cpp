@@ -370,7 +370,7 @@ template<typename Weight>
 					double starttime = rtime(2);
 					outer->cutGraph.clearHistory();
 					outer->stats_mc_calls++;
-					if(opt_conflict_min_cut){
+				/*	if(opt_conflict_min_cut){
 						if(mincutalg!= MinCutAlg::ALG_EDKARP_ADJ){
 							//ok, set the weights for each edge in the cut graph.
 							//Set edges to infinite weight if they are undef or true, and weight 1 otherwise.
@@ -379,9 +379,9 @@ template<typename Weight>
 									int v = outer->cutGraph.incident(u,j).node;
 									int edgeid =  outer->cutGraph.incident(u,j).id;
 									Var var = outer->getEdgeVar(edgeid);
-									/*if(S->value(var)==l_False){
+									if(S->value(var)==l_False){
 										mc.setCapacity(u,v,1);
-									}else{*/
+									}else{
 									outer->mc->setCapacity(u,v,0xF0F0F0);
 									//}
 								}
@@ -405,7 +405,7 @@ template<typename Weight>
 							assert(outer->value(l)==l_False);
 							conflict.push(l);
 						}
-					}else{
+					}else*/{
 						//We could learn an arbitrary (non-infinite) cut here, or just the whole set of false edges
 						//or perhaps we can learn the actual 1-uip cut?
 
