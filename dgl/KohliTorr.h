@@ -162,7 +162,7 @@ public:
         	arc_map.resize(g.edges(),-1);
         	for(int edgeID = 0;edgeID<g.edges();edgeID++){
 
-        		if(!g.hasEdge(edgeID))
+        		if(!g.hasEdge(edgeID) || g.selfLoop(edgeID))
         			continue;
 
         		max_capacity+=capacity[edgeID];
@@ -213,6 +213,8 @@ public:
 
     	for (int i = history_qhead;i<g.history.size();i++){
     			int edgeid = g.history[i].id;
+    			if(g.selfLoop(edgeid))
+    				continue;//skip self loops
     			if(g.history[i].addition && g.edgeEnabled(edgeid) && !edge_enabled[edgeid]){
     				added_Edges=true;
     				edge_enabled[edgeid]=true;
@@ -246,8 +248,11 @@ public:
 
 #ifndef NDEBUG
 
-    	for(int i = 0;i<g.edges();i++)
+    	for(int i = 0;i<g.edges();i++){
+    		if(g.getEdge(i).from==g.getEdge(i).to)
+				continue;//skip self edges.
     		assert(edge_enabled[i]==g.edgeEnabled(i));
+    	}
 
 #endif
     	dbg_check_flow(s,t);

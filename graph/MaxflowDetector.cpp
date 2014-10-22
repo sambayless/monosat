@@ -83,8 +83,8 @@ Detector(_detectorID),outer(_outer),capacities(capacities),over_graph(_g),g(_g),
 		if(opt_conflict_min_cut)
 				learn_cut = new DinitzLinkCut<std::vector<int>>(learn_graph,learn_caps,source,target);
 	}else if (mincutalg==MinCutAlg::ALG_KOHLI_TORR){
-		positive_detector = new KohliTorr<std::vector<Weight>,Weight>(_g,capacities,opt_maxflow_backward,source,target);
-		negative_detector = new KohliTorr<std::vector<Weight>,Weight>(_antig,capacities,opt_maxflow_backward,source,target);
+		positive_detector = new KohliTorr<std::vector<Weight>,Weight>(_g,capacities,source,target,opt_maxflow_backward);
+		negative_detector = new KohliTorr<std::vector<Weight>,Weight>(_antig,capacities,source,target,opt_maxflow_backward);
 		if(opt_use_kt_for_conflicts){
 			positive_conflict_detector = positive_detector;//new EdmondsKarpDynamic<std::vector<Weight>,Weight>(_g,capacities);
 			negative_conflict_detector =negative_detector;//new EdmondsKarpDynamic<std::vector<Weight>,Weight>(_antig,capacities);
@@ -267,13 +267,14 @@ template<typename Weight>
 				}
 				learn_graph.invalidate();
 				//learn_graph.drawFull(true);
-				outer->cut.clear();
-				//antig.drawFull(true);
-				int f =learn_cut->minCut(outer->cut);
+				cut.clear();
+				antig.drawFull(true);
+				learn_graph.drawFull(true);
+				int f =learn_cut->minCut(cut);
 				if(f<0x0FF0F0){
-					assert(f<0xF0F0F0); assert(f==outer->cut.size());//because edges are only ever infinity or 1
-					for(int i = 0;i<outer->cut.size();i++){
-						MaxFlowEdge e = outer->cut[i];
+					assert(f<0xF0F0F0); assert(f==cut.size());//because edges are only ever infinity or 1
+					for(int i = 0;i<cut.size();i++){
+						MaxFlowEdge e = cut[i];
 
 						Lit l = mkLit( outer->getEdgeVar(e.id),false);
 						assert(outer->value(l)==l_False);

@@ -109,7 +109,10 @@ public:
 		for(int i = 0;i<n;i++)
 			addNode();
 	}
-
+	//Returns true iff the edge exists and is a self loop
+	bool selfLoop(int edgeID)const{
+		return hasEdge(edgeID) && getEdge(edgeID).from==getEdge(edgeID).to;
+	}
 	bool hasEdge(int from, int to)const{
 		for(int i = 0;i< adjacency_list[from].size();i++){
 			if(adjacency_list[from][i].node==to && edgeEnabled(adjacency_list[from][i].id)){
@@ -249,7 +252,7 @@ public:
 		return weights[edgeID];
 		//return all_edges[edgeID].weight;
 	}*/
-	FullEdge getEdge(int id){
+	FullEdge getEdge(int id)const{
 		return all_edges[id];
 	}
 	void enableEdge(int id){

@@ -75,7 +75,7 @@ public:
 
 		};
 		vec<DistLit> flow_lits;
-
+		std::vector<MaxFlowEdge> cut;
 
 		vec<MaxFlowEdge> tmp_cut;
 		vec<int> visit;

@@ -277,8 +277,9 @@ public:
 			a= a->next;
 
 		if (a->head!=&nodes[to]){
-			printf("Error: Specified edge doesn't exist");
+			printf("Error: Specified edge doesn't exist\n");
 			assert(false);
+			exit(4);
 			return -1;
 		}else
 		{
@@ -1091,8 +1092,11 @@ void Graph<captype,tcaptype,flowtype>::edit_edge_inc(node_id from, node_id to, c
 		while((a!=NULL)&&(a!=a->next)&&(a->head != &nodes[to]))
 			a= a->next;
 
-		if (!a || a->head!=&nodes[to]) printf("Error: Specified edge doesn't exist");
-		else
+		if (!a || a->head!=&nodes[to]){
+			fprintf(stderr,"Error: Specified edge doesn't exist\n");
+			assert(false);
+			exit(4);
+		}else
 		{
 			// Modifying flow value
 
@@ -1241,8 +1245,11 @@ void Graph<captype,tcaptype,flowtype>::edit_edge(node_id from, node_id to, capty
 	while((a!=NULL)&&(a!=a->next)&&(a->head != &nodes[to]))
 		a= a->next;
 
-	if (a->head!=&nodes[to]) printf("Error: Specified edge doesn't exist");
-	else
+	if (a->head!=&nodes[to]){
+		fprintf(stderr,"Error: Specified edge doesn't exist\n");
+		assert(false);
+		exit(4);
+	}else
 	{
 		// Modifying flow value 
 
@@ -1386,8 +1393,11 @@ void Graph<captype,tcaptype,flowtype>::edit_edge_wt(node_id from, node_id to, ca
 
 	while((a!=NULL)&&(a!=a->next)&&(a->head != &nodes[to]))	a= a->next;
 
-	if (a->head!=&nodes[to]) printf("Error: Specified edge doesn't exist");
-	else
+	if (a->head!=&nodes[to]){
+		fprintf(stderr,"Error: Specified edge doesn't exist\n");
+		assert(false);
+		exit(4);
+	}else
 	{
 		if (nodes[from].t_cap>0) flow -= MIN(nodes[from].t_cap-nodes[from].tr_cap,nodes[from].t_cap);
 		else flow += MAX(0,nodes[from].tr_cap);

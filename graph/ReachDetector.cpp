@@ -418,34 +418,36 @@ void ReachDetector<Weight>::addLit(int from, int to, Var outer_reach_var){
 	 }
 	 if(opt_conflict_min_cut){
 		conflict_flows.resize(g.nodes(),nullptr);
-		if(!conflict_flows[to]){
-			MaxFlow<int> * conflict_flow_t=nullptr;
-				if(mincutalg==MinCutAlg::ALG_EDKARP_DYN){
-					conflict_flow_t = new EdmondsKarpDynamic<CutStatus,int>(outer->cutGraph, cutStatus,source,to);
-				}else if (mincutalg==MinCutAlg::ALG_EDKARP_ADJ){
+		for(int i = 0;i<g.nodes();i++){
+			if(reach_lits[i]!=lit_Undef && !conflict_flows[i]){
+				MaxFlow<int> * conflict_flow_t=nullptr;
+					if(mincutalg==MinCutAlg::ALG_EDKARP_DYN){
+						conflict_flow_t = new EdmondsKarpDynamic<CutStatus,int>(outer->cutGraph, cutStatus,source,i);
+					}else if (mincutalg==MinCutAlg::ALG_EDKARP_ADJ){
 
-					conflict_flow_t = new EdmondsKarpAdj<CutStatus,int>(outer->cutGraph, cutStatus,source,to);
+						conflict_flow_t = new EdmondsKarpAdj<CutStatus,int>(outer->cutGraph, cutStatus,source,i);
 
-				}else if (mincutalg==MinCutAlg::ALG_DINITZ){
+					}else if (mincutalg==MinCutAlg::ALG_DINITZ){
 
-					conflict_flow_t = new Dinitz<CutStatus,int>(outer->cutGraph, cutStatus,source,to);
+						conflict_flow_t = new Dinitz<CutStatus,int>(outer->cutGraph, cutStatus,source,i);
 
-				}else if (mincutalg==MinCutAlg::ALG_DINITZ_LINKCUT){
-					//link-cut tree currently only supports ints (enforcing this using tempalte specialization...).
+					}else if (mincutalg==MinCutAlg::ALG_DINITZ_LINKCUT){
+						//link-cut tree currently only supports ints (enforcing this using tempalte specialization...).
 
-					conflict_flow_t = new DinitzLinkCut<CutStatus>(outer->cutGraph, cutStatus,source,to);
+						conflict_flow_t = new DinitzLinkCut<CutStatus>(outer->cutGraph, cutStatus,source,i);
 
-				}else if (mincutalg==MinCutAlg::ALG_KOHLI_TORR){
-					if(opt_use_kt_for_conflicts){
-						conflict_flow_t = new KohliTorr<CutStatus,int>(outer->cutGraph, cutStatus,source,to);
-					}else
-						conflict_flow_t = new EdmondsKarpDynamic<CutStatus,int>(outer->cutGraph, cutStatus,source,to);
-				}else{
+					}else if (mincutalg==MinCutAlg::ALG_KOHLI_TORR){
+						if(opt_use_kt_for_conflicts){
+							conflict_flow_t = new KohliTorr<CutStatus,int>(outer->cutGraph, cutStatus,source,i);
+						}else
+							conflict_flow_t = new EdmondsKarpDynamic<CutStatus,int>(outer->cutGraph, cutStatus,source,i);
+					}else{
 
-					conflict_flow_t = new EdmondsKarpAdj<CutStatus,int>(outer->cutGraph, cutStatus,source,to);
+						conflict_flow_t = new EdmondsKarpAdj<CutStatus,int>(outer->cutGraph, cutStatus,source,i);
 
-				}
-			conflict_flows[to]=conflict_flow_t;
+					}
+				conflict_flows[i]=conflict_flow_t;
+			}
 		}
 	 }
 }
@@ -658,7 +660,8 @@ template<typename Weight>
 
 
 			}else*/
-			if(opt_conflict_min_cut && conflict_flows[node]){
+			if(opt_conflict_min_cut  && conflict_flows[node]){
+
 				antig.drawFull();
 				cut.clear();
 
