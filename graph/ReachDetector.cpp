@@ -668,9 +668,36 @@ template<typename Weight>
 				assert(conflict_flows[node]->getSource()==source);
 
 				int f =conflict_flows[node]->minCut(cut);
-				/*if(!dbg_cut(cut,outer->cutGraph,source,node)){
+				/*{
+					EdmondsKarpAdj<CutStatus,int> check(outer->cutGraph,cutStatus,source,node);
+					std::vector<MaxFlowEdge> check_cut;
+					int flow = check.minCut(check_cut);
+					if(flow!=f){
+						printf("cut: ");
+						for(int i =0;i<cut.size();i++){
+							printf("%d ",cut[i].id);
+						}
+						printf("\n");
+						printf("expected cut: ");
+							for(int i =0;i<check_cut.size();i++){
+							printf("%d ",check_cut[i].id);
+						}
+						printf("\n");
+						exit(4);
+					}
+				}
+				printf("cut: ");
+				for(int i =0;i<cut.size();i++){
+					printf("%d ",cut[i].id);
+				}
+				printf("\n");*/
+			/*	if(!dbg_cut(cut,outer->cutGraph,source,node)){
 					exit(4);
+				}
+				if(cut.size()==0){
+					exit(5);
 				}*/
+
 				assert(f==cut.size());//because edges are only ever infinity or 1
 				assert(f<0xFFFF);
 				for(int i = 0;i<cut.size();i++){

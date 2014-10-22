@@ -285,6 +285,45 @@ public:
 			return "Reachability Detector";
 		}
 
+		bool dbg_cut(std::vector<MaxFlowEdge> & cut, DynamicGraph & graph, int source, int node){
+//#ifndef NDEBUG
+
+
+
+			DynamicGraph t;
+			for(int i = 0;i<graph.nodes();i++)
+				t.addNode();
+			std::vector<int> capacity;
+			for(int id = 0;id<graph.edges();id++){
+				t.addEdge(graph.getEdge(id).from,graph.getEdge(id).to,id);
+				if(id%2==0){
+					bool incut=false;
+					for(int i = 0;i<cut.size();i++){
+						if(cut[i].id==id){
+							incut=true;
+							break;
+						}
+					}
+					if(incut){
+						capacity.push_back(0);
+						t.disableEdge(id);
+					}else
+						capacity.push_back(1);
+				}else{
+					capacity.push_back(0xFFFF);
+				}
+
+			}
+			EdmondsKarpAdj<std::vector<int>,int> check(t,capacity,source,node);
+			std::vector<MaxFlowEdge> check_cut;
+			int flow = check.minCut(check_cut);
+			assert(flow<0xFFFF);
+			if(flow<0xFFFF){
+				exit(4);
+			}
+			return true;
+//#endif
+		}
 
 };
 };

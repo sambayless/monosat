@@ -149,14 +149,16 @@ public:
       		}
 #endif
         	return curflow;
-        }else if (last_modification<=0 || g.historyclears!=last_history_clear  || g.changed()){
+        }else if (last_modification<=0 || kt->get_node_num()!=g.nodes() || edge_enabled.size()!=g.edges() ){
         	edge_enabled.clear();
-
+        	flow_needs_recalc=true;
+        	if(kt){
+        		delete(kt);
+        		kt=nullptr;
+        	}
         	if(!kt){
         		kt = new kohli_torr::Graph<Weight,Weight,Weight> (g.nodes(),g.edges());
-        	  	kt->maxflow(false);//just to initialize things.
-        	}else{
-        		kt->reset();
+        		kt->maxflow(false);//just to initialize things.
         	}
 
         	while(kt->get_node_num()<g.nodes()){
@@ -207,22 +209,41 @@ public:
         		kt->edit_tweights(t,max_capacity,0);
 				kt->edit_tweights(s,0,max_capacity);
         	}
+        }else if(g.historyclears!=last_history_clear  || g.changed()){
+        	flow_needs_recalc=true;
+			for(int edgeid = 0;edgeid<g.edges();edgeid++){
+				if(!g.hasEdge(edgeid) || g.selfLoop(edgeid))
+					continue;
+				if( g.edgeEnabled(edgeid) && !edge_enabled[edgeid]){
 
-
-
+					edge_enabled[edgeid]=true;
+					if(!backward_maxflow){
+						kt->edit_edge_inc(g.getEdge(edgeid).from,g.getEdge(edgeid).to,capacity[edgeid],0);
+					}else{
+						kt->edit_edge_inc(g.getEdge(edgeid).to,g.getEdge(edgeid).from,capacity[edgeid],0);
+					}
+				}else if (!g.edgeEnabled(edgeid) && edge_enabled[edgeid]){
+					assert(edge_enabled[edgeid]);
+					edge_enabled[edgeid]=false;
+					if(!backward_maxflow){
+						kt->edit_edge_inc(g.getEdge(edgeid).from,g.getEdge(edgeid).to,-capacity[edgeid],0);
+					}else{
+						kt->edit_edge_inc(g.getEdge(edgeid).to,g.getEdge(edgeid).from,-capacity[edgeid],0);
+					}
+				}
+			}
+			history_qhead=g.history.size();
         }
       	flow_needs_recalc=true;
       	assert(kt);
 
-    	bool added_Edges=false;
-    	bool needsReflow = false;
 
     	for (int i = history_qhead;i<g.history.size();i++){
     			int edgeid = g.history[i].id;
     			if(g.selfLoop(edgeid))
     				continue;//skip self loops
     			if(g.history[i].addition && g.edgeEnabled(edgeid) && !edge_enabled[edgeid]){
-    				added_Edges=true;
+
     				edge_enabled[edgeid]=true;
     				if(!backward_maxflow){
     					kt->edit_edge_inc(g.getEdge(edgeid).from,g.getEdge(edgeid).to,capacity[edgeid],0);

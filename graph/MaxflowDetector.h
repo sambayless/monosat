@@ -109,6 +109,7 @@ public:
 		const char* getName(){
 			return "Max-flow Detector";
 		}
+		//int dbg_minconflict();
 private:
 		void buildDinitzLinkCut();
 };

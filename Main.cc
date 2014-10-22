@@ -153,6 +153,8 @@ int main(int argc, char** argv)
         	fprintf(stderr,"WARNING: for repeatability, setting FPU to use double precision\n");
 #endif
 
+
+
         vec<std::pair<int,string> > symbols;
 
         mincutalg = MinCutAlg::ALG_EDMONSKARP;
@@ -327,6 +329,8 @@ int main(int argc, char** argv)
                     fprintf(stderr,"WARNING! Could not set resource limit: Virtual memory.\n");
             } }
 #endif
+
+
          const char *error;
          SimpSolver S;
          solver = &S;

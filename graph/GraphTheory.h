@@ -255,6 +255,10 @@ public:
 				cutGraph.outfile=fopen(t,"w");
 			}
 #endif
+			g.historyClearInterval=opt_history_clear;
+			antig.historyClearInterval=opt_history_clear;
+			cutGraph.historyClearInterval=opt_history_clear;
+
 			local_q=0;
 			theory_index=0;
 			mctime=0;

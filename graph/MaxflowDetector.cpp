@@ -201,6 +201,76 @@ void MaxflowDetector<Weight>::buildMaxFlowTooHighReason(Weight flow,vec<Lit> & c
 
 			stats_under_conflict_time+=elapsed;
 		}
+/*
+
+template<typename Weight>
+int MaxflowDetector<Weight>::dbg_minconflict(){
+#ifndef NDEBUG
+		Weight foundflow = negative_conflict_detector->maxFlow();
+
+			int INF=0x0FF0F0;
+			//for each edge in the original graph, need to add a forward and backward edge here.
+			if(learn_graph.nodes()<g.nodes()){
+				while(learn_graph.nodes()<g.nodes())
+					learn_graph.addNode();
+
+				for (auto & e:g.all_edges){
+					learn_graph.addEdge(e.from,e.to);
+				}
+				back_edges.growTo(g.edges());
+				for (auto & e:g.all_edges){
+					back_edges[e.id] = learn_graph.addEdge(e.to,e.from);
+				}
+				learn_caps.resize(learn_graph.edges());
+			}
+
+			//now, set learn_graph to the residual graph
+			for (auto & e:g.all_edges){
+				int from = e.from;
+				int to = e.to;
+				int v = outer->getEdgeVar(e.id);
+				lbool val =outer->value(v);
+				if(val!=l_False){
+					Weight flow = negative_conflict_detector->getEdgeFlow(e.id);
+					Weight capacity =  negative_conflict_detector->getEdgeCapacity(e.id);
+					if(capacity==0){
+						learn_graph.disableEdge(e.id);
+						learn_graph.disableEdge(back_edges[e.id]);
+					}else{
+						if(flow>0){
+							//then there is capacity in the backward edge in the residual graph
+							int back_edge = back_edges[e.id];
+							learn_graph.enableEdge(back_edges[e.id]);
+							learn_caps[back_edge] = INF;
+						}else{
+							learn_graph.disableEdge(back_edges[e.id]);
+						}
+						if (flow<capacity){
+							//then there is capacity in the forward edge in the residual graph
+							learn_caps[e.id] = INF;
+							learn_graph.enableEdge(e.id);
+						}else{
+							learn_graph.disableEdge(e.id);
+						}
+					}
+				}else{
+
+					learn_graph.enableEdge(e.id);
+					learn_graph.disableEdge(back_edges[e.id]);
+					learn_caps[e.id] = 1;
+				}
+			}
+			learn_graph.invalidate();
+			cut.clear();
+
+			auto check_cut = new EdmondsKarpAdj<std::vector<int>,int>(learn_graph,learn_caps,source,target);
+			int f =check_cut->minCut(cut);
+			return cut.size();
+#endif
+			return 0;
+	}
+*/
+
 template<typename Weight>
 		void MaxflowDetector<Weight>::buildMaxFlowTooLowReason(Weight maxflow,vec<Lit> & conflict){
 			static int it = 0;
@@ -290,6 +360,9 @@ template<typename Weight>
 				 stats_over_conflicts++;
 					double elapsed = rtime(2)-starttime;
 					stats_over_conflict_time+=elapsed;
+			/*		if(conflict.size()<dbg_minconflict()){
+									exit(4);
+								}*/
 				return;
 			}
 
@@ -356,7 +429,9 @@ template<typename Weight>
 					//pred
 				}
 			}
-
+			/*if(conflict.size()<dbg_minconflict()){
+				exit(4);
+			}*/
 #ifdef RECORD
 			if(negative_detector!=negative_conflict_detector){
 				Weight foundflow2 = negative_detector->maxFlow();

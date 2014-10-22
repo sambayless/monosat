@@ -52,7 +52,9 @@ class DynamicGraph{
 	int num_edges;
 	int next_id;
 	bool is_changed;
+
 public:
+	int historyClearInterval=1000;
 	int modifications;
 	int additions;
 	int deletions;
@@ -403,7 +405,7 @@ public:
 	}
 
 	void clearHistory(){
-		if(history.size()>1000){
+		if(history.size()>historyClearInterval){
 			history.clear();
 			historyclears++;
 #ifdef RECORD
