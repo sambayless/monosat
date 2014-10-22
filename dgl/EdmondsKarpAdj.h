@@ -57,9 +57,11 @@ public:
     DynamicGraph& g;
     Capacity & capacity;
     Weight INF;
+/*
 #ifdef DEBUG_MAXFLOW
     	EdmondsKarp<Weight> ek;
 #endif
+*/
 
     std::vector<int> Q;
 
@@ -125,9 +127,11 @@ public:
 	   }
 public:
     EdmondsKarpAdj(DynamicGraph& _g,Capacity & cap,int source=-1,int sink=-1):g(_g),capacity(cap),source(source),sink(sink),INF(0xF0F0F0)
+/*
 #ifdef DEBUG_MAXFLOW
     	,ek(_g,source,sink)
 #endif
+*/
     {
     	  curflow=0;
       	last_modification=-1;
@@ -138,6 +142,12 @@ public:
       	last_history_clear=-1;
     	//setAllEdgeCapacities(1);
 
+    }
+    int getSource() const{
+    	return source;
+    }
+    int getSink() const{
+    	return sink;
     }
     void setCapacity(int u, int w, Weight c){
     	//C.resize(g.edges());

@@ -175,7 +175,7 @@ public:
 
 		} cutStatus;
 		std::vector<MaxFlowEdge> cut;
-		struct ChokepointStatus{
+/*		struct ChokepointStatus{
 			ReachDetector & detector;
 			bool mustReach(int node);
 			bool operator() (int edge_id);
@@ -184,7 +184,7 @@ public:
 			}
 		}chokepoint_status;
 
-		Chokepoint<ChokepointStatus > chokepoint;
+		Chokepoint<ChokepointStatus > chokepoint;*/
 
 		//This class can stand in as a reach algorithm if we have encoded reachability directly into the cnf.
 		class CNFReachability:public Reach{
@@ -284,6 +284,8 @@ public:
 		const char* getName(){
 			return "Reachability Detector";
 		}
+
+
 };
 };
 #endif /* REACHDETECTOR_H_ */

@@ -73,6 +73,7 @@ StringOption Monosat::opt_components_alg(_cat_graph,"components","Select connect
   BoolOption Monosat::opt_conflict_shortest_path(_cat_graph,"conflict-shortest-path","Use shortest path (instead of arbitrary path) for conflict resolution (in theories that support this)",true);
   BoolOption Monosat::opt_conflict_min_cut(_cat_graph,"conflict-min-cut","Use min-cut (instead of arbitrary cut) for conflict resolution (in theories that support this)",false);
   BoolOption Monosat::opt_conflict_1uip(_cat_graph,"conflict-1uip","Use 1 uip (instead of arbitrary or min cut) for conflict resolution (in theories that support this)",false);
+  BoolOption Monosat::opt_conflict_min_cut_maxflow(_cat_graph,"conflict-min-cut-maxflow","Use min-cut (instead of arbitrary cut) for conflict resolution for maximum flow properties",false);
 
 
 BoolOption Monosat::opt_check_solution(_cat_graph,"check-solution","Double check solution",true);

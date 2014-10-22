@@ -88,7 +88,12 @@ public:
       	last_history_clear=-1;
     	//setAllEdgeCapacities(1);
     }
-
+    int getSource() const{
+    	return source;
+    }
+    int getSink() const{
+    	return sink;
+    }
     	void printStats(){
     		printf("Dinics :\n");
 

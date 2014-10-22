@@ -51,8 +51,8 @@ public:
     virtual void printStats(){
 
     }
-
-
+    virtual int getSource() const=0;
+    virtual int getSink() const=0;
     virtual const Weight minCut( std::vector<MaxFlowEdge> & cut)=0;
     virtual const Weight getEdgeFlow(int edgeID)=0;
     virtual const Weight  getEdgeCapacity(int id)=0;

@@ -120,6 +120,12 @@ public:
     	last_history_clear=-1;
     	setAllEdgeCapacities(1);
     }
+    int getSource() const{
+    	return source;
+    }
+    int getSink() const{
+    	return sink;
+    }
     void setCapacity(int u, int w, Weight c){
     	if(C.size()<g.nodes()){
     		C.resize(g.nodes());

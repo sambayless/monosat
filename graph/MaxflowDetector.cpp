@@ -54,14 +54,14 @@ Detector(_detectorID),outer(_outer),capacities(capacities),over_graph(_g),g(_g),
 		negative_detector = new EdmondsKarpDynamic<std::vector<Weight>,Weight>(_antig,capacities,source,target);
 		positive_conflict_detector =positive_detector;//new EdmondsKarpAdj<std::vector<Weight>,Weight>(_g,capacities);
 		negative_conflict_detector =negative_detector;// new EdmondsKarpAdj<std::vector<Weight>,Weight>(_antig,capacities);
-		if(opt_conflict_min_cut)
+		if(opt_conflict_min_cut_maxflow)
 				learn_cut = new EdmondsKarpAdj<std::vector<int>,int>(learn_graph,learn_caps,source,target);
 	}else if (mincutalg==MinCutAlg::ALG_EDKARP_ADJ){
 		positive_detector = new EdmondsKarpAdj<std::vector<Weight>,Weight>(_g,capacities,source,target);
 		negative_detector = new EdmondsKarpAdj<std::vector<Weight>,Weight>(_antig,capacities,source,target);
 		positive_conflict_detector = positive_detector;
 		negative_conflict_detector = negative_detector;
-		if(opt_conflict_min_cut)
+		if(opt_conflict_min_cut_maxflow)
 				learn_cut = new EdmondsKarpAdj<std::vector<int>,int>(learn_graph,learn_caps,source,target);
 	}/*else if (mincutalg==MinCutAlg::ALG_IBFS){
 		positive_detector = new IBFS(_g);
@@ -73,14 +73,14 @@ Detector(_detectorID),outer(_outer),capacities(capacities),over_graph(_g),g(_g),
 		negative_detector = new Dinitz<std::vector<Weight>,Weight>(_antig,capacities,source,target);
 		positive_conflict_detector = positive_detector;// new EdmondsKarpAdj<std::vector<Weight>,Weight>(_g,capacities);
 		negative_conflict_detector = negative_detector;//new EdmondsKarpAdj<std::vector<Weight>,Weight>(_antig,capacities);
-		if(opt_conflict_min_cut)
+		if(opt_conflict_min_cut_maxflow)
 				learn_cut = new Dinitz<std::vector<int>,int>(learn_graph,learn_caps,source,target);
 	}else if (mincutalg==MinCutAlg::ALG_DINITZ_LINKCUT){
 		//link-cut tree currently only supports ints (enforcing this using tempalte specialization...).
 		buildDinitzLinkCut();
 		positive_conflict_detector = new EdmondsKarpAdj<std::vector<Weight>,Weight>(_g,capacities,source,target);
 		negative_conflict_detector = new EdmondsKarpAdj<std::vector<Weight>,Weight>(_antig,capacities,source,target);
-		if(opt_conflict_min_cut)
+		if(opt_conflict_min_cut_maxflow)
 				learn_cut = new DinitzLinkCut<std::vector<int>>(learn_graph,learn_caps,source,target);
 	}else if (mincutalg==MinCutAlg::ALG_KOHLI_TORR){
 		positive_detector = new KohliTorr<std::vector<Weight>,Weight>(_g,capacities,source,target,opt_maxflow_backward);
@@ -93,14 +93,14 @@ Detector(_detectorID),outer(_outer),capacities(capacities),over_graph(_g),g(_g),
 			positive_conflict_detector =new EdmondsKarpDynamic<std::vector<Weight>,Weight>(_g,capacities,source,target);
 			negative_conflict_detector = new EdmondsKarpDynamic<std::vector<Weight>,Weight>(_antig,capacities,source,target);
 		}
-		if(opt_conflict_min_cut)
+		if(opt_conflict_min_cut_maxflow)
 				learn_cut = new EdmondsKarpAdj<std::vector<int>,int>(learn_graph,learn_caps,source,target);
 	}else{
 		positive_detector = new EdmondsKarpAdj<std::vector<Weight>,Weight>(_g,capacities,source,target);
 		negative_detector = new EdmondsKarpAdj<std::vector<Weight>,Weight>(_antig,capacities,source,target);
 		positive_conflict_detector = positive_detector;
 		negative_conflict_detector = negative_detector;
-		if(opt_conflict_min_cut)
+		if(opt_conflict_min_cut_maxflow)
 				learn_cut = new EdmondsKarpAdj<std::vector<int>,int>(learn_graph,learn_caps,source,target);
 	}
 
@@ -209,7 +209,7 @@ template<typename Weight>
 				int a=1;
 			}
 			double starttime = rtime(2);
-			if(opt_conflict_min_cut){
+			if(opt_conflict_min_cut_maxflow){
 				Weight foundflow = negative_conflict_detector->maxFlow();
 				//find a minimal s-t cut in the residual graph.
 				//to do so, first construct the residual graph

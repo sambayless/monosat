@@ -28,7 +28,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "dgl/TarjansSCC.h"
 using namespace Monosat;
 template<typename Weight>
-ReachDetector<Weight>::ReachDetector(int _detectorID, GraphTheorySolver<Weight> * _outer, DynamicGraph &_g, DynamicGraph &_antig, int from,double seed):Detector(_detectorID),outer(_outer),g(_g),antig(_antig),within(-1),source(from),rnd_seed(seed),cutStatus(*this),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),negative_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL),chokepoint_status(*this),chokepoint(chokepoint_status, _antig,source){
+ReachDetector<Weight>::ReachDetector(int _detectorID, GraphTheorySolver<Weight> * _outer, DynamicGraph &_g, DynamicGraph &_antig, int from,double seed):Detector(_detectorID),outer(_outer),g(_g),antig(_antig),within(-1),source(from),rnd_seed(seed),cutStatus(*this),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),negative_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL){//,chokepoint_status(*this),chokepoint(chokepoint_status, _antig,source){
 
 
 	rnd_path=nullptr;
@@ -498,7 +498,7 @@ void ReachDetector<Weight>::ReachStatus::setMininumDistance(int u, bool reachabl
 		}
 	}*/
 }
-template<typename Weight>
+/*template<typename Weight>
 bool ReachDetector<Weight>::ChokepointStatus::mustReach(int node){
 	Lit l =  detector.reach_lits[node];
 	if(l!=lit_Undef){
@@ -509,7 +509,7 @@ bool ReachDetector<Weight>::ChokepointStatus::mustReach(int node){
 template<typename Weight>
 bool ReachDetector<Weight>::ChokepointStatus::operator() (int edge_id){
 	return detector.outer->value(detector.outer->edge_list[ edge_id].v)==l_Undef;
-}
+}*/
 template<typename Weight>
 void ReachDetector<Weight>::preprocess(){
 
@@ -664,9 +664,13 @@ template<typename Weight>
 
 				antig.drawFull();
 				cut.clear();
+				assert(conflict_flows[node]->getSink()==node);
+				assert(conflict_flows[node]->getSource()==source);
 
 				int f =conflict_flows[node]->minCut(cut);
-
+				/*if(!dbg_cut(cut,outer->cutGraph,source,node)){
+					exit(4);
+				}*/
 				assert(f==cut.size());//because edges are only ever infinity or 1
 				assert(f<0xFFFF);
 				for(int i = 0;i<cut.size();i++){
@@ -1173,7 +1177,7 @@ template<typename Weight>
 						return false;
 					}
 
-					if(opt_reach_prop){
+					/*if(opt_reach_prop){
 						forced_edges.clear();
 						chokepoint.collectForcedEdges(forced_edges);
 						for(int i = 0;i<forced_edges.size();i++){
@@ -1195,7 +1199,7 @@ template<typename Weight>
 							}
 						}
 
-					}
+					}*/
 					assert(sz==changed.size());//This can be really tricky - if you are not careful, an a reach detector's update phase was skipped at the beginning of propagate, then if the reach detector is called during propagate it can push a change onto the list, which can cause the wrong item to be removed here.
 					assert(changed.last().u == u);
 					is_changed[u]=false;
