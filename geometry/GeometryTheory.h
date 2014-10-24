@@ -33,7 +33,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "PointSet.h"
 #include "ConvexHullDetector.h"
 #include "ConvexHullCollisionDetector.h"
-#include "GeometrySteinerDetector.h"
+
 #ifndef NDEBUG
 #include <cstdio>
 #endif
@@ -78,7 +78,7 @@ public:
 	std::vector<GeometryDetector*> detectors;
 	std::vector<GeometryDetector*> detectors_rnd;
 	std::vector<ConvexHullDetector<D,T>*> convexHullDetectors;
-	std::vector<GeometricSteinerDetector<D,T>*> steinerTreeDetectors;
+	//std::vector<GeometricSteinerDetector<D,T>*> steinerTreeDetectors;
 	ConvexHullCollisionDetector<D,T>* collisionDetector=nullptr;
 
 	vec<int> marker_map;
@@ -1088,7 +1088,7 @@ public:
 		collisionDetector->addCollisionDetectorLit(pointSet1,pointSet2,outerVar,inclusive);
 	}
 
-	void euclidianSteinerTreeSize(int pointSet, int sizeLessThan, Var outerVar){
+	/*void euclidianSteinerTreeSize(int pointSet, int sizeLessThan, Var outerVar){
 		steinerTreeDetectors.growTo(nPointSets(),nullptr);
 		if(!steinerTreeDetectors[pointSet]){
 			int detectorID = detectors.size();
@@ -1099,7 +1099,7 @@ public:
 		}
 
 		steinerTreeDetectors[pointSet]->addAreaDetectorLit(sizeLessThan,outerVar);
-	}
+	}*/
 
 };
 
