@@ -89,6 +89,7 @@
 #include <cstdlib>
 #include <assert.h>
 #include <new>
+#include <algorithm>
 // NOTE: in UNIX you need to use -DNDEBUG preprocessor option to supress assert's!!!
 
 namespace kohli_torr{
@@ -119,6 +120,7 @@ public:
 	} termtype; // terminals 
 	typedef int node_id;
 	typedef arc* arc_id;
+	bool preserve_backward_order=false;
 	std::vector<node_id> t_edge_nodes;
 	std::vector<node_id> s_edge_nodes;
 	/////////////////////////////////////////////////////////////////////////
@@ -519,6 +521,7 @@ private:
 			   }
 
 			   arc * a = nodes[u].first;
+			   int cpos = Q.size();
 			   while(a){
 				   int to = a->head - nodes;
 				   if(prev[to] == nullptr){
@@ -536,6 +539,10 @@ private:
 					   }
 				   }
 				   a=a->next;
+			   }
+			   if(preserve_backward_order && backward && Q.size()-cpos>1){
+				   //reverse the order of the edges added to the queue if walking backward through the graph, so that they are visited in the same order as if we had walked forwards through the graph
+				   std::reverse(Q.begin() + cpos ,Q.end());
 			   }
 		   }
 		   store_flow= 0;

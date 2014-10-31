@@ -26,6 +26,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "mtl/Vec.h"
 #include "core/Config.h"
 #include <cstdio>
+#include <iostream>
 namespace Monosat{
 
 //Graph properties (such as shortest paths, minimum spanning tree weights) are computed by individual 'detectors',
@@ -75,7 +76,7 @@ public:
 		}
 	}
 
-	virtual void printSolution(){
+	virtual void printSolution(std::ostream & write_to=std::cout){
 
 	}
 

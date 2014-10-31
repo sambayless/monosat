@@ -946,17 +946,17 @@ for(int k = 0;k< tree_edge_lits.size();k++){
 return true;
 }
 template<typename Weight>
-void MSTDetector<Weight>::printSolution(){
-	if(opt_verb>0){
+void MSTDetector<Weight>::printSolution(std::ostream & write_to){
+
 
 		if(positive_reach_detector->numComponents()>1){
 			printf("Min Spanning Tree is disconnected (%d components)\n",positive_reach_detector->numComponents());
 			Weight min_weight =positive_reach_detector->forestWeight();
-			std::cout<<"Min Spanning Forest Weight: " << min_weight <<"\n";
+			write_to<<"Min Spanning Forest Weight: " << min_weight <<"\n";
 
 		}else{
 			Weight min_weight = positive_reach_detector->weight();
-			std::cout<<"Min Spanning Tree Weight: " << min_weight <<"\n";
+			write_to<<"Min Spanning Tree Weight: " << min_weight <<"\n";
 		}
 
 		int maxw = log10(outer->nNodes() )+1;
@@ -976,7 +976,7 @@ void MSTDetector<Weight>::printSolution(){
 
 			int y = (n )/width;
 			if(y > lasty)
-				printf("\n");
+				write_to<<"\n";
 			bool in_tree=false;
 			for(int e = 0;e<g.edges();e++){
 				if(g.getEdge(e).to==n && g.edgeEnabled(e) && this->positive_reach_detector->edgeInTree(e)){
@@ -985,14 +985,14 @@ void MSTDetector<Weight>::printSolution(){
 				}
 			}
 			if(in_tree){
-				printf("-");
+				write_to<<"-";
 			}else{
-				printf(" ");
+				write_to<<" ";
 			}
 		}
-		printf("\n");
+		write_to<<"\n";
 
-	}
+
 }
 
 template<typename Weight>

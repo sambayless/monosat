@@ -438,7 +438,7 @@ void ReachDetector<Weight>::addLit(int from, int to, Var outer_reach_var){
 
 					}else if (mincutalg==MinCutAlg::ALG_KOHLI_TORR){
 						if(opt_use_kt_for_conflicts){
-							conflict_flow_t = new KohliTorr<CutStatus,int>(outer->cutGraph, cutStatus,source,i);
+							conflict_flow_t = new KohliTorr<CutStatus,int>(outer->cutGraph, cutStatus,source,i,opt_kt_preserve_order);
 						}else
 							conflict_flow_t = new EdmondsKarpDynamic<CutStatus,int>(outer->cutGraph, cutStatus,source,i);
 					}else{
@@ -1252,9 +1252,10 @@ template<typename Weight>
 			return true;
 		}
 
+
 template<typename Weight>
-void ReachDetector<Weight>::printSolution(){
-	if(opt_verb>0){
+void ReachDetector<Weight>::printSolution(std::ostream & write_to){
+
 		 vec<bool> to_show;
 		 to_show.growTo(g.nodes());
 
@@ -1275,7 +1276,7 @@ void ReachDetector<Weight>::printSolution(){
 			Reach & d = *positive_path_detector;
 			d.update();
 			 if(d.connected(to) ){
-				 std::cout<<"Path from " << source <<"->"<<to<<" is : ";
+				 write_to<<"Path from " << source <<"->"<<to<<" is : ";
 				 path.clear();
 				int u = to;
 				path.push(u);
@@ -1288,14 +1289,14 @@ void ReachDetector<Weight>::printSolution(){
 
 
 				for(int i = path.size()-1;i>=0;i--){
-					std::cout<<path[i] <<",";
+					write_to<<path[i] <<",";
 				}
-				std::cout<<'\n';
+				write_to<<'\n';
 			 }else{
-				 std::cout<<"No path from" << source <<"->"<<to<<"\n";
+				 write_to<<"No path from" << source <<"->"<<to<<"\n";
 			 }
 		 }
-	}
+
 
 
 }

@@ -166,6 +166,30 @@ public:
 		}
     }
 
+	void writeTheoryWitness(std::ostream& write_to){
+
+		if(!ok){
+			write_to<<"s UNSATISFIABLE\n";
+		}else{
+			write_to<<"s SATISFIABLE\n";
+			write_to<<"v ";
+			if(model.size()>=nVars()){
+				for(int v = 0;v<nVars();v++){
+					if(model[v]==l_True){
+						write_to<<" " << (v+1);
+					}else{
+						write_to<<" " << -(v+1);
+					}
+				}
+			}
+			write_to<<" 0\n";
+
+			for(Theory * t:theories){
+				t->writeTheoryWitness(write_to);
+			}
+		}
+	}
+
     bool isTheoryCause(CRef cr){
     	return cr != CRef_Undef && !ca.isClause(cr);
     }

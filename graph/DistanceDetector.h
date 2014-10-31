@@ -168,7 +168,7 @@ public:
 			}
 		}
 
-		 void printSolution();
+		 void printSolution(std::ostream& write_to);
 
 	/*	Lit getLit(int node){
 

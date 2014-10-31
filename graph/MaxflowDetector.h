@@ -21,7 +21,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #ifndef MAXFLOWDETECTOR_H_
 #define MAXFLOWDETECTOR_H_
 #include "utils/System.h"
-
+#include "dgl/KohliTorr.h"
 #include "GraphTheoryTypes.h"
 #include "dgl/graph/DynamicGraph.h"
 #include "dgl/MaxFlow.h"
@@ -55,6 +55,13 @@ public:
 		MaxFlow<Weight> * positive_conflict_detector;
 		MaxFlow<Weight> * negative_conflict_detector;
 		int last_decision_status=-1;
+		int last_decision_q_pos=0;
+
+		long stats_decision_calculations=0;
+		double stats_flow_calc_time=0;
+		double stats_flow_recalc_time = 0;
+		double stats_redecide_time = 0;
+
 		Lit last_decision_lit = lit_Undef;
 		vec<Lit> to_decide;
 		std::vector<int> q;
@@ -100,7 +107,16 @@ public:
 		void buildReason(Lit p, vec<Lit> & reason, CRef marker);
 		bool checkSatisfied();
 		Lit decide();
-		void printSolution();
+		void printStats(){
+			Detector::printStats();
+			if (mincutalg==MinCutAlg::ALG_KOHLI_TORR){
+				 KohliTorr<std::vector<Weight>,Weight> * kt = (KohliTorr<std::vector<Weight>,Weight> *) negative_detector;
+				 printf("\tDecision flow calculations: %d, (redecide: %f s) flow_calc %f s, flow_discovery %f s, (%d) (maxflow %f,flow assignment %f)\n",stats_decision_calculations,stats_redecide_time,stats_flow_calc_time,stats_flow_recalc_time,kt->stats_flow_calcs,kt->stats_flow_time,kt->stats_calc_time );
+			}else
+				 printf("\tDecision flow calculations: %d\n",stats_decision_calculations );
+
+		}
+		void printSolution(std::ostream & write_to);
 		void addFlowLit(Weight max_flow,Var reach_var);
 		MaxflowDetector(int _detectorID, GraphTheorySolver<Weight> * _outer,std::vector<Weight> & capacities, DynamicGraph &_g, DynamicGraph &_antig, int _source, int _target,double seed=1);//:Detector(_detectorID),outer(_outer),within(-1),source(_source),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL){}
 		virtual ~MaxflowDetector(){

@@ -331,6 +331,15 @@ public:
 		fflush(stdout);
 	}
 
+	void writeTheoryWitness(std::ostream& write_to){
+
+		for(Detector * d:detectors){
+			write_to<<"Graph " << this->getGraphID() << ", detector " << d->getID() << ":\n";
+			d->printSolution(write_to);
+		}
+
+	}
+
 	inline int getTheoryIndex(){
 	    	return theory_index;
 	    }
@@ -569,6 +578,7 @@ public:
 	}
 	void dbg_sync(){
 #ifndef NDEBUG
+		if(opt_conflict_min_cut){
 		for(int i = 0;i<edge_list.size();i++){
 			if(value(edge_list[i].v)==l_False){
 				assert(cutGraph.edgeEnabled(i*2));
@@ -577,6 +587,7 @@ public:
 				assert(!cutGraph.edgeEnabled(i*2));
 				assert(cutGraph.edgeEnabled(i*2+1));
 			}
+		}
 		}
 #endif
 #ifdef DEBUG_DIJKSTRA
@@ -1054,7 +1065,7 @@ public:
 
 		bool any_change = false;
 		double startproptime = rtime(1);
-		static vec<int> detectors_to_check;
+		//static vec<int> detectors_to_check;
 
 		conflict.clear();
 		//Can probably speed this up alot by a) constant propagating reaches that I care about at level 0, and b) Removing all detectors for nodes that appear only in the opposite polarity (or not at all) in the cnf.
@@ -1090,7 +1101,7 @@ public:
 		g.clearHistory();
 		antig.clearHistory();
 		cutGraph.clearHistory();
-		detectors_to_check.clear();
+		//detectors_to_check.clear();
 
 		double elapsed = rtime(1)-startproptime;
 		propagationtime+=elapsed;

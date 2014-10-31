@@ -30,7 +30,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "alg/dyncut/graph.h"
 #include "EdmondsKarpDynamic.h"
 #include <algorithm>
-
+#include "../core/Config.h"
 namespace dgl{
 template< class Capacity,typename Weight  >
 class KohliTorr:public MaxFlow<Weight>{
@@ -58,6 +58,9 @@ class KohliTorr:public MaxFlow<Weight>{
     int history_qhead;
     int last_history_clear;
     bool backward_maxflow=false;
+    bool kt_preserve_order=false;
+
+    std::vector<std::vector<int>> multi_edges;
 
     typedef  typename kohli_torr::Graph<Weight,Weight,Weight>::arc_id arc;
 
@@ -79,20 +82,23 @@ class KohliTorr:public MaxFlow<Weight>{
     bool flow_needs_recalc=true;
 
 public:
-    KohliTorr(DynamicGraph& _g,Capacity & cap, int source, int sink,bool backward_maxflow=false):g(_g),capacity(cap),source(source),sink(sink),backward_maxflow(backward_maxflow),INF(0xF0F0F0)
+    double stats_calc_time =0;
+    double stats_flow_time=0;
+    long stats_flow_calcs = 0;
+    KohliTorr(DynamicGraph& _g,Capacity & cap, int source, int sink,bool backward_maxflow=false, bool kt_preserve_order=false):g(_g),capacity(cap),source(source),sink(sink),backward_maxflow(backward_maxflow),kt_preserve_order(kt_preserve_order),INF(0xF0F0F0)
 #ifdef DEBUG_MAXFLOW
     	,ek(_g,cap,source,sink)
 #endif
     {
-    	  curflow=0;
+    	curflow=0;
       	last_modification=-1;
       	last_deletion=-1;
       	last_addition=-1;
 
       	history_qhead=0;
       	last_history_clear=-1;
-
     }
+
     int getSource() const{
     	return source;
     }
@@ -158,6 +164,7 @@ public:
         	}
         	if(!kt){
         		kt = new kohli_torr::Graph<Weight,Weight,Weight> (g.nodes(),g.edges());
+        		kt->preserve_backward_order = kt_preserve_order;
         		kt->maxflow(false);//just to initialize things.
         	}
 
@@ -165,7 +172,10 @@ public:
         		int node_id= kt->add_node();
         		assert(node_id==kt->get_node_num()-1);
         	}
+
         	edge_enabled.resize(g.edges(),false);
+        	multi_edges.clear();
+        	multi_edges.resize(g.edges());
         	arc_map.clear();
         	arc_map.resize(g.edges(),-1);
         	for(int edgeID = 0;edgeID<g.edges();edgeID++){
@@ -270,7 +280,7 @@ public:
 				exit(4);
 			}
 #endif
-   		dbg_print_graph(s,t);
+   		dbg_print_graph(s,t,true);
 
 
 #ifndef NDEBUG
@@ -297,9 +307,21 @@ public:
 
 private:
 
+    inline void collect_multi_edges(int for_edge){
+    	if(multi_edges[for_edge].size()==0){
+			int from = g.getEdge(for_edge).from;
+			int to = g.getEdge(for_edge).to;
+			//for(int i = g.nIncident(from,true)-1;i>=0;i--){
+			for(int i = 0;i<g.nIncident(from,true);i++){
+				int edgeid = g.incident(from,i,true).id;
+				if((g.getEdge(edgeid).from==from && g.getEdge(edgeid).to==to)){
+					multi_edges[for_edge].push_back(edgeid);
+				}
+			}
+    	}
+    }
 
-
-    void dbg_print_graph(int from, int to){
+    void dbg_print_graph(int from, int to, bool only_flow=false){
 #ifndef NDEBUG
 
     	if(edge_enabled.size()<g.edges())
@@ -328,6 +350,8 @@ private:
     				if(edge_enabled[i]){
 						auto & e = g.all_edges[i];
 						const char * s = "black";
+						if(only_flow &&  getEdgeFlow(e.id)==0)
+							continue;
 						std::cout<<"n" << e.from <<" -> n" << e.to << " [label=\"" << i <<": " << getEdgeFlow(e.id) <<"/" << capacity[i]  << "\" color=\"" << s<<"\"]\n";
 						//printf("n%d -> n%d [label=\"%d: %d/%d\",color=\"%s\"]\n", e.from,e.to, i, F[i],capacity[i] , s);
     				}
@@ -358,6 +382,31 @@ private:
     		exit(4);
     	}
     }
+
+  /*  void dbg_print_matrix(){
+    	int width = 11;
+    	int height = 11;
+    	int node = 0;
+    	for(int y = 0;y<height;y++){
+			for(int x = 0;x<width;x++){
+				for (int i = 0;i<g.nIncident(node);i++){
+					auto & e = g.incident(node,i);
+					int flow = this->getEdgeFlow(e.id);
+					if(flow!=0){
+						printf("%d ", flow);
+					}else{
+						printf(" ")
+					}
+
+				}
+
+				node = node+1;
+			}
+    	}
+
+
+    }*/
+
     void dbg_check_flow(int s, int t){
 #ifndef NDEBUG
     	//check that the flow is legal
@@ -421,9 +470,12 @@ private:
     inline void calc_flow(){
     	if(!flow_needs_recalc)
     		return;
+    	//double startflowtime = Monosat::rtime(0);
     	flow_needs_recalc=false;
+    	stats_flow_calcs++;
     	//apply edmonds karp to the current flow.
     	Weight maxflow = kt->maxflow(true,nullptr);
+    	double startcalctime = Monosat::rtime(0);
     	if(backward_maxflow){
 
         	kt->clear_t_edges(sink,source);
@@ -437,6 +489,9 @@ private:
     	}
 
     	assert(kt->maxflow(true,nullptr) == maxflow);
+    	//stats_calc_time+=  Monosat::rtime(0)-startcalctime;
+    	//stats_flow_time+=  startcalctime-startflowtime;
+    	//printf("flow calc time %f %f\n", stats_flow_time,stats_calc_time);
     }
 
     std::vector<int> Q;
@@ -513,6 +568,7 @@ public:
     		return 0;//self edges have no flow.
 
     	calc_flow();
+    	collect_multi_edges(flow_edge);
     	//we need to pick, possibly arbitrarily (but deterministically), which of the edges have flow
     	int arc_id = arc_map[flow_edge];
     	assert(arc_id>=0);
@@ -527,12 +583,12 @@ public:
     	Weight remaining_flow = kt->get_ecap(a) - kt->get_rcap(a);
     	if(remaining_flow<=0)
     		return 0;
-		int from = g.getEdge(flow_edge).from;
-		int to = g.getEdge(flow_edge).to;
-		//for(int i = g.nIncident(from,true)-1;i>=0;i--){
-		for(int i = 0;i<g.nIncident(from,true);i++){
-			int edgeid = g.incident(from,i,true).id;
-			if(g.edgeEnabled(edgeid) &&  ((g.getEdge(edgeid).from==from && g.getEdge(edgeid).to==to))){
+		for (int edgeid : multi_edges[flow_edge]){
+
+			assert(g.getEdge(edgeid).from==g.getEdge(flow_edge).from);
+			assert(g.getEdge(edgeid).to==g.getEdge(flow_edge).to);
+
+			if(g.edgeEnabled(edgeid)){
 				assert(arc_map[edgeid] == arc_id);
 				Weight  edge_cap = capacity[edgeid];
 				if(edgeid==flow_edge){

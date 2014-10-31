@@ -32,7 +32,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include <cassert>
 #include <cstdlib>
 #include <iostream>
-
+#include <iomanip>
 using namespace Monosat;
 template<typename Weight>
 DistanceDetector<Weight>::DistanceDetector(int _detectorID, GraphTheorySolver<Weight> * _outer,std::vector<Weight> & weights,  DynamicGraph &_g,DynamicGraph &_antig, int from, double seed):
@@ -478,8 +478,8 @@ void DistanceDetector<Weight>::buildNonReachReason(int node,vec<Lit> & conflict)
 }
 
 template<typename Weight>
-void DistanceDetector<Weight>::printSolution(){
-	 if(opt_verb>0){
+void DistanceDetector<Weight>::printSolution(std::ostream& write_to){
+
 		 vec<bool> to_show;
 		 to_show.growTo(g.nodes());
 		 for(auto & w:weighted_dist_lits){
@@ -493,7 +493,7 @@ void DistanceDetector<Weight>::printSolution(){
 			Distance<Weight> & d = *positive_weighted_path_detector;
 			d.update();
 			Weight & actual_dist = d.distance(to);
-			std::cout<<"Shortest Weighted Path " << source <<"->"<<to<<" is " << actual_dist<<": ";
+			write_to<<"Shortest Weighted Path " << source <<"->"<<to<<" is " << actual_dist<<": ";
 			 //std::cout<< "Weighted Distance Constraint " <<dimacs(w.l) << " (" << source <<"->" << w.u << ") <=" << w.min_distance ;
 
 
@@ -510,11 +510,11 @@ void DistanceDetector<Weight>::printSolution(){
 
 
 				for(int i = path.size()-1;i>=0;i--){
-					std::cout<<path[i] <<",";
+					write_to<<path[i] <<",";
 				}
-				std::cout<<'\n';
+				write_to<<'\n';
 			 }else{
-				 std::cout<<": FALSE\n";
+				 write_to<<": FALSE\n";
 			 }
 		 }
 
@@ -534,19 +534,19 @@ void DistanceDetector<Weight>::printSolution(){
 
 			int y = (n + extra )/width;
 			if(y > lasty)
-				printf("\n");
+				write_to<<"\n";
 
 			int d = positive_reach_detector->distance(n);
-			printf("%*d ",maxw,d);
-
+			//printf("%*d ",maxw,d);
+			write_to<< std::setw(maxw)<<d;
 
 				lasty=y;
-			}
-			printf("\n");
+		}
+		write_to<<"\n";
 
 
 
-	}
+
 
 }
 

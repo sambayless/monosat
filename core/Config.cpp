@@ -60,7 +60,7 @@ IntOption Monosat::opt_temporary_theory_reasons(_cat_sms,"temporary-theory-reaso
  BoolOption Monosat::opt_graph(_cat_graph,"graph","Use graph theory solver",true);
  BoolOption Monosat::opt_inc_graph(_cat_graph,"inc","Use incremental graph reachability",false);
  IntOption Monosat::opt_dec_graph(_cat_graph,"dec","Use decremental graph reachability",0,IntRange(0, 2));
- StringOption Monosat::opt_maxflow_alg(_cat_graph,"maxflow","Select max s-t-flow algorithm (edmondskarp, edmondskarp-adj, edmondskarp-dynamic,dinitz,dinitz-linkcut)","edmondskarp-dynamic");//ibfs
+ StringOption Monosat::opt_maxflow_alg(_cat_graph,"maxflow","Select max s-t-flow algorithm (edmondskarp, edmondskarp-adj, edmondskarp-dynamic,dinitz,dinitz-linkcut, kohli-torr)","kohli-torr");//ibfs
  StringOption Monosat::opt_reach_alg(_cat_graph,"reach","Select reachability algorithm (bfs,dfs, dijkstra,ramal-reps,cnf)","ramal-reps");
  StringOption Monosat::opt_dist_alg(_cat_graph,"dist","Select reachability algorithm (bfs,dfs, dijkstra,ramal-reps,cnf)","ramal-reps");
 
@@ -142,8 +142,12 @@ StringOption Monosat::opt_hull_alg(_cat_geom,"hull","Select convex-hull algorith
 
 BoolOption Monosat::opt_conflict_dfs(_cat_graph,"conflict-dfs","Use a DFS (instead of a BFS) to find the conflict cut",true);
 BoolOption Monosat::opt_conflict_from_source(_cat_graph,"conflict-from-source","Search from the source (instead of back from the target) to find the conflict cut",false);
-BoolOption Monosat::opt_use_kt_for_conflicts(_cat_graph,"use-kt-for-conflict","When kohli-torr is selected as the maximum flow algorithm, also use kohli-torr for conflcits and decisions (instead of edmonds karp)",false);
+BoolOption Monosat::opt_use_kt_for_conflicts(_cat_graph,"use-kt-for-conflicts","When kohli-torr is selected as the maximum flow algorithm, also use kohli-torr for conflcits and decisions (instead of edmonds karp)",true);
 BoolOption Monosat::opt_maxflow_backward(_cat_graph,"maxflow-backward","Reverse source,sink, and all edge capacities when computing maxflow (this can force different flow assignments by individual algorithms, but doesn't effect the set of valid solutions)",false);
+BoolOption Monosat::opt_kt_preserve_order(_cat_graph,"kt-preserve-order","Attempt to preserve the order of flow assigned by the kohli-torr maxflow algorithm",false);
+
+BoolOption Monosat::opt_lazy_maxflow_decisions(_cat_graph,"lazy-maxflow-decisions","",false);
+
 
 
 

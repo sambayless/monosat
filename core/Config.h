@@ -122,7 +122,8 @@ extern BoolOption opt_use_kt_for_conflicts;
 extern BoolOption opt_maxflow_backward;
 extern BoolOption opt_conflict_min_cut_maxflow;
 extern IntOption opt_history_clear;
-
+extern BoolOption opt_kt_preserve_order;
+extern BoolOption opt_lazy_maxflow_decisions;
 
 enum class PointInPolygonAlg{
 	 ALG_FULL,

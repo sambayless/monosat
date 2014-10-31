@@ -27,7 +27,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "mtl/Alg.h"
 #include "utils/Options.h"
 #include "core/SolverTypes.h"
-
+#include <ostream>
 namespace Monosat{
 /**
  * Abstract interface to SMT theory solvers, as accessed by the SAT solver
@@ -59,6 +59,9 @@ public:
 	}
 	virtual void printSolution(){
 
+	}
+	virtual void writeTheoryWitness(std::ostream& write_to){
+		//do nothing
 	}
 };
 

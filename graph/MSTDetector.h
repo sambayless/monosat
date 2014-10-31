@@ -138,7 +138,7 @@ public:
 		Lit decide();
 		void addTreeEdgeLit(int edge_id, Var reach_var);
 		void addWeightLit(Var weight_var,Weight & min_weight);
-		void printSolution();
+		void printSolution(std::ostream & write_to);
 		MSTDetector(int _detectorID, GraphTheorySolver<Weight> * _outer, DynamicGraph &_g, DynamicGraph &_antig, std::vector<Weight> & _edge_weights,  double seed=1);//:Detector(_detectorID),outer(_outer),within(-1),source(_source),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL){}
 		virtual ~MSTDetector(){
 

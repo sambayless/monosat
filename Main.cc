@@ -134,6 +134,8 @@ int main(int argc, char** argv)
 
         BoolOption opt_witness("MAIN","witness","print solution",false);
         StringOption opt_witness_file("MAIN","witness-file","write witness to file","");
+        StringOption opt_theory_witness_file("MAIN","theory-witness-file","write witness for theories to file","");
+
         BoolOption   pre    ("MAIN", "pre",    "Completely turn on/off any preprocessing.", true);
 
         BoolOption opb("PB","opb","Parse the input as pseudo-boolean constraints in .opb format",false);
@@ -633,6 +635,11 @@ int main(int argc, char** argv)
 			   }
         	}
 
+        	if(strlen(opt_theory_witness_file)>0){
+        		std::ofstream theory_out(opt_theory_witness_file,ios::out);
+        		S.writeTheoryWitness(theory_out);
+        	}
+
 			if(opt_witness){
 
 				printf("v ");
@@ -682,10 +689,10 @@ int main(int argc, char** argv)
 				}
 				printf("\n");
 			}
-
-			for(int i = 0;i<S.theories.size();i++)
-				 S.theories[i]->printSolution();
-
+			if(opt_verb>=2){
+				for(int i = 0;i<S.theories.size();i++)
+					 S.theories[i]->printSolution();
+			}
 			if(!opt_csv)
 				printf("s SATISFIABLE\n");
         }else if(ret==l_False){

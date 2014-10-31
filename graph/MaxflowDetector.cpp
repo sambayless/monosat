@@ -83,8 +83,8 @@ Detector(_detectorID),outer(_outer),capacities(capacities),over_graph(_g),g(_g),
 		if(opt_conflict_min_cut_maxflow)
 				learn_cut = new DinitzLinkCut<std::vector<int>>(learn_graph,learn_caps,source,target);
 	}else if (mincutalg==MinCutAlg::ALG_KOHLI_TORR){
-		positive_detector = new KohliTorr<std::vector<Weight>,Weight>(_g,capacities,source,target,opt_maxflow_backward);
-		negative_detector = new KohliTorr<std::vector<Weight>,Weight>(_antig,capacities,source,target,opt_maxflow_backward);
+		positive_detector = new KohliTorr<std::vector<Weight>,Weight>(_g,capacities,source,target,opt_maxflow_backward,opt_kt_preserve_order);
+		negative_detector = new KohliTorr<std::vector<Weight>,Weight>(_antig,capacities,source,target,opt_maxflow_backward,opt_kt_preserve_order);
 		if(opt_use_kt_for_conflicts){
 			positive_conflict_detector = positive_detector;//new EdmondsKarpDynamic<std::vector<Weight>,Weight>(_g,capacities);
 			negative_conflict_detector =negative_detector;//new EdmondsKarpDynamic<std::vector<Weight>,Weight>(_antig,capacities);
@@ -631,60 +631,59 @@ bool MaxflowDetector<Weight>::checkSatisfied(){
 	return true;
 }
 template<typename Weight>
-void MaxflowDetector<Weight>::printSolution(){
+void MaxflowDetector<Weight>::printSolution(std::ostream & write_to){
 	Weight f = positive_conflict_detector->maxFlow();
-	printf("Maximum %d->%d flow in graph %d is ", this->source,this->target,this->outer->getGraphID());
-	std::cout<<f <<"\n";
-	if(opt_verb>0){
+	write_to<< "Graph " << outer->getGraphID() << " maxflow " << source <<" to " << target << " is " << f<<"\n";
 
-		int maxw = log10(outer->nNodes() )+1;
-		int width = sqrt(outer->nNodes());
-		if(opt_width>0){
-				width=opt_width;
+
+
+int maxw = log10(outer->nNodes() )+1;
+int width = sqrt(outer->nNodes());
+if(opt_width>0){
+		width=opt_width;
+}
+	int height =width;
+	if(opt_height>0){
+		height = opt_height;
+	}
+
+	int lasty= 0;
+	int extra =  outer->nNodes() % width ? (width- outer->nNodes() % width ):0;
+	for(int n = 0;n<outer->nNodes();n++){
+		int x = n%width;
+
+		int y = (n )/width;
+		if(y > lasty)
+			write_to<<"\n";
+		Weight total_flow = 0;
+		for(int e = 0;e<g.edges();e++){
+			if(g.getEdge(e).to==n && g.edgeEnabled(e)){
+				total_flow+=positive_conflict_detector->getEdgeFlow(e);
+
+			}
 		}
-			int height =width;
-			if(opt_height>0){
-				height = opt_height;
+
+		//printf("%*d ",maxw,total_flow);
+		write_to<<total_flow<<" ";
+			lasty=y;
+		}
+		write_to<<"\n";
+
+		for(int n = 0;n<outer->nNodes();n++){
+
+			int total_flow = 0;
+			for(int e = 0;e<g.edges();e++){
+				if(g.getEdge(e).to==n && g.edgeEnabled(e)){
+					Weight flow = positive_conflict_detector->getEdgeFlow(e);
+					if(flow>0){
+						write_to<< "Graph " << outer->getGraphID() << " maxflow " << source <<" to " << target << " assigns edge " << g.getEdge(e).from << " -> " << g.getEdge(e).to << " flow " << flow<<"\n";
+					}
+				}
 			}
 
-			int lasty= 0;
-			int extra =  outer->nNodes() % width ? (width- outer->nNodes() % width ):0;
-			for(int n = 0;n<outer->nNodes();n++){
-				int x = n%width;
+		}
+		write_to<<"\n";
 
-				int y = (n )/width;
-				if(y > lasty)
-					printf("\n");
-				Weight total_flow = 0;
-				for(int e = 0;e<g.edges();e++){
-					if(g.getEdge(e).to==n && g.edgeEnabled(e)){
-						total_flow+=positive_conflict_detector->getEdgeFlow(e);
-
-					}
-				}
-
-				//printf("%*d ",maxw,total_flow);
-				std::cout<<total_flow<<" ";
-					lasty=y;
-				}
-				printf("\n");
-
-				for(int n = 0;n<outer->nNodes();n++){
-
-					int total_flow = 0;
-					for(int e = 0;e<g.edges();e++){
-						if(g.getEdge(e).to==n && g.edgeEnabled(e)){
-							Weight flow = positive_conflict_detector->getEdgeFlow(e);
-							if(flow>0){
-								printf("flow  %d to %d = ", g.getEdge(e).from,g.getEdge(e).to);
-								std::cout<<flow<<"\n";
-							}
-						}
-					}
-
-				}
-				printf("\n");
-	}
 
 }
 
@@ -696,190 +695,314 @@ Lit MaxflowDetector<Weight>::decide(){
 	auto * over =negative_conflict_detector;
 		auto * under = positive_conflict_detector;
 
-		//Weight under_flow = under->maxFlow(source,target) ;
-		if(last_decision_status!= over->numUpdates())
-			to_decide.clear();
-
-		if(to_decide.size() ){
-/*
+		if(opt_lazy_maxflow_decisions){
 			if(last_decision_status!= over->numUpdates()){
-				//check if any literal has been assigned false; if none of them have, then this decision set is still safe to use.
-				for(Lit l:to_decide){
-					if(outer->value(l)==l_False){
-						to_decide.clear();
-						break;
-					}
-				}
-				last_decision_status=over->numUpdates();
+				last_decision_status= over->numUpdates();
+				q.clear();
+				last_decision_q_pos=0;
+				seen.clear();
+				seen.growTo(antig.nodes(),false);
+
+				if(opt_conflict_from_source)
+					q.push_back(source);
+				else
+					q.push_back(target);
 			}
-*/
 
-			while(to_decide.size()){
-				Lit l = to_decide.last();
-				to_decide.pop();
-				if(outer->value(l)==l_Undef){
-					stats_decide_time+=  rtime(2)-startdecidetime;
-					return l;
-				}
-			}
-		}
-		//Weight under_flow = positive_detector->maxFlow(source,target);//intentionally not using the conflict detector; it isn't required.
-		Weight over_flow = negative_detector->maxFlow() ;
 
-		for(int k = 0;k<flow_lits.size();k++){
-			Lit l =flow_lits[k].l;
-			if(l==lit_Undef)
-				continue;
 
-			Weight & required_flow = flow_lits[k].max_flow;
+			stats_decision_calculations++;
 
-			if(outer->value(l)==l_True && opt_decide_graph_pos){
-				assert(over_flow>=required_flow);
+			double post_calc_time=rtime(2);
 
-#ifndef NDEBUG
-				static vec<bool> dbg_expect;
-				int dbg_count = 0;
-				dbg_expect.clear();
-				dbg_expect.growTo(g.edges());
-				for(int edgeID = 0;edgeID<g.edges();edgeID++){
-					lbool val = outer->value(outer->getEdgeVar(edgeID));
-					if(val==l_Undef){
-						if(over->getEdgeFlow(edgeID)>0){
-							dbg_expect[edgeID]=true;
-							dbg_count++;
-						}
-					}else if (val == l_False){
-						//assert(over->getEdgeFlow(edgeID)==0);
-					}
-				}
-#endif
-				//in principle we can do this check, and it can avoid un-needed decisions - but if we are detecting pure theory literals,
-				//then we might not have computed the underflow yet, and it is probably too expensive to compute here in that case.
 
-				//if(under_flow <required_flow)
-				{
 
-					//then decide an unassigned edge of the currently selected flow
-					to_decide.clear();
-					over->maxFlow();
-					last_decision_status= over->numUpdates();
+			if(opt_conflict_dfs){
+				//do a dfs to find that edge. Could start from either the source or the target.
+				if(opt_conflict_from_source){
 
-					seen.clear();
-					seen.growTo(antig.nodes(),false);
-					q.clear();
-
-					if(opt_conflict_dfs){
-						//do a dfs to find that edge. Could start from either the source or the target.
-						if(opt_conflict_from_source){
-
-							q.push_back(source);
-
-							while(q.size()){
-								int u =q.back();
-								q.pop_back();
-								for(int i = 0;i<antig.nIncident(u) ;i++){
-									if(!antig.edgeEnabled(antig.incident(u,i).id))
-										continue;
-									int v =antig.incident(u,i).node;
-									int edgeID= antig.incident(u,i).id;
-									if (over->getEdgeFlow(edgeID)>0){
-										Var var = outer->getEdgeVar(edgeID);
-										if(outer->value(var)==l_Undef){
-											to_decide.push(mkLit(var,false));
-										}
-										if(!seen[v]){
-											seen[v]=true;
-											q.push_back(v);
-										}
-									}
+					while(q.size()){
+						int u =q.back();
+						q.pop_back();
+						int qs = q.size();
+						for(int i = 0;i<antig.nIncident(u) ;i++){
+							if(!antig.edgeEnabled(antig.incident(u,i).id))
+								continue;
+							int v =antig.incident(u,i).node;
+							int edgeID= antig.incident(u,i).id;
+							if (over->getEdgeFlow(edgeID)>0){
+								Var var = outer->getEdgeVar(edgeID);
+								if(outer->value(var)==l_Undef){
+									q.resize(qs);
+									q.push_back(u);
+									return (mkLit(var,false));
 								}
-							}
-						}else{
-							q.push_back(target);
-							while(q.size()){
-								int u =q.back();
-								q.pop_back();
-								for(int i = 0;i<antig.nIncoming(u) ;i++){
-									if(!antig.edgeEnabled(antig.incoming(u,i).id))
-										continue;
-									int v =antig.incoming(u,i).node;
-									int edgeID= antig.incoming(u,i).id;
-									if (over->getEdgeFlow(edgeID)>0){
-										Var var = outer->getEdgeVar(edgeID);
-										if(outer->value(var)==l_Undef){
-											to_decide.push(mkLit(var,false));
-										}
-										if(!seen[v]){
-											seen[v]=true;
-											q.push_back(v);
-										}
-									}
+								if(!seen[v]){
+									seen[v]=true;
+									q.push_back(v);
 								}
+
 							}
 						}
-					}else{
-						if(opt_conflict_from_source){
-							q.push_back(source);
-							//do a bfs to find that edge. Could start from either the source or the target.
-							for (int i = 0;i<q.size();i++){
-								int u = q[i];
-								for(int i = 0;i<antig.nIncident(u);i++){
-									if(!antig.edgeEnabled(antig.incident(u,i).id))
-										continue;
-									int edgeID = antig.incident(u,i).id;
-									int v = antig.incident(u,i).node;
-									if (over->getEdgeFlow(edgeID)>0){
-										Var var = outer->getEdgeVar(edgeID);
-										assert(outer->value(var)!=l_False);
-										if(outer->value(var)==l_Undef){
-											to_decide.push(mkLit(var,false));
-										}
-										if(!seen[v]){
-											seen[v]=true;
-											q.push_back(v);
-										}
-									}
+					}
+				}else{
+
+					while(q.size()){
+						int u =q.back();
+						int qs=q.size();
+						q.pop_back();
+						for(int i = 0;i<antig.nIncoming(u) ;i++){
+							if(!antig.edgeEnabled(antig.incoming(u,i).id))
+								continue;
+							int v =antig.incoming(u,i).node;
+							int edgeID= antig.incoming(u,i).id;
+							if (over->getEdgeFlow(edgeID)>0){
+								Var var = outer->getEdgeVar(edgeID);
+								if(outer->value(var)==l_Undef){
+									q.resize(qs);
+									q.push_back(u);
+									return (mkLit(var,false));
 								}
-							}
-						}else{
-							q.push_back(target);
-							//do a bfs to find that edge. Could start from either the source or the target.
-							for (int i = 0;i<q.size();i++){
-								int u = q[i];
-								for(int i = 0;i<antig.nIncoming(u);i++){
-									if(!antig.edgeEnabled(antig.incoming(u,i).id))
-										continue;
-									int edgeID = antig.incoming(u,i).id;
-									int v = antig.incoming(u,i).node;
-									if (over->getEdgeFlow(edgeID)>0){
-										Var var = outer->getEdgeVar(edgeID);
-										assert(outer->value(var)!=l_False);
-										if(outer->value(var)==l_Undef){
-											to_decide.push(mkLit(var,false));
-										}
-										if(!seen[v]){
-											seen[v]=true;
-											q.push_back(v);
-										}
-									}
+								if(!seen[v]){
+									seen[v]=true;
+									q.push_back(v);
 								}
 							}
 						}
 					}
-					//assert(to_decide.size()==dbg_count);
 				}
-			}else if(outer->value(l)==l_False && opt_decide_graph_neg){
+			}else{
+				if(opt_conflict_from_source){
 
+					//do a bfs to find that edge. Could start from either the source or the target.
+					for (;last_decision_q_pos<q.size();last_decision_q_pos++){
+						int u = q[last_decision_q_pos];
+						for(int i = 0;i<antig.nIncident(u);i++){
+							if(!antig.edgeEnabled(antig.incident(u,i).id))
+								continue;
+							int edgeID = antig.incident(u,i).id;
+							int v = antig.incident(u,i).node;
+							if (over->getEdgeFlow(edgeID)>0){
+								Var var = outer->getEdgeVar(edgeID);
+								assert(outer->value(var)!=l_False);
+								if(outer->value(var)==l_Undef){
+									return (mkLit(var,false));
+								}
+								if(!seen[v]){
+									seen[v]=true;
+									q.push_back(v);
+								}
+							}
+						}
+					}
+				}else{
 
-
+					//do a bfs to find that edge. Could start from either the source or the target.
+					for (;last_decision_q_pos<q.size();last_decision_q_pos++){
+						int u = q[last_decision_q_pos];
+						for(int i = 0;i<antig.nIncoming(u);i++){
+							if(!antig.edgeEnabled(antig.incoming(u,i).id))
+								continue;
+							int edgeID = antig.incoming(u,i).id;
+							int v = antig.incoming(u,i).node;
+							if (over->getEdgeFlow(edgeID)>0){
+								Var var = outer->getEdgeVar(edgeID);
+								assert(outer->value(var)!=l_False);
+								if(outer->value(var)==l_Undef){
+									return (mkLit(var,false));
+								}
+								if(!seen[v]){
+									seen[v]=true;
+									q.push_back(v);
+								}
+							}
+						}
+					}
+				}
 			}
-			if(to_decide.size() && last_decision_status== over->numUpdates()){
+			stats_flow_recalc_time+= rtime(2)-post_calc_time;
+
+		}else{
+
+			//Weight under_flow = under->maxFlow(source,target) ;
+			if(last_decision_status!= over->numUpdates())
+				to_decide.clear();
+
+			if(to_decide.size() ){
 				while(to_decide.size()){
 					Lit l = to_decide.last();
 					to_decide.pop();
 					if(outer->value(l)==l_Undef){
-						stats_decide_time+= rtime(2)-startdecidetime;
+						double post_time =  rtime(2);
+						stats_decide_time+= post_time-startdecidetime;
+						stats_redecide_time+= post_time-startdecidetime;
 						return l;
+					}
+				}
+			}
+			//Weight under_flow = positive_detector->maxFlow(source,target);//intentionally not using the conflict detector; it isn't required.
+			Weight over_flow = negative_detector->maxFlow() ;
+
+			for(int k = 0;k<flow_lits.size();k++){
+				Lit l =flow_lits[k].l;
+				if(l==lit_Undef)
+					continue;
+
+				Weight & required_flow = flow_lits[k].max_flow;
+
+				if(outer->value(l)==l_True && opt_decide_graph_pos){
+					assert(over_flow>=required_flow);
+
+	#ifndef NDEBUG
+					static vec<bool> dbg_expect;
+					int dbg_count = 0;
+					dbg_expect.clear();
+					dbg_expect.growTo(g.edges());
+					for(int edgeID = 0;edgeID<g.edges();edgeID++){
+						lbool val = outer->value(outer->getEdgeVar(edgeID));
+						if(val==l_Undef){
+							if(over->getEdgeFlow(edgeID)>0){
+								dbg_expect[edgeID]=true;
+								dbg_count++;
+							}
+						}else if (val == l_False){
+							//assert(over->getEdgeFlow(edgeID)==0);
+						}
+					}
+	#endif
+					//in principle we can do this check, and it can avoid un-needed decisions - but if we are detecting pure theory literals,
+					//then we might not have computed the underflow yet, and it is probably too expensive to compute here in that case.
+
+					//if(under_flow <required_flow)
+					{
+						stats_decision_calculations++;
+						//then decide an unassigned edge of the currently selected flow
+						to_decide.clear();
+						over->maxFlow();
+						double st = rtime(2);
+						over->getEdgeFlow(0);
+						double post_calc_time=rtime(2);
+						stats_flow_calc_time+= post_calc_time-st;
+						last_decision_status= over->numUpdates();
+
+						seen.clear();
+						seen.growTo(antig.nodes(),false);
+						q.clear();
+
+						if(opt_conflict_dfs){
+							//do a dfs to find that edge. Could start from either the source or the target.
+							if(opt_conflict_from_source){
+
+								q.push_back(source);
+
+								while(q.size()){
+									int u =q.back();
+									q.pop_back();
+									for(int i = 0;i<antig.nIncident(u) ;i++){
+										if(!antig.edgeEnabled(antig.incident(u,i).id))
+											continue;
+										int v =antig.incident(u,i).node;
+										int edgeID= antig.incident(u,i).id;
+										if (over->getEdgeFlow(edgeID)>0){
+											Var var = outer->getEdgeVar(edgeID);
+											if(outer->value(var)==l_Undef){
+												to_decide.push(mkLit(var,false));
+											}
+											if(!seen[v]){
+												seen[v]=true;
+												q.push_back(v);
+											}
+										}
+									}
+								}
+							}else{
+								q.push_back(target);
+								while(q.size()){
+									int u =q.back();
+									q.pop_back();
+									for(int i = 0;i<antig.nIncoming(u) ;i++){
+										if(!antig.edgeEnabled(antig.incoming(u,i).id))
+											continue;
+										int v =antig.incoming(u,i).node;
+										int edgeID= antig.incoming(u,i).id;
+										if (over->getEdgeFlow(edgeID)>0){
+											Var var = outer->getEdgeVar(edgeID);
+											if(outer->value(var)==l_Undef){
+												to_decide.push(mkLit(var,false));
+											}
+											if(!seen[v]){
+												seen[v]=true;
+												q.push_back(v);
+											}
+										}
+									}
+								}
+							}
+						}else{
+							if(opt_conflict_from_source){
+								q.push_back(source);
+								//do a bfs to find that edge. Could start from either the source or the target.
+								for (int i = 0;i<q.size();i++){
+									int u = q[i];
+									for(int i = 0;i<antig.nIncident(u);i++){
+										if(!antig.edgeEnabled(antig.incident(u,i).id))
+											continue;
+										int edgeID = antig.incident(u,i).id;
+										int v = antig.incident(u,i).node;
+										if (over->getEdgeFlow(edgeID)>0){
+											Var var = outer->getEdgeVar(edgeID);
+											assert(outer->value(var)!=l_False);
+											if(outer->value(var)==l_Undef){
+												to_decide.push(mkLit(var,false));
+											}
+											if(!seen[v]){
+												seen[v]=true;
+												q.push_back(v);
+											}
+										}
+									}
+								}
+							}else{
+								q.push_back(target);
+								//do a bfs to find that edge. Could start from either the source or the target.
+								for (int i = 0;i<q.size();i++){
+									int u = q[i];
+									for(int i = 0;i<antig.nIncoming(u);i++){
+										if(!antig.edgeEnabled(antig.incoming(u,i).id))
+											continue;
+										int edgeID = antig.incoming(u,i).id;
+										int v = antig.incoming(u,i).node;
+										if (over->getEdgeFlow(edgeID)>0){
+											Var var = outer->getEdgeVar(edgeID);
+											assert(outer->value(var)!=l_False);
+											if(outer->value(var)==l_Undef){
+												to_decide.push(mkLit(var,false));
+											}
+											if(!seen[v]){
+												seen[v]=true;
+												q.push_back(v);
+											}
+										}
+									}
+								}
+							}
+						}
+						stats_flow_recalc_time+= rtime(2)-post_calc_time;
+						//assert(to_decide.size()==dbg_count);
+					}
+				}else if(outer->value(l)==l_False && opt_decide_graph_neg){
+
+
+
+				}
+				if(to_decide.size() && last_decision_status== over->numUpdates()){
+					while(to_decide.size()){
+						Lit l = to_decide.last();
+						to_decide.pop();
+						if(outer->value(l)==l_Undef){
+							stats_decide_time+= rtime(2)-startdecidetime;
+							return l;
+						}
 					}
 				}
 			}
