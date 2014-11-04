@@ -48,6 +48,10 @@ public:
     }
     virtual const  Weight update()=0;
     virtual int numUpdates()const=0;
+    virtual std::vector<int> &  getChangedEdges()=0;
+    virtual void clearChangedEdges(){
+
+    }
     virtual void printStats(){
 
     }

@@ -696,6 +696,23 @@ Lit MaxflowDetector<Weight>::decide(){
 		auto * under = positive_conflict_detector;
 
 		if(opt_lazy_maxflow_decisions){
+
+			over->update();
+			std::vector<int> & changed_edges = over->getChangedEdges();
+			while(changed_edges.size()){
+				int edgeid = changed_edges.back();
+				changed_edges.pop_back();
+				Lit l = mkLit(outer->getEdgeVar(edgeid),false);
+				if(outer->value(l)==l_Undef){
+					double post_time =  rtime(2);
+					stats_decide_time+= post_time-startdecidetime;
+					stats_redecide_time+= post_time-startdecidetime;
+					return l;
+				}
+			}
+
+			return lit_Undef;
+
 			if(last_decision_status!= over->numUpdates()){
 				last_decision_status= over->numUpdates();
 				q.clear();

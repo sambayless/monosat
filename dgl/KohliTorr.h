@@ -65,7 +65,7 @@ class KohliTorr:public MaxFlow<Weight>{
     typedef  typename kohli_torr::Graph<Weight,Weight,Weight>::arc_id arc;
 
     std::vector<int> arc_map; //map from edgeids to arcs (note: this may be many to one)
-
+    std::vector<std::vector<int>> edge_map; //map from arc ids to edgeids
     DynamicGraph& g;
     Capacity & capacity;
     Weight INF;
@@ -79,6 +79,7 @@ class KohliTorr:public MaxFlow<Weight>{
     Weight max_capacity =0;
 
     std::vector<bool> edge_enabled;
+    std::vector<int> changed_edges;
     bool flow_needs_recalc=true;
 
 public:
@@ -178,6 +179,8 @@ public:
         	multi_edges.resize(g.edges());
         	arc_map.clear();
         	arc_map.resize(g.edges(),-1);
+        	edge_map.clear();
+
         	for(int edgeID = 0;edgeID<g.edges();edgeID++){
 
         		if(!g.hasEdge(edgeID) || g.selfLoop(edgeID))
@@ -192,13 +195,19 @@ public:
         		if(!kt->has_edge(from,to)){
         			assert(arc_map[edgeID]==-1);
         			int arc_id = kt->add_edge(from,to,0,0);
+
+        			if(edge_map.size()<=arc_id+1)
+        				edge_map.resize(arc_id+2);
+
         			arc_map[edgeID]=arc_id;
         			//set the corresponding arc for each other from-to edge
 					for(int i = 0;i<g.nIncident(from,true);i++){
 						int edgeid = g.incident(from,i,true).id;
 						if(g.getEdge(edgeid).from==from && g.getEdge(edgeid).to==to){
+							edge_map[arc_id].push_back(edgeid);
 							arc_map[edgeid]=arc_id;
 						}else if  (g.getEdge(edgeid).from==to && g.getEdge(edgeid).to==from){
+							edge_map[arc_id+1].push_back(edgeid);
 							arc_map[edgeid]=arc_id+1;//the reverse arc is always stored right after the forward arc
 						}
 					}
@@ -305,6 +314,22 @@ public:
     }
 
 
+    std::vector<int> & getChangedEdges(){
+    	while(kt->changed_edges.size()){
+    		int arc = kt->changed_edges.back();
+    		kt->changed_edges.pop_back();
+    		kt->unmarkFlowEdge(kt->get_arc(arc));
+    		assert(arc<edge_map.size());
+    		for (int edgeID:edge_map[arc]){
+    			changed_edges.push_back(edgeID);
+    		}
+    	}
+    	return changed_edges;
+	}
+
+    void clearChangedEdges(){
+    	changed_edges.clear();
+    }
 private:
 
     inline void collect_multi_edges(int for_edge){

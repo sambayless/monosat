@@ -352,6 +352,14 @@ public:
     const Weight update(){
     	return maxFlow(source,sink);
     }
+    std::vector<int> changed_edges;
+    std::vector<int> &  getChangedEdges(){
+     	return changed_edges;
+     }
+     void clearChangedEdges(){
+
+     }
+
     const Weight maxFlow(int s, int t){
     	Weight f = 0;
 #ifdef RECORD

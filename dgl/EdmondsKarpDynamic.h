@@ -364,7 +364,13 @@ public:
 		last_history_clear=g.historyclears;
         return f;
     }
+    std::vector<int> changed_edges;
+    std::vector<int> &  getChangedEdges(){
+     	return changed_edges;
+     }
+     void clearChangedEdges(){
 
+     }
 
 private:
 

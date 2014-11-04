@@ -822,6 +822,14 @@ public:
    const int update(){
 		return maxFlow(source,sink);
 	}
+   std::vector<int> changed_edges;
+   std::vector<int> &  getChangedEdges(){
+    	return changed_edges;
+    }
+    void clearChangedEdges(){
+
+    }
+
     const  int maxFlow(int s, int t){
     	int f = 0;
 #ifdef RECORD

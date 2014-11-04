@@ -123,6 +123,7 @@ public:
 	bool preserve_backward_order=false;
 	std::vector<node_id> t_edge_nodes;
 	std::vector<node_id> s_edge_nodes;
+	std::vector<int> changed_edges;
 	/////////////////////////////////////////////////////////////////////////
 	//                     BASIC INTERFACE FUNCTIONS                       //
 	//              (should be enough for most applications)               //
@@ -381,7 +382,7 @@ private:
 		node		*head=nullptr;		// node the arc points to
 		arc		*next=nullptr;		// next arc with the same originating node
 		arc		*sister=nullptr;	// reverse arc
-
+		bool 	might_have_flow=false;
 		captype		r_cap;		// residual capacity
 		captype		e_cap;		// original capacity
 	};
@@ -549,6 +550,23 @@ private:
 		   return -2;
 	   }
 public:
+
+	void markFlowEdge(arc * edge){
+		if(!edge->might_have_flow){
+			assert(!edge->sister->might_have_flow);
+			edge->might_have_flow=true;
+			edge->sister->might_have_flow=true;
+			changed_edges.push_back(edge-get_first_arc());
+		}
+		assert(edge->might_have_flow);
+		assert(edge->sister->might_have_flow);
+	}
+
+	void unmarkFlowEdge(arc * edge){
+		edge->might_have_flow=false;
+		edge->sister->might_have_flow=false;
+	}
+
 	//Run edmonds-karp to remove any excess flow on t-edges
 	void clear_t_edges(int source_node, int sink_node){
 		static int iter = 0;
@@ -605,6 +623,7 @@ public:
                 }
                 assert(edge->e_cap-edge->r_cap>=f);
                 edge->r_cap+=f;//remove this flow from this edge by adding it to its remaining capacity;
+                markFlowEdge(edge);
                 assert(edge->sister->r_cap>=f);
                 edge->sister->r_cap-=f;
                 int u =  edge->sister->head-nodes;
@@ -635,7 +654,7 @@ public:
                 }
                 assert(edge->r_cap>=f);
                 edge->r_cap-=f;//remove this flow from this edge by adding it to its remaining capacity;
-
+                markFlowEdge(edge);
                 edge->sister->r_cap+=f;
                 int u =  edge->sister->head-nodes;
                 v = u;
@@ -664,6 +683,7 @@ public:
 				   }
 				   assert(edge->e_cap-edge->r_cap>=f);
 				  edge->r_cap+=f;//remove this flow from this edge by adding it to its remaining capacity;
+				  markFlowEdge(edge);
 				  assert(edge->sister->r_cap>=f);
 				  edge->sister->r_cap-=f;
 				  int u =  edge->sister->head-nodes;
@@ -1729,6 +1749,7 @@ template <typename captype, typename tcaptype, typename flowtype>
 		if (a == TERMINAL) break;
 		a -> r_cap += bottleneck;
 		a -> sister -> r_cap -= bottleneck;
+		markFlowEdge(a->sister);
 		if (!a->sister->r_cap)
 		{
 			set_orphan_front(i); // add i to the beginning of the adoption list
@@ -1752,6 +1773,7 @@ template <typename captype, typename tcaptype, typename flowtype>
 		if (a == TERMINAL) break;
 		a -> sister -> r_cap += bottleneck;
 		a -> r_cap -= bottleneck;
+		markFlowEdge(a);
 		if (!a->r_cap)
 		{
 			set_orphan_front(i); // add i to the beginning of the adoption list
