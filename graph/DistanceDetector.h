@@ -198,7 +198,7 @@ public:
 		void buildForcedEdgeReason(int reach_node, int forced_edge_id,vec<Lit> & conflict);
 		void buildReason(Lit p, vec<Lit> & reason, CRef marker);
 		bool checkSatisfied();
-		Lit decide();
+		Lit decide(int level);
 		void addUnweightedShortestPathLit(int from, int to, Var reach_var,int within_steps=-1);
 		void addWeightedShortestPathLit(int from, int to, Var reach_var,Weight within_distance);
 		DistanceDetector(int _detectorID, GraphTheorySolver<Weight> * _outer, std::vector<Weight> & weights, DynamicGraph &_g, DynamicGraph &_antig, int _source,double seed=1);//:Detector(_detectorID),outer(_outer),within(-1),source(_source),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL){}

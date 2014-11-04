@@ -996,7 +996,7 @@ void MSTDetector<Weight>::printSolution(std::ostream & write_to){
 }
 
 template<typename Weight>
-Lit MSTDetector<Weight>::decide(){
+Lit MSTDetector<Weight>::decide(int level){
 /*MSTDetector *r =this;
 MinimumSpanningTree<MSTDetector<Weight>::MSTStatus> * over = (MinimumSpanningTree<MSTDetector<Weight>::MSTStatus>*) r->negative_reach_detector;
 

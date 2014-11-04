@@ -882,7 +882,7 @@ int ConnectDetector<Weight>::OptimalWeightEdgeStatus::size()const{
 }*/
 
 		template<typename Weight>
-Lit ConnectDetector<Weight>::decide(){
+Lit ConnectDetector<Weight>::decide(int level){
 	if(!negative_reach_detector)
 		return lit_Undef;
 	auto * over = negative_reach_detector;

@@ -315,6 +315,7 @@ public:
 
 
     std::vector<int> & getChangedEdges(){
+    	calc_flow();
     	while(kt->changed_edges.size()){
     		int arc = kt->changed_edges.back();
     		kt->changed_edges.pop_back();

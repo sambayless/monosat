@@ -92,7 +92,7 @@ public:
 	virtual void backtrack(int level){
 		//do nothing
 	}
-	virtual Lit decide()=0;
+	virtual Lit decide(int level)=0;
 	virtual void setOccurs(Lit l, bool occurs){
 		if(!occurs){
 			 if(sign(l))
@@ -124,7 +124,7 @@ public:
 		   unassigned_positives++;
 	}
 	//virtual vec<int> & getLitMap();
-	Detector(int _detectorID):detectorID(_detectorID),unassigned_positives(0),unassigned_negatives(0){};
+	Detector(int detectorID):detectorID(detectorID),unassigned_positives(0),unassigned_negatives(0){};
 	virtual ~Detector(){
 
 	}
@@ -138,7 +138,41 @@ public:
 		unassigned_positives++;
 	}
 };
+
+class LevelDetector : public Detector{
+
+	vec<int> level_trail;
+
+public:
+	LevelDetector(int detectorID):Detector(detectorID){};
+
+	virtual ~LevelDetector(){
+	}
+
+	virtual void backtrack(int level){
+		while(level_trail.size() && level<level_trail.last()){
+			level_trail.pop();
+			localBacktrack();
+		}
+	}
+	virtual void localBacktrack(){
+		//do nothing
+	}
+	//local decision level within the detector
+	int decisionLevel(){
+		return level_trail.size();
+	}
+
+	void newDecisionLevel(int outer_level){
+		assert(!level_trail.contains(outer_level));
+		level_trail.push(outer_level);
+	}
+
 };
+
+};
+
+
 
 
 #endif /* DETECTOR_H_ */

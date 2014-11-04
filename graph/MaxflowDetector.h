@@ -36,7 +36,7 @@ namespace Monosat{
 template<typename Weight>
 class GraphTheorySolver;
 template<typename Weight=int>
-class MaxflowDetector:public Detector{
+class MaxflowDetector:public LevelDetector{
 public:
 		GraphTheorySolver<Weight> * outer;
 		std::vector<Weight> capacities;
@@ -63,8 +63,14 @@ public:
 		double stats_redecide_time = 0;
 
 		Lit last_decision_lit = lit_Undef;
+
+		vec<Lit> decisions;
+		vec<bool> is_potential_decision;
+		vec<int> potential_decisions;
+
 		vec<Lit> to_decide;
 		std::vector<int> q;
+
 
 		DynamicGraph learn_graph;
 		vec<int> back_edges;
@@ -106,7 +112,7 @@ public:
 		void buildForcedEdgeReason(int reach_node, int forced_edge_id,vec<Lit> & conflict);
 		void buildReason(Lit p, vec<Lit> & reason, CRef marker);
 		bool checkSatisfied();
-		Lit decide();
+		Lit decide(int level);
 		void printStats(){
 			Detector::printStats();
 			if (mincutalg==MinCutAlg::ALG_KOHLI_TORR){
@@ -125,7 +131,44 @@ public:
 		const char* getName(){
 			return "Max-flow Detector";
 		}
-		//int dbg_minconflict();
+
+		void decideEdge(int edgeID, int outerLevel, bool assign=true){
+			assert(decisions.size()>=decisionLevel());
+
+
+			newDecisionLevel(outerLevel);
+
+			Lit l = mkLit(outer->getEdgeVar(edgeID),!assign);
+
+			assert(!decisions.contains(l));
+			assert(!decisions.contains(~l));
+
+			decisions.push(l);
+
+
+
+			assert(decisions.size()==decisionLevel());
+		}
+		void localBacktrack(){
+			//undo a decision edge, and return it to the set of potential decisions
+			assert(decisions.size()==decisionLevel()+1);
+
+			Lit l = decisions.last();
+			decisions.pop();
+
+			assert(outer->isEdgeVar(var(l)));
+			int edgeID = outer->getEdgeID(var(l));
+			assert(!is_potential_decision[edgeID]);
+			assert(!potential_decisions.contains(edgeID));
+
+			//this check is optional
+			if(negative_detector->getEdgeFlow(edgeID)>0){//this check is optional
+				is_potential_decision[edgeID]=true;
+				potential_decisions.push(edgeID);
+			}
+
+		}
+
 private:
 		void buildDinitzLinkCut();
 };

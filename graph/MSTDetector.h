@@ -135,7 +135,7 @@ public:
 		//void buildForcedMinWeightReason(int reach_node, int forced_edge_id,vec<Lit> & conflict);
 		void buildReason(Lit p, vec<Lit> & reason, CRef marker);
 		bool checkSatisfied();
-		Lit decide();
+		Lit decide(int level);
 		void addTreeEdgeLit(int edge_id, Var reach_var);
 		void addWeightLit(Var weight_var,Weight & min_weight);
 		void printSolution(std::ostream & write_to);

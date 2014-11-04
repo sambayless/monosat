@@ -1372,7 +1372,7 @@ int ReachDetector<Weight>::OptimalWeightEdgeStatus::size()const{
 }*/
 
 template<typename Weight>
-Lit ReachDetector<Weight>::decide(){
+Lit ReachDetector<Weight>::decide(int level){
 	if(!opt_allow_reach_decisions)
 		return lit_Undef;
 	double startdecidetime = rtime(2);

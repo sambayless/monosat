@@ -47,7 +47,7 @@ void MaxflowDetector<Weight>::buildDinitzLinkCut(){
 
 template<typename Weight>
 MaxflowDetector<Weight>::MaxflowDetector(int _detectorID, GraphTheorySolver<Weight> * _outer,std::vector<Weight> & capacities,  DynamicGraph &_g,DynamicGraph &_antig, int from, int _target,double seed):
-Detector(_detectorID),outer(_outer),capacities(capacities),over_graph(_g),g(_g),antig(_antig),source(from),target(_target),rnd_seed(seed),positive_detector(NULL),negative_detector(NULL){
+LevelDetector(_detectorID),outer(_outer),capacities(capacities),over_graph(_g),g(_g),antig(_antig),source(from),target(_target),rnd_seed(seed),positive_detector(NULL),negative_detector(NULL){
 
 	if(mincutalg==MinCutAlg::ALG_EDKARP_DYN){
 		positive_detector = new EdmondsKarpDynamic<std::vector<Weight>,Weight>(_g,capacities,source,target);
@@ -683,12 +683,10 @@ if(opt_width>0){
 
 		}
 		write_to<<"\n";
-
-
 }
 
 template<typename Weight>
-Lit MaxflowDetector<Weight>::decide(){
+Lit MaxflowDetector<Weight>::decide(int level){
 	static int it =0;
 	++it;
 	double startdecidetime = rtime(2);
@@ -696,23 +694,75 @@ Lit MaxflowDetector<Weight>::decide(){
 		auto * under = positive_conflict_detector;
 
 		if(opt_lazy_maxflow_decisions){
-
+			if(is_potential_decision.size()<g.edges()){
+				is_potential_decision.growTo(g.edges(),false);
+			}
 			over->update();
+
 			std::vector<int> & changed_edges = over->getChangedEdges();
 			while(changed_edges.size()){
 				int edgeid = changed_edges.back();
 				changed_edges.pop_back();
-				Lit l = mkLit(outer->getEdgeVar(edgeid),false);
-				if(outer->value(l)==l_Undef){
-					double post_time =  rtime(2);
-					stats_decide_time+= post_time-startdecidetime;
-					stats_redecide_time+= post_time-startdecidetime;
-					return l;
+
+				if(!is_potential_decision[edgeid]){
+					Lit l = mkLit(outer->getEdgeVar(edgeid),false);
+					if(outer->value(l)==l_Undef && over->getEdgeFlow(edgeid)>0){
+						is_potential_decision[edgeid]=true;
+						potential_decisions.push(edgeid);
+					}
 				}
 			}
 
-			return lit_Undef;
+#ifndef NDEBUG
+			{
+				bool found=false;
+				for(int edgeID = 0;edgeID<g.edges();edgeID++){
+					bool hasFlow = over->getEdgeFlow(edgeID)>0;
+					Lit l =mkLit( outer->getEdgeVar(edgeID));
+					if(hasFlow){
+						assert(is_potential_decision[edgeID]|| decisions.contains(l));
+					}
+				}
+			}
+#endif
 
+			Lit decision=lit_Undef;
+			//should probably look into ordering heuristics for which edge to decide first, here...
+			while(potential_decisions.size()>0){
+				int edgeID = potential_decisions.last();
+				assert(is_potential_decision[edgeID]);
+				is_potential_decision[edgeID]=false;
+				potential_decisions.pop();
+				Lit l = mkLit(outer->getEdgeVar(edgeID),false);
+				if(outer->value(l)==l_Undef && over->getEdgeFlow(edgeID)>0){
+					decideEdge(edgeID,level,true);
+					decision = l;
+					break;
+				}else if (outer->value(l)==l_True){
+					if(over->getEdgeFlow(edgeID)>0)//this check is optional
+						decideEdge(edgeID,level,true);
+				}else{
+					assert(over->getEdgeFlow(edgeID)==0);
+					//decideEdge(edgeID,level,false);
+				}
+			}
+#ifndef NDEBUG
+			{
+				bool found=false;
+				for(int edgeID = 0;edgeID<g.edges();edgeID++){
+					bool hasFlow = over->getEdgeFlow(edgeID)>0;
+					Lit l =mkLit( outer->getEdgeVar(edgeID));
+					if(hasFlow){
+						assert(is_potential_decision[edgeID]|| decisions.contains(l));
+					}
+				}
+			}
+#endif
+			double post_time =  rtime(2);
+			stats_decide_time+= post_time-startdecidetime;
+			stats_redecide_time+= post_time-startdecidetime;
+			return decision;
+		}else if (opt_old_lazy_maxflow_decisions){
 			if(last_decision_status!= over->numUpdates()){
 				last_decision_status= over->numUpdates();
 				q.clear();

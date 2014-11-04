@@ -623,7 +623,7 @@ public:
                 }
                 assert(edge->e_cap-edge->r_cap>=f);
                 edge->r_cap+=f;//remove this flow from this edge by adding it to its remaining capacity;
-                markFlowEdge(edge);
+                markFlowEdge(edge->sister);
                 assert(edge->sister->r_cap>=f);
                 edge->sister->r_cap-=f;
                 int u =  edge->sister->head-nodes;
@@ -1743,6 +1743,7 @@ template <typename captype, typename tcaptype, typename flowtype>
 	/* 2a - the source tree */
 	middle_arc -> sister -> r_cap += bottleneck;
 	middle_arc -> r_cap -= bottleneck;
+	markFlowEdge(middle_arc);
 	for (i=middle_arc->sister->head; ; i=a->head)
 	{
 		a = i -> parent;

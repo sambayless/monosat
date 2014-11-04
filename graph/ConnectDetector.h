@@ -144,7 +144,7 @@ public:
 		void buildReason(Lit p, vec<Lit> & reason, CRef marker);
 		bool checkSatisfied();
 		void addLit(int from, int to, Var reach_var);
-		Lit decide();
+		Lit decide(int level);
 		void preprocess();
 		void dbg_sync_reachability();
 

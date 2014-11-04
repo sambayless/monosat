@@ -230,7 +230,7 @@ bool CycleDetector<Weight>::checkSatisfied(){
 	return true;
 }
 template<typename Weight>
-Lit CycleDetector<Weight>::decide(){
+Lit CycleDetector<Weight>::decide(int level){
 
 	return lit_Undef;
 };

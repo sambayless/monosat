@@ -1122,7 +1122,7 @@ int DistanceDetector<Weight>::OptimalWeightEdgeStatus::size()const{
 */
 
 template<typename Weight>
-Lit DistanceDetector<Weight>::decide(){
+Lit DistanceDetector<Weight>::decide(int level){
 	if(!opt_decide_graph_distance || !negative_reach_detector)
 		return lit_Undef;
 	DistanceDetector *r =this;
