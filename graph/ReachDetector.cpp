@@ -699,7 +699,7 @@ template<typename Weight>
 				}*/
 
 				assert(f==cut.size());//because edges are only ever infinity or 1
-				assert(f<0xFFFF);
+				assert(f<cutStatus.inf);
 				for(int i = 0;i<cut.size();i++){
 					MaxFlowEdge e = cut[i];
 					int cut_id = e.id;

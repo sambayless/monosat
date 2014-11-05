@@ -248,6 +248,10 @@ public:
 	void set_trcap(node_id i, tcaptype trcap); 
 	void set_rcap(arc* a, captype rcap);
 
+	tcaptype getTweight(node_id i){
+		return nodes[i].t_cap;
+	}
+
 	// Edit capacity of t-edge when "using" tree-recycling 
 	void edit_tweights(node_id i, tcaptype cap_source, tcaptype cap_sink);
 	

@@ -308,7 +308,20 @@ public:
 		last_history_clear=g.historyclears;
         return f;
     }
-
+    void setSource(int s){
+    	if(source==s){
+    		return;
+    	}
+    	source=s;
+    	last_modification= g.modifications-1;
+    }
+    void setSink(int t){
+    	if(sink==t){
+    		return;
+    	}
+    	sink=t;
+    	last_modification=g.modifications-1;
+    }
 
     std::vector<bool> seen;
     std::vector<bool> visited;

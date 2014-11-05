@@ -106,6 +106,59 @@ public:
     int getSink() const{
     	return sink;
     }
+
+    void setSource(int s){
+    	if(source==s){
+    		return;
+    	}
+    	if(kt){
+    		if(dynamic){
+				kt->edit_tweights(source,0,0);
+				if(!backward_maxflow){
+					kt->edit_tweights(s,max_capacity,0);
+				}else{
+					kt->edit_tweights(s,0,max_capacity);
+				}
+    		}else{
+    			kt->edit_tweights_wt(source,0,0);
+				if(!backward_maxflow){
+					kt->edit_tweights_wt(s,max_capacity,0);
+				}else{
+					kt->edit_tweights_wt(s,0,max_capacity);
+				}
+    		}
+    	}
+		source=s;
+		last_modification=g.modifications-1;
+		flow_needs_recalc=true;
+    }
+
+    void setSink(int t){
+    	if(sink==t){
+			return;
+		}
+    	if(kt){
+    		if(dynamic){
+				kt->edit_tweights(sink,0,0);
+				if(!backward_maxflow){
+					kt->edit_tweights(t,max_capacity,0);
+				}else{
+					kt->edit_tweights(t,0,max_capacity);
+				}
+    		}else{
+    			kt->edit_tweights_wt(sink,0,0);
+				if(!backward_maxflow){
+					kt->edit_tweights_wt(t,max_capacity,0);
+				}else{
+					kt->edit_tweights_wt(t,0,max_capacity);
+				}
+    		}
+    	}
+    	sink=t;
+    	last_modification=g.modifications-1;
+    	flow_needs_recalc=true;
+    }
+
     void setCapacity(int u, int w, Weight c){
 
     }
@@ -222,12 +275,22 @@ public:
         			}
         		}
         	}
-        	if(!backward_maxflow){
-        		kt->edit_tweights(s,max_capacity,0);
-				kt->edit_tweights(t,0,max_capacity);
+        	if(dynamic){
+				if(!backward_maxflow){
+					kt->edit_tweights(s,max_capacity,0);
+					kt->edit_tweights(t,0,max_capacity);
+				}else{
+					kt->edit_tweights(t,max_capacity,0);
+					kt->edit_tweights(s,0,max_capacity);
+				}
         	}else{
-        		kt->edit_tweights(t,max_capacity,0);
-				kt->edit_tweights(s,0,max_capacity);
+				if(!backward_maxflow){
+					kt->edit_tweights_wt(s,max_capacity,0);
+					kt->edit_tweights_wt(t,0,max_capacity);
+				}else{
+					kt->edit_tweights_wt(t,max_capacity,0);
+					kt->edit_tweights_wt(s,0,max_capacity);
+				}
         	}
         }else if(g.historyclears!=last_history_clear  || g.changed()){
         	flow_needs_recalc=true;

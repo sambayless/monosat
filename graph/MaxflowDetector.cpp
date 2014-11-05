@@ -47,22 +47,24 @@ void MaxflowDetector<Weight>::buildDinitzLinkCut(){
 
 template<typename Weight>
 MaxflowDetector<Weight>::MaxflowDetector(int _detectorID, GraphTheorySolver<Weight> * _outer,std::vector<Weight> & capacities,  DynamicGraph &_g,DynamicGraph &_antig, int from, int _target,double seed):
-LevelDetector(_detectorID),outer(_outer),capacities(capacities),over_graph(_g),g(_g),antig(_antig),source(from),target(_target),rnd_seed(seed),positive_detector(NULL),negative_detector(NULL){
+LevelDetector(_detectorID),outer(_outer),capacities(capacities),over_graph(_g),g(_g),antig(_antig),source(from),target(_target),rnd_seed(seed),positive_detector(NULL),negative_detector(NULL),cutStatus(*this){
 
 	if(mincutalg==MinCutAlg::ALG_EDKARP_DYN){
 		positive_detector = new EdmondsKarpDynamic<std::vector<Weight>,Weight>(_g,capacities,source,target);
 		negative_detector = new EdmondsKarpDynamic<std::vector<Weight>,Weight>(_antig,capacities,source,target);
 		positive_conflict_detector =positive_detector;//new EdmondsKarpAdj<std::vector<Weight>,Weight>(_g,capacities);
 		negative_conflict_detector =negative_detector;// new EdmondsKarpAdj<std::vector<Weight>,Weight>(_antig,capacities);
-		if(opt_conflict_min_cut_maxflow)
-				learn_cut = new EdmondsKarpAdj<std::vector<int>,int>(learn_graph,learn_caps,source,target);
+		learn_cut = new EdmondsKarpDynamic<CutStatus,int>(outer->cutGraph, cutStatus,source,target);
+
+		/*if(opt_conflict_min_cut_maxflow)
+				learn_cut = new EdmondsKarpAdj<std::vector<int>,int>(learn_graph,learn_caps,source,target);*/
 	}else if (mincutalg==MinCutAlg::ALG_EDKARP_ADJ){
 		positive_detector = new EdmondsKarpAdj<std::vector<Weight>,Weight>(_g,capacities,source,target);
 		negative_detector = new EdmondsKarpAdj<std::vector<Weight>,Weight>(_antig,capacities,source,target);
 		positive_conflict_detector = positive_detector;
 		negative_conflict_detector = negative_detector;
 		if(opt_conflict_min_cut_maxflow)
-				learn_cut = new EdmondsKarpAdj<std::vector<int>,int>(learn_graph,learn_caps,source,target);
+				learn_cut = new EdmondsKarpAdj<CutStatus,int>(outer->cutGraph, cutStatus,source,target);
 	}/*else if (mincutalg==MinCutAlg::ALG_IBFS){
 		positive_detector = new IBFS(_g);
 		negative_detector = new IBFS(_antig);
@@ -74,14 +76,14 @@ LevelDetector(_detectorID),outer(_outer),capacities(capacities),over_graph(_g),g
 		positive_conflict_detector = positive_detector;// new EdmondsKarpAdj<std::vector<Weight>,Weight>(_g,capacities);
 		negative_conflict_detector = negative_detector;//new EdmondsKarpAdj<std::vector<Weight>,Weight>(_antig,capacities);
 		if(opt_conflict_min_cut_maxflow)
-				learn_cut = new Dinitz<std::vector<int>,int>(learn_graph,learn_caps,source,target);
+				learn_cut = new Dinitz<CutStatus,int>(outer->cutGraph, cutStatus,source,target);
 	}else if (mincutalg==MinCutAlg::ALG_DINITZ_LINKCUT){
 		//link-cut tree currently only supports ints (enforcing this using tempalte specialization...).
 		buildDinitzLinkCut();
 		positive_conflict_detector = new EdmondsKarpAdj<std::vector<Weight>,Weight>(_g,capacities,source,target);
 		negative_conflict_detector = new EdmondsKarpAdj<std::vector<Weight>,Weight>(_antig,capacities,source,target);
 		if(opt_conflict_min_cut_maxflow)
-				learn_cut = new DinitzLinkCut<std::vector<int>>(learn_graph,learn_caps,source,target);
+				learn_cut = new DinitzLinkCut<CutStatus>(outer->cutGraph, cutStatus,source,target);
 	}else if (mincutalg==MinCutAlg::ALG_KOHLI_TORR){
 		positive_detector = new KohliTorr<std::vector<Weight>,Weight>(_g,capacities,source,target,opt_maxflow_backward,opt_kt_preserve_order);
 		negative_detector = new KohliTorr<std::vector<Weight>,Weight>(_antig,capacities,source,target,opt_maxflow_backward,opt_kt_preserve_order);
@@ -90,18 +92,20 @@ LevelDetector(_detectorID),outer(_outer),capacities(capacities),over_graph(_g),g
 			negative_conflict_detector =negative_detector;//new EdmondsKarpDynamic<std::vector<Weight>,Weight>(_antig,capacities);
 		}else{
 			//for reasons I don't yet understand, kohli-torr seems to produce maxflows that work very poorly as theory-decisions for some problems.
+			//Possibly, this is because Kohli-torr will sometimes produces flows that use multiple paths even when a maxflow with a single path is possible.
 			positive_conflict_detector =new EdmondsKarpDynamic<std::vector<Weight>,Weight>(_g,capacities,source,target);
 			negative_conflict_detector = new EdmondsKarpDynamic<std::vector<Weight>,Weight>(_antig,capacities,source,target);
 		}
 		if(opt_conflict_min_cut_maxflow)
-				learn_cut = new EdmondsKarpAdj<std::vector<int>,int>(learn_graph,learn_caps,source,target);
+					learn_cut = new KohliTorr<CutStatus,int>(outer->cutGraph, cutStatus,source,target,opt_kt_preserve_order);
+
 	}else{
 		positive_detector = new EdmondsKarpAdj<std::vector<Weight>,Weight>(_g,capacities,source,target);
 		negative_detector = new EdmondsKarpAdj<std::vector<Weight>,Weight>(_antig,capacities,source,target);
 		positive_conflict_detector = positive_detector;
 		negative_conflict_detector = negative_detector;
 		if(opt_conflict_min_cut_maxflow)
-				learn_cut = new EdmondsKarpAdj<std::vector<int>,int>(learn_graph,learn_caps,source,target);
+				learn_cut =  new EdmondsKarpAdj<CutStatus,int>(outer->cutGraph, cutStatus,source,target);
 	}
 
 
@@ -283,7 +287,7 @@ template<typename Weight>
 				Weight foundflow = negative_conflict_detector->maxFlow();
 				//find a minimal s-t cut in the residual graph.
 				//to do so, first construct the residual graph
-				int INF=0x0FF0F0;
+				/*int INF=0x0FF0F0;
 				//for each edge in the original graph, need to add a forward and backward edge here.
 				if(learn_graph.nodes()<g.nodes()){
 					while(learn_graph.nodes()<g.nodes())
@@ -297,6 +301,7 @@ template<typename Weight>
 						back_edges[e.id] = learn_graph.addEdge(e.to,e.from);
 					}
 					learn_caps.resize(learn_graph.edges());
+					learn_graph.invalidate();
 				}
 
 				//now, set learn_graph to the residual graph
@@ -339,9 +344,10 @@ template<typename Weight>
 				//learn_graph.drawFull(true);
 				cut.clear();
 				antig.drawFull(true);
-				learn_graph.drawFull(true);
+				learn_graph.drawFull(true);*/
+
 				int f =learn_cut->minCut(cut);
-				if(f<0x0FF0F0){
+				if(f<cutStatus.inf){
 					assert(f<0xF0F0F0); assert(f==cut.size());//because edges are only ever infinity or 1
 					for(int i = 0;i<cut.size();i++){
 						MaxFlowEdge e = cut[i];

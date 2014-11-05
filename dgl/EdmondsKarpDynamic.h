@@ -176,7 +176,20 @@ public:
 	int numUpdates()const{
 		return num_updates;
 	}
-
+	   void setSource(int s){
+	     	if(source==s){
+	     		return;
+	     	}
+	     	source=s;
+	     	last_modification= -1; //needs to be -1 here, to trigger a full re-calculation
+	     }
+	     void setSink(int t){
+	     	if(sink==t){
+	     		return;
+	     	}
+	     	sink=t;
+	     	last_modification=-1; //needs to be -1 here, to trigger a full re-calculation
+	     }
     const  Weight update(){
     	int s = source;
     	int t = sink;

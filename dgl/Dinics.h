@@ -359,7 +359,20 @@ public:
      void clearChangedEdges(){
 
      }
-
+     void setSource(int s){
+       	if(source==s){
+       		return;
+       	}
+       	source=s;
+       	last_modification= g.modifications-1;
+       }
+       void setSink(int t){
+       	if(sink==t){
+       		return;
+       	}
+       	sink=t;
+       	last_modification=g.modifications-1;
+       }
     const Weight maxFlow(int s, int t){
     	Weight f = 0;
 #ifdef RECORD

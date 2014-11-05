@@ -72,7 +72,7 @@ public:
 		std::vector<int> q;
 
 
-		DynamicGraph learn_graph;
+		//DynamicGraph learn_graph;
 		vec<int> back_edges;
 		std::vector<int> learn_caps;
 		MaxFlow<int> * learn_cut=nullptr;
@@ -102,6 +102,25 @@ public:
 			assert(reach_lit_map[index]>=0);
 			return reach_lit_map[index];
 		}*/
+		struct CutStatus{
+			int one=1;
+			int inf= 0x0FF0F0;
+			MaxflowDetector & outer;
+
+			const int &operator [] (int id) const {
+				if(id%2==0){
+					return one;
+				}else{
+					return inf;
+				}
+			}
+			int size()const{
+				return outer.g.edges()*2;
+			}
+			CutStatus(MaxflowDetector & outer):outer(outer){}
+
+		} cutStatus;
+
 		void backtrack(int level){
 			to_decide.clear();
 			last_decision_status=-1;

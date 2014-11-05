@@ -829,7 +829,20 @@ public:
     void clearChangedEdges(){
 
     }
-
+    void setSource(int s){
+      	if(source==s){
+      		return;
+      	}
+      	source=s;
+      	last_modification= g.modifications-1;
+      }
+      void setSink(int t){
+      	if(sink==t){
+      		return;
+      	}
+      	sink=t;
+      	last_modification=g.modifications-1;
+      }
     const  int maxFlow(int s, int t){
     	int f = 0;
 #ifdef RECORD
