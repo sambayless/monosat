@@ -157,6 +157,7 @@ public:
 #endif
         	return curflow;
         }else if (last_modification<=0 || kt->get_node_num()!=g.nodes() || edge_enabled.size()!=g.edges() ){
+        	clearChangedEdges();
         	edge_enabled.clear();
         	flow_needs_recalc=true;
         	if(kt){

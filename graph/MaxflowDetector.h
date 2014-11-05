@@ -28,7 +28,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "dgl/EdmondsKarp.h"
 #include "core/SolverTypes.h"
 #include "mtl/Map.h"
-
+#include "mtl/Queue.h"
 #include "utils/System.h"
 #include "Detector.h"
 using namespace dgl;
@@ -67,7 +67,7 @@ public:
 		vec<Lit> decisions;
 		vec<bool> is_potential_decision;
 		vec<int> potential_decisions;
-
+		Queue<int> potential_decisions_q;
 		vec<Lit> to_decide;
 		std::vector<int> q;
 
@@ -164,7 +164,10 @@ public:
 			//this check is optional
 			if(negative_detector->getEdgeFlow(edgeID)>0){//this check is optional
 				is_potential_decision[edgeID]=true;
-				potential_decisions.push(edgeID);
+				if(opt_maxflow_decisions_q)
+					potential_decisions.push(edgeID);
+				else
+					potential_decisions_q.insert(edgeID);
 			}
 
 		}

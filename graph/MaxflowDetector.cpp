@@ -708,7 +708,11 @@ Lit MaxflowDetector<Weight>::decide(int level){
 					Lit l = mkLit(outer->getEdgeVar(edgeid),false);
 					if(outer->value(l)==l_Undef && over->getEdgeFlow(edgeid)>0){
 						is_potential_decision[edgeid]=true;
-						potential_decisions.push(edgeid);
+						if(!opt_maxflow_decisions_q){
+							potential_decisions.push(edgeid);
+						}else{
+							potential_decisions_q.insert(edgeid);
+						}
 					}
 				}
 			}
@@ -727,23 +731,47 @@ Lit MaxflowDetector<Weight>::decide(int level){
 #endif
 
 			Lit decision=lit_Undef;
-			//should probably look into ordering heuristics for which edge to decide first, here...
-			while(potential_decisions.size()>0){
-				int edgeID = potential_decisions.last();
-				assert(is_potential_decision[edgeID]);
-				is_potential_decision[edgeID]=false;
-				potential_decisions.pop();
-				Lit l = mkLit(outer->getEdgeVar(edgeID),false);
-				if(outer->value(l)==l_Undef && over->getEdgeFlow(edgeID)>0){
-					decideEdge(edgeID,level,true);
-					decision = l;
-					break;
-				}else if (outer->value(l)==l_True){
-					if(over->getEdgeFlow(edgeID)>0)//this check is optional
+			if(!opt_maxflow_decisions_q){
+				//should probably look into ordering heuristics for which edge to decide first, here...
+				while(potential_decisions.size()>0){
+					int edgeID = potential_decisions.last();
+					assert(is_potential_decision[edgeID]);
+					is_potential_decision[edgeID]=false;
+
+					potential_decisions.pop();
+					Lit l = mkLit(outer->getEdgeVar(edgeID),false);
+					if(outer->value(l)==l_Undef && over->getEdgeFlow(edgeID)>0){
 						decideEdge(edgeID,level,true);
-				}else{
-					assert(over->getEdgeFlow(edgeID)==0);
-					//decideEdge(edgeID,level,false);
+						decision = l;
+						break;
+					}else if (outer->value(l)==l_True){
+						if(over->getEdgeFlow(edgeID)>0)//this check is optional
+							decideEdge(edgeID,level,true);
+					}else{
+						assert(over->getEdgeFlow(edgeID)==0);
+						//decideEdge(edgeID,level,false);
+					}
+				}
+			}else{
+				//should probably look into ordering heuristics for which edge to decide first, here...
+				while(potential_decisions_q.size()>0){
+					int edgeID = potential_decisions_q.peek();
+					assert(is_potential_decision[edgeID]);
+					is_potential_decision[edgeID]=false;
+
+					potential_decisions_q.pop();
+					Lit l = mkLit(outer->getEdgeVar(edgeID),false);
+					if(outer->value(l)==l_Undef && over->getEdgeFlow(edgeID)>0){
+						decideEdge(edgeID,level,true);
+						decision = l;
+						break;
+					}else if (outer->value(l)==l_True){
+						if(over->getEdgeFlow(edgeID)>0)//this check is optional
+							decideEdge(edgeID,level,true);
+					}else{
+						assert(over->getEdgeFlow(edgeID)==0);
+						//decideEdge(edgeID,level,false);
+					}
 				}
 			}
 #ifndef NDEBUG
