@@ -149,7 +149,7 @@ BoolOption Monosat::opt_kt_preserve_order(_cat_graph,"kt-preserve-order","Attemp
 BoolOption Monosat::opt_lazy_maxflow_decisions(_cat_graph,"lazy-maxflow-decisions","",true);
 
 BoolOption Monosat::opt_old_lazy_maxflow_decisions(_cat_graph,"old-lazy-maxflow-decisions","",false);
-IntOption Monosat::opt_maxflow_decisions_q(_cat_graph,"maxflow-decisions-q","Use a FIFO (instead of LIFO) decision order in the maxflow theory",2,IntRange(0,3));
+IntOption Monosat::opt_maxflow_decisions_q(_cat_graph,"maxflow-decisions-q","Use a FIFO (instead of LIFO) decision order in the maxflow theory",2,IntRange(0,1));
 
 
 
