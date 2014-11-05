@@ -28,7 +28,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "dgl/EdmondsKarp.h"
 #include "core/SolverTypes.h"
 #include "mtl/Map.h"
-#include "mtl/Queue.h"
+#include "mtl/Deque.h"
 #include "utils/System.h"
 #include "Detector.h"
 using namespace dgl;
@@ -67,7 +67,7 @@ public:
 		vec<Lit> decisions;
 		vec<bool> is_potential_decision;
 		vec<int> potential_decisions;
-		Queue<int> potential_decisions_q;
+		Deque<int> potential_decisions_q;
 		vec<Lit> to_decide;
 		std::vector<int> q;
 
@@ -105,6 +105,7 @@ public:
 		void backtrack(int level){
 			to_decide.clear();
 			last_decision_status=-1;
+			LevelDetector::backtrack(level);
 		}
 		bool propagate(vec<Lit> & conflict);
 		void buildMaxFlowTooHighReason(Weight flow,vec<Lit> & conflict);
@@ -164,10 +165,13 @@ public:
 			//this check is optional
 			if(negative_detector->getEdgeFlow(edgeID)>0){//this check is optional
 				is_potential_decision[edgeID]=true;
-				if(opt_maxflow_decisions_q)
+				if(opt_maxflow_decisions_q==0)
 					potential_decisions.push(edgeID);
-				else
-					potential_decisions_q.insert(edgeID);
+				else if (opt_maxflow_decisions_q==1){
+					potential_decisions_q.insertBack(edgeID);//insert in LIFO order, no FIFO, because we are unwinding the decisions
+				}else {
+					potential_decisions_q.insert(edgeID);//insert in FIFO order instead
+				}
 			}
 
 		}

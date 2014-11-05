@@ -706,9 +706,9 @@ Lit MaxflowDetector<Weight>::decide(int level){
 
 				if(!is_potential_decision[edgeid]){
 					Lit l = mkLit(outer->getEdgeVar(edgeid),false);
-					if(outer->value(l)==l_Undef && over->getEdgeFlow(edgeid)>0){
+					if( over->getEdgeFlow(edgeid)>0){
 						is_potential_decision[edgeid]=true;
-						if(!opt_maxflow_decisions_q){
+						if(opt_maxflow_decisions_q==0){
 							potential_decisions.push(edgeid);
 						}else{
 							potential_decisions_q.insert(edgeid);
@@ -731,7 +731,7 @@ Lit MaxflowDetector<Weight>::decide(int level){
 #endif
 
 			Lit decision=lit_Undef;
-			if(!opt_maxflow_decisions_q){
+			if(opt_maxflow_decisions_q==0){
 				//should probably look into ordering heuristics for which edge to decide first, here...
 				while(potential_decisions.size()>0){
 					int edgeID = potential_decisions.last();

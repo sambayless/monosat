@@ -164,7 +164,7 @@ public:
 	}
 
 	void newDecisionLevel(int outer_level){
-		assert(!level_trail.contains(outer_level));
+
 		level_trail.push(outer_level);
 	}
 

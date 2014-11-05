@@ -125,7 +125,7 @@ extern IntOption opt_history_clear;
 extern BoolOption opt_kt_preserve_order;
 extern BoolOption opt_lazy_maxflow_decisions;
 extern BoolOption opt_old_lazy_maxflow_decisions;
-extern BoolOption opt_maxflow_decisions_q;
+extern IntOption opt_maxflow_decisions_q;
 enum class PointInPolygonAlg{
 	 ALG_FULL,
 	 ALG_RECURSIVE_SPLIT
