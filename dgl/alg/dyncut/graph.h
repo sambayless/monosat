@@ -561,6 +561,8 @@ public:
 			edge->might_have_flow=true;
 			edge->sister->might_have_flow=true;
 			changed_edges.push_back(edge-get_first_arc());
+			changed_edges.push_back(edge->sister-get_first_arc());
+
 		}
 		assert(edge->might_have_flow);
 		assert(edge->sister->might_have_flow);
@@ -627,6 +629,7 @@ public:
                 }
                 assert(edge->e_cap-edge->r_cap>=f);
                 edge->r_cap+=f;//remove this flow from this edge by adding it to its remaining capacity;
+
                 markFlowEdge(edge->sister);
                 assert(edge->sister->r_cap>=f);
                 edge->sister->r_cap-=f;

@@ -85,6 +85,21 @@ public:
     	}
         buf[first] = elem;
     }
+
+    bool contains(const T& element)const{
+    	int i =0;
+    	int pos = first;
+      	for(i = 0;i<size();i++){
+      		if(buf[pos]==element){
+      			return true;
+      		}
+      		pos++;
+      		if(pos==buf.size())
+      			pos=0;
+      	}
+      	return false;
+      }
+
 };
 
 

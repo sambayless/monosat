@@ -72,9 +72,10 @@ public:
 		std::vector<int> q;
 
 
-		//DynamicGraph learn_graph;
+		DynamicGraph learn_graph;
 		vec<int> back_edges;
-		std::vector<int> learn_caps;
+		int learngraph_history_qhead=0;
+		int learngraph_history_clears=-1;
 		MaxFlow<int> * learn_cut=nullptr;
 
 		//vec<Lit>  reach_lits;
@@ -126,6 +127,8 @@ public:
 			last_decision_status=-1;
 			LevelDetector::backtrack(level);
 		}
+		void collectChangedEdges();
+		void collectDisabledEdges();
 		bool propagate(vec<Lit> & conflict);
 		void buildMaxFlowTooHighReason(Weight flow,vec<Lit> & conflict);
 		void buildMaxFlowTooLowReason(Weight flow,vec<Lit> & conflict);
@@ -142,10 +145,11 @@ public:
 				 printf("\tDecision flow calculations: %d\n",stats_decision_calculations );
 
 		}
+		void dbg_decisions();
 		void printSolution(std::ostream & write_to);
 		void addFlowLit(Weight max_flow,Var reach_var);
 		MaxflowDetector(int _detectorID, GraphTheorySolver<Weight> * _outer,std::vector<Weight> & capacities, DynamicGraph &_g, DynamicGraph &_antig, int _source, int _target,double seed=1);//:Detector(_detectorID),outer(_outer),within(-1),source(_source),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL){}
-		virtual ~MaxflowDetector(){
+		~MaxflowDetector(){
 
 		}
 		const char* getName(){
@@ -168,8 +172,10 @@ public:
 
 
 			assert(decisions.size()==decisionLevel());
+			dbg_decisions();
 		}
 		void localBacktrack(){
+			dbg_decisions();
 			//undo a decision edge, and return it to the set of potential decisions
 			assert(decisions.size()==decisionLevel()+1);
 
@@ -192,7 +198,7 @@ public:
 					potential_decisions_q.insert(edgeID);//insert in FIFO order instead
 				}
 			}
-
+			dbg_decisions();
 		}
 
 private:

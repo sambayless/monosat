@@ -54,7 +54,7 @@ LevelDetector(_detectorID),outer(_outer),capacities(capacities),over_graph(_g),g
 		negative_detector = new EdmondsKarpDynamic<std::vector<Weight>,Weight>(_antig,capacities,source,target);
 		positive_conflict_detector =positive_detector;//new EdmondsKarpAdj<std::vector<Weight>,Weight>(_g,capacities);
 		negative_conflict_detector =negative_detector;// new EdmondsKarpAdj<std::vector<Weight>,Weight>(_antig,capacities);
-		learn_cut = new EdmondsKarpDynamic<CutStatus,int>(outer->cutGraph, cutStatus,source,target);
+		learn_cut = new EdmondsKarpDynamic<CutStatus,int>(learn_graph, cutStatus,source,target);
 
 		/*if(opt_conflict_min_cut_maxflow)
 				learn_cut = new EdmondsKarpAdj<std::vector<int>,int>(learn_graph,learn_caps,source,target);*/
@@ -64,7 +64,7 @@ LevelDetector(_detectorID),outer(_outer),capacities(capacities),over_graph(_g),g
 		positive_conflict_detector = positive_detector;
 		negative_conflict_detector = negative_detector;
 		if(opt_conflict_min_cut_maxflow)
-				learn_cut = new EdmondsKarpAdj<CutStatus,int>(outer->cutGraph, cutStatus,source,target);
+				learn_cut = new EdmondsKarpAdj<CutStatus,int>(learn_graph, cutStatus,source,target);
 	}/*else if (mincutalg==MinCutAlg::ALG_IBFS){
 		positive_detector = new IBFS(_g);
 		negative_detector = new IBFS(_antig);
@@ -76,14 +76,14 @@ LevelDetector(_detectorID),outer(_outer),capacities(capacities),over_graph(_g),g
 		positive_conflict_detector = positive_detector;// new EdmondsKarpAdj<std::vector<Weight>,Weight>(_g,capacities);
 		negative_conflict_detector = negative_detector;//new EdmondsKarpAdj<std::vector<Weight>,Weight>(_antig,capacities);
 		if(opt_conflict_min_cut_maxflow)
-				learn_cut = new Dinitz<CutStatus,int>(outer->cutGraph, cutStatus,source,target);
+				learn_cut = new Dinitz<CutStatus,int>(learn_graph, cutStatus,source,target);
 	}else if (mincutalg==MinCutAlg::ALG_DINITZ_LINKCUT){
 		//link-cut tree currently only supports ints (enforcing this using tempalte specialization...).
 		buildDinitzLinkCut();
 		positive_conflict_detector = new EdmondsKarpAdj<std::vector<Weight>,Weight>(_g,capacities,source,target);
 		negative_conflict_detector = new EdmondsKarpAdj<std::vector<Weight>,Weight>(_antig,capacities,source,target);
 		if(opt_conflict_min_cut_maxflow)
-				learn_cut = new DinitzLinkCut<CutStatus>(outer->cutGraph, cutStatus,source,target);
+				learn_cut = new DinitzLinkCut<CutStatus>(learn_graph, cutStatus,source,target);
 	}else if (mincutalg==MinCutAlg::ALG_KOHLI_TORR){
 		positive_detector = new KohliTorr<std::vector<Weight>,Weight>(_g,capacities,source,target,opt_maxflow_backward,opt_kt_preserve_order);
 		negative_detector = new KohliTorr<std::vector<Weight>,Weight>(_antig,capacities,source,target,opt_maxflow_backward,opt_kt_preserve_order);
@@ -97,7 +97,7 @@ LevelDetector(_detectorID),outer(_outer),capacities(capacities),over_graph(_g),g
 			negative_conflict_detector = new EdmondsKarpDynamic<std::vector<Weight>,Weight>(_antig,capacities,source,target);
 		}
 		if(opt_conflict_min_cut_maxflow)
-					learn_cut = new KohliTorr<CutStatus,int>(outer->cutGraph, cutStatus,source,target,opt_kt_preserve_order);
+					learn_cut = new KohliTorr<CutStatus,int>(learn_graph, cutStatus,source,target,opt_kt_preserve_order);
 
 	}else{
 		positive_detector = new EdmondsKarpAdj<std::vector<Weight>,Weight>(_g,capacities,source,target);
@@ -105,7 +105,7 @@ LevelDetector(_detectorID),outer(_outer),capacities(capacities),over_graph(_g),g
 		positive_conflict_detector = positive_detector;
 		negative_conflict_detector = negative_detector;
 		if(opt_conflict_min_cut_maxflow)
-				learn_cut =  new EdmondsKarpAdj<CutStatus,int>(outer->cutGraph, cutStatus,source,target);
+				learn_cut =  new EdmondsKarpAdj<CutStatus,int>(learn_graph, cutStatus,source,target);
 	}
 
 
@@ -285,25 +285,66 @@ template<typename Weight>
 			double starttime = rtime(2);
 			if(opt_conflict_min_cut_maxflow){
 				Weight foundflow = negative_conflict_detector->maxFlow();
+				collectChangedEdges();
+				collectDisabledEdges();
+#ifndef NDEBUG
+				for (auto & e:g.all_edges){
+					int from = e.from;
+					int to = e.to;
+					int v = outer->getEdgeVar(e.id);
+					lbool val =outer->value(v);
+					if(val!=l_False){
+						Weight flow = negative_conflict_detector->getEdgeFlow(e.id);
+						Weight capacity =  negative_conflict_detector->getEdgeCapacity(e.id);
+						if(capacity==0){
+							assert(!learn_graph.edgeEnabled(e.id*2));
+							assert(!learn_graph.edgeEnabled(e.id*2+1));
+							assert(!learn_graph.edgeEnabled(back_edges[e.id*2]));
+							assert(!learn_graph.edgeEnabled(back_edges[e.id*2+1]));
+
+						}else{
+							if(flow>0){
+								//then there is capacity in the backward edge in the residual graph
+								int back_edge = back_edges[e.id];
+							/*	learn_graph.enableEdge(back_edges[e.id]);
+								learn_caps[back_edge] = INF;*/
+								assert(!learn_graph.edgeEnabled(back_edges[e.id*2]));
+								assert(learn_graph.edgeEnabled(back_edges[e.id*2+1]));
+							}else{
+								//learn_graph.disableEdge(back_edges[e.id]);
+								assert(!learn_graph.edgeEnabled(back_edges[e.id*2]));
+								assert(!learn_graph.edgeEnabled(back_edges[e.id*2+1]));
+							}
+							if (flow<capacity){
+								//then there is capacity in the forward edge in the residual graph
+							/*	learn_caps[e.id] = INF;
+								learn_graph.enableEdge(e.id);*/
+								assert(!learn_graph.edgeEnabled(e.id*2));
+								assert(learn_graph.edgeEnabled(e.id*2+1));
+							}else{
+								//learn_graph.disableEdge(e.id);
+								assert(!learn_graph.edgeEnabled(e.id*2));
+								assert(!learn_graph.edgeEnabled(e.id*2+1));
+							}
+						}
+					}else{
+
+			/*			learn_graph.enableEdge(e.id);
+						learn_graph.disableEdge(back_edges[e.id]);
+						learn_caps[e.id] = 1;*/
+						assert(learn_graph.edgeEnabled(e.id*2));
+						assert(!learn_graph.edgeEnabled(e.id*2+1));
+						assert(!learn_graph.edgeEnabled(back_edges[e.id*2]));
+						assert(!learn_graph.edgeEnabled(back_edges[e.id*2+1]));
+					}
+				}
+#endif
 				//find a minimal s-t cut in the residual graph.
 				//to do so, first construct the residual graph
-				/*int INF=0x0FF0F0;
+
 				//for each edge in the original graph, need to add a forward and backward edge here.
-				if(learn_graph.nodes()<g.nodes()){
-					while(learn_graph.nodes()<g.nodes())
-						learn_graph.addNode();
 
-					for (auto & e:g.all_edges){
-						learn_graph.addEdge(e.from,e.to);
-					}
-					back_edges.growTo(g.edges());
-					for (auto & e:g.all_edges){
-						back_edges[e.id] = learn_graph.addEdge(e.to,e.from);
-					}
-					learn_caps.resize(learn_graph.edges());
-					learn_graph.invalidate();
-				}
-
+				/*
 				//now, set learn_graph to the residual graph
 				for (auto & e:g.all_edges){
 					int from = e.from;
@@ -351,8 +392,8 @@ template<typename Weight>
 					assert(f<0xF0F0F0); assert(f==cut.size());//because edges are only ever infinity or 1
 					for(int i = 0;i<cut.size();i++){
 						MaxFlowEdge e = cut[i];
-
-						Lit l = mkLit( outer->getEdgeVar(e.id),false);
+						int edgeID = e.id/2;
+						Lit l = mkLit( outer->getEdgeVar(edgeID),false);
 						assert(outer->value(l)==l_False);
 						conflict.push(l);
 					}
@@ -692,36 +733,254 @@ if(opt_width>0){
 }
 
 template<typename Weight>
+void MaxflowDetector<Weight>::collectDisabledEdges(){
+	if(opt_conflict_min_cut_maxflow){
+		if(learn_graph.nodes()<g.nodes()){
+			while(learn_graph.nodes()<g.nodes())
+				learn_graph.addNode();
+			back_edges.growTo(g.edges()*2,-1);
+
+			//add every edge twice
+			for (auto & e:g.all_edges){
+				if(back_edges[e.id*2]==-1){
+					learn_graph.addEdge(e.from,e.to);
+					learn_graph.addEdge(e.from,e.to);
+				}
+			}
+
+			for (auto & e:g.all_edges){
+				if(back_edges[e.id*2]==-1){
+					back_edges[e.id*2] = learn_graph.addEdge(e.to,e.from);
+					back_edges[e.id*2+1] = learn_graph.addEdge(e.to,e.from);
+				}
+			}
+			for(auto & e:learn_graph.all_edges){
+				learn_graph.disableEdge(e.id);
+			}
+			learn_graph.invalidate();
+		}
+
+		if(learngraph_history_clears!= antig.historyclears){
+			//refresh
+			for(int edgeid = 0;edgeid<antig.edges();edgeid++){
+				if(antig.hasEdge(edgeid) && ! antig.edgeEnabled(edgeid)){
+					learn_graph.enableEdge(edgeid*2);
+					learn_graph.disableEdge(back_edges[edgeid*2]);
+					learn_graph.disableEdge(edgeid*2+1);
+					learn_graph.disableEdge(back_edges[edgeid*2+1]);
+				}else{
+					Weight flow = negative_conflict_detector->getEdgeFlow(edgeid);
+					Weight capacity =  negative_conflict_detector->getEdgeCapacity(edgeid);
+					if(capacity==0){
+						//learn_graph.disableEdge(e.id);
+						//learn_graph.disableEdge(back_edges[e.id]);
+
+						learn_graph.disableEdge(edgeid*2);
+						learn_graph.disableEdge(back_edges[edgeid*2]);
+						learn_graph.disableEdge(edgeid*2+1);
+						learn_graph.disableEdge(back_edges[edgeid*2+1]);
+					}else{
+						if(flow>0){
+							//then there is capacity in the backward edge in the residual graph
+		/*					int back_edge = back_edges[e.id];
+							learn_graph.enableEdge(back_edges[e.id]);
+							learn_caps[back_edge] = INF;*/
+
+							learn_graph.disableEdge(back_edges[edgeid*2]);
+							learn_graph.enableEdge(back_edges[edgeid*2+1]);
+						}else{
+							learn_graph.disableEdge(back_edges[edgeid*2]);
+							learn_graph.disableEdge(back_edges[edgeid*2+1]);
+						}
+						if (flow<capacity){
+							//then there is capacity in the forward edge in the residual graph
+						/*	learn_caps[e.id] = INF;
+							learn_graph.enableEdge(e.id);
+							*/
+							learn_graph.disableEdge(edgeid*2);
+							//learn_graph.disableEdge(back_edges[edgeid*2]);
+							learn_graph.enableEdge(edgeid*2+1);
+							//learn_graph.disableEdge(back_edges[edgeid*2+1]);
+						}else{
+							assert(flow==capacity);
+							//learn_graph.disableEdge(e.id);
+
+							learn_graph.disableEdge(edgeid*2);
+							//learn_graph.disableEdge(back_edges[edgeid*2]);
+							learn_graph.disableEdge(edgeid*2+1);
+							//learn_graph.disableEdge(back_edges[edgeid*2+1]);
+						}
+					}
+				}
+			}
+			learngraph_history_clears =  antig.historyclears;
+			learngraph_history_qhead= antig.history.size();
+		}else{
+			for (int i = learngraph_history_qhead;i<antig.history.size();i++){
+				int edgeid = g.history[i].id;
+			/*	if(antig.selfLoop(edgeid))
+					continue;//skip self loops*/
+				if(antig.history[i].addition && antig.edgeEnabled(edgeid)){
+
+				}else if (!antig.history[i].addition &&  !antig.edgeEnabled(edgeid)){
+					//any edge that is disabled has a capacity of 1 in the learn graph
+					learn_graph.enableEdge(edgeid*2);
+					learn_graph.disableEdge(back_edges[edgeid*2]);
+					learn_graph.disableEdge(edgeid*2+1);
+					learn_graph.disableEdge(back_edges[edgeid*2+1]);
+				}
+			}
+			learngraph_history_qhead=antig.history.size();
+		}
+	}
+}
+
+template<typename Weight>
+void MaxflowDetector<Weight>::collectChangedEdges(){
+
+	if(is_potential_decision.size()<g.edges()){
+			is_potential_decision.growTo(g.edges(),false);
+		}
+	dbg_decisions();
+		negative_conflict_detector->update();
+
+		if(opt_conflict_min_cut_maxflow){
+			if(learn_graph.nodes()<g.nodes()){
+				while(learn_graph.nodes()<g.nodes())
+					learn_graph.addNode();
+				back_edges.growTo(g.edges()*2,-1);
+
+				//add every edge twice
+				for (auto & e:g.all_edges){
+					if(back_edges[e.id*2]==-1){
+						learn_graph.addEdge(e.from,e.to);
+						learn_graph.addEdge(e.from,e.to);
+					}
+				}
+
+				for (auto & e:g.all_edges){
+					if(back_edges[e.id*2]==-1){
+						back_edges[e.id*2] = learn_graph.addEdge(e.to,e.from);
+						back_edges[e.id*2+1] = learn_graph.addEdge(e.to,e.from);
+					}
+				}
+				for(auto & e:learn_graph.all_edges){
+					learn_graph.disableEdge(e.id);
+				}
+				learn_graph.invalidate();
+			}
+		}
+
+		std::vector<int> & changed_edges = negative_conflict_detector->getChangedEdges();
+		while(changed_edges.size()){
+			int edgeid = changed_edges.back();
+			if(edgeid==37){
+				int a =1;
+			}
+			changed_edges.pop_back();
+
+			if(!is_potential_decision[edgeid]){
+				Lit l = mkLit(outer->getEdgeVar(edgeid),false);
+				if( negative_conflict_detector->getEdgeFlow(edgeid)>0){
+					is_potential_decision[edgeid]=true;
+					if(opt_maxflow_decisions_q==0){
+						potential_decisions.push(edgeid);
+					}else{
+						potential_decisions_q.insert(edgeid);
+					}
+				}
+			}
+
+			if(opt_conflict_min_cut_maxflow){
+				Lit l = mkLit(outer->getEdgeVar(edgeid),false);
+				//maintain the residual graph for conflict analysis
+				lbool val =outer->value(l);
+				if(val!=l_False){
+					Weight flow = negative_conflict_detector->getEdgeFlow(edgeid);
+					Weight capacity =  negative_conflict_detector->getEdgeCapacity(edgeid);
+					if(capacity==0){
+						//learn_graph.disableEdge(e.id);
+						//learn_graph.disableEdge(back_edges[e.id]);
+
+						learn_graph.disableEdge(edgeid*2);
+						learn_graph.disableEdge(back_edges[edgeid*2]);
+						learn_graph.disableEdge(edgeid*2+1);
+						learn_graph.disableEdge(back_edges[edgeid*2+1]);
+					}else{
+						if(flow>0){
+							//then there is capacity in the backward edge in the residual graph
+		/*					int back_edge = back_edges[e.id];
+							learn_graph.enableEdge(back_edges[e.id]);
+							learn_caps[back_edge] = INF;*/
+
+							learn_graph.disableEdge(back_edges[edgeid*2]);
+							learn_graph.enableEdge(back_edges[edgeid*2+1]);
+						}else{
+							learn_graph.disableEdge(back_edges[edgeid*2]);
+							learn_graph.disableEdge(back_edges[edgeid*2+1]);
+						}
+						if (flow<capacity){
+							//then there is capacity in the forward edge in the residual graph
+						/*	learn_caps[e.id] = INF;
+							learn_graph.enableEdge(e.id);
+							*/
+							learn_graph.disableEdge(edgeid*2);
+							//learn_graph.disableEdge(back_edges[edgeid*2]);
+							learn_graph.enableEdge(edgeid*2+1);
+							//learn_graph.disableEdge(back_edges[edgeid*2+1]);
+						}else{
+							assert(flow==capacity);
+							//learn_graph.disableEdge(e.id);
+
+							learn_graph.disableEdge(edgeid*2);
+							//learn_graph.disableEdge(back_edges[edgeid*2]);
+							learn_graph.disableEdge(edgeid*2+1);
+							//learn_graph.disableEdge(back_edges[edgeid*2+1]);
+						}
+					}
+				}else{
+					learn_graph.enableEdge(edgeid*2);
+					learn_graph.disableEdge(back_edges[edgeid*2]);
+					learn_graph.disableEdge(edgeid*2+1);
+					learn_graph.disableEdge(back_edges[edgeid*2+1]);
+				}
+			}
+		}
+		dbg_decisions();
+}
+
+template<typename Weight>
+void MaxflowDetector<Weight>::dbg_decisions(){
+#ifndef NDEBUG
+	for (int edgeID = 0;edgeID<g.edges();edgeID++){
+		if(is_potential_decision[edgeID]){
+			assert(potential_decisions.contains(edgeID) || potential_decisions_q.contains(edgeID));
+			Lit l = mkLit(outer->getEdgeVar(edgeID));
+			assert(!decisions.contains(l));
+			assert(!decisions.contains(~l));
+		}
+	}
+	for(Lit l : decisions){
+		Var v = var(l);
+		int edgeID = outer->getEdgeID(v);
+		assert(!is_potential_decision[edgeID]);
+	}
+
+#endif
+}
+
+template<typename Weight>
 Lit MaxflowDetector<Weight>::decide(int level){
 	static int it =0;
-	++it;
+	if(++it==296){
+		int a=1;
+	}
 	double startdecidetime = rtime(2);
 	auto * over =negative_conflict_detector;
 		auto * under = positive_conflict_detector;
 
 		if(opt_lazy_maxflow_decisions){
-			if(is_potential_decision.size()<g.edges()){
-				is_potential_decision.growTo(g.edges(),false);
-			}
-			over->update();
-
-			std::vector<int> & changed_edges = over->getChangedEdges();
-			while(changed_edges.size()){
-				int edgeid = changed_edges.back();
-				changed_edges.pop_back();
-
-				if(!is_potential_decision[edgeid]){
-					Lit l = mkLit(outer->getEdgeVar(edgeid),false);
-					if( over->getEdgeFlow(edgeid)>0){
-						is_potential_decision[edgeid]=true;
-						if(opt_maxflow_decisions_q==0){
-							potential_decisions.push(edgeid);
-						}else{
-							potential_decisions_q.insert(edgeid);
-						}
-					}
-				}
-			}
+			collectChangedEdges();
 
 #ifndef NDEBUG
 			{
