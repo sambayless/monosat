@@ -158,7 +158,7 @@ public:
 
 		void decideEdge(int edgeID, int outerLevel, bool assign=true){
 			assert(decisions.size()>=decisionLevel());
-
+			assert(is_potential_decision[edgeID]);
 
 			newDecisionLevel(outerLevel);
 
@@ -184,12 +184,12 @@ public:
 
 			assert(outer->isEdgeVar(var(l)));
 			int edgeID = outer->getEdgeID(var(l));
-			assert(!is_potential_decision[edgeID]);
+			assert(is_potential_decision[edgeID]);
 			assert(!potential_decisions.contains(edgeID));
-
+			assert(!potential_decisions_q.contains(edgeID));
 			//this check is optional
 			if(negative_detector->getEdgeFlow(edgeID)>0){//this check is optional
-				is_potential_decision[edgeID]=true;
+				//is_potential_decision[edgeID]=true;
 				if(opt_maxflow_decisions_q==0)
 					potential_decisions.push(edgeID);
 				else if (opt_maxflow_decisions_q==1){
@@ -197,6 +197,8 @@ public:
 				}else {
 					potential_decisions_q.insert(edgeID);//insert in FIFO order instead
 				}
+			}else{
+				is_potential_decision[edgeID]=false;//discard this edge from the set of potential decisions
 			}
 			dbg_decisions();
 		}
