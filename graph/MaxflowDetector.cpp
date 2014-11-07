@@ -919,10 +919,8 @@ void MaxflowDetector<Weight>::collectChangedEdges(){
 		}
 
 		std::vector<int> & changed_edges = negative_conflict_detector->getChangedEdges();
-		while(changed_edges.size()){
-			int edgeid = changed_edges.back();
-
-			changed_edges.pop_back();
+		for(int j = 0;j<changed_edges.size();j++){
+					int edgeid = changed_edges[j];
 
 			if(!is_potential_decision[edgeid]){
 				Lit l = mkLit(outer->getEdgeVar(edgeid),false);
@@ -930,7 +928,9 @@ void MaxflowDetector<Weight>::collectChangedEdges(){
 					is_potential_decision[edgeid]=true;
 					if(opt_maxflow_decisions_q==0){
 						potential_decisions.push(edgeid);
-					}else{
+					}else if(opt_maxflow_decisions_q==1){
+						potential_decisions_q.insertBack(edgeid);
+					}else if(opt_maxflow_decisions_q==2){
 						potential_decisions_q.insert(edgeid);
 					}
 				}
@@ -994,6 +994,7 @@ void MaxflowDetector<Weight>::collectChangedEdges(){
 				}
 			}
 		}
+		changed_edges.clear();
 		dbg_decisions();
 }
 
