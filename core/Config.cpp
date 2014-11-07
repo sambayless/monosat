@@ -150,7 +150,7 @@ BoolOption Monosat::opt_lazy_maxflow_decisions(_cat_graph,"lazy-maxflow-decision
 
 BoolOption Monosat::opt_old_lazy_maxflow_decisions(_cat_graph,"old-lazy-maxflow-decisions","",false);
 IntOption Monosat::opt_maxflow_decisions_q(_cat_graph,"maxflow-decisions-q","Use a FIFO (instead of LIFO) decision order in the maxflow theory",2,IntRange(0,1));
-
+BoolOption Monosat::opt_reach_detector_combined_maxflow(_cat_graph,"reach-combined-maxflow","",false);
 
 
 

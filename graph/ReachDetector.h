@@ -140,7 +140,7 @@ public:
 		};
 		ReachStatus *positiveReachStatus;
 		ReachStatus *negativeReachStatus;
-		//MaxFlow<int> * conflict_flow=nullptr;
+		MaxFlow<long> * conflict_flow=nullptr;
 		std::vector<MaxFlow<long> *> conflict_flows;
 
 		WeightedDijkstra<double> * rnd_path;

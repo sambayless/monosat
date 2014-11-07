@@ -155,7 +155,7 @@ public:
     		}
     	}
     	sink=t;
-    	last_modification=g.modifications-1;
+    	last_modification=std::min(last_modification, g.modifications-1);
     	flow_needs_recalc=true;
     }
 
@@ -210,7 +210,7 @@ public:
 
 #endif
         	return curflow;
-        }else if (last_modification<=0 || kt->get_node_num()!=g.nodes() || edge_enabled.size()!=g.edges() ){
+        }else if (!kt|| last_modification<=0 || kt->get_node_num()!=g.nodes() || edge_enabled.size()!=g.edges() ){
         	clearChangedEdges();
         	edge_enabled.clear();
         	flow_needs_recalc=true;
