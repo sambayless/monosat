@@ -999,7 +999,7 @@ void MaxflowDetector<Weight>::collectChangedEdges(){
 
 template<typename Weight>
 void MaxflowDetector<Weight>::dbg_decisions(){
-//#ifndef NDEBUG
+#ifndef NDEBUG
 	static int iter = 0;
 	++iter;
 	if(iter== 911){
@@ -1026,7 +1026,7 @@ void MaxflowDetector<Weight>::dbg_decisions(){
 		printf("%d ",edgeID);
 	}
 	printf("\n");
-//#endif
+#endif
 }
 
 template<typename Weight>
