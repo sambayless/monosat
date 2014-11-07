@@ -55,7 +55,7 @@ class DynamicGraph{
 	bool is_changed;
 
 public:
-	int historyClearInterval=2;
+	int historyClearInterval=1000;
 	int modifications;
 	int additions;
 	int deletions;
@@ -412,7 +412,7 @@ public:
 	}
 
 	void clearHistory(){
-		if(history.size()> std::max(1000,historyClearInterval*edges())){
+		if(history.size()> historyClearInterval){//std::max(1000,historyClearInterval*edges())){
 			history.clear();
 			historyclears++;
 #ifdef RECORD
