@@ -929,7 +929,7 @@ void MaxflowDetector<Weight>::collectChangedEdges(){
 					if(opt_maxflow_decisions_q==0){
 						potential_decisions.push(edgeid);
 					}else if(opt_maxflow_decisions_q==1){
-						potential_decisions_q.insertBack(edgeid);
+						potential_decisions_q.insert(edgeid);//insertBack
 					}else if(opt_maxflow_decisions_q==2){
 						potential_decisions_q.insert(edgeid);
 					}
