@@ -236,6 +236,7 @@ Lit CycleDetector<Weight>::decide(int level){
 };
 
 template class CycleDetector<int>;
+template class CycleDetector<long>;
 template class CycleDetector<double>;
 #include <gmpxx.h>
 template class CycleDetector<mpq_class>;

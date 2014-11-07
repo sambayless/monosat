@@ -54,7 +54,7 @@ LevelDetector(_detectorID),outer(_outer),capacities(capacities),over_graph(_g),g
 		negative_detector = new EdmondsKarpDynamic<std::vector<Weight>,Weight>(_antig,capacities,source,target);
 		positive_conflict_detector =positive_detector;//new EdmondsKarpAdj<std::vector<Weight>,Weight>(_g,capacities);
 		negative_conflict_detector =negative_detector;// new EdmondsKarpAdj<std::vector<Weight>,Weight>(_antig,capacities);
-		learn_cut = new EdmondsKarpDynamic<CutStatus,int>(learn_graph, cutStatus,source,target);
+		learn_cut = new EdmondsKarpDynamic<CutStatus,long>(learn_graph, cutStatus,source,target);
 
 		/*if(opt_conflict_min_cut_maxflow)
 				learn_cut = new EdmondsKarpAdj<std::vector<int>,int>(learn_graph,learn_caps,source,target);*/
@@ -64,7 +64,7 @@ LevelDetector(_detectorID),outer(_outer),capacities(capacities),over_graph(_g),g
 		positive_conflict_detector = positive_detector;
 		negative_conflict_detector = negative_detector;
 		if(opt_conflict_min_cut_maxflow)
-				learn_cut = new EdmondsKarpAdj<CutStatus,int>(learn_graph, cutStatus,source,target);
+				learn_cut = new EdmondsKarpAdj<CutStatus,long>(learn_graph, cutStatus,source,target);
 	}/*else if (mincutalg==MinCutAlg::ALG_IBFS){
 		positive_detector = new IBFS(_g);
 		negative_detector = new IBFS(_antig);
@@ -76,14 +76,14 @@ LevelDetector(_detectorID),outer(_outer),capacities(capacities),over_graph(_g),g
 		positive_conflict_detector = positive_detector;// new EdmondsKarpAdj<std::vector<Weight>,Weight>(_g,capacities);
 		negative_conflict_detector = negative_detector;//new EdmondsKarpAdj<std::vector<Weight>,Weight>(_antig,capacities);
 		if(opt_conflict_min_cut_maxflow)
-				learn_cut = new Dinitz<CutStatus,int>(learn_graph, cutStatus,source,target);
+				learn_cut = new Dinitz<CutStatus,long>(learn_graph, cutStatus,source,target);
 	}else if (mincutalg==MinCutAlg::ALG_DINITZ_LINKCUT){
 		//link-cut tree currently only supports ints (enforcing this using tempalte specialization...).
 		buildDinitzLinkCut();
 		positive_conflict_detector = new EdmondsKarpAdj<std::vector<Weight>,Weight>(_g,capacities,source,target);
 		negative_conflict_detector = new EdmondsKarpAdj<std::vector<Weight>,Weight>(_antig,capacities,source,target);
 		if(opt_conflict_min_cut_maxflow)
-				learn_cut = new DinitzLinkCut<CutStatus>(learn_graph, cutStatus,source,target);
+				learn_cut = new EdmondsKarpAdj<CutStatus,long>(learn_graph, cutStatus,source,target);
 	}else if (mincutalg==MinCutAlg::ALG_KOHLI_TORR){
 		positive_detector = new KohliTorr<std::vector<Weight>,Weight>(_g,capacities,source,target,opt_maxflow_backward,opt_kt_preserve_order);
 		negative_detector = new KohliTorr<std::vector<Weight>,Weight>(_antig,capacities,source,target,opt_maxflow_backward,opt_kt_preserve_order);
@@ -97,7 +97,7 @@ LevelDetector(_detectorID),outer(_outer),capacities(capacities),over_graph(_g),g
 			negative_conflict_detector = new EdmondsKarpDynamic<std::vector<Weight>,Weight>(_antig,capacities,source,target);
 		}
 		if(opt_conflict_min_cut_maxflow)
-					learn_cut = new KohliTorr<CutStatus,int>(learn_graph, cutStatus,source,target,opt_kt_preserve_order);
+					learn_cut = new KohliTorr<CutStatus,long>(learn_graph, cutStatus,source,target,opt_kt_preserve_order);
 
 	}else{
 		positive_detector = new EdmondsKarpAdj<std::vector<Weight>,Weight>(_g,capacities,source,target);
@@ -105,12 +105,19 @@ LevelDetector(_detectorID),outer(_outer),capacities(capacities),over_graph(_g),g
 		positive_conflict_detector = positive_detector;
 		negative_conflict_detector = negative_detector;
 		if(opt_conflict_min_cut_maxflow)
-				learn_cut =  new EdmondsKarpAdj<CutStatus,int>(learn_graph, cutStatus,source,target);
+				learn_cut =  new EdmondsKarpAdj<CutStatus,long>(learn_graph, cutStatus,source,target);
 	}
 
 
 
+#ifdef RECORD
+			{
+				char t[30];
+				sprintf(t,"LEARN_GRAPH%d",getID());
+				learn_graph.outfile=fopen(t,"w");
+			}
 
+#endif
 
 
 	first_reach_var = var_Undef;
@@ -274,14 +281,22 @@ int MaxflowDetector<Weight>::dbg_minconflict(){
 			return 0;
 	}
 */
+void bassert(bool condition){
+#ifndef NDEBUG
+	if(!condition){
+		exit(3);
+	}
+#endif
+}
 
 template<typename Weight>
 		void MaxflowDetector<Weight>::buildMaxFlowTooLowReason(Weight maxflow,vec<Lit> & conflict){
 			static int it = 0;
 			++it;
-			if(it==22){
+			if(it==338){
 				int a=1;
 			}
+			//printf("%d\n",it);
 			double starttime = rtime(2);
 			if(opt_conflict_min_cut_maxflow){
 				Weight foundflow = negative_conflict_detector->maxFlow();
@@ -297,10 +312,10 @@ template<typename Weight>
 						Weight flow = negative_conflict_detector->getEdgeFlow(e.id);
 						Weight capacity =  negative_conflict_detector->getEdgeCapacity(e.id);
 						if(capacity==0){
-							assert(!learn_graph.edgeEnabled(e.id*2));
-							assert(!learn_graph.edgeEnabled(e.id*2+1));
-							assert(!learn_graph.edgeEnabled(back_edges[e.id*2]));
-							assert(!learn_graph.edgeEnabled(back_edges[e.id*2+1]));
+							bassert(!learn_graph.edgeEnabled(e.id*2));
+							bassert(!learn_graph.edgeEnabled(e.id*2+1));
+							bassert(!learn_graph.edgeEnabled(back_edges[e.id*2]));
+							bassert(!learn_graph.edgeEnabled(back_edges[e.id*2+1]));
 
 						}else{
 							if(flow>0){
@@ -308,23 +323,23 @@ template<typename Weight>
 								int back_edge = back_edges[e.id];
 							/*	learn_graph.enableEdge(back_edges[e.id]);
 								learn_caps[back_edge] = INF;*/
-								assert(!learn_graph.edgeEnabled(back_edges[e.id*2]));
-								assert(learn_graph.edgeEnabled(back_edges[e.id*2+1]));
+								bassert(!learn_graph.edgeEnabled(back_edges[e.id*2]));
+								bassert(learn_graph.edgeEnabled(back_edges[e.id*2+1]));
 							}else{
 								//learn_graph.disableEdge(back_edges[e.id]);
-								assert(!learn_graph.edgeEnabled(back_edges[e.id*2]));
-								assert(!learn_graph.edgeEnabled(back_edges[e.id*2+1]));
+								bassert(!learn_graph.edgeEnabled(back_edges[e.id*2]));
+								bassert(!learn_graph.edgeEnabled(back_edges[e.id*2+1]));
 							}
 							if (flow<capacity){
 								//then there is capacity in the forward edge in the residual graph
 							/*	learn_caps[e.id] = INF;
 								learn_graph.enableEdge(e.id);*/
-								assert(!learn_graph.edgeEnabled(e.id*2));
-								assert(learn_graph.edgeEnabled(e.id*2+1));
+								bassert(!learn_graph.edgeEnabled(e.id*2));
+								bassert(learn_graph.edgeEnabled(e.id*2+1));
 							}else{
 								//learn_graph.disableEdge(e.id);
-								assert(!learn_graph.edgeEnabled(e.id*2));
-								assert(!learn_graph.edgeEnabled(e.id*2+1));
+								bassert(!learn_graph.edgeEnabled(e.id*2));
+								bassert(!learn_graph.edgeEnabled(e.id*2+1));
 							}
 						}
 					}else{
@@ -332,73 +347,40 @@ template<typename Weight>
 			/*			learn_graph.enableEdge(e.id);
 						learn_graph.disableEdge(back_edges[e.id]);
 						learn_caps[e.id] = 1;*/
-						assert(learn_graph.edgeEnabled(e.id*2));
-						assert(!learn_graph.edgeEnabled(e.id*2+1));
-						assert(!learn_graph.edgeEnabled(back_edges[e.id*2]));
-						assert(!learn_graph.edgeEnabled(back_edges[e.id*2+1]));
+						bassert(learn_graph.edgeEnabled(e.id*2));
+						bassert(!learn_graph.edgeEnabled(e.id*2+1));
+						bassert(!learn_graph.edgeEnabled(back_edges[e.id*2]));
+						bassert(!learn_graph.edgeEnabled(back_edges[e.id*2+1]));
 					}
 				}
 #endif
-				//find a minimal s-t cut in the residual graph.
-				//to do so, first construct the residual graph
 
-				//for each edge in the original graph, need to add a forward and backward edge here.
 
-				/*
-				//now, set learn_graph to the residual graph
-				for (auto & e:g.all_edges){
-					int from = e.from;
-					int to = e.to;
-					int v = outer->getEdgeVar(e.id);
-					lbool val =outer->value(v);
-					if(val!=l_False){
-						Weight flow = negative_conflict_detector->getEdgeFlow(e.id);
-						Weight capacity =  negative_conflict_detector->getEdgeCapacity(e.id);
-						if(capacity==0){
-							learn_graph.disableEdge(e.id);
-							learn_graph.disableEdge(back_edges[e.id]);
-						}else{
-							if(flow>0){
-								//then there is capacity in the backward edge in the residual graph
-								int back_edge = back_edges[e.id];
-								learn_graph.enableEdge(back_edges[e.id]);
-								learn_caps[back_edge] = INF;
-							}else{
-								learn_graph.disableEdge(back_edges[e.id]);
-							}
-							if (flow<capacity){
-								//then there is capacity in the forward edge in the residual graph
-								learn_caps[e.id] = INF;
-								learn_graph.enableEdge(e.id);
-							}else{
-								learn_graph.disableEdge(e.id);
-							}
-						}
-					}else{
+				long f =learn_cut->minCut(cut);
+				learn_graph.clearChanged();
+				learn_graph.clearHistory();
+		/*		if(it>=315){
 
-						learn_graph.enableEdge(e.id);
-						learn_graph.disableEdge(back_edges[e.id]);
-						learn_caps[e.id] = 1;
+					EdmondsKarpAdj<CutStatus,long> ek(learn_graph, cutStatus,source,target);
+					std::vector<MaxFlowEdge> tmpcut;
+					long tf = ek.minCut(tmpcut);
+					printf("cut size:%d, %d, expected: %d, %d \n",cut.size(),f, tmpcut.size(), tf);
+					if(f != tf || cut.size()!= tmpcut.size()){
+						exit(3);
 					}
-				}
-				learn_graph.invalidate();
-				//learn_graph.drawFull(true);
-				cut.clear();
-				antig.drawFull(true);
-				learn_graph.drawFull(true);*/
-
-				int f =learn_cut->minCut(cut);
+				}*/
 				if(f<cutStatus.inf){
 					assert(f<0xF0F0F0); assert(f==cut.size());//because edges are only ever infinity or 1
 					for(int i = 0;i<cut.size();i++){
 						MaxFlowEdge e = cut[i];
 						int edgeID = e.id/2;
 						Lit l = mkLit( outer->getEdgeVar(edgeID),false);
-						assert(outer->value(l)==l_False);
+						bassert(outer->value(l)==l_False);
 						conflict.push(l);
 					}
 				}else{
 					int a=1;
+
 					//there is no way to increase the max flow.
 				}
 
@@ -407,9 +389,7 @@ template<typename Weight>
 				 stats_over_conflicts++;
 					double elapsed = rtime(2)-starttime;
 					stats_over_conflict_time+=elapsed;
-			/*		if(conflict.size()<dbg_minconflict()){
-									exit(4);
-								}*/
+
 				return;
 			}
 
@@ -752,15 +732,26 @@ void MaxflowDetector<Weight>::collectDisabledEdges(){
 				if(back_edges[e.id*2]==-1){
 					back_edges[e.id*2] = learn_graph.addEdge(e.to,e.from);
 					back_edges[e.id*2+1] = learn_graph.addEdge(e.to,e.from);
+
 				}
 			}
 			for(auto & e:learn_graph.all_edges){
 				learn_graph.disableEdge(e.id);
 			}
 			learn_graph.invalidate();
+
+
+#ifdef RECORD
+		if(learn_graph.outfile){
+			for(int edgeID = 0;edgeID<learn_graph.edges();edgeID++){
+				fprintf(learn_graph.outfile,"edge_weight %d %d\n", edgeID,cutStatus[edgeID]);
+			}
+			fflush(learn_graph.outfile);
+		}
+#endif
 		}
 
-		if(learngraph_history_clears!= antig.historyclears){
+		if(learngraph_history_clears!= antig.historyclears || antig.changed()){
 			//refresh
 			for(int edgeid = 0;edgeid<antig.edges();edgeid++){
 				if(edgeid==34){
@@ -915,6 +906,15 @@ void MaxflowDetector<Weight>::collectChangedEdges(){
 					learn_graph.disableEdge(e.id);
 				}
 				learn_graph.invalidate();
+
+#ifdef RECORD
+		if(learn_graph.outfile){
+			for(int edgeID = 0;edgeID<learn_graph.edges();edgeID++){
+				fprintf(learn_graph.outfile,"edge_weight %d %d\n", edgeID,cutStatus[edgeID]);
+			}
+			fflush(learn_graph.outfile);
+		}
+#endif
 			}
 		}
 
@@ -1428,6 +1428,7 @@ Lit MaxflowDetector<Weight>::decide(int level){
 
 
 template class MaxflowDetector<int>;
+template class MaxflowDetector<long>;
 template class MaxflowDetector<double>;
 #include <gmpxx.h>
 template class MaxflowDetector<mpq_class>;

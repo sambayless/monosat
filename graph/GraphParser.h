@@ -52,7 +52,7 @@ struct SteinerStruct{
 template<class B, class Solver>
 class GraphParser:public Parser<B,Solver>{
 	vec<std::pair<int,std::string> > * symbols=nullptr;
-	vec<GraphTheorySolver<int>*> graphs;
+	vec<GraphTheorySolver<long>*> graphs;
 	vec<GraphTheorySolver<double>*> graphs_float;
 	vec<GraphTheorySolver<mpq_class>*> graphs_rational;
 
@@ -106,7 +106,7 @@ class GraphParser:public Parser<B,Solver>{
 	graphs_float.growTo(g+1);
 	graphs_rational.growTo(g+1);
 	if(graph_type==GraphType::INTEGER){
-		GraphTheorySolver<int> *graph= new GraphTheorySolver<int>(&S,g);
+		GraphTheorySolver<long> *graph= new GraphTheorySolver<long>(&S,g);
 		graph->newNodes(n);
 		graphs[g]=graph;
 		S.addTheory(graph);

@@ -925,7 +925,7 @@ public:
 		seen.clear();
 		seen.resize(g.nodes());
 		seen[s]=true;
-
+		cut.clear();
 		//explore the residual graph
 		for(int j = 0;j<Q.size();j++){
 		   int u = Q[j];

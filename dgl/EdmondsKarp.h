@@ -277,6 +277,7 @@ public:
 		seen.clear();
 		seen.resize(g.nodes());
 		seen[s]=true;
+		cut.clear();
 	//	visited.clear();
 		//visited.resize(g.nodes());
 	//	visited[s]=true;

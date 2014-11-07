@@ -23,6 +23,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #define DYNAMICGRAPH_H_
 #include <vector>
 #include "graph/GraphTheoryTypes.h"
+#include <algorithm>
 
 #ifndef NDEBUG
 //Used to track graph operations for debugging purposes - you can probably ignore this.
@@ -54,7 +55,7 @@ class DynamicGraph{
 	bool is_changed;
 
 public:
-	int historyClearInterval=1000;
+	int historyClearInterval=2;
 	int modifications;
 	int additions;
 	int deletions;
@@ -276,6 +277,7 @@ public:
 			history.push_back({true,id,modifications,additions});
 #ifdef RECORD
 			if(outfile){
+
 				fprintf(outfile,"%d\n", id+1);
 				fflush(outfile);
 			}
@@ -295,6 +297,9 @@ public:
 			edge_status[id]=false;
 #ifdef RECORD
 			if(outfile){
+				if(id+1==89486){
+					int a =1;
+				}
 				fprintf(outfile,"-%d\n", id+1);
 				fflush(outfile);
 			}
@@ -316,6 +321,7 @@ public:
 			edge_status[id]=false;
 #ifdef RECORD
 			if(outfile){
+
 				fprintf(outfile,"-%d\n", id+1);
 				fflush(outfile);
 			}
@@ -340,6 +346,7 @@ public:
 			edge_status[id]=true;
 #ifdef RECORD
 			if(outfile){
+
 				fprintf(outfile,"%d\n", id+1);
 				fflush(outfile);
 			}
@@ -405,7 +412,7 @@ public:
 	}
 
 	void clearHistory(){
-		if(history.size()>historyClearInterval){
+		if(history.size()> std::max(1000,historyClearInterval*edges())){
 			history.clear();
 			historyclears++;
 #ifdef RECORD

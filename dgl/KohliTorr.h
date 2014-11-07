@@ -45,7 +45,7 @@ class KohliTorr:public MaxFlow<Weight>{
 		bool backward=false;
 		LocalEdge(int from=-1, int id=-1, bool backward=false):from(from),id(id),backward(backward){
 
-			}
+		}
 	};
 	int source=-1;
 	int sink=-1;
@@ -189,7 +189,12 @@ public:
     	//C.resize(g.nodes());
 #ifdef DEBUG_MAXFLOW
     	for(int i = 0;i<g.all_edges.size();i++){
+    		if(!g.hasEdge(i))
+    			continue;
     		int id = g.all_edges[i].id;
+    		if(id>=capacity.size()){
+    			exit(5);
+    		}
     		Weight cap = capacity[id];
     		int from =  g.all_edges[i].from;
     		int to =  g.all_edges[i].to;
@@ -204,9 +209,8 @@ public:
 
 #ifdef DEBUG_MAXFLOW
       		assert(curflow==expected_flow);
-      		if(curflow != expected_flow){
-      			exit(4);
-      		}
+      		bassert(curflow == expected_flow);
+
 #endif
         	return curflow;
         }else if (last_modification<=0 || kt->get_node_num()!=g.nodes() || edge_enabled.size()!=g.edges() ){
@@ -349,11 +353,10 @@ public:
 
 #ifdef DEBUG_MAXFLOW
     		Weight expected_flow =ek.maxFlow();
-    		if(f != expected_flow){
-				exit(4);
-			}
+    		bassert(f == expected_flow);
+
 #endif
-   		dbg_print_graph(s,t,true);
+   		//dbg_print_graph(s,t,true);
 
 
 #ifndef NDEBUG
@@ -592,12 +595,13 @@ public:
     	int s = source;
     	int t = sink;
     	calc_flow();
+    	cut.clear();
     	Q.clear();
 		Q.push_back(s);
 		seen.clear();
 		seen.resize(g.nodes());
 		seen[s]=true;
-		dbg_print_graph(s,t);
+		//dbg_print_graph(s,t);
 		//explore the residual graph
 		for(int j = 0;j<Q.size();j++){
 		   int u = Q[j];

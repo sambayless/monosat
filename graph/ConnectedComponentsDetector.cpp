@@ -820,6 +820,7 @@ Lit ConnectedComponentsDetector<Weight>::decide(int level){
 	return lit_Undef;
 };
 template class ConnectedComponentsDetector<int>;
+template class ConnectedComponentsDetector<long>;
 template class ConnectedComponentsDetector<double>;
 #include <gmpxx.h>
 template class ConnectedComponentsDetector<mpq_class>;

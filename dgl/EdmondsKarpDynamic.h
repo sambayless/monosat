@@ -208,6 +208,8 @@ public:
     	//C.resize(g.nodes());
 #ifdef DEBUG_MAXFLOW
     	for(int i = 0;i<g.all_edges.size();i++){
+    		if(!g.hasEdge(i))
+				continue;
     		int id = g.all_edges[i].id;
     		Weight cap = capacity[id];
     		int from =  g.all_edges[i].from;
@@ -593,7 +595,7 @@ private:
 
     void dbg_print_graph(int from, int to, Weight shortCircuitFrom=-1, Weight shortCircuitTo=-1){
 #ifndef NDEBUG
-
+    		return;
     		static int it = 0;
     		if(++it==6){
     			int a =1;
@@ -776,7 +778,7 @@ public:
     	int s = source;
     	int t = sink;
 
-
+    	cut.clear();
     	//ok, now find the cut
     	Q.clear();
     	Q.push_back(s);

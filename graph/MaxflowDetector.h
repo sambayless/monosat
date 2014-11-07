@@ -76,7 +76,7 @@ public:
 		vec<int> back_edges;
 		int learngraph_history_qhead=0;
 		int learngraph_history_clears=-1;
-		MaxFlow<int> * learn_cut=nullptr;
+		MaxFlow<long> * learn_cut=nullptr;
 
 		//vec<Lit>  reach_lits;
 		Var first_reach_var;
@@ -104,11 +104,11 @@ public:
 			return reach_lit_map[index];
 		}*/
 		struct CutStatus{
-			int one=1;
-			int inf= 0x0FF0F0;
+			long one=1;
+			long inf= 0x0FF0F0;
 			MaxflowDetector & outer;
 
-			const int &operator [] (int id) const {
+			const long &operator [] (int id) const {
 				if(id%2==0){
 					return one;
 				}else{

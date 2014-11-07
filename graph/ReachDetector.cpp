@@ -420,30 +420,30 @@ void ReachDetector<Weight>::addLit(int from, int to, Var outer_reach_var){
 		conflict_flows.resize(g.nodes(),nullptr);
 		for(int i = 0;i<g.nodes();i++){
 			if(reach_lits[i]!=lit_Undef && !conflict_flows[i]){
-				MaxFlow<int> * conflict_flow_t=nullptr;
+				MaxFlow<long> * conflict_flow_t=nullptr;
 					if(mincutalg==MinCutAlg::ALG_EDKARP_DYN){
-						conflict_flow_t = new EdmondsKarpDynamic<CutStatus,int>(outer->cutGraph, cutStatus,source,i);
+						conflict_flow_t = new EdmondsKarpDynamic<CutStatus,long>(outer->cutGraph, cutStatus,source,i);
 					}else if (mincutalg==MinCutAlg::ALG_EDKARP_ADJ){
 
-						conflict_flow_t = new EdmondsKarpAdj<CutStatus,int>(outer->cutGraph, cutStatus,source,i);
+						conflict_flow_t = new EdmondsKarpAdj<CutStatus,long>(outer->cutGraph, cutStatus,source,i);
 
 					}else if (mincutalg==MinCutAlg::ALG_DINITZ){
 
-						conflict_flow_t = new Dinitz<CutStatus,int>(outer->cutGraph, cutStatus,source,i);
+						conflict_flow_t = new Dinitz<CutStatus,long>(outer->cutGraph, cutStatus,source,i);
 
 					}else if (mincutalg==MinCutAlg::ALG_DINITZ_LINKCUT){
 						//link-cut tree currently only supports ints (enforcing this using tempalte specialization...).
 
-						conflict_flow_t = new DinitzLinkCut<CutStatus>(outer->cutGraph, cutStatus,source,i);
+						conflict_flow_t = new Dinitz<CutStatus,long>(outer->cutGraph, cutStatus,source,i);
 
 					}else if (mincutalg==MinCutAlg::ALG_KOHLI_TORR){
 						if(opt_use_kt_for_conflicts){
-							conflict_flow_t = new KohliTorr<CutStatus,int>(outer->cutGraph, cutStatus,source,i,opt_kt_preserve_order);
+							conflict_flow_t = new KohliTorr<CutStatus,long>(outer->cutGraph, cutStatus,source,i,opt_kt_preserve_order);
 						}else
-							conflict_flow_t = new EdmondsKarpDynamic<CutStatus,int>(outer->cutGraph, cutStatus,source,i);
+							conflict_flow_t = new EdmondsKarpDynamic<CutStatus,long>(outer->cutGraph, cutStatus,source,i);
 					}else{
 
-						conflict_flow_t = new EdmondsKarpAdj<CutStatus,int>(outer->cutGraph, cutStatus,source,i);
+						conflict_flow_t = new EdmondsKarpAdj<CutStatus,long>(outer->cutGraph, cutStatus,source,i);
 
 					}
 				conflict_flows[i]=conflict_flow_t;
@@ -667,7 +667,7 @@ template<typename Weight>
 				assert(conflict_flows[node]->getSink()==node);
 				assert(conflict_flows[node]->getSource()==source);
 
-				int f =conflict_flows[node]->minCut(cut);
+				long f =conflict_flows[node]->minCut(cut);
 				/*{
 					EdmondsKarpAdj<CutStatus,int> check(outer->cutGraph,cutStatus,source,node);
 					std::vector<MaxFlowEdge> check_cut;
@@ -1670,6 +1670,7 @@ Lit ReachDetector<Weight>::decide(int level){
 };
 
 template class ReachDetector<int>;
+template class ReachDetector<long>;
 template class ReachDetector<double>;
 #include <gmpxx.h>
 template class ReachDetector<mpq_class>;

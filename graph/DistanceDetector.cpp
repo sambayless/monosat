@@ -1298,6 +1298,7 @@ Lit DistanceDetector<Weight>::decide(int level){
 };
 
 template class DistanceDetector<int>;
+template class DistanceDetector<long>;
 template class DistanceDetector<double>;
 #include <gmpxx.h>
 template class DistanceDetector<mpq_class>;
