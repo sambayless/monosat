@@ -61,6 +61,11 @@ public:
     virtual int getSource() const=0;
     virtual int getSink() const=0;
     virtual const Weight minCut( std::vector<MaxFlowEdge> & cut)=0;
+    //Return a valid cut that may or may not be the mincut.
+    virtual const Weight approxMinCut( std::vector<MaxFlowEdge> & cut){
+    	return minCut(cut);
+    }
+
     virtual const Weight getEdgeFlow(int edgeID)=0;
     virtual const Weight  getEdgeCapacity(int id)=0;
 

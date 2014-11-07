@@ -192,9 +192,6 @@ public:
     		if(!g.hasEdge(i))
     			continue;
     		int id = g.all_edges[i].id;
-    		if(id>=capacity.size()){
-    			exit(5);
-    		}
     		Weight cap = capacity[id];
     		int from =  g.all_edges[i].from;
     		int to =  g.all_edges[i].to;
@@ -590,18 +587,45 @@ private:
     std::vector<int> Q;
 
 public:
+
+
+
     const Weight minCut( std::vector<MaxFlowEdge> & cut){
     	Weight f = this->maxFlow();
+
     	int s = source;
     	int t = sink;
-    	calc_flow();
+    	cut.clear();
+    	if(f==0)
+			return 0;
+    	for(int n = 0;n<g.nodes();n++){
+    		auto t = kt->what_segment(n,kohli_torr::Graph<Weight,Weight,Weight>::SOURCE);
+    		if(t==kohli_torr::Graph<Weight,Weight,Weight>::SINK){
+    			//check to see if any neighbouring edges are in the sink segment.
+    			for(int i = 0;i<g.nIncident(n);i++){
+
+    				auto & e = g.incident(n,i);
+    				if(g.edgeEnabled(e.id)){
+    					auto segment = kt->what_segment(e.node,kohli_torr::Graph<Weight,Weight,Weight>::SOURCE);
+						if(segment==kohli_torr::Graph<Weight,Weight,Weight>::SOURCE){
+							//then this edge is on the cut
+							cut.push_back(MaxFlowEdge{n,e.node,e.id});
+						}
+    				}
+    			}
+    		}
+    	}
+    	dbg_print_graph(s,t);
+    	//kohli-torr is unusual in that it maintains the _mincut_, explicitly.
+
+    	/*calc_flow();
     	cut.clear();
     	Q.clear();
 		Q.push_back(s);
 		seen.clear();
 		seen.resize(g.nodes());
 		seen[s]=true;
-		//dbg_print_graph(s,t);
+		//
 		//explore the residual graph
 		for(int j = 0;j<Q.size();j++){
 		   int u = Q[j];
@@ -639,6 +663,7 @@ public:
 			}
 		}
 		cut.resize(j);
+		*/
 #ifndef NDEBUG
 		Weight dbg_sum = 0;
 		for(int i = 0;i<cut.size();i++){
