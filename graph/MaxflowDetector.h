@@ -158,14 +158,14 @@ public:
 
 		void decideEdge(int edgeID, int outerLevel, bool assign=true){
 			assert(decisions.size()>=decisionLevel());
-			assert(is_potential_decision[edgeID]);
+
 
 			newDecisionLevel(outerLevel);
 
 			Lit l = mkLit(outer->getEdgeVar(edgeID),!assign);
 
-			assert(!decisions.contains(l));
-			assert(!decisions.contains(~l));
+			//assert(!decisions.contains(l));
+			//assert(!decisions.contains(~l));
 
 			decisions.push(l);
 
@@ -187,12 +187,12 @@ public:
 			if(edgeID==34){
 				int a=1;
 			}
-			assert(is_potential_decision[edgeID]);
+			assert(!is_potential_decision[edgeID]);
 			assert(!potential_decisions.contains(edgeID));
 			assert(!potential_decisions_q.contains(edgeID));
 			//this check is optional
 			if(negative_detector->getEdgeFlow(edgeID)>0){//this check is optional
-				//is_potential_decision[edgeID]=true;
+				is_potential_decision[edgeID]=true;
 				if(opt_maxflow_decisions_q==0)
 					potential_decisions.push(edgeID);
 				else if (opt_maxflow_decisions_q==1){
