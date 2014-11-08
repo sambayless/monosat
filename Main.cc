@@ -148,7 +148,9 @@ int main(int argc, char** argv)
         StringOption opt_interpolant_file("MAIN","int-out","Write interpolant to given file","");
 
         parseOptions(argc, argv, true);
-
+        if(!opt_allsat_modsat){
+        	opt_interpolate=false;//interpolants are currently only supported by modsat
+        }
 
         double initial_time = cpuTime();
 
@@ -273,26 +275,6 @@ int main(int argc, char** argv)
         	}
         	printf("\n");
 
-     /*   	if(opt_allsat_vars==0){
-        		for(int i = 0;i<S.nVars();i++){
-
-					allsatvec.push(i);
-				}
-        	}else if(opt_allsat_vars>0){
-        		for(int i = 0;i<opt_allsat_vars;i++){
-        			if(i>=S.nVars())
-        				break;
-        			allsatvec.push(i);
-        		}
-        	}else {
-        		int start = S.nVars()+opt_allsat_vars;
-        		if(start<0)
-        			start=0;
-        		for(int i = start;i<S.nVars();i++){
-					allsatvec.push(i);
-				}
-        	}*/
-
         	//do an allsat loop
         	{
         		vec<Lit> learnt_clause;
@@ -306,23 +288,26 @@ int main(int argc, char** argv)
 					c.excludeFromCover(i,true);
 				}
         		vec<int> allsat_map;
-        		for(int i = 0;i<allsatvec.size();i++){
-					c.excludeFromCover(allsatvec[i],false);
-					allsat_map.growTo(allsatvec[i]+1);
-					allsat_map[allsatvec[i]]=allsatvec[i];
-				}
+
 
         		if(opt_allsat_modsat){
 					//map from sub to supersolver vars
-					vec<int> allsat_map;
+
 					for(int i = 0;i<allsatvec.size();i++){
 						Var v =allsat.newVar();
 						supervec.push(v);
 						allsat_map.growTo(allsatvec[i]+1);
 						allsat_map[allsatvec[i]]=v;
+						c.excludeFromCover(allsatvec[i],false);
 					}
 					allsat.addTheory(&S);
 					S.attachTo(&allsat,supervec,allsatvec);
+				}else{
+					for(int i = 0;i<allsatvec.size();i++){
+						c.excludeFromCover(allsatvec[i],false);
+						allsat_map.growTo(allsatvec[i]+1);
+						allsat_map[allsatvec[i]]=allsatvec[i];
+					}
 				}
 
         		//ok, now do an allsat loop:
@@ -498,11 +483,6 @@ int main(int argc, char** argv)
         			printf("Avg. interpolant clause length: %f\n",total_int_clause_length/((double)n_int_clauses));
         		}
         		gmp_printf ("#solutions: %Zd\n", n_solutions.get_mpz_t());
-        	/*	if(n_solutions>ULONG_MAX){
-        			printf("#solutions: %g\n",n_solutions);
-        		}else{
-        			printf("#solutions: %lu\n",n_solutions);
-        		}*/
 
        		   if(intout){
        		        printInterpolant(S,intout);
@@ -512,15 +492,14 @@ int main(int argc, char** argv)
         if(intout){
         	fclose(intout);
         }
+        if(has_any_solutions){
+        	ret=l_True;
+        }
 
         if(ret==l_True){
         	printf("SAT\n");
         }else if(ret==l_False){
-        	if(!has_any_solutions)
-        		printf("UNSAT\n");
-        	else{
-        		printf("SAT\n");
-        	}
+        	printf("UNSAT\n");
         }else{
         	printf("UNKNOWN\n");
         }

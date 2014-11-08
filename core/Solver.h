@@ -178,7 +178,7 @@ public:
     CRef cause_marker;
     int track_min_level;
     int initial_level;
-
+    bool first_solve=true;
     Var max_super;
     Var min_super;
     Var min_local;
@@ -273,9 +273,9 @@ public:
     vec<Lit>            analyze_toclear;
     vec<Lit>            add_tmp;
 
-    double              max_learnts;
-    double              learntsize_adjust_confl;
-    int                 learntsize_adjust_cnt;
+    double              max_learnts=1;
+    double              learntsize_adjust_confl=1;
+    int                 learntsize_adjust_cnt=0;
 
     // Resource contraints:
     //

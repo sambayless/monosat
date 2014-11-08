@@ -1051,7 +1051,7 @@ lbool Solver::solve_()
     if (!ok) return l_False;
 
     solves++;
-
+    first_solve=false;
     max_learnts               = nClauses() * learntsize_factor;
     learntsize_adjust_confl   = learntsize_adjust_start_confl;
     learntsize_adjust_cnt     = (int)learntsize_adjust_confl;
@@ -1101,6 +1101,12 @@ bool Solver::solve(vec<Lit> & conflict_out){
 	 track_min_level= initial_level;
 	 lbool status=l_Undef;
 		// Search:
+	 if(first_solve){
+		 first_solve=false;
+		 max_learnts               = nClauses() * learntsize_factor;
+		 learntsize_adjust_confl   = learntsize_adjust_start_confl;
+		 learntsize_adjust_cnt     = (int)learntsize_adjust_confl;
+	 }
 	int curr_restarts =0;
 	conflict.clear();
 	conflict_out.clear();
