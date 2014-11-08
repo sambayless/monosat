@@ -188,7 +188,7 @@ int main(int argc, char** argv)
         Solver S;
 
 
-	   S.verbosity = verb;
+	   S.verbosity = 0;
 	   S.use_model=false;
 	   solver = &S;
         if (S.verbosity > 0){
@@ -227,10 +227,12 @@ int main(int argc, char** argv)
         }
         vec<Lit> dummy;
         lbool ret=l_Undef;
+        bool has_any_solutions=false;
         if(!opt_allsat){
 
         	ret = S.solveLimited(dummy);
       	  if(ret==l_True) {
+      		has_any_solutions=true;
       		 if(opt_partial){
 
       			Cover c;
@@ -292,34 +294,42 @@ int main(int argc, char** argv)
         	}*/
 
         	//do an allsat loop
-        	if(opt_allsat_modsat){
+        	{
         		vec<Lit> learnt_clause;
         		vec<Var> supervec;
         		vec<Lit> block;
         		Cover c;
-        		Solver allsat;
+        		Solver allsat_solver;
+        		Solver & allsat = opt_allsat_modsat?allsat_solver:S;
         		allsat.use_model=false;
         		for(int i = 0;i<S.nVars();i++){
 					c.excludeFromCover(i,true);
 				}
-        		//map from sub to supersolver vars
         		vec<int> allsat_map;
-
         		for(int i = 0;i<allsatvec.size();i++){
-        			Var v =allsat.newVar();
-        			supervec.push(v);
-        			allsat_map.growTo(allsatvec[i]+1);
-        			allsat_map[allsatvec[i]]=v;
-        			c.excludeFromCover(allsatvec[i],false);
-        		}
-        		allsat.addTheory(&S);
-        		S.attachTo(&allsat,supervec,allsatvec);
+					c.excludeFromCover(allsatvec[i],false);
+					allsat_map.growTo(allsatvec[i]+1);
+					allsat_map[allsatvec[i]]=allsatvec[i];
+				}
 
+        		if(opt_allsat_modsat){
+					//map from sub to supersolver vars
+					vec<int> allsat_map;
+					for(int i = 0;i<allsatvec.size();i++){
+						Var v =allsat.newVar();
+						supervec.push(v);
+						allsat_map.growTo(allsatvec[i]+1);
+						allsat_map[allsatvec[i]]=v;
+					}
+					allsat.addTheory(&S);
+					S.attachTo(&allsat,supervec,allsatvec);
+				}
 
         		//ok, now do an allsat loop:
         		while(ret!=l_False && (!max_clauses || n_blocking_clauses<max_clauses) && (!max_int || S.interpolant.size() <max_int)  &&! allsat.asynch_interrupt){
         			ret = allsat.solveLimited(dummy);
         			if(ret==l_True){
+        				has_any_solutions=true;
         				n_blocking_clauses++;
         				//Negate the solver's assignments
         				block.clear();
@@ -384,76 +394,76 @@ int main(int argc, char** argv)
 								}
 							}
 
-        				if(block.size()>1){
-        					Lit second_max = block[second_pos];
-        					if(max_pos!=0){
-        						Lit t = block[0];
-        						block[0]=max;
-        						block[max_pos]=t;
-        						if(second_pos==0){
-        							second_pos=max_pos;
-        						}
-        					}
+							if(block.size()>1){
+								Lit second_max = block[second_pos];
+								if(max_pos!=0){
+									Lit t = block[0];
+									block[0]=max;
+									block[max_pos]=t;
+									if(second_pos==0){
+										second_pos=max_pos;
+									}
+								}
 
-        					if(second_pos!=1){
-        						Lit t= block[1];
-        						block[1]=second_max;
-        						block[second_pos]=t;
-        					}
+								if(second_pos!=1){
+									Lit t= block[1];
+									block[1]=second_max;
+									block[second_pos]=t;
+								}
 
-        					assert(block[0]==max);
-        					assert(block[1]==second_max);
-        				}
-
-
-        				allsat.cancelUntil(second_max);
-
-        				if(block.size()==1 || max_lev>second_max){
-        				    if (block.size() == 1){
-        				    	allsat.ok&= allsat.enqueue(max);
-							}else{
-								CRef cr = allsat.ca.alloc(block, false);
-								allsat.clauses.push(cr);
-								allsat.attachClause(cr);
-
-								assert(allsat.value(block[0])==l_Undef);
-								allsat.uncheckedEnqueue(block[0], cr);
+								assert(block[0]==max);
+								assert(block[1]==second_max);
 							}
-        				}else{
-        					//solver is in conflict...
-        					CRef confl = allsat.ca.alloc(block, false);
-							allsat.clauses.push(confl);
-							allsat.attachClause(confl);
-
-							if(allsat.decisionLevel()==0){
-								ret = l_False;//done
-							}else{
 
 
-								 learnt_clause.clear();
-								 int backtrack_level=0;
-								allsat.analyze(confl, learnt_clause, backtrack_level);
-								allsat.cancelUntil(backtrack_level);
+							allsat.cancelUntil(second_max);
 
-								//this is now slightly more complicated, if there are multiple lits implied by the super solver in the current decision level:
-								//The learnt clause may not be asserting.
-
-								if (learnt_clause.size() == 1){
-									allsat.uncheckedEnqueue(learnt_clause[0]);
+							if(block.size()==1 || max_lev>second_max){
+								if (block.size() == 1){
+									allsat.ok&= allsat.enqueue(max);
 								}else{
-									CRef cr = allsat.ca.alloc(learnt_clause, true);
-									allsat.learnts.push(cr);
+									CRef cr = allsat.ca.alloc(block, false);
+									allsat.clauses.push(cr);
 									allsat.attachClause(cr);
-									allsat.claBumpActivity(allsat.ca[cr]);
+
+									assert(allsat.value(block[0])==l_Undef);
+									allsat.uncheckedEnqueue(block[0], cr);
+								}
+							}else{
+								//solver is in conflict...
+								CRef confl = allsat.ca.alloc(block, false);
+								allsat.clauses.push(confl);
+								allsat.attachClause(confl);
+
+								if(allsat.decisionLevel()==0){
+									ret = l_False;//done
+								}else{
 
 
-									allsat.uncheckedEnqueue(learnt_clause[0], cr);
+									 learnt_clause.clear();
+									 int backtrack_level=0;
+									allsat.analyze(confl, learnt_clause, backtrack_level);
+									allsat.cancelUntil(backtrack_level);
+
+									//this is now slightly more complicated, if there are multiple lits implied by the super solver in the current decision level:
+									//The learnt clause may not be asserting.
+
+									if (learnt_clause.size() == 1){
+										allsat.uncheckedEnqueue(learnt_clause[0]);
+									}else{
+										CRef cr = allsat.ca.alloc(learnt_clause, true);
+										allsat.learnts.push(cr);
+										allsat.attachClause(cr);
+										allsat.claBumpActivity(allsat.ca[cr]);
+
+
+										allsat.uncheckedEnqueue(learnt_clause[0], cr);
 
 
 
+									}
 								}
 							}
-        				}
         				}else{
         					allsat.cancelUntil(0);
         					allsat.addClause_(block);
@@ -506,7 +516,11 @@ int main(int argc, char** argv)
         if(ret==l_True){
         	printf("SAT\n");
         }else if(ret==l_False){
-        	printf("UNSAT\n");
+        	if(!has_any_solutions)
+        		printf("UNSAT\n");
+        	else{
+        		printf("SAT\n");
+        	}
         }else{
         	printf("UNKNOWN\n");
         }
