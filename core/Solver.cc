@@ -74,7 +74,7 @@ Solver::Solver() :
   , qhead              (0)
   , simpDB_assigns     (-1)
   , simpDB_props       (0)
-  , order_heap         (VarOrderLt(activity))
+  , order_heap         (VarOrderLt(activity,priority))
   , progress_estimate  (0)
   , remove_satisfied   (true)
 
@@ -114,6 +114,8 @@ Var Solver::newVar(bool sign, bool dvar)
     activity .push(rnd_init_act ? drand(random_seed) * 0.00001 : 0);
     seen     .push(0);
     polarity .push(sign);
+
+    priority.push(0);
     decision .push();
     trail    .capacity(v+1);
     setDecisionVar(v, dvar);
@@ -245,12 +247,14 @@ Lit Solver::pickBranchLit()
             rnd_decisions++; }
 
     // Activity based decision:
-    while (next == var_Undef || value(next) != l_Undef || !decision[next])
+    while (next == var_Undef || value(next) != l_Undef || !decision[next]){
         if (order_heap.empty()){
             next = var_Undef;
             break;
-        }else
+        }else{
             next = order_heap.removeMin();
+        }
+    }
 
     return next == var_Undef ? lit_Undef : mkLit(next, rnd_pol ? drand(random_seed) < 0.5 : polarity[next]);
 }

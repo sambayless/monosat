@@ -232,13 +232,24 @@ public:
         WatcherDeleted(const ClauseAllocator& _ca) : ca(_ca) {}
         bool operator()(const Watcher& w) const { return ca[w.cref].mark() == 1; }
     };
-
+/*
     struct VarOrderLt {
         const vec<double>&  activity;
         bool operator () (Var x, Var y) const { return activity[x] > activity[y]; }
         VarOrderLt(const vec<double>&  act) : activity(act) { }
-    };
-
+    };*/
+    struct VarOrderLt {
+	   const vec<double>&  activity;
+	   const vec<int> &  priority;
+	   bool operator () (Var x, Var y) const {
+		if (priority[x] == priority[y])
+			return activity[x] > activity[y];
+		else{
+			return priority[x]>priority[y];
+		}
+	   }
+	   VarOrderLt(const vec<double>&  act,const vec<int>&  pri) : activity(act),priority(pri) { }
+   };
     // Solver state:
     //
     bool                ok;               // If FALSE, the constraints are already unsatisfiable. No part of the solver state may be used!
@@ -246,6 +257,7 @@ public:
     vec<CRef>           learnts;          // List of learnt clauses.
     double              cla_inc;          // Amount to bump next clause with.
     vec<double>         activity;         // A heuristic measurement of the activity of a variable.
+    vec<int>			priority;		  // Static, lexicographic heuristic. Variables with higher priority are decided first
     double              var_inc;          // Amount to bump next variable with.
     OccLists<Lit, vec<Watcher>, WatcherDeleted>
                         watches;          // 'watches[lit]' is a list of constraints watching 'lit' (will go there if literal becomes true).
@@ -401,7 +413,11 @@ public:
         	return v>=min_super  && v <= max_super;
         }
 
-  
+        void setDecisionPriority(Var v,unsigned int p){
+        	assert(value(v)==l_Undef);
+        	priority[v]=p;
+        	order_heap.update(v);
+        }
 };
 
 

@@ -307,6 +307,9 @@ int main(int argc, char** argv)
 						c.excludeFromCover(allsatvec[i],false);
 						allsat_map.growTo(allsatvec[i]+1);
 						allsat_map[allsatvec[i]]=allsatvec[i];
+						if(opt_decide_allsat_first){
+							allsat.setDecisionPriority(allsatvec[i],1);
+						}
 					}
 				}
 
@@ -464,21 +467,21 @@ int main(int argc, char** argv)
         		printf("Learned %ld blocking clauses.\n",n_blocking_clauses);
         		printf("Avg. blocking clause length: %f\n",total_clause_length/((double)n_blocking_clauses));
 
-
-        		if(opt_subsume){
-        			Subsume subsume;
-        			subsume.setNumVars(S.nVars());
-        			printf("Checking for subsumed clauses...\n");
-        			subsume.checkAll(S.interpolant);
-        		}
-
-        		long total_int_clause_length = 0;
-        		int n_int_clauses =0;
-        		for(int i = 0;i<S.interpolant.size();i++){
-        			n_int_clauses++;
-        			total_int_clause_length+= S.interpolant[i].size();
-        		}
         		if(opt_interpolate){
+					if(opt_subsume){
+						Subsume subsume;
+						subsume.setNumVars(S.nVars());
+						printf("Checking for subsumed clauses...\n");
+						subsume.checkAll(S.interpolant);
+					}
+
+					long total_int_clause_length = 0;
+					int n_int_clauses =0;
+					for(int i = 0;i<S.interpolant.size();i++){
+						n_int_clauses++;
+						total_int_clause_length+= S.interpolant[i].size();
+					}
+
         			printf("# Interpolants: %d\n", S.interpolant.size());
         			printf("Avg. interpolant clause length: %f\n",total_int_clause_length/((double)n_int_clauses));
         		}
