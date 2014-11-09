@@ -882,6 +882,19 @@ lbool Solver::search(int nof_conflicts)
             //this is now slightly more complicated, if there are multiple lits implied by the super solver in the current decision level:
             //The learnt clause may not be asserting.
 
+            if (--learntsize_adjust_cnt == 0){
+            	//when making many calls to solve(), it is important that this is checked _before_ returning, otherwise the maximum number of learnt clauses may never increase.
+				 learntsize_adjust_confl *= learntsize_adjust_inc;
+				 learntsize_adjust_cnt    = (int)learntsize_adjust_confl;
+				 max_learnts             *= learntsize_inc;
+
+				 if (verbosity >= 1)
+					 printf("| %9d | %7d %8d %8d | %8d %8d %6.0f | %6.3f %% |\n",
+							(int)conflicts,
+							(int)dec_vars - (trail_lim.size() == 0 ? trail.size() : trail_lim[0]), nClauses(), (int)clauses_literals,
+							(int)max_learnts, nLearnts(), (double)learnts_literals/nLearnts(), progressEstimate()*100);
+			 }
+
             if (learnt_clause.size() == 1){
                 uncheckedEnqueue(learnt_clause[0]);
             }else{
@@ -907,17 +920,7 @@ lbool Solver::search(int nof_conflicts)
             varDecayActivity();
             claDecayActivity();
 
-            if (--learntsize_adjust_cnt == 0){
-                learntsize_adjust_confl *= learntsize_adjust_inc;
-                learntsize_adjust_cnt    = (int)learntsize_adjust_confl;
-                max_learnts             *= learntsize_inc;
 
-                if (verbosity >= 1)
-                    printf("| %9d | %7d %8d %8d | %8d %8d %6.0f | %6.3f %% |\n", 
-                           (int)conflicts, 
-                           (int)dec_vars - (trail_lim.size() == 0 ? trail.size() : trail_lim[0]), nClauses(), (int)clauses_literals, 
-                           (int)max_learnts, nLearnts(), (double)learnts_literals/nLearnts(), progressEstimate()*100);
-            }
 
         }else{
             if(opt_subsearch==0 &&  decisionLevel()< initial_level){
@@ -1060,10 +1063,10 @@ lbool Solver::solve_()
     solves++;
    // if(first_solve){
 		first_solve=false;
-		max_learnts               =( nClauses() * learntsize_factor) +1;
+		max_learnts               =( nTotalClauses() * learntsize_factor) +1000;
 		learntsize_adjust_confl   = learntsize_adjust_start_confl;
 		learntsize_adjust_cnt     = (int)learntsize_adjust_confl;
-    //}
+   // }
     lbool   status            = l_Undef;
 /*
     if (verbosity >= 1){
