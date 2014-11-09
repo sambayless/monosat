@@ -142,6 +142,7 @@ int main(int argc, char** argv)
         // Extra options:
         //
         IntOption    verb   ("MAIN", "verb",   "Verbosity level (0=silent, 1=some, 2=more).", 1, IntRange(0, 2));
+        IntOption    solver_verb   ("MAIN", "solver-verb",   "Verbosity level (0=silent, 1=some, 2=more).", 0, IntRange(0, 2));
         IntOption    cpu_lim("MAIN", "cpu-lim","Limit on CPU time allowed in seconds.\n", INT32_MAX, IntRange(0, INT32_MAX));
         IntOption    mem_lim("MAIN", "mem-lim","Limit on memory usage in megabytes.\n", INT32_MAX, IntRange(0, INT32_MAX));
         
@@ -190,7 +191,7 @@ int main(int argc, char** argv)
         Solver S;
 
 
-	   S.verbosity = 0;
+	   S.verbosity = solver_verb;
 	   S.use_model=false;
 	   solver = &S;
         if (S.verbosity > 0){
@@ -411,7 +412,7 @@ int main(int argc, char** argv)
 									allsat.ok&= allsat.enqueue(max);
 								}else{
 									CRef cr = allsat.ca.alloc(block, false);
-									allsat.clauses.push(cr);
+									allsat.blocking_clauses.push(cr);
 									allsat.attachClause(cr);
 
 									assert(allsat.value(block[0])==l_Undef);
@@ -420,7 +421,7 @@ int main(int argc, char** argv)
 							}else{
 								//solver is in conflict...
 								CRef confl = allsat.ca.alloc(block, false);
-								allsat.clauses.push(confl);
+								allsat.blocking_clauses.push(confl);
 								allsat.attachClause(confl);
 
 								if(allsat.decisionLevel()==0){
@@ -466,7 +467,9 @@ int main(int argc, char** argv)
 
         		printf("Learned %ld blocking clauses.\n",n_blocking_clauses);
         		printf("Avg. blocking clause length: %f\n",total_clause_length/((double)n_blocking_clauses));
-
+        		printf("# Decisions %d, # conflicts %d\n", allsat.decisions, allsat.conflicts);
+        		if(opt_allsat_modsat)
+        			printf("Subsolver: # Decisions %d, # conflicts %d\n", S.decisions, S.conflicts);
         		if(opt_interpolate){
 					if(opt_subsume){
 						Subsume subsume;

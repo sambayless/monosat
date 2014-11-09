@@ -254,6 +254,7 @@ public:
     //
     bool                ok;               // If FALSE, the constraints are already unsatisfiable. No part of the solver state may be used!
     vec<CRef>           clauses;          // List of problem clauses.
+    vec<CRef> 			blocking_clauses;
     vec<CRef>           learnts;          // List of learnt clauses.
     double              cla_inc;          // Amount to bump next clause with.
     vec<double>         activity;         // A heuristic measurement of the activity of a variable.
@@ -480,7 +481,7 @@ inline lbool    Solver::value         (Lit p) const   { return assigns[var(p)] ^
 inline lbool    Solver::modelValue    (Var x) const   { assert(use_model); return model[x]; }
 inline lbool    Solver::modelValue    (Lit p) const   { assert(use_model); return model[var(p)] ^ sign(p); }
 inline int      Solver::nAssigns      ()      const   { return trail.size(); }
-inline int      Solver::nClauses      ()      const   { return clauses.size(); }
+inline int      Solver::nClauses      ()      const   { return clauses.size()+blocking_clauses.size(); }
 inline int      Solver::nLearnts      ()      const   { return learnts.size(); }
 inline int      Solver::nVars         ()      const   { return vardata.size(); }
 inline int      Solver::nFreeVars     ()      const   { return (int)dec_vars - (trail_lim.size() == 0 ? trail.size() : trail_lim[0]); }

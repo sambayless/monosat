@@ -794,8 +794,11 @@ bool Solver::simplify()
 
     // Remove satisfied clauses:
     removeSatisfied(learnts);
-    if (remove_satisfied)        // Can be turned off.
+    if (remove_satisfied){        // Can be turned off.
         removeSatisfied(clauses);
+        removeSatisfied(blocking_clauses);
+
+    }
     checkGarbage();
     rebuildOrderHeap();
 
@@ -1055,18 +1058,20 @@ lbool Solver::solve_()
     if (!ok) return l_False;
 
     solves++;
-    first_solve=false;
-    max_learnts               = nClauses() * learntsize_factor;
-    learntsize_adjust_confl   = learntsize_adjust_start_confl;
-    learntsize_adjust_cnt     = (int)learntsize_adjust_confl;
+   // if(first_solve){
+		first_solve=false;
+		max_learnts               =( nClauses() * learntsize_factor) +1;
+		learntsize_adjust_confl   = learntsize_adjust_start_confl;
+		learntsize_adjust_cnt     = (int)learntsize_adjust_confl;
+    //}
     lbool   status            = l_Undef;
-
+/*
     if (verbosity >= 1){
         printf("============================[ Search Statistics ]==============================\n");
         printf("| Conflicts |          ORIGINAL         |          LEARNT          | Progress |\n");
         printf("|           |    Vars  Clauses Literals |    Limit  Clauses Lit/Cl |          |\n");
         printf("===============================================================================\n");
-    }
+    }*/
     initial_level=0;
     track_min_level=0;
     // Search:
@@ -1078,9 +1083,14 @@ lbool Solver::solve_()
         curr_restarts++;
     }
 
-    if (verbosity >= 1)
+ /*   if (verbosity >= 1)
         printf("===============================================================================\n");
-
+*/
+    if (verbosity >= 1)
+		printf("| %9d | %7d %8d %8d | %8d %8d %6.0f | %6.3f %% |\n",
+			   (int)conflicts,
+			   (int)dec_vars - (trail_lim.size() == 0 ? trail.size() : trail_lim[0]), nClauses(), (int)clauses_literals,
+			   (int)max_learnts, nLearnts(), (double)learnts_literals/nLearnts(), progressEstimate()*100);
 
     if (status == l_True){
     	if(use_model){
@@ -1265,6 +1275,10 @@ void Solver::relocAll(ClauseAllocator& to)
     //
     for (int i = 0; i < clauses.size(); i++)
         ca.reloc(clauses[i], to);
+
+    for (int i = 0; i < blocking_clauses.size(); i++)
+		ca.reloc(blocking_clauses[i], to);
+
 }
 
 
