@@ -55,11 +55,12 @@ class DynamicGraph{
 	bool is_changed;
 
 public:
-	int historyClearInterval=1000;
+	bool adaptive_history_clear=false;
+	long historyClearInterval=1000;
 	int modifications;
 	int additions;
 	int deletions;
-	int historyclears;
+	long historyclears;
 
 
 	struct Edge{
@@ -97,7 +98,7 @@ public:
 	FILE * outfile;
 #endif
 public:
-	DynamicGraph():num_nodes(0),num_edges(0),modifications(0),additions(0),deletions(0),historyclears(0),next_id(0),is_changed(true){
+	DynamicGraph():num_nodes(0),num_edges(0),next_id(0),modifications(0),additions(0),deletions(0),historyclears(0),is_changed(true){
 		//allocated=true;
 #ifdef RECORD
 		outfile=nullptr;
@@ -142,7 +143,7 @@ public:
 		additions=modifications;
 		deletions=modifications;
 		markChanged();
-		clearHistory();
+		clearHistory(true);
 #ifdef RECORD
 			if(outfile){
 				fprintf(outfile,"node %d\n",num_nodes);
@@ -193,6 +194,7 @@ public:
 		modifications++;
 		additions=modifications;
 		markChanged();
+
 #ifdef RECORD
 			if(outfile){
 				fprintf(outfile,"edge %d %d %d %d\n",from,to,1, id+1);
@@ -411,8 +413,10 @@ public:
 		return modifications;
 	}
 
-	void clearHistory(){
-		if(history.size()> historyClearInterval){//std::max(1000,historyClearInterval*edges())){
+	void clearHistory(bool forceClear=false){
+		//long expect=std::max(1000,historyClearInterval*edges());
+		if( history.size() &&
+				( forceClear || (  history.size()> (adaptive_history_clear?  std::max(1000L,historyClearInterval*edges()) :  historyClearInterval)))){//){
 			history.clear();
 			historyclears++;
 #ifdef RECORD
@@ -431,10 +435,10 @@ public:
 		deletions=modifications;
 		is_changed=true;
 #ifdef RECORD
-			if(outfile){
-				fprintf(outfile,"invalidate\n");
-				fflush(outfile);
-			}
+		if(outfile){
+			fprintf(outfile,"invalidate\n");
+			fflush(outfile);
+		}
 #endif
 	}
 

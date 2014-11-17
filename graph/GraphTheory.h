@@ -255,10 +255,19 @@ public:
 				cutGraph.outfile=fopen(t,"w");
 			}
 #endif
-			g.historyClearInterval=opt_history_clear;
-			antig.historyClearInterval=opt_history_clear;
-			cutGraph.historyClearInterval=opt_history_clear;
 
+			if(opt_adaptive_history_clear>0){
+				g.adaptive_history_clear=true;
+				antig.adaptive_history_clear=true;
+				cutGraph.adaptive_history_clear=true;
+				g.historyClearInterval=opt_adaptive_history_clear;
+				antig.historyClearInterval=opt_adaptive_history_clear;
+				cutGraph.historyClearInterval=opt_adaptive_history_clear;
+			}else{
+				g.historyClearInterval=opt_history_clear;
+				antig.historyClearInterval=opt_history_clear;
+				cutGraph.historyClearInterval=opt_history_clear;
+			}
 			local_q=0;
 			theory_index=0;
 			mctime=0;
@@ -313,7 +322,7 @@ public:
 				d->printStats();
 		}
 
-		printf("Graph stats:\n");
+		printf("Graph %d stats:\n", getGraphID());
 /*		printf("Decision Time: %f\n", stats_decision_time);
 		printf("Prop Time: %f (initial: %f)\n", propagationtime,stats_initial_propagation_time);
 		printf("Conflict Time: %f (initial: %f)\n", stats_reason_time,stats_reason_initial_time);*/
@@ -323,11 +332,13 @@ public:
 		printf("Path Time: %f (#Paths: %d, AvgLength %f, total: %d)\n", pathtime, num_learnt_paths, (learnt_path_clause_length /  ((float) num_learnt_paths+1)),learnt_path_clause_length);
 		printf("Min-cut Time: %f (%d calls, %f average, #Cuts: %d, AvgLength %f, total: %d)\n", mctime, stats_mc_calls,(mctime/(stats_mc_calls ? stats_mc_calls:1)),  num_learnt_cuts, (learnt_cut_clause_length /  ((float) num_learnt_cuts+1)),learnt_cut_clause_length);
 */
-
+		printf("%d nodes, %d edges\n", g.nodes(),g.edges());
 		printf("Propagations: %ld (%f s, avg: %f s, %ld skipped)\n",stats_propagations ,propagationtime, (propagationtime)/((double)stats_propagations+1),stats_propagations_skipped);
 		printf("Decisions: %ld (%f s, avg: %f s)\n",stats_decisions,stats_decision_time, (stats_decision_time)/((double)stats_decisions+1));
 		printf("Conflicts: %ld\n",stats_num_conflicts);
 		printf("Reasons: %ld (%f s, avg: %f s)\n",stats_num_reasons,stats_reason_time, (stats_reason_time)/((double)stats_num_reasons+1));
+		printf("History Clears: over_approx %d, under_approx %d, cut_graph %d\n",antig.historyclears,g.historyclears,cutGraph.historyclears);
+
 		fflush(stdout);
 	}
 

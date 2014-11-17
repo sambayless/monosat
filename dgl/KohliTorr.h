@@ -30,7 +30,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "alg/dyncut/graph.h"
 #include "EdmondsKarpDynamic.h"
 #include <algorithm>
-#include "../core/Config.h"
+
 namespace dgl{
 template< class Capacity,typename Weight  >
 class KohliTorr:public MaxFlow<Weight>{

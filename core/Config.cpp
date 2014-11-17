@@ -76,7 +76,7 @@ StringOption Monosat::opt_components_alg(_cat_graph,"components","Select connect
   BoolOption Monosat::opt_conflict_min_cut_maxflow(_cat_graph,"conflict-min-cut-maxflow","Use min-cut (instead of arbitrary cut) for conflict resolution for maximum flow properties",false);
 
 IntOption Monosat::opt_history_clear(_cat_graph,"history-clear","Rate at which the history of dynamic graphs is cleared",1000,IntRange(1, INT32_MAX));
-
+IntOption Monosat::opt_adaptive_history_clear(_cat_graph,"adaptive-history-clear","If >0, ignore the history clear option, and instead set the history clear rate to be this value multiplied by the number of edges in the graph",0,IntRange(0, INT32_MAX));
 BoolOption Monosat::opt_check_solution(_cat_graph,"check-solution","Double check solution",true);
 BoolOption Monosat::opt_print_reach(_cat_graph,"print-reach","Print reachability graphs",false);
 BoolOption Monosat::opt_print_graph(_cat_graph,"print-graph","Print digraph",false);

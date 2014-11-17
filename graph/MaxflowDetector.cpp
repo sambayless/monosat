@@ -110,6 +110,13 @@ LevelDetector(_detectorID),outer(_outer),capacities(capacities),over_graph(_g),g
 
 
 
+
+	if(opt_adaptive_history_clear>0){
+		learn_graph.adaptive_history_clear=true;
+		learn_graph.historyClearInterval=opt_adaptive_history_clear;
+	}else{
+		learn_graph.historyClearInterval=opt_history_clear;
+	}
 #ifdef RECORD
 			{
 				char t[30];
