@@ -185,7 +185,7 @@ void getCover(Solver &S, vec<Lit> & cover)
 					{
 						assert(include[var(l)]);
 						assert(!(in_cover[var(l)]));
-						 potentialCoverLits.push(l);
+						potentialCoverLits.push(l);
 					}
 					 mVarsInUncCls[var(l)].push(i);
 
