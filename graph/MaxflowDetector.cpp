@@ -932,11 +932,15 @@ void MaxflowDetector<Weight>::collectChangedEdges(){
 				if( negative_conflict_detector->getEdgeFlow(edgeid)>0){
 					is_potential_decision[edgeid]=true;
 					if(opt_maxflow_decisions_q==0){
-						potential_decisions.push(edgeid);
+						potential_decisions_q.insertBack(edgeid);
 					}else if(opt_maxflow_decisions_q==1){
 						potential_decisions_q.insert(edgeid);//insertBack
 					}else if(opt_maxflow_decisions_q==2){
 						potential_decisions_q.insert(edgeid);
+					}else if(opt_maxflow_decisions_q==3){
+						potential_decisions_q.insertBack(edgeid);
+					}else if(opt_maxflow_decisions_q==4){
+						potential_decisions_q.insertBack(edgeid);
 					}
 				}
 			}
@@ -1068,7 +1072,7 @@ Lit MaxflowDetector<Weight>::decide(int level){
 #endif
 
 			Lit decision=lit_Undef;
-					if(opt_maxflow_decisions_q==0){
+					/*if(opt_maxflow_decisions_q==0){
 						//should probably look into ordering heuristics for which edge to decide first, here...
 						while(potential_decisions.size()>0){
 							int edgeID = potential_decisions.last();
@@ -1093,14 +1097,19 @@ Lit MaxflowDetector<Weight>::decide(int level){
 								//decideEdge(edgeID,level,false);
 							}
 						}
-					}else{
+					}else{*/
 						//should probably look into ordering heuristics for which edge to decide first, here...
 						while(potential_decisions_q.size()>0){
-							int edgeID = potential_decisions_q.peek();
-							assert(is_potential_decision[edgeID]);
-
-
-							potential_decisions_q.pop();
+							int edgeID;
+							if(opt_maxflow_decisions_q==0){
+								edgeID= potential_decisions_q.peekBack();
+								assert(is_potential_decision[edgeID]);
+								potential_decisions_q.popBack();
+							}else{
+								edgeID= potential_decisions_q.peek();
+								assert(is_potential_decision[edgeID]);
+								potential_decisions_q.pop();
+							}
 							Lit l = mkLit(outer->getEdgeVar(edgeID),false);
 							if(outer->value(l)==l_Undef && over->getEdgeFlow(edgeID)>0){
 								decideEdge(edgeID,level,true);
@@ -1118,7 +1127,7 @@ Lit MaxflowDetector<Weight>::decide(int level){
 								//decideEdge(edgeID,level,false);
 							}
 						}
-					}
+					//}
 #ifndef NDEBUG
 			{
 				bool found=false;

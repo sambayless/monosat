@@ -194,11 +194,15 @@ public:
 			if(negative_detector->getEdgeFlow(edgeID)>0){//this check is optional
 				is_potential_decision[edgeID]=true;
 				if(opt_maxflow_decisions_q==0)
-					potential_decisions.push(edgeID);
+					potential_decisions_q.insertBack(edgeID);
 				else if (opt_maxflow_decisions_q==1){
 					potential_decisions_q.insertBack(edgeID);//insert in LIFO order, no FIFO, because we are unwinding the decisions
-				}else {
+				}else  if (opt_maxflow_decisions_q==2){
 					potential_decisions_q.insert(edgeID);//insert in FIFO order instead
+				}else if (opt_maxflow_decisions_q==3){
+					potential_decisions_q.insertBack(edgeID);//insert in LIFO order, no FIFO, because we are unwinding the decisions
+				}else if (opt_maxflow_decisions_q==4){
+					potential_decisions_q.insert(edgeID);//insert in LIFO order, no FIFO, because we are unwinding the decisions
 				}
 			}else{
 				is_potential_decision[edgeID]=false;//discard this edge from the set of potential decisions
