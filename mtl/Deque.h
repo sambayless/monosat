@@ -69,19 +69,36 @@ public:
     		first=buf.size()-1;
     	if(first==end){
     		//resize
-    		first=old_first;
+    		//first=old_first;
             vec<T>  tmp((buf.size()*3 + 1) >> 1);
+    /*        printf("realloc: first: %d, old_first: %d, end: %d, buf: %d\n",first,old_first,end, buf.size());
+            printf("Before [");
+            for(int i = 0;i<buf.size();i++){
+
+            	printf("%d,",buf[i]);
+            }
+            printf("]\n");*/
             //**/printf("queue alloc: %d elems (%.1f MB)\n", tmp.size(), tmp.size() * sizeof(T) / 1000000.0);
-            int     i = 0;
-            for (int j = first; j < buf.size(); j++) tmp[i++] = buf[j];
-            for (int j = 0    ; j < end       ; j++) tmp[i++] = buf[j];
-
+            int     i = 1;//start allocating at position 1, to leave space for the new element.
+            if(end<=old_first){
+            	for (int j = old_first; j < buf.size(); j++) tmp[i++] = buf[j];
+            	for (int j = 0    ; j < end       ; j++) tmp[i++] = buf[j];
+            }else{
+            	for (int j = old_first; j < end; j++) tmp[i++] = buf[j];
+            }
             end   = buf.size();
-            tmp.moveTo(buf);
 
-        	first--;
-        	if(first<0)
-        		first=buf.size()-1;
+            tmp.moveTo(buf);
+          /*  printf("After [");
+            for(int i = 0;i<buf.size();i++){
+
+             	printf("%d,",buf[i]);
+             }
+             printf("]\n");*/
+
+        	first=0;
+        	//if(first<0)
+        	//	first=buf.size()-1;
     	}
         buf[first] = elem;
     }
