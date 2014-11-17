@@ -187,7 +187,7 @@ public:
 			if(edgeID==34){
 				int a=1;
 			}
-			assert(!is_potential_decision[edgeID]);
+			//assert(!is_potential_decision[edgeID]);
 			assert(!potential_decisions.contains(edgeID));
 			assert(!potential_decisions_q.contains(edgeID));
 			//this check is optional

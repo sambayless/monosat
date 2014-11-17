@@ -109,7 +109,15 @@ public:
     	}
     	return false;
     }
-
+    int count(const T& element)const{
+    	int c = 0;
+      	for(int i = 0;i<size();i++){
+      		if(data[i]==element){
+      			c++;
+      		}
+      	}
+      	return c;
+      }
     //remove all instances of the given element, if it exists
     bool remove(const T& element){
     	int i,j=0;
