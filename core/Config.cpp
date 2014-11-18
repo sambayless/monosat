@@ -122,7 +122,7 @@ BoolOption Monosat::opt_ignore_theories(_cat_graph,"ignore-theories","",false);
 
 BoolOption Monosat::opt_decide_graph_chokepoints(_cat_graph,"decide-graph-chokepoints","",false);
 IntOption Monosat::opt_sort_graph_decisions(_cat_graph,"decide-graph-sort","0=dont sort, 1=sort by shortest, 2=sort by longest",0,IntRange(0,2));
-BoolOption Monosat::opt_rnd_order_graph_decisions(_cat_graph,"decide-graph-rnd-order","",false);
+BoolOption Monosat::opt_rnd_order_graph_decisions(_cat_graph,"decide-graph-rnd-order","",true);
 
 
 BoolOption Monosat::opt_detect_pure_lits(_cat,"detect-pure-lits","Detect pure literals in the main solver (only during simplification, not during search)",false);
