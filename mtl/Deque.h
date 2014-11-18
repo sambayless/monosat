@@ -69,10 +69,12 @@ public:
     		first=buf.size()-1;
     	if(first==end){
     		//resize
-    		//first=old_first;
+    		first=old_first;
+    		int sz = size();
+    		//
             vec<T>  tmp((buf.size()*3 + 1) >> 1);
-    /*        printf("realloc: first: %d, old_first: %d, end: %d, buf: %d\n",first,old_first,end, buf.size());
-            printf("Before [");
+            //printf("realloc: first: %d, old_first: %d, end: %d, buf: %d\n",first,old_first,end, buf.size());
+            /*      printf("Before [");
             for(int i = 0;i<buf.size();i++){
 
             	printf("%d,",buf[i]);
@@ -80,14 +82,18 @@ public:
             printf("]\n");*/
             //**/printf("queue alloc: %d elems (%.1f MB)\n", tmp.size(), tmp.size() * sizeof(T) / 1000000.0);
             int     i = 1;//start allocating at position 1, to leave space for the new element.
-            if(end<=old_first){
+            for(int j = 0;j<sz;j++){
+            	tmp[i++] = buf[(j+old_first) % buf.size()];
+            }
+          /*  if(end<=old_first){
             	for (int j = old_first; j < buf.size(); j++) tmp[i++] = buf[j];
             	for (int j = 0    ; j < end       ; j++) tmp[i++] = buf[j];
             }else{
             	for (int j = old_first; j < end; j++) tmp[i++] = buf[j];
-            }
-            end   = buf.size();
-
+            }*/
+            end   = i;//because we are about to add one element
+            first=0;
+            assert(i==sz+1);
             tmp.moveTo(buf);
           /*  printf("After [");
             for(int i = 0;i<buf.size();i++){
@@ -95,8 +101,7 @@ public:
              	printf("%d,",buf[i]);
              }
              printf("]\n");*/
-
-        	first=0;
+        	assert(size()==sz+1);
         	//if(first<0)
         	//	first=buf.size()-1;
     	}
@@ -115,6 +120,21 @@ public:
       			pos=0;
       	}
       	return false;
+      }
+
+    int count(const T& element)const{
+    	int c = 0;
+    	int i =0;
+    	int pos = first;
+      	for(i = 0;i<size();i++){
+      		if(buf[pos]==element){
+      			c++;
+      		}
+      		pos++;
+      		if(pos==buf.size())
+      			pos=0;
+      	}
+      	return c;
       }
 
 };

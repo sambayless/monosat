@@ -122,7 +122,7 @@ BoolOption Monosat::opt_ignore_theories(_cat_graph,"ignore-theories","",false);
 
 BoolOption Monosat::opt_decide_graph_chokepoints(_cat_graph,"decide-graph-chokepoints","",false);
 IntOption Monosat::opt_sort_graph_decisions(_cat_graph,"decide-graph-sort","0=dont sort, 1=sort by shortest, 2=sort by longest",0,IntRange(0,2));
-BoolOption Monosat::opt_rnd_order_graph_decisions(_cat_graph,"decide-graph-rnd-order","",false);
+BoolOption Monosat::opt_rnd_order_graph_decisions(_cat_graph,"decide-graph-rnd-order","",true);
 
 
 BoolOption Monosat::opt_detect_pure_lits(_cat,"detect-pure-lits","Detect pure literals in the main solver (only during simplification, not during search)",false);
@@ -149,7 +149,7 @@ BoolOption Monosat::opt_kt_preserve_order(_cat_graph,"kt-preserve-order","Attemp
 BoolOption Monosat::opt_lazy_maxflow_decisions(_cat_graph,"lazy-maxflow-decisions","",true);
 
 BoolOption Monosat::opt_old_lazy_maxflow_decisions(_cat_graph,"old-lazy-maxflow-decisions","",false);
-IntOption Monosat::opt_maxflow_decisions_q(_cat_graph,"maxflow-decisions-q","Use a FIFO (instead of LIFO) decision order in the maxflow theory",1,IntRange(0,1));
+IntOption Monosat::opt_maxflow_decisions_q(_cat_graph,"maxflow-decisions-q","Use a FIFO (instead of LIFO) decision order in the maxflow theory",1,IntRange(0,4));
 BoolOption Monosat::opt_reach_detector_combined_maxflow(_cat_graph,"reach-combined-maxflow","",false);
 
 
