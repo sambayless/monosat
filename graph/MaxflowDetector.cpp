@@ -54,7 +54,8 @@ LevelDetector(_detectorID),outer(_outer),capacities(capacities),over_graph(_g),g
 		negative_detector = new EdmondsKarpDynamic<std::vector<Weight>,Weight>(_antig,capacities,source,target);
 		positive_conflict_detector =positive_detector;//new EdmondsKarpAdj<std::vector<Weight>,Weight>(_g,capacities);
 		negative_conflict_detector =negative_detector;// new EdmondsKarpAdj<std::vector<Weight>,Weight>(_antig,capacities);
-		learn_cut = new EdmondsKarpDynamic<CutStatus,long>(learn_graph, cutStatus,source,target);
+		if(opt_conflict_min_cut_maxflow)
+			learn_cut = new EdmondsKarpDynamic<CutStatus,long>(learn_graph, cutStatus,source,target);
 
 		/*if(opt_conflict_min_cut_maxflow)
 				learn_cut = new EdmondsKarpAdj<std::vector<int>,int>(learn_graph,learn_caps,source,target);*/
@@ -64,26 +65,21 @@ LevelDetector(_detectorID),outer(_outer),capacities(capacities),over_graph(_g),g
 		positive_conflict_detector = positive_detector;
 		negative_conflict_detector = negative_detector;
 		if(opt_conflict_min_cut_maxflow)
-				learn_cut = new EdmondsKarpAdj<CutStatus,long>(learn_graph, cutStatus,source,target);
-	}/*else if (mincutalg==MinCutAlg::ALG_IBFS){
-		positive_detector = new IBFS(_g);
-		negative_detector = new IBFS(_antig);
-		positive_conflict_detector =new EdmondsKarpAdj<std::vector<Weight>,Weight>(_g,capacities);
-		negative_conflict_detector = new EdmondsKarpAdj<std::vector<Weight>,Weight>(_antig,capacities);
-	}*/else if (mincutalg==MinCutAlg::ALG_DINITZ){
+			learn_cut = new EdmondsKarpAdj<CutStatus,long>(learn_graph, cutStatus,source,target);
+	}else if (mincutalg==MinCutAlg::ALG_DINITZ){
 		positive_detector = new Dinitz<std::vector<Weight>,Weight>(_g,capacities,source,target);
 		negative_detector = new Dinitz<std::vector<Weight>,Weight>(_antig,capacities,source,target);
 		positive_conflict_detector = positive_detector;// new EdmondsKarpAdj<std::vector<Weight>,Weight>(_g,capacities);
 		negative_conflict_detector = negative_detector;//new EdmondsKarpAdj<std::vector<Weight>,Weight>(_antig,capacities);
 		if(opt_conflict_min_cut_maxflow)
-				learn_cut = new Dinitz<CutStatus,long>(learn_graph, cutStatus,source,target);
+			learn_cut = new Dinitz<CutStatus,long>(learn_graph, cutStatus,source,target);
 	}else if (mincutalg==MinCutAlg::ALG_DINITZ_LINKCUT){
 		//link-cut tree currently only supports ints (enforcing this using tempalte specialization...).
 		buildDinitzLinkCut();
 		positive_conflict_detector = new EdmondsKarpAdj<std::vector<Weight>,Weight>(_g,capacities,source,target);
 		negative_conflict_detector = new EdmondsKarpAdj<std::vector<Weight>,Weight>(_antig,capacities,source,target);
 		if(opt_conflict_min_cut_maxflow)
-				learn_cut = new EdmondsKarpAdj<CutStatus,long>(learn_graph, cutStatus,source,target);
+			learn_cut = new EdmondsKarpAdj<CutStatus,long>(learn_graph, cutStatus,source,target);
 	}else if (mincutalg==MinCutAlg::ALG_KOHLI_TORR){
 		positive_detector = new KohliTorr<std::vector<Weight>,Weight>(_g,capacities,source,target,opt_maxflow_backward,opt_kt_preserve_order);
 		negative_detector = new KohliTorr<std::vector<Weight>,Weight>(_antig,capacities,source,target,opt_maxflow_backward,opt_kt_preserve_order);
@@ -97,7 +93,7 @@ LevelDetector(_detectorID),outer(_outer),capacities(capacities),over_graph(_g),g
 			negative_conflict_detector = new EdmondsKarpDynamic<std::vector<Weight>,Weight>(_antig,capacities,source,target);
 		}
 		if(opt_conflict_min_cut_maxflow)
-					learn_cut = new KohliTorr<CutStatus,long>(learn_graph, cutStatus,source,target,opt_kt_preserve_order);
+			learn_cut = new KohliTorr<CutStatus,long>(learn_graph, cutStatus,source,target,opt_kt_preserve_order);
 
 	}else{
 		positive_detector = new EdmondsKarpAdj<std::vector<Weight>,Weight>(_g,capacities,source,target);
@@ -105,18 +101,9 @@ LevelDetector(_detectorID),outer(_outer),capacities(capacities),over_graph(_g),g
 		positive_conflict_detector = positive_detector;
 		negative_conflict_detector = negative_detector;
 		if(opt_conflict_min_cut_maxflow)
-				learn_cut =  new EdmondsKarpAdj<CutStatus,long>(learn_graph, cutStatus,source,target);
+			learn_cut =  new EdmondsKarpAdj<CutStatus,long>(learn_graph, cutStatus,source,target);
 	}
 
-
-
-
-	if(opt_adaptive_history_clear>0){
-		learn_graph.adaptive_history_clear=true;
-		learn_graph.historyClearInterval=opt_adaptive_history_clear;
-	}else{
-		learn_graph.historyClearInterval=opt_history_clear;
-	}
 #ifdef RECORD
 			{
 				char t[30];
@@ -289,28 +276,42 @@ int MaxflowDetector<Weight>::dbg_minconflict(){
 	}
 */
 void bassert(bool condition){
-#ifndef NDEBUG
+//#ifndef NDEBUG
 	assert(condition);
 	if(!condition){
 		exit(3);
 	}
-#endif
+//#endif
 }
 
 template<typename Weight>
 		void MaxflowDetector<Weight>::buildMaxFlowTooLowReason(Weight maxflow,vec<Lit> & conflict){
 			static int it = 0;
 			++it;
-			if(it==338){
+			if(it==136){
 				int a=1;
 			}
 			//printf("%d\n",it);
 			double starttime = rtime(2);
-			if(opt_conflict_min_cut_maxflow){
+			if(opt_conflict_min_cut_maxflow ){
 				Weight foundflow = negative_conflict_detector->maxFlow();
+//#ifndef NDEBUG
+				{
+
+						EdmondsKarpAdj<std::vector<Weight>,Weight> ek(antig,capacities,source,target);
+						std::vector<MaxFlowEdge> tmpcut;
+						Weight tf = ek.maxFlow();
+
+						if(tf != foundflow){
+							exit(3);
+						}
+
+
+					}
+//#endif
 				collectChangedEdges();
 				collectDisabledEdges();
-#ifndef NDEBUG
+//#ifndef NDEBUG
 				for (auto & e:antig.all_edges){
 					int from = e.from;
 					int to = e.to;
@@ -361,13 +362,13 @@ template<typename Weight>
 						bassert(!learn_graph.edgeEnabled(back_edges[e.id*2+1]));
 					}
 				}
-#endif
+//#endif
 
 
 				long f =learn_cut->minCut(cut);
 				learn_graph.clearChanged();
 				learn_graph.clearHistory();
-		/*		if(it>=315){
+				{
 
 					EdmondsKarpAdj<CutStatus,long> ek(learn_graph, cutStatus,source,target);
 					std::vector<MaxFlowEdge> tmpcut;
@@ -376,7 +377,9 @@ template<typename Weight>
 					if(f != tf || cut.size()!= tmpcut.size()){
 						exit(3);
 					}
-				}*/
+					cut.clear();
+
+				}
 				if(f<cutStatus.inf){
 					assert(f<0xF0F0F0); assert(f==cut.size());//because edges are only ever infinity or 1
 					for(int i = 0;i<cut.size();i++){
@@ -960,9 +963,7 @@ void MaxflowDetector<Weight>::collectChangedEdges(){
 			}
 
 			if(opt_conflict_min_cut_maxflow){
-				if(edgeid==34){
-					int a =1;
-				}
+
 				Lit l = mkLit(outer->getEdgeVar(edgeid),false);
 				//maintain the residual graph for conflict analysis
 				lbool val =outer->value(l);
@@ -1116,13 +1117,12 @@ Lit MaxflowDetector<Weight>::decide(int level){
 						//should probably look into ordering heuristics for which edge to decide first, here...
 						while(potential_decisions_q.size()>0){
 							int edgeID;
+							assert(is_potential_decision[edgeID]);
 							if(opt_maxflow_decisions_q==0){
 								edgeID= potential_decisions_q.peekBack();
-								assert(is_potential_decision[edgeID]);
 								potential_decisions_q.popBack();
 							}else{
 								edgeID= potential_decisions_q.peek();
-								assert(is_potential_decision[edgeID]);
 								potential_decisions_q.pop();
 							}
 							Lit l = mkLit(outer->getEdgeVar(edgeID),false);
@@ -1139,7 +1139,6 @@ Lit MaxflowDetector<Weight>::decide(int level){
 							}else{
 								assert(over->getEdgeFlow(edgeID)==0);
 								is_potential_decision[edgeID]=false;
-								//decideEdge(edgeID,level,false);
 							}
 						}
 					//}
