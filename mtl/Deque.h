@@ -73,8 +73,8 @@ public:
     		int sz = size();
     		//
             vec<T>  tmp((buf.size()*3 + 1) >> 1);
-    /*        printf("realloc: first: %d, old_first: %d, end: %d, buf: %d\n",first,old_first,end, buf.size());
-            printf("Before [");
+            //printf("realloc: first: %d, old_first: %d, end: %d, buf: %d\n",first,old_first,end, buf.size());
+            /*      printf("Before [");
             for(int i = 0;i<buf.size();i++){
 
             	printf("%d,",buf[i]);

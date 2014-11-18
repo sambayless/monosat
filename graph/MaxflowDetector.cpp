@@ -920,6 +920,13 @@ void MaxflowDetector<Weight>::collectChangedEdges(){
 		}
 
 		std::vector<int> & changed_edges = negative_conflict_detector->getChangedEdges();
+		if(opt_rnd_order_graph_decisions){
+/*			static vec<int> tmp_changed;
+			tmp_changed.clear();
+			for(int edge:changed_edges):
+				tmp_changed.p*/
+			randomShuffle(rnd_seed,changed_edges);
+		}
 		//for(int j = 0;j<changed_edges.size();j++){
 		//			int edgeid = changed_edges[j];
 		while(changed_edges.size()){
@@ -1003,6 +1010,7 @@ void MaxflowDetector<Weight>::collectChangedEdges(){
 				}
 			}
 		}
+
 		changed_edges.clear();
 		dbg_decisions();
 }
@@ -1116,9 +1124,9 @@ Lit MaxflowDetector<Weight>::decide(int level){
 								decision = l;
 								break;
 							}else if (outer->value(l)==l_True){
-								if(over->getEdgeFlow(edgeID)>0)//this check is optional
+								if(over->getEdgeFlow(edgeID)>0){//this check is optional
 									decideEdge(edgeID,level,true);
-								else{
+								}else{
 									is_potential_decision[edgeID]=false;
 								}
 							}else{

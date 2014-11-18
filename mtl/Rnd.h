@@ -36,6 +36,17 @@ static inline double drand(double& seed)
 // Generate a random integer:
 static inline int irand(double& seed, int size) { return (int)(drand(seed) * size); }
 
+// Randomly shuffle the contents of a vector:
+template<class V>
+static void randomShuffle(double& seed, V& xs)
+{
+    for (int i = 0; i < xs.size(); i++){
+        int pick = i + irand(seed, xs.size() - i);
+        auto tmp = xs[i];
+        xs[i] = xs[pick];
+        xs[pick] = tmp;
+    }
+}
 
 // Randomly shuffle the contents of a vector:
 template<class T>
