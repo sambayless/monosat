@@ -52,6 +52,7 @@ public:
     Weight INF;
 
     std::vector<int> Q;
+    std::vector<bool> changed;
 
     Weight  BreadthFirstSearch(int s, int t){
      	for(int i = 0;i<g.nodes();i++)
@@ -158,8 +159,23 @@ public:
      	return changed_edges;
      }
      void clearChangedEdges(){
-
+    	 for(int edgeID:changed_edges){
+    		 assert(changed[edgeID]);
+    		 changed[edgeID]=false;
+    	 }
+    	 changed_edges.clear();
      }
+
+
+private:
+
+     void markChanged(int edgeID){
+    	 if(!changed[edgeID]){
+    		 changed[edgeID]=true;
+    		 changed_edges.push_back(edgeID);
+    	 }
+     }
+public:
      void setSource(int s){
      	if(source==s){
      		return;
@@ -228,7 +244,7 @@ public:
        	F.resize(g.nodes());
        	P.resize(g.nodes());
        	M.resize(g.nodes());
-
+       	changed.resize(g.nEdgeIDs());
        	for(int i = 0;i<g.nodes();i++){
        		P[i]=-1;
        		M[i]=0;

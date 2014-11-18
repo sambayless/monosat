@@ -184,14 +184,12 @@ public:
 
 			assert(outer->isEdgeVar(var(l)));
 			int edgeID = outer->getEdgeID(var(l));
-			if(edgeID==34){
-				int a=1;
-			}
+
 			//assert(!is_potential_decision[edgeID]);
 			assert(!potential_decisions.contains(edgeID));
 			assert(!potential_decisions_q.contains(edgeID));
-			//this check is optional
-			if(negative_detector->getEdgeFlow(edgeID)>0){//this check is optional
+			//this check is optional, but if used, must use the _conflict_ detector (to match the decisions, which are also using the conflict detector).
+			if(negative_conflict_detector->getEdgeFlow(edgeID)>0){//this check is optional
 				is_potential_decision[edgeID]=true;
 				if(opt_maxflow_decisions_q==0)
 					potential_decisions_q.insertBack(edgeID);

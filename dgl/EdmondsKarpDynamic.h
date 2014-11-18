@@ -54,6 +54,8 @@ class EdmondsKarpDynamic:public MaxFlow<Weight>{
     int last_history_clear;
     std::vector<LocalEdge> prev;
     std::vector<Weight> M;
+    std::vector<int> changed_edges;
+    std::vector<bool> changed;
     DynamicGraph& g;
     Capacity & capacity;
     bool allow_flow_cycles=false;
@@ -230,6 +232,7 @@ public:
         }else if (last_modification<=0 || g.historyclears!=last_history_clear  || g.changed()){
         	F.clear();
         	F.resize(g.all_edges.size());
+        	changed.resize(g.nEdgeIDs());
 			prev.resize(g.nodes());
 			M.resize(g.nodes());
 			f=0;
@@ -297,6 +300,7 @@ public:
     						//f-=flow;//this doesn't work
     					}
     					F[edgeid]=0;
+    					markChanged(edgeid);
     				}
     			}
     		}
@@ -379,15 +383,27 @@ public:
 		last_history_clear=g.historyclears;
         return f;
     }
-    std::vector<int> changed_edges;
+
     std::vector<int> &  getChangedEdges(){
      	return changed_edges;
      }
      void clearChangedEdges(){
-
+    	 for(int edgeID:changed_edges){
+    		 assert(changed[edgeID]);
+    		 changed[edgeID]=false;
+    	 }
+    	 changed_edges.clear();
      }
 
+
 private:
+
+     void markChanged(int edgeID){
+    	 if(!changed[edgeID]){
+    		 changed[edgeID]=true;
+    		 changed_edges.push_back(edgeID);
+    	 }
+     }
 
     Weight maxFlow_residual(int s, int t, Weight & bound){
 /*
@@ -437,8 +453,10 @@ private:
     				int id = prev[v].id;
     				if(prev[v].backward){
     					F[id] = F[id] - m;
-    				}else
+    				}else{
     					F[id] = F[id] + m;
+    				}
+    				markChanged(id);
     			/*	if(rev[id]>-1){
     					F[rev[id]]-=m;
     				}*/
@@ -492,6 +510,7 @@ private:
 						F[rev[id]]-=m;
 					}*/
 				}
+				markChanged(id);
 				assert(F[id]<= capacity[id]);
 			   // F[v][u] = F[v][u] - m;
 				v = u;
@@ -697,6 +716,7 @@ private:
 								F[rev[id]]-=m;
 							}*/
     					}
+    					markChanged(id);
         				assert(id>=0);
         				assert(id<F.size());
         				assert(id<capacity.size());
@@ -835,15 +855,15 @@ public:
     	return f;
     }
     const Weight getEdgeCapacity(int id){
-     	assert(g.edgeEnabled(id));
+     	//assert(g.edgeEnabled(id));
      	return capacity[id];
      }
     const Weight getEdgeFlow(int id){
-    	assert(g.edgeEnabled(id));
+    	//assert(g.edgeEnabled(id));
     	return F[id];// reserve(id);
     }
     const Weight getEdgeResidualCapacity(int id){
-    	assert(g.edgeEnabled(id));
+    	//assert(g.edgeEnabled(id));
     	return  capacity[id]-F[id];// reserve(id);
     }
 };

@@ -59,6 +59,7 @@ public:
     //std::vector<int> M;
     std::vector<int> dist;
     std::vector<int> pos;//position in the combined forward and backward adjacency list of each node in the DFS.
+    std::vector<bool> changed;
     DynamicGraph& g;
     Capacity & capacity;
     int INF;
@@ -826,9 +827,24 @@ public:
    std::vector<int> &  getChangedEdges(){
     	return changed_edges;
     }
-    void clearChangedEdges(){
+     void clearChangedEdges(){
+    	 for(int edgeID:changed_edges){
+    		 assert(changed[edgeID]);
+    		 changed[edgeID]=false;
+    	 }
+    	 changed_edges.clear();
+     }
 
-    }
+
+private:
+
+     void markChanged(int edgeID){
+    	 if(!changed[edgeID]){
+    		 changed[edgeID]=true;
+    		 changed_edges.push_back(edgeID);
+    	 }
+     }
+public:
     void setSource(int s){
       	if(source==s){
       		return;
@@ -858,7 +874,8 @@ public:
       	src=s;
       	dst=t;
     	F.clear();
-    	F.resize(g.all_edges.size());
+    	F.resize(g.nEdgeIDs());
+    	changed.resize(g.nEdgeIDs());
     	dist.clear();
     	dist.resize(g.nodes());
     	f=0;

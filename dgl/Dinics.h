@@ -57,7 +57,7 @@ public:
     std::vector<Weight> M;
     std::vector<int> dist;
     std::vector<int> pos;//position in the combined forward and backward adjacency list of each node in the DFS.
-
+    std::vector<bool> changed;
     DynamicGraph& g;
     Capacity & capacity;
     Weight INF;
@@ -357,8 +357,23 @@ public:
      	return changed_edges;
      }
      void clearChangedEdges(){
-
+    	 for(int edgeID:changed_edges){
+    		 assert(changed[edgeID]);
+    		 changed[edgeID]=false;
+    	 }
+    	 changed_edges.clear();
      }
+
+
+private:
+
+     void markChanged(int edgeID){
+    	 if(!changed[edgeID]){
+    		 changed[edgeID]=true;
+    		 changed_edges.push_back(edgeID);
+    	 }
+     }
+public:
      void setSource(int s){
        	if(source==s){
        		return;
@@ -384,9 +399,9 @@ public:
 
 
       	if(last_modification>0 && g.modifications==last_modification){
+			return curflow;
+		}
 
-        			return curflow;
-        		}
       	src=s;
       	dst=t;
     	F.clear();
@@ -395,6 +410,7 @@ public:
     	dist.resize(g.nodes());
     	M.resize(g.nodes());
     	prev.resize(g.nodes());
+    	changed.resize(g.nEdgeIDs());
     	f=0;
     	dbg_print_graph(s,t);
 		while (buildLevelGraph(s,t)) {

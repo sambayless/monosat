@@ -54,6 +54,7 @@ public:
     int last_history_clear;
     std::vector<LocalEdge> prev;
     std::vector<Weight> M;
+    std::vector<bool> changed;
     DynamicGraph& g;
     Capacity & capacity;
     Weight INF;
@@ -200,9 +201,23 @@ public:
      	return changed_edges;
      }
      void clearChangedEdges(){
-
+    	 for(int edgeID:changed_edges){
+    		 assert(changed[edgeID]);
+    		 changed[edgeID]=false;
+    	 }
+    	 changed_edges.clear();
      }
 
+
+private:
+
+     void markChanged(int edgeID){
+    	 if(!changed[edgeID]){
+    		 changed[edgeID]=true;
+    		 changed_edges.push_back(edgeID);
+    	 }
+     }
+public:
     const Weight maxFlow(){
     	return this->maxFlow(source,sink);
     }
@@ -256,7 +271,7 @@ public:
     			}
     		}
     	}*/
-
+      	changed.resize(g.nEdgeIDs());
     	F.clear();
     	F.resize(g.all_edges.size());
     	prev.resize(g.nodes());
@@ -284,6 +299,7 @@ public:
 					F[id] = F[id] - m;
 				}else
 					F[id] = F[id] + m;
+    			markChanged(id);
                 v = u;
             }
 

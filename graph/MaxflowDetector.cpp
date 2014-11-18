@@ -276,12 +276,12 @@ int MaxflowDetector<Weight>::dbg_minconflict(){
 	}
 */
 void bassert(bool condition){
-//#ifndef NDEBUG
+#ifndef NDEBUG
 	assert(condition);
 	if(!condition){
 		exit(3);
 	}
-//#endif
+#endif
 }
 
 template<typename Weight>
@@ -295,23 +295,23 @@ template<typename Weight>
 			double starttime = rtime(2);
 			if(opt_conflict_min_cut_maxflow ){
 				Weight foundflow = negative_conflict_detector->maxFlow();
-//#ifndef NDEBUG
-				{
 
-						EdmondsKarpAdj<std::vector<Weight>,Weight> ek(antig,capacities,source,target);
-						std::vector<MaxFlowEdge> tmpcut;
-						Weight tf = ek.maxFlow();
+			/*	{
 
-						if(tf != foundflow){
-							exit(3);
-						}
+				EdmondsKarpAdj<std::vector<Weight>,Weight> ek(antig,capacities,source,target);
+				std::vector<MaxFlowEdge> tmpcut;
+				Weight tf = ek.maxFlow();
+
+				if(tf != foundflow){
+					exit(3);
+				}
 
 
-					}
-//#endif
+			}*/
+
 				collectChangedEdges();
 				collectDisabledEdges();
-//#ifndef NDEBUG
+#ifndef NDEBUG
 				for (auto & e:antig.all_edges){
 					int from = e.from;
 					int to = e.to;
@@ -362,13 +362,13 @@ template<typename Weight>
 						bassert(!learn_graph.edgeEnabled(back_edges[e.id*2+1]));
 					}
 				}
-//#endif
+#endif
 
 
 				long f =learn_cut->minCut(cut);
 				learn_graph.clearChanged();
 				learn_graph.clearHistory();
-				{
+/*				{
 
 					EdmondsKarpAdj<CutStatus,long> ek(learn_graph, cutStatus,source,target);
 					std::vector<MaxFlowEdge> tmpcut;
@@ -377,9 +377,9 @@ template<typename Weight>
 					if(f != tf || cut.size()!= tmpcut.size()){
 						exit(3);
 					}
-					cut.clear();
 
-				}
+
+				}*/
 				if(f<cutStatus.inf){
 					assert(f<0xF0F0F0); assert(f==cut.size());//because edges are only ever infinity or 1
 					for(int i = 0;i<cut.size();i++){
@@ -939,10 +939,8 @@ void MaxflowDetector<Weight>::collectChangedEdges(){
 		}
 		//for(int j = 0;j<changed_edges.size();j++){
 		//			int edgeid = changed_edges[j];
-		while(changed_edges.size()){
-			int edgeid = changed_edges.back();
-
-			changed_edges.pop_back();
+		for(int j = changed_edges.size()-1;j>=0;j--){
+			int edgeid = changed_edges[j];
 
 			if(!is_potential_decision[edgeid]){
 				Lit l = mkLit(outer->getEdgeVar(edgeid),false);
@@ -1019,7 +1017,7 @@ void MaxflowDetector<Weight>::collectChangedEdges(){
 			}
 		}
 
-		changed_edges.clear();
+		negative_conflict_detector->clearChangedEdges();
 		dbg_decisions();
 }
 
@@ -1064,7 +1062,7 @@ void MaxflowDetector<Weight>::dbg_decisions(){
 template<typename Weight>
 Lit MaxflowDetector<Weight>::decide(int level){
 	static int it =0;
-	if(++it==296){
+	if(++it==59){
 		int a=1;
 	}
 	double startdecidetime = rtime(2);
@@ -1078,10 +1076,15 @@ Lit MaxflowDetector<Weight>::decide(int level){
 			{
 				bool found=false;
 				for(int edgeID = 0;edgeID<g.edges();edgeID++){
-					bool hasFlow = over->getEdgeFlow(edgeID)>0;
-					Lit l =mkLit( outer->getEdgeVar(edgeID));
-					if(hasFlow){
-						assert(is_potential_decision[edgeID] || decisions.contains(l));
+					if(edgeID==62){
+						int a=1;
+					}
+					if(g.edgeEnabled(edgeID)){
+						bool hasFlow = over->getEdgeFlow(edgeID)>0;
+						Lit l =mkLit( outer->getEdgeVar(edgeID));
+						if(hasFlow){
+							assert(is_potential_decision[edgeID] || decisions.contains(l));
+						}
 					}
 				}
 			}
@@ -1117,7 +1120,7 @@ Lit MaxflowDetector<Weight>::decide(int level){
 						//should probably look into ordering heuristics for which edge to decide first, here...
 						while(potential_decisions_q.size()>0){
 							int edgeID;
-							assert(is_potential_decision[edgeID]);
+
 							if(opt_maxflow_decisions_q==0){
 								edgeID= potential_decisions_q.peekBack();
 								potential_decisions_q.popBack();
@@ -1125,6 +1128,7 @@ Lit MaxflowDetector<Weight>::decide(int level){
 								edgeID= potential_decisions_q.peek();
 								potential_decisions_q.pop();
 							}
+							assert(is_potential_decision[edgeID]);
 							Lit l = mkLit(outer->getEdgeVar(edgeID),false);
 							if(outer->value(l)==l_Undef && over->getEdgeFlow(edgeID)>0){
 								decideEdge(edgeID,level,true);
@@ -1146,10 +1150,12 @@ Lit MaxflowDetector<Weight>::decide(int level){
 			{
 				bool found=false;
 				for(int edgeID = 0;edgeID<g.edges();edgeID++){
-					bool hasFlow = over->getEdgeFlow(edgeID)>0;
-					Lit l =mkLit( outer->getEdgeVar(edgeID));
-					if(hasFlow){
-						assert(is_potential_decision[edgeID]|| decisions.contains(l));
+					if(g.edgeEnabled(edgeID)){
+						bool hasFlow = over->getEdgeFlow(edgeID)>0;
+						Lit l =mkLit( outer->getEdgeVar(edgeID));
+						if(hasFlow){
+							assert(is_potential_decision[edgeID]|| decisions.contains(l));
+						}
 					}
 				}
 			}

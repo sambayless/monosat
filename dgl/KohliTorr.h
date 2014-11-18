@@ -413,7 +413,7 @@ private:
 
     void dbg_print_graph(int from, int to, bool only_flow=false){
 #ifndef NDEBUG
-
+    	return;
     	if(edge_enabled.size()<g.edges())
     		return;
     		static int it = 0;
