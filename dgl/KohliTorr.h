@@ -203,7 +203,7 @@ public:
 #endif
       	if(last_modification>0 && g.modifications==last_modification){
 #ifdef DEBUG_MAXFLOW
-      		Weight expected_flow =ek.maxFlow();
+      		Weight expected_flow =ek.maxFlow(source,sink);
 #endif
 
 #ifdef DEBUG_MAXFLOW
@@ -351,7 +351,7 @@ public:
 
 
 #ifdef DEBUG_MAXFLOW
-    		Weight expected_flow =ek.maxFlow();
+    		Weight expected_flow =ek.maxFlow(source,sink);
     		bassert(f == expected_flow);
 
 #endif
@@ -415,7 +415,7 @@ private:
 
     void dbg_print_graph(int from, int to, bool only_flow=false){
 #ifndef NDEBUG
-    	return;
+
     	if(edge_enabled.size()<g.edges())
     		return;
     		static int it = 0;
@@ -603,13 +603,14 @@ public:
     	cut.clear();
     	if(f==0)
 			return 0;
+    	dbg_print_graph(s,t);
     	for(int n = 0;n<g.nodes();n++){
     		auto t = kt->what_segment(n,kohli_torr::Graph<Weight,Weight,Weight>::SOURCE);
     		if(t==kohli_torr::Graph<Weight,Weight,Weight>::SINK){
-    			//check to see if any neighbouring edges are in the sink segment.
-    			for(int i = 0;i<g.nIncident(n);i++){
-
-    				auto & e = g.incident(n,i);
+    			//check to see if any neighbouring edges are in the source segment.
+    			for(int i = 0;i<g.nIncoming(n);i++){
+    				//an edge that crosses from the source side into the sink side is on the cut.
+    				auto & e = g.incoming(n,i);
     				if(g.edgeEnabled(e.id)){
     					auto segment = kt->what_segment(e.node,kohli_torr::Graph<Weight,Weight,Weight>::SOURCE);
 						if(segment==kohli_torr::Graph<Weight,Weight,Weight>::SOURCE){
@@ -620,7 +621,7 @@ public:
     			}
     		}
     	}
-    	dbg_print_graph(s,t);
+
     	//kohli-torr is unusual in that it maintains the _mincut_, explicitly.
 
     	/*calc_flow();

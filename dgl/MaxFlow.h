@@ -46,6 +46,11 @@ public:
     const  Weight maxFlow(){
     	return update();
     }
+    virtual const  Weight maxFlow(int from, int to){
+    	setSource(from);
+    	setSink(to);
+    	return maxFlow();
+    }
     virtual const  Weight update()=0;
     virtual int numUpdates()const=0;
     virtual void setSource(int s)=0;
