@@ -480,9 +480,6 @@ void ReachDetector<Weight>::ReachStatus::setReachable(int u, bool reachable){
 				}else{
 					assert(detector.outer->dbg_notreachable( detector.source,u));
 				}
-				if(u==249){
-					int a =1;
-				}
 				if(polarity==reachable && u<detector.reach_lits.size()){
 					Lit l = detector.reach_lits[u];
 					if(l!=lit_Undef && !detector.is_changed[u]){
@@ -695,7 +692,7 @@ template<typename Weight>
 				}else{
 					assert(conflict_flow->getSource()==source);
 					conflict_flow->setSink(node);
-					 f=conflict_flow->minCut(cut);
+					f=conflict_flow->minCut(cut);
 				}
 				assert(f==cut.size());//because edges are only ever infinity or 1
 				assert(f<cutStatus.inf);
@@ -709,7 +706,7 @@ template<typename Weight>
 				}
 			}else{
 				//We could learn an arbitrary (non-infinite) cut here, or just the whole set of false edges
-				//or perhaps we can learn the actual 1-uip cut?
+				//or perhaps we can learn something equivalent to the 1-uip cut?
 
 
 					vec<int>& to_visit  = outer->to_visit;

@@ -12,3 +12,4 @@ Test/*
 graph/resources/*
 /Static
 /DbgRelease
+/Test

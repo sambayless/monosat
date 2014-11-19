@@ -397,7 +397,7 @@ template<typename Weight>
 				}
 			}else*/{
 				//We could learn an arbitrary (non-infinite) cut here, or just the whole set of false edges
-				//or perhaps we can learn the actual 1-uip cut?
+				//or perhaps we can learn something equivalent to the 1-uip cut?
 
 
 					vec<int>& to_visit  = outer->to_visit;

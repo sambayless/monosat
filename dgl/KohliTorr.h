@@ -112,6 +112,7 @@ public:
     		return;
     	}
     	if(kt){
+    		assert(kt->getTweight(source)==max_capacity);
     		if(dynamic){
 				kt->edit_tweights(source,0,0);
 				if(!backward_maxflow){
@@ -138,19 +139,20 @@ public:
 			return;
 		}
     	if(kt){
+    		assert(kt->getTweight(sink)==-max_capacity);
     		if(dynamic){
 				kt->edit_tweights(sink,0,0);
 				if(!backward_maxflow){
-					kt->edit_tweights(t,max_capacity,0);
-				}else{
 					kt->edit_tweights(t,0,max_capacity);
+				}else{
+					kt->edit_tweights(t,max_capacity,0);
 				}
     		}else{
     			kt->edit_tweights_wt(sink,0,0);
-				if(!backward_maxflow){
-					kt->edit_tweights_wt(t,max_capacity,0);
+    			if(!backward_maxflow){
+					kt->edit_tweights(t,0,max_capacity);
 				}else{
-					kt->edit_tweights_wt(t,0,max_capacity);
+					kt->edit_tweights(t,max_capacity,0);
 				}
     		}
     	}
