@@ -131,7 +131,7 @@ public:
 		void collectDisabledEdges();
 		bool propagate(vec<Lit> & conflict);
 		void buildMaxFlowTooHighReason(Weight flow,vec<Lit> & conflict);
-		void buildMaxFlowTooLowReason(Weight flow,vec<Lit> & conflict);
+		void buildMaxFlowTooLowReason(Weight flow,vec<Lit> & conflict, bool force_maxflow=false);
 		void buildForcedEdgeReason(int reach_node, int forced_edge_id,vec<Lit> & conflict);
 		void buildReason(Lit p, vec<Lit> & reason, CRef marker);
 		bool checkSatisfied();

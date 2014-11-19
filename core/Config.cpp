@@ -151,7 +151,7 @@ BoolOption Monosat::opt_lazy_maxflow_decisions(_cat_graph,"lazy-maxflow-decision
 BoolOption Monosat::opt_old_lazy_maxflow_decisions(_cat_graph,"old-lazy-maxflow-decisions","",false);
 IntOption Monosat::opt_maxflow_decisions_q(_cat_graph,"maxflow-decisions-q","Use a FIFO (instead of LIFO) decision order in the maxflow theory",1,IntRange(0,4));
 BoolOption Monosat::opt_reach_detector_combined_maxflow(_cat_graph,"reach-combined-maxflow","",true);
-
+IntOption Monosat::opt_adaptive_conflict_mincut(_cat_graph,"adaptive-conflict-mincut","First try applying conflict detection without mincut analysis (which is faster), then try again with mincut analysis if the learnt clause is >= this length (0 to disable, 1 to always use mincut analysis)",0,IntRange(0, INT32_MAX) );
 
 
 ConvexHullAlg Monosat::hullAlg=ConvexHullAlg::ALG_MONOTONE_HULL;

@@ -54,7 +54,7 @@ LevelDetector(_detectorID),outer(_outer),capacities(capacities),over_graph(_g),g
 		negative_detector = new EdmondsKarpDynamic<std::vector<Weight>,Weight>(_antig,capacities,source,target);
 		positive_conflict_detector =positive_detector;//new EdmondsKarpAdj<std::vector<Weight>,Weight>(_g,capacities);
 		negative_conflict_detector =negative_detector;// new EdmondsKarpAdj<std::vector<Weight>,Weight>(_antig,capacities);
-		if(opt_conflict_min_cut_maxflow)
+		if(opt_conflict_min_cut_maxflow || opt_adaptive_conflict_mincut)
 			learn_cut = new EdmondsKarpDynamic<CutStatus,long>(learn_graph, cutStatus,source,target);
 
 		/*if(opt_conflict_min_cut_maxflow)
@@ -64,21 +64,21 @@ LevelDetector(_detectorID),outer(_outer),capacities(capacities),over_graph(_g),g
 		negative_detector = new EdmondsKarpAdj<std::vector<Weight>,Weight>(_antig,capacities,source,target);
 		positive_conflict_detector = positive_detector;
 		negative_conflict_detector = negative_detector;
-		if(opt_conflict_min_cut_maxflow)
+		if(opt_conflict_min_cut_maxflow || opt_adaptive_conflict_mincut)
 			learn_cut = new EdmondsKarpAdj<CutStatus,long>(learn_graph, cutStatus,source,target);
 	}else if (mincutalg==MinCutAlg::ALG_DINITZ){
 		positive_detector = new Dinitz<std::vector<Weight>,Weight>(_g,capacities,source,target);
 		negative_detector = new Dinitz<std::vector<Weight>,Weight>(_antig,capacities,source,target);
 		positive_conflict_detector = positive_detector;// new EdmondsKarpAdj<std::vector<Weight>,Weight>(_g,capacities);
 		negative_conflict_detector = negative_detector;//new EdmondsKarpAdj<std::vector<Weight>,Weight>(_antig,capacities);
-		if(opt_conflict_min_cut_maxflow)
+		if(opt_conflict_min_cut_maxflow  || opt_adaptive_conflict_mincut)
 			learn_cut = new Dinitz<CutStatus,long>(learn_graph, cutStatus,source,target);
 	}else if (mincutalg==MinCutAlg::ALG_DINITZ_LINKCUT){
 		//link-cut tree currently only supports ints (enforcing this using tempalte specialization...).
 		buildDinitzLinkCut();
 		positive_conflict_detector = new EdmondsKarpAdj<std::vector<Weight>,Weight>(_g,capacities,source,target);
 		negative_conflict_detector = new EdmondsKarpAdj<std::vector<Weight>,Weight>(_antig,capacities,source,target);
-		if(opt_conflict_min_cut_maxflow)
+		if(opt_conflict_min_cut_maxflow  || opt_adaptive_conflict_mincut)
 			learn_cut = new EdmondsKarpAdj<CutStatus,long>(learn_graph, cutStatus,source,target);
 	}else if (mincutalg==MinCutAlg::ALG_KOHLI_TORR){
 		positive_detector = new KohliTorr<std::vector<Weight>,Weight>(_g,capacities,source,target,opt_maxflow_backward,opt_kt_preserve_order);
@@ -92,7 +92,7 @@ LevelDetector(_detectorID),outer(_outer),capacities(capacities),over_graph(_g),g
 			positive_conflict_detector =new EdmondsKarpDynamic<std::vector<Weight>,Weight>(_g,capacities,source,target);
 			negative_conflict_detector = new EdmondsKarpDynamic<std::vector<Weight>,Weight>(_antig,capacities,source,target);
 		}
-		if(opt_conflict_min_cut_maxflow)
+		if(opt_conflict_min_cut_maxflow || opt_adaptive_conflict_mincut)
 			learn_cut = new KohliTorr<CutStatus,long>(learn_graph, cutStatus,source,target,opt_kt_preserve_order);
 
 	}else{
@@ -100,7 +100,7 @@ LevelDetector(_detectorID),outer(_outer),capacities(capacities),over_graph(_g),g
 		negative_detector = new EdmondsKarpAdj<std::vector<Weight>,Weight>(_antig,capacities,source,target);
 		positive_conflict_detector = positive_detector;
 		negative_conflict_detector = negative_detector;
-		if(opt_conflict_min_cut_maxflow)
+		if(opt_conflict_min_cut_maxflow  || opt_adaptive_conflict_mincut)
 			learn_cut =  new EdmondsKarpAdj<CutStatus,long>(learn_graph, cutStatus,source,target);
 	}
 
@@ -285,7 +285,7 @@ void bassert(bool condition){
 }
 
 template<typename Weight>
-		void MaxflowDetector<Weight>::buildMaxFlowTooLowReason(Weight maxflow,vec<Lit> & conflict){
+		void MaxflowDetector<Weight>::buildMaxFlowTooLowReason(Weight maxflow,vec<Lit> & conflict, bool force_maxflow){
 			static int it = 0;
 			++it;
 			if(it==136){
@@ -293,7 +293,7 @@ template<typename Weight>
 			}
 			//printf("%d\n",it);
 			double starttime = rtime(2);
-			if(opt_conflict_min_cut_maxflow ){
+			if(force_maxflow || opt_conflict_min_cut_maxflow ){
 				Weight foundflow = negative_conflict_detector->maxFlow();
 
 			/*	{
@@ -467,6 +467,15 @@ template<typename Weight>
 					//pred
 				}
 			}
+
+
+		    if(!force_maxflow && opt_adaptive_conflict_mincut>0 && ( conflict.size()-1 > opt_adaptive_conflict_mincut)){ //-1 to ignore the predicate's literal stored at position 0
+		    	conflict.shrink(conflict.size()-1);
+		    	assert(conflict.size()==1);
+		    	buildMaxFlowTooLowReason(maxflow,conflict,true);
+		    	return;
+		    }
+
 			/*if(conflict.size()<dbg_minconflict()){
 				exit(4);
 			}*/

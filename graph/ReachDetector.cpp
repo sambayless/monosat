@@ -187,7 +187,6 @@ ReachDetector<Weight>::ReachDetector(int _detectorID, GraphTheorySolver<Weight> 
 			}else{
 				conflict_flow = new EdmondsKarpAdj<CutStatus,long>(outer->cutGraph, cutStatus,source,0);
 			}
-
 	 }
 	if(positive_reach_detector)
 		positive_reach_detector->setSource(source);
@@ -436,7 +435,7 @@ void ReachDetector<Weight>::addLit(int from, int to, Var outer_reach_var){
 	 if( !negative_reach_detector){
 		 buildSATConstraints(false);
 	 }
-	 if(opt_conflict_min_cut){
+	 if(opt_conflict_min_cut  || opt_adaptive_conflict_mincut){
 		 if(!opt_reach_detector_combined_maxflow){
 			conflict_flows.resize(g.nodes(),nullptr);
 			for(int i = 0;i<g.nodes();i++){
@@ -588,7 +587,7 @@ void ReachDetector<Weight>::buildReachReason(int node,vec<Lit> & conflict){
 			 stats_under_conflict_time+=elapsed;
 		}
 template<typename Weight>
-		void ReachDetector<Weight>::buildNonReachReason(int node,vec<Lit> & conflict){
+		void ReachDetector<Weight>::buildNonReachReason(int node,vec<Lit> & conflict, bool force_maxflow){
 			static int it = 0;
 			++it;
 			if(it==4){
@@ -601,85 +600,8 @@ template<typename Weight>
 			//assert(!negative_reach_detector->connected_unchecked(node));
 			double starttime = rtime(2);
 
-			/*if(opt_conflict_1uip){
-				auto & dist = *negative_distance_detector;
-				//learn the actual 1-uip cut? Hopefully that is what this does...
-				vec<int>& to_visit  = outer->to_visit;
-				vec<char>& seen  = outer->seen;
-				int pathC=0;
-				int path_must_visit = 0;
-				to_visit.clear();
-				to_visit.push(node);
-				seen.clear();
-				seen.growTo(outer->nNodes());
-				seen[node]=true;
-				antig.drawFull();
-				int last_dist = dist.distance(u);
-				path_must_visit=1;
-				do{
 
-					assert(to_visit.size());
-					int u = to_visit.last();
-#ifndef NDEBUG
-					assert(dist.distance(u)<= last_dist);
-					last_dist = dist.distance(u);//you need to be visiting these nodes in decreasing distance, or else you may miss the 1uip.
-#endif
-					assert(u!=source);
-					to_visit.pop();
-					assert(seen[u]);
-					if(seen[u]==1){
-						path_must_visit--;
-					}else{
-						assert(seen[u]==2);
-						pathC--;
-					}
-
-					assert(outer->dbg_notreachable( source,u));
-					//assert(!negative_reach_detector->connected_unsafe(u));
-					//Ok, then add all its incoming disabled edges to the cut, and visit any unseen, non-disabled incoming.edges()
-					for(int i = 0;i<outer->inv_adj[u].size();i++){
-						int v = outer->inv_adj[u][i].v;
-						int from = outer->inv_adj[u][i].from;
-						int edge_num =outer->getEdgeID(v);// v-outer->min_edge_var;
-						if(from==u){
-							assert(outer->edge_list[edge_num].to == u);
-							assert(outer->edge_list[edge_num].from == u);
-							continue;//Self loops are allowed, but just make sure nothing got flipped around...
-						}
-						assert(from!=u);
-						assert(outer->inv_adj[u][i].to==u);
-						//Note: the variable has to not only be assigned false, but assigned false earlier in the trail than the reach variable...
-
-
-						if(outer->value(v)==l_False){
-							//note: we know we haven't seen this edge variable before, because we know we haven't visited this node before
-							//if we are already planning on visiting the from node, then we don't need to include it in the conflict (is this correct?)
-							//if(!seen[from])
-							if ( outer->level(v) >= outer->decisionLevel()){
-									if(!seen[from]){
-										pathC++;
-										seen[from]=2;
-										to_visit.push(from);
-									}
-								}else{
-									conflict.push(mkLit(v,false));
-								}
-						}else{
-							assert(from!=source);
-							//even if it is undef? probably...
-							if(!seen[from]){
-								seen[from]=1;
-								path_must_visit++;
-								to_visit.push(from);
-							}
-						}
-					}
-				}  while (path_must_visit>0 || pathC>1);
-
-
-
-			}else*/
-			if(opt_conflict_min_cut  && (conflict_flow || conflict_flows[node])){
+			if((force_maxflow || opt_conflict_min_cut)  && (conflict_flow || conflict_flows[node])){
 
 				antig.drawFull();
 				cut.clear();
@@ -840,6 +762,13 @@ template<typename Weight>
 
 */
 
+		    }
+
+		    if(!force_maxflow && opt_adaptive_conflict_mincut>0 && ( conflict.size()-1 > opt_adaptive_conflict_mincut) && (conflict_flow || conflict_flows[node])){ //-1 to ignore the predicate's literal stored at position 0
+		    	conflict.shrink(conflict.size()-1);
+		    	assert(conflict.size()==1);
+		    	buildNonReachReason(node, conflict,true);
+		    	return;
 		    }
 
 		    if(opt_learn_unreachable_component && conflict.size()>1){

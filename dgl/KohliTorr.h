@@ -470,9 +470,12 @@ private:
 #endif
     		}
     void bassert(bool c){
+#ifndef NDEBUG
+    	assert(c);
     	if (!c){
     		exit(4);
     	}
+#endif
     }
 
   /*  void dbg_print_matrix(){

@@ -128,6 +128,8 @@ extern BoolOption opt_lazy_maxflow_decisions;
 extern BoolOption opt_old_lazy_maxflow_decisions;
 extern IntOption opt_maxflow_decisions_q;
 extern BoolOption opt_reach_detector_combined_maxflow;
+extern IntOption opt_adaptive_conflict_mincut;
+
 enum class PointInPolygonAlg{
 	 ALG_FULL,
 	 ALG_RECURSIVE_SPLIT

@@ -266,7 +266,7 @@ public:
 		void buildSATConstraints(bool onlyUnderApprox=false,int within_steps=-1);
 		bool propagate(vec<Lit> & conflict);
 		void buildReachReason(int node,vec<Lit> & conflict);
-		void buildNonReachReason(int node,vec<Lit> & conflict);
+		void buildNonReachReason(int node,vec<Lit> & conflict, bool force_maxflow=false);
 		void buildForcedEdgeReason(int reach_node, int forced_edge_id,vec<Lit> & conflict);
 		void buildReason(Lit p, vec<Lit> & reason, CRef marker);
 		bool checkSatisfied();
@@ -287,7 +287,7 @@ public:
 		}
 
 		bool dbg_cut(std::vector<MaxFlowEdge> & cut, DynamicGraph & graph, int source, int node){
-//#ifndef NDEBUG
+#ifndef NDEBUG
 
 
 
@@ -323,7 +323,7 @@ public:
 				exit(4);
 			}
 			return true;
-//#endif
+#endif
 		}
 
 };

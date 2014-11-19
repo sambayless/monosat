@@ -142,7 +142,10 @@ int main(int argc, char** argv)
         BoolOption precise("GEOM","precise","Solve geometry using precise rational arithmetic (instead of unsound, but faster, floating point arithmetic)",true);
 
         parseOptions(argc, argv, true);
-
+        if(opt_adaptive_conflict_mincut==1){
+        	opt_conflict_min_cut=true;
+        	opt_conflict_min_cut_maxflow=true;
+        }
         bool using_symbols = strlen((const char* )opt_symbols)>0;
 
         if(opt_csv){
