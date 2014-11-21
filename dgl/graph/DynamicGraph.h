@@ -225,6 +225,22 @@ public:
 		}
 	}
 
+	inline int nDirectedEdges(int node, bool incoming){
+		assert(node>=0);assert(node<nodes());
+		if(incoming){
+			return nIncoming(node,false);
+		}else{
+			return nIncident(node,false);
+		}
+	}
+	inline Edge & directedEdges(int node, int i,bool is_incoming){
+		if(is_incoming){
+			return incoming(node,i,false);
+		}else{
+			return incident(node,i,false);
+		}
+	}
+
 	inline int nIncoming(int node, bool undirected=false){
 		assert(node>=0);assert(node<nodes());
 		if(undirected){

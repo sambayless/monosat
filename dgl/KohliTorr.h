@@ -57,7 +57,7 @@ class KohliTorr:public MaxFlow<Weight>{
     std::vector<int> tmp_edges;
     int history_qhead;
     int last_history_clear;
-    bool backward_maxflow=false;
+    //bool backward_maxflow=false;
     bool kt_preserve_order=false;
 
     std::vector<std::vector<int>> multi_edges;
@@ -76,7 +76,7 @@ class KohliTorr:public MaxFlow<Weight>{
     	EdmondsKarpDynamic<Capacity,Weight> ek;
 #endif
 
-    Weight max_capacity =0;
+    Weight max_capacity =1;//start this at 1, not 0
 
     std::vector<bool> edge_enabled;
     std::vector<int> changed_edges;
@@ -86,7 +86,7 @@ public:
     double stats_calc_time =0;
     double stats_flow_time=0;
     long stats_flow_calcs = 0;
-    KohliTorr(DynamicGraph& _g,Capacity & cap, int source, int sink,bool backward_maxflow=false, bool kt_preserve_order=false):g(_g),capacity(cap),source(source),sink(sink),backward_maxflow(backward_maxflow),kt_preserve_order(kt_preserve_order),INF(0xF0F0F0)
+    KohliTorr(DynamicGraph& _g,Capacity & cap, int source, int sink, bool kt_preserve_order=false):g(_g),capacity(cap),source(source),sink(sink),kt_preserve_order(kt_preserve_order),INF(0xF0F0F0)
 #ifdef DEBUG_MAXFLOW
     	,ek(_g,cap,source,sink)
 #endif
@@ -112,21 +112,21 @@ public:
     		return;
     	}
     	if(kt){
-    		assert(kt->getTweight(source)==max_capacity);
+
     		if(dynamic){
 				kt->edit_tweights(source,0,0);
-				if(!backward_maxflow){
+				//if(!backward_maxflow){
 					kt->edit_tweights(s,max_capacity,0);
-				}else{
+				/*}else{
 					kt->edit_tweights(s,0,max_capacity);
-				}
+				}*/
     		}else{
     			kt->edit_tweights_wt(source,0,0);
-				if(!backward_maxflow){
+				//if(!backward_maxflow){
 					kt->edit_tweights_wt(s,max_capacity,0);
-				}else{
+				/*}else{
 					kt->edit_tweights_wt(s,0,max_capacity);
-				}
+				}*/
     		}
     	}
 		source=s;
@@ -139,21 +139,21 @@ public:
 			return;
 		}
     	if(kt){
-    		assert(kt->getTweight(sink)==-max_capacity);
+
     		if(dynamic){
 				kt->edit_tweights(sink,0,0);
-				if(!backward_maxflow){
+				//if(!backward_maxflow){
 					kt->edit_tweights(t,0,max_capacity);
-				}else{
+				/*}else{
 					kt->edit_tweights(t,max_capacity,0);
-				}
+				}*/
     		}else{
     			kt->edit_tweights_wt(sink,0,0);
-    			if(!backward_maxflow){
+    			//if(!backward_maxflow){
 					kt->edit_tweights(t,0,max_capacity);
-				}else{
+				/*}else{
 					kt->edit_tweights(t,max_capacity,0);
-				}
+				}*/
     		}
     	}
     	sink=t;
@@ -271,29 +271,29 @@ public:
         		}
         		if(g.edgeEnabled(edgeID)){
         			edge_enabled[edgeID]=true;
-        			if(!backward_maxflow){
+        			//if(!backward_maxflow){
         				kt->edit_edge_inc(from,to,capacity[edgeID],0);
-        			}else{
+        			/*}else{
         				kt->edit_edge_inc(to,from,capacity[edgeID],0);
-        			}
+        			}*/
         		}
         	}
         	if(dynamic){
-				if(!backward_maxflow){
+				//if(!backward_maxflow){
 					kt->edit_tweights(s,max_capacity,0);
 					kt->edit_tweights(t,0,max_capacity);
-				}else{
+			/*	}else{
 					kt->edit_tweights(t,max_capacity,0);
 					kt->edit_tweights(s,0,max_capacity);
-				}
+				}*/
         	}else{
-				if(!backward_maxflow){
+				//if(!backward_maxflow){
 					kt->edit_tweights_wt(s,max_capacity,0);
 					kt->edit_tweights_wt(t,0,max_capacity);
-				}else{
+			/*	}else{
 					kt->edit_tweights_wt(t,max_capacity,0);
 					kt->edit_tweights_wt(s,0,max_capacity);
-				}
+				}*/
         	}
         }else if(g.historyclears!=last_history_clear  || g.changed()){
         	flow_needs_recalc=true;
@@ -303,19 +303,19 @@ public:
 				if( g.edgeEnabled(edgeid) && !edge_enabled[edgeid]){
 
 					edge_enabled[edgeid]=true;
-					if(!backward_maxflow){
+					//if(!backward_maxflow){
 						kt->edit_edge_inc(g.getEdge(edgeid).from,g.getEdge(edgeid).to,capacity[edgeid],0);
-					}else{
+					/*}else{
 						kt->edit_edge_inc(g.getEdge(edgeid).to,g.getEdge(edgeid).from,capacity[edgeid],0);
-					}
+					}*/
 				}else if (!g.edgeEnabled(edgeid) && edge_enabled[edgeid]){
 					assert(edge_enabled[edgeid]);
 					edge_enabled[edgeid]=false;
-					if(!backward_maxflow){
+					//if(!backward_maxflow){
 						kt->edit_edge_inc(g.getEdge(edgeid).from,g.getEdge(edgeid).to,-capacity[edgeid],0);
-					}else{
+				/*	}else{
 						kt->edit_edge_inc(g.getEdge(edgeid).to,g.getEdge(edgeid).from,-capacity[edgeid],0);
-					}
+					}*/
 				}
 			}
 			history_qhead=g.history.size();
@@ -331,19 +331,19 @@ public:
     			if(g.history[i].addition && g.edgeEnabled(edgeid) && !edge_enabled[edgeid]){
 
     				edge_enabled[edgeid]=true;
-    				if(!backward_maxflow){
+    				//if(!backward_maxflow){
     					kt->edit_edge_inc(g.getEdge(edgeid).from,g.getEdge(edgeid).to,capacity[edgeid],0);
-    				}else{
+    				/*}else{
     					kt->edit_edge_inc(g.getEdge(edgeid).to,g.getEdge(edgeid).from,capacity[edgeid],0);
-    				}
+    				}*/
     			}else if (!g.history[i].addition &&  !g.edgeEnabled(edgeid) && edge_enabled[edgeid]){
     				assert(edge_enabled[edgeid]);
     				edge_enabled[edgeid]=false;
-    				if(!backward_maxflow){
+    				//if(!backward_maxflow){
     					kt->edit_edge_inc(g.getEdge(edgeid).from,g.getEdge(edgeid).to,-capacity[edgeid],0);
-    				}else{
+    				/*}else{
     					kt->edit_edge_inc(g.getEdge(edgeid).to,g.getEdge(edgeid).from,-capacity[edgeid],0);
-    				}
+    				}*/
     			}
     		}
 
@@ -534,21 +534,21 @@ private:
 				}
 			}
     		if(n==s){
-    			if(!backward_maxflow){
+    			//if(!backward_maxflow){
     	   			bassert(flow_in==0);
     	   			bassert(flow_out==f);
-    			}else{
+    			/*}else{
     	   			bassert(flow_in==0);
 					bassert(flow_out==f);
-    			}
+    			}*/
     		}else if (n==t){
-    			if(!backward_maxflow){
+    			//if(!backward_maxflow){
     				bassert(flow_out==0);
 					bassert(flow_in==f);
-    			}else{
+    			/*}else{
     				bassert(flow_out==0);
 					bassert(flow_in==f);
-    			}
+    			}*/
     		}else{
     			bassert(flow_in==flow_out);
     		}
@@ -571,17 +571,17 @@ private:
     	//apply edmonds karp to the current flow.
     	Weight maxflow = kt->maxflow(true,nullptr);
     	double startcalctime = Monosat::rtime(0);
-    	if(backward_maxflow){
+    	//if(backward_maxflow){
 
-        	kt->clear_t_edges(sink,source);
+        	/*kt->clear_t_edges(sink,source);
 
-        	dbg_check_flow(source,sink);
-    	}else{
+        	dbg_check_flow(source,sink);*/
+    	/*}else{*/
 
         	kt->clear_t_edges(source, sink);
 
         	dbg_check_flow(source,sink);
-    	}
+    	//}
 
     	assert(kt->maxflow(true,nullptr) == maxflow);
     	//stats_calc_time+=  Monosat::rtime(0)-startcalctime;
@@ -600,20 +600,41 @@ public:
 
     	int s = source;
     	int t = sink;
+#ifdef RECORD
+		if(g.outfile){
+			fprintf(g.outfile,"m %d %d\n", s,t);
+			fflush(g.outfile);
+		}
+#endif
     	cut.clear();
+    	dbg_print_graph(s,t);
     	if(f==0)
 			return 0;
-    	dbg_print_graph(s,t);
+
+    	auto SOURCE =kohli_torr::Graph<Weight,Weight,Weight>::SOURCE;  // backward_maxflow? kohli_torr::Graph<Weight,Weight,Weight>::SINK : kohli_torr::Graph<Weight,Weight,Weight>::SOURCE;
+    	auto SINK = kohli_torr::Graph<Weight,Weight,Weight>::SINK; //backward_maxflow? kohli_torr::Graph<Weight,Weight,Weight>::SOURCE :  kohli_torr::Graph<Weight,Weight,Weight>::SINK;
+
+    	//KT allows for all the nodes to be source or sink, if the cut is placed at the final source->'outer source' or 'outer sink' -> sink edge.
+    	//Ideally, this shouldn't happen here, because those should have infinite weight edges.
+    	if ( kt->what_segment(s,SOURCE)==SINK){
+    		exit(1);
+    		return -1;
+    	}else if  ( kt->what_segment(t,SOURCE)==SOURCE){
+    		exit(1);
+    		return -1;
+    	}
+
+
     	for(int n = 0;n<g.nodes();n++){
-    		auto t = kt->what_segment(n,kohli_torr::Graph<Weight,Weight,Weight>::SOURCE);
-    		if(t==kohli_torr::Graph<Weight,Weight,Weight>::SINK){
+    		auto t = kt->what_segment(n,SOURCE);
+    		if(t==SINK){
     			//check to see if any neighbouring edges are in the source segment.
     			for(int i = 0;i<g.nIncoming(n);i++){
-    				//an edge that crosses from the source side into the sink side is on the cut.
+    				//any edge that crosses from the source side into the sink side is on the cut.
     				auto & e = g.incoming(n,i);
     				if(g.edgeEnabled(e.id)){
-    					auto segment = kt->what_segment(e.node,kohli_torr::Graph<Weight,Weight,Weight>::SOURCE);
-						if(segment==kohli_torr::Graph<Weight,Weight,Weight>::SOURCE){
+    					auto segment = kt->what_segment(e.node,SOURCE);
+						if(segment==SOURCE){
 							//then this edge is on the cut
 							cut.push_back(MaxFlowEdge{n,e.node,e.id});
 						}
@@ -674,10 +695,10 @@ public:
 		Weight dbg_sum = 0;
 		for(int i = 0;i<cut.size();i++){
 			int id = cut[i].id;
-			assert(getEdgeFlow(id)==capacity[id]);
+			bassert(getEdgeFlow(id)==capacity[id]);
 			dbg_sum+=getEdgeFlow(id);
 		}
-		assert(dbg_sum==f);
+		bassert(dbg_sum==f);
 #endif
 
     	return f;
@@ -698,11 +719,11 @@ public:
     	int arc_id = arc_map[flow_edge];
     	assert(arc_id>=0);
     	arc a;
-    	if(!backward_maxflow){
+    	//if(!backward_maxflow){
     		a= kt->get_arc(arc_id);
-    	}else{
+    /*	}else{
     		a= kt->get_reverse( kt->get_arc(arc_id));
-    	}
+    	}*/
     	Weight start_cap = kt->get_ecap(a) ;
     	Weight end_cap = kt->get_rcap(a);
     	Weight remaining_flow = kt->get_ecap(a) - kt->get_rcap(a);

@@ -81,8 +81,8 @@ LevelDetector(_detectorID),outer(_outer),capacities(capacities),over_graph(_g),g
 		if(opt_conflict_min_cut_maxflow  || opt_adaptive_conflict_mincut)
 			learn_cut = new EdmondsKarpAdj<CutStatus,long>(learn_graph, cutStatus,source,target);
 	}else if (mincutalg==MinCutAlg::ALG_KOHLI_TORR){
-		positive_detector = new KohliTorr<std::vector<Weight>,Weight>(_g,capacities,source,target,opt_maxflow_backward,opt_kt_preserve_order);
-		negative_detector = new KohliTorr<std::vector<Weight>,Weight>(_antig,capacities,source,target,opt_maxflow_backward,opt_kt_preserve_order);
+		positive_detector = new KohliTorr<std::vector<Weight>,Weight>(_g,capacities,source,target,opt_kt_preserve_order);
+		negative_detector = new KohliTorr<std::vector<Weight>,Weight>(_antig,capacities,source,target,opt_kt_preserve_order);
 		if(opt_use_kt_for_conflicts){
 			positive_conflict_detector = positive_detector;//new EdmondsKarpDynamic<std::vector<Weight>,Weight>(_g,capacities);
 			negative_conflict_detector =negative_detector;//new EdmondsKarpDynamic<std::vector<Weight>,Weight>(_antig,capacities);

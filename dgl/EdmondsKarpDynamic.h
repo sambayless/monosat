@@ -322,24 +322,30 @@ public:
     			if(!allow_flow_cycles){
 					for(int i = 0;i<g.nIncoming(s);i++){
 						auto & edge = g.incoming(s,i);
+						if(edge_enabled[edge.id]){
 						//There shouldn't be any backwards flow to s in a maximum flow, unless there is a spurious flow cycle
 						//(which doesn't normally happen in edmonds karp, but can be introduced by dynamic updates sometimes)
-						assert(F[edge.id]==0);
+							assert(F[edge.id]==0);
+						}
 					}
     			}else{
     				Weight in_flow=0;
     				for(int i = 0;i<g.nIncoming(s);i++){
 						auto & edge = g.incoming(s,i);
+						if(edge_enabled[edge.id]){
 						//There shouldn't be any backwards flow to s in a maximum flow, unless there is a spurious flow cycle
 						//(which doesn't normally happen in edmonds karp, but can be introduced by dynamic updates sometimes)
 						in_flow+=F[edge.id];
+						}
 					}
     				Weight out_flow=0;
     				for(int i = 0;i<g.nIncident(s);i++){
 						auto & edge = g.incident(s,i);
+						if(edge_enabled[edge.id]){
 						//There shouldn't be any backwards flow to s in a maximum flow, unless there is a spurious flow cycle
 						//(which doesn't normally happen in edmonds karp, but can be introduced by dynamic updates sometimes)
 						out_flow+=F[edge.id];
+						}
 					}
     				assert(out_flow>=in_flow);
     				assert(f==out_flow-in_flow);
@@ -799,6 +805,8 @@ public:
     	int t = sink;
 
     	cut.clear();
+    	if(f==0)
+			return 0;
     	//ok, now find the cut
     	Q.clear();
     	Q.push_back(s);

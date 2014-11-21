@@ -44,7 +44,7 @@
 								<option id="gnu.cpp.compiler.option.include.paths.1554597876" name="Include paths (-I)" superClass="gnu.cpp.compiler.option.include.paths" useByScannerDiscovery="false" valueType="includePath">
 									<listOptionValue builtIn="false" value="/home/sam/workspaceC/modsat"/>
 								</option>
-								<option id="gnu.cpp.compiler.option.other.other.561945821" name="Other flags" superClass="gnu.cpp.compiler.option.other.other" useByScannerDiscovery="false" value="-c -fmessage-length=0 -std=c++11  -Wno-unused-variable -Wno-unused-but-set-variable  -DDEBUG_GRAPH -DDEBUG_DIJKSTRA" valueType="string"/>
+								<option id="gnu.cpp.compiler.option.other.other.561945821" name="Other flags" superClass="gnu.cpp.compiler.option.other.other" useByScannerDiscovery="false" value="-c -fmessage-length=0 -std=c++11  -Wno-unused-variable -Wno-unused-but-set-variable  " valueType="string"/>
 								<inputType id="cdt.managedbuild.tool.gnu.cpp.compiler.input.758743014" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.input"/>
 							</tool>
 							<tool id="cdt.managedbuild.tool.gnu.c.compiler.exe.debug.399221987" name="GCC C Compiler" superClass="cdt.managedbuild.tool.gnu.c.compiler.exe.debug">
