@@ -608,8 +608,8 @@ public:
 #endif
     	cut.clear();
     	dbg_print_graph(s,t);
-    	if(f==0)
-			return 0;
+ /*   	if(f==0)
+			return 0;*/
 
     	auto SOURCE =kohli_torr::Graph<Weight,Weight,Weight>::SOURCE;  // backward_maxflow? kohli_torr::Graph<Weight,Weight,Weight>::SINK : kohli_torr::Graph<Weight,Weight,Weight>::SOURCE;
     	auto SINK = kohli_torr::Graph<Weight,Weight,Weight>::SINK; //backward_maxflow? kohli_torr::Graph<Weight,Weight,Weight>::SOURCE :  kohli_torr::Graph<Weight,Weight,Weight>::SINK;

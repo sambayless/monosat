@@ -805,8 +805,8 @@ public:
     	int t = sink;
 
     	cut.clear();
-    	if(f==0)
-			return 0;
+    	/*if(f==0)
+			return 0;*/
     	//ok, now find the cut
     	Q.clear();
     	Q.push_back(s);

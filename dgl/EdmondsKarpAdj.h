@@ -353,8 +353,8 @@ public:
 		seen.resize(g.nodes());
 		seen[s]=true;
 		cut.clear();
-		if(f==0)
-			return 0;
+	/*	if(f==0)
+			return 0;*/
 		dbg_print_graph(s,t);
 		//explore the residual graph
 		for(int j = 0;j<Q.size();j++){
