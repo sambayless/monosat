@@ -51,10 +51,10 @@ public:
 		CRef underprop_edge_marker;
 		CRef overprop_edge_marker;
 
-		MinimumSpanningTree<Weight> * positive_reach_detector=nullptr;
-		MinimumSpanningTree<Weight> * negative_reach_detector=nullptr;
-		MinimumSpanningTree<Weight> *  positive_conflict_detector=nullptr;
-		MinimumSpanningTree<Weight> * negative_conflict_detector=nullptr;
+		MinimumSpanningTree<Weight> * underapprox_detector=nullptr;
+		MinimumSpanningTree<Weight> * overapprox_detector=nullptr;
+		MinimumSpanningTree<Weight> *  underapprox_conflict_detector=nullptr;
+		MinimumSpanningTree<Weight> * overapprox_conflict_detector=nullptr;
 
 		Weight lowest_weight_lit=-1;
 		Weight highest_weight_lit=-1;

@@ -49,8 +49,8 @@ public:
 
 		CRef undirected_cycle_marker;
 		CRef no_undirected_cycle_marker;
-		Cycle * positive_reach_detector;
-		Cycle * negative_reach_detector;
+		Cycle * underapprox_reach_detector;
+		Cycle * overapprox_reach_detector;
 
 		//Reach *  positive_path_detector;
 

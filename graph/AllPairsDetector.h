@@ -55,9 +55,9 @@ public:
 		CRef underprop_marker;
 		CRef overprop_marker;
 
-		AllPairs * positive_reach_detector;
-		AllPairs * negative_reach_detector;
-		AllPairs *  positive_path_detector;
+		AllPairs * underapprox_reach_detector;
+		AllPairs * overapprox_reach_detector;
+		AllPairs * underapprox_path_detector;
 
 		//vec<Lit>  reach_lits;
 		Var first_reach_var;

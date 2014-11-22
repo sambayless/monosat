@@ -27,15 +27,15 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 using namespace Monosat;
 template<typename Weight>
 ConnectedComponentsDetector<Weight>::ConnectedComponentsDetector(int _detectorID, GraphTheorySolver<Weight> * _outer,  DynamicGraph &_g,DynamicGraph &_antig,double seed):
-Detector(_detectorID),outer(_outer),g(_g),antig(_antig),rnd_seed(seed),positive_component_detector(NULL),negative_component_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL){
+Detector(_detectorID),outer(_outer),g(_g),antig(_antig),rnd_seed(seed),underapprox_component_detector(NULL),overapprox_component_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL){
 
 
 
 		positiveReachStatus = new ConnectedComponentsDetector<Weight>::ConnectedComponentsStatus(*this,true);
 		negativeReachStatus = new ConnectedComponentsDetector<Weight>::ConnectedComponentsStatus(*this,false);
 		//Note: these are _intentionalyl_ swapped
-		negative_component_detector = new DisjointSetsConnectedComponents<ConnectedComponentsDetector<Weight>::ConnectedComponentsStatus>(_g,*(negativeReachStatus),1);
-		positive_component_detector = new DisjointSetsConnectedComponents<ConnectedComponentsDetector<Weight>::ConnectedComponentsStatus>(_antig,*(positiveReachStatus),1);
+		overapprox_component_detector = new DisjointSetsConnectedComponents<ConnectedComponentsDetector<Weight>::ConnectedComponentsStatus>(_g,*(negativeReachStatus),1);
+		underapprox_component_detector = new DisjointSetsConnectedComponents<ConnectedComponentsDetector<Weight>::ConnectedComponentsStatus>(_antig,*(positiveReachStatus),1);
 
 		components_low_marker=outer->newReasonMarker(getID());
 		components_high_marker=outer->newReasonMarker(getID());
@@ -186,9 +186,9 @@ template<typename Weight>
 
 			visit.clear();
 			//ok,construct spanning forest from among the connected elements using dfs (we don't need to use kruskal's, as the graph is unweighted), and learn that at least one edge in that each must be disabled.
-			for(int k = 0;k<negative_component_detector->numComponents();k++){
+			for(int k = 0;k<overapprox_component_detector->numComponents();k++){
 			//learn that at least one edge in the tree must be disabled (else, number of connected components cannot be increased)
-				int root =negative_component_detector->getComponent(k);
+				int root =overapprox_component_detector->getComponent(k);
 				seen[root]=true;
 				visit.push(root);
 
@@ -225,8 +225,8 @@ template<typename Weight>
 
 				double starttime = rtime(2);
 				int INF=std::numeric_limits<int>::max();
-				positive_component_detector->update();
-				int numComponents = positive_component_detector->numComponents();
+				underapprox_component_detector->update();
+				int numComponents = underapprox_component_detector->numComponents();
 				assert(numComponents>=min_components);
 
 
@@ -241,8 +241,8 @@ template<typename Weight>
 					edge_in_clause.clear();
 					edge_in_clause.growTo(g.nEdgeIDs());
 					assert(conflict.size()==1);
-					for(int i = 0;i<positive_component_detector->numComponents();i++){
-						int root = positive_component_detector->getComponent(i);
+					for(int i = 0;i<underapprox_component_detector->numComponents();i++){
+						int root = underapprox_component_detector->getComponent(i);
 
 						//now explore that component.
 
@@ -289,10 +289,10 @@ template<typename Weight>
 					vec<Lit> c;
 					c.push(conflict[0]);
 					//for each component, find the lowest valued node; learn that at least one of these lowest nodes must be connected to each other.
-					for(int i = 0;i<positive_component_detector->numComponents();i++){
-						int root1 = positive_component_detector->getComponent(i);
-						for(int j = i+1;j<positive_component_detector->numComponents();j++){
-							int root2 = positive_component_detector->getComponent(j);
+					for(int i = 0;i<underapprox_component_detector->numComponents();i++){
+						int root1 = underapprox_component_detector->getComponent(i);
+						for(int j = i+1;j<underapprox_component_detector->numComponents();j++){
+							int root2 = underapprox_component_detector->getComponent(j);
 
 							Lit connect = getConnectLit(root1,root1);
 							c.push(connect);
@@ -538,18 +538,18 @@ template<typename Weight>
 
 		changed.clear();
 		changed_weights.clear();
-		if(positive_component_detector && (!opt_detect_pure_theory_lits || unassigned_positives>0)){
+		if(underapprox_component_detector && (!opt_detect_pure_theory_lits || unassigned_positives>0)){
 			double startdreachtime = rtime(2);
-			positive_component_detector->update();
+			underapprox_component_detector->update();
 			double reachUpdateElapsed = rtime(2)-startdreachtime;
 			outer->reachupdatetime+=reachUpdateElapsed;
 		}else{
 			outer->stats_pure_skipped++;
 		}
 
-		if(negative_component_detector && (!opt_detect_pure_theory_lits || unassigned_negatives>0)){
+		if(overapprox_component_detector && (!opt_detect_pure_theory_lits || unassigned_negatives>0)){
 			double startunreachtime = rtime(2);
-			negative_component_detector->update();
+			overapprox_component_detector->update();
 			double unreachUpdateElapsed = rtime(2)-startunreachtime;
 			outer->unreachupdatetime+=unreachUpdateElapsed;
 		}else{
@@ -619,15 +619,15 @@ template<typename Weight>
 template<typename Weight>
 void ConnectedComponentsDetector<Weight>::printSolution(){
 	if(opt_verb>0){
-		int numComponents =  positive_component_detector->numComponents();
+		int numComponents =  underapprox_component_detector->numComponents();
 		printf("Number of connected components (graph %d) is: %d\n",outer->getGraphID(),numComponents);
 	}
 }
 
 template<typename Weight>
 bool ConnectedComponentsDetector<Weight>::checkSatisfied(){
-	int numConnected = positive_component_detector->numComponents();
-	int numConnectedOver = negative_component_detector->numComponents();
+	int numConnected = underapprox_component_detector->numComponents();
+	int numConnectedOver = overapprox_component_detector->numComponents();
 					for(int k = 0;k<connected_components_lits.size();k++){
 						Lit l = connected_components_lits[k].l;
 						int moreThanThisManyComponents = connected_components_lits[k].min_components;
@@ -636,18 +636,18 @@ bool ConnectedComponentsDetector<Weight>::checkSatisfied(){
 
 
 							if(outer->value(l)==l_True){
-								if(negative_component_detector->numComponents()<=moreThanThisManyComponents){
+								if(overapprox_component_detector->numComponents()<=moreThanThisManyComponents){
 									return false;
 								}
 							}else if (outer->value(l)==l_False){
-								if( positive_component_detector->numComponents()>moreThanThisManyComponents){
+								if( underapprox_component_detector->numComponents()>moreThanThisManyComponents){
 									return false;
 								}
 							}else{
-								if(negative_component_detector->numComponents()>moreThanThisManyComponents){
+								if(overapprox_component_detector->numComponents()>moreThanThisManyComponents){
 									return false;
 								}
-								if(!positive_component_detector->numComponents()<=moreThanThisManyComponents){
+								if(!underapprox_component_detector->numComponents()<=moreThanThisManyComponents){
 									return false;
 								}
 							}

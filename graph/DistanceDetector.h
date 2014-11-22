@@ -61,13 +61,13 @@ public:
 		CRef weighted_underprop_marker;
 		CRef weighted_overprop_marker;
 
-		Distance<int> * positive_unweighted_distance_detector=nullptr;
-		Distance<int> * negative_unweighted_distance_detector=nullptr;
+		Distance<int> * underapprox_unweighted_distance_detector=nullptr;
+		Distance<int> * overapprox_unweighted_distance_detector=nullptr;
 
-		Distance<Weight> * positive_weighted_distance_detector=nullptr;
-		Distance<Weight> * negative_weighted_distance_detector=nullptr;
-		Distance<Weight> * positive_weighted_path_detector=nullptr;
-		Reach *  positive_path_detector=nullptr;
+		Distance<Weight> * underapprox_weighted_distance_detector=nullptr;
+		Distance<Weight> * overapprox_weighted_distance_detector=nullptr;
+		Distance<Weight> * underapprox_weighted_path_detector=nullptr;
+		Reach *  underapprox_path_detector=nullptr;
 
 		//vec<Lit>  reach_lits;
 		Var first_reach_var;

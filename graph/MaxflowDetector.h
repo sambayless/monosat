@@ -50,10 +50,10 @@ public:
 		CRef underprop_marker;
 		CRef overprop_marker;
 
-		MaxFlow<Weight>* positive_detector=nullptr;
-		MaxFlow<Weight> * negative_detector=nullptr;
-		MaxFlow<Weight> * positive_conflict_detector=nullptr;
-		MaxFlow<Weight> * negative_conflict_detector=nullptr;
+		MaxFlow<Weight>* underapprox_detector=nullptr;
+		MaxFlow<Weight> * overapprox_detector=nullptr;
+		MaxFlow<Weight> * underapprox_conflict_detector=nullptr;
+		MaxFlow<Weight> * overapprox_conflict_detector=nullptr;
 		int last_decision_status=-1;
 		int last_decision_q_pos=0;
 
@@ -131,7 +131,7 @@ public:
 		void printStats(){
 			Detector::printStats();
 			if (mincutalg==MinCutAlg::ALG_KOHLI_TORR){
-				 KohliTorr<std::vector<Weight>,Weight> * kt = (KohliTorr<std::vector<Weight>,Weight> *) negative_detector;
+				 KohliTorr<std::vector<Weight>,Weight> * kt = (KohliTorr<std::vector<Weight>,Weight> *) overapprox_detector;
 				 printf("\tDecision flow calculations: %ld, (redecide: %f s) flow_calc %f s, flow_discovery %f s, (%ld) (maxflow %f,flow assignment %f)\n",stats_decision_calculations,stats_redecide_time,stats_flow_calc_time,stats_flow_recalc_time,kt->stats_flow_calcs,kt->stats_flow_time,kt->stats_calc_time );
 			}else
 				 printf("\tDecision flow calculations: %ld\n",stats_decision_calculations );
@@ -181,7 +181,7 @@ public:
 			assert(!potential_decisions.contains(edgeID));
 			assert(!potential_decisions_q.contains(edgeID));
 			//this check is optional, but if used, must use the _conflict_ detector (to match the decisions, which are also using the conflict detector).
-			if(negative_conflict_detector->getEdgeFlow(edgeID)>0){//this check is optional
+			if(overapprox_conflict_detector->getEdgeFlow(edgeID)>0){//this check is optional
 				is_potential_decision[edgeID]=true;
 				if(opt_maxflow_decisions_q==0)
 					potential_decisions_q.insertBack(edgeID);

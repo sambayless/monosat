@@ -54,10 +54,10 @@ public:
 		CRef underprop_edge_marker;
 		CRef overprop_edge_marker;
 
-		SteinerTree<Weight> * positive_reach_detector=nullptr;
-		SteinerTree<Weight> * negative_reach_detector=nullptr;
-		SteinerTree<Weight> *  positive_conflict_detector=nullptr;
-		SteinerTree<Weight> * negative_conflict_detector=nullptr;
+		SteinerTree<Weight> * underapprox_detector=nullptr;
+		SteinerTree<Weight> * overapprox_detector=nullptr;
+		SteinerTree<Weight> *  underapprox_conflict_detector=nullptr;
+		SteinerTree<Weight> * overapprox_conflict_detector=nullptr;
 
 		vec<Var> terminal_map;
 		vec<int> terminal_var_map;

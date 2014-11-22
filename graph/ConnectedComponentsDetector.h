@@ -50,8 +50,8 @@ public:
 		CRef connected_marker;
 		CRef not_connected_marker;
 
-		ConnectedComponents * positive_component_detector;
-		ConnectedComponents * negative_component_detector;
+		ConnectedComponents * underapprox_component_detector;
+		ConnectedComponents * overapprox_component_detector;
 
 		//Reach *  positive_path_detector;
 

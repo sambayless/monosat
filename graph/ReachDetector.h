@@ -60,12 +60,12 @@ public:
 		CRef overprop_marker;
 		CRef forced_edge_marker;
 
-		Reach * positive_reach_detector=nullptr;
-		Reach * negative_reach_detector=nullptr;
-		Reach *  positive_path_detector=nullptr;
-		Reach * negative_path_detector=nullptr;
-		Reach *  cutgraph_reach_detector=nullptr;
-		Reach * positive_fast_reach_detector=nullptr;
+		Reach * underapprox_detector=nullptr;
+		Reach * overapprox_reach_detector=nullptr;
+		Reach *  underapprox_path_detector=nullptr;
+		Reach * overapprox_path_detector=nullptr;
+		Reach *  cutgraph_detector=nullptr;
+		Reach * underapprox_fast_detector=nullptr;
 		Distance<int> * negative_distance_detector=nullptr;
 		vec<bool> original_reach_lits;
 		vec<Lit>  reach_lits;

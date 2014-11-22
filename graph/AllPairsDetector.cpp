@@ -27,23 +27,23 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 using namespace Monosat;
 template<typename Weight>
 AllPairsDetector<Weight>::AllPairsDetector(int _detectorID, GraphTheorySolver<Weight> * _outer,  DynamicGraph &_g,DynamicGraph &_antig, double seed):
-Detector(_detectorID),outer(_outer),g(_g),antig(_antig),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL){
+Detector(_detectorID),outer(_outer),g(_g),antig(_antig),rnd_seed(seed),underapprox_reach_detector(NULL),overapprox_reach_detector(NULL),underapprox_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL){
 
 
 		positiveReachStatus = new AllPairsDetector<Weight>::ReachStatus(*this,true);
 		negativeReachStatus = new AllPairsDetector<Weight>::ReachStatus(*this,false);
 		if(allpairsalg==AllPairsAlg::ALG_FLOYDWARSHALL){
-			positive_reach_detector = new FloydWarshall<AllPairsDetector<Weight>::ReachStatus>(_g,*(positiveReachStatus),1);
-			negative_reach_detector = new FloydWarshall<AllPairsDetector<Weight>::ReachStatus>(_antig,*(negativeReachStatus),-1);
-			positive_path_detector = positive_reach_detector;
+			underapprox_reach_detector = new FloydWarshall<AllPairsDetector<Weight>::ReachStatus>(_g,*(positiveReachStatus),1);
+			overapprox_reach_detector = new FloydWarshall<AllPairsDetector<Weight>::ReachStatus>(_antig,*(negativeReachStatus),-1);
+			underapprox_path_detector = underapprox_reach_detector;
 		}/*else if (allpairsalg==ALG_THORUP_ALLPAIRS){
 			positive_reach_detector = new DynamicConnectivity<AllPairsDetector<Weight>::ReachStatus>(_g,*(positiveReachStatus),1);
 			negative_reach_detector = new DynamicConnectivity<AllPairsDetector<Weight>::ReachStatus>(_antig,*(negativeReachStatus),-1);
 			positive_path_detector = positive_reach_detector;
 		}*/else{
-			positive_reach_detector = new DijkstraAllPairs<AllPairsDetector<Weight>::ReachStatus>(_g,*(positiveReachStatus),1);
-			negative_reach_detector = new DijkstraAllPairs<AllPairsDetector<Weight>::ReachStatus>(_antig,*(negativeReachStatus),-1);
-			positive_path_detector = positive_reach_detector;
+			underapprox_reach_detector = new DijkstraAllPairs<AllPairsDetector<Weight>::ReachStatus>(_g,*(positiveReachStatus),1);
+			overapprox_reach_detector = new DijkstraAllPairs<AllPairsDetector<Weight>::ReachStatus>(_antig,*(negativeReachStatus),-1);
+			underapprox_path_detector = underapprox_reach_detector;
 		}
 		/*	if(opt_conflict_shortest_path)
 			reach_detectors.last()->positive_dist_detector = new Dijkstra<PositiveEdgeStatus>(from,g);*/
@@ -92,8 +92,8 @@ void AllPairsDetector<Weight>::addLit(int from, int to, Var outer_reach_var,int 
 	if(!installed_sources[from]){
 		installed_sources[from]=true;
 		sources.push(from);
-		positive_reach_detector->addSource(from);
-		negative_reach_detector->addSource(from);
+		underapprox_reach_detector->addSource(from);
+		overapprox_reach_detector->addSource(from);
 #ifdef DEBUG_ALLPAIRS
 		dbg_positive_reach_detector->addSource(from);
 		dbg_negative_reach_detector->addSource(from);
@@ -174,7 +174,7 @@ void AllPairsDetector<Weight>::ReachStatus::setMininumDistance(int from, int u, 
 template<typename Weight>
 void AllPairsDetector<Weight>::buildReachReason(int source, int to,vec<Lit> & conflict){
 			//drawFull();
-			AllPairs & d = *positive_path_detector;
+			AllPairs & d = *underapprox_path_detector;
 			static int iter =0;
 			if(++iter==3){
 				int a =1;
@@ -339,12 +339,12 @@ template<typename Weight>
 
 		double startdreachtime = rtime(2);
 		getChanged().clear();
-		positive_reach_detector->update();
+		underapprox_reach_detector->update();
 		double reachUpdateElapsed = rtime(2)-startdreachtime;
 		outer->reachupdatetime+=reachUpdateElapsed;
 
 		double startunreachtime = rtime(2);
-		negative_reach_detector->update();
+		overapprox_reach_detector->update();
 		double unreachUpdateElapsed = rtime(2)-startunreachtime;
 		outer->unreachupdatetime+=unreachUpdateElapsed;
 
@@ -412,8 +412,8 @@ template<typename Weight>
 					int dist =  dist_lits[s][i][j].min_distance;
 					if(l!=lit_Undef){
 						int u = getNode(var(l));
-						int pos_d = positive_reach_detector->distance_unsafe(s,u);
-						int neg_d = negative_reach_detector->distance_unsafe(s,u);
+						int pos_d = underapprox_reach_detector->distance_unsafe(s,u);
+						int neg_d = overapprox_reach_detector->distance_unsafe(s,u);
 						int dbg_pos_d=dbg_positive_reach_detector->distance(s,u);
 						int dbg_neg_d=dbg_negative_reach_detector->distance(s,u);
 						if(dbg_pos_d!=pos_d){
@@ -440,10 +440,10 @@ template<typename Weight>
 							int dist =  dist_lits[s][i][j].min_distance;
 							if(l!=lit_Undef){
 								int u = getNode(var(l));
-								if(positive_reach_detector->distance_unsafe(s,u)<=dist){
+								if(underapprox_reach_detector->distance_unsafe(s,u)<=dist){
 									assert(outer->value(l)==l_True);
-								}else if (negative_reach_detector->distance_unsafe(s,u)>dist){
-									int d =negative_reach_detector->distance_unsafe(s,u);
+								}else if (overapprox_reach_detector->distance_unsafe(s,u)>dist){
+									int d =overapprox_reach_detector->distance_unsafe(s,u);
 									assert(outer->value(l)==l_False);
 								}
 							}
@@ -467,18 +467,18 @@ bool AllPairsDetector<Weight>::checkSatisfied(){
 							int node =getNode(var(l));
 
 							if(outer->value(l)==l_True){
-								if(positive_reach_detector->distance(s,node)>dist){
+								if(underapprox_reach_detector->distance(s,node)>dist){
 									return false;
 								}
 							}else if (outer->value(l)==l_False){
-								if( negative_reach_detector->distance(s,node)<=dist){
+								if( overapprox_reach_detector->distance(s,node)<=dist){
 									return false;
 								}
 							}else{
-								if(positive_reach_detector->distance(s,node)<=dist){
+								if(underapprox_reach_detector->distance(s,node)<=dist){
 									return false;
 								}
-								if(!negative_reach_detector->distance(s,node)>dist){
+								if(!overapprox_reach_detector->distance(s,node)>dist){
 									return false;
 								}
 							}
@@ -514,40 +514,40 @@ Lit AllPairsDetector<Weight>::decide(int level){
 					//if(S->level(var(l))>0)
 					//	continue;
 
-					assert(negative_reach_detector->distance(s,j)<=min_dist);//else we would already be in conflict before this decision was attempted!
-					if(positive_reach_detector->distance(s,j)>min_dist){
+					assert(overapprox_reach_detector->distance(s,j)<=min_dist);//else we would already be in conflict before this decision was attempted!
+					if(underapprox_reach_detector->distance(s,j)>min_dist){
 						//then lets try to connect this
 						static vec<bool> print_path;
 
-						assert(negative_reach_detector->connected(s,j));//Else, we would already be in conflict
+						assert(overapprox_reach_detector->connected(s,j));//Else, we would already be in conflict
 						int p =j;
 						int last=j;
 						//if(!opt_use_random_path_for_decisions)
 						{
 							//ok, read back the path from the over to find a candidate edge we can decide
 							//find the earliest unconnected node on this path
-							negative_reach_detector->update();
-							assert(negative_reach_detector->distance(s,j)<=min_dist);
+							overapprox_reach_detector->update();
+							assert(overapprox_reach_detector->distance(s,j)<=min_dist);
 #ifdef DEBUG_ALLPAIRS
-					if(!negative_reach_detector->connected(s,j)){
+					if(!overapprox_reach_detector->connected(s,j)){
 						assert(false);
 						exit(4);
 					}
 
-					if(!(negative_reach_detector->distance(s,j)<=min_dist)){
+					if(!(overapprox_reach_detector->distance(s,j)<=min_dist)){
 							assert(false);
 							exit(4);
 						}
 #endif
 					tmp_path.clear();
-							negative_reach_detector->getPath(s,j,tmp_path);
+							overapprox_reach_detector->getPath(s,j,tmp_path);
 
 							 p = j;
 							 last = j;
 
 							 assert(tmp_path.size());
 							 int d = 0;
-								while(positive_reach_detector->distance(s,p)>(min_dist-d)){
+								while(underapprox_reach_detector->distance(s,p)>(min_dist-d)){
 
 								    tmp_path.pop_back();
 								    if(tmp_path.size()==0)
@@ -559,11 +559,11 @@ Lit AllPairsDetector<Weight>::decide(int level){
 									d+=1;//for weighted graphs, this needs to be the weight of the edge.
 									p = prev;
 #ifdef DEBUG_ALLPAIRS
-					if(!negative_reach_detector->connected(s,p)){
+					if(!overapprox_reach_detector->connected(s,p)){
 						assert(false);
 
 					}
-					if(!(negative_reach_detector->distance(s,p)<=min_dist-d)){
+					if(!(overapprox_reach_detector->distance(s,p)<=min_dist-d)){
 						assert(false);
 
 					}

@@ -34,13 +34,13 @@ ReachDetector<Weight>::ReachDetector(int _detectorID, GraphTheorySolver<Weight> 
 	rnd_path=nullptr;
 	//opt_path=nullptr;
 	chokepoint_detector=nullptr;
-	cutgraph_reach_detector=nullptr;
+	cutgraph_detector=nullptr;
 	 positiveReachStatus=nullptr;
 	 negativeReachStatus=nullptr;
-	 positive_reach_detector=nullptr;
-	 negative_reach_detector=nullptr;
-	 positive_path_detector=nullptr;
-	 negative_path_detector=nullptr;
+	 underapprox_detector=nullptr;
+	 overapprox_reach_detector=nullptr;
+	 underapprox_path_detector=nullptr;
+	 overapprox_path_detector=nullptr;
 	first_reach_var = var_Undef;
 	stats_pure_skipped=0;
 	stats_shrink_removed=0;
@@ -52,9 +52,9 @@ ReachDetector<Weight>::ReachDetector(int _detectorID, GraphTheorySolver<Weight> 
 		//positive_reach_detector = new ReachDetector::CNFReachability(*this,false);
 		//negative_reach_detector = new ReachDetector::CNFReachability(*this,true);
 
-		positive_path_detector = new UnweightedBFS<Reach::NullStatus>(from,_g,Reach::nullStatus,1);
-		negative_path_detector = new UnweightedBFS<Reach::NullStatus>(from,_antig,Reach::nullStatus,-1);
-		positive_fast_reach_detector = positive_path_detector;
+		underapprox_path_detector = new UnweightedBFS<Reach::NullStatus>(from,_g,Reach::nullStatus,1);
+		overapprox_path_detector = new UnweightedBFS<Reach::NullStatus>(from,_antig,Reach::nullStatus,-1);
+		underapprox_fast_detector = underapprox_path_detector;
 		return;
 	}
 
@@ -63,7 +63,7 @@ ReachDetector<Weight>::ReachDetector(int _detectorID, GraphTheorySolver<Weight> 
 
 	}
 	if(opt_shrink_theory_conflicts){
-		cutgraph_reach_detector= new UnweightedRamalReps<Reach::NullStatus>(from,cutgraph,Reach::nullStatus,0);
+		cutgraph_detector= new UnweightedRamalReps<Reach::NullStatus>(from,cutgraph,Reach::nullStatus,0);
 	}
 
 	 if(opt_use_random_path_for_decisions){
@@ -85,60 +85,60 @@ ReachDetector<Weight>::ReachDetector(int _detectorID, GraphTheorySolver<Weight> 
 	if(reachalg==ReachAlg::ALG_BFS){
 		if(!opt_encode_reach_underapprox_as_sat)
 		{
-			positive_reach_detector = new BFSReachability<ReachDetector<Weight>::ReachStatus>(from,_g,*(positiveReachStatus),1);
+			underapprox_detector = new BFSReachability<ReachDetector<Weight>::ReachStatus>(from,_g,*(positiveReachStatus),1);
 		}else{
-			positive_fast_reach_detector = new BFSReachability<ReachDetector<Weight>::ReachStatus>(from,_g,*(positiveReachStatus),1);
+			underapprox_fast_detector = new BFSReachability<ReachDetector<Weight>::ReachStatus>(from,_g,*(positiveReachStatus),1);
 			//positive_reach_detector = new ReachDetector::CNFReachability(*this,false);
 		}
 
-		negative_reach_detector = new BFSReachability<ReachDetector<Weight>::ReachStatus>(from,_antig,*(negativeReachStatus),-1);
+		overapprox_reach_detector = new BFSReachability<ReachDetector<Weight>::ReachStatus>(from,_antig,*(negativeReachStatus),-1);
 
-		positive_path_detector =positive_reach_detector;
-		negative_path_detector = negative_reach_detector;
-		negative_distance_detector = (Distance<int> *) negative_path_detector;
+		underapprox_path_detector =underapprox_detector;
+		overapprox_path_detector = overapprox_reach_detector;
+		negative_distance_detector = (Distance<int> *) overapprox_path_detector;
 	}else if(reachalg==ReachAlg::ALG_DFS){
 		if(!opt_encode_reach_underapprox_as_sat)
 		{
-			positive_reach_detector = new DFSReachability<ReachDetector<Weight>::ReachStatus>(from,_g,*(positiveReachStatus),1);
+			underapprox_detector = new DFSReachability<ReachDetector<Weight>::ReachStatus>(from,_g,*(positiveReachStatus),1);
 		}else{
-			positive_fast_reach_detector = new DFSReachability<ReachDetector<Weight>::ReachStatus>(from,_g,*(positiveReachStatus),1);
+			underapprox_fast_detector = new DFSReachability<ReachDetector<Weight>::ReachStatus>(from,_g,*(positiveReachStatus),1);
 			//positive_reach_detector = new ReachDetector::CNFReachability(*this,false);
 		}
 
-		negative_reach_detector = new DFSReachability<ReachDetector<Weight>::ReachStatus>(from,_antig,*(negativeReachStatus),-1);
+		overapprox_reach_detector = new DFSReachability<ReachDetector<Weight>::ReachStatus>(from,_antig,*(negativeReachStatus),-1);
 		if(opt_conflict_shortest_path)
-			positive_path_detector = new UnweightedBFS<Reach::NullStatus>(from,_g,Reach::nullStatus,1);
+			underapprox_path_detector = new UnweightedBFS<Reach::NullStatus>(from,_g,Reach::nullStatus,1);
 		else
-			positive_path_detector =positive_reach_detector;
+			underapprox_path_detector =underapprox_detector;
 
 		negative_distance_detector  =new UnweightedBFS<Reach::NullStatus>(from,_antig,Reach::nullStatus,-1);
-		negative_path_detector =negative_reach_detector;
+		overapprox_path_detector =overapprox_reach_detector;
 	}else if(reachalg==ReachAlg::ALG_DISTANCE){
 		if(!opt_encode_reach_underapprox_as_sat)
 		{
-			positive_reach_detector = new UnweightedBFS<ReachDetector<Weight>::ReachStatus>(from,_g,*(positiveReachStatus),1);
+			underapprox_detector = new UnweightedBFS<ReachDetector<Weight>::ReachStatus>(from,_g,*(positiveReachStatus),1);
 		}else{
-			positive_fast_reach_detector = new UnweightedBFS<ReachDetector<Weight>::ReachStatus>(from,_g,*(positiveReachStatus),1);
+			underapprox_fast_detector = new UnweightedBFS<ReachDetector<Weight>::ReachStatus>(from,_g,*(positiveReachStatus),1);
 			//positive_reach_detector = new ReachDetector::CNFReachability(*this,false);
 		}
 
-		negative_reach_detector = new UnweightedBFS<ReachDetector<Weight>::ReachStatus>(from,_antig,*(negativeReachStatus),-1);
-		positive_path_detector = positive_reach_detector;
-		negative_path_detector =negative_reach_detector;
-		negative_distance_detector = (Distance<int> *) negative_path_detector;
+		overapprox_reach_detector = new UnweightedBFS<ReachDetector<Weight>::ReachStatus>(from,_antig,*(negativeReachStatus),-1);
+		underapprox_path_detector = underapprox_detector;
+		overapprox_path_detector =overapprox_reach_detector;
+		negative_distance_detector = (Distance<int> *) overapprox_path_detector;
 	}else if(reachalg==ReachAlg::ALG_RAMAL_REPS){
 		if(!opt_encode_reach_underapprox_as_sat)
 		{
-			positive_reach_detector = new UnweightedRamalReps<ReachDetector<Weight>::ReachStatus>(from,_g,*(positiveReachStatus),1,false);
+			underapprox_detector = new UnweightedRamalReps<ReachDetector<Weight>::ReachStatus>(from,_g,*(positiveReachStatus),1,false);
 		}else{
-			positive_fast_reach_detector= new UnweightedRamalReps<ReachDetector<Weight>::ReachStatus>(from,_g,*(positiveReachStatus),1,false);
+			underapprox_fast_detector= new UnweightedRamalReps<ReachDetector<Weight>::ReachStatus>(from,_g,*(positiveReachStatus),1,false);
 			//positive_reach_detector = new ReachDetector::CNFReachability(*this,false);
 		}
 
-		negative_reach_detector = new UnweightedRamalReps<ReachDetector<Weight>::ReachStatus>(from,_antig,*(negativeReachStatus),-1,false);
-		positive_path_detector = new UnweightedBFS<Reach::NullStatus>(from,_g,Reach::nullStatus,1);
-		negative_path_detector = new UnweightedBFS<Reach::NullStatus>(from,_antig,Reach::nullStatus,-1);
-		negative_distance_detector =(Distance<int> *) negative_path_detector;
+		overapprox_reach_detector = new UnweightedRamalReps<ReachDetector<Weight>::ReachStatus>(from,_antig,*(negativeReachStatus),-1,false);
+		underapprox_path_detector = new UnweightedBFS<Reach::NullStatus>(from,_g,Reach::nullStatus,1);
+		overapprox_path_detector = new UnweightedBFS<Reach::NullStatus>(from,_antig,Reach::nullStatus,-1);
+		negative_distance_detector =(Distance<int> *) overapprox_path_detector;
 	}/*else if (reachalg==ReachAlg::ALG_THORUP){
 
 
@@ -152,19 +152,19 @@ ReachDetector<Weight>::ReachDetector(int _detectorID, GraphTheorySolver<Weight> 
 	}*/else{
 		if(!opt_encode_reach_underapprox_as_sat)
 		{
-			positive_reach_detector = new UnweightedDijkstra<ReachDetector<Weight>::ReachStatus>(from,_g,*positiveReachStatus,1);
+			underapprox_detector = new UnweightedDijkstra<ReachDetector<Weight>::ReachStatus>(from,_g,*positiveReachStatus,1);
 		}else{
-			positive_fast_reach_detector = new UnweightedDijkstra<ReachDetector<Weight>::ReachStatus>(from,_g,*positiveReachStatus,1);
+			underapprox_fast_detector = new UnweightedDijkstra<ReachDetector<Weight>::ReachStatus>(from,_g,*positiveReachStatus,1);
 			//positive_reach_detector = new ReachDetector::CNFReachability(*this,false);
 		}
-		negative_reach_detector = new UnweightedDijkstra<ReachDetector<Weight>::ReachStatus>(from,_antig,*negativeReachStatus,-1);
-		positive_path_detector = positive_reach_detector;
-		negative_path_detector =negative_reach_detector;
-		negative_distance_detector =(Distance<int> *)  negative_path_detector;
+		overapprox_reach_detector = new UnweightedDijkstra<ReachDetector<Weight>::ReachStatus>(from,_antig,*negativeReachStatus,-1);
+		underapprox_path_detector = underapprox_detector;
+		overapprox_path_detector =overapprox_reach_detector;
+		negative_distance_detector =(Distance<int> *)  overapprox_path_detector;
 		//reach_detectors.last()->positive_dist_detector = new Dijkstra(from,g);
 	}
-	if(positive_reach_detector && ! positive_fast_reach_detector)
-		positive_fast_reach_detector = positive_reach_detector;
+	if(underapprox_detector && ! underapprox_fast_detector)
+		underapprox_fast_detector = underapprox_detector;
 
 
 	 if(opt_reach_detector_combined_maxflow){
@@ -188,10 +188,10 @@ ReachDetector<Weight>::ReachDetector(int _detectorID, GraphTheorySolver<Weight> 
 				conflict_flow = new EdmondsKarpAdj<CutStatus,long>(outer->cutGraph, cutStatus,source,0);
 			}
 	 }
-	if(positive_reach_detector)
-		positive_reach_detector->setSource(source);
-	if(negative_reach_detector)
-		negative_reach_detector->setSource(source);
+	if(underapprox_detector)
+		underapprox_detector->setSource(source);
+	if(overapprox_reach_detector)
+		overapprox_reach_detector->setSource(source);
 
 	underprop_marker=outer->newReasonMarker(getID());
 	overprop_marker=outer->newReasonMarker(getID());
@@ -301,7 +301,7 @@ void ReachDetector<Weight>::buildSATConstraints(bool onlyUnderApprox,int within_
 		for(int n = 0;n<g.nodes();n++){
 			if(reach_lits[n]==lit_Undef){
 				Var reach_var;
-				if(this->positive_reach_detector || this->negative_reach_detector)
+				if(this->underapprox_detector || this->overapprox_reach_detector)
 					reach_var= outer->newVar(detectorID , true);
 				else{
 					reach_var= outer->newVar(-1, false);
@@ -429,10 +429,10 @@ void ReachDetector<Weight>::addLit(int from, int to, Var outer_reach_var){
 	reach_lit_map[reach_var-first_reach_var]=to;
 
 	assert(from==source);
-	 if(opt_encode_reach_underapprox_as_sat || !positive_reach_detector){
+	 if(opt_encode_reach_underapprox_as_sat || !underapprox_detector){
 		 buildSATConstraints(true);
 	 }
-	 if( !negative_reach_detector){
+	 if( !overapprox_reach_detector){
 		 buildSATConstraints(false);
 	 }
 	 if(opt_conflict_min_cut  || opt_adaptive_conflict_mincut){
@@ -538,7 +538,7 @@ void ReachDetector<Weight>::preprocess(){
 template<typename Weight>
 void ReachDetector<Weight>::buildReachReason(int node,vec<Lit> & conflict){
 			//drawFull();
-			Reach & d = *positive_path_detector;
+			Reach & d = *underapprox_path_detector;
 			double starttime = rtime(2);
 			d.update();
 
@@ -942,7 +942,7 @@ template<typename Weight>
 						    	assert(u!=source);
 						    	to_visit.pop();
 						    	assert(seen[u]);
-						    	assert(!negative_reach_detector->connected_unsafe(u));
+						    	assert(!overapprox_reach_detector->connected_unsafe(u));
 						    	//Ok, then add all its incoming disabled edges to the cut, and visit any unseen, non-disabled incoming.edges()
 						    	for(int i = 0;i<outer->inv_adj[u].size();i++){
 						    		int v = outer->inv_adj[u][i].v;
@@ -1047,10 +1047,10 @@ template<typename Weight>
 			}
 			is_changed.growTo(g.nodes());
 			bool skipped_positive=false;
-			if(positive_reach_detector && (!opt_detect_pure_theory_lits || unassigned_positives>0)){
+			if(underapprox_detector && (!opt_detect_pure_theory_lits || unassigned_positives>0)){
 				double startdreachtime = rtime(2);
 				stats_under_updates++;
-				positive_reach_detector->update();
+				underapprox_detector->update();
 				double reachUpdateElapsed = rtime(2)-startdreachtime;
 				//outer->reachupdatetime+=reachUpdateElapsed;
 				stats_under_update_time+=rtime(2)-startdreachtime;
@@ -1060,10 +1060,10 @@ template<typename Weight>
 				stats_skipped_under_updates++;
 			}
 			bool skipped_negative=false;
-			if(negative_reach_detector && (!opt_detect_pure_theory_lits || unassigned_negatives>0)){
+			if(overapprox_reach_detector && (!opt_detect_pure_theory_lits || unassigned_negatives>0)){
 				double startunreachtime = rtime(2);
 				stats_over_updates++;
-				negative_reach_detector->update();
+				overapprox_reach_detector->update();
 				double unreachUpdateElapsed = rtime(2)-startunreachtime;
 				//outer->unreachupdatetime+=unreachUpdateElapsed;
 				stats_over_update_time+=rtime(2)-startunreachtime;
@@ -1083,9 +1083,9 @@ template<typename Weight>
 					assert(is_changed[u]);
 					Lit l;
 
-					if(positive_reach_detector && !skipped_positive && positive_reach_detector->connected(u)){
+					if(underapprox_detector && !skipped_positive && underapprox_detector->connected(u)){
 						l = mkLit(v,false);
-					}else if (negative_reach_detector &&!skipped_negative && !negative_reach_detector->connected(u)){
+					}else if (overapprox_reach_detector &&!skipped_negative && !overapprox_reach_detector->connected(u)){
 						l = mkLit(v,true);
 					}else{
 						assert(sz==changed.size());
@@ -1175,10 +1175,10 @@ template<typename Weight>
 						Lit l = reach_lits[i];
 						if(l!=lit_Undef){
 							int u = getNode(var(l));
-							if((positive_reach_detector && (!opt_detect_pure_theory_lits || unassigned_positives>0) && positive_reach_detector->connected_unsafe(u))){
+							if((underapprox_detector && (!opt_detect_pure_theory_lits || unassigned_positives>0) && underapprox_detector->connected_unsafe(u))){
 								assert(outer->value(l)==l_True);
 								assert(outer->dbg_value(l)==l_True);
-							}else if (negative_reach_detector && ((!opt_detect_pure_theory_lits || unassigned_negatives>0) && !negative_reach_detector->connected_unsafe(u))){
+							}else if (overapprox_reach_detector && ((!opt_detect_pure_theory_lits || unassigned_negatives>0) && !overapprox_reach_detector->connected_unsafe(u))){
 								assert(outer->value(l)==l_False);
 								assert(outer->dbg_value(l)==l_False);
 							}
@@ -1210,7 +1210,7 @@ void ReachDetector<Weight>::printSolution(std::ostream & write_to){
 			 if(!to_show[to])
 				 continue;
 
-			Reach & d = *positive_path_detector;
+			Reach & d = *underapprox_path_detector;
 			d.update();
 			 if(d.connected(to) ){
 				 write_to<<"Path from " << source <<"->"<<to<<" is : ";
@@ -1273,16 +1273,16 @@ bool ReachDetector<Weight>::checkSatisfied(){
 template<typename Weight>
 void ReachDetector<Weight>::dbg_sync_reachability(){
 #ifndef NDEBUG
-	if(!positive_reach_detector)
+	if(!underapprox_detector)
 		return;
 		for(int j = 0;j< reach_lits.size();j++){
 						Lit l =reach_lits[j];
 						if(l!=lit_Undef){
 							int node = getNode(var(l));
 
-							if(positive_reach_detector->connected(node)){
+							if(underapprox_detector->connected(node)){
 								assert(outer->value(l)==l_True);
-							}else if(! negative_reach_detector->connected(node)){
+							}else if(! overapprox_reach_detector->connected(node)){
 								assert(outer->value(l)==l_False);
 							}
 						}
@@ -1313,17 +1313,17 @@ Lit ReachDetector<Weight>::decide(int level){
 	if(!opt_allow_reach_decisions)
 		return lit_Undef;
 	double startdecidetime = rtime(2);
-	auto * over_reach = negative_reach_detector;
-	auto * under_reach = positive_reach_detector;
+	auto * over_reach = overapprox_reach_detector;
+	auto * under_reach = underapprox_detector;
 
 	if(!under_reach){
-		under_reach = positive_fast_reach_detector;
+		under_reach = underapprox_fast_detector;
 	}
 
-	auto * over_path =negative_path_detector;
-	auto * under_path = positive_reach_detector;
+	auto * over_path =overapprox_path_detector;
+	auto * under_path = underapprox_detector;
 	if(!under_path){
-		under_path = positive_path_detector;
+		under_path = underapprox_path_detector;
 	}
 	assert(under_path);
 	assert(over_path);

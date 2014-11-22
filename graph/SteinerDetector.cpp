@@ -43,8 +43,8 @@ Detector(detectorID),outer(outer),g(g),antig(antig),weights(weights),rnd_seed(se
 	negativeStatus = new SteinerDetector<Weight>::SteinerStatus(*this,false);
 
 	//NOTE: the terminal sets are intentionally swapped, in order to preserve monotonicity
-	positive_reach_detector =  new SteinerApprox<DynamicNodes,SteinerDetector<Weight>::SteinerStatus,Weight>(g,weights,overTerminalSet,*positiveStatus,1);//new SpiraPan<SteinerDetector<Weight>::MSTStatus>(_g,*(positiveReachStatus),1);
-	negative_reach_detector = new SteinerApprox<DynamicNodes,SteinerDetector<Weight>::SteinerStatus,Weight>(antig,weights,underTerminalSet,*negativeStatus,-1);
+	underapprox_detector =  new SteinerApprox<DynamicNodes,SteinerDetector<Weight>::SteinerStatus,Weight>(g,weights,overTerminalSet,*positiveStatus,1);//new SpiraPan<SteinerDetector<Weight>::MSTStatus>(_g,*(positiveReachStatus),1);
+	overapprox_detector = new SteinerApprox<DynamicNodes,SteinerDetector<Weight>::SteinerStatus,Weight>(antig,weights,underTerminalSet,*negativeStatus,-1);
 
 
 	underprop_marker=outer->newReasonMarker(getID());
@@ -131,7 +131,7 @@ template<typename Weight>
 				}
 			}
 			std::vector<int> edges;
-			positive_reach_detector->getSteinerTree(edges);
+			underapprox_detector->getSteinerTree(edges);
 			for(int edgeID: edges){
 				assert(g.edgeEnabled(edgeID));
 				conflict.push(mkLit(outer->getEdgeVar(edgeID),true));
@@ -141,7 +141,7 @@ template<typename Weight>
 
 template<typename Weight>
 		void SteinerDetector<Weight>::buildMinWeightTooLargeReason(Weight &weight,vec<Lit> & conflict){
-			assert(negative_reach_detector->disconnected() || negative_reach_detector->weight()>weight);
+			assert(overapprox_detector->disconnected() || overapprox_detector->weight()>weight);
 			//if the weight is too large, then either an edge has to be enabled, or a terminal node that is currently enabled has to be disabled.
 			for(int i = 0;i<overTerminalSet.nodes();i++){
 				if(overTerminalSet.nodeEnabled(i) && terminal_map[i]!=var_Undef){
@@ -151,7 +151,7 @@ template<typename Weight>
 
 			//antig.drawFull(true);
 
-			if(negative_reach_detector->disconnected()){
+			if(overapprox_detector->disconnected()){
 				//Then find a separating cut between any two terminals.
 
 					double starttime = rtime(2);
@@ -352,7 +352,7 @@ template<typename Weight>
 			changed_weights.clear();
 			double startdreachtime = rtime(2);
 			stats_under_updates++;
-			positive_reach_detector->update();
+			underapprox_detector->update();
 			double reachUpdateElapsed = rtime(2)-startdreachtime;
 			stats_under_update_time+=reachUpdateElapsed;
 		//}else
@@ -361,7 +361,7 @@ template<typename Weight>
 		//if(negative_reach_detector && (!opt_detect_pure_theory_lits || unassigned_negatives>0)){
 			double startunreachtime = rtime(2);
 			stats_over_updates++;
-			negative_reach_detector->update();
+			overapprox_detector->update();
 			double unreachUpdateElapsed = rtime(2)-startunreachtime;
 			stats_over_update_time+=unreachUpdateElapsed;
 		//}else
