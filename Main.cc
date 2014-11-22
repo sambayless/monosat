@@ -105,39 +105,26 @@ int main(int argc, char** argv)
 {
     try {
         setUsageHelp("USAGE: %s [options] <input-file> <result-output-file>\n\n  where input may be either in plain or gzipped DIMACS.\n");
-        // printf("This is MiniSat 2.0 beta\n");
+
         
 
         // Extra options:
-        //
-        //IntOption    opt_verb   ("MAIN", "opt_verb",   "opt_verb level (0=silent, 1=some, 2=more).", 1, IntRange(0, 3));
+
         IntOption    cpu_lim("MAIN", "cpu-lim","Limit on CPU time allowed in seconds.\n", INT32_MAX, IntRange(0, INT32_MAX));
         IntOption    mem_lim("MAIN", "mem-lim","Limit on memory usage in megabytes.\n", INT32_MAX, IntRange(0, INT32_MAX));
-        
-
-
         StringOption    opt_assume("MAIN", "assume","Specify a file of assumptions, with one literal or symbol per line", "");
-
         StringOption    opt_decidable("MAIN", "decidable-theories","Specify which graphs should make decisions on their own, in comma delimited format", "");
         IntOption    	opt_min_decision_var("MAIN", "min-decision-var","Restrict decisions to variables >= this one",1);
         IntOption    	opt_max_decision_var("MAIN", "max-decision-var","Restrict decisions to variables <= this one (ignore if 0)",0);
-
         IntOption    	opt_min_priority_decision_var("MAIN", "min-priority-var","Make decisions on variables in the range min-priority-var..max-priority-var first",1);
         IntOption    	opt_max_priority_decision_var("MAIN", "max-priority-var","Make decisions on variables in the range min-priority-var..max-priority-var first (set max-priority-var to 0 to set it to infinite)",0);
-
-
         StringOption 		opt_symbols("MAIN","symbols","Whether to read symbol lines (\"c var <variable number> <name>\") from the gnf","");
-
         StringOption    opt_assume_symbols("MAIN","assume-symbols","read in symbols (in the format produced by the 'symbols' option) and treat them as assumptions","");
-
         BoolOption opt_id_graph("GRAPH","print-vars","Identify the variables in the graph, then quit\n",false);
-
         BoolOption opt_witness("MAIN","witness","print solution",false);
         StringOption opt_witness_file("MAIN","witness-file","write witness to file","");
         StringOption opt_theory_witness_file("MAIN","theory-witness-file","write witness for theories to file","");
-
         BoolOption   pre    ("MAIN", "pre",    "Completely turn on/off any preprocessing.", true);
-
         BoolOption opb("PB","opb","Parse the input as pseudo-boolean constraints in .opb format",false);
         BoolOption precise("GEOM","precise","Solve geometry using precise rational arithmetic (instead of unsound, but faster, floating point arithmetic)",true);
 
@@ -158,16 +145,10 @@ int main(int argc, char** argv)
         	fprintf(stderr,"WARNING: for repeatability, setting FPU to use double precision\n");
 #endif
 
-
-
         vec<std::pair<int,string> > symbols;
 
         mincutalg = MinCutAlg::ALG_EDMONSKARP;
 
-        /*if(!strcasecmp(opt_min_cut_alg,"ibfs")){
-        	mincutalg=MinCutAlg::ALG_IBFS;
-
-        }else */
         if (!strcasecmp(opt_maxflow_alg,"edmondskarp-adj")){
         	mincutalg = MinCutAlg::ALG_EDKARP_ADJ;
         }else if (!strcasecmp(opt_maxflow_alg,"edmondskarp")){
@@ -350,10 +331,6 @@ int main(int argc, char** argv)
          }
          if (!pre) S.eliminate(true);
 
-#ifdef DEBUG_SOLVER
-         S.dbg_solver = new Solver();S.dbg_solver.verbosity=0;
-#endif
-
 
          gzFile in = (argc == 1) ? gzdopen(0, "rb") : gzopen(argv[1], "rb");
              if (in == NULL)
@@ -462,15 +439,7 @@ int main(int argc, char** argv)
 
            const char * assume_str =opt_assume;
 		   if(strlen(assume_str)){
-	/*		 //gzFile gin =gzopen(assume_str, "rb");
-			   int fd = open(assume_str, O_RDONLY, 0);
-			   gzFile gin =   gzdopen(fd,"rb");
-			parse_Assumptions(gin,assume, S,&symbols);
-			if(assume.size()==0){
-				printf("Warning: no assumptions found in assume file %s\n", assume_str);
-			}
-			gzclose(gin);*/
-	     	   //FILE * f = fopen(assume_str,"r");
+
 			   std::ifstream infile(assume_str);
 			   std::string symbol;
 
@@ -710,7 +679,7 @@ int main(int argc, char** argv)
         fflush(stdout);
 
         return (ret == l_True ? 10 : ret == l_False ? 20 : 0);
-//#endif
+
     } catch (OutOfMemoryException&){
         printf("===============================================================================\n");
         printf("INDETERMINATE\n");
