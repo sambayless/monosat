@@ -34,37 +34,6 @@ struct ReachabilityConstraint{
 	Var reach_var;
 };
 
-struct ConnectivityConstraint{
-	int from;
-	int to;
-	int distance;
-	Var connect_var;
-};
-
-/*struct DefaultEdgeStatus{
-
-	vec<char> status;
-
-	bool operator [] (int index) const {
-		return status[index];
-	}
-	void setStatus(int index, bool value){
-		status[index]=value;
-	}
-
-	int size(){
-		return status.size();
-	}
-	void growTo(int size) {
-		status.growTo(size);
-	}
-
-};*/
-//extern DefaultEdgeStatus defaultStatus;
-/*typedef DefaultEdgeStatus PositiveEdgeStatus;
-typedef DefaultEdgeStatus NegativeEdgeStatus;
-typedef DefaultEdgeStatus CutEdgeStatus;*/
-
 	struct Assignment{
 		bool isEdge:1;
 		bool assign:1;

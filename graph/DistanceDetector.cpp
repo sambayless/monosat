@@ -54,11 +54,11 @@ Detector(_detectorID),outer(_outer),weights(weights),g(_g),antig(_antig),source(
 		 positive_unweighted_distance_detector=nullptr;
 		 negative_unweighted_distance_detector=nullptr;
 		 positive_path_detector=nullptr;
-		 reach_marker=CRef_Undef;
-		 non_reach_marker=CRef_Undef;
-		 forced_reach_marker=CRef_Undef;
-		 weighted_reach_marker=CRef_Undef;
-		 weighted_non_reach_marker=CRef_Undef;
+		 unweighted_underprop_marker=CRef_Undef;
+		 unweighted_overprop_marker=CRef_Undef;
+
+		 weighted_underprop_marker=CRef_Undef;
+		 weighted_overprop_marker=CRef_Undef;
 		 //we are just going to directly enforce these constraints in the original SAT solver, so _nothing_ will end up happening in this detector (except for creating the clauses needed to enforce these constraints).
 
 		 return;
@@ -142,11 +142,11 @@ Detector(_detectorID),outer(_outer),weights(weights),g(_g),antig(_antig),source(
 			}
 	 }
 
-	reach_marker=outer->newReasonMarker(getID());
-	non_reach_marker=outer->newReasonMarker(getID());
-	forced_reach_marker=outer->newReasonMarker(getID());
-	weighted_reach_marker=outer->newReasonMarker(getID());
-	weighted_non_reach_marker=outer->newReasonMarker(getID());
+	unweighted_underprop_marker=outer->newReasonMarker(getID());
+	unweighted_overprop_marker=outer->newReasonMarker(getID());
+
+	weighted_underprop_marker=outer->newReasonMarker(getID());
+	weighted_overprop_marker=outer->newReasonMarker(getID());
 }
 
 template<typename Weight>
@@ -788,98 +788,11 @@ void DistanceDetector<Weight>::buildDistanceGTReason(int to,Weight & min_distanc
 
 
 }
-
-		/**
-		 * Explain why an edge was forced (to true).
-		 * The reason is that _IF_ that edge is false, THEN there is a cut of disabled edges between source and target
-		 * So, create the graph that has that edge (temporarily) assigned false, and find a min-cut in it...
-		 */
-template<typename Weight>
-		void DistanceDetector<Weight>::buildForcedEdgeReason(int reach_node, int forced_edge_id,vec<Lit> & conflict){
-					static int it = 0;
-					++it;
-
-					assert(outer->value(outer->edge_list[forced_edge_id].v)==l_True);
-					Lit edgeLit =mkLit( outer->edge_list[forced_edge_id].v,false);
-
-					conflict.push(edgeLit);
-
-					int forced_edge_from = outer->edge_list[forced_edge_id].from;
-					int forced_edge_to= outer->edge_list[forced_edge_id].to;
-
-
-					int u = reach_node;
-					//drawFull( non_reach_detectors[detector]->getSource(),u);
-					assert(outer->dbg_notreachable( source,u));
-					double starttime = rtime(2);
-					outer->cutGraph.clearHistory();
-					outer->stats_mc_calls++;
-
-
-
-
-				//We could learn an arbitrary (non-infinite) cut here, or just the whole set of false edges
-				//or perhaps we can learn the actual 1-uip cut?
-
-
-				vec<int>& to_visit  = outer->to_visit;
-				vec<char>& seen  = outer->seen;
-
-				to_visit.clear();
-				to_visit.push(reach_node);
-				seen.clear();
-				seen.growTo(outer->nNodes());
-				seen[reach_node]=true;
-
-				do{
-
-					assert(to_visit.size());
-					int u = to_visit.last();
-					assert(u!=source);
-					to_visit.pop();
-					assert(seen[u]);
-					assert(!negative_unweighted_distance_detector->connected_unsafe(u));
-					//Ok, then add all its incoming disabled edges to the cut, and visit any unseen, non-disabled incoming.edges()
-					for(int i = 0;i<outer->inv_adj[u].size();i++){
-						int v = outer->inv_adj[u][i].v;
-						int from = outer->inv_adj[u][i].from;
-						assert(from!=u);
-						assert(outer->inv_adj[u][i].to==u);
-						//Note: the variable has to not only be assigned false, but assigned false earlier in the trail than the reach variable...
-						int edge_num =outer->getEdgeID(v);// v-outer->min_edge_var;
-
-						if(edge_num == forced_edge_id || outer->value(v)==l_False){
-							//note: we know we haven't seen this edge variable before, because we know we haven't visited this node before
-							//if we are already planning on visiting the from node, then we don't need to include it in the conflict (is this correct?)
-							//if(!seen[from])
-								conflict.push(mkLit(v,false));
-						}else if (from!=source){
-							//assert(from!=source);
-							//even if it is undef? probably...
-							if(!seen[from]){
-								seen[from]=true;
-								to_visit.push(from);
-							}
-						}
-					}
-				}  while (to_visit.size());
-
-
-
-
-					 outer->num_learnt_cuts++;
-					 outer->learnt_cut_clause_length+= (conflict.size()-1);
-
-					double elapsed = rtime(2)-starttime;
-					 outer->mctime+=elapsed;
-
-
-				}
 template<typename Weight>
 		void DistanceDetector<Weight>::buildReason(Lit p, vec<Lit> & reason, CRef marker){
 
 
-				if(marker==reach_marker){
+				if(marker==unweighted_underprop_marker){
 					reason.push(p);
 				//	double startpathtime = rtime(2);
 
@@ -904,7 +817,7 @@ template<typename Weight>
 
 					//double elapsed = rtime(2)-startpathtime;
 				//	pathtime+=elapsed;
-				}else if(marker==non_reach_marker){
+				}else if(marker==unweighted_overprop_marker){
 					reason.push(p);
 
 					//the reason is a cut separating p from s;
@@ -918,13 +831,6 @@ template<typename Weight>
 					int t = getNode(v); // v- var(reach_lits[d][0]);
 					buildUnweightedDistanceGTReason(t,reason);
 
-				}else if (marker==forced_reach_marker){
-					Var v = var(p);
-					//The forced variable is an EDGE that was forced.
-					int forced_edge_id =outer->getEdgeID(v);//v- outer->min_edge_var;
-					//The corresponding node that is the reason it was forced
-					int reach_node=force_reason[forced_edge_id];
-					 buildForcedEdgeReason( reach_node,  forced_edge_id, reason);
 				}else{
 					assert(false);
 				}
@@ -1031,9 +937,9 @@ template<typename Weight>
 	#endif
 
 						if(reach)
-							outer->enqueue(l,reach_marker) ;
+							outer->enqueue(l,unweighted_underprop_marker) ;
 						else
-							outer->enqueue(l,non_reach_marker) ;
+							outer->enqueue(l,unweighted_overprop_marker) ;
 
 					}else if (outer->value(l)==l_False){
 						conflict.push(l);
@@ -1089,7 +995,7 @@ template<typename Weight>
 				if(outer->value(l)==l_True){
 					//do nothing
 				}else if (outer->value(l)==l_Undef){
-					outer->enqueue(l,weighted_reach_marker) ;
+					outer->enqueue(l,weighted_underprop_marker) ;
 				}else if (outer->value(l)==l_False){
 					//conflict
 					conflict.push(l);
@@ -1101,7 +1007,7 @@ template<typename Weight>
 				if(outer->value(~l)==l_True){
 					//do nothing
 				}else if (outer->value(~l)==l_Undef){
-					outer->enqueue(~l,weighted_non_reach_marker) ;
+					outer->enqueue(~l,weighted_overprop_marker) ;
 				}else if (outer->value(~l)==l_False){
 					//conflict
 					conflict.push(~l);
@@ -1223,7 +1129,7 @@ bool DistanceDetector<Weight>::checkSatisfied(){
 					if(outer->value(l)==l_True){
 						//do nothing
 					}else if (outer->value(l)==l_Undef){
-						outer->enqueue(l,weighted_reach_marker) ;
+						outer->enqueue(l,weighted_underprop_marker) ;
 					}else if (outer->value(l)==l_False){
 						return false;
 					}
@@ -1232,7 +1138,7 @@ bool DistanceDetector<Weight>::checkSatisfied(){
 					if(outer->value(~l)==l_True){
 						//do nothing
 					}else if (outer->value(~l)==l_Undef){
-						outer->enqueue(~l,weighted_non_reach_marker) ;
+						outer->enqueue(~l,weighted_overprop_marker) ;
 					}else if (outer->value(~l)==l_False){
 
 						return false;

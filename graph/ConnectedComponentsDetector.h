@@ -49,7 +49,7 @@ public:
 		CRef components_high_marker;
 		CRef connected_marker;
 		CRef not_connected_marker;
-		CRef forced_reach_marker;
+
 		ConnectedComponents * positive_component_detector;
 		ConnectedComponents * negative_component_detector;
 

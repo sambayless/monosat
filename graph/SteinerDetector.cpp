@@ -47,11 +47,11 @@ Detector(detectorID),outer(outer),g(g),antig(antig),rnd_seed(seed),weights(weigh
 	negative_reach_detector = new SteinerApprox<DynamicNodes,SteinerDetector<Weight>::SteinerStatus,Weight>(antig,weights,underTerminalSet,*negativeStatus,-1);
 
 
-	reach_marker=outer->newReasonMarker(getID());
-	non_reach_marker=outer->newReasonMarker(getID());
+	underprop_marker=outer->newReasonMarker(getID());
+	overprop_marker=outer->newReasonMarker(getID());
 
-	reach_edge_marker=outer->newReasonMarker(getID());
-	non_reach_edge_marker=outer->newReasonMarker(getID());
+	underprop_edge_marker=outer->newReasonMarker(getID());
+	overprop_edge_marker=outer->newReasonMarker(getID());
 	first_reach_var=var_Undef;
 }
 template<typename Weight>
@@ -298,7 +298,7 @@ template<typename Weight>
 template<typename Weight>
 		void SteinerDetector<Weight>::buildReason(Lit p, vec<Lit> & reason, CRef marker){
 
-				if(marker==reach_marker){
+				if(marker==underprop_marker){
 					reason.push(p);
 
 					Var v = var(p);
@@ -315,7 +315,7 @@ template<typename Weight>
 
 					//double elapsed = rtime(2)-startpathtime;
 				//	pathtime+=elapsed;
-				}else if(marker==non_reach_marker){
+				}else if(marker==overprop_marker){
 					reason.push(p);
 
 					//the reason is a cut separating p from s;
@@ -378,9 +378,9 @@ template<typename Weight>
 			}else if(outer->value(l)==l_Undef){
 				//trail.push(Assignment(false,reach,detectorID,0,var(l)));
 				if(reach)
-					outer->enqueue(l,reach_marker) ;
+					outer->enqueue(l,underprop_marker) ;
 				else
-					outer->enqueue(l,non_reach_marker) ;
+					outer->enqueue(l,overprop_marker) ;
 
 			}else if (outer->value(l)==l_False){
 				conflict.push(l);

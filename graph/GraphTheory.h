@@ -48,7 +48,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 #include "AllPairsDetector.h"
 #include "ReachDetector.h"
-#include "ConnectDetector.h"
+
 #include "DistanceDetector.h"
 #include "MSTDetector.h"
 #include "MaxflowDetector.h"
@@ -88,7 +88,7 @@ public:
 
 	MSTDetector<Weight> * mstDetector;
 	vec<ReachabilityConstraint> unimplemented_reachability_constraints;
-	vec<ConnectivityConstraint> unimplemented_connectivity_constraints;
+
 
 
 
@@ -127,7 +127,7 @@ public:
 public:
 	vec<Detector*> detectors;
 	vec<ReachDetector<Weight>*> reach_detectors;
-	vec<ConnectDetector<Weight>*> connect_detectors;
+
 	vec<DistanceDetector<Weight>*> distance_detectors;
 	vec<MaxflowDetector<Weight>*> flow_detectors;
 	ConnectedComponentsDetector<Weight>* component_detector;
@@ -1407,18 +1407,11 @@ public:
 				ReachabilityConstraint c = unimplemented_reachability_constraints[i];
 				reaches_private(c.from,c.to,c.reach_var,c.distance);
 			}
-			for(int i = 0;i<unimplemented_connectivity_constraints.size();i++){
-				ConnectivityConstraint c = unimplemented_connectivity_constraints[i];
-				connects_private(c.from,c.to,c.connect_var,c.distance);
-			}
+
 		}else if (opt_allpairs_percentage==0){
 			for(int i = 0;i<unimplemented_reachability_constraints.size();i++){
 				ReachabilityConstraint c = unimplemented_reachability_constraints[i];
 				allpairs(c.from,c.to,c.reach_var,c.distance);
-			}
-			for(int i = 0;i<unimplemented_connectivity_constraints.size();i++){
-				ConnectivityConstraint c = unimplemented_connectivity_constraints[i];
-				allpairs_undirected(c.from,c.to,c.connect_var,c.distance);
 			}
 		}else{
 			{
@@ -1444,32 +1437,6 @@ public:
 						allpairs(c.from,c.to,c.reach_var,c.distance);
 					else
 						reaches_private(c.from,c.to,c.reach_var,c.distance);
-				}
-			}
-
-			{
-				vec<bool> seen;
-				int count=0;
-				seen.growTo(nNodes());
-				for(int i = 0;i<unimplemented_connectivity_constraints.size();i++){
-					ConnectivityConstraint c = unimplemented_connectivity_constraints[i];
-							if(!seen[c.from]){
-								seen[c.from]=true;
-								count++;
-							}
-						}
-				double frac = ((double)count)/((double)nNodes());
-
-				if (opt_verb>0 && frac>=opt_allpairs_percentage){
-					printf("Allpairs-undirected solver triggered for graph %d by percentage of source nodes: %d/%d=%f>%f\n",getGraphID() ,count,nNodes(),frac,(double)opt_allpairs_percentage);
-				}
-
-				for(int i = 0;i<unimplemented_connectivity_constraints.size();i++){
-					ConnectivityConstraint c = unimplemented_connectivity_constraints[i];
-					if(frac>=opt_allpairs_percentage)
-						allpairs_undirected(c.from,c.to,c.connect_var,c.distance);
-					else
-						connects_private(c.from,c.to,c.connect_var,c.distance);
 				}
 			}
 		}
@@ -1522,43 +1489,7 @@ public:
 
 
 			    }
-	void connects_private(int from, int to, Var reach_var,int within_steps=-1){
-		//for now, reachesWithinSteps to be called instead
-		if(within_steps>=0 || opt_force_distance_solver){
-			//reachesWithinSteps(from,to,reach_var,within_steps);
-			printf("Not supported yet\n");
-			exit(1);
-			return;
-		}
 
-
-			assert(from<g.nodes());
-			if(within_steps>g.nodes())
-				within_steps=-1;
-
-			if (connect_info[from].source<0){
-
-					ConnectDetector<Weight>*rd = new ConnectDetector<Weight>(detectors.size(), this,g,antig,from,drand(rnd_seed));
-					detectors.push(rd);
-					connect_detectors.push(rd);
-
-				assert(detectors.last()->getID()==detectors.size()-1);
-
-
-				connect_info[from].source=from;
-				connect_info[from].detector=detectors.last();
-
-				//reach_detectors.last()->within=within_steps;
-
-			}
-
-			ConnectDetector<Weight> * d = (ConnectDetector<Weight>*) connect_info[from].detector;
-			assert(d);
-			assert(within_steps==-1);
-			d->addLit(from,to,reach_var);
-
-
-	}
 
 	void reaches_private(int from, int to, Var reach_var,int within_steps=-1){
 			//for now, reachesWithinSteps to be called instead
@@ -1601,11 +1532,6 @@ public:
 
 
 		    }
-
-	//Undirected reachability query
-	void connects(int from, int to, Var connect_var, int within_steps=-1){
-		unimplemented_connectivity_constraints.push({from,to,within_steps,connect_var});
-	}
 
 	void reaches(int from, int to, Var reach_var,int within_steps=-1){
 			unimplemented_reachability_constraints.push({from,to,within_steps,reach_var});

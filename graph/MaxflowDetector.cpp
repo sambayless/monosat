@@ -115,9 +115,9 @@ LevelDetector(_detectorID),outer(_outer),capacities(capacities),over_graph(_g),g
 
 
 	first_reach_var = var_Undef;
-	reach_marker=outer->newReasonMarker(getID());
-	non_reach_marker=outer->newReasonMarker(getID());
-	forced_reach_marker=outer->newReasonMarker(getID());
+	underprop_marker=outer->newReasonMarker(getID());
+	overprop_marker=outer->newReasonMarker(getID());
+
 }
 
 
@@ -514,7 +514,7 @@ template<typename Weight>
 		void MaxflowDetector<Weight>::buildReason(Lit p, vec<Lit> & reason, CRef marker){
 
 
-				if(marker==reach_marker){
+				if(marker==underprop_marker){
 					reason.push(p);
 				//	double startpathtime = rtime(2);
 
@@ -540,7 +540,7 @@ template<typename Weight>
 
 					//double elapsed = rtime(2)-startpathtime;
 				//	pathtime+=elapsed;
-				}else if(marker==non_reach_marker){
+				}else if(marker==overprop_marker){
 					reason.push(p);
 
 					//the reason is a cut separating p from s;
@@ -615,7 +615,7 @@ template<typename Weight>
 						//do nothing
 					}else if(outer->value(l)==l_Undef){
 						//trail.push(Assignment(false,true,detectorID,0,var(l)));
-						outer->enqueue(l,reach_marker) ;
+						outer->enqueue(l,underprop_marker) ;
 
 					}else if(outer->value(l)==l_False){
 						conflict.push(l);
@@ -628,7 +628,7 @@ template<typename Weight>
 						//do nothing
 					}else if(outer->value(l)==l_Undef){
 						//trail.push(Assignment(false,false,detectorID,0,var(l)));
-						outer->enqueue(~l,reach_marker) ;
+						outer->enqueue(~l,underprop_marker) ;
 
 					}else if(outer->value(l)==l_True){
 						conflict.push(~l);

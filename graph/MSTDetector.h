@@ -46,15 +46,15 @@ public:
 		DynamicGraph & antig;
 
 		double rnd_seed;
-		CRef reach_marker;
-		CRef non_reach_marker;
-		CRef reach_edge_marker;
-		CRef non_reach_edge_marker;
+		CRef underprop_marker;
+		CRef overprop_marker;
+		CRef underprop_edge_marker;
+		CRef overprop_edge_marker;
 
-		MinimumSpanningTree<Weight> * positive_reach_detector;
-		MinimumSpanningTree<Weight> * negative_reach_detector;
-		MinimumSpanningTree<Weight> *  positive_conflict_detector;
-		MinimumSpanningTree<Weight> * negative_conflict_detector;
+		MinimumSpanningTree<Weight> * positive_reach_detector=nullptr;
+		MinimumSpanningTree<Weight> * negative_reach_detector=nullptr;
+		MinimumSpanningTree<Weight> *  positive_conflict_detector=nullptr;
+		MinimumSpanningTree<Weight> * negative_conflict_detector=nullptr;
 		//Reach *  positive_path_detector;
 		Weight lowest_weight_lit=-1;
 		Weight highest_weight_lit=-1;

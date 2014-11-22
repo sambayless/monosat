@@ -56,9 +56,9 @@ public:
 		int constraintsBuiltOver=-1;
 		int constraintsBuiltUnder=-1;
 
-		CRef reach_marker;
-		CRef non_reach_marker;
-		CRef forced_reach_marker;
+		CRef underprop_marker;
+		CRef overprop_marker;
+		CRef forced_edge_marker;
 
 		Reach * positive_reach_detector=nullptr;
 		Reach * negative_reach_detector=nullptr;

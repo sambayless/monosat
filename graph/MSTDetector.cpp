@@ -61,11 +61,11 @@ Detector(detectorID),outer(outer),g(g),antig(antig),rnd_seed(seed),edge_weights(
 			negative_conflict_detector = new Kruskal<typename MinimumSpanningTree<Weight>::NullStatus,Weight>(antig,edge_weights,MinimumSpanningTree<Weight>::nullStatus,-1);
 		}
 
-		reach_marker=outer->newReasonMarker(getID());
-		non_reach_marker=outer->newReasonMarker(getID());
+		underprop_marker=outer->newReasonMarker(getID());
+		overprop_marker=outer->newReasonMarker(getID());
 
-		reach_edge_marker=outer->newReasonMarker(getID());
-		non_reach_edge_marker=outer->newReasonMarker(getID());
+		underprop_edge_marker=outer->newReasonMarker(getID());
+		overprop_edge_marker=outer->newReasonMarker(getID());
 		first_reach_var=var_Undef;
 }
 template<typename Weight>
@@ -641,7 +641,7 @@ void MSTDetector<Weight>::buildEdgeInTreeReason(int edgeid,vec<Lit> & conflict){
 template<typename Weight>
 void MSTDetector<Weight>::buildReason(Lit p, vec<Lit> & reason, CRef marker){
 
-		if(marker==reach_marker){
+		if(marker==underprop_marker){
 			reason.push(p);
 
 			Var v = var(p);
@@ -658,7 +658,7 @@ void MSTDetector<Weight>::buildReason(Lit p, vec<Lit> & reason, CRef marker){
 
 			//double elapsed = rtime(2)-startpathtime;
 		//	pathtime+=elapsed;
-		}else if(marker==non_reach_marker){
+		}else if(marker==overprop_marker){
 			reason.push(p);
 
 			//the reason is a cut separating p from s;
@@ -682,7 +682,7 @@ void MSTDetector<Weight>::buildReason(Lit p, vec<Lit> & reason, CRef marker){
 
 			buildMinWeightTooLargeReason(weight,reason);
 
-		}else if(marker==reach_edge_marker){
+		}else if(marker==underprop_edge_marker){
 			reason.push(p);
 
 			Var v = var(p);
@@ -692,7 +692,7 @@ void MSTDetector<Weight>::buildReason(Lit p, vec<Lit> & reason, CRef marker){
 
 			//double elapsed = rtime(2)-startpathtime;
 		//	pathtime+=elapsed;
-		}else if(marker==non_reach_edge_marker){
+		}else if(marker==overprop_edge_marker){
 			reason.push(p);
 
 			//the reason is a cut separating p from s;
@@ -767,9 +767,9 @@ if(weight_lits.size() && ( (under_weight>=lowest_weight_lit || positive_reach_de
 		}else if(outer->value(l)==l_Undef){
 			//trail.push(Assignment(false,reach,detectorID,0,var(l)));
 			if(reach)
-				outer->enqueue(l,reach_marker) ;
+				outer->enqueue(l,underprop_marker) ;
 			else
-				outer->enqueue(l,non_reach_marker) ;
+				outer->enqueue(l,overprop_marker) ;
 
 		}else if (outer->value(l)==l_False){
 			conflict.push(l);
@@ -825,9 +825,9 @@ while(changed_edges.size()){
 			}else if(outer->value(l)==l_Undef){
 				//trail.push(Assignment(false,reach,detectorID,0,var(l)));
 				if(reach)
-					outer->enqueue(l,reach_edge_marker) ;
+					outer->enqueue(l,underprop_edge_marker) ;
 				else
-					outer->enqueue(l,non_reach_edge_marker) ;
+					outer->enqueue(l,overprop_edge_marker) ;
 
 			}else if (outer->value(l)==l_False){
 				conflict.push(l);

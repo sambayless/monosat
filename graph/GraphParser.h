@@ -225,7 +225,7 @@ class GraphParser:public Parser<B,Solver>{
 
 }
 
- void readConnect(B& in, Solver& S) {
+/* void readConnect(B& in, Solver& S) {
 	if(opt_ignore_theories){
 		skipLine(in);
 		return;
@@ -258,7 +258,7 @@ class GraphParser:public Parser<B,Solver>{
 		printf("PARSE ERROR! Undeclared graph identifier %d\n",graphID), exit(1);
 		exit(1);
 	}
-}
+}*/
 
 
  void readReach(B& in, Solver& S) {
@@ -867,10 +867,10 @@ public:
 			count++;
 			readRationalWeightedEdge(in, S);
 			return true;
-		}*/else if (match(in,"connect")){
+		}*//*else if (match(in,"connect")){
 			readConnect(in, S);
 			return true;
-		}else if (match(in,"reach")){
+		}*/else if (match(in,"reach")){
 			readReach(in, S);
 			return true;
 		}else if (match(in, "distance_lt")){

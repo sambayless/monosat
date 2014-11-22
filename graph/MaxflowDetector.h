@@ -47,9 +47,9 @@ public:
 		int source;
 		int target;
 		double rnd_seed;
-		CRef reach_marker;
-		CRef non_reach_marker;
-		CRef forced_reach_marker;
+		CRef underprop_marker;
+		CRef overprop_marker;
+
 		MaxFlow<Weight>* positive_detector;
 		MaxFlow<Weight> * negative_detector;
 		MaxFlow<Weight> * positive_conflict_detector;

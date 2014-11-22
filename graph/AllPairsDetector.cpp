@@ -54,9 +54,9 @@ Detector(_detectorID),outer(_outer),g(_g),antig(_antig),rnd_seed(seed),positive_
 		}
 #endif
 	first_reach_var = var_Undef;
-	reach_marker=outer->newReasonMarker(getID());
-	non_reach_marker=outer->newReasonMarker(getID());
-	forced_reach_marker=outer->newReasonMarker(getID());
+	underprop_marker=outer->newReasonMarker(getID());
+	overprop_marker=outer->newReasonMarker(getID());
+
 }
 
 
@@ -284,92 +284,12 @@ template<typename Weight>
 
 		}
 
-		/**
-		 * Explain why an edge was forced (to true).
-		 * The reason is that _IF_ that edge is false, THEN there is a cut of disabled edges between source and target
-		 * So, create the graph that has that edge (temporarily) assigned false, and find a min-cut in it...
-		 */
-template<typename Weight>
-		void AllPairsDetector<Weight>::buildForcedEdgeReason(int source, int to, int forced_edge_id,vec<Lit> & conflict){
-					static int it = 0;
-					++it;
 
-					assert(outer->assigns[ outer->edge_list[forced_edge_id].v]==l_True);
-					Lit edgeLit =mkLit( outer->edge_list[forced_edge_id].v,false);
-
-					conflict.push(edgeLit);
-
-					int forced_edge_from = outer->edge_list[forced_edge_id].from;
-					int forced_edge_to= outer->edge_list[forced_edge_id].to;
-
-
-					int u = to;
-					//drawFull( non_reach_detectors[detector]->getSource(),u);
-					assert(outer->dbg_notreachable( source,u));
-					double starttime = rtime(2);
-					outer->cutGraph.clearHistory();
-					outer->stats_mc_calls++;
-
-					//We could learn an arbitrary (non-infinite) cut here, or just the whole set of false edges
-					//or perhaps we can learn the actual 1-uip cut?
-
-					vec<int>& to_visit  = outer->to_visit;
-					vec<char>& seen  = outer->seen;
-
-					to_visit.clear();
-					to_visit.push(to);
-					seen.clear();
-					seen.growTo(outer->nNodes());
-					seen[to]=true;
-
-					do{
-
-						assert(to_visit.size());
-						int u = to_visit.last();
-						assert(u!=source);
-						to_visit.pop();
-						assert(seen[u]);
-						assert(!negative_reach_detector->connected_unsafe(source,u));
-						//Ok, then add all its incoming disabled edges to the cut, and visit any unseen, non-disabled incoming.edges()
-						for(int i = 0;i<outer->inv_adj[u].size();i++){
-							int v = outer->inv_adj[u][i].v;
-							int from = outer->inv_adj[u][i].from;
-							assert(from!=u);
-							assert(outer->inv_adj[u][i].to==u);
-							//Note: the variable has to not only be assigned false, but assigned false earlier in the trail than the reach variable...
-							int edge_num = outer->getEdgeID(v);//v-outer->min_edge_var;
-
-							if(edge_num == forced_edge_id || outer->assigns[ outer->edge_list[forced_edge_id].v]==l_False){
-								//note: we know we haven't seen this edge variable before, because we know we haven't visited this node before
-								//if we are already planning on visiting the from node, then we don't need to include it in the conflict (is this correct?)
-								//if(!seen[from])
-									conflict.push(mkLit(v,false));
-							}else if (from!=source){
-								//assert(from!=source);
-								//even if it is undef? probably...
-								if(!seen[from]){
-									seen[from]=true;
-									to_visit.push(from);
-								}
-							}
-						}
-					}  while (to_visit.size());
-
-
-
-
-					 outer->num_learnt_cuts++;
-					 outer->learnt_cut_clause_length+= (conflict.size()-1);
-
-					double elapsed = rtime(2)-starttime;
-					 outer->mctime+=elapsed;
-
-				}
 template<typename Weight>
 		void AllPairsDetector<Weight>::buildReason(Lit p, vec<Lit> & reason, CRef marker){
 
 
-				if(marker==reach_marker){
+				if(marker==underprop_marker){
 					reason.push(p);
 				//	double startpathtime = rtime(2);
 
@@ -394,7 +314,7 @@ template<typename Weight>
 
 					//double elapsed = rtime(2)-startpathtime;
 				//	pathtime+=elapsed;
-				}else if(marker==non_reach_marker){
+				}else if(marker==overprop_marker){
 					reason.push(p);
 
 					//the reason is a cut separating p from s;
@@ -409,14 +329,6 @@ template<typename Weight>
 					int source = getSource(v);
 					buildNonReachReason(source,t,reason);
 
-				}else if (marker==forced_reach_marker){
-					Var v = var(p);
-					//The forced variable is an EDGE that was forced.
-					int forced_edge_id = outer->getEdgeID(v); //v- outer->min_edge_var;
-					//The corresponding node that is the reason it was forced
-					int reach_node=force_reason[forced_edge_id];
-					int source = getSource(v);
-					 buildForcedEdgeReason(source, reach_node,  forced_edge_id, reason);
 				}else{
 					assert(false);
 				}
@@ -454,9 +366,9 @@ template<typename Weight>
 #endif
 					//trail.push(Assignment(false,reach,detectorID,0,var(l)));
 					if(reach)
-						outer->enqueue(l,reach_marker) ;
+						outer->enqueue(l,underprop_marker) ;
 					else
-						outer->enqueue(l,non_reach_marker) ;
+						outer->enqueue(l,overprop_marker) ;
 
 				}else if (outer->value(l)==l_False){
 					conflict.push(l);

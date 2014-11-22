@@ -44,7 +44,7 @@ public:
 		GraphTheorySolver<Weight> * outer;
 		DynamicGraph &g;
 		DynamicGraph &antig;
-		int within;
+		int within=0;
 
 		double rnd_seed;
 #ifdef DEBUG_ALLPAIRS
@@ -52,9 +52,9 @@ public:
 		AllPairs * dbg_negative_reach_detector;
 #endif
 
-		CRef reach_marker;
-		CRef non_reach_marker;
-		CRef forced_reach_marker;
+		CRef underprop_marker;
+		CRef overprop_marker;
+
 		AllPairs * positive_reach_detector;
 		AllPairs * negative_reach_detector;
 		AllPairs *  positive_path_detector;
@@ -142,7 +142,7 @@ public:
 		bool propagate(vec<Lit> & conflict);
 		void buildReachReason(int from, int to,vec<Lit> & conflict);
 		void buildNonReachReason(int from, int to,vec<Lit> & conflict);
-		void buildForcedEdgeReason(int from, int to, int forced_edge_id,vec<Lit> & conflict);
+
 		void buildReason(Lit p, vec<Lit> & reason, CRef marker);
 		bool checkSatisfied();
 		Lit decide(int level);

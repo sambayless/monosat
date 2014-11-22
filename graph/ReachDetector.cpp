@@ -44,9 +44,9 @@ ReachDetector<Weight>::ReachDetector(int _detectorID, GraphTheorySolver<Weight> 
 	first_reach_var = var_Undef;
 	stats_pure_skipped=0;
 	stats_shrink_removed=0;
-	 reach_marker=CRef_Undef;
-	 non_reach_marker=CRef_Undef;
-	 forced_reach_marker=CRef_Undef;
+	 underprop_marker=CRef_Undef;
+	 overprop_marker=CRef_Undef;
+	 forced_edge_marker=CRef_Undef;
 	if(reachalg==ReachAlg::ALG_SAT){
 		//to print out the solution
 		//positive_reach_detector = new ReachDetector::CNFReachability(*this,false);
@@ -193,9 +193,9 @@ ReachDetector<Weight>::ReachDetector(int _detectorID, GraphTheorySolver<Weight> 
 	if(negative_reach_detector)
 		negative_reach_detector->setSource(source);
 
-	reach_marker=outer->newReasonMarker(getID());
-	non_reach_marker=outer->newReasonMarker(getID());
-	forced_reach_marker=outer->newReasonMarker(getID());
+	underprop_marker=outer->newReasonMarker(getID());
+	overprop_marker=outer->newReasonMarker(getID());
+	forced_edge_marker=outer->newReasonMarker(getID());
 }
 template<typename Weight>
 void ReachDetector<Weight>::buildSATConstraints(bool onlyUnderApprox,int within_steps){
@@ -989,7 +989,7 @@ template<typename Weight>
 				}
 template<typename Weight>
 		void ReachDetector<Weight>::buildReason(Lit p, vec<Lit> & reason, CRef marker){
-				if(marker==reach_marker){
+				if(marker==underprop_marker){
 					reason.push(p);
 				//	double startpathtime = rtime(2);
 
@@ -1014,7 +1014,7 @@ template<typename Weight>
 
 					//double elapsed = rtime(2)-startpathtime;
 				//	pathtime+=elapsed;
-				}else if(marker==non_reach_marker){
+				}else if(marker==overprop_marker){
 					reason.push(p);
 
 					//the reason is a cut separating p from s;
@@ -1028,7 +1028,7 @@ template<typename Weight>
 					int t = getNode(v); // v- var(reach_lits[d][0]);
 					buildNonReachReason(t,reason);
 
-				}else if (marker==forced_reach_marker){
+				}else if (marker==forced_edge_marker){
 					Var v = var(p);
 					//The forced variable is an EDGE that was forced.
 					int forced_edge_id =outer->getEdgeID(v);//v- outer->min_edge_var;
@@ -1109,9 +1109,9 @@ template<typename Weight>
 #endif
 						//trail.push(Assignment(false,reach,detectorID,0,var(l)));
 						if(reach)
-							outer->enqueue(l,reach_marker) ;
+							outer->enqueue(l,underprop_marker) ;
 						else
-							outer->enqueue(l,non_reach_marker) ;
+							outer->enqueue(l,overprop_marker) ;
 					}else if (outer->value(l)==l_False){
 						conflict.push(l);
 

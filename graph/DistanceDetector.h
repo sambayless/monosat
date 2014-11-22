@@ -55,11 +55,11 @@ public:
 		int source;
 		double rnd_seed;
 		int constraintsBuilt;
-		CRef reach_marker;
-		CRef non_reach_marker;
-		CRef weighted_reach_marker;
-		CRef weighted_non_reach_marker;
-		CRef forced_reach_marker;
+		CRef unweighted_underprop_marker;
+		CRef unweighted_overprop_marker;
+		CRef weighted_underprop_marker;
+		CRef weighted_overprop_marker;
+
 		Distance<int> * positive_unweighted_distance_detector;
 		Distance<int> * negative_unweighted_distance_detector;
 
@@ -225,7 +225,7 @@ public:
 		void buildUnweightedDistanceGTReason(int node,vec<Lit> & conflict);
 		void buildDistanceLEQReason(int to,Weight & min_distance,vec<Lit> & conflict);
 		void buildDistanceGTReason(int to,Weight & min_distance,vec<Lit> & conflict);
-		void buildForcedEdgeReason(int reach_node, int forced_edge_id,vec<Lit> & conflict);
+
 		void buildReason(Lit p, vec<Lit> & reason, CRef marker);
 		bool checkSatisfied();
 		Lit decide(int level);
