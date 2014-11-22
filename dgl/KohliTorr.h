@@ -24,7 +24,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 //Wrapper around Kohli and Torr's  Dynamic Graph Cuts algorithm (version 2)
 //Note that the Kohli Torr implementation itself is under the GPL (Version 2); only this wrapper code is MIT licensed.
-
+#include "DynamicGraph.h"
 #include "MaxFlow.h"
 #include <vector>
 #include "alg/dyncut/graph.h"

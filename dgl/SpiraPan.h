@@ -25,7 +25,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include <vector>
 #include "alg/Heap.h"
 #include "mtl/Sort.h"
-#include "graph/DynamicGraph.h"
+#include "DynamicGraph.h"
 #include "core/Config.h"
 #include "MinimumSpanningTree.h"
 #include "Kruskal.h"

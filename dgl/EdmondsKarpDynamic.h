@@ -23,7 +23,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #define EDMONDS_KARP_DYNAMIC_H
 
 //dynamic edmonds_karp, implemented by Sam, following http://cstheory.stackexchange.com/questions/9938/incremental-maximum-flow-in-dynamic-graphs
-
+#include "DynamicGraph.h"
 #include "MaxFlow.h"
 #include <vector>
 #include "EdmondsKarp.h"

@@ -23,7 +23,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "SteinerDetector.h"
 #include "GraphTheory.h"
 #include "dgl/SteinerApprox.h"
-#include "dgl/graph/DynamicNodes.h"
+#include "dgl/DynamicNodes.h"
 #include <limits>
 #include <set>
 #include "dgl/FloydWarshall.h"

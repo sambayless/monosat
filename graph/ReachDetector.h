@@ -22,7 +22,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #define REACHDETECTOR_H_
 #include "utils/System.h"
 #include "GraphTheoryTypes.h"
-#include "dgl/graph/DynamicGraph.h"
+#include "dgl/DynamicGraph.h"
 #include "dgl/Reach.h"
 #include "dgl/Dijkstra.h"
 #include "dgl/BFS.h"

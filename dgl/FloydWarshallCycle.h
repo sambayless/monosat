@@ -22,7 +22,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #ifndef FLOYD_WARSHALL_CYCLE_H_
 #define FLOYD_WARSHALL_CYCLE_H_
 
-#include "graph/DynamicGraph.h"
+#include "DynamicGraph.h"
 
 namespace dgl{
 class FloydWarshallCycle{

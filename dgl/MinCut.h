@@ -22,7 +22,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #ifndef MAXFLOW_H_
 #define MAXFLOW_H_
 
-
+#include "DynamicGraph.h"
 #include <vector>
 #include "alg/Heap.h"
 #include "DynDijkstra.h"

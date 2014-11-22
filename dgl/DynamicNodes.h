@@ -21,6 +21,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #ifndef DYNAMIC_NODES
 #define DYNAMIC_NODES
 #include <vector>
+#include <cassert>
 class DynamicNodes{
 	std::vector<bool> nodeStatus;
 	int n_enabled=0;

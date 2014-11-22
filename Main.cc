@@ -90,17 +90,7 @@ static void SIGINT_exit(int signum) {
     _exit(1); }
 
 
-//=================================================================================================
-// Main:
-//from http://stackoverflow.com/a/994647
-static unsigned int log2 (unsigned int val) {
-    unsigned int ret = -1;
-    while (val != 0) {
-        val >>= 1;
-        ret++;
-    }
-    return ret;
-}
+
 int main(int argc, char** argv)
 {
     try {

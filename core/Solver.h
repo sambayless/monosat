@@ -154,12 +154,12 @@ public:
 		double mem_used = memUsedPeak();
 
 	    printf("restarts              : %" PRIu64 "\n", starts);
-		printf("conflicts             : %-12" PRIu64 "   (%.0f /sec, %d learnts, %d removed)\n", conflicts   , conflicts   /cpu_time, learnts.size(),stats_removed_clauses);
+		printf("conflicts             : %-12" PRIu64 "   (%.0f /sec, %d learnts, %ld removed)\n", conflicts   , conflicts   /cpu_time, learnts.size(),stats_removed_clauses);
 		printf("decisions             : %-12" PRIu64 "   (%4.2f %% random) (%.0f /sec)\n", decisions, (float)rnd_decisions*100 / (float)decisions, decisions   /cpu_time);
 		printf("propagations          : %-12" PRIu64 "   (%.0f /sec)\n", propagations, propagations/cpu_time);
 		printf("conflict literals     : %-12" PRIu64 "   (%4.2f %% deleted)\n", tot_literals, (max_literals - tot_literals)*100 / (double)max_literals);
 		if(opt_detect_pure_theory_lits){
-			printf("pure literals     : %d (%d theory lits) (%d rounds, %f time)\n",stats_pure_lits, stats_pure_theory_lits,pure_literal_detections,stats_pure_lit_time);
+			printf("pure literals     : %ld (%ld theory lits) (%ld rounds, %f time)\n",stats_pure_lits, stats_pure_theory_lits,pure_literal_detections,stats_pure_lit_time);
 		}
 		for(int i = 0;i<theories.size();i++){
 			theories[i]->printStats(detail_level);
@@ -167,7 +167,6 @@ public:
     }
 
 	void writeTheoryWitness(std::ostream& write_to){
-
 		if(!ok){
 			write_to<<"s UNSATISFIABLE\n";
 		}else{
@@ -248,6 +247,7 @@ public:
     	theory_vars[solverVar].theory_var=newTheoryVar;
     }
 
+    //Lazily construct a reason for a literal propagated from a theory
     CRef constructReason(Lit p){
     	CRef cr = reason(var(p));
     	assert(isTheoryCause(cr));
@@ -257,11 +257,6 @@ public:
     	assert(hasTheory(p));
     	theory_reason.clear();
     	theories[t]->buildReason(getTheoryLit(p),theory_reason);
-    	/*CRef reason = ca.alloc(theory_reason, !opt_permanent_theory_conflicts);
-    	if(opt_permanent_theory_conflicts)
-			clauses.push(reason);
-		else
-			learnts.push(reason);*/
     	assert(theory_reason[0]==p); assert(value(p)==l_True);
 #ifdef DEBUG_SOLVER
     	//assert all the other reasons in this cause are earlier on the trail than p...
@@ -378,14 +373,14 @@ public:
     vec<LitCount> lit_counts;
     vec<CRef> markers;//a set of special clauses that can be recognized as pointers to theories
     vec<int> marker_theory;
-    int theory_index;
-    Solver * S;//super solver
-    bool initialPropagate;//to force propagation to occur at least once to the theory solvers
-    int super_qhead;
-    int local_qhead;
+    int theory_index=0;
+    Solver * S=nullptr;//super solver
+    bool initialPropagate=true;//to force propagation to occur at least once to the theory solvers
+    int super_qhead=0;
+    int local_qhead=0;
     CRef cause_marker;
-    int track_min_level;
-    int initial_level;
+    int track_min_level=0;
+    int initial_level=0;
     vec<int> theory_queue;
     vec<bool> in_theory_queue;
     int min_decision_var=0;
@@ -394,11 +389,11 @@ public:
     int max_priority_var=-1;
     CRef tmp_clause=CRef_Undef;
     int tmp_clause_sz=0;
-    Var max_super;
-    Var min_super;
-    Var min_local;
-    Var max_local;
-    int super_offset;
+    Var max_super=var_Undef;
+    Var min_super=var_Undef;
+    Var min_local=var_Undef;
+    Var max_local=var_Undef;
+    int super_offset=-1;
 
 
 

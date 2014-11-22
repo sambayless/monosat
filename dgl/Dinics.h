@@ -22,7 +22,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #ifndef DINICS_H
 #define DINICS_H
 
-
+#include "DynamicGraph.h"
 #include "MaxFlow.h"
 #include <vector>
 #include "core/Config.h"

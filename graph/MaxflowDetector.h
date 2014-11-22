@@ -23,7 +23,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "utils/System.h"
 #include "dgl/KohliTorr.h"
 #include "GraphTheoryTypes.h"
-#include "dgl/graph/DynamicGraph.h"
+#include "dgl/DynamicGraph.h"
 #include "dgl/MaxFlow.h"
 #include "dgl/EdmondsKarp.h"
 #include "core/SolverTypes.h"

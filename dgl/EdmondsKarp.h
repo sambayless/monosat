@@ -26,7 +26,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "MaxFlow.h"
 #include <vector>
 #include <algorithm>
-#include "graph/DynamicGraph.h"
+#include "DynamicGraph.h"
 namespace dgl{
 template<typename Weight=int>
 class EdmondsKarp:public MaxFlow<Weight>{

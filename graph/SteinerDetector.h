@@ -23,14 +23,14 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #define STEINER_DETECTOR_H_
 #include "utils/System.h"
 #include "GraphTheoryTypes.h"
-#include "dgl/graph/DynamicGraph.h"
+#include "dgl/DynamicGraph.h"
 #include "dgl/MinimumSpanningTree.h"
 #include "dgl/SteinerTree.h"
 #include "core/SolverTypes.h"
 #include "mtl/Map.h"
 
 #include "dgl/alg/DisjointSets.h"
-#include "dgl/graph/DynamicNodes.h"
+#include "dgl/DynamicNodes.h"
 #include "utils/System.h"
 #include "Detector.h"
 

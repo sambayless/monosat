@@ -22,9 +22,8 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #ifndef DYNAMICGRAPH_H_
 #define DYNAMICGRAPH_H_
 #include <vector>
-#include "graph/GraphTheoryTypes.h"
 #include <algorithm>
-
+#include <cassert>
 #ifndef NDEBUG
 //Used to track graph operations for debugging purposes - you can probably ignore this.
 #define RECORD

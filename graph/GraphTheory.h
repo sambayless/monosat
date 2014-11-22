@@ -32,7 +32,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "core/SolverTypes.h"
 #include "mtl/Map.h"
 #include "dgl/MaxFlow.h"
-
+#include "dgl/DynamicGraph.h"
 #include "dgl/EdmondsKarp.h"
 #include "dgl/EdmondsKarpAdj.h"
 #include "dgl/EdmondsKarpDynamic.h"
@@ -520,9 +520,6 @@ public:
      ~GraphTheorySolver(){};
 	 int newNode(){
 
-		/* edges.push();
-		 for(int i = 0;i<edges.size();i++)
-			 edges[i].growTo(edges.size());*/
 		 inv_adj.push();
 		 undirected_adj.push();
 		 reach_info.push();
@@ -530,8 +527,6 @@ public:
 		 dist_info.push();
 		 antig.addNode();
 		 cutGraph.addNode();
-
-
 		 seen.growTo(nNodes());
 
 		return g.addNode();
@@ -577,7 +572,7 @@ public:
 		}
 
 	void	dbg_sync_reachability(){
-/*
+
 #ifdef DEBUG_GRAPH
 
 		for(int i = 0;i<reach_detectors.size();i++){
@@ -585,7 +580,7 @@ public:
 			d->dbg_sync_reachability();
 		}
 #endif
-*/
+
 	}
 	void dbg_sync(){
 #ifndef NDEBUG
@@ -628,6 +623,7 @@ public:
 		}
 		/*static vec<lbool> assigned;
 		assigned.clear();*.
+		*/
 
 
 		/*for(int i = 0;i<edge_list.size();i++)

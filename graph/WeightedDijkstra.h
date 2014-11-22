@@ -24,7 +24,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 #include <vector>
 #include "dgl/alg/Heap.h"
-#include "dgl/graph/DynamicGraph.h"
+#include "dgl/DynamicGraph.h"
 #include "dgl/Reach.h"
 #include <limits>
 

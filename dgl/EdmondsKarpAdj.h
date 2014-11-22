@@ -22,7 +22,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #ifndef EDMONDS_KARP_ADJ_H
 #define EDMONDS_KARP_ADJ_H
 
-
+#include "DynamicGraph.h"
 #include "MaxFlow.h"
 #include <vector>
 #include <algorithm>
