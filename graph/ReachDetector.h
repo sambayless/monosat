@@ -138,12 +138,12 @@ public:
 
 			ReachStatus(ReachDetector & _outer, bool _polarity):detector(_outer), polarity(_polarity){}
 		};
-		ReachStatus *positiveReachStatus;
-		ReachStatus *negativeReachStatus;
+		ReachStatus *positiveReachStatus=nullptr;
+		ReachStatus *negativeReachStatus=nullptr;
 		MaxFlow<long> * conflict_flow=nullptr;
 		std::vector<MaxFlow<long> *> conflict_flows;
 
-		WeightedDijkstra<double> * rnd_path;
+		WeightedDijkstra<double> * rnd_path=nullptr;
 		std::vector<double> rnd_weight;
 		/*struct OptimalWeightEdgeStatus{
 			ReachDetector & detector;
@@ -155,7 +155,7 @@ public:
 
 		OptimalWeightEdgeStatus opt_weight;
 		WeightedDijkstra<OptimalWeightEdgeStatus> * opt_path;*/
-		Reach * chokepoint_detector;
+		Reach * chokepoint_detector=nullptr;
 		struct CutStatus{
 			long one=1;
 			long inf= 0xFFFF;

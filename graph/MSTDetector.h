@@ -41,7 +41,7 @@ template<typename Weight=int>
 class MSTDetector:public Detector{
 public:
 		GraphTheorySolver<Weight> * outer;
-		//int within;
+
 		DynamicGraph & g;
 		DynamicGraph & antig;
 
@@ -55,12 +55,10 @@ public:
 		MinimumSpanningTree<Weight> * negative_reach_detector=nullptr;
 		MinimumSpanningTree<Weight> *  positive_conflict_detector=nullptr;
 		MinimumSpanningTree<Weight> * negative_conflict_detector=nullptr;
-		//Reach *  positive_path_detector;
+
 		Weight lowest_weight_lit=-1;
 		Weight highest_weight_lit=-1;
-		//vec<Lit>  reach_lits;
 
-		//Map<float,int> weight_lit_map;
 		vec<int> force_reason;
 		std::vector<Weight> & edge_weights;
 		struct MSTWeightLit{
@@ -79,13 +77,7 @@ public:
 		vec<int> tree_edge_lits_map;
 		vec<MSTEdgeLit>  tree_edge_lits;
 		Var first_reach_var;
-/*
-		struct ChangedWeight{
-			Lit l;
-			Weight weight;
-		};
-		vec<ChangedWeight> changed_weights;
-*/
+
 
 		struct ChangedEdge{
 			Var v;
@@ -132,7 +124,7 @@ public:
 		void buildMinWeightTooLargeReason(Weight & weight,vec<Lit> & conflict);
 		void buildEdgeInTreeReason(int edge,vec<Lit> & conflict);
 		void buildEdgeNotInTreeReason(int edge,vec<Lit> & conflict);
-		//void buildForcedMinWeightReason(int reach_node, int forced_edge_id,vec<Lit> & conflict);
+
 		void buildReason(Lit p, vec<Lit> & reason, CRef marker);
 		bool checkSatisfied();
 		Lit decide(int level);

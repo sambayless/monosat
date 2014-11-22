@@ -40,8 +40,8 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include <iomanip>
 using namespace Monosat;
 template<typename Weight>
-DistanceDetector<Weight>::DistanceDetector(int _detectorID, GraphTheorySolver<Weight> * _outer,std::vector<Weight> & weights,  DynamicGraph &_g,DynamicGraph &_antig, int from, double seed):
-Detector(_detectorID),outer(_outer),weights(weights),g(_g),antig(_antig),source(from),rnd_seed(seed),cutStatus(*this),positive_unweighted_distance_detector(NULL),negative_unweighted_distance_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL){
+DistanceDetector<Weight>::DistanceDetector(int _detectorID, GraphTheorySolver<Weight> * outer,std::vector<Weight> & weights,  DynamicGraph &_g,DynamicGraph &_antig, int from, double seed):
+Detector(_detectorID),outer(outer),weights(weights),g(_g),antig(_antig),source(from),rnd_seed(seed),cutStatus(*this){
 	max_unweighted_distance=0;
 	rnd_path=NULL;
 
@@ -128,8 +128,7 @@ Detector(_detectorID),outer(_outer),weights(weights),g(_g),antig(_antig),source(
 			}else if (mincutalg==MinCutAlg::ALG_DINITZ){
 				conflict_flow = new Dinitz<CutStatus,long>(outer->cutGraph, cutStatus,source,0);
 			}else if (mincutalg==MinCutAlg::ALG_DINITZ_LINKCUT){
-				//link-cut tree currently only supports ints (enforcing this using tempalte specialization...).
-
+				//link-cut tree currently only supports ints
 				conflict_flow = new Dinitz<CutStatus,long>(outer->cutGraph, cutStatus,source,0);
 
 			}else if (mincutalg==MinCutAlg::ALG_KOHLI_TORR){

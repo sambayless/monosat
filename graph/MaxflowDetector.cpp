@@ -47,7 +47,7 @@ void MaxflowDetector<Weight>::buildDinitzLinkCut(){
 
 template<typename Weight>
 MaxflowDetector<Weight>::MaxflowDetector(int _detectorID, GraphTheorySolver<Weight> * _outer,std::vector<Weight> & capacities,  DynamicGraph &_g,DynamicGraph &_antig, int from, int _target,double seed):
-LevelDetector(_detectorID),outer(_outer),capacities(capacities),over_graph(_g),g(_g),antig(_antig),source(from),target(_target),rnd_seed(seed),positive_detector(NULL),negative_detector(NULL),cutStatus(*this){
+LevelDetector(_detectorID),outer(_outer),capacities(capacities),over_graph(_g),g(_g),antig(_antig),source(from),target(_target),rnd_seed(seed),cutStatus(*this){
 
 	if(mincutalg==MinCutAlg::ALG_EDKARP_DYN){
 		positive_detector = new EdmondsKarpDynamic<std::vector<Weight>,Weight>(_g,capacities,source,target);
@@ -764,7 +764,7 @@ void MaxflowDetector<Weight>::collectDisabledEdges(){
 #ifdef RECORD
 		if(learn_graph.outfile){
 			for(int edgeID = 0;edgeID<learn_graph.edges();edgeID++){
-				fprintf(learn_graph.outfile,"edge_weight %d %d\n", edgeID,cutStatus[edgeID]);
+				fprintf(learn_graph.outfile,"edge_weight %d %ld\n", edgeID,cutStatus[edgeID]);
 			}
 			fflush(learn_graph.outfile);
 		}
@@ -930,7 +930,7 @@ void MaxflowDetector<Weight>::collectChangedEdges(){
 #ifdef RECORD
 		if(learn_graph.outfile){
 			for(int edgeID = 0;edgeID<learn_graph.edges();edgeID++){
-				fprintf(learn_graph.outfile,"edge_weight %d %d\n", edgeID,cutStatus[edgeID]);
+				fprintf(learn_graph.outfile,"edge_weight %d %ld\n", edgeID,cutStatus[edgeID]);
 			}
 			fflush(learn_graph.outfile);
 		}

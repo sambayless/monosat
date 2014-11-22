@@ -42,10 +42,10 @@ template<typename Weight=int>
 class SteinerDetector:public Detector{
 public:
 		GraphTheorySolver<Weight> * outer;
-		std::vector<Weight>& weights;
+
 		DynamicGraph & g;
 		DynamicGraph & antig;
-
+		std::vector<Weight>& weights;
 		DynamicNodes underTerminalSet;
 		DynamicNodes overTerminalSet;
 		double rnd_seed;
@@ -54,10 +54,10 @@ public:
 		CRef underprop_edge_marker;
 		CRef overprop_edge_marker;
 
-		SteinerTree<Weight> * positive_reach_detector;
-		SteinerTree<Weight> * negative_reach_detector;
-		SteinerTree<Weight> *  positive_conflict_detector;
-		SteinerTree<Weight> * negative_conflict_detector;
+		SteinerTree<Weight> * positive_reach_detector=nullptr;
+		SteinerTree<Weight> * negative_reach_detector=nullptr;
+		SteinerTree<Weight> *  positive_conflict_detector=nullptr;
+		SteinerTree<Weight> * negative_conflict_detector=nullptr;
 
 		vec<Var> terminal_map;
 		vec<int> terminal_var_map;

@@ -36,7 +36,7 @@ using namespace Monosat;
 
 template<typename Weight>
 MSTDetector<Weight>::MSTDetector(int detectorID, GraphTheorySolver<Weight> * outer,  DynamicGraph &g,DynamicGraph &antig ,std::vector<Weight> & edge_weights,double seed):
-Detector(detectorID),outer(outer),g(g),antig(antig),rnd_seed(seed),edge_weights(edge_weights),positive_reach_detector(NULL),negative_reach_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL){
+Detector(detectorID),outer(outer),g(g),antig(antig),rnd_seed(seed),edge_weights(edge_weights){
 	checked_unique=false;
 	all_unique=true;
 		positiveReachStatus = new MSTDetector<Weight>::MSTStatus(*this,true);

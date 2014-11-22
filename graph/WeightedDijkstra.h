@@ -65,37 +65,22 @@ public:
 public:
 	//stats
 
-	int stats_full_updates;
-	int stats_fast_updates;
-	int stats_fast_failed_updates;
-	int stats_skip_deletes;
-	int stats_skipped_updates;
-	int stats_num_skipable_deletions;
-	double mod_percentage;
+	long stats_full_updates=0;
+	long stats_fast_updates=0;
+	long stats_fast_failed_updates=0;
+	long stats_skip_deletes=0;
+	long stats_skipped_updates=0;
+	long stats_num_skipable_deletions=0;
+	double mod_percentage=0;
 
-	double stats_full_update_time;
-	double stats_fast_update_time;
+	double stats_full_update_time=0;
+	double stats_fast_update_time=0;
 	WeightedDijkstra(int s,DynamicGraph & graph,std::vector<Weight> & weights):g(graph),weights(weights), last_modification(-1),last_addition(-1),last_deletion(-1),history_qhead(0),last_history_clear(0),source(s),INF(0),q(DistCmp(dist)){
 
 		mod_percentage=0.2;
-		stats_full_updates=0;
-		stats_fast_updates=0;
-		stats_skip_deletes=0;
-		stats_skipped_updates=0;
-		stats_full_update_time=0;
-		stats_fast_update_time=0;
+
 		INF= std::numeric_limits<Weight>::infinity();
 	}
-	//Dijkstra(const Dijkstra& d):g(d.g), last_modification(-1),last_addition(-1),last_deletion(-1),history_qhead(0),last_history_clear(0),source(d.source),INF(0),q(DistCmp(dist)),stats_full_updates(0),stats_fast_updates(0),stats_skip_deletes(0),stats_skipped_updates(0),stats_full_update_time(0),stats_fast_update_time(0){marked=false;};
-
-/*	void setWeight(int node, double w){
-		while(weight.size()<=g.nodes()){
-			weight.push_back(1);
-		}
-		weight[node]=w;
-
-	}*/
-
 
 	void setSource(int s){
 		source = s;
@@ -112,12 +97,6 @@ public:
 	}
 	void updateFast(){
 		stats_fast_updates++;
-		
-
-
-
-		/*for(int i = 0;i<g.nodes();i++)
-					changed.push_back(i);*/
 		assert(last_deletion==g.deletions);
 		num_updates++;
 		last_modification=g.modifications;
@@ -128,8 +107,6 @@ public:
 		while(weights.size()<=g.nodes()){
 			weights.push_back(1);
 		}
-
-
 
 		q.clear();
 		if(last_history_clear!=g.historyclears){
@@ -176,25 +153,7 @@ public:
 					else
 						q.decrease(v);
 				}
-
 			}
-			/*
-			 *
-			 *
-			//Is this altered code still correct? Well, not for dijkstras, but probably for connectivity
-			if(dist[v]>=INF){
-				//this was changed
-				changed.push_back(v);
-
-				dist[v]=alt;
-				prev[v]=u;
-
-				if(!q.inHeap(v))
-					q.insert(v);
-			}
-			 *
-			 */
-
 		}
 		history_qhead=g.history.size();
 

@@ -48,9 +48,10 @@ template<typename Weight>
 class DistanceDetector:public Detector{
 public:
 		GraphTheorySolver<Weight> * outer;
+
+		 std::vector<Weight> & weights;
 		 DynamicGraph &g;
 		 DynamicGraph &antig;
-		 std::vector<Weight> & weights;
 		//int within;
 		int source;
 		double rnd_seed;
@@ -60,13 +61,13 @@ public:
 		CRef weighted_underprop_marker;
 		CRef weighted_overprop_marker;
 
-		Distance<int> * positive_unweighted_distance_detector;
-		Distance<int> * negative_unweighted_distance_detector;
+		Distance<int> * positive_unweighted_distance_detector=nullptr;
+		Distance<int> * negative_unweighted_distance_detector=nullptr;
 
-		Distance<Weight> * positive_weighted_distance_detector;
-		Distance<Weight> * negative_weighted_distance_detector;
-		Distance<Weight> * positive_weighted_path_detector;
-		Reach *  positive_path_detector;
+		Distance<Weight> * positive_weighted_distance_detector=nullptr;
+		Distance<Weight> * negative_weighted_distance_detector=nullptr;
+		Distance<Weight> * positive_weighted_path_detector=nullptr;
+		Reach *  positive_path_detector=nullptr;
 
 		//vec<Lit>  reach_lits;
 		Var first_reach_var;

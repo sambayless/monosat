@@ -74,24 +74,16 @@ class GraphTheorySolver:public Theory{
 public:
 
 	double rnd_seed;
-	Lit False;
-	Lit True;
-	int local_q;
+
 private:
 	Solver * S;
+	int local_q=0;
 public:
 	int id;
-
-
 	bool all_edges_unit=true;
 	vec<lbool> assigns;
-
-	MSTDetector<Weight> * mstDetector;
+	MSTDetector<Weight> * mstDetector=nullptr;
 	vec<ReachabilityConstraint> unimplemented_reachability_constraints;
-
-
-
-
 
 	DynamicGraph g;
 	DynamicGraph antig;
@@ -114,10 +106,10 @@ public:
 
 	struct ReachInfo{
 		int source;
-		bool distance;
+		bool distance=0;
 		Detector * detector;
 
-		ReachInfo():source(-1),detector(NULL){}
+		ReachInfo():source(-1),detector(nullptr){}
 	};
 
 
@@ -127,11 +119,10 @@ public:
 public:
 	vec<Detector*> detectors;
 	vec<ReachDetector<Weight>*> reach_detectors;
-
 	vec<DistanceDetector<Weight>*> distance_detectors;
 	vec<MaxflowDetector<Weight>*> flow_detectors;
-	ConnectedComponentsDetector<Weight>* component_detector;
-	CycleDetector<Weight> * cycle_detector;
+	ConnectedComponentsDetector<Weight>* component_detector=nullptr;
+	CycleDetector<Weight> * cycle_detector=nullptr;
 	vec<SteinerDetector<Weight>*>  steiner_detectors;
 
 	vec<int> marker_map;
@@ -153,9 +144,8 @@ public:
 	std::vector<Weight> edge_weights;
 	//Some algorithms support computations using rational weights (or capacities).
 	std::vector<mpq_class> rational_weights;
-	bool requiresPropagation;
-	//MaxFlow<int> * mc;
-	//MaxFlow * reachprop;
+	bool requiresPropagation=true;
+
 
     vec<char> seen;
 	vec<int> to_visit;
@@ -170,32 +160,32 @@ public:
 	};
 
 	vec<VarData> vars;
-	int theory_index;
+	int theory_index=0;
 public:
 
-	double mctime;
-	double reachtime;
-	double unreachtime;
-	double pathtime;
-	double propagationtime;
-	long stats_propagations;
-	long stats_num_conflicts;
-	long stats_decisions;
-	long stats_num_reasons;
+	double mctime=0;
+	double reachtime=0;
+	double unreachtime=0;
+	double pathtime=0;
+	double propagationtime=0;
+	long stats_propagations=0;
+	long stats_num_conflicts=0;
+	long stats_decisions=0;
+	long stats_num_reasons=0;
 
-	double reachupdatetime;
-	double unreachupdatetime;
-	double stats_initial_propagation_time;
-	double stats_decision_time;
-	double stats_reason_initial_time;
-	double stats_reason_time;
-	int num_learnt_paths;
-	int learnt_path_clause_length;
-	int num_learnt_cuts;
-	int learnt_cut_clause_length;
-	int stats_pure_skipped;
-	int stats_mc_calls;
-	long stats_propagations_skipped;
+	double reachupdatetime=0;
+	double unreachupdatetime=0;
+	double stats_initial_propagation_time=0;
+	double stats_decision_time=0;
+	double stats_reason_initial_time=0;
+	double stats_reason_time=0;
+	long num_learnt_paths=0;
+	long learnt_path_clause_length=0;
+	long num_learnt_cuts=0;
+	long learnt_cut_clause_length=0;
+	long stats_pure_skipped=0;
+	long stats_mc_calls=0;
+	long stats_propagations_skipped=0;
 	vec<Lit> reach_cut;
 
 	struct CutStatus{
@@ -234,10 +224,6 @@ public:
 	}propCutStatus;
 
 	GraphTheorySolver(Solver * S_, int _id=-1):S(S_),id(_id),cutStatus(*this),propCutStatus(*this){
-		mstDetector = NULL;
-		//True = mkLit(S->newVar(),false);
-			//False=~True;
-			//S->addClause(True);
 #ifdef RECORD
 			{
 				char t[30];
@@ -268,52 +254,8 @@ public:
 				antig.historyClearInterval=opt_history_clear;
 				cutGraph.historyClearInterval=opt_history_clear;
 			}
-			local_q=0;
-			theory_index=0;
-			mctime=0;
-			stats_mc_calls=0;
-			reachtime=0;
-			unreachtime=0;
-			pathtime=0;
-			propagationtime=0;
-			stats_propagations=0;
-			stats_num_conflicts=0;
-			stats_num_reasons=0;
-			stats_decisions = 0;
-			stats_propagations_skipped=0;
-			reachupdatetime=0;
-			unreachupdatetime=0;
-			stats_initial_propagation_time=0;
-			stats_decision_time=0;
-			stats_reason_initial_time=0;
-			stats_reason_time=0;
-			 num_learnt_paths=0;
-			 learnt_path_clause_length=0;
-			 num_learnt_cuts=0;
-			 learnt_cut_clause_length=0;
-			 component_detector=NULL;
-			 requiresPropagation=true;
+
 			 rnd_seed=opt_random_seed;
-
-	/*		if(mincutalg==MinCutAlg::ALG_EDKARP_DYN){
-				 mc = new EdmondsKarpDynamic<CutStatus,int>(cutGraph, cutStatus);
-			}else if (mincutalg==MinCutAlg::ALG_EDKARP_ADJ){
-				mc = new EdmondsKarpAdj<CutStatus,int>(cutGraph, cutStatus);
-			}else if (mincutalg==MinCutAlg::ALG_DINITZ){
-				mc = new Dinitz<CutStatus,int>(cutGraph, cutStatus);
-
-			}else if (mincutalg==MinCutAlg::ALG_DINITZ_LINKCUT){
-				//link-cut tree currently only supports ints (enforcing this using tempalte specialization...).
-				mc = new DinitzLinkCut<CutStatus>(cutGraph, cutStatus);
-			}else if (mincutalg==MinCutAlg::ALG_KOHLI_TORR){
-				if(opt_use_kt_for_conflicts){
-					 mc = new KohliTorr<CutStatus,int>(cutGraph, cutStatus);
-				}else
-					mc = new EdmondsKarpDynamic<CutStatus,int>(cutGraph, cutStatus);
-			}else{
-				mc = new EdmondsKarpAdj<CutStatus,int>(cutGraph, cutStatus);
-			}*/
-
 	}
 
 	void printStats(int detailLevel){
@@ -333,11 +275,11 @@ public:
 		printf("Min-cut Time: %f (%d calls, %f average, #Cuts: %d, AvgLength %f, total: %d)\n", mctime, stats_mc_calls,(mctime/(stats_mc_calls ? stats_mc_calls:1)),  num_learnt_cuts, (learnt_cut_clause_length /  ((float) num_learnt_cuts+1)),learnt_cut_clause_length);
 */
 		printf("%d nodes, %d edges\n", g.nodes(),g.edges());
+		printf("History Clears: over_approx %ld, under_approx %ld, cut_graph %ld\n",antig.historyclears,g.historyclears,cutGraph.historyclears);
 		printf("Propagations: %ld (%f s, avg: %f s, %ld skipped)\n",stats_propagations ,propagationtime, (propagationtime)/((double)stats_propagations+1),stats_propagations_skipped);
 		printf("Decisions: %ld (%f s, avg: %f s)\n",stats_decisions,stats_decision_time, (stats_decision_time)/((double)stats_decisions+1));
 		printf("Conflicts: %ld\n",stats_num_conflicts);
 		printf("Reasons: %ld (%f s, avg: %f s)\n",stats_num_reasons,stats_reason_time, (stats_reason_time)/((double)stats_num_reasons+1));
-		printf("History Clears: over_approx %d, under_approx %d, cut_graph %d\n",antig.historyclears,g.historyclears,cutGraph.historyclears);
 
 		fflush(stdout);
 	}
@@ -418,25 +360,9 @@ public:
 
 		S->addClauseSafely(tmp_clause);
 	}
-	/*void addConflictClause(vec<Lit> & c){
-		tmp_clause.clear();
-		c.copyTo(tmp_clause);
-		toSolver(tmp_clause);
-		CRef ignore;
-		S->addConflictClause(tmp_clause,ignore);
-	}*/
+
 	Var newVar(int forDetector=-1, bool connectToTheory=false){
 		Var s= S->newVar();
-	/*	Var v = vars.size();
-		vars.push();
-		vars[v].isEdge=false;
-		vars[v].occursPositive=true;
-		vars[v].occursNegative=true;
-		vars[v].detector_edge=-1;
-		vars[v].solverVar=s;
-		if(connectToTheory){
-			S->setTheoryVar(s,getTheoryIndex(),v);
-		}*/
 		return newVar(s,forDetector,false,connectToTheory);
 	}
 	Var newVar(Var solverVar, int detector, bool isEdge=false, bool connectToTheory=true){
@@ -495,7 +421,7 @@ public:
 		if(assigns[var(l)]!=l_Undef){
 			assert(S->value(toSolver(l))==  (assigns[var(l)]^ sign(l)));
 		}
-		return assigns[var(l)]^ sign(l);;//S->value(toSolver(l));
+		return assigns[var(l)]^ sign(l);
 	}
 	inline lbool dbg_value(Var v){
 		return S->value(toSolver(v));

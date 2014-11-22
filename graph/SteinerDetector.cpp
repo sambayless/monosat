@@ -36,7 +36,7 @@ using namespace Monosat;
 
 template<typename Weight>
 SteinerDetector<Weight>::SteinerDetector(int detectorID, GraphTheorySolver<Weight> * outer,std::vector<Weight> &weights,  DynamicGraph &g,DynamicGraph &antig ,double seed):
-Detector(detectorID),outer(outer),g(g),antig(antig),rnd_seed(seed),weights(weights),positive_reach_detector(NULL),negative_reach_detector(NULL){
+Detector(detectorID),outer(outer),g(g),antig(antig),weights(weights),rnd_seed(seed){
 	checked_unique=false;
 	all_unique=true;
 	positiveStatus = new SteinerDetector<Weight>::SteinerStatus(*this,true);

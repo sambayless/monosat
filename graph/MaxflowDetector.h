@@ -43,17 +43,17 @@ public:
 		DynamicGraph & over_graph;
 		 DynamicGraph &g;
 		 DynamicGraph &antig;
-		//int within;
+
 		int source;
 		int target;
 		double rnd_seed;
 		CRef underprop_marker;
 		CRef overprop_marker;
 
-		MaxFlow<Weight>* positive_detector;
-		MaxFlow<Weight> * negative_detector;
-		MaxFlow<Weight> * positive_conflict_detector;
-		MaxFlow<Weight> * negative_conflict_detector;
+		MaxFlow<Weight>* positive_detector=nullptr;
+		MaxFlow<Weight> * negative_detector=nullptr;
+		MaxFlow<Weight> * positive_conflict_detector=nullptr;
+		MaxFlow<Weight> * negative_conflict_detector=nullptr;
 		int last_decision_status=-1;
 		int last_decision_q_pos=0;
 
@@ -94,15 +94,7 @@ public:
 		vec<MaxFlowEdge> tmp_cut;
 		vec<int> visit;
 		vec<bool> seen;
-		//vec<int> prev;
-		//vec<int> dist;
-/*		int getNode(Var reachVar){
-			assert(reachVar>=first_reach_var);
-			int index = reachVar-first_reach_var;
-			assert(index< reach_lit_map.size());
-			assert(reach_lit_map[index]>=0);
-			return reach_lit_map[index];
-		}*/
+
 		struct CutStatus{
 			long one=1;
 			long inf= 0x0FF0F0;
@@ -140,9 +132,9 @@ public:
 			Detector::printStats();
 			if (mincutalg==MinCutAlg::ALG_KOHLI_TORR){
 				 KohliTorr<std::vector<Weight>,Weight> * kt = (KohliTorr<std::vector<Weight>,Weight> *) negative_detector;
-				 printf("\tDecision flow calculations: %d, (redecide: %f s) flow_calc %f s, flow_discovery %f s, (%d) (maxflow %f,flow assignment %f)\n",stats_decision_calculations,stats_redecide_time,stats_flow_calc_time,stats_flow_recalc_time,kt->stats_flow_calcs,kt->stats_flow_time,kt->stats_calc_time );
+				 printf("\tDecision flow calculations: %ld, (redecide: %f s) flow_calc %f s, flow_discovery %f s, (%ld) (maxflow %f,flow assignment %f)\n",stats_decision_calculations,stats_redecide_time,stats_flow_calc_time,stats_flow_recalc_time,kt->stats_flow_calcs,kt->stats_flow_time,kt->stats_calc_time );
 			}else
-				 printf("\tDecision flow calculations: %d\n",stats_decision_calculations );
+				 printf("\tDecision flow calculations: %ld\n",stats_decision_calculations );
 
 		}
 		void dbg_decisions();

@@ -30,7 +30,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 namespace Monosat{
 
 //Graph properties (such as shortest paths, minimum spanning tree weights) are computed by individual 'detectors',
-//atached to the central graph theory.
+//atached to the central graph theory. This allows them to share their edge atoms and a lot of other infrastructure.
 class Detector{
 public:
 
@@ -70,22 +70,18 @@ public:
 		if(opt_verb>0){
 			printf("Detector %d (%s):\n", getID(), getName());
 			//printf("Updates: %d (under), %d over\n", stats_under_updates, stats_over_updates);
-			printf("\tUnder-approx updates: %d (%d skipped) (%f s total, %f s avg)\n", stats_under_updates,stats_skipped_under_updates,(double)stats_under_update_time, (double)stats_under_update_time/(double)(stats_under_updates+1) );
-			printf("\tOver-approx updates: %d (%d skipped)  (%f s total, %f s avg)\n", stats_over_updates,stats_skipped_over_updates,(double)stats_over_update_time, (double)stats_over_update_time/(double)(stats_over_updates+1) );
-			printf("\tTheory Decisions: %d (%f s total, %f s avg)\n",stats_decisions,(double)stats_decide_time,(double)stats_decide_time/(double)(stats_decisions+1));
-			printf("\tConflicts (under,over): %d (clause literals: %d), %d, (clause literals: %d), (under time %f s, over time %f s)\n",stats_under_conflicts,stats_under_clause_length,stats_over_conflicts, stats_over_clause_length  ,stats_under_conflict_time,stats_over_conflict_time );
+			printf("\tUnder-approx updates: %ld (%ld skipped) (%f s total, %f s avg)\n", stats_under_updates,stats_skipped_under_updates,(double)stats_under_update_time, (double)stats_under_update_time/(double)(stats_under_updates+1) );
+			printf("\tOver-approx updates: %ld (%ld skipped)  (%f s total, %f s avg)\n", stats_over_updates,stats_skipped_over_updates,(double)stats_over_update_time, (double)stats_over_update_time/(double)(stats_over_updates+1) );
+			printf("\tTheory Decisions: %ld (%f s total, %f s avg)\n",stats_decisions,(double)stats_decide_time,(double)stats_decide_time/(double)(stats_decisions+1));
+			printf("\tConflicts (under,over): %ld (clause literals: %ld), %ld, (clause literals: %ld), (under time %f s, over time %f s)\n",stats_under_conflicts,stats_under_clause_length,stats_over_conflicts, stats_over_clause_length  ,stats_under_conflict_time,stats_over_conflict_time );
 
 		}
 	}
 
 	virtual void printSolution(std::ostream & write_to=std::cout){
-
 	}
 
 	virtual bool propagate(vec<Lit> & conflict)=0;
-	/*virtual void buildReachReason(int node,vec<Lit> & conflict)=0;
-	virtual void buildNonReachReason(int node,vec<Lit> & conflict)=0;
-	virtual void buildForcedEdgeReason(int reach_node, int forced_edge_id,vec<Lit> & conflict)=0;*/
 	virtual void buildReason(Lit p, vec<Lit> & reason, CRef marker)=0;
 	virtual bool checkSatisfied()=0;
 	virtual void preprocess(){
