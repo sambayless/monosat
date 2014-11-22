@@ -153,6 +153,11 @@ IntOption Monosat::opt_maxflow_decisions_q(_cat_graph,"maxflow-decisions-q","Use
 BoolOption Monosat::opt_reach_detector_combined_maxflow(_cat_graph,"reach-combined-maxflow","",true);
 IntOption Monosat::opt_adaptive_conflict_mincut(_cat_graph,"adaptive-conflict-mincut","First try applying conflict detection without mincut analysis (which is faster), then try again with mincut analysis if the learnt clause is >= this length (0 to disable, 1 to always use mincut analysis)",0,IntRange(0, INT32_MAX) );
 
+BoolOption Monosat::opt_shortest_path_prune_dist(_cat_graph,"shortest-paths-prune-dist","Prune edges based on distances from learnt clauses for the shortest paths theory",false);
+BoolOption Monosat::opt_conflict_min_cut_shortest_paths(_cat_graph,"conflict-min-cut-shortest-path","When a node is unreachable in a shortest path constraint, find the minimum separating cut",false);
+
+
+
 
 ConvexHullAlg Monosat::hullAlg=ConvexHullAlg::ALG_MONOTONE_HULL;
 

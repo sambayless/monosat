@@ -582,6 +582,8 @@ void ReachDetector<Weight>::buildReachReason(int node,vec<Lit> & conflict){
 			stats_under_conflicts++;
 			outer->num_learnt_paths++;
 			outer->learnt_path_clause_length+= (conflict.size()-1);
+
+			stats_under_clause_length+= (conflict.size()-1);
 			double elapsed = rtime(2)-starttime;
 			outer->pathtime+=elapsed;
 			 stats_under_conflict_time+=elapsed;
@@ -843,7 +845,8 @@ template<typename Weight>
 		    	}
 		    }
 
-			outer->num_learnt_cuts++;
+
+		    stats_over_clause_length+= (conflict.size()-1);
 			outer->learnt_cut_clause_length+= (conflict.size()-1);
 
 			double elapsed = rtime(2)-starttime;

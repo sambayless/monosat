@@ -22,7 +22,12 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 #include <core/Config.h>
 #include <dgl/RamalReps.h>
-
+#include "dgl/EdmondsKarp.h"
+#include "dgl/EdmondsKarpAdj.h"
+#include "dgl/KohliTorr.h"
+#include "dgl/EdmondsKarpDynamic.h"
+#include "dgl/Dinics.h"
+#include "dgl/DinicsLinkCut.h"
 #include <graph/DistanceDetector.h>
 #include <graph/GraphTheory.h>
 #include <mtl/Rnd.h>
@@ -36,7 +41,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 using namespace Monosat;
 template<typename Weight>
 DistanceDetector<Weight>::DistanceDetector(int _detectorID, GraphTheorySolver<Weight> * _outer,std::vector<Weight> & weights,  DynamicGraph &_g,DynamicGraph &_antig, int from, double seed):
-Detector(_detectorID),outer(_outer),weights(weights),g(_g),antig(_antig),source(from),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL){
+Detector(_detectorID),outer(_outer),weights(weights),g(_g),antig(_antig),source(from),rnd_seed(seed),cutStatus(*this),positive_unweighted_distance_detector(NULL),negative_unweighted_distance_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL){
 	max_unweighted_distance=0;
 	rnd_path=NULL;
 
@@ -46,8 +51,8 @@ Detector(_detectorID),outer(_outer),weights(weights),g(_g),antig(_antig),source(
 	 if(distalg ==DistAlg::ALG_SAT){
 		 positiveReachStatus=nullptr;
 		 negativeReachStatus=nullptr;
-		 positive_reach_detector=nullptr;
-		 negative_reach_detector=nullptr;
+		 positive_unweighted_distance_detector=nullptr;
+		 negative_unweighted_distance_detector=nullptr;
 		 positive_path_detector=nullptr;
 		 reach_marker=CRef_Undef;
 		 non_reach_marker=CRef_Undef;
@@ -78,25 +83,25 @@ Detector(_detectorID),outer(_outer),weights(weights),g(_g),antig(_antig),source(
 	//select the unweighted distance detectors
 	if(distalg==DistAlg::ALG_DISTANCE){
 		if(outer->all_edges_unit){
-			positive_reach_detector = new UnweightedBFS<DistanceDetector<Weight>::ReachStatus>(from,_g,*(positiveReachStatus),0);
-			negative_reach_detector = new UnweightedBFS<DistanceDetector<Weight>::ReachStatus>(from,_antig,*(negativeReachStatus),0);
-			positive_path_detector = positive_reach_detector;
+			positive_unweighted_distance_detector = new UnweightedBFS<DistanceDetector<Weight>::ReachStatus>(from,_g,*(positiveReachStatus),0);
+			negative_unweighted_distance_detector = new UnweightedBFS<DistanceDetector<Weight>::ReachStatus>(from,_antig,*(negativeReachStatus),0);
+			positive_path_detector = positive_unweighted_distance_detector;
 		}else{
-			positive_reach_detector = new UnweightedDijkstra<DistanceDetector<Weight>::ReachStatus>(from,_g,*positiveReachStatus,0);
-			negative_reach_detector = new UnweightedDijkstra<DistanceDetector<Weight>::ReachStatus>(from,_antig,*negativeReachStatus,0);
+			positive_unweighted_distance_detector = new UnweightedDijkstra<DistanceDetector<Weight>::ReachStatus>(from,_g,*positiveReachStatus,0);
+			negative_unweighted_distance_detector = new UnweightedDijkstra<DistanceDetector<Weight>::ReachStatus>(from,_antig,*negativeReachStatus,0);
 			positive_path_detector =  new UnweightedBFS<Reach::NullStatus>(from,_g,Reach::nullStatus,0);
 		}
 
 		/*	if(opt_conflict_shortest_path)
 			reach_detectors.last()->positive_dist_detector = new Dijkstra<PositiveEdgeStatus>(from,g);*/
 	}else if (distalg==DistAlg::ALG_RAMAL_REPS){
-		positive_reach_detector = new UnweightedRamalReps<typename DistanceDetector<Weight>::ReachStatus>(from,_g,*(positiveReachStatus),0);
-		negative_reach_detector = new UnweightedRamalReps<typename DistanceDetector<Weight>::ReachStatus>(from,_antig,*(negativeReachStatus),0);
+		positive_unweighted_distance_detector = new UnweightedRamalReps<typename DistanceDetector<Weight>::ReachStatus>(from,_g,*(positiveReachStatus),0);
+		negative_unweighted_distance_detector = new UnweightedRamalReps<typename DistanceDetector<Weight>::ReachStatus>(from,_antig,*(negativeReachStatus),0);
 		positive_path_detector =  new UnweightedBFS<Reach::NullStatus>(from,_g,Reach::nullStatus,0);
 	}else{
-		positive_reach_detector = new UnweightedDijkstra<typename DistanceDetector<Weight>::ReachStatus>(from,_g,*positiveReachStatus,0);
-		negative_reach_detector = new UnweightedDijkstra<typename DistanceDetector<Weight>::ReachStatus>(from,_antig,*negativeReachStatus,0);
-		positive_path_detector = positive_reach_detector;
+		positive_unweighted_distance_detector = new UnweightedDijkstra<typename DistanceDetector<Weight>::ReachStatus>(from,_g,*positiveReachStatus,0);
+		negative_unweighted_distance_detector = new UnweightedDijkstra<typename DistanceDetector<Weight>::ReachStatus>(from,_antig,*negativeReachStatus,0);
+		positive_path_detector = positive_unweighted_distance_detector;
 		//reach_detectors.last()->positive_dist_detector = new Dijkstra(from,g);
 	}
 
@@ -115,6 +120,27 @@ Detector(_detectorID),outer(_outer),weights(weights),g(_g),antig(_antig),source(
 		 positive_weighted_path_detector = positive_weighted_distance_detector;
 	 }
 
+	 if(opt_conflict_min_cut_shortest_paths){
+			if(mincutalg==MinCutAlg::ALG_EDKARP_DYN){
+				conflict_flow = new EdmondsKarpDynamic<CutStatus,long>(outer->cutGraph, cutStatus,source,0);
+			}else if (mincutalg==MinCutAlg::ALG_EDKARP_ADJ){
+				conflict_flow = new EdmondsKarpAdj<CutStatus,long>(outer->cutGraph, cutStatus,source,0);
+			}else if (mincutalg==MinCutAlg::ALG_DINITZ){
+				conflict_flow = new Dinitz<CutStatus,long>(outer->cutGraph, cutStatus,source,0);
+			}else if (mincutalg==MinCutAlg::ALG_DINITZ_LINKCUT){
+				//link-cut tree currently only supports ints (enforcing this using tempalte specialization...).
+
+				conflict_flow = new Dinitz<CutStatus,long>(outer->cutGraph, cutStatus,source,0);
+
+			}else if (mincutalg==MinCutAlg::ALG_KOHLI_TORR){
+				if(opt_use_kt_for_conflicts){
+					conflict_flow = new KohliTorr<CutStatus,long>(outer->cutGraph, cutStatus,source,0,opt_kt_preserve_order);
+				}else
+					conflict_flow = new EdmondsKarpDynamic<CutStatus,long>(outer->cutGraph, cutStatus,source,0);
+			}else{
+				conflict_flow = new EdmondsKarpAdj<CutStatus,long>(outer->cutGraph, cutStatus,source,0);
+			}
+	 }
 
 	reach_marker=outer->newReasonMarker(getID());
 	non_reach_marker=outer->newReasonMarker(getID());
@@ -229,8 +255,8 @@ void DistanceDetector<Weight>::addUnweightedShortestPathLit(int from, int to, Va
 	if(within_steps>=max_unweighted_distance){
 		max_unweighted_distance=within_steps;
 		if(opt_compute_max_distance){
-			positive_reach_detector->setMaxDistance(max_unweighted_distance);
-			negative_reach_detector->setMaxDistance(max_unweighted_distance);
+			positive_unweighted_distance_detector->setMaxDistance(max_unweighted_distance);
+			negative_unweighted_distance_detector->setMaxDistance(max_unweighted_distance);
 			//positive_path_detector->setMaxDistance(max_distance);
 		}
 	}
@@ -342,11 +368,11 @@ void DistanceDetector<Weight>::DistanceStatus::setMininumDistance(int u, bool re
 }
 
 template<typename Weight>
-void DistanceDetector<Weight>::buildReachReason(int node,vec<Lit> & conflict){
+void DistanceDetector<Weight>::buildUnweightedDistanceLEQReason(int node,vec<Lit> & conflict){
 			//drawFull();
 			Reach & d = *positive_path_detector;
 			stats_unweighted_leq_reasons++;
-
+			stats_under_conflicts++;
 			double starttime = rtime(2);
 			d.update();
 			assert(outer->dbg_reachable(d.getSource(),node));
@@ -358,7 +384,7 @@ void DistanceDetector<Weight>::buildReachReason(int node,vec<Lit> & conflict){
 
 				assert(false);
 			}*/
-			assert(positive_reach_detector->connected(node));
+			assert(positive_unweighted_distance_detector->connected(node));
 			/*if(!d.connected_unchecked(node)){
 				exit(3);
 			}*/
@@ -400,19 +426,52 @@ void DistanceDetector<Weight>::buildReachReason(int node,vec<Lit> & conflict){
 			}*/
 			outer->num_learnt_paths++;
 			outer->learnt_path_clause_length+= (conflict.size()-1);
+
+			    stats_under_clause_length+= (conflict.size()-1);
 			double elapsed = rtime(2)-starttime;
-			outer->pathtime+=elapsed;
+			 stats_under_conflict_time+=elapsed;
 
 		}
 template<typename Weight>
-void DistanceDetector<Weight>::buildNonReachReason(int node,vec<Lit> & conflict){
+void DistanceDetector<Weight>::buildUnweightedDistanceGTReason(int node,vec<Lit> & conflict){
 	static int it = 0;
 	stats_unweighted_gt_reasons++;
+	stats_over_conflicts++;
+	double starttime = rtime(2);
 	++it;
 	int u = node;
+	bool reaches = negative_unweighted_distance_detector->connected(node);
+
+	if(!reaches && opt_conflict_min_cut_shortest_paths && conflict_flow){
+		antig.drawFull();
+		cut.clear();
+		long f;
+
+		assert(conflict_flow->getSource()==source);
+		conflict_flow->setSink(node);
+		f=conflict_flow->minCut(cut);
+
+		assert(f==cut.size());//because edges are only ever infinity or 1
+		assert(f<cutStatus.inf);
+		for(int i = 0;i<cut.size();i++){
+			MaxFlowEdge e = cut[i];
+			int cut_id = e.id;
+			assert(cut_id%2==0);
+			Lit l = mkLit(outer->getEdgeVar(cut_id/2),false);
+			assert(outer->value(l)==l_False);
+			conflict.push(l);
+		}
+		 outer->learnt_cut_clause_length+= (conflict.size()-1);
+
+			    stats_over_clause_length+= (conflict.size()-1);
+		double elapsed = rtime(2)-starttime;
+		 stats_over_conflict_time+=elapsed;
+		return;
+	}
+
 	//drawFull( non_reach_detectors[detector]->getSource(),u);
 	//assert(outer->dbg_distance( source,u));
-	double starttime = rtime(2);
+
 	outer->cutGraph.clearHistory();
 	outer->stats_mc_calls++;
 	{
@@ -449,11 +508,24 @@ void DistanceDetector<Weight>::buildNonReachReason(int node,vec<Lit> & conflict)
 					}
 					assert(from!=u);
 
+					if(has_unweighted_shortest_paths_overapprox && reaches){
+						//This is an optional optimization: if we know that even with all possible edges enabled, the shortest path to from + 1 is >= than the current distance to this node, enabling this edge cannot decrease the shortest path,
+						//and so we don't need to consider this edge
+						int current_dist = negative_unweighted_distance_detector->distance(u);
+						assert(current_dist>0);
+						int over_approx_dist = unweighted_over_approx_shortest_paths[from]+1;
+						if(over_approx_dist>=current_dist){
+							//following this edge cannot shorten this path, so skip it.
+							stats_gt_unweighted_edges_skipped++;
+							continue;
+						}
+					}
+
 					if(outer->value(v)==l_False){
 						//note: we know we haven't seen this edge variable before, because we know we haven't visited this node before
 						//if we are already planning on visiting the from node, then we don't need to include it in the conflict (is this correct?)
 						//if(!seen[from])
-							conflict.push(mkLit(v,false));
+						conflict.push(mkLit(v,false));
 					}else if (from!=source){
 						//for distance analysis, we _can_ end up reaching source.
 
@@ -472,8 +544,9 @@ void DistanceDetector<Weight>::buildNonReachReason(int node,vec<Lit> & conflict)
 	 outer->num_learnt_cuts++;
 	 outer->learnt_cut_clause_length+= (conflict.size()-1);
 
+	stats_over_clause_length+= (conflict.size()-1);
 	double elapsed = rtime(2)-starttime;
-	 outer->mctime+=elapsed;
+	 stats_over_conflict_time+=elapsed;
 
 }
 
@@ -536,7 +609,7 @@ void DistanceDetector<Weight>::printSolution(std::ostream& write_to){
 			if(y > lasty)
 				write_to<<"\n";
 
-			int d = positive_reach_detector->distance(n);
+			int d = positive_unweighted_distance_detector->distance(n);
 			//printf("%*d ",maxw,d);
 			write_to<< std::setw(maxw)<<d;
 
@@ -558,8 +631,9 @@ void DistanceDetector<Weight>::buildDistanceLEQReason(int to,Weight & min_distan
 	Weight & actual_dist = positive_weighted_distance_detector->distance(to);
 	double starttime = rtime(2);
 	d.update();
+    stats_under_conflicts++;
 	assert(outer->dbg_reachable(d.getSource(),to));
-	assert(positive_reach_detector->connected(to));
+	assert(positive_unweighted_distance_detector->connected(to));
 	assert(positive_weighted_distance_detector->distance(to)<=min_distance && positive_weighted_distance_detector->distance(to)!=positive_weighted_distance_detector->unreachable());
 	assert(d.connected_unchecked(to));
 	if(!d.connected(to) || d.distance(to)>min_distance){
@@ -581,8 +655,11 @@ void DistanceDetector<Weight>::buildDistanceLEQReason(int to,Weight & min_distan
 	}
 	outer->num_learnt_paths++;
 	outer->learnt_path_clause_length+= (conflict.size()-1);
+
+	stats_under_clause_length+= (conflict.size()-1);
 	double elapsed = rtime(2)-starttime;
-	outer->pathtime+=elapsed;
+	 stats_under_conflict_time+=elapsed;
+
 
 }
 
@@ -590,9 +667,37 @@ template<typename Weight>
 void DistanceDetector<Weight>::buildDistanceGTReason(int to,Weight & min_distance,vec<Lit> & conflict){
 	static int it = 0;
 	stats_distance_gt_reasons++;
+	stats_over_conflicts++;
 	++it;
+	double starttime = rtime(2);
 	int u = to;
+	bool reaches = negative_weighted_distance_detector->connected(to);
+	if(!reaches && opt_conflict_min_cut_shortest_paths && conflict_flow){
+		antig.drawFull();
+		cut.clear();
+		long f;
 
+		assert(conflict_flow->getSource()==source);
+		conflict_flow->setSink(to);
+		f=conflict_flow->minCut(cut);
+
+		assert(f==cut.size());//because edges are only ever infinity or 1
+		assert(f<cutStatus.inf);
+		for(int i = 0;i<cut.size();i++){
+			MaxFlowEdge e = cut[i];
+			int cut_id = e.id;
+			assert(cut_id%2==0);
+			Lit l = mkLit(outer->getEdgeVar(cut_id/2),false);
+			assert(outer->value(l)==l_False);
+			conflict.push(l);
+		}
+		 outer->learnt_cut_clause_length+= (conflict.size()-1);
+
+			    stats_over_clause_length+= (conflict.size()-1);
+		double elapsed = rtime(2)-starttime;
+		 outer->mctime+=elapsed;
+		return;
+	}
 	Weight & actual_dist = negative_weighted_distance_detector->distance(to);
 	/*for(auto & e:antig.all_edges){
 		if(antig.edgeEnabled(e.id)){
@@ -607,7 +712,7 @@ void DistanceDetector<Weight>::buildDistanceGTReason(int to,Weight & min_distanc
 	assert(expected==actual_dist);
 	assert(!negative_weighted_distance_detector->connected(to) || actual_dist>min_distance);
 #endif
-	double starttime = rtime(2);
+
 
 	{
 
@@ -642,6 +747,18 @@ void DistanceDetector<Weight>::buildDistanceGTReason(int to,Weight & min_distanc
 				}
 				assert(from!=u);
 
+				if(has_weighted_shortest_paths_overapprox && reaches){
+					//This is an optional optimization: if we know that even with all possible edges enabled, the shortest path to from + 1 is >= than the current distance to this node, enabling this edge cannot decrease the shortest path,
+					//and so we don't need to consider this edge
+					Weight current_dist = negative_weighted_distance_detector->distance(u);
+					Weight over_approx_dist = over_approx_shortest_paths[from]+weights[edge_num];
+					if(over_approx_dist>=current_dist){
+						stats_gt_weighted_edges_skipped++;
+						//following this edge cannot shorten this path, so skip it.
+						continue;
+					}
+				}
+
 				if(outer->value(v)==l_False){
 					//note: we know we haven't seen this edge variable before, because we know we haven't visited this node before
 					//if we are already planning on visiting the from node, then we don't need to include it in the conflict (is this correct?)
@@ -662,9 +779,10 @@ void DistanceDetector<Weight>::buildDistanceGTReason(int to,Weight & min_distanc
 
 	}
 
-	 outer->num_learnt_cuts++;
+
 	 outer->learnt_cut_clause_length+= (conflict.size()-1);
 
+		    stats_over_clause_length+= (conflict.size()-1);
 	double elapsed = rtime(2)-starttime;
 	 outer->mctime+=elapsed;
 
@@ -720,7 +838,7 @@ template<typename Weight>
 					assert(u!=source);
 					to_visit.pop();
 					assert(seen[u]);
-					assert(!negative_reach_detector->connected_unsafe(u));
+					assert(!negative_unweighted_distance_detector->connected_unsafe(u));
 					//Ok, then add all its incoming disabled edges to the cut, and visit any unseen, non-disabled incoming.edges()
 					for(int i = 0;i<outer->inv_adj[u].size();i++){
 						int v = outer->inv_adj[u][i].v;
@@ -781,7 +899,7 @@ template<typename Weight>
 					}*/
 					Var v = var(p);
 					int u =getNode(v);
-					buildReachReason(u,reason);
+					buildUnweightedDistanceLEQReason(u,reason);
 
 
 					//double elapsed = rtime(2)-startpathtime;
@@ -798,7 +916,7 @@ template<typename Weight>
 
 					Var v = var(p);
 					int t = getNode(v); // v- var(reach_lits[d][0]);
-					buildNonReachReason(t,reason);
+					buildUnweightedDistanceGTReason(t,reason);
 
 				}else if (marker==forced_reach_marker){
 					Var v = var(p);
@@ -811,9 +929,30 @@ template<typename Weight>
 					assert(false);
 				}
 		}
+
+template<typename Weight>
+void DistanceDetector<Weight>::updateShortestPaths(bool unweighted){
+	if(opt_shortest_path_prune_dist && outer->decisionLevel()==0){
+		//only update these distances at level 0, to ensure they are a valid over approximate of the shortest possible path to each node
+		if(unweighted){
+			has_unweighted_shortest_paths_overapprox=true;
+			unweighted_over_approx_shortest_paths.growTo(g.nodes());
+			for(int i = 0;i<antig.nodes();i++){
+				unweighted_over_approx_shortest_paths[i]=negative_unweighted_distance_detector->distance(i);
+			}
+		}else{
+			has_weighted_shortest_paths_overapprox=true;
+			over_approx_shortest_paths.growTo(g.nodes());
+			for(int i = 0;i<antig.nodes();i++){
+				over_approx_shortest_paths[i]=negative_weighted_distance_detector->distance(i);
+			}
+		}
+	}
+}
+
 template<typename Weight>
 		bool DistanceDetector<Weight>::propagate(vec<Lit> & conflict){
-			if(!positive_reach_detector)
+			if(!positive_unweighted_distance_detector)
 				return true;
 
 			static int iter = 0;
@@ -827,7 +966,7 @@ template<typename Weight>
 		if(!opt_detect_pure_theory_lits || unassigned_positives>0){
 			double startdreachtime = rtime(2);
 			stats_under_updates++;
-			positive_reach_detector->update();
+			positive_unweighted_distance_detector->update();
 			double reachUpdateElapsed = rtime(2)-startdreachtime;
 			stats_under_update_time+=reachUpdateElapsed;
 		}else{
@@ -842,14 +981,17 @@ template<typename Weight>
 		if(!opt_detect_pure_theory_lits || unassigned_negatives>0){
 			double startunreachtime = rtime(2);
 			stats_over_updates++;
-  		    negative_reach_detector->update();
+  		    negative_unweighted_distance_detector->update();
   			double unreachUpdateElapsed = rtime(2)-startunreachtime;
   			stats_over_update_time+=unreachUpdateElapsed;
+			updateShortestPaths(true);//only needed for the shortest path theory
 		}else{
 			skipped_negative=true;
 			stats_skipped_over_updates++;
 		}
 		//outer->unreachupdatetime+=unreachUpdateElapsed;
+
+
 
 		if(opt_rnd_shuffle){
 			randomShuffle(rnd_seed, changed);
@@ -868,9 +1010,9 @@ template<typename Weight>
 					Var v =var( unweighted_dist_lits[u][i].l);
 					Lit l;
 
-					if(positive_reach_detector && !skipped_positive && positive_reach_detector->connected(u) && positive_reach_detector->distance(u)<=min_distance){
+					if(positive_unweighted_distance_detector && !skipped_positive && positive_unweighted_distance_detector->connected(u) && positive_unweighted_distance_detector->distance(u)<=min_distance){
 						l = mkLit(v,false);
-					}else if (negative_reach_detector && ! skipped_negative && (!negative_reach_detector->connected(u) || negative_reach_detector->distance(u)>min_distance)){
+					}else if (negative_unweighted_distance_detector && ! skipped_negative && (!negative_unweighted_distance_detector->connected(u) || negative_unweighted_distance_detector->distance(u)>min_distance)){
 						l = mkLit(v,true);
 					}else{
 						continue;
@@ -900,13 +1042,13 @@ template<typename Weight>
 
 						//conflict
 						//The reason is a path in g from to s in d
-							buildReachReason(u,conflict);
+							buildUnweightedDistanceLEQReason(u,conflict);
 						//add it to s
 						//return it as a conflict
 
 						}else{
 							//The reason is a cut separating s from t
-							buildNonReachReason(u,conflict);
+							buildUnweightedDistanceGTReason(u,conflict);
 
 						}
 	#ifdef DEBUG_GRAPH
@@ -932,6 +1074,9 @@ template<typename Weight>
 
 		if(opt_rnd_shuffle && weighted_dist_lits.size()){
 			randomShuffle(rnd_seed, weighted_dist_lits);
+		}
+		if(weighted_dist_lits.size()){
+			updateShortestPaths(false);//only needed for the shortest path theory
 		}
 		//now, check for weighted distance lits
 		for(auto & dist_lit:weighted_dist_lits){
@@ -976,13 +1121,13 @@ template<typename Weight>
 							int dist =  unweighted_dist_lits[i][j].min_unweighted_distance;
 							if(l!=lit_Undef){
 								int u = getNode(var(l));
-								if((!opt_detect_pure_theory_lits || unassigned_positives>0) && positive_reach_detector->connected(u) && positive_reach_detector->distance_unsafe(u)<=dist){
+								if((!opt_detect_pure_theory_lits || unassigned_positives>0) && positive_unweighted_distance_detector->connected(u) && positive_unweighted_distance_detector->distance_unsafe(u)<=dist){
 									if(outer->dbg_value(l)!=l_True){
 										assert(false);
 										exit(3);
 									}
-								}else if ((!opt_detect_pure_theory_lits || unassigned_negatives>0) && (!negative_reach_detector->connected(u) || negative_reach_detector->distance_unsafe(u)>dist)){
-									int d =negative_reach_detector->distance_unsafe(u);
+								}else if ((!opt_detect_pure_theory_lits || unassigned_negatives>0) && (!negative_unweighted_distance_detector->connected(u) || negative_unweighted_distance_detector->distance_unsafe(u)>dist)){
+									int d =negative_unweighted_distance_detector->distance_unsafe(u);
 									if(outer->dbg_value(l)!=l_False){
 										assert(false);
 										exit(3);
@@ -1123,12 +1268,12 @@ int DistanceDetector<Weight>::OptimalWeightEdgeStatus::size()const{
 
 template<typename Weight>
 Lit DistanceDetector<Weight>::decide(int level){
-	if(!opt_decide_graph_distance || !negative_reach_detector)
+	if(!opt_decide_graph_distance || !negative_unweighted_distance_detector)
 		return lit_Undef;
 	DistanceDetector *r =this;
-	auto * over =  r->negative_reach_detector;
+	auto * over =  r->negative_unweighted_distance_detector;
 
-	auto *  under =  r->positive_reach_detector;
+	auto *  under =  r->positive_unweighted_distance_detector;
 
 	//we can probably also do something similar, but with cuts, for nodes that are decided to be unreachable.
 

@@ -53,6 +53,8 @@ public:
 	long stats_skipped_over_updates=0;
 	long stats_decisions=0;
 	double stats_decide_time=0;
+	long stats_under_clause_length=0;
+	long stats_over_clause_length=0;
 
 
 
@@ -71,7 +73,7 @@ public:
 			printf("\tUnder-approx updates: %d (%d skipped) (%f s total, %f s avg)\n", stats_under_updates,stats_skipped_under_updates,(double)stats_under_update_time, (double)stats_under_update_time/(double)(stats_under_updates+1) );
 			printf("\tOver-approx updates: %d (%d skipped)  (%f s total, %f s avg)\n", stats_over_updates,stats_skipped_over_updates,(double)stats_over_update_time, (double)stats_over_update_time/(double)(stats_over_updates+1) );
 			printf("\tTheory Decisions: %d (%f s total, %f s avg)\n",stats_decisions,(double)stats_decide_time,(double)stats_decide_time/(double)(stats_decisions+1));
-			printf("\tConflicts (under,over): %d, %d, (under time %f s, over time %f s)\n",stats_under_conflicts,stats_over_conflicts ,stats_under_conflict_time,stats_over_conflict_time );
+			printf("\tConflicts (under,over): %d (clause literals: %d), %d, (clause literals: %d), (under time %f s, over time %f s)\n",stats_under_conflicts,stats_under_clause_length,stats_over_conflicts, stats_over_clause_length  ,stats_under_conflict_time,stats_over_conflict_time );
 
 		}
 	}

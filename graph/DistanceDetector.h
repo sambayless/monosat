@@ -29,7 +29,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "dgl/Distance.h"
 #include "dgl/Dijkstra.h"
 #include "dgl/BFS.h"
-
+#include "dgl/MaxFlow.h"
 #include "core/SolverTypes.h"
 #include "mtl/Map.h"
 #include "WeightedDijkstra.h"
@@ -60,8 +60,8 @@ public:
 		CRef weighted_reach_marker;
 		CRef weighted_non_reach_marker;
 		CRef forced_reach_marker;
-		Distance<int> * positive_reach_detector;
-		Distance<int> * negative_reach_detector;
+		Distance<int> * positive_unweighted_distance_detector;
+		Distance<int> * negative_unweighted_distance_detector;
 
 		Distance<Weight> * positive_weighted_distance_detector;
 		Distance<Weight> * negative_weighted_distance_detector;
@@ -72,6 +72,12 @@ public:
 		Var first_reach_var;
 		vec<int> reach_lit_map;
 		vec<int> force_reason;
+		bool has_unweighted_shortest_paths_overapprox=false;
+		bool has_weighted_shortest_paths_overapprox=false;
+		vec<int> unweighted_over_approx_shortest_paths;
+		vec<Weight> over_approx_shortest_paths;
+		MaxFlow<long> * conflict_flow=nullptr;
+
 		int max_unweighted_distance;
 
 		int stats_pure_skipped=0;
@@ -79,6 +85,8 @@ public:
 		long stats_distance_leq_reasons=0;
 		long stats_unweighted_gt_reasons=0;
 		long stats_unweighted_leq_reasons=0;
+		long stats_gt_unweighted_edges_skipped=0;
+		long stats_gt_weighted_edges_skipped=0;
 
 		vec<vec<Lit> > unweighted_sat_lits;
 
@@ -145,6 +153,27 @@ public:
 
 			DistanceStatus(DistanceDetector & _outer, bool _polarity):detector(_outer), polarity(_polarity){}
 		};
+
+		struct CutStatus{
+			long one=1;
+			long inf= 0xFFFF;
+			DistanceDetector & outer;
+
+			const long &operator [] (int id) const {
+				if(id%2==0){
+					return one;
+				}else{
+					return inf;
+				}
+			}
+			int size()const{
+				return outer.g.edges()*2;
+			}
+			CutStatus(DistanceDetector & _outer):outer(_outer){}
+
+		} cutStatus;
+		std::vector<MaxFlowEdge> cut;
+
 		ReachStatus *positiveReachStatus;
 		ReachStatus *negativeReachStatus;
 		DistanceStatus *positiveDistanceStatus;
@@ -165,6 +194,7 @@ public:
 					printf("\tPropagations skipped by pure literal detection: %d\n", stats_pure_skipped);
 				printf("\tUnweighted Reasons (leq,gt): %d,%d\n",stats_unweighted_leq_reasons,stats_unweighted_gt_reasons);
 				printf("\tWeighted Reasons (leq,gt): %d,%d\n",stats_distance_leq_reasons,stats_distance_gt_reasons);
+				printf("\tConflict Edges Skipped (unweighted %d, weighted %d)\n", stats_gt_unweighted_edges_skipped,stats_gt_weighted_edges_skipped);
 			}
 		}
 
@@ -191,14 +221,15 @@ public:
 			 }
 		}
 		bool propagate(vec<Lit> & conflict);
-		void buildReachReason(int node,vec<Lit> & conflict);
-		void buildNonReachReason(int node,vec<Lit> & conflict);
+		void buildUnweightedDistanceLEQReason(int node,vec<Lit> & conflict);
+		void buildUnweightedDistanceGTReason(int node,vec<Lit> & conflict);
 		void buildDistanceLEQReason(int to,Weight & min_distance,vec<Lit> & conflict);
 		void buildDistanceGTReason(int to,Weight & min_distance,vec<Lit> & conflict);
 		void buildForcedEdgeReason(int reach_node, int forced_edge_id,vec<Lit> & conflict);
 		void buildReason(Lit p, vec<Lit> & reason, CRef marker);
 		bool checkSatisfied();
 		Lit decide(int level);
+		void updateShortestPaths(bool unweighted);
 		void addUnweightedShortestPathLit(int from, int to, Var reach_var,int within_steps=-1);
 		void addWeightedShortestPathLit(int from, int to, Var reach_var,Weight within_distance);
 		DistanceDetector(int _detectorID, GraphTheorySolver<Weight> * _outer, std::vector<Weight> & weights, DynamicGraph &_g, DynamicGraph &_antig, int _source,double seed=1);//:Detector(_detectorID),outer(_outer),within(-1),source(_source),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL){}
