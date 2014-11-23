@@ -29,7 +29,6 @@ typedef unsigned short int const ushortintc;
  stream and very complex, in my opinion endl is a very bad default in the language. */
 #define endln "\n"
 
-
 /** The argument is evaluated in both debug and release. */
 #ifndef NDEBUG
 #define asserteval(xarg) xarg;
@@ -57,7 +56,7 @@ typedef unsigned short int const ushortintc;
 } 
 #endif
 
-/** If in release (not debug mode) and test fails return false. */ 
+/** If in release (not debug mode) and test fails return false. */
 #ifndef NDEBUG 
 #define assertreturnfalse(xarg) \
 assert(xarg);
@@ -95,7 +94,6 @@ assert(xarg);
   if (!res) return failedreturnobj;\
 }
 #endif
-
 
 #endif
 
