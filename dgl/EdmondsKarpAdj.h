@@ -1,23 +1,23 @@
 /****************************************************************************************[Solver.h]
-The MIT License (MIT)
+ The MIT License (MIT)
 
-Copyright (c) 2014, Sam Bayless
+ Copyright (c) 2014, Sam Bayless
 
-Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
-associated documentation files (the "Software"), to deal in the Software without restriction,
-including without limitation the rights to use, copy, modify, merge, publish, distribute,
-sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+ Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
+ associated documentation files (the "Software"), to deal in the Software without restriction,
+ including without limitation the rights to use, copy, modify, merge, publish, distribute,
+ sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is
+ furnished to do so, subject to the following conditions:
 
-The above copyright notice and this permission notice shall be included in all copies or
-substantial portions of the Software.
+ The above copyright notice and this permission notice shall be included in all copies or
+ substantial portions of the Software.
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT
-NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
-DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT
-OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-**************************************************************************************************/
+ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT
+ NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+ DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT
+ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ **************************************************************************************************/
 
 #ifndef EDMONDS_KARP_ADJ_H
 #define EDMONDS_KARP_ADJ_H
@@ -29,394 +29,393 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "core/Config.h"
 #include "dgl/EdmondsKarp.h"
 
-namespace dgl{
-template< class Capacity, typename Weight=int  >
-class EdmondsKarpAdj:public MaxFlow<Weight>{
-
+namespace dgl {
+template<class Capacity, typename Weight = int>
+class EdmondsKarpAdj: public MaxFlow<Weight> {
+	
 public:
-
+	
 	std::vector<Weight> F;
-	struct LocalEdge{
+	struct LocalEdge {
 		int from;
 		int id;
-		bool backward=false;
-		LocalEdge(int from=-1, int id=-1, bool backward=false):from(from),id(id),backward(backward){
-
+		bool backward = false;
+		LocalEdge(int from = -1, int id = -1, bool backward = false) :
+				from(from), id(id), backward(backward) {
+			
 		}
 	};
 	Weight curflow;
-    int last_modification;
-    int last_deletion;
-    int last_addition;
-	int source=-1;
-	int sink=-1;
-    int history_qhead;
-    int last_history_clear;
-    std::vector<LocalEdge> prev;
-    std::vector<Weight> M;
-    std::vector<bool> changed;
-    DynamicGraph& g;
-    Capacity & capacity;
-    Weight INF;
-/*
-#ifdef DEBUG_MAXFLOW
-    	EdmondsKarp<Weight> ek;
-#endif
-*/
+	int last_modification;
+	int last_deletion;
+	int last_addition;
+	int source = -1;
+	int sink = -1;
+	int history_qhead;
+	int last_history_clear;
+	std::vector<LocalEdge> prev;
+	std::vector<Weight> M;
+	std::vector<bool> changed;
+	DynamicGraph& g;
+	Capacity & capacity;
+	Weight INF;
+	/*
+	 #ifdef DEBUG_MAXFLOW
+	 EdmondsKarp<Weight> ek;
+	 #endif
+	 */
 
-    std::vector<int> Q;
+	std::vector<int> Q;
 
-
-
-
-    Weight  BreadthFirstSearch(int s, int t){
-     	for(int i = 0;i<g.nodes();i++)
-     		prev[i].from=-1;
-     	prev[s].from = -2;
-    	Q.clear();
-           Q.push_back(s);
-
-       	for(int j = 0;j<Q.size();j++){
-   			   int u = Q[j];
-
-               for (int i = 0;i<g.nIncident(u);i++){
-            	   if(!g.edgeEnabled(g.incident(u,i).id))
-						continue;
-            	   int id = g.incident(u,i).id;
-            	   int v = g.incident(u,i).node;
-                   ///(If there is available capacity, and v is not seen before in search)
-
-            	   Weight &f = F[id];
-            	   Weight  c = capacity[id];
-
-            	 //  int fr = F[id];
-                   if (((c - F[id]) > 0) && (prev[v].from == -1)){
-                       prev[v] = LocalEdge(u,id,false);
-                       Weight b=c - F[id];
-                       M[v] = std::min(M[u],b );
-                       if (v != t)
-                           Q.push_back(v);
-                       else
-                           return M[t];
-                   }
-               }
-
-               for (int i = 0;i<g.nIncoming(u);i++){
-            	   int id = g.incoming(u,i).id;
-            	   if(!g.edgeEnabled(id))
-						continue;
-
-				   int v = g.incoming(u,i).node;
-
-				   Weight f = 0;
-				   Weight& c = F[id];
-
-					  if (((c - f) > 0) && (prev[v].from == -1)){
-						  prev[v] = LocalEdge(u,id,true);
-						  Weight b = c-f;
-						  M[v] = std::min(M[u], b);
-						  if (v != t)
-							  Q.push_back(v);
-						  else
-							  return M[t];
-					  }
-				  }
-           }
-           return 0;
-
-
-	   }
+	Weight BreadthFirstSearch(int s, int t) {
+		for (int i = 0; i < g.nodes(); i++)
+			prev[i].from = -1;
+		prev[s].from = -2;
+		Q.clear();
+		Q.push_back(s);
+		
+		for (int j = 0; j < Q.size(); j++) {
+			int u = Q[j];
+			
+			for (int i = 0; i < g.nIncident(u); i++) {
+				if (!g.edgeEnabled(g.incident(u, i).id))
+					continue;
+				int id = g.incident(u, i).id;
+				int v = g.incident(u, i).node;
+				///(If there is available capacity, and v is not seen before in search)
+				
+				Weight &f = F[id];
+				Weight c = capacity[id];
+				
+				//  int fr = F[id];
+				if (((c - F[id]) > 0) && (prev[v].from == -1)) {
+					prev[v] = LocalEdge(u, id, false);
+					Weight b = c - F[id];
+					M[v] = std::min(M[u], b);
+					if (v != t)
+						Q.push_back(v);
+					else
+						return M[t];
+				}
+			}
+			
+			for (int i = 0; i < g.nIncoming(u); i++) {
+				int id = g.incoming(u, i).id;
+				if (!g.edgeEnabled(id))
+					continue;
+				
+				int v = g.incoming(u, i).node;
+				
+				Weight f = 0;
+				Weight& c = F[id];
+				
+				if (((c - f) > 0) && (prev[v].from == -1)) {
+					prev[v] = LocalEdge(u, id, true);
+					Weight b = c - f;
+					M[v] = std::min(M[u], b);
+					if (v != t)
+						Q.push_back(v);
+					else
+						return M[t];
+				}
+			}
+		}
+		return 0;
+		
+	}
 public:
-    EdmondsKarpAdj(DynamicGraph& _g,Capacity & cap,int source=-1,int sink=-1):g(_g),capacity(cap),source(source),sink(sink),INF(0xF0F0F0)
-/*
-#ifdef DEBUG_MAXFLOW
-    	,ek(_g,source,sink)
+	EdmondsKarpAdj(DynamicGraph& _g, Capacity & cap, int source = -1, int sink = -1) :
+			g(_g), capacity(cap), source(source), sink(sink), INF(0xF0F0F0)
+	/*
+	 #ifdef DEBUG_MAXFLOW
+	 ,ek(_g,source,sink)
+	 #endif
+	 */
+	{
+		curflow = 0;
+		last_modification = -1;
+		last_deletion = -1;
+		last_addition = -1;
+		
+		history_qhead = -1;
+		last_history_clear = -1;
+		//setAllEdgeCapacities(1);
+		
+	}
+	int getSource() const {
+		return source;
+	}
+	int getSink() const {
+		return sink;
+	}
+	void setCapacity(int u, int w, Weight c) {
+		//C.resize(g.edges());
+		//C[ ]=c;
+		
+	}
+	void setAllEdgeCapacities(Weight c) {
+		
+	}
+	void dbg_print_graph(int from, int to) {
+#ifndef NDEBUG
+		return;
+		static int it = 0;
+		if (++it == 6) {
+			int a = 1;
+		}
+		printf("Graph %d\n", it);
+		printf("digraph{\n");
+		for (int i = 0; i < g.nodes(); i++) {
+			if (i == from) {
+				printf("n%d [label=\"From\", style=filled, fillcolor=blue]\n", i);
+			} else if (i == to) {
+				printf("n%d [label=\"To\", style=filled, fillcolor=red]\n", i);
+			} else
+				printf("n%d\n", i);
+		}
+		
+		for (int i = 0; i < g.edges(); i++) {
+			if (g.edgeEnabled(i)) {
+				auto & e = g.all_edges[i];
+				const char * s = "black";
+				std::cout << "n" << e.from << " -> n" << e.to << " [label=\"" << i << ": " << F[i] << "/" << capacity[i]
+						<< "\" color=\"" << s << "\"]\n";
+				//printf("n%d -> n%d [label=\"%d: %d/%d\",color=\"%s\"]\n", e.from,e.to, i, F[i],capacity[i] , s);
+			}
+		}
+		
+		printf("}\n");
 #endif
-*/
-    {
-    	  curflow=0;
-      	last_modification=-1;
-      	last_deletion=-1;
-      	last_addition=-1;
-
-      	history_qhead=-1;
-      	last_history_clear=-1;
-    	//setAllEdgeCapacities(1);
-
-    }
-    int getSource() const{
-    	return source;
-    }
-    int getSink() const{
-    	return sink;
-    }
-    void setCapacity(int u, int w, Weight c){
-    	//C.resize(g.edges());
-    	//C[ ]=c;
-
-    }
-    void setAllEdgeCapacities(Weight c){
-
-    }
-    void dbg_print_graph(int from, int to){
-   #ifndef NDEBUG
-   		return;
-       		static int it = 0;
-       		if(++it==6){
-       			int a =1;
-       		}
-       		printf("Graph %d\n", it);
-       			printf("digraph{\n");
-       			for(int i = 0;i<g.nodes();i++){
-       				if(i==from){
-       					printf("n%d [label=\"From\", style=filled, fillcolor=blue]\n", i);
-       				}else if (i==to){
-       					printf("n%d [label=\"To\", style=filled, fillcolor=red]\n", i);
-       				}else
-       					printf("n%d\n", i);
-       			}
-
-       			for(int i = 0;i<g.edges();i++){
-       				if(g.edgeEnabled(i)){
-   						auto & e = g.all_edges[i];
-   						const char * s = "black";
-   						std::cout<<"n" << e.from <<" -> n" << e.to << " [label=\"" << i <<": " <<  F[i]<<"/" << capacity[i]  << "\" color=\"" << s<<"\"]\n";
-   						//printf("n%d -> n%d [label=\"%d: %d/%d\",color=\"%s\"]\n", e.from,e.to, i, F[i],capacity[i] , s);
-       				}
-       			}
-
-       			printf("}\n");
-   #endif
-       		}
-	long num_updates=0;
-	int numUpdates()const{
+	}
+	long num_updates = 0;
+	int numUpdates() const {
 		return num_updates;
 	}
-
-    const Weight update(){
-    	return maxFlow(source,sink);
-    }
-    std::vector<int> changed_edges;
-    std::vector<int> &  getChangedEdges(){
-     	return changed_edges;
-     }
-     void clearChangedEdges(){
-    	 for(int edgeID:changed_edges){
-    		 assert(changed[edgeID]);
-    		 changed[edgeID]=false;
-    	 }
-    	 changed_edges.clear();
-     }
-
-
+	
+	const Weight update() {
+		return maxFlow(source, sink);
+	}
+	std::vector<int> changed_edges;
+	std::vector<int> & getChangedEdges() {
+		return changed_edges;
+	}
+	void clearChangedEdges() {
+		for (int edgeID : changed_edges) {
+			assert(changed[edgeID]);
+			changed[edgeID] = false;
+		}
+		changed_edges.clear();
+	}
+	
 private:
-
-     void markChanged(int edgeID){
-    	 if(!changed[edgeID]){
-    		 changed[edgeID]=true;
-    		 changed_edges.push_back(edgeID);
-    	 }
-     }
+	
+	void markChanged(int edgeID) {
+		if (!changed[edgeID]) {
+			changed[edgeID] = true;
+			changed_edges.push_back(edgeID);
+		}
+	}
 public:
-    const Weight maxFlow(){
-    	return this->maxFlow(source,sink);
-    }
-    const Weight maxFlow(int s, int t){
-    	Weight f = 0;
+	const Weight maxFlow() {
+		return this->maxFlow(source, sink);
+	}
+	const Weight maxFlow(int s, int t) {
+		Weight f = 0;
 #ifdef RECORD
-		if(g.outfile){
-			fprintf(g.outfile,"f %d %d\n", s,t);
+		if (g.outfile) {
+			fprintf(g.outfile, "f %d %d\n", s, t);
 			fflush(g.outfile);
 		}
 #endif
+		
+		//C.resize(g.nodes());
+		/*
+		 #ifdef DEBUG_MAXFLOW
+		 for(int i = 0;i<g.all_edges.size();i++){
+		 int id = g.all_edges[i].id;
+		 int cap = capacity[id];
+		 int from =  g.all_edges[i].from;
+		 int to =  g.all_edges[i].to;
 
-    	//C.resize(g.nodes());
-/*
-#ifdef DEBUG_MAXFLOW
-    	for(int i = 0;i<g.all_edges.size();i++){
-    		int id = g.all_edges[i].id;
-    		int cap = capacity[id];
-    		int from =  g.all_edges[i].from;
-    		int to =  g.all_edges[i].to;
+		 ek.setCapacity(from,to,cap);
+		 }
+		 #endif
+		 */
+		if (last_modification > 0 && g.modifications == last_modification) {
+			/*
+			 #ifdef DEBUG_MAXFLOW
+			 int expected_flow =ek.maxFlow(s,t);
+			 #endif
 
-    		ek.setCapacity(from,to,cap);
-    	}
-#endif
-*/
-      	if(last_modification>0 && g.modifications==last_modification){
-/*
-#ifdef DEBUG_MAXFLOW
-    	int expected_flow =ek.maxFlow(s,t);
-#endif
+			 #ifdef DEBUG_MAXFLOW
+			 assert(curflow==expected_flow);
+			 #endif
+			 */
+			return curflow;
+		}
+		/*if(rev.size()<g.all_edges.size()){
+		 rev.clear();
 
-#ifdef DEBUG_MAXFLOW
-    	assert(curflow==expected_flow);
-#endif
-*/
-        			return curflow;
-        		}
-    	/*if(rev.size()<g.all_edges.size()){
-    		rev.clear();
-
-    		rev.resize(g.all_edges.size());
-    		for(int i = 0;i<g.all_edges.size();i++){
-    			rev[i]=-1;
-    			int from = g.all_edges[i].from;
-    			int to = g.all_edges[i].to;
-    			for(int j = 0;j<g.adjacency[to].size();j++){
-    				if(g.adjacency[to][j].node == from){
-    					rev[i]=g.adjacency[to][j].id;
-    					break;
-    				}
-    			}
-    		}
-    	}*/
-      	changed.resize(g.nEdgeIDs());
-    	F.clear();
-    	F.resize(g.all_edges.size());
-    	prev.resize(g.nodes());
-    	M.resize(g.nodes());
-
-    	for(int i = 0;i<g.nodes();i++){
-    		prev[i].from =-1;
-    		M[i]=0;
-    	}
-    	prev[s].from = -2;
-    	 M[s] = INF;
-        while(true){
-        	Weight m= BreadthFirstSearch(s,t);
-
-            if (m == 0)
-                break;
-
-            f = f + m;
-
-            int v = t;
-            while (v!=  s){
-                int u = prev[v].from;
-                int id = prev[v].id;
-    			if(prev[v].backward){
+		 rev.resize(g.all_edges.size());
+		 for(int i = 0;i<g.all_edges.size();i++){
+		 rev[i]=-1;
+		 int from = g.all_edges[i].from;
+		 int to = g.all_edges[i].to;
+		 for(int j = 0;j<g.adjacency[to].size();j++){
+		 if(g.adjacency[to][j].node == from){
+		 rev[i]=g.adjacency[to][j].id;
+		 break;
+		 }
+		 }
+		 }
+		 }*/
+		changed.resize(g.nEdgeIDs());
+		F.clear();
+		F.resize(g.all_edges.size());
+		prev.resize(g.nodes());
+		M.resize(g.nodes());
+		
+		for (int i = 0; i < g.nodes(); i++) {
+			prev[i].from = -1;
+			M[i] = 0;
+		}
+		prev[s].from = -2;
+		M[s] = INF;
+		while (true) {
+			Weight m = BreadthFirstSearch(s, t);
+			
+			if (m == 0)
+				break;
+			
+			f = f + m;
+			
+			int v = t;
+			while (v != s) {
+				int u = prev[v].from;
+				int id = prev[v].id;
+				if (prev[v].backward) {
 					F[id] = F[id] - m;
-				}else
+				} else
 					F[id] = F[id] + m;
-    			markChanged(id);
-                v = u;
-            }
+				markChanged(id);
+				v = u;
+			}
+			
+		}
+		/*
+		 #ifdef DEBUG_MAXFLOW
+		 int expected_flow =ek.maxFlow(s,t);
+		 #endif
 
-        }
-/*
-#ifdef DEBUG_MAXFLOW
-    	int expected_flow =ek.maxFlow(s,t);
-#endif
-
-#ifdef DEBUG_MAXFLOW
-    	assert(f==expected_flow);
-#endif
-*/
-        //dbg_print_graph(s,t);
-    	curflow=f;
-    	num_updates++;
-		last_modification=g.modifications;
+		 #ifdef DEBUG_MAXFLOW
+		 assert(f==expected_flow);
+		 #endif
+		 */
+		//dbg_print_graph(s,t);
+		curflow = f;
+		num_updates++;
+		last_modification = g.modifications;
 		last_deletion = g.deletions;
-		last_addition=g.additions;
-		dbg_print_graph(s,t);
-		history_qhead=g.history.size();
-		last_history_clear=g.historyclears;
-        return f;
-    }
-    void setSource(int s){
-    	if(source==s){
-    		return;
-    	}
-    	source=s;
-    	last_modification= g.modifications-1;
-    }
-    void setSink(int t){
-    	if(sink==t){
-    		return;
-    	}
-    	sink=t;
-    	last_modification=g.modifications-1;
-    }
-
-    std::vector<bool> seen;
-    std::vector<bool> visited;
-    const Weight minCut( std::vector<MaxFlowEdge> & cut){
-    	return minCut(source,sink,cut);
-    }
-    const Weight minCut(int s, int t, std::vector<MaxFlowEdge> & cut){
-    	const Weight f = maxFlow(s,t);
-    	//ok, now find the cut
-    	Q.clear();
+		last_addition = g.additions;
+		dbg_print_graph(s, t);
+		history_qhead = g.history.size();
+		last_history_clear = g.historyclears;
+		return f;
+	}
+	void setSource(int s) {
+		if (source == s) {
+			return;
+		}
+		source = s;
+		last_modification = g.modifications - 1;
+	}
+	void setSink(int t) {
+		if (sink == t) {
+			return;
+		}
+		sink = t;
+		last_modification = g.modifications - 1;
+	}
+	
+	std::vector<bool> seen;
+	std::vector<bool> visited;
+	const Weight minCut(std::vector<MaxFlowEdge> & cut) {
+		return minCut(source, sink, cut);
+	}
+	const Weight minCut(int s, int t, std::vector<MaxFlowEdge> & cut) {
+		const Weight f = maxFlow(s, t);
+		//ok, now find the cut
+		Q.clear();
 		Q.push_back(s);
 		seen.clear();
 		seen.resize(g.nodes());
-		seen[s]=true;
+		seen[s] = true;
 		cut.clear();
-	/*	if(f==0)
-			return 0;*/
-		dbg_print_graph(s,t);
+		/*	if(f==0)
+		 return 0;*/
+		dbg_print_graph(s, t);
 		//explore the residual graph
-		for(int j = 0;j<Q.size();j++){
-		   int u = Q[j];
-
-			for(int i = 0;i<g.nIncident(u);i++){
-				if(!g.edgeEnabled(g.incident(u,i).id))
+		for (int j = 0; j < Q.size(); j++) {
+			int u = Q[j];
+			
+			for (int i = 0; i < g.nIncident(u); i++) {
+				if (!g.edgeEnabled(g.incident(u, i).id))
 					continue;
-				int v = g.incident(u,i).node;
-				int id = g.incident(u,i).id;
-				if(capacity[id] - F[id] == 0){
-					cut.push_back(MaxFlowEdge{u,v,id});//potential element of the cut
-				}else if(!seen[v]){
+				int v = g.incident(u, i).node;
+				int id = g.incident(u, i).id;
+				if (capacity[id] - F[id] == 0) {
+					cut.push_back(MaxFlowEdge { u, v, id });    	//potential element of the cut
+				} else if (!seen[v]) {
 					Q.push_back(v);
-					seen[v]=true;
+					seen[v] = true;
 				}
 			}
-			for(int i = 0;i<g.nIncoming(u);i++){
-				if(!g.edgeEnabled(g.incoming(u,i).id))
+			for (int i = 0; i < g.nIncoming(u); i++) {
+				if (!g.edgeEnabled(g.incoming(u, i).id))
 					continue;
-				int v = g.incoming(u,i).node;
-				int id = g.incoming(u,i).id;
-				if(F[id] == 0){
-
-				}else if(!seen[v]){
+				int v = g.incoming(u, i).node;
+				int id = g.incoming(u, i).id;
+				if (F[id] == 0) {
+					
+				} else if (!seen[v]) {
 					Q.push_back(v);
-					seen[v]=true;
+					seen[v] = true;
 				}
 			}
 		}
 		//Now keep only the edges from a seen vertex to an unseen vertex
 		int i, j = 0;
-		for( i = 0;i<cut.size();i++){
-			if(!seen[cut[i].v] && seen[cut[i].u]){
-				cut[j++]=cut[i];
+		for (i = 0; i < cut.size(); i++) {
+			if (!seen[cut[i].v] && seen[cut[i].u]) {
+				cut[j++] = cut[i];
 			}
 		}
 		cut.resize(j);
 #ifndef NDEBUG
 		Weight dbg_sum = 0;
-		for(int i = 0;i<cut.size();i++){
+		for (int i = 0; i < cut.size(); i++) {
 			int id = cut[i].id;
-			assert(F[id]==capacity[id]);
-			dbg_sum+=F[id];
+			assert(F[id] == capacity[id]);
+			dbg_sum += F[id];
 		}
-		assert(dbg_sum==f);
+		assert(dbg_sum == f);
 #endif
-    	return f;
-    }
-    const  Weight getEdgeCapacity(int id){
-     	assert(g.edgeEnabled(id));
-     	return capacity[id];
-     }
-    const Weight getEdgeFlow(int id){
-    	assert(g.edgeEnabled(id));
-    	return F[id];// reserve(id);
-    }
-    const Weight getEdgeResidualCapacity(int id){
-    	assert(g.edgeEnabled(id));
-    	return  capacity[id]-F[id];// reserve(id);
-    }
+		return f;
+	}
+	const Weight getEdgeCapacity(int id) {
+		assert(g.edgeEnabled(id));
+		return capacity[id];
+	}
+	const Weight getEdgeFlow(int id) {
+		assert(g.edgeEnabled(id));
+		return F[id];    	// reserve(id);
+	}
+	const Weight getEdgeResidualCapacity(int id) {
+		assert(g.edgeEnabled(id));
+		return capacity[id] - F[id];    	// reserve(id);
+	}
 };
-};
+}
+;
 #endif
 
