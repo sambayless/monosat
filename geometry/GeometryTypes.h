@@ -398,7 +398,8 @@ static Winding computeWinding(const std::vector<Point<2, T>> & points) {
 		return Winding::CLOCKWISE;
 	else if (sum < 0) {
 		return Winding::COUNTER_CLOCKWISE;
-	} else if (sum == 0) {
+	} else {
+		assert(sum == 0);
 		return Winding::NEITHER;
 	}
 }
