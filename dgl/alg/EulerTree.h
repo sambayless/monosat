@@ -993,8 +993,8 @@ public:
 	struct tour_iterator {
 		EulerHalfEdge * n;
 		EulerHalfEdge * start;
-		bool strict;
 		bool backward;
+		bool strict;
 		bool restarted;
 
 		tour_iterator(EulerHalfEdge * start, bool strict = false) :

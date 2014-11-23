@@ -122,17 +122,17 @@ public:
 		printf("Convex hull %d: ", getID());
 		cout << under_hull->getHull() << "\n";
 		
-		printf("propagations: %d\n", stats_propagations);
-		printf("bound checks %d (skipped under,over: %d,%d)\n", stats_bound_checks, stats_bounds_skips_under,
+		printf("propagations: %ld\n", stats_propagations);
+		printf("bound checks %ld (skipped under,over: %ld,%ld)\n", stats_bound_checks, stats_bounds_skips_under,
 				stats_bounds_skips_over);
-		printf("containment: bounds skipped %d, triangle skipped %d, checks %d, %d depth\n",
+		printf("containment: bounds skipped %ld, triangle skipped %ld, checks %ld, %ld depth\n",
 				ConvexPolygon<D, T>::stats_bounds_avoided, ConvexPolygon<D, T>::stats_triangle_avoided,
 				ConvexPolygon<D, T>::stats_split_full_checks, ConvexPolygon<D, T>::stats_split_checks_depths);
-		printf("intersections: bounds skipped %d, checks skipped under: %d, skipped over: %d\n",
+		printf("intersections: bounds skipped %ld, checks skipped under: %ld, skipped over: %ld\n",
 				ConvexPolygon<D, T>::stats_bounds_intersections_avoided, stats_line_intersection_skips_under,
 				stats_line_intersection_skips_over);
 		
-		printf("Skipped updates: %d/%d under, %d/%d over\n",
+		printf("Skipped updates: %ld/%ld under, %ld/%ld over\n",
 				((MonotoneConvexHull<D, T>*) under_hull)->stats_skipped_updates,
 				((MonotoneConvexHull<D, T>*) under_hull)->stats_updates,
 				((MonotoneConvexHull<D, T>*) over_hull)->stats_skipped_updates,

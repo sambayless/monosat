@@ -398,8 +398,8 @@ private:
 	flowtype flow;			// total flow
 	
 	// reusing trees & list of changed pixels
-	int maxflow_iteration; // counter
-	bool keep_changed_list;
+	int maxflow_iteration=0; // counter
+	bool keep_changed_list=false;
 	Block<node_id> *changed_list;
 
 	/////////////////////////////////////////////////////////////////////////
@@ -1768,7 +1768,7 @@ void Graph<captype, tcaptype, flowtype>::process_source_orphan(node *i) {
 			}
 		}
 	
-	if (i->parent = a0_min) //is this assignment intentional
+	if ((i->parent = a0_min)) //is this assignment intentional
 			{
 		i->TS = TIME;
 		i->DIST = d_min + 1;
@@ -1836,7 +1836,7 @@ void Graph<captype, tcaptype, flowtype>::process_sink_orphan(node *i) {
 			}
 		}
 	
-	if (i->parent = a0_min) //is this assignment intentional?
+	if ((i->parent = a0_min)) //is this assignment intentional?
 			{
 		i->TS = TIME;
 		i->DIST = d_min + 1;

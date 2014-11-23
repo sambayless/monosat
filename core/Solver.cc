@@ -1277,7 +1277,7 @@ lbool Solver::search(int nof_conflicts) {
 	vec<Lit> learnt_clause;
 	
 	starts++;
-	last_dec = var_Undef;
+	//last_dec = var_Undef;
 	for (;;) {
 		static int iter = 0;
 		if (++iter == 5) {
@@ -1426,7 +1426,7 @@ lbool Solver::search(int nof_conflicts) {
 					return l_True;
 				}
 			}
-			last_dec = var(next);
+			//last_dec = var(next);
 			// Increase decision level and enqueue 'next'
 			newDecisionLevel();
 			uncheckedEnqueue(next);

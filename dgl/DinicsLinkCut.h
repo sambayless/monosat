@@ -52,8 +52,7 @@ public:
 	int last_modification;
 	int last_deletion;
 	int last_addition;
-	int source = -1;
-	int sink = -1;
+
 	int history_qhead;
 	int last_history_clear;
 	//std::vector<LocalEdge> prev;
@@ -63,9 +62,11 @@ public:
 	std::vector<bool> changed;
 	DynamicGraph& g;
 	Capacity & capacity;
+	int source = -1;
+	int sink = -1;
 	int INF;
-	int src;
-	int dst;
+	int src=-1;
+	int dst=-1;
 	struct ParentEdge {
 		bool backward;
 		int edgeID;
@@ -112,8 +113,8 @@ public:
 		printf("Total time: %f\n", totaltime);
 		printf("BFS Time: %f\n", bfstime);
 		printf("Augmenting Path Time: %f (search: %f, cleanup: %f)\n", augtime, augtime_search, augtime_cleanup);
-		printf("Rounds: %d, Augmenting Rounds: %d\n", stats_rounds, stats_augmenting_rounds);
-		printf("Backtracks %d (%d avoided)\n", stats_backtracks, stats_avoided_backtracks);
+		printf("Rounds: %ld, Augmenting Rounds: %ld\n", stats_rounds, stats_augmenting_rounds);
+		printf("Backtracks %ld (%ld avoided)\n", stats_backtracks, stats_avoided_backtracks);
 	}
 	
 public:

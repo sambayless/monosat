@@ -244,8 +244,8 @@ private:
 	block *first;
 	block *last;
 
-	block *scan_current_block;
-	Type *scan_current_data;
+	block *scan_current_block=nullptr;
+	Type *scan_current_data=nullptr;
 
 	void (*error_function)(const char *);
 };

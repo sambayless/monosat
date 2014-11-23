@@ -61,11 +61,12 @@ public:
 	std::vector<bool> changed;
 	DynamicGraph& g;
 	Capacity & capacity;
-	Weight INF;
-	int src;
-	int dst;
+
+	int src=-1;
+	int dst=-1;
 	int source = -1;
 	int sink = -1;
+	Weight INF;
 	std::vector<int> Q;
 	long stats_augmenting_rounds = 0;
 	long stats_rounds = 0;
@@ -99,7 +100,7 @@ public:
 	void printStats() {
 		printf("Dinics :\n");
 		
-		printf("Rounds: %d, Augmenting Rounds: %d\n", stats_rounds, stats_augmenting_rounds);
+		printf("Rounds: %ld, Augmenting Rounds: %ld\n", stats_rounds, stats_augmenting_rounds);
 	}
 	
 	void setCapacity(int u, int w, Weight c) {

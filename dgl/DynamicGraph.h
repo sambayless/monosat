@@ -48,18 +48,18 @@ namespace dgl {
 class DynamicGraph {
 	
 	std::vector<bool> edge_status;
-	int num_nodes;
-	int num_edges;
-	int next_id;
-	bool is_changed;
+	int num_nodes=0;
+	int num_edges=0;
+	int next_id=0;
+	bool is_changed=false;
 
 public:
 	bool adaptive_history_clear = false;
 	long historyClearInterval = 1000;
-	int modifications;
-	int additions;
-	int deletions;
-	long historyclears;
+	int modifications=0;
+	int additions=0;
+	int deletions=0;
+	long historyclears=0;
 
 	struct Edge {
 		int node;
@@ -100,9 +100,7 @@ public:
 	FILE * outfile;
 #endif
 public:
-	DynamicGraph() :
-			num_nodes(0), num_edges(0), next_id(0), modifications(0), additions(0), deletions(0), historyclears(0), is_changed(
-					true) {
+	DynamicGraph() {
 		//allocated=true;
 #ifdef RECORD
 		outfile = nullptr;

@@ -381,7 +381,7 @@ public:
 	bool initialPropagate = true;    				//to force propagation to occur at least once to the theory solvers
 	int super_qhead = 0;
 	int local_qhead = 0;
-	CRef cause_marker;
+	CRef cause_marker=CRef_Undef;
 	int track_min_level = 0;
 	int initial_level = 0;
 	vec<int> theory_queue;
@@ -428,7 +428,7 @@ public:
 	uint64_t dec_vars, clauses_literals, learnts_literals, max_literals, tot_literals;
 	double stats_pure_lit_time;
 
-	Var last_dec;
+	//Var last_dec=var_Undef;
 protected:
 	
 	// Helper structures:
@@ -535,7 +535,7 @@ protected:
 
 	vec<vec<Lit>> clauses_to_add;
 
-	double max_learnts;
+	double max_learnts=1;
 	double learntsize_adjust_confl;
 	int learntsize_adjust_cnt;
 

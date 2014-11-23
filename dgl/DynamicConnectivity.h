@@ -70,30 +70,26 @@ public:
 	int INF;
 
 	ThorupDynamicConnectivity t;
-	int default_source;
-	int default_source_index;
+	int default_source=0;
+	int default_source_index=0;
 	const int reportPolarity;
 
 public:
 	
-	int stats_full_updates;
-	int stats_fast_updates;
-	int stats_fast_failed_updates;
-	int stats_skip_deletes;
-	int stats_skipped_updates;
-	int stats_num_skipable_deletions;
-	double mod_percentage;
+	long stats_full_updates=0;
+	long stats_fast_updates=0;
+	long stats_fast_failed_updates=0;
+	long stats_skip_deletes=0;
+	long stats_skipped_updates=0;
+	long stats_num_skipable_deletions=0;
+	double mod_percentage=0;
 
-	double stats_full_update_time;
-	double stats_fast_update_time;
+	double stats_full_update_time=0;
+	double stats_fast_update_time=0;
 
 	DynamicConnectivity(DynamicGraph & graph, Status & status, int _reportPolarity = 0) :
 			g(graph), status(status), last_modification(-1), last_addition(-1), last_deletion(-1), history_qhead(0), last_history_clear(
 					0), INF(0), reportPolarity(_reportPolarity) {
-		stats_skipped_updates = 0;
-		stats_full_updates = 0;
-		stats_full_update_time = 0;
-		stats_fast_update_time = 0;
 		default_source = -1;
 		hasPrev = false;
 		iteration = 0;
@@ -292,7 +288,7 @@ public:
 			stats_skipped_updates++;
 			return;
 		}
-		stats_full_updates++; //1416
+		stats_full_updates++;
 		
 		setNodes(g.nodes());
 		hasPrev = false;
