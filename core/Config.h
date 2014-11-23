@@ -1,23 +1,23 @@
 /****************************************************************************************[Solver.h]
-The MIT License (MIT)
+ The MIT License (MIT)
 
-Copyright (c) 2014, Sam Bayless
+ Copyright (c) 2014, Sam Bayless
 
-Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
-associated documentation files (the "Software"), to deal in the Software without restriction,
-including without limitation the rights to use, copy, modify, merge, publish, distribute,
-sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+ Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
+ associated documentation files (the "Software"), to deal in the Software without restriction,
+ including without limitation the rights to use, copy, modify, merge, publish, distribute,
+ sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is
+ furnished to do so, subject to the following conditions:
 
-The above copyright notice and this permission notice shall be included in all copies or
-substantial portions of the Software.
+ The above copyright notice and this permission notice shall be included in all copies or
+ substantial portions of the Software.
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT
-NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
-DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT
-OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-**************************************************************************************************/
+ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT
+ NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+ DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT
+ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ **************************************************************************************************/
 #ifndef CONFIG_H_
 #define CONFIG_H_
 
@@ -25,22 +25,22 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "utils/System.h"
 namespace Monosat {
 extern IntOption opt_verb;
-extern  DoubleOption  opt_var_decay;
-extern  DoubleOption  opt_clause_decay ;
-extern  DoubleOption  opt_random_var_freq ;
-extern  DoubleOption  opt_random_seed;
-extern  IntOption     opt_ccmin_mode  ;
-extern  IntOption     opt_phase_saving ;
-extern  BoolOption    opt_rnd_init_act ;
-extern  BoolOption    opt_luby_restart ;
-extern  IntOption     opt_restart_first ;
-extern  DoubleOption  opt_restart_inc   ;
-extern  DoubleOption  opt_garbage_frac  ;
-extern  BoolOption    opt_rnd_restart ;
+extern DoubleOption opt_var_decay;
+extern DoubleOption opt_clause_decay;
+extern DoubleOption opt_random_var_freq;
+extern DoubleOption opt_random_seed;
+extern IntOption opt_ccmin_mode;
+extern IntOption opt_phase_saving;
+extern BoolOption opt_rnd_init_act;
+extern BoolOption opt_luby_restart;
+extern IntOption opt_restart_first;
+extern DoubleOption opt_restart_inc;
+extern DoubleOption opt_garbage_frac;
+extern BoolOption opt_rnd_restart;
 
-extern  DoubleOption  opt_random_theory_freq ;
+extern DoubleOption opt_random_theory_freq;
 
-extern  BoolOption opt_interpolate;
+extern BoolOption opt_interpolate;
 extern IntOption opt_eager_prop;
 extern IntOption opt_subsearch;
 
@@ -49,7 +49,6 @@ extern BoolOption opt_inc_graph;
 extern IntOption opt_dec_graph;
 extern BoolOption opt_conflict_shortest_path;
 extern BoolOption opt_conflict_min_cut;
-
 
 extern StringOption opt_maxflow_alg;
 extern StringOption opt_reach_alg;
@@ -96,19 +95,19 @@ extern IntOption opt_temporary_theory_reasons;
 extern BoolOption opt_force_directed;
 extern BoolOption opt_decide_graph_chokepoints;
 extern IntOption opt_sort_graph_decisions;
-extern BoolOption  opt_rnd_order_graph_decisions;
+extern BoolOption opt_rnd_order_graph_decisions;
 extern BoolOption opt_compute_max_distance;
- extern BoolOption opt_detect_pure_theory_lits;
- extern BoolOption opt_detect_pure_lits;
- extern BoolOption opt_propagate_theories_during_simplification;
- extern BoolOption opt_shrink_theory_conflicts;
+extern BoolOption opt_detect_pure_theory_lits;
+extern BoolOption opt_detect_pure_lits;
+extern BoolOption opt_propagate_theories_during_simplification;
+extern BoolOption opt_shrink_theory_conflicts;
 extern BoolOption opt_early_theory_prop;
- extern IntOption    opt_width;
- extern    IntOption    opt_height;
- extern   IntOption    opt_bits;
+extern IntOption opt_width;
+extern IntOption opt_height;
+extern IntOption opt_bits;
 extern BoolOption opt_encode_reach_underapprox_as_sat;
- extern   BoolOption	 opt_csv;
- extern BoolOption opt_rnd_shuffle;
+extern BoolOption opt_csv;
+extern BoolOption opt_rnd_shuffle;
 extern BoolOption opt_components_learn_connect;
 extern BoolOption opt_learn_unreachable_component;
 extern BoolOption opt_dinics_recursive;
@@ -132,89 +131,67 @@ extern IntOption opt_adaptive_conflict_mincut;
 extern BoolOption opt_shortest_path_prune_dist;
 extern BoolOption opt_conflict_min_cut_shortest_paths;
 
-enum class PointInPolygonAlg{
-	 ALG_FULL,
-	 ALG_RECURSIVE_SPLIT
+enum class PointInPolygonAlg {
+	ALG_FULL, ALG_RECURSIVE_SPLIT
 };
 extern PointInPolygonAlg pipalg;
 
-enum class ReachAlg{
-	 ALG_SAT,
-	 ALG_DFS,
-	 ALG_DIJKSTRA,
-	 ALG_DISTANCE,
-	 ALG_BFS,
-	 ALG_RAMAL_REPS
+enum class ReachAlg {
+	ALG_SAT, ALG_DFS, ALG_DIJKSTRA, ALG_DISTANCE, ALG_BFS, ALG_RAMAL_REPS
 };
 
 //For undirected reachability
-enum class ConnectivityAlg{
-	 ALG_SAT,
-	 ALG_DFS,
-	 ALG_DIJKSTRA,
-	 ALG_DISTANCE,
-	 ALG_BFS,
-	 ALG_THORUP
+enum class ConnectivityAlg {
+	ALG_SAT, ALG_DFS, ALG_DIJKSTRA, ALG_DISTANCE, ALG_BFS, ALG_THORUP
 };
 extern ConnectivityAlg undirectedalg;
 extern ReachAlg reachalg;
 
-enum class AllPairsAlg{
-	 ALG_FLOYDWARSHALL,
-	 ALG_DIJKSTRA_ALLPAIRS
+enum class AllPairsAlg {
+	ALG_FLOYDWARSHALL, ALG_DIJKSTRA_ALLPAIRS
 };
 extern AllPairsAlg allpairsalg;
-enum class AllPairsConnectivityAlg{
-	 ALG_FLOYDWARSHALL,
-	 ALG_DIJKSTRA_ALLPAIRS,
-	 ALG_THORUP
+enum class AllPairsConnectivityAlg {
+	ALG_FLOYDWARSHALL, ALG_DIJKSTRA_ALLPAIRS, ALG_THORUP
 };
 extern AllPairsConnectivityAlg undirected_allpairsalg;
-enum class MinCutAlg{
-	 ALG_EDMONSKARP,
-	 ALG_EDKARP_ADJ,
+enum class MinCutAlg {
+	ALG_EDMONSKARP, ALG_EDKARP_ADJ,
 	// ALG_IBFS, //omitted for licensing reasons
-	 ALG_EDKARP_DYN,
-	 ALG_DINITZ,
-	 ALG_DINITZ_LINKCUT,
-	 ALG_KOHLI_TORR
+	ALG_EDKARP_DYN,
+	ALG_DINITZ,
+	ALG_DINITZ_LINKCUT,
+	ALG_KOHLI_TORR
 };
 extern MinCutAlg mincutalg;
-enum class MinSpanAlg{
-	 ALG_KRUSKAL,
-	 ALG_PRIM,
-	 ALG_SPIRA_PAN
+enum class MinSpanAlg {
+	ALG_KRUSKAL, ALG_PRIM, ALG_SPIRA_PAN
 };
 extern MinSpanAlg mstalg;
-enum class ComponentsAlg{
+enum class ComponentsAlg {
 	ALG_DISJOINT_SETS
 
 };
 extern ComponentsAlg componentsalg;
 
-enum class ConvexHullAlg{
-	ALG_MONOTONE_HULL,
-	ALG_QUICKHULL
+enum class ConvexHullAlg {
+	ALG_MONOTONE_HULL, ALG_QUICKHULL
 
 };
 extern ConvexHullAlg hullAlg;
 
-enum class DistAlg{
-	 ALG_SAT,
-	 ALG_DIJKSTRA,
-	 ALG_DISTANCE,
-	 ALG_RAMAL_REPS
+enum class DistAlg {
+	ALG_SAT, ALG_DIJKSTRA, ALG_DISTANCE, ALG_RAMAL_REPS
 };
-
 
 extern DistAlg distalg;
 
 extern IntOption opt_time;
 
-static inline double rtime(int level=1){
-	if(level<=opt_time){
+static inline double rtime(int level = 1) {
+	if (level <= opt_time) {
 		return cpuTime();
-	}else{
+	} else {
 		return 0;
 	}
 }
