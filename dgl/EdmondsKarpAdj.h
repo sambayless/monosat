@@ -49,8 +49,7 @@ public:
 	int last_modification;
 	int last_deletion;
 	int last_addition;
-	int source = -1;
-	int sink = -1;
+
 	int history_qhead;
 	int last_history_clear;
 	std::vector<LocalEdge> prev;
@@ -58,6 +57,8 @@ public:
 	std::vector<bool> changed;
 	DynamicGraph& g;
 	Capacity & capacity;
+	int source = -1;
+	int sink = -1;
 	Weight INF;
 	/*
 	 #ifdef DEBUG_MAXFLOW

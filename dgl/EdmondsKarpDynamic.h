@@ -60,9 +60,10 @@ class EdmondsKarpDynamic: public MaxFlow<Weight> {
 	DynamicGraph& g;
 	Capacity & capacity;
 	bool allow_flow_cycles = false;
-	Weight INF;
 	int source = -1;
 	int sink = -1;
+	Weight INF;
+
 #ifdef DEBUG_MAXFLOW
 	EdmondsKarpAdj<Capacity,Weight> ek;
 #endif

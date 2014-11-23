@@ -391,10 +391,6 @@ private:
 
 	DBlock<nodeptr> *nodeptr_block;
 
-	void (*error_function)(const char *);	// this function is called if a error occurs,
-	// with a corresponding error message
-	// (or exit(1) is called if it's NULL)
-	
 	flowtype flow;			// total flow
 	
 	// reusing trees & list of changed pixels
@@ -402,11 +398,14 @@ private:
 	bool keep_changed_list=false;
 	Block<node_id> *changed_list;
 
+	void (*error_function)(const char *);	// this function is called if a error occurs,
+	// with a corresponding error message
+	// (or exit(1) is called if it's NULL)
 	/////////////////////////////////////////////////////////////////////////
 	
 	node *queue_first[2], *queue_last[2];	// list of active nodes
-	nodeptr *orphan_first, *orphan_last;		// list of pointers to orphans
-	int TIME;					// monotonically increasing global counter
+	nodeptr *orphan_first=nullptr, *orphan_last=nullptr;		// list of pointers to orphans
+	int TIME=0;					// monotonically increasing global counter
 	
 	/////////////////////////////////////////////////////////////////////////
 	

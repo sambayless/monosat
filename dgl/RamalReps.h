@@ -72,16 +72,16 @@ public:
 	std::vector<int> changeset;
 public:
 	
-	int stats_full_updates;
-	int stats_fast_updates;
-	int stats_fast_failed_updates;
-	int stats_skip_deletes;
-	int stats_skipped_updates;
-	int stats_num_skipable_deletions;
-	double mod_percentage;
+	long stats_full_updates=0;
+	long stats_fast_updates=0;
+	long stats_fast_failed_updates=0;
+	long stats_skip_deletes=0;
+	long stats_skipped_updates=0;
+	long stats_num_skipable_deletions=0;
+	double mod_percentage=0;
 
-	double stats_full_update_time;
-	double stats_fast_update_time;
+	double stats_full_update_time=0;
+	double stats_fast_update_time=0;
 	RamalReps(int s, DynamicGraph & graph, std::vector<Weight> & weights, Status & status, int reportPolarity = 0,
 			bool reportDistance = false) :
 			g(graph), weights(weights), status(status), reportPolarity(reportPolarity), reportDistance(reportDistance), last_modification(
@@ -89,12 +89,7 @@ public:
 					0), q(DistCmp(dist)) {
 		
 		mod_percentage = 0.2;
-		stats_full_updates = 0;
-		stats_fast_updates = 0;
-		stats_skip_deletes = 0;
-		stats_skipped_updates = 0;
-		stats_full_update_time = 0;
-		stats_fast_update_time = 0;
+
 	}
 	//Dijkstra(const Dijkstra& d):g(d.g), last_modification(-1),last_addition(-1),last_deletion(-1),history_qhead(0),last_history_clear(0),source(d.source),INF(0),q(DistCmp(dist)),stats_full_updates(0),stats_fast_updates(0),stats_skip_deletes(0),stats_skipped_updates(0),stats_full_update_time(0),stats_fast_update_time(0){marked=false;};
 	
@@ -647,7 +642,7 @@ public:
 		if (connected_unsafe(t))
 			return dist[t];
 		else
-			return this->unreachable();;
+			return this->unreachable();
 	}
 	int incomingEdge(int t) {
 		/*
@@ -714,16 +709,16 @@ public:
 	std::vector<int> changeset;
 public:
 	
-	int stats_full_updates;
-	int stats_fast_updates;
-	int stats_fast_failed_updates;
-	int stats_skip_deletes;
-	int stats_skipped_updates;
-	int stats_num_skipable_deletions;
-	double mod_percentage;
+	long stats_full_updates=0;
+	long stats_fast_updates=0;
+	long stats_fast_failed_updates=0;
+	long stats_skip_deletes=0;
+	long stats_skipped_updates=0;
+	long stats_num_skipable_deletions=0;
+	double mod_percentage=0;
 
-	double stats_full_update_time;
-	double stats_fast_update_time;
+	double stats_full_update_time=0;
+	double stats_fast_update_time=0;
 	UnweightedRamalReps(int s, DynamicGraph & graph, Status & status, int reportPolarity = 0,
 			bool reportDistance = true) :
 			g(graph), status(status), reportPolarity(reportPolarity), reportDistance(reportDistance), last_modification(
@@ -731,12 +726,6 @@ public:
 					-1) {
 		maxDistance = -1;
 		mod_percentage = 0.2;
-		stats_full_updates = 0;
-		stats_fast_updates = 0;
-		stats_skip_deletes = 0;
-		stats_skipped_updates = 0;
-		stats_full_update_time = 0;
-		stats_fast_update_time = 0;
 	}
 	//Dijkstra(const Dijkstra& d):g(d.g), last_modification(-1),last_addition(-1),last_deletion(-1),history_qhead(0),last_history_clear(0),source(d.source),INF(0),q(DistCmp(dist)),stats_full_updates(0),stats_fast_updates(0),stats_skip_deletes(0),stats_skipped_updates(0),stats_full_update_time(0),stats_fast_update_time(0){marked=false;};
 	void setMaxDistance(int _maxDistance) {

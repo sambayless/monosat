@@ -35,6 +35,8 @@ namespace dgl {
 template<class Capacity, typename Weight>
 class KohliTorr: public MaxFlow<Weight> {
 	Weight f = 0;
+	DynamicGraph& g;
+	Capacity & capacity;
 	/**
 	 * Note: The Kohli Torr implementation does _not_ support multiple edges between the same nodes.
 	 */
@@ -67,8 +69,7 @@ class KohliTorr: public MaxFlow<Weight> {
 
 	std::vector<int> arc_map; //map from edgeids to arcs (note: this may be many to one)
 	std::vector<std::vector<int>> edge_map; //map from arc ids to edgeids
-	DynamicGraph& g;
-	Capacity & capacity;
+
 	Weight INF;
 
 	static const auto KT_SOURCE = kohli_torr::Graph<Weight, Weight, Weight>::SOURCE;
