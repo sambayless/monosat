@@ -89,7 +89,7 @@ private:
 	H hash;
 	E equals;
 
-	vec<Pair>* table;
+	vec<Pair>* table=nullptr;
 	int cap=1;
 	int size=0;
 

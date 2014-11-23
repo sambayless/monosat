@@ -1084,7 +1084,7 @@ bool DistanceDetector<Weight>::checkSatisfied() {
 	}
 	
 	/*else{/
-	 /*{
+	 {
 	 UnweightedDijkstra<>under(source,g) ;
 	 UnweightedDijkstra<>over(source,antig) ;
 	 under.update();

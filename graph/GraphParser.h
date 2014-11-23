@@ -722,7 +722,7 @@ class GraphParser: public Parser<B, Solver> {
 				weights.push(1);
 		}
 		skipWhitespace(in);
-		PbTheory::PbType op;
+		PbTheory::PbType op = PbTheory::PbType::EQ;
 		//read the operator:
 		if (*in == '<') {
 			++in;
@@ -750,6 +750,8 @@ class GraphParser: public Parser<B, Solver> {
 		} else if (*in == '=') {
 			++in;
 			op = PbTheory::PbType::EQ;
+		}else{
+			printf("PARSE ERROR! Bad PB constraint\n"), exit(1);
 		}
 		int comparison = parseInt(in);
 		int type = parseInt(in);

@@ -79,7 +79,7 @@ public:
 
 	int max_unweighted_distance;
 
-	int stats_pure_skipped = 0;
+	long stats_pure_skipped = 0;
 	long stats_distance_gt_reasons = 0;
 	long stats_distance_leq_reasons = 0;
 	long stats_unweighted_gt_reasons = 0;

@@ -324,8 +324,9 @@ public:
 		if (flow < 0xFFFF) {
 			exit(4);
 		}
-		return true;
+
 #endif
+		return true;
 	}
 	
 };

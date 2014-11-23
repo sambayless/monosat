@@ -36,7 +36,7 @@ namespace Monosat {
 
 template<class T>
 class vec {
-	T* data;
+	T* data=nullptr;
 	int sz=0;
 	int cap=1;
 
