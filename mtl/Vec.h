@@ -37,8 +37,8 @@ namespace Monosat {
 template<class T>
 class vec {
 	T* data;
-	int sz;
-	int cap;
+	int sz=0;
+	int cap=1;
 
 	// Don't allow copying (error prone):
 	vec<T>& operator =(vec<T>& other) {

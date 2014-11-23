@@ -95,10 +95,11 @@ class PbTheory: public Theory {
 		ConstraintSide side;
 		//bool isSatisfied;
 		//bool isOverEq; //true iff the sum of the lhs is >= the rhs
-		bool inQueue;
+
 		//maintain running counts of the under/over approximations of this clause.
 		long under;
 		long unassigned;
+		bool inQueue;
 		PbElement rhs;
 		CRef reason;
 		vec<PbElement> clause;
@@ -1330,9 +1331,9 @@ public:
 	
 	void printStats(int detailLevel) {
 		printf("PbTheory: %d clauses\n", clauses.size());
-		printf("%d propagations (%d skipped)\n", stats_propagations, stats_propagations_skipped);
-		printf("%d conflicts, %d reasons\n", stats_conflicts, stats_reasons);
-		printf("Shrink removed %d lits from conflict clauses\n", stats_shrink_removed);
+		printf("%ld propagations (%ld skipped)\n", stats_propagations, stats_propagations_skipped);
+		printf("%ld conflicts, %ld reasons\n", stats_conflicts, stats_reasons);
+		printf("Shrink removed %ld lits from conflict clauses\n", stats_shrink_removed);
 	}
 	void preprocess() {
 		

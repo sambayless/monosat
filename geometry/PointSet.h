@@ -47,8 +47,8 @@ public:
 		bool addition;
 		int id;
 
-		int mod;
-		int prev_mod;
+		long mod;
+		long prev_mod;
 	};
 	std::vector<PointsetChange> history;
 public:

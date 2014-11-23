@@ -90,8 +90,8 @@ private:
 	E equals;
 
 	vec<Pair>* table;
-	int cap;
-	int size;
+	int cap=1;
+	int size=0;
 
 	// Don't allow copying (error prone):
 	Map<K, D, H, E>& operator =(Map<K, D, H, E>& other) {
