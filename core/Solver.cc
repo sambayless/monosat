@@ -58,14 +58,13 @@ Solver::Solver() :
 		//
 				, solves(0), starts(0), decisions(0), rnd_decisions(0), propagations(0), conflicts(0), stats_pure_lits(
 				0), stats_pure_theory_lits(0), pure_literal_detections(0), stats_removed_clauses(0), dec_vars(0), clauses_literals(
-				0), learnts_literals(0), max_literals(0), tot_literals(0), stats_pure_lit_time(0), theory_index(0), ok(
+				0), learnts_literals(0), max_literals(0), tot_literals(0), stats_pure_lit_time(0),  ok(
 				true), cla_inc(1), var_inc(1), watches(WatcherDeleted(ca)), qhead(0), simpDB_assigns(-1), simpDB_props(
 				0), order_heap(VarOrderLt(activity, priority)), progress_estimate(0), remove_satisfied(true)
 
 		// Resource constraints:
 		//
-				, conflict_budget(-1), propagation_budget(-1), asynch_interrupt(false), S(nullptr), initialPropagate(
-				true), super_qhead(0), super_offset(-1), local_qhead(0) {
+				, conflict_budget(-1), propagation_budget(-1) {
 #ifdef DEBUG_SOLVER
 	dbg_solver=NULL;
 #endif

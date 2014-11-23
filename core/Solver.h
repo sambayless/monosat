@@ -426,7 +426,7 @@ public:
 	uint64_t solves, starts, decisions, rnd_decisions, propagations, conflicts, stats_pure_lits, stats_pure_theory_lits,
 			pure_literal_detections, stats_removed_clauses;
 	uint64_t dec_vars, clauses_literals, learnts_literals, max_literals, tot_literals;
-	double stats_pure_lit_time;
+	double stats_pure_lit_time=0;
 
 	//Var last_dec=var_Undef;
 protected:
@@ -536,14 +536,14 @@ protected:
 	vec<vec<Lit>> clauses_to_add;
 
 	double max_learnts=1;
-	double learntsize_adjust_confl;
-	int learntsize_adjust_cnt;
+	double learntsize_adjust_confl=0;
+	int learntsize_adjust_cnt=0;
 
 	// Resource contraints:
 	//
 	int64_t conflict_budget;    // -1 means no budget.
 	int64_t propagation_budget; // -1 means no budget.
-	bool asynch_interrupt;
+	bool asynch_interrupt=false;
 
 	// Main internal methods:
 	//
