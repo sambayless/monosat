@@ -10,7 +10,12 @@ Build with
 $cd Release
 $make
 
-Tested on Ubuntu 14.04, with G++ 4.8.2 (MonoSAT makes use of C++11 features, and so requires a compatible compiler)
+Build Notes:  
+MonoSAT makes use of C++11 features, and so requires a compatible compiler.
+It is critically important to build with -NDEBUG set in any release build, as there is a large quantity of 
+(very!) expensive debugging code that will be activated otherwise.
+
+Tested on Ubuntu 14.04, with G++ 4.8.2 
 
 Usage:
 
