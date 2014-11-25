@@ -1,0 +1,24 @@
+c this is a cnf with 5 Boolean variables and 2 clauses
+p cnf 7 5
+c some clauses in CNF format
+1 0
+3 0
+-2 -4 0
+6 7 0
+-6 0
+c add a directed graph with identifier '0'. This graph has 3 nodes (numbered 0..2) and 4 edges.
+c All graph identifiers must be unique non-negative integers.
+digraph 4 5 0
+c declare an edge in graph 0, from node 0 to node 2. This edge is enabled (e.g., in the graph) if and only if variable 1 is true.
+c note that the variable controlling the graph must not be negative, and also that (for now), no two edges or graph predicates 
+c can be associated with the same variable. 
+edge 0 0 2 1
+edge 0 2 0 2
+edge 0 2 1 3
+edge 0 2 3 4
+edge 0 3 2 5
+c add a reachability constraint to graph 0. Variable 7 must be assigned true if and only if node 0 reaches node 1 in graph 0 
+c (under assignment to the edge variables).
+reach 0 0 3 6
+c add a second reachability constraint to graph 0. Variable 8 must be true if and only if node 3 reaches node 0 in graph 0.
+reach 0 3 0 7
