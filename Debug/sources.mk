@@ -28,7 +28,6 @@ simp \
 graph \
 geometry/polypartition \
 geometry/cevans \
-geometry/bitmap \
 geometry \
 dgl/alg \
 dgl \
