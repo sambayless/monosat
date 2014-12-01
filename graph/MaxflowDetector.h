@@ -40,9 +40,9 @@ class MaxflowDetector: public LevelDetector {
 public:
 	GraphTheorySolver<Weight> * outer;
 	std::vector<Weight> capacities;
-	DynamicGraph & over_graph;
-	DynamicGraph &g;
-	DynamicGraph &antig;
+
+	DynamicGraph &g_under;
+	DynamicGraph &g_over;
 
 	int source;
 	int target;
@@ -107,7 +107,7 @@ public:
 			}
 		}
 		int size() const {
-			return outer.g.edges() * 2;
+			return outer.g_under.edges() * 2;
 		}
 		CutStatus(MaxflowDetector & outer) :
 				outer(outer) {

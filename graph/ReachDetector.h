@@ -47,8 +47,8 @@ template<typename Weight>
 class ReachDetector: public Detector {
 public:
 	GraphTheorySolver<Weight> * outer;
-	DynamicGraph &g;
-	DynamicGraph &antig;
+	DynamicGraph &g_under;
+	DynamicGraph &g_over;
 	DynamicGraph cutgraph;
 	int within;
 	int source;
@@ -169,7 +169,7 @@ public:
 			}
 		}
 		int size() const {
-			return outer.g.edges() * 2;
+			return outer.g_under.edges() * 2;
 		}
 		CutStatus(ReachDetector & _outer) :
 				outer(_outer) {

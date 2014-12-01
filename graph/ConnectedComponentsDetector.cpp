@@ -28,7 +28,7 @@ using namespace Monosat;
 template<typename Weight>
 ConnectedComponentsDetector<Weight>::ConnectedComponentsDetector(int _detectorID, GraphTheorySolver<Weight> * _outer,
 		DynamicGraph &_g, DynamicGraph &_antig, double seed) :
-		Detector(_detectorID), outer(_outer), g(_g), antig(_antig), rnd_seed(seed), underapprox_component_detector(
+		Detector(_detectorID), outer(_outer), g_under(_g), g_over(_antig), rnd_seed(seed), underapprox_component_detector(
 				NULL), overapprox_component_detector(NULL), positiveReachStatus(NULL), negativeReachStatus(NULL) {
 	
 	positiveReachStatus = new ConnectedComponentsDetector<Weight>::ConnectedComponentsStatus(*this, true);
@@ -51,10 +51,10 @@ Lit ConnectedComponentsDetector<Weight>::getConnectLit(int u, int v) {
 	if (reachLits.size() > u && reachLits[u].size() > v && reachLits[u][v] != lit_Undef) {
 		return reachLits[u][v];
 	}
-	if (reachLits.size() < g.nodes()) {
-		reachLits.growTo(g.nodes());
+	if (reachLits.size() < g_under.nodes()) {
+		reachLits.growTo(g_under.nodes());
 		for (int i = 0; i < reachLits.size(); i++) {
-			reachLits[i].growTo(g.nodes(), lit_Undef);
+			reachLits[i].growTo(g_under.nodes(), lit_Undef);
 		}
 	}
 	Var connect_var = outer->newVar(getID(), true);
@@ -65,12 +65,12 @@ Lit ConnectedComponentsDetector<Weight>::getConnectLit(int u, int v) {
 }
 template<typename Weight>
 void ConnectedComponentsDetector<Weight>::addConnectedLit(Var outer_reach_var, int node1, int node2) {
-	g.invalidate();
-	antig.invalidate();
-	if (reachLits.size() < g.nodes()) {
-		reachLits.growTo(g.nodes());
+	g_under.invalidate();
+	g_over.invalidate();
+	if (reachLits.size() < g_under.nodes()) {
+		reachLits.growTo(g_under.nodes());
 		for (int i = 0; i < reachLits.size(); i++) {
-			reachLits[i].growTo(g.nodes(), lit_Undef);
+			reachLits[i].growTo(g_under.nodes(), lit_Undef);
 		}
 	}
 	
@@ -90,8 +90,8 @@ void ConnectedComponentsDetector<Weight>::addConnectedLit(Var outer_reach_var, i
 template<typename Weight>
 void ConnectedComponentsDetector<Weight>::addConnectedComponentsLit(Var outer_weight_var, int min_components) {
 	
-	g.invalidate();
-	antig.invalidate();
+	g_under.invalidate();
+	g_over.invalidate();
 	//while( dist_lits[to].size()<=within_steps)
 	//	dist_lits[to].push({lit_Undef,-1});
 	
@@ -177,7 +177,7 @@ void ConnectedComponentsDetector<Weight>::buildMinComponentsTooLowReason(int min
 	double starttime = rtime(2);
 	
 	seen.clear();
-	seen.growTo(g.nodes());
+	seen.growTo(g_under.nodes());
 	
 	visit.clear();
 	//ok,construct spanning forest from among the connected elements using dfs (we don't need to use kruskal's, as the graph is unweighted), and learn that at least one edge in that each must be disabled.
@@ -191,10 +191,10 @@ void ConnectedComponentsDetector<Weight>::buildMinComponentsTooLowReason(int min
 			int u = visit.last();
 			visit.pop();
 			
-			for (int i = 0; i < g.nIncident(u); i++) {
-				int v = g.incident(u, i).node;
-				int edgeid = g.incident(u, i).id;
-				if (g.edgeEnabled(edgeid) && !seen[v]) {
+			for (int i = 0; i < g_under.nIncident(u); i++) {
+				int v = g_under.incident(u, i).node;
+				int edgeid = g_under.incident(u, i).id;
+				if (g_under.edgeEnabled(edgeid) && !seen[v]) {
 					seen[v] = true;
 					visit.push(v);
 					//this edge is in the spanning tree
@@ -233,7 +233,7 @@ void ConnectedComponentsDetector<Weight>::buildMinComponentsTooHighReason(int mi
 	//return the smallest such cut.
 	
 	edge_in_clause.clear();
-	edge_in_clause.growTo(g.nEdgeIDs());
+	edge_in_clause.growTo(g_under.nEdgeIDs());
 	assert(conflict.size() == 1);
 	for (int i = 0; i < underapprox_component_detector->numComponents(); i++) {
 		int root = underapprox_component_detector->getComponent(i);
@@ -243,7 +243,7 @@ void ConnectedComponentsDetector<Weight>::buildMinComponentsTooHighReason(int mi
 		visit.clear();
 		//ok, now traverse the connected component in the tree below this root.
 		seen.clear();
-		seen.growTo(g.nodes());
+		seen.growTo(g_under.nodes());
 		
 		visit.push(root);
 		seen[root] = true;
@@ -251,18 +251,18 @@ void ConnectedComponentsDetector<Weight>::buildMinComponentsTooHighReason(int mi
 			int u = visit.last();
 			visit.pop();
 			
-			for (int i = 0; i < antig.nIncident(u, true); i++) {
-				int edgeid = antig.incident(u, i).id;
-				if (antig.edgeEnabled(edgeid)) {
-					int v = antig.incident(u, i).node;
+			for (int i = 0; i < g_over.nIncident(u, true); i++) {
+				int edgeid = g_over.incident(u, i).id;
+				if (g_over.edgeEnabled(edgeid)) {
+					int v = g_over.incident(u, i).node;
 					
 					if (!seen[v]) {
 						//u is a child of node in the minimum spanning tree
 						seen[v] = true;
 						visit.push(v);
 					}
-				} else if (!antig.edgeEnabled(edgeid)) {
-					int v = antig.incident(u, i).node;
+				} else if (!g_over.edgeEnabled(edgeid)) {
+					int v = g_over.incident(u, i).node;
 					if (!edge_in_clause[edgeid]) {
 						edge_in_clause[edgeid] = true;
 						Var e = outer->edge_list[edgeid].v;
@@ -301,7 +301,7 @@ void ConnectedComponentsDetector<Weight>::buildNodesConnectedReason(int source, 
 		std::swap(source, node);
 	}
 	
-	UnweightedBFS<Reach::NullStatus, true> d(source, g);
+	UnweightedBFS<Reach::NullStatus, true> d(source, g_under);
 	double starttime = rtime(2);
 	d.update();
 	

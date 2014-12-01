@@ -42,8 +42,8 @@ class MSTDetector: public Detector {
 public:
 	GraphTheorySolver<Weight> * outer;
 
-	DynamicGraph & g;
-	DynamicGraph & antig;
+	DynamicGraph & g_under;
+	DynamicGraph & g_over;
 
 	double rnd_seed;
 	CRef underprop_marker;

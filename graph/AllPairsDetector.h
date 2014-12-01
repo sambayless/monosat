@@ -41,8 +41,8 @@ template<typename Weight>
 class AllPairsDetector: public Detector {
 public:
 	GraphTheorySolver<Weight> * outer;
-	DynamicGraph &g;
-	DynamicGraph &antig;
+	DynamicGraph &g_under;
+	DynamicGraph &g_over;
 	int within = 0;
 
 	double rnd_seed;

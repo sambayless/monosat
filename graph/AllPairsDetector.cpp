@@ -28,7 +28,7 @@ using namespace Monosat;
 template<typename Weight>
 AllPairsDetector<Weight>::AllPairsDetector(int _detectorID, GraphTheorySolver<Weight> * _outer, DynamicGraph &_g,
 		DynamicGraph &_antig, double seed) :
-		Detector(_detectorID), outer(_outer), g(_g), antig(_antig), rnd_seed(seed), underapprox_reach_detector(NULL), overapprox_reach_detector(
+		Detector(_detectorID), outer(_outer), g_under(_g), g_over(_antig), rnd_seed(seed), underapprox_reach_detector(NULL), overapprox_reach_detector(
 				NULL), underapprox_path_detector(NULL), positiveReachStatus(NULL), negativeReachStatus(NULL) {
 	
 	positiveReachStatus = new AllPairsDetector<Weight>::ReachStatus(*this, true);
@@ -66,8 +66,8 @@ AllPairsDetector<Weight>::AllPairsDetector(int _detectorID, GraphTheorySolver<We
 
 template<typename Weight>
 void AllPairsDetector<Weight>::addLit(int from, int to, Var outer_reach_var, int within_steps) {
-	g.invalidate();
-	antig.invalidate();
+	g_under.invalidate();
+	g_over.invalidate();
 	
 	Var reach_var = outer->newVar(outer_reach_var, getID());
 	
@@ -140,8 +140,8 @@ void AllPairsDetector<Weight>::ReachStatus::setReachable(int from, int u, bool r
 }
 template<typename Weight>
 void AllPairsDetector<Weight>::ReachStatus::setMininumDistance(int from, int u, bool reachable, int distance) {
-	assert(reachable == (distance < detector.outer->g.nodes()));
-	if (distance <= detector.outer->g.nodes()) {
+	assert(reachable == (distance < detector.g_under.nodes()));
+	if (distance <= detector.g_under.nodes()) {
 		setReachable(from, u, reachable);
 	}
 	
@@ -567,10 +567,10 @@ Lit AllPairsDetector<Weight>::decide(int level) {
 							
 						}
 						
-						for (int k = 0; k < outer->antig.nIncident(p); k++) {
-							int to = outer->antig.incident(p, k).node;
+						for (int k = 0; k < g_over.nIncident(p); k++) {
+							int to = g_over.incident(p, k).node;
 							if (to == last) {
-								Var v = outer->edge_list[outer->antig.incident(p, k).id].v;
+								Var v = outer->edge_list[g_over.incident(p, k).id].v;
 								if (outer->value(v) == l_Undef) {
 									return mkLit(v, false);
 								} else {

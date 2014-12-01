@@ -41,8 +41,8 @@ class ConnectedComponentsDetector: public Detector {
 public:
 	GraphTheorySolver<Weight> * outer;
 	//int within;
-	DynamicGraph & g;
-	DynamicGraph & antig;
+	DynamicGraph & g_under;
+	DynamicGraph & g_over;
 
 	double rnd_seed;
 	CRef components_low_marker;

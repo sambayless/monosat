@@ -30,8 +30,8 @@ using namespace Monosat;
 
 template<>
 void MaxflowDetector<int>::buildDinitzLinkCut() {
-	underapprox_detector = new DinitzLinkCut<std::vector<int>>(g, capacities, source, target);
-	overapprox_detector = new DinitzLinkCut<std::vector<int>>(antig, capacities, source, target);
+	underapprox_detector = new DinitzLinkCut<std::vector<int>>(g_under, capacities, source, target);
+	overapprox_detector = new DinitzLinkCut<std::vector<int>>(g_over, capacities, source, target);
 }
 
 template<typename Weight>
@@ -47,7 +47,7 @@ void MaxflowDetector<Weight>::buildDinitzLinkCut() {
 template<typename Weight>
 MaxflowDetector<Weight>::MaxflowDetector(int _detectorID, GraphTheorySolver<Weight> * _outer,
 		std::vector<Weight> & capacities, DynamicGraph &_g, DynamicGraph &_antig, int from, int _target, double seed) :
-		LevelDetector(_detectorID), outer(_outer), capacities(capacities), over_graph(_g), g(_g), antig(_antig), source(
+		LevelDetector(_detectorID), outer(_outer), capacities(capacities), g_under(_g), g_over(_antig), source(
 				from), target(_target), rnd_seed(seed), cutStatus(*this) {
 	
 	if (mincutalg == MinCutAlg::ALG_EDKARP_DYN) {
@@ -127,8 +127,8 @@ MaxflowDetector<Weight>::MaxflowDetector(int _detectorID, GraphTheorySolver<Weig
 
 template<typename Weight>
 void MaxflowDetector<Weight>::addFlowLit(Weight maxflow, Var outer_reach_var) {
-	g.invalidate();
-	antig.invalidate();
+	g_under.invalidate();
+	g_over.invalidate();
 	Var reach_var = outer->newVar(outer_reach_var, getID());
 	if (first_reach_var == var_Undef) {
 		first_reach_var = reach_var;
@@ -167,8 +167,8 @@ void MaxflowDetector<Weight>::buildMaxFlowTooHighReason(Weight flow, vec<Lit> & 
 	
 	//just collect the set of edges which have non-zero flow, and return them
 	//(Or, I could return a cut, probably)
-	for (int i = 0; i < g.edges(); i++) {
-		if (g.edgeEnabled(i)) {
+	for (int i = 0; i < g_under.edges(); i++) {
+		if (g_under.edgeEnabled(i)) {
 			if (underapprox_conflict_detector->getEdgeFlow(i) > 0) {
 				Var v = outer->edge_list[i].v;
 				assert(outer->value(v)==l_True);
@@ -179,21 +179,21 @@ void MaxflowDetector<Weight>::buildMaxFlowTooHighReason(Weight flow, vec<Lit> & 
 	
 #ifdef RECORD
 	std::sort(conflict.begin(), conflict.end());
-	if (g.outfile) {
-		fprintf(g.outfile, "toohigh ");
+	if (g_under.outfile) {
+		fprintf(g_under.outfile, "toohigh ");
 		for (int i = 0; i < conflict.size(); i++) {
-			fprintf(g.outfile, "%d,", dimacs(conflict[i]));
+			fprintf(g_under.outfile, "%d,", dimacs(conflict[i]));
 		}
-		fprintf(g.outfile, "\n");
-		fflush(g.outfile);
+		fprintf(g_under.outfile, "\n");
+		fflush(g_under.outfile);
 	}
-	if (antig.outfile) {
-		fprintf(antig.outfile, "toohigh ");
+	if (g_over.outfile) {
+		fprintf(g_over.outfile, "toohigh ");
 		for (int i = 0; i < conflict.size(); i++) {
-			fprintf(antig.outfile, "%d,", dimacs(conflict[i]));
+			fprintf(g_over.outfile, "%d,", dimacs(conflict[i]));
 		}
-		fprintf(antig.outfile, "\n");
-		fflush(antig.outfile);
+		fprintf(g_over.outfile, "\n");
+		fflush(g_over.outfile);
 	}
 #endif
 	stats_under_conflicts++;
@@ -310,7 +310,7 @@ void MaxflowDetector<Weight>::buildMaxFlowTooLowReason(Weight maxflow, vec<Lit> 
 		collectChangedEdges();
 		collectDisabledEdges();
 #ifndef NDEBUG
-		for (auto & e : antig.all_edges) {
+		for (auto & e : g_over.all_edges) {
 			int from = e.from;
 			int to = e.to;
 			int v = outer->getEdgeVar(e.id);
@@ -416,11 +416,11 @@ void MaxflowDetector<Weight>::buildMaxFlowTooLowReason(Weight maxflow, vec<Lit> 
 	visit.push(target);
 	for (int k = 0; k < visit.size(); k++) {
 		int u = visit[k];
-		for (int i = 0; i < g.nIncoming(u); i++) {
-			int p = g.incoming(u, i).node;
+		for (int i = 0; i < g_under.nIncoming(u); i++) {
+			int p = g_under.incoming(u, i).node;
 			if (!seen[p]) {
 				
-				int edgeid = g.incoming(u, i).id;
+				int edgeid = g_under.incoming(u, i).id;
 				int v = outer->getEdgeVar(edgeid);
 				
 				//assert( g.incoming(u,i).to==u);
@@ -441,10 +441,10 @@ void MaxflowDetector<Weight>::buildMaxFlowTooLowReason(Weight maxflow, vec<Lit> 
 			//pred
 		}
 		//we are walking back in the RESIDUAL graph, which can mean backwards traversal of edges with flow!
-		for (int i = 0; i < g.nIncident(u); i++) {
-			int p = g.incident(u, i).node;
+		for (int i = 0; i < g_under.nIncident(u); i++) {
+			int p = g_under.incident(u, i).node;
 			if (!seen[p]) {
-				int edgeid = g.incident(u, i).id;
+				int edgeid = g_under.incident(u, i).id;
 				int v = outer->getEdgeVar(edgeid);
 				
 				//assert( g.incoming(u,i).to==u);
@@ -481,21 +481,21 @@ void MaxflowDetector<Weight>::buildMaxFlowTooLowReason(Weight maxflow, vec<Lit> 
 		assert(foundflow == foundflow2);
 	}
 	std::sort(conflict.begin(), conflict.end());
-	if (g.outfile) {
-		fprintf(g.outfile, "toolow ");
+	if (g_under.outfile) {
+		fprintf(g_under.outfile, "toolow ");
 		for (int i = 0; i < conflict.size(); i++) {
-			fprintf(g.outfile, "%d,", dimacs(conflict[i]));
+			fprintf(g_under.outfile, "%d,", dimacs(conflict[i]));
 		}
-		fprintf(g.outfile, "\n");
-		fflush(g.outfile);
+		fprintf(g_under.outfile, "\n");
+		fflush(g_under.outfile);
 	}
-	if (antig.outfile) {
-		fprintf(antig.outfile, "toolow ");
+	if (g_over.outfile) {
+		fprintf(g_over.outfile, "toolow ");
 		for (int i = 0; i < conflict.size(); i++) {
-			fprintf(antig.outfile, "%d,", dimacs(conflict[i]));
+			fprintf(g_over.outfile, "%d,", dimacs(conflict[i]));
 		}
-		fprintf(antig.outfile, "\n");
-		fflush(antig.outfile);
+		fprintf(g_over.outfile, "\n");
+		fflush(g_over.outfile);
 	}
 #endif
 	outer->num_learnt_cuts++;
@@ -562,13 +562,13 @@ bool MaxflowDetector<Weight>::propagate(vec<Lit> & conflict) {
 		int a = 1;
 	}
 #ifdef RECORD
-	if (g.outfile) {
-		fprintf(g.outfile, "iter %d\n", iter1);
-		fflush(g.outfile);
+	if (g_under.outfile) {
+		fprintf(g_under.outfile, "iter %d\n", iter1);
+		fflush(g_under.outfile);
 	}
-	if (antig.outfile) {
-		fprintf(antig.outfile, "iter %d\n", iter1);
-		fflush(antig.outfile);
+	if (g_over.outfile) {
+		fprintf(g_over.outfile, "iter %d\n", iter1);
+		fflush(g_over.outfile);
 	}
 #endif
 	
@@ -636,8 +636,8 @@ bool MaxflowDetector<Weight>::propagate(vec<Lit> & conflict) {
 }
 template<typename Weight>
 bool MaxflowDetector<Weight>::checkSatisfied() {
-	EdmondsKarpAdj<std::vector<Weight>, Weight> positiveCheck(g, capacities, source, target);
-	EdmondsKarpAdj<std::vector<Weight>, Weight> negativeCheck(antig, capacities, source, target);
+	EdmondsKarpAdj<std::vector<Weight>, Weight> positiveCheck(g_under, capacities, source, target);
+	EdmondsKarpAdj<std::vector<Weight>, Weight> negativeCheck(g_over, capacities, source, target);
 	for (int j = 0; j < flow_lits.size(); j++) {
 		
 		Lit l = flow_lits[j].l;
@@ -691,8 +691,8 @@ void MaxflowDetector<Weight>::printSolution(std::ostream & write_to) {
 		if (y > lasty)
 			write_to << "\n";
 		Weight total_flow = 0;
-		for (int e = 0; e < g.edges(); e++) {
-			if (g.getEdge(e).to == n && g.edgeEnabled(e)) {
+		for (int e = 0; e < g_under.edges(); e++) {
+			if (g_under.getEdge(e).to == n && g_under.edgeEnabled(e)) {
 				total_flow += underapprox_conflict_detector->getEdgeFlow(e);
 				
 			}
@@ -707,12 +707,12 @@ void MaxflowDetector<Weight>::printSolution(std::ostream & write_to) {
 	for (int n = 0; n < outer->nNodes(); n++) {
 		
 		int total_flow = 0;
-		for (int e = 0; e < g.edges(); e++) {
-			if (g.getEdge(e).to == n && g.edgeEnabled(e)) {
+		for (int e = 0; e < g_under.edges(); e++) {
+			if (g_under.getEdge(e).to == n && g_under.edgeEnabled(e)) {
 				Weight flow = underapprox_conflict_detector->getEdgeFlow(e);
 				if (flow > 0) {
 					write_to << "Graph " << outer->getGraphID() << " maxflow " << source << " to " << target
-							<< " assigns edge " << g.getEdge(e).from << " -> " << g.getEdge(e).to << " flow " << flow
+							<< " assigns edge " << g_under.getEdge(e).from << " -> " << g_under.getEdge(e).to << " flow " << flow
 							<< "\n";
 				}
 			}
@@ -725,20 +725,20 @@ void MaxflowDetector<Weight>::printSolution(std::ostream & write_to) {
 template<typename Weight>
 void MaxflowDetector<Weight>::collectDisabledEdges() {
 	if (opt_conflict_min_cut_maxflow) {
-		if (learn_graph.nodes() < g.nodes()) {
-			while (learn_graph.nodes() < g.nodes())
+		if (learn_graph.nodes() < g_under.nodes()) {
+			while (learn_graph.nodes() < g_under.nodes())
 				learn_graph.addNode();
-			back_edges.growTo(g.edges() * 2, -1);
+			back_edges.growTo(g_under.edges() * 2, -1);
 			
 			//add every edge twice
-			for (auto & e : g.all_edges) {
+			for (auto & e : g_under.all_edges) {
 				if (back_edges[e.id * 2] == -1) {
 					learn_graph.addEdge(e.from, e.to);
 					learn_graph.addEdge(e.from, e.to);
 				}
 			}
 			
-			for (auto & e : g.all_edges) {
+			for (auto & e : g_under.all_edges) {
 				if (back_edges[e.id * 2] == -1) {
 					back_edges[e.id * 2] = learn_graph.addEdge(e.to, e.from);
 					back_edges[e.id * 2 + 1] = learn_graph.addEdge(e.to, e.from);
@@ -760,13 +760,13 @@ void MaxflowDetector<Weight>::collectDisabledEdges() {
 #endif
 		}
 		
-		if (learngraph_history_clears != antig.historyclears || antig.changed()) {
+		if (learngraph_history_clears != g_over.historyclears || g_over.changed()) {
 			//refresh
-			for (int edgeid = 0; edgeid < antig.edges(); edgeid++) {
+			for (int edgeid = 0; edgeid < g_over.edges(); edgeid++) {
 				if (edgeid == 34) {
 					int a = 1;
 				}
-				if (antig.hasEdge(edgeid) && !antig.edgeEnabled(edgeid)) {
+				if (g_over.hasEdge(edgeid) && !g_over.edgeEnabled(edgeid)) {
 					learn_graph.enableEdge(edgeid * 2);
 					learn_graph.disableEdge(back_edges[edgeid * 2]);
 					learn_graph.disableEdge(edgeid * 2 + 1);
@@ -816,17 +816,17 @@ void MaxflowDetector<Weight>::collectDisabledEdges() {
 					}
 				}
 			}
-			learngraph_history_clears = antig.historyclears;
-			learngraph_history_qhead = antig.history.size();
+			learngraph_history_clears = g_over.historyclears;
+			learngraph_history_qhead = g_over.history.size();
 		} else {
-			for (int i = learngraph_history_qhead; i < antig.history.size(); i++) {
-				int edgeid = antig.history[i].id;
+			for (int i = learngraph_history_qhead; i < g_over.history.size(); i++) {
+				int edgeid = g_over.history[i].id;
 				if (edgeid == 34) {
 					int a = 1;
 				}
 				/*	if(antig.selfLoop(edgeid))
 				 continue;//skip self loops*/
-				if (antig.history[i].addition && antig.edgeEnabled(edgeid)) {
+				if (g_over.history[i].addition && g_over.edgeEnabled(edgeid)) {
 					Weight flow = overapprox_conflict_detector->getEdgeFlow(edgeid);
 					Weight capacity = overapprox_conflict_detector->getEdgeCapacity(edgeid);
 					if (capacity == 0) {
@@ -869,7 +869,7 @@ void MaxflowDetector<Weight>::collectDisabledEdges() {
 							//learn_graph.disableEdge(back_edges[edgeid*2+1]);
 						}
 					}
-				} else if (!antig.history[i].addition && !antig.edgeEnabled(edgeid)) {
+				} else if (!g_over.history[i].addition && !g_over.edgeEnabled(edgeid)) {
 					//any edge that is disabled has a capacity of 1 in the learn graph
 					learn_graph.enableEdge(edgeid * 2);
 					learn_graph.disableEdge(back_edges[edgeid * 2]);
@@ -877,7 +877,7 @@ void MaxflowDetector<Weight>::collectDisabledEdges() {
 					learn_graph.disableEdge(back_edges[edgeid * 2 + 1]);
 				}
 			}
-			learngraph_history_qhead = antig.history.size();
+			learngraph_history_qhead = g_over.history.size();
 		}
 	}
 }
@@ -885,27 +885,27 @@ void MaxflowDetector<Weight>::collectDisabledEdges() {
 template<typename Weight>
 void MaxflowDetector<Weight>::collectChangedEdges() {
 	
-	if (is_potential_decision.size() < g.edges()) {
-		is_potential_decision.growTo(g.edges(), false);
+	if (is_potential_decision.size() < g_under.edges()) {
+		is_potential_decision.growTo(g_under.edges(), false);
 	}
 	dbg_decisions();
 	overapprox_conflict_detector->update();
 	
 	if (opt_conflict_min_cut_maxflow) {
-		if (learn_graph.nodes() < g.nodes()) {
-			while (learn_graph.nodes() < g.nodes())
+		if (learn_graph.nodes() < g_under.nodes()) {
+			while (learn_graph.nodes() < g_under.nodes())
 				learn_graph.addNode();
-			back_edges.growTo(g.edges() * 2, -1);
+			back_edges.growTo(g_under.edges() * 2, -1);
 			
 			//add every edge twice
-			for (auto & e : g.all_edges) {
+			for (auto & e : g_under.all_edges) {
 				if (back_edges[e.id * 2] == -1) {
 					learn_graph.addEdge(e.from, e.to);
 					learn_graph.addEdge(e.from, e.to);
 				}
 			}
 			
-			for (auto & e : g.all_edges) {
+			for (auto & e : g_under.all_edges) {
 				if (back_edges[e.id * 2] == -1) {
 					back_edges[e.id * 2] = learn_graph.addEdge(e.to, e.from);
 					back_edges[e.id * 2 + 1] = learn_graph.addEdge(e.to, e.from);
@@ -1028,7 +1028,7 @@ void MaxflowDetector<Weight>::dbg_decisions() {
 		int a = 1;
 	}
 	//printf("Potential Decisions %d: ",iter);
-	for (int edgeID = 0; edgeID < g.edges(); edgeID++) {
+	for (int edgeID = 0; edgeID < g_under.edges(); edgeID++) {
 		
 		if (is_potential_decision[edgeID]) {
 			/*if(potential_decisions.contains(edgeID) || potential_decisions_q.contains(edgeID)){
@@ -1075,11 +1075,11 @@ Lit MaxflowDetector<Weight>::decide(int level) {
 #ifndef NDEBUG
 		{
 			bool found = false;
-			for (int edgeID = 0; edgeID < g.edges(); edgeID++) {
+			for (int edgeID = 0; edgeID < g_under.edges(); edgeID++) {
 				if (edgeID == 62) {
 					int a = 1;
 				}
-				if (g.edgeEnabled(edgeID)) {
+				if (g_under.edgeEnabled(edgeID)) {
 					bool hasFlow = over->getEdgeFlow(edgeID) > 0;
 					Lit l = mkLit(outer->getEdgeVar(edgeID));
 					if (hasFlow) {
@@ -1149,8 +1149,8 @@ Lit MaxflowDetector<Weight>::decide(int level) {
 #ifndef NDEBUG
 		{
 			bool found = false;
-			for (int edgeID = 0; edgeID < g.edges(); edgeID++) {
-				if (g.edgeEnabled(edgeID)) {
+			for (int edgeID = 0; edgeID < g_under.edges(); edgeID++) {
+				if (g_under.edgeEnabled(edgeID)) {
 					bool hasFlow = over->getEdgeFlow(edgeID) > 0;
 					Lit l = mkLit(outer->getEdgeVar(edgeID));
 					if (hasFlow) {
@@ -1170,7 +1170,7 @@ Lit MaxflowDetector<Weight>::decide(int level) {
 			q.clear();
 			last_decision_q_pos = 0;
 			seen.clear();
-			seen.growTo(antig.nodes(), false);
+			seen.growTo(g_over.nodes(), false);
 			
 			if (opt_conflict_from_source)
 				q.push_back(source);
@@ -1190,11 +1190,11 @@ Lit MaxflowDetector<Weight>::decide(int level) {
 					int u = q.back();
 					q.pop_back();
 					int qs = q.size();
-					for (int i = 0; i < antig.nIncident(u); i++) {
-						if (!antig.edgeEnabled(antig.incident(u, i).id))
+					for (int i = 0; i < g_over.nIncident(u); i++) {
+						if (!g_over.edgeEnabled(g_over.incident(u, i).id))
 							continue;
-						int v = antig.incident(u, i).node;
-						int edgeID = antig.incident(u, i).id;
+						int v = g_over.incident(u, i).node;
+						int edgeID = g_over.incident(u, i).id;
 						if (over->getEdgeFlow(edgeID) > 0) {
 							Var var = outer->getEdgeVar(edgeID);
 							if (outer->value(var) == l_Undef) {
@@ -1216,11 +1216,11 @@ Lit MaxflowDetector<Weight>::decide(int level) {
 					int u = q.back();
 					int qs = q.size();
 					q.pop_back();
-					for (int i = 0; i < antig.nIncoming(u); i++) {
-						if (!antig.edgeEnabled(antig.incoming(u, i).id))
+					for (int i = 0; i < g_over.nIncoming(u); i++) {
+						if (!g_over.edgeEnabled(g_over.incoming(u, i).id))
 							continue;
-						int v = antig.incoming(u, i).node;
-						int edgeID = antig.incoming(u, i).id;
+						int v = g_over.incoming(u, i).node;
+						int edgeID = g_over.incoming(u, i).id;
 						if (over->getEdgeFlow(edgeID) > 0) {
 							Var var = outer->getEdgeVar(edgeID);
 							if (outer->value(var) == l_Undef) {
@@ -1242,11 +1242,11 @@ Lit MaxflowDetector<Weight>::decide(int level) {
 				//do a bfs to find that edge. Could start from either the source or the target.
 				for (; last_decision_q_pos < q.size(); last_decision_q_pos++) {
 					int u = q[last_decision_q_pos];
-					for (int i = 0; i < antig.nIncident(u); i++) {
-						if (!antig.edgeEnabled(antig.incident(u, i).id))
+					for (int i = 0; i < g_over.nIncident(u); i++) {
+						if (!g_over.edgeEnabled(g_over.incident(u, i).id))
 							continue;
-						int edgeID = antig.incident(u, i).id;
-						int v = antig.incident(u, i).node;
+						int edgeID = g_over.incident(u, i).id;
+						int v = g_over.incident(u, i).node;
 						if (over->getEdgeFlow(edgeID) > 0) {
 							Var var = outer->getEdgeVar(edgeID);
 							assert(outer->value(var)!=l_False);
@@ -1265,11 +1265,11 @@ Lit MaxflowDetector<Weight>::decide(int level) {
 				//do a bfs to find that edge. Could start from either the source or the target.
 				for (; last_decision_q_pos < q.size(); last_decision_q_pos++) {
 					int u = q[last_decision_q_pos];
-					for (int i = 0; i < antig.nIncoming(u); i++) {
-						if (!antig.edgeEnabled(antig.incoming(u, i).id))
+					for (int i = 0; i < g_over.nIncoming(u); i++) {
+						if (!g_over.edgeEnabled(g_over.incoming(u, i).id))
 							continue;
-						int edgeID = antig.incoming(u, i).id;
-						int v = antig.incoming(u, i).node;
+						int edgeID = g_over.incoming(u, i).id;
+						int v = g_over.incoming(u, i).node;
 						if (over->getEdgeFlow(edgeID) > 0) {
 							Var var = outer->getEdgeVar(edgeID);
 							assert(outer->value(var)!=l_False);
@@ -1322,8 +1322,8 @@ Lit MaxflowDetector<Weight>::decide(int level) {
 				static vec<bool> dbg_expect;
 				int dbg_count = 0;
 				dbg_expect.clear();
-				dbg_expect.growTo(g.edges());
-				for (int edgeID = 0; edgeID < g.edges(); edgeID++) {
+				dbg_expect.growTo(g_under.edges());
+				for (int edgeID = 0; edgeID < g_under.edges(); edgeID++) {
 					lbool val = outer->value(outer->getEdgeVar(edgeID));
 					if (val == l_Undef) {
 						if (over->getEdgeFlow(edgeID) > 0) {
@@ -1351,7 +1351,7 @@ Lit MaxflowDetector<Weight>::decide(int level) {
 					last_decision_status = over->numUpdates();
 					
 					seen.clear();
-					seen.growTo(antig.nodes(), false);
+					seen.growTo(g_over.nodes(), false);
 					q.clear();
 					
 					if (opt_conflict_dfs) {
@@ -1363,11 +1363,11 @@ Lit MaxflowDetector<Weight>::decide(int level) {
 							while (q.size()) {
 								int u = q.back();
 								q.pop_back();
-								for (int i = 0; i < antig.nIncident(u); i++) {
-									if (!antig.edgeEnabled(antig.incident(u, i).id))
+								for (int i = 0; i < g_over.nIncident(u); i++) {
+									if (!g_over.edgeEnabled(g_over.incident(u, i).id))
 										continue;
-									int v = antig.incident(u, i).node;
-									int edgeID = antig.incident(u, i).id;
+									int v = g_over.incident(u, i).node;
+									int edgeID = g_over.incident(u, i).id;
 									if (over->getEdgeFlow(edgeID) > 0) {
 										Var var = outer->getEdgeVar(edgeID);
 										if (outer->value(var) == l_Undef) {
@@ -1385,11 +1385,11 @@ Lit MaxflowDetector<Weight>::decide(int level) {
 							while (q.size()) {
 								int u = q.back();
 								q.pop_back();
-								for (int i = 0; i < antig.nIncoming(u); i++) {
-									if (!antig.edgeEnabled(antig.incoming(u, i).id))
+								for (int i = 0; i < g_over.nIncoming(u); i++) {
+									if (!g_over.edgeEnabled(g_over.incoming(u, i).id))
 										continue;
-									int v = antig.incoming(u, i).node;
-									int edgeID = antig.incoming(u, i).id;
+									int v = g_over.incoming(u, i).node;
+									int edgeID = g_over.incoming(u, i).id;
 									if (over->getEdgeFlow(edgeID) > 0) {
 										Var var = outer->getEdgeVar(edgeID);
 										if (outer->value(var) == l_Undef) {
@@ -1409,11 +1409,11 @@ Lit MaxflowDetector<Weight>::decide(int level) {
 							//do a bfs to find that edge. Could start from either the source or the target.
 							for (int i = 0; i < q.size(); i++) {
 								int u = q[i];
-								for (int i = 0; i < antig.nIncident(u); i++) {
-									if (!antig.edgeEnabled(antig.incident(u, i).id))
+								for (int i = 0; i < g_over.nIncident(u); i++) {
+									if (!g_over.edgeEnabled(g_over.incident(u, i).id))
 										continue;
-									int edgeID = antig.incident(u, i).id;
-									int v = antig.incident(u, i).node;
+									int edgeID = g_over.incident(u, i).id;
+									int v = g_over.incident(u, i).node;
 									if (over->getEdgeFlow(edgeID) > 0) {
 										Var var = outer->getEdgeVar(edgeID);
 										assert(outer->value(var)!=l_False);
@@ -1432,11 +1432,11 @@ Lit MaxflowDetector<Weight>::decide(int level) {
 							//do a bfs to find that edge. Could start from either the source or the target.
 							for (int i = 0; i < q.size(); i++) {
 								int u = q[i];
-								for (int i = 0; i < antig.nIncoming(u); i++) {
-									if (!antig.edgeEnabled(antig.incoming(u, i).id))
+								for (int i = 0; i < g_over.nIncoming(u); i++) {
+									if (!g_over.edgeEnabled(g_over.incoming(u, i).id))
 										continue;
-									int edgeID = antig.incoming(u, i).id;
-									int v = antig.incoming(u, i).node;
+									int edgeID = g_over.incoming(u, i).id;
+									int v = g_over.incoming(u, i).node;
 									if (over->getEdgeFlow(edgeID) > 0) {
 										Var var = outer->getEdgeVar(edgeID);
 										assert(outer->value(var)!=l_False);

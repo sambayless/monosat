@@ -48,8 +48,8 @@ public:
 	GraphTheorySolver<Weight> * outer;
 
 	std::vector<Weight> & weights;
-	DynamicGraph &g;
-	DynamicGraph &antig;
+	DynamicGraph &g_under;
+	DynamicGraph &g_over;
 	//int within;
 	int source;
 	double rnd_seed;
@@ -169,7 +169,7 @@ public:
 			}
 		}
 		int size() const {
-			return outer.g.edges() * 2;
+			return outer.g_under.edges() * 2;
 		}
 		CutStatus(DistanceDetector & _outer) :
 				outer(_outer) {

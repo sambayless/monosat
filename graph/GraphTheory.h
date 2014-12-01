@@ -83,8 +83,8 @@ public:
 	MSTDetector<Weight> * mstDetector = nullptr;
 	vec<ReachabilityConstraint> unimplemented_reachability_constraints;
 
-	DynamicGraph g;
-	DynamicGraph antig;
+	DynamicGraph g_under;
+	DynamicGraph g_over;
 	/**
 	 * The cutgraph is (optionally) used for conflict analysis by some graph theories.
 	 * It has two edges for every edge in the real graph (with indices edgeID*2 and edgeID*2+1).
@@ -227,12 +227,12 @@ public:
 		{
 			char t[30];
 			sprintf(t, "TEST_GRAPH%d", id);
-			g.outfile = fopen(t, "w");
+			g_under.outfile = fopen(t, "w");
 		}
 		{
 			char t[30];
 			sprintf(t, "TEST_ANTI_GRAPH%d", id);
-			antig.outfile = fopen(t, "w");
+			g_over.outfile = fopen(t, "w");
 		}
 		{
 			char t[30];
@@ -242,15 +242,15 @@ public:
 #endif
 		
 		if (opt_adaptive_history_clear > 0) {
-			g.adaptive_history_clear = true;
-			antig.adaptive_history_clear = true;
+			g_under.adaptive_history_clear = true;
+			g_over.adaptive_history_clear = true;
 			cutGraph.adaptive_history_clear = true;
-			g.historyClearInterval = opt_adaptive_history_clear;
-			antig.historyClearInterval = opt_adaptive_history_clear;
+			g_under.historyClearInterval = opt_adaptive_history_clear;
+			g_over.historyClearInterval = opt_adaptive_history_clear;
 			cutGraph.historyClearInterval = opt_adaptive_history_clear;
 		} else {
-			g.historyClearInterval = opt_history_clear;
-			antig.historyClearInterval = opt_history_clear;
+			g_under.historyClearInterval = opt_history_clear;
+			g_over.historyClearInterval = opt_history_clear;
 			cutGraph.historyClearInterval = opt_history_clear;
 		}
 		
@@ -273,9 +273,9 @@ public:
 		 printf("Path Time: %f (#Paths: %d, AvgLength %f, total: %d)\n", pathtime, num_learnt_paths, (learnt_path_clause_length /  ((float) num_learnt_paths+1)),learnt_path_clause_length);
 		 printf("Min-cut Time: %f (%d calls, %f average, #Cuts: %d, AvgLength %f, total: %d)\n", mctime, stats_mc_calls,(mctime/(stats_mc_calls ? stats_mc_calls:1)),  num_learnt_cuts, (learnt_cut_clause_length /  ((float) num_learnt_cuts+1)),learnt_cut_clause_length);
 		 */
-		printf("%d nodes, %d edges\n", g.nodes(), g.edges());
-		printf("History Clears: over_approx %ld, under_approx %ld, cut_graph %ld\n", antig.historyclears,
-				g.historyclears, cutGraph.historyclears);
+		printf("%d nodes, %d edges\n", g_under.nodes(), g_under.edges());
+		printf("History Clears: over_approx %ld, under_approx %ld, cut_graph %ld\n", g_over.historyclears,
+				g_under.historyclears, cutGraph.historyclears);
 		printf("Propagations: %ld (%f s, avg: %f s, %ld skipped)\n", stats_propagations, propagationtime,
 				(propagationtime) / ((double) stats_propagations + 1), stats_propagations_skipped);
 		printf("Decisions: %ld (%f s, avg: %f s)\n", stats_decisions, stats_decision_time,
@@ -454,18 +454,18 @@ public:
 		reach_info.push();
 		connect_info.push();
 		dist_info.push();
-		antig.addNode();
+		g_over.addNode();
 		cutGraph.addNode();
 		seen.growTo(nNodes());
 		
-		return g.addNode();
+		return g_under.addNode();
 	}
 	void newNodes(int n) {
 		for (int i = 0; i < n; i++)
 			newNode();
 	}
 	int nNodes() {
-		return g.nodes();
+		return g_under.nodes();
 	}
 	bool isNode(int n) {
 		return n >= 0 && n < nNodes();
@@ -620,9 +620,9 @@ public:
 		dbg_sync();
 		for(int i =0;i<edge_list.size();i++) {
 
-			if(edge_list[i].edgeID>=0 && g.edgeEnabled(i)) {
+			if(edge_list[i].edgeID>=0 && g_under.edgeEnabled(i)) {
 				assert(value(edge_list[i].v)==l_True);
-			} else if (edge_list[i].edgeID>=0 && !antig.edgeEnabled(i)) {
+			} else if (edge_list[i].edgeID>=0 && !g_over.edgeEnabled(i)) {
 				assert(value(edge_list[i].v)==l_False);
 			}
 		}
@@ -647,11 +647,11 @@ public:
 					int edge_num = getEdgeID(e.var); //e.var-min_edge_var;
 							
 					if (e.assign) {
-						g.disableEdge(e.from, e.to, edge_num);
+						g_under.disableEdge(e.from, e.to, edge_num);
 						assert(!cutGraph.edgeEnabled(edge_num * 2));
 					} else {
-						antig.enableEdge(e.from, e.to, edge_num);
-						assert(antig.hasEdge(e.from, e.to));
+						g_over.enableEdge(e.from, e.to, edge_num);
+						assert(g_over.hasEdge(e.from, e.to));
 						if (opt_conflict_min_cut) {
 							assert(cutGraph.edgeEnabled(edge_num * 2));
 							cutGraph.disableEdge(e.from, e.to, edge_num * 2);
@@ -727,12 +727,12 @@ public:
 				assert(assigns[e.var]!=l_Undef);
 				assigns[e.var] = l_Undef;
 				if (e.assign) {
-					g.disableEdge(e.from, e.to, edge_num);
+					g_under.disableEdge(e.from, e.to, edge_num);
 					
 					assert(!cutGraph.edgeEnabled(edge_num * 2));
 				} else {
-					antig.enableEdge(e.from, e.to, edge_num);
-					assert(antig.hasEdge(e.from, e.to));
+					g_over.enableEdge(e.from, e.to, edge_num);
+					assert(g_over.hasEdge(e.from, e.to));
 					if (opt_conflict_min_cut) {
 						assert(cutGraph.edgeEnabled(edge_num * 2));
 						cutGraph.disableEdge(e.from, e.to, edge_num * 2);
@@ -800,11 +800,11 @@ public:
 #ifdef DEBUG_DIJKSTRA
 		
 		if(undirected) {
-			UnweightedDijkstra<Reach::NullStatus, true> d(from,g);
+			UnweightedDijkstra<Reach::NullStatus, true> d(from,g_under);
 			d.update();
 			return d.connected(to);
 		} else {
-			UnweightedDijkstra<> d(from,g);
+			UnweightedDijkstra<> d(from,g_under);
 			d.update();
 			return d.connected(to);
 		}
@@ -855,17 +855,17 @@ public:
 			lbool val = value(e.v);
 
 			if(val==l_True || val==l_Undef) {
-				assert(antig.edgeEnabled(i));
+				assert(g_over.edgeEnabled(i));
 				//assert(antig.hasEdge(e.from,e.to));
 			} else {
-				assert(!antig.edgeEnabled(i));
+				assert(!g_over.edgeEnabled(i));
 				//assert(!antig.hasEdge(e.from,e.to));
 			}
 			if(val==l_True) {
-				assert(g.edgeEnabled(i));
+				assert(g_under.edgeEnabled(i));
 				//assert(g.hasEdge(e.from,e.to));
 			} else {
-				assert(!g.edgeEnabled(i));
+				assert(!g_under.edgeEnabled(i));
 				//assert(!g.hasEdge(e.from,e.to));
 			}
 		}
@@ -928,16 +928,16 @@ public:
 #endif
 		
 #ifdef RECORD
-		if (g.outfile) {
-			fprintf(g.outfile, "enqueue %d\n", dimacs(l));
+		if (g_under.outfile) {
+			fprintf(g_under.outfile, "enqueue %d\n", dimacs(l));
 			
-			fprintf(g.outfile, "\n");
-			fflush(g.outfile);
+			fprintf(g_under.outfile, "\n");
+			fflush(g_under.outfile);
 		}
-		if (antig.outfile) {
-			fprintf(antig.outfile, "enqueue %d\n", dimacs(l));
-			fprintf(antig.outfile, "\n");
-			fflush(antig.outfile);
+		if (g_over.outfile) {
+			fprintf(g_over.outfile, "enqueue %d\n", dimacs(l));
+			fprintf(g_over.outfile, "\n");
+			fflush(g_over.outfile);
 		}
 #endif
 		
@@ -956,9 +956,9 @@ public:
 			assert(e.to == to);
 			
 			if (!sign(l)) {
-				g.enableEdge(from, to, edge_num);
+				g_under.enableEdge(from, to, edge_num);
 			} else {
-				antig.disableEdge(from, to, edge_num);
+				g_over.disableEdge(from, to, edge_num);
 				if (opt_conflict_min_cut) {
 					assert(cutGraph.edgeEnabled(edge_num * 2 + 1));
 					assert(!cutGraph.edgeEnabled(edge_num * 2));
@@ -1017,12 +1017,12 @@ public:
 		dbg_full_sync();
 		
 		requiresPropagation = false;
-		g.clearChanged();
-		antig.clearChanged();
+		g_under.clearChanged();
+		g_over.clearChanged();
 		cutGraph.clearChanged();
 		
-		g.clearHistory();
-		antig.clearHistory();
+		g_under.clearHistory();
+		g_over.clearHistory();
 		cutGraph.clearHistory();
 		//detectors_to_check.clear();
 		
@@ -1110,20 +1110,20 @@ public:
 				 if(!antig.hasEdge(e.from,e.to)){
 				 return false;
 				 }*/
-				if (!g.edgeEnabled(e.edgeID)) {
+				if (!g_under.edgeEnabled(e.edgeID)) {
 					return false;
 				}
-				if (!antig.edgeEnabled(e.edgeID)) {
+				if (!g_over.edgeEnabled(e.edgeID)) {
 					return false;
 				}
 			} else {
 				/*if(g.hasEdge(e.from,e.to)){
 				 return false;
 				 }*/
-				if (g.edgeEnabled(e.edgeID)) {
+				if (g_under.edgeEnabled(e.edgeID)) {
 					return false;
 				}
-				if (antig.edgeEnabled(e.edgeID)) {
+				if (g_over.edgeEnabled(e.edgeID)) {
 					return false;
 				}
 				/*if(antig.hasEdge(e.from,e.to)){
@@ -1151,11 +1151,11 @@ public:
 			assert(val!=l_Undef);
 
 			if(val==l_True) {
-				assert(g.hasEdge(e.from,e.to));
-				assert(antig.hasEdge(e.from,e.to));
+				assert(g_under.hasEdge(e.from,e.to));
+				assert(g_over.hasEdge(e.from,e.to));
 			} else {
-				assert(!g.hasEdge(e.from,e.to));
-				assert(!antig.hasEdge(e.from,e.to));
+				assert(!g_under.hasEdge(e.from,e.to));
+				assert(!g_over.hasEdge(e.from,e.to));
 			}
 
 		}
@@ -1234,25 +1234,25 @@ public:
 		edge_weights[index] = weight;
 		
 		//edges[from][to]= {v,outerVar,from,to,index};
-		g.addEdge(from, to, index);
-		g.disableEdge(from, to, index);
-		antig.addEdge(from, to, index);
+		g_under.addEdge(from, to, index);
+		g_under.disableEdge(from, to, index);
+		g_over.addEdge(from, to, index);
 		cutGraph.addEdge(from, to, index * 2);
 		cutGraph.addEdge(from, to, index * 2 + 1);
 		cutGraph.disableEdge(from, to, index * 2);
 		
 #ifdef RECORD
-		if (g.outfile) {
+		if (g_under.outfile) {
 			std::stringstream wt;
 			wt << weight;
-			fprintf(g.outfile, "edge_weight %d %s\n", index, wt.str().c_str());
-			fflush(g.outfile);
+			fprintf(g_under.outfile, "edge_weight %d %s\n", index, wt.str().c_str());
+			fflush(g_under.outfile);
 		}
-		if (antig.outfile) {
+		if (g_over.outfile) {
 			std::stringstream wt;
 			wt << weight;
-			fprintf(antig.outfile, "edge_weight %d %s\n", index, wt.str().c_str());
-			fflush(antig.outfile);
+			fprintf(g_over.outfile, "edge_weight %d %s\n", index, wt.str().c_str());
+			fflush(g_over.outfile);
 		}
 		if (cutGraph.outfile) {
 			
@@ -1272,12 +1272,12 @@ public:
 	}
 	void reachesWithinSteps(int from, int to, Var reach_var, int within_steps) {
 		
-		assert(from < g.nodes());
+		assert(from < g_under.nodes());
 		if (within_steps <= -1)
-			within_steps = g.nodes();
+			within_steps = g_under.nodes();
 		
 		if (dist_info[from].source < 0) {
-			DistanceDetector<Weight> * d = new DistanceDetector<Weight>(detectors.size(), this, edge_weights, g, antig,
+			DistanceDetector<Weight> * d = new DistanceDetector<Weight>(detectors.size(), this, edge_weights, g_under, g_over,
 					from, drand(rnd_seed));
 			detectors.push(d);
 			distance_detectors.push(d);
@@ -1294,10 +1294,10 @@ public:
 	}
 	void reachesWithinDistance(int from, int to, Var reach_var, Weight distance) {
 		
-		assert(from < g.nodes());
+		assert(from < g_under.nodes());
 		
 		if (dist_info[from].source < 0) {
-			DistanceDetector<Weight> * d = new DistanceDetector<Weight>(detectors.size(), this, edge_weights, g, antig,
+			DistanceDetector<Weight> * d = new DistanceDetector<Weight>(detectors.size(), this, edge_weights, g_under, g_over,
 					from, drand(rnd_seed));
 			detectors.push(d);
 			distance_detectors.push(d);
@@ -1364,13 +1364,13 @@ public:
 	void allpairs(int from, int to, Var reach_var, int within_steps = -1) {
 		//for now, reachesWithinSteps to be called instead
 		
-		assert(from < g.nodes());
-		if (within_steps > g.nodes())
+		assert(from < g_under.nodes());
+		if (within_steps > g_under.nodes())
 			within_steps = -1;
 		
 		if (reach_info[from].source < 0) {
 			
-			detectors.push(new AllPairsDetector<Weight>(detectors.size(), this, g, antig, drand(rnd_seed)));
+			detectors.push(new AllPairsDetector<Weight>(detectors.size(), this, g_under, g_over, drand(rnd_seed)));
 			//reach_detectors.push(reach_detectors.last());
 			
 			assert(detectors.last()->getID() == detectors.size() - 1);
@@ -1399,13 +1399,13 @@ public:
 			return;
 		}
 		
-		assert(from < g.nodes());
-		if (within_steps > g.nodes())
+		assert(from < g_under.nodes());
+		if (within_steps > g_under.nodes())
 			within_steps = -1;
 		
 		if (reach_info[from].source < 0) {
 			
-			ReachDetector<Weight>*rd = new ReachDetector<Weight>(detectors.size(), this, g, antig, from,
+			ReachDetector<Weight>*rd = new ReachDetector<Weight>(detectors.size(), this, g_under, g_over, from,
 					drand(rnd_seed));
 			detectors.push(rd);
 			reach_detectors.push(rd);
@@ -1436,13 +1436,13 @@ public:
 	}
 	
 	void reachesAny(int from, Var firstVar, int within_steps = -1) {
-		for (int i = 0; i < g.nodes(); i++) {
+		for (int i = 0; i < g_under.nodes(); i++) {
 			reaches(from, i, firstVar + i, within_steps);
 		}
 	}
 	
 	void reachesAny(int from, vec<Lit> & reachlits_out, int within_steps = -1) {
-		for (int i = 0; i < g.nodes(); i++) {
+		for (int i = 0; i < g_under.nodes(); i++) {
 			Var reachVar = S->newVar();
 			//reaches(from,i,reachVar,within_steps);
 			reaches(from, i, reachVar, within_steps);
@@ -1452,14 +1452,14 @@ public:
 	//v will be true if the minimum weight is <= the specified value
 	void minimumSpanningTree(Var v, Weight minimum_weight) {
 		if (!mstDetector) {
-			mstDetector = new MSTDetector<Weight>(detectors.size(), this, g, antig, edge_weights, drand(rnd_seed));
+			mstDetector = new MSTDetector<Weight>(detectors.size(), this, g_under, g_over, edge_weights, drand(rnd_seed));
 			detectors.push(mstDetector);
 		}
 		mstDetector->addWeightLit(v, minimum_weight);
 	}
 	void edgeInMinimumSpanningTree(Var edgeVar, Var var) {
 		if (!mstDetector) {
-			mstDetector = new MSTDetector<Weight>(detectors.size(), this, g, antig, edge_weights, drand(rnd_seed));
+			mstDetector = new MSTDetector<Weight>(detectors.size(), this, g_under, g_over, edge_weights, drand(rnd_seed));
 			detectors.push(mstDetector);
 		}
 		if (!S->hasTheory(edgeVar) || (S->getTheoryID(edgeVar) != getTheoryIndex())
@@ -1484,7 +1484,7 @@ public:
 				return;
 			}
 		}
-		MaxflowDetector<Weight> *f = new MaxflowDetector<Weight>(detectors.size(), this, edge_weights, g, antig, from,
+		MaxflowDetector<Weight> *f = new MaxflowDetector<Weight>(detectors.size(), this, edge_weights, g_under, g_over, from,
 				to, drand(rnd_seed));
 		flow_detectors.push(f);
 		detectors.push(f);
@@ -1493,7 +1493,7 @@ public:
 	}
 	void minConnectedComponents(int min_components, Var v) {
 		if (!component_detector) {
-			component_detector = new ConnectedComponentsDetector<Weight>(detectors.size(), this, g, antig,
+			component_detector = new ConnectedComponentsDetector<Weight>(detectors.size(), this, g_under, g_over,
 					drand(rnd_seed));
 			detectors.push(component_detector);
 		}
@@ -1501,7 +1501,7 @@ public:
 	}
 	void detectCycle(bool directed, Var v) {
 		if (!cycle_detector) {
-			cycle_detector = new CycleDetector<Weight>(detectors.size(), this, g, antig, true, drand(rnd_seed));
+			cycle_detector = new CycleDetector<Weight>(detectors.size(), this, g_under, g_over, true, drand(rnd_seed));
 			detectors.push(cycle_detector);
 		}
 		cycle_detector->addCycleDetectorLit(directed, v);
@@ -1510,7 +1510,7 @@ public:
 	void addSteinerTree(const vec<std::pair<int, Var> > & terminals, int steinerTreeID) {
 		steiner_detectors.growTo(steinerTreeID + 1);
 		assert(!steiner_detectors[steinerTreeID]);
-		steiner_detectors[steinerTreeID] = new SteinerDetector<Weight>(detectors.size(), this, edge_weights, g, antig,
+		steiner_detectors[steinerTreeID] = new SteinerDetector<Weight>(detectors.size(), this, edge_weights, g_under, g_over,
 				drand(rnd_seed));
 		detectors.push(steiner_detectors[steinerTreeID]);
 		for (int i = 0; i < terminals.size(); i++) {

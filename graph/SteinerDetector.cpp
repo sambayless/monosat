@@ -34,7 +34,7 @@ using namespace Monosat;
 template<typename Weight>
 SteinerDetector<Weight>::SteinerDetector(int detectorID, GraphTheorySolver<Weight> * outer,
 		std::vector<Weight> &weights, DynamicGraph &g, DynamicGraph &antig, double seed) :
-		Detector(detectorID), outer(outer), g(g), antig(antig), weights(weights), rnd_seed(seed) {
+		Detector(detectorID), outer(outer), g_under(g), g_over(antig), weights(weights), rnd_seed(seed) {
 	checked_unique = false;
 	all_unique = true;
 	positiveStatus = new SteinerDetector<Weight>::SteinerStatus(*this, true);
@@ -60,7 +60,7 @@ void SteinerDetector<Weight>::addTerminalNode(int node, Var outer_Var) {
 	underTerminalSet.setNodeEnabled(node, false);
 	overTerminalSet.addNode(node);
 	overTerminalSet.setNodeEnabled(node, true);
-	terminal_map.growTo(g.nodes(), var_Undef);
+	terminal_map.growTo(g_under.nodes(), var_Undef);
 	terminal_map[node] = var;
 	//vec<int> terminal_var_map;
 	terminal_var_map.growTo(var + 1, -1);
@@ -68,8 +68,8 @@ void SteinerDetector<Weight>::addTerminalNode(int node, Var outer_Var) {
 }
 template<typename Weight>
 void SteinerDetector<Weight>::addWeightLit(Weight& min_weight, Var outer_weight_var) {
-	g.invalidate();
-	antig.invalidate();
+	g_under.invalidate();
+	g_over.invalidate();
 	
 	//while( dist_lits[to].size()<=within_steps)
 	//	dist_lits[to].push({lit_Undef,-1});
@@ -130,7 +130,7 @@ void SteinerDetector<Weight>::buildMinWeightTooSmallReason(Weight & weight, vec<
 	std::vector<int> edges;
 	underapprox_detector->getSteinerTree(edges);
 	for (int edgeID : edges) {
-		assert(g.edgeEnabled(edgeID));
+		assert(g_under.edgeEnabled(edgeID));
 		conflict.push(mkLit(outer->getEdgeVar(edgeID), true));
 	}
 	
@@ -163,18 +163,18 @@ void SteinerDetector<Weight>::buildMinWeightTooLargeReason(Weight &weight, vec<L
 		//return the smallest such cut.
 		
 		DisjointSets sets;
-		sets.AddElements(antig.nodes());
+		sets.AddElements(g_over.nodes());
 		
-		for (int i = 0; i < antig.edges(); i++) {
-			if (antig.edgeEnabled(i)) {
-				int u = antig.getEdge(i).from;
-				int v = antig.getEdge(i).to;
+		for (int i = 0; i < g_over.edges(); i++) {
+			if (g_over.edgeEnabled(i)) {
+				int u = g_over.getEdge(i).from;
+				int v = g_over.getEdge(i).to;
 				sets.UnionElements(u, v);
 			}
 		}
 		assert(sets.NumSets() > 1);
 		vec<bool> visited;
-		visited.growTo(g.nodes());
+		visited.growTo(g_under.nodes());
 		/*
 		 vec<bool> hasTerminal;
 		 hasTerminal.growTo(sets.NumSets());
@@ -198,24 +198,24 @@ void SteinerDetector<Weight>::buildMinWeightTooLargeReason(Weight &weight, vec<L
 			visit.push(root);
 			seen.clear();
 			
-			seen.growTo(g.nodes());
+			seen.growTo(g_under.nodes());
 			seen[root] = true;
 			while (visit.size()) {
 				int u = visit.last();
 				visit.pop();
 				assert(u > -1);
-				for (int i = 0; i < antig.nIncident(u, true); i++) {
-					int edgeid = antig.incident(u, i, true).id;
-					if (antig.edgeEnabled(edgeid)) {
-						int v = antig.incident(u, i, true).node;
+				for (int i = 0; i < g_over.nIncident(u, true); i++) {
+					int edgeid = g_over.incident(u, i, true).id;
+					if (g_over.edgeEnabled(edgeid)) {
+						int v = g_over.incident(u, i, true).node;
 						assert(sets.FindSet(v) == set);
 						if (!seen[v]) {
 							//u is a child of node in the minimum spanning tree
 							seen[v] = true;
 							visit.push(v);
 						}
-					} else if (!antig.edgeEnabled(edgeid)) {
-						int v = antig.incident(u, i, true).node;
+					} else if (!g_over.edgeEnabled(edgeid)) {
+						int v = g_over.incident(u, i, true).node;
 						int s = sets.FindSet(v);
 						if (s != set) {	//&& hasTerminal[s] this isn't correct, because there can be a separating component between two terminals that has no terminal itself, and yet an edge has to be added to it to make the terminals connected.
 							//this node is on a separating cut.
@@ -245,12 +245,12 @@ void SteinerDetector<Weight>::buildMinWeightTooLargeReason(Weight &weight, vec<L
 	}
 	
 	//all pairs shortest paths
-	FloydWarshall<> fw(antig);
+	FloydWarshall<> fw(g_over);
 	
-	for (int i = 0; i < antig.edges(); i++) {
-		if (antig.isEdge(i) && !antig.edgeEnabled(i)) {
-			int u = antig.getEdge(i).from;
-			int v = antig.getEdge(i).to;
+	for (int i = 0; i < g_over.edges(); i++) {
+		if (g_over.isEdge(i) && !g_over.edgeEnabled(i)) {
+			int u = g_over.getEdge(i).from;
+			int v = g_over.getEdge(i).to;
 			if (weights[i] < fw.distance(u, v)) {
 				//then adding this edge can potentially decrease the steiner tree
 				//(there is probably an additional test we can do to include fewer edges...)
@@ -399,9 +399,9 @@ bool SteinerDetector<Weight>::checkSatisfied() {
 	
 	assert(underTerminalSet.numEnabled() == overTerminalSet.numEnabled());
 	
-	SteinerApprox<DynamicNodes, typename SteinerTree<Weight>::NullStatus, Weight> positive_checker(g, weights,
+	SteinerApprox<DynamicNodes, typename SteinerTree<Weight>::NullStatus, Weight> positive_checker(g_under, weights,
 			overTerminalSet, SteinerTree<Weight>::nullStatus, 0);
-	SteinerApprox<DynamicNodes, typename SteinerTree<Weight>::NullStatus, Weight> negative_checker(antig, weights,
+	SteinerApprox<DynamicNodes, typename SteinerTree<Weight>::NullStatus, Weight> negative_checker(g_over, weights,
 			underTerminalSet, SteinerTree<Weight>::nullStatus, 0);
 	positive_checker.update();
 	negative_checker.update();

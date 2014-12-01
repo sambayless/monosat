@@ -40,8 +40,8 @@ class CycleDetector: public Detector {
 public:
 	GraphTheorySolver<Weight> * outer;
 	//int within;
-	DynamicGraph & g;
-	DynamicGraph & antig;
+	DynamicGraph & g_under;
+	DynamicGraph & g_over;
 
 	double rnd_seed;
 	CRef directed_cycle_marker;

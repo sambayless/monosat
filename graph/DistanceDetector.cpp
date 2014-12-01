@@ -41,7 +41,7 @@ using namespace Monosat;
 template<typename Weight>
 DistanceDetector<Weight>::DistanceDetector(int _detectorID, GraphTheorySolver<Weight> * outer,
 		std::vector<Weight> & weights, DynamicGraph &_g, DynamicGraph &_antig, int from, double seed) :
-		Detector(_detectorID), outer(outer), weights(weights), g(_g), antig(_antig), source(from), rnd_seed(seed), cutStatus(
+		Detector(_detectorID), outer(outer), weights(weights), g_under(_g), g_over(_antig), source(from), rnd_seed(seed), cutStatus(
 				*this) {
 	max_unweighted_distance = 0;
 	rnd_path = NULL;
@@ -170,11 +170,11 @@ DistanceDetector<Weight>::DistanceDetector(int _detectorID, GraphTheorySolver<We
 template<typename Weight>
 void DistanceDetector<Weight>::buildSATConstraints(int within_steps) {
 	if (within_steps < 0)
-		within_steps = g.nodes();
-	if (within_steps > g.nodes())
-		within_steps = g.nodes();
-	if (within_steps > g.edges())
-		within_steps = g.edges();
+		within_steps = g_under.nodes();
+	if (within_steps > g_under.nodes())
+		within_steps = g_under.nodes();
+	if (within_steps > g_under.edges())
+		within_steps = g_under.edges();
 	if (constraintsBuilt >= within_steps)
 		return;
 	
@@ -188,7 +188,7 @@ void DistanceDetector<Weight>::buildSATConstraints(int within_steps) {
 		outer->addClause(True);
 		assert(outer->value(True)==l_True);
 		Lit False = ~True;
-		for (int i = 0; i < g.nodes(); i++) {
+		for (int i = 0; i < g_under.nodes(); i++) {
 			unweighted_sat_lits[0].push(False);
 		}
 		unweighted_sat_lits[0][source] = True;
@@ -203,7 +203,7 @@ void DistanceDetector<Weight>::buildSATConstraints(int within_steps) {
 		reaches.copyTo(unweighted_sat_lits.last());
 		assert(outer->value( reaches[source])==l_True);
 		//For each edge:
-		for (int j = 0; j < g.nodes(); j++) {
+		for (int j = 0; j < g_under.nodes(); j++) {
 			Lit r_cur = reaches[j];
 			
 			for (Edge & e : outer->inv_adj[j]) {
@@ -249,8 +249,8 @@ void DistanceDetector<Weight>::buildSATConstraints(int within_steps) {
 template<typename Weight>
 void DistanceDetector<Weight>::addWeightedShortestPathLit(int from, int to, Var outer_reach_var,
 		Weight within_distance) {
-	g.invalidate();
-	antig.invalidate();
+	g_under.invalidate();
+	g_over.invalidate();
 	Var reach_var = outer->newVar(outer_reach_var, getID());
 	assert(from == source);
 	weighted_dist_lits.push(WeightedDistLit { mkLit(reach_var), to, within_distance });
@@ -259,8 +259,8 @@ void DistanceDetector<Weight>::addWeightedShortestPathLit(int from, int to, Var 
 
 template<typename Weight>
 void DistanceDetector<Weight>::addUnweightedShortestPathLit(int from, int to, Var outer_reach_var, int within_steps) {
-	g.invalidate();
-	antig.invalidate();
+	g_under.invalidate();
+	g_over.invalidate();
 	Var reach_var = outer->newVar(outer_reach_var, getID());
 	
 	if (first_reach_var == var_Undef) {
@@ -270,10 +270,10 @@ void DistanceDetector<Weight>::addUnweightedShortestPathLit(int from, int to, Va
 	}
 	assert(from == source);
 	assert(within_steps >= 0);
-	if (within_steps > g.nodes())
-		within_steps = g.nodes();
+	if (within_steps > g_under.nodes())
+		within_steps = g_under.nodes();
 	if (within_steps < 0)
-		within_steps = g.nodes();
+		within_steps = g_under.nodes();
 	
 	if (within_steps >= max_unweighted_distance) {
 		max_unweighted_distance = within_steps;
@@ -340,8 +340,8 @@ void DistanceDetector<Weight>::ReachStatus::setReachable(int u, bool reachable) 
 }
 template<typename Weight>
 void DistanceDetector<Weight>::ReachStatus::setMininumDistance(int u, bool reachable, int distance) {
-	assert(reachable == (distance < detector.outer->g.nodes()));
-	if (distance <= detector.outer->g.nodes()) {
+	assert(reachable == (distance < detector.g_under.nodes()));
+	if (distance <= detector.g_under.nodes()) {
 		setReachable(u, reachable);
 	}
 	
@@ -458,7 +458,7 @@ void DistanceDetector<Weight>::buildUnweightedDistanceGTReason(int node, vec<Lit
 	bool reaches = overapprox_unweighted_distance_detector->connected(node);
 	
 	if (!reaches && opt_conflict_min_cut_shortest_paths && conflict_flow) {
-		antig.drawFull();
+		g_over.drawFull();
 		cut.clear();
 		long f;
 		
@@ -568,12 +568,12 @@ template<typename Weight>
 void DistanceDetector<Weight>::printSolution(std::ostream& write_to) {
 	
 	vec<bool> to_show;
-	to_show.growTo(g.nodes());
+	to_show.growTo(g_under.nodes());
 	for (auto & w : weighted_dist_lits) {
 		to_show[w.u] = true;
 	}
 	underapprox_weighted_path_detector->update();
-	for (int to = 0; to < g.nodes(); to++) {
+	for (int to = 0; to < g_under.nodes(); to++) {
 		if (!to_show[to])
 			continue;
 		
@@ -683,7 +683,7 @@ void DistanceDetector<Weight>::buildDistanceGTReason(int to, Weight & min_distan
 	int u = to;
 	bool reaches = overapprox_weighted_distance_detector->connected(to);
 	if (!reaches && opt_conflict_min_cut_shortest_paths && conflict_flow) {
-		antig.drawFull();
+		g_over.drawFull();
 		cut.clear();
 		long f;
 		
@@ -717,7 +717,7 @@ void DistanceDetector<Weight>::buildDistanceGTReason(int to, Weight & min_distan
 	 }*/
 	bool connected = overapprox_weighted_distance_detector->connected(to);
 #ifndef NDEBUG
-	Dijkstra<Weight> d(source, antig, weights);
+	Dijkstra<Weight> d(source, g_over, weights);
 	Weight & expected = d.distance(to);
 	assert(expected == actual_dist);
 	assert(!overapprox_weighted_distance_detector->connected(to) || actual_dist > min_distance);
@@ -845,14 +845,14 @@ void DistanceDetector<Weight>::updateShortestPaths(bool unweighted) {
 		//only update these distances at level 0, to ensure they are a valid over approximate of the shortest possible path to each node
 		if (unweighted) {
 			has_unweighted_shortest_paths_overapprox = true;
-			unweighted_over_approx_shortest_paths.growTo(g.nodes());
-			for (int i = 0; i < antig.nodes(); i++) {
+			unweighted_over_approx_shortest_paths.growTo(g_under.nodes());
+			for (int i = 0; i < g_over.nodes(); i++) {
 				unweighted_over_approx_shortest_paths[i] = overapprox_unweighted_distance_detector->distance(i);
 			}
 		} else {
 			has_weighted_shortest_paths_overapprox = true;
-			over_approx_shortest_paths.growTo(g.nodes());
-			for (int i = 0; i < antig.nodes(); i++) {
+			over_approx_shortest_paths.growTo(g_under.nodes());
+			for (int i = 0; i < g_over.nodes(); i++) {
 				over_approx_shortest_paths[i] = overapprox_weighted_distance_detector->distance(i);
 			}
 		}
@@ -868,7 +868,7 @@ bool DistanceDetector<Weight>::propagate(vec<Lit> & conflict) {
 	if (++iter == 267) { //18303
 		int a = 1;
 	}
-	is_changed.growTo(g.nodes());
+	is_changed.growTo(g_under.nodes());
 	//printf("iter %d\n",iter);
 	bool skipped_positive = false;
 	//getChanged().clear();
@@ -1051,8 +1051,8 @@ bool DistanceDetector<Weight>::propagate(vec<Lit> & conflict) {
 }
 template<typename Weight>
 bool DistanceDetector<Weight>::checkSatisfied() {
-	UnweightedDijkstra<> under(source, g);
-	UnweightedDijkstra<> over(source, antig);
+	UnweightedDijkstra<> under(source, g_under);
+	UnweightedDijkstra<> over(source, g_over);
 	under.update();
 	over.update();
 	for (int j = 0; j < unweighted_dist_lits.size(); j++) {
@@ -1118,8 +1118,8 @@ bool DistanceDetector<Weight>::checkSatisfied() {
 	 }
 	 }*/
 	{
-		Dijkstra<Weight> under(source, g, weights);
-		Dijkstra<Weight> over(source, antig, weights);
+		Dijkstra<Weight> under(source, g_under, weights);
+		Dijkstra<Weight> over(source, g_over, weights);
 		under.update();
 		over.update();
 		//now, check for weighted distance lits

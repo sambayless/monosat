@@ -30,7 +30,7 @@ using namespace Monosat;
 template<typename Weight>
 ReachDetector<Weight>::ReachDetector(int _detectorID, GraphTheorySolver<Weight> * _outer, DynamicGraph &_g,
 		DynamicGraph &_antig, int from, double seed) :
-		Detector(_detectorID), outer(_outer), g(_g), antig(_antig), within(-1), source(from), rnd_seed(seed), cutStatus(
+		Detector(_detectorID), outer(_outer), g_under(_g), g_over(_antig), within(-1), source(from), rnd_seed(seed), cutStatus(
 				*this) { //,chokepoint_status(*this),chokepoint(chokepoint_status, _antig,source){
 
 	rnd_path = nullptr;
@@ -212,11 +212,11 @@ ReachDetector<Weight>::ReachDetector(int _detectorID, GraphTheorySolver<Weight> 
 template<typename Weight>
 void ReachDetector<Weight>::buildSATConstraints(bool onlyUnderApprox, int within_steps) {
 	if (within_steps < 0)
-		within_steps = g.nodes();
-	if (within_steps > g.nodes())
-		within_steps = g.nodes();
-	if (within_steps > g.edges())
-		within_steps = g.edges();
+		within_steps = g_under.nodes();
+	if (within_steps > g_under.nodes())
+		within_steps = g_under.nodes();
+	if (within_steps > g_under.edges())
+		within_steps = g_under.edges();
 	if (onlyUnderApprox && constraintsBuiltUnder >= within_steps)
 		return;
 	if (!onlyUnderApprox && constraintsBuiltOver >= within_steps)
@@ -236,7 +236,7 @@ void ReachDetector<Weight>::buildSATConstraints(bool onlyUnderApprox, int within
 			
 			Lit False = ~True;
 			
-			for (int i = 0; i < g.nodes(); i++) {
+			for (int i = 0; i < g_under.nodes(); i++) {
 				dist_lits[0].push(False);
 			}
 			dist_lits[0][source] = True;
@@ -254,7 +254,7 @@ void ReachDetector<Weight>::buildSATConstraints(bool onlyUnderApprox, int within
 			reaches.copyTo(dist_lits.last());
 			
 			//For each edge:
-			for (int j = 0; j < g.nodes(); j++) {
+			for (int j = 0; j < g_under.nodes(); j++) {
 				Lit r_cur = reaches[j];
 				
 				for (Edge & e : outer->inv_adj[j]) {
@@ -297,8 +297,8 @@ void ReachDetector<Weight>::buildSATConstraints(bool onlyUnderApprox, int within
 			
 		}
 		assert(dist_lits.size() == within_steps + 1);
-		if (within_steps == g.nodes() || within_steps == g.edges()) {
-			reach_lits.growTo(g.nodes());
+		if (within_steps == g_under.nodes() || within_steps == g_under.edges()) {
+			reach_lits.growTo(g_under.nodes());
 			
 			for (int i = 0; i < dist_lits.last().size(); i++) {
 				Lit d = dist_lits.last()[i];
@@ -314,10 +314,10 @@ void ReachDetector<Weight>::buildSATConstraints(bool onlyUnderApprox, int within
 		constraintsBuiltOver = within_steps;
 	} else {
 		if (constraintsBuiltUnder < 0) {
-			constraintsBuiltUnder = g.nodes();
+			constraintsBuiltUnder = g_under.nodes();
 			
 			//for each node, it cannot be reachable if none of its incoming.edges() are enabled.
-			for (int n = 0; n < g.nodes(); n++) {
+			for (int n = 0; n < g_under.nodes(); n++) {
 				if (reach_lits[n] == lit_Undef) {
 					Var reach_var;
 					if (this->underapprox_detector || this->overapprox_reach_detector)
@@ -336,7 +336,7 @@ void ReachDetector<Weight>::buildSATConstraints(bool onlyUnderApprox, int within
 			
 			vec<Lit> c;
 			vec<Lit> t;
-			for (int n = 0; n < g.nodes(); n++) {
+			for (int n = 0; n < g_under.nodes(); n++) {
 				
 				if (n == source) {
 					outer->addClause(reach_lits[n]); //source node is unconditionally reachable
@@ -344,8 +344,8 @@ void ReachDetector<Weight>::buildSATConstraints(bool onlyUnderApprox, int within
 					c.clear();
 					c.push(~reach_lits[n]);
 					//for(auto edge:g.inverted_adjacency[n]){
-					for (int i = 0; i < g.nIncoming(n); i++) {
-						auto & edge = g.incoming(n, i);
+					for (int i = 0; i < g_under.nIncoming(n); i++) {
+						auto & edge = g_under.incoming(n, i);
 						int edgeID = edge.id;
 						int from = edge.node;
 						if (from != n) {
@@ -360,8 +360,8 @@ void ReachDetector<Weight>::buildSATConstraints(bool onlyUnderApprox, int within
 					c.clear();
 					//either an incoming node must be true, or reach_lit must be false
 					c.push(~reach_lits[n]);
-					for (int i = 0; i < g.nIncoming(n); i++) {
-						auto & edge = g.incoming(n, i);
+					for (int i = 0; i < g_under.nIncoming(n); i++) {
+						auto & edge = g_under.incoming(n, i);
 						int edgeID = edge.id;
 						int from = edge.node;
 						if (from != n) { //ignore trivial cycles
@@ -375,8 +375,8 @@ void ReachDetector<Weight>::buildSATConstraints(bool onlyUnderApprox, int within
 					c.clear();
 					//either an incoming node must be true, or reach_lit must be false
 					c.push(~reach_lits[n]);
-					for (int i = 0; i < g.nIncoming(n); i++) {
-						auto & edge = g.incoming(n, i);
+					for (int i = 0; i < g_under.nIncoming(n); i++) {
+						auto & edge = g_under.incoming(n, i);
 						int edgeID = edge.id;
 						int from = edge.node;
 						if (from != n) { //ignore trivial cycles
@@ -397,8 +397,8 @@ void ReachDetector<Weight>::buildSATConstraints(bool onlyUnderApprox, int within
 				}
 				
 				//If this node is reachable, the for each outgoing edge, if that edge is enabled, its to node must also be reachable
-				for (int i = 0; i < g.nIncident(n); i++) {
-					auto & edge = g.incident(n, i);
+				for (int i = 0; i < g_under.nIncident(n); i++) {
+					auto & edge = g_under.incident(n, i);
 					int edgeID = edge.id;
 					int to = edge.node;
 					if (to != n) { //ignore trivial cycles
@@ -414,9 +414,9 @@ void ReachDetector<Weight>::buildSATConstraints(bool onlyUnderApprox, int within
 }
 template<typename Weight>
 void ReachDetector<Weight>::addLit(int from, int to, Var outer_reach_var) {
-	while (reach_lits.size() < g.nodes())
+	while (reach_lits.size() < g_under.nodes())
 		reach_lits.push(lit_Undef);
-	while (original_reach_lits.size() < g.nodes())
+	while (original_reach_lits.size() < g_under.nodes())
 		original_reach_lits.push(false);
 	
 	original_reach_lits[to] = true;
@@ -427,8 +427,8 @@ void ReachDetector<Weight>::addLit(int from, int to, Var outer_reach_var) {
 		return;
 	}
 	
-	g.invalidate();
-	antig.invalidate();
+	g_under.invalidate();
+	g_over.invalidate();
 	
 	Var reach_var = outer->newVar(outer_reach_var, getID());
 	
@@ -455,8 +455,8 @@ void ReachDetector<Weight>::addLit(int from, int to, Var outer_reach_var) {
 	}
 	if (opt_conflict_min_cut || opt_adaptive_conflict_mincut) {
 		if (!opt_reach_detector_combined_maxflow) {
-			conflict_flows.resize(g.nodes(), nullptr);
-			for (int i = 0; i < g.nodes(); i++) {
+			conflict_flows.resize(g_under.nodes(), nullptr);
+			for (int i = 0; i < g_under.nodes(); i++) {
 				if (reach_lits[i] != lit_Undef && !conflict_flows[i]) {
 					MaxFlow<long> * conflict_flow_t = nullptr;
 					if (mincutalg == MinCutAlg::ALG_EDKARP_DYN) {
@@ -626,7 +626,7 @@ void ReachDetector<Weight>::buildNonReachReason(int node, vec<Lit> & conflict, b
 	
 	if ((force_maxflow || opt_conflict_min_cut) && (conflict_flow || conflict_flows[node])) {
 		
-		antig.drawFull();
+		g_over.drawFull();
 		cut.clear();
 		long f;
 		if (!opt_reach_detector_combined_maxflow) {
@@ -809,7 +809,7 @@ void ReachDetector<Weight>::buildNonReachReason(int node, vec<Lit> & conflict, b
 
 		 */
 		//antig.drawFull();
-		TarjansSCC<>::getSCC(node, antig, component);
+		TarjansSCC<>::getSCC(node, g_over, component);
 		assert(std::count(component.begin(), component.end(), node));
 		for (int n : component) {
 			if (reach_lits[n] != lit_Undef) {
@@ -1053,7 +1053,7 @@ bool ReachDetector<Weight>::propagate(vec<Lit> & conflict) {
 	if (++iter == 87) {
 		int a = 1;
 	}
-	is_changed.growTo(g.nodes());
+	is_changed.growTo(g_under.nodes());
 	bool skipped_positive = false;
 	if (underapprox_detector && (!opt_detect_pure_theory_lits || unassigned_positives > 0)) {
 		double startdreachtime = rtime(2);
@@ -1200,7 +1200,7 @@ template<typename Weight>
 void ReachDetector<Weight>::printSolution(std::ostream & write_to) {
 	
 	vec<bool> to_show;
-	to_show.growTo(g.nodes());
+	to_show.growTo(g_under.nodes());
 	
 	for (int i = 0; i < reach_lits.size(); i++) {
 		if (!original_reach_lits[i])//only print paths to nodes that the user asked for (this matters if we are using a CNF reachability encoding, which may have invented extra reach lits)
@@ -1212,7 +1212,7 @@ void ReachDetector<Weight>::printSolution(std::ostream & write_to) {
 		}
 	}
 	vec<int> path;
-	for (int to = 0; to < g.nodes(); to++) {
+	for (int to = 0; to < g_under.nodes(); to++) {
 		if (!to_show[to])
 			continue;
 		
@@ -1243,8 +1243,8 @@ void ReachDetector<Weight>::printSolution(std::ostream & write_to) {
 template<typename Weight>
 bool ReachDetector<Weight>::checkSatisfied() {
 	
-	UnweightedDijkstra<> under(source, g);
-	UnweightedDijkstra<> over(source, antig);
+	UnweightedDijkstra<> under(source, g_under);
+	UnweightedDijkstra<> over(source, g_over);
 	under.update();
 	over.update();
 	

@@ -26,7 +26,7 @@ using namespace Monosat;
 template<typename Weight>
 CycleDetector<Weight>::CycleDetector(int _detectorID, GraphTheorySolver<Weight> * _outer, DynamicGraph &_g,
 		DynamicGraph &_antig, bool detect_directed_cycles, double seed) :
-		Detector(_detectorID), outer(_outer), g(_g), antig(_antig), rnd_seed(seed), underapprox_reach_detector(NULL), overapprox_reach_detector(
+		Detector(_detectorID), outer(_outer), g_under(_g), g_over(_antig), rnd_seed(seed), underapprox_reach_detector(NULL), overapprox_reach_detector(
 				NULL) {
 	
 	undirected_cycle_lit = lit_Undef;
@@ -47,8 +47,8 @@ template<typename Weight>
 void CycleDetector<Weight>::addCycleDetectorLit(bool directed, Var outer_reach_var) {
 	Var v = outer->newVar(outer_reach_var, getID());
 	Lit l = mkLit(v, false);
-	g.invalidate();
-	antig.invalidate();
+	g_under.invalidate();
+	g_over.invalidate();
 	if (!directed) {
 		if (undirected_cycle_lit == lit_Undef) {
 			undirected_cycle_lit = l;
