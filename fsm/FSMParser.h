@@ -53,12 +53,13 @@ class FSMParser: public Parser<B, Solver> {
 		Var edgeVar;
 	};
 	vec<vec<Transition> > transitions;
-
-	vec<vec<int>*> strings;
+	vec<bool> created_strings;
+	vec<vec<int>> strings;
 
 	struct Accepts{
 		int fsm;
-		int state;
+		int from;
+		int to;
 		int strID;
 		Var reachVar;
 
@@ -92,7 +93,7 @@ class FSMParser: public Parser<B, Solver> {
 		accepts.growTo(fsmID+1);
 	}
 	
-	void readString(B& in, Sovler & S){
+	void readString(B& in, Solver & S){
 		if (opt_ignore_theories) {
 			skipLine(in);
 			return;
@@ -100,15 +101,16 @@ class FSMParser: public Parser<B, Solver> {
 
 		int strID = parseInt(in);
 		strings.growTo(strID+1);
-		if(strID<0 || strings[strID]){
+		created_strings.growTo(strID+1);
+		if(strID<0 || created_strings[strID]){
 			printf("PARSE ERROR! Bad string id %d\n", strID), exit(1);
 		}
-		strings[strID] =new vec<int>();
+
 		while(int i = parseInt(in)){
 			if (i<=0){
 				printf("PARSE ERROR! FSM strings must contain only positive (non-zero) integers, found %d\n", i), exit(1);
 			}
-			strings[strID]->push(i);
+			strings[strID].push(i);
 		}
 
 	}
@@ -153,7 +155,8 @@ class FSMParser: public Parser<B, Solver> {
 		++in;
 		
 		int fsmID = parseInt(in);
-		int acceptingState = parseInt(in);
+		int from = parseInt(in);
+		int to = parseInt(in);
 		int strID = parseInt(in);
 		int reachVar = parseInt(in) - 1;
 
@@ -161,7 +164,8 @@ class FSMParser: public Parser<B, Solver> {
 		accepts[fsmID].push();
 
 		accepts[fsmID].last().fsm=fsmID;
-		accepts[fsmID].last().state=acceptingState;
+		accepts[fsmID].last().from=from;
+		accepts[fsmID].last().to=to;
 		accepts[fsmID].last().strID = strID;
 		accepts[fsmID].last().reachVar = reachVar;
 
@@ -171,8 +175,11 @@ class FSMParser: public Parser<B, Solver> {
 		if (strID<0 || !strings[strID]){
 			printf("PARSE ERROR! String ID must be a non-negative integer, was %d\n", strID), exit(1);
 		}
-		if (acceptingState<0){
-			printf("PARSE ERROR! Accepting state must be a node id (a non-negative integer), was %d\n", acceptingState), exit(1);
+		if (from<0){
+				printf("PARSE ERROR! Source state must be a node id (a non-negative integer), was %d\n", from), exit(1);
+			}
+		if (to<0){
+			printf("PARSE ERROR! Accepting state must be a node id (a non-negative integer), was %d\n", to), exit(1);
 		}
 		if (reachVar < 0) {
 			printf("PARSE ERROR! Edge variables must be >=0, was %d\n", reachVar), exit(1);
@@ -205,7 +212,10 @@ public:
 			count++;
 			readTransition(in, S);
 			return true;
-		} else if (match(in, "accepts")) {
+		}else if (match(in,"str")){
+			readString(in,S);
+			return true;
+		}else if (match(in, "accepts")) {
 			readAccepts(in, S);
 			return true;
 		}
@@ -215,6 +225,19 @@ public:
 
 	void implementConstraints(Solver & S) {
 		
+		for(int i = 0;i<fsms.size();i++){
+			if(fsms[i]){
+				fsms[i]->setStrings(&strings);
+
+				for (auto &t:transitions[i]){
+					fsms[i]->addTransition(t.from,t.to,t.label);
+				}
+
+				for(auto & a: accepts[i]){
+					fsms[i]->addReachLit(a.from, a.to,a.strID,a.reachVar);
+				}
+			}
+		}
 
 
 

@@ -67,7 +67,7 @@ public:
 	};
 
 	double rnd_seed;
-
+	vec<vec<int>> * strings=nullptr;
 private:
 	Solver * S;
 	int local_q = 0;
@@ -83,6 +83,7 @@ public:
 
 	DynamicFSM g_under;
 	DynamicFSM g_over;
+	vec<FSMReachDetector *> reaches;
 
 	/**
 	 * The cutgraph is (optionally) used for conflict analysis by some graph theories.
@@ -728,43 +729,7 @@ public:
 	}
 	
 	bool dbg_solved() {
-#ifdef DEBUG_GRAPH
-		for(int i = 0;i<edge_list.size();i++) {
-			if(edge_list[i].v<0)
-			continue;
-			Edge & e = edge_list[i];
-			lbool val = value(e.v);
-			assert(val!=l_Undef);
 
-			if(val==l_True) {
-				assert(g_under.hasEdge(e.from,e.to));
-				assert(g_over.hasEdge(e.from,e.to));
-			} else {
-				assert(!g_under.hasEdge(e.from,e.to));
-				assert(!g_over.hasEdge(e.from,e.to));
-			}
-
-		}
-		assert(check_solved());
-		/*for(int i = 0;i<reach_detectors.size();i++){
-		 ReachDetector* d  = reach_detectors[i];
-		 for(int j = 0;j< d->reach_lits.size();j++){
-		 Lit l = d->reach_lits[j];
-		 if(l!=lit_Undef){
-		 int node = d->getNode(var(l));
-
-		 if(value(l)==l_True){
-		 assert(d->positive_reach_detector->connected(node));
-		 }else if (value(l)==l_False){
-		 assert(! d->negative_reach_detector->connected(node));
-		 }else{
-		 assert(!d->positive_reach_detector->connected(node));
-		 assert(d->negative_reach_detector->connected(node));
-		 }
-		 }
-		 }
-		 }*/
-#endif
 		return true;
 	}
 	
@@ -807,6 +772,27 @@ public:
 		}
 	}
 	
+	void setStrings(vec<vec<int>>* strings){
+		assert(!this->strings);
+		this->strings=strings;
+	}
+
+	void addTransition(int from, int to, int label){
+		assert(label>=0);
+		int index = g_under.nEdgeIDs();
+		g_under.addTransition(from,to,index,label);
+		g_over.addTransition(from,to,index,label);
+	}
+
+	void addReachLit(int source ,int reach, int strID, Var outer_var){
+		reaches.growTo(source);
+		if(!reaches[source]){
+			reaches[source] = new FSMReachDetector(detectors.size(), this, g_under,g_over, source,*strings,drand(rnd_seed));
+			detectors.push(reaches[source]);
+		}
+		reaches[source]->addReachLit(reach,strID,outer_var);
+	}
+
 };
 
 }

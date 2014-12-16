@@ -72,6 +72,17 @@ public:
 		return transitions[edgeID][label];
 	}
 
+	void addTransition(int from, int to,int edgeID, int label, bool defaultEnabled=true){
+		assert(!g.hasEdge(edgeID));
+		while(n_labels<=label){
+			addLabel();
+		}
+		g.addEdge(from, to, edgeID);
+		transitions.growTo(edgeID+1);
+		transitions[edgeID].growTo(label+1);
+		if(defaultEnabled)
+			transitions[edgeID].set(label);
+	}
 
 	void enableTransition(int edgeID, int label) {
 		assert(edgeID >= 0);
