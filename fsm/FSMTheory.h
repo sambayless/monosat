@@ -45,15 +45,27 @@
 using namespace dgl;
 namespace Monosat {
 
-struct EdgeLabel{
 
-
-};
-
+class FSMTheorySolver;
 
 class FSMTheorySolver: public Theory {
 public:
-	
+	struct Transition{
+		Var v;
+		Var outerVar;
+		int from;
+		int to;
+	};
+	struct Assignment {
+		bool isEdge :1;
+		bool assign :1;
+		int edgeID:30;
+		Var var;
+		Assignment(bool isEdge, bool assign, int edgeID, Var v):isEdge(isEdge),assign(assign),edgeID(edgeID),var(v){
+
+		}
+	};
+
 	double rnd_seed;
 
 private:
@@ -61,16 +73,16 @@ private:
 	int local_q = 0;
 public:
 	int id;
-	bool all_edges_unit = true;
+
 	vec<lbool> assigns;
 
 	int n_labels=1;//number of transition labels. Transition labels start from 0 (which is the non-consuming epsilon transition) and go to n_labels-1.
 
 
-	vec<EdgeLabel> edge_labels;
+	vec<vec<Transition>> edge_labels;
 
-	DynamicFSM<8> g_under;
-	DynamicFSM<8> g_over;
+	DynamicFSM g_under;
+	DynamicFSM g_over;
 
 	/**
 	 * The cutgraph is (optionally) used for conflict analysis by some graph theories.
@@ -107,6 +119,7 @@ public:
 		int occursPositive :1;
 		int occursNegative :1;
 		int detector_edge :29;	//the detector this variable belongs to, or its edge number, if it is an edge variable
+		int label;
 		Var solverVar;
 	};
 
@@ -137,8 +150,6 @@ public:
 	long stats_pure_skipped = 0;
 	long stats_mc_calls = 0;
 	long stats_propagations_skipped = 0;
-	vec<Lit> reach_cut;
-
 
 
 	FSMTheorySolver(Solver * S_, int _id = -1) :
@@ -176,21 +187,34 @@ public:
 	inline int getGraphID() {
 		return id;
 	}
-	inline bool isEdgeVar(Var v) {
+	inline int nLabels()const{
+		return n_labels;
+	}
+	void addLabel(){
+		n_labels++;
+		g_under.addLabel();
+		g_over.addLabel();
+	}
+	inline bool isEdgeVar(Var v) const{
 		assert(v < vars.size());
 		return vars[v].isEdge;
 	}
-	inline int getEdgeID(Var v) {
+	inline int getEdgeID(Var v) const {
 		assert(isEdgeVar(v));
 		return vars[v].detector_edge;
 	}
-	inline int getDetector(Var v) {
+	inline int getLabel(Var v) const{
+		assert(isEdgeVar(v));
+		return vars[v].label;
+	}
+	inline int getDetector(Var v) const {
 		assert(!isEdgeVar(v));
 		return vars[v].detector_edge;
 	}
 	
-	inline Var getEdgeVar(int edgeID) {
-		Var v = edge_list[edgeID].v;
+	inline Var getLabelVar(int edgeID, int label) {
+		assert(label>=0);
+		Var v = edge_labels[edgeID][label].v;
 		assert(v < vars.size());
 		assert(vars[v].isEdge);
 		return v;
@@ -237,9 +261,9 @@ public:
 	
 	Var newVar(int forDetector = -1, bool connectToTheory = false) {
 		Var s = S->newVar();
-		return newVar(s, forDetector, false, connectToTheory);
+		return newVar(s, forDetector, -1,false, connectToTheory);
 	}
-	Var newVar(Var solverVar, int detector, bool isEdge = false, bool connectToTheory = true) {
+	Var newVar(Var solverVar, int detector, int label, bool isEdge = false, bool connectToTheory = true) {
 		while (S->nVars() <= solverVar)
 			S->newVar();
 		Var v = vars.size();
@@ -247,6 +271,7 @@ public:
 		vars[v].isEdge = isEdge;
 		vars[v].detector_edge = detector;
 		vars[v].solverVar = solverVar;
+		vars[v].label=label;
 		assigns.push(l_Undef);
 		if (connectToTheory) {
 			S->setTheoryVar(solverVar, getTheoryIndex(), v);
@@ -317,14 +342,10 @@ public:
 	
 	~FSMTheorySolver() {
 	}
-	;
-	int newNode() {
-		
-		inv_adj.push();
-		undirected_adj.push();
 
+	int newNode() {
 		g_over.addNode();
-		cutGraph.addNode();
+
 		seen.growTo(nNodes());
 		
 		return g_under.addNode();
@@ -341,30 +362,7 @@ public:
 	}
 	
 	bool dbg_propgation(Lit l) {
-#ifndef NDEBUG
-		static vec<Lit> c;
-		c.clear();
-		for (int i = 0; i < S->trail.size(); i++) {
-			if (!S->hasTheory(S->trail[i]) || S->getTheoryID(S->trail[i]) != getTheoryIndex())
-				continue;
-			Lit l = S->getTheoryLit(S->trail[i]);
-			Var v = var(l);
-			if (isEdgeVar(v)) {
-				Edge & e = edge_list[getEdgeID(v)];
-				c.push(l);
-			}
-			
-			/*		if(v>=min_edge_var && v<min_edge_var+num_edges){
-			 if(edge_list[v-min_edge_var].v<0)
-			 continue;
-			 Edge e = edge_list[v-min_edge_var];
-			 c.push(l);
-			 }*/
-		}
-		c.push(~l);
-		//bool res = dbg->solve(c);
-		//assert(~res);
-#endif
+
 		return true;
 	}
 	
@@ -374,34 +372,11 @@ public:
 		
 	}
 	void dbg_sync() {
-#ifndef NDEBUG
-		if (opt_conflict_min_cut) {
-			for (int i = 0; i < edge_list.size(); i++) {
-				if (value(edge_list[i].v) == l_False) {
-					assert(cutGraph.edgeEnabled(i * 2));
-					assert(!cutGraph.edgeEnabled(i * 2 + 1));
-				} else {
-					assert(!cutGraph.edgeEnabled(i * 2));
-					assert(cutGraph.edgeEnabled(i * 2 + 1));
-				}
-			}
-		}
-#endif
+
 
 	}
 	void dbg_full_sync() {
-#ifdef DEBUG_GRAPH
-		dbg_sync();
-		for(int i =0;i<edge_list.size();i++) {
 
-			if(edge_list[i].edgeID>=0 && g_under.edgeEnabled(i)) {
-				assert(value(edge_list[i].v)==l_True);
-			} else if (edge_list[i].edgeID>=0 && !g_over.edgeEnabled(i)) {
-				assert(value(edge_list[i].v)==l_False);
-			}
-		}
-
-#endif
 	}
 	
 	void backtrackUntil(int level) {
@@ -418,20 +393,16 @@ public:
 				assert(assigns[e.var]!=l_Undef);
 				if (e.isEdge) {
 					assert(dbg_value(e.var)==l_Undef);
-					int edge_num = getEdgeID(e.var); //e.var-min_edge_var;
-							
+					int edgeID = getEdgeID(e.var); //e.var-min_edge_var;
+					int label = getLabel(e.var);
+					assert(edgeID==e.edgeID);
+
 					if (e.assign) {
-						g_under.disableEdge(e.from, e.to, edge_num);
-						assert(!cutGraph.edgeEnabled(edge_num * 2));
+						g_under.enableTransition(edgeID, label);
+
 					} else {
-						g_over.enableEdge(e.from, e.to, edge_num);
-						assert(g_over.hasEdge(e.from, e.to));
-						if (opt_conflict_min_cut) {
-							assert(cutGraph.edgeEnabled(edge_num * 2));
-							cutGraph.disableEdge(e.from, e.to, edge_num * 2);
-							assert(!cutGraph.edgeEnabled(edge_num * 2 + 1));
-							cutGraph.enableEdge(e.from, e.to, edge_num * 2 + 1);
-						}
+						g_over.enableTransition(edgeID,label);
+
 					}
 				} else {
 					//This is a reachability literal				  
@@ -455,20 +426,11 @@ public:
 				d->backtrack(level);
 			}
 		}
-		/*		if(local_q>S->qhead)
-		 local_q=S->qhead;*/
-		assert(dbg_graphsUpToDate());
-		/*for(int i = 0;i<reach_detectors.size();i++){
-		 if(reach_detectors[i]->positive_reach_detector)
-		 reach_detectors[i]->positive_reach_detector->update();
-		 if(reach_detectors[i]->negative_reach_detector)
-		 reach_detectors[i]->negative_reach_detector->update();
-		 }*/
 
+		assert(dbg_graphsUpToDate());
 		dbg_sync();
 		
-	}
-	;
+	};
 
 	Lit decideTheory() {
 		if (!opt_decide_theories)
@@ -497,22 +459,14 @@ public:
 		for (; i >= 0; i--) {
 			Assignment e = trail[i];
 			if (e.isEdge) {
-				int edge_num = getEdgeID(e.var); //e.var-min_edge_var;
+				int edgeID = getEdgeID(e.var); //e.var-min_edge_var;
+				int label = getLabel(e.var);
 				assert(assigns[e.var]!=l_Undef);
 				assigns[e.var] = l_Undef;
 				if (e.assign) {
-					g_under.disableEdge(e.from, e.to, edge_num);
-					
-					assert(!cutGraph.edgeEnabled(edge_num * 2));
+					g_under.enableTransition(edgeID,label);
 				} else {
-					g_over.enableEdge(e.from, e.to, edge_num);
-					assert(g_over.hasEdge(e.from, e.to));
-					if (opt_conflict_min_cut) {
-						assert(cutGraph.edgeEnabled(edge_num * 2));
-						cutGraph.disableEdge(e.from, e.to, edge_num * 2);
-						assert(!cutGraph.edgeEnabled(edge_num * 2 + 1));
-						cutGraph.enableEdge(e.from, e.to, edge_num * 2 + 1);
-					}
+					g_over.enableTransition(edgeID,label);
 				}
 			} else {
 				if (var(p) == e.var) {
@@ -570,91 +524,13 @@ public:
 		
 	}
 	
-	bool dbg_reachable(int from, int to, bool undirected = false) {
-#ifdef DEBUG_DIJKSTRA
-		
-		if(undirected) {
-			UnweightedDijkstra<Reach::NullStatus, true> d(from,g_under);
-			d.update();
-			return d.connected(to);
-		} else {
-			UnweightedDijkstra<> d(from,g_under);
-			d.update();
-			return d.connected(to);
-		}
 
-#else
-		return true;
-#endif
-	}
-	
-	bool dbg_notreachable(int from, int to, bool undirected = false) {
-		
-#ifndef NDEBUG
-		//drawFull(from,to);
-		
-		DynamicGraph g;
-		for (int i = 0; i < nNodes(); i++) {
-			g.addNode();
-		}
-		
-		for (int i = 0; i < edge_list.size(); i++) {
-			if (edge_list[i].v < 0)
-				continue;
-			Edge e = edge_list[i];
-			if (value(e.v) != l_False) {
-				g.addEdge(e.from, e.to);
-			}
-		}
-		if (undirected) {
-			UnweightedDijkstra<Reach::NullStatus, true> d(from, g);
-			
-			return !d.connected(to);
-		} else {
-			UnweightedDijkstra<Reach::NullStatus, false> d(from, g);
-			
-			return !d.connected(to);
-		}
-#endif
-		return true;
-		
-	}
+
 	
 	bool dbg_graphsUpToDate() {
-#ifdef DEBUG_GRAPH
-		for(int i = 0;i<edge_list.size();i++) {
-			if(edge_list[i].v<0)
-			continue;
-			Edge e = edge_list[i];
-			lbool val = value(e.v);
 
-			if(val==l_True || val==l_Undef) {
-				assert(g_over.edgeEnabled(i));
-				//assert(antig.hasEdge(e.from,e.to));
-			} else {
-				assert(!g_over.edgeEnabled(i));
-				//assert(!antig.hasEdge(e.from,e.to));
-			}
-			if(val==l_True) {
-				assert(g_under.edgeEnabled(i));
-				//assert(g.hasEdge(e.from,e.to));
-			} else {
-				assert(!g_under.edgeEnabled(i));
-				//assert(!g.hasEdge(e.from,e.to));
-			}
-		}
-
-#endif
 		return true;
 	}
-	
-	/*	int getEdgeID(Var v){
-	 assert(v>= min_edge_var && v<min_edge_var+edge_list.size());
-
-	 //this is an edge assignment
-	 int edge_num = v-min_edge_var;
-	 return edge_num;
-	 }*/
 
 	void preprocess() {
 		for (int i = 0; i < detectors.size(); i++) {
@@ -701,49 +577,28 @@ public:
 		}
 #endif
 		
-#ifdef RECORD
-		if (g_under.outfile) {
-			fprintf(g_under.outfile, "enqueue %d\n", dimacs(l));
-			
-			fprintf(g_under.outfile, "\n");
-			fflush(g_under.outfile);
-		}
-		if (g_over.outfile) {
-			fprintf(g_over.outfile, "enqueue %d\n", dimacs(l));
-			fprintf(g_over.outfile, "\n");
-			fflush(g_over.outfile);
-		}
-#endif
+
 		
 		if (isEdgeVar(var(l))) {
 			
 			//this is an edge assignment
-			int edge_num = getEdgeID(var(l)); //v-min_edge_var;
-			assert(edge_list[edge_num].v == var(l));
+			int edgeID = getEdgeID(var(l)); //v-min_edge_var;
+			int label = getLabel(var(l));
+			assert(edge_labels[edgeID][label].v == var(l));
 			
-			int from = edge_list[edge_num].from;
-			int to = edge_list[edge_num].to;
-			trail.push( { true, !sign(l), from, to, v });
-			
-			Assignment e = trail.last();
-			assert(e.from == from);
-			assert(e.to == to);
-			
+
+			trail.push( { true, !sign(l),edgeID, v });
+
+
 			if (!sign(l)) {
-				g_under.enableEdge(from, to, edge_num);
+				g_under.enableTransition(edgeID,label);
 			} else {
-				g_over.disableEdge(from, to, edge_num);
-				if (opt_conflict_min_cut) {
-					assert(cutGraph.edgeEnabled(edge_num * 2 + 1));
-					assert(!cutGraph.edgeEnabled(edge_num * 2));
-					cutGraph.enableEdge(e.from, e.to, edge_num * 2);
-					cutGraph.disableEdge(e.from, e.to, edge_num * 2 + 1);
-				}
+				g_over.disableTransition(edgeID,label);
 			}
 			
 		} else {
 			
-			trail.push( { false, !sign(l), 0, 0, v });
+			trail.push( { false, !sign(l),-1, v });
 			//this is an assignment to a non-edge atom. (eg, a reachability assertion)
 			detectors[getDetector(var(l))]->assign(l);
 		}
@@ -793,11 +648,10 @@ public:
 		requiresPropagation = false;
 		g_under.clearChanged();
 		g_over.clearChanged();
-		cutGraph.clearChanged();
 		
 		g_under.clearHistory();
 		g_over.clearHistory();
-		cutGraph.clearHistory();
+
 		//detectors_to_check.clear();
 		
 		double elapsed = rtime(1) - startproptime;
@@ -818,94 +672,52 @@ public:
 	;
 
 	void drawFull(int from, int to) {
-		printf("digraph{\n");
-		for (int i = 0; i < nNodes(); i++) {
-			if (i == from) {
-				printf("n%d [label=\"From\", style=filled, fillcolor=blue]\n", i);
-			} else if (i == to) {
-				printf("n%d [label=\"To\", style=filled, fillcolor=red]\n", i);
-			} else
-				printf("n%d\n", i);
-		}
 		
-		for (int i = 0; i < edge_list.size(); i++) {
-			if (edge_list[i].v < 0)
-				continue;
-			Edge & e = edge_list[i];
-			const char * s = "black";
-			if (value(e.v) == l_True)
-				s = "blue";
-			else if (value(e.v) == l_False)
-				s = "red";
-			printf("n%d -> n%d [label=\"v%d\",color=\"%s\"]\n", e.from, e.to, e.v, s);
-		}
-		
-		printf("}\n");
-	}
-	void drawFull() {
-		printf("digraph{\n");
-		for (int i = 0; i < nNodes(); i++) {
-			printf("n%d\n", i);
-		}
-		
-		for (int i = 0; i < edge_list.size(); i++) {
-			Edge & e = edge_list[i];
-			const char * s = "black";
-			if (value(e.v) == l_True)
-				s = "blue";
-			else if (value(e.v) == l_False)
-				s = "red";
-			else {
-				int a = 1;
-			}
-			printf("n%d -> n%d [label=\"v%d\",color=\"%s\"]\n", e.from, e.to, e.v, s);
-		}
-		
-		printf("}\n");
 	}
 	
 	bool check_solved() {
-		if (opt_print_graph) {
-			drawFull();
-		}
-		for (int i = 0; i < edge_list.size(); i++) {
-			if (edge_list[i].v < 0)
-				continue;
-			Edge & e = edge_list[i];
-			lbool val = value(e.v);
-			if (val == l_Undef) {
-				return false;
-			}
-			
-			if (val == l_True) {
-				/*	if(!g.hasEdge(e.from,e.to)){
-				 return false;
-				 }
-				 if(!antig.hasEdge(e.from,e.to)){
-				 return false;
-				 }*/
-				if (!g_under.edgeEnabled(e.edgeID)) {
-					return false;
-				}
-				if (!g_over.edgeEnabled(e.edgeID)) {
-					return false;
-				}
-			} else {
-				/*if(g.hasEdge(e.from,e.to)){
-				 return false;
-				 }*/
-				if (g_under.edgeEnabled(e.edgeID)) {
-					return false;
-				}
-				if (g_over.edgeEnabled(e.edgeID)) {
-					return false;
-				}
-				/*if(antig.hasEdge(e.from,e.to)){
-				 return false;
-				 }*/
 
+		for (int edgeID = 0; edgeID < edge_labels.size(); edgeID++) {
+			for (int label = 0;label<nLabels();label++){
+				if (edge_labels[edgeID][label].v < 0)
+					continue;
+				Var v = edge_labels[edgeID][label].v;
+				if(v==var_Undef)
+					continue;
+				lbool val = value(v);
+				if (val == l_Undef) {
+					return false;
+				}
+
+				if (val == l_True) {
+					/*	if(!g.hasEdge(e.from,e.to)){
+					 return false;
+					 }
+					 if(!antig.hasEdge(e.from,e.to)){
+					 return false;
+					 }*/
+					if (!g_under.transitionEnabled(edgeID,label)) {
+						return false;
+					}
+					if (!g_over.transitionEnabled(edgeID,label)) {
+						return false;
+					}
+				} else {
+					/*if(g.hasEdge(e.from,e.to)){
+					 return false;
+					 }*/
+					if (g_under.transitionEnabled(edgeID,label)) {
+						return false;
+					}
+					if (g_over.transitionEnabled(edgeID,label)) {
+						return false;
+					}
+					/*if(antig.hasEdge(e.from,e.to)){
+					 return false;
+					 }*/
+
+				}
 			}
-			
 		}
 		for (int i = 0; i < detectors.size(); i++) {
 			if (!detectors[i]->checkSatisfied()) {
@@ -960,7 +772,7 @@ public:
 		
 	}
 	int nEdges() {
-		return edge_list.size();
+		return edge_labels.size();
 	}
 	CRef newReasonMarker(int detectorID) {
 		CRef reasonMarker = S->newReasonMarker(this);
@@ -970,71 +782,20 @@ public:
 		return reasonMarker;
 	}
 	
-	Lit newEdge(int from, int to, Var outerVar = var_Undef) {
+	Lit newTransition(int from, int to,int label, Var outerVar = var_Undef) {
 		assert(outerVar!=var_Undef);
-		/*	if(outerVar==var_Undef)
-		 outerVar = S->newVar();*/
 
-		all_edges_unit &= (weight == 1);
-		int index = edge_list.size();
-		edge_list.push();
-		Var v = newVar(outerVar, index, true);
-		
-		/*
-		 if(num_edges>0){
-		 }else
-		 min_edge_var=v;
+		int edgeID = edge_labels.size();
+		edge_labels.push();
+		edge_labels.last().growTo(nLabels());
+		assert(label<nLabels());
+		Var v = newVar(outerVar, edgeID,label, true);
 
-		 int index = v-min_edge_var;*/
-		/*
-		 while(edge_list.size()<=index){
-		 edge_list.push({-1,-1,-1,-1,-1,1});
-		 assigns.push(l_Undef);
-		 }*/
-		undirected_adj[to].push( { v, outerVar, from, to, index });
-		undirected_adj[from].push( { v, outerVar, to, from, index });
-		inv_adj[to].push( { v, outerVar, from, to, index });
-		
-		//num_edges++;
-		edge_list[index].v = v;
-		edge_list[index].outerVar = outerVar;
-		edge_list[index].from = from;
-		edge_list[index].to = to;
-		edge_list[index].edgeID = index;
-		//edge_list[index].weight=weight;
-		if (edge_labels.size() <= index) {
-			edge_labels.resize(index + 1);
-		}
-		edge_labels[index] = weight;
-		
-		//edges[from][to]= {v,outerVar,from,to,index};
-		g_under.addEdge(from, to, index);
-		g_under.disableEdge(from, to, index);
-		g_over.addEdge(from, to, index);
-		cutGraph.addEdge(from, to, index * 2);
-		cutGraph.addEdge(from, to, index * 2 + 1);
-		cutGraph.disableEdge(from, to, index * 2);
-		
-#ifdef RECORD
-		if (g_under.outfile) {
-			std::stringstream wt;
-			wt << weight;
-			fprintf(g_under.outfile, "edge_weight %d %s\n", index, wt.str().c_str());
-			fflush(g_under.outfile);
-		}
-		if (g_over.outfile) {
-			std::stringstream wt;
-			wt << weight;
-			fprintf(g_over.outfile, "edge_weight %d %s\n", index, wt.str().c_str());
-			fflush(g_over.outfile);
-		}
-		if (cutGraph.outfile) {
-			
-			fprintf(cutGraph.outfile, "edge_weight %d %d\n", index * 2, 1);
-			fprintf(cutGraph.outfile, "edge_weight %d %d\n", index * 2 + 1, 0xFFFF);
-			fflush(cutGraph.outfile);
-		}
-#endif
+		edge_labels[edgeID][label].v = v;
+		edge_labels[edgeID][label].outerVar = outerVar;
+		edge_labels[edgeID][label].from = from;
+		edge_labels[edgeID][label].to = to;
+
 		return mkLit(v, false);
 	}
 
@@ -1051,4 +812,4 @@ public:
 }
 ;
 
-#endif /* DGRAPH_H_ */
+#endif

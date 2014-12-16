@@ -23,7 +23,7 @@
 
 #include <assert.h>
 #include <new>
-
+#include <algorithm>
 #include "mtl/IntTypes.h"
 #include "mtl/XAlloc.h"
 
@@ -158,6 +158,12 @@ public:
 		data = NULL;
 		sz = 0;
 		cap = 0;
+	}
+
+	void swap(vec<T>& dest) {
+		std::swap(data,dest.data);
+		std::swap(sz,dest.sz);
+		std::swap(cap,dest.cap);
 	}
 	
 	//stl-style begin and end, to support C++11 range-based for loops

@@ -54,11 +54,14 @@ class FSMParser: public Parser<B, Solver> {
 	};
 	vec<vec<Transition> > transitions;
 
+	vec<vec<int>*> strings;
+
 	struct Accepts{
 		int fsm;
 		int state;
-		Var acceptVar;
-		vec<int> str;
+		int strID;
+		Var reachVar;
+
 	};
 	vec<vec<Accepts> > accepts;
 	vec<Lit> lits;
@@ -84,11 +87,32 @@ class FSMParser: public Parser<B, Solver> {
 		if(fsms[fsmID]){
 			printf("PARSE ERROR! FSM id %d declared twice!\n", fsmID), exit(1);
 		}
-		fsms[fsmID]= new FSMTheorySolver();
+		fsms[fsmID]= new FSMTheorySolver(&S);
 		transitions.growTo(fsmID+1);
 		accepts.growTo(fsmID+1);
 	}
 	
+	void readString(B& in, Sovler & S){
+		if (opt_ignore_theories) {
+			skipLine(in);
+			return;
+		}
+
+		int strID = parseInt(in);
+		strings.growTo(strID+1);
+		if(strID<0 || strings[strID]){
+			printf("PARSE ERROR! Bad string id %d\n", strID), exit(1);
+		}
+		strings[strID] =new vec<int>();
+		while(int i = parseInt(in)){
+			if (i<=0){
+				printf("PARSE ERROR! FSM strings must contain only positive (non-zero) integers, found %d\n", i), exit(1);
+			}
+			strings[strID]->push(i);
+		}
+
+	}
+
 	void readTransition(B& in, Solver& S) {
 		if (opt_ignore_theories) {
 			skipLine(in);
@@ -104,7 +128,7 @@ class FSMParser: public Parser<B, Solver> {
 		int edgeVar = parseInt(in) - 1;
 		
 		if (fsmID < 0 || fsmID >= fsms.size()) {
-			printf("PARSE ERROR! Undeclared fsm identifier %d for edge %d\n", graphID, edgeVar), exit(1);
+			printf("PARSE ERROR! Undeclared fsm identifier %d for edge %d\n", fsmID, edgeVar), exit(1);
 		}
 		if (label<0){
 			printf("PARSE ERROR! Transition labels  must be >=0, was %d\n", label), exit(1);
@@ -117,7 +141,7 @@ class FSMParser: public Parser<B, Solver> {
 		while (edgeVar >= S.nVars())
 			S.newVar();
 		
-		transitions[fsmID].push({fsm,from,to,label,edgeVar});
+		transitions[fsmID].push({fsmID,from,to,label,edgeVar});
 	}
 
 	void readAccepts(B& in, Solver& S) {
@@ -130,24 +154,22 @@ class FSMParser: public Parser<B, Solver> {
 		
 		int fsmID = parseInt(in);
 		int acceptingState = parseInt(in);
-
+		int strID = parseInt(in);
 		int reachVar = parseInt(in) - 1;
 
 		//now read in the string
-		accepts.push();
+		accepts[fsmID].push();
 
-		accepts.back().fsm=fsmID;
-		accepts.back().state=acceptingState;
-		accepts.back().reachVar = reachVar;
-		while(int i = parseInt(in)){
-			if (i<=0){
-				printf("PARSE ERROR! FSM strings must contain only positive (non-zero) integers, found %d\n", i), exit(1);
-			}
-			accepts.back().str.push(i);
-		}
+		accepts[fsmID].last().fsm=fsmID;
+		accepts[fsmID].last().state=acceptingState;
+		accepts[fsmID].last().strID = strID;
+		accepts[fsmID].last().reachVar = reachVar;
 
 		if (fsmID < 0 || fsmID >= fsms.size()) {
-			printf("PARSE ERROR! Undeclared fsm identifier %d for edge %d\n", graphID, reachVar), exit(1);
+			printf("PARSE ERROR! Undeclared fsm identifier %d for edge %d\n", fsmID, reachVar), exit(1);
+		}
+		if (strID<0 || !strings[strID]){
+			printf("PARSE ERROR! String ID must be a non-negative integer, was %d\n", strID), exit(1);
 		}
 		if (acceptingState<0){
 			printf("PARSE ERROR! Accepting state must be a node id (a non-negative integer), was %d\n", acceptingState), exit(1);
@@ -172,7 +194,7 @@ public:
 		skipWhitespace(in);
 		if (*in == EOF)
 			return false;
-		else if (*in == 'c') {
+
 		if (match(in, "fsm")) {
 			skipWhitespace(in);
 			readFSM(in,S);
@@ -190,15 +212,12 @@ public:
 		return false;
 	}
 	
+
 	void implementConstraints(Solver & S) {
 		
 
 
 
-		for (int i = 0; i < fsms.size(); i++) {
-			if (fsms[i])
-				fsms[i]->implementConstraints();
-		}
 
 	}
 

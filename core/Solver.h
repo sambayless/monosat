@@ -32,8 +32,11 @@
 #include "core/SolverTypes.h"
 #include "core/Theory.h"
 #include "core/Config.h"
+
+//this is _really_ ugly...
 template<unsigned int D, class T> class GeometryTheorySolver;
 template<typename Weight> class GraphTheorySolver;
+class FSMTheorySolver;
 namespace Monosat {
 
 //=================================================================================================
@@ -44,6 +47,7 @@ public:
 	friend class Theory;
 	template<typename Weight> friend class GraphTheorySolver;
 	template<unsigned int D, class T> friend class GeometryTheorySolver;
+	friend class FSMTheorySolver;
 #ifdef DEBUG_SOLVER
 	Solver * dbg_solver;
 #endif

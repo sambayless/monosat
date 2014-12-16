@@ -32,6 +32,7 @@
 
 #include "utils/System.h"
 #include "FSMDetector.h"
+#include "alg/NFAReach.h"
 
 using namespace dgl;
 namespace Monosat {
@@ -41,27 +42,46 @@ class FSMTheorySolver;
 class FSMReachDetector: public FSMDetector {
 public:
 	FSMTheorySolver* outer;
-	DynamicFSM &f_under;
-	DynamicFSM &f_over;
+	DynamicFSM &g_under;
+	DynamicFSM &g_over;
 
 	int within;
 	int source;
+	vec<vec<int>> & strings;
 	double rnd_seed;
 
+	struct ReachStatus {
+		FSMReachDetector & detector;
+		bool polarity;
+		void reaches(int string, int state,int edgeID,int label);
+
+		ReachStatus(FSMReachDetector & _outer, bool _polarity) :
+				detector(_outer), polarity(_polarity) {
+		}
+	};
+
+
+	NFAReach<ReachStatus> * underapprox_detector;
+	NFAReach<ReachStatus> * overapprox_detector;
 
 	CRef underprop_marker;
 	CRef overprop_marker;
-	CRef forced_edge_marker;
-
 
 	struct Change {
 		Var v;
 		int u;
+		int str;
 	};
 	vec<bool> is_changed;
 	vec<Change> changed;
 
-s
+	vec<vec<Lit>> reach_lits;
+	Var first_reach_var;
+	struct ReachLit{
+		int str;
+		int to;
+	};
+	vec<ReachLit> reach_lit_map;
 	//stats
 	
 	int stats_full_updates = 0;
@@ -78,6 +98,10 @@ s
 	double stats_full_update_time = 0;
 	double stats_fast_update_time = 0;
 
+
+	ReachStatus *underReachStatus = nullptr;
+	ReachStatus *overReachStatus = nullptr;
+
 	void printStats() {
 		//printf("Reach detector\n");
 		FSMDetector::printStats();
@@ -92,96 +116,64 @@ s
 		}
 	}
 	
-
 	void unassign(Lit l) {
 		FSMDetector::unassign(l);
-		int index = var(l) - first_reach_var;
-		if (index >= 0 && index < reach_lit_map.size() && reach_lit_map[index] != -1) {
-			int node = reach_lit_map[index];
-			if (!is_changed[node]) {
-				changed.push( { var(l), node });
-				is_changed[node] = true;
+		int index = indexOf(var(l));
+		if (index >= 0 && index < reach_lit_map.size() && reach_lit_map[index].to != -1) {
+			int node = reach_lit_map[index].to;
+			int str =  reach_lit_map[index].str;
+			if (!is_changed[index]) {
+				changed.push( { var(l), node,str });
+				is_changed[index] = true;
 			}
 		}
 	}
 	
-	int getNode(Var reachVar) {
-		assert(reachVar >= first_reach_var);
-		int index = reachVar - first_reach_var;
+	inline int indexOf(Var v)const{
+		int index = v - first_reach_var;
 		assert(index < reach_lit_map.size());
-		assert(reach_lit_map[index] >= 0);
-		return reach_lit_map[index];
-	}
-	void backtrack(int level) {
-		to_decide.clear();
-		last_decision_status = -1;
-		
+		return index;
 	}
 
+	int getState(Var reachVar) {
+		assert(reachVar >= first_reach_var);
+		int index = indexOf(reachVar);
 
-	void buildSATConstraints(bool onlyUnderApprox = false, int within_steps = -1);
+		assert(reach_lit_map[index].to >= 0);
+		return reach_lit_map[index].to;
+	}
+	int getString(Var reachVar) {
+		assert(reachVar >= first_reach_var);
+		int index = indexOf(reachVar);
+
+		assert(reach_lit_map[index].to >= 0);
+		return reach_lit_map[index].str;
+	}
+
 	bool propagate(vec<Lit> & conflict);
-	void buildReachReason(int node, vec<Lit> & conflict);
-	void buildNonReachReason(int node, vec<Lit> & conflict, bool force_maxflow = false);
-	void buildForcedEdgeReason(int reach_node, int forced_edge_id, vec<Lit> & conflict);
+	void buildReachReason(int node,int str, vec<Lit> & conflict);
+	void buildNonReachReason(int node,int str, vec<Lit> & conflict);
+
 	void buildReason(Lit p, vec<Lit> & reason, CRef marker);
 	bool checkSatisfied();
 	void printSolution(std::ostream& write_to);
 
-	void addLit(int from, int to, Var reach_var);
-	Lit decide(int level);
-	void preprocess();
-	void dbg_sync_reachability();
+	void addReachLit(int state, int strID, Var reach_var);
 
-	FSMReachDetector(int _detectorID, FSMTheorySolver * _outer, DynamicGraph &_g, DynamicGraph &_antig,
-			int _source, double seed = 1);
+
+
+	FSMReachDetector(int _detectorID, FSMTheorySolver * _outer, DynamicFSM &g_under, DynamicFSM &g_over,
+			int _source, vec<vec<int>> &  strs, double seed = 1);
 	virtual ~FSMReachDetector() {
 		
 	}
 	
 	const char* getName() {
-		return "Reachability Detector";
+		return "NFA Reachability Detector";
 	}
 	
-	bool dbg_cut(std::vector<MaxFlowEdge> & cut, DynamicGraph & graph, int source, int node) {
-#ifndef NDEBUG
-		
-		DynamicGraph t;
-		for (int i = 0; i < graph.nodes(); i++)
-			t.addNode();
-		std::vector<int> capacity;
-		for (int id = 0; id < graph.edges(); id++) {
-			t.addEdge(graph.getEdge(id).from, graph.getEdge(id).to, id);
-			if (id % 2 == 0) {
-				bool incut = false;
-				for (int i = 0; i < cut.size(); i++) {
-					if (cut[i].id == id) {
-						incut = true;
-						break;
-					}
-				}
-				if (incut) {
-					capacity.push_back(0);
-					t.disableEdge(id);
-				} else
-					capacity.push_back(1);
-			} else {
-				capacity.push_back(0xFFFF);
-			}
-			
-		}
-		EdmondsKarpAdj<std::vector<int>, int> check(t, capacity, source, node);
-		std::vector<MaxFlowEdge> check_cut;
-		int flow = check.minCut(check_cut);
-		assert(flow < 0xFFFF);
-		if (flow < 0xFFFF) {
-			exit(4);
-		}
+	
 
-#endif
-		return true;
-	}
-	
 };
 }
 ;

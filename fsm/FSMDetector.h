@@ -95,7 +95,9 @@ public:
 	virtual void backtrack(int level) {
 		//do nothing
 	}
-	virtual Lit decide(int level)=0;
+	virtual Lit decide(int level){
+		return lit_Undef;
+	}
 	virtual void setOccurs(Lit l, bool occurs) {
 		if (!occurs) {
 			if (sign(l))
