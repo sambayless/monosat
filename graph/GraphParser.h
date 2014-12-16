@@ -66,21 +66,7 @@ class GraphParser: public Parser<B, Solver> {
 	vec<int> weights;
 	vec<Lit> lits;
 	int count = 0;
-//Each graph file has the following (ascii) format:
-	
-//p graph\n
-//c anything
-//g digraph n e id
-//e g u w var
-//r g u w var
-//...
-	
-//first line is just magic
-//following lines are either g digraph nodes edges id
-//or edge specifiers, which are of the form:
-//e graphID fromNode toNode literal
-//If lit is 0 or 1, this is a constant edge (0 for false, 1 for true)
-//r g u w var is a reach query: var is true if can u reach w in graph g, false otherwise
+
 	
 	void readDiGraph(B& in, GraphType graph_type, Solver& S) {
 		if (opt_ignore_theories) {

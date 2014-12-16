@@ -33,6 +33,7 @@
 #include "utils/ParseUtils.h"
 #include "utils/Options.h"
 #include "graph/GraphParser.h"
+#include "fsm/FSMParser.h"
 #include "core/Dimacs.h"
 #include "core/AssumptionParser.h"
 #include "core/Solver.h"
@@ -358,6 +359,8 @@ int main(int argc, char** argv) {
 		graphParser.setSymbols(&symbols);
 		parser.addParser(&graphParser);
 
+		FSMParser<char*,SimpSolver> fsmParser;
+		parser.addParser(&fsmParser);
 		if (precise) {
 			GeometryParser<char *, SimpSolver, mpq_class> geometryParser;
 			parser.addParser(&geometryParser);

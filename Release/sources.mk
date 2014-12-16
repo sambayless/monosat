@@ -28,7 +28,9 @@ simp \
 graph \
 geometry/polypartition \
 geometry/cevans \
+geometry/bitmap \
 geometry \
+fsm \
 dgl/alg \
 dgl \
 core \
