@@ -887,7 +887,7 @@ public:
 		} else if (match(in, "connected_component_count_lt")) {
 			readMinConnectedComponentsConstraint(in, S);
 			return true;
-		} else if (*in == 's') {
+		} /*else if (*in == 's') {
 			if (!eagerMatch(in, "steiner_")) {
 				printf("PARSE ERROR! Unexpected char: %c\n", *in), exit(1);
 			}
@@ -903,7 +903,7 @@ public:
 				readSteinerTreeConstraint(in, S);
 			}
 			return true;
-		} else if (match(in, "pb_lt")) {
+		} */else if (match(in, "pb_lt")) {
 			//Pseudoboolean constraint: o is for opb... can't use p, unfortunately...
 			if (!pbtheory) {
 				pbtheory = new PbTheory(&S);

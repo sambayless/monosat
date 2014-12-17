@@ -26,7 +26,7 @@
 #include "core/Theory.h"
 #include "dgl/DynamicGraph.h"
 #include "DynamicFSM.h"
-#include "FSMReachDetector.h"
+#include "FSMAcceptDetector.h"
 
 #include "core/SolverTypes.h"
 #include "mtl/Map.h"
@@ -83,7 +83,7 @@ public:
 
 	DynamicFSM g_under;
 	DynamicFSM g_over;
-	vec<FSMReachDetector *> reaches;
+	vec<FSMAcceptDetector *> accepts;
 
 	/**
 	 * The cutgraph is (optionally) used for conflict analysis by some graph theories.
@@ -102,7 +102,7 @@ public:
 
 public:
 	vec<FSMDetector*> detectors;
-	vec<FSMReachDetector*> reach_detectors;
+	vec<FSMAcceptDetector*> reach_detectors;
 
 
 	vec<int> marker_map;
@@ -260,11 +260,11 @@ public:
 		S->addClauseSafely(tmp_clause);
 	}
 	
-	Var newVar(int forDetector = -1, bool connectToTheory = false) {
+	Var newAuxVar(int forDetector = -1, bool connectToTheory = false) {
 		Var s = S->newVar();
 		return newVar(s, forDetector, -1,false, connectToTheory);
 	}
-	Var newVar(Var solverVar, int detector, int label, bool isEdge = false, bool connectToTheory = true) {
+	Var newVar(Var solverVar, int detector, int label=-1, bool isEdge = false, bool connectToTheory = true) {
 		while (S->nVars() <= solverVar)
 			S->newVar();
 		Var v = vars.size();
@@ -784,13 +784,13 @@ public:
 		g_over.addTransition(from,to,index,label);
 	}
 
-	void addReachLit(int source ,int reach, int strID, Var outer_var){
-		reaches.growTo(source);
-		if(!reaches[source]){
-			reaches[source] = new FSMReachDetector(detectors.size(), this, g_under,g_over, source,*strings,drand(rnd_seed));
-			detectors.push(reaches[source]);
+	void addAcceptLit(int source ,int reach, int strID, Var outer_var){
+		accepts.growTo(source+1);
+		if(!accepts[source]){
+			accepts[source] = new FSMAcceptDetector(detectors.size(), this, g_under,g_over, source,*strings,drand(rnd_seed));
+			detectors.push(accepts[source]);
 		}
-		reaches[source]->addReachLit(reach,strID,outer_var);
+		accepts[source]->addAcceptLit(reach,strID,outer_var);
 	}
 
 };

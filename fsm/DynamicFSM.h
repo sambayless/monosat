@@ -54,12 +54,12 @@ public:
 
 	}
 
-	bool useEmoves()const{
+	bool emovesEnabled()const{
 		return has_epsilon;
 	}
 
 	bool emove(int edgeID)const{
-		return useEmoves() && transitions[edgeID][0];
+		return emovesEnabled() && transitions[edgeID][0];
 	}
 
 	unsigned int nLabels()const{
@@ -77,6 +77,8 @@ public:
 		while(n_labels<=label){
 			addLabel();
 		}
+		while(from>=g.nodes() || to>=g.nodes())
+			g.addNode();
 		g.addEdge(from, to, edgeID);
 		transitions.growTo(edgeID+1);
 		transitions[edgeID].growTo(label+1);

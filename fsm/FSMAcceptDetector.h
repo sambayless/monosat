@@ -32,14 +32,14 @@
 
 #include "utils/System.h"
 #include "FSMDetector.h"
-#include "alg/NFAReach.h"
+#include "alg/NFAAccept.h"
 
 using namespace dgl;
 namespace Monosat {
 
 class FSMTheorySolver;
 
-class FSMReachDetector: public FSMDetector {
+class FSMAcceptDetector: public FSMDetector {
 public:
 	FSMTheorySolver* outer;
 	DynamicFSM &g_under;
@@ -50,19 +50,23 @@ public:
 	vec<vec<int>> & strings;
 	double rnd_seed;
 
-	struct ReachStatus {
-		FSMReachDetector & detector;
+	struct AcceptStatus {
+		FSMAcceptDetector & detector;
 		bool polarity;
-		void reaches(int string, int state,int edgeID,int label);
+		void accepts(int string, int state,int edgeID,int label);
 
-		ReachStatus(FSMReachDetector & _outer, bool _polarity) :
+		AcceptStatus(FSMAcceptDetector & _outer, bool _polarity) :
 				detector(_outer), polarity(_polarity) {
 		}
 	};
 
+	AcceptStatus *underReachStatus = nullptr;
+	AcceptStatus *overReachStatus = nullptr;
 
-	NFAReach<ReachStatus> * underapprox_detector;
-	NFAReach<ReachStatus> * overapprox_detector;
+	NFAAccept<AcceptStatus> * underapprox_detector;
+	NFAAccept<AcceptStatus> * overapprox_detector;
+
+
 
 	CRef underprop_marker;
 	CRef overprop_marker;
@@ -75,13 +79,14 @@ public:
 	vec<bool> is_changed;
 	vec<Change> changed;
 
-	vec<vec<Lit>> reach_lits;
-	Var first_reach_var;
-	struct ReachLit{
+	vec<vec<Lit>> accept_lits;
+	Var first_var=var_Undef;
+	struct AcceptLit{
 		int str;
 		int to;
 	};
-	vec<ReachLit> reach_lit_map;
+	vec<AcceptLit> accept_lit_map;
+	vec<Lit> all_lits;
 	//stats
 	
 	int stats_full_updates = 0;
@@ -99,8 +104,7 @@ public:
 	double stats_fast_update_time = 0;
 
 
-	ReachStatus *underReachStatus = nullptr;
-	ReachStatus *overReachStatus = nullptr;
+
 
 	void printStats() {
 		//printf("Reach detector\n");
@@ -117,37 +121,37 @@ public:
 	}
 	
 	void unassign(Lit l) {
-		FSMDetector::unassign(l);
+/*		FSMDetector::unassign(l);
 		int index = indexOf(var(l));
-		if (index >= 0 && index < reach_lit_map.size() && reach_lit_map[index].to != -1) {
-			int node = reach_lit_map[index].to;
-			int str =  reach_lit_map[index].str;
+		if (index >= 0 && index < accept_lit_map.size() && accept_lit_map[index].to != -1) {
+			int node = accept_lit_map[index].to;
+			int str =  accept_lit_map[index].str;
 			if (!is_changed[index]) {
 				changed.push( { var(l), node,str });
 				is_changed[index] = true;
 			}
-		}
+		}*/
 	}
 	
 	inline int indexOf(Var v)const{
-		int index = v - first_reach_var;
-		assert(index < reach_lit_map.size());
+		int index = v - first_var;
+		assert(index < accept_lit_map.size());
 		return index;
 	}
 
 	int getState(Var reachVar) {
-		assert(reachVar >= first_reach_var);
+		assert(reachVar >= first_var);
 		int index = indexOf(reachVar);
 
-		assert(reach_lit_map[index].to >= 0);
-		return reach_lit_map[index].to;
+		assert(accept_lit_map[index].to >= 0);
+		return accept_lit_map[index].to;
 	}
 	int getString(Var reachVar) {
-		assert(reachVar >= first_reach_var);
+		assert(reachVar >= first_var);
 		int index = indexOf(reachVar);
 
-		assert(reach_lit_map[index].to >= 0);
-		return reach_lit_map[index].str;
+		assert(accept_lit_map[index].to >= 0);
+		return accept_lit_map[index].str;
 	}
 
 	bool propagate(vec<Lit> & conflict);
@@ -158,13 +162,13 @@ public:
 	bool checkSatisfied();
 	void printSolution(std::ostream& write_to);
 
-	void addReachLit(int state, int strID, Var reach_var);
+	void addAcceptLit(int state, int strID, Var reach_var);
 
 
 
-	FSMReachDetector(int _detectorID, FSMTheorySolver * _outer, DynamicFSM &g_under, DynamicFSM &g_over,
+	FSMAcceptDetector(int _detectorID, FSMTheorySolver * _outer, DynamicFSM &g_under, DynamicFSM &g_over,
 			int _source, vec<vec<int>> &  strs, double seed = 1);
-	virtual ~FSMReachDetector() {
+	virtual ~FSMAcceptDetector() {
 		
 	}
 	

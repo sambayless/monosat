@@ -362,7 +362,7 @@ int main(int argc, char** argv) {
 		FSMParser<char*,SimpSolver> fsmParser;
 		parser.addParser(&fsmParser);
 		if (precise) {
-			GeometryParser<char *, SimpSolver, mpq_class> geometryParser;
+			GeometryParser<char *, SimpSolver, mpq_class>  geometryParser;
 			parser.addParser(&geometryParser);
 			parser.parse_DIMACS(in, S);
 		} else {
@@ -370,6 +370,7 @@ int main(int argc, char** argv) {
 			parser.addParser(&geometryParser);
 			parser.parse_DIMACS(in, S);
 		}
+
 		gzclose(in);
 
 		if (opt_verb > 2) {

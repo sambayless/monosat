@@ -89,6 +89,7 @@ class FSMParser: public Parser<B, Solver> {
 			printf("PARSE ERROR! FSM id %d declared twice!\n", fsmID), exit(1);
 		}
 		fsms[fsmID]= new FSMTheorySolver(&S);
+		S.addTheory(fsms[fsmID]);
 		transitions.growTo(fsmID+1);
 		accepts.growTo(fsmID+1);
 	}
@@ -111,6 +112,10 @@ class FSMParser: public Parser<B, Solver> {
 				printf("PARSE ERROR! FSM strings must contain only positive (non-zero) integers, found %d\n", i), exit(1);
 			}
 			strings[strID].push(i);
+			skipWhitespace(in);
+			if (isEof(in) || *in == '\n')
+				break;
+
 		}
 
 	}
@@ -172,9 +177,7 @@ class FSMParser: public Parser<B, Solver> {
 		if (fsmID < 0 || fsmID >= fsms.size()) {
 			printf("PARSE ERROR! Undeclared fsm identifier %d for edge %d\n", fsmID, reachVar), exit(1);
 		}
-		if (strID<0 || !strings[strID]){
-			printf("PARSE ERROR! String ID must be a non-negative integer, was %d\n", strID), exit(1);
-		}
+
 		if (from<0){
 				printf("PARSE ERROR! Source state must be a node id (a non-negative integer), was %d\n", from), exit(1);
 			}
@@ -234,7 +237,11 @@ public:
 				}
 
 				for(auto & a: accepts[i]){
-					fsms[i]->addReachLit(a.from, a.to,a.strID,a.reachVar);
+
+					if (a.strID<0 || !strings[a.strID]){
+						printf("PARSE ERROR! String ID must be a non-negative integer, was %d\n", a.strID), exit(1);
+					}
+					fsms[i]->addAcceptLit(a.from, a.to,a.strID,a.reachVar);
 				}
 			}
 		}
