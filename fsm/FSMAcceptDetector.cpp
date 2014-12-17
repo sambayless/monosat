@@ -67,7 +67,7 @@ void FSMAcceptDetector::addAcceptLit(int state, int strID, Var outer_reach_var){
 	}
 	int index = accept_var - first_var;
 
-	is_changed.growTo(index);
+	//is_changed.growTo(index+1);
 	Lit acceptLit = mkLit(accept_var, false);
 	all_lits.push(acceptLit);
 	assert(accept_lits[strID][state] == lit_Undef);
@@ -80,12 +80,29 @@ void FSMAcceptDetector::addAcceptLit(int state, int strID, Var outer_reach_var){
 
 }
 
+void FSMAcceptDetector::AcceptStatus::accepts(int string,int state,int edgeID,int label, bool accepts){
+	Lit l = detector.accept_lits[string][state];
+
+	if (l != lit_Undef){// && !detector.is_changed[detector.indexOf(var(l))]) {
+		if(!accepts){
+			l=~l;
+		}
+		if (polarity == accepts){
+			lbool assign = detector.outer->value(l);
+			//detector.is_changed[detector.indexOf(var(l))] = true;
+			detector.changed.push( { l, state,string});
+		}
+	}
+}
+
+
+
 bool FSMAcceptDetector::propagate(vec<Lit> & conflict) {
 	static int iter = 0;
 	if (++iter == 87) {
 		int a = 1;
 	}
-
+	changed.clear();
 	bool skipped_positive = false;
 	if (underapprox_detector && (!opt_detect_pure_theory_lits || unassigned_positives > 0)) {
 		double startdreachtime = rtime(2);
@@ -110,85 +127,69 @@ bool FSMAcceptDetector::propagate(vec<Lit> & conflict) {
 		skipped_negative = true;
 		stats_skipped_over_updates++;
 	}
-/*
+
 	if (opt_rnd_shuffle) {
 		randomShuffle(rnd_seed, changed);
-	}*/
-
-
-	//while (changed.size()) {
-	for(int i = 0;i<all_lits.size();i++){
-
-		Var v =var(all_lits[i]);
-		//int sz = changed.size();
-		//Var v = changed.last().v;
-		int u = getState(v);
-
-		int str = getString(v);
-		//int u = changed.last().u;
-		//int str = changed.last().str;
-		//assert(is_changed[indexOf(v)]);
-		Lit l;
-
-		if (underapprox_detector && !skipped_positive && underapprox_detector->accepting(u)) {
-			l = mkLit(v, false);
-		} else if (overapprox_detector && !skipped_negative && !overapprox_detector->accepting(u)) {
-			l = mkLit(v, true);
-		} else {
-			//assert(sz == changed.size());
-			//assert(changed.last().u == u);
-			//is_changed[indexOf(v)] = false;
-		//	changed.pop();
-			//this can happen if the changed node's reachability status was reported before a backtrack in the solver.
-			continue;
-		}
-
-		bool reach = !sign(l);
-		if (outer->value(l) == l_True) {
-			//do nothing
-		} else if (outer->value(l) == l_Undef) {
-
-			//trail.push(Assignment(false,reach,detectorID,0,var(l)));
-			if (reach)
-				outer->enqueue(l, underprop_marker);
-			else
-				outer->enqueue(l, overprop_marker);
-		} else if (outer->value(l) == l_False) {
-			conflict.push(l);
-
-			if (reach) {
-
-				//conflict
-				//The reason is a path in g from to s in d
-				buildReachReason(u,str, conflict);
-				//add it to s
-				//return it as a conflict
-
-			} else {
-				//The reason is a cut separating s from t
-				buildNonReachReason(u,str, conflict);
-
-			}
-			return false;
-		}
-
-		//assert(sz == changed.size());//This can be really tricky - if you are not careful, an a reach detector's update phase was skipped at the beginning of propagate, then if the reach detector is called during propagate it can push a change onto the list, which can cause the wrong item to be removed here.
-		////assert(changed.last().u == u);
-		//is_changed[indexOf(v)] = false;
-		//changed.pop();
 	}
 
+
+	while (changed.size()) {
+			int sz = changed.size();
+			Lit l = changed.last().l;
+
+			int u = changed.last().u;
+			int str = changed.last().str;
+			//assert(is_changed[indexOf(var(l))]);
+			if(sign(l)){
+				assert(!overapprox_detector->acceptsString(str,u));
+			}else{
+				assert(underapprox_detector->acceptsString(str,u));
+			}
+
+			if (underapprox_detector && !skipped_positive && !sign(l)) {
+
+			} else if (overapprox_detector && !skipped_negative && sign(l)) {
+
+			} else {
+				assert(sz == changed.size());
+				assert(changed.last().u == u);
+				//is_changed[indexOf(var(l))] = false;
+				changed.pop();
+				//this can happen if the changed node's reachability status was reported before a backtrack in the solver.
+				continue;
+			}
+
+			bool reach = !sign(l);
+			if (outer->value(l) == l_True) {
+				//do nothing
+			} else if (outer->value(l) == l_Undef) {
+
+				if (reach)
+					outer->enqueue(l, underprop_marker);
+				else
+					outer->enqueue(l, overprop_marker);
+			} else if (outer->value(l) == l_False) {
+				conflict.push(l);
+
+				if (reach) {
+					buildAcceptReason(u,str, conflict);
+				} else {
+					//The reason is a cut separating s from t
+					buildNonAcceptReason(u,str, conflict);
+				}
+
+				return false;
+			}
+
+			assert(sz == changed.size());//This can be really tricky - if you are not careful, an a reach detector's update phase was skipped at the beginning of propagate, then if the reach detector is called during propagate it can push a change onto the list, which can cause the wrong item to be removed here.
+			assert(changed.last().u == u);
+			//is_changed[indexOf(var(l))] = false;
+			changed.pop();
+		}
+	assert(changed.size()==0);
 	return true;
 }
 
-void FSMAcceptDetector::AcceptStatus::accepts(int string,int state,int edgeID,int label){
-/*	Lit l = detector.accept_lits[string][state];
-	if (l != lit_Undef && !detector.is_changed[state]) {
-		lbool assign = detector.outer->value(l);
-		detector.is_changed[detector.indexOf(var(l))] = true;
-		detector.changed.push( { var(l), state,string});
-	}*/
-}
 
 void FSMAcceptDetector::buildReason(Lit p, vec<Lit> & reason, CRef marker) {
 	if (marker == underprop_marker) {
@@ -196,25 +197,32 @@ void FSMAcceptDetector::buildReason(Lit p, vec<Lit> & reason, CRef marker) {
 		Var v = var(p);
 		int u = getState(v);
 		int str = getString(v);
-		buildReachReason(u,str, reason);
+		buildAcceptReason(u,str, reason);
 	} else if (marker == overprop_marker) {
 		reason.push(p);
 		Var v = var(p);
 		int t = getState(v);
 		int str = getString(v);
-		buildNonReachReason(t,str, reason);
+		buildNonAcceptReason(t,str, reason);
 	}  else {
 		assert(false);
 	}
 }
 
-void FSMAcceptDetector::buildReachReason(int node,int str, vec<Lit> & conflict){
+void FSMAcceptDetector::buildAcceptReason(int node,int str, vec<Lit> & conflict){
 //find a path - ideally, the one that traverses the fewest unique transitions - from source to node, learn that one of the transitions on that path must be disabled.
+
+	/*vec<int> & string = strings[str];
+	printf("Accepts: ");
+	for(int s:string){
+		printf("%d ",s);
+	}
+	printf("\n");*/
 	static vec<NFATransition> path;
 	path.clear();
 	bool hasPath =underapprox_detector->getPath(str,node,path);
 	assert(hasPath);
-
+	assert(underapprox_detector->acceptsString(str,node));
 	for(auto & t:path){
 		int edgeID = t.edgeID;
 		int label = t.label;
@@ -225,7 +233,8 @@ void FSMAcceptDetector::buildReachReason(int node,int str, vec<Lit> & conflict){
 	//note: if there are repeated edges in this conflict, they will be cheaply removed by the sat solver anyhow, so that is not a major problem.
 
 }
-void FSMAcceptDetector::buildNonReachReason(int node,int str, vec<Lit> & conflict){
+void FSMAcceptDetector::buildNonAcceptReason(int node,int str, vec<Lit> & conflict){
+
 
 
 //optionally, remove all transitions from the graph that would not be traversed by this string operating on the level 0 overapprox graph.
@@ -243,6 +252,13 @@ void FSMAcceptDetector::buildNonReachReason(int node,int str, vec<Lit> & conflic
 	int u = node;
 
 	vec<int> & string = strings[str];
+/*	printf("Doesn't accept: ");
+	for(int s:string){
+		printf("%d ",s);
+	}
+	printf("\n");*/
+
+	assert(!overapprox_detector->acceptsString(str,node));
 	//int strpos = string.size()-1;
 	to_visit.clear();
 	next_visit.clear();
@@ -285,33 +301,37 @@ void FSMAcceptDetector::buildNonReachReason(int node,int str, vec<Lit> & conflic
 				int edgeID = g_under.incoming(u,i).id;
 				int from = g_under.incoming(u,i).node;
 
-				if(g_under.emovesEnabled()){
-					if (g_under.transitionEnabled(edgeID,0)){
+				if(g_over.emovesEnabled()){
+					if (g_over.transitionEnabled(edgeID,0)){
 						if (!cur_seen[from]){
 							cur_seen[from]=true;
 							to_visit.push(from);//emove transition, if enabled
 						}
 					}else{
 						Var v = outer->getLabelVar(edgeID,0);
-						assert(outer->value(v)==l_False);
-						if (outer->level(v)>0){
-							//learn v
-							conflict.push(mkLit(v));
+						if (v!=var_Undef){
+							assert(outer->value(v)==l_False);
+							if (outer->level(v)>0){
+								//learn v
+								conflict.push(mkLit(v));
+							}
 						}
 					}
 				}
 
-				if (g_under.transitionEnabled(edgeID,l)){
+				if (g_over.transitionEnabled(edgeID,l)){
 					if (!next_seen[from] && str_pos>0){
 						next_seen[from]=true;
 						next_visit.push(from);
 					}
 				}else{
 					Var v = outer->getLabelVar(edgeID,l);
-					assert(outer->value(v)==l_False);
-					if (outer->level(v)>0){
-						//learn v
-						conflict.push(mkLit(v));//rely on the sat solver to remove duplicates, here...
+					if (v!=var_Undef){
+						assert(outer->value(v)==l_False);
+						if (outer->level(v)>0){
+							//learn v
+							conflict.push(mkLit(v));//rely on the sat solver to remove duplicates, here...
+						}
 					}
 				}
 			}
@@ -325,10 +345,10 @@ void FSMAcceptDetector::printSolution(std::ostream& out){
 }
 bool FSMAcceptDetector::checkSatisfied(){
 	NFAAccept<> check(g_under,source,strings);
-	check.update();
+	g_under.draw(source);
 	for(int str = 0;str<accept_lits.size();str++){
 		vec<int> & string = strings[str];
-
+		check.run(str);
 		for(int to = 0;to<accept_lits[str].size();to++){
 			if(accept_lits[str][to]!=lit_Undef){
 				Lit l = accept_lits[str][to];

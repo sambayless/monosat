@@ -51,59 +51,16 @@ class NFAAccept{
 
 	int source;
 	vec<vec<int>> & strings;
+
+
+
 public:
 	NFAAccept(DynamicFSM & f,int source, vec<vec<int>> & strings,Status & status=fsmNullStatus):g(f),status(status),source(source),strings(strings){
 
 	}
 
-
-
-	void update(){
-
-		if (last_modification > 0 && g.modifications == last_modification) {
-			stats_skipped_updates++;
-			return;
-		}
-		static int iteration = 0;
-		int local_it = ++iteration;
-		stats_full_updates++;
-
-		if (last_deletion == g.deletions) {
-			stats_num_skipable_deletions++;
-		}
-
-		if (last_modification <= 0 || g.changed() || last_history_clear != g.historyclears) {
-			next_seen.clear();
-			next_seen.growTo(g.states());
-			cur_seen.clear();
-			cur_seen.growTo(g.states());
-		}
-
-
-		//first, apply e-moves
-
-		//for(int i = 0;i<g.states();i++)
-		for (int str = 0;str<strings.size();str++){
-
-
-			find_accepts(str);
-			for(int s:accepts){
-				status.accepts(str,s,-1,-1);
-			}
-		}
-
-
-
-		last_modification = g.modifications;
-		last_deletion = g.deletions;
-		last_addition = g.additions;
-
-		history_qhead = g.history.size();
-		last_history_clear = g.historyclears;
-	}
-
 private:
-	void find_acceps(int str){
+	void find_accepts(int str){
 		for(int s:accepts){
 			assert(cur_seen);
 			cur_seen[s]=false;
@@ -180,13 +137,76 @@ private:
 		return false;
 	}
 
-
 public:
-	bool accepting(int string, int state){
-		find_acceps(str);
-		return accepts[state];
+
+	void update(){
+
+		if (last_modification > 0 && g.modifications == last_modification) {
+			stats_skipped_updates++;
+			return;
+		}
+		static int iteration = 0;
+		int local_it = ++iteration;
+		stats_full_updates++;
+
+		if (last_deletion == g.deletions) {
+			stats_num_skipable_deletions++;
+		}
+
+		if (last_modification <= 0 || g.changed() || last_history_clear != g.historyclears) {
+			next_seen.clear();
+			next_seen.growTo(g.states());
+			cur_seen.clear();
+			cur_seen.growTo(g.states());
+		}
+
+
+		//first, apply e-moves
+
+		//for(int i = 0;i<g.states();i++)
+		for (int str = 0;str<strings.size();str++){
+			find_accepts(str);
+			for(int s:accepts){
+				status.accepts(str,s,-1,-1,true);
+			}
+			//improve this:
+			for(int s = 0;s<g.states();s++){
+				if (!cur_seen[s]){
+					status.accepts(str,s,-1,-1,false);
+				}
+			}
+		}
+
+
+
+		last_modification = g.modifications;
+		last_deletion = g.deletions;
+		last_addition = g.additions;
+
+		history_qhead = g.history.size();
+		last_history_clear = g.historyclears;
 	}
 
+
+
+
+public:
+	void run(int str){
+		next_seen.growTo(g.states());
+		cur_seen.growTo(g.states());
+		find_accepts(str);
+	}
+	bool accepting( int state){
+
+		return cur_seen[state];
+	}
+
+	//inefficient!
+	bool acceptsString(int string, int state){
+
+		run(string);
+		return accepting(state);
+	}
 	bool getPath(int string, int state, vec<NFATransition> & path){
 		return path_rec(source,state,string,0,0,path);
 	}

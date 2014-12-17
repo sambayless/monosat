@@ -51,10 +51,11 @@ class FSMTheorySolver;
 class FSMTheorySolver: public Theory {
 public:
 	struct Transition{
-		Var v;
-		Var outerVar;
-		int from;
-		int to;
+		Var v=var_Undef;
+		Var outerVar=var_Undef;
+		int from=-1;
+		int to=-1;
+
 	};
 	struct Assignment {
 		bool isEdge :1;
@@ -191,10 +192,25 @@ public:
 	inline int nLabels()const{
 		return n_labels;
 	}
+	void setLabels(int labels){
+		assert(labels>=n_labels);
+		while (labels>nLabels()){
+			n_labels++;
+			g_under.addLabel();
+			g_over.addLabel();
+		}
+		for(int i =0;i<edge_labels.size();i++){
+			edge_labels[i].growTo(nLabels()+1);
+		}
+	}
 	void addLabel(){
 		n_labels++;
 		g_under.addLabel();
 		g_over.addLabel();
+		//this is not great...
+		for(int i =0;i<edge_labels.size();i++){
+			edge_labels[i].growTo(nLabels()+1);
+		}
 	}
 	inline bool isEdgeVar(Var v) const{
 		assert(v < vars.size());
@@ -217,7 +233,7 @@ public:
 		assert(label>=0);
 		Var v = edge_labels[edgeID][label].v;
 		assert(v < vars.size());
-		assert(vars[v].isEdge);
+		//assert(vars[v].isEdge);
 		return v;
 	}
 	
@@ -399,7 +415,7 @@ public:
 					assert(edgeID==e.edgeID);
 
 					if (e.assign) {
-						g_under.enableTransition(edgeID, label);
+						g_under.disableTransition(edgeID, label);
 
 					} else {
 						g_over.enableTransition(edgeID,label);
@@ -465,7 +481,7 @@ public:
 				assert(assigns[e.var]!=l_Undef);
 				assigns[e.var] = l_Undef;
 				if (e.assign) {
-					g_under.enableTransition(edgeID,label);
+					g_under.disableTransition(edgeID,label);
 				} else {
 					g_over.enableTransition(edgeID,label);
 				}
@@ -586,10 +602,8 @@ public:
 			int edgeID = getEdgeID(var(l)); //v-min_edge_var;
 			int label = getLabel(var(l));
 			assert(edge_labels[edgeID][label].v == var(l));
-			
 
 			trail.push( { true, !sign(l),edgeID, v });
-
 
 			if (!sign(l)) {
 				g_under.enableTransition(edgeID,label);
@@ -777,11 +791,19 @@ public:
 		this->strings=strings;
 	}
 
-	void addTransition(int from, int to, int label){
-		assert(label>=0);
+	void addTransition(int from, int to, int label, Var outerVar){
+		assert(label>=0);assert(outerVar!=var_Undef);
 		int index = g_under.nEdgeIDs();
-		g_under.addTransition(from,to,index,label);
-		g_over.addTransition(from,to,index,label);
+		Var v = newVar(outerVar, index,label, true);
+
+		g_under.addTransition(from,to,index,label,false);
+		g_over.addTransition(from,to,index,label,true);
+		edge_labels.growTo(index+1);
+		edge_labels[index].growTo(nLabels()+1);
+		edge_labels[index][label].from = from;
+		edge_labels[index][label].to = to;
+		edge_labels[index][label].v = v;
+		edge_labels[index][label].outerVar = outerVar;
 	}
 
 	void addAcceptLit(int source ,int reach, int strID, Var outer_var){

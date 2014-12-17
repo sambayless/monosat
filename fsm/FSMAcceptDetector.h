@@ -53,7 +53,7 @@ public:
 	struct AcceptStatus {
 		FSMAcceptDetector & detector;
 		bool polarity;
-		void accepts(int string, int state,int edgeID,int label);
+		void accepts(int string, int state,int edgeID,int label, bool accepts);
 
 		AcceptStatus(FSMAcceptDetector & _outer, bool _polarity) :
 				detector(_outer), polarity(_polarity) {
@@ -72,11 +72,11 @@ public:
 	CRef overprop_marker;
 
 	struct Change {
-		Var v;
+		Lit l;
 		int u;
 		int str;
 	};
-	vec<bool> is_changed;
+	//vec<bool> is_changed;
 	vec<Change> changed;
 
 	vec<vec<Lit>> accept_lits;
@@ -121,16 +121,16 @@ public:
 	}
 	
 	void unassign(Lit l) {
-/*		FSMDetector::unassign(l);
+		FSMDetector::unassign(l);
 		int index = indexOf(var(l));
 		if (index >= 0 && index < accept_lit_map.size() && accept_lit_map[index].to != -1) {
 			int node = accept_lit_map[index].to;
 			int str =  accept_lit_map[index].str;
-			if (!is_changed[index]) {
+			//if (!is_changed[index]) {
 				changed.push( { var(l), node,str });
-				is_changed[index] = true;
-			}
-		}*/
+			//	is_changed[index] = true;
+			//}
+		}
 	}
 	
 	inline int indexOf(Var v)const{
@@ -155,8 +155,8 @@ public:
 	}
 
 	bool propagate(vec<Lit> & conflict);
-	void buildReachReason(int node,int str, vec<Lit> & conflict);
-	void buildNonReachReason(int node,int str, vec<Lit> & conflict);
+	void buildAcceptReason(int node,int str, vec<Lit> & conflict);
+	void buildNonAcceptReason(int node,int str, vec<Lit> & conflict);
 
 	void buildReason(Lit p, vec<Lit> & reason, CRef marker);
 	bool checkSatisfied();

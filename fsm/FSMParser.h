@@ -27,7 +27,7 @@
 #include "utils/ParseUtils.h"
 #include "core/SolverTypes.h"
 #include "fsm/FSMTheory.h"
-
+#include <algorithm>
 #include "core/Config.h"
 
 #include "core/Dimacs.h"
@@ -55,7 +55,7 @@ class FSMParser: public Parser<B, Solver> {
 	vec<vec<Transition> > transitions;
 	vec<bool> created_strings;
 	vec<vec<int>> strings;
-
+	vec<int> stringLabels;
 	struct Accepts{
 		int fsm;
 		int from;
@@ -103,6 +103,7 @@ class FSMParser: public Parser<B, Solver> {
 		int strID = parseInt(in);
 		strings.growTo(strID+1);
 		created_strings.growTo(strID+1);
+		stringLabels.growTo(strID+1);
 		if(strID<0 || created_strings[strID]){
 			printf("PARSE ERROR! Bad string id %d\n", strID), exit(1);
 		}
@@ -112,6 +113,7 @@ class FSMParser: public Parser<B, Solver> {
 				printf("PARSE ERROR! FSM strings must contain only positive (non-zero) integers, found %d\n", i), exit(1);
 			}
 			strings[strID].push(i);
+			stringLabels[strID]= std::max(stringLabels[strID],i+1);
 			skipWhitespace(in);
 			if (isEof(in) || *in == '\n')
 				break;
@@ -148,6 +150,10 @@ class FSMParser: public Parser<B, Solver> {
 		while (edgeVar >= S.nVars())
 			S.newVar();
 		
+		while(label>= fsms[fsmID]->nLabels()){
+			 fsms[fsmID]->addLabel();
+		}
+
 		transitions[fsmID].push({fsmID,from,to,label,edgeVar});
 	}
 
@@ -232,14 +238,18 @@ public:
 			if(fsms[i]){
 				fsms[i]->setStrings(&strings);
 
+
 				for (auto &t:transitions[i]){
-					fsms[i]->addTransition(t.from,t.to,t.label);
+					fsms[i]->addTransition(t.from,t.to,t.label,t.edgeVar);
 				}
 
 				for(auto & a: accepts[i]){
 
 					if (a.strID<0 || !strings[a.strID]){
 						printf("PARSE ERROR! String ID must be a non-negative integer, was %d\n", a.strID), exit(1);
+					}
+					if(fsms[i]->nLabels()<stringLabels[a.strID]){
+						fsms[i]->setLabels(stringLabels[a.strID]);
 					}
 					fsms[i]->addAcceptLit(a.from, a.to,a.strID,a.reachVar);
 				}

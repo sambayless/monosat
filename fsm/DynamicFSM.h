@@ -22,7 +22,7 @@ namespace Monosat {
 
 class DynamicFSM{
 	DynamicGraph g;
-	std::vector<bool> edge_status;
+	//std::vector<Bitset> edge_status;
 	bool has_epsilon=true;
 	bool is_changed = true;
 	vec<Bitset> transitions;
@@ -102,8 +102,8 @@ public:
 		assert(edgeID >= 0);
 		assert(edgeID < g.edges());
 		assert(isEdge(edgeID));
-		if (edge_status[edgeID] != false) {
-			edge_status[edgeID] = false;
+		if (transitions[edgeID][label] != false) {
+			transitions[edgeID].clear(label);
 			modifications++;
 			history.push_back( { false, edgeID,label, modifications, deletions });
 			deletions = modifications;
@@ -224,6 +224,38 @@ public:
 		is_changed = false;
 		g.clearChanged();
 	}
+
+	void draw(int source=-1){
+
+		printf("digraph{\n");
+		if(source>=0){
+			printf("start->%d\n",source);
+		}
+		for(int i = 0;i<transitions.size();i++){
+			bool any_enabled=false;
+			for(int l= 0;l<transitions[i].size();l++){
+				if(transitions[i][l]){
+					any_enabled=true;
+					break;
+				}
+			}
+			if (any_enabled){
+				printf("%d->%d [label=\"", g.getEdge(i).from,g.getEdge(i).to);
+				for(int l= 0;l<transitions[i].size();l++){
+					if(transitions[i][l]){
+						printf("%d,",l);
+
+					}
+				}
+				printf("\"]\n");
+			}
+		}
+
+
+		printf("}\n");
+
+	}
+
 };
 
 }
