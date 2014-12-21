@@ -210,14 +210,16 @@ void FSMAcceptDetector::buildReason(Lit p, vec<Lit> & reason, CRef marker) {
 }
 
 void FSMAcceptDetector::buildAcceptReason(int node,int str, vec<Lit> & conflict){
+	static int iter = 0;
+	++iter;
 //find a path - ideally, the one that traverses the fewest unique transitions - from source to node, learn that one of the transitions on that path must be disabled.
-
-	/*vec<int> & string = strings[str];
-	printf("Accepts: ");
+/*	g_under.draw(source);
+	vec<int> & string = strings[str];
+	printf("Accepts: \"");
 	for(int s:string){
 		printf("%d ",s);
 	}
-	printf("\n");*/
+	printf("\"\n");*/
 	static vec<NFATransition> path;
 	path.clear();
 	bool hasPath =underapprox_detector->getPath(str,node,path);
@@ -235,8 +237,7 @@ void FSMAcceptDetector::buildAcceptReason(int node,int str, vec<Lit> & conflict)
 }
 void FSMAcceptDetector::buildNonAcceptReason(int node,int str, vec<Lit> & conflict){
 
-
-
+	static int iter = 0;
 //optionally, remove all transitions from the graph that would not be traversed by this string operating on the level 0 overapprox graph.
 
 	//This doesn't work:
@@ -249,14 +250,22 @@ void FSMAcceptDetector::buildNonAcceptReason(int node,int str, vec<Lit> & confli
 	//instead of actually unrolling the graph, I am going to traverse it backwards, 'unrolling it' implicitly.
 	static vec<int> to_visit;
 	static vec<int> next_visit;
-	int u = node;
-
 	vec<int> & string = strings[str];
-/*	printf("Doesn't accept: ");
+/*
+	g_over.draw(source);
+
+	printf("%d: Doesn't accept: \"",iter);
 	for(int s:string){
 		printf("%d ",s);
 	}
-	printf("\n");*/
+	printf("\"\n");
+*/
+
+
+
+	if(++iter==10189){
+		int a=1;
+	}
 
 	assert(!overapprox_detector->acceptsString(str,node));
 	//int strpos = string.size()-1;
@@ -272,9 +281,65 @@ void FSMAcceptDetector::buildNonAcceptReason(int node,int str, vec<Lit> & confli
 	next_seen.growTo(g_under.states());
 
 	int str_pos = string.size();
+	if(str_pos==0){
+		//special handling for empty string. Only e-move edges are considered.
+		assert(node!=source);//otherwise, this would have been accepted.
 
-	next_visit.push(u);
-	next_seen[u]=true;
+		if(!g_over.emovesEnabled()){
+			//no way to get to the node without consuming strings.
+			return;
+		}
+		cur_seen[node]=true;
+		to_visit.push(node);
+		for(int j = 0;j<to_visit.size();j++){
+			int u = to_visit[j];
+
+			assert(str_pos>=0);
+
+			for (int i = 0;i<g_under.nIncoming(u);i++){
+				int edgeID = g_under.incoming(u,i).id;
+				int from = g_under.incoming(u,i).node;
+
+				if(g_over.emovesEnabled()){
+					if (g_over.transitionEnabled(edgeID,0)){
+						if (!cur_seen[from]){
+							cur_seen[from]=true;
+							to_visit.push(from);//emove transition, if enabled
+						}
+					}else{
+						Var v = outer->getLabelVar(edgeID,0);
+						if (v!=var_Undef){
+							assert(outer->value(v)==l_False);
+							if (outer->level(v)>0){
+								//learn v
+								conflict.push(mkLit(v));
+							}
+						}
+					}
+				}
+
+
+			}
+		}
+
+		for(int s:to_visit){
+			assert(cur_seen[s]);
+			cur_seen[s]=false;
+		}
+		to_visit.clear();
+
+		return;
+	}
+
+
+	for(int s:next_visit){
+		assert(next_seen[s]);
+		next_seen[s]=false;
+	}
+	next_visit.clear();
+
+	next_visit.push(node);
+	next_seen[node]=true;
 
 
 	while(next_visit.size()){
@@ -338,10 +403,17 @@ void FSMAcceptDetector::buildNonAcceptReason(int node,int str, vec<Lit> & confli
 		}
 
 	}
-
+/*	printf("conflict: ");
+	for (int i = 1;i<conflict.size();i++){
+		Lit l = conflict[i];
+		int edgeID = outer->getEdgeID(var(l));
+		int f = g_under.getEdge(edgeID).from;
+		int t = g_under.getEdge(edgeID).to;
+		printf("(%d->%d %d),",f,t,outer->getLabel(var(l)));
+	}*/
 }
 void FSMAcceptDetector::printSolution(std::ostream& out){
-
+	g_under.draw(source);
 }
 bool FSMAcceptDetector::checkSatisfied(){
 	NFAAccept<> check(g_under,source,strings);

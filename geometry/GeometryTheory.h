@@ -253,6 +253,7 @@ public:
 		S->addClause(~o1, o2);
 		S->addClause(o1, ~o2);
 	}
+	//Both l1 and l2 are SOLVER vars, not theory vars!
 	void makeEqualInSolver(Lit l1, Lit l2) {
 		S->addClause(~l1, l2);
 		S->addClause(l1, ~l2);

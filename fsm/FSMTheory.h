@@ -284,6 +284,7 @@ public:
 		while (S->nVars() <= solverVar)
 			S->newVar();
 		Var v = vars.size();
+
 		vars.push();
 		vars[v].isEdge = isEdge;
 		vars[v].detector_edge = detector;
@@ -293,6 +294,10 @@ public:
 		if (connectToTheory) {
 			S->setTheoryVar(solverVar, getTheoryIndex(), v);
 			assert(toSolver(v) == solverVar);
+		}
+		if(isEdge){
+			assert(label>-1);
+			assert(detector>-1);
 		}
 		if (!isEdge && detector >= 0)
 			detectors[detector]->addVar(v);
@@ -760,15 +765,46 @@ public:
 		marker_map[mnum] = detectorID;
 		return reasonMarker;
 	}
-	
+
+
 	Lit newTransition(int from, int to,int label, Var outerVar = var_Undef) {
 		assert(outerVar!=var_Undef);
+		assert(label>=0);assert(outerVar!=var_Undef);
+		if(from==to && label==0){
+			//don't add this transition; self-looping e transitions have no effect.
+			return lit_Undef;
+		}
 
-		int edgeID = edge_labels.size();
-		edge_labels.push();
-		edge_labels.last().growTo(nLabels());
-		assert(label<nLabels());
+		int edgeID=-1;
+		if(g_under.states()>from && g_under.states()>to && (edgeID=g_under.getEdge(from,to))>-1){
+			if(g_over.nLabels()>label && g_over.transitionEnabled(edgeID,label)){
+				//we already have this transition implemented
+				Var ov = edge_labels[edgeID][label].outerVar;
+				assert(ov!=var_Undef);
+				assert(edge_labels[edgeID][label].from ==from);
+				assert(edge_labels[edgeID][label].to ==to);
+				makeEqualInSolver(mkLit(outerVar),mkLit(ov));
+				return lit_Undef;
+			}
+
+		}else{
+
+
+		}
+
+
+
+		g_under.addTransition(from,to,edgeID,label,false);
+		edgeID =g_over.addTransition(from,to,edgeID,label,true);
 		Var v = newVar(outerVar, edgeID,label, true);
+		assert(label<nLabels());
+		if (edgeID==13){
+			int a=1;
+		}
+
+		edge_labels.growTo(edgeID+1);
+		edge_labels[edgeID].growTo(nLabels()+1);
+
 
 		edge_labels[edgeID][label].v = v;
 		edge_labels[edgeID][label].outerVar = outerVar;
@@ -790,20 +826,9 @@ public:
 		assert(!this->strings);
 		this->strings=strings;
 	}
-
-	void addTransition(int from, int to, int label, Var outerVar){
-		assert(label>=0);assert(outerVar!=var_Undef);
-		int index = g_under.nEdgeIDs();
-		Var v = newVar(outerVar, index,label, true);
-
-		g_under.addTransition(from,to,index,label,false);
-		g_over.addTransition(from,to,index,label,true);
-		edge_labels.growTo(index+1);
-		edge_labels[index].growTo(nLabels()+1);
-		edge_labels[index][label].from = from;
-		edge_labels[index][label].to = to;
-		edge_labels[index][label].v = v;
-		edge_labels[index][label].outerVar = outerVar;
+	void setHasEpsilonTransitons(bool hasEpsilon){
+		g_under.setEmovesEnabled(hasEpsilon);
+		g_over.setEmovesEnabled(hasEpsilon);
 	}
 
 	void addAcceptLit(int source ,int reach, int strID, Var outer_var){

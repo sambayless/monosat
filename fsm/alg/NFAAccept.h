@@ -71,10 +71,30 @@ private:
 		accepts.push(source);
 
 		vec<int> & string = strings[str];
+
+		//initial emove pass:
+		if(g.emovesEnabled()){
+			for(int i = 0;i<accepts.size();i++){
+				int s = accepts[i];
+				for(int j = 0;j<g.nIncident(s);j++){
+					//now check if the label is active
+					int edgeID= g.incident(s,j).id;
+					int to = g.incident(s,j).node;
+					if(!cur_seen[to] && g.emove(edgeID)){
+						cur_seen[to]=true;
+						accepts.push(to);
+
+					}
+
+				}
+			}
+		}
+
 		for(int l:string)
 		{
 			assert(l>0);
-			for(int s:accepts){
+			for(int i = 0;i<accepts.size();i++){
+				int s = accepts[i];
 				for(int j = 0;j<g.nIncident(s);j++){
 					//now check if the label is active
 					int edgeID= g.incident(s,j).id;
@@ -102,15 +122,34 @@ private:
 			}
 			next.clear();
 		}
+
+		//final emove pass:
+		if(g.emovesEnabled()){
+			for(int i = 0;i<accepts.size();i++){
+				int s = accepts[i];
+				for(int j = 0;j<g.nIncident(s);j++){
+					//now check if the label is active
+					int edgeID= g.incident(s,j).id;
+					int to = g.incident(s,j).node;
+					if(!cur_seen[to] && g.emove(edgeID)){
+						cur_seen[to]=true;
+						accepts.push(to);
+					}
+
+				}
+			}
+		}
 	}
 
 	bool path_rec(int s, int dest,int string,int str_pos,int emove_count, vec<NFATransition> & path){
 		if(str_pos==strings[string].size() && s==dest){
 			return true;
 		}
-		if (emove_count>=g.states()-1){
+		if (emove_count>=g.states()){
 			return false;//this is not a great way to solve the problem of avoiding infinite e-move cycles...
 		}
+
+
 		int l = strings[string][str_pos];
 		for(int j = 0;j<g.nIncident(s);j++){
 			//now check if the label is active
@@ -124,13 +163,14 @@ private:
 					path.pop();
 				}
 			}
-
-			if (g.transitionEnabled(edgeID,l)){
-				path.push({edgeID,l});
-				if(path_rec(to,dest,string,str_pos+1,0,path)){//str_pos is incremented
-					return true;
-				}else{
-					path.pop();
+			if(str_pos< strings[string].size()){
+				if (g.transitionEnabled(edgeID,l)){
+					path.push({edgeID,l});
+					if(path_rec(to,dest,string,str_pos+1,0,path)){//str_pos is incremented
+						return true;
+					}else{
+						path.pop();
+					}
 				}
 			}
 		}

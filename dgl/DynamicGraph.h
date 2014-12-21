@@ -127,6 +127,15 @@ public:
 		}
 		return false;
 	}
+	//Returns -1 if there is no edge
+	int getEdge(int from, int to) const {
+		for (int i = 0; i < adjacency_list[from].size(); i++) {
+			if (adjacency_list[from][i].node == to && edgeEnabled(adjacency_list[from][i].id)) {
+				return adjacency_list[from][i].id;
+			}
+		}
+		return -1;
+	}
 	bool hasEdgeUndirected(int from, int to) const {
 		for (int i = 0; i < adjacency_undirected_list[from].size(); i++) {
 			if (adjacency_undirected_list[from][i].node == to && edgeEnabled(adjacency_undirected_list[from][i].id)) {

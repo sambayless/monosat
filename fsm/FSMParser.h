@@ -52,6 +52,7 @@ class FSMParser: public Parser<B, Solver> {
 		int label;
 		Var edgeVar;
 	};
+	vec<bool> hasEpsilonTransitions;
 	vec<vec<Transition> > transitions;
 	vec<bool> created_strings;
 	vec<vec<int>> strings;
@@ -92,6 +93,7 @@ class FSMParser: public Parser<B, Solver> {
 		S.addTheory(fsms[fsmID]);
 		transitions.growTo(fsmID+1);
 		accepts.growTo(fsmID+1);
+		hasEpsilonTransitions.growTo(fsmID+1);
 	}
 	
 	void readString(B& in, Solver & S){
@@ -108,6 +110,11 @@ class FSMParser: public Parser<B, Solver> {
 			printf("PARSE ERROR! Bad string id %d\n", strID), exit(1);
 		}
 
+		created_strings[strID]=true;
+
+		//allow zero-length strings
+		if (isEof(in) || *in == '\n')
+			return;
 		while(int i = parseInt(in)){
 			if (i<=0){
 				printf("PARSE ERROR! FSM strings must contain only positive (non-zero) integers, found %d\n", i), exit(1);
@@ -145,6 +152,10 @@ class FSMParser: public Parser<B, Solver> {
 
 		if (edgeVar < 0) {
 			printf("PARSE ERROR! Edge variables must be >=0, was %d\n", edgeVar), exit(1);
+		}
+
+		if (label==0){
+			hasEpsilonTransitions[fsmID]=true;
 		}
 
 		while (edgeVar >= S.nVars())
@@ -236,17 +247,24 @@ public:
 		
 		for(int i = 0;i<fsms.size();i++){
 			if(fsms[i]){
+				fsms[i]->setHasEpsilonTransitons(hasEpsilonTransitions[i]);
 				fsms[i]->setStrings(&strings);
 
 
 				for (auto &t:transitions[i]){
-					fsms[i]->addTransition(t.from,t.to,t.label,t.edgeVar);
+					fsms[i]->newTransition(t.from,t.to,t.label,t.edgeVar);
 				}
 
 				for(auto & a: accepts[i]){
 
-					if (a.strID<0 || !strings[a.strID]){
+					if (a.strID<0 || !created_strings[a.strID]){
 						printf("PARSE ERROR! String ID must be a non-negative integer, was %d\n", a.strID), exit(1);
+					}
+					if(a.from<0 || a.from>=fsms[i]->nNodes()){
+							printf("PARSE ERROR! %d is not a valid state\n", a.from), exit(1);
+						}
+					if(a.to<0 || a.to>=fsms[i]->nNodes()){
+						printf("PARSE ERROR! %d is not a valid state\n", a.to), exit(1);
 					}
 					if(fsms[i]->nLabels()<stringLabels[a.strID]){
 						fsms[i]->setLabels(stringLabels[a.strID]);

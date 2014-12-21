@@ -54,6 +54,10 @@ public:
 
 	}
 
+	void setEmovesEnabled(bool enabled){
+		has_epsilon=enabled;
+	}
+
 	bool emovesEnabled()const{
 		return has_epsilon;
 	}
@@ -72,18 +76,21 @@ public:
 		return transitions[edgeID][label];
 	}
 
-	void addTransition(int from, int to,int edgeID, int label, bool defaultEnabled=true){
-		assert(!g.hasEdge(edgeID));
+	int addTransition(int from, int to,int edgeID, int label, bool defaultEnabled=true){
+
 		while(n_labels<=label){
 			addLabel();
 		}
 		while(from>=g.nodes() || to>=g.nodes())
 			g.addNode();
-		g.addEdge(from, to, edgeID);
+		if(edgeID==-1){
+			edgeID = g.addEdge(from, to, edgeID);
+		}
 		transitions.growTo(edgeID+1);
 		transitions[edgeID].growTo(label+1);
 		if(defaultEnabled)
 			transitions[edgeID].set(label);
+		return edgeID;
 	}
 
 	void enableTransition(int edgeID, int label) {
@@ -159,6 +166,13 @@ public:
 		return g.edges();
 	}
 
+	bool hasEdge(int from, int to)const{
+
+		return g.hasEdge(from,to);
+	}
+	int getEdge(int from,int to)const{
+		return g.getEdge(from,to);
+	}
 	inline int nIncident(int node, bool undirected = false) {
 		return g.nIncident(node,undirected);
 	}
@@ -243,8 +257,11 @@ public:
 				printf("%d->%d [label=\"", g.getEdge(i).from,g.getEdge(i).to);
 				for(int l= 0;l<transitions[i].size();l++){
 					if(transitions[i][l]){
-						printf("%d,",l);
-
+						if(l==0){
+							printf("{},");
+						}else{
+							printf("%c,",'a'+l-1);
+						}
 					}
 				}
 				printf("\"]\n");
