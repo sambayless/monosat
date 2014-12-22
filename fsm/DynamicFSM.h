@@ -81,18 +81,16 @@ public:
 	void addOutCharacter(){
 		out_alphabet++;
 	}
-	bool transitionEnabled(int edgeID, int label)const{
-		return transitions[edgeID][label];
+	bool transitionEnabled(int edgeID, int input, int output)const{
+		assert(input<inAlphabet());
+		assert(output<outAlphabet());
+		int pos = input +output*inAlphabet();
+		return transitions[edgeID][pos];
 	}
 
 	int addTransition(int from, int to,int edgeID, int input,int output, bool defaultEnabled=true){
-
-		while(in_alphabet<=input){
-			addInCharacter();
-		}
-		while(out_alphabet<=output){
-			addOutCharacter();
-		}
+		assert(input<inAlphabet());
+		assert(output<outAlphabet());
 		while(from>=g.nodes() || to>=g.nodes())
 			g.addNode();
 		if(edgeID==-1){
@@ -100,8 +98,9 @@ public:
 		}
 		transitions.growTo(edgeID+1);
 		transitions[edgeID].growTo(inAlphabet()*outAlphabet());
+		int pos = input +output*inAlphabet();
 		if(defaultEnabled)
-			transitions[edgeID].set(input);
+			transitions[edgeID].set(pos);
 		return edgeID;
 	}
 
@@ -109,7 +108,7 @@ public:
 		assert(edgeID >= 0);
 		assert(edgeID < g.edges());
 		assert(isEdge(edgeID));
-		int pos = input +output*outAlphabet();
+		int pos = input +output*inAlphabet();
 		if (transitions[edgeID][pos]!= true) {
 			transitions[edgeID].set(pos);
 			//edge_status.setStatus(id,true);
@@ -122,7 +121,7 @@ public:
 		assert(edgeID >= 0);
 		assert(edgeID < g.edges());
 		assert(isEdge(edgeID));
-		int pos = input +output*outAlphabet();
+		int pos = input +output*inAlphabet();
 		if (transitions[edgeID][pos] != false) {
 			transitions[edgeID].clear(pos);
 			modifications++;

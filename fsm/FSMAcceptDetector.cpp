@@ -227,8 +227,8 @@ void FSMAcceptDetector::buildAcceptReason(int node,int str, vec<Lit> & conflict)
 	assert(underapprox_detector->acceptsString(str,node));
 	for(auto & t:path){
 		int edgeID = t.edgeID;
-		int label = t.label;
-		Var v = outer->getLabelVar(edgeID,label);
+		int input = t.input;
+		Var v = outer->getTransitionVar(edgeID,input,0);
 		assert(outer->value(v)==l_True);
 		conflict.push(mkLit(v,true));
 	}
@@ -301,13 +301,13 @@ void FSMAcceptDetector::buildNonAcceptReason(int node,int str, vec<Lit> & confli
 				int from = g_under.incoming(u,i).node;
 
 				if(g_over.emovesEnabled()){
-					if (g_over.transitionEnabled(edgeID,0)){
+					if (g_over.transitionEnabled(edgeID,0,0)){
 						if (!cur_seen[from]){
 							cur_seen[from]=true;
 							to_visit.push(from);//emove transition, if enabled
 						}
 					}else{
-						Var v = outer->getLabelVar(edgeID,0);
+						Var v = outer->getTransitionVar(edgeID,0,0);
 						if (v!=var_Undef){
 							assert(outer->value(v)==l_False);
 							if (outer->level(v)>0){
@@ -367,13 +367,13 @@ void FSMAcceptDetector::buildNonAcceptReason(int node,int str, vec<Lit> & confli
 				int from = g_under.incoming(u,i).node;
 
 				if(g_over.emovesEnabled()){
-					if (g_over.transitionEnabled(edgeID,0)){
+					if (g_over.transitionEnabled(edgeID,0,0)){
 						if (!cur_seen[from]){
 							cur_seen[from]=true;
 							to_visit.push(from);//emove transition, if enabled
 						}
 					}else{
-						Var v = outer->getLabelVar(edgeID,0);
+						Var v = outer->getTransitionVar(edgeID,0,0);
 						if (v!=var_Undef){
 							assert(outer->value(v)==l_False);
 							if (outer->level(v)>0){
@@ -384,13 +384,13 @@ void FSMAcceptDetector::buildNonAcceptReason(int node,int str, vec<Lit> & confli
 					}
 				}
 
-				if (g_over.transitionEnabled(edgeID,l)){
+				if (g_over.transitionEnabled(edgeID,l,0)){
 					if (!next_seen[from] && str_pos>0){
 						next_seen[from]=true;
 						next_visit.push(from);
 					}
 				}else{
-					Var v = outer->getLabelVar(edgeID,l);
+					Var v = outer->getTransitionVar(edgeID,l,0);
 					if (v!=var_Undef){
 						assert(outer->value(v)==l_False);
 						if (outer->level(v)>0){

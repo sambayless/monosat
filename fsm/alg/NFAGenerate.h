@@ -75,7 +75,7 @@ private:
 			//now check if the label is active
 			int edgeID= g.incident(s,j).id;
 			int to = g.incident(s,j).node;
-			if( g.emove(edgeID)){
+			if( g.transitionEnabled(edgeID,0,0)){
 				bool set_transition=false;
 				if(used_transitions[s].edge==-1){
 					used_transitions[s].edge=edgeID;
@@ -86,7 +86,7 @@ private:
 
 				if(used_transitions[s].label==0 && used_transitions[s].edge==edgeID){
 
-					path.push({edgeID,0});
+					path.push({edgeID,0,0});
 					if(unique_path_rec(to,string,str_pos,emove_count+1,path)){//str_pos is NOT incremented!
 						if(set_transition){
 							used_transitions[s].edge=-1;
@@ -103,7 +103,7 @@ private:
 				}
 			}
 			if(str_pos< strings[string].size()){
-				if (g.transitionEnabled(edgeID,l)){
+				if (g.transitionEnabled(edgeID,0,l)){
 					bool set_transition=false;
 					if(used_transitions[s].edge==-1){
 						used_transitions[s].edge=edgeID;
@@ -112,7 +112,7 @@ private:
 						//used_transitions[s].depth = path.size();
 					}
 					if(used_transitions[s].label==l && used_transitions[s].edge==edgeID){
-						path.push({edgeID,l});
+						path.push({edgeID,0,l});
 						if(unique_path_rec(to,string,str_pos+1,0,path)){//str_pos is incremented
 							if(set_transition){
 								used_transitions[s].edge=-1;

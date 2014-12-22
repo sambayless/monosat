@@ -79,7 +79,7 @@ public:
 
 	vec<lbool> assigns;
 
-	int n_labels=1;//number of transition labels. Transition labels start from 0 (which is the non-consuming epsilon transition) and go to n_labels-1.
+	int n_in_alphabet=1;//number of transition labels. Transition labels start from 0 (which is the non-consuming epsilon transition) and go to n_labels-1.
 	int n_out_alphabet=0;
 
 	vec<vec<Transition>> edge_labels;
@@ -193,29 +193,34 @@ public:
 		return id;
 	}
 	inline int inAlphabet()const{
-		return n_labels;
+		return n_in_alphabet;
 	}
 	inline int outAlphabet()const{
 		return n_out_alphabet;
 	}
-	void setLabels(int labels){
-		assert(labels>=n_labels);
-		while (labels>inAlphabet()){
-			n_labels++;
+	void setAlphabets(int inputs,int outputs){
+		assert(inputs>=n_in_alphabet);
+		while (inputs>inAlphabet()){
+			n_in_alphabet++;
 			g_under.addInCharacter();
 			g_over.addInCharacter();
 		}
+		while (outputs>outAlphabet()){
+			n_out_alphabet++;
+			g_under.addOutCharacter();
+			g_over.addOutCharacter();
+		}
 		for(int i =0;i<edge_labels.size();i++){
-			edge_labels[i].growTo(inAlphabet()+1);
+			edge_labels[i].growTo(inAlphabet()*outAlphabet());
 		}
 	}
 	void addInCharacter(){
-		n_labels++;
+		n_in_alphabet++;
 		g_under.addInCharacter();
 		g_over.addInCharacter();
 		//this is not great...
 		for(int i =0;i<edge_labels.size();i++){
-			edge_labels[i].growTo(inAlphabet()+1);
+			edge_labels[i].growTo(inAlphabet()*outAlphabet());
 		}
 	}
 	void addOutCharacter(){
@@ -224,7 +229,7 @@ public:
 		g_over.addInCharacter();
 		//this is not great...
 		for(int i =0;i<edge_labels.size();i++){
-			edge_labels[i].growTo(inAlphabet()+1);
+			edge_labels[i].growTo(inAlphabet()*outAlphabet());
 		}
 	}
 	inline bool isEdgeVar(Var v) const{
@@ -235,6 +240,10 @@ public:
 		assert(isEdgeVar(v));
 		return vars[v].detector_edge;
 	}
+
+	inline Transition & getTransition(int edgeID, int input,int output){
+			return edge_labels[edgeID][input+output*inAlphabet()];
+		}
 	inline int getInput(Var v) const{
 		assert(isEdgeVar(v));
 		return vars[v].input;
@@ -248,9 +257,10 @@ public:
 		return vars[v].detector_edge;
 	}
 	
-	inline Var getLabelVar(int edgeID, int label) {
-		assert(label>=0);
-		Var v = edge_labels[edgeID][label].v;
+	inline Var getTransitionVar(int edgeID, int inputChar, int outputChar) {
+		assert(inputChar>=0);
+		assert(outputChar>=0);
+		Var v = getTransition(edgeID,inputChar,outputChar).v;
 		assert(v < vars.size());
 		//assert(vars[v].isEdge);
 		return v;
@@ -629,7 +639,7 @@ public:
 			int edgeID = getEdgeID(var(l)); //v-min_edge_var;
 			int input = getInput(var(l));
 			int output = getOutput(var(l));
-			assert(edge_labels[edgeID][input].v == var(l));
+			assert(getTransition(edgeID,input,output).v == var(l));
 
 			trail.push( { true, !sign(l),edgeID, v });
 
@@ -722,9 +732,10 @@ public:
 
 		for (int edgeID = 0; edgeID < edge_labels.size(); edgeID++) {
 			for (int input = 0;input<inAlphabet();input++){
-				if (edge_labels[edgeID][input].v < 0)
+				for (int output = 0;output<outAlphabet();output++){
+				if (getTransition(edgeID,input,output).v < 0)
 					continue;
-				Var v = edge_labels[edgeID][input].v;
+				Var v = getTransition(edgeID,input,output).v;
 				if(v==var_Undef)
 					continue;
 				lbool val = value(v);
@@ -739,26 +750,26 @@ public:
 					 if(!antig.hasEdge(e.from,e.to)){
 					 return false;
 					 }*/
-					if (!g_under.transitionEnabled(edgeID,input)) {
+					if (!g_under.transitionEnabled(edgeID,input,output)) {
 						return false;
 					}
-					if (!g_over.transitionEnabled(edgeID,input)) {
+					if (!g_over.transitionEnabled(edgeID,input,output)) {
 						return false;
 					}
 				} else {
 					/*if(g.hasEdge(e.from,e.to)){
 					 return false;
 					 }*/
-					if (g_under.transitionEnabled(edgeID,input)) {
+					if (g_under.transitionEnabled(edgeID,input,output)) {
 						return false;
 					}
-					if (g_over.transitionEnabled(edgeID,input)) {
+					if (g_over.transitionEnabled(edgeID,input,output)) {
 						return false;
 					}
 					/*if(antig.hasEdge(e.from,e.to)){
 					 return false;
 					 }*/
-
+				}
 				}
 			}
 		}
@@ -800,12 +811,12 @@ public:
 
 		int edgeID=-1;
 		if(g_under.states()>from && g_under.states()>to && (edgeID=g_under.getEdge(from,to))>-1){
-			if(g_over.inAlphabet()>input && g_over.transitionEnabled(edgeID,input)){
+			if(g_over.inAlphabet()>input && g_over.outAlphabet()>output && g_over.transitionEnabled(edgeID,input,output)){
 				//we already have this transition implemented
-				Var ov = edge_labels[edgeID][input].outerVar;
+				Var ov =getTransition(edgeID,input,output).outerVar;
 				assert(ov!=var_Undef);
-				assert(edge_labels[edgeID][input].from ==from);
-				assert(edge_labels[edgeID][input].to ==to);
+				assert(getTransition(edgeID,input,output).from ==from);
+				assert(getTransition(edgeID,input,output).to ==to);
 				makeEqualInSolver(mkLit(outerVar),mkLit(ov));
 				return lit_Undef;
 			}
@@ -825,13 +836,13 @@ public:
 
 
 		edge_labels.growTo(edgeID+1);
-		edge_labels[edgeID].growTo(inAlphabet()+1);
+		edge_labels[edgeID].growTo(inAlphabet()*outAlphabet());
 
 
-		edge_labels[edgeID][input].v = v;
-		edge_labels[edgeID][input].outerVar = outerVar;
-		edge_labels[edgeID][input].from = from;
-		edge_labels[edgeID][input].to = to;
+		getTransition(edgeID,input,output).v = v;
+		getTransition(edgeID,input,output).outerVar = outerVar;
+		getTransition(edgeID,input,output).from = from;
+		getTransition(edgeID,input,output).to = to;
 
 		return mkLit(v, false);
 	}

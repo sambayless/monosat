@@ -44,7 +44,8 @@ template<class B, class Solver>
 class FSMParser: public Parser<B, Solver> {
 
 	vec<FSMTheorySolver*> fsms;
-
+	vec<int> inAlphabets;
+	vec<int> outAlphabets;
 	struct Transition{
 		int fsm;
 		int from;
@@ -105,6 +106,8 @@ class FSMParser: public Parser<B, Solver> {
 		accepts.growTo(fsmID+1);
 		generates.growTo(fsmID+1);
 		hasEpsilonTransitions.growTo(fsmID+1);
+		inAlphabets.growTo(fsmID+1,1);
+		outAlphabets.growTo(fsmID+1,1);
 	}
 	
 	void readString(B& in, Solver & S){
@@ -175,12 +178,8 @@ class FSMParser: public Parser<B, Solver> {
 		while (edgeVar >= S.nVars())
 			S.newVar();
 		
-		while(input>= fsms[fsmID]->inAlphabet()){
-			 fsms[fsmID]->addInCharacter();
-		}
-		while(output>= fsms[fsmID]->outAlphabet()){
-			 fsms[fsmID]->addOutCharacter();
-		}
+		inAlphabets[fsmID]=std::max(inAlphabets[fsmID],input+1);
+		outAlphabets[fsmID]=std::max(outAlphabets[fsmID],output+1);
 		transitions[fsmID].push({fsmID,from,to,input,output,edgeVar});
 	}
 
@@ -308,6 +307,8 @@ public:
 		for(int i = 0;i<fsms.size();i++){
 			if(fsms[i]){
 				fsms[i]->setHasEpsilonTransitons(hasEpsilonTransitions[i]);
+				fsms[i]->setAlphabets(inAlphabets[i],outAlphabets[i]);
+
 				fsms[i]->setStrings(&strings);
 
 
@@ -326,9 +327,7 @@ public:
 					if(a.to<0 || a.to>=fsms[i]->nNodes()){
 						printf("PARSE ERROR! %d is not a valid state\n", a.to), exit(1);
 					}
-					if(fsms[i]->inAlphabet()<stringLabels[a.strID]){
-						fsms[i]->setLabels(stringLabels[a.strID]);
-					}
+
 					fsms[i]->addAcceptLit(a.from, a.to,a.strID,a.reachVar);
 				}
 
@@ -341,9 +340,6 @@ public:
 							printf("PARSE ERROR! %d is not a valid state\n", a.from), exit(1);
 						}
 
-					if(fsms[i]->inAlphabet()<stringLabels[a.strID]){
-						fsms[i]->setLabels(stringLabels[a.strID]);
-					}
 					fsms[i]->addGenerateLit(a.from, a.strID,a.reachVar);
 				}
 			}

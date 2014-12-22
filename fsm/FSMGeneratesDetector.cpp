@@ -223,8 +223,9 @@ void FSMGeneratesDetector::buildGeneratesReason(int str, vec<Lit> & conflict){
 	assert(underapprox_detector->generatesString(str));
 	for(auto & t:path){
 		int edgeID = t.edgeID;
-		int label = t.label;
-		Var v = outer->getLabelVar(edgeID,label);
+
+		int output = t.output;
+		Var v = outer->getTransitionVar(edgeID,0,output);
 		assert(outer->value(v)==l_True);
 		conflict.push(mkLit(v,true));
 	}
@@ -246,7 +247,7 @@ bool FSMGeneratesDetector::unique_path_conflict(int s,int string,int str_pos,int
 			//now check if the label is active
 			int edgeID= g.incident(s,j).id;
 			int to = g.incident(s,j).node;
-			if( g.emove(edgeID)){
+			if( g.transitionEnabled(edgeID,0,0)){
 				bool set_transition=false;
 				if(used_transitions[s].edge==-1){
 					used_transitions[s].edge=edgeID;
@@ -270,7 +271,7 @@ bool FSMGeneratesDetector::unique_path_conflict(int s,int string,int str_pos,int
 					}
 				}
 			}else{
-				Var v = outer->getLabelVar(edgeID,0);
+				Var v = outer->getTransitionVar(edgeID,0,0);
 				if(v!=var_Undef && used_transitions[s].label==-1){
 					assert(outer->value(v)==l_False);
 					conflict.push(mkLit(v));
@@ -278,7 +279,7 @@ bool FSMGeneratesDetector::unique_path_conflict(int s,int string,int str_pos,int
 			}
 
 			if(str_pos< strings[string].size()){
-				if (g.transitionEnabled(edgeID,l)){
+				if (g.transitionEnabled(edgeID,0,l)){
 					bool set_transition=false;
 					if(used_transitions[s].edge==-1){
 						used_transitions[s].edge=edgeID;
@@ -300,7 +301,7 @@ bool FSMGeneratesDetector::unique_path_conflict(int s,int string,int str_pos,int
 						}
 					}
 				}else{
-					Var v = outer->getLabelVar(edgeID,l);
+					Var v = outer->getTransitionVar(edgeID,0,l);
 					if(v!=var_Undef && used_transitions[s].label==-1){
 						assert(outer->value(v)==l_False);
 						conflict.push(mkLit(v));

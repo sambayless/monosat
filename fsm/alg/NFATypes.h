@@ -11,7 +11,8 @@
 
 struct NFATransition{
 	int edgeID;
-	int label;
+	int input;
+	int output;
 };
 struct FSMNullStatus {
 	void accepts(int string, int state,int edgeID,int label) {
