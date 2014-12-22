@@ -18,8 +18,8 @@
  DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
-#ifndef FSM_ACCEPTDETECTOR_H_
-#define FSM_ACCEPTDETECTOR_H_
+#ifndef FSM_GENERATEDETECTOR_H_
+#define FSM_GENERATEDETECTOR_H_
 #include "utils/System.h"
 
 #include "dgl/DynamicGraph.h"
@@ -32,14 +32,14 @@
 
 #include "utils/System.h"
 #include "FSMDetector.h"
-#include "alg/NFAAccept.h"
+#include "alg/NFAGenerate.h"
 
 using namespace dgl;
 namespace Monosat {
 
 class FSMTheorySolver;
 
-class FSMAcceptDetector: public FSMDetector {
+class FSMGeneratesDetector: public FSMDetector {
 public:
 	FSMTheorySolver* outer;
 	DynamicFSM &g_under;
@@ -47,25 +47,24 @@ public:
 
 	int within;
 	int source;
-	int first_destination=-1;
 	vec<vec<int>> & strings;
 	double rnd_seed;
 
-	struct AcceptStatus {
-		FSMAcceptDetector & detector;
+	struct GenerateStatus {
+		FSMGeneratesDetector & detector;
 		bool polarity;
-		void accepts(int string, int state,int edgeID,int label, bool accepts);
+		void generates(int string, bool generates);
 
-		AcceptStatus(FSMAcceptDetector & _outer, bool _polarity) :
+		GenerateStatus(FSMGeneratesDetector & _outer, bool _polarity) :
 				detector(_outer), polarity(_polarity) {
 		}
 	};
 
-	AcceptStatus *underReachStatus = nullptr;
-	AcceptStatus *overReachStatus = nullptr;
+	GenerateStatus *underReachStatus = nullptr;
+	GenerateStatus *overReachStatus = nullptr;
 
-	NFAAccept<AcceptStatus> * underapprox_detector;
-	NFAAccept<AcceptStatus> * overapprox_detector;
+	NFAGenerate<GenerateStatus> * underapprox_detector;
+	NFAGenerate<GenerateStatus> * overapprox_detector;
 
 
 
@@ -74,19 +73,18 @@ public:
 
 	struct Change {
 		Lit l;
-		int u;
+
 		int str;
 	};
 	//vec<bool> is_changed;
 	vec<Change> changed;
 
-	vec<vec<Lit>> accept_lits;
+	vec<Lit> generate_lits;
 	Var first_var=var_Undef;
-	struct AcceptLit{
+	struct GenerateLit{
 		int str;
-		int to;
 	};
-	vec<AcceptLit> accept_lit_map;
+	vec<GenerateLit> generate_lit_map;
 	vec<Lit> all_lits;
 	//stats
 	
@@ -124,11 +122,11 @@ public:
 	void unassign(Lit l) {
 		FSMDetector::unassign(l);
 		int index = indexOf(var(l));
-		if (index >= 0 && index < accept_lit_map.size() && accept_lit_map[index].to != -1) {
-			int node = accept_lit_map[index].to;
-			int str =  accept_lit_map[index].str;
+		if (index >= 0 && index < generate_lit_map.size() && generate_lit_map[index].str != -1) {
+
+			int str =  generate_lit_map[index].str;
 			//if (!is_changed[index]) {
-				changed.push( { var(l), node,str });
+				changed.push( { var(l), str });
 			//	is_changed[index] = true;
 			//}
 		}
@@ -136,47 +134,50 @@ public:
 	
 	inline int indexOf(Var v)const{
 		int index = v - first_var;
-		assert(index < accept_lit_map.size());
+		assert(index < generate_lit_map.size());
 		return index;
 	}
 
-	int getState(Var reachVar) {
-		assert(reachVar >= first_var);
-		int index = indexOf(reachVar);
 
-		assert(accept_lit_map[index].to >= 0);
-		return accept_lit_map[index].to;
-	}
 	int getString(Var reachVar) {
 		assert(reachVar >= first_var);
 		int index = indexOf(reachVar);
 
-		assert(accept_lit_map[index].to >= 0);
-		return accept_lit_map[index].str;
+
+		return generate_lit_map[index].str;
 	}
 
 	bool propagate(vec<Lit> & conflict);
-	void buildAcceptReason(int node,int str, vec<Lit> & conflict);
-	void buildNonAcceptReason(int node,int str, vec<Lit> & conflict);
+	void buildGeneratesReason(int str, vec<Lit> & conflict);
+	void buildNonGeneratesReason(int str, vec<Lit> & conflict);
 
 	void buildReason(Lit p, vec<Lit> & reason, CRef marker);
 	bool checkSatisfied();
 	void printSolution(std::ostream& write_to);
 
-	void addAcceptLit(int state, int strID, Var reach_var);
+	void addGeneratesLit( int strID, Var reach_var);
 
 
 
-	FSMAcceptDetector(int _detectorID, FSMTheorySolver * _outer, DynamicFSM &g_under, DynamicFSM &g_over,
+	FSMGeneratesDetector(int _detectorID, FSMTheorySolver * _outer, DynamicFSM &g_under, DynamicFSM &g_over,
 			int _source, vec<vec<int>> &  strs, double seed = 1);
-	virtual ~FSMAcceptDetector() {
+	virtual ~FSMGeneratesDetector() {
 		
 	}
 	
 	const char* getName() {
-		return "NFA Accepts Detector";
+		return "NFA Generates Detector";
 	}
 	
+private:
+
+	struct UsedTransition{
+		int edge=-1;
+		int label=-1;
+	};
+
+	vec<UsedTransition> used_transitions;
+	bool unique_path_conflict(int s,int string,int str_pos,int emove_count, vec<NFATransition> & path,vec<Lit> & conflict);
 	
 
 };

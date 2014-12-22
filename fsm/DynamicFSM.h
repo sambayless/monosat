@@ -25,20 +25,23 @@ class DynamicFSM{
 	//std::vector<Bitset> edge_status;
 	bool has_epsilon=true;
 	bool is_changed = true;
-	vec<Bitset> transitions;
 public:
+	vec<Bitset> transitions;
+
 	bool adaptive_history_clear = false;
 	long historyClearInterval = 1000;
 	int modifications=0;
 	int additions=0;
 	int deletions=0;
-	int n_labels =0;
+	int in_alphabet =1;
+	int out_alphabet=1;
 	long historyclears=0;
 	struct EdgeChange {
 		bool addition;
 
 		int id;
-		int label;
+		int input;
+		int output;
 		int mod;
 		int prev_mod;
 
@@ -66,20 +69,29 @@ public:
 		return emovesEnabled() && transitions[edgeID][0];
 	}
 
-	unsigned int nLabels()const{
-		return n_labels;
+	unsigned int inAlphabet()const{
+		return in_alphabet;
 	}
-	void addLabel(){
-		n_labels++;
+	unsigned int outAlphabet()const{
+		return out_alphabet;
+	}
+	void addInCharacter(){
+		in_alphabet++;
+	}
+	void addOutCharacter(){
+		out_alphabet++;
 	}
 	bool transitionEnabled(int edgeID, int label)const{
 		return transitions[edgeID][label];
 	}
 
-	int addTransition(int from, int to,int edgeID, int label, bool defaultEnabled=true){
+	int addTransition(int from, int to,int edgeID, int input,int output, bool defaultEnabled=true){
 
-		while(n_labels<=label){
-			addLabel();
+		while(in_alphabet<=input){
+			addInCharacter();
+		}
+		while(out_alphabet<=output){
+			addOutCharacter();
 		}
 		while(from>=g.nodes() || to>=g.nodes())
 			g.addNode();
@@ -87,32 +99,34 @@ public:
 			edgeID = g.addEdge(from, to, edgeID);
 		}
 		transitions.growTo(edgeID+1);
-		transitions[edgeID].growTo(label+1);
+		transitions[edgeID].growTo(inAlphabet()*outAlphabet());
 		if(defaultEnabled)
-			transitions[edgeID].set(label);
+			transitions[edgeID].set(input);
 		return edgeID;
 	}
 
-	void enableTransition(int edgeID, int label) {
+	void enableTransition(int edgeID, int input,int output) {
 		assert(edgeID >= 0);
 		assert(edgeID < g.edges());
 		assert(isEdge(edgeID));
-		if (transitions[edgeID][label]!= true) {
-			transitions[edgeID].set(label);
+		int pos = input +output*outAlphabet();
+		if (transitions[edgeID][pos]!= true) {
+			transitions[edgeID].set(pos);
 			//edge_status.setStatus(id,true);
 			modifications++;
 			additions = modifications;
-			history.push_back( { true, edgeID,label, modifications, additions });
+			history.push_back( { true, edgeID,input,output, modifications, additions });
 		}
 	}
-	void disableTransition(int edgeID, int label) {
+	void disableTransition(int edgeID, int input,int output) {
 		assert(edgeID >= 0);
 		assert(edgeID < g.edges());
 		assert(isEdge(edgeID));
-		if (transitions[edgeID][label] != false) {
-			transitions[edgeID].clear(label);
+		int pos = input +output*outAlphabet();
+		if (transitions[edgeID][pos] != false) {
+			transitions[edgeID].clear(pos);
 			modifications++;
-			history.push_back( { false, edgeID,label, modifications, deletions });
+			history.push_back( { false, edgeID,input,output, modifications, deletions });
 			deletions = modifications;
 		}
 	}
@@ -239,11 +253,14 @@ public:
 		g.clearChanged();
 	}
 
-	void draw(int source=-1){
+	void draw(int source=-1, int dest=-1){
 
 		printf("digraph{\n");
 		if(source>=0){
 			printf("start->%d\n",source);
+		}
+		if(dest>=0){
+			printf("%d [shape=doublecircle]\n",dest);
 		}
 		for(int i = 0;i<transitions.size();i++){
 			bool any_enabled=false;

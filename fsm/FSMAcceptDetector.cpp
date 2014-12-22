@@ -45,8 +45,8 @@ void FSMAcceptDetector::addAcceptLit(int state, int strID, Var outer_reach_var){
 
 	accept_lits.growTo(strings.size());
 	accept_lits[strID].growTo(g_under.nodes(),lit_Undef);
-
-
+	if(first_destination==-1)
+		first_destination= state;
 
 	if (accept_lits[strID][state] != lit_Undef) {
 		Lit r = accept_lits[strID][state];
@@ -417,7 +417,8 @@ void FSMAcceptDetector::printSolution(std::ostream& out){
 }
 bool FSMAcceptDetector::checkSatisfied(){
 	NFAAccept<> check(g_under,source,strings);
-	g_under.draw(source);
+
+	g_under.draw(source,first_destination );
 	for(int str = 0;str<accept_lits.size();str++){
 		vec<int> & string = strings[str];
 		check.run(str);

@@ -27,6 +27,7 @@
 #include "dgl/DynamicGraph.h"
 #include "DynamicFSM.h"
 #include "FSMAcceptDetector.h"
+#include "FSMGeneratesDetector.h"
 
 #include "core/SolverTypes.h"
 #include "mtl/Map.h"
@@ -55,7 +56,8 @@ public:
 		Var outerVar=var_Undef;
 		int from=-1;
 		int to=-1;
-
+		int inputchar;
+		int outputchar;
 	};
 	struct Assignment {
 		bool isEdge :1;
@@ -78,14 +80,14 @@ public:
 	vec<lbool> assigns;
 
 	int n_labels=1;//number of transition labels. Transition labels start from 0 (which is the non-consuming epsilon transition) and go to n_labels-1.
-
+	int n_out_alphabet=0;
 
 	vec<vec<Transition>> edge_labels;
 
 	DynamicFSM g_under;
 	DynamicFSM g_over;
 	vec<FSMAcceptDetector *> accepts;
-
+	vec<FSMGeneratesDetector *> generates;
 	/**
 	 * The cutgraph is (optionally) used for conflict analysis by some graph theories.
 	 * It has two edges for every edge in the real graph (with indices edgeID*2 and edgeID*2+1).
@@ -121,7 +123,8 @@ public:
 		int occursPositive :1;
 		int occursNegative :1;
 		int detector_edge :29;	//the detector this variable belongs to, or its edge number, if it is an edge variable
-		int label;
+		int input;
+		int output;
 		Var solverVar;
 	};
 
@@ -189,27 +192,39 @@ public:
 	inline int getGraphID() {
 		return id;
 	}
-	inline int nLabels()const{
+	inline int inAlphabet()const{
 		return n_labels;
+	}
+	inline int outAlphabet()const{
+		return n_out_alphabet;
 	}
 	void setLabels(int labels){
 		assert(labels>=n_labels);
-		while (labels>nLabels()){
+		while (labels>inAlphabet()){
 			n_labels++;
-			g_under.addLabel();
-			g_over.addLabel();
+			g_under.addInCharacter();
+			g_over.addInCharacter();
 		}
 		for(int i =0;i<edge_labels.size();i++){
-			edge_labels[i].growTo(nLabels()+1);
+			edge_labels[i].growTo(inAlphabet()+1);
 		}
 	}
-	void addLabel(){
+	void addInCharacter(){
 		n_labels++;
-		g_under.addLabel();
-		g_over.addLabel();
+		g_under.addInCharacter();
+		g_over.addInCharacter();
 		//this is not great...
 		for(int i =0;i<edge_labels.size();i++){
-			edge_labels[i].growTo(nLabels()+1);
+			edge_labels[i].growTo(inAlphabet()+1);
+		}
+	}
+	void addOutCharacter(){
+		n_out_alphabet++;
+		g_under.addInCharacter();
+		g_over.addInCharacter();
+		//this is not great...
+		for(int i =0;i<edge_labels.size();i++){
+			edge_labels[i].growTo(inAlphabet()+1);
 		}
 	}
 	inline bool isEdgeVar(Var v) const{
@@ -220,9 +235,13 @@ public:
 		assert(isEdgeVar(v));
 		return vars[v].detector_edge;
 	}
-	inline int getLabel(Var v) const{
+	inline int getInput(Var v) const{
 		assert(isEdgeVar(v));
-		return vars[v].label;
+		return vars[v].input;
+	}
+	inline int getOutput(Var v)const{
+		assert(isEdgeVar(v));
+		return vars[v].output;
 	}
 	inline int getDetector(Var v) const {
 		assert(!isEdgeVar(v));
@@ -278,9 +297,9 @@ public:
 	
 	Var newAuxVar(int forDetector = -1, bool connectToTheory = false) {
 		Var s = S->newVar();
-		return newVar(s, forDetector, -1,false, connectToTheory);
+		return newVar(s, forDetector, -1,-1,false, connectToTheory);
 	}
-	Var newVar(Var solverVar, int detector, int label=-1, bool isEdge = false, bool connectToTheory = true) {
+	Var newVar(Var solverVar, int detector, int label=-1,int output=-1, bool isEdge = false, bool connectToTheory = true) {
 		while (S->nVars() <= solverVar)
 			S->newVar();
 		Var v = vars.size();
@@ -289,7 +308,8 @@ public:
 		vars[v].isEdge = isEdge;
 		vars[v].detector_edge = detector;
 		vars[v].solverVar = solverVar;
-		vars[v].label=label;
+		vars[v].input=label;
+		vars[v].output = output;
 		assigns.push(l_Undef);
 		if (connectToTheory) {
 			S->setTheoryVar(solverVar, getTheoryIndex(), v);
@@ -416,14 +436,15 @@ public:
 				if (e.isEdge) {
 					assert(dbg_value(e.var)==l_Undef);
 					int edgeID = getEdgeID(e.var); //e.var-min_edge_var;
-					int label = getLabel(e.var);
+					int input = getInput(e.var);
+					int output = getOutput(e.var);
 					assert(edgeID==e.edgeID);
 
 					if (e.assign) {
-						g_under.disableTransition(edgeID, label);
+						g_under.disableTransition(edgeID, input,output);
 
 					} else {
-						g_over.enableTransition(edgeID,label);
+						g_over.enableTransition(edgeID,input,output);
 
 					}
 				} else {
@@ -482,13 +503,14 @@ public:
 			Assignment e = trail[i];
 			if (e.isEdge) {
 				int edgeID = getEdgeID(e.var); //e.var-min_edge_var;
-				int label = getLabel(e.var);
+				int input = getInput(e.var);
+				int output = getOutput(e.var);
 				assert(assigns[e.var]!=l_Undef);
 				assigns[e.var] = l_Undef;
 				if (e.assign) {
-					g_under.disableTransition(edgeID,label);
+					g_under.disableTransition(edgeID,input,output);
 				} else {
-					g_over.enableTransition(edgeID,label);
+					g_over.enableTransition(edgeID,input,output);
 				}
 			} else {
 				if (var(p) == e.var) {
@@ -605,15 +627,16 @@ public:
 			
 			//this is an edge assignment
 			int edgeID = getEdgeID(var(l)); //v-min_edge_var;
-			int label = getLabel(var(l));
-			assert(edge_labels[edgeID][label].v == var(l));
+			int input = getInput(var(l));
+			int output = getOutput(var(l));
+			assert(edge_labels[edgeID][input].v == var(l));
 
 			trail.push( { true, !sign(l),edgeID, v });
 
 			if (!sign(l)) {
-				g_under.enableTransition(edgeID,label);
+				g_under.enableTransition(edgeID,input,output);
 			} else {
-				g_over.disableTransition(edgeID,label);
+				g_over.disableTransition(edgeID,input,output);
 			}
 			
 		} else {
@@ -698,10 +721,10 @@ public:
 	bool check_solved() {
 
 		for (int edgeID = 0; edgeID < edge_labels.size(); edgeID++) {
-			for (int label = 0;label<nLabels();label++){
-				if (edge_labels[edgeID][label].v < 0)
+			for (int input = 0;input<inAlphabet();input++){
+				if (edge_labels[edgeID][input].v < 0)
 					continue;
-				Var v = edge_labels[edgeID][label].v;
+				Var v = edge_labels[edgeID][input].v;
 				if(v==var_Undef)
 					continue;
 				lbool val = value(v);
@@ -716,20 +739,20 @@ public:
 					 if(!antig.hasEdge(e.from,e.to)){
 					 return false;
 					 }*/
-					if (!g_under.transitionEnabled(edgeID,label)) {
+					if (!g_under.transitionEnabled(edgeID,input)) {
 						return false;
 					}
-					if (!g_over.transitionEnabled(edgeID,label)) {
+					if (!g_over.transitionEnabled(edgeID,input)) {
 						return false;
 					}
 				} else {
 					/*if(g.hasEdge(e.from,e.to)){
 					 return false;
 					 }*/
-					if (g_under.transitionEnabled(edgeID,label)) {
+					if (g_under.transitionEnabled(edgeID,input)) {
 						return false;
 					}
-					if (g_over.transitionEnabled(edgeID,label)) {
+					if (g_over.transitionEnabled(edgeID,input)) {
 						return false;
 					}
 					/*if(antig.hasEdge(e.from,e.to)){
@@ -767,22 +790,22 @@ public:
 	}
 
 
-	Lit newTransition(int from, int to,int label, Var outerVar = var_Undef) {
+	Lit newTransition(int from, int to,int input,int output, Var outerVar = var_Undef) {
 		assert(outerVar!=var_Undef);
-		assert(label>=0);assert(outerVar!=var_Undef);
-		if(from==to && label==0){
+		assert(input>=0);assert(outerVar!=var_Undef);
+		if(from==to && input==0){
 			//don't add this transition; self-looping e transitions have no effect.
 			return lit_Undef;
 		}
 
 		int edgeID=-1;
 		if(g_under.states()>from && g_under.states()>to && (edgeID=g_under.getEdge(from,to))>-1){
-			if(g_over.nLabels()>label && g_over.transitionEnabled(edgeID,label)){
+			if(g_over.inAlphabet()>input && g_over.transitionEnabled(edgeID,input)){
 				//we already have this transition implemented
-				Var ov = edge_labels[edgeID][label].outerVar;
+				Var ov = edge_labels[edgeID][input].outerVar;
 				assert(ov!=var_Undef);
-				assert(edge_labels[edgeID][label].from ==from);
-				assert(edge_labels[edgeID][label].to ==to);
+				assert(edge_labels[edgeID][input].from ==from);
+				assert(edge_labels[edgeID][input].to ==to);
 				makeEqualInSolver(mkLit(outerVar),mkLit(ov));
 				return lit_Undef;
 			}
@@ -794,22 +817,21 @@ public:
 
 
 
-		g_under.addTransition(from,to,edgeID,label,false);
-		edgeID =g_over.addTransition(from,to,edgeID,label,true);
-		Var v = newVar(outerVar, edgeID,label, true);
-		assert(label<nLabels());
-		if (edgeID==13){
-			int a=1;
-		}
+		g_under.addTransition(from,to,edgeID,input,output,false);
+		edgeID =g_over.addTransition(from,to,edgeID,input,output,true);
+		Var v = newVar(outerVar, edgeID,input,output, true);
+		assert(input<inAlphabet());
+		assert(output<outAlphabet());
+
 
 		edge_labels.growTo(edgeID+1);
-		edge_labels[edgeID].growTo(nLabels()+1);
+		edge_labels[edgeID].growTo(inAlphabet()+1);
 
 
-		edge_labels[edgeID][label].v = v;
-		edge_labels[edgeID][label].outerVar = outerVar;
-		edge_labels[edgeID][label].from = from;
-		edge_labels[edgeID][label].to = to;
+		edge_labels[edgeID][input].v = v;
+		edge_labels[edgeID][input].outerVar = outerVar;
+		edge_labels[edgeID][input].from = from;
+		edge_labels[edgeID][input].to = to;
 
 		return mkLit(v, false);
 	}
@@ -838,6 +860,15 @@ public:
 			detectors.push(accepts[source]);
 		}
 		accepts[source]->addAcceptLit(reach,strID,outer_var);
+	}
+
+	void addGenerateLit(int source, int strID, Var outer_var){
+		generates.growTo(source+1);
+		if(!generates[source]){
+			generates[source] = new FSMGeneratesDetector(detectors.size(), this, g_under,g_over, source,*strings,drand(rnd_seed));
+			detectors.push(generates[source]);
+		}
+		generates[source]->addGeneratesLit(strID,outer_var);
 	}
 
 };

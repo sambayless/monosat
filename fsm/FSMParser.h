@@ -49,7 +49,8 @@ class FSMParser: public Parser<B, Solver> {
 		int fsm;
 		int from;
 		int to;
-		int label;
+		int input;
+		int output;
 		Var edgeVar;
 	};
 	vec<bool> hasEpsilonTransitions;
@@ -66,6 +67,15 @@ class FSMParser: public Parser<B, Solver> {
 
 	};
 	vec<vec<Accepts> > accepts;
+	struct Generates{
+		int fsm;
+		int from;
+		int strID;
+		Var reachVar;
+	};
+
+	vec<vec<Generates> > generates;
+
 	vec<Lit> lits;
 	int count = 0;
 
@@ -93,6 +103,7 @@ class FSMParser: public Parser<B, Solver> {
 		S.addTheory(fsms[fsmID]);
 		transitions.growTo(fsmID+1);
 		accepts.growTo(fsmID+1);
+		generates.growTo(fsmID+1);
 		hasEpsilonTransitions.growTo(fsmID+1);
 	}
 	
@@ -140,32 +151,37 @@ class FSMParser: public Parser<B, Solver> {
 		int fsmID = parseInt(in);
 		int from = parseInt(in);
 		int to = parseInt(in);
-		int label = parseInt(in);
+		int input = parseInt(in);
+		int output = parseInt(in);
 		int edgeVar = parseInt(in) - 1;
 		
 		if (fsmID < 0 || fsmID >= fsms.size()) {
 			printf("PARSE ERROR! Undeclared fsm identifier %d for edge %d\n", fsmID, edgeVar), exit(1);
 		}
-		if (label<0){
-			printf("PARSE ERROR! Transition labels  must be >=0, was %d\n", label), exit(1);
+		if (input<0){
+			printf("PARSE ERROR! Transition inputs  must be >=0, was %d\n", input), exit(1);
 		}
-
+		if (output<0){
+				printf("PARSE ERROR! Transition outputs  must be >=0, was %d\n", output), exit(1);
+			}
 		if (edgeVar < 0) {
 			printf("PARSE ERROR! Edge variables must be >=0, was %d\n", edgeVar), exit(1);
 		}
 
-		if (label==0){
+		if (input==0){
 			hasEpsilonTransitions[fsmID]=true;
 		}
 
 		while (edgeVar >= S.nVars())
 			S.newVar();
 		
-		while(label>= fsms[fsmID]->nLabels()){
-			 fsms[fsmID]->addLabel();
+		while(input>= fsms[fsmID]->inAlphabet()){
+			 fsms[fsmID]->addInCharacter();
 		}
-
-		transitions[fsmID].push({fsmID,from,to,label,edgeVar});
+		while(output>= fsms[fsmID]->outAlphabet()){
+			 fsms[fsmID]->addOutCharacter();
+		}
+		transitions[fsmID].push({fsmID,from,to,input,output,edgeVar});
 	}
 
 	void readAccepts(B& in, Solver& S) {
@@ -211,6 +227,47 @@ class FSMParser: public Parser<B, Solver> {
 
 	}
 	
+	void readGenerates(B& in, Solver& S) {
+		if (opt_ignore_theories) {
+			skipLine(in);
+			return;
+		}
+
+		++in;
+
+		int fsmID = parseInt(in);
+		int from = parseInt(in);
+
+		int strID = parseInt(in);
+		int reachVar = parseInt(in) - 1;
+
+		//now read in the string
+		generates[fsmID].push();
+
+		generates[fsmID].last().fsm=fsmID;
+		generates[fsmID].last().from=from;
+
+		generates[fsmID].last().strID = strID;
+		generates[fsmID].last().reachVar = reachVar;
+
+		if (fsmID < 0 || fsmID >= fsms.size()) {
+			printf("PARSE ERROR! Undeclared fsm identifier %d for edge %d\n", fsmID, reachVar), exit(1);
+		}
+
+		if (from<0){
+				printf("PARSE ERROR! Source state must be a node id (a non-negative integer), was %d\n", from), exit(1);
+			}
+
+		if (reachVar < 0) {
+			printf("PARSE ERROR! Edge variables must be >=0, was %d\n", reachVar), exit(1);
+		}
+
+		while (reachVar >= S.nVars())
+			S.newVar();
+
+
+	}
+
 public:
 	FSMParser(){
 		
@@ -238,6 +295,9 @@ public:
 		}else if (match(in, "accepts")) {
 			readAccepts(in, S);
 			return true;
+		}else if (match(in,"generates")){
+			readGenerates(in,S);
+			return true;
 		}
 		return false;
 	}
@@ -252,7 +312,7 @@ public:
 
 
 				for (auto &t:transitions[i]){
-					fsms[i]->newTransition(t.from,t.to,t.label,t.edgeVar);
+					fsms[i]->newTransition(t.from,t.to,t.input,t.output,t.edgeVar);
 				}
 
 				for(auto & a: accepts[i]){
@@ -266,10 +326,25 @@ public:
 					if(a.to<0 || a.to>=fsms[i]->nNodes()){
 						printf("PARSE ERROR! %d is not a valid state\n", a.to), exit(1);
 					}
-					if(fsms[i]->nLabels()<stringLabels[a.strID]){
+					if(fsms[i]->inAlphabet()<stringLabels[a.strID]){
 						fsms[i]->setLabels(stringLabels[a.strID]);
 					}
 					fsms[i]->addAcceptLit(a.from, a.to,a.strID,a.reachVar);
+				}
+
+				for(auto & a: generates[i]){
+
+					if (a.strID<0 || !created_strings[a.strID]){
+						printf("PARSE ERROR! String ID must be a non-negative integer, was %d\n", a.strID), exit(1);
+					}
+					if(a.from<0 || a.from>=fsms[i]->nNodes()){
+							printf("PARSE ERROR! %d is not a valid state\n", a.from), exit(1);
+						}
+
+					if(fsms[i]->inAlphabet()<stringLabels[a.strID]){
+						fsms[i]->setLabels(stringLabels[a.strID]);
+					}
+					fsms[i]->addGenerateLit(a.from, a.strID,a.reachVar);
 				}
 			}
 		}

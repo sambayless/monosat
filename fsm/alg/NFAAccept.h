@@ -10,17 +10,10 @@
 #include "../DynamicFSM.h"
 #include "mtl/Bitset.h"
 #include "mtl/Vec.h"
+#include "NFATypes.h"
 using namespace Monosat;
-struct FSMNullStatus {
-	void accepts(int string, int state,int edgeID,int label) {
 
-	}
-};
-struct NFATransition{
-	int edgeID;
-	int label;
-};
-static FSMNullStatus fsmNullStatus;
+
 template<class Status=FSMNullStatus>
 class NFAAccept{
 	DynamicFSM & g;
@@ -46,6 +39,7 @@ class NFAAccept{
 
 	vec<int> next;
 	vec<int> accepts;
+
 	vec<bool> next_seen;
 	vec<bool> cur_seen;
 
@@ -61,6 +55,7 @@ public:
 
 private:
 	void find_accepts(int str){
+
 		for(int s:accepts){
 			assert(cur_seen);
 			cur_seen[s]=false;
@@ -139,10 +134,12 @@ private:
 				}
 			}
 		}
+
+
 	}
 
 	bool path_rec(int s, int dest,int string,int str_pos,int emove_count, vec<NFATransition> & path){
-		if(str_pos==strings[string].size() && s==dest){
+		if(str_pos==strings[string].size() && (s==dest || dest<0) ){
 			return true;
 		}
 		if (emove_count>=g.states()){
@@ -236,12 +233,16 @@ public:
 		cur_seen.growTo(g.states());
 		find_accepts(str);
 	}
+	//If state is -1, then this is true if any state accepts the string.
 	bool accepting( int state){
-
+		if(state<0){
+			return accepts.size();
+		}
 		return cur_seen[state];
 	}
 
 	//inefficient!
+	//If state is -1, then this is true if any state accepts the string.
 	bool acceptsString(int string, int state){
 
 		run(string);
