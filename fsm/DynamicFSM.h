@@ -65,9 +65,11 @@ public:
 		return has_epsilon;
 	}
 
+/*
 	bool emove(int edgeID)const{
 		return emovesEnabled() && transitions[edgeID][0];
 	}
+*/
 
 	unsigned int inAlphabet()const{
 		return in_alphabet;
@@ -271,15 +273,30 @@ public:
 			}
 			if (any_enabled){
 				printf("%d->%d [label=\"", g.getEdge(i).from,g.getEdge(i).to);
-				for(int l= 0;l<transitions[i].size();l++){
-					if(transitions[i][l]){
-						if(l==0){
-							printf("{},");
-						}else{
-							printf("%c,",'a'+l-1);
+
+				for(int in = 0;in<inAlphabet();in++){
+					for(int out = 0;out<outAlphabet();out++){
+						int pos = in + inAlphabet()*out;
+						if(transitions[i][pos]){
+							if(out==0){
+								if(in==0){
+									printf("{},");
+								}else{
+									printf("%c:,",'a'+in-1);
+								}
+							}else{
+								if(in==0){
+									printf(":%c,",'a'+out-1);
+								}else{
+									printf("%c:%c,",'a'+in-1,'a'+out-1);
+								}
+							}
+
 						}
 					}
 				}
+
+
 				printf("\"]\n");
 			}
 		}

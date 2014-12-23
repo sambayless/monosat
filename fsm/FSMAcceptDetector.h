@@ -45,7 +45,7 @@ public:
 	DynamicFSM &g_under;
 	DynamicFSM &g_over;
 
-	int within;
+
 	int source;
 	int first_destination=-1;
 	vec<vec<int>> & strings;

@@ -18,8 +18,8 @@
  DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
-#ifndef FSM_GENERATEDETECTOR_H_
-#define FSM_GENERATEDETECTOR_H_
+#ifndef FSM_TRANSDUCES_DETECTOR_H_
+#define FSM_TRANSDUCES_DETECTOR_H_
 #include "utils/System.h"
 
 #include "dgl/DynamicGraph.h"
@@ -28,43 +28,45 @@
 
 #include "core/SolverTypes.h"
 #include "mtl/Map.h"
-
-
+#include <algorithm>
+#include <utility>
 #include "utils/System.h"
 #include "FSMDetector.h"
-#include "alg/NFAGenerate.h"
+#include "alg/NFATransduce.h"
 
 using namespace dgl;
 namespace Monosat {
 
 class FSMTheorySolver;
 
-class FSMGeneratesDetector: public FSMDetector {
+class FSMTransducesDetector: public FSMDetector {
 public:
+
 	FSMTheorySolver* outer;
 	DynamicFSM &g_under;
 	DynamicFSM &g_over;
 
 
 	int source;
+	int first_destination=-1;
 	vec<vec<int>> & strings;
 	double rnd_seed;
 
-	struct GenerateStatus {
-		FSMGeneratesDetector & detector;
+	struct TransducesStatus {
+		FSMTransducesDetector & detector;
 		bool polarity;
-		void generates(int string, bool generates);
+		void transduces(int string1,int string2, int state, bool accepts);
 
-		GenerateStatus(FSMGeneratesDetector & _outer, bool _polarity) :
+		TransducesStatus(FSMTransducesDetector & _outer, bool _polarity) :
 				detector(_outer), polarity(_polarity) {
 		}
 	};
 
-	GenerateStatus *underReachStatus = nullptr;
-	GenerateStatus *overReachStatus = nullptr;
+	TransducesStatus *underReachStatus = nullptr;
+	TransducesStatus *overReachStatus = nullptr;
 
-	NFAGenerate<GenerateStatus> * underapprox_detector;
-	NFAGenerate<GenerateStatus> * overapprox_detector;
+	NFATransduce<TransducesStatus> * underapprox_detector;
+	NFATransduce<TransducesStatus> * overapprox_detector;
 
 
 
@@ -73,18 +75,30 @@ public:
 
 	struct Change {
 		Lit l;
-
-		int str;
+		int u;
+		int str1;
+		int str2;
 	};
 	//vec<bool> is_changed;
 	vec<Change> changed;
+	vec<std::tuple<int,int,int,Lit>> all_transduce_lits;
+	struct TransduceHash{
 
-	vec<Lit> generate_lits;
-	Var first_var=var_Undef;
-	struct GenerateLit{
-		int str;
+
+		 std::size_t operator()(const std::tuple<int,int,int>& k) const
+		 {
+		   return std::get<0>(k) ^ std::get<1>(k) ^ std::get<2>(k);
+		 }
+
 	};
-	vec<GenerateLit> generate_lit_map;
+	Map<std::tuple<int,int,int>,Lit,TransduceHash> transduce_lits;
+	Var first_var=var_Undef;
+	struct AcceptLit{
+		int str1;
+		int str2;
+		int to;
+	};
+	vec<AcceptLit> accept_lit_map;
 	vec<Lit> all_lits;
 	//stats
 	
@@ -122,11 +136,12 @@ public:
 	void unassign(Lit l) {
 		FSMDetector::unassign(l);
 		int index = indexOf(var(l));
-		if (index >= 0 && index < generate_lit_map.size() && generate_lit_map[index].str != -1) {
-
-			int str =  generate_lit_map[index].str;
+		if (index >= 0 && index < accept_lit_map.size() && accept_lit_map[index].to != -1) {
+			int node = accept_lit_map[index].to;
+			int str1 =  accept_lit_map[index].str1;
+			int str2 =  accept_lit_map[index].str2;
 			//if (!is_changed[index]) {
-				changed.push( { var(l), str });
+				changed.push( { var(l), node,str1,str2 });
 			//	is_changed[index] = true;
 			//}
 		}
@@ -134,51 +149,56 @@ public:
 	
 	inline int indexOf(Var v)const{
 		int index = v - first_var;
-		assert(index < generate_lit_map.size());
+		assert(index < accept_lit_map.size());
 		return index;
 	}
 
-
-	int getString(Var reachVar) {
+	int getState(Var reachVar) {
 		assert(reachVar >= first_var);
 		int index = indexOf(reachVar);
 
-
-		return generate_lit_map[index].str;
+		assert(accept_lit_map[index].to >= 0);
+		return accept_lit_map[index].to;
 	}
+	int getString1(Var reachVar) {
+		assert(reachVar >= first_var);
+		int index = indexOf(reachVar);
 
+		assert(accept_lit_map[index].to >= 0);
+		return accept_lit_map[index].str1;
+	}
+	int getString2(Var reachVar) {
+		assert(reachVar >= first_var);
+		int index = indexOf(reachVar);
+
+		assert(accept_lit_map[index].to >= 0);
+		return accept_lit_map[index].str2;
+	}
 	bool propagate(vec<Lit> & conflict);
-	void buildGeneratesReason(int str, vec<Lit> & conflict);
-	void buildNonGeneratesReason(int str, vec<Lit> & conflict);
+	void buildTransducesReason(int node,int str1,int str2, vec<Lit> & conflict);
+	void buildNonTransducesReason(int node,int str1,int str2, vec<Lit> & conflict);
 
 	void buildReason(Lit p, vec<Lit> & reason, CRef marker);
 	bool checkSatisfied();
 	void printSolution(std::ostream& write_to);
 
-	void addGeneratesLit( int strID, Var reach_var);
+	void addTransducesLit(int state, int strID1,int strID2, Var reach_var);
 
 
 
-	FSMGeneratesDetector(int _detectorID, FSMTheorySolver * _outer, DynamicFSM &g_under, DynamicFSM &g_over,
+	FSMTransducesDetector(int _detectorID, FSMTheorySolver * _outer, DynamicFSM &g_under, DynamicFSM &g_over,
 			int _source, vec<vec<int>> &  strs, double seed = 1);
-	virtual ~FSMGeneratesDetector() {
+	virtual ~FSMTransducesDetector() {
 		
 	}
 	
 	const char* getName() {
-		return "NFA Generates Detector";
+		return "NFA Transduces Detector";
 	}
 	
 private:
+	bool path_rec(int s, int dest,int string1,int string2,int str1_pos, int str2_pos,int emove_count, vec<NFATransition> & path, vec<Lit> & conflict);
 
-	struct UsedTransition{
-		int edge=-1;
-		int label=-1;
-	};
-
-	vec<UsedTransition> used_transitions;
-	bool unique_path_conflict(int s,int string,int str_pos,int emove_count, vec<NFATransition> & path,vec<Lit> & conflict);
-	
 
 };
 }

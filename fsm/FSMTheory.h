@@ -28,6 +28,7 @@
 #include "DynamicFSM.h"
 #include "FSMAcceptDetector.h"
 #include "FSMGeneratesDetector.h"
+#include "FSMTransducesDetector.h"
 
 #include "core/SolverTypes.h"
 #include "mtl/Map.h"
@@ -88,6 +89,7 @@ public:
 	DynamicFSM g_over;
 	vec<FSMAcceptDetector *> accepts;
 	vec<FSMGeneratesDetector *> generates;
+	vec<FSMTransducesDetector *> transduces;
 	/**
 	 * The cutgraph is (optionally) used for conflict analysis by some graph theories.
 	 * It has two edges for every edge in the real graph (with indices edgeID*2 and edgeID*2+1).
@@ -881,7 +883,14 @@ public:
 		}
 		generates[source]->addGeneratesLit(strID,outer_var);
 	}
-
+	void addTransduceLit(int source,int dest, int strID, int strID2, Var outer_var){
+		transduces.growTo(source+1);
+		if(!transduces[source]){
+			transduces[source] = new FSMTransducesDetector(detectors.size(), this, g_under,g_over, source,*strings,drand(rnd_seed));
+			detectors.push(transduces[source]);
+		}
+		transduces[source]->addTransducesLit(dest,strID,strID2,outer_var);
+	}
 };
 
 }

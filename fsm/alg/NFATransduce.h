@@ -5,8 +5,8 @@
  *      Author: sam
  */
 
-#ifndef NFAREACH_H_
-#define NFAREACH_H_
+#ifndef NFATRANSDUCE_H_
+#define NFATRANSDUCE_H_
 #include "../DynamicFSM.h"
 #include "mtl/Bitset.h"
 #include "mtl/Vec.h"
@@ -15,7 +15,7 @@ using namespace Monosat;
 
 
 template<class Status=FSMNullStatus>
-class NFAAccept{
+class NFATransduce{
 	DynamicFSM & g;
 	Status & status;
 	int last_modification=-1;
@@ -39,6 +39,8 @@ class NFAAccept{
 
 	vec<int> next;
 	vec<int> accepts;
+	//for each state, this lists the prefixes of string 2 that can be reached at that state.
+	vec<vec<int> > produced_prefix;
 
 	vec<bool> next_seen;
 	vec<bool> cur_seen;
@@ -49,12 +51,12 @@ class NFAAccept{
 
 
 public:
-	NFAAccept(DynamicFSM & f,int source, vec<vec<int>> & strings,Status & status=fsmNullStatus):g(f),status(status),source(source),strings(strings){
+	NFATransduce(DynamicFSM & f,int source, vec<vec<int>> & strings,Status & status=fsmNullStatus):g(f),status(status),source(source),strings(strings){
 
 	}
 
 private:
-	void find_accepts(int str){
+	void find_transduces(int str1){
 
 		for(int s:accepts){
 			assert(cur_seen);
@@ -65,7 +67,14 @@ private:
 		cur_seen[source]=true;
 		accepts.push(source);
 
-		vec<int> & string = strings[str];
+
+		produced_prefix.growTo(g.states());
+		for(auto & v:produced_prefix){
+			v.clear();
+		}
+		produced_prefix[source].push(0);
+
+		vec<int> & string = strings[str1];
 
 		//initial emove pass:
 		if(g.emovesEnabled()){
@@ -75,12 +84,13 @@ private:
 					//now check if the label is active
 					int edgeID= g.incident(s,j).id;
 					int to = g.incident(s,j).node;
-					if(!cur_seen[to] && g.transitionEnabled(edgeID,0,0)){
-						cur_seen[to]=true;
-						accepts.push(to);
+					for(int k = 0;k<g.outAlphabet();k++){
+						if(!cur_seen[to] && g.transitionEnabled(edgeID,0,k)){
+							cur_seen[to]=true;
+							accepts.push(to);
 
+						}
 					}
-
 				}
 			}
 		}
@@ -138,8 +148,8 @@ private:
 
 	}
 
-	bool path_rec(int s, int dest,int string,int str_pos,int emove_count, vec<NFATransition> & path){
-		if(str_pos==strings[string].size() && (s==dest || dest<0) ){
+	bool path_rec(int s, int dest,int string1,int string2,int str1_pos, int str2_pos,int emove_count, vec<NFATransition> & path){
+		if(str1_pos==strings[string1].size() && str2_pos==strings[string2].size() && (s==dest || dest<0) ){
 			return true;
 		}
 		if (emove_count>=g.states()){
@@ -147,23 +157,56 @@ private:
 		}
 
 
-		int l = strings[string][str_pos];
+		int l_in = 0;
+		int l_out = 0;
+		if(str1_pos<strings[string1].size()){
+			l_in =strings[string1][str1_pos];
+		}
+		if(str2_pos<strings[string2].size()){
+			l_out =strings[string2][str2_pos];
+		}
+
 		for(int j = 0;j<g.nIncident(s);j++){
 			//now check if the label is active
 			int edgeID= g.incident(s,j).id;
 			int to = g.incident(s,j).node;
+
 			if( g.transitionEnabled(edgeID,0,0)){
 				path.push({edgeID,0,0});
-				if(path_rec(to,dest,string,str_pos,emove_count+1,path)){//str_pos is NOT incremented!
+				if(path_rec(to,dest,string1,string2,str1_pos,str2_pos,emove_count+1,path)){//str_pos is NOT incremented!
 					return true;
 				}else{
 					path.pop();
 				}
 			}
-			if(str_pos< strings[string].size()){
-				if (g.transitionEnabled(edgeID,l,0)){
-					path.push({edgeID,l,0});
-					if(path_rec(to,dest,string,str_pos+1,0,path)){//str_pos is incremented
+
+			if(l_in>0){
+				if( g.transitionEnabled(edgeID,l_in,0)){
+					path.push({edgeID,l_in,0});
+					if(path_rec(to,dest,string1,string2,str1_pos+1,str2_pos,emove_count,path)){//str_pos is incremented!
+						return true;
+					}else{
+						path.pop();
+					}
+				}
+			}
+
+			if(l_out>0){
+				if( g.transitionEnabled(edgeID,0,l_out)){
+					path.push({edgeID,0,l_out});
+					if(path_rec(to,dest,string1,string2,str1_pos,str2_pos+1,emove_count,path)){//str_pos is incremented!
+						return true;
+					}else{
+						path.pop();
+					}
+				}
+
+			}
+
+			if(l_in>=0 && l_out>=0){
+				if (g.transitionEnabled(edgeID,l_in,l_out)){
+					path.push({edgeID,l_in,l_out});
+					if(path_rec(to,dest,string1,string2,str1_pos+1,str2_pos+1,0,path)){//str_pos is incremented
 						return true;
 					}else{
 						path.pop();
@@ -200,7 +243,7 @@ public:
 
 		//first, apply e-moves
 
-		//for(int i = 0;i<g.states();i++)
+/*		//for(int i = 0;i<g.states();i++)
 		for (int str = 0;str<strings.size();str++){
 			find_accepts(str);
 			for(int s:accepts){
@@ -212,8 +255,7 @@ public:
 					status.accepts(str,s,-1,-1,false);
 				}
 			}
-		}
-
+		}*/
 
 
 		last_modification = g.modifications;
@@ -231,7 +273,7 @@ public:
 	void run(int str){
 		next_seen.growTo(g.states());
 		cur_seen.growTo(g.states());
-		find_accepts(str);
+		find_transduces(str);
 	}
 	//If state is -1, then this is true if any state accepts the string.
 	bool accepting( int state){
@@ -243,13 +285,15 @@ public:
 
 	//inefficient!
 	//If state is -1, then this is true if any state accepts the string.
-	bool acceptsString(int string, int state){
-
-		run(string);
-		return accepting(state);
+	bool transducesString(int string1,int string2, int state){
+		static vec<NFATransition> ignore;
+		ignore.clear();
+		return getPath(string1,string2,state,ignore);
+		/*run(string1);
+		return accepting(state);*/
 	}
-	bool getPath(int string, int state, vec<NFATransition> & path){
-		return path_rec(source,state,string,0,0,path);
+	bool getPath(int string1, int string2, int state, vec<NFATransition> & path){
+		return path_rec(source,state,string1, string2,0,0,0,path);
 	}
 
 

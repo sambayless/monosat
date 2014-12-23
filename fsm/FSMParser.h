@@ -77,6 +77,18 @@ class FSMParser: public Parser<B, Solver> {
 
 	vec<vec<Generates> > generates;
 
+	struct Transduces{
+			int fsm;
+			int from;
+			int to;
+			int strID;
+			int strID2;
+			Var reachVar;
+		};
+
+	vec<vec<Transduces> > transduces;
+
+
 	vec<Lit> lits;
 	int count = 0;
 
@@ -105,6 +117,7 @@ class FSMParser: public Parser<B, Solver> {
 		transitions.growTo(fsmID+1);
 		accepts.growTo(fsmID+1);
 		generates.growTo(fsmID+1);
+		transduces.growTo(fsmID+1);
 		hasEpsilonTransitions.growTo(fsmID+1);
 		inAlphabets.growTo(fsmID+1,1);
 		outAlphabets.growTo(fsmID+1,1);
@@ -267,6 +280,52 @@ class FSMParser: public Parser<B, Solver> {
 
 	}
 
+	void readTransduces(B& in, Solver& S) {
+		if (opt_ignore_theories) {
+			skipLine(in);
+			return;
+		}
+
+		++in;
+
+		int fsmID = parseInt(in);
+		int from = parseInt(in);
+		int to = parseInt(in);
+		int strID = parseInt(in);
+		int strID2 = parseInt(in);
+		int reachVar = parseInt(in) - 1;
+
+		//now read in the string
+		transduces[fsmID].push();
+
+		transduces[fsmID].last().fsm=fsmID;
+		transduces[fsmID].last().from=from;
+		transduces[fsmID].last().to=to;
+
+		transduces[fsmID].last().strID = strID;
+		transduces[fsmID].last().strID2 = strID2;
+		transduces[fsmID].last().reachVar = reachVar;
+
+		if (fsmID < 0 || fsmID >= fsms.size()) {
+			printf("PARSE ERROR! Undeclared fsm identifier %d for edge %d\n", fsmID, reachVar), exit(1);
+		}
+
+		if (from<0){
+				printf("PARSE ERROR! Source state must be a node id (a non-negative integer), was %d\n", from), exit(1);
+			}
+		if (to<0){
+				printf("PARSE ERROR! Accepting state must be a node id (a non-negative integer), was %d\n", to), exit(1);
+			}
+		if (reachVar < 0) {
+			printf("PARSE ERROR! Edge variables must be >=0, was %d\n", reachVar), exit(1);
+		}
+
+		while (reachVar >= S.nVars())
+			S.newVar();
+
+
+	}
+
 public:
 	FSMParser(){
 		
@@ -296,6 +355,9 @@ public:
 			return true;
 		}else if (match(in,"generates")){
 			readGenerates(in,S);
+			return true;
+		}else if (match(in,"transduces")){
+			readTransduces(in,S);
 			return true;
 		}
 		return false;
@@ -341,6 +403,20 @@ public:
 						}
 
 					fsms[i]->addGenerateLit(a.from, a.strID,a.reachVar);
+				}
+
+				for(auto & a: transduces[i]){
+
+					if (a.strID<0 || !created_strings[a.strID]){
+						printf("PARSE ERROR! String ID must be a non-negative integer, was %d\n", a.strID), exit(1);
+					}
+					if(a.from<0 || a.from>=fsms[i]->nNodes()){
+							printf("PARSE ERROR! %d is not a valid state\n", a.from), exit(1);
+						}
+					if(a.to<0 || a.to>=fsms[i]->nNodes()){
+									printf("PARSE ERROR! %d is not a valid state\n", a.from), exit(1);
+								}
+					fsms[i]->addTransduceLit(a.from,a.to, a.strID,a.strID2,a.reachVar);
 				}
 			}
 		}
