@@ -111,7 +111,7 @@ public:
 		assert(edgeID < g.edges());
 		assert(isEdge(edgeID));
 		int pos = input +output*inAlphabet();
-		if (transitions[edgeID][pos]!= true) {
+		if (!transitions[edgeID][pos]) {
 			transitions[edgeID].set(pos);
 			//edge_status.setStatus(id,true);
 			modifications++;
@@ -124,7 +124,7 @@ public:
 		assert(edgeID < g.edges());
 		assert(isEdge(edgeID));
 		int pos = input +output*inAlphabet();
-		if (transitions[edgeID][pos] != false) {
+		if (transitions[edgeID][pos]) {
 			transitions[edgeID].clear(pos);
 			modifications++;
 			history.push_back( { false, edgeID,input,output, modifications, deletions });

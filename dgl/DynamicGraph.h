@@ -304,7 +304,7 @@ public:
 		assert(id >= 0);
 		assert(id < edge_status.size());
 		assert(isEdge(id));
-		if (edge_status[id] != true) {
+		if (!edge_status[id] ) {
 			edge_status[id] = true;
 			//edge_status.setStatus(id,true);
 			
@@ -352,7 +352,7 @@ public:
 		assert(id >= 0);
 		assert(id < edge_status.size());
 		assert(isEdge(id));
-		if (edge_status[id] != false) {
+		if (edge_status[id]) {
 			//edge_status.setStatus(id,false);
 			edge_status[id] = false;
 #ifdef RECORD
