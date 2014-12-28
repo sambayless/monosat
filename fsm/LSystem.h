@@ -36,7 +36,9 @@ public:
 
 	vec<Rule> rules;
 	vec<vec<int> > all_rules;
-
+	bool producing=true;
+	bool strictlyProducing=true;
+	int nTerminalCharacters=0;
 	bool adaptive_history_clear = false;
 	long historyClearInterval = 1000;
 	int modifications=0;
@@ -66,45 +68,72 @@ public:
 
 	}
 
+	bool isProducing(){
+		return producing;
+	}
+
+	//True if every character is either terminal, or only has rules that produce 2 or more characters.
+	bool isStrictlyProducing(){
+		return strictlyProducing;
+	}
 
 	void addCharacter(int chars=1){
 		characters +=chars;
-
+		nTerminalCharacters+=chars;
 		enabled_rules.growTo(characters);
 		all_rules.growTo(characters);
 		terminal_character.growTo(characters,true);
+
 	}
-	bool isRule(int rule){
-		return rule>=0 && rule<rules.size();
+	bool hasRule(int rule){
+		return rule>=0 && rule<rules.size() && rules[rule].predessor>=0;
 	}
 
 	int getPredessor(int rule){
-		assert(isRule(rule));
+		assert(hasRule(rule));
 		return rules[rule].predessor;
 	}
 
-	vec<int> & getProduction(int rule){
+	vec<int> & getRule(int rule){
+		assert(hasRule(rule));
 		return rules[rule].production;
 	}
 
 	vec<int> & getRules(int character){
 		return all_rules[character];
 	}
-	int nRules(){
+	int nCharacters()const{
+		return characters;
+	}
+	int nRules()const{
 		return rules.size();
 	}
 	//Add a production rule to a character
-	void addRule(int predessor,vec<int> & production, int ruleID, bool defaultEnabled=false){
+	int addRule(int predessor,vec<int> & production,  bool defaultEnabled=false){
+		int ruleID = rules.size();
 		assert(predessor<characters);
 		rules.growTo(ruleID);
 		assert(rules[ruleID].predessor==-1);
 		rules[ruleID].predessor=predessor;
 		production.copyTo(rules[ruleID].production);
+
 		if(production.size()!= 1 || production[0]!=predessor){
-			terminal_character[predessor]=false;
+			if(terminal_character[predessor]){
+				nTerminalCharacters--;
+				terminal_character[predessor]=false;
+			}
 		}
+		if(production.size()==0){
+			producing=false;
+			strictlyProducing=false;
+		}
+		if(production.size()== 1 && production[0]!=predessor){
+			strictlyProducing=false;
+		}
+
 		enabled_rules.growTo(ruleID+1);
 		enabled_rules[ruleID]=defaultEnabled;
+		return ruleID;
 	}
 
 	bool isTerminal(int character){
@@ -134,7 +163,7 @@ public:
 		}
 	}
 
-	void disableTransition(int ruleID) {
+	void disableRule(int ruleID) {
 		if (enabled_rules[ruleID]) {
 			enabled_rules[ruleID]=false;
 			modifications++;

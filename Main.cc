@@ -36,6 +36,7 @@
 #include "fsm/FSMParser.h"
 #include "core/Dimacs.h"
 #include "core/AssumptionParser.h"
+#include "fsm/LSystemParser.h"
 #include "core/Solver.h"
 #include "core/Config.h"
 #include <unistd.h>

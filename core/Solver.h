@@ -44,10 +44,12 @@ namespace Monosat {
 // The MiniSAT Boolean SAT solver, extended to provided basic SMT support.
 class Solver: public Theory {
 public:
+	//fix this...
 	friend class Theory;
 	template<typename Weight> friend class GraphTheorySolver;
 	template<unsigned int D, class T> friend class GeometryTheorySolver;
 	friend class FSMTheorySolver;
+	friend class LSystemSolver;
 #ifdef DEBUG_SOLVER
 	Solver * dbg_solver;
 #endif
