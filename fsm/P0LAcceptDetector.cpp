@@ -40,7 +40,7 @@ P0LAcceptDetector::P0LAcceptDetector(int detectorID, LSystemSolver * outer, LSys
 
 void P0LAcceptDetector::addProducesLit(int strID, Var outer_reach_var){
 
-	accept_lits.growTo(strings.size());
+	accept_lits.growTo(strings.size(),lit_Undef);
 
 	if (accept_lits[strID] != lit_Undef) {
 		Lit r = accept_lits[strID];
@@ -63,7 +63,7 @@ void P0LAcceptDetector::addProducesLit(int strID, Var outer_reach_var){
 
 	//is_changed.growTo(index+1);
 	Lit acceptLit = mkLit(accept_var, false);
-	all_lits.push(acceptLit);
+	all_lits.push({acceptLit,strID});
 	assert(accept_lits[strID]== lit_Undef);
 	//if(reach_lits[to]==lit_Undef){
 	accept_lits[strID] = acceptLit;
@@ -113,60 +113,38 @@ bool P0LAcceptDetector::propagate(vec<Lit> & conflict) {
 	}
 
 
-	while (changed.size()) {
-			int sz = changed.size();
-			Lit l = changed.last().l;
+	for(auto & t:all_lits){
+
+		Lit l = t.l;
+		int string = t.str;
 
 
-			int str = changed.last().str;
-			//assert(is_changed[indexOf(var(l))]);
-			if(sign(l)){
-				assert(!overapprox_detector->acceptsString(str));
-			}else{
-				assert(underapprox_detector->acceptsString(str));
-			}
-
-			if (underapprox_detector && !skipped_positive && !sign(l)) {
-
-			} else if (overapprox_detector && !skipped_negative && sign(l)) {
-
-			} else {
-				assert(sz == changed.size());
-
-				//is_changed[indexOf(var(l))] = false;
-				changed.pop();
-				//this can happen if the changed node's reachability status was reported before a backtrack in the solver.
-				continue;
-			}
-
-			bool reach = !sign(l);
+		if(underapprox_detector->acceptsString(string)){
 			if (outer->value(l) == l_True) {
 				//do nothing
 			} else if (outer->value(l) == l_Undef) {
-
-				if (reach)
-					outer->enqueue(l, underprop_marker);
-				else
-					outer->enqueue(l, overprop_marker);
-			} else if (outer->value(l) == l_False) {
+				outer->enqueue(l, underprop_marker);
+			}else{
 				conflict.push(l);
-
-				if (reach) {
-					buildAcceptReason(str, conflict);
-				} else {
-					//The reason is a cut separating s from t
-					buildNonAcceptReason(str, conflict);
-				}
-
+				buildAcceptReason(string, conflict);
 				return false;
 			}
+		}else if (!overapprox_detector->acceptsString(string)){
+			l=~l;
+			if (outer->value(l) == l_True) {
+				//do nothing
+			} else if (outer->value(l) == l_Undef) {
+				outer->enqueue(l, overprop_marker);
+			}else{
+				conflict.push(l);
+				buildNonAcceptReason(string, conflict);
+				return false;
+			}
+		}else{
 
-			assert(sz == changed.size());//This can be really tricky - if you are not careful, an a reach detector's update phase was skipped at the beginning of propagate, then if the reach detector is called during propagate it can push a change onto the list, which can cause the wrong item to be removed here.
-
-			//is_changed[indexOf(var(l))] = false;
-			changed.pop();
 		}
-	assert(changed.size()==0);
+	}
+
 	return true;
 }
 
@@ -212,9 +190,9 @@ bool P0LAcceptDetector::checkSatisfied(){
 					return false;
 				}
 
-				else if (outer->value(l)==l_False && check.accepting(str)){
+				else if (outer->value(l)==l_False && check.acceptsString(str)){
 					return false;
-				}else if (outer->value(l)==l_True && !check.accepting(str)){
+				}else if (outer->value(l)==l_True && !check.acceptsString(str)){
 					return false;
 				}
 

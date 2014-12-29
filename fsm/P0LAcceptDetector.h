@@ -75,7 +75,11 @@ public:
 
 	};
 	vec<AcceptLit> accept_lit_map;
-	vec<Lit> all_lits;
+	struct AcceptLitPair{
+		Lit l;
+		int str;
+	};
+	vec<AcceptLitPair> all_lits;
 	//stats
 	
 	int stats_full_updates = 0;

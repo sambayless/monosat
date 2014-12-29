@@ -11,7 +11,8 @@
 #include "mtl/Bitset.h"
 #include "mtl/Vec.h"
 #include "NFATypes.h"
-#include <fst/fstlib.h>
+#include "../DynamicFSM.h"
+//#include <fst/fstlib.h>
 using namespace Monosat;
 
 
@@ -45,25 +46,30 @@ class NP0LAccept{
 	vec<bool> cur_seen;
 
 	int source;
+	int atom = 0;
 	vec<vec<int>> & strings;
+	vec<vec<int>>  stringset;
+	vec<vec<Bitset>> suffixTables;
+	vec<vec<int>> toChecks;
 
-
+	DynamicFSM acceptor;
 
 public:
 	NP0LAccept(LSystem & f, vec<vec<int>> & strings):g(f),strings(strings){
 		assert(f.strictlyProducing);
-		fst::StdVectorFst t;
-		const auto one = fst::StdArc::Weight::One();
-		auto  start = t.AddState();
-		t.SetStart(start);
-		t.SetFinal(start,one);
 
+
+		//bool buildSuffixTable(int startState, int finalState, vec<int> & string, vec<Bitset> & table){
+		for(int i = 0;i<=g.nCharacters();i++){
+			acceptor.addInCharacter();
+			acceptor.addOutCharacter();
+
+		}
+		int start = acceptor.addState();
 		for(int c = 0;c<f.nCharacters();c++){
-			int  cState = t.AddState();
+			int  cState = acceptor.addState();
 			//Add an arc that takes epsilon and outputs this character.
-			t.AddArc(start, fst::StdArc(0, c+1, one, cState));
-
-
+			acceptor.addTransition(start,cState,-1,0,c+1);
 			//In the future: combine rules into a prefix tree first.
 			for(int rID : f.getRules(c)){
 				vec<int> & rule = f.getRule(rID);
@@ -72,35 +78,19 @@ public:
 					int o = rule[i];
 					int next;
 					if(i<rule.size()-1){
-						next = t.AddState();
+						next = acceptor.addState();
 					}else{
 						next=start;
 					}
 
 					//Add an arc that takes this rule character, and outputs epsilon
-					t.AddArc(from, fst::StdArc(o+1,0, one, next));
+					acceptor.addTransition(from,next,-1,o+1,0);
 					from = next;
 				}
 			}
 		}
 
-		t.Write("/home/sam/uncombined.fst");
 
-		fst::StdVectorFst * c = new fst::StdVectorFst();
-		int depth = 5;
-		printf("composing %d...\n",0);
-		fst::Compose(t,t,c);
-		for(int i = 1;i<depth;i++){
-			printf("composing %d...\n",i);
-			fst::StdVectorFst * c_out = new fst::StdVectorFst();
-			fst::Compose(*c,t,c_out);
-			delete(c);
-			c=c_out;
-			long narcs = fst::CountArcs(*c);
-			printf("done composing %d, %d states, %d transitions...\n",i,c->NumStates(),narcs);
-		}
-		c->Write("/home/sam/combined.fst");
-		delete(c);
 	}
 
 
@@ -113,27 +103,86 @@ public:
 
 	}
 
+private:
 
+	bool path_rec(int s, int dest,vec<int> & string,int str_pos,int emove_count,int depth,vec<Bitset> & suffixTable, vec<int> & path){
+		if(str_pos==string.size() && (s==dest || dest<0) ){
+			//string accepted by lsystem.
+			if(path.size()==0){
+				return true;
+			}else
+				return accepts_rec(-1,depth+1);
+
+		}
+		if (emove_count>=acceptor.states()){
+			return false;//this is not a great way to solve the problem of avoiding infinite e-move cycles...
+		}
+		if(!suffixTable[str_pos][s])
+			return false;
+		int l = string[str_pos];
+		for(int j = 0;j<acceptor.nIncident(s);j++){
+			//now check if the label is active
+			int edgeID= acceptor.incident(s,j).id;
+			int to = acceptor.incident(s,j).node;
+			for(int o = 0;o<acceptor.outAlphabet();o++){
+				if(acceptor.transitionEnabled(edgeID,0,o)){
+					assert(suffixTable[str_pos][to]);
+					if(o>0)
+						path.push(o);
+
+					if(path_rec(to,dest,string,str_pos,emove_count+1,depth,suffixTable,path)){//str_pos is NOT incremented!
+						return true;
+					}else if (o>0){
+						path.pop();
+					}
+				}
+			}
+
+			if(str_pos< string.size() && suffixTable[str_pos+1][to]){
+				for(int o = 0;o<acceptor.outAlphabet();o++){
+					if (acceptor.transitionEnabled(edgeID,l,o)){
+						if(o>0)
+							path.push(o);
+
+						if(path_rec(to,dest,string,str_pos+1,0,depth,suffixTable,path)){//str_pos is incremented
+							return true;
+						}else if (o>0){
+							path.pop();
+						}
+					}
+				}
+			}
+		}
+		return false;
+	}
+
+	bool accepts_rec(int str,int depth){
+		vec<int> & string = depth==0 ? strings[str] :stringset[depth];
+		stringset.growTo(depth+2);
+		suffixTables.growTo(depth+1);
+		vec<Bitset> & suffixTable = suffixTables[depth];
+		//build suffix table of states that can reach the final state from the nth suffix of the string
+		acceptor.buildSuffixTable(0,0,string,suffixTable);
+
+		//now find all paths through the nfa using a dfs, but filtering the search using the suffix table so that all paths explored are valid paths.
+		toChecks.growTo(depth+1);
+		vec<int> & toCheck = toChecks[depth];
+		int str_pos = 0;
+		stringset[depth+1].clear();
+		return path_rec(0,0,string,0,0,0,suffixTable,stringset[depth+1]);
+
+	}
 
 
 public:
-	void run(int str){
 
-	}
-	//If state is -1, then this is true if any state accepts the string.
-	bool accepting( int str){
-		return false;
-	}
 
 	//inefficient!
 	//If state is -1, then this is true if any state accepts the string.
 	bool acceptsString(int string){
 
-		run(string);
-		return false;
-	}
-	bool getPath(int string, vec<NFATransition> & path){
-		return false;
+
+		return accepts_rec(string,0);
 	}
 
 

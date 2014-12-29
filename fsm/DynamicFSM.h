@@ -86,8 +86,22 @@ public:
 	bool transitionEnabled(int edgeID, int input, int output)const{
 		assert(input<inAlphabet());
 		assert(output<outAlphabet());
-		int pos = input +output*inAlphabet();
-		return transitions[edgeID][pos];
+		if(output<0){
+			for(int i = 0;i<out_alphabet;i++){
+				if(transitionEnabled(edgeID,input,i))
+					return true;
+			}
+			return false;
+		}else if (input<0){
+			for(int i = 0;i<in_alphabet;i++){
+				if(transitionEnabled(edgeID,i,output))
+					return true;
+			}
+			return false;
+		}else{
+			int pos = input +output*inAlphabet();
+			return transitions[edgeID][pos];
+		}
 	}
 
 	int addTransition(int from, int to,int edgeID, int input,int output, bool defaultEnabled=true){
@@ -131,7 +145,9 @@ public:
 			deletions = modifications;
 		}
 	}
-
+	int addState(){
+		return addNode();
+	}
 	int addNode() {
 
 		g.addNode();
@@ -313,6 +329,8 @@ public:
 			table[i].clear();
 			table[i].growTo(this->states());
 		}
+		if(string.size()==0)
+			return startState==finalState;//this isn't quite correct, because there may be emoves connecting start to final state...
 		static vec<int> curStates;
 		static vec<int> nextStates;
 		nextStates.clear();
@@ -329,8 +347,8 @@ public:
 					//now check if the label is active
 					int edgeID= incident(s,j).id;
 					int to = incident(s,j).node;
-					if(!table[pos][to] && transitionEnabled(edgeID,0,0)){
-						table[pos][to] =true;
+					if(!table[pos][to] && transitionEnabled(edgeID,0,-1)){
+						table[pos].set(to);
 						curStates.push(to);
 					}
 
@@ -338,7 +356,7 @@ public:
 			}
 		}
 
-		for(pos<string.size();pos++)
+		for(;pos<string.size();pos++)
 		{
 			int l = string[pos];
 			assert(l>0);
@@ -348,15 +366,13 @@ public:
 					//now check if the label is active
 					int edgeID= incident(s,j).id;
 					int to = incident(s,j).node;
-					if(!table[pos][to] && transitionEnabled(edgeID,0,0)){
-						table[pos][to]=true;
+					if(!table[pos][to] && transitionEnabled(edgeID,0,-1)){
+						table[pos].set(to);
 						curStates.push(to);
-						//status.reaches(str,to,edgeID,0);
 					}
 
-					if (pos+1<string.size() && !table[pos+1][to] && transitionEnabled(edgeID,l,0)){
-						//status.reaches(str,to,edgeID,l);
-						table[pos+1][to]=true;
+					if (pos+1<string.size() && !table[pos+1][to] && transitionEnabled(edgeID,l,-1)){
+						table[pos+1].set(to);
 						nextStates.push(to);
 					}
 				}
@@ -364,8 +380,8 @@ public:
 
 			nextStates.swap(curStates);
 			nextStates.clear();
-
 		}
+
 		pos = string.size()-1;
 		//final emove pass:
 		if(emovesEnabled()){
@@ -375,8 +391,8 @@ public:
 					//now check if the label is active
 					int edgeID= incident(s,j).id;
 					int to = incident(s,j).node;
-					if(!table[pos][to] && transitionEnabled(edgeID,0,0)){
-						table[pos][to]=true;
+					if(!table[pos][to] && transitionEnabled(edgeID,0,-1)){
+						table[pos].set(to);
 						curStates.push(to);
 					}
 				}
@@ -391,6 +407,8 @@ public:
 			table[i].clear();
 			table[i].growTo(this->states());
 		}
+		if(string.size()==0)
+			return startState==finalState;//this isn't quite correct, because there may be emoves connecting start to final state...
 		static vec<int> curStates;
 		static vec<int> nextStates;
 		nextStates.clear();
@@ -407,8 +425,8 @@ public:
 					//now check if the label is active
 					int edgeID= incoming(s,j).id;
 					int to = incoming(s,j).node;
-					if(!table[pos][to] && transitionEnabled(edgeID,0,0)){
-						table[pos][to] =true;
+					if(!table[pos][to] && transitionEnabled(edgeID,0,-1)){
+						table[pos].set(to);
 						curStates.push(to);
 					}
 
@@ -426,15 +444,15 @@ public:
 					//now check if the label is active
 					int edgeID= incoming(s,j).id;
 					int to = incoming(s,j).node;
-					if(!table[pos][to] && transitionEnabled(edgeID,0,0)){
-						table[pos][to]=true;
+					if(!table[pos][to] && transitionEnabled(edgeID,0,-1)){
+						table[pos].set(to);
 						curStates.push(to);
 						//status.reaches(str,to,edgeID,0);
 					}
 
-					if (pos+1<string.size() && !table[pos+1][to] && transitionEnabled(edgeID,l,0)){
+					if (pos+1<string.size() && !table[pos+1][to] && transitionEnabled(edgeID,l,-1)){
 						//status.reaches(str,to,edgeID,l);
-						table[pos+1][to]=true;
+						table[pos+1].set(to);
 						nextStates.push(to);
 					}
 				}
@@ -453,8 +471,8 @@ public:
 					//now check if the label is active
 					int edgeID= incoming(s,j).id;
 					int to = incoming(s,j).node;
-					if(!table[pos][to] && transitionEnabled(edgeID,0,0)){
-						table[pos][to]=true;
+					if(!table[pos][to] && transitionEnabled(edgeID,0,-1)){
+						table[pos].set(to);
 						curStates.push(to);
 					}
 				}
