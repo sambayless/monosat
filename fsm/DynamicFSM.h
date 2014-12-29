@@ -71,10 +71,10 @@ public:
 	}
 */
 
-	unsigned int inAlphabet()const{
+	int inAlphabet()const{
 		return in_alphabet;
 	}
-	unsigned int outAlphabet()const{
+	int outAlphabet()const{
 		return out_alphabet;
 	}
 	void addInCharacter(){
@@ -157,7 +157,7 @@ public:
 		markChanged();
 		clearHistory(true);
 
-		return g.nodes();
+		return g.nodes()-1;
 	}
 
 	bool edgeEnabled(int edgeID) const {

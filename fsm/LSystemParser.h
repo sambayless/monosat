@@ -251,7 +251,7 @@ public:
 		for(int i = 0;i<lsystems.size();i++){
 			if(lsystems[i]){
 
-				lsystems[i]->setAlphabet(alphabets[i]);
+				lsystems[i]->setAlphabet(alphabets[i]+1);
 
 				lsystems[i]->setStrings(&strings);
 
