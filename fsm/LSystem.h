@@ -109,27 +109,29 @@ public:
 		return rules.size();
 	}
 	//Add a production rule to a character
-	int addRule(int predessor,vec<int> & production,  bool defaultEnabled=false){
+	int addRule(int predecessor,vec<int> & production,  bool defaultEnabled=false){
 		int ruleID = rules.size();
-		assert(predessor<characters);
-		rules.growTo(ruleID);
+		assert(predecessor<characters);
+		rules.growTo(ruleID+1);
 		assert(rules[ruleID].predessor==-1);
-		rules[ruleID].predessor=predessor;
+		rules[ruleID].predessor=predecessor;
 		production.copyTo(rules[ruleID].production);
 
-		if(production.size()!= 1 || production[0]!=predessor){
-			if(terminal_character[predessor]){
+		if(production.size()!= 1 || production[0]!=predecessor){
+			if(terminal_character[predecessor]){
 				nTerminalCharacters--;
-				terminal_character[predessor]=false;
+				terminal_character[predecessor]=false;
 			}
 		}
 		if(production.size()==0){
 			producing=false;
 			strictlyProducing=false;
 		}
-		if(production.size()== 1 && production[0]!=predessor){
+		if(production.size()== 1 && production[0]!=predecessor){
 			strictlyProducing=false;
 		}
+
+		all_rules[predecessor].push(ruleID);
 
 		enabled_rules.growTo(ruleID+1);
 		enabled_rules[ruleID]=defaultEnabled;

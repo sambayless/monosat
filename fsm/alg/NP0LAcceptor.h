@@ -55,6 +55,7 @@ public:
 		fst::StdVectorFst t;
 		const auto one = fst::StdArc::Weight::One();
 		auto  start = t.AddState();
+		t.SetStart(start);
 		t.SetFinal(start,one);
 
 		for(int c = 0;c<f.nCharacters();c++){
@@ -62,6 +63,8 @@ public:
 			//Add an arc that takes epsilon and outputs this character.
 			t.AddArc(start, fst::StdArc(0, c+1, one, cState));
 
+
+			//In the future: combine rules into a prefix tree first.
 			for(int rID : f.getRules(c)){
 				vec<int> & rule = f.getRule(rID);
 				int from = cState;
@@ -81,9 +84,26 @@ public:
 			}
 		}
 
-		t.Write("/home/sam/test.bin");
+		t.Write("/home/sam/uncombined.fst");
 
+		fst::StdVectorFst * c = new fst::StdVectorFst();
+		int depth = 5;
+		printf("composing %d...\n",0);
+		fst::Compose(t,t,c);
+		for(int i = 1;i<depth;i++){
+			printf("composing %d...\n",i);
+			fst::StdVectorFst * c_out = new fst::StdVectorFst();
+			fst::Compose(*c,t,c_out);
+			delete(c);
+			c=c_out;
+			long narcs = fst::CountArcs(*c);
+			printf("done composing %d, %d states, %d transitions...\n",i,c->NumStates(),narcs);
+		}
+		c->Write("/home/sam/combined.fst");
+		delete(c);
 	}
+
+
 
 
 public:

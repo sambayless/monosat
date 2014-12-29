@@ -306,6 +306,164 @@ public:
 
 	}
 
+
+	bool buildPrefixTable(int startState, int finalState, vec<int> & string, vec<Bitset> & table){
+		table.growTo(string.size());
+		for(int i = 0;i<table.size();i++){
+			table[i].clear();
+			table[i].growTo(this->states());
+		}
+		static vec<int> curStates;
+		static vec<int> nextStates;
+		nextStates.clear();
+		curStates.clear();
+		curStates.push(startState);
+		int pos = 0;
+		table[pos].set(startState);
+
+		//initial emove pass:
+		if(emovesEnabled()){
+			for(int i = 0;i<curStates.size();i++){
+				int s = curStates[i];
+				for(int j = 0;j<nIncident(s);j++){
+					//now check if the label is active
+					int edgeID= incident(s,j).id;
+					int to = incident(s,j).node;
+					if(!table[pos][to] && transitionEnabled(edgeID,0,0)){
+						table[pos][to] =true;
+						curStates.push(to);
+					}
+
+				}
+			}
+		}
+
+		for(pos<string.size();pos++)
+		{
+			int l = string[pos];
+			assert(l>0);
+			for(int i = 0;i<curStates.size();i++){
+				int s = curStates[i];
+				for(int j = 0;j<nIncident(s);j++){
+					//now check if the label is active
+					int edgeID= incident(s,j).id;
+					int to = incident(s,j).node;
+					if(!table[pos][to] && transitionEnabled(edgeID,0,0)){
+						table[pos][to]=true;
+						curStates.push(to);
+						//status.reaches(str,to,edgeID,0);
+					}
+
+					if (pos+1<string.size() && !table[pos+1][to] && transitionEnabled(edgeID,l,0)){
+						//status.reaches(str,to,edgeID,l);
+						table[pos+1][to]=true;
+						nextStates.push(to);
+					}
+				}
+			}
+
+			nextStates.swap(curStates);
+			nextStates.clear();
+
+		}
+		pos = string.size()-1;
+		//final emove pass:
+		if(emovesEnabled()){
+			for(int i = 0;i<curStates.size();i++){
+				int s = curStates[i];
+				for(int j = 0;j<nIncident(s);j++){
+					//now check if the label is active
+					int edgeID= incident(s,j).id;
+					int to = incident(s,j).node;
+					if(!table[pos][to] && transitionEnabled(edgeID,0,0)){
+						table[pos][to]=true;
+						curStates.push(to);
+					}
+				}
+			}
+		}
+		return table[pos][finalState];
+	}
+
+	bool buildSuffixTable(int startState, int finalState, vec<int> & string, vec<Bitset> & table){
+		table.growTo(string.size());
+		for(int i = 0;i<table.size();i++){
+			table[i].clear();
+			table[i].growTo(this->states());
+		}
+		static vec<int> curStates;
+		static vec<int> nextStates;
+		nextStates.clear();
+		curStates.clear();
+		curStates.push(finalState);
+		int pos = string.size()-1;
+		table[pos].set(finalState);
+
+		//initial emove pass:
+		if(emovesEnabled()){
+			for(int i = 0;i<curStates.size();i++){
+				int s = curStates[i];
+				for(int j = 0;j<nIncoming(s);j++){
+					//now check if the label is active
+					int edgeID= incoming(s,j).id;
+					int to = incoming(s,j).node;
+					if(!table[pos][to] && transitionEnabled(edgeID,0,0)){
+						table[pos][to] =true;
+						curStates.push(to);
+					}
+
+				}
+			}
+		}
+
+		for(;pos>=0;pos--)
+		{
+			int l = string[pos];
+			assert(l>0);
+			for(int i = 0;i<curStates.size();i++){
+				int s = curStates[i];
+				for(int j = 0;j<nIncoming(s);j++){
+					//now check if the label is active
+					int edgeID= incoming(s,j).id;
+					int to = incoming(s,j).node;
+					if(!table[pos][to] && transitionEnabled(edgeID,0,0)){
+						table[pos][to]=true;
+						curStates.push(to);
+						//status.reaches(str,to,edgeID,0);
+					}
+
+					if (pos+1<string.size() && !table[pos+1][to] && transitionEnabled(edgeID,l,0)){
+						//status.reaches(str,to,edgeID,l);
+						table[pos+1][to]=true;
+						nextStates.push(to);
+					}
+				}
+			}
+
+			nextStates.swap(curStates);
+			nextStates.clear();
+
+		}
+		pos = 0;
+		//final emove pass:
+		if(emovesEnabled()){
+			for(int i = 0;i<curStates.size();i++){
+				int s = curStates[i];
+				for(int j = 0;j<nIncoming(s);j++){
+					//now check if the label is active
+					int edgeID= incoming(s,j).id;
+					int to = incoming(s,j).node;
+					if(!table[pos][to] && transitionEnabled(edgeID,0,0)){
+						table[pos][to]=true;
+						curStates.push(to);
+					}
+				}
+			}
+		}
+
+		return table[0][startState];
+	}
+
 };
 
 }

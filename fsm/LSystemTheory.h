@@ -261,9 +261,9 @@ public:
 	
 	Var newAuxVar(int forDetector = -1, bool connectToTheory = false) {
 		Var s = S->newVar();
-		return newVar(s, forDetector, -1,-1,false, connectToTheory);
+		return newVar(s, forDetector,false, connectToTheory);
 	}
-	Var newVar(Var solverVar, int detector, int label=-1,int output=-1, bool isEdge = false, bool connectToTheory = true) {
+	Var newVar(Var solverVar, int detector,  bool isEdge = false, bool connectToTheory = true) {
 		while (S->nVars() <= solverVar)
 			S->newVar();
 		Var v = vars.size();
@@ -272,17 +272,13 @@ public:
 		vars[v].isEdge = isEdge;
 		vars[v].detector_edge = detector;
 		vars[v].solverVar = solverVar;
-		vars[v].input=label;
-		vars[v].output = output;
+
 		assigns.push(l_Undef);
 		if (connectToTheory) {
 			S->setTheoryVar(solverVar, getTheoryIndex(), v);
 			assert(toSolver(v) == solverVar);
 		}
-		if(isEdge){
-			assert(label>-1);
-			assert(detector>-1);
-		}
+
 		if (!isEdge && detector >= 0)
 			detectors[detector]->addVar(v);
 		return v;

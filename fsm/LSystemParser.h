@@ -167,10 +167,8 @@ class LSystemParser: public Parser<B, Solver> {
 		//allow zero-length strings
 		if (isEof(in) || *in == '\n')
 			return;
-		while(int i = parseInt(in)){
-			if (i<=0){
-				printf("PARSE ERROR! lsystem strings must contain only positive (non-zero) integers, found %d\n", i), exit(1);
-			}
+		while(true){
+			int i = parseInt(in);
 			rules[lsystemID].last().production.push(i);
 			alphabets[lsystemID]=std::max(alphabets[lsystemID],i);
 			skipWhitespace(in);

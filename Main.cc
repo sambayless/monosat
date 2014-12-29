@@ -365,6 +365,8 @@ int main(int argc, char** argv) {
 
 		FSMParser<char*,SimpSolver> fsmParser;
 		parser.addParser(&fsmParser);
+		LSystemParser<char*,SimpSolver>  lparser;
+		parser.addParser(&lparser);
 		if (precise) {
 			GeometryParser<char *, SimpSolver, mpq_class>  geometryParser;
 			parser.addParser(&geometryParser);
