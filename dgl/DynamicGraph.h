@@ -500,6 +500,38 @@ public:
 		}
 #endif
 	}
+
+	void clear(){
+		edge_status.clear();
+		num_nodes=0;
+		num_edges=0;
+		next_id=0;
+
+
+		adjacency_list.clear();
+		inverted_adjacency_list.clear();
+		adjacency_undirected_list.clear();
+		all_edges.clear();
+		history.clear();
+		invalidate();
+		clearHistory(true);
+	}
+	void copyTo(DynamicGraph & to){
+		to.clear();
+
+		to.num_nodes = num_nodes;
+		to.num_edges = num_edges;
+		to.next_id = next_id;
+		to.edge_status = edge_status;
+		to.historyClearInterval=historyClearInterval;
+		to.adjacency_list = adjacency_list;
+		to.adjacency_undirected_list=adjacency_undirected_list;
+		to.all_edges =all_edges;
+		to.inverted_adjacency_list=inverted_adjacency_list;
+
+
+	}
+
 };
 
 }

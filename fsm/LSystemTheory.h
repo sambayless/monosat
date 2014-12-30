@@ -721,13 +721,13 @@ public:
 	}
 
 
-	void addProducesLit(int strID, Var outer_var){
+	void addProducesLit(int atom,int strID, Var outer_var){
 
 		if(!produces){
 			produces = new P0LAcceptDetector(detectors.size(), this, g_under,g_over,*strings,drand(rnd_seed));
 			detectors.push(produces);
 		}
-		produces->addProducesLit(strID,outer_var);
+		produces->addProducesLit(atom,strID,outer_var);
 	}
 
 };

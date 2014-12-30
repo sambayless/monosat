@@ -257,16 +257,21 @@ private:
 	bool accepts_rec(int str,int depth,vec<int> * blocking_edges=nullptr){
 		if(depth>5)
 			return false;
+		static int iter = 0;
+		++iter;
+
+		assert(stringset.size()>depth || depth==0);
+		assert(strings.size()>str);
 
 		vec<int> & string = depth==0 ? strings[str] :stringset[depth];
-		stringset.growTo(depth+2);
-		suffixTables.growTo(depth+1);
+
+
 		vec<Bitset> & suffixTable = suffixTables[depth];
 
 		if(!acceptor.accepts(0,0,string)){
-			if(blocking_edges){
+	/*		if(blocking_edges){
 				analyzeNFA(0,0,string,*blocking_edges);
-			}
+			}*/
 			return false;
 		}
 
@@ -284,137 +289,7 @@ private:
 
 	}
 
-	void analyzeNFA(int source, int final,vec<int> & string,vec<int> & blocking){
-		static vec<int> to_visit;
-		static vec<int> next_visit;
 
-		assert(!acceptor.accepts(source,final, string));
-		//int strpos = string.size()-1;
-		to_visit.clear();
-		next_visit.clear();
-
-		static vec<bool> cur_seen;
-		static vec<bool> next_seen;
-		cur_seen.clear();
-		cur_seen.growTo(acceptor.states());
-
-		next_seen.clear();
-		next_seen.growTo(acceptor.states());
-		int node = final;
-		int str_pos = string.size();
-		if(str_pos==0){
-			//special handling for empty string. Only e-move edges are considered.
-			assert(node!=source);//otherwise, this would have been accepted.
-
-			if(!acceptor.emovesEnabled()){
-				//no way to get to the node without consuming strings.
-				return;
-			}
-			cur_seen[node]=true;
-			to_visit.push(node);
-			for(int j = 0;j<to_visit.size();j++){
-				int u = to_visit[j];
-
-				assert(str_pos>=0);
-
-				for (int i = 0;i<acceptor.nIncoming(u);i++){
-					int edgeID = acceptor.incoming(u,i).id;
-					int from = acceptor.incoming(u,i).node;
-
-					if(acceptor.emovesEnabled()){
-						if (acceptor.transitionEnabled(edgeID,0,0)){
-							if (!cur_seen[from]){
-								cur_seen[from]=true;
-								to_visit.push(from);//emove transition, if enabled
-							}
-						}else{
-							int ruleID = getRule(edgeID,0);
-							if(ruleID>=0 && !edge_blocking[ruleID]){
-								blocking.push(ruleID);
-								edge_blocking[ruleID]=true;
-							}
-						}
-					}
-
-
-				}
-			}
-
-			for(int s:to_visit){
-				assert(cur_seen[s]);
-				cur_seen[s]=false;
-			}
-			to_visit.clear();
-
-			return;
-		}
-
-
-		for(int s:next_visit){
-			assert(next_seen[s]);
-			next_seen[s]=false;
-		}
-		next_visit.clear();
-
-		next_visit.push(node);
-		next_seen[node]=true;
-
-
-		while(next_visit.size()){
-			str_pos --;
-			assert(str_pos>=0);
-			next_visit.swap(to_visit);
-			next_seen.swap(cur_seen);
-
-			for(int s:next_visit){
-				assert(next_seen[s]);
-				next_seen[s]=false;
-			}
-			next_visit.clear();
-
-			int l = string[str_pos];
-
-			for(int j = 0;j<to_visit.size();j++){
-				int u = to_visit[j];
-
-				assert(str_pos>=0);
-
-
-				for (int i = 0;i<acceptor.nIncoming(u);i++){
-					int edgeID = acceptor.incoming(u,i).id;
-					int from = acceptor.incoming(u,i).node;
-
-					if(acceptor.emovesEnabled()){
-						if (acceptor.transitionEnabled(edgeID,0,0)){
-							if (!cur_seen[from]){
-								cur_seen[from]=true;
-								to_visit.push(from);//emove transition, if enabled
-							}
-						}else{
-							int ruleID = getRule(edgeID,0);
-							if(ruleID>=0 &&!edge_blocking[ruleID]){
-								blocking.push(ruleID);
-								edge_blocking[ruleID]=true;
-							}
-						}
-					}
-
-					if (acceptor.transitionEnabled(edgeID,l,0)){
-						if (!next_seen[from] && str_pos>0){
-							next_seen[from]=true;
-							next_visit.push(from);
-						}
-					}else{
-						int ruleID = getRule(edgeID,l);
-						if(ruleID>=0 && !edge_blocking[ruleID]){
-							blocking.push(ruleID);
-							edge_blocking[ruleID]=true;
-						}
-					}
-				}
-			}
-		}
-	}
 
 public:
 
@@ -423,10 +298,11 @@ public:
 	//If state is -1, then this is true if any state accepts the string.
 	bool acceptsString(int string){
 		update();
-
+		stringset.growTo(strings[string].size()+2);
+		suffixTables.growTo(strings[string].size()+2);
 		return accepts_rec(string,0,nullptr);
 	}
-
+/*
 	void blockingEdges(int string, vec<int> & store_edges ){
 		update();
 		store_edges.clear();
@@ -434,7 +310,7 @@ public:
 		edge_blocking.growTo(g.nRules());
 		bool r = accepts_rec(string,0,&store_edges);
 		assert(!r);
-	}
+	}*/
 
 
 };

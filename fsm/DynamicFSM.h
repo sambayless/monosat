@@ -402,6 +402,7 @@ public:
 	}
 
 	bool buildSuffixTable(int startState, int finalState, vec<int> & string, vec<Bitset> & table){
+		return true;
 		table.growTo(string.size());
 		for(int i = 0;i<table.size();i++){
 			table[i].clear();
@@ -519,59 +520,88 @@ public:
 				}
 			}
 		}
+		if(string.size()){
+			for(int l:string)
+			{
+				assert(l>0);
+				for(int i = 0;i<cur.size();i++){
+					int s = cur[i];
+					for(int j = 0;j<nIncident(s);j++){
+						//now check if the label is active
+						int edgeID= incident(s,j).id;
+						int to = incident(s,j).node;
+						if(!cur_seen[to] && transitionEnabled(edgeID,0,-1)){
+							cur_seen[to]=true;
+							cur.push(to);
+							//status.reaches(str,to,edgeID,0);
+						}
 
-		for(int l:string)
-		{
-			assert(l>0);
-			for(int i = 0;i<cur.size();i++){
-				int s = cur[i];
-				for(int j = 0;j<nIncident(s);j++){
-					//now check if the label is active
-					int edgeID= incident(s,j).id;
-					int to = incident(s,j).node;
-					if(!cur_seen[to] && transitionEnabled(edgeID,0,-1)){
-						cur_seen[to]=true;
-						cur.push(to);
-						//status.reaches(str,to,edgeID,0);
+						if (!next_seen[to] && transitionEnabled(edgeID,l,-1)){
+							//status.reaches(str,to,edgeID,l);
+							next_seen[to]=true;
+							next.push(to);
+						}
 					}
+				}
 
-					if (!next_seen[to] && transitionEnabled(edgeID,l,-1)){
-						//status.reaches(str,to,edgeID,l);
-						next_seen[to]=true;
-						next.push(to);
+				next.swap(cur);
+				next_seen.swap(cur_seen);
+
+				for(int s:next){
+					assert(next_seen[s]);
+					next_seen[s]=false;
+				}
+				next.clear();
+			}
+
+			//final emove pass:
+			if(emovesEnabled()){
+				for(int i = 0;i<cur.size();i++){
+					int s = cur[i];
+					for(int j = 0;j<nIncident(s);j++){
+						//now check if the label is active
+						int edgeID= incident(s,j).id;
+						int to = incident(s,j).node;
+						if(!cur_seen[to] && transitionEnabled(edgeID,0,-1)){
+							cur_seen[to]=true;
+							cur.push(to);
+						}
+
 					}
 				}
 			}
-
-			next.swap(cur);
-			next_seen.swap(cur_seen);
-
-			for(int s:next){
-				assert(next_seen[s]);
-				next_seen[s]=false;
-			}
-			next.clear();
 		}
-
-		//final emove pass:
-		if(emovesEnabled()){
-			for(int i = 0;i<cur.size();i++){
-				int s = cur[i];
-				for(int j = 0;j<nIncident(s);j++){
-					//now check if the label is active
-					int edgeID= incident(s,j).id;
-					int to = incident(s,j).node;
-					if(!cur_seen[to] && transitionEnabled(edgeID,0,-1)){
-						cur_seen[to]=true;
-						cur.push(to);
-					}
-
-				}
-			}
-		}
-
 		return cur_seen[final];
 
+	}
+	void clear(){
+		g.clear();
+		has_epsilon=true;
+		is_changed=true;
+		transitions.clear();
+
+		in_alphabet =1;
+		out_alphabet=1;
+
+
+		next.clear();
+		cur.clear();
+		next_seen.clear();
+		cur_seen.clear();
+
+		invalidate();
+		clearHistory(true);
+	}
+	void copyTo(DynamicFSM & to){
+		to.clear();
+		g.copyTo(to.g);
+		to.has_epsilon=has_epsilon;
+		to.in_alphabet=in_alphabet;
+		to.out_alphabet=out_alphabet;
+		for(Bitset & b:transitions){
+			to.transitions.push();
+			b.copyTo(to.transitions.last());
+		}
 	}
 
 };

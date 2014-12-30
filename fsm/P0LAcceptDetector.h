@@ -68,16 +68,17 @@ public:
 	//vec<bool> is_changed;
 	vec<Change> changed;
 
-	vec<Lit> accept_lits;
+	vec<vec<Lit>> accept_lits;
 	Var first_var=var_Undef;
 	struct AcceptLit{
 		int str;
-
+		int atom;
 	};
 	vec<AcceptLit> accept_lit_map;
 	struct AcceptLitPair{
 		Lit l;
 		int str;
+		int atom;
 	};
 	vec<AcceptLitPair> all_lits;
 	//stats
@@ -132,6 +133,12 @@ public:
 		return index;
 	}
 
+	int getAtom(Var reachVar) {
+		assert(reachVar >= first_var);
+		int index = indexOf(reachVar);
+
+		return accept_lit_map[index].atom;
+	}
 	int getString(Var reachVar) {
 		assert(reachVar >= first_var);
 		int index = indexOf(reachVar);
@@ -140,14 +147,14 @@ public:
 	}
 
 	bool propagate(vec<Lit> & conflict);
-	void buildAcceptReason(int str, vec<Lit> & conflict);
-	void buildNonAcceptReason(int str, vec<Lit> & conflict);
+	void buildAcceptReason(int atom,int str, vec<Lit> & conflict);
+	void buildNonAcceptReason(int atom,int str, vec<Lit> & conflict);
 
 	void buildReason(Lit p, vec<Lit> & reason, CRef marker);
 	bool checkSatisfied();
 	void printSolution(std::ostream& write_to);
 
-	void addProducesLit( int strID, Var reach_var);
+	void addProducesLit(int atom, int strID, Var reach_var);
 
 
 
@@ -160,9 +167,74 @@ public:
 	const char* getName() {
 		return "P0-LSystem Accepts Detector";
 	}
-	
-	
 
+private:
+	bool path_rec(int atom,int s, int dest,vec<int> & string,int str_pos,int emove_count,int depth,vec<Bitset> & suffixTable, vec<int> & path,vec<int> * blocking_edges);
+	bool accepts_rec(int atom,int str,int depth,vec<int> * blocking_edges=nullptr);
+	void analyzeNFT(int atom,int source, int final,vec<int> & string,vec<int> & blocking,vec<Bitset> & suffixTable);
+
+	void buildAcceptors();
+
+	DynamicFSM acceptor;
+	DynamicFSM acceptor_over;
+	struct RuleTransition{
+
+		int edgeID=-1;
+		int inChar;
+		int outChar;
+	};
+	vec<RuleTransition> ruleMap;
+	vec<vec<int>> rules;
+
+	vec<vec<int>>  stringset;
+	vec<vec<Bitset>> suffixTables;
+	vec<vec<int>> toChecks;
+
+	int last_modification=-1;
+
+	int last_addition=-1;
+	int last_deletion=-1;
+	int history_qhead=0;
+	int last_history_clear=0;
+	vec<bool> edge_blocking;
+	bool hasRule(int edgeID, int inLabel){
+		if(edgeID>=rules.size())
+			return false;
+		if(rules[edgeID].size()<=inLabel)
+			return false;
+		return (rules[edgeID][inLabel]>=0);
+
+	}
+
+	int getRule(int edgeID, int inLabel){
+		if(hasRule(edgeID,inLabel)){
+			return rules[edgeID][inLabel];
+		}else{
+			return -1;
+		}
+	}
+	void setRuleEnabled(int ruleID, bool enable, bool isLevel0 = false){
+		assert(ruleMap[ruleID].edgeID>=0);
+		if(enable){
+			acceptor.enableTransition(ruleMap[ruleID].edgeID,ruleMap[ruleID].inChar,ruleMap[ruleID].outChar);
+		}else{
+			acceptor.disableTransition(ruleMap[ruleID].edgeID,ruleMap[ruleID].inChar,ruleMap[ruleID].outChar);
+		}
+		if(isLevel0){
+			if(enable){
+				acceptor_over.enableTransition(ruleMap[ruleID].edgeID,ruleMap[ruleID].inChar,ruleMap[ruleID].outChar);
+			}else{
+				acceptor_over.disableTransition(ruleMap[ruleID].edgeID,ruleMap[ruleID].inChar,ruleMap[ruleID].outChar);
+			}
+		}
+	}
+
+	bool ruleEnabled(int ruleID){
+		assert(ruleMap[ruleID].edgeID>=0);
+		return acceptor.transitionEnabled(ruleMap[ruleID].edgeID,ruleMap[ruleID].inChar,ruleMap[ruleID].outChar);
+	}
+
+	void updateAcceptor();
 };
 }
 ;

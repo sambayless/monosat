@@ -60,6 +60,7 @@ class LSystemParser: public Parser<B, Solver> {
 
 	struct Accepts{
 		int lsystem;
+		int atom;
 		int from;
 		int to;
 		int strID;
@@ -188,19 +189,21 @@ class LSystemParser: public Parser<B, Solver> {
 		int lsystemID = parseInt(in);
 
 		int strID = parseInt(in);
+		int atom = parseInt(in);
 		int reachVar = parseInt(in) - 1;
 
 		//now read in the string
 		produces[lsystemID].push();
 
 		produces[lsystemID].last().lsystem=lsystemID;
-
+		produces[lsystemID].last().atom = atom;
 		produces[lsystemID].last().strID = strID;
 		produces[lsystemID].last().reachVar = reachVar;
 
 		if (lsystemID < 0 || lsystemID >= lsystems.size()) {
 			printf("PARSE ERROR! Undeclared lsystem identifier %d for edge %d\n", lsystemID, reachVar), exit(1);
 		}
+
 
 
 		if (reachVar < 0) {
@@ -267,7 +270,7 @@ public:
 					}
 
 
-					lsystems[i]->addProducesLit(a.strID,a.reachVar);
+					lsystems[i]->addProducesLit(a.atom, a.strID,a.reachVar);
 				}
 
 			}
