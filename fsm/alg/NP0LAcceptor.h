@@ -48,6 +48,7 @@ class NP0LAccept{
 	int source;
 	int atom = 1;
 	vec<vec<int>> & strings;
+	vec<vec<int>>  fsmstrings;
 	vec<vec<int>>  stringset;
 	vec<vec<Bitset>> suffixTables;
 	vec<vec<int>> toChecks;
@@ -86,7 +87,12 @@ private:
 public:
 	NP0LAccept(LSystem & f, vec<vec<int>> & strings):g(f),strings(strings){
 		assert(f.strictlyProducing);
-
+		for(vec<int> & str:strings){
+			fsmstrings.push();
+			for(int c:str){
+				fsmstrings.last().push(c+1);//need to add one here...
+			}
+		}
 
 		//bool buildSuffixTable(int startState, int finalState, vec<int> & string, vec<Bitset> & table){
 		for(int i = 0;i<=g.nCharacters();i++){
@@ -255,15 +261,15 @@ private:
 	}
 
 	bool accepts_rec(int str,int depth,vec<int> * blocking_edges=nullptr){
-		if(depth>5)
+		if(depth>9)
 			return false;
 		static int iter = 0;
 		++iter;
 
 		assert(stringset.size()>depth || depth==0);
-		assert(strings.size()>str);
+		assert(fsmstrings.size()>str);
 
-		vec<int> & string = depth==0 ? strings[str] :stringset[depth];
+		vec<int> & string = depth==0 ? fsmstrings[str] :stringset[depth];
 
 
 		vec<Bitset> & suffixTable = suffixTables[depth];
@@ -281,8 +287,7 @@ private:
 
 
 		//now find all paths through the nfa using a dfs, but filtering the search using the suffix table so that all paths explored are valid paths.
-		toChecks.growTo(depth+1);
-		vec<int> & toCheck = toChecks[depth];
+
 		int str_pos = 0;
 		stringset[depth+1].clear();
 		return path_rec(0,0,string,0,0,depth,suffixTable,stringset[depth+1],blocking_edges);
@@ -298,8 +303,8 @@ public:
 	//If state is -1, then this is true if any state accepts the string.
 	bool acceptsString(int string){
 		update();
-		stringset.growTo(strings[string].size()+2);
-		suffixTables.growTo(strings[string].size()+2);
+		stringset.growTo(fsmstrings[string].size()+2);
+		suffixTables.growTo(fsmstrings[string].size()+2);
 		return accepts_rec(string,0,nullptr);
 	}
 /*

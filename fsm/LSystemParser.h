@@ -187,9 +187,9 @@ class LSystemParser: public Parser<B, Solver> {
 		++in;
 		
 		int lsystemID = parseInt(in);
-
-		int strID = parseInt(in);
 		int atom = parseInt(in);
+		int strID = parseInt(in);
+
 		int reachVar = parseInt(in) - 1;
 
 		//now read in the string

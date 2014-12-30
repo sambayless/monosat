@@ -232,7 +232,7 @@ bool P0LAcceptDetector::path_rec(int atom,int s, int dest,vec<int> & string,int 
 }
 
 bool P0LAcceptDetector::accepts_rec(int atom,int str,int depth,vec<int> * blocking_edges){
-	if(depth>5)
+	if(depth>9)
 		return false;
 	assert(stringset.size()>depth || depth==0);
 	assert(strings.size()>str);
@@ -254,8 +254,8 @@ bool P0LAcceptDetector::accepts_rec(int atom,int str,int depth,vec<int> * blocki
 
 
 	//now find all paths through the nfa using a dfs, but filtering the search using the suffix table so that all paths explored are valid paths.
-	toChecks.growTo(depth+1);
-	vec<int> & toCheck = toChecks[depth];
+
+
 	int str_pos = 0;
 	stringset[depth+1].clear();
 	if(! path_rec(atom,0,0,string,0,0,depth,suffixTable,stringset[depth+1],blocking_edges)){
@@ -404,6 +404,14 @@ void P0LAcceptDetector::analyzeNFT(int atom,int source, int final,vec<int> & str
 	}
 void P0LAcceptDetector::buildAcceptors(){
 	assert(outer->decisionLevel()==0);
+
+	for(vec<int> & str:strings){
+		fsmstrings.push();
+		for(int c:str){
+			fsmstrings.last().push(c+1);//need to add one here...
+		}
+	}
+
 		LSystem & f = g_over;
 		assert(f.strictlyProducing);
 		//bool buildSuffixTable(int startState, int finalState, vec<int> & string, vec<Bitset> & table){
@@ -528,8 +536,10 @@ void P0LAcceptDetector::buildNonAcceptReason(int atom,int str, vec<Lit> & confli
 void P0LAcceptDetector::printSolution(std::ostream& out){
 
 	for(int c = 0;c<g_under.nCharacters();c++){
+		int n_rules = 0;
 		for(int ruleID:g_under.getRules(c)){
 			if(g_under.ruleEnabled(ruleID)){
+				n_rules++;
 				out<<c<<" -> ";
 				for(int c:g_under.getRule(ruleID)){
 					out<<c<<",";
@@ -537,8 +547,10 @@ void P0LAcceptDetector::printSolution(std::ostream& out){
 				out<<"\n";
 			}
 		}
-
 	}
+	int depth = 5;
+
+
 }
 bool P0LAcceptDetector::checkSatisfied(){
 	NP0LAccept check(g_under,strings);

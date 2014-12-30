@@ -45,7 +45,7 @@ public:
 	LSystem &g_under;
 	LSystem &g_over;
 
-
+	vec<vec<int>>  fsmstrings;
 
 	int first_destination=-1;
 	vec<vec<int>> & strings;
