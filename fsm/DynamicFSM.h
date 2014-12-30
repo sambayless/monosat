@@ -481,6 +481,98 @@ public:
 
 		return table[0][startState];
 	}
+private:
+	vec<int> next;
+	vec<int> cur;
+
+	vec<bool> next_seen;
+	vec<bool> cur_seen;
+public:
+	bool accepts(int source, int final, vec<int> & string){
+		cur_seen.growTo(states());
+		next_seen.growTo(states());
+		for(int s:cur){
+			assert(cur_seen);
+			cur_seen[s]=false;
+		}
+		cur.clear();
+		assert(next.size()==0);
+		cur_seen[source]=true;
+		cur.push(source);
+
+
+
+		//initial emove pass:
+		if(emovesEnabled()){
+			for(int i = 0;i<cur.size();i++){
+				int s = cur[i];
+				for(int j = 0;j<nIncident(s);j++){
+					//now check if the label is active
+					int edgeID= incident(s,j).id;
+					int to = incident(s,j).node;
+					if(!cur_seen[to] && transitionEnabled(edgeID,0,-1)){
+						cur_seen[to]=true;
+						cur.push(to);
+
+					}
+
+				}
+			}
+		}
+
+		for(int l:string)
+		{
+			assert(l>0);
+			for(int i = 0;i<cur.size();i++){
+				int s = cur[i];
+				for(int j = 0;j<nIncident(s);j++){
+					//now check if the label is active
+					int edgeID= incident(s,j).id;
+					int to = incident(s,j).node;
+					if(!cur_seen[to] && transitionEnabled(edgeID,0,-1)){
+						cur_seen[to]=true;
+						cur.push(to);
+						//status.reaches(str,to,edgeID,0);
+					}
+
+					if (!next_seen[to] && transitionEnabled(edgeID,l,-1)){
+						//status.reaches(str,to,edgeID,l);
+						next_seen[to]=true;
+						next.push(to);
+					}
+				}
+			}
+
+			next.swap(cur);
+			next_seen.swap(cur_seen);
+
+			for(int s:next){
+				assert(next_seen[s]);
+				next_seen[s]=false;
+			}
+			next.clear();
+		}
+
+		//final emove pass:
+		if(emovesEnabled()){
+			for(int i = 0;i<cur.size();i++){
+				int s = cur[i];
+				for(int j = 0;j<nIncident(s);j++){
+					//now check if the label is active
+					int edgeID= incident(s,j).id;
+					int to = incident(s,j).node;
+					if(!cur_seen[to] && transitionEnabled(edgeID,0,-1)){
+						cur_seen[to]=true;
+						cur.push(to);
+					}
+
+				}
+			}
+		}
+
+		return cur_seen[final];
+
+	}
 
 };
 

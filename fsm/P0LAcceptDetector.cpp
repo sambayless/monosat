@@ -171,6 +171,20 @@ void P0LAcceptDetector::buildAcceptReason(int str, vec<Lit> & conflict){
 
 }
 void P0LAcceptDetector::buildNonAcceptReason(int str, vec<Lit> & conflict){
+	static vec<int> blocking;
+	blocking.clear();
+	overapprox_detector->blockingEdges(str,blocking);
+
+	for(int ruleID:blocking){
+		Var v = outer->getRuleVar(ruleID);
+		if (v!=var_Undef){
+			assert(outer->value(v)==l_False);
+			if (outer->level(v)>0){
+				//learn v
+				conflict.push(mkLit(v));//rely on the sat solver to remove duplicates, here...
+			}
+		}
+	}
 
 }
 void P0LAcceptDetector::printSolution(std::ostream& out){

@@ -52,6 +52,8 @@ class NP0LAccept{
 	vec<vec<Bitset>> suffixTables;
 	vec<vec<int>> toChecks;
 
+	vec<bool> edge_blocking;
+
 	DynamicFSM acceptor;
 	struct RuleTransition{
 
@@ -60,6 +62,27 @@ class NP0LAccept{
 		int outChar;
 	};
 	vec<RuleTransition> ruleMap;
+	vec<vec<int>> rules;
+
+private:
+	bool hasRule(int edgeID, int inLabel){
+		if(edgeID>=rules.size())
+			return false;
+		if(rules[edgeID].size()<=inLabel)
+			return false;
+		return (rules[edgeID][inLabel]>=0);
+
+	}
+
+	int getRule(int edgeID, int inLabel){
+		if(hasRule(edgeID,inLabel)){
+			return rules[edgeID][inLabel];
+		}else{
+			return -1;
+		}
+	}
+
+
 public:
 	NP0LAccept(LSystem & f, vec<vec<int>> & strings):g(f),strings(strings){
 		assert(f.strictlyProducing);
@@ -99,6 +122,10 @@ public:
 						ruleMap[rID].edgeID = edgeID;
 						ruleMap[rID].inChar=o+1;
 						ruleMap[rID].outChar=0;
+
+						rules.growTo(edgeID+1);
+						rules[edgeID].growTo(acceptor.inAlphabet(),-1);//this vector size assumes that we aren't interested in output labels!
+						rules[edgeID][o+1]=rID;
 					}
 					from = next;
 				}
@@ -174,7 +201,7 @@ public:
 
 private:
 
-	bool path_rec(int s, int dest,vec<int> & string,int str_pos,int emove_count,int depth,vec<Bitset> & suffixTable, vec<int> & path){
+	bool path_rec(int s, int dest,vec<int> & string,int str_pos,int emove_count,int depth,vec<Bitset> & suffixTable, vec<int> & path,vec<int> * blocking_edges){
 		if(str_pos==string.size() && (s==dest || dest<0) ){
 			//string accepted by lsystem.
 			if(path.size()==0){
@@ -182,7 +209,7 @@ private:
 			}else if(path.size()==1 && path[0]==atom){
 				return true;
 			}else
-				return accepts_rec(-1,depth+1);
+				return accepts_rec(-1,depth+1,blocking_edges);
 
 		}
 		if (emove_count>=acceptor.states()){
@@ -201,7 +228,7 @@ private:
 					if(o>0)
 						path.push(o);
 
-					if(path_rec(to,dest,string,str_pos,emove_count+1,depth,suffixTable,path)){//str_pos is NOT incremented!
+					if(path_rec(to,dest,string,str_pos,emove_count+1,depth,suffixTable,path,blocking_edges)){//str_pos is NOT incremented!
 						return true;
 					}else if (o>0){
 						path.pop();
@@ -215,7 +242,7 @@ private:
 						if(o>0)
 							path.push(o);
 
-						if(path_rec(to,dest,string,str_pos+1,0,depth,suffixTable,path)){//str_pos is incremented
+						if(path_rec(to,dest,string,str_pos+1,0,depth,suffixTable,path,blocking_edges)){//str_pos is incremented
 							return true;
 						}else if (o>0){
 							path.pop();
@@ -227,25 +254,167 @@ private:
 		return false;
 	}
 
-	bool accepts_rec(int str,int depth){
+	bool accepts_rec(int str,int depth,vec<int> * blocking_edges=nullptr){
 		if(depth>5)
 			return false;
+
 		vec<int> & string = depth==0 ? strings[str] :stringset[depth];
 		stringset.growTo(depth+2);
 		suffixTables.growTo(depth+1);
 		vec<Bitset> & suffixTable = suffixTables[depth];
+
+		if(!acceptor.accepts(0,0,string)){
+			if(blocking_edges){
+				analyzeNFA(0,0,string,*blocking_edges);
+			}
+			return false;
+		}
+
 		//build suffix table of states that can reach the final state from the nth suffix of the string
 		acceptor.buildSuffixTable(0,0,string,suffixTable);
+
+
 
 		//now find all paths through the nfa using a dfs, but filtering the search using the suffix table so that all paths explored are valid paths.
 		toChecks.growTo(depth+1);
 		vec<int> & toCheck = toChecks[depth];
 		int str_pos = 0;
 		stringset[depth+1].clear();
-		return path_rec(0,0,string,0,0,depth,suffixTable,stringset[depth+1]);
+		return path_rec(0,0,string,0,0,depth,suffixTable,stringset[depth+1],blocking_edges);
 
 	}
 
+	void analyzeNFA(int source, int final,vec<int> & string,vec<int> & blocking){
+		static vec<int> to_visit;
+		static vec<int> next_visit;
+
+		assert(!acceptor.accepts(source,final, string));
+		//int strpos = string.size()-1;
+		to_visit.clear();
+		next_visit.clear();
+
+		static vec<bool> cur_seen;
+		static vec<bool> next_seen;
+		cur_seen.clear();
+		cur_seen.growTo(acceptor.states());
+
+		next_seen.clear();
+		next_seen.growTo(acceptor.states());
+		int node = final;
+		int str_pos = string.size();
+		if(str_pos==0){
+			//special handling for empty string. Only e-move edges are considered.
+			assert(node!=source);//otherwise, this would have been accepted.
+
+			if(!acceptor.emovesEnabled()){
+				//no way to get to the node without consuming strings.
+				return;
+			}
+			cur_seen[node]=true;
+			to_visit.push(node);
+			for(int j = 0;j<to_visit.size();j++){
+				int u = to_visit[j];
+
+				assert(str_pos>=0);
+
+				for (int i = 0;i<acceptor.nIncoming(u);i++){
+					int edgeID = acceptor.incoming(u,i).id;
+					int from = acceptor.incoming(u,i).node;
+
+					if(acceptor.emovesEnabled()){
+						if (acceptor.transitionEnabled(edgeID,0,0)){
+							if (!cur_seen[from]){
+								cur_seen[from]=true;
+								to_visit.push(from);//emove transition, if enabled
+							}
+						}else{
+							int ruleID = getRule(edgeID,0);
+							if(ruleID>=0 && !edge_blocking[ruleID]){
+								blocking.push(ruleID);
+								edge_blocking[ruleID]=true;
+							}
+						}
+					}
+
+
+				}
+			}
+
+			for(int s:to_visit){
+				assert(cur_seen[s]);
+				cur_seen[s]=false;
+			}
+			to_visit.clear();
+
+			return;
+		}
+
+
+		for(int s:next_visit){
+			assert(next_seen[s]);
+			next_seen[s]=false;
+		}
+		next_visit.clear();
+
+		next_visit.push(node);
+		next_seen[node]=true;
+
+
+		while(next_visit.size()){
+			str_pos --;
+			assert(str_pos>=0);
+			next_visit.swap(to_visit);
+			next_seen.swap(cur_seen);
+
+			for(int s:next_visit){
+				assert(next_seen[s]);
+				next_seen[s]=false;
+			}
+			next_visit.clear();
+
+			int l = string[str_pos];
+
+			for(int j = 0;j<to_visit.size();j++){
+				int u = to_visit[j];
+
+				assert(str_pos>=0);
+
+
+				for (int i = 0;i<acceptor.nIncoming(u);i++){
+					int edgeID = acceptor.incoming(u,i).id;
+					int from = acceptor.incoming(u,i).node;
+
+					if(acceptor.emovesEnabled()){
+						if (acceptor.transitionEnabled(edgeID,0,0)){
+							if (!cur_seen[from]){
+								cur_seen[from]=true;
+								to_visit.push(from);//emove transition, if enabled
+							}
+						}else{
+							int ruleID = getRule(edgeID,0);
+							if(ruleID>=0 &&!edge_blocking[ruleID]){
+								blocking.push(ruleID);
+								edge_blocking[ruleID]=true;
+							}
+						}
+					}
+
+					if (acceptor.transitionEnabled(edgeID,l,0)){
+						if (!next_seen[from] && str_pos>0){
+							next_seen[from]=true;
+							next_visit.push(from);
+						}
+					}else{
+						int ruleID = getRule(edgeID,l);
+						if(ruleID>=0 && !edge_blocking[ruleID]){
+							blocking.push(ruleID);
+							edge_blocking[ruleID]=true;
+						}
+					}
+				}
+			}
+		}
+	}
 
 public:
 
@@ -255,9 +424,17 @@ public:
 	bool acceptsString(int string){
 		update();
 
-		return accepts_rec(string,0);
+		return accepts_rec(string,0,nullptr);
 	}
 
+	void blockingEdges(int string, vec<int> & store_edges ){
+		update();
+		store_edges.clear();
+		edge_blocking.clear();
+		edge_blocking.growTo(g.nRules());
+		bool r = accepts_rec(string,0,&store_edges);
+		assert(!r);
+	}
 
 
 };
