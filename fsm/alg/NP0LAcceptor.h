@@ -228,41 +228,43 @@ private:
 		if (emove_count>=acceptor.states()){
 			return false;//this is not a great way to solve the problem of avoiding infinite e-move cycles...
 		}
-		//if(!suffixTable[str_pos][s])
-		//	return false;
+		if(!suffixTable[str_pos][s])
+			return false;
 		int l = string[str_pos];
 		for(int j = 0;j<acceptor.nIncident(s);j++){
 			//now check if the label is active
 			int edgeID= acceptor.incident(s,j).id;
 			int to = acceptor.incident(s,j).node;
-			for(int o = 0;o<acceptor.outAlphabet();o++){
-				if(acceptor.transitionEnabled(edgeID,0,o)){
-					//assert(suffixTable[str_pos][to]);
-					if(o>0)
-						path.push(o);
-					bool used = false;
-					int rID = getRule(edgeID,0);
-					if(rID>=0 && ! used_edges[rID]){
-						used=true;
-						used_edges[rID]=true;
-						used_rule_set.push(rID);
-					}
+			if(suffixTable[str_pos][to]){
+				for(int o = 0;o<acceptor.outAlphabet();o++){
+					if(acceptor.transitionEnabled(edgeID,0,o)){
+						//assert(suffixTable[str_pos][to]);
+						if(o>0)
+							path.push(o);
+						bool used = false;
+						int rID = getRule(edgeID,0);
+						if(rID>=0 && ! used_edges[rID]){
+							used=true;
+							used_edges[rID]=true;
+							used_rule_set.push(rID);
+						}
 
-					if(path_rec(to,dest,string,str_pos,emove_count+1,depth,suffixTable,path,used_edges,used_rule_set,blocking_edges)){//str_pos is NOT incremented!
-						return true;
-					}
-					if (o>0){
-						path.pop();
-					}
-					if(used){
-						assert(rID>=0);
-						used_edges[rID]=false;
-						used_rule_set.pop();
+						if(path_rec(to,dest,string,str_pos,emove_count+1,depth,suffixTable,path,used_edges,used_rule_set,blocking_edges)){//str_pos is NOT incremented!
+							return true;
+						}
+						if (o>0){
+							path.pop();
+						}
+						if(used){
+							assert(rID>=0);
+							used_edges[rID]=false;
+							used_rule_set.pop();
+						}
 					}
 				}
 			}
 
-			if(str_pos< string.size()){// && suffixTable[str_pos+1][to]){
+			if(str_pos< string.size() && suffixTable[str_pos+1][to]){
 				for(int o = 0;o<acceptor.outAlphabet();o++){
 					if (acceptor.transitionEnabled(edgeID,l,o)){
 						if(o>0)
@@ -305,14 +307,18 @@ private:
 
 
 		vec<Bitset> & suffixTable = suffixTables[depth];
+/*
 
 		if(!acceptor.accepts(0,0,string)){
 
 			return false;
 		}
+*/
 
 		//build suffix table of states that can reach the final state from the nth suffix of the string
-		//acceptor.buildSuffixTable(0,0,string,suffixTable);
+		if(!acceptor.buildSuffixTable(0,0,string,suffixTable)){
+			return false;
+		}
 
 
 

@@ -211,21 +211,23 @@ bool P0LAcceptDetector::path_rec(int atom,int s, int dest,vec<int> & string,int 
 		//now check if the label is active
 		int edgeID= acceptor.incident(s,j).id;
 		int to = acceptor.incident(s,j).node;
-		for(int o = 0;o<acceptor.outAlphabet();o++){
-			if(acceptor.transitionEnabled(edgeID,0,o)){
-				//assert(suffixTable[str_pos][to]);
-				if(o>0)
-					path.push(o);
+		if(suffixTable[str_pos][to]){
+			for(int o = 0;o<acceptor.outAlphabet();o++){
+				if(acceptor.transitionEnabled(edgeID,0,o)){
+					//assert(suffixTable[str_pos][to]);
+					if(o>0)
+						path.push(o);
 
-				if(path_rec(atom,to,dest,string,str_pos,emove_count+1,depth,suffixTable,path,blocking_edges)){//str_pos is NOT incremented!
-					return true;
-				}else if (o>0){
-					path.pop();
+					if(path_rec(atom,to,dest,string,str_pos,emove_count+1,depth,suffixTable,path,blocking_edges)){//str_pos is NOT incremented!
+						return true;
+					}else if (o>0){
+						path.pop();
+					}
 				}
 			}
 		}
 
-		if(str_pos< string.size()){// && suffixTable[str_pos+1][to]){
+		if(str_pos< string.size() && suffixTable[str_pos+1][to]){
 			for(int o = 0;o<acceptor.outAlphabet();o++){
 				if (acceptor.transitionEnabled(edgeID,l,o)){
 					if(o>0)
