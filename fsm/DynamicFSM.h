@@ -402,11 +402,11 @@ public:
 	}
 
 	bool buildSuffixTable(int startState, int finalState, vec<int> & string, vec<Bitset> & table){
-		return true;
-		table.growTo(string.size());
+
+		table.growTo(string.size()+1);
 		for(int i = 0;i<table.size();i++){
 			table[i].clear();
-			table[i].growTo(this->states());
+			table[i].growTo(this->states()+1);
 		}
 		if(string.size()==0)
 			return startState==finalState;//this isn't quite correct, because there may be emoves connecting start to final state...
@@ -415,7 +415,7 @@ public:
 		nextStates.clear();
 		curStates.clear();
 		curStates.push(finalState);
-		int pos = string.size()-1;
+		int pos = string.size();
 		table[pos].set(finalState);
 
 		//initial emove pass:
@@ -435,9 +435,9 @@ public:
 			}
 		}
 
-		for(;pos>=0;pos--)
+		for(;pos>0;pos--)
 		{
-			int l = string[pos];
+			int l = string[pos-1];
 			assert(l>0);
 			for(int i = 0;i<curStates.size();i++){
 				int s = curStates[i];
@@ -451,9 +451,9 @@ public:
 						//status.reaches(str,to,edgeID,0);
 					}
 
-					if (pos+1<string.size() && !table[pos+1][to] && transitionEnabled(edgeID,l,-1)){
+					if (pos>0 && !table[pos-1][to] && transitionEnabled(edgeID,l,-1)){
 						//status.reaches(str,to,edgeID,l);
-						table[pos+1].set(to);
+						table[pos-1].set(to);
 						nextStates.push(to);
 					}
 				}

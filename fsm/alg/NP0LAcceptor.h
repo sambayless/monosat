@@ -33,6 +33,7 @@ class NP0LAccept{
 	int stats_skip_deletes=0;
 	int stats_skipped_updates=0;
 	int stats_num_skipable_deletions=0;
+	long stats_skipped_accepts=0;
 	double mod_percentage=0;
 
 	double stats_full_update_time=0;
@@ -64,6 +65,8 @@ class NP0LAccept{
 	};
 	vec<RuleTransition> ruleMap;
 	vec<vec<int>> rules;
+	vec<vec<bool>> used_rules;
+	vec<vec<int>> used_rule_sets;
 
 private:
 	bool hasRule(int edgeID, int inLabel){
@@ -93,7 +96,11 @@ public:
 				fsmstrings.last().push(c+1);//need to add one here...
 			}
 		}
-
+		while(used_rules.size()<strings.size()){
+			used_rules.push();
+			used_rules.last().growTo(g.nRules());
+		}
+		used_rule_sets.growTo(strings.size());
 		//bool buildSuffixTable(int startState, int finalState, vec<int> & string, vec<Bitset> & table){
 		for(int i = 0;i<=g.nCharacters();i++){
 			acceptor.addInCharacter();
@@ -207,7 +214,7 @@ public:
 
 private:
 
-	bool path_rec(int s, int dest,vec<int> & string,int str_pos,int emove_count,int depth,vec<Bitset> & suffixTable, vec<int> & path,vec<int> * blocking_edges){
+	bool path_rec(int s, int dest,vec<int> & string,int str_pos,int emove_count,int depth,vec<Bitset> & suffixTable, vec<int> & path,vec<bool> & used_edges,vec<int> & used_rule_set,vec<int> * blocking_edges){
 		if(str_pos==string.size() && (s==dest || dest<0) ){
 			//string accepted by lsystem.
 			if(path.size()==0){
@@ -215,7 +222,7 @@ private:
 			}else if(path.size()==1 && path[0]==atom){
 				return true;
 			}else
-				return accepts_rec(-1,depth+1,blocking_edges);
+				return accepts_rec(-1,depth+1,used_edges,used_rule_set,blocking_edges);
 
 		}
 		if (emove_count>=acceptor.states()){
@@ -233,11 +240,24 @@ private:
 					//assert(suffixTable[str_pos][to]);
 					if(o>0)
 						path.push(o);
+					bool used = false;
+					int rID = getRule(edgeID,0);
+					if(rID>=0 && ! used_edges[rID]){
+						used=true;
+						used_edges[rID]=true;
+						used_rule_set.push(rID);
+					}
 
-					if(path_rec(to,dest,string,str_pos,emove_count+1,depth,suffixTable,path,blocking_edges)){//str_pos is NOT incremented!
+					if(path_rec(to,dest,string,str_pos,emove_count+1,depth,suffixTable,path,used_edges,used_rule_set,blocking_edges)){//str_pos is NOT incremented!
 						return true;
-					}else if (o>0){
+					}
+					if (o>0){
 						path.pop();
+					}
+					if(used){
+						assert(rID>=0);
+						used_edges[rID]=false;
+						used_rule_set.pop();
 					}
 				}
 			}
@@ -247,11 +267,23 @@ private:
 					if (acceptor.transitionEnabled(edgeID,l,o)){
 						if(o>0)
 							path.push(o);
-
-						if(path_rec(to,dest,string,str_pos+1,0,depth,suffixTable,path,blocking_edges)){//str_pos is incremented
+						bool used = false;
+						int rID = getRule(edgeID,l);
+						if(rID>=0 && ! used_edges[rID]){
+							used=true;
+							used_edges[rID]=true;
+							used_rule_set.push(rID);
+						}
+						if(path_rec(to,dest,string,str_pos+1,0,depth,suffixTable,path,used_edges,used_rule_set,blocking_edges)){//str_pos is incremented
 							return true;
-						}else if (o>0){
+						}
+						if (o>0){
 							path.pop();
+						}
+						if(used){
+							assert(rID>=0);
+							used_edges[rID]=false;
+							used_rule_set.pop();
 						}
 					}
 				}
@@ -260,7 +292,7 @@ private:
 		return false;
 	}
 
-	bool accepts_rec(int str,int depth,vec<int> * blocking_edges=nullptr){
+	bool accepts_rec(int str,int depth,vec<bool> & used_edges,vec<int> & used_rule_set,vec<int> * blocking_edges){
 		if(depth>9)
 			return false;
 		static int iter = 0;
@@ -275,14 +307,12 @@ private:
 		vec<Bitset> & suffixTable = suffixTables[depth];
 
 		if(!acceptor.accepts(0,0,string)){
-	/*		if(blocking_edges){
-				analyzeNFA(0,0,string,*blocking_edges);
-			}*/
+
 			return false;
 		}
 
 		//build suffix table of states that can reach the final state from the nth suffix of the string
-		acceptor.buildSuffixTable(0,0,string,suffixTable);
+		//acceptor.buildSuffixTable(0,0,string,suffixTable);
 
 
 
@@ -290,7 +320,7 @@ private:
 
 		int str_pos = 0;
 		stringset[depth+1].clear();
-		return path_rec(0,0,string,0,0,depth,suffixTable,stringset[depth+1],blocking_edges);
+		return path_rec(0,0,string,0,0,depth,suffixTable,stringset[depth+1],used_edges,used_rule_set,blocking_edges);
 
 	}
 
@@ -298,14 +328,51 @@ private:
 
 public:
 
-
+	bool getUsedRules(int str, vec<int> & used_rules){
+		used_rules.clear();
+		if(acceptsString(str)){
+			used_rule_sets[str].copyTo(used_rules);
+			return true;
+		}else{
+			return false;
+		}
+	}
 	//inefficient!
 	//If state is -1, then this is true if any state accepts the string.
 	bool acceptsString(int string){
 		update();
 		stringset.growTo(fsmstrings[string].size()+2);
 		suffixTables.growTo(fsmstrings[string].size()+2);
-		return accepts_rec(string,0,nullptr);
+
+
+		if(used_rule_sets[string].size()){
+			//check to see if all of the previously used production rules are still available. in that case, we are done.
+			bool all_used=true;
+			for(int rID: used_rule_sets[string]){
+				if(!g.ruleEnabled(rID)){
+					all_used=false;
+					break;
+				}
+			}
+			if(all_used){
+				stats_skipped_accepts++;
+				return true;
+			}
+			//clear the old used rules.
+			while(used_rule_sets[string].size()){
+				int rID = used_rule_sets[string].last();
+				assert(used_rules[string][rID]);
+				used_rules[string][rID]=false;
+				used_rule_sets[string].pop();
+			}
+		}
+
+#ifndef NDEBUG
+		assert(!used_rules[string].contains(true));
+		assert(used_rule_sets[string].size()==0);
+#endif
+
+		return accepts_rec(string,0,used_rules[string],used_rule_sets[string],nullptr);
 	}
 /*
 	void blockingEdges(int string, vec<int> & store_edges ){

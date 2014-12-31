@@ -123,7 +123,7 @@ bool P0LAcceptDetector::propagate(vec<Lit> & conflict) {
 		int string = t.str;
 		int atom = t.atom;
 
-		if(underapprox_detector->acceptsString(string)){
+		if(outer->value(l)!=l_True && underapprox_detector->acceptsString(string)){
 			if (outer->value(l) == l_True) {
 				//do nothing
 			} else if (outer->value(l) == l_Undef) {
@@ -133,7 +133,7 @@ bool P0LAcceptDetector::propagate(vec<Lit> & conflict) {
 				buildAcceptReason(atom,string, conflict);
 				return false;
 			}
-		}else if (!overapprox_detector->acceptsString(string)){
+		}else if (outer->value(l)!=l_False && !overapprox_detector->acceptsString(string)){
 			l=~l;
 			if (outer->value(l) == l_True) {
 				//do nothing
@@ -173,8 +173,20 @@ void P0LAcceptDetector::buildReason(Lit p, vec<Lit> & reason, CRef marker) {
 
 void P0LAcceptDetector::buildAcceptReason(int atom,int str, vec<Lit> & conflict){
 	//the reason the string was accepted is simply the set of all unique ruleIDs that were traversed accepting the string.
-
-
+	static vec<int> store_edges;
+	store_edges.clear();
+	bool r = underapprox_detector->getUsedRules(str,store_edges);
+	assert(r);
+	for(int ruleID:store_edges){
+		Var v = outer->getRuleVar(ruleID);
+		if (v!=var_Undef){
+			assert(outer->value(v)==l_True);
+			if (outer->level(v)>0){
+				//learn v
+				conflict.push(~mkLit(v));
+			}
+		}
+	}
 
 }
 
@@ -237,7 +249,7 @@ bool P0LAcceptDetector::accepts_rec(int atom,int str,int depth,vec<int> * blocki
 	assert(stringset.size()>depth || depth==0);
 	assert(strings.size()>str);
 	assert(depth>=0);
-	vec<int> & string = depth==0 ? strings[str] :stringset[depth];
+	vec<int> & string = stringset[depth];
 
 	vec<Bitset> & suffixTable = suffixTables[depth];
 
@@ -249,7 +261,7 @@ bool P0LAcceptDetector::accepts_rec(int atom,int str,int depth,vec<int> * blocki
 	}*/
 
 	//build suffix table of states that can reach the final state from the nth suffix of the string
-	acceptor.buildSuffixTable(0,0,string,suffixTable);
+	//acceptor.buildSuffixTable(0,0,string,suffixTable);
 
 
 
@@ -274,8 +286,10 @@ void P0LAcceptDetector::analyzeNFT(int atom,int source, int final,vec<int> & str
 
 		//explain why this transducer only produces the set of strings it produces, and not others, given this string as input.
 		//build FULL, level-0 overapprox suffix table to filter the dfs exploration below.
-		acceptor_over.buildSuffixTable(0,0,string,suffixTable);
-
+		bool r = acceptor_over.buildSuffixTable(source,final,string,suffixTable);
+		if(!r){
+			return;//no blocking edges to be found
+		}
 		//int strpos = string.size()-1;
 		to_visit.clear();
 		next_visit.clear();
@@ -287,11 +301,11 @@ void P0LAcceptDetector::analyzeNFT(int atom,int source, int final,vec<int> & str
 
 		next_seen.clear();
 		next_seen.growTo(acceptor.states());
-		int node = final;
-		int str_pos = string.size();
-		if(str_pos==0){
+		int node = source;
+		int str_pos = 0;
+		if(string.size()==0){
 			//special handling for empty string. Only e-move edges are considered.
-			assert(node!=source);//otherwise, this would have been accepted.
+			assert(node!=final);//otherwise, this would have been accepted.
 
 			if(!acceptor.emovesEnabled()){
 				//no way to get to the node without consuming strings.
@@ -304,12 +318,12 @@ void P0LAcceptDetector::analyzeNFT(int atom,int source, int final,vec<int> & str
 
 				assert(str_pos>=0);
 
-				for (int i = 0;i<acceptor.nIncoming(u);i++){
-					int edgeID = acceptor.incoming(u,i).id;
-					int from = acceptor.incoming(u,i).node;
+				for (int i = 0;i<acceptor.nIncident(u);i++){
+					int edgeID = acceptor.incident(u,i).id;
+					int from = acceptor.incident(u,i).node;
 
 					if(acceptor.emovesEnabled()){
-						if (acceptor.transitionEnabled(edgeID,0,0)){
+						if (acceptor.transitionEnabled(edgeID,0,-1)){
 							if (!cur_seen[from]){
 								cur_seen[from]=true;
 								to_visit.push(from);//emove transition, if enabled
@@ -348,7 +362,7 @@ void P0LAcceptDetector::analyzeNFT(int atom,int source, int final,vec<int> & str
 
 
 		while(next_visit.size()){
-			str_pos --;
+
 			assert(str_pos>=0);
 			next_visit.swap(to_visit);
 			next_seen.swap(cur_seen);
@@ -359,7 +373,7 @@ void P0LAcceptDetector::analyzeNFT(int atom,int source, int final,vec<int> & str
 			}
 			next_visit.clear();
 
-			int l = string[str_pos];
+			int l = string[str_pos];//add 1 to each character, for the nfa
 
 			for(int j = 0;j<to_visit.size();j++){
 				int u = to_visit[j];
@@ -367,39 +381,45 @@ void P0LAcceptDetector::analyzeNFT(int atom,int source, int final,vec<int> & str
 				assert(str_pos>=0);
 
 
-				for (int i = 0;i<acceptor.nIncoming(u);i++){
-					int edgeID = acceptor.incoming(u,i).id;
-					int from = acceptor.incoming(u,i).node;
+				for (int i = 0;i<acceptor.nIncident(u);i++){
+					int edgeID = acceptor.incident(u,i).id;
+					int to = acceptor.incident(u,i).node;
 
 					if(acceptor.emovesEnabled()){
-						if (acceptor.transitionEnabled(edgeID,0,0)){
-							if (!cur_seen[from]){
-								cur_seen[from]=true;
-								to_visit.push(from);//emove transition, if enabled
-							}
-						}else{
-							int ruleID = getRule(edgeID,0);
-							if(ruleID>=0 &&!edge_blocking[ruleID]){
-								blocking.push(ruleID);
-								edge_blocking[ruleID]=true;
+						if(suffixTable[str_pos][to]){
+							if (acceptor.transitionEnabled(edgeID,0,-1)){
+								if (!cur_seen[to]){
+									cur_seen[to]=true;
+									to_visit.push(to);//emove transition, if enabled
+								}
+							}else{
+								int ruleID = getRule(edgeID,0);
+								if(ruleID>=0 &&!edge_blocking[ruleID]){
+									blocking.push(ruleID);
+									edge_blocking[ruleID]=true;
+								}
 							}
 						}
 					}
-
-					if (acceptor.transitionEnabled(edgeID,l,0)){
-						if (!next_seen[from] && str_pos>0){
-							next_seen[from]=true;
-							next_visit.push(from);
-						}
-					}else{
-						int ruleID = getRule(edgeID,l);
-						if(ruleID>=0 && !edge_blocking[ruleID]){
-							blocking.push(ruleID);
-							edge_blocking[ruleID]=true;
+					if(str_pos+1 < string.size()){
+						if(suffixTable[str_pos+1][to]){
+							if (acceptor.transitionEnabled(edgeID,l,-1)){
+								if (!next_seen[to]){
+									next_seen[to]=true;
+									next_visit.push(to);
+								}
+							}else{
+								int ruleID = getRule(edgeID,l);
+								if(ruleID>=0 && !edge_blocking[ruleID]){
+									blocking.push(ruleID);
+									edge_blocking[ruleID]=true;
+								}
+							}
 						}
 					}
 				}
 			}
+			str_pos ++;
 		}
 	}
 void P0LAcceptDetector::buildAcceptors(){
@@ -515,6 +535,11 @@ void P0LAcceptDetector::buildNonAcceptReason(int atom,int str, vec<Lit> & confli
 	stringset.growTo(strings[str].size()+2);
 	suffixTables.growTo(strings[str].size()+2);
 
+	stringset[0].clear();
+	for(int c:strings[str]){
+		stringset[0].push(c+1);
+	}
+
 	store_edges.clear();
 	edge_blocking.clear();
 	edge_blocking.growTo(g_over.nRules());
@@ -527,7 +552,7 @@ void P0LAcceptDetector::buildNonAcceptReason(int atom,int str, vec<Lit> & confli
 			assert(outer->value(v)==l_False);
 			if (outer->level(v)>0){
 				//learn v
-				conflict.push(mkLit(v));//rely on the sat solver to remove duplicates, here...
+				conflict.push(mkLit(v));
 			}
 		}
 	}
