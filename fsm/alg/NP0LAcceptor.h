@@ -294,6 +294,151 @@ private:
 		return false;
 	}
 
+	bool find_path(int source, int dest,vec<int> & string,int depth,vec<Bitset> & suffixTable, vec<int> & path,vec<bool> & used_edges,vec<int> & used_rule_set,vec<int> * blocking_edges){
+		int str_pos=0;
+		int emove_count=0;
+
+		struct PathElement{
+			int emove:1;//every move is either an emove or a string move.
+			int used_rule:1;
+			int on_path:1;
+			//int edgeID:29;
+			int state:29;
+			int next_edge;
+			int next_transition;
+			PathElement(bool emove, bool used_rule, bool on_path, int state, int next_edge,int next_transition):emove(emove),used_rule(used_rule),on_path(on_path),state(state),next_edge(next_edge),next_transition(next_transition){
+
+			}
+		};
+
+		vec<PathElement> stack;
+		stack.push(PathElement(true,false,false,source,0,0));
+
+		while(true){
+			int cur_index = stack.size()-1;
+			PathElement & p= stack[cur_index];
+
+			int s = p.state;
+			int next_edge = p.next_edge;
+			int next_transition = p.next_transition;
+			if(next_edge==0 && next_transition ==0){
+				if(p.emove){
+					emove_count++;
+					assert(emove_count<acceptor.states());
+				}else{
+					str_pos++;
+
+
+					if(str_pos==string.size() && (s==dest || dest<0) ){
+						if(path.size()==1 && path[0]==atom){
+							return true;
+						}else{
+							int backtrack = check_accepts(-1,depth+1,used_edges,used_rule_set,blocking_edges);
+							if(backtrack== path.size()){
+								//path accepted; return true.
+								return true;
+							}else{
+								//backtrack until the path is backtrack size.
+								assert(backtrack<path.size());
+								while(backtrack<path.size()){
+									PathElement & p= stack.last();
+									if(p.emove){
+										emove_count--;
+									}else{
+										str_pos--;
+									}
+									if (p.on_path){
+										path.pop();
+									}
+									if(p.used_rule){
+										int rID = used_rule_set.last();
+										used_edges[rID]=false;
+										used_rule_set.pop();
+									}
+									stack.pop();
+								}
+								continue;
+							}
+						}
+					}
+				}
+			}
+			if(next_edge>=acceptor.nIncident(s)){
+
+				if(p.emove){
+					emove_count--;
+				}else{
+					str_pos--;
+				}
+				if (p.on_path){
+					path.pop();
+				}
+				if(p.used_rule){
+					int rID = used_rule_set.last();
+					used_edges[rID]=false;
+					used_rule_set.pop();
+				}
+				stack.pop();
+				if(stack.size()==0){
+					return false;
+				}
+			}else{
+
+				int l = string[str_pos];
+				//now check if the label is active
+				int edgeID= acceptor.incident(s,next_edge).id;
+				int to = acceptor.incident(s,next_edge).node;
+
+				if(next_transition<acceptor.outAlphabet()){
+					if(emove_count+1 < acceptor.states() && suffixTable[str_pos][to]){
+						int o =next_transition;
+							if(acceptor.transitionEnabled(edgeID,0,o)){
+
+								if(o>0)
+									path.push(o);
+								bool used = false;
+								int rID = getRule(edgeID,0);
+								if(rID>=0 && ! used_edges[rID]){
+									used=true;
+									used_edges[rID]=true;
+									used_rule_set.push(rID);
+								}
+								stack.push(PathElement(true,used,o>0,to,0,0));
+							}
+
+
+
+					}
+				}else{
+					if(str_pos< string.size() && suffixTable[str_pos+1][to]){
+						int o =next_transition-acceptor.outAlphabet();
+						//for(int o = 0;o<acceptor.outAlphabet();o++){
+						if (acceptor.transitionEnabled(edgeID,l,o)){
+							if(o>0)
+								path.push(o);
+							bool used = false;
+							int rID = getRule(edgeID,l);
+							if(rID>=0 && ! used_edges[rID]){
+								used=true;
+								used_edges[rID]=true;
+								used_rule_set.push(rID);
+							}
+							stack.push(PathElement(false,used,o>0,to,0,0));
+						}
+						//}
+					}
+				}
+				if(next_transition+1>=acceptor.outAlphabet()*2){
+					stack[cur_index].next_transition=0;
+					stack[cur_index].next_edge++;
+				}else{
+					stack[cur_index].next_transition++;
+				}
+			}
+		}
+
+	}
+
 	bool accepts_rec(int str,int depth,vec<bool> & used_edges,vec<int> & used_rule_set,vec<int> * blocking_edges){
 		if(depth>9)
 			return false;
@@ -327,6 +472,45 @@ private:
 		int str_pos = 0;
 		stringset[depth+1].clear();
 		return path_rec(0,0,string,0,0,depth,suffixTable,stringset[depth+1],used_edges,used_rule_set,blocking_edges);
+
+	}
+	int check_accepts(int str,int depth,vec<bool> & used_edges,vec<int> & used_rule_set,vec<int> * blocking_edges){
+		if(depth>9)
+			return false;
+		static int iter = 0;
+		++iter;
+
+		assert(stringset.size()>depth || depth==0);
+		assert(fsmstrings.size()>str);
+
+		vec<int> & string = depth==0 ? fsmstrings[str] :stringset[depth];
+
+
+		vec<Bitset> & suffixTable = suffixTables[depth];
+
+		int backtrack=0;
+		if((backtrack = acceptor.accepts_prefix(0,0,string)) < string.size()){
+
+			return backtrack;
+		}
+
+
+		//build suffix table of states that can reach the final state from the nth suffix of the string
+		acceptor.buildSuffixTable(0,0,string,suffixTable);//<string.size());//{
+		//	return suffix;
+		//}
+
+
+
+		//now find all paths through the nfa using a dfs, but filtering the search using the suffix table so that all paths explored are valid paths.
+
+		int str_pos = 0;
+		stringset[depth+1].clear();
+		if( find_path(0,0,string,depth,suffixTable,stringset[depth+1],used_edges,used_rule_set,blocking_edges)){
+			return string.size();
+		}else{
+			return string.size()-1;
+		}
 
 	}
 
@@ -378,7 +562,9 @@ public:
 		assert(used_rule_sets[string].size()==0);
 #endif
 
-		return accepts_rec(string,0,used_rules[string],used_rule_sets[string],nullptr);
+		bool r= check_accepts(string,0,used_rules[string],used_rule_sets[string],nullptr)==strings[string].size();
+
+		return r;
 	}
 /*
 	void blockingEdges(int string, vec<int> & store_edges ){

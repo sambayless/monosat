@@ -204,8 +204,8 @@ bool P0LAcceptDetector::path_rec(int atom,int s, int dest,vec<int> & string,int 
 	if (emove_count>=acceptor.states()){
 		return false;//this is not a great way to solve the problem of avoiding infinite e-move cycles...
 	}
-	//if(!suffixTable[str_pos][s])
-	//	return false;
+	if(!suffixTable[str_pos][s])
+		return false;
 	int l = string[str_pos];
 	for(int j = 0;j<acceptor.nIncident(s);j++){
 		//now check if the label is active
@@ -263,7 +263,7 @@ bool P0LAcceptDetector::accepts_rec(int atom,int str,int depth,vec<int> * blocki
 	}*/
 
 	//build suffix table of states that can reach the final state from the nth suffix of the string
-	//acceptor.buildSuffixTable(0,0,string,suffixTable);
+	acceptor.buildSuffixTable(0,0,string,suffixTable);
 
 
 
