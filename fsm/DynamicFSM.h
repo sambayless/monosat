@@ -490,6 +490,9 @@ private:
 	vec<bool> cur_seen;
 public:
 	bool accepts(int source, int final, vec<int> & string){
+		return accepts_prefix(source,final,string)==string.size();
+	}
+	int accepts_prefix(int source, int final, vec<int> & string){
 		cur_seen.growTo(states());
 		next_seen.growTo(states());
 		for(int s:cur){
@@ -501,7 +504,7 @@ public:
 		cur_seen[source]=true;
 		cur.push(source);
 
-
+		int largest_prefix=0;
 
 		//initial emove pass:
 		if(emovesEnabled()){
@@ -521,8 +524,9 @@ public:
 			}
 		}
 		if(string.size()){
-			for(int l:string)
+			for(int k = 0;k<string.size();k++)
 			{
+				int l = string[k];
 				assert(l>0);
 				for(int i = 0;i<cur.size();i++){
 					int s = cur[i];
@@ -552,6 +556,10 @@ public:
 					next_seen[s]=false;
 				}
 				next.clear();
+
+				if(cur.size()){
+					largest_prefix=k;
+				}
 			}
 
 			//final emove pass:
@@ -571,7 +579,11 @@ public:
 				}
 			}
 		}
-		return cur_seen[final];
+		if( cur_seen[final]){
+			return string.size();
+		}else{
+			return largest_prefix;
+		}
 
 	}
 	void clear(){

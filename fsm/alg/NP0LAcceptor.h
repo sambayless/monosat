@@ -307,18 +307,18 @@ private:
 
 
 		vec<Bitset> & suffixTable = suffixTables[depth];
-/*
 
-		if(!acceptor.accepts(0,0,string)){
+		int backtrack=0;
+		if((backtrack = acceptor.accepts_prefix(0,0,string)) < string.size()){
 
-			return false;
+			return backtrack;
 		}
-*/
+
 
 		//build suffix table of states that can reach the final state from the nth suffix of the string
-		if(!acceptor.buildSuffixTable(0,0,string,suffixTable)){
-			return false;
-		}
+		acceptor.buildSuffixTable(0,0,string,suffixTable);//<string.size());//{
+		//	return suffix;
+		//}
 
 
 
