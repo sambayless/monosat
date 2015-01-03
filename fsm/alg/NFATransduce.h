@@ -293,6 +293,7 @@ public:
 		return accepting(state);*/
 	}
 	bool getPath(int string1, int string2, int state, vec<NFATransition> & path){
+
 		return path_rec(source,state,string1, string2,0,0,0,path);
 	}
 

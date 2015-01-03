@@ -315,6 +315,32 @@ private:
 		stack.push(PathElement(true,false,false,source,0,0));
 
 		while(true){
+
+			if(path.size()>=string.size()){
+				//don't consider a string this long.
+				//backtrack until the path is backtrack size.
+				int backtrack = path.size()-1;
+				assert(backtrack<path.size());
+				while(backtrack<path.size()){
+					PathElement & p= stack.last();
+					if(p.emove){
+						emove_count--;
+					}else{
+						str_pos--;
+					}
+					if (p.on_path){
+						path.pop();
+					}
+					if(p.used_rule){
+						int rID = used_rule_set.last();
+						used_edges[rID]=false;
+						used_rule_set.pop();
+					}
+					stack.pop();
+				}
+				continue;
+			}
+
 			int cur_index = stack.size()-1;
 			PathElement & p= stack[cur_index];
 
@@ -475,8 +501,7 @@ private:
 
 	}
 	int check_accepts(int str,int depth,vec<bool> & used_edges,vec<int> & used_rule_set,vec<int> * blocking_edges){
-		if(depth>9)
-			return false;
+
 		static int iter = 0;
 		++iter;
 

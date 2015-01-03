@@ -147,7 +147,7 @@ private:
 		}
 
 
-		int l = strings[string][str_pos];
+
 		for(int j = 0;j<g.nIncident(s);j++){
 			//now check if the label is active
 			int edgeID= g.incident(s,j).id;
@@ -161,6 +161,7 @@ private:
 				}
 			}
 			if(str_pos< strings[string].size()){
+				int l = strings[string][str_pos];
 				if (g.transitionEnabled(edgeID,l,0)){
 					path.push({edgeID,l,0});
 					if(path_rec(to,dest,string,str_pos+1,0,path)){//str_pos is incremented

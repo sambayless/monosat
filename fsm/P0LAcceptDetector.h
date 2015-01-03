@@ -169,6 +169,9 @@ public:
 	}
 
 private:
+	bool find_path(int source, int dest,vec<int> & string,int depth,vec<Bitset> & suffixTable, vec<int> & path,vec<int> * blocking_edges);
+
+	int check_accepts(int str,int depth,vec<int> * blocking_edges);
 	bool path_rec(int atom,int s, int dest,vec<int> & string,int str_pos,int emove_count,int depth,vec<Bitset> & suffixTable, vec<int> & path,vec<int> * blocking_edges);
 	bool accepts_rec(int atom,int str,int depth,vec<int> * blocking_edges=nullptr);
 	void analyzeNFT(int atom,int source, int final,vec<int> & string,vec<int> & blocking,vec<Bitset> & suffixTable);
