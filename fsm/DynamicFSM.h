@@ -23,6 +23,7 @@ namespace Monosat {
 class DynamicFSM{
 	DynamicGraph g;
 	//std::vector<Bitset> edge_status;
+	int id;
 	bool has_epsilon=true;
 	bool is_changed = true;
 public:
@@ -49,7 +50,7 @@ public:
 	std::vector<EdgeChange> history;
 
 public:
-	DynamicFSM() {
+	DynamicFSM(int id = -1):id(id) {
 
 	}
 
@@ -57,6 +58,9 @@ public:
 
 	}
 
+	int getID(){
+		return id;
+	}
 	void setEmovesEnabled(bool enabled){
 		has_epsilon=enabled;
 	}

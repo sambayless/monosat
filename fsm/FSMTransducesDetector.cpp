@@ -58,7 +58,7 @@ void FSMTransducesDetector::addTransducesLit(int state, int strID1,int strID2, V
 	g_under.invalidate();
 	g_over.invalidate();
 
-	Var accept_var = outer->newVar(outer_reach_var, getID());
+	Var accept_var = outer->newVar(g_over.getID(),outer_reach_var, getID());
 
 	if (first_var == var_Undef) {
 		first_var = accept_var;
@@ -205,7 +205,7 @@ void FSMTransducesDetector::buildTransducesReason(int node,int str1,int str2, ve
 		int edgeID = t.edgeID;
 		int input = t.input;
 		int output = t.output;
-		Var v = outer->getTransitionVar(edgeID,input,output);
+		Var v = outer->getTransitionVar(g_over.getID(),edgeID,input,output);
 		assert(outer->value(v)==l_True);
 		conflict.push(mkLit(v,true));
 	}
@@ -243,7 +243,7 @@ bool FSMTransducesDetector::path_rec(int s, int dest,int string1,int string2,int
 				path.pop();
 			}
 		}else{
-			Var v = outer->getTransitionVar(edgeID,0,0);
+			Var v = outer->getTransitionVar(g_over.getID(),edgeID,0,0);
 			if(v!=var_Undef){
 				assert(outer->value(v)==l_False);
 				conflict.push(mkLit(v));
@@ -259,7 +259,7 @@ bool FSMTransducesDetector::path_rec(int s, int dest,int string1,int string2,int
 					path.pop();
 				}
 			}else{
-				Var v = outer->getTransitionVar(edgeID,l_in,0);
+				Var v = outer->getTransitionVar(g_over.getID(),edgeID,l_in,0);
 				if(v!=var_Undef){
 					assert(outer->value(v)==l_False);
 					conflict.push(mkLit(v));
@@ -276,7 +276,7 @@ bool FSMTransducesDetector::path_rec(int s, int dest,int string1,int string2,int
 					path.pop();
 				}
 			}else{
-				Var v = outer->getTransitionVar(edgeID,0,l_out);
+				Var v = outer->getTransitionVar(g_over.getID(),edgeID,0,l_out);
 				if(v!=var_Undef){
 					assert(outer->value(v)==l_False);
 					conflict.push(mkLit(v));
@@ -294,7 +294,7 @@ bool FSMTransducesDetector::path_rec(int s, int dest,int string1,int string2,int
 					path.pop();
 				}
 			}else{
-				Var v = outer->getTransitionVar(edgeID,l_in,l_out);
+				Var v = outer->getTransitionVar(g_over.getID(),edgeID,l_in,l_out);
 				if(v!=var_Undef){
 					assert(outer->value(v)==l_False);
 					conflict.push(mkLit(v));

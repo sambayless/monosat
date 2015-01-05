@@ -58,7 +58,7 @@ void FSMAcceptDetector::addAcceptLit(int state, int strID, Var outer_reach_var){
 	g_under.invalidate();
 	g_over.invalidate();
 
-	Var accept_var = outer->newVar(outer_reach_var, getID());
+	Var accept_var = outer->newVar(g_over.getID(),outer_reach_var, getID());
 
 	if (first_var == var_Undef) {
 		first_var = accept_var;
@@ -228,7 +228,7 @@ void FSMAcceptDetector::buildAcceptReason(int node,int str, vec<Lit> & conflict)
 	for(auto & t:path){
 		int edgeID = t.edgeID;
 		int input = t.input;
-		Var v = outer->getTransitionVar(edgeID,input,0);
+		Var v = outer->getTransitionVar(g_over.getID(),edgeID,input,0);
 		assert(outer->value(v)==l_True);
 		conflict.push(mkLit(v,true));
 	}
@@ -307,7 +307,7 @@ void FSMAcceptDetector::buildNonAcceptReason(int node,int str, vec<Lit> & confli
 							to_visit.push(from);//emove transition, if enabled
 						}
 					}else{
-						Var v = outer->getTransitionVar(edgeID,0,0);
+						Var v = outer->getTransitionVar(g_over.getID(),edgeID,0,0);
 						if (v!=var_Undef){
 							assert(outer->value(v)==l_False);
 							if (outer->level(v)>0){
@@ -373,7 +373,7 @@ void FSMAcceptDetector::buildNonAcceptReason(int node,int str, vec<Lit> & confli
 							to_visit.push(from);//emove transition, if enabled
 						}
 					}else{
-						Var v = outer->getTransitionVar(edgeID,0,0);
+						Var v = outer->getTransitionVar(g_over.getID(),edgeID,0,0);
 						if (v!=var_Undef){
 							assert(outer->value(v)==l_False);
 							if (outer->level(v)>0){
@@ -390,7 +390,7 @@ void FSMAcceptDetector::buildNonAcceptReason(int node,int str, vec<Lit> & confli
 						next_visit.push(from);
 					}
 				}else{
-					Var v = outer->getTransitionVar(edgeID,l,0);
+					Var v = outer->getTransitionVar(g_over.getID(),edgeID,l,0);
 					if (v!=var_Undef){
 						assert(outer->value(v)==l_False);
 						if (outer->level(v)>0){

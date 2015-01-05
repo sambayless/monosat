@@ -56,7 +56,7 @@ void FSMGeneratesDetector::addGeneratesLit(int strID, Var outer_reach_var){
 	g_under.invalidate();
 	g_over.invalidate();
 
-	Var accept_var = outer->newVar(outer_reach_var, getID());
+	Var accept_var = outer->newVar(g_over.getID(),outer_reach_var, getID());
 
 	if (first_var == var_Undef) {
 		first_var = accept_var;
@@ -225,7 +225,7 @@ void FSMGeneratesDetector::buildGeneratesReason(int str, vec<Lit> & conflict){
 		int edgeID = t.edgeID;
 
 		int output = t.output;
-		Var v = outer->getTransitionVar(edgeID,0,output);
+		Var v = outer->getTransitionVar(g_over.getID(),edgeID,0,output);
 		assert(outer->value(v)==l_True);
 		conflict.push(mkLit(v,true));
 	}
@@ -271,7 +271,7 @@ bool FSMGeneratesDetector::unique_path_conflict(int s,int string,int str_pos,int
 					}
 				}
 			}else{
-				Var v = outer->getTransitionVar(edgeID,0,0);
+				Var v = outer->getTransitionVar(g_over.getID(),edgeID,0,0);
 				if(v!=var_Undef && used_transitions[s].label==-1){
 					assert(outer->value(v)==l_False);
 					conflict.push(mkLit(v));
@@ -301,7 +301,7 @@ bool FSMGeneratesDetector::unique_path_conflict(int s,int string,int str_pos,int
 						}
 					}
 				}else{
-					Var v = outer->getTransitionVar(edgeID,0,l);
+					Var v = outer->getTransitionVar(g_over.getID(),edgeID,0,l);
 					if(v!=var_Undef && used_transitions[s].label==-1){
 						assert(outer->value(v)==l_False);
 						conflict.push(mkLit(v));

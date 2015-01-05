@@ -80,13 +80,13 @@ public:
 
 	vec<lbool> assigns;
 
-	int n_in_alphabet=1;//number of transition labels. Transition labels start from 0 (which is the non-consuming epsilon transition) and go to n_labels-1.
-	int n_out_alphabet=0;
+	vec<int> n_in_alphabets;//number of transition labels. Transition labels start from 0 (which is the non-consuming epsilon transition) and go to n_labels-1.
+	vec<int> n_out_alphabets;
 
 	vec<vec<Transition>> edge_labels;
+	vec<DynamicFSM*> g_unders;
+	vec<DynamicFSM*> g_overs;
 
-	DynamicFSM g_under;
-	DynamicFSM g_over;
 	vec<FSMAcceptDetector *> accepts;
 	vec<FSMGeneratesDetector *> generates;
 	vec<FSMTransducesDetector *> transduces;
@@ -127,6 +127,7 @@ public:
 		int detector_edge :29;	//the detector this variable belongs to, or its edge number, if it is an edge variable
 		int input;
 		int output;
+		int fsmID;
 		Var solverVar;
 	};
 
@@ -165,6 +166,14 @@ public:
 
 		rnd_seed = opt_random_seed;
 	}
+	~FSMTheorySolver(){
+		for (DynamicFSM * f:g_unders){
+			delete(f);
+		}
+		for (DynamicFSM * f:g_overs){
+			delete(f);
+		}
+	}
 	
 	void printStats(int detailLevel) {
 		if (detailLevel > 0) {
@@ -194,29 +203,33 @@ public:
 	inline int getGraphID() {
 		return id;
 	}
-	inline int inAlphabet()const{
-		return n_in_alphabet;
+	inline int inAlphabet(int fsmID)const{
+		return n_in_alphabets[fsmID];
 	}
-	inline int outAlphabet()const{
-		return n_out_alphabet;
+	inline int outAlphabet(int fsmID)const{
+		return n_out_alphabets[fsmID];
 	}
-	void setAlphabets(int inputs,int outputs){
-		assert(inputs>=n_in_alphabet);
-		while (inputs>inAlphabet()){
-			n_in_alphabet++;
+	void setAlphabets(int fsmID,int inputs,int outputs){
+		assert(g_unders[fsmID]);
+		DynamicFSM & g_under = *g_unders[fsmID];
+		DynamicFSM & g_over = *g_overs[fsmID];
+
+		assert(inputs>=n_in_alphabets[fsmID]);
+		while (inputs>inAlphabet(fsmID)){
+			n_in_alphabets[fsmID]++;
 			g_under.addInCharacter();
 			g_over.addInCharacter();
 		}
-		while (outputs>outAlphabet()){
-			n_out_alphabet++;
+		while (outputs>outAlphabet(fsmID)){
+			n_out_alphabets[fsmID]++;
 			g_under.addOutCharacter();
 			g_over.addOutCharacter();
 		}
 		for(int i =0;i<edge_labels.size();i++){
-			edge_labels[i].growTo(inAlphabet()*outAlphabet());
+			edge_labels[i].growTo(inAlphabet(fsmID)*outAlphabet(fsmID));
 		}
 	}
-	void addInCharacter(){
+/*	void addInCharacter(){
 		n_in_alphabet++;
 		g_under.addInCharacter();
 		g_over.addInCharacter();
@@ -233,7 +246,7 @@ public:
 		for(int i =0;i<edge_labels.size();i++){
 			edge_labels[i].growTo(inAlphabet()*outAlphabet());
 		}
-	}
+	}*/
 	inline bool isEdgeVar(Var v) const{
 		assert(v < vars.size());
 		return vars[v].isEdge;
@@ -242,9 +255,12 @@ public:
 		assert(isEdgeVar(v));
 		return vars[v].detector_edge;
 	}
+	inline int getFsmID(Var v) const{
 
-	inline Transition & getTransition(int edgeID, int input,int output){
-			return edge_labels[edgeID][input+output*inAlphabet()];
+		return vars[v].fsmID;
+	}
+	inline Transition & getTransition(int fsmID,int edgeID, int input,int output){
+			return edge_labels[edgeID][input+output*inAlphabet(fsmID)];
 		}
 	inline int getInput(Var v) const{
 		assert(isEdgeVar(v));
@@ -259,10 +275,10 @@ public:
 		return vars[v].detector_edge;
 	}
 	
-	inline Var getTransitionVar(int edgeID, int inputChar, int outputChar) {
+	inline Var getTransitionVar(int fsmID,int edgeID, int inputChar, int outputChar) {
 		assert(inputChar>=0);
 		assert(outputChar>=0);
-		Var v = getTransition(edgeID,inputChar,outputChar).v;
+		Var v = getTransition(fsmID,edgeID,inputChar,outputChar).v;
 		assert(v < vars.size());
 		//assert(vars[v].isEdge);
 		return v;
@@ -309,16 +325,17 @@ public:
 	
 	Var newAuxVar(int forDetector = -1, bool connectToTheory = false) {
 		Var s = S->newVar();
-		return newVar(s, forDetector, -1,-1,false, connectToTheory);
+		return newVar(s, forDetector,-1, -1,-1,false, connectToTheory);
 	}
-	Var newVar(Var solverVar, int detector, int label=-1,int output=-1, bool isEdge = false, bool connectToTheory = true) {
+	Var newVar(Var solverVar,  int detector_edge,int fsmID=-1, int label=-1,int output=-1, bool isEdge = false, bool connectToTheory = true) {
 		while (S->nVars() <= solverVar)
 			S->newVar();
 		Var v = vars.size();
 
 		vars.push();
 		vars[v].isEdge = isEdge;
-		vars[v].detector_edge = detector;
+		vars[v].fsmID=fsmID;
+		vars[v].detector_edge = detector_edge;
 		vars[v].solverVar = solverVar;
 		vars[v].input=label;
 		vars[v].output = output;
@@ -329,10 +346,10 @@ public:
 		}
 		if(isEdge){
 			assert(label>-1);
-			assert(detector>-1);
+			assert(detector_edge>-1);
 		}
-		if (!isEdge && detector >= 0)
-			detectors[detector]->addVar(v);
+		if (!isEdge && detector_edge >= 0)
+			detectors[detector_edge]->addVar(v);
 		return v;
 	}
 	inline int level(Var v) {
@@ -393,46 +410,27 @@ public:
 			return false;
 		}
 	}
-	
-	~FSMTheorySolver() {
-	}
 
-	int newNode() {
-		g_over.addNode();
 
-		seen.growTo(nNodes());
+	int newNode(int fsmID) {
+		assert(g_overs[fsmID]);
+		g_overs[fsmID]->addNode();
+
+		seen.growTo(nNodes(fsmID));
 		
-		return g_under.addNode();
+		return g_unders[fsmID]->addNode();
 	}
-	void newNodes(int n) {
+	void newNodes(int fsmID,int n) {
 		for (int i = 0; i < n; i++)
-			newNode();
+			newNode(fsmID);
 	}
-	int nNodes() {
-		return g_under.nodes();
+	int nNodes(int fsmID) {
+		return g_overs[fsmID]->nodes();
 	}
-	bool isNode(int n) {
-		return n >= 0 && n < nNodes();
+	bool isNode(int fsmID,int n) {
+		return n >= 0 && n < nNodes(fsmID);
 	}
-	
-	bool dbg_propgation(Lit l) {
 
-		return true;
-	}
-	
-	void dbg_sync_reachability() {
-		
-
-		
-	}
-	void dbg_sync() {
-
-
-	}
-	void dbg_full_sync() {
-
-	}
-	
 	void backtrackUntil(int level) {
 		static int it = 0;
 		
@@ -447,16 +445,17 @@ public:
 				assert(assigns[e.var]!=l_Undef);
 				if (e.isEdge) {
 					assert(dbg_value(e.var)==l_Undef);
+					int fsmID = getFsmID(e.var);
 					int edgeID = getEdgeID(e.var); //e.var-min_edge_var;
 					int input = getInput(e.var);
 					int output = getOutput(e.var);
 					assert(edgeID==e.edgeID);
 
 					if (e.assign) {
-						g_under.disableTransition(edgeID, input,output);
+						g_unders[fsmID]->disableTransition(edgeID, input,output);
 
 					} else {
-						g_over.enableTransition(edgeID,input,output);
+						g_overs[fsmID]->enableTransition(edgeID,input,output);
 
 					}
 				} else {
@@ -483,7 +482,6 @@ public:
 		}
 
 		assert(dbg_graphsUpToDate());
-		dbg_sync();
 		
 	};
 
@@ -491,8 +489,7 @@ public:
 		if (!opt_decide_theories)
 			return lit_Undef;
 		double start = rtime(1);
-		
-		dbg_full_sync();
+
 		for (int i = 0; i < detectors.size(); i++) {
 			FSMDetector * r = detectors[i];
 			Lit l = r->decide(decisionLevel());
@@ -514,15 +511,16 @@ public:
 		for (; i >= 0; i--) {
 			Assignment e = trail[i];
 			if (e.isEdge) {
+				int fsmID = getFsmID(e.var);
 				int edgeID = getEdgeID(e.var); //e.var-min_edge_var;
 				int input = getInput(e.var);
 				int output = getOutput(e.var);
 				assert(assigns[e.var]!=l_Undef);
 				assigns[e.var] = l_Undef;
 				if (e.assign) {
-					g_under.disableTransition(edgeID,input,output);
+					g_unders[fsmID]->disableTransition(edgeID,input,output);
 				} else {
-					g_over.enableTransition(edgeID,input,output);
+					g_overs[fsmID]->enableTransition(edgeID,input,output);
 				}
 			} else {
 				if (var(p) == e.var) {
@@ -546,7 +544,7 @@ public:
 		}
 		//while(trail_lim.size() && trail_lim.last()>=trail.size())
 		//	trail_lim.pop();
-		dbg_sync();
+
 		/*		for(int i = 0;i<reach_detectors.size();i++){
 		 if(reach_detectors[i]->positive_reach_detector)
 		 reach_detectors[i]->positive_reach_detector->update();
@@ -638,17 +636,18 @@ public:
 		if (isEdgeVar(var(l))) {
 			
 			//this is an edge assignment
+			int fsmID = getFsmID(var(l));
 			int edgeID = getEdgeID(var(l)); //v-min_edge_var;
 			int input = getInput(var(l));
 			int output = getOutput(var(l));
-			assert(getTransition(edgeID,input,output).v == var(l));
+			assert(getTransition(fsmID,edgeID,input,output).v == var(l));
 
 			trail.push( { true, !sign(l),edgeID, v });
 
 			if (!sign(l)) {
-				g_under.enableTransition(edgeID,input,output);
+				g_unders[fsmID]->enableTransition(edgeID,input,output);
 			} else {
-				g_over.disableTransition(edgeID,input,output);
+				g_overs[fsmID]->disableTransition(edgeID,input,output);
 			}
 			
 		} else {
@@ -666,7 +665,7 @@ public:
 			int a = 1;
 		}
 		stats_propagations++;
-		dbg_sync();
+
 		if (!requiresPropagation) {
 			stats_propagations_skipped++;
 			assert(dbg_graphsUpToDate());
@@ -684,7 +683,7 @@ public:
 		//At level 0, need to propagate constant reaches/source nodes/edges...
 		
 		//stats_initial_propagation_time += rtime(1) - startproptime;
-		dbg_sync();
+
 		assert(dbg_graphsUpToDate());
 		
 		for (int d = 0; d < detectors.size(); d++) {
@@ -698,21 +697,22 @@ public:
 			}
 		}
 		
-		dbg_full_sync();
+
 		
 		requiresPropagation = false;
-		g_under.clearChanged();
-		g_over.clearChanged();
-		
-		g_under.clearHistory();
-		g_over.clearHistory();
+		for(int i = 0;i<nFsms();i++){
+			g_unders[i]->clearChanged();
+			g_overs[i]->clearChanged();
+
+			g_unders[i]->clearHistory();
+			g_overs[i]->clearHistory();
+		}
 
 		//detectors_to_check.clear();
 		
 		double elapsed = rtime(1) - startproptime;
 		propagationtime += elapsed;
-		dbg_sync();
-		dbg_sync_reachability();
+
 		return true;
 	}
 	;
@@ -731,47 +731,52 @@ public:
 	}
 	
 	bool check_solved() {
+		for(int fsmID = 0;fsmID<nFsms();fsmID++){
+			if(!g_unders[fsmID])
+				continue;
+			DynamicFSM & g_under = *g_unders[fsmID];
+			DynamicFSM & g_over = *g_overs[fsmID];
+			for (int edgeID = 0; edgeID < edge_labels.size(); edgeID++) {
+				for (int input = 0;input<inAlphabet(fsmID);input++){
+					for (int output = 0;output<outAlphabet(fsmID);output++){
+					if (getTransition(fsmID,edgeID,input,output).v < 0)
+						continue;
+					Var v = getTransition(fsmID,edgeID,input,output).v;
+					if(v==var_Undef)
+						continue;
+					lbool val = value(v);
+					if (val == l_Undef) {
+						return false;
+					}
 
-		for (int edgeID = 0; edgeID < edge_labels.size(); edgeID++) {
-			for (int input = 0;input<inAlphabet();input++){
-				for (int output = 0;output<outAlphabet();output++){
-				if (getTransition(edgeID,input,output).v < 0)
-					continue;
-				Var v = getTransition(edgeID,input,output).v;
-				if(v==var_Undef)
-					continue;
-				lbool val = value(v);
-				if (val == l_Undef) {
-					return false;
-				}
-
-				if (val == l_True) {
-					/*	if(!g.hasEdge(e.from,e.to)){
-					 return false;
-					 }
-					 if(!antig.hasEdge(e.from,e.to)){
-					 return false;
-					 }*/
-					if (!g_under.transitionEnabled(edgeID,input,output)) {
-						return false;
+					if (val == l_True) {
+						/*	if(!g.hasEdge(e.from,e.to)){
+						 return false;
+						 }
+						 if(!antig.hasEdge(e.from,e.to)){
+						 return false;
+						 }*/
+						if (!g_under.transitionEnabled(edgeID,input,output)) {
+							return false;
+						}
+						if (!g_over.transitionEnabled(edgeID,input,output)) {
+							return false;
+						}
+					} else {
+						/*if(g.hasEdge(e.from,e.to)){
+						 return false;
+						 }*/
+						if (g_under.transitionEnabled(edgeID,input,output)) {
+							return false;
+						}
+						if (g_over.transitionEnabled(edgeID,input,output)) {
+							return false;
+						}
+						/*if(antig.hasEdge(e.from,e.to)){
+						 return false;
+						 }*/
 					}
-					if (!g_over.transitionEnabled(edgeID,input,output)) {
-						return false;
 					}
-				} else {
-					/*if(g.hasEdge(e.from,e.to)){
-					 return false;
-					 }*/
-					if (g_under.transitionEnabled(edgeID,input,output)) {
-						return false;
-					}
-					if (g_over.transitionEnabled(edgeID,input,output)) {
-						return false;
-					}
-					/*if(antig.hasEdge(e.from,e.to)){
-					 return false;
-					 }*/
-				}
 				}
 			}
 		}
@@ -791,6 +796,9 @@ public:
 	void drawCurrent() {
 		
 	}
+	int nFsms()const{
+		return g_overs.size();
+	}
 	int nEdges() {
 		return edge_labels.size();
 	}
@@ -801,24 +809,38 @@ public:
 		marker_map[mnum] = detectorID;
 		return reasonMarker;
 	}
+	void newFSM(int fsmID){
+		g_unders.growTo(fsmID+1,nullptr);
+		g_overs.growTo(fsmID+1,nullptr);
+		if(g_unders[fsmID]){
+			assert(false);
+			fprintf(stderr,"Redefined fsm, Aborting!");
+			exit(1);
+		}
+		g_unders[fsmID]=new DynamicFSM(fsmID);
+		g_overs[fsmID]=new DynamicFSM(fsmID);
+		n_in_alphabets.growTo(fsmID+1,0);//number of transition labels. Transition labels start from 0 (which is the non-consuming epsilon transition) and go to n_labels-1.
+		n_out_alphabets.growTo(fsmID+1,0);
+	}
 
-
-	Lit newTransition(int from, int to,int input,int output, Var outerVar = var_Undef) {
+	Lit newTransition(int fsmID,int from, int to,int input,int output, Var outerVar = var_Undef) {
 		assert(outerVar!=var_Undef);
 		assert(input>=0);assert(outerVar!=var_Undef);
 		if(from==to && input==0){
 			//don't add this transition; self-looping e transitions have no effect.
 			return lit_Undef;
 		}
-
+		assert(g_unders[fsmID]);
+		DynamicFSM & g_under = *g_unders[fsmID];
+		DynamicFSM & g_over = *g_overs[fsmID];
 		int edgeID=-1;
 		if(g_under.states()>from && g_under.states()>to && (edgeID=g_under.getEdge(from,to))>-1){
 			if(g_over.inAlphabet()>input && g_over.outAlphabet()>output && g_over.transitionEnabled(edgeID,input,output)){
 				//we already have this transition implemented
-				Var ov =getTransition(edgeID,input,output).outerVar;
+				Var ov =getTransition(fsmID,edgeID,input,output).outerVar;
 				assert(ov!=var_Undef);
-				assert(getTransition(edgeID,input,output).from ==from);
-				assert(getTransition(edgeID,input,output).to ==to);
+				assert(getTransition(fsmID,edgeID,input,output).from ==from);
+				assert(getTransition(fsmID,edgeID,input,output).to ==to);
 				makeEqualInSolver(mkLit(outerVar),mkLit(ov));
 				return lit_Undef;
 			}
@@ -832,19 +854,19 @@ public:
 
 		g_under.addTransition(from,to,edgeID,input,output,false);
 		edgeID =g_over.addTransition(from,to,edgeID,input,output,true);
-		Var v = newVar(outerVar, edgeID,input,output, true);
-		assert(input<inAlphabet());
-		assert(output<outAlphabet());
+		Var v = newVar(outerVar,edgeID,fsmID,input,output, true);
+		assert(input<inAlphabet(fsmID));
+		assert(output<outAlphabet(fsmID));
 
 
 		edge_labels.growTo(edgeID+1);
-		edge_labels[edgeID].growTo(inAlphabet()*outAlphabet());
+		edge_labels[edgeID].growTo(inAlphabet(fsmID)*outAlphabet(fsmID));
 
 
-		getTransition(edgeID,input,output).v = v;
-		getTransition(edgeID,input,output).outerVar = outerVar;
-		getTransition(edgeID,input,output).from = from;
-		getTransition(edgeID,input,output).to = to;
+		getTransition(fsmID,edgeID,input,output).v = v;
+		getTransition(fsmID,edgeID,input,output).outerVar = outerVar;
+		getTransition(fsmID,edgeID,input,output).from = from;
+		getTransition(fsmID,edgeID,input,output).to = to;
 
 		return mkLit(v, false);
 	}
@@ -861,12 +883,12 @@ public:
 		assert(!this->strings);
 		this->strings=strings;
 	}
-	void setHasEpsilonTransitons(bool hasEpsilon){
-		g_under.setEmovesEnabled(hasEpsilon);
-		g_over.setEmovesEnabled(hasEpsilon);
-	}
 
-	void addAcceptLit(int source ,int reach, int strID, Var outer_var){
+
+	void addAcceptLit(int fsmID,int source ,int reach, int strID, Var outer_var){
+		assert(g_unders[fsmID]);
+		DynamicFSM & g_under = *g_unders[fsmID];
+		DynamicFSM & g_over = *g_overs[fsmID];
 		accepts.growTo(source+1);
 		if(!accepts[source]){
 			accepts[source] = new FSMAcceptDetector(detectors.size(), this, g_under,g_over, source,*strings,drand(rnd_seed));
@@ -875,7 +897,10 @@ public:
 		accepts[source]->addAcceptLit(reach,strID,outer_var);
 	}
 
-	void addGenerateLit(int source, int strID, Var outer_var){
+	void addGenerateLit(int fsmID,int source, int strID, Var outer_var){
+		assert(g_unders[fsmID]);
+		DynamicFSM & g_under = *g_unders[fsmID];
+		DynamicFSM & g_over = *g_overs[fsmID];
 		generates.growTo(source+1);
 		if(!generates[source]){
 			generates[source] = new FSMGeneratesDetector(detectors.size(), this, g_under,g_over, source,*strings,drand(rnd_seed));
@@ -883,7 +908,10 @@ public:
 		}
 		generates[source]->addGeneratesLit(strID,outer_var);
 	}
-	void addTransduceLit(int source,int dest, int strID, int strID2, Var outer_var){
+	void addTransduceLit(int fsmID, int source,int dest, int strID, int strID2, Var outer_var){
+		assert(g_unders[fsmID]);
+		DynamicFSM & g_under = *g_unders[fsmID];
+		DynamicFSM & g_over = *g_overs[fsmID];
 		transduces.growTo(source+1);
 		if(!transduces[source]){
 			transduces[source] = new FSMTransducesDetector(detectors.size(), this, g_under,g_over, source,*strings,drand(rnd_seed));

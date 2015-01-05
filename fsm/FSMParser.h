@@ -42,8 +42,8 @@ namespace Monosat {
 // GRAPH Parser:
 template<class B, class Solver>
 class FSMParser: public Parser<B, Solver> {
+	vec<int> fsmIDs;
 
-	vec<FSMTheorySolver*> fsms;
 	vec<int> inAlphabets;
 	vec<int> outAlphabets;
 	struct Transition{
@@ -108,12 +108,13 @@ class FSMParser: public Parser<B, Solver> {
 			printf("PARSE ERROR! Number of transition labels must be >=0, was %d\n", n_labels), exit(1);
 		}
 
-		fsms.growTo(fsmID + 1);
-		if(fsms[fsmID]){
+		fsmIDs.growTo(fsmID + 1,-1);
+		if(fsmIDs[fsmID]>=0){
 			printf("PARSE ERROR! FSM id %d declared twice!\n", fsmID), exit(1);
 		}
-		fsms[fsmID]= new FSMTheorySolver(&S);
-		S.addTheory(fsms[fsmID]);
+		//fsms[fsmID]= new FSMTheorySolver(&S);
+		fsmIDs[fsmID]=fsmID;
+		//S.addTheory(fsms[fsmID]);
 		transitions.growTo(fsmID+1);
 		accepts.growTo(fsmID+1);
 		generates.growTo(fsmID+1);
@@ -171,7 +172,7 @@ class FSMParser: public Parser<B, Solver> {
 		int output = parseInt(in);
 		int edgeVar = parseInt(in) - 1;
 		
-		if (fsmID < 0 || fsmID >= fsms.size()) {
+		if (fsmID < 0 || fsmID >= fsmIDs.size()) {
 			printf("PARSE ERROR! Undeclared fsm identifier %d for edge %d\n", fsmID, edgeVar), exit(1);
 		}
 		if (input<0){
@@ -219,7 +220,7 @@ class FSMParser: public Parser<B, Solver> {
 		accepts[fsmID].last().strID = strID;
 		accepts[fsmID].last().reachVar = reachVar;
 
-		if (fsmID < 0 || fsmID >= fsms.size()) {
+		if (fsmID < 0 || fsmID >= fsmIDs.size()) {
 			printf("PARSE ERROR! Undeclared fsm identifier %d for edge %d\n", fsmID, reachVar), exit(1);
 		}
 
@@ -262,7 +263,7 @@ class FSMParser: public Parser<B, Solver> {
 		generates[fsmID].last().strID = strID;
 		generates[fsmID].last().reachVar = reachVar;
 
-		if (fsmID < 0 || fsmID >= fsms.size()) {
+		if (fsmID < 0 || fsmID >= fsmIDs.size()) {
 			printf("PARSE ERROR! Undeclared fsm identifier %d for edge %d\n", fsmID, reachVar), exit(1);
 		}
 
@@ -306,7 +307,7 @@ class FSMParser: public Parser<B, Solver> {
 		transduces[fsmID].last().strID2 = strID2;
 		transduces[fsmID].last().reachVar = reachVar;
 
-		if (fsmID < 0 || fsmID >= fsms.size()) {
+		if (fsmID < 0 || fsmID >= fsmIDs.size()) {
 			printf("PARSE ERROR! Undeclared fsm identifier %d for edge %d\n", fsmID, reachVar), exit(1);
 		}
 
@@ -365,17 +366,23 @@ public:
 	
 
 	void implementConstraints(Solver & S) {
-		
-		for(int i = 0;i<fsms.size();i++){
-			if(fsms[i]){
-				fsms[i]->setHasEpsilonTransitons(hasEpsilonTransitions[i]);
-				fsms[i]->setAlphabets(inAlphabets[i],outAlphabets[i]);
+		FSMTheorySolver * theory=nullptr;
 
-				fsms[i]->setStrings(&strings);
+		for(int i = 0;i<fsmIDs.size();i++){
+			int fsmID = fsmIDs[i];
+			if(fmsID<0)
+				continue;
 
+			if(!theory){
+				theory = new FSMTheorySolver(&S);
+				theory->setStrings(&strings);
+			}
+
+
+				theory->setAlphabets(fsmID,inAlphabets[i],outAlphabets[i]);
 
 				for (auto &t:transitions[i]){
-					fsms[i]->newTransition(t.from,t.to,t.input,t.output,t.edgeVar);
+					theory->newTransition(fsmID,t.from,t.to,t.input,t.output,t.edgeVar);
 				}
 
 				for(auto & a: accepts[i]){
@@ -383,14 +390,14 @@ public:
 					if (a.strID<0 || !created_strings[a.strID]){
 						printf("PARSE ERROR! String ID must be a non-negative integer, was %d\n", a.strID), exit(1);
 					}
-					if(a.from<0 || a.from>=fsms[i]->nNodes()){
+					if(a.from<0 || a.from>=theory->nNodes(fsmID)){
 							printf("PARSE ERROR! %d is not a valid state\n", a.from), exit(1);
 						}
-					if(a.to<0 || a.to>=fsms[i]->nNodes()){
+					if(a.to<0 || a.to>=theory->nNodes(fsmID)){
 						printf("PARSE ERROR! %d is not a valid state\n", a.to), exit(1);
 					}
 
-					fsms[i]->addAcceptLit(a.from, a.to,a.strID,a.reachVar);
+					theory->addAcceptLit(fsmID,a.from, a.to,a.strID,a.reachVar);
 				}
 
 				for(auto & a: generates[i]){
@@ -398,11 +405,11 @@ public:
 					if (a.strID<0 || !created_strings[a.strID]){
 						printf("PARSE ERROR! String ID must be a non-negative integer, was %d\n", a.strID), exit(1);
 					}
-					if(a.from<0 || a.from>=fsms[i]->nNodes()){
+					if(a.from<0 || a.from>=theory->nNodes(fsmID)){
 							printf("PARSE ERROR! %d is not a valid state\n", a.from), exit(1);
 						}
 
-					fsms[i]->addGenerateLit(a.from, a.strID,a.reachVar);
+					theory->addGenerateLit(fsmID,a.from, a.strID,a.reachVar);
 				}
 
 				for(auto & a: transduces[i]){
@@ -410,15 +417,15 @@ public:
 					if (a.strID<0 || !created_strings[a.strID]){
 						printf("PARSE ERROR! String ID must be a non-negative integer, was %d\n", a.strID), exit(1);
 					}
-					if(a.from<0 || a.from>=fsms[i]->nNodes()){
+					if(a.from<0 || a.from>=theory->nNodes(fsmID)){
 							printf("PARSE ERROR! %d is not a valid state\n", a.from), exit(1);
 						}
-					if(a.to<0 || a.to>=fsms[i]->nNodes()){
+					if(a.to<0 || a.to>=theory->nNodes(fsmID)){
 									printf("PARSE ERROR! %d is not a valid state\n", a.from), exit(1);
 								}
-					fsms[i]->addTransduceLit(a.from,a.to, a.strID,a.strID2,a.reachVar);
+					theory->addTransduceLit(fsmID,a.from,a.to, a.strID,a.strID2,a.reachVar);
 				}
-			}
+
 		}
 
 
