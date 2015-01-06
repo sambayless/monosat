@@ -13,7 +13,7 @@
 #include "mtl/Bitset.h"
 #include <algorithm>
 #include <cassert>
-
+#include "alg/NFATypes.h"
 #include "dgl/DynamicGraph.h"
 using namespace dgl;
 namespace Monosat {
@@ -26,6 +26,9 @@ class DynamicFSM{
 	int id;
 	bool has_epsilon=true;
 	bool is_changed = true;
+	bool is_generator=true;
+	bool is_acceptor=true;
+	bool is_linear=true;
 public:
 	vec<Bitset> transitions;
 
@@ -56,6 +59,15 @@ public:
 
 	~DynamicFSM() {
 
+	}
+	bool isGenerator()const{
+		return is_generator;
+	}
+	bool isAcceptor()const{
+		return is_acceptor;
+	}
+	bool isLinear()const{
+		return is_linear;
 	}
 
 	int getID(){
@@ -492,7 +504,60 @@ private:
 
 	vec<bool> next_seen;
 	vec<bool> cur_seen;
+
+	bool generates_path_rec(int s,int final,int emove_count, vec<NFATransition> & path){
+			if(s==final){
+				return true;
+			}
+			if (emove_count>=states()){
+				return false;//this is not a great way to solve the problem of avoiding infinite e-move cycles...
+			}
+
+
+			for(int j = 0;j<nIncident(s);j++){
+				//now check if the label is active
+				int edgeID= incident(s,j).id;
+				int to = incident(s,j).node;
+				if( transitionEnabled(edgeID,0,0)){
+
+
+						path.push({edgeID,0,0});
+						if(generates_path_rec(to,final,emove_count+1,path)){//str_pos is NOT incremented!
+
+							return true;
+						}else{
+
+							path.pop();
+						}
+
+				}
+				for(int l = 0;l<outAlphabet();l++){
+					if (transitionEnabled(edgeID,0,l)){
+						bool set_transition=false;
+
+
+						path.push({edgeID,0,l});
+						if(generates_path_rec(to,final,0,path)){//str_pos is incremented
+
+							return true;
+						}else{
+
+							path.pop();
+						}
+
+					}
+				}
+
+			}
+			return false;
+		}
+
 public:
+	bool generates(int source, int final, vec<NFATransition> & path){
+		return generates_path_rec(source,final,0,path);
+	}
+
+
 	bool accepts(int source, int final, vec<int> & string){
 		return accepts_prefix(source,final,string)==string.size();
 	}

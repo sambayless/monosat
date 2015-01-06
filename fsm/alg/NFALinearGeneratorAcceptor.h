@@ -71,7 +71,12 @@ class NFALinearGeneratorAcceptor{
 public:
 	NFALinearGeneratorAcceptor(DynamicFSM &  gen,DynamicFSM &  accept,int gen_source, int accept_source,Status & status=fsmNullStatus):gen(gen),accept(accept),status(status),gen_source(gen_source),accept_source(accept_source){
 		//Generator must be _linear_ (but may be non-deterministic.)
+		cur_seen.growTo(accept.states());
+		gen_cur_seen.growTo(gen.states());
 
+		next_seen.growTo(accept.states());
+		gen_next_seen.growTo(gen.states());
+		seen_chars.growTo(gen.outAlphabet()+1);
 		vec<int> stack;
 		stack.push(gen_source);
 		while(stack.size()){
@@ -101,24 +106,24 @@ private:
 		DynamicFSM & g = gen;
 
 
-		for(int i = 0;i<cur.size();i++){
-			int s = cur[i];
+		for(int i = 0;i<gen_cur.size();i++){
+			int s = gen_cur[i];
 			for(int j = 0;j<g.nIncident(s);j++){
 				//now check if the label is active
 				int edgeID= g.incident(s,j).id;
 				int to = g.incident(s,j).node;
 
-				if(!cur_seen[to] && g.transitionEnabled(edgeID,0,0)){
-					cur_seen[to]=true;
-					cur.push(to);
+				if(!gen_cur_seen[to] && g.transitionEnabled(edgeID,0,0)){
+					gen_cur_seen[to]=true;
+					gen_cur.push(to);
 					if(path){
 						path->push({edgeID,0,0});
 					}
 				}
 				for(int l = 1;l<g.outAlphabet();l++){
-					if (!next_seen[to] && g.transitionEnabled(edgeID,0,l)){
-						next_seen[to]=true;
-						next.push(to);
+					if (!gen_next_seen[to] && g.transitionEnabled(edgeID,0,l)){
+						gen_next_seen[to]=true;
+						gen_next.push(to);
 						if(!store_seen[l]){
 							store_seen[l]=true;
 							store.push(l);
@@ -131,16 +136,16 @@ private:
 			}
 		}
 
-		next.swap(cur);
-		next_seen.swap(cur_seen);
+		gen_next.swap(gen_cur);
+		gen_next_seen.swap(gen_cur_seen);
 
-		for(int s:next){
-			assert(next_seen[s]);
-			next_seen[s]=false;
+		for(int s:gen_next){
+			assert(gen_next_seen[s]);
+			gen_next_seen[s]=false;
 		}
-		next.clear();
+		gen_next.clear();
 
-		return cur_seen[final];
+		return gen_cur_seen[final];
 
 	}
 
@@ -149,6 +154,7 @@ private:
 	}
 
 	void find_accepts(int gen_final, int accept_final){
+
 
 		for(int s:cur){
 			assert(cur_seen);
@@ -205,12 +211,12 @@ private:
 			}
 		}
 
-		bool prev_accepting=gen_cur_seen[gen_final];
+		bool prev_accepting=true;//gen_cur_seen[gen_final];
 		bool accepted=false;
 		//use the linear generator to produce a (set) of strings. Because the generator is linear, it is only ever in one state, which greatly simplifies the reasoning here...
 		while(!accepted){
-			bool accepting = stepGenerator(gen_final, chars,seen_chars);//get set of next strings
-
+			stepGenerator(gen_final, chars,seen_chars);//get set of next strings
+			bool accepting =true;
 			if(chars.size()==0){
 				//must eventually happen because the generator is linear.
 				break;
@@ -257,7 +263,7 @@ private:
 				assert(seen_chars[l]);
 				seen_chars[l]=false;
 			}
-			seen_chars.clear();
+			chars.clear();
 			prev_accepting = accepting;
 		}
 
@@ -325,8 +331,8 @@ private:
 		bool accepted=false;
 		//use the linear generator to produce a (set) of strings. Because the generator is linear, it is only ever in one state, which greatly simplifies the reasoning here...
 		while(!accepted){
-			bool accepting = stepGenerator(gen_final, chars,seen_chars,& path);//get set of next strings
-
+			stepGenerator(gen_final, chars,seen_chars,& path);//get set of next strings
+			bool accepting = true;
 			if(chars.size()==0){
 				//must eventually happen because the generator is linear.
 				break;
@@ -373,7 +379,7 @@ private:
 				assert(seen_chars[l]);
 				seen_chars[l]=false;
 			}
-			seen_chars.clear();
+			chars.clear();
 			prev_accepting = accepting;
 		}
 

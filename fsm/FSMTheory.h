@@ -29,6 +29,7 @@
 #include "FSMAcceptDetector.h"
 #include "FSMGeneratesDetector.h"
 #include "FSMTransducesDetector.h"
+#include "FSMGeneratorAcceptorDetector.h"
 
 #include "core/SolverTypes.h"
 #include "mtl/Map.h"
@@ -83,7 +84,7 @@ public:
 	vec<int> n_in_alphabets;//number of transition labels. Transition labels start from 0 (which is the non-consuming epsilon transition) and go to n_labels-1.
 	vec<int> n_out_alphabets;
 
-	vec<vec<Transition>> edge_labels;
+	vec<vec<vec<Transition>>> edge_labels;
 	vec<DynamicFSM*> g_unders;
 	vec<DynamicFSM*> g_overs;
 
@@ -225,8 +226,8 @@ public:
 			g_under.addOutCharacter();
 			g_over.addOutCharacter();
 		}
-		for(int i =0;i<edge_labels.size();i++){
-			edge_labels[i].growTo(inAlphabet(fsmID)*outAlphabet(fsmID));
+		for(int i =0;i<edge_labels[fsmID].size();i++){
+			edge_labels[fsmID][i].growTo(inAlphabet(fsmID)*outAlphabet(fsmID));
 		}
 	}
 /*	void addInCharacter(){
@@ -260,7 +261,7 @@ public:
 		return vars[v].fsmID;
 	}
 	inline Transition & getTransition(int fsmID,int edgeID, int input,int output){
-			return edge_labels[edgeID][input+output*inAlphabet(fsmID)];
+			return edge_labels[fsmID][edgeID][input+output*inAlphabet(fsmID)];
 		}
 	inline int getInput(Var v) const{
 		assert(isEdgeVar(v));
@@ -736,7 +737,7 @@ public:
 				continue;
 			DynamicFSM & g_under = *g_unders[fsmID];
 			DynamicFSM & g_over = *g_overs[fsmID];
-			for (int edgeID = 0; edgeID < edge_labels.size(); edgeID++) {
+			for (int edgeID = 0; edgeID < edge_labels[fsmID].size(); edgeID++) {
 				for (int input = 0;input<inAlphabet(fsmID);input++){
 					for (int output = 0;output<outAlphabet(fsmID);output++){
 					if (getTransition(fsmID,edgeID,input,output).v < 0)
@@ -799,8 +800,8 @@ public:
 	int nFsms()const{
 		return g_overs.size();
 	}
-	int nEdges() {
-		return edge_labels.size();
+	int nEdges(int fsmID) {
+		return edge_labels[fsmID].size();
 	}
 	CRef newReasonMarker(int detectorID) {
 		CRef reasonMarker = S->newReasonMarker(this);
@@ -817,6 +818,7 @@ public:
 			fprintf(stderr,"Redefined fsm, Aborting!");
 			exit(1);
 		}
+		edge_labels.growTo(fsmID+1);
 		g_unders[fsmID]=new DynamicFSM(fsmID);
 		g_overs[fsmID]=new DynamicFSM(fsmID);
 		n_in_alphabets.growTo(fsmID+1,0);//number of transition labels. Transition labels start from 0 (which is the non-consuming epsilon transition) and go to n_labels-1.
@@ -859,8 +861,8 @@ public:
 		assert(output<outAlphabet(fsmID));
 
 
-		edge_labels.growTo(edgeID+1);
-		edge_labels[edgeID].growTo(inAlphabet(fsmID)*outAlphabet(fsmID));
+		edge_labels[fsmID].growTo(edgeID+1);
+		edge_labels[fsmID][edgeID].growTo(inAlphabet(fsmID)*outAlphabet(fsmID));
 
 
 		getTransition(fsmID,edgeID,input,output).v = v;
@@ -918,6 +920,34 @@ public:
 			detectors.push(transduces[source]);
 		}
 		transduces[source]->addTransducesLit(dest,strID,strID2,outer_var);
+	}
+	void addComposeAcceptLit(int fsmID1,int fsmID2,int from1,int to1,int from2,int to2, int strID,Var reachVar){
+		//for now, only linear generator/acceptor compositions are supported
+		if(strID>=0){
+			fprintf(stderr,"String inputs are not yet supported in compositions, aborting\n");
+			exit(1);
+		}
+
+		if(!g_overs[fsmID1] || !g_overs[fsmID2]){
+				fprintf(stderr,"Undefined FSM, aborting\n");
+				exit(1);
+		}
+
+		if(!g_overs[fsmID1]->isGenerator()){
+			fprintf(stderr,"Only compositions of linear generators with FSAs are supported, aborting\n");
+			exit(1);
+		}
+		if(!g_overs[fsmID1]->isLinear()){
+			fprintf(stderr,"Only compositions of linear generators with FSAs are supported, aborting\n");
+			exit(1);
+		}
+		if(!g_overs[fsmID2]->isAcceptor()){
+			fprintf(stderr,"Only compositions of linear generators with FSAs are supported, aborting\n");
+			exit(1);
+		}
+		FSMGeneratorAcceptorDetector * d = new FSMGeneratorAcceptorDetector(detectors.size(), this, *g_unders[fsmID1],*g_overs[fsmID1], *g_unders[fsmID2],*g_overs[fsmID2], from1,from2,drand(rnd_seed));
+		detectors.push(d);
+		d->addAcceptLit(to1,to2,reachVar);
 	}
 };
 

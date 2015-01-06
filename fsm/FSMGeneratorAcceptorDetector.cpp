@@ -40,19 +40,12 @@ FSMGeneratorAcceptorDetector::FSMGeneratorAcceptorDetector(int detectorID, FSMTh
 	overprop_marker = outer->newReasonMarker(getID());
 }
 
-void FSMGeneratorAcceptorDetector::addAcceptLit(int state, int strID, Var outer_reach_var){
+void FSMGeneratorAcceptorDetector::addAcceptLit(int generatorFinalState, int acceptorFinalState, Var outer_reach_var){
 
 
-	accept_lits[strID].growTo(g_under.nodes(),lit_Undef);
+
 	if(first_destination==-1)
-		first_destination= state;
-
-	if (accept_lits[strID][state] != lit_Undef) {
-		Lit r = accept_lits[strID][state];
-		//force equality between the new lit and the old reach lit, in the SAT solver
-		outer->makeEqualInSolver(outer->toSolver(r), mkLit(outer_reach_var));
-		return;
-	}
+		first_destination= generatorFinalState;
 
 	g_under.invalidate();
 	g_over.invalidate();
@@ -69,18 +62,17 @@ void FSMGeneratorAcceptorDetector::addAcceptLit(int state, int strID, Var outer_
 	//is_changed.growTo(index+1);
 	Lit acceptLit = mkLit(accept_var, false);
 	all_lits.push(acceptLit);
-	assert(accept_lits[strID][state] == lit_Undef);
-	//if(reach_lits[to]==lit_Undef){
-	accept_lits[strID][state] = acceptLit;
+
+
 	while (accept_lit_map.size() <= accept_var - first_var) {
 		accept_lit_map.push({-1,-1});
 	}
-	accept_lit_map[accept_var - first_var] = {strID,state};
-
+	accept_lit_map[accept_var - first_var] = {acceptLit,generatorFinalState,acceptorFinalState};
+	all_accept_lits.push( {acceptLit,generatorFinalState,acceptorFinalState});
 }
 
 void FSMGeneratorAcceptorDetector::AcceptStatus::accepts(int string,int state,int edgeID,int label, bool accepts){
-	Lit l = detector.accept_lits[string][state];
+/*	Lit l = detector.accept_lits[string][state];
 
 	if (l != lit_Undef){// && !detector.is_changed[detector.indexOf(var(l))]) {
 		if(!accepts){
@@ -91,7 +83,7 @@ void FSMGeneratorAcceptorDetector::AcceptStatus::accepts(int string,int state,in
 			//detector.is_changed[detector.indexOf(var(l))] = true;
 			detector.changed.push( { l, state,string});
 		}
-	}
+	}*/
 }
 
 
@@ -109,7 +101,7 @@ bool FSMGeneratorAcceptorDetector::propagate(vec<Lit> & conflict) {
 			int accept_to = t.accept_to;
 			//assert(is_changed[indexOf(var(l))]);
 
-			if(underapprox_detector->accepts(gen_to,accept_to)){
+			if(outer->value(l)!=l_True && underapprox_detector->accepts(gen_to,accept_to)){
 				if (outer->value(l) == l_True) {
 					//do nothing
 				} else if (outer->value(l) == l_Undef) {
@@ -119,7 +111,7 @@ bool FSMGeneratorAcceptorDetector::propagate(vec<Lit> & conflict) {
 					buildAcceptReason(gen_to,accept_to, conflict);
 					return false;
 				}
-			}else if (!overapprox_detector->accepts(gen_to,accept_to)){
+			}else if (outer->value(l)!=l_False && !overapprox_detector->accepts(gen_to,accept_to)){
 				l=~l;
 				if (outer->value(l) == l_True) {
 					//do nothing
@@ -170,7 +162,9 @@ void FSMGeneratorAcceptorDetector::buildAcceptReason(int genFinal, int acceptFin
 	for(auto & t:path){
 		int edgeID = t.edgeID;
 		int input = t.input;
-		Var v = outer->getTransitionVar(g_over.getID(),edgeID,input,0);
+		assert(input==0);
+		int output = t.output;
+		Var v = outer->getTransitionVar(g_over.getID(),edgeID,0,output);
 		assert(outer->value(v)==l_True);
 		conflict.push(mkLit(v,true));
 	}
@@ -183,12 +177,51 @@ void FSMGeneratorAcceptorDetector::buildNonAcceptReason(int genFinal, int accept
 
 }
 void FSMGeneratorAcceptorDetector::printSolution(std::ostream& out){
-	g_under.draw(gen_source);
+
+	for(auto & t:all_accept_lits){
+		Lit l =t.l;
+
+		int gen_to = t.gen_to;
+		int accept_to = t.accept_to;
+
+		if(outer->value(l)==l_True){
+			static vec<NFATransition> path;
+			path.clear();
+			assert(underapprox_detector->accepts(gen_to,accept_to));
+			underapprox_detector->getGeneratorPath(gen_to,accept_to,path);
+
+			out<<"Generated string: ";
+			for(auto & t:path){
+				int edgeID = t.edgeID;
+				int output = t.output;
+				Var v = outer->getTransitionVar(g_over.getID(),edgeID,0,output);
+				assert(outer->value(v)==l_True);
+				out<< output;
+			}
+			out<<"\n";
+		}else{
+			static vec<NFATransition> path;
+			path.clear();
+			if(g_under.generates(gen_source,gen_to, path)){
+				out<<"Generated string: ";
+				for(auto & t:path){
+					int edgeID = t.edgeID;
+					int output = t.output;
+					Var v = outer->getTransitionVar(g_over.getID(),edgeID,0,output);
+					assert(outer->value(v)==l_True);
+					out<< output;
+				}
+				out<<"\n";
+			}
+
+		}
+	}
 }
 bool FSMGeneratorAcceptorDetector::checkSatisfied(){
+	printSolution(std::cout);
 	NFALinearGeneratorAcceptor<> check(g_under,acceptor_under,gen_source,accept_source);
 
-	g_under.draw(gen_source,first_destination );
+	//g_under.draw(gen_source,first_destination );
 	for(auto & t:all_accept_lits){
 		Lit l =t.l;
 

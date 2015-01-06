@@ -68,6 +68,19 @@ class FSMParser: public Parser<B, Solver> {
 
 	};
 	vec<vec<Accepts> > accepts;
+
+	struct ComposeAccepts{
+		int fsmID1;
+		int fsmID2;
+		int from1;
+		int from2;
+		int to1;
+		int to2;
+		int strID;
+		Var reachVar;
+
+	};
+	vec<ComposeAccepts>  compose_accepts;
 	struct Generates{
 		int fsm;
 		int from;
@@ -240,6 +253,63 @@ class FSMParser: public Parser<B, Solver> {
 
 	}
 	
+	void readCompositionAccepts(B& in, Solver& S) {
+		if (opt_ignore_theories) {
+			skipLine(in);
+			return;
+		}
+
+		++in;
+
+		int fsmID1 = parseInt(in);
+		int fsmID2 = parseInt(in);
+		int from1 = parseInt(in);
+		int to1 = parseInt(in);
+		int from2 = parseInt(in);
+		int to2 = parseInt(in);
+		int strID = parseInt(in);
+		int reachVar = parseInt(in) - 1;
+
+		//now read in the string
+		compose_accepts.push();
+
+		compose_accepts.last().fsmID1=fsmID1;
+		compose_accepts.last().fsmID2=fsmID2;
+		compose_accepts.last().from1=from1;
+		compose_accepts.last().from2=from2;
+		compose_accepts.last().to1=to1;
+		compose_accepts.last().to2=to2;
+		compose_accepts.last().strID = strID;
+		compose_accepts.last().reachVar = reachVar;
+
+
+		if (from1<0){
+				printf("PARSE ERROR! Source state must be a node id (a non-negative integer), was %d\n", from1), exit(1);
+			}
+		if (to1<0){
+			printf("PARSE ERROR! Accepting state must be a node id (a non-negative integer), was %d\n", to1), exit(1);
+		}
+
+		if (fsmID2 < 0 || fsmID2 >= fsmIDs.size()) {
+			printf("PARSE ERROR! Undeclared fsm identifier %d for edge %d\n", fsmID2, reachVar), exit(1);
+		}
+
+		if (from2<0){
+				printf("PARSE ERROR! Source state must be a node id (a non-negative integer), was %d\n", from2), exit(1);
+			}
+		if (to2<0){
+			printf("PARSE ERROR! Accepting state must be a node id (a non-negative integer), was %d\n", to2), exit(1);
+		}
+
+		if (reachVar < 0) {
+			printf("PARSE ERROR! Edge variables must be >=0, was %d\n", reachVar), exit(1);
+		}
+
+		while (reachVar >= S.nVars())
+			S.newVar();
+
+	}
+
 	void readGenerates(B& in, Solver& S) {
 		if (opt_ignore_theories) {
 			skipLine(in);
@@ -360,6 +430,9 @@ public:
 		}else if (match(in,"transduces")){
 			readTransduces(in,S);
 			return true;
+		}else if (match(in,"composition_accepts")){
+			readCompositionAccepts(in,S);
+			return true;
 		}
 		return false;
 	}
@@ -370,14 +443,15 @@ public:
 
 		for(int i = 0;i<fsmIDs.size();i++){
 			int fsmID = fsmIDs[i];
-			if(fmsID<0)
+			if(fsmID<0)
 				continue;
 
 			if(!theory){
 				theory = new FSMTheorySolver(&S);
+				S.addTheory(theory);
 				theory->setStrings(&strings);
 			}
-
+				theory->newFSM(fsmID);
 
 				theory->setAlphabets(fsmID,inAlphabets[i],outAlphabets[i]);
 
@@ -426,6 +500,16 @@ public:
 					theory->addTransduceLit(fsmID,a.from,a.to, a.strID,a.strID2,a.reachVar);
 				}
 
+
+
+		}
+		for(auto & c: compose_accepts){
+			if(!theory){
+				printf("PARSE ERROR! No fsms declared!\n"), exit(1);
+				exit(1);
+			}
+
+			theory->addComposeAcceptLit(c.fsmID1,c.fsmID2,c.from1,c.to1,c.from2,c.to2, c.strID,c.reachVar);
 		}
 
 

@@ -81,7 +81,6 @@ public:
 	//vec<bool> is_changed;
 	vec<Change> changed;
 
-	vec<vec<Lit>> accept_lits;
 	Var first_var=var_Undef;
 	struct AcceptLit{
 		Lit l;
