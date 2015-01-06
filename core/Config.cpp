@@ -31,6 +31,7 @@ static const char* _cat = "CORE";
 static const char* _cat_sms = "SMS";
 static const char* _cat_graph = "GRAPH";
 static const char* _cat_geom = "GEOMETRY";
+static const char* _cat_fsm = "FSM";
 
 IntOption Monosat::opt_verb("MAIN", "verb", "Verbosity level (0=silent, 1=some, 2=more).", 1, IntRange(0, 3));
 DoubleOption Monosat::opt_var_decay(_cat, "var-decay", "The variable activity decay factor", 0.95,
@@ -237,6 +238,10 @@ BoolOption Monosat::opt_components_learn_connect(_cat_graph, "components-learn-c
 
 BoolOption Monosat::opt_dinics_recursive(_cat_graph, "dinitz-recursive",
 		"Use the recursive (default: iterative) Dinic's Maximum-flow implementation", false);
+
+BoolOption Monosat::opt_fsm_negate_underapprox(_cat_fsm, "fsm-negate-under",
+		"", true);
+
 
 IntOption Monosat::opt_width("GRAPH", "width", "Width of graph.\n", 0, IntRange(0, INT32_MAX));
 IntOption Monosat::opt_height("GRAPH", "height", "Height of graph.\n", 0, IntRange(0, INT32_MAX));

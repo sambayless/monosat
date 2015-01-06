@@ -214,7 +214,8 @@ public:
 		assert(g_unders[fsmID]);
 		DynamicFSM & g_under = *g_unders[fsmID];
 		DynamicFSM & g_over = *g_overs[fsmID];
-
+		inputs+=1;
+		outputs+=1;
 		assert(inputs>=n_in_alphabets[fsmID]);
 		while (inputs>inAlphabet(fsmID)){
 			n_in_alphabets[fsmID]++;
@@ -821,8 +822,8 @@ public:
 		edge_labels.growTo(fsmID+1);
 		g_unders[fsmID]=new DynamicFSM(fsmID);
 		g_overs[fsmID]=new DynamicFSM(fsmID);
-		n_in_alphabets.growTo(fsmID+1,0);//number of transition labels. Transition labels start from 0 (which is the non-consuming epsilon transition) and go to n_labels-1.
-		n_out_alphabets.growTo(fsmID+1,0);
+		n_in_alphabets.growTo(fsmID+1,1);//number of transition labels. Transition labels start from 0 (which is the non-consuming epsilon transition) and go to n_labels-1.
+		n_out_alphabets.growTo(fsmID+1,1);
 	}
 
 	Lit newTransition(int fsmID,int from, int to,int input,int output, Var outerVar = var_Undef) {

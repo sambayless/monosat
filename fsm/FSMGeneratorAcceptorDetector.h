@@ -143,7 +143,7 @@ public:
 		return accept_lit_map[index].accept_to;
 	}
 
-
+	Lit decide(int level);
 	bool propagate(vec<Lit> & conflict);
 	void buildAcceptReason(int genFinal, int acceptFinal, vec<Lit> & conflict);
 	void buildNonAcceptReason(int genFinal, int acceptFinal, vec<Lit> & conflict);

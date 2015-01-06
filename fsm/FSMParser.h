@@ -133,8 +133,8 @@ class FSMParser: public Parser<B, Solver> {
 		generates.growTo(fsmID+1);
 		transduces.growTo(fsmID+1);
 		hasEpsilonTransitions.growTo(fsmID+1);
-		inAlphabets.growTo(fsmID+1,1);
-		outAlphabets.growTo(fsmID+1,1);
+		inAlphabets.growTo(fsmID+1,0);
+		outAlphabets.growTo(fsmID+1,0);
 	}
 	
 	void readString(B& in, Solver & S){
@@ -205,8 +205,8 @@ class FSMParser: public Parser<B, Solver> {
 		while (edgeVar >= S.nVars())
 			S.newVar();
 		
-		inAlphabets[fsmID]=std::max(inAlphabets[fsmID],input+1);
-		outAlphabets[fsmID]=std::max(outAlphabets[fsmID],output+1);
+		inAlphabets[fsmID]=std::max(inAlphabets[fsmID],input);
+		outAlphabets[fsmID]=std::max(outAlphabets[fsmID],output);
 		transitions[fsmID].push({fsmID,from,to,input,output,edgeVar});
 	}
 

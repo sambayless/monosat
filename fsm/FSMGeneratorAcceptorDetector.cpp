@@ -100,8 +100,18 @@ bool FSMGeneratorAcceptorDetector::propagate(vec<Lit> & conflict) {
 			int gen_to = t.gen_to;
 			int accept_to = t.accept_to;
 			//assert(is_changed[indexOf(var(l))]);
-
-			if(outer->value(l)!=l_True && underapprox_detector->accepts(gen_to,accept_to)){
+			//g_under.draw(gen_source,gen_to);
+			if(!opt_fsm_negate_underapprox && outer->value(l)!=l_True && underapprox_detector->accepts(gen_to,accept_to)){
+				if (outer->value(l) == l_True) {
+					//do nothing
+				} else if (outer->value(l) == l_Undef) {
+					outer->enqueue(l, underprop_marker);
+				}else{
+					conflict.push(l);
+					buildAcceptReason(gen_to,accept_to, conflict);
+					return false;
+				}
+			}else if(opt_fsm_negate_underapprox && outer->value(l)!=l_True && !overapprox_detector->accepts(gen_to,accept_to,true)){
 				if (outer->value(l) == l_True) {
 					//do nothing
 				} else if (outer->value(l) == l_Undef) {
@@ -153,29 +163,81 @@ void FSMGeneratorAcceptorDetector::buildAcceptReason(int genFinal, int acceptFin
 	static int iter = 0;
 	++iter;
 //find a path - ideally, the one that traverses the fewest unique transitions - from source to node, learn that one of the transitions on that path must be disabled.
+	if(!opt_fsm_negate_underapprox){
+		static vec<NFATransition> path;
+		path.clear();
+		underapprox_detector->getGeneratorPath(genFinal,acceptFinal,path);
 
-	static vec<NFATransition> path;
-	path.clear();
-	underapprox_detector->getGeneratorPath(genFinal,acceptFinal,path);
+		assert(underapprox_detector->accepts(genFinal,acceptFinal));
+		for(auto & t:path){
+			int edgeID = t.edgeID;
+			int input = t.input;
+			assert(input==0);
+			int output = t.output;
+			Var v = outer->getTransitionVar(g_over.getID(),edgeID,0,output);
+			assert(outer->value(v)==l_True);
+			conflict.push(mkLit(v,true));
+		}
+	}else{
+		assert( !overapprox_detector->accepts(genFinal,acceptFinal,true));
+		//run an NFA to find all transitions that accepting prefixes use.
+		//printf("conflict %d\n",iter);
+		//g_over.draw(gen_source,genFinal);
+		static vec<NFATransition> path;
+		path.clear();
+		overapprox_detector->getGeneratorPath(genFinal,acceptFinal,path,false,true);
 
-	assert(underapprox_detector->accepts(genFinal,acceptFinal));
-	for(auto & t:path){
-		int edgeID = t.edgeID;
-		int input = t.input;
-		assert(input==0);
-		int output = t.output;
-		Var v = outer->getTransitionVar(g_over.getID(),edgeID,0,output);
-		assert(outer->value(v)==l_True);
-		conflict.push(mkLit(v,true));
+		for(auto & t:path){
+			//printf("%d(c%d), ", t.edgeID, t.output);
+			int edgeID = t.edgeID;
+			int input = t.input;
+			assert(input==0);
+			int output = t.output;
+			Var v = outer->getTransitionVar(g_over.getID(),edgeID,0,output);
+			assert(outer->value(v)!=l_False);
+			if(outer->value(v)==l_True){
+				conflict.push(mkLit(v,true));
+			}
+		}
+		//printf("\n");
+
 	}
-	//note: if there are repeated edges in this conflict, they will be cheaply removed by the sat solver anyhow, so that is not a major problem.
-
 }
 void FSMGeneratorAcceptorDetector::buildNonAcceptReason(int genFinal, int acceptFinal, vec<Lit> & conflict){
 
 	static int iter = 0;
 
 }
+
+Lit FSMGeneratorAcceptorDetector::decide(int level) {
+
+
+	double startdecidetime = rtime(2);
+	for(auto & t:all_accept_lits){
+
+		Lit l =t.l;
+		if(outer->value(l)==l_False){
+			int gen_to = t.gen_to;
+			int accept_to = t.accept_to;
+			static vec<NFATransition> path;
+			path.clear();
+
+			if(overapprox_detector->getGeneratorPath(gen_to,accept_to,path,true,false)){
+				for(auto & t:path){
+					Var v = outer->getTransitionVar(g_over.getID(),t.edgeID,t.input,t.output);
+					if(outer->value(v)==l_Undef){
+						stats_decisions++;
+						stats_decide_time += rtime(2) - startdecidetime;
+						return mkLit(v,false);
+					}
+				}
+			}
+		}
+	}
+	stats_decide_time += rtime(2) - startdecidetime;
+	return lit_Undef;
+}
+
 void FSMGeneratorAcceptorDetector::printSolution(std::ostream& out){
 
 	for(auto & t:all_accept_lits){

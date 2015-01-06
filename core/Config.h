@@ -130,6 +130,8 @@ extern BoolOption opt_reach_detector_combined_maxflow;
 extern IntOption opt_adaptive_conflict_mincut;
 extern BoolOption opt_shortest_path_prune_dist;
 extern BoolOption opt_conflict_min_cut_shortest_paths;
+extern BoolOption opt_fsm_negate_underapprox;
+
 
 enum class PointInPolygonAlg {
 	ALG_FULL, ALG_RECURSIVE_SPLIT
