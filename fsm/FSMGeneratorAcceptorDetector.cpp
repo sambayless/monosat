@@ -38,6 +38,14 @@ FSMGeneratorAcceptorDetector::FSMGeneratorAcceptorDetector(int detectorID, FSMTh
 
 	underprop_marker = outer->newReasonMarker(getID());
 	overprop_marker = outer->newReasonMarker(getID());
+	forcededge_marker= outer->newReasonMarker(getID());
+
+	cur_seen.growTo(acceptor_over.states());
+	gen_cur_seen.growTo(g_over.states());
+
+	next_seen.growTo(acceptor_over.states());
+	gen_next_seen.growTo(g_over.states());
+	seen_chars.growTo(g_over.outAlphabet()+1);
 }
 
 void FSMGeneratorAcceptorDetector::addAcceptLit(int generatorFinalState, int acceptorFinalState, Var outer_reach_var){
@@ -93,15 +101,17 @@ bool FSMGeneratorAcceptorDetector::propagate(vec<Lit> & conflict) {
 	if (++iter == 87) {
 		int a = 1;
 	}
+	static vec<ForcedTransition> forced_edges;
+
 	for(auto & t:all_accept_lits){
-
+			forced_edges.clear();
 			Lit l =t.l;
-
+			Lit lit =t.l;
 			int gen_to = t.gen_to;
 			int accept_to = t.accept_to;
 			//assert(is_changed[indexOf(var(l))]);
-			//g_under.draw(gen_source,gen_to);
-			if(!opt_fsm_negate_underapprox && outer->value(l)!=l_True && underapprox_detector->accepts(gen_to,accept_to)){
+			//g_over.draw(gen_source,gen_to);
+			if(!opt_fsm_negate_underapprox && outer->value(l)!=l_True && underapprox_detector->accepts(gen_to,accept_to,false,&forced_edges)){
 				if (outer->value(l) == l_True) {
 					//do nothing
 				} else if (outer->value(l) == l_Undef) {
@@ -111,7 +121,7 @@ bool FSMGeneratorAcceptorDetector::propagate(vec<Lit> & conflict) {
 					buildAcceptReason(gen_to,accept_to, conflict);
 					return false;
 				}
-			}else if(opt_fsm_negate_underapprox && outer->value(l)!=l_True && !overapprox_detector->accepts(gen_to,accept_to,true)){
+			}else if(opt_fsm_negate_underapprox && outer->value(l)!=l_True && !overapprox_detector->accepts(gen_to,accept_to,true,&forced_edges)){
 				if (outer->value(l) == l_True) {
 					//do nothing
 				} else if (outer->value(l) == l_Undef) {
@@ -122,18 +132,49 @@ bool FSMGeneratorAcceptorDetector::propagate(vec<Lit> & conflict) {
 					return false;
 				}
 			}else if (outer->value(l)!=l_False && !overapprox_detector->accepts(gen_to,accept_to)){
-				l=~l;
-				if (outer->value(l) == l_True) {
+
+				if (outer->value(~l) == l_True) {
 					//do nothing
-				} else if (outer->value(l) == l_Undef) {
-					outer->enqueue(l, overprop_marker);
+				} else if (outer->value(~l) == l_Undef) {
+					outer->enqueue(~l, overprop_marker);
 				}else{
-					conflict.push(l);
+					conflict.push(~l);
 					buildNonAcceptReason(gen_to,accept_to, conflict);
 					return false;
 				}
 			}else{
 
+			}
+			if(outer->value(lit)==l_False){
+				for(auto & t:forced_edges){
+					//int edgeID = t.edgeID;
+					//int input = t.input;
+					//int output = t.output;
+					int generator_state = t.generator_state;
+
+					int label = t.character;
+
+					for(int i = 0;i<g_over.nIncident(generator_state);i++){
+						int edgeID = g_over.incident(generator_state,i).id;
+						if(g_over.transitionEnabled(edgeID,0,label)){
+							Var v = outer->getTransitionVar(g_over.getID(),edgeID,0,label);
+							Lit f = mkLit(v,true);
+							Var test = var(lit);
+							assert(outer->value(lit)==l_False);
+							int lev = outer->level(var(lit));
+							setForcedVar(v,~lit);
+							if(outer->value(f)==l_Undef){
+								outer->enqueue(f, forcededge_marker);
+							}else if(outer->value(f)==l_False){
+								conflict.push(f);
+								buildForcedEdgeReason(gen_to,accept_to,edgeID,label, conflict);
+							}
+						}
+					}
+
+
+
+				}
 			}
 		}
 
@@ -154,7 +195,23 @@ void FSMGeneratorAcceptorDetector::buildReason(Lit p, vec<Lit> & reason, CRef ma
 		int gen_final = getGeneratorFinal(v);
 		int accept_final = getAcceptorFinal(v);
 		buildNonAcceptReason(gen_final,accept_final, reason);
-	}  else {
+	}else if (marker ==forcededge_marker){
+		reason.push(p);
+		Var v = var(p);
+
+		Lit forL = getForcedVar(v);
+		lbool val = outer->value(forL);
+		Var forV = var(forL);
+		lbool val2 = outer->value(forV);
+		assert(outer->value(forL)==l_True);
+		assert(outer->value(forV)==l_False);
+		reason.push(~forL);
+		int gen_final = getGeneratorFinal(forV);
+		int accept_final = getAcceptorFinal(forV);
+		int forcedEdge = outer->getEdgeID(v);
+		int forcedLabel = outer->getOutput(v);
+		buildForcedEdgeReason(gen_final,accept_final,forcedEdge,  forcedLabel,  reason);
+	}else{
 		assert(false);
 	}
 }
@@ -179,6 +236,9 @@ void FSMGeneratorAcceptorDetector::buildAcceptReason(int genFinal, int acceptFin
 			conflict.push(mkLit(v,true));
 		}
 	}else{
+		static vec<ForcedTransition> forced_edges;
+		forced_edges.clear();
+		assert(!overapprox_detector->accepts(genFinal,acceptFinal,true,&forced_edges));
 		assert( !overapprox_detector->accepts(genFinal,acceptFinal,true));
 		//run an NFA to find all transitions that accepting prefixes use.
 		//printf("conflict %d\n",iter);
@@ -195,6 +255,7 @@ void FSMGeneratorAcceptorDetector::buildAcceptReason(int genFinal, int acceptFin
 			int output = t.output;
 			Var v = outer->getTransitionVar(g_over.getID(),edgeID,0,output);
 			assert(outer->value(v)!=l_False);
+			stats_forced_edges++;
 			if(outer->value(v)==l_True){
 				conflict.push(mkLit(v,true));
 			}
@@ -203,6 +264,275 @@ void FSMGeneratorAcceptorDetector::buildAcceptReason(int genFinal, int acceptFin
 
 	}
 }
+bool FSMGeneratorAcceptorDetector::stepGenerator(int final,int forcedEdge,int forcedLabel, vec<int> & store, vec<bool> & store_seen, int & cur_gen_state, vec<NFATransition> * path){
+	DynamicFSM & g = g_over;
+
+
+	for(int i = 0;i<gen_cur.size();i++){
+		int s = gen_cur[i];
+		cur_gen_state = s;
+		for(int j = 0;j<g.nIncident(s);j++){
+			//now check if the label is active
+			int edgeID= g.incident(s,j).id;
+			int to = g.incident(s,j).node;
+
+			if(g.transitionEnabled(edgeID,0,0)){
+				if(!gen_cur_seen[to] ){
+					gen_cur_seen[to]=true;
+					gen_cur.push(to);
+				}
+				if(path){
+					path->push({edgeID,0,0});
+				}
+			}
+
+			for(int l = 1;l<g.outAlphabet();l++){
+				if (g.transitionEnabled(edgeID,0,l) || (edgeID==forcedEdge && l==forcedLabel)){
+					if(!gen_next_seen[to]){
+						gen_next_seen[to]=true;
+						gen_next.push(to);
+					}
+					if(path && !( (edgeID==forcedEdge && l==forcedLabel))){
+						path->push({edgeID,0,l});
+					}
+					if(!store_seen[l]){
+						store_seen[l]=true;
+						store.push(l);
+					}
+
+				}
+			}
+
+		}
+	}
+
+	gen_next.swap(gen_cur);
+	gen_next_seen.swap(gen_cur_seen);
+
+	for(int s:gen_next){
+		assert(gen_next_seen[s]);
+		gen_next_seen[s]=false;
+	}
+	gen_next.clear();
+
+	return gen_cur_seen[final];
+
+}
+bool FSMGeneratorAcceptorDetector::isAttractor(int acceptorState){
+	DynamicFSM & accept = acceptor_over;
+		if(acceptorState<0){
+			return true;
+		}else{
+			//should really fix this to work correctly for epsilon transitions between multiple acceptor states...
+			for(int i = 0;i<accept.nIncident(acceptorState);i++){
+				int edgeID = accept.incident(acceptorState,i).id;
+				int to =  accept.incident(acceptorState,i).node;
+				if(to==acceptorState){
+					for(int c = 1;c<accept.inAlphabet();c++){
+						if(!accept.transitionEnabled(edgeID,c,-1)){
+							return false;
+						}
+					}
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+bool FSMGeneratorAcceptorDetector::find_gen_path(int gen_final, int accept_final,int forcedEdge,int forcedLabel, vec<NFATransition> & path,bool invertAcceptance , bool all_paths){
+		bool accepting_state_is_attractor= !invertAcceptance && isAttractor(accept_final) ;
+		path.clear();
+		for(int s:cur){
+			assert(cur_seen);
+			cur_seen[s]=false;
+		}
+		cur.clear();
+		assert(next.size()==0);
+		cur_seen[accept_source]=true;
+		cur.push(accept_source);
+
+
+		for(int s:gen_cur){
+			assert(gen_cur_seen);
+			gen_cur_seen[s]=false;
+		}
+		gen_cur.clear();
+		assert(next.size()==0);
+		gen_cur_seen[gen_source]=true;
+		gen_cur.push(gen_source);
+		chars.clear();
+		DynamicFSM & g =  acceptor_over;
+		DynamicFSM & gen =  g_over;
+		bool any_non_acceptors=accept_source!=accept_final;
+		bool any_non_acceptors_next=false;
+		//initial emove pass:
+		if(g.emovesEnabled()){
+			for(int i = 0;i<cur.size();i++){
+				int s = cur[i];
+				for(int j = 0;j<g.nIncident(s);j++){
+					//now check if the label is active
+					int edgeID= g.incident(s,j).id;
+					int to = g.incident(s,j).node;
+					if(!cur_seen[to] && g.transitionEnabled(edgeID,0,0)){
+						cur_seen[to]=true;
+						cur.push(to);
+						if(to!=accept_final)
+							any_non_acceptors=true;
+					}
+
+				}
+			}
+		}
+		//initial emove pass:
+		if(gen.emovesEnabled()){
+			for(int i = 0;i<gen_cur.size();i++){
+				int s = gen_cur[i];
+				for(int j = 0;j<gen.nIncident(s);j++){
+					//now check if the label is active
+					int edgeID= gen.incident(s,j).id;
+					int to = gen.incident(s,j).node;
+					if(gen.transitionEnabled(edgeID,0,0)){
+						if(!gen_cur_seen[to]){
+							gen_cur_seen[to]=true;
+							gen_cur.push(to);
+						}
+						path.push({edgeID,0,0});
+					}
+				}
+			}
+		}
+
+		bool prev_accepting=accepting_state_is_attractor ? true:gen_cur_seen[gen_final];
+		bool accepted=false;
+		//use the linear generator to produce a (set) of strings. Because the generator is linear, it is only ever in one state, which greatly simplifies the reasoning here...
+		while(!accepted){
+			int prev_path_size = path.size();
+			int  cur_gen_state=0;
+			bool accepting = stepGenerator(gen_final, forcedEdge, forcedLabel, chars,seen_chars, cur_gen_state,& path);//get set of next strings
+			if(accepting_state_is_attractor){
+				accepting =true;
+			}
+
+			if(chars.size()==0){
+				for(int i = 0;i<cur.size();i++){
+					int s = cur[i];
+					for(int j = 0;j<g.nIncident(s);j++){
+						//now check if the label is active
+						int edgeID= g.incident(s,j).id;
+						int to = g.incident(s,j).node;
+						if(!cur_seen[to] && g.transitionEnabled(edgeID,0,0)){
+							cur_seen[to]=true;
+							cur.push(to);
+							if(to!=accept_final)
+								any_non_acceptors=true;
+
+						}
+					}
+				}
+			}else{
+				for(int l:chars)
+				{
+					assert(l>0);
+					for(int i = 0;i<cur.size();i++){
+						int s = cur[i];
+						for(int j = 0;j<g.nIncident(s);j++){
+							//now check if the label is active
+							int edgeID= g.incident(s,j).id;
+							int to = g.incident(s,j).node;
+							if(!cur_seen[to] && g.transitionEnabled(edgeID,0,0)){
+								cur_seen[to]=true;
+								cur.push(to);
+								if(to!=accept_final)
+									any_non_acceptors=true;
+								//status.reaches(str,to,edgeID,0);
+							}
+
+							if (!next_seen[to] && g.transitionEnabled(edgeID,l,0)){
+								//status.reaches(str,to,edgeID,l);
+								next_seen[to]=true;
+								next.push(to);
+								if(to!=accept_final)
+									any_non_acceptors_next=true;
+							}
+						}
+					}
+				}
+			}
+			if(!invertAcceptance && ! all_paths){
+				if(prev_accepting && cur_seen[accept_final]){
+					accepted=true;
+					path.shrink(path.size()-prev_path_size);
+				}
+			}else if (invertAcceptance && ! all_paths){
+				if(prev_accepting && any_non_acceptors){
+					accepted=true;
+					path.shrink(path.size()-prev_path_size);
+				}
+			}else if (all_paths){
+				if(prev_accepting && !any_non_acceptors){
+					accepted=true;
+					path.shrink(path.size()-prev_path_size);
+				}
+			}
+
+			next.swap(cur);
+			next_seen.swap(cur_seen);
+
+			for(int s:next){
+				assert(next_seen[s]);
+				next_seen[s]=false;
+			}
+			next.clear();
+			if(chars.size()==0){
+				//must eventually happen because the generator is linear.
+				break;
+			}
+
+			for(int l :chars){
+				assert(seen_chars[l]);
+				seen_chars[l]=false;
+			}
+			chars.clear();
+			prev_accepting = accepting;
+			any_non_acceptors= any_non_acceptors_next;
+			any_non_acceptors_next=false;
+		}
+
+		return accepted;
+	}
+
+
+void FSMGeneratorAcceptorDetector::buildForcedEdgeReason(int genFinal, int acceptFinal,int forcedEdge, int forcedLabel, vec<Lit> & conflict){
+	//the reason that an edge was forced by an _unreachability_ condition, was that if it was negated then that state would be reachable.
+	//so the 'reason' is the same as the reachability reason for that state IF the forced edge was flipped.
+
+	if(!opt_fsm_negate_underapprox){
+		assert(false);
+		exit(1);
+	}else{
+
+		static vec<NFATransition> path;
+		path.clear();
+		find_gen_path(genFinal,acceptFinal,forcedEdge,forcedLabel,path,false,true);
+
+		for(auto & t:path){
+			//printf("%d(c%d), ", t.edgeID, t.output);
+			int edgeID = t.edgeID;
+			int input = t.input;
+			assert(input==0);
+			int output = t.output;
+			Var v = outer->getTransitionVar(g_over.getID(),edgeID,0,output);
+			assert(outer->value(v)!=l_False);
+			stats_forced_edges++;
+			if(outer->value(v)==l_True){
+				conflict.push(mkLit(v,true));
+			}
+		}
+		//printf("\n");
+
+	}
+}
+
 void FSMGeneratorAcceptorDetector::buildNonAcceptReason(int genFinal, int acceptFinal, vec<Lit> & conflict){
 
 	static int iter = 0;

@@ -722,6 +722,10 @@ public:
 		int i = trail.size() - 1;
 		for (; i >= 0; i--) {
 			Assignment e = trail[i];
+			if (var(p) == e.var) {
+					assert(sign(p) != e.assign);
+					break;
+				}
 			if (e.isEdge) {
 				int edge_num = getEdgeID(e.var); //e.var-min_edge_var;
 				assert(assigns[e.var]!=l_Undef);
@@ -741,10 +745,7 @@ public:
 					}
 				}
 			} else {
-				if (var(p) == e.var) {
-					assert(sign(p) != e.assign);
-					break;
-				}
+
 				assigns[e.var] = l_Undef;
 				detectors[getDetector(e.var)]->unassign(mkLit(e.var, !e.assign));
 			}

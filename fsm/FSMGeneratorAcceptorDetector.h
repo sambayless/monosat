@@ -72,7 +72,7 @@ public:
 
 	CRef underprop_marker;
 	CRef overprop_marker;
-
+	CRef forcededge_marker;
 	struct Change {
 		Lit l;
 		int u;
@@ -90,6 +90,7 @@ public:
 	vec<AcceptLit> accept_lit_map;
 	vec<AcceptLit> all_accept_lits;
 	vec<Lit> all_lits;
+
 	//stats
 	
 	int stats_full_updates = 0;
@@ -100,13 +101,14 @@ public:
 	int stats_num_skipable_deletions = 0;
 	int stats_learnt_components = 0;
 	int stats_learnt_components_sz = 0;
+	long stats_forced_edges=0;
 	double mod_percentage = 0.2;
 	int stats_pure_skipped = 0;
 	int stats_shrink_removed = 0;
 	double stats_full_update_time = 0;
 	double stats_fast_update_time = 0;
 
-
+	Map<Var,Lit> forcedVars;
 
 
 	void printStats() {
@@ -121,6 +123,20 @@ public:
 			printf("\t%d components learned, average component size: %f\n", stats_learnt_components,
 					stats_learnt_components_sz / (float) stats_learnt_components);
 		}
+		printf("Forced edge assignments: %d\n", stats_forced_edges);
+	}
+
+	inline void setForcedVar(Var edgeVar, Lit forcedBy){
+		if(forcedVars.has(edgeVar)){
+			forcedVars.remove(edgeVar);
+		}
+
+	//	printf("Forced edge %d by %d, %d\n", edgeVar, var(forcedBy), sign(forcedBy)?-1:1);
+		forcedVars.insert(edgeVar,forcedBy);
+	}
+
+	inline Lit getForcedVar(Var edgeVar){
+		return forcedVars[edgeVar];
 	}
 
 	inline int indexOf(Var v)const{
@@ -147,6 +163,7 @@ public:
 	bool propagate(vec<Lit> & conflict);
 	void buildAcceptReason(int genFinal, int acceptFinal, vec<Lit> & conflict);
 	void buildNonAcceptReason(int genFinal, int acceptFinal, vec<Lit> & conflict);
+	void buildForcedEdgeReason(int genFinal, int acceptFinal,int forcedEdge, int forcedLabel,  vec<Lit> & conflict);
 
 	void buildReason(Lit p, vec<Lit> & reason, CRef marker);
 	bool checkSatisfied();
@@ -165,7 +182,23 @@ public:
 	const char* getName() {
 		return "NFA Generator Acceptor Detector";
 	}
-	
+private:
+	vec<int> next;
+	vec<int> cur;
+
+	vec<bool> next_seen;
+	vec<bool> cur_seen;
+
+	vec<int> gen_cur;
+	vec<int> gen_next;
+	vec<bool> gen_next_seen;
+	vec<bool> gen_cur_seen;
+	vec<int> chars;
+	vec<bool> seen_chars;
+	bool isAttractor(int acceptorState);
+	bool find_gen_path(int gen_final, int accept_final,int forcedEdge,int forcedLabel, vec<NFATransition> & path,bool invertAcceptance = false, bool all_paths=false);
+	bool stepGenerator(int final,int forcedEdge,int forcedLabel, vec<int> & store, vec<bool> & store_seen, int & cur_gen_state, vec<NFATransition> * path=nullptr);
+
 	
 
 };

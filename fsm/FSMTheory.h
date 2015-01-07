@@ -508,10 +508,14 @@ public:
 	
 	void backtrackUntil(Lit p) {
 		//need to remove and add edges in the two graphs accordingly.
-		
+		assert(value(p)==l_True);
 		int i = trail.size() - 1;
 		for (; i >= 0; i--) {
 			Assignment e = trail[i];
+			if (var(p) == e.var) {
+				assert(sign(p) != e.assign);
+				break;
+			}
 			if (e.isEdge) {
 				int fsmID = getFsmID(e.var);
 				int edgeID = getEdgeID(e.var); //e.var-min_edge_var;
@@ -525,10 +529,7 @@ public:
 					g_overs[fsmID]->enableTransition(edgeID,input,output);
 				}
 			} else {
-				if (var(p) == e.var) {
-					assert(sign(p) != e.assign);
-					break;
-				}
+
 				assigns[e.var] = l_Undef;
 				detectors[getDetector(e.var)]->unassign(mkLit(e.var, !e.assign));
 			}

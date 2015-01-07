@@ -493,6 +493,10 @@ public:
 		int i = trail.size() - 1;
 		for (; i >= 0; i--) {
 			Assignment e = trail[i];
+			if (var(p) == e.var) {
+				assert(sign(p) != e.assign);
+				break;
+			}
 			if (e.isPoint) {
 				int point_num = getPointID(e.var); //e.var-min_point_var;
 				int pointSet = points[point_num].pointset;
@@ -506,10 +510,7 @@ public:
 					
 				}
 			} else {
-				if (var(p) == e.var) {
-					assert(sign(p) != e.assign);
-					break;
-				}
+
 				assigns[e.var] = l_Undef;
 				detectors[getDetector(e.var)]->unassign(mkLit(e.var, !e.assign));
 			}
