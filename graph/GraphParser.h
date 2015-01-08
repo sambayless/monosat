@@ -66,7 +66,7 @@ class GraphParser: public Parser<B, Solver> {
 	vec<int> weights;
 	vec<Lit> lits;
 	int count = 0;
-
+	vec<char> tmp;
 	
 	void readDiGraph(B& in, GraphType graph_type, Solver& S) {
 		if (opt_ignore_theories) {
@@ -108,7 +108,7 @@ class GraphParser: public Parser<B, Solver> {
 		//  return ev;
 	}
 	
-	void readEdge(B& in, Solver& S) {
+/*	void readEdge(B& in, Solver& S) {
 		if (opt_ignore_theories) {
 			skipLine(in);
 			return;
@@ -141,16 +141,16 @@ class GraphParser: public Parser<B, Solver> {
 			exit(1);
 		}
 		
-	}
+	}*/
 	
-	void readWeightedEdge(B& in, Solver& S) {
+	void readEdge(B& in, Solver& S) {
 		if (opt_ignore_theories) {
 			skipLine(in);
 			return;
 		}
 		
 		++in;
-		static vec<char> tmp;
+
 		int graphID = parseInt(in);
 		int from = parseInt(in);
 		int to = parseInt(in);
@@ -165,46 +165,64 @@ class GraphParser: public Parser<B, Solver> {
 		while (edgeVar >= S.nVars())
 			S.newVar();
 		
-		if (graphs[graphID]) {
-			int weight = parseInt(in);
-			graphs[graphID]->newEdge(from, to, edgeVar, weight);
-		} else if (graphs_float[graphID]) {
-			//float can be either a plain integer, or a rational in the form '123/456', or a floating point in decimal format
-			double weight = parseDouble(in, tmp);
-			skipWhitespace(in);
-			if (*in == '/') {
-				++in;
-				double denom = parseDouble(in, tmp);
-				weight /= denom;
-			}
-			graphs_float[graphID]->newEdge(from, to, edgeVar, weight);
-		} else if (graphs_rational[graphID]) {
-			//rational can be either a plain integer, or a rational in the form '123/456', or a floating point value
-			std::stringstream ss;
-			skipWhitespace(in);
+		skipWhitespace(in);
+		if(*in=='\n' || *in==0){
+			//this is an unweighted edge
 			
-			while (*in != '\n') {
-				ss << (*in);
-				++in;
+			if (graphs[graphID]) {
+				graphs[graphID]->newEdge(from, to, edgeVar);
+			} else if (graphs_float[graphID]) {
+				graphs_float[graphID]->newEdge(from, to, edgeVar);
+			} else if (graphs_rational[graphID]) {
+				graphs_rational[graphID]->newEdge(from, to, edgeVar);
+			} else {
+				printf("PARSE ERROR! Undeclared graph identifier %d for edge %d\n", graphID, edgeVar), exit(1);
+				exit(1);
 			}
 			
-			//first, try to interpret this string as a double:
-			try {
-				double value = std::stod(ss.str());
-				mpq_class weight(value);
-				weight.canonicalize();
-				graphs_rational[graphID]->newEdge(from, to, edgeVar, weight);
-			} catch (std::exception& e) {
-				//if that fails, attempt to read it in directly as an fraction:
-				mpq_class weight(ss.str());
-				weight.canonicalize();
-				graphs_rational[graphID]->newEdge(from, to, edgeVar, weight);
+		}else{
+
+			if (graphs[graphID]) {
+				int weight = parseInt(in);
+				graphs[graphID]->newEdge(from, to, edgeVar, weight);
+			} else if (graphs_float[graphID]) {
+				//float can be either a plain integer, or a rational in the form '123/456', or a floating point in decimal format
+				double weight = parseDouble(in, tmp);
+				skipWhitespace(in);
+				if (*in == '/') {
+					++in;
+					double denom = parseDouble(in, tmp);
+					weight /= denom;
+				}
+				graphs_float[graphID]->newEdge(from, to, edgeVar, weight);
+			} else if (graphs_rational[graphID]) {
+				//rational can be either a plain integer, or a rational in the form '123/456', or a floating point value
+				std::stringstream ss;
+				skipWhitespace(in);
+
+				while (*in != '\n') {
+					ss << (*in);
+					++in;
+				}
+
+				//first, try to interpret this string as a double:
+				try {
+					double value = std::stod(ss.str());
+					mpq_class weight(value);
+					weight.canonicalize();
+					graphs_rational[graphID]->newEdge(from, to, edgeVar, weight);
+				} catch (std::exception& e) {
+					//if that fails, attempt to read it in directly as an fraction:
+					mpq_class weight(ss.str());
+					weight.canonicalize();
+					graphs_rational[graphID]->newEdge(from, to, edgeVar, weight);
+				}
+
+			} else {
+				printf("PARSE ERROR! Undeclared graph identifier %d for edge %d\n", graphID, edgeVar), exit(1);
+				exit(1);
 			}
-		} else {
-			printf("PARSE ERROR! Undeclared graph identifier %d for edge %d\n", graphID, edgeVar), exit(1);
-			exit(1);
 		}
-		
 	}
 	
 	/* void readConnect(B& in, Solver& S) {
@@ -448,18 +466,19 @@ class GraphParser: public Parser<B, Solver> {
 	 }
 	 */
 
-	void readMinSpanningTreeConstraint(B& in, Solver& S) {
+	void readMinSpanningTreeConstraint(B& in, Solver& S, bool inclusive) {
 		if (opt_ignore_theories) {
 			skipLine(in);
 			return;
 		}
-		//mst_weight_lt grachID maxweight var is a minimum spanning tree weight constraint: var is true if the mst of the graph is <= maxweight
-		
+
 		++in;
 		
 		int graphID = parseInt(in);
-		int maxweight = parseInt(in);
+
 		int reachVar = parseInt(in) - 1;
+		int maxweight = parseInt(in);
+
 		if (graphID < 0 || graphID >= graphs.size()) {
 			printf("PARSE ERROR! Undeclared graph identifier %d for edge %d\n", graphID, reachVar), exit(1);
 		}
@@ -469,17 +488,47 @@ class GraphParser: public Parser<B, Solver> {
 		
 		while (reachVar >= S.nVars())
 			S.newVar();
-		
 		if (graphs[graphID]) {
-			graphs[graphID]->minimumSpanningTree(reachVar, maxweight);
+			long maxweight = parseInt(in);
+			graphs[graphID]->minimumSpanningTree(reachVar, maxweight,inclusive);
 		} else if (graphs_float[graphID]) {
-			graphs_float[graphID]->minimumSpanningTree(reachVar, maxweight);
+			//float can be either a plain integer, or a rational (interpreted at floating point precision) in the form '123/456', or a floating point in decimal format
+			double maxweight = parseDouble(in, tmp);
+			skipWhitespace(in);
+			if (*in == '/') {
+				++in;
+				double denom = parseDouble(in, tmp);
+				maxweight /= denom;
+			}
+			graphs_float[graphID]->minimumSpanningTree(reachVar, maxweight,inclusive);
 		} else if (graphs_rational[graphID]) {
-			graphs_rational[graphID]->minimumSpanningTree(reachVar, maxweight);
+			//rational can be either a plain integer, or a rational in the form '123/456', or a floating point value
+			std::stringstream ss;
+			skipWhitespace(in);
+
+			while (*in != '\n') {
+				ss << (*in);
+				++in;
+			}
+
+			//first, try to interpret this string as a double:
+			try {
+				double value = std::stod(ss.str());
+				mpq_class maxweight(value);
+				maxweight.canonicalize();
+				graphs_rational[graphID]->minimumSpanningTree(reachVar, maxweight,inclusive);
+			} catch (std::exception& e) {
+				//if that fails, attempt to read it in directly as an fraction:
+				mpq_class maxweight(ss.str());
+				maxweight.canonicalize();
+				graphs_rational[graphID]->minimumSpanningTree(reachVar, maxweight,inclusive);
+			}
+
 		} else {
 			printf("PARSE ERROR! Undeclared graph identifier %d\n", graphID), exit(1);
 			exit(1);
 		}
+
 	}
 	void readMinSpanningTreeEdgeConstraint(B& in, Solver& S) {
 		if (opt_ignore_theories) {
@@ -517,31 +566,31 @@ class GraphParser: public Parser<B, Solver> {
 			exit(1);
 		}
 	}
-	
-	void readMaxFlowConstraint(B& in, Solver& S) {
+	void readOldMaxFlowConstraint(B& in, Solver& S) {
 		if (opt_ignore_theories) {
 			skipLine(in);
 			return;
 		}
-		//max_flow_gt grachID s t flow var is a max flow constraint, true if the max flow is >= var
-		
+
 		++in;
-		
+
 		int graphID = parseInt(in);
 		int s = parseInt(in);
 		int t = parseInt(in);
-		int flow = parseInt(in);
-		int reachVar = parseInt(in) - 1;
+		long flow = parseInt(in);
+		int reachVar = parseInt(in) - 1; //note: maximum flow constraint format has been changed since the paper. The order of reachVar and flow after the paper, to allow for non-integer flow constraints.
+
+
 		if (graphID < 0 || graphID >= graphs.size()) {
 			printf("PARSE ERROR! Undeclared graph identifier %d for edge %d\n", graphID, reachVar), exit(1);
 		}
 		if (reachVar < 0) {
 			printf("PARSE ERROR! Edge variables must be >=0, was %d\n", reachVar), exit(1);
 		}
-		
+
 		while (reachVar >= S.nVars())
 			S.newVar();
-		
+
 		if (graphs[graphID]) {
 			graphs[graphID]->maxFlow(s, t, flow, reachVar);
 		} else if (graphs_float[graphID]) {
@@ -552,6 +601,74 @@ class GraphParser: public Parser<B, Solver> {
 			printf("PARSE ERROR! Undeclared graph identifier %d\n", graphID), exit(1);
 			exit(1);
 		}
+	}
+	void readMaxFlowConstraint(B& in, Solver& S, bool inclusive) {
+		if (opt_ignore_theories) {
+			skipLine(in);
+			return;
+		}
+
+		++in;
+
+		int graphID = parseInt(in);
+		int s = parseInt(in);
+		int t = parseInt(in);
+		int reachVar = parseInt(in) - 1; //note: switched the order of reachVar and flow after the paper, to allow for non-integer flow constraints in the future...
+
+
+		if (graphID < 0 || graphID >= graphs.size()) {
+			printf("PARSE ERROR! Undeclared graph identifier %d for edge %d\n", graphID, reachVar), exit(1);
+		}
+		if (reachVar < 0) {
+			printf("PARSE ERROR! Edge variables must be >=0, was %d\n", reachVar), exit(1);
+		}
+
+		while (reachVar >= S.nVars())
+			S.newVar();
+
+		//parse the flow constraint appropriately for the type of the graph:
+
+		if (graphs[graphID]) {
+			long flow = parseInt(in);
+			graphs[graphID]->maxFlow(s, t, flow, reachVar,inclusive);
+		} else if (graphs_float[graphID]) {
+			//float can be either a plain integer, or a rational (interpreted at floating point precision) in the form '123/456', or a floating point in decimal format
+			double flow = parseDouble(in, tmp);
+			skipWhitespace(in);
+			if (*in == '/') {
+				++in;
+				double denom = parseDouble(in, tmp);
+				flow /= denom;
+			}
+			graphs_float[graphID]->maxFlow(s, t, flow, reachVar,inclusive);
+		} else if (graphs_rational[graphID]) {
+			//rational can be either a plain integer, or a rational in the form '123/456', or a floating point value
+			std::stringstream ss;
+			skipWhitespace(in);
+
+			while (*in != '\n') {
+				ss << (*in);
+				++in;
+			}
+
+			//first, try to interpret this string as a double:
+			try {
+				double value = std::stod(ss.str());
+				mpq_class flow(value);
+				flow.canonicalize();
+				graphs_rational[graphID]->maxFlow(s, t, flow, reachVar,inclusive);
+			} catch (std::exception& e) {
+				//if that fails, attempt to read it in directly as an fraction:
+				mpq_class flow(ss.str());
+				flow.canonicalize();
+				graphs_rational[graphID]->maxFlow(s, t, flow, reachVar,inclusive);
+			}
+
+		} else {
+			printf("PARSE ERROR! Undeclared graph identifier %d\n", graphID), exit(1);
+			exit(1);
+		}
+
 	}
 	
 	void readMinConnectedComponentsConstraint(B& in, Solver& S) {
@@ -802,7 +919,7 @@ public:
 			return true;
 		} else if (match(in, "weighted_edge")) {
 			count++;
-			readWeightedEdge(in, S);
+			readEdge(in, S);
 			return true;
 		}/*else if (match(in,"float_edge")){
 		 count++;
@@ -830,49 +947,30 @@ public:
 		} else if (match(in, "weighted_distance_leq")) {
 			readShortestPath(in, S, true);
 			return true;
-		}
-		/*else if (match(in, "distance_rational_lt")){
-		 readDistanceRational(in, S);
-		 return true;
-		 }else if (match(in, "distance_rational_leq")){
-		 readDistanceRational(in, S,true);
-		 return true;
-		 }else if (match(in, "distance_float_lt")){
-		 readDistanceFloat(in, S);
-		 return true;
-		 }else if (match(in, "distance_float_leq")){
-		 readDistanceFloat(in, S,true);
-		 return true;
-		 }*/else if (match(in, "mst_weight_lt")) {
-			readMinSpanningTreeConstraint(in, S);
+		}else if (match(in, "mst_weight_leq")) {
+			readMinSpanningTreeConstraint(in, S,true);
 			return true;
-		} else if (match(in, "mst_edge")) {
+		}else if (match(in, "mst_weight_lt")) {
+			readMinSpanningTreeConstraint(in, S,false);
+			return true;
+		}else if (match(in, "mst_edge")) {
 			readMinSpanningTreeEdgeConstraint(in, S);
 			return true;
-		} else if (match(in, "max_flow_gt")) {
-			readMaxFlowConstraint(in, S);
+		} else if (match(in, "maximum_flow_geq")) {
+			readMaxFlowConstraint(in, S,true);
 			return true;
-		} else if (match(in, "connected_component_count_lt")) {
+		} else if (match(in, "maximum_flow_gt")) {
+			readMaxFlowConstraint(in, S,false);
+			return true;
+		} else if (match(in, "max_flow_gt")) {
+			//for compatibility with old file format (don't use this!)
+			readOldMaxFlowConstraint(in, S);
+			return true;
+		}else if (match(in, "connected_component_count_lt")) {
 			readMinConnectedComponentsConstraint(in, S);
 			return true;
-		} /*else if (*in == 's') {
-			if (!eagerMatch(in, "steiner_")) {
-				printf("PARSE ERROR! Unexpected char: %c\n", *in), exit(1);
-			}
-			if (*in == 't') {
-				if (!eagerMatch(in, "terminal")) {
-					printf("PARSE ERROR! Unexpected char: %c\n", *in), exit(1);
-				}
-				readSteinerTreeTerminal(in, S);
-			} else if (*in == 'm') {
-				if (!eagerMatch(in, "minweight")) {
-					printf("PARSE ERROR! Unexpected char: %c\n", *in), exit(1);
-				}
-				readSteinerTreeConstraint(in, S);
-			}
-			return true;
-		} */else if (match(in, "pb_lt")) {
-			//Pseudoboolean constraint: o is for opb... can't use p, unfortunately...
+		}else if (match(in, "pb_lt")) {
+
 			if (!pbtheory) {
 				pbtheory = new PbTheory(&S);
 				S.addTheory(pbtheory);

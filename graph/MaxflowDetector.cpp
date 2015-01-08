@@ -126,7 +126,7 @@ MaxflowDetector<Weight>::MaxflowDetector(int _detectorID, GraphTheorySolver<Weig
 }
 
 template<typename Weight>
-void MaxflowDetector<Weight>::addFlowLit(Weight maxflow, Var outer_reach_var) {
+void MaxflowDetector<Weight>::addFlowLit(Weight maxflow, Var outer_reach_var, bool inclusive) {
 	g_under.invalidate();
 	g_over.invalidate();
 	Var reach_var = outer->newVar(outer_reach_var, getID());
@@ -150,6 +150,7 @@ void MaxflowDetector<Weight>::addFlowLit(Weight maxflow, Var outer_reach_var) {
 	flow_lits.push();
 	flow_lits.last().l = reachLit;
 	flow_lits.last().max_flow = maxflow;
+	flow_lits.last().inclusive=inclusive;
 	while (reach_lit_map.size() <= reach_var - first_reach_var) {
 		reach_lit_map.push(-1);
 	}
@@ -599,10 +600,11 @@ bool MaxflowDetector<Weight>::propagate(vec<Lit> & conflict) {
 		
 		DistLit f = flow_lits[j];
 		Lit l = f.l;
+		bool inclusive = f.inclusive;
 		Weight& maxflow = f.max_flow;
 		//int u = getNode(var(l));
 		
-		if (under_maxflow >= maxflow) {
+		if ((inclusive && under_maxflow >= maxflow) || (!inclusive && under_maxflow > maxflow)) {
 			if (outer->value(l) == l_True) {
 				//do nothing
 			} else if (outer->value(l) == l_Undef) {
@@ -615,7 +617,7 @@ bool MaxflowDetector<Weight>::propagate(vec<Lit> & conflict) {
 				return false;
 			}
 			
-		} else if (over_maxflow < maxflow) {
+		} else if ((inclusive && over_maxflow < maxflow) || (!inclusive && over_maxflow <= maxflow)) {
 			if (outer->value(l) == l_False) {
 				//do nothing
 			} else if (outer->value(l) == l_Undef) {

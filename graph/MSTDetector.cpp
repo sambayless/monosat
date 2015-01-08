@@ -77,12 +77,10 @@ MSTDetector<Weight>::MSTDetector(int detectorID, GraphTheorySolver<Weight> * out
 	first_reach_var = var_Undef;
 }
 template<typename Weight>
-void MSTDetector<Weight>::addWeightLit(Var outer_weight_var, Weight & min_weight) {
+void MSTDetector<Weight>::addWeightLit(Var outer_weight_var, Weight & min_weight, bool inclusive) {
 	g_under.invalidate();
 	g_over.invalidate();
 	
-	//while( dist_lits[to].size()<=within_steps)
-	//	dist_lits[to].push({lit_Undef,-1});
 	Var weight_var = outer->newVar(outer_weight_var, getID());
 	if (lowest_weight_lit < 0 || min_weight < lowest_weight_lit) {
 		lowest_weight_lit = min_weight;
@@ -93,7 +91,7 @@ void MSTDetector<Weight>::addWeightLit(Var outer_weight_var, Weight & min_weight
 	Lit reachLit = mkLit(weight_var, false);
 	bool found = false;
 	for (int i = 0; i < weight_lits.size(); i++) {
-		if (weight_lits[i].min_weight == min_weight) {
+		if (weight_lits[i].min_weight == min_weight && weight_lits[i].inclusive==inclusive) {
 			found = true;
 			Lit r = weight_lits[i].l;
 			//force equality between the new lit and the old reach lit, in the SAT solver
@@ -105,11 +103,9 @@ void MSTDetector<Weight>::addWeightLit(Var outer_weight_var, Weight & min_weight
 	if (!found) {
 		weight_lits.push();
 		weight_lits.last().l = reachLit;
+		weight_lits.last().inclusive = inclusive;
 		weight_lits.last().min_weight = min_weight;
-		
-		//weight_lit_map.insert(min_weight,weight_lits.size()-1);
 	}
-	
 }
 
 template<typename Weight>
@@ -746,14 +742,19 @@ bool MSTDetector<Weight>::propagate(vec<Lit> & conflict) {
 		//Probably should do a binary search here.
 		for (int j = 0; j < weight_lits.size(); j++) {
 			Lit l = weight_lits[j].l;
+			bool inclusive =  weight_lits[j].inclusive;
 			//printf("mst: %d\n",dimacs(l));
 			Weight min_weight = weight_lits[j].min_weight;
 			
-			if (under_weight <= min_weight && underapprox_detector->numComponents() <= 1) {
+			if (inclusive && under_weight <= min_weight && underapprox_detector->numComponents() <= 1) {
 				//dont flip sign
-			} else if (over_weight > min_weight || overapprox_detector->numComponents() > 1) {
+			}else if (!inclusive && under_weight < min_weight && underapprox_detector->numComponents() <= 1) {
+				//dont flip sign
+			}else if (inclusive && ( over_weight > min_weight || overapprox_detector->numComponents() > 1)) {
 				l = ~l;			//flip sign
-			} else {
+			}else if (!inclusive && ( over_weight >= min_weight || overapprox_detector->numComponents() > 1)) {
+				l = ~l;			//flip sign
+			}  else {
 				//try the next edge weight
 				continue;
 			}

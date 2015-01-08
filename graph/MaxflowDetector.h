@@ -85,7 +85,7 @@ public:
 	struct DistLit {
 		Lit l;
 		Weight max_flow;
-		
+		bool inclusive;//If inclusive true, l is true iff the maximum flow is >= max_flow; else, l is true iff the maximum flow is > max_flow.
 	};
 	vec<DistLit> flow_lits;
 	std::vector<MaxFlowEdge> cut;
@@ -143,7 +143,7 @@ public:
 	}
 	void dbg_decisions();
 	void printSolution(std::ostream & write_to);
-	void addFlowLit(Weight max_flow, Var reach_var);
+	void addFlowLit(Weight max_flow, Var reach_var, bool inclusive);
 	MaxflowDetector(int _detectorID, GraphTheorySolver<Weight> * _outer, std::vector<Weight> & capacities,
 			DynamicGraph &_g, DynamicGraph &_antig, int _source, int _target, double seed = 1); //:Detector(_detectorID),outer(_outer),within(-1),source(_source),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL){}
 	~MaxflowDetector() {

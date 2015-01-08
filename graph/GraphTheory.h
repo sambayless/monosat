@@ -1451,12 +1451,12 @@ public:
 		}
 	}
 	//v will be true if the minimum weight is <= the specified value
-	void minimumSpanningTree(Var v, Weight minimum_weight) {
+	void minimumSpanningTree(Var v, Weight minimum_weight, bool inclusive) {
 		if (!mstDetector) {
 			mstDetector = new MSTDetector<Weight>(detectors.size(), this, g_under, g_over, edge_weights, drand(rnd_seed));
 			detectors.push(mstDetector);
 		}
-		mstDetector->addWeightLit(v, minimum_weight);
+		mstDetector->addWeightLit(v, minimum_weight,inclusive);
 	}
 	void edgeInMinimumSpanningTree(Var edgeVar, Var var) {
 		if (!mstDetector) {
@@ -1477,11 +1477,11 @@ public:
 		}
 		mstDetector->addTreeEdgeLit(edgeid, var);
 	}
-	void maxFlow(int from, int to, int max_flow, Var v) {
+	void maxFlow(int from, int to, Weight  max_flow, Var v, bool inclusive=true) {
 		
 		for (int i = 0; i < flow_detectors.size(); i++) {
 			if (flow_detectors[i]->source == from && flow_detectors[i]->target == to) {
-				flow_detectors[i]->addFlowLit(max_flow, v);
+				flow_detectors[i]->addFlowLit(max_flow, v,inclusive);
 				return;
 			}
 		}
@@ -1489,9 +1489,9 @@ public:
 				to, drand(rnd_seed));
 		flow_detectors.push(f);
 		detectors.push(f);
-		f->addFlowLit(max_flow, v);
-		
+		f->addFlowLit(max_flow, v,inclusive);
 	}
+
 	void minConnectedComponents(int min_components, Var v) {
 		if (!component_detector) {
 			component_detector = new ConnectedComponentsDetector<Weight>(detectors.size(), this, g_under, g_over,
