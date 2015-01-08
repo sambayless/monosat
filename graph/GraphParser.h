@@ -51,7 +51,7 @@ struct SteinerStruct {
 // GRAPH Parser:
 template<class B, class Solver>
 class GraphParser: public Parser<B, Solver> {
-	vec<std::pair<int, std::string> > * symbols = nullptr;
+
 	vec<GraphTheorySolver<long>*> graphs;
 	vec<GraphTheorySolver<double>*> graphs_float;
 	vec<GraphTheorySolver<mpq_class>*> graphs_rational;
@@ -62,7 +62,7 @@ class GraphParser: public Parser<B, Solver> {
 	bool precise;
 	vec<vec<SteinerStruct*>> steiners;
 	PbTheory * pbtheory = nullptr;
-	std::string symbol;
+
 	vec<int> weights;
 	vec<Lit> lits;
 	int count = 0;
@@ -773,40 +773,8 @@ public:
 		if (*in == EOF)
 			return false;
 		else if (*in == 'c') {
-			if (symbols && match(in, "c var ")) {
-				
-				//this is a variable symbol map
-				skipWhitespace(in);
-				int v = parseInt(in);
-				if (v <= 0) {
-					//printf("PARSE ERROR! Variables must be positive: %c\n", *in), exit(1);
-					v = -v;
-				}
-				
-				v--; //subtract one to get the variable id
-				
-				symbol.clear();
-				skipWhitespace(in);
-				while (*in != '\n' && !isWhitespace(*in)) {
-					symbol.push_back(*in);
-					++in;
-				}
-				if (symbol.size() == 0) {
-					printf("PARSE ERROR! Empty symbol: %c\n", *in), exit(1);
-				}
-				/*   		if(symbols && used_symbols.count(symbol)){
-				 printf("PARSE ERROR! Duplicated symbol: %c\n", *symbol.c_str()), exit(1);
-				 }
-				 used_symbols.insert(symbol);*/
-
-				symbols->push();
-				symbols->last().first = v;
-				symbols->last().second = symbol;
-				return true;
-			} else {
-				//just a comment
-				return false;
-			}
+			//just a comment
+			return false;
 		} else if (match(in, "digraph")) {
 			skipWhitespace(in);
 			if (match(in, "int")) {
@@ -917,20 +885,7 @@ public:
 	
 	void implementConstraints(Solver & S) {
 		
-		//clear any unmapped symbols (have to do this _before_ implementing constraints, which may introduce new variables)
-		if (symbols) {
-			int i, j = 0;
-			for (i = 0; i < symbols->size(); i++) {
-				std::pair<int, std::string> p = (*symbols)[i];
-				Var v = p.first;
-				if (v <= S.nVars()) {
-					//keep this symbol
-					(*symbols)[j++] = (*symbols)[i];
-				}
-			}
-			symbols->shrink(i - j);
-		}
-		
+
 		for (int gid = 0; gid < steiners.size(); gid++) {
 			for (auto & steiner : steiners[gid]) {
 				if (steiner) {
@@ -958,10 +913,7 @@ public:
 		if (pbtheory)
 			pbtheory->implementConstraints();
 	}
-	
-	void setSymbols(vec<std::pair<int, std::string> > * symbols) {
-		this->symbols = symbols;
-	}
+
 	
 };
 

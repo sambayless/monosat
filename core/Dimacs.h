@@ -28,6 +28,8 @@
 #include "utils/ParseUtils.h"
 #include "core/SolverTypes.h"
 #include "mtl/Vec.h"
+#include <string>
+#include <algorithm>
 namespace Monosat {
 
 template<class B, class Solver>
@@ -41,6 +43,75 @@ public:
 	virtual void implementConstraints(Solver & S)=0;
 };
 
+//A simple parser to allow for named variables
+template<class B, class Solver>
+class SymbolParser: public Parser<B, Solver> {
+	vec<std::pair<int, std::string> >  symbols;
+	std::string symbol;
+public:
+	SymbolParser(){
+
+	}
+
+	bool parseLine(B& in, Solver& S) {
+		if (*in == EOF)
+			return false;
+		else if (*in == 'c') {
+			if (match(in, "c var ")) {
+
+				//this is a variable symbol map
+				skipWhitespace(in);
+				int v = parseInt(in);
+				if (v <= 0) {
+					//printf("PARSE ERROR! Variables must be positive: %c\n", *in), exit(1);
+					v = -v;
+				}
+
+				v--; //subtract one to get the variable id
+
+				symbol.clear();
+				skipWhitespace(in);
+				while (*in != '\n' && !isWhitespace(*in)) {
+					symbol.push_back(*in);
+					++in;
+				}
+				if (symbol.size() == 0) {
+					printf("PARSE ERROR! Empty symbol: %c\n", *in), exit(1);
+				}
+				/*   		if(symbols && used_symbols.count(symbol)){
+				 printf("PARSE ERROR! Duplicated symbol: %c\n", *symbol.c_str()), exit(1);
+				 }
+				 used_symbols.insert(symbol);*/
+
+				symbols.push();
+				symbols.last().first = v;
+				symbols.last().second = symbol;
+				return true;
+			} else {
+				//just a comment
+				return false;
+			}
+		}
+		return false;
+	}
+	void implementConstraints(Solver & S){
+		//clear any unmapped symbols (have to do this _before_ implementing constraints, which may introduce new variables)
+		int i, j = 0;
+		for (i = 0; i < symbols.size(); i++) {
+			std::pair<int, std::string> p = symbols[i];
+			Var v = p.first;
+			if (v <= S.nVars()) {
+				//keep this symbol
+				symbols[j++] = symbols[i];
+			}
+		}
+		symbols.shrink(i - j);
+	}
+	vec<std::pair<int, std::string> > &  getSymbols(){
+		return symbols;
+	}
+};
+
 //The MiniSAT DIMACS Parser, converted to be extensible...
 template<class B, class Solver>
 class Dimacs {
@@ -52,7 +123,7 @@ public:
 	
 	virtual ~Dimacs() {
 	}
-	
+
 private:
 	
 	void readClause(char * in, Solver& S, vec<Lit>& lits) {
