@@ -921,18 +921,7 @@ public:
 			count++;
 			readEdge(in, S);
 			return true;
-		}/*else if (match(in,"float_edge")){
-		 count++;
-		 readFloatWeightedEdge(in, S);
-		 return true;
-		 }else if (match(in,"rational_edge")){
-		 count++;
-		 readRationalWeightedEdge(in, S);
-		 return true;
-		 }*//*else if (match(in,"connect")){
-		 readConnect(in, S);
-		 return true;
-		 }*/else if (match(in, "reach")) {
+		}else if (match(in, "reach")) {
 			readReach(in, S);
 			return true;
 		} else if (match(in, "distance_lt")) {
@@ -963,7 +952,7 @@ public:
 			readMaxFlowConstraint(in, S,false);
 			return true;
 		} else if (match(in, "max_flow_gt")) {
-			//for compatibility with old file format (don't use this!)
+			//for compatibility with an old file format (don't use this!)
 			readOldMaxFlowConstraint(in, S);
 			return true;
 		}else if (match(in, "connected_component_count_lt")) {
