@@ -62,7 +62,8 @@ public:
 		int sz; //size of the component
 		int element; //pointer to an arbitrary node in the scc.
 	};
-	std::vector<SCC> scc_set;
+	std::vector<SCC> scc_set;//this scc_set treats individual nodes as sccs
+	std::vector<int> strict_scc_set;//this lists only the 'real' strongly connected components, excluding lone vertices or vertices in acyclic components
 
 	std::vector<int> q;
 
@@ -136,6 +137,9 @@ public:
 			assert(q.size());
 			int first = q.back();
 			scc_set.push_back( { sz, first });
+			if(sz>1){
+				strict_scc_set.push_back(sccID);
+			}
 			if (scc_out) {
 				scc_out->clear();
 			}
@@ -186,6 +190,7 @@ public:
 		
 		setNodes(g.nodes());
 		scc_set.clear();
+		strict_scc_set.clear();
 		q.clear();
 		for (int i = 0; i < g.nodes(); i++) {
 			indices[i] = -1;
@@ -212,18 +217,30 @@ public:
 		return scc[from].id == scc[to].id;
 	}
 	
+	int numStrictSCCs(){
+		update();
+		return strict_scc_set.size();
+	}
+
+	std::vector<int> & getStrictSCCs()const{
+		return strict_scc_set;
+	}
+
 	int numComponents() {
 		update();
 		return scc_set.size();
 	}
+	int getComponentUnsafe(int node) {
+			return scc[node].id;
+		}
 	int getComponent(int node) {
 		update();
 		return scc[node].id;
 	}
-	int getElement(int set) {
+	int getElement(int sccID) {
 		update();
-		assert(set < scc_set.size());
-		return scc_set[set].element;
+		assert(sccID < scc_set.size());
+		return scc_set[sccID].element;
 	}
 	
 	bool dbg_uptodate() {
