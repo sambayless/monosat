@@ -59,6 +59,7 @@ extern StringOption opt_dist_alg;
 extern StringOption opt_mst_alg;
 
 extern StringOption opt_components_alg;
+extern StringOption opt_cycle_alg;
 extern IntOption opt_adaptive_history_clear;
 extern BoolOption opt_check_solution;
 extern BoolOption opt_print_reach;
@@ -175,6 +176,13 @@ enum class ComponentsAlg {
 
 };
 extern ComponentsAlg componentsalg;
+
+enum class CycleAlg {
+	ALG_DFS_CYCLE,
+	ALG_PK_CYCLE
+};
+extern CycleAlg cyclealg;
+
 
 enum class ConvexHullAlg {
 	ALG_MONOTONE_HULL, ALG_QUICKHULL

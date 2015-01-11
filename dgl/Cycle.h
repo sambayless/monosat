@@ -42,8 +42,11 @@ public:
 
 	virtual ~Cycle() {
 	}
-	;
 
+	//hint to the algorithm that any discovered cycles will be removed.
+	void forceDAG(){
+
+	}
 	virtual bool hasDirectedCycle()=0;
 	virtual bool hasUndirectedCycle()=0;
 	virtual void update()=0;

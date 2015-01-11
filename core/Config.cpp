@@ -105,6 +105,9 @@ StringOption Monosat::opt_allpairs_alg(_cat_graph, "allpairs",
 		"Select allpairs reachability algorithm (floyd-warshall,dijkstra)", "floyd-warshall");
 StringOption Monosat::opt_components_alg(_cat_graph, "components",
 		"Select connected-components algorithm (disjoint-sets, link-cut)", "disjoint-sets");
+StringOption Monosat::opt_cycle_alg(_cat_graph, "cycles",
+		"Select cycle detection algorithm (dfs, pk)", "pk");
+
 BoolOption Monosat::opt_conflict_shortest_path(_cat_graph, "conflict-shortest-path",
 		"Use shortest path (instead of arbitrary path) for conflict resolution (in theories that support this)", true);
 BoolOption Monosat::opt_conflict_min_cut(_cat_graph, "conflict-min-cut",
@@ -258,5 +261,6 @@ AllPairsAlg Monosat::allpairsalg = AllPairsAlg::ALG_DIJKSTRA_ALLPAIRS;
 AllPairsConnectivityAlg Monosat::undirected_allpairsalg = AllPairsConnectivityAlg::ALG_DIJKSTRA_ALLPAIRS;
 ComponentsAlg Monosat::componentsalg = ComponentsAlg::ALG_DISJOINT_SETS;
 MinSpanAlg Monosat::mstalg = MinSpanAlg::ALG_KRUSKAL;
+CycleAlg Monosat::cyclealg= CycleAlg::ALG_PK_CYCLE;
 
 PointInPolygonAlg Monosat::pipalg = PointInPolygonAlg::ALG_RECURSIVE_SPLIT;

@@ -139,6 +139,20 @@ void selectAlgorithms(){
 				((string) opt_components_alg).c_str());
 		exit(1);
 	}
+
+	cyclealg = CycleAlg::ALG_DFS_CYCLE;
+
+	if (!strcasecmp(opt_cycle_alg, "dfs")) {
+		cyclealg = CycleAlg::ALG_DFS_CYCLE;
+	}else if (!strcasecmp(opt_cycle_alg, "pk")) {
+		cyclealg = CycleAlg::ALG_PK_CYCLE;
+	} else {
+		fprintf(stderr, "Error: unknown cycle detection algorithm %s, aborting\n",
+				((string) opt_cycle_alg).c_str());
+		exit(1);
+	}
+
+
 	mstalg = MinSpanAlg::ALG_KRUSKAL;
 
 	if (!strcasecmp(opt_mst_alg, "kruskal")) {

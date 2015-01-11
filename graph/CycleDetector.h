@@ -28,7 +28,7 @@
 #include "dgl/Cycle.h"
 #include "core/SolverTypes.h"
 #include "mtl/Map.h"
-#include "dgl/DFSCycle.h"
+
 #include "utils/System.h"
 #include "Detector.h"
 using namespace dgl;

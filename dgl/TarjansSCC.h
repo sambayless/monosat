@@ -222,7 +222,7 @@ public:
 		return strict_scc_set.size();
 	}
 
-	std::vector<int> & getStrictSCCs()const{
+	std::vector<int> & getStrictSCCs(){
 		return strict_scc_set;
 	}
 

@@ -47,7 +47,7 @@ public:
 	std::vector<int> strict_sccs;
 	//int num_invalidated_sccs=0;
 	int num_strict_sccs=0;
-	bool directed;
+
 	int last_modification;
 	int last_addition;
 	int last_deletion;
@@ -59,6 +59,7 @@ public:
 
 	std::vector<bool> in_cycle;
 	std::vector<int> cycle;
+	std::vector<int> store_cycle;
 	std::vector<int> prev;
 
 	const int reportPolarity;
@@ -82,18 +83,30 @@ public:
 	bool cycleComputed=false;
 	bool has_topo=false;
 	int nextOrd =0;
+
+	struct Ord_LT {
+		std::vector<int> & ord;
+	    bool operator()(int a, int b) {
+	        return  ord[a]<ord[b];
+	    }
+
+	    Ord_LT(std::vector<int> & ord):ord(ord){
+
+	    }
+	} ord_lt;
+
 public:
 
 	void forceDAG(){
 		//If true, force the (analyzed) graph to remain a DAG.
 		//This is only valid if it is known that any discovered cycles will be eliminated.
 		//In practice, what will happen is that as soon as a cycle is created on edge addition, that edge addition will be cancelled (but the cycle will be stored in "cycle" for analysis)
-		forceDAG=true;
+		force_dag=true;
 	}
 
-	PKToplogicalSort(DynamicGraph & graph, bool _directed = true, int _reportPolarity = 0) :
-			g(graph), directed(_directed), last_modification(-1), last_addition(-1), last_deletion(-1), history_qhead(
-					0), last_history_clear(0), INF(0), reportPolarity(_reportPolarity) {
+	PKToplogicalSort(DynamicGraph & graph, int _reportPolarity = 0) :
+			g(graph),last_modification(-1), last_addition(-1), last_deletion(-1), history_qhead(
+					0), last_history_clear(0), INF(0), reportPolarity(_reportPolarity),scc(g),ord_lt(ord) {
 		marked = false;
 		mod_percentage = 0.2;
 		stats_full_updates = 0;
@@ -211,7 +224,7 @@ private:
 	int upper_bound;
 	void addEdge(int edgeID){
 		//once the PK algorithm has a cycle, it is in an invalid state.
-		if(has_cycle && !forceDAG)
+		if(has_cycle)
 			return;
 		int from = g.getEdge(edgeID).from;
 		int to = g.getEdge(edgeID).to;
@@ -226,7 +239,7 @@ private:
 				l_xy_F.clear();
 				l_xy_B.clear();
 				if(force_dag){
-					has_cycle=false;
+					has_cycle=false;//ignore the edge that caused a cycle to be introduced, because it is guaranteed that any edges creating cycles will be removed.
 				}
 			}
 		}
@@ -238,7 +251,7 @@ private:
 		visited[n]=true;
 		l_xy_F.push_back(n);
 		for (int i = 0;!has_cycle && i<g.nIncident(n);i++){
-			int edgeID = g.incident(n,i);
+			int edgeID = g.incident(n,i).id;
 			if(g.edgeEnabled(edgeID)){
 				int w = g.getEdge(edgeID).to;
 				if(ord[w]==upper_bound){
@@ -265,7 +278,7 @@ private:
 		visited[n]=true;
 		l_xy_B.push_back(n);
 		for (int i = 0;i<g.nIncoming(n);i++){
-			int edgeID = g.incoming(n,i);
+			int edgeID = g.incoming(n,i).id;
 			if(g.edgeEnabled(edgeID)){
 				int w = g.getEdge(edgeID).to;
 
@@ -298,8 +311,8 @@ private:
 	void reorder(){
 		assert(!has_cycle);
 		//sort l_xy arrays with respect to their current ordinal
-		std::sort(l_xy_B.begin(),l_xy_B.end(),ord);
-		std::sort(l_xy_F.begin(),l_xy_F.end(),ord);
+		std::sort(l_xy_B.begin(),l_xy_B.end(),ord_lt);
+		std::sort(l_xy_F.begin(),l_xy_F.end(),ord_lt);
 
 
 		L.clear();
@@ -345,12 +358,11 @@ public:
 		}
 
 		for (int i = history_qhead; i < g.history.size(); i++) {
-			int edgeid = g.history[i].id;
-			if (g.selfLoop(edgeid))
-				continue; //skip self loops
-			if (g.history[i].addition && g.edgeEnabled(edgeid) ) {
+			int edgeID = g.history[i].id;
+
+			if (g.history[i].addition && g.edgeEnabled(edgeID) ) {
 				addEdge(edgeID);
-			} else if (!g.history[i].addition && !g.edgeEnabled(edgeid)) {
+			} else if (!g.history[i].addition && !g.edgeEnabled(edgeID)) {
 				removeEdge(edgeID);
 			}
 		}
@@ -419,29 +431,30 @@ public:
 	}
 
 	//get _any_ directed cycle from this graph (must be cyclic)
-	void getDirectedCycle(std::vector<int> & store) {
+	std::vector<int> &  getDirectedCycle() {
 		update();
-		store.clear();
+
 
 		if(cycle.size()){
-			store= cycle;
-			return;
+
+			return cycle;
 		}
 
 		if(!hasDirectedCycle()){
 			assert(cycle.size()==0);
-			return ;
+			return cycle;
 		}
 
 
 		for(int id:strict_sccs){
 			int element = scc.getElement(id);
-			store.clear();
-			scc.getSCC(element,g,store);
-			if(store.size()>1){
-				return;
+			//in the future, it might be a good idea to put this into the cached 'cycle'...
+			store_cycle.clear();
+			scc.getSCC(element,g,store_cycle);
+			if(store_cycle.size()>1){
+				return store_cycle;
 			}
-			store.clear();
+			store_cycle.clear();
 			/*if(cycle.size()>1){
 				for(int n:cycle){
 					in_cycle[n]=true;

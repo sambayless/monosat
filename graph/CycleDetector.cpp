@@ -21,6 +21,9 @@
 
 #include "CycleDetector.h"
 #include "GraphTheory.h"
+#include "dgl/PKTopologicalSort.h"
+#include "dgl/DFSCycle.h"
+#include "core/Config.h"
 #include <limits>
 using namespace Monosat;
 template<typename Weight>
@@ -33,9 +36,13 @@ CycleDetector<Weight>::CycleDetector(int _detectorID, GraphTheorySolver<Weight> 
 	directed_cycle_lit = lit_Undef;
 	
 	//Note: these are _intentionalyl_ swapped
-	overapprox_reach_detector = new DFSCycle(_g, detect_directed_cycles, 1);
-	underapprox_reach_detector = new DFSCycle(_antig, detect_directed_cycles, 1);
-	
+	if(cyclealg==CycleAlg::ALG_DFS_CYCLE){
+		overapprox_reach_detector = new DFSCycle(_g, detect_directed_cycles, 1);
+		underapprox_reach_detector = new DFSCycle(_antig, detect_directed_cycles, 1);
+	}else if(cyclealg==CycleAlg::ALG_PK_CYCLE){
+		overapprox_reach_detector = new PKToplogicalSort(_g,  1);
+		underapprox_reach_detector = new PKToplogicalSort(_antig,  1);
+	}
 	directed_cycle_marker = outer->newReasonMarker(getID());
 	no_directed_cycle_marker = outer->newReasonMarker(getID());
 	
@@ -150,6 +157,9 @@ template<typename Weight>
 bool CycleDetector<Weight>::propagate(vec<Lit> & conflict) {
 	
 	double startdreachtime = rtime(2);
+	if(directed_cycle_lit != lit_Undef && outer->value(directed_cycle_lit)==l_False && outer->level(var(directed_cycle_lit))==0){
+		underapprox_reach_detector->forceDAG();
+	}
 	
 	underapprox_reach_detector->update();
 	double reachUpdateElapsed = rtime(2) - startdreachtime;
@@ -162,7 +172,7 @@ bool CycleDetector<Weight>::propagate(vec<Lit> & conflict) {
 	
 	if (directed_cycle_lit != lit_Undef) {
 		
-		if (underapprox_reach_detector->hasDirectedCycle()) {
+		if (outer->value(directed_cycle_lit) !=l_True && underapprox_reach_detector->hasDirectedCycle()) {
 			Lit l = directed_cycle_lit;
 			
 			if (outer->value(l) == l_True) {
@@ -175,7 +185,7 @@ bool CycleDetector<Weight>::propagate(vec<Lit> & conflict) {
 				buildDirectedCycleReason(conflict);
 				return false;
 			}
-		} else if (!overapprox_reach_detector->hasDirectedCycle()) {
+		} else if (outer->value(directed_cycle_lit) !=l_False && !overapprox_reach_detector->hasDirectedCycle()) {
 			Lit l = ~directed_cycle_lit;
 			
 			if (outer->value(l) == l_True) {
@@ -192,7 +202,7 @@ bool CycleDetector<Weight>::propagate(vec<Lit> & conflict) {
 		
 	} else if (undirected_cycle_lit != lit_Undef) {
 		
-		if (underapprox_reach_detector->hasUndirectedCycle()) {
+		if (outer->value(undirected_cycle_lit) !=l_True && underapprox_reach_detector->hasUndirectedCycle()) {
 			Lit l = undirected_cycle_lit;
 			
 			if (outer->value(l) == l_True) {
@@ -205,7 +215,7 @@ bool CycleDetector<Weight>::propagate(vec<Lit> & conflict) {
 				buildUndirectedCycleReason(conflict);
 				return false;
 			}
-		} else if (!overapprox_reach_detector->hasUndirectedCycle()) {
+		} else if (outer->value(undirected_cycle_lit) !=l_False &&  !overapprox_reach_detector->hasUndirectedCycle()) {
 			Lit l = ~directed_cycle_lit;
 			
 			if (outer->value(l) == l_True) {
