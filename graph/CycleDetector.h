@@ -49,9 +49,10 @@ public:
 
 	CRef undirected_cycle_marker;
 	CRef no_undirected_cycle_marker;
-	Cycle * underapprox_reach_detector;
-	Cycle * overapprox_reach_detector;
-
+	Cycle * underapprox_directed_cycle_detector;
+	Cycle * overapprox_directed_cycle_detector;
+	Cycle * underapprox_undirected_cycle_detector;
+	Cycle * overapprox_undirected_cycle_detector;
 	//Reach *  positive_path_detector;
 	
 	//vec<Lit>  reach_lits;
@@ -64,8 +65,8 @@ public:
 	vec<bool> edge_in_clause;
 	vec<int> visit;
 
-	Lit undirected_cycle_lit;
-	Lit directed_cycle_lit;
+	Lit undirected_cycle_lit=lit_Undef;
+	Lit directed_cycle_lit=lit_Undef;
 
 	bool propagate(vec<Lit> & conflict);
 

@@ -445,7 +445,7 @@ public:
 			return cycle;
 		}
 
-
+		store_cycle.clear();
 		for(int id:strict_sccs){
 			int element = scc.getElement(id);
 			//in the future, it might be a good idea to put this into the cached 'cycle'...
@@ -462,6 +462,7 @@ public:
 				return cycle;
 			}*/
 		}
+		return store_cycle;
 	}
 
 	bool hasUndirectedCycle(){

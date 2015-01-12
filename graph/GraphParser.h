@@ -107,41 +107,7 @@ class GraphParser: public Parser<B, Solver> {
 		}
 		//  return ev;
 	}
-	
-/*	void readEdge(B& in, Solver& S) {
-		if (opt_ignore_theories) {
-			skipLine(in);
-			return;
-		}
-		
-		++in;
-		
-		int graphID = parseInt(in);
-		int from = parseInt(in);
-		int to = parseInt(in);
-		int edgeVar = parseInt(in) - 1;
-		
-		if (graphID < 0 || graphID >= graphs.size()) {
-			printf("PARSE ERROR! Undeclared graph identifier %d for edge %d\n", graphID, edgeVar), exit(1);
-		}
-		if (edgeVar < 0) {
-			printf("PARSE ERROR! Edge variables must be >=0, was %d\n", edgeVar), exit(1);
-		}
-		while (edgeVar >= S.nVars())
-			S.newVar();
-		
-		if (graphs[graphID]) {
-			graphs[graphID]->newEdge(from, to, edgeVar);
-		} else if (graphs_float[graphID]) {
-			graphs_float[graphID]->newEdge(from, to, edgeVar);
-		} else if (graphs_rational[graphID]) {
-			graphs_rational[graphID]->newEdge(from, to, edgeVar);
-		} else {
-			printf("PARSE ERROR! Undeclared graph identifier %d for edge %d\n", graphID, edgeVar), exit(1);
-			exit(1);
-		}
-		
-	}*/
+
 	
 	void readEdge(B& in, Solver& S) {
 		if (opt_ignore_theories) {
@@ -224,41 +190,6 @@ class GraphParser: public Parser<B, Solver> {
 			}
 		}
 	}
-	
-	/* void readConnect(B& in, Solver& S) {
-	 if(opt_ignore_theories){
-	 skipLine(in);
-	 return;
-	 }
-	 //reach_undirected graphid u w var is an undirected reachability query: var is true if can u reach w in graph g, false otherwise
-
-	 ++in;
-
-	 int graphID = parseInt(in);
-	 int from = parseInt(in);
-	 // int steps = parseInt(in);
-	 int to=parseInt(in);
-	 int reachVar = parseInt(in)-1;
-	 if(graphID <0 || graphID>=graphs.size()){
-	 printf("PARSE ERROR! Undeclared graph identifier %d for edge %d\n",graphID, reachVar), exit(1);
-	 }
-	 if(reachVar<0){
-	 printf("PARSE ERROR! Edge variables must be >=0, was %d\n", reachVar), exit(1);
-	 }
-
-	 while (reachVar >= S.nVars()) S.newVar();
-
-	 if(graphs[graphID]){
-	 graphs[graphID]->connects(from,to,reachVar);
-	 }else if (graphs_float[graphID]){
-	 graphs_float[graphID]->connects(from,to,reachVar);
-	 }else if(graphs_rational[graphID]){
-	 graphs_rational[graphID]->connects(from,to,reachVar);
-	 }else{
-	 printf("PARSE ERROR! Undeclared graph identifier %d\n",graphID), exit(1);
-	 exit(1);
-	 }
-	 }*/
 
 	void readReach(B& in, Solver& S) {
 		if (opt_ignore_theories) {
@@ -387,84 +318,36 @@ class GraphParser: public Parser<B, Solver> {
 			exit(1);
 		}
 	}
-	/*
-	 void readDistanceFloat(B& in, Solver& S,  bool leq=false) {
-	 if(opt_ignore_theories){
-	 skipLine(in);
-	 return;
-	 }
-	 //distance_lt grachID u w var dist is a reach query: var is true if can u reach w in graph g, false otherwise
 
-	 ++in;
-	 static vec<char> tmp;
-	 int graphID = parseInt(in);
-	 int from = parseInt(in);
-	 int to=parseInt(in);
-	 int reachVar = parseInt(in)-1;
-	 double distance = parseDouble(in,tmp);
-	 if(graphID <0 || graphID>=graphs.size()){
-	 printf("PARSE ERROR! Undeclared graph identifier %d for edge %d\n",graphID, reachVar), exit(1);
-	 }
-	 if(reachVar<0){
-	 printf("PARSE ERROR! Edge variables must be >=0, was %d\n", reachVar), exit(1);
-	 }
+	void readAcyclic(B& in, Solver& S, bool directed = false) {
+			if (opt_ignore_theories) {
+				skipLine(in);
+				return;
+			}
+			//distance_lt grachID u w var dist is a reach query: var is true if can u reach w in graph g, false otherwise
 
-	 if(graphs[graphID]){
-	 printf("PARSE ERROR! Floating point distance constraints cannot be added to integer-weight graphs, aborting\n",graphID), exit(1);
-	 }else if (graphs_float[graphID]){
-	 graphs_float[graphID]->reachesWithinDistance(from,to,reachVar,distance);
-	 }else if(graphs_rational[graphID]){
-	 graphs_rational[graphID]->reachesWithinDistance(from,to,reachVar,distance);
-	 }else{
-	 printf("PARSE ERROR! Undeclared graph identifier %d\n",graphID), exit(1);
-	 exit(1);
-	 }
-	 }*/
-	/*
-	 void readDistanceRational(B& in, Solver& S,  bool leq=false) {
-	 if(opt_ignore_theories){
-	 skipLine(in);
-	 return;
-	 }
-	 //distance_lt grachID u w var dist is a reach query: var is true if can u reach w in graph g, false otherwise
+			++in;
+			static vec<char> tmp;
+			int graphID = parseInt(in);
+			int reachVar = parseInt(in) - 1;
 
-	 ++in;
-
-	 int graphID = parseInt(in);
-	 int from = parseInt(in);
-	 int to=parseInt(in);
-	 int reachVar = parseInt(in)-1;
-	 std::stringstream ss;
-	 skipWhitespace(in);
-	 //rational can be either a plain integer, or a rational in the form '123/456'
-	 while(*in != '\n'){
-	 ss<<(*in);
-	 ++in;
-	 }
-	 mpq_class weight(ss.str());
-	 weight.canonicalize();
-
-	 if(graphID <0 || graphID>=graphs.size() ){
-	 printf("PARSE ERROR! Undeclared graph identifier %d for edge %d\n",graphID, reachVar), exit(1);
-	 }
-	 if(reachVar<0){
-	 printf("PARSE ERROR! Edge variables must be >=0, was %d\n", reachVar), exit(1);
-	 }
-
-	 if(graphs[graphID]){
-	 printf("PARSE ERROR! Rational distance constraints cannot be added to integer-weight graphs, aborting\n",graphID), exit(1);
-
-	 }else if (graphs_float[graphID]){
-
-	 graphs_float[graphID]->reachesWithinDistance(from,to,reachVar,weight.get_d());
-	 }else if(graphs_rational[graphID]){
-	 graphs_rational[graphID]->reachesWithinDistance(from,to,reachVar,weight);
-	 }else{
-	 printf("PARSE ERROR! Undeclared graph identifier %d\n",graphID), exit(1);
-	 exit(1);
-	 }
-	 }
-	 */
+			if (graphID < 0 || graphID >= graphs.size()) {
+				printf("PARSE ERROR! Undeclared graph identifier %d for edge %d\n", graphID, reachVar), exit(1);
+			}
+			if (reachVar < 0) {
+				printf("PARSE ERROR! Variables must be >=0, was %d\n", reachVar), exit(1);
+			}
+			if (graphs[graphID]) {
+				graphs[graphID]->acyclic(reachVar,directed);
+			} else if (graphs_float[graphID]) {
+				graphs_float[graphID]->acyclic(reachVar,directed);
+			} else if (graphs_rational[graphID]) {
+				graphs_rational[graphID]->acyclic(reachVar,directed);
+			} else {
+				printf("PARSE ERROR! Undeclared graph identifier %d\n", graphID), exit(1);
+				exit(1);
+			}
+		}
 
 	void readMinSpanningTreeConstraint(B& in, Solver& S, bool inclusive) {
 		if (opt_ignore_theories) {
@@ -921,10 +804,15 @@ public:
 			count++;
 			readEdge(in, S);
 			return true;
-		}else if (match(in, "reach")) {
-			readReach(in, S);
+		}else if (match(in, "acyclic")) {
+			//A _directed_ acyclic graph constraint
+			readAcyclic(in, S,true);
 			return true;
-		} else if (match(in, "distance_lt")) {
+		}else if (match(in, "forest")) {
+			//An _undirected_ acyclic graph constraint
+			readAcyclic(in, S,false);
+			return true;
+		}  else if (match(in, "distance_lt")) {
 			readDistance(in, S);
 			return true;
 		} else if (match(in, "distance_leq")) {
@@ -972,18 +860,18 @@ public:
 	
 	void implementConstraints(Solver & S) {
 		
-
-		for (int gid = 0; gid < steiners.size(); gid++) {
+		//not really implemented, yet!
+	/*	for (int gid = 0; gid < steiners.size(); gid++) {
 			for (auto & steiner : steiners[gid]) {
 				if (steiner) {
-					graphs[gid]->addSteinerTree(steiner->terminals, steiner->id);
+					graphs[gid]->steinerTree(steiner->terminals, steiner->id);
 					for (auto & weight : steiner->weight_constraints) {
 						graphs[gid]->addSteinerWeightConstraint(steiner->id, weight.first, weight.second);
 					}
 					delete (steiner);
 				}
 			}
-		}
+		}*/
 		
 		for (int i = 0; i < graphs.size(); i++) {
 			if (graphs[i])

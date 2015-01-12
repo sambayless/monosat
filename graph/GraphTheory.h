@@ -1450,6 +1450,8 @@ public:
 			reachlits_out.push(mkLit(reachVar, false));
 		}
 	}
+
+
 	//v will be true if the minimum weight is <= the specified value
 	void minimumSpanningTree(Var v, Weight minimum_weight, bool inclusive) {
 		if (!mstDetector) {
@@ -1500,7 +1502,7 @@ public:
 		}
 		component_detector->addConnectedComponentsLit(v, min_components);
 	}
-	void detectCycle(bool directed, Var v) {
+	void acyclic(Var v,bool directed) {
 		if (!cycle_detector) {
 			cycle_detector = new CycleDetector<Weight>(detectors.size(), this, g_under, g_over, true, drand(rnd_seed));
 			detectors.push(cycle_detector);
@@ -1508,7 +1510,7 @@ public:
 		cycle_detector->addCycleDetectorLit(directed, v);
 	}
 	
-	void addSteinerTree(const vec<std::pair<int, Var> > & terminals, int steinerTreeID) {
+	void steinerTree(const vec<std::pair<int, Var> > & terminals, int steinerTreeID) {
 		steiner_detectors.growTo(steinerTreeID + 1);
 		assert(!steiner_detectors[steinerTreeID]);
 		steiner_detectors[steinerTreeID] = new SteinerDetector<Weight>(detectors.size(), this, edge_weights, g_under, g_over,

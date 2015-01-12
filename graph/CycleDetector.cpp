@@ -29,7 +29,7 @@ using namespace Monosat;
 template<typename Weight>
 CycleDetector<Weight>::CycleDetector(int _detectorID, GraphTheorySolver<Weight> * _outer, DynamicGraph &_g,
 		DynamicGraph &_antig, bool detect_directed_cycles, double seed) :
-		Detector(_detectorID), outer(_outer), g_under(_g), g_over(_antig), rnd_seed(seed), underapprox_reach_detector(NULL), overapprox_reach_detector(
+		Detector(_detectorID), outer(_outer), g_under(_g), g_over(_antig), rnd_seed(seed), underapprox_directed_cycle_detector(NULL), overapprox_directed_cycle_detector(
 				NULL) {
 	
 	undirected_cycle_lit = lit_Undef;
@@ -37,11 +37,18 @@ CycleDetector<Weight>::CycleDetector(int _detectorID, GraphTheorySolver<Weight> 
 	
 	//Note: these are _intentionalyl_ swapped
 	if(cyclealg==CycleAlg::ALG_DFS_CYCLE){
-		overapprox_reach_detector = new DFSCycle(_g, detect_directed_cycles, 1);
-		underapprox_reach_detector = new DFSCycle(_antig, detect_directed_cycles, 1);
+		overapprox_directed_cycle_detector = new DFSCycle(_g, detect_directed_cycles, 1);
+		underapprox_directed_cycle_detector = new DFSCycle(_antig, detect_directed_cycles, 1);
+
+		overapprox_undirected_cycle_detector=overapprox_directed_cycle_detector;
+		underapprox_undirected_cycle_detector=underapprox_directed_cycle_detector;
+
 	}else if(cyclealg==CycleAlg::ALG_PK_CYCLE){
-		overapprox_reach_detector = new PKToplogicalSort(_g,  1);
-		underapprox_reach_detector = new PKToplogicalSort(_antig,  1);
+		overapprox_directed_cycle_detector = new PKToplogicalSort(_g,  1);
+		underapprox_directed_cycle_detector = new PKToplogicalSort(_antig,  1);
+
+		overapprox_undirected_cycle_detector = new DFSCycle(_g, detect_directed_cycles, 1);
+		underapprox_undirected_cycle_detector = new DFSCycle(_antig, detect_directed_cycles, 1);
 	}
 	directed_cycle_marker = outer->newReasonMarker(getID());
 	no_directed_cycle_marker = outer->newReasonMarker(getID());
@@ -91,6 +98,8 @@ template<typename Weight>
 void CycleDetector<Weight>::buildNoDirectedCycleReason(vec<Lit> & conflict) {
 	//its clear that we can do better than this, but its also not clear how to do so efficiently...
 	//for now, learn the trivial clause...
+	//One thing you could do would be to first do an over-approx cycle detection at level 0, and exclude from here any edges that can't possibly be part of any scc.
+	//Is that the best one can do?
 	for (int i = 0; i < outer->edge_list.size(); i++) {
 		Var v = outer->edge_list[i].v;
 		if (outer->value(v) == l_False) {
@@ -102,9 +111,9 @@ void CycleDetector<Weight>::buildNoDirectedCycleReason(vec<Lit> & conflict) {
 
 template<typename Weight>
 void CycleDetector<Weight>::buildUndirectedCycleReason(vec<Lit> & conflict) {
-	assert(underapprox_reach_detector->hasUndirectedCycle());
+	assert(underapprox_directed_cycle_detector->hasUndirectedCycle());
 	
-	std::vector<int> & cycle = underapprox_reach_detector->getUndirectedCycle();
+	std::vector<int> & cycle = underapprox_directed_cycle_detector->getUndirectedCycle();
 	for (int i = 0; i < cycle.size(); i++) {
 		int e = cycle[i];
 		Lit l = mkLit(outer->edge_list[e].v, false);
@@ -115,9 +124,9 @@ void CycleDetector<Weight>::buildUndirectedCycleReason(vec<Lit> & conflict) {
 }
 template<typename Weight>
 void CycleDetector<Weight>::buildDirectedCycleReason(vec<Lit> & conflict) {
-	assert(underapprox_reach_detector->hasDirectedCycle());
+	assert(underapprox_directed_cycle_detector->hasDirectedCycle());
 	
-	std::vector<int> & cycle = underapprox_reach_detector->getDirectedCycle();
+	std::vector<int> & cycle = underapprox_directed_cycle_detector->getDirectedCycle();
 	for (int i = 0; i < cycle.size(); i++) {
 		int e = cycle[i];
 		Lit l = mkLit(outer->edge_list[e].v, false);
@@ -158,21 +167,14 @@ bool CycleDetector<Weight>::propagate(vec<Lit> & conflict) {
 	
 	double startdreachtime = rtime(2);
 	if(directed_cycle_lit != lit_Undef && outer->value(directed_cycle_lit)==l_False && outer->level(var(directed_cycle_lit))==0){
-		underapprox_reach_detector->forceDAG();
+		underapprox_directed_cycle_detector->forceDAG();
 	}
 	
-	underapprox_reach_detector->update();
-	double reachUpdateElapsed = rtime(2) - startdreachtime;
-	outer->reachupdatetime += reachUpdateElapsed;
-	
-	double startunreachtime = rtime(2);
-	overapprox_reach_detector->update();
-	double unreachUpdateElapsed = rtime(2) - startunreachtime;
-	outer->unreachupdatetime += unreachUpdateElapsed;
+
 	
 	if (directed_cycle_lit != lit_Undef) {
 		
-		if (outer->value(directed_cycle_lit) !=l_True && underapprox_reach_detector->hasDirectedCycle()) {
+		if (outer->value(directed_cycle_lit) !=l_True && underapprox_directed_cycle_detector->hasDirectedCycle()) {
 			Lit l = directed_cycle_lit;
 			
 			if (outer->value(l) == l_True) {
@@ -185,7 +187,7 @@ bool CycleDetector<Weight>::propagate(vec<Lit> & conflict) {
 				buildDirectedCycleReason(conflict);
 				return false;
 			}
-		} else if (outer->value(directed_cycle_lit) !=l_False && !overapprox_reach_detector->hasDirectedCycle()) {
+		} else if (outer->value(directed_cycle_lit) !=l_False && !overapprox_directed_cycle_detector->hasDirectedCycle()) {
 			Lit l = ~directed_cycle_lit;
 			
 			if (outer->value(l) == l_True) {
@@ -202,7 +204,7 @@ bool CycleDetector<Weight>::propagate(vec<Lit> & conflict) {
 		
 	} else if (undirected_cycle_lit != lit_Undef) {
 		
-		if (outer->value(undirected_cycle_lit) !=l_True && underapprox_reach_detector->hasUndirectedCycle()) {
+		if (outer->value(undirected_cycle_lit) !=l_True && underapprox_undirected_cycle_detector->hasUndirectedCycle()) {
 			Lit l = undirected_cycle_lit;
 			
 			if (outer->value(l) == l_True) {
@@ -215,7 +217,7 @@ bool CycleDetector<Weight>::propagate(vec<Lit> & conflict) {
 				buildUndirectedCycleReason(conflict);
 				return false;
 			}
-		} else if (outer->value(undirected_cycle_lit) !=l_False &&  !overapprox_reach_detector->hasUndirectedCycle()) {
+		} else if (outer->value(undirected_cycle_lit) !=l_False &&  !overapprox_undirected_cycle_detector->hasUndirectedCycle()) {
 			Lit l = ~directed_cycle_lit;
 			
 			if (outer->value(l) == l_True) {
