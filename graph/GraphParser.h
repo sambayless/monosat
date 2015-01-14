@@ -360,7 +360,7 @@ class GraphParser: public Parser<B, Solver> {
 		int graphID = parseInt(in);
 
 		int reachVar = parseInt(in) - 1;
-		int maxweight = parseInt(in);
+
 
 		if (graphID < 0 || graphID >= graphs.size()) {
 			printf("PARSE ERROR! Undeclared graph identifier %d for edge %d\n", graphID, reachVar), exit(1);
@@ -804,15 +804,10 @@ public:
 			count++;
 			readEdge(in, S);
 			return true;
-		}else if (match(in, "acyclic")) {
-			//A _directed_ acyclic graph constraint
-			readAcyclic(in, S,true);
+		}else if (match(in, "reach")) {
+			readReach(in, S);
 			return true;
-		}else if (match(in, "forest")) {
-			//An _undirected_ acyclic graph constraint
-			readAcyclic(in, S,false);
-			return true;
-		}  else if (match(in, "distance_lt")) {
+		} else if (match(in, "distance_lt")) {
 			readDistance(in, S);
 			return true;
 		} else if (match(in, "distance_leq")) {
@@ -845,6 +840,14 @@ public:
 			return true;
 		}else if (match(in, "connected_component_count_lt")) {
 			readMinConnectedComponentsConstraint(in, S);
+			return true;
+		}else if (match(in, "acyclic")) {
+			//A _directed_ acyclic graph constraint
+			readAcyclic(in, S,true);
+			return true;
+		}else if (match(in, "forest")) {
+			//An _undirected_ acyclic graph constraint
+			readAcyclic(in, S,false);
 			return true;
 		}else if (match(in, "pb_lt")) {
 

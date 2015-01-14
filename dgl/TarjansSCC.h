@@ -64,13 +64,16 @@ public:
 	};
 	std::vector<SCC> scc_set;//this scc_set treats individual nodes as sccs
 	std::vector<int> strict_scc_set;//this lists only the 'real' strongly connected components, excluding lone vertices or vertices in acyclic components
-
-	std::vector<int> q;
+	struct QNode{
+		int node;
+		int edgeID;
+	};
+	std::vector<QNode> q;
 
 	std::vector<int> indices;
 	std::vector<int> lowlink;
 	std::vector<bool> in_q;
-
+	int last_edgeID = -1;
 	int stats_full_updates = 0;
 	int stats_fast_updates = 0;
 	int stats_fast_failed_updates = 0;
@@ -104,7 +107,7 @@ public:
 		INF = std::numeric_limits<int>::max();
 	}
 	
-	void strongConnect(int node, int & index, std::vector<int> * scc_out = nullptr) {
+	void strongConnect(int node, int fromEdge, int & index, std::vector<int> * scc_out = nullptr) {
 		//Following wikipedia's pseudocode, from http://en.wikipedia.org/wiki/Tarjan%27s_strongly_connected_components_algorithm
 		assert(indices[node] < 0);
 		assert(lowlink[node] < 0);
@@ -112,19 +115,21 @@ public:
 		lowlink[node] = index;
 		index++;
 		assert(!in_q[node]);
-		q.push_back(node);
+		q.push_back({node,fromEdge});
 		in_q[node] = true;
 		
 		//for(auto & edge:g.adjacency[node]){
 		for (int i = 0; i < g.nIncident(node); i++) {
 			auto & edge = g.incident(node, i);
-			if (g.edgeEnabled(edge.id)) {
+			int edgeID = edge.id;
+			if (g.edgeEnabled(edgeID)) {
 				int to = edge.node;
-				assert(in_q[node] == (std::count(q.begin(), q.end(), node)));
+
 				if (indices[to] < 0) {
-					strongConnect(to, index, scc_out);
+					strongConnect(to,edgeID, index, scc_out);
 					lowlink[node] = std::min(lowlink[node], lowlink[to]);
 				} else if (in_q[to]) {
+					last_edgeID=edgeID;
 					lowlink[node] = std::min(lowlink[node], indices[to]);
 				}
 			}
@@ -133,44 +138,57 @@ public:
 		// If v is a root node, pop the stack and generate an SCC
 		if (lowlink[node] == indices[node]) {
 			int sccID = scc_set.size();
-			int sz = q.size();
+			int sz = 0;
 			assert(q.size());
-			int first = q.back();
-			scc_set.push_back( { sz, first });
-			if(sz>1){
-				strict_scc_set.push_back(sccID);
-			}
+			int first = q.back().node;
+			int curEdge = q.back().edgeID;
+
 			if (scc_out) {
 				scc_out->clear();
 			}
 			do {
-				int n = q.back();
-				
+				int n = q.back().node;
+				int curEdge = q.back().edgeID;
+				sz++;
 				q.pop_back();
 				assert(in_q[n]);
 				in_q[n] = false;
 				int next;
 				if (q.size() && n != node) {
-					next = q.back();
+					next = q.back().node;
 				} else {
 					next = first;
 				}
 				scc[n]= {sccID,next};
-				if (scc_out) {
-					scc_out->push_back(n);
+				if (scc_out && (n != node)) {
+					if(curEdge!=-1)
+						scc_out->push_back(curEdge);
+					else{
+						int a=1;
+					}
 				}
-#ifndef NDEBUG
-				{
-					UnweightedDijkstra<> d(node, g);
-					assert(d.connected(n));
-					UnweightedDijkstra<> d2(n, g);
-					assert(d2.connected(node));
-				}
-#endif
-				if (n == node)
+				if(n == node){
+					if (scc_out&& sz >1){
+						//this is a bit of a hack, but because I haven't figured out how to properly keep track of the last connected edgeID,
+						//I need to do a quick search for it here (fix this!).
+
+						for(int i = 0;i<g.nIncoming(n);i++){
+							int edgeID = g.incoming(n,i).id;
+							if(g.edgeEnabled(edgeID) && g.incoming(n,i).node ==first){
+								scc_out->push_back(edgeID);
+								break;
+							}
+						}
+					}
 					break;
+				}
+
 			} while (q.size());
-			
+			scc_set.push_back( { sz, first });
+
+			if(sz>1){
+				strict_scc_set.push_back(sccID);
+			}
 		}
 	}
 	
@@ -194,11 +212,12 @@ public:
 		q.clear();
 		for (int i = 0; i < g.nodes(); i++) {
 			indices[i] = -1;
+			lowlink[i]=-1;
 		}
 		int index = 0;
 		for (int i = 0; i < g.nodes(); i++) {
 			if (indices[i] < 0) {
-				strongConnect(i, index);
+				strongConnect(i,-1, index);
 			}
 		}
 		
@@ -254,9 +273,9 @@ public:
 		TarjansSCC<> s(graph);
 		s.setNodes(graph.nodes());
 		int index = 0;
-		s.strongConnect(node, index, &scc);
+		s.strongConnect(node,-1, index, &scc);
 		assert(scc.size());
-		assert(std::count(scc.begin(), scc.end(), node));
+
 	}
 	
 };

@@ -29,157 +29,232 @@
 #include "Reach.h"
 
 namespace dgl {
-
+template <bool directed=true, bool undirected=true>
 class DFSCycle: public Cycle {
 public:
 	
 	DynamicGraph & g;
 
-	bool directed;
-	int last_modification;
-	int last_addition;
-	int last_deletion;
-	int history_qhead;
+	int last_modification=0;
+	int last_addition=0;
+	int last_deletion=0;
+	int history_qhead=0;
 
-	int last_history_clear;
+	int last_history_clear=0;
 
 	int INF;
 
 	std::vector<int> q;
 	std::vector<int> check;
 	std::vector<int> path;
-	std::vector<int> cycle;
+	std::vector<int> undirected_cycle;
+	std::vector<int> directed_cycle;
 
 	const int reportPolarity;
 
 	//std::vector<char> old_seen;
+	std::vector<bool> processed;
 	std::vector<bool> seen;
-	std::vector<bool> in_q;
+	std::vector<bool> ever_seen;
+
 
 //	std::vector<int> changed;
 	
-	bool undirected_cycle;
-	bool directed_cycle;
+	bool has_undirected_cycle=false;
+	bool has_directed_cycle=false;
 
-	std::vector<int> prev;
+	std::vector<int> undirected_prev;
 
-public:
-	
-	DFSCycle(DynamicGraph & graph, bool _directed = true, int _reportPolarity = 0) :
-			g(graph), directed(_directed), last_modification(-1), last_addition(-1), last_deletion(-1), history_qhead(
-					0), last_history_clear(0), INF(0), reportPolarity(_reportPolarity) {
-		marked = false;
-		mod_percentage = 0.2;
-		stats_full_updates = 0;
-		stats_fast_updates = 0;
-		stats_skip_deletes = 0;
-		stats_skipped_updates = 0;
-		stats_full_update_time = 0;
-		stats_fast_update_time = 0;
-		stats_num_skipable_deletions = 0;
-		stats_fast_failed_updates = 0;
-		undirected_cycle = false;
-		directed_cycle = false;
-	}
-	
 	void setNodes(int n) {
 		q.reserve(n);
 		check.reserve(n);
 		seen.resize(n);
-		prev.resize(n);
+		processed.resize(n);
+		ever_seen.resize(n);
+		undirected_prev.resize(n);
 		INF = g.nodes() + 1;
 	}
 	
-	void update() {
-		static int iteration = 0;
-		int local_it = ++iteration;
-		
-		if (last_modification > 0 && g.modifications == last_modification) {
-			stats_skipped_updates++;
-			//reportPolarity(undirected_cycle,directed_cycle);
-			return;
-		}
-		
-		if (last_modification > 0 && last_deletion == g.deletions) {
-			stats_num_skipable_deletions++;
-			//reportPolarity(undirected_cycle,directed_cycle);
-			return;
-		}
-		
-		setNodes(g.nodes());
-		
-		stats_full_updates++;
-		
+	void computeCycles(){
+		path.clear();
 		q.clear();
 		for (int i = 0; i < g.nodes(); i++) {
-			seen[i] = 0;
-			in_q[i] = 0;
-			prev[i] = -1;
+			seen[i] = false;
+			ever_seen[i]=false;
+			processed[i]=false;
+			undirected_prev[i]=-1;
 		}
 		
-		cycle.clear();
-		path.clear();
+		directed_cycle.clear();
+		undirected_cycle.clear();
 		for (int k = 0; k < g.nodes(); k++) { //to handle disconnected graph
-			if (seen[k])
+			if (ever_seen[k])
 				continue;
 			q.push_back(k);
+
+			ever_seen[k]=true;
+			seen[k]=true;
 			while (q.size()) { //dfs
 				int u = q.back();
-				if (in_q[u]) {
-					q.pop_back();
-					path.pop_back();
-					in_q[u] = false;
-					continue;
-				} else {
-					in_q[u] = true;
-					
+
+				if(directed){
+					if (processed[u]) {
+						q.pop_back();
+						if(u!=k)
+							path.pop_back();
+						seen[u]=false;
+						processed[u] = false;
+						continue;
+					} else {
+						processed[u] = true;
+					}
 				}
-				
+
+				int fromEdge = -1;
+				if(u!=k){
+					fromEdge=path.back();
+					assert(g.getEdge(fromEdge).to==u);
+				}
+
+
 				assert(seen[u]);
-				
+				assert(ever_seen[u]);
 				for (int i = 0; i < g.nIncident(u); i++) {
 					if (!g.edgeEnabled(g.incident(u, i).id))
 						continue;
 					int v = g.incident(u, i).node;
-					
-					if (!seen[v]) {
-						seen[v] = 1;
-						prev[v] = u;
-						q.push_back(v);
-						path.push_back(g.incident(u, i).id);
-					} else {
-						if (!undirected_cycle) {
-							//path.copyTo(cycle);
-							
+					int id = g.incident(u, i).id;
+
+					if(directed){
+						if (!seen[v]) {
+							seen[v] = true;//for directed cycles
+							q.push_back(v);
+							path.push_back(id);
+						}else{
+							assert(!has_directed_cycle);
+							has_directed_cycle = true;
+							directed_cycle.clear();
+							directed_cycle.push_back(id);
 							assert(path.size() == q.size() - 1);
 							for (int j = 1; j < q.size(); j++) {
-								if (in_q[j]) {
-									cycle.push_back(path[j - 1]);
+								if (seen[j]) {
+									directed_cycle.push_back(path[j - 1]);
 								}
 							}
-							cycle.push_back(g.incident(u, i).id);
-							
-						}
-						undirected_cycle = true;
-						if (!directed) {
+							if(!has_undirected_cycle){
+								//a directed cycle is also an undirected cycle.
+								has_undirected_cycle=true;
+								undirected_cycle= directed_cycle;
+							}
 							break;
-						} else if (in_q[i]) {
-							directed_cycle = true;
-							cycle.clear();
-							assert(path.size() == q.size() - 1);
-							for (int j = 1; j < q.size(); j++) {
-								if (in_q[j]) {
-									cycle.push_back(path[j - 1]);
+
+						}
+					}
+
+
+					if(undirected){
+						if (!ever_seen[v]){//for undirected cycles
+							ever_seen[v] = true;//for directed cycles
+							undirected_prev[v] = id;
+						}else {
+							if (!has_undirected_cycle) {
+								//there is a cycle
+								undirected_cycle.clear();
+								undirected_cycle.push_back(id);
+								while(v != u){
+									int edgeID = undirected_prev[v];
+									int from = g.getEdge(edgeID).from;
+									if(from==v){
+										from =  g.getEdge(edgeID).to;
+									}
+									undirected_cycle.push_back(edgeID);
+									assert(from!=v);
+									u=v;
 								}
 							}
-							cycle.push_back(g.incident(u, i).id);
-							
+							has_undirected_cycle = true;
+							if(!directed){
+								break;
+							}
+						}
+					}
+				}
+				if(undirected && !has_undirected_cycle){
+					//for undirected cycles, we are treating edges as undirected, so follow back edges here
+					for (int i = 0; i < g.nIncoming(u); i++) {
+						if (!g.edgeEnabled(g.incoming(u, i).id))
+							continue;
+						int v = g.incoming(u, i).node;
+						int id = g.incoming(u, i).id;
+						if(id==fromEdge)
+							continue;
+
+						if (!ever_seen[v]){//for undirected cycles
+							ever_seen[v] = true;//for directed cycles
+							undirected_prev[v] = id;
+						}else {
+							if (!has_undirected_cycle) {
+								//there is a cycle
+								undirected_cycle.clear();
+								undirected_cycle.push_back(id);
+								while(v != u){
+									int edgeID = undirected_prev[v];
+									int from = g.getEdge(edgeID).from;
+									if(from==v){
+										from =  g.getEdge(edgeID).to;
+									}
+									undirected_cycle.push_back(edgeID);
+									assert(from!=v);
+									u=v;
+								}
+							}
+							has_undirected_cycle = true;
 							break;
 						}
 					}
 				}
+
+				if(directed && has_directed_cycle){
+					return;
+				}
+				else if (!directed && has_undirected_cycle){
+					return;
+				}
 			}
 		}
+	}
+
+public:
+
+	DFSCycle(DynamicGraph & graph, bool _directed = true, int _reportPolarity = 0) :
+			g(graph),  last_modification(-1), last_addition(-1), last_deletion(-1), history_qhead(
+					0), last_history_clear(0), INF(0), reportPolarity(_reportPolarity) {
+
+	}
+
+
+	void update() {
+		static int iteration = 0;
+		int local_it = ++iteration;
+
+		if (last_modification > 0 && g.modifications == last_modification ) {
+			stats_skipped_updates++;
+			//reportPolarity(undirected_cycle,directed_cycle);
+			return;
+		}
+
+
+		if(last_modification<=0 || g.changed()){
+			setNodes(g.nodes());
+		}
+		has_undirected_cycle=false;
+		has_directed_cycle=false;
+
+
+		stats_full_updates++;
+
+		computeCycles();
+
 		last_modification = g.modifications;
 		last_deletion = g.deletions;
 		last_addition = g.additions;
@@ -191,20 +266,20 @@ public:
 	
 	bool hasDirectedCycle() {
 		update();
-		return directed_cycle;
+		return has_directed_cycle;
 	}
 	bool hasUndirectedCycle() {
 		update();
-		return undirected_cycle;
+		return has_undirected_cycle;
 	}
 	
 	std::vector<int> & getUndirectedCycle() {
 		update();
-		return cycle;
+		return undirected_cycle;
 	}
 	std::vector<int> & getDirectedCycle() {
 		update();
-		return cycle;
+		return directed_cycle;
 	}
 };
 }

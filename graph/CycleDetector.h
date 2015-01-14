@@ -49,10 +49,10 @@ public:
 
 	CRef undirected_cycle_marker;
 	CRef no_undirected_cycle_marker;
-	Cycle * underapprox_directed_cycle_detector;
-	Cycle * overapprox_directed_cycle_detector;
-	Cycle * underapprox_undirected_cycle_detector;
-	Cycle * overapprox_undirected_cycle_detector;
+	Cycle * underapprox_directed_cycle_detector=nullptr;
+	Cycle * overapprox_directed_cycle_detector=nullptr;
+	Cycle * underapprox_undirected_cycle_detector=nullptr;
+	Cycle * overapprox_undirected_cycle_detector=nullptr;
 	//Reach *  positive_path_detector;
 	
 	//vec<Lit>  reach_lits;
@@ -65,8 +65,8 @@ public:
 	vec<bool> edge_in_clause;
 	vec<int> visit;
 
-	Lit undirected_cycle_lit=lit_Undef;
-	Lit directed_cycle_lit=lit_Undef;
+	Lit undirected_acyclic_lit=lit_Undef;
+	Lit directed_acyclic_lit=lit_Undef;
 
 	bool propagate(vec<Lit> & conflict);
 
@@ -78,7 +78,7 @@ public:
 	void buildReason(Lit p, vec<Lit> & reason, CRef marker);
 	bool checkSatisfied();
 	Lit decide(int level);
-	void addCycleDetectorLit(bool undirected, Var v);
+	void addAcyclicLit(bool undirected, Var v);
 
 	CycleDetector(int _detectorID, GraphTheorySolver<Weight> * _outer, DynamicGraph &_g, DynamicGraph &_antig,
 			bool detect_directed_cycles = true, double seed = 1); //:Detector(_detectorID),outer(_outer),within(-1),source(_source),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL){}

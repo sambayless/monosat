@@ -1507,7 +1507,7 @@ public:
 			cycle_detector = new CycleDetector<Weight>(detectors.size(), this, g_under, g_over, true, drand(rnd_seed));
 			detectors.push(cycle_detector);
 		}
-		cycle_detector->addCycleDetectorLit(directed, v);
+		cycle_detector->addAcyclicLit(directed, v);
 	}
 	
 	void steinerTree(const vec<std::pair<int, Var> > & terminals, int steinerTreeID) {
