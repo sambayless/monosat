@@ -172,10 +172,10 @@ void CycleDetector<Weight>::buildReason(Lit p, vec<Lit> & reason, CRef marker) {
 template<typename Weight>
 bool CycleDetector<Weight>::propagate(vec<Lit> & conflict) {
 	static int it = 0;
-	if(++it==687){
+/*	if(++it==687){
 		g_under.drawFull();
 		int a=1;
-	}
+	}*/
 
 	double startdreachtime = rtime(2);
 	if(directed_acyclic_lit != lit_Undef && outer->value(directed_acyclic_lit)==l_False && outer->level(var(directed_acyclic_lit))==0){

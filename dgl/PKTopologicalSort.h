@@ -34,14 +34,14 @@
 #include "Reach.h"
 #include <algorithm>
 #include "TarjansSCC.h"
-
+#include "DFSCycle.h"
 namespace dgl {
 
 class PKToplogicalSort: public Cycle {
 public:
 
 	DynamicGraph & g;
-	TarjansSCC<> scc;
+	DFSCycle<true,false> dfs_cycle;
 
 	std::vector<bool> is_strict_scc;
 	std::vector<int> strict_sccs;
@@ -105,7 +105,7 @@ public:
 	}
 
 	PKToplogicalSort(DynamicGraph & graph, int _reportPolarity = 0) :
-			g(graph),INF(0), reportPolarity(_reportPolarity),scc(g),ord_lt(ord) {
+			g(graph),dfs_cycle(g),INF(0), reportPolarity(_reportPolarity),ord_lt(ord) {
 
 
 	}
@@ -124,20 +124,10 @@ private:
 
 	bool inSCC(int node){
 		assert(has_cycle);
-		if(cycle.size()){
-#ifndef NDEBUG
-			for(int edgeID:cycle){
-				int from = g.getEdge(edgeID).from;
-				int to = g.getEdge(edgeID).to;
-				assert(in_cycle[from]);
-				assert(in_cycle[to]);
-			}
 
-#endif
-			return in_cycle[node];
-		}
-		int sccID = scc.getComponentUnsafe(node);
-		return is_strict_scc[sccID];
+		return in_cycle[node];
+
+
 	}
 
 	void invalidateSCC(int node){
@@ -165,7 +155,8 @@ private:
 				cycleComputed=false;
 			}
 		}else{
-
+			num_strict_sccs=0;
+/*
 			int sccID =scc.getComponentUnsafe(node);
 			if (is_strict_scc[sccID]){
 				is_strict_scc[sccID]=false;
@@ -174,7 +165,7 @@ private:
 					cycleComputed=false;
 				}
 			}
-			assert(num_strict_sccs>=0);
+			assert(num_strict_sccs>=0);*/
 		}
 	}
 
@@ -187,23 +178,20 @@ private:
 				in_cycle[to]=false;
 			}
 			cycle.clear();
-			scc.update();
-			for(int id:strict_sccs){
-				is_strict_scc[id]=false;
+			//search for a cycle
+			cycle = dfs_cycle.getDirectedCycle();
+			for(int edgeID:cycle){
+				int from = g.getEdge(edgeID).from;
+				int to = g.getEdge(edgeID).to;
+				in_cycle[from]=true;
+				in_cycle[to]=true;
 			}
-			num_strict_sccs=0;
-			strict_sccs.clear();
-			for(int id: scc.getStrictSCCs()){
-				is_strict_scc[id]=true;
-				num_strict_sccs++;
-				strict_sccs.push_back(id);
-			}
-			has_cycle=num_strict_sccs>0;
-			if(has_cycle){
-				cycleComputed=true;
-			}
+			has_cycle=cycle.size()>0;
+			num_strict_sccs=has_cycle?1:0;
+			cycleComputed=has_cycle;
 		}
 		if(has_cycle){
+			assert(cycle.size()>0);
 			assert(num_strict_sccs>0);
 			assert(cycleComputed);
 		}
@@ -431,9 +419,9 @@ public:
 			//reportPolarity(undirected_cycle,directed_cycle);
 			return;
 		}
-		g.drawFull();
+		//g.drawFull();
 		int local_it = ++iteration;//7
-		if(local_it==527){
+		if(local_it==5){
 			int a=1;
 		}
 		if(last_modification<=0 || g.historyclears != last_history_clear  || g.changed()){
@@ -479,13 +467,8 @@ private:
 			cycleComputed=true;
 			num_strict_sccs=1;
 			assert(cycle.size()==0);
-			scc.getSCC(node,g,cycle);
-			for(int edgeID:cycle){
-				int from = g.getEdge(edgeID).from;
-				int to = g.getEdge(edgeID).to;
-				in_cycle[from]=true;
-				in_cycle[to]=true;
-			}
+
+
 			return false;
 		}
 		if(!visited[node]){
@@ -496,6 +479,9 @@ private:
 					if(!sortVisit(g.incident(node,j).node)){
 						assert(has_cycle);
 						tmp_mark[node]=false;
+						cycle.push_back(edgeID);
+						in_cycle[node]=true;
+						in_cycle[g.incident(node,j).node]=true;
 						return false;
 					}
 				}
@@ -550,12 +536,10 @@ public:
 		update();
 
 
-		if(cycle.size()){
 
-			return cycle;
-		}
+		return cycle;
 
-		if(!hasDirectedCycle()){
+	/*	if(!hasDirectedCycle()){
 			assert(cycle.size()==0);
 			return cycle;
 		}
@@ -565,19 +549,19 @@ public:
 			int element = scc.getElement(id);
 			//in the future, it might be a good idea to put this into the cached 'cycle'...
 			store_cycle.clear();
-			scc.getSCC(element,g,store_cycle);
+
 			if(store_cycle.size()>1){
 				return store_cycle;
 			}
 			store_cycle.clear();
-			/*if(cycle.size()>1){
+			if(cycle.size()>1){
 				for(int n:cycle){
 					in_cycle[n]=true;
 				}
 				return cycle;
-			}*/
+			}
 		}
-		return store_cycle;
+		return store_cycle;*/
 	}
 
 	bool hasUndirectedCycle(){

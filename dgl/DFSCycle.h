@@ -118,7 +118,7 @@ public:
 
 
 				assert(seen[u]);
-				assert(ever_seen[u]);
+				assert(!undirected|| ever_seen[u]);
 				for (int i = 0; i < g.nIncident(u); i++) {
 					if (!g.edgeEnabled(g.incident(u, i).id))
 						continue;
