@@ -1,73 +1,138 @@
-Licensing:
-MonoSAT is based on MiniSat, version 2.2. Many thanks to the authors of MiniSat! 
-The majority of MonoSAT is released under the MIT license (as documented in individual source files).
-However, some of the code, including some important libraries, fall under the GPL, and as a result, 
-MonoSAT as a whole is currently released under the GPL (version 3.0 or later).
+# MonoSAT
+MonoSAT is a SAT Modulo Theory solver for *[Boolean monotonic theories]*. It supports a wide set of graph predicates (including reachability, shortest paths, maximum s-t flow, minimum spanning tree, and acyclicity constraints). MonoSAT also has limited support for geometric constraints involving convex hulls of point sets, and experimental support for finite state machines.
 
+To see examples of use cases for MonoSAT, and details on the (very simple) input file format that MonoSAT accepts, see  [FORMAT].
 
-Build with 
+###Building
+From the root directory, build MonoSAT with:
 
+```
 $cd Release
 $make
+```
 
-Build Notes:  
-MonoSAT makes use of C++11 features, and so requires a compatible compiler.
-It is critically important to build with -NDEBUG set in any release build, as there is a large quantity of 
-(very!) expensive debugging code that will be activated otherwise.
+or
 
-Tested on Ubuntu 14.04, with G++ 4.8.2 
+```
+$cd Static
+$make
+```
 
-Usage:
+MonoSAT requires C++11 support. Tested on Ubuntu 14.04, with G++ 4.8.2, and recent MinGW releases on Windows. 
 
-$./monosat [-witness][-witness-file=filename] <gnf_file>
+If you build MonoSAT without using the provided makefiles, it is critically important to compile with `NDEBUG` set (*i.e.,* `-DNDEBUG`), as otherwise many very expensive debugging assertions will be enabled. 
 
-Enable the -witness option to printout the solution to the variables in the CNF, or use -witness-file to write the witness to a file. 
-MonoSat comes with a (very!) large number of options to control its performance, the majority of which are experimental and or broken.
-I'd recommend not experimenting with them for now.
+###Usage
+MonoSAT is based on [MiniSat 2][Minisat], and supports many of the same calling conventions:
 
+```
+$monosat [-witness|-witness-file=filename] input_file.gnf
+```
 
-File Format Notes:
+Where input_file.gnf is a file in [GNF format][FORMAT] (a very simple extension of DIMACS CNF format to support graph and geometry predicates). Use `-witness` to print the solution (if one exists) to stdout, or `-witness-file` to save it to file.
 
-MonoSAT reads files in a extended version DIMACS CNF format, provisionally called "GNF" format. 
-The additions provide support for graph and geometric theory predicates 
-(note though that this format may be somewhat awkward to use, and is still subject to frequent changes).
+MonoSAT includes a very large set of configuration options - most of which you should stay away from unless you know what you are doing or want to explore the internals of MonoSAT (also, some of those configuration options might lead to buggy behaviour). Two options that often have a large impact on performance are `-decide-theories` and `-conflict-min-cut`:
 
-A GNF file is a DIMACS CNF followed by one or more graph declarations, and for each graph, a set of edge declarations 
-for that graph, and optionally a set of graph predicates constraining the edges on that graph:
+```
+$monosat -decide-theories -conflict-min-cut input_file.gnf
+```
 
-p cnf <vars> <clauses>
-digraph <nodes> <edges> <graphID>
-edge <graphID> <from> <to> <CNF variable>
-reach <graphID> <from> <to> <CNF variable>
+The `-decide-theories` option will cause the solver to make heuristic decisions that try to satisfy the various SMT predicates, which will often lead to improved performance, but can be pathologically bad in some common cases, and so is disabled by default. `-conflict-min-cut` will cause the solver to use a much slower, but more aggressive, clause learning strategy for reachability predicates; it may be useful for small, dificult instances.
 
-An example GNF (avaialble in examples/)
+###Source Overview
+MonoSAT is written in C++. Core SAT solver functionality is in the `core/` and `simp/` directories; in particular, note `core/Config.cpp`, which is a central listing of all the configuration options available to MonoSAT. 
 
-c this is a cnf with 5 Boolean variables and 2 clauses
-p cnf 7 5
-c some clauses in CNF format
-1 0
-3 0
--2 -4 0
-6 7 0
--6 0
-c add a directed graph with identifier '0'. This graph has 3 nodes (numbered 0..2) and 4 edges.
-c All graph identifiers must be unique non-negative integers.
-digraph 4 5 0
-c declare an edge in graph 0, from node 0 to node 2. This edge is enabled (e.g., in the graph) if and only if variable 1 is true.
-c note that the variable controlling the graph must not be negative, and also that (for now), no two edges or graph predicates 
-c can be associated with the same variable. 
-edge 0 0 2 1
-edge 0 2 0 2
-edge 0 2 1 3
-edge 0 2 3 4
-edge 0 3 2 5
-c add a reachability constraint to graph 0. Variable 7 must be assigned true if and only if node 0 reaches node 1 in graph 0 
-c (under assignment to the edge variables).
-reach 0 0 3 6
-c add a second reachability constraint to graph 0. Variable 8 must be true if and only if node 3 reaches node 0 in graph 0.
-reach 0 3 0 7
+The graph and geometry theory solvers can be found in `geometry/` and `graph/`. Many of the graph algorithsms used by MonoSAT are collected in  `dgl/` (for 'Dynamic Graph Library'). 
+
+`dgl/` incldudes implementations of several dynamic graph algorithms (as well as many standard graph algorithms), and is well-optimized for medium sized (<20,000 nodes, < 100,000 edges), sparse graphs. The algorithms in dgl are designed for the case where the set of *possible* edges (and nodes) is fixed and known in advance (or only changes infrequently), and from that fixed set of possible edges many subsets of edges will subsequently be selected to be included in or excluded from the graph. 'dgl' supports templated edge weights and edge capacities, and has been tested succesfully with integers, floats, and GMP arbitrary precision rationals.
+
+######Algirthms implemented in 'dgl/' include:
+* Reachability/Shortest Paths
+    * [Ramalingam-Reps](#ramalingam1996incremental) dynamic single-source shortest paths algorithm (with improvements described in [Buriol et al. 2008](#buriol2008speeding))
+    * [Thorup](#thorup2000near)'s dynamic connectivity algorithm
+    * [Dijkstra](#dijkstra1959note)'s algorithm
+    * DFS/BFS
+* Minimum Spanning Tree
+    * [Spira and Pan](#spira1975finding)'s dynamic minimum spanning tree algorithm
+    * [Kruskal](#kruskal)'s algorithm
+    * [Prim](#prims)'s algorithm
+* Maximum *s-t* Flow
+    * [Kohli and Torr](#kohlitorr)'s dynamic maximum flow algorithm
+    * [Edmonds-Karp](#edmondskarp) algorithm (as well as a [dynamic variant](#dynamic_edmonds_karp))
+    * [Dinitz](#dinitz)'s algorithm (as well as the [dynamic tree](#dynamic_tree) variant)
+* And many supporting algorithms and data structures, including:
+    * [Euler Tree](http://en.wikipedia.org/wiki/Euler_tour_technique)
+    * [Link Cut Tree](http://en.wikipedia.org/?title=Link/cut_tree)
+    * Splay Tree
+    * Disjoint Set
 
 
-Important notes about GNF format:
-1) It is provisional. It is in flux, and may end up being entirely deprecated.
-2) At the moment, each edge, and each graph predicate (eg, reach, distance_lt,max_flow_gt) must be associated with exactly one (positive) variable in the CNF, and that variable must not be associated with any other edges or graph predicates (even for other graphs).
+
+###Licensing
+The majority of MonoSAT is released under the [MIT license] (as documented in individual source files). However, some of the code, including some important libraries, fall under the GPL, and as a result, 
+MonoSAT as a whole is currently released under the [GPL] (version 3 or later).
+
+###Acknowledgements
+
+MonoSAT was made possible by the use of several open-source projects, including the afore-mentioned [MiniSat], as well as a high-performance [dynamic maximum-flow algorithm] by Pushmeet Kohli and Philip Torr, Emil Stefanov's implementation of [Disjoint Sets], a [Link-Cut Tree] implementation by Daniel Sleator, and a [computational geometry library] by Chelton Evans.
+
+[Boolean monotonic theories]: http://www.cs.ubc.ca/labs/isd/Projects/monosat/smmt.pdf
+[FORMAT]: FORMAT.md
+
+[MiniSat]:http://minisat.se/
+
+[MIT license]: http://opensource.org/licenses/MIT
+[GPL]: http://www.gnu.org/licenses/gpl.html
+[dynamic maximum-flow algorithm]:http://research.microsoft.com/en-us/um/people/pkohli/code/rrr.txt
+[Link-Cut Tree]: http://codeforces.com/contest/117/submission/860934
+[computational geometry library]:http://www.fluxionsdividebyzero.com/p1/math/geometry/geom.html
+[Disjoint Sets]: http://web.rememberingemil.org/Projects/DisjointSets.aspx.html
+
+
+###References
+
+
+<a name="buriol2008speeding">
+[Buriol, Luciana S., Mauricio GC Resende, and Mikkel Thorup. "Speeding up dynamic shortest-path algorithms." INFORMS Journal on Computing 20.2 (2008): 191-204.](http://dx.doi.org/10.1287/ijoc.1070.0231)</a>
+
+
+<a name="dijkstra1959note">
+[Dijkstra, Edsger W. "A note on two problems in connexion with graphs." Numerische mathematik 1.1 (1959): 269-271](http://dx.doi.org/10.1007%2FBF01386390)</a>
+
+<a name="dinitz">
+[Dinitz, Y. "Algorithm for solution of a problem of maximum flow in a network with power estimation". Doklady Akademii nauk SSSR 11: 1277–1280  (1970)](http://www.cs.bgu.ac.il/~dinitz/D70.pdf) </a>
+
+<a name="edmondskarp">[Edmonds, Jack, and Richard M. Karp. "Theoretical improvements in algorithmic efficiency for network flow problems." Journal of the ACM (JACM) 19.2 (1972): 248-264](http://dx.doi.org/10.1145%2F321694.321699)</a>
+
+<a name="kohli2005efficiently">
+[Kohli, Pushmeet, and Philip HS Torr. "Efficiently solving dynamic markov random fields using graph cuts." Computer Vision, 2005. ICCV 2005. Tenth IEEE International Conference on. Vol. 2. IEEE, 2005](http://dx.doi.org/10.1109/ICCV.2005.81)</a>
+
+<a name="dynamic_edmonds_karp">
+[Korduban, D. "Incremental Maximum Flow in Dynamic graphs." Theoretical Computer Science Stack Exchange. http://cstheory.stackexchange.com/q/10186, 2012](http://cstheory.stackexchange.com/a/10186)</a>
+
+<a name="kruskal">
+[Kruskal, Joseph B. "On the shortest spanning subtree of a graph and the traveling salesman problem." Proceedings of the American Mathematical society 7.1 (1956): 48-50](http://dx.doi.org/10.1090%2FS0002-9939-1956-0078686-7)</a>
+
+<a name="prim">
+Prim, Robert Clay. "Shortest connection networks and some generalizations." Bell system technical journal 36.6 (1957): 1389-140](http://dx.doi.org/10.1002/j.1538-7305.1957.tb01515.x)</a>
+
+<a name="ramalingam1996incremental"> [Ramalingam, Ganesan, and Thomas Reps. "An incremental algorithm for a generalization of the shortest-path problem." Journal of Algorithms 21.2 (1996): 267-305.](http://dx.doi.org/10.1006/jagm.1996.0046)</a>
+
+
+<a name="dynamic_tree">
+[Sleator, Daniel D., and Robert Endre Tarjan. "A data structure for dynamic trees." Proceedings of the thirteenth annual ACM symposium on Theory of computing. ACM, 1981.](http://dx.doi.org/10.1145/800076.802464)</a>
+
+
+<a name="spira1975finding">
+[Spira, Philip M., and A. Pan. "On finding and updating spanning trees and shortest paths." SIAM Journal on Computing 4.3 (1975): 375-380.](http://dx.doi.org/10.1137/0204032)</a>
+
+<a name="thorup2000near">
+[Thorup, Mikkel. "Near-optimal fully-dynamic graph connectivity." Proceedings of the thirty-second annual ACM symposium on Theory of computing. ACM, 2000.](http://dx.doi.org/10.1145/335305.335345)</a>
+
+
+
+
+
+
+
+

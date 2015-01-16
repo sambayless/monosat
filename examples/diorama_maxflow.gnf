@@ -65348,9 +65348,9 @@ weighted_edge 2 55 65 3342 8
 weighted_edge 2 64 56 3343 8
 weighted_edge 2 63 65 3344 8
 c max flow constraint (assuming 1 weighted edges for now), true if the max flow weight is >= 16
-max_flow_gt 2 64 65 16 3345
+maximum_flow_geq 2 64 65 3345 16
 c max flow constraint (assuming 1 weighted edges for now), true if the max flow weight is >= 17
-max_flow_gt 2 64 65 17 3346
+maximum_flow_geq 2 64 65 3346 17
 c var 321 baseLocation(1,0,0)
 c var 322 baseLocation(1,0,1)
 c var 323 baseLocation(1,0,2)
