@@ -1,5 +1,5 @@
 # MonoSAT
-MonoSAT is a SAT Modulo Theory solver for *[Boolean monotonic theories]*. It supports a wide set of graph predicates (including reachability, shortest paths, maximum s-t flow, minimum spanning tree, and acyclicity constraints). MonoSAT also has limited support for geometric constraints involving convex hulls of point sets, and experimental support for finite state machines.
+MonoSAT is a SAT Modulo Theory solver for *[Boolean monotonic theories]*. It supports a wide set of graph predicates (including reachability, shortest paths, maximum s-t flow, minimum spanning tree, and acyclicity constraints). MonoSAT also has limited support for geometric constraints involving convex hulls of point sets, and experimental support for constraints on finite state machines.
 
 To see examples of use cases for MonoSAT, and details on the (very simple) input file format that MonoSAT accepts, see  [FORMAT].
 
@@ -44,10 +44,10 @@ MonoSAT is written in C++. Core SAT solver functionality is in the `core/` and `
 
 The graph and geometry theory solvers can be found in `geometry/` and `graph/`. Many of the graph algorithsms used by MonoSAT are collected in  `dgl/` (for 'Dynamic Graph Library'). 
 
-`dgl/` incldudes implementations of several dynamic graph algorithms (as well as many standard graph algorithms), and is well-optimized for medium sized (<20,000 nodes, < 100,000 edges), sparse graphs. The algorithms in dgl are designed for the case where the set of *possible* edges (and nodes) is fixed and known in advance (or only changes infrequently), and from that fixed set of possible edges many subsets of edges will subsequently be selected to be included in or excluded from the graph. 'dgl' supports templated edge weights and edge capacities, and has been tested succesfully with integers, floats, and GMP arbitrary precision rationals.
+`dgl/` incldudes C++ implementations of several dynamic graph algorithms (as well as some more common graph algorithms), and is well-optimized for medium sized (<20,000 nodes, < 100,000 edges), sparse graphs. The algorithms in dgl are designed for the case where the set of *possible* edges (and nodes) is fixed and known in advance (or only changes infrequently), and from that fixed set of possible edges many subsets of edges will subsequently be selected to be included in or excluded from the graph. 'dgl' supports templated edge weights and edge capacities, and has been tested succesfully with integers, floats, and GMP arbitrary precision rationals.
 
 ######Algirthms implemented in 'dgl/' include:
-* Reachability/Shortest Paths
+* Reachability/Shortest Path
     * [Ramalingam-Reps](#ramalingam1996incremental) dynamic single-source shortest paths algorithm (with improvements described in [Buriol et al. 2008](#buriol2008speeding))
     * [Thorup](#thorup2000near)'s dynamic connectivity algorithm
     * [Dijkstra](#dijkstra1959note)'s algorithm
@@ -58,8 +58,8 @@ The graph and geometry theory solvers can be found in `geometry/` and `graph/`. 
     * [Prim](#prims)'s algorithm
 * Maximum *s-t* Flow
     * [Kohli and Torr](#kohlitorr)'s dynamic maximum flow algorithm
-    * [Edmonds-Karp](#edmondskarp) algorithm (as well as a [dynamic variant](#dynamic_edmonds_karp))
-    * [Dinitz](#dinitz)'s algorithm (as well as the [dynamic tree](#dynamic_tree) variant)
+    * [Edmonds-Karp](#edmondskarp) algorithm (including a [dynamic variant](#dynamic_edmonds_karp))
+    * [Dinitz](#dinitz)'s algorithm (including the [dynamic tree](#dynamic_tree) variant)
 * And many supporting algorithms and data structures, including:
     * [Euler Tree](http://en.wikipedia.org/wiki/Euler_tour_technique)
     * [Link Cut Tree](http://en.wikipedia.org/?title=Link/cut_tree)
@@ -128,11 +128,3 @@ Prim, Robert Clay. "Shortest connection networks and some generalizations." Bell
 
 <a name="thorup2000near">
 [Thorup, Mikkel. "Near-optimal fully-dynamic graph connectivity." Proceedings of the thirty-second annual ACM symposium on Theory of computing. ACM, 2000.](http://dx.doi.org/10.1145/335305.335345)</a>
-
-
-
-
-
-
-
-
