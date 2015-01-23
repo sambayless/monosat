@@ -49,7 +49,7 @@ The graph and geometry theory solvers can be found in `geometry/` and `graph/`. 
 ######Algirthms implemented in 'dgl/' include:
 * Reachability/Shortest Path
     * [Ramalingam-Reps](#ramalingam1996incremental) dynamic single-source shortest paths algorithm (with improvements described in [Buriol et al. 2008](#buriol2008speeding))
-    * [Thorup](#thorup2000near)'s dynamic connectivity algorithm
+    * [Thorup](#thorup2000near)'s dynamic connectivity algorithm (for undirected graphs)
     * [Dijkstra](#dijkstra1959note)'s algorithm
     * DFS/BFS
 * Minimum Spanning Tree
