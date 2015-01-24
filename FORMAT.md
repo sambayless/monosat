@@ -87,9 +87,7 @@ reach 0 0 2 5
 weighted_distance_leq 0 0 2 6 3 
 ```
 
-These are the graph properties that are currently well-supported by MonoSAT; many other useful graph properties are Boolean monotonic with respect to the edges in a graph, and could be supported in the future. Interesting possibilities include cycle detection, connected components, global minimum cut, and many variatons of network flow properties. 
-
-
+These are the graph properties that are currently well-supported by MonoSAT; many other useful graph properties are Boolean monotonic with respect to the edges in a graph, and could be supported in the future. Interesting possibilities include planarity detection, connected components, global minimum cuts, and many variatons of network flow properties. 
 
 [DIMACS CNF format]: http://www.cs.ubc.ca/~hoos/SATLIB/Benchmarks/SAT/satformat.ps
 [mpq_set_str]:https://gmplib.org/manual/Initializing-Rationals.html#Initializing-Rationals
