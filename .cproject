@@ -138,7 +138,6 @@
 								</option>
 								<option id="gnu.cpp.compiler.option.include.paths.479362924" name="Include paths (-I)" superClass="gnu.cpp.compiler.option.include.paths" valueType="includePath">
 									<listOptionValue builtIn="false" value=".././"/>
-									<listOptionValue builtIn="false" value=".././"/>
 								</option>
 								<option id="gnu.cpp.compiler.option.optimization.flags.994071788" name="Other optimization flags" superClass="gnu.cpp.compiler.option.optimization.flags" value="" valueType="string"/>
 								<option id="gnu.cpp.compiler.option.other.other.347702268" name="Other flags" superClass="gnu.cpp.compiler.option.other.other" value="-c -fmessage-length=0 -std=c++11 -Wno-unused-variable -Wno-unused-but-set-variable   -Wno-sign-compare" valueType="string"/>
@@ -153,7 +152,6 @@
 									<listOptionValue builtIn="false" value="NDEBUG"/>
 								</option>
 								<option id="gnu.c.compiler.option.include.paths.1233465992" name="Include paths (-I)" superClass="gnu.c.compiler.option.include.paths" valueType="includePath">
-									<listOptionValue builtIn="false" value=".././"/>
 									<listOptionValue builtIn="false" value=".././"/>
 								</option>
 								<option id="gnu.c.compiler.option.misc.other.896025370" name="Other flags" superClass="gnu.c.compiler.option.misc.other" value="-c -fmessage-length=0 " valueType="string"/>
@@ -319,7 +317,6 @@
 								</option>
 								<option id="gnu.cpp.compiler.option.include.paths.1721445648" name="Include paths (-I)" superClass="gnu.cpp.compiler.option.include.paths" valueType="includePath">
 									<listOptionValue builtIn="false" value=".././"/>
-									<listOptionValue builtIn="false" value=".././"/>
 								</option>
 								<option id="gnu.cpp.compiler.option.optimization.flags.2092383469" name="Other optimization flags" superClass="gnu.cpp.compiler.option.optimization.flags" value="" valueType="string"/>
 								<option id="gnu.cpp.compiler.option.other.other.269916616" name="Other flags" superClass="gnu.cpp.compiler.option.other.other" value="-c -fmessage-length=0 -std=c++11 -Wno-unused-variable -Wno-unused-but-set-variable  -static  -static-libgcc     -static-libstdc++" valueType="string"/>
@@ -333,7 +330,6 @@
 									<listOptionValue builtIn="false" value="__STDC_FORMAT_MACROS"/>
 								</option>
 								<option id="gnu.c.compiler.option.include.paths.1184084549" name="Include paths (-I)" superClass="gnu.c.compiler.option.include.paths" valueType="includePath">
-									<listOptionValue builtIn="false" value=".././"/>
 									<listOptionValue builtIn="false" value=".././"/>
 								</option>
 								<option id="gnu.c.compiler.option.misc.other.1071334463" name="Other flags" superClass="gnu.c.compiler.option.misc.other" value="-c -fmessage-length=0 -static  -static-libgcc " valueType="string"/>
