@@ -200,10 +200,11 @@ private:
 				S.addClause_(lits);
 			}
 		}
-		if (vars != S.nVars())
+		//Disabling this for now, as it is always triggered when there are theory atoms...
+		/*if (vars != S.nVars())
 			fprintf(stderr, "WARNING! DIMACS header mismatch: wrong number of variables.\n");
 		if (cnt != clauses)
-			fprintf(stderr, "WARNING! DIMACS header mismatch: wrong number of clauses.\n");
+			fprintf(stderr, "WARNING! DIMACS header mismatch: wrong number of clauses.\n");*/
 		
 		for (auto * p : parsers) {
 			p->implementConstraints(S);

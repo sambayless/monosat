@@ -2,7 +2,7 @@
 
 MonoSAT is a SAT Modulo Theory solver for Boolean Monotonic Theories, featuring support for a wide set of graph properties, as well as a number of other theories, including some limited geometric properties (currently, for convex hulls), and finite state machine synthesis (still experimental).
 
-This file documents MonoSAT's __*.GNF__ file format, which is a superset of the common [DIMACS CNF format] (specifically, a superset of DIMACS as parsed by Minisat).
+This file documents MonoSAT's __*.GNF__ file format, which is a superset of the common [DIMACS CNF format](http://www.cs.ubc.ca/~hoos/SATLIB/Benchmarks/SAT/satformat.ps) (specifically, a superset of DIMACS as parsed by Minisat).
 
 Just like a DIMACS CNF, a GNF instance begins with a `p cnf <#Vars> <#Clauses>` header line, followed by a number of clauses in 0-terminated format, one per line:
 
@@ -32,7 +32,7 @@ This creates an integer-weighted graph (with ID '0'), with 3 nodes (numbered 0..
 Two important restrictions to note are that 
   - edge variables are variables, *not* literals (that is, they must be positive integers)
   - every edge must be assigned a variable 
-  - no two edges (or any other theory element from *any* graph in the instance) may share the same variable.snuck
+  - no two edges (or any other theory element from *any* graph in the instance) may share the same variable.
 
 These restrictions reflect implementation choices in MonoSAT, and may be lifted in the future. 
 
@@ -91,5 +91,5 @@ These are the graph properties that are currently well-supported by MonoSAT; man
 
 
 
-[DIMACS CNF format]: http://www.cs.ubc.ca/~hoos/SATLIB/Benchmarks/SAT/satformat.ps
+
 [mpq_set_str]:https://gmplib.org/manual/Initializing-Rationals.html#Initializing-Rationals
