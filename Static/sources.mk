@@ -29,6 +29,7 @@ graph \
 geometry/polypartition \
 geometry/cevans \
 geometry \
+fsm \
 dgl/alg \
 dgl \
 core \

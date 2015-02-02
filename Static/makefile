@@ -14,6 +14,7 @@ RM := rm -rf
 -include geometry/polypartition/subdir.mk
 -include geometry/cevans/subdir.mk
 -include geometry/subdir.mk
+-include fsm/subdir.mk
 -include dgl/alg/subdir.mk
 -include dgl/subdir.mk
 -include core/subdir.mk
