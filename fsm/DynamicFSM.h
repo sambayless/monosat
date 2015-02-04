@@ -29,6 +29,8 @@ class DynamicFSM{
 	bool is_generator=true;
 	bool is_acceptor=true;
 	bool is_linear=true;
+	bool is_deterministic=false;
+	bool must_be_deterministic=false;
 public:
 	vec<Bitset> transitions;
 
@@ -69,7 +71,13 @@ public:
 	bool isLinear()const{
 		return is_linear;
 	}
-
+	//True if every state _must_ have exactly one outgoing transition in the final solution
+	bool mustBeDeterministic()const{
+		return must_be_deterministic;
+	}
+	bool isDeterministic()const{
+		return is_deterministic;
+	}
 	int getID(){
 		return id;
 	}
@@ -314,13 +322,13 @@ public:
 								if(in==0){
 									printf("{},");
 								}else{
-									printf("%c:,",'a'+in-1);
+									printf("%c:,",'A'+in-1);
 								}
 							}else{
 								if(in==0){
-									printf(":%c,",'a'+out-1);
+									printf(":%c,",'A'+out-1);
 								}else{
-									printf("%c:%c,",'a'+in-1,'a'+out-1);
+									printf("%c:%c,",'A'+in-1,'A'+out-1);
 								}
 							}
 

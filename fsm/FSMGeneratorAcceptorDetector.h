@@ -109,7 +109,7 @@ public:
 	double stats_fast_update_time = 0;
 
 	Map<Var,Lit> forcedVars;
-
+	vec<Var> lit_backward_map;
 
 	void printStats() {
 		//printf("Reach detector\n");
@@ -171,7 +171,9 @@ public:
 
 	void addAcceptLit(int state, int strID, Var reach_var);
 
-
+	Var getDetectorVar(int gen_final, int accept_final){
+		return lit_backward_map[gen_final +accept_final*g_over.states()];
+	}
 
 	FSMGeneratorAcceptorDetector(int _detectorID, FSMTheorySolver * _outer, DynamicFSM &g_under, DynamicFSM &g_over,DynamicFSM & acceptor_under,DynamicFSM & acceptor_over,
 			int gen_source,int acceptor_source, double seed = 1);
@@ -195,11 +197,45 @@ private:
 	vec<bool> gen_cur_seen;
 	vec<int> chars;
 	vec<bool> seen_chars;
+	vec<vec<Bitset>>  prefixTables;
+
+	int last_prefix_update=-1;
 	bool isAttractor(int acceptorState);
 	bool find_gen_path(int gen_final, int accept_final,int forcedEdge,int forcedLabel, vec<NFATransition> & path,bool invertAcceptance = false, bool all_paths=false);
 	bool stepGenerator(int final,int forcedEdge,int forcedLabel, vec<int> & store, vec<bool> & store_seen, int & cur_gen_state, vec<NFATransition> * path=nullptr);
+	bool buildSuffixCut(int gen_final,int accept_final,vec<Lit> & cut, bool accepting_state_is_attractor, bool invertAcceptance);
+	bool stepGeneratorBackward(int final,vec<Bitset> & prefixTable, vec<Lit> & cut,  vec<int> & store, vec<bool> & store_seen, vec<NFATransition> * path=nullptr);
 
-	
+	void updatePrefixTable(int gen_final, int accept_final);
+
+	vec<Bitset> & getPrefixTable(int gen_final, int accept_final){
+		updatePrefixTable(gen_final,accept_final);
+		Var v = getDetectorVar(gen_final,accept_final);
+		assert(v!=var_Undef);
+		int index = v - first_var;
+		return prefixTables[index];
+	}
+
+	bool isAttractor(DynamicFSM & accept, int acceptorState){
+		if(acceptorState<0){
+			return true;
+		}else{
+			//should really fix this to work correctly for epsilon transitions between multiple acceptor states...
+			for(int i = 0;i<accept.nIncident(acceptorState);i++){
+				int edgeID = accept.incident(acceptorState,i).id;
+				int to =  accept.incident(acceptorState,i).node;
+				if(to==acceptorState){
+					for(int c = 1;c<accept.inAlphabet();c++){
+						if(!accept.transitionEnabled(edgeID,c,-1)){
+							return false;
+						}
+					}
+					return true;
+				}
+			}
+		}
+		return false;
+	}
 
 };
 }

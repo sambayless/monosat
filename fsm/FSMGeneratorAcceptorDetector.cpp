@@ -46,11 +46,20 @@ FSMGeneratorAcceptorDetector::FSMGeneratorAcceptorDetector(int detectorID, FSMTh
 	next_seen.growTo(acceptor_over.states());
 	gen_next_seen.growTo(g_over.states());
 	seen_chars.growTo(g_over.outAlphabet()+1);
+
+
+
 }
 
 void FSMGeneratorAcceptorDetector::addAcceptLit(int generatorFinalState, int acceptorFinalState, Var outer_reach_var){
 
+	lit_backward_map.growTo(g_over.states() * acceptor_over.states(),var_Undef);
 
+	if(lit_backward_map[generatorFinalState + acceptorFinalState*g_over.states()] !=var_Undef){
+		Var v = lit_backward_map[generatorFinalState*g_over.states() + acceptorFinalState];
+		outer->makeEqualInSolver(mkLit(outer->toSolver(v)),mkLit( outer_reach_var));
+		return;
+	}
 
 	if(first_destination==-1)
 		first_destination= generatorFinalState;
@@ -71,12 +80,15 @@ void FSMGeneratorAcceptorDetector::addAcceptLit(int generatorFinalState, int acc
 	Lit acceptLit = mkLit(accept_var, false);
 	all_lits.push(acceptLit);
 
+	lit_backward_map[generatorFinalState + acceptorFinalState*g_over.states()]= var(acceptLit);
 
 	while (accept_lit_map.size() <= accept_var - first_var) {
 		accept_lit_map.push({-1,-1});
 	}
 	accept_lit_map[accept_var - first_var] = {acceptLit,generatorFinalState,acceptorFinalState};
 	all_accept_lits.push( {acceptLit,generatorFinalState,acceptorFinalState});
+
+	updatePrefixTable(generatorFinalState,acceptorFinalState);
 }
 
 void FSMGeneratorAcceptorDetector::AcceptStatus::accepts(int string,int state,int edgeID,int label, bool accepts){
@@ -535,9 +547,375 @@ void FSMGeneratorAcceptorDetector::buildForcedEdgeReason(int genFinal, int accep
 
 void FSMGeneratorAcceptorDetector::buildNonAcceptReason(int genFinal, int acceptFinal, vec<Lit> & conflict){
 
-	static int iter = 0;
+	static vec<NFATransition> path;
+	path.clear();
+
+	assert( !overapprox_detector->accepts(genFinal,acceptFinal,false));
+	//run an NFA to find all transitions that accepting prefixes use.
+	//printf("conflict %d\n",iter);
+	//g_over.draw(gen_source,genFinal);
+	//acceptor_over.draw(accept_source,acceptFinal);
+	overapprox_detector->getGeneratorPath(genFinal,acceptFinal,path,true,true);
+	static vec<bool> seen_states;
+	/*seen_states.clear();
+	seen_states.growTo(g_over.states());
+	if(true||g_over.mustBeDeterministic()){
+
+		//this reasoning is only correct if the SAT solver itself is already enforcing that atleast one outgoing edge from each state must be enabled.
+		//otherwise, it is incorrect.
+
+		for(auto & t:path){
+			//printf("%d(c%d), ", t.edgeID, t.output);
+			int edgeID = t.edgeID;
+			if(edgeID==10){
+				int a=1;
+			}
+			int input = t.input;
+			assert(input==0);
+			int output = t.output;
+			Var v = outer->getTransitionVar(g_over.getID(),edgeID,input,output);
+			assert(outer->value(v)!=l_False);
+			if(outer->value(v)==l_True){
+				if(outer->level(v)==0){
+					//this edge cannot be disabled
+				}else{
+					conflict.push(mkLit(v,true));
+				}
+			}
+		}
+
+	}else{
+		for(auto & t:path){
+			//printf("%d(c%d), ", t.edgeID, t.output);
+			int edgeID = t.edgeID;
+			int input = t.input;
+			assert(input==0);
+			int output = t.output;
+			Var v = outer->getTransitionVar(g_over.getID(),edgeID,0,output);
+			assert(outer->value(v)!=l_False);
+			//for each transition(from,to) that leads to a non-accepting state, learn that
+			//at least one currently disabled edge (from,anywhere) must be enabled.
+
+			if(outer->value(v)==l_True && outer->level(v)==0){
+				//this edge cannot be disabled
+			}else{
+
+				int from = g_over.getEdge(edgeID).from;
+				if(seen_states[from]){
+					continue;
+				}
+				seen_states[from]=true;
+
+				for (int j = 0;j<g_over.nIncident(from);j++){
+					int edgeID = g_over.incident(from,j).id;
+					for(int i = 0;i<g_over.inAlphabet();i++){
+						for (int o = 0;o<g_over.outAlphabet();o++){
+
+							if(!g_over.transitionEnabled(edgeID,i,o)  ){
+								Var v2 =  outer->getTransition(g_over.getID(),edgeID,i,o).v;
+								if(v2!=var_Undef){
+									conflict.push(mkLit(v2,false));
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+*/
+
+
+	buildSuffixCut(genFinal,acceptFinal,conflict,false,false);
 
 }
+
+void FSMGeneratorAcceptorDetector::updatePrefixTable(int gen_final, int accept_final){
+	if(last_prefix_update<0 && outer->decisionLevel()==0){
+		//(int gen_final,int accept_final,vec<Bitset> & suffixTable, bool accepting_state_is_attractor, bool invertAcceptance){
+		Var v = getDetectorVar(gen_final,accept_final);
+		assert(v!=var_Undef);
+		int index = v - first_var;
+		prefixTables.growTo(index+1);
+		overapprox_detector->buildPrefixTable(gen_final,accept_final,prefixTables[index],false,false);
+		last_prefix_update = g_over.modifications;
+	}
+}
+
+bool FSMGeneratorAcceptorDetector::buildSuffixCut(int gen_final,int accept_final,vec<Lit> & cut, bool accepting_state_is_attractor, bool invertAcceptance){
+		//run the nfa backwards from the end of the generator, and collect the set of reachable fsa states at each step in the (linear) generator.
+		DynamicFSM & gen = g_over;
+		DynamicFSM & accept = acceptor_over;
+
+		vec<Bitset> & prefixTable = getPrefixTable(gen_final,accept_final);
+
+		for(int s:cur){
+			assert(cur_seen);
+			cur_seen[s]=false;
+		}
+		cur.clear();
+		assert(next.size()==0);
+		int gen_pos = gen.states()-1;
+		if(!invertAcceptance){
+			cur_seen[accept_final]=true;
+			cur.push(accept_final);
+		}else{
+			for(int i = 0;i<accept.states();i++){
+				if(i!=accept_final){
+					cur_seen[i]=true;
+					cur.push(i);
+				}
+			}
+		}
+
+		for(int s:gen_cur){
+			assert(gen_cur_seen);
+			gen_cur_seen[s]=false;
+		}
+		gen_cur.clear();
+		assert(next.size()==0);
+		gen_cur_seen[gen_final]=true;
+		gen_cur.push(gen_final);
+
+
+		chars.clear();
+		DynamicFSM & g = accept;
+		bool any_non_acceptors=!cur_seen[accept_final];
+		bool any_non_acceptors_next=false;
+		//initial emove pass:
+		if(g.emovesEnabled()){
+			for(int i = 0;i<cur.size();i++){
+				int s = cur[i];
+				for(int j = 0;j<g.nIncoming(s);j++){
+					//now check if the label is active
+					int edgeID= g.incoming(s,j).id;
+					int to = g.incoming(s,j).node;
+					if(!cur_seen[to] && g.transitionEnabled(edgeID,0,0)){
+						cur_seen[to]=true;
+						cur.push(to);
+						if(to!=accept_final)
+							any_non_acceptors=true;
+					}else if (!g.transitionEnabled(edgeID,0,0)){
+						Var v = outer->getTransitionVar(g.getID(),edgeID,0,0);
+						if(v!=var_Undef &&  outer->value(v)==l_False && outer->level(v)>0){
+							cut.push(mkLit(v));
+						}
+					}
+
+				}
+			}
+		}
+		//initial emove pass:
+		if(gen.emovesEnabled()){
+			for(int i = 0;i<gen_cur.size();i++){
+				int s = gen_cur[i];
+				for(int j = 0;j<gen.nIncoming(s);j++){
+					//now check if the label is active
+					int edgeID= gen.incoming(s,j).id;
+					int to = gen.incoming(s,j).node;
+					if(!gen_cur_seen[to] && gen.transitionEnabled(edgeID,0,0)){
+						gen_cur_seen[to]=true;
+						gen_cur.push(to);
+					}else if (!gen.transitionEnabled(edgeID,0,0)){// && prefixTable[gen_final][to]
+						Var v = outer->getTransitionVar(gen.getID(),edgeID,0,0);
+						if(v!=var_Undef &&  outer->value(v)==l_False && outer->level(v)>0){
+							cut.push(mkLit(v));
+						}
+					}
+				}
+			}
+		}
+
+		bool prev_accepting=accepting_state_is_attractor ? true:gen_cur_seen[gen_source];
+		bool accepted=false;
+
+
+		//use the linear generator to produce a (set) of strings. Because the generator is linear, it is only ever in one state, which greatly simplifies the reasoning here...
+		while(!accepted){
+			bool accepting = stepGeneratorBackward(gen_final, prefixTable,cut, chars,seen_chars);//get set of next strings
+			if(accepting_state_is_attractor){
+				accepting =true;
+			}
+			if(chars.size()==0){
+				for(int i = 0;i<cur.size();i++){
+					int s = cur[i];
+					for(int j = 0;j<g.nIncoming(s);j++){
+						//now check if the label is active
+						int edgeID= g.incoming(s,j).id;
+						int to = g.incoming(s,j).node;
+						if(!cur_seen[to] && g.transitionEnabled(edgeID,0,0)){
+							cur_seen[to]=true;
+							cur.push(to);
+
+							if(to!=accept_final)
+								any_non_acceptors=true;
+
+						}else if (!g.transitionEnabled(edgeID,0,0)){
+							Var v = outer->getTransitionVar(g.getID(),edgeID,0,0);
+							if(v!=var_Undef &&  outer->value(v)==l_False && outer->level(v)>0){
+								cut.push(mkLit(v));
+							}
+						}
+					}
+				}
+			}else{
+				for(int l:chars)
+				{
+					assert(l>0);
+					for(int i = 0;i<cur.size();i++){
+						int s = cur[i];
+						for(int j = 0;j<g.nIncoming(s);j++){
+							//now check if the label is active
+							int edgeID= g.incoming(s,j).id;
+							int to = g.incoming(s,j).node;
+							if(!cur_seen[to] && g.transitionEnabled(edgeID,0,0)){
+								cur_seen[to]=true;
+								cur.push(to);
+
+								if(to!=accept_final)
+									any_non_acceptors=true;
+								//status.reaches(str,to,edgeID,0);
+							}else if (!g.transitionEnabled(edgeID,0,0)){
+								Var v = outer->getTransitionVar(g.getID(),edgeID,0,0);
+								if(v!=var_Undef &&  outer->value(v)==l_False && outer->level(v)>0){
+									cut.push(mkLit(v));
+								}
+							}
+
+							if (!next_seen[to] && g.transitionEnabled(edgeID,l,0)){
+
+								//status.reaches(str,to,edgeID,l);
+								next_seen[to]=true;
+								next.push(to);
+								if(to!=accept_final)
+									any_non_acceptors_next=true;
+							}else if (!g.transitionEnabled(edgeID,l,0)){
+								Var v = outer->getTransitionVar(g.getID(),edgeID,l,0);
+								if(v!=var_Undef &&  outer->value(v)==l_False && outer->level(v)>0){
+									cut.push(mkLit(v));
+								}
+							}
+						}
+					}
+				}
+			}
+			if(prev_accepting && cur_seen[accept_source]){
+					accepted=true;
+				}
+			/*if(!invertAcceptance){
+
+			}else{
+				if(prev_accepting && any_non_acceptors){
+					accepted=true;
+				}
+			}*/
+			next.swap(cur);
+			next_seen.swap(cur_seen);
+
+			for(int s:next){
+				assert(next_seen[s]);
+				next_seen[s]=false;
+			}
+			next.clear();
+			if(chars.size()==0){
+				//must eventually happen because the generator is linear.
+				break;
+			}
+
+			for(int l :chars){
+				assert(seen_chars[l]);
+				seen_chars[l]=false;
+			}
+			chars.clear();
+			prev_accepting = accepting;
+			any_non_acceptors= any_non_acceptors_next;
+			any_non_acceptors_next=false;
+			gen_pos--;
+		}
+
+		return accepted;
+
+	}
+
+bool FSMGeneratorAcceptorDetector::stepGeneratorBackward(int final, vec<Bitset> & prefixTable, vec<Lit> & cut, vec<int> & store, vec<bool> & store_seen, vec<NFATransition> * path){
+		DynamicFSM & g = g_over;
+
+		for(int i = 0;i<gen_cur.size();i++){
+			int s = gen_cur[i];
+			for(int j = 0;j<g.nIncoming(s);j++){
+				//now check if the label is active
+				int edgeID= g.incoming(s,j).id;
+				int to = g.incoming(s,j).node;
+
+				if(g.transitionEnabled(edgeID,0,0)){
+					if(!gen_cur_seen[to] ){
+						gen_cur_seen[to]=true;
+						gen_cur.push(to);
+					}
+					if(path){
+						path->push({edgeID,0,0});
+					}
+				}else {//if (prefixTable[s][to])
+					Var v = outer->getTransitionVar(g.getID(),edgeID,0,0);
+					if(v!=var_Undef &&  outer->value(v)==l_False && outer->level(v)>0){
+						cut.push(mkLit(v));
+					}
+				}
+
+				int edge_assigned_true=-1;
+				for(int l = 1;l<g_under.outAlphabet();l++){
+					if (g_under.transitionEnabled(edgeID,0,l)){
+						edge_assigned_true=l;
+						break;
+					}
+				}
+				if(edge_assigned_true>=0){
+					//if a character has been decided true, then since exactly one character is learnt in each position, we can just learn !character, rather than learning the negation of the set of disabled characters
+					Var v = outer->getTransitionVar(g.getID(),edgeID,0,edge_assigned_true);
+					if(v!=var_Undef &&  outer->value(v)==l_True && outer->level(v)>0){
+						cut.push(mkLit(v,true));
+					}
+				}
+
+				for(int l = 1;l<g.outAlphabet();l++){
+					//g.mustBeDeterministic() &&
+					 if (g.transitionEnabled(edgeID,0,l)){
+						if(!gen_next_seen[to]){
+							gen_next_seen[to]=true;
+							gen_next.push(to);
+						}
+						if(path){
+							path->push({edgeID,0,l});
+						}
+						if(!store_seen[l]){
+							store_seen[l]=true;
+							store.push(l);
+						}
+
+					}else if (edge_assigned_true==-1) {//if (prefixTable[s][to])
+						Var v = outer->getTransitionVar(g.getID(),edgeID,0,l);
+						if(v!=var_Undef &&  outer->value(v)==l_False && outer->level(v)>0){
+							cut.push(mkLit(v));
+						}
+					}
+				}
+
+			}
+		}
+
+		gen_next.swap(gen_cur);
+		gen_next_seen.swap(gen_cur_seen);
+
+		for(int s:gen_next){
+			assert(gen_next_seen[s]);
+			gen_next_seen[s]=false;
+		}
+		gen_next.clear();
+
+		return gen_cur_seen[gen_source];
+
+	}
+
 
 Lit FSMGeneratorAcceptorDetector::decide(int level) {
 
