@@ -1184,7 +1184,32 @@ public:
 	}
 	
 	void drawCurrent() {
+		int from = -1;
+		int to = -1;
+		printf("digraph{\n");
+		for (int i = 0; i < nNodes(); i++) {
+			if (i == from) {
+				printf("n%d [label=\"From\", style=filled, fillcolor=blue]\n", i);
+			} else if (i == to) {
+				printf("n%d [label=\"To\", style=filled, fillcolor=red]\n", i);
+			} else
+				printf("n%d\n", i);
+		}
+
+		for (int i = 0; i < edge_list.size(); i++) {
+			if (edge_list[i].v < 0)
+				continue;
+			Edge & e = edge_list[i];
+			const char * s = "black";
+			if (value(e.v) == l_True)
+				s = "blue";
+			else if (value(e.v) == l_False)
+				continue;
+				//s = "red";
+			printf("n%d -> n%d [label=\"v%d\",color=\"%s\"]\n", e.from, e.to, e.v, s);
+		}
 		
+		printf("}\n");
 	}
 	int nEdges() {
 		return edge_list.size();

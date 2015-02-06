@@ -322,13 +322,13 @@ public:
 								if(in==0){
 									printf("{},");
 								}else{
-									printf("%c:,",'A'+in-1);
+									printf("%d:,",in);
 								}
 							}else{
 								if(in==0){
-									printf(":%c,",'A'+out-1);
+									printf(":%d,",out);
 								}else{
-									printf("%c:%c,",'A'+in-1,'A'+out-1);
+									printf("%d:%d,",in,out);
 								}
 							}
 

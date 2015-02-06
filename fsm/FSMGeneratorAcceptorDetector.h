@@ -33,7 +33,7 @@
 #include "utils/System.h"
 #include "FSMDetector.h"
 #include "alg/NFALinearGeneratorAcceptor.h"
-
+#include "graph/GraphTheory.h"
 using namespace dgl;
 namespace Monosat {
 
@@ -65,8 +65,8 @@ public:
 	AcceptStatus *underReachStatus = nullptr;
 	AcceptStatus *overReachStatus = nullptr;
 
-	NFALinearGeneratorAcceptor<AcceptStatus> * underapprox_detector;
-	NFALinearGeneratorAcceptor<AcceptStatus> * overapprox_detector;
+	NFALinearGeneratorAcceptor<AcceptStatus> * underapprox_detector = nullptr;
+	NFALinearGeneratorAcceptor<AcceptStatus> * overapprox_detector = nullptr;
 
 
 
@@ -111,19 +111,26 @@ public:
 	Map<Var,Lit> forcedVars;
 	vec<Var> lit_backward_map;
 
+	GraphTheorySolver<long> * graph=nullptr;//for if we reduce the nfa to a graph
+	vec<vec<int> > nodes;
+
 	void printStats() {
 		//printf("Reach detector\n");
-		FSMDetector::printStats();
-		if (opt_detect_pure_theory_lits)
-			printf("\tPropagations skipped by pure literal detection: %d\n", stats_pure_skipped);
-		if (opt_shrink_theory_conflicts) {
-			printf("\t%d lits removed by shrinking conflicts\n", stats_shrink_removed);
+		if(graph){
+			graph->printStats(1);
+		}else{
+			FSMDetector::printStats();
+			if (opt_detect_pure_theory_lits)
+				printf("\tPropagations skipped by pure literal detection: %d\n", stats_pure_skipped);
+			if (opt_shrink_theory_conflicts) {
+				printf("\t%d lits removed by shrinking conflicts\n", stats_shrink_removed);
+			}
+			if (opt_learn_unreachable_component) {
+				printf("\t%d components learned, average component size: %f\n", stats_learnt_components,
+						stats_learnt_components_sz / (float) stats_learnt_components);
+			}
+			printf("Forced edge assignments: %d\n", stats_forced_edges);
 		}
-		if (opt_learn_unreachable_component) {
-			printf("\t%d components learned, average component size: %f\n", stats_learnt_components,
-					stats_learnt_components_sz / (float) stats_learnt_components);
-		}
-		printf("Forced edge assignments: %d\n", stats_forced_edges);
 	}
 
 	inline void setForcedVar(Var edgeVar, Lit forcedBy){
@@ -164,7 +171,7 @@ public:
 	void buildAcceptReason(int genFinal, int acceptFinal, vec<Lit> & conflict);
 	void buildNonAcceptReason(int genFinal, int acceptFinal, vec<Lit> & conflict);
 	void buildForcedEdgeReason(int genFinal, int acceptFinal,int forcedEdge, int forcedLabel,  vec<Lit> & conflict);
-
+	 void preprocess() ;
 	void buildReason(Lit p, vec<Lit> & reason, CRef marker);
 	bool checkSatisfied();
 	void printSolution(std::ostream& write_to);
@@ -185,6 +192,15 @@ public:
 		return "NFA Generator Acceptor Detector";
 	}
 private:
+
+	struct Transition{
+		int edgeID;
+		int in;
+		int out;
+	};
+
+	void constructAllPaths();
+	void stepGeneratorForward(vec<Transition> & store, vec<bool> & store_seen, int & cur_gen_state);
 	vec<int> next;
 	vec<int> cur;
 

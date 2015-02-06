@@ -134,6 +134,8 @@ extern BoolOption opt_conflict_min_cut_shortest_paths;
 extern BoolOption opt_fsm_negate_underapprox;
 extern BoolOption opt_fsm_edge_prop;
 
+extern BoolOption opt_fsm_as_graph;
+
 enum class PointInPolygonAlg {
 	ALG_FULL, ALG_RECURSIVE_SPLIT
 };

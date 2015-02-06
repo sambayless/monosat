@@ -175,7 +175,9 @@ public:
 			delete(f);
 		}
 	}
-	
+	Solver * getSolver(){
+		return S;
+	}
 	void printStats(int detailLevel) {
 		if (detailLevel > 0) {
 			for (FSMDetector * d : detectors)
@@ -934,7 +936,10 @@ public:
 				fprintf(stderr,"Undefined FSM, aborting\n");
 				exit(1);
 		}
-
+		if(from1>=g_overs[fsmID1]->states() ||from2>=g_overs[fsmID2]->states() || to1>=g_overs[fsmID1]->states() ||to2>=g_overs[fsmID2]->states()){
+			fprintf(stderr,"Undefined fsm state in formula, aborting\n");
+			exit(1);
+		}
 		if(!g_overs[fsmID1]->isGenerator()){
 			fprintf(stderr,"Only compositions of linear generators with FSAs are supported, aborting\n");
 			exit(1);

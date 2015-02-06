@@ -358,7 +358,7 @@ public:
 
 #endif
 		//dbg_print_graph(s,t,true);
-		
+		//g.drawFull(true);
 #ifndef NDEBUG
 		
 		for (int i = 0; i < g.edges(); i++) {
@@ -400,6 +400,7 @@ public:
 private:
 	
 	inline void collect_multi_edges(int for_edge) {
+
 		if (multi_edges[for_edge].size() == 0) {
 			int from = g.getEdge(for_edge).from;
 			int to = g.getEdge(for_edge).to;
@@ -745,6 +746,10 @@ public:
 				}
 				if (remaining_flow >= edge_cap) {
 					remaining_flow -= edge_cap;
+				}else{
+					assert(remaining_flow< edge_cap);
+					remaining_flow=0;//all the flow was allocated to this edge;
+					return 0;
 				}
 				if (remaining_flow <= 0) {
 					return 0;

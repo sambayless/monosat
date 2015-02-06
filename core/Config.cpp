@@ -246,6 +246,9 @@ BoolOption Monosat::opt_fsm_negate_underapprox(_cat_fsm, "fsm-negate-under",
 		"", true);
 BoolOption Monosat::opt_fsm_edge_prop(_cat_fsm, "fsm-edge-prop",
 		"", true);
+BoolOption Monosat::opt_fsm_as_graph(_cat_fsm, "fsm-as-graph",
+		"", true);
+
 
 IntOption Monosat::opt_width("GRAPH", "width", "Width of graph.\n", 0, IntRange(0, INT32_MAX));
 IntOption Monosat::opt_height("GRAPH", "height", "Height of graph.\n", 0, IntRange(0, INT32_MAX));

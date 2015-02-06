@@ -584,7 +584,7 @@ public:
 				prev_accepting = accepting;
 				any_non_acceptors= any_non_acceptors_next;
 				any_non_acceptors_next=false;
-				gen_pos--;
+				gen_pos++;
 			}
 
 			return accepted;

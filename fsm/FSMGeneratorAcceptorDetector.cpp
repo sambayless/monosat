@@ -24,22 +24,49 @@
 #include "FSMTheory.h"
 #include "core/Config.h"
 
+
 using namespace Monosat;
 
 FSMGeneratorAcceptorDetector::FSMGeneratorAcceptorDetector(int detectorID, FSMTheorySolver * outer, DynamicFSM &g_under,
 		DynamicFSM &g_over,DynamicFSM & acceptor_under,DynamicFSM & acceptor_over,int gen_source, int accept_source,  double seed) :
 		FSMDetector(detectorID), outer(outer), g_under(g_under), g_over(g_over), acceptor_under(acceptor_under), acceptor_over(acceptor_over),gen_source(gen_source), accept_source(accept_source), rnd_seed(seed){
 
-	underReachStatus = new FSMGeneratorAcceptorDetector::AcceptStatus(*this, true);
-	overReachStatus = new FSMGeneratorAcceptorDetector::AcceptStatus(*this, false);
+	if(!opt_fsm_as_graph){
+		underReachStatus = new FSMGeneratorAcceptorDetector::AcceptStatus(*this, true);
+		overReachStatus = new FSMGeneratorAcceptorDetector::AcceptStatus(*this, false);
 
-	underapprox_detector = new NFALinearGeneratorAcceptor<FSMGeneratorAcceptorDetector::AcceptStatus>(g_under,acceptor_under,gen_source,accept_source,*underReachStatus);
-	overapprox_detector = new NFALinearGeneratorAcceptor<FSMGeneratorAcceptorDetector::AcceptStatus>(g_over,acceptor_over,gen_source,accept_source,*overReachStatus);
+		underapprox_detector = new NFALinearGeneratorAcceptor<FSMGeneratorAcceptorDetector::AcceptStatus>(g_under,acceptor_under,gen_source,accept_source,*underReachStatus);
+		overapprox_detector = new NFALinearGeneratorAcceptor<FSMGeneratorAcceptorDetector::AcceptStatus>(g_over,acceptor_over,gen_source,accept_source,*overReachStatus);
 
-	underprop_marker = outer->newReasonMarker(getID());
-	overprop_marker = outer->newReasonMarker(getID());
-	forcededge_marker= outer->newReasonMarker(getID());
+		underprop_marker = outer->newReasonMarker(getID());
+		overprop_marker = outer->newReasonMarker(getID());
+		forcededge_marker= outer->newReasonMarker(getID());
 
+		cur_seen.growTo(acceptor_over.states());
+		gen_cur_seen.growTo(g_over.states());
+
+		next_seen.growTo(acceptor_over.states());
+		gen_next_seen.growTo(g_over.states());
+		seen_chars.growTo(g_over.outAlphabet()+1);
+	}else{
+		graph = new GraphTheorySolver<long>(outer->getSolver(),acceptor_over.getID()*10);
+		outer->getSolver()->addTheory(graph);
+
+		//fully unroll the fsm you get by feeding the generator into the acceptor
+		//(can improve on this by pruning some nodes if we know the final states already).
+
+		constructAllPaths();
+
+	}
+
+
+}
+
+void FSMGeneratorAcceptorDetector::constructAllPaths(){
+	assert(graph);
+	//this assumes that the generator is LINEAR!
+	assert(g_over.isLinear());
+	int gen_pos=0;
 	cur_seen.growTo(acceptor_over.states());
 	gen_cur_seen.growTo(g_over.states());
 
@@ -47,11 +74,255 @@ FSMGeneratorAcceptorDetector::FSMGeneratorAcceptorDetector(int detectorID, FSMTh
 	gen_next_seen.growTo(g_over.states());
 	seen_chars.growTo(g_over.outAlphabet()+1);
 
+	nodes.growTo(g_over.states());
+	for(int i = 0;i<g_over.states();i++){
+		for(int j = 0;j<acceptor_over.states();j++){
+			nodes[i].push(graph->newNode());
+		}
+	}
 
 
+	assert(outer->decisionLevel()==0);
+
+
+	for(int s:cur){
+		assert(cur_seen);
+		cur_seen[s]=false;
+	}
+	cur.clear();
+	assert(next.size()==0);
+
+
+	cur_seen[accept_source]=true;
+	cur.push(accept_source);
+
+	for(int s:gen_cur){
+		assert(gen_cur_seen);
+		gen_cur_seen[s]=false;
+	}
+	gen_cur.clear();
+	assert(next.size()==0);
+	gen_cur_seen[gen_source]=true;
+	gen_cur.push(gen_source);
+	vec<Transition> chars;
+	chars.clear();
+	DynamicFSM & g = acceptor_over;
+	DynamicFSM & gen = g_over;
+
+	//initial emove pass:
+/*	if(g.emovesEnabled()){
+		for(int i = 0;i<cur.size();i++){
+			int s = cur[i];
+			for(int j = 0;j<g.nIncident(s);j++){
+				//now check if the label is active
+				int edgeID= g.incident(s,j).id;
+				int to = g.incident(s,j).node;
+				int from = i;
+				if(!cur_seen[to] && g.transitionEnabled(edgeID,0,0)){
+					cur_seen[to]=true;
+					//suffixTable[gen_pos].set(to);
+					cur.push(to);
+				}
+				if (g.transitionEnabled(edgeID,0,0)){
+					Var transitionVar = outer->getTransition(g.getID() , edgeID, 0,0).outerVar;
+					Var outerVar = outer->toSolver(outer->newAuxVar());
+					Lit edgeLit = mkLit(outerVar);
+					graph->newEdge(nodes[gen_source][from],nodes[gen_source][to],outerVar);
+					outer->makeEqualInSolver(mkLit(transitionVar),edgeLit);
+				}
+
+			}
+		}
+	}*/
+	//initial emove pass:
+	if(gen.emovesEnabled()){
+		for(int i = 0;i<gen_cur.size();i++){
+			int s = gen_cur[i];
+			for(int j = 0;j<gen.nIncident(s);j++){
+				//now check if the label is active
+				int edgeID= gen.incident(s,j).id;
+				int to = gen.incident(s,j).node;
+				int from = i;
+				if(!gen_cur_seen[to] && gen.transitionEnabled(edgeID,0,0)){
+					gen_cur_seen[to]=true;
+					gen_cur.push(to);
+
+				}
+				if (gen.transitionEnabled(edgeID,0,0)){
+					Var transitionVar = outer->getTransition(gen.getID() , edgeID, 0,0).outerVar;
+					Var outerVar =  outer->toSolver(outer->newAuxVar());
+					Lit edgeLit = mkLit(outerVar);
+					graph->newEdge(nodes[from][accept_source],nodes[to][accept_source],outerVar);
+					outer->makeEqualInSolver(mkLit(transitionVar),edgeLit);
+				}
+			}
+		}
+	}
+
+
+	int gen_prev_state = gen_source;
+	//use the linear generator to produce a (set) of strings. Because the generator is linear, it is only ever in one state, which greatly simplifies the reasoning here...
+	while(gen_pos<g_over.states()){
+		int gen_state;
+		stepGeneratorForward(chars,seen_chars,gen_state);//get set of next strings
+
+		if(chars.size()==0){
+			for(int i = 0;i<cur.size();i++){
+				int s = cur[i];
+				for(int j = 0;j<g.nIncident(s);j++){
+					//now check if the label is active
+					int edgeID= g.incident(s,j).id;
+					int to = g.incident(s,j).node;
+					int from = s;
+					if(!cur_seen[to] && g.transitionEnabled(edgeID,0,0)){
+						cur_seen[to]=true;
+						cur.push(to);
+						//suffixTable[gen_pos].set(to);
+
+
+					}
+					if (g.transitionEnabled(edgeID,0,0)){
+						Var transitionVar = outer->getTransition(g.getID() , edgeID, 0,0).outerVar;
+						Var outerVar = outer->toSolver(outer->newAuxVar());
+						Lit edgeLit = mkLit(outerVar);
+						graph->newEdge(nodes[gen_prev_state][from],nodes[gen_prev_state][to],outerVar);
+						outer->makeEqualInSolver(mkLit(transitionVar),edgeLit);
+					}
+				}
+			}
+		}else{
+
+				for(int i = 0;i<cur.size();i++){
+					int s = cur[i];
+					for(int j = 0;j<g.nIncident(s);j++){
+						//now check if the label is active
+						int edgeID= g.incident(s,j).id;
+						int to = g.incident(s,j).node;
+						int from = s;
+						if(!cur_seen[to] && g.transitionEnabled(edgeID,0,0)){
+							cur_seen[to]=true;
+							cur.push(to);
+						}
+						if ( g.transitionEnabled(edgeID,0,0)){
+							Var transitionVar = outer->getTransition(g.getID() , edgeID, 0,0).outerVar;
+							Var outerVar = outer->toSolver(outer->newAuxVar());
+							Lit edgeLit = mkLit(outerVar);
+							graph->newEdge(nodes[gen_prev_state][from],nodes[gen_prev_state][to],outerVar);
+							outer->makeEqualInSolver(mkLit(transitionVar),edgeLit);
+						}
+						for(auto transition:chars)
+						{
+							int genEdge = transition.edgeID;
+							int l = transition.out;
+							assert(l>0);
+							if (!next_seen[to] && g.transitionEnabled(edgeID,l,0)){
+								next_seen[to]=true;
+								next.push(to);
+							}
+
+							if (g.transitionEnabled(edgeID,l,0)){
+								Lit genLit = mkLit( outer->getTransition(gen.getID() , transition.edgeID, transition.in,transition.out).outerVar);
+								Lit acceptLit = mkLit( outer->getTransition(g.getID() ,edgeID,l,0).outerVar);
+								Var outerVar = outer->toSolver(outer->newAuxVar());
+								Lit edgeLit = mkLit(outerVar);
+								Var inner_edge = var(graph->newEdge(nodes[gen_prev_state][from],nodes[gen_state][to],outerVar));
+								//EdgeLit == (genVar && acceptVar)
+								outer->getSolver()->addClause(genLit,~edgeLit);
+								outer->getSolver()->addClause(acceptLit,~edgeLit);
+								outer->getSolver()->addClause(edgeLit,~genLit,~acceptLit);
+							}
+
+						}
+					}
+				}
+
+		}
+
+		next.swap(cur);
+		next_seen.swap(cur_seen);
+
+		for(int s:next){
+			assert(next_seen[s]);
+			next_seen[s]=false;
+		}
+		next.clear();
+		if(chars.size()==0){
+			//must eventually happen because the generator is linear.
+			break;
+		}
+
+		for(auto c :chars){
+			assert(seen_chars[c.out]);
+			seen_chars[c.out]=false;
+		}
+		chars.clear();
+		gen_prev_state = gen_state;
+		gen_pos++;
+	}
+	//g_over.draw();
+	//acceptor_over.draw();
+	//graph->drawFull();
 }
+void FSMGeneratorAcceptorDetector::stepGeneratorForward(vec<Transition> & store, vec<bool> & store_seen, int & cur_gen_state){
+		DynamicFSM & g = g_over;
 
+
+		for(int i = 0;i<gen_cur.size();i++){
+			int s = gen_cur[i];
+
+			for(int j = 0;j<g.nIncident(s);j++){
+				//now check if the label is active
+				int edgeID= g.incident(s,j).id;
+				int to = g.incident(s,j).node;
+
+				if(g.transitionEnabled(edgeID,0,0)){
+					if(!gen_cur_seen[to] ){
+						gen_cur_seen[to]=true;
+						gen_cur.push(to);
+					}
+					cur_gen_state = to;
+				}
+				for(int l = 1;l<g.outAlphabet();l++){
+					if (g.transitionEnabled(edgeID,0,l)){
+						if(!gen_next_seen[to]){
+							gen_next_seen[to]=true;
+							gen_next.push(to);
+						}
+						cur_gen_state = to;
+						if(!store_seen[l]){
+							store_seen[l]=true;
+							store.push({edgeID,0,l});
+						}
+
+					}
+				}
+			}
+		}
+
+		gen_next.swap(gen_cur);
+		gen_next_seen.swap(gen_cur_seen);
+
+		for(int s:gen_next){
+			assert(gen_next_seen[s]);
+			gen_next_seen[s]=false;
+		}
+		gen_next.clear();
+
+
+
+	}
+void FSMGeneratorAcceptorDetector::preprocess(){
+	if(graph){
+		graph->implementConstraints();
+	}
+}
 void FSMGeneratorAcceptorDetector::addAcceptLit(int generatorFinalState, int acceptorFinalState, Var outer_reach_var){
+
+	if(opt_fsm_as_graph){
+		assert(graph);
+		graph->reaches(nodes[gen_source][accept_source],nodes[generatorFinalState][acceptorFinalState], outer_reach_var);
+		return;
+	}
 
 	lit_backward_map.growTo(g_over.states() * acceptor_over.states(),var_Undef);
 
@@ -646,7 +917,12 @@ bool FSMGeneratorAcceptorDetector::buildSuffixCut(int gen_final,int accept_final
 		//run the nfa backwards from the end of the generator, and collect the set of reachable fsa states at each step in the (linear) generator.
 		DynamicFSM & gen = g_over;
 		DynamicFSM & accept = acceptor_over;
+		cur_seen.growTo(accept.states());
+		gen_cur_seen.growTo(gen.states());
 
+		next_seen.growTo(accept.states());
+		gen_next_seen.growTo(gen.states());
+		seen_chars.growTo(gen.outAlphabet()+1);
 		vec<Bitset> & prefixTable = getPrefixTable(gen_final,accept_final);
 
 		for(int s:cur){
@@ -947,6 +1223,11 @@ Lit FSMGeneratorAcceptorDetector::decide(int level) {
 }
 
 void FSMGeneratorAcceptorDetector::printSolution(std::ostream& out){
+	if(graph){
+		graph->drawCurrent();
+		//graph->printSolution();
+		return;
+	}
 
 	for(auto & t:all_accept_lits){
 		Lit l =t.l;
