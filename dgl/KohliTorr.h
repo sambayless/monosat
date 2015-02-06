@@ -745,6 +745,9 @@ public:
 				}
 				if (remaining_flow >= edge_cap) {
 					remaining_flow -= edge_cap;
+				}else{
+					assert(remaining_flow<edge_cap);
+					return 0;//all the flow goes into this edge.
 				}
 				if (remaining_flow <= 0) {
 					return 0;
