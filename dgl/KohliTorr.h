@@ -416,7 +416,7 @@ private:
 	
 	void dbg_print_graph(int from, int to, bool only_flow = false) {
 #ifndef NDEBUG
-		
+		return;
 		if (edge_enabled.size() < g.edges())
 			return;
 		static int it = 0;
@@ -540,16 +540,20 @@ private:
 			}
 			if (n == s) {
 				//if(!backward_maxflow){
-				bassert(flow_in == 0);
-				bassert(flow_out == f);
+				Weight excess = flow_out-flow_in;
+				bassert(excess==f);
+				//bassert(flow_in == 0);//this doesn't have to be the case - their can be spurious flow loops...
+				//bassert(flow_out == f);
 				/*}else{
 				 bassert(flow_in==0);
 				 bassert(flow_out==f);
 				 }*/
 			} else if (n == t) {
 				//if(!backward_maxflow){
-				bassert(flow_out == 0);
-				bassert(flow_in == f);
+				Weight excess = flow_in-flow_out;
+				bassert(excess==f);
+				//bassert(flow_out == 0);
+				//bassert(flow_in == f);
 				/*}else{
 				 bassert(flow_out==0);
 				 bassert(flow_in==f);
@@ -627,14 +631,14 @@ public:
 		}
 		
 		for (int n = 0; n < g.nodes(); n++) {
-			auto t = kt->what_segment(n, SOURCE);
+			auto t = kt->what_segment(n, SINK);
 			if (t == SINK) {
 				//check to see if any neighbouring edges are in the source segment.
 				for (int i = 0; i < g.nIncoming(n); i++) {
 					//any edge that crosses from the source side into the sink side is on the cut.
 					auto & e = g.incoming(n, i);
 					if (g.edgeEnabled(e.id)) {
-						auto segment = kt->what_segment(e.node, SOURCE);
+						auto segment = kt->what_segment(e.node, SINK);
 						if (segment == SOURCE) {
 							//then this edge is on the cut
 							cut.push_back(MaxFlowEdge { n, e.node, e.id });
@@ -747,9 +751,8 @@ public:
 				if (remaining_flow >= edge_cap) {
 					remaining_flow -= edge_cap;
 				}else{
-					assert(remaining_flow< edge_cap);
-					remaining_flow=0;//all the flow was allocated to this edge;
-					return 0;
+					assert(remaining_flow<edge_cap);
+					return 0;//all the flow goes into this edge, which is not the edge being queried, so the returned flow is 0.
 				}
 				if (remaining_flow <= 0) {
 					return 0;

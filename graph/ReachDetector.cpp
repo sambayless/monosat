@@ -626,7 +626,7 @@ void ReachDetector<Weight>::buildNonReachReason(int node, vec<Lit> & conflict, b
 	
 	if ((force_maxflow || opt_conflict_min_cut) && (conflict_flow || conflict_flows[node])) {
 		
-		g_over.drawFull();
+		//g_over.drawFull();
 		cut.clear();
 		long f;
 		if (!opt_reach_detector_combined_maxflow) {
