@@ -46,12 +46,15 @@ public:
 		}
 	};
 	Weight curflow;
-	int last_modification;
-	int last_deletion;
-	int last_addition;
+	int last_s = -1;
+	int last_t = -1;
 
-	int history_qhead;
-	int last_history_clear;
+	int last_modification=-1;
+	int last_deletion=0;
+	int last_addition=0;
+
+	int history_qhead=0;
+	int last_history_clear=0;
 	std::vector<LocalEdge> prev;
 	std::vector<Weight> M;
 	std::vector<bool> changed;
@@ -242,7 +245,7 @@ public:
 		 }
 		 #endif
 		 */
-		if (last_modification > 0 && g.modifications == last_modification) {
+		if (last_modification > 0 && g.modifications == last_modification && s==last_s && t==last_t) {
 			/*
 			 #ifdef DEBUG_MAXFLOW
 			 int expected_flow =ek.maxFlow(s,t);
@@ -254,6 +257,8 @@ public:
 			 */
 			return curflow;
 		}
+		last_s =s;
+		last_t = t;
 		/*if(rev.size()<g.all_edges.size()){
 		 rev.clear();
 
@@ -364,7 +369,7 @@ public:
 					continue;
 				int v = g.incident(u, i).node;
 				int id = g.incident(u, i).id;
-				if (capacity[id] - F[id] == 0) {
+				if ((capacity[id] - F[id] == 0) && (F[id]>0)) {
 					cut.push_back(MaxFlowEdge { u, v, id });    	//potential element of the cut
 				} else if (!seen[v]) {
 					Q.push_back(v);
