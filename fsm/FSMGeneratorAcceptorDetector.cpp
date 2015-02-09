@@ -1224,7 +1224,7 @@ Lit FSMGeneratorAcceptorDetector::decide(int level) {
 
 void FSMGeneratorAcceptorDetector::printSolution(std::ostream& out){
 	if(graph){
-		graph->drawCurrent();
+		//graph->drawCurrent();
 		//graph->printSolution();
 		return;
 	}
