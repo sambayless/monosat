@@ -525,7 +525,7 @@ private:
 		
 #ifndef NDEBUG
 		//EdmondsKarp<EdgeStatus> ek_check(g);
-		EdmondsKarpAdj<Weight> ek_check(g, capacity);
+		EdmondsKarpAdj<Weight> ek_check(g);
 		Weight expect = ek_check.maxFlow(s, t);
 		assert(f == expect);
 #endif
@@ -637,9 +637,9 @@ private:
 		
 		for (int i = 0; i < g.edges(); i++) {
 			if (edge_enabled[i]) {
-				auto & e = g.all_edges[i];
+				auto & e = g.getEdge(i);
 				const char * s = "black";
-				std::cout << "n" << e.from << " -> n" << e.to << " [label=\"" << i << ": " << F[i] << "/" << capacity[i]
+				std::cout << "n" << e.from << " -> n" << e.to << " [label=\"" << i << ": " << F[i] << "/" << g.getWeight(i)
 						<< "\" color=\"" << s << "\"]\n";
 				//printf("n%d -> n%d [label=\"%d: %d/%d\",color=\"%s\"]\n", e.from,e.to, i, F[i],capacity[i] , s);
 			}
@@ -725,7 +725,7 @@ private:
 					markChanged(id);
 					assert(id >= 0);
 					assert(id < F.size());
-					assert(id < capacity.size());
+
 					assert(F[id] <= g.getWeight(id));
 				} else {
 					u = shortCircuitFrom;

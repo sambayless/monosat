@@ -316,7 +316,7 @@ public:
 		in_tree.resize(g.nEdgeIDs());
 		for (int i = 0; i < g.edges(); i++) {
 			if (in_tree[i]) {
-				sumweight += weights[i];
+				sumweight += g.getWeight(i);
 			}
 		}
 		assert(sumweight == min_weight || min_weight == INF);

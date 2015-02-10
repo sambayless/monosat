@@ -166,7 +166,7 @@ public:
 		
 		for (int i = 0; i < g.edges(); i++) {
 			if (g.edgeEnabled(i)) {
-				auto & e = g.getEdge(i);
+				auto  e = g.getEdge(i);
 				const char * s = "black";
 				
 				bool link = false;

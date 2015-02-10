@@ -131,7 +131,7 @@ public:
 		
 		for (int i = 0; i < g.edges(); i++) {
 			if (g.edgeEnabled(i)) {
-				auto & e = g.all_edges[i];
+				auto & e = g.getEdge(i);
 				const char * s = "black";
 				if (dist[e.to] == dist[e.from] + 1) {
 					s = "blue";
@@ -140,7 +140,7 @@ public:
 				 s="blue";
 				 else if (value(e.v)==l_False)
 				 s="red";*/
-				std::cout << "n" << e.from << " -> n" << e.to << " [label=\"" << i << ": " << F[i] << "/" << capacity[i]
+				std::cout << "n" << e.from << " -> n" << e.to << " [label=\"" << i << ": " << F[i] << "/" << g.getWeight(i)
 						<< "\" color=\"" << s << "\"]\n";
 			}
 		}

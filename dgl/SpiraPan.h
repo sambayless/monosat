@@ -203,8 +203,8 @@ public:
 				num_parents++;
 				if (parents[p] > -1) {
 					int e = parent_edges[p];
-					int u = g.all_edges[e].from;
-					int v = g.all_edges[e].to;
+					int u =g.getEdge(e).from;
+					int v = g.getEdge(e).to;
 					assert(u == p || v == p);
 					assert(u == parents[p] || v == parents[p]);
 					assert(in_tree[e]);
@@ -799,7 +799,7 @@ public:
 		in_tree.resize(g.nEdgeIDs());
 		for (int i = 0; i < g.nEdgeIDs(); i++) {
 			if (in_tree[i]) {
-				sumweight += weights[i];
+				sumweight += g.getWeight(i);
 			}
 		}
 		assert(sumweight == min_weight);

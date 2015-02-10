@@ -250,7 +250,7 @@ public:
 		return g.incoming(node,i,undirected);
 	}
 
-	DynamicGraph<bool>::FullEdge getEdge(int id) const {
+	DynamicGraph<bool>::FullEdge getEdge(int id)  {
 		return g.getEdge(id);
 	}
 

@@ -118,7 +118,7 @@ public:
 			addNode();
 	}
 	//Returns true iff the edge exists and is a self loop
-	bool selfLoop(int edgeID) const {
+	bool selfLoop(int edgeID)  {
 		return hasEdge(edgeID) && getEdge(edgeID).from == getEdge(edgeID).to;
 	}
 	bool hasEdge(int from, int to) const {
@@ -304,7 +304,7 @@ public:
 		 return weights[edgeID];
 	 //return all_edges[edgeID].weight;
 	 }
-	FullEdge getEdge(int id) const {
+	FullEdge & getEdge(int id)  {
 		return all_edges[id];
 	}
 	void enableEdge(int id) {

@@ -311,7 +311,7 @@ void MaxflowDetector<Weight>::buildMaxFlowTooLowReason(Weight maxflow, vec<Lit> 
 		collectChangedEdges();
 		collectDisabledEdges();
 #ifndef NDEBUG
-		for (auto & e : g_over.all_edges) {
+		for (auto & e : g_over.getEdges()) {
 			int from = e.from;
 			int to = e.to;
 			int v = outer->getEdgeVar(e.id);

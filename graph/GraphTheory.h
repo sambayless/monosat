@@ -830,7 +830,8 @@ public:
 				continue;
 			Edge e = edge_list[i];
 			if (value(e.v) != l_False) {
-				g.addEdge(e.from, e.to,g.getWeight(e.edgeID));
+				Weight w = edge_weights[e.edgeID];
+				g.addEdge(e.from, e.to,e.edgeID,w);
 			}
 		}
 		if (undirected) {

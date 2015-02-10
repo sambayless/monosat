@@ -444,12 +444,12 @@ private:
 		printf("outer_sink\n");
 		for (int i = 0; i < g.edges(); i++) {
 			if (edge_enabled[i]) {
-				auto & e = g.all_edges[i];
+				auto & e = g.getEdge(i);
 				const char * s = "black";
 				if (only_flow && getEdgeFlow(e.id) == 0)
 					continue;
 				std::cout << "n" << e.from << " -> n" << e.to << " [label=\"" << i << ": " << getEdgeFlow(e.id) << "/"
-						<< capacity[i] << "\" color=\"" << s << "\"]\n";
+						<< g.getWeight(i) << "\" color=\"" << s << "\"]\n";
 				//printf("n%d -> n%d [label=\"%d: %d/%d\",color=\"%s\"]\n", e.from,e.to, i, F[i],capacity[i] , s);
 			}
 		}
@@ -513,7 +513,7 @@ private:
 		for (int i = 0; i < g.edges(); i++) {
 			Weight flow = getEdgeFlow(i);
 			bassert(flow >= 0);
-			bassert(flow <= capacity[i]);
+			bassert(flow <= g.getWeight(i));
 			if (flow != 0) {
 				bassert(g.edgeEnabled(i));
 			}
