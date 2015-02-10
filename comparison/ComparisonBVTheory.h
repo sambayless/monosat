@@ -58,10 +58,11 @@ public:
 	};
 
 	struct Comparison{
-		Weight lt;
+		Weight w;
 		Lit l;
 
-		int valueID;
+		int bvID:31;
+		int is_lt:1;
 	};
 
 	double rnd_seed;
@@ -73,8 +74,8 @@ public:
 	int id;
 
 	vec<lbool> assigns;
-	CRef underprop_marker;
-	CRef overprop_marker;
+	CRef comparisonprop_marker;
+	CRef bvprop_marker;
 
 	vec<Assignment> trail;
 	vec<int> trail_lim;
@@ -82,7 +83,8 @@ public:
 	//Bitvectors are unsigned, and have least significant bit at index 0
 	vec<vec<Lit> > bitvectors;
 	vec<Comparison> comparisons;
-	vec<vec<int> > comparisonsBV; //for each bitvector, comparisons are all to unique values, and in ascending order of compareTo.
+	vec<vec<int> > comparisons_lt; //for each bitvector, comparisons are all to unique values, and in ascending order of compareTo.
+	vec<vec<int> > comparisons_gt; //for each bitvector, comparisons are all to unique values, and in ascending order of compareTo.
 
 	vec<Weight> under_approx;
 	vec<Weight> over_approx;
@@ -105,7 +107,7 @@ public:
 		int occursPositive :1;
 		int occursNegative :1;
 
-		int valueID:30;
+		int bvID:30;
 		int comparisonID;
 		Var solverVar;
 	};
@@ -141,8 +143,11 @@ public:
 	ComparisonBVTheorySolver(Solver * S_, int _id = -1) :
 			S(S_), id(_id){
 		rnd_seed = opt_random_seed;
-		 underprop_marker = S->newReasonMarker(this);
-		 overprop_marker = S->newReasonMarker(this);
+
+
+		S->addTheory(this);
+		comparisonprop_marker = S->newReasonMarker(this);
+		 bvprop_marker = S->newReasonMarker(this);
 
 	}
 	~ComparisonBVTheorySolver(){
@@ -169,18 +174,18 @@ public:
 
 	inline bool isComparisonVar(Var v) const{
 		assert(v < vars.size());
-		return vars[v].isEdge;
+		return vars[v].comparisonID>-1;
 	}
 	inline int getComparisonID(Var v) const {
 		assert(isComparisonVar(v));
-		return vars[v].detector_edge;
+		return vars[v].comparisonID;
 	}
-	inline Comparison& getComparison(int comparisonID)const{
+	inline Comparison& getComparison(int comparisonID){
 		return comparisons[comparisonID];
 	}
-	inline int getValueID(Var v) const{
+	inline int getbvID(Var v) const{
 
-		return vars[v].valueID;
+		return vars[v].bvID;
 	}
 
 	inline int getDetector(Var v) const {
@@ -230,7 +235,7 @@ public:
 	}
 	
 
-	Var newVar(Var solverVar=var_Undef,  int comparisonID=-1,int valueID=-1, bool connectToTheory = true) {
+	Var newVar(Var solverVar=var_Undef, int bvID=-1, int comparisonID=-1, bool connectToTheory = true) {
 		if(solverVar==var_Undef){
 			solverVar = S->newVar();
 		}
@@ -241,7 +246,7 @@ public:
 		vars.push();
 		vars[v].occursPositive=false;
 		vars[v].occursNegative=false;
-		vars[v].valueID=valueID;
+		vars[v].bvID=bvID;
 		vars[v].comparisonID=comparisonID;
 		vars[v].solverVar = solverVar;
 
@@ -250,7 +255,6 @@ public:
 			S->setTheoryVar(solverVar, getTheoryIndex(), v);
 			assert(toSolver(v) == solverVar);
 		}
-
 
 		return v;
 	}
@@ -330,17 +334,13 @@ public:
 				assert(assigns[e.var]!=l_Undef);
 				if (e.isEdge) {
 					assert(dbg_value(e.var)==l_Undef);
-					int valueID = getvalueID(e.var);
-					int edgeID = getEdgeID(e.var); //e.var-min_edge_var;
-					int input = getInput(e.var);
-					int output = getOutput(e.var);
-					assert(edgeID==e.edgeID);
+
 
 					if (e.assign) {
-						//g_unders[valueID]->disableTransition(edgeID, input,output);
+						//g_unders[bvID]->disableTransition(edgeID, input,output);
 
 					} else {
-						//g_overs[valueID]->enableTransition(edgeID,input,output);
+						//g_overs[bvID]->enableTransition(edgeID,input,output);
 
 					}
 				} else {
@@ -348,14 +348,14 @@ public:
 					//detectors[getDetector(e.var)]->unassign(mkLit(e.var, !e.assign));
 				}
 				assigns[e.var] = l_Undef;
-				changed = true;
+				//changed = true;
 			}
 			trail.shrink(trail.size() - stop);
 			trail_lim.shrink(trail_lim.size() - level);
 			assert(trail_lim.size() == level);
 			
 			if (changed) {
-				requiresPropagation = true;
+				//requiresPropagation = true;
 
 			}
 			
@@ -381,16 +381,13 @@ public:
 				break;
 			}
 			if (e.isEdge) {
-				int valueID = getvalueID(e.var);
-				int edgeID = getEdgeID(e.var); //e.var-min_edge_var;
-				int input = getInput(e.var);
-				int output = getOutput(e.var);
+
 				assert(assigns[e.var]!=l_Undef);
 				assigns[e.var] = l_Undef;
 				if (e.assign) {
-				//	g_unders[valueID]->disableTransition(edgeID,input,output);
+				//	g_unders[bvID]->disableTransition(edgeID,input,output);
 				} else {
-				//	g_overs[valueID]->enableTransition(edgeID,input,output);
+				//	g_overs[bvID]->enableTransition(edgeID,input,output);
 				}
 			} else {
 
@@ -420,8 +417,37 @@ public:
 		double start = rtime(1);
 		backtrackUntil(p);
 		
-		//assert(d < detectors.size());
-		//detectors[d]->buildReason(p, reason, marker);
+		if (marker == comparisonprop_marker) {
+			reason.push(p);
+			Var v = var(p);
+			int bvID = getbvID(v);
+			if(isComparisonVar(v)){
+				int comparisonID = getComparisonID(v);
+				if(comparisons[comparisonID].is_lt){
+					if(!sign(p)){
+						buildValueLTReason(bvID,comparisonID,reason);
+					}else{
+						buildValueGEQReason(bvID,comparisonID,reason);
+					}
+				}else{
+					if(!sign(p)){
+						buildValueGTReason(bvID,comparisonID,reason);
+					}else{
+						buildValueLEQReason(bvID,comparisonID,reason);
+					}
+				}
+			}else{
+
+			}
+
+		} else if (marker == bvprop_marker) {
+			reason.push(p);
+			Var v = var(p);
+
+		}  else {
+			assert(false);
+		}
+
 		toSolver(reason);
 		double finish = rtime(1);
 		stats_reason_time += finish - start;
@@ -480,15 +506,15 @@ public:
 			
 
 			trail.push( { false, !sign(l),-1, v });
-			int valueID = getValueID(v);
-			if(!alteredBV[valueID]){
-				alteredBV[valueID]=true;
-				altered_bvs.push(valueID);
+			int bvID = getbvID(v);
+			if(!alteredBV[bvID]){
+				alteredBV[bvID]=true;
+				altered_bvs.push(bvID);
 			}
 
 		} else {
 
-			int valueID = getValueID(var(l));
+			int bvID = getbvID(var(l));
 			int edgeID = getComparisonID(var(l)); //v-min_edge_var;
 
 
@@ -498,28 +524,28 @@ public:
 	}
 	;
 
-	void updateApproximations(int valueID){
-		vec<Lit> & bv = bitvectors[valueID];
-		under_approx[valueID]=0;
-		over_approx[valueID]=0;
+	void updateApproximations(int bvID){
+		vec<Lit> & bv = bitvectors[bvID];
+		under_approx[bvID]=0;
+		over_approx[bvID]=0;
 		for(int i = 0;i<bv.size();i++){
 			lbool val = value(bv[i]);
 			if(val==l_True){
 				Weight bit = 1<<i;
-				under_approx[valueID]+=bit;
-				over_approx[valueID]+=bit;
+				under_approx[bvID]+=bit;
+				over_approx[bvID]+=bit;
 			}else if (val==l_False){
 
 			}else{
 				Weight bit = 1<<i;
-				over_approx[valueID]+=bit;
+				over_approx[bvID]+=bit;
 			}
 		}
 	}
 
-	bool checkApproxUpToDate(int valueID){
+	bool checkApproxUpToDate(int bvID){
 #ifndef NDEBUG
-		vec<Lit> & bv = bitvectors[valueID];
+		vec<Lit> & bv = bitvectors[bvID];
 		Weight under =0;
 		Weight over=0;
 		for(int i = 0;i<bv.size();i++){
@@ -527,16 +553,25 @@ public:
 			if(val==l_True){
 				Weight bit = 1<<i;
 				under+=bit;
-				under+=bit;
+				over+=bit;
 			}else if (val==l_False){
 
 			}else{
 				Weight bit = 1<<i;
-				under+=bit;
+				over+=bit;
 			}
 		}
-		assert(under==under_approx[valueID]);
-		assert(over==over_approx[valueID]);
+		assert(under==under_approx[bvID]);
+		assert(over==over_approx[bvID]);
+#endif
+		return true;
+	}
+
+	bool dbg_synced(){
+#ifndef NDEBUG
+		for(Var v = 0;v<nVars();v++){
+			assert(value(v)==dbg_value(v));
+		}
 #endif
 		return true;
 	}
@@ -544,7 +579,7 @@ public:
 	bool propagateTheory(vec<Lit> & conflict) {
 
 		stats_propagations++;
-
+		assert(dbg_synced());
 		if (!requiresPropagation) {
 			stats_propagations_skipped++;
 
@@ -559,30 +594,33 @@ public:
 
 		
 		while(altered_bvs.size()){
-			int valueID = altered_bvs.last();
-			assert(alteredBV[valueID]);
+			int bvID = altered_bvs.last();
+			assert(alteredBV[bvID]);
 
-			updateApproximations(valueID);
+			updateApproximations(bvID);
 
-			Weight & underApprox = under_approx[valueID];
-			Weight & overApprox = over_approx[valueID];
+			Weight & underApprox = under_approx[bvID];
+			Weight & overApprox = over_approx[bvID];
 
-			vec<int> & compares = comparisonsBV[valueID];
+			vec<int> & compares_lt = comparisons_lt[bvID];
 			//update over approx lits
-			for(int i = 0;i<compares.size();i++){
-				int comparisonID = compares[i];
-				Weight & lt = getComparison(comparisonID).lt;
+			for(int i = 0;i<compares_lt.size();i++){
+				int comparisonID = compares_lt[i];
+				Weight & lt = getComparison(comparisonID).w;
 				Lit l =  getComparison(comparisonID).l;
 				if (overApprox<lt){
 					if(value(l)==l_True){
 						//do nothing
 					}else if (value(l)==l_False){
 						assert(value(l)==l_False);
+						assert(dbg_value(l)==l_False);
 						conflict.push(l);
-						buildValueGEQReason(valueID,comparisonID,conflict);
+						buildValueLTReason(bvID,comparisonID,conflict);
+						toSolver(conflict);
+						return false;
 					}else {
 						assert(value(l)==l_Undef);
-						enqueue(l, overprop_marker);
+						enqueue(l, comparisonprop_marker);
 					}
 
 				}else{
@@ -591,27 +629,78 @@ public:
 			}
 
 			//update under approx lits
-			for(int i = compares.size()-1;i>=0;i--){
-				int comparisonID = compares[i];
-				Weight & lt = getComparison(comparisonID).lt;
+			for(int i = compares_lt.size()-1;i>=0;i--){
+				int comparisonID = compares_lt[i];
+				Weight & lt = getComparison(comparisonID).w;
 				Lit l =  getComparison(comparisonID).l;
 				if (underApprox>=lt){
 					if(value(l)==l_True){
-						assert(value(l)==l_False);
+
 						conflict.push(~l);
-						buildValueLTReason(valueID,comparisonID,conflict);
+						buildValueGEQReason(bvID,comparisonID,conflict);
+						toSolver(conflict);
+						return false;
 					}else if (value(l)==l_False){
 						//do nothing
 					}else {
 						assert(value(l)==l_Undef);
-						enqueue(~l, underprop_marker);
+						enqueue(~l, comparisonprop_marker);
 					}
 
 				}else{
 					break;
 				}
 			}
-			alteredBV[valueID]=false;
+
+			vec<int> & compares_gt = comparisons_gt[bvID];
+			//update over approx lits
+			for(int i = 0;i<compares_gt.size();i++){
+				int comparisonID = compares_gt[i];
+				Weight & gt = getComparison(comparisonID).w;
+				Lit l =  getComparison(comparisonID).l;
+				if (overApprox<=gt){
+					if(value(l)==l_True){
+						conflict.push(~l);
+						buildValueLEQReason(bvID,comparisonID,conflict);
+						toSolver(conflict);
+						return false;
+					}else if (value(l)==l_False){
+
+
+
+					}else {
+						assert(value(l)==l_Undef);
+						enqueue(~l, comparisonprop_marker);
+					}
+
+				}else{
+					break;
+				}
+			}
+
+			//update under approx lits
+			for(int i = compares_gt.size()-1;i>=0;i--){
+				int comparisonID = compares_gt[i];
+				Weight & gt = getComparison(comparisonID).w;
+				Lit l =  getComparison(comparisonID).l;
+				if (underApprox>gt){
+					if(value(l)==l_True){
+
+					}else if (value(l)==l_False){
+						conflict.push(l);
+						buildValueGTReason(bvID,comparisonID,conflict);
+						toSolver(conflict);
+						return false;
+					}else {
+						assert(value(l)==l_Undef);
+						enqueue(l, comparisonprop_marker);
+					}
+
+				}else{
+					break;
+				}
+			}
+			alteredBV[bvID]=false;
 			altered_bvs.pop();
 		}
 		
@@ -626,15 +715,15 @@ public:
 		return true;
 	};
 
-	void buildValueLTReason(int valueID, int comparisonID, vec<Lit> & conflict){
+	void buildValueLTReason(int bvID, int comparisonID, vec<Lit> & conflict){
 
-		Weight & lt = getComparison(comparisonID).lt;
+		Weight & lt = getComparison(comparisonID).w;
 		Lit l =  getComparison(comparisonID).l;
 
-		vec<Lit> & bv = bitvectors[valueID];
-		Weight  over = over_approx[valueID];
-		assert(checkApproxUpToDate(valueID));
-
+		vec<Lit> & bv = bitvectors[bvID];
+		Weight  over = over_approx[bvID];
+		assert(checkApproxUpToDate(bvID));
+		assert(over<lt);
 		//the reason that the value is less than the weight 'lt' is that the _overapprox_ of the weight is less than lt.
 		for(int i =0;i<bv.size();i++){
 			Lit bl = bv[i];
@@ -651,14 +740,14 @@ public:
 
 	}
 
-	void buildValueGEQReason(int valueID, int comparisonID, vec<Lit> & conflict){
-		Weight & lt = getComparison(comparisonID).lt;
+	void buildValueGEQReason(int bvID, int comparisonID, vec<Lit> & conflict){
+		Weight & lt = getComparison(comparisonID).w;
 		Lit l =  getComparison(comparisonID).l;
 
-		vec<Lit> & bv = bitvectors[valueID];
-		Weight  under = under_approx[valueID];
-		assert(checkApproxUpToDate(valueID));
-
+		vec<Lit> & bv = bitvectors[bvID];
+		Weight  under = under_approx[bvID];
+		assert(checkApproxUpToDate(bvID));
+		assert(under>=lt);
 		//the reason that the value is less than the weight 'lt' is that the _overapprox_ of the weight is less than lt.
 
 		for(int i =0;i<bv.size();i++){
@@ -675,6 +764,55 @@ public:
 		}
 	}
 
+	void buildValueLEQReason(int bvID, int comparisonID, vec<Lit> & conflict){
+
+			Weight & lt = getComparison(comparisonID).w;
+			Lit l =  getComparison(comparisonID).l;
+
+			vec<Lit> & bv = bitvectors[bvID];
+			Weight  over = over_approx[bvID];
+			assert(checkApproxUpToDate(bvID));
+			assert(over<=lt);
+			//the reason that the value is less than the weight 'lt' is that the _overapprox_ of the weight is less than lt.
+			for(int i =0;i<bv.size();i++){
+				Lit bl = bv[i];
+				if(value(bl)==l_False && level(var(bl))>0){
+					Weight bit = 1<<i;
+					if(over+bit<=lt){
+						//then we can skip this bit, because we would still have had a conflict even if it was assigned true.
+						over+=bit;
+					}else{
+						conflict.push(bl);
+					}
+				}
+			}
+
+		}
+
+		void buildValueGTReason(int bvID, int comparisonID, vec<Lit> & conflict){
+			Weight & lt = getComparison(comparisonID).w;
+			Lit l =  getComparison(comparisonID).l;
+
+			vec<Lit> & bv = bitvectors[bvID];
+			Weight  under = under_approx[bvID];
+			assert(checkApproxUpToDate(bvID));
+			assert(under>lt);
+			//the reason that the value is less than the weight 'lt' is that the _overapprox_ of the weight is less than lt.
+
+			for(int i =0;i<bv.size();i++){
+				Lit bl = bv[i];
+				if(value(bl)==l_True && level(var(bl))>0){
+					Weight bit = 1<<i;
+					if(under-bit>lt){
+						//then we can skip this bit, because we would still have had a conflict even if it was assigned false.
+						under-=bit;
+					}else{
+						conflict.push(~bl);
+					}
+				}
+			}
+		}
+
 	bool solveTheory(vec<Lit> & conflict) {
 		requiresPropagation = true;		//Just to be on the safe side... but this shouldn't really be required.
 		bool ret = propagateTheory(conflict);
@@ -684,7 +822,42 @@ public:
 	}
 
 	bool check_solved() {
+		for(int bvID = 0;bvID<bitvectors.size();bvID++){
+			vec<Lit> & bv = bitvectors[bvID];
+			Weight over=0;
+			Weight under=0;
+			for(int i = 0;i<bv.size();i++){
+				lbool val = value(bv[i]);
+				if(val==l_True){
+					Weight bit = 1<<i;
+					under+=bit;
+					over+=bit;
+				}else if (val==l_False){
 
+				}else{
+					Weight bit = 1<<i;
+					over+=bit;
+				}
+			}
+			for(int cID:comparisons_lt[bvID]){
+				Comparison & c = comparisons[cID];
+				if(value(c.l)==l_True && under>= c.w){
+					return false;
+				}else if (value(c.l)==l_False && over<c.w){
+					return false;
+				}
+			}
+
+			for(int cID:comparisons_gt[bvID]){
+				Comparison & c = comparisons[cID];
+				if(value(c.l)==l_True && over<= c.w){
+					return false;
+				}else if (value(c.l)==l_False && under>c.w){
+					return false;
+				}
+			}
+
+		}
 		return true;
 	}
 	
@@ -701,32 +874,72 @@ public:
 		marker_map[mnum] = detectorID;
 		return reasonMarker;
 	}
-	void newValue(int valueID, int bitwidth){
-		bitvectors.growTo(valueID+1);
-		under_approx.growTo(valueID+1,-1);
-		over_approx.growTo(valueID+1,-1);
-		comparisonsBV.growTo(valueID+1);
-
-		if(under_approx[valueID]>-1){
+	void newBitvector(int bvID, vec<Var> & vars){
+		bitvectors.growTo(bvID+1);
+		under_approx.growTo(bvID+1,-1);
+		over_approx.growTo(bvID+1,-1);
+		comparisons_lt.growTo(bvID+1);
+		comparisons_gt.growTo(bvID+1);
+		alteredBV.growTo(bvID+1);
+		if(under_approx[bvID]>-1){
 			assert(false);
 			fprintf(stderr,"Redefined bitvector, Aborting!");
 			exit(1);
 		}
-		under_approx[valueID]=0;
-		over_approx[valueID]=0;
+		under_approx[bvID]=0;
+		over_approx[bvID]=0;
 
-		for(int i = 0;i<bitwidth;i++){
-			bitvectors[i].push(mkLit(newVar(var_Undef,valueID)));
+		for(int i = 0;i<vars.size();i++){
+			bitvectors[bvID].push(mkLit(newVar(vars[i],bvID)));
 		}
 
+		alteredBV[bvID]=true;
+		altered_bvs.push(bvID);
+	}
+	void newBitvector(int bvID, int bitwidth){
+		bitvectors.growTo(bvID+1);
+		under_approx.growTo(bvID+1,-1);
+		over_approx.growTo(bvID+1,-1);
+		comparisons_lt.growTo(bvID+1);
+		comparisons_gt.growTo(bvID+1);
+		alteredBV.growTo(bvID+1);
+		if(under_approx[bvID]>-1){
+			assert(false);
+			fprintf(stderr,"Redefined bitvector, Aborting!");
+			exit(1);
+		}
+		under_approx[bvID]=0;
+		over_approx[bvID]=0;
 
+		for(int i = 0;i<bitwidth;i++){
+			bitvectors[bvID].push(mkLit(newVar(var_Undef,bvID)));
+		}
+
+		alteredBV[bvID]=true;
+		altered_bvs.push(bvID);
 	}
 
-	Lit getComparisonLit(int valueID, Weight & lt){
+
+	bool hasBV(int bvID){
+		return bvID>=0 && bvID<under_approx.size() && under_approx[bvID]>-1;
+	}
+
+	Lit getComparisonLT(int bvID, Weight & lt){
 		//could do a binary search here:
-		for(int i=0;i<comparisonsBV[valueID].size()-1;i++){
-			int cID = comparisonsBV[valueID][i];
-			if (comparisons[cID].lt == lt){
+		for(int i=0;i<comparisons_lt[bvID].size()-1;i++){
+			int cID = comparisons_lt[bvID][i];
+			if (comparisons[cID].w == lt){
+				return comparisons[cID].l;
+			}
+		}
+
+		return lit_Undef;
+	}
+	Lit getComparisonGT(int bvID, Weight & gt){
+		//could do a binary search here:
+		for(int i=0;i<comparisons_gt[bvID].size()-1;i++){
+			int cID = comparisons_gt[bvID][i];
+			if (comparisons[cID].w == gt){
 				return comparisons[cID].l;
 			}
 		}
@@ -734,34 +947,76 @@ public:
 		return lit_Undef;
 	}
 
-	Lit newComparison(int valueID, Weight & lt, Var outerVar = var_Undef) {
+	Lit newComparisonLT(int bvID, Weight & lt, Var outerVar = var_Undef) {
 		Lit l;
-		if((l = getComparisonLit(valueID, lt))!=lit_Undef){
+		if(!hasBV(bvID)){
+			exit(1);
+		}
+		int comparisonID = comparisons.size();
+		if((l = getComparisonLT(bvID, lt))!=lit_Undef){
 			if(outerVar != var_Undef){
 				makeEqualInSolver(mkLit(outerVar),toSolver(l));
 			}
 			return l;
+		}else{
+			l = mkLit(newVar(outerVar, bvID,comparisonID));
 		}
 
-		int comparisonID = comparisons.size();
-		comparisons.push({lt,l,valueID});
-		comparisonsBV[valueID].push(comparisonID);
+
+		comparisons.push({lt,l,bvID,true});
+		comparisons_lt[bvID].push(comparisonID);
 		//insert this value in order.
 		//could do a binary search here...
-		for(int i=0;i<comparisonsBV[valueID].size()-1;i++){
-			int cid = comparisonsBV[valueID][i];
-			if(comparisons[cid].lt>= lt){
-				for(int j = comparisonsBV[valueID].size()-1; j>i ;j--){
-					comparisonsBV[j]=comparisonsBV[j-1];
+		for(int i=0;i<comparisons_lt[bvID].size()-1;i++){
+			int cid = comparisons_lt[bvID][i];
+			if(comparisons[cid].w>= lt){
+				for(int j = comparisons_lt[bvID].size()-1; j>i ;j--){
+					comparisons_lt[bvID][j]=comparisons_lt[bvID][j-1];
 				}
-				comparisonsBV[i]=comparisonID;
+				comparisons_lt[bvID][i]=comparisonID;
 				break;
 			}
 		}
-
+		if(!alteredBV[bvID]){
+			alteredBV[bvID]=true;
+			altered_bvs.push(bvID);
+		}
 		return l;
 	}
+	Lit newComparisonGT(int bvID, Weight & gt, Var outerVar = var_Undef) {
+			Lit l;
+			int comparisonID = comparisons.size();
+			if((l = getComparisonGT(bvID, gt))!=lit_Undef){
+				if(outerVar != var_Undef){
+					makeEqualInSolver(mkLit(outerVar),toSolver(l));
+				}
+				return l;
+			}else{
+				l = mkLit(newVar(outerVar, bvID,comparisonID));
+			}
 
+
+
+			comparisons.push({gt,l,bvID,false});
+			comparisons_gt[bvID].push(comparisonID);
+			//insert this value in order.
+			//could do a binary search here...
+			for(int i=0;i<comparisons_gt[bvID].size()-1;i++){
+				int cid = comparisons_gt[bvID][i];
+				if(comparisons[cid].w>= gt){
+					for(int j = comparisons_gt[bvID].size()-1; j>i ;j--){
+						comparisons_gt[bvID][j]=comparisons_gt[bvID][j-1];
+					}
+					comparisons_gt[bvID][i]=comparisonID;
+					break;
+				}
+			}
+			if(!alteredBV[bvID]){
+				alteredBV[bvID]=true;
+				altered_bvs.push(bvID);
+			}
+			return l;
+		}
 	void printSolution() {
 
 	}

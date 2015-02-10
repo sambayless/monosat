@@ -53,7 +53,7 @@
 #include "graph/GraphTheory.h"
 #include "geometry/GeometryTheory.h"
 #include "geometry/GeometryParser.h"
-
+#include "comparison/ComparisonParser.h"
 
 
 using namespace Monosat;
@@ -376,9 +376,10 @@ int main(int argc, char** argv) {
 		parser.addParser(&symbolParser);
 
 		GraphParser<char *, SimpSolver> graphParser(precise);
-
-
 		parser.addParser(&graphParser);
+
+		ComparisonParser<char *, SimpSolver> comparisonParser;
+		parser.addParser(&comparisonParser);
 
 		FSMParser<char*,SimpSolver> fsmParser;
 		parser.addParser(&fsmParser);

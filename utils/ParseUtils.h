@@ -117,6 +117,21 @@ static int parseInt(B& in) {
 		val = val * 10 + (*in - '0'), ++in;
 	return neg ? -val : val;
 }
+template<class B>
+static int parseLong(B& in) {
+	long val = 0;
+	bool neg = false;
+	skipWhitespace(in);
+	if (*in == '-')
+		neg = true, ++in;
+	else if (*in == '+')
+		++in;
+	if (*in < '0' || *in > '9')
+		fprintf(stderr, "PARSE ERROR! Unexpected char: %c\n", *in), exit(3);
+	while (*in >= '0' && *in <= '9')
+		val = val * 10 + (*in - '0'), ++in;
+	return neg ? -val : val;
+}
 
 template<class B>
 static double parseDouble(B& in, vec<char> & tmp) {
