@@ -666,8 +666,6 @@ public:
 						return false;
 					}else if (value(l)==l_False){
 
-
-
 					}else {
 						assert(value(l)==l_Undef);
 						enqueue(~l, comparisonprop_marker);
