@@ -32,11 +32,11 @@
 #include <algorithm>
 
 namespace dgl {
-template<class Capacity, typename Weight>
+template<typename Weight>
 class KohliTorr: public MaxFlow<Weight> {
 	Weight f = 0;
 	DynamicGraph<Weight>& g;
-	Capacity & capacity;
+
 	/**
 	 * Note: The Kohli Torr implementation does _not_ support multiple edges between the same nodes.
 	 */
@@ -75,7 +75,7 @@ class KohliTorr: public MaxFlow<Weight> {
 	static const auto KT_SOURCE = kohli_torr::Graph<Weight, Weight, Weight>::SOURCE;
 	static const auto KT_SINK = kohli_torr::Graph<Weight, Weight, Weight>::SINK;
 #ifdef DEBUG_MAXFLOW
-	EdmondsKarpDynamic<Capacity,Weight> ek;
+	EdmondsKarpDynamic<Weight> ek;
 #endif
 	
 	Weight max_capacity = 1; //start this at 1, not 0
@@ -88,10 +88,10 @@ public:
 	double stats_calc_time = 0;
 	double stats_flow_time = 0;
 	long stats_flow_calcs = 0;
-	KohliTorr(DynamicGraph<Weight>& _g, Capacity & cap, int source, int sink, bool kt_preserve_order = false) :
-			g(_g), capacity(cap), source(source), sink(sink), kt_preserve_order(kt_preserve_order), INF(0xF0F0F0)
+	KohliTorr(DynamicGraph<Weight>& _g, int source, int sink, bool kt_preserve_order = false) :
+			g(_g), source(source), sink(sink), kt_preserve_order(kt_preserve_order), INF(0xF0F0F0)
 #ifdef DEBUG_MAXFLOW
-	,ek(_g,cap,source,sink)
+	,ek(_g,source,sink)
 #endif
 	{
 		curflow = 0;
@@ -197,7 +197,7 @@ public:
 			if(!g.hasEdge(i))
 			continue;
 			int id = g.all_edges[i].id;
-			Weight cap = capacity[id];
+			Weight cap = g.getWeight(id);
 			int from = g.all_edges[i].from;
 			int to = g.all_edges[i].to;
 
@@ -247,7 +247,7 @@ public:
 				if (!g.hasEdge(edgeID) || g.selfLoop(edgeID))
 					continue;
 				
-				max_capacity += capacity[edgeID];
+				max_capacity += g.getWeight(edgeID);
 				int from = g.getEdge(edgeID).from;
 				int to = g.getEdge(edgeID).to;
 				edge_enabled[edgeID] = false;
@@ -276,9 +276,9 @@ public:
 				if (g.edgeEnabled(edgeID)) {
 					edge_enabled[edgeID] = true;
 					//if(!backward_maxflow){
-					kt->edit_edge_inc(from, to, capacity[edgeID], 0);
+					kt->edit_edge_inc(from, to, g.getWeight(edgeID), 0);
 					/*}else{
-					 kt->edit_edge_inc(to,from,capacity[edgeID],0);
+					 kt->edit_edge_inc(to,from,g.getWeight(edgeID),0);
 					 }*/
 				}
 			}
@@ -308,17 +308,17 @@ public:
 					
 					edge_enabled[edgeid] = true;
 					//if(!backward_maxflow){
-					kt->edit_edge_inc(g.getEdge(edgeid).from, g.getEdge(edgeid).to, capacity[edgeid], 0);
+					kt->edit_edge_inc(g.getEdge(edgeid).from, g.getEdge(edgeid).to, g.getWeight(edgeid), 0);
 					/*}else{
-					 kt->edit_edge_inc(g.getEdge(edgeid).to,g.getEdge(edgeid).from,capacity[edgeid],0);
+					 kt->edit_edge_inc(g.getEdge(edgeid).to,g.getEdge(edgeid).from,g.getWeight(edgeID),0);
 					 }*/
 				} else if (!g.edgeEnabled(edgeid) && edge_enabled[edgeid]) {
 					assert(edge_enabled[edgeid]);
 					edge_enabled[edgeid] = false;
 					//if(!backward_maxflow){
-					kt->edit_edge_inc(g.getEdge(edgeid).from, g.getEdge(edgeid).to, -capacity[edgeid], 0);
+					kt->edit_edge_inc(g.getEdge(edgeid).from, g.getEdge(edgeid).to, -g.getWeight(edgeid), 0);
 					/*	}else{
-					 kt->edit_edge_inc(g.getEdge(edgeid).to,g.getEdge(edgeid).from,-capacity[edgeid],0);
+					 kt->edit_edge_inc(g.getEdge(edgeid).to,g.getEdge(edgeid).from,-g.getWeight(edgeID),0);
 					 }*/
 				}
 			}
@@ -335,17 +335,17 @@ public:
 				
 				edge_enabled[edgeid] = true;
 				//if(!backward_maxflow){
-				kt->edit_edge_inc(g.getEdge(edgeid).from, g.getEdge(edgeid).to, capacity[edgeid], 0);
+				kt->edit_edge_inc(g.getEdge(edgeid).from, g.getEdge(edgeid).to, g.getWeight(edgeid), 0);
 				/*}else{
-				 kt->edit_edge_inc(g.getEdge(edgeid).to,g.getEdge(edgeid).from,capacity[edgeid],0);
+				 kt->edit_edge_inc(g.getEdge(edgeid).to,g.getEdge(edgeid).from,g.getWeight(edgeID),0);
 				 }*/
 			} else if (!g.history[i].addition && !g.edgeEnabled(edgeid) && edge_enabled[edgeid]) {
 				assert(edge_enabled[edgeid]);
 				edge_enabled[edgeid] = false;
 				//if(!backward_maxflow){
-				kt->edit_edge_inc(g.getEdge(edgeid).from, g.getEdge(edgeid).to, -capacity[edgeid], 0);
+				kt->edit_edge_inc(g.getEdge(edgeid).from, g.getEdge(edgeid).to, -g.getWeight(edgeid), 0);
 				/*}else{
-				 kt->edit_edge_inc(g.getEdge(edgeid).to,g.getEdge(edgeid).from,-capacity[edgeid],0);
+				 kt->edit_edge_inc(g.getEdge(edgeid).to,g.getEdge(edgeid).from,-g.getWeight(edgeID),0);
 				 }*/
 			}
 		}
@@ -700,7 +700,7 @@ public:
 		Weight dbg_sum = 0;
 		for (int i = 0; i < cut.size(); i++) {
 			int id = cut[i].id;
-			bassert(getEdgeFlow(id) == capacity[id]);
+			bassert(getEdgeFlow(id) == g.getWeight(id));
 			dbg_sum += getEdgeFlow(id);
 		}
 		bassert(dbg_sum == f);
@@ -710,7 +710,7 @@ public:
 	}
 	const Weight getEdgeCapacity(int id) {
 		assert(g.edgeEnabled(id));
-		return capacity[id];
+		return g.getWeight(id);
 	}
 	
 public:
@@ -741,7 +741,7 @@ public:
 			
 			if (g.edgeEnabled(edgeid)) {
 				assert(arc_map[edgeid] == arc_id);
-				Weight edge_cap = capacity[edgeid];
+				Weight edge_cap = g.getWeight(edgeid);
 				if (edgeid == flow_edge) {
 					if (remaining_flow >= edge_cap)
 						return edge_cap;

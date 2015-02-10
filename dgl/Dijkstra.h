@@ -127,8 +127,8 @@ public:
 			for (int i = history_qhead; i < g.history.size(); i++) {
 				assert(!g.history[i].addition);
 				int edgeid = g.history[i].id;
-				int u = g.all_edges[edgeid].from;
-				int v = g.all_edges[edgeid].to;
+				int u = g.getEdge(edgeid).from;
+				int v = g.getEdge(edgeid).to;
 				if (incomingEdge(u) == edgeid || incomingEdge(v) == edgeid) {
 					history_qhead = i - 1;
 					need_recompute = true;
@@ -162,8 +162,9 @@ public:
 		if (dist.size() != g.nodes()) {
 			
 			INF = 1;
-			for (auto & e : g.all_edges) {
-				INF += g.getWeight(e.id);
+			for (int edgeID = 0;edgeID<g.edges();edgeID++) {
+				if(g.hasEdge(edgeID))
+					INF += g.getWeight(edgeID);
 			}
 			dist.resize(g.nodes());
 			prev.resize(g.nodes());
@@ -537,8 +538,8 @@ public:
 			for (int i = history_qhead; i < g.history.size(); i++) {
 				assert(!g.history[i].addition);
 				int edgeid = g.history[i].id;
-				int u = g.all_edges[edgeid].from;
-				int v = g.all_edges[edgeid].to;
+				int u = g.getEdge(edgeid).from;
+				int v = g.getEdge(edgeid).to;
 				if (incomingEdge(u) == edgeid || incomingEdge(v) == edgeid) {
 					history_qhead = i - 1;
 					need_recompute = true;

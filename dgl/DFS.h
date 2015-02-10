@@ -291,8 +291,8 @@ public:
 		
 		for (int i = history_qhead; i < g.history.size(); i++) {
 			int edgeid = g.history[i].id;
-			int from = g.all_edges[edgeid].from;
-			int to = g.all_edges[edgeid].to;
+			int from = g.getEdge(edgeid).from;
+			int to = g.getEdge(edgeid).to;
 			if (g.history[i].addition) {
 				//incrementally add edge
 				if (seen[from] && !seen[to]) {
@@ -352,8 +352,8 @@ public:
 		
 		for (int i = history_qhead; i < g.history.size(); i++) {
 			int edgeid = g.history[i].id;
-			int from = g.all_edges[edgeid].from;
-			int to = g.all_edges[edgeid].to;
+			int from = g.getEdge(edgeid).from;
+			int to = g.getEdge(edgeid).to;
 			
 			if (g.history[i].addition && g.edgeEnabled(g.history[i].id)) {
 				//incrementally add edge
@@ -443,8 +443,8 @@ public:
 					bool safe = true;
 					for (int i = history_qhead; i < g.history.size(); i++) {
 						int edgeid = g.history[i].id;
-						int from = g.all_edges[edgeid].from;
-						int to = g.all_edges[edgeid].to;
+						int from = g.getEdge(edgeid).from;
+						int to = g.getEdge(edgeid).to;
 						if (g.history[i].addition) {
 							//safe
 						} else if (!seen[from] || (seen[to] && seen[previous(to)] && previous(to) != from)) {
@@ -454,8 +454,8 @@ public:
 							break;
 						}
 						if (undirected) {
-							int from = g.all_edges[edgeid].to;
-							int to = g.all_edges[edgeid].from;
+							int from = g.getEdge(edgeid).to;
+							int to = g.getEdge(edgeid).from;
 							if (g.history[i].addition) {
 								//safe
 							} else if (!seen[from] || (seen[to] && seen[previous(to)] && previous(to) != from)) {
@@ -642,11 +642,11 @@ public:
 	int previous(int t) {
 		if (prev[t] < 0)
 			return -1;
-		if (undirected && g.all_edges[incomingEdge(t)].from == t) {
-			return g.all_edges[incomingEdge(t)].to;
+		if (undirected && g.getEdge(incomingEdge(t)).from == t) {
+			return g.getEdge(incomingEdge(t)).to;
 		}
-		assert(g.all_edges[incomingEdge(t)].to == t);
-		return g.all_edges[incomingEdge(t)].from;
+		assert(g.getEdge(incomingEdge(t)).to == t);
+		return g.getEdge(incomingEdge(t)).from;
 	}
 	
 };

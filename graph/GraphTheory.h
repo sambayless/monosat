@@ -1303,7 +1303,7 @@ public:
 			within_steps = g_under.nodes();
 		
 		if (dist_info[from].source < 0) {
-			DistanceDetector<Weight> * d = new DistanceDetector<Weight>(detectors.size(), this, edge_weights, g_under, g_over,
+			DistanceDetector<Weight> * d = new DistanceDetector<Weight>(detectors.size(), this,  g_under, g_over,
 					from, drand(rnd_seed));
 			detectors.push(d);
 			distance_detectors.push(d);
@@ -1323,7 +1323,7 @@ public:
 		assert(from < g_under.nodes());
 		
 		if (dist_info[from].source < 0) {
-			DistanceDetector<Weight> * d = new DistanceDetector<Weight>(detectors.size(), this, edge_weights, g_under, g_over,
+			DistanceDetector<Weight> * d = new DistanceDetector<Weight>(detectors.size(), this,  g_under, g_over,
 					from, drand(rnd_seed));
 			detectors.push(d);
 			distance_detectors.push(d);
@@ -1480,14 +1480,14 @@ public:
 	//v will be true if the minimum weight is <= the specified value
 	void minimumSpanningTree(Var v, Weight minimum_weight, bool inclusive) {
 		if (!mstDetector) {
-			mstDetector = new MSTDetector<Weight>(detectors.size(), this, g_under, g_over, edge_weights, drand(rnd_seed));
+			mstDetector = new MSTDetector<Weight>(detectors.size(), this, g_under, g_over,  drand(rnd_seed));
 			detectors.push(mstDetector);
 		}
 		mstDetector->addWeightLit(v, minimum_weight,inclusive);
 	}
 	void edgeInMinimumSpanningTree(Var edgeVar, Var var) {
 		if (!mstDetector) {
-			mstDetector = new MSTDetector<Weight>(detectors.size(), this, g_under, g_over, edge_weights, drand(rnd_seed));
+			mstDetector = new MSTDetector<Weight>(detectors.size(), this, g_under, g_over,  drand(rnd_seed));
 			detectors.push(mstDetector);
 		}
 		if (!S->hasTheory(edgeVar) || (S->getTheoryID(edgeVar) != getTheoryIndex())

@@ -30,8 +30,7 @@ using namespace Monosat;
 template<typename Weight>
 ReachDetector<Weight>::ReachDetector(int _detectorID, GraphTheorySolver<Weight> * _outer, DynamicGraph<Weight>  &_g,
 		DynamicGraph<Weight>  &_antig, int from, double seed) :
-		Detector(_detectorID), outer(_outer), g_under(_g), g_over(_antig), within(-1), source(from), rnd_seed(seed), cutStatus(
-				*this) { //,chokepoint_status(*this),chokepoint(chokepoint_status, _antig,source){
+		Detector(_detectorID), outer(_outer), g_under(_g), g_over(_antig), within(-1), source(from), rnd_seed(seed) { //,chokepoint_status(*this),chokepoint(chokepoint_status, _antig,source){
 
 	rnd_path = nullptr;
 	//opt_path=nullptr;
@@ -54,8 +53,8 @@ ReachDetector<Weight>::ReachDetector(int _detectorID, GraphTheorySolver<Weight> 
 		//positive_reach_detector = new ReachDetector::CNFReachability(*this,false);
 		//negative_reach_detector = new ReachDetector::CNFReachability(*this,true);
 		
-		underapprox_path_detector = new UnweightedBFS<Reach::NullStatus>(from, _g, Reach::nullStatus, 1);
-		overapprox_path_detector = new UnweightedBFS<Reach::NullStatus>(from, _antig, Reach::nullStatus, -1);
+		underapprox_path_detector = new UnweightedBFS<Weight,Reach::NullStatus>(from, _g, Reach::nullStatus, 1);
+		overapprox_path_detector = new UnweightedBFS<Weight,Reach::NullStatus>(from, _antig, Reach::nullStatus, -1);
 		underapprox_fast_detector = underapprox_path_detector;
 		return;
 	}
@@ -180,24 +179,24 @@ ReachDetector<Weight>::ReachDetector(int _detectorID, GraphTheorySolver<Weight> 
 	
 	if (opt_reach_detector_combined_maxflow) {
 		if (mincutalg == MinCutAlg::ALG_EDKARP_DYN) {
-			conflict_flow = new EdmondsKarpDynamic<CutStatus, long>(outer->cutGraph, cutStatus, source, 0);
+			conflict_flow = new EdmondsKarpDynamic<long>(outer->cutGraph,  source, 0);
 		} else if (mincutalg == MinCutAlg::ALG_EDKARP_ADJ) {
-			conflict_flow = new EdmondsKarpAdj<CutStatus, long>(outer->cutGraph, cutStatus, source, 0);
+			conflict_flow = new EdmondsKarpAdj<long>(outer->cutGraph,  source, 0);
 		} else if (mincutalg == MinCutAlg::ALG_DINITZ) {
-			conflict_flow = new Dinitz<CutStatus, long>(outer->cutGraph, cutStatus, source, 0);
+			conflict_flow = new Dinitz<long>(outer->cutGraph,  source, 0);
 		} else if (mincutalg == MinCutAlg::ALG_DINITZ_LINKCUT) {
 			//link-cut tree currently only supports ints (enforcing this using tempalte specialization...).
 			
-			conflict_flow = new Dinitz<CutStatus, long>(outer->cutGraph, cutStatus, source, 0);
+			conflict_flow = new Dinitz<long>(outer->cutGraph,  source, 0);
 			
 		} else if (mincutalg == MinCutAlg::ALG_KOHLI_TORR) {
 			if (opt_use_kt_for_conflicts) {
-				conflict_flow = new KohliTorr<CutStatus, long>(outer->cutGraph, cutStatus, source, 0,
+				conflict_flow = new KohliTorr<long>(outer->cutGraph,  source, 0,
 						opt_kt_preserve_order);
 			} else
-				conflict_flow = new EdmondsKarpDynamic<CutStatus, long>(outer->cutGraph, cutStatus, source, 0);
+				conflict_flow = new EdmondsKarpDynamic<long>(outer->cutGraph,  source, 0);
 		} else {
-			conflict_flow = new EdmondsKarpAdj<CutStatus, long>(outer->cutGraph, cutStatus, source, 0);
+			conflict_flow = new EdmondsKarpAdj<long>(outer->cutGraph,  source, 0);
 		}
 	}
 	if (underapprox_detector)
@@ -460,31 +459,31 @@ void ReachDetector<Weight>::addLit(int from, int to, Var outer_reach_var) {
 				if (reach_lits[i] != lit_Undef && !conflict_flows[i]) {
 					MaxFlow<long> * conflict_flow_t = nullptr;
 					if (mincutalg == MinCutAlg::ALG_EDKARP_DYN) {
-						conflict_flow_t = new EdmondsKarpDynamic<CutStatus, long>(outer->cutGraph, cutStatus, source,
+						conflict_flow_t = new EdmondsKarpDynamic< long>(outer->cutGraph,  source,
 								i);
 					} else if (mincutalg == MinCutAlg::ALG_EDKARP_ADJ) {
 						
-						conflict_flow_t = new EdmondsKarpAdj<CutStatus, long>(outer->cutGraph, cutStatus, source, i);
+						conflict_flow_t = new EdmondsKarpAdj< long>(outer->cutGraph,  source, i);
 						
 					} else if (mincutalg == MinCutAlg::ALG_DINITZ) {
 						
-						conflict_flow_t = new Dinitz<CutStatus, long>(outer->cutGraph, cutStatus, source, i);
+						conflict_flow_t = new Dinitz< long>(outer->cutGraph,  source, i);
 						
 					} else if (mincutalg == MinCutAlg::ALG_DINITZ_LINKCUT) {
 						//link-cut tree currently only supports ints (enforcing this using tempalte specialization...).
 						
-						conflict_flow_t = new Dinitz<CutStatus, long>(outer->cutGraph, cutStatus, source, i);
+						conflict_flow_t = new Dinitz< long>(outer->cutGraph,  source, i);
 						
 					} else if (mincutalg == MinCutAlg::ALG_KOHLI_TORR) {
 						if (opt_use_kt_for_conflicts) {
-							conflict_flow_t = new KohliTorr<CutStatus, long>(outer->cutGraph, cutStatus, source, i,
+							conflict_flow_t = new KohliTorr< long>(outer->cutGraph,  source, i,
 									opt_kt_preserve_order);
 						} else
-							conflict_flow_t = new EdmondsKarpDynamic<CutStatus, long>(outer->cutGraph, cutStatus,
+							conflict_flow_t = new EdmondsKarpDynamic< long>(outer->cutGraph,
 									source, i);
 					} else {
 						
-						conflict_flow_t = new EdmondsKarpAdj<CutStatus, long>(outer->cutGraph, cutStatus, source, i);
+						conflict_flow_t = new EdmondsKarpAdj< long>(outer->cutGraph,  source, i);
 						
 					}
 					conflict_flows[i] = conflict_flow_t;
@@ -640,7 +639,7 @@ void ReachDetector<Weight>::buildNonReachReason(int node, vec<Lit> & conflict, b
 			f = conflict_flow->minCut(cut);
 		}
 		assert(f == cut.size());						//because edges are only ever infinity or 1
-		assert(f < cutStatus.inf);
+
 		for (int i = 0; i < cut.size(); i++) {
 			MaxFlowEdge e = cut[i];
 			int cut_id = e.id;
@@ -1243,8 +1242,8 @@ void ReachDetector<Weight>::printSolution(std::ostream & write_to) {
 template<typename Weight>
 bool ReachDetector<Weight>::checkSatisfied() {
 	
-	UnweightedDijkstra<> under(source, g_under);
-	UnweightedDijkstra<> over(source, g_over);
+	UnweightedDijkstra<Weight> under(source, g_under);
+	UnweightedDijkstra<Weight> over(source, g_over);
 	under.update();
 	over.update();
 	

@@ -177,7 +177,7 @@ public:
 		return isEdge(edgeID);
 	}
 	//Instead of actually adding and removing edges, tag each edge with an 'enabled/disabled' label, and just expect reading algorithms to check and respect that label.
-	int addEdge(int from, int to, int id = -1, int weight=1){
+	int addEdge(int from, int to, int id = -1, Weight weight=1){
 		assert(from < num_nodes);
 		assert(to < num_nodes);
 		assert(from >= 0);
@@ -211,6 +211,9 @@ public:
 #ifdef RECORD
 		if (outfile) {
 			fprintf(outfile, "edge %d %d %d %d\n", from, to, 1, id + 1);
+			std::stringstream ss;
+			ss<<weight;
+			fprintf(outfile, "edge_weight %d %s\n", id + 1, ss.str().c_str());
 			fflush(outfile);
 		}
 #endif
@@ -286,10 +289,18 @@ public:
 			return inverted_adjacency_list[node][i];
 		}
 	}
+	std::vector<FullEdge> & getEdges(){
+		return all_edges;
+	}
+
 	std::vector<Weight> & getWeights(){
 		return weights;
 	 }
-	 Weight getWeight(int edgeID){
+/*	 Weight getWeight(int edgeID){
+		 return weights[edgeID];
+	 //return all_edges[edgeID].weight;
+	 }*/
+	 Weight  getWeight(int edgeID){
 		 return weights[edgeID];
 	 //return all_edges[edgeID].weight;
 	 }
@@ -414,7 +425,7 @@ public:
 			if (outfile) {
 				std::stringstream ss;
 				ss<<w;
-				fprintf(outfile, "w %d %s\n", id + 1, ss.str().c_str());
+				fprintf(outfile, "edge_weight %d %s\n", id + 1, ss.str().c_str());
 				fflush(outfile);
 			}
 #endif

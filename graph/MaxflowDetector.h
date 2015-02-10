@@ -71,7 +71,7 @@ public:
 	vec<Lit> to_decide;
 	std::vector<int> q;
 
-	DynamicGraph<Weight> learn_graph;
+	DynamicGraph<long> learn_graph;
 	vec<int> back_edges;
 	int learngraph_history_qhead = 0;
 	int learngraph_history_clears = -1;
@@ -94,26 +94,7 @@ public:
 	vec<int> visit;
 	vec<bool> seen;
 
-	struct CutStatus {
-		long one = 1;
-		long inf = 0x0FF0F0;
-		MaxflowDetector & outer;
 
-		const long &operator [](int id) const {
-			if (id % 2 == 0) {
-				return one;
-			} else {
-				return inf;
-			}
-		}
-		int size() const {
-			return outer.g_under.edges() * 2;
-		}
-		CutStatus(MaxflowDetector & outer) :
-				outer(outer) {
-		}
-		
-	} cutStatus;
 
 	void backtrack(int level) {
 		to_decide.clear();
@@ -132,7 +113,7 @@ public:
 	void printStats() {
 		Detector::printStats();
 		if (mincutalg == MinCutAlg::ALG_KOHLI_TORR) {
-			KohliTorr<std::vector<Weight>, Weight> * kt = (KohliTorr<std::vector<Weight>, Weight> *) overapprox_detector;
+			KohliTorr<Weight> * kt = (KohliTorr<Weight> *) overapprox_detector;
 			printf(
 					"\tDecision flow calculations: %ld, (redecide: %f s) flow_calc %f s, flow_discovery %f s, (%ld) (maxflow %f,flow assignment %f)\n",
 					stats_decision_calculations, stats_redecide_time, stats_flow_calc_time, stats_flow_recalc_time,
@@ -144,7 +125,7 @@ public:
 	void dbg_decisions();
 	void printSolution(std::ostream & write_to);
 	void addFlowLit(Weight max_flow, Var reach_var, bool inclusive);
-	MaxflowDetector(int _detectorID, GraphTheorySolver<Weight> * _outer, std::vector<Weight> & capacities,
+	MaxflowDetector(int _detectorID, GraphTheorySolver<Weight> * _outer,
 			DynamicGraph<Weight>  &_g, DynamicGraph<Weight>  &_antig, int _source, int _target, double seed = 1); //:Detector(_detectorID),outer(_outer),within(-1),source(_source),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL){}
 	~MaxflowDetector() {
 		

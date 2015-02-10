@@ -42,7 +42,7 @@ class SteinerApprox: public SteinerTree<Weight> {
 public:
 	
 	DynamicGraph<Weight> & g;
-	std::vector<Weight> weights;
+
 	TerminalSet & terminals;
 	Status & status;
 
@@ -73,9 +73,9 @@ public:
 	double stats_full_update_time;
 	double stats_fast_update_time;
 
-	SteinerApprox(DynamicGraph<Weight> & graph, std::vector<Weight> weights, TerminalSet & terminals, Status & _status,
+	SteinerApprox(DynamicGraph<Weight> & graph,  TerminalSet & terminals, Status & _status,
 			int _reportPolarity = 0) :
-			g(graph), weights(weights), terminals(terminals), status(_status), last_modification(-1), last_addition(-1), last_deletion(
+			g(graph),terminals(terminals), status(_status), last_modification(-1), last_addition(-1), last_deletion(
 					-1), history_qhead(0), last_history_clear(0), INF(0), reportPolarity(_reportPolarity) {
 		
 		mod_percentage = 0.2;
@@ -136,7 +136,7 @@ public:
 			
 			//This can be made much more efficient...
 			for (int i = 0; i < terminals.nodes(); i++) {
-				reaches.push_back(new Dijkstra<Weight>(i, g, weights));
+				reaches.push_back(new Dijkstra<Weight>(i, g));
 			};
 			for (int i = 0; i < terminals.nodes(); i++) {
 				if (terminals.nodeEnabled(i)) {
@@ -157,7 +157,7 @@ public:
 				}
 			}
 			
-			Kruskal<typename MinimumSpanningTree<Weight>::NullStatus, Weight> mst(induced, weights);
+			Kruskal<typename MinimumSpanningTree<Weight>::NullStatus, Weight> mst(induced);
 			min_weight = 0;
 			
 			for (int & edgeID : mst.getSpanningTree()) {
@@ -179,7 +179,7 @@ public:
 						last = p;
 					} else if (first < 0) {
 						in_tree[p] = true;
-						min_weight += weights[pathEdge];
+						min_weight += g.getWeight(pathEdge);
 						tree_edges.push_back(pathEdge);
 					}
 					p = reaches[u]->previous(p);

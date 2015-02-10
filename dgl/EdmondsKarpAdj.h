@@ -30,7 +30,7 @@
 #include "dgl/EdmondsKarp.h"
 
 namespace dgl {
-template<class Capacity, typename Weight = int>
+template<typename Weight = int>
 class EdmondsKarpAdj: public MaxFlow<Weight> {
 	
 public:
@@ -59,7 +59,7 @@ public:
 	std::vector<Weight> M;
 	std::vector<bool> changed;
 	DynamicGraph<Weight>& g;
-	Capacity & capacity;
+
 	int source = -1;
 	int sink = -1;
 	Weight INF;
@@ -89,7 +89,7 @@ public:
 				///(If there is available capacity, and v is not seen before in search)
 				
 				Weight &f = F[id];
-				Weight c = capacity[id];
+				Weight c = g.getWeight(id);
 				
 				//  int fr = F[id];
 				if (((c - F[id]) > 0) && (prev[v].from == -1)) {
@@ -128,8 +128,8 @@ public:
 		
 	}
 public:
-	EdmondsKarpAdj(DynamicGraph<Weight>& _g, Capacity & cap, int source = -1, int sink = -1) :
-			g(_g), capacity(cap), source(source), sink(sink), INF(0xF0F0F0)
+	EdmondsKarpAdj(DynamicGraph<Weight>& _g, int source = -1, int sink = -1) :
+			g(_g),  source(source), sink(sink), INF(0xF0F0F0)
 	/*
 	 #ifdef DEBUG_MAXFLOW
 	 ,ek(_g,source,sink)
@@ -237,7 +237,7 @@ public:
 		 #ifdef DEBUG_MAXFLOW
 		 for(int i = 0;i<g.all_edges.size();i++){
 		 int id = g.all_edges[i].id;
-		 int cap = capacity[id];
+		 int cap = g.getWeight(id);
 		 int from =  g.all_edges[i].from;
 		 int to =  g.all_edges[i].to;
 
@@ -369,7 +369,7 @@ public:
 					continue;
 				int v = g.incident(u, i).node;
 				int id = g.incident(u, i).id;
-				if ((capacity[id] - F[id] == 0) && (F[id]>0)) {
+				if ((g.getWeight(id) - F[id] == 0) && (F[id]>0)) {
 					cut.push_back(MaxFlowEdge { u, v, id });    	//potential element of the cut
 				} else if (!seen[v]) {
 					Q.push_back(v);
@@ -401,7 +401,7 @@ public:
 		Weight dbg_sum = 0;
 		for (int i = 0; i < cut.size(); i++) {
 			int id = cut[i].id;
-			assert(F[id] == capacity[id]);
+			assert(F[id] == g.getWeight(id));
 			dbg_sum += F[id];
 		}
 		assert(dbg_sum == f);
@@ -410,7 +410,7 @@ public:
 	}
 	const Weight getEdgeCapacity(int id) {
 		assert(g.edgeEnabled(id));
-		return capacity[id];
+		return g.getWeight(id);
 	}
 	const Weight getEdgeFlow(int id) {
 		assert(g.edgeEnabled(id));
@@ -418,7 +418,7 @@ public:
 	}
 	const Weight getEdgeResidualCapacity(int id) {
 		assert(g.edgeEnabled(id));
-		return capacity[id] - F[id];    	// reserve(id);
+		return g.getWeight(id) - F[id];    	// reserve(id);
 	}
 };
 }

@@ -45,7 +45,7 @@ class SpiraPan: public MinimumSpanningTree<Weight> {
 public:
 	
 	DynamicGraph<Weight> & g;
-	std::vector<Weight> & weights;
+
 	Status & status;
 	int last_modification;
 	Weight min_weight;
@@ -108,11 +108,11 @@ public:
 	double stats_full_update_time;
 	double stats_fast_update_time;
 
-	SpiraPan(DynamicGraph<Weight> & graph, std::vector<Weight> & weights, Status & status, int reportPolarity = 0) :
-			g(graph), weights(weights), status(status), last_modification(-1), last_addition(-1), last_deletion(-1), history_qhead(
+	SpiraPan(DynamicGraph<Weight> & graph,  Status & status, int reportPolarity = 0) :
+			g(graph),  status(status), last_modification(-1), last_addition(-1), last_deletion(-1), history_qhead(
 					0), last_history_clear(0), INF(0), reportPolarity(reportPolarity), Q(VertLt(component_edge_weight))
 #ifndef NDEBUG
-					, dbg(g, weights, MinimumSpanningTree<Weight>::nullStatus, 0)
+					, dbg(g,  MinimumSpanningTree<Weight>::nullStatus, 0)
 #endif
 	{
 		mod_percentage = 0.2;
@@ -170,10 +170,10 @@ public:
 	 assert(dbg_is_largest_edge_on_path(m,r,z));
 	 assert(dbg_is_largest_edge_on_path(t,edge.node,z));
 	 int k = t;
-	 if(t<0 || g.weights[edge.id]>g.weights[t])
+	 if(t<0 || g.g.getWeight(edge.id)>g.weights[t])
 	 k=edge.id;
 	 int h = t;
-	 if(t<0 || g.weights[edge.id]<g.weights[t])
+	 if(t<0 || g.g.getWeight(edge.id)<g.weights[t])
 	 h=edge.id;
 	 if(h>=0){
 	 keep_in_tree[h]=true;
@@ -285,7 +285,7 @@ public:
 			}
 			//ok, now set every node in the higher component to be in the lower component with a simple dfs.
 			//fix the parents at the same time.
-			min_weight += weights[edgeid];
+			min_weight += g.getWeight(edgeid);
 			assert(components[lower_component] == new_c);
 			assert(components[higher_component] == old_c);
 			components[higher_component] = new_c;
@@ -324,11 +324,11 @@ public:
 				if (parents[v] == u) {
 					p_edge = parent_edges[v];
 				}
-				if (weights[p_edge] > weights[edgeid]) {
+				if ( g.getWeight(p_edge) > g.getWeight(edgeid)) {
 					//then swap these edges without changing anything else.
 					in_tree[p_edge] = false;
 					in_tree[edgeid] = true;
-					Weight delta = weights[p_edge] - weights[edgeid];
+					Weight delta = g.getWeight(p_edge) - g.getWeight(edgeid);
 					min_weight -= delta;
 					if (parents[v] == u) {
 						assert(parent_edges[v] == p_edge);
@@ -356,9 +356,9 @@ public:
 					if (seen[p]) {
 						break;
 					} else {
-						if (parents[p] > -1 && weights[parent_edges[p]] > max_edge_weight) {
+						if (parents[p] > -1 && g.getWeight(parent_edges[p]) > max_edge_weight) {
 							assert(parent_edges[p] > -1);
-							max_edge_weight = weights[parent_edges[p]];
+							max_edge_weight = g.getWeight(parent_edges[p]);
 							max_edge = parent_edges[p];
 						}
 						p = parents[p];
@@ -370,9 +370,9 @@ public:
 				while (p != lca) {
 					assert(seen[p]);
 					seen[p] = false;
-					if (parents[p] > -1 && weights[parent_edges[p]] > max_edge_weight) {
+					if (parents[p] > -1 && g.getWeight(parent_edges[p]) > max_edge_weight) {
 						assert(parent_edges[p] > -1);
-						max_edge_weight = weights[parent_edges[p]];
+						max_edge_weight = g.getWeight(parent_edges[p]);
 						max_edge = parent_edges[p];
 						edge_on_left = true;
 					}
@@ -387,11 +387,11 @@ public:
 					p = parents[p];
 				}
 				assert(max_edge > -1);
-				if (max_edge_weight > weights[edgeid]) {
+				if (max_edge_weight > g.getWeight(edgeid)) {
 					//then swap out that edge with the new edge.
 					//this will also require us to repair parent edges in the cycle
 					min_weight -= max_edge_weight;
-					min_weight += weights[edgeid];
+					min_weight += g.getWeight(edgeid);
 					in_tree[edgeid] = true;
 					in_tree[max_edge] = false;
 					
@@ -438,7 +438,7 @@ public:
 			int v = g.getEdge(edgeid).to;
 			
 			in_tree[edgeid] = false;
-			min_weight -= weights[edgeid];
+			min_weight -= g.getWeight(edgeid);
 			num_sets++;
 			
 			assert(components[u] == components[v]);
@@ -523,7 +523,7 @@ public:
 				if (cur_component != c) {
 					//connect these two components together
 					int edgeid = edge_to_component[cur_component];
-					assert(weights[edgeid] == component_edge_weight[cur_component]);
+					assert(g.getWeight(edgeid) == component_edge_weight[cur_component]);
 					int u = g.getEdge(edgeid).from;
 					int v = g.getEdge(edgeid).to;
 					assert(components[u] == c || components[v] == c);
@@ -542,7 +542,7 @@ public:
 					
 					num_sets--;
 					in_tree[edgeid] = true;
-					min_weight += weights[edgeid];
+					min_weight += g.getWeight(edgeid);
 					parents[start_node] = last_p;
 					parent_edges[start_node] = edgeid;
 					assert(components[start_node] == cur_component);
@@ -567,7 +567,7 @@ public:
 								//assert(g.edgeEnabled(edge.id));
 								int ncomponent = components[t];
 								if (ncomponent != c && ncomponent != cur_component) {
-									Weight w = weights[edge.id];
+									Weight w = g.getWeight(edge.id);
 									if (w < component_edge_weight[ncomponent]) {
 										
 										edge_to_component[ncomponent] = edge.id;
@@ -626,7 +626,7 @@ public:
 		if (last_modification <= 0 || g.changed() || last_history_clear != g.historyclears) {
 			INF = 1;				//g.nodes()+1;
 			setNodes(g.nodes());
-			for (auto & w : weights)
+			for (auto & w : g.getWeights())
 				INF += w;
 			seen.clear();
 			seen.resize(g.nodes());

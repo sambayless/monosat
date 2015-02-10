@@ -37,7 +37,7 @@ class Kruskal: public MinimumSpanningTree<Weight> {
 public:
 	
 	DynamicGraph<Weight> & g;
-	std::vector<Weight>&weights;
+
 	Status & status;
 	int last_modification;
 	Weight min_weight;
@@ -89,10 +89,10 @@ public:
 	double stats_full_update_time=0;
 	double stats_fast_update_time=0;
 
-	Kruskal(DynamicGraph<Weight> & graph, std::vector<Weight> & weights, Status & _status =
+	Kruskal(DynamicGraph<Weight> & graph, Status & _status =
 			MinimumSpanningTree<Weight>::nullStatus, int _reportPolarity = 0) :
-			g(graph), weights(weights), status(_status), last_modification(-1), last_addition(-1), last_deletion(-1), history_qhead(
-					0), last_history_clear(0), INF(0), reportPolarity(_reportPolarity), edge_heap(EdgeLt(weights)) {
+			g(graph), status(_status), last_modification(-1), last_addition(-1), last_deletion(-1), history_qhead(
+					0), last_history_clear(0), INF(0), reportPolarity(_reportPolarity), edge_heap(EdgeLt(g.getWeights())) {
 		
 		mod_percentage = 0.2;
 
@@ -137,7 +137,7 @@ public:
 		if (last_modification <= 0 || g.changed() || last_history_clear != g.historyclears) {
 			INF = 1; //g.nodes()+1;
 					
-			for (auto & w : weights)
+			for (auto & w : g.getWeights())
 				INF += w;
 		}
 		setNodes(g.nodes());
@@ -153,7 +153,7 @@ public:
 				edge_list.push_back(i);
 				
 			}
-			std::sort(edge_list.begin(), edge_list.end(), EdgeLt(weights));
+			std::sort(edge_list.begin(), edge_list.end(), EdgeLt(g.getWeights()));
 		}
 		for (int i = 0; i < in_tree.size(); i++)
 			in_tree[i] = false;
@@ -173,7 +173,7 @@ public:
 				mst.push_back(edge_id);
 				//if(reportPolarity>-1)
 				//	status.inMinimumSpanningTree(edge_id,true);
-				min_weight += weights[edge_id];
+				min_weight += g.getWeight(edge_id);
 				sets.UnionSets(set1, set2);
 				assert(sets.FindSet(u) == sets.FindSet(v));
 			}

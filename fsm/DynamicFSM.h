@@ -21,7 +21,7 @@ namespace Monosat {
 
 
 class DynamicFSM{
-	DynamicGraph g;
+	DynamicGraph<bool> g;
 	//std::vector<Bitset> edge_status;
 	int id;
 	bool has_epsilon=true;
@@ -235,7 +235,7 @@ public:
 	inline int nDirectedEdges(int node, bool incoming) {
 		return g.nDirectedEdges(node,incoming);
 	}
-	inline DynamicGraph::Edge & directedEdges(int node, int i, bool is_incoming) {
+	inline DynamicGraph<bool>::Edge & directedEdges(int node, int i, bool is_incoming) {
 		return g.directedEdges(node,i,is_incoming);
 	}
 
@@ -243,14 +243,14 @@ public:
 		return g.nIncoming(node,undirected);
 	}
 
-	inline DynamicGraph::Edge & incident(int node, int i, bool undirected = false) {
+	inline DynamicGraph<bool>::Edge & incident(int node, int i, bool undirected = false) {
 		return g.incident(node,i,undirected);
 	}
-	inline DynamicGraph::Edge & incoming(int node, int i, bool undirected = false) {
+	inline DynamicGraph<bool>::Edge & incoming(int node, int i, bool undirected = false) {
 		return g.incoming(node,i,undirected);
 	}
 
-	DynamicGraph::FullEdge getEdge(int id) const {
+	DynamicGraph<bool>::FullEdge getEdge(int id) const {
 		return g.getEdge(id);
 	}
 

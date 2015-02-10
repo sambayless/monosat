@@ -30,7 +30,7 @@
 #include "EdmondsKarpAdj.h"
 #include <algorithm>
 namespace dgl {
-template<class Capacity, typename Weight>
+template<typename Weight>
 class EdmondsKarpDynamic: public MaxFlow<Weight> {
 	Weight f = 0;
 	std::vector<Weight> F;
@@ -58,7 +58,7 @@ class EdmondsKarpDynamic: public MaxFlow<Weight> {
 	std::vector<int> changed_edges;
 	std::vector<bool> changed;
 	DynamicGraph<Weight>& g;
-	Capacity & capacity;
+
 	bool allow_flow_cycles = false;
 	int source = -1;
 	int sink = -1;
@@ -92,7 +92,7 @@ class EdmondsKarpDynamic: public MaxFlow<Weight> {
 				///(If there is available capacity, and v is not seen before in search)
 				
 				Weight& f = F[id];
-				Weight c = capacity[id];
+				Weight c = g.getWeight(id);
 				
 				//  int fr = F[id];
 				if (((c - F[id]) > 0) && (prev[v].from == -1)) {
@@ -145,8 +145,8 @@ class EdmondsKarpDynamic: public MaxFlow<Weight> {
 	}
 	
 public:
-	EdmondsKarpDynamic(DynamicGraph<Weight>& _g, Capacity & cap, int source, int sink) :
-			g(_g), capacity(cap), source(source), sink(sink), INF(0xF0F0F0)
+	EdmondsKarpDynamic(DynamicGraph<Weight>& _g,  int source, int sink) :
+			g(_g),  source(source), sink(sink), INF(0xF0F0F0)
 #ifdef DEBUG_MAXFLOW
 	,ek(_g,cap,source,sink)
 #endif
@@ -213,7 +213,7 @@ public:
 			if(!g.hasEdge(i))
 			continue;
 			int id = g.all_edges[i].id;
-			Weight cap = capacity[id];
+			Weight cap = g.getWeight(id);
 			int from = g.all_edges[i].from;
 			int to = g.all_edges[i].to;
 
@@ -466,7 +466,7 @@ private:
 				 F[rev[id]]-=m;
 				 }*/
 				// F[v][u] = F[v][u] - m;
-				assert(F[id] <= capacity[id]);
+				assert(F[id] <= g.getWeight(id));
 				v = u;
 			}
 			dbg_print_graph(s, t, -1, -1);
@@ -516,7 +516,7 @@ private:
 					 }*/
 				}
 				markChanged(id);
-				assert(F[id] <= capacity[id]);
+				assert(F[id] <= g.getWeight(id));
 				// F[v][u] = F[v][u] - m;
 				v = u;
 			}
@@ -525,7 +525,7 @@ private:
 		
 #ifndef NDEBUG
 		//EdmondsKarp<EdgeStatus> ek_check(g);
-		EdmondsKarpAdj<Capacity, Weight> ek_check(g, capacity);
+		EdmondsKarpAdj<Weight> ek_check(g, capacity);
 		Weight expect = ek_check.maxFlow(s, t);
 		assert(f == expect);
 #endif
@@ -596,7 +596,7 @@ private:
 						int a = 1;
 					}
 					Weight f = F[id];
-					const Weight& c = capacity[id];
+					const Weight& c = g.getWeight(id);
 					
 					//  int fr = F[id];
 					if (((c - f) > 0) && (prev[v].from == -1)) {
@@ -726,7 +726,7 @@ private:
 					assert(id >= 0);
 					assert(id < F.size());
 					assert(id < capacity.size());
-					assert(F[id] <= capacity[id]);
+					assert(F[id] <= g.getWeight(id));
 				} else {
 					u = shortCircuitFrom;
 				}
@@ -823,7 +823,7 @@ public:
 					continue;
 				int v = g.incident(u, i).node;
 				int id = g.incident(u, i).id;
-				if (capacity[id] - F[id] == 0) {
+				if (g.getWeight(id) - F[id] == 0) {
 					cut.push_back(MaxFlowEdge { u, v, id });    	//potential element of the cut
 				} else if (!seen[v]) {
 					Q.push_back(v);
@@ -855,7 +855,7 @@ public:
 		Weight dbg_sum = 0;
 		for (int i = 0; i < cut.size(); i++) {
 			int id = cut[i].id;
-			assert(F[id] == capacity[id]);
+			assert(F[id] == g.getWeight(id));
 			dbg_sum += F[id];
 		}
 		assert(dbg_sum == f);
@@ -864,7 +864,7 @@ public:
 	}
 	const Weight getEdgeCapacity(int id) {
 		//assert(g.edgeEnabled(id));
-		return capacity[id];
+		return g.getWeight(id);
 	}
 	const Weight getEdgeFlow(int id) {
 		//assert(g.edgeEnabled(id));
@@ -872,7 +872,7 @@ public:
 	}
 	const Weight getEdgeResidualCapacity(int id) {
 		//assert(g.edgeEnabled(id));
-		return capacity[id] - F[id];    	// reserve(id);
+		return g.getWeight(id) - F[id];    	// reserve(id);
 	}
 };
 }

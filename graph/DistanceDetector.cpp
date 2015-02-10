@@ -140,23 +140,23 @@ DistanceDetector<Weight>::DistanceDetector(int _detectorID, GraphTheorySolver<We
 	
 	if (opt_conflict_min_cut_shortest_paths) {
 		if (mincutalg == MinCutAlg::ALG_EDKARP_DYN) {
-			conflict_flow = new EdmondsKarpDynamic<CutStatus, long>(outer->cutGraph, cutStatus, source, 0);
+			conflict_flow = new EdmondsKarpDynamic<long>(outer->cutGraph,  source, 0);
 		} else if (mincutalg == MinCutAlg::ALG_EDKARP_ADJ) {
-			conflict_flow = new EdmondsKarpAdj<CutStatus, long>(outer->cutGraph, cutStatus, source, 0);
+			conflict_flow = new EdmondsKarpAdj<long>(outer->cutGraph,  source, 0);
 		} else if (mincutalg == MinCutAlg::ALG_DINITZ) {
-			conflict_flow = new Dinitz<CutStatus, long>(outer->cutGraph, cutStatus, source, 0);
+			conflict_flow = new Dinitz<long>(outer->cutGraph,  source, 0);
 		} else if (mincutalg == MinCutAlg::ALG_DINITZ_LINKCUT) {
 			//link-cut tree currently only supports ints
-			conflict_flow = new Dinitz<CutStatus, long>(outer->cutGraph, cutStatus, source, 0);
+			conflict_flow = new Dinitz<long>(outer->cutGraph,  source, 0);
 			
 		} else if (mincutalg == MinCutAlg::ALG_KOHLI_TORR) {
 			if (opt_use_kt_for_conflicts) {
-				conflict_flow = new KohliTorr<CutStatus, long>(outer->cutGraph, cutStatus, source, 0,
+				conflict_flow = new KohliTorr<long>(outer->cutGraph, source, 0,
 						opt_kt_preserve_order);
 			} else
-				conflict_flow = new EdmondsKarpDynamic<CutStatus, long>(outer->cutGraph, cutStatus, source, 0);
+				conflict_flow = new EdmondsKarpDynamic<long>(outer->cutGraph,  source, 0);
 		} else {
-			conflict_flow = new EdmondsKarpAdj<CutStatus, long>(outer->cutGraph, cutStatus, source, 0);
+			conflict_flow = new EdmondsKarpAdj<long>(outer->cutGraph,  source, 0);
 		}
 	}
 	

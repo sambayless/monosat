@@ -33,40 +33,40 @@ using namespace Monosat;
 
 template<typename Weight>
 MSTDetector<Weight>::MSTDetector(int detectorID, GraphTheorySolver<Weight> * outer, DynamicGraph<Weight>  &g,
-		DynamicGraph<Weight>  &antig, std::vector<Weight> & edge_weights, double seed) :
-		Detector(detectorID), outer(outer), g_under(g), g_over(antig), rnd_seed(seed), edge_weights(edge_weights) {
+		DynamicGraph<Weight>  &antig, double seed) :
+		Detector(detectorID), outer(outer), g_under(g), g_over(antig), rnd_seed(seed)  {
 	checked_unique = false;
 	all_unique = true;
 	positiveReachStatus = new MSTDetector<Weight>::MSTStatus(*this, true);
 	negativeReachStatus = new MSTDetector<Weight>::MSTStatus(*this, false);
 	
 	if (mstalg == MinSpanAlg::ALG_KRUSKAL) {
-		underapprox_detector = new Kruskal<MSTDetector<Weight>::MSTStatus, Weight>(g, edge_weights,
+		underapprox_detector = new Kruskal<MSTDetector<Weight>::MSTStatus, Weight>(g,
 				*(positiveReachStatus), 1);
-		overapprox_detector = new Kruskal<MSTDetector<Weight>::MSTStatus, Weight>(antig, edge_weights,
+		overapprox_detector = new Kruskal<MSTDetector<Weight>::MSTStatus, Weight>(antig,
 				*(negativeReachStatus), -1);
 		underapprox_conflict_detector = underapprox_detector;
 		overapprox_conflict_detector = overapprox_detector;
 	} else if (mstalg == MinSpanAlg::ALG_PRIM) {
-		underapprox_detector = new Prim<MSTDetector<Weight>::MSTStatus, Weight>(g, edge_weights, *(positiveReachStatus),
+		underapprox_detector = new Prim<MSTDetector<Weight>::MSTStatus, Weight>(g,  *(positiveReachStatus),
 				1);
-		overapprox_detector = new Prim<MSTDetector<Weight>::MSTStatus, Weight>(antig, edge_weights,
+		overapprox_detector = new Prim<MSTDetector<Weight>::MSTStatus, Weight>(antig,
 				*(negativeReachStatus), -1);
 		underapprox_conflict_detector = new Kruskal<typename MinimumSpanningTree<Weight>::NullStatus, Weight>(g,
-				edge_weights, MinimumSpanningTree<Weight>::nullStatus, 1);
+				 MinimumSpanningTree<Weight>::nullStatus, 1);
 		overapprox_conflict_detector = new Kruskal<typename MinimumSpanningTree<Weight>::NullStatus, Weight>(antig,
-				edge_weights, MinimumSpanningTree<Weight>::nullStatus, -1);
+				 MinimumSpanningTree<Weight>::nullStatus, -1);
 		
 	} else if (mstalg == MinSpanAlg::ALG_SPIRA_PAN) {
 		
-		underapprox_detector = new SpiraPan<MSTDetector<Weight>::MSTStatus, Weight>(g, edge_weights,
+		underapprox_detector = new SpiraPan<MSTDetector<Weight>::MSTStatus, Weight>(g,
 				*(positiveReachStatus), 1); //new SpiraPan<MSTDetector<Weight>::MSTStatus>(_g,*(positiveReachStatus),1);
-		overapprox_detector = new SpiraPan<MSTDetector<Weight>::MSTStatus, Weight>(antig, edge_weights,
+		overapprox_detector = new SpiraPan<MSTDetector<Weight>::MSTStatus, Weight>(antig,
 				*(negativeReachStatus), -1);
 		underapprox_conflict_detector = new Kruskal<typename MinimumSpanningTree<Weight>::NullStatus, Weight>(g,
-				edge_weights, MinimumSpanningTree<Weight>::nullStatus, 1);
+				 MinimumSpanningTree<Weight>::nullStatus, 1);
 		overapprox_conflict_detector = new Kruskal<typename MinimumSpanningTree<Weight>::NullStatus, Weight>(antig,
-				edge_weights, MinimumSpanningTree<Weight>::nullStatus, -1);
+				 MinimumSpanningTree<Weight>::nullStatus, -1);
 	}
 	
 	underprop_marker = outer->newReasonMarker(getID());
@@ -120,8 +120,8 @@ void MSTDetector<Weight>::addTreeEdgeLit(int edge_id, Var outer_reach_var) {
 		checked_unique = true;
 		
 		std::set<Weight> seen;
-		for (int i = 0; i < edge_weights.size(); i++) {
-			Weight & w = edge_weights[i];
+		for (int i = 0; i < g_over.getWeights().size(); i++) {
+			Weight  w = g_over.getWeight(i);
 			if (seen.count(w) > 0) {
 				all_unique = false;
 				std::cout
@@ -249,7 +249,7 @@ bool MSTDetector<Weight>::walkback(Weight & min_weight, int from, int to) {
 		int p = overapprox_conflict_detector->getParent(u);
 		if (p != -1) {
 			int edgeid = overapprox_conflict_detector->getParentEdge(u);
-			Weight & weight = edge_weights[edgeid];
+			Weight  weight = g_over.getWeight(edgeid);
 			if (weight > min_weight) {
 				return true;
 			}
@@ -288,7 +288,7 @@ void MSTDetector<Weight>::TarjanOLCA(int node, vec<Lit> & conflict) {
 				int lowest_common_ancestor = ancestors[set];
 				
 				//ok, now walk back from u and v in the minimum spanning tree until either the lowest common ancestor is seen, or an edge larger than the weight of this disabled edge is found
-				Weight & weight = edge_weights[edgeid];
+				Weight  weight = g_over.getWeight(edgeid);
 				bool any_larger_weights = walkback(weight, node, lowest_common_ancestor)
 						|| walkback(weight, v, lowest_common_ancestor);
 				//if any larger edge was found in either path from u or v to their common ancestor in the minimum spanning tree, then enabling this edge
@@ -419,7 +419,7 @@ Weight MSTDetector<Weight>::walkback_edge(Weight &min_weight, int edge_id, int f
 		int p = overapprox_conflict_detector->getParent(u);
 		if (p != -1) {
 			int edgeid = overapprox_conflict_detector->getParentEdge(u);
-			Weight weight = edge_weights[edgeid];
+			Weight weight = g_over.getWeight(edgeid);
 			if (edgeid == edge_id) {
 				assert(!found);	//can't enounter the edge twice while traversing the cycle
 				found = true;
@@ -466,7 +466,7 @@ void MSTDetector<Weight>::TarjanOLCA_edge(int node, int check_edgeid, int lowest
 				int lowest_common_ancestor = ancestors[set];
 				
 				//ok, now walk back from u and v in the minimum spanning tree until either the lowest common ancestor is seen, or an edge larger than the weight of this disabled edge is found
-				Weight& weight = edge_weights[edgeid];
+				Weight weight = g_under.getWeight(edgeid);
 				bool found = false;
 				
 				Weight largest_weight = walkback_edge(weight, check_edgeid, node, lowest_common_ancestor, found);
@@ -591,8 +591,8 @@ void MSTDetector<Weight>::buildEdgeInTreeReason(int edgeid, vec<Lit> & conflict)
 	
 	//conceptually, thats really simple. The problem is that visiting that cycle requires computing the lowest common ancestor of the two nodes on either side of the disabled edge,
 	//and to make that efficient we are going to use Tarjan's offline lca algorithm. This results in the convoluted code below.
-	int u = g_under.all_edges[edgeid].from;
-	int v = g_under.all_edges[edgeid].to;
+	int u = g_under.getEdge(edgeid).from;
+	int v = g_under.getEdge(edgeid).to;
 	int lower_endpoint = u;
 	if (overapprox_conflict_detector->getParent(v) == u) {
 		lower_endpoint = v;
@@ -858,9 +858,9 @@ bool MSTDetector<Weight>::propagate(vec<Lit> & conflict) {
 }
 template<typename Weight>
 bool MSTDetector<Weight>::checkSatisfied() {
-	Kruskal<typename MinimumSpanningTree<Weight>::NullStatus, Weight> positive_checker(g_under, edge_weights,
+	Kruskal<typename MinimumSpanningTree<Weight>::NullStatus, Weight> positive_checker(g_under,
 			MinimumSpanningTree<Weight>::nullStatus, 0);
-	Kruskal<typename MinimumSpanningTree<Weight>::NullStatus, Weight> negative_checker(g_over, edge_weights,
+	Kruskal<typename MinimumSpanningTree<Weight>::NullStatus, Weight> negative_checker(g_over,
 			MinimumSpanningTree<Weight>::nullStatus, 0);
 	positive_checker.update();
 	negative_checker.update();
@@ -931,8 +931,8 @@ bool MSTDetector<Weight>::checkSatisfied() {
 			if (!negative_checker.edgeInTree(edgeid)) {
 				return false;
 			}
-			sum_weight += edge_weights[edgeid];
-			//printf("edge(%d,%d,%d).\n",outer->edge_list[edgeid].from,outer->edge_list[edgeid].to,outer->edge_weights[edgeid]);
+			sum_weight += g_under.getWeight(edgeid);
+
 		} else if (negative_checker.edgeInTree(edgeid)) {
 			return false;
 		}

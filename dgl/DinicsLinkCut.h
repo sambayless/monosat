@@ -32,7 +32,7 @@
 #include <climits>
 //Implementation of the Link/Cut Tree (aka Dynamic Tree) max-flow algorithm from Sleator and Tarjan, 1983).
 namespace dgl {
-template<class Capacity>
+
 class DinitzLinkCut: public MaxFlow<int> {
 	
 public:
@@ -61,7 +61,7 @@ public:
 	std::vector<int> pos;    //position in the combined forward and backward adjacency list of each node in the DFS.
 	std::vector<bool> changed;
 	DynamicGraph<int>& g;
-	Capacity & capacity;
+
 	int source = -1;
 	int sink = -1;
 	int INF;
@@ -118,8 +118,8 @@ public:
 	}
 	
 public:
-	DinitzLinkCut(DynamicGraph<int>& _g, Capacity & cap, int source = -1, int sink = -1) :
-			g(_g), capacity(cap), source(source), sink(sink), INF(0xF0F0F0)
+	DinitzLinkCut(DynamicGraph<int>& _g,  int source = -1, int sink = -1) :
+			g(_g),  source(source), sink(sink), INF(0xF0F0F0)
 #ifdef DEBUG_MAXFLOW
 	,ek(_g,cap,source,sink)
 #endif
@@ -166,7 +166,7 @@ public:
 		
 		for (int i = 0; i < g.edges(); i++) {
 			if (g.edgeEnabled(i)) {
-				auto & e = g.all_edges[i];
+				auto & e = g.getEdge(i);
 				const char * s = "black";
 				
 				bool link = false;
@@ -200,7 +200,7 @@ public:
 					s = "blue";
 				}
 				
-				std::cout << "n" << e.from << " -> n" << e.to << " [label=\"" << i << ": " << F[i] << "/" << capacity[i]
+				std::cout << "n" << e.from << " -> n" << e.to << " [label=\"" << i << ": " << F[i] << "/" << g.getWeight(i)
 						<< "\" color=\"" << s << "\"]\n";
 			}
 		}
@@ -223,7 +223,7 @@ public:
 				if (!g.edgeEnabled(edgeID))
 					continue;
 				int v = g.incident(u, j).node;
-				if (dist[v] < 0 && F[edgeID] < capacity[edgeID]) {
+				if (dist[v] < 0 && F[edgeID] < g.getWeight(edgeID)) {
 					dist[v] = dist[u] + 1;
 					Q.push_back(v);
 				}
@@ -309,7 +309,7 @@ public:
 						int v = edge.node;
 						if ((dist[v] != dist[u] + 1) || !g.edgeEnabled(edgeID))
 							continue;
-						if (F[edgeID] < capacity[edgeID]) {
+						if (F[edgeID] < g.getWeight(edgeID)) {
 							// assert(parentEdge[u].edgeID==-1);
 							assert(!dbg_hasLink(u));
 							toLink.push_back( { u, v, false, edgeID });
@@ -362,7 +362,7 @@ public:
 					//assert(parentEdge[u].edgeID==-1);
 					assert(edgeID >= 0);
 					assert(forest.findRoot(src) == u);
-					assert(capacity[edgeID] >= F[edgeID]);
+					assert(g.getWeight(edgeID) >= F[edgeID]);
 					assert(F[edgeID] >= 0);
 					if (backward) {
 						forest.link(u, v, F[edgeID]);
@@ -370,7 +370,7 @@ public:
 						parentEdge[u].edgeID = edgeID;
 						parentEdge[u].backward = true;
 					} else {
-						forest.link(u, v, capacity[edgeID] - F[edgeID]);
+						forest.link(u, v, g.getWeight(edgeID) - F[edgeID]);
 						//parent_edge_backward[u]=false;
 						parentEdge[u].backward = false;
 						parentEdge[u].edgeID = edgeID;
@@ -397,7 +397,7 @@ public:
 					int edgeID = parentEdge[u].edgeID;
 					assert(edgeID >= 0);
 					if (!parentEdge[u].backward) {
-						assert(F[edgeID] + c <= capacity[edgeID]);
+						assert(F[edgeID] + c <= g.getWeight(edgeID));
 						F[edgeID] += c;
 					} else {
 						assert(c <= F[edgeID]);
@@ -423,9 +423,9 @@ public:
 							int c = forest.getCost(u);
 							
 							int edgeID = parentEdge[u].edgeID;
-							assert(c <= capacity[edgeID]);
+							assert(c <= g.getWeight(edgeID));
 							if (!parentEdge[u].backward) {
-								F[edgeID] = capacity[edgeID] - c;
+								F[edgeID] = g.getWeight(edgeID) - c;
 							} else {
 								F[edgeID] = c;
 							}
@@ -472,7 +472,7 @@ public:
 								continue;
 							if (parentEdge[v].edgeID == edgeID) {
 								int residual_capacity = forest.getCost(v);
-								F[edgeID] = capacity[edgeID] - residual_capacity;
+								F[edgeID] = g.getWeight(edgeID) - residual_capacity;
 								assert(F[edgeID] >= 0);
 								forest.cut(v);
 								parentEdge[v].edgeID = -1;
@@ -519,8 +519,8 @@ public:
 						if ((dist[v] != dist[u] + 1) || !g.edgeEnabled(edgeID))
 							continue;
 						
-						if (F[edgeID] < capacity[edgeID]) {
-							forest.link(u, v, capacity[edgeID] - F[edgeID]);
+						if (F[edgeID] < g.getWeight(edgeID)) {
+							forest.link(u, v, g.getWeight(edgeID) - F[edgeID]);
 							//tree_edges[edgeID].in_tree=true;
 							parentEdge[u].backward = false;
 							parentEdge[u].edgeID = edgeID;
@@ -577,7 +577,7 @@ public:
 					assert(forest.getCost(u) == minC);
 					int edgeID = parentEdge[u].edgeID;
 					if (!parentEdge[u].backward) {
-						assert(F[edgeID] + c <= capacity[edgeID]);
+						assert(F[edgeID] + c <= g.getWeight(edgeID));
 						F[edgeID] += c;
 					} else {
 						
@@ -601,7 +601,7 @@ public:
 							int c = forest.getCost(u);
 							int edgeID = parentEdge[u].edgeID;
 							if (!parentEdge[u].backward) {
-								F[edgeID] = capacity[edgeID] - c;
+								F[edgeID] = g.getWeight(edgeID) - c;
 							} else {
 								
 								F[edgeID] = c;
@@ -643,7 +643,7 @@ public:
 							continue;
 						if (parentEdge[v].edgeID == edgeID) {
 							int residual_capacity = forest.getCost(v);
-							F[edgeID] = capacity[edgeID] - residual_capacity;
+							F[edgeID] = g.getWeight(edgeID) - residual_capacity;
 							assert(F[edgeID] >= 0);
 							forest.cut(v);
 							parentEdge[v].edgeID = -1;
@@ -683,8 +683,8 @@ public:
 						if ((dist[v] != dist[u] + 1) || !g.edgeEnabled(edgeID))
 							continue;
 						
-						if (F[edgeID] < capacity[edgeID]) {
-							forest.link(u, v, capacity[edgeID] - F[edgeID]);
+						if (F[edgeID] < g.getWeight(edgeID)) {
+							forest.link(u, v, g.getWeight(edgeID) - F[edgeID]);
 							//tree_edges[edgeID].in_tree=true;
 							parentEdge[u].backward = false;
 							parentEdge[u].edgeID = edgeID;
@@ -737,7 +737,7 @@ public:
 					int edgeID = parentEdge[u].edgeID;
 					if (!parentEdge[u].backward) {
 						//if(tree_edges[edgeID].in_tree){
-						assert(F[edgeID] + c <= capacity[edgeID]);
+						assert(F[edgeID] + c <= g.getWeight(edgeID));
 						F[edgeID] += c;
 					} else {
 						//assert(tree_edges[edgeID].in_tree_backward);
@@ -762,7 +762,7 @@ public:
 							int edgeID = parentEdge[u].edgeID;
 							if (!parentEdge[u].edgeID) {
 								// if(tree_edges[edgeID].in_tree){
-								F[edgeID] = capacity[edgeID] - c;
+								F[edgeID] = g.getWeight(edgeID) - c;
 							} else {
 								//assert(tree_edges[edgeID].in_tree_backward);
 								F[edgeID] = c;
@@ -808,7 +808,7 @@ public:
 							continue;
 						if (parentEdge[v].edgeID == edgeID) {
 							int residual_capacity = forest.getCost(v);
-							F[edgeID] = capacity[edgeID] - residual_capacity;
+							F[edgeID] = g.getWeight(edgeID) - residual_capacity;
 							assert(F[edgeID] >= 0);
 							forest.cut(v);
 							parentEdge[v].edgeID = -1;
@@ -958,7 +958,7 @@ public:
 					continue;
 				int v = g.incident(u, i).node;
 				int id = g.incident(u, i).id;
-				if (capacity[id] - F[id] == 0) {
+				if (g.getWeight(id) - F[id] == 0) {
 					cut.push_back(MaxFlowEdge { u, v, id });    					//potential element of the cut
 				} else if (!seen[v]) {
 					Q.push_back(v);
@@ -990,7 +990,7 @@ public:
 		int dbg_sum = 0;
 		for (int i = 0; i < cut.size(); i++) {
 			int id = cut[i].id;
-			assert(F[id] == capacity[id]);
+			assert(F[id] == g.getWeight(id));
 			dbg_sum += F[id];
 		}
 		assert(dbg_sum == f);
@@ -999,7 +999,7 @@ public:
 	}
 	const int getEdgeCapacity(int id) {
 		assert(g.edgeEnabled(id));
-		return capacity[id];
+		return g.getWeight(id);
 	}
 	const int getEdgeFlow(int id) {
 		assert(g.edgeEnabled(id));
@@ -1007,7 +1007,7 @@ public:
 	}
 	const int getEdgeResidualCapacity(int id) {
 		assert(g.edgeEnabled(id));
-		return capacity[id] - F[id];    					// reserve(id);
+		return g.getWeight(id) - F[id];    					// reserve(id);
 	}
 };
 }

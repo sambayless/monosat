@@ -156,7 +156,7 @@ public:
 	 OptimalWeightEdgeStatus opt_weight;
 	 WeightedDijkstra<OptimalWeightEdgeStatus> * opt_path;*/
 	Reach * chokepoint_detector = nullptr;
-	struct CutStatus {
+/*	struct CutStatus {
 		long one = 1;
 		long inf = 0xFFFF;
 		ReachDetector & outer;
@@ -175,7 +175,7 @@ public:
 				outer(_outer) {
 		}
 		
-	} cutStatus;
+	} cutStatus;*/
 	std::vector<MaxFlowEdge> cut;
 	/*		struct ChokepointStatus{
 	 ReachDetector & detector;
@@ -296,7 +296,7 @@ public:
 		DynamicGraph<Weight>  t;
 		for (int i = 0; i < graph.nodes(); i++)
 			t.addNode();
-		std::vector<int> capacity;
+
 		for (int id = 0; id < graph.edges(); id++) {
 			t.addEdge(graph.getEdge(id).from, graph.getEdge(id).to, id);
 			if (id % 2 == 0) {
@@ -308,16 +308,16 @@ public:
 					}
 				}
 				if (incut) {
-					capacity.push_back(0);
+					t.setEdgeWeight(id, 0);
 					t.disableEdge(id);
 				} else
-					capacity.push_back(1);
+					t.setEdgeWeight(id, 1);
 			} else {
-				capacity.push_back(0xFFFF);
+				t.setEdgeWeight(id, 0xFFFF);
 			}
 			
 		}
-		EdmondsKarpAdj<std::vector<int>, int> check(t, capacity, source, node);
+		EdmondsKarpAdj<int> check(t,  source, node);
 		std::vector<MaxFlowEdge> check_cut;
 		int flow = check.minCut(check_cut);
 		assert(flow < 0xFFFF);

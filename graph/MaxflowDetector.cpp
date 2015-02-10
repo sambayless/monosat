@@ -30,8 +30,8 @@ using namespace Monosat;
 
 template<>
 void MaxflowDetector<int>::buildDinitzLinkCut() {
-	underapprox_detector = new DinitzLinkCut<std::vector<int>>(g_under, capacities, source, target);
-	overapprox_detector = new DinitzLinkCut<std::vector<int>>(g_over, capacities, source, target);
+	underapprox_detector = new DinitzLinkCut(g_under, source, target);
+	overapprox_detector = new DinitzLinkCut(g_over, source, target);
 }
 
 template<typename Weight>
@@ -46,46 +46,46 @@ void MaxflowDetector<Weight>::buildDinitzLinkCut() {
 
 template<typename Weight>
 MaxflowDetector<Weight>::MaxflowDetector(int _detectorID, GraphTheorySolver<Weight> * _outer,
-		std::vector<Weight> & capacities, DynamicGraph<Weight>  &_g, DynamicGraph<Weight>  &_antig, int from, int _target, double seed) :
-		LevelDetector(_detectorID), outer(_outer), capacities(capacities), g_under(_g), g_over(_antig), source(
-				from), target(_target), rnd_seed(seed), cutStatus(*this) {
+		 DynamicGraph<Weight>  &_g, DynamicGraph<Weight>  &_antig, int from, int _target, double seed) :
+		LevelDetector(_detectorID), outer(_outer),  g_under(_g), g_over(_antig), source(
+				from), target(_target), rnd_seed(seed) {
 	
 	if (mincutalg == MinCutAlg::ALG_EDKARP_DYN) {
-		underapprox_detector = new EdmondsKarpDynamic<std::vector<Weight>, Weight>(_g, capacities, source, target);
-		overapprox_detector = new EdmondsKarpDynamic<std::vector<Weight>, Weight>(_antig, capacities, source, target);
+		underapprox_detector = new EdmondsKarpDynamic<Weight>(_g, source, target);
+		overapprox_detector = new EdmondsKarpDynamic<Weight>(_antig, source, target);
 		underapprox_conflict_detector = underapprox_detector; //new EdmondsKarpAdj<std::vector<Weight>,Weight>(_g,capacities);
 		overapprox_conflict_detector = overapprox_detector; // new EdmondsKarpAdj<std::vector<Weight>,Weight>(_antig,capacities);
 		if (opt_conflict_min_cut_maxflow || opt_adaptive_conflict_mincut)
-			learn_cut = new EdmondsKarpDynamic<CutStatus, long>(learn_graph, cutStatus, source, target);
+			learn_cut = new EdmondsKarpDynamic<long>(learn_graph, source, target);
 		
 		/*if(opt_conflict_min_cut_maxflow)
 		 learn_cut = new EdmondsKarpAdj<std::vector<int>,int>(learn_graph,learn_caps,source,target);*/
 	} else if (mincutalg == MinCutAlg::ALG_EDKARP_ADJ) {
-		underapprox_detector = new EdmondsKarpAdj<std::vector<Weight>, Weight>(_g, capacities, source, target);
-		overapprox_detector = new EdmondsKarpAdj<std::vector<Weight>, Weight>(_antig, capacities, source, target);
+		underapprox_detector = new EdmondsKarpAdj<Weight>(_g, source, target);
+		overapprox_detector = new EdmondsKarpAdj<Weight>(_antig, source, target);
 		underapprox_conflict_detector = underapprox_detector;
 		overapprox_conflict_detector = overapprox_detector;
 		if (opt_conflict_min_cut_maxflow || opt_adaptive_conflict_mincut)
-			learn_cut = new EdmondsKarpAdj<CutStatus, long>(learn_graph, cutStatus, source, target);
+			learn_cut = new EdmondsKarpAdj<long>(learn_graph, source, target);
 	} else if (mincutalg == MinCutAlg::ALG_DINITZ) {
-		underapprox_detector = new Dinitz<std::vector<Weight>, Weight>(_g, capacities, source, target);
-		overapprox_detector = new Dinitz<std::vector<Weight>, Weight>(_antig, capacities, source, target);
+		underapprox_detector = new Dinitz<Weight>(_g, source, target);
+		overapprox_detector = new Dinitz<Weight>(_antig, source, target);
 		underapprox_conflict_detector = underapprox_detector; // new EdmondsKarpAdj<std::vector<Weight>,Weight>(_g,capacities);
 		overapprox_conflict_detector = overapprox_detector; //new EdmondsKarpAdj<std::vector<Weight>,Weight>(_antig,capacities);
 		if (opt_conflict_min_cut_maxflow || opt_adaptive_conflict_mincut)
-			learn_cut = new Dinitz<CutStatus, long>(learn_graph, cutStatus, source, target);
+			learn_cut = new Dinitz<long>(learn_graph, source, target);
 	} else if (mincutalg == MinCutAlg::ALG_DINITZ_LINKCUT) {
 		//link-cut tree currently only supports ints (enforcing this using tempalte specialization...).
 		buildDinitzLinkCut();
-		underapprox_conflict_detector = new EdmondsKarpAdj<std::vector<Weight>, Weight>(_g, capacities, source, target);
-		overapprox_conflict_detector = new EdmondsKarpAdj<std::vector<Weight>, Weight>(_antig, capacities, source,
+		underapprox_conflict_detector = new EdmondsKarpAdj<Weight>(_g, source, target);
+		overapprox_conflict_detector = new EdmondsKarpAdj<Weight>(_antig, source,
 				target);
 		if (opt_conflict_min_cut_maxflow || opt_adaptive_conflict_mincut)
-			learn_cut = new EdmondsKarpAdj<CutStatus, long>(learn_graph, cutStatus, source, target);
+			learn_cut = new EdmondsKarpAdj<long>(learn_graph, source, target);
 	} else if (mincutalg == MinCutAlg::ALG_KOHLI_TORR) {
-		underapprox_detector = new KohliTorr<std::vector<Weight>, Weight>(_g, capacities, source, target,
+		underapprox_detector = new KohliTorr<Weight>(_g, source, target,
 				opt_kt_preserve_order);
-		overapprox_detector = new KohliTorr<std::vector<Weight>, Weight>(_antig, capacities, source, target,
+		overapprox_detector = new KohliTorr<Weight>(_antig, source, target,
 				opt_kt_preserve_order);
 		if (opt_use_kt_for_conflicts) {
 			underapprox_conflict_detector = underapprox_detector; //new EdmondsKarpDynamic<std::vector<Weight>,Weight>(_g,capacities);
@@ -93,21 +93,21 @@ MaxflowDetector<Weight>::MaxflowDetector(int _detectorID, GraphTheorySolver<Weig
 		} else {
 			//for reasons I don't yet understand, kohli-torr seems to produce maxflows that work very poorly as theory-decisions for some problems.
 			//Possibly, this is because Kohli-torr will sometimes produces flows that use multiple paths even when a maxflow with a single path is possible.
-			underapprox_conflict_detector = new EdmondsKarpDynamic<std::vector<Weight>, Weight>(_g, capacities, source,
+			underapprox_conflict_detector = new EdmondsKarpDynamic<Weight>(_g, source,
 					target);
-			overapprox_conflict_detector = new EdmondsKarpDynamic<std::vector<Weight>, Weight>(_antig, capacities,
+			overapprox_conflict_detector = new EdmondsKarpDynamic<Weight>(_antig,
 					source, target);
 		}
 		if (opt_conflict_min_cut_maxflow || opt_adaptive_conflict_mincut)
-			learn_cut = new KohliTorr<CutStatus, long>(learn_graph, cutStatus, source, target, opt_kt_preserve_order);
+			learn_cut = new KohliTorr<long>(learn_graph, source, target, opt_kt_preserve_order);
 		
 	} else {
-		underapprox_detector = new EdmondsKarpAdj<std::vector<Weight>, Weight>(_g, capacities, source, target);
-		overapprox_detector = new EdmondsKarpAdj<std::vector<Weight>, Weight>(_antig, capacities, source, target);
+		underapprox_detector = new EdmondsKarpAdj<Weight>(_g, source, target);
+		overapprox_detector = new EdmondsKarpAdj<Weight>(_antig, source, target);
 		underapprox_conflict_detector = underapprox_detector;
 		overapprox_conflict_detector = overapprox_detector;
 		if (opt_conflict_min_cut_maxflow || opt_adaptive_conflict_mincut)
-			learn_cut = new EdmondsKarpAdj<CutStatus, long>(learn_graph, cutStatus, source, target);
+			learn_cut = new EdmondsKarpAdj<long>(learn_graph, source, target);
 	}
 	
 #ifdef RECORD
@@ -378,7 +378,7 @@ void MaxflowDetector<Weight>::buildMaxFlowTooLowReason(Weight maxflow, vec<Lit> 
 
 
 		 }*/
-		if (f < cutStatus.inf) {
+		if (f < 0x0FF0F0) {
 			assert(f < 0xF0F0F0);
 			assert(f == cut.size());			//because edges are only ever infinity or 1
 			for (int i = 0; i < cut.size(); i++) {
@@ -638,8 +638,8 @@ bool MaxflowDetector<Weight>::propagate(vec<Lit> & conflict) {
 }
 template<typename Weight>
 bool MaxflowDetector<Weight>::checkSatisfied() {
-	EdmondsKarpAdj<std::vector<Weight>, Weight> positiveCheck(g_under, capacities, source, target);
-	EdmondsKarpAdj<std::vector<Weight>, Weight> negativeCheck(g_over, capacities, source, target);
+	EdmondsKarpAdj<Weight> positiveCheck(g_under, source, target);
+	EdmondsKarpAdj<Weight> negativeCheck(g_over, source, target);
 	for (int j = 0; j < flow_lits.size(); j++) {
 		
 		Lit l = flow_lits[j].l;
@@ -733,33 +733,26 @@ void MaxflowDetector<Weight>::collectDisabledEdges() {
 			back_edges.growTo(g_under.edges() * 2, -1);
 			
 			//add every edge twice
-			for (auto & e : g_under.all_edges) {
+			for (auto & e : g_under.getEdges()) {
 				if (back_edges[e.id * 2] == -1) {
 					learn_graph.addEdge(e.from, e.to);
 					learn_graph.addEdge(e.from, e.to);
 				}
 			}
 			
-			for (auto & e : g_under.all_edges) {
+			for (auto & e : g_under.getEdges()) {
 				if (back_edges[e.id * 2] == -1) {
 					back_edges[e.id * 2] = learn_graph.addEdge(e.to, e.from);
 					back_edges[e.id * 2 + 1] = learn_graph.addEdge(e.to, e.from);
 					
 				}
 			}
-			for (auto & e : learn_graph.all_edges) {
+			for (auto & e : learn_graph.getEdges()) {
 				learn_graph.disableEdge(e.id);
 			}
 			learn_graph.invalidate();
 			
-#ifdef RECORD
-			if (learn_graph.outfile) {
-				for (int edgeID = 0; edgeID < learn_graph.edges(); edgeID++) {
-					fprintf(learn_graph.outfile, "edge_weight %d %ld\n", edgeID, cutStatus[edgeID]);
-				}
-				fflush(learn_graph.outfile);
-			}
-#endif
+
 		}
 		
 		if (learngraph_history_clears != g_over.historyclears || g_over.changed()) {
@@ -900,32 +893,24 @@ void MaxflowDetector<Weight>::collectChangedEdges() {
 			back_edges.growTo(g_under.edges() * 2, -1);
 			
 			//add every edge twice
-			for (auto & e : g_under.all_edges) {
+			for (auto & e : g_under.getEdges()) {
 				if (back_edges[e.id * 2] == -1) {
 					learn_graph.addEdge(e.from, e.to);
 					learn_graph.addEdge(e.from, e.to);
 				}
 			}
 			
-			for (auto & e : g_under.all_edges) {
+			for (auto & e : g_under.getEdges()) {
 				if (back_edges[e.id * 2] == -1) {
 					back_edges[e.id * 2] = learn_graph.addEdge(e.to, e.from);
 					back_edges[e.id * 2 + 1] = learn_graph.addEdge(e.to, e.from);
 				}
 			}
-			for (auto & e : learn_graph.all_edges) {
+			for (auto & e : learn_graph.getEdges()) {
 				learn_graph.disableEdge(e.id);
 			}
 			learn_graph.invalidate();
-			
-#ifdef RECORD
-			if (learn_graph.outfile) {
-				for (int edgeID = 0; edgeID < learn_graph.edges(); edgeID++) {
-					fprintf(learn_graph.outfile, "edge_weight %d %ld\n", edgeID, cutStatus[edgeID]);
-				}
-				fflush(learn_graph.outfile);
-			}
-#endif
+
 		}
 	}
 	

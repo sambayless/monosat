@@ -60,7 +60,7 @@ public:
 	Weight highest_weight_lit = -1;
 
 	vec<int> force_reason;
-	std::vector<Weight> & edge_weights;
+
 	struct MSTWeightLit {
 		Lit l;
 		bool inclusive;
@@ -138,7 +138,7 @@ public:
 	void addWeightLit(Var weight_var, Weight & min_weight, bool inclusive);
 	void printSolution(std::ostream & write_to);
 	MSTDetector(int _detectorID, GraphTheorySolver<Weight> * _outer, DynamicGraph<Weight>  &_g, DynamicGraph<Weight>  &_antig,
-			std::vector<Weight> & _edge_weights, double seed = 1); //:Detector(_detectorID),outer(_outer),within(-1),source(_source),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL){}
+			double seed = 1); //:Detector(_detectorID),outer(_outer),within(-1),source(_source),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL){}
 	virtual ~MSTDetector() {
 		
 	}
