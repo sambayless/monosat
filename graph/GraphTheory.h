@@ -83,8 +83,8 @@ public:
 	MSTDetector<Weight> * mstDetector = nullptr;
 	vec<ReachabilityConstraint> unimplemented_reachability_constraints;
 
-	DynamicGraph g_under;
-	DynamicGraph g_over;
+	DynamicGraph<Weight> g_under;
+	DynamicGraph<Weight> g_over;
 	/**
 	 * The cutgraph is (optionally) used for conflict analysis by some graph theories.
 	 * It has two edges for every edge in the real graph (with indices edgeID*2 and edgeID*2+1).
@@ -93,7 +93,7 @@ public:
 	 * Otherwise, if edge ID is unassigned or true, then edge ID*2 is disabled in the cutgraph, and
 	 * edge ID*2+1 is enabled.
 	 */
-	DynamicGraph cutGraph;
+	DynamicGraph<long> cutGraph;
 
 	//Var min_edge_var;
 	//int num_edges;
@@ -820,7 +820,7 @@ public:
 #ifndef NDEBUG
 		//drawFull(from,to);
 		
-		DynamicGraph g;
+		DynamicGraph<Weight> g;
 		for (int i = 0; i < nNodes(); i++) {
 			g.addNode();
 		}
@@ -830,15 +830,15 @@ public:
 				continue;
 			Edge e = edge_list[i];
 			if (value(e.v) != l_False) {
-				g.addEdge(e.from, e.to);
+				g.addEdge(e.from, e.to,g.getWeight(e.edgeID));
 			}
 		}
 		if (undirected) {
-			UnweightedDijkstra<Reach::NullStatus, true> d(from, g);
+			UnweightedDijkstra<Weight, Reach::NullStatus, true> d(from, g);
 			
 			return !d.connected(to);
 		} else {
-			UnweightedDijkstra<Reach::NullStatus, false> d(from, g);
+			UnweightedDijkstra<Weight,Reach::NullStatus, false> d(from, g);
 			
 			return !d.connected(to);
 		}

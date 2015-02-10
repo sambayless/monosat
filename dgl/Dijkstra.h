@@ -31,11 +31,11 @@
 
 namespace dgl {
 
-template<typename Weight = int, class Status = typename Distance<Weight>::NullStatus, bool undirected = false>
+template<typename Weight = long, class Status = typename Distance<Weight>::NullStatus, bool undirected = false>
 class Dijkstra: public Distance<Weight> {
 public:
-	DynamicGraph & g;
-	std::vector<Weight> & weights;
+	DynamicGraph<Weight> & g;
+
 	Status & status;
 	int reportPolarity;
 
@@ -74,16 +74,16 @@ public:
 
 	double stats_full_update_time = 0;
 	double stats_fast_update_time = 0;
-	Dijkstra(int s, DynamicGraph & graph, std::vector<Weight> & weights, Status & status, int reportPolarity = 0) :
-			g(graph), weights(weights), status(status), reportPolarity(reportPolarity), last_modification(-1), last_addition(
+	Dijkstra(int s, DynamicGraph<Weight> & graph, Status & status, int reportPolarity = 0) :
+			g(graph), status(status), reportPolarity(reportPolarity), last_modification(-1), last_addition(
 					-1), last_deletion(-1), history_qhead(0), last_history_clear(0), source(s), INF(0), q(DistCmp(dist)) {
 		
 		mod_percentage = 0.2;
 		
 	}
 	
-	Dijkstra(int s, DynamicGraph & graph, std::vector<Weight> & weights, int reportPolarity = 0) :
-			g(graph), weights(weights), status(Distance<Weight>::nullStatus), reportPolarity(reportPolarity), last_modification(
+	Dijkstra(int s, DynamicGraph<Weight>  & graph,  int reportPolarity = 0) :
+			g(graph), status(Distance<Weight>::nullStatus), reportPolarity(reportPolarity), last_modification(
 					-1), last_addition(-1), last_deletion(-1), history_qhead(0), last_history_clear(0), source(s), INF(
 					0), q(DistCmp(dist)) {
 		
@@ -163,7 +163,7 @@ public:
 			
 			INF = 1;
 			for (auto & e : g.all_edges) {
-				INF += weights[e.id];
+				INF += g.getWeight(e.id);
 			}
 			dist.resize(g.nodes());
 			prev.resize(g.nodes());
@@ -192,7 +192,7 @@ public:
 					continue;
 				int edgeID = g.incident(u, i, undirected).id;
 				int v = g.incident(u, i, undirected).node;
-				Weight alt = dist[u] + weights[edgeID];
+				Weight alt = dist[u] +  g.getWeight(edgeID);
 				if (alt < dist[v]) {
 					dist[v] = alt;
 					prev[v] = edgeID;
@@ -306,18 +306,18 @@ public:
 	int previous(int t) {
 		if (prev[t] < 0)
 			return -1;
-		if (undirected && g.all_edges[incomingEdge(t)].from == t) {
-			return g.all_edges[incomingEdge(t)].to;
+		if (undirected && g.getEdge(incomingEdge(t)).from == t) {
+			return g.getEdge(incomingEdge(t)).to;
 		}
-		assert(g.all_edges[incomingEdge(t)].to == t);
-		return g.all_edges[incomingEdge(t)].from;
+		assert(g.getEdge(incomingEdge(t)).to == t);
+		return g.getEdge(incomingEdge(t)).from;
 	}
 };
 
-template<class Status = Reach::NullStatus, bool undirected = false>
+template<typename Weight, class Status = Reach::NullStatus, bool undirected = false>
 class UnweightedDijkstra: public Distance<int> {
 public:
-	DynamicGraph & g;
+	DynamicGraph<Weight>  & g;
 	Status & status;
 	int reportPolarity;
 
@@ -356,7 +356,7 @@ public:
 
 	double stats_full_update_time = 0;
 	double stats_fast_update_time = 0;
-	UnweightedDijkstra(int s, DynamicGraph & graph, Status & status, int reportPolarity = 0) :
+	UnweightedDijkstra(int s, DynamicGraph<Weight>  & graph, Status & status, int reportPolarity = 0) :
 			g(graph), status(status), reportPolarity(reportPolarity), last_modification(-1), last_addition(-1), last_deletion(
 					-1), history_qhead(0), last_history_clear(0), source(s), INF(0), q(DistCmp(dist)) {
 		
@@ -364,7 +364,7 @@ public:
 		
 	}
 	
-	UnweightedDijkstra(int s, DynamicGraph & graph, int reportPolarity = 0) :
+	UnweightedDijkstra(int s, DynamicGraph<Weight>  & graph, int reportPolarity = 0) :
 			g(graph), status(Reach::nullStatus), reportPolarity(reportPolarity), last_modification(-1), last_addition(
 					-1), last_deletion(-1), history_qhead(0), last_history_clear(0), source(s), INF(0), q(DistCmp(dist)) {
 		
@@ -733,11 +733,11 @@ public:
 	int previous(int t) {
 		if (prev[t] < 0)
 			return -1;
-		if (undirected && g.all_edges[incomingEdge(t)].from == t) {
-			return g.all_edges[incomingEdge(t)].to;
+		if (undirected && g.getEdge(incomingEdge(t)).from == t) {
+			return g.getEdge(incomingEdge(t)).to;
 		}
-		assert(g.all_edges[incomingEdge(t)].to == t);
-		return g.all_edges[incomingEdge(t)].from;
+		assert(g.getEdge(incomingEdge(t)).to == t);
+		return g.getEdge(incomingEdge(t)).from;
 	}
 };
 }

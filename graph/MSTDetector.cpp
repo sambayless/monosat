@@ -32,8 +32,8 @@
 using namespace Monosat;
 
 template<typename Weight>
-MSTDetector<Weight>::MSTDetector(int detectorID, GraphTheorySolver<Weight> * outer, DynamicGraph &g,
-		DynamicGraph &antig, std::vector<Weight> & edge_weights, double seed) :
+MSTDetector<Weight>::MSTDetector(int detectorID, GraphTheorySolver<Weight> * outer, DynamicGraph<Weight>  &g,
+		DynamicGraph<Weight>  &antig, std::vector<Weight> & edge_weights, double seed) :
 		Detector(detectorID), outer(outer), g_under(g), g_over(antig), rnd_seed(seed), edge_weights(edge_weights) {
 	checked_unique = false;
 	all_unique = true;
@@ -494,8 +494,8 @@ void MSTDetector<Weight>::buildEdgeNotInTreeReason(int edgeid, vec<Lit> & confli
 	//this edge cannot be in the mst.
 	seen.clear();
 	seen.growTo(g_under.nodes());
-	int u = g_under.all_edges[edgeid].from;
-	int v = g_under.all_edges[edgeid].to;
+	int u = g_under.getEdge(edgeid).from;
+	int v = g_under.getEdge(edgeid).to;
 	underapprox_conflict_detector->update();
 	//assert(!g.edgeEnabled(edgeid));
 	assert(!underapprox_conflict_detector->edgeInTree(edgeid));

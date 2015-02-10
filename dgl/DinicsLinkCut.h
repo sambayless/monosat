@@ -60,7 +60,7 @@ public:
 	std::vector<int> dist;
 	std::vector<int> pos;    //position in the combined forward and backward adjacency list of each node in the DFS.
 	std::vector<bool> changed;
-	DynamicGraph& g;
+	DynamicGraph<int>& g;
 	Capacity & capacity;
 	int source = -1;
 	int sink = -1;
@@ -118,7 +118,7 @@ public:
 	}
 	
 public:
-	DinitzLinkCut(DynamicGraph& _g, Capacity & cap, int source = -1, int sink = -1) :
+	DinitzLinkCut(DynamicGraph<int>& _g, Capacity & cap, int source = -1, int sink = -1) :
 			g(_g), capacity(cap), source(source), sink(sink), INF(0xF0F0F0)
 #ifdef DEBUG_MAXFLOW
 	,ek(_g,cap,source,sink)

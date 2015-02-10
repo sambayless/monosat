@@ -44,7 +44,7 @@ template<class Status, typename Weight = int>
 class SpiraPan: public MinimumSpanningTree<Weight> {
 public:
 	
-	DynamicGraph & g;
+	DynamicGraph<Weight> & g;
 	std::vector<Weight> & weights;
 	Status & status;
 	int last_modification;
@@ -108,7 +108,7 @@ public:
 	double stats_full_update_time;
 	double stats_fast_update_time;
 
-	SpiraPan(DynamicGraph & graph, std::vector<Weight> & weights, Status & status, int reportPolarity = 0) :
+	SpiraPan(DynamicGraph<Weight> & graph, std::vector<Weight> & weights, Status & status, int reportPolarity = 0) :
 			g(graph), weights(weights), status(status), last_modification(-1), last_addition(-1), last_deletion(-1), history_qhead(
 					0), last_history_clear(0), INF(0), reportPolarity(reportPolarity), Q(VertLt(component_edge_weight))
 #ifndef NDEBUG
@@ -250,8 +250,8 @@ public:
 	}
 	
 	void addEdgeToMST(int edgeid) {
-		int u = g.all_edges[edgeid].from;
-		int v = g.all_edges[edgeid].to;
+		int u = g.getEdge(edgeid).from;
+		int v = g.getEdge(edgeid).to;
 		
 		dbg_parents();
 		if (components[u] != components[v]) {
@@ -434,8 +434,8 @@ public:
 			//following Spira & Pan, each removed edge splits the spanning tree into separate components that are MST's for those components.
 			//after all edges that will be removed have been removed, we will run Prim's to stitch those components back together, if possible.
 			
-			int u = g.all_edges[edgeid].from;
-			int v = g.all_edges[edgeid].to;
+			int u = g.getEdge(edgeid).from;
+			int v = g.getEdge(edgeid).to;
 			
 			in_tree[edgeid] = false;
 			min_weight -= weights[edgeid];
@@ -524,8 +524,8 @@ public:
 					//connect these two components together
 					int edgeid = edge_to_component[cur_component];
 					assert(weights[edgeid] == component_edge_weight[cur_component]);
-					int u = g.all_edges[edgeid].from;
-					int v = g.all_edges[edgeid].to;
+					int u = g.getEdge(edgeid).from;
+					int v = g.getEdge(edgeid).to;
 					assert(components[u] == c || components[v] == c);
 					assert(components[u] == cur_component || components[v] == cur_component);
 					

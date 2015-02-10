@@ -46,7 +46,7 @@ void MaxflowDetector<Weight>::buildDinitzLinkCut() {
 
 template<typename Weight>
 MaxflowDetector<Weight>::MaxflowDetector(int _detectorID, GraphTheorySolver<Weight> * _outer,
-		std::vector<Weight> & capacities, DynamicGraph &_g, DynamicGraph &_antig, int from, int _target, double seed) :
+		std::vector<Weight> & capacities, DynamicGraph<Weight>  &_g, DynamicGraph<Weight>  &_antig, int from, int _target, double seed) :
 		LevelDetector(_detectorID), outer(_outer), capacities(capacities), g_under(_g), g_over(_antig), source(
 				from), target(_target), rnd_seed(seed), cutStatus(*this) {
 	

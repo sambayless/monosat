@@ -46,7 +46,7 @@ public:
 	int last_history_clear;
 	int source = -1;
 	int sink = -1;
-	DynamicGraph& g;
+	DynamicGraph<Weight>& g;
 	Weight INF;
 
 	std::vector<int> Q;
@@ -106,7 +106,7 @@ public:
 		
 	}
 public:
-	EdmondsKarp(DynamicGraph& _g, int source = -1, int sink = -1) :
+	EdmondsKarp(DynamicGraph<Weight>& _g, int source = -1, int sink = -1) :
 			g(_g), source(source), sink(sink), INF(0xF0F0F0) {
 		curflow = -1;
 		

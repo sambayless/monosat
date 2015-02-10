@@ -30,11 +30,11 @@
 
 namespace dgl {
 
-template<class Status = Reach::NullStatus, bool undirected = false>
+template<typename Weight, class Status = Reach::NullStatus, bool undirected = false>
 class BFSReachability: public Reach {
 public:
 	
-	DynamicGraph & g;
+	DynamicGraph<Weight> & g;
 	Status & status;
 	int last_modification;
 	int last_addition;
@@ -74,7 +74,7 @@ public:
 	double stats_full_update_time;
 	double stats_fast_update_time;
 
-	BFSReachability(int s, DynamicGraph & graph, Status & _status = Reach::nullStatus, int _reportPolarity = 0) :
+	BFSReachability(int s, DynamicGraph<Weight> & graph, Status & _status = Reach::nullStatus, int _reportPolarity = 0) :
 			g(graph), status(_status), last_modification(-1), last_addition(-1), last_deletion(-1), history_qhead(0), last_history_clear(
 					0), source(s), INF(0), reportPolarity(_reportPolarity) {
 		
@@ -673,11 +673,11 @@ public:
 /**
  * Detect connectivity within a number of steps in unweighted, directed graphs
  */
-template<class Status = Reach::NullStatus, bool undirected = false>
+template<typename Weight,class Status = Reach::NullStatus, bool undirected = false>
 class UnweightedBFS: public Distance<int> {
 public:
 	
-	DynamicGraph & g;
+	DynamicGraph<Weight> & g;
 	Status & status;
 	int last_modification;
 	int last_addition;
@@ -715,7 +715,7 @@ public:
 
 public:
 	
-	UnweightedBFS(int s, DynamicGraph & graph, int _reportPolarity = 0) :
+	UnweightedBFS(int s, DynamicGraph<Weight> & graph, int _reportPolarity = 0) :
 			g(graph), status(Reach::nullStatus), last_modification(-1), last_addition(-1), last_deletion(-1), history_qhead(
 					0), last_history_clear(0), source(s), INF(0), reportPolarity(_reportPolarity) {
 		maxDistance = -1;
@@ -730,7 +730,7 @@ public:
 		stats_fast_failed_updates = 0;
 	}
 	
-	UnweightedBFS(int s, DynamicGraph & graph, Status & _status, int _reportPolarity = 0) :
+	UnweightedBFS(int s, DynamicGraph<Weight> & graph, Status & _status, int _reportPolarity = 0) :
 			g(graph), status(_status), last_modification(-1), last_addition(-1), last_deletion(-1), history_qhead(0), last_history_clear(
 					0), source(s), INF(0), reportPolarity(_reportPolarity) {
 		maxDistance = -1;
@@ -952,11 +952,11 @@ public:
 		
 		if (incomingEdge(t) < 0)
 			return -1;
-		if (undirected && g.all_edges[incomingEdge(t)].from == t) {
-			return g.all_edges[incomingEdge(t)].to;
+		if (undirected && g.getEdge(incomingEdge(t)).from == t) {
+			return g.getEdge(incomingEdge(t)).to;
 		}
-		assert(g.all_edges[incomingEdge(t)].to == t);
-		return g.all_edges[incomingEdge(t)].from;
+		assert(g.getEdge(incomingEdge(t)).to == t);
+		return g.getEdge(incomingEdge(t)).from;
 	}
 	
 };

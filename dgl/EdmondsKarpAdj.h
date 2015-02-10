@@ -58,7 +58,7 @@ public:
 	std::vector<LocalEdge> prev;
 	std::vector<Weight> M;
 	std::vector<bool> changed;
-	DynamicGraph& g;
+	DynamicGraph<Weight>& g;
 	Capacity & capacity;
 	int source = -1;
 	int sink = -1;
@@ -128,7 +128,7 @@ public:
 		
 	}
 public:
-	EdmondsKarpAdj(DynamicGraph& _g, Capacity & cap, int source = -1, int sink = -1) :
+	EdmondsKarpAdj(DynamicGraph<Weight>& _g, Capacity & cap, int source = -1, int sink = -1) :
 			g(_g), capacity(cap), source(source), sink(sink), INF(0xF0F0F0)
 	/*
 	 #ifdef DEBUG_MAXFLOW
@@ -277,7 +277,7 @@ public:
 		 }*/
 		changed.resize(g.nEdgeIDs());
 		F.clear();
-		F.resize(g.all_edges.size());
+		F.resize(g.edges());
 		prev.resize(g.nodes());
 		M.resize(g.nodes());
 		

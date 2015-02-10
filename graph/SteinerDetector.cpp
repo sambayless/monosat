@@ -33,7 +33,7 @@ using namespace Monosat;
 
 template<typename Weight>
 SteinerDetector<Weight>::SteinerDetector(int detectorID, GraphTheorySolver<Weight> * outer,
-		std::vector<Weight> &weights, DynamicGraph &g, DynamicGraph &antig, double seed) :
+		std::vector<Weight> &weights, DynamicGraph<Weight>  &g, DynamicGraph<Weight>  &antig, double seed) :
 		Detector(detectorID), outer(outer), g_under(g), g_over(antig), weights(weights), rnd_seed(seed) {
 	checked_unique = false;
 	all_unique = true;

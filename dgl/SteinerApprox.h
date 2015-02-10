@@ -41,7 +41,7 @@ template<class TerminalSet, class Status, typename Weight = int>
 class SteinerApprox: public SteinerTree<Weight> {
 public:
 	
-	DynamicGraph & g;
+	DynamicGraph<Weight> & g;
 	std::vector<Weight> weights;
 	TerminalSet & terminals;
 	Status & status;
@@ -73,7 +73,7 @@ public:
 	double stats_full_update_time;
 	double stats_fast_update_time;
 
-	SteinerApprox(DynamicGraph & graph, std::vector<Weight> weights, TerminalSet & terminals, Status & _status,
+	SteinerApprox(DynamicGraph<Weight> & graph, std::vector<Weight> weights, TerminalSet & terminals, Status & _status,
 			int _reportPolarity = 0) :
 			g(graph), weights(weights), terminals(terminals), status(_status), last_modification(-1), last_addition(-1), last_deletion(
 					-1), history_qhead(0), last_history_clear(0), INF(0), reportPolarity(_reportPolarity) {
@@ -127,7 +127,7 @@ public:
 			
 			//construct the metric closure of GL on the set of terminal nodes.
 			//i.e., find the shortest path between each terminal node; then form a graph with one edge for each such path...
-			DynamicGraph induced;
+			DynamicGraph<Weight> induced;
 			
 			for (int i = 0; i < g.nodes(); i++) {
 				induced.addNode();

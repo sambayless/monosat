@@ -47,9 +47,8 @@ class DistanceDetector: public Detector {
 public:
 	GraphTheorySolver<Weight> * outer;
 
-	std::vector<Weight> & weights;
-	DynamicGraph &g_under;
-	DynamicGraph &g_over;
+	DynamicGraph<Weight>  &g_under;
+	DynamicGraph<Weight>  &g_over;
 	//int within;
 	int source;
 	double rnd_seed;
@@ -117,7 +116,7 @@ public:
 
 	std::vector<double> rnd_weight;
 
-	WeightedDijkstra<double> * rnd_path;
+	WeightedDijkstra<Weight,double> * rnd_path;
 	/*struct OptimalWeightEdgeStatus{
 	 DistanceDetector & detector;
 	 int operator [] (int edge) const ;
@@ -237,8 +236,8 @@ public:
 	void updateShortestPaths(bool unweighted);
 	void addUnweightedShortestPathLit(int from, int to, Var reach_var, int within_steps = -1);
 	void addWeightedShortestPathLit(int from, int to, Var reach_var, Weight within_distance);
-	DistanceDetector(int _detectorID, GraphTheorySolver<Weight> * _outer, std::vector<Weight> & weights,
-			DynamicGraph &_g, DynamicGraph &_antig, int _source, double seed = 1);//:Detector(_detectorID),outer(_outer),within(-1),source(_source),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL){}
+	DistanceDetector(int _detectorID, GraphTheorySolver<Weight> * _outer,
+			DynamicGraph<Weight>  &_g, DynamicGraph<Weight>  &_antig, int _source, double seed = 1);//:Detector(_detectorID),outer(_outer),within(-1),source(_source),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL){}
 	virtual ~DistanceDetector() {
 		
 	}

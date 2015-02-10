@@ -42,8 +42,8 @@ class MSTDetector: public Detector {
 public:
 	GraphTheorySolver<Weight> * outer;
 
-	DynamicGraph & g_under;
-	DynamicGraph & g_over;
+	DynamicGraph<Weight> & g_under;
+	DynamicGraph<Weight> & g_over;
 
 	double rnd_seed;
 	CRef underprop_marker;
@@ -137,7 +137,7 @@ public:
 	void addTreeEdgeLit(int edge_id, Var reach_var);
 	void addWeightLit(Var weight_var, Weight & min_weight, bool inclusive);
 	void printSolution(std::ostream & write_to);
-	MSTDetector(int _detectorID, GraphTheorySolver<Weight> * _outer, DynamicGraph &_g, DynamicGraph &_antig,
+	MSTDetector(int _detectorID, GraphTheorySolver<Weight> * _outer, DynamicGraph<Weight>  &_g, DynamicGraph<Weight>  &_antig,
 			std::vector<Weight> & _edge_weights, double seed = 1); //:Detector(_detectorID),outer(_outer),within(-1),source(_source),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL){}
 	virtual ~MSTDetector() {
 		

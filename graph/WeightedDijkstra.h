@@ -32,10 +32,10 @@
 
 using namespace dgl;
 
-template<class Weight = double, bool undirected = false>
+template<class GraphWeight, class Weight = double, bool undirected = false>
 class WeightedDijkstra: public Distance<Weight> {
 public:
-	DynamicGraph & g;
+	DynamicGraph<GraphWeight> & g;
 	std::vector<Weight> & weights;
 	int last_modification;
 	int last_addition;
@@ -77,7 +77,7 @@ public:
 
 	double stats_full_update_time = 0;
 	double stats_fast_update_time = 0;
-	WeightedDijkstra(int s, DynamicGraph & graph, std::vector<Weight> & weights) :
+	WeightedDijkstra(int s, DynamicGraph<GraphWeight> & graph, std::vector<Weight> & weights) :
 			g(graph), weights(weights), last_modification(-1), last_addition(-1), last_deletion(-1), history_qhead(0), last_history_clear(
 					0), source(s), INF(0), q(DistCmp(dist)) {
 		
@@ -381,11 +381,11 @@ public:
 	int previous(int t) {
 		if (prev[t] < 0)
 			return -1;
-		if (undirected && g.all_edges[incomingEdge(t)].from == t) {
-			return g.all_edges[incomingEdge(t)].to;
+		if (undirected && g.getEdge(incomingEdge(t)).from == t) {
+			return g.getEdge(incomingEdge(t)).to;
 		}
-		assert(g.all_edges[incomingEdge(t)].to == t);
-		return g.all_edges[incomingEdge(t)].from;
+		assert(g.getEdge(incomingEdge(t)).to == t);
+		return g.getEdge(incomingEdge(t)).from;
 	}
 	
 };

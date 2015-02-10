@@ -27,8 +27,8 @@
 #include <limits>
 using namespace Monosat;
 template<typename Weight>
-CycleDetector<Weight>::CycleDetector(int _detectorID, GraphTheorySolver<Weight> * _outer, DynamicGraph &g_under,
-		DynamicGraph &g_over, bool detect_directed_cycles, double seed) :
+CycleDetector<Weight>::CycleDetector(int _detectorID, GraphTheorySolver<Weight> * _outer, DynamicGraph<Weight>  &g_under,
+		DynamicGraph<Weight>  &g_over, bool detect_directed_cycles, double seed) :
 		Detector(_detectorID), outer(_outer), g_under(g_under), g_over(g_over), rnd_seed(seed), underapprox_directed_cycle_detector(NULL), overapprox_directed_cycle_detector(
 				NULL) {
 	
@@ -37,18 +37,18 @@ CycleDetector<Weight>::CycleDetector(int _detectorID, GraphTheorySolver<Weight> 
 	
 
 	if(cyclealg==CycleAlg::ALG_DFS_CYCLE){
-		underapprox_directed_cycle_detector = new DFSCycle<>(g_under, detect_directed_cycles, 1);
-		overapprox_directed_cycle_detector = new DFSCycle<>(g_over, detect_directed_cycles, 1);
+		underapprox_directed_cycle_detector = new DFSCycle<Weight>(g_under, detect_directed_cycles, 1);
+		overapprox_directed_cycle_detector = new DFSCycle<Weight>(g_over, detect_directed_cycles, 1);
 
 		overapprox_undirected_cycle_detector=overapprox_directed_cycle_detector;
 		underapprox_undirected_cycle_detector=underapprox_directed_cycle_detector;
 
 	}else if(cyclealg==CycleAlg::ALG_PK_CYCLE){
-		underapprox_directed_cycle_detector = new PKToplogicalSort(g_under,  1);
-		overapprox_directed_cycle_detector = new PKToplogicalSort(g_over,  1);
+		underapprox_directed_cycle_detector = new PKToplogicalSort<Weight>(g_under,  1);
+		overapprox_directed_cycle_detector = new PKToplogicalSort<Weight>(g_over,  1);
 
-		underapprox_undirected_cycle_detector = new DFSCycle<>(g_under, false, 1);
-		overapprox_undirected_cycle_detector = new DFSCycle<>(g_over, false, 1);
+		underapprox_undirected_cycle_detector = new DFSCycle<Weight>(g_under, false, 1);
+		overapprox_undirected_cycle_detector = new DFSCycle<Weight>(g_over, false, 1);
 	}
 	directed_cycle_marker = outer->newReasonMarker(getID());
 	no_directed_cycle_marker = outer->newReasonMarker(getID());
@@ -251,8 +251,8 @@ bool CycleDetector<Weight>::propagate(vec<Lit> & conflict) {
 }
 template<typename Weight>
 bool CycleDetector<Weight>::checkSatisfied() {
-	Cycle * checkDirected = new DFSCycle<>(g_under, true, 1);
-	Cycle * checkUndirected = new DFSCycle<>(g_under, false, 1);
+	Cycle * checkDirected = new DFSCycle<Weight>(g_under, true, 1);
+	Cycle * checkUndirected = new DFSCycle<Weight>(g_under, false, 1);
 	if(directed_acyclic_lit != lit_Undef){
 		if(outer->value(directed_acyclic_lit)==l_True && checkDirected->hasDirectedCycle()){
 			return false;

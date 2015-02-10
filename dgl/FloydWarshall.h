@@ -31,11 +31,11 @@
 
 namespace dgl {
 
-template<class Status = AllPairs::NullStatus>
+template<typename Weight, class Status = AllPairs::NullStatus>
 class FloydWarshall: public AllPairs {
 public:
 	
-	DynamicGraph & g;
+	DynamicGraph<Weight> & g;
 	Status & status;
 	int last_modification;
 	int last_addition;
@@ -67,7 +67,7 @@ public:
 	double stats_full_update_time;
 	double stats_fast_update_time;
 
-	FloydWarshall(DynamicGraph & graph, Status & _status = AllPairs::nullStatus, int _reportPolarity = 0) :
+	FloydWarshall(DynamicGraph<Weight> & graph, Status & _status = AllPairs::nullStatus, int _reportPolarity = 0) :
 			g(graph), status(_status), last_modification(-1), last_addition(-1), last_deletion(-1), history_qhead(0), last_history_clear(
 					0), INF(0), reportPolarity(0) {
 		
@@ -149,10 +149,10 @@ public:
 			dist[i][i] = 0;
 		}
 		
-		for (int i = 0; i < g.all_edges.size(); i++) {
-			if (g.edgeEnabled(g.all_edges[i].id)) {
-				int u = g.all_edges[i].from;
-				int v = g.all_edges[i].to;
+		for (int i = 0; i < g.edges(); i++) {
+			if (g.hasEdge(i) && g.edgeEnabled(i)) {
+				int u = g.getEdge(i).from;
+				int v = g.getEdge(i).to;
 				if (u != v)
 					dist[u][v] = 1;
 			}

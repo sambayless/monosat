@@ -57,7 +57,7 @@ class EdmondsKarpDynamic: public MaxFlow<Weight> {
 	std::vector<Weight> M;
 	std::vector<int> changed_edges;
 	std::vector<bool> changed;
-	DynamicGraph& g;
+	DynamicGraph<Weight>& g;
 	Capacity & capacity;
 	bool allow_flow_cycles = false;
 	int source = -1;
@@ -145,7 +145,7 @@ class EdmondsKarpDynamic: public MaxFlow<Weight> {
 	}
 	
 public:
-	EdmondsKarpDynamic(DynamicGraph& _g, Capacity & cap, int source, int sink) :
+	EdmondsKarpDynamic(DynamicGraph<Weight>& _g, Capacity & cap, int source, int sink) :
 			g(_g), capacity(cap), source(source), sink(sink), INF(0xF0F0F0)
 #ifdef DEBUG_MAXFLOW
 	,ek(_g,cap,source,sink)
@@ -231,7 +231,7 @@ public:
 			return curflow;
 		} else if (last_modification <= 0 || g.historyclears != last_history_clear || g.changed()) {
 			F.clear();
-			F.resize(g.all_edges.size());
+			F.resize(g.edges());
 			changed.resize(g.nEdgeIDs());
 			prev.resize(g.nodes());
 			M.resize(g.nodes());
@@ -278,8 +278,8 @@ public:
 				} else {
 					//ok, check if the maxflow from u to v has not lowered now that we've removed this edge.
 					//if it hasn't, then we are still safe
-					int u = g.all_edges[edgeid].from;
-					int v = g.all_edges[edgeid].to;
+					int u = g.getEdge(edgeid).from;
+					int v = g.getEdge(edgeid).to;
 					
 					if (fv < 0) {
 						std::swap(u, v);

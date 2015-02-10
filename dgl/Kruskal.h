@@ -36,7 +36,7 @@ template<class Status, typename Weight = int>
 class Kruskal: public MinimumSpanningTree<Weight> {
 public:
 	
-	DynamicGraph & g;
+	DynamicGraph<Weight> & g;
 	std::vector<Weight>&weights;
 	Status & status;
 	int last_modification;
@@ -89,7 +89,7 @@ public:
 	double stats_full_update_time=0;
 	double stats_fast_update_time=0;
 
-	Kruskal(DynamicGraph & graph, std::vector<Weight> & weights, Status & _status =
+	Kruskal(DynamicGraph<Weight> & graph, std::vector<Weight> & weights, Status & _status =
 			MinimumSpanningTree<Weight>::nullStatus, int _reportPolarity = 0) :
 			g(graph), weights(weights), status(_status), last_modification(-1), last_addition(-1), last_deletion(-1), history_qhead(
 					0), last_history_clear(0), INF(0), reportPolarity(_reportPolarity), edge_heap(EdgeLt(weights)) {

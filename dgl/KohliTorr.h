@@ -35,7 +35,7 @@ namespace dgl {
 template<class Capacity, typename Weight>
 class KohliTorr: public MaxFlow<Weight> {
 	Weight f = 0;
-	DynamicGraph& g;
+	DynamicGraph<Weight>& g;
 	Capacity & capacity;
 	/**
 	 * Note: The Kohli Torr implementation does _not_ support multiple edges between the same nodes.
@@ -88,7 +88,7 @@ public:
 	double stats_calc_time = 0;
 	double stats_flow_time = 0;
 	long stats_flow_calcs = 0;
-	KohliTorr(DynamicGraph& _g, Capacity & cap, int source, int sink, bool kt_preserve_order = false) :
+	KohliTorr(DynamicGraph<Weight>& _g, Capacity & cap, int source, int sink, bool kt_preserve_order = false) :
 			g(_g), capacity(cap), source(source), sink(sink), kt_preserve_order(kt_preserve_order), INF(0xF0F0F0)
 #ifdef DEBUG_MAXFLOW
 	,ek(_g,cap,source,sink)

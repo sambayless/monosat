@@ -28,8 +28,8 @@
 #include "dgl/TarjansSCC.h"
 using namespace Monosat;
 template<typename Weight>
-ReachDetector<Weight>::ReachDetector(int _detectorID, GraphTheorySolver<Weight> * _outer, DynamicGraph &_g,
-		DynamicGraph &_antig, int from, double seed) :
+ReachDetector<Weight>::ReachDetector(int _detectorID, GraphTheorySolver<Weight> * _outer, DynamicGraph<Weight>  &_g,
+		DynamicGraph<Weight>  &_antig, int from, double seed) :
 		Detector(_detectorID), outer(_outer), g_under(_g), g_over(_antig), within(-1), source(from), rnd_seed(seed), cutStatus(
 				*this) { //,chokepoint_status(*this),chokepoint(chokepoint_status, _antig,source){
 
@@ -61,16 +61,16 @@ ReachDetector<Weight>::ReachDetector(int _detectorID, GraphTheorySolver<Weight> 
 	}
 	
 	if (opt_decide_graph_chokepoints) {
-		chokepoint_detector = new DFSReachability<Reach::NullStatus>(from, _antig, Reach::nullStatus, 1);
+		chokepoint_detector = new DFSReachability<Weight, Reach::NullStatus>(from, _antig, Reach::nullStatus, 1);
 		
 	}
 	if (opt_shrink_theory_conflicts) {
-		cutgraph_detector = new UnweightedRamalReps<Reach::NullStatus>(from, cutgraph, Reach::nullStatus, 0);
+		cutgraph_detector = new UnweightedRamalReps<Weight,Reach::NullStatus>(from, cutgraph, Reach::nullStatus, 0);
 	}
 	
 	if (opt_use_random_path_for_decisions) {
 		rnd_weight.clear();
-		rnd_path = new WeightedDijkstra<double>(from, _antig, rnd_weight);
+		rnd_path = new WeightedDijkstra<Weight,double>(from, _antig, rnd_weight);
 		for (int i = 0; i < outer->edge_list.size(); i++) {
 			double w = drand(rnd_seed);
 			
@@ -86,15 +86,15 @@ ReachDetector<Weight>::ReachDetector(int _detectorID, GraphTheorySolver<Weight> 
 	negativeReachStatus = new ReachDetector<Weight>::ReachStatus(*this, false);
 	if (reachalg == ReachAlg::ALG_BFS) {
 		if (!opt_encode_reach_underapprox_as_sat) {
-			underapprox_detector = new BFSReachability<ReachDetector<Weight>::ReachStatus>(from, _g,
+			underapprox_detector = new BFSReachability<Weight,ReachDetector<Weight>::ReachStatus>(from, _g,
 					*(positiveReachStatus), 1);
 		} else {
-			underapprox_fast_detector = new BFSReachability<ReachDetector<Weight>::ReachStatus>(from, _g,
+			underapprox_fast_detector = new BFSReachability<Weight,ReachDetector<Weight>::ReachStatus>(from, _g,
 					*(positiveReachStatus), 1);
 			//positive_reach_detector = new ReachDetector::CNFReachability(*this,false);
 		}
 		
-		overapprox_reach_detector = new BFSReachability<ReachDetector<Weight>::ReachStatus>(from, _antig,
+		overapprox_reach_detector = new BFSReachability<Weight,ReachDetector<Weight>::ReachStatus>(from, _antig,
 				*(negativeReachStatus), -1);
 		
 		underapprox_path_detector = underapprox_detector;
@@ -102,52 +102,52 @@ ReachDetector<Weight>::ReachDetector(int _detectorID, GraphTheorySolver<Weight> 
 		negative_distance_detector = (Distance<int> *) overapprox_path_detector;
 	} else if (reachalg == ReachAlg::ALG_DFS) {
 		if (!opt_encode_reach_underapprox_as_sat) {
-			underapprox_detector = new DFSReachability<ReachDetector<Weight>::ReachStatus>(from, _g,
+			underapprox_detector = new DFSReachability<Weight,ReachDetector<Weight>::ReachStatus>(from, _g,
 					*(positiveReachStatus), 1);
 		} else {
-			underapprox_fast_detector = new DFSReachability<ReachDetector<Weight>::ReachStatus>(from, _g,
+			underapprox_fast_detector = new DFSReachability<Weight,ReachDetector<Weight>::ReachStatus>(from, _g,
 					*(positiveReachStatus), 1);
 			//positive_reach_detector = new ReachDetector::CNFReachability(*this,false);
 		}
 		
-		overapprox_reach_detector = new DFSReachability<ReachDetector<Weight>::ReachStatus>(from, _antig,
+		overapprox_reach_detector = new DFSReachability<Weight,ReachDetector<Weight>::ReachStatus>(from, _antig,
 				*(negativeReachStatus), -1);
 		if (opt_conflict_shortest_path)
-			underapprox_path_detector = new UnweightedBFS<Reach::NullStatus>(from, _g, Reach::nullStatus, 1);
+			underapprox_path_detector = new UnweightedBFS<Weight,Reach::NullStatus>(from, _g, Reach::nullStatus, 1);
 		else
 			underapprox_path_detector = underapprox_detector;
 		
-		negative_distance_detector = new UnweightedBFS<Reach::NullStatus>(from, _antig, Reach::nullStatus, -1);
+		negative_distance_detector = new UnweightedBFS<Weight,Reach::NullStatus>(from, _antig, Reach::nullStatus, -1);
 		overapprox_path_detector = overapprox_reach_detector;
 	} else if (reachalg == ReachAlg::ALG_DISTANCE) {
 		if (!opt_encode_reach_underapprox_as_sat) {
-			underapprox_detector = new UnweightedBFS<ReachDetector<Weight>::ReachStatus>(from, _g,
+			underapprox_detector = new UnweightedBFS<Weight,ReachDetector<Weight>::ReachStatus>(from, _g,
 					*(positiveReachStatus), 1);
 		} else {
-			underapprox_fast_detector = new UnweightedBFS<ReachDetector<Weight>::ReachStatus>(from, _g,
+			underapprox_fast_detector = new UnweightedBFS<Weight,ReachDetector<Weight>::ReachStatus>(from, _g,
 					*(positiveReachStatus), 1);
 			//positive_reach_detector = new ReachDetector::CNFReachability(*this,false);
 		}
 		
-		overapprox_reach_detector = new UnweightedBFS<ReachDetector<Weight>::ReachStatus>(from, _antig,
+		overapprox_reach_detector = new UnweightedBFS<Weight,ReachDetector<Weight>::ReachStatus>(from, _antig,
 				*(negativeReachStatus), -1);
 		underapprox_path_detector = underapprox_detector;
 		overapprox_path_detector = overapprox_reach_detector;
 		negative_distance_detector = (Distance<int> *) overapprox_path_detector;
 	} else if (reachalg == ReachAlg::ALG_RAMAL_REPS) {
 		if (!opt_encode_reach_underapprox_as_sat) {
-			underapprox_detector = new UnweightedRamalReps<ReachDetector<Weight>::ReachStatus>(from, _g,
+			underapprox_detector = new UnweightedRamalReps<Weight,ReachDetector<Weight>::ReachStatus>(from, _g,
 					*(positiveReachStatus), 1, false);
 		} else {
-			underapprox_fast_detector = new UnweightedRamalReps<ReachDetector<Weight>::ReachStatus>(from, _g,
+			underapprox_fast_detector = new UnweightedRamalReps<Weight,ReachDetector<Weight>::ReachStatus>(from, _g,
 					*(positiveReachStatus), 1, false);
 			//positive_reach_detector = new ReachDetector::CNFReachability(*this,false);
 		}
 		
-		overapprox_reach_detector = new UnweightedRamalReps<ReachDetector<Weight>::ReachStatus>(from, _antig,
+		overapprox_reach_detector = new UnweightedRamalReps<Weight,ReachDetector<Weight>::ReachStatus>(from, _antig,
 				*(negativeReachStatus), -1, false);
-		underapprox_path_detector = new UnweightedBFS<Reach::NullStatus>(from, _g, Reach::nullStatus, 1);
-		overapprox_path_detector = new UnweightedBFS<Reach::NullStatus>(from, _antig, Reach::nullStatus, -1);
+		underapprox_path_detector = new UnweightedBFS<Weight,Reach::NullStatus>(from, _g, Reach::nullStatus, 1);
+		overapprox_path_detector = new UnweightedBFS<Weight,Reach::NullStatus>(from, _antig, Reach::nullStatus, -1);
 		negative_distance_detector = (Distance<int> *) overapprox_path_detector;
 	}/*else if (reachalg==ReachAlg::ALG_THORUP){
 
@@ -161,14 +161,14 @@ ReachDetector<Weight>::ReachDetector(int _detectorID, GraphTheorySolver<Weight> 
 	 positive_path_detector =positive_reach_detector;
 	 }*/else {
 		if (!opt_encode_reach_underapprox_as_sat) {
-			underapprox_detector = new UnweightedDijkstra<ReachDetector<Weight>::ReachStatus>(from, _g,
+			underapprox_detector = new UnweightedDijkstra<Weight,ReachDetector<Weight>::ReachStatus>(from, _g,
 					*positiveReachStatus, 1);
 		} else {
-			underapprox_fast_detector = new UnweightedDijkstra<ReachDetector<Weight>::ReachStatus>(from, _g,
+			underapprox_fast_detector = new UnweightedDijkstra<Weight,ReachDetector<Weight>::ReachStatus>(from, _g,
 					*positiveReachStatus, 1);
 			//positive_reach_detector = new ReachDetector::CNFReachability(*this,false);
 		}
-		overapprox_reach_detector = new UnweightedDijkstra<ReachDetector<Weight>::ReachStatus>(from, _antig,
+		overapprox_reach_detector = new UnweightedDijkstra<Weight,ReachDetector<Weight>::ReachStatus>(from, _antig,
 				*negativeReachStatus, -1);
 		underapprox_path_detector = underapprox_detector;
 		overapprox_path_detector = overapprox_reach_detector;
@@ -809,7 +809,7 @@ void ReachDetector<Weight>::buildNonReachReason(int node, vec<Lit> & conflict, b
 
 		 */
 		//antig.drawFull();
-		TarjansSCC<>::getSCC(node, g_over, component);
+		TarjansSCC<Weight>::getSCC(node, g_over, component);
 		assert(std::count(component.begin(), component.end(), node));
 		for (int n : component) {
 			if (reach_lits[n] != lit_Undef) {

@@ -30,11 +30,11 @@
 
 namespace dgl {
 
-template<class Status, bool undirected = false>
+template<typename Weight,class Status, bool undirected = false>
 class DFSReachability: public Reach {
 public:
 	
-	DynamicGraph & g;
+	DynamicGraph<Weight> & g;
 	Status & status;
 	int last_modification;
 	int last_addition;
@@ -74,7 +74,7 @@ public:
 	double stats_full_update_time;
 	double stats_fast_update_time;
 
-	DFSReachability(int s, DynamicGraph & graph, Status & _status, int _reportPolarity = 0) :
+	DFSReachability(int s, DynamicGraph<Weight> & graph, Status & _status, int _reportPolarity = 0) :
 			g(graph), status(_status), last_modification(-1), last_addition(-1), last_deletion(-1), history_qhead(0), last_history_clear(
 					0), source(s), INF(0), reportPolarity(_reportPolarity) {
 		

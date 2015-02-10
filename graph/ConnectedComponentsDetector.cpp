@@ -27,16 +27,16 @@
 using namespace Monosat;
 template<typename Weight>
 ConnectedComponentsDetector<Weight>::ConnectedComponentsDetector(int _detectorID, GraphTheorySolver<Weight> * _outer,
-		DynamicGraph &_g, DynamicGraph &_antig, double seed) :
+		DynamicGraph<Weight>  &_g, DynamicGraph<Weight>  &_antig, double seed) :
 		Detector(_detectorID), outer(_outer), g_under(_g), g_over(_antig), rnd_seed(seed), underapprox_component_detector(
 				NULL), overapprox_component_detector(NULL), positiveReachStatus(NULL), negativeReachStatus(NULL) {
 	
 	positiveReachStatus = new ConnectedComponentsDetector<Weight>::ConnectedComponentsStatus(*this, true);
 	negativeReachStatus = new ConnectedComponentsDetector<Weight>::ConnectedComponentsStatus(*this, false);
 	//Note: these are _intentionalyl_ swapped
-	overapprox_component_detector = new DisjointSetsConnectedComponents<
+	overapprox_component_detector = new DisjointSetsConnectedComponents<Weight,
 			ConnectedComponentsDetector<Weight>::ConnectedComponentsStatus>(_g, *(negativeReachStatus), 1);
-	underapprox_component_detector = new DisjointSetsConnectedComponents<
+	underapprox_component_detector = new DisjointSetsConnectedComponents<Weight,
 			ConnectedComponentsDetector<Weight>::ConnectedComponentsStatus>(_antig, *(positiveReachStatus), 1);
 	
 	components_low_marker = outer->newReasonMarker(getID());
@@ -301,7 +301,7 @@ void ConnectedComponentsDetector<Weight>::buildNodesConnectedReason(int source, 
 		std::swap(source, node);
 	}
 	
-	UnweightedBFS<Reach::NullStatus, true> d(source, g_under);
+	UnweightedBFS<Weight,Reach::NullStatus, true> d(source, g_under);
 	double starttime = rtime(2);
 	d.update();
 	

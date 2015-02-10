@@ -47,9 +47,9 @@ template<typename Weight>
 class ReachDetector: public Detector {
 public:
 	GraphTheorySolver<Weight> * outer;
-	DynamicGraph &g_under;
-	DynamicGraph &g_over;
-	DynamicGraph cutgraph;
+	DynamicGraph<Weight> &g_under;
+	DynamicGraph<Weight> &g_over;
+	DynamicGraph<Weight> cutgraph;
 	int within;
 	int source;
 	double rnd_seed;
@@ -143,7 +143,7 @@ public:
 	MaxFlow<long> * conflict_flow = nullptr;
 	std::vector<MaxFlow<long> *> conflict_flows;
 
-	WeightedDijkstra<double> * rnd_path = nullptr;
+	WeightedDijkstra<Weight,double> * rnd_path = nullptr;
 	std::vector<double> rnd_weight;
 	/*struct OptimalWeightEdgeStatus{
 	 ReachDetector & detector;
@@ -280,7 +280,7 @@ public:
 	void preprocess();
 	void dbg_sync_reachability();
 
-	ReachDetector(int _detectorID, GraphTheorySolver<Weight> * _outer, DynamicGraph &_g, DynamicGraph &_antig,
+	ReachDetector(int _detectorID, GraphTheorySolver<Weight> * _outer, DynamicGraph<Weight>  &_g, DynamicGraph<Weight>  &_antig,
 			int _source, double seed = 1); //:Detector(_detectorID),outer(_outer),within(-1),source(_source),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL),chokepoint_status(*this),chokepoint(chokepoint_status, _antig,source){}
 	virtual ~ReachDetector() {
 		
@@ -290,10 +290,10 @@ public:
 		return "Reachability Detector";
 	}
 	
-	bool dbg_cut(std::vector<MaxFlowEdge> & cut, DynamicGraph & graph, int source, int node) {
+	bool dbg_cut(std::vector<MaxFlowEdge> & cut, DynamicGraph<Weight>  & graph, int source, int node) {
 #ifndef NDEBUG
 		
-		DynamicGraph t;
+		DynamicGraph<Weight>  t;
 		for (int i = 0; i < graph.nodes(); i++)
 			t.addNode();
 		std::vector<int> capacity;

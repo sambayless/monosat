@@ -27,6 +27,7 @@
 #ifndef NDEBUG
 //Used to track graph operations for debugging purposes - you can probably ignore this.
 #define RECORD
+#include <sstream>
 #include <cstdio>
 #endif
 
@@ -45,9 +46,11 @@ namespace dgl {
  *
  * Most algorithms in the library are optimized for moderate sized, sparsely connected graphs (<10,000 edges/nodes).
  */
+template<typename Weight>
 class DynamicGraph {
 	
 	std::vector<bool> edge_status;
+	std::vector<Weight> weights;
 	int num_nodes=0;
 	int num_edges=0;
 	int next_id=0;
@@ -82,15 +85,14 @@ public:
 		} //,weight(weight){}
 	};
 
-	//std::vector<int> weights;
+private:
 	std::vector<FullEdge> all_edges;
-
+public:
 	struct EdgeChange {
 		bool addition;
-		/*
-		 int u;//from
-		 int v;//top
-		 */
+		bool deletion;
+		bool weight_increase;
+		bool weight_decrease;
 		int id;
 		int mod;
 		int prev_mod;
@@ -175,7 +177,7 @@ public:
 		return isEdge(edgeID);
 	}
 	//Instead of actually adding and removing edges, tag each edge with an 'enabled/disabled' label, and just expect reading algorithms to check and respect that label.
-	int addEdge(int from, int to, int id = -1) { //, int weight=1
+	int addEdge(int from, int to, int id = -1, int weight=1){
 		assert(from < num_nodes);
 		assert(to < num_nodes);
 		assert(from >= 0);
@@ -198,10 +200,10 @@ public:
 		if (all_edges.size() <= id)
 			all_edges.resize(id + 1);
 		all_edges[id]= {from,to,id}; //,weight};
-		//if(weights.size()<=id)
-		//	weights.resize(id+1,0);
-		//weights[id]=weight;
-		//weights.push_back(weight);
+		if(weights.size()<=id)
+			weights.resize(id+1,0);
+		weights[id]=weight;
+		weights.push_back(weight);
 		modifications++;
 		additions = modifications;
 		markChanged();
@@ -284,13 +286,13 @@ public:
 			return inverted_adjacency_list[node][i];
 		}
 	}
-	/*	std::vector<int> & getWeights(){
-	 return weights;
+	std::vector<Weight> & getWeights(){
+		return weights;
 	 }
-	 int getWeight(int edgeID){
-	 return weights[edgeID];
+	 Weight getWeight(int edgeID){
+		 return weights[edgeID];
 	 //return all_edges[edgeID].weight;
-	 }*/
+	 }
 	FullEdge getEdge(int id) const {
 		return all_edges[id];
 	}
@@ -310,7 +312,7 @@ public:
 			
 			modifications++;
 			additions = modifications;
-			history.push_back( { true, id, modifications, additions });
+			history.push_back( { true,false,false,false, id, modifications, additions });
 #ifdef RECORD
 			if (outfile) {
 				
@@ -365,7 +367,7 @@ public:
 			
 			modifications++;
 			
-			history.push_back( { false, id, modifications, deletions });
+			history.push_back( { false,true,false,false, id, modifications, deletions });
 			deletions = modifications;
 		}
 	}
@@ -395,6 +397,31 @@ public:
 		return false;
 	}
 	
+	void setEdgeWeight(int id,const Weight & w) {
+			assert(id >= 0);
+			assert(id < edge_status.size());
+			assert(isEdge(id));
+			if(w==getWeight(id)){
+				return;
+			}
+			modifications++;
+			if(w>getWeight(id)){
+				history.push_back( {false,false, true,false, id, modifications, additions });
+			}else{
+				history.push_back( {false,false, false, true, id, modifications, additions });
+			}
+#ifdef RECORD
+			if (outfile) {
+				std::stringstream ss;
+				ss<<w;
+				fprintf(outfile, "w %d %s\n", id + 1, ss.str().c_str());
+				fflush(outfile);
+			}
+#endif
+
+		}
+
+
 	void drawFull(bool showWeights = false) {
 #ifndef NDEBUG
 		printf("digraph{\n");
@@ -431,7 +458,7 @@ public:
 				if (!undoEnableEdge(e.id)) {
 					return false;
 				}
-			} else {
+			} else if(e.deletion) {
 				if (!undoDisableEdge(e.id)) {
 					return false;
 				}
