@@ -1512,7 +1512,7 @@ public:
 				return;
 			}
 		}
-		MaxflowDetector<Weight> *f = new MaxflowDetector<Weight>(detectors.size(), this, edge_weights, g_under, g_over, from,
+		MaxflowDetector<Weight> *f = new MaxflowDetector<Weight>(detectors.size(), this,  g_under, g_over, from,
 				to, drand(rnd_seed));
 		flow_detectors.push(f);
 		detectors.push(f);
@@ -1538,7 +1538,7 @@ public:
 	void steinerTree(const vec<std::pair<int, Var> > & terminals, int steinerTreeID) {
 		steiner_detectors.growTo(steinerTreeID + 1);
 		assert(!steiner_detectors[steinerTreeID]);
-		steiner_detectors[steinerTreeID] = new SteinerDetector<Weight>(detectors.size(), this, edge_weights, g_under, g_over,
+		steiner_detectors[steinerTreeID] = new SteinerDetector<Weight>(detectors.size(), this,  g_under, g_over,
 				drand(rnd_seed));
 		detectors.push(steiner_detectors[steinerTreeID]);
 		for (int i = 0; i < terminals.size(); i++) {
