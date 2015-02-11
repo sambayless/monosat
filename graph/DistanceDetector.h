@@ -155,7 +155,7 @@ public:
 		}
 	};
 
-	struct CutStatus {
+	/*struct CutStatus {
 		long one = 1;
 		long inf = 0xFFFF;
 		DistanceDetector & outer;
@@ -174,7 +174,7 @@ public:
 				outer(_outer) {
 		}
 		
-	} cutStatus;
+	} cutStatus;*/
 	std::vector<MaxFlowEdge> cut;
 
 	ReachStatus *positiveReachStatus;

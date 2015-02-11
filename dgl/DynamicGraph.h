@@ -25,11 +25,13 @@
 #include <algorithm>
 #include <cassert>
 #ifndef NDEBUG
+#include <sstream>
 //Used to track graph operations for debugging purposes - you can probably ignore this.
 #define RECORD
-#include <sstream>
+
 #include <cstdio>
 #endif
+
 
 namespace dgl {
 
@@ -449,11 +451,13 @@ public:
 					s = "blue";
 				else
 					s = "red";
-				//if(showWeights){
-				//	printf("n%d -> n%d [label=\"v%d w=%d\",color=\"%s\"]\n", i,u, id,getWeight(id), s);
-				//}else{
+				if(showWeights){
+					std::stringstream ss;
+					ss<<getWeight(id);
+					printf("n%d -> n%d [label=\"v%d w=%s\",color=\"%s\"]\n", i,u, id,ss.str().c_str(), s);
+				}else{
 				printf("n%d -> n%d [label=\"v%d\",color=\"%s\"]\n", i, u, id, s);
-				//}
+				}
 			}
 		}
 		printf("}\n");

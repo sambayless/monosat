@@ -59,7 +59,7 @@ class EdmondsKarpDynamic: public MaxFlow<Weight> {
 	std::vector<bool> changed;
 	DynamicGraph<Weight>& g;
 
-	bool allow_flow_cycles = false;
+	bool allow_flow_cycles = true; //actually, this flag doesn't appear to work - spurious flow cycles are still sometimes produced.
 	int source = -1;
 	int sink = -1;
 	Weight INF;
@@ -317,9 +317,17 @@ public:
 					assert(F[edge.id] == 0);
 				}
 			}
+			for (int i = 0; i < g.nIncoming(s); i++) {
+				auto & edge = g.incoming(s, i);
+				if (edge_enabled[edge.id]) {
+					f -= F[edge.id];
+				} else {
+					assert(F[edge.id] == 0);
+				}
+			}
 			dbg_print_graph(s, t, -1, -1);
 #ifndef NDEBUG
-			if (!allow_flow_cycles) {
+		/*	if (!allow_flow_cycles) {
 				for (int i = 0; i < g.nIncoming(s); i++) {
 					auto & edge = g.incoming(s, i);
 					if (edge_enabled[edge.id]) {
@@ -328,7 +336,8 @@ public:
 						assert(F[edge.id] == 0);
 					}
 				}
-			} else {
+			} else */
+			{
 				Weight in_flow = 0;
 				for (int i = 0; i < g.nIncoming(s); i++) {
 					auto & edge = g.incoming(s, i);
@@ -619,7 +628,7 @@ private:
 	
 	void dbg_print_graph(int from, int to, Weight shortCircuitFrom = -1, Weight shortCircuitTo = -1) {
 #ifndef NDEBUG
-
+		return;
 		static int it = 0;
 		if (++it == 6) {
 			int a = 1;
@@ -782,9 +791,9 @@ private:
 			if (u != s && u != t) {
 				assert(inflow == outflow);
 			} else if (u == s) {
-				assert(outflow == f);
+				assert(outflow-inflow == f);
 			} else if (u == t) {
-				assert(inflow == f);
+				assert(inflow-outflow == f);
 			}
 		}
 		

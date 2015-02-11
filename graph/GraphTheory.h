@@ -1261,11 +1261,11 @@ public:
 		edge_weights[index] = weight;
 		
 		//edges[from][to]= {v,outerVar,from,to,index};
-		g_under.addEdge(from, to, index);
+		g_under.addEdge(from, to, index,weight);
 		g_under.disableEdge(from, to, index);
-		g_over.addEdge(from, to, index);
-		cutGraph.addEdge(from, to, index * 2);
-		cutGraph.addEdge(from, to, index * 2 + 1);
+		g_over.addEdge(from, to, index,weight);
+		cutGraph.addEdge(from, to, index * 2,1);
+		cutGraph.addEdge(from, to, index * 2 + 1,0xFFFF);
 		cutGraph.disableEdge(from, to, index * 2);
 		
 #ifdef RECORD

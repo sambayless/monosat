@@ -41,8 +41,7 @@ using namespace Monosat;
 template<typename Weight>
 DistanceDetector<Weight>::DistanceDetector(int _detectorID, GraphTheorySolver<Weight> * outer,
 		DynamicGraph<Weight>  &_g, DynamicGraph<Weight>  &_antig, int from, double seed) :
-		Detector(_detectorID), outer(outer), g_under(_g), g_over(_antig), source(from), rnd_seed(seed), cutStatus(
-				*this) {
+		Detector(_detectorID), outer(outer), g_under(_g), g_over(_antig), source(from), rnd_seed(seed) {
 	max_unweighted_distance = 0;
 	rnd_path = NULL;
 	
@@ -467,7 +466,7 @@ void DistanceDetector<Weight>::buildUnweightedDistanceGTReason(int node, vec<Lit
 		f = conflict_flow->minCut(cut);
 		
 		assert(f == cut.size()); //because edges are only ever infinity or 1
-		assert(f < cutStatus.inf);
+
 		for (int i = 0; i < cut.size(); i++) {
 			MaxFlowEdge e = cut[i];
 			int cut_id = e.id;
@@ -692,7 +691,7 @@ void DistanceDetector<Weight>::buildDistanceGTReason(int to, Weight & min_distan
 		f = conflict_flow->minCut(cut);
 		
 		assert(f == cut.size()); //because edges are only ever infinity or 1
-		assert(f < cutStatus.inf);
+
 		for (int i = 0; i < cut.size(); i++) {
 			MaxFlowEdge e = cut[i];
 			int cut_id = e.id;

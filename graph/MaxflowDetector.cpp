@@ -405,7 +405,7 @@ void MaxflowDetector<Weight>::buildMaxFlowTooLowReason(Weight maxflow, vec<Lit> 
 	
 	//drawFull( non_reach_detectors[detector]->getSource(),u);
 	//assert(outer->dbg_distance( source,u));
-	
+	//g_over.drawFull(true);
 	//The reason why we can't reach this assignment is a cut through the disabled edges in the residual graph from the overapprox.
 	//we could search for a min cut, but instead we will just step back in the RESIDUAL graph, from u to s, collecting disabled edges.
 	seen.clear();
@@ -452,7 +452,7 @@ void MaxflowDetector<Weight>::buildMaxFlowTooLowReason(Weight maxflow, vec<Lit> 
 				if (outer->value(v) != l_False) {
 					//this is the residual capacity of the backwards edge in the residual graph - which is equal to the forwards flow on this edge!
 					Weight residual_capacity = overapprox_conflict_detector->getEdgeFlow(edgeid);
-					if (residual_capacity) {
+					if (residual_capacity>0) {
 						seen[p] = true;
 						visit.push(p);
 					}
@@ -735,15 +735,15 @@ void MaxflowDetector<Weight>::collectDisabledEdges() {
 			//add every edge twice
 			for (auto & e : g_under.getEdges()) {
 				if (back_edges[e.id * 2] == -1) {
-					learn_graph.addEdge(e.from, e.to);
-					learn_graph.addEdge(e.from, e.to);
+					learn_graph.addEdge(e.from, e.to,-1,1);
+					learn_graph.addEdge(e.from, e.to,-1, 0x0FF0F0);
 				}
 			}
 			
 			for (auto & e : g_under.getEdges()) {
 				if (back_edges[e.id * 2] == -1) {
-					back_edges[e.id * 2] = learn_graph.addEdge(e.to, e.from);
-					back_edges[e.id * 2 + 1] = learn_graph.addEdge(e.to, e.from);
+					back_edges[e.id * 2] = learn_graph.addEdge(e.to, e.from,-1,1);
+					back_edges[e.id * 2 + 1] = learn_graph.addEdge(e.to, e.from,-1, 0x0FF0F0);
 					
 				}
 			}
@@ -895,15 +895,15 @@ void MaxflowDetector<Weight>::collectChangedEdges() {
 			//add every edge twice
 			for (auto & e : g_under.getEdges()) {
 				if (back_edges[e.id * 2] == -1) {
-					learn_graph.addEdge(e.from, e.to);
-					learn_graph.addEdge(e.from, e.to);
+					learn_graph.addEdge(e.from, e.to,-1,1);
+					learn_graph.addEdge(e.from, e.to,-1, 0x0FF0F0);
 				}
 			}
 			
 			for (auto & e : g_under.getEdges()) {
 				if (back_edges[e.id * 2] == -1) {
-					back_edges[e.id * 2] = learn_graph.addEdge(e.to, e.from);
-					back_edges[e.id * 2 + 1] = learn_graph.addEdge(e.to, e.from);
+					back_edges[e.id * 2] = learn_graph.addEdge(e.to, e.from,-1,1);
+					back_edges[e.id * 2 + 1] = learn_graph.addEdge(e.to, e.from,-1, 0x0FF0F0);
 				}
 			}
 			for (auto & e : learn_graph.getEdges()) {
