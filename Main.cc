@@ -361,12 +361,12 @@ int main(int argc, char** argv)
 							}
 
         				}
-        				if(opt_allsat_inc_block){
-							int max_lev = 0;
-							int second_max = 0;
+        				if(opt_allsat_inc_block && allsat.decisionLevel()>0 && block.size()>0){
+        					int max_lev = allsat.level(var(block[0]));
+							int second_max = allsat.level(var(block[1]));
 							int max_pos=0;
 							int second_pos=1;
-							Lit max=lit_Undef;
+							Lit max=block[0];
 							for(int i = 0;i<block.size();i++){
 								Lit l = block[i];
 								assert(allsat.value(l)==l_False);
