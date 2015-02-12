@@ -12,8 +12,8 @@ ASM_SRCS :=
 CXX_SRCS := 
 C++_SRCS := 
 CC_SRCS := 
-OBJS := 
 C++_DEPS := 
+OBJS := 
 C_DEPS := 
 CC_DEPS := 
 CPP_DEPS := 
@@ -26,11 +26,16 @@ SUBDIRS := \
 utils \
 core \
 aiger \
-Release2/utils \
-Release2/minilib \
-Release2/dbg \
-Release2/core \
-Release2/aiger \
-Release2 \
+Static/utils \
+Static/simp \
+Static/graph \
+Static/geometry/polypartition \
+Static/geometry/cevans \
+Static/geometry \
+Static/fsm \
+Static/dgl/alg \
+Static/dgl \
+Static/core \
+Static \
 . \
 

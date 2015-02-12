@@ -11,12 +11,17 @@ RM := rm -rf
 -include utils/subdir.mk
 -include core/subdir.mk
 -include aiger/subdir.mk
--include Release2/utils/subdir.mk
--include Release2/minilib/subdir.mk
--include Release2/dbg/subdir.mk
--include Release2/core/subdir.mk
--include Release2/aiger/subdir.mk
--include Release2/subdir.mk
+-include Static/utils/subdir.mk
+-include Static/simp/subdir.mk
+-include Static/graph/subdir.mk
+-include Static/geometry/polypartition/subdir.mk
+-include Static/geometry/cevans/subdir.mk
+-include Static/geometry/subdir.mk
+-include Static/fsm/subdir.mk
+-include Static/dgl/alg/subdir.mk
+-include Static/dgl/subdir.mk
+-include Static/core/subdir.mk
+-include Static/subdir.mk
 -include subdir.mk
 -include objects.mk
 
@@ -46,19 +51,19 @@ endif
 # Add inputs and outputs from these tool invocations to the build variables 
 
 # All Target
-all: modsat
+all: modsat_allsat
 
 # Tool invocations
-modsat: $(OBJS) $(USER_OBJS)
+modsat_allsat: $(OBJS) $(USER_OBJS)
 	@echo 'Building target: $@'
-	@echo 'Invoking: GCC C++ Linker'
-	g++  -o "modsat" $(OBJS) $(USER_OBJS) $(LIBS)
+	@echo 'Invoking: Cross G++ Linker'
+	g++  -o "modsat_allsat" $(OBJS) $(USER_OBJS) $(LIBS)
 	@echo 'Finished building target: $@'
 	@echo ' '
 
 # Other Targets
 clean:
-	-$(RM) $(OBJS)$(C++_DEPS)$(C_DEPS)$(CC_DEPS)$(CPP_DEPS)$(EXECUTABLES)$(CXX_DEPS)$(C_UPPER_DEPS) modsat
+	-$(RM) $(C++_DEPS)$(OBJS)$(C_DEPS)$(CC_DEPS)$(CPP_DEPS)$(EXECUTABLES)$(CXX_DEPS)$(C_UPPER_DEPS) modsat_allsat
 	-@echo ' '
 
 .PHONY: all clean dependents

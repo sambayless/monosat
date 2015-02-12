@@ -367,7 +367,7 @@ int main(int argc, char** argv)
 							int max_pos=0;
 							int second_pos=1;
 							Lit max=block[0];
-							for(int i = 0;i<block.size();i++){
+							for(int i = 1;i<block.size();i++){
 								Lit l = block[i];
 								assert(allsat.value(l)==l_False);
 								int lev = allsat.level(var(l));
@@ -441,7 +441,6 @@ int main(int argc, char** argv)
 										allsat.uncheckedEnqueue(learnt_clause[0]);
 									}else{
 										CRef cr = allsat.ca.alloc(learnt_clause, true);
-										allsat.learnts.push(cr);
 										allsat.attachClause(cr);
 										allsat.claBumpActivity(allsat.ca[cr]);
 

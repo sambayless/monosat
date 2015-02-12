@@ -23,6 +23,7 @@ extern  DoubleOption  opt_restart_inc   ;
 extern  DoubleOption  opt_garbage_frac  ;
 
 extern BoolOption opt_partial;
+extern BoolOption opt_fast_partial;
 
 extern  BoolOption opt_interpolate;
 

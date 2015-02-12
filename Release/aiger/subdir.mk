@@ -16,8 +16,8 @@ C_DEPS += \
 # Each subdirectory must supply rules for building sources it contributes
 aiger/%.o: ../aiger/%.c
 	@echo 'Building file: $<'
-	@echo 'Invoking: GCC C Compiler'
-	gcc -D__STDC_LIMIT_MACROS -D__STDC_FORMAT_MACROS -I"/home/sam/workspaceC/modsat" -O3 -Wall -c -fmessage-length=0 -MMD -MP -MF"$(@:%.o=%.d)" -MT"$(@:%.o=%.d)" -o "$@" "$<"
+	@echo 'Invoking: Cross GCC Compiler'
+	gcc -DNDEBUG -I.././ -O3 -Wall -c -fmessage-length=0 -MMD -MP -MF"$(@:%.o=%.d)" -MT"$(@:%.o=%.d)" -o "$@" "$<"
 	@echo 'Finished building: $<'
 	@echo ' '
 

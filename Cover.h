@@ -15,7 +15,7 @@
 
 #ifndef COVER_H_
 #define COVER_H_
-
+#include "core/Solver.h"
 #include "core/SolverTypes.h"
 #include "mtl/Vec.h"
 #include "mtl/Sort.h"
@@ -32,6 +32,7 @@ vec<int> mVarsGreedyScore;
 vec<vec<int> > mVarsInUncCls;
 vec<Lit> potentialCoverLits;
 vec<bool>in_cover;
+vec<Var> subset;
 struct cover_lt {
 	const Cover & outer;
 	bool operator () (Lit a, Lit b) const {return outer.mVarsGreedyScore[var(a)]>outer.mVarsGreedyScore[var(b)]; }
@@ -52,7 +53,13 @@ void excludeFromCover(Var v, bool exclude){
 void getCover(Solver &S, vec<Lit> & cover)
 {
 	include.growTo(S.nVars(),true);
-
+	if(subset.size()==0){
+		for(int i = 0;i<include.size();i++){
+			if(include[i]){
+				subset.push(i);
+			}
+		}
+	}
 	cover.clear();
 	potentialCoverLits.clear();
 	in_cover.clear();
@@ -81,6 +88,62 @@ void getCover(Solver &S, vec<Lit> & cover)
 			cover.push(l);
 		}
 	}
+	if(opt_fast_partial){
+
+		for(int j = 0;j<subset.size();j++){
+			Var v = subset[j];
+			assert(include[v]);
+			if(in_cover[v])
+				continue;
+
+			Lit p = mkLit(v);
+			if(S.value(p)==l_False){
+				p=~p;
+			}
+			assert(S.value(p)==l_True);
+			bool any_unwatched=false;
+			vec<Solver::Watcher>&  ws  = S.watches[~p];
+
+			for (int k = 0;k<ws.size();k++){
+				Solver::Watcher        *i = &ws[k];
+				Lit blocker = i->blocker;
+				if (blocker!=lit_Undef && S.value(blocker) == l_True && (!include[var(blocker)] || in_cover[var(blocker)] )){
+					//this clause is covered
+					continue;
+				}
+
+				// Make sure the false literal is data[1]:
+				CRef     cr        = i->cref;
+				Clause&  c         = S.ca[cr];
+
+				assert(c.size()>1);
+				Lit other_watcher=c[0];
+				if (c[0] == p)
+					other_watcher=c[1];
+
+				if (S.value(other_watcher) == l_True){
+					if(!include[var(other_watcher)] || in_cover[var(other_watcher)] ){
+						//this clause is covered
+						continue;
+					}else{
+						any_unwatched=true;
+					}
+				}else{
+					//this is the _only_ true literal in this clause, so it must cover the clause
+					assert(!in_cover[v]);
+					in_cover[v]=true;
+					cover.push(p);
+					break;
+				}
+			}
+			if(any_unwatched && ! in_cover[v]){
+				in_cover[v]=true;
+				cover.push(p);
+			}
+		}
+		return;
+	}
+
 
 	for(int i = 0;i<S.clauses.size();i++)
 	{
@@ -144,6 +207,7 @@ void getCover(Solver &S, vec<Lit> & cover)
 						sat=true;
 						break;
 					}else if(in_cover[var(l)]){
+/*
 #ifndef NDEBUG
 						{
 					bool found=false;
@@ -158,6 +222,7 @@ void getCover(Solver &S, vec<Lit> & cover)
 				assert(found);
 						}
 #endif
+*/
 						coverCount[i]++;//mark this clause covered
 
 						uncovered[i].clear();
@@ -283,6 +348,7 @@ void getCover(Solver &S, vec<Lit> & cover)
 		}
 		cover.shrink(i-j);
 	}
+/*
 #ifndef NDEBUG
 	for(int i = 0;i<cover.size();i++)
 	{
@@ -328,6 +394,7 @@ void getCover(Solver &S, vec<Lit> & cover)
 
 
 #endif
+*/
 }
 };
 };
