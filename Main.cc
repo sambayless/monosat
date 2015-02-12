@@ -363,7 +363,7 @@ int main(int argc, char** argv)
         				}
         				if(opt_allsat_inc_block && allsat.decisionLevel()>0 && block.size()>0){
         					int max_lev = allsat.level(var(block[0]));
-							int second_max = allsat.level(var(block[1]));
+        					int second_max = block.size()>1 ? allsat.level(var(block[1])):0;
 							int max_pos=0;
 							int second_pos=1;
 							Lit max=block[0];
