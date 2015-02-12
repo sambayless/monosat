@@ -412,7 +412,7 @@ int main(int argc, char** argv)
 									allsat.ok&= allsat.enqueue(max);
 								}else{
 									CRef cr = allsat.ca.alloc(block, false);
-									allsat.blocking_clauses.push(cr);
+									allsat.clauses.push(cr);//previously, was adding these to blocking_clauses, which causes Cover to ignore them - which might possibly lead to double counting (not sure about this).
 									allsat.attachClause(cr);
 
 									assert(allsat.value(block[0])==l_Undef);
@@ -421,7 +421,7 @@ int main(int argc, char** argv)
 							}else{
 								//solver is in conflict...
 								CRef confl = allsat.ca.alloc(block, false);
-								allsat.blocking_clauses.push(confl);
+								allsat.clauses.push(confl);//blocking_clauses
 								allsat.attachClause(confl);
 
 								if(allsat.decisionLevel()==0){
