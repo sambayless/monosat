@@ -1085,8 +1085,9 @@ bool ReachDetector<Weight>::propagate(vec<Lit> & conflict) {
 	
 	while (changed.size()) {
 		int sz = changed.size();
-		Var v = changed.last().v;
-		int u = changed.last().u;
+		Change & ch = changed.last();
+		Var v =ch.v;
+		int u = ch.u;
 		assert(is_changed[u]);
 		Lit l;
 		
@@ -1096,7 +1097,7 @@ bool ReachDetector<Weight>::propagate(vec<Lit> & conflict) {
 			l = mkLit(v, true);
 		} else {
 			assert(sz == changed.size());
-			assert(changed.last().u == u);
+			assert(ch.u == u);
 			is_changed[u] = false;
 			changed.pop();
 			//this can happen if the changed node's reachability status was reported before a backtrack in the solver.
@@ -1158,7 +1159,7 @@ bool ReachDetector<Weight>::propagate(vec<Lit> & conflict) {
 
 		 }*/
 		assert(sz == changed.size());//This can be really tricky - if you are not careful, an a reach detector's update phase was skipped at the beginning of propagate, then if the reach detector is called during propagate it can push a change onto the list, which can cause the wrong item to be removed here.
-		assert(changed.last().u == u);
+		assert(ch.u == u);
 		is_changed[u] = false;
 		changed.pop();
 	}
