@@ -28,16 +28,11 @@ class NP0LAccept{
 	int last_history_clear=0;
 
 	int stats_full_updates=0;
-	int stats_fast_updates=0;
-	int stats_fast_failed_updates=0;
-	int stats_skip_deletes=0;
+
 	int stats_skipped_updates=0;
 	int stats_num_skipable_deletions=0;
 	long stats_skipped_accepts=0;
-	double mod_percentage=0;
 
-	double stats_full_update_time=0;
-	double stats_fast_update_time=0;
 
 
 	vec<int> next;
@@ -46,7 +41,7 @@ class NP0LAccept{
 	vec<bool> next_seen;
 	vec<bool> cur_seen;
 
-	int source;
+
 	int atom = 1;
 	vec<vec<int>> & strings;
 	vec<vec<int>>  fsmstrings;
@@ -462,7 +457,7 @@ private:
 				}
 			}
 		}
-
+		return true;
 	}
 
 	bool accepts_rec(int str,int depth,vec<bool> & used_edges,vec<int> & used_rule_set,vec<int> * blocking_edges){

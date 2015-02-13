@@ -1157,8 +1157,8 @@ Lit MSTDetector<Weight>::decide(int level) {
 }
 ;
 
-template class MSTDetector<int> ;
-template class MSTDetector<long> ;
-template class MSTDetector<double> ;
+template class Monosat::MSTDetector<int> ;
+template class Monosat::MSTDetector<long> ;
+template class Monosat::MSTDetector<double> ;
 #include <gmpxx.h>
-template class MSTDetector<mpq_class> ;
+template class Monosat::MSTDetector<mpq_class> ;

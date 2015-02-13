@@ -58,8 +58,9 @@ class NFALinearGeneratorAcceptor{
 	vec<int> gen_next;
 	vec<bool> gen_next_seen;
 	vec<bool> gen_cur_seen;
-	int accept_source;
 	int gen_source;
+	int accept_source;
+
 	vec<Bitset> suffixTable;
 	vec<int> chars;
 	vec<bool> seen_chars;

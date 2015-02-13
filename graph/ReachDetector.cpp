@@ -1603,8 +1603,8 @@ Lit ReachDetector<Weight>::decide(int level) {
 }
 ;
 
-template class ReachDetector<int> ;
-template class ReachDetector<long> ;
-template class ReachDetector<double> ;
+template class Monosat::ReachDetector<int> ;
+template class Monosat::ReachDetector<long> ;
+template class Monosat::ReachDetector<double> ;
 #include <gmpxx.h>
-template class ReachDetector<mpq_class> ;
+template class Monosat::ReachDetector<mpq_class> ;

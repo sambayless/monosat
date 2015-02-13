@@ -638,8 +638,8 @@ bool MaxflowDetector<Weight>::propagate(vec<Lit> & conflict) {
 }
 template<typename Weight>
 bool MaxflowDetector<Weight>::checkSatisfied() {
-	EdmondsKarpAdj<Weight> positiveCheck(g_under, source, target);
-	EdmondsKarpAdj<Weight> negativeCheck(g_over, source, target);
+	EdmondsKarpAdj<Weight> underCheck(g_under, source, target);
+	EdmondsKarpAdj<Weight> overCheck(g_over, source, target);
 	for (int j = 0; j < flow_lits.size(); j++) {
 		
 		Lit l = flow_lits[j].l;
@@ -649,18 +649,18 @@ bool MaxflowDetector<Weight>::checkSatisfied() {
 			//int node =getNode(var(l));
 			
 			if (outer->value(l) == l_True) {
-				if (positiveCheck.maxFlow() < dist) {
+				if (underCheck.maxFlow() < dist) {
 					return false;
 				}
 			} else if (outer->value(l) == l_False) {
-				if (negativeCheck.maxFlow() >= dist) {
+				if (overCheck.maxFlow() >= dist) {
 					return false;
 				}
 			} else {
-				if (positiveCheck.maxFlow() >= dist) {
+				if (underCheck.maxFlow() >= dist) {
 					return false;
 				}
-				if (!negativeCheck.maxFlow() < dist) {
+				if (overCheck.maxFlow() < dist) {
 					return false;
 				}
 			}
@@ -747,8 +747,9 @@ void MaxflowDetector<Weight>::collectDisabledEdges() {
 					
 				}
 			}
-			for (auto & e : learn_graph.getEdges()) {
-				learn_graph.disableEdge(e.id);
+			for (int i = 0;i<learn_graph.edges();i++) {
+				if(learn_graph.hasEdge(i))
+					learn_graph.disableEdge(i);
 			}
 			learn_graph.invalidate();
 			
@@ -906,8 +907,9 @@ void MaxflowDetector<Weight>::collectChangedEdges() {
 					back_edges[e.id * 2 + 1] = learn_graph.addEdge(e.to, e.from,-1, 0x0FF0F0);
 				}
 			}
-			for (auto & e : learn_graph.getEdges()) {
-				learn_graph.disableEdge(e.id);
+			for (int i = 0;i<learn_graph.edges();i++) {
+				if(learn_graph.hasEdge(i))
+					learn_graph.disableEdge(i);
 			}
 			learn_graph.invalidate();
 
@@ -1462,8 +1464,8 @@ Lit MaxflowDetector<Weight>::decide(int level) {
 }
 ;
 
-template class MaxflowDetector<int> ;
-template class MaxflowDetector<long> ;
-template class MaxflowDetector<double> ;
+template class Monosat::MaxflowDetector<int> ;
+template class Monosat::MaxflowDetector<long> ;
+template class Monosat::MaxflowDetector<double> ;
 #include <gmpxx.h>
-template class MaxflowDetector<mpq_class> ;
+template class Monosat::MaxflowDetector<mpq_class> ;

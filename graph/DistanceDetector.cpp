@@ -1347,8 +1347,8 @@ Lit DistanceDetector<Weight>::decide(int level) {
 }
 ;
 
-template class DistanceDetector<int> ;
-template class DistanceDetector<long> ;
-template class DistanceDetector<double> ;
+template class Monosat::DistanceDetector<int> ;
+template class Monosat::DistanceDetector<long> ;
+template class Monosat::DistanceDetector<double> ;
 #include <gmpxx.h>
-template class DistanceDetector<mpq_class> ;
+template class Monosat::DistanceDetector<mpq_class> ;

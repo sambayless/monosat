@@ -473,7 +473,7 @@ bool AllPairsDetector<Weight>::checkSatisfied() {
 						if (underapprox_reach_detector->distance(s, node) <= dist) {
 							return false;
 						}
-						if (!overapprox_reach_detector->distance(s, node) > dist) {
+						if (overapprox_reach_detector->distance(s, node) > dist) {
 							return false;
 						}
 					}
@@ -587,9 +587,9 @@ Lit AllPairsDetector<Weight>::decide(int level) {
 	return lit_Undef;
 }
 ;
-template class AllPairsDetector<int> ;
-template class AllPairsDetector<long> ;
-template class AllPairsDetector<double> ;
+template class Monosat::AllPairsDetector<int> ;
+template class Monosat::AllPairsDetector<long> ;
+template class Monosat::AllPairsDetector<double> ;
 #include <gmpxx.h>
-template class AllPairsDetector<mpq_class> ;
+template class Monosat::AllPairsDetector<mpq_class> ;
 

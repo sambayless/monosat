@@ -129,7 +129,7 @@ public:
 				printf("\t%d components learned, average component size: %f\n", stats_learnt_components,
 						stats_learnt_components_sz / (float) stats_learnt_components);
 			}
-			printf("Forced edge assignments: %d\n", stats_forced_edges);
+			printf("Forced edge assignments: %ld\n", stats_forced_edges);
 		}
 	}
 

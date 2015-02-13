@@ -46,6 +46,7 @@ class PbTheory: public Theory {
 	vec<int> trail_lim;
 	vec<int> inq;
 	vec<int> t_weights;
+public:
 	enum class PbType {
 		GT, GE, LT, LE, EQ, NE
 	};
@@ -53,6 +54,7 @@ class PbTheory: public Theory {
 	enum class ConstraintSide {
 		Upper, Lower, Both
 	};
+private:
 	ConstraintSide invert(ConstraintSide c) {
 		if (c == ConstraintSide::Upper)
 			return ConstraintSide::Lower;
@@ -1065,7 +1067,7 @@ private:
 		}
 		FILE *f = fopen("testa.opb", "w");
 		for (PbElement & e : c.clause) {
-			fprintf(f, "%s%d x%d ", e.weight >= 0 ? "+" : "", e.weight, var(e.lit) + 1);
+			fprintf(f, "%s%d x%d ","+" , e.weight, var(e.lit) + 1);
 		}
 		
 		if (rhs_val) {
@@ -1122,7 +1124,7 @@ private:
 		}
 		FILE *f = fopen("testa.opb", "w");
 		for (PbElement & e : c.clause) {
-			fprintf(f, "%s%d x%d ", e.weight >= 0 ? "+" : "", e.weight, var(e.lit) + 1);
+			fprintf(f, "%s%d x%d ", "+", e.weight, var(e.lit) + 1);
 		}
 		
 		if (rhs_val) {
@@ -1179,7 +1181,7 @@ private:
 		}
 		FILE *f = fopen("testa.opb", "w");
 		for (PbElement & e : c.clause) {
-			fprintf(f, "%s%d x%d ", e.weight >= 0 ? "+" : "", e.weight, var(e.lit) + 1);
+			fprintf(f, "%s%d x%d ",  "+", e.weight, var(e.lit) + 1);
 		}
 		
 		if (rhs_val) {
@@ -1236,7 +1238,7 @@ private:
 		}
 		FILE *f = fopen("testa.opb", "w");
 		for (PbElement & e : c.clause) {
-			fprintf(f, "%s%d x%d ", e.weight >= 0 ? "+" : "", e.weight, var(e.lit) + 1);
+			fprintf(f, "%s%d x%d ",  "+", e.weight, var(e.lit) + 1);
 		}
 		
 		if (rhs_val) {

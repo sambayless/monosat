@@ -600,7 +600,7 @@ bool ConnectedComponentsDetector<Weight>::propagate(vec<Lit> & conflict) {
 }
 
 template<typename Weight>
-void ConnectedComponentsDetector<Weight>::printSolution() {
+void ConnectedComponentsDetector<Weight>::printSolution(std::ostream & write_to) {
 	if (opt_verb > 0) {
 		int numComponents = underapprox_component_detector->numComponents();
 		printf("Number of connected components (graph %d) is: %d\n", outer->getGraphID(), numComponents);
@@ -629,7 +629,7 @@ bool ConnectedComponentsDetector<Weight>::checkSatisfied() {
 				if (overapprox_component_detector->numComponents() > moreThanThisManyComponents) {
 					return false;
 				}
-				if (!underapprox_component_detector->numComponents() <= moreThanThisManyComponents) {
+				if (underapprox_component_detector->numComponents() <= moreThanThisManyComponents) {
 					return false;
 				}
 			}
@@ -802,9 +802,9 @@ Lit ConnectedComponentsDetector<Weight>::decide(int level) {
 	return lit_Undef;
 }
 ;
-template class ConnectedComponentsDetector<int> ;
-template class ConnectedComponentsDetector<long> ;
-template class ConnectedComponentsDetector<double> ;
+template class Monosat::ConnectedComponentsDetector<int> ;
+template class Monosat::ConnectedComponentsDetector<long> ;
+template class Monosat::ConnectedComponentsDetector<double> ;
 #include <gmpxx.h>
-template class ConnectedComponentsDetector<mpq_class> ;
+template class Monosat::ConnectedComponentsDetector<mpq_class> ;
 

@@ -127,7 +127,7 @@ public:
 	void buildNodesNotConnectedReason(int u, int v, vec<Lit> & conflict);
 	void buildReason(Lit p, vec<Lit> & reason, CRef marker);
 	bool checkSatisfied();
-	void printSolution();
+	void printSolution(std::ostream & write_to);
 	Lit decide(int level);
 	void addTreeEdgeLit(int edge_id, Var reach_var);
 	void addConnectedComponentsLit(Var weight_var, int min_components);

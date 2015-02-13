@@ -46,9 +46,8 @@ class GeometryTheorySolver: public Theory {
 public:
 	
 	double rnd_seed;
-	Lit False;
-	Lit True;
-	int local_q;
+
+	int local_q=0;
 private:
 	Solver * S;
 public:
@@ -109,60 +108,38 @@ public:
 	};
 	std::vector<VarData> vars;
 	std::vector<PointData> points;
-	int theory_index;
+	int theory_index=0;
 public:
 	
-	double mctime;
-	double reachtime;
-	double unreachtime;
-	double pathtime;
-	double propagationtime;
-	long stats_propagations;
-	long stats_num_conflicts;
-	long stats_decisions;
-	long stats_num_reasons;
+	double mctime=0;
+	double reachtime=0;
+	double unreachtime=0;
+	double pathtime=0;
+	double propagationtime=0;
+	long stats_propagations=0;
+	long stats_num_conflicts=0;
+	long stats_decisions=0;
+	long stats_num_reasons=0;
 
-	double reachupdatetime;
-	double unreachupdatetime;
-	double stats_initial_propagation_time;
-	double stats_decision_time;
-	double stats_reason_initial_time;
-	double stats_reason_time;
-	int num_learnt_paths;
-	int learnt_path_clause_length;
-	int num_learnt_cuts;
-	int learnt_cut_clause_length;
-	int stats_pure_skipped;
-	int stats_mc_calls;
-	long stats_propagations_skipped;
+	double reachupdatetime=0;
+	double unreachupdatetime=0;
+	double stats_initial_propagation_time=0;
+	double stats_decision_time=0;
+	double stats_reason_initial_time=0;
+	double stats_reason_time=0;
+	long num_learnt_paths=0;
+	long learnt_path_clause_length=0;
+	long num_learnt_cuts=0;
+	long learnt_cut_clause_length=0;
+	long stats_pure_skipped=0;
+	long stats_mc_calls=0;
+	long stats_propagations_skipped=0;
 	vec<Lit> reach_cut;
 
 	GeometryTheorySolver(Solver * S_, int _id = -1) :
 			S(S_), id(_id) {
-		local_q = 0;
-		theory_index = 0;
-		mctime = 0;
-		stats_mc_calls = 0;
-		reachtime = 0;
-		unreachtime = 0;
-		pathtime = 0;
-		propagationtime = 0;
-		stats_propagations = 0;
-		stats_num_conflicts = 0;
-		stats_num_reasons = 0;
-		stats_decisions = 0;
-		stats_propagations_skipped = 0;
-		reachupdatetime = 0;
-		unreachupdatetime = 0;
-		stats_initial_propagation_time = 0;
-		stats_decision_time = 0;
-		stats_reason_initial_time = 0;
-		stats_reason_time = 0;
-		num_learnt_paths = 0;
-		learnt_path_clause_length = 0;
-		num_learnt_cuts = 0;
-		learnt_cut_clause_length = 0;
 		
+
 		rnd_seed = opt_random_seed;
 		
 	}
@@ -351,7 +328,7 @@ public:
 		if (assigns[var(l)] != l_Undef) {
 			assert(S->value(toSolver(l)) == (assigns[var(l)] ^ sign(l)));
 		}
-		return assigns[var(l)] ^ sign(l);; //S->value(toSolver(l));
+		return assigns[var(l)] ^ sign(l); //S->value(toSolver(l));
 	}
 	inline lbool dbg_value(Var v) {
 		return S->value(toSolver(v));

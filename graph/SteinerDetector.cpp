@@ -424,7 +424,7 @@ bool SteinerDetector<Weight>::checkSatisfied() {
 				if (positive_checker.weight() <= dist) {
 					return false;
 				}
-				if (!negative_checker.weight() > dist) {
+				if (negative_checker.weight() > dist) {
 					return false;
 				}
 			}
@@ -439,8 +439,8 @@ Lit SteinerDetector<Weight>::decide(int level) {
 	return lit_Undef;
 }
 ;
-template class SteinerDetector<int> ;
-template class SteinerDetector<long> ;
-template class SteinerDetector<double> ;
+template class Monosat::SteinerDetector<int> ;
+template class Monosat::SteinerDetector<long> ;
+template class Monosat::SteinerDetector<double> ;
 #include <gmpxx.h>
-template class SteinerDetector<mpq_class> ;
+template class Monosat::SteinerDetector<mpq_class> ;
