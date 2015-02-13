@@ -61,20 +61,9 @@ void getCover(Solver &S, vec<Lit> & cover)
 		}
 	}
 	cover.clear();
-	potentialCoverLits.clear();
 	in_cover.clear();
-	coverCount.clear();
-	mVarsGreedyScore.clear();
-	uncovered.growTo(S.clauses.size()+1);
 	in_cover.growTo(S.nVars());
-	mVarsGreedyScore.growTo(S.nVars());
-	mVarsInUncCls.growTo(S.nVars());
-//
-	coverCount.growTo(S.clauses.size()+1);
-	for(int i = 0;i<mVarsInUncCls.size();i++)
-		mVarsInUncCls[i].clear();
-	for(int i = 0;i<uncovered.size();i++)
-		uncovered[i].clear();
+
 
 	//first pass: find any clauses where the _only_ true literal is a required lit. Add all such lits to the cover set.
 	for(int i = 0;i< ((S.decisionLevel()==0) ? S.trail.size():S.trail_lim[0]);i++)
@@ -89,7 +78,54 @@ void getCover(Solver &S, vec<Lit> & cover)
 		}
 	}
 	if(opt_fast_partial){
+		//first find any forced literals and add them to the cover.
+		//Disabling this because it is too expensive.
+		/*for(int j = 0;j<subset.size();j++){
 
+			Var v = subset[j];
+			assert(include[v]);
+
+
+			Lit p = mkLit(v);
+			if(S.value(p)==l_False){
+				p=~p;
+			}
+			assert(S.value(p)==l_True);
+
+			vec<Solver::Watcher>&  ws  = S.watches[p];
+
+			for (int k = 0;k<ws.size();k++){
+				Solver::Watcher        *i = &ws[k];
+				Lit blocker = i->blocker;
+				if (blocker!=lit_Undef && S.value(blocker) == l_True && (!include[var(blocker)] || in_cover[var(blocker)] )){
+					//this clause is covered
+					continue;
+				}
+
+				// Make sure the false literal is data[1]:
+				CRef     cr        = i->cref;
+				Clause&  c         = S.ca[cr];
+
+				assert(c.size()>1);
+				Lit other_watcher=c[0];
+				if (c[0] == ~p)
+					other_watcher=c[1];
+
+				assert (S.value(other_watcher) == l_True);//otherwise this would be a conflict.
+
+				if(!include[var(other_watcher)]){
+
+				}else if( in_cover[var(other_watcher)]){
+					//this clause is already covered
+
+				}else{
+					in_cover[var(other_watcher)]=true;
+					cover.push(other_watcher);
+				}
+			}
+
+		}*/
+		//now find any clauses that are still uncovered, and cover them.
 		for(int j = 0;j<subset.size();j++){
 			Var v = subset[j];
 			assert(include[v]);
@@ -101,7 +137,7 @@ void getCover(Solver &S, vec<Lit> & cover)
 				p=~p;
 			}
 			assert(S.value(p)==l_True);
-			bool any_unwatched=false;
+
 			vec<Solver::Watcher>&  ws  = S.watches[~p];
 
 			for (int k = 0;k<ws.size();k++){
@@ -126,7 +162,10 @@ void getCover(Solver &S, vec<Lit> & cover)
 						//this clause is covered
 						continue;
 					}else{
-						any_unwatched=true;
+						assert(!in_cover[v]);//arbitrarily pick this literal to cover this clause. (should we try to use a different heuristic here? for example, select the watcher that is watching more clauses?)
+						in_cover[v]=true;
+						cover.push(p);
+						break;
 					}
 				}else{
 					//this is the _only_ true literal in this clause, so it must cover the clause
@@ -136,14 +175,25 @@ void getCover(Solver &S, vec<Lit> & cover)
 					break;
 				}
 			}
-			if(any_unwatched && ! in_cover[v]){
-				in_cover[v]=true;
-				cover.push(p);
-			}
+
 		}
 		return;
 	}
 
+	potentialCoverLits.clear();
+
+	coverCount.clear();
+	mVarsGreedyScore.clear();
+	uncovered.growTo(S.clauses.size()+1);
+
+	mVarsGreedyScore.growTo(S.nVars());
+	mVarsInUncCls.growTo(S.nVars());
+//
+	coverCount.growTo(S.clauses.size()+1);
+	for(int i = 0;i<mVarsInUncCls.size();i++)
+		mVarsInUncCls[i].clear();
+	for(int i = 0;i<uncovered.size();i++)
+		uncovered[i].clear();
 
 	for(int i = 0;i<S.clauses.size();i++)
 	{

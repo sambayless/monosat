@@ -284,6 +284,7 @@ int main(int argc, char** argv)
         		Cover c;
         		Solver allsat_solver;
         		Solver & allsat = opt_allsat_modsat?allsat_solver:S;
+        		vec<Lit> tmp_clause;
         		allsat.use_model=false;
         		for(int i = 0;i<S.nVars();i++){
 					c.excludeFromCover(i,true);
@@ -361,6 +362,27 @@ int main(int argc, char** argv)
 							}
 
         				}
+        				if(opt_allsat_modsat && block.size()>0){
+        					if(block.size()==1){
+        						S.cancelUntil(0);
+        						S.addClause(S.fromSuper(block[0]));
+        					}else{
+
+								tmp_clause.clear();
+								for (int i = 0;i<block.size();i++){
+									Lit l = block[i];
+									tmp_clause.push(S.fromSuper(l));
+								}
+								CRef confl = S.ca.alloc(block, false);
+								if(opt_fast_partial){
+									S.blocking_clauses.push(confl);
+								}else
+									S.clauses.push(confl);
+								S.attachClause(confl);
+								//this will put the solver in conflict, but that is ok because it will be resolved in the supersolver below.
+        					}
+        				}
+
         				if(opt_allsat_inc_block && allsat.decisionLevel()>0 && block.size()>0){
         					int max_lev = allsat.level(var(block[0]));
         					int second_max = block.size()>1 ? allsat.level(var(block[1])):0;
@@ -412,7 +434,10 @@ int main(int argc, char** argv)
 									allsat.ok&= allsat.enqueue(max);
 								}else{
 									CRef cr = allsat.ca.alloc(block, false);
-									allsat.clauses.push(cr);//previously, was adding these to blocking_clauses, which causes Cover to ignore them - which might possibly lead to double counting (not sure about this).
+									if(opt_fast_partial){
+										allsat.blocking_clauses.push(cr);
+									}else
+										allsat.clauses.push(cr);//previously, was adding these to blocking_clauses, which causes Cover to ignore them - which might possibly lead to double counting (not sure about this).
 									allsat.attachClause(cr);
 
 									assert(allsat.value(block[0])==l_Undef);
@@ -421,7 +446,10 @@ int main(int argc, char** argv)
 							}else{
 								//solver is in conflict...
 								CRef confl = allsat.ca.alloc(block, false);
-								allsat.clauses.push(confl);//blocking_clauses
+								if(opt_fast_partial){
+									allsat.blocking_clauses.push(confl);
+								}else
+									allsat.clauses.push(confl);//blocking_clauses
 								allsat.attachClause(confl);
 
 								if(allsat.decisionLevel()==0){
@@ -441,6 +469,8 @@ int main(int argc, char** argv)
 										allsat.uncheckedEnqueue(learnt_clause[0]);
 									}else{
 										CRef cr = allsat.ca.alloc(learnt_clause, true);
+										allsat.blocking_clauses.push(cr);//apparently adding this to learnts would be too expensive (not sure why - possibly it just triggers a huge amount of garbage collection);
+
 										allsat.attachClause(cr);
 										allsat.claBumpActivity(allsat.ca[cr]);
 
