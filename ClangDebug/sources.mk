@@ -34,17 +34,5 @@ fsm \
 dgl/alg \
 dgl \
 core \
-clang/utils \
-clang/simp \
-clang/graph \
-clang/geometry/polypartition \
-clang/geometry/cevans \
-clang/geometry/bitmap \
-clang/geometry \
-clang/fsm \
-clang/dgl/alg \
-clang/dgl \
-clang/core \
-clang \
 . \
 

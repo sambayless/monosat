@@ -50,9 +50,7 @@ public:
 	//template<unsigned int D, class T> friend class GeometryTheorySolver;
 	friend class FSMTheorySolver;
 	friend class LSystemSolver;
-#ifdef DEBUG_SOLVER
-	Solver * dbg_solver;
-#endif
+
 	// Constructor/Destructor:
 	//
 	Solver();
@@ -671,41 +669,7 @@ private:
 		return v >= min_super && v <= max_super;
 	}
 	
-	inline void dbg_check_propagation(Lit p) {
-#ifdef DEBUG_SOLVER
-		if (dbg_solver) {
 
-			static vec<Lit> c;
-			c.clear();
-			for(int i = 0;i<trail.size();i++)
-			{	
-				c.push(trail[i]);
-			}
-			c.push(~p);
-			bool res = dbg_solver->solve(c);
-
-			assert(!res);
-		}
-#endif
-	}
-	
-	inline void dbg_check(const vec<Lit> & clause) {
-#ifdef DEBUG_SOLVER
-		if (dbg_solver) {
-			static bool first = true;
-			static vec<Lit> c;
-			c.clear();
-			for(int i = 0;i<clause.size();i++)
-			{	
-				c.push(~ clause[i]);
-			}
-
-			bool res = dbg_solver->solve(c);
-
-			assert(!res);
-		}
-#endif
-	}
 	
 };
 

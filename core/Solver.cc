@@ -65,9 +65,7 @@ Solver::Solver() :
 		// Resource constraints:
 		//
 				, conflict_budget(-1), propagation_budget(-1) {
-#ifdef DEBUG_SOLVER
-	dbg_solver=NULL;
-#endif
+
 }
 
 Solver::~Solver() {
@@ -83,12 +81,7 @@ Solver::~Solver() {
 // used as a decision variable (NOTE! This has effects on the meaning of a SATISFIABLE result).
 //
 Var Solver::newVar(bool sign, bool dvar) {
-	
-#ifdef DEBUG_SOLVER
-	if( dbg_solver) {
-		dbg_solver->newVar();
-	}
-#endif
+
 	int v = nVars();
 	watches.init(mkLit(v, false));
 	watches.init(mkLit(v, true));
@@ -116,13 +109,7 @@ Var Solver::newVar(bool sign, bool dvar) {
 
 bool Solver::addClause_(vec<Lit>& ps) {
 	
-#ifdef DEBUG_SOLVER
-	if( dbg_solver) {
-		static vec<Lit> c;
-		ps.copyTo(c);
-		dbg_solver->addClause(c);
-	}
-#endif
+
 	assert(decisionLevel() == 0);
 	if (!ok)
 		return false;
@@ -174,7 +161,7 @@ CRef Solver::attachClauseSafe(vec<Lit> & ps) {
 	} else if (ps.size() == 1) {
 		cancelUntil(0);
 		assert(var(ps[0]) < nVars());
-		dbg_check_propagation(ps[0]);
+
 		if (!enqueue(ps[0])) {
 			ok = false;
 			
@@ -424,7 +411,7 @@ void Solver::analyze(CRef confl, vec<Lit>& out_learnt, int& out_btlevel) {
 		
 	} while (pathC > 0);
 	out_learnt[0] = ~p;
-	dbg_check(out_learnt);
+
 #ifndef NDEBUG
 	for (Lit p : out_learnt)
 		assert(value(p)==l_False);
@@ -484,7 +471,7 @@ void Solver::analyze(CRef confl, vec<Lit>& out_learnt, int& out_btlevel) {
 	for (Lit p : out_learnt)
 		assert(value(p)==l_False);
 #endif
-	dbg_check(out_learnt);
+
 	for (int j = 0; j < analyze_toclear.size(); j++)
 		seen[var(analyze_toclear[j])] = 0;    // ('seen[]' is now cleared)
 }
@@ -1102,7 +1089,7 @@ bool Solver::simplify() {
 }
 
 bool Solver::addConflictClause(vec<Lit> & ps, CRef & confl_out, bool permanent) {
-	dbg_check(theory_conflict);
+
 	sort(ps);
 	Lit p;
 	int i, j;
@@ -1121,7 +1108,7 @@ bool Solver::addConflictClause(vec<Lit> & ps, CRef & confl_out, bool permanent) 
 	} else if (ps.size() == 1) {
 		cancelUntil(0);
 		assert(var(ps[0]) < nVars());
-		dbg_check_propagation(ps[0]);
+
 		if (!enqueue(ps[0])) {
 			ok = false;
 			return false;
@@ -1376,8 +1363,6 @@ lbool Solver::search(int nof_conflicts) {
 					newDecisionLevel();
 				} else if (value(p) == l_False) {
 					analyzeFinal(~p, conflict);
-					dbg_check(conflict);
-					dbg_check_propagation(~p);
 					return l_False;
 				} else {
 					next = p;
@@ -1541,23 +1526,12 @@ lbool Solver::solve_() {
 				exit(4);
 			}
 		}
-#ifdef DEBUG_SOLVER
-		if(dbg_solver)
-		assert(dbg_solver->solve(assumptions));
-#endif
+
 		
 	} else if (status == l_False && conflict.size() == 0) {
 		ok = false;
-#ifdef DEBUG_SOLVER
-		if(dbg_solver)
-		assert(!dbg_solver->solve());
-#endif
 	} else if (status == l_False) {
 		assert(ok);
-#ifdef DEBUG_SOLVER
-		if(dbg_solver)
-		assert(!dbg_solver->solve(assumptions));
-#endif
 	}
 	
 	assumptions.clear();

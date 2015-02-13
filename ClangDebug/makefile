@@ -19,18 +19,6 @@ RM := rm -rf
 -include dgl/alg/subdir.mk
 -include dgl/subdir.mk
 -include core/subdir.mk
--include clang/utils/subdir.mk
--include clang/simp/subdir.mk
--include clang/graph/subdir.mk
--include clang/geometry/polypartition/subdir.mk
--include clang/geometry/cevans/subdir.mk
--include clang/geometry/bitmap/subdir.mk
--include clang/geometry/subdir.mk
--include clang/fsm/subdir.mk
--include clang/dgl/alg/subdir.mk
--include clang/dgl/subdir.mk
--include clang/core/subdir.mk
--include clang/subdir.mk
 -include subdir.mk
 -include objects.mk
 

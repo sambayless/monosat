@@ -1107,13 +1107,7 @@ bool ReachDetector<Weight>::propagate(vec<Lit> & conflict) {
 		if (outer->value(l) == l_True) {
 			//do nothing
 		} else if (outer->value(l) == l_Undef) {
-#ifdef DEBUG_GRAPH
-			assert(outer->dbg_propgation(l));
-#endif
-#ifdef DEBUG_SOLVER
-			if(S->dbg_solver)
-			S->dbg_check_propagation(l);
-#endif
+
 			//trail.push(Assignment(false,reach,detectorID,0,var(l)));
 			if (reach)
 				outer->enqueue(l, underprop_marker);
@@ -1135,14 +1129,7 @@ bool ReachDetector<Weight>::propagate(vec<Lit> & conflict) {
 				buildNonReachReason(u, conflict);
 				
 			}
-#ifdef DEBUG_GRAPH
-			for(int i = 0;i<conflict.size();i++)
-			assert(outer->dbg_value(conflict[i])==l_False);
-#endif
-#ifdef DEBUG_SOLVER
-			if(S->dbg_solver)
-			S->dbg_check(conflict);
-#endif
+
 			
 			return false;
 		}
