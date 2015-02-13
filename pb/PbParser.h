@@ -28,6 +28,7 @@
 #include "core/SolverTypes.h"
 #include "pb/PbTheory.h"
 #include "core/Config.h"
+#include <sstream>
 #include <set>
 namespace Monosat {
 
@@ -135,7 +136,7 @@ static void parse_PB_main(B& in, Solver& S, vec<std::pair<int, std::string> > * 
 						if (!hasSymbol[v]) {
 							hasSymbol[v] = true;
 							
-							stringstream ss;
+							std::stringstream ss;
 							ss << "x" << parsed_ID;
 							
 							symbols->push();
