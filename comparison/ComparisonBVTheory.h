@@ -39,20 +39,23 @@
 #include <unistd.h>
 #include <sstream>
 
-using namespace dgl;
+template<typename Weight>
+class ComparisonBVTheorySolver;
+
 namespace Monosat {
 
 
-template<typename Weight>
+
+template<typename Weight, class Status>
 class ComparisonBVTheorySolver: public Theory {
 public:
-
+	Status & status;
 	struct Assignment {
-		bool isEdge :1;
+		bool isComparator :1;
 		bool assign :1;
-		int edgeID:30;
+		int bvID:30;
 		Var var;
-		Assignment(bool isEdge, bool assign, int edgeID, Var v):isEdge(isEdge),assign(assign),edgeID(edgeID),var(v){
+		Assignment(bool isComparator, bool assign, int bvID, Var v):isComparator(isComparator),assign(assign),bvID(bvID),var(v){
 
 		}
 	};
@@ -65,11 +68,34 @@ public:
 		int is_lt:1;
 	};
 
+
+	class BitVector{
+		ComparisonBVTheorySolver & outer;
+		int id;
+	public:
+		BitVector(ComparisonBVTheorySolver & outer, int id):outer(outer),id(id){
+
+		}
+		int getID(){
+			return id;
+		}
+		Weight & getUnder(){
+			return outer.getUnderApprox(id);
+		}
+		Weight & getOver(){
+			return outer.getOverApprox(id);
+		}
+
+		vec<Lit> & getBits(){
+			return outer.getBits(id);
+		}
+	};
+
 	double rnd_seed;
 
 private:
 	Solver * S;
-	int local_q = 0;
+
 public:
 	int id;
 
@@ -147,7 +173,7 @@ public:
 
 		S->addTheory(this);
 		comparisonprop_marker = S->newReasonMarker(this);
-		 bvprop_marker = S->newReasonMarker(this);
+		bvprop_marker = S->newReasonMarker(this);
 
 	}
 	~ComparisonBVTheorySolver(){
@@ -332,9 +358,8 @@ public:
 				
 				Assignment & e = trail[i];
 				assert(assigns[e.var]!=l_Undef);
-				if (e.isEdge) {
+				if (e.isComparator) {
 					assert(dbg_value(e.var)==l_Undef);
-
 
 					if (e.assign) {
 						//g_unders[bvID]->disableTransition(edgeID, input,output);
@@ -344,8 +369,7 @@ public:
 
 					}
 				} else {
-					//This is a reachability literal				  
-					//detectors[getDetector(e.var)]->unassign(mkLit(e.var, !e.assign));
+					status.bvAltered(e.bvID);
 				}
 				assigns[e.var] = l_Undef;
 				//changed = true;
@@ -380,7 +404,7 @@ public:
 				assert(sign(p) != e.assign);
 				break;
 			}
-			if (e.isEdge) {
+			if (e.isComparator) {
 
 				assert(assigns[e.var]!=l_Undef);
 				assigns[e.var] = l_Undef;
@@ -392,7 +416,7 @@ public:
 			} else {
 
 				assigns[e.var] = l_Undef;
-				//detectors[getDetector(e.var)]->unassign(mkLit(e.var, !e.assign));
+				status.bvAltered(e.bvID);
 			}
 		}
 		
@@ -510,13 +534,14 @@ public:
 			if(!alteredBV[bvID]){
 				alteredBV[bvID]=true;
 				altered_bvs.push(bvID);
+				status.bvAltered(bvID);
 			}
 
 		} else {
 
 			int bvID = getbvID(var(l));
-			int edgeID = getComparisonID(var(l)); //v-min_edge_var;
-
+			int comparisonID = getComparisonID(var(l)); //v-min_edge_var;
+			status.comparisonAltered(bvID, comparisonID);
 
 			//trail.push( { true, !sign(l),edgeID, v });
 
@@ -541,6 +566,19 @@ public:
 				over_approx[bvID]+=bit;
 			}
 		}
+	}
+
+	Weight & getUnderApprox(int bvID){
+		assert(checkApproxUpToDate(bvID));
+		return under_approx[bvID];
+	}
+	Weight & getOverApprox(int bvID){
+		assert(checkApproxUpToDate(bvID));
+		return over_approx[bvID];
+	}
+
+	vec<Lit> & getBits(int bvID){
+		return bitvectors[bvID];
 	}
 
 	bool checkApproxUpToDate(int bvID){
@@ -872,7 +910,10 @@ public:
 		marker_map[mnum] = detectorID;
 		return reasonMarker;
 	}
-	void newBitvector(int bvID, vec<Var> & vars){
+	BitVector newBitvector(int bvID, vec<Var> & vars){
+		if(bvID<0){
+			bvID = bitvectors.size();
+		}
 		bitvectors.growTo(bvID+1);
 		under_approx.growTo(bvID+1,-1);
 		over_approx.growTo(bvID+1,-1);
@@ -893,8 +934,12 @@ public:
 
 		alteredBV[bvID]=true;
 		altered_bvs.push(bvID);
+		return BitVector(*this,bvID);
 	}
-	void newBitvector(int bvID, int bitwidth){
+	BitVector newBitvector(int bvID, int bitwidth){
+		if(bvID<0){
+			bvID = bitvectors.size();
+		}
 		bitvectors.growTo(bvID+1);
 		under_approx.growTo(bvID+1,-1);
 		over_approx.growTo(bvID+1,-1);
@@ -915,6 +960,7 @@ public:
 
 		alteredBV[bvID]=true;
 		altered_bvs.push(bvID);
+		return BitVector(*this,bvID);
 	}
 
 
@@ -1020,6 +1066,7 @@ public:
 	}
 
 };
+
 
 }
 ;

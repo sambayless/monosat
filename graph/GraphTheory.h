@@ -48,7 +48,8 @@
 
 #include "AllPairsDetector.h"
 #include "ReachDetector.h"
-
+#include "comparison/ComparisonBVTheory.h"
+#include "comparison/BitVector.h"
 #include "DistanceDetector.h"
 #include "MSTDetector.h"
 #include "MaxflowDetector.h"
@@ -79,6 +80,7 @@ private:
 public:
 	int id;
 	bool all_edges_unit = true;
+	bool all_edges_positive=true;
 	vec<lbool> assigns;
 	MSTDetector<Weight> * mstDetector = nullptr;
 	vec<ReachabilityConstraint> unimplemented_reachability_constraints;
@@ -95,9 +97,30 @@ public:
 	 */
 	DynamicGraph<long> cutGraph;
 
-	//Var min_edge_var;
-	//int num_edges;
-	
+	struct ComparisonStatus;
+	//if bitvectors weights are supplied, then this manages the resulting weights.
+	ComparisonBVTheorySolver<long, ComparisonStatus> * comparator=nullptr;
+
+	struct ComparisonStatus{
+		GraphTheorySolver & outer;
+		ComparisonBVTheorySolver<long, ComparisonStatus> & comp;
+		void comparisonAltered(int bvID, int comparisonID){
+
+		}
+		void bvAltered(int bvID){
+		/*	if(!outer.bv_needs_update[bvID]){
+				outer.bv_needs_update[bvID]=true;
+				outer.bvs_to_update.push(bvID);
+			}*/
+			int edgeID = outer.getBVEdge(bvID);
+			outer.g_under.setEdgeWeight(edgeID,outer.edge_bv_weights[bvID].getUnder());
+			outer.g_over.setEdgeWeight(edgeID, outer.edge_bv_weights[bvID].getOver());
+		}
+
+	};
+
+	using BitVector = typename ComparisonBVTheorySolver<Weight, ComparisonStatus>::BitVector;
+
 	vec<Assignment> trail;
 	vec<int> trail_lim;
 
@@ -107,7 +130,7 @@ public:
 		Detector * detector;
 
 		ReachInfo() :
-				source(-1), detector(nullptr) {
+			source(-1), detector(nullptr) {
 		}
 	};
 
@@ -137,8 +160,16 @@ public:
 
 	//vector of the weights for each edge
 	std::vector<Weight> edge_weights;
-	//Some algorithms support computations using rational weights (or capacities).
-	std::vector<mpq_class> rational_weights;
+	std::vector<BitVector> edge_bv_weights;
+
+	struct BVInfo{
+		int edgeID;
+	};
+
+	std::vector<BVInfo> bitvectors;
+	vec<bool> bv_needs_update;
+	vec<int> bvs_to_update;
+
 	bool requiresPropagation = true;
 
 	vec<char> seen;
@@ -147,9 +178,10 @@ public:
 	//Data about local theory variables, and how they connect to the sat solver's variables
 	struct VarData {
 		int isEdge :1;
+		int isBV:1;
 		int occursPositive :1;
 		int occursNegative :1;
-		int detector_edge :29;	//the detector this variable belongs to, or its edge number, if it is an edge variable
+		int detector_edge :28;	//the detector this variable belongs to, or its edge number, if it is an edge variable
 		Var solverVar;
 	};
 
@@ -368,12 +400,30 @@ public:
 		Var s = S->newVar();
 		return newVar(s, forDetector, false, connectToTheory);
 	}
+	Var newBVVar(Var solverVar, int bvID, int edgeID){
+		while (S->nVars() <= solverVar)
+			S->newVar();
+		Var v = vars.size();
+		vars.push();
+		vars[v].isEdge = false;
+		vars[v].isBV=true;
+		vars[v].detector_edge = bvID;
+		vars[v].solverVar = solverVar;
+		assigns.push(l_Undef);
+
+		S->setTheoryVar(solverVar, getTheoryIndex(), v);
+		assert(toSolver(v) == solverVar);
+
+		return v;
+	}
+
 	Var newVar(Var solverVar, int detector, bool isEdge = false, bool connectToTheory = true) {
 		while (S->nVars() <= solverVar)
 			S->newVar();
 		Var v = vars.size();
 		vars.push();
 		vars[v].isEdge = isEdge;
+		vars[v].isBV=false;
 		vars[v].detector_edge = detector;
 		vars[v].solverVar = solverVar;
 		assigns.push(l_Undef);
@@ -471,6 +521,10 @@ public:
 		return n >= 0 && n < nNodes();
 	}
 	
+	bool hasBitVector(int edgeID){
+		return edge_list[edgeID].bvID>=0;
+	}
+
 	bool dbg_propgation(Lit l) {
 #ifndef NDEBUG
 		static vec<Lit> c;
@@ -943,7 +997,17 @@ public:
 		}
 #endif
 		
-		if (isEdgeVar(var(l))) {
+		if(isBVVar(var(l))){
+			int bvID = getBV(var(l));
+			if(isBVEdge(bvID)){
+				int edgeID = getBVEdge(bvID);
+			}
+			if(!bv_needs_update[bvID]){
+				bv_needs_update[bvID]=true;
+				bvs_to_update.push(bvID);
+			}
+
+		}else if (isEdgeVar(var(l))) {
 			
 			//this is an edge assignment
 			int edge_num = getEdgeID(var(l)); //v-min_edge_var;
@@ -990,18 +1054,27 @@ public:
 			assert(dbg_graphsUpToDate());
 			return true;
 		}
-		
+
 		bool any_change = false;
 		double startproptime = rtime(1);
-		//static vec<int> detectors_to_check;
 		
 		conflict.clear();
 		//Can probably speed this up alot by a) constant propagating reaches that I care about at level 0, and b) Removing all detectors for nodes that appear only in the opposite polarity (or not at all) in the cnf.
 		//That second one especially.
 		
 		//At level 0, need to propagate constant reaches/source nodes/edges...
-		
-		//stats_initial_propagation_time += rtime(1) - startproptime;
+
+		for (int bvID:bvs_to_update){
+			assert(bv_needs_update[bvID]);
+			if(isBVEdge(bvID)){
+				int edgeID = getBVEdge(bvID);
+				g_under.setEdgeWeight(edgeID,edge_bv_weights[bvID].getUnder());
+				g_over.setEdgeWeight(edgeID, edge_bv_weights[bvID].getOver());
+				bv_needs_update[bvID]=false;
+			}
+		}
+		bvs_to_update.clear();
+
 		dbg_sync();
 		assert(dbg_graphsUpToDate());
 		
@@ -1222,13 +1295,104 @@ public:
 		marker_map[mnum] = detectorID;
 		return reasonMarker;
 	}
-	
+
+	bool isBVEdge(int bvID){
+		return bitvectors[bvID].edgeID>=0;
+	}
+	int getBVEdge(int bvID){
+		assert(isBVEdge(bvID));
+		return bitvectors[bvID].edgeID;
+	}
+
+	bool isBVVar(Var v){
+		return vars[v].isBV;
+	}
+
+	int getBV(Var v){
+		assert(isBVVar(v));
+		return vars[v].detector_edge;
+	}
+
+	Lit newEdge(int from, int to, vec<Var> & bitVector, Var outerVar = var_Undef) {
+			assert(outerVar!=var_Undef);
+			assert(edge_weights.size()==0);
+			/*	if(outerVar==var_Undef)
+			 outerVar = S->newVar();*/
+			vec<Var> internalBV;
+			int bvID = bitvectors.size();
+			int index = edge_list.size();
+			for (Var v:bitVector){
+				internalBV.push(newBVVar(v,bvID,index));
+			}
+
+			if(!comparator){
+				comparator = new ComparisonBVTheorySolver<Weight,ComparisonStatus>(ComparisonStatus(*this, *comparator));
+			}
+			BitVector bv = comparator->newBitvector(bvID,bitVector);
+			bitvectors.push(bvID);
+
+			all_edges_unit &= (bv.getUnder()== 1 && bv.getOver()==1);
+			all_edges_positive &= bv.getUnder()>0;
+			edge_list.push();
+			Var v = newVar(outerVar, index, true);
+
+			undirected_adj[to].push( { v, outerVar, from, to, index });
+			undirected_adj[from].push( { v, outerVar, to, from, index });
+			inv_adj[to].push( { v, outerVar, from, to, index });
+
+			//num_edges++;
+			edge_list[index].v = v;
+			edge_list[index].outerVar = outerVar;
+			edge_list[index].from = from;
+			edge_list[index].to = to;
+			edge_list[index].edgeID = index;
+			edge_list[index].bvID = bv.getID();
+
+			if (edge_bv_weights.size() <= index) {
+				edge_bv_weights.resize(index + 1);
+			}
+			edge_bv_weights[index] = bv;
+
+			//edges[from][to]= {v,outerVar,from,to,index};
+			g_under.addEdge(from, to, index,bv.getUnder());
+			g_under.disableEdge(from, to, index);
+			g_over.addEdge(from, to, index,bv.getOver());
+			cutGraph.addEdge(from, to, index * 2,1);
+			cutGraph.addEdge(from, to, index * 2 + 1,0xFFFF);
+			cutGraph.disableEdge(from, to, index * 2);
+
+	#ifdef RECORD
+			if (g_under.outfile) {
+
+				fprintf(g_under.outfile, "edge_bv_weight %d", index);
+				for(Var v:bitVector)
+					fprintf(g_under.outfile," %d", v+1);
+				fprintf(g_under.outfile,"\n");
+				fflush(g_under.outfile);
+			}
+			if (g_over.outfile) {
+				fprintf(g_over.outfile, "edge_bv_weight %d", index);
+				for(Var v:bitVector)
+					fprintf(g_over.outfile," %d", v+1);
+				fprintf(g_over.outfile,"\n");
+				fflush(g_over.outfile);
+			}
+			if (cutGraph.outfile) {
+
+				fprintf(cutGraph.outfile, "edge_weight %d %d\n", index * 2, 1);
+				fprintf(cutGraph.outfile, "edge_weight %d %d\n", index * 2 + 1, 0xFFFF);
+				fflush(cutGraph.outfile);
+			}
+	#endif
+			return mkLit(v, false);
+		}
 	Lit newEdge(int from, int to, Var outerVar = var_Undef, Weight weight = 1) {
 		assert(outerVar!=var_Undef);
 		/*	if(outerVar==var_Undef)
 		 outerVar = S->newVar();*/
-
+		assert(bitvectors.size()==0);
 		all_edges_unit &= (weight == 1);
+		all_edges_positive &= weight>0;
 		int index = edge_list.size();
 		edge_list.push();
 		Var v = newVar(outerVar, index, true);
@@ -1294,9 +1458,9 @@ public:
 	 assert(edges[from][to].edgeID>=0);
 	 return edges[from][to].edgeID;
 	 }*/
-	Weight getWeight(int edgeID) {
+/*	Weight getWeight(int edgeID) {
 		return edge_weights[edgeID];
-	}
+	}*/
 	void reachesWithinSteps(int from, int to, Var reach_var, int within_steps) {
 		
 		assert(from < g_under.nodes());

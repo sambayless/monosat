@@ -55,13 +55,13 @@ struct Edge {
 	int from;
 	int to;
 	int edgeID;
-
-	Edge(Var v, Var outerVar, int from, int to, int edgeID) :
-			v(v), outerVar(outerVar), from(from), to(to), edgeID(edgeID) { //,weight(weight){
+	int bvID;
+	Edge(Var v, Var outerVar, int from, int to, int edgeID, int bvID=-1) :
+			v(v), outerVar(outerVar), from(from), to(to), edgeID(edgeID),bvID(bvID) { //,weight(weight){
 	
 	}
 	Edge() :
-			v(var_Undef), outerVar(var_Undef), from(-1), to(-1), edgeID(-1) { //,weight(0){
+			v(var_Undef), outerVar(var_Undef), from(-1), to(-1), edgeID(-1),bvID(-1) { //,weight(0){
 	
 	}
 };
