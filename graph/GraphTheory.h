@@ -1313,7 +1313,7 @@ public:
 		return vars[v].detector_edge;
 	}
 
-	Lit newEdge(int from, int to, vec<Var> & bitVector, Var outerVar = var_Undef) {
+	Lit newEdge(int from, int to, Var outerVar,vec<Var> & bitVector) {
 			assert(outerVar!=var_Undef);
 			assert(edge_weights.size()==0);
 			/*	if(outerVar==var_Undef)
@@ -1325,9 +1325,9 @@ public:
 				internalBV.push(newBVVar(v,bvID,index));
 			}
 
-			if(!comparator){
+		/*	if(!comparator){
 				comparator = new ComparisonBVTheorySolver<Weight,ComparisonStatus>(ComparisonStatus(*this, *comparator));
-			}
+			}*/
 			BitVector bv = comparator->newBitvector(bvID,bitVector);
 			bitvectors.push(bvID);
 

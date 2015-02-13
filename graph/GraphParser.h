@@ -108,6 +108,50 @@ class GraphParser: public Parser<B, Solver> {
 		//  return ev;
 	}
 
+	void readEdgeBV(B& in, Solver& S) {
+		if (opt_ignore_theories) {
+			skipLine(in);
+			return;
+		}
+
+		++in;
+
+		int graphID = parseInt(in);
+		int from = parseInt(in);
+		int to = parseInt(in);
+		int edgeVar = parseInt(in) - 1;
+
+		if (graphID < 0 || graphID >= graphs.size()) {
+			printf("PARSE ERROR! Undeclared graph identifier %d for edge %d\n", graphID, edgeVar), exit(1);
+		}
+		if (edgeVar < 0) {
+			printf("PARSE ERROR! Edge variables must be >=0, was %d\n", edgeVar), exit(1);
+		}
+		while (edgeVar >= S.nVars())
+			S.newVar();
+
+		skipWhitespace(in);
+		int bvID = parseInt(in);
+/*		static vec<Var> bv;
+		bv.clear();
+
+		while(*in != "\n"){
+			skipWhitespace(in);
+			int bvVar = parseInt(in)-1;
+			bv.push(bvVar);
+		}*/
+
+		if (graphs[graphID]) {
+			graphs[graphID]->newEdge(from, to, edgeVar, bv);
+		} else if (graphs_float[graphID]) {
+			graphs_float[graphID]->newEdge(from, to, edgeVar,bv);
+		} else if (graphs_rational[graphID]) {
+			graphs_rational[graphID]->newEdge(from, to, edgeVar,bv);
+		} else {
+			printf("PARSE ERROR! Undeclared graph identifier %d for edge %d\n", graphID, edgeVar), exit(1);
+			exit(1);
+		}
+	}
 	
 	void readEdge(B& in, Solver& S) {
 		if (opt_ignore_theories) {
@@ -659,6 +703,14 @@ class GraphParser: public Parser<B, Solver> {
 		steiners[graphID][steinerID]->weight_constraints.push( { maxweight, var });
 	}
 	
+	void readBV(B& in, Solver& S){
+		if (opt_ignore_theories) {
+			skipLine(in);
+			return;
+		}
+
+	}
+
 	void readPB(B & in, vec<Lit> & lits, vec<int> & weights, Solver & S, PbTheory * pb) {
 		if (opt_ignore_theories) {
 			skipLine(in);
@@ -800,6 +852,10 @@ public:
 			count++;
 			readEdge(in, S);
 			return true;
+		}else if (match(in, "edge_bv")) {
+			count++;
+			readEdgeBV(in, S);
+			return true;
 		} else if (match(in, "weighted_edge")) {
 			count++;
 			readEdge(in, S);
@@ -857,6 +913,9 @@ public:
 			}
 			readPB(in, lits, weights, S, pbtheory);
 			return true;
+		}else if (match(in, "bv")){
+			//todo: put the bitvector definitions outside of the graph theory, so other theories can also use them
+			readBV(in,S);
 		}
 		return false;
 	}
