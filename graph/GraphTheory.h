@@ -99,7 +99,7 @@ public:
 
 
 	//if bitvectors weights are supplied, then this manages the resulting weights.
-	ComparisonBVTheorySolver<long> * comparator=nullptr;
+	ComparisonBVTheorySolver<Weight> * comparator=nullptr;
 
 
 	struct ComparisonStatus:public ComparisonBVTheorySolver<long>::CallBack{
@@ -1301,6 +1301,26 @@ public:
 		marker_map.growTo(mnum + 1);
 		marker_map[mnum] = detectorID;
 		return reasonMarker;
+	}
+
+	Lit getEdgeWeightGT(int edgeID, Weight w){
+		if(edge_bv_weights.size()>edgeID){
+			return comparator->newComparisonGT(getEdgeBV(edgeID),w);
+		}else{
+			return mkLit(getEdgeVar(edgeID));
+		}
+	}
+	Lit getEdgeWeightLT(int edgeID, Weight w){
+		if(edge_bv_weights.size()>edgeID){
+			return comparator->newComparisonLT(getEdgeBV(edgeID),w);
+		}else{
+			return mkLit(getEdgeVar(edgeID));
+		}
+	}
+
+	int getEdgeBV(int edgeID){
+		assert(edge_bv_weights.size()>edgeID);
+		return edge_bv_weights[edgeID].getID();
 	}
 
 	bool isBVEdge(int bvID){

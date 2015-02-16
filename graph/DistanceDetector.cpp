@@ -137,7 +137,7 @@ DistanceDetector<Weight>::DistanceDetector(int _detectorID, GraphTheorySolver<We
 		underapprox_weighted_path_detector = underapprox_weighted_distance_detector;
 	}
 	
-	if (opt_conflict_min_cut_shortest_paths) {
+	if (opt_conflict_min_cut) {
 		if (mincutalg == MinCutAlg::ALG_EDKARP_DYN) {
 			conflict_flow = new EdmondsKarpDynamic<long>(outer->cutGraph,  source, 0);
 		} else if (mincutalg == MinCutAlg::ALG_EDKARP_ADJ) {
@@ -456,7 +456,7 @@ void DistanceDetector<Weight>::buildUnweightedDistanceGTReason(int node, vec<Lit
 	int u = node;
 	bool reaches = overapprox_unweighted_distance_detector->connected(node);
 	
-	if (!reaches && opt_conflict_min_cut_shortest_paths && conflict_flow) {
+	if (!reaches && opt_conflict_min_cut && conflict_flow) {
 		g_over.drawFull();
 		cut.clear();
 		long f;
@@ -681,7 +681,7 @@ void DistanceDetector<Weight>::buildDistanceGTReason(int to, Weight & min_distan
 	double starttime = rtime(2);
 	int u = to;
 	bool reaches = overapprox_weighted_distance_detector->connected(to);
-	if (!reaches && opt_conflict_min_cut_shortest_paths && conflict_flow) {
+	if (!reaches && opt_conflict_min_cut && conflict_flow) {
 		g_over.drawFull();
 		cut.clear();
 		long f;
@@ -741,13 +741,16 @@ void DistanceDetector<Weight>::buildDistanceGTReason(int to, Weight & min_distan
 			to_visit.pop();
 			assert(seen[u]);
 			//add all of this node's incoming disabled edges to the cut, and visit any unseen, non-disabled incoming.edges()
-			for (int i = 0; i < outer->inv_adj[u].size(); i++) {
-				int v = outer->inv_adj[u][i].v;
-				int from = outer->inv_adj[u][i].from;
-				assert(outer->inv_adj[u][i].to == u);
+			//for (int i = 0; i < outer->inv_adj[u].size(); i++) {
+			for(int i = 0;i<g_over.nIncoming(u);i++){
+				//int v = outer->inv_adj[u][i].v;
+				//int from = outer->inv_adj[u][i].from;
+				//assert(outer->inv_adj[u][i].to == u);
+				int from =  g_over.incoming(u,i).node;
+				int edge_num =  g_over.incoming(u,i).id;
+
 				//Note: the variable has to not only be assigned false, but assigned false earlier in the trail than the reach variable...
-				int edge_num = outer->getEdgeID(v); // v-outer->min_edge_var;
-						
+				Var edge_enabled = outer->getEdgeVar(edge_num);
 				if (from == u) {
 					assert(outer->edge_list[edge_num].to == u);
 					assert(outer->edge_list[edge_num].from == u);
@@ -767,18 +770,27 @@ void DistanceDetector<Weight>::buildDistanceGTReason(int to, Weight & min_distan
 					}
 				}
 				
-				if (outer->value(v) == l_False) {
+				if (outer->value(edge_enabled) == l_False) {
 					//note: we know we haven't seen this edge variable before, because we know we haven't visited this node before
 					//if we are already planning on visiting the from node, then we don't need to include it in the conflict (is this correct?)
 					//if(!seen[from])
-					conflict.push(mkLit(v, false));
-				} else if (from != source) {
+					conflict.push(mkLit(edge_enabled,false));
+				} else{
+
+					if(reaches){
+						//if the edge _is_ enabled, and the node _is_ reachable, and the edge weight is symbolic, then part of the reason the shortest path is so long is that
+						//then part of the reason the shortest path is too long is that this edge is not less than its current weight.
+						Lit lt = outer->getEdgeWeightLT(edge_num,g_over.getWeight(edge_num));
+						assert(outer->value(lt)==l_False);
+						conflict.push(lt);
+					}
 					//for distance analysis, we _can_ end up reaching source.
-					
-					//even if it is undef? probably...
-					if (!seen[from]) {
-						seen[from] = true;
-						to_visit.push(from);
+					if (from != source) {
+						//even if it is undef? probably...
+						if (!seen[from]) {
+							seen[from] = true;
+							to_visit.push(from);
+						}
 					}
 				}
 			}

@@ -225,8 +225,6 @@ IntOption Monosat::opt_adaptive_conflict_mincut(_cat_graph, "adaptive-conflict-m
 
 BoolOption Monosat::opt_shortest_path_prune_dist(_cat_graph, "shortest-paths-prune-dist",
 		"Prune edges based on distances from learnt clauses for the shortest paths theory", false);
-BoolOption Monosat::opt_conflict_min_cut_shortest_paths(_cat_graph, "conflict-min-cut-shortest-path",
-		"When a node is unreachable in a shortest path constraint, find the minimum separating cut", false);
 
 ConvexHullAlg Monosat::hullAlg = ConvexHullAlg::ALG_MONOTONE_HULL;
 

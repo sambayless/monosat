@@ -1027,7 +1027,7 @@ public:
 	bool hasBV(int bvID){
 		return bvID>=0 && bvID<under_approx.size() && under_approx[bvID]>-1;
 	}
-
+private:
 	Lit getComparisonLT(int bvID, Weight & lt){
 		//could do a binary search here:
 		for(int i=0;i<comparisons_lt[bvID].size()-1;i++){
@@ -1050,7 +1050,7 @@ public:
 
 		return lit_Undef;
 	}
-
+public:
 	Lit newComparisonLT(int bvID, Weight & lt, Var outerVar = var_Undef) {
 		Lit l;
 		if(!hasBV(bvID)){
