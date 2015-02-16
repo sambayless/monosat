@@ -663,8 +663,6 @@ void DistanceDetector<Weight>::buildDistanceLEQReason(int to, Weight & min_dista
 			conflict.push(mkLit(e, true));
 			if(outer->hasBitVector(edgeID)){
 				Lit leq = outer->getEdgeWeightLEQ(edgeID,g_over.getWeight(edgeID));
-				lbool val = outer->dbg_value(leq);
-				assert(outer->dbg_value(leq)==l_True);
 				conflict.push(~leq);
 			}
 

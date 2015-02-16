@@ -569,8 +569,12 @@ protected:
 	//Add a clause to the clause database safely, even if the solver is in the middle of search, propagation, or clause analysis.
 	//(In reality, the clause will be added to the database sometime later)
 	void addClauseSafely(vec<Lit> & ps) {
-		clauses_to_add.push();
-		ps.copyTo(clauses_to_add.last());
+		if(decisionLevel()==0){
+			addClause(ps);
+		}else{
+			clauses_to_add.push();
+			ps.copyTo(clauses_to_add.last());
+		}
 	}
 public:
 	void cancelUntil(int level);                                             // Backtrack until a certain level.

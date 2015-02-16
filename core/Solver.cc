@@ -1089,17 +1089,22 @@ bool Solver::simplify() {
 }
 
 bool Solver::addConflictClause(vec<Lit> & ps, CRef & confl_out, bool permanent) {
-
+	bool any_undef=false;
 	sort(ps);
 	Lit p;
 	int i, j;
-	for (i = j = 0, p = lit_Undef; i < ps.size(); i++)
+	for (i = j = 0, p = lit_Undef; i < ps.size(); i++){
+		if(decisionLevel()>0 && value(ps[i])==l_Undef)
+			any_undef=true;
 		if (((value(ps[i]) == l_True && level(var(ps[i])) == 0)) || ps[i] == ~p)
 			return true;
 		else if ((value(ps[i]) != l_False || level(var(ps[i])) != 0) && ps[i] != p)
 			ps[j++] = p = ps[i];
+	}
 	ps.shrink(i - j);
-	
+	if(any_undef){
+		cancelUntil(0);//this is _not_ a conflict clause.
+	}
 	confl_out = CRef_Undef;
 	if (ps.size() == 0) {
 		ok = false;

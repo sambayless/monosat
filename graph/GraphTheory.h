@@ -398,33 +398,55 @@ public:
 	void makeEqual(Lit l1, Lit l2) {
 		Lit o1 = toSolver(l1);
 		Lit o2 = toSolver(l2);
-		S->addClause(~o1, o2);
-		S->addClause(o1, ~o2);
+		tmp_clause.clear();
+		tmp_clause.push(~o1);
+		tmp_clause.push(o2);
+		S->addClauseSafely(tmp_clause);
+		tmp_clause.clear();
+		tmp_clause.push(o1);
+		tmp_clause.push(~o2);
+		S->addClauseSafely(tmp_clause);
 	}
-	void makeEqualInSolver(Lit l1, Lit l2) {
-		S->addClause(~l1, l2);
-		S->addClause(l1, ~l2);
+	void makeEqualInSolver(Lit o1, Lit o2) {
+		tmp_clause.clear();
+		tmp_clause.push(~o1);
+		tmp_clause.push(o2);
+		S->addClauseSafely(tmp_clause);
+		tmp_clause.clear();
+		tmp_clause.push(o1);
+		tmp_clause.push(~o2);
+		S->addClauseSafely(tmp_clause);
 	}
 	void addClause(Lit l1) {
 		Lit o1 = toSolver(l1);
-		S->addClause(o1);
+		tmp_clause.clear();
+		tmp_clause.push(o1);
+		S->addClauseSafely(tmp_clause);
 	}
 	void addClause(Lit l1, Lit l2) {
 		Lit o1 = toSolver(l1);
 		Lit o2 = toSolver(l2);
-		S->addClause(o1, o2);
+		tmp_clause.clear();
+		tmp_clause.push(o1);
+		tmp_clause.push(o2);
+
+		S->addClauseSafely(tmp_clause);
 	}
 	void addClause(Lit l1, Lit l2, Lit l3) {
 		Lit o1 = toSolver(l1);
 		Lit o2 = toSolver(l2);
 		Lit o3 = toSolver(l3);
-		S->addClause(o1, o2, o3);
+		tmp_clause.clear();
+		tmp_clause.push(o1);
+		tmp_clause.push(o2);
+		tmp_clause.push(o3);
+		S->addClauseSafely(tmp_clause);
 	}
 	void addClause(vec<Lit> & c) {
 		tmp_clause.clear();
 		c.copyTo(tmp_clause);
 		toSolver(tmp_clause);
-		S->addClause(tmp_clause);
+		S->addClauseSafely(tmp_clause);
 	}
 	void addClauseSafely(vec<Lit> & c) {
 		tmp_clause.clear();
