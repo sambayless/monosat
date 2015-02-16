@@ -53,8 +53,8 @@ ReachDetector<Weight>::ReachDetector(int _detectorID, GraphTheorySolver<Weight> 
 		//positive_reach_detector = new ReachDetector::CNFReachability(*this,false);
 		//negative_reach_detector = new ReachDetector::CNFReachability(*this,true);
 		
-		underapprox_path_detector = new UnweightedBFS<Weight,Reach::NullStatus>(from, _g, Reach::nullStatus, 1);
-		overapprox_path_detector = new UnweightedBFS<Weight,Reach::NullStatus>(from, _antig, Reach::nullStatus, -1);
+		underapprox_path_detector = new UnweightedBFS<int,Distance<int>::NullStatus>(from, _g, Distance<int>::nullStatus, 1);
+		overapprox_path_detector = new UnweightedBFS<int,Distance<int>::NullStatus>(from, _antig, Distance<int>::nullStatus, -1);
 		underapprox_fast_detector = underapprox_path_detector;
 		return;
 	}
@@ -112,11 +112,11 @@ ReachDetector<Weight>::ReachDetector(int _detectorID, GraphTheorySolver<Weight> 
 		overapprox_reach_detector = new DFSReachability<Weight,ReachDetector<Weight>::ReachStatus>(from, _antig,
 				*(negativeReachStatus), -1);
 		if (opt_conflict_shortest_path)
-			underapprox_path_detector = new UnweightedBFS<Weight,Reach::NullStatus>(from, _g, Reach::nullStatus, 1);
+			underapprox_path_detector = new UnweightedBFS<Weight,Distance<Weight>::NullStatus>(from, _g, Distance<Weight>::nullStatus, 1);
 		else
 			underapprox_path_detector = underapprox_detector;
 		
-		negative_distance_detector = new UnweightedBFS<Weight,Reach::NullStatus>(from, _antig, Reach::nullStatus, -1);
+		negative_distance_detector = new UnweightedBFS<Weight,Distance<Weight>::NullStatus>(from, _antig, Distance<Weight>::nullStatus, -1);
 		overapprox_path_detector = overapprox_reach_detector;
 	} else if (reachalg == ReachAlg::ALG_DISTANCE) {
 		if (!opt_encode_reach_underapprox_as_sat) {
@@ -511,7 +511,7 @@ void ReachDetector<Weight>::ReachStatus::setReachable(int u, bool reachable) {
 	}
 }
 template<typename Weight>
-void ReachDetector<Weight>::ReachStatus::setMininumDistance(int u, bool reachable, int distance) {
+void ReachDetector<Weight>::ReachStatus::setMininumDistance(int u, bool reachable, Weight distance) {
 	/*assert(reachable ==(distance<detector.outer->g.nodes()));
 	 setReachable(u,reachable);
 

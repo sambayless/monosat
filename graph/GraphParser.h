@@ -27,7 +27,7 @@
 #include "utils/ParseUtils.h"
 #include "core/SolverTypes.h"
 #include "graph/GraphTheory.h"
-
+#include "comparison/ComparisonBVTheory.h"
 #include "core/Config.h"
 #include "pb/PbTheory.h"
 #include "core/Dimacs.h"
@@ -51,7 +51,8 @@ struct SteinerStruct {
 // GRAPH Parser:
 template<class B, class Solver>
 class GraphParser: public Parser<B, Solver> {
-
+	bool precise;
+	ComparisonBVTheorySolver<long>*& comparison;
 	vec<GraphTheorySolver<long>*> graphs;
 	vec<GraphTheorySolver<double>*> graphs_float;
 	vec<GraphTheorySolver<mpq_class>*> graphs_rational;
@@ -59,7 +60,7 @@ class GraphParser: public Parser<B, Solver> {
 	enum class GraphType {
 		INTEGER, FLOAT, RATIONAL
 	};
-	bool precise;
+
 	vec<vec<SteinerStruct*>> steiners;
 	PbTheory * pbtheory = nullptr;
 
@@ -68,6 +69,15 @@ class GraphParser: public Parser<B, Solver> {
 	int count = 0;
 	vec<char> tmp;
 	
+	struct BVEdge{
+		int graphID;
+		int from;
+		int to;
+		int edgeVar;
+		int bvID;
+	};
+	vec<BVEdge> bvedges;
+
 	void readDiGraph(B& in, GraphType graph_type, Solver& S) {
 		if (opt_ignore_theories) {
 			skipLine(in);
@@ -142,12 +152,13 @@ class GraphParser: public Parser<B, Solver> {
 		}*/
 
 		if (graphs[graphID]) {
-			graphs[graphID]->newEdge(from, to, edgeVar, bv);
-		} else if (graphs_float[graphID]) {
-			graphs_float[graphID]->newEdge(from, to, edgeVar,bv);
+			bvedges.push({graphID,from, to, edgeVar, bvID});
+			//graphs[graphID]->newEdgeBV(from, to, edgeVar, bvID);
+		}/* else if (graphs_float[graphID]) {
+			graphs_float[graphID]->newEdge(from, to, edgeVar,bvID);
 		} else if (graphs_rational[graphID]) {
-			graphs_rational[graphID]->newEdge(from, to, edgeVar,bv);
-		} else {
+			graphs_rational[graphID]->newEdge(from, to, edgeVar,bvID);
+		} */else {
 			printf("PARSE ERROR! Undeclared graph identifier %d for edge %d\n", graphID, edgeVar), exit(1);
 			exit(1);
 		}
@@ -815,8 +826,8 @@ class GraphParser: public Parser<B, Solver> {
 	}
 	
 public:
-	GraphParser(bool precise = true) :
-			precise(precise) {
+	GraphParser(bool precise, ComparisonBVTheorySolver<long>*& comparison) :
+			precise(precise),comparison(comparison) {
 		
 	}
 	bool parseLine(B& in, Solver& S) {
@@ -848,13 +859,13 @@ public:
 			//	printf("PARSE ERROR! Unexpected char: %c\n", *in), exit(1);
 			//}
 			return true;
-		} else if (match(in, "edge")) {
-			count++;
-			readEdge(in, S);
-			return true;
 		}else if (match(in, "edge_bv")) {
 			count++;
 			readEdgeBV(in, S);
+			return true;
+		} else if (match(in, "edge")) {
+			count++;
+			readEdge(in, S);
 			return true;
 		} else if (match(in, "weighted_edge")) {
 			count++;
@@ -913,15 +924,23 @@ public:
 			}
 			readPB(in, lits, weights, S, pbtheory);
 			return true;
-		}else if (match(in, "bv")){
-			//todo: put the bitvector definitions outside of the graph theory, so other theories can also use them
-			readBV(in,S);
 		}
 		return false;
 	}
 	
 	void implementConstraints(Solver & S) {
-		
+		for (int i = 0; i < graphs.size(); i++) {
+			if(graphs[i])
+				graphs[i]->setComparator(comparison);
+		}
+	/*	for (int i = 0; i < graphs_float.size(); i++) {
+			if(graphs_float[i])
+				graphs_float[i]->setComparator(comparison);
+		}
+		for (int i = 0; i < graphs_rational.size(); i++) {
+			if(graphs_rational[i])
+				graphs_rational[i]->setComparator(comparison);
+		}*/
 		//not really implemented, yet!
 	/*	for (int gid = 0; gid < steiners.size(); gid++) {
 			for (auto & steiner : steiners[gid]) {
@@ -934,7 +953,9 @@ public:
 				}
 			}
 		}*/
-		
+		for (auto & e:bvedges){
+			graphs[e.graphID]->newEdgeBV(e.from, e.to, e.edgeVar, e.bvID);
+		}
 		for (int i = 0; i < graphs.size(); i++) {
 			if (graphs[i])
 				graphs[i]->implementConstraints();

@@ -46,10 +46,12 @@ namespace Monosat {
 
 
 
-template<typename Weight, class Status>
+template<typename Weight>
 class ComparisonBVTheorySolver: public Theory {
 public:
-	Status & status;
+	struct CallBack{
+		virtual void operator()(int bvID)=0;
+	};
 	struct Assignment {
 		bool isComparator :1;
 		bool assign :1;
@@ -70,26 +72,43 @@ public:
 
 
 	class BitVector{
-		ComparisonBVTheorySolver & outer;
+		ComparisonBVTheorySolver * outer;
 		int id;
 	public:
-		BitVector(ComparisonBVTheorySolver & outer, int id):outer(outer),id(id){
+		BitVector():outer(nullptr),id(0){
+
+			}
+		BitVector(ComparisonBVTheorySolver & outer, int id):outer(&outer),id(id){
 
 		}
+		BitVector(const BitVector & copy):outer(copy.outer),id(copy.id){
+
+			}
+		BitVector(const BitVector && move):outer(move.outer),id(move.id){
+
+			}
+		BitVector& operator=(BitVector &  other) {
+			outer= other.outer;
+			id=other.id;
+			return *this;
+		}
+
 		int getID(){
 			return id;
 		}
 		Weight & getUnder(){
-			return outer.getUnderApprox(id);
+			return outer->getUnderApprox(id);
 		}
 		Weight & getOver(){
-			return outer.getOverApprox(id);
+			return outer->getOverApprox(id);
 		}
 
 		vec<Lit> & getBits(){
-			return outer.getBits(id);
+			return outer->getBits(id);
 		}
 	};
+
+	//typedef void (*CallBack)(int) ;
 
 	double rnd_seed;
 
@@ -117,6 +136,10 @@ public:
 
 	vec<int> altered_bvs;
 	vec<bool> alteredBV;
+
+
+
+	vec<CallBack*> bv_callbacks;
 public:
 
 
@@ -197,6 +220,13 @@ public:
 		theory_index = id;
 	}
 
+	void setCallback(int bvID,CallBack* callback){
+		bv_callbacks[bvID]=callback;
+	}
+
+	BitVector getBV(int bvID){
+		return BitVector(*this,bvID);
+	}
 
 	inline bool isComparisonVar(Var v) const{
 		assert(v < vars.size());
@@ -369,7 +399,10 @@ public:
 
 					}
 				} else {
-					status.bvAltered(e.bvID);
+					if(bv_callbacks[e.bvID]){
+						(*bv_callbacks[e.bvID])(e.bvID);
+					}
+					//status.bvAltered(e.bvID);
 				}
 				assigns[e.var] = l_Undef;
 				//changed = true;
@@ -416,7 +449,9 @@ public:
 			} else {
 
 				assigns[e.var] = l_Undef;
-				status.bvAltered(e.bvID);
+				if(bv_callbacks[e.bvID])
+					(*bv_callbacks[e.bvID])(e.bvID);
+				//status.bvAltered(e.bvID);
 			}
 		}
 		
@@ -534,14 +569,17 @@ public:
 			if(!alteredBV[bvID]){
 				alteredBV[bvID]=true;
 				altered_bvs.push(bvID);
-				status.bvAltered(bvID);
+				//status.bvAltered(bvID);
+				if(bv_callbacks[bvID]){
+					(*bv_callbacks[bvID])(bvID);
+				}
 			}
 
 		} else {
 
 			int bvID = getbvID(var(l));
 			int comparisonID = getComparisonID(var(l)); //v-min_edge_var;
-			status.comparisonAltered(bvID, comparisonID);
+			//status.comparisonAltered(bvID, comparisonID);
 
 			//trail.push( { true, !sign(l),edgeID, v });
 
@@ -566,13 +604,31 @@ public:
 				over_approx[bvID]+=bit;
 			}
 		}
+		for(int lt:comparisons_lt[bvID]){
+			Comparison & c = comparisons[lt];
+			if(value( c.l)==l_True && over_approx[bvID]>=c.w){
+				over_approx[bvID]=c.w-1;
+			}else if (value(c.l)==l_False && under_approx[bvID]<c.w){
+				under_approx[bvID]=c.w;
+			}
+		}
+		for(int gt:comparisons_gt[bvID]){
+			Comparison & c = comparisons[gt];
+			if(value( c.l)==l_True && under_approx[bvID]<=c.w){
+				under_approx[bvID]=c.w+1;
+			}else if (value(c.l)==l_False && over_approx[bvID]>c.w){
+				over_approx[bvID]=c.w;
+			}
+		}
 	}
 
 	Weight & getUnderApprox(int bvID){
+		updateApproximations(bvID);
 		assert(checkApproxUpToDate(bvID));
 		return under_approx[bvID];
 	}
 	Weight & getOverApprox(int bvID){
+		updateApproximations(bvID);
 		assert(checkApproxUpToDate(bvID));
 		return over_approx[bvID];
 	}
@@ -914,12 +970,14 @@ public:
 		if(bvID<0){
 			bvID = bitvectors.size();
 		}
+		bv_callbacks.growTo(id+1,nullptr);
 		bitvectors.growTo(bvID+1);
 		under_approx.growTo(bvID+1,-1);
 		over_approx.growTo(bvID+1,-1);
 		comparisons_lt.growTo(bvID+1);
 		comparisons_gt.growTo(bvID+1);
 		alteredBV.growTo(bvID+1);
+		bv_callbacks.growTo(bvID+1);
 		if(under_approx[bvID]>-1){
 			assert(false);
 			fprintf(stderr,"Redefined bitvector, Aborting!");
@@ -940,12 +998,14 @@ public:
 		if(bvID<0){
 			bvID = bitvectors.size();
 		}
+		bv_callbacks.growTo(id+1,nullptr);
 		bitvectors.growTo(bvID+1);
 		under_approx.growTo(bvID+1,-1);
 		over_approx.growTo(bvID+1,-1);
 		comparisons_lt.growTo(bvID+1);
 		comparisons_gt.growTo(bvID+1);
 		alteredBV.growTo(bvID+1);
+		bv_callbacks.growTo(bvID+1);
 		if(under_approx[bvID]>-1){
 			assert(false);
 			fprintf(stderr,"Redefined bitvector, Aborting!");
@@ -1066,7 +1126,8 @@ public:
 	}
 
 };
-
+template<typename Weight>
+using BitVector = typename ComparisonBVTheorySolver<Weight>::BitVector;
 
 }
 ;

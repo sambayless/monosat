@@ -83,17 +83,17 @@ DistanceDetector<Weight>::DistanceDetector(int _detectorID, GraphTheorySolver<We
 	//select the unweighted distance detectors
 	if (distalg == DistAlg::ALG_DISTANCE) {
 		if (outer->all_edges_unit) {
-			underapprox_unweighted_distance_detector = new UnweightedBFS<Weight,DistanceDetector<Weight>::ReachStatus>(from,
+			underapprox_unweighted_distance_detector = new UnweightedBFS<Weight,typename DistanceDetector<Weight>::ReachStatus>(from,
 					_g, *(positiveReachStatus), 0);
-			overapprox_unweighted_distance_detector = new UnweightedBFS<Weight,DistanceDetector<Weight>::ReachStatus>(from,
+			overapprox_unweighted_distance_detector = new UnweightedBFS<Weight,typename DistanceDetector<Weight>::ReachStatus>(from,
 					_antig, *(negativeReachStatus), 0);
 			underapprox_path_detector = underapprox_unweighted_distance_detector;
 		} else {
-			underapprox_unweighted_distance_detector = new UnweightedDijkstra<Weight,DistanceDetector<Weight>::ReachStatus>(
+			underapprox_unweighted_distance_detector = new UnweightedDijkstra<Weight,typename DistanceDetector<Weight>::ReachStatus>(
 					from, _g, *positiveReachStatus, 0);
-			overapprox_unweighted_distance_detector = new UnweightedDijkstra<Weight,DistanceDetector<Weight>::ReachStatus>(
+			overapprox_unweighted_distance_detector = new UnweightedDijkstra<Weight,typename DistanceDetector<Weight>::ReachStatus>(
 					from, _antig, *negativeReachStatus, 0);
-			underapprox_path_detector = new UnweightedBFS<Weight,Reach::NullStatus>(from, _g, Reach::nullStatus, 0);
+			underapprox_path_detector = new UnweightedBFS<Weight,typename DistanceDetector<Weight>>(from, _g, Reach::nullStatus, 0);
 		}
 		
 		/*	if(opt_conflict_shortest_path)
@@ -104,7 +104,7 @@ DistanceDetector<Weight>::DistanceDetector(int _detectorID, GraphTheorySolver<We
 		overapprox_unweighted_distance_detector =
 				new UnweightedRamalReps<Weight,typename DistanceDetector<Weight>::ReachStatus>(from, _antig,
 						*(negativeReachStatus), 0);
-		underapprox_path_detector = new UnweightedBFS<Weight,Reach::NullStatus>(from, _g, Reach::nullStatus, 0);
+		underapprox_path_detector = new UnweightedBFS<Weight,typename DistanceDetector<Weight>>(from, _g, Reach::nullStatus, 0);
 	} else {
 		underapprox_unweighted_distance_detector =
 				new UnweightedDijkstra<Weight,typename DistanceDetector<Weight>::ReachStatus>(from, _g, *positiveReachStatus,
@@ -338,7 +338,7 @@ void DistanceDetector<Weight>::ReachStatus::setReachable(int u, bool reachable) 
 	 }*/
 }
 template<typename Weight>
-void DistanceDetector<Weight>::ReachStatus::setMininumDistance(int u, bool reachable, int distance) {
+void DistanceDetector<Weight>::ReachStatus::setMininumDistance(int u, bool reachable, Weight distance) {
 	assert(reachable == (distance < detector.g_under.nodes()));
 	if (distance <= detector.g_under.nodes()) {
 		setReachable(u, reachable);
@@ -525,9 +525,9 @@ void DistanceDetector<Weight>::buildUnweightedDistanceGTReason(int node, vec<Lit
 				if (has_unweighted_shortest_paths_overapprox && reaches) {
 					//This is an optional optimization: if we know that even with all possible edges enabled, the shortest path to from + 1 is >= than the current distance to this node, enabling this edge cannot decrease the shortest path,
 					//and so we don't need to consider this edge
-					int current_dist = overapprox_unweighted_distance_detector->distance(u);
+					Weight current_dist = overapprox_unweighted_distance_detector->distance(u);
 					assert(current_dist > 0);
-					int over_approx_dist = unweighted_over_approx_shortest_paths[from] + 1;
+					Weight over_approx_dist = unweighted_over_approx_shortest_paths[from] + 1;
 					if (over_approx_dist >= current_dist) {
 						//following this edge cannot shorten this path, so skip it.
 						stats_gt_unweighted_edges_skipped++;
@@ -620,7 +620,7 @@ void DistanceDetector<Weight>::printSolution(std::ostream& write_to) {
 		if (y > lasty)
 			write_to << "\n";
 		
-		int d = underapprox_unweighted_distance_detector->distance(n);
+		Weight d = underapprox_unweighted_distance_detector->distance(n);
 		//printf("%*d ",maxw,d);
 		write_to << std::setw(maxw) << d;
 		
@@ -1119,6 +1119,8 @@ bool DistanceDetector<Weight>::checkSatisfied() {
 	{
 		Dijkstra<Weight> under(source, g_under);
 		Dijkstra<Weight> over(source, g_over);
+		g_under.drawFull(true);
+		g_over.drawFull(true);
 		under.update();
 		over.update();
 		//now, check for weighted distance lits

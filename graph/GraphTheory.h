@@ -49,7 +49,7 @@
 #include "AllPairsDetector.h"
 #include "ReachDetector.h"
 #include "comparison/ComparisonBVTheory.h"
-#include "comparison/BitVector.h"
+
 #include "DistanceDetector.h"
 #include "MSTDetector.h"
 #include "MaxflowDetector.h"
@@ -97,29 +97,30 @@ public:
 	 */
 	DynamicGraph<long> cutGraph;
 
-	struct ComparisonStatus;
-	//if bitvectors weights are supplied, then this manages the resulting weights.
-	ComparisonBVTheorySolver<long, ComparisonStatus> * comparator=nullptr;
 
-	struct ComparisonStatus{
+	//if bitvectors weights are supplied, then this manages the resulting weights.
+	ComparisonBVTheorySolver<long> * comparator=nullptr;
+
+
+	struct ComparisonStatus:public ComparisonBVTheorySolver<long>::CallBack{
 		GraphTheorySolver & outer;
-		ComparisonBVTheorySolver<long, ComparisonStatus> & comp;
+
 		void comparisonAltered(int bvID, int comparisonID){
 
 		}
-		void bvAltered(int bvID){
-		/*	if(!outer.bv_needs_update[bvID]){
+		void operator()(int bvID){
+			if(!outer.bv_needs_update[bvID]){
 				outer.bv_needs_update[bvID]=true;
 				outer.bvs_to_update.push(bvID);
-			}*/
+			}
 			int edgeID = outer.getBVEdge(bvID);
 			outer.g_under.setEdgeWeight(edgeID,outer.edge_bv_weights[bvID].getUnder());
 			outer.g_over.setEdgeWeight(edgeID, outer.edge_bv_weights[bvID].getOver());
 		}
+		ComparisonStatus(GraphTheorySolver & outer):outer(outer){}
+	} bvcallback;
 
-	};
 
-	using BitVector = typename ComparisonBVTheorySolver<Weight, ComparisonStatus>::BitVector;
 
 	vec<Assignment> trail;
 	vec<int> trail_lim;
@@ -160,13 +161,15 @@ public:
 
 	//vector of the weights for each edge
 	std::vector<Weight> edge_weights;
-	std::vector<BitVector> edge_bv_weights;
+	std::vector<BitVector<Weight>> edge_bv_weights;
 
+/*
 	struct BVInfo{
 		int edgeID;
 	};
+*/
 
-	std::vector<BVInfo> bitvectors;
+	vec<int> bitvectors;
 	vec<bool> bv_needs_update;
 	vec<int> bvs_to_update;
 
@@ -254,7 +257,7 @@ public:
 	} propCutStatus;
 
 	GraphTheorySolver(Solver * S_, int _id = -1) :
-			S(S_), id(_id), cutStatus(*this), propCutStatus(*this) {
+			S(S_), id(_id),bvcallback(*this) , cutStatus(*this), propCutStatus(*this){
 #ifdef RECORD
 		{
 			char t[30];
@@ -496,7 +499,11 @@ public:
 	
 	~GraphTheorySolver() {
 	}
-	;
+
+	void setComparator(ComparisonBVTheorySolver<Weight> * comparator){
+		this->comparator=comparator;
+	}
+
 	int newNode() {
 		
 		inv_adj.push();
@@ -889,11 +896,11 @@ public:
 			}
 		}
 		if (undirected) {
-			UnweightedDijkstra<Weight, Reach::NullStatus, true> d(from, g);
+			UnweightedDijkstra<Weight,typename Distance<Weight>::NullStatus, true> d(from, g);
 			
 			return !d.connected(to);
 		} else {
-			UnweightedDijkstra<Weight,Reach::NullStatus, false> d(from, g);
+			UnweightedDijkstra<Weight,typename Distance<Weight>::NullStatus, false> d(from, g);
 			
 			return !d.connected(to);
 		}
@@ -1297,11 +1304,11 @@ public:
 	}
 
 	bool isBVEdge(int bvID){
-		return bitvectors[bvID].edgeID>=0;
+		return bitvectors[bvID]>=0;
 	}
 	int getBVEdge(int bvID){
 		assert(isBVEdge(bvID));
-		return bitvectors[bvID].edgeID;
+		return bitvectors[bvID];
 	}
 
 	bool isBVVar(Var v){
@@ -1313,7 +1320,7 @@ public:
 		return vars[v].detector_edge;
 	}
 
-	Lit newEdge(int from, int to, Var outerVar,vec<Var> & bitVector) {
+	Lit newEdgeBV(int from, int to, Var outerVar,vec<Var> & bitVector) {
 			assert(outerVar!=var_Undef);
 			assert(edge_weights.size()==0);
 			/*	if(outerVar==var_Undef)
@@ -1328,9 +1335,10 @@ public:
 		/*	if(!comparator){
 				comparator = new ComparisonBVTheorySolver<Weight,ComparisonStatus>(ComparisonStatus(*this, *comparator));
 			}*/
-			BitVector bv = comparator->newBitvector(bvID,bitVector);
-			bitvectors.push(bvID);
-
+			BitVector<Weight> bv = comparator->newBitvector(bvID,bitVector);
+			bitvectors.growTo(bv.getID()+1,-1);
+			bitvectors[bv.getID()]=index;
+			bv_needs_update.growTo(bv.getID()+1);
 			all_edges_unit &= (bv.getUnder()== 1 && bv.getOver()==1);
 			all_edges_positive &= bv.getUnder()>0;
 			edge_list.push();
@@ -1386,6 +1394,71 @@ public:
 	#endif
 			return mkLit(v, false);
 		}
+	Lit newEdgeBV(int from, int to, Var outerVar,int bvID) {
+				assert(outerVar!=var_Undef);
+				assert(edge_weights.size()==0);
+				int index = edge_list.size();
+
+				BitVector<Weight> bv = comparator->getBV(bvID);
+				bitvectors.growTo(bv.getID()+1,-1);
+				bitvectors[bv.getID()]=index;
+				comparator->setCallback(bv.getID(),&bvcallback);
+
+				all_edges_unit &= (bv.getUnder()== 1 && bv.getOver()==1);
+				all_edges_positive &= bv.getUnder()>0;
+				edge_list.push();
+				Var v = newVar(outerVar, index, true);
+				bv_needs_update.growTo(bv.getID()+1);
+				undirected_adj[to].push( { v, outerVar, from, to, index });
+				undirected_adj[from].push( { v, outerVar, to, from, index });
+				inv_adj[to].push( { v, outerVar, from, to, index });
+
+				//num_edges++;
+				edge_list[index].v = v;
+				edge_list[index].outerVar = outerVar;
+				edge_list[index].from = from;
+				edge_list[index].to = to;
+				edge_list[index].edgeID = index;
+				edge_list[index].bvID = bv.getID();
+
+				if (edge_bv_weights.size() <= index) {
+					edge_bv_weights.resize(index + 1);
+				}
+				edge_bv_weights[index] = bv;
+
+				//edges[from][to]= {v,outerVar,from,to,index};
+				g_under.addEdge(from, to, index,bv.getUnder());
+				g_under.disableEdge(from, to, index);
+				g_over.addEdge(from, to, index,bv.getOver());
+				cutGraph.addEdge(from, to, index * 2,1);
+				cutGraph.addEdge(from, to, index * 2 + 1,0xFFFF);
+				cutGraph.disableEdge(from, to, index * 2);
+
+		#ifdef RECORD
+	/*			if (g_under.outfile) {
+
+					fprintf(g_under.outfile, "edge_bv_weight %d", index);
+					for(Var v:bitVector)
+						fprintf(g_under.outfile," %d", v+1);
+					fprintf(g_under.outfile,"\n");
+					fflush(g_under.outfile);
+				}
+				if (g_over.outfile) {
+					fprintf(g_over.outfile, "edge_bv_weight %d", index);
+					for(Var v:bitVector)
+						fprintf(g_over.outfile," %d", v+1);
+					fprintf(g_over.outfile,"\n");
+					fflush(g_over.outfile);
+				}*/
+				if (cutGraph.outfile) {
+
+					fprintf(cutGraph.outfile, "edge_weight %d %d\n", index * 2, 1);
+					fprintf(cutGraph.outfile, "edge_weight %d %d\n", index * 2 + 1, 0xFFFF);
+					fflush(cutGraph.outfile);
+				}
+		#endif
+				return mkLit(v, false);
+			}
 	Lit newEdge(int from, int to, Var outerVar = var_Undef, Weight weight = 1) {
 		assert(outerVar!=var_Undef);
 		/*	if(outerVar==var_Undef)

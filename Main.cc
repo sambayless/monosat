@@ -371,15 +371,16 @@ int main(int argc, char** argv) {
 		}
 
 		Dimacs<StreamBuffer, SimpSolver> parser;
+		ComparisonParser<char *, SimpSolver> comparisonParser;
+		parser.addParser(&comparisonParser);
 
 		SymbolParser<char*,SimpSolver> symbolParser;
 		parser.addParser(&symbolParser);
 
-		GraphParser<char *, SimpSolver> graphParser(precise);
+		GraphParser<char *, SimpSolver> graphParser(precise,comparisonParser.theory);
 		parser.addParser(&graphParser);
 
-		ComparisonParser<char *, SimpSolver> comparisonParser;
-		parser.addParser(&comparisonParser);
+
 
 		FSMParser<char*,SimpSolver> fsmParser;
 		parser.addParser(&fsmParser);

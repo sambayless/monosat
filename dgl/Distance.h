@@ -22,7 +22,10 @@
 #ifndef DISTANCE_H_
 #define DISTANCE_H_
 #include "Reach.h"
+#include <limits>
 #include <vector>
+#include <gmpxx.h>
+
 namespace dgl {
 
 template<typename Weight>
@@ -43,6 +46,7 @@ public:
 	};
 	static NullStatus nullStatus;
 	static Weight weight_unreach;
+	static Weight INF;
 	virtual ~Distance() {
 	}
 	;
@@ -59,6 +63,9 @@ public:
 	virtual Weight & unreachable() {
 		return weight_unreach;
 	}
+	virtual Weight & inf() {
+		return INF;
+	}
 	virtual Weight & distance(int t)=0;
 	virtual Weight & distance_unsafe(int t)=0;
 	virtual int previous(int node)=0;
@@ -72,6 +79,19 @@ template<typename Weight>
 typename Distance<Weight>::NullStatus Distance<Weight>::nullStatus;
 template<typename Weight>
 Weight Distance<Weight>::weight_unreach = -1;
+
+template<typename Weight>
+Weight Distance<Weight>::INF = std::numeric_limits<Weight>::max()/2;
+
+template<>
+double Distance<double>::INF = std::numeric_limits<double>::infinity();
+template<>
+float Distance<float>::INF = std::numeric_limits<float>::infinity();
+
+template<>
+mpq_class Distance<mpq_class>::INF = std::numeric_limits<long>::max();//hopefully big enough...
+template<>
+mpz_class Distance<mpz_class>::INF = std::numeric_limits<long>::max();//hopefully big enough...
 }
 ;
 

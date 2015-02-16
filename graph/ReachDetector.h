@@ -132,7 +132,7 @@ public:
 			return false;
 		}
 		
-		void setMininumDistance(int u, bool reachable, int distance);
+		void setMininumDistance(int u, bool reachable, Weight distance);
 
 		ReachStatus(ReachDetector & _outer, bool _polarity) :
 				detector(_outer), polarity(_polarity) {

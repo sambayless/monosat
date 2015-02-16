@@ -35,11 +35,7 @@ public:
 		bool isReachable(int u) const {
 			return false;
 		}
-		
-		void setMininumDistance(int u, bool reachable, int distance) {
-			
-		}
-		
+
 	};
 	static NullStatus nullStatus;
 

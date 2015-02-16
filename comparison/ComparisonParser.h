@@ -43,7 +43,9 @@ namespace Monosat {
 
 template<class B, class Solver>
 class ComparisonParser: public Parser<B, Solver> {
+public:
 	ComparisonBVTheorySolver<long>* theory=nullptr;
+private:
 	struct BV{
 		int id=-1;
 		vec<Var> vector;
@@ -152,7 +154,7 @@ public:
 	}
 
 	void implementConstraints(Solver & S) {
-		if(compares.size()){
+		if(compares.size() || bvs.size()){
 			theory = new ComparisonBVTheorySolver<long>(&S);
 
 
