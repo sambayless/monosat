@@ -66,8 +66,9 @@ public:
 		Weight w;
 		Lit l;
 
-		int bvID:31;
+		int bvID:30;
 		int is_lt:1;
+		int is_strict:1;
 	};
 
 
@@ -130,6 +131,8 @@ public:
 	vec<Comparison> comparisons;
 	vec<vec<int> > comparisons_lt; //for each bitvector, comparisons are all to unique values, and in ascending order of compareTo.
 	vec<vec<int> > comparisons_gt; //for each bitvector, comparisons are all to unique values, and in ascending order of compareTo.
+	vec<vec<int> > comparisons_leq; //for each bitvector, comparisons are all to unique values, and in ascending order of compareTo.
+	vec<vec<int> > comparisons_geq; //for each bitvector, comparisons are all to unique values, and in ascending order of compareTo.
 
 	vec<Weight> under_approx;
 	vec<Weight> over_approx;
@@ -570,11 +573,11 @@ public:
 				alteredBV[bvID]=true;
 				altered_bvs.push(bvID);
 				//status.bvAltered(bvID);
-				if(bv_callbacks[bvID]){
-					(*bv_callbacks[bvID])(bvID);
-				}
-			}
 
+			}
+			if(bv_callbacks[bvID]){
+				(*bv_callbacks[bvID])(bvID);
+			}
 		} else {
 
 			int bvID = getbvID(var(l));
@@ -746,6 +749,56 @@ public:
 				}
 			}
 
+			vec<int> & compares_leq = comparisons_leq[bvID];
+			//update over approx lits
+			for(int i = 0;i<compares_leq.size();i++){
+				int comparisonID = compares_leq[i];
+				Weight & leq = getComparison(comparisonID).w;
+				Lit l =  getComparison(comparisonID).l;
+				if (overApprox<=leq){
+					if(value(l)==l_True){
+						//do nothing
+					}else if (value(l)==l_False){
+						assert(value(l)==l_False);
+						assert(dbg_value(l)==l_False);
+						conflict.push(l);
+						buildValueLEQReason(bvID,comparisonID,conflict);
+						toSolver(conflict);
+						return false;
+					}else {
+						assert(value(l)==l_Undef);
+						enqueue(l, comparisonprop_marker);
+					}
+
+				}else{
+					break;
+				}
+			}
+
+			//update under approx lits
+			for(int i = compares_leq.size()-1;i>=0;i--){
+				int comparisonID = compares_leq[i];
+				Weight & leq = getComparison(comparisonID).w;
+				Lit l =  getComparison(comparisonID).l;
+				if (underApprox>leq){
+					if(value(l)==l_True){
+
+						conflict.push(~l);
+						buildValueGTReason(bvID,comparisonID,conflict);
+						toSolver(conflict);
+						return false;
+					}else if (value(l)==l_False){
+						//do nothing
+					}else {
+						assert(value(l)==l_Undef);
+						enqueue(~l, comparisonprop_marker);
+					}
+
+				}else{
+					break;
+				}
+			}
+
 			vec<int> & compares_gt = comparisons_gt[bvID];
 			//update over approx lits
 			for(int i = 0;i<compares_gt.size();i++){
@@ -792,6 +845,55 @@ public:
 					break;
 				}
 			}
+
+			vec<int> & compares_geq = comparisons_geq[bvID];
+			//update over approx lits
+			for(int i = 0;i<compares_geq.size();i++){
+				int comparisonID = compares_geq[i];
+				Weight & geq = getComparison(comparisonID).w;
+				Lit l =  getComparison(comparisonID).l;
+				if (overApprox<geq){
+					if(value(l)==l_True){
+						conflict.push(~l);
+						buildValueLTReason(bvID,comparisonID,conflict);
+						toSolver(conflict);
+						return false;
+					}else if (value(l)==l_False){
+
+					}else {
+						assert(value(l)==l_Undef);
+						enqueue(~l, comparisonprop_marker);
+					}
+
+				}else{
+					break;
+				}
+			}
+
+			//update under approx lits
+			for(int i = compares_geq.size()-1;i>=0;i--){
+				int comparisonID = compares_geq[i];
+				Weight & geq = getComparison(comparisonID).w;
+				Lit l =  getComparison(comparisonID).l;
+				if (underApprox>=geq){
+					if(value(l)==l_True){
+
+					}else if (value(l)==l_False){
+						conflict.push(l);
+						buildValueGEQReason(bvID,comparisonID,conflict);
+						toSolver(conflict);
+						return false;
+					}else {
+						assert(value(l)==l_Undef);
+						enqueue(l, comparisonprop_marker);
+					}
+
+				}else{
+					break;
+				}
+			}
+
+
 			alteredBV[bvID]=false;
 			altered_bvs.pop();
 		}
@@ -976,6 +1078,8 @@ public:
 		over_approx.growTo(bvID+1,-1);
 		comparisons_lt.growTo(bvID+1);
 		comparisons_gt.growTo(bvID+1);
+		comparisons_leq.growTo(bvID+1);
+		comparisons_geq.growTo(bvID+1);
 		alteredBV.growTo(bvID+1);
 		bv_callbacks.growTo(bvID+1);
 		if(under_approx[bvID]>-1){
@@ -1004,6 +1108,8 @@ public:
 		over_approx.growTo(bvID+1,-1);
 		comparisons_lt.growTo(bvID+1);
 		comparisons_gt.growTo(bvID+1);
+		comparisons_leq.growTo(bvID+1);
+		comparisons_geq.growTo(bvID+1);
 		alteredBV.growTo(bvID+1);
 		bv_callbacks.growTo(bvID+1);
 		if(under_approx[bvID]>-1){
@@ -1050,6 +1156,28 @@ private:
 
 		return lit_Undef;
 	}
+	Lit getComparisonLEQ(int bvID, Weight & leq){
+		//could do a binary search here:
+		for(int i=0;i<comparisons_leq[bvID].size()-1;i++){
+			int cID = comparisons_leq[bvID][i];
+			if (comparisons[cID].w == leq){
+				return comparisons[cID].l;
+			}
+		}
+
+		return lit_Undef;
+	}
+	Lit getComparisonGEQ(int bvID, Weight & geq){
+		//could do a binary search here:
+		for(int i=0;i<comparisons_geq[bvID].size()-1;i++){
+			int cID = comparisons_geq[bvID][i];
+			if (comparisons[cID].w == geq){
+				return comparisons[cID].l;
+			}
+		}
+
+		return lit_Undef;
+	}
 public:
 	Lit newComparisonLT(int bvID, Weight & lt, Var outerVar = var_Undef) {
 		Lit l;
@@ -1067,7 +1195,7 @@ public:
 		}
 
 
-		comparisons.push({lt,l,bvID,true});
+		comparisons.push({lt,l,bvID,true,true});
 		comparisons_lt[bvID].push(comparisonID);
 		//insert this value in order.
 		//could do a binary search here...
@@ -1085,12 +1213,168 @@ public:
 			alteredBV[bvID]=true;
 			altered_bvs.push(bvID);
 		}
+		//set the value of this immediately, if needed
+		updateApproximations(bvID);
+		Weight & underApprox = under_approx[bvID];
+		Weight & overApprox = over_approx[bvID];
+
+
+		if (overApprox<lt){
+			if(value(l)==l_True){
+				//do nothing
+			}else if (value(l)==l_False){
+				assert(false);//this should not happen!
+			}else {
+				assert(value(l)==l_Undef);
+				enqueue(l, comparisonprop_marker);
+			}
+		}
+
+		if (underApprox>=lt){
+			if(value(l)==l_True){
+				assert(false);
+			}else if (value(l)==l_False){
+				//do nothing
+			}else {
+				assert(value(l)==l_Undef);
+				enqueue(~l, comparisonprop_marker);
+			}
+		}
+
 		return l;
 	}
+	Lit newComparisonLEQ(int bvID, Weight & leq, Var outerVar = var_Undef) {
+			Lit l;
+			if(!hasBV(bvID)){
+				exit(1);
+			}
+			int comparisonID = comparisons.size();
+			if((l = getComparisonLEQ(bvID, leq))!=lit_Undef){
+				if(outerVar != var_Undef){
+					makeEqualInSolver(mkLit(outerVar),toSolver(l));
+				}
+				return l;
+			}else{
+				l = mkLit(newVar(outerVar, bvID,comparisonID));
+			}
+
+
+			comparisons.push({leq,l,bvID,true,false});
+			comparisons_leq[bvID].push(comparisonID);
+			//insert this value in order.
+			//could do a binary search here...
+			for(int i=0;i<comparisons_leq[bvID].size()-1;i++){
+				int cid = comparisons_leq[bvID][i];
+				if(comparisons[cid].w>= leq){
+					for(int j = comparisons_leq[bvID].size()-1; j>i ;j--){
+						comparisons_leq[bvID][j]=comparisons_leq[bvID][j-1];
+					}
+					comparisons_leq[bvID][i]=comparisonID;
+					break;
+				}
+			}
+			if(!alteredBV[bvID]){
+				alteredBV[bvID]=true;
+				altered_bvs.push(bvID);
+			}
+			//set the value of this immediately, if needed
+			updateApproximations(bvID);
+			Weight & underApprox = under_approx[bvID];
+			Weight & overApprox = over_approx[bvID];
+
+
+			if (overApprox<=leq){
+				if(value(l)==l_True){
+					//do nothing
+				}else if (value(l)==l_False){
+					assert(false);//this should not happen!
+				}else {
+					assert(value(l)==l_Undef);
+					enqueue(l, comparisonprop_marker);
+				}
+			}
+
+			if (underApprox>leq){
+				if(value(l)==l_True){
+					assert(false);
+				}else if (value(l)==l_False){
+					//do nothing
+				}else {
+					assert(value(l)==l_Undef);
+					enqueue(~l, comparisonprop_marker);
+				}
+			}
+
+			return l;
+		}
 	Lit newComparisonGT(int bvID, Weight & gt, Var outerVar = var_Undef) {
+		Lit l;
+		int comparisonID = comparisons.size();
+		if((l = getComparisonGT(bvID, gt))!=lit_Undef){
+			if(outerVar != var_Undef){
+				makeEqualInSolver(mkLit(outerVar),toSolver(l));
+			}
+			return l;
+		}else{
+			l = mkLit(newVar(outerVar, bvID,comparisonID));
+		}
+
+
+
+		comparisons.push({gt,l,bvID,false,true});
+		comparisons_gt[bvID].push(comparisonID);
+		//insert this value in order.
+		//could do a binary search here...
+		for(int i=0;i<comparisons_gt[bvID].size()-1;i++){
+			int cid = comparisons_gt[bvID][i];
+			if(comparisons[cid].w>= gt){
+				for(int j = comparisons_gt[bvID].size()-1; j>i ;j--){
+					comparisons_gt[bvID][j]=comparisons_gt[bvID][j-1];
+				}
+				comparisons_gt[bvID][i]=comparisonID;
+				break;
+			}
+		}
+		if(!alteredBV[bvID]){
+			alteredBV[bvID]=true;
+			altered_bvs.push(bvID);
+		}
+
+		updateApproximations(bvID);
+		Weight & underApprox = under_approx[bvID];
+		Weight & overApprox = over_approx[bvID];
+
+
+		if (overApprox<=gt){
+			if(value(l)==l_True){
+				assert(false);
+			}else if (value(l)==l_False){
+
+			}else {
+				assert(value(l)==l_Undef);
+				enqueue(~l, comparisonprop_marker);
+			}
+		}
+
+		if (underApprox>gt){
+			if(value(l)==l_True){
+
+			}else if (value(l)==l_False){
+				assert(false);
+			}else {
+				assert(value(l)==l_Undef);
+				enqueue(l, comparisonprop_marker);
+			}
+		}
+
+
+		return l;
+	}
+
+	Lit newComparisonGEQ(int bvID, Weight & geq, Var outerVar = var_Undef) {
 			Lit l;
 			int comparisonID = comparisons.size();
-			if((l = getComparisonGT(bvID, gt))!=lit_Undef){
+			if((l = getComparisonGEQ(bvID, geq))!=lit_Undef){
 				if(outerVar != var_Undef){
 					makeEqualInSolver(mkLit(outerVar),toSolver(l));
 				}
@@ -1101,17 +1385,17 @@ public:
 
 
 
-			comparisons.push({gt,l,bvID,false});
-			comparisons_gt[bvID].push(comparisonID);
+			comparisons.push({geq,l,bvID,false,false});
+			comparisons_geq[bvID].push(comparisonID);
 			//insert this value in order.
 			//could do a binary search here...
-			for(int i=0;i<comparisons_gt[bvID].size()-1;i++){
-				int cid = comparisons_gt[bvID][i];
-				if(comparisons[cid].w>= gt){
-					for(int j = comparisons_gt[bvID].size()-1; j>i ;j--){
-						comparisons_gt[bvID][j]=comparisons_gt[bvID][j-1];
+			for(int i=0;i<comparisons_geq[bvID].size()-1;i++){
+				int cid = comparisons_geq[bvID][i];
+				if(comparisons[cid].w>= geq){
+					for(int j = comparisons_geq[bvID].size()-1; j>i ;j--){
+						comparisons_geq[bvID][j]=comparisons_geq[bvID][j-1];
 					}
-					comparisons_gt[bvID][i]=comparisonID;
+					comparisons_geq[bvID][i]=comparisonID;
 					break;
 				}
 			}
@@ -1119,8 +1403,38 @@ public:
 				alteredBV[bvID]=true;
 				altered_bvs.push(bvID);
 			}
+
+			updateApproximations(bvID);
+			Weight & underApprox = under_approx[bvID];
+			Weight & overApprox = over_approx[bvID];
+
+
+			if (overApprox<geq){
+				if(value(l)==l_True){
+					assert(false);
+				}else if (value(l)==l_False){
+
+				}else {
+					assert(value(l)==l_Undef);
+					enqueue(~l, comparisonprop_marker);
+				}
+			}
+
+			if (underApprox>=geq){
+				if(value(l)==l_True){
+
+				}else if (value(l)==l_False){
+					assert(false);
+				}else {
+					assert(value(l)==l_Undef);
+					enqueue(l, comparisonprop_marker);
+				}
+			}
+
+
 			return l;
 		}
+
 	void printSolution() {
 
 	}

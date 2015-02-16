@@ -27,12 +27,8 @@
 
 namespace Monosat {
 
-struct ReachabilityConstraint {
-	int from;
-	int to;
-	int distance;
-	Var reach_var;
-};
+
+
 
 struct Assignment {
 	bool isEdge :1;

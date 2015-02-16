@@ -83,10 +83,28 @@ public:
 	bool all_edges_positive=true;
 	vec<lbool> assigns;
 	MSTDetector<Weight> * mstDetector = nullptr;
+	struct ReachabilityConstraint {
+		int from;
+		int to;
+		int distance;
+		Var reach_var;
+	};
+
 	vec<ReachabilityConstraint> unimplemented_reachability_constraints;
+	struct DistanceConstraint {
+		int from;
+		int to;
+		Weight distance;
+		Var reach_var;
+	};
+	vec<DistanceConstraint> unimplemented_distance_constraints;
 
 	DynamicGraph<Weight> g_under;
 	DynamicGraph<Weight> g_over;
+	bool using_neg_weights = false;
+	DynamicGraph<Weight> g_under_weights_over;
+	DynamicGraph<Weight> g_over_weights_under;
+
 	/**
 	 * The cutgraph is (optionally) used for conflict analysis by some graph theories.
 	 * It has two edges for every edge in the real graph (with indices edgeID*2 and edgeID*2+1).
@@ -116,6 +134,10 @@ public:
 			int edgeID = outer.getBVEdge(bvID);
 			outer.g_under.setEdgeWeight(edgeID,outer.edge_bv_weights[bvID].getUnder());
 			outer.g_over.setEdgeWeight(edgeID, outer.edge_bv_weights[bvID].getOver());
+			if(outer.using_neg_weights){
+				outer.g_under_weights_over.setEdgeWeight(edgeID,outer.edge_bv_weights[bvID].getOver());
+				outer.g_over_weights_under.setEdgeWeight(edgeID, outer.edge_bv_weights[bvID].getUnder());
+			}
 		}
 		ComparisonStatus(GraphTheorySolver & outer):outer(outer){}
 	} bvcallback;
@@ -128,13 +150,14 @@ public:
 	struct ReachInfo {
 		int source;
 		bool distance = 0;
+		bool weighted_distance=0;
 		Detector * detector;
 
 		ReachInfo() :
 			source(-1), detector(nullptr) {
 		}
 	};
-
+	vec<ReachInfo> weighted_dist_info;
 	vec<ReachInfo> dist_info;
 	vec<ReachInfo> reach_info;
 	vec<ReachInfo> connect_info;
@@ -142,6 +165,7 @@ public:
 	vec<Detector*> detectors;
 	vec<ReachDetector<Weight>*> reach_detectors;
 	vec<DistanceDetector<Weight>*> distance_detectors;
+	vec<DistanceDetector<Weight>*> weighted_distance_detectors;
 	vec<MaxflowDetector<Weight>*> flow_detectors;
 	ConnectedComponentsDetector<Weight>* component_detector = nullptr;
 	CycleDetector<Weight> * cycle_detector = nullptr;
@@ -162,6 +186,17 @@ public:
 	//vector of the weights for each edge
 	std::vector<Weight> edge_weights;
 	std::vector<BitVector<Weight>> edge_bv_weights;
+	struct Comparison{
+		Weight w;
+		Lit l;
+		int bvID:31;
+		int is_lt:1;
+	};
+	vec<Comparison> comparisons;
+	vec<vec<int> > comparisons_lt;
+	vec<vec<int> > comparisons_gt;
+	vec<vec<int> > comparisons_leq;
+	vec<vec<int> > comparisons_geq;
 
 /*
 	struct BVInfo{
@@ -511,8 +546,11 @@ public:
 		reach_info.push();
 		connect_info.push();
 		dist_info.push();
+		weighted_dist_info.push();
 		g_over.addNode();
 		cutGraph.addNode();
+		g_under_weights_over.addNode();
+		g_over_weights_under.addNode();
 		seen.growTo(nNodes());
 		
 		return g_under.addNode();
@@ -720,6 +758,13 @@ public:
 							cutGraph.enableEdge(e.from, e.to, edge_num * 2 + 1);
 						}
 					}
+					if(using_neg_weights){
+						if (e.assign) {
+							g_under_weights_over.disableEdge(e.from, e.to, edge_num);
+						} else {
+							g_over_weights_under.enableEdge(e.from, e.to, edge_num);
+						}
+					}
 				} else {
 					//This is a reachability literal				  
 					detectors[getDetector(e.var)]->unassign(mkLit(e.var, !e.assign));
@@ -803,6 +848,13 @@ public:
 						cutGraph.disableEdge(e.from, e.to, edge_num * 2);
 						assert(!cutGraph.edgeEnabled(edge_num * 2 + 1));
 						cutGraph.enableEdge(e.from, e.to, edge_num * 2 + 1);
+					}
+				}
+				if(using_neg_weights){
+					if (e.assign) {
+						g_under_weights_over.disableEdge(e.from, e.to, edge_num);
+					} else {
+						g_over_weights_under.enableEdge(e.from, e.to, edge_num);
 					}
 				}
 			} else {
@@ -1039,7 +1091,13 @@ public:
 					cutGraph.disableEdge(e.from, e.to, edge_num * 2 + 1);
 				}
 			}
-			
+			if(using_neg_weights){
+				if (!sign(l)) {
+					g_under_weights_over.enableEdge(from, to, edge_num);
+				} else {
+					g_over_weights_under.disableEdge(from, to, edge_num);
+				}
+			}
 		} else {
 			
 			trail.push( { false, !sign(l), 0, 0, v });
@@ -1077,6 +1135,10 @@ public:
 				int edgeID = getBVEdge(bvID);
 				g_under.setEdgeWeight(edgeID,edge_bv_weights[bvID].getUnder());
 				g_over.setEdgeWeight(edgeID, edge_bv_weights[bvID].getOver());
+				if(using_neg_weights){
+					g_under.setEdgeWeight(edgeID,edge_bv_weights[bvID].getOver());
+					g_over.setEdgeWeight(edgeID, edge_bv_weights[bvID].getUnder());
+				}
 				bv_needs_update[bvID]=false;
 			}
 		}
@@ -1106,7 +1168,11 @@ public:
 		g_under.clearHistory();
 		g_over.clearHistory();
 		cutGraph.clearHistory();
-		//detectors_to_check.clear();
+
+		g_under_weights_over.clearChanged();
+		g_over_weights_under.clearChanged();
+		g_under_weights_over.clearHistory();
+		g_over_weights_under.clearHistory();
 		
 		double elapsed = rtime(1) - startproptime;
 		propagationtime += elapsed;
@@ -1198,6 +1264,15 @@ public:
 				if (!g_over.edgeEnabled(e.edgeID)) {
 					return false;
 				}
+				if(edge_bv_weights.size()){
+					BitVector<Weight> & bv = edge_bv_weights[e.edgeID];
+					if(g_under.getWeight(e.edgeID)> bv.getUnder()){
+						return false;
+					}
+					if(g_over.getWeight(e.edgeID)<bv.getOver()){
+						return false;
+					}
+				}
 			} else {
 				/*if(g.hasEdge(e.from,e.to)){
 				 return false;
@@ -1213,7 +1288,47 @@ public:
 				 }*/
 
 			}
-			
+			if(using_neg_weights){
+
+				if (val == l_True) {
+					/*	if(!g.hasEdge(e.from,e.to)){
+					 return false;
+					 }
+					 if(!antig.hasEdge(e.from,e.to)){
+					 return false;
+					 }*/
+					if (!g_under_weights_over.edgeEnabled(e.edgeID)) {
+						return false;
+					}
+					if (!g_over_weights_under.edgeEnabled(e.edgeID)) {
+						return false;
+					}
+					if(edge_bv_weights.size()){
+						BitVector<Weight> & bv = edge_bv_weights[e.edgeID];
+						if(g_under_weights_over.getWeight(e.edgeID)!=bv.getOver()){
+							return false;
+						}
+						if(g_over_weights_under.getWeight(e.edgeID)!=bv.getUnder()){
+							return false;
+						}
+					}
+				} else {
+					/*if(g.hasEdge(e.from,e.to)){
+					 return false;
+					 }*/
+					if (g_under_weights_over.edgeEnabled(e.edgeID)) {
+						return false;
+					}
+					if (g_over_weights_under.edgeEnabled(e.edgeID)) {
+						return false;
+					}
+					/*if(antig.hasEdge(e.from,e.to)){
+					 return false;
+					 }*/
+
+				}
+
+			}
 		}
 		for (int i = 0; i < detectors.size(); i++) {
 			if (!detectors[i]->checkSatisfied()) {
@@ -1302,22 +1417,194 @@ public:
 		marker_map[mnum] = detectorID;
 		return reasonMarker;
 	}
+private:
+	Lit getComparisonLT(int bvID, Weight & lt){
+		//could do a binary search here:
+		for(int i=0;i<comparisons_lt[bvID].size()-1;i++){
+			int cID = comparisons_lt[bvID][i];
+			if (comparisons[cID].w == lt){
+				return comparisons[cID].l;
+			}
+		}
 
+		return lit_Undef;
+	}
+	Lit getComparisonGT(int bvID, Weight & gt){
+		//could do a binary search here:
+		for(int i=0;i<comparisons_gt[bvID].size()-1;i++){
+			int cID = comparisons_gt[bvID][i];
+			if (comparisons[cID].w == gt){
+				return comparisons[cID].l;
+			}
+		}
+
+		return lit_Undef;
+	}
+	Lit getComparisonLEQ(int bvID, Weight & leq){
+		//could do a binary search here:
+		for(int i=0;i<comparisons_leq[bvID].size()-1;i++){
+			int cID = comparisons_leq[bvID][i];
+			if (comparisons[cID].w == leq){
+				return comparisons[cID].l;
+			}
+		}
+
+		return lit_Undef;
+	}
+	Lit getComparisonGEQ(int bvID, Weight & geq){
+		//could do a binary search here:
+		for(int i=0;i<comparisons_geq[bvID].size()-1;i++){
+			int cID = comparisons_geq[bvID][i];
+			if (comparisons[cID].w == geq){
+				return comparisons[cID].l;
+			}
+		}
+
+		return lit_Undef;
+	}
+public:
 	Lit getEdgeWeightGT(int edgeID, Weight w){
 		if(edge_bv_weights.size()>edgeID){
-			return comparator->newComparisonGT(getEdgeBV(edgeID),w);
+			int bvID = edge_bv_weights[edgeID].getID();
+				assert(bvID>=0);
+				//if has existing literal, we really shouldn't create a new one here...
+				Lit l=lit_Undef;
+				if((l=getComparisonGT(bvID,w))!=lit_Undef){
+					return l;
+				}
+				int comparisonID = comparisons.size();
+				Lit gt = comparator->newComparisonGT(getEdgeBV(edgeID),w);
+				l = mkLit(newVar());
+
+				makeEqualInSolver(comparator->toSolver(gt),toSolver(l));
+
+				comparisons.push({w,l,bvID,true});
+				comparisons_gt[bvID].push(comparisonID);
+				//insert this value in order.
+				//could do a binary search here...
+				for(int i=0;i<comparisons_gt[bvID].size()-1;i++){
+					int cid = comparisons_gt[bvID][i];
+					if(comparisons[cid].w>= w){
+						for(int j = comparisons_gt[bvID].size()-1; j>i ;j--){
+							comparisons_gt[bvID][j]=comparisons_gt[bvID][j-1];
+						}
+						comparisons_gt[bvID][i]=comparisonID;
+						break;
+					}
+				}
+
+				return l;
+		}else{
+			return mkLit(getEdgeVar(edgeID));
+		}
+	}
+	Lit getEdgeWeightGEQ(int edgeID, Weight w){
+		if(edge_bv_weights.size()>edgeID){
+			int bvID = edge_bv_weights[edgeID].getID();
+				assert(bvID>=0);
+				//if has existing literal, we really shouldn't create a new one here...
+				Lit l=lit_Undef;
+				if((l=getComparisonGEQ(bvID,w))!=lit_Undef){
+					return l;
+				}
+				int comparisonID = comparisons.size();
+				Lit geq = comparator->newComparisonGEQ(getEdgeBV(edgeID),w);
+				l = mkLit(newVar());
+
+				makeEqualInSolver(comparator->toSolver(geq),toSolver(l));
+
+				comparisons.push({w,l,bvID,true});
+				comparisons_geq[bvID].push(comparisonID);
+				//insert this value in order.
+				//could do a binary search here...
+				for(int i=0;i<comparisons_geq[bvID].size()-1;i++){
+					int cid = comparisons_geq[bvID][i];
+					if(comparisons[cid].w>= w){
+						for(int j = comparisons_geq[bvID].size()-1; j>i ;j--){
+							comparisons_geq[bvID][j]=comparisons_geq[bvID][j-1];
+						}
+						comparisons_geq[bvID][i]=comparisonID;
+						break;
+					}
+				}
+
+				return l;
 		}else{
 			return mkLit(getEdgeVar(edgeID));
 		}
 	}
 	Lit getEdgeWeightLT(int edgeID, Weight w){
 		if(edge_bv_weights.size()>edgeID){
-			return comparator->newComparisonLT(getEdgeBV(edgeID),w);
+			int bvID = edge_bv_weights[edgeID].getID();
+			assert(bvID>=0);
+			//if has existing literal, we really shouldn't create a new one here...
+			Lit l=lit_Undef;
+			if((l=getComparisonLT(bvID,w))!=lit_Undef){
+				return l;
+			}
+			int comparisonID = comparisons.size();
+			Lit lt = comparator->newComparisonLT(getEdgeBV(edgeID),w);
+			l = mkLit(newVar());
+
+			makeEqualInSolver(comparator->toSolver(lt),toSolver(l));
+
+			comparisons.push({w,l,bvID,true});
+			comparisons_lt[bvID].push(comparisonID);
+			//insert this value in order.
+			//could do a binary search here...
+			for(int i=0;i<comparisons_lt[bvID].size()-1;i++){
+				int cid = comparisons_lt[bvID][i];
+				if(comparisons[cid].w>= w){
+					for(int j = comparisons_lt[bvID].size()-1; j>i ;j--){
+						comparisons_lt[bvID][j]=comparisons_lt[bvID][j-1];
+					}
+					comparisons_lt[bvID][i]=comparisonID;
+					break;
+				}
+			}
+
+			return l;
+
 		}else{
 			return mkLit(getEdgeVar(edgeID));
 		}
 	}
+	Lit getEdgeWeightLEQ(int edgeID, Weight w){
+			if(edge_bv_weights.size()>edgeID){
+				int bvID = edge_bv_weights[edgeID].getID();
+				assert(bvID>=0);
+				//if has existing literal, we really shouldn't create a new one here...
+				Lit l=lit_Undef;
+				if((l=getComparisonLEQ(bvID,w))!=lit_Undef){
+					return l;
+				}
+				int comparisonID = comparisons.size();
+				Lit leq = comparator->newComparisonLEQ(getEdgeBV(edgeID),w);
+				l = mkLit(newVar());
 
+				makeEqualInSolver(comparator->toSolver(leq),toSolver(l));
+
+				comparisons.push({w,l,bvID,true});
+				comparisons_leq[bvID].push(comparisonID);
+				//insert this value in order.
+				//could do a binary search here...
+				for(int i=0;i<comparisons_leq[bvID].size()-1;i++){
+					int cid = comparisons_leq[bvID][i];
+					if(comparisons[cid].w>= w){
+						for(int j = comparisons_leq[bvID].size()-1; j>i ;j--){
+							comparisons_leq[bvID][j]=comparisons_leq[bvID][j-1];
+						}
+						comparisons_leq[bvID][i]=comparisonID;
+						break;
+					}
+				}
+
+				return l;
+
+			}else{
+				return mkLit(getEdgeVar(edgeID));
+			}
+		}
 	int getEdgeBV(int edgeID){
 		assert(edge_bv_weights.size()>edgeID);
 		return edge_bv_weights[edgeID].getID();
@@ -1363,7 +1650,10 @@ public:
 			all_edges_positive &= bv.getUnder()>0;
 			edge_list.push();
 			Var v = newVar(outerVar, index, true);
-
+			comparisons_lt.growTo(bv.getID()+1);
+			comparisons_gt.growTo(bv.getID()+1);
+			comparisons_leq.growTo(bv.getID()+1);
+			comparisons_geq.growTo(bv.getID()+1);
 			undirected_adj[to].push( { v, outerVar, from, to, index });
 			undirected_adj[from].push( { v, outerVar, to, from, index });
 			inv_adj[to].push( { v, outerVar, from, to, index });
@@ -1385,6 +1675,13 @@ public:
 			g_under.addEdge(from, to, index,bv.getUnder());
 			g_under.disableEdge(from, to, index);
 			g_over.addEdge(from, to, index,bv.getOver());
+
+
+			g_under_weights_over.addEdge(from, to, index,bv.getOver());
+			g_under_weights_over.disableEdge(from, to, index);
+			g_over_weights_under.addEdge(from, to, index,bv.getUnder());
+
+
 			cutGraph.addEdge(from, to, index * 2,1);
 			cutGraph.addEdge(from, to, index * 2 + 1,0xFFFF);
 			cutGraph.disableEdge(from, to, index * 2);
@@ -1423,6 +1720,10 @@ public:
 				bitvectors.growTo(bv.getID()+1,-1);
 				bitvectors[bv.getID()]=index;
 				comparator->setCallback(bv.getID(),&bvcallback);
+				comparisons_lt.growTo(bv.getID()+1);
+				comparisons_gt.growTo(bv.getID()+1);
+				comparisons_leq.growTo(bv.getID()+1);
+				comparisons_geq.growTo(bv.getID()+1);
 
 				all_edges_unit &= (bv.getUnder()== 1 && bv.getOver()==1);
 				all_edges_positive &= bv.getUnder()>0;
@@ -1450,6 +1751,13 @@ public:
 				g_under.addEdge(from, to, index,bv.getUnder());
 				g_under.disableEdge(from, to, index);
 				g_over.addEdge(from, to, index,bv.getOver());
+
+
+				g_under_weights_over.addEdge(from, to, index,bv.getOver());
+				g_under_weights_over.disableEdge(from, to, index);
+				g_over_weights_under.addEdge(from, to, index,bv.getUnder());
+
+
 				cutGraph.addEdge(from, to, index * 2,1);
 				cutGraph.addEdge(from, to, index * 2 + 1,0xFFFF);
 				cutGraph.disableEdge(from, to, index * 2);
@@ -1521,6 +1829,13 @@ public:
 		g_under.addEdge(from, to, index,weight);
 		g_under.disableEdge(from, to, index);
 		g_over.addEdge(from, to, index,weight);
+
+
+		g_under_weights_over.addEdge(from, to, index,weight);
+		g_under_weights_over.disableEdge(from, to, index);
+		g_over_weights_under.addEdge(from, to, index,weight);
+
+
 		cutGraph.addEdge(from, to, index * 2,1);
 		cutGraph.addEdge(from, to, index * 2 + 1,0xFFFF);
 		cutGraph.disableEdge(from, to, index * 2);
@@ -1580,17 +1895,24 @@ public:
 		
 		assert(from < g_under.nodes());
 		
-		if (dist_info[from].source < 0) {
-			DistanceDetector<Weight> * d = new DistanceDetector<Weight>(detectors.size(), this,  g_under, g_over,
-					from, drand(rnd_seed));
+		if (weighted_dist_info[from].source < 0) {
+			DistanceDetector<Weight> * d;
+			if(edge_bv_weights.size()>0){
+				using_neg_weights=true;
+				d = new DistanceDetector<Weight>(detectors.size(), this,  g_under_weights_over, g_over_weights_under,
+						from, drand(rnd_seed));
+			}else{
+				d = new DistanceDetector<Weight>(detectors.size(), this,  g_under, g_over,
+						from, drand(rnd_seed));
+			}
 			detectors.push(d);
-			distance_detectors.push(d);
+			weighted_distance_detectors.push(d);
 			assert(detectors.last()->getID() == detectors.size() - 1);
-			dist_info[from].source = from;
-			dist_info[from].detector = detectors.last();
+			weighted_dist_info[from].source = from;
+			weighted_dist_info[from].detector = detectors.last();
 		}
 		
-		DistanceDetector<Weight> * d = (DistanceDetector<Weight>*) dist_info[from].detector;
+		DistanceDetector<Weight> * d = (DistanceDetector<Weight>*) weighted_dist_info[from].detector;
 		assert(d);
 		
 		d->addWeightedShortestPathLit(from, to, reach_var, distance);
@@ -1640,6 +1962,11 @@ public:
 		}
 		unimplemented_reachability_constraints.clear();
 		
+		for(auto & d:unimplemented_distance_constraints){
+			reachesWithinDistance(d.from, d.to, d.reach_var, d.distance);
+		}
+		unimplemented_distance_constraints.clear();
+
 	}
 	void allpairs_undirected(int from, int to, Var reach_var, int within_steps = -1) {
 		
@@ -1718,7 +2045,11 @@ public:
 		//to allow us to alter the solving algorithm based on the number and type of constraints, we aren't implementing them here directly any more - instead,
 		//we just store the constraints in this vector, then implement them later when 'implementConstraints' is called.
 	}
-	
+	void distance(int from, int to, Var reach_var, Weight distance_lt) {
+		unimplemented_distance_constraints.push( { from, to, distance_lt, reach_var });
+		//to allow us to alter the solving algorithm based on the number and type of constraints, we aren't implementing them here directly any more - instead,
+		//we just store the constraints in this vector, then implement them later when 'implementConstraints' is called.
+	}
 	void reachesAny(int from, Var firstVar, int within_steps = -1) {
 		for (int i = 0; i < g_under.nodes(); i++) {
 			reaches(from, i, firstVar + i, within_steps);

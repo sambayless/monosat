@@ -1518,12 +1518,13 @@ lbool Solver::solve_() {
 			model[i] = value(i);
 		
 		if (opt_check_solution && theories.size()) {
-			Theory * t = theories[0];
+			for(Theory * t:theories){
 			
-			if (!t->check_solved()) {
-				fprintf(stderr, "Error! Solution doesn't satisfy theory properties!\n");
-				fflush(stderr);
-				exit(4);
+				if (!t->check_solved()) {
+					fprintf(stderr, "Error! Solution doesn't satisfy theory properties!\n");
+					fflush(stderr);
+					exit(4);
+				}
 			}
 		}
 

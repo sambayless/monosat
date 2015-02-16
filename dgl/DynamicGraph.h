@@ -417,6 +417,7 @@ public:
 			if(w==getWeight(id)){
 				return;
 			}
+			weights[id]=w;
 			modifications++;
 			if(w>getWeight(id)){
 				history.push_back( {false,false, true,false, id, modifications, additions });

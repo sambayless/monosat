@@ -337,7 +337,7 @@ class GraphParser: public Parser<B, Solver> {
 		
 		if (graphs[graphID]) {
 			int weight = parseInt(in);
-			graphs[graphID]->reachesWithinDistance(from, to, reachVar, weight);
+			graphs[graphID]->distance(from, to, reachVar, weight);
 		} else if (graphs_float[graphID]) {
 			double weight = parseDouble(in, tmp);
 			skipWhitespace(in);
@@ -346,7 +346,7 @@ class GraphParser: public Parser<B, Solver> {
 				double denom = parseDouble(in, tmp);
 				weight /= denom;
 			}
-			graphs_float[graphID]->reachesWithinDistance(from, to, reachVar, weight);
+			graphs_float[graphID]->distance(from, to, reachVar, weight);
 		} else if (graphs_rational[graphID]) {
 			std::stringstream ss;
 			skipWhitespace(in);
@@ -360,12 +360,12 @@ class GraphParser: public Parser<B, Solver> {
 				double value = std::stod(ss.str());
 				mpq_class weight(value);
 				weight.canonicalize();
-				graphs_rational[graphID]->reachesWithinDistance(from, to, reachVar, weight);
+				graphs_rational[graphID]->distance(from, to, reachVar, weight);
 			} catch (std::exception& e) {
 				//if that fails, attempt to read it in directly as an fraction:
 				mpq_class weight(ss.str());
 				weight.canonicalize();
-				graphs_rational[graphID]->reachesWithinDistance(from, to, reachVar, weight);
+				graphs_rational[graphID]->distance(from, to, reachVar, weight);
 			}
 			
 		} else {

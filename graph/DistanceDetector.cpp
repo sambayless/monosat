@@ -656,10 +656,18 @@ void DistanceDetector<Weight>::buildDistanceLEQReason(int to, Weight & min_dista
 		int p;
 		while ((p = d.previous(u)) != -1) {
 			Edge & edg = outer->edge_list[d.incomingEdge(u)]; //outer->edges[p][u];
+			int edgeID = edg.edgeID;
 			Var e = edg.v;
 			lbool val = outer->value(e);
 			assert(outer->value(e)==l_True);
 			conflict.push(mkLit(e, true));
+			if(outer->hasBitVector(edgeID)){
+				Lit leq = outer->getEdgeWeightLEQ(edgeID,g_over.getWeight(edgeID));
+				lbool val = outer->dbg_value(leq);
+				assert(outer->dbg_value(leq)==l_True);
+				conflict.push(~leq);
+			}
+
 			u = p;
 		}
 	}
@@ -780,9 +788,10 @@ void DistanceDetector<Weight>::buildDistanceGTReason(int to, Weight & min_distan
 					if(reaches){
 						//if the edge _is_ enabled, and the node _is_ reachable, and the edge weight is symbolic, then part of the reason the shortest path is so long is that
 						//then part of the reason the shortest path is too long is that this edge is not less than its current weight.
-						Lit lt = outer->getEdgeWeightLT(edge_num,g_over.getWeight(edge_num));
-						assert(outer->value(lt)==l_False);
-						conflict.push(lt);
+						Lit gt = ~outer->getEdgeWeightLT(edge_num,g_over.getWeight(edge_num));
+						lbool val = outer->dbg_value(gt);
+						assert(outer->dbg_value(gt)==l_False);
+						conflict.push(gt);
 					}
 					//for distance analysis, we _can_ end up reaching source.
 					if (from != source) {
@@ -1093,41 +1102,7 @@ bool DistanceDetector<Weight>::checkSatisfied() {
 			}
 		}
 	}
-	
-	/*else{/
-	 {
-	 UnweightedDijkstra<>under(source,g) ;
-	 UnweightedDijkstra<>over(source,antig) ;
-	 under.update();
-	 over.update();
-	 for(int j = 0;j< unweighted_sat_lits.size();j++){
-	 for(int k = 0;k<unweighted_sat_lits[j].size();k++){
-	 Lit l = unweighted_sat_lits[j][k];
-	 int dist =j;
 
-	 if(l!=lit_Undef){
-	 int node =k;
-
-	 if(outer->value(l)==l_True){
-	 if(under.distance(node)>dist){
-	 return false;
-	 }
-	 }else if (outer->value(l)==l_False){
-	 if( over.distance(node)<=dist){
-	 return false;
-	 }
-	 }else{
-	 if(under.distance(node)<=dist){
-	 return false;
-	 }
-	 if(!over.distance(node)>dist){
-	 return false;
-	 }
-	 }
-	 }
-	 }
-	 }
-	 }*/
 	{
 		Dijkstra<Weight> under(source, g_under);
 		Dijkstra<Weight> over(source, g_over);
@@ -1140,9 +1115,9 @@ bool DistanceDetector<Weight>::checkSatisfied() {
 			Lit l = dist_lit.l;
 			int to = dist_lit.u;
 			Weight & min_dist = dist_lit.min_distance;
-			Weight & under_dist = under.distance(to);
-			Weight & over_dist = over.distance(to);
-			if (under.connected(to) && under_dist <= min_dist) {
+			Weight & over_dist = under.distance(to);
+			Weight & under_dist = over.distance(to);
+			if (under.connected(to) &&  under.distance(to) <= min_dist) {
 				if (outer->value(l) == l_True) {
 					//do nothing
 				} else if (outer->value(l) == l_Undef) {
@@ -1151,7 +1126,7 @@ bool DistanceDetector<Weight>::checkSatisfied() {
 					return false;
 				}
 			}
-			if (!over.connected(to) || over_dist > min_dist) {
+			if (!over.connected(to) || over.distance(to) > min_dist) {
 				if (outer->value(~l) == l_True) {
 					//do nothing
 				} else if (outer->value(~l) == l_Undef) {
