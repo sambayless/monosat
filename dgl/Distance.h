@@ -77,6 +77,7 @@ public:
 };
 template<typename Weight>
 typename Distance<Weight>::NullStatus Distance<Weight>::nullStatus;
+
 template<typename Weight>
 Weight Distance<Weight>::weight_unreach = -1;
 
@@ -84,14 +85,14 @@ template<typename Weight>
 Weight Distance<Weight>::INF = std::numeric_limits<Weight>::max()/2;
 
 template<>
-double Distance<double>::INF = std::numeric_limits<double>::infinity();
+double Distance<double>::INF;
 template<>
-float Distance<float>::INF = std::numeric_limits<float>::infinity();
+float Distance<float>::INF;
 
 template<>
-mpq_class Distance<mpq_class>::INF = std::numeric_limits<long>::max();//hopefully big enough...
+mpq_class Distance<mpq_class>::INF;
 template<>
-mpz_class Distance<mpz_class>::INF = std::numeric_limits<long>::max();//hopefully big enough...
+mpz_class Distance<mpz_class>::INF;
 }
 ;
 
