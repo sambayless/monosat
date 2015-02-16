@@ -317,10 +317,10 @@ public:
 	}
 };
 
-template<typename Weight, class Status =typename Distance<Weight>::NullStatus, bool undirected = false>
-class UnweightedDijkstra: public Distance<Weight> {
-	using Distance<Weight>::inf;
-	using Distance<Weight>::unreachable;
+template<typename Weight, class Status =typename Distance<int>::NullStatus, bool undirected = false>
+class UnweightedDijkstra: public Distance<int> {
+	using Distance<int>::inf;
+	using Distance<int>::unreachable;
 public:
 	DynamicGraph<Weight>  & g;
 	Status & status;
@@ -335,14 +335,14 @@ public:
 
 	int source;
 
-	std::vector<Weight> dist;
+	std::vector<int> dist;
 	std::vector<int> prev;
 	struct DistCmp {
-		std::vector<Weight> & _dist;
+		std::vector<int> & _dist;
 		bool operator()(int a, int b) const {
 			return _dist[a] < _dist[b];
 		}
-		DistCmp(std::vector<Weight> & d) :
+		DistCmp(std::vector<int> & d) :
 				_dist(d) {
 		}
 		;
@@ -369,7 +369,7 @@ public:
 	}
 	
 	UnweightedDijkstra(int s, DynamicGraph<Weight>  & graph, int reportPolarity = 0) :
-			g(graph), status(Distance<Weight>::nullStatus), reportPolarity(reportPolarity), source(s),  q(DistCmp(dist)) {
+			g(graph), status(Distance<int>::nullStatus), reportPolarity(reportPolarity), source(s),  q(DistCmp(dist)) {
 		
 		mod_percentage = 0.2;
 		
@@ -612,7 +612,7 @@ public:
 					continue;
 				int edgeID = g.incident(u, i, undirected).id;
 				int v = g.incident(u, i, undirected).node;
-				Weight alt = dist[u] + 1;
+				int alt = dist[u] + 1;
 				if (alt < dist[v]) {
 					dist[v] = alt;
 					prev[v] = edgeID;
@@ -714,14 +714,14 @@ public:
 		
 		return dist[t] < inf();
 	}
-	Weight & distance(int t) {
+	int & distance(int t) {
 		if (last_modification != g.modifications)
 			update();
 		if (connected_unsafe(t))
 			return dist[t];
 		return this->unreachable();
 	}
-	Weight &distance_unsafe(int t) {
+	int &distance_unsafe(int t) {
 		if (connected_unsafe(t))
 			return dist[t];
 		else

@@ -673,10 +673,10 @@ public:
 /**
  * Detect connectivity within a number of steps in unweighted, directed graphs
  */
-template<typename Weight,class Status = typename Distance<Weight>::NullStatus, bool undirected = false>
-class UnweightedBFS: public Distance<Weight> {
-	using Distance<Weight>::inf;
-	using Distance<Weight>::unreachable;
+template<typename Weight,class Status = Reach::NullStatus, bool undirected = false>
+class UnweightedBFS: public Distance<int> {
+	using Distance<int>::inf;
+	using Distance<int>::unreachable;
 public:
 	
 	DynamicGraph<Weight> & g;
@@ -690,14 +690,14 @@ public:
 
 	int source;
 
-	Weight maxDistance;
+	int maxDistance;
 
 	std::vector<int> q;
 	std::vector<int> check;
 	const int reportPolarity;
 
 	//std::vector<char> old_seen;
-	std::vector<Weight> dist;
+	std::vector<int> dist;
 //	std::vector<int> changed;
 	
 	std::vector<int> prev;
@@ -718,8 +718,8 @@ public:
 public:
 	
 	UnweightedBFS(int s, DynamicGraph<Weight> & graph, int _reportPolarity = 0) :
-			g(graph), status(Reach::nullStatus), last_modification(-1), last_addition(-1), last_deletion(-1), history_qhead(
-					0), last_history_clear(0), source(s),  reportPolarity(_reportPolarity) {
+			g(graph), status(Distance<int>::nullStatus), last_modification(-1), last_addition(-1), last_deletion(-1), history_qhead(
+					0), last_history_clear(0), source(s), reportPolarity(_reportPolarity) {
 		maxDistance = -1;
 		mod_percentage = 0.2;
 		stats_full_updates = 0;
@@ -747,7 +747,7 @@ public:
 		stats_fast_failed_updates = 0;
 	}
 	//Connectivity(const Connectivity& d):g(d.g), last_modification(-1),last_addition(-1),last_deletion(-1),history_qhead(0),last_history_clear(0),source(d.source),INF(0),mod_percentage(0.2),stats_full_updates(0),stats_fast_updates(0),stats_skip_deletes(0),stats_skipped_updates(0),stats_full_update_time(0),stats_fast_update_time(0){marked=false;};
-	void setMaxDistance(Weight & _maxDistance) {
+	void setMaxDistance(int & _maxDistance) {
 		if (_maxDistance < 0) {
 			maxDistance = inf();
 		} else
@@ -768,7 +768,8 @@ public:
 		q.reserve(n);
 		dist.resize(n);
 		prev.resize(n);
-
+		if (maxDistance < 0)
+			maxDistance =  inf();
 	}
 	long num_updates = 0;
 	int numUpdates() const {
@@ -798,7 +799,7 @@ public:
 		
 		q.clear();
 		for (int i = 0; i < g.nodes(); i++) {
-			dist[i] = inf();
+			dist[i] =  inf();
 			prev[i] = -1;
 		}
 		
@@ -806,19 +807,19 @@ public:
 		q.push_back(source);
 		for (int i = 0; i < q.size(); i++) {
 			int u = q[i];
-			assert(dist[u] < inf());
+			assert(dist[u] <  inf());
 			if (reportPolarity >= 0)
 				status.setMininumDistance(u, true, dist[u]);
-			Weight d = dist[u];
+			int d = dist[u];
 			for (int i = 0; i < g.nIncident(u, undirected); i++) {
 				if (!g.edgeEnabled(g.incident(u, i, undirected).id))
 					continue;
 				int edgeID = g.incident(u, i, undirected).id;
 				int v = g.incident(u, i, undirected).node;
-				Weight dv = dist[v];
-				Weight alt = d + 1;
+				int dv = dist[v];
+				int alt = d + 1;
 				if (alt > maxDistance)
-					alt = inf();			//Abort BFS early
+					alt =  inf();			//Abort BFS early
 				if (dist[v] > alt) {
 					dist[v] = alt;
 					prev[v] = edgeID;
@@ -829,8 +830,8 @@ public:
 		
 		if (reportPolarity <= 0) {
 			for (int u = 0; u < g.nodes(); u++) {
-				if (dist[u] >= inf()) {
-					status.setMininumDistance(u, dist[u] < inf(), dist[u]);
+				if (dist[u] >=  inf()) {
+					status.setMininumDistance(u, dist[u] <  inf(), dist[u]);
 				}
 			}
 		}
@@ -870,7 +871,7 @@ public:
 		printf("digraph{\n");
 		for (int i = 0; i < g.nodes(); i++) {
 			
-			if (dist[i] < inf()) {
+			if (dist[i] <  inf()) {
 				printf("n%d [label=\"n%d %d \" fillcolor=blue style=filled]\n", i, i, dist[i]);
 			} else {
 				printf("n%d \n", i);
@@ -906,7 +907,7 @@ public:
 			int distance = dist[i];
 			int dbgdist = d.dist[i];
 			if(dbgdist>maxDistance)
-			dbgdist=INF;
+			dbgdist= inf();
 			assert(distance==dbgdist);
 		}
 #endif
@@ -914,7 +915,7 @@ public:
 	}
 	
 	bool connected_unsafe(int t) {
-		return t < dist.size() && dist[t] < inf();
+		return t < dist.size() && dist[t] <  inf();
 	}
 	bool connected_unchecked(int t) {
 		assert(last_modification == g.modifications);
@@ -926,21 +927,21 @@ public:
 		
 		assert(dbg_uptodate());
 		
-		return dist[t] < inf();
+		return dist[t] <  inf();
 	}
 	
-	Weight & distance(int t) {
+	int & distance(int t) {
 		if (connected(t)) {
 			return dist[t];
 		} else {
-			return inf();
+			return  inf();
 		}
 	}
-	Weight & distance_unsafe(int t) {
+	int & distance_unsafe(int t) {
 		if (connected_unsafe(t))
 			return dist[t];
 		else
-			return inf();
+			return  inf();
 	}
 	int incomingEdge(int t) {
 		

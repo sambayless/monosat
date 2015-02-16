@@ -862,11 +862,11 @@ public:
 #ifdef DEBUG_DIJKSTRA
 		
 		if(undirected) {
-			UnweightedDijkstra<Reach::NullStatus, true> d(from,g_under);
+			UnweightedDijkstra<Weight,Distance<int>::NullStatus, true> d(from,g_under);
 			d.update();
 			return d.connected(to);
 		} else {
-			UnweightedDijkstra<> d(from,g_under);
+			UnweightedDijkstra<Weight> d(from,g_under);
 			d.update();
 			return d.connected(to);
 		}
@@ -896,11 +896,11 @@ public:
 			}
 		}
 		if (undirected) {
-			UnweightedDijkstra<Weight,typename Distance<Weight>::NullStatus, true> d(from, g);
+			UnweightedDijkstra<Weight,typename Distance<int>::NullStatus, true> d(from, g);
 			
 			return !d.connected(to);
 		} else {
-			UnweightedDijkstra<Weight,typename Distance<Weight>::NullStatus, false> d(from, g);
+			UnweightedDijkstra<Weight,typename Distance<int>::NullStatus, false> d(from, g);
 			
 			return !d.connected(to);
 		}

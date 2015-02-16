@@ -36,6 +36,10 @@ public:
 			return false;
 		}
 
+		void setMininumDistance(int u, bool reachable, int distance) {
+
+		}
+
 	};
 	static NullStatus nullStatus;
 

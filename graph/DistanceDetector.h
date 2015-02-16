@@ -58,8 +58,8 @@ public:
 	CRef weighted_underprop_marker;
 	CRef weighted_overprop_marker;
 
-	Distance<Weight> * underapprox_unweighted_distance_detector = nullptr;
-	Distance<Weight> * overapprox_unweighted_distance_detector = nullptr;
+	Distance<int> * underapprox_unweighted_distance_detector = nullptr;
+	Distance<int> * overapprox_unweighted_distance_detector = nullptr;
 
 	Distance<Weight> * underapprox_weighted_distance_detector = nullptr;
 	Distance<Weight> * overapprox_weighted_distance_detector = nullptr;
@@ -72,11 +72,11 @@ public:
 	vec<int> force_reason;
 	bool has_unweighted_shortest_paths_overapprox = false;
 	bool has_weighted_shortest_paths_overapprox = false;
-	vec<Weight> unweighted_over_approx_shortest_paths;
+	vec<int> unweighted_over_approx_shortest_paths;
 	vec<Weight> over_approx_shortest_paths;
 	MaxFlow<long> * conflict_flow = nullptr;
 
-	Weight max_unweighted_distance;
+	int max_unweighted_distance;
 
 	long stats_pure_skipped = 0;
 	long stats_distance_gt_reasons = 0;
@@ -134,7 +134,7 @@ public:
 			return false;
 		}
 		
-		void setMininumDistance(int u, bool reachable, Weight distance);
+		void setMininumDistance(int u, bool reachable, int distance);
 
 		ReachStatus(DistanceDetector & _outer, bool _polarity) :
 				detector(_outer), polarity(_polarity) {

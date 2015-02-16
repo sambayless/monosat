@@ -301,7 +301,7 @@ void ConnectedComponentsDetector<Weight>::buildNodesConnectedReason(int source, 
 		std::swap(source, node);
 	}
 	
-	UnweightedBFS<Weight,Reach::NullStatus, true> d(source, g_under);
+	UnweightedBFS<Weight,Distance<int>::NullStatus, true> d(source, g_under);
 	double starttime = rtime(2);
 	d.update();
 	
