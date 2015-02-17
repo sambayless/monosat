@@ -387,11 +387,13 @@ public:
 	inline int getGraphID() {
 		return id;
 	}
-
+	inline int getTheoryIndexBV(){
+		return theory_index;
+	}
 
 	void setBVTheory(BVTheorySolver<Weight> * bv){
 		comparator = bv;
-		int bvTheoryID = bv->addTheory(this);
+		bv->addTheory(this);
 	}
 
 	inline bool isEdgeVar(Var v) {
@@ -1098,6 +1100,7 @@ public:
 	
 	void enqueueBV(int bvID){
 		requiresPropagation=true;
+		S->needsPropagation(getTheoryIndex());
 		int edgeID = getBVEdge(bvID);
 
 		g_under.setEdgeWeight(edgeID,edge_bv_weights[bvID].getUnder());
@@ -1107,7 +1110,7 @@ public:
 			g_over_weights_under.setEdgeWeight(edgeID, edge_bv_weights[bvID].getUnder());
 		}
 	}
-	void relaxBV(int bvID){
+	void backtrackBV(int bvID){
 		int edgeID = getBVEdge(bvID);
 
 		g_under.setEdgeWeight(edgeID,edge_bv_weights[bvID].getUnder());
@@ -1162,7 +1165,6 @@ public:
 
 		if(hasTheory(var(l))){
 			theories[getTheoryID(var(l))]->enqueueTheory(getTheoryLit(l));
-		}else{
 			return;
 		}
 /*
@@ -1760,6 +1762,7 @@ public:
 				comparator = new BVTheorySolver<Weight,ComparisonStatus>(ComparisonStatus(*this, *comparator));
 			}*/
 			BitVector bv = comparator->newBitvector(bvID,bitVector);
+			comparator->setBitvectorTheory(bvID,this->getTheoryIndex());
 			bitvectors.growTo(bv.getID()+1,-1);
 			bitvectors[bv.getID()]=index;
 			//bv_needs_update.growTo(bv.getID()+1);
@@ -1832,7 +1835,7 @@ public:
 				assert(outerVar!=var_Undef);
 				assert(edge_weights.size()==0);
 				int index = edge_list.size();
-
+				comparator->setBitvectorTheory(bvID,this->getTheoryIndex());
 				BitVector bv = comparator->getBV(bvID);
 				bitvectors.growTo(bv.getID()+1,-1);
 				bitvectors[bv.getID()]=index;
@@ -2328,6 +2331,10 @@ public:
 	Lit getTheoryLit(Lit l) {
 		assert(hasTheory(l));
 		return mkLit(getTheoryVar(var(l)), sign(l));
+	}
+
+	void needsPropagation(int theoryID){
+		requiresPropagation=true;
 	}
 };
 

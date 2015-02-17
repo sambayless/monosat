@@ -139,8 +139,10 @@ public:
 	vec<int> altered_bvs;
 	vec<bool> alteredBV;
 
+	vec<bool> in_backtrack_queue;
+	vec<int> backtrack_queue;
 	vec<BVTheory*> theories;
-
+	vec<BVTheory*> actual_theories;
 public:
 
 
@@ -206,6 +208,7 @@ public:
 	}
 
 	bool hasTheory(int bvID){
+		assert(bvID>=0);
 		return theoryIds[bvID]>=0;
 	}
 	BVTheory * getTheory(int bvID){
@@ -213,9 +216,10 @@ public:
 		return theories[theoryIds[bvID]];
 	}
 
-	int addTheory(BVTheory* theory){
-		theories.push(theory);
-		return theories.size()-1;
+	void addTheory(BVTheory* theory){
+		theories.growTo(theory->getTheoryIndexBV()+1);
+		actual_theories.push(theory);
+		theories[theory->getTheoryIndexBV()]=theory;
 	}
 
 	void printStats(int detailLevel) {
@@ -330,7 +334,7 @@ public:
 		Var v = vars.size();
 		if (connectToTheory) {
 			S->newTheoryVar(solverVar, getTheoryIndex(), v);
-			assert(toSolver(v) == solverVar);
+
 		}else{
 			while (S->nVars() <= solverVar)
 				S->newVar();
@@ -345,8 +349,9 @@ public:
 		vars[v].solverVar = solverVar;
 
 		assigns.push(l_Undef);
-
-
+		if (connectToTheory) {
+			assert(toSolver(v) == solverVar);
+		}
 		return v;
 	}
 	inline int level(Var v) {
@@ -434,9 +439,12 @@ public:
 
 					}
 				} else {
-					if(hasTheory(e.bvID))
-						getTheory(e.bvID)->relaxBV(e.bvID);
-
+					if(hasTheory(e.bvID)){
+						if(!in_backtrack_queue[e.bvID]){
+							backtrack_queue.push(e.bvID);
+							in_backtrack_queue[e.bvID]=true;
+						}
+					}
 					//status.bvAltered(e.bvID);
 				}
 				assigns[e.var] = l_Undef;
@@ -452,6 +460,12 @@ public:
 			}
 			
 
+		}
+		while(backtrack_queue.size()){
+			int bvID = backtrack_queue.last();
+			backtrack_queue.pop();
+			in_backtrack_queue[bvID]=false;
+			getTheory(bvID)->backtrackBV(bvID);
 		}
 
 		
@@ -475,29 +489,37 @@ public:
 			if (e.isComparator) {
 
 				assert(assigns[e.var]!=l_Undef);
-				assigns[e.var] = l_Undef;
+
 				if (e.assign) {
 				//	g_unders[bvID]->disableTransition(edgeID,input,output);
 				} else {
 				//	g_overs[bvID]->enableTransition(edgeID,input,output);
 				}
 			} else {
-
-				assigns[e.var] = l_Undef;
 				//if(bv_callbacks[e.bvID])
 				//	(*bv_callbacks[e.bvID])(e.bvID);
 				//status(e.bvID);
-				if(hasTheory(e.bvID))
-					getTheory(e.bvID)->relaxBV(e.bvID);
-
+				if(hasTheory(e.bvID)){
+					if(!in_backtrack_queue[e.bvID]){
+						backtrack_queue.push(e.bvID);
+						in_backtrack_queue[e.bvID]=true;
+					}
+				}
 				//status.bvAltered(e.bvID);
 			}
+			assigns[e.var] = l_Undef;
 		}
 		
 		trail.shrink(trail.size() - (i + 1));
 		//if(i>0){
 		requiresPropagation = true;
 
+		while(backtrack_queue.size()){
+			int bvID = backtrack_queue.last();
+			backtrack_queue.pop();
+			in_backtrack_queue[bvID]=false;
+			getTheory(bvID)->backtrackBV(bvID);
+		}
 	}
 	;
 
@@ -602,20 +624,16 @@ public:
 		
 		if (!isComparisonVar(var(l))) {
 			
-
-			trail.push( { false, !sign(l),-1, v });
 			int bvID = getbvID(v);
+			trail.push( { false, !sign(l),bvID, v });
+
 			if(!alteredBV[bvID]){
 				alteredBV[bvID]=true;
 				altered_bvs.push(bvID);
 				//status.bvAltered(bvID);
-				if(hasTheory(bvID))
-					getTheory(bvID)->enqueueBV(bvID);
-
 			}
-			if(theoryIds[bvID]>=0){
-				theories[theoryIds[bvID]]->enqueueBV(bvID);
-			}
+			if(hasTheory(bvID))
+				getTheory(bvID)->enqueueBV(bvID);
 		} else {
 
 			int bvID = getbvID(var(l));
@@ -1118,6 +1136,7 @@ public:
 		//bv_callbacks.growTo(id+1,nullptr);
 		bitvectors.growTo(bvID+1);
 		theoryIds.growTo(bvID+1,-1);
+		in_backtrack_queue.growTo(bvID+1,-1);
 		under_approx.growTo(bvID+1,-1);
 		over_approx.growTo(bvID+1,-1);
 		comparisons_lt.growTo(bvID+1);
@@ -1151,6 +1170,7 @@ public:
 		//bv_callbacks.growTo(id+1,nullptr);
 		bitvectors.growTo(bvID+1);
 		theoryIds.growTo(bvID+1,-1);
+		in_backtrack_queue.growTo(bvID+1,-1);
 		under_approx.growTo(bvID+1,-1);
 		over_approx.growTo(bvID+1,-1);
 		comparisons_lt.growTo(bvID+1);

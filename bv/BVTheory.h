@@ -18,8 +18,9 @@ class BVTheory {
 public:
 	virtual ~BVTheory() {
 	}
+	virtual int getTheoryIndexBV()=0;
 	virtual void enqueueBV(int bvID)=0;
-	virtual void relaxBV(int bvID)=0;
+	virtual void backtrackBV(int bvID)=0;
 };
 
 };

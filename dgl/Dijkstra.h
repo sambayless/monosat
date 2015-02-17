@@ -41,12 +41,14 @@ public:
 	Status & status;
 	int reportPolarity;
 
-	int last_modification;
-	int last_addition;
-	int last_deletion;
-	int history_qhead;
+	int last_modification=-1;
+	int last_addition=0;
+	int last_deletion=0;
+	int last_edge_inc =0;
+	int last_edge_dec = 0;
+	int history_qhead=0;
 
-	int last_history_clear;
+	int last_history_clear=0;
 
 	int source;
 	//Weight inf();
@@ -77,16 +79,14 @@ public:
 	double stats_full_update_time = 0;
 	double stats_fast_update_time = 0;
 	Dijkstra(int s, DynamicGraph<Weight> & graph, Status & status, int reportPolarity = 0) :
-			g(graph), status(status), reportPolarity(reportPolarity), last_modification(-1), last_addition(
-					-1), last_deletion(-1), history_qhead(0), last_history_clear(0), source(s),  q(DistCmp(dist)) {
+			g(graph), status(status), reportPolarity(reportPolarity), source(s),  q(DistCmp(dist)) {
 		
 		mod_percentage = 0.2;
 		
 	}
 	
 	Dijkstra(int s, DynamicGraph<Weight>  & graph,  int reportPolarity = 0) :
-			g(graph), status(Distance<Weight>::nullStatus), reportPolarity(reportPolarity), last_modification(
-					-1), last_addition(-1), last_deletion(-1), history_qhead(0), last_history_clear(0), source(s), q(DistCmp(dist)) {
+			g(graph), status(Distance<Weight>::nullStatus), reportPolarity(reportPolarity),  source(s), q(DistCmp(dist)) {
 		
 		mod_percentage = 0.2;
 		//inf()=std::numeric_limits<Weight>::max()/2;
@@ -118,7 +118,7 @@ public:
 		if (last_modification > 0 && g.modifications == last_modification)
 			return;
 		
-		if (last_addition == g.additions && last_modification > 0) {
+		if (last_addition == g.additions && last_edge_inc==g.edge_increases  && last_edge_dec==g.edge_decreases  && last_modification > 0) {
 			//if none of the deletions were to edges that were the previous edge of some shortest path, then we don't need to do anything
 			if (last_history_clear != g.historyclears) {
 				history_qhead = 0;
@@ -150,7 +150,8 @@ public:
 				last_modification = g.modifications;
 				last_deletion = g.deletions;
 				last_addition = g.additions;
-				
+				last_edge_inc = g.edge_increases;
+				last_edge_dec = g.edge_decreases;
 				history_qhead = g.history.size();
 				last_history_clear = g.historyclears;
 				
@@ -221,7 +222,8 @@ public:
 		last_modification = g.modifications;
 		last_deletion = g.deletions;
 		last_addition = g.additions;
-		
+		last_edge_inc = g.edge_increases;
+		last_edge_dec = g.edge_decreases;
 		history_qhead = g.history.size();
 		last_history_clear = g.historyclears;
 		

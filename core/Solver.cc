@@ -565,12 +565,14 @@ void Solver::uncheckedEnqueue(Lit p, CRef from) {
 	//printf("%d\n",dimacs(p));
 	if (hasTheory(p)) {
 		int theoryID = getTheoryID(p);
+		needsPropagation(theoryID);
 		theories[theoryID]->enqueueTheory(getTheoryLit(p));
-		if (!in_theory_queue[theoryID]) {
+
+		/*if (!in_theory_queue[theoryID]) {
 			in_theory_queue[theoryID] = true;
 			theory_queue.push(theoryID);
 			assert(theory_queue.size() <= theories.size());
-		}
+		}*/
 	}
 }
 
@@ -849,10 +851,7 @@ CRef Solver::propagate(bool propagate_theories) {
 			}
 			//Have to check _all_ the theories, even if we haven't eneueued of their literals, in case they have constants to propagate up.
 			for (int theoryID = 0; theoryID < theories.size(); theoryID++) {
-				if (!in_theory_queue[theoryID]) {
-					in_theory_queue[theoryID] = true;
-					theory_queue.push(theoryID);
-				}
+				needsPropagation(theoryID);
 			}
 			initialPropagate = false;
 		}
@@ -1218,7 +1217,8 @@ bool Solver::addConflictClause(vec<Lit> & ps, CRef & confl_out, bool permanent) 
 			}
 			
 			attachClause(cr);
-			confl_out = cr;
+			if(conflicting)
+				confl_out = cr;
 		}
 		if (!satisfied)
 			cancelUntil(max_lev);

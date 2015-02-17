@@ -585,6 +585,13 @@ protected:
 	}
 public:
 	void cancelUntil(int level);                                             // Backtrack until a certain level.
+	inline void needsPropagation(int theoryID){
+		if (!in_theory_queue[theoryID]) {
+			in_theory_queue[theoryID] = true;
+			theory_queue.push(theoryID);
+			assert(theory_queue.size() <= theories.size());
+		}
+	}
 protected:
 	void analyze(CRef confl, vec<Lit>& out_learnt, int& out_btlevel);    // (bt = backtrack)
 	void analyzeFinal(CRef confl, Lit skip_lit, vec<Lit>& out_conflict);

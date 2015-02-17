@@ -1042,29 +1042,6 @@ bool DistanceDetector<Weight>::propagate(vec<Lit> & conflict) {
 		
 	}
 	
-#ifdef DEBUG_DIJKSTRA
-	for(int i = 0;i<unweighted_dist_lits.size();i++) {
-		for(int j = 0;j<unweighted_dist_lits[i].size();j++) {
-			Lit l = unweighted_dist_lits[i][j].l;
-			int dist = unweighted_dist_lits[i][j].min_unweighted_distance;
-			if(l!=lit_Undef) {
-				int u = getNode(var(l));
-				if((!opt_detect_pure_theory_lits || unassigned_positives>0) && underapprox_unweighted_distance_detector->connected(u) && underapprox_unweighted_distance_detector->distance_unsafe(u)<=dist) {
-					if(outer->dbg_value(l)!=l_True) {
-						assert(false);
-						exit(3);
-					}
-				} else if ((!opt_detect_pure_theory_lits || unassigned_negatives>0) && (!overapprox_unweighted_distance_detector->connected(u) || overapprox_unweighted_distance_detector->distance_unsafe(u)>dist)) {
-					int d =overapprox_unweighted_distance_detector->distance_unsafe(u);
-					if(outer->dbg_value(l)!=l_False) {
-						assert(false);
-						exit(3);
-					}
-				}
-			}
-		}
-	}
-#endif
 	return true;
 }
 template<typename Weight>

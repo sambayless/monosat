@@ -64,6 +64,8 @@ public:
 	int modifications=0;
 	int additions=0;
 	int deletions=0;
+	int edge_increases = 0;
+	int edge_decreases = 0;
 	long historyclears=0;
 
 	struct Edge {
@@ -157,6 +159,8 @@ public:
 		modifications++;
 		additions = modifications;
 		deletions = modifications;
+		edge_increases = modifications;
+		edge_decreases = modifications;
 		markChanged();
 		clearHistory(true);
 #ifdef RECORD
@@ -205,9 +209,10 @@ public:
 		if(weights.size()<=id)
 			weights.resize(id+1,0);
 		weights[id]=weight;
-		weights.push_back(weight);
+
 		modifications++;
 		additions = modifications;
+		edge_increases = modifications;
 		markChanged();
 		
 #ifdef RECORD
@@ -417,13 +422,17 @@ public:
 			if(w==getWeight(id)){
 				return;
 			}
-			weights[id]=w;
+
 			modifications++;
 			if(w>getWeight(id)){
 				history.push_back( {false,false, true,false, id, modifications, additions });
+				edge_increases = modifications;
 			}else{
+				assert(w<getWeight(id));
 				history.push_back( {false,false, false, true, id, modifications, additions });
+				edge_decreases = modifications;
 			}
+			weights[id]=w;
 #ifdef RECORD
 			if (outfile) {
 				std::stringstream ss;
