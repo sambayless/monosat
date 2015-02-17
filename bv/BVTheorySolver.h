@@ -28,7 +28,7 @@
 #include "core/SolverTypes.h"
 #include "mtl/Map.h"
 
-
+#include "BVTheory.h"
 #include "utils/System.h"
 #include "core/TheorySolver.h"
 
@@ -40,18 +40,14 @@
 #include <sstream>
 
 template<typename Weight>
-class ComparisonBVTheorySolver;
+class BVTheorySolver;
 
 namespace Monosat {
 
-struct NullStatus{
-	void operator()(int ignore){
 
-	}
-}nullStatus;
 
-template<typename Weight,typename Status=NullStatus>
-class ComparisonBVTheorySolver: public Theory {
+template<typename Weight>
+class BVTheorySolver: public Theory {
 public:
 
 
@@ -76,13 +72,13 @@ public:
 
 
 	class BitVector{
-		ComparisonBVTheorySolver * outer;
+		BVTheorySolver * outer;
 		int id;
 	public:
 		BitVector():outer(nullptr),id(0){
 
 			}
-		BitVector(ComparisonBVTheorySolver & outer, int id):outer(&outer),id(id){
+		BitVector(BVTheorySolver & outer, int id):outer(&outer),id(id){
 
 		}
 		BitVector(const BitVector & copy):outer(copy.outer),id(copy.id){
@@ -121,7 +117,7 @@ private:
 
 public:
 	int id;
-	Status & status;
+
 	vec<lbool> assigns;
 	CRef comparisonprop_marker;
 	CRef bvprop_marker;
@@ -139,11 +135,11 @@ public:
 
 	vec<Weight> under_approx;
 	vec<Weight> over_approx;
-
+	vec<int> theoryIds;
 	vec<int> altered_bvs;
 	vec<bool> alteredBV;
 
-
+	vec<BVTheory*> theories;
 
 public:
 
@@ -194,22 +190,34 @@ public:
 	long stats_propagations_skipped = 0;
 
 
-	ComparisonBVTheorySolver(TheorySolver * S_, int _id , Status & status=nullStatus) :
-			S(S_), id(_id),status(status){
+	BVTheorySolver(TheorySolver * S ) :
+			S(S){
 		rnd_seed = opt_random_seed;
-
-
 		S->addTheory(this);
 		comparisonprop_marker = S->newReasonMarker(this);
 		bvprop_marker = S->newReasonMarker(this);
 
 	}
-	~ComparisonBVTheorySolver(){
+	~BVTheorySolver(){
 
 	}
 	Solver * getSolver(){
 		return S;
 	}
+
+	bool hasTheory(int bvID){
+		return theoryIds[bvID]>=0;
+	}
+	BVTheory * getTheory(int bvID){
+		assert(hasTheory(bvID));
+		return theories[theoryIds[bvID]];
+	}
+
+	int addTheory(BVTheory* theory){
+		theories.push(theory);
+		return theories.size()-1;
+	}
+
 	void printStats(int detailLevel) {
 
 	}
@@ -426,8 +434,8 @@ public:
 
 					}
 				} else {
-
-					status(e.bvID);
+					if(hasTheory(e.bvID))
+						getTheory(e.bvID)->relaxBV(e.bvID);
 
 					//status.bvAltered(e.bvID);
 				}
@@ -478,7 +486,10 @@ public:
 				assigns[e.var] = l_Undef;
 				//if(bv_callbacks[e.bvID])
 				//	(*bv_callbacks[e.bvID])(e.bvID);
-				status(e.bvID);
+				//status(e.bvID);
+				if(hasTheory(e.bvID))
+					getTheory(e.bvID)->relaxBV(e.bvID);
+
 				//status.bvAltered(e.bvID);
 			}
 		}
@@ -598,9 +609,13 @@ public:
 				alteredBV[bvID]=true;
 				altered_bvs.push(bvID);
 				//status.bvAltered(bvID);
+				if(hasTheory(bvID))
+					getTheory(bvID)->enqueueBV(bvID);
 
 			}
-			status(bvID);
+			if(theoryIds[bvID]>=0){
+				theories[theoryIds[bvID]]->enqueueBV(bvID);
+			}
 		} else {
 
 			int bvID = getbvID(var(l));
@@ -1091,12 +1106,18 @@ public:
 		marker_map[mnum] = detectorID;
 		return reasonMarker;
 	}
+
+	void setBitvectorTheory(int bvID, int theoryID){
+		theoryIds[bvID]=theoryID;
+	}
+
 	BitVector newBitvector(int bvID, vec<Var> & vars){
 		if(bvID<0){
 			bvID = bitvectors.size();
 		}
 		//bv_callbacks.growTo(id+1,nullptr);
 		bitvectors.growTo(bvID+1);
+		theoryIds.growTo(bvID+1,-1);
 		under_approx.growTo(bvID+1,-1);
 		over_approx.growTo(bvID+1,-1);
 		comparisons_lt.growTo(bvID+1);
@@ -1121,12 +1142,15 @@ public:
 		altered_bvs.push(bvID);
 		return BitVector(*this,bvID);
 	}
+
+
 	BitVector newBitvector(int bvID, int bitwidth){
 		if(bvID<0){
 			bvID = bitvectors.size();
 		}
 		//bv_callbacks.growTo(id+1,nullptr);
 		bitvectors.growTo(bvID+1);
+		theoryIds.growTo(bvID+1,-1);
 		under_approx.growTo(bvID+1,-1);
 		over_approx.growTo(bvID+1,-1);
 		comparisons_lt.growTo(bvID+1);
@@ -1134,6 +1158,8 @@ public:
 		comparisons_leq.growTo(bvID+1);
 		comparisons_geq.growTo(bvID+1);
 		alteredBV.growTo(bvID+1);
+
+
 		//bv_callbacks.growTo(bvID+1);
 		if(under_approx[bvID]>-1){
 			assert(false);
@@ -1464,7 +1490,7 @@ public:
 
 };
 //template<typename Weight,typename Status>
-//using BitVector = typename ComparisonBVTheorySolver<Weight, Status>::BitVector;
+//using BitVector = typename BVTheorySolver<Weight, Status>::BitVector;
 
 }
 ;

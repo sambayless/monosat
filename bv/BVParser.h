@@ -29,7 +29,7 @@
 
 #include "utils/ParseUtils.h"
 #include "core/SolverTypes.h"
-#include "bv/BVSolver.h"
+#include "bv/BVTheorySolver.h"
 
 #include "core/Config.h"
 
@@ -44,7 +44,7 @@ namespace Monosat {
 template<class B, class Solver>
 class ComparisonParser: public Parser<B, Solver> {
 public:
-	ComparisonBVTheorySolver<long>* theory=nullptr;
+	BVTheorySolver<long>* theory=nullptr;
 private:
 	struct BV{
 		int id=-1;
@@ -155,7 +155,7 @@ public:
 
 	void implementConstraints(Solver & S) {
 		if(compares.size() || bvs.size()){
-			theory = new ComparisonBVTheorySolver<long>(&S);
+			theory = new BVTheorySolver<long>(&S);
 
 
 			for (auto & bv:bvs){

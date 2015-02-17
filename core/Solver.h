@@ -623,6 +623,11 @@ public:
 	CRef reason(Var x) const;
 	int level(Var x) const;
 	double progressEstimate() const; // DELETE THIS ?? IT'S NOT VERY USEFUL ...
+
+	 bool isConstant(Var v)const{
+		 return value(v)!=l_Undef && (level(v)==0);
+	 }
+
 private:
 	bool withinBudget() const;
 	bool addConflictClause(vec<Lit> & theory_conflict, CRef & confl_out, bool permanent = false);
@@ -778,6 +783,8 @@ inline bool Solver::locked(const Clause& c) const {
 inline void Solver::newDecisionLevel() {
 	trail_lim.push(trail.size());
 }
+
+
 
 inline int Solver::decisionLevel() const {
 	return trail_lim.size();

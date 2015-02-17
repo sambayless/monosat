@@ -27,7 +27,7 @@
 #include "utils/ParseUtils.h"
 #include "core/SolverTypes.h"
 #include "graph/GraphTheory.h"
-#include "comparison/ComparisonBVTheory.h"
+#include "bv/BVTheorySolver.h"
 #include "core/Config.h"
 #include "pb/PbTheory.h"
 #include "core/Dimacs.h"
@@ -52,7 +52,7 @@ struct SteinerStruct {
 template<class B, class Solver>
 class GraphParser: public Parser<B, Solver> {
 	bool precise;
-	ComparisonBVTheorySolver<long>*& comparison;
+	BVTheorySolver<long>*& bvTheory;
 	vec<GraphTheorySolver<long>*> graphs;
 	vec<GraphTheorySolver<double>*> graphs_float;
 	vec<GraphTheorySolver<mpq_class>*> graphs_rational;
@@ -826,8 +826,8 @@ class GraphParser: public Parser<B, Solver> {
 	}
 	
 public:
-	GraphParser(bool precise, ComparisonBVTheorySolver<long>*& comparison) :
-			precise(precise),comparison(comparison) {
+	GraphParser(bool precise, BVTheorySolver<long>*& bvTheory) :
+			precise(precise),bvTheory(bvTheory) {
 		
 	}
 	bool parseLine(B& in, Solver& S) {
@@ -929,10 +929,10 @@ public:
 	}
 	
 	void implementConstraints(Solver & S) {
-/*		for (int i = 0; i < graphs.size(); i++) {
+		for (int i = 0; i < graphs.size(); i++) {
 			if(graphs[i])
-				graphs[i]->setComparator(comparison);
-		}*/
+				graphs[i]->setBVTheory(bvTheory);
+		}
 	/*	for (int i = 0; i < graphs_float.size(); i++) {
 			if(graphs_float[i])
 				graphs_float[i]->setComparator(comparison);

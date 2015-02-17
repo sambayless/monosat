@@ -53,7 +53,7 @@
 #include "graph/GraphTheory.h"
 #include "geometry/GeometryTheory.h"
 #include "geometry/GeometryParser.h"
-#include "comparison/ComparisonParser.h"
+#include "bv/BVParser.h"
 
 
 using namespace Monosat;

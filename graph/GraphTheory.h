@@ -19,8 +19,8 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
 
-#ifndef DGRAPH_H_
-#define DGRAPH_H_
+#ifndef GRAPH_THEORY_H_
+#define GRAPH_THEORY_H_
 
 #include "utils/System.h"
 #include "core/Theory.h"
@@ -48,7 +48,7 @@
 
 #include "AllPairsDetector.h"
 #include "ReachDetector.h"
-#include "comparison/ComparisonBVTheory.h"
+#include "bv/BVTheorySolver.h"
 
 #include "DistanceDetector.h"
 #include "MSTDetector.h"
@@ -65,11 +65,10 @@
 
 using namespace dgl;
 namespace Monosat {
-template<typename Weight>
-class GraphTheorySolver;
+
 
 template<typename Weight>
-class GraphTheorySolver: public Theory,public TheorySolver {
+class GraphTheorySolver: public Theory, public TheorySolver, public BVTheory{
 public:
 
 	double rnd_seed;
@@ -115,7 +114,7 @@ public:
 	 */
 	DynamicGraph<long> cutGraph;
 
-	struct ComparisonStatus{//:public ComparisonBVTheorySolver<long>::CallBack{
+	/*struct ComparisonStatus{//:public BVTheorySolver<long>::CallBack{
 		GraphTheorySolver & outer;
 
 		void comparisonAltered(int bvID, int comparisonID){
@@ -135,11 +134,11 @@ public:
 			}
 		}
 		ComparisonStatus(GraphTheorySolver & outer):outer(outer){}
-	} bvcallback;
-	using BitVector = typename ComparisonBVTheorySolver<Weight, ComparisonStatus>::BitVector;
-	//typedef ComparisonBVTheorySolver<Weight,ComparisonStatus>::BitVector BitVector;
+	} bvcallback;*/
+	using BitVector = typename BVTheorySolver<Weight>::BitVector;
+	//typedef BVTheorySolver<Weight,ComparisonStatus>::BitVector BitVector;
 	//if bitvectors weights are supplied, then this manages the resulting weights.
-	ComparisonBVTheorySolver<Weight,ComparisonStatus> * comparator=nullptr;
+	BVTheorySolver<Weight> * comparator=nullptr;
 
 
 
@@ -211,8 +210,10 @@ public:
 */
 
 	vec<int> bitvectors;
+/*
 	vec<bool> bv_needs_update;
 	vec<int> bvs_to_update;
+*/
 
 	bool requiresPropagation = true;
 
@@ -301,7 +302,7 @@ public:
 	} propCutStatus;
 
 	GraphTheorySolver(Solver * S_, int _id = -1) :
-			S(S_), id(_id),bvcallback(*this) , cutStatus(*this), propCutStatus(*this){
+			S(S_), id(_id), cutStatus(*this), propCutStatus(*this){
 #ifdef RECORD
 		{
 			char t[30];
@@ -334,9 +335,10 @@ public:
 		}
 		
 		rnd_seed = opt_random_seed;
-		comparator = new ComparisonBVTheorySolver<Weight,ComparisonStatus>(this,-1,bvcallback);
+
 	}
-	
+
+
 	void printStats(int detailLevel) {
 		if (detailLevel > 0) {
 			for (Detector * d : detectors)
@@ -385,6 +387,13 @@ public:
 	inline int getGraphID() {
 		return id;
 	}
+
+
+	void setBVTheory(BVTheorySolver<Weight> * bv){
+		comparator = bv;
+		int bvTheoryID = bv->addTheory(this);
+	}
+
 	inline bool isEdgeVar(Var v) {
 		assert(v < vars.size());
 		return vars[v].isEdge;
@@ -530,7 +539,7 @@ public:
 			detectors[detector]->addVar(v);
 		return v;
 	}
-	inline int level(Var v) {
+	inline int level(Var v)const {
 		return S->level(toSolver(v));
 	}
 	inline int decisionLevel() {
@@ -539,7 +548,7 @@ public:
 	inline int nVars() const {
 		return vars.size(); //S->nVars();
 	}
-	inline Var toSolver(Var v) {
+	inline Var toSolver(Var v)const {
 		//return v;
 		assert(v < vars.size());
 		//assert(S->hasTheory(vars[v].solverVar));
@@ -547,7 +556,7 @@ public:
 		return vars[v].solverVar;
 	}
 	
-	inline Lit toSolver(Lit l) {
+	inline Lit toSolver(Lit l)const {
 		//assert(S->hasTheory(vars[var(l)].solverVar));
 		//assert(S->getTheoryVar(vars[var(l)].solverVar)==var(l));
 		return mkLit(vars[var(l)].solverVar, sign(l));
@@ -559,13 +568,13 @@ public:
 		}
 	}
 	
-	inline lbool value(Var v) {
+	inline lbool value(Var v) const{
 		if (assigns[v] != l_Undef)
 			assert(S->value(toSolver(v)) == assigns[v]);
 		
 		return assigns[v]; //S->value(toSolver(v));
 	}
-	inline lbool value(Lit l) {
+	inline lbool value(Lit l)const {
 		if (assigns[var(l)] != l_Undef) {
 			assert(S->value(toSolver(l)) == (assigns[var(l)] ^ sign(l)));
 		}
@@ -591,10 +600,6 @@ public:
 	
 	~GraphTheorySolver() {
 	}
-
-	/*void setComparator(ComparisonBVTheorySolver<Weight> * comparator){
-		this->comparator=comparator;
-	}*/
 
 	int newNode() {
 		
@@ -1091,6 +1096,27 @@ public:
 		
 	}
 	
+	void enqueueBV(int bvID){
+		requiresPropagation=true;
+		int edgeID = getBVEdge(bvID);
+
+		g_under.setEdgeWeight(edgeID,edge_bv_weights[bvID].getUnder());
+		g_over.setEdgeWeight(edgeID, edge_bv_weights[bvID].getOver());
+		if(using_neg_weights){
+			g_under_weights_over.setEdgeWeight(edgeID,edge_bv_weights[bvID].getOver());
+			g_over_weights_under.setEdgeWeight(edgeID, edge_bv_weights[bvID].getUnder());
+		}
+	}
+	void relaxBV(int bvID){
+		int edgeID = getBVEdge(bvID);
+
+		g_under.setEdgeWeight(edgeID,edge_bv_weights[bvID].getUnder());
+		g_over.setEdgeWeight(edgeID, edge_bv_weights[bvID].getOver());
+		if(using_neg_weights){
+			g_under_weights_over.setEdgeWeight(edgeID,edge_bv_weights[bvID].getOver());
+			g_over_weights_under.setEdgeWeight(edgeID, edge_bv_weights[bvID].getUnder());
+		}
+	}
 	void enqueueTheory(Lit l) {
 		Var v = var(l);
 		
@@ -1139,7 +1165,7 @@ public:
 		}else{
 			return;
 		}
-
+/*
 		if(isBVVar(var(l))){
 			int bvID = getBV(var(l));
 			if(isBVEdge(bvID)){
@@ -1150,7 +1176,8 @@ public:
 				bvs_to_update.push(bvID);
 			}
 
-		}else if (isEdgeVar(var(l))) {
+		}else */
+		if (isEdgeVar(var(l))) {
 			
 			//this is an edge assignment
 			int edge_num = getEdgeID(var(l)); //v-min_edge_var;
@@ -1218,7 +1245,7 @@ public:
 		
 		//At level 0, need to propagate constant reaches/source nodes/edges...
 
-		for (int bvID:bvs_to_update){
+/*		for (int bvID:bvs_to_update){
 			assert(bv_needs_update[bvID]);
 			if(isBVEdge(bvID)){
 				int edgeID = getBVEdge(bvID);
@@ -1231,7 +1258,7 @@ public:
 				bv_needs_update[bvID]=false;
 			}
 		}
-		bvs_to_update.clear();
+		bvs_to_update.clear();*/
 
 		dbg_sync();
 		assert(dbg_graphsUpToDate());
@@ -1730,12 +1757,12 @@ public:
 			}
 
 		/*	if(!comparator){
-				comparator = new ComparisonBVTheorySolver<Weight,ComparisonStatus>(ComparisonStatus(*this, *comparator));
+				comparator = new BVTheorySolver<Weight,ComparisonStatus>(ComparisonStatus(*this, *comparator));
 			}*/
 			BitVector bv = comparator->newBitvector(bvID,bitVector);
 			bitvectors.growTo(bv.getID()+1,-1);
 			bitvectors[bv.getID()]=index;
-			bv_needs_update.growTo(bv.getID()+1);
+			//bv_needs_update.growTo(bv.getID()+1);
 			all_edges_unit &= (bv.getUnder()== 1 && bv.getOver()==1);
 			all_edges_positive &= bv.getUnder()>0;
 			edge_list.push();
@@ -1819,7 +1846,7 @@ public:
 				all_edges_positive &= bv.getUnder()>0;
 				edge_list.push();
 				Var v = newVar(outerVar, index, true);
-				bv_needs_update.growTo(bv.getID()+1);
+				//bv_needs_update.growTo(bv.getID()+1);
 				undirected_adj[to].push( { v, outerVar, from, to, index });
 				undirected_adj[from].push( { v, outerVar, to, from, index });
 				inv_adj[to].push( { v, outerVar, from, to, index });
@@ -2256,12 +2283,12 @@ public:
 		theories.push(t);
 	}
 
-	bool isConstant(Var v){
+	bool isConstant(Var v)const{
 		return S->isConstant(toSolver(v));
 	}
 
 
-	virtual CRef reason(Var v){
+	virtual CRef reason(Var v)const{
 		return S->reason(toSolver(v));
 	}
 
@@ -2307,4 +2334,4 @@ public:
 }
 ;
 
-#endif /* DGRAPH_H_ */
+#endif /* GRAPH_THEORY_H_ */
