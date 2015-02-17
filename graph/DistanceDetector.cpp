@@ -650,6 +650,7 @@ void DistanceDetector<Weight>::buildDistanceLEQReason(int to, Weight & min_dista
 		fprintf(stderr, "Error in shortest path detector, aborting\n");
 		exit(4);
 	}
+	assert(!outer->comparator || outer->comparator->dbg_uptodate());
 	//the reason that the distance is less than or equal to min_distance is because the shortest path is less than this weight
 	{
 		int u = to;
@@ -663,6 +664,7 @@ void DistanceDetector<Weight>::buildDistanceLEQReason(int to, Weight & min_dista
 			conflict.push(mkLit(e, true));
 			if(outer->hasBitVector(edgeID)){
 				Lit leq = outer->getEdgeWeightLEQ(edgeID,g_over.getWeight(edgeID));
+				lbool val = outer->dbg_value(leq);
 				conflict.push(~leq);
 			}
 
