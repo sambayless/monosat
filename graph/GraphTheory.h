@@ -69,9 +69,9 @@ template<typename Weight>
 class GraphTheorySolver;
 
 template<typename Weight>
-class GraphTheorySolver: public Theory {
+class GraphTheorySolver: public Theory,public TheorySolver {
 public:
-	
+
 	double rnd_seed;
 
 private:
@@ -115,12 +115,7 @@ public:
 	 */
 	DynamicGraph<long> cutGraph;
 
-
-	//if bitvectors weights are supplied, then this manages the resulting weights.
-	ComparisonBVTheorySolver<Weight> * comparator=nullptr;
-
-
-	struct ComparisonStatus:public ComparisonBVTheorySolver<long>::CallBack{
+	struct ComparisonStatus{//:public ComparisonBVTheorySolver<long>::CallBack{
 		GraphTheorySolver & outer;
 
 		void comparisonAltered(int bvID, int comparisonID){
@@ -141,6 +136,12 @@ public:
 		}
 		ComparisonStatus(GraphTheorySolver & outer):outer(outer){}
 	} bvcallback;
+	using BitVector = typename ComparisonBVTheorySolver<Weight, ComparisonStatus>::BitVector;
+	//typedef ComparisonBVTheorySolver<Weight,ComparisonStatus>::BitVector BitVector;
+	//if bitvectors weights are supplied, then this manages the resulting weights.
+	ComparisonBVTheorySolver<Weight,ComparisonStatus> * comparator=nullptr;
+
+
 
 
 
@@ -162,6 +163,7 @@ public:
 	vec<ReachInfo> reach_info;
 	vec<ReachInfo> connect_info;
 public:
+	vec<Theory*> theories;
 	vec<Detector*> detectors;
 	vec<ReachDetector<Weight>*> reach_detectors;
 	vec<DistanceDetector<Weight>*> distance_detectors;
@@ -171,7 +173,11 @@ public:
 	CycleDetector<Weight> * cycle_detector = nullptr;
 	vec<SteinerDetector<Weight>*> steiner_detectors;
 
-	vec<int> marker_map;
+	struct MarkerEntry{
+		int id;
+		bool forTheory;
+	};
+	vec<MarkerEntry> marker_map;
 
 	std::vector<MaxFlowEdge> cut;
 
@@ -185,7 +191,7 @@ public:
 
 	//vector of the weights for each edge
 	std::vector<Weight> edge_weights;
-	std::vector<BitVector<Weight>> edge_bv_weights;
+	std::vector<BitVector> edge_bv_weights;
 	struct Comparison{
 		Weight w;
 		Lit l;
@@ -217,10 +223,13 @@ public:
 	struct VarData {
 		int isEdge :1;
 		int isBV:1;
+		int isTheoryVar;
 		int occursPositive :1;
 		int occursNegative :1;
-		int detector_edge :28;	//the detector this variable belongs to, or its edge number, if it is an edge variable
+		int detector_edge :27;	//the detector this variable belongs to, or its edge number, if it is an edge variable
+
 		Var solverVar;
+		Var theory_var;
 	};
 
 	vec<VarData> vars;
@@ -325,6 +334,7 @@ public:
 		}
 		
 		rnd_seed = opt_random_seed;
+		comparator = new ComparisonBVTheorySolver<Weight,ComparisonStatus>(this,-1,bvcallback);
 	}
 	
 	void printStats(int detailLevel) {
@@ -455,8 +465,10 @@ public:
 		
 		S->addClauseSafely(tmp_clause);
 	}
-	
-	Var newVar(int forDetector = -1, bool connectToTheory = false) {
+	Var newVar(bool polarity = true, bool dvar = true){
+		return newVar(-1,false);
+	}
+	Var newVar(int forDetector, bool connectToTheory = false) {
 		Var s = S->newVar();
 		return newVar(s, forDetector, false, connectToTheory);
 	}
@@ -467,8 +479,10 @@ public:
 		vars.push();
 		vars[v].isEdge = false;
 		vars[v].isBV=true;
+		vars[v].isTheoryVar=false;
 		vars[v].detector_edge = bvID;
 		vars[v].solverVar = solverVar;
+		vars[v].theory_var=var_Undef;
 		assigns.push(l_Undef);
 
 		S->setTheoryVar(solverVar, getTheoryIndex(), v);
@@ -477,6 +491,25 @@ public:
 		return v;
 	}
 
+	Var newTheoryVar(Var solverVar, int theoryID, Var theoryVar){
+
+
+		Var v = vars.size();
+
+		S->newTheoryVar(solverVar,getTheoryIndex(),v);
+
+
+		vars.push();
+		vars[v].isEdge = false;
+		vars[v].isBV=false;
+		vars[v].isTheoryVar=true;
+		vars[v].detector_edge = theoryID;
+		vars[v].solverVar = solverVar;
+		vars[v].theory_var=theoryVar;
+
+		assigns.push(l_Undef);
+		return v;
+	}
 	Var newVar(Var solverVar, int detector, bool isEdge = false, bool connectToTheory = true) {
 		while (S->nVars() <= solverVar)
 			S->newVar();
@@ -484,8 +517,10 @@ public:
 		vars.push();
 		vars[v].isEdge = isEdge;
 		vars[v].isBV=false;
+		vars[v].isTheoryVar=false;
 		vars[v].detector_edge = detector;
 		vars[v].solverVar = solverVar;
+		vars[v].theory_var=var_Undef;
 		assigns.push(l_Undef);
 		if (connectToTheory) {
 			S->setTheoryVar(solverVar, getTheoryIndex(), v);
@@ -557,9 +592,9 @@ public:
 	~GraphTheorySolver() {
 	}
 
-	void setComparator(ComparisonBVTheorySolver<Weight> * comparator){
+	/*void setComparator(ComparisonBVTheorySolver<Weight> * comparator){
 		this->comparator=comparator;
-	}
+	}*/
 
 	int newNode() {
 		
@@ -809,6 +844,9 @@ public:
 				d->backtrack(level);
 			}
 		}
+		for (int i = 0; i < theories.size(); i++) {
+			theories[i]->backtrackUntil(level);
+		}
 		/*		if(local_q>S->qhead)
 		 local_q=S->qhead;*/
 		assert(dbg_graphsUpToDate());
@@ -896,6 +934,10 @@ public:
 		for (Detector * d : detectors) {
 			d->backtrack(this->decisionLevel());
 		}
+
+		for (int i = 0; i < theories.size(); i++) {
+			theories[i]->backtrackUntil(this->decisionLevel());
+		}
 		//while(trail_lim.size() && trail_lim.last()>=trail.size())
 		//	trail_lim.pop();
 		dbg_sync();
@@ -917,19 +959,31 @@ public:
 		CRef marker = S->reason(var(toSolver(p)));
 		assert(marker != CRef_Undef);
 		int pos = CRef_Undef - marker;
-		int d = marker_map[pos];
-		//double initial_start = rtime(1);
-		double start = rtime(1);
-		backtrackUntil(p);
+		if(marker_map[pos].forTheory){
+			int d = marker_map[pos].id;
+			//double initial_start = rtime(1);
+			double start = rtime(1);
+			assert(d < detectors.size());
+			theories[d]->buildReason(p, reason);
+			toSolver(reason);
+			double finish = rtime(1);
+			stats_reason_time += finish - start;
+			stats_num_reasons++;
+		}else{
 		
-		assert(d < detectors.size());
-		detectors[d]->buildReason(p, reason, marker);
-		toSolver(reason);
-		double finish = rtime(1);
-		stats_reason_time += finish - start;
-		stats_num_reasons++;
-		//stats_reason_initial_time+=start-initial_start;
-		
+			int d = marker_map[pos].id;
+			//double initial_start = rtime(1);
+			double start = rtime(1);
+			backtrackUntil(p);
+
+			assert(d < detectors.size());
+			detectors[d]->buildReason(p, reason, marker);
+			toSolver(reason);
+			double finish = rtime(1);
+			stats_reason_time += finish - start;
+			stats_num_reasons++;
+			//stats_reason_initial_time+=start-initial_start;
+		}
 	}
 	
 	bool dbg_reachable(int from, int to, bool undirected = false) {
@@ -1047,13 +1101,15 @@ public:
 		while (lev > trail_lim.size()) {
 			newDecisionLevel();
 		}
-		
+
 		if (assigns[var(l)] != l_Undef) {
 			return;			//this is already enqueued.
 		}
 		assert(assigns[var(l)]==l_Undef);
 		assigns[var(l)] = sign(l) ? l_False : l_True;
+
 		requiresPropagation = true;
+
 		//printf("enqueue %d\n", dimacs(l));
 		
 #ifndef NDEBUG
@@ -1063,7 +1119,7 @@ public:
 			}
 		}
 #endif
-		
+
 #ifdef RECORD
 		if (g_under.outfile) {
 			fprintf(g_under.outfile, "enqueue %d\n", dimacs(l));
@@ -1077,7 +1133,13 @@ public:
 			fflush(g_over.outfile);
 		}
 #endif
-		
+
+		if(hasTheory(var(l))){
+			theories[getTheoryID(var(l))]->enqueueTheory(getTheoryLit(l));
+		}else{
+			return;
+		}
+
 		if(isBVVar(var(l))){
 			int bvID = getBV(var(l));
 			if(isBVEdge(bvID)){
@@ -1141,7 +1203,12 @@ public:
 			assert(dbg_graphsUpToDate());
 			return true;
 		}
-
+		for(Theory * t:theories){
+			if(!t->propagateTheory(conflict)){
+				toSolver(conflict);
+				return false;
+			}
+		}
 		bool any_change = false;
 		double startproptime = rtime(1);
 		
@@ -1287,7 +1354,7 @@ public:
 					return false;
 				}
 				if(edge_bv_weights.size()){
-					BitVector<Weight> & bv = edge_bv_weights[e.edgeID];
+					BitVector & bv = edge_bv_weights[e.edgeID];
 					if(g_under.getWeight(e.edgeID)> bv.getUnder()){
 						return false;
 					}
@@ -1326,7 +1393,7 @@ public:
 						return false;
 					}
 					if(edge_bv_weights.size()){
-						BitVector<Weight> & bv = edge_bv_weights[e.edgeID];
+						BitVector & bv = edge_bv_weights[e.edgeID];
 						if(g_under_weights_over.getWeight(e.edgeID)!=bv.getOver()){
 							return false;
 						}
@@ -1436,7 +1503,8 @@ public:
 		CRef reasonMarker = S->newReasonMarker(this);
 		int mnum = CRef_Undef - reasonMarker;
 		marker_map.growTo(mnum + 1);
-		marker_map[mnum] = detectorID;
+		marker_map[mnum].forTheory=false;
+		marker_map[mnum].id = detectorID;
 		return reasonMarker;
 	}
 private:
@@ -1664,7 +1732,7 @@ public:
 		/*	if(!comparator){
 				comparator = new ComparisonBVTheorySolver<Weight,ComparisonStatus>(ComparisonStatus(*this, *comparator));
 			}*/
-			BitVector<Weight> bv = comparator->newBitvector(bvID,bitVector);
+			BitVector bv = comparator->newBitvector(bvID,bitVector);
 			bitvectors.growTo(bv.getID()+1,-1);
 			bitvectors[bv.getID()]=index;
 			bv_needs_update.growTo(bv.getID()+1);
@@ -1738,10 +1806,10 @@ public:
 				assert(edge_weights.size()==0);
 				int index = edge_list.size();
 
-				BitVector<Weight> bv = comparator->getBV(bvID);
+				BitVector bv = comparator->getBV(bvID);
 				bitvectors.growTo(bv.getID()+1,-1);
 				bitvectors[bv.getID()]=index;
-				comparator->setCallback(bv.getID(),&bvcallback);
+				//comparator->setCallback(bv.getID(),&bvcallback);
 				comparisons_lt.growTo(bv.getID()+1);
 				comparisons_gt.growTo(bv.getID()+1);
 				comparisons_leq.growTo(bv.getID()+1);
@@ -2184,7 +2252,56 @@ public:
 			d->printSolution();
 		}
 	}
-	
+	void addTheory(Theory * t){
+		theories.push(t);
+	}
+
+	bool isConstant(Var v){
+		return S->isConstant(toSolver(v));
+	}
+
+
+	virtual CRef reason(Var v){
+		return S->reason(toSolver(v));
+	}
+
+
+	bool addConflictClause(vec<Lit> & ps, CRef & confl_out, bool permanent) {
+		toSolver(ps);
+		return S->addConflictClause(ps,confl_out,permanent);
+	}
+
+	CRef newReasonMarker(Theory * theory) {
+		CRef reasonMarker = S->newReasonMarker(this);
+		int mnum = CRef_Undef - reasonMarker;
+		marker_map.growTo(mnum + 1);
+		marker_map[mnum].forTheory=true;
+		marker_map[mnum].id = theory->getTheoryIndex();
+		return reasonMarker;
+	}
+
+	bool hasTheory(Var v) {
+		return vars[v].isTheoryVar;
+	}
+	bool hasTheory(Lit l) {
+		return vars[var(l)].isTheoryVar;
+	}
+	int getTheoryID(Var v) {
+		return vars[v].detector_edge - 1;
+	}
+	int getTheoryID(Lit l) {
+		return vars[var(l)].detector_edge - 1;
+	}
+	Var getTheoryVar(Var v) {
+		assert(hasTheory(v));
+		return (Var) vars[v].theory_var;
+	}
+
+	//Translate a literal into its corresponding theory literal (if it has a theory literal)
+	Lit getTheoryLit(Lit l) {
+		assert(hasTheory(l));
+		return mkLit(getTheoryVar(var(l)), sign(l));
+	}
 };
 
 }

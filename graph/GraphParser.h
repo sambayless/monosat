@@ -929,10 +929,10 @@ public:
 	}
 	
 	void implementConstraints(Solver & S) {
-		for (int i = 0; i < graphs.size(); i++) {
+/*		for (int i = 0; i < graphs.size(); i++) {
 			if(graphs[i])
 				graphs[i]->setComparator(comparison);
-		}
+		}*/
 	/*	for (int i = 0; i < graphs_float.size(); i++) {
 			if(graphs_float[i])
 				graphs_float[i]->setComparator(comparison);

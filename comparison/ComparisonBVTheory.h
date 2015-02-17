@@ -30,7 +30,7 @@
 
 
 #include "utils/System.h"
-#include "core/Solver.h"
+#include "core/TheorySolver.h"
 
 #include <vector>
 
@@ -44,14 +44,17 @@ class ComparisonBVTheorySolver;
 
 namespace Monosat {
 
+struct NullStatus{
+	void operator()(int ignore){
 
+	}
+}nullStatus;
 
-template<typename Weight>
+template<typename Weight,typename Status=NullStatus>
 class ComparisonBVTheorySolver: public Theory {
 public:
-	struct CallBack{
-		virtual void operator()(int bvID)=0;
-	};
+
+
 	struct Assignment {
 		bool isComparator :1;
 		bool assign :1;
@@ -114,11 +117,11 @@ public:
 	double rnd_seed;
 
 private:
-	Solver * S;
+	TheorySolver * S;
 
 public:
 	int id;
-
+	Status & status;
 	vec<lbool> assigns;
 	CRef comparisonprop_marker;
 	CRef bvprop_marker;
@@ -142,7 +145,6 @@ public:
 
 
 
-	vec<CallBack*> bv_callbacks;
 public:
 
 
@@ -192,8 +194,8 @@ public:
 	long stats_propagations_skipped = 0;
 
 
-	ComparisonBVTheorySolver(Solver * S_, int _id = -1) :
-			S(S_), id(_id){
+	ComparisonBVTheorySolver(TheorySolver * S_, int _id , Status & status=nullStatus) :
+			S(S_), id(_id),status(status){
 		rnd_seed = opt_random_seed;
 
 
@@ -223,9 +225,6 @@ public:
 		theory_index = id;
 	}
 
-	void setCallback(int bvID,CallBack* callback){
-		bv_callbacks[bvID]=callback;
-	}
 
 	BitVector getBV(int bvID){
 		return BitVector(*this,bvID);
@@ -253,37 +252,59 @@ public:
 	}
 	
 
-	
+
 	void makeEqual(Lit l1, Lit l2) {
 		Lit o1 = toSolver(l1);
 		Lit o2 = toSolver(l2);
-		S->addClause(~o1, o2);
-		S->addClause(o1, ~o2);
+		tmp_clause.clear();
+		tmp_clause.push(~o1);
+		tmp_clause.push(o2);
+		S->addClauseSafely(tmp_clause);
+		tmp_clause.clear();
+		tmp_clause.push(o1);
+		tmp_clause.push(~o2);
+		S->addClauseSafely(tmp_clause);
 	}
-	void makeEqualInSolver(Lit l1, Lit l2) {
-		S->addClause(~l1, l2);
-		S->addClause(l1, ~l2);
+	void makeEqualInSolver(Lit o1, Lit o2) {
+		tmp_clause.clear();
+		tmp_clause.push(~o1);
+		tmp_clause.push(o2);
+		S->addClauseSafely(tmp_clause);
+		tmp_clause.clear();
+		tmp_clause.push(o1);
+		tmp_clause.push(~o2);
+		S->addClauseSafely(tmp_clause);
 	}
 	void addClause(Lit l1) {
 		Lit o1 = toSolver(l1);
-		S->addClause(o1);
+		tmp_clause.clear();
+		tmp_clause.push(o1);
+		S->addClauseSafely(tmp_clause);
 	}
 	void addClause(Lit l1, Lit l2) {
 		Lit o1 = toSolver(l1);
 		Lit o2 = toSolver(l2);
-		S->addClause(o1, o2);
+		tmp_clause.clear();
+		tmp_clause.push(o1);
+		tmp_clause.push(o2);
+
+		S->addClauseSafely(tmp_clause);
 	}
 	void addClause(Lit l1, Lit l2, Lit l3) {
 		Lit o1 = toSolver(l1);
 		Lit o2 = toSolver(l2);
 		Lit o3 = toSolver(l3);
-		S->addClause(o1, o2, o3);
+		tmp_clause.clear();
+		tmp_clause.push(o1);
+		tmp_clause.push(o2);
+		tmp_clause.push(o3);
+		S->addClauseSafely(tmp_clause);
 	}
 	void addClause(vec<Lit> & c) {
 		tmp_clause.clear();
 		c.copyTo(tmp_clause);
 		toSolver(tmp_clause);
-		S->addClause(tmp_clause);
+		S->addClauseSafely(tmp_clause);
 	}
 	void addClauseSafely(vec<Lit> & c) {
 		tmp_clause.clear();
@@ -298,9 +319,15 @@ public:
 		if(solverVar==var_Undef){
 			solverVar = S->newVar();
 		}
-		while (S->nVars() <= solverVar)
-			S->newVar();
 		Var v = vars.size();
+		if (connectToTheory) {
+			S->newTheoryVar(solverVar, getTheoryIndex(), v);
+			assert(toSolver(v) == solverVar);
+		}else{
+			while (S->nVars() <= solverVar)
+				S->newVar();
+		}
+
 
 		vars.push();
 		vars[v].occursPositive=false;
@@ -310,10 +337,7 @@ public:
 		vars[v].solverVar = solverVar;
 
 		assigns.push(l_Undef);
-		if (connectToTheory) {
-			S->setTheoryVar(solverVar, getTheoryIndex(), v);
-			assert(toSolver(v) == solverVar);
-		}
+
 
 		return v;
 	}
@@ -402,9 +426,9 @@ public:
 
 					}
 				} else {
-					if(bv_callbacks[e.bvID]){
-						(*bv_callbacks[e.bvID])(e.bvID);
-					}
+
+					status(e.bvID);
+
 					//status.bvAltered(e.bvID);
 				}
 				assigns[e.var] = l_Undef;
@@ -452,8 +476,9 @@ public:
 			} else {
 
 				assigns[e.var] = l_Undef;
-				if(bv_callbacks[e.bvID])
-					(*bv_callbacks[e.bvID])(e.bvID);
+				//if(bv_callbacks[e.bvID])
+				//	(*bv_callbacks[e.bvID])(e.bvID);
+				status(e.bvID);
 				//status.bvAltered(e.bvID);
 			}
 		}
@@ -575,9 +600,7 @@ public:
 				//status.bvAltered(bvID);
 
 			}
-			if(bv_callbacks[bvID]){
-				(*bv_callbacks[bvID])(bvID);
-			}
+			status(bvID);
 		} else {
 
 			int bvID = getbvID(var(l));
@@ -1072,7 +1095,7 @@ public:
 		if(bvID<0){
 			bvID = bitvectors.size();
 		}
-		bv_callbacks.growTo(id+1,nullptr);
+		//bv_callbacks.growTo(id+1,nullptr);
 		bitvectors.growTo(bvID+1);
 		under_approx.growTo(bvID+1,-1);
 		over_approx.growTo(bvID+1,-1);
@@ -1081,7 +1104,7 @@ public:
 		comparisons_leq.growTo(bvID+1);
 		comparisons_geq.growTo(bvID+1);
 		alteredBV.growTo(bvID+1);
-		bv_callbacks.growTo(bvID+1);
+		//bv_callbacks.growTo(bvID+1);
 		if(under_approx[bvID]>-1){
 			assert(false);
 			fprintf(stderr,"Redefined bitvector, Aborting!");
@@ -1102,7 +1125,7 @@ public:
 		if(bvID<0){
 			bvID = bitvectors.size();
 		}
-		bv_callbacks.growTo(id+1,nullptr);
+		//bv_callbacks.growTo(id+1,nullptr);
 		bitvectors.growTo(bvID+1);
 		under_approx.growTo(bvID+1,-1);
 		over_approx.growTo(bvID+1,-1);
@@ -1111,7 +1134,7 @@ public:
 		comparisons_leq.growTo(bvID+1);
 		comparisons_geq.growTo(bvID+1);
 		alteredBV.growTo(bvID+1);
-		bv_callbacks.growTo(bvID+1);
+		//bv_callbacks.growTo(bvID+1);
 		if(under_approx[bvID]>-1){
 			assert(false);
 			fprintf(stderr,"Redefined bitvector, Aborting!");
@@ -1440,8 +1463,8 @@ public:
 	}
 
 };
-template<typename Weight>
-using BitVector = typename ComparisonBVTheorySolver<Weight>::BitVector;
+//template<typename Weight,typename Status>
+//using BitVector = typename ComparisonBVTheorySolver<Weight, Status>::BitVector;
 
 }
 ;

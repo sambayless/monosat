@@ -41,6 +41,11 @@ public:
 	// Problem specification:
 	//
 	Var newVar(bool polarity = true, bool dvar = true);
+	Var newTheoryVar(Var solverVar, int theoryID, Var theoryVar){
+		Var v = newVar();
+		setTheoryVar(solverVar,theoryID,theoryVar);
+		return v;
+	}
 	void setTheoryVar(Var solverVar, int theory, Var theoryVar) {
 		setFrozen(solverVar, true);
 		Solver::setTheoryVar(solverVar, theory, theoryVar);

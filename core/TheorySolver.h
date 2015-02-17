@@ -32,16 +32,24 @@ public:
 	virtual ~TheorySolver() {
 		
 	}
+	virtual void addTheory(Theory * t)=0;
 	virtual lbool value(Lit l)=0;
 	virtual lbool value(Var v)=0;
 	virtual bool isConstant(Var v)=0;
 	inline bool isConstant(Lit l) {
 		return isConstant(var(l));
 	}
-	virtual Var newVar(Var v, int detector_id)=0;
+
+	virtual Var newTheoryVar(Var solverVar, int theoryID, Var theoryVar);
+	virtual Var newVar(bool polarity = true, bool dvar = true);
+	virtual int nVars()const=0;
 	virtual bool enqueue(Lit l, CRef reason)=0;
-	virtual CRef newReasonMarker(int detectorID)=0;
-	virtual void needsPropagation(int detector_id)=0;
+	virtual CRef newReasonMarker(Theory * forTheory)=0;
+	virtual CRef reason(Var v)=0;
+
+	virtual void addClauseSafely(vec<Lit> & clause)=0;
+	virtual bool addConflictClause(vec<Lit> & ps, CRef & confl_out, bool permanent)=0;
+	virtual int level(Var v)=0;
 };
 }
 ;

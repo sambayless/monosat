@@ -31,6 +31,7 @@
 #include "utils/Options.h"
 #include "core/SolverTypes.h"
 #include "core/Theory.h"
+#include "core/TheorySolver.h"
 #include "core/Config.h"
 
 //this is _really_ ugly...
@@ -42,7 +43,7 @@ namespace Monosat {
 //=================================================================================================
 // Solver -- the main class:
 // The MiniSAT Boolean SAT solver, extended to provided basic SMT support.
-class Solver: public Theory {
+class Solver: public Theory,public TheorySolver {
 public:
 	//fix this...
 	friend class Theory;
@@ -226,7 +227,13 @@ public:
 		assert(hasTheory(l));
 		return mkLit(getTheoryVar(var(l)), sign(l));
 	}
-	
+	virtual Var newTheoryVar(Var solverVar, int theoryID, Var theoryVar){
+		while(nVars()<solverVar)
+			newVar();
+		Var v = solverVar;
+		setTheoryVar(solverVar,theoryID,theoryVar);
+		return v;
+	}
 	//Connect a variable in the SAT solver to a variable in a theory.
 	virtual void setTheoryVar(Var solverVar, int theory, Var theoryVar) {
 		if (hasTheory(solverVar)) {
