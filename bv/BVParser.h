@@ -29,7 +29,7 @@
 
 #include "utils/ParseUtils.h"
 #include "core/SolverTypes.h"
-#include "comparison/ComparisonBVTheory.h"
+#include "bv/BVSolver.h"
 
 #include "core/Config.h"
 
