@@ -639,7 +639,7 @@ public:
 			int bvID = getbvID(var(l));
 			int comparisonID = getComparisonID(var(l)); //v-min_edge_var;
 			//status.comparisonAltered(bvID, comparisonID);
-
+			trail.push( { true, !sign(l),bvID, v });
 			//trail.push( { true, !sign(l),edgeID, v });
 
 		}
