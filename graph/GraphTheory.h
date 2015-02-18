@@ -1232,6 +1232,11 @@ public:
 			assert(dbg_graphsUpToDate());
 			return true;
 		}
+		//this is ugly... what is a cleaner way to ensure that the bitvector theory propagates before this one?
+		if(comparator && !comparator->propagateTheory(conflict)){
+			return false;
+		}
+
 		for(Theory * t:theories){
 			if(!t->propagateTheory(conflict)){
 				toSolver(conflict);
@@ -1384,10 +1389,10 @@ public:
 				}
 				if(edge_bv_weights.size()){
 					BitVector & bv = edge_bv_weights[e.edgeID];
-					if(g_under.getWeight(e.edgeID)> bv.getUnder()){
+					if(g_under.getWeight(e.edgeID)!= bv.getUnder()){
 						return false;
 					}
-					if(g_over.getWeight(e.edgeID)<bv.getOver()){
+					if(g_over.getWeight(e.edgeID)!=bv.getOver()){
 						return false;
 					}
 				}

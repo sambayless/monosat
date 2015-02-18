@@ -675,12 +675,28 @@ public:
 				under_approx[bvID]=c.w;
 			}
 		}
+		for(int leq:comparisons_leq[bvID]){
+			Comparison & c = comparisons[leq];
+			if(value( c.l)==l_True && over_approx[bvID]>c.w){
+				over_approx[bvID]=c.w;
+			}else if (value(c.l)==l_False && under_approx[bvID]<=c.w){
+				under_approx[bvID]=c.w+1;
+			}
+		}
 		for(int gt:comparisons_gt[bvID]){
 			Comparison & c = comparisons[gt];
 			if(value( c.l)==l_True && under_approx[bvID]<=c.w){
 				under_approx[bvID]=c.w+1;
 			}else if (value(c.l)==l_False && over_approx[bvID]>c.w){
 				over_approx[bvID]=c.w;
+			}
+		}
+		for(int geq:comparisons_geq[bvID]){
+			Comparison & c = comparisons[geq];
+			if(value( c.l)==l_True && under_approx[bvID]<c.w){
+				under_approx[bvID]=c.w;
+			}else if (value(c.l)==l_False && over_approx[bvID]>=c.w){
+				over_approx[bvID]=c.w-1;
 			}
 		}
 	}
