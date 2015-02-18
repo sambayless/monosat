@@ -349,14 +349,14 @@ class GraphParser: public Parser<B, Solver> {
 		skipWhitespace(in);
 		int bvID = parseInt(in);
 		if (graphs[graphID]) {
-			bvdistances.push({graphID,from, to, bvID});
+			bvdistances.push({graphID,from, to,reachVar, bvID});
 			//graphs[graphID]->newEdgeBV(from, to, edgeVar, bvID);
 		}/* else if (graphs_float[graphID]) {
 			graphs_float[graphID]->newEdge(from, to, edgeVar,bvID);
 		} else if (graphs_rational[graphID]) {
 			graphs_rational[graphID]->newEdge(from, to, edgeVar,bvID);
 		} */else {
-			printf("PARSE ERROR! Undeclared graph identifier %d for edge %d\n", graphID, edgeVar), exit(1);
+			printf("PARSE ERROR! Undeclared graph identifier %d for edge %d\n", graphID, reachVar), exit(1);
 			exit(1);
 		}
 
@@ -1013,7 +1013,7 @@ public:
 		}
 
 		for(auto & e:bvdistances){
-			graphs[graphID]->distanceBV(e.from, e.to, e.var, e.bvID);
+			graphs[e.graphID]->distanceBV(e.from, e.to, e.var, e.bvID);
 
 		}
 

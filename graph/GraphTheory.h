@@ -1553,6 +1553,7 @@ public:
 private:
 	Lit getComparisonLT(int bvID,const Weight & lt){
 		//could do a binary search here:
+		comparisons_lt.growTo(bvID+1);
 		for(int i=0;i<comparisons_lt[bvID].size()-1;i++){
 			int cID = comparisons_lt[bvID][i];
 			if (comparisons[cID].w == lt){
@@ -1564,6 +1565,7 @@ private:
 	}
 	Lit getComparisonGT(int bvID,const Weight & gt){
 		//could do a binary search here:
+		comparisons_gt.growTo(bvID+1);
 		for(int i=0;i<comparisons_gt[bvID].size()-1;i++){
 			int cID = comparisons_gt[bvID][i];
 			if (comparisons[cID].w == gt){
@@ -1575,6 +1577,7 @@ private:
 	}
 	Lit getComparisonLEQ(int bvID,const Weight & leq){
 		//could do a binary search here:
+		comparisons_leq.growTo(bvID+1);
 		for(int i=0;i<comparisons_leq[bvID].size()-1;i++){
 			int cID = comparisons_leq[bvID][i];
 			if (comparisons[cID].w == leq){
@@ -1586,6 +1589,7 @@ private:
 	}
 	Lit getComparisonGEQ(int bvID,const Weight & geq){
 		//could do a binary search here:
+		comparisons_geq.growTo(bvID+1);
 		for(int i=0;i<comparisons_geq[bvID].size()-1;i++){
 			int cID = comparisons_geq[bvID][i];
 			if (comparisons[cID].w == geq){
