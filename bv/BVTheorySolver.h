@@ -632,8 +632,7 @@ public:
 				altered_bvs.push(bvID);
 
 			}
-			if(hasTheory(bvID))
-				getTheory(bvID)->enqueueBV(bvID);
+
 		} else {
 
 			int bvID = getbvID(var(l));
@@ -734,6 +733,40 @@ public:
 				over+=bit;
 			}
 		}
+
+		for(int lt:comparisons_lt[bvID]){
+			Comparison & c = comparisons[lt];
+			if(value( c.l)==l_True && over>=c.w){
+				over=c.w-1;
+			}else if (value(c.l)==l_False && under<c.w){
+				under=c.w;
+			}
+		}
+		for(int leq:comparisons_leq[bvID]){
+			Comparison & c = comparisons[leq];
+			if(value( c.l)==l_True && over>c.w){
+				over=c.w;
+			}else if (value(c.l)==l_False && under<=c.w){
+				under=c.w+1;
+			}
+		}
+		for(int gt:comparisons_gt[bvID]){
+			Comparison & c = comparisons[gt];
+			if(value( c.l)==l_True && under<=c.w){
+				under=c.w+1;
+			}else if (value(c.l)==l_False && over>c.w){
+				over=c.w;
+			}
+		}
+		for(int geq:comparisons_geq[bvID]){
+			Comparison & c = comparisons[geq];
+			if(value( c.l)==l_True && under<c.w){
+				under=c.w;
+			}else if (value(c.l)==l_False && over>=c.w){
+				over=c.w-1;
+			}
+		}
+
 		assert(under==under_approx[bvID]);
 		assert(over==over_approx[bvID]);
 #endif
@@ -976,7 +1009,8 @@ public:
 				}
 			}
 
-
+			if(hasTheory(bvID))
+				getTheory(bvID)->enqueueBV(bvID);//only enqueue the bitvector in the subtheory _after_ it's approximation has been updated!
 			//alteredBV[bvID]=false;
 		//	altered_bvs.pop();
 		}

@@ -856,7 +856,7 @@ CRef Solver::propagate(bool propagate_theories) {
 			initialPropagate = false;
 		}
 		static int iter = 0;
-		if (++iter == 48) {
+		if (++iter == 26) {
 			int a = 1;
 		}
 		//printf("iter %d\n",iter);
