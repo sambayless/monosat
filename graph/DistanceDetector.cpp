@@ -257,6 +257,18 @@ void DistanceDetector<Weight>::addWeightedShortestPathLit(int from, int to, Var 
 }
 
 template<typename Weight>
+void DistanceDetector<Weight>::addWeightedShortestPathBVLit(int from, int to, Var outer_reach_var,
+		const BitVector<Weight>  &bv) {
+	g_under.invalidate();
+	g_over.invalidate();
+	Var reach_var = outer->newVar(outer_reach_var, getID());
+	assert(from == source);
+	weighted_dist_bv_lits.push(WeightedDistBVLit { mkLit(reach_var), to, bv });
+	//sort(weighted_dist_lits);
+}
+
+
+template<typename Weight>
 void DistanceDetector<Weight>::addUnweightedShortestPathLit(int from, int to, Var outer_reach_var, int within_steps) {
 	g_under.invalidate();
 	g_over.invalidate();
@@ -569,6 +581,9 @@ void DistanceDetector<Weight>::printSolution(std::ostream& write_to) {
 	vec<bool> to_show;
 	to_show.growTo(g_under.nodes());
 	for (auto & w : weighted_dist_lits) {
+		to_show[w.u] = true;
+	}
+	for (auto & w : weighted_dist_bv_lits) {
 		to_show[w.u] = true;
 	}
 	underapprox_weighted_path_detector->update();
@@ -1005,7 +1020,10 @@ bool DistanceDetector<Weight>::propagate(vec<Lit> & conflict) {
 	if (opt_rnd_shuffle && weighted_dist_lits.size()) {
 		randomShuffle(rnd_seed, weighted_dist_lits);
 	}
-	if (weighted_dist_lits.size()) {
+	if (opt_rnd_shuffle && weighted_dist_bv_lits.size()) {
+		randomShuffle(rnd_seed, weighted_dist_bv_lits);
+	}
+	if (weighted_dist_lits.size() || weighted_dist_bv_lits.size()) {
 		updateShortestPaths(false);						//only needed for the shortest path theory
 	}
 	//now, check for weighted distance lits
@@ -1044,6 +1062,44 @@ bool DistanceDetector<Weight>::propagate(vec<Lit> & conflict) {
 		
 	}
 	
+	for (auto & dist_lit : weighted_dist_bv_lits) {
+		Lit l = dist_lit.l;
+		int to = dist_lit.u;
+		BitVector<Weight> & bv = dist_lit.bv;
+		Weight & min_dist_under = bv.getUnder();
+		Weight & min_dist_over = bv.getOver();
+		Weight & under_dist = underapprox_weighted_distance_detector->distance(to);
+		Weight & over_dist = overapprox_weighted_distance_detector->distance(to);
+		if (underapprox_weighted_distance_detector->connected(to)
+				&& under_dist <= min_dist_under) {
+			if (outer->value(l) == l_True) {
+				//do nothing
+			} else if (outer->value(l) == l_Undef) {
+				outer->enqueue(l, weighted_underprop_marker);
+			} else if (outer->value(l) == l_False) {
+				//conflict
+				conflict.push(l);
+				conflict.push(~outer->getBV_LEQ(bv.getID(),under_dist));
+				buildDistanceLEQReason(to, min_dist_under, conflict);
+				return false;
+			}
+		}
+		if (!overapprox_weighted_distance_detector->connected(to)
+				|| over_dist > min_dist_over) {
+			if (outer->value(~l) == l_True) {
+				//do nothing
+			} else if (outer->value(~l) == l_Undef) {
+				outer->enqueue(~l, weighted_overprop_marker);
+			} else if (outer->value(~l) == l_False) {
+				//conflict
+				conflict.push(~l);
+				conflict.push(outer->getBV_LT(bv.getID(),over_dist));
+				buildDistanceGTReason(to, min_dist_over, conflict);
+				return false;
+			}
+		}
+
+	}
 	return true;
 }
 template<typename Weight>

@@ -78,6 +78,16 @@ class GraphParser: public Parser<B, Solver> {
 	};
 	vec<BVEdge> bvedges;
 
+	struct BVDistance{
+		int graphID;
+		int from;
+		int to;
+		int var;
+		int bvID;
+	};
+
+	vec<BVDistance> bvdistances;
+
 	void readDiGraph(B& in, GraphType graph_type, Solver& S) {
 		if (opt_ignore_theories) {
 			skipLine(in);
@@ -314,27 +324,66 @@ class GraphParser: public Parser<B, Solver> {
 			exit(1);
 		}
 	}
-	void readShortestPath(B& in, Solver& S, bool leq = false) {
+
+	void readShortestPathBV(B& in, Solver& S, bool leq = false) {
 		if (opt_ignore_theories) {
 			skipLine(in);
 			return;
 		}
 		//distance_lt grachID u w var dist is a reach query: var is true if can u reach w in graph g, false otherwise
-		
+
 		++in;
 		static vec<char> tmp;
 		int graphID = parseInt(in);
 		int from = parseInt(in);
 		int to = parseInt(in);
 		int reachVar = parseInt(in) - 1;
-		
+
 		if (graphID < 0 || graphID >= graphs.size()) {
 			printf("PARSE ERROR! Undeclared graph identifier %d for edge %d\n", graphID, reachVar), exit(1);
 		}
 		if (reachVar < 0) {
 			printf("PARSE ERROR! Edge variables must be >=0, was %d\n", reachVar), exit(1);
 		}
-		
+
+		skipWhitespace(in);
+		int bvID = parseInt(in);
+		if (graphs[graphID]) {
+			bvdistances.push({graphID,from, to, bvID});
+			//graphs[graphID]->newEdgeBV(from, to, edgeVar, bvID);
+		}/* else if (graphs_float[graphID]) {
+			graphs_float[graphID]->newEdge(from, to, edgeVar,bvID);
+		} else if (graphs_rational[graphID]) {
+			graphs_rational[graphID]->newEdge(from, to, edgeVar,bvID);
+		} */else {
+			printf("PARSE ERROR! Undeclared graph identifier %d for edge %d\n", graphID, edgeVar), exit(1);
+			exit(1);
+		}
+
+	}
+
+	void readShortestPath(B& in, Solver& S, bool leq = false) {
+		if (opt_ignore_theories) {
+			skipLine(in);
+			return;
+		}
+		//distance_lt grachID u w var dist is a reach query: var is true if can u reach w in graph g, false otherwise
+
+		++in;
+		static vec<char> tmp;
+		int graphID = parseInt(in);
+		int from = parseInt(in);
+		int to = parseInt(in);
+		int reachVar = parseInt(in) - 1;
+
+		if (graphID < 0 || graphID >= graphs.size()) {
+			printf("PARSE ERROR! Undeclared graph identifier %d for edge %d\n", graphID, reachVar), exit(1);
+		}
+		if (reachVar < 0) {
+			printf("PARSE ERROR! Edge variables must be >=0, was %d\n", reachVar), exit(1);
+		}
+
+
 		if (graphs[graphID]) {
 			int weight = parseInt(in);
 			graphs[graphID]->distance(from, to, reachVar, weight);
@@ -367,7 +416,7 @@ class GraphParser: public Parser<B, Solver> {
 				weight.canonicalize();
 				graphs_rational[graphID]->distance(from, to, reachVar, weight);
 			}
-			
+
 		} else {
 			printf("PARSE ERROR! Undeclared graph identifier %d\n", graphID), exit(1);
 			exit(1);
@@ -886,6 +935,12 @@ public:
 		} else if (match(in, "weighted_distance_leq")) {
 			readShortestPath(in, S, true);
 			return true;
+		}else if (match(in, "weighted_distance_bv_lt")) {
+			readShortestPathBV(in, S);
+			return true;
+		} else if (match(in, "weighted_distance_bv_leq")) {
+			readShortestPathBV(in, S, true);
+			return true;
 		}else if (match(in, "mst_weight_leq")) {
 			readMinSpanningTreeConstraint(in, S,true);
 			return true;
@@ -956,6 +1011,12 @@ public:
 		for (auto & e:bvedges){
 			graphs[e.graphID]->newEdgeBV(e.from, e.to, e.edgeVar, e.bvID);
 		}
+
+		for(auto & e:bvdistances){
+			graphs[graphID]->distanceBV(e.from, e.to, e.var, e.bvID);
+
+		}
+
 		for (int i = 0; i < graphs.size(); i++) {
 			if (graphs[i])
 				graphs[i]->implementConstraints();

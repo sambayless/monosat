@@ -203,7 +203,7 @@ public:
 	~BVTheorySolver(){
 
 	}
-	Solver * getSolver(){
+	TheorySolver * getSolver(){
 		return S;
 	}
 
@@ -808,7 +808,7 @@ public:
 
 			Weight & underApprox = under_approx[bvID];
 			Weight & overApprox = over_approx[bvID];
-			std::cout<<"bv: " << bvID << " (" <<underApprox << ", " <<overApprox << " )\n";
+			//std::cout<<"bv: " << bvID << " (" <<underApprox << ", " <<overApprox << " )\n";
 
 			vec<int> & compares_lt = comparisons_lt[bvID];
 			//update over approx lits
@@ -868,10 +868,10 @@ public:
 				Lit l =  getComparison(comparisonID).l;
 				if (overApprox<=leq){
 					if(value(l)==l_True){
-						std::cout<<"nothing bv " << bvID << "<= " << leq << "\n";
+						//std::cout<<"nothing bv " << bvID << "<= " << leq << "\n";
 						//do nothing
 					}else if (value(l)==l_False){
-						std::cout<<"conflict bv " << bvID << "<= " << leq << "\n";
+						//std::cout<<"conflict bv " << bvID << "<= " << leq << "\n";
 						assert(value(l)==l_False);
 						assert(dbg_value(l)==l_False);
 						conflict.push(l);
@@ -879,7 +879,7 @@ public:
 						toSolver(conflict);
 						return false;
 					}else {
-						std::cout<<"propagate bv " << bvID << "<= " << leq << "\n";
+						//std::cout<<"propagate bv " << bvID << "<= " << leq << "\n";
 						assert(value(l)==l_Undef);
 						enqueue(l, comparisonprop_marker);
 					}
@@ -896,16 +896,16 @@ public:
 				Lit l =  getComparison(comparisonID).l;
 				if (underApprox>leq){
 					if(value(l)==l_True){
-						std::cout<<"conflict neg bv " << bvID << "<= " << leq << "\n";
+						//std::cout<<"conflict neg bv " << bvID << "<= " << leq << "\n";
 						conflict.push(~l);
 						buildValueGTReason(bvID,comparisonID,conflict);
 						toSolver(conflict);
 						return false;
 					}else if (value(l)==l_False){
 						//do nothing
-						std::cout<<"nothing neg bv " << bvID << "<= " << leq << "\n";
+						//std::cout<<"nothing neg bv " << bvID << "<= " << leq << "\n";
 					}else {
-						std::cout<<"propagate neg bv " << bvID << "<= " << leq << "\n";
+						//std::cout<<"propagate neg bv " << bvID << "<= " << leq << "\n";
 						assert(value(l)==l_Undef);
 						enqueue(~l, comparisonprop_marker);
 					}
@@ -1264,7 +1264,7 @@ public:
 		return bvID>=0 && bvID<under_approx.size() && under_approx[bvID]>-1;
 	}
 private:
-	Lit getComparisonLT(int bvID, Weight & lt){
+	Lit getComparisonLT(int bvID,const Weight & lt){
 		//could do a binary search here:
 		for(int i=0;i<comparisons_lt[bvID].size();i++){
 			int cID = comparisons_lt[bvID][i];
@@ -1275,7 +1275,7 @@ private:
 
 		return lit_Undef;
 	}
-	Lit getComparisonGT(int bvID, Weight & gt){
+	Lit getComparisonGT(int bvID,const Weight & gt){
 		//could do a binary search here:
 		for(int i=0;i<comparisons_gt[bvID].size();i++){
 			int cID = comparisons_gt[bvID][i];
@@ -1286,7 +1286,7 @@ private:
 
 		return lit_Undef;
 	}
-	Lit getComparisonLEQ(int bvID, Weight & leq){
+	Lit getComparisonLEQ(int bvID,const Weight & leq){
 		//could do a binary search here:
 		vec<int>  & comparison_leq = comparisons_leq[bvID];
 		for(int i=0;i<comparison_leq.size();i++){
@@ -1298,7 +1298,7 @@ private:
 
 		return lit_Undef;
 	}
-	Lit getComparisonGEQ(int bvID, Weight & geq){
+	Lit getComparisonGEQ(int bvID,const Weight & geq){
 		//could do a binary search here:
 		for(int i=0;i<comparisons_geq[bvID].size();i++){
 			int cID = comparisons_geq[bvID][i];
@@ -1310,7 +1310,7 @@ private:
 		return lit_Undef;
 	}
 public:
-	Lit newComparisonLT(int bvID, Weight & lt, Var outerVar = var_Undef) {
+	Lit newComparisonLT(int bvID,const Weight & lt, Var outerVar = var_Undef) {
 		Lit l;
 		if(!hasBV(bvID)){
 			exit(1);
@@ -1374,7 +1374,7 @@ public:
 
 		return l;
 	}
-	Lit newComparisonLEQ(int bvID, Weight & leq, Var outerVar = var_Undef) {
+	Lit newComparisonLEQ(int bvID,const Weight & leq, Var outerVar = var_Undef) {
 			Lit l;
 			if(!hasBV(bvID)){
 				exit(1);
@@ -1389,7 +1389,7 @@ public:
 				l = mkLit(newVar(outerVar, bvID,comparisonID));
 			}
 
-			std::cout<<"constraint: bv " << bvID << "<= " << leq << "\n";
+			//std::cout<<"constraint: bv " << bvID << "<= " << leq << "\n";
 			comparisons.push({leq,l,bvID,true,false});
 			comparisons_leq[bvID].push(comparisonID);
 			//insert this value in order.
@@ -1438,7 +1438,7 @@ public:
 
 			return l;
 		}
-	Lit newComparisonGT(int bvID, Weight & gt, Var outerVar = var_Undef) {
+	Lit newComparisonGT(int bvID,const Weight & gt, Var outerVar = var_Undef) {
 		Lit l;
 		int comparisonID = comparisons.size();
 		if((l = getComparisonGT(bvID, gt))!=lit_Undef){
@@ -1504,7 +1504,7 @@ public:
 		return l;
 	}
 
-	Lit newComparisonGEQ(int bvID, Weight & geq, Var outerVar = var_Undef) {
+	Lit newComparisonGEQ(int bvID,const Weight & geq, Var outerVar = var_Undef) {
 			Lit l;
 			int comparisonID = comparisons.size();
 			if((l = getComparisonGEQ(bvID, geq))!=lit_Undef){
@@ -1759,8 +1759,8 @@ public:
 	}
 
 };
-//template<typename Weight,typename Status>
-//using BitVector = typename BVTheorySolver<Weight, Status>::BitVector;
+template<typename Weight>
+using BitVector = typename BVTheorySolver<Weight>::BitVector;
 
 }
 ;
