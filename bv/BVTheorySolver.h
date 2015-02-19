@@ -1714,6 +1714,9 @@ public:
 			exit(1);
 		}
 		int comparisonID = comparisons.size();
+		if(comparisonID==7){
+			int a=1;
+		}
 		if((l = getComparisonLT(bvID, lt))!=lit_Undef){
 			if(outerVar != var_Undef){
 				makeEqualInSolver(mkLit(outerVar),toSolver(l));
@@ -1722,7 +1725,7 @@ public:
 		}else{
 			l = mkLit(newVar(outerVar, bvID,comparisonID));
 		}
-		std::cout<<"New comparison: bv"<< bvID << " < " << lt <<"\n";
+		std::cout<<"New comparison " << comparisonID << ": bv"<< bvID << " < " << lt <<"\n";
 
 		comparisons.push({lt,l,bvID,true,true});
 		comparisons_lt[bvID].push(comparisonID);
@@ -1789,7 +1792,7 @@ public:
 			}else{
 				l = mkLit(newVar(outerVar, bvID,comparisonID));
 			}
-			std::cout<<"New comparison: bv"<< bvID << " <= " << leq <<"\n";
+			std::cout<<"New comparison " << comparisonID << ": bv"<< bvID << " <= " << leq <<"\n";
 			//std::cout<<"constraint: bv " << bvID << "<= " << leq << "\n";
 			comparisons.push({leq,l,bvID,true,false});
 			comparisons_leq[bvID].push(comparisonID);
@@ -1851,7 +1854,7 @@ public:
 			l = mkLit(newVar(outerVar, bvID,comparisonID));
 		}
 
-		std::cout<<"New comparison: bv"<< bvID << " > " << gt <<"\n";
+		std::cout<<"New comparison " << comparisonID << ": bv"<< bvID << " > " << gt <<"\n";
 
 		comparisons.push({gt,l,bvID,false,true});
 		comparisons_gt[bvID].push(comparisonID);
@@ -1917,7 +1920,7 @@ public:
 				l = mkLit(newVar(outerVar, bvID,comparisonID));
 			}
 
-			std::cout<<"New comparison: bv"<< bvID << " >= " << geq <<"\n";
+			std::cout<<"New comparison " << comparisonID << ": bv"<< bvID << " >= " << geq <<"\n";
 
 			comparisons.push({geq,l,bvID,false,false});
 			comparisons_geq[bvID].push(comparisonID);
