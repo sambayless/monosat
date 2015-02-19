@@ -146,7 +146,7 @@ public:
 public:
 
 
-	vec<int> marker_map;
+	//vec<int> marker_map;
 
 	bool requiresPropagation = true;
 
@@ -532,7 +532,7 @@ public:
 		CRef marker = S->reason(var(toSolver(p)));
 		assert(marker != CRef_Undef);
 		int pos = CRef_Undef - marker;
-		int d = marker_map[pos];
+		//int d = marker_map[pos];
 		//double initial_start = rtime(1);
 		double start = rtime(1);
 		backtrackUntil(p);
@@ -541,19 +541,36 @@ public:
 			reason.push(p);
 			Var v = var(p);
 			int bvID = getbvID(v);
+			updateApproximations(bvID);
 			if(isComparisonVar(v)){
 				int comparisonID = getComparisonID(v);
 				if(comparisons[comparisonID].is_lt){
-					if(!sign(p)){
-						buildValueLTReason(bvID,comparisonID,reason);
+					if(comparisons[comparisonID].is_strict){
+						if(!sign(p)){
+							buildValueLTReason(bvID,comparisonID,reason);
+						}else{
+							buildValueGEQReason(bvID,comparisonID,reason);
+						}
 					}else{
-						buildValueGEQReason(bvID,comparisonID,reason);
+						if(!sign(p)){
+							buildValueLEQReason(bvID,comparisonID,reason);
+						}else{
+							buildValueGTReason(bvID,comparisonID,reason);
+						}
 					}
 				}else{
-					if(!sign(p)){
-						buildValueGTReason(bvID,comparisonID,reason);
+					if(comparisons[comparisonID].is_strict){
+						if(!sign(p)){
+							buildValueGTReason(bvID,comparisonID,reason);
+						}else{
+							buildValueLEQReason(bvID,comparisonID,reason);
+						}
 					}else{
-						buildValueLEQReason(bvID,comparisonID,reason);
+						if(!sign(p)){
+							buildValueGEQReason(bvID,comparisonID,reason);
+						}else{
+							buildValueLTReason(bvID,comparisonID,reason);
+						}
 					}
 				}
 			}else{
@@ -791,7 +808,10 @@ public:
 
 			return true;
 		}
-		
+		printf("bv prop %d\n",stats_propagations);
+		if(stats_propagations==157){
+			int a =1;
+		}
 		bool any_change = false;
 		double startproptime = rtime(1);
 		//static vec<int> detectors_to_check;
@@ -832,7 +852,7 @@ public:
 					}
 
 				}else{
-					break;
+					//break;
 				}
 			}
 
@@ -856,7 +876,7 @@ public:
 					}
 
 				}else{
-					break;
+					//break;
 				}
 			}
 
@@ -935,7 +955,7 @@ public:
 					}
 
 				}else{
-					break;
+					//break;
 				}
 			}
 
@@ -958,7 +978,7 @@ public:
 					}
 
 				}else{
-					break;
+					//break;
 				}
 			}
 
@@ -982,7 +1002,7 @@ public:
 					}
 
 				}else{
-					break;
+					//break;
 				}
 			}
 
@@ -1005,7 +1025,7 @@ public:
 					}
 
 				}else{
-					break;
+					//break;
 				}
 			}
 
@@ -1032,11 +1052,11 @@ public:
 		Lit l =  getComparison(comparisonID).l;
 
 		vec<Lit> & bv = bitvectors[bvID];
-		Weight  over = over_approx[bvID];
+		Weight  over_cur = over_approx[bvID];
 		assert(checkApproxUpToDate(bvID));
-		assert(over<lt);
+		assert(over_cur<lt);
 		//the reason that the value is less than the weight 'lt' is that the _overapprox_ of the weight is less than lt.
-		for(int i =0;i<bv.size();i++){
+		/*for(int i =0;i<bv.size();i++){
 			Lit bl = bv[i];
 			if(value(bl)==l_False && level(var(bl))>0){
 				Weight bit = 1<<i;
@@ -1047,8 +1067,104 @@ public:
 					conflict.push(bl);
 				}
 			}
+		}*/
+		Weight under =0;
+		Weight over=0;
+		for(int i = 0;i<bv.size();i++){
+			lbool val = value(bv[i]);
+			if(val==l_True){
+				Weight bit = 1<<i;
+				under+=bit;
+				over+=bit;
+			}else if (val==l_False){
+
+			}else{
+				Weight bit = 1<<i;
+				over+=bit;
+			}
+		}
+		if (over<lt){
+			//then the reason the underapprox is too large is because of the assignment to the bits
+			for(int i =0;i<bv.size();i++){
+				Lit bl = bv[i];
+				if(value(bl)==l_False ){
+					Weight bit = 1<<i;
+					if(over+bit<=lt&& level(var(bl))>0){
+						//then we can skip this bit, because we would still have had a conflict even if it was assigned true.
+						over+=bit;
+					}else{
+						assert(value(bl)==l_False);
+						conflict.push(bl);
+					}
+				}
+			}
+			return;
 		}
 
+		for(int cID:comparisons_lt[bvID]){
+			if(cID == comparisonID)
+				continue;
+			Comparison & c = comparisons[cID];
+			if(value( c.l)==l_True && over>=c.w){
+				over=c.w-1;
+			}else if (value(c.l)==l_False && under<c.w){
+				under=c.w;
+			}
+			if (over<lt){
+				//this is the reason for the bitvector being too large
+				assert(value(~c.l)==l_False);
+				conflict.push(~c.l);
+				return;
+			}
+		}
+		for(int cID:comparisons_leq[bvID]){
+			if(cID == comparisonID)
+				continue;
+			Comparison & c = comparisons[cID];
+			if(value( c.l)==l_True && over>c.w){
+				over=c.w;
+			}else if (value(c.l)==l_False && under<=c.w){
+				under=c.w+1;
+			}
+			if (over<lt){
+				//this is the reason for the bitvector being too large
+				assert(value(~c.l)==l_False);
+				conflict.push(~c.l);
+				return;
+			}
+		}
+		for(int cID:comparisons_gt[bvID]){
+			if(cID == comparisonID)
+				continue;
+			Comparison & c = comparisons[cID];
+			if(value( c.l)==l_True && under<=c.w){
+				under=c.w+1;
+			}else if (value(c.l)==l_False && over>c.w){
+				over=c.w;
+			}
+			if (over<lt){
+				//this is the reason for the bitvector being too large
+				assert(value(c.l)==l_False);
+				conflict.push(c.l);
+				return;
+			}
+		}
+		for(int cID:comparisons_geq[bvID]){
+			if(cID == comparisonID)
+				continue;
+			Comparison & c = comparisons[cID];
+			if(value( c.l)==l_True && under<c.w){
+				under=c.w;
+			}else if (value(c.l)==l_False && over>=c.w){
+				over=c.w-1;
+			}
+			if (over<lt){
+				//this is the reason for the bitvector being too large
+				assert(value(c.l)==l_False);
+				conflict.push(c.l);
+				return;
+			}
+		}
 	}
 
 	void buildValueGEQReason(int bvID, int comparisonID, vec<Lit> & conflict){
@@ -1056,23 +1172,115 @@ public:
 		Lit l =  getComparison(comparisonID).l;
 
 		vec<Lit> & bv = bitvectors[bvID];
-		Weight  under = under_approx[bvID];
+		Weight  under_cur = under_approx[bvID];
 		assert(checkApproxUpToDate(bvID));
-		assert(under>=lt);
+		assert(under_cur>=lt);
 		//the reason that the value is less than the weight 'lt' is that the _overapprox_ of the weight is less than lt.
+		//the reason for this depends on how the over approximation was computed - that is, whether it is caused by an assignment to a comparison or to the bitvector itself.
 
-		for(int i =0;i<bv.size();i++){
-			Lit bl = bv[i];
-			if(value(bl)==l_True && level(var(bl))>0){
+		//this analysis is _only_ correct if we have correctly backtracked in the trail to the point where the comparison was assigned.
+
+		Weight under =0;
+		Weight over=0;
+		for(int i = 0;i<bv.size();i++){
+			lbool val = value(bv[i]);
+			if(val==l_True){
 				Weight bit = 1<<i;
-				if(under-bit>=lt){
-					//then we can skip this bit, because we would still have had a conflict even if it was assigned false.
-					under-=bit;
-				}else{
-					conflict.push(~bl);
-				}
+				under+=bit;
+				over+=bit;
+			}else if (val==l_False){
+
+			}else{
+				Weight bit = 1<<i;
+				over+=bit;
 			}
 		}
+		if (under>=lt){
+			//then the reason the underapprox is too large is because of the assignment to the bits
+			for(int i =0;i<bv.size();i++){
+				Lit bl = bv[i];
+				lbool val = value(bl);
+				lbool dbgval = dbg_value(bl);
+				if(value(bl)==l_True){
+					Weight bit = 1<<i;
+					if(under-bit>=lt  && level(var(bl))>0){
+						//then we can skip this bit, because we would still have had a conflict even if it was assigned false.
+						under-=bit;
+					}else{
+						assert(value(~bl)==l_False);
+						conflict.push(~bl);
+					}
+				}
+			}
+			return;
+		}
+
+		for(int cID:comparisons_lt[bvID]){
+			if(cID == comparisonID)
+				continue;
+			Comparison & c = comparisons[cID];
+			if(value( c.l)==l_True && over>=c.w){
+				over=c.w-1;
+			}else if (value(c.l)==l_False && under<c.w){
+				under=c.w;
+			}
+			if (under>=lt){
+				//this is the reason for the bitvector being too large
+				assert(value(c.l)==l_False);
+				conflict.push(c.l);
+				return;
+			}
+		}
+		for(int cID:comparisons_leq[bvID]){
+			if(cID == comparisonID)
+				continue;
+			Comparison & c = comparisons[cID];
+			if(value( c.l)==l_True && over>c.w){
+				over=c.w;
+			}else if (value(c.l)==l_False && under<=c.w){
+				under=c.w+1;
+			}
+			if (under>=lt){
+				//this is the reason for the bitvector being too large
+				assert(value(c.l)==l_False);
+				conflict.push(c.l);
+				return;
+			}
+		}
+		for(int cID:comparisons_gt[bvID]){
+			if(cID == comparisonID)
+				continue;
+			Comparison & c = comparisons[cID];
+			if(value( c.l)==l_True && under<=c.w){
+				under=c.w+1;
+			}else if (value(c.l)==l_False && over>c.w){
+				over=c.w;
+			}
+			if (under>=lt){
+				//this is the reason for the bitvector being too large
+				assert(value(~c.l)==l_False);
+				conflict.push(~c.l);
+				return;
+			}
+		}
+		for(int cID:comparisons_geq[bvID]){
+			if(cID == comparisonID)
+				continue;
+			Comparison & c = comparisons[cID];
+			if(value( c.l)==l_True && under<c.w){
+				under=c.w;
+			}else if (value(c.l)==l_False && over>=c.w){
+				over=c.w-1;
+			}
+			if (under>=lt){
+				//this is the reason for the bitvector being too large
+				assert(value(~c.l)==l_False);
+				conflict.push(~c.l);
+				return;
+			}
+		}
+
+
 	}
 
 	void buildValueLEQReason(int bvID, int comparisonID, vec<Lit> & conflict){
@@ -1081,11 +1289,11 @@ public:
 			Lit l =  getComparison(comparisonID).l;
 
 			vec<Lit> & bv = bitvectors[bvID];
-			Weight  over = over_approx[bvID];
+			Weight  over_cur = over_approx[bvID];
 			assert(checkApproxUpToDate(bvID));
-			assert(over<=lt);
+			assert(over_cur<=lt);
 			//the reason that the value is less than the weight 'lt' is that the _overapprox_ of the weight is less than lt.
-			for(int i =0;i<bv.size();i++){
+			/*for(int i =0;i<bv.size();i++){
 				Lit bl = bv[i];
 				if(value(bl)==l_False && level(var(bl))>0){
 					Weight bit = 1<<i;
@@ -1096,8 +1304,104 @@ public:
 						conflict.push(bl);
 					}
 				}
+			}*/
+			Weight under =0;
+			Weight over=0;
+			for(int i = 0;i<bv.size();i++){
+				lbool val = value(bv[i]);
+				if(val==l_True){
+					Weight bit = 1<<i;
+					under+=bit;
+					over+=bit;
+				}else if (val==l_False){
+
+				}else{
+					Weight bit = 1<<i;
+					over+=bit;
+				}
+			}
+			if (over<=lt){
+				//then the reason the underapprox is too large is because of the assignment to the bits
+				for(int i =0;i<bv.size();i++){
+					Lit bl = bv[i];
+					if(value(bl)==l_False ){
+						Weight bit = 1<<i;
+						if(over+bit<=lt&& level(var(bl))>0){
+							//then we can skip this bit, because we would still have had a conflict even if it was assigned true.
+							over+=bit;
+						}else{
+							assert(value(bl)==l_False);
+							conflict.push(bl);
+						}
+					}
+				}
+				return;
 			}
 
+			for(int cID:comparisons_lt[bvID]){
+				if(cID == comparisonID)
+					continue;
+				Comparison & c = comparisons[cID];
+				if(value( c.l)==l_True && over>=c.w){
+					over=c.w-1;
+				}else if (value(c.l)==l_False && under<c.w){
+					under=c.w;
+				}
+				if (over<=lt){
+					//this is the reason for the bitvector being too large
+					assert(value(~c.l)==l_False);
+					conflict.push(~c.l);
+					return;
+				}
+			}
+			for(int cID:comparisons_leq[bvID]){
+				if(cID == comparisonID)
+					continue;
+				Comparison & c = comparisons[cID];
+				if(value( c.l)==l_True && over>c.w){
+					over=c.w;
+				}else if (value(c.l)==l_False && under<=c.w){
+					under=c.w+1;
+				}
+				if (over<=lt){
+					//this is the reason for the bitvector being too large
+					assert(value(~c.l)==l_False);
+					conflict.push(~c.l);
+					return;
+				}
+			}
+			for(int cID:comparisons_gt[bvID]){
+				if(cID == comparisonID)
+					continue;
+				Comparison & c = comparisons[cID];
+				if(value( c.l)==l_True && under<=c.w){
+					under=c.w+1;
+				}else if (value(c.l)==l_False && over>c.w){
+					over=c.w;
+				}
+				if (over<=lt){
+					//this is the reason for the bitvector being too large
+					assert(value(c.l)==l_False);
+					conflict.push(c.l);
+					return;
+				}
+			}
+			for(int cID:comparisons_geq[bvID]){
+				if(cID == comparisonID)
+					continue;
+				Comparison & c = comparisons[cID];
+				if(value( c.l)==l_True && under<c.w){
+					under=c.w;
+				}else if (value(c.l)==l_False && over>=c.w){
+					over=c.w-1;
+				}
+				if (over<=lt){
+					//this is the reason for the bitvector being too large
+					assert(value(c.l)==l_False);
+					conflict.push(c.l);
+					return;
+				}
+			}
 		}
 
 		void buildValueGTReason(int bvID, int comparisonID, vec<Lit> & conflict){
@@ -1105,12 +1409,12 @@ public:
 			Lit l =  getComparison(comparisonID).l;
 
 			vec<Lit> & bv = bitvectors[bvID];
-			Weight  under = under_approx[bvID];
+			Weight  under_cur = under_approx[bvID];
 			assert(checkApproxUpToDate(bvID));
-			assert(under>lt);
+			assert(under_cur>lt);
 			//the reason that the value is less than the weight 'lt' is that the _overapprox_ of the weight is less than lt.
 
-			for(int i =0;i<bv.size();i++){
+		/*	for(int i =0;i<bv.size();i++){
 				Lit bl = bv[i];
 				if(value(bl)==l_True && level(var(bl))>0){
 					Weight bit = 1<<i;
@@ -1120,6 +1424,106 @@ public:
 					}else{
 						conflict.push(~bl);
 					}
+				}
+			}*/
+
+			Weight under =0;
+			Weight over=0;
+			for(int i = 0;i<bv.size();i++){
+				lbool val = value(bv[i]);
+				if(val==l_True){
+					Weight bit = 1<<i;
+					under+=bit;
+					over+=bit;
+				}else if (val==l_False){
+
+				}else{
+					Weight bit = 1<<i;
+					over+=bit;
+				}
+			}
+			if (under>lt){
+				//then the reason the underapprox is too large is because of the assignment to the bits
+				for(int i =0;i<bv.size();i++){
+					Lit bl = bv[i];
+					lbool val = value(bl);
+					lbool dbgval = dbg_value(bl);
+					if(value(bl)==l_True){
+						Weight bit = 1<<i;
+						if(under-bit>=lt  && level(var(bl))>0){
+							//then we can skip this bit, because we would still have had a conflict even if it was assigned false.
+							under-=bit;
+						}else{
+							assert(value(~bl)==l_False);
+							conflict.push(~bl);
+						}
+					}
+				}
+				return;
+			}
+
+			for(int cID:comparisons_lt[bvID]){
+				if(cID == comparisonID)
+					continue;
+				Comparison & c = comparisons[cID];
+				if(value( c.l)==l_True && over>=c.w){
+					over=c.w-1;
+				}else if (value(c.l)==l_False && under<c.w){
+					under=c.w;
+				}
+				if (under>lt){
+					//this is the reason for the bitvector being too large
+					assert(value(c.l)==l_False);
+					conflict.push(c.l);
+					return;
+				}
+			}
+			for(int cID:comparisons_leq[bvID]){
+				if(cID == comparisonID)
+					continue;
+				Comparison & c = comparisons[cID];
+				if(value( c.l)==l_True && over>c.w){
+					over=c.w;
+				}else if (value(c.l)==l_False && under<=c.w){
+					under=c.w+1;
+				}
+				if (under>lt){
+					//this is the reason for the bitvector being too large
+					assert(value(c.l)==l_False);
+					conflict.push(c.l);
+					return;
+				}
+			}
+			for(int cID:comparisons_gt[bvID]){
+				if(cID == comparisonID)
+					continue;
+				Comparison & c = comparisons[cID];
+				if(value( c.l)==l_True && under<=c.w){
+					under=c.w+1;
+				}else if (value(c.l)==l_False && over>c.w){
+					over=c.w;
+				}
+				if (under>lt){
+					//this is the reason for the bitvector being too large
+					assert(value(~c.l)==l_False);
+					conflict.push(~c.l);
+					return;
+				}
+			}
+			for(int cID:comparisons_geq[bvID]){
+				if(cID == comparisonID)
+					continue;
+				Comparison & c = comparisons[cID];
+				if(value( c.l)==l_True && under<c.w){
+					under=c.w;
+				}else if (value(c.l)==l_False && over>=c.w){
+					over=c.w-1;
+				}
+				if (under>lt){
+					//this is the reason for the bitvector being too large
+					assert(value(~c.l)==l_False);
+					conflict.push(~c.l);
+					return;
 				}
 			}
 		}
@@ -1178,13 +1582,7 @@ public:
 	}
 
 
-	CRef newReasonMarker(int detectorID) {
-		CRef reasonMarker = S->newReasonMarker(this);
-		int mnum = CRef_Undef - reasonMarker;
-		marker_map.growTo(mnum + 1);
-		marker_map[mnum] = detectorID;
-		return reasonMarker;
-	}
+
 
 	void setBitvectorTheory(int bvID, int theoryID){
 		theoryIds[bvID]=theoryID;
@@ -1324,7 +1722,7 @@ public:
 		}else{
 			l = mkLit(newVar(outerVar, bvID,comparisonID));
 		}
-
+		std::cout<<"New comparison: bv"<< bvID << " < " << lt <<"\n";
 
 		comparisons.push({lt,l,bvID,true,true});
 		comparisons_lt[bvID].push(comparisonID);
@@ -1380,6 +1778,9 @@ public:
 				exit(1);
 			}
 			int comparisonID = comparisons.size();
+			if(comparisonID==41){
+				int a=1;
+			}
 			if((l = getComparisonLEQ(bvID, leq))!=lit_Undef){
 				if(outerVar != var_Undef){
 					makeEqualInSolver(mkLit(outerVar),toSolver(l));
@@ -1388,7 +1789,7 @@ public:
 			}else{
 				l = mkLit(newVar(outerVar, bvID,comparisonID));
 			}
-
+			std::cout<<"New comparison: bv"<< bvID << " <= " << leq <<"\n";
 			//std::cout<<"constraint: bv " << bvID << "<= " << leq << "\n";
 			comparisons.push({leq,l,bvID,true,false});
 			comparisons_leq[bvID].push(comparisonID);
@@ -1450,7 +1851,7 @@ public:
 			l = mkLit(newVar(outerVar, bvID,comparisonID));
 		}
 
-
+		std::cout<<"New comparison: bv"<< bvID << " > " << gt <<"\n";
 
 		comparisons.push({gt,l,bvID,false,true});
 		comparisons_gt[bvID].push(comparisonID);
@@ -1516,7 +1917,7 @@ public:
 				l = mkLit(newVar(outerVar, bvID,comparisonID));
 			}
 
-
+			std::cout<<"New comparison: bv"<< bvID << " >= " << geq <<"\n";
 
 			comparisons.push({geq,l,bvID,false,false});
 			comparisons_geq[bvID].push(comparisonID);

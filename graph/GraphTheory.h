@@ -1234,6 +1234,7 @@ public:
 		if (++itp == 62279) {
 			int a = 1;
 		}
+
 		stats_propagations++;
 		dbg_sync();
 		if (!requiresPropagation) {
@@ -1245,7 +1246,7 @@ public:
 		if(comparator && !comparator->propagateTheory(conflict)){
 			return false;
 		}
-
+		printf("graph prop %d\n",stats_propagations);
 		for(Theory * t:theories){
 			if(!t->propagateTheory(conflict)){
 				toSolver(conflict);

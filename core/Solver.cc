@@ -856,9 +856,11 @@ CRef Solver::propagate(bool propagate_theories) {
 			initialPropagate = false;
 		}
 		static int iter = 0;
-		if (++iter == 26) {
+		if (++iter == 389) {
+
 			int a = 1;
 		}
+		printf("iter %d\n",iter);
 		//printf("iter %d\n",iter);
 		//propagate theories;
 		while (propagate_theories && theory_queue.size() && (opt_early_theory_prop || qhead == trail.size())
