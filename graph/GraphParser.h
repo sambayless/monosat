@@ -84,6 +84,7 @@ class GraphParser: public Parser<B, Solver> {
 		int to;
 		int var;
 		int bvID;
+		bool strict;
 	};
 
 	vec<BVDistance> bvdistances;
@@ -349,7 +350,7 @@ class GraphParser: public Parser<B, Solver> {
 		skipWhitespace(in);
 		int bvID = parseInt(in);
 		if (graphs[graphID]) {
-			bvdistances.push({graphID,from, to,reachVar, bvID});
+			bvdistances.push({graphID,from, to,reachVar, bvID,!leq});
 			//graphs[graphID]->newEdgeBV(from, to, edgeVar, bvID);
 		}/* else if (graphs_float[graphID]) {
 			graphs_float[graphID]->newEdge(from, to, edgeVar,bvID);
@@ -1013,7 +1014,7 @@ public:
 		}
 
 		for(auto & e:bvdistances){
-			graphs[e.graphID]->distanceBV(e.from, e.to, e.var, e.bvID);
+			graphs[e.graphID]->distanceBV(e.from, e.to, e.var, e.bvID,e.strict);
 
 		}
 

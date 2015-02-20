@@ -110,7 +110,7 @@ public:
 		Lit l;
 		int u;
 		BitVector<Weight> bv;
-
+		bool strictComparison;
 	};
 	vec<WeightedDistBVLit> weighted_dist_bv_lits;
 
@@ -236,8 +236,8 @@ public:
 	bool propagate(vec<Lit> & conflict);
 	void buildUnweightedDistanceLEQReason(int node, vec<Lit> & conflict);
 	void buildUnweightedDistanceGTReason(int node, vec<Lit> & conflict);
-	void buildDistanceLEQReason(int to, Weight & min_distance, vec<Lit> & conflict);
-	void buildDistanceGTReason(int to, Weight & min_distance, vec<Lit> & conflict);
+	void buildDistanceLEQReason(int to, Weight & min_distance, vec<Lit> & conflict, bool strictComparison=false);
+	void buildDistanceGTReason(int to, Weight & min_distance, vec<Lit> & conflict, bool strictComparison=true);
 
 	void buildReason(Lit p, vec<Lit> & reason, CRef marker);
 	bool checkSatisfied();
@@ -245,7 +245,7 @@ public:
 	void updateShortestPaths(bool unweighted);
 	void addUnweightedShortestPathLit(int from, int to, Var reach_var, int within_steps = -1);
 	void addWeightedShortestPathLit(int from, int to, Var reach_var, Weight within_distance);
-	void addWeightedShortestPathBVLit(int from, int to, Var reach_var, const BitVector<Weight> & bv);
+	void addWeightedShortestPathBVLit(int from, int to, Var reach_var, const BitVector<Weight> & bv, bool strictComparison);
 
 	DistanceDetector(int _detectorID, GraphTheorySolver<Weight> * _outer,
 			DynamicGraph<Weight>  &_g, DynamicGraph<Weight>  &_antig, int _source, double seed = 1);//:Detector(_detectorID),outer(_outer),within(-1),source(_source),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL){}

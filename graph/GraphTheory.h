@@ -103,6 +103,7 @@ public:
 			int to;
 			int bvID;
 			Var var;
+			bool strict;
 		};
 		vec<DistanceConstraintBV> unimplemented_distance_constraints_bv;
 
@@ -2082,7 +2083,7 @@ public:
 		
 	}
 
-	void reachesWithinDistanceBV(int from, int to, Var reach_var, int bvID) {
+	void reachesWithinDistanceBV(int from, int to, Var reach_var, int bvID, bool strictComparison) {
 
 		assert(from < g_under.nodes());
 
@@ -2106,7 +2107,7 @@ public:
 		DistanceDetector<Weight> * d = (DistanceDetector<Weight>*) weighted_dist_info[from].detector;
 		assert(d);
 		BitVector<Weight> bv = comparator->getBV(bvID);
-		d->addWeightedShortestPathBVLit(from, to, reach_var,bv );
+		d->addWeightedShortestPathBVLit(from, to, reach_var,bv,strictComparison );
 
 	}
 
@@ -2160,7 +2161,7 @@ public:
 		unimplemented_distance_constraints.clear();
 
 		for(auto & d:unimplemented_distance_constraints_bv){
-			reachesWithinDistanceBV(d.from, d.to, d.var, d.bvID);
+			reachesWithinDistanceBV(d.from, d.to, d.var, d.bvID,d.strict);
 		}
 		unimplemented_distance_constraints_bv.clear();
 
@@ -2249,8 +2250,8 @@ public:
 		//we just store the constraints in this vector, then implement them later when 'implementConstraints' is called.
 	}
 
-	void distanceBV(int from, int to, Var reach_var, int bvID) {
-		unimplemented_distance_constraints_bv.push( { from, to, bvID, reach_var });
+	void distanceBV(int from, int to, Var reach_var, int bvID, bool strict) {
+		unimplemented_distance_constraints_bv.push( { from, to, bvID, reach_var, strict});
 		//to allow us to alter the solving algorithm based on the number and type of constraints, we aren't implementing them here directly any more - instead,
 		//we just store the constraints in this vector, then implement them later when 'implementConstraints' is called.
 	}
