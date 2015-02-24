@@ -28,6 +28,7 @@
 #include <vector>
 #include <cmath>
 #include <algorithm>
+#include <cstddef>
 #include <gmpxx.h>
 #include <iostream>
 

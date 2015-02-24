@@ -24,6 +24,7 @@
 #include "Reach.h"
 #include <limits>
 #include <vector>
+#include <cstddef>
 #include <gmpxx.h>
 
 namespace dgl {

@@ -529,6 +529,8 @@ public:
 	;
 
 	void buildReason(Lit p, vec<Lit> & reason) {
+		static int iter = 0;
+		++iter;
 		CRef marker = S->reason(var(toSolver(p)));
 		assert(marker != CRef_Undef);
 		int pos = CRef_Undef - marker;
@@ -590,7 +592,9 @@ public:
 		stats_reason_time += finish - start;
 		stats_num_reasons++;
 		//stats_reason_initial_time+=start-initial_start;
-		
+		if(reason.size()<2){
+			int a=1;
+		}
 	}
 
 

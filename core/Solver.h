@@ -261,6 +261,10 @@ public:
 	
 	//Lazily construct a reason for a literal propagated from a theory
 	CRef constructReason(Lit p) {
+		static int iterp =0;
+		if(++iterp==39){
+			int a=1;
+		}
 		CRef cr = reason(var(p));
 		assert(isTheoryCause(cr));
 		assert(!ca.isClause(cr));
@@ -283,12 +287,12 @@ public:
 			assert(marks[var(theory_reason[i])]);
 		}
 #endif
-		
-		CRef reason = attachClauseSafe(theory_reason);
 		if (theory_reason.size() < 2) {
 			assert(false);
 			exit(5);
 		}
+		CRef reason = attachClauseSafe(theory_reason);
+
 		vardata[var(p)] = mkVarData(reason, level(var(p)));
 		return reason;
 	}
