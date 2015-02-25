@@ -270,6 +270,7 @@ public:
 		assert(isTheoryCause(cr));
 		assert(!ca.isClause(cr));
 		assert(cr != CRef_Undef);
+		int trail_pos = trail.size();
 		int t = getTheory(cr);
 		assert(hasTheory(p));
 		theory_reason.clear();
@@ -296,6 +297,14 @@ public:
 		CRef reason = attachClauseSafe(theory_reason);
 		assert(decisionLevel()==lev);//ensure no backtracking happened while adding this clause!
 		vardata[var(p)] = mkVarData(reason, level(var(p)));
+
+		//collect any newly enqueued vars - we need to analyze them
+
+		for(int i = trail_pos;i<trail.size();i++){
+			to_analyze.push(trail[i]);
+		}
+
+
 		return reason;
 	}
 	
@@ -542,6 +551,7 @@ protected:
 	vec<char> decision;         // Declares if a variable is eligible for selection in the decision heuristic.
 	vec<int> priority;		  // Static, lexicographic heuristic
 	vec<TheoryData> theory_vars;
+	vec<Lit> to_analyze;
 	vec<Lit> to_reenqueue;
 	vec<Lit> trail;            // Assignment stack; stores all assigments made in the order they were made.
 	vec<int> trail_lim;        // Separator indices for different decision levels in 'trail'.

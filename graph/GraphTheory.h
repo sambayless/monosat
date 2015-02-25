@@ -403,7 +403,9 @@ public:
 
 	void setBVTheory(BVTheorySolver<Weight> * bv){
 		comparator = bv;
-		bv->addTheory(this);
+		if(bv){
+			bv->addTheory(this);
+		}
 	}
 
 	inline bool isEdgeVar(Var v) {

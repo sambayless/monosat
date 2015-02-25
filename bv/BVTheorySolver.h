@@ -687,6 +687,21 @@ public:
 	;
 
 	void updateApproximations(int bvID){
+		static int iter = 0;
+		++iter;
+		std::cout<< "bv update " << iter << " for " << bvID << ": ";
+#ifndef NDEBUG
+		for(int i = 0;i<vars.size();i++){
+			if(value(i)==l_True){
+				std::cout << "1";
+			}else if (value(i)==l_False){
+				std::cout << "0";
+			}else{
+				std::cout << "x";
+			}
+		}
+		std::cout<<"\n";
+#endif
 		vec<Lit> & bv = bitvectors[bvID];
 		under_approx[bvID]=0;
 		over_approx[bvID]=0;
@@ -829,7 +844,7 @@ public:
 			return true;
 		}
 		printf("bv prop %d\n",stats_propagations);
-		if(stats_propagations==157){
+		if(stats_propagations==81){
 			int a =1;
 		}
 		bool any_change = false;
@@ -848,7 +863,7 @@ public:
 
 			Weight & underApprox = under_approx[bvID];
 			Weight & overApprox = over_approx[bvID];
-			//std::cout<<"bv: " << bvID << " (" <<underApprox << ", " <<overApprox << " )\n";
+			std::cout<<"bv: " << bvID << " (" <<underApprox << ", " <<overApprox << " )\n";
 
 			vec<int> & compares_lt = comparisons_lt[bvID];
 			//update over approx lits
@@ -859,7 +874,9 @@ public:
 				if (overApprox<lt){
 					if(value(l)==l_True){
 						//do nothing
+						std::cout<<"nothing bv " << bvID << "< " << lt << "\n";
 					}else if (value(l)==l_False){
+						std::cout<<"conflict bv " << bvID << "< " << lt << "\n";
 						assert(value(l)==l_False);
 						assert(dbg_value(l)==l_False);
 						conflict.push(l);
@@ -867,6 +884,7 @@ public:
 						toSolver(conflict);
 						return false;
 					}else {
+						std::cout<<"propagate bv " << bvID << "< " << lt << "\n";
 						assert(value(l)==l_Undef);
 						enqueue(l, comparisonprop_marker);
 					}
@@ -883,14 +901,16 @@ public:
 				Lit l =  getComparison(comparisonID).l;
 				if (underApprox>=lt){
 					if(value(l)==l_True){
-
+						std::cout<<"conflict neg bv " << bvID << "< " << lt << "\n";
 						conflict.push(~l);
 						buildValueGEQReason(bvID,comparisonID,conflict);
 						toSolver(conflict);
 						return false;
 					}else if (value(l)==l_False){
 						//do nothing
+						std::cout<<"nothing neg bv " << bvID << "< " << lt << "\n";
 					}else {
+						std::cout<<"propagate neg bv " << bvID << "< " << lt << "\n";
 						assert(value(l)==l_Undef);
 						enqueue(~l, comparisonprop_marker);
 					}
@@ -908,10 +928,10 @@ public:
 				Lit l =  getComparison(comparisonID).l;
 				if (overApprox<=leq){
 					if(value(l)==l_True){
-						//std::cout<<"nothing bv " << bvID << "<= " << leq << "\n";
+						std::cout<<"nothing bv " << bvID << "<= " << leq << "\n";
 						//do nothing
 					}else if (value(l)==l_False){
-						//std::cout<<"conflict bv " << bvID << "<= " << leq << "\n";
+						std::cout<<"conflict bv " << bvID << "<= " << leq << "\n";
 						assert(value(l)==l_False);
 						assert(dbg_value(l)==l_False);
 						conflict.push(l);
@@ -919,7 +939,7 @@ public:
 						toSolver(conflict);
 						return false;
 					}else {
-						//std::cout<<"propagate bv " << bvID << "<= " << leq << "\n";
+						std::cout<<"propagate bv " << bvID << "<= " << leq << "\n";
 						assert(value(l)==l_Undef);
 						enqueue(l, comparisonprop_marker);
 					}
@@ -936,16 +956,16 @@ public:
 				Lit l =  getComparison(comparisonID).l;
 				if (underApprox>leq){
 					if(value(l)==l_True){
-						//std::cout<<"conflict neg bv " << bvID << "<= " << leq << "\n";
+						std::cout<<"conflict neg bv " << bvID << "<= " << leq << "\n";
 						conflict.push(~l);
 						buildValueGTReason(bvID,comparisonID,conflict);
 						toSolver(conflict);
 						return false;
 					}else if (value(l)==l_False){
 						//do nothing
-						//std::cout<<"nothing neg bv " << bvID << "<= " << leq << "\n";
+						std::cout<<"nothing neg bv " << bvID << "<= " << leq << "\n";
 					}else {
-						//std::cout<<"propagate neg bv " << bvID << "<= " << leq << "\n";
+						std::cout<<"propagate neg bv " << bvID << "<= " << leq << "\n";
 						assert(value(l)==l_Undef);
 						enqueue(~l, comparisonprop_marker);
 					}
@@ -963,13 +983,15 @@ public:
 				Lit l =  getComparison(comparisonID).l;
 				if (overApprox<=gt){
 					if(value(l)==l_True){
+						std::cout<<"conflict neg bv " << bvID << "> " << gt << "\n";
 						conflict.push(~l);
 						buildValueLEQReason(bvID,comparisonID,conflict);
 						toSolver(conflict);
 						return false;
 					}else if (value(l)==l_False){
-
+						std::cout<<"nothing neg bv " << bvID << "> " << gt << "\n";
 					}else {
+						std::cout<<"propagate neg bv " << bvID << "> " << gt << "\n";
 						assert(value(l)==l_Undef);
 						enqueue(~l, comparisonprop_marker);
 					}
@@ -986,13 +1008,15 @@ public:
 				Lit l =  getComparison(comparisonID).l;
 				if (underApprox>gt){
 					if(value(l)==l_True){
-
+						std::cout<<"nothing bv " << bvID << "> " << gt << "\n";
 					}else if (value(l)==l_False){
+						std::cout<<"conflict bv " << bvID << "> " << gt << "\n";
 						conflict.push(l);
 						buildValueGTReason(bvID,comparisonID,conflict);
 						toSolver(conflict);
 						return false;
 					}else {
+						std::cout<<"propagate bv " << bvID << "> " << gt << "\n";
 						assert(value(l)==l_Undef);
 						enqueue(l, comparisonprop_marker);
 					}
@@ -1010,13 +1034,15 @@ public:
 				Lit l =  getComparison(comparisonID).l;
 				if (overApprox<geq){
 					if(value(l)==l_True){
+						std::cout<<"conflict neg bv " << bvID << ">= " << geq << "\n";
 						conflict.push(~l);
 						buildValueLTReason(bvID,comparisonID,conflict);
 						toSolver(conflict);
 						return false;
 					}else if (value(l)==l_False){
-
+						std::cout<<"nothing neg bv " << bvID << ">= " << geq << "\n";
 					}else {
+						std::cout<<"propagate neg bv " << bvID << ">= " << geq << "\n";
 						assert(value(l)==l_Undef);
 						enqueue(~l, comparisonprop_marker);
 					}
@@ -1033,13 +1059,15 @@ public:
 				Lit l =  getComparison(comparisonID).l;
 				if (underApprox>=geq){
 					if(value(l)==l_True){
-
+						std::cout<<"nothing bv " << bvID << ">= " << geq << "\n";
 					}else if (value(l)==l_False){
+						std::cout<<"conflict bv " << bvID << ">= " << geq << "\n";
 						conflict.push(l);
 						buildValueGEQReason(bvID,comparisonID,conflict);
 						toSolver(conflict);
 						return false;
 					}else {
+						std::cout<<"propagate bv " << bvID << ">= " << geq << "\n";
 						assert(value(l)==l_Undef);
 						enqueue(l, comparisonprop_marker);
 					}
@@ -1067,7 +1095,7 @@ public:
 	};
 
 	void buildValueLTReason(int bvID, int comparisonID, vec<Lit> & conflict){
-
+		printf("lt reason %d %d\n",bvID, comparisonID);
 		Weight & lt = getComparison(comparisonID).w;
 		Lit l =  getComparison(comparisonID).l;
 
@@ -1109,7 +1137,7 @@ public:
 				Lit bl = bv[i];
 				if(value(bl)==l_False ){
 					Weight bit = 1<<i;
-					if(over+bit<=lt&& level(var(bl))>0){
+					if(over+bit<lt&& level(var(bl))>0){
 						//then we can skip this bit, because we would still have had a conflict even if it was assigned true.
 						over+=bit;
 					}else{
@@ -1188,6 +1216,7 @@ public:
 	}
 
 	void buildValueGEQReason(int bvID, int comparisonID, vec<Lit> & conflict){
+		printf("geq reason %d %d\n",bvID, comparisonID);
 		Weight & lt = getComparison(comparisonID).w;
 		Lit l =  getComparison(comparisonID).l;
 
@@ -1304,7 +1333,7 @@ public:
 	}
 
 	void buildValueLEQReason(int bvID, int comparisonID, vec<Lit> & conflict){
-
+			printf("leq reason %d %d\n",bvID, comparisonID);
 			Weight & lt = getComparison(comparisonID).w;
 			Lit l =  getComparison(comparisonID).l;
 
@@ -1425,6 +1454,7 @@ public:
 		}
 
 		void buildValueGTReason(int bvID, int comparisonID, vec<Lit> & conflict){
+			printf("gt reason %d %d\n",bvID, comparisonID);
 			Weight & lt = getComparison(comparisonID).w;
 			Lit l =  getComparison(comparisonID).l;
 
@@ -1470,7 +1500,7 @@ public:
 					lbool dbgval = dbg_value(bl);
 					if(value(bl)==l_True){
 						Weight bit = 1<<i;
-						if(under-bit>=lt  && level(var(bl))>0){
+						if(under-bit>lt  && level(var(bl))>0){
 							//then we can skip this bit, because we would still have had a conflict even if it was assigned false.
 							under-=bit;
 						}else{

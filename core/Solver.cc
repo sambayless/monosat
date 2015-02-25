@@ -396,6 +396,7 @@ void Solver::analyze(CRef confl, vec<Lit>& out_learnt, int& out_btlevel) {
 	assert(confl != CRef_Undef);
 	// Generate conflict clause:
 	//
+	to_analyze.clear();
 	out_learnt.push();      // (leave room for the asserting literal)
 	int index = trail.size() - 1;
 	
@@ -423,10 +424,11 @@ void Solver::analyze(CRef confl, vec<Lit>& out_learnt, int& out_btlevel) {
 			out_learnt.push(~p);
 		}
 		// Select next clause to look at:
-		while (!seen[var(trail[index--])])
+		while (!seen[var(trail[index--])] || level(var(trail[index+1]))<decisionLevel()  )
 			;
 		assert(index >= -1);
 		p = trail[index + 1];
+		assert(level(var(p))==decisionLevel());
 		confl = reason(var(p));
 		if (isTheoryCause(confl)) {
 			//lazily construct the reason for this theory propagation now that we need it
@@ -441,6 +443,7 @@ void Solver::analyze(CRef confl, vec<Lit>& out_learnt, int& out_btlevel) {
 #ifndef NDEBUG
 	for (Lit p : out_learnt)
 		assert(value(p)==l_False);
+
 #endif
 	// Simplify conflict clause:
 	//
@@ -500,6 +503,9 @@ void Solver::analyze(CRef confl, vec<Lit>& out_learnt, int& out_btlevel) {
 
 	for (int j = 0; j < analyze_toclear.size(); j++)
 		seen[var(analyze_toclear[j])] = 0;    // ('seen[]' is now cleared)
+#ifndef NDEBUG
+	assert(!seen.contains(1));
+#endif
 }
 
 // Check if 'p' can be removed. 'abstract_levels' is used to abort early if the algorithm is
@@ -895,7 +901,7 @@ CRef Solver::propagate(bool propagate_theories) {
 			initialPropagate = false;
 		}
 		static int iter = 0;
-		if (++iter == 704) {
+		if (++iter == 49) {
 
 			int a = 1;
 		}

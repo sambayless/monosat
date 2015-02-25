@@ -1097,9 +1097,11 @@ bool DistanceDetector<Weight>::propagate(vec<Lit> & conflict) {
 				outer->enqueue(l, weighted_underprop_marker);
 			} else if (outer->value(l) == l_False) {
 				//conflict
+
 				conflict.push(l);
 				//conflict.push(~outer->getBV_LEQ(bv.getID(),min_dist_under));
 				if(strictComparison){
+					std::cout<<"distance conflict " << under_dist << " < " << bv.getID() << "\n";
 					Lit d = outer->getBV_LEQ(bv.getID(),under_dist);
 					conflict.push(d);
 					lbool val = outer->value(d);
@@ -1107,6 +1109,7 @@ bool DistanceDetector<Weight>::propagate(vec<Lit> & conflict) {
 					assert(dbgval!=l_True);
 					buildDistanceLEQReason(to, min_dist_under, conflict,true);
 				}else{
+					std::cout<<"distance conflict " << under_dist << " <= " << bv.getID() << "\n";
 					conflict.push(outer->getBV_LT(bv.getID(),under_dist));
 					lbool val = outer->value(outer->getBV_LT(bv.getID(),under_dist));
 					lbool dbgval = outer->dbg_value(outer->getBV_LT(bv.getID(),under_dist));
@@ -1127,6 +1130,7 @@ bool DistanceDetector<Weight>::propagate(vec<Lit> & conflict) {
 				//conflict
 				conflict.push(~l);
 				if(strictComparison){
+					std::cout<<"distance conflict " << over_dist << " > " << bv.getID() << "\n";
 					//conflict.push(outer->getBV_LT(bv.getID(),min_dist_over));
 					if(overapprox_weighted_distance_detector->connected(to)){
 						conflict.push(outer->getBV_GT(bv.getID(),over_dist));
@@ -1136,6 +1140,7 @@ bool DistanceDetector<Weight>::propagate(vec<Lit> & conflict) {
 					}
 					buildDistanceGTReason(to, min_dist_over, conflict,false);
 				}else{
+					std::cout<<"distance conflict " << over_dist << " >= " << bv.getID() << "\n";
 					//conflict.push(outer->getBV_LT(bv.getID(),min_dist_over));
 					if(overapprox_weighted_distance_detector->connected(to)){
 						conflict.push(outer->getBV_GEQ(bv.getID(),over_dist));
