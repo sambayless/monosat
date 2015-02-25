@@ -470,6 +470,7 @@ void Solver::analyze(CRef confl, vec<Lit>& out_learnt, int& out_btlevel) {
 						CRef cr = reason(var(q));
 						if (isTheoryCause(cr)) {
 							//lazily construct the reason for this theory propagation now that we need it
+							//one potential issue with doing this is that now the theory solver might be creating reasons not in the order that the variables were allocated...
 							cr = constructReason(~q);
 							//for some theories, we may discover while constructing the cause that p is at a lower level than we thought.
 							if(level(var(q))<decisionLevel()){
