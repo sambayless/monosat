@@ -265,6 +265,7 @@ public:
 		if(++iterp==39){
 			int a=1;
 		}
+		assert(value(p)==l_True);
 		CRef cr = reason(var(p));
 		assert(isTheoryCause(cr));
 		assert(!ca.isClause(cr));
@@ -272,7 +273,7 @@ public:
 		int t = getTheory(cr);
 		assert(hasTheory(p));
 		theory_reason.clear();
-		theories[t]->buildReason(getTheoryLit(p), theory_reason);
+		theories[t]->buildReason(getTheoryLit(p), theory_reason, cr);
 		assert(theory_reason[0] == p);
 		assert(value(p)==l_True);
 #ifdef DEBUG_SOLVER
@@ -291,8 +292,9 @@ public:
 			assert(false);
 			exit(5);
 		}
+		int lev = decisionLevel();
 		CRef reason = attachClauseSafe(theory_reason);
-
+		assert(decisionLevel()==lev);//ensure no backtracking happened while adding this clause!
 		vardata[var(p)] = mkVarData(reason, level(var(p)));
 		return reason;
 	}
@@ -481,6 +483,19 @@ protected:
 		}
 	};
 
+	struct LazyLevelLt{
+
+		Solver * outer;
+		bool operator ()(int x, int y) const {
+			Var vx = toInt(toLit(x));
+			Var vy = toInt(toLit(y));
+			return outer->level(vx)>outer->level(vy);
+		}
+		LazyLevelLt(Solver * outer) :
+			outer(outer){
+		}
+	};
+
 	struct VarOrderLt {
 		const vec<double>& activity;
 		const vec<int> & priority;
@@ -527,6 +542,7 @@ protected:
 	vec<char> decision;         // Declares if a variable is eligible for selection in the decision heuristic.
 	vec<int> priority;		  // Static, lexicographic heuristic
 	vec<TheoryData> theory_vars;
+	vec<Lit> to_reenqueue;
 	vec<Lit> trail;            // Assignment stack; stores all assigments made in the order they were made.
 	vec<int> trail_lim;        // Separator indices for different decision levels in 'trail'.
 	vec<VarData> vardata;          // Stores reason and level for each variable.
@@ -535,6 +551,7 @@ protected:
 	int64_t simpDB_props;   // Remaining number of propagations that must be made before next execution of 'simplify()'.
 	vec<Lit> assumptions;      // Current set of assumptions provided to solve by the user.
 	Heap<VarOrderLt> order_heap;       // A priority queue of variables ordered with respect to the variable activity.
+	//Heap<LazyLevelLt> lazy_heap;       // A priority queue of variables to be propagated at earlier levels, lazily.
 	double progress_estimate;       // Set by 'search()'.
 	bool remove_satisfied; // Indicates whether possibly inefficient linear scan for satisfied clauses should be performed in 'simplify'.
 	
@@ -568,7 +585,7 @@ public:
 	void newDecisionLevel();                                                      // Begins a new decision level.
 	void uncheckedEnqueue(Lit p, CRef from = CRef_Undef);   // Enqueue a literal. Assumes value of literal is undefined.
 	bool enqueue(Lit p, CRef from = CRef_Undef);       // Test if fact 'p' contradicts current state, enqueue otherwise.
-			
+	void enqueueLazy(Lit p,int level, CRef from = CRef_Undef);
 protected:
 	CRef propagate(bool propagate_theories = true);    // Perform unit propagation. Returns possibly conflicting clause.
 	void enqueueTheory(Lit l);
@@ -578,15 +595,8 @@ protected:
 	void buildReason(Lit p, vec<Lit> & reason);
 	void backtrackUntil(int level);
 	//Add a clause to the clause database safely, even if the solver is in the middle of search, propagation, or clause analysis.
-	//(In reality, the clause will be added to the database sometime later)
-	void addClauseSafely(vec<Lit> & ps) {
-		if(decisionLevel()==0){
-			addClause(ps);
-		}else{
-			clauses_to_add.push();
-			ps.copyTo(clauses_to_add.last());
-		}
-	}
+	//(In reality, the clause may be added to the database sometime later)
+	void addClauseSafely(vec<Lit> & ps);
 public:
 	void cancelUntil(int level);                                             // Backtrack until a certain level.
 	inline void needsPropagation(int theoryID){

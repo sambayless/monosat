@@ -401,6 +401,23 @@ public:
 	inline lbool dbg_value(Lit l) {
 		return S->value(toSolver(l));
 	}
+
+	void enqueueEager(Lit l, CRef reason_marker){
+		//if newly created lits are enqueued, then they must provide a reason eagerly (so that complex propagation dependencies can be handled correctly by the solver, instead of having to be sorted out in the theories).
+		static int iter = 0;
+		++iter;
+		vec<Lit>  reason;
+		buildReason(l,reason,reason_marker);
+
+		Lit sl = toSolver(l);
+
+		S->addClauseSafely(reason);
+
+		//the lit must have been propagated by this clause (or, alternatively, the solver might now have a conflict).
+		if(S->value(sl)==l_True)
+			enqueueTheory(l);
+	}
+
 	inline bool enqueue(Lit l, CRef reason) {
 		assert(assigns[var(l)]==l_Undef);
 		
@@ -412,9 +429,6 @@ public:
 			return false;
 		}
 	}
-
-
-
 
 	void backtrackUntil(int level) {
 		static int it = 0;
@@ -429,7 +443,7 @@ public:
 				Assignment & e = trail[i];
 				assert(assigns[e.var]!=l_Undef);
 				if (e.isComparator) {
-					assert(dbg_value(e.var)==l_Undef);
+
 
 					if (e.assign) {
 						//g_unders[bvID]->disableTransition(edgeID, input,output);
@@ -477,7 +491,9 @@ public:
 	}
 	
 	void backtrackUntil(Lit p) {
-		//need to remove and add edges in the two graphs accordingly.
+		assert(value(p)!=l_False);
+		if(value(p)!=l_True)
+			return;
 		assert(value(p)==l_True);
 		int i = trail.size() - 1;
 		for (; i >= 0; i--) {
@@ -528,17 +544,20 @@ public:
 	}
 	;
 
-	void buildReason(Lit p, vec<Lit> & reason) {
+	void buildReason(Lit p, vec<Lit> & reason,CRef marker) {
 		static int iter = 0;
 		++iter;
-		CRef marker = S->reason(var(toSolver(p)));
+		assert(value(p)!=l_False);
+
 		assert(marker != CRef_Undef);
 		int pos = CRef_Undef - marker;
 		//int d = marker_map[pos];
 		//double initial_start = rtime(1);
 		double start = rtime(1);
+
+		//if the reason is being constructed eagerly, then p won't be assigned yet, and so wont be on the trail, so we skip this.
 		backtrackUntil(p);
-		
+		assert(value(p)!=l_False);
 		if (marker == comparisonprop_marker) {
 			reason.push(p);
 			Var v = var(p);
@@ -618,9 +637,6 @@ public:
 		Var v = var(l);
 		
 		int lev = level(v);
-		
-		assert(decisionLevel() <= lev);
-		
 		while (lev > trail_lim.size()) {
 			newDecisionLevel();
 		}
@@ -1750,7 +1766,7 @@ public:
 			altered_bvs.push(bvID);
 		}
 		//set the value of this immediately, if needed
-	/*	updateApproximations(bvID);
+		updateApproximations(bvID);
 		Weight & underApprox = under_approx[bvID];
 		Weight & overApprox = over_approx[bvID];
 
@@ -1762,7 +1778,8 @@ public:
 				assert(false);//this should not happen!
 			}else {
 				assert(value(l)==l_Undef);
-				enqueue(l, comparisonprop_marker);
+
+				enqueueEager(l, comparisonprop_marker);
 			}
 		}
 
@@ -1773,9 +1790,9 @@ public:
 				//do nothing
 			}else {
 				assert(value(l)==l_Undef);
-				enqueue(~l, comparisonprop_marker);
+				enqueueEager(~l, comparisonprop_marker);
 			}
-		}*/
+		}
 
 		return l;
 	}
@@ -1785,7 +1802,7 @@ public:
 				exit(1);
 			}
 			int comparisonID = comparisons.size();
-			if(comparisonID==41){
+			if(comparisonID==7){
 				int a=1;
 			}
 			if((l = getComparisonLEQ(bvID, leq))!=lit_Undef){
@@ -1817,7 +1834,7 @@ public:
 				altered_bvs.push(bvID);
 			}
 			//set the value of this immediately, if needed
-	/*		updateApproximations(bvID);
+			updateApproximations(bvID);
 			Weight & underApprox = under_approx[bvID];
 			Weight & overApprox = over_approx[bvID];
 
@@ -1829,7 +1846,7 @@ public:
 					assert(false);//this should not happen!
 				}else {
 					assert(value(l)==l_Undef);
-					enqueue(l, comparisonprop_marker);
+					enqueueEager(l, comparisonprop_marker);
 				}
 			}
 
@@ -1840,9 +1857,9 @@ public:
 					//do nothing
 				}else {
 					assert(value(l)==l_Undef);
-					enqueue(~l, comparisonprop_marker);
+					enqueueEager(~l, comparisonprop_marker);
 				}
-			}*/
+			}
 
 			return l;
 		}
@@ -1879,7 +1896,7 @@ public:
 			altered_bvs.push(bvID);
 		}
 
-/*
+
 		updateApproximations(bvID);
 		Weight & underApprox = under_approx[bvID];
 		Weight & overApprox = over_approx[bvID];
@@ -1892,7 +1909,7 @@ public:
 
 			}else {
 				assert(value(l)==l_Undef);
-				enqueue(~l, comparisonprop_marker);
+				enqueueEager(~l, comparisonprop_marker);
 			}
 		}
 
@@ -1903,10 +1920,10 @@ public:
 				assert(false);
 			}else {
 				assert(value(l)==l_Undef);
-				enqueue(l, comparisonprop_marker);
+				enqueueEager(l, comparisonprop_marker);
 			}
 		}
-*/
+
 
 
 		return l;
@@ -1945,7 +1962,7 @@ public:
 				altered_bvs.push(bvID);
 			}
 
-	/*		updateApproximations(bvID);
+			updateApproximations(bvID);
 			Weight & underApprox = under_approx[bvID];
 			Weight & overApprox = over_approx[bvID];
 
@@ -1957,7 +1974,7 @@ public:
 
 				}else {
 					assert(value(l)==l_Undef);
-					enqueue(~l, comparisonprop_marker);
+					enqueueEager(~l, comparisonprop_marker);
 				}
 			}
 
@@ -1968,9 +1985,9 @@ public:
 					assert(false);
 				}else {
 					assert(value(l)==l_Undef);
-					enqueue(l, comparisonprop_marker);
+					enqueueEager(l, comparisonprop_marker);
 				}
-			}*/
+			}
 
 
 			return l;

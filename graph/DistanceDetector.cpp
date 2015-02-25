@@ -1076,8 +1076,8 @@ bool DistanceDetector<Weight>::propagate(vec<Lit> & conflict) {
 		}
 		
 	}
-	g_under.drawFull(true);
-	g_over.drawFull(true);
+	//g_under.drawFull(true);
+	//g_over.drawFull(true);
 	for (auto & dist_lit : weighted_dist_bv_lits) {
 		Lit l = dist_lit.l;
 		int to = dist_lit.u;
@@ -1100,9 +1100,10 @@ bool DistanceDetector<Weight>::propagate(vec<Lit> & conflict) {
 				conflict.push(l);
 				//conflict.push(~outer->getBV_LEQ(bv.getID(),min_dist_under));
 				if(strictComparison){
-					conflict.push(outer->getBV_LEQ(bv.getID(),under_dist));
-					lbool val = outer->value(outer->getBV_LT(bv.getID(),under_dist));
-					lbool dbgval = outer->dbg_value(outer->getBV_LT(bv.getID(),under_dist));
+					Lit d = outer->getBV_LEQ(bv.getID(),under_dist);
+					conflict.push(d);
+					lbool val = outer->value(d);
+					lbool dbgval = outer->dbg_value(d);
 					assert(dbgval!=l_True);
 					buildDistanceLEQReason(to, min_dist_under, conflict,true);
 				}else{
@@ -1127,17 +1128,21 @@ bool DistanceDetector<Weight>::propagate(vec<Lit> & conflict) {
 				conflict.push(~l);
 				if(strictComparison){
 					//conflict.push(outer->getBV_LT(bv.getID(),min_dist_over));
-					conflict.push(outer->getBV_GT(bv.getID(),over_dist));
-					lbool val = outer->value(outer->getBV_GEQ(bv.getID(),over_dist));
-					lbool dbgval = outer->dbg_value(outer->getBV_GEQ(bv.getID(),over_dist));
-					assert(dbgval!=l_True);
+					if(overapprox_weighted_distance_detector->connected(to)){
+						conflict.push(outer->getBV_GT(bv.getID(),over_dist));
+						lbool val = outer->value(outer->getBV_GEQ(bv.getID(),over_dist));
+						lbool dbgval = outer->dbg_value(outer->getBV_GEQ(bv.getID(),over_dist));
+						assert(dbgval!=l_True);
+					}
 					buildDistanceGTReason(to, min_dist_over, conflict,false);
 				}else{
 					//conflict.push(outer->getBV_LT(bv.getID(),min_dist_over));
-					conflict.push(outer->getBV_GEQ(bv.getID(),over_dist));
-					lbool val = outer->value(outer->getBV_GEQ(bv.getID(),over_dist));
-					lbool dbgval = outer->dbg_value(outer->getBV_GEQ(bv.getID(),over_dist));
-					assert(dbgval!=l_True);
+					if(overapprox_weighted_distance_detector->connected(to)){
+						conflict.push(outer->getBV_GEQ(bv.getID(),over_dist));
+						lbool val = outer->value(outer->getBV_GEQ(bv.getID(),over_dist));
+						lbool dbgval = outer->dbg_value(outer->getBV_GEQ(bv.getID(),over_dist));
+						assert(dbgval!=l_True);
+					}
 					buildDistanceGTReason(to, min_dist_over, conflict,true);
 				}
 				return false;

@@ -48,7 +48,14 @@ public:
 		return lit_Undef;
 	}
 	//Lazily construct the reason clause explaining this propagation
-	virtual void buildReason(Lit p, vec<Lit> & reason)=0;
+	virtual void buildReason(Lit p, vec<Lit> & reason, CRef reason_marker){
+		return buildReason(p,reason);
+	}
+protected:
+	virtual void buildReason(Lit p, vec<Lit> & reason){
+
+	}
+public:
 	//Informs the theory solver about whether this literal (with this polarity!) ever occurs in its parent solver
 	virtual void setLiteralOccurs(Lit l, bool occurs) {
 		

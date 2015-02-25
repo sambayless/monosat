@@ -972,8 +972,8 @@ public:
 	}
 	;
 
-	void buildReason(Lit p, vec<Lit> & reason) {
-		CRef marker = S->reason(var(toSolver(p)));
+	void buildReason(Lit p, vec<Lit> & reason,CRef marker) {
+		//CRef marker = S->reason(var(toSolver(p)));
 		assert(marker != CRef_Undef);
 		int pos = CRef_Undef - marker;
 		if(marker_map[pos].forTheory){
@@ -981,7 +981,7 @@ public:
 			//double initial_start = rtime(1);
 			double start = rtime(1);
 			assert(d < detectors.size());
-			theories[d]->buildReason(p, reason);
+			theories[d]->buildReason(p, reason,marker);
 			toSolver(reason);
 			double finish = rtime(1);
 			stats_reason_time += finish - start;
