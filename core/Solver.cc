@@ -141,8 +141,8 @@ bool Solver::addClause_(vec<Lit>& ps) {
 	return true;
 }
 
-CRef Solver::attachClauseSafe(vec<Lit> & ps) {
-	
+CRef Solver::attachReasonClause(Lit r,vec<Lit> & ps) {
+	assert(value(r)==l_True);
 	//sort(ps);
 	Lit p;
 	int i, j;
@@ -156,20 +156,72 @@ CRef Solver::attachClauseSafe(vec<Lit> & ps) {
 	CRef confl_out = CRef_Undef;
 	if (ps.size() == 0) {
 		ok = false;
-		cancelUntil(0);
+		//cancelUntil(0);
 		return CRef_Undef;
 	} else if (ps.size() == 1) {
-		cancelUntil(0);
+		//cancelUntil(0);
 		assert(var(ps[0]) < nVars());
 
-		if (!enqueue(ps[0])) {
-			ok = false;
-			
-		}
+		enqueueLazy(ps[0],0);
+
 		return CRef_Undef;
 	} else {
+
+		int nfalse = 0;
+		int max_lev = 0;
+		bool satisfied = false;
+		int notFalsePos1 = 0;
+		int notFalsePos2 = -1;
+		for (int j = 1; j < ps.size(); j++) {
+			assert(var(ps[j]) < nVars());
+			//assert(value(ps[j])==l_False);
+			if (value(ps[j]) == l_False) {
+				nfalse++;
+			} else {
+
+				if (value(ps[j]) == l_True)
+					satisfied = true;
+				if (notFalsePos1 < 0)
+					notFalsePos1 = j;
+				else if (notFalsePos2 < 0) {
+					notFalsePos2 = j;
+				}
+			}
+			if (value(ps[j]) != l_Undef) {
+				int l = level(var(ps[j]));
+				if (l > max_lev) {
+					max_lev = l;
+				}
+			}
+		}
+
+
+		assert(notFalsePos1 >= 0);
+		if (notFalsePos1 >= 0 && notFalsePos2 >= 0) {
+			assert(notFalsePos1 != notFalsePos2);
+			if (notFalsePos1 == 1) {
+				std::swap(ps[0], ps[notFalsePos2]);
+			} else {
+				std::swap(ps[0], ps[notFalsePos1]);
+				std::swap(ps[1], ps[notFalsePos2]);
+			}
+		} else {
+			std::swap(ps[0], ps[notFalsePos1]);
+		}
+		assert(value(ps[0])!=l_False);
+		if (notFalsePos2 >= 0) {
+			assert(value(ps[1])!=l_False);
+		}
+
+
+		CRef cr = ca.alloc(ps);
+		ca[cr].setFromTheory(true);
+		clauses.push(cr);
+		attachClause(cr);
+		enqueueLazy(ps[0],max_lev,cr);
+
 		//find the highest level in the conflict (should be the current decision level, but we won't require that)
-		if (ps.size() > opt_temporary_theory_reasons) {
+	/*	if (ps.size() > opt_temporary_theory_reasons) {
 			if (tmp_clause == CRef_Undef) {
 				tmp_clause = ca.alloc(ps, false);
 				tmp_clause_sz = ps.size();
@@ -213,8 +265,8 @@ CRef Solver::attachClauseSafe(vec<Lit> & ps) {
 			attachClause(cr);
 			
 			confl_out = cr;
-		}
-		return confl_out;
+		}*/
+		return cr;
 	}
 }
 
@@ -414,26 +466,67 @@ void Solver::analyze(CRef confl, vec<Lit>& out_learnt, int& out_btlevel) {
 				if (!seen[var(q)] && level(var(q)) > 0) {
 					varBumpActivity(var(q));
 					seen[var(q)] = 1;
-					if (level(var(q)) >= decisionLevel())
-						pathC++;
-					else
+					if (level(var(q)) >= decisionLevel()){
+						CRef cr = reason(var(q));
+						if (isTheoryCause(cr)) {
+							//lazily construct the reason for this theory propagation now that we need it
+							cr = constructReason(~q);
+							//for some theories, we may discover while constructing the cause that p is at a lower level than we thought.
+							if(level(var(q))<decisionLevel()){
+								out_learnt.push(q);
+							}else{
+								pathC++;
+							}
+						}else{
+							pathC++;
+						}
+					}else
 						out_learnt.push(q);
 				}
 			}
 		} else {
 			out_learnt.push(~p);
 		}
-		// Select next clause to look at:
-		while (!seen[var(trail[index--])] || level(var(trail[index+1]))<decisionLevel()  )
-			;
+		//bool searching=true;
+		//while(searching){
+		//	searching=false;
+			// Select next clause to look at:
+		while (!seen[var(trail[index--])] || level(var(trail[index+1]))<decisionLevel());
 		assert(index >= -1);
 		p = trail[index + 1];
-		assert(level(var(p))==decisionLevel());
 		confl = reason(var(p));
-		if (isTheoryCause(confl)) {
-			//lazily construct the reason for this theory propagation now that we need it
-			confl = constructReason(p);
-		}
+		assert(!isTheoryCause(confl));
+			/*
+			int was_at_level = level(var(p));
+			if (isTheoryCause(confl)) {
+				//lazily construct the reason for this theory propagation now that we need it
+				confl = constructReason(p);
+				//for some theories, we may discover while constructing the cause that p is at a lower level than we thought.
+			}
+			if(level(var(p))<decisionLevel()){
+				if(was_at_level){
+					//the level of this variable changed while deriving a reason for it.
+					pathC--;
+					if(pathC>0){
+						out_learnt.push(~p);
+					}else{
+						//we may have missed the 1-UIP because of the level re-arrangement.
+						//start clause learning from scratch?
+						seen[var(p)] = 0;
+						for(Lit l:out_learnt){
+							assert(seen[var(l)]);
+							seen[var(l)]=0;
+						}
+						out_learnt.clear();
+						analyze(confl,out_learnt,out_btlevel);
+						return;
+					}
+				}
+				seen[var(p)] = 0;
+				searching=true;
+			}*/
+		//}
+		assert(level(var(p))==decisionLevel());
 		seen[var(p)] = 0;
 		pathC--;
 		
@@ -589,12 +682,15 @@ void Solver::analyzeFinal(Lit p, vec<Lit>& out_conflict) {
 	seen[var(p)] = 0;
 }
 
-void Solver::enqueueLazy(Lit p, int level, CRef from){
-	assert(value(p) == l_Undef);
-	if(level<decisionLevel()){
+void Solver::enqueueLazy(Lit p, int lev, CRef from){
+	assert(value(p)!=l_False);
+	if(value(p)==l_True && lev < level(var(p))){
+		//then the lit was already implied, but needs to be (lazily) moved to an earlier level.
+		vardata[var(p)] = mkVarData(from, lev);
+	}else if(value(p)==l_Undef && lev<decisionLevel()){
 		assert(value(p) == l_Undef);
 		assigns[var(p)] = lbool(!sign(p));
-		vardata[var(p)] = mkVarData(from, level);
+		vardata[var(p)] = mkVarData(from, lev);
 		trail.push_(p);
 		//lazy_heap.insert(toInt(p));
 		if (hasTheory(p)) {
@@ -602,9 +698,10 @@ void Solver::enqueueLazy(Lit p, int level, CRef from){
 			needsPropagation(theoryID);
 			theories[theoryID]->enqueueTheory(getTheoryLit(p));
 		}
-	}else{
-		if(value(p)==l_Undef)
+	}else if(value(p)==l_Undef){
 			uncheckedEnqueue(p, from);
+	}else{
+		//do nothing
 	}
 }
 
@@ -1141,7 +1238,8 @@ void Solver::addClauseSafely(vec<Lit> & ps) {
 		//clauses_to_add.push();
 		//ps.copyTo(clauses_to_add.last());
 		//
-		//check if this clause should emply a literal right now
+		//check if this clause should imply a literal right now.
+		//and IF that literal is already implied, then we may still need to adjust the level the literal should be implied at.
 		int undef_count=0;
 		int false_count=0;
 		sort(ps);
@@ -1160,7 +1258,7 @@ void Solver::addClauseSafely(vec<Lit> & ps) {
 			}
 		}
 		ps.shrink(i - j);
-		if(false_count==ps.size()-1 && undef_count==1){
+		if(false_count==ps.size()-1){
 			//this clause is unit under the current assignment.
 			//although we _could_ wait until a restart to add this clause, in many cases this will lead to very poor solver behaviour.
 			//so we are going to propagate this clause now.
@@ -1169,7 +1267,6 @@ void Solver::addClauseSafely(vec<Lit> & ps) {
 				ok=false;
 				return;
 			}else if (ps.size()==1){
-				assert(! (value(ps[0])==l_False && level(var(ps[0]))==0));
 				enqueueLazy(ps[0],0,CRef_Undef);
 			}else{
 

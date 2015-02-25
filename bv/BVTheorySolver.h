@@ -403,8 +403,9 @@ public:
 	}
 
 	void enqueueEager(Lit l, CRef reason_marker){
+		enqueue(l,reason_marker);
 		//if newly created lits are enqueued, then they must provide a reason eagerly (so that complex propagation dependencies can be handled correctly by the solver, instead of having to be sorted out in the theories).
-		static int iter = 0;
+		/*static int iter = 0;
 		++iter;
 		vec<Lit>  reason;
 		buildReason(l,reason,reason_marker);
@@ -415,7 +416,7 @@ public:
 
 		//the lit must have been propagated by this clause (or, alternatively, the solver might now have a conflict).
 		if(S->value(sl)==l_True)
-			enqueueTheory(l);
+			enqueueTheory(l);*/
 	}
 
 	inline bool enqueue(Lit l, CRef reason) {
@@ -718,6 +719,7 @@ public:
 				over_approx[bvID]+=bit;
 			}
 		}
+
 		for(int lt:comparisons_lt[bvID]){
 			Comparison & c = comparisons[lt];
 			if(value( c.l)==l_True && over_approx[bvID]>=c.w){
@@ -726,6 +728,7 @@ public:
 				under_approx[bvID]=c.w;
 			}
 		}
+
 		for(int leq:comparisons_leq[bvID]){
 			Comparison & c = comparisons[leq];
 			if(value( c.l)==l_True && over_approx[bvID]>c.w){
@@ -734,6 +737,7 @@ public:
 				under_approx[bvID]=c.w+1;
 			}
 		}
+
 		for(int gt:comparisons_gt[bvID]){
 			Comparison & c = comparisons[gt];
 			if(value( c.l)==l_True && under_approx[bvID]<=c.w){
@@ -742,7 +746,9 @@ public:
 				over_approx[bvID]=c.w;
 			}
 		}
+
 		for(int geq:comparisons_geq[bvID]){
+
 			Comparison & c = comparisons[geq];
 			if(value( c.l)==l_True && under_approx[bvID]<c.w){
 				under_approx[bvID]=c.w;
@@ -750,6 +756,7 @@ public:
 				over_approx[bvID]=c.w-1;
 			}
 		}
+
 	}
 
 	Weight & getUnderApprox(int bvID){
@@ -1103,6 +1110,8 @@ public:
 		Weight  over_cur = over_approx[bvID];
 		assert(checkApproxUpToDate(bvID));
 		assert(over_cur<lt);
+
+
 		//the reason that the value is less than the weight 'lt' is that the _overapprox_ of the weight is less than lt.
 		/*for(int i =0;i<bv.size();i++){
 			Lit bl = bv[i];
@@ -1341,19 +1350,8 @@ public:
 			Weight  over_cur = over_approx[bvID];
 			assert(checkApproxUpToDate(bvID));
 			assert(over_cur<=lt);
-			//the reason that the value is less than the weight 'lt' is that the _overapprox_ of the weight is less than lt.
-			/*for(int i =0;i<bv.size();i++){
-				Lit bl = bv[i];
-				if(value(bl)==l_False && level(var(bl))>0){
-					Weight bit = 1<<i;
-					if(over+bit<=lt){
-						//then we can skip this bit, because we would still have had a conflict even if it was assigned true.
-						over+=bit;
-					}else{
-						conflict.push(bl);
-					}
-				}
-			}*/
+
+
 			Weight under =0;
 			Weight over=0;
 			for(int i = 0;i<bv.size();i++){
@@ -1776,7 +1774,7 @@ public:
 			l = mkLit(newVar(outerVar, bvID,comparisonID));
 		}
 		std::cout<<"New comparison " << comparisonID << ": bv"<< bvID << " < " << lt <<"\n";
-
+		updateApproximations(bvID);
 		comparisons.push({lt,l,bvID,true,true});
 		comparisons_lt[bvID].push(comparisonID);
 		//insert this value in order.
@@ -1796,7 +1794,7 @@ public:
 			altered_bvs.push(bvID);
 		}
 		//set the value of this immediately, if needed
-		updateApproximations(bvID);
+
 		Weight & underApprox = under_approx[bvID];
 		Weight & overApprox = over_approx[bvID];
 
@@ -1843,6 +1841,7 @@ public:
 			}else{
 				l = mkLit(newVar(outerVar, bvID,comparisonID));
 			}
+			updateApproximations(bvID);
 			std::cout<<"New comparison " << comparisonID << ": bv"<< bvID << " <= " << leq <<"\n";
 			//std::cout<<"constraint: bv " << bvID << "<= " << leq << "\n";
 			comparisons.push({leq,l,bvID,true,false});
@@ -1864,10 +1863,10 @@ public:
 				altered_bvs.push(bvID);
 			}
 			//set the value of this immediately, if needed
-			updateApproximations(bvID);
+
 			Weight & underApprox = under_approx[bvID];
 			Weight & overApprox = over_approx[bvID];
-
+			assert(under_approx[bvID]<=overApprox);
 
 			if (overApprox<=leq){
 				if(value(l)==l_True){
@@ -1906,7 +1905,7 @@ public:
 		}
 
 		std::cout<<"New comparison " << comparisonID << ": bv"<< bvID << " > " << gt <<"\n";
-
+		updateApproximations(bvID);
 		comparisons.push({gt,l,bvID,false,true});
 		comparisons_gt[bvID].push(comparisonID);
 		//insert this value in order.
@@ -1927,7 +1926,7 @@ public:
 		}
 
 
-		updateApproximations(bvID);
+
 		Weight & underApprox = under_approx[bvID];
 		Weight & overApprox = over_approx[bvID];
 
@@ -1972,7 +1971,7 @@ public:
 			}
 
 			std::cout<<"New comparison " << comparisonID << ": bv"<< bvID << " >= " << geq <<"\n";
-
+			updateApproximations(bvID);
 			comparisons.push({geq,l,bvID,false,false});
 			comparisons_geq[bvID].push(comparisonID);
 			//insert this value in order.
@@ -1992,7 +1991,7 @@ public:
 				altered_bvs.push(bvID);
 			}
 
-			updateApproximations(bvID);
+
 			Weight & underApprox = under_approx[bvID];
 			Weight & overApprox = over_approx[bvID];
 

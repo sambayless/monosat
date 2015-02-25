@@ -262,7 +262,7 @@ public:
 	//Lazily construct a reason for a literal propagated from a theory
 	CRef constructReason(Lit p) {
 		static int iterp =0;
-		if(++iterp==39){
+		if(++iterp==5){
 			int a=1;
 		}
 		assert(value(p)==l_True);
@@ -289,14 +289,11 @@ public:
 			assert(marks[var(theory_reason[i])]);
 		}
 #endif
-		if (theory_reason.size() < 2) {
-			assert(false);
-			exit(5);
-		}
+
 		int lev = decisionLevel();
-		CRef reason = attachClauseSafe(theory_reason);
+		CRef reason = attachReasonClause(p,theory_reason);
 		assert(decisionLevel()==lev);//ensure no backtracking happened while adding this clause!
-		vardata[var(p)] = mkVarData(reason, level(var(p)));
+		assert(ok);
 
 		//collect any newly enqueued vars - we need to analyze them
 
@@ -637,7 +634,7 @@ protected:
 			
 	// Operations on clauses:
 	//
-	CRef attachClauseSafe(vec<Lit> & ps);
+	CRef attachReasonClause(Lit r,vec<Lit> & ps);
 	void attachClause(CRef cr);               // Attach a clause to watcher lists.
 	void detachClause(CRef cr, bool strict = false); // Detach a clause to watcher lists.
 	void removeClause(CRef cr);               // Detach and free a clause.
