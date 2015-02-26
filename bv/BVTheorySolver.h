@@ -44,7 +44,22 @@ class BVTheorySolver;
 
 namespace Monosat {
 
+enum class Comparison{
+		lt,leq,gt,geq
+};
 
+inline Comparison operator ~(Comparison p) {
+	switch (p){
+		case Comparison::lt:
+			return Comparison::geq;
+		case Comparison::leq:
+			return Comparison::gt;
+		case Comparison::gt:
+			return Comparison::leq;
+		default:
+			return Comparison::lt;
+	}
+}
 
 template<typename Weight>
 class BVTheorySolver: public Theory {
@@ -61,13 +76,28 @@ public:
 		}
 	};
 
-	struct Comparison{
+	struct ComparisonID{
 		Weight w;
 		Lit l;
-
+		int compareID;
 		int bvID:30;
 		int is_lt:1;
 		int is_strict:1;
+		bool bvCompare(){
+			return compareID>-1;
+		}
+
+		Comparison op(){
+			if(is_lt && is_strict){
+				return Comparison::lt;
+			}else if(is_lt){
+				return Comparison::leq;
+			}else if(is_strict){
+				return Comparison::gt;
+			}else{
+				return Comparison::geq;
+			}
+		}
 	};
 
 
@@ -127,7 +157,8 @@ public:
 
 	//Bitvectors are unsigned, and have least significant bit at index 0
 	vec<vec<Lit> > bitvectors;
-	vec<Comparison> comparisons;
+	vec<ComparisonID> comparisons;
+
 	vec<vec<int> > comparisons_lt; //for each bitvector, comparisons are all to unique values, and in ascending order of compareTo.
 	vec<vec<int> > comparisons_gt; //for each bitvector, comparisons are all to unique values, and in ascending order of compareTo.
 	vec<vec<int> > comparisons_leq; //for each bitvector, comparisons are all to unique values, and in ascending order of compareTo.
@@ -138,6 +169,10 @@ public:
 	vec<int> theoryIds;
 	vec<int> altered_bvs;
 	vec<bool> alteredBV;
+
+
+	vec<vec<int>> bvcompares;
+
 
 	vec<bool> in_backtrack_queue;
 	vec<int> backtrack_queue;
@@ -250,7 +285,7 @@ public:
 		assert(isComparisonVar(v));
 		return vars[v].comparisonID;
 	}
-	inline Comparison& getComparison(int comparisonID){
+	inline ComparisonID& getComparison(int comparisonID){
 		return comparisons[comparisonID];
 	}
 	inline int getbvID(Var v) const{
@@ -721,7 +756,7 @@ public:
 		}
 
 		for(int lt:comparisons_lt[bvID]){
-			Comparison & c = comparisons[lt];
+			ComparisonID & c = comparisons[lt];
 			if(value( c.l)==l_True && over_approx[bvID]>=c.w){
 				over_approx[bvID]=c.w-1;
 			}else if (value(c.l)==l_False && under_approx[bvID]<c.w){
@@ -730,7 +765,7 @@ public:
 		}
 
 		for(int leq:comparisons_leq[bvID]){
-			Comparison & c = comparisons[leq];
+			ComparisonID & c = comparisons[leq];
 			if(value( c.l)==l_True && over_approx[bvID]>c.w){
 				over_approx[bvID]=c.w;
 			}else if (value(c.l)==l_False && under_approx[bvID]<=c.w){
@@ -739,7 +774,7 @@ public:
 		}
 
 		for(int gt:comparisons_gt[bvID]){
-			Comparison & c = comparisons[gt];
+			ComparisonID & c = comparisons[gt];
 			if(value( c.l)==l_True && under_approx[bvID]<=c.w){
 				under_approx[bvID]=c.w+1;
 			}else if (value(c.l)==l_False && over_approx[bvID]>c.w){
@@ -749,7 +784,7 @@ public:
 
 		for(int geq:comparisons_geq[bvID]){
 
-			Comparison & c = comparisons[geq];
+			ComparisonID & c = comparisons[geq];
 			if(value( c.l)==l_True && under_approx[bvID]<c.w){
 				under_approx[bvID]=c.w;
 			}else if (value(c.l)==l_False && over_approx[bvID]>=c.w){
@@ -794,7 +829,7 @@ public:
 		}
 
 		for(int lt:comparisons_lt[bvID]){
-			Comparison & c = comparisons[lt];
+			ComparisonID & c = comparisons[lt];
 			if(value( c.l)==l_True && over>=c.w){
 				over=c.w-1;
 			}else if (value(c.l)==l_False && under<c.w){
@@ -802,7 +837,7 @@ public:
 			}
 		}
 		for(int leq:comparisons_leq[bvID]){
-			Comparison & c = comparisons[leq];
+			ComparisonID & c = comparisons[leq];
 			if(value( c.l)==l_True && over>c.w){
 				over=c.w;
 			}else if (value(c.l)==l_False && under<=c.w){
@@ -810,7 +845,7 @@ public:
 			}
 		}
 		for(int gt:comparisons_gt[bvID]){
-			Comparison & c = comparisons[gt];
+			ComparisonID & c = comparisons[gt];
 			if(value( c.l)==l_True && under<=c.w){
 				under=c.w+1;
 			}else if (value(c.l)==l_False && over>c.w){
@@ -818,7 +853,7 @@ public:
 			}
 		}
 		for(int geq:comparisons_geq[bvID]){
-			Comparison & c = comparisons[geq];
+			ComparisonID & c = comparisons[geq];
 			if(value( c.l)==l_True && under<c.w){
 				under=c.w;
 			}else if (value(c.l)==l_False && over>=c.w){
@@ -1161,7 +1196,7 @@ public:
 		for(int cID:comparisons_lt[bvID]){
 			if(cID == comparisonID)
 				continue;
-			Comparison & c = comparisons[cID];
+			ComparisonID & c = comparisons[cID];
 			if(value( c.l)==l_True && over>=c.w){
 				over=c.w-1;
 			}else if (value(c.l)==l_False && under<c.w){
@@ -1177,7 +1212,7 @@ public:
 		for(int cID:comparisons_leq[bvID]){
 			if(cID == comparisonID)
 				continue;
-			Comparison & c = comparisons[cID];
+			ComparisonID & c = comparisons[cID];
 			if(value( c.l)==l_True && over>c.w){
 				over=c.w;
 			}else if (value(c.l)==l_False && under<=c.w){
@@ -1193,7 +1228,7 @@ public:
 		for(int cID:comparisons_gt[bvID]){
 			if(cID == comparisonID)
 				continue;
-			Comparison & c = comparisons[cID];
+			ComparisonID & c = comparisons[cID];
 			if(value( c.l)==l_True && under<=c.w){
 				under=c.w+1;
 			}else if (value(c.l)==l_False && over>c.w){
@@ -1209,7 +1244,7 @@ public:
 		for(int cID:comparisons_geq[bvID]){
 			if(cID == comparisonID)
 				continue;
-			Comparison & c = comparisons[cID];
+			ComparisonID & c = comparisons[cID];
 			if(value( c.l)==l_True && under<c.w){
 				under=c.w;
 			}else if (value(c.l)==l_False && over>=c.w){
@@ -1276,7 +1311,7 @@ public:
 		for(int cID:comparisons_lt[bvID]){
 			if(cID == comparisonID)
 				continue;
-			Comparison & c = comparisons[cID];
+			ComparisonID & c = comparisons[cID];
 			if(value( c.l)==l_True && over>=c.w){
 				over=c.w-1;
 			}else if (value(c.l)==l_False && under<c.w){
@@ -1292,7 +1327,7 @@ public:
 		for(int cID:comparisons_leq[bvID]){
 			if(cID == comparisonID)
 				continue;
-			Comparison & c = comparisons[cID];
+			ComparisonID & c = comparisons[cID];
 			if(value( c.l)==l_True && over>c.w){
 				over=c.w;
 			}else if (value(c.l)==l_False && under<=c.w){
@@ -1308,7 +1343,7 @@ public:
 		for(int cID:comparisons_gt[bvID]){
 			if(cID == comparisonID)
 				continue;
-			Comparison & c = comparisons[cID];
+			ComparisonID & c = comparisons[cID];
 			if(value( c.l)==l_True && under<=c.w){
 				under=c.w+1;
 			}else if (value(c.l)==l_False && over>c.w){
@@ -1324,7 +1359,7 @@ public:
 		for(int cID:comparisons_geq[bvID]){
 			if(cID == comparisonID)
 				continue;
-			Comparison & c = comparisons[cID];
+			ComparisonID & c = comparisons[cID];
 			if(value( c.l)==l_True && under<c.w){
 				under=c.w;
 			}else if (value(c.l)==l_False && over>=c.w){
@@ -1388,7 +1423,7 @@ public:
 			for(int cID:comparisons_lt[bvID]){
 				if(cID == comparisonID)
 					continue;
-				Comparison & c = comparisons[cID];
+				ComparisonID & c = comparisons[cID];
 				if(value( c.l)==l_True && over>=c.w){
 					over=c.w-1;
 				}else if (value(c.l)==l_False && under<c.w){
@@ -1404,7 +1439,7 @@ public:
 			for(int cID:comparisons_leq[bvID]){
 				if(cID == comparisonID)
 					continue;
-				Comparison & c = comparisons[cID];
+				ComparisonID & c = comparisons[cID];
 				if(value( c.l)==l_True && over>c.w){
 					over=c.w;
 				}else if (value(c.l)==l_False && under<=c.w){
@@ -1420,7 +1455,7 @@ public:
 			for(int cID:comparisons_gt[bvID]){
 				if(cID == comparisonID)
 					continue;
-				Comparison & c = comparisons[cID];
+				ComparisonID & c = comparisons[cID];
 				if(value( c.l)==l_True && under<=c.w){
 					under=c.w+1;
 				}else if (value(c.l)==l_False && over>c.w){
@@ -1436,7 +1471,7 @@ public:
 			for(int cID:comparisons_geq[bvID]){
 				if(cID == comparisonID)
 					continue;
-				Comparison & c = comparisons[cID];
+				ComparisonID & c = comparisons[cID];
 				if(value( c.l)==l_True && under<c.w){
 					under=c.w;
 				}else if (value(c.l)==l_False && over>=c.w){
@@ -1513,7 +1548,7 @@ public:
 			for(int cID:comparisons_lt[bvID]){
 				if(cID == comparisonID)
 					continue;
-				Comparison & c = comparisons[cID];
+				ComparisonID & c = comparisons[cID];
 				if(value( c.l)==l_True && over>=c.w){
 					over=c.w-1;
 				}else if (value(c.l)==l_False && under<c.w){
@@ -1529,7 +1564,7 @@ public:
 			for(int cID:comparisons_leq[bvID]){
 				if(cID == comparisonID)
 					continue;
-				Comparison & c = comparisons[cID];
+				ComparisonID & c = comparisons[cID];
 				if(value( c.l)==l_True && over>c.w){
 					over=c.w;
 				}else if (value(c.l)==l_False && under<=c.w){
@@ -1545,7 +1580,7 @@ public:
 			for(int cID:comparisons_gt[bvID]){
 				if(cID == comparisonID)
 					continue;
-				Comparison & c = comparisons[cID];
+				ComparisonID & c = comparisons[cID];
 				if(value( c.l)==l_True && under<=c.w){
 					under=c.w+1;
 				}else if (value(c.l)==l_False && over>c.w){
@@ -1561,7 +1596,7 @@ public:
 			for(int cID:comparisons_geq[bvID]){
 				if(cID == comparisonID)
 					continue;
-				Comparison & c = comparisons[cID];
+				ComparisonID & c = comparisons[cID];
 				if(value( c.l)==l_True && under<c.w){
 					under=c.w;
 				}else if (value(c.l)==l_False && over>=c.w){
@@ -1603,7 +1638,7 @@ public:
 				}
 			}
 			for(int cID:comparisons_lt[bvID]){
-				Comparison & c = comparisons[cID];
+				ComparisonID & c = comparisons[cID];
 				if(value(c.l)==l_True && under>= c.w){
 					return false;
 				}else if (value(c.l)==l_False && over<c.w){
@@ -1612,7 +1647,7 @@ public:
 			}
 
 			for(int cID:comparisons_gt[bvID]){
-				Comparison & c = comparisons[cID];
+				ComparisonID & c = comparisons[cID];
 				if(value(c.l)==l_True && over<= c.w){
 					return false;
 				}else if (value(c.l)==l_False && under>c.w){
@@ -1651,6 +1686,7 @@ public:
 		comparisons_leq.growTo(bvID+1);
 		comparisons_geq.growTo(bvID+1);
 		alteredBV.growTo(bvID+1);
+		bvcompares.growTo(bvID+1);
 		//bv_callbacks.growTo(bvID+1);
 		if(under_approx[bvID]>-1){
 			assert(false);
@@ -1685,7 +1721,7 @@ public:
 		comparisons_leq.growTo(bvID+1);
 		comparisons_geq.growTo(bvID+1);
 		alteredBV.growTo(bvID+1);
-
+		bvcompares.growTo(bvID+1);
 
 		//bv_callbacks.growTo(bvID+1);
 		if(under_approx[bvID]>-1){
@@ -1755,6 +1791,28 @@ private:
 
 		return lit_Undef;
 	}
+
+	Lit getComparisonBV(Comparison op, int bvID,int compareID){
+
+		if(bvID>compareID){
+			Lit c =getComparisonBV(~op,compareID,bvID);
+			if(c!=lit_Undef){
+				return ~c;
+			}else{
+				return lit_Undef;
+			}
+		}
+
+		vec<int> & bvcompare = bvcompares[bvID];
+		for(int i=0;i<bvcompare.size();i++){
+			int cID = bvcompare[i];
+			if (comparisons[cID].compareID == compareID && comparisons[cID].op()==op){
+				return comparisons[cID].l;
+			}
+		}
+		return lit_Undef;
+	}
+
 public:
 	Lit newComparisonLT(int bvID,const Weight & lt, Var outerVar = var_Undef) {
 		Lit l;
@@ -2021,6 +2079,71 @@ public:
 
 			return l;
 		}
+
+
+	Lit newComparisonBV(Comparison c, int bvID,const Weight & geq, Var outerVar = var_Undef) {
+		Lit l;
+		int comparisonID = comparisons.size();
+		if((l = getComparisonGEQ(bvID, geq))!=lit_Undef){
+			if(outerVar != var_Undef){
+				makeEqualInSolver(mkLit(outerVar),toSolver(l));
+			}
+			return l;
+		}else{
+			l = mkLit(newVar(outerVar, bvID,comparisonID));
+		}
+
+		std::cout<<"New comparison " << comparisonID << ": bv"<< bvID << " >= " << geq <<"\n";
+		updateApproximations(bvID);
+		comparisons.push({geq,l,bvID,false,false});
+		comparisons_geq[bvID].push(comparisonID);
+		//insert this value in order.
+		//could do a binary search here...
+		for(int i=0;i<comparisons_geq[bvID].size()-1;i++){
+			int cid = comparisons_geq[bvID][i];
+			if(comparisons[cid].w>= geq){
+				for(int j = comparisons_geq[bvID].size()-1; j>i ;j--){
+					comparisons_geq[bvID][j]=comparisons_geq[bvID][j-1];
+				}
+				comparisons_geq[bvID][i]=comparisonID;
+				break;
+			}
+		}
+		if(!alteredBV[bvID]){
+			alteredBV[bvID]=true;
+			altered_bvs.push(bvID);
+		}
+
+
+		Weight & underApprox = under_approx[bvID];
+		Weight & overApprox = over_approx[bvID];
+
+
+		if (overApprox<geq){
+			if(value(l)==l_True){
+				assert(false);
+			}else if (value(l)==l_False){
+
+			}else {
+				assert(value(l)==l_Undef);
+				enqueueEager(~l, comparisonprop_marker);
+			}
+		}
+
+		if (underApprox>=geq){
+			if(value(l)==l_True){
+
+			}else if (value(l)==l_False){
+				assert(false);
+			}else {
+				assert(value(l)==l_Undef);
+				enqueueEager(l, comparisonprop_marker);
+			}
+		}
+
+
+		return l;
+	}
 
 	void printSolution() {
 

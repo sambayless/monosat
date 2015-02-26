@@ -51,9 +51,7 @@ private:
 		vec<Var> vector;
 	};
 	vec<BV> bvs;
-	enum class Comparison{
-			lt,leq,gt,geq
-	};
+
 
 
 	vec<int> weights;
@@ -67,6 +65,13 @@ private:
 		Var var;
 	};
 	vec<Compare> compares;
+	struct CompareBV{
+		int bvID;
+		int compareID;
+		Comparison c;
+		Var var;
+	};
+	vec<CompareBV> comparebvs;
 
 	void readBV(B& in,  Solver& S) {
 		//bv id width l0 l1 l2 ...
@@ -90,6 +95,28 @@ private:
 		}
 	}
 
+	void readCompareBV(B& in, Solver& S,Comparison c) {
+		if (opt_ignore_theories) {
+			skipLine(in);
+			return;
+		}
+		//bv_lt bvID var weight
+		++in;
+
+		int bvID = parseInt(in);
+		int v = parseInt(in) - 1;
+
+		while (v >= S.nVars())
+			S.newVar();
+
+		int compareID = parseInt(in);
+
+		comparebvs.push();
+		comparebvs.last().bvID = bvID;
+		comparebvs.last().compareID = compareID;
+		comparebvs.last().c = c;
+		comparebvs.last().var = v;
+	}
 
 	void readCompare(B& in, Solver& S,Comparison c) {
 		if (opt_ignore_theories) {
@@ -127,8 +154,23 @@ public:
 			//just a comment
 			return false;
 		} else if (match(in, "bv")) {
-
-			if (match(in, "_lt")) {
+			if (match(in, "_lt_bv")) {
+				count++;
+				readCompareBV(in, S,Comparison::lt);
+				return true;
+			} else if (match(in, "_leq_bv")) {
+				count++;
+				readCompareBV(in, S,Comparison::leq);
+				return true;
+			} else if (match(in, "_gt_bv")) {
+				count++;
+				readCompareBV(in, S,Comparison::gt);
+				return true;
+			} else if (match(in, "_geq_bv")) {
+				count++;
+				readCompareBV(in, S,Comparison::geq);
+				return true;
+			}else if (match(in, "_lt")) {
 				count++;
 				readCompare(in, S,Comparison::lt);
 				return true;
@@ -182,6 +224,10 @@ public:
 				}else{
 					assert(false);
 				}
+			}
+
+			for(auto & c:comparebvs){
+				theory->newComparisonBV(c.c,c.bvID,c.compareID,c.var);
 			}
 
 		}

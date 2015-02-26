@@ -885,6 +885,7 @@ void DistanceDetector<Weight>::buildReason(Lit p, vec<Lit> & reason, CRef marker
 		buildUnweightedDistanceGTReason(t, reason);
 		
 	} else {
+		exit(3);
 		assert(false);
 	}
 }

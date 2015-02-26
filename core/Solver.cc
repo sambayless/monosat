@@ -444,10 +444,12 @@ Lit Solver::pickBranchLit() {
  |________________________________________________________________________________________________@*/
 void Solver::analyze(CRef confl, vec<Lit>& out_learnt, int& out_btlevel) {
 	int pathC = 0;
+	CRef original_confl = confl;
 	Lit p = lit_Undef;
 	assert(confl != CRef_Undef);
 	// Generate conflict clause:
 	//
+	bool possibly_missed_1uip=false;
 	to_analyze.clear();
 	out_learnt.push();      // (leave room for the asserting literal)
 	int index = trail.size() - 1;
@@ -466,38 +468,24 @@ void Solver::analyze(CRef confl, vec<Lit>& out_learnt, int& out_btlevel) {
 				if (!seen[var(q)] && level(var(q)) > 0) {
 					varBumpActivity(var(q));
 					seen[var(q)] = 1;
-					if (level(var(q)) >= decisionLevel()){
-						CRef cr = reason(var(q));
-						if (isTheoryCause(cr)) {
-							//lazily construct the reason for this theory propagation now that we need it
-							//one potential issue with doing this is that now the theory solver might be creating reasons not in the order that the variables were allocated...
-							cr = constructReason(~q);
-							//for some theories, we may discover while constructing the cause that p is at a lower level than we thought.
-							if(level(var(q))<decisionLevel()){
-								out_learnt.push(q);
-							}else{
-								pathC++;
-							}
-						}else{
-							pathC++;
-						}
-					}else
+					if (level(var(q)) >= decisionLevel())
+						pathC++;
+					else
 						out_learnt.push(q);
 				}
 			}
 		} else {
 			out_learnt.push(~p);
 		}
-		//bool searching=true;
-		//while(searching){
-		//	searching=false;
+		bool searching=true;
+		while(searching){
+			searching=false;
 			// Select next clause to look at:
-		while (!seen[var(trail[index--])] || level(var(trail[index+1]))<decisionLevel());
-		assert(index >= -1);
-		p = trail[index + 1];
-		confl = reason(var(p));
-		assert(!isTheoryCause(confl));
-			/*
+			while (!seen[var(trail[index--])]  );
+
+			assert(index >= -1);
+			p = trail[index + 1];
+			confl = reason(var(p));
 			int was_at_level = level(var(p));
 			if (isTheoryCause(confl)) {
 				//lazily construct the reason for this theory propagation now that we need it
@@ -505,34 +493,36 @@ void Solver::analyze(CRef confl, vec<Lit>& out_learnt, int& out_btlevel) {
 				//for some theories, we may discover while constructing the cause that p is at a lower level than we thought.
 			}
 			if(level(var(p))<decisionLevel()){
-				if(was_at_level){
+				if(was_at_level==decisionLevel()){
 					//the level of this variable changed while deriving a reason for it.
+					out_learnt.push(~p);
 					pathC--;
-					if(pathC>0){
-						out_learnt.push(~p);
-					}else{
-						//we may have missed the 1-UIP because of the level re-arrangement.
-						//start clause learning from scratch?
-						seen[var(p)] = 0;
-						for(Lit l:out_learnt){
-							assert(seen[var(l)]);
-							seen[var(l)]=0;
-						}
-						out_learnt.clear();
-						analyze(confl,out_learnt,out_btlevel);
-						return;
-					}
+					possibly_missed_1uip=true;
 				}
 				seen[var(p)] = 0;
 				searching=true;
-			}*/
-		//}
+			}
+		}
 		assert(level(var(p))==decisionLevel());
 		seen[var(p)] = 0;
 		pathC--;
 		
 	} while (pathC > 0);
 	out_learnt[0] = ~p;
+
+
+	if(possibly_missed_1uip){
+		//because of literals that were enqueued lazily, at the wrong level, and only discovered during lazy reason construction,
+		//in rare circumstances the 1uip may be missed. If that happens, re-start clause learning now that all the relevant reasons have
+		//been constructed and all relevant levels are corrected.
+		for(Lit l:out_learnt){
+			seen[var(l)]=0;
+		}
+		assert(!seen.contains(1));
+		out_learnt.clear();
+		analyze(original_confl,out_learnt,out_btlevel);
+		return;
+	}
 
 #ifndef NDEBUG
 	for (Lit p : out_learnt)
