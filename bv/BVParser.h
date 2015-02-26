@@ -207,23 +207,7 @@ public:
 			}
 
 			for(auto & c:compares){
-				if(c.c == Comparison::lt){
-					theory->newComparisonLT(c.bvID,c.w,c.var);
-				}else if (c.c==Comparison::gt){
-					theory->newComparisonGT(c.bvID,c.w,c.var);
-				}else if (c.c==Comparison::geq){
-					//Var v= S.newVar();
-					//S.addClause(mkLit(v),mkLit(c.var));
-					//S.addClause(~mkLit(v),~mkLit(c.var));//Assert these variables are opposites.
-					theory->newComparisonGEQ(c.bvID,c.w,c.var);
-				}else if (c.c==Comparison::leq){
-					Var v= S.newVar();
-					//S.addClause(mkLit(v),mkLit(c.var));
-					//S.addClause(~mkLit(v),~mkLit(c.var));//Assert these variables are opposites.
-					theory->newComparisonLEQ(c.bvID,c.w,c.var);
-				}else{
-					assert(false);
-				}
+				theory->newComparison(c.c,c.bvID,c.w,c.var);
 			}
 
 			for(auto & c:comparebvs){

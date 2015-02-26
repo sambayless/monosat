@@ -201,13 +201,13 @@ public:
 	//vector of the weights for each edge
 	std::vector<Weight> edge_weights;
 	std::vector<BitVector<Weight>> edge_bv_weights;
-	struct Comparison{
+	struct ComparisonID{
 		Weight w;
 		Lit l;
 		int bvID:31;
 		int is_lt:1;
 	};
-	vec<Comparison> comparisons;
+	vec<ComparisonID> comparisons;
 	vec<vec<int> > comparisons_lt;
 	vec<vec<int> > comparisons_gt;
 	vec<vec<int> > comparisons_leq;
@@ -1606,6 +1606,7 @@ private:
 public:
 
 	Lit getBV_GT(int bvID,const Weight & w){
+		Comparison op = Comparison::gt;
 		assert(bvID>=0);
 		//if has existing literal, we really shouldn't create a new one here...
 		Lit l=lit_Undef;
@@ -1613,7 +1614,7 @@ public:
 			return l;
 		}
 		int comparisonID = comparisons.size();
-		Lit gt = comparator->newComparisonGT(bvID,w);
+		Lit gt = comparator->newComparison(op,bvID,w);
 		l = mkLit(newVar());
 
 		makeEqualInSolver(comparator->toSolver(gt),toSolver(l));
@@ -1647,6 +1648,7 @@ public:
 	}
 
 	Lit getBV_GEQ(int bvID,const Weight & w){
+		Comparison op = Comparison::geq;
 		assert(bvID>=0);
 		//if has existing literal, we really shouldn't create a new one here...
 		Lit l=lit_Undef;
@@ -1654,7 +1656,7 @@ public:
 			return l;
 		}
 		int comparisonID = comparisons.size();
-		Lit geq = comparator->newComparisonGEQ(bvID,w);
+		Lit geq = comparator->newComparison(op,bvID,w);
 		l = mkLit(newVar());
 
 		makeEqualInSolver(comparator->toSolver(geq),toSolver(l));
@@ -1688,6 +1690,7 @@ public:
 
 
 	Lit getBV_LT(int bvID,const Weight & w){
+		Comparison op = Comparison::lt;
 		assert(bvID>=0);
 		//if has existing literal, we really shouldn't create a new one here...
 		Lit l=lit_Undef;
@@ -1695,7 +1698,7 @@ public:
 			return l;
 		}
 		int comparisonID = comparisons.size();
-		Lit lt = comparator->newComparisonLT(bvID,w);
+		Lit lt = comparator->newComparison(op,bvID,w);
 		l = mkLit(newVar());
 
 		makeEqualInSolver(comparator->toSolver(lt),toSolver(l));
@@ -1728,7 +1731,8 @@ public:
 	}
 
 
-	Lit getBV_LEQ(int bvID,const Weight & w){
+	Lit getBV_LEQ( int bvID,const Weight & w){
+		Comparison op = Comparison::leq;
 		assert(bvID>=0);
 		//if has existing literal, we really shouldn't create a new one here...
 		Lit l=lit_Undef;
@@ -1736,7 +1740,7 @@ public:
 			return l;
 		}
 		int comparisonID = comparisons.size();
-		Lit leq = comparator->newComparisonLEQ(bvID,w);
+		Lit leq = comparator->newComparison(op, bvID,w);
 		l = mkLit(newVar());
 
 		makeEqualInSolver(comparator->toSolver(leq),toSolver(l));
