@@ -500,7 +500,7 @@ void Solver::analyze(CRef confl, vec<Lit>& out_learnt, int& out_btlevel) {
 					possibly_missed_1uip=true;
 				}
 				seen[var(p)] = 0;
-				searching=true;
+				searching=pathC>0;
 			}
 		}
 		assert(level(var(p))==decisionLevel());
@@ -674,6 +674,9 @@ void Solver::analyzeFinal(Lit p, vec<Lit>& out_conflict) {
 }
 
 void Solver::enqueueLazy(Lit p, int lev, CRef from){
+	if(p.x==189 || p.x == 188){
+		int a=1;
+	}
 	assert(value(p)!=l_False);
 	if(value(p)==l_True && lev < level(var(p))){
 		//then the lit was already implied, but needs to be (lazily) moved to an earlier level.
@@ -697,6 +700,9 @@ void Solver::enqueueLazy(Lit p, int lev, CRef from){
 }
 
 void Solver::uncheckedEnqueue(Lit p, CRef from) {
+	if(p.x==189 || p.x == 188){
+		int a=1;
+	}
 	assert(value(p) == l_Undef);
 	assigns[var(p)] = lbool(!sign(p));
 	vardata[var(p)] = mkVarData(from, decisionLevel());
@@ -1457,19 +1463,21 @@ bool Solver::addConflictClause(vec<Lit> & ps, CRef & confl_out, bool permanent) 
 			}
 			
 			attachClause(cr);
-			if(conflicting)
-				confl_out = cr;
+			confl_out = cr;
 		}
 		if (!satisfied)
 			cancelUntil(max_lev);
 		
 		if (!satisfied && nfalse == ps.size() - 1) {
+			assert(!conflicting);
 			assert(value(ps[0])!=l_False);
 			assert(value(ps[1])==l_False);
 			if (value(ps[0]) == l_Undef) {
 				uncheckedEnqueue(ps[0], confl_out);
 			}
-			confl_out = CRef_Undef;
+		}
+		if(!conflicting){
+			confl_out=CRef_Undef;
 		}
 		return !conflicting;
 	}
@@ -1511,7 +1519,7 @@ lbool Solver::search(int nof_conflicts) {
 	//last_dec = var_Undef;
 	for (;;) {
 		static int iter = 0;
-		if (++iter == 25) {
+		if (++iter == 56) {
 			int a = 1;
 		}
 		propagate: CRef confl = propagate();

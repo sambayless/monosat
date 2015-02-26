@@ -630,6 +630,9 @@ public:
 			if(isComparisonVar(v)){
 				int comparisonID = getComparisonID(v);
 				Comparison op = comparisons[comparisonID].op();
+				if(sign(p)){
+					op=~op;
+				}
 				buildValueReason(op,bvID,comparisonID,reason);
 			}else{
 
@@ -830,11 +833,12 @@ public:
 		for(int cID:compares[bvID]){
 			ComparisonID & c = comparisons[cID];
 			Comparison op = c.op();
+			lbool val = value(c.l);
 			switch(op){
 				case Comparison::lt:
 					if(value( c.l)==l_True && over>=c.w){
 						over=c.w-1;
-					}else if (value(c.l)==l_False && under_approx[bvID]<c.w){
+					}else if (value(c.l)==l_False && under<c.w){
 						under=c.w;
 					}
 					break;
@@ -887,7 +891,7 @@ public:
 			return true;
 		}
 		printf("bv prop %d\n",stats_propagations);
-		if(stats_propagations==81){
+		if(stats_propagations==5){
 			int a =1;
 		}
 		bool any_change = false;
@@ -964,7 +968,7 @@ public:
 							if(value(l)==l_True){
 								std::cout<<"conflict neg bv " << bvID << "> " << to << "\n";
 								conflict.push(~l);
-								buildValueReason(op,bvID,cID,conflict);
+								buildValueReason(~op,bvID,cID,conflict);
 								toSolver(conflict);
 								return false;
 							}else if (value(l)==l_False){
@@ -982,7 +986,7 @@ public:
 							if(value(l)==l_True){
 								std::cout<<"conflict neg bv " << bvID << ">= " << to << "\n";
 								conflict.push(~l);
-								buildValueReason(op,bvID,cID,conflict);
+								buildValueReason(~op,bvID,cID,conflict);
 								toSolver(conflict);
 								return false;
 							}else if (value(l)==l_False){
@@ -1009,7 +1013,7 @@ public:
 							if(value(l)==l_True){
 								std::cout<<"conflict neg bv " << bvID << "< " << to << "\n";
 								conflict.push(~l);
-								buildValueReason(op,bvID,cID,conflict);
+								buildValueReason(~op,bvID,cID,conflict);
 								toSolver(conflict);
 								return false;
 							}else if (value(l)==l_False){
@@ -1027,7 +1031,7 @@ public:
 							if(value(l)==l_True){
 								std::cout<<"conflict neg bv " << bvID << "<= " << to << "\n";
 								conflict.push(~l);
-								buildValueReason(op,bvID,cID,conflict);
+								buildValueReason(~op,bvID,cID,conflict);
 								toSolver(conflict);
 								return false;
 							}else if (value(l)==l_False){
@@ -1092,7 +1096,12 @@ public:
 	};
 
 	void buildValueReason(Comparison op, int bvID, int comparisonID, vec<Lit> & conflict){
-			printf("lt reason %d %d\n",bvID, comparisonID);
+		static int iter = 0;
+		++iter;
+			printf("reason %d: %d %d\n",iter,bvID, comparisonID);
+			if(iter==16){
+				int a=1;
+			}
 			Weight & to = getComparison(comparisonID).w;
 			Lit l =  getComparison(comparisonID).l;
 
@@ -1208,13 +1217,14 @@ public:
 						}
 						break;
 				}
-				if (compare_over && comp(op,over,to)){
-					assert(value(~c.l)==l_False);
-					conflict.push(~c.l);
-					return;
-				}else if (!compare_over && comp(op,under,to)){
-					assert(value(c.l)==l_False);
-					conflict.push(c.l);
+				if ((compare_over && comp(op,over,to)) || (!compare_over && comp(op,under,to)) ){
+					if(value(c.l)==l_True){
+						assert(value(~c.l)==l_False);
+						conflict.push(~c.l);
+					}else{
+						assert(value(c.l)==l_False);
+						conflict.push(c.l);
+					}
 					return;
 				}
 			}

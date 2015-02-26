@@ -292,6 +292,7 @@ public:
 
 		int lev = decisionLevel();
 		CRef reason = attachReasonClause(p,theory_reason);
+		vardata[var(p)] = mkVarData(reason, level(var(p)));
 		assert(decisionLevel()==lev);//ensure no backtracking happened while adding this clause!
 		assert(ok);
 
