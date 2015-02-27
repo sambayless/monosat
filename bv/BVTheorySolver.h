@@ -1771,7 +1771,7 @@ public:
 
 			for(int cID:bvcompares[bvID]){
 				ComparisonID & c = comparisons[cID];
-				assert(c.compareID<0);
+				assert(c.compareID>=0);
 				Comparison op = c.op();
 				int toID = c.compareID;
 				vec<Lit> & bv_compare = bitvectors[toID];
