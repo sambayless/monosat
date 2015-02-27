@@ -21,7 +21,7 @@
 #ifndef FSM_TRANSDUCES_DETECTOR_H_
 #define FSM_TRANSDUCES_DETECTOR_H_
 #include "utils/System.h"
-
+#include <tuple>
 #include "dgl/DynamicGraph.h"
 
 #include "DynamicFSM.h"
