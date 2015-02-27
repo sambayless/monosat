@@ -19,9 +19,10 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
 
-#ifndef COMPARISON_THEORY_H_
-#define COMPARISON_THEORY_H_
-
+#ifndef BV_THEORY_SOLVER_H_
+#define BV_THEORY_SOLVER_H_
+#include <cstddef>
+#include <gmpxx.h>
 #include "utils/System.h"
 #include "core/Theory.h"
 
@@ -33,7 +34,7 @@
 #include "core/TheorySolver.h"
 
 #include <vector>
-
+#include <cmath>
 #include <cstdio>
 #include <cstdlib>
 #include <unistd.h>
@@ -47,8 +48,19 @@ namespace Monosat {
 enum class Comparison{
 		lt,leq,gt,geq
 };
-
 inline Comparison operator ~(Comparison p) {
+	switch (p){
+		case Comparison::lt:
+			return Comparison::gt;
+		case Comparison::leq:
+			return Comparison::geq;
+		case Comparison::gt:
+			return Comparison::lt;
+		default:
+			return Comparison::leq;
+	}
+}
+inline Comparison operator -(Comparison p) {
 	switch (p){
 		case Comparison::lt:
 			return Comparison::geq;
@@ -198,7 +210,7 @@ public:
 	vec<int> altered_bvs;
 	vec<bool> alteredBV;
 
-
+	vec<bool> bvconst;
 
 
 
@@ -630,10 +642,18 @@ public:
 			if(isComparisonVar(v)){
 				int comparisonID = getComparisonID(v);
 				Comparison op = comparisons[comparisonID].op();
-				if(sign(p)){
-					op=~op;
+				if (comparisons[comparisonID].compareID<0){
+					if(sign(p)){
+						op=-op;
+					}
+					buildValueReason(op,bvID,comparisonID,reason);
+				}else{
+					int compareBV = comparisons[comparisonID].compareID;
+					if(sign(p)){
+						op=-op;
+					}
+					buildValueReasonBV(op,bvID,compareBV,comparisonID,reason);
 				}
-				buildValueReason(op,bvID,comparisonID,reason);
 			}else{
 
 			}
@@ -922,84 +942,42 @@ public:
 				Weight & to = c.w;
 				Lit l =  c.l;
 
-				switch (op){
-					case Comparison::lt:
-						if (overApprox<to){
-							if(value(l)==l_True){
-								//do nothing
-								std::cout<<"nothing bv " << bvID << "< " << to << "\n";
-							}else if (value(l)==l_False){
-								std::cout<<"conflict bv " << bvID << "< " << to << "\n";
-								assert(value(l)==l_False);
-								assert(dbg_value(l)==l_False);
-								conflict.push(l);
-								buildValueReason(op,bvID,cID,conflict);
-								toSolver(conflict);
-								return false;
-							}else {
-								std::cout<<"propagate bv " << bvID << "< " << to << "\n";
-								assert(value(l)==l_Undef);
-								enqueue(l, comparisonprop_marker);
-							}
-						}
-						break;
-					case Comparison::leq:
-						if (overApprox<=to){
-							if(value(l)==l_True){
-								std::cout<<"nothing bv " << bvID << "<= " << to << "\n";
-								//do nothing
-							}else if (value(l)==l_False){
-								std::cout<<"conflict bv " << bvID << "<= " << to << "\n";
-								assert(value(l)==l_False);
-								assert(dbg_value(l)==l_False);
-								conflict.push(l);
-								buildValueReason(op,bvID,cID,conflict);
-								toSolver(conflict);
-								return false;
-							}else {
-								std::cout<<"propagate bv " << bvID << "<= " << to << "\n";
-								assert(value(l)==l_Undef);
-								enqueue(l, comparisonprop_marker);
-							}
-						}
-						break;
-					case Comparison::gt:
-						if (overApprox<=to){
-							if(value(l)==l_True){
-								std::cout<<"conflict neg bv " << bvID << "> " << to << "\n";
-								conflict.push(~l);
-								buildValueReason(~op,bvID,cID,conflict);
-								toSolver(conflict);
-								return false;
-							}else if (value(l)==l_False){
-								std::cout<<"nothing neg bv " << bvID << "> " << to << "\n";
-							}else {
-								std::cout<<"propagate neg bv " << bvID << "> " << to << "\n";
-								assert(value(l)==l_Undef);
-								enqueue(~l, comparisonprop_marker);
-							}
-						}
-						break;
-					case Comparison::geq:
-					default:
-						if (overApprox<to){
-							if(value(l)==l_True){
-								std::cout<<"conflict neg bv " << bvID << ">= " << to << "\n";
-								conflict.push(~l);
-								buildValueReason(~op,bvID,cID,conflict);
-								toSolver(conflict);
-								return false;
-							}else if (value(l)==l_False){
-								std::cout<<"nothing neg bv " << bvID << ">= " << to << "\n";
-							}else {
-								std::cout<<"propagate neg bv " << bvID << ">= " << to << "\n";
-								assert(value(l)==l_Undef);
-								enqueue(~l, comparisonprop_marker);
-							}
-						}
-						break;
+				if((op==Comparison::lt && overApprox<to) ||
+						(op==Comparison::leq && overApprox<=to)){
+					if(value(l)==l_True){
+						//do nothing
+						std::cout<<"nothing bv " << bvID << op << to << "\n";
+					}else if (value(l)==l_False){
+						std::cout<<"conflict bv " << bvID << op << to << "\n";
+						assert(value(l)==l_False);
+						assert(dbg_value(l)==l_False);
+						conflict.push(l);
+						buildValueReason(op,bvID,cID,conflict);
+						toSolver(conflict);
+						return false;
+					}else {
+						std::cout<<"propagate bv " << bvID << op << to << "\n";
+						assert(value(l)==l_Undef);
+						enqueue(l, comparisonprop_marker);
+					}
+				}else if((op==Comparison::gt && overApprox<=to) ||
+						(op==Comparison::geq && overApprox<to)){
+					if(value(l)==l_True){
+						std::cout<<"conflict neg bv " << bvID << op << to << "\n";
+						conflict.push(~l);
+						buildValueReason(-op,bvID,cID,conflict);
+						toSolver(conflict);
+						return false;
+					}else if (value(l)==l_False){
+						std::cout<<"nothing neg bv " << bvID << op << to << "\n";
+					}else {
+						std::cout<<"propagate neg bv " << bvID << op << to << "\n";
+						assert(value(l)==l_Undef);
+						enqueue(~l, comparisonprop_marker);
+					}
 				}
 			}
+
 
 			for(int i=compare.size()-1;i>=0;i--){
 				int cID = compare[i];
@@ -1007,85 +985,139 @@ public:
 				Comparison op = c.op();
 				Weight & to = c.w;
 				Lit l =  c.l;
-				switch (op){
-					case Comparison::lt:
-						if (underApprox>=to){
-							if(value(l)==l_True){
-								std::cout<<"conflict neg bv " << bvID << "< " << to << "\n";
-								conflict.push(~l);
-								buildValueReason(~op,bvID,cID,conflict);
-								toSolver(conflict);
-								return false;
-							}else if (value(l)==l_False){
-								//do nothing
-								std::cout<<"nothing neg bv " << bvID << "< " << to << "\n";
-							}else {
-								std::cout<<"propagate neg bv " << bvID << "< " << to << "\n";
-								assert(value(l)==l_Undef);
-								enqueue(~l, comparisonprop_marker);
-							}
-						}
-						break;
-					case Comparison::leq:
-						if (underApprox>to){
-							if(value(l)==l_True){
-								std::cout<<"conflict neg bv " << bvID << "<= " << to << "\n";
-								conflict.push(~l);
-								buildValueReason(~op,bvID,cID,conflict);
-								toSolver(conflict);
-								return false;
-							}else if (value(l)==l_False){
-								//do nothing
-								std::cout<<"nothing neg bv " << bvID << "<= " << to << "\n";
-							}else {
-								std::cout<<"propagate neg bv " << bvID << "<= " << to << "\n";
-								assert(value(l)==l_Undef);
-								enqueue(~l, comparisonprop_marker);
-							}
-						}
-						break;
-					case Comparison::gt:
-						if (underApprox>to){
-							if(value(l)==l_True){
-								std::cout<<"nothing bv " << bvID << "> " << to << "\n";
-							}else if (value(l)==l_False){
-								std::cout<<"conflict bv " << bvID << "> " << to << "\n";
-								conflict.push(l);
-								buildValueReason(op,bvID,cID,conflict);
-								toSolver(conflict);
-								return false;
-							}else {
-								std::cout<<"propagate bv " << bvID << "> " << to << "\n";
-								assert(value(l)==l_Undef);
-								enqueue(l, comparisonprop_marker);
-							}
-						}
-						break;
-					case Comparison::geq:
-					default:
-						if (underApprox>=to){
-							if(value(l)==l_True){
-								std::cout<<"nothing bv " << bvID << ">= " << to << "\n";
-							}else if (value(l)==l_False){
-								std::cout<<"conflict bv " << bvID << ">= " << to << "\n";
-								conflict.push(l);
-								buildValueReason(op,bvID,cID,conflict);
-								toSolver(conflict);
-								return false;
-							}else {
-								std::cout<<"propagate bv " << bvID << ">= " << to << "\n";
-								assert(value(l)==l_Undef);
-								enqueue(l, comparisonprop_marker);
-							}
-						}
-						break;
+
+				if((op==Comparison::lt && underApprox>=to) ||
+						(op==Comparison::leq && underApprox>to)){
+					if(value(l)==l_True){
+						std::cout<<"conflict neg bv " << bvID << op << to << "\n";
+						conflict.push(~l);
+						buildValueReason(-op,bvID,cID,conflict);
+						toSolver(conflict);
+						return false;
+					}else if (value(l)==l_False){
+						//do nothing
+						std::cout<<"nothing neg bv " << bvID << op << to << "\n";
+					}else {
+						std::cout<<"propagate neg bv " << bvID << op << to << "\n";
+						assert(value(l)==l_Undef);
+						enqueue(~l, comparisonprop_marker);
+					}
+				}else if((op==Comparison::gt && underApprox>to) ||
+						(op==Comparison::geq && underApprox>=to)){
+					if(value(l)==l_True){
+						std::cout<<"nothing bv " << bvID << op<< to << "\n";
+					}else if (value(l)==l_False){
+						std::cout<<"conflict bv " << bvID << op << to << "\n";
+						conflict.push(l);
+						buildValueReason(op,bvID,cID,conflict);
+						toSolver(conflict);
+						return false;
+					}else {
+						std::cout<<"propagate bv " << bvID << op << to << "\n";
+						assert(value(l)==l_Undef);
+						enqueue(l, comparisonprop_marker);
+					}
+				}
+			}
+
+			//comparisons to bitvectors.
+			vec<int> & bvcompare = bvcompares[bvID];
+
+			for(int i = 0;i<bvcompare.size();i++){
+				int cID = bvcompare[i];
+				ComparisonID & c = comparisons[cID];
+				Comparison op = c.op();
+				int compareID = c.compareID;
+				assert(compareID>=0);
+				Lit l =  c.l;
+				updateApproximations(compareID);
+
+				Weight & under_compare = under_approx[compareID];
+
+
+
+				if((op==Comparison::lt && overApprox<under_compare) ||
+						(op==Comparison::leq && overApprox<=under_compare)){
+					if(value(l)==l_True){
+						//do nothing
+						std::cout<<"nothing bv " << bvID << op << compareID << "\n";
+					}else if (value(l)==l_False){
+						std::cout<<"conflict bv " << bvID << op << compareID << "\n";
+						assert(value(l)==l_False);
+						assert(dbg_value(l)==l_False);
+						conflict.push(l);
+						buildValueReasonBV(op,bvID,compareID,cID,conflict);
+						toSolver(conflict);
+						return false;
+					}else {
+						std::cout<<"propagate bv " << bvID << op << compareID << "\n";
+						assert(value(l)==l_Undef);
+						enqueue(l, comparisonprop_marker);
+					}
+				}else if((op==Comparison::gt && overApprox<=under_compare) ||
+						(op==Comparison::geq && overApprox<under_compare)){
+					if(value(l)==l_True){
+						std::cout<<"conflict neg bv " << bvID << op << compareID << "\n";
+						conflict.push(~l);
+						buildValueReasonBV(-op,bvID,compareID,cID,conflict);
+						toSolver(conflict);
+						return false;
+					}else if (value(l)==l_False){
+						std::cout<<"nothing neg bv " << bvID << op << compareID << "\n";
+					}else {
+						std::cout<<"propagate neg bv " << bvID << op << compareID << "\n";
+						assert(value(l)==l_Undef);
+						enqueue(~l, comparisonprop_marker);
+					}
 				}
 			}
 
 
+			for(int i=bvcompare.size()-1;i>=0;i--){
+				int cID = bvcompare[i];
+				ComparisonID & c = comparisons[cID];
+				Comparison op = c.op();
+				int compareID = c.compareID;
+				assert(compareID>=0);
+				Lit l =  c.l;
+				updateApproximations(compareID);
+				Weight & over_compare = over_approx[compareID];
+				if((op==Comparison::lt && underApprox>=over_compare) ||
+						(op==Comparison::leq && underApprox>over_compare)){
+					if(value(l)==l_True){
+						std::cout<<"conflict neg bv " << bvID << op << compareID << "\n";
+						conflict.push(~l);
+						buildValueReasonBV(-op,bvID,compareID,cID,conflict);
+						toSolver(conflict);
+						return false;
+					}else if (value(l)==l_False){
+						//do nothing
+						std::cout<<"nothing neg bv " << bvID << op << compareID << "\n";
+					}else {
+						std::cout<<"propagate neg bv " << bvID << op << compareID << "\n";
+						assert(value(l)==l_Undef);
+						enqueue(~l, comparisonprop_marker);
+					}
+				}else if((op==Comparison::gt && underApprox>over_compare) ||
+						(op==Comparison::geq && underApprox>=over_compare)){
+					if(value(l)==l_True){
+						std::cout<<"nothing bv " << bvID << op<< compareID << "\n";
+					}else if (value(l)==l_False){
+						std::cout<<"conflict bv " << bvID << op << compareID << "\n";
+						conflict.push(l);
+						buildValueReasonBV(op,bvID,compareID,cID,conflict);
+						toSolver(conflict);
+						return false;
+					}else {
+						std::cout<<"propagate bv " << bvID << op << compareID << "\n";
+						assert(value(l)==l_Undef);
+						enqueue(l, comparisonprop_marker);
+					}
+				}
+			}
+
 			if(hasTheory(bvID))
 				getTheory(bvID)->enqueueBV(bvID);//only enqueue the bitvector in the subtheory _after_ it's approximation has been updated!
-
 		}
 		
 		requiresPropagation = false;
@@ -1094,6 +1126,102 @@ public:
 
 		return true;
 	};
+
+	Weight ceildiv(Weight a, Weight b);
+
+	void buildValueReasonBV(Comparison op, int bvID,int comparebvID, int comparisonID, vec<Lit> & conflict){
+		Weight  over_cur = over_approx[bvID];
+		Weight  under_cur = under_approx[bvID];
+		assert(checkApproxUpToDate(bvID));
+
+		Weight  over_comp = over_approx[comparebvID];
+		Weight  under_comp = under_approx[comparebvID];
+		assert(checkApproxUpToDate(bvID));
+		if (op==Comparison::lt){
+			assert(over_cur<under_comp);
+
+		}
+		else if (op==Comparison::leq){
+			assert(over_cur<=under_comp);
+
+		}
+		else if (op==Comparison::geq){
+			assert(under_cur>=over_comp);
+
+		}
+		else if (op==Comparison::gt){
+			assert(under_cur>over_comp);
+		}
+
+		if(isConst(bvID) && isConst(comparebvID)){
+			//both bitvectors are constants, so no reason is required
+			return;
+		}else if (isConst(comparebvID)){
+			assert(under_comp==over_comp);
+			//if the other bitvector is a constant,
+			//then the reason for the assignment is because this bitvector is (<,<=,>,>=) than the underapproximation of that constant.
+			newComparison(op,bvID,under_comp);
+			int cID = getComparisonID(op,bvID,under_comp);
+			buildValueReason(op,bvID,cID,conflict);
+		}else if (isConst(bvID)){
+			assert(under_cur==over_cur);
+			//if the other bitvector is a constant,
+			//then the reason for the assignment is because this bitvector is (<,<=,>,>=) than the underapproximation of that constant.
+			op=~op;
+			newComparison(op,comparebvID,over_cur);
+			int cID = getComparisonID(op,comparebvID,over_cur);
+			buildValueReason(op,comparebvID,cID,conflict);
+		}else{
+			//neither bitvector is constant. Pick a value between them, and learn relative to that.
+			Weight midval;
+			Comparison cOp;
+
+			if (op==Comparison::lt){
+				assert(over_cur>=0);
+				assert(under_comp>=0);
+				assert(over_cur<under_comp);
+
+				midval = ceildiv( under_comp- over_cur,2)+over_cur; //integer ceiling division
+				assert(midval<=under_comp);
+				assert(over_cur<midval);
+				cOp=Comparison::geq;
+				assert(midval!=over_cur);//because we took the integer ceiling division
+			}
+			else if (op==Comparison::leq){
+				assert(over_cur<=under_comp);
+				Weight m = under_comp- over_cur;
+				midval = ceildiv( under_comp- over_cur,2)+over_cur; //integer ceiling division
+				assert(midval<=under_comp);
+				assert(over_cur<=midval);
+				cOp=Comparison::geq;
+			}
+			else if (op==Comparison::geq){
+				assert(under_cur>=over_comp);
+				midval = (under_cur- over_comp)/2 + over_comp;//integer floor division
+				assert(midval>=over_comp);
+				assert(under_cur>=midval);
+				cOp=Comparison::leq;
+			}
+			else{
+				assert((op==Comparison::gt));
+				assert(under_cur>over_comp);
+				midval = (under_cur- over_comp)/2 + over_comp;//integer floor division
+				assert(midval>=over_comp);
+				assert(under_cur>midval);
+				cOp=Comparison::leq;
+			}
+
+			newComparison(op,bvID,midval);
+			int cID = getComparisonID(op,bvID,midval);
+			buildValueReason(op,bvID,cID,conflict);
+			op=cOp;
+			newComparison(op,comparebvID,midval);
+			cID = getComparisonID(op,comparebvID,midval);
+			buildValueReason(op,comparebvID,cID,conflict);
+		}
+
+
+	}
 
 	void buildValueReason(Comparison op, int bvID, int comparisonID, vec<Lit> & conflict){
 		static int iter = 0;
@@ -1852,7 +1980,7 @@ public:
 		alteredBV.growTo(bvID+1);
 		bvcompares.growTo(bvID+1);
 		compares.growTo(bvID+1);
-
+		bvconst.growTo(bvID+1);
 		//bv_callbacks.growTo(bvID+1);
 		if(under_approx[bvID]>-1){
 			assert(false);
@@ -1882,7 +2010,7 @@ public:
 		in_backtrack_queue.growTo(bvID+1,-1);
 		under_approx.growTo(bvID+1,-1);
 		over_approx.growTo(bvID+1,-1);
-
+		bvconst.growTo(bvID+1);
 		alteredBV.growTo(bvID+1);
 		bvcompares.growTo(bvID+1);
 		compares.growTo(bvID+1);
@@ -1905,6 +2033,9 @@ public:
 		return BitVector(*this,bvID);
 	}
 
+	bool isConst(int bvID)const{
+		return bvconst[bvID];
+	}
 
 	bool hasBV(int bvID){
 		return bvID>=0 && bvID<under_approx.size() && under_approx[bvID]>-1;
@@ -1921,11 +2052,21 @@ private:
 
 		return lit_Undef;
 	}
+	int getComparisonID(Comparison op, int bvID,const Weight & lt){
+		//could do a binary search here:
+		for(int i=0;i<compares[bvID].size();i++){
+			int cID = compares[bvID][i];
+			if (comparisons[cID].op() == op && comparisons[cID].w == lt){
+				return cID;
+			}
+		}
 
+		return -1;
+	}
 	Lit getComparisonBV(Comparison op, int bvID,int compareID){
 
 		if(bvID>compareID){
-			Lit c =getComparisonBV(~op,compareID,bvID);
+			Lit c =getComparisonBV(-op,compareID,bvID);
 			if(c!=lit_Undef){
 				return ~c;
 			}else{
@@ -2089,7 +2230,7 @@ public:
 	Lit newComparisonBV(Comparison op, int bvID,int toID, Var outerVar = var_Undef) {
 
 		if(bvID>toID){
-			return ~newComparisonBV(~op,toID,bvID,outerVar);//is this correct?
+			return ~newComparisonBV(-op,toID,bvID,outerVar);//is this correct?
 		}
 
 		Lit l;
@@ -2445,6 +2586,36 @@ public:
 	}
 
 };
+
+
+template<typename Weight>
+inline Weight BVTheorySolver<Weight>::ceildiv(Weight a, Weight b){
+	Weight rem = a%b;
+	Weight div = a/b;
+	return  (rem !=0) ? (div+1) : div;
+}
+template<>
+inline mpq_class BVTheorySolver<mpq_class>::ceildiv(mpq_class a, mpq_class b){
+	//what is the correct way to do this, if any?
+	assert(false);//this is not properly implemented yet...
+	return a/b;
+
+}
+template<>
+inline mpf_class BVTheorySolver<mpf_class>::ceildiv(mpf_class a, mpf_class b){
+	return ceil(a/b);
+}
+template<>
+inline double BVTheorySolver<double>::ceildiv(double a, double b){
+	return std::ceil(a/b);
+}
+template<>
+inline float BVTheorySolver<float>::ceildiv(float a, float b){
+	return std::ceil(a/b);
+}
+
+
+
 template<typename Weight>
 using BitVector = typename BVTheorySolver<Weight>::BitVector;
 
