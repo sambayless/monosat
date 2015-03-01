@@ -18,7 +18,7 @@ $cd Static
 $make
 ```
 
-MonoSAT requires C++11 support. Tested on Ubuntu 14.04, with G++ 4.8.2, and recent MinGW releases on Windows. 
+MonoSAT requires C++11 support, zlib, and GMP >= 5.1.3. Tested on Ubuntu 14.04, with G++ 4.8.2 and G++ 4.9. 
 
 If you build MonoSAT without using the provided makefiles, it is critically important to compile with `NDEBUG` set (*i.e.,* `-DNDEBUG`), as otherwise many very expensive debugging assertions will be enabled. 
 
@@ -44,7 +44,7 @@ MonoSAT is written in C++. Core SAT solver functionality is in the `core/` and `
 
 The graph and geometry theory solvers can be found in `geometry/` and `graph/`. Many of the graph algorithsms used by MonoSAT are collected in  `dgl/` (for 'Dynamic Graph Library'). 
 
-`dgl/` incldudes C++ implementations of several dynamic graph algorithms (as well as some more common graph algorithms), and is well-optimized for medium sized (<20,000 nodes, < 100,000 edges), sparse graphs. The algorithms in dgl are designed for the case where the set of *possible* edges (and nodes) is fixed and known in advance (or only changes infrequently), and from that fixed set of possible edges many subsets of edges will subsequently be selected to be included in or excluded from the graph. 'dgl' supports templated edge weights and edge capacities, and has been tested succesfully with integers, floats, and GMP arbitrary precision rationals.
+`dgl/` incldudes C++ implementations of several dynamic graph algorithms (as well as some more common graph algorithms), and is well-optimized for medium sized (<20,000 nodes, < 100,000 edges), sparse graphs. The algorithms in dgl are designed for the case where the set of *possible* edges (and nodes) is fixed and known in advance (or only changes infrequently), and from that fixed set of possible edges many subsets of edges will subsequently be selected to be included in or excluded from the graph. 'dgl' supports templated edge weights and edge capacities, and has been tested successfully with integers, floats, and GMP arbitrary precision rationals.
 
 ######Algirthms implemented in 'dgl/' include:
 * Reachability/Shortest Path
