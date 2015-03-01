@@ -1,9 +1,11 @@
-Release/*
+*.o
+*.d
+#Release/*
 Release2/*
-Debug/*
+#Debug/*
 Klee/*
 coverage/*
-Static/*
+#Static/*
 Win32/*
 Win64/*
 DbgRelease/*
@@ -12,4 +14,4 @@ Test/*
 graph/resources/*
 /DbgRelease
 /Test
-/Static
+#/Static
