@@ -1781,8 +1781,9 @@ void NConvexPolygon<D, T>::reorderVertices2d() {
 		centerX += p.x;
 		centerY += p.y;
 	}
-	centerX /= vertices.size();
-	centerY /= vertices.size();
+	T npoints =  (int)vertices.size();
+	centerX /=npoints;
+	centerY /=npoints;
 	
 	//from http://stackoverflow.com/a/6989383
 	
