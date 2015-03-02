@@ -660,7 +660,7 @@ bool MaxflowDetector<Weight>::checkSatisfied() {
 				if (positiveCheck.maxFlow() >= dist) {
 					return false;
 				}
-				if (!negativeCheck.maxFlow() < dist) {
+				if (negativeCheck.maxFlow() < dist) {
 					return false;
 				}
 			}
