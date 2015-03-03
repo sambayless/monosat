@@ -162,8 +162,11 @@ public:
 			return outer->getOverApprox(id);
 		}
 
-		vec<Lit> & getBits(){
+		vec<Lit> & getBits()const{
 			return outer->getBits(id);
+		}
+		int width()const{
+			return getBits().size();
 		}
 	};
 
@@ -203,6 +206,19 @@ public:
 
 	vec<vec<int> > compares; //for each bitvector, comparisons are all to unique values, and in ascending order of compareTo.
 	vec<vec<int>> bvcompares;
+
+	struct Addition{
+		int aID=-1;
+		int bID=-1;
+		//Weight w=0;
+		bool hasAddition()const{
+			return aID>=0;
+		}
+/*		bool addConst()const{
+			return bID<0;
+		}*/
+	};
+	vec<Addition> additions;//each bitvector is the result of at most one addition.
 
 	vec<Weight> under_approx;
 	vec<Weight> over_approx;
@@ -329,16 +345,8 @@ public:
 		return comparisons[comparisonID];
 	}
 	inline int getbvID(Var v) const{
-
 		return vars[v].bvID;
 	}
-
-	inline int getDetector(Var v) const {
-		assert(!isComparisonVar(v));
-		return vars[v].detector_edge;
-	}
-	
-
 
 	void makeEqual(Lit l1, Lit l2) {
 		Lit o1 = toSolver(l1);
@@ -646,13 +654,13 @@ public:
 					if(sign(p)){
 						op=-op;
 					}
-					buildValueReason(op,bvID,comparisonID,reason);
+					buildValueReason(op,bvID,comparisons[comparisonID].w,reason);
 				}else{
 					int compareBV = comparisons[comparisonID].compareID;
 					if(sign(p)){
 						op=-op;
 					}
-					buildValueReasonBV(op,bvID,compareBV,comparisonID,reason);
+					buildValueReasonBV(op,bvID,compareBV,reason);
 				}
 			}else{
 
@@ -779,6 +787,22 @@ public:
 			}
 		}
 
+		if(additions[bvID].hasAddition()){
+			int aID = additions[bvID].aID;
+			int bID = additions[bvID].bID;
+			assert(aID<bvID);
+			assert(bID<bvID);
+			Weight under = under_approx[aID] +  under_approx[bID];
+			Weight over = over_approx[aID] +  over_approx[bID];
+
+			if(under >under_approx[bvID]){
+				under_approx[bvID]=under;
+			}
+			if(over<over_approx[bvID]){
+				over_approx[bvID]=over;
+			}
+		}
+
 		for(int cID:compares[bvID]){
 			ComparisonID & c = comparisons[cID];
 			Comparison op = c.op();
@@ -813,6 +837,14 @@ public:
 					}
 					break;
 			}
+		}
+		int width = bitvectors[bvID].size();
+		Weight max_val = ((1L)<<width)-1;
+		if(under_approx[bvID]>max_val){
+			under_approx[bvID]=max_val;
+		}
+		if(over_approx[bvID]>max_val){
+			over_approx[bvID]=max_val;
 		}
 	}
 
@@ -850,6 +882,20 @@ public:
 			}
 		}
 
+		if(additions[bvID].hasAddition()){
+			int aID = additions[bvID].aID;
+			int bID = additions[bvID].bID;
+			assert(aID<bvID);
+			assert(bID<bvID);
+			Weight underadd = under_approx[aID] +  under_approx[bID];
+			Weight overadd = over_approx[aID] +  over_approx[bID];
+			if(underadd >under){
+				under=underadd;
+			}
+			if(overadd<over){
+				over=overadd;
+			}
+		}
 		for(int cID:compares[bvID]){
 			ComparisonID & c = comparisons[cID];
 			Comparison op = c.op();
@@ -886,6 +932,14 @@ public:
 					break;
 			}
 		}
+		int width = bitvectors[bvID].size();
+		Weight max_val = (1L<<width)-1;
+		if(under>max_val){
+			under=max_val;
+		}
+		if(over>max_val){
+			over=max_val;
+		}
 		assert(under==under_approx[bvID]);
 		assert(over==over_approx[bvID]);
 #endif
@@ -911,7 +965,7 @@ public:
 			return true;
 		}
 		printf("bv prop %d\n",stats_propagations);
-		if(stats_propagations==5){
+		if(stats_propagations==318){
 			int a =1;
 		}
 		bool any_change = false;
@@ -933,6 +987,33 @@ public:
 			std::cout<<"bv: " << bvID << " (" <<underApprox << ", " <<overApprox << " )\n";
 
 			vec<int> & compare = compares[bvID];
+			if(additions[bvID].hasAddition()){
+
+				int aID = additions[bvID].aID;
+				int bID = additions[bvID].bID;
+				assert(aID<bvID);
+				assert(bID<bvID);
+				Weight under = under_approx[aID] +  under_approx[bID];
+				Weight over = over_approx[aID] +  over_approx[bID];
+				int width = bitvectors[bvID].size();
+				Weight max_val = ((1L)<<width)-1;
+				if(under>max_val){
+					under=max_val;
+				}
+				if(over>max_val){
+					over=max_val;
+				}
+				if(underApprox>over){
+					//then we have a conflict
+					buildAdditionReason(bvID,conflict);
+					toSolver(conflict);
+					return false;
+				}else if (overApprox<under){
+					buildAdditionReason(bvID,conflict);
+					toSolver(conflict);
+					return false;
+				}
+			}
 
 			//update over approx lits
 			for(int i = 0;i<compare.size();i++){
@@ -952,7 +1033,7 @@ public:
 						assert(value(l)==l_False);
 						assert(dbg_value(l)==l_False);
 						conflict.push(l);
-						buildValueReason(op,bvID,cID,conflict);
+						buildValueReason(op,bvID,to,conflict);
 						toSolver(conflict);
 						return false;
 					}else {
@@ -965,7 +1046,7 @@ public:
 					if(value(l)==l_True){
 						std::cout<<"conflict neg bv " << bvID << op << to << "\n";
 						conflict.push(~l);
-						buildValueReason(-op,bvID,cID,conflict);
+						buildValueReason(-op,bvID,to,conflict);
 						toSolver(conflict);
 						return false;
 					}else if (value(l)==l_False){
@@ -991,7 +1072,7 @@ public:
 					if(value(l)==l_True){
 						std::cout<<"conflict neg bv " << bvID << op << to << "\n";
 						conflict.push(~l);
-						buildValueReason(-op,bvID,cID,conflict);
+						buildValueReason(-op,bvID,to,conflict);
 						toSolver(conflict);
 						return false;
 					}else if (value(l)==l_False){
@@ -1009,7 +1090,7 @@ public:
 					}else if (value(l)==l_False){
 						std::cout<<"conflict bv " << bvID << op << to << "\n";
 						conflict.push(l);
-						buildValueReason(op,bvID,cID,conflict);
+						buildValueReason(op,bvID,to,conflict);
 						toSolver(conflict);
 						return false;
 					}else {
@@ -1046,7 +1127,7 @@ public:
 						assert(value(l)==l_False);
 						assert(dbg_value(l)==l_False);
 						conflict.push(l);
-						buildValueReasonBV(op,bvID,compareID,cID,conflict);
+						buildValueReasonBV(op,bvID,compareID,conflict);
 						toSolver(conflict);
 						return false;
 					}else {
@@ -1059,7 +1140,7 @@ public:
 					if(value(l)==l_True){
 						std::cout<<"conflict neg bv " << bvID << op << compareID << "\n";
 						conflict.push(~l);
-						buildValueReasonBV(-op,bvID,compareID,cID,conflict);
+						buildValueReasonBV(-op,bvID,compareID,conflict);
 						toSolver(conflict);
 						return false;
 					}else if (value(l)==l_False){
@@ -1087,7 +1168,7 @@ public:
 					if(value(l)==l_True){
 						std::cout<<"conflict neg bv " << bvID << op << compareID << "\n";
 						conflict.push(~l);
-						buildValueReasonBV(-op,bvID,compareID,cID,conflict);
+						buildValueReasonBV(-op,bvID,compareID,conflict);
 						toSolver(conflict);
 						return false;
 					}else if (value(l)==l_False){
@@ -1105,7 +1186,7 @@ public:
 					}else if (value(l)==l_False){
 						std::cout<<"conflict bv " << bvID << op << compareID << "\n";
 						conflict.push(l);
-						buildValueReasonBV(op,bvID,compareID,cID,conflict);
+						buildValueReasonBV(op,bvID,compareID,conflict);
 						toSolver(conflict);
 						return false;
 					}else {
@@ -1129,7 +1210,49 @@ public:
 
 	Weight ceildiv(Weight a, Weight b);
 
-	void buildValueReasonBV(Comparison op, int bvID,int comparebvID, int comparisonID, vec<Lit> & conflict){
+
+	void buildAdditionReason(int bvID, vec<Lit> & conflict){
+		Weight  over_cur = over_approx[bvID];
+		Weight  under_cur = under_approx[bvID];
+		assert(checkApproxUpToDate(bvID));
+		assert(additions[bvID].hasAddition());
+
+		//the reason that the addition is over is the reason that
+		//bvID > addition_under, or the reason that addition_under>= its current value.
+		int aID = additions[bvID].aID;
+		int bID = additions[bvID].bID;
+
+		assert(aID<bvID);
+		assert(bID<bvID);
+
+		Weight under_add = under_approx[aID] +  under_approx[bID];
+		Weight over_add = over_approx[aID] +  over_approx[bID];
+
+		int width = bitvectors[bvID].size();
+		Weight max_val = ((1L)<<width)-1;
+		if(under_add>max_val){
+			under_add=max_val;
+		}
+		if(over_add>max_val){
+			over_add=max_val;
+		}
+
+		if(under_cur>over_add){
+
+			buildValueReason(Comparison::gt, bvID,over_add,conflict);
+
+			buildValueReason(Comparison::leq, aID,over_approx[aID],conflict);
+			buildValueReason(Comparison::leq, bID,over_approx[bID],conflict);
+		}else{
+			assert(over_cur<under_add);
+			buildValueReason(Comparison::lt, bvID,under_add,conflict);
+
+			buildValueReason(Comparison::geq, aID,under_approx[aID],conflict);
+			buildValueReason(Comparison::geq, bID,under_approx[bID],conflict);
+		}
+	}
+
+	void buildValueReasonBV(Comparison op, int bvID,int comparebvID, vec<Lit> & conflict){
 		Weight  over_cur = over_approx[bvID];
 		Weight  under_cur = under_approx[bvID];
 		assert(checkApproxUpToDate(bvID));
@@ -1160,17 +1283,17 @@ public:
 			assert(under_comp==over_comp);
 			//if the other bitvector is a constant,
 			//then the reason for the assignment is because this bitvector is (<,<=,>,>=) than the underapproximation of that constant.
-			newComparison(op,bvID,under_comp);
-			int cID = getComparisonID(op,bvID,under_comp);
-			buildValueReason(op,bvID,cID,conflict);
+			//newComparison(op,bvID,under_comp);
+			//int cID = getComparisonID(op,bvID,under_comp);
+			buildValueReason(op,bvID,under_comp,conflict);
 		}else if (isConst(bvID)){
 			assert(under_cur==over_cur);
 			//if the other bitvector is a constant,
 			//then the reason for the assignment is because this bitvector is (<,<=,>,>=) than the underapproximation of that constant.
 			op=~op;
-			newComparison(op,comparebvID,over_cur);
-			int cID = getComparisonID(op,comparebvID,over_cur);
-			buildValueReason(op,comparebvID,cID,conflict);
+			//newComparison(op,comparebvID,over_cur);
+			//int cID = getComparisonID(op,comparebvID,over_cur);
+			buildValueReason(op,comparebvID,over_cur,conflict);
 		}else{
 			//neither bitvector is constant. Pick a value between them, and learn relative to that.
 			Weight midval;
@@ -1211,27 +1334,30 @@ public:
 				cOp=Comparison::leq;
 			}
 
-			newComparison(op,bvID,midval);
-			int cID = getComparisonID(op,bvID,midval);
-			buildValueReason(op,bvID,cID,conflict);
-			op=cOp;
-			newComparison(op,comparebvID,midval);
-			cID = getComparisonID(op,comparebvID,midval);
-			buildValueReason(op,comparebvID,cID,conflict);
+			//newComparison(op,bvID,midval);
+			//int cID = getComparisonID(op,bvID,midval);
+			buildValueReason(op,bvID,midval,conflict);
+
+			//newComparison(op,comparebvID,midval);
+			//cID = getComparisonID(op,comparebvID,midval);
+			buildValueReason(cOp,comparebvID,midval,conflict);
 		}
 
 
 	}
 
-	void buildValueReason(Comparison op, int bvID, int comparisonID, vec<Lit> & conflict){
+	void buildValueReason(Comparison op, int bvID, Weight  to,  vec<Lit> & conflict){
 		static int iter = 0;
 		++iter;
-			printf("reason %d: %d %d\n",iter,bvID, comparisonID);
+			printf("reason %d: %d\n",iter,bvID);
 			if(iter==16){
 				int a=1;
 			}
-			Weight & to = getComparison(comparisonID).w;
-			Lit l =  getComparison(comparisonID).l;
+			if(isConst(bvID)){
+				// a constant bitvector needs no reason
+				return;
+			}
+
 
 			bool compare_over;
 
@@ -1308,9 +1434,34 @@ public:
 				return;
 			}
 
+
+			if(additions[bvID].hasAddition()){
+				int aID = additions[bvID].aID;
+				int bID = additions[bvID].bID;
+				assert(aID<bvID);
+				assert(bID<bvID);
+				Weight underadd = under_approx[aID] +  under_approx[bID];
+				Weight overadd = over_approx[aID] +  over_approx[bID];
+				if(underadd >under){
+					under=underadd;
+				}
+				if(overadd<over){
+					over=overadd;
+				}
+				if (compare_over && comp(op,over, to)){
+					//then the reason is that aID is <= weight-under(bID), or bID <= weight-under(aID)
+					buildValueReason(op,aID,to-under_approx[bID],conflict);
+					buildValueReason(op,bID,to-under_approx[aID],conflict);
+					return;
+				}else if(!compare_over  && comp(op,under, to)){
+					buildValueReason(op,aID,to-over_approx[bID],conflict);
+					buildValueReason(op,bID,to-over_approx[aID],conflict);
+					return;
+				}
+			}
+
 			for(int cID:compares[bvID]){
-				if(cID == comparisonID)
-					continue;
+
 				ComparisonID & c = comparisons[cID];
 				Comparison op = c.op();
 
@@ -1859,6 +2010,30 @@ public:
 					over+=bit;
 				}
 			}
+
+			if(additions[bvID].hasAddition()){
+				int aID = additions[bvID].aID;
+				int bID = additions[bvID].bID;
+				int width = bitvectors[bvID].size();
+				Weight max_val = (1L<<width)-1;
+				assert(aID<bvID);
+				assert(bID<bvID);
+				Weight underadd = under_approx[aID] +  under_approx[bID];
+				Weight overadd = over_approx[aID] +  over_approx[bID];
+				if(underadd>max_val){
+					underadd=max_val;
+				}
+				if(overadd>max_val){
+					overadd=max_val;
+				}
+				if(underadd >under){
+					return false;
+				}
+				if(overadd<over){
+					return false;
+				}
+			}
+
 			for(int cID:compares[bvID]){
 				ComparisonID & c = comparisons[cID];
 				assert(c.compareID<0);
@@ -1967,6 +2142,54 @@ public:
 		theoryIds[bvID]=theoryID;
 	}
 
+
+/*	BitVector newAdditionConst(int resultID, int aID, Weight weight){
+		int bitwidth = getBV(resultID).width();
+		if(resultID<=aID){
+			std::cerr<<"Addition result must have a strictly greater id than its arguments\n";
+			exit(1);
+		}
+		if(bitwidth !=  getBV(aID).width()){
+			std::cerr<<"Bit widths must match for bitvectors\n";
+			exit(1);
+		}
+
+		if(additions[resultID].aID>-1){
+			std::cerr<<"Bitvectors can be the sum of at most one addition\n";
+			exit(1);
+		}
+
+		additions[resultID].aID=aID;
+		additions[resultID].bID=-1;
+		additions[resultID].w=weight;
+		return getBV(resultID);
+	}*/
+	BitVector newAdditionBV(int resultID, int aID, int bID){
+		int bitwidth = getBV(resultID).width();
+		if(resultID<=aID || resultID<=bID){
+			std::cerr<<"Addition result must have a strictly greater id than its arguments\n";
+			exit(1);
+		}
+		if(bitwidth !=  getBV(aID).width()){
+			std::cerr<<"Bit widths must match for bitvectors\n";
+			exit(1);
+		}
+		if(bitwidth !=  getBV(bID).width()){
+			std::cerr<<"Bit widths must match for bitvectors\n";
+			exit(1);
+		}
+
+		if(additions[resultID].aID>-1){
+			std::cerr<<"Bitvectors can be the sum of at most one addition\n";
+			exit(1);
+		}
+
+		additions[resultID].aID=aID;
+		additions[resultID].bID=bID;
+		//additions[resultID].w=0;
+		return getBV(resultID);
+	}
+
 	BitVector newBitvector(int bvID, vec<Var> & vars){
 		if(bvID<0){
 			bvID = bitvectors.size();
@@ -1981,6 +2204,8 @@ public:
 		bvcompares.growTo(bvID+1);
 		compares.growTo(bvID+1);
 		bvconst.growTo(bvID+1);
+		additions.growTo(bvID+1);
+
 		//bv_callbacks.growTo(bvID+1);
 		if(under_approx[bvID]>-1){
 			assert(false);
@@ -1999,6 +2224,20 @@ public:
 		return BitVector(*this,bvID);
 	}
 
+	void makeConst(int bvID, Weight c){
+		BitVector bv = getBV(bvID);
+		for (int i = bv.width()-1;i>=0;i--){
+			Weight v = ((Weight)1)<<i;
+			Lit l = bv.getBits()[i];
+			if(c>=v){
+				c-=v;
+
+				addClause(l);
+			}else{
+				addClause(~l);
+			}
+		}
+	}
 
 	BitVector newBitvector(int bvID, int bitwidth){
 		if(bvID<0){
@@ -2014,6 +2253,7 @@ public:
 		alteredBV.growTo(bvID+1);
 		bvcompares.growTo(bvID+1);
 		compares.growTo(bvID+1);
+		additions.growTo(bvID+1);
 
 		//bv_callbacks.growTo(bvID+1);
 		if(under_approx[bvID]>-1){
@@ -2225,6 +2465,7 @@ public:
 		}
 		return l;
 	}
+
 
 
 	Lit newComparisonBV(Comparison op, int bvID,int toID, Var outerVar = var_Undef) {

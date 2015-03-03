@@ -6,16 +6,19 @@
 CPP_SRCS += \
 ../dgl/AllPairs.cpp \
 ../dgl/ConnectedComponents.cpp \
+../dgl/Distance.cpp \
 ../dgl/Reach.cpp 
 
 OBJS += \
 ./dgl/AllPairs.o \
 ./dgl/ConnectedComponents.o \
+./dgl/Distance.o \
 ./dgl/Reach.o 
 
 CPP_DEPS += \
 ./dgl/AllPairs.d \
 ./dgl/ConnectedComponents.d \
+./dgl/Distance.d \
 ./dgl/Reach.d 
 
 

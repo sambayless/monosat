@@ -372,13 +372,13 @@ int main(int argc, char** argv) {
 		}
 
 		Dimacs<StreamBuffer, SimpSolver> parser;
-		ComparisonParser<char *, SimpSolver> comparisonParser;
-		parser.addParser(&comparisonParser);
+		BVParser<char *, SimpSolver> bvParser;
+		parser.addParser(&bvParser);
 
 		SymbolParser<char*,SimpSolver> symbolParser;
 		parser.addParser(&symbolParser);
 
-		GraphParser<char *, SimpSolver> graphParser(precise,comparisonParser.theory);
+		GraphParser<char *, SimpSolver> graphParser(precise,bvParser.theory);
 		parser.addParser(&graphParser);
 
 

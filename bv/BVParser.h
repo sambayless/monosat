@@ -21,8 +21,8 @@
  **************************************************************************************************/
 
 
-#ifndef COMPARISONPARSER_H_
-#define COMPARISONPARSER_H_
+#ifndef BVPARSER_H_
+#define BVPARSER_H_
 
 
 #include <stdio.h>
@@ -42,7 +42,7 @@ namespace Monosat {
 
 
 template<class B, class Solver>
-class ComparisonParser: public Parser<B, Solver> {
+class BVParser: public Parser<B, Solver> {
 public:
 	BVTheorySolver<long>* theory=nullptr;
 private:
@@ -73,9 +73,29 @@ private:
 	};
 	vec<CompareBV> comparebvs;
 
+/*	struct AddConst{
+		int resultID;
+		int aBV;
+		long b;
+	};
+
+	vec<AddConst> addconsts;*/
+	struct AddBV{
+		int resultID;
+		int aBV;
+		int bBV;
+
+	};
+	vec<AddBV> addbvs;
+
+/*	struct BVConstant{
+		int resultID;
+		long value;
+	};
+	vec<BVConstant> bvconstants;*/
 	void readBV(B& in,  Solver& S) {
 		//bv id width l0 l1 l2 ...
-		++in;
+
 		int id = parseInt(in);
 		int width = parseInt(in);
 
@@ -95,54 +115,89 @@ private:
 		}
 	}
 
+
+	void readAddBV(B& in, Solver& S) {
+		if (opt_ignore_theories) {
+			skipLine(in);
+			return;
+		}
+		skipWhitespace(in);
+	/*	if(! match(in,"bv")){
+			printf("PARSE ERROR! Result of addition must be bitvector\n"), exit(1);
+		}*/
+		int resultID = parseInt(in);
+		skipWhitespace(in);
+		//bool arg1_is_bv=match(in,"bv");
+		long arg1 = parseLong(in);
+		skipWhitespace(in);
+		//bool arg2_is_bv=match(in,"bv");
+		long arg2 = parseLong(in);
+
+		//if(arg1_is_bv && arg2_is_bv){
+		if(arg2<arg1){
+
+			std::swap(arg1,arg2);
+		}
+		addbvs.push();
+		addbvs.last().resultID = resultID;
+		addbvs.last().aBV =  (int) arg1;
+		addbvs.last().bBV = (int) arg2;
+		return;
+	/*	}else if(!(arg1_is_bv || arg2_is_bv)){
+			bvconstants.push({resultID,arg1+arg2});
+			return;
+		}else if (arg2_is_bv && ! arg1_is_bv){
+			std::swap(arg1_is_bv,arg2_is_bv);
+			std::swap(arg1,arg2);
+		}
+		addconsts.push();
+		addconsts.last().resultID = resultID;
+		addconsts.last().aBV = (int) arg1;
+		addconsts.last().b = arg2;*/
+	}
+
+
 	void readCompareBV(B& in, Solver& S,Comparison c) {
 		if (opt_ignore_theories) {
 			skipLine(in);
 			return;
 		}
 		//bv_lt bvID var weight
-		++in;
 
-		int bvID = parseInt(in);
 		int v = parseInt(in) - 1;
-
 		while (v >= S.nVars())
 			S.newVar();
-
-		int compareID = parseInt(in);
-
-		comparebvs.push();
-		comparebvs.last().bvID = bvID;
-		comparebvs.last().compareID = compareID;
-		comparebvs.last().c = c;
-		comparebvs.last().var = v;
+		skipWhitespace(in);
+		//bool arg1_is_bv=match(in,"bv");
+		long arg1 = parseLong(in);
+		skipWhitespace(in);
+		//bool arg2_is_bv=match(in,"bv");
+		long arg2 = parseLong(in);
+/*
+		if (arg2_is_bv && ! arg1_is_bv){
+			c=~c;
+			std::swap(arg1_is_bv,arg2_is_bv);
+			std::swap(arg1,arg2);
+		}*/
+		//if(arg2_is_bv){
+			comparebvs.push();
+			comparebvs.last().bvID = (int) arg1;
+			comparebvs.last().compareID = (int) arg2;
+			comparebvs.last().c = c;
+			comparebvs.last().var = v;
+		/*}else{
+			compares.push();
+			compares.last().bvID =(int)  arg1;
+			compares.last().w = arg2;
+			compares.last().c = c;
+			compares.last().var = v;
+		}*/
 	}
 
-	void readCompare(B& in, Solver& S,Comparison c) {
-		if (opt_ignore_theories) {
-			skipLine(in);
-			return;
-		}
-		//bv_lt bvID var weight
-		++in;
 
-		int bvID = parseInt(in);
-		int v = parseInt(in) - 1;
-
-		while (v >= S.nVars())
-			S.newVar();
-
-		long weight = parseLong(in);
-
-		compares.push();
-		compares.last().bvID = bvID;
-		compares.last().w = weight;
-		compares.last().c = c;
-		compares.last().var = v;
-	}
 
 public:
-	ComparisonParser(){
+	BVParser(){
 
 	}
 	bool parseLine(B& in, Solver& S) {
@@ -154,43 +209,33 @@ public:
 			//just a comment
 			return false;
 		} else if (match(in, "bv")) {
-			if (match(in, "_lt_bv")) {
+			skipWhitespace(in);
+			if (match(in, "+")) {
 				count++;
-				readCompareBV(in, S,Comparison::lt);
+				readAddBV(in, S);
 				return true;
-			} else if (match(in, "_leq_bv")) {
+			}else if (match(in, "<=")) {
 				count++;
 				readCompareBV(in, S,Comparison::leq);
 				return true;
-			} else if (match(in, "_gt_bv")) {
+			}else if (match(in, "<")) {
 				count++;
-				readCompareBV(in, S,Comparison::gt);
+				readCompareBV(in, S,Comparison::lt);
 				return true;
-			} else if (match(in, "_geq_bv")) {
+			}else if (match(in, ">=")) {
 				count++;
 				readCompareBV(in, S,Comparison::geq);
 				return true;
-			}else if (match(in, "_lt")) {
+			}  else if (match(in, ">")) {
 				count++;
-				readCompare(in, S,Comparison::lt);
+				readCompareBV(in, S,Comparison::gt);
 				return true;
-			} else if (match(in, "_leq")) {
-				count++;
-				readCompare(in, S,Comparison::leq);
-				return true;
-			} else if (match(in, "_gt")) {
-				count++;
-				readCompare(in, S,Comparison::gt);
-				return true;
-			} else if (match(in, "_geq")) {
-				count++;
-				readCompare(in, S,Comparison::geq);
-				return true;
-			}else{
+			} else{
 				readBV(in,S);
+				return true;
 			}
 
-			return true;
+			return false;
 		}
 		return false;
 	}
@@ -206,6 +251,16 @@ public:
 				}
 			}
 
+
+			/*for(auto & c:addconsts){
+				int newBV = theory->newBitvector(-1,theory->getBV(c.aBV).width()).getID();
+				theory->makeConst(newBV,c.b);
+				addbvs.push();
+				addbvs.last().resultID = c.resultID;
+				addbvs.last().aBV =  c.aBV;
+				addbvs.last().bBV = newBV;
+			}*/
+
 			for(auto & c:compares){
 				theory->newComparison(c.c,c.bvID,c.w,c.var);
 			}
@@ -214,6 +269,9 @@ public:
 				theory->newComparisonBV(c.c,c.bvID,c.compareID,c.var);
 			}
 
+			for(auto & c:addbvs){
+				theory->newAdditionBV(c.resultID,c.aBV,c.bBV);
+			}
 		}
 
 
@@ -228,4 +286,4 @@ public:
 
 
 
-#endif /* COMPARISONPARSER_H_ */
+#endif /* BVPARSER_H_ */
