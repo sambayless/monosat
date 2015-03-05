@@ -318,7 +318,13 @@ public:
 	}
 	
 	void writeTheoryWitness(std::ostream& write_to) {
+		for(int bvID = 0;bvID<bitvectors.size();bvID++){
+				vec<Lit> & bv = bitvectors[bvID];
+				updateApproximations(bvID);
+				Weight under=under_approx[bvID];
+				write_to<<"bv"<<bvID << " = " << under << "\n";
 
+		}
 	}
 	
 	inline int getTheoryIndex() {
@@ -965,7 +971,7 @@ public:
 			return true;
 		}
 		printf("bv prop %d\n",stats_propagations);
-		if(stats_propagations==318){
+		if(stats_propagations==126){
 			int a =1;
 		}
 		bool any_change = false;
@@ -1350,7 +1356,7 @@ public:
 		static int iter = 0;
 		++iter;
 			printf("reason %d: %d\n",iter,bvID);
-			if(iter==16){
+			if(iter==67){
 				int a=1;
 			}
 			if(isConst(bvID)){
@@ -1450,12 +1456,12 @@ public:
 				}
 				if (compare_over && comp(op,over, to)){
 					//then the reason is that aID is <= weight-under(bID), or bID <= weight-under(aID)
-					buildValueReason(op,aID,to-under_approx[bID],conflict);
-					buildValueReason(op,bID,to-under_approx[aID],conflict);
-					return;
-				}else if(!compare_over  && comp(op,under, to)){
 					buildValueReason(op,aID,to-over_approx[bID],conflict);
 					buildValueReason(op,bID,to-over_approx[aID],conflict);
+					return;
+				}else if(!compare_over  && comp(op,under, to)){
+					buildValueReason(op,aID,to-under_approx[bID],conflict);
+					buildValueReason(op,bID,to-under_approx[aID],conflict);
 					return;
 				}
 			}
@@ -2470,10 +2476,20 @@ public:
 
 	Lit newComparisonBV(Comparison op, int bvID,int toID, Var outerVar = var_Undef) {
 
-		if(bvID>toID){
-			return ~newComparisonBV(-op,toID,bvID,outerVar);//is this correct?
-		}
+		if(bvID<toID){
 
+			Lit l = newComparisonBV(~op,toID,bvID,outerVar);//is this correct?
+		/*	if(outerVar !=var_Undef){
+				makeEqualInSolver(mkLit(outerVar),toSolver(~l));
+			}*/
+			return l;
+		}
+		if(!hasBV(bvID)){
+			printf("PARSE ERROR! Undefined bitvector %d\n", bvID), exit(1);
+		}
+		if(!hasBV(toID)){
+			printf("PARSE ERROR! Undefined bitvector %d\n", toID), exit(1);
+		}
 		Lit l;
 		int comparisonID = comparisons.size();
 		if((l = getComparisonBV(op,bvID, toID))!=lit_Undef){

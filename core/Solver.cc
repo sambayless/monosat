@@ -1333,6 +1333,11 @@ void Solver::addClauseSafely(vec<Lit> & ps) {
 	}
 }
 bool Solver::addConflictClause(vec<Lit> & ps, CRef & confl_out, bool permanent) {
+	printf("learnt ");
+	for (Lit l:ps){
+		printf(" %d", dimacs(l));
+	}
+	printf(" 0\n");
 	bool any_undef=false;
 	sort(ps);
 	Lit p;

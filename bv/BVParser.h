@@ -138,6 +138,7 @@ private:
 
 			std::swap(arg1,arg2);
 		}
+
 		addbvs.push();
 		addbvs.last().resultID = resultID;
 		addbvs.last().aBV =  (int) arg1;
@@ -173,6 +174,8 @@ private:
 		skipWhitespace(in);
 		//bool arg2_is_bv=match(in,"bv");
 		long arg2 = parseLong(in);
+
+
 /*
 		if (arg2_is_bv && ! arg1_is_bv){
 			c=~c;
@@ -241,7 +244,7 @@ public:
 	}
 
 	void implementConstraints(Solver & S) {
-		if(compares.size() || bvs.size()){
+		if(bvs.size()){
 			theory = new BVTheorySolver<long>(&S);
 
 
@@ -272,6 +275,10 @@ public:
 			for(auto & c:addbvs){
 				theory->newAdditionBV(c.resultID,c.aBV,c.bBV);
 			}
+		}else if (addbvs.size() || comparebvs.size() || compares.size()){
+
+			printf("PARSE ERROR! Undefined bitvector\n"), exit(1);
+
 		}
 
 
