@@ -240,8 +240,18 @@ public:
 		last_t = t;
 
 		changed.resize(g.nEdgeIDs());
-		F.clear();
 		F.resize(g.edges());
+		for(int edgeID = 0;edgeID<g.edges();edgeID++){
+			//can do much better than this...
+			if(g.hasEdge(edgeID) && F[edgeID]>0){
+				if (F[edgeID]>0){
+					markChanged(edgeID);
+				}
+			}
+			F[edgeID]=0;
+		}
+
+
 		prev.resize(g.nodes());
 		M.resize(g.nodes());
 		
@@ -366,15 +376,19 @@ public:
 		return f;
 	}
 	const Weight getEdgeCapacity(int id) {
-		assert(g.edgeEnabled(id));
+
 		return g.getWeight(id);
 	}
 	const Weight getEdgeFlow(int id) {
-		assert(g.edgeEnabled(id));
+		if(!g.edgeEnabled(id)){
+			assert(F[id]==0);
+		}
 		return F[id];    	// reserve(id);
 	}
 	const Weight getEdgeResidualCapacity(int id) {
-		assert(g.edgeEnabled(id));
+		if(!g.edgeEnabled(id)){
+				assert(F[id]==0);
+			}
 		return g.getWeight(id) - F[id];    	// reserve(id);
 	}
 };
