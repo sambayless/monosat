@@ -418,7 +418,7 @@ void MaxflowDetector<Weight>::buildMaxFlowTooLowReason(Weight maxflow, vec<Lit> 
 				bassert(outer->value(l) == l_False);
 				conflict.push(l);
 				if(outer->hasBitVector(edgeID)){
-					outer->buildBVReason(outer->getEdgeBV(edgeID).getID(),Comparison::leq,underapprox_conflict_detector->getEdgeFlow(edgeID),conflict);
+					outer->buildBVReason(outer->getEdgeBV(edgeID).getID(),Comparison::leq,overapprox_conflict_detector->getEdgeFlow(edgeID),conflict);
 					//outer->buildBVReason(bv.getID(),inclusive ? Comparison::gt:Comparison::geq,bv.getUnder(),conflict);
 				}
 			}
@@ -469,7 +469,7 @@ void MaxflowDetector<Weight>::buildMaxFlowTooLowReason(Weight maxflow, vec<Lit> 
 					}else{
 						//if the edge _was_ enabled, and all of its capacity was used, then the reason that it didn't have more capacity must be included.
 						if(outer->hasBitVector(edgeid)){
-							outer->buildBVReason(outer->getEdgeBV(edgeid).getID(),Comparison::leq,underapprox_conflict_detector->getEdgeFlow(edgeid),conflict);
+							outer->buildBVReason(outer->getEdgeBV(edgeid).getID(),Comparison::leq,overapprox_conflict_detector->getEdgeFlow(edgeid),conflict);
 							//outer->buildBVReason(bv.getID(),inclusive ? Comparison::gt:Comparison::geq,bv.getUnder(),conflict);
 						}
 					}
@@ -495,8 +495,8 @@ void MaxflowDetector<Weight>::buildMaxFlowTooLowReason(Weight maxflow, vec<Lit> 
 					if (residual_capacity>0) {
 						seen[p] = true;
 						visit.push(p);
-					}else if (g_under.getWeight(edgeid)==0){
-						//if the edge _was_ enabled, it had no capacity capacity was used, then the reason that it didn't have more capacity must be included.
+					}else if (g_over.getWeight(edgeid)==0){
+						//if the edge _was_ enabled, and it had no capacity capacity was used, then the reason that it didn't have more capacity must be included.
 						//does this really hold for backwards edges?
 						if(outer->hasBitVector(edgeid)){
 							outer->buildBVReason(outer->getEdgeBV(edgeid).getID(),Comparison::leq,0,conflict);
@@ -710,7 +710,7 @@ bool MaxflowDetector<Weight>::propagate(vec<Lit> & conflict) {
 
 				} else if (outer->value(l) == l_False) {
 					conflict.push(l);
-					outer->buildBVReason(bv.getID(),inclusive ? Comparison::leq:Comparison::lt,bv.getOver(),conflict);
+					outer->buildBVReason(bv.getID(),inclusive ? Comparison::leq:Comparison::lt,under_maxflow,conflict);
 					buildMaxFlowTooHighReason(bv.getOver(), conflict);
 					return false;
 				}
@@ -724,7 +724,7 @@ bool MaxflowDetector<Weight>::propagate(vec<Lit> & conflict) {
 
 				} else if (outer->value(l) == l_True) {
 					conflict.push(~l);
-					outer->buildBVReason(bv.getID(),inclusive ? Comparison::gt:Comparison::geq,bv.getUnder(),conflict);
+					outer->buildBVReason(bv.getID(),inclusive ? Comparison::gt:Comparison::geq,over_maxflow,conflict);
 					buildMaxFlowTooLowReason(bv.getUnder(), conflict);
 					return false;
 				}
@@ -742,25 +742,51 @@ bool MaxflowDetector<Weight>::checkSatisfied() {
 	for (int j = 0; j < flow_lits.size(); j++) {
 		
 		Lit l = flow_lits[j].l;
-		Weight dist = flow_lits[j].max_flow;
-		
-		if (l != lit_Undef) {
-			//int node =getNode(var(l));
+		if(flow_lits[j].max_flow>=0){
+			Weight dist = flow_lits[j].max_flow;
 			
-			if (outer->value(l) == l_True) {
-				if (underCheck.maxFlow() < dist) {
-					return false;
+			if (l != lit_Undef) {
+				//int node =getNode(var(l));
+
+				if (outer->value(l) == l_True) {
+					if (underCheck.maxFlow() < dist) {
+						return false;
+					}
+				} else if (outer->value(l) == l_False) {
+					if (overCheck.maxFlow() >= dist) {
+						return false;
+					}
+				} else {
+					if (underCheck.maxFlow() >= dist) {
+						return false;
+					}
+					if (overCheck.maxFlow() < dist) {
+						return false;
+					}
 				}
-			} else if (outer->value(l) == l_False) {
-				if (overCheck.maxFlow() >= dist) {
-					return false;
-				}
-			} else {
-				if (underCheck.maxFlow() >= dist) {
-					return false;
-				}
-				if (overCheck.maxFlow() < dist) {
-					return false;
+			}
+		}else{
+			Weight dist_under = flow_lits[j].bv.getUnder();
+			Weight dist_over = flow_lits[j].bv.getOver();
+
+			if (l != lit_Undef) {
+				//int node =getNode(var(l));
+
+				if (outer->value(l) == l_True) {
+					if (underCheck.maxFlow() < dist_under) {
+						return false;
+					}
+				} else if (outer->value(l) == l_False) {
+					if (overCheck.maxFlow() >= dist_over) {
+						return false;
+					}
+				} else {
+					if (underCheck.maxFlow() >= dist_under) {
+						return false;
+					}
+					if (overCheck.maxFlow() < dist_over) {
+						return false;
+					}
 				}
 			}
 		}

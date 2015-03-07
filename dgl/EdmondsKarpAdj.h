@@ -282,6 +282,7 @@ public:
 		dbg_print_graph(s, t);
 		history_qhead = g.history.size();
 		last_history_clear = g.historyclears;
+		assert(f>=0);
 		return f;
 	}
 	void setSource(int s) {
