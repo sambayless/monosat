@@ -31,6 +31,7 @@
 #include "mtl/Deque.h"
 #include "utils/System.h"
 #include "Detector.h"
+#include "bv/BVTheorySolver.h"
 using namespace dgl;
 namespace Monosat {
 template<typename Weight>
@@ -84,10 +85,12 @@ public:
 
 	struct DistLit {
 		Lit l;
-		Weight max_flow;
+		Weight max_flow=-1;
+		BitVector<Weight>  bv;
 		bool inclusive;//If inclusive true, l is true iff the maximum flow is >= max_flow; else, l is true iff the maximum flow is > max_flow.
 	};
 	vec<DistLit> flow_lits;
+
 	std::vector<MaxFlowEdge> cut;
 
 	vec<MaxFlowEdge> tmp_cut;
@@ -125,6 +128,7 @@ public:
 	void dbg_decisions();
 	void printSolution(std::ostream & write_to);
 	void addFlowLit(Weight max_flow, Var reach_var, bool inclusive);
+	void addFlowBVLessThan(const BitVector<Weight>  &bv, Var v, bool inclusive);
 	MaxflowDetector(int _detectorID, GraphTheorySolver<Weight> * _outer,
 			DynamicGraph<Weight>  &_g, DynamicGraph<Weight>  &_antig, int _source, int _target, double seed = 1); //:Detector(_detectorID),outer(_outer),within(-1),source(_source),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL){}
 	~MaxflowDetector() {

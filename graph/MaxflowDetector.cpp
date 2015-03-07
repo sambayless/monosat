@@ -160,6 +160,32 @@ void MaxflowDetector<Weight>::addFlowLit(Weight maxflow, Var outer_reach_var, bo
 }
 
 template<typename Weight>
+void MaxflowDetector<Weight>::addFlowBVLessThan(const BitVector<Weight>  &bv, Var outer_reach_var, bool inclusive) {
+	g_under.invalidate();
+	g_over.invalidate();
+	Var reach_var = outer->newVar(outer_reach_var, getID());
+	if (first_reach_var == var_Undef) {
+		first_reach_var = reach_var;
+	} else {
+		assert(reach_var > first_reach_var);
+	}
+
+	Lit reachLit = mkLit(reach_var, false);
+	bool found = false;
+
+	flow_lits.push();
+	flow_lits.last().l = reachLit;
+	flow_lits.last().bv = bv;
+	flow_lits.last().max_flow = -1;
+	flow_lits.last().inclusive=inclusive;
+	while (reach_lit_map.size() <= reach_var - first_reach_var) {
+		reach_lit_map.push(-1);
+	}
+
+	reach_lit_map[reach_var - first_reach_var] = flow_lits.size() - 1;
+
+}
+template<typename Weight>
 void MaxflowDetector<Weight>::buildMaxFlowTooHighReason(Weight flow, vec<Lit> & conflict) {
 	//drawFull();
 	double starttime = rtime(2);
@@ -174,6 +200,10 @@ void MaxflowDetector<Weight>::buildMaxFlowTooHighReason(Weight flow, vec<Lit> & 
 				Var v = outer->edge_list[i].v;
 				assert(outer->value(v)==l_True);
 				conflict.push(mkLit(v, true));
+				if(outer->hasBitVector(i)){
+					outer->buildBVReason(outer->getEdgeBV(i).getID(),Comparison::geq,underapprox_conflict_detector->getEdgeFlow(i),conflict);
+					//outer->buildBVReason(bv.getID(),inclusive ? Comparison::gt:Comparison::geq,bv.getUnder(),conflict);
+				}
 			}
 		}
 	}
@@ -387,6 +417,10 @@ void MaxflowDetector<Weight>::buildMaxFlowTooLowReason(Weight maxflow, vec<Lit> 
 				Lit l = mkLit(outer->getEdgeVar(edgeID), false);
 				bassert(outer->value(l) == l_False);
 				conflict.push(l);
+				if(outer->hasBitVector(edgeID)){
+					outer->buildBVReason(outer->getEdgeBV(edgeID).getID(),Comparison::leq,underapprox_conflict_detector->getEdgeFlow(edgeID),conflict);
+					//outer->buildBVReason(bv.getID(),inclusive ? Comparison::gt:Comparison::geq,bv.getUnder(),conflict);
+				}
 			}
 		} else {
 			int a = 1;
@@ -432,6 +466,12 @@ void MaxflowDetector<Weight>::buildMaxFlowTooLowReason(Weight maxflow, vec<Lit> 
 					if (residual_capacity > 0) {
 						seen[p] = true;
 						visit.push(p);
+					}else{
+						//if the edge _was_ enabled, and all of its capacity was used, then the reason that it didn't have more capacity must be included.
+						if(outer->hasBitVector(edgeid)){
+							outer->buildBVReason(outer->getEdgeBV(edgeid).getID(),Comparison::leq,underapprox_conflict_detector->getEdgeFlow(edgeid),conflict);
+							//outer->buildBVReason(bv.getID(),inclusive ? Comparison::gt:Comparison::geq,bv.getUnder(),conflict);
+						}
 					}
 				} else {
 					//this is a disabled edge, and we can add it to the cut.
@@ -455,6 +495,13 @@ void MaxflowDetector<Weight>::buildMaxFlowTooLowReason(Weight maxflow, vec<Lit> 
 					if (residual_capacity>0) {
 						seen[p] = true;
 						visit.push(p);
+					}else if (g_under.getWeight(edgeid)==0){
+						//if the edge _was_ enabled, it had no capacity capacity was used, then the reason that it didn't have more capacity must be included.
+						//does this really hold for backwards edges?
+						if(outer->hasBitVector(edgeid)){
+							outer->buildBVReason(outer->getEdgeBV(edgeid).getID(),Comparison::leq,0,conflict);
+							//outer->buildBVReason(bv.getID(),inclusive ? Comparison::gt:Comparison::geq,bv.getUnder(),conflict);
+						}
 					}
 				} else {
 					//this is a disabled edge, and we can add it to the cut.
@@ -529,10 +576,16 @@ void MaxflowDetector<Weight>::buildReason(Lit p, vec<Lit> & reason, CRef marker)
 		 u=w;
 		 }*/
 		Var v = var(p);
-		Weight flow = flow_lits[reach_lit_map[v - first_reach_var]].max_flow;
-		//int u =getNode(v);
-		buildMaxFlowTooHighReason(flow, reason);
-		
+		DistLit & f = flow_lits[reach_lit_map[v - first_reach_var]];
+		if (f.max_flow>=0){
+			Weight flow = f.max_flow;
+			//int u =getNode(v);
+			buildMaxFlowTooHighReason(flow, reason);
+		}else{
+			auto & bv= f.bv;
+			outer->buildBVReason(bv.getID(),f.inclusive ? Comparison::gt:Comparison::geq,bv.getUnder(),reason);
+			buildMaxFlowTooHighReason(bv.getOver(), reason);
+		}
 		//double elapsed = rtime(2)-startpathtime;
 		//	pathtime+=elapsed;
 	} else if (marker == overprop_marker) {
@@ -545,9 +598,17 @@ void MaxflowDetector<Weight>::buildReason(Lit p, vec<Lit> & reason, CRef marker)
 		//assign the mincut edge weights if they aren't already assigned.
 		
 		Var v = var(p);
-		Weight flow = flow_lits[reach_lit_map[v - first_reach_var]].max_flow;
-		//int t = getNode(v); // v- var(reach_lits[d][0]);
-		buildMaxFlowTooLowReason(flow, reason);
+		DistLit & f = flow_lits[reach_lit_map[v - first_reach_var]];
+		if (f.max_flow>=0){
+			Weight flow = f.max_flow;
+			//int t = getNode(v); // v- var(reach_lits[d][0]);
+			buildMaxFlowTooLowReason(flow, reason);
+		}else{
+			auto & bv = f.bv;
+			outer->buildBVReason(bv.getID(),f.inclusive ? Comparison::gt:Comparison::geq,bv.getUnder(),reason);
+			//int t = getNode(v); // v- var(reach_lits[d][0]);
+			buildMaxFlowTooLowReason(bv.getUnder(), reason);
+		}
 		
 	} else {
 		assert(false);
@@ -601,37 +662,75 @@ bool MaxflowDetector<Weight>::propagate(vec<Lit> & conflict) {
 		DistLit f = flow_lits[j];
 		Lit l = f.l;
 		bool inclusive = f.inclusive;
-		Weight& maxflow = f.max_flow;
-		//int u = getNode(var(l));
+		if(f.max_flow>=0){
+			Weight& maxflow = f.max_flow;
+			//int u = getNode(var(l));
 		
-		if ((inclusive && under_maxflow >= maxflow) || (!inclusive && under_maxflow > maxflow)) {
-			if (outer->value(l) == l_True) {
-				//do nothing
-			} else if (outer->value(l) == l_Undef) {
-				//trail.push(Assignment(false,true,detectorID,0,var(l)));
-				outer->enqueue(l, underprop_marker);
+			if ((inclusive && under_maxflow >= maxflow) || (!inclusive && under_maxflow > maxflow)) {
+				if (outer->value(l) == l_True) {
+					//do nothing
+				} else if (outer->value(l) == l_Undef) {
+					//trail.push(Assignment(false,true,detectorID,0,var(l)));
+					outer->enqueue(l, underprop_marker);
+
+				} else if (outer->value(l) == l_False) {
+					conflict.push(l);
+					buildMaxFlowTooHighReason(maxflow, conflict);
+					return false;
+				}
 				
-			} else if (outer->value(l) == l_False) {
-				conflict.push(l);
-				buildMaxFlowTooHighReason(maxflow, conflict);
-				return false;
-			}
-			
-		} else if ((inclusive && over_maxflow < maxflow) || (!inclusive && over_maxflow <= maxflow)) {
-			if (outer->value(l) == l_False) {
-				//do nothing
-			} else if (outer->value(l) == l_Undef) {
-				//trail.push(Assignment(false,false,detectorID,0,var(l)));
-				outer->enqueue(~l, underprop_marker);
+			} else if ((inclusive && over_maxflow < maxflow) || (!inclusive && over_maxflow <= maxflow)) {
+				if (outer->value(l) == l_False) {
+					//do nothing
+				} else if (outer->value(l) == l_Undef) {
+					//trail.push(Assignment(false,false,detectorID,0,var(l)));
+					outer->enqueue(~l, underprop_marker);
+
+				} else if (outer->value(l) == l_True) {
+					conflict.push(~l);
+					buildMaxFlowTooLowReason(maxflow, conflict);
+					return false;
+				}
 				
-			} else if (outer->value(l) == l_True) {
-				conflict.push(~l);
-				buildMaxFlowTooLowReason(maxflow, conflict);
-				return false;
 			}
-			
+		}else{
+			Lit l = f.l;
+
+			bool inclusive = f.inclusive;
+			BitVector<Weight> & bv = f.bv;
+			Weight & max_flow_under = bv.getUnder();
+			Weight & max_flow_over = bv.getOver();
+
+			if ((inclusive && under_maxflow >= max_flow_over) || (!inclusive && under_maxflow > max_flow_over)) {
+				if (outer->value(l) == l_True) {
+					//do nothing
+				} else if (outer->value(l) == l_Undef) {
+					//trail.push(Assignment(false,true,detectorID,0,var(l)));
+					outer->enqueue(l, underprop_marker);
+
+				} else if (outer->value(l) == l_False) {
+					conflict.push(l);
+					outer->buildBVReason(bv.getID(),inclusive ? Comparison::leq:Comparison::lt,bv.getOver(),conflict);
+					buildMaxFlowTooHighReason(bv.getOver(), conflict);
+					return false;
+				}
+
+			} else if ((inclusive && over_maxflow < max_flow_under) || (!inclusive && over_maxflow <= max_flow_under)) {
+				if (outer->value(l) == l_False) {
+					//do nothing
+				} else if (outer->value(l) == l_Undef) {
+					//trail.push(Assignment(false,false,detectorID,0,var(l)));
+					outer->enqueue(~l, underprop_marker);
+
+				} else if (outer->value(l) == l_True) {
+					conflict.push(~l);
+					outer->buildBVReason(bv.getID(),inclusive ? Comparison::gt:Comparison::geq,bv.getUnder(),conflict);
+					buildMaxFlowTooLowReason(bv.getUnder(), conflict);
+					return false;
+				}
+
+			}
 		}
-		
 	}
 	
 	return true;

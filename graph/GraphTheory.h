@@ -105,7 +105,16 @@ public:
 			Var var;
 			bool strict;
 		};
-		vec<DistanceConstraintBV> unimplemented_distance_constraints_bv;
+	vec<DistanceConstraintBV> unimplemented_distance_constraints_bv;
+
+	struct MaxflowConstraintBV {
+			int s;
+			int t;
+			int bvID;
+			Var var;
+			bool strict;
+		};
+	vec<MaxflowConstraintBV> unimplemented_maxflow_constraints_bv;
 
 
 	DynamicGraph<Weight> g_under;
@@ -646,6 +655,10 @@ public:
 		return edge_list[edgeID].bvID>=0;
 	}
 
+	BitVector<Weight> getEdgeBV(int edgeID){
+		return comparator->getBV(edge_list[edgeID].bvID);
+	}
+
 	bool dbg_propgation(Lit l) {
 #ifndef NDEBUG
 		static vec<Lit> c;
@@ -973,6 +986,46 @@ public:
 		trail_lim.push(trail.size());
 	}
 	;
+
+	void buildBVReason(int bvID, Comparison comp, Weight compareTo, vec<Lit> &reason){
+		BitVector<Weight> bv = comparator->getBV(bvID);
+		switch(comp){
+			case Comparison::lt:{
+				assert(bv.getOver()<compareTo);
+				Lit c = getBV_LT(bvID,compareTo);
+				reason.push(c);
+			}
+			break;
+			case Comparison::leq:{
+				assert(bv.getOver()<=compareTo);
+				Lit c = getBV_LEQ(bvID,compareTo);
+				reason.push(c);
+				}
+				break;
+			case Comparison::gt:{
+				assert(bv.getUnder()>compareTo);
+				Lit c = getBV_GT(bvID,compareTo);
+				reason.push(c);
+				}
+				break;
+			case Comparison::geq:{
+				assert(bv.getUnder()>=compareTo);
+				Lit c = getBV_GEQ(bvID,compareTo);
+				reason.push(c);
+				}
+				break;
+		}
+/*
+		if(strictComparison){
+			leq= outer->getEdgeWeightGT(edgeID,w);
+		}else{
+			leq= ~outer->getEdgeWeightLEQ(edgeID,w);
+		}
+		lbool val = outer->dbg_value(leq);
+		assert(val!=l_True);
+		conflict.push(leq);*/
+
+	}
 
 	void buildReason(Lit p, vec<Lit> & reason,CRef marker) {
 		//CRef marker = S->reason(var(toSolver(p)));
@@ -1772,10 +1825,10 @@ public:
 				return mkLit(getEdgeVar(edgeID));
 			}
 		}
-	int getEdgeBV(int edgeID){
+/*	int getEdgeBV(int edgeID){
 		assert(edge_bv_weights.size()>edgeID);
 		return edge_bv_weights[edgeID].getID();
-	}
+	}*/
 
 	bool isBVEdge(int bvID){
 		return bitvectors[bvID]>=0;
@@ -2117,6 +2170,20 @@ public:
 
 	}
 
+	void implementMaxflowBV(int from, int to, Var v, int bvID, bool strictComparison) {
+		for (int i = 0; i < flow_detectors.size(); i++) {
+			if (flow_detectors[i]->source == from && flow_detectors[i]->target == to) {
+				flow_detectors[i]->addFlowBVLessThan(comparator->getBV(bvID), v,!strictComparison);
+				return;
+			}
+		}
+		MaxflowDetector<Weight> *f = new MaxflowDetector<Weight>(detectors.size(), this,  g_under, g_over, from,
+				to, drand(rnd_seed));
+		flow_detectors.push(f);
+		detectors.push(f);
+		f->addFlowBVLessThan(comparator->getBV(bvID), v,!strictComparison);
+	}
+
 	void implementConstraints() {
 		if (!S->okay())
 			return;
@@ -2171,7 +2238,10 @@ public:
 		}
 		unimplemented_distance_constraints_bv.clear();
 
-
+		for(auto & d:unimplemented_maxflow_constraints_bv){
+			implementMaxflowBV(d.s, d.t, d.var, d.bvID,d.strict);
+		}
+		unimplemented_maxflow_constraints_bv.clear();
 	}
 	void allpairs_undirected(int from, int to, Var reach_var, int within_steps = -1) {
 		
@@ -2261,7 +2331,11 @@ public:
 		//to allow us to alter the solving algorithm based on the number and type of constraints, we aren't implementing them here directly any more - instead,
 		//we just store the constraints in this vector, then implement them later when 'implementConstraints' is called.
 	}
-
+	void maxflowBV(int s, int t, Var reach_var, int bvID, bool strict) {
+		unimplemented_maxflow_constraints_bv.push( { s, t, bvID, reach_var, strict});
+		//to allow us to alter the solving algorithm based on the number and type of constraints, we aren't implementing them here directly any more - instead,
+		//we just store the constraints in this vector, then implement them later when 'implementConstraints' is called.
+	}
 	void reachesAny(int from, Var firstVar, int within_steps = -1) {
 		for (int i = 0; i < g_under.nodes(); i++) {
 			reaches(from, i, firstVar + i, within_steps);

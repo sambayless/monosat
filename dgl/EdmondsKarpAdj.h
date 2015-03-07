@@ -232,49 +232,13 @@ public:
 		}
 #endif
 		
-		//C.resize(g.nodes());
-		/*
-		 #ifdef DEBUG_MAXFLOW
-		 for(int i = 0;i<g.all_edges.size();i++){
-		 int id = g.all_edges[i].id;
-		 int cap = g.getWeight(id);
-		 int from =  g.all_edges[i].from;
-		 int to =  g.all_edges[i].to;
-
-		 ek.setCapacity(from,to,cap);
-		 }
-		 #endif
-		 */
 		if (last_modification > 0 && g.modifications == last_modification && s==last_s && t==last_t) {
-			/*
-			 #ifdef DEBUG_MAXFLOW
-			 int expected_flow =ek.maxFlow(s,t);
-			 #endif
 
-			 #ifdef DEBUG_MAXFLOW
-			 assert(curflow==expected_flow);
-			 #endif
-			 */
 			return curflow;
 		}
 		last_s =s;
 		last_t = t;
-		/*if(rev.size()<g.all_edges.size()){
-		 rev.clear();
 
-		 rev.resize(g.all_edges.size());
-		 for(int i = 0;i<g.all_edges.size();i++){
-		 rev[i]=-1;
-		 int from = g.all_edges[i].from;
-		 int to = g.all_edges[i].to;
-		 for(int j = 0;j<g.adjacency[to].size();j++){
-		 if(g.adjacency[to][j].node == from){
-		 rev[i]=g.adjacency[to][j].id;
-		 break;
-		 }
-		 }
-		 }
-		 }*/
 		changed.resize(g.nEdgeIDs());
 		F.clear();
 		F.resize(g.edges());
@@ -308,15 +272,7 @@ public:
 			}
 			
 		}
-		/*
-		 #ifdef DEBUG_MAXFLOW
-		 int expected_flow =ek.maxFlow(s,t);
-		 #endif
 
-		 #ifdef DEBUG_MAXFLOW
-		 assert(f==expected_flow);
-		 #endif
-		 */
 		//dbg_print_graph(s,t);
 		curflow = f;
 		num_updates++;

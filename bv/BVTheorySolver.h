@@ -146,7 +146,7 @@ public:
 		BitVector(const BitVector && move):outer(move.outer),id(move.id){
 
 			}
-		BitVector& operator=(BitVector &  other) {
+		BitVector& operator=(BitVector   other) {
 			outer= other.outer;
 			id=other.id;
 			return *this;

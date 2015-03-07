@@ -89,6 +89,16 @@ class GraphParser: public Parser<B, Solver> {
 
 	vec<BVDistance> bvdistances;
 
+	struct BVMaxFlow{
+		int graphID;
+		int s;
+		int t;
+		int var;
+		int bvID;
+		bool strict;
+	};
+
+	vec<BVMaxFlow> bvmaxflows;
 	void readDiGraph(B& in, GraphType graph_type, Solver& S) {
 		if (opt_ignore_theories) {
 			skipLine(in);
@@ -590,6 +600,37 @@ class GraphParser: public Parser<B, Solver> {
 			exit(1);
 		}
 	}
+
+	void readMaxFlowConstraintBV(B& in, Solver& S, bool inclusive) {
+			if (opt_ignore_theories) {
+				skipLine(in);
+				return;
+			}
+
+			++in;
+
+			int graphID = parseInt(in);
+			int s = parseInt(in);
+			int t = parseInt(in);
+			int reachVar = parseInt(in) - 1; //note: switched the order of reachVar and flow after the paper, to allow for non-integer flow constraints in the future...
+
+
+			if (graphID < 0 || graphID >= graphs.size()) {
+				printf("PARSE ERROR! Undeclared graph identifier %d for edge %d\n", graphID, reachVar), exit(1);
+			}
+			if (reachVar < 0) {
+				printf("PARSE ERROR! Edge variables must be >=0, was %d\n", reachVar), exit(1);
+			}
+
+			while (reachVar >= S.nVars())
+				S.newVar();
+
+			//parse the flow constraint appropriately for the type of the graph:
+			int bvID = parseInt(in);
+			bvmaxflows.push({graphID,s,t,reachVar,bvID,!inclusive});
+
+		}
+
 	void readMaxFlowConstraint(B& in, Solver& S, bool inclusive) {
 		if (opt_ignore_theories) {
 			skipLine(in);
@@ -951,7 +992,14 @@ public:
 		}else if (match(in, "mst_edge")) {
 			readMinSpanningTreeEdgeConstraint(in, S);
 			return true;
-		} else if (match(in, "maximum_flow_geq")) {
+		}else if (match(in, "maximum_flow_bv_geq")) {
+			readMaxFlowConstraintBV(in, S,true);
+			return true;
+		} else if (match(in, "maximum_flow_bv_gt")) {
+			readMaxFlowConstraintBV(in, S,false);
+			return true;
+		}
+		else if (match(in, "maximum_flow_geq")) {
 			readMaxFlowConstraint(in, S,true);
 			return true;
 		} else if (match(in, "maximum_flow_gt")) {
@@ -1017,6 +1065,11 @@ public:
 			graphs[e.graphID]->distanceBV(e.from, e.to, e.var, e.bvID,e.strict);
 
 		}
+		for(auto & e:bvmaxflows){
+			graphs[e.graphID]->maxflowBV(e.s, e.t, e.var, e.bvID,e.strict);
+
+		}
+
 
 		for (int i = 0; i < graphs.size(); i++) {
 			if (graphs[i])
