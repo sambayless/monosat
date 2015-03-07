@@ -620,7 +620,7 @@ bool MaxflowDetector<Weight>::propagate(vec<Lit> & conflict) {
 		return true;
 	}
 	static int iter1 = 0;
-	if (++iter1 == 7) {
+	if (++iter1 == 64) {
 		int a = 1;
 	}
 #ifdef RECORD

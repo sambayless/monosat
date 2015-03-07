@@ -1615,52 +1615,30 @@ public:
 		return reasonMarker;
 	}
 private:
-	Lit getComparisonLT(int bvID,const Weight & lt){
-		//could do a binary search here:
-		comparisons_lt.growTo(bvID+1);
-		for(int i=0;i<comparisons_lt[bvID].size()-1;i++){
-			int cID = comparisons_lt[bvID][i];
-			if (comparisons[cID].w == lt){
-				return comparisons[cID].l;
-			}
+	vec<vec<int> > & getComparisonSet(Comparison op){
+		switch(op){
+			case Comparison::lt:
+				return comparisons_lt;
+			case Comparison::leq:
+				return comparisons_leq;
+			case Comparison::gt:
+				return comparisons_gt;
+			case Comparison::geq:
+			default:
+				return comparisons_geq;
 		}
-
-		return lit_Undef;
 	}
-	Lit getComparisonGT(int bvID,const Weight & gt){
+	Lit getComparison(int bvID,Comparison op,const Weight & w){
 		//could do a binary search here:
-		comparisons_gt.growTo(bvID+1);
-		for(int i=0;i<comparisons_gt[bvID].size()-1;i++){
-			int cID = comparisons_gt[bvID][i];
-			if (comparisons[cID].w == gt){
+
+		vec<vec<int> > & comparison = getComparisonSet(op);
+		comparison.growTo(bvID+1);
+		for(int i=0;i<comparison[bvID].size()-1;i++){
+			int cID = comparison[bvID][i];
+			if (comparisons[cID].w == w){
 				return comparisons[cID].l;
 			}
 		}
-
-		return lit_Undef;
-	}
-	Lit getComparisonLEQ(int bvID,const Weight & leq){
-		//could do a binary search here:
-		comparisons_leq.growTo(bvID+1);
-		for(int i=0;i<comparisons_leq[bvID].size()-1;i++){
-			int cID = comparisons_leq[bvID][i];
-			if (comparisons[cID].w == leq){
-				return comparisons[cID].l;
-			}
-		}
-
-		return lit_Undef;
-	}
-	Lit getComparisonGEQ(int bvID,const Weight & geq){
-		//could do a binary search here:
-		comparisons_geq.growTo(bvID+1);
-		for(int i=0;i<comparisons_geq[bvID].size()-1;i++){
-			int cID = comparisons_geq[bvID][i];
-			if (comparisons[cID].w == geq){
-				return comparisons[cID].l;
-			}
-		}
-
 		return lit_Undef;
 	}
 public:
@@ -1671,7 +1649,7 @@ public:
 			assert(bvID>=0);
 			//if has existing literal, we really shouldn't create a new one here...
 			Lit l=lit_Undef;
-			if((l=getComparisonGT(bvID,w))!=lit_Undef){
+			if((l=getComparison(bvID,op,w))!=lit_Undef){
 				return l;
 			}
 			int comparisonID = comparisons.size();
@@ -1681,16 +1659,19 @@ public:
 			makeEqualInSolver(comparator->toSolver(gt),toSolver(l));
 
 			comparisons.push({w,l,bvID,true});
-			comparisons_gt[bvID].push(comparisonID);
+
+
+			vec<vec<int> > & comparison = getComparisonSet(op);
+			//comparisons_gt[bvID].push(comparisonID);
 			//insert this value in order.
 			//could do a binary search here...
-			for(int i=0;i<comparisons_gt[bvID].size()-1;i++){
-				int cid = comparisons_gt[bvID][i];
+			for(int i=0;i<comparison[bvID].size()-1;i++){
+				int cid = comparison[bvID][i];
 				if(comparisons[cid].w>= w){
-					for(int j = comparisons_gt[bvID].size()-1; j>i ;j--){
-						comparisons_gt[bvID][j]=comparisons_gt[bvID][j-1];
+					for(int j = comparison[bvID].size()-1; j>i ;j--){
+						comparison[bvID][j]=comparison[bvID][j-1];
 					}
-					comparisons_gt[bvID][i]=comparisonID;
+					comparison[bvID][i]=comparisonID;
 					break;
 				}
 			}
