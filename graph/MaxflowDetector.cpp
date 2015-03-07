@@ -620,7 +620,7 @@ bool MaxflowDetector<Weight>::propagate(vec<Lit> & conflict) {
 		return true;
 	}
 	static int iter1 = 0;
-	if (++iter1 == 135) {
+	if (++iter1 == 7) {
 		int a = 1;
 	}
 #ifdef RECORD
@@ -636,10 +636,13 @@ bool MaxflowDetector<Weight>::propagate(vec<Lit> & conflict) {
 	
 	Weight over_maxflow = -1;
 	Weight under_maxflow = -1;
+	bool computed_under=false;
+	bool computed_over=false;
 	
 	if (underapprox_detector && (!opt_detect_pure_theory_lits || unassigned_positives > 0)) {
 		double startdreachtime = rtime(2);
 		stats_under_updates++;
+		computed_under=true;
 		under_maxflow = underapprox_detector->maxFlow();
 		assert(under_maxflow == underapprox_conflict_detector->maxFlow());
 		double reachUpdateElapsed = rtime(2) - startdreachtime;
@@ -650,6 +653,7 @@ bool MaxflowDetector<Weight>::propagate(vec<Lit> & conflict) {
 	if (overapprox_detector && (!opt_detect_pure_theory_lits || unassigned_negatives > 0)) {
 		double startunreachtime = rtime(2);
 		stats_over_updates++;
+		computed_over=true;
 		over_maxflow = overapprox_detector->maxFlow();
 		assert(over_maxflow == overapprox_conflict_detector->maxFlow());
 		double unreachUpdateElapsed = rtime(2) - startunreachtime;
@@ -666,7 +670,7 @@ bool MaxflowDetector<Weight>::propagate(vec<Lit> & conflict) {
 			Weight& maxflow = f.max_flow;
 			//int u = getNode(var(l));
 		
-			if ((inclusive && under_maxflow >= maxflow) || (!inclusive && under_maxflow > maxflow)) {
+			if (computed_under && ((inclusive && under_maxflow >= maxflow) || (!inclusive && under_maxflow > maxflow))) {
 				if (outer->value(l) == l_True) {
 					//do nothing
 				} else if (outer->value(l) == l_Undef) {
@@ -679,7 +683,7 @@ bool MaxflowDetector<Weight>::propagate(vec<Lit> & conflict) {
 					return false;
 				}
 				
-			} else if ((inclusive && over_maxflow < maxflow) || (!inclusive && over_maxflow <= maxflow)) {
+			} else if (computed_over && ((inclusive && over_maxflow < maxflow) || (!inclusive && over_maxflow <= maxflow))) {
 				if (outer->value(l) == l_False) {
 					//do nothing
 				} else if (outer->value(l) == l_Undef) {
@@ -701,7 +705,7 @@ bool MaxflowDetector<Weight>::propagate(vec<Lit> & conflict) {
 			Weight & max_flow_under = bv.getUnder();
 			Weight & max_flow_over = bv.getOver();
 
-			if ((inclusive && under_maxflow >= max_flow_over) || (!inclusive && under_maxflow > max_flow_over)) {
+			if  (computed_under && ((inclusive && under_maxflow >= max_flow_over) || (!inclusive && under_maxflow > max_flow_over))) {
 				if (outer->value(l) == l_True) {
 					//do nothing
 				} else if (outer->value(l) == l_Undef) {
@@ -715,7 +719,7 @@ bool MaxflowDetector<Weight>::propagate(vec<Lit> & conflict) {
 					return false;
 				}
 
-			} else if ((inclusive && over_maxflow < max_flow_under) || (!inclusive && over_maxflow <= max_flow_under)) {
+			} else if  (computed_over && ((inclusive && over_maxflow < max_flow_under) || (!inclusive && over_maxflow <= max_flow_under))) {
 				if (outer->value(l) == l_False) {
 					//do nothing
 				} else if (outer->value(l) == l_Undef) {

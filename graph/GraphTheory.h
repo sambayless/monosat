@@ -228,7 +228,7 @@ public:
 	};
 */
 
-	vec<int> bitvectors;
+	vec<int> edge_bitvectors;
 /*
 	vec<bool> bv_needs_update;
 	vec<int> bvs_to_update;
@@ -989,7 +989,10 @@ public:
 
 	void buildBVReason(int bvID, Comparison comp, Weight compareTo, vec<Lit> &reason){
 		BitVector<Weight> bv = comparator->getBV(bvID);
-		switch(comp){
+		Lit c = getBV_COMP(bvID,-comp,compareTo);
+		assert(dbg_value(c)==l_False);
+		reason.push(c);
+		/*switch(comp){
 			case Comparison::lt:{
 				assert(bv.getOver()<compareTo);
 				Lit c = getBV_LT(bvID,compareTo);
@@ -998,7 +1001,7 @@ public:
 			break;
 			case Comparison::leq:{
 				assert(bv.getOver()<=compareTo);
-				Lit c = getBV_LEQ(bvID,compareTo);
+				Lit c = ~getBV_GT(bvID,compareTo);
 				reason.push(c);
 				}
 				break;
@@ -1014,7 +1017,7 @@ public:
 				reason.push(c);
 				}
 				break;
-		}
+		}*/
 /*
 		if(strictComparison){
 			leq= outer->getEdgeWeightGT(edgeID,w);
@@ -1166,23 +1169,27 @@ public:
 	void enqueueBV(int bvID){
 		requiresPropagation=true;
 		S->needsPropagation(getTheoryIndex());
-		int edgeID = getBVEdge(bvID);
+		if(isEdgeBV(bvID)){
+			int edgeID = getBVEdge(bvID);
 
-		g_under.setEdgeWeight(edgeID,edge_bv_weights[bvID].getUnder());
-		g_over.setEdgeWeight(edgeID, edge_bv_weights[bvID].getOver());
-		if(using_neg_weights){
-			g_under_weights_over.setEdgeWeight(edgeID,edge_bv_weights[bvID].getOver());
-			g_over_weights_under.setEdgeWeight(edgeID, edge_bv_weights[bvID].getUnder());
+			g_under.setEdgeWeight(edgeID,edge_bv_weights[bvID].getUnder());
+			g_over.setEdgeWeight(edgeID, edge_bv_weights[bvID].getOver());
+			if(using_neg_weights){
+				g_under_weights_over.setEdgeWeight(edgeID,edge_bv_weights[bvID].getOver());
+				g_over_weights_under.setEdgeWeight(edgeID, edge_bv_weights[bvID].getUnder());
+			}
 		}
 	}
 	void backtrackBV(int bvID){
-		int edgeID = getBVEdge(bvID);
+		if (isEdgeBV(bvID)){
+			int edgeID = getBVEdge(bvID);
 
-		g_under.setEdgeWeight(edgeID,edge_bv_weights[bvID].getUnder());
-		g_over.setEdgeWeight(edgeID, edge_bv_weights[bvID].getOver());
-		if(using_neg_weights){
-			g_under_weights_over.setEdgeWeight(edgeID,edge_bv_weights[bvID].getOver());
-			g_over_weights_under.setEdgeWeight(edgeID, edge_bv_weights[bvID].getUnder());
+			g_under.setEdgeWeight(edgeID,edge_bv_weights[bvID].getUnder());
+			g_over.setEdgeWeight(edgeID, edge_bv_weights[bvID].getOver());
+			if(using_neg_weights){
+				g_under_weights_over.setEdgeWeight(edgeID,edge_bv_weights[bvID].getOver());
+				g_over_weights_under.setEdgeWeight(edgeID, edge_bv_weights[bvID].getUnder());
+			}
 		}
 	}
 	void enqueueTheory(Lit l) {
@@ -1287,7 +1294,7 @@ public:
 	;
 	bool propagateTheory(vec<Lit> & conflict) {
 		static int itp = 0;
-		if (++itp == 62279) {
+		if (++itp == 8) {
 			int a = 1;
 		}
 
@@ -1658,169 +1665,77 @@ private:
 	}
 public:
 
-	Lit getBV_GT(int bvID,const Weight & w){
-		Comparison op = Comparison::gt;
-		assert(bvID>=0);
-		//if has existing literal, we really shouldn't create a new one here...
-		Lit l=lit_Undef;
-		if((l=getComparisonGT(bvID,w))!=lit_Undef){
+
+	Lit getBV_COMP(int bvID,Comparison op,const Weight & w){
+
+			assert(bvID>=0);
+			//if has existing literal, we really shouldn't create a new one here...
+			Lit l=lit_Undef;
+			if((l=getComparisonGT(bvID,w))!=lit_Undef){
+				return l;
+			}
+			int comparisonID = comparisons.size();
+			Lit gt = comparator->newComparison(op,bvID,w);
+			l = mkLit(newVar());
+
+			makeEqualInSolver(comparator->toSolver(gt),toSolver(l));
+
+			comparisons.push({w,l,bvID,true});
+			comparisons_gt[bvID].push(comparisonID);
+			//insert this value in order.
+			//could do a binary search here...
+			for(int i=0;i<comparisons_gt[bvID].size()-1;i++){
+				int cid = comparisons_gt[bvID][i];
+				if(comparisons[cid].w>= w){
+					for(int j = comparisons_gt[bvID].size()-1; j>i ;j--){
+						comparisons_gt[bvID][j]=comparisons_gt[bvID][j-1];
+					}
+					comparisons_gt[bvID][i]=comparisonID;
+					break;
+				}
+			}
+
 			return l;
 		}
-		int comparisonID = comparisons.size();
-		Lit gt = comparator->newComparison(op,bvID,w);
-		l = mkLit(newVar());
-
-		makeEqualInSolver(comparator->toSolver(gt),toSolver(l));
-
-		comparisons.push({w,l,bvID,true});
-		comparisons_gt[bvID].push(comparisonID);
-		//insert this value in order.
-		//could do a binary search here...
-		for(int i=0;i<comparisons_gt[bvID].size()-1;i++){
-			int cid = comparisons_gt[bvID][i];
-			if(comparisons[cid].w>= w){
-				for(int j = comparisons_gt[bvID].size()-1; j>i ;j--){
-					comparisons_gt[bvID][j]=comparisons_gt[bvID][j-1];
-				}
-				comparisons_gt[bvID][i]=comparisonID;
-				break;
-			}
-		}
-
-		return l;
-	}
 
 
 	Lit getEdgeWeightGT(int edgeID,const Weight & w){
 		if(edge_bv_weights.size()>edgeID){
 			int bvID = edge_bv_weights[edgeID].getID();
-			return getBV_GT(bvID,w);
+			return getBV_COMP(bvID,Comparison::gt,w);
 		}else{
 			return mkLit(getEdgeVar(edgeID));
 		}
 	}
 
-	Lit getBV_GEQ(int bvID,const Weight & w){
-		Comparison op = Comparison::geq;
-		assert(bvID>=0);
-		//if has existing literal, we really shouldn't create a new one here...
-		Lit l=lit_Undef;
-		if((l=getComparisonGEQ(bvID,w))!=lit_Undef){
-			return l;
-		}
-		int comparisonID = comparisons.size();
-		Lit geq = comparator->newComparison(op,bvID,w);
-		l = mkLit(newVar());
 
-		makeEqualInSolver(comparator->toSolver(geq),toSolver(l));
-
-		comparisons.push({w,l,bvID,true});
-		comparisons_geq[bvID].push(comparisonID);
-		//insert this value in order.
-		//could do a binary search here...
-		for(int i=0;i<comparisons_geq[bvID].size()-1;i++){
-			int cid = comparisons_geq[bvID][i];
-			if(comparisons[cid].w>= w){
-				for(int j = comparisons_geq[bvID].size()-1; j>i ;j--){
-					comparisons_geq[bvID][j]=comparisons_geq[bvID][j-1];
-				}
-				comparisons_geq[bvID][i]=comparisonID;
-				break;
-			}
-		}
-
-		return l;
-	}
 
 	Lit getEdgeWeightGEQ(int edgeID,const Weight w){
 		if(edge_bv_weights.size()>edgeID){
 			int bvID = edge_bv_weights[edgeID].getID();
-			return getBV_GEQ(bvID,w);
+			return getBV_COMP(bvID,Comparison::geq,w);
 		}else{
 			return mkLit(getEdgeVar(edgeID));
 		}
 	}
 
 
-	Lit getBV_LT(int bvID,const Weight & w){
-		Comparison op = Comparison::lt;
-		assert(bvID>=0);
-		//if has existing literal, we really shouldn't create a new one here...
-		Lit l=lit_Undef;
-		if((l=getComparisonLT(bvID,w))!=lit_Undef){
-			return l;
-		}
-		int comparisonID = comparisons.size();
-		Lit lt = comparator->newComparison(op,bvID,w);
-		l = mkLit(newVar());
 
-		makeEqualInSolver(comparator->toSolver(lt),toSolver(l));
-
-		comparisons.push({w,l,bvID,true});
-		comparisons_lt[bvID].push(comparisonID);
-		//insert this value in order.
-		//could do a binary search here...
-		for(int i=0;i<comparisons_lt[bvID].size()-1;i++){
-			int cid = comparisons_lt[bvID][i];
-			if(comparisons[cid].w>= w){
-				for(int j = comparisons_lt[bvID].size()-1; j>i ;j--){
-					comparisons_lt[bvID][j]=comparisons_lt[bvID][j-1];
-				}
-				comparisons_lt[bvID][i]=comparisonID;
-				break;
-			}
-		}
-
-		return l;
-	}
 
 	Lit getEdgeWeightLT(int edgeID,const Weight & w){
 		if(edge_bv_weights.size()>edgeID){
 			int bvID = edge_bv_weights[edgeID].getID();
-			return getBV_LT(bvID,w);
+			return getBV_COMP(bvID,Comparison::lt,w);
 		}else{
 			return mkLit(getEdgeVar(edgeID));
 		}
 	}
 
 
-	Lit getBV_LEQ( int bvID,const Weight & w){
-		Comparison op = Comparison::leq;
-		assert(bvID>=0);
-		//if has existing literal, we really shouldn't create a new one here...
-		Lit l=lit_Undef;
-		if((l=getComparisonLEQ(bvID,w))!=lit_Undef){
-			return l;
-		}
-		int comparisonID = comparisons.size();
-		Lit leq = comparator->newComparison(op, bvID,w);
-		l = mkLit(newVar());
-
-		makeEqualInSolver(comparator->toSolver(leq),toSolver(l));
-
-		comparisons.push({w,l,bvID,true});
-		comparisons_leq[bvID].push(comparisonID);
-		//insert this value in order.
-		//could do a binary search here...
-		for(int i=0;i<comparisons_leq[bvID].size()-1;i++){
-			int cid = comparisons_leq[bvID][i];
-			if(comparisons[cid].w>= w){
-				for(int j = comparisons_leq[bvID].size()-1; j>i ;j--){
-					comparisons_leq[bvID][j]=comparisons_leq[bvID][j-1];
-				}
-				comparisons_leq[bvID][i]=comparisonID;
-				break;
-			}
-		}
-
-		return l;
-
-	}
-
 	Lit getEdgeWeightLEQ(int edgeID,const Weight & w){
 			if(edge_bv_weights.size()>edgeID){
 				int bvID = edge_bv_weights[edgeID].getID();
-				return getBV_LEQ(bvID,w);
+				return getBV_COMP(bvID,Comparison::leq,w);
 			}else{
 				return mkLit(getEdgeVar(edgeID));
 			}
@@ -1830,12 +1745,12 @@ public:
 		return edge_bv_weights[edgeID].getID();
 	}*/
 
-	bool isBVEdge(int bvID){
-		return bitvectors[bvID]>=0;
+	bool isEdgeBV(int bvID){
+		return bvID<edge_bitvectors.size() && edge_bitvectors[bvID]>=0;
 	}
 	int getBVEdge(int bvID){
-		assert(isBVEdge(bvID));
-		return bitvectors[bvID];
+		assert(isEdgeBV(bvID));
+		return edge_bitvectors[bvID];
 	}
 
 	bool isBVVar(Var v){
@@ -1853,7 +1768,7 @@ public:
 			/*	if(outerVar==var_Undef)
 			 outerVar = S->newVar();*/
 			vec<Var> internalBV;
-			int bvID = bitvectors.size();
+			int bvID = edge_bitvectors.size();
 			int index = edge_list.size();
 			for (Var v:bitVector){
 				internalBV.push(newBVVar(v,bvID,index));
@@ -1864,8 +1779,8 @@ public:
 			}*/
 			BitVector<Weight> bv = comparator->newBitvector(bvID,bitVector);
 			comparator->setBitvectorTheory(bvID,this->getTheoryIndex());
-			bitvectors.growTo(bv.getID()+1,-1);
-			bitvectors[bv.getID()]=index;
+			edge_bitvectors.growTo(bv.getID()+1,-1);
+			edge_bitvectors[bv.getID()]=index;
 			//bv_needs_update.growTo(bv.getID()+1);
 			all_edges_unit &= (bv.getUnder()== 1 && bv.getOver()==1);
 			all_edges_positive &= bv.getUnder()>0;
@@ -1938,8 +1853,8 @@ public:
 				int index = edge_list.size();
 				comparator->setBitvectorTheory(bvID,this->getTheoryIndex());
 				BitVector<Weight> bv = comparator->getBV(bvID);
-				bitvectors.growTo(bv.getID()+1,-1);
-				bitvectors[bv.getID()]=index;
+				edge_bitvectors.growTo(bv.getID()+1,-1);
+				edge_bitvectors[bv.getID()]=index;
 				//comparator->setCallback(bv.getID(),&bvcallback);
 				comparisons_lt.growTo(bv.getID()+1);
 				comparisons_gt.growTo(bv.getID()+1);
@@ -2012,7 +1927,7 @@ public:
 		assert(outerVar!=var_Undef);
 		/*	if(outerVar==var_Undef)
 		 outerVar = S->newVar();*/
-		assert(bitvectors.size()==0);
+		assert(edge_bitvectors.size()==0);
 		all_edges_unit &= (weight == 1);
 		all_edges_positive &= weight>0;
 		int index = edge_list.size();
@@ -2143,7 +2058,7 @@ public:
 	}
 
 	void reachesWithinDistanceBV(int from, int to, Var reach_var, int bvID, bool strictComparison) {
-
+		comparator->setBitvectorTheory(bvID,this->getTheoryIndex());
 		assert(from < g_under.nodes());
 
 		if (weighted_dist_info[from].source < 0) {
@@ -2171,6 +2086,7 @@ public:
 	}
 
 	void implementMaxflowBV(int from, int to, Var v, int bvID, bool strictComparison) {
+		comparator->setBitvectorTheory(bvID,this->getTheoryIndex());
 		for (int i = 0; i < flow_detectors.size(); i++) {
 			if (flow_detectors[i]->source == from && flow_detectors[i]->target == to) {
 				flow_detectors[i]->addFlowBVLessThan(comparator->getBV(bvID), v,!strictComparison);
