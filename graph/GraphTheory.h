@@ -2039,6 +2039,9 @@ public:
 	}
 
 	void reachesWithinDistanceBV(int from, int to, Var reach_var, int bvID, bool strictComparison) {
+		if(!comparator ||!comparator->hasBV(bvID)){
+			fprintf(stderr,"Undefined bitvector\n");exit(1);
+		}
 		comparator->setBitvectorTheory(bvID,this->getTheoryIndex());
 		assert(from < g_under.nodes());
 
@@ -2067,6 +2070,9 @@ public:
 	}
 
 	void implementMaxflowBV(int from, int to, Var v, int bvID, bool strictComparison) {
+		if(!comparator || !comparator->hasBV(bvID)){
+			fprintf(stderr,"Undefined bitvector\n");exit(1);
+		}
 		comparator->setBitvectorTheory(bvID,this->getTheoryIndex());
 		for (int i = 0; i < flow_detectors.size(); i++) {
 			if (flow_detectors[i]->source == from && flow_detectors[i]->target == to) {
