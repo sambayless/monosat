@@ -317,7 +317,7 @@ template<typename Weight>
 void MaxflowDetector<Weight>::buildMaxFlowTooLowReason(Weight maxflow, vec<Lit> & conflict, bool force_maxflow) {
 	static int it = 0;
 	++it;
-	if (it == 2) {
+	if (it == 3) {
 		int a = 1;
 	}
 	//printf("%d\n",it);
@@ -411,7 +411,7 @@ void MaxflowDetector<Weight>::buildMaxFlowTooLowReason(Weight maxflow, vec<Lit> 
 			assert(f == cut.size());			//because edges are only ever infinity or 1
 			for (int i = 0; i < cut.size(); i++) {
 				MaxFlowEdge e = cut[i];
-				int edgeID = e.id / 2;
+				int edgeID = e.id / 2;//because we've doubled the set of edges in the learn graph relative to g_over/g_under.
 				Lit l = mkLit(outer->getEdgeVar(edgeID), false);
 				if(outer->value(l)==l_False){//it is possible for the edge to be enabled, but to be set to capacity 0.
 					bassert(outer->value(l) == l_False);

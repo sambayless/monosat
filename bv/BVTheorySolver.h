@@ -982,7 +982,7 @@ public:
 			return true;
 		}
 		printf("bv prop %d\n",stats_propagations);
-		if(stats_propagations==126){
+		if(stats_propagations==83){
 			int a =1;
 		}
 		bool any_change = false;
@@ -1480,9 +1480,9 @@ public:
 			for(int cID:compares[bvID]){
 
 				ComparisonID & c = comparisons[cID];
-				Comparison op = c.op();
+				Comparison cop = c.op();
 
-				switch (op){
+				switch (cop){
 					case Comparison::lt:
 						if(value( c.l)==l_True && over>=c.w){
 							over=c.w-1;

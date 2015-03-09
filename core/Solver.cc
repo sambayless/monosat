@@ -995,7 +995,7 @@ CRef Solver::propagate(bool propagate_theories) {
 			initialPropagate = false;
 		}
 		static int iter = 0;
-		if (++iter == 28) {
+		if (++iter == 52) {
 
 			int a = 1;
 		}
@@ -1340,6 +1340,11 @@ void Solver::addClauseSafely(vec<Lit> & ps) {
 	}
 }
 bool Solver::addConflictClause(vec<Lit> & ps, CRef & confl_out, bool permanent) {
+	static int nlearnt=0;
+	if(++nlearnt==13){
+		int a=1;
+	}
+
 	printf("learnt ");
 	for (Lit l:ps){
 		printf(" %d", dimacs(l));
