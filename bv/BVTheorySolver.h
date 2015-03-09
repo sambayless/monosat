@@ -155,11 +155,11 @@ public:
 		int getID(){
 			return id;
 		}
-		Weight & getUnder(){
-			return outer->getUnderApprox(id);
+		Weight & getUnder(bool level0=false){
+			return outer->getUnderApprox(id,level0);
 		}
-		Weight & getOver(){
-			return outer->getOverApprox(id);
+		Weight & getOver(bool level0=false){
+			return outer->getOverApprox(id,level0);
 		}
 
 		vec<Lit> & getBits()const{
@@ -219,7 +219,8 @@ public:
 		}*/
 	};
 	vec<Addition> additions;//each bitvector is the result of at most one addition.
-
+	vec<Weight> under_approx0;//under approx at level 0
+	vec<Weight> over_approx0;//over approx at level 0
 	vec<Weight> under_approx;
 	vec<Weight> over_approx;
 	vec<int> theoryIds;
@@ -852,17 +853,25 @@ public:
 		if(over_approx[bvID]>max_val){
 			over_approx[bvID]=max_val;
 		}
+		if(decisionLevel()==0){
+			under_approx0[bvID]=under_approx[bvID];
+			over_approx0[bvID]=over_approx[bvID];
+		}
 	}
 
-	Weight & getUnderApprox(int bvID){
-
-
-		return under_approx[bvID];
+	Weight & getUnderApprox(int bvID, bool level0=false){
+		if(level0){
+			return under_approx0[bvID];
+		}else{
+			return under_approx[bvID];
+		}
 	}
-	Weight & getOverApprox(int bvID){
-
-
-		return over_approx[bvID];
+	Weight & getOverApprox(int bvID, bool level0=false){
+		if(level0){
+			return over_approx0[bvID];
+		}else{
+			return over_approx[bvID];
+		}
 	}
 
 	vec<Lit> & getBits(int bvID){
@@ -948,6 +957,8 @@ public:
 		}
 		assert(under==under_approx[bvID]);
 		assert(over==over_approx[bvID]);
+		assert(under_approx0[bvID]<=under_approx[bvID]);
+		assert(over_approx0[bvID]>=over_approx[bvID]);
 #endif
 		return true;
 	}
@@ -2206,6 +2217,8 @@ public:
 		in_backtrack_queue.growTo(bvID+1,-1);
 		under_approx.growTo(bvID+1,-1);
 		over_approx.growTo(bvID+1,-1);
+		under_approx0.growTo(bvID+1,-1);
+		over_approx0.growTo(bvID+1,-1);
 		alteredBV.growTo(bvID+1);
 		bvcompares.growTo(bvID+1);
 		compares.growTo(bvID+1);
@@ -2219,7 +2232,10 @@ public:
 			exit(1);
 		}
 		under_approx[bvID]=0;
-		over_approx[bvID]=0;
+		over_approx[bvID]=(1L<<vars.size())-1;
+		under_approx0[bvID]=under_approx[bvID];
+		over_approx0[bvID]=over_approx[bvID];
+
 
 		for(int i = 0;i<vars.size();i++){
 			bitvectors[bvID].push(mkLit(newVar(vars[i],bvID)));
@@ -2255,6 +2271,8 @@ public:
 		in_backtrack_queue.growTo(bvID+1,-1);
 		under_approx.growTo(bvID+1,-1);
 		over_approx.growTo(bvID+1,-1);
+		under_approx0.growTo(bvID+1,-1);
+		over_approx0.growTo(bvID+1,-1);
 		bvconst.growTo(bvID+1);
 		alteredBV.growTo(bvID+1);
 		bvcompares.growTo(bvID+1);
@@ -2268,8 +2286,9 @@ public:
 			exit(1);
 		}
 		under_approx[bvID]=0;
-		over_approx[bvID]=0;
-
+		over_approx[bvID]=(1L<<vars.size())-1;
+		under_approx0[bvID]=under_approx[bvID];
+		over_approx0[bvID]=over_approx[bvID];
 		for(int i = 0;i<bitwidth;i++){
 			bitvectors[bvID].push(mkLit(newVar(var_Undef,bvID)));
 		}

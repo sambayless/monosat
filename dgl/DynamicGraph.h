@@ -458,9 +458,9 @@ public:
 				int u = adjacency_list[i][j].node;
 				const char * s = "black";
 				if (edgeEnabled(id))
-					s = "blue";
-				else
 					s = "red";
+				else
+					s = "blue";
 				if(showWeights){
 					std::stringstream ss;
 					ss<<getWeight(id);
