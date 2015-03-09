@@ -2349,6 +2349,10 @@ public:
 			l = mkLit(newVar(outerVar, bvID,comparisonID));
 		}
 		std::cout<<"New comparison " << comparisonID << ": bv"<< bvID << op << to <<"\n";
+#ifndef NDEBUG
+		std::cout << "learnt fact " << "bv " << bvID << " " << op << " " << to  <<" " << dimacs(toSolver(l)) << "\n";
+#endif
+
 		updateApproximations(bvID);
 		comparisons.push(ComparisonID(to,-1,l,bvID,op));
 		compares[bvID].push(comparisonID);

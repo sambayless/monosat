@@ -613,7 +613,7 @@ bool MaxflowDetector<Weight>::propagate(vec<Lit> & conflict) {
 		return true;
 	}
 	static int iter1 = 0;
-	if (++iter1 == 64) {
+	if (++iter1 == 21) {
 		int a = 1;
 	}
 #ifdef RECORD
@@ -627,6 +627,8 @@ bool MaxflowDetector<Weight>::propagate(vec<Lit> & conflict) {
 	}
 #endif
 	
+	g_over.drawFull(true);
+
 	Weight over_maxflow = -1;
 	Weight under_maxflow = -1;
 	bool computed_under=false;

@@ -1172,11 +1172,11 @@ public:
 		if(isEdgeBV(bvID)){
 			int edgeID = getBVEdge(bvID);
 
-			g_under.setEdgeWeight(edgeID,edge_bv_weights[bvID].getUnder());
-			g_over.setEdgeWeight(edgeID, edge_bv_weights[bvID].getOver());
+			g_under.setEdgeWeight(edgeID,edge_bv_weights[edgeID].getUnder());
+			g_over.setEdgeWeight(edgeID, edge_bv_weights[edgeID].getOver());
 			if(using_neg_weights){
-				g_under_weights_over.setEdgeWeight(edgeID,edge_bv_weights[bvID].getOver());
-				g_over_weights_under.setEdgeWeight(edgeID, edge_bv_weights[bvID].getUnder());
+				g_under_weights_over.setEdgeWeight(edgeID,edge_bv_weights[edgeID].getOver());
+				g_over_weights_under.setEdgeWeight(edgeID, edge_bv_weights[edgeID].getUnder());
 			}
 		}
 	}
@@ -1184,11 +1184,11 @@ public:
 		if (isEdgeBV(bvID)){
 			int edgeID = getBVEdge(bvID);
 
-			g_under.setEdgeWeight(edgeID,edge_bv_weights[bvID].getUnder());
-			g_over.setEdgeWeight(edgeID, edge_bv_weights[bvID].getOver());
+			g_under.setEdgeWeight(edgeID,edge_bv_weights[edgeID].getUnder());
+			g_over.setEdgeWeight(edgeID, edge_bv_weights[edgeID].getOver());
 			if(using_neg_weights){
-				g_under_weights_over.setEdgeWeight(edgeID,edge_bv_weights[bvID].getOver());
-				g_over_weights_under.setEdgeWeight(edgeID, edge_bv_weights[bvID].getUnder());
+				g_under_weights_over.setEdgeWeight(edgeID,edge_bv_weights[edgeID].getOver());
+				g_over_weights_under.setEdgeWeight(edgeID, edge_bv_weights[edgeID].getUnder());
 			}
 		}
 	}
@@ -1744,6 +1744,9 @@ public:
 	}
 
 	Lit newEdgeBV(int from, int to, Var outerVar,vec<Var> & bitVector) {
+		if(!comparator ){
+			fprintf(stderr,"Undefined bitvector\n");exit(1);
+		}
 			assert(outerVar!=var_Undef);
 			assert(edge_weights.size()==0);
 			/*	if(outerVar==var_Undef)
@@ -1829,6 +1832,9 @@ public:
 			return mkLit(v, false);
 		}
 	Lit newEdgeBV(int from, int to, Var outerVar,int bvID) {
+		if(!comparator ||!comparator->hasBV(bvID)){
+			fprintf(stderr,"Undefined bitvector\n");exit(1);
+		}
 				assert(outerVar!=var_Undef);
 				assert(edge_weights.size()==0);
 				int index = edge_list.size();

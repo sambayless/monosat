@@ -995,7 +995,7 @@ CRef Solver::propagate(bool propagate_theories) {
 			initialPropagate = false;
 		}
 		static int iter = 0;
-		if (++iter == 49) {
+		if (++iter == 28) {
 
 			int a = 1;
 		}
@@ -1229,6 +1229,13 @@ bool Solver::simplify() {
 	return true;
 }
 void Solver::addClauseSafely(vec<Lit> & ps) {
+#ifndef NDEBUG
+	printf("learnt fact ");
+	for (Lit l:ps){
+		printf(" %d", dimacs(l));
+	}
+	printf(" 0\n");
+#endif
 	if(decisionLevel()==0){
 		addClause(ps);
 	}else{
