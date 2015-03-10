@@ -199,7 +199,28 @@ public:
 
 	vec<Assignment> trail;
 	vec<int> trail_lim;
+	struct Cause{
+		int cause_is_bits:1;
+		int cause_is_addition:1;
+		int comparison_cause:30;
+		Cause():cause_is_bits(0),cause_is_addition(0),comparison_cause(-1){
 
+		}
+		Cause(bool bits, bool addition, int comparison=-1):cause_is_bits(bits),cause_is_addition(addition),comparison_cause(comparison){
+
+		}
+		bool hasCause(){
+			//this can be improved, if we want.
+			return cause_is_bits|| cause_is_addition || (comparison_cause>=0);
+		}
+		void clear(){
+			cause_is_bits=0;
+			cause_is_addition=0;
+			comparison_cause=-1;
+		}
+	};
+	vec<Cause> under_causes;
+	vec<Cause> over_causes;
 	//Bitvectors are unsigned, and have least significant bit at index 0
 	vec<vec<Lit> > bitvectors;
 	vec<ComparisonID> comparisons;
@@ -511,7 +532,9 @@ public:
 
 	inline bool enqueue(Lit l, CRef reason) {
 		assert(assigns[var(l)]==l_Undef);
-		
+		if(l.x==55){
+			int a=1;
+		}
 		Lit sl = toSolver(l);
 		if (S->enqueue(sl, reason)) {
 			enqueueTheory(l);
@@ -544,6 +567,10 @@ public:
 
 					}
 				} else {
+					//probably not neccessary
+					under_causes[e.bvID].clear();
+					over_causes[e.bvID].clear();
+
 					if(hasTheory(e.bvID)){
 						if(!in_backtrack_queue[e.bvID]){
 							backtrack_queue.push(e.bvID);
@@ -603,6 +630,10 @@ public:
 				//	g_overs[bvID]->enableTransition(edgeID,input,output);
 				}
 			} else {
+				//probably not neccessary
+				under_causes[e.bvID].clear();
+				over_causes[e.bvID].clear();
+
 				//if(bv_callbacks[e.bvID])
 				//	(*bv_callbacks[e.bvID])(e.bvID);
 				//status(e.bvID);
@@ -653,9 +684,10 @@ public:
 			reason.push(p);
 			Var v = var(p);
 			int bvID = getbvID(v);
-			updateApproximations(bvID);
+
 			if(isComparisonVar(v)){
 				int comparisonID = getComparisonID(v);
+				updateApproximations(bvID,comparisonID);
 				Comparison op = comparisons[comparisonID].op();
 				if (comparisons[comparisonID].compareID<0){
 					if(sign(p)){
@@ -761,7 +793,10 @@ public:
 	}
 	;
 
-	void updateApproximations(int bvID){
+	void updateApproximations(int bvID, int ignoreCID=-1){
+		if(isConst(bvID))
+			return;
+
 		static int iter = 0;
 		++iter;
 		std::cout<< "bv update " << iter << " for " << bvID << ": ";
@@ -777,7 +812,12 @@ public:
 		}
 		std::cout<<"\n";
 #endif
+
 		vec<Lit> & bv = bitvectors[bvID];
+
+		under_causes[bvID].clear();
+		over_causes[bvID].clear();
+
 		under_approx[bvID]=0;
 		over_approx[bvID]=0;
 		for(int i = 0;i<bv.size();i++){
@@ -786,11 +826,13 @@ public:
 				Weight bit = 1<<i;
 				under_approx[bvID]+=bit;
 				over_approx[bvID]+=bit;
+				under_causes[bvID].cause_is_bits=true;
 			}else if (val==l_False){
-
+				over_causes[bvID].cause_is_bits=true;
 			}else{
 				Weight bit = 1<<i;
 				over_approx[bvID]+=bit;
+
 			}
 		}
 
@@ -804,47 +846,103 @@ public:
 
 			if(under >under_approx[bvID]){
 				under_approx[bvID]=under;
+				under_causes[bvID].clear();
+				under_causes[bvID].cause_is_addition=true;
 			}
 			if(over<over_approx[bvID]){
 				over_approx[bvID]=over;
+				over_causes[bvID].clear();
+				over_causes[bvID].cause_is_addition=true;
 			}
 		}
 
-		for(int cID:compares[bvID]){
+		for(int i = compares[bvID].size()-1;i>=0;i--){
+			int cID = compares[bvID][i];
+			if(cID==ignoreCID){
+				continue;
+			}
 			ComparisonID & c = comparisons[cID];
 			Comparison op = c.op();
+
+			bool setOver=false;
 			switch(op){
 				case Comparison::lt:
 					if(value( c.l)==l_True && over_approx[bvID]>=c.w){
 						over_approx[bvID]=c.w-1;
-					}else if (value(c.l)==l_False && under_approx[bvID]<c.w){
-						under_approx[bvID]=c.w;
+						setOver=true;
 					}
 					break;
 				case Comparison::leq:
 					if(value( c.l)==l_True && over_approx[bvID]>c.w){
 						over_approx[bvID]=c.w;
-					}else if (value(c.l)==l_False && under_approx[bvID]<=c.w){
+						setOver=true;
+					}
+					break;
+				case Comparison::gt:
+					if (value(c.l)==l_False && over_approx[bvID]>c.w){
+						over_approx[bvID]=c.w;
+						setOver=true;
+					}
+					break;
+				case Comparison::geq:
+				default:
+					if (value(c.l)==l_False && over_approx[bvID]>=c.w){
+						over_approx[bvID]=c.w-1;
+						setOver=true;
+					}
+					break;
+			}
+
+			if(setOver){
+				over_causes[bvID].clear();
+				over_causes[bvID].comparison_cause=cID;
+			}
+		}
+
+
+		for(int cID:compares[bvID]){
+			if(cID==ignoreCID){
+				continue;
+			}
+			ComparisonID & c = comparisons[cID];
+			Comparison op = c.op();
+			bool setUnder=false;
+
+			switch(op){
+				case Comparison::lt:
+					 if (value(c.l)==l_False && under_approx[bvID]<c.w){
+						under_approx[bvID]=c.w;
+						setUnder=true;
+					}
+					break;
+				case Comparison::leq:
+					 if (value(c.l)==l_False && under_approx[bvID]<=c.w){
 						under_approx[bvID]=c.w+1;
+						setUnder=true;
 					}
 					break;
 				case Comparison::gt:
 					if(value( c.l)==l_True && under_approx[bvID]<=c.w){
 						under_approx[bvID]=c.w+1;
-					}else if (value(c.l)==l_False && over_approx[bvID]>c.w){
-						over_approx[bvID]=c.w;
+						setUnder=true;
 					}
 					break;
 				case Comparison::geq:
 				default:
 					if(value( c.l)==l_True && under_approx[bvID]<c.w){
 						under_approx[bvID]=c.w;
-					}else if (value(c.l)==l_False && over_approx[bvID]>=c.w){
-						over_approx[bvID]=c.w-1;
+						setUnder=true;
 					}
 					break;
 			}
+
+			if(setUnder){
+				under_causes[bvID].clear();
+				under_causes[bvID].comparison_cause=cID;
+			}
+
 		}
+
 		int width = bitvectors[bvID].size();
 		Weight max_val = ((1L)<<width)-1;
 		if(under_approx[bvID]>max_val){
@@ -985,7 +1083,7 @@ public:
 			return true;
 		}
 		printf("bv prop %d\n",stats_propagations);
-		if(stats_propagations==104){
+		if(stats_propagations==9){
 			int a =1;
 		}
 		bool any_change = false;
@@ -1367,173 +1465,131 @@ public:
 	}
 
 	void buildValueReason(Comparison op, int bvID, Weight  to,  vec<Lit> & conflict){
+		if(isConst(bvID)){
+			// a constant bitvector needs no reason
+			return;
+		}
+
 		static int iter = 0;
 		++iter;
-			printf("reason %d: %d\n",iter,bvID);
-			if(iter==28){
-				int a=1;
-			}
-			if(isConst(bvID)){
-				// a constant bitvector needs no reason
-				return;
-			}
+		printf("reason %d: %d\n",iter,bvID);
+		if(iter==4){
+			int a=1;
+		}
 
+		bool compare_over;
 
-			bool compare_over;
+		vec<Lit> & bv = bitvectors[bvID];
+		Weight  over_cur = over_approx[bvID];
+		Weight  under_cur = under_approx[bvID];
+		assert(checkApproxUpToDate(bvID));
+		if (op==Comparison::lt){
+			assert(over_cur<to);
+			compare_over=true;
+		}
+		if (op==Comparison::leq){
+			assert(over_cur<=to);
+			compare_over=true;
+		}
+		if (op==Comparison::geq){
+			assert(under_cur>=to);
+			compare_over=false;
+		}
+		if (op==Comparison::gt){
+			assert(under_cur>to);
+			compare_over=false;
+		}
 
-			vec<Lit> & bv = bitvectors[bvID];
-			Weight  over_cur = over_approx[bvID];
-			Weight  under_cur = under_approx[bvID];
-			assert(checkApproxUpToDate(bvID));
-			if (op==Comparison::lt){
-				assert(over_cur<to);
-				compare_over=true;
-			}
-			if (op==Comparison::leq){
-				assert(over_cur<=to);
-				compare_over=true;
-			}
-			if (op==Comparison::geq){
-				assert(under_cur>=to);
-				compare_over=false;
-			}
-			if (op==Comparison::gt){
-				assert(under_cur>to);
-				compare_over=false;
-			}
+		if(!compare_over && under_approx[bvID]<= getUnderApprox(bvID, true) ){
+			//no reason necessary; this is the lowest possible value.
+			return;
+		}else if(compare_over && over_approx[bvID]>=getOverApprox(bvID, true)  ){
+			//no reason necessary; this is the lowest possible value.
+			return;
+		}
 
-			Weight under =0;
-			Weight over=0;
-			for(int i = 0;i<bv.size();i++){
-				lbool val = value(bv[i]);
-				if(val==l_True){
+		if(compare_over)
+			assert(over_causes[bvID].hasCause());
+		if(!compare_over)
+			assert(under_causes[bvID].hasCause());
+
+		if (compare_over && over_causes[bvID].cause_is_bits){
+			//then the reason the underapprox is too large is because of the assignment to the bits
+			Weight over = over_approx[bvID];
+			for(int i =0;i<bv.size();i++){
+				Lit bl = bv[i];
+				if(value(bl)==l_False ){
 					Weight bit = 1<<i;
-					under+=bit;
-					over+=bit;
-				}else if (val==l_False){
-
-				}else{
-					Weight bit = 1<<i;
-					over+=bit;
-				}
-			}
-
-			if (compare_over && comp(op,over, to)){
-				//then the reason the underapprox is too large is because of the assignment to the bits
-				for(int i =0;i<bv.size();i++){
-					Lit bl = bv[i];
-					if(value(bl)==l_False ){
-						Weight bit = 1<<i;
-						if(comp(op,over+bit,to)&& level(var(bl))>0){
-							//then we can skip this bit, because we would still have had a conflict even if it was assigned true.
-							over+=bit;
-						}else{
-							assert(value(bl)==l_False);
-							conflict.push(bl);
-						}
-					}
-				}
-				return;
-			}else if (!compare_over  && comp(op,under, to)){
-				//then the reason the underapprox is too large is because of the assignment to the bits
-				for(int i =0;i<bv.size();i++){
-					Lit bl = bv[i];
-					lbool val = value(bl);
-					lbool dbgval = dbg_value(bl);
-					if(value(bl)==l_True){
-						Weight bit = 1<<i;
-						if(comp(op,under-bit,to)  && level(var(bl))>0){
-							//then we can skip this bit, because we would still have had a conflict even if it was assigned false.
-							under-=bit;
-						}else{
-							assert(value(~bl)==l_False);
-							conflict.push(~bl);
-						}
-					}
-				}
-				return;
-			}
-
-
-			if(additions[bvID].hasAddition()){
-				int aID = additions[bvID].aID;
-				int bID = additions[bvID].bID;
-				assert(aID<bvID);
-				assert(bID<bvID);
-				Weight underadd = under_approx[aID] +  under_approx[bID];
-				Weight overadd = over_approx[aID] +  over_approx[bID];
-				if(underadd >under){
-					under=underadd;
-				}
-				if(overadd<over){
-					over=overadd;
-				}
-				if (compare_over && comp(op,over, to)){
-					//then the reason is that aID is <= weight-under(bID), or bID <= weight-under(aID)
-					buildValueReason(op,aID,to-over_approx[bID],conflict);
-					buildValueReason(op,bID,to-over_approx[aID],conflict);
-					return;
-				}else if(!compare_over  && comp(op,under, to)){
-					buildValueReason(op,aID,to-under_approx[bID],conflict);
-					buildValueReason(op,bID,to-under_approx[aID],conflict);
-					return;
-				}
-			}
-
-			for(int i = 0;i<compares[bvID].size();i++){
-				int cID;
-
-				if (compare_over){
-					cID= compares[bvID][i];
-				}else{
-					cID= compares[bvID][compares[bvID].size()-i-1];
-				}
-
-				ComparisonID & c = comparisons[cID];
-				Comparison cop = c.op();
-
-				switch (cop){
-					case Comparison::lt:
-						if(value( c.l)==l_True && over>=c.w){
-							over=c.w-1;
-						}else if (value(c.l)==l_False && under<c.w){
-							under=c.w;
-						}
-						break;
-					case Comparison::leq:
-						if(value( c.l)==l_True && over>c.w){
-							over=c.w;
-						}else if (value(c.l)==l_False && under<=c.w){
-							under=c.w+1;
-						}
-						break;
-					case Comparison::gt:
-						if(value( c.l)==l_True && under<=c.w){
-							under=c.w+1;
-						}else if (value(c.l)==l_False && over>c.w){
-							over=c.w;
-						}
-						break;
-					case Comparison::geq:
-					default:
-						if(value( c.l)==l_True && under<c.w){
-							under=c.w;
-						}else if (value(c.l)==l_False && over>=c.w){
-							over=c.w-1;
-						}
-						break;
-				}
-				if ((compare_over && comp(op,over,to)) || (!compare_over && comp(op,under,to)) ){
-					if(value(c.l)==l_True){
-						assert(value(~c.l)==l_False);
-						conflict.push(~c.l);
+					if(comp(op,over+bit,to)&& level(var(bl))>0){
+						//then we can skip this bit, because we would still have had a conflict even if it was assigned true.
+						over+=bit;
 					}else{
-						assert(value(c.l)==l_False);
-						conflict.push(c.l);
+						assert(value(bl)==l_False);
+						conflict.push(bl);
 					}
-					return;
 				}
 			}
+			return;
+		}else if (!compare_over  && under_causes[bvID].cause_is_bits){
+			//then the reason the underapprox is too large is because of the assignment to the bits
+			Weight under = under_approx[bvID];
+			for(int i =0;i<bv.size();i++){
+				Lit bl = bv[i];
+				lbool val = value(bl);
+				lbool dbgval = dbg_value(bl);
+				if(value(bl)==l_True){
+					Weight bit = 1<<i;
+					if(comp(op,under-bit,to)  && level(var(bl))>0){
+						//then we can skip this bit, because we would still have had a conflict even if it was assigned false.
+						under-=bit;
+					}else{
+						assert(value(~bl)==l_False);
+						conflict.push(~bl);
+					}
+				}
+			}
+			return;
+		}
+
+
+		if(additions[bvID].hasAddition()){
+			int aID = additions[bvID].aID;
+			int bID = additions[bvID].bID;
+			assert(aID<bvID);
+			assert(bID<bvID);
+
+			if  (compare_over && over_causes[bvID].cause_is_addition){
+				//then the reason is that aID is <= weight-under(bID), or bID <= weight-under(aID)
+				buildValueReason(op,aID,to-over_approx[bID],conflict);
+				buildValueReason(op,bID,to-over_approx[aID],conflict);
+				return;
+			}else if(!compare_over && under_causes[bvID].cause_is_addition){
+				buildValueReason(op,aID,to-under_approx[bID],conflict);
+				buildValueReason(op,bID,to-under_approx[aID],conflict);
+				return;
+			}
+		}
+
+
+		int cID;
+		if (compare_over){
+			cID= over_causes[bvID].comparison_cause;
+		}else{
+			cID= under_causes[bvID].comparison_cause;
+		}
+		if(cID>=-1){
+			ComparisonID & c = comparisons[cID];
+			Comparison cop = c.op();
+			if(value(c.l)==l_True){
+				assert(value(~c.l)==l_False);
+				conflict.push(~c.l);
+			}else{
+				assert(value(c.l)==l_False);
+				conflict.push(c.l);
+			}
+			return;
+		}
+		assert(false);//no cause was found.
 	}
 /*
 	void buildValueLTReason(int bvID, int comparisonID, vec<Lit> & conflict){
@@ -2234,7 +2290,8 @@ public:
 		compares.growTo(bvID+1);
 		bvconst.growTo(bvID+1);
 		additions.growTo(bvID+1);
-
+		under_causes.growTo(bvID+1);
+		over_causes.growTo(bvID+1);
 		//bv_callbacks.growTo(bvID+1);
 		if(under_approx[bvID]>-1){
 			assert(false);
@@ -2288,7 +2345,8 @@ public:
 		bvcompares.growTo(bvID+1);
 		compares.growTo(bvID+1);
 		additions.growTo(bvID+1);
-
+		under_causes.growTo(bvID+1);
+		over_causes.growTo(bvID+1);
 		//bv_callbacks.growTo(bvID+1);
 		if(under_approx[bvID]>-1){
 			assert(false);

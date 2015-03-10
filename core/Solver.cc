@@ -680,7 +680,7 @@ void Solver::analyzeFinal(Lit p, vec<Lit>& out_conflict) {
 }
 
 void Solver::enqueueLazy(Lit p, int lev, CRef from){
-	if(p.x==299 || p.x == 298){
+	if(p.x==307 || p.x == 306){
 		int a=1;
 	}
 	assert(value(p)!=l_False);
@@ -706,7 +706,7 @@ void Solver::enqueueLazy(Lit p, int lev, CRef from){
 }
 
 void Solver::uncheckedEnqueue(Lit p, CRef from) {
-	if(p.x==299 || p.x == 298){
+	if(p.x==307 || p.x == 306){
 		int a=1;
 	}
 	assert(value(p) == l_Undef);
