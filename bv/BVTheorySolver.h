@@ -676,7 +676,7 @@ public:
 		} else if (marker == bvprop_marker) {
 			reason.push(p);
 			Var v = var(p);
-
+			assert(false);
 		}  else {
 			assert(false);
 		}
@@ -856,6 +856,9 @@ public:
 		if(decisionLevel()==0){
 			under_approx0[bvID]=under_approx[bvID];
 			over_approx0[bvID]=over_approx[bvID];
+			if (under_approx[bvID]==over_approx[bvID]){
+				bvconst[bvID]=true;//this bitvector is a known constant value in the formula.
+			}
 		}
 	}
 
@@ -982,7 +985,7 @@ public:
 			return true;
 		}
 		printf("bv prop %d\n",stats_propagations);
-		if(stats_propagations==83){
+		if(stats_propagations==104){
 			int a =1;
 		}
 		bool any_change = false;
@@ -1367,7 +1370,7 @@ public:
 		static int iter = 0;
 		++iter;
 			printf("reason %d: %d\n",iter,bvID);
-			if(iter==67){
+			if(iter==28){
 				int a=1;
 			}
 			if(isConst(bvID)){
@@ -1477,7 +1480,14 @@ public:
 				}
 			}
 
-			for(int cID:compares[bvID]){
+			for(int i = 0;i<compares[bvID].size();i++){
+				int cID;
+
+				if (compare_over){
+					cID= compares[bvID][i];
+				}else{
+					cID= compares[bvID][compares[bvID].size()-i-1];
+				}
 
 				ComparisonID & c = comparisons[cID];
 				Comparison cop = c.op();
@@ -2356,7 +2366,7 @@ public:
 			exit(1);
 		}
 		int comparisonID = comparisons.size();
-		if(comparisonID==7){
+		if(comparisonID==11){
 			int a=1;
 		}
 		if((l = getComparison(op, bvID, to))!=lit_Undef){

@@ -143,6 +143,12 @@ bool Solver::addClause_(vec<Lit>& ps) {
 
 CRef Solver::attachReasonClause(Lit r,vec<Lit> & ps) {
 	assert(value(r)==l_True);
+
+	printf("learnt ");
+	for (Lit l:ps){
+		printf(" %d", dimacs(l));
+	}
+	printf(" 0\n");
 	//sort(ps);
 	Lit p;
 	int i, j;
@@ -674,7 +680,7 @@ void Solver::analyzeFinal(Lit p, vec<Lit>& out_conflict) {
 }
 
 void Solver::enqueueLazy(Lit p, int lev, CRef from){
-	if(p.x==189 || p.x == 188){
+	if(p.x==299 || p.x == 298){
 		int a=1;
 	}
 	assert(value(p)!=l_False);
@@ -700,7 +706,7 @@ void Solver::enqueueLazy(Lit p, int lev, CRef from){
 }
 
 void Solver::uncheckedEnqueue(Lit p, CRef from) {
-	if(p.x==189 || p.x == 188){
+	if(p.x==299 || p.x == 298){
 		int a=1;
 	}
 	assert(value(p) == l_Undef);
@@ -1536,7 +1542,7 @@ lbool Solver::search(int nof_conflicts) {
 	//last_dec = var_Undef;
 	for (;;) {
 		static int iter = 0;
-		if (++iter == 56) {
+		if (++iter == 63) {
 			int a = 1;
 		}
 		propagate: CRef confl = propagate();

@@ -274,6 +274,9 @@ public:
 		int t = getTheory(cr);
 		assert(hasTheory(p));
 		theory_reason.clear();
+		if(p.x==293){
+			int a =1;
+		}
 		theories[t]->buildReason(getTheoryLit(p), theory_reason, cr);
 		assert(theory_reason[0] == p);
 		assert(value(p)==l_True);

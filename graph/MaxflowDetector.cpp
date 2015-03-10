@@ -388,8 +388,8 @@ void MaxflowDetector<Weight>::buildMaxFlowTooLowReason(Weight maxflow, vec<Lit> 
 			}
 		}
 #endif
-		g_over.drawFull(true);
-		learn_graph.drawFull(true);
+		//g_over.drawFull(true);
+		//learn_graph.drawFull(true);
 		long f = learn_cut->minCut(cut);
 		learn_graph.clearChanged();
 		learn_graph.clearHistory();
