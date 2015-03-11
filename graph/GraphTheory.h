@@ -988,6 +988,10 @@ public:
 	;
 
 	void buildBVReason(int bvID, Comparison comp, Weight compareTo, vec<Lit> &reason){
+		static int iter = 0;
+		if(++iter==7){
+			int a =1;
+		}
 		BitVector<Weight> bv = comparator->getBV(bvID);
 		Lit c = getBV_COMP(bvID,-comp,compareTo);
 		assert(dbg_value(c)==l_False);

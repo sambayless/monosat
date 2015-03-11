@@ -570,13 +570,11 @@ public:
 					//probably not neccessary
 					under_causes[e.bvID].clear();
 					over_causes[e.bvID].clear();
-
-					if(hasTheory(e.bvID)){
-						if(!in_backtrack_queue[e.bvID]){
-							backtrack_queue.push(e.bvID);
-							in_backtrack_queue[e.bvID]=true;
-						}
+					if(!in_backtrack_queue[e.bvID]){
+						backtrack_queue.push(e.bvID);
+						in_backtrack_queue[e.bvID]=true;
 					}
+
 					//status.bvAltered(e.bvID);
 				}
 				assigns[e.var] = l_Undef;
@@ -597,7 +595,11 @@ public:
 			int bvID = backtrack_queue.last();
 			backtrack_queue.pop();
 			in_backtrack_queue[bvID]=false;
-			getTheory(bvID)->backtrackBV(bvID);
+			updateApproximations(bvID);
+			if(hasTheory(bvID)){
+				getTheory(bvID)->backtrackBV(bvID);
+			}
+
 		}
 
 		
@@ -637,12 +639,12 @@ public:
 				//if(bv_callbacks[e.bvID])
 				//	(*bv_callbacks[e.bvID])(e.bvID);
 				//status(e.bvID);
-				if(hasTheory(e.bvID)){
+				//if(hasTheory(e.bvID)){
 					if(!in_backtrack_queue[e.bvID]){
 						backtrack_queue.push(e.bvID);
 						in_backtrack_queue[e.bvID]=true;
 					}
-				}
+				//}
 				//status.bvAltered(e.bvID);
 			}
 			assigns[e.var] = l_Undef;
@@ -656,10 +658,13 @@ public:
 			int bvID = backtrack_queue.last();
 			backtrack_queue.pop();
 			in_backtrack_queue[bvID]=false;
-			getTheory(bvID)->backtrackBV(bvID);
+			updateApproximations(bvID);
+			if(hasTheory(bvID)){
+				getTheory(bvID)->backtrackBV(bvID);
+			}
 		}
-	}
-	;
+	};
+
 
 	void newDecisionLevel() {
 		trail_lim.push(trail.size());
@@ -684,9 +689,9 @@ public:
 		//there is likely room to improve this, so that only relevant bitvectors are updated, but it might be
 		//complicated to do so... Note that there ARE cases where bitvectors beyond the one directly responsible for p may need to be updated:
 		//if p is caused by the addition of two other bitvectors, for example, then they both need to be updated.
-		for(int bvID = 0;bvID<bitvectors.size();bvID++){
+	/*	for(int bvID = 0;bvID<bitvectors.size();bvID++){
 			updateApproximations(bvID);
-		}
+		}*/
 
 		if (marker == comparisonprop_marker) {
 			reason.push(p);
@@ -1306,8 +1311,8 @@ public:
 		if(over<under_approx0[bvID]){
 			over=under_approx0[bvID];
 		}
-		assert(under<=under_approx[bvID]);
-		assert(over>=over_approx[bvID]);
+		assert(under==under_approx[bvID]);
+		assert(over==over_approx[bvID]);
 		assert(under_approx0[bvID]<=under_approx[bvID]);
 		assert(over_approx0[bvID]>=over_approx[bvID]);
 		if(under_store){
@@ -2625,7 +2630,7 @@ public:
 		//bv_callbacks.growTo(id+1,nullptr);
 		bitvectors.growTo(bvID+1);
 		theoryIds.growTo(bvID+1,-1);
-		in_backtrack_queue.growTo(bvID+1,-1);
+		in_backtrack_queue.growTo(bvID+1,false);
 		under_approx.growTo(bvID+1,-1);
 		over_approx.growTo(bvID+1,-1);
 		under_approx0.growTo(bvID+1,-1);
@@ -2680,7 +2685,7 @@ public:
 		//bv_callbacks.growTo(id+1,nullptr);
 		bitvectors.growTo(bvID+1);
 		theoryIds.growTo(bvID+1,-1);
-		in_backtrack_queue.growTo(bvID+1,-1);
+		in_backtrack_queue.growTo(bvID+1,false);
 		under_approx.growTo(bvID+1,-1);
 		over_approx.growTo(bvID+1,-1);
 		under_approx0.growTo(bvID+1,-1);
