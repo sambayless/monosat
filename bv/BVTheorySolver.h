@@ -685,30 +685,72 @@ public:
 			Var v = var(p);
 			int bvID = getbvID(v);
 
-			if(isComparisonVar(v)){
-				int comparisonID = getComparisonID(v);
-				updateApproximations(bvID,comparisonID);
-				Comparison op = comparisons[comparisonID].op();
-				if (comparisons[comparisonID].compareID<0){
-					if(sign(p)){
-						op=-op;
-					}
-					buildValueReason(op,bvID,comparisons[comparisonID].w,reason);
-				}else{
-					int compareBV = comparisons[comparisonID].compareID;
-					if(sign(p)){
-						op=-op;
-					}
-					buildValueReasonBV(op,bvID,compareBV,reason);
+			assert(isComparisonVar(v));
+			int comparisonID = getComparisonID(v);
+			updateApproximations(bvID,comparisonID);
+			Comparison op = comparisons[comparisonID].op();
+			if (comparisons[comparisonID].compareID<0){
+				if(sign(p)){
+					op=-op;
 				}
+				buildValueReason(op,bvID,comparisons[comparisonID].w,reason);
 			}else{
-
+				int compareBV = comparisons[comparisonID].compareID;
+				if(sign(p)){
+					op=-op;
+				}
+				buildValueReasonBV(op,bvID,compareBV,reason);
 			}
 
+
 		} else if (marker == bvprop_marker) {
-			reason.push(p);
 			Var v = var(p);
-			assert(false);
+
+			assert(!isComparisonVar(v));
+			int bvID = getbvID(v);
+			updateApproximations(bvID,-1,v);
+			reason.push(p);
+
+			Weight underApprox = under_approx[bvID];
+			Weight overApprox = over_approx[bvID];
+			std::cout<<"bv: " << bvID << " (" <<underApprox << ", " <<overApprox << " )\n";
+
+			vec<Lit> & bv = bitvectors[bvID];
+
+			int bitpos=-1;
+			for(int i = bv.size()-1;i>=0;i--){
+				lbool val = value(bv[i]);
+				Lit l = bv[i];
+				if(var(bv[i])==v){
+					bitpos=i;
+					break;
+				}
+			}
+			Weight bit = 1<<bitpos;
+		/*	if(underApprox==0){
+				assert(overApprox<underApprox+bit);
+				overApprox=bit-1;
+			}
+			if(overApprox==(1L<<bv.size())-1){
+				assert(underApprox> overApprox-bit);
+				underApprox=(1L<<bv.size())-1 - bit+1;
+			}*/
+
+			if(!sign(p)){
+				//if this bit is true, then the reason is because the overapprox, minus this bit, would be less than the underapprox.
+				//hence either the underapprox must decrease, or the overapprox must increase.
+
+				buildValueReason(Comparison::leq,bvID,overApprox,reason);
+				buildValueReason(Comparison::geq,bvID,underApprox,reason);
+			}else{
+				//if this bit is false, then the reason is because the underapprox, plus this bit, would be greater than the overapprox.
+				//hence either the underapprox must decrease, or the overapprox must increase.
+				buildValueReason(Comparison::leq,bvID,overApprox,reason);
+				buildValueReason(Comparison::geq,bvID,underApprox,reason);
+			}
+
+
+
 		}  else {
 			assert(false);
 		}
@@ -793,7 +835,7 @@ public:
 	}
 	;
 
-	void updateApproximations(int bvID, int ignoreCID=-1){
+	void updateApproximations(int bvID, int ignoreCID=-1, Var ignore_bv=var_Undef){
 		if(isConst(bvID))
 			return;
 
@@ -821,6 +863,11 @@ public:
 		under_approx[bvID]=0;
 		over_approx[bvID]=0;
 		for(int i = 0;i<bv.size();i++){
+			if(var(bv[i])==ignore_bv){
+				Weight bit = 1<<i;
+				over_approx[bvID]+=bit;
+				continue;
+			}
 			lbool val = value(bv[i]);
 			if(val==l_True){
 				Weight bit = 1<<i;
@@ -1083,7 +1130,7 @@ public:
 			return true;
 		}
 		printf("bv prop %d\n",stats_propagations);
-		if(stats_propagations==9){
+		if(stats_propagations==103){
 			int a =1;
 		}
 		bool any_change = false;
@@ -1104,7 +1151,59 @@ public:
 			Weight & overApprox = over_approx[bvID];
 			std::cout<<"bv: " << bvID << " (" <<underApprox << ", " <<overApprox << " )\n";
 
-			vec<int> & compare = compares[bvID];
+			vec<Lit> & bv = bitvectors[bvID];
+			Weight under =0;
+			Weight over=(1L<<bv.size())-1;
+			//for(int i = 0;i<bv.size();i++){
+			for(int i = bv.size()-1;i>=0;i--){
+				Weight bit = 1<<i;
+				lbool val = value(bv[i]);
+				Lit l = bv[i];
+				if(val==l_True){
+					under+=bit;
+					if(under>overApprox){
+						//this is a conflict
+						for(int j = bv.size()-1;j>=i;j--){
+							Weight bit = 1<<j;
+							lbool val = value(bv[j]);
+							if(val==l_True){
+								conflict.push(~bv[j]);
+							}
+						}
+						buildValueReason(Comparison::leq,bvID,overApprox,conflict);
+						toSolver(conflict);
+						return false;
+					}
+				}else if (val==l_False){
+					over-=bit;
+					if(over<underApprox){
+						//this is a conflict. Either this bit, or any previously assigned false bit, must be true, or the underapprox must be larger than it currently is.
+						//is this really the best way to handle this conflict?
+						for(int j = bv.size()-1;j>=i;j--){
+							Weight bit = 1<<j;
+							lbool val = value(bv[j]);
+							if(val==l_False){
+								conflict.push(bv[j]);
+							}
+						}
+						//conflict.push(l);
+						buildValueReason(Comparison::geq,bvID,underApprox,conflict);
+						toSolver(conflict);
+						return false;
+					}
+				}else{
+					if(over-bit < underApprox){
+						enqueue(l, bvprop_marker);
+						under+=bit;
+					}else if (under+bit>overApprox){
+						enqueue(~l, bvprop_marker);
+						over-=bit;
+					}
+				}
+			}
+
+
+
 			if(additions[bvID].hasAddition()){
 
 				int aID = additions[bvID].aID;
@@ -1132,7 +1231,7 @@ public:
 					return false;
 				}
 			}
-
+			vec<int> & compare = compares[bvID];
 			//update over approx lits
 			for(int i = 0;i<compare.size();i++){
 				int cID = compare[i];
@@ -1473,7 +1572,7 @@ public:
 		static int iter = 0;
 		++iter;
 		printf("reason %d: %d\n",iter,bvID);
-		if(iter==4){
+		if(iter==83){
 			int a=1;
 		}
 
@@ -1482,7 +1581,7 @@ public:
 		vec<Lit> & bv = bitvectors[bvID];
 		Weight  over_cur = over_approx[bvID];
 		Weight  under_cur = under_approx[bvID];
-		assert(checkApproxUpToDate(bvID));
+		//assert(checkApproxUpToDate(bvID));
 		if (op==Comparison::lt){
 			assert(over_cur<to);
 			compare_over=true;
