@@ -453,6 +453,17 @@ void Solver::analyze(CRef confl, vec<Lit>& out_learnt, int& out_btlevel) {
 	CRef original_confl = confl;
 	Lit p = lit_Undef;
 	assert(confl != CRef_Undef);
+	int maxlev = 0;
+	{
+		Clause & check = ca[confl];
+		for(Lit p:check){
+			int lev = level(var(p));
+			if(lev>maxlev){
+				maxlev=lev;
+			}
+		}
+	}
+	cancelUntil(maxlev);//use of lazily enqueued literals can trigger conflicts at earlier decision levels
 	// Generate conflict clause:
 	//
 	bool possibly_missed_1uip=false;
@@ -509,7 +520,7 @@ void Solver::analyze(CRef confl, vec<Lit>& out_learnt, int& out_btlevel) {
 				searching=pathC>0;
 			}
 		}
-		assert(level(var(p))==decisionLevel());
+
 		seen[var(p)] = 0;
 		pathC--;
 		

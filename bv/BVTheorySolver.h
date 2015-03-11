@@ -680,6 +680,14 @@ public:
 		//if the reason is being constructed eagerly, then p won't be assigned yet, and so wont be on the trail, so we skip this.
 		backtrackUntil(p);
 		assert(value(p)!=l_False);
+		//now that we have backtracked, we need to update the under/over approximations.
+		//there is likely room to improve this, so that only relevant bitvectors are updated, but it might be
+		//complicated to do so... Note that there ARE cases where bitvectors beyond the one directly responsible for p may need to be updated:
+		//if p is caused by the addition of two other bitvectors, for example, then they both need to be updated.
+		for(int bvID = 0;bvID<bitvectors.size();bvID++){
+			updateApproximations(bvID);
+		}
+
 		if (marker == comparisonprop_marker) {
 			reason.push(p);
 			Var v = var(p);
@@ -713,8 +721,10 @@ public:
 
 			Weight underApprox = under_approx[bvID];
 			Weight overApprox = over_approx[bvID];
-			std::cout<<"bv: " << bvID << " (" <<underApprox << ", " <<overApprox << " )\n";
-
+			static int iterv =0;
+			++iterv;
+			std::cout<<"bv: " << bvID << " (" <<underApprox << ", " <<overApprox << " ) " << " it " << iterv <<  "\n";
+			assert(under_approx>=0); assert(overApprox>=0);
 			vec<Lit> & bv = bitvectors[bvID];
 
 			int bitpos=-1;
@@ -913,34 +923,39 @@ public:
 
 			bool setOver=false;
 			Weight w = c.w;
-			if(c.bvCompare()){
-				assert(c.bvID>=0);
-				w = over_approx[c.bvID];
-			}
+			assert(!c.bvCompare());
 			switch(op){
 				case Comparison::lt:
 					if(value( c.l)==l_True && over_approx[bvID]>=w){
-						over_approx[bvID]=c.w-1;
-						setOver=true;
+						if(w-1>=getUnderApprox(bvID,true)){
+							 over_approx[bvID]=w-1;
+							setOver=true;
+						 }
 					}
 					break;
 				case Comparison::leq:
 					if(value( c.l)==l_True && over_approx[bvID]>w){
-						over_approx[bvID]=c.w;
-						setOver=true;
+						if(w>=getUnderApprox(bvID,true)){
+							 over_approx[bvID]=w;
+							setOver=true;
+						 }
 					}
 					break;
 				case Comparison::gt:
 					if (value(c.l)==l_False && over_approx[bvID]>w){
-						over_approx[bvID]=c.w;
-						setOver=true;
+						if(w>=getUnderApprox(bvID,true)){
+							 over_approx[bvID]=w;
+							setOver=true;
+						 }
 					}
 					break;
 				case Comparison::geq:
 				default:
 					if (value(c.l)==l_False && over_approx[bvID]>=w){
-						over_approx[bvID]=c.w-1;
-						setOver=true;
+						if(w-1>=getUnderApprox(bvID,true)){
+							 over_approx[bvID]=w-1;
+							setOver=true;
+						 }
 					}
 					break;
 			}
@@ -959,35 +974,41 @@ public:
 			ComparisonID & c = comparisons[cID];
 			Comparison op = c.op();
 			bool setUnder=false;
+			assert(!c.bvCompare());
 			Weight w = c.w;
-			if(c.bvCompare()){
-				assert(c.bvID>=0);
-				w = over_approx[c.bvID];
-			}
+
 			switch(op){
 				case Comparison::lt:
 					 if (value(c.l)==l_False && under_approx[bvID]<w){
-						under_approx[bvID]=c.w;
-						setUnder=true;
+						 if(w<=getOverApprox(bvID,true)){
+							 under_approx[bvID]=w;
+							 setUnder=true;
+						 }
 					}
 					break;
 				case Comparison::leq:
 					 if (value(c.l)==l_False && under_approx[bvID]<=w){
-						under_approx[bvID]=c.w+1;
-						setUnder=true;
+						 if(w<=getOverApprox(bvID,true)){
+							 under_approx[bvID]=w+1;
+							setUnder=true;
+						 }
 					}
 					break;
 				case Comparison::gt:
 					if(value( c.l)==l_True && under_approx[bvID]<=w){
-						under_approx[bvID]=c.w+1;
-						setUnder=true;
+						 if(w+1<=getOverApprox(bvID,true)){
+							 under_approx[bvID]=w+1;
+							 setUnder=true;
+						 }
 					}
 					break;
 				case Comparison::geq:
 				default:
 					if(value( c.l)==l_True && under_approx[bvID]<w){
-						under_approx[bvID]=c.w;
-						setUnder=true;
+						 if(w<=getOverApprox(bvID,true)){
+							 under_approx[bvID]=w;
+							 setUnder=true;
+						 }
 					}
 					break;
 			}
@@ -999,6 +1020,114 @@ public:
 
 		}
 
+
+		for(int i = bvcompares[bvID].size()-1;i>=0;i--){
+			int cID = bvcompares[bvID][i];
+			if(cID==ignoreCID){
+				continue;
+			}
+			ComparisonID & c = comparisons[cID];
+			Comparison op = c.op();
+
+			bool setOver=false;
+
+			assert(c.bvCompare());
+			Weight w = over_approx[c.compareID];
+			switch(op){
+				case Comparison::lt:
+					if(value( c.l)==l_True && over_approx[bvID]>=w){
+						if(w-1>=getUnderApprox(bvID,true)){
+							over_approx[bvID]=w-1;
+							setOver=true;
+						}
+					}
+					break;
+				case Comparison::leq:
+					if(value( c.l)==l_True && over_approx[bvID]>w){
+						if(w>=getUnderApprox(bvID,true)){
+							over_approx[bvID]=w;
+							setOver=true;
+						}
+					}
+					break;
+				case Comparison::gt:
+					if (value(c.l)==l_False && over_approx[bvID]>w){
+						if(w>=getUnderApprox(bvID,true)){
+							over_approx[bvID]=w;
+							setOver=true;
+						}
+					}
+					break;
+				case Comparison::geq:
+				default:
+					if (value(c.l)==l_False && over_approx[bvID]>=w){
+						if(w-1>=getUnderApprox(bvID,true)){
+							over_approx[bvID]=w-1;
+							setOver=true;
+						}
+					}
+					break;
+			}
+
+			if(setOver){
+				over_causes[bvID].clear();
+				over_causes[bvID].comparison_cause=cID;
+			}
+		}
+
+
+		for(int cID:bvcompares[bvID]){
+			if(cID==ignoreCID){
+				continue;
+			}
+			ComparisonID & c = comparisons[cID];
+			Comparison op = c.op();
+			bool setUnder=false;
+			assert(c.bvID>=0);
+			Weight w = under_approx[c.compareID];
+
+			switch(op){
+				case Comparison::lt:
+					 if (value(c.l)==l_False && under_approx[bvID]<w){
+						 if(w<=getOverApprox(bvID,true)){
+							 under_approx[bvID]=w;
+							 setUnder=true;
+						 }
+					}
+					break;
+				case Comparison::leq:
+					 if (value(c.l)==l_False && under_approx[bvID]<=w){
+						 if(w+1<=getOverApprox(bvID,true)){
+							 under_approx[bvID]=w+1;
+							setUnder=true;
+						 }
+					}
+					break;
+				case Comparison::gt:
+					if(value( c.l)==l_True && under_approx[bvID]<=w){
+						 if(w+1<=getOverApprox(bvID,true)){
+							 under_approx[bvID]=w+1;
+							 setUnder=true;
+						 }
+					}
+					break;
+				case Comparison::geq:
+				default:
+					if(value( c.l)==l_True && under_approx[bvID]<w){
+						 if(w<=getOverApprox(bvID,true)){
+							 under_approx[bvID]=w;
+							 setUnder=true;
+						 }
+					}
+					break;
+			}
+
+			if(setUnder){
+				under_causes[bvID].clear();
+				under_causes[bvID].comparison_cause=cID;
+			}
+
+		}
 		int width = bitvectors[bvID].size();
 		Weight max_val = ((1L)<<width)-1;
 		if(under_approx[bvID]>max_val){
@@ -1006,6 +1135,12 @@ public:
 		}
 		if(over_approx[bvID]>max_val){
 			over_approx[bvID]=max_val;
+		}
+		if(under_approx[bvID]<0){
+			under_approx[bvID]=0;
+		}
+		if(over_approx[bvID]<0){
+			over_approx[bvID]=0;
 		}
 		if(decisionLevel()==0){
 			under_approx0[bvID]=under_approx[bvID];
@@ -1035,7 +1170,7 @@ public:
 		return bitvectors[bvID];
 	}
 
-	bool checkApproxUpToDate(int bvID){
+	bool checkApproxUpToDate(int bvID, Weight * under_store=nullptr,Weight*over_store=nullptr){
 #ifndef NDEBUG
 		vec<Lit> & bv = bitvectors[bvID];
 		Weight under =0;
@@ -1110,18 +1245,77 @@ public:
 
 			}
 		}
+		for(int cID:bvcompares[bvID]){
+			ComparisonID & c = comparisons[cID];
+			Comparison op = c.op();
+
+			lbool val = value(c.l);
+			if(c.bvCompare()){
+				Weight under_w = under_approx[c.compareID];
+				Weight over_w = over_approx[c.compareID];
+
+				switch(op){
+
+					case Comparison::lt:
+						if(value( c.l)==l_True && over>=over_w){
+							over=over_w-1;
+						}else if (value(c.l)==l_False && under<under_w){
+							under=under_w;
+						}
+						break;
+					case Comparison::leq:
+						if(value( c.l)==l_True && over>over_w){
+							over=over_w;
+						}else if (value(c.l)==l_False && under<=under_w){
+							under=under_w+1;
+						}
+						break;
+					case Comparison::gt:
+						if(value( c.l)==l_True && under<=under_w){
+							under=under_w+1;
+						}else if (value(c.l)==l_False && over>over_w){
+							over=over_w;
+						}
+						break;
+					case Comparison::geq:
+					default:
+						if(value( c.l)==l_True && under<under_w){
+							under=under_w;
+						}else if (value(c.l)==l_False && over>=over_w){
+							over=over_w-1;
+						}
+						break;
+				}
+			}else{
+
+
+			}
+		}
+
 		int width = bitvectors[bvID].size();
 		Weight max_val = (1L<<width)-1;
-		if(under>max_val){
-			under=max_val;
+		if(under>over_approx0[bvID]){
+			under=over_approx0[bvID];
 		}
-		if(over>max_val){
-			over=max_val;
+		if(over>over_approx0[bvID]){
+			over=over_approx0[bvID];
 		}
-		assert(under==under_approx[bvID]);
-		assert(over==over_approx[bvID]);
+		if(under<under_approx0[bvID]){
+			under=under_approx0[bvID];
+		}
+		if(over<under_approx0[bvID]){
+			over=under_approx0[bvID];
+		}
+		assert(under<=under_approx[bvID]);
+		assert(over>=over_approx[bvID]);
 		assert(under_approx0[bvID]<=under_approx[bvID]);
 		assert(over_approx0[bvID]>=over_approx[bvID]);
+		if(under_store){
+			(*under_store)=under;
+		}
+		if(over_store){
+			(*over_store)=over;
+		}
 #endif
 		return true;
 	}
@@ -1167,7 +1361,7 @@ public:
 	}*/
 
 	bool propagateTheory(vec<Lit> & conflict) {
-
+		static int realprops = 0;
 		stats_propagations++;
 		assert(dbg_synced());
 		if (!requiresPropagation) {
@@ -1175,8 +1369,12 @@ public:
 			assert(dbg_uptodate());
 			return true;
 		}
+
+		if(++realprops==59){
+			int a =1;
+		}
 		printf("bv prop %d\n",stats_propagations);
-		if(stats_propagations==103){
+		if(stats_propagations==21){
 			int a =1;
 		}
 		bool any_change = false;
@@ -1248,7 +1446,7 @@ public:
 				}
 			}
 
-
+			updateApproximations(bvID);//the bit assignment updates above can force a more precise over or under approximation.
 
 			if(additions[bvID].hasAddition()){
 
@@ -1326,6 +1524,7 @@ public:
 			for(int i=compare.size()-1;i>=0;i--){
 				int cID = compare[i];
 				ComparisonID & c = comparisons[cID];
+				assert(!c.bvCompare());
 				Comparison op = c.op();
 				Weight & to = c.w;
 				Lit l =  c.l;
@@ -1370,6 +1569,7 @@ public:
 			for(int i = 0;i<bvcompare.size();i++){
 				int cID = bvcompare[i];
 				ComparisonID & c = comparisons[cID];
+				assert(c.bvCompare());
 				Comparison op = c.op();
 				int compareID = c.compareID;
 				assert(compareID>=0);
@@ -1518,11 +1718,11 @@ public:
 	void buildValueReasonBV(Comparison op, int bvID,int comparebvID, vec<Lit> & conflict){
 		Weight  over_cur = over_approx[bvID];
 		Weight  under_cur = under_approx[bvID];
-		assert(checkApproxUpToDate(bvID));
+
 
 		Weight  over_comp = over_approx[comparebvID];
 		Weight  under_comp = under_approx[comparebvID];
-		assert(checkApproxUpToDate(bvID));
+
 		if (op==Comparison::lt){
 			assert(over_cur<under_comp);
 
@@ -2875,207 +3075,101 @@ public:
 #ifndef NDEBUG
 		dbg_synced();
 		for(int bvID = 0;bvID<bitvectors.size();bvID++){
-			assert(checkApproxUpToDate(bvID));
+			Weight under;
+			Weight over;
+			assert(checkApproxUpToDate(bvID,&under,&over));
 
-			Weight & underApprox = under_approx[bvID];
-			Weight & overApprox = over_approx[bvID];
-			vec<int> & compare = compares[bvID];
-			//update over approx lits
-			for(int i = 0;i<compare.size();i++){
-				int comparisonID = compare[i];
+			//Weight & under = under_approx[bvID];
+			//Weight & over = over_approx[bvID];
+				for(int cID:compares[bvID]){
+			ComparisonID & c = comparisons[cID];
+			Comparison op = c.op();
 
-				if(!comparisons[comparisonID].bvCompare()){
-
-					Weight & lt = getComparison(comparisonID).w;
-					Comparison op = comparisons[comparisonID].op();
-					Lit l =  getComparison(comparisonID).l;
-					if(op==Comparison::lt){
-						if (overApprox<lt){
-							if(value(l)==l_True){
-								//do nothing
-							}else if (value(l)==l_False){
-								assert(false);
-								return false;
-							}else {
-								assert(false);
-								return false;
-							}
-
-						}else{
-							break;
+			lbool val = value(c.l);
+			if(!c.bvCompare()){
+				switch(op){
+					case Comparison::lt:
+						if(over<c.w){
+							assert(value(c.l)==l_True);
+						}else if (under>=c.w){
+							assert(value(c.l)==l_False);
 						}
-					}
-				}
 
-				//update under approx lits
-				for(int i = 0;i<compare.size();i++){
-					int comparisonID = compare[i];
-					Weight & lt = getComparison(comparisonID).w;
-					Comparison op = comparisons[comparisonID].op();
-					Lit l =  getComparison(comparisonID).l;
-					if(op==Comparison::lt){
-						if (underApprox>=lt){
-							if(value(l)==l_True){
-								assert(false);
-								return false;
-							}else if (value(l)==l_False){
-								//do nothing
-							}else {
-								assert(false);
-								return false;
-							}
-
-						}else{
-							break;
+						break;
+					case Comparison::leq:
+						if(over<=c.w){
+							assert(value(c.l)==l_True);
+						}else if (under>c.w){
+							assert(value(c.l)==l_False);
 						}
-					}
-				}
-
-
-				//update over approx lits
-				for(int i = 0;i<compare.size();i++){
-					int comparisonID = compare[i];
-					Weight & leq = getComparison(comparisonID).w;
-					Comparison op = comparisons[comparisonID].op();
-					Lit l =  getComparison(comparisonID).l;
-					if(op==Comparison::leq){
-						if (overApprox<=leq){
-							if(value(l)==l_True){
-
-							}else if (value(l)==l_False){
-								assert(false);
-								return false;
-							}else {
-								assert(false);
-								return false;
-							}
-
-						}else{
-							//break;
+						break;
+					case Comparison::gt:
+						if(over<=c.w){
+							assert(value(c.l)==l_False);
+						}else if (under>c.w){
+							assert(value(c.l)==l_True);
 						}
-					}
-				}
-				//update under approx lits
-				for(int i = 0;i<compare.size();i++){
-					int comparisonID = compare[i];
-					Weight & leq = getComparison(comparisonID).w;
-					Comparison op = comparisons[comparisonID].op();
-					Lit l =  getComparison(comparisonID).l;
-					if(op==Comparison::leq){
-						if (underApprox>leq){
-							if(value(l)==l_True){
-								assert(false);
-								return false;
-							}else if (value(l)==l_False){
-
-							}else {
-								assert(false);
-								return false;
-							}
-
-						}else{
-							//break;
+						break;
+					case Comparison::geq:
+					default:
+						if(over<c.w){
+							assert(value(c.l)==l_False);
+						}else if (under>=c.w){
+							assert(value(c.l)==l_True);
 						}
-					}
+					break;
 				}
+			}else{
 
 
-				//update over approx lits
-				for(int i = 0;i<compare.size();i++){
-					int comparisonID = compare[i];
-					Weight & gt = getComparison(comparisonID).w;
-					Comparison op = comparisons[comparisonID].op();
-					Lit l =  getComparison(comparisonID).l;
-					if(op==Comparison::gt){
-						if (overApprox<=gt){
-							if(value(l)==l_True){
-								assert(false);
-								return false;
-							}else if (value(l)==l_False){
-
-							}else {
-								assert(false);
-								return false;
-							}
-
-						}else{
-							break;
-						}
-					}
-				}
-
-				//update under approx lits
-				for(int i = 0;i<compare.size();i++){
-					int comparisonID = compare[i];
-					Weight & gt = getComparison(comparisonID).w;
-					Comparison op = comparisons[comparisonID].op();
-					Lit l =  getComparison(comparisonID).l;
-					if(op==Comparison::gt){
-						if (underApprox>gt){
-							if(value(l)==l_True){
-
-							}else if (value(l)==l_False){
-								assert(false);
-								return false;
-							}else {
-								assert(false);
-								return false;
-							}
-
-						}else{
-							break;
-						}
-					}
-				}
-
-				//update over approx lits
-				for(int i = 0;i<compare.size();i++){
-					int comparisonID = compare[i];
-					Weight & geq = getComparison(comparisonID).w;
-					Comparison op = comparisons[comparisonID].op();
-					Lit l =  getComparison(comparisonID).l;
-					if(op==Comparison::geq){
-						if (overApprox<geq){
-							if(value(l)==l_True){
-								assert(false);
-								return false;
-							}else if (value(l)==l_False){
-
-							}else {
-								assert(false);
-								return false;
-							}
-
-						}else{
-							break;
-						}
-					}
-				}
-
-				//update under approx lits
-				for(int i = 0;i<compare.size();i++){
-					int comparisonID = compare[i];
-					Weight & geq = getComparison(comparisonID).w;
-					Comparison op = comparisons[comparisonID].op();
-					Lit l =  getComparison(comparisonID).l;
-					if(op==Comparison::geq){
-						if (underApprox>=geq){
-							if(value(l)==l_True){
-
-							}else if (value(l)==l_False){
-								assert(false);
-								return false;
-							}else {
-								assert(false);
-								return false;
-							}
-
-						}else{
-							break;
-						}
-					}
-				}
 			}
+		}
+		for(int cID:bvcompares[bvID]){
+			ComparisonID & c = comparisons[cID];
+			Comparison op = c.op();
+
+			lbool val = value(c.l);
+			if(c.bvCompare()){
+				Weight under_w = under_approx[c.compareID];
+				Weight over_w = over_approx[c.compareID];
+
+				switch(op){
+
+					case Comparison::lt:
+						if( over<under_w){
+							assert(value(c.l)==l_True);
+						}else if (under>=over_w){
+							assert(value(c.l)==l_False);
+						}
+						break;
+					case Comparison::leq:
+						if( over<=under_w){
+							assert(value(c.l)==l_True);
+						}else if (under>over_w){
+							assert(value(c.l)==l_False);
+						}
+						break;
+					case Comparison::gt:
+						if( over<=under_w){
+							assert(value(c.l)==l_False);
+						}else if (under>over_w){
+							assert(value(c.l)==l_True);
+						}
+						break;
+					case Comparison::geq:
+					default:
+						if( over<under_w){
+							assert(value(c.l)==l_False);
+						}else if (under>=over_w){
+							assert(value(c.l)==l_True);
+						}
+						break;
+				}
+			}else{
+
+
+			}
+		}
 		}
 #endif
 		return true;

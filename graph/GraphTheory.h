@@ -1294,7 +1294,7 @@ public:
 	;
 	bool propagateTheory(vec<Lit> & conflict) {
 		static int itp = 0;
-		if (++itp == 80) {
+		if (++itp == 79) {
 			int a = 1;
 		}
 
