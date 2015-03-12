@@ -1405,7 +1405,7 @@ public:
 			return true;
 		}
 
-		if(++realprops==25){
+		if(++realprops==46){
 			int a =1;
 		}
 		printf("bv prop %d\n",stats_propagations);
@@ -1959,7 +1959,7 @@ public:
 		}
 		if(cID>=-1){
 			ComparisonID & c = comparisons[cID];
-			Comparison cop = c.op();
+			Comparison cop = c.op();//invert this because we are switch the direction of comparison
 
 
 
@@ -1968,9 +1968,9 @@ public:
 				conflict.push(~c.l);
 				if(c.bvCompare()){
 					if (compare_over){
-						buildValueReason(cop,c.compareID, over_approx[bvID],conflict);
+						buildValueReason(Comparison::leq,c.compareID, over_approx[c.compareID],conflict);
 					}else{
-						buildValueReason(cop,c.compareID, under_approx[bvID],conflict);
+						buildValueReason(Comparison::geq,c.compareID, under_approx[c.compareID],conflict);
 					}
 				}
 			}else{
@@ -1978,9 +1978,9 @@ public:
 				conflict.push(c.l);
 				if(c.bvCompare()){
 					if (compare_over){
-						buildValueReason(-cop,c.compareID, over_approx[bvID],conflict);
+						buildValueReason(Comparison::leq,c.compareID, over_approx[c.compareID],conflict);
 					}else{
-						buildValueReason(-cop,c.compareID, under_approx[bvID],conflict);
+						buildValueReason(Comparison::geq,c.compareID, under_approx[c.compareID],conflict);
 					}
 				}
 			}
