@@ -1553,7 +1553,7 @@ lbool Solver::search(int nof_conflicts) {
 	//last_dec = var_Undef;
 	for (;;) {
 		static int iter = 0;
-		if (++iter == 63) {
+		if (++iter == 73) {
 			int a = 1;
 		}
 		propagate: CRef confl = propagate();

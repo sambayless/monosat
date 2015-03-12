@@ -224,7 +224,7 @@ public:
 	//Bitvectors are unsigned, and have least significant bit at index 0
 	vec<vec<Lit> > bitvectors;
 	vec<ComparisonID> comparisons;
-
+	vec<vec<int> > cause_set;//for each bv, this is the set of all bitvectors that have a greater id and might need to have their approx updated when this bv's approx changes.
 	vec<vec<int> > compares; //for each bitvector, comparisons are all to unique values, and in ascending order of compareTo.
 	vec<vec<int>> bvcompares;
 
@@ -251,8 +251,8 @@ public:
 	vec<bool> bvconst;
 
 
-
 	vec<bool> in_backtrack_queue;
+	vec<bool> needs_update;
 	vec<int> backtrack_queue;
 	vec<BVTheory*> theories;
 	vec<BVTheory*> actual_theories;
@@ -543,10 +543,43 @@ public:
 			return false;
 		}
 	}
+	inline bool setNeedsUpdate(int bvID){
+		assert(bvID>=0);
+		if(!needs_update[bvID]){
+			//backtrack_queue.push(bvID);
+			needs_update[bvID]=true;
+			return true;
+		}
+		return false;
+	}
+
+	bool updateBitvectors(bool backtracking=false){
+		bool any_changed=false;
+		for(int bvID = 0;bvID<bitvectors.size();bvID++){
+			if(needs_update[bvID]){
+				if(updateApproximations(bvID)){
+					any_changed=true;
+					//mark
+					vec<int> & causes = cause_set[bvID];
+					for(int bv:causes){
+						assert(bv>bvID);
+						setNeedsUpdate(bv);
+					}
+				}
+				needs_update[bvID]=false;
+				if(backtracking){
+					if(hasTheory(bvID)){
+						getTheory(bvID)->backtrackBV(bvID);
+					}
+				}
+			}
+		}
+		return any_changed;
+	}
 
 	void backtrackUntil(int level) {
 		static int it = 0;
-		
+		int n_backtrack=0;
 		bool changed = false;
 		//need to remove and add edges in the two graphs accordingly.
 		if (trail_lim.size() > level) {
@@ -564,34 +597,22 @@ public:
 					//if the bitvector's cause was this comparison, then we need to update the bitvector now.
 					if(under_causes[bvID].comparison_cause == cID){
 						under_causes[bvID].clear();
-						if(!in_backtrack_queue[bvID]){
-							backtrack_queue.push(bvID);
-							in_backtrack_queue[bvID]=true;
-						}
+						n_backtrack+=setNeedsUpdate(bvID);
 					}
 					if(over_causes[bvID].comparison_cause == cID){
 						over_causes[bvID].clear();
-						if(!in_backtrack_queue[bvID]){
-							backtrack_queue.push(bvID);
-							in_backtrack_queue[bvID]=true;
-						}
+						n_backtrack+=setNeedsUpdate(bvID);
 					}
 				} else {
 
 					int bvID = e.bvID;
 					if(under_causes[bvID].cause_is_bits){
 						under_causes[bvID].clear();
-						if(!in_backtrack_queue[bvID]){
-							backtrack_queue.push(bvID);
-							in_backtrack_queue[bvID]=true;
-						}
+						n_backtrack+=setNeedsUpdate(bvID);
 					}
 					if(over_causes[bvID].cause_is_bits){
 						over_causes[bvID].clear();
-						if(!in_backtrack_queue[bvID]){
-							backtrack_queue.push(bvID);
-							in_backtrack_queue[bvID]=true;
-						}
+						n_backtrack+=setNeedsUpdate(bvID);
 					}
 				}
 				assigns[e.var] = l_Undef;
@@ -605,22 +626,13 @@ public:
 				//requiresPropagation = true;
 
 			}
-			
+		}
+
+		if(updateBitvectors(true)){
+			requiresPropagation = true;
 
 		}
-		while(backtrack_queue.size()){
-			int bvID = backtrack_queue.last();
-			//these _might_ need to be ordered by bvID to ensure the correctness of approximation updates.
-			//also, an update to a bitvector may trigger updates to later bitvectors (through addition, or comparison),
-			//so that really needs to be accounted for too.
-			backtrack_queue.pop();
-			in_backtrack_queue[bvID]=false;
-			updateApproximations(bvID);
-			if(hasTheory(bvID)){
-				getTheory(bvID)->backtrackBV(bvID);
-			}
 
-		}
 
 		
 	};
@@ -634,6 +646,7 @@ public:
 		assert(value(p)!=l_False);
 		if(value(p)!=l_True)
 			return;
+		int n_backtrack=0;
 		assert(value(p)==l_True);
 		int i = trail.size() - 1;
 		for (; i >= 0; i--) {
@@ -650,52 +663,34 @@ public:
 				//if the bitvector's cause was this comparison, then we need to update the bitvector now.
 				if(under_causes[bvID].comparison_cause == cID){
 					under_causes[bvID].clear();
-					if(!in_backtrack_queue[bvID]){
-						backtrack_queue.push(bvID);
-						in_backtrack_queue[bvID]=true;
-					}
+					n_backtrack+=setNeedsUpdate(bvID);
 				}
 				if(over_causes[bvID].comparison_cause == cID){
 					over_causes[bvID].clear();
-					if(!in_backtrack_queue[bvID]){
-						backtrack_queue.push(bvID);
-						in_backtrack_queue[bvID]=true;
-					}
+					n_backtrack+=setNeedsUpdate(bvID);
 				}
 			} else {
 
 				int bvID = e.bvID;
 				if(under_causes[bvID].cause_is_bits){
 					under_causes[bvID].clear();
-					if(!in_backtrack_queue[bvID]){
-						backtrack_queue.push(bvID);
-						in_backtrack_queue[bvID]=true;
-					}
+					n_backtrack+=setNeedsUpdate(bvID);
 				}
 				if(over_causes[bvID].cause_is_bits){
 					over_causes[bvID].clear();
-					if(!in_backtrack_queue[bvID]){
-						backtrack_queue.push(bvID);
-						in_backtrack_queue[bvID]=true;
-					}
+					n_backtrack+=setNeedsUpdate(bvID);
 				}
 			}
 			assigns[e.var] = l_Undef;
+			//changed = true;
 		}
 		
 		trail.shrink(trail.size() - (i + 1));
 		//if(i>0){
 		requiresPropagation = true;
 
-		while(backtrack_queue.size()){
-			int bvID = backtrack_queue.last();
-			backtrack_queue.pop();
-			in_backtrack_queue[bvID]=false;
-			updateApproximations(bvID);
-			if(hasTheory(bvID)){
-				getTheory(bvID)->backtrackBV(bvID);
-			}
-		}
+		//since we didn't backtrack a full level, a propagation is required regardless of whether any bitvectors change value.
+		updateBitvectors(true);
 	};
 
 
@@ -883,9 +878,9 @@ public:
 	}
 	;
 
-	void updateApproximations(int bvID, int ignoreCID=-1, Var ignore_bv=var_Undef){
+	bool updateApproximations(int bvID, int ignoreCID=-1, Var ignore_bv=var_Undef){
 		if(isConst(bvID))
-			return;
+			return false;
 
 		static int iter = 0;
 		++iter;
@@ -902,7 +897,8 @@ public:
 		}
 		std::cout<<"\n";
 #endif
-
+		Weight under_old = under_approx[bvID];
+		Weight over_old = over_approx[bvID];
 		vec<Lit> & bv = bitvectors[bvID];
 
 		under_causes[bvID].clear();
@@ -1187,6 +1183,7 @@ public:
 				bvconst[bvID]=true;//this bitvector is a known constant value in the formula.
 			}
 		}
+		return 	(under_old != under_approx[bvID]) || (over_old != over_approx[bvID]);//return whether either weight has changed.
 	}
 
 	Weight & getUnderApprox(int bvID, bool level0=false){
@@ -1408,7 +1405,7 @@ public:
 			return true;
 		}
 
-		if(++realprops==76){
+		if(++realprops==25){
 			int a =1;
 		}
 		printf("bv prop %d\n",stats_propagations);
@@ -1612,7 +1609,7 @@ public:
 				int compareID = c.compareID;
 				assert(compareID>=0);
 				Lit l =  c.l;
-				updateApproximations(compareID);
+
 
 				Weight & under_compare = under_approx[compareID];
 
@@ -1662,7 +1659,7 @@ public:
 				int compareID = c.compareID;
 				assert(compareID>=0);
 				Lit l =  c.l;
-				updateApproximations(compareID);
+				//updateApproximations(compareID);
 				Weight & over_compare = over_approx[compareID];
 				if((op==Comparison::lt && underApprox>=over_compare) ||
 						(op==Comparison::leq && underApprox>over_compare)){
@@ -1856,7 +1853,7 @@ public:
 		static int iter = 0;
 		++iter;
 		printf("reason %d: %d\n",iter,bvID);
-		if(iter==83){
+		if(iter==13){
 			int a=1;
 		}
 
@@ -1963,13 +1960,32 @@ public:
 		if(cID>=-1){
 			ComparisonID & c = comparisons[cID];
 			Comparison cop = c.op();
+
+
+
 			if(value(c.l)==l_True){
 				assert(value(~c.l)==l_False);
 				conflict.push(~c.l);
+				if(c.bvCompare()){
+					if (compare_over){
+						buildValueReason(cop,c.compareID, over_approx[bvID],conflict);
+					}else{
+						buildValueReason(cop,c.compareID, under_approx[bvID],conflict);
+					}
+				}
 			}else{
 				assert(value(c.l)==l_False);
 				conflict.push(c.l);
+				if(c.bvCompare()){
+					if (compare_over){
+						buildValueReason(-cop,c.compareID, over_approx[bvID],conflict);
+					}else{
+						buildValueReason(-cop,c.compareID, under_approx[bvID],conflict);
+					}
+				}
 			}
+
+
 			return;
 		}
 		assert(false);//no cause was found.
@@ -2652,6 +2668,10 @@ public:
 
 		additions[resultID].aID=aID;
 		additions[resultID].bID=bID;
+		if(!cause_set[aID].contains(resultID))
+			cause_set[aID].push(resultID);
+		if(!cause_set[bID].contains(resultID))
+			cause_set[bID].push(resultID);
 		//additions[resultID].w=0;
 		return getBV(resultID);
 	}
@@ -2663,7 +2683,7 @@ public:
 		//bv_callbacks.growTo(id+1,nullptr);
 		bitvectors.growTo(bvID+1);
 		theoryIds.growTo(bvID+1,-1);
-		in_backtrack_queue.growTo(bvID+1,false);
+		needs_update.growTo(bvID+1,false);
 		under_approx.growTo(bvID+1,-1);
 		over_approx.growTo(bvID+1,-1);
 		under_approx0.growTo(bvID+1,-1);
@@ -2675,6 +2695,7 @@ public:
 		additions.growTo(bvID+1);
 		under_causes.growTo(bvID+1);
 		over_causes.growTo(bvID+1);
+		cause_set.growTo(bvID+1);
 		//bv_callbacks.growTo(bvID+1);
 		if(under_approx[bvID]>-1){
 			assert(false);
@@ -2718,7 +2739,7 @@ public:
 		//bv_callbacks.growTo(id+1,nullptr);
 		bitvectors.growTo(bvID+1);
 		theoryIds.growTo(bvID+1,-1);
-		in_backtrack_queue.growTo(bvID+1,false);
+		needs_update.growTo(bvID+1,false);
 		under_approx.growTo(bvID+1,-1);
 		over_approx.growTo(bvID+1,-1);
 		under_approx0.growTo(bvID+1,-1);
@@ -2730,6 +2751,7 @@ public:
 		additions.growTo(bvID+1);
 		under_causes.growTo(bvID+1);
 		over_causes.growTo(bvID+1);
+		cause_set.growTo(bvID+1);
 		//bv_callbacks.growTo(bvID+1);
 		if(under_approx[bvID]>-1){
 			assert(false);
@@ -2978,6 +3000,9 @@ public:
 		std::cout<<"New comparison " << comparisonID << ": bv"<< bvID << op << "bv" <<toID <<"\n";
 		updateApproximations(bvID);
 		updateApproximations(toID);
+
+		if(!cause_set[toID].contains(bvID))
+			cause_set[toID].push(bvID);
 
 		comparisons.push(ComparisonID(-1,toID,l,bvID,op));
 		bvcompares[bvID].push(comparisonID);
