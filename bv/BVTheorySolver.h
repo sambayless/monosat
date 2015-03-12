@@ -557,25 +557,42 @@ public:
 				Assignment & e = trail[i];
 				assert(assigns[e.var]!=l_Undef);
 				if (e.isComparator) {
-
-
-					if (e.assign) {
-						//g_unders[bvID]->disableTransition(edgeID, input,output);
-
-					} else {
-						//g_overs[bvID]->enableTransition(edgeID,input,output);
-
+					int cID = e.bvID;
+					assert(cID>=0);
+					ComparisonID & c = comparisons[cID];
+					int bvID = c.bvID;
+					//if the bitvector's cause was this comparison, then we need to update the bitvector now.
+					if(under_causes[bvID].comparison_cause == cID){
+						under_causes[bvID].clear();
+						if(!in_backtrack_queue[bvID]){
+							backtrack_queue.push(bvID);
+							in_backtrack_queue[bvID]=true;
+						}
+					}
+					if(over_causes[bvID].comparison_cause == cID){
+						over_causes[bvID].clear();
+						if(!in_backtrack_queue[bvID]){
+							backtrack_queue.push(bvID);
+							in_backtrack_queue[bvID]=true;
+						}
 					}
 				} else {
-					//probably not neccessary
-					under_causes[e.bvID].clear();
-					over_causes[e.bvID].clear();
-					if(!in_backtrack_queue[e.bvID]){
-						backtrack_queue.push(e.bvID);
-						in_backtrack_queue[e.bvID]=true;
-					}
 
-					//status.bvAltered(e.bvID);
+					int bvID = e.bvID;
+					if(under_causes[bvID].cause_is_bits){
+						under_causes[bvID].clear();
+						if(!in_backtrack_queue[bvID]){
+							backtrack_queue.push(bvID);
+							in_backtrack_queue[bvID]=true;
+						}
+					}
+					if(over_causes[bvID].cause_is_bits){
+						over_causes[bvID].clear();
+						if(!in_backtrack_queue[bvID]){
+							backtrack_queue.push(bvID);
+							in_backtrack_queue[bvID]=true;
+						}
+					}
 				}
 				assigns[e.var] = l_Undef;
 				//changed = true;
@@ -593,6 +610,9 @@ public:
 		}
 		while(backtrack_queue.size()){
 			int bvID = backtrack_queue.last();
+			//these _might_ need to be ordered by bvID to ensure the correctness of approximation updates.
+			//also, an update to a bitvector may trigger updates to later bitvectors (through addition, or comparison),
+			//so that really needs to be accounted for too.
 			backtrack_queue.pop();
 			in_backtrack_queue[bvID]=false;
 			updateApproximations(bvID);
@@ -623,29 +643,42 @@ public:
 				break;
 			}
 			if (e.isComparator) {
-
-				assert(assigns[e.var]!=l_Undef);
-
-				if (e.assign) {
-				//	g_unders[bvID]->disableTransition(edgeID,input,output);
-				} else {
-				//	g_overs[bvID]->enableTransition(edgeID,input,output);
+				int cID = e.bvID;
+				assert(cID>=0);
+				ComparisonID & c = comparisons[cID];
+				int bvID = c.bvID;
+				//if the bitvector's cause was this comparison, then we need to update the bitvector now.
+				if(under_causes[bvID].comparison_cause == cID){
+					under_causes[bvID].clear();
+					if(!in_backtrack_queue[bvID]){
+						backtrack_queue.push(bvID);
+						in_backtrack_queue[bvID]=true;
+					}
+				}
+				if(over_causes[bvID].comparison_cause == cID){
+					over_causes[bvID].clear();
+					if(!in_backtrack_queue[bvID]){
+						backtrack_queue.push(bvID);
+						in_backtrack_queue[bvID]=true;
+					}
 				}
 			} else {
-				//probably not neccessary
-				under_causes[e.bvID].clear();
-				over_causes[e.bvID].clear();
 
-				//if(bv_callbacks[e.bvID])
-				//	(*bv_callbacks[e.bvID])(e.bvID);
-				//status(e.bvID);
-				//if(hasTheory(e.bvID)){
-					if(!in_backtrack_queue[e.bvID]){
-						backtrack_queue.push(e.bvID);
-						in_backtrack_queue[e.bvID]=true;
+				int bvID = e.bvID;
+				if(under_causes[bvID].cause_is_bits){
+					under_causes[bvID].clear();
+					if(!in_backtrack_queue[bvID]){
+						backtrack_queue.push(bvID);
+						in_backtrack_queue[bvID]=true;
 					}
-				//}
-				//status.bvAltered(e.bvID);
+				}
+				if(over_causes[bvID].cause_is_bits){
+					over_causes[bvID].clear();
+					if(!in_backtrack_queue[bvID]){
+						backtrack_queue.push(bvID);
+						in_backtrack_queue[bvID]=true;
+					}
+				}
 			}
 			assigns[e.var] = l_Undef;
 		}
@@ -839,7 +872,7 @@ public:
 			int bvID = getbvID(var(l));
 			int comparisonID = getComparisonID(var(l)); //v-min_edge_var;
 			//status.comparisonAltered(bvID, comparisonID);
-			trail.push( { true, !sign(l),bvID, v });
+			trail.push( { true, !sign(l),comparisonID, v });
 			//trail.push( { true, !sign(l),edgeID, v });
 			if(!alteredBV[bvID]){
 				alteredBV[bvID]=true;
@@ -1135,17 +1168,17 @@ public:
 		}
 		int width = bitvectors[bvID].size();
 		Weight max_val = ((1L)<<width)-1;
-		if(under_approx[bvID]>max_val){
-			under_approx[bvID]=max_val;
+		if(under_approx[bvID]>over_approx0[bvID]){
+			under_approx[bvID]=over_approx0[bvID];
 		}
-		if(over_approx[bvID]>max_val){
-			over_approx[bvID]=max_val;
+		if(over_approx[bvID]>over_approx0[bvID]){
+			over_approx[bvID]=over_approx0[bvID];
 		}
-		if(under_approx[bvID]<0){
-			under_approx[bvID]=0;
+		if(under_approx[bvID]<under_approx0[bvID]){
+			under_approx[bvID]=under_approx0[bvID];
 		}
-		if(over_approx[bvID]<0){
-			over_approx[bvID]=0;
+		if(over_approx[bvID]<under_approx0[bvID]){
+			over_approx[bvID]=under_approx0[bvID];
 		}
 		if(decisionLevel()==0){
 			under_approx0[bvID]=under_approx[bvID];
@@ -1375,11 +1408,11 @@ public:
 			return true;
 		}
 
-		if(++realprops==59){
+		if(++realprops==76){
 			int a =1;
 		}
 		printf("bv prop %d\n",stats_propagations);
-		if(stats_propagations==21){
+		if(stats_propagations==110){
 			int a =1;
 		}
 		bool any_change = false;
