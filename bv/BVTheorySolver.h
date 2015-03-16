@@ -1408,7 +1408,7 @@ public:
 		if(++realprops==46){
 			int a =1;
 		}
-		printf("bv prop %d\n",stats_propagations);
+		//printf("bv prop %d\n",stats_propagations);
 		if(stats_propagations==110){
 			int a =1;
 		}
@@ -1852,7 +1852,7 @@ public:
 
 		static int iter = 0;
 		++iter;
-		printf("reason %d: %d\n",iter,bvID);
+		//printf("reason %d: %d\n",iter,bvID);
 		if(iter==13){
 			int a=1;
 		}

@@ -143,12 +143,13 @@ bool Solver::addClause_(vec<Lit>& ps) {
 
 CRef Solver::attachReasonClause(Lit r,vec<Lit> & ps) {
 	assert(value(r)==l_True);
-
+#ifndef NDEBUG
 	printf("learnt ");
 	for (Lit l:ps){
 		printf(" %d", dimacs(l));
 	}
 	printf(" 0\n");
+#endif
 	//sort(ps);
 	Lit p;
 	int i, j;
@@ -1016,7 +1017,7 @@ CRef Solver::propagate(bool propagate_theories) {
 
 			int a = 1;
 		}
-		printf("iter %d\n",iter);
+		//printf("iter %d\n",iter);
 		//printf("iter %d\n",iter);
 		//propagate theories;
 		while (propagate_theories && theory_queue.size() && (opt_early_theory_prop || qhead == trail.size())
@@ -1361,12 +1362,13 @@ bool Solver::addConflictClause(vec<Lit> & ps, CRef & confl_out, bool permanent) 
 	if(++nlearnt==13){
 		int a=1;
 	}
-
+#ifndef NDEBUG
 	printf("learnt ");
 	for (Lit l:ps){
 		printf(" %d", dimacs(l));
 	}
 	printf(" 0\n");
+#endif
 	bool any_undef=false;
 	sort(ps);
 	Lit p;
