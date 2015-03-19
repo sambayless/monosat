@@ -67,6 +67,15 @@ class GraphParser: public Parser<B, Solver> {
 	vec<int> weights;
 	vec<Lit> lits;
 	int count = 0;
+
+	struct EdgePriority{
+		int graphID;
+		int edgeVar;
+		int priority;
+	};
+
+	vec<EdgePriority> edgePriorities;
+
 	vec<char> tmp;
 	
 	struct BVEdge{
@@ -138,7 +147,38 @@ class GraphParser: public Parser<B, Solver> {
 		}
 		//  return ev;
 	}
+	void readEdgePriority(B & in){
+		if (opt_ignore_theories) {
+			skipLine(in);
+			return;
+		}
 
+		++in;
+
+		int graphID = parseInt(in);
+		int edgeVar = parseInt(in) - 1;
+		int priority = parseInt(in);
+
+		if (graphID < 0 || graphID >= graphs.size()) {
+			printf("PARSE ERROR! Undeclared graph identifier %d for edge %d\n", graphID, edgeVar), exit(1);
+		}
+		if (edgeVar < 0) {
+			printf("PARSE ERROR! Edge variables must be >=0, was %d\n", edgeVar), exit(1);
+		}
+
+		edgePriorities.push({graphID, edgeVar,priority});
+
+		if (graphs[graphID]) {
+
+		} else if (graphs_float[graphID]) {
+
+		} else if (graphs_rational[graphID]) {
+
+		} else {
+			printf("PARSE ERROR! Undeclared graph identifier %d for edge %d\n", graphID, edgeVar), exit(1);
+			exit(1);
+		}
+	}
 	void readEdgeBV(B& in, Solver& S) {
 		if (opt_ignore_theories) {
 			skipLine(in);
@@ -950,6 +990,9 @@ public:
 			//	printf("PARSE ERROR! Unexpected char: %c\n", *in), exit(1);
 			//}
 			return true;
+		}else if (match(in, "edge_priority")) {
+			readEdgePriority(in);
+			return true;
 		}else if (match(in, "edge_bv")) {
 			count++;
 			readEdgeBV(in, S);
@@ -1069,7 +1112,20 @@ public:
 			graphs[e.graphID]->maxflowBV(e.s, e.t, e.var, e.bvID,e.strict);
 
 		}
-
+		for (auto p:edgePriorities){
+/*			int graphID = p.graphID;
+			Var v = S.getTheoryVar( p.edgeVar);
+			if (graphs[graphID])
+				graphs[graphID]->setEdgePriority(graphs[graphID]->getEdgeID(v),p.priority);
+			else if (graphs_float[graphID])
+				graphs_float[graphID]->setEdgePriority(graphs_float[graphID]->getEdgeID(v),p.priority);
+			else if (graphs_rational[graphID])
+				graphs_rational[graphID]->setEdgePriority(graphs_rational[graphID]->getEdgeID(v),p.priority);
+			else {
+				printf("PARSE ERROR! Undeclared graph identifier %d\n", graphID), exit(1);
+				exit(1);
+			}*/
+		}
 
 		for (int i = 0; i < graphs.size(); i++) {
 			if (graphs[i])

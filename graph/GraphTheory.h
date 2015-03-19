@@ -711,6 +711,38 @@ public:
 				}
 			}
 		}
+		for (int i = 0; i < edge_list.size(); i++) {
+			if (edge_list[i].v < 0)
+				continue;
+			Edge & e = edge_list[i];
+			lbool val = value(e.v);
+			if(edge_bv_weights.size()){
+				BitVector<Weight> & bv = edge_bv_weights[e.edgeID];
+				if(g_under.getWeight(e.edgeID)!= bv.getUnder()){
+					assert( false);
+				}
+				if(g_over.getWeight(e.edgeID)!=bv.getOver()){
+					assert( false);
+				}
+			}
+			if (val == l_True) {
+				if (!g_under.edgeEnabled(e.edgeID)) {
+					assert( false);
+				}
+				if (!g_over.edgeEnabled(e.edgeID)) {
+					assert( false);
+				}
+
+			} else  if (val == l_False) {
+				if (g_under.edgeEnabled(e.edgeID)) {
+					assert( false);
+				}
+				if (g_over.edgeEnabled(e.edgeID)) {
+					assert( false);
+				}
+			}
+		}
+
 #endif
 #ifdef DEBUG_DIJKSTRA
 		
@@ -889,7 +921,7 @@ public:
 		 reach_detectors[i]->negative_reach_detector->update();
 		 }*/
 
-		dbg_sync();
+		//dbg_sync();
 		
 	}
 	;
@@ -972,7 +1004,7 @@ public:
 		}
 		//while(trail_lim.size() && trail_lim.last()>=trail.size())
 		//	trail_lim.pop();
-		dbg_sync();
+		//dbg_sync();
 		/*		for(int i = 0;i<reach_detectors.size();i++){
 		 if(reach_detectors[i]->positive_reach_detector)
 		 reach_detectors[i]->positive_reach_detector->update();
@@ -1298,13 +1330,14 @@ public:
 	;
 	bool propagateTheory(vec<Lit> & conflict) {
 		static int itp = 0;
-		if (++itp == 79) {
+		if (++itp == 5241) {
 			int a = 1;
 		}
 
 		stats_propagations++;
-		dbg_sync();
+
 		if (!requiresPropagation) {
+			dbg_sync();
 			stats_propagations_skipped++;
 			assert(dbg_graphsUpToDate());
 			return true;
@@ -1313,7 +1346,8 @@ public:
 		if(comparator && !comparator->propagateTheory(conflict)){
 			return false;
 		}
-		printf("graph prop %d\n",stats_propagations);
+		dbg_sync();
+		//printf("graph prop %d\n",stats_propagations);
 		for(Theory * t:theories){
 			if(!t->propagateTheory(conflict)){
 				toSolver(conflict);
@@ -1417,6 +1451,7 @@ public:
 		printf("}\n");
 	}
 	void drawFull() {
+#ifndef NDEBUG
 		printf("digraph{\n");
 		for (int i = 0; i < nNodes(); i++) {
 			printf("n%d\n", i);
@@ -1436,6 +1471,7 @@ public:
 		}
 		
 		printf("}\n");
+#endif
 	}
 	
 	bool check_solved() {
@@ -1580,6 +1616,7 @@ public:
 	}
 	
 	void drawCurrent() {
+#ifndef NDEBUG
 		int from = -1;
 		int to = -1;
 		printf("digraph{\n");
@@ -1606,6 +1643,7 @@ public:
 		}
 		
 		printf("}\n");
+#endif
 	}
 	int nEdges() {
 		return edge_list.size();
@@ -1768,6 +1806,11 @@ public:
 			BitVector<Weight> bv = comparator->newBitvector(bvID,bitVector);
 			comparator->setBitvectorTheory(bvID,this->getTheoryIndex());
 			edge_bitvectors.growTo(bv.getID()+1,-1);
+			if(edge_bitvectors[bv.getID()]!=-1){
+				//else, this is already used!
+				fprintf(stderr,"Each bitvector can only be used for one edge!\n");
+				exit(1);
+			}
 			edge_bitvectors[bv.getID()]=index;
 			//bv_needs_update.growTo(bv.getID()+1);
 			all_edges_unit &= (bv.getUnder()== 1 && bv.getOver()==1);

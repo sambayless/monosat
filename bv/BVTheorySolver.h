@@ -756,7 +756,7 @@ public:
 			Weight overApprox = over_approx[bvID];
 			static int iterv =0;
 			++iterv;
-			std::cout<<"bv: " << bvID << " (" <<underApprox << ", " <<overApprox << " ) " << " it " << iterv <<  "\n";
+
 			assert(under_approx>=0); assert(overApprox>=0);
 			vec<Lit> & bv = bitvectors[bvID];
 
@@ -884,7 +884,7 @@ public:
 
 		static int iter = 0;
 		++iter;
-		std::cout<< "bv update " << iter << " for " << bvID << ": ";
+
 #ifndef NDEBUG
 		for(int i = 0;i<vars.size();i++){
 			if(value(i)==l_True){
@@ -1428,7 +1428,6 @@ public:
 
 			Weight & underApprox = under_approx[bvID];
 			Weight & overApprox = over_approx[bvID];
-			std::cout<<"bv: " << bvID << " (" <<underApprox << ", " <<overApprox << " )\n";
 
 			vec<Lit> & bv = bitvectors[bvID];
 			Weight under =0;
@@ -1523,9 +1522,9 @@ public:
 						(op==Comparison::leq && overApprox<=to)){
 					if(value(l)==l_True){
 						//do nothing
-						std::cout<<"nothing bv " << bvID << op << to << "\n";
+
 					}else if (value(l)==l_False){
-						std::cout<<"conflict bv " << bvID << op << to << "\n";
+
 						assert(value(l)==l_False);
 						assert(dbg_value(l)==l_False);
 						conflict.push(l);
@@ -1533,22 +1532,22 @@ public:
 						toSolver(conflict);
 						return false;
 					}else {
-						std::cout<<"propagate bv " << bvID << op << to << "\n";
+
 						assert(value(l)==l_Undef);
 						enqueue(l, comparisonprop_marker);
 					}
 				}else if((op==Comparison::gt && overApprox<=to) ||
 						(op==Comparison::geq && overApprox<to)){
 					if(value(l)==l_True){
-						std::cout<<"conflict neg bv " << bvID << op << to << "\n";
+
 						conflict.push(~l);
 						buildValueReason(-op,bvID,to,conflict);
 						toSolver(conflict);
 						return false;
 					}else if (value(l)==l_False){
-						std::cout<<"nothing neg bv " << bvID << op << to << "\n";
+
 					}else {
-						std::cout<<"propagate neg bv " << bvID << op << to << "\n";
+
 						assert(value(l)==l_Undef);
 						enqueue(~l, comparisonprop_marker);
 					}
@@ -1567,31 +1566,31 @@ public:
 				if((op==Comparison::lt && underApprox>=to) ||
 						(op==Comparison::leq && underApprox>to)){
 					if(value(l)==l_True){
-						std::cout<<"conflict neg bv " << bvID << op << to << "\n";
+
 						conflict.push(~l);
 						buildValueReason(-op,bvID,to,conflict);
 						toSolver(conflict);
 						return false;
 					}else if (value(l)==l_False){
 						//do nothing
-						std::cout<<"nothing neg bv " << bvID << op << to << "\n";
+
 					}else {
-						std::cout<<"propagate neg bv " << bvID << op << to << "\n";
+
 						assert(value(l)==l_Undef);
 						enqueue(~l, comparisonprop_marker);
 					}
 				}else if((op==Comparison::gt && underApprox>to) ||
 						(op==Comparison::geq && underApprox>=to)){
 					if(value(l)==l_True){
-						std::cout<<"nothing bv " << bvID << op<< to << "\n";
+
 					}else if (value(l)==l_False){
-						std::cout<<"conflict bv " << bvID << op << to << "\n";
+
 						conflict.push(l);
 						buildValueReason(op,bvID,to,conflict);
 						toSolver(conflict);
 						return false;
 					}else {
-						std::cout<<"propagate bv " << bvID << op << to << "\n";
+
 						assert(value(l)==l_Undef);
 						enqueue(l, comparisonprop_marker);
 					}
@@ -1619,9 +1618,9 @@ public:
 						(op==Comparison::leq && overApprox<=under_compare)){
 					if(value(l)==l_True){
 						//do nothing
-						std::cout<<"nothing bv " << bvID << op << compareID << "\n";
+
 					}else if (value(l)==l_False){
-						std::cout<<"conflict bv " << bvID << op << compareID << "\n";
+
 						assert(value(l)==l_False);
 						assert(dbg_value(l)==l_False);
 						conflict.push(l);
@@ -1629,22 +1628,22 @@ public:
 						toSolver(conflict);
 						return false;
 					}else {
-						std::cout<<"propagate bv " << bvID << op << compareID << "\n";
+
 						assert(value(l)==l_Undef);
 						enqueue(l, comparisonprop_marker);
 					}
 				}else if((op==Comparison::gt && overApprox<=under_compare) ||
 						(op==Comparison::geq && overApprox<under_compare)){
 					if(value(l)==l_True){
-						std::cout<<"conflict neg bv " << bvID << op << compareID << "\n";
+
 						conflict.push(~l);
 						buildValueReasonBV(-op,bvID,compareID,conflict);
 						toSolver(conflict);
 						return false;
 					}else if (value(l)==l_False){
-						std::cout<<"nothing neg bv " << bvID << op << compareID << "\n";
+
 					}else {
-						std::cout<<"propagate neg bv " << bvID << op << compareID << "\n";
+
 						assert(value(l)==l_Undef);
 						enqueue(~l, comparisonprop_marker);
 					}
@@ -1664,31 +1663,31 @@ public:
 				if((op==Comparison::lt && underApprox>=over_compare) ||
 						(op==Comparison::leq && underApprox>over_compare)){
 					if(value(l)==l_True){
-						std::cout<<"conflict neg bv " << bvID << op << compareID << "\n";
+
 						conflict.push(~l);
 						buildValueReasonBV(-op,bvID,compareID,conflict);
 						toSolver(conflict);
 						return false;
 					}else if (value(l)==l_False){
 						//do nothing
-						std::cout<<"nothing neg bv " << bvID << op << compareID << "\n";
+
 					}else {
-						std::cout<<"propagate neg bv " << bvID << op << compareID << "\n";
+
 						assert(value(l)==l_Undef);
 						enqueue(~l, comparisonprop_marker);
 					}
 				}else if((op==Comparison::gt && underApprox>over_compare) ||
 						(op==Comparison::geq && underApprox>=over_compare)){
 					if(value(l)==l_True){
-						std::cout<<"nothing bv " << bvID << op<< compareID << "\n";
+
 					}else if (value(l)==l_False){
-						std::cout<<"conflict bv " << bvID << op << compareID << "\n";
+
 						conflict.push(l);
 						buildValueReasonBV(op,bvID,compareID,conflict);
 						toSolver(conflict);
 						return false;
 					}else {
-						std::cout<<"propagate bv " << bvID << op << compareID << "\n";
+
 						assert(value(l)==l_Undef);
 						enqueue(l, comparisonprop_marker);
 					}
@@ -2625,27 +2624,6 @@ public:
 	}
 
 
-/*	BitVector newAdditionConst(int resultID, int aID, Weight weight){
-		int bitwidth = getBV(resultID).width();
-		if(resultID<=aID){
-			std::cerr<<"Addition result must have a strictly greater id than its arguments\n";
-			exit(1);
-		}
-		if(bitwidth !=  getBV(aID).width()){
-			std::cerr<<"Bit widths must match for bitvectors\n";
-			exit(1);
-		}
-
-		if(additions[resultID].aID>-1){
-			std::cerr<<"Bitvectors can be the sum of at most one addition\n";
-			exit(1);
-		}
-
-		additions[resultID].aID=aID;
-		additions[resultID].bID=-1;
-		additions[resultID].w=weight;
-		return getBV(resultID);
-	}*/
 	BitVector newAdditionBV(int resultID, int aID, int bID){
 		int bitwidth = getBV(resultID).width();
 		if(resultID<=aID || resultID<=bID){
@@ -2840,7 +2818,7 @@ public:
 		}else{
 			l = mkLit(newVar(outerVar, bvID,comparisonID));
 		}
-		std::cout<<"New comparison " << comparisonID << ": bv"<< bvID << op << to <<"\n";
+
 #ifndef NDEBUG
 		std::cout << "learnt fact " << "bv " << bvID << " " << op << " " << to  <<" " << dimacs(toSolver(l)) << "\n";
 #endif
@@ -2997,7 +2975,7 @@ public:
 			l = mkLit(newVar(outerVar, bvID,comparisonID));
 		}
 
-		std::cout<<"New comparison " << comparisonID << ": bv"<< bvID << op << "bv" <<toID <<"\n";
+
 		updateApproximations(bvID);
 		updateApproximations(toID);
 

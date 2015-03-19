@@ -109,7 +109,13 @@ MaxflowDetector<Weight>::MaxflowDetector(int _detectorID, GraphTheorySolver<Weig
 		if (opt_conflict_min_cut_maxflow || opt_adaptive_conflict_mincut)
 			learn_cut = new EdmondsKarpAdj<long>(learn_graph, source, target);
 	}
-	
+	if (opt_adaptive_history_clear > 0) {
+		learn_graph.adaptive_history_clear = true;
+		learn_graph.historyClearInterval = opt_adaptive_history_clear;
+	} else {
+
+		learn_graph.historyClearInterval = opt_history_clear;
+	}
 #ifdef RECORD
 	{
 		char t[30];
