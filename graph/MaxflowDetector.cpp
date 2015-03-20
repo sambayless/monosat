@@ -19,13 +19,27 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
 
-#include "MaxflowDetector.h"
-#include "GraphTheory.h"
-#include "dgl/EdmondsKarpAdj.h"
-#include "dgl/KohliTorr.h"
-#include "dgl/EdmondsKarpDynamic.h"
-#include "dgl/Dinics.h"
-#include "dgl/DinicsLinkCut.h"
+#include <core/Config.h>
+#include <dgl/Dinics.h>
+#include <dgl/DinicsLinkCut.h>
+#include <dgl/EdmondsKarpAdj.h>
+#include <dgl/EdmondsKarpDynamic.h>
+#include <dgl/Reach.h>
+#include <dgl/BFS.h>
+#include <graph/GraphTheory.h>
+#include <graph/MaxflowDetector.h>
+#include <mtl/Rnd.h>
+#include <mtl/Vec.h>
+#include <utils/Options.h>
+//#include "dgl/KohliTorr.h"
+#include <algorithm>
+#include <cassert>
+#include <cmath>
+#include <cstdio>
+#include <cstdlib>
+#include <iostream>
+#include <vector>
+
 using namespace Monosat;
 
 template<>
@@ -205,7 +219,9 @@ void MaxflowDetector<Weight>::buildMaxFlowTooHighReason(Weight flow, vec<Lit> & 
 			if (underapprox_conflict_detector->getEdgeFlow(i) > 0) {
 				Var v = outer->edge_list[i].v;
 				assert(outer->value(v)==l_True);
-				conflict.push(mkLit(v, true));
+				if(!g_under.isConstant(i)){
+					conflict.push(mkLit(v, true));
+				}
 				if(outer->hasBitVector(i)){
 					outer->buildBVReason(outer->getEdgeBV(i).getID(),Comparison::geq,underapprox_conflict_detector->getEdgeFlow(i),conflict);
 					//outer->buildBVReason(bv.getID(),inclusive ? Comparison::gt:Comparison::geq,bv.getUnder(),conflict);
@@ -383,15 +399,19 @@ void MaxflowDetector<Weight>::buildMaxFlowTooLowReason(Weight maxflow, vec<Lit> 
 					}
 				}
 			} else {
-				
-				/*			learn_graph.enableEdge(e.id);
-				 learn_graph.disableEdge(back_edges[e.id]);
-				 learn_caps[e.id] = 1;*/
-				bassert(learn_graph.edgeEnabled(e.id * 2));
-				bassert(!learn_graph.edgeEnabled(e.id * 2 + 1));
-				bassert(!learn_graph.edgeEnabled(back_edges[e.id * 2]));
-				bassert(!learn_graph.edgeEnabled(back_edges[e.id * 2 + 1]));
+				if(!g_over.isConstant(e.id)){
+					bassert(learn_graph.edgeEnabled(e.id * 2));
+					bassert(!learn_graph.edgeEnabled(e.id * 2 + 1));
+					bassert(!learn_graph.edgeEnabled(back_edges[e.id * 2]));
+					bassert(!learn_graph.edgeEnabled(back_edges[e.id * 2 + 1]));
+				}else{
+					bassert(!learn_graph.edgeEnabled(e.id * 2));
+					bassert(!learn_graph.edgeEnabled(e.id * 2 + 1));
+					bassert(!learn_graph.edgeEnabled(back_edges[e.id * 2]));
+					bassert(!learn_graph.edgeEnabled(back_edges[e.id * 2 + 1]));
+				}
 			}
+
 		}
 #endif
 		//g_over.drawFull(true);
@@ -482,7 +502,15 @@ void MaxflowDetector<Weight>::buildMaxFlowTooLowReason(Weight maxflow, vec<Lit> 
 				} else {
 					//this is a disabled edge, and we can add it to the cut.
 					//we're going to assume the edge has non-zero capacity here, otherwise we could exclude it (but it shouldn't really even be in this graph in that case, anyways).
-					conflict.push(mkLit(v, false));
+					if( !g_over.isConstant(edgeid)){
+						//if(g_over.getWeight(edgeid)>0){
+							conflict.push(mkLit(v, false));
+				/*		}else if (!outer->constantWeight(edgeid)){
+							if(outer->hasBitVector(edgeid)){
+								outer->buildBVReason(outer->getEdgeBV(edgeid).getID(),Comparison::leq,0,conflict);
+							}
+						}*/
+					}
 				}
 			}
 			//pred
@@ -512,7 +540,9 @@ void MaxflowDetector<Weight>::buildMaxFlowTooLowReason(Weight maxflow, vec<Lit> 
 				} else {
 					//this is a disabled edge, and we can add it to the cut.
 					//we're going to assume the edge has non-zero capacity here, otherwise we could exclude it (but it shouldn't really even be in this graph in that case, anyways).
-					conflict.push(mkLit(v, false));
+					if( !g_over.isConstant(edgeid)){
+						conflict.push(mkLit(v, false));
+					}
 				}
 			}
 			//pred
@@ -809,6 +839,11 @@ bool MaxflowDetector<Weight>::checkSatisfied() {
 template<typename Weight>
 void MaxflowDetector<Weight>::printSolution(std::ostream & write_to) {
 	Weight f = underapprox_conflict_detector->maxFlow();
+	BFSReachability<Weight> r = BFSReachability<Weight>(source,g_under);
+	r.update();
+	//Filter the proposed flow to exclude superfluous cycles (which, though legal parts of a flow, don't contribute to the overall flow
+	//and are usually not a useful thing (and also, can always be safely removed without affecting the logical correctness of the solution))
+	//note: it _IS_ possible
 	write_to << "Graph " << outer->getGraphID() << " maxflow " << source << " to " << target << " is " << f << "\n";
 	
 	int maxw = log10(outer->nNodes()) + 1;
@@ -849,10 +884,12 @@ void MaxflowDetector<Weight>::printSolution(std::ostream & write_to) {
 		for (int e = 0; e < g_under.edges(); e++) {
 			if (g_under.getEdge(e).to == n && g_under.edgeEnabled(e)) {
 				Weight flow = underapprox_conflict_detector->getEdgeFlow(e);
-				if (flow > 0) {
-					write_to << "Graph " << outer->getGraphID() << " maxflow " << source << " to " << target
-							<< " assigns edge " << g_under.getEdge(e).from << " -> " << g_under.getEdge(e).to << " flow " << flow
-							<< "\n";
+				if(opt_maxflow_allow_cycles || r.connected(n)){
+					if (flow > 0) {
+						write_to << "Graph " << outer->getGraphID() << " maxflow " << source << " to " << target
+								<< " assigns edge " << g_under.getEdge(e).from << " -> " << g_under.getEdge(e).to << " flow " << flow
+								<< "\n";
+					}
 				}
 			}
 		}
@@ -890,7 +927,7 @@ void MaxflowDetector<Weight>::collectDisabledEdges() {
 			}
 			learn_graph.invalidate();
 			
-
+			learn_graph.clearHistory(true);
 		}
 		
 		if (learngraph_history_clears != g_over.historyclears || g_over.changed()) {
@@ -900,10 +937,17 @@ void MaxflowDetector<Weight>::collectDisabledEdges() {
 					int a = 1;
 				}
 				if (g_over.hasEdge(edgeid) && !g_over.edgeEnabled(edgeid)) {
-					learn_graph.enableEdge(edgeid * 2);
-					learn_graph.disableEdge(back_edges[edgeid * 2]);
-					learn_graph.disableEdge(edgeid * 2 + 1);
-					learn_graph.disableEdge(back_edges[edgeid * 2 + 1]);
+					if(!g_over.isConstant(edgeid)){
+						learn_graph.enableEdge(edgeid * 2);
+						learn_graph.disableEdge(back_edges[edgeid * 2]);
+						learn_graph.disableEdge(edgeid * 2 + 1);
+						learn_graph.disableEdge(back_edges[edgeid * 2 + 1]);
+					}else{
+						learn_graph.disableEdge(edgeid * 2);
+						learn_graph.disableEdge(back_edges[edgeid * 2]);
+						learn_graph.disableEdge(edgeid * 2 + 1);
+						learn_graph.disableEdge(back_edges[edgeid * 2 + 1]);
+					}
 				} else {
 
 					Weight capacity = overapprox_conflict_detector->getEdgeCapacity(edgeid);
@@ -1029,11 +1073,18 @@ void MaxflowDetector<Weight>::collectDisabledEdges() {
 						}
 					}
 				} else if ((g_over.history[i].deletion && !g_over.edgeEnabled(edgeid)) ||  (g_over.history[i].weight_decrease && g_over.getWeight(edgeid)<=0 )) {
-					//any edge that is disabled has a capacity of 1 in the learn graph
-					learn_graph.enableEdge(edgeid * 2);
-					learn_graph.disableEdge(back_edges[edgeid * 2]);
-					learn_graph.disableEdge(edgeid * 2 + 1);
-					learn_graph.disableEdge(back_edges[edgeid * 2 + 1]);
+					//any edge that is disabled has a capacity of 1 in the learn graph (unless it is proven to be permanently disabled)
+					if(!g_over.isConstant(edgeid)){
+						learn_graph.enableEdge(edgeid * 2);
+						learn_graph.disableEdge(back_edges[edgeid * 2]);
+						learn_graph.disableEdge(edgeid * 2 + 1);
+						learn_graph.disableEdge(back_edges[edgeid * 2 + 1]);
+					}else{
+						learn_graph.disableEdge(edgeid * 2);
+						learn_graph.disableEdge(back_edges[edgeid * 2]);
+						learn_graph.disableEdge(edgeid * 2 + 1);
+						learn_graph.disableEdge(back_edges[edgeid * 2 + 1]);
+					}
 				}
 			}
 			learngraph_history_qhead = g_over.history.size();
@@ -1171,10 +1222,18 @@ void MaxflowDetector<Weight>::collectChangedEdges() {
 					}
 				}
 			} else {
-				learn_graph.enableEdge(edgeid * 2);
-				learn_graph.disableEdge(back_edges[edgeid * 2]);
-				learn_graph.disableEdge(edgeid * 2 + 1);
-				learn_graph.disableEdge(back_edges[edgeid * 2 + 1]);
+
+				if(!g_over.isConstant(edgeid)){
+					learn_graph.enableEdge(edgeid * 2);
+					learn_graph.disableEdge(back_edges[edgeid * 2]);
+					learn_graph.disableEdge(edgeid * 2 + 1);
+					learn_graph.disableEdge(back_edges[edgeid * 2 + 1]);
+				}else{
+					learn_graph.disableEdge(edgeid * 2);
+					learn_graph.disableEdge(back_edges[edgeid * 2]);
+					learn_graph.disableEdge(edgeid * 2 + 1);
+					learn_graph.disableEdge(back_edges[edgeid * 2 + 1]);
+				}
 			}
 		}
 	}

@@ -616,6 +616,7 @@ int main(int argc, char** argv) {
 		}
 
 		double before_pre_processing = rtime(0);
+		S.preprocess();//do this _even_ if sat based preprocessing is disabled! Some of the theory solvers depend on a preprocessing call being made!
 		printf("simplify:\n");
 		fflush(stdout);
 		if (pre)

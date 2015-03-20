@@ -511,9 +511,6 @@ public:
 
 			theory->addComposeAcceptLit(c.fsmID1,c.fsmID2,c.from1,c.to1,c.from2,c.to2, c.strID,c.reachVar);
 		}
-		if(theory){
-			theory->preprocess();
-		}
 
 
 	}

@@ -214,6 +214,7 @@ BoolOption Monosat::opt_kt_preserve_order(_cat_graph, "kt-preserve-order",
 		"Attempt to preserve the order of flow assigned by the kohli-torr maxflow algorithm", false);
 
 BoolOption Monosat::opt_lazy_maxflow_decisions(_cat_graph, "lazy-maxflow-decisions", "", true);
+BoolOption Monosat::opt_maxflow_allow_cycles(_cat_graph, "allow-maxflow-cycles", "Allow (superfluous) cycles in the maxflow solution", false);
 
 BoolOption Monosat::opt_old_lazy_maxflow_decisions(_cat_graph, "old-lazy-maxflow-decisions", "", false);
 IntOption Monosat::opt_maxflow_decisions_q(_cat_graph, "maxflow-decisions-q",

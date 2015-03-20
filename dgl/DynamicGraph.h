@@ -52,6 +52,7 @@ template<typename Weight>
 class DynamicGraph {
 	
 	std::vector<bool> edge_status;
+	std::vector<bool> edge_status_const;
 	std::vector<Weight> weights;
 	int num_nodes=0;
 	int num_edges=0;
@@ -171,7 +172,15 @@ public:
 #endif
 		return num_nodes++;
 	}
-	
+	//true iff the edge's current assignment will never be altered.
+	bool isConstant(int edgeID) const{
+		return edge_status_const[edgeID];
+	}
+
+	void makeEdgeAssignmentConstant(int edgeID){
+		edge_status_const[edgeID]=true;
+	}
+
 	bool edgeEnabled(int edgeID) const {
 		assert(edgeID < edge_status.size());
 		return edge_status[edgeID];
@@ -202,6 +211,11 @@ public:
 		adjacency_undirected_list[to].push_back( { from, id });
 		if (edge_status.size() <= id)
 			edge_status.resize(id + 1);
+
+		if(edge_status_const.size()<=id){
+			edge_status_const.resize(id+1,false);
+		}
+
 		inverted_adjacency_list[to].push_back( { from, id });
 		if (all_edges.size() <= id)
 			all_edges.resize(id + 1);
@@ -503,8 +517,8 @@ public:
 		if (history.size()
 				&& (forceClear
 						|| (history.size()
-								> (adaptive_history_clear ?
-										std::max(1000L, historyClearInterval * edges()) : historyClearInterval)))) {//){
+								>= (std::min((long)history.max_size(), (adaptive_history_clear ?
+										std::max(1000L, historyClearInterval * edges()) : historyClearInterval)))))) {//){
 			history.clear();
 			historyclears++;
 #ifdef RECORD

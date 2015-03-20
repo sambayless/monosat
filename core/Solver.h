@@ -259,6 +259,12 @@ public:
 		theory_vars[solverVar].theory_var = newTheoryVar;
 	}
 	
+	void preprocess(){
+		for(Theory *t:theories){
+			t->preprocess();
+		}
+	}
+
 	//Lazily construct a reason for a literal propagated from a theory
 	CRef constructReason(Lit p) {
 		static int iterp =0;

@@ -72,6 +72,9 @@ public:
 	virtual void writeTheoryWitness(std::ostream& write_to) {
 		//do nothing
 	}
+	virtual void preprocess(){
+
+	}
 };
 
 }

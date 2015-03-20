@@ -676,7 +676,8 @@ void DistanceDetector<Weight>::buildDistanceLEQReason(int to, Weight & min_dista
 			Var e = edg.v;
 			lbool val = outer->value(e);
 			assert(outer->value(e)==l_True);
-			conflict.push(mkLit(e, true));
+			if(!g_under.isConstant(edgeID))
+				conflict.push(mkLit(e, true));
 			if(outer->hasBitVector(edgeID)){
 	/*			Lit leq;
 				Weight w = g_under.getWeight(edgeID);
@@ -727,9 +728,12 @@ void DistanceDetector<Weight>::buildDistanceGTReason(int to, Weight & min_distan
 			MaxFlowEdge e = cut[i];
 			int cut_id = e.id;
 			assert(cut_id % 2 == 0);
-			Lit l = mkLit(outer->getEdgeVar(cut_id / 2), false);
-			assert(outer->value(l)==l_False);
-			conflict.push(l);
+			int edgeID = cut_id/2;
+			if(!g_over.isConstant(edgeID)){
+				Lit l = mkLit(outer->getEdgeVar(edgeID), false);
+				assert(outer->value(l)==l_False);
+				conflict.push(l);
+			}
 		}
 		outer->learnt_cut_clause_length += (conflict.size() - 1);
 		
@@ -805,24 +809,28 @@ void DistanceDetector<Weight>::buildDistanceGTReason(int to, Weight & min_distan
 					//note: we know we haven't seen this edge variable before, because we know we haven't visited this node before
 					//if we are already planning on visiting the from node, then we don't need to include it in the conflict (is this correct?)
 					//if(!seen[from])
-					conflict.push(mkLit(edge_enabled,false));
+					if(!g_over.isConstant(edge_num)){
+						conflict.push(mkLit(edge_enabled,false));
+					}
 				} else{
 
 					if(reaches){
 						//if the edge _is_ enabled, and the node _is_ reachable, and the edge weight is symbolic
 						//then part of the reason the shortest path is too long is that this edge is not less than its current weight.
-						Weight w = g_over.getWeight(edge_num);
+						if(!outer->constantWeight(edge_num)){
+							Weight w = g_over.getWeight(edge_num);
 
-						Lit gt;
-						if(strictComparison){
-							gt= outer->getEdgeWeightLT(edge_num,w);
-						}else{
-							//gt= outer->getEdgeWeightLEQ(edge_num,w);
-							gt= ~outer->getEdgeWeightGT(edge_num,w);
+							Lit gt;
+							if(strictComparison){
+								gt= outer->getEdgeWeightLT(edge_num,w);
+							}else{
+								//gt= outer->getEdgeWeightLEQ(edge_num,w);
+								gt= ~outer->getEdgeWeightGT(edge_num,w);
+							}
+							lbool val = outer->dbg_value(gt);
+							assert(val!=l_True);
+							conflict.push(gt);
 						}
-						lbool val = outer->dbg_value(gt);
-						assert(val!=l_True);
-						conflict.push(gt);
 					}
 					//for distance analysis, we _can_ end up reaching source.
 					if (from != source) {

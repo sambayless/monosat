@@ -1185,6 +1185,11 @@ public:
 	 }*/
 
 	void preprocess() {
+		g_under.clearHistory(true);
+		g_over.clearHistory(true);
+		g_under_weights_over.clearHistory(true);
+		g_over_weights_under.clearHistory(true);
+		cutGraph.clearHistory(true);
 		for (int i = 0; i < detectors.size(); i++) {
 			detectors[i]->preprocess();
 		}
@@ -1275,18 +1280,7 @@ public:
 			theories[getTheoryID(var(l))]->enqueueTheory(getTheoryLit(l));
 			return;
 		}
-/*
-		if(isBVVar(var(l))){
-			int bvID = getBV(var(l));
-			if(isBVEdge(bvID)){
-				int edgeID = getBVEdge(bvID);
-			}
-			if(!bv_needs_update[bvID]){
-				bv_needs_update[bvID]=true;
-				bvs_to_update.push(bvID);
-			}
 
-		}else */
 		if (isEdgeVar(var(l))) {
 			
 			//this is an edge assignment
@@ -1312,11 +1306,23 @@ public:
 					cutGraph.disableEdge(e.from, e.to, edge_num * 2 + 1);
 				}
 			}
+
+			if(decisionLevel()==0){
+				assert(g_under.edgeEnabled(edge_num)== g_over.edgeEnabled(edge_num));
+				g_under.makeEdgeAssignmentConstant(edge_num);
+				g_over.makeEdgeAssignmentConstant(edge_num);
+			}
+
 			if(using_neg_weights){
 				if (!sign(l)) {
 					g_under_weights_over.enableEdge(from, to, edge_num);
 				} else {
 					g_over_weights_under.disableEdge(from, to, edge_num);
+				}
+				if(decisionLevel()==0){
+					assert(g_under_weights_over.edgeEnabled(edge_num)== g_over_weights_under.edgeEnabled(edge_num));
+					g_under_weights_over.makeEdgeAssignmentConstant(edge_num);
+					g_over_weights_under.makeEdgeAssignmentConstant(edge_num);
 				}
 			}
 		} else {
@@ -1326,8 +1332,8 @@ public:
 			detectors[getDetector(var(l))]->assign(l);
 		}
 		
-	}
-	;
+	};
+
 	bool propagateTheory(vec<Lit> & conflict) {
 		static int itp = 0;
 		if (++itp == 5241) {
@@ -1742,8 +1748,11 @@ public:
 		}
 	}
 
-
-
+	//True if the weight of this edge is constant.
+	bool constantWeight(int edgeID) const{
+		//improve this, later...
+		return !( edge_bv_weights.size()>edgeID);
+	}
 
 	Lit getEdgeWeightLT(int edgeID,const Weight & w){
 		if(edge_bv_weights.size()>edgeID){
