@@ -377,6 +377,8 @@ public:
 		printf("%d nodes, %d edges\n", g_under.nodes(), g_under.edges());
 		printf("History Clears: over_approx %ld, under_approx %ld, cut_graph %ld\n", g_over.historyclears,
 				g_under.historyclears, cutGraph.historyclears);
+		printf("Skipped History Clears: over_approx %ld, under_approx %ld, cut_graph %ld\n", g_over.skipped_historyclears,
+				g_under.skipped_historyclears, cutGraph.skipped_historyclears);
 		printf("Propagations: %ld (%f s, avg: %f s, %ld skipped)\n", stats_propagations, propagationtime,
 				(propagationtime) / ((double) stats_propagations + 1), stats_propagations_skipped);
 		printf("Decisions: %ld (%f s, avg: %f s)\n", stats_decisions, stats_decision_time,
@@ -1120,7 +1122,7 @@ public:
 #ifndef NDEBUG
 		//drawFull(from,to);
 		
-		DynamicGraph<Weight> g;
+		/*DynamicGraph<Weight> g;
 		for (int i = 0; i < nNodes(); i++) {
 			g.addNode();
 		}
@@ -1142,7 +1144,7 @@ public:
 			UnweightedDijkstra<Weight,typename Distance<int>::NullStatus, false> d(from, g);
 			
 			return !d.connected(to);
-		}
+		}*/
 #endif
 		return true;
 		
@@ -1185,14 +1187,17 @@ public:
 	 }*/
 
 	void preprocess() {
+		for (int i = 0; i < detectors.size(); i++) {
+			detectors[i]->preprocess();
+		}
 		g_under.clearHistory(true);
 		g_over.clearHistory(true);
 		g_under_weights_over.clearHistory(true);
 		g_over_weights_under.clearHistory(true);
 		cutGraph.clearHistory(true);
-		for (int i = 0; i < detectors.size(); i++) {
-			detectors[i]->preprocess();
-		}
+		g_under.clearChanged();
+		g_over.clearChanged();
+		cutGraph.clearChanged();
 	}
 	void setLiteralOccurs(Lit l, bool occurs) {
 		if (isEdgeVar(var(l))) {

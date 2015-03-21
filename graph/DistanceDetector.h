@@ -233,6 +233,7 @@ public:
 			}
 		}
 	}
+	void preprocess();
 	bool propagate(vec<Lit> & conflict);
 	void buildUnweightedDistanceLEQReason(int node, vec<Lit> & conflict);
 	void buildUnweightedDistanceGTReason(int node, vec<Lit> & conflict);

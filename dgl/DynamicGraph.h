@@ -39,7 +39,7 @@ class DynamicGraphAlgorithm{
 public:
 	virtual ~DynamicGraphAlgorithm(){}
 
-	void update(){	}
+	virtual void updateHistory()=0;
 };
 
 /**
@@ -67,6 +67,8 @@ class DynamicGraph {
 	bool is_changed=false;
 	std::vector<DynamicGraphAlgorithm*> dynamic_algs;
 	std::vector<int> dynamic_history_pos;
+	int n_dynamic_algs_updtodate;
+	long history_offset=0;
 public:
 	bool adaptive_history_clear = false;
 	long historyClearInterval = 1000;
@@ -76,7 +78,7 @@ public:
 	int edge_increases = 0;
 	int edge_decreases = 0;
 	long historyclears=0;
-
+	long skipped_historyclears=0;
 	struct Edge {
 		int node;
 		int id;
@@ -522,37 +524,67 @@ public:
 	 */
 	int addDynamicAlgorithm(DynamicGraphAlgorithm*alg){
 		dynamic_algs.push_back(alg);
-		dynamic_history_pos.push_back(-1);
+		dynamic_history_pos.push_back(0);
+		n_dynamic_algs_updtodate+= (historySize()==0);
 		return dynamic_algs.size()-1;
 	}
 
-
 	void updateAlgorithmHistory(DynamicGraphAlgorithm * alg, int algorithmID, int historyPos){
 		assert(dynamic_algs[algorithmID]==alg);//sanity check
+		//bool was_uptodate = dynamic_history_pos[algorithmID]==historySize();
 		dynamic_history_pos[algorithmID]=historyPos;
+/*		if(!was_uptodate && historyPos ==historySize()){
+			dynamic_history_pos[algorithmID]++;
+		}*/
 	}
 
-	EdgeChange & getChange(int historyPos){
-		return history[historyPos];
+	EdgeChange & getChange(long historyPos){
+		return history[historyPos-history_offset];
 	}
 
 	int historySize(){
-		return history.size();
+		return history.size() + history_offset;
 	}
 
 	int getCurrentHistory() {
 		return modifications;
 	}
 	
-
-
 	void clearHistory(bool forceClear = false) {
 		//long expect=std::max(1000,historyClearInterval*edges());
+		//check whether we can do a cheap history cleanup (without resetting all the dynamic algorithms)
+
+
 		if (history.size()
 				&& (forceClear
 						|| (history.size()
 								>= (std::min((long)history.max_size(), (adaptive_history_clear ?
 										std::max(1000L, historyClearInterval * edges()) : historyClearInterval)))))) {//){
+
+
+
+			int n_uptodate=0;
+			for(int algorithmID = 0;algorithmID<dynamic_algs.size();algorithmID++){
+				if (dynamic_history_pos[algorithmID]<history.size()){
+					dynamic_algs[algorithmID]->updateHistory();
+					if (dynamic_history_pos[algorithmID]>=history.size()){
+						n_uptodate++;
+					}
+				}else{
+					n_uptodate++;
+				}
+			}
+
+			if(n_uptodate==dynamic_algs.size()){
+				//we can skip this history clear.
+				history_offset+=history.size();
+				skipped_historyclears++;
+				history.clear();
+				return;
+			}
+
+
+			history_offset=0;
 			history.clear();
 			historyclears++;
 #ifdef RECORD

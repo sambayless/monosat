@@ -41,20 +41,20 @@ namespace dgl {
  * is inefficient if multiple edges are deleted at once).
  */
 template<class Status, typename Weight = int>
-class SpiraPan: public MinimumSpanningTree<Weight> {
+class SpiraPan: public MinimumSpanningTree<Weight>, public DynamicGraphAlgorithm {
 public:
 	
 	DynamicGraph<Weight> & g;
 
 	Status & status;
-	int last_modification;
-	Weight min_weight;
-	int last_addition;
-	int last_deletion;
-	int history_qhead;
+	int last_modification=-1;
+	Weight min_weight=0;
+	int last_addition=0;
+	int last_deletion=0;
+	int history_qhead=0;
 
-	int last_history_clear;
-
+	int last_history_clear=0;
+	int alg_id=-1;
 	Weight INF;
 
 	std::vector<int> mst;
@@ -97,16 +97,16 @@ public:
 #endif
 public:
 	
-	int stats_full_updates;
-	int stats_fast_updates;
-	int stats_fast_failed_updates;
-	int stats_skip_deletes;
-	int stats_skipped_updates;
-	int stats_num_skipable_deletions;
-	double mod_percentage;
+	int stats_full_updates=0;
+	int stats_fast_updates=0;
+	int stats_fast_failed_updates=0;
+	int stats_skip_deletes=0;
+	int stats_skipped_updates=0;
+	int stats_num_skipable_deletions=0;
+	double mod_percentage=0;
 
-	double stats_full_update_time;
-	double stats_fast_update_time;
+	double stats_full_update_time=0;
+	double stats_fast_update_time=0;
 
 	SpiraPan(DynamicGraph<Weight> & graph,  Status & status, int reportPolarity = 0) :
 			g(graph),  status(status), last_modification(-1), last_addition(-1), last_deletion(-1), history_qhead(
@@ -115,15 +115,9 @@ public:
 					, dbg(g,  MinimumSpanningTree<Weight>::nullStatus, 0)
 #endif
 	{
+		alg_id=g.addDynamicAlgorithm(this);
 		mod_percentage = 0.2;
-		stats_full_updates = 0;
-		stats_fast_updates = 0;
-		stats_skip_deletes = 0;
-		stats_skipped_updates = 0;
-		stats_full_update_time = 0;
-		stats_fast_update_time = 0;
-		stats_num_skipable_deletions = 0;
-		stats_fast_failed_updates = 0;
+
 		min_weight = -1;
 		
 	}
@@ -703,10 +697,16 @@ public:
 		last_addition = g.additions;
 		
 		history_qhead = g.historySize();
+		g.updateAlgorithmHistory(this,alg_id,history_qhead);
 		last_history_clear = g.historyclears;
 		
 		;
 	}
+
+	void updateHistory(){
+		update();
+	}
+
 	std::vector<int> & getSpanningTree() {
 		update();
 		return mst;

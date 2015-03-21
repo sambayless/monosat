@@ -130,6 +130,14 @@ MaxflowDetector<Weight>::MaxflowDetector(int _detectorID, GraphTheorySolver<Weig
 
 		learn_graph.historyClearInterval = opt_history_clear;
 	}
+
+
+
+	if(learn_cut){
+		alg_id = g_over.addDynamicAlgorithm(this);
+	}
+
+
 #ifdef RECORD
 	{
 		char t[30];
@@ -347,7 +355,7 @@ void MaxflowDetector<Weight>::buildMaxFlowTooLowReason(Weight maxflow, vec<Lit> 
 	if (force_maxflow || opt_conflict_min_cut_maxflow) {
 		Weight foundflow = overapprox_conflict_detector->maxFlow();
 		collectChangedEdges();
-		collectDisabledEdges();
+		updateHistory();
 #ifndef NDEBUG
 		for (auto & e : g_over.getEdges()) {
 			int from = e.from;
@@ -899,7 +907,7 @@ void MaxflowDetector<Weight>::printSolution(std::ostream & write_to) {
 }
 
 template<typename Weight>
-void MaxflowDetector<Weight>::collectDisabledEdges() {
+void MaxflowDetector<Weight>::updateHistory() {
 	if (opt_conflict_min_cut_maxflow) {
 		if (learn_graph.nodes() < g_under.nodes()) {
 			while (learn_graph.nodes() < g_under.nodes())
@@ -1090,6 +1098,7 @@ void MaxflowDetector<Weight>::collectDisabledEdges() {
 			learngraph_history_qhead = g_over.historySize();
 		}
 	}
+	g_over.updateAlgorithmHistory(this,alg_id,learngraph_history_qhead);
 }
 
 template<typename Weight>

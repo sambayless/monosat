@@ -31,7 +31,7 @@
 #include <algorithm>
 namespace dgl {
 template<typename Weight>
-class EdmondsKarpDynamic: public MaxFlow<Weight> {
+class EdmondsKarpDynamic: public MaxFlow<Weight>, public DynamicGraphAlgorithm {
 	Weight f = 0;
 	std::vector<Weight> F;
 
@@ -47,12 +47,13 @@ class EdmondsKarpDynamic: public MaxFlow<Weight> {
 		}
 	};
 	Weight curflow;
-	int last_modification;
-	int last_deletion;
-	int last_addition;
+	int last_modification=-1;
+	int last_deletion=0;
+	int last_addition=0;
 
-	int history_qhead;
-	int last_history_clear;
+	int history_qhead=0;
+	int alg_id=-1;
+	int last_history_clear=0;
 	std::vector<LocalEdge> prev;
 	std::vector<Weight> M;
 	std::vector<int> changed_edges;
@@ -152,12 +153,8 @@ public:
 #endif
 	{
 		curflow = 0;
-		last_modification = -1;
-		last_deletion = -1;
-		last_addition = -1;
-		
-		history_qhead = 0;
-		last_history_clear = -1;
+
+		alg_id=g.addDynamicAlgorithm(this);
 		//setAllEdgeCapacities(1);
 	}
 	int getSource() const {
@@ -395,10 +392,13 @@ public:
 		last_addition = g.additions;
 		
 		history_qhead = g.historySize();
+		g.updateAlgorithmHistory(this,alg_id,history_qhead);
 		last_history_clear = g.historyclears;
 		return f;
 	}
-	
+	void updateHistory(){
+		update();
+	}
 	std::vector<int> & getChangedEdges() {
 		return changed_edges;
 	}

@@ -37,7 +37,7 @@ namespace Monosat {
 template<typename Weight>
 class GraphTheorySolver;
 template<typename Weight = int>
-class MaxflowDetector: public LevelDetector {
+class MaxflowDetector: public LevelDetector, public DynamicGraphAlgorithm  {
 public:
 	GraphTheorySolver<Weight> * outer;
 	std::vector<Weight> capacities;
@@ -57,6 +57,7 @@ public:
 	MaxFlow<Weight> * overapprox_conflict_detector = nullptr;
 	int last_decision_status = -1;
 	int last_decision_q_pos = 0;
+	int alg_id=-1;
 
 	long stats_decision_calculations = 0;
 	double stats_flow_calc_time = 0;
@@ -105,7 +106,7 @@ public:
 		LevelDetector::backtrack(level);
 	}
 	void collectChangedEdges();
-	void collectDisabledEdges();
+	void updateHistory();
 	bool propagate(vec<Lit> & conflict);
 	void buildMaxFlowTooHighReason(Weight flow, vec<Lit> & conflict);
 	void buildMaxFlowTooLowReason(Weight flow, vec<Lit> & conflict, bool force_maxflow = false);

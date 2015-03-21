@@ -37,7 +37,7 @@
 #include "DFSCycle.h"
 namespace dgl {
 template<typename Weight>
-class PKToplogicalSort: public Cycle {
+class PKToplogicalSort: public Cycle,public DynamicGraphAlgorithm {
 public:
 
 	DynamicGraph<Weight> & g;
@@ -54,6 +54,7 @@ public:
 	int history_qhead=0;
 
 	int last_history_clear=0;
+	int alg_id=-1;
 
 	int INF;
 
@@ -106,7 +107,7 @@ public:
 
 	PKToplogicalSort(DynamicGraph<Weight> & graph, int _reportPolarity = 0) :
 			g(graph),dfs_cycle(g),INF(0), reportPolarity(_reportPolarity),ord_lt(ord) {
-
+		alg_id=g.addDynamicAlgorithm(this);
 
 	}
 
@@ -455,9 +456,15 @@ public:
 		last_addition = g.additions;
 
 		history_qhead = g.historySize();
+		g.updateAlgorithmHistory(this,alg_id,history_qhead);
 		last_history_clear = g.historyclears;
 
 	}
+
+	void updateHistory(){
+		update();
+	}
+
 private:
 	bool sortVisit(int node){
 		if(tmp_mark[node]){

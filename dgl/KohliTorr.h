@@ -33,7 +33,7 @@
 
 namespace dgl {
 template<typename Weight>
-class KohliTorr: public MaxFlow<Weight> {
+class KohliTorr: public MaxFlow<Weight>, public DynamicGraphAlgorithm {
 	Weight f = 0;
 	DynamicGraph<Weight>& g;
 
@@ -83,13 +83,13 @@ class KohliTorr: public MaxFlow<Weight> {
 	std::vector<bool> edge_enabled;
 	std::vector<int> changed_edges;
 	bool flow_needs_recalc = true;
-
+	int alg_id;
 public:
 	double stats_calc_time = 0;
 	double stats_flow_time = 0;
 	long stats_flow_calcs = 0;
-	KohliTorr(DynamicGraph<Weight>& _g, int source, int sink, bool kt_preserve_order = false) :
-			g(_g), source(source), sink(sink), kt_preserve_order(kt_preserve_order), INF(0xF0F0F0)
+	KohliTorr(DynamicGraph<Weight>& g, int source, int sink, bool kt_preserve_order = false) :
+			g(g), source(source), sink(sink), kt_preserve_order(kt_preserve_order), INF(0xF0F0F0)
 #ifdef DEBUG_MAXFLOW
 	,ek(_g,source,sink)
 #endif
@@ -101,6 +101,7 @@ public:
 		
 		history_qhead = 0;
 		last_history_clear = -1;
+		alg_id=g.addDynamicAlgorithm(this);
 	}
 	
 	int getSource() const {
@@ -174,7 +175,9 @@ public:
 	int numUpdates() const {
 		return num_updates;
 	}
-	
+	void updateHistory(){
+		update();
+	}
 	const Weight update() {
 		int s = source;
 		int t = sink;
@@ -376,6 +379,7 @@ public:
 		last_addition = g.additions;
 		
 		history_qhead = g.historySize();
+		g.updateAlgorithmHistory(this,alg_id,history_qhead);
 		last_history_clear = g.historyclears;
 		return f;
 	}

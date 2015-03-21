@@ -703,13 +703,19 @@ void MSTDetector<Weight>::buildReason(Lit p, vec<Lit> & reason, CRef marker) {
 		assert(false);
 	}
 }
+
+
+template<typename Weight>
+void MSTDetector<Weight>::preprocess() {
+	is_edge_changed.growTo(g_under.edges());
+}
 template<typename Weight>
 bool MSTDetector<Weight>::propagate(vec<Lit> & conflict) {
 	static int it = 0;
 	if (++it == 7) {
 		int a = 1;
 	}
-	is_edge_changed.growTo(g_under.edges());
+
 	//printf("it %d: \n",it);
 //	changed_edges.clear();
 //changed_weights.clear();

@@ -918,6 +918,10 @@ void DistanceDetector<Weight>::updateShortestPaths(bool unweighted) {
 		}
 	}
 }
+template<typename Weight>
+void DistanceDetector<Weight>::preprocess() {
+	is_changed.growTo(g_under.nodes());
+}
 
 template<typename Weight>
 bool DistanceDetector<Weight>::propagate(vec<Lit> & conflict) {
@@ -928,7 +932,7 @@ bool DistanceDetector<Weight>::propagate(vec<Lit> & conflict) {
 	if (++iter == 267) { //18303
 		int a = 1;
 	}
-	is_changed.growTo(g_under.nodes());
+
 	//printf("iter %d\n",iter);
 	bool skipped_positive = false;
 	//getChanged().clear();

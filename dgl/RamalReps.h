@@ -33,7 +33,7 @@
 
 namespace dgl {
 template<typename Weight = int, class Status = typename Distance<Weight>::NullStatus>
-class RamalReps: public Distance<Weight> {
+class RamalReps: public Distance<Weight>, public DynamicGraphAlgorithm {
 public:
 	DynamicGraph<Weight> & g;
 	std::vector<Weight> & weights;
@@ -70,6 +70,7 @@ public:
 	std::vector<int> edgeInShortestPathGraph;
 	std::vector<int> delta;
 	std::vector<int> changeset;
+	int alg_id;
 public:
 	
 	long stats_full_updates=0;
@@ -89,7 +90,7 @@ public:
 					0), q(DistCmp(dist)) {
 		
 		mod_percentage = 0.2;
-
+		alg_id=g.addDynamicAlgorithm(this);
 	}
 	//Dijkstra(const Dijkstra& d):g(d.g), last_modification(-1),last_addition(-1),last_deletion(-1),history_qhead(0),last_history_clear(0),source(d.source),INF(0),q(DistCmp(dist)),stats_full_updates(0),stats_fast_updates(0),stats_skip_deletes(0),stats_skipped_updates(0),stats_full_update_time(0),stats_fast_update_time(0){marked=false;};
 	
@@ -562,13 +563,15 @@ public:
 		last_modification = g.modifications;
 		last_deletion = g.deletions;
 		last_addition = g.additions;
-		
+		g.updateAlgorithmHistory(this,alg_id,history_qhead);
 		history_qhead = g.historySize();
 		last_history_clear = g.historyclears;
 		
 		;
 	}
-	
+	void updateHistory(){
+		update();
+	}
 	bool dbg_path(int to) {
 #ifdef DEBUG_DIJKSTRA
 		/*	assert(connected(to));
@@ -666,7 +669,7 @@ public:
 };
 
 template<typename Weight, class Status>
-class UnweightedRamalReps: public Distance<int> {
+class UnweightedRamalReps: public Distance<int>, public DynamicGraphAlgorithm {
 public:
 	DynamicGraph<Weight> & g;
 	Status & status;
@@ -707,6 +710,7 @@ public:
 	std::vector<int> edgeInShortestPathGraph;
 	std::vector<int> delta;
 	std::vector<int> changeset;
+	int alg_id;
 public:
 	
 	long stats_full_updates=0;
@@ -726,6 +730,7 @@ public:
 					-1) {
 		maxDistance = -1;
 		mod_percentage = 0.2;
+		alg_id=g.addDynamicAlgorithm(this);
 	}
 	//Dijkstra(const Dijkstra& d):g(d.g), last_modification(-1),last_addition(-1),last_deletion(-1),history_qhead(0),last_history_clear(0),source(d.source),INF(0),q(DistCmp(dist)),stats_full_updates(0),stats_fast_updates(0),stats_skip_deletes(0),stats_skipped_updates(0),stats_full_update_time(0),stats_fast_update_time(0){marked=false;};
 	void setMaxDistance(int &_maxDistance) {
@@ -761,7 +766,7 @@ public:
 	
 	void dbg_delta() {
 #ifndef NDEBUG
-		
+		g.drawFull();
 		dbg_delta_lite();
 		assert(delta.size() == g.nodes());
 		
@@ -1341,10 +1346,15 @@ public:
 		last_addition = g.additions;
 		
 		history_qhead = g.historySize();
+		g.updateAlgorithmHistory(this,alg_id,history_qhead);
 		last_history_clear = g.historyclears;
 		assert(dbg_uptodate());
 		
 	}
+	void updateHistory(){
+		update();
+	}
+
 	bool dbg_path(int to) {
 #ifdef DEBUG_DIJKSTRA
 		assert(connected(to));

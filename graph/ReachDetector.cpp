@@ -494,11 +494,11 @@ void ReachDetector<Weight>::addLit(int from, int to, Var outer_reach_var) {
 }
 template<typename Weight>
 void ReachDetector<Weight>::ReachStatus::setReachable(int u, bool reachable) {
-	if (reachable) {
+/*	if (reachable) {
 		assert(!detector.outer->dbg_notreachable(detector.source, u));
 	} else {
 		assert(detector.outer->dbg_notreachable(detector.source, u));
-	}
+	}*/
 	if (polarity == reachable && u < detector.reach_lits.size()) {
 		Lit l = detector.reach_lits[u];
 		if (l != lit_Undef && !detector.is_changed[u]) {
@@ -550,7 +550,7 @@ void ReachDetector<Weight>::ReachStatus::setMininumDistance(int u, bool reachabl
  }*/
 template<typename Weight>
 void ReachDetector<Weight>::preprocess() {
-	
+	is_changed.growTo(g_under.nodes());
 	//vec<bool> pure;
 	//pure.growTo(reach_lits.size());
 	//can check if all reach lits appear in only one polarity in the solver constraints; if so, then we can disable either check_positive or check_negative
@@ -1052,7 +1052,7 @@ bool ReachDetector<Weight>::propagate(vec<Lit> & conflict) {
 	if (++iter == 87) {
 		int a = 1;
 	}
-	is_changed.growTo(g_under.nodes());
+
 	bool skipped_positive = false;
 	if (underapprox_detector && (!opt_detect_pure_theory_lits || unassigned_positives > 0)) {
 		double startdreachtime = rtime(2);

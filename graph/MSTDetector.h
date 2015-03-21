@@ -124,7 +124,7 @@ public:
 			}
 		}
 	}
-	
+	void preprocess();
 	bool propagate(vec<Lit> & conflict);
 	void buildMinWeightTooSmallReason(Weight & weight, vec<Lit> & conflict);
 	void buildMinWeightTooLargeReason(Weight & weight, vec<Lit> & conflict);
