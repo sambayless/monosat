@@ -130,7 +130,7 @@ MaxflowDetector<Weight>::MaxflowDetector(int _detectorID, GraphTheorySolver<Weig
 
 		learn_graph.historyClearInterval = opt_history_clear;
 	}
-
+	learn_graph.dynamic_history_clears=opt_dynamic_history_clear;
 
 
 	if(learn_cut){

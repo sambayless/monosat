@@ -650,6 +650,7 @@ int main(int argc, char** argv) {
 			}
 
 			if (strlen(opt_theory_witness_file) > 0) {
+				std::cout<<"Writing witness to file " << (const char*) opt_theory_witness_file <<"\n";
 				std::ofstream theory_out(opt_theory_witness_file, ios::out);
 				S.writeTheoryWitness(theory_out);
 				for (auto p : symbols) {
@@ -716,7 +717,7 @@ int main(int argc, char** argv) {
 				}
 				printf("\n");
 			}
-			if (opt_verb >= 2) {
+			if (opt_verb > 2) {
 				for (int i = 0; i < S.theories.size(); i++)
 					S.theories[i]->printSolution();
 			}

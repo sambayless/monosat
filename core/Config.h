@@ -61,6 +61,7 @@ extern StringOption opt_mst_alg;
 extern StringOption opt_components_alg;
 extern StringOption opt_cycle_alg;
 extern IntOption opt_adaptive_history_clear;
+extern BoolOption opt_dynamic_history_clear;
 extern BoolOption opt_check_solution;
 extern BoolOption opt_print_reach;
 extern BoolOption opt_print_graph;

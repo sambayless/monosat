@@ -122,6 +122,8 @@ IntOption Monosat::opt_history_clear(_cat_graph, "history-clear",
 IntOption Monosat::opt_adaptive_history_clear(_cat_graph, "adaptive-history-clear",
 		"If >0, ignore the history clear option, and instead set the history clear rate to be this value multiplied by the number of edges in the graph",
 		0, IntRange(0, INT32_MAX));
+BoolOption Monosat::opt_dynamic_history_clear(_cat_graph, "dynamic-history-clear", "", true);
+
 BoolOption Monosat::opt_check_solution(_cat_graph, "check-solution", "Double check solution", true);
 BoolOption Monosat::opt_print_reach(_cat_graph, "print-reach", "Print reachability graphs", false);
 BoolOption Monosat::opt_print_graph(_cat_graph, "print-graph", "Print digraph", false);

@@ -69,7 +69,9 @@ class DynamicGraph {
 	std::vector<int> dynamic_history_pos;
 	int n_dynamic_algs_updtodate;
 	long history_offset=0;
+
 public:
+	bool dynamic_history_clears=false;
 	bool adaptive_history_clear = false;
 	long historyClearInterval = 1000;
 	int modifications=0;
@@ -562,27 +564,27 @@ public:
 										std::max(1000L, historyClearInterval * edges()) : historyClearInterval)))))) {//){
 
 
-
-			int n_uptodate=0;
-			for(int algorithmID = 0;algorithmID<dynamic_algs.size();algorithmID++){
-				if (dynamic_history_pos[algorithmID]<history.size()){
-					dynamic_algs[algorithmID]->updateHistory();
-					if (dynamic_history_pos[algorithmID]>=history.size()){
+			if(dynamic_history_clears){
+				int n_uptodate=0;
+				for(int algorithmID = 0;algorithmID<dynamic_algs.size();algorithmID++){
+					if (dynamic_history_pos[algorithmID]<history.size()){
+						dynamic_algs[algorithmID]->updateHistory();
+						if (dynamic_history_pos[algorithmID]>=history.size()){
+							n_uptodate++;
+						}
+					}else{
 						n_uptodate++;
 					}
-				}else{
-					n_uptodate++;
+				}
+
+				if(n_uptodate==dynamic_algs.size()){
+					//we can skip this history clear.
+					history_offset+=history.size();
+					skipped_historyclears++;
+					history.clear();
+					return;
 				}
 			}
-
-			if(n_uptodate==dynamic_algs.size()){
-				//we can skip this history clear.
-				history_offset+=history.size();
-				skipped_historyclears++;
-				history.clear();
-				return;
-			}
-
 
 			history_offset=0;
 			history.clear();

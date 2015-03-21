@@ -352,6 +352,9 @@ public:
 			g_over.historyClearInterval = opt_history_clear;
 			cutGraph.historyClearInterval = opt_history_clear;
 		}
+		g_under.dynamic_history_clears=opt_dynamic_history_clear;
+		g_over.dynamic_history_clears=opt_dynamic_history_clear;
+		cutGraph.dynamic_history_clears=opt_dynamic_history_clear;
 		
 		rnd_seed = opt_random_seed;
 
