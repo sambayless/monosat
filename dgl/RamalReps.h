@@ -531,11 +531,11 @@ public:
 			
 		}
 		
-		for (int i = history_qhead; i < g.history.size(); i++) {
-			int edgeid = g.history[i].id;
-			if (g.history[i].addition && g.edgeEnabled(edgeid)) {
+		for (int i = history_qhead; i < g.historySize(); i++) {
+			int edgeid = g.getChange(i).id;
+			if (g.getChange(i).addition && g.edgeEnabled(edgeid)) {
 				GRRInc(edgeid);
-			} else if (!g.history[i].addition && !g.edgeEnabled(edgeid)) {
+			} else if (!g.getChange(i).addition && !g.edgeEnabled(edgeid)) {
 				GRRDec(edgeid);
 			}
 		}
@@ -563,7 +563,7 @@ public:
 		last_deletion = g.deletions;
 		last_addition = g.additions;
 		
-		history_qhead = g.history.size();
+		history_qhead = g.historySize();
 		last_history_clear = g.historyclears;
 		
 		;
@@ -1309,11 +1309,11 @@ public:
 			}
 		}
 		
-		for (int i = history_qhead; i < g.history.size(); i++) {
-			int edgeid = g.history[i].id;
-			if (g.history[i].addition && g.edgeEnabled(edgeid)) {
+		for (int i = history_qhead; i < g.historySize(); i++) {
+			int edgeid = g.getChange(i).id;
+			if (g.getChange(i).addition && g.edgeEnabled(edgeid)) {
 				GRRInc(edgeid);
-			} else if (!g.history[i].addition && !g.edgeEnabled(edgeid)) {
+			} else if (!g.getChange(i).addition && !g.edgeEnabled(edgeid)) {
 				GRRDec(edgeid);
 			}
 		}
@@ -1340,7 +1340,7 @@ public:
 		last_deletion = g.deletions;
 		last_addition = g.additions;
 		
-		history_qhead = g.history.size();
+		history_qhead = g.historySize();
 		last_history_clear = g.historyclears;
 		assert(dbg_uptodate());
 		

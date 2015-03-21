@@ -126,9 +126,9 @@ public:
 			}
 			bool need_recompute = false;
 			//ok, now check if any of the added edges allow for a decrease in distance.
-			for (int i = history_qhead; i < g.history.size(); i++) {
-				assert(!g.history[i].addition);
-				int edgeid = g.history[i].id;
+			for (int i = history_qhead; i < g.historySize(); i++) {
+				assert(!g.getChange(i).addition);
+				int edgeid = g.getChange(i).id;
 				int u = g.getEdge(edgeid).from;
 				int v = g.getEdge(edgeid).to;
 				if (incomingEdge(u) == edgeid || incomingEdge(v) == edgeid) {
@@ -152,7 +152,7 @@ public:
 				last_addition = g.additions;
 				last_edge_inc = g.edge_increases;
 				last_edge_dec = g.edge_decreases;
-				history_qhead = g.history.size();
+				history_qhead = g.historySize();
 				last_history_clear = g.historyclears;
 				
 				assert(dbg_uptodate());
@@ -224,7 +224,7 @@ public:
 		last_addition = g.additions;
 		last_edge_inc = g.edge_increases;
 		last_edge_dec = g.edge_decreases;
-		history_qhead = g.history.size();
+		history_qhead = g.historySize();
 		last_history_clear = g.historyclears;
 		
 	}
@@ -408,11 +408,11 @@ public:
 	 last_history_clear=g.historyclears;
 	 }
 	 //ok, now check if any of the added edges allow for a decrease in distance.
-	 for (int i = history_qhead;i<g.history.size();i++){
-	 assert(g.history[i].addition); //NOTE: Currently, this is glitchy in some circumstances - specifically, ./modsat -rinc=1.05 -rnd-restart  -conflict-shortest-path  -no-conflict-min-cut   -rnd-init -rnd-seed=01231 -rnd-freq=0.01 /home/sam/data/gnf/unit_tests/unit_test_17_reduced.gnf can trigger this assertion!
-	 int u=g.history[i].u;
-	 int v=g.history[i].v;
-	 int edgeID = g.history[i].id;
+	 for (int i = history_qhead;i<g.historySize();i++){
+	 assert(g.getChange(i).addition); //NOTE: Currently, this is glitchy in some circumstances - specifically, ./modsat -rinc=1.05 -rnd-restart  -conflict-shortest-path  -no-conflict-min-cut   -rnd-init -rnd-seed=01231 -rnd-freq=0.01 /home/sam/data/gnf/unit_tests/unit_test_17_reduced.gnf can trigger this assertion!
+	 int u=g.getChange(i).u;
+	 int v=g.getChange(i).v;
+	 int edgeID = g.getChange(i).id;
 	 int alt = dist[u]+1 ;
 	 if(alt< dist[v]){
 
@@ -429,8 +429,8 @@ public:
 	 else
 	 q.decrease(v);
 	 }else if (undirected){
-	 int u=g.history[i].v;
-	 int v=g.history[i].u;
+	 int u=g.getChange(i).v;
+	 int v=g.getChange(i).u;
 	 int alt = dist[u]+1 ;
 	 if(alt< dist[v]){
 	 if(dist[v]>=inf()){
@@ -467,7 +467,7 @@ public:
 
 
 	 }
-	 history_qhead=g.history.size();
+	 history_qhead=g.historySize();
 	 auto & adjacency = undirected? g.adjacency_undirected:g.adjacency;
 	 while(q.size()){
 	 int u = q.removeMin();
@@ -539,9 +539,9 @@ public:
 			}
 			bool need_recompute = false;
 			//ok, now check if any of the added edges allow for a decrease in distance.
-			for (int i = history_qhead; i < g.history.size(); i++) {
-				assert(!g.history[i].addition);
-				int edgeid = g.history[i].id;
+			for (int i = history_qhead; i <g.historySize();i++) {
+				assert(!g.getChange(i).addition);
+				int edgeid = g.getChange(i).id;
 				int u = g.getEdge(edgeid).from;
 				int v = g.getEdge(edgeid).to;
 				if (incomingEdge(u) == edgeid || incomingEdge(v) == edgeid) {
@@ -564,7 +564,7 @@ public:
 				last_deletion = g.deletions;
 				last_addition = g.additions;
 				
-				history_qhead = g.history.size();
+				history_qhead = g.historySize();
 				last_history_clear = g.historyclears;
 				
 				assert(dbg_uptodate());
@@ -649,8 +649,8 @@ public:
 		last_modification = g.modifications;
 		last_deletion = g.deletions;
 		last_addition = g.additions;
-		
-		history_qhead = g.history.size();
+
+		history_qhead = g.historySize();
 		last_history_clear = g.historyclears;
 		
 	}

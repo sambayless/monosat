@@ -438,13 +438,13 @@ public:
 			}
 		}
 
-		for (int i = history_qhead; i < g.history.size(); i++) {
-			int edgeID = g.history[i].id;
+		for (int i = history_qhead; i < g.historySize(); i++) {
+			int edgeID = g.getChange(i).id;
 
-			if (g.history[i].addition && g.edgeEnabled(edgeID) && !edge_enabled[edgeID] ) {
+			if (g.getChange(i).addition && g.edgeEnabled(edgeID) && !edge_enabled[edgeID] ) {
 				edge_enabled[edgeID]=true;
 				addEdge(edgeID);
-			} else if (!g.history[i].addition && !g.edgeEnabled(edgeID) && edge_enabled[edgeID]) {
+			} else if (!g.getChange(i).addition && !g.edgeEnabled(edgeID) && edge_enabled[edgeID]) {
 				edge_enabled[edgeID]=false;
 				removeEdge(edgeID);
 			}
@@ -454,7 +454,7 @@ public:
 		last_deletion = g.deletions;
 		last_addition = g.additions;
 
-		history_qhead = g.history.size();
+		history_qhead = g.historySize();
 		last_history_clear = g.historyclears;
 
 	}

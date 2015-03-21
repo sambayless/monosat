@@ -322,16 +322,16 @@ public:
 					 }*/
 				}
 			}
-			history_qhead = g.history.size();
+			history_qhead = g.historySize();
 		}
 		flow_needs_recalc = true;
 		assert(kt);
 		
-		for (int i = history_qhead; i < g.history.size(); i++) {
-			int edgeid = g.history[i].id;
+		for (int i = history_qhead; i < g.historySize(); i++) {
+			int edgeid = g.getChange(i).id;
 			if (g.selfLoop(edgeid))
 				continue; //skip self loops
-			if (g.history[i].addition && g.edgeEnabled(edgeid) && !edge_enabled[edgeid]) {
+			if (g.getChange(i).addition && g.edgeEnabled(edgeid) && !edge_enabled[edgeid]) {
 				
 				edge_enabled[edgeid] = true;
 				//if(!backward_maxflow){
@@ -339,7 +339,7 @@ public:
 				/*}else{
 				 kt->edit_edge_inc(g.getEdge(edgeid).to,g.getEdge(edgeid).from,g.getWeight(edgeID),0);
 				 }*/
-			} else if (!g.history[i].addition && !g.edgeEnabled(edgeid) && edge_enabled[edgeid]) {
+			} else if (!g.getChange(i).addition && !g.edgeEnabled(edgeid) && edge_enabled[edgeid]) {
 				assert(edge_enabled[edgeid]);
 				edge_enabled[edgeid] = false;
 				//if(!backward_maxflow){
@@ -375,7 +375,7 @@ public:
 		last_deletion = g.deletions;
 		last_addition = g.additions;
 		
-		history_qhead = g.history.size();
+		history_qhead = g.historySize();
 		last_history_clear = g.historyclears;
 		return f;
 	}

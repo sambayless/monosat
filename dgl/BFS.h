@@ -308,11 +308,11 @@ public:
 		//old_seen.resize(g.nodes());
 		q.clear();
 		
-		for (int i = history_qhead; i < g.history.size(); i++) {
-			int edgeid = g.history[i].id;
+		for (int i = history_qhead; i < g.historySize(); i++) {
+			int edgeid = g.getChange(i).id;
 			int from = g.getEdge(edgeid).from;
 			int to = g.getEdge(edgeid).to;
-			if (g.history[i].addition) {
+			if (g.getChange(i).addition) {
 				//incrementally add edge
 				
 				if (seen[from] && !seen[to]) {
@@ -346,7 +346,7 @@ public:
 		}
 		
 		stats_fast_updates++;
-		history_qhead = g.history.size();
+
 		
 		assert(dbg_uptodate());
 		
@@ -354,7 +354,7 @@ public:
 		last_deletion = g.deletions;
 		last_addition = g.additions;
 		
-		history_qhead = g.history.size();
+		history_qhead = g.historySize();
 		last_history_clear = g.historyclears;
 		
 		return true;
@@ -372,12 +372,12 @@ public:
 		//old_seen.resize(g.nodes());
 		q.clear();
 		
-		for (int i = history_qhead; i < g.history.size(); i++) {
-			int edgeid = g.history[i].id;
+		for (int i = history_qhead; i < g.historySize(); i++) {
+			int edgeid = g.getChange(i).id;
 			int from = g.getEdge(edgeid).from;
 			int to = g.getEdge(edgeid).to;
 			
-			if (g.history[i].addition && g.edgeEnabled(g.history[i].id)) {
+			if (g.getChange(i).addition && g.edgeEnabled(g.getChange(i).id)) {
 				//incrementally add edge
 				
 				if (seen[from] && !seen[to]) {
@@ -391,7 +391,7 @@ public:
 						add_update(from, true);
 					}
 				}
-			} else if (!g.history[i].addition && !g.edgeEnabled(g.history[i].id)) {
+			} else if (!g.getChange(i).addition && !g.edgeEnabled(g.getChange(i).id)) {
 				
 				if (!undirected
 						&& (to == source || !seen[from] || (seen[to] && seen[previous(to)] && previous(to) != from))) {
@@ -414,7 +414,7 @@ public:
 		}
 		
 		stats_fast_updates++;
-		history_qhead = g.history.size();
+
 		
 		assert(dbg_uptodate());
 		
@@ -422,7 +422,7 @@ public:
 		last_deletion = g.deletions;
 		last_addition = g.additions;
 		
-		history_qhead = g.history.size();
+		history_qhead = g.historySize();
 		last_history_clear = g.historyclears;
 		
 		return true;
@@ -461,7 +461,7 @@ public:
 		if (g.historyclears != last_history_clear) {
 			last_history_clear = g.historyclears;
 			history_qhead = 0;
-		} else if (opt_inc_graph && last_modification > 0 && (g.historyclears <= (last_history_clear + 1))) {// && (g.history.size()-history_qhead < g.edges()*mod_percentage)){
+		} else if (opt_inc_graph && last_modification > 0 && (g.historyclears <= (last_history_clear + 1))) {// && (g.historySize()-history_qhead < g.edges()*mod_percentage)){
 			if (opt_dec_graph == 2) {
 				if (incrementalUpdate())
 					return;
@@ -470,11 +470,11 @@ public:
 					
 					//scan through the deletions and check if any of them matter..
 					bool safe = true;
-					for (int i = history_qhead; i < g.history.size(); i++) {
-						int edgeid = g.history[i].id;
+					for (int i = history_qhead; i < g.historySize(); i++) {
+						int edgeid = g.getChange(i).id;
 						int from = g.getEdge(edgeid).from;
 						int to = g.getEdge(edgeid).to;
-						if (g.history[i].addition) {
+						if (g.getChange(i).addition) {
 							//safe
 						} else if (!undirected
 								&& (!seen[from] || (seen[to] && seen[previous(to)] && previous(to) != from))) {
@@ -546,7 +546,7 @@ public:
 		last_deletion = g.deletions;
 		last_addition = g.additions;
 		
-		history_qhead = g.history.size();
+		history_qhead = g.historySize();
 		last_history_clear = g.historyclears;
 		
 		;
@@ -841,7 +841,7 @@ public:
 		last_deletion = g.deletions;
 		last_addition = g.additions;
 		
-		history_qhead = g.history.size();
+		history_qhead = g.historySize();
 		last_history_clear = g.historyclears;
 		
 		;

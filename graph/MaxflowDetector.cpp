@@ -1008,16 +1008,16 @@ void MaxflowDetector<Weight>::collectDisabledEdges() {
 				}
 			}
 			learngraph_history_clears = g_over.historyclears;
-			learngraph_history_qhead = g_over.history.size();
+			learngraph_history_qhead = g_over.historySize();
 		} else {
-			for (int i = learngraph_history_qhead; i < g_over.history.size(); i++) {
-				int edgeid = g_over.history[i].id;
+			for (int i = learngraph_history_qhead; i < g_over.historySize(); i++) {
+				int edgeid = g_over.getChange(i).id;
 				if (edgeid == 3) {
 					int a = 1;
 				}
 				/*	if(antig.selfLoop(edgeid))
 				 continue;//skip self loops*/
-				if (g_over.edgeEnabled(edgeid) && (g_over.history[i].addition || ((g_over.history[i].weight_increase || g_over.history[i].weight_decrease) && g_over.getWeight(edgeid)>0) )) {
+				if (g_over.edgeEnabled(edgeid) && (g_over.getChange(i).addition || ((g_over.getChange(i).weight_increase || g_over.getChange(i).weight_decrease) && g_over.getWeight(edgeid)>0) )) {
 
 					Weight capacity = overapprox_conflict_detector->getEdgeCapacity(edgeid);
 					Weight level0capacity =  outer->hasBitVector(edgeid)?	 outer->getEdgeBV(edgeid).getOver(true):capacity;
@@ -1072,7 +1072,7 @@ void MaxflowDetector<Weight>::collectDisabledEdges() {
 							//learn_graph.disableEdge(back_edges[edgeid*2+1]);
 						}
 					}
-				} else if ((g_over.history[i].deletion && !g_over.edgeEnabled(edgeid)) ||  (g_over.history[i].weight_decrease && g_over.getWeight(edgeid)<=0 )) {
+				} else if ((g_over.getChange(i).deletion && !g_over.edgeEnabled(edgeid)) ||  (g_over.getChange(i).weight_decrease && g_over.getWeight(edgeid)<=0 )) {
 					//any edge that is disabled has a capacity of 1 in the learn graph (unless it is proven to be permanently disabled)
 					if(!g_over.isConstant(edgeid)){
 						learn_graph.enableEdge(edgeid * 2);
@@ -1087,7 +1087,7 @@ void MaxflowDetector<Weight>::collectDisabledEdges() {
 					}
 				}
 			}
-			learngraph_history_qhead = g_over.history.size();
+			learngraph_history_qhead = g_over.historySize();
 		}
 	}
 }

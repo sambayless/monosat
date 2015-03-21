@@ -35,6 +35,13 @@
 
 namespace dgl {
 
+class DynamicGraphAlgorithm{
+public:
+	virtual ~DynamicGraphAlgorithm(){}
+
+	void update(){	}
+};
+
 /**
  * A dynamic graph.
  * It supports efficiently recomputing graph properties as edges are added and removed ('enabled' and 'disabled').
@@ -58,7 +65,8 @@ class DynamicGraph {
 	int num_edges=0;
 	int next_id=0;
 	bool is_changed=false;
-
+	std::vector<DynamicGraphAlgorithm*> dynamic_algs;
+	std::vector<int> dynamic_history_pos;
 public:
 	bool adaptive_history_clear = false;
 	long historyClearInterval = 1000;
@@ -102,11 +110,13 @@ public:
 		int mod;
 		int prev_mod;
 	};
+private:
 	std::vector<EdgeChange> history;
+public:
 #ifdef RECORD
 	FILE * outfile;
 #endif
-public:
+
 	DynamicGraph() {
 		//allocated=true;
 #ifdef RECORD
@@ -507,11 +517,35 @@ public:
 		assert(modifications == cur_modifications - steps);
 		return true;
 	}
-	
+	/**
+	 * Returns a unique identifier for this algorithm.
+	 */
+	int addDynamicAlgorithm(DynamicGraphAlgorithm*alg){
+		dynamic_algs.push_back(alg);
+		dynamic_history_pos.push_back(-1);
+		return dynamic_algs.size()-1;
+	}
+
+
+	void updateAlgorithmHistory(DynamicGraphAlgorithm * alg, int algorithmID, int historyPos){
+		assert(dynamic_algs[algorithmID]==alg);//sanity check
+		dynamic_history_pos[algorithmID]=historyPos;
+	}
+
+	EdgeChange & getChange(int historyPos){
+		return history[historyPos];
+	}
+
+	int historySize(){
+		return history.size();
+	}
+
 	int getCurrentHistory() {
 		return modifications;
 	}
 	
+
+
 	void clearHistory(bool forceClear = false) {
 		//long expect=std::max(1000,historyClearInterval*edges());
 		if (history.size()

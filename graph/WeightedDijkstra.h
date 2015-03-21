@@ -118,9 +118,9 @@ public:
 			last_history_clear = g.historyclears;
 		}
 		//ok, now check if any of the added edges allow for a decrease in distance.
-		for (int i = history_qhead; i < g.history.size(); i++) {
-			assert(g.history[i].addition); //NOTE: Currently, this is glitchy in some circumstances - specifically, ./modsat -rinc=1.05 -rnd-restart  -conflict-shortest-path  -no-conflict-min-cut   -rnd-init -rnd-seed=01231 -rnd-freq=0.01 /home/sam/data/gnf/unit_tests/unit_test_17_reduced.gnf can trigger this assertion!
-			int edgeID = g.history[i].id;
+		for (int i = history_qhead; i < g.historySize(); i++) {
+			assert(g.getChange(i).addition); //NOTE: Currently, this is glitchy in some circumstances - specifically, ./modsat -rinc=1.05 -rnd-restart  -conflict-shortest-path  -no-conflict-min-cut   -rnd-init -rnd-seed=01231 -rnd-freq=0.01 /home/sam/data/gnf/unit_tests/unit_test_17_reduced.gnf can trigger this assertion!
+			int edgeID = g.getChange(i).id;
 			int u = g.all_edges[edgeID].from;
 			int v = g.all_edges[edgeID].to;
 			Weight alt = dist[u] + weights[u];
@@ -159,7 +159,7 @@ public:
 				}
 			}
 		}
-		history_qhead = g.history.size();
+		history_qhead = g.historySize();
 		
 		while (q.size()) {
 			int u = q.removeMin();
@@ -222,9 +222,9 @@ public:
 		 bool need_recompute = false;
 		 //ok, now check if any of the added edges allow for a decrease in distance.
 		 for (int i = history_qhead;i<g.history.size();i++){
-		 assert(!g.history[i].addition);
-		 int u=g.history[i].u;
-		 int v=g.history[i].v;
+		 assert(!g.getChange(i).addition);
+		 int u=g.getChange(i).u;
+		 int v=g.getChange(i).v;
 		 if(prev[v]==u){
 		 history_qhead = i-1;
 		 need_recompute=true;
@@ -317,7 +317,7 @@ public:
 		last_deletion = g.deletions;
 		last_addition = g.additions;
 		
-		history_qhead = g.history.size();
+		history_qhead = g.historySize();
 		last_history_clear = g.historyclears;
 		
 		;

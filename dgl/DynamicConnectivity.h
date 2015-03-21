@@ -348,9 +348,9 @@ public:
 			
 		} else {
 			//incremental/decremental update
-			for (; history_qhead < g.history.size(); history_qhead++) {
-				int edgeid = g.history[history_qhead].id;
-				bool add = g.history[history_qhead].addition;
+			for (; history_qhead < g.historySize(); history_qhead++) {
+				int edgeid = g.getChange(history_qhead).id;
+				bool add = g.getChange(history_qhead).addition;
 				int u = g.all_edges[edgeid].from;
 				int v = g.all_edges[edgeid].to;
 				updateEdge(u, v, edgeid, add);
@@ -440,7 +440,7 @@ public:
 		last_deletion = g.deletions;
 		last_addition = g.additions;
 		
-		history_qhead = g.history.size();
+		history_qhead = g.historySize();
 		last_history_clear = g.historyclears;
 		
 		//stats_full_update_time+=cpuTime()-startdupdatetime;;

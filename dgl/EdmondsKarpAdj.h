@@ -290,7 +290,7 @@ public:
 		last_deletion = g.deletions;
 		last_addition = g.additions;
 		dbg_print_graph(s, t);
-		history_qhead = g.history.size();
+		history_qhead = g.historySize();
 		last_history_clear = g.historyclears;
 		assert(f>=0);
 		return f;

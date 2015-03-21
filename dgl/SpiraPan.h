@@ -658,17 +658,17 @@ public:
 			for (int i = 0; i < in_tree.size(); i++)
 				in_tree[i] = false;
 			last_history_clear = g.historyclears;
-			history_qhead = g.history.size();//have to skip any additions or deletions that are left here, as otherwise the tree wont be an MST at the beginning of the addEdgeToMST method, which is an error.
+			history_qhead = g.historySize();//have to skip any additions or deletions that are left here, as otherwise the tree wont be an MST at the beginning of the addEdgeToMST method, which is an error.
 					
 		}
 		
 		//std::cout<<"Weight " << min_weight << " Components " << num_sets << " Dbg Weight: " << dbg.forestWeight() << " Components " << dbg.numComponents() <<"\n";
-		for (int i = history_qhead; i < g.history.size(); i++) {
+		for (int i = history_qhead; i < g.historySize(); i++) {
 			
-			int edgeid = g.history[i].id;
-			if (g.history[i].addition && g.edgeEnabled(edgeid)) {
+			int edgeid = g.getChange(i).id;
+			if (g.getChange(i).addition && g.edgeEnabled(edgeid)) {
 				addEdgeToMST(edgeid);
-			} else if (!g.history[i].addition && !g.edgeEnabled(edgeid)) {
+			} else if (!g.getChange(i).addition && !g.edgeEnabled(edgeid)) {
 				removeEdgeFromMST(edgeid);
 			}
 			//std::cout<<"Weight " << min_weight << " Components " << num_sets << " Dbg Weight: " << dbg.forestWeight() << " Components " << dbg.numComponents() <<"\n";
@@ -702,7 +702,7 @@ public:
 		last_deletion = g.deletions;
 		last_addition = g.additions;
 		
-		history_qhead = g.history.size();
+		history_qhead = g.historySize();
 		last_history_clear = g.historyclears;
 		
 		;
