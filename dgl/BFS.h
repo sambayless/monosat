@@ -601,6 +601,7 @@ public:
 		printf("}\n");
 	}
 	bool dbg_uptodate() {
+/*
 #ifdef DEBUG_DIJKSTRA
 		if(last_modification<=0)
 		return true;
@@ -624,6 +625,7 @@ public:
 			}
 		}
 #endif
+*/
 		return true;
 	}
 	

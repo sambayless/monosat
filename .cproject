@@ -804,8 +804,6 @@
 								<option id="gnu.cpp.compiler.option.preprocessor.def.931433339" name="Defined symbols (-D)" superClass="gnu.cpp.compiler.option.preprocessor.def" useByScannerDiscovery="false" valueType="definedSymbols">
 									<listOptionValue builtIn="false" value="__STDC_LIMIT_MACROS"/>
 									<listOptionValue builtIn="false" value="__STDC_FORMAT_MACROS"/>
-									<listOptionValue builtIn="false" value="DEBUG_DIJKSTRA"/>
-									<listOptionValue builtIn="false" value="DEBUG_MAXFLOW"/>
 								</option>
 								<option id="gnu.cpp.compiler.option.include.paths.471375053" name="Include paths (-I)" superClass="gnu.cpp.compiler.option.include.paths" useByScannerDiscovery="false" valueType="includePath">
 									<listOptionValue builtIn="false" value="/home/sam/workspaceC/modsat/"/>
@@ -820,17 +818,12 @@
 								<option id="gnu.c.compiler.option.preprocessor.def.symbols.1242953533" name="Defined symbols (-D)" superClass="gnu.c.compiler.option.preprocessor.def.symbols" useByScannerDiscovery="false" valueType="definedSymbols">
 									<listOptionValue builtIn="false" value="__STDC_LIMIT_MACROS"/>
 									<listOptionValue builtIn="false" value="__STDC_FORMAT_MACROS"/>
-									<listOptionValue builtIn="false" value="DEBUG_GRAPH"/>
-									<listOptionValue builtIn="false" value="DEBUG_DIJKSTRA"/>
-									<listOptionValue builtIn="false" value="DEBUG_MAXFLOW"/>
 								</option>
 								<option id="gnu.c.compiler.option.include.paths.2094894230" name="Include paths (-I)" superClass="gnu.c.compiler.option.include.paths" useByScannerDiscovery="false" valueType="includePath">
 									<listOptionValue builtIn="false" value="/home/sam/workspaceC/modsat/"/>
 									<listOptionValue builtIn="false" value="/home/sam/workspaceC/modsat"/>
 								</option>
-								<option id="gnu.c.compiler.option.preprocessor.undef.symbol.2103338623" name="Undefined symbols (-U)" superClass="gnu.c.compiler.option.preprocessor.undef.symbol" useByScannerDiscovery="false" valueType="undefDefinedSymbols">
-									<listOptionValue builtIn="false" value="__amd64"/>
-								</option>
+								<option id="gnu.c.compiler.option.preprocessor.undef.symbol.2103338623" name="Undefined symbols (-U)" superClass="gnu.c.compiler.option.preprocessor.undef.symbol" useByScannerDiscovery="false" valueType="undefDefinedSymbols"/>
 								<inputType id="cdt.managedbuild.tool.gnu.c.compiler.input.1438038404" superClass="cdt.managedbuild.tool.gnu.c.compiler.input"/>
 							</tool>
 							<tool id="cdt.managedbuild.tool.gnu.c.linker.exe.debug.1678944999" name="GCC C Linker" superClass="cdt.managedbuild.tool.gnu.c.linker.exe.debug"/>
@@ -1178,36 +1171,36 @@
 		<configuration configurationName="DbgRelease">
 			<resource resourceType="PROJECT" workspacePath="/modsat"/>
 		</configuration>
-		<configuration configurationName="Release">
-			<resource resourceType="PROJECT" workspacePath="/modsat"/>
-		</configuration>
 		<configuration configurationName="Win64">
 			<resource resourceType="PROJECT" workspacePath="/modsat"/>
 		</configuration>
-		<configuration configurationName="Test"/>
-		<configuration configurationName="Klee">
-			<resource resourceType="PROJECT" workspacePath="/modsat"/>
-		</configuration>
 		<configuration configurationName="TestRelease"/>
-		<configuration configurationName="coverage">
-			<resource resourceType="PROJECT" workspacePath="/modsat"/>
-		</configuration>
 		<configuration configurationName="Win32">
 			<resource resourceType="PROJECT" workspacePath="/modsat"/>
 		</configuration>
-		<configuration configurationName="clang"/>
 		<configuration configurationName="Static">
 			<resource resourceType="PROJECT" workspacePath="/modsat"/>
 		</configuration>
 		<configuration configurationName="ClangRelease">
 			<resource resourceType="PROJECT" workspacePath="/modsat"/>
 		</configuration>
-		<configuration configurationName="ClangDebug">
-			<resource resourceType="PROJECT" workspacePath="/modsat"/>
-		</configuration>
 		<configuration configurationName="Debug">
 			<resource resourceType="PROJECT" workspacePath="/modsat"/>
 		</configuration>
+		<configuration configurationName="ClangDebug">
+			<resource resourceType="PROJECT" workspacePath="/modsat"/>
+		</configuration>
+		<configuration configurationName="Release">
+			<resource resourceType="PROJECT" workspacePath="/modsat"/>
+		</configuration>
+		<configuration configurationName="Klee">
+			<resource resourceType="PROJECT" workspacePath="/modsat"/>
+		</configuration>
+		<configuration configurationName="Test"/>
+		<configuration configurationName="coverage">
+			<resource resourceType="PROJECT" workspacePath="/modsat"/>
+		</configuration>
+		<configuration configurationName="clang"/>
 	</storageModule>
 	<storageModule moduleId="org.eclipse.cdt.core.LanguageSettingsProviders"/>
 	<storageModule moduleId="org.eclipse.cdt.internal.ui.text.commentOwnerProjectMappings"/>

@@ -221,7 +221,7 @@ public:
 #ifdef DEBUG_MAXFLOW
 			Weight expected_flow =ek.maxFlow(s,t);
 #endif
-			
+
 #ifdef DEBUG_MAXFLOW
 			assert(curflow==expected_flow);
 #endif

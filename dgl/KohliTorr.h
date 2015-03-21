@@ -184,7 +184,7 @@ public:
 		
 		//see http://cstheory.stackexchange.com/a/10186
 		static int it = 0;
-		if (++it == 56) {
+		if (++it == 95) {
 			int a = 1;
 		}
 #ifdef RECORD
@@ -193,6 +193,7 @@ public:
 			fflush(g.outfile);
 		}
 #endif
+
 		
 		//C.resize(g.nodes());
 #ifdef DEBUG_MAXFLOW
@@ -353,7 +354,12 @@ public:
 			}
 		}
 		
-		f = kt->maxflow(dynamic);
+		if(s!=t){
+			f = kt->maxflow(dynamic);
+		}else{
+			f=0;
+		}
+
 		
 #ifdef DEBUG_MAXFLOW
 		Weight expected_flow =ek.maxFlow(source,sink);
@@ -616,10 +622,15 @@ public:
 			fflush(g.outfile);
 		}
 #endif
+
 		cut.clear();
 		dbg_print_graph(s, t);
 		/*   	if(f==0)
 		 return 0;*/
+		if(s==t){
+			assert(f==0);
+			return f;
+		}
 
 		auto SOURCE = kohli_torr::Graph<Weight, Weight, Weight>::SOURCE; // backward_maxflow? kohli_torr::Graph<Weight,Weight,Weight>::SINK : kohli_torr::Graph<Weight,Weight,Weight>::SOURCE;
 		auto SINK = kohli_torr::Graph<Weight, Weight, Weight>::SINK; //backward_maxflow? kohli_torr::Graph<Weight,Weight,Weight>::SOURCE :  kohli_torr::Graph<Weight,Weight,Weight>::SINK;
@@ -627,10 +638,10 @@ public:
 		//KT allows for all the nodes to be source or sink, if the cut is placed at the final source->'outer source' or 'outer sink' -> sink edge.
 		//Ideally, this shouldn't happen here, because those should have infinite weight edges.
 		if (kt->what_segment(s, SOURCE) == SINK) {
-			exit(1);
+			exit(3);
 			return -1;
 		} else if (kt->what_segment(t, SOURCE) == SOURCE) {
-			exit(1);
+			exit(3);
 			return -1;
 		}
 		
@@ -721,7 +732,10 @@ public:
 	const Weight getEdgeFlow(int flow_edge) {
 		if (g.getEdge(flow_edge).from == g.getEdge(flow_edge).to)
 			return 0;    	//self edges have no flow.
-			
+		if(source==sink){
+			return 0;//no flow exists of source and sink are the same.
+		}
+
 		calc_flow();
 		collect_multi_edges(flow_edge);
 		//we need to pick, possibly arbitrarily (but deterministically), which of the edges have flow

@@ -1888,8 +1888,8 @@ public:
 			}
 			if (cutGraph.outfile) {
 
-				fprintf(cutGraph.outfile, "edge_weight %d %d\n", index * 2, 1);
-				fprintf(cutGraph.outfile, "edge_weight %d %d\n", index * 2 + 1, 0xFFFF);
+			//	fprintf(cutGraph.outfile, "edge_weight %d %d\n", index * 2, 1);
+			//	fprintf(cutGraph.outfile, "edge_weight %d %d\n", index * 2 + 1, 0xFFFF);
 				fflush(cutGraph.outfile);
 			}
 	#endif
@@ -1965,12 +1965,12 @@ public:
 					fprintf(g_over.outfile,"\n");
 					fflush(g_over.outfile);
 				}*/
-				if (cutGraph.outfile) {
+		/*		if (cutGraph.outfile) {
 
 					fprintf(cutGraph.outfile, "edge_weight %d %d\n", index * 2, 1);
 					fprintf(cutGraph.outfile, "edge_weight %d %d\n", index * 2 + 1, 0xFFFF);
 					fflush(cutGraph.outfile);
-				}
+				}*/
 		#endif
 				return mkLit(v, false);
 			}
@@ -2040,12 +2040,12 @@ public:
 			fprintf(g_over.outfile, "edge_weight %d %s\n", index, wt.str().c_str());
 			fflush(g_over.outfile);
 		}
-		if (cutGraph.outfile) {
+/*		if (cutGraph.outfile) {
 			
 			fprintf(cutGraph.outfile, "edge_weight %d %d\n", index * 2, 1);
 			fprintf(cutGraph.outfile, "edge_weight %d %d\n", index * 2 + 1, 0xFFFF);
 			fflush(cutGraph.outfile);
-		}
+		}*/
 #endif
 		return mkLit(v, false);
 	}

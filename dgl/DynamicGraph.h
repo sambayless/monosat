@@ -103,6 +103,9 @@ public:
 	};
 
 private:
+#ifndef NDEBUG
+public:
+#endif
 	std::vector<FullEdge> all_edges;
 public:
 	struct EdgeChange {
@@ -541,6 +544,11 @@ public:
 	}
 
 	EdgeChange & getChange(long historyPos){
+		assert(historyPos-history_offset>=0);
+		assert(historyPos-history_offset<history.size());
+		if(historyPos-history_offset>=history.size() || historyPos-history_offset<0){
+			exit(3);
+		}
 		return history[historyPos-history_offset];
 	}
 
@@ -567,9 +575,9 @@ public:
 			if(dynamic_history_clears){
 				int n_uptodate=0;
 				for(int algorithmID = 0;algorithmID<dynamic_algs.size();algorithmID++){
-					if (dynamic_history_pos[algorithmID]<history.size()){
+					if (dynamic_history_pos[algorithmID]!=historySize()){
 						dynamic_algs[algorithmID]->updateHistory();
-						if (dynamic_history_pos[algorithmID]>=history.size()){
+						if (dynamic_history_pos[algorithmID]==historySize()){
 							n_uptodate++;
 						}
 					}else{
@@ -579,9 +587,10 @@ public:
 
 				if(n_uptodate==dynamic_algs.size()){
 					//we can skip this history clear.
-					history_offset+=history.size();
+					history_offset=historySize();
 					skipped_historyclears++;
 					history.clear();
+					assert(history_offset == historySize());
 					return;
 				}
 			}
