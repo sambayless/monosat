@@ -678,7 +678,7 @@ bool MaxflowDetector<Weight>::propagate(vec<Lit> & conflict) {
 	}
 #endif
 	
-	g_over.drawFull(true);
+
 
 	Weight over_maxflow = -1;
 	Weight under_maxflow = -1;
