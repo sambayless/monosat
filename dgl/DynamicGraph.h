@@ -546,9 +546,6 @@ public:
 	EdgeChange & getChange(long historyPos){
 		assert(historyPos-history_offset>=0);
 		assert(historyPos-history_offset<history.size());
-		if(historyPos-history_offset>=history.size() || historyPos-history_offset<0){
-			exit(3);
-		}
 		return history[historyPos-history_offset];
 	}
 

@@ -118,19 +118,41 @@ public:
 		if (kt) {
 			
 			if (dynamic) {
-				kt->edit_tweights(source, 0, 0);
+				Weight curweight = kt->getTweight(source);
+				Weight newWeight = curweight-max_capacity;
+				if(newWeight>=0){
+					kt->edit_tweights(source, newWeight, 0);
+				}else{
+					kt->edit_tweights(source, 0,-newWeight);
+				}
 				//if(!backward_maxflow){
-				kt->edit_tweights(s, max_capacity, 0);
+				curweight = kt->getTweight(s);
+			    newWeight = curweight+max_capacity;
+				if(newWeight>=0){
+					kt->edit_tweights(s, newWeight, 0);
+				}else{
+					kt->edit_tweights(s, 0,-newWeight);
+				}
+
 				/*}else{
 				 kt->edit_tweights(s,0,max_capacity);
 				 }*/
 			} else {
-				kt->edit_tweights_wt(source, 0, 0);
+				Weight curweight = kt->getTweight(source);
+				Weight newWeight = curweight-max_capacity;
+				if(newWeight>=0){
+					kt->edit_tweights_wt(source, newWeight, 0);
+				}else{
+					kt->edit_tweights_wt(source, 0,-newWeight);
+				}
 				//if(!backward_maxflow){
-				kt->edit_tweights_wt(s, max_capacity, 0);
-				/*}else{
-				 kt->edit_tweights_wt(s,0,max_capacity);
-				 }*/
+				curweight = kt->getTweight(s);
+				newWeight = curweight+max_capacity;
+				if(newWeight>=0){
+					kt->edit_tweights_wt(s, newWeight, 0);
+				}else{
+					kt->edit_tweights_wt(s, 0,-newWeight);
+				}
 			}
 		}
 		source = s;
@@ -143,21 +165,38 @@ public:
 			return;
 		}
 		if (kt) {
-			
 			if (dynamic) {
-				kt->edit_tweights(sink, 0, 0);
-				//if(!backward_maxflow){
-				kt->edit_tweights(t, 0, max_capacity);
-				/*}else{
-				 kt->edit_tweights(t,max_capacity,0);
-				 }*/
+				Weight curweight = -kt->getTweight(sink);
+				Weight newWeight = curweight-max_capacity;
+				if(newWeight>=0){
+					kt->edit_tweights(sink, 0, newWeight);
+				}else{
+					kt->edit_tweights(sink, -newWeight,0);
+				}
+				curweight = -kt->getTweight(t);
+				newWeight = curweight+max_capacity;
+				if(newWeight>=0){
+					kt->edit_tweights(t, 0, newWeight);
+				}else{
+					kt->edit_tweights(t, -newWeight,0);
+				}
 			} else {
-				kt->edit_tweights_wt(sink, 0, 0);
+				Weight curweight = -kt->getTweight(sink);
+				Weight newWeight = curweight-max_capacity;
+				if(newWeight>=0){
+					kt->edit_tweights_wt(sink, 0, newWeight);
+				}else{
+					kt->edit_tweights_wt(sink, -newWeight,0);
+				}
 				//if(!backward_maxflow){
-				kt->edit_tweights(t, 0, max_capacity);
-				/*}else{
-				 kt->edit_tweights(t,max_capacity,0);
-				 }*/
+				curweight = -kt->getTweight(t);
+				newWeight = curweight+max_capacity;
+				if(newWeight>=0){
+					kt->edit_tweights_wt(t, 0, newWeight);
+				}else{
+					kt->edit_tweights_wt(t, -newWeight,0);
+				}
+
 			}
 		}
 		sink = t;
@@ -193,7 +232,6 @@ public:
 			fflush(g.outfile);
 		}
 #endif
-
 		
 		//C.resize(g.nodes());
 #ifdef DEBUG_MAXFLOW
@@ -286,22 +324,25 @@ public:
 					 }*/
 				}
 			}
-			if (dynamic) {
-				//if(!backward_maxflow){
-				kt->edit_tweights(s, max_capacity, 0);
-				kt->edit_tweights(t, 0, max_capacity);
+			if(s!=t){
+
+				if (dynamic) {
+					//if(!backward_maxflow){
+					kt->edit_tweights(s, max_capacity, 0);
+					kt->edit_tweights(t, 0, max_capacity);
 				/*	}else{
-				 kt->edit_tweights(t,max_capacity,0);
-				 kt->edit_tweights(s,0,max_capacity);
-				 }*/
-			} else {
-				//if(!backward_maxflow){
-				kt->edit_tweights_wt(s, max_capacity, 0);
-				kt->edit_tweights_wt(t, 0, max_capacity);
-				/*	}else{
-				 kt->edit_tweights_wt(t,max_capacity,0);
-				 kt->edit_tweights_wt(s,0,max_capacity);
-				 }*/
+					 kt->edit_tweights(t,max_capacity,0);
+					 kt->edit_tweights(s,0,max_capacity);
+					 }*/
+				} else {
+					//if(!backward_maxflow){
+					kt->edit_tweights_wt(s, max_capacity, 0);
+					kt->edit_tweights_wt(t, 0, max_capacity);
+			/*			}else{
+					 kt->edit_tweights_wt(t,max_capacity,0);
+					 kt->edit_tweights_wt(s,0,max_capacity);
+					 }*/
+				}
 			}
 		} else if (g.historyclears != last_history_clear || g.changed()) {
 			flow_needs_recalc = true;
@@ -354,12 +395,7 @@ public:
 			}
 		}
 		
-		if(s!=t){
-			f = kt->maxflow(dynamic);
-		}else{
-			f=0;
-		}
-
+		f = kt->maxflow(dynamic);
 		
 #ifdef DEBUG_MAXFLOW
 		Weight expected_flow =ek.maxFlow(source,sink);
@@ -622,15 +658,10 @@ public:
 			fflush(g.outfile);
 		}
 #endif
-
 		cut.clear();
 		dbg_print_graph(s, t);
 		/*   	if(f==0)
 		 return 0;*/
-		if(s==t){
-			assert(f==0);
-			return f;
-		}
 
 		auto SOURCE = kohli_torr::Graph<Weight, Weight, Weight>::SOURCE; // backward_maxflow? kohli_torr::Graph<Weight,Weight,Weight>::SINK : kohli_torr::Graph<Weight,Weight,Weight>::SOURCE;
 		auto SINK = kohli_torr::Graph<Weight, Weight, Weight>::SINK; //backward_maxflow? kohli_torr::Graph<Weight,Weight,Weight>::SOURCE :  kohli_torr::Graph<Weight,Weight,Weight>::SINK;
@@ -732,9 +763,6 @@ public:
 	const Weight getEdgeFlow(int flow_edge) {
 		if (g.getEdge(flow_edge).from == g.getEdge(flow_edge).to)
 			return 0;    	//self edges have no flow.
-		if(source==sink){
-			return 0;//no flow exists of source and sink are the same.
-		}
 
 		calc_flow();
 		collect_multi_edges(flow_edge);
