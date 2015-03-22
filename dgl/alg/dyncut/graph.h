@@ -1020,7 +1020,7 @@ void Graph<captype, tcaptype, flowtype>::reallocate_arcs() {
 template<typename captype, typename tcaptype, typename flowtype>
 void Graph<captype, tcaptype, flowtype>::edit_tweights(node_id i, tcaptype cap_source, tcaptype cap_sink) {
 	tcaptype oldRes = nodes[i].t_cap;
-	
+	assert(cap_source>=0);assert(cap_sink>=0);
 	if (nodes[i].t_cap != cap_source - cap_sink) {
 		if (nodes[i].t_cap > 0)
 			flow -= MIN(nodes[i].t_cap - nodes[i].tr_cap, nodes[i].t_cap);
