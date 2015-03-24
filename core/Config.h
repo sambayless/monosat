@@ -129,6 +129,7 @@ extern BoolOption opt_lazy_maxflow_decisions;
 extern BoolOption opt_maxflow_allow_cycles;
 extern BoolOption opt_old_lazy_maxflow_decisions;
 extern IntOption opt_maxflow_decisions_q;
+extern IntOption opt_maxflow_decision_paths;
 extern BoolOption opt_reach_detector_combined_maxflow;
 extern IntOption opt_adaptive_conflict_mincut;
 extern BoolOption opt_shortest_path_prune_dist;

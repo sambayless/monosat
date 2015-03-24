@@ -221,6 +221,9 @@ BoolOption Monosat::opt_maxflow_allow_cycles(_cat_graph, "allow-maxflow-cycles",
 BoolOption Monosat::opt_old_lazy_maxflow_decisions(_cat_graph, "old-lazy-maxflow-decisions", "", false);
 IntOption Monosat::opt_maxflow_decisions_q(_cat_graph, "maxflow-decisions-q",
 		"Use a FIFO (instead of LIFO) decision order in the maxflow theory", 1, IntRange(0, 4));
+IntOption Monosat::opt_maxflow_decision_paths(_cat_graph, "maxflow-decision-paths",
+		"Make maxflow decisions path by path (0 = never, 1 = forward, 2= backward)",0, IntRange(0,3));
+
 BoolOption Monosat::opt_reach_detector_combined_maxflow(_cat_graph, "reach-combined-maxflow", "", true);
 IntOption Monosat::opt_adaptive_conflict_mincut(_cat_graph, "adaptive-conflict-mincut",
 		"First try applying conflict detection without mincut analysis (which is faster), then try again with mincut analysis if the learnt clause is >= this length (0 to disable, 1 to always use mincut analysis)",

@@ -69,7 +69,15 @@ public:
 	vec<Lit> decisions;
 	vec<bool> is_potential_decision;
 	vec<int> potential_decisions;
-	Deque<int> potential_decisions_q;
+	struct DecisionS{
+		int path_decision:1;
+		int edgeID:31;
+		DecisionS():path_decision(0), edgeID(-1){}
+		DecisionS(const int edgeID):path_decision(0), edgeID(edgeID){}
+		DecisionS(int edgeID, bool pathDecision):path_decision(pathDecision), edgeID(edgeID){}
+		operator int() const { return edgeID; }
+	};
+	Deque<DecisionS> potential_decisions_q;
 	vec<Lit> to_decide;
 	std::vector<int> q;
 
@@ -78,7 +86,7 @@ public:
 	int learngraph_history_qhead = 0;
 	int learngraph_history_clears = -1;
 	MaxFlow<long> * learn_cut = nullptr;
-
+	//int current_decision_edge=-1;
 	//vec<Lit>  reach_lits;
 	Var first_reach_var;
 	vec<int> reach_lit_map;
@@ -97,7 +105,7 @@ public:
 	vec<MaxFlowEdge> tmp_cut;
 	vec<int> visit;
 	vec<bool> seen;
-
+	vec<bool> seen_path;
 
 
 	void backtrack(int level) {
@@ -126,6 +134,7 @@ public:
 			printf("\tDecision flow calculations: %ld\n", stats_decision_calculations);
 		
 	}
+	//Lit decideByPath(int level);
 	void dbg_decisions();
 	void printSolution(std::ostream & write_to);
 	void addFlowLit(Weight max_flow, Var reach_var, bool inclusive);

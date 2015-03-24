@@ -1291,6 +1291,49 @@ void MaxflowDetector<Weight>::dbg_decisions() {
 #endif
 }
 
+/*template<typename Weight>
+Lit MaxflowDetector<Weight>::decideByPath(int level){
+	//given an edgeID, decide any undecided edge contributing to its flow.
+	if(current_decision_edge<0)
+		return lit_Undef;
+	if (overapprox_conflict_detector->getEdgeFlow(current_decision_edge)<=0){
+		current_decision_edge=-1;
+	}
+	bool forward = (opt_maxflow_decision_paths==1);
+	//explore forward and backwards from this edge to find other edges with flow (in the over approx)
+	int lastDecisionEdge = -1;
+
+
+	if(lastDecisionEdge==-1){
+		int node = g_over.getEdge(current_decision_edge).from;
+		while(node!=(forward? target:source)){
+			for (int i = 0;i<g_over.nDirectedEdges(node,!forward);i++){
+				int edgeID = g_over.directedEdges(node,i,!forward).id;
+				if(g_over.edgeEnabled(edgeID)){
+					if(overapprox_conflict_detector->getEdgeFlow(edgeID)>0){
+						//if(!g_under.edgeEnabled(edgeID)){
+						if(outer->value(outer->getEdgeVar(edgeID))==l_Undef){
+							lastDecisionEdge=edgeID;//in the forward direction, decide the first encountered node, not the last.
+							node = forward? target:source;
+							break;
+						}
+						node = g_over.directedEdges(node,i,!forward).node;
+						break;
+					}
+				}
+			}
+		}
+	}
+	current_decision_edge=lastDecisionEdge;
+	if(lastDecisionEdge>-1){
+		Lit l = mkLit(outer->getEdgeVar(lastDecisionEdge), false);
+		decideEdge(lastDecisionEdge, level, true);
+		return l;
+	}
+	current_decision_edge=-1;
+	return lit_Undef;
+}*/
+
 template<typename Weight>
 Lit MaxflowDetector<Weight>::decide(int level) {
 	static int it = 0;
@@ -1302,6 +1345,18 @@ Lit MaxflowDetector<Weight>::decide(int level) {
 	auto * under = underapprox_conflict_detector;
 	
 	if (opt_lazy_maxflow_decisions) {
+
+		/*if(current_decision_edge>=0 && overapprox_conflict_detector->getEdgeFlow(current_decision_edge)>0){
+
+			Lit l = decideByPath(level);
+			if(l!=lit_Undef){
+				double post_time = rtime(2);
+				stats_decide_time += post_time - startdecidetime;
+				stats_redecide_time += post_time - startdecidetime;
+				return l;
+			}
+		}*/
+
 		collectChangedEdges();
 		
 #ifndef NDEBUG
@@ -1323,48 +1378,84 @@ Lit MaxflowDetector<Weight>::decide(int level) {
 #endif
 		
 		Lit decision = lit_Undef;
-		/*if(opt_maxflow_decisions_q==0){
-		 //should probably look into ordering heuristics for which edge to decide first, here...
-		 while(potential_decisions.size()>0){
-		 int edgeID = potential_decisions.last();
-		 assert(is_potential_decision[edgeID]);
 
-
-		 potential_decisions.pop();
-		 Lit l = mkLit(outer->getEdgeVar(edgeID),false);
-		 if(outer->value(l)==l_Undef && over->getEdgeFlow(edgeID)>0){
-		 decideEdge(edgeID,level,true);
-		 decision = l;
-		 break;
-		 }else if (outer->value(l)==l_True){
-		 if(over->getEdgeFlow(edgeID)>0)//this check is optional
-		 decideEdge(edgeID,level,true);
-		 else{
-		 is_potential_decision[edgeID]=false;
-		 }
-		 }else{
-		 assert(over->getEdgeFlow(edgeID)==0);
-		 is_potential_decision[edgeID]=false;
-		 //decideEdge(edgeID,level,false);
-		 }
-		 }
-		 }else{*/
-		//should probably look into ordering heuristics for which edge to decide first, here...
 		while (potential_decisions_q.size() > 0) {
 			int edgeID;
-			
+			bool path_decision=false;
 			if (opt_maxflow_decisions_q == 0) {
 				edgeID = potential_decisions_q.peekBack();
+				path_decision = potential_decisions_q.peekBack().path_decision;
 				potential_decisions_q.popBack();
 			} else {
 				edgeID = potential_decisions_q.peek();
+				path_decision = potential_decisions_q.peek().path_decision;
 				potential_decisions_q.pop();
 			}
 			assert(is_potential_decision[edgeID]);
 			Lit l = mkLit(outer->getEdgeVar(edgeID), false);
 			if (outer->value(l) == l_Undef && over->getEdgeFlow(edgeID) > 0) {
+				if(!path_decision && opt_maxflow_decision_paths>0){
+					seen_path.clear();
+					seen_path.growTo(g_over.nodes());
+					//current_decision_edge=edgeID;
+					int node = g_over.getEdge(edgeID).from;
+					seen_path[ g_over.getEdge(edgeID).from]=true;
+					seen_path[ g_over.getEdge(edgeID).to]=true;
+					bool forward = (opt_maxflow_decision_paths==1);
+					bool found_node=true;
+					while(found_node && node!=(forward ?  source:target )){
+						found_node=false;
+						for (int i = 0;i<g_over.nDirectedEdges(node,forward);i++){
+							int eID = g_over.directedEdges(node,i,forward).id;
+							int to =  g_over.directedEdges(node,i,forward).node;
+							if(!seen_path[to] && g_over.edgeEnabled(eID)){
+								if(overapprox_conflict_detector->getEdgeFlow(eID)>0){
+									seen_path[to]=true;
+									if(outer->value(outer->getEdgeVar(eID))==l_Undef){
+										if (opt_maxflow_decisions_q == 0) {
+											potential_decisions_q.insertBack({eID,true});
+										} else {
+											potential_decisions_q.insert({eID,true});
+										}
+									}
+									found_node=true;
+									node = to;
+									break;
+								}
+							}
+
+						}
+					}
+					found_node=true;
+					node = g_over.getEdge(edgeID).to;
+					while(found_node && node!=(forward? target:source)){
+						found_node=false;
+						for (int i = 0;i<g_over.nDirectedEdges(node,!forward);i++){
+							int eID = g_over.directedEdges(node,i,!forward).id;
+							int to = g_over.directedEdges(node,i,!forward).node;
+							if(!seen_path[to] && g_over.edgeEnabled(eID)){
+								if(overapprox_conflict_detector->getEdgeFlow(eID)>0){
+									seen_path[to]=true;
+									if(outer->value(outer->getEdgeVar(eID))==l_Undef){
+										if (opt_maxflow_decisions_q == 0) {
+											potential_decisions_q.insertBack({eID,true});
+										} else {
+											potential_decisions_q.insert({eID,true});
+										}
+									}
+									found_node=true;
+									node = to;
+									break;
+								}
+							}
+						}
+					}
+
+				}
+
 				decideEdge(edgeID, level, true);
 				decision = l;
+
 				break;
 			} else if (outer->value(l) == l_True) {
 				if (over->getEdgeFlow(edgeID) > 0) {			//this check is optional
