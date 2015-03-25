@@ -276,7 +276,7 @@ public:
 	void printSolution(std::ostream& write_to);
 
 	void addLit(int from, int to, Var reach_var);
-	Lit decide(int level);
+	Lit decide();
 	void preprocess();
 	void dbg_sync_reachability();
 

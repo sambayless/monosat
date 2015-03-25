@@ -484,7 +484,7 @@ bool AllPairsDetector<Weight>::checkSatisfied() {
 	return true;
 }
 template<typename Weight>
-Lit AllPairsDetector<Weight>::decide(int level) {
+Lit AllPairsDetector<Weight>::decide() {
 	
 	//AllPairs * over = (FloydWarshall<AllPairsDetector<Weight>::ReachStatus>*) negative_reach_detector;
 	

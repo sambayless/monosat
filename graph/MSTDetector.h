@@ -133,7 +133,7 @@ public:
 
 	void buildReason(Lit p, vec<Lit> & reason, CRef marker);
 	bool checkSatisfied();
-	Lit decide(int level);
+	Lit decide();
 	void addTreeEdgeLit(int edge_id, Var reach_var);
 	void addWeightLit(Var weight_var, Weight & min_weight, bool inclusive);
 	void printSolution(std::ostream & write_to);

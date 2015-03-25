@@ -1153,7 +1153,9 @@ void MaxflowDetector<Weight>::collectChangedEdges() {
 	//need to deal with changes to bv edge weights, also!
 	for (int j = changed_edges.size() - 1; j >= 0; j--) {
 		int edgeid = changed_edges[j];
-		
+		if(edgeid==6){
+			int a=1;
+		}
 		if (!is_potential_decision[edgeid]) {
 			Lit l = mkLit(outer->getEdgeVar(edgeid), false);
 			if (overapprox_conflict_detector->getEdgeFlow(edgeid) > 0) {
@@ -1335,7 +1337,7 @@ Lit MaxflowDetector<Weight>::decideByPath(int level){
 }*/
 
 template<typename Weight>
-Lit MaxflowDetector<Weight>::decide(int level) {
+Lit MaxflowDetector<Weight>::decide() {
 	static int it = 0;
 	if (++it == 59) {
 		int a = 1;
@@ -1363,9 +1365,6 @@ Lit MaxflowDetector<Weight>::decide(int level) {
 		{
 			bool found = false;
 			for (int edgeID = 0; edgeID < g_under.edges(); edgeID++) {
-				if (edgeID == 62) {
-					int a = 1;
-				}
 				if (g_under.edgeEnabled(edgeID)) {
 					bool hasFlow = over->getEdgeFlow(edgeID) > 0;
 					Lit l = mkLit(outer->getEdgeVar(edgeID));
@@ -1375,8 +1374,36 @@ Lit MaxflowDetector<Weight>::decide(int level) {
 				}
 			}
 		}
+		{
+			bool found = false;
+			for (int edgeID = 0; edgeID < g_over.edges(); edgeID++) {
+				if (g_over.edgeEnabled(edgeID) && outer->value(outer->getEdgeVar(edgeID))==l_Undef && overapprox_conflict_detector->getEdgeFlow(edgeID)>0) {
+
+					assert(is_potential_decision[edgeID]);
+					assert(potential_decisions_q.contains(edgeID));
+
+				}
+			}
+		}
 #endif
-		
+/*
+		{
+			bool found = false;
+			for (int edgeID = 0; edgeID < g_over.edges(); edgeID++) {
+				if (g_over.edgeEnabled(edgeID) && outer->value(outer->getEdgeVar(edgeID))==l_Undef && overapprox_conflict_detector->getEdgeFlow(edgeID)>0) {
+
+
+					if(!potential_decisions_q.contains(edgeID)){
+						exit(3);
+					}
+					if(!is_potential_decision[edgeID]){
+						exit(3);
+					}
+				}
+			}
+		}
+*/
+
 		Lit decision = lit_Undef;
 
 		while (potential_decisions_q.size() > 0) {
@@ -1390,6 +1417,9 @@ Lit MaxflowDetector<Weight>::decide(int level) {
 				edgeID = potential_decisions_q.peek();
 				path_decision = potential_decisions_q.peek().path_decision;
 				potential_decisions_q.pop();
+			}
+			if(edgeID==6){
+				int a=1;
 			}
 			assert(is_potential_decision[edgeID]);
 			Lit l = mkLit(outer->getEdgeVar(edgeID), false);
@@ -1453,13 +1483,13 @@ Lit MaxflowDetector<Weight>::decide(int level) {
 
 				}
 
-				decideEdge(edgeID, level, true);
+				decideEdge(edgeID, true);
 				decision = l;
 
 				break;
 			} else if (outer->value(l) == l_True) {
 				if (over->getEdgeFlow(edgeID) > 0) {			//this check is optional
-					decideEdge(edgeID, level, true);
+					decideEdge(edgeID, true);
 				} else {
 					is_potential_decision[edgeID] = false;
 				}

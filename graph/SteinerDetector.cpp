@@ -434,7 +434,7 @@ bool SteinerDetector<Weight>::checkSatisfied() {
 	return true;
 }
 template<typename Weight>
-Lit SteinerDetector<Weight>::decide(int level) {
+Lit SteinerDetector<Weight>::decide() {
 	
 	return lit_Undef;
 }

@@ -639,7 +639,7 @@ bool ConnectedComponentsDetector<Weight>::checkSatisfied() {
 	return true;
 }
 template<typename Weight>
-Lit ConnectedComponentsDetector<Weight>::decide(int level) {
+Lit ConnectedComponentsDetector<Weight>::decide() {
 	/*ConnectedComponentsDetector *r =this;
 	 MinimumSpanningTree<ConnectedComponentsDetector<Weight>::ConnectedComponentsStatus> * over = (MinimumSpanningTree<ConnectedComponentsDetector<Weight>::ConnectedComponentsStatus>*) r->negative_reach_detector;
 

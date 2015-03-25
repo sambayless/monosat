@@ -121,7 +121,7 @@ public:
 	void buildForcedEdgeReason(int reach_node, int forced_edge_id, vec<Lit> & conflict);
 	void buildReason(Lit p, vec<Lit> & reason, CRef marker);
 	bool checkSatisfied();
-	Lit decide(int level);
+	Lit decide();
 	void printStats() {
 		Detector::printStats();
 		if (mincutalg == MinCutAlg::ALG_KOHLI_TORR) {
@@ -148,15 +148,15 @@ public:
 		return "Max-flow Detector";
 	}
 	
-	void decideEdge(int edgeID, int outerLevel, bool assign = true) {
+	void decideEdge(int edgeID,  bool assign = true) {
 		assert(decisions.size() >= decisionLevel());
-		
-		newDecisionLevel(outerLevel);
+
+		newDecisionLevel(outer->decisionLevel()+1);
 		
 		Lit l = mkLit(outer->getEdgeVar(edgeID), !assign);
-		
-		//assert(!decisions.contains(l));
-		//assert(!decisions.contains(~l));
+
+		assert(!decisions.contains(l));
+		assert(!decisions.contains(~l));
 		
 		decisions.push(l);
 		
@@ -177,6 +177,9 @@ public:
 		//assert(!is_potential_decision[edgeID]);
 		assert(!potential_decisions.contains(edgeID));
 		assert(!potential_decisions_q.contains(edgeID));
+		if(edgeID==6){
+			int a =1;
+		}
 		//this check is optional, but if used, must use the _conflict_ detector (to match the decisions, which are also using the conflict detector).
 		if (overapprox_conflict_detector->getEdgeFlow(edgeID) > 0) {			//this check is optional
 			is_potential_decision[edgeID] = true;

@@ -939,7 +939,7 @@ public:
 		dbg_full_sync();
 		for (int i = 0; i < detectors.size(); i++) {
 			Detector * r = detectors[i];
-			Lit l = r->decide(decisionLevel());
+			Lit l = r->decide();
 			if (l != lit_Undef) {
 				stats_decisions++;
 				r->stats_decisions++;

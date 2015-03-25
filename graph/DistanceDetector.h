@@ -242,7 +242,7 @@ public:
 
 	void buildReason(Lit p, vec<Lit> & reason, CRef marker);
 	bool checkSatisfied();
-	Lit decide(int level);
+	Lit decide();
 	void updateShortestPaths(bool unweighted);
 	void addUnweightedShortestPathLit(int from, int to, Var reach_var, int within_steps = -1);
 	void addWeightedShortestPathLit(int from, int to, Var reach_var, Weight within_distance);
