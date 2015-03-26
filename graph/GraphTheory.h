@@ -339,7 +339,10 @@ public:
 			cutGraph.outfile = fopen(t, "w");
 		}
 #endif
-		
+		g_under.disable_history_clears=disable_history_clears;
+		g_over.disable_history_clears=disable_history_clears;
+		cutGraph.disable_history_clears=disable_history_clears;
+
 		if (opt_adaptive_history_clear > 0) {
 			g_under.adaptive_history_clear = true;
 			g_over.adaptive_history_clear = true;

@@ -131,6 +131,7 @@ MaxflowDetector<Weight>::MaxflowDetector(int _detectorID, GraphTheorySolver<Weig
 		learn_graph.historyClearInterval = opt_history_clear;
 	}
 	learn_graph.dynamic_history_clears=opt_dynamic_history_clear;
+	learn_graph.disable_history_clears=disable_history_clears;
 
 
 	if(learn_cut){
@@ -355,7 +356,7 @@ void MaxflowDetector<Weight>::buildMaxFlowTooLowReason(Weight maxflow, vec<Lit> 
 	if (force_maxflow || opt_conflict_min_cut_maxflow) {
 		Weight foundflow = overapprox_conflict_detector->maxFlow();
 		collectChangedEdges();
-		updateHistory();
+		collectDisabledEdges();
 #ifndef NDEBUG
 		for (auto & e : g_over.getEdges()) {
 			int from = e.from;
@@ -907,7 +908,7 @@ void MaxflowDetector<Weight>::printSolution(std::ostream & write_to) {
 }
 
 template<typename Weight>
-void MaxflowDetector<Weight>::updateHistory() {
+void MaxflowDetector<Weight>::collectDisabledEdges() {
 	if (opt_conflict_min_cut_maxflow) {
 		if (learn_graph.nodes() < g_under.nodes()) {
 			while (learn_graph.nodes() < g_under.nodes())
@@ -940,6 +941,7 @@ void MaxflowDetector<Weight>::updateHistory() {
 		
 		if (learngraph_history_clears != g_over.historyclears || g_over.changed()) {
 			//refresh
+			overapprox_conflict_detector->update();
 			for (int edgeid = 0; edgeid < g_over.edges(); edgeid++) {
 				if (edgeid == 34) {
 					int a = 1;
@@ -1135,11 +1137,13 @@ void MaxflowDetector<Weight>::collectChangedEdges() {
 					learn_graph.disableEdge(i);
 			}
 			learn_graph.invalidate();
-
+			learn_graph.clearHistory(true);
 		}
 	}
 	
 	std::vector<int> & changed_edges = overapprox_conflict_detector->getChangedEdges();
+
+
 	if (opt_rnd_order_graph_decisions) {
 		/*			static vec<int> tmp_changed;
 		 tmp_changed.clear();
@@ -1156,9 +1160,12 @@ void MaxflowDetector<Weight>::collectChangedEdges() {
 		if(edgeid==6){
 			int a=1;
 		}
+		static int iter = 0;
+		++iter;
 		if (!is_potential_decision[edgeid]) {
 			Lit l = mkLit(outer->getEdgeVar(edgeid), false);
 			if (overapprox_conflict_detector->getEdgeFlow(edgeid) > 0) {
+
 				is_potential_decision[edgeid] = true;
 				if (opt_maxflow_decisions_q == 0) {
 					potential_decisions_q.insertBack(edgeid);
@@ -1348,17 +1355,6 @@ Lit MaxflowDetector<Weight>::decide() {
 	
 	if (opt_lazy_maxflow_decisions) {
 
-		/*if(current_decision_edge>=0 && overapprox_conflict_detector->getEdgeFlow(current_decision_edge)>0){
-
-			Lit l = decideByPath(level);
-			if(l!=lit_Undef){
-				double post_time = rtime(2);
-				stats_decide_time += post_time - startdecidetime;
-				stats_redecide_time += post_time - startdecidetime;
-				return l;
-			}
-		}*/
-
 		collectChangedEdges();
 		
 #ifndef NDEBUG
@@ -1403,7 +1399,13 @@ Lit MaxflowDetector<Weight>::decide() {
 			}
 		}
 */
-
+/*		printf("DecisionQ %d:", it);
+		for(int i = 0;i<potential_decisions_q.size();i++){
+			int edgeID = potential_decisions_q[i];
+			printf("%d, ", edgeID);
+		}
+		printf("\n");
+		exit(5);*/
 		Lit decision = lit_Undef;
 
 		while (potential_decisions_q.size() > 0) {

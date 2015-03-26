@@ -114,7 +114,10 @@ public:
 		LevelDetector::backtrack(level);
 	}
 	void collectChangedEdges();
-	void updateHistory();
+	void collectDisabledEdges();
+	void updateHistory(){
+		collectDisabledEdges();
+	}
 	bool propagate(vec<Lit> & conflict);
 	void buildMaxFlowTooHighReason(Weight flow, vec<Lit> & conflict);
 	void buildMaxFlowTooLowReason(Weight flow, vec<Lit> & conflict, bool force_maxflow = false);

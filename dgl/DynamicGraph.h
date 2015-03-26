@@ -67,11 +67,13 @@ class DynamicGraph {
 	bool is_changed=false;
 	std::vector<DynamicGraphAlgorithm*> dynamic_algs;
 	std::vector<int> dynamic_history_pos;
-	int n_dynamic_algs_updtodate;
+
 	long history_offset=0;
 
 public:
-	bool dynamic_history_clears=false;
+	bool disable_history_clears=false;
+	int dynamic_history_clears=0;
+
 	bool adaptive_history_clear = false;
 	long historyClearInterval = 1000;
 	int modifications=0;
@@ -257,6 +259,7 @@ public:
 #endif
 //		history.push_back({true,id,modifications});
 		enableEdge(from, to, id);		//default to enabled
+		clearHistory(true);
 		return id;
 	}
 	int nEdgeIDs() {
@@ -530,7 +533,7 @@ public:
 	int addDynamicAlgorithm(DynamicGraphAlgorithm*alg){
 		dynamic_algs.push_back(alg);
 		dynamic_history_pos.push_back(0);
-		n_dynamic_algs_updtodate+= (historySize()==0);
+		//n_dynamic_algs_updtodate+= (historySize()==0);
 		return dynamic_algs.size()-1;
 	}
 
@@ -557,10 +560,13 @@ public:
 		return modifications;
 	}
 	
+
+
 	void clearHistory(bool forceClear = false) {
 		//long expect=std::max(1000,historyClearInterval*edges());
 		//check whether we can do a cheap history cleanup (without resetting all the dynamic algorithms)
-
+		if(disable_history_clears)
+			return;
 
 		if (history.size()
 				&& (forceClear
@@ -569,13 +575,15 @@ public:
 										std::max(1000L, historyClearInterval * edges()) : historyClearInterval)))))) {//){
 
 
-			if(dynamic_history_clears){
+			if(!forceClear && dynamic_history_clears>0){
 				int n_uptodate=0;
 				for(int algorithmID = 0;algorithmID<dynamic_algs.size();algorithmID++){
 					if (dynamic_history_pos[algorithmID]!=historySize()){
-						dynamic_algs[algorithmID]->updateHistory();
-						if (dynamic_history_pos[algorithmID]==historySize()){
-							n_uptodate++;
+						if(dynamic_history_clears==2){
+							dynamic_algs[algorithmID]->updateHistory();
+							if (dynamic_history_pos[algorithmID]==historySize()){
+								n_uptodate++;
+							}
 						}
 					}else{
 						n_uptodate++;

@@ -285,10 +285,14 @@ public:
 			edge_map.clear();
 			
 			for (int edgeID = 0; edgeID < g.edges(); edgeID++) {
-				
+				if(edgeID==386){
+					int a =1;
+				}
+
 				if (!g.hasEdge(edgeID) || g.selfLoop(edgeID))
 					continue;
-				
+
+
 				max_capacity += g.getWeight(edgeID);
 				int from = g.getEdge(edgeID).from;
 				int to = g.getEdge(edgeID).to;
@@ -619,6 +623,9 @@ private:
 	inline void calc_flow() {
 		if (!flow_needs_recalc)
 			return;
+		if(!kt){
+			update();
+		}
 		//double startflowtime = Monosat::rtime(0);
 		flow_needs_recalc = false;
 		stats_flow_calcs++;
