@@ -259,7 +259,7 @@ public:
 #endif
 //		history.push_back({true,id,modifications});
 		enableEdge(from, to, id);		//default to enabled
-		clearHistory(true);
+
 		return id;
 	}
 	int nEdgeIDs() {
