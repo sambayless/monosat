@@ -348,9 +348,14 @@ void Solver::cancelUntil(int lev) {
 	if (decisionLevel() > lev) {
 		for (int c = trail.size() - 1; c >= trail_lim[lev]; c--) {
 			Var x = var(trail[c]);
-			if(level(x)<=lev){
+			int xlev = level(x);
+
+			if(xlev<=lev){
 				to_reenqueue.push(trail[c]);
 			}else{
+				if(hasTheory(x)){
+					theories[getTheoryID(x)]->undecideTheory(getTheoryLit(trail[c]));
+				}
 				assigns[x] = l_Undef;
 				if (phase_saving > 1 || ((phase_saving == 1) && c > trail_lim.last()))
 					polarity[x] = sign(trail[c]);
@@ -381,7 +386,13 @@ void Solver::cancelUntil(int lev) {
 		}
 		theory_queue.clear();
 		for (int i = 0; i < theories.size(); i++) {
-			theories[i]->backtrackUntil(lev);
+			if(opt_lazy_backtrack  && theories[i]->supportsLazyBacktracking()){
+				theories[i]->backtrackLazy(lev);
+				//if we _are_ backtracking lazily, then the assumption is that the theory solver will, after backtracking, mostly re-assign the same literals.
+				//so instead, we will backtrack the theory lazily, in the future, if it encounters an apparent conflict (and this backtracking may alter or eliminate that conflict.)
+			}else{
+				theories[i]->backtrackUntil(lev);
+			}
 		}
 
 
@@ -1028,7 +1039,14 @@ CRef Solver::propagate(bool propagate_theories) {
 			theory_queue.pop();
 			in_theory_queue[theoryID] = false;
 			if (!theories[theoryID]->propagateTheory(theory_conflict)) {
-				if (!addConflictClause(theory_conflict, confl)) {
+				bool has_conflict=true;
+				if(opt_lazy_backtrack  && theories[theoryID]->supportsLazyBacktracking() && theories[theoryID]->rectifyAssignments()){
+					//if we were lazily backtracking, and theory propagation fails, then we need to backtrack the theory now, and this conflict might actually be false, or incorect.
+					theory_conflict.clear();
+					has_conflict = !theories[theoryID]->propagateTheory(theory_conflict);
+				}
+
+				if (has_conflict && !addConflictClause(theory_conflict, confl)) {
 					in_theory_queue[theoryID] = false;
 					qhead = trail.size();
 					return confl;

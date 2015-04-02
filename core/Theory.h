@@ -39,7 +39,7 @@ public:
 	;
 	virtual int getTheoryIndex()=0;
 	virtual void setTheoryIndex(int id)=0;
-	virtual void backtrackUntil(int level)=0;
+	virtual void backtrackUntil(int untilLevel)=0;
 	virtual void newDecisionLevel()=0;
 	virtual void enqueueTheory(Lit p)=0;
 	virtual bool propagateTheory(vec<Lit> & conflict)=0;
@@ -47,10 +47,27 @@ public:
 	virtual Lit decideTheory() {
 		return lit_Undef;
 	}
+	virtual void undecideTheory(Lit l){
+
+	}
 	//Lazily construct the reason clause explaining this propagation
 	virtual void buildReason(Lit p, vec<Lit> & reason, CRef reason_marker){
 		return buildReason(p,reason);
 	}
+	virtual bool supportsLazyBacktracking(){
+		return false;
+	}
+	virtual void backtrackLazy(int untilLevel){
+		//this is optional; only theories supporting lazy backtracking need to support this
+	}
+
+	//returns true is any changes were made during rectification
+	virtual bool rectifyAssignments(){
+		//this is optional; only theories supporting lazy backtracking need to support this
+		return false;
+	}
+
+
 protected:
 	virtual void buildReason(Lit p, vec<Lit> & reason){
 

@@ -125,6 +125,7 @@ IntOption Monosat::opt_adaptive_history_clear(_cat_graph, "adaptive-history-clea
 BoolOption Monosat::disable_history_clears(_cat_graph,"disable-history-clear","",false);
 IntOption Monosat::opt_dynamic_history_clear(_cat_graph, "dynamic-history-clear", "0=dont use dynamic history clears,1=use opportunistic dynamic history clears (falling back on normal history clears if that fails), 2=force dynamic history clears",0, IntRange(0, 2));
 
+BoolOption Monosat::opt_lazy_backtrack(_cat_graph, "lazy-backtrack", "", false);
 BoolOption Monosat::opt_check_solution(_cat_graph, "check-solution", "Double check solution", true);
 BoolOption Monosat::opt_print_reach(_cat_graph, "print-reach", "Print reachability graphs", false);
 BoolOption Monosat::opt_print_graph(_cat_graph, "print-graph", "Print digraph", false);

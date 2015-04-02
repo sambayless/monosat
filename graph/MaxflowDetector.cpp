@@ -1366,6 +1366,10 @@ Lit MaxflowDetector<Weight>::decide() {
 					Lit l = mkLit(outer->getEdgeVar(edgeID));
 					if (hasFlow) {
 						assert(is_potential_decision[edgeID] || decisions.contains(l));
+						if(!is_potential_decision[edgeID] && !decisions.contains(l)){
+							//printf("m1:it, decisions, edgeid: %d, %d, %d\n",it, stats_decisions,edgeID);
+							exit(4);
+						}
 					}
 				}
 			}
@@ -1377,35 +1381,19 @@ Lit MaxflowDetector<Weight>::decide() {
 
 					assert(is_potential_decision[edgeID]);
 					assert(potential_decisions_q.contains(edgeID));
-
+					if(!is_potential_decision[edgeID]){
+						//printf("m2a:it, decisions, edgeid: %d, %d, %d\n",it, stats_decisions,edgeID);
+						exit(4);
+					}
+					if (!potential_decisions_q.contains(edgeID)){
+						//printf("m2b:it, decisions, edgeid: %d, %d, %d\n",it, stats_decisions,edgeID);
+						exit(4);
+					}
 				}
 			}
 		}
 #endif
-/*
-		{
-			bool found = false;
-			for (int edgeID = 0; edgeID < g_over.edges(); edgeID++) {
-				if (g_over.edgeEnabled(edgeID) && outer->value(outer->getEdgeVar(edgeID))==l_Undef && overapprox_conflict_detector->getEdgeFlow(edgeID)>0) {
 
-
-					if(!potential_decisions_q.contains(edgeID)){
-						exit(3);
-					}
-					if(!is_potential_decision[edgeID]){
-						exit(3);
-					}
-				}
-			}
-		}
-*/
-/*		printf("DecisionQ %d:", it);
-		for(int i = 0;i<potential_decisions_q.size();i++){
-			int edgeID = potential_decisions_q[i];
-			printf("%d, ", edgeID);
-		}
-		printf("\n");
-		exit(5);*/
 		Lit decision = lit_Undef;
 
 		while (potential_decisions_q.size() > 0) {
@@ -1420,9 +1408,7 @@ Lit MaxflowDetector<Weight>::decide() {
 				path_decision = potential_decisions_q.peek().path_decision;
 				potential_decisions_q.pop();
 			}
-			if(edgeID==6){
-				int a=1;
-			}
+
 			assert(is_potential_decision[edgeID]);
 			Lit l = mkLit(outer->getEdgeVar(edgeID), false);
 			if (outer->value(l) == l_Undef && over->getEdgeFlow(edgeID) > 0) {

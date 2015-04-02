@@ -76,10 +76,13 @@ public:
 private:
 	Solver * S;
 	int local_q = 0;
+	bool lazy_backtracking_enabled=false;
 public:
 	int id;
 	bool all_edges_unit = true;
 	bool all_edges_positive=true;
+
+	int lazy_backtrack_level=-1;
 	vec<lbool> assigns;
 	MSTDetector<Weight> * mstDetector = nullptr;
 	struct ReachabilityConstraint {
@@ -235,6 +238,8 @@ public:
 */
 
 	bool requiresPropagation = true;
+	int decisions = 0;
+	vec<int> var_decision_pos;
 
 	vec<char> seen;
 	vec<int> to_visit;
@@ -279,6 +284,7 @@ public:
 	long stats_pure_skipped = 0;
 	long stats_mc_calls = 0;
 	long stats_propagations_skipped = 0;
+	long stats_lazy_decisions = 0;
 	vec<Lit> reach_cut;
 
 	struct CutStatus {
@@ -359,6 +365,9 @@ public:
 		g_over.dynamic_history_clears=opt_dynamic_history_clear;
 		cutGraph.dynamic_history_clears=opt_dynamic_history_clear;
 		
+
+
+
 		rnd_seed = opt_random_seed;
 
 	}
@@ -387,8 +396,8 @@ public:
 				g_under.skipped_historyclears, cutGraph.skipped_historyclears);
 		printf("Propagations: %ld (%f s, avg: %f s, %ld skipped)\n", stats_propagations, propagationtime,
 				(propagationtime) / ((double) stats_propagations + 1), stats_propagations_skipped);
-		printf("Decisions: %ld (%f s, avg: %f s)\n", stats_decisions, stats_decision_time,
-				(stats_decision_time) / ((double) stats_decisions + 1));
+		printf("Decisions: %ld (%f s, avg: %f s), lazy decisions: %ld\n", stats_decisions, stats_decision_time,
+				(stats_decision_time) / ((double) stats_decisions + 1), stats_lazy_decisions);
 		printf("Conflicts: %ld\n", stats_num_conflicts);
 		printf("Reasons: %ld (%f s, avg: %f s)\n", stats_num_reasons, stats_reason_time,
 				(stats_reason_time) / ((double) stats_num_reasons + 1));
@@ -523,6 +532,7 @@ public:
 		vars[v].detector_edge = bvID;
 		vars[v].solverVar = solverVar;
 		vars[v].theory_var=var_Undef;
+		var_decision_pos.growTo(vars.size(),-1);
 		assigns.push(l_Undef);
 
 		S->setTheoryVar(solverVar, getTheoryIndex(), v);
@@ -546,7 +556,7 @@ public:
 		vars[v].detector_edge = theoryID;
 		vars[v].solverVar = solverVar;
 		vars[v].theory_var=theoryVar;
-
+		var_decision_pos.growTo(vars.size(),-1);
 		assigns.push(l_Undef);
 		return v;
 	}
@@ -562,6 +572,7 @@ public:
 		vars[v].solverVar = solverVar;
 		vars[v].theory_var=var_Undef;
 		assigns.push(l_Undef);
+		var_decision_pos.growTo(vars.size(),-1);
 		if (connectToTheory) {
 			S->setTheoryVar(solverVar, getTheoryIndex(), v);
 			assert(toSolver(v) == solverVar);
@@ -600,15 +611,23 @@ public:
 	}
 	
 	inline lbool value(Var v) const{
-		if (assigns[v] != l_Undef)
-			assert(S->value(toSolver(v)) == assigns[v]);
-		
+
+#ifndef NDEBUG
+		if(!opt_lazy_backtrack){
+			if (assigns[v] != l_Undef)
+				assert(S->value(toSolver(v)) == assigns[v]);
+		}
+#endif
 		return assigns[v]; //S->value(toSolver(v));
 	}
 	inline lbool value(Lit l)const {
+#ifndef NDEBUG
 		if (assigns[var(l)] != l_Undef) {
-			assert(S->value(toSolver(l)) == (assigns[var(l)] ^ sign(l)));
+			if(!opt_lazy_backtrack){
+				assert(S->value(toSolver(l)) == (assigns[var(l)] ^ sign(l)));
+			}
 		}
+#endif
 		return assigns[var(l)] ^ sign(l);
 	}
 	inline lbool dbg_value(Var v) {
@@ -857,96 +876,253 @@ public:
 
 #endif
 	}
-	
-	void backtrackUntil(int level) {
+
+	void backtrackAssign(Assignment & e){
+		if (e.isEdge) {
+			int edge_num = getEdgeID(e.var); //e.var-min_edge_var;
+			assert(assigns[e.var]!=l_Undef);
+
+			if (e.assign) {
+				g_under.disableEdge(e.from, e.to, edge_num);
+
+				assert(!cutGraph.edgeEnabled(edge_num * 2));
+			} else {
+				g_over.enableEdge(e.from, e.to, edge_num);
+				assert(g_over.hasEdge(e.from, e.to));
+				if (opt_conflict_min_cut) {
+					assert(cutGraph.edgeEnabled(edge_num * 2));
+					cutGraph.disableEdge(e.from, e.to, edge_num * 2);
+					assert(!cutGraph.edgeEnabled(edge_num * 2 + 1));
+					cutGraph.enableEdge(e.from, e.to, edge_num * 2 + 1);
+				}
+			}
+			if(using_neg_weights){
+				if (e.assign) {
+					g_under_weights_over.disableEdge(e.from, e.to, edge_num);
+				} else {
+					g_over_weights_under.enableEdge(e.from, e.to, edge_num);
+				}
+			}
+		} else {
+			detectors[getDetector(e.var)]->unassign(mkLit(e.var, !e.assign));
+		}
+		assigns[e.var] = l_Undef;
+
+		int decision_pos = var_decision_pos[e.var];
+		assert(decision_pos<decisionLevel());
+		if(decision_pos>-1 && decision_pos <decisions){
+			decisions=decision_pos-1;
+			if(decisions<0){
+				decisions=0;
+			}
+		}
+		var_decision_pos[e.var]=-1;
+	}
+
+	vec<Lit> to_reenqueue;
+	void backtrackUntil(int untilLevel) {
 		static int it = 0;
-		
+		++it;
+
+		assert(to_reenqueue.size()==0);
 		bool changed = false;
 		//need to remove and add edges in the two graphs accordingly.
-		if (trail_lim.size() > level) {
-			
-			int stop = trail_lim[level];
-			for (int i = trail.size() - 1; i >= trail_lim[level]; i--) {
+		if (trail_lim.size() > untilLevel) {
+			int stop = trail_lim[untilLevel];
+			for (int i = trail.size() - 1; i >= trail_lim[untilLevel]; i--) {
 				
 				Assignment & e = trail[i];
 				assert(assigns[e.var]!=l_Undef);
-				if (e.isEdge) {
-					assert(dbg_value(e.var)==l_Undef);
-					int edge_num = getEdgeID(e.var); //e.var-min_edge_var;
-							
-					if (e.assign) {
-						g_under.disableEdge(e.from, e.to, edge_num);
-						assert(!cutGraph.edgeEnabled(edge_num * 2));
-					} else {
-						g_over.enableEdge(e.from, e.to, edge_num);
-						assert(g_over.hasEdge(e.from, e.to));
-						if (opt_conflict_min_cut) {
-							assert(cutGraph.edgeEnabled(edge_num * 2));
-							cutGraph.disableEdge(e.from, e.to, edge_num * 2);
-							assert(!cutGraph.edgeEnabled(edge_num * 2 + 1));
-							cutGraph.enableEdge(e.from, e.to, edge_num * 2 + 1);
-						}
+
+				if(S->level(toSolver(e.var))<=untilLevel){
+					if(value(e.var) != S->value(toSolver(e.var))){
+						changed=true;
 					}
-					if(using_neg_weights){
-						if (e.assign) {
-							g_under_weights_over.disableEdge(e.from, e.to, edge_num);
-						} else {
-							g_over_weights_under.enableEdge(e.from, e.to, edge_num);
-						}
-					}
-				} else {
-					//This is a reachability literal				  
-					detectors[getDetector(e.var)]->unassign(mkLit(e.var, !e.assign));
+					to_reenqueue.push(mkLit(e.var, S->value(toSolver(e.var))==l_False));//re-enqueue it with the SOLVERS assignment, not its assignment on the track, which may be wrong!;
+				}else{
+					backtrackAssign(e);
+					changed = true;
 				}
-				assigns[e.var] = l_Undef;
-				changed = true;
 			}
 			trail.shrink(trail.size() - stop);
-			trail_lim.shrink(trail_lim.size() - level);
-			assert(trail_lim.size() == level);
+			trail_lim.shrink(trail_lim.size() - untilLevel);
+			assert(trail_lim.size() == untilLevel);
 			
 			if (changed) {
 				requiresPropagation = true;
-				/*				g.markChanged();
-				 antig.markChanged();
-				 cutGraph.markChanged();*/
 			}
 			
 			for (Detector * d : detectors) {
-				d->backtrack(level);
+				d->backtrack(untilLevel);
 			}
 		}
-		for (int i = 0; i < theories.size(); i++) {
-			theories[i]->backtrackUntil(level);
-		}
-		/*		if(local_q>S->qhead)
-		 local_q=S->qhead;*/
-		assert(dbg_graphsUpToDate());
-		/*for(int i = 0;i<reach_detectors.size();i++){
-		 if(reach_detectors[i]->positive_reach_detector)
-		 reach_detectors[i]->positive_reach_detector->update();
-		 if(reach_detectors[i]->negative_reach_detector)
-		 reach_detectors[i]->negative_reach_detector->update();
-		 }*/
 
-		//dbg_sync();
+		while(to_reenqueue.size()){
+			Lit p = to_reenqueue.last();
+			to_reenqueue.pop();
+			assert(S->level(toSolver(var(p))) <=untilLevel);
+			enqueueTheory(p);
+		}
+
+		for (int i = 0; i < theories.size(); i++) {
+			theories[i]->backtrackUntil(untilLevel);
+		}
+
+		assert(dbg_graphsUpToDate());
+
 		
 	}
-	;
+
+
+	void backtrackUntil(Lit p) {
+		static int it=0;
+		++it;
+
+		//need to remove and add edges in the two graphs accordingly.
+		int untilLevel = level(var(p));
+		backtrackUntil(untilLevel);//required if opt_lazy_backtrack is being used; doesn't hurt if it isn't.
+		assert(to_reenqueue.size()==0);
+		int i = trail.size() - 1;
+		for (; i >= 0; i--) {
+			Assignment e = trail[i];
+			if (var(p) == e.var) {
+				assert(sign(p) != e.assign);
+				break;
+			}
+			if(S->level(toSolver(e.var))<untilLevel){//strict less than is intentional, here, as we will always backtrack past this level after backtrackUntil(p).
+				to_reenqueue.push(mkLit(e.var, S->value(toSolver(e.var))==l_False));
+			}else{
+				backtrackAssign(e);
+			}
+		}
+
+		trail.shrink(trail.size() - (i + 1));
+		//if(i>0){
+		requiresPropagation = true;
+
+
+		for (Detector * d : detectors) {
+			d->backtrack(this->decisionLevel());
+		}
+
+		while(to_reenqueue.size()){
+			//this is safe to combine with backtrackUntil(p), because only vars at strictly earlier levels are re_enqueued here.
+			Lit p = to_reenqueue.last();
+			to_reenqueue.pop();
+			assert(S->level(toSolver(var(p))) <untilLevel);
+			enqueueTheory(p);
+		}
+
+		for (int i = 0; i < theories.size(); i++) {
+			theories[i]->backtrackUntil(this->decisionLevel());
+		}
+
+	}
+
+	void undecideTheory(Lit l){
+
+		int decision_pos = var_decision_pos[var(l)];
+		assert(decision_pos<decisionLevel());
+		if(decision_pos>-1 && decision_pos <decisions){
+			decisions=decision_pos-1;
+			if(decisions<0){
+				decisions=0;
+			}
+		}
+
+		var_decision_pos[var(l)]=-1;
+//#ifndef NDEBUG
+				for(int i = 0;i<decisions;i++){
+					int p = trail_lim[i];
+					if(p<trail.size()){
+						Lit l = mkLit( trail[p].var, !trail[p].assign);
+						assert(S->value(toSolver(l))==l_True);
+						if(S->value(toSolver(l))!=l_True){
+							printf("p3: decisions, lazy: %d, %d\n", stats_decisions,stats_lazy_decisions);
+							exit(4);
+						}
+					}
+				}
+//#endif
+	}
 
 	Lit decideTheory() {
 		if (!opt_decide_theories)
 			return lit_Undef;
 		double start = rtime(1);
+		static int iter = 0;
+		iter++;
+
+		if(opt_lazy_backtrack && supportsLazyBacktracking()){
+			while(decisions<decisionLevel()){
+//#ifndef NDEBUG
+				for(int i = 0;i<decisions;i++){
+					int p = trail_lim[i];
+					if(p<trail.size()){
+						Lit l = mkLit( trail[p].var, !trail[p].assign);
+						assert(S->value(toSolver(l))==l_True);
+						if(S->value(toSolver(l))!=l_True){
+							printf("p1: it, decisions, lazy: %d, %d, %d\n",iter, stats_decisions,stats_lazy_decisions);
+							exit(4);
+						}
+					}
+				}
+//#endif
+				int trail_pos = trail_lim[decisions];
+				if(trail_pos>=trail.size()){
+					decisions=decisionLevel();
+					break;
+				}
+				Lit l = mkLit( trail[trail_pos].var, !trail[trail_pos].assign);
+				assert(value(l)==l_True);
+				if(var_decision_pos[var(l)]<0)
+					var_decision_pos[var(l)]=decisions;
+				else
+					assert(var_decision_pos[var(l)]<=decisions);
+				decisions++;
+				Lit solverLit = toSolver(l);
+				assert(S->value(solverLit)!=l_False);
+				if(S->value(solverLit)==l_Undef){
+					stats_lazy_decisions++;
+					stats_decisions++;
+					//printf("g: graph lazy decision %d: %d\n", iter, dimacs(l));
+					stats_decision_time += rtime(1) - start;
+					return solverLit;
+				}
+			}
+		}
+
+
+
 		
 		dbg_full_sync();
 		for (int i = 0; i < detectors.size(); i++) {
 			Detector * r = detectors[i];
 			Lit l = r->decide();
 			if (l != lit_Undef) {
+//#ifndef NDEBUG
+				for(int i = 0;i<decisions;i++){
+					int p = trail_lim[i];
+					if(p<trail.size()){
+						Lit l = mkLit( trail[p].var, !trail[p].assign);
+						assert(S->value(toSolver(l))==l_True);
+						if(S->value(toSolver(l))!=l_True){
+							printf("p2: it, decisions, lazy: %d, %d, %d\n",iter, stats_decisions,stats_lazy_decisions);
+							exit(4);
+						}
+					}
+				}
+//endif
+				if(var_decision_pos[var(l)]<0)
+					var_decision_pos[var(l)]=decisions;
+				else
+					assert(var_decision_pos[var(l)]<=decisions);
+				decisions++;
+
 				stats_decisions++;
 				r->stats_decisions++;
 				stats_decision_time += rtime(1) - start;
+				//printf("g: graph decision %d: %d\n", iter, dimacs(l));
 				return toSolver(l);
 			}
 		}
@@ -954,73 +1130,6 @@ public:
 		return lit_Undef;
 	}
 	
-	void backtrackUntil(Lit p) {
-		//need to remove and add edges in the two graphs accordingly.
-		
-		int i = trail.size() - 1;
-		for (; i >= 0; i--) {
-			Assignment e = trail[i];
-			if (var(p) == e.var) {
-					assert(sign(p) != e.assign);
-					break;
-				}
-			if (e.isEdge) {
-				int edge_num = getEdgeID(e.var); //e.var-min_edge_var;
-				assert(assigns[e.var]!=l_Undef);
-				assigns[e.var] = l_Undef;
-				if (e.assign) {
-					g_under.disableEdge(e.from, e.to, edge_num);
-					
-					assert(!cutGraph.edgeEnabled(edge_num * 2));
-				} else {
-					g_over.enableEdge(e.from, e.to, edge_num);
-					assert(g_over.hasEdge(e.from, e.to));
-					if (opt_conflict_min_cut) {
-						assert(cutGraph.edgeEnabled(edge_num * 2));
-						cutGraph.disableEdge(e.from, e.to, edge_num * 2);
-						assert(!cutGraph.edgeEnabled(edge_num * 2 + 1));
-						cutGraph.enableEdge(e.from, e.to, edge_num * 2 + 1);
-					}
-				}
-				if(using_neg_weights){
-					if (e.assign) {
-						g_under_weights_over.disableEdge(e.from, e.to, edge_num);
-					} else {
-						g_over_weights_under.enableEdge(e.from, e.to, edge_num);
-					}
-				}
-			} else {
-
-				assigns[e.var] = l_Undef;
-				detectors[getDetector(e.var)]->unassign(mkLit(e.var, !e.assign));
-			}
-		}
-		
-		trail.shrink(trail.size() - (i + 1));
-		//if(i>0){
-		requiresPropagation = true;
-		/*			g.markChanged();
-		 antig.markChanged();
-		 cutGraph.markChanged();*/
-		//}
-		for (Detector * d : detectors) {
-			d->backtrack(this->decisionLevel());
-		}
-
-		for (int i = 0; i < theories.size(); i++) {
-			theories[i]->backtrackUntil(this->decisionLevel());
-		}
-		//while(trail_lim.size() && trail_lim.last()>=trail.size())
-		//	trail_lim.pop();
-		//dbg_sync();
-		/*		for(int i = 0;i<reach_detectors.size();i++){
-		 if(reach_detectors[i]->positive_reach_detector)
-		 reach_detectors[i]->positive_reach_detector->update();
-		 if(reach_detectors[i]->negative_reach_detector)
-		 reach_detectors[i]->negative_reach_detector->update();
-		 }*/
-	}
-	;
 
 	void newDecisionLevel() {
 		trail_lim.push(trail.size());
@@ -1204,6 +1313,19 @@ public:
 		g_under.clearChanged();
 		g_over.clearChanged();
 		cutGraph.clearChanged();
+
+		if(opt_lazy_backtrack){
+			lazy_backtracking_enabled=true;
+			//currently, lazy backtracking is only supported if _all_ property lits are ground.
+			for (Detector * d:detectors){
+				if(d->unassigned_negatives >0 && d->unassigned_positives>0){
+					//at least one property lit of this detector is unassigned, so disable lazy_backtracking.
+					lazy_backtracking_enabled=false;
+					break;
+				}
+			}
+		}
+
 	}
 	void setLiteralOccurs(Lit l, bool occurs) {
 		if (isEdgeVar(var(l))) {
@@ -1248,16 +1370,53 @@ public:
 		Var v = var(l);
 		
 		int lev = level(v);
-		
-		assert(decisionLevel() <= lev);
-		
+		if(!opt_lazy_backtrack){
+			assert(decisionLevel() <= lev);
+		}
+
 		while (lev > trail_lim.size()) {
 			newDecisionLevel();
 		}
+		//if we are assigning lazily, then there are additional possibilities.
+		bool on_trail=false;
+		if (value(v)==S->value(toSolver(v))) {
+			return;			//this is already enqueued; can simply return.
+		}else if (opt_lazy_backtrack && value(v)!=l_Undef){
+			assert(value(v)!=S->value(toSolver(v)));
+			//this literal was already assigned, and then we backtracked _lazily_ without unassigning it in the theory solver.
+			//unassign it now, by itself.
+			bool assign = sign(l);//intentionally inverting this compared to what it normally would be, because l is currently assigned with the opposite polarity in the theory solver
+			assigns[v] = l_Undef;
+			on_trail=true;
+			if (isEdgeVar(v)) {
+				int edge_num = getEdgeID(v); //e.var-min_edge_var;
+				if (assign) {
+					g_under.disableEdge( edge_num);
+					assert(!cutGraph.edgeEnabled(edge_num * 2));
+				} else {
+					g_over.enableEdge(edge_num);
 
-		if (assigns[var(l)] != l_Undef) {
-			return;			//this is already enqueued.
+					if (opt_conflict_min_cut) {
+						assert(cutGraph.edgeEnabled(edge_num * 2));
+						cutGraph.disableEdge( edge_num * 2);
+						assert(!cutGraph.edgeEnabled(edge_num * 2 + 1));
+						cutGraph.enableEdge(edge_num * 2 + 1);
+					}
+				}
+				if(using_neg_weights){
+					if (assign) {
+						g_under_weights_over.disableEdge( edge_num);
+					} else {
+						g_over_weights_under.enableEdge( edge_num);
+					}
+				}
+
+			} else {
+				//This is a reachability literal
+				detectors[getDetector(v)]->unassign(l);
+			}
 		}
+
 		assert(assigns[var(l)]==l_Undef);
 		assigns[var(l)] = sign(l) ? l_False : l_True;
 
@@ -1266,7 +1425,7 @@ public:
 		//printf("enqueue %d\n", dimacs(l));
 		
 #ifndef NDEBUG
-		{
+		if(!opt_lazy_backtrack)	{
 			for (int i = 0; i < trail.size(); i++) {
 				assert(trail[i].var != v);
 			}
@@ -1300,21 +1459,18 @@ public:
 			
 			int from = edge_list[edge_num].from;
 			int to = edge_list[edge_num].to;
-			trail.push( { true, !sign(l), from, to, v });
-			
-			Assignment e = trail.last();
-			assert(e.from == from);
-			assert(e.to == to);
+			if(!on_trail)
+				trail.push( { true, !sign(l), from, to, v });
 			
 			if (!sign(l)) {
-				g_under.enableEdge(from, to, edge_num);
+				g_under.enableEdge(edge_num);
 			} else {
-				g_over.disableEdge(from, to, edge_num);
-				if (opt_conflict_min_cut) {
+				g_over.disableEdge( edge_num);
+				if (opt_conflict_min_cut) {//can optimize this by also checking if any installed detectors are actually using the cutgraph!
 					assert(cutGraph.edgeEnabled(edge_num * 2 + 1));
 					assert(!cutGraph.edgeEnabled(edge_num * 2));
-					cutGraph.enableEdge(e.from, e.to, edge_num * 2);
-					cutGraph.disableEdge(e.from, e.to, edge_num * 2 + 1);
+					cutGraph.enableEdge( edge_num * 2);
+					cutGraph.disableEdge( edge_num * 2 + 1);
 				}
 			}
 
@@ -1326,9 +1482,9 @@ public:
 
 			if(using_neg_weights){
 				if (!sign(l)) {
-					g_under_weights_over.enableEdge(from, to, edge_num);
+					g_under_weights_over.enableEdge(edge_num);
 				} else {
-					g_over_weights_under.disableEdge(from, to, edge_num);
+					g_over_weights_under.disableEdge(edge_num);
 				}
 				if(decisionLevel()==0){
 					assert(g_under_weights_over.edgeEnabled(edge_num)== g_over_weights_under.edgeEnabled(edge_num));
@@ -1337,8 +1493,8 @@ public:
 				}
 			}
 		} else {
-			
-			trail.push( { false, !sign(l), 0, 0, v });
+			if(!on_trail)
+				trail.push( { false, !sign(l), 0, 0, v });
 			//this is an assignment to a non-edge atom. (eg, a reachability assertion)
 			detectors[getDetector(var(l))]->assign(l);
 		}
@@ -1431,7 +1587,29 @@ public:
 		dbg_sync_reachability();
 		return true;
 	}
-	;
+
+	bool supportsLazyBacktracking(){
+		return lazy_backtracking_enabled;
+	}
+	void backtrackLazy(int untilLevel){
+		//this is optional; only theories supporting lazy backtracking need to support this
+	/*	if(lazy_backtrack_level<0 || lazy_backtrack_level>untilLevel){
+			lazy_backtrack_level=untilLevel;
+		}*/
+	}
+	bool rectifyAssignments(){
+		/*if(lazy_backtrack_level<0 || lazy_backtrack_level>=S->decisionLevel()){
+			return false;
+		}*/
+		bool changed=false;
+		if(S->decisionLevel()<decisionLevel()){
+			changed=true;
+			//backtrack the theory solver to the current theory level.
+			backtrackUntil(S->decisionLevel());
+		}
+		//lazy_backtrack_level=-1;
+		return changed;
+	}
 
 	bool solveTheory(vec<Lit> & conflict) {
 		requiresPropagation = true;		//Just to be on the safe side... but this shouldn't really be required.
