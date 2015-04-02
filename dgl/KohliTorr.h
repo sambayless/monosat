@@ -629,6 +629,7 @@ private:
 		//double startflowtime = Monosat::rtime(0);
 		flow_needs_recalc = false;
 		stats_flow_calcs++;
+
 		//apply edmonds karp to the current flow.
 		Weight maxflow = kt->maxflow(true, nullptr);
 		double startcalctime = Monosat::rtime(0);
@@ -779,12 +780,14 @@ public:
 		arc a;
 		//if(!backward_maxflow){
 		a = kt->get_arc(arc_id);
+
 		/*	}else{
 		 a= kt->get_reverse( kt->get_arc(arc_id));
 		 }*/
 		Weight start_cap = kt->get_ecap(a);
 		Weight end_cap = kt->get_rcap(a);
 		Weight remaining_flow = kt->get_ecap(a) - kt->get_rcap(a);
+
 		if (remaining_flow <= 0)
 			return 0;
 		for (int edgeid : multi_edges[flow_edge]) {

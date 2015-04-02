@@ -88,7 +88,7 @@
 #include <assert.h>
 #include <new>
 #include <algorithm>
-// NOTE: in UNIX you need to use -DNDEBUG preprocessor option to supress assert's!!!
+// NOTE: in UNIX you need to use -DNDEBUG preprocessor option to suppress assert's!!!
 
 namespace kohli_torr {
 
@@ -547,7 +547,6 @@ public:
 			edge->sister->might_have_flow = true;
 			changed_edges.push_back(edge - get_first_arc());
 			changed_edges.push_back(edge->sister - get_first_arc());
-			
 		}
 		assert(edge->might_have_flow);
 		assert(edge->sister->might_have_flow);
@@ -675,7 +674,7 @@ public:
 				}
 				assert(edge->e_cap - edge->r_cap >= f);
 				edge->r_cap += f; //remove this flow from this edge by adding it to its remaining capacity;
-				markFlowEdge(edge);
+				markFlowEdge(edge->sister);
 				assert(edge->sister->r_cap >= f);
 				edge->sister->r_cap -= f;
 				int u = edge->sister->head - nodes;
@@ -1048,7 +1047,6 @@ void Graph<captype, tcaptype, flowtype>::edit_tweights(node_id i, tcaptype cap_s
 		nodes[i].in_s_edges_set = 1;
 		s_edge_nodes.push_back(i);
 	}
-	
 }
 
 template<typename captype, typename tcaptype, typename flowtype>
@@ -1126,6 +1124,10 @@ void Graph<captype, tcaptype, flowtype>::edit_edge_inc(node_id from, node_id to,
 			a->r_cap += (cap - a->e_cap);
 			a_rev->r_cap += (rev_cap - a_rev->e_cap);
 		} else if (eflow > 0) {
+			markFlowEdge(a);//IMPORTANT: the capacity of this edge has changed (possibly enough to reduce the total flow, possibly not).
+			//REGARDLESS of whether this is a capacity increase or decrease, and regardless of whether there is now enough capacity for the flow on this edge, because this edge previously carried flow,
+			//the assignment of which DGL edge is assigned that flow may have changed. So the edge must be marked.
+
 			if (cap >= a->e_cap) {
 				if (eflow >= a->e_cap) {
 					mark_node(from);
@@ -1165,6 +1167,9 @@ void Graph<captype, tcaptype, flowtype>::edit_edge_inc(node_id from, node_id to,
 				}
 			}
 		} else {
+			markFlowEdge(a_rev);//IMPORTANT: the capacity of this edge has changed (possibly enough to reduce the total flow, possibly not).
+			//REGARDLESS of whether this is a capacity increase or decrease, and regardless of whether there is now enough capacity for the flow on this edge, because this edge previously carried flow,
+			//the assignment of which DGL edge is assigned that flow may have changed. So the edge must be marked.
 			eflow *= -1;
 			if (rev_cap >= a_rev->e_cap) {
 				if (eflow == a_rev->e_cap) {
@@ -1258,6 +1263,10 @@ void Graph<captype, tcaptype, flowtype>::edit_edge(node_id from, node_id to, cap
 			a->r_cap += (cap - a->e_cap);
 			a_rev->r_cap += (rev_cap - a_rev->e_cap);
 		} else if (eflow > 0) {
+			markFlowEdge(a);//IMPORTANT: the capacity of this edge has changed (possibly enough to reduce the total flow, possibly not).
+			//REGARDLESS of whether this is a capacity increase or decrease, and regardless of whether there is now enough capacity for the flow on this edge, because this edge previously carried flow,
+			//the assignment of which DGL edge is assigned that flow may have changed. So the edge must be marked.
+
 			if (cap >= a->e_cap) {
 				if (eflow >= a->e_cap) {
 					mark_node(from);
@@ -1296,6 +1305,10 @@ void Graph<captype, tcaptype, flowtype>::edit_edge(node_id from, node_id to, cap
 				}
 			}
 		} else {
+			markFlowEdge(a_rev);//IMPORTANT: the capacity of this edge has changed (possibly enough to reduce the total flow, possibly not).
+			//REGARDLESS of whether this is a capacity increase or decrease, and regardless of whether there is now enough capacity for the flow on this edge, because this edge previously carried flow,
+			//the assignment of which DGL edge is assigned that flow may have changed. So the edge must be marked.
+
 			eflow *= -1;
 			if (rev_cap >= a_rev->e_cap) {
 				if (eflow == a_rev->e_cap) {
@@ -1380,7 +1393,16 @@ void Graph<captype, tcaptype, flowtype>::edit_edge_wt(node_id from, node_id to, 
 		captype eflow, excess;
 		a_rev = a->sister;
 		eflow = a->e_cap - a->r_cap;
-		
+		if (eflow>0){
+			markFlowEdge(a);//IMPORTANT: the capacity of this edge has changed (possibly enough to reduce the total flow, possibly not).
+			//REGARDLESS of whether this is a capacity increase or decrease, and regardless of whether there is now enough capacity for the flow on this edge, because this edge previously carried flow,
+			//the assignment of which DGL edge is assigned that flow may have changed. So the edge must be marked.
+		}else if (eflow<0){
+			markFlowEdge(a_rev);//IMPORTANT: the capacity of this edge has changed (possibly enough to reduce the total flow, possibly not).
+			//REGARDLESS of whether this is a capacity increase or decrease, and regardless of whether there is now enough capacity for the flow on this edge, because this edge previously carried flow,
+			//the assignment of which DGL edge is assigned that flow may have changed. So the edge must be marked.
+
+		}
 		if ((eflow > 0 && eflow > cap) || (eflow < 0 && -eflow > rev_cap)) {
 			if (eflow > 0) {
 				excess = eflow - cap;
