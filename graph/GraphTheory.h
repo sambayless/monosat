@@ -923,7 +923,7 @@ public:
 	void backtrackUntil(int untilLevel) {
 		static int it = 0;
 		++it;
-
+		//printf("g%d: backtrack until level %d\n", this->id,untilLevel);
 		assert(to_reenqueue.size()==0);
 		bool changed = false;
 		//need to remove and add edges in the two graphs accordingly.
@@ -947,7 +947,7 @@ public:
 			trail.shrink(trail.size() - stop);
 			trail_lim.shrink(trail_lim.size() - untilLevel);
 			assert(trail_lim.size() == untilLevel);
-			
+
 			if (changed) {
 				requiresPropagation = true;
 			}
@@ -956,7 +956,10 @@ public:
 				d->backtrack(untilLevel);
 			}
 		}
-
+		if(decisions>decisionLevel()){
+			decisions=decisionLevel();
+		}
+		assert(decisions<=decisionLevel());
 		while(to_reenqueue.size()){
 			Lit p = to_reenqueue.last();
 			to_reenqueue.pop();
@@ -970,14 +973,13 @@ public:
 
 		assert(dbg_graphsUpToDate());
 
-		
 	}
 
 
 	void backtrackUntil(Lit p) {
 		static int it=0;
 		++it;
-
+		printf("g%d : backtrack until lit %d\n", this->id,dimacs(p));
 		//need to remove and add edges in the two graphs accordingly.
 		int untilLevel = level(var(p));
 		backtrackUntil(untilLevel);//required if opt_lazy_backtrack is being used; doesn't hurt if it isn't.
@@ -1000,7 +1002,7 @@ public:
 		//if(i>0){
 		requiresPropagation = true;
 
-
+		assert(decisions<=decisionLevel());
 		for (Detector * d : detectors) {
 			d->backtrack(this->decisionLevel());
 		}
@@ -1017,33 +1019,26 @@ public:
 			theories[i]->backtrackUntil(this->decisionLevel());
 		}
 
+
 	}
 
 	void undecideTheory(Lit l){
-
+		assert(value(l)==l_True);
 		int decision_pos = var_decision_pos[var(l)];
 		assert(decision_pos<decisionLevel());
-		if(decision_pos>-1 && decision_pos <decisions){
+		assert(trail_lim[decision_pos]==l );
+		//printf("g%d: undecide lit %d with decision_pos %d, decisions=%d, trail_lim_var=%d\n", this->id,dimacs(l), decision_pos, decisions,trail[trail_lim[decision_pos]].var+1);
+		if(decision_pos>-1 && decisions>=decision_pos){
 			decisions=decision_pos-1;
 			if(decisions<0){
 				decisions=0;
 			}
+			//printf("g%d: decision change undecide %d\n", this->id, decisions);
+
 		}
 
 		var_decision_pos[var(l)]=-1;
-//#ifndef NDEBUG
-				for(int i = 0;i<decisions;i++){
-					int p = trail_lim[i];
-					if(p<trail.size()){
-						Lit l = mkLit( trail[p].var, !trail[p].assign);
-						assert(S->value(toSolver(l))==l_True);
-						if(S->value(toSolver(l))!=l_True){
-							printf("p3: decisions, lazy: %d, %d\n", stats_decisions,stats_lazy_decisions);
-							exit(4);
-						}
-					}
-				}
-//#endif
+
 	}
 
 	Lit decideTheory() {
@@ -1053,8 +1048,12 @@ public:
 		static int iter = 0;
 		iter++;
 
+
 		if(opt_lazy_backtrack && supportsLazyBacktracking()){
+			assert(decisions<=decisionLevel());
+			//printf("g%d lazy dec start: decisionLevel %d, decisions %d\n", this->id, decisionLevel(),decisions);
 			while(decisions<decisionLevel()){
+/*
 //#ifndef NDEBUG
 				for(int i = 0;i<decisions;i++){
 					int p = trail_lim[i];
@@ -1062,20 +1061,23 @@ public:
 						Lit l = mkLit( trail[p].var, !trail[p].assign);
 						assert(S->value(toSolver(l))==l_True);
 						if(S->value(toSolver(l))!=l_True){
-							printf("p1: it, decisions, lazy: %d, %d, %d\n",iter, stats_decisions,stats_lazy_decisions);
+							printf("g%d p1: it, decisions,  lazy: %d, %d, %d, untrue lit is %d (current assign is %d),cur decision is %d, decisions %d, cur var trail pos for lit is %d\n", this->id,iter, stats_decisions,stats_lazy_decisions, dimacs(l), S->value(toSolver(l)),i, decisions,var_decision_pos[var(l)]);
 							exit(4);
 						}
 					}
 				}
 //#endif
+*/
 				int trail_pos = trail_lim[decisions];
 				if(trail_pos>=trail.size()){
 					decisions=decisionLevel();
+					//printf("g%d: decision set to decision level %d\n", this->id, decisions);
 					break;
 				}
+				assert(decisions<=decisionLevel());
 				Lit l = mkLit( trail[trail_pos].var, !trail[trail_pos].assign);
 				assert(value(l)==l_True);
-				if(var_decision_pos[var(l)]<0)
+				if(var_decision_pos[var(l)]<0 || decisions<var_decision_pos[var(l)])
 					var_decision_pos[var(l)]=decisions;
 				else
 					assert(var_decision_pos[var(l)]<=decisions);
@@ -1085,9 +1087,11 @@ public:
 				if(S->value(solverLit)==l_Undef){
 					stats_lazy_decisions++;
 					stats_decisions++;
-					//printf("g: graph lazy decision %d: %d\n", iter, dimacs(l));
+					//printf("g%d: graph lazy decision %d: %d, decision pos %d\n", this->id, iter, dimacs(l),var_decision_pos[var(l)]);
 					stats_decision_time += rtime(1) - start;
 					return solverLit;
+				}else{
+					//printf("g%d: graph lazy non-decision %d: %d, decision pos %d\n", this->id, iter, dimacs(l), var_decision_pos[var(l)]);
 				}
 			}
 		}
@@ -1100,6 +1104,7 @@ public:
 			Detector * r = detectors[i];
 			Lit l = r->decide();
 			if (l != lit_Undef) {
+/*
 //#ifndef NDEBUG
 				for(int i = 0;i<decisions;i++){
 					int p = trail_lim[i];
@@ -1107,12 +1112,13 @@ public:
 						Lit l = mkLit( trail[p].var, !trail[p].assign);
 						assert(S->value(toSolver(l))==l_True);
 						if(S->value(toSolver(l))!=l_True){
-							printf("p2: it, decisions, lazy: %d, %d, %d\n",iter, stats_decisions,stats_lazy_decisions);
+							printf("g%d, p2: it, decisions, lazy: %d, %d, %d\n", this->id,iter, stats_decisions,stats_lazy_decisions);
 							exit(4);
 						}
 					}
 				}
 //endif
+*/
 				if(var_decision_pos[var(l)]<0)
 					var_decision_pos[var(l)]=decisions;
 				else
@@ -1122,7 +1128,7 @@ public:
 				stats_decisions++;
 				r->stats_decisions++;
 				stats_decision_time += rtime(1) - start;
-				//printf("g: graph decision %d: %d\n", iter, dimacs(l));
+				//printf("g%d: graph decision %d: %d\n", this->id, iter, dimacs(l));
 				return toSolver(l);
 			}
 		}

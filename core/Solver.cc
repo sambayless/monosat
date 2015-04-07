@@ -346,6 +346,7 @@ bool Solver::satisfied(const Clause& c) const {
 //
 void Solver::cancelUntil(int lev) {
 	if (decisionLevel() > lev) {
+		//printf("s: cancel %d\n",lev);
 		for (int c = trail.size() - 1; c >= trail_lim[lev]; c--) {
 			Var x = var(trail[c]);
 			int xlev = level(x);
