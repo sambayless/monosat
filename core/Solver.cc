@@ -1826,6 +1826,7 @@ lbool Solver::solve_() {
 			model[i] = value(i);
 		
 		if (opt_check_solution && theories.size()) {
+			double check_start=rtime(1);
 			for(Theory * t:theories){
 			
 				if (!t->check_solved()) {
@@ -1834,6 +1835,7 @@ lbool Solver::solve_() {
 					exit(4);
 				}
 			}
+			stats_solution_checking_time+=rtime(1)-check_start;
 		}
 
 		

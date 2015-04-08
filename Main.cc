@@ -314,7 +314,7 @@ int main(int argc, char** argv) {
 		//Select which algorithms to apply for graph and geometric theory solvers, by parsing command line arguments and defaults.
 		selectAlgorithms();
 
-		double initial_time = cpuTime();
+		double initial_time = rtime(0);
 
 		// Use signal handlers that forcibly quit until the solver will be able to respond to
 		// interrupts:
@@ -616,6 +616,10 @@ int main(int argc, char** argv) {
 		}
 
 		double before_pre_processing = rtime(0);
+		double parsing_time = before_pre_processing - initial_time;
+		if (opt_verb > 0) {
+			printf("Parsing time = %f\n", parsing_time);
+		}
 		S.preprocess();//do this _even_ if sat based preprocessing is disabled! Some of the theory solvers depend on a preprocessing call being made!
 		printf("simplify:\n");
 		fflush(stdout);
@@ -623,11 +627,16 @@ int main(int argc, char** argv) {
 			S.eliminate(true);
 		fflush(stdout);
 		//exit(0);
-		double preprocessing_time = rtime(0) - before_pre_processing;
+		double after_preprocessing =  rtime(0);
+		double preprocessing_time =after_preprocessing - before_pre_processing;
 		if (opt_verb > 0 && pre) {
 			printf("Preprocessing time = %f\n", preprocessing_time);
 		}
 		lbool ret = S.solve(assume) ? l_True : l_False;
+		double solving_time = rtime(0) - after_preprocessing;
+		if (opt_verb > 0) {
+			printf("Solving time = %f\n", solving_time);
+		}
 
 		if (ret == l_True) {
 

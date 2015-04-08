@@ -243,6 +243,7 @@ public:
 
 	vec<char> seen;
 	vec<int> to_visit;
+
 	vec<Lit> tmp_clause;
 	//Data about local theory variables, and how they connect to the sat solver's variables
 	struct VarData {
@@ -268,6 +269,7 @@ public:
 	double propagationtime = 0;
 	long stats_propagations = 0;
 	long stats_num_conflicts = 0;
+	long stats_num_averted_lazy_conflicts=0;
 	long stats_decisions = 0;
 	long stats_num_reasons = 0;
 
@@ -398,7 +400,7 @@ public:
 				(propagationtime) / ((double) stats_propagations + 1), stats_propagations_skipped);
 		printf("Decisions: %ld (%f s, avg: %f s), lazy decisions: %ld\n", stats_decisions, stats_decision_time,
 				(stats_decision_time) / ((double) stats_decisions + 1), stats_lazy_decisions);
-		printf("Conflicts: %ld\n", stats_num_conflicts);
+		printf("Conflicts: %ld (lazy conflicts %d)\n", stats_num_conflicts,stats_num_averted_lazy_conflicts);
 		printf("Reasons: %ld (%f s, avg: %f s)\n", stats_num_reasons, stats_reason_time,
 				(stats_reason_time) / ((double) stats_num_reasons + 1));
 		
@@ -727,6 +729,25 @@ public:
 	}
 	void dbg_sync() {
 #ifndef NDEBUG
+
+		if(opt_lazy_backtrack){
+			for(int v = 0;v<vars.size();v++){
+				int decision_pos = var_decision_pos[v];
+				if (decision_pos>-1){
+					assert(value(v)!=l_Undef);
+					assert(trail[trail_lim[decision_pos]].var==v );
+					if(trail[trail_lim[decision_pos]].var!=v){
+						exit(4);
+					}
+					assert(decision_pos<=decisionLevel());
+					if(decision_pos>decisionLevel()){
+						exit(4);
+					}
+				}
+
+			}
+		}
+
 		if (opt_conflict_min_cut) {
 			for (int i = 0; i < edge_list.size(); i++) {
 				if (value(edge_list[i].v) == l_False) {
@@ -863,6 +884,25 @@ public:
 #endif
 	}
 	void dbg_full_sync() {
+#ifndef NDEBUG
+		if(opt_lazy_backtrack){
+			for(int v = 0;v<vars.size();v++){
+				int decision_pos = var_decision_pos[v];
+				if (decision_pos>-1){
+					assert(value(v)!=l_Undef);
+					assert(trail[trail_lim[decision_pos]].var==v );
+					if(trail[trail_lim[decision_pos]].var!=v){
+						exit(4);
+					}
+					assert(decision_pos<=decisionLevel());
+					if(decision_pos>decisionLevel()){
+						exit(4);
+					}
+				}
+
+			}
+		}
+#endif
 #ifdef DEBUG_GRAPH
 		dbg_sync();
 		for(int i =0;i<edge_list.size();i++) {
@@ -933,7 +973,8 @@ public:
 				
 				Assignment & e = trail[i];
 				assert(assigns[e.var]!=l_Undef);
-
+				if(opt_lazy_backtrack)
+					e.assign = (value(e.var)==l_True);//to correct for lazy backtrack changes
 				if(S->level(toSolver(e.var))<=untilLevel){
 					if(value(e.var) != S->value(toSolver(e.var))){
 						changed=true;
@@ -972,7 +1013,7 @@ public:
 		}
 
 		assert(dbg_graphsUpToDate());
-
+		dbg_sync();
 	}
 
 
@@ -986,9 +1027,11 @@ public:
 		assert(to_reenqueue.size()==0);
 		int i = trail.size() - 1;
 		for (; i >= 0; i--) {
-			Assignment e = trail[i];
+			Assignment & e = trail[i];
+			if(opt_lazy_backtrack)
+				e.assign = (value(e.var)==l_True);//to correct for lazy backtrack changes
 			if (var(p) == e.var) {
-				assert(sign(p) != e.assign);
+				assert(opt_lazy_backtrack ||( sign(p) != e.assign));
 				break;
 			}
 			if(S->level(toSolver(e.var))<untilLevel){//strict less than is intentional, here, as we will always backtrack past this level after backtrackUntil(p).
@@ -1025,10 +1068,14 @@ public:
 	void undecideTheory(Lit l){
 		assert(value(l)==l_True);
 		int decision_pos = var_decision_pos[var(l)];
-		assert(decision_pos<decisionLevel());
-		assert(trail_lim[decision_pos]==l );
+		assert(decision_pos<=decisionLevel());
+		if(decision_pos>decisionLevel()){
+			exit(4);
+		}
 		//printf("g%d: undecide lit %d with decision_pos %d, decisions=%d, trail_lim_var=%d\n", this->id,dimacs(l), decision_pos, decisions,trail[trail_lim[decision_pos]].var+1);
 		if(decision_pos>-1 && decisions>=decision_pos){
+
+			assert(trail[trail_lim[decision_pos]].var==var(l) );
 			decisions=decision_pos-1;
 			if(decisions<0){
 				decisions=0;
@@ -1047,8 +1094,7 @@ public:
 		double start = rtime(1);
 		static int iter = 0;
 		iter++;
-
-
+		dbg_full_sync();
 		if(opt_lazy_backtrack && supportsLazyBacktracking()){
 			assert(decisions<=decisionLevel());
 			//printf("g%d lazy dec start: decisionLevel %d, decisions %d\n", this->id, decisionLevel(),decisions);
@@ -1075,7 +1121,8 @@ public:
 					break;
 				}
 				assert(decisions<=decisionLevel());
-				Lit l = mkLit( trail[trail_pos].var, !trail[trail_pos].assign);
+				assert(value(trail[trail_pos].var)!=l_Undef);
+				Lit l = mkLit( trail[trail_pos].var, value(trail[trail_pos].var)==l_False);
 				assert(value(l)==l_True);
 				if(var_decision_pos[var(l)]<0 || decisions<var_decision_pos[var(l)])
 					var_decision_pos[var(l)]=decisions;
@@ -1099,7 +1146,7 @@ public:
 
 
 		
-		dbg_full_sync();
+
 		for (int i = 0; i < detectors.size(); i++) {
 			Detector * r = detectors[i];
 			Lit l = r->decide();
@@ -1119,12 +1166,12 @@ public:
 				}
 //endif
 */
-				if(var_decision_pos[var(l)]<0)
+			/*	if(var_decision_pos[var(l)]<0)
 					var_decision_pos[var(l)]=decisions;
 				else
 					assert(var_decision_pos[var(l)]<=decisions);
 				decisions++;
-
+*/
 				stats_decisions++;
 				r->stats_decisions++;
 				stats_decision_time += rtime(1) - start;
@@ -1374,7 +1421,9 @@ public:
 	}
 	void enqueueTheory(Lit l) {
 		Var v = var(l);
-		
+		if(v==29969){
+			int a=1;
+		}
 		int lev = level(v);
 		if(!opt_lazy_backtrack){
 			assert(decisionLevel() <= lev);
@@ -1386,6 +1435,18 @@ public:
 		//if we are assigning lazily, then there are additional possibilities.
 		bool on_trail=false;
 		if (value(v)==S->value(toSolver(v))) {
+
+			int decision_pos = var_decision_pos[v];
+			if(decision_pos>decisions){
+				var_decision_pos[v]=-1;
+			}else if(decision_pos>-1 && decision_pos <decisions && decision_pos!= level(v)){
+				if(decisions>=level(v))
+					decisions= level(v)-1;
+				if(decisions<0){
+					decisions=0;
+				}
+				var_decision_pos[v]=-1;
+			}
 			return;			//this is already enqueued; can simply return.
 		}else if (opt_lazy_backtrack && value(v)!=l_Undef){
 			assert(value(v)!=S->value(toSolver(v)));
@@ -1509,7 +1570,7 @@ public:
 
 	bool propagateTheory(vec<Lit> & conflict) {
 		static int itp = 0;
-		if (++itp == 5241) {
+		if (++itp == 584) {
 			int a = 1;
 		}
 
@@ -1525,6 +1586,21 @@ public:
 		if(comparator && !comparator->propagateTheory(conflict)){
 			return false;
 		}
+
+		if (opt_lazy_backtrack &&
+				!lazy_backtracking_enabled && decisionLevel()==0 ){
+			lazy_backtracking_enabled=true;
+			//currently, lazy backtracking is only supported if _all_ property lits are ground.
+			for (Detector * d:detectors){
+				if(d->unassigned_negatives >0 && d->unassigned_positives>0){
+					//at least one property lit of this detector is unassigned, so disable lazy_backtracking.
+					lazy_backtracking_enabled=false;
+					break;
+				}
+			}
+		}
+
+
 		dbg_sync();
 		//printf("graph prop %d\n",stats_propagations);
 		for(Theory * t:theories){
@@ -1564,6 +1640,55 @@ public:
 			assert(conflict.size() == 0);
 			bool r = detectors[d]->propagate(conflict);
 			if (!r) {
+
+				if(opt_lazy_backtrack){
+					//find the highest level lit in the conflict; if it is a higher level than the SAT solver, flip its assignment _in the theory solver_; propagate again.
+					//it might also be a good idea to add that assignment as a decision in the SAT solver.
+					//or, add the clause to the SAT solver, and simply unassign the lit in the theory solver.
+					//that might be a much cleaner option.
+					Lit unassigned_lit = lit_Undef;
+					int highest_level = 0;
+					assert(!seen.contains(true));
+					seen.growTo(vars.size());
+					int n_seen=0;
+					for (Lit l:conflict){
+						if(S->value(toSolver(l))!=value(l)){
+							seen[var(l)]=true;
+							unassigned_lit=l;
+							n_seen++;
+						}
+					}
+					if(unassigned_lit!=lit_Undef){
+						//backtrack until the highest (in the theory) solver unassigned lit is found? still add clause to sat solver?
+						int backtrack_pos = -1;
+						for(int i = trail.size()-1;i>=0;i--){
+							if(seen[ trail[i].var]){
+								backtrack_pos=i;
+
+								break;
+							}
+						}
+						for (Lit l:conflict){
+							seen[var(l)]=false;
+						}
+						assert(backtrack_pos>=0);
+
+						if (backtrack_pos > 0){
+							Var v = trail[backtrack_pos-1].var;
+							Lit l_before_highest = mkLit(v,value(v)==l_False);
+							backtrackUntil(l_before_highest);
+						}else{
+							backtrackUntil(0);
+						}
+						//the conflict should now be eliminated.
+						toSolver(conflict);
+						S->addClauseSafely(conflict);
+						stats_num_averted_lazy_conflicts++;
+						//restart the loop, as assignments have changed.
+						d=0;
+						continue;
+					}
+				}
 				stats_num_conflicts++;
 				toSolver(conflict);
 				propagationtime += rtime(1) - startproptime;

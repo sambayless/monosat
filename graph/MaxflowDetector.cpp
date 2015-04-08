@@ -559,6 +559,8 @@ void MaxflowDetector<Weight>::buildMaxFlowTooLowReason(Weight maxflow, vec<Lit> 
 	}
 	
 	if (!force_maxflow && opt_adaptive_conflict_mincut > 0 && (conflict.size() - 1 > opt_adaptive_conflict_mincut)) { //-1 to ignore the predicate's literal stored at position 0
+		double elapsed = rtime(2) - starttime;
+		stats_over_conflict_time += elapsed;
 		conflict.shrink(conflict.size() - 1);
 		assert(conflict.size() == 1);
 		buildMaxFlowTooLowReason(maxflow, conflict, true);
@@ -1269,12 +1271,12 @@ void MaxflowDetector<Weight>::dbg_decisions() {
 		int a = 1;
 	}
 	//printf("Potential Decisions %d: ",iter);
-	for (int edgeID = 0; edgeID < g_under.edges(); edgeID++) {
+	/*for (int edgeID = 0; edgeID < g_under.edges(); edgeID++) {
 		
 		if (is_potential_decision[edgeID]) {
-			/*if(potential_decisions.contains(edgeID) || potential_decisions_q.contains(edgeID)){
+			if(potential_decisions.contains(edgeID) || potential_decisions_q.contains(edgeID)){
 			 printf("%d ",edgeID);
-			 }*/
+			 }
 			Lit l = mkLit(outer->getEdgeVar(edgeID));
 			//assert(!decisions.contains(l));
 			//assert(!decisions.contains(~l));
@@ -1292,7 +1294,7 @@ void MaxflowDetector<Weight>::dbg_decisions() {
 		bassert(!potential_decisions.contains(edgeID));
 		bassert(!potential_decisions_q.contains(edgeID));
 		//printf("%d ",edgeID);
-	}
+	}*/
 	/*printf("\n");
 	 printf("Decisions %d: ",iter);
 
@@ -1357,6 +1359,7 @@ Lit MaxflowDetector<Weight>::decide() {
 
 		collectChangedEdges();
 		
+/*
 #ifndef NDEBUG
 		{
 			bool found = false;
@@ -1393,6 +1396,7 @@ Lit MaxflowDetector<Weight>::decide() {
 			}
 		}
 #endif
+*/
 
 		Lit decision = lit_Undef;
 

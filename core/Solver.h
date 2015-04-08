@@ -166,6 +166,9 @@ public:
 			printf("pure literals     : %ld (%ld theory lits) (%ld rounds, %f time)\n", stats_pure_lits,
 					stats_pure_theory_lits, pure_literal_detections, stats_pure_lit_time);
 		}
+		if(opt_check_solution){
+			printf("Solution double-checking time (disable with -no-check-solution): %f s\n",stats_solution_checking_time);
+		}
 		for (int i = 0; i < theories.size(); i++) {
 			theories[i]->printStats(detail_level);
 		}
@@ -456,6 +459,7 @@ public:
 
 	// Statistics: (read-only member variable)
 	//
+	double stats_solution_checking_time=0;
 	uint64_t solves, starts, decisions, rnd_decisions, propagations, conflicts, stats_pure_lits, stats_pure_theory_lits,
 			pure_literal_detections, stats_removed_clauses;
 	uint64_t dec_vars, clauses_literals, learnts_literals, max_literals, tot_literals;
