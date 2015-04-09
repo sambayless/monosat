@@ -164,10 +164,210 @@ public:
 
 
 
+	struct Trail{
+		//Lit l=lit_Undef;
+		int level = -1;
+		Var prev_var=var_Undef;
+		Var next_var=var_Undef;
+	};
+	vec<Trail> trail;//we can size this in advance, to the size of the variables;
+	vec<Var> decisions;//have the prev_var of the decision point to the end of the current level's trail, if any.
+	vec<Var> lazy_tail;//only used when lazy backtracking; this is the tail of the trail matching the SAT solver's trail.
+	Var getPrev(Var v){
+		int lev = trail[v].level;
+		if(lev>=0){
+			Var dec = decisions[lev];
+			if(dec==v){
+				//return getBack(lev-1);
+				return var_Undef;
+			}else{
+				return trail[v].prev_var;
+			}
+		}
+		return var_Undef;
+	}
+	Var inline _getPrev(Var v){
+		assert(trail[v].level>=0);
+		return trail[v].prev_var;
+	}
+	Var inline _getNext(Var v){
+		assert(trail[v].level>=0);
+		return trail[v].next_var;
+	}
+	Var getNext(Var v){
+		int lev = trail[v].level;
+		if(lev>=0){
+			Var dec = decisions[lev];
+			if(trail[v].next_var==dec){
+				//return getDecision(lev+1);
+				return var_Undef;
+			}else{
+				return trail[v].next_var;
+			}
 
+		}
+		return var_Undef;
+	}
+	Var getDecision(int lev){
+		if(lev>=0){
+			//there is no level 0 decision, but there is a level 0 head of the tail, which will operate the same way.
+			return decisions[lev];
+		}else{
+			return var_Undef;
+		}
+	}
+	Var getBack(int lev){
+		assert(lev>=0);
+		//if(lev>=0){
+		if(decisions[lev]==var_Undef){
+			return var_Undef;
+		}else{
+			return trail[decisions[lev]].prev_var;
+		}
+	/*	}else{
+			return var_Undef;
+		}*/
+	}
+	void insertIntoTrail(Lit l, Var insertAfter){
+		dbg_check_trails();
+		assert(insertAfter!=var_Undef);
+		Var v = var(l);
+		assert(trail[v].level==-1);
+		Var n = trail[insertAfter].next_var;
+		trail[insertAfter].next_var=v;
+		trail[n].prev_var=v;
+		trail[v].next_var=n;
+		trail[v].prev_var=insertAfter;
+		dbg_check_trails();
+	}
+	void appendToTrail(Lit l, int lev){
+		dbg_check_trails();
+		Var v = var(l);
+		assert(trail[v].level==-1);
+		while(lev>=decisions.size()){
+			decisions.push(var_Undef);
+		}
+		Var dec = decisions[lev];
+		if(dec==var_Undef){
+			decisions[lev]=v;
+			assert(trail[v].level==-1);
+			assert(trail[v].prev_var==var_Undef);
+			assert(trail[v].next_var==var_Undef);
+			trail[v].level=level;
+			trail[v].prev_var=v;
+			trail[v].next_var=v;//the decision is a self-loop
+		}else{
+			Var back = trail[dec].prev_var;
+			trail[back].next_var=v;
+			trail[dec].prev_var=v;
+			trail[v].next_var=dec;
+			trail[v].prev_var=back;
+		}
+		dbg_check_trails();
+	}
+	bool removeFromTrail(Var v){
+		dbg_check_trails();
+		int lev =trail[v].level;
+		if(lev>=0){
+			Var prev = trail[v].prev_var;
+			Var next = trail[v].next_var;
+			assert(prev!=var_Undef);
+			assert(next!=var_Undef);
+			trail[prev].next_var=next;
+			trail[next].prev_var=prev;
 
-	vec<Assignment> trail;
-	vec<int> trail_lim;
+			trail[v].next_var=var_Undef;
+			trail[v].prev_var=var_Undef;
+			trail[v].level=-1;
+
+			if(v== decisions[lev]){
+				if(next==v){
+					//v is the last element of this level
+					assert(prev==v);
+					decisions[lev]=var_Undef;
+					dbg_check_trails();
+					return true;
+				}else{
+					decisions[lev]=next;
+				}
+			}
+
+		}
+		dbg_check_trails();
+		return false;
+	}
+	//Returns true if the trail at this level is now empty.
+	inline bool _removeFromTrail(Var v, int lev){
+			assert(lev>=0);
+			Var prev = trail[v].prev_var;
+			Var next = trail[v].next_var;
+			assert(prev!=var_Undef);
+			assert(next!=var_Undef);
+			trail[prev].next_var=next;
+			trail[next].prev_var=prev;
+
+			trail[v].next_var=var_Undef;
+			trail[v].prev_var=var_Undef;
+			trail[v].level=-1;
+
+			if(v== decisions[lev]){
+				if(next==v){
+					//v is the last element of this level
+					assert(prev==v);
+					decisions[lev]=var_Undef;
+					dbg_check_trails();
+					return true;
+				}else{
+					decisions[lev]=next;
+				}
+			}
+			dbg_check_trails();
+			return false;
+		}
+	void dbg_check_trail(int lev){
+#ifndef NDEBUG
+		static vec<bool> seen;
+		seen.clear();
+		seen.growTo(vars.size());
+		Var decision = decisions[lev];
+		if(decision!=var_Undef){
+			seen[decision]=true;
+			assert(trail[decision].level==lev);
+			Var v = trail[decision].next_var;
+			if(v==decision){
+				assert(trail[v].prev_var==v);//this is a self loop.
+			}
+			Var p = decision;
+			while(v!=decision){
+				assert(!seen[v]);
+				seen[v]=true;
+				assert(trail[v].level==lev);
+				assert(trail[v].prev_var==p);
+				p=v;
+				v==trail[v].next_var;
+			}
+		}
+#endif
+	}
+
+	void dbg_check_trails(){
+#ifndef NDEBUG
+		for(int l = 0;l<decisions.size();l++){
+			dbg_check_trail(l);
+		}
+		for(int v = 0;v<nVars();v++){
+			int l = trail[v].level;
+			if(l>=0){
+				assert(l<decisions.size());
+				assert(decisions[l]!=var_Undef);
+			}
+		}
+#endif
+	}
+
+	//vec<Assignment> trail;
+	//vec<int> trail_lim;
+
 
 	struct ReachInfo {
 		int source;
@@ -238,7 +438,7 @@ public:
 */
 
 	bool requiresPropagation = true;
-	int decisions = 0;
+	int n_decisions = 0;
 	vec<int> var_decision_pos;
 
 	vec<char> seen;
@@ -587,7 +787,7 @@ public:
 		return S->level(toSolver(v));
 	}
 	inline int decisionLevel() {
-		return trail_lim.size(); //S->decisionLevel();
+		return decisions.size()-1; //S->decisionLevel();
 	}
 	inline int nVars() const {
 		return vars.size(); //S->nVars();
@@ -735,10 +935,11 @@ public:
 				int decision_pos = var_decision_pos[v];
 				if (decision_pos>-1){
 					assert(value(v)!=l_Undef);
-					assert(trail[trail_lim[decision_pos]].var==v );
+					assert(getDecision(decision_pos)==v);
+					/*assert(trail[trail_lim[decision_pos]].var==v );
 					if(trail[trail_lim[decision_pos]].var!=v){
 						exit(4);
-					}
+					}*/
 					assert(decision_pos<=decisionLevel());
 					if(decision_pos>decisionLevel()){
 						exit(4);
@@ -890,8 +1091,8 @@ public:
 				int decision_pos = var_decision_pos[v];
 				if (decision_pos>-1){
 					assert(value(v)!=l_Undef);
-					assert(trail[trail_lim[decision_pos]].var==v );
-					if(trail[trail_lim[decision_pos]].var!=v){
+					assert(getDecision(decision_pos)==v);
+					if(getDecision(decision_pos)!=v){
 						exit(4);
 					}
 					assert(decision_pos<=decisionLevel());
@@ -916,48 +1117,49 @@ public:
 
 #endif
 	}
+	void backtrackAssign(Lit l){
+		Var v = var(l);
+		assert(value(l)==l_True);
+		lbool assign = sign(l)?l_False:l_True;
+			if (isEdgeVar(v)) {
+				int edge_num = getEdgeID(v); //e.var-min_edge_var;
+				assert(assigns[v]!=l_Undef);
 
-	void backtrackAssign(Assignment & e){
-		if (e.isEdge) {
-			int edge_num = getEdgeID(e.var); //e.var-min_edge_var;
-			assert(assigns[e.var]!=l_Undef);
+				if (assign) {
+					g_under.disableEdge(edge_num);
 
-			if (e.assign) {
-				g_under.disableEdge(e.from, e.to, edge_num);
-
-				assert(!cutGraph.edgeEnabled(edge_num * 2));
-			} else {
-				g_over.enableEdge(e.from, e.to, edge_num);
-				assert(g_over.hasEdge(e.from, e.to));
-				if (opt_conflict_min_cut) {
-					assert(cutGraph.edgeEnabled(edge_num * 2));
-					cutGraph.disableEdge(e.from, e.to, edge_num * 2);
-					assert(!cutGraph.edgeEnabled(edge_num * 2 + 1));
-					cutGraph.enableEdge(e.from, e.to, edge_num * 2 + 1);
-				}
-			}
-			if(using_neg_weights){
-				if (e.assign) {
-					g_under_weights_over.disableEdge(e.from, e.to, edge_num);
+					assert(!cutGraph.edgeEnabled(edge_num * 2));
 				} else {
-					g_over_weights_under.enableEdge(e.from, e.to, edge_num);
+					g_over.enableEdge(edge_num);
+					if (opt_conflict_min_cut) {
+						assert(cutGraph.edgeEnabled(edge_num * 2));
+						cutGraph.disableEdge(edge_num * 2);
+						assert(!cutGraph.edgeEnabled(edge_num * 2 + 1));
+						cutGraph.enableEdge(edge_num * 2 + 1);
+					}
+				}
+				if(using_neg_weights){
+					if (assign) {
+						g_under_weights_over.disableEdge(edge_num);
+					} else {
+						g_over_weights_under.enableEdge(edge_num);
+					}
+				}
+			} else {
+				detectors[getDetector(v)]->unassign(mkLit(v, assign==l_False));
+			}
+			assigns[v] = l_Undef;
+
+			int decision_pos = var_decision_pos[v];
+			assert(decision_pos<decisionLevel());
+			if(decision_pos>-1 && decision_pos <n_decisions){
+				n_decisions=decision_pos-1;
+				if(n_decisions<0){
+					n_decisions=0;
 				}
 			}
-		} else {
-			detectors[getDetector(e.var)]->unassign(mkLit(e.var, !e.assign));
+			var_decision_pos[v]=-1;
 		}
-		assigns[e.var] = l_Undef;
-
-		int decision_pos = var_decision_pos[e.var];
-		assert(decision_pos<decisionLevel());
-		if(decision_pos>-1 && decision_pos <decisions){
-			decisions=decision_pos-1;
-			if(decisions<0){
-				decisions=0;
-			}
-		}
-		var_decision_pos[e.var]=-1;
-	}
 
 	vec<Lit> to_reenqueue;
 	void backtrackUntil(int untilLevel) {
@@ -966,41 +1168,51 @@ public:
 		//printf("g%d: backtrack until level %d\n", this->id,untilLevel);
 		assert(to_reenqueue.size()==0);
 		bool changed = false;
-		//need to remove and add edges in the two graphs accordingly.
-		if (trail_lim.size() > untilLevel) {
-			int stop = trail_lim[untilLevel];
-			for (int i = trail.size() - 1; i >= trail_lim[untilLevel]; i--) {
-				
-				Assignment & e = trail[i];
-				assert(assigns[e.var]!=l_Undef);
-				if(opt_lazy_backtrack)
-					e.assign = (value(e.var)==l_True);//to correct for lazy backtrack changes
-				if(S->level(toSolver(e.var))<=untilLevel){
-					if(value(e.var) != S->value(toSolver(e.var))){
-						changed=true;
+		if(decisionLevel()>untilLevel){
+		//as we backtrack, we need to remove and add edges in the two graphs accordingly.
+			while (decisionLevel() > untilLevel) {
+				//int stop = getDecision(untilLevel);
+				//Var decision = getDecision(decisionLevel());
+
+				Var v = getBack(decisionLevel());
+				//for (int i = trail.size() - 1; i >= trail_lim[untilLevel]; i--) {
+				while(true){
+					Lit l = mkLit(v, value(v)==l_False);
+					assert(assigns[v]!=l_Undef);
+
+					if(S->level(toSolver(v))<=untilLevel){
+						if(value(v) != S->value(toSolver(v))){
+							changed=true;
+						}
+						to_reenqueue.push(mkLit(v, S->value(toSolver(v))==l_False));//re-enqueue it with the SAT SOLVERS assignment, not its assignment on the trail, which may be wrong!;
+					}else{
+						backtrackAssign(l);
+						changed = true;
 					}
-					to_reenqueue.push(mkLit(e.var, S->value(toSolver(e.var))==l_False));//re-enqueue it with the SOLVERS assignment, not its assignment on the track, which may be wrong!;
-				}else{
-					backtrackAssign(e);
-					changed = true;
+					Var p = _getPrev(v);
+					if (_removeFromTrail(v,decisionLevel())){
+						break;
+					}
+					v=p;
 				}
+				decisions.pop();
 			}
-			trail.shrink(trail.size() - stop);
-			trail_lim.shrink(trail_lim.size() - untilLevel);
-			assert(trail_lim.size() == untilLevel);
+
+
+			assert(decisionLevel() == untilLevel);
 
 			if (changed) {
 				requiresPropagation = true;
 			}
-			
+
 			for (Detector * d : detectors) {
 				d->backtrack(untilLevel);
 			}
 		}
-		if(decisions>decisionLevel()){
-			decisions=decisionLevel();
+		if(n_decisions>decisionLevel()){
+			n_decisions=decisionLevel();
 		}
-		assert(decisions<=decisionLevel());
+		assert(n_decisions<=decisionLevel());
 		while(to_reenqueue.size()){
 			Lit p = to_reenqueue.last();
 			to_reenqueue.pop();
@@ -1023,29 +1235,30 @@ public:
 		printf("g%d : backtrack until lit %d\n", this->id,dimacs(p));
 		//need to remove and add edges in the two graphs accordingly.
 		int untilLevel = level(var(p));
-		backtrackUntil(untilLevel);//required if opt_lazy_backtrack is being used; doesn't hurt if it isn't.
+		backtrackUntil(untilLevel);//this is neccesary!
+		assert(trail[var(p)].level==decisionLevel());
 		assert(to_reenqueue.size()==0);
-		int i = trail.size() - 1;
-		for (; i >= 0; i--) {
-			Assignment & e = trail[i];
-			if(opt_lazy_backtrack)
-				e.assign = (value(e.var)==l_True);//to correct for lazy backtrack changes
-			if (var(p) == e.var) {
-				assert(opt_lazy_backtrack ||( sign(p) != e.assign));
-				break;
-			}
-			if(S->level(toSolver(e.var))<untilLevel){//strict less than is intentional, here, as we will always backtrack past this level after backtrackUntil(p).
-				to_reenqueue.push(mkLit(e.var, S->value(toSolver(e.var))==l_False));
-			}else{
-				backtrackAssign(e);
-			}
-		}
 
-		trail.shrink(trail.size() - (i + 1));
-		//if(i>0){
+		Var v = getBack(decisionLevel());
+		while(v!=var(p)){
+			Lit l = mkLit(v, value(v)==l_False);
+			assert(assigns[v]!=l_Undef);
+
+			if(S->level(toSolver(v))<untilLevel){//strict less than is intentional, here, as we will always backtrack past this level after backtrackUntil(p).
+				to_reenqueue.push(mkLit(v, S->value(toSolver(v))==l_False));//re-enqueue it with the SAT SOLVERS assignment, not its assignment on the trail, which may be wrong!;
+			}else{
+				backtrackAssign(l);
+			}
+			Var p = _getPrev(v);
+			if (_removeFromTrail(v,decisionLevel())){
+				assert(false);//shouldn't happen, because it means we some how missed p at this level!
+				exit(4);
+			}
+			v=p;
+		}
 		requiresPropagation = true;
 
-		assert(decisions<=decisionLevel());
+		assert(n_decisions<=decisionLevel());
 		for (Detector * d : detectors) {
 			d->backtrack(this->decisionLevel());
 		}
@@ -1072,15 +1285,15 @@ public:
 		if(decision_pos>decisionLevel()){
 			exit(4);
 		}
-		//printf("g%d: undecide lit %d with decision_pos %d, decisions=%d, trail_lim_var=%d\n", this->id,dimacs(l), decision_pos, decisions,trail[trail_lim[decision_pos]].var+1);
-		if(decision_pos>-1 && decisions>=decision_pos){
+		//printf("g%d: undecide lit %d with decision_pos %d, decisions=%d, trail_lim_var=%d\n", this->id,dimacs(l), decision_pos, n_decisions,trail[trail_lim[decision_pos]].var+1);
+		if(decision_pos>-1 && n_decisions>=decision_pos){
 
-			assert(trail[trail_lim[decision_pos]].var==var(l) );
-			decisions=decision_pos-1;
-			if(decisions<0){
-				decisions=0;
+			assert(getDecision(decision_pos)==var(l) );
+			n_decisions=decision_pos-1;
+			if(n_decisions<0){
+				n_decisions=0;
 			}
-			//printf("g%d: decision change undecide %d\n", this->id, decisions);
+			//printf("g%d: decision change undecide %d\n", this->id, n_decisions);
 
 		}
 
@@ -1096,39 +1309,39 @@ public:
 		iter++;
 		dbg_full_sync();
 		if(opt_lazy_backtrack && supportsLazyBacktracking()){
-			assert(decisions<=decisionLevel());
-			//printf("g%d lazy dec start: decisionLevel %d, decisions %d\n", this->id, decisionLevel(),decisions);
-			while(decisions<decisionLevel()){
+			assert(n_decisions<=decisionLevel());
+			//printf("g%d lazy dec start: decisionLevel %d, decisions %d\n", this->id, decisionLevel(),n_decisions);
+			while(n_decisions<decisionLevel()){
 /*
 //#ifndef NDEBUG
-				for(int i = 0;i<decisions;i++){
+				for(int i = 0;i<n_decisions;i++){
 					int p = trail_lim[i];
 					if(p<trail.size()){
 						Lit l = mkLit( trail[p].var, !trail[p].assign);
 						assert(S->value(toSolver(l))==l_True);
 						if(S->value(toSolver(l))!=l_True){
-							printf("g%d p1: it, decisions,  lazy: %d, %d, %d, untrue lit is %d (current assign is %d),cur decision is %d, decisions %d, cur var trail pos for lit is %d\n", this->id,iter, stats_decisions,stats_lazy_decisions, dimacs(l), S->value(toSolver(l)),i, decisions,var_decision_pos[var(l)]);
+							printf("g%d p1: it, n_decisions,  lazy: %d, %d, %d, untrue lit is %d (current assign is %d),cur decision is %d, decisions %d, cur var trail pos for lit is %d\n", this->id,iter, stats_decisions,stats_lazy_decisions, dimacs(l), S->value(toSolver(l)),i, n_decisions,var_decision_pos[var(l)]);
 							exit(4);
 						}
 					}
 				}
 //#endif
 */
-				int trail_pos = trail_lim[decisions];
+				int trail_pos = trail_lim[n_decisions];
 				if(trail_pos>=trail.size()){
-					decisions=decisionLevel();
-					//printf("g%d: decision set to decision level %d\n", this->id, decisions);
+					n_decisions=decisionLevel();
+					//printf("g%d: decision set to decision level %d\n", this->id, n_decisions);
 					break;
 				}
-				assert(decisions<=decisionLevel());
+				assert(n_decisions<=decisionLevel());
 				assert(value(trail[trail_pos].var)!=l_Undef);
 				Lit l = mkLit( trail[trail_pos].var, value(trail[trail_pos].var)==l_False);
 				assert(value(l)==l_True);
-				if(var_decision_pos[var(l)]<0 || decisions<var_decision_pos[var(l)])
-					var_decision_pos[var(l)]=decisions;
+				if(var_decision_pos[var(l)]<0 || n_decisions<var_decision_pos[var(l)])
+					var_decision_pos[var(l)]=n_decisions;
 				else
-					assert(var_decision_pos[var(l)]<=decisions);
-				decisions++;
+					assert(var_decision_pos[var(l)]<=n_decisions);
+				n_decisions++;
 				Lit solverLit = toSolver(l);
 				assert(S->value(solverLit)!=l_False);
 				if(S->value(solverLit)==l_Undef){
@@ -1153,7 +1366,7 @@ public:
 			if (l != lit_Undef) {
 /*
 //#ifndef NDEBUG
-				for(int i = 0;i<decisions;i++){
+				for(int i = 0;i<n_decisions;i++){
 					int p = trail_lim[i];
 					if(p<trail.size()){
 						Lit l = mkLit( trail[p].var, !trail[p].assign);
@@ -1167,10 +1380,10 @@ public:
 //endif
 */
 			/*	if(var_decision_pos[var(l)]<0)
-					var_decision_pos[var(l)]=decisions;
+					var_decision_pos[var(l)]=n_decisions;
 				else
-					assert(var_decision_pos[var(l)]<=decisions);
-				decisions++;
+					assert(var_decision_pos[var(l)]<=n_decisions);
+				n_decisions++;
 */
 				stats_decisions++;
 				r->stats_decisions++;
@@ -1185,7 +1398,8 @@ public:
 	
 
 	void newDecisionLevel() {
-		trail_lim.push(trail.size());
+		//trail_lim.push(trail.size());
+		decisions.push(var_Undef);
 	}
 	;
 
@@ -1421,15 +1635,12 @@ public:
 	}
 	void enqueueTheory(Lit l) {
 		Var v = var(l);
-		if(v==29969){
-			int a=1;
-		}
 		int lev = level(v);
 		if(!opt_lazy_backtrack){
 			assert(decisionLevel() <= lev);
 		}
 
-		while (lev > trail_lim.size()) {
+		while (lev > decisionLevel()) {
 			newDecisionLevel();
 		}
 		//if we are assigning lazily, then there are additional possibilities.
@@ -1437,13 +1648,13 @@ public:
 		if (value(v)==S->value(toSolver(v))) {
 
 			int decision_pos = var_decision_pos[v];
-			if(decision_pos>decisions){
+			if(decision_pos>n_decisions){
 				var_decision_pos[v]=-1;
-			}else if(decision_pos>-1 && decision_pos <decisions && decision_pos!= level(v)){
-				if(decisions>=level(v))
-					decisions= level(v)-1;
-				if(decisions<0){
-					decisions=0;
+			}else if(decision_pos>-1 && decision_pos <n_decisions && decision_pos!= level(v)){
+				if(n_decisions>=level(v))
+					n_decisions= level(v)-1;
+				if(n_decisions<0){
+					n_decisions=0;
 				}
 				var_decision_pos[v]=-1;
 			}
