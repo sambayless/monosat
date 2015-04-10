@@ -1108,9 +1108,7 @@ void MaxflowDetector<Weight>::collectDisabledEdges() {
 template<typename Weight>
 void MaxflowDetector<Weight>::collectChangedEdges() {
 	
-	if (is_potential_decision.size() < g_under.edges()) {
-		is_potential_decision.growTo(g_under.edges(), false);
-	}
+
 	dbg_decisions();
 	overapprox_conflict_detector->update();
 	

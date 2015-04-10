@@ -1316,7 +1316,7 @@ public:
 	void backtrackUntil(Lit p) {
 		static int it=0;
 		++it;
-		printf("g%d : backtrack until lit %d\n", this->id,dimacs(p));
+		//printf("g%d : backtrack until lit %d\n", this->id,dimacs(p));
 		//need to remove and add edges in the two graphs accordingly.
 		assert(onTrail(var(p))||onLazyTrail(var(p)));
 		Var v;
