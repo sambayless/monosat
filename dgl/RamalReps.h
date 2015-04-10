@@ -766,7 +766,7 @@ public:
 	
 	void dbg_delta() {
 #ifndef NDEBUG
-		g.drawFull();
+		//g.drawFull();
 		dbg_delta_lite();
 		assert(delta.size() == g.nodes());
 		

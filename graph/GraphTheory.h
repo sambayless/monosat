@@ -172,9 +172,10 @@ public:
 	};
 	vec<Trail> trail;//we can size this in advance, to the size of the variables;
 	vec<Var> decisions;//have the prev_var of the decision point to the end of the current level's trail, if any.
-	vec<Var> lazy_tail;//only used when lazy backtracking; this is the tail of the trail matching the SAT solver's trail.
+	Var lazy_trail_head = var_Undef;//only used when lazy backtracking; this is the tail of the trail matching the SAT solver's trail.
 	Var getPrev(Var v){
-		int lev = trail[v].level;
+		return trail[v].prev_var;
+		/*int lev = trail[v].level;
 		if(lev>=0){
 			Var dec = decisions[lev];
 			if(dec==v){
@@ -183,19 +184,22 @@ public:
 			}else{
 				return trail[v].prev_var;
 			}
+		}else if (lev==-2){
+
 		}
-		return var_Undef;
+		return var_Undef;*/
 	}
 	Var inline _getPrev(Var v){
-		assert(trail[v].level>=0);
+
 		return trail[v].prev_var;
 	}
 	Var inline _getNext(Var v){
-		assert(trail[v].level>=0);
+
 		return trail[v].next_var;
 	}
 	Var getNext(Var v){
-		int lev = trail[v].level;
+		return trail[v].next_var;
+	/*	int lev = trail[v].level;
 		if(lev>=0){
 			Var dec = decisions[lev];
 			if(trail[v].next_var==dec){
@@ -206,7 +210,7 @@ public:
 			}
 
 		}
-		return var_Undef;
+		return var_Undef;*/
 	}
 	Var getDecision(int lev){
 		if(lev>=0){
@@ -228,8 +232,72 @@ public:
 			return var_Undef;
 		}*/
 	}
+	bool onLazyTrail(Var v){
+		return trail[v].level==-2;
+	}
+	bool onTrail(Var v){
+		return trail[v].level!=-1;
+	}
+	//move a literal from the 'real' trail (which is in sync with the SAT solver) to the lazy trail (if lazy backtracking is enabled).
+	void prependToLazyTrail(Lit l){
+		//dbg_check_trails();
+		removeFromTrail(var(l));
+
+		Var v = var(l);
+		assert(trail[v].level==-1);
+
+		Var dec = lazy_trail_head;
+		if(dec==var_Undef){
+			lazy_trail_head=v;
+			assert(trail[v].level==-1);
+			assert(trail[v].prev_var==var_Undef);
+			assert(trail[v].next_var==var_Undef);
+			trail[v].level=-2;
+			trail[v].prev_var=v;
+			trail[v].next_var=v;//the decision is a self-loop
+		}else{
+			Var p = trail[dec].prev_var;
+			trail[dec].prev_var=v;
+			trail[v].next_var=dec;
+			trail[p].next_var=v;
+			trail[v].prev_var=p;
+			trail[v].level =-2;
+			lazy_trail_head=v;
+		}
+
+		//dbg_check_trails();
+	}
+
+	//move a literal from the 'real' trail (which is in sync with the SAT solver) to the lazy trail (if lazy backtracking is enabled).
+	void appendToLazyTrail(Lit l){
+		//dbg_check_trails();
+		removeFromTrail(var(l));
+
+		Var v = var(l);
+		assert(trail[v].level==-1);
+
+		Var dec = lazy_trail_head;
+		if(dec==var_Undef){
+			lazy_trail_head=v;
+			assert(trail[v].level==-1);
+			assert(trail[v].prev_var==var_Undef);
+			assert(trail[v].next_var==var_Undef);
+			trail[v].level=-2;
+			trail[v].prev_var=v;
+			trail[v].next_var=v;//the decision is a self-loop
+		}else{
+			Var back = trail[dec].prev_var;
+			trail[back].next_var=v;
+			trail[dec].prev_var=v;
+			trail[v].next_var=dec;
+			trail[v].prev_var=back;
+			trail[v].level =-2;
+		}
+		//dbg_check_trails();
+	}
+
 	void insertIntoTrail(Lit l, Var insertAfter){
-		dbg_check_trails();
+		//dbg_check_trails();
 		assert(insertAfter!=var_Undef);
 		Var v = var(l);
 		assert(trail[v].level==-1);
@@ -238,10 +306,11 @@ public:
 		trail[n].prev_var=v;
 		trail[v].next_var=n;
 		trail[v].prev_var=insertAfter;
-		dbg_check_trails();
+		trail[v].level =trail[insertAfter].level;
+		//dbg_check_trails();
 	}
 	void appendToTrail(Lit l, int lev){
-		dbg_check_trails();
+		//dbg_check_trails();
 		Var v = var(l);
 		assert(trail[v].level==-1);
 		while(lev>=decisions.size()){
@@ -253,22 +322,23 @@ public:
 			assert(trail[v].level==-1);
 			assert(trail[v].prev_var==var_Undef);
 			assert(trail[v].next_var==var_Undef);
-			trail[v].level=level;
+			trail[v].level=lev;
 			trail[v].prev_var=v;
 			trail[v].next_var=v;//the decision is a self-loop
 		}else{
 			Var back = trail[dec].prev_var;
+			trail[v].level =lev;
 			trail[back].next_var=v;
 			trail[dec].prev_var=v;
 			trail[v].next_var=dec;
 			trail[v].prev_var=back;
 		}
-		dbg_check_trails();
+		//dbg_check_trails();
 	}
 	bool removeFromTrail(Var v){
-		dbg_check_trails();
+		//dbg_check_trails();
 		int lev =trail[v].level;
-		if(lev>=0){
+		if(lev>=0 || lev==-2){
 			Var prev = trail[v].prev_var;
 			Var next = trail[v].next_var;
 			assert(prev!=var_Undef);
@@ -280,7 +350,7 @@ public:
 			trail[v].prev_var=var_Undef;
 			trail[v].level=-1;
 
-			if(v== decisions[lev]){
+			if(lev >=0 && v== decisions[lev]){
 				if(next==v){
 					//v is the last element of this level
 					assert(prev==v);
@@ -290,10 +360,20 @@ public:
 				}else{
 					decisions[lev]=next;
 				}
+			}else if (lev ==-2 && v== lazy_trail_head){
+				if(next==v){
+					//v is the last element of this level
+					assert(prev==v);
+					lazy_trail_head=var_Undef;
+					dbg_check_trails();
+					return true;
+				}else{
+					lazy_trail_head=next;
+				}
 			}
 
 		}
-		dbg_check_trails();
+		//dbg_check_trails();
 		return false;
 	}
 	//Returns true if the trail at this level is now empty.
@@ -321,37 +401,61 @@ public:
 					decisions[lev]=next;
 				}
 			}
-			dbg_check_trails();
+			//dbg_check_trails();
 			return false;
 		}
 	void dbg_check_trail(int lev){
 #ifndef NDEBUG
-		static vec<bool> seen;
+		/*static vec<bool> seen;
 		seen.clear();
 		seen.growTo(vars.size());
-		Var decision = decisions[lev];
-		if(decision!=var_Undef){
-			seen[decision]=true;
-			assert(trail[decision].level==lev);
-			Var v = trail[decision].next_var;
-			if(v==decision){
-				assert(trail[v].prev_var==v);//this is a self loop.
+		if(lev>=0){
+			Var decision = decisions[lev];
+			if(decision!=var_Undef){
+				seen[decision]=true;
+				assert(trail[decision].level==lev);
+				Var v = trail[decision].next_var;
+				if(v==decision){
+					assert(trail[v].prev_var==v);//this is a self loop.
+				}
+				Var p = decision;
+				while(v!=decision){
+					assert(!seen[v]);
+					seen[v]=true;
+					assert(trail[v].level==lev);
+					assert(trail[v].prev_var==p);
+					p=v;
+					v=trail[v].next_var;
+				}
 			}
-			Var p = decision;
-			while(v!=decision){
-				assert(!seen[v]);
-				seen[v]=true;
-				assert(trail[v].level==lev);
-				assert(trail[v].prev_var==p);
-				p=v;
-				v==trail[v].next_var;
+		}else if (lev==-2){
+
+			Var decision = lazy_trail_head;
+			if(decision!=var_Undef){
+				assert(opt_lazy_backtrack && supportsLazyBacktracking());
+				seen[decision]=true;
+				assert(trail[decision].level==lev);
+				Var v = trail[decision].next_var;
+				if(v==decision){
+					assert(trail[v].prev_var==v);//this is a self loop.
+				}
+				Var p = decision;
+				while(v!=decision){
+					assert(!seen[v]);
+					seen[v]=true;
+					assert(trail[v].level==lev);
+					assert(trail[v].prev_var==p);
+					p=v;
+					v=trail[v].next_var;
+				}
 			}
-		}
+		}*/
 #endif
 	}
 
 	void dbg_check_trails(){
 #ifndef NDEBUG
+		/*dbg_check_trail(-2);//lazy trail
 		for(int l = 0;l<decisions.size();l++){
 			dbg_check_trail(l);
 		}
@@ -360,8 +464,11 @@ public:
 			if(l>=0){
 				assert(l<decisions.size());
 				assert(decisions[l]!=var_Undef);
+			}else if (l==-2){
+				assert(opt_lazy_backtrack && supportsLazyBacktracking());
+				assert(lazy_trail_head!=var_Undef);
 			}
-		}
+		}*/
 #endif
 	}
 
@@ -438,8 +545,8 @@ public:
 */
 
 	bool requiresPropagation = true;
-	int n_decisions = 0;
-	vec<int> var_decision_pos;
+	//int n_decisions = 0;
+	//vec<int> var_decision_pos;
 
 	vec<char> seen;
 	vec<int> to_visit;
@@ -734,9 +841,8 @@ public:
 		vars[v].detector_edge = bvID;
 		vars[v].solverVar = solverVar;
 		vars[v].theory_var=var_Undef;
-		var_decision_pos.growTo(vars.size(),-1);
 		assigns.push(l_Undef);
-
+		trail.growTo(v+1);
 		S->setTheoryVar(solverVar, getTheoryIndex(), v);
 		assert(toSolver(v) == solverVar);
 
@@ -758,7 +864,7 @@ public:
 		vars[v].detector_edge = theoryID;
 		vars[v].solverVar = solverVar;
 		vars[v].theory_var=theoryVar;
-		var_decision_pos.growTo(vars.size(),-1);
+		trail.growTo(v+1);
 		assigns.push(l_Undef);
 		return v;
 	}
@@ -773,8 +879,9 @@ public:
 		vars[v].detector_edge = detector;
 		vars[v].solverVar = solverVar;
 		vars[v].theory_var=var_Undef;
+		trail.growTo(v+1);
 		assigns.push(l_Undef);
-		var_decision_pos.growTo(vars.size(),-1);
+
 		if (connectToTheory) {
 			S->setTheoryVar(solverVar, getTheoryIndex(), v);
 			assert(toSolver(v) == solverVar);
@@ -843,7 +950,7 @@ public:
 		
 		Lit sl = toSolver(l);
 		if (S->enqueue(sl, reason)) {
-			enqueueTheory(l);
+			enqueueTheory(l);//is this still needed?
 			return true;
 		} else {
 			return false;
@@ -929,25 +1036,7 @@ public:
 	}
 	void dbg_sync() {
 #ifndef NDEBUG
-
-		if(opt_lazy_backtrack){
-			for(int v = 0;v<vars.size();v++){
-				int decision_pos = var_decision_pos[v];
-				if (decision_pos>-1){
-					assert(value(v)!=l_Undef);
-					assert(getDecision(decision_pos)==v);
-					/*assert(trail[trail_lim[decision_pos]].var==v );
-					if(trail[trail_lim[decision_pos]].var!=v){
-						exit(4);
-					}*/
-					assert(decision_pos<=decisionLevel());
-					if(decision_pos>decisionLevel()){
-						exit(4);
-					}
-				}
-
-			}
-		}
+		dbg_check_trails();
 
 		if (opt_conflict_min_cut) {
 			for (int i = 0; i < edge_list.size(); i++) {
@@ -1085,25 +1174,7 @@ public:
 #endif
 	}
 	void dbg_full_sync() {
-#ifndef NDEBUG
-		if(opt_lazy_backtrack){
-			for(int v = 0;v<vars.size();v++){
-				int decision_pos = var_decision_pos[v];
-				if (decision_pos>-1){
-					assert(value(v)!=l_Undef);
-					assert(getDecision(decision_pos)==v);
-					if(getDecision(decision_pos)!=v){
-						exit(4);
-					}
-					assert(decision_pos<=decisionLevel());
-					if(decision_pos>decisionLevel()){
-						exit(4);
-					}
-				}
 
-			}
-		}
-#endif
 #ifdef DEBUG_GRAPH
 		dbg_sync();
 		for(int i =0;i<edge_list.size();i++) {
@@ -1125,7 +1196,7 @@ public:
 				int edge_num = getEdgeID(v); //e.var-min_edge_var;
 				assert(assigns[v]!=l_Undef);
 
-				if (assign) {
+				if (assign==l_True) {
 					g_under.disableEdge(edge_num);
 
 					assert(!cutGraph.edgeEnabled(edge_num * 2));
@@ -1139,7 +1210,7 @@ public:
 					}
 				}
 				if(using_neg_weights){
-					if (assign) {
+					if (assign==l_True) {
 						g_under_weights_over.disableEdge(edge_num);
 					} else {
 						g_over_weights_under.enableEdge(edge_num);
@@ -1149,25 +1220,40 @@ public:
 				detectors[getDetector(v)]->unassign(mkLit(v, assign==l_False));
 			}
 			assigns[v] = l_Undef;
-
-			int decision_pos = var_decision_pos[v];
-			assert(decision_pos<decisionLevel());
-			if(decision_pos>-1 && decision_pos <n_decisions){
-				n_decisions=decision_pos-1;
-				if(n_decisions<0){
-					n_decisions=0;
-				}
-			}
-			var_decision_pos[v]=-1;
 		}
 
-	vec<Lit> to_reenqueue;
+	//vec<Lit> to_reenqueue;
 	void backtrackUntil(int untilLevel) {
 		static int it = 0;
 		++it;
 		//printf("g%d: backtrack until level %d\n", this->id,untilLevel);
-		assert(to_reenqueue.size()==0);
+		//assert(to_reenqueue.size()==0);
 		bool changed = false;
+		//first, undo any assignments in the lazy trail
+		if(lazy_trail_head!=var_Undef){
+			requiresPropagation = true;
+			Var v = getPrev(lazy_trail_head);
+			while(true){
+				Lit l = mkLit(v, value(v)==l_False);
+				assert(assigns[v]!=l_Undef);
+
+	/*			if(S->level(toSolver(v))<=untilLevel){
+					if(value(v) != S->value(toSolver(v))){
+						changed=true;
+					}
+					to_reenqueue.push(mkLit(v, S->value(toSolver(v))==l_False));//re-enqueue it with the SAT SOLVERS assignment, not its assignment on the trail, which may be wrong!;
+				}else{*/
+					backtrackAssign(l);
+					changed = true;
+				//}
+				Var p = _getPrev(v);
+				if (removeFromTrail(v)){
+					break;
+				}
+				v=p;
+			}
+		}
+
 		if(decisionLevel()>untilLevel){
 		//as we backtrack, we need to remove and add edges in the two graphs accordingly.
 			while (decisionLevel() > untilLevel) {
@@ -1176,49 +1262,44 @@ public:
 
 				Var v = getBack(decisionLevel());
 				//for (int i = trail.size() - 1; i >= trail_lim[untilLevel]; i--) {
-				while(true){
+				while(v!=var_Undef){
 					Lit l = mkLit(v, value(v)==l_False);
 					assert(assigns[v]!=l_Undef);
 
-					if(S->level(toSolver(v))<=untilLevel){
+			/*		if(S->level(toSolver(v))<=untilLevel){
 						if(value(v) != S->value(toSolver(v))){
 							changed=true;
 						}
 						to_reenqueue.push(mkLit(v, S->value(toSolver(v))==l_False));//re-enqueue it with the SAT SOLVERS assignment, not its assignment on the trail, which may be wrong!;
-					}else{
+					}else{*/
 						backtrackAssign(l);
 						changed = true;
-					}
+					//}
 					Var p = _getPrev(v);
 					if (_removeFromTrail(v,decisionLevel())){
-						break;
+						p=var_Undef;
 					}
 					v=p;
 				}
 				decisions.pop();
 			}
 
-
 			assert(decisionLevel() == untilLevel);
-
-			if (changed) {
-				requiresPropagation = true;
-			}
 
 			for (Detector * d : detectors) {
 				d->backtrack(untilLevel);
 			}
 		}
-		if(n_decisions>decisionLevel()){
-			n_decisions=decisionLevel();
+
+		if (changed) {
+			requiresPropagation = true;
 		}
-		assert(n_decisions<=decisionLevel());
-		while(to_reenqueue.size()){
+/*		while(to_reenqueue.size()){
 			Lit p = to_reenqueue.last();
 			to_reenqueue.pop();
 			assert(S->level(toSolver(var(p))) <=untilLevel);
 			enqueueTheory(p);
-		}
+		}*/
 
 		for (int i = 0; i < theories.size(); i++) {
 			theories[i]->backtrackUntil(untilLevel);
@@ -1234,43 +1315,50 @@ public:
 		++it;
 		printf("g%d : backtrack until lit %d\n", this->id,dimacs(p));
 		//need to remove and add edges in the two graphs accordingly.
-		int untilLevel = level(var(p));
-		backtrackUntil(untilLevel);//this is neccesary!
-		assert(trail[var(p)].level==decisionLevel());
-		assert(to_reenqueue.size()==0);
+		assert(onTrail(var(p))||onLazyTrail(var(p)));
+		Var v;
+		if(!onLazyTrail(var(p))){
 
-		Var v = getBack(decisionLevel());
+			backtrackUntil(level(var(p)));//this is neccesary!
+			assert(trail[var(p)].level==decisionLevel());
+			v= getBack(decisionLevel());
+		}else{
+			assert(lazy_trail_head!=var_Undef);
+			v = getPrev(lazy_trail_head);
+		}
+
+		//assert(to_reenqueue.size()==0);
+
+
 		while(v!=var(p)){
 			Lit l = mkLit(v, value(v)==l_False);
 			assert(assigns[v]!=l_Undef);
 
-			if(S->level(toSolver(v))<untilLevel){//strict less than is intentional, here, as we will always backtrack past this level after backtrackUntil(p).
+		/*	if(S->level(toSolver(v))<decisionLevel()){//strict less than is intentional, here, as we will always backtrack past this level after backtrackUntil(p).
 				to_reenqueue.push(mkLit(v, S->value(toSolver(v))==l_False));//re-enqueue it with the SAT SOLVERS assignment, not its assignment on the trail, which may be wrong!;
-			}else{
+			}else{*/
 				backtrackAssign(l);
-			}
+			//}
 			Var p = _getPrev(v);
-			if (_removeFromTrail(v,decisionLevel())){
-				assert(false);//shouldn't happen, because it means we some how missed p at this level!
-				exit(4);
+			if (removeFromTrail(v)){
+				break;
 			}
 			v=p;
 		}
 		requiresPropagation = true;
 
-		assert(n_decisions<=decisionLevel());
 		for (Detector * d : detectors) {
 			d->backtrack(this->decisionLevel());
 		}
 
-		while(to_reenqueue.size()){
+	/*	while(to_reenqueue.size()){
 			//this is safe to combine with backtrackUntil(p), because only vars at strictly earlier levels are re_enqueued here.
 			Lit p = to_reenqueue.last();
 			to_reenqueue.pop();
-			assert(S->level(toSolver(var(p))) <untilLevel);
+			assert(S->level(toSolver(var(p))) <decisionLevel());
 			enqueueTheory(p);
 		}
-
+*/
 		for (int i = 0; i < theories.size(); i++) {
 			theories[i]->backtrackUntil(this->decisionLevel());
 		}
@@ -1280,25 +1368,8 @@ public:
 
 	void undecideTheory(Lit l){
 		assert(value(l)==l_True);
-		int decision_pos = var_decision_pos[var(l)];
-		assert(decision_pos<=decisionLevel());
-		if(decision_pos>decisionLevel()){
-			exit(4);
-		}
-		//printf("g%d: undecide lit %d with decision_pos %d, decisions=%d, trail_lim_var=%d\n", this->id,dimacs(l), decision_pos, n_decisions,trail[trail_lim[decision_pos]].var+1);
-		if(decision_pos>-1 && n_decisions>=decision_pos){
-
-			assert(getDecision(decision_pos)==var(l) );
-			n_decisions=decision_pos-1;
-			if(n_decisions<0){
-				n_decisions=0;
-			}
-			//printf("g%d: decision change undecide %d\n", this->id, n_decisions);
-
-		}
-
-		var_decision_pos[var(l)]=-1;
-
+		if(supportsLazyBacktracking())
+			prependToLazyTrail(l);
 	}
 
 	Lit decideTheory() {
@@ -1307,84 +1378,32 @@ public:
 		double start = rtime(1);
 		static int iter = 0;
 		iter++;
-		dbg_full_sync();
-		if(opt_lazy_backtrack && supportsLazyBacktracking()){
-			assert(n_decisions<=decisionLevel());
-			//printf("g%d lazy dec start: decisionLevel %d, decisions %d\n", this->id, decisionLevel(),n_decisions);
-			while(n_decisions<decisionLevel()){
-/*
-//#ifndef NDEBUG
-				for(int i = 0;i<n_decisions;i++){
-					int p = trail_lim[i];
-					if(p<trail.size()){
-						Lit l = mkLit( trail[p].var, !trail[p].assign);
-						assert(S->value(toSolver(l))==l_True);
-						if(S->value(toSolver(l))!=l_True){
-							printf("g%d p1: it, n_decisions,  lazy: %d, %d, %d, untrue lit is %d (current assign is %d),cur decision is %d, decisions %d, cur var trail pos for lit is %d\n", this->id,iter, stats_decisions,stats_lazy_decisions, dimacs(l), S->value(toSolver(l)),i, n_decisions,var_decision_pos[var(l)]);
-							exit(4);
-						}
-					}
-				}
-//#endif
-*/
-				int trail_pos = trail_lim[n_decisions];
-				if(trail_pos>=trail.size()){
-					n_decisions=decisionLevel();
-					//printf("g%d: decision set to decision level %d\n", this->id, n_decisions);
-					break;
-				}
-				assert(n_decisions<=decisionLevel());
-				assert(value(trail[trail_pos].var)!=l_Undef);
-				Lit l = mkLit( trail[trail_pos].var, value(trail[trail_pos].var)==l_False);
-				assert(value(l)==l_True);
-				if(var_decision_pos[var(l)]<0 || n_decisions<var_decision_pos[var(l)])
-					var_decision_pos[var(l)]=n_decisions;
-				else
-					assert(var_decision_pos[var(l)]<=n_decisions);
-				n_decisions++;
-				Lit solverLit = toSolver(l);
-				assert(S->value(solverLit)!=l_False);
-				if(S->value(solverLit)==l_Undef){
-					stats_lazy_decisions++;
-					stats_decisions++;
-					//printf("g%d: graph lazy decision %d: %d, decision pos %d\n", this->id, iter, dimacs(l),var_decision_pos[var(l)]);
-					stats_decision_time += rtime(1) - start;
-					return solverLit;
-				}else{
-					//printf("g%d: graph lazy non-decision %d: %d, decision pos %d\n", this->id, iter, dimacs(l), var_decision_pos[var(l)]);
-				}
-			}
+		if(iter==519){
+			int a=1;
 		}
 
+		dbg_full_sync();
+		if(opt_lazy_backtrack && supportsLazyBacktracking()){
+			//assert(n_decisions<=decisionLevel());
+			//printf("g%d lazy dec start: decisionLevel %d, decisions %d\n", this->id, decisionLevel(),n_decisions);
+			while(lazy_trail_head!=var_Undef){
+				assert(value(lazy_trail_head)!=l_Undef);
+				assert(S->value(toSolver(lazy_trail_head))==l_Undef);
+				Lit solverLit = toSolver(mkLit(lazy_trail_head, value(lazy_trail_head)==l_False));
 
+				stats_lazy_decisions++;
+				stats_decisions++;
+				//printf("g%d: graph lazy decision %d: %d, decision pos %d\n", this->id, iter, dimacs(l),var_decision_pos[var(l)]);
+				stats_decision_time += rtime(1) - start;
+				return solverLit;
 
-		
+			}
+		}
 
 		for (int i = 0; i < detectors.size(); i++) {
 			Detector * r = detectors[i];
 			Lit l = r->decide();
 			if (l != lit_Undef) {
-/*
-//#ifndef NDEBUG
-				for(int i = 0;i<n_decisions;i++){
-					int p = trail_lim[i];
-					if(p<trail.size()){
-						Lit l = mkLit( trail[p].var, !trail[p].assign);
-						assert(S->value(toSolver(l))==l_True);
-						if(S->value(toSolver(l))!=l_True){
-							printf("g%d, p2: it, decisions, lazy: %d, %d, %d\n", this->id,iter, stats_decisions,stats_lazy_decisions);
-							exit(4);
-						}
-					}
-				}
-//endif
-*/
-			/*	if(var_decision_pos[var(l)]<0)
-					var_decision_pos[var(l)]=n_decisions;
-				else
-					assert(var_decision_pos[var(l)]<=n_decisions);
-				n_decisions++;
-*/
 				stats_decisions++;
 				r->stats_decisions++;
 				stats_decision_time += rtime(1) - start;
@@ -1401,7 +1420,7 @@ public:
 		//trail_lim.push(trail.size());
 		decisions.push(var_Undef);
 	}
-	;
+
 
 	void buildBVReason(int bvID, Comparison comp, Weight compareTo, vec<Lit> &reason){
 		static int iter = 0;
@@ -1412,42 +1431,6 @@ public:
 		Lit c = getBV_COMP(bvID,-comp,compareTo);
 		assert(dbg_value(c)==l_False);
 		reason.push(c);
-		/*switch(comp){
-			case Comparison::lt:{
-				assert(bv.getOver()<compareTo);
-				Lit c = getBV_LT(bvID,compareTo);
-				reason.push(c);
-			}
-			break;
-			case Comparison::leq:{
-				assert(bv.getOver()<=compareTo);
-				Lit c = ~getBV_GT(bvID,compareTo);
-				reason.push(c);
-				}
-				break;
-			case Comparison::gt:{
-				assert(bv.getUnder()>compareTo);
-				Lit c = getBV_GT(bvID,compareTo);
-				reason.push(c);
-				}
-				break;
-			case Comparison::geq:{
-				assert(bv.getUnder()>=compareTo);
-				Lit c = getBV_GEQ(bvID,compareTo);
-				reason.push(c);
-				}
-				break;
-		}*/
-/*
-		if(strictComparison){
-			leq= outer->getEdgeWeightGT(edgeID,w);
-		}else{
-			leq= ~outer->getEdgeWeightLEQ(edgeID,w);
-		}
-		lbool val = outer->dbg_value(leq);
-		assert(val!=l_True);
-		conflict.push(leq);*/
-
 	}
 
 	void buildReason(Lit p, vec<Lit> & reason,CRef marker) {
@@ -1635,7 +1618,10 @@ public:
 	}
 	void enqueueTheory(Lit l) {
 		Var v = var(l);
-		int lev = level(v);
+		if(v==612){
+			int a=1;
+		}
+		int lev = level(v);//level from the SAT solver.
 		if(!opt_lazy_backtrack){
 			assert(decisionLevel() <= lev);
 		}
@@ -1643,29 +1629,23 @@ public:
 		while (lev > decisionLevel()) {
 			newDecisionLevel();
 		}
-		//if we are assigning lazily, then there are additional possibilities.
-		bool on_trail=false;
-		if (value(v)==S->value(toSolver(v))) {
 
-			int decision_pos = var_decision_pos[v];
-			if(decision_pos>n_decisions){
-				var_decision_pos[v]=-1;
-			}else if(decision_pos>-1 && decision_pos <n_decisions && decision_pos!= level(v)){
-				if(n_decisions>=level(v))
-					n_decisions= level(v)-1;
-				if(n_decisions<0){
-					n_decisions=0;
-				}
-				var_decision_pos[v]=-1;
-			}
-			return;			//this is already enqueued; can simply return.
+		//if we are assigning lazily, then there are additional possibilities.
+		//bool on_trail=false;
+		if (value(v)==S->value(toSolver(v))) {
+			//this is already enqueued.
+			//place it into the correct place on the trail
+			removeFromTrail(var(l));
+			appendToTrail(l,decisionLevel());
+			return;
 		}else if (opt_lazy_backtrack && value(v)!=l_Undef){
+
 			assert(value(v)!=S->value(toSolver(v)));
 			//this literal was already assigned, and then we backtracked _lazily_ without unassigning it in the theory solver.
 			//unassign it now, by itself.
 			bool assign = sign(l);//intentionally inverting this compared to what it normally would be, because l is currently assigned with the opposite polarity in the theory solver
 			assigns[v] = l_Undef;
-			on_trail=true;
+			//on_trail=true;
 			if (isEdgeVar(v)) {
 				int edge_num = getEdgeID(v); //e.var-min_edge_var;
 				if (assign) {
@@ -1693,22 +1673,18 @@ public:
 				//This is a reachability literal
 				detectors[getDetector(v)]->unassign(l);
 			}
+			removeFromTrail(var(l));
 		}
+		assert(!onTrail(var(l)));
 
 		assert(assigns[var(l)]==l_Undef);
 		assigns[var(l)] = sign(l) ? l_False : l_True;
-
+		appendToTrail(l,decisionLevel());
 		requiresPropagation = true;
 
-		//printf("enqueue %d\n", dimacs(l));
-		
-#ifndef NDEBUG
-		if(!opt_lazy_backtrack)	{
-			for (int i = 0; i < trail.size(); i++) {
-				assert(trail[i].var != v);
-			}
-		}
-#endif
+
+		assert(onTrail(var(l)));
+
 
 #ifdef RECORD
 		if (g_under.outfile) {
@@ -1737,9 +1713,7 @@ public:
 			
 			int from = edge_list[edge_num].from;
 			int to = edge_list[edge_num].to;
-			if(!on_trail)
-				trail.push( { true, !sign(l), from, to, v });
-			
+
 			if (!sign(l)) {
 				g_under.enableEdge(edge_num);
 			} else {
@@ -1771,8 +1745,6 @@ public:
 				}
 			}
 		} else {
-			if(!on_trail)
-				trail.push( { false, !sign(l), 0, 0, v });
 			//this is an assignment to a non-edge atom. (eg, a reachability assertion)
 			detectors[getDetector(var(l))]->assign(l);
 		}
@@ -1857,46 +1829,42 @@ public:
 					//it might also be a good idea to add that assignment as a decision in the SAT solver.
 					//or, add the clause to the SAT solver, and simply unassign the lit in the theory solver.
 					//that might be a much cleaner option.
-					Lit unassigned_lit = lit_Undef;
-					int highest_level = 0;
+
 					assert(!seen.contains(true));
 					seen.growTo(vars.size());
-					int n_seen=0;
+					bool any_seen=false;
+
 					for (Lit l:conflict){
 						if(S->value(toSolver(l))!=value(l)){
 							seen[var(l)]=true;
-							unassigned_lit=l;
-							n_seen++;
+							any_seen=true;
+							assert(onLazyTrail(var(l)));
 						}
 					}
-					if(unassigned_lit!=lit_Undef){
-						//backtrack until the highest (in the theory) solver unassigned lit is found? still add clause to sat solver?
-						int backtrack_pos = -1;
-						for(int i = trail.size()-1;i>=0;i--){
-							if(seen[ trail[i].var]){
-								backtrack_pos=i;
-
-								break;
-							}
+					if(any_seen){
+						assert(lazy_trail_head!=var_Undef);
+						Var v = getPrev(lazy_trail_head);
+						while(!seen[v]){
+							v = getPrev(v);
 						}
+
 						for (Lit l:conflict){
 							seen[var(l)]=false;
 						}
-						assert(backtrack_pos>=0);
 
-						if (backtrack_pos > 0){
-							Var v = trail[backtrack_pos-1].var;
-							Lit l_before_highest = mkLit(v,value(v)==l_False);
-							backtrackUntil(l_before_highest);
+						if (v ==lazy_trail_head){
+							backtrackUntil(decisionLevel());
 						}else{
-							backtrackUntil(0);
+							backtrackUntil(getPrev(v));
 						}
 						//the conflict should now be eliminated.
 						toSolver(conflict);
 						S->addClauseSafely(conflict);
 						stats_num_averted_lazy_conflicts++;
-						//restart the loop, as assignments have changed.
-						d=0;
+						conflict.clear();
+						//restart the loop, as assignments have changed... actually, this shouldn't be neccesary (only the current propagation should be re-started)
+						//as we have not backtracked past the current level in the SAT solver.
+						d=-1;
 						continue;
 					}
 				}

@@ -730,9 +730,6 @@ void Solver::enqueueLazy(Lit p, int lev, CRef from){
 }
 
 void Solver::uncheckedEnqueue(Lit p, CRef from) {
-	if(p.x==307 || p.x == 306){
-		int a=1;
-	}
 	assert(value(p) == l_Undef);
 	assigns[var(p)] = lbool(!sign(p));
 	vardata[var(p)] = mkVarData(from, decisionLevel());
@@ -1041,11 +1038,11 @@ CRef Solver::propagate(bool propagate_theories) {
 			in_theory_queue[theoryID] = false;
 			if (!theories[theoryID]->propagateTheory(theory_conflict)) {
 				bool has_conflict=true;
-				if(opt_lazy_backtrack  && theories[theoryID]->supportsLazyBacktracking() && theories[theoryID]->rectifyAssignments()){
+		/*		if(opt_lazy_backtrack  && theories[theoryID]->supportsLazyBacktracking() && theories[theoryID]->rectifyAssignments()){
 					//if we were lazily backtracking, and theory propagation fails, then we need to backtrack the theory now, and this conflict might actually be false, or incorect.
 					theory_conflict.clear();
 					has_conflict = !theories[theoryID]->propagateTheory(theory_conflict);
-				}
+				}*/
 
 				if (has_conflict && !addConflictClause(theory_conflict, confl)) {
 					in_theory_queue[theoryID] = false;

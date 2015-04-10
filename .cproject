@@ -1230,7 +1230,7 @@
 									<listOptionValue builtIn="false" value="gmp"/>
 								</option>
 								<option id="gnu.cpp.link.option.flags.924942699" name="Linker flags" superClass="gnu.cpp.link.option.flags" value="-Wl,--no-as-needed -lprofiler -Wl,--as-needed" valueType="string"/>
-								<option id="gnu.cpp.link.option.paths.208532659" name="Library search path (-L)" superClass="gnu.cpp.link.option.paths" valueType="libPaths"/>
+								<option id="gnu.cpp.link.option.paths.208532659" name="Library search path (-L)" superClass="gnu.cpp.link.option.paths"/>
 								<inputType id="cdt.managedbuild.tool.gnu.cpp.linker.input.819870447" superClass="cdt.managedbuild.tool.gnu.cpp.linker.input">
 									<additionalInput kind="additionalinputdependency" paths="$(USER_OBJS)"/>
 									<additionalInput kind="additionalinput" paths="$(LIBS)"/>
