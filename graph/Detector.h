@@ -148,7 +148,7 @@ public:
 	}
 };
 
-class LevelDetector: public Detector {
+/*class LevelDetector: public Detector {
 	
 	vec<int> level_trail;
 
@@ -180,7 +180,7 @@ public:
 		level_trail.push(outer_level);
 	}
 	
-};
+};*/
 
 }
 ;

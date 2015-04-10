@@ -61,7 +61,7 @@ void MaxflowDetector<Weight>::buildDinitzLinkCut() {
 template<typename Weight>
 MaxflowDetector<Weight>::MaxflowDetector(int _detectorID, GraphTheorySolver<Weight> * _outer,
 		 DynamicGraph<Weight>  &_g, DynamicGraph<Weight>  &_antig, int from, int _target, double seed) :
-		LevelDetector(_detectorID), outer(_outer),  g_under(_g), g_over(_antig), source(
+		Detector(_detectorID), outer(_outer),  g_under(_g), g_over(_antig), source(
 				from), target(_target), rnd_seed(seed) {
 	
 	if (mincutalg == MinCutAlg::ALG_EDKARP_DYN) {
@@ -1167,16 +1167,19 @@ void MaxflowDetector<Weight>::collectChangedEdges() {
 			if (overapprox_conflict_detector->getEdgeFlow(edgeid) > 0) {
 
 				is_potential_decision[edgeid] = true;
-				if (opt_maxflow_decisions_q == 0) {
-					potential_decisions_q.insertBack(edgeid);
-				} else if (opt_maxflow_decisions_q == 1) {
-					potential_decisions_q.insert(edgeid);		//insertBack
-				} else if (opt_maxflow_decisions_q == 2) {
-					potential_decisions_q.insert(edgeid);
-				} else if (opt_maxflow_decisions_q == 3) {
-					potential_decisions_q.insertBack(edgeid);
-				} else if (opt_maxflow_decisions_q == 4) {
-					potential_decisions_q.insertBack(edgeid);
+				if(!in_decision_q[edgeid]){
+					in_decision_q[edgeid]=true;
+					if (opt_maxflow_decisions_q == 0) {
+						potential_decisions_q.insertBack(edgeid);
+					} else if (opt_maxflow_decisions_q == 1) {
+						potential_decisions_q.insert(edgeid);		//insertBack
+					} else if (opt_maxflow_decisions_q == 2) {
+						potential_decisions_q.insert(edgeid);
+					} else if (opt_maxflow_decisions_q == 3) {
+						potential_decisions_q.insertBack(edgeid);
+					} else if (opt_maxflow_decisions_q == 4) {
+						potential_decisions_q.insertBack(edgeid);
+					}
 				}
 			}
 		}
@@ -1344,35 +1347,37 @@ Lit MaxflowDetector<Weight>::decideByPath(int level){
 }*/
 template<typename Weight>
 void MaxflowDetector<Weight>::undecide(Lit l) {
+	static int iter = 0;
+	++iter;
 	if(outer->isEdgeVar(var(l))){
 		int edgeid = outer->getEdgeID(var(l));
-		if (!is_potential_decision[edgeid]) {
-			Lit l = mkLit(outer->getEdgeVar(edgeid), false);
-			if (overapprox_conflict_detector->getEdgeFlow(edgeid) > 0) {
+		if(is_potential_decision[edgeid] && !in_decision_q[edgeid]){
+			if (overapprox_conflict_detector->getEdgeFlow(edgeid) > 0) {			//this check is optional
 
-				is_potential_decision[edgeid] = true;
-				if(!opt_backward_undecisions){
-					if (opt_maxflow_decisions_q == 0) {
+				if(!in_decision_q[edgeid]){
+					in_decision_q[edgeid]=true;
+					if (opt_maxflow_decisions_q == 0)
 						potential_decisions_q.insertBack(edgeid);
-					} else if (opt_maxflow_decisions_q == 1) {
-						potential_decisions_q.insert(edgeid);		//insertBack
+					else if (opt_maxflow_decisions_q == 1) {
+						potential_decisions_q.insertBack(edgeid);//insert in LIFO order, no FIFO, because we are unwinding the decisions
 					} else if (opt_maxflow_decisions_q == 2) {
-						potential_decisions_q.insert(edgeid);
+						potential_decisions_q.insert(edgeid);			//insert in FIFO order instead
 					} else if (opt_maxflow_decisions_q == 3) {
-						potential_decisions_q.insertBack(edgeid);
+						potential_decisions_q.insertBack(edgeid);//insert in LIFO order, no FIFO, because we are unwinding the decisions
 					} else if (opt_maxflow_decisions_q == 4) {
-						potential_decisions_q.insertBack(edgeid);
-					}
-				}else{
-					if (opt_maxflow_decisions_q == 0) {
-						potential_decisions_q.insertBack(edgeid);
-					} else {
-						potential_decisions_q.insert(edgeid);
+						potential_decisions_q.insert(edgeid);//insert in LIFO order, no FIFO, because we are unwinding the decisions
 					}
 				}
+			} else {
+				is_potential_decision[edgeid] = false;			//discard this edge from the set of potential decisions
 			}
 		}
 	}
+	/*printf("g%d %d undecide %d q: ", outer->id,iter,dimacs(l));
+	for(int i =0;i<potential_decisions_q.size();i++){
+		printf("%d, ",(int) potential_decisions_q[i]);
+	}
+	printf("\n");*/
 }
 
 template<typename Weight>
@@ -1427,7 +1432,6 @@ Lit MaxflowDetector<Weight>::decide() {
 		}
 #endif
 */
-
 		Lit decision = lit_Undef;
 
 		while (potential_decisions_q.size() > 0) {
@@ -1442,76 +1446,18 @@ Lit MaxflowDetector<Weight>::decide() {
 				path_decision = potential_decisions_q.peek().path_decision;
 				potential_decisions_q.pop();
 			}
-
+			assert(in_decision_q[edgeID]);
+			in_decision_q[edgeID]=false;
 			assert(is_potential_decision[edgeID]);
 			Lit l = mkLit(outer->getEdgeVar(edgeID), false);
-			if (outer->value(l) == l_Undef && over->getEdgeFlow(edgeID) > 0) {
-				if(!path_decision && opt_maxflow_decision_paths>0){
-					seen_path.clear();
-					seen_path.growTo(g_over.nodes());
-					//current_decision_edge=edgeID;
-					int node = g_over.getEdge(edgeID).from;
-					seen_path[ g_over.getEdge(edgeID).from]=true;
-					seen_path[ g_over.getEdge(edgeID).to]=true;
-					bool forward = (opt_maxflow_decision_paths==1);
-					bool found_node=true;
-					while(found_node && node!=(forward ?  source:target )){
-						found_node=false;
-						for (int i = 0;i<g_over.nDirectedEdges(node,forward);i++){
-							int eID = g_over.directedEdges(node,i,forward).id;
-							int to =  g_over.directedEdges(node,i,forward).node;
-							if(!seen_path[to] && g_over.edgeEnabled(eID)){
-								if(overapprox_conflict_detector->getEdgeFlow(eID)>0){
-									seen_path[to]=true;
-									if(outer->value(outer->getEdgeVar(eID))==l_Undef){
-										if (opt_maxflow_decisions_q == 0) {
-											potential_decisions_q.insertBack({eID,true});
-										} else {
-											potential_decisions_q.insert({eID,true});
-										}
-									}
-									found_node=true;
-									node = to;
-									break;
-								}
-							}
-
-						}
-					}
-					found_node=true;
-					node = g_over.getEdge(edgeID).to;
-					while(found_node && node!=(forward? target:source)){
-						found_node=false;
-						for (int i = 0;i<g_over.nDirectedEdges(node,!forward);i++){
-							int eID = g_over.directedEdges(node,i,!forward).id;
-							int to = g_over.directedEdges(node,i,!forward).node;
-							if(!seen_path[to] && g_over.edgeEnabled(eID)){
-								if(overapprox_conflict_detector->getEdgeFlow(eID)>0){
-									seen_path[to]=true;
-									if(outer->value(outer->getEdgeVar(eID))==l_Undef){
-										if (opt_maxflow_decisions_q == 0) {
-											potential_decisions_q.insertBack({eID,true});
-										} else {
-											potential_decisions_q.insert({eID,true});
-										}
-									}
-									found_node=true;
-									node = to;
-									break;
-								}
-							}
-						}
-					}
-
-				}
-
-				decideEdge(edgeID, true);
+			if (outer->decidable(l) && over->getEdgeFlow(edgeID) > 0) {
+				//decideEdge(edgeID, true);
 				decision = l;
 
 				break;
 			} else if (outer->value(l) == l_True) {
 				if (over->getEdgeFlow(edgeID) > 0) {			//this check is optional
-					decideEdge(edgeID, true);
+					//decideEdge(edgeID, true);
 				} else {
 					is_potential_decision[edgeID] = false;
 				}
@@ -1521,20 +1467,7 @@ Lit MaxflowDetector<Weight>::decide() {
 			}
 		}
 		//}
-#ifndef NDEBUG
-		{
-			bool found = false;
-			for (int edgeID = 0; edgeID < g_under.edges(); edgeID++) {
-				if (g_under.edgeEnabled(edgeID)) {
-					bool hasFlow = over->getEdgeFlow(edgeID) > 0;
-					Lit l = mkLit(outer->getEdgeVar(edgeID));
-					if (hasFlow) {
-						assert(is_potential_decision[edgeID] || decisions.contains(l));
-					}
-				}
-			}
-		}
-#endif
+
 		double post_time = rtime(2);
 		stats_decide_time += post_time - startdecidetime;
 		stats_redecide_time += post_time - startdecidetime;

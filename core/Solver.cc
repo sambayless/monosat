@@ -703,7 +703,7 @@ void Solver::analyzeFinal(Lit p, vec<Lit>& out_conflict) {
 }
 
 void Solver::enqueueLazy(Lit p, int lev, CRef from){
-	if(p.x==307 || p.x == 306){
+	if(var(p)==392932){
 		int a=1;
 	}
 	assert(value(p)!=l_False);
@@ -730,6 +730,10 @@ void Solver::enqueueLazy(Lit p, int lev, CRef from){
 
 void Solver::uncheckedEnqueue(Lit p, CRef from) {
 	assert(value(p) == l_Undef);
+	if(var(p)==392932){
+		int a=1;
+
+	}
 	assigns[var(p)] = lbool(!sign(p));
 	vardata[var(p)] = mkVarData(from, decisionLevel());
 	trail.push_(p);
@@ -1516,10 +1520,11 @@ bool Solver::addConflictClause(vec<Lit> & ps, CRef & confl_out, bool permanent) 
 			attachClause(cr);
 			confl_out = cr;
 		}
-		if (!satisfied)
-			cancelUntil(max_lev);
+		//if (!satisfied )
+		//	cancelUntil(max_lev);
 		
 		if (!satisfied && nfalse == ps.size() - 1) {
+			cancelUntil(max_lev);
 			assert(!conflicting);
 			assert(value(ps[0])!=l_False);
 			assert(value(ps[1])==l_False);
@@ -1570,7 +1575,7 @@ lbool Solver::search(int nof_conflicts) {
 	//last_dec = var_Undef;
 	for (;;) {
 		static int iter = 0;
-		if (++iter == 1920) {
+		if (++iter == 2750) {//2752
 			int a = 1;
 		}
 		propagate: CRef confl = propagate();

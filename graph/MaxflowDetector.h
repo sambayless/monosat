@@ -37,7 +37,7 @@ namespace Monosat {
 template<typename Weight>
 class GraphTheorySolver;
 template<typename Weight = int>
-class MaxflowDetector: public LevelDetector, public DynamicGraphAlgorithm  {
+class MaxflowDetector: public Detector, public DynamicGraphAlgorithm  {
 public:
 	GraphTheorySolver<Weight> * outer;
 	std::vector<Weight> capacities;
@@ -66,8 +66,9 @@ public:
 
 	Lit last_decision_lit = lit_Undef;
 
-	vec<Lit> decisions;
+	//vec<Lit> decisions;
 	vec<bool> is_potential_decision;
+	vec<bool> in_decision_q;
 	vec<int> potential_decisions;
 	struct DecisionS{
 		int path_decision:1;
@@ -111,7 +112,7 @@ public:
 	void backtrack(int level) {
 		to_decide.clear();
 		last_decision_status = -1;
-		LevelDetector::backtrack(level);
+		//LevelDetector::backtrack(level);
 	}
 	void collectChangedEdges();
 	void collectDisabledEdges();
@@ -152,7 +153,7 @@ public:
 		return "Max-flow Detector";
 	}
 	
-	void decideEdge(int edgeID,  bool assign = true) {
+/*	void decideEdge(int edgeID,  bool assign = true) {
 		assert(decisions.size() >= decisionLevel());
 
 		newDecisionLevel(outer->decisionLevel()+1);
@@ -162,12 +163,12 @@ public:
 		assert(!decisions.contains(l));
 		assert(!decisions.contains(~l));
 		
-		decisions.push(l);
+		//decisions.push(l);
 		
 		assert(decisions.size() == decisionLevel());
 		dbg_decisions();
-	}
-	void localBacktrack() {
+	}*/
+	/*void localBacktrack() {
 		dbg_decisions();
 		//undo a decision edge, and return it to the set of potential decisions
 		assert(decisions.size() == decisionLevel() + 1);
@@ -201,12 +202,13 @@ public:
 			is_potential_decision[edgeID] = false;			//discard this edge from the set of potential decisions
 		}
 		dbg_decisions();
-	}
+	}*/
 
 	void preprocess(){
-		if (is_potential_decision.size() < g_under.edges()) {
-			is_potential_decision.growTo(g_under.edges(), false);
-		}
+
+		is_potential_decision.growTo(g_under.edges(), false);
+
+		in_decision_q.growTo(g_under.edges(), false);
 	}
 	
 private:

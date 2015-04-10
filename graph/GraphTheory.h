@@ -922,24 +922,17 @@ public:
 		}
 	}
 	
-	inline lbool value(Var v) const{
+	inline bool decidable(Var v)const{
+		return S->value(toSolver(v))==l_Undef;
+	}
+	inline bool decidable(Lit l)const{
+		return S->value(toSolver(var(l)))==l_Undef;
+	}
 
-#ifndef NDEBUG
-		if(!opt_lazy_backtrack){
-			if (assigns[v] != l_Undef)
-				assert(S->value(toSolver(v)) == assigns[v]);
-		}
-#endif
+	inline lbool value(Var v) const{
 		return assigns[v]; //S->value(toSolver(v));
 	}
 	inline lbool value(Lit l)const {
-#ifndef NDEBUG
-		if (assigns[var(l)] != l_Undef) {
-			if(!opt_lazy_backtrack){
-				assert(S->value(toSolver(l)) == (assigns[var(l)] ^ sign(l)));
-			}
-		}
-#endif
 		return assigns[var(l)] ^ sign(l);
 	}
 	inline lbool dbg_value(Var v) {
@@ -1370,13 +1363,15 @@ public:
 	}
 
 	void undecideTheory(Lit l){
-		assert(value(l)==l_True);
+		//assert(value(l)==l_True); //the value can be locally unassigned if we backtracked while building a propagation reason
+
 		if(supportsLazyBacktracking()){
 			prependToLazyTrail(l);
-			for (int i = 0; i < detectors.size(); i++) {
-				Detector * r = detectors[i];
-				r->undecide(l);
-			}
+
+		}
+		for (int i = 0; i < detectors.size(); i++) {
+			Detector * r = detectors[i];
+			r->undecide(l);
 		}
 	}
 
@@ -1386,7 +1381,7 @@ public:
 		double start = rtime(1);
 		static int iter = 0;
 		iter++;
-		if(iter==519){
+		if(iter==211){
 			int a=1;
 		}
 
@@ -1398,11 +1393,12 @@ public:
 			if(lazy_trail_head!=var_Undef){
 				assert(value(lazy_trail_head)!=l_Undef);
 				assert(S->value(toSolver(lazy_trail_head))==l_Undef);
-				Lit solverLit = toSolver(mkLit(lazy_trail_head, value(lazy_trail_head)==l_False));
+				Lit d = mkLit(lazy_trail_head, value(lazy_trail_head)==l_False);
+				Lit solverLit = toSolver(d);
 
 				stats_lazy_decisions++;
 				stats_decisions++;
-				//printf("g%d: graph lazy decision %d: %d, decision pos %d\n", this->id, iter, dimacs(l),var_decision_pos[var(l)]);
+				//printf("g%d: graph lazy decision %d: %d\n", this->id, iter, dimacs(d));
 				stats_decision_time += rtime(1) - start;
 				return solverLit;
 			}
@@ -1626,7 +1622,7 @@ public:
 	}
 	void enqueueTheory(Lit l) {
 		Var v = var(l);
-		if(v==612){
+		if(v==2046){
 			int a=1;
 		}
 		int lev = level(v);//level from the SAT solver.
@@ -1827,6 +1823,7 @@ public:
 		dbg_sync();
 		assert(dbg_graphsUpToDate());
 		
+
 		for (int d = 0; d < detectors.size(); d++) {
 			assert(conflict.size() == 0);
 			bool r = detectors[d]->propagate(conflict);
@@ -1850,6 +1847,7 @@ public:
 						}
 					}
 					if(any_seen){
+						//printf("g%d lazy conflict\n", this->id);
 						assert(lazy_trail_head!=var_Undef);
 						Var v = getPrev(lazy_trail_head);
 						while(!seen[v]){

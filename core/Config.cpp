@@ -127,7 +127,7 @@ IntOption Monosat::opt_dynamic_history_clear(_cat_graph, "dynamic-history-clear"
 
 BoolOption Monosat::opt_lazy_backtrack(_cat_graph, "lazy-backtrack", "", false);
 BoolOption Monosat::opt_lazy_backtrack_decisions(_cat_graph, "lazy-backtrack-decisions", "", false);
-BoolOption Monosat::opt_backward_undecisions(_cat_graph, "backward-undecisions", "", false);
+
 BoolOption Monosat::opt_check_solution(_cat_graph, "check-solution", "Double check solution", true);
 BoolOption Monosat::opt_print_reach(_cat_graph, "print-reach", "Print reachability graphs", false);
 BoolOption Monosat::opt_print_graph(_cat_graph, "print-graph", "Print digraph", false);
