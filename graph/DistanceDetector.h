@@ -218,9 +218,7 @@ public:
 	 return reach_lits[node];
 
 	 }*/
-	void backtrack(int level) {
-		
-	}
+
 	void unassign(Lit l) {
 		Detector::unassign(l);
 		int index = var(l) - first_reach_var;

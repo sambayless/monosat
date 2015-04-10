@@ -64,6 +64,8 @@ extern IntOption opt_adaptive_history_clear;
 extern BoolOption disable_history_clears;
 extern IntOption opt_dynamic_history_clear;
 extern BoolOption opt_lazy_backtrack;
+extern BoolOption opt_lazy_backtrack_decisions;
+extern BoolOption  opt_backward_undecisions;
 extern BoolOption opt_check_solution;
 extern BoolOption opt_print_reach;
 extern BoolOption opt_print_graph;

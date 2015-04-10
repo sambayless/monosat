@@ -57,15 +57,7 @@ public:
 	virtual bool supportsLazyBacktracking(){
 		return false;
 	}
-	virtual void backtrackLazy(int untilLevel){
-		//this is optional; only theories supporting lazy backtracking need to support this
-	}
 
-	//returns true is any changes were made during rectification
-	virtual bool rectifyAssignments(){
-		//this is optional; only theories supporting lazy backtracking need to support this
-		return false;
-	}
 
 
 protected:

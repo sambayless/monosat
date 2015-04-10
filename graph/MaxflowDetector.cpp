@@ -1344,6 +1344,38 @@ Lit MaxflowDetector<Weight>::decideByPath(int level){
 	current_decision_edge=-1;
 	return lit_Undef;
 }*/
+template<typename Weight>
+void MaxflowDetector<Weight>::undecide(Lit l) {
+	if(outer->isEdgeVar(var(l))){
+		int edgeid = outer->getEdgeID(var(l));
+		if (!is_potential_decision[edgeid]) {
+			Lit l = mkLit(outer->getEdgeVar(edgeid), false);
+			if (overapprox_conflict_detector->getEdgeFlow(edgeid) > 0) {
+
+				is_potential_decision[edgeid] = true;
+				if(!opt_backward_undecisions){
+					if (opt_maxflow_decisions_q == 0) {
+						potential_decisions_q.insertBack(edgeid);
+					} else if (opt_maxflow_decisions_q == 1) {
+						potential_decisions_q.insert(edgeid);		//insertBack
+					} else if (opt_maxflow_decisions_q == 2) {
+						potential_decisions_q.insert(edgeid);
+					} else if (opt_maxflow_decisions_q == 3) {
+						potential_decisions_q.insertBack(edgeid);
+					} else if (opt_maxflow_decisions_q == 4) {
+						potential_decisions_q.insertBack(edgeid);
+					}
+				}else{
+					if (opt_maxflow_decisions_q == 0) {
+						potential_decisions_q.insertBack(edgeid);
+					} else {
+						potential_decisions_q.insert(edgeid);
+					}
+				}
+			}
+		}
+	}
+}
 
 template<typename Weight>
 Lit MaxflowDetector<Weight>::decide() {

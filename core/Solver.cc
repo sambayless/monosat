@@ -388,7 +388,6 @@ void Solver::cancelUntil(int lev) {
 		theory_queue.clear();
 		for (int i = 0; i < theories.size(); i++) {
 			if(opt_lazy_backtrack  && theories[i]->supportsLazyBacktracking()){
-				theories[i]->backtrackLazy(lev);
 				//if we _are_ backtracking lazily, then the assumption is that the theory solver will, after backtracking, mostly re-assign the same literals.
 				//so instead, we will backtrack the theory lazily, in the future, if it encounters an apparent conflict (and this backtracking may alter or eliminate that conflict.)
 			}else{
@@ -1823,6 +1822,9 @@ lbool Solver::solve_() {
 			model[i] = value(i);
 		
 		if (opt_check_solution && theories.size()) {
+			if(opt_verb>0){
+				printf("Checking witnesses...\n");
+			}
 			double check_start=rtime(1);
 			for(Theory * t:theories){
 			

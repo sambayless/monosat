@@ -124,6 +124,7 @@ public:
 	void buildForcedEdgeReason(int reach_node, int forced_edge_id, vec<Lit> & conflict);
 	void buildReason(Lit p, vec<Lit> & reason, CRef marker);
 	bool checkSatisfied();
+	void undecide(Lit l);
 	Lit decide();
 	void printStats() {
 		Detector::printStats();

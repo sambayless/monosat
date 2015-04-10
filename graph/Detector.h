@@ -95,6 +95,9 @@ public:
 	virtual void backtrack(int level) {
 		//do nothing
 	}
+	virtual void undecide(Lit l){
+
+	}
 	virtual Lit decide()=0;
 	virtual void setOccurs(Lit l, bool occurs) {
 		if (!occurs) {
@@ -145,7 +148,7 @@ public:
 	}
 };
 
-class LevelDetector: public Detector {
+/*class LevelDetector: public Detector {
 	
 	vec<int> level_trail;
 
@@ -177,7 +180,7 @@ public:
 		level_trail.push(outer_level);
 	}
 	
-};
+};*/
 
 }
 ;

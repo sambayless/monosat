@@ -683,10 +683,7 @@ public:
 
 
 	void printStats(int detailLevel) {
-		if (detailLevel > 0) {
-			for (Detector * d : detectors)
-				d->printStats();
-		}
+
 		
 		printf("Graph %d stats:\n", getGraphID());
 		/*		printf("Decision Time: %f\n", stats_decision_time);
@@ -710,7 +707,13 @@ public:
 		printf("Conflicts: %ld (lazy conflicts %d)\n", stats_num_conflicts,stats_num_averted_lazy_conflicts);
 		printf("Reasons: %ld (%f s, avg: %f s)\n", stats_num_reasons, stats_reason_time,
 				(stats_reason_time) / ((double) stats_num_reasons + 1));
-		
+
+		fflush(stdout);
+
+		if (detailLevel > 0) {
+			for (Detector * d : detectors)
+				d->printStats();
+		}
 		fflush(stdout);
 	}
 	
@@ -1368,8 +1371,13 @@ public:
 
 	void undecideTheory(Lit l){
 		assert(value(l)==l_True);
-		if(supportsLazyBacktracking())
+		if(supportsLazyBacktracking()){
 			prependToLazyTrail(l);
+			for (int i = 0; i < detectors.size(); i++) {
+				Detector * r = detectors[i];
+				r->undecide(l);
+			}
+		}
 	}
 
 	Lit decideTheory() {
@@ -1383,10 +1391,11 @@ public:
 		}
 
 		dbg_full_sync();
-		if(opt_lazy_backtrack && supportsLazyBacktracking()){
+		if(opt_lazy_backtrack && supportsLazyBacktracking() && opt_lazy_backtrack_decisions && detectors.size()){//the detectors.size() check is a hack, to prevent empty graphs from forcing the decisions that they didn't originally contribute to.
 			//assert(n_decisions<=decisionLevel());
 			//printf("g%d lazy dec start: decisionLevel %d, decisions %d\n", this->id, decisionLevel(),n_decisions);
-			while(lazy_trail_head!=var_Undef){
+			//when redeciding a literal, should check to see whether it would still be recomended as a decision by its detector...
+			if(lazy_trail_head!=var_Undef){
 				assert(value(lazy_trail_head)!=l_Undef);
 				assert(S->value(toSolver(lazy_trail_head))==l_Undef);
 				Lit solverLit = toSolver(mkLit(lazy_trail_head, value(lazy_trail_head)==l_False));
@@ -1396,7 +1405,6 @@ public:
 				//printf("g%d: graph lazy decision %d: %d, decision pos %d\n", this->id, iter, dimacs(l),var_decision_pos[var(l)]);
 				stats_decision_time += rtime(1) - start;
 				return solverLit;
-
 			}
 		}
 
@@ -1855,7 +1863,8 @@ public:
 						if (v ==lazy_trail_head){
 							backtrackUntil(decisionLevel());
 						}else{
-							backtrackUntil(getPrev(v));
+							Var p = getPrev(v);
+							backtrackUntil(mkLit(p,value(p)==l_False));
 						}
 						//the conflict should now be eliminated.
 						toSolver(conflict);
@@ -1900,25 +1909,6 @@ public:
 
 	bool supportsLazyBacktracking(){
 		return lazy_backtracking_enabled;
-	}
-	void backtrackLazy(int untilLevel){
-		//this is optional; only theories supporting lazy backtracking need to support this
-	/*	if(lazy_backtrack_level<0 || lazy_backtrack_level>untilLevel){
-			lazy_backtrack_level=untilLevel;
-		}*/
-	}
-	bool rectifyAssignments(){
-		/*if(lazy_backtrack_level<0 || lazy_backtrack_level>=S->decisionLevel()){
-			return false;
-		}*/
-		bool changed=false;
-		if(S->decisionLevel()<decisionLevel()){
-			changed=true;
-			//backtrack the theory solver to the current theory level.
-			backtrackUntil(S->decisionLevel());
-		}
-		//lazy_backtrack_level=-1;
-		return changed;
 	}
 
 	bool solveTheory(vec<Lit> & conflict) {
