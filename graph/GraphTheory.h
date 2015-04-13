@@ -1381,10 +1381,13 @@ public:
 		double start = rtime(1);
 		static int iter = 0;
 		iter++;
-		if(iter==211){
+
+		if(iter==5940){
 			int a=1;
 		}
-
+	/*	if(iter>128451){
+			exit(1);
+		}*/
 		dbg_full_sync();
 		if(opt_lazy_backtrack && supportsLazyBacktracking() && opt_lazy_backtrack_decisions && detectors.size()){//the detectors.size() check is a hack, to prevent empty graphs from forcing the decisions that they didn't originally contribute to.
 			//assert(n_decisions<=decisionLevel());
