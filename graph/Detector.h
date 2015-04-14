@@ -87,6 +87,10 @@ public:
 	}
 	
 	virtual bool propagate(vec<Lit> & conflict)=0;
+	virtual bool propagate(vec<Lit> & conflict	, bool backtrackOnly){
+		return propagate(conflict);
+	}
+
 	virtual void buildReason(Lit p, vec<Lit> & reason, CRef marker)=0;
 	virtual bool checkSatisfied()=0;
 	virtual void preprocess() {

@@ -119,7 +119,10 @@ public:
 	void updateHistory(){
 		collectDisabledEdges();
 	}
-	bool propagate(vec<Lit> & conflict);
+	bool propagate(vec<Lit> & conflict){
+		return propagate(conflict,false);
+	}
+	bool propagate(vec<Lit> & conflict, bool backtrackOnly);
 	void buildMaxFlowTooHighReason(Weight flow, vec<Lit> & conflict);
 	void buildMaxFlowTooLowReason(Weight flow, vec<Lit> & conflict, bool force_maxflow = false);
 	void buildForcedEdgeReason(int reach_node, int forced_edge_id, vec<Lit> & conflict);

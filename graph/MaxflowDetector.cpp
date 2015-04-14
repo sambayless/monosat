@@ -662,7 +662,7 @@ void MaxflowDetector<Weight>::buildReason(Lit p, vec<Lit> & reason, CRef marker)
 	}
 }
 template<typename Weight>
-bool MaxflowDetector<Weight>::propagate(vec<Lit> & conflict) {
+bool MaxflowDetector<Weight>::propagate(vec<Lit> & conflict, bool backtrackOnly) {
 	if (flow_lits.size() == 0) {
 		return true;
 	}
@@ -727,8 +727,12 @@ bool MaxflowDetector<Weight>::propagate(vec<Lit> & conflict) {
 					outer->enqueue(l, underprop_marker);
 
 				} else if (outer->value(l) == l_False) {
+					if(backtrackOnly)
+						return false;
+
 					conflict.push(l);
 					buildMaxFlowTooHighReason(maxflow, conflict);
+
 					return false;
 				}
 				
@@ -740,6 +744,9 @@ bool MaxflowDetector<Weight>::propagate(vec<Lit> & conflict) {
 					outer->enqueue(~l, underprop_marker);
 
 				} else if (outer->value(l) == l_True) {
+					if(backtrackOnly)
+						return false;
+
 					conflict.push(~l);
 					buildMaxFlowTooLowReason(maxflow, conflict);
 					return false;
@@ -762,6 +769,9 @@ bool MaxflowDetector<Weight>::propagate(vec<Lit> & conflict) {
 					outer->enqueue(l, underprop_marker);
 
 				} else if (outer->value(l) == l_False) {
+					if(backtrackOnly)
+						return false;
+
 					conflict.push(l);
 					outer->buildBVReason(bv.getID(),inclusive ? Comparison::leq:Comparison::lt,under_maxflow,conflict);
 					buildMaxFlowTooHighReason(bv.getOver(), conflict);
@@ -776,6 +786,9 @@ bool MaxflowDetector<Weight>::propagate(vec<Lit> & conflict) {
 					outer->enqueue(~l, underprop_marker);
 
 				} else if (outer->value(l) == l_True) {
+					if(backtrackOnly)
+						return false;
+
 					conflict.push(~l);
 					outer->buildBVReason(bv.getID(),inclusive ? Comparison::gt:Comparison::geq,over_maxflow,conflict);
 					buildMaxFlowTooLowReason(bv.getUnder(), conflict);

@@ -1759,6 +1759,39 @@ public:
 		
 	};
 
+	bool backtrackWhileConflicting(Detector * d,vec<Lit> & conflict){
+		conflict.clear();
+
+
+		bool backtrackOnly = lazy_backtracking_enabled && lazy_trail_head!=var_Undef;
+		if(lazy_trail_head==var_Undef){
+			return d->propagate(conflict,backtrackOnly);
+		}
+		assert(lazy_trail_head!=var_Undef);
+		Var v = getPrev(lazy_trail_head);
+
+		bool r = false;
+
+		while(v!=var_Undef && !r){
+			Lit l = mkLit(v, value(v)==l_False);
+			assert(assigns[v]!=l_Undef);
+			backtrackAssign(l);
+			Var p = _getPrev(v);
+			requiresPropagation = true;
+			if (removeFromTrail(v)){
+				break;
+			}
+			r = d->propagate(conflict,lazy_trail_head!=var_Undef);
+			if(r){
+				//conflict backtrack'd past.
+				return true;
+			}
+			v=p;
+		}
+
+		return d->propagate(conflict,lazy_trail_head!=var_Undef);
+	}
+
 	bool propagateTheory(vec<Lit> & conflict) {
 		static int itp = 0;
 		if (++itp == 584) {
@@ -1793,9 +1826,11 @@ public:
 
 
 		dbg_sync();
+		conflict.clear();
 		//printf("graph prop %d\n",stats_propagations);
 		for(Theory * t:theories){
 			if(!t->propagateTheory(conflict)){
+
 				toSolver(conflict);
 				return false;
 			}
@@ -1826,48 +1861,47 @@ public:
 
 		dbg_sync();
 		assert(dbg_graphsUpToDate());
-		
 
 		for (int d = 0; d < detectors.size(); d++) {
 			assert(conflict.size() == 0);
+			//bool backtrackOnly = lazy_backtracking_enabled && lazy_trail_head!=var_Undef;
 			bool r = detectors[d]->propagate(conflict);
+		/*	if(!r && backtrackOnly && conflict.size()==0){
+				r = backtrackWhileConflicting( detectors[d], conflict);
+			}*/
+
 			if (!r) {
 
-				if(opt_lazy_backtrack){
+				if(conflict.size() && lazy_backtracking_enabled && lazy_trail_head!=var_Undef){
 					//find the highest level lit in the conflict; if it is a higher level than the SAT solver, flip its assignment _in the theory solver_; propagate again.
 					//it might also be a good idea to add that assignment as a decision in the SAT solver.
 					//or, add the clause to the SAT solver, and simply unassign the lit in the theory solver.
 					//that might be a much cleaner option.
 
-					assert(!seen.contains(true));
-					seen.growTo(vars.size());
+					//assert(!seen.contains(true));
+					//seen.growTo(vars.size());
 					bool any_seen=false;
 
 					for (Lit l:conflict){
 						if(S->value(toSolver(l))!=value(l)){
-							seen[var(l)]=true;
+
 							any_seen=true;
 							assert(onLazyTrail(var(l)));
+
+							if(!onLazyTrail(var(l))){
+								exit(5);
+							}
+							if(value(~l)!=l_True){
+								exit(4);
+							}
+							removeFromTrail(var(l));
+							backtrackAssign(~l);
+							break;
 						}
 					}
+
 					if(any_seen){
-						//printf("g%d lazy conflict\n", this->id);
-						assert(lazy_trail_head!=var_Undef);
-						Var v = getPrev(lazy_trail_head);
-						while(!seen[v]){
-							v = getPrev(v);
-						}
 
-						for (Lit l:conflict){
-							seen[var(l)]=false;
-						}
-
-						if (v ==lazy_trail_head){
-							backtrackUntil(decisionLevel());
-						}else{
-							Var p = getPrev(v);
-							backtrackUntil(mkLit(p,value(p)==l_False));
-						}
 						//the conflict should now be eliminated.
 						toSolver(conflict);
 						S->addClauseSafely(conflict);
