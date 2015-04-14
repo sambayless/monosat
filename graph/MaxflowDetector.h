@@ -67,7 +67,7 @@ public:
 	Lit last_decision_lit = lit_Undef;
 
 	//vec<Lit> decisions;
-	//vec<bool> is_potential_decision;
+	vec<bool> is_potential_decision;
 	vec<bool> in_decision_q;
 	vec<int> potential_decisions;
 	struct DecisionS{
@@ -206,7 +206,7 @@ public:
 
 	void preprocess(){
 
-		//is_potential_decision.growTo(g_under.edges(), false);
+		is_potential_decision.growTo(g_under.edges(), false);
 
 		in_decision_q.growTo(g_under.edges(), false);
 	}

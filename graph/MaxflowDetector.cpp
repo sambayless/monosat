@@ -1162,22 +1162,34 @@ void MaxflowDetector<Weight>::collectChangedEdges() {
 		}
 		static int iter = 0;
 		++iter;
-		if (!in_decision_q[edgeid]) {
+		if (!is_potential_decision[edgeid]) {
 			Lit l = mkLit(outer->getEdgeVar(edgeid), false);
-			if (overapprox_conflict_detector->getEdgeFlow(edgeid) > 0) {
-				in_decision_q[edgeid]=true;
-				if (opt_maxflow_decisions_q == 0) {
-					potential_decisions_q.insertBack(edgeid);
-				} else if (opt_maxflow_decisions_q == 1) {
-					potential_decisions_q.insert(edgeid);		//insertBack
-				} else if (opt_maxflow_decisions_q == 2) {
-					potential_decisions_q.insert(edgeid);
-				} else if (opt_maxflow_decisions_q == 3) {
-					potential_decisions_q.insertBack(edgeid);
-				} else if (opt_maxflow_decisions_q == 4) {
-					potential_decisions_q.insertBack(edgeid);
-				}
+			if(outer->value(l)==l_Undef || outer->level(var(l))>0){
+				if (overapprox_conflict_detector->getEdgeFlow(edgeid) > 0) {
 
+					is_potential_decision[edgeid] = true;
+					if(!in_decision_q[edgeid]){
+						in_decision_q[edgeid]=true;
+						if (opt_maxflow_decisions_q == 0) {
+							potential_decisions_q.insertBack(edgeid);
+						} else if (opt_maxflow_decisions_q == 1) {
+							potential_decisions_q.insert(edgeid);		//insertBack
+						} else if (opt_maxflow_decisions_q == 2) {
+							potential_decisions_q.insert(edgeid);
+						} else if (opt_maxflow_decisions_q == 3) {
+							potential_decisions_q.insertBack(edgeid);
+						} else if (opt_maxflow_decisions_q == 4) {
+							potential_decisions_q.insertBack(edgeid);
+						}
+					/*	printf("g%d %d mf collect change q (size %d): ", outer->id,iter,potential_decisions_q.size());
+						for(int i =0;i<potential_decisions_q.size();i++){
+							printf("%d, ",(int) potential_decisions_q[i]);
+							break;
+						}
+						printf("%d, ",(int) potential_decisions_q[potential_decisions_q.size()-1]);
+						printf("\n");*/
+					}
+				}
 			}
 		}
 		
@@ -1349,10 +1361,12 @@ void MaxflowDetector<Weight>::undecide(Lit l) {
 	if(outer->isEdgeVar(var(l))){
 		++iter;
 		int edgeid = outer->getEdgeID(var(l));
-		if(!in_decision_q[edgeid]){
+		if(is_potential_decision[edgeid] && !in_decision_q[edgeid]){
+
+			//problem: this check is applied before any backtracking might occur (if lazy backtracking is not applied).
 			if (overapprox_conflict_detector->getEdgeFlow(edgeid) > 0) {			//this check is optional
-				assert(!in_decision_q[edgeid]);
-				//if(!in_decision_q[edgeid]){
+
+				if(!in_decision_q[edgeid]){
 					in_decision_q[edgeid]=true;
 					if (opt_maxflow_decisions_q == 0)
 						potential_decisions_q.insertBack(edgeid);
@@ -1365,16 +1379,19 @@ void MaxflowDetector<Weight>::undecide(Lit l) {
 					} else if (opt_maxflow_decisions_q == 4) {
 						potential_decisions_q.insert(edgeid);//insert in LIFO order, no FIFO, because we are unwinding the decisions
 					}
-				//}
-	/*			printf("g%d %d mf backtrack q (size %d): ", outer->id,iter,potential_decisions_q.size());
+				}
+			/*	printf("g%d mf backtrack q (size %d): ", outer->id,potential_decisions_q.size());
 				for(int i =0;i<potential_decisions_q.size();i++){
 					printf("%d, ",(int) potential_decisions_q[i]);
 					break;
 				}
-				printf("%d, ",(int) potential_decisions_q[potential_decisions_q.size()-1]);
+				if(potential_decisions_q.size()){
+					printf("%d, ",(int) potential_decisions_q[potential_decisions_q.size()-1]);
+				}
 				printf("\n");*/
 			} else {
-				//is_potential_decision[edgeid] = false;			//discard this edge from the set of potential decisions
+				is_potential_decision[edgeid] = false;			//discard this edge from the set of potential decisions
+				//printf("undecide remove from q %d\n", edgeid);
 			}
 		}
 
@@ -1402,13 +1419,48 @@ Lit MaxflowDetector<Weight>::decide() {
 	if (opt_lazy_maxflow_decisions) {
 
 		collectChangedEdges();
-		//if(it> 42000){//42817
-/*			printf("g%d %d decision q (size %d): ", outer->id,it,potential_decisions_q.size());
+	/*	if(it % 1000 ==0){//42817
+
+			printf("g%d %d decision q (size %d) check: \n", outer->id,it,potential_decisions_q.size());
+			static vec<bool> needs_decision;
+			static vec<bool> check_in_decisions;
+			needs_decision.clear();
+			needs_decision.growTo(g_under.edges());
+			check_in_decisions.clear();
+			check_in_decisions.growTo(g_under.edges());
+			for(int i = 0;i<potential_decisions_q.size();i++){
+				int edgeID = potential_decisions_q[i];
+				if(check_in_decisions[edgeID]){
+					exit(7);
+				}
+				check_in_decisions[edgeID]=true;
+			}
+			for (int edgeID = 0; edgeID < g_under.edges(); edgeID++) {
+				Lit l = mkLit(outer->getEdgeVar(edgeID));
+				if(outer->value(l)==l_Undef && overapprox_conflict_detector->getEdgeFlow(edgeID)>0){
+					needs_decision[edgeID]=true;
+					if(!in_decision_q[edgeID]){
+						exit(4);
+					}
+					if(!is_potential_decision[edgeID]){
+						exit(5);
+					}
+					if(!check_in_decisions[edgeID]){
+						exit(6);
+					}
+				}
+			}
+		}*/
+
+
+	/*		printf("g%d %d decision q (size %d): ", outer->id,it,potential_decisions_q.size());
 			for(int i =0;i<potential_decisions_q.size();i++){
 				printf("%d, ",(int) potential_decisions_q[i]);
 				break;
 			}
-			printf("%d, ",(int) potential_decisions_q[potential_decisions_q.size()-1]);
+			if(potential_decisions_q.size()){
+				printf("%d, ",(int) potential_decisions_q[potential_decisions_q.size()-1]);
+			}
 			printf("\n");*/
 		//}
 /*
@@ -1465,21 +1517,25 @@ Lit MaxflowDetector<Weight>::decide() {
 			}
 			assert(in_decision_q[edgeID]);
 			in_decision_q[edgeID]=false;
+			assert(is_potential_decision[edgeID]);
 			Lit l = mkLit(outer->getEdgeVar(edgeID), false);
 			if (outer->decidable(l) && over->getEdgeFlow(edgeID) > 0) {
 				//decideEdge(edgeID, true);
 				decision = l;
-
+				//printf("decide edge %d\n", edgeID);
 				break;
 			} else if (outer->value(l) == l_True) {
 				if (over->getEdgeFlow(edgeID) > 0) {			//this check is optional
 					//decideEdge(edgeID, true);
+				//	printf("skip decision keep edge %d\n", edgeID);
 				} else {
-					//is_potential_decision[edgeID] = false;
+					is_potential_decision[edgeID] = false;
+				//	printf("skip decision remove edge %d\n", edgeID);
 				}
 			} else {
 				assert(over->getEdgeFlow(edgeID) == 0);
-				//is_potential_decision[edgeID] = false;
+				is_potential_decision[edgeID] = false;
+				//printf("skip decision remove edge %d\n", edgeID);
 			}
 		}
 		//}

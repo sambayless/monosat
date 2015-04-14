@@ -1385,7 +1385,8 @@ public:
 		if(iter==5940){
 			int a=1;
 		}
-	/*	if(iter>128451){
+		/*if(iter>128451){
+			fflush(stdout);
 			exit(1);
 		}*/
 		dbg_full_sync();

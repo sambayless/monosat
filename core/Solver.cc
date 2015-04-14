@@ -346,6 +346,16 @@ bool Solver::satisfied(const Clause& c) const {
 //
 void Solver::cancelUntil(int lev) {
 	if (decisionLevel() > lev) {
+
+		for (int i = 0; i < theories.size(); i++) {
+			if(opt_lazy_backtrack  && theories[i]->supportsLazyBacktracking()){
+				//if we _are_ backtracking lazily, then the assumption is that the theory solver will, after backtracking, mostly re-assign the same literals.
+				//so instead, we will backtrack the theory lazily, in the future, if it encounters an apparent conflict (and this backtracking may alter or eliminate that conflict.)
+			}else{
+				theories[i]->backtrackUntil(lev);
+			}
+		}
+
 		//printf("s: cancel %d\n",lev);
 		for (int c = trail.size() - 1; c >= trail_lim[lev]; c--) {
 			Var x = var(trail[c]);
@@ -386,14 +396,7 @@ void Solver::cancelUntil(int lev) {
 			in_theory_queue[i] = false;
 		}
 		theory_queue.clear();
-		for (int i = 0; i < theories.size(); i++) {
-			if(opt_lazy_backtrack  && theories[i]->supportsLazyBacktracking()){
-				//if we _are_ backtracking lazily, then the assumption is that the theory solver will, after backtracking, mostly re-assign the same literals.
-				//so instead, we will backtrack the theory lazily, in the future, if it encounters an apparent conflict (and this backtracking may alter or eliminate that conflict.)
-			}else{
-				theories[i]->backtrackUntil(lev);
-			}
-		}
+
 
 
 		//re-enqueue any lazy lits as appropriate
