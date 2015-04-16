@@ -214,6 +214,133 @@ void MaxflowDetector<Weight>::addFlowBVLessThan(const BitVector<Weight>  &bv, Va
 	reach_lit_map[reach_var - first_reach_var] = flow_lits.size() - 1;
 
 }
+
+
+template<typename Weight>
+Lit MaxflowDetector<Weight>::findFirstReasonTooHigh(Weight flow) {
+
+	Weight actual_flow = underapprox_conflict_detector->maxFlow();
+
+	//just collect the set of edges which have non-zero flow, and return them
+	//(Or, I could return a cut, probably)
+	for (int i = 0; i < g_under.edges(); i++) {
+		if (g_under.edgeEnabled(i)) {
+			if (underapprox_conflict_detector->getEdgeFlow(i) > 0) {
+				Var v = outer->edge_list[i].v;
+				Lit l = mkLit(v,true);
+				assert(outer->value(v)==l_True);
+				if(!g_under.isConstant(i) && outer->decidable(l)){
+					return l;
+				}
+				if(outer->hasBitVector(i)){
+					exit(3);
+					//outer->buildBVReason(outer->getEdgeBV(i).getID(),Comparison::geq,underapprox_conflict_detector->getEdgeFlow(i),conflict);
+					//outer->buildBVReason(bv.getID(),inclusive ? Comparison::gt:Comparison::geq,bv.getUnder(),conflict);
+				}
+			}
+		}
+	}
+	return lit_Undef;
+}
+template<typename Weight>
+Lit MaxflowDetector<Weight>::findFirstReasonTooLow(Weight flow) {
+	Weight foundflow = overapprox_conflict_detector->maxFlow();
+	assert(!seen.contains(true));
+
+	visit.clear();
+	visit.push(target);
+	for (int k = 0; k < visit.size(); k++) {
+		int u = visit[k];
+		for (int i = 0; i < g_under.nIncoming(u); i++) {
+			int p = g_under.incoming(u, i).node;
+			if (!seen[p]) {
+
+				int edgeid = g_under.incoming(u, i).id;
+				int v = outer->getEdgeVar(edgeid);
+
+				//assert( g.incoming(u,i).to==u);
+				if (outer->value(v) != l_False) {
+					//this is an enabled edge in the overapprox
+
+					Weight residual_capacity = overapprox_conflict_detector->getEdgeResidualCapacity(edgeid);
+					if (residual_capacity > 0) {
+						seen[p] = true;
+						visit.push(p);
+					}else{
+						//if the edge _was_ enabled, and all of its capacity was used, then the reason that it didn't have more capacity must be included.
+						if(outer->hasBitVector(edgeid)){
+							exit(3);
+						}
+					}
+				} else {
+					//this is a disabled edge, and we can add it to the cut.
+					//we're going to assume the edge has non-zero capacity here, otherwise we could exclude it (but it shouldn't really even be in this graph in that case, anyways).
+					if( !g_over.isConstant(edgeid)){
+						Lit l = mkLit(v);
+						if(outer->decidable(l)){
+							while(visit.size()){
+								seen[visit.last()]=false;
+								visit.pop();
+							}
+							visit.clear();
+
+							return l;
+						}
+					}
+				}
+			}
+			//pred
+		}
+		//we are walking back in the RESIDUAL graph, which can mean backwards traversal of edges with flow!
+		for (int i = 0; i < g_under.nIncident(u); i++) {
+			int p = g_under.incident(u, i).node;
+			if (!seen[p]) {
+				int edgeid = g_under.incident(u, i).id;
+				int v = outer->getEdgeVar(edgeid);
+
+				//assert( g.incoming(u,i).to==u);
+				if (outer->value(v) != l_False) {
+					//this is the residual capacity of the backwards edge in the residual graph - which is equal to the forwards flow on this edge!
+					Weight residual_capacity = overapprox_conflict_detector->getEdgeFlow(edgeid);
+					if (residual_capacity>0) {
+						seen[p] = true;
+						visit.push(p);
+					}else if (g_over.getWeight(edgeid)==0){
+						//if the edge _was_ enabled, and it had no capacity capacity was used, then the reason that it didn't have more capacity must be included.
+						//does this really hold for backwards edges?
+						if(outer->hasBitVector(edgeid)){
+							exit(3);
+							//outer->buildBVReason(bv.getID(),inclusive ? Comparison::gt:Comparison::geq,bv.getUnder(),conflict);
+						}
+					}
+				} else {
+					//this is a disabled edge, and we can add it to the cut.
+					//we're going to assume the edge has non-zero capacity here, otherwise we could exclude it (but it shouldn't really even be in this graph in that case, anyways).
+					if( !g_over.isConstant(edgeid)){
+						Lit l = mkLit(v);
+						if(outer->decidable(l)){
+							while(visit.size()){
+								seen[visit.last()]=false;
+								visit.pop();
+							}
+							visit.clear();
+
+							return l;
+						}
+					}
+				}
+			}
+			//pred
+		}
+	}
+	while(visit.size()){
+		seen[visit.last()]=false;
+		visit.pop();
+	}
+	return lit_Undef;
+}
+
+
 template<typename Weight>
 void MaxflowDetector<Weight>::buildMaxFlowTooHighReason(Weight flow, vec<Lit> & conflict) {
 	//drawFull();
@@ -236,6 +363,7 @@ void MaxflowDetector<Weight>::buildMaxFlowTooHighReason(Weight flow, vec<Lit> & 
 					//outer->buildBVReason(bv.getID(),inclusive ? Comparison::gt:Comparison::geq,bv.getUnder(),conflict);
 				}
 			}
+
 		}
 	}
 	
@@ -477,8 +605,8 @@ void MaxflowDetector<Weight>::buildMaxFlowTooLowReason(Weight maxflow, vec<Lit> 
 	//g_over.drawFull(true);
 	//The reason why we can't reach this assignment is a cut through the disabled edges in the residual graph from the overapprox.
 	//we could search for a min cut, but instead we will just step back in the RESIDUAL graph, from u to s, collecting disabled edges.
-	seen.clear();
-	seen.growTo(outer->nNodes());
+	assert(!seen.contains(true));
+
 	visit.clear();
 	Weight foundflow = overapprox_conflict_detector->maxFlow();
 	/*			std::vector<MaxFlowEdge> ignore;
@@ -558,6 +686,11 @@ void MaxflowDetector<Weight>::buildMaxFlowTooLowReason(Weight maxflow, vec<Lit> 
 		}
 	}
 	
+	while(visit.size()){
+		seen[visit.last()]=false;
+		visit.pop();
+	}
+
 	if (!force_maxflow && opt_adaptive_conflict_mincut > 0 && (conflict.size() - 1 > opt_adaptive_conflict_mincut)) { //-1 to ignore the predicate's literal stored at position 0
 		double elapsed = rtime(2) - starttime;
 		stats_over_conflict_time += elapsed;
@@ -662,7 +795,7 @@ void MaxflowDetector<Weight>::buildReason(Lit p, vec<Lit> & reason, CRef marker)
 	}
 }
 template<typename Weight>
-bool MaxflowDetector<Weight>::propagate(vec<Lit> & conflict, bool backtrackOnly) {
+bool MaxflowDetector<Weight>::propagate(vec<Lit> & conflict, bool backtrackOnly, Lit & conflictLit) {
 	if (flow_lits.size() == 0) {
 		return true;
 	}
@@ -727,9 +860,12 @@ bool MaxflowDetector<Weight>::propagate(vec<Lit> & conflict, bool backtrackOnly)
 					outer->enqueue(l, underprop_marker);
 
 				} else if (outer->value(l) == l_False) {
-					if(backtrackOnly)
-						return false;
-
+					if(backtrackOnly){
+						conflictLit = findFirstReasonTooHigh(maxflow);
+						if(conflictLit!=lit_Undef){
+							return false;
+						}
+					}
 					conflict.push(l);
 					buildMaxFlowTooHighReason(maxflow, conflict);
 
@@ -744,8 +880,12 @@ bool MaxflowDetector<Weight>::propagate(vec<Lit> & conflict, bool backtrackOnly)
 					outer->enqueue(~l, underprop_marker);
 
 				} else if (outer->value(l) == l_True) {
-					if(backtrackOnly)
-						return false;
+					if(backtrackOnly){
+						conflictLit= findFirstReasonTooLow(maxflow);
+						if(conflictLit!=lit_Undef){
+							return false;
+						}
+					}
 
 					conflict.push(~l);
 					buildMaxFlowTooLowReason(maxflow, conflict);

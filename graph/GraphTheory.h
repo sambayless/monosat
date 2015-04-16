@@ -1758,7 +1758,7 @@ public:
 		}
 		
 	};
-
+/*
 	bool backtrackWhileConflicting(Detector * d,vec<Lit> & conflict){
 		conflict.clear();
 
@@ -1790,7 +1790,7 @@ public:
 		}
 
 		return d->propagate(conflict,lazy_trail_head!=var_Undef);
-	}
+	}*/
 
 	bool propagateTheory(vec<Lit> & conflict) {
 		static int itp = 0;
@@ -1864,13 +1864,44 @@ public:
 
 		for (int d = 0; d < detectors.size(); d++) {
 			assert(conflict.size() == 0);
-			//bool backtrackOnly = lazy_backtracking_enabled && lazy_trail_head!=var_Undef;
-			bool r = detectors[d]->propagate(conflict);
+			Lit l = lit_Undef;
+			bool backtrackOnly = lazy_backtracking_enabled && lazy_trail_head!=var_Undef;
+			bool r = detectors[d]->propagate(conflict,backtrackOnly,l);
 		/*	if(!r && backtrackOnly && conflict.size()==0){
 				r = backtrackWhileConflicting( detectors[d], conflict);
 			}*/
 
 			if (!r) {
+
+				if(l!=lit_Undef){
+
+					bool any_seen=false;
+					if(S->value(toSolver(l))!=value(l)){
+
+						any_seen=true;
+						assert(onLazyTrail(var(l)));
+
+						if(!onLazyTrail(var(l))){
+							exit(5);
+						}
+						if(value(~l)!=l_True){
+							exit(4);
+						}
+						removeFromTrail(var(l));
+						backtrackAssign(~l);
+
+					}
+
+					if(any_seen){
+						stats_num_averted_lazy_conflicts++;
+						conflict.clear();
+						//restart the loop, as assignments have changed... actually, this shouldn't be neccesary (only the current propagation should be re-started)
+						//as we have not backtracked past the current level in the SAT solver.
+						d=-1;
+						continue;
+					}
+				}
+
 
 				if(conflict.size() && lazy_backtracking_enabled && lazy_trail_head!=var_Undef){
 					//find the highest level lit in the conflict; if it is a higher level than the SAT solver, flip its assignment _in the theory solver_; propagate again.

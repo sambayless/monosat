@@ -87,7 +87,7 @@ public:
 	}
 	
 	virtual bool propagate(vec<Lit> & conflict)=0;
-	virtual bool propagate(vec<Lit> & conflict	, bool backtrackOnly){
+	virtual bool propagate(vec<Lit> & conflict	, bool backtrackOnly, Lit & conflictLit){
 		return propagate(conflict);
 	}
 

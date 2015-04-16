@@ -120,10 +120,13 @@ public:
 		collectDisabledEdges();
 	}
 	bool propagate(vec<Lit> & conflict){
-		return propagate(conflict,false);
+		Lit ignore=lit_Undef;
+		return propagate(conflict,false,ignore);
 	}
-	bool propagate(vec<Lit> & conflict, bool backtrackOnly);
+	bool propagate(vec<Lit> & conflict, bool backtrackOnly, Lit & conflictLit);
 	void buildMaxFlowTooHighReason(Weight flow, vec<Lit> & conflict);
+	Lit findFirstReasonTooHigh(Weight flow);
+	Lit findFirstReasonTooLow(Weight flow);
 	void buildMaxFlowTooLowReason(Weight flow, vec<Lit> & conflict, bool force_maxflow = false);
 	void buildForcedEdgeReason(int reach_node, int forced_edge_id, vec<Lit> & conflict);
 	void buildReason(Lit p, vec<Lit> & reason, CRef marker);
@@ -209,6 +212,7 @@ public:
 
 	void preprocess(){
 
+		seen.growTo(outer->nNodes());
 		is_potential_decision.growTo(g_under.edges(), false);
 
 		in_decision_q.growTo(g_under.edges(), false);
