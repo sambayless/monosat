@@ -1865,15 +1865,15 @@ public:
 		for (int d = 0; d < detectors.size(); d++) {
 			assert(conflict.size() == 0);
 			Lit l = lit_Undef;
-			bool backtrackOnly = lazy_backtracking_enabled && lazy_trail_head!=var_Undef;
-			bool r = detectors[d]->propagate(conflict,backtrackOnly,l);
+			//bool backtrackOnly = lazy_backtracking_enabled && lazy_trail_head!=var_Undef;
+			bool r = detectors[d]->propagate(conflict,false,l);
 		/*	if(!r && backtrackOnly && conflict.size()==0){
 				r = backtrackWhileConflicting( detectors[d], conflict);
 			}*/
 
 			if (!r) {
 
-				if(l!=lit_Undef){
+				/*if(l!=lit_Undef){
 
 					bool any_seen=false;
 					if(S->value(toSolver(l))!=value(l)){
@@ -1901,41 +1901,80 @@ public:
 						continue;
 					}
 				}
-
+*/
 
 				if(conflict.size() && lazy_backtracking_enabled && lazy_trail_head!=var_Undef){
-					//find the highest level lit in the conflict; if it is a higher level than the SAT solver, flip its assignment _in the theory solver_; propagate again.
-					//it might also be a good idea to add that assignment as a decision in the SAT solver.
-					//or, add the clause to the SAT solver, and simply unassign the lit in the theory solver.
-					//that might be a much cleaner option.
+					//find the highest level lit in the conflict; if it is a higher level than the SAT solver, then this isn't a conflict in the SAT solver (though the learnt clause is a valid one)
 
-					//assert(!seen.contains(true));
-					//seen.growTo(vars.size());
-					bool any_seen=false;
+					//There are several options for how to deal with this:
 
+					//0) Completely sync up the theory solver with the SAT solver at this point, and re-propagate
+					//1) add the clause to the SAT solver, and simply unassign the lit in the theory solver.
+					//2) Unassign _all_ lazy lits from the conflict, and repropagate.
+					//3) flip the assignment of one of the lits _in the theory solver_; propagate again.
+					//(it might also be a good idea to add that assignment as a decision in the SAT solver.)
+
+#ifndef NDEBUG
 					for (Lit l:conflict){
 						if(S->value(toSolver(l))!=value(l)){
-
-							any_seen=true;
 							assert(onLazyTrail(var(l)));
-
 							if(!onLazyTrail(var(l))){
 								exit(5);
 							}
 							if(value(~l)!=l_True){
 								exit(4);
 							}
-							removeFromTrail(var(l));
-							backtrackAssign(~l);
-							break;
 						}
 					}
+#endif
 
+					//assert(!seen.contains(true));
+					//seen.growTo(vars.size());
+
+					bool any_seen=false;
+					if(opt_lazy_conflicts==0){
+						for (Lit l:conflict){
+							if(S->value(toSolver(l))!=value(l)){
+								any_seen=true;
+								assert(onLazyTrail(var(l)));
+								break;
+							}
+						}
+						if(any_seen){
+							//sync the solver:
+							backtrackUntil(decisionLevel());
+							assert(lazy_trail_head==var_Undef);
+						}
+					}else if(opt_lazy_conflicts==1){
+						for (Lit l:conflict){
+							if(S->value(toSolver(l))!=value(l)){
+								any_seen=true;
+								assert(onLazyTrail(var(l)));
+
+								removeFromTrail(var(l));
+								backtrackAssign(~l);
+							}
+						}
+					}else if(opt_lazy_conflicts==2){
+						for (Lit l:conflict){
+							if(S->value(toSolver(l))!=value(l)){
+
+								any_seen=true;
+								assert(onLazyTrail(var(l)));
+
+								removeFromTrail(var(l));
+								backtrackAssign(~l);
+								break;
+							}
+						}
+					}
 					if(any_seen){
 
 						//the conflict should now be eliminated.
-						toSolver(conflict);
-						S->addClauseSafely(conflict);
+						if(opt_keep_lazy_conflicts){
+							toSolver(conflict);
+							S->addClauseSafely(conflict);
+						}
 						stats_num_averted_lazy_conflicts++;
 						conflict.clear();
 						//restart the loop, as assignments have changed... actually, this shouldn't be neccesary (only the current propagation should be re-started)
