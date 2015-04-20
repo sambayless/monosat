@@ -133,6 +133,7 @@ public:
 	bool checkSatisfied();
 	void undecide(Lit l);
 	Lit decide();
+	void suggestDecision(Lit l);
 	void printStats() {
 		Detector::printStats();
 		if (mincutalg == MinCutAlg::ALG_KOHLI_TORR) {

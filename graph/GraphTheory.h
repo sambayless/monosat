@@ -1873,36 +1873,6 @@ public:
 
 			if (!r) {
 
-				/*if(l!=lit_Undef){
-
-					bool any_seen=false;
-					if(S->value(toSolver(l))!=value(l)){
-
-						any_seen=true;
-						assert(onLazyTrail(var(l)));
-
-						if(!onLazyTrail(var(l))){
-							exit(5);
-						}
-						if(value(~l)!=l_True){
-							exit(4);
-						}
-						removeFromTrail(var(l));
-						backtrackAssign(~l);
-
-					}
-
-					if(any_seen){
-						stats_num_averted_lazy_conflicts++;
-						conflict.clear();
-						//restart the loop, as assignments have changed... actually, this shouldn't be neccesary (only the current propagation should be re-started)
-						//as we have not backtracked past the current level in the SAT solver.
-						d=-1;
-						continue;
-					}
-				}
-*/
-
 				if(conflict.size() && lazy_backtracking_enabled && lazy_trail_head!=var_Undef){
 					//find the highest level lit in the conflict; if it is a higher level than the SAT solver, then this isn't a conflict in the SAT solver (though the learnt clause is a valid one)
 
@@ -1913,6 +1883,8 @@ public:
 					//2) Unassign _all_ lazy lits from the conflict, and repropagate.
 					//3) flip the assignment of one of the lits _in the theory solver_; propagate again.
 					//(it might also be a good idea to add that assignment as a decision in the SAT solver.)
+
+					//if lits are unassigned, we may also want to put those at the head of the decision heuristic (to make the sat solver revisit them).
 
 #ifndef NDEBUG
 					for (Lit l:conflict){
@@ -1953,6 +1925,13 @@ public:
 
 								removeFromTrail(var(l));
 								backtrackAssign(~l);
+								if(opt_lazy_backtrack_redecide && isEdgeVar(var(l))){
+									for (int i = 0; i < detectors.size(); i++) {
+										Detector * r = detectors[i];
+										r->suggestDecision(l);
+									}
+								}
+
 							}
 						}
 					}else if(opt_lazy_conflicts==2){
@@ -1964,6 +1943,12 @@ public:
 
 								removeFromTrail(var(l));
 								backtrackAssign(~l);
+								if(opt_lazy_backtrack_redecide && isEdgeVar(var(l))){
+									for (int i = 0; i < detectors.size(); i++) {
+										Detector * r = detectors[i];
+										r->suggestDecision(l);
+									}
+								}
 								break;
 							}
 						}

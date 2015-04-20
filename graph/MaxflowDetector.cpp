@@ -1558,6 +1558,31 @@ void MaxflowDetector<Weight>::undecide(Lit l) {
 	}
 	printf("\n");*/
 }
+template<typename Weight>
+void MaxflowDetector<Weight>::suggestDecision(Lit l){
+	int edgeID = outer->getEdgeID(var(l));
+	//note: this may cause a literal to be added multiple times to the decision q.
+	//if(is_potential_decision[edgeID]){
+
+		//problem: this check is applied before any backtracking might occur.
+		//for now, disabling the edgeflow check for that reason...
+		//if (overapprox_conflict_detector->getEdgeFlow(edgeID) > 0) {
+			in_decision_q[edgeID]=true;
+			if (opt_maxflow_decisions_q == 0)
+				potential_decisions_q.insertBack(edgeID);
+			else if (opt_maxflow_decisions_q == 1) {
+				potential_decisions_q.insert(edgeID);//insert in LIFO order, no FIFO, because we are unwinding the decisions
+			} else if (opt_maxflow_decisions_q == 2) {
+				potential_decisions_q.insert(edgeID);			//insert in FIFO order instead
+			} else if (opt_maxflow_decisions_q == 3) {
+				potential_decisions_q.insert(edgeID);//insert in LIFO order, no FIFO, because we are unwinding the decisions
+			} else if (opt_maxflow_decisions_q == 4) {
+				potential_decisions_q.insert(edgeID);//insert in LIFO order, no FIFO, because we are unwinding the decisions
+			}
+		//}
+	//}
+
+}
 
 template<typename Weight>
 Lit MaxflowDetector<Weight>::decide() {

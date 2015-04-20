@@ -103,6 +103,9 @@ public:
 
 	}
 	virtual Lit decide()=0;
+	virtual void suggestDecision(Lit l){
+		//do nothing
+	}
 	virtual void setOccurs(Lit l, bool occurs) {
 		if (!occurs) {
 			if (sign(l))
