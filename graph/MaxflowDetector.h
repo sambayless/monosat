@@ -258,6 +258,14 @@ private:
 		}
 	}
 	inline void bumpConflictEdges(vec<Lit> & conflict){
+		if(opt_theory_prioritize_conflicts){
+			for (Lit l:conflict){
+				if(outer->isEdgeVar(var(l))){
+					int edgeID = outer->getEdgeID(var(l));
+					priority_decisions.push(edgeID);
+				}
+			}
+		}
 		if(opt_theory_vsids){
 			for (Lit l:conflict){
 				if(outer->isEdgeVar(var(l))){
