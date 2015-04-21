@@ -273,9 +273,9 @@ private:
 					edgeBumpActivity(edgeID);
 				}
 			}
-
+			edgeDecayActivity();
 		}
-		edgeDecayActivity();
+
 	}
 	inline void edgeDecayActivity() {
 		var_inc *= (1 / var_decay);

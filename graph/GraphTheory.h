@@ -576,7 +576,7 @@ public:
 	double propagationtime = 0;
 	long stats_propagations = 0;
 	long stats_num_conflicts = 0;
-	long stats_num_averted_lazy_conflicts=0;
+	long stats_num_lazy_conflicts=0;
 	long stats_decisions = 0;
 	long stats_num_reasons = 0;
 
@@ -704,7 +704,7 @@ public:
 				(propagationtime) / ((double) stats_propagations + 1), stats_propagations_skipped);
 		printf("Decisions: %ld (%f s, avg: %f s), lazy decisions: %ld\n", stats_decisions, stats_decision_time,
 				(stats_decision_time) / ((double) stats_decisions + 1), stats_lazy_decisions);
-		printf("Conflicts: %ld (lazy conflicts %d)\n", stats_num_conflicts,stats_num_averted_lazy_conflicts);
+		printf("Conflicts: %ld (lazy conflicts %d)\n", stats_num_conflicts,stats_num_lazy_conflicts);
 		printf("Reasons: %ld (%f s, avg: %f s)\n", stats_num_reasons, stats_reason_time,
 				(stats_reason_time) / ((double) stats_num_reasons + 1));
 
@@ -1865,13 +1865,17 @@ public:
 		for (int d = 0; d < detectors.size(); d++) {
 			assert(conflict.size() == 0);
 			Lit l = lit_Undef;
-			//bool backtrackOnly = lazy_backtracking_enabled && lazy_trail_head!=var_Undef;
-			bool r = detectors[d]->propagate(conflict,false,l);
-		/*	if(!r && backtrackOnly && conflict.size()==0){
-				r = backtrackWhileConflicting( detectors[d], conflict);
-			}*/
+			bool backtrackOnly = lazy_backtracking_enabled && (opt_lazy_conflicts==3) &&  lazy_trail_head!=var_Undef;
+			bool r = detectors[d]->propagate(conflict,backtrackOnly,l);
+			if(!r && backtrackOnly && conflict.size()==0){
+				backtrackUntil(decisionLevel());
+				stats_num_lazy_conflicts++;
+				d=-1;
+				continue;
+			}
 
 			if (!r) {
+
 
 				if(conflict.size() && lazy_backtracking_enabled && lazy_trail_head!=var_Undef){
 					//find the highest level lit in the conflict; if it is a higher level than the SAT solver, then this isn't a conflict in the SAT solver (though the learnt clause is a valid one)
@@ -1972,7 +1976,7 @@ public:
 							toSolver(conflict);
 							S->addClauseSafely(conflict);
 						}
-						stats_num_averted_lazy_conflicts++;
+						stats_num_lazy_conflicts++;
 						conflict.clear();
 						//restart the loop, as assignments have changed... actually, this shouldn't be neccesary (only the current propagation should be re-started)
 						//as we have not backtracked past the current level in the SAT solver.

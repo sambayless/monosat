@@ -863,10 +863,11 @@ bool MaxflowDetector<Weight>::propagate(vec<Lit> & conflict, bool backtrackOnly,
 
 				} else if (outer->value(l) == l_False) {
 					if(backtrackOnly){
-						conflictLit = findFirstReasonTooHigh(maxflow);
+						return false;
+						/*conflictLit = findFirstReasonTooHigh(maxflow);
 						if(conflictLit!=lit_Undef){
 							return false;
-						}
+						}*/
 					}
 					conflict.push(l);
 					buildMaxFlowTooHighReason(maxflow, conflict);
@@ -883,10 +884,11 @@ bool MaxflowDetector<Weight>::propagate(vec<Lit> & conflict, bool backtrackOnly,
 
 				} else if (outer->value(l) == l_True) {
 					if(backtrackOnly){
-						conflictLit= findFirstReasonTooLow(maxflow);
+						return false;
+					/*	conflictLit= findFirstReasonTooLow(maxflow);
 						if(conflictLit!=lit_Undef){
 							return false;
-						}
+						}*/
 					}
 
 					conflict.push(~l);
@@ -1594,6 +1596,8 @@ Lit MaxflowDetector<Weight>::decide() {
 			double post_time = rtime(2);
 			stats_decide_time += post_time - startdecidetime;
 			stats_redecide_time += post_time - startdecidetime;
+			if(opt_theory_priority_clear)
+				priority_decisions.clear();//at most one decision per conflict clause.
 			return l;
 		}
 	}

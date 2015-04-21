@@ -70,6 +70,7 @@ extern BoolOption opt_keep_lazy_conflicts;
 extern BoolOption opt_lazy_backtrack_redecide;
 extern BoolOption opt_theory_vsids;
 extern BoolOption opt_theory_prioritize_conflicts;
+extern BoolOption opt_theory_priority_clear;
 
 extern BoolOption opt_check_solution;
 extern BoolOption opt_print_reach;
