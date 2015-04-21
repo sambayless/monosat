@@ -62,8 +62,10 @@ template<typename Weight>
 MaxflowDetector<Weight>::MaxflowDetector(int _detectorID, GraphTheorySolver<Weight> * _outer,
 		 DynamicGraph<Weight>  &_g, DynamicGraph<Weight>  &_antig, int from, int _target, double seed) :
 		Detector(_detectorID), outer(_outer),  g_under(_g), g_over(_antig), source(
-				from), target(_target), rnd_seed(seed) {
-	
+				from), target(_target), rnd_seed(seed),order_heap(EdgeOrderLt(activity)) {
+	var_decay =opt_var_decay;
+
+
 	if (mincutalg == MinCutAlg::ALG_EDKARP_DYN) {
 		underapprox_detector = new EdmondsKarpDynamic<Weight>(_g, source, target);
 		overapprox_detector = new EdmondsKarpDynamic<Weight>(_antig, source, target);
@@ -366,7 +368,7 @@ void MaxflowDetector<Weight>::buildMaxFlowTooHighReason(Weight flow, vec<Lit> & 
 
 		}
 	}
-	
+	bumpConflictEdges(conflict);
 #ifdef RECORD
 	std::sort(conflict.begin(), conflict.end());
 	if (g_under.outfile) {
@@ -590,13 +592,13 @@ void MaxflowDetector<Weight>::buildMaxFlowTooLowReason(Weight maxflow, vec<Lit> 
 			
 			//there is no way to increase the max flow.
 		}
-		
+		bumpConflictEdges(conflict);
 		outer->num_learnt_cuts++;
 		outer->learnt_cut_clause_length += (conflict.size() - 1);
 		stats_over_conflicts++;
 		double elapsed = rtime(2) - starttime;
 		stats_over_conflict_time += elapsed;
-		
+
 		return;
 	}
 	
@@ -699,7 +701,7 @@ void MaxflowDetector<Weight>::buildMaxFlowTooLowReason(Weight maxflow, vec<Lit> 
 		buildMaxFlowTooLowReason(maxflow, conflict, true);
 		return;
 	}
-	
+	bumpConflictEdges(conflict);
 	/*if(conflict.size()<dbg_minconflict()){
 	 exit(4);
 	 }*/
@@ -1309,12 +1311,12 @@ void MaxflowDetector<Weight>::collectChangedEdges() {
 
 	//need to deal with changes to bv edge weights, also!
 	for (int j = changed_edges.size() - 1; j >= 0; j--) {
-		int edgeid = changed_edges[j];
-		if(edgeid==6){
-			int a=1;
-		}
 		static int iter = 0;
 		++iter;
+		int edgeid = changed_edges[j];
+		if(opt_theory_vsids){
+			insertEdgeOrder(edgeid);
+		}
 		if (!is_potential_decision[edgeid]) {
 			Lit l = mkLit(outer->getEdgeVar(edgeid), false);
 			if(outer->value(l)==l_Undef || outer->level(var(l))>0){
@@ -1514,6 +1516,10 @@ void MaxflowDetector<Weight>::undecide(Lit l) {
 	if(outer->isEdgeVar(var(l))){
 		++iter;
 		int edgeid = outer->getEdgeID(var(l));
+
+		if(opt_theory_vsids){
+			insertEdgeOrder(edgeid);
+		}
 		if(is_potential_decision[edgeid] && !in_decision_q[edgeid]){
 
 			//problem: this check is applied before any backtracking might occur (if lazy backtracking is not applied).
@@ -1592,7 +1598,17 @@ Lit MaxflowDetector<Weight>::decide() {
 		}
 	}
 
-
+	while(order_heap.size()){
+		int edgeID = order_heap.removeMin();
+		Lit l = mkLit(outer->getEdgeVar(edgeID), false);
+		if (outer->decidable(l) && over->getEdgeFlow(edgeID) > 0) {
+			n_stats_vsids_decisions++;
+			double post_time = rtime(2);
+			stats_decide_time += post_time - startdecidetime;
+			stats_redecide_time += post_time - startdecidetime;
+			return l;
+		}
+	}
 
 	if (opt_lazy_maxflow_decisions) {
 

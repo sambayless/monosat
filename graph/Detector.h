@@ -53,6 +53,7 @@ public:
 	long stats_decisions = 0;
 	double stats_decide_time = 0;
 	long n_stats_priority_decisions =0;
+	long n_stats_vsids_decisions=0;
 	long stats_under_clause_length = 0;
 	long stats_over_clause_length = 0;
 

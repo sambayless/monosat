@@ -130,6 +130,8 @@ BoolOption Monosat::opt_lazy_backtrack_decisions(_cat_graph, "lazy-backtrack-dec
 IntOption Monosat::opt_lazy_conflicts(_cat_graph, "lazy-conflicts", "0= unassign all lazy lits and reprop, 1=unassign all lazy lits in the clause, reprop, 2=unassign one lit, reprop",0,IntRange(0,2));
 BoolOption Monosat::opt_keep_lazy_conflicts(_cat_graph, "keep-lazy-conflicts", "Keep clauses from lazy conflicts (only relevant if lazy-backtracking is enabled)",true);
 BoolOption Monosat::opt_lazy_backtrack_redecide(_cat_graph, "lazy-backtrack-redecide", "",false);
+BoolOption Monosat::opt_theory_vsids(_cat_graph, "theory-vsids", "Use vsids decision heuristic within theory solvers",false);
+
 
 BoolOption Monosat::opt_check_solution(_cat_graph, "check-solution", "Double check solution", true);
 BoolOption Monosat::opt_print_reach(_cat_graph, "print-reach", "Print reachability graphs", false);

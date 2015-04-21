@@ -148,6 +148,12 @@ public:
 					kt->stats_flow_calcs, kt->stats_flow_time, kt->stats_calc_time);
 		} else
 			printf("\tDecision flow calculations: %ld\n", stats_decision_calculations);
+		if(n_stats_priority_decisions>0){
+			printf("\tPriority decisions: %ld\n",n_stats_priority_decisions);
+		}
+		if(opt_theory_vsids){
+			printf("\tVsids decisions: %ld\n",n_stats_vsids_decisions);
+		}
 		
 	}
 	//Lit decideByPath(int level);
@@ -216,7 +222,7 @@ public:
 	}*/
 
 	void preprocess(){
-
+		activity.growTo(g_under.edges());
 		seen.growTo(outer->nNodes());
 		is_potential_decision.growTo(g_under.edges(), false);
 
@@ -224,6 +230,64 @@ public:
 	}
 	
 private:
+	double var_inc=1;
+	double var_decay=1;
+	vec<double> activity;
+	struct EdgeOrderLt {
+		const vec<double>& activity;
+		//const vec<int> & priority;
+		bool operator ()(Var x, Var y) const {
+			//if (priority[x] == priority[y])
+				return activity[x] > activity[y];
+			//else {
+			//	return priority[x] > priority[y];
+			//}
+		}
+		EdgeOrderLt(const vec<double>& act):
+			activity(act) {
+		}
+	};
+
+	//Local vsids implementation for edges...
+	Heap<EdgeOrderLt> order_heap;
+
+	inline void insertEdgeOrder(int edgeID) {
+		if(opt_theory_vsids){
+			if (!order_heap.inHeap(edgeID) && activity[edgeID]>0 )
+				order_heap.insert(edgeID);
+		}
+	}
+	inline void bumpConflictEdges(vec<Lit> & conflict){
+		if(opt_theory_vsids){
+			for (Lit l:conflict){
+				if(outer->isEdgeVar(var(l))){
+					int edgeID = outer->getEdgeID(var(l));
+					edgeBumpActivity(edgeID);
+				}
+			}
+
+		}
+		edgeDecayActivity();
+	}
+	inline void edgeDecayActivity() {
+		var_inc *= (1 / var_decay);
+	}
+	inline void edgeBumpActivity(Var v) {
+		edgeBumpActivity(v, var_inc);
+	}
+	inline void edgeBumpActivity(Var v, double inc) {
+		if ((activity[v] += inc) > 1e100) {
+			// Rescale:
+			for (int i = 0; i < g_over.edges(); i++)
+				activity[i] *= 1e-100;
+			var_inc *= 1e-100;
+		}
+
+		// Update order_heap with respect to new activity:
+		if (order_heap.inHeap(v))
+			order_heap.decrease(v);
+	}
+
 	void buildDinitzLinkCut();
 };
 template<>
