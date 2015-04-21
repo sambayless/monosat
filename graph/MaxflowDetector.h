@@ -93,6 +93,8 @@ public:
 	vec<int> reach_lit_map;
 	vec<int> force_reason;
 
+	vec<int> priority_decisions;
+
 	struct DistLit {
 		Lit l;
 		Weight max_flow=-1;
@@ -123,6 +125,8 @@ public:
 		Lit ignore=lit_Undef;
 		return propagate(conflict,false,ignore);
 	}
+
+
 	bool propagate(vec<Lit> & conflict, bool backtrackOnly, Lit & conflictLit);
 	void buildMaxFlowTooHighReason(Weight flow, vec<Lit> & conflict);
 	Lit findFirstReasonTooHigh(Weight flow);

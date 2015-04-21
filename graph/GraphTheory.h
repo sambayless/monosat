@@ -1916,6 +1916,18 @@ public:
 							//sync the solver:
 							backtrackUntil(decisionLevel());
 							assert(lazy_trail_head==var_Undef);
+							if(opt_lazy_backtrack_redecide){
+								//redecide the lits of the conflict
+								for (Lit l:conflict){
+									if(isEdgeVar(var(l)) && S->value(var(toSolver(l)))==l_Undef){
+										for (int i = 0; i < detectors.size(); i++) {
+											Detector * r = detectors[i];
+											r->suggestDecision(l);
+										}
+									}
+								}
+							}
+
 						}
 					}else if(opt_lazy_conflicts==1){
 						for (Lit l:conflict){

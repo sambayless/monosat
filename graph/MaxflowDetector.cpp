@@ -1560,28 +1560,10 @@ void MaxflowDetector<Weight>::undecide(Lit l) {
 }
 template<typename Weight>
 void MaxflowDetector<Weight>::suggestDecision(Lit l){
-	int edgeID = outer->getEdgeID(var(l));
-	//note: this may cause a literal to be added multiple times to the decision q.
-	//if(is_potential_decision[edgeID]){
-
-		//problem: this check is applied before any backtracking might occur.
-		//for now, disabling the edgeflow check for that reason...
-		//if (overapprox_conflict_detector->getEdgeFlow(edgeID) > 0) {
-			in_decision_q[edgeID]=true;
-			if (opt_maxflow_decisions_q == 0)
-				potential_decisions_q.insertBack(edgeID);
-			else if (opt_maxflow_decisions_q == 1) {
-				potential_decisions_q.insert(edgeID);//insert in LIFO order, no FIFO, because we are unwinding the decisions
-			} else if (opt_maxflow_decisions_q == 2) {
-				potential_decisions_q.insert(edgeID);			//insert in FIFO order instead
-			} else if (opt_maxflow_decisions_q == 3) {
-				potential_decisions_q.insert(edgeID);//insert in LIFO order, no FIFO, because we are unwinding the decisions
-			} else if (opt_maxflow_decisions_q == 4) {
-				potential_decisions_q.insert(edgeID);//insert in LIFO order, no FIFO, because we are unwinding the decisions
-			}
-		//}
-	//}
-
+	if(outer->isEdgeVar(var(l))){
+		int edgeID = outer->getEdgeID(var(l));
+		priority_decisions.push(edgeID);
+	}
 }
 
 template<typename Weight>
@@ -1594,6 +1576,24 @@ Lit MaxflowDetector<Weight>::decide() {
 	auto * over = overapprox_conflict_detector;
 	auto * under = underapprox_conflict_detector;
 	
+
+	//typically, only one of the priority decisions will be selected (and, in doing so, satisfy the learn clause that filled the priority queue)
+	while (priority_decisions.size() > 0) {
+		int edgeID =priority_decisions.last();
+		priority_decisions.pop();
+
+		Lit l = mkLit(outer->getEdgeVar(edgeID), false);
+		if (outer->decidable(l) && over->getEdgeFlow(edgeID)>0) {
+			n_stats_priority_decisions++;
+			double post_time = rtime(2);
+			stats_decide_time += post_time - startdecidetime;
+			stats_redecide_time += post_time - startdecidetime;
+			return l;
+		}
+	}
+
+
+
 	if (opt_lazy_maxflow_decisions) {
 
 		collectChangedEdges();

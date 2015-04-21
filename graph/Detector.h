@@ -52,6 +52,7 @@ public:
 	long stats_skipped_over_updates = 0;
 	long stats_decisions = 0;
 	double stats_decide_time = 0;
+	long n_stats_priority_decisions =0;
 	long stats_under_clause_length = 0;
 	long stats_over_clause_length = 0;
 
@@ -73,8 +74,8 @@ public:
 			printf("\tOver-approx updates: %ld (%ld skipped)  (%f s total, %f s avg)\n", stats_over_updates,
 					stats_skipped_over_updates, (double) stats_over_update_time,
 					(double) stats_over_update_time / (double) (stats_over_updates + 1));
-			printf("\tTheory Decisions: %ld (%f s total, %f s avg)\n", stats_decisions, (double) stats_decide_time,
-					(double) stats_decide_time / (double) (stats_decisions + 1));
+			printf("\tTheory Decisions: %ld (%f s total, %f s avg, %d priority)\n", stats_decisions, (double) stats_decide_time,
+					(double) stats_decide_time / (double) (stats_decisions + 1),n_stats_priority_decisions);
 			printf(
 					"\tConflicts (under,over): %ld (clause literals: %ld), %ld, (clause literals: %ld), (under time %f s, over time %f s)\n",
 					stats_under_conflicts, stats_under_clause_length, stats_over_conflicts, stats_over_clause_length,
