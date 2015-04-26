@@ -100,6 +100,7 @@ public:
 		Lit l;
 		int u;
 		Weight min_distance;
+		bool strictComparison;
 		bool operator <(WeightedDistLit & b) const {
 			return min_distance < b.min_distance;
 		}
@@ -243,7 +244,7 @@ public:
 	Lit decide();
 	void updateShortestPaths(bool unweighted);
 	void addUnweightedShortestPathLit(int from, int to, Var reach_var, int within_steps = -1);
-	void addWeightedShortestPathLit(int from, int to, Var reach_var, Weight within_distance);
+	void addWeightedShortestPathLit(int from, int to, Var reach_var, Weight within_distance, bool strictComparison);
 	void addWeightedShortestPathBVLit(int from, int to, Var reach_var, const BitVector<Weight> & bv, bool strictComparison);
 
 	DistanceDetector(int _detectorID, GraphTheorySolver<Weight> * _outer,

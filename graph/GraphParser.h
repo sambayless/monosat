@@ -108,6 +108,35 @@ class GraphParser: public Parser<B, Solver> {
 	};
 
 	vec<BVMaxFlow> bvmaxflows;
+
+	template<typename Weight>
+	struct Distance{
+		int graphID;
+		int from;
+		int to;
+		int var;
+		bool strict;
+		Weight weight;
+	};
+
+	vec<Distance<long>> distances_long;
+	vec<Distance<double>> distances_float;
+	vec<Distance<mpq_class>> distances_rational;
+
+	template<typename Weight>
+	struct MaxFlow{
+		int graphID;
+		int s;
+		int t;
+		int var;
+		bool strict;
+		Weight weight;
+	};
+
+	vec<MaxFlow<long>> maxflows_long;
+	vec<MaxFlow<double>> maxflows_float;
+	vec<MaxFlow<mpq_class>> maxflows_rational;
+
 	void readDiGraph(B& in, GraphType graph_type, Solver& S) {
 		if (opt_ignore_theories) {
 			skipLine(in);
@@ -437,7 +466,8 @@ class GraphParser: public Parser<B, Solver> {
 
 		if (graphs[graphID]) {
 			int weight = parseInt(in);
-			graphs[graphID]->distance(from, to, reachVar, weight);
+			distances_long.push({graphID,from,to,reachVar,!leq,weight});
+			//graphs[graphID]->distance(from, to, reachVar, weight);
 		} else if (graphs_float[graphID]) {
 			double weight = parseDouble(in, tmp);
 			skipWhitespace(in);
@@ -446,7 +476,8 @@ class GraphParser: public Parser<B, Solver> {
 				double denom = parseDouble(in, tmp);
 				weight /= denom;
 			}
-			graphs_float[graphID]->distance(from, to, reachVar, weight);
+			distances_float.push({graphID,from,to,reachVar,!leq,weight});
+			//graphs_float[graphID]->distance(from, to, reachVar, weight);
 		} else if (graphs_rational[graphID]) {
 			std::stringstream ss;
 			skipWhitespace(in);
@@ -460,12 +491,14 @@ class GraphParser: public Parser<B, Solver> {
 				double value = std::stod(ss.str());
 				mpq_class weight(value);
 				weight.canonicalize();
-				graphs_rational[graphID]->distance(from, to, reachVar, weight);
+				//graphs_rational[graphID]->distance(from, to, reachVar, weight);
+				distances_rational.push({graphID,from,to,reachVar,!leq,weight});
 			} catch (std::exception& e) {
 				//if that fails, attempt to read it in directly as an fraction:
 				mpq_class weight(ss.str());
 				weight.canonicalize();
-				graphs_rational[graphID]->distance(from, to, reachVar, weight);
+				distances_rational.push({graphID,from,to,reachVar,!leq,weight});
+				//graphs_rational[graphID]->distance(from, to, reachVar, weight);
 			}
 
 		} else {
@@ -604,42 +637,7 @@ class GraphParser: public Parser<B, Solver> {
 			exit(1);
 		}
 	}
-	void readOldMaxFlowConstraint(B& in, Solver& S) {
-		if (opt_ignore_theories) {
-			skipLine(in);
-			return;
-		}
 
-		++in;
-
-		int graphID = parseInt(in);
-		int s = parseInt(in);
-		int t = parseInt(in);
-		long flow = parseInt(in);
-		int reachVar = parseInt(in) - 1; //note: maximum flow constraint format has been changed since the paper. The order of reachVar and flow after the paper, to allow for non-integer flow constraints.
-
-
-		if (graphID < 0 || graphID >= graphs.size()) {
-			printf("PARSE ERROR! Undeclared graph identifier %d for edge %d\n", graphID, reachVar), exit(1);
-		}
-		if (reachVar < 0) {
-			printf("PARSE ERROR! Edge variables must be >=0, was %d\n", reachVar), exit(1);
-		}
-
-		while (reachVar >= S.nVars())
-			S.newVar();
-
-		if (graphs[graphID]) {
-			graphs[graphID]->maxFlow(s, t, flow, reachVar);
-		} else if (graphs_float[graphID]) {
-			graphs_float[graphID]->maxFlow(s, t, flow, reachVar);
-		} else if (graphs_rational[graphID]) {
-			graphs_rational[graphID]->maxFlow(s, t, flow, reachVar);
-		} else {
-			printf("PARSE ERROR! Undeclared graph identifier %d\n", graphID), exit(1);
-			exit(1);
-		}
-	}
 
 	void readMaxFlowConstraintBV(B& in, Solver& S, bool inclusive) {
 			if (opt_ignore_theories) {
@@ -670,7 +668,42 @@ class GraphParser: public Parser<B, Solver> {
 			bvmaxflows.push({graphID,s,t,reachVar,bvID,!inclusive});
 
 		}
+	void readOldMaxFlowConstraint(B& in, Solver& S) {
+			if (opt_ignore_theories) {
+				skipLine(in);
+				return;
+			}
 
+			++in;
+
+			int graphID = parseInt(in);
+			int s = parseInt(in);
+			int t = parseInt(in);
+			long flow = parseInt(in); //old maxflow constraints always compared to an int
+			int reachVar = parseInt(in) - 1; //note: maximum flow constraint format has been changed since the paper. The order of reachVar and flow after the paper, to allow for non-integer flow constraints.
+			bool inclusive=true;//old maxflow constraints were always inclusive.
+
+			if (graphID < 0 || graphID >= graphs.size()) {
+				printf("PARSE ERROR! Undeclared graph identifier %d for edge %d\n", graphID, reachVar), exit(1);
+			}
+			if (reachVar < 0) {
+				printf("PARSE ERROR! Edge variables must be >=0, was %d\n", reachVar), exit(1);
+			}
+
+			while (reachVar >= S.nVars())
+				S.newVar();
+
+			if (graphs[graphID]) {
+				maxflows_long.push({graphID,s,t,reachVar,!inclusive,flow});
+			} else if (graphs_float[graphID]) {
+				maxflows_float.push({graphID,s,t,reachVar,!inclusive,(double)flow});
+			} else if (graphs_rational[graphID]) {
+				maxflows_rational.push({graphID,s,t,reachVar,!inclusive,(mpq_class)flow});
+			} else {
+				printf("PARSE ERROR! Undeclared graph identifier %d\n", graphID), exit(1);
+				exit(1);
+			}
+		}
 	void readMaxFlowConstraint(B& in, Solver& S, bool inclusive) {
 		if (opt_ignore_theories) {
 			skipLine(in);
@@ -699,7 +732,9 @@ class GraphParser: public Parser<B, Solver> {
 
 		if (graphs[graphID]) {
 			long flow = parseInt(in);
-			graphs[graphID]->maxFlow(s, t, flow, reachVar,inclusive);
+
+			maxflows_long.push({graphID,s,t,reachVar,!inclusive,flow});
+			//graphs[graphID]->maxFlow(s, t, flow, reachVar,inclusive);
 		} else if (graphs_float[graphID]) {
 			//float can be either a plain integer, or a rational (interpreted at floating point precision) in the form '123/456', or a floating point in decimal format
 			double flow = parseDouble(in, tmp);
@@ -709,7 +744,8 @@ class GraphParser: public Parser<B, Solver> {
 				double denom = parseDouble(in, tmp);
 				flow /= denom;
 			}
-			graphs_float[graphID]->maxFlow(s, t, flow, reachVar,inclusive);
+			maxflows_float.push({graphID,s,t,reachVar,!inclusive,flow});
+			//graphs_float[graphID]->maxFlow(s, t, flow, reachVar,inclusive);
 		} else if (graphs_rational[graphID]) {
 			//rational can be either a plain integer, or a rational in the form '123/456', or a floating point value
 			std::stringstream ss;
@@ -725,12 +761,14 @@ class GraphParser: public Parser<B, Solver> {
 				double value = std::stod(ss.str());
 				mpq_class flow(value);
 				flow.canonicalize();
-				graphs_rational[graphID]->maxFlow(s, t, flow, reachVar,inclusive);
+				//graphs_rational[graphID]->maxFlow(s, t, flow, reachVar,inclusive);
+				maxflows_rational.push({graphID,s,t,reachVar,!inclusive,flow});
 			} catch (std::exception& e) {
 				//if that fails, attempt to read it in directly as an fraction:
 				mpq_class flow(ss.str());
 				flow.canonicalize();
-				graphs_rational[graphID]->maxFlow(s, t, flow, reachVar,inclusive);
+				maxflows_rational.push({graphID,s,t,reachVar,!inclusive,flow});
+				//graphs_rational[graphID]->maxFlow(s, t, flow, reachVar,inclusive);
 			}
 
 		} else {
@@ -1104,14 +1142,39 @@ public:
 			graphs[e.graphID]->newEdgeBV(e.from, e.to, e.edgeVar, e.bvID);
 		}
 
+		for (auto & e: distances_long){
+			graphs[e.graphID]->distance(e.from, e.to, e.var, e.weight,!e.strict);
+		}
+		for (auto & e: distances_float){
+			graphs_float[e.graphID]->distance(e.from, e.to, e.var, e.weight,!e.strict);
+		}
+
+		for (auto & e: distances_rational){
+			graphs_rational[e.graphID]->distance(e.from, e.to, e.var, e.weight,!e.strict);
+		}
+
 		for(auto & e:bvdistances){
-			graphs[e.graphID]->distanceBV(e.from, e.to, e.var, e.bvID,e.strict);
+			graphs[e.graphID]->distanceBV(e.from, e.to, e.var, e.bvID,!e.strict);
 
 		}
+
+		for (auto & e: maxflows_long){
+			graphs[e.graphID]->maxflow(e.s, e.t, e.var, e.weight,!e.strict);
+		}
+
+		for (auto & e: maxflows_float){
+			graphs_float[e.graphID]->maxflow(e.s, e.t, e.var, e.weight,!e.strict);
+		}
+
+		for (auto & e: maxflows_rational){
+			graphs_rational[e.graphID]->maxflow(e.s, e.t, e.var, e.weight,!e.strict);
+		}
+
 		for(auto & e:bvmaxflows){
-			graphs[e.graphID]->maxflowBV(e.s, e.t, e.var, e.bvID,e.strict);
-
+			graphs[e.graphID]->maxflowBV(e.s, e.t, e.var, e.bvID,!e.strict);
 		}
+
+
 		for (auto p:edgePriorities){
 /*			int graphID = p.graphID;
 			Var v = S.getTheoryVar( p.edgeVar);

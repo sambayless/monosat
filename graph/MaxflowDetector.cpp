@@ -64,9 +64,16 @@ MaxflowDetector<Weight>::MaxflowDetector(int _detectorID, GraphTheorySolver<Weig
 		Detector(_detectorID), outer(_outer),  g_under(_g), g_over(_antig), source(
 				from), target(_target), rnd_seed(seed),order_heap(EdgeOrderLt(activity)) {
 	var_decay =opt_var_decay;
-
-
-	if (mincutalg == MinCutAlg::ALG_EDKARP_DYN) {
+	if (outer->hasBitVectorEdges() ) {
+		printf("Note: falling back on EdmondsKarp for maxflow, because edge weights are bitvectors\n");
+		//only edmonds karp supports bitvectors for now
+		underapprox_detector = new EdmondsKarpAdj<Weight>(_g, source, target);
+		overapprox_detector = new EdmondsKarpAdj<Weight>(_antig, source, target);
+		underapprox_conflict_detector = underapprox_detector;
+		overapprox_conflict_detector = overapprox_detector;
+		if (opt_conflict_min_cut_maxflow || opt_adaptive_conflict_mincut)
+			learn_cut = new EdmondsKarpAdj<long>(learn_graph, source, target);
+	}else if (mincutalg == MinCutAlg::ALG_EDKARP_DYN) {
 		underapprox_detector = new EdmondsKarpDynamic<Weight>(_g, source, target);
 		overapprox_detector = new EdmondsKarpDynamic<Weight>(_antig, source, target);
 		underapprox_conflict_detector = underapprox_detector; //new EdmondsKarpAdj<std::vector<Weight>,Weight>(_g,capacities);

@@ -81,7 +81,7 @@ public:
 	int id;
 	bool all_edges_unit = true;
 	bool all_edges_positive=true;
-
+	bool has_any_bitvector_edges=false;
 	int lazy_backtrack_level=-1;
 	vec<lbool> assigns;
 	MSTDetector<Weight> * mstDetector = nullptr;
@@ -98,6 +98,7 @@ public:
 		int to;
 		Weight distance;
 		Var reach_var;
+		bool strict;
 	};
 	vec<DistanceConstraint> unimplemented_distance_constraints;
 
@@ -737,6 +738,10 @@ public:
 	}
 	inline int getTheoryIndexBV(){
 		return theory_index;
+	}
+
+	bool hasBitVectorEdges()const{
+		return has_any_bitvector_edges;
 	}
 
 	void setBVTheory(BVTheorySolver<Weight> * bv){
@@ -2394,6 +2399,7 @@ public:
 		if(!comparator ){
 			fprintf(stderr,"Undefined bitvector\n");exit(1);
 		}
+		has_any_bitvector_edges=true;
 			assert(outerVar!=var_Undef);
 			assert(edge_weights.size()==0);
 			/*	if(outerVar==var_Undef)
@@ -2668,7 +2674,7 @@ public:
 	}
 
 
-	void reachesWithinDistance(int from, int to, Var reach_var, Weight distance) {
+	void reachesWithinDistance(int from, int to, Var reach_var, Weight distance, bool strictComparison) {
 		
 		assert(from < g_under.nodes());
 		
@@ -2692,7 +2698,7 @@ public:
 		DistanceDetector<Weight> * d = (DistanceDetector<Weight>*) weighted_dist_info[from].detector;
 		assert(d);
 		
-		d->addWeightedShortestPathLit(from, to, reach_var, distance);
+		d->addWeightedShortestPathLit(from, to, reach_var, distance,strictComparison);
 		
 	}
 
@@ -2790,7 +2796,7 @@ public:
 		unimplemented_reachability_constraints.clear();
 		
 		for(auto & d:unimplemented_distance_constraints){
-			reachesWithinDistance(d.from, d.to, d.reach_var, d.distance);
+			reachesWithinDistance(d.from, d.to, d.reach_var, d.distance,d.strict);
 		}
 		unimplemented_distance_constraints.clear();
 
@@ -2881,19 +2887,19 @@ public:
 		//to allow us to alter the solving algorithm based on the number and type of constraints, we aren't implementing them here directly any more - instead,
 		//we just store the constraints in this vector, then implement them later when 'implementConstraints' is called.
 	}
-	void distance(int from, int to, Var reach_var, Weight distance_lt) {
-		unimplemented_distance_constraints.push( { from, to, distance_lt, reach_var });
+	void distance(int from, int to, Var reach_var,  Weight distance_lt,bool inclusive) {
+		unimplemented_distance_constraints.push( { from, to, distance_lt, reach_var,!inclusive });
 		//to allow us to alter the solving algorithm based on the number and type of constraints, we aren't implementing them here directly any more - instead,
 		//we just store the constraints in this vector, then implement them later when 'implementConstraints' is called.
 	}
 
-	void distanceBV(int from, int to, Var reach_var, int bvID, bool strict) {
-		unimplemented_distance_constraints_bv.push( { from, to, bvID, reach_var, strict});
+	void distanceBV(int from, int to, Var reach_var, int bvID, bool inclusive) {
+		unimplemented_distance_constraints_bv.push( { from, to, bvID, reach_var, !inclusive});
 		//to allow us to alter the solving algorithm based on the number and type of constraints, we aren't implementing them here directly any more - instead,
 		//we just store the constraints in this vector, then implement them later when 'implementConstraints' is called.
 	}
-	void maxflowBV(int s, int t, Var reach_var, int bvID, bool strict) {
-		unimplemented_maxflow_constraints_bv.push( { s, t, bvID, reach_var, strict});
+	void maxflowBV(int s, int t, Var reach_var, int bvID, bool inclusive) {
+		unimplemented_maxflow_constraints_bv.push( { s, t, bvID, reach_var, !inclusive});
 		//to allow us to alter the solving algorithm based on the number and type of constraints, we aren't implementing them here directly any more - instead,
 		//we just store the constraints in this vector, then implement them later when 'implementConstraints' is called.
 	}
@@ -2940,7 +2946,7 @@ public:
 		}
 		mstDetector->addTreeEdgeLit(edgeid, var);
 	}
-	void maxFlow(int from, int to, Weight  max_flow, Var v, bool inclusive=true) {
+	void maxflow(int from, int to,Var v, Weight  max_flow,  bool inclusive=true) {
 		
 		for (int i = 0; i < flow_detectors.size(); i++) {
 			if (flow_detectors[i]->source == from && flow_detectors[i]->target == to) {

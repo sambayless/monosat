@@ -881,12 +881,14 @@ public:
 	bool updateApproximations(int bvID, int ignoreCID=-1, Var ignore_bv=var_Undef){
 		if(isConst(bvID))
 			return false;
-
+		if(bvID==34393){
+			int a=1;
+		}
 		static int iter = 0;
 		++iter;
 
 #ifndef NDEBUG
-		for(int i = 0;i<vars.size();i++){
+/*		for(int i = 0;i<vars.size();i++){
 			if(value(i)==l_True){
 				std::cout << "1";
 			}else if (value(i)==l_False){
@@ -895,7 +897,7 @@ public:
 				std::cout << "x";
 			}
 		}
-		std::cout<<"\n";
+		std::cout<<"\n";*/
 #endif
 		Weight under_old = under_approx[bvID];
 		Weight over_old = over_approx[bvID];
@@ -1108,7 +1110,6 @@ public:
 				over_causes[bvID].comparison_cause=cID;
 			}
 		}
-
 
 		for(int cID:bvcompares[bvID]){
 			if(cID==ignoreCID){
@@ -1608,18 +1609,20 @@ public:
 				int compareID = c.compareID;
 				assert(compareID>=0);
 				Lit l =  c.l;
-
-
+				lbool val = value(l);
+				if(value(l)==l_False){
+					l=~l;
+					op=-op;
+				}
+				assert(value(l)!=l_False);
 				Weight & under_compare = under_approx[compareID];
-
-
 
 				if((op==Comparison::lt && overApprox<under_compare) ||
 						(op==Comparison::leq && overApprox<=under_compare)){
 					if(value(l)==l_True){
 						//do nothing
 
-					}else if (value(l)==l_False){
+					}/*else if (value(l)==l_False){
 
 						assert(value(l)==l_False);
 						assert(dbg_value(l)==l_False);
@@ -1627,7 +1630,7 @@ public:
 						buildValueReasonBV(op,bvID,compareID,conflict);
 						toSolver(conflict);
 						return false;
-					}else {
+					}*/else {
 
 						assert(value(l)==l_Undef);
 						enqueue(l, comparisonprop_marker);
@@ -1640,12 +1643,24 @@ public:
 						buildValueReasonBV(-op,bvID,compareID,conflict);
 						toSolver(conflict);
 						return false;
-					}else if (value(l)==l_False){
+					}/*else if (value(l)==l_False){
 
-					}else {
+					}*/else {
 
 						assert(value(l)==l_Undef);
 						enqueue(~l, comparisonprop_marker);
+					}
+				}
+				if(value(l)==l_True &&((op==Comparison::lt && underApprox>=under_compare) ||
+						(op==Comparison::leq && underApprox>under_compare))){
+					//the other bv needs to be updated
+					if(!alteredBV[compareID]){
+						alteredBV[compareID]=true;
+						assert(altered_bvs.last()==bvID);
+						altered_bvs.last()=compareID;
+						assert(altered_bvs.last()==compareID);
+						altered_bvs.push(bvID);
+						assert(altered_bvs.last()==bvID);
 					}
 				}
 			}
@@ -1658,6 +1673,12 @@ public:
 				int compareID = c.compareID;
 				assert(compareID>=0);
 				Lit l =  c.l;
+				lbool val = value(l);
+				if(value(l)==l_False){
+					l=~l;
+					op=-op;
+				}
+				assert(value(l)!=l_False);
 				//updateApproximations(compareID);
 				Weight & over_compare = over_approx[compareID];
 				if((op==Comparison::lt && underApprox>=over_compare) ||
@@ -1668,10 +1689,10 @@ public:
 						buildValueReasonBV(-op,bvID,compareID,conflict);
 						toSolver(conflict);
 						return false;
-					}else if (value(l)==l_False){
+					}/*else if (value(l)==l_False){
 						//do nothing
 
-					}else {
+					}*/else {
 
 						assert(value(l)==l_Undef);
 						enqueue(~l, comparisonprop_marker);
@@ -1680,23 +1701,39 @@ public:
 						(op==Comparison::geq && underApprox>=over_compare)){
 					if(value(l)==l_True){
 
-					}else if (value(l)==l_False){
+					}/*else if (value(l)==l_False){
 
 						conflict.push(l);
 						buildValueReasonBV(op,bvID,compareID,conflict);
 						toSolver(conflict);
 						return false;
-					}else {
+					}*/else {
 
 						assert(value(l)==l_Undef);
 						enqueue(l, comparisonprop_marker);
 					}
 				}
+				//we can also update the other bv's approximation, possibly:
+				if(value(l)==l_True &&( (op==Comparison::gt && overApprox<over_compare) ||
+						(op==Comparison::geq && overApprox<=over_compare))){
+					//the other bv needs to be updated
+					if(!alteredBV[compareID]){
+						alteredBV[compareID]=true;
+						assert(altered_bvs.last()==bvID);
+						altered_bvs.last()=compareID;
+						assert(altered_bvs.last()==compareID);
+						altered_bvs.push(bvID);
+						assert(altered_bvs.last()==bvID);
+					}
+				}
+
 			}
 
 			if(hasTheory(bvID))
 				getTheory(bvID)->enqueueBV(bvID);//only enqueue the bitvector in the subtheory _after_ it's approximation has been updated!
 
+			assert(altered_bvs.last()==bvID);
+			assert(alteredBV[bvID]==true);
 			altered_bvs.pop();
 			alteredBV[bvID]=false;
 		}
@@ -2955,7 +2992,7 @@ public:
 
 		if(bvID<toID){
 
-			Lit l = newComparisonBV(-op,toID,bvID,outerVar);//is this correct?
+			Lit l = newComparisonBV(~op,toID,bvID,outerVar);//is this correct?
 		/*	if(outerVar !=var_Undef){
 				makeEqualInSolver(mkLit(outerVar),toSolver(~l));
 			}*/
@@ -3002,9 +3039,9 @@ public:
 
 		if(!cause_set[bvID].contains(toID))
 			cause_set[bvID].push(toID);
-		//Also need to attach an equivalent (but negated) comparator to the other bitvector
+		//Also need to attach an equivalent (but reversed) comparator to the other bitvector
 		comparisonID = comparisons.size();
-		comparisons.push(ComparisonID(-1,bvID,~l,toID,-op));
+		comparisons.push(ComparisonID(-1,bvID,l,toID,~op));
 		bvcompares[toID].push(comparisonID);
 		//insert this value in order.
 		//could do a binary search here...
