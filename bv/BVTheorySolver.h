@@ -1405,7 +1405,7 @@ public:
 			return true;
 		}
 
-		if(++realprops==46){
+		if(++realprops==22){
 			int a =1;
 		}
 		//printf("bv prop %d\n",stats_propagations);
@@ -1417,12 +1417,12 @@ public:
 		//static vec<int> detectors_to_check;
 		
 		conflict.clear();
-
 		
-		//while(altered_bvs.size()){
-			//int bvID = altered_bvs.last();
-		for(int bvID = 0;bvID<bitvectors.size();bvID++){
-			//assert(alteredBV[bvID]);
+
+		while(altered_bvs.size()){
+			int bvID = altered_bvs.last();
+		//for(int bvID = 0;bvID<bitvectors.size();bvID++){
+			assert(alteredBV[bvID]);
 
 			updateApproximations(bvID);
 
@@ -1696,6 +1696,9 @@ public:
 
 			if(hasTheory(bvID))
 				getTheory(bvID)->enqueueBV(bvID);//only enqueue the bitvector in the subtheory _after_ it's approximation has been updated!
+
+			altered_bvs.pop();
+			alteredBV[bvID]=false;
 		}
 		
 		requiresPropagation = false;
@@ -2952,7 +2955,7 @@ public:
 
 		if(bvID<toID){
 
-			Lit l = newComparisonBV(~op,toID,bvID,outerVar);//is this correct?
+			Lit l = newComparisonBV(-op,toID,bvID,outerVar);//is this correct?
 		/*	if(outerVar !=var_Undef){
 				makeEqualInSolver(mkLit(outerVar),toSolver(~l));
 			}*/
@@ -2996,11 +2999,34 @@ public:
 				break;
 			}
 		}
+
+		if(!cause_set[bvID].contains(toID))
+			cause_set[bvID].push(toID);
+		//Also need to attach an equivalent (but negated) comparator to the other bitvector
+		comparisonID = comparisons.size();
+		comparisons.push(ComparisonID(-1,bvID,~l,toID,-op));
+		bvcompares[toID].push(comparisonID);
+		//insert this value in order.
+		//could do a binary search here...
+		for(int i=0;i<bvcompares[toID].size()-1;i++){
+			int cid = bvcompares[toID][i];
+			if(comparisons[cid].compareID>= bvID){
+				for(int j = bvcompares[toID].size()-1; j>i ;j--){
+					bvcompares[toID][j]=bvcompares[toID][j-1];
+				}
+				bvcompares[toID][i]=comparisonID;
+				break;
+			}
+		}
+
 		if(!alteredBV[bvID]){
 			alteredBV[bvID]=true;
 			altered_bvs.push(bvID);
 		}
-
+		if(!alteredBV[toID]){
+			alteredBV[toID]=true;
+			altered_bvs.push(toID);
+		}
 
 		Weight & underApprox = under_approx[bvID];
 		Weight & overApprox = over_approx[bvID];
