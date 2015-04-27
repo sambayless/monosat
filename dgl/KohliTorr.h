@@ -704,7 +704,7 @@ private:
 
 		//apply edmonds karp to the current flow.
 		Weight maxflow = kt->maxflow(true, nullptr);
-		double startcalctime = Monosat::rtime(0);
+		//double startcalctime = Monosat::rtime(2);
 		//if(backward_maxflow){
 		
 		/*kt->clear_t_edges(sink,source);
