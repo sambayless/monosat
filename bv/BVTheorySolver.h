@@ -588,7 +588,7 @@ public:
 					//mark
 					vec<int> & causes = cause_set[bvID];
 					for(int bv:causes){
-						assert(bv>bvID);
+						//assert(bv>bvID);
 						setNeedsUpdate(bv);
 					}
 				}

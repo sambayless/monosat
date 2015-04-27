@@ -64,40 +64,40 @@ MaxflowDetector<Weight>::MaxflowDetector(int _detectorID, GraphTheorySolver<Weig
 		Detector(_detectorID), outer(_outer),  g_under(_g), g_over(_antig), source(
 				from), target(_target), rnd_seed(seed),order_heap(EdgeOrderLt(activity)) {
 	var_decay =opt_var_decay;
-	if (outer->hasBitVectorEdges() ) {
-		printf("Note: falling back on EdmondsKarp for maxflow, because edge weights are bitvectors\n");
-		//only edmonds karp supports bitvectors for now
-		underapprox_detector = new EdmondsKarpAdj<Weight>(_g, source, target);
-		overapprox_detector = new EdmondsKarpAdj<Weight>(_antig, source, target);
-		underapprox_conflict_detector = underapprox_detector;
-		overapprox_conflict_detector = overapprox_detector;
-		if (opt_conflict_min_cut_maxflow || opt_adaptive_conflict_mincut)
-			learn_cut = new EdmondsKarpAdj<long>(learn_graph, source, target);
-	}else if (mincutalg == MinCutAlg::ALG_EDKARP_DYN) {
+
+	MinCutAlg alg = mincutalg;
+	if(outer->hasBitVectorEdges()){
+		if (alg!= MinCutAlg::ALG_EDKARP_ADJ && alg != MinCutAlg::ALG_KOHLI_TORR){
+			printf("Note: falling back on kohli-torr for maxflow, because edge weights are bitvectors\n");
+			alg=MinCutAlg::ALG_KOHLI_TORR;
+		}
+	}
+
+	if (alg == MinCutAlg::ALG_EDKARP_DYN) {
 		underapprox_detector = new EdmondsKarpDynamic<Weight>(_g, source, target);
 		overapprox_detector = new EdmondsKarpDynamic<Weight>(_antig, source, target);
 		underapprox_conflict_detector = underapprox_detector; //new EdmondsKarpAdj<std::vector<Weight>,Weight>(_g,capacities);
 		overapprox_conflict_detector = overapprox_detector; // new EdmondsKarpAdj<std::vector<Weight>,Weight>(_antig,capacities);
 		if (opt_conflict_min_cut_maxflow || opt_adaptive_conflict_mincut)
 			learn_cut = new EdmondsKarpDynamic<long>(learn_graph, source, target);
-		
+
 		/*if(opt_conflict_min_cut_maxflow)
 		 learn_cut = new EdmondsKarpAdj<std::vector<int>,int>(learn_graph,learn_caps,source,target);*/
-	} else if (mincutalg == MinCutAlg::ALG_EDKARP_ADJ) {
+	} else if (alg == MinCutAlg::ALG_EDKARP_ADJ) {
 		underapprox_detector = new EdmondsKarpAdj<Weight>(_g, source, target);
 		overapprox_detector = new EdmondsKarpAdj<Weight>(_antig, source, target);
 		underapprox_conflict_detector = underapprox_detector;
 		overapprox_conflict_detector = overapprox_detector;
 		if (opt_conflict_min_cut_maxflow || opt_adaptive_conflict_mincut)
 			learn_cut = new EdmondsKarpAdj<long>(learn_graph, source, target);
-	} else if (mincutalg == MinCutAlg::ALG_DINITZ) {
+	} else if (alg == MinCutAlg::ALG_DINITZ) {
 		underapprox_detector = new Dinitz<Weight>(_g, source, target);
 		overapprox_detector = new Dinitz<Weight>(_antig, source, target);
 		underapprox_conflict_detector = underapprox_detector; // new EdmondsKarpAdj<std::vector<Weight>,Weight>(_g,capacities);
 		overapprox_conflict_detector = overapprox_detector; //new EdmondsKarpAdj<std::vector<Weight>,Weight>(_antig,capacities);
 		if (opt_conflict_min_cut_maxflow || opt_adaptive_conflict_mincut)
 			learn_cut = new Dinitz<long>(learn_graph, source, target);
-	} else if (mincutalg == MinCutAlg::ALG_DINITZ_LINKCUT) {
+	} else if (alg == MinCutAlg::ALG_DINITZ_LINKCUT) {
 		//link-cut tree currently only supports ints (enforcing this using tempalte specialization...).
 		buildDinitzLinkCut();
 		underapprox_conflict_detector = new EdmondsKarpAdj<Weight>(_g, source, target);
@@ -105,7 +105,7 @@ MaxflowDetector<Weight>::MaxflowDetector(int _detectorID, GraphTheorySolver<Weig
 				target);
 		if (opt_conflict_min_cut_maxflow || opt_adaptive_conflict_mincut)
 			learn_cut = new EdmondsKarpAdj<long>(learn_graph, source, target);
-	} else if (mincutalg == MinCutAlg::ALG_KOHLI_TORR) {
+	} else if (alg == MinCutAlg::ALG_KOHLI_TORR) {
 		underapprox_detector = new KohliTorr<Weight>(_g, source, target,
 				opt_kt_preserve_order);
 		overapprox_detector = new KohliTorr<Weight>(_antig, source, target,
