@@ -2493,6 +2493,7 @@ public:
 		if(!comparator ||!comparator->hasBV(bvID)){
 			fprintf(stderr,"Undefined bitvector\n");exit(1);
 		}
+		has_any_bitvector_edges=true;
 				assert(outerVar!=var_Undef);
 				assert(edge_weights.size()==0);
 				int index = edge_list.size();

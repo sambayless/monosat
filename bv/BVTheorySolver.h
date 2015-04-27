@@ -192,7 +192,10 @@ private:
 
 public:
 	int id;
-
+	bool first_propagation=true;
+	long n_bits =0;
+	long n_consts = 0;
+	long n_starting_consts=0;
 	vec<lbool> assigns;
 	CRef comparisonprop_marker;
 	CRef bvprop_marker;
@@ -285,10 +288,18 @@ public:
 	double unreachtime = 0;
 	double pathtime = 0;
 	double propagationtime = 0;
+	double stats_conflict_time = 0;
 	long stats_propagations = 0;
 	long stats_num_conflicts = 0;
+	long stats_bit_conflicts = 0;
+	long stats_addition_conflicts = 0;
+	long stats_compare_conflicts = 0;
+	long stats_bv_compare_conflicts = 0;
 	long stats_decisions = 0;
 	long stats_num_reasons = 0;
+	long stats_build_value_reason=0;
+	long stats_build_value_bv_reason=0;
+	long stats_build_addition_reason=0;
 
 	double reachupdatetime = 0;
 	double unreachupdatetime = 0;
@@ -303,7 +314,7 @@ public:
 	long stats_pure_skipped = 0;
 	long stats_mc_calls = 0;
 	long stats_propagations_skipped = 0;
-
+	long statis_bv_updates = 0;
 
 	BVTheorySolver(TheorySolver * S ) :
 			S(S){
@@ -336,7 +347,22 @@ public:
 	}
 
 	void printStats(int detailLevel) {
+		printf("BV Theory %d stats:\n", this->id);
 
+		printf("%d bitvectors, %ld bits, %d comparisons (bvcomparisons), %d additions\n", bitvectors.size(),n_bits,compares.size()+bvcompares.size(),bvcompares.size(), additions.size()				 );
+		printf("constant bitvectors (at start, end of deduction): %d, %d\n",n_starting_consts ,n_consts);
+
+
+		printf("Propagations: %ld (%f s, avg: %f s, %ld skipped), bv updates: %d\n", stats_propagations, propagationtime,
+				(propagationtime) / ((double) stats_propagations + 1), stats_propagations_skipped,statis_bv_updates);
+		printf("Decisions: %ld (%f s, avg: %f s)\n", stats_decisions, stats_decision_time,
+				(stats_decision_time) / ((double) stats_decisions + 1));
+		printf("Conflicts: %ld (bits: %ld, additions: %ld, comparisons: %ld, bv comparisons: %ld), %f seconds\n", stats_num_conflicts,stats_bit_conflicts,stats_addition_conflicts,stats_compare_conflicts,stats_bv_compare_conflicts, stats_conflict_time);
+		printf("Reasons: %ld (%f s, avg: %f s)\n", stats_num_reasons, stats_reason_time,
+				(stats_reason_time) / ((double) stats_num_reasons + 1));
+		printf("Build: value reason %ld, bv value reason %ld, addition reason %ld\n", stats_build_value_reason,stats_build_value_bv_reason,stats_build_addition_reason);
+
+		fflush(stdout);
 	}
 	
 	void writeTheoryWitness(std::ostream& write_to) {
@@ -884,6 +910,7 @@ public:
 		if(bvID==34393){
 			int a=1;
 		}
+		statis_bv_updates++;
 		static int iter = 0;
 		++iter;
 
@@ -1181,7 +1208,9 @@ public:
 			under_approx0[bvID]=under_approx[bvID];
 			over_approx0[bvID]=over_approx[bvID];
 			if (under_approx[bvID]==over_approx[bvID]){
+				assert(!bvconst[bvID]);
 				bvconst[bvID]=true;//this bitvector is a known constant value in the formula.
+				n_consts++;
 			}
 		}
 		return 	(under_old != under_approx[bvID]) || (over_old != over_approx[bvID]);//return whether either weight has changed.
@@ -1425,7 +1454,7 @@ public:
 		//for(int bvID = 0;bvID<bitvectors.size();bvID++){
 			assert(alteredBV[bvID]);
 
-			updateApproximations(bvID);
+			bool changed = updateApproximations(bvID);
 
 			Weight & underApprox = under_approx[bvID];
 			Weight & overApprox = over_approx[bvID];
@@ -1449,8 +1478,11 @@ public:
 								conflict.push(~bv[j]);
 							}
 						}
+						stats_num_conflicts++;stats_bit_conflicts++;
+						double startconftime = rtime(2);
 						buildValueReason(Comparison::leq,bvID,overApprox,conflict);
 						toSolver(conflict);
+						stats_conflict_time+=rtime(2)-startconftime;
 						return false;
 					}
 				}else if (val==l_False){
@@ -1465,9 +1497,11 @@ public:
 								conflict.push(bv[j]);
 							}
 						}
-						//conflict.push(l);
+						double startconftime = rtime(2);
+						stats_num_conflicts++;stats_bit_conflicts++;
 						buildValueReason(Comparison::geq,bvID,underApprox,conflict);
 						toSolver(conflict);
+						stats_conflict_time+=rtime(2)-startconftime;
 						return false;
 					}
 				}else{
@@ -1481,10 +1515,9 @@ public:
 				}
 			}
 
-			updateApproximations(bvID);//the bit assignment updates above can force a more precise over or under approximation.
+			changed|=updateApproximations(bvID);//the bit assignment updates above can force a more precise over or under approximation.
 
 			if(additions[bvID].hasAddition()){
-
 				int aID = additions[bvID].aID;
 				int bID = additions[bvID].bID;
 				assert(aID<bvID);
@@ -1501,13 +1534,42 @@ public:
 				}
 				if(underApprox>over){
 					//then we have a conflict
+					double startconftime = rtime(2);
+					stats_num_conflicts++;stats_addition_conflicts++;
 					buildAdditionReason(bvID,conflict);
 					toSolver(conflict);
+					stats_conflict_time+=rtime(2)-startconftime;
 					return false;
 				}else if (overApprox<under){
+					double startconftime = rtime(2);
+					stats_num_conflicts++;stats_addition_conflicts++;
 					buildAdditionReason(bvID,conflict);
 					toSolver(conflict);
+					stats_conflict_time+=rtime(2)-startconftime;
 					return false;
+				}
+				//this check may be especially important when either aID or bID is really a constant...
+				if(( underApprox - over_approx[bID]> under_approx[aID]) || ( overApprox - under_approx[bID]> over_approx[aID])){
+					//the other bv needs to be updated
+					if(!alteredBV[aID]){
+						alteredBV[aID]=true;
+						assert(altered_bvs.last()==bvID);
+						altered_bvs.last()=aID;
+						assert(altered_bvs.last()==aID);
+						altered_bvs.push(bvID);
+						assert(altered_bvs.last()==bvID);
+					}
+				}
+				if(( underApprox - over_approx[aID]> under_approx[bID]) || ( overApprox - under_approx[aID]> over_approx[bID])){
+					//the other bv needs to be updated
+					if(!alteredBV[bID]){
+						alteredBV[bID]=true;
+						assert(altered_bvs.last()==bvID);
+						altered_bvs.last()=bID;
+						assert(altered_bvs.last()==bID);
+						altered_bvs.push(bvID);
+						assert(altered_bvs.last()==bvID);
+					}
 				}
 			}
 			vec<int> & compare = compares[bvID];
@@ -1525,12 +1587,14 @@ public:
 						//do nothing
 
 					}else if (value(l)==l_False){
-
+						double startconftime = rtime(2);
+						stats_num_conflicts++;stats_compare_conflicts++;
 						assert(value(l)==l_False);
 						assert(dbg_value(l)==l_False);
 						conflict.push(l);
 						buildValueReason(op,bvID,to,conflict);
 						toSolver(conflict);
+						stats_conflict_time+=rtime(2)-startconftime;
 						return false;
 					}else {
 
@@ -1540,10 +1604,12 @@ public:
 				}else if((op==Comparison::gt && overApprox<=to) ||
 						(op==Comparison::geq && overApprox<to)){
 					if(value(l)==l_True){
-
+						double startconftime = rtime(2);
+						stats_num_conflicts++;stats_compare_conflicts++;
 						conflict.push(~l);
 						buildValueReason(-op,bvID,to,conflict);
 						toSolver(conflict);
+						stats_conflict_time+=rtime(2)-startconftime;
 						return false;
 					}else if (value(l)==l_False){
 
@@ -1567,10 +1633,12 @@ public:
 				if((op==Comparison::lt && underApprox>=to) ||
 						(op==Comparison::leq && underApprox>to)){
 					if(value(l)==l_True){
-
+						double startconftime = rtime(2);
+						stats_num_conflicts++;stats_compare_conflicts++;
 						conflict.push(~l);
 						buildValueReason(-op,bvID,to,conflict);
 						toSolver(conflict);
+						stats_conflict_time+=rtime(2)-startconftime;
 						return false;
 					}else if (value(l)==l_False){
 						//do nothing
@@ -1585,10 +1653,12 @@ public:
 					if(value(l)==l_True){
 
 					}else if (value(l)==l_False){
-
+						double startconftime = rtime(2);
+						stats_num_conflicts++;stats_compare_conflicts++;
 						conflict.push(l);
 						buildValueReason(op,bvID,to,conflict);
 						toSolver(conflict);
+						stats_conflict_time+=rtime(2)-startconftime;
 						return false;
 					}else {
 
@@ -1638,10 +1708,12 @@ public:
 				}else if((op==Comparison::gt && overApprox<=under_compare) ||
 						(op==Comparison::geq && overApprox<under_compare)){
 					if(value(l)==l_True){
-
+						double startconftime = rtime(2);
+						stats_num_conflicts++;stats_bv_compare_conflicts++;
 						conflict.push(~l);
 						buildValueReasonBV(-op,bvID,compareID,conflict);
 						toSolver(conflict);
+						stats_conflict_time+=rtime(2)-startconftime;
 						return false;
 					}/*else if (value(l)==l_False){
 
@@ -1684,10 +1756,12 @@ public:
 				if((op==Comparison::lt && underApprox>=over_compare) ||
 						(op==Comparison::leq && underApprox>over_compare)){
 					if(value(l)==l_True){
-
+						double startconftime = rtime(2);
+						stats_num_conflicts++;stats_bv_compare_conflicts++;
 						conflict.push(~l);
 						buildValueReasonBV(-op,bvID,compareID,conflict);
 						toSolver(conflict);
+						stats_conflict_time+=rtime(2)-startconftime;
 						return false;
 					}/*else if (value(l)==l_False){
 						//do nothing
@@ -1732,6 +1806,21 @@ public:
 			if(hasTheory(bvID))
 				getTheory(bvID)->enqueueBV(bvID);//only enqueue the bitvector in the subtheory _after_ it's approximation has been updated!
 
+
+			if(changed){
+				//then any additions this is an argument of need to be updated.
+				for(int changedID: cause_set[bvID]){
+					if(!alteredBV[changedID]){
+						alteredBV[changedID]=true;
+						assert(altered_bvs.last()==bvID);
+						altered_bvs.last()=changedID;
+						assert(altered_bvs.last()==changedID);
+						altered_bvs.push(bvID);
+						assert(altered_bvs.last()==bvID);
+					}
+				}
+			}
+
 			assert(altered_bvs.last()==bvID);
 			assert(alteredBV[bvID]==true);
 			altered_bvs.pop();
@@ -1742,6 +1831,10 @@ public:
 		double elapsed = rtime(1) - startproptime;
 		propagationtime += elapsed;
 		assert(dbg_uptodate());
+		if(first_propagation){
+			first_propagation=false;
+			n_starting_consts=n_consts;
+		}
 		return true;
 	};
 
@@ -1749,6 +1842,7 @@ public:
 
 
 	void buildAdditionReason(int bvID, vec<Lit> & conflict){
+		stats_build_addition_reason++;
 		Weight  over_cur = over_approx[bvID];
 		Weight  under_cur = under_approx[bvID];
 		assert(checkApproxUpToDate(bvID));
@@ -1790,6 +1884,7 @@ public:
 	}
 
 	void buildValueReasonBV(Comparison op, int bvID,int comparebvID, vec<Lit> & conflict){
+		stats_build_value_bv_reason++;
 		Weight  over_cur = over_approx[bvID];
 		Weight  under_cur = under_approx[bvID];
 
@@ -1888,7 +1983,7 @@ public:
 			// a constant bitvector needs no reason
 			return;
 		}
-
+		stats_build_value_reason++;
 		static int iter = 0;
 		++iter;
 		//printf("reason %d: %d\n",iter,bvID);
@@ -2698,6 +2793,7 @@ public:
 		if(bvID<0){
 			bvID = bitvectors.size();
 		}
+		n_bits+=vars.size();
 		//bv_callbacks.growTo(id+1,nullptr);
 		bitvectors.growTo(bvID+1);
 		theoryIds.growTo(bvID+1,-1);
@@ -2754,6 +2850,7 @@ public:
 		if(bvID<0){
 			bvID = bitvectors.size();
 		}
+		n_bits+=bitwidth;
 		//bv_callbacks.growTo(id+1,nullptr);
 		bitvectors.growTo(bvID+1);
 		theoryIds.growTo(bvID+1,-1);

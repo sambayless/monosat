@@ -957,7 +957,6 @@ bool MaxflowDetector<Weight>::checkSatisfied() {
 	EdmondsKarpAdj<Weight> underCheck(g_under, source, target);
 	EdmondsKarpAdj<Weight> overCheck(g_over, source, target);
 	for (int j = 0; j < flow_lits.size(); j++) {
-		
 		Lit l = flow_lits[j].l;
 		if(flow_lits[j].max_flow>=0){
 			Weight dist = flow_lits[j].max_flow;
