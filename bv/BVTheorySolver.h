@@ -1435,7 +1435,7 @@ public:
 			return true;
 		}
 
-		if(++realprops==22){
+		if(++realprops==39652){
 			int a =1;
 		}
 		//printf("bv prop %d\n",stats_propagations);
@@ -1458,7 +1458,10 @@ public:
 
 			Weight & underApprox = under_approx[bvID];
 			Weight & overApprox = over_approx[bvID];
-
+			printf("iter %d, bv %d, under ",realprops , bvID); //: %d, over %d\n", bvID, underApprox,overApprox);
+			std::cout<<underApprox << " over ";
+			std::cout<<overApprox << "\n";
+			fflush(stdout);
 			vec<Lit> & bv = bitvectors[bvID];
 			Weight under =0;
 			Weight over=(1L<<bv.size())-1;

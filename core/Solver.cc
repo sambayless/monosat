@@ -477,7 +477,17 @@ void Solver::analyze(CRef confl, vec<Lit>& out_learnt, int& out_btlevel) {
 				maxlev=lev;
 			}
 		}
+		int maxcount = 0;
+		for(Lit l:check){
+			if(level(var(l))>=maxlev){
+				maxcount++;
+			}
+		}
+		if(maxcount==1){
+			exit(7);
+		}
 	}
+
 	cancelUntil(maxlev);//use of lazily enqueued literals can trigger conflicts at earlier decision levels
 	// Generate conflict clause:
 	//
@@ -1578,7 +1588,7 @@ lbool Solver::search(int nof_conflicts) {
 	//last_dec = var_Undef;
 	for (;;) {
 		static int iter = 0;
-		if (++iter == 2750) {//2752
+		if (++iter == 20) {//40097
 			int a = 1;
 		}
 		propagate: CRef confl = propagate();
