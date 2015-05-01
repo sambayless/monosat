@@ -1617,7 +1617,11 @@ lbool Solver::search(int nof_conflicts) {
 				if (value(learnt_clause[0]) == l_Undef) {
 					uncheckedEnqueue(learnt_clause[0], cr);
 				} else {
+
 					assert(S);
+					if(!S){
+						exit(1);
+					}
 					//this is _not_ an asserting clause, its a conflict that must be passed up to the super solver.
 					analyzeFinal(cr, lit_Undef, conflict);
 					

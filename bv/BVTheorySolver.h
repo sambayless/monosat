@@ -262,7 +262,7 @@ public:
 
 
 	vec<bool> in_backtrack_queue;
-	vec<bool> needs_update;
+
 	vec<int> backtrack_queue;
 	vec<BVTheory*> theories;
 	vec<BVTheory*> actual_theories;
@@ -575,8 +575,9 @@ public:
 	for (int i = 0;i<nVars();i++){
 			if(value(i)!=l_Undef){
 				if(i!=var(l)){
-					Lit l = toSolver( mkLit(i,value(i)==l_True));
-					printf(" %d",dimacs(l));
+					Lit l = mkLit(i,value(i)==l_True);
+					assert(value(l)==l_False);
+					printf(" %d",dimacs(toSolver(l)));
 				}
 			}
 		}
@@ -590,44 +591,12 @@ public:
 			return false;
 		}
 	}
-	inline bool setNeedsUpdate(int bvID){
-		assert(bvID>=0);
-		if(!needs_update[bvID]){
-			//backtrack_queue.push(bvID);
-			needs_update[bvID]=true;
-			return true;
-		}
-		return false;
-	}
 
-	bool updateBitvectors(bool backtracking=false){
-		bool any_changed=false;
-		for(int bvID = 0;bvID<bitvectors.size();bvID++){
-			if(needs_update[bvID]){
-				if(updateApproximations(bvID)){
-					any_changed=true;
-					//mark
-					vec<int> & causes = cause_set[bvID];
-					for(int bv:causes){
-						//assert(bv>bvID);
-						setNeedsUpdate(bv);
-					}
-				}
-				needs_update[bvID]=false;
-				if(backtracking){
-					if(hasTheory(bvID)){
-						getTheory(bvID)->backtrackBV(bvID);
-					}
-				}
-			}
-		}
-		return any_changed;
-	}
+
 
 	void backtrackUntil(int level) {
 		static int it = 0;
-		int n_backtrack=0;
-		bool changed = false;
+
 		//need to remove and add edges in the two graphs accordingly.
 		if (trail_lim.size() > level) {
 			
@@ -641,25 +610,29 @@ public:
 					assert(cID>=0);
 					ComparisonID & c = comparisons[cID];
 					int bvID = c.bvID;
-					//if the bitvector's cause was this comparison, then we need to update the bitvector now.
+					under_approx[bvID]=0;
+					over_approx[bvID]=((1L)<<bitvectors[bvID].size())-1;
+					if(!alteredBV[bvID]){
+						alteredBV[bvID]=true;
+						altered_bvs.push(bvID);
+					}
+				/*	//if the bitvector's cause was this comparison, then we need to update the bitvector now.
 					if(under_causes[bvID].comparison_cause == cID){
 						under_causes[bvID].clear();
-						n_backtrack+=setNeedsUpdate(bvID);
+
 					}
 					if(over_causes[bvID].comparison_cause == cID){
 						over_causes[bvID].clear();
-						n_backtrack+=setNeedsUpdate(bvID);
-					}
+
+					}*/
 				} else {
 
 					int bvID = e.bvID;
-					if(under_causes[bvID].cause_is_bits || under_causes[bvID].refined_cause){
-						under_causes[bvID].clear();
-						n_backtrack+=setNeedsUpdate(bvID);
-					}
-					if(over_causes[bvID].cause_is_bits || over_causes[bvID].refined_cause){
-						over_causes[bvID].clear();
-						n_backtrack+=setNeedsUpdate(bvID);
+					under_approx[bvID]=0;
+					over_approx[bvID]=((1L)<<bitvectors[bvID].size())-1;
+					if(!alteredBV[bvID]){
+						alteredBV[bvID]=true;
+						altered_bvs.push(bvID);
 					}
 				}
 				assigns[e.var] = l_Undef;
@@ -669,16 +642,12 @@ public:
 			trail_lim.shrink(trail_lim.size() - level);
 			assert(trail_lim.size() == level);
 			
-			if (changed) {
-				//requiresPropagation = true;
 
-			}
-		}
+			requiresPropagation |= altered_bvs.size();
 
-		if(updateBitvectors(true)){
-			requiresPropagation = true;
 
 		}
+
 
 
 		
@@ -708,24 +677,20 @@ public:
 				ComparisonID & c = comparisons[cID];
 				int bvID = c.bvID;
 				//if the bitvector's cause was this comparison, then we need to update the bitvector now.
-				if(under_causes[bvID].comparison_cause == cID){
-					under_causes[bvID].clear();
-					n_backtrack+=setNeedsUpdate(bvID);
-				}
-				if(over_causes[bvID].comparison_cause == cID){
-					over_causes[bvID].clear();
-					n_backtrack+=setNeedsUpdate(bvID);
+				under_approx[bvID]=0;
+				over_approx[bvID]=((1L)<<bitvectors[bvID].size())-1;
+				if(!alteredBV[bvID]){
+					alteredBV[bvID]=true;
+					altered_bvs.push(bvID);
 				}
 			} else {
 
 				int bvID = e.bvID;
-				if(under_causes[bvID].cause_is_bits){
-					under_causes[bvID].clear();
-					n_backtrack+=setNeedsUpdate(bvID);
-				}
-				if(over_causes[bvID].cause_is_bits){
-					over_causes[bvID].clear();
-					n_backtrack+=setNeedsUpdate(bvID);
+				under_approx[bvID]=0;
+				over_approx[bvID]=((1L)<<bitvectors[bvID].size())-1;
+				if(!alteredBV[bvID]){
+					alteredBV[bvID]=true;
+					altered_bvs.push(bvID);
 				}
 			}
 			assigns[e.var] = l_Undef;
@@ -735,9 +700,10 @@ public:
 		trail.shrink(trail.size() - (i + 1));
 		//if(i>0){
 		requiresPropagation = true;
-
+		static vec<Lit> ignore;
+		ignore.clear();
 		//since we didn't backtrack a full level, a propagation is required regardless of whether any bitvectors change value.
-		updateBitvectors(true);
+		propagateTheory(ignore);
 	};
 
 
@@ -960,7 +926,9 @@ public:
 		statis_bv_updates++;
 		static int iter = 0;
 		++iter;
-
+		if(iter==45){
+			int a = 1;
+		}
 #ifndef NDEBUG
 /*		for(int i = 0;i<vars.size();i++){
 			if(value(i)==l_True){
@@ -1266,13 +1234,13 @@ public:
 		Weight refined_over = refine_lbound(bvID, over_new);
 		if(refined_over>-1 && refined_over< over_new){
 			std::cout<< "Refined overapprox for bv " << bvID << " from " << over_new << " to " << refined_over << "\n";
-			over_approx[bvID]=refined_over;
+			over_new=refined_over;
 			over_causes[bvID].refined_cause=true;
 		}
 		Weight refined_under = refine_ubound(bvID, under_new);
 		if(refined_under>-1  && refined_under> under_new){
 			std::cout<< "Refined underapprox for bv " << bvID << " from " << under_new<< " to " << refined_under << "\n";
-			under_approx[bvID]=refined_under;
+			under_new=refined_under;
 			under_causes[bvID].refined_cause=true;
 		}
 
@@ -1303,6 +1271,42 @@ public:
 				n_consts++;
 			}
 		}
+
+#ifndef NDEBUG
+		static int bound_num=0;
+		printf("learnt bound ");
+		printf(" %d <= ", bvID);
+		std::cout<<over_approx[bvID] << " ";
+
+		for (int i = 0;i<nVars();i++){
+				if(value(i)!=l_Undef){
+					Lit l = mkLit(i,value(i)==l_True);
+					assert(value(l)==l_False);
+					printf(" %d",dimacs(toSolver(l)));
+				}
+			}
+
+		printf(" 0\n");
+		++bound_num;
+		printf("learnt bound ");
+		printf(" %d >= ", bvID);
+		std::cout<<under_approx[bvID] << " ";
+
+		for (int i = 0;i<nVars();i++){
+				if(value(i)!=l_Undef){
+					Lit l = mkLit(i,value(i)==l_True);
+					assert(value(l)==l_False);
+					printf(" %d",dimacs(toSolver(l)));
+				}
+			}
+
+		printf(" 0\n");
+		if(++bound_num>=89){
+			int  a=1;
+		}
+		printf("%d\n", bound_num);
+#endif
+
 		return 	(under_old != under_approx[bvID]) || (over_old != over_approx[bvID]);//return whether either weight has changed.
 	}
 
@@ -1555,7 +1559,7 @@ public:
 	bool propagateTheory(vec<Lit> & conflict) {
 		static int realprops = 0;
 		stats_propagations++;
-		assert(dbg_synced());
+
 		if (!requiresPropagation) {
 			stats_propagations_skipped++;
 			assert(dbg_uptodate());
@@ -1977,8 +1981,8 @@ public:
 					}
 				}
 				//we can also update the other bv's approximation, possibly:
-				if(value(l)==l_True &&( (op==Comparison::gt && overApprox<over_compare) ||
-						(op==Comparison::geq && overApprox<=over_compare))){
+				if(value(l)==l_True &&( (op==Comparison::gt && overApprox<=over_compare) ||
+						(op==Comparison::geq && overApprox<over_compare))){
 					//the other bv needs to be updated
 					if(!alteredBV[compareID]){
 						alteredBV[compareID]=true;
@@ -2057,18 +2061,18 @@ public:
 		}
 
 		if(under_cur>over_add){
-			buildTrivialClause(conflict);
-/*			buildValueReason(Comparison::leq, sumID,over_approx[sumID],conflict);
+			//buildTrivialClause(conflict);
+			buildValueReason(Comparison::leq, sumID,over_approx[sumID],conflict);
 
 			buildValueReason(Comparison::geq, other_argID,under_approx[other_argID],conflict);
-			buildValueReason(Comparison::gt, bvID,over_add,conflict);*/
+			buildValueReason(Comparison::gt, bvID,over_add,conflict);
 		}else{
 			assert(over_cur<under_add);
-			buildTrivialClause(conflict);
-			/*buildValueReason(Comparison::geq, sumID,under_approx[sumID],conflict);
+			//buildTrivialClause(conflict);
+			buildValueReason(Comparison::geq, sumID,under_approx[sumID],conflict);
 			buildValueReason(Comparison::leq, other_argID,over_approx[other_argID],conflict);
 			buildValueReason(Comparison::lt, bvID,under_add,conflict);
-*/
+
 		}
 
 	}
@@ -3088,7 +3092,7 @@ public:
 		//bv_callbacks.growTo(id+1,nullptr);
 		bitvectors.growTo(bvID+1);
 		theoryIds.growTo(bvID+1,-1);
-		needs_update.growTo(bvID+1,false);
+
 		under_approx.growTo(bvID+1,-1);
 		over_approx.growTo(bvID+1,-1);
 		under_approx0.growTo(bvID+1,-1);
@@ -3146,7 +3150,7 @@ public:
 		//bv_callbacks.growTo(id+1,nullptr);
 		bitvectors.growTo(bvID+1);
 		theoryIds.growTo(bvID+1,-1);
-		needs_update.growTo(bvID+1,false);
+
 		under_approx.growTo(bvID+1,-1);
 		over_approx.growTo(bvID+1,-1);
 		under_approx0.growTo(bvID+1,-1);
@@ -3567,7 +3571,7 @@ public:
 
 	bool dbg_uptodate(){
 #ifndef NDEBUG
-		dbg_synced();
+		//dbg_synced();
 		for(int bvID = 0;bvID<bitvectors.size();bvID++){
 			Weight under;
 			Weight over;
