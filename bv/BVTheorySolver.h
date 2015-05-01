@@ -248,6 +248,7 @@ public:
 		int other_argID=-1;
 		int sumID=-1;
 	};
+
 	vec<Addition> additions;//each bitvector is the result of at most one addition.
 	vec<vec<AdditionArg>> addition_arguments;
 	vec<Weight> under_approx0;//under approx at level 0
@@ -257,6 +258,8 @@ public:
 	vec<int> theoryIds;
 	vec<int> altered_bvs;
 	vec<bool> alteredBV;
+
+	vec<int> backtrack_altered;
 
 	vec<bool> bvconst;
 
@@ -703,7 +706,19 @@ public:
 		static vec<Lit> ignore;
 		ignore.clear();
 		//since we didn't backtrack a full level, a propagation is required regardless of whether any bitvectors change value.
-		propagateTheory(ignore);
+		backtrack_altered.clear();
+		for(int bvID :altered_bvs){
+			backtrack_altered.push(bvID);
+		}
+		propagateTheory(ignore, false);
+		for(int bvID:backtrack_altered){
+			if(!alteredBV[bvID]){
+				alteredBV[bvID]=true;
+				altered_bvs.push(bvID);
+			}
+		}
+		backtrack_altered.clear();
+		requiresPropagation |= altered_bvs.size();
 	};
 
 
@@ -1557,6 +1572,10 @@ public:
 	}*/
 
 	bool propagateTheory(vec<Lit> & conflict) {
+		return  propagateTheory(conflict, true);
+	}
+
+	bool propagateTheory(vec<Lit> & conflict, bool propagate) {
 		static int realprops = 0;
 		stats_propagations++;
 
@@ -1604,47 +1623,53 @@ public:
 				if(val==l_True){
 					under+=bit;
 					if(under>overApprox){
-						//this is a conflict
-						for(int j = bv.size()-1;j>=i;j--){
-							Weight bit = 1<<j;
-							lbool val = value(bv[j]);
-							if(val==l_True){
-								conflict.push(~bv[j]);
+
+							//this is a conflict
+							for(int j = bv.size()-1;j>=i;j--){
+								Weight bit = 1<<j;
+								lbool val = value(bv[j]);
+								if(val==l_True){
+									conflict.push(~bv[j]);
+								}
 							}
-						}
-						stats_num_conflicts++;stats_bit_conflicts++;
-						double startconftime = rtime(2);
-						buildValueReason(Comparison::leq,bvID,overApprox,conflict);
-						toSolver(conflict);
-						stats_conflict_time+=rtime(2)-startconftime;
-						return false;
+							stats_num_conflicts++;stats_bit_conflicts++;
+							double startconftime = rtime(2);
+							buildValueReason(Comparison::leq,bvID,overApprox,conflict);
+							toSolver(conflict);
+							stats_conflict_time+=rtime(2)-startconftime;
+							return false;
+
 					}
 				}else if (val==l_False){
 					over-=bit;
 					if(over<underApprox){
-						//this is a conflict. Either this bit, or any previously assigned false bit, must be true, or the underapprox must be larger than it currently is.
-						//is this really the best way to handle this conflict?
-						for(int j = bv.size()-1;j>=i;j--){
-							Weight bit = 1<<j;
-							lbool val = value(bv[j]);
-							if(val==l_False){
-								conflict.push(bv[j]);
+
+							//this is a conflict. Either this bit, or any previously assigned false bit, must be true, or the underapprox must be larger than it currently is.
+							//is this really the best way to handle this conflict?
+							for(int j = bv.size()-1;j>=i;j--){
+								Weight bit = 1<<j;
+								lbool val = value(bv[j]);
+								if(val==l_False){
+									conflict.push(bv[j]);
+								}
 							}
-						}
-						double startconftime = rtime(2);
-						stats_num_conflicts++;stats_bit_conflicts++;
-						buildValueReason(Comparison::geq,bvID,underApprox,conflict);
-						toSolver(conflict);
-						stats_conflict_time+=rtime(2)-startconftime;
-						return false;
+							double startconftime = rtime(2);
+							stats_num_conflicts++;stats_bit_conflicts++;
+							buildValueReason(Comparison::geq,bvID,underApprox,conflict);
+							toSolver(conflict);
+							stats_conflict_time+=rtime(2)-startconftime;
+							return false;
+
 					}
 				}else{
-					if(over-bit < underApprox){
-						enqueue(l, bvprop_marker);
-						under+=bit;
-					}else if (under+bit>overApprox){
-						enqueue(~l, bvprop_marker);
-						over-=bit;
+					if(propagate){
+						if(over-bit < underApprox){
+							enqueue(l, bvprop_marker);
+							under+=bit;
+						}else if (under+bit>overApprox){
+							enqueue(~l, bvprop_marker);
+							over-=bit;
+						}
 					}
 				}
 			}
@@ -1666,6 +1691,7 @@ public:
 				if(over>max_val){
 					over=max_val;
 				}
+
 				if(underApprox>over){
 					//then we have a conflict
 					double startconftime = rtime(2);
@@ -1682,6 +1708,7 @@ public:
 					stats_conflict_time+=rtime(2)-startconftime;
 					return false;
 				}
+
 				//this check may be especially important when either aID or bID is really a constant...
 				if(( underApprox - over_approx[bID]> under_approx[aID]) || ( overApprox - under_approx[bID]< over_approx[aID])){
 					//the other bv needs to be updated
@@ -1790,9 +1817,10 @@ public:
 						stats_conflict_time+=rtime(2)-startconftime;
 						return false;
 					}else {
-
-						assert(value(l)==l_Undef);
-						enqueue(l, comparisonprop_marker);
+						if(propagate){
+							assert(value(l)==l_Undef);
+							enqueue(l, comparisonprop_marker);
+						}
 					}
 				}else if((op==Comparison::gt && overApprox<=to) ||
 						(op==Comparison::geq && overApprox<to)){
@@ -1807,9 +1835,10 @@ public:
 					}else if (value(l)==l_False){
 
 					}else {
-
-						assert(value(l)==l_Undef);
-						enqueue(~l, comparisonprop_marker);
+						if(propagate){
+							assert(value(l)==l_Undef);
+							enqueue(~l, comparisonprop_marker);
+						}
 					}
 				}
 			}
@@ -1837,9 +1866,10 @@ public:
 						//do nothing
 
 					}else {
-
-						assert(value(l)==l_Undef);
-						enqueue(~l, comparisonprop_marker);
+						if(propagate){
+							assert(value(l)==l_Undef);
+							enqueue(~l, comparisonprop_marker);
+						}
 					}
 				}else if((op==Comparison::gt && underApprox>to) ||
 						(op==Comparison::geq && underApprox>=to)){
@@ -1854,9 +1884,10 @@ public:
 						stats_conflict_time+=rtime(2)-startconftime;
 						return false;
 					}else {
-
-						assert(value(l)==l_Undef);
-						enqueue(l, comparisonprop_marker);
+						if(propagate){
+							assert(value(l)==l_Undef);
+							enqueue(l, comparisonprop_marker);
+						}
 					}
 				}
 			}
@@ -1894,9 +1925,10 @@ public:
 						toSolver(conflict);
 						return false;
 					}*/else {
-
-						assert(value(l)==l_Undef);
-						enqueue(l, comparisonprop_marker);
+						if(propagate){
+							assert(value(l)==l_Undef);
+							enqueue(l, comparisonprop_marker);
+						}
 					}
 				}else if((op==Comparison::gt && overApprox<=under_compare) ||
 						(op==Comparison::geq && overApprox<under_compare)){
@@ -1911,9 +1943,10 @@ public:
 					}/*else if (value(l)==l_False){
 
 					}*/else {
-
-						assert(value(l)==l_Undef);
-						enqueue(~l, comparisonprop_marker);
+						if(propagate){
+							assert(value(l)==l_Undef);
+							enqueue(~l, comparisonprop_marker);
+						}
 					}
 				}
 				if(value(l)==l_True &&((op==Comparison::lt && underApprox>=under_compare) ||
@@ -1960,9 +1993,10 @@ public:
 						//do nothing
 
 					}*/else {
-
-						assert(value(l)==l_Undef);
-						enqueue(~l, comparisonprop_marker);
+						if(propagate){
+							assert(value(l)==l_Undef);
+							enqueue(~l, comparisonprop_marker);
+						}
 					}
 				}else if((op==Comparison::gt && underApprox>over_compare) ||
 						(op==Comparison::geq && underApprox>=over_compare)){
@@ -1975,9 +2009,10 @@ public:
 						toSolver(conflict);
 						return false;
 					}*/else {
-
-						assert(value(l)==l_Undef);
-						enqueue(l, comparisonprop_marker);
+						if(propagate){
+							assert(value(l)==l_Undef);
+							enqueue(l, comparisonprop_marker);
+						}
 					}
 				}
 				//we can also update the other bv's approximation, possibly:
@@ -1995,10 +2030,10 @@ public:
 				}
 
 			}
-
-			if(hasTheory(bvID))
-				getTheory(bvID)->enqueueBV(bvID);//only enqueue the bitvector in the subtheory _after_ it's approximation has been updated!
-
+			if(propagate){
+				if(hasTheory(bvID))
+					getTheory(bvID)->enqueueBV(bvID);//only enqueue the bitvector in the subtheory _after_ it's approximation has been updated!
+			}
 
 	/*		if(changed){
 				//then any additions this is an argument of need to be updated.
