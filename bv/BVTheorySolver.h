@@ -204,21 +204,25 @@ public:
 	vec<int> trail_lim;
 	struct Cause{
 		int cause_is_bits:1;
+		int refined_cause:1;
 		int cause_is_addition:1;
-		int comparison_cause:30;
-		Cause():cause_is_bits(0),cause_is_addition(0),comparison_cause(-1){
+		int comparison_cause:29;
+		int cause_is_addition_arg:32;
+		Cause():cause_is_bits(0),refined_cause(0),cause_is_addition(0),cause_is_addition_arg(-1),comparison_cause(-1){
 
 		}
-		Cause(bool bits, bool addition, int comparison=-1):cause_is_bits(bits),cause_is_addition(addition),comparison_cause(comparison){
+		/*Cause(bool bits, bool addition, int comparison=-1):cause_is_bits(bits),refined_cause(0),cause_is_addition(addition),cause_is_addition_arg(0),comparison_cause(comparison){
 
-		}
+		}*/
 		bool hasCause(){
 			//this can be improved, if we want.
-			return cause_is_bits|| cause_is_addition || (comparison_cause>=0);
+			return cause_is_bits|| cause_is_addition ||  (cause_is_addition_arg>=0)  || (comparison_cause>=0) || refined_cause;
 		}
 		void clear(){
 			cause_is_bits=0;
+			refined_cause=0;
 			cause_is_addition=0;
+			cause_is_addition_arg=-1;
 			comparison_cause=-1;
 		}
 	};
@@ -234,15 +238,18 @@ public:
 	struct Addition{
 		int aID=-1;
 		int bID=-1;
-		//Weight w=0;
+
 		bool hasAddition()const{
 			return aID>=0;
 		}
-/*		bool addConst()const{
-			return bID<0;
-		}*/
+
+	};
+	struct AdditionArg{
+		int other_argID=-1;
+		int sumID=-1;
 	};
 	vec<Addition> additions;//each bitvector is the result of at most one addition.
+	vec<vec<AdditionArg>> addition_arguments;
 	vec<Weight> under_approx0;//under approx at level 0
 	vec<Weight> over_approx0;//over approx at level 0
 	vec<Weight> under_approx;
@@ -300,7 +307,7 @@ public:
 	long stats_build_value_reason=0;
 	long stats_build_value_bv_reason=0;
 	long stats_build_addition_reason=0;
-
+	long stats_build_addition_arg_reason =0;
 	double reachupdatetime = 0;
 	double unreachupdatetime = 0;
 	double stats_initial_propagation_time = 0;
@@ -562,6 +569,20 @@ public:
 			int a=1;
 		}
 		Lit sl = toSolver(l);
+#ifndef NDEBUG
+
+	printf("learnt ");
+	for (int i = 0;i<nVars();i++){
+			if(value(i)!=l_Undef){
+				if(i!=var(l)){
+					Lit l = toSolver( mkLit(i,value(i)==l_True));
+					printf(" %d",dimacs(l));
+				}
+			}
+		}
+	printf(" %d", dimacs(sl));
+	printf(" 0\n");
+#endif
 		if (S->enqueue(sl, reason)) {
 			enqueueTheory(l);
 			return true;
@@ -632,11 +653,11 @@ public:
 				} else {
 
 					int bvID = e.bvID;
-					if(under_causes[bvID].cause_is_bits){
+					if(under_causes[bvID].cause_is_bits || under_causes[bvID].refined_cause){
 						under_causes[bvID].clear();
 						n_backtrack+=setNeedsUpdate(bvID);
 					}
-					if(over_causes[bvID].cause_is_bits){
+					if(over_causes[bvID].cause_is_bits || over_causes[bvID].refined_cause){
 						over_causes[bvID].clear();
 						n_backtrack+=setNeedsUpdate(bvID);
 					}
@@ -884,7 +905,16 @@ public:
 
 			if(!alteredBV[bvID]){
 				alteredBV[bvID]=true;
-				altered_bvs.push(bvID);
+				if (altered_bvs.size()==0)
+					altered_bvs.push(bvID);
+				else{
+					//preserve last element in alteredbvs, in case this enqueue happened during propagation
+					int lastID = altered_bvs.last();
+					altered_bvs.last()=bvID;
+					assert(altered_bvs.last()==bvID);
+					altered_bvs.push(lastID);
+					assert(altered_bvs.last()==lastID);
+				}
 
 			}
 
@@ -897,13 +927,30 @@ public:
 			//trail.push( { true, !sign(l),edgeID, v });
 			if(!alteredBV[bvID]){
 				alteredBV[bvID]=true;
-				altered_bvs.push(bvID);
+				if (altered_bvs.size()==0)
+					altered_bvs.push(bvID);
+				else{
+					//preserve last element in alteredbvs, in case this enqueue happened during propagation
+					int lastID = altered_bvs.last();
+					altered_bvs.last()=bvID;
+					assert(altered_bvs.last()==bvID);
+					altered_bvs.push(lastID);
+					assert(altered_bvs.last()==lastID);
+				}
 
 			}
 		}
 	}
 	;
-
+private:
+	Weight lowest(int bvID);
+	Weight highest(int bvID);
+	Weight refine_lbound(int bvID, Weight bound, Var ignore_bit=var_Undef);
+	Weight refine_ubound(int bvID, Weight bound, Var ignore_bit=var_Undef);
+	Weight refine_ubound_check(int bvID, Weight bound, Var ignore_bit);
+	Weight refine_lbound_check(int bvID, Weight bound, Var ignore_bit);
+	void dbg_evaluate(int bvID, int pos,vec<Weight> & vals,Weight val);
+public:
 	bool updateApproximations(int bvID, int ignoreCID=-1, Var ignore_bv=var_Undef){
 		if(isConst(bvID))
 			return false;
@@ -929,29 +976,30 @@ public:
 		Weight under_old = under_approx[bvID];
 		Weight over_old = over_approx[bvID];
 		vec<Lit> & bv = bitvectors[bvID];
-
+		Weight under_new=0;
+		Weight over_new=0;
 		under_causes[bvID].clear();
 		over_causes[bvID].clear();
 
-		under_approx[bvID]=0;
-		over_approx[bvID]=0;
+		//under_approx[bvID]=0;
+		//over_approx[bvID]=0;
 		for(int i = 0;i<bv.size();i++){
 			if(var(bv[i])==ignore_bv){
 				Weight bit = 1<<i;
-				over_approx[bvID]+=bit;
+				over_new+=bit;
 				continue;
 			}
 			lbool val = value(bv[i]);
 			if(val==l_True){
 				Weight bit = 1<<i;
-				under_approx[bvID]+=bit;
-				over_approx[bvID]+=bit;
+				under_new+=bit;
+				over_new+=bit;
 				under_causes[bvID].cause_is_bits=true;
 			}else if (val==l_False){
 				over_causes[bvID].cause_is_bits=true;
 			}else{
 				Weight bit = 1<<i;
-				over_approx[bvID]+=bit;
+				over_new+=bit;
 
 			}
 		}
@@ -964,15 +1012,39 @@ public:
 			Weight under = under_approx[aID] +  under_approx[bID];
 			Weight over = over_approx[aID] +  over_approx[bID];
 
-			if(under >under_approx[bvID]){
-				under_approx[bvID]=under;
+			if(under >under_new){
+				under_new=under;
 				under_causes[bvID].clear();
 				under_causes[bvID].cause_is_addition=true;
 			}
-			if(over<over_approx[bvID]){
-				over_approx[bvID]=over;
+			if(over<over_new){
+				over_new=over;
 				over_causes[bvID].clear();
 				over_causes[bvID].cause_is_addition=true;
+			}
+		}
+
+		//also need to iterate through the additions that this bv is an argument of...
+		for(int i = 0;i<addition_arguments[bvID].size();i++){
+			int other_argID = addition_arguments[bvID][i].other_argID;
+			int sumID = addition_arguments[bvID][i].sumID;
+			assert(other_argID>=0);assert(sumID>=0);
+			assert(additions[sumID].hasAddition());
+			assert((additions[sumID].aID==bvID && additions[sumID].bID==other_argID ) || (additions[sumID].bID==bvID && additions[sumID].aID==other_argID ) );
+			//assert((other_argID!=bvID &&   under_approx[sumID] >=  under_approx[other_argID] + under_old  ) || (other_argID==bvID &&   under_approx[sumID] >= under_old + under_old  ));
+			//assert((other_argID!=bvID &&  over_approx[sumID] <=  over_approx[other_argID] + over_old ) || (other_argID==bvID &&  over_approx[sumID] <=  over_old + over_old ));
+			Weight under = under_approx[sumID] -  over_approx[other_argID];
+			Weight over = over_approx[sumID] -  under_approx[other_argID];
+
+			if(under >under_new){
+				under_new=under;
+				under_causes[bvID].clear();
+				under_causes[bvID].cause_is_addition_arg=i;
+			}
+			if(over<over_new){
+				over_new=over;
+				over_causes[bvID].clear();
+				over_causes[bvID].cause_is_addition_arg=i;
 			}
 		}
 
@@ -989,34 +1061,34 @@ public:
 			assert(!c.bvCompare());
 			switch(op){
 				case Comparison::lt:
-					if(value( c.l)==l_True && over_approx[bvID]>=w){
+					if(value( c.l)==l_True && over_new>=w){
 						if(w-1>=getUnderApprox(bvID,true)){
-							 over_approx[bvID]=w-1;
+							over_new=w-1;
 							setOver=true;
 						 }
 					}
 					break;
 				case Comparison::leq:
-					if(value( c.l)==l_True && over_approx[bvID]>w){
+					if(value( c.l)==l_True && over_new>w){
 						if(w>=getUnderApprox(bvID,true)){
-							 over_approx[bvID]=w;
+							over_new=w;
 							setOver=true;
 						 }
 					}
 					break;
 				case Comparison::gt:
-					if (value(c.l)==l_False && over_approx[bvID]>w){
+					if (value(c.l)==l_False && over_new>w){
 						if(w>=getUnderApprox(bvID,true)){
-							 over_approx[bvID]=w;
+							over_new=w;
 							setOver=true;
 						 }
 					}
 					break;
 				case Comparison::geq:
 				default:
-					if (value(c.l)==l_False && over_approx[bvID]>=w){
+					if (value(c.l)==l_False && over_new>=w){
 						if(w-1>=getUnderApprox(bvID,true)){
-							 over_approx[bvID]=w-1;
+							over_new=w-1;
 							setOver=true;
 						 }
 					}
@@ -1042,34 +1114,34 @@ public:
 
 			switch(op){
 				case Comparison::lt:
-					 if (value(c.l)==l_False && under_approx[bvID]<w){
+					 if (value(c.l)==l_False && under_new<w){
 						 if(w<=getOverApprox(bvID,true)){
-							 under_approx[bvID]=w;
+							 under_new=w;
 							 setUnder=true;
 						 }
 					}
 					break;
 				case Comparison::leq:
-					 if (value(c.l)==l_False && under_approx[bvID]<=w){
+					 if (value(c.l)==l_False && under_new<=w){
 						 if(w<=getOverApprox(bvID,true)){
-							 under_approx[bvID]=w+1;
+							 under_new=w+1;
 							setUnder=true;
 						 }
 					}
 					break;
 				case Comparison::gt:
-					if(value( c.l)==l_True && under_approx[bvID]<=w){
+					if(value( c.l)==l_True && under_new<=w){
 						 if(w+1<=getOverApprox(bvID,true)){
-							 under_approx[bvID]=w+1;
+							 under_new=w+1;
 							 setUnder=true;
 						 }
 					}
 					break;
 				case Comparison::geq:
 				default:
-					if(value( c.l)==l_True && under_approx[bvID]<w){
+					if(value( c.l)==l_True && under_new<w){
 						 if(w<=getOverApprox(bvID,true)){
-							 under_approx[bvID]=w;
+							 under_new=w;
 							 setUnder=true;
 						 }
 					}
@@ -1098,34 +1170,34 @@ public:
 			Weight w = over_approx[c.compareID];
 			switch(op){
 				case Comparison::lt:
-					if(value( c.l)==l_True && over_approx[bvID]>=w){
+					if(value( c.l)==l_True && over_new>=w){
 						if(w-1>=getUnderApprox(bvID,true)){
-							over_approx[bvID]=w-1;
+							over_new=w-1;
 							setOver=true;
 						}
 					}
 					break;
 				case Comparison::leq:
-					if(value( c.l)==l_True && over_approx[bvID]>w){
+					if(value( c.l)==l_True && over_new>w){
 						if(w>=getUnderApprox(bvID,true)){
-							over_approx[bvID]=w;
+							over_new=w;
 							setOver=true;
 						}
 					}
 					break;
 				case Comparison::gt:
-					if (value(c.l)==l_False && over_approx[bvID]>w){
+					if (value(c.l)==l_False && over_new>w){
 						if(w>=getUnderApprox(bvID,true)){
-							over_approx[bvID]=w;
+							over_new=w;
 							setOver=true;
 						}
 					}
 					break;
 				case Comparison::geq:
 				default:
-					if (value(c.l)==l_False && over_approx[bvID]>=w){
+					if (value(c.l)==l_False && over_new>=w){
 						if(w-1>=getUnderApprox(bvID,true)){
-							over_approx[bvID]=w-1;
+							over_new=w-1;
 							setOver=true;
 						}
 					}
@@ -1150,34 +1222,34 @@ public:
 
 			switch(op){
 				case Comparison::lt:
-					 if (value(c.l)==l_False && under_approx[bvID]<w){
+					 if (value(c.l)==l_False && under_new<w){
 						 if(w<=getOverApprox(bvID,true)){
-							 under_approx[bvID]=w;
+							 under_new=w;
 							 setUnder=true;
 						 }
 					}
 					break;
 				case Comparison::leq:
-					 if (value(c.l)==l_False && under_approx[bvID]<=w){
+					 if (value(c.l)==l_False && under_new<=w){
 						 if(w+1<=getOverApprox(bvID,true)){
-							 under_approx[bvID]=w+1;
+							under_new=w+1;
 							setUnder=true;
 						 }
 					}
 					break;
 				case Comparison::gt:
-					if(value( c.l)==l_True && under_approx[bvID]<=w){
+					if(value( c.l)==l_True && under_new<=w){
 						 if(w+1<=getOverApprox(bvID,true)){
-							 under_approx[bvID]=w+1;
+							 under_new=w+1;
 							 setUnder=true;
 						 }
 					}
 					break;
 				case Comparison::geq:
 				default:
-					if(value( c.l)==l_True && under_approx[bvID]<w){
+					if(value( c.l)==l_True && under_new<w){
 						 if(w<=getOverApprox(bvID,true)){
-							 under_approx[bvID]=w;
+							 under_new=w;
 							 setUnder=true;
 						 }
 					}
@@ -1190,20 +1262,38 @@ public:
 			}
 
 		}
+
+		Weight refined_over = refine_lbound(bvID, over_new);
+		if(refined_over>-1 && refined_over< over_new){
+			std::cout<< "Refined overapprox for bv " << bvID << " from " << over_new << " to " << refined_over << "\n";
+			over_approx[bvID]=refined_over;
+			over_causes[bvID].refined_cause=true;
+		}
+		Weight refined_under = refine_ubound(bvID, under_new);
+		if(refined_under>-1  && refined_under> under_new){
+			std::cout<< "Refined underapprox for bv " << bvID << " from " << under_new<< " to " << refined_under << "\n";
+			under_approx[bvID]=refined_under;
+			under_causes[bvID].refined_cause=true;
+		}
+
 		int width = bitvectors[bvID].size();
 		Weight max_val = ((1L)<<width)-1;
-		if(under_approx[bvID]>over_approx0[bvID]){
-			under_approx[bvID]=over_approx0[bvID];
+		if(under_new>over_approx0[bvID]){
+			under_new=over_approx0[bvID];
 		}
-		if(over_approx[bvID]>over_approx0[bvID]){
-			over_approx[bvID]=over_approx0[bvID];
+		if(over_new>over_approx0[bvID]){
+			over_new=over_approx0[bvID];
 		}
-		if(under_approx[bvID]<under_approx0[bvID]){
-			under_approx[bvID]=under_approx0[bvID];
+		if(under_new<under_approx0[bvID]){
+			under_new=under_approx0[bvID];
 		}
-		if(over_approx[bvID]<under_approx0[bvID]){
-			over_approx[bvID]=under_approx0[bvID];
+		if(over_new<under_approx0[bvID]){
+			over_new=under_approx0[bvID];
 		}
+
+		under_approx[bvID]=under_new;
+		over_approx[bvID]=over_new;
+
 		if(decisionLevel()==0){
 			under_approx0[bvID]=under_approx[bvID];
 			over_approx0[bvID]=over_approx[bvID];
@@ -1233,6 +1323,16 @@ public:
 
 	vec<Lit> & getBits(int bvID){
 		return bitvectors[bvID];
+	}
+
+	void buildTrivialClause(vec<Lit> & conflict){
+		for (int i = 0;i<nVars();i++){
+			if(value(i)!=l_Undef){
+				Lit l = mkLit(i,value(i)==l_True);
+				assert(value(l)==l_False);
+				conflict.push(l);
+			}
+		}
 	}
 
 	bool checkApproxUpToDate(int bvID, Weight * under_store=nullptr,Weight*over_store=nullptr){
@@ -1268,6 +1368,23 @@ public:
 				over=overadd;
 			}
 		}
+
+		//also need to iterate through the additions that this bv is an argument of...
+		for(int i = 0;i<addition_arguments[bvID].size();i++){
+			int other_argID = addition_arguments[bvID][i].other_argID;
+			int sumID = addition_arguments[bvID][i].sumID;
+
+			Weight under_add = under_approx[sumID] -  over_approx[other_argID];
+			Weight over_add = over_approx[sumID] -  under_approx[other_argID];
+
+			if(under_add >under){
+				under=under_add;
+			}
+			if(over_add<over){
+				over=over_add;
+			}
+		}
+
 		for(int cID:compares[bvID]){
 			ComparisonID & c = comparisons[cID];
 			Comparison op = c.op();
@@ -1356,6 +1473,16 @@ public:
 
 			}
 		}
+		Weight refined_over = refine_lbound(bvID, over);
+		if(refined_over>-1 && refined_over< over){
+
+			over=refined_over;
+		}
+		Weight refined_under = refine_ubound(bvID,under);
+		if(refined_under>-1  && refined_under> under){
+
+			under=refined_under;
+		}
 
 		int width = bitvectors[bvID].size();
 		Weight max_val = (1L<<width)-1;
@@ -1435,7 +1562,7 @@ public:
 			return true;
 		}
 
-		if(++realprops==39652){
+		if(++realprops==11){
 			int a =1;
 		}
 		//printf("bv prop %d\n",stats_propagations);
@@ -1552,7 +1679,7 @@ public:
 					return false;
 				}
 				//this check may be especially important when either aID or bID is really a constant...
-				if(( underApprox - over_approx[bID]> under_approx[aID]) || ( overApprox - under_approx[bID]> over_approx[aID])){
+				if(( underApprox - over_approx[bID]> under_approx[aID]) || ( overApprox - under_approx[bID]< over_approx[aID])){
 					//the other bv needs to be updated
 					if(!alteredBV[aID]){
 						alteredBV[aID]=true;
@@ -1563,7 +1690,7 @@ public:
 						assert(altered_bvs.last()==bvID);
 					}
 				}
-				if(( underApprox - over_approx[aID]> under_approx[bID]) || ( overApprox - under_approx[aID]> over_approx[bID])){
+				if(( underApprox - over_approx[aID]> under_approx[bID]) || ( overApprox - under_approx[aID]< over_approx[bID])){
 					//the other bv needs to be updated
 					if(!alteredBV[bID]){
 						alteredBV[bID]=true;
@@ -1575,6 +1702,65 @@ public:
 					}
 				}
 			}
+
+			//also need to iterate through the additions that this bv is an argument of...
+			for(int i = 0;i<addition_arguments[bvID].size();i++){
+				int other_argID = addition_arguments[bvID][i].other_argID;
+				int sumID = addition_arguments[bvID][i].sumID;
+				assert(other_argID>=0);assert(sumID>=0);
+				assert(additions[sumID].hasAddition());
+				assert((additions[sumID].aID==bvID && additions[sumID].bID==other_argID ) || (additions[sumID].bID==bvID && additions[sumID].aID==other_argID ) );
+
+				Weight under = under_approx[sumID] -  over_approx[other_argID];
+				Weight over = over_approx[sumID] -  under_approx[other_argID];
+
+				if(underApprox>over){
+					//then we have a conflict
+					double startconftime = rtime(2);
+					stats_num_conflicts++;stats_addition_conflicts++;
+					buildAdditionArgReason(bvID,i,conflict);
+					toSolver(conflict);
+					stats_conflict_time+=rtime(2)-startconftime;
+					return false;
+				}else if (overApprox<under){
+					double startconftime = rtime(2);
+					stats_num_conflicts++;stats_addition_conflicts++;
+					buildAdditionArgReason(bvID,i,conflict);
+					toSolver(conflict);
+					stats_conflict_time+=rtime(2)-startconftime;
+					return false;
+				}
+				//this check may be especially important when either aID or bID is really a constant...
+				if(( underApprox + under_approx[other_argID]> under_approx[sumID]) || ( overApprox + over_approx[other_argID]< over_approx[sumID])){
+					//the other bv needs to be updated
+
+					if(!alteredBV[sumID]){
+						//exit(8);
+						alteredBV[sumID]=true;
+						assert(altered_bvs.last()==bvID);
+						altered_bvs.last()=sumID;
+						assert(altered_bvs.last()==sumID);
+						altered_bvs.push(bvID);
+						assert(altered_bvs.last()==bvID);
+					}
+				}
+
+				if( ( under_approx[sumID]  - overApprox> under_approx[other_argID]) || (over_approx[sumID] - underApprox< over_approx[other_argID])){
+					//the other bv needs to be updated
+
+					if(!alteredBV[other_argID]){
+						//exit(8);
+						alteredBV[other_argID]=true;
+						assert(altered_bvs.last()==bvID);
+						altered_bvs.last()=other_argID;
+						assert(altered_bvs.last()==other_argID);
+						altered_bvs.push(bvID);
+						assert(altered_bvs.last()==bvID);
+					}
+				}
+			}
+
+
 			vec<int> & compare = compares[bvID];
 			//update over approx lits
 			for(int i = 0;i<compare.size();i++){
@@ -1810,7 +1996,7 @@ public:
 				getTheory(bvID)->enqueueBV(bvID);//only enqueue the bitvector in the subtheory _after_ it's approximation has been updated!
 
 
-			if(changed){
+	/*		if(changed){
 				//then any additions this is an argument of need to be updated.
 				for(int changedID: cause_set[bvID]){
 					if(!alteredBV[changedID]){
@@ -1822,7 +2008,7 @@ public:
 						assert(altered_bvs.last()==bvID);
 					}
 				}
-			}
+			}*/
 
 			assert(altered_bvs.last()==bvID);
 			assert(alteredBV[bvID]==true);
@@ -1843,6 +2029,49 @@ public:
 
 	Weight ceildiv(Weight a, Weight b);
 
+	void buildAdditionArgReason(int bvID, int argindex, vec<Lit> & conflict){
+		//exit(8);
+
+		stats_build_addition_arg_reason++;
+		Weight  over_cur = over_approx[bvID];
+		Weight  under_cur = under_approx[bvID];
+		assert(checkApproxUpToDate(bvID));
+
+
+		//the reason that the addition is over is the reason that
+		//bvID > addition_under, or the reason that addition_under>= its current value.
+		int other_argID = addition_arguments[bvID][argindex].other_argID;
+		int sumID = addition_arguments[bvID][argindex].sumID;
+
+
+		Weight under_add = under_approx[sumID] -  over_approx[other_argID];
+		Weight over_add = over_approx[sumID] -  under_approx[other_argID];
+
+		int width = bitvectors[bvID].size();
+		Weight max_val = ((1L)<<width)-1;
+		if(under_add>max_val){
+			under_add=max_val;
+		}
+		if(over_add>max_val){
+			over_add=max_val;
+		}
+
+		if(under_cur>over_add){
+			buildTrivialClause(conflict);
+/*			buildValueReason(Comparison::leq, sumID,over_approx[sumID],conflict);
+
+			buildValueReason(Comparison::geq, other_argID,under_approx[other_argID],conflict);
+			buildValueReason(Comparison::gt, bvID,over_add,conflict);*/
+		}else{
+			assert(over_cur<under_add);
+			buildTrivialClause(conflict);
+			/*buildValueReason(Comparison::geq, sumID,under_approx[sumID],conflict);
+			buildValueReason(Comparison::leq, other_argID,over_approx[other_argID],conflict);
+			buildValueReason(Comparison::lt, bvID,under_add,conflict);
+*/
+		}
+
+	}
 
 	void buildAdditionReason(int bvID, vec<Lit> & conflict){
 		stats_build_addition_reason++;
@@ -2030,7 +2259,39 @@ public:
 		if(!compare_over)
 			assert(under_causes[bvID].hasCause());
 
-		if (compare_over && over_causes[bvID].cause_is_bits){
+		if (compare_over &&  over_causes[bvID].refined_cause){
+			//then the reason the underapprox is too large is because of the assignment to the bits
+
+			for(int i =0;i<bv.size();i++){
+				Lit bl = bv[i];
+				if(value(bl)==l_True ){
+
+					//can probably improve on this later...
+					assert(value(~bl)==l_False);
+					conflict.push(~bl);
+
+				}
+			}
+			//keep looking for further causes!
+		}else if (!compare_over  && under_causes[bvID].refined_cause){
+			//then the reason the underapprox is too large is because of the assignment to the bits
+
+			for(int i =0;i<bv.size();i++){
+				Lit bl = bv[i];
+				lbool val = value(bl);
+				lbool dbgval = dbg_value(bl);
+				if(value(bl)==l_False){
+
+						assert(value(bl)==l_False);
+						conflict.push(bl);
+
+				}
+			}
+			//keep looking for further causes!
+		}
+
+
+		if (compare_over &&  over_causes[bvID].cause_is_bits){
 			//then the reason the underapprox is too large is because of the assignment to the bits
 			Weight over = over_approx[bvID];
 			for(int i =0;i<bv.size();i++){
@@ -2046,7 +2307,8 @@ public:
 					}
 				}
 			}
-			return;
+
+				return;
 		}else if (!compare_over  && under_causes[bvID].cause_is_bits){
 			//then the reason the underapprox is too large is because of the assignment to the bits
 			Weight under = under_approx[bvID];
@@ -2065,7 +2327,8 @@ public:
 					}
 				}
 			}
-			return;
+
+				return;
 		}
 
 
@@ -2087,7 +2350,24 @@ public:
 			}
 		}
 
+		if (compare_over && over_causes[bvID].cause_is_addition_arg>=0){
+			int argindex = over_causes[bvID].cause_is_addition_arg;
+			int other_argID = addition_arguments[bvID][argindex].other_argID;
+			int sumID = addition_arguments[bvID][argindex].sumID;
 
+			buildValueReason(op,other_argID,to+over_approx[sumID],conflict);
+			buildValueReason(op,sumID,to+over_approx[other_argID],conflict);
+			return;
+		}
+		if (!compare_over && under_causes[bvID].cause_is_addition_arg>=0){
+			int argindex = under_causes[bvID].cause_is_addition_arg;
+			int other_argID = addition_arguments[bvID][argindex].other_argID;
+			int sumID = addition_arguments[bvID][argindex].sumID;
+
+			buildValueReason(op,other_argID,to+over_approx[sumID],conflict);
+			buildValueReason(op,sumID,to+over_approx[other_argID],conflict);
+			return;
+		}
 		int cID;
 		if (compare_over){
 			cID= over_causes[bvID].comparison_cause;
@@ -2784,6 +3064,14 @@ public:
 
 		additions[resultID].aID=aID;
 		additions[resultID].bID=bID;
+		addition_arguments[aID].push();
+		addition_arguments[aID].last().other_argID=bID;
+		addition_arguments[aID].last().sumID=resultID;
+
+		addition_arguments[bID].push();
+		addition_arguments[bID].last().other_argID=aID;
+		addition_arguments[bID].last().sumID=resultID;
+		//addition_arguments[bID].push({aID,resultID});
 		if(!cause_set[aID].contains(resultID))
 			cause_set[aID].push(resultID);
 		if(!cause_set[bID].contains(resultID))
@@ -2810,6 +3098,7 @@ public:
 		compares.growTo(bvID+1);
 		bvconst.growTo(bvID+1);
 		additions.growTo(bvID+1);
+		addition_arguments.growTo(bvID+1);
 		under_causes.growTo(bvID+1);
 		over_causes.growTo(bvID+1);
 		cause_set.growTo(bvID+1);
@@ -2867,6 +3156,7 @@ public:
 		bvcompares.growTo(bvID+1);
 		compares.growTo(bvID+1);
 		additions.growTo(bvID+1);
+		addition_arguments.growTo(bvID+1);
 		under_causes.growTo(bvID+1);
 		over_causes.growTo(bvID+1);
 		cause_set.growTo(bvID+1);
@@ -3403,13 +3693,325 @@ template<>
 inline double BVTheorySolver<double>::ceildiv(double a, double b){
 	return std::ceil(a/b);
 }
+
 template<>
 inline float BVTheorySolver<float>::ceildiv(float a, float b){
 	return std::ceil(a/b);
 }
+template<>
+inline mpq_class BVTheorySolver<mpq_class>::lowest(int bvID){
+	exit(1);
+}
+template<>
+inline mpq_class BVTheorySolver<mpq_class>::highest(int bvID){
+	exit(1);
+}
+template<>
+inline mpq_class BVTheorySolver<mpq_class>::refine_ubound(int bvID, mpq_class bound, Var ignore_bit){
+	exit(1);
+}
+template<>
+inline double BVTheorySolver<double>::lowest(int bvID){
+	exit(1);
+}
+template<>
+inline double BVTheorySolver<double>::highest(int bvID){
+	exit(1);
+}
+template<>
+inline double BVTheorySolver<double>::refine_ubound(int bvID, double bound, Var ignore_bit){
+	exit(1);
+}
+template<>
+inline mpq_class BVTheorySolver<mpq_class>::refine_lbound(int bvID, mpq_class bound, Var ignore_bit){
+	exit(1);
+}
+template<>
+inline double BVTheorySolver<double>::refine_lbound(int bvID, double bound, Var ignore_bit){
+	exit(1);
+}
+template<typename Weight>
+Weight BVTheorySolver<Weight>::lowest(int bvID){
+	    Weight val= 0;
+	    vec<Lit> & bv = bitvectors[bvID];
+	    for (int i = 0;i<bv.size();i++){
+	        if (value(bv[i])==l_True)
+	            val += ((Weight )1)<<i;
+	    }
+	    return val;
+	}
+template<typename Weight>
+	Weight BVTheorySolver<Weight>::highest(int bvID){
+	    Weight val= 0;
+	    vec<Lit> & bv = bitvectors[bvID];
+	    for (int i = 0;i<bv.size();i++){
+	        if (value(bv[i])!=l_False)
+	            val += ((Weight )1)<<i;
+	    }
+	    return val;
+	}
+
+template<>
+inline mpq_class BVTheorySolver<mpq_class>::refine_ubound_check(int bvID, mpq_class bound, Var ignore_bit){
+}
+template<>
+inline double BVTheorySolver<double>::refine_ubound_check(int bvID, double bound, Var ignore_bit){
+}
 
 
+template<>
+inline mpq_class BVTheorySolver<mpq_class>::refine_lbound_check(int bvID, mpq_class bound, Var ignore_bit){
+}
+template<>
+inline double BVTheorySolver<double>::refine_lbound_check(int bvID, double bound, Var ignore_bit){
+}
 
+template<>
+inline void BVTheorySolver<double>::dbg_evaluate(int bvID, int pos,vec<double> & vals,double val){
+
+}
+template<>
+inline void BVTheorySolver<mpq_class>::dbg_evaluate(int bvID, int pos,vec<mpq_class> & vals,mpq_class val){
+
+}
+
+template<typename Weight>
+void BVTheorySolver<Weight>::dbg_evaluate(int bvID, int pos,vec<Weight> & vals,Weight val){
+    if(pos==-1){
+        vals.push(val);
+        return;
+    }
+    vec<Lit> & bv = bitvectors[bvID];
+    if (value(bv[pos]) ==l_True or value(bv[pos]) ==l_Undef){
+    	Weight bit = (1<<pos);
+		dbg_evaluate(bvID,pos-1,vals, val+bit);
+    }
+    if (value(bv[pos]) ==l_False or value(bv[pos]) ==l_Undef)
+    	dbg_evaluate(bvID,pos-1,vals, val);
+}
+template<typename Weight>
+Weight BVTheorySolver<Weight>::refine_ubound_check(int bvID, Weight bound, Var ignore_bit){
+#ifndef NDEBUG
+	//test all values of mbits, find the lowest one >= i
+	static vec<Weight> vals;
+	vals.clear();
+
+    dbg_evaluate(bvID,bitvectors[bvID].size()-1,vals,0);
+    Weight lowest_bound = -1;
+    for(Weight x:vals){
+    	if (x>= bound && (lowest_bound<0 || x<lowest_bound)){
+    		lowest_bound=x;
+    	}
+    }
+    return lowest_bound;
+
+#endif
+    return 0;
+}
+
+template<typename Weight>
+Weight BVTheorySolver<Weight>::refine_lbound_check(int bvID, Weight bound, Var ignore_bit){
+#ifndef NDEBUG
+	//test all values of mbits, find the lowest one >= i
+	static vec<Weight> vals;
+	vals.clear();
+
+    dbg_evaluate(bvID,bitvectors[bvID].size()-1,vals,0);
+    Weight highest_bound = -1;
+    for(Weight x:vals){
+    	if (x<= bound && (highest_bound<0 || x>highest_bound)){
+    		highest_bound=x;
+    	}
+    }
+    return highest_bound;
+
+#endif
+    return 0;
+}
+
+	template<typename Weight>
+	Weight BVTheorySolver<Weight>::refine_ubound(int bvID, Weight bound, Var ignore_bit){
+#ifndef NDEBUG
+		Weight expected = refine_ubound_check(bvID,bound,ignore_bit);
+#endif
+		//Weight under_old = under_approx[bvID];
+		//Weight over_old = over_approx[bvID];
+		vec<Lit> & bv = bitvectors[bvID];
+		bool done = false;
+		//under_causes[bvID].clear();
+		//over_causes[bvID].clear();
+		int last_set_x =-1;
+		int j = bv.size()-1;
+
+
+		Weight proposed_bound=0;
+		for(int i = bv.size()-1; i>=0 && ! done;i--){
+
+			Weight ibit = ((Weight )1)<<i;
+			if ((value(bv[i])!=l_True || var(bv[i])==ignore_bit) && (bound & (ibit))){
+				bool found=false;
+				while(j>=i){
+					Weight jbit = ((Weight )1)<<j;
+					if ((value(bv[j])==l_Undef || var(bv[j])==ignore_bit) && !(proposed_bound & jbit) ){
+						//bv[j] must also not have been used yet as a flip value for this case (else we should try the (!(bound & (jbit))) case)...
+						last_set_x=j;
+					}else if  (!(bound & (jbit)) && ((value(bv[j])==l_True || var(bv[j])==ignore_bit || (proposed_bound & jbit)))){
+						found=true;
+						last_set_x=-1;
+						//if j is > than i, then we are done.
+						if (j>i){
+							done=true;
+							break;
+						}
+					}
+					j--;
+				}
+				if (last_set_x  >-1){
+					found=true;
+					//#we were forced to set an xbit to 1 to match this ibit.
+					Weight xbit = ((Weight )1)<<last_set_x;
+					assert(!(proposed_bound & xbit));
+					proposed_bound|=xbit;
+					//mp[last_set_x]='s'
+					if (last_set_x>i){
+						//#mp is > i, so we are done
+						done=true;
+						break;
+					}else{
+						assert(last_set_x==i);
+						j=bv.size()-1;//can we do better than this?
+					}
+				}
+
+				if (! found){
+					assert(expected==-1);
+					return -1;
+				}
+			}
+		}
+		Weight refined_bound=lowest(bvID);
+	    j =bv.size()-1;
+		while (j>=0){
+			Weight jbit = ((Weight )1)<<j;
+			if (proposed_bound & jbit){
+				assert(!(refined_bound & jbit));
+				refined_bound |=jbit;
+				if (!(bound & (jbit))){
+					break;
+				}
+
+			}
+			j--;
+		}
+
+
+	    if(refined_bound< bound){
+	    	assert(expected==-1);
+	        return -1;
+	    }
+	        //#return ubound(ibits,mbits2)
+#ifndef NDEBUG
+		if(refined_bound!=expected){
+			assert(false);
+			exit(5);
+		}
+#endif
+	    return refined_bound;
+	}
+template<typename Weight>
+Weight BVTheorySolver<Weight>::refine_lbound(int bvID, Weight obound, Var ignore_bit){
+#ifndef NDEBUG
+	Weight expected = refine_lbound_check(bvID,obound,ignore_bit);
+#endif
+	//Weight under_old = under_approx[bvID];
+	//Weight over_old = over_approx[bvID];
+	vec<Lit> & bv = bitvectors[bvID];
+	bool done = false;
+	//under_causes[bvID].clear();
+	//over_causes[bvID].clear();
+	int last_set_x =-1;
+	int j = bv.size()-1;
+
+	Weight bound = ~obound;
+
+	Weight proposed_bound=0;
+	for(int i = bv.size()-1; i>=0 && ! done;i--){
+
+		Weight ibit = ((Weight )1)<<i;
+		if ((value(bv[i])!=l_False || var(bv[i])==ignore_bit) && (bound & (ibit))){
+			bool found=false;
+			while(j>=i){
+				Weight jbit = ((Weight )1)<<j;
+				if ((value(bv[j])==l_Undef || var(bv[j])==ignore_bit) && !(proposed_bound & jbit) ){
+					//bv[j] must also not have been used yet as a flip value for this case (else we should try the (!(bound & (jbit))) case)...
+					last_set_x=j;
+				}else if  (!(bound & (jbit)) && ((value(bv[j])==l_False || var(bv[j])==ignore_bit || (proposed_bound & jbit)))){
+					found=true;
+					last_set_x=-1;
+					//if j is > than i, then we are done.
+					if (j>i){
+						done=true;
+						break;
+					}
+				}
+				j--;
+			}
+			if (last_set_x  >-1){
+				found=true;
+				//#we were forced to set an xbit to 1 to match this ibit.
+				Weight xbit = ((Weight )1)<<last_set_x;
+				assert(!(proposed_bound & xbit));
+				proposed_bound|=xbit;
+				//mp[last_set_x]='s'
+				if (last_set_x>i){
+					//#mp is > i, so we are done
+					done=true;
+					break;
+				}else{
+					assert(last_set_x==i);
+					j=bv.size()-1;//can we do better than this?
+				}
+			}
+
+			if (! found)
+				return -1;
+		}
+	}
+	Weight refined_bound= 0;//(bvID);
+	for (int i = 0;i<bv.size();i++){
+		if (value(bv[i])==l_False)
+			refined_bound += ((Weight )1)<<i;
+	}
+	j =bv.size()-1;
+	while (j>=0){
+		Weight jbit = ((Weight )1)<<j;
+		if (proposed_bound & jbit){
+			assert(!(refined_bound & jbit));
+			refined_bound |=jbit;
+			if (!(bound & (jbit))){
+				break;
+			}
+
+		}
+		j--;
+	}
+
+	refined_bound = (1L<<bv.size()) + ~refined_bound;
+	if(refined_bound> obound){
+		assert(expected==-1);
+		return -1;
+	}
+
+		//#return ubound(ibits,mbits2)
+
+#ifndef NDEBUG
+		if(refined_bound!=expected){
+			assert(false);
+			exit(5);
+		}
+#endif
+	return refined_bound;
+}
 template<typename Weight>
 using BitVector = typename BVTheorySolver<Weight>::BitVector;
 

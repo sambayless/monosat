@@ -1588,7 +1588,7 @@ lbool Solver::search(int nof_conflicts) {
 	//last_dec = var_Undef;
 	for (;;) {
 		static int iter = 0;
-		if (++iter == 20) {//40097
+		if (++iter == 22) {//40097
 			int a = 1;
 		}
 		propagate: CRef confl = propagate();
