@@ -95,7 +95,9 @@ public:
 		bool assign :1;
 		int bvID:30;
 		Var var;
-		Assignment(bool isComparator, bool assign, int bvID, Var v):isComparator(isComparator),assign(assign),bvID(bvID),var(v){
+		Weight previous_under;
+		Weight previous_over;
+		Assignment(bool isComparator, bool assign, int bvID, Var v,Weight previous_under,Weight previous_over):isComparator(isComparator),assign(assign),bvID(bvID),var(v),previous_under(previous_under),previous_over(previous_over){
 
 		}
 	};
@@ -549,8 +551,8 @@ public:
 		return S->value(toSolver(l));
 	}
 
-	void enqueueEager(Lit l, CRef reason_marker){
-		enqueue(l,reason_marker);
+	void enqueueEager(Lit l,int bvID, Weight prev_under, Weight prev_over, CRef reason_marker){
+		enqueue(l,bvID,prev_under,prev_over,reason_marker);
 		//if newly created lits are enqueued, then they must provide a reason eagerly (so that complex propagation dependencies can be handled correctly by the solver, instead of having to be sorted out in the theories).
 		/*static int iter = 0;
 		++iter;
@@ -566,7 +568,7 @@ public:
 			enqueueTheory(l);*/
 	}
 
-	inline bool enqueue(Lit l, CRef reason) {
+	inline bool enqueue(Lit l,int bvID, Weight prev_under, Weight prev_over, CRef reason) {
 		assert(assigns[var(l)]==l_Undef);
 		if(l.x==55){
 			int a=1;
@@ -587,8 +589,17 @@ public:
 	printf(" %d", dimacs(sl));
 	printf(" 0\n");
 #endif
+
+		Weight tmp_under = under_approx[bvID];
+		Weight tmp_over  = over_approx[bvID];
+		under_approx[bvID]=prev_under;
+		over_approx[bvID]=prev_over;
+		enqueueTheory(l);
+		under_approx[bvID]=tmp_under;
+		over_approx[bvID]=tmp_over;
+
 		if (S->enqueue(sl, reason)) {
-			enqueueTheory(l);
+
 			return true;
 		} else {
 			return false;
@@ -613,26 +624,18 @@ public:
 					assert(cID>=0);
 					ComparisonID & c = comparisons[cID];
 					int bvID = c.bvID;
-					under_approx[bvID]=0;
-					over_approx[bvID]=((1L)<<bitvectors[bvID].size())-1;
+					under_approx[bvID]=e.previous_under;
+					over_approx[bvID]=e.previous_over;
 					if(!alteredBV[bvID]){
 						alteredBV[bvID]=true;
 						altered_bvs.push(bvID);
 					}
-				/*	//if the bitvector's cause was this comparison, then we need to update the bitvector now.
-					if(under_causes[bvID].comparison_cause == cID){
-						under_causes[bvID].clear();
 
-					}
-					if(over_causes[bvID].comparison_cause == cID){
-						over_causes[bvID].clear();
-
-					}*/
 				} else {
 
 					int bvID = e.bvID;
-					under_approx[bvID]=0;
-					over_approx[bvID]=((1L)<<bitvectors[bvID].size())-1;
+					under_approx[bvID]=e.previous_under;
+					over_approx[bvID]=e.previous_over;
 					if(!alteredBV[bvID]){
 						alteredBV[bvID]=true;
 						altered_bvs.push(bvID);
@@ -680,8 +683,8 @@ public:
 				ComparisonID & c = comparisons[cID];
 				int bvID = c.bvID;
 				//if the bitvector's cause was this comparison, then we need to update the bitvector now.
-				under_approx[bvID]=0;
-				over_approx[bvID]=((1L)<<bitvectors[bvID].size())-1;
+				under_approx[bvID]=e.previous_under;
+				over_approx[bvID]=e.previous_over;
 				if(!alteredBV[bvID]){
 					alteredBV[bvID]=true;
 					altered_bvs.push(bvID);
@@ -689,8 +692,8 @@ public:
 			} else {
 
 				int bvID = e.bvID;
-				under_approx[bvID]=0;
-				over_approx[bvID]=((1L)<<bitvectors[bvID].size())-1;
+				under_approx[bvID]=e.previous_under;
+				over_approx[bvID]=e.previous_over;
 				if(!alteredBV[bvID]){
 					alteredBV[bvID]=true;
 					altered_bvs.push(bvID);
@@ -703,22 +706,7 @@ public:
 		trail.shrink(trail.size() - (i + 1));
 		//if(i>0){
 		requiresPropagation = true;
-		static vec<Lit> ignore;
-		ignore.clear();
-		//since we didn't backtrack a full level, a propagation is required regardless of whether any bitvectors change value.
-		backtrack_altered.clear();
-		for(int bvID :altered_bvs){
-			backtrack_altered.push(bvID);
-		}
-		propagateTheory(ignore, false);
-		for(int bvID:backtrack_altered){
-			if(!alteredBV[bvID]){
-				alteredBV[bvID]=true;
-				altered_bvs.push(bvID);
-			}
-		}
-		backtrack_altered.clear();
-		requiresPropagation |= altered_bvs.size();
+
 	};
 
 
@@ -852,7 +840,7 @@ public:
 		}*/
 		
 	}
-	
+
 	void enqueueTheory(Lit l) {
 		Var v = var(l);
 		
@@ -882,7 +870,7 @@ public:
 		if (!isComparisonVar(var(l))) {
 			
 			int bvID = getbvID(v);
-			trail.push( { false, !sign(l),bvID, v });
+			trail.push( { false, !sign(l),bvID, v,under_approx[bvID],over_approx[bvID] });
 
 			if(!alteredBV[bvID]){
 				alteredBV[bvID]=true;
@@ -904,7 +892,7 @@ public:
 			int bvID = getbvID(var(l));
 			int comparisonID = getComparisonID(var(l)); //v-min_edge_var;
 			//status.comparisonAltered(bvID, comparisonID);
-			trail.push( { true, !sign(l),comparisonID, v });
+			trail.push( { true, !sign(l),comparisonID, v,under_approx[bvID],over_approx[bvID] });
 			//trail.push( { true, !sign(l),edgeID, v });
 			if(!alteredBV[bvID]){
 				alteredBV[bvID]=true;
@@ -1603,7 +1591,8 @@ public:
 			int bvID = altered_bvs.last();
 		//for(int bvID = 0;bvID<bitvectors.size();bvID++){
 			assert(alteredBV[bvID]);
-
+			Weight  underApprox_prev = under_approx[bvID];
+			Weight  overApprox_prev = over_approx[bvID];
 			bool changed = updateApproximations(bvID);
 
 			Weight & underApprox = under_approx[bvID];
@@ -1664,10 +1653,10 @@ public:
 				}else{
 					if(propagate){
 						if(over-bit < underApprox){
-							enqueue(l, bvprop_marker);
+							enqueue(l,bvID,underApprox_prev,overApprox_prev, bvprop_marker);
 							under+=bit;
 						}else if (under+bit>overApprox){
-							enqueue(~l, bvprop_marker);
+							enqueue(~l,bvID,underApprox_prev,overApprox_prev, bvprop_marker);
 							over-=bit;
 						}
 					}
@@ -1819,7 +1808,7 @@ public:
 					}else {
 						if(propagate){
 							assert(value(l)==l_Undef);
-							enqueue(l, comparisonprop_marker);
+							enqueue(l,bvID,underApprox_prev,overApprox_prev, comparisonprop_marker);
 						}
 					}
 				}else if((op==Comparison::gt && overApprox<=to) ||
@@ -1837,7 +1826,7 @@ public:
 					}else {
 						if(propagate){
 							assert(value(l)==l_Undef);
-							enqueue(~l, comparisonprop_marker);
+							enqueue(~l,bvID,underApprox_prev,overApprox_prev, comparisonprop_marker);
 						}
 					}
 				}
@@ -1868,7 +1857,7 @@ public:
 					}else {
 						if(propagate){
 							assert(value(l)==l_Undef);
-							enqueue(~l, comparisonprop_marker);
+							enqueue(~l,bvID,underApprox_prev,overApprox_prev, comparisonprop_marker);
 						}
 					}
 				}else if((op==Comparison::gt && underApprox>to) ||
@@ -1886,7 +1875,7 @@ public:
 					}else {
 						if(propagate){
 							assert(value(l)==l_Undef);
-							enqueue(l, comparisonprop_marker);
+							enqueue(l,bvID,underApprox_prev,overApprox_prev, comparisonprop_marker);
 						}
 					}
 				}
@@ -1927,7 +1916,7 @@ public:
 					}*/else {
 						if(propagate){
 							assert(value(l)==l_Undef);
-							enqueue(l, comparisonprop_marker);
+							enqueue(l,bvID,underApprox_prev,overApprox_prev, comparisonprop_marker);
 						}
 					}
 				}else if((op==Comparison::gt && overApprox<=under_compare) ||
@@ -1945,7 +1934,7 @@ public:
 					}*/else {
 						if(propagate){
 							assert(value(l)==l_Undef);
-							enqueue(~l, comparisonprop_marker);
+							enqueue(~l,bvID,underApprox_prev,overApprox_prev, comparisonprop_marker);
 						}
 					}
 				}
@@ -1995,7 +1984,7 @@ public:
 					}*/else {
 						if(propagate){
 							assert(value(l)==l_Undef);
-							enqueue(~l, comparisonprop_marker);
+							enqueue(~l,bvID,underApprox_prev,overApprox_prev, comparisonprop_marker);
 						}
 					}
 				}else if((op==Comparison::gt && underApprox>over_compare) ||
@@ -2011,7 +2000,7 @@ public:
 					}*/else {
 						if(propagate){
 							assert(value(l)==l_Undef);
-							enqueue(l, comparisonprop_marker);
+							enqueue(l,bvID,underApprox_prev,overApprox_prev, comparisonprop_marker);
 						}
 					}
 				}
@@ -3326,7 +3315,7 @@ public:
 					}else {
 						assert(value(l)==l_Undef);
 
-						enqueueEager(l, comparisonprop_marker);
+						enqueueEager(l,bvID,underApprox,overApprox, comparisonprop_marker);
 					}
 				}
 
@@ -3337,7 +3326,7 @@ public:
 						//do nothing
 					}else {
 						assert(value(l)==l_Undef);
-						enqueueEager(~l, comparisonprop_marker);
+						enqueueEager(~l,bvID,underApprox,overApprox, comparisonprop_marker);
 					}
 				}
 				break;
@@ -3349,7 +3338,7 @@ public:
 						assert(false);//this should not happen!
 					}else {
 						assert(value(l)==l_Undef);
-						enqueueEager(l, comparisonprop_marker);
+						enqueueEager(l,bvID,underApprox,overApprox, comparisonprop_marker);
 					}
 				}
 
@@ -3360,7 +3349,7 @@ public:
 						//do nothing
 					}else {
 						assert(value(l)==l_Undef);
-						enqueueEager(~l, comparisonprop_marker);
+						enqueueEager(~l,bvID,underApprox,overApprox, comparisonprop_marker);
 					}
 				}
 				break;
@@ -3372,7 +3361,7 @@ public:
 
 					}else {
 						assert(value(l)==l_Undef);
-						enqueueEager(~l, comparisonprop_marker);
+						enqueueEager(~l,bvID,underApprox,overApprox, comparisonprop_marker);
 					}
 				}
 
@@ -3383,7 +3372,7 @@ public:
 						assert(false);
 					}else {
 						assert(value(l)==l_Undef);
-						enqueueEager(l, comparisonprop_marker);
+						enqueueEager(l,bvID,underApprox,overApprox, comparisonprop_marker);
 					}
 				}
 				break;
@@ -3396,7 +3385,7 @@ public:
 
 					}else {
 						assert(value(l)==l_Undef);
-						enqueueEager(~l, comparisonprop_marker);
+						enqueueEager(~l,bvID,underApprox,overApprox, comparisonprop_marker);
 					}
 				}
 
@@ -3407,7 +3396,7 @@ public:
 						assert(false);
 					}else {
 						assert(value(l)==l_Undef);
-						enqueueEager(l, comparisonprop_marker);
+						enqueueEager(l,bvID,underApprox,overApprox, comparisonprop_marker);
 					}
 				}
 				break;
@@ -3510,7 +3499,7 @@ public:
 					}else {
 						assert(value(l)==l_Undef);
 
-						enqueueEager(l, comparisonprop_marker);
+						enqueueEager(l,bvID,underApprox,overApprox, comparisonprop_marker);
 					}
 				}
 
@@ -3521,7 +3510,7 @@ public:
 						//do nothing
 					}else {
 						assert(value(l)==l_Undef);
-						enqueueEager(~l, comparisonprop_marker);
+						enqueueEager(~l,bvID,underApprox,overApprox, comparisonprop_marker);
 					}
 				}
 				break;
@@ -3533,7 +3522,7 @@ public:
 						assert(false);//this should not happen!
 					}else {
 						assert(value(l)==l_Undef);
-						enqueueEager(l, comparisonprop_marker);
+						enqueueEager(l,bvID,underApprox,overApprox, comparisonprop_marker);
 					}
 				}
 
@@ -3544,7 +3533,7 @@ public:
 						//do nothing
 					}else {
 						assert(value(l)==l_Undef);
-						enqueueEager(~l, comparisonprop_marker);
+						enqueueEager(~l,bvID,underApprox,overApprox, comparisonprop_marker);
 					}
 				}
 				break;
@@ -3556,7 +3545,7 @@ public:
 
 					}else {
 						assert(value(l)==l_Undef);
-						enqueueEager(~l, comparisonprop_marker);
+						enqueueEager(~l,bvID,underApprox,overApprox, comparisonprop_marker);
 					}
 				}
 
@@ -3567,7 +3556,7 @@ public:
 						assert(false);
 					}else {
 						assert(value(l)==l_Undef);
-						enqueueEager(l, comparisonprop_marker);
+						enqueueEager(l,bvID,underApprox,overApprox, comparisonprop_marker);
 					}
 				}
 				break;
@@ -3580,7 +3569,7 @@ public:
 
 					}else {
 						assert(value(l)==l_Undef);
-						enqueueEager(~l, comparisonprop_marker);
+						enqueueEager(~l,bvID,underApprox,overApprox, comparisonprop_marker);
 					}
 				}
 
@@ -3591,7 +3580,7 @@ public:
 						assert(false);
 					}else {
 						assert(value(l)==l_Undef);
-						enqueueEager(l, comparisonprop_marker);
+						enqueueEager(l,bvID,underApprox,overApprox, comparisonprop_marker);
 					}
 				}
 				break;
