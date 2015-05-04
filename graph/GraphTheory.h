@@ -1307,7 +1307,7 @@ public:
 		}
 
 		assert(dbg_graphsUpToDate());
-		dbg_sync();
+		//dbg_sync();
 	}
 
 

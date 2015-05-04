@@ -484,7 +484,7 @@ void Solver::analyze(CRef confl, vec<Lit>& out_learnt, int& out_btlevel) {
 			}
 		}
 		if(maxcount==1){
-			exit(7);
+		//	exit(7);
 		}
 	}
 

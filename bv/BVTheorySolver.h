@@ -117,7 +117,10 @@ public:
 			comparison_cause=-1;
 		}
 	};
+	//An assignment is either an assignment to a variable, or is a tightening of a bitvector's bounds
 	struct Assignment {
+
+
 		bool isComparator :1;
 		bool assign :1;
 		int bvID:30;
@@ -131,10 +134,16 @@ public:
 		Cause prev_over_cause;
 		Cause new_under_cause;
 		Cause new_over_cause;
-		Assignment(bool isComparator, bool assign, int bvID, Var v,Weight previous_under,Weight previous_over,Weight new_under,Weight new_over,
-				Cause prev_under_cause,Cause prev_over_cause,Cause new_under_cause,Cause new_over_cause):isComparator(isComparator),assign(assign),bvID(bvID),var(v),previous_under(previous_under),previous_over(previous_over),new_under(new_under),new_over(new_over),
+		Assignment( int bvID,Weight previous_under,Weight previous_over,Weight new_under,Weight new_over,
+				Cause prev_under_cause,Cause prev_over_cause,Cause new_under_cause,Cause new_over_cause):isComparator(false),assign(0),bvID(bvID),var(var_Undef),previous_under(previous_under),previous_over(previous_over),new_under(new_under),new_over(new_over),
 				prev_under_cause(prev_under_cause),prev_over_cause(prev_over_cause),new_under_cause(new_under_cause),new_over_cause(new_over_cause){
 
+		}
+		Assignment(bool isComparator, bool assign, int bvID, Var v):isComparator(isComparator),assign(assign),bvID(bvID),var(v),previous_under(-1),previous_over(-1),new_under(-1),new_over(-1),
+				prev_under_cause(),prev_over_cause(),new_under_cause(),new_over_cause(){
+		}
+		bool isBoundAssignment()const{
+			return new_under>-1;
 		}
 	};
 
@@ -566,7 +575,7 @@ public:
 	}
 
 	void enqueueEager(Lit l,int bvID, Weight prev_under, Weight prev_over, Cause prev_under_cause, Cause prev_over_cause, CRef reason_marker){
-		enqueue(l,bvID,prev_under,prev_over,prev_under_cause,prev_over_cause,reason_marker);
+		enqueue(l,reason_marker);
 		//if newly created lits are enqueued, then they must provide a reason eagerly (so that complex propagation dependencies can be handled correctly by the solver, instead of having to be sorted out in the theories).
 		/*static int iter = 0;
 		++iter;
@@ -582,7 +591,7 @@ public:
 			enqueueTheory(l);*/
 	}
 
-	inline bool enqueue(Lit l,int bvID, Weight prev_under, Weight prev_over, Cause prev_under_cause, Cause prev_over_cause, CRef reason) {
+	inline bool enqueue(Lit l,CRef reason) {
 		assert(assigns[var(l)]==l_Undef);
 		if(l.x==55){
 			int a=1;
@@ -603,7 +612,7 @@ public:
 	printf(" %d", dimacs(sl));
 	printf(" 0\n");
 #endif
-		enqueueTheory(l,prev_under,prev_over,under_approx[bvID],over_approx[bvID],prev_under_cause,prev_over_cause, under_causes[bvID],over_causes[bvID]);
+		enqueueTheory(l);
 		if (S->enqueue(sl, reason)) {
 			return true;
 		} else {
@@ -618,7 +627,7 @@ public:
 			analysis_trail_pos=trail.size()-1;
 		}
 		if(trail.size()==0){
-			analysis_trail_pos=0;
+			analysis_trail_pos=-1;
 			return;
 		}
 		if(trail_pos<0){
@@ -627,56 +636,55 @@ public:
 		if(trail_pos>=trail.size()){
 			trail_pos=trail.size()-1;
 		}
-		if(analysis_trail_pos<0){
-			analysis_trail_pos=0;
+		if(analysis_trail_pos<-1){
+			analysis_trail_pos=-1;
 		}
 		if(analysis_trail_pos<trail_pos){
 			for(;analysis_trail_pos<trail_pos;analysis_trail_pos++){
-				assert(analysis_trail_pos>=0);assert(analysis_trail_pos<trail.size()-1);
+				assert(analysis_trail_pos>=-1);assert(analysis_trail_pos<trail.size()-1);
 				Assignment & e = trail[analysis_trail_pos+1];
-				int bvID;
-				if (e.isComparator) {
-					int cID = e.bvID;
-					assert(cID>=0);
-					ComparisonID & c = comparisons[cID];
-					bvID = c.bvID;
-				} else {
-					bvID = e.bvID;
 
+				if (e.isBoundAssignment()){
+					int bvID = e.bvID;
+					under_approx[bvID]=e.new_under;
+					over_approx[bvID]=e.new_over;
+					under_causes[bvID]=e.new_under_cause;
+					over_causes[bvID]=e.new_over_cause;
+				}else{
+					Var x = e.var;
+					Lit p = mkLit(x,!e.assign);
+					assert(value(x)==l_Undef);
+					assigns[x] = sign(p) ? l_False : l_True;
 				}
-				under_approx[bvID]=e.new_under;
-				over_approx[bvID]=e.new_over;
-				under_causes[bvID]=e.new_under_cause;
-				over_causes[bvID]=e.new_over_cause;
 			}
 
 		}else if(analysis_trail_pos>trail_pos){
 			for(;analysis_trail_pos>trail_pos;analysis_trail_pos--){
 				assert(analysis_trail_pos>=0);assert(analysis_trail_pos<trail.size());
 				Assignment & e = trail[analysis_trail_pos];
-				int bvID;
-				if (e.isComparator) {
-					int cID = e.bvID;
-					assert(cID>=0);
-					ComparisonID & c = comparisons[cID];
-					bvID = c.bvID;
-				} else {
-					bvID = e.bvID;
+
+				if (e.isBoundAssignment()){
+					int bvID = e.bvID;
+					under_approx[bvID]=e.previous_under;
+					over_approx[bvID]=e.previous_over;
+					under_causes[bvID]=e.prev_under_cause;
+					over_causes[bvID]=e.prev_over_cause;
+				}else{
+					Var x = e.var;
+					Lit p = mkLit(x,!e.assign);
+					assert(value(p)==l_True);
+					assigns[x] = l_Undef;
 				}
-				under_approx[bvID]=e.previous_under;
-				over_approx[bvID]=e.previous_over;
-				under_causes[bvID]=e.prev_under_cause;
-				over_causes[bvID]=e.prev_over_cause;
 			}
 		}
-		assert(analysis_trail_pos>=0);
+		assert(analysis_trail_pos>=-1);
 		assert(analysis_trail_pos<=trail.size());
 		assert(analysis_trail_pos==trail_pos);
 	}
 
 	int rewindUntil(int for_bvID, Comparison op, Weight compareTo){
-		if(analysis_trail_pos<0){
-			analysis_trail_pos=0;
+		if(analysis_trail_pos<-1){
+			analysis_trail_pos=-1;
 		}
 		if(analysis_trail_pos>=trail.size()){
 			analysis_trail_pos=trail.size()-1;
@@ -684,49 +692,46 @@ public:
 		//rewind until the previous under or over approx of bvID violates the comparison.
 		for(;analysis_trail_pos>=0;analysis_trail_pos--){
 			Assignment & e = trail[analysis_trail_pos];
-			int bvID;
-			if (e.isComparator) {
-				int cID = e.bvID;
-				assert(cID>=0);
-				ComparisonID & c = comparisons[cID];
-				bvID = c.bvID;
-			} else {
-				bvID = e.bvID;
-			}
+			if (e.isBoundAssignment()){
+				int bvID = e.bvID;
 
-			if (bvID==for_bvID){
-				if (op==Comparison::lt){
-					assert(over_approx[for_bvID]<compareTo);
-					if (e.previous_over >= compareTo){
-						break;
-					}
-				}else if (op==Comparison::leq){
-					assert(over_approx[for_bvID]<=compareTo);
-					if (e.previous_over > compareTo){
-						break;
-					}
-				}else if (op==Comparison::gt){
-					assert(under_approx[for_bvID]>compareTo);
-					if (e.previous_under <= compareTo){
-						break;
-					}
-				}else if (op==Comparison::geq){
-					assert(under_approx[for_bvID]>=compareTo);
-					if (e.previous_under < compareTo){
-						break;
+				if (bvID==for_bvID){
+					if (op==Comparison::lt){
+						assert(over_approx[for_bvID]<compareTo);
+						if (e.previous_over >= compareTo){
+							break;
+						}
+					}else if (op==Comparison::leq){
+						assert(over_approx[for_bvID]<=compareTo);
+						if (e.previous_over > compareTo){
+							break;
+						}
+					}else if (op==Comparison::gt){
+						assert(under_approx[for_bvID]>compareTo);
+						if (e.previous_under <= compareTo){
+							break;
+						}
+					}else if (op==Comparison::geq){
+						assert(under_approx[for_bvID]>=compareTo);
+						if (e.previous_under < compareTo){
+							break;
+						}
 					}
 				}
-			}
 
-			under_approx[bvID]=e.previous_under;
-			over_approx[bvID]=e.previous_over;
-			under_causes[bvID]=e.prev_under_cause;
-			over_causes[bvID]=e.prev_over_cause;
+				under_approx[bvID]=e.previous_under;
+				over_approx[bvID]=e.previous_over;
+				under_causes[bvID]=e.prev_under_cause;
+				over_causes[bvID]=e.prev_over_cause;
+			}else{
+				Var x = e.var;
+				Lit p = mkLit(x,!e.assign);
+				assert(value(p)==l_True);
+				assigns[x] = l_Undef;
+			}
 		}
-		if(analysis_trail_pos<0){
-			analysis_trail_pos=0;
-		}
-		assert(analysis_trail_pos>=0);
+
+		assert(analysis_trail_pos>=-1);
 		assert(analysis_trail_pos<=trail.size());
 		return analysis_trail_pos;
 	}
@@ -742,34 +747,27 @@ public:
 			for (int i = trail.size() - 1; i >= trail_lim[level]; i--) {
 				
 				Assignment & e = trail[i];
-				assert(assigns[e.var]!=l_Undef);
-				if (e.isComparator) {
-					int cID = e.bvID;
-					assert(cID>=0);
-					ComparisonID & c = comparisons[cID];
-					int bvID = c.bvID;
-					under_approx[bvID]=e.previous_under;
-					over_approx[bvID]=e.previous_over;
-					under_causes[bvID]=e.prev_under_cause;
-					over_causes[bvID]=e.prev_over_cause;
-					if(!alteredBV[bvID]){
-						alteredBV[bvID]=true;
-						altered_bvs.push(bvID);
-					}
-
-				} else {
-
+				if(e.isBoundAssignment()){
 					int bvID = e.bvID;
 					under_approx[bvID]=e.previous_under;
 					over_approx[bvID]=e.previous_over;
 					under_causes[bvID]=e.prev_under_cause;
 					over_causes[bvID]=e.prev_over_cause;
-					if(!alteredBV[bvID]){
-						alteredBV[bvID]=true;
-						altered_bvs.push(bvID);
-					}
+					if(hasTheory(bvID))
+						getTheory(bvID)->enqueueBV(bvID);//only enqueue the bitvector in the subtheory _after_ it's approximation has been updated!
+				}else{
+					assert(assigns[e.var]!=l_Undef);
+	/*				if (e.isComparator) {
+						int cID = e.bvID;
+						assert(cID>=0);
+						ComparisonID & c = comparisons[cID];
+						int bvID = c.bvID;
+					} else {
+						int bvID = e.bvID;
+
+					}*/
+					assigns[e.var] = l_Undef;
 				}
-				assigns[e.var] = l_Undef;
 				//changed = true;
 			}
 			trail.shrink(trail.size() - stop);
@@ -783,6 +781,7 @@ public:
 		}
 		analysis_trail_pos = trail.size()-1;
 
+		dbg_uptodate();
 
 		
 	};
@@ -802,37 +801,34 @@ public:
 		int i = trail.size() - 1;
 		for (; i >= 0; i--) {
 			Assignment e = trail[i];
-			if (var(p) == e.var) {
-				assert(sign(p) != e.assign);
-				break;
-			}
-			if (e.isComparator) {
-				int cID = e.bvID;
-				assert(cID>=0);
-				ComparisonID & c = comparisons[cID];
-				int bvID = c.bvID;
-				//if the bitvector's cause was this comparison, then we need to update the bitvector now.
-				under_approx[bvID]=e.previous_under;
-				over_approx[bvID]=e.previous_over;
-				under_causes[bvID]=e.prev_under_cause;
-				over_causes[bvID]=e.prev_over_cause;
-				if(!alteredBV[bvID]){
-					alteredBV[bvID]=true;
-					altered_bvs.push(bvID);
-				}
-			} else {
-
+			if(e.isBoundAssignment()){
 				int bvID = e.bvID;
 				under_approx[bvID]=e.previous_under;
 				over_approx[bvID]=e.previous_over;
 				under_causes[bvID]=e.prev_under_cause;
 				over_causes[bvID]=e.prev_over_cause;
-				if(!alteredBV[bvID]){
-					alteredBV[bvID]=true;
-					altered_bvs.push(bvID);
+				if(hasTheory(bvID))
+					getTheory(bvID)->enqueueBV(bvID);//only enqueue the bitvector in the subtheory _after_ it's approximation has been updated!
+
+			}else{
+				if (var(p) == e.var) {
+					assert(sign(p) != e.assign);
+					break;
 				}
+/*				if (e.isComparator) {
+					int cID = e.bvID;
+					assert(cID>=0);
+					ComparisonID & c = comparisons[cID];
+					int bvID = c.bvID;
+					//if the bitvector's cause was this comparison, then we need to update the bitvector now.
+
+				} else {
+
+					int bvID = e.bvID;
+
+				}*/
+				assigns[e.var] = l_Undef;
 			}
-			assigns[e.var] = l_Undef;
 			//changed = true;
 		}
 		
@@ -974,11 +970,8 @@ public:
 		}*/
 		
 	}
+
 	void enqueueTheory(Lit l) {
-		int bvID = getbvID(var(l));
-		enqueueTheory(l,under_approx[bvID],over_approx[bvID],under_approx[bvID],over_approx[bvID], under_causes[bvID],over_causes[bvID], under_causes[bvID],over_causes[bvID]);
-	}
-	void enqueueTheory(Lit l, Weight prev_under, Weight prev_over, Weight new_under, Weight new_over,Cause prev_under_cause,Cause prev_over_cause,Cause new_under_cause,Cause new_over_cause) {
 		Var v = var(l);
 		rewind_trail_pos(trail.size());
 		int lev = level(v);
@@ -1007,7 +1000,7 @@ public:
 		if (!isComparisonVar(var(l))) {
 			
 			int bvID = getbvID(v);
-			trail.push( { false, !sign(l),bvID, v,prev_under, prev_over, new_under, new_over,prev_under_cause,prev_over_cause,new_under_cause,new_over_cause});
+			trail.push( { false, !sign(l),bvID, v});
 			analysis_trail_pos=trail.size()-1;
 			if(!alteredBV[bvID]){
 				alteredBV[bvID]=true;
@@ -1029,7 +1022,7 @@ public:
 			int bvID = getbvID(var(l));
 			int comparisonID = getComparisonID(var(l)); //v-min_edge_var;
 			//status.comparisonAltered(bvID, comparisonID);
-			trail.push( { true, !sign(l),comparisonID, v,prev_under, prev_over, new_under, new_over,prev_under_cause,prev_over_cause,new_under_cause,new_over_cause });
+			trail.push( { true, !sign(l),comparisonID, v });
 			analysis_trail_pos=trail.size()-1;
 			//trail.push( { true, !sign(l),edgeID, v });
 			if(!alteredBV[bvID]){
@@ -1087,6 +1080,10 @@ public:
 		vec<Lit> & bv = bitvectors[bvID];
 		Weight under_new=0;
 		Weight over_new=0;
+
+		Cause under_cause_old = under_causes[bvID];
+		Cause over_cause_old = over_causes[bvID];
+
 		under_causes[bvID].clear();
 		over_causes[bvID].clear();
 
@@ -1413,6 +1410,27 @@ public:
 			}
 		}
 
+		bool changed = (under_old != under_approx[bvID]) || (over_old != over_approx[bvID]);
+		if(changed){
+			//bounds _must_ have tightened
+			assert(under_new>=under_old);
+			assert(over_new<=over_old);
+			assert(analysis_trail_pos==trail.size()-1);
+			trail.push({bvID,under_old, over_old, under_new, over_new, under_cause_old, over_cause_old, under_causes[bvID],over_causes[bvID]});
+			assert(trail.last().isBoundAssignment());
+			assert(trail.last().bvID==bvID);
+			assert(trail.last().new_over == over_new);
+			assert(trail.last().new_under == under_new);
+			assert(trail.last().previous_over == over_old);
+			assert(trail.last().previous_under == under_old);
+			analysis_trail_pos=trail.size()-1;
+		}else{
+			//ensure that the cause isn't altered if the approx was not changed.
+			under_causes[bvID] = under_cause_old;
+			over_causes[bvID] = over_cause_old;
+		}
+
+
 #ifndef NDEBUG
 		static int bound_num=0;
 		printf("learnt bound ");
@@ -1448,7 +1466,7 @@ public:
 		printf("%d\n", bound_num);
 #endif
 
-		return 	(under_old != under_approx[bvID]) || (over_old != over_approx[bvID]);//return whether either weight has changed.
+		return 	changed;//return whether either weight has changed.
 	}
 
 	Weight & getUnderApprox(int bvID, bool level0=false){
@@ -1711,7 +1729,7 @@ public:
 			return true;
 		}
 		rewind_trail_pos(trail.size());
-		if(++realprops==11){
+		if(++realprops==61){
 			int a =1;
 		}
 		//printf("bv prop %d\n",stats_propagations);
@@ -1744,66 +1762,71 @@ public:
 			vec<Lit> & bv = bitvectors[bvID];
 			Weight under =0;
 			Weight over=(1L<<bv.size())-1;
-			//for(int i = 0;i<bv.size();i++){
-			for(int i = bv.size()-1;i>=0;i--){
-				Weight bit = 1<<i;
-				lbool val = value(bv[i]);
-				Lit l = bv[i];
-				if(val==l_True){
-					under+=bit;
-					if(under>overApprox){
+			bool new_change;
+			do{
+				new_change=false;
+				//for(int i = 0;i<bv.size();i++){
+				for(int i = bv.size()-1;i>=0;i--){
+					Weight bit = 1<<i;
+					lbool val = value(bv[i]);
+					Lit l = bv[i];
+					if(val==l_True){
+						under+=bit;
+						if(under>overApprox){
 
-							//this is a conflict
-							for(int j = bv.size()-1;j>=i;j--){
-								Weight bit = 1<<j;
-								lbool val = value(bv[j]);
-								if(val==l_True){
-									conflict.push(~bv[j]);
+								//this is a conflict
+								for(int j = bv.size()-1;j>=i;j--){
+									Weight bit = 1<<j;
+									lbool val = value(bv[j]);
+									if(val==l_True){
+										conflict.push(~bv[j]);
+									}
 								}
-							}
-							stats_num_conflicts++;stats_bit_conflicts++;
-							double startconftime = rtime(2);
-							buildValueReason(Comparison::leq,bvID,overApprox,conflict);
-							toSolver(conflict);
-							stats_conflict_time+=rtime(2)-startconftime;
-							return false;
+								stats_num_conflicts++;stats_bit_conflicts++;
+								double startconftime = rtime(2);
+								buildValueReason(Comparison::leq,bvID,overApprox,conflict);
+								toSolver(conflict);
+								stats_conflict_time+=rtime(2)-startconftime;
+								return false;
 
-					}
-				}else if (val==l_False){
-					over-=bit;
-					if(over<underApprox){
+						}
+					}else if (val==l_False){
+						over-=bit;
+						if(over<underApprox){
 
-							//this is a conflict. Either this bit, or any previously assigned false bit, must be true, or the underapprox must be larger than it currently is.
-							//is this really the best way to handle this conflict?
-							for(int j = bv.size()-1;j>=i;j--){
-								Weight bit = 1<<j;
-								lbool val = value(bv[j]);
-								if(val==l_False){
-									conflict.push(bv[j]);
+								//this is a conflict. Either this bit, or any previously assigned false bit, must be true, or the underapprox must be larger than it currently is.
+								//is this really the best way to handle this conflict?
+								for(int j = bv.size()-1;j>=i;j--){
+									Weight bit = 1<<j;
+									lbool val = value(bv[j]);
+									if(val==l_False){
+										conflict.push(bv[j]);
+									}
 								}
-							}
-							double startconftime = rtime(2);
-							stats_num_conflicts++;stats_bit_conflicts++;
-							buildValueReason(Comparison::geq,bvID,underApprox,conflict);
-							toSolver(conflict);
-							stats_conflict_time+=rtime(2)-startconftime;
-							return false;
+								double startconftime = rtime(2);
+								stats_num_conflicts++;stats_bit_conflicts++;
+								buildValueReason(Comparison::geq,bvID,underApprox,conflict);
+								toSolver(conflict);
+								stats_conflict_time+=rtime(2)-startconftime;
+								return false;
 
-					}
-				}else{
-					if(propagate){
-						if(over-bit < underApprox){
-							enqueue(l,bvID,underApprox_prev,overApprox_prev,prev_under_cause,prev_over_cause, bvprop_marker);
-							under+=bit;
-						}else if (under+bit>overApprox){
-							enqueue(~l,bvID,underApprox_prev,overApprox_prev,prev_under_cause,prev_over_cause, bvprop_marker);
-							over-=bit;
+						}
+					}else{
+						if(propagate){
+							if(over-bit < underApprox){
+								enqueue(l, bvprop_marker);
+								under+=bit;
+							}else if (under+bit>overApprox){
+								enqueue(~l, bvprop_marker);
+								over-=bit;
+							}
 						}
 					}
 				}
-			}
+				new_change = updateApproximations(bvID);
+				changed|=new_change;
 
-			changed|=updateApproximations(bvID);//the bit assignment updates above can force a more precise over or under approximation.
+			}while(new_change);//the bit assignment updates above can force a more precise over or under approximation, which can in turn lead to further bit assignments (I think this can happen?).
 
 			if(additions[bvID].hasAddition()){
 				int aID = additions[bvID].aID;
@@ -1948,7 +1971,7 @@ public:
 					}else {
 						if(propagate){
 							assert(value(l)==l_Undef);
-							enqueue(l,bvID,underApprox_prev,overApprox_prev,prev_under_cause,prev_over_cause, comparisonprop_marker);
+							enqueue(l,comparisonprop_marker);
 						}
 					}
 				}else if((op==Comparison::gt && overApprox<=to) ||
@@ -1966,7 +1989,7 @@ public:
 					}else {
 						if(propagate){
 							assert(value(l)==l_Undef);
-							enqueue(~l,bvID,underApprox_prev,overApprox_prev,prev_under_cause,prev_over_cause, comparisonprop_marker);
+							enqueue(~l, comparisonprop_marker);
 						}
 					}
 				}
@@ -1997,7 +2020,7 @@ public:
 					}else {
 						if(propagate){
 							assert(value(l)==l_Undef);
-							enqueue(~l,bvID,underApprox_prev,overApprox_prev,prev_under_cause,prev_over_cause, comparisonprop_marker);
+							enqueue(~l, comparisonprop_marker);
 						}
 					}
 				}else if((op==Comparison::gt && underApprox>to) ||
@@ -2015,7 +2038,7 @@ public:
 					}else {
 						if(propagate){
 							assert(value(l)==l_Undef);
-							enqueue(l,bvID,underApprox_prev,overApprox_prev,prev_under_cause,prev_over_cause, comparisonprop_marker);
+							enqueue(l,comparisonprop_marker);
 						}
 					}
 				}
@@ -2056,7 +2079,7 @@ public:
 					}*/else {
 						if(propagate){
 							assert(value(l)==l_Undef);
-							enqueue(l,bvID,underApprox_prev,overApprox_prev,prev_under_cause,prev_over_cause, comparisonprop_marker);
+							enqueue(l,comparisonprop_marker);
 						}
 					}
 				}else if((op==Comparison::gt && overApprox<=under_compare) ||
@@ -2074,7 +2097,7 @@ public:
 					}*/else {
 						if(propagate){
 							assert(value(l)==l_Undef);
-							enqueue(~l,bvID,underApprox_prev,overApprox_prev,prev_under_cause,prev_over_cause, comparisonprop_marker);
+							enqueue(~l, comparisonprop_marker);
 						}
 					}
 				}
@@ -2124,7 +2147,7 @@ public:
 					}*/else {
 						if(propagate){
 							assert(value(l)==l_Undef);
-							enqueue(~l,bvID,underApprox_prev,overApprox_prev,prev_under_cause,prev_over_cause, comparisonprop_marker);
+							enqueue(~l, comparisonprop_marker);
 						}
 					}
 				}else if((op==Comparison::gt && underApprox>over_compare) ||
@@ -2140,7 +2163,7 @@ public:
 					}*/else {
 						if(propagate){
 							assert(value(l)==l_Undef);
-							enqueue(l,bvID,underApprox_prev,overApprox_prev,prev_under_cause,prev_over_cause, comparisonprop_marker);
+							enqueue(l, comparisonprop_marker);
 						}
 					}
 				}
@@ -2159,7 +2182,7 @@ public:
 				}
 
 			}
-			if(propagate){
+			if(propagate && changed){
 				if(hasTheory(bvID))
 					getTheory(bvID)->enqueueBV(bvID);//only enqueue the bitvector in the subtheory _after_ it's approximation has been updated!
 			}
@@ -2546,16 +2569,19 @@ public:
 			int other_argID = addition_arguments[bvID][argindex].other_argID;
 			int sumID = addition_arguments[bvID][argindex].sumID;
 
-			buildValueReason(op,other_argID,to+over_approx[sumID],conflict,trail_pos-1);
-			buildValueReason(op,sumID,to+over_approx[other_argID],conflict,trail_pos-1);
+
+			//Weight over = over_approx[sumID] -  under_approx[other_argID];
+			buildValueReason(~op,other_argID,over_approx[sumID]-to,conflict,trail_pos-1);
+			buildValueReason(op,sumID,to+under_approx[other_argID],conflict,trail_pos-1);
+
 			return;
 		}
 		if (!compare_over && under_causes[bvID].cause_is_addition_arg>=0){
 			int argindex = under_causes[bvID].cause_is_addition_arg;
 			int other_argID = addition_arguments[bvID][argindex].other_argID;
 			int sumID = addition_arguments[bvID][argindex].sumID;
-
-			buildValueReason(op,other_argID,to+over_approx[sumID],conflict,trail_pos-1);
+			//Weight under = under_approx[sumID] -  over_approx[other_argID];
+			buildValueReason(~op,other_argID,under_approx[sumID]-to,conflict,trail_pos-1);
 			buildValueReason(op,sumID,to+over_approx[other_argID],conflict,trail_pos-1);
 			return;
 		}
@@ -3637,6 +3663,14 @@ public:
 				break;
 			}
 		}
+
+		//Add (some) obvious implied relationships to the SAT solver:
+		//if we have two relationships,a ==( x>y), b==( x<=y), then we also have (~a or ~b) and (a or b) in the sat solver.
+		//If we have relationships a ==x>y, b== x>=y, then we have (a -> b).
+		//if we have relationships a == x < y, b== y < z, c== x < z, then we have ((a and b) -> c)
+		//more?
+
+
 
 		if(!alteredBV[bvID]){
 			alteredBV[bvID]=true;
