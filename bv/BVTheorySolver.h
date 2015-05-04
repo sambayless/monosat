@@ -259,6 +259,9 @@ public:
 	vec<vec<int> > compares; //for each bitvector, comparisons are all to unique values, and in ascending order of compareTo.
 	vec<vec<int>> bvcompares;
 
+	vec<bool> comparison_needs_repropagation;
+	vec<int> repropagate_comparisons;
+
 	struct Addition{
 		int aID=-1;
 		int bID=-1;
@@ -738,6 +741,12 @@ public:
 
 
 	void backtrackUntil(int level) {
+		//it is NOT safe to remove altered bitvectors here, because if a comparison was added at a higher level, and then
+		//a conflict was discovered _Before_ the comparison was processed, then the comparison may never be propagated at all if the altered_bvs are cleared here.
+/*		for(int bvID:altered_bvs){
+			alteredBV[bvID]=false;
+		}
+		altered_bvs.clear();*/
 		static int it = 0;
 		rewind_trail_pos(trail.size());
 		//need to remove and add edges in the two graphs accordingly.
@@ -757,15 +766,20 @@ public:
 						getTheory(bvID)->enqueueBV(bvID);//only enqueue the bitvector in the subtheory _after_ it's approximation has been updated!
 				}else{
 					assert(assigns[e.var]!=l_Undef);
-	/*				if (e.isComparator) {
+					if (e.isComparator) {
 						int cID = e.bvID;
 						assert(cID>=0);
-						ComparisonID & c = comparisons[cID];
-						int bvID = c.bvID;
-					} else {
-						int bvID = e.bvID;
+						if (comparison_needs_repropagation[cID]){
+							ComparisonID & c = comparisons[cID];
+							int bvID = c.bvID;
+							if(!alteredBV[bvID]){
+								alteredBV[bvID]=true;
+								altered_bvs.push(bvID);
+							}
+							requiresPropagation=true;
+						}
+					}
 
-					}*/
 					assigns[e.var] = l_Undef;
 				}
 				//changed = true;
@@ -774,16 +788,16 @@ public:
 			trail_lim.shrink(trail_lim.size() - level);
 			assert(trail_lim.size() == level);
 			
-
-			requiresPropagation |= altered_bvs.size();
-
-
+			if(decisionLevel()==0){
+				for(int cID:repropagate_comparisons){
+					assert(comparison_needs_repropagation[cID]);
+					comparison_needs_repropagation[cID]=false;
+				}
+				repropagate_comparisons.clear();
+			}
 		}
 		analysis_trail_pos = trail.size()-1;
 
-		dbg_uptodate();
-
-		
 	};
 
 	Lit decideTheory() {
@@ -796,6 +810,10 @@ public:
 		assert(value(p)!=l_False);
 		if(value(p)!=l_True)
 			return;
+	/*	for(int bvID:altered_bvs){
+			alteredBV[bvID]=false;
+		}
+		altered_bvs.clear();*/
 		int n_backtrack=0;
 		assert(value(p)==l_True);
 		int i = trail.size() - 1;
@@ -815,18 +833,19 @@ public:
 					assert(sign(p) != e.assign);
 					break;
 				}
-/*				if (e.isComparator) {
+				if (e.isComparator) {
 					int cID = e.bvID;
 					assert(cID>=0);
-					ComparisonID & c = comparisons[cID];
-					int bvID = c.bvID;
-					//if the bitvector's cause was this comparison, then we need to update the bitvector now.
-
-				} else {
-
-					int bvID = e.bvID;
-
-				}*/
+					if (comparison_needs_repropagation[cID]){
+						ComparisonID & c = comparisons[cID];
+						int bvID = c.bvID;
+						if(!alteredBV[bvID]){
+							alteredBV[bvID]=true;
+							altered_bvs.push(bvID);
+						}
+						requiresPropagation=true;
+					}
+				}
 				assigns[e.var] = l_Undef;
 			}
 			//changed = true;
@@ -3473,6 +3492,8 @@ public:
 		updateApproximations(bvID);
 		comparisons.push(ComparisonID(to,-1,l,bvID,op));
 		compares[bvID].push(comparisonID);
+
+
 		//insert this value in order.
 		//could do a binary search here...
 		for(int i=0;i<compares[bvID].size()-1;i++){
@@ -3484,6 +3505,14 @@ public:
 				compares[bvID][i]=comparisonID;
 				break;
 			}
+		}
+
+		comparison_needs_repropagation.growTo(comparisons.size());
+		if(decisionLevel()>0 && !comparison_needs_repropagation[comparisonID]){
+			//If this comparison was added at a decision level >0 (by another theory, for example),
+			//then we will need to force the associated bitvector to re-update after backtracking.
+			comparison_needs_repropagation[comparisonID]=true;
+			repropagate_comparisons.push(comparisonID);
 		}
 		if(!alteredBV[bvID]){
 			alteredBV[bvID]=true;
@@ -3623,7 +3652,6 @@ public:
 			l = mkLit(newVar(outerVar, bvID,comparisonID));
 		}
 
-
 		updateApproximations(bvID);
 		updateApproximations(toID);
 
@@ -3669,7 +3697,19 @@ public:
 		//If we have relationships a ==x>y, b== x>=y, then we have (a -> b).
 		//if we have relationships a == x < y, b== y < z, c== x < z, then we have ((a and b) -> c)
 		//more?
-
+		comparison_needs_repropagation.growTo(comparisons.size());
+		if(decisionLevel()>0 && !comparison_needs_repropagation[comparisonID-1]){
+			//If this comparison was added at a decision level >0 (by another theory, for example),
+			//then we will need to force the associated bitvector to re-update after backtracking.
+			comparison_needs_repropagation[comparisonID-1]=true;
+			repropagate_comparisons.push(comparisonID-1);
+		}
+		if(decisionLevel()>0 && !comparison_needs_repropagation[comparisonID]){
+			//If this comparison was added at a decision level >0 (by another theory, for example),
+			//then we will need to force the associated bitvector to re-update after backtracking.
+			comparison_needs_repropagation[comparisonID]=true;
+			repropagate_comparisons.push(comparisonID);
+		}
 
 
 		if(!alteredBV[bvID]){
