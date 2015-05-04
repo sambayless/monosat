@@ -615,7 +615,7 @@ public:
 	printf(" %d", dimacs(sl));
 	printf(" 0\n");
 #endif
-		enqueueTheory(l);
+
 		if (S->enqueue(sl, reason)) {
 			return true;
 		} else {
@@ -649,6 +649,9 @@ public:
 
 				if (e.isBoundAssignment()){
 					int bvID = e.bvID;
+					if(bvID==6){
+						int a =1;
+					}
 					under_approx[bvID]=e.new_under;
 					over_approx[bvID]=e.new_over;
 					under_causes[bvID]=e.new_under_cause;
@@ -668,6 +671,9 @@ public:
 
 				if (e.isBoundAssignment()){
 					int bvID = e.bvID;
+					if(bvID==6){
+						int a =1;
+					}
 					under_approx[bvID]=e.previous_under;
 					over_approx[bvID]=e.previous_over;
 					under_causes[bvID]=e.prev_under_cause;
@@ -697,7 +703,9 @@ public:
 			Assignment & e = trail[analysis_trail_pos];
 			if (e.isBoundAssignment()){
 				int bvID = e.bvID;
-
+				if(bvID==6){
+					int a =1;
+				}
 				if (bvID==for_bvID){
 					if (op==Comparison::lt){
 						assert(over_approx[for_bvID]<compareTo);
@@ -758,6 +766,9 @@ public:
 				Assignment & e = trail[i];
 				if(e.isBoundAssignment()){
 					int bvID = e.bvID;
+					if(bvID==6){
+						int a =1;
+					}
 					under_approx[bvID]=e.previous_under;
 					over_approx[bvID]=e.previous_over;
 					under_causes[bvID]=e.prev_under_cause;
@@ -821,6 +832,9 @@ public:
 			Assignment e = trail[i];
 			if(e.isBoundAssignment()){
 				int bvID = e.bvID;
+				if(bvID==6){
+					int a =1;
+				}
 				under_approx[bvID]=e.previous_under;
 				over_approx[bvID]=e.previous_over;
 				under_causes[bvID]=e.prev_under_cause;
@@ -1079,7 +1093,7 @@ public:
 		statis_bv_updates++;
 		static int iter = 0;
 		++iter;
-		if(iter==45){
+		if(iter==239){
 			int a = 1;
 		}
 #ifndef NDEBUG
@@ -1443,6 +1457,9 @@ public:
 			assert(trail.last().previous_over == over_old);
 			assert(trail.last().previous_under == under_old);
 			analysis_trail_pos=trail.size()-1;
+			if(trail.size()==33){
+				int a=1;
+			}
 		}else{
 			//ensure that the cause isn't altered if the approx was not changed.
 			under_causes[bvID] = under_cause_old;
@@ -1752,7 +1769,7 @@ public:
 			int a =1;
 		}
 		//printf("bv prop %d\n",stats_propagations);
-		if(stats_propagations==110){
+		if(stats_propagations==106){
 			int a =1;
 		}
 		bool any_change = false;
@@ -3842,7 +3859,7 @@ public:
 
 			//Weight & under = under_approx[bvID];
 			//Weight & over = over_approx[bvID];
-				for(int cID:compares[bvID]){
+			for(int cID:compares[bvID]){
 			ComparisonID & c = comparisons[cID];
 			Comparison op = c.op();
 
