@@ -1105,7 +1105,7 @@ public:
 		statis_bv_updates++;
 		static int iter = 0;
 		++iter;
-		if(iter==45){//75
+		if(iter==540){//75//119
 			int a = 1;
 		}
 #ifndef NDEBUG
@@ -1125,7 +1125,7 @@ public:
 		vec<Lit> & bv = bitvectors[bvID];
 		Weight under_new=0;
 		Weight over_new=0;
-
+		bool any_changed=false;
 		Cause under_cause_old = under_causes[bvID];
 		Cause over_cause_old = over_causes[bvID];
 
@@ -1416,11 +1416,11 @@ public:
 
 		Weight refined_over = refine_lbound(bvID, over_new);
 		if(refined_over>-1 && refined_over< over_new){
-			std::cout<< "Refined overapprox for bv " << bvID << " from " << over_new << " to " << refined_over << "\n";
+			//std::cout<< "Refined overapprox for bv " << bvID << " from " << over_new << " to " << refined_over << "\n";
 
 			if(over_new<over_old){
 				//need to record this previous change as a separate entry in the trail, for conflict analysis later...
-
+				any_changed=true;
 				assert(over_new<=over_old);
 				assert(analysis_trail_pos==trail.size()-1);
 				trail.push({bvID,under_old, over_old, under_old, over_new, under_cause_old, over_cause_old, under_cause_old,over_causes[bvID]});
@@ -1437,7 +1437,7 @@ public:
 				over_old=over_new;
 				over_cause_old=over_causes[bvID];
 
-				if(trail.size()==12  && trail[11].bvID==2){
+				if(trail.size()==33  && trail[32].bvID==3){
 					int a=1;
 				}
 				if(trail.size()==8  && trail[11].bvID==2){
@@ -1451,7 +1451,7 @@ public:
 		}
 		Weight refined_under = refine_ubound(bvID, under_new);
 		if(refined_under>-1  && refined_under> under_new){
-			std::cout<< "Refined underapprox for bv " << bvID << " from " << under_new<< " to " << refined_under << "\n";
+			//std::cout<< "Refined underapprox for bv " << bvID << " from " << under_new<< " to " << refined_under << "\n";
 
 			if(under_new>under_old){
 				//need to record this previous change as a separate entry in the trail, for conflict analysis later...
@@ -1466,13 +1466,13 @@ public:
 				assert(trail.last().previous_over == over_old);
 				assert(trail.last().previous_under == under_old);
 				analysis_trail_pos=trail.size()-1;
-
+				any_changed=true;
 				under_old=under_new;
 				over_old=over_new;
 				under_cause_old=under_causes[bvID];
 				over_cause_old=over_causes[bvID];
 
-				if(trail.size()==12  && trail[11].bvID==2){
+				if(trail.size()==33  && trail[32].bvID==3){
 								int a=1;
 							}
 				if(trail.size()==8  && trail[11].bvID==2){
@@ -1515,7 +1515,7 @@ public:
 
 		bool changed = (under_old != under_approx[bvID]) || (over_old != over_approx[bvID]);
 		if(changed){
-			//bounds _must_ have tightened
+			any_changed=true;
 			assert(under_new>=under_old);
 			assert(over_new<=over_old);
 			assert(analysis_trail_pos==trail.size()-1);
@@ -1527,7 +1527,7 @@ public:
 			assert(trail.last().previous_over == over_old);
 			assert(trail.last().previous_under == under_old);
 			analysis_trail_pos=trail.size()-1;
-			if(trail.size()==12  && trail[11].bvID==2){
+			if(trail.size()==33  && trail[32].bvID==3){
 							int a=1;
 						}
 			if(trail.size()==8  && trail[11].bvID==2){
@@ -1575,7 +1575,7 @@ public:
 		printf("%d\n", bound_num);
 #endif
 
-		return 	changed;//return whether either weight has changed.
+		return 	any_changed;//return whether either weight has changed.
 	}
 
 	Weight & getUnderApprox(int bvID, bool level0=false){
@@ -1838,7 +1838,7 @@ public:
 			return true;
 		}
 		rewind_trail_pos(trail.size());
-		if(++realprops==43){
+		if(++realprops==210){
 			int a =1;
 		}
 		//printf("bv prop %d\n",stats_propagations);
@@ -1864,10 +1864,10 @@ public:
 
 			Weight & underApprox = under_approx[bvID];
 			Weight & overApprox = over_approx[bvID];
-			printf("iter %d, bv %d, under ",realprops , bvID); //: %d, over %d\n", bvID, underApprox,overApprox);
+	/*		printf("iter %d, bv %d, under ",realprops , bvID); //: %d, over %d\n", bvID, underApprox,overApprox);
 			std::cout<<underApprox << " over ";
 			std::cout<<overApprox << "\n";
-			fflush(stdout);
+			fflush(stdout);*/
 			vec<Lit> & bv = bitvectors[bvID];
 			Weight under =0;
 			Weight over=(1L<<bv.size())-1;
@@ -2532,7 +2532,7 @@ public:
 		static int iter = 0;
 		++iter;
 		//printf("reason %d: %d\n",iter,bvID);
-		if(iter==11){
+		if(iter==121){
 			int a=1;
 		}
 		if (trail_pos<-1){
@@ -2584,12 +2584,16 @@ public:
 
 		if (compare_over &&  over_causes[bvID].refined_cause){
 			//then the reason the underapprox is too large is because of the assignment to the bits
-
+			//can this analysis be improved upon?
 			for(int i =0;i<bv.size();i++){
 				Lit bl = bv[i];
-				if(value(bl)==l_True ){
+				if(value(bl)==l_False){
 
-					//can probably improve on this later...
+						assert(value(bl)==l_False);
+						conflict.push(bl);
+
+				}else if(value(bl)==l_True){
+
 					assert(value(~bl)==l_False);
 					conflict.push(~bl);
 
@@ -2609,6 +2613,11 @@ public:
 
 						assert(value(bl)==l_False);
 						conflict.push(bl);
+
+				}else if(value(bl)==l_True){
+
+					assert(value(~bl)==l_False);
+					conflict.push(~bl);
 
 				}
 			}
