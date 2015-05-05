@@ -764,7 +764,7 @@ void DistanceDetector<Weight>::buildDistanceGTReason(int to, Weight & min_distan
 	Dijkstra<Weight> d(source, g_over);
 	Weight & expected = d.distance(to);
 	assert(expected == actual_dist);
-	assert(!overapprox_weighted_distance_detector->connected(to) || actual_dist > min_distance);
+	assert(!overapprox_weighted_distance_detector->connected(to) || (strictComparison? actual_dist > min_distance: actual_dist >= min_distance));
 #endif
 	
 	{
@@ -832,10 +832,12 @@ void DistanceDetector<Weight>::buildDistanceGTReason(int to, Weight & min_distan
 
 							Lit gt;
 							if(strictComparison){
-								gt= outer->getEdgeWeightLT(edge_num,w);
+								gt= ~outer->getEdgeWeightGEQ(edge_num,w);
+								//gt= outer->getEdgeWeightLT(edge_num,w);
 							}else{
+								gt= ~outer->getEdgeWeightGEQ(edge_num,w);
 								//gt= outer->getEdgeWeightLEQ(edge_num,w);
-								gt= ~outer->getEdgeWeightGT(edge_num,w);
+								//gt= ~outer->getEdgeWeightGT(edge_num,w);
 							}
 							lbool val = outer->dbg_value(gt);
 							assert(val!=l_True);

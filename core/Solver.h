@@ -283,7 +283,7 @@ public:
 		int t = getTheory(cr);
 		assert(hasTheory(p));
 		theory_reason.clear();
-		if(p.x==117 || p.x==99){
+		if(p.x==191 ){
 			int a =1;
 		}
 		theories[t]->buildReason(getTheoryLit(p), theory_reason, cr);

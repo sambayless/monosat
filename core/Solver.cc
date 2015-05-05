@@ -1391,7 +1391,7 @@ void Solver::addClauseSafely(vec<Lit> & ps) {
 }
 bool Solver::addConflictClause(vec<Lit> & ps, CRef & confl_out, bool permanent) {
 	static int nlearnt=0;
-	if(++nlearnt==13){
+	if(++nlearnt==235){
 		int a=1;
 	}
 #ifndef NDEBUG

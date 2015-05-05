@@ -774,7 +774,7 @@ public:
 					under_causes[bvID]=e.prev_under_cause;
 					over_causes[bvID]=e.prev_over_cause;
 					if(hasTheory(bvID))
-						getTheory(bvID)->enqueueBV(bvID);//only enqueue the bitvector in the subtheory _after_ it's approximation has been updated!
+						getTheory(bvID)->backtrackBV(bvID);//only enqueue the bitvector in the subtheory _after_ it's approximation has been updated!
 				}else{
 					assert(assigns[e.var]!=l_Undef);
 					if (e.isComparator) {
@@ -840,7 +840,7 @@ public:
 				under_causes[bvID]=e.prev_under_cause;
 				over_causes[bvID]=e.prev_over_cause;
 				if(hasTheory(bvID))
-					getTheory(bvID)->enqueueBV(bvID);//only enqueue the bitvector in the subtheory _after_ it's approximation has been updated!
+					getTheory(bvID)->backtrackBV(bvID);//only enqueue the bitvector in the subtheory _after_ it's approximation has been updated!
 
 			}else{
 				if (var(p) == e.var) {
@@ -1027,13 +1027,19 @@ public:
 			}
 		}
 #endif
-		
-		
+
 
 		if (!isComparisonVar(var(l))) {
 			
 			int bvID = getbvID(v);
+
+			if(bvID==2){
+				int a =1;
+			}
 			trail.push( { false, !sign(l),bvID, v});
+			if(trail.size()>10 && trail[10].bvID==2){
+							int a=1;
+						}
 			analysis_trail_pos=trail.size()-1;
 			if(!alteredBV[bvID]){
 				alteredBV[bvID]=true;
@@ -1053,9 +1059,15 @@ public:
 		} else {
 
 			int bvID = getbvID(var(l));
+			if(bvID==2){
+				int a =1;
+			}
 			int comparisonID = getComparisonID(var(l)); //v-min_edge_var;
 			//status.comparisonAltered(bvID, comparisonID);
 			trail.push( { true, !sign(l),comparisonID, v });
+			if(trail.size()>10 && trail[10].bvID==2){
+							int a=1;
+						}
 			analysis_trail_pos=trail.size()-1;
 			//trail.push( { true, !sign(l),edgeID, v });
 			if(!alteredBV[bvID]){
@@ -1093,7 +1105,7 @@ public:
 		statis_bv_updates++;
 		static int iter = 0;
 		++iter;
-		if(iter==239){
+		if(iter==45){//75
 			int a = 1;
 		}
 #ifndef NDEBUG
@@ -1405,13 +1417,71 @@ public:
 		Weight refined_over = refine_lbound(bvID, over_new);
 		if(refined_over>-1 && refined_over< over_new){
 			std::cout<< "Refined overapprox for bv " << bvID << " from " << over_new << " to " << refined_over << "\n";
+
+			if(over_new<over_old){
+				//need to record this previous change as a separate entry in the trail, for conflict analysis later...
+
+				assert(over_new<=over_old);
+				assert(analysis_trail_pos==trail.size()-1);
+				trail.push({bvID,under_old, over_old, under_old, over_new, under_cause_old, over_cause_old, under_cause_old,over_causes[bvID]});
+				assert(trail.last().isBoundAssignment());
+				assert(trail.last().bvID==bvID);
+				assert(trail.last().new_over == over_new);
+				assert(trail.last().new_under == under_old);//intentionally not changing under here.
+				assert(trail.last().previous_over == over_old);
+				assert(trail.last().previous_under == under_old);
+				analysis_trail_pos=trail.size()-1;
+
+
+				//ONLY update over_old to over new here.
+				over_old=over_new;
+				over_cause_old=over_causes[bvID];
+
+				if(trail.size()==12  && trail[11].bvID==2){
+					int a=1;
+				}
+				if(trail.size()==8  && trail[11].bvID==2){
+										int a=1;
+									}
+			}
+
 			over_new=refined_over;
+			over_causes[bvID].clear();
 			over_causes[bvID].refined_cause=true;
 		}
 		Weight refined_under = refine_ubound(bvID, under_new);
 		if(refined_under>-1  && refined_under> under_new){
 			std::cout<< "Refined underapprox for bv " << bvID << " from " << under_new<< " to " << refined_under << "\n";
+
+			if(under_new>under_old){
+				//need to record this previous change as a separate entry in the trail, for conflict analysis later...
+				assert(under_new>=under_old);
+				assert(over_new<=over_old);
+				assert(analysis_trail_pos==trail.size()-1);
+				trail.push({bvID,under_old, over_old, under_new, over_new, under_cause_old, over_cause_old, under_causes[bvID],over_causes[bvID]});
+				assert(trail.last().isBoundAssignment());
+				assert(trail.last().bvID==bvID);
+				assert(trail.last().new_over == over_new);
+				assert(trail.last().new_under == under_new);
+				assert(trail.last().previous_over == over_old);
+				assert(trail.last().previous_under == under_old);
+				analysis_trail_pos=trail.size()-1;
+
+				under_old=under_new;
+				over_old=over_new;
+				under_cause_old=under_causes[bvID];
+				over_cause_old=over_causes[bvID];
+
+				if(trail.size()==12  && trail[11].bvID==2){
+								int a=1;
+							}
+				if(trail.size()==8  && trail[11].bvID==2){
+									int a=1;
+								}
+			}
+
 			under_new=refined_under;
+			under_causes[bvID].clear();
 			under_causes[bvID].refined_cause=true;
 		}
 
@@ -1457,9 +1527,12 @@ public:
 			assert(trail.last().previous_over == over_old);
 			assert(trail.last().previous_under == under_old);
 			analysis_trail_pos=trail.size()-1;
-			if(trail.size()==33){
-				int a=1;
-			}
+			if(trail.size()==12  && trail[11].bvID==2){
+							int a=1;
+						}
+			if(trail.size()==8  && trail[11].bvID==2){
+									int a=1;
+								}
 		}else{
 			//ensure that the cause isn't altered if the approx was not changed.
 			under_causes[bvID] = under_cause_old;
@@ -1765,7 +1838,7 @@ public:
 			return true;
 		}
 		rewind_trail_pos(trail.size());
-		if(++realprops==61){
+		if(++realprops==43){
 			int a =1;
 		}
 		//printf("bv prop %d\n",stats_propagations);
@@ -2522,7 +2595,9 @@ public:
 
 				}
 			}
-			//keep looking for further causes!
+			rewind_trail_pos(trail_pos-1);
+			buildValueReason(Comparison::leq,bvID,over_approx[bvID],conflict,trail_pos-1);
+			return;
 		}else if (!compare_over  && under_causes[bvID].refined_cause){
 			//then the reason the underapprox is too large is because of the assignment to the bits
 
@@ -2537,7 +2612,9 @@ public:
 
 				}
 			}
-			//keep looking for further causes!
+			rewind_trail_pos(trail_pos-1);
+			buildValueReason(Comparison::geq,bvID,under_approx[bvID],conflict,trail_pos-1);
+			return;
 		}
 
 
@@ -2589,13 +2666,17 @@ public:
 			assert(bID<bvID);
 
 			if  (compare_over && over_causes[bvID].cause_is_addition){
+				Weight over_bid = over_approx[bID];
+				Weight over_aid = over_approx[aID];
 				//then the reason is that aID is <= weight-under(bID), or bID <= weight-under(aID)
-				buildValueReason(op,aID,to-over_approx[bID],conflict,trail_pos-1);
-				buildValueReason(op,bID,to-over_approx[aID],conflict,trail_pos-1);
+				buildValueReason(op,aID,to-over_bid,conflict,trail_pos-1);
+				buildValueReason(op,bID,to-over_aid,conflict,trail_pos-1);
 				return;
 			}else if(!compare_over && under_causes[bvID].cause_is_addition){
-				buildValueReason(op,aID,to-under_approx[bID],conflict,trail_pos-1);
-				buildValueReason(op,bID,to-under_approx[aID],conflict,trail_pos-1);
+				Weight under_bid = under_approx[bID];
+				Weight under_aid = under_approx[aID];
+				buildValueReason(op,aID,to-under_bid,conflict,trail_pos-1);
+				buildValueReason(op,bID,to-under_aid,conflict,trail_pos-1);
 				return;
 			}
 		}
@@ -2604,11 +2685,12 @@ public:
 			int argindex = over_causes[bvID].cause_is_addition_arg;
 			int other_argID = addition_arguments[bvID][argindex].other_argID;
 			int sumID = addition_arguments[bvID][argindex].sumID;
-
+			Weight over_sumID = over_approx[sumID];
+			Weight under_argID = under_approx[other_argID];
 
 			//Weight over = over_approx[sumID] -  under_approx[other_argID];
-			buildValueReason(~op,other_argID,over_approx[sumID]-to,conflict,trail_pos-1);
-			buildValueReason(op,sumID,to+under_approx[other_argID],conflict,trail_pos-1);
+			buildValueReason(~op,other_argID,over_sumID-to,conflict,trail_pos-1);
+			buildValueReason(op,sumID,to+under_argID,conflict,trail_pos-1);
 
 			return;
 		}
@@ -2616,9 +2698,11 @@ public:
 			int argindex = under_causes[bvID].cause_is_addition_arg;
 			int other_argID = addition_arguments[bvID][argindex].other_argID;
 			int sumID = addition_arguments[bvID][argindex].sumID;
+			Weight under_sumID = under_approx[sumID];
+			Weight over_argID = over_approx[other_argID];
 			//Weight under = under_approx[sumID] -  over_approx[other_argID];
-			buildValueReason(~op,other_argID,under_approx[sumID]-to,conflict,trail_pos-1);
-			buildValueReason(op,sumID,to+over_approx[other_argID],conflict,trail_pos-1);
+			buildValueReason(~op,other_argID,under_sumID-to,conflict,trail_pos-1);
+			buildValueReason(op,sumID,to+over_argID,conflict,trail_pos-1);
 			return;
 		}
 		int cID;
@@ -3506,7 +3590,7 @@ public:
 		std::cout << "learnt fact " << "bv " << bvID << " " << op << " " << to  <<" " << dimacs(toSolver(l)) << "\n";
 #endif
 
-		updateApproximations(bvID);
+		//updateApproximations(bvID);
 		comparisons.push(ComparisonID(to,-1,l,bvID,op));
 		compares[bvID].push(comparisonID);
 
@@ -3669,8 +3753,8 @@ public:
 			l = mkLit(newVar(outerVar, bvID,comparisonID));
 		}
 
-		updateApproximations(bvID);
-		updateApproximations(toID);
+		//updateApproximations(bvID);
+		//updateApproximations(toID);
 
 		if(!cause_set[toID].contains(bvID))
 			cause_set[toID].push(bvID);
