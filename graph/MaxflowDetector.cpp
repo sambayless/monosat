@@ -611,7 +611,7 @@ void MaxflowDetector<Weight>::buildMaxFlowTooLowReason(Weight maxflow, vec<Lit> 
 	
 	//drawFull( non_reach_detectors[detector]->getSource(),u);
 	//assert(outer->dbg_distance( source,u));
-	g_over.drawFull(true);
+	//g_over.drawFull(true);
 	//The reason why we can't reach this assignment is a cut through the disabled edges in the residual graph from the overapprox.
 	//we could search for a min cut, but instead we will just step back in the RESIDUAL graph, from u to s, collecting disabled edges.
 	assert(!seen.contains(true));

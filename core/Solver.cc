@@ -752,7 +752,7 @@ void Solver::uncheckedEnqueue(Lit p, CRef from) {
 	assigns[var(p)] = lbool(!sign(p));
 	vardata[var(p)] = mkVarData(from, decisionLevel());
 	trail.push_(p);
-	if(dbg_symbols[var(p)]){
+	if(dbg_symbols[var(p)] && !sign(p)){
 		printf("q %s%s\n",sign(p)?"-":"",dbg_symbols[var(p)]);
 	}
 	if (hasTheory(p)) {

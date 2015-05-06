@@ -46,6 +46,9 @@ class BVParser: public Parser<B, Solver> {
 public:
 	BVTheorySolver<long>* theory=nullptr;
 private:
+	vec<std::pair<int, std::string> >  symbols;
+	std::string symbol;
+
 	struct BV{
 		int id=-1;
 		vec<Var> vector;
@@ -157,6 +160,29 @@ private:
 		addconsts.last().b = arg2;*/
 	}
 
+	void readSymbol(B& in, Solver& S){
+		//this is a variable symbol map
+		skipWhitespace(in);
+		int v = parseInt(in);
+
+		symbol.clear();
+		skipWhitespace(in);
+		while (*in != '\n' && !isWhitespace(*in)) {
+			symbol.push_back(*in);
+			++in;
+		}
+		if (symbol.size() == 0) {
+			printf("PARSE ERROR! Empty symbol: %c\n", *in), exit(1);
+		}
+		/*   		if(symbols && used_symbols.count(symbol)){
+		 printf("PARSE ERROR! Duplicated symbol: %c\n", *symbol.c_str()), exit(1);
+		 }
+		 used_symbols.insert(symbol);*/
+
+		symbols.push();
+		symbols.last().first = v;
+		symbols.last().second = symbol;
+	}
 
 	void readCompareBV(B& in, Solver& S,Comparison c) {
 		if (opt_ignore_theories) {
@@ -208,7 +234,11 @@ public:
 		skipWhitespace(in);
 		if (*in == EOF)
 			return false;
-		else if (*in == 'c') {
+		else if (match(in, "c bv")) {
+			//this is a bitvector symbol definition
+			readSymbol(in,S);
+			return true;
+		}else if (*in == 'c') {
 			//just a comment
 			return false;
 		} else if (match(in, "bv")) {
@@ -275,6 +305,17 @@ public:
 			for(auto & c:addbvs){
 				theory->newAdditionBV(c.resultID,c.aBV,c.bBV);
 			}
+
+			for (int i = 0; i < symbols.size(); i++) {
+				int bvID = symbols[i].first;
+				string & s = symbols[i].second;
+				if (theory->hasBV(bvID)){
+					theory->setSymbol(bvID, s.c_str());
+				}else{
+					fprintf(stderr,"Unmatched bv symbol definition for %d : %s\n",bvID,s.c_str());
+				}
+			}
+
 		}else if (addbvs.size() || comparebvs.size() || compares.size()){
 
 			printf("PARSE ERROR! Undefined bitvector\n"), exit(1);

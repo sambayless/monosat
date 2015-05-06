@@ -247,6 +247,8 @@ public:
 	CRef comparisonprop_marker;
 	CRef bvprop_marker;
 
+	vec<const char*> symbols;
+
 	vec<Assignment> trail;
 	vec<int> trail_lim;
 
@@ -1543,8 +1545,9 @@ public:
 			under_causes[bvID] = under_cause_old;
 			over_causes[bvID] = over_cause_old;
 		}
-
-
+		if(getSymbol(bvID)){
+			std::cout<< "q bv " << getSymbol(bvID) << " " << under_approx[bvID] << " <= bv <=" <<  over_approx[bvID] << "\n" ;
+		}
 #ifndef NDEBUG
 		static int bound_num=0;
 		printf("learnt bound ");
@@ -3431,6 +3434,14 @@ public:
 		return getBV(resultID);
 	}
 
+	void setSymbol(int bvID, const char* symbol){
+		symbols[bvID]=symbol;
+	}
+
+	const char * getSymbol(int bvID){
+		return symbols[bvID];
+	}
+
 	BitVector newBitvector(int bvID, vec<Var> & vars){
 		if(bvID<0){
 			bvID = bitvectors.size();
@@ -3439,7 +3450,7 @@ public:
 		//bv_callbacks.growTo(id+1,nullptr);
 		bitvectors.growTo(bvID+1);
 		theoryIds.growTo(bvID+1,-1);
-
+		symbols.growTo(bvID+1,nullptr);
 		under_approx.growTo(bvID+1,-1);
 		over_approx.growTo(bvID+1,-1);
 		under_approx0.growTo(bvID+1,-1);
@@ -3497,7 +3508,7 @@ public:
 		//bv_callbacks.growTo(id+1,nullptr);
 		bitvectors.growTo(bvID+1);
 		theoryIds.growTo(bvID+1,-1);
-
+		symbols.growTo(bvID+1,nullptr);
 		under_approx.growTo(bvID+1,-1);
 		over_approx.growTo(bvID+1,-1);
 		under_approx0.growTo(bvID+1,-1);
