@@ -43,7 +43,7 @@ public:
 	virtual Var newTheoryVar(Var solverVar, int theoryID, Var theoryVar)=0;
 	virtual Var newVar(bool polarity = true, bool dvar = true)=0;
 	virtual int nVars()const=0;
-	virtual bool enqueue(Lit l, CRef reason)=0;
+	virtual bool enqueue(Lit l, CRef reason=CRef_Undef)=0;
 	virtual CRef newReasonMarker(Theory * forTheory)=0;
 	virtual CRef reason(Var v)const=0;
 

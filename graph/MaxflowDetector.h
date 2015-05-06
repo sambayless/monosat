@@ -37,7 +37,7 @@ namespace Monosat {
 template<typename Weight>
 class GraphTheorySolver;
 template<typename Weight = int>
-class MaxflowDetector: public Detector, public DynamicGraphAlgorithm  {
+class MaxflowDetector: public Detector,public EdgeDecider<Weight>, public DynamicGraphAlgorithm  {
 public:
 	GraphTheorySolver<Weight> * outer;
 	std::vector<Weight> capacities;
@@ -135,8 +135,13 @@ public:
 	void buildForcedEdgeReason(int reach_node, int forced_edge_id, vec<Lit> & conflict);
 	void buildReason(Lit p, vec<Lit> & reason, CRef marker);
 	bool checkSatisfied();
+	bool decideEdgeWeight(int edgeID, Weight & store, DetectorComparison & op);
+	void undecideEdgeWeight(int edgeID);
 	void undecide(Lit l);
 	Lit decide();
+	bool supportsEdgeDecisions(){
+		return true;
+	}
 	void suggestDecision(Lit l);
 	void printStats() {
 		Detector::printStats();

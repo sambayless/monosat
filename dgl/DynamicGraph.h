@@ -24,6 +24,7 @@
 #include <vector>
 #include <algorithm>
 #include <cassert>
+#include <sstream>
 #ifndef NDEBUG
 #include <sstream>
 //Used to track graph operations for debugging purposes - you can probably ignore this.
@@ -480,7 +481,7 @@ public:
 
 
 	void drawFull(bool showWeights = false) {
-#ifndef NDEBUG
+//#ifndef NDEBUG
 		printf("digraph{\n");
 		for (int i = 0; i < num_nodes; i++) {
 			printf("n%d\n", i);
@@ -505,7 +506,7 @@ public:
 			}
 		}
 		printf("}\n");
-#endif
+//#endif
 	}
 	
 	bool rewindHistory(int steps) {

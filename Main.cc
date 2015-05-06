@@ -405,6 +405,15 @@ int main(int argc, char** argv) {
 		gzclose(in);
 
 		vec<std::pair<int, std::string> > & symbols = symbolParser.getSymbols();
+//#ifndef NDEBUG
+		S.dbg_symbols.growTo(S.nVars());
+		for (int i = 0; i < symbols.size(); i++) {
+			int v = symbols[i].first;
+			S.dbg_symbols.growTo(v+1);
+			string s = symbols[i].second;
+			S.dbg_symbols[v]=s.c_str();
+		}
+//#endif
 
 		if (opt_verb > 2) {
 			for (int i = 0; i < symbols.size(); i++) {

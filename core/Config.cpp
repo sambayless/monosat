@@ -165,6 +165,7 @@ BoolOption Monosat::opt_reach_prop(_cat_graph, "prop-reach", "", false);
 
 BoolOption Monosat::opt_decide_theories(_cat_graph, "decide-theories", "", false);
 BoolOption Monosat::opt_decide_graph_distance(_cat_graph, "decide-graph-dist", "", false);
+BoolOption Monosat::opt_decide_graph_bv(_cat_graph,"decide-graph-bv","",false);
 
 BoolOption Monosat::opt_use_random_path_for_decisions(_cat_graph, "decide-graph-rnd", "", false);
 BoolOption Monosat::opt_use_optimal_path_for_decisions(_cat_graph, "decide-graph-opt",

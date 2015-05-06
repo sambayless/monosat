@@ -811,6 +811,11 @@ public:
 
 	};
 
+	void decideBV(Comparison op, int bvID, Weight to){
+		Lit l = newComparison(op, bvID, to);
+		S->enqueue(toSolver(l));
+	}
+
 	Lit decideTheory() {
 
 		return lit_Undef;

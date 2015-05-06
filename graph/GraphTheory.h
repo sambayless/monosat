@@ -927,6 +927,10 @@ public:
 		}
 	}
 	
+	inline bool edgeWeightDecidable(int edgeID) {
+		return g_over.getWeight(edgeID)!=g_under.getWeight(edgeID);
+	}
+
 	inline bool decidable(Var v)const{
 		return S->value(toSolver(v))==l_Undef;
 	}
@@ -1366,7 +1370,16 @@ public:
 
 
 	}
+	void undecideBV(int bvID){
 
+		if(isEdgeBV(bvID)){
+			int edgeID = getBVEdge(bvID);
+			for (int i = 0; i < detectors.size(); i++) {
+				Detector * r = detectors[i];
+				r->undecideEdgeWeight(edgeID);
+			}
+		}
+	}
 	void undecideTheory(Lit l){
 		//assert(value(l)==l_True); //the value can be locally unassigned if we backtracked while building a propagation reason
 
@@ -1374,10 +1387,12 @@ public:
 			prependToLazyTrail(l);
 
 		}
+
 		for (int i = 0; i < detectors.size(); i++) {
 			Detector * r = detectors[i];
 			r->undecide(l);
 		}
+
 	}
 
 	Lit decideTheory() {
@@ -1417,6 +1432,38 @@ public:
 			Detector * r = detectors[i];
 			Lit l = r->decide();
 			if (l != lit_Undef) {
+
+				if(opt_decide_graph_bv && !sign(l) && isEdgeVar(var(l)) && r->supportsEdgeDecisions()){
+					int edgeID = getEdgeID(var(l));
+					EdgeDecider<Weight> * d = dynamic_cast<EdgeDecider<Weight> *>(r); //(EdgeDecider<Weight>*)r;
+					Weight edgeWeight=-1;
+					DetectorComparison op;
+					if(d->decideEdgeWeight(edgeID,edgeWeight,op)){
+						assert(edgeWeight>=0);
+						Comparison bvOp;
+						if (op==DetectorComparison::leq){
+							bvOp=Comparison::leq;
+							comparator->decideBV(bvOp, getEdgeBV(edgeID).getID(), edgeWeight);
+						}else if (op==DetectorComparison::lt){
+							bvOp=Comparison::lt;
+							comparator->decideBV(bvOp, getEdgeBV(edgeID).getID(), edgeWeight);
+						}else if (op==DetectorComparison::geq){
+							bvOp=Comparison::geq;
+							comparator->decideBV(bvOp, getEdgeBV(edgeID).getID(), edgeWeight);
+						}else if (op==DetectorComparison::gt){
+							bvOp=Comparison::gt;
+							comparator->decideBV(bvOp, getEdgeBV(edgeID).getID(), edgeWeight);
+						}else if (op==DetectorComparison::eq){
+							comparator->decideBV(Comparison::leq, getEdgeBV(edgeID).getID(), edgeWeight);
+							comparator->decideBV(Comparison::geq, getEdgeBV(edgeID).getID(), edgeWeight);
+						}else{
+							exit(1);//ne not supported yet...
+						}
+
+
+					}
+				}
+
 				stats_decisions++;
 				r->stats_decisions++;
 				stats_decision_time += rtime(1) - start;

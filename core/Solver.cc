@@ -104,6 +104,8 @@ Var Solver::newVar(bool sign, bool dvar) {
 	if (v < min_decision_var)
 		dvar = false;
 	setDecisionVar(v, dvar);
+
+	dbg_symbols.push(nullptr);
 	return v;
 }
 
@@ -364,6 +366,9 @@ void Solver::cancelUntil(int lev) {
 			if(xlev<=lev){
 				to_reenqueue.push(trail[c]);
 			}else{
+				if(dbg_symbols[x]){
+					printf("u %s\n",dbg_symbols[x]);
+				}
 				if(hasTheory(x)){
 					theories[getTheoryID(x)]->undecideTheory(getTheoryLit(trail[c]));
 				}
@@ -743,14 +748,13 @@ void Solver::enqueueLazy(Lit p, int lev, CRef from){
 
 void Solver::uncheckedEnqueue(Lit p, CRef from) {
 	assert(value(p) == l_Undef);
-	if(var(p)==392932){
-		int a=1;
 
-	}
 	assigns[var(p)] = lbool(!sign(p));
 	vardata[var(p)] = mkVarData(from, decisionLevel());
 	trail.push_(p);
-	//printf("%d\n",dimacs(p));
+	if(dbg_symbols[var(p)]){
+		printf("q %s%s\n",sign(p)?"-":"",dbg_symbols[var(p)]);
+	}
 	if (hasTheory(p)) {
 		int theoryID = getTheoryID(p);
 		needsPropagation(theoryID);
@@ -1679,7 +1683,7 @@ lbool Solver::search(int nof_conflicts) {
 			if (learnts.size() - nAssigns() >= max_learnts)
 				// Reduce the set of learnt clauses:
 				reduceDB();
-			
+
 			Lit next = lit_Undef;
 			while (decisionLevel() < assumptions.size()) {
 				// Perform user provided assumption:
@@ -1696,6 +1700,9 @@ lbool Solver::search(int nof_conflicts) {
 				}
 			}
 			
+			//Note: decision level is now added before theories make their decisions, to allow them to decide multiple literals at once.
+			newDecisionLevel();
+
 			if (opt_decide_theories && next == lit_Undef && drand(random_seed) < opt_random_theory_freq) {
 				/**
 				 * Give the theory solvers a chance to make decisions
@@ -1738,8 +1745,11 @@ lbool Solver::search(int nof_conflicts) {
 			}
 			//last_dec = var(next);
 			// Increase decision level and enqueue 'next'
-			newDecisionLevel();
-			uncheckedEnqueue(next);
+			assert(next!=lit_Undef);
+			if(dbg_symbols[var(next)]){
+				printf("d %s%s\n",sign(next)?"-":"",dbg_symbols[var(next)]);
+			}
+			enqueue(next);//not unchecked enqueue, because a theory solver _may_ have assigned this literal while making a decision
 		}
 	}
 	//Unreachable

@@ -101,10 +101,16 @@ public:
 	virtual void backtrack(int level) {
 		//do nothing
 	}
+	virtual void undecideEdgeWeight(int edgeID){
+
+	}
 	virtual void undecide(Lit l){
 
 	}
 	virtual Lit decide()=0;
+	virtual bool supportsEdgeDecisions(){
+		return false;
+	}
 	virtual void suggestDecision(Lit l){
 		//do nothing
 	}
@@ -154,6 +160,19 @@ public:
 	virtual void addVar(Var v) {
 		unassigned_negatives++;
 		unassigned_positives++;
+	}
+};
+
+enum class DetectorComparison{
+	lt,leq,gt,geq,eq,ne
+};
+
+template<typename Weight>
+class EdgeDecider{
+public:
+	virtual bool decideEdgeWeight(int edgeID, Weight & store, DetectorComparison & op)=0;
+	virtual ~EdgeDecider() {
+
 	}
 };
 
