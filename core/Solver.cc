@@ -366,9 +366,9 @@ void Solver::cancelUntil(int lev) {
 			if(xlev<=lev){
 				to_reenqueue.push(trail[c]);
 			}else{
-				if(dbg_symbols[x]){
+			/*	if(dbg_symbols[x]){
 					printf("u %s\n",dbg_symbols[x]);
-				}
+				}*/
 				if(hasTheory(x)){
 					theories[getTheoryID(x)]->undecideTheory(getTheoryLit(trail[c]));
 				}
@@ -752,9 +752,9 @@ void Solver::uncheckedEnqueue(Lit p, CRef from) {
 	assigns[var(p)] = lbool(!sign(p));
 	vardata[var(p)] = mkVarData(from, decisionLevel());
 	trail.push_(p);
-	if(dbg_symbols[var(p)] && !sign(p)){
+/*	if(dbg_symbols[var(p)] && !sign(p)){
 		printf("q %s%s\n",sign(p)?"-":"",dbg_symbols[var(p)]);
-	}
+	}*/
 	if (hasTheory(p)) {
 		int theoryID = getTheoryID(p);
 		needsPropagation(theoryID);
@@ -1746,9 +1746,9 @@ lbool Solver::search(int nof_conflicts) {
 			//last_dec = var(next);
 			// Increase decision level and enqueue 'next'
 			assert(next!=lit_Undef);
-			if(dbg_symbols[var(next)]){
+	/*		if(dbg_symbols[var(next)]){
 				printf("d %s%s\n",sign(next)?"-":"",dbg_symbols[var(next)]);
-			}
+			}*/
 			enqueue(next);//not unchecked enqueue, because a theory solver _may_ have assigned this literal while making a decision
 		}
 	}

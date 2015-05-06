@@ -1545,9 +1545,9 @@ public:
 			under_causes[bvID] = under_cause_old;
 			over_causes[bvID] = over_cause_old;
 		}
-		if(getSymbol(bvID)){
+/*		if(getSymbol(bvID)){
 			std::cout<< "q bv " << getSymbol(bvID) << " " << under_approx[bvID] << " <= bv <=" <<  over_approx[bvID] << "\n" ;
-		}
+		}*/
 #ifndef NDEBUG
 		static int bound_num=0;
 		printf("learnt bound ");
