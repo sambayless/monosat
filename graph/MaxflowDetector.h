@@ -82,11 +82,11 @@ public:
 	vec<Lit> to_decide;
 	std::vector<int> q;
 
-	DynamicGraph<long> learn_graph;
+	DynamicGraph<Weight> learn_graph;
 	vec<int> back_edges;
 	int learngraph_history_qhead = 0;
 	int learngraph_history_clears = -1;
-	MaxFlow<long> * learn_cut = nullptr;
+	MaxFlow<Weight> * learn_cut = nullptr;
 	//int current_decision_edge=-1;
 	//vec<Lit>  reach_lits;
 	Var first_reach_var;
@@ -235,6 +235,31 @@ public:
 	}
 	
 private:
+
+	void buildLearnGraph(){
+		if (learn_graph.nodes() < g_under.nodes()) {
+			while (learn_graph.nodes() < g_under.nodes())
+				learn_graph.addNode();
+			back_edges.growTo(g_under.edges(), -1);
+
+			for (auto & e : g_under.getEdges()) {
+				if (back_edges[e.id ] == -1) {
+					learn_graph.addEdge(e.from, e.to,-1,0);
+				}
+			}
+
+			for (auto & e : g_under.getEdges()) {
+				if (back_edges[e.id ] == -1) {
+					back_edges[e.id ] = learn_graph.addEdge(e.to, e.from,-1,0);
+				}
+			}
+
+			learn_graph.invalidate();
+
+			learn_graph.clearHistory(true);
+		}
+	}
+
 	double var_inc=1;
 	double var_decay=1;
 	vec<double> activity;
