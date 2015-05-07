@@ -1535,19 +1535,19 @@ public:
 			assert(trail.last().previous_under == under_old);
 			analysis_trail_pos=trail.size()-1;
 			if(trail.size()==33  && trail[32].bvID==3){
-							int a=1;
-						}
+				int a=1;
+			}
 			if(trail.size()==8  && trail[11].bvID==2){
-									int a=1;
-								}
+				int a=1;
+			}
 		}else{
 			//ensure that the cause isn't altered if the approx was not changed.
 			under_causes[bvID] = under_cause_old;
 			over_causes[bvID] = over_cause_old;
 		}
-/*		if(getSymbol(bvID)){
+		if(any_changed && getSymbol(bvID)){
 			std::cout<< "q bv " << getSymbol(bvID) << " " << under_approx[bvID] << " <= bv <=" <<  over_approx[bvID] << "\n" ;
-		}*/
+		}
 #ifndef NDEBUG
 		static int bound_num=0;
 		printf("learnt bound ");

@@ -481,7 +481,7 @@ public:
 
 
 	void drawFull(bool showWeights = false) {
-#ifndef NDEBUG
+//#ifndef NDEBUG
 		printf("digraph{\n");
 		for (int i = 0; i < num_nodes; i++) {
 			printf("n%d\n", i);
@@ -506,7 +506,7 @@ public:
 			}
 		}
 		printf("}\n");
-#endif
+//#endif
 	}
 	
 	bool rewindHistory(int steps) {

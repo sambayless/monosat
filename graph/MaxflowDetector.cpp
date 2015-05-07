@@ -488,12 +488,16 @@ void MaxflowDetector<Weight>::buildMaxFlowTooLowReason(Weight maxflow, vec<Lit> 
 	if (it == 3) {
 		int a = 1;
 	}
+	if(g_over.edges()==0)
+		return;
 	//printf("%d\n",it);
 	double starttime = rtime(2);
 	if (force_maxflow || opt_conflict_min_cut_maxflow) {
 		Weight foundflow = overapprox_conflict_detector->maxFlow();
 		collectChangedEdges();
 		collectDisabledEdges();
+		g_over.drawFull(true);
+		learn_graph.drawFull(true);
 #ifndef NDEBUG
 		for (auto & e : g_over.getEdges()) {
 			int from = e.from;
@@ -562,6 +566,7 @@ void MaxflowDetector<Weight>::buildMaxFlowTooLowReason(Weight maxflow, vec<Lit> 
 #endif
 		//g_over.drawFull(true);
 		//learn_graph.drawFull(true);
+
 		long f = learn_cut->minCut(cut);
 		learn_graph.clearChanged();
 		learn_graph.clearHistory();
@@ -578,6 +583,7 @@ void MaxflowDetector<Weight>::buildMaxFlowTooLowReason(Weight maxflow, vec<Lit> 
 
 
 		 }*/
+		printf("conflict in theory %d ", outer->getTheoryIndex());
 		if (f < 0x0FF0F0) {
 			assert(f < 0xF0F0F0);
 			assert(f == cut.size());			//because edges are only ever infinity or 1
@@ -588,10 +594,12 @@ void MaxflowDetector<Weight>::buildMaxFlowTooLowReason(Weight maxflow, vec<Lit> 
 				if(outer->value(l)==l_False){//it is possible for the edge to be enabled, but to be set to capacity 0.
 					bassert(outer->value(l) == l_False);
 					conflict.push(l);
+					std::cout << "edge " << edgeID << " enabled ";
 				}else if(outer->hasBitVector(edgeID)){
 					assert(overapprox_conflict_detector->getEdgeResidualCapacity(edgeID)==0);//the edge has no residual capacity, so its capacity must be increased.
 					outer->buildBVReason(outer->getEdgeBV(edgeID).getID(),Comparison::leq,g_over.getWeight(edgeID),conflict);
 					//outer->buildBVReason(bv.getID(),inclusive ? Comparison::gt:Comparison::geq,bv.getUnder(),conflict);
+					std::cout << "edge " << edgeID << " > " << g_over.getWeight(edgeID)<< " ";
 				}
 			}
 		} else {
@@ -599,6 +607,7 @@ void MaxflowDetector<Weight>::buildMaxFlowTooLowReason(Weight maxflow, vec<Lit> 
 			
 			//there is no way to increase the max flow.
 		}
+		printf("\n");
 		bumpConflictEdges(conflict);
 		outer->num_learnt_cuts++;
 		outer->learnt_cut_clause_length += (conflict.size() - 1);
@@ -852,6 +861,10 @@ bool MaxflowDetector<Weight>::propagate(vec<Lit> & conflict, bool backtrackOnly,
 	} else
 		stats_skipped_over_updates++;
 	
+	if(outer->getTheoryIndex()==9){
+		g_over.drawFull(true);
+	}
+
 	for (int j = 0; j < flow_lits.size(); j++) {
 		
 		DistLit f = flow_lits[j];
@@ -1327,7 +1340,7 @@ void MaxflowDetector<Weight>::collectChangedEdges() {
 		}
 		if (!is_potential_decision[edgeid]) {
 			Lit l = mkLit(outer->getEdgeVar(edgeid), false);
-			if(outer->value(l)==l_Undef || outer->level(var(l))>0){
+			if((outer->decidable(l) || outer->level(var(l))>0) || (outer->edgeWeightDecidable(edgeid)) ){
 				if (overapprox_conflict_detector->getEdgeFlow(edgeid) > 0) {
 
 					is_potential_decision[edgeid] = true;
@@ -1365,7 +1378,7 @@ void MaxflowDetector<Weight>::collectChangedEdges() {
 				Weight flow = overapprox_conflict_detector->getEdgeFlow(edgeid);
 				Weight capacity = overapprox_conflict_detector->getEdgeCapacity(edgeid);
 				Weight level0capacity =  outer->hasBitVector(edgeid)?	 outer->getEdgeBV(edgeid).getOver(true):capacity;
-
+				Weight dif_cap = level0capacity-capacity;
 				if (capacity==0 && level0capacity>0){
 					learn_graph.enableEdge(edgeid * 2);
 					learn_graph.disableEdge(back_edges[edgeid * 2]);

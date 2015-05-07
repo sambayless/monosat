@@ -1448,6 +1448,8 @@ public:
 							bvOp=Comparison::lt;
 							comparator->decideBV(bvOp, getEdgeBV(edgeID).getID(), edgeWeight);
 						}else if (op==DetectorComparison::geq){
+							printf("decide graph %d edge %d >= ",this->getTheoryIndex(),edgeID);
+							std::cout << edgeWeight <<"\n";
 							bvOp=Comparison::geq;
 							comparator->decideBV(bvOp, getEdgeBV(edgeID).getID(), edgeWeight);
 						}else if (op==DetectorComparison::gt){

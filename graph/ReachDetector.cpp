@@ -246,6 +246,8 @@ void ReachDetector<Weight>::buildSATConstraints(bool onlyUnderApprox, int within
 		vec<Lit> incomingEdges;
 		vec<Lit> incomingNodes;
 		
+		//Note (thanks to Roberto Sebastani for this): clauses added here do not count towards pure literal counts.
+
 		//bellman-ford:
 		for (int i = constraintsBuiltOver; i < within_steps; i++) {
 			dist_lits.last().copyTo(reaches);
