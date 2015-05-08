@@ -749,6 +749,36 @@ public:
 		return analysis_trail_pos;
 	}
 
+	int rewindUntil(Var until_assign){
+		if(analysis_trail_pos<-1){
+			analysis_trail_pos=-1;
+		}
+		if(analysis_trail_pos>=trail.size()){
+			analysis_trail_pos=trail.size()-1;
+		}
+		//rewind until the previous under or over approx of bvID violates the comparison.
+		for(;analysis_trail_pos>=0;analysis_trail_pos--){
+			Assignment & e = trail[analysis_trail_pos];
+			if (e.isBoundAssignment()){
+				int bvID = e.bvID;
+				under_approx[bvID]=e.previous_under;
+				over_approx[bvID]=e.previous_over;
+				under_causes[bvID]=e.prev_under_cause;
+				over_causes[bvID]=e.prev_over_cause;
+			}else{
+				Var x = e.var;
+				if(x==until_assign){
+					break;
+				}
+				assigns[x] = l_Undef;
+			}
+		}
+
+		assert(analysis_trail_pos>=-1);
+		assert(analysis_trail_pos<=trail.size());
+		return analysis_trail_pos;
+	}
+
 
 	void backtrackUntil(int level) {
 		//it is NOT safe to remove altered bitvectors here, because if a comparison was added at a higher level, and then
@@ -813,9 +843,42 @@ public:
 
 	};
 
-	void decideBV(Comparison op, int bvID, Weight to){
+	bool decidableBV(Comparison op, int bvID, Weight to){
+		switch(op){
+			case Comparison::gt:
+				return  !(under_approx[bvID]>to);
+			case Comparison::geq:
+				return ! (under_approx[bvID]>=to);
+			case Comparison::lt:
+				return !(over_approx[bvID]<to);
+			case Comparison::leq:
+			default:
+				return !(over_approx[bvID]<=to);
+		}
+	}
+
+	Lit decideBV(Comparison op, int bvID, Weight to){
+		switch(op){
+			case Comparison::gt:
+				if (under_approx[bvID]>to)
+					return lit_Undef;
+				break;
+			case Comparison::geq:
+				if (under_approx[bvID]>=to)
+					return lit_Undef;
+				break;
+			case Comparison::lt:
+				if (over_approx[bvID]<to)
+					return lit_Undef;
+				break;
+			case Comparison::leq:
+				if (over_approx[bvID]<=to)
+					return lit_Undef;
+				break;
+		}
 		Lit l = newComparison(op, bvID, to);
-		S->enqueue(toSolver(l));
+		//S->enqueue(toSolver(l));
+		return toSolver(l);
 	}
 
 	Lit decideTheory() {
@@ -823,61 +886,7 @@ public:
 		return lit_Undef;
 	}
 	
-	void backtrackUntil(Lit p) {
-		rewind_trail_pos(trail.size());
-		assert(value(p)!=l_False);
-		if(value(p)!=l_True)
-			return;
-	/*	for(int bvID:altered_bvs){
-			alteredBV[bvID]=false;
-		}
-		altered_bvs.clear();*/
-		int n_backtrack=0;
-		assert(value(p)==l_True);
-		int i = trail.size() - 1;
-		for (; i >= 0; i--) {
-			Assignment e = trail[i];
-			if(e.isBoundAssignment()){
-				int bvID = e.bvID;
-				if(bvID==6){
-					int a =1;
-				}
-				under_approx[bvID]=e.previous_under;
-				over_approx[bvID]=e.previous_over;
-				under_causes[bvID]=e.prev_under_cause;
-				over_causes[bvID]=e.prev_over_cause;
-				if(hasTheory(bvID))
-					getTheory(bvID)->backtrackBV(bvID);//only enqueue the bitvector in the subtheory _after_ it's approximation has been updated!
 
-			}else{
-				if (var(p) == e.var) {
-					assert(sign(p) != e.assign);
-					break;
-				}
-				if (e.isComparator) {
-					int cID = e.bvID;
-					assert(cID>=0);
-					if (comparison_needs_repropagation[cID]){
-						ComparisonID & c = comparisons[cID];
-						int bvID = c.bvID;
-						if(!alteredBV[bvID]){
-							alteredBV[bvID]=true;
-							altered_bvs.push(bvID);
-						}
-						requiresPropagation=true;
-					}
-				}
-				assigns[e.var] = l_Undef;
-			}
-			//changed = true;
-		}
-		
-		trail.shrink(trail.size() - (i + 1));
-		analysis_trail_pos = trail.size()-1;
-		//if(i>0){
-		requiresPropagation = true;
-
-	};
 
 
 	void newDecisionLevel() {
@@ -897,7 +906,7 @@ public:
 		double start = rtime(1);
 
 		//if the reason is being constructed eagerly, then p won't be assigned yet, and so wont be on the trail, so we skip this.
-		backtrackUntil(p);
+		rewindUntil(var(p));
 		assert(value(p)!=l_False);
 		//now that we have backtracked, we need to update the under/over approximations.
 		//there is likely room to improve this, so that only relevant bitvectors are updated, but it might be
@@ -1545,9 +1554,9 @@ public:
 			under_causes[bvID] = under_cause_old;
 			over_causes[bvID] = over_cause_old;
 		}
-		if(any_changed && getSymbol(bvID)){
+	/*	if(any_changed && getSymbol(bvID)){
 			std::cout<< "q bv " << getSymbol(bvID) << " " << under_approx[bvID] << " <= bv <=" <<  over_approx[bvID] << "\n" ;
-		}
+		}*/
 #ifndef NDEBUG
 		static int bound_num=0;
 		printf("learnt bound ");
@@ -3596,7 +3605,7 @@ public:
 	Lit newComparison(Comparison op, int bvID,const Weight & to, Var outerVar = var_Undef) {
 		Lit l;
 		if(!hasBV(bvID)){
-			exit(1);
+			printf("ERROR! Undefined bitvector %d\n", bvID), exit(1);
 		}
 		int comparisonID = comparisons.size();
 		if(comparisonID==8){

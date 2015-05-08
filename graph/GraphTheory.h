@@ -927,8 +927,34 @@ public:
 		}
 	}
 	
-	inline bool edgeWeightDecidable(int edgeID) {
-		return g_over.getWeight(edgeID)!=g_under.getWeight(edgeID);
+	inline bool edgeWeightDecidable(int edgeID,DetectorComparison op, Weight edgeWeight) {
+		if (! hasBitVector(edgeID))
+			return false;
+		int bvID = getEdgeBV(edgeID).getID();
+		Comparison bvOp;
+		if (op==DetectorComparison::leq){
+			bvOp=Comparison::leq;
+			return comparator->decidableBV(bvOp,bvID,edgeWeight);
+
+		}else if (op==DetectorComparison::lt){
+			bvOp=Comparison::lt;
+			return comparator->decidableBV(bvOp, bvID, edgeWeight);
+		}else if (op==DetectorComparison::geq){
+			/*printf("decide graph %d edge %d bv %d >= ",this->getTheoryIndex(), getEdgeBV(edgeID).getID(),edgeID);
+			std::cout << edgeWeight <<"\n";*/
+			bvOp=Comparison::geq;
+			return comparator->decidableBV(bvOp, bvID, edgeWeight);
+		}else if (op==DetectorComparison::gt){
+			bvOp=Comparison::gt;
+			return comparator->decidableBV(bvOp, bvID, edgeWeight);
+		}else if (op==DetectorComparison::eq){
+			return comparator->decidableBV(Comparison::leq, bvID, edgeWeight) || comparator->decidableBV(Comparison::geq, bvID, edgeWeight);
+
+		}else{
+			assert(false);
+			return false;
+		}
+
 	}
 
 	inline bool decidable(Var v)const{
@@ -1432,37 +1458,45 @@ public:
 			Detector * r = detectors[i];
 			Lit l = r->decide();
 			if (l != lit_Undef) {
-
-				if(opt_decide_graph_bv && !sign(l) && isEdgeVar(var(l)) && r->supportsEdgeDecisions()){
+				if(opt_decide_graph_bv && !sign(l) && isEdgeVar(var(l)) && hasBitVector(getEdgeID(var(l))) && r->supportsEdgeDecisions()){
 					int edgeID = getEdgeID(var(l));
 					EdgeDecider<Weight> * d = dynamic_cast<EdgeDecider<Weight> *>(r); //(EdgeDecider<Weight>*)r;
 					Weight edgeWeight=-1;
 					DetectorComparison op;
 					if(d->decideEdgeWeight(edgeID,edgeWeight,op)){
 						assert(edgeWeight>=0);
+						Lit bv_decision = lit_Undef;
 						Comparison bvOp;
 						if (op==DetectorComparison::leq){
 							bvOp=Comparison::leq;
-							comparator->decideBV(bvOp, getEdgeBV(edgeID).getID(), edgeWeight);
+							bv_decision = comparator->decideBV(bvOp, getEdgeBV(edgeID).getID(), edgeWeight);
+
+
 						}else if (op==DetectorComparison::lt){
 							bvOp=Comparison::lt;
-							comparator->decideBV(bvOp, getEdgeBV(edgeID).getID(), edgeWeight);
+							bv_decision = comparator->decideBV(bvOp, getEdgeBV(edgeID).getID(), edgeWeight);
 						}else if (op==DetectorComparison::geq){
-							printf("decide graph %d edge %d >= ",this->getTheoryIndex(),edgeID);
-							std::cout << edgeWeight <<"\n";
+							/*printf("decide graph %d edge %d bv %d >= ",this->getTheoryIndex(), getEdgeBV(edgeID).getID(),edgeID);
+							std::cout << edgeWeight <<"\n";*/
 							bvOp=Comparison::geq;
-							comparator->decideBV(bvOp, getEdgeBV(edgeID).getID(), edgeWeight);
+							bv_decision = comparator->decideBV(bvOp, getEdgeBV(edgeID).getID(), edgeWeight);
 						}else if (op==DetectorComparison::gt){
 							bvOp=Comparison::gt;
-							comparator->decideBV(bvOp, getEdgeBV(edgeID).getID(), edgeWeight);
+							bv_decision = comparator->decideBV(bvOp, getEdgeBV(edgeID).getID(), edgeWeight);
 						}else if (op==DetectorComparison::eq){
-							comparator->decideBV(Comparison::leq, getEdgeBV(edgeID).getID(), edgeWeight);
-							comparator->decideBV(Comparison::geq, getEdgeBV(edgeID).getID(), edgeWeight);
+							bv_decision = comparator->decideBV(Comparison::leq, getEdgeBV(edgeID).getID(), edgeWeight);
+							if(bv_decision==lit_Undef)
+								bv_decision = comparator->decideBV(Comparison::geq, getEdgeBV(edgeID).getID(), edgeWeight);
 						}else{
 							exit(1);//ne not supported yet...
 						}
+						if(bv_decision!=lit_Undef){
+							stats_decisions++;
+							r->undecide(l);
+							stats_decision_time += rtime(1) - start;
 
-
+							return bv_decision;
+						}
 					}
 				}
 

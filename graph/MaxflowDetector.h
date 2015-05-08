@@ -71,11 +71,11 @@ public:
 	vec<bool> in_decision_q;
 	vec<int> potential_decisions;
 	struct DecisionS{
-		int path_decision:1;
-		int edgeID:31;
-		DecisionS():path_decision(0), edgeID(-1){}
-		DecisionS(const int edgeID):path_decision(0), edgeID(edgeID){}
-		DecisionS(int edgeID, bool pathDecision):path_decision(pathDecision), edgeID(edgeID){}
+		//int path_decision:1;
+		int edgeID:32;
+		DecisionS():edgeID(-1){}
+		DecisionS(const int edgeID): edgeID(edgeID){}
+		DecisionS(int edgeID, bool pathDecision): edgeID(edgeID){}
 		operator int() const { return edgeID; }
 	};
 	Deque<DecisionS> potential_decisions_q;

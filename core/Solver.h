@@ -389,9 +389,7 @@ public:
 	void checkGarbage(double gf);
 	void checkGarbage();
 
-//#ifndef NDEBUG
-	vec<const char*> dbg_symbols;
-//#endif
+
 	// Extra results: (read-only member variable)
 	//
 	vec<lbool> model;             // If problem is satisfiable, this vector contains the model (if any).
