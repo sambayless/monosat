@@ -916,7 +916,7 @@ bool MaxflowDetector<Weight>::propagate(vec<Lit> & conflict, bool backtrackOnly,
 				} else if (outer->value(l) == l_Undef) {
 					//trail.push(Assignment(false,true,detectorID,0,var(l)));
 					outer->enqueue(l, underprop_marker);
-
+					//should also enqueue that the flow is >= under->flow, and <= over->flow...
 				} else if (outer->value(l) == l_False) {
 					if(backtrackOnly)
 						return false;
@@ -933,7 +933,7 @@ bool MaxflowDetector<Weight>::propagate(vec<Lit> & conflict, bool backtrackOnly,
 				} else if (outer->value(l) == l_Undef) {
 					//trail.push(Assignment(false,false,detectorID,0,var(l)));
 					outer->enqueue(~l, underprop_marker);
-
+					//should also enqueue that the flow is >= under->flow, and <= over->flow...
 				} else if (outer->value(l) == l_True) {
 					if(backtrackOnly)
 						return false;

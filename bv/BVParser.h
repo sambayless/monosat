@@ -51,6 +51,8 @@ private:
 
 	struct BV{
 		int id=-1;
+		int width=0;
+		long constval=-1;
 		vec<Var> vector;
 	};
 	vec<BV> bvs;
@@ -91,11 +93,25 @@ private:
 	};
 	vec<AddBV> addbvs;
 
-/*	struct BVConstant{
-		int resultID;
-		long value;
-	};
-	vec<BVConstant> bvconstants;*/
+
+	void readConstBV(B& in,  Solver& S) {
+		//bv id width l0 l1 l2 ...
+
+		int id = parseInt(in);
+		int width = parseInt(in);
+
+		bvs.growTo(id + 1);
+
+		if(bvs[id].id!=-1){
+
+			printf("PARSE ERROR! Re-defined bitvector %d\n", id), exit(1);
+
+		}
+		bvs[id].id = id;
+		bvs[id].width=width;
+		bvs[id].constval=parseLong(in);
+	}
+
 	void readBV(B& in,  Solver& S) {
 		//bv id width l0 l1 l2 ...
 
@@ -110,6 +126,7 @@ private:
 
 		}
 		bvs[id].id = id;
+		bvs[id].width=width;
 		for(int i =0;i<width;i++){
 			int v = parseInt(in) - 1;
 			while (v >= S.nVars())
@@ -243,7 +260,10 @@ public:
 			return false;
 		} else if (match(in, "bv")) {
 			skipWhitespace(in);
-			if (match(in, "+")) {
+			if (match(in,"const")){
+				readConstBV(in,S);
+				return true;
+			}else if (match(in, "+")) {
 				count++;
 				readAddBV(in, S);
 				return true;
@@ -280,7 +300,11 @@ public:
 
 			for (auto & bv:bvs){
 				if(bv.id>-1){
-					theory->newBitvector(bv.id,bv.vector);
+					if(bv.constval>=0){
+						theory->newBitvector(bv.id,bv.width,bv.constval);
+					}else{
+						theory->newBitvector(bv.id,bv.vector);
+					}
 				}
 			}
 

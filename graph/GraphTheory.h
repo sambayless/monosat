@@ -2576,6 +2576,7 @@ public:
 		if(!comparator ||!comparator->hasBV(bvID)){
 			fprintf(stderr,"Undefined bitvector\n");exit(1);
 		}
+
 		if(isEdgeBV(bvID)){
 			fprintf(stderr,"Bitvector %d used for multiple edge weights\n", bvID);exit(1);
 		}
