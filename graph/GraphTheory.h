@@ -2576,60 +2576,62 @@ public:
 		if(!comparator ||!comparator->hasBV(bvID)){
 			fprintf(stderr,"Undefined bitvector\n");exit(1);
 		}
-
+		if(comparator->hasTheory(bvID)){
+			bvID = comparator->duplicateBV(bvID).getID();
+		}
 		if(isEdgeBV(bvID)){
 			fprintf(stderr,"Bitvector %d used for multiple edge weights\n", bvID);exit(1);
 		}
 		has_any_bitvector_edges=true;
-				assert(outerVar!=var_Undef);
-				assert(edge_weights.size()==0);
-				int index = edge_list.size();
-				comparator->setBitvectorTheory(bvID,this->getTheoryIndex());
-				BitVector<Weight> bv = comparator->getBV(bvID);
-				edge_bitvectors.growTo(bv.getID()+1,-1);
-				edge_bitvectors[bv.getID()]=index;
-				//comparator->setCallback(bv.getID(),&bvcallback);
-				comparisons_lt.growTo(bv.getID()+1);
-				comparisons_gt.growTo(bv.getID()+1);
-				comparisons_leq.growTo(bv.getID()+1);
-				comparisons_geq.growTo(bv.getID()+1);
+		assert(outerVar!=var_Undef);
+		assert(edge_weights.size()==0);
+		int index = edge_list.size();
+		comparator->setBitvectorTheory(bvID,this->getTheoryIndex());
+		BitVector<Weight> bv = comparator->getBV(bvID);
+		edge_bitvectors.growTo(bv.getID()+1,-1);
+		edge_bitvectors[bv.getID()]=index;
+		//comparator->setCallback(bv.getID(),&bvcallback);
+		comparisons_lt.growTo(bv.getID()+1);
+		comparisons_gt.growTo(bv.getID()+1);
+		comparisons_leq.growTo(bv.getID()+1);
+		comparisons_geq.growTo(bv.getID()+1);
 
-				all_edges_unit &= (bv.getUnder()== 1 && bv.getOver()==1);
-				all_edges_positive &= bv.getUnder()>0;
-				edge_list.push();
-				Var v = newVar(outerVar, index, true);
-				//bv_needs_update.growTo(bv.getID()+1);
-				undirected_adj[to].push( { v, outerVar, from, to, index });
-				undirected_adj[from].push( { v, outerVar, to, from, index });
-				inv_adj[to].push( { v, outerVar, from, to, index });
+		all_edges_unit &= (bv.getUnder()== 1 && bv.getOver()==1);
+		all_edges_positive &= bv.getUnder()>0;
+		edge_list.push();
+		Var v = newVar(outerVar, index, true);
+		//bv_needs_update.growTo(bv.getID()+1);
+		undirected_adj[to].push( { v, outerVar, from, to, index });
+		undirected_adj[from].push( { v, outerVar, to, from, index });
+		inv_adj[to].push( { v, outerVar, from, to, index });
 
-				//num_edges++;
-				edge_list[index].v = v;
-				edge_list[index].outerVar = outerVar;
-				edge_list[index].from = from;
-				edge_list[index].to = to;
-				edge_list[index].edgeID = index;
-				edge_list[index].bvID = bv.getID();
+		//num_edges++;
+		edge_list[index].v = v;
+		edge_list[index].outerVar = outerVar;
+		edge_list[index].from = from;
+		edge_list[index].to = to;
+		edge_list[index].edgeID = index;
+		edge_list[index].bvID = bv.getID();
 
-				if (edge_bv_weights.size() <= index) {
-					edge_bv_weights.resize(index + 1);
-				}
-				edge_bv_weights[index] = bv;
+		if (edge_bv_weights.size() <= index) {
+			edge_bv_weights.resize(index + 1);
+		}
+		edge_bv_weights[index] = bv;
 
-				//edges[from][to]= {v,outerVar,from,to,index};
-				g_under.addEdge(from, to, index,bv.getUnder());
-				g_under.disableEdge(from, to, index);
-				g_over.addEdge(from, to, index,bv.getOver());
-
-
-				g_under_weights_over.addEdge(from, to, index,bv.getOver());
-				g_under_weights_over.disableEdge(from, to, index);
-				g_over_weights_under.addEdge(from, to, index,bv.getUnder());
+		//edges[from][to]= {v,outerVar,from,to,index};
+		g_under.addEdge(from, to, index,bv.getUnder());
+		g_under.disableEdge(from, to, index);
+		g_over.addEdge(from, to, index,bv.getOver());
 
 
-				cutGraph.addEdge(from, to, index * 2,1);
-				cutGraph.addEdge(from, to, index * 2 + 1,0xFFFF);
-				cutGraph.disableEdge(from, to, index * 2);
+		g_under_weights_over.addEdge(from, to, index,bv.getOver());
+		g_under_weights_over.disableEdge(from, to, index);
+		g_over_weights_under.addEdge(from, to, index,bv.getUnder());
+
+
+		cutGraph.addEdge(from, to, index * 2,1);
+		cutGraph.addEdge(from, to, index * 2 + 1,0xFFFF);
+		cutGraph.disableEdge(from, to, index * 2);
 
 		#ifdef RECORD
 	/*			if (g_under.outfile) {

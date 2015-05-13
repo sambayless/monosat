@@ -242,7 +242,7 @@ Lit MaxflowDetector<Weight>::findFirstReasonTooHigh(Weight flow) {
 					return l;
 				}
 				if(outer->hasBitVector(i)){
-					exit(3);
+					exit(8);
 					//outer->buildBVReason(outer->getEdgeBV(i).getID(),Comparison::geq,underapprox_conflict_detector->getEdgeFlow(i),conflict);
 					//outer->buildBVReason(bv.getID(),inclusive ? Comparison::gt:Comparison::geq,bv.getUnder(),conflict);
 				}
@@ -278,7 +278,7 @@ Lit MaxflowDetector<Weight>::findFirstReasonTooLow(Weight flow) {
 					}else{
 						//if the edge _was_ enabled, and all of its capacity was used, then the reason that it didn't have more capacity must be included.
 						if(outer->hasBitVector(edgeid)){
-							exit(3);
+							exit(7);
 						}
 					}
 				} else {
@@ -318,7 +318,7 @@ Lit MaxflowDetector<Weight>::findFirstReasonTooLow(Weight flow) {
 						//if the edge _was_ enabled, and it had no capacity capacity was used, then the reason that it didn't have more capacity must be included.
 						//does this really hold for backwards edges?
 						if(outer->hasBitVector(edgeid)){
-							exit(3);
+							exit(6);
 							//outer->buildBVReason(bv.getID(),inclusive ? Comparison::gt:Comparison::geq,bv.getUnder(),conflict);
 						}
 					}

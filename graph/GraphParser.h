@@ -1118,26 +1118,12 @@ public:
 			if(graphs[i])
 				graphs[i]->setBVTheory(bvTheory);
 		}
-	/*	for (int i = 0; i < graphs_float.size(); i++) {
-			if(graphs_float[i])
-				graphs_float[i]->setComparator(comparison);
-		}
-		for (int i = 0; i < graphs_rational.size(); i++) {
-			if(graphs_rational[i])
-				graphs_rational[i]->setComparator(comparison);
-		}*/
-		//not really implemented, yet!
-	/*	for (int gid = 0; gid < steiners.size(); gid++) {
-			for (auto & steiner : steiners[gid]) {
-				if (steiner) {
-					graphs[gid]->steinerTree(steiner->terminals, steiner->id);
-					for (auto & weight : steiner->weight_constraints) {
-						graphs[gid]->addSteinerWeightConstraint(steiner->id, weight.first, weight.second);
-					}
-					delete (steiner);
-				}
+
+		for (auto & e:bvedges){
+			if(!bvTheory->hasBV(e.bvID)){
+				printf("PARSE ERROR! Undefined bitvector %d for edge %d\n", e.bvID, e.edgeVar), exit(1);
 			}
-		}*/
+		}
 		for (auto & e:bvedges){
 			graphs[e.graphID]->newEdgeBV(e.from, e.to, e.edgeVar, e.bvID);
 		}
