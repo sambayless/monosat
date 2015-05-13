@@ -32,7 +32,7 @@
 #include "BVTheory.h"
 #include "utils/System.h"
 #include "core/TheorySolver.h"
-
+#include <algorithm>
 #include <vector>
 #include <cmath>
 #include <cstdio>
@@ -1253,7 +1253,6 @@ public:
 		Weight under_new=0;
 		Weight over_new=0;
 		bool any_changed=false;
-
 
 		if(eq_bitvectors[bvID]!=bvID){
 			//this bitvector is equivalent to some other (lower index) bv, so just copy its values.
@@ -3582,10 +3581,10 @@ public:
 		addition_arguments[bID].last().other_argID=aID;
 		addition_arguments[bID].last().sumID=resultID;
 		//addition_arguments[bID].push({aID,resultID});
-		if(!cause_set[aID].contains(resultID))
+	/*	if(!cause_set[aID].contains(resultID))
 			cause_set[aID].push(resultID);
 		if(!cause_set[bID].contains(resultID))
-			cause_set[bID].push(resultID);
+			cause_set[bID].push(resultID);*/
 		//additions[resultID].w=0;
 		return getBV(resultID);
 	}
@@ -3736,28 +3735,130 @@ public:
 		return bvID>=0 && bvID<under_approx.size() && under_approx[bvID]>-1;
 	}
 private:
-	Lit getComparison(Comparison op, int bvID,const Weight & lt){
+	Lit getComparison(Comparison op, int bvID,const Weight & w){
 		//could do a binary search here:
-		for(int i=0;i<compares[bvID].size();i++){
-			int cID = compares[bvID][i];
-			if (comparisons[cID].op() == op && comparisons[cID].w == lt){
-				return comparisons[cID].l;
-			}
-		}
-
-		return lit_Undef;
+		int cID = getComparisonID(op,bvID,w);
+		if(cID<0)
+			return lit_Undef;
+		else
+			return comparisons[cID].l;
 	}
-	int getComparisonID(Comparison op, int bvID,const Weight & lt){
+	int getComparisonID(Comparison op, int bvID,const Weight & w){
 		//could do a binary search here:
+#ifndef NDEBUG
+		int expect = -1;
 		for(int i=0;i<compares[bvID].size();i++){
 			int cID = compares[bvID][i];
-			if (comparisons[cID].op() == op && comparisons[cID].w == lt){
-				return cID;
+			if (comparisons[cID].op() == op && comparisons[cID].w == w){
+				expect= cID;
+				break;
 			}
 		}
-
+#endif
+		vec<int> & compare = compares[bvID];
+		if(compare.size()){
+			dbg_compares_sorted(bvID);
+			int pos = binary_search_Weight(compare,w);
+			if(comparisons[compare[pos]].w==w){
+				//we found a comparison to the same bitvector. Now lets see if there is a comparison with the same operator to that bitvector
+				while(pos< compare.size() && comparisons[compare[pos]].w == w){
+					if( comparisons[compare[pos]].op()==op){
+						assert(compare[pos]==expect);
+						return compare[pos];
+					}
+					pos++;
+				}
+			}
+		}
+		assert(expect==-1);
 		return -1;
 	}
+	bool dbg_compares_sorted(int bvID){
+#ifndef NDEBUG
+		vec<int> & compare = compares[bvID];
+		for(int i = 1;i<compare.size();i++){
+			int cID0 = compare[i-1];
+			int cID1 = compare[i];
+			assert(comparisons[cID0].w <= comparisons[cID1].w);
+		}
+#endif
+		return true;
+	}
+	bool dbg_bvcompares_sorted(int bvID){
+#ifndef NDEBUG
+		vec<int> & bvcompare = bvcompares[bvID];
+		for(int i = 1;i<bvcompare.size();i++){
+			int cID0 = bvcompare[i-1];
+			int cID1 = bvcompare[i];
+			assert(comparisons[cID0].compareID <= comparisons[cID1].compareID);
+		}
+#endif
+		return true;
+	}
+
+	//Returns a CID with the same weight if one exists,  returns the index this CID should be insert after otherwise
+	int binary_search_Weight(vec<int> & compares, Weight w)
+	{
+		int low = 0, high = compares.size() - 1;
+		while (low <= high)
+		{
+			int midpoint = low + (high - low)/2;
+			int cID = compares[midpoint];
+			if (comparisons[cID].w == w )
+			{
+				//ensure we get the first such matching CID
+				while(midpoint>0 && comparisons[compares[midpoint-1]].w == w){
+					midpoint--;
+				}
+				return midpoint;
+			}
+			else if (w <comparisons[cID].w)
+				high = midpoint - 1;
+			else
+				low = midpoint + 1;
+		}
+		//this can probably be done more cleanly...
+		if (compares.size()==0)
+			return -1;
+		else if (low<compares.size() && comparisons[compares[low]].w > w){
+			return low-1;
+		}else if (low>compares.size()-1){
+			return compares.size()-1;
+		}
+		return low;
+	}
+
+	//Returns a CID comparing to the same bitvector if one exists,  returns the index this CID should be insert after otherwise
+	int binary_search_CID(vec<int> & compares,  int compareID)
+	{
+		int low = 0, high = compares.size() - 1;
+		while (low <= high)
+		{
+			int midpoint = low + (high - low)/2;
+			int cID = compares[midpoint];
+			if (comparisons[cID].compareID == compareID )
+			{
+				//ensure we get the first such matching CID
+				while(midpoint>0 && comparisons[compares[midpoint-1]].compareID == compareID){
+					midpoint--;
+				}
+				return midpoint;
+			}
+			else if (compareID <comparisons[cID].compareID)
+				high = midpoint - 1;
+			else
+				low = midpoint + 1;
+		}
+		if (compares.size()==0)
+			return -1;
+		else if (low<compares.size() && comparisons[compares[low]].compareID > compareID){
+			return low-1;
+		}else if (low>compares.size()-1){
+			return compares.size()-1;
+		}
+		return low;
+	}
+
 	Lit getComparisonBV(Comparison op, int bvID,int compareID){
 
 		if(bvID>compareID){
@@ -3770,12 +3871,33 @@ private:
 		}
 
 		vec<int> & bvcompare = bvcompares[bvID];
+		assert(dbg_bvcompares_sorted(bvID));
+		//The bv's are kept in sorted order.
+		//Do a binary search to find this bvcompare, if it exists.
+#ifndef NDEBUG
+		Lit expect = lit_Undef;
 		for(int i=0;i<bvcompare.size();i++){
 			int cID = bvcompare[i];
 			if (comparisons[cID].compareID == compareID && comparisons[cID].op()==op){
-				return comparisons[cID].l;
+				expect = comparisons[cID].l;
+				break;
 			}
 		}
+#endif
+		if(bvcompare.size()){
+			int pos = binary_search_CID(bvcompare,compareID);
+			if(comparisons[bvcompare[pos]].compareID==compareID){
+				//we found a comparison to the same bitvector. Now lets see if there is a comparison with the same operator to that bitvector
+				while(pos< bvcompare.size() && comparisons[bvcompare[pos]].compareID == compareID){
+					if( comparisons[bvcompare[pos]].op()==op){
+						assert(comparisons[bvcompare[pos]].l==expect);
+						return comparisons[bvcompare[pos]].l;
+					}
+					pos++;
+				}
+			}
+		}
+		assert(expect==lit_Undef);
 		return lit_Undef;
 	}
 
@@ -3797,28 +3919,37 @@ public:
 		}else{
 			l = mkLit(newVar(outerVar, bvID,comparisonID));
 		}
-
+		static int iter = 0;
+		if(++iter==29){
+			int a =1;
+		}
 #ifndef NDEBUG
 		std::cout << "learnt fact " << "bv " << bvID << " " << op << " " << to  <<" " << dimacs(toSolver(l)) << "\n";
 #endif
 
 		//updateApproximations(bvID);
 		comparisons.push(ComparisonID(to,-1,l,bvID,op));
-		compares[bvID].push(comparisonID);
 
 
+		dbg_compares_sorted(bvID);
+		vec<int> & compare = compares[bvID];
 		//insert this value in order.
-		//could do a binary search here...
-		for(int i=0;i<compares[bvID].size()-1;i++){
-			int cid = compares[bvID][i];
-			if(comparisons[cid].w>= to){
-				for(int j = compares[bvID].size()-1; j>i ;j--){
-					compares[bvID][j]=compares[bvID][j-1];
-				}
-				compares[bvID][i]=comparisonID;
-				break;
+		int insertPos = binary_search_Weight(compare,to)+1;
+		assert(insertPos>=0);assert(insertPos<=compare.size());
+		compare.push(comparisonID);
+		if(insertPos<compare.size()-1){
+
+			int curVal = compare[insertPos];
+			for(int i = insertPos+1;i<compare.size();i++){
+				int newVal = compare[i];
+				compare[i]=curVal;
+				curVal=newVal;
 			}
+			compare[insertPos]=comparisonID;
 		}
+
+		dbg_compares_sorted(bvID);
+
 
 		comparison_needs_repropagation.growTo(comparisons.size());
 		if(decisionLevel()>0 && !comparison_needs_repropagation[comparisonID]){
@@ -3968,13 +4099,35 @@ public:
 		//updateApproximations(bvID);
 		//updateApproximations(toID);
 
-		if(!cause_set[toID].contains(bvID))
-			cause_set[toID].push(bvID);
+	/*	if(!cause_set[toID].contains(bvID))
+			cause_set[toID].push(bvID);*/
 
 		comparisons.push(ComparisonID(-1,toID,l,bvID,op));
 		bvcompares[bvID].push(comparisonID);
 		//insert this value in order.
 		//could do a binary search here...
+
+		dbg_bvcompares_sorted(bvID);
+		//insert this value in order.
+		{
+			vec<int> & compare= bvcompares[bvID];
+			int insertPos = binary_search_CID(compare,toID)+1;
+			assert(insertPos>=0);assert(insertPos<=compare.size());
+			compare.push(comparisonID);
+			if(insertPos<compare.size()-1){
+
+				int curVal = compare[insertPos];
+				for(int i = insertPos+1;i<compare.size();i++){
+					int newVal = compare[i];
+					compare[i]=curVal;
+					curVal=newVal;
+				}
+				compare[insertPos]=comparisonID;
+			}
+		}
+		dbg_bvcompares_sorted(bvID);
+
+/*
 		for(int i=0;i<bvcompares[bvID].size()-1;i++){
 			int cid = bvcompares[bvID][i];
 			if(comparisons[cid].compareID>= toID){
@@ -3985,15 +4138,34 @@ public:
 				break;
 			}
 		}
+*/
 
-		if(!cause_set[bvID].contains(toID))
-			cause_set[bvID].push(toID);
+/*		if(!cause_set[bvID].contains(toID))
+			cause_set[bvID].push(toID);*/
 		//Also need to attach an equivalent (but reversed) comparator to the other bitvector
 		comparisonID = comparisons.size();
 		comparisons.push(ComparisonID(-1,bvID,l,toID,~op));
 		bvcompares[toID].push(comparisonID);
 		//insert this value in order.
-		//could do a binary search here...
+		dbg_bvcompares_sorted(toID);
+		{
+			vec<int> & compare= bvcompares[toID];
+			int insertPos = binary_search_CID(compare,bvID)+1;
+			assert(insertPos>=0);assert(insertPos<=compare.size());
+			compare.push(comparisonID);
+			if(insertPos<compare.size()-1){
+
+				int curVal = compare[insertPos];
+				for(int i = insertPos+1;i<compare.size();i++){
+					int newVal = compare[i];
+					compare[i]=curVal;
+					curVal=newVal;
+				}
+				compare[insertPos]=comparisonID;
+			}
+		}
+		dbg_bvcompares_sorted(toID);
+/*
 		for(int i=0;i<bvcompares[toID].size()-1;i++){
 			int cid = bvcompares[toID][i];
 			if(comparisons[cid].compareID>= bvID){
@@ -4004,6 +4176,7 @@ public:
 				break;
 			}
 		}
+*/
 
 		//Add (some) obvious implied relationships to the SAT solver:
 		//if we have two relationships,a ==( x>y), b==( x<=y), then we also have (~a or ~b) and (a or b) in the sat solver.
