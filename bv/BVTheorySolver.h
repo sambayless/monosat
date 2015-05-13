@@ -712,7 +712,7 @@ public:
 		Lit sl = toSolver(l);
 #ifndef NDEBUG
 
-	printf("learnt ");
+	/*printf("learnt ");
 	for (int i = 0;i<nVars();i++){
 			if(value(i)!=l_Undef){
 				if(i!=var(l)){
@@ -723,7 +723,7 @@ public:
 			}
 		}
 	printf(" %d", dimacs(sl));
-	printf(" 0\n");
+	printf(" 0\n");*/
 #endif
 
 		if (S->enqueue(sl, reason)) {
@@ -1261,6 +1261,8 @@ public:
 			assert(eqBV<bvID);
 			under_approx[bvID]=under_approx[eqBV];
 			over_approx[bvID]=over_approx[eqBV];
+			under_approx0[bvID]=under_approx0[eqBV];
+			over_approx0[bvID]=over_approx0[eqBV];
 			return (under_old != under_approx[bvID]) || (over_old != over_approx[bvID]);
 		}
 		Cause under_cause_old = under_causes[bvID];

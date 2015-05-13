@@ -30,7 +30,7 @@
 #include "alg/dyncut/graph.h"
 #include "EdmondsKarpDynamic.h"
 #include <algorithm>
-
+#include <limits>
 namespace dgl {
 template<typename Weight>
 class KohliTorr: public MaxFlow<Weight>, public DynamicGraphAlgorithm {
@@ -114,6 +114,9 @@ public:
 
 	void updateMaxCapacity(Weight new_max_capacity){
 		{
+			if(new_max_capacity<1){
+				exit(11);
+			}
 			assert(new_max_capacity>=max_capacity);
 			if (kt) {
 				if (dynamic) {
@@ -383,7 +386,10 @@ public:
 				}
 			}
 			if(s!=t){
-
+				assert(max_capacity>=0);
+				if(max_capacity<0){
+					exit(11);
+				}
 				if (dynamic) {
 					//if(!backward_maxflow){
 					kt->edit_tweights(s, max_capacity, 0);
@@ -519,7 +525,11 @@ private:
 	inline void set_local_weight(int edgeid, Weight  w){
 		sum_of_edge_capacities-=local_weights[edgeid];
 		local_weights[edgeid]=w;
+
 		sum_of_edge_capacities+=w;
+		if(sum_of_edge_capacities<=0){
+			sum_of_edge_capacities=std::numeric_limits<Weight>::max();
+		}
 	}
 	inline void collect_multi_edges(int for_edge) {
 

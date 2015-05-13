@@ -1691,7 +1691,9 @@ public:
 		S->needsPropagation(getTheoryIndex());
 		if(isEdgeBV(bvID)){
 			int edgeID = getBVEdge(bvID);
-
+			if(edgeID==11){
+				int a=1;
+			}
 			g_under.setEdgeWeight(edgeID,edge_bv_weights[edgeID].getUnder());
 			g_over.setEdgeWeight(edgeID, edge_bv_weights[edgeID].getOver());
 			if(using_neg_weights){
