@@ -394,7 +394,7 @@ public:
 	void printStats(int detailLevel) {
 		printf("BV Theory %d stats:\n", this->id);
 
-		printf("%d bitvectors, %ld bits, %d comparisons (bvcomparisons), %d additions\n", bitvectors.size(),n_bits,compares.size()+bvcompares.size(),bvcompares.size(), n_additions				 );
+		printf("%d bitvectors, %ld bits, %d comparisons (bvcomparisons %d), %d additions\n", bitvectors.size(),n_bits,compares.size()+bvcompares.size(),bvcompares.size(), n_additions				 );
 		printf("constant bitvectors (at start, end of deduction): %d, %d\n",n_starting_consts ,n_consts);
 
 
@@ -2009,6 +2009,9 @@ public:
 
 		while(altered_bvs.size()){
 			int bvID = altered_bvs.last();
+			if(bvID==36900){
+				int a=1;
+			}
 		//for(int bvID = 0;bvID<bitvectors.size();bvID++){
 			assert(alteredBV[bvID]);
 			Weight  underApprox_prev = under_approx[bvID];
@@ -2019,7 +2022,7 @@ public:
 
 			Weight & underApprox = under_approx[bvID];
 			Weight & overApprox = over_approx[bvID];
-	/*		printf("iter %d, bv %d, under ",realprops , bvID); //: %d, over %d\n", bvID, underApprox,overApprox);
+			/*printf("iter %d, bv %d, under ",realprops , bvID); //: %d, over %d\n", bvID, underApprox,overApprox);
 			std::cout<<underApprox << " over ";
 			std::cout<<overApprox << "\n";
 			fflush(stdout);*/
@@ -2700,7 +2703,6 @@ public:
 		}
 		rewind_trail_pos(trail_pos);
 		trail_pos = rewindUntil(bvID,op,to);
-
 
 
 		bool compare_over;
@@ -3601,6 +3603,9 @@ public:
 		if(bvID<0){
 			bvID = bitvectors.size();
 		}
+		if(bvID==55349){
+			int a=1;
+		}
 		n_bits+=vars.size();
 		//bv_callbacks.growTo(id+1,nullptr);
 		bitvectors.growTo(bvID+1);
@@ -3628,7 +3633,10 @@ public:
 			exit(1);
 		}
 		under_approx[bvID]=0;
-		over_approx[bvID]=(1L<<vars.size())-1;
+		if(vars.size()>0)
+			over_approx[bvID]=(1L<<vars.size())-1;
+		else
+			over_approx[bvID]=0;
 		under_approx0[bvID]=under_approx[bvID];
 		over_approx0[bvID]=over_approx[bvID];
 
@@ -3661,8 +3669,8 @@ public:
 		if(bvID<0){
 			bvID = bitvectors.size();
 		}
-		if(bvID==2966){
-			int a =1;
+		if(bvID==55349){
+			int a=1;
 		}
 		if (constval<0)
 			n_bits+=bitwidth;
@@ -3694,7 +3702,7 @@ public:
 			exit(1);
 		}
 		under_approx[bvID]=0;
-		over_approx[bvID]=(1L<<vars.size())-1;
+		over_approx[bvID]=(1L<<bitwidth)-1;
 		under_approx0[bvID]=under_approx[bvID];
 		over_approx0[bvID]=over_approx[bvID];
 		if(equivalentBV<0){
@@ -3779,6 +3787,7 @@ private:
 		for(int i = 1;i<compare.size();i++){
 			int cID0 = compare[i-1];
 			int cID1 = compare[i];
+			assert(cID0 != cID1);
 			assert(comparisons[cID0].w <= comparisons[cID1].w);
 		}
 #endif
@@ -3790,6 +3799,7 @@ private:
 		for(int i = 1;i<bvcompare.size();i++){
 			int cID0 = bvcompare[i-1];
 			int cID1 = bvcompare[i];
+			assert(cID0 != cID1);
 			assert(comparisons[cID0].compareID <= comparisons[cID1].compareID);
 		}
 #endif
@@ -4101,13 +4111,13 @@ public:
 
 	/*	if(!cause_set[toID].contains(bvID))
 			cause_set[toID].push(bvID);*/
-
+		dbg_bvcompares_sorted(bvID);
 		comparisons.push(ComparisonID(-1,toID,l,bvID,op));
-		bvcompares[bvID].push(comparisonID);
+
 		//insert this value in order.
 		//could do a binary search here...
 
-		dbg_bvcompares_sorted(bvID);
+
 		//insert this value in order.
 		{
 			vec<int> & compare= bvcompares[bvID];
@@ -4143,11 +4153,12 @@ public:
 /*		if(!cause_set[bvID].contains(toID))
 			cause_set[bvID].push(toID);*/
 		//Also need to attach an equivalent (but reversed) comparator to the other bitvector
+		dbg_bvcompares_sorted(toID);
 		comparisonID = comparisons.size();
 		comparisons.push(ComparisonID(-1,bvID,l,toID,~op));
-		bvcompares[toID].push(comparisonID);
+
 		//insert this value in order.
-		dbg_bvcompares_sorted(toID);
+
 		{
 			vec<int> & compare= bvcompares[toID];
 			int insertPos = binary_search_CID(compare,bvID)+1;
