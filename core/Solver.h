@@ -535,8 +535,8 @@ protected:
 	struct TheoryData {
 		union {
 			struct {
-				unsigned int theory :11;
-				unsigned int theory_var :21;
+				unsigned int theory ;
+				unsigned int theory_var;//these were previously packed together into a 32bit int, but that has proved insufficient in practice.
 			};
 			unsigned int isTheoryVar; //true if non-zero - this property is ensured by adding 1 to theory_var
 		};

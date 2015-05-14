@@ -913,6 +913,11 @@ public:
 					over_approx[bvID]=e.previous_over;
 					under_causes[bvID]=e.prev_under_cause;
 					over_causes[bvID]=e.prev_over_cause;
+			/*		printf("backtrack bv %d, under ", bvID);
+					std::cout<<e.previous_under << " over ";
+					std::cout<<e.previous_over << "\n";
+					fflush(stdout);
+*/
 					if(hasTheory(bvID))
 						getTheory(bvID)->backtrackBV(bvID);//only enqueue the bitvector in the subtheory _after_ it's approximation has been updated!
 				}else{
@@ -948,7 +953,7 @@ public:
 			}
 		}
 		analysis_trail_pos = trail.size()-1;
-
+		assert(dbg_uptodate());
 	};
 
 	bool decidableBV(Comparison op, int bvID, Weight to){
@@ -1258,11 +1263,36 @@ public:
 			//this bitvector is equivalent to some other (lower index) bv, so just copy its values.
 			int eqBV = eq_bitvectors[bvID];
 			assert(eqBV<bvID);
+			Cause under_cause_old = under_causes[bvID];
+			Cause over_cause_old = over_causes[bvID];
+			under_new = under_approx[eqBV];
+			over_new = over_approx[eqBV];
 			under_approx[bvID]=under_approx[eqBV];
 			over_approx[bvID]=over_approx[eqBV];
 			under_approx0[bvID]=under_approx0[eqBV];
 			over_approx0[bvID]=over_approx0[eqBV];
-			return (under_old != under_approx[bvID]) || (over_old != over_approx[bvID]);
+
+			bool changed = (under_old != under_approx[bvID]) || (over_old != over_approx[bvID]);
+			if(changed){
+				any_changed=true;
+				assert(under_new>=under_old);
+				assert(over_new<=over_old);
+				assert(analysis_trail_pos==trail.size()-1);
+				trail.push({bvID,under_old, over_old, under_new, over_new, under_cause_old, over_cause_old, under_causes[bvID],over_causes[bvID]});
+				assert(trail.last().isBoundAssignment());
+				assert(trail.last().bvID==bvID);
+				assert(trail.last().new_over == over_new);
+				assert(trail.last().new_under == under_new);
+				assert(trail.last().previous_over == over_old);
+				assert(trail.last().previous_under == under_old);
+				analysis_trail_pos=trail.size()-1;
+
+			}else{
+				//ensure that the cause isn't altered if the approx was not changed.
+				under_causes[bvID] = under_cause_old;
+				over_causes[bvID] = over_cause_old;
+			}
+			return changed;
 		}
 		Cause under_cause_old = under_causes[bvID];
 		Cause over_cause_old = over_causes[bvID];
@@ -1929,6 +1959,20 @@ public:
 		assert(over==over_approx[bvID]);
 		assert(under_approx0[bvID]<=under_approx[bvID]);
 		assert(over_approx0[bvID]>=over_approx[bvID]);
+
+		if(eq_bitvectors[bvID]!=bvID && eq_bitvectors[bvID]>-1 ){
+			int eqID = eq_bitvectors[bvID];
+			Weight under_expect=under_approx[eqID];
+			Weight over_expect=over_approx[eqID];
+			assert(under_expect==under);
+			assert(over_expect==over);
+			Weight under_approx0_expect = under_approx0[eqID];
+			Weight over_approx0_expect = over_approx0[eqID];
+
+			assert(under_approx0_expect==under_approx0[bvID]);
+			assert(over_approx0_expect==over_approx0[bvID]);
+		}
+
 		if(under_store){
 			(*under_store)=under;
 		}
@@ -1993,7 +2037,7 @@ public:
 			return true;
 		}
 		rewind_trail_pos(trail.size());
-		if(++realprops==210){
+		if(++realprops==52){
 			int a =1;
 		}
 		//printf("bv prop %d\n",stats_propagations);
@@ -2009,7 +2053,7 @@ public:
 
 		while(altered_bvs.size()){
 			int bvID = altered_bvs.last();
-			if(bvID==36900){
+			if(bvID==18898){
 				int a=1;
 			}
 		//for(int bvID = 0;bvID<bitvectors.size();bvID++){
@@ -2022,7 +2066,7 @@ public:
 
 			Weight & underApprox = under_approx[bvID];
 			Weight & overApprox = over_approx[bvID];
-			/*printf("iter %d, bv %d, under ",realprops , bvID); //: %d, over %d\n", bvID, underApprox,overApprox);
+/*			printf("iter %d, bv %d, under ",realprops , bvID); //: %d, over %d\n", bvID, underApprox,overApprox);
 			std::cout<<underApprox << " over ";
 			std::cout<<overApprox << "\n";
 			fflush(stdout);*/
@@ -2050,6 +2094,9 @@ public:
 									}
 								}
 								stats_num_conflicts++;stats_bit_conflicts++;
+								if(realprops==1){
+									exit(12);
+								}
 								double startconftime = rtime(2);
 								buildValueReason(Comparison::leq,bvID,overApprox,conflict);
 								toSolver(conflict);
@@ -3407,23 +3454,34 @@ public:
 
 	bool check_solved() {
 		for(int bvID = 0;bvID<bitvectors.size();bvID++){
+			int eqBV = bvID;
+			while(eq_bitvectors[eqBV]>-1 && eq_bitvectors[eqBV]!=eqBV ){
+				eqBV=eq_bitvectors[eqBV];
+			}
+
+
+
 			vec<Lit> & bv = bitvectors[bvID];
 			Weight over=0;
 			Weight under=0;
-			for(int i = 0;i<bv.size();i++){
-				lbool val = value(bv[i]);
-				if(val==l_True){
-					Weight bit = 1<<i;
-					under+=bit;
-					over+=bit;
-				}else if (val==l_False){
+			if(bv.size()){
+				for(int i = 0;i<bv.size();i++){
+					lbool val = value(bv[i]);
+					if(val==l_True){
+						Weight bit = 1<<i;
+						under+=bit;
+						over+=bit;
+					}else if (val==l_False){
 
-				}else{
-					Weight bit = 1<<i;
-					over+=bit;
+					}else{
+						Weight bit = 1<<i;
+						over+=bit;
+					}
 				}
+			}else{
+				over=over_approx[eqBV];
+				under=under_approx[eqBV];
 			}
-
 			for(int i = 0;i< additions[bvID].size();i++){
 				int aID = additions[bvID][i].aID;
 				int bID = additions[bvID][i].bID;
@@ -3557,6 +3615,13 @@ public:
 
 
 	BitVector newAdditionBV(int resultID, int aID, int bID){
+		while(eq_bitvectors[resultID]!=resultID)
+			resultID=eq_bitvectors[resultID];
+		while(eq_bitvectors[aID]!=aID)
+			aID=eq_bitvectors[aID];
+		while(eq_bitvectors[bID]!=bID)
+			bID=eq_bitvectors[bID];
+
 		int bitwidth = getBV(resultID).width();
 		if(resultID<=aID || resultID<=bID){
 			std::cerr<<"Addition result must have a strictly greater id than its arguments\n";
@@ -3651,6 +3716,8 @@ public:
 	}
 
 	void makeConst(int bvID, Weight c){
+		while(eq_bitvectors[bvID]!=bvID)
+			bvID=eq_bitvectors[bvID];
 		BitVector bv = getBV(bvID);
 		for (int i = bv.width()-1;i>=0;i--){
 			Weight v = ((Weight)1)<<i;
@@ -3917,6 +3984,8 @@ public:
 		if(!hasBV(bvID)){
 			printf("ERROR! Undefined bitvector %d\n", bvID), exit(1);
 		}
+		while(eq_bitvectors[bvID]!=bvID)
+			bvID=eq_bitvectors[bvID];
 		int comparisonID = comparisons.size();
 		if(comparisonID==8){
 			int a=1;
@@ -4080,7 +4149,10 @@ public:
 
 
 	Lit newComparisonBV(Comparison op, int bvID,int toID, Var outerVar = var_Undef) {
-
+		while(eq_bitvectors[bvID]!=bvID)
+			bvID=eq_bitvectors[bvID];
+		while(eq_bitvectors[toID]!=toID)
+			toID=eq_bitvectors[toID];
 		if(bvID<toID){
 
 			Lit l = newComparisonBV(~op,toID,bvID,outerVar);//is this correct?
