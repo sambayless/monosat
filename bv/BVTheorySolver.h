@@ -95,13 +95,14 @@ public:
 		int cause_is_addition:1;
 		int cause_is_addition_argument:1;
 		int cause_is_comparison:1;
-		int index:27;
+		int cause_is_decision:1;
+		int index:26;
 
-		Cause(const Cause & copy):cause_is_bits(copy.cause_is_bits),refined_cause(copy.refined_cause),cause_is_addition(copy.cause_is_addition),cause_is_comparison(copy.cause_is_comparison),cause_is_addition_argument(copy.cause_is_addition_argument),index(copy.index){
+		Cause(const Cause & copy):cause_is_bits(copy.cause_is_bits),refined_cause(copy.refined_cause),cause_is_addition(copy.cause_is_addition),cause_is_comparison(copy.cause_is_comparison),cause_is_addition_argument(copy.cause_is_addition_argument),cause_is_decision(copy.cause_is_decision),index(copy.index){
 
 		}
 
-		Cause():cause_is_bits(0),refined_cause(0),cause_is_addition(0),cause_is_addition_argument(0),cause_is_comparison(0),index(-1){
+		Cause():cause_is_bits(0),refined_cause(0),cause_is_addition(0),cause_is_addition_argument(0),cause_is_comparison(0),cause_is_decision(0),index(-1){
 
 		}
 		/*Cause(bool bits, bool addition, int comparison=-1):cause_is_bits(bits),refined_cause(0),cause_is_addition(addition),cause_is_addition_arg(0),comparison_cause(comparison){
@@ -112,6 +113,7 @@ public:
 			return cause_is_bits|| cause_is_addition || cause_is_addition_argument|| cause_is_comparison|| refined_cause;
 		}
 		void clear(){
+			cause_is_decision=0;
 			cause_is_bits=0;
 			refined_cause=0;
 			cause_is_addition=0;
@@ -989,8 +991,60 @@ public:
 					return lit_Undef;
 				break;
 		}
+		while(eq_bitvectors[bvID]!=bvID)
+			bvID=eq_bitvectors[bvID];
 		Lit l = lit_Undef;
-		if(opt_decide_bv_bitwise){
+
+
+		if (opt_decide_bv_intrinsic){
+			Weight under_old = under_approx[bvID];
+			Weight over_old = over_approx[bvID];
+
+			Cause under_cause_old = under_causes[bvID];
+			Cause over_cause_old = over_causes[bvID];
+
+			switch(op){
+				case Comparison::gt:
+					under_approx[bvID]=to+1;
+					under_causes[bvID].clear();
+					under_causes[bvID].cause_is_decision;
+					break;
+				case Comparison::geq:
+					under_approx[bvID]=to;
+					under_causes[bvID].clear();
+					under_causes[bvID].cause_is_decision;
+					break;
+				case Comparison::lt:
+					over_approx[bvID]=to-1;
+					over_causes[bvID].clear();
+					over_causes[bvID].cause_is_decision;
+					break;
+				case Comparison::leq:
+					over_approx[bvID]=to;
+					over_causes[bvID].clear();
+					over_causes[bvID].cause_is_decision;
+				break;
+			}
+
+			if ((under_old != under_approx[bvID]) || (over_old != over_approx[bvID])){
+				assert(under_approx[bvID]>=under_old);
+				assert( over_approx[bvID]<=over_old);
+				assert(analysis_trail_pos==trail.size()-1);
+				trail.push({bvID,under_old, over_old, under_approx[bvID], over_approx[bvID], under_cause_old, over_cause_old, under_causes[bvID],over_causes[bvID]});
+				assert(trail.last().isBoundAssignment());
+				assert(trail.last().bvID==bvID);
+				assert(trail.last().new_over ==  over_approx[bvID]);
+				assert(trail.last().new_under == under_approx[bvID]);
+				assert(trail.last().previous_over == over_old);
+				assert(trail.last().previous_under == under_old);
+				analysis_trail_pos=trail.size()-1;
+				if(! alteredBV[bvID]){
+					alteredBV[bvID]=true;
+					altered_bvs.push(bvID);
+				}
+			}
+			return lit_Error;//for now, using lit_Error to signify a decision with no associated literal... is there a better option for this?
+		}else if(opt_decide_bv_bitwise){
 			Weight refined_under = refine_ubound(bvID, to);
 			if(refined_under>to)//can this ever not be the case?
 				to = refined_under;
@@ -1284,6 +1338,7 @@ public:
 		vec<Lit> & bv = bitvectors[bvID];
 		Weight under_new=0;
 		Weight over_new=0;
+
 		bool any_changed=false;
 
 		if(eq_bitvectors[bvID]!=bvID){
@@ -1321,10 +1376,11 @@ public:
 			}
 			return changed;
 		}
+
 		Cause under_cause_old = under_causes[bvID];
 		Cause over_cause_old = over_causes[bvID];
-		under_causes[bvID].clear();
-		over_causes[bvID].clear();
+		Cause over_cause_new;
+		Cause under_cause_new;
 
 		//under_approx[bvID]=0;
 		//over_approx[bvID]=0;
@@ -1359,15 +1415,15 @@ public:
 
 			if(under >under_new){
 				under_new=under;
-				under_causes[bvID].clear();
-				under_causes[bvID].cause_is_addition=true;
-				under_causes[bvID].index=i;
+				under_cause_new.clear();
+				under_cause_new.cause_is_addition=true;
+				under_cause_new.index=i;
 			}
 			if(over<over_new){
 				over_new=over;
-				over_causes[bvID].clear();
-				over_causes[bvID].cause_is_addition=true;
-				over_causes[bvID].index=i;
+				over_cause_new.clear();
+				over_cause_new.cause_is_addition=true;
+				over_cause_new.index=i;
 			}
 		}
 
@@ -1383,15 +1439,15 @@ public:
 
 			if(under >under_new){
 				under_new=under;
-				under_causes[bvID].clear();
-				under_causes[bvID].cause_is_addition_argument=true;
-				under_causes[bvID].index=i;
+				under_cause_new.clear();
+				under_cause_new.cause_is_addition_argument=true;
+				under_cause_new.index=i;
 			}
 			if(over<over_new){
 				over_new=over;
-				over_causes[bvID].clear();
-				over_causes[bvID].cause_is_addition_argument=true;
-				over_causes[bvID].index=i;
+				over_cause_new.clear();
+				over_cause_new.cause_is_addition_argument=true;
+				over_cause_new.index=i;
 			}
 		}
 
@@ -1443,9 +1499,9 @@ public:
 			}
 
 			if(setOver){
-				over_causes[bvID].clear();
-				over_causes[bvID].cause_is_comparison=true;
-				over_causes[bvID].index=cID;
+				over_cause_new.clear();
+				over_cause_new.cause_is_comparison=true;
+				over_cause_new.index=cID;
 			}
 		}
 
@@ -1497,9 +1553,9 @@ public:
 			}
 
 			if(setUnder){
-				under_causes[bvID].clear();
-				under_causes[bvID].cause_is_comparison=true;
-				under_causes[bvID].index=cID;
+				under_cause_new.clear();
+				under_cause_new.cause_is_comparison=true;
+				under_cause_new.index=cID;
 			}
 
 		}
@@ -1554,9 +1610,9 @@ public:
 			}
 
 			if(setOver){
-				over_causes[bvID].clear();
-				over_causes[bvID].cause_is_comparison=true;
-				over_causes[bvID].index=cID;
+				over_cause_new.clear();
+				over_cause_new.cause_is_comparison=true;
+				over_cause_new.index=cID;
 			}
 		}
 
@@ -1607,9 +1663,9 @@ public:
 			}
 
 			if(setUnder){
-				under_causes[bvID].clear();
-				under_causes[bvID].cause_is_comparison=true;
-				under_causes[bvID].index=cID;
+				under_cause_new.clear();
+				under_cause_new.cause_is_comparison=true;
+				under_cause_new.index=cID;
 			}
 
 		}
@@ -1636,18 +1692,11 @@ public:
 				//ONLY update over_old to over new here.
 				over_old=over_new;
 				over_cause_old=over_causes[bvID];
-
-				if(trail.size()==33  && trail[32].bvID==3){
-					int a=1;
-				}
-				if(trail.size()==8  && trail[11].bvID==2){
-										int a=1;
-									}
 			}
 
 			over_new=refined_over;
-			over_causes[bvID].clear();
-			over_causes[bvID].refined_cause=true;
+			over_cause_new.clear();
+			over_cause_new.refined_cause=true;
 		}
 		Weight refined_under = refine_ubound(bvID, under_new);
 		if(refined_under>-1  && refined_under> under_new){
@@ -1671,18 +1720,11 @@ public:
 				over_old=over_new;
 				under_cause_old=under_causes[bvID];
 				over_cause_old=over_causes[bvID];
-
-				if(trail.size()==33  && trail[32].bvID==3){
-								int a=1;
-							}
-				if(trail.size()==8  && trail[11].bvID==2){
-									int a=1;
-								}
 			}
 
 			under_new=refined_under;
-			under_causes[bvID].clear();
-			under_causes[bvID].refined_cause=true;
+			under_cause_new.clear();
+			under_cause_new.refined_cause=true;
 		}
 
 		int width = bitvectors[bvID].size();
@@ -1702,6 +1744,8 @@ public:
 
 		under_approx[bvID]=under_new;
 		over_approx[bvID]=over_new;
+		under_causes[bvID]= under_cause_new;
+		over_causes[bvID]= over_cause_new;
 
 		if(decisionLevel()==0){
 			under_approx0[bvID]=under_approx[bvID];
@@ -1727,12 +1771,7 @@ public:
 			assert(trail.last().previous_over == over_old);
 			assert(trail.last().previous_under == under_old);
 			analysis_trail_pos=trail.size()-1;
-			if(trail.size()==33  && trail[32].bvID==3){
-				int a=1;
-			}
-			if(trail.size()==8  && trail[11].bvID==2){
-				int a=1;
-			}
+
 		}else{
 			//ensure that the cause isn't altered if the approx was not changed.
 			under_causes[bvID] = under_cause_old;
@@ -1985,8 +2024,11 @@ public:
 				over=under_approx0[bvID];
 			}
 		}
-		assert(under==under_approx[bvID]);
-		assert(over==over_approx[bvID]);
+		if (!under_causes[bvID].cause_is_decision)
+			assert(under==under_approx[bvID]);
+		if(!over_causes[bvID].cause_is_decision)
+			assert(over==over_approx[bvID]);
+
 		assert(under_approx0[bvID]<=under_approx[bvID]);
 		assert(over_approx0[bvID]>=over_approx[bvID]);
 
@@ -2818,6 +2860,22 @@ public:
 			assert(over_causes[bvID].hasCause());
 		if(!compare_over)
 			assert(under_causes[bvID].hasCause());
+
+		if (compare_over &&  over_causes[bvID].cause_is_decision){
+			//the reason that the bvID's over approx is <= its current value
+			//is because it was a decision.
+			//Create a literal on the fly to explain this...
+			Lit reason = newComparison(op,bvID, to,opt_cmp_lits_decidable);
+			assert(value(reason)!=l_False);
+			conflict.push(~reason);
+			return;
+		}else if (!compare_over &&  under_causes[bvID].cause_is_decision){
+			Lit reason = newComparison(op,bvID, to,opt_cmp_lits_decidable);
+			assert(value(reason)!=l_False);
+			conflict.push(~reason);
+			return;
+		}
+
 
 		if (compare_over &&  over_causes[bvID].refined_cause){
 			//then the reason the underapprox is too large is because of the assignment to the bits
@@ -3906,7 +3964,8 @@ private:
 	//Returns a CID with the same weight if one exists,  returns the index this CID should be insert after otherwise
 	int binary_search_Weight(vec<int> & compares, Weight w)
 	{
-		int low = 0, high = compares.size() - 1;
+		int low = 0;
+		int high = compares.size() - 1;
 		while (low <= high)
 		{
 			int midpoint = low + (high - low)/2;
@@ -3938,7 +3997,8 @@ private:
 	//Returns a CID comparing to the same bitvector if one exists,  returns the index this CID should be insert after otherwise
 	int binary_search_CID(vec<int> & compares,  int compareID)
 	{
-		int low = 0, high = compares.size() - 1;
+		int low = 0;
+		int high = compares.size() - 1;
 		while (low <= high)
 		{
 			int midpoint = low + (high - low)/2;

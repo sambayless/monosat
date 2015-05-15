@@ -89,6 +89,7 @@ extern BoolOption opt_decide_graph_distance;
 extern BoolOption opt_decide_graph_bv;
 extern BoolOption opt_cmp_lits_decidable;
 extern BoolOption opt_decide_bv_bitwise;
+extern BoolOption opt_decide_bv_intrinsic;
 extern BoolOption opt_decide_theories_reverse;
 extern BoolOption opt_use_random_path_for_decisions;
 extern BoolOption opt_use_optimal_path_for_decisions;
