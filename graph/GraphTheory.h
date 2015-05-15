@@ -856,7 +856,9 @@ public:
 
 		return v;
 	}
-
+	void setDecisionVar(Var solverVar, bool decidable){
+		S->setDecisionVar(toSolver(solverVar),decidable);
+	}
 	Var newTheoryVar(Var solverVar, int theoryID, Var theoryVar){
 
 
@@ -1466,6 +1468,7 @@ public:
 					if(d->decideEdgeWeight(edgeID,edgeWeight,op)){
 						assert(edgeWeight>=0);
 						Lit bv_decision = lit_Undef;
+
 						Comparison bvOp;
 						if (op==DetectorComparison::leq){
 							bvOp=Comparison::leq;
@@ -1490,6 +1493,7 @@ public:
 						}else{
 							exit(1);//ne not supported yet...
 						}
+
 						if(bv_decision!=lit_Undef){
 							stats_decisions++;
 							r->undecide(l);
@@ -2387,7 +2391,7 @@ public:
 				return l;
 			}
 			int comparisonID = comparisons.size();
-			Lit gt = comparator->newComparison(op,bvID,w);
+			Lit gt = comparator->newComparison(op,bvID,w,var_Undef,opt_cmp_lits_decidable);
 			l = mkLit(newVar());
 
 			makeEqualInSolver(comparator->toSolver(gt),toSolver(l));

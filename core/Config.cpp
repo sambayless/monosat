@@ -166,7 +166,9 @@ BoolOption Monosat::opt_reach_prop(_cat_graph, "prop-reach", "", false);
 BoolOption Monosat::opt_decide_theories(_cat_graph, "decide-theories", "", false);
 BoolOption Monosat::opt_decide_graph_distance(_cat_graph, "decide-graph-dist", "", false);
 BoolOption Monosat::opt_decide_graph_bv(_cat_graph,"decide-graph-bv","",false);
-
+BoolOption Monosat::opt_cmp_lits_decidable(_cat_graph,"decide-cmp-lits","Controls whether or not comparison lits introduced by the bv solver (but not in the original formula) can be chosen as decisions by the SAT solver",false);
+BoolOption Monosat::opt_decide_bv_bitwise(_cat_graph,"decide-bv-bitwise","",false);
+BoolOption Monosat::opt_decide_theories_reverse(_cat_graph,"decide-theories-reverse","Decide theories in reverse order, if theory decisions are enabled",false);
 BoolOption Monosat::opt_use_random_path_for_decisions(_cat_graph, "decide-graph-rnd", "", false);
 BoolOption Monosat::opt_use_optimal_path_for_decisions(_cat_graph, "decide-graph-opt",
 		"When selecting a path during decisions, find the shortest path, excluding the weight of already assigned edges.",

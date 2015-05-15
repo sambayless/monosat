@@ -612,7 +612,7 @@ public:
 	}
 	
 
-	Var newVar(Var solverVar=var_Undef, int bvID=-1, int comparisonID=-1, bool connectToTheory = true) {
+	Var newVar(Var solverVar=var_Undef, int bvID=-1, int comparisonID=-1, bool connectToTheory = true, bool decidable=true) {
 		if(solverVar==var_Undef){
 			solverVar = S->newVar();
 		}
@@ -624,7 +624,7 @@ public:
 			while (S->nVars() <= solverVar)
 				S->newVar();
 		}
-
+		S->setDecisionVar(solverVar, decidable);
 
 		vars.push();
 		vars[v].occursPositive=false;
@@ -989,8 +989,35 @@ public:
 					return lit_Undef;
 				break;
 		}
-		Lit l = newComparison(op, bvID, to);
-		//S->enqueue(toSolver(l));
+		Lit l = lit_Undef;
+		if(opt_decide_bv_bitwise){
+			Weight refined_under = refine_ubound(bvID, to);
+			if(refined_under>to)//can this ever not be the case?
+				to = refined_under;
+			//find the highest order bit of edgeID that is unassigned, and assign it to match edgeWeight.
+			vec<Lit> & bits =  getBits(bvID);
+			Weight bit_under = 0;
+			for(int i = bits.size()-1;i>=0;i--){
+				Lit b = bits[i];
+				if(value(b)==l_Undef){
+					Weight bit = 1L<<i;
+
+					bool positive=true;
+					if (bit_under+ bit > to ||  bit_under+ bit > over_approx[bvID]){
+						positive=false;
+					}
+					l= positive ? b:~b;
+					break;
+				}else if (value(b)==l_True){
+					Weight bit = 1L<<i;
+					bit_under+=bit;
+				}else{
+
+				}
+			}
+		}else{
+			l = newComparison(op, bvID, to,var_Undef,opt_cmp_lits_decidable);
+		}
 		return toSolver(l);
 	}
 
@@ -1768,6 +1795,9 @@ public:
 	}
 
 	vec<Lit> & getBits(int bvID){
+		//can this be avoided?
+		while(eq_bitvectors[bvID]!=bvID)
+			bvID=eq_bitvectors[bvID];
 		return bitvectors[bvID];
 	}
 
@@ -3979,7 +4009,7 @@ private:
 	}
 
 public:
-	Lit newComparison(Comparison op, int bvID,const Weight & to, Var outerVar = var_Undef) {
+	Lit newComparison(Comparison op, int bvID,const Weight & to, Var outerVar = var_Undef, bool decidable=true) {
 		Lit l;
 		if(!hasBV(bvID)){
 			printf("ERROR! Undefined bitvector %d\n", bvID), exit(1);
@@ -3996,7 +4026,8 @@ public:
 			}
 			return l;
 		}else{
-			l = mkLit(newVar(outerVar, bvID,comparisonID));
+			l = mkLit(newVar(outerVar, bvID,comparisonID,true,decidable));
+
 		}
 		static int iter = 0;
 		if(++iter==29){

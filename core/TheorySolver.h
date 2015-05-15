@@ -40,6 +40,7 @@ public:
 		return isConstant(var(l));
 	}
 	virtual void needsPropagation(int theoryID)=0;
+	virtual void setDecisionVar(Var solverVar, bool decidable)=0;
 	virtual Var newTheoryVar(Var solverVar, int theoryID, Var theoryVar)=0;
 	virtual Var newVar(bool polarity = true, bool dvar = true)=0;
 	virtual int nVars()const=0;

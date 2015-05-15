@@ -231,7 +231,7 @@ public:
 		return mkLit(getTheoryVar(var(l)), sign(l));
 	}
 	virtual Var newTheoryVar(Var solverVar, int theoryID, Var theoryVar){
-		while(nVars()<solverVar)
+		while(nVars()<=solverVar)
 			newVar();
 		Var v = solverVar;
 		setTheoryVar(solverVar,theoryID,theoryVar);

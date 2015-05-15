@@ -562,6 +562,16 @@ int main(int argc, char** argv) {
 			printf("\n");
 		}
 
+		if(opt_decide_theories_reverse){
+			vec<Theory*> v;
+			for (int i = S.decidable_theories.size()-1;i>=0;i--){
+				v.push(S.decidable_theories[i]);
+			}
+			S.decidable_theories.clear();
+			for (Theory * t:v)
+				S.decidable_theories.push(t);
+		}
+
 		if (strlen((const char*) opt_assume_symbols) > 0) {
 
 			std::ifstream infile((const char*) opt_assume_symbols);
