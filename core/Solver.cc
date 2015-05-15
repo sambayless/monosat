@@ -959,7 +959,6 @@ CRef Solver::propagate(bool propagate_theories) {
 					in_theory_queue[theoryID] = false;
 					if (!theories[theoryID]->propagateTheory(theory_conflict)) {
 						if (!addConflictClause(theory_conflict, confl)) {
-							in_theory_queue[theoryID] = false;
 							qhead = trail.size();
 							return confl;
 						}
@@ -1056,14 +1055,9 @@ CRef Solver::propagate(bool propagate_theories) {
 			in_theory_queue[theoryID] = false;
 			if (!theories[theoryID]->propagateTheory(theory_conflict)) {
 				bool has_conflict=true;
-		/*		if(opt_lazy_backtrack  && theories[theoryID]->supportsLazyBacktracking() && theories[theoryID]->rectifyAssignments()){
-					//if we were lazily backtracking, and theory propagation fails, then we need to backtrack the theory now, and this conflict might actually be false, or incorect.
-					theory_conflict.clear();
-					has_conflict = !theories[theoryID]->propagateTheory(theory_conflict);
-				}*/
 
 				if (has_conflict && !addConflictClause(theory_conflict, confl)) {
-					in_theory_queue[theoryID] = false;
+
 					qhead = trail.size();
 					return confl;
 				}

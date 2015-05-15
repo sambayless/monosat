@@ -935,7 +935,7 @@ public:
 								altered_bvs.push(bvID);
 							}
 							requiresPropagation=true;
-							S->needsPropagation(this->getTheoryIndex());
+							S->needsPropagation(getTheoryIndex());
 						}
 					}
 
@@ -1210,7 +1210,10 @@ public:
 
 
 	void preprocess() {
-
+		if (const_true==lit_Undef){
+			const_true = mkLit(newVar(var_Undef, -1,-1, false));
+			addClause(const_true);
+		}
 	}
 	void setLiteralOccurs(Lit l, bool occurs) {
 		/*if (isEdgeVar(var(l))) {
@@ -2222,7 +2225,12 @@ public:
 				}
 				new_change = updateApproximations(bvID);
 				changed|=new_change;
-
+				if(new_change){
+					printf("iter %d, bv %d, under ",realprops , bvID); //: %d, over %d\n", bvID, underApprox,overApprox);
+						std::cout<<underApprox << " over ";
+						std::cout<<overApprox << "\n";
+						fflush(stdout);
+				}
 			}while(new_change);//the bit assignment updates above can force a more precise over or under approximation, which can in turn lead to further bit assignments (I think this can happen?).
 
 			for(int i = 0;i<additions[bvID].size();i++){
@@ -3874,7 +3882,7 @@ public:
 		if(equivalentBV<0){
 			if (constval>=0){
 				if (const_true==lit_Undef){
-					const_true = mkLit(newVar());//var_Undef,-1,-1,false
+					const_true = mkLit(newVar(var_Undef,-1, -1,false));
 					addClause(const_true);
 				}
 				bitvectors[bvID].growTo(bitwidth);
@@ -3894,6 +3902,8 @@ public:
 					bitvectors[bvID].push(mkLit(newVar(var_Undef,bvID)));
 				}
 			}
+		}else{
+			bitvectors[equivalentBV].copyTo(bitvectors[bvID]);//is this really the right thing to do?
 		}
 		alteredBV[bvID]=true;
 		altered_bvs.push(bvID);
@@ -4252,6 +4262,13 @@ public:
 
 
 	Lit newComparisonBV(Comparison op, int bvID,int toID, Var outerVar = var_Undef) {
+
+		if(!hasBV(bvID)){
+			printf("PARSE ERROR! Undefined bitvector %d\n", bvID), exit(1);
+		}
+		if(!hasBV(toID)){
+			printf("PARSE ERROR! Undefined bitvector %d\n", toID), exit(1);
+		}
 		while(eq_bitvectors[bvID]!=bvID)
 			bvID=eq_bitvectors[bvID];
 		while(eq_bitvectors[toID]!=toID)
@@ -4264,12 +4281,31 @@ public:
 			}*/
 			return l;
 		}
-		if(!hasBV(bvID)){
-			printf("PARSE ERROR! Undefined bitvector %d\n", bvID), exit(1);
+
+
+		if (bvID==toID){
+			if(outerVar==var_Undef){
+				if (const_true==lit_Undef){
+					const_true = mkLit(newVar());//var_Undef,-1,-1,false
+					addClause(const_true);
+				}
+				//then this is a constant
+				if (op==Comparison::leq || op==Comparison::geq){
+					return const_true;
+				}else{
+					return ~const_true;
+				}
+			}else{
+				Lit l = mkLit(newVar(outerVar, bvID,-1,false));
+				if (op==Comparison::leq || op==Comparison::geq){
+					addClause(l);//const true
+				}else{
+					addClause(~l);//const false
+				}
+				return l;
+			}
 		}
-		if(!hasBV(toID)){
-			printf("PARSE ERROR! Undefined bitvector %d\n", toID), exit(1);
-		}
+
 		Lit l;
 		int comparisonID = comparisons.size();
 		if((l = getComparisonBV(op,bvID, toID))!=lit_Undef){
