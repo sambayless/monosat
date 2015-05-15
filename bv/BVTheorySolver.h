@@ -915,11 +915,11 @@ public:
 					over_approx[bvID]=e.previous_over;
 					under_causes[bvID]=e.prev_under_cause;
 					over_causes[bvID]=e.prev_over_cause;
-			/*		printf("backtrack bv %d, under ", bvID);
+					printf("backtrack bv %d, under ", bvID);
 					std::cout<<e.previous_under << " over ";
 					std::cout<<e.previous_over << "\n";
 					fflush(stdout);
-*/
+
 					if(hasTheory(bvID))
 						getTheory(bvID)->backtrackBV(bvID);//only enqueue the bitvector in the subtheory _after_ it's approximation has been updated!
 				}else{
@@ -935,6 +935,7 @@ public:
 								altered_bvs.push(bvID);
 							}
 							requiresPropagation=true;
+							S->needsPropagation(this->getTheoryIndex());
 						}
 					}
 
@@ -945,17 +946,27 @@ public:
 			trail.shrink(trail.size() - stop);
 			trail_lim.shrink(trail_lim.size() - level);
 			assert(trail_lim.size() == level);
-			
+			assert(dbg_uptodate());
 			if(decisionLevel()==0){
 				for(int cID:repropagate_comparisons){
 					assert(comparison_needs_repropagation[cID]);
 					comparison_needs_repropagation[cID]=false;
+					//need to handle the case where we backtracked before ever propagating this comparison's bitvector...
+					ComparisonID & c = comparisons[cID];
+					int bvID = c.bvID;
+					if(!alteredBV[bvID]){
+						alteredBV[bvID]=true;
+						altered_bvs.push(bvID);
+					}
+					requiresPropagation=true;
+					S->needsPropagation(this->getTheoryIndex());
 				}
 				repropagate_comparisons.clear();
 			}
+			analysis_trail_pos = trail.size()-1;
+
 		}
-		analysis_trail_pos = trail.size()-1;
-		assert(dbg_uptodate());
+
 	};
 
 	bool decidableBV(Comparison op, int bvID, Weight to){
@@ -1395,9 +1406,9 @@ public:
 				Weight bit = 1<<i;
 				under_new+=bit;
 				over_new+=bit;
-				under_causes[bvID].cause_is_bits=true;
+				under_cause_new.cause_is_bits=true;
 			}else if (val==l_False){
-				over_causes[bvID].cause_is_bits=true;
+				over_cause_new.cause_is_bits=true;
 			}else{
 				Weight bit = 1<<i;
 				over_new+=bit;
@@ -1679,7 +1690,7 @@ public:
 				any_changed=true;
 				assert(over_new<=over_old);
 				assert(analysis_trail_pos==trail.size()-1);
-				trail.push({bvID,under_old, over_old, under_old, over_new, under_cause_old, over_cause_old, under_cause_old,over_causes[bvID]});
+				trail.push({bvID,under_old, over_old, under_old, over_new, under_cause_old, over_cause_old, under_cause_old,over_cause_new});
 				assert(trail.last().isBoundAssignment());
 				assert(trail.last().bvID==bvID);
 				assert(trail.last().new_over == over_new);
@@ -1691,7 +1702,7 @@ public:
 
 				//ONLY update over_old to over new here.
 				over_old=over_new;
-				over_cause_old=over_causes[bvID];
+				over_cause_old=over_cause_new;
 			}
 
 			over_new=refined_over;
@@ -1707,7 +1718,7 @@ public:
 				assert(under_new>=under_old);
 				assert(over_new<=over_old);
 				assert(analysis_trail_pos==trail.size()-1);
-				trail.push({bvID,under_old, over_old, under_new, over_new, under_cause_old, over_cause_old, under_causes[bvID],over_causes[bvID]});
+				trail.push({bvID,under_old, over_old, under_new, over_new, under_cause_old, over_cause_old, under_cause_new,over_cause_new});
 				assert(trail.last().isBoundAssignment());
 				assert(trail.last().bvID==bvID);
 				assert(trail.last().new_over == over_new);
@@ -1718,8 +1729,8 @@ public:
 				any_changed=true;
 				under_old=under_new;
 				over_old=over_new;
-				under_cause_old=under_causes[bvID];
-				over_cause_old=over_causes[bvID];
+				under_cause_old=under_cause_new;
+				over_cause_old=over_cause_new;
 			}
 
 			under_new=refined_under;
@@ -1763,7 +1774,7 @@ public:
 			assert(under_new>=under_old);
 			assert(over_new<=over_old);
 			assert(analysis_trail_pos==trail.size()-1);
-			trail.push({bvID,under_old, over_old, under_new, over_new, under_cause_old, over_cause_old, under_causes[bvID],over_causes[bvID]});
+			trail.push({bvID,under_old, over_old, under_new, over_new, under_cause_old, over_cause_old, under_cause_new,over_cause_new});
 			assert(trail.last().isBoundAssignment());
 			assert(trail.last().bvID==bvID);
 			assert(trail.last().new_over == over_new);
@@ -2138,10 +2149,10 @@ public:
 
 			Weight & underApprox = under_approx[bvID];
 			Weight & overApprox = over_approx[bvID];
-/*			printf("iter %d, bv %d, under ",realprops , bvID); //: %d, over %d\n", bvID, underApprox,overApprox);
+			printf("iter %d, bv %d, under ",realprops , bvID); //: %d, over %d\n", bvID, underApprox,overApprox);
 			std::cout<<underApprox << " over ";
 			std::cout<<overApprox << "\n";
-			fflush(stdout);*/
+			fflush(stdout);
 			vec<Lit> & bv = bitvectors[bvID];
 			Weight under =0;
 			Weight over=(1L<<bv.size())-1;
@@ -4122,9 +4133,8 @@ public:
 
 
 		comparison_needs_repropagation.growTo(comparisons.size());
-		if(decisionLevel()>0 && !comparison_needs_repropagation[comparisonID]){
-			//If this comparison was added at a decision level >0 (by another theory, for example),
-			//then we will need to force the associated bitvector to re-update after backtracking.
+		if(!comparison_needs_repropagation[comparisonID]){
+			//we will need to force the associated bitvector to re-update after backtracking.
 			comparison_needs_repropagation[comparisonID]=true;
 			repropagate_comparisons.push(comparisonID);
 		}
@@ -4133,6 +4143,8 @@ public:
 			altered_bvs.push(bvID);
 		}
 		//set the value of this immediately, if needed
+		requiresPropagation=true;
+		S->needsPropagation(getTheoryIndex());
 
 		Weight & underApprox = under_approx[bvID];
 		Weight & overApprox = over_approx[bvID];
@@ -4358,15 +4370,13 @@ public:
 		//if we have relationships a == x < y, b== y < z, c== x < z, then we have ((a and b) -> c)
 		//more?
 		comparison_needs_repropagation.growTo(comparisons.size());
-		if(decisionLevel()>0 && !comparison_needs_repropagation[comparisonID-1]){
-			//If this comparison was added at a decision level >0 (by another theory, for example),
-			//then we will need to force the associated bitvector to re-update after backtracking.
+		if(!comparison_needs_repropagation[comparisonID-1]){
+			//we will need to force the associated bitvector to re-update after backtracking.
 			comparison_needs_repropagation[comparisonID-1]=true;
 			repropagate_comparisons.push(comparisonID-1);
 		}
-		if(decisionLevel()>0 && !comparison_needs_repropagation[comparisonID]){
-			//If this comparison was added at a decision level >0 (by another theory, for example),
-			//then we will need to force the associated bitvector to re-update after backtracking.
+		if(!comparison_needs_repropagation[comparisonID]){
+			// we will need to force the associated bitvector to re-update after backtracking.
 			comparison_needs_repropagation[comparisonID]=true;
 			repropagate_comparisons.push(comparisonID);
 		}
@@ -4381,6 +4391,9 @@ public:
 			altered_bvs.push(toID);
 		}
 
+		//set the value of this immediately, if needed
+		requiresPropagation=true;
+		S->needsPropagation(getTheoryIndex());
 		Weight & underApprox = under_approx[bvID];
 		Weight & overApprox = over_approx[bvID];
 
@@ -4503,6 +4516,8 @@ public:
 			//Weight & under = under_approx[bvID];
 			//Weight & over = over_approx[bvID];
 			for(int cID:compares[bvID]){
+				if(comparison_needs_repropagation[cID])
+					continue;//this is a newly added comparison which might not have been propagated yet
 			ComparisonID & c = comparisons[cID];
 			Comparison op = c.op();
 
