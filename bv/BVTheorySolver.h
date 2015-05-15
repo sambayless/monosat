@@ -110,7 +110,7 @@ public:
 		}*/
 		bool hasCause(){
 			//this can be improved, if we want.
-			return cause_is_bits|| cause_is_addition || cause_is_addition_argument|| cause_is_comparison|| refined_cause;
+			return cause_is_bits|| cause_is_addition || cause_is_addition_argument|| cause_is_comparison || cause_is_decision|| refined_cause;
 		}
 		void clear(){
 			cause_is_decision=0;
@@ -1018,22 +1018,22 @@ public:
 				case Comparison::gt:
 					under_approx[bvID]=to+1;
 					under_causes[bvID].clear();
-					under_causes[bvID].cause_is_decision;
+					under_causes[bvID].cause_is_decision=true;
 					break;
 				case Comparison::geq:
 					under_approx[bvID]=to;
 					under_causes[bvID].clear();
-					under_causes[bvID].cause_is_decision;
+					under_causes[bvID].cause_is_decision=true;
 					break;
 				case Comparison::lt:
 					over_approx[bvID]=to-1;
 					over_causes[bvID].clear();
-					over_causes[bvID].cause_is_decision;
+					over_causes[bvID].cause_is_decision=true;
 					break;
 				case Comparison::leq:
 					over_approx[bvID]=to;
 					over_causes[bvID].clear();
-					over_causes[bvID].cause_is_decision;
+					over_causes[bvID].cause_is_decision=true;
 				break;
 			}
 
@@ -1053,6 +1053,14 @@ public:
 					alteredBV[bvID]=true;
 					altered_bvs.push(bvID);
 				}
+				if(hasTheory(bvID))
+					getTheory(bvID)->enqueueBV(bvID);//only enqueue the bitvector in the subtheory _after_ it's approximation has been updated!
+
+				requiresPropagation=true;
+				S->needsPropagation(getTheoryIndex());
+			}else{
+				under_causes[bvID]=under_cause_old;
+				over_causes[bvID]=over_cause_old;
 			}
 			return lit_Error;//for now, using lit_Error to signify a decision with no associated literal... is there a better option for this?
 		}else if(opt_decide_bv_bitwise){
@@ -1417,6 +1425,16 @@ public:
 				over_new+=bit;
 
 			}
+		}
+		//needed in case a decision was made, to preserve that decision's cause here...
+		if( under_old>= under_new){
+			under_new=under_old;
+			under_cause_new = under_cause_old;
+		}
+
+		if(over_old<=over_new){
+			over_new=over_old;
+			over_cause_new=over_cause_old;
 		}
 
 		for(int i = 0;i<additions[bvID].size();i++){
@@ -2884,12 +2902,12 @@ public:
 			//the reason that the bvID's over approx is <= its current value
 			//is because it was a decision.
 			//Create a literal on the fly to explain this...
-			Lit reason = newComparison(op,bvID, to,opt_cmp_lits_decidable);
+			Lit reason = newComparison(op,bvID, to,var_Undef,opt_cmp_lits_decidable);
 			assert(value(reason)!=l_False);
 			conflict.push(~reason);
 			return;
 		}else if (!compare_over &&  under_causes[bvID].cause_is_decision){
-			Lit reason = newComparison(op,bvID, to,opt_cmp_lits_decidable);
+			Lit reason = newComparison(op,bvID, to,var_Undef,opt_cmp_lits_decidable);
 			assert(value(reason)!=l_False);
 			conflict.push(~reason);
 			return;

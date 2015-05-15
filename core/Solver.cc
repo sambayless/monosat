@@ -526,7 +526,7 @@ void Solver::analyze(CRef confl, vec<Lit>& out_learnt, int& out_btlevel) {
 		while(searching){
 			searching=false;
 			// Select next clause to look at:
-			while (!seen[var(trail[index--])] || (level(var(trail[index+1]))<decisionLevel())  );
+			while (!seen[var(trail[index--])] || (level(var(trail[index+1]))<decisionLevel()));
 
 			assert(index >= -1);
 			p = trail[index + 1];
@@ -937,8 +937,7 @@ bool Solver::propagateTheory(vec<Lit> & conflict_out) {
  |      * the propagation queue is empty, even if there was a conflict.
  |________________________________________________________________________________________________@*/
 CRef Solver::propagate(bool propagate_theories) {
-	if (qhead == trail.size() && (!initialPropagate || decisionLevel() > 0)) {
-		assert(!theory_queue.size());
+	if (qhead == trail.size() && (!initialPropagate || decisionLevel() > 0) && (!propagate_theories || !theory_queue.size())) {//it is possible that the theory solvers need propagation, even if the sat solver has an empty queue.
 		return CRef_Undef;
 	}
 	CRef confl = CRef_Undef;
