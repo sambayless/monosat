@@ -903,7 +903,7 @@ public:
 	inline int level(Var v)const {
 		return S->level(toSolver(v));
 	}
-	inline int decisionLevel() {
+	inline int decisionLevel()const {
 		return decisions.size()-1; //S->decisionLevel();
 	}
 	inline int nVars() const {

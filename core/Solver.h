@@ -361,7 +361,7 @@ public:
 	// 
 	void setPolarity(Var v, bool b); // Declare which polarity the decision heuristic should use for a variable. Requires mode 'polarity_user'.
 	void setDecisionVar(Var v, bool b); // Declare if a variable should be eligible for selection in the decision heuristic.
-			
+	void prependToTrail(Lit l, int atLevel);
 	// Read state:
 	//
 	lbool value(Var x) const;       // The current value of a variable.
@@ -563,6 +563,7 @@ protected:
 	vec<char> decision;         // Declares if a variable is eligible for selection in the decision heuristic.
 	vec<int> priority;		  // Static, lexicographic heuristic
 	vec<TheoryData> theory_vars;
+	vec<Lit> pre_level_trail;
 	vec<Lit> to_analyze;
 	vec<Lit> to_reenqueue;
 	vec<Lit> trail;            // Assignment stack; stores all assigments made in the order they were made.

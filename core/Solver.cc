@@ -386,6 +386,18 @@ void Solver::cancelUntil(int lev) {
 		trail.shrink(trail.size() - trail_lim[lev]);
 		trail_lim.shrink(trail_lim.size() - lev);
 
+		int j=0;
+		for(int i = 0;i<pre_level_trail.size();i++){
+			Lit l = pre_level_trail[i];
+			if(value(l)==l_Undef){
+				//this was unassigned, so remove it
+
+			}else{
+				pre_level_trail[j++]=l;
+			}
+		}
+		pre_level_trail.shrink(pre_level_trail.size()-j);
+
 		//remove any lits from the lazy heap that are now unassigned.
 /*		while(lazy_heap.size() && value(toLit( lazy_heap.peakMin())) == l_Undef ){
 			lazy_heap.pop();
@@ -448,6 +460,12 @@ Lit Solver::pickBranchLit() {
 	return next == var_Undef ? lit_Undef : mkLit(next, rnd_pol ? drand(random_seed) < 0.5 : polarity[next]);
 }
 
+
+void Solver::prependToTrail(Lit l, int atLevel){
+	pre_level_trail.push(l);
+	enqueueLazy(l,atLevel);
+}
+
 /*_________________________________________________________________________________________________
  |
  |  analyze : (confl : Clause*) (out_learnt : vec<Lit>&) (out_btlevel : int&)  ->  [void]
@@ -493,11 +511,12 @@ void Solver::analyze(CRef confl, vec<Lit>& out_learnt, int& out_btlevel) {
 	cancelUntil(maxlev);//use of lazily enqueued literals can trigger conflicts at earlier decision levels
 	// Generate conflict clause:
 	//
+	bool searching_pre_trail=false;
 	bool possibly_missed_1uip=false;
 	to_analyze.clear();
 	out_learnt.push();      // (leave room for the asserting literal)
 	int index = trail.size() - 1;
-	
+	int stop = trail_lim.last();
 	do {
 		if (confl != CRef_Undef) {
 			assert(!isTheoryCause(confl));
@@ -525,11 +544,22 @@ void Solver::analyze(CRef confl, vec<Lit>& out_learnt, int& out_btlevel) {
 		bool searching=true;
 		while(searching){
 			searching=false;
-			// Select next clause to look at:
-			while (!seen[var(trail[index--])] || (level(var(trail[index+1]))<decisionLevel()));
+			if(index<stop && pre_level_trail.size()){
+				searching_pre_trail=true;
+				index = pre_level_trail.size()-1;
+			}
+			if(!searching_pre_trail){
+				// Select next clause to look at:
+				while (index>= stop && (!seen[var(trail[index--])] || (level(var(trail[index+1]))<decisionLevel())));
 
-			assert(index >= -1);
-			p = trail[index + 1];
+				assert(index >= -1);
+				p = trail[index + 1];
+			}else{
+				while ((!seen[var(pre_level_trail[index--])] || (level(var(pre_level_trail[index+1]))<decisionLevel())));
+				assert(index >= -1);
+				p = pre_level_trail[index + 1];
+			}
+
 			confl = reason(var(p));
 			int was_at_level = level(var(p));
 			if (isTheoryCause(confl)) {

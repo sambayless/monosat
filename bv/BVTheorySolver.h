@@ -947,7 +947,7 @@ public:
 			trail_lim.shrink(trail_lim.size() - level);
 			assert(trail_lim.size() == level);
 			assert(dbg_uptodate());
-			if(decisionLevel()==0){
+			if(level==0){//decisionLevel()==0 This check can fail if the levels of the theory and sat solver are out of sync
 				for(int cID:repropagate_comparisons){
 					assert(comparison_needs_repropagation[cID]);
 					comparison_needs_repropagation[cID]=false;
@@ -959,7 +959,7 @@ public:
 						altered_bvs.push(bvID);
 					}
 					requiresPropagation=true;
-					S->needsPropagation(this->getTheoryIndex());
+					S->needsPropagation(getTheoryIndex());
 				}
 				repropagate_comparisons.clear();
 			}
@@ -1006,6 +1006,9 @@ public:
 			bvID=eq_bitvectors[bvID];
 		Lit l = lit_Undef;
 
+		while (S->decisionLevel() > trail_lim.size()) {
+			newDecisionLevel();
+		}
 
 		if (opt_decide_bv_intrinsic){
 			Weight under_old = under_approx[bvID];
@@ -1019,21 +1022,25 @@ public:
 					under_approx[bvID]=to+1;
 					under_causes[bvID].clear();
 					under_causes[bvID].cause_is_decision=true;
+					under_causes[bvID].index=decisionLevel();
 					break;
 				case Comparison::geq:
 					under_approx[bvID]=to;
 					under_causes[bvID].clear();
 					under_causes[bvID].cause_is_decision=true;
+					under_causes[bvID].index=decisionLevel();
 					break;
 				case Comparison::lt:
 					over_approx[bvID]=to-1;
 					over_causes[bvID].clear();
 					over_causes[bvID].cause_is_decision=true;
+					under_causes[bvID].index=decisionLevel();
 					break;
 				case Comparison::leq:
 					over_approx[bvID]=to;
 					over_causes[bvID].clear();
 					over_causes[bvID].cause_is_decision=true;
+					under_causes[bvID].index=decisionLevel();
 				break;
 			}
 
@@ -1053,16 +1060,26 @@ public:
 					alteredBV[bvID]=true;
 					altered_bvs.push(bvID);
 				}
+
+
 				if(hasTheory(bvID))
 					getTheory(bvID)->enqueueBV(bvID);//only enqueue the bitvector in the subtheory _after_ it's approximation has been updated!
 
 				requiresPropagation=true;
 				S->needsPropagation(getTheoryIndex());
+
+				Lit d=lit_Undef;
+				if((d = getComparison(op, bvID, to))!=lit_Undef){
+					return toSolver(d);
+				}else{
+					return lit_Error;//for now, using lit_Error to signify a decision with no associated literal... is there a better option for this?
+
+				}
 			}else{
 				under_causes[bvID]=under_cause_old;
 				over_causes[bvID]=over_cause_old;
 			}
-			return lit_Error;//for now, using lit_Error to signify a decision with no associated literal... is there a better option for this?
+			return lit_Undef;
 		}else if(opt_decide_bv_bitwise){
 			Weight refined_under = refine_ubound(bvID, to);
 			if(refined_under>to)//can this ever not be the case?
@@ -2140,8 +2157,9 @@ public:
 			assert(dbg_uptodate());
 			return true;
 		}
+
 		rewind_trail_pos(trail.size());
-		if(++realprops==52){
+		if(++realprops==10){
 			int a =1;
 		}
 		//printf("bv prop %d\n",stats_propagations);
@@ -2151,6 +2169,10 @@ public:
 		bool any_change = false;
 		double startproptime = rtime(1);
 		//static vec<int> detectors_to_check;
+
+		while (S->decisionLevel() > trail_lim.size()) {
+			newDecisionLevel();
+		}
 		
 		conflict.clear();
 		
@@ -2902,14 +2924,27 @@ public:
 			//the reason that the bvID's over approx is <= its current value
 			//is because it was a decision.
 			//Create a literal on the fly to explain this...
+			int lev = over_causes[bvID].index;
+			assert(lev>=0);
+			assert(lev<=decisionLevel());
 			Lit reason = newComparison(op,bvID, to,var_Undef,opt_cmp_lits_decidable);
+
 			assert(value(reason)!=l_False);
 			conflict.push(~reason);
+
+			S->prependToTrail(toSolver(reason),lev);//this is a decision that was made, without a corresponding literal in the solver at the time it was made.
+			//need to ensure that this lit can be properly analyzed, so prepend it to the trail at this decision level.
 			return;
 		}else if (!compare_over &&  under_causes[bvID].cause_is_decision){
+			int lev = under_causes[bvID].index;
+			assert(lev>=0);
+			assert(lev<=decisionLevel());
 			Lit reason = newComparison(op,bvID, to,var_Undef,opt_cmp_lits_decidable);
 			assert(value(reason)!=l_False);
 			conflict.push(~reason);
+
+			S->prependToTrail(toSolver(reason),lev);//this is a decision that was made, without a corresponding literal in the solver at the time it was made.
+			//need to ensure that this lit can be properly analyzed, so prepend it to the trail at this decision level.
 			return;
 		}
 
@@ -3961,7 +3996,7 @@ private:
 		if(compare.size()){
 			dbg_compares_sorted(bvID);
 			int pos = binary_search_Weight(compare,w);
-			if(comparisons[compare[pos]].w==w){
+			if(pos>=0 && pos < compare.size() && comparisons[compare[pos]].w==w){
 				//we found a comparison to the same bitvector. Now lets see if there is a comparison with the same operator to that bitvector
 				while(pos< compare.size() && comparisons[compare[pos]].w == w){
 					if( comparisons[compare[pos]].op()==op){
@@ -4092,7 +4127,7 @@ private:
 #endif
 		if(bvcompare.size()){
 			int pos = binary_search_CID(bvcompare,compareID);
-			if(comparisons[bvcompare[pos]].compareID==compareID){
+			if(pos>=0 && pos < bvcompare.size() && comparisons[bvcompare[pos]].compareID==compareID){
 				//we found a comparison to the same bitvector. Now lets see if there is a comparison with the same operator to that bitvector
 				while(pos< bvcompare.size() && comparisons[bvcompare[pos]].compareID == compareID){
 					if( comparisons[bvcompare[pos]].op()==op){
