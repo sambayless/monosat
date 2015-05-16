@@ -386,18 +386,6 @@ void Solver::cancelUntil(int lev) {
 		trail.shrink(trail.size() - trail_lim[lev]);
 		trail_lim.shrink(trail_lim.size() - lev);
 
-		int j=0;
-		for(int i = 0;i<pre_level_trail.size();i++){
-			Lit l = pre_level_trail[i];
-			if(value(l)==l_Undef){
-				//this was unassigned, so remove it
-
-			}else{
-				pre_level_trail[j++]=l;
-			}
-		}
-		pre_level_trail.shrink(pre_level_trail.size()-j);
-
 		//remove any lits from the lazy heap that are now unassigned.
 /*		while(lazy_heap.size() && value(toLit( lazy_heap.peakMin())) == l_Undef ){
 			lazy_heap.pop();
@@ -460,11 +448,29 @@ Lit Solver::pickBranchLit() {
 	return next == var_Undef ? lit_Undef : mkLit(next, rnd_pol ? drand(random_seed) < 0.5 : polarity[next]);
 }
 
+void Solver::instantiateLazyDecision(Lit p,int atLevel, CRef reason){
+	assert(value(p) == l_Undef);
+	assigns[var(p)] = lbool(!sign(p));
+	vardata[var(p)] = mkVarData(reason, atLevel);
+	assert(atLevel<=decisionLevel());
+	assert(atLevel>0);
+	int trail_pos = trail_lim[atLevel-1];
+	Lit curDec = trail[trail_pos];
+	if(curDec==p)//this lit was already the decision at this level
+		return;
+	assert(curDec==theoryDecision);
+	if(curDec!=theoryDecision){
+		exit(3);
+	}
+	trail[trail_pos]=p;
 
-void Solver::prependToTrail(Lit l, int atLevel){
-	pre_level_trail.push(l);
-	enqueueLazy(l,atLevel);
+	if (hasTheory(p)) {
+		int theoryID = getTheoryID(p);
+		needsPropagation(theoryID);
+		theories[theoryID]->enqueueTheory(getTheoryLit(p));
+	}
 }
+
 
 /*_________________________________________________________________________________________________
  |
@@ -511,7 +517,6 @@ void Solver::analyze(CRef confl, vec<Lit>& out_learnt, int& out_btlevel) {
 	cancelUntil(maxlev);//use of lazily enqueued literals can trigger conflicts at earlier decision levels
 	// Generate conflict clause:
 	//
-	bool searching_pre_trail=false;
 	bool possibly_missed_1uip=false;
 	to_analyze.clear();
 	out_learnt.push();      // (leave room for the asserting literal)
@@ -527,9 +532,8 @@ void Solver::analyze(CRef confl, vec<Lit>& out_learnt, int& out_btlevel) {
 			
 			for (int j = (p == lit_Undef) ? 0 : 1; j < c.size(); j++) {
 				Lit q = c[j];
-				
 				if (!seen[var(q)] && level(var(q)) > 0) {
-					assert(value(q)==l_False);
+					assert(value(q)==l_False);assert(var(q)!=var(theoryDecision));
 					varBumpActivity(var(q));
 					seen[var(q)] = 1;
 					if (level(var(q)) >= decisionLevel())
@@ -544,22 +548,12 @@ void Solver::analyze(CRef confl, vec<Lit>& out_learnt, int& out_btlevel) {
 		bool searching=true;
 		while(searching){
 			searching=false;
-			if(index<stop && pre_level_trail.size()){
-				searching_pre_trail=true;
-				index = pre_level_trail.size()-1;
-			}
-			if(!searching_pre_trail){
-				// Select next clause to look at:
-				while (index>= stop && (!seen[var(trail[index--])] || (level(var(trail[index+1]))<decisionLevel())));
 
-				assert(index >= -1);
-				p = trail[index + 1];
-			}else{
-				while ((!seen[var(pre_level_trail[index--])] || (level(var(pre_level_trail[index+1]))<decisionLevel())));
-				assert(index >= -1);
-				p = pre_level_trail[index + 1];
-			}
-
+			// Select next clause to look at:
+			while (index>= stop && (!seen[var(trail[index--])] || (level(var(trail[index+1]))<decisionLevel())));
+			assert(index >= -1);
+			p = trail[index + 1];
+			assert(var(p)!=var(theoryDecision));
 			confl = reason(var(p));
 			int was_at_level = level(var(p));
 			if (isTheoryCause(confl)) {
@@ -587,7 +581,7 @@ void Solver::analyze(CRef confl, vec<Lit>& out_learnt, int& out_btlevel) {
 		
 	} while (pathC > 0);
 	out_learnt[0] = ~p;
-
+	assert(var(p)!=var(theoryDecision));
 
 	if(possibly_missed_1uip){
 		//because of literals that were enqueued lazily, at the wrong level, and only discovered during lazy reason construction,
@@ -659,8 +653,10 @@ void Solver::analyze(CRef confl, vec<Lit>& out_learnt, int& out_btlevel) {
 		out_btlevel = level(var(p));
 	}
 #ifndef NDEBUG
-	for (Lit p : out_learnt)
+	for (Lit p : out_learnt){
+		assert(var(p)!=var(theoryDecision));
 		assert(value(p)==l_False);
+	}
 #endif
 
 	for (int j = 0; j < analyze_toclear.size(); j++)
@@ -752,9 +748,7 @@ void Solver::analyzeFinal(Lit p, vec<Lit>& out_conflict) {
 }
 
 void Solver::enqueueLazy(Lit p, int lev, CRef from){
-	if(var(p)==392932){
-		int a=1;
-	}
+
 	assert(value(p)!=l_False);
 	if(value(p)==l_True && lev < level(var(p))){
 		//then the lit was already implied, but needs to be (lazily) moved to an earlier level.
@@ -1325,6 +1319,7 @@ void Solver::addClauseSafely(vec<Lit> & ps) {
 		Lit p;
 		int i, j;
 		for (i = j = 0, p = lit_Undef; i < ps.size(); i++){
+			assert(var(ps[i])!=var(theoryDecision));
 			if (((value(ps[i]) == l_True && level(var(ps[i])) == 0)) || ps[i] == ~p)
 				return;
 			else if ((value(ps[i]) != l_False || level(var(ps[i])) != 0) && ps[i] != p){
@@ -1431,12 +1426,14 @@ bool Solver::addConflictClause(vec<Lit> & ps, CRef & confl_out, bool permanent) 
 	Lit p;
 	int i, j;
 	for (i = j = 0, p = lit_Undef; i < ps.size(); i++){
+		assert(var(ps[i])!=var(theoryDecision));
 		if(decisionLevel()>0 && value(ps[i])==l_Undef)
 			any_undef=true;
 		if (((value(ps[i]) == l_True && level(var(ps[i])) == 0)) || ps[i] == ~p)
 			return true;
 		else if ((value(ps[i]) != l_False || level(var(ps[i])) != 0) && ps[i] != p)
 			ps[j++] = p = ps[i];
+
 	}
 	ps.shrink(i - j);
 /*	if(any_undef){
@@ -1731,7 +1728,9 @@ lbool Solver::search(int nof_conflicts) {
 				for (int i = 0; i < decidable_theories.size() && next == lit_Undef; i++) {
 					
 					next = decidable_theories[i]->decideTheory();
-					
+					if(theoryDecision !=lit_Undef && var(next)==var(theoryDecision)){
+						assigns[var(theoryDecision)]=l_Undef;
+					}
 				}
 			}
 			
@@ -1767,8 +1766,9 @@ lbool Solver::search(int nof_conflicts) {
 			//last_dec = var(next);
 			// Increase decision level and enqueue 'next'
 			assert(next!=lit_Undef);
-			if(next!=lit_Error)//lit_Error is used to signify a decision that has no literal in the SAT solver (some theories may support this)
-				enqueue(next);//not unchecked enqueue, because a theory solver _may_ have assigned this literal while making a decision
+			//if(next!=lit_Error)//lit_Error is used to signify a decision that has no literal in the SAT solver (some theories may support this)
+
+			enqueue(next);//not unchecked enqueue, because a theory solver _may_ have assigned this literal while making a decision
 		}
 	}
 	//Unreachable

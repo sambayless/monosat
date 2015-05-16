@@ -361,7 +361,7 @@ public:
 	// 
 	void setPolarity(Var v, bool b); // Declare which polarity the decision heuristic should use for a variable. Requires mode 'polarity_user'.
 	void setDecisionVar(Var v, bool b); // Declare if a variable should be eligible for selection in the decision heuristic.
-	void prependToTrail(Lit l, int atLevel);
+
 	// Read state:
 	//
 	lbool value(Var x) const;       // The current value of a variable.
@@ -397,7 +397,7 @@ public:
 								// this vector represent the final conflict clause expressed in the assumptions.
 	vec<vec<Lit> > interpolant; //This vector represents an interpolant between this module and its super solver ('S'), if it is attached to such a solver and the instance is UNSAT.
 								// Variables in each clause in the interpolant vector are in the super solver's variable space, not the subsolver's.
-	
+	Lit theoryDecision = lit_Undef;
 	vec<Lit> theory_reason;
 	vec<Lit> theory_conflict;
 	vec<Theory*> theories;
@@ -563,7 +563,6 @@ protected:
 	vec<char> decision;         // Declares if a variable is eligible for selection in the decision heuristic.
 	vec<int> priority;		  // Static, lexicographic heuristic
 	vec<TheoryData> theory_vars;
-	vec<Lit> pre_level_trail;
 	vec<Lit> to_analyze;
 	vec<Lit> to_reenqueue;
 	vec<Lit> trail;            // Assignment stack; stores all assigments made in the order they were made.
@@ -605,6 +604,13 @@ protected:
 	void insertVarOrder(Var x);                               // Insert a variable in the decision order priority queue.
 	Lit pickBranchLit();                                                      // Return the next decision variable.
 public:
+	void instantiateLazyDecision(Lit l, int atLevel, CRef reason);
+	Lit theoryDecisionLit(int theoryID){
+		if(theoryDecision==lit_Undef){
+			theoryDecision = mkLit(newVar(true,false));
+		}
+		return theoryDecision;
+	}
 	void newDecisionLevel();                                                      // Begins a new decision level.
 	void uncheckedEnqueue(Lit p, CRef from = CRef_Undef);   // Enqueue a literal. Assumes value of literal is undefined.
 	bool enqueue(Lit p, CRef from = CRef_Undef);       // Test if fact 'p' contradicts current state, enqueue otherwise.

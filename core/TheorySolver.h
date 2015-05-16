@@ -40,10 +40,12 @@ public:
 		return isConstant(var(l));
 	}
 	virtual void needsPropagation(int theoryID)=0;
-
-	virtual void prependToTrail(Lit solverLit, int atLevel){
+	virtual void instantiateLazyDecision(Lit l,int atLevel, CRef reason=CRef_Undef){
 
 	}
+	/*virtual void prependToTrail(Lit solverLit, int atLevel){
+
+	}*/
 	//Set whether a variable can be a chosen as a decision in the SAT solver or not
 	virtual void setDecisionVar(Var solverVar, bool decidable)=0;
 	virtual Var newTheoryVar(Var solverVar, int theoryID, Var theoryVar)=0;
@@ -57,6 +59,9 @@ public:
 	virtual bool addConflictClause(vec<Lit> & ps, CRef & confl_out, bool permanent)=0;
 	virtual int level(Var v)const=0;
 	virtual int decisionLevel()const=0;
+	virtual Lit theoryDecisionLit(int theoryID){
+		return mkLit(newVar(true,false));
+	}
 };
 }
 ;

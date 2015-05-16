@@ -1070,10 +1070,12 @@ public:
 
 				Lit d=lit_Undef;
 				if((d = getComparison(op, bvID, to))!=lit_Undef){
+					printf("theory decision %d at level %d\n", dimacs(toSolver(d)),decisionLevel());
 					return toSolver(d);
 				}else{
-					return lit_Error;//for now, using lit_Error to signify a decision with no associated literal... is there a better option for this?
-
+					Lit l = S->theoryDecisionLit(getTheoryIndex());//for now, using lit_Error to signify a decision with no associated literal... is there a better option for this?
+					printf("theory decision %d at level %d\n", dimacs(l),decisionLevel());
+					return l;
 				}
 			}else{
 				under_causes[bvID]=under_cause_old;
@@ -1911,7 +1913,9 @@ public:
 			int eqID = eq_bitvectors[bvID];
 			under=under_approx[eqID];
 			over=over_approx[eqID];
-
+			assert(over_approx[bvID]==over);
+			assert(under_approx[bvID]==under);
+			return true;
 		}else{
 
 			for(int i = 0;i<bv.size();i++){
@@ -2189,7 +2193,13 @@ public:
 			Cause prev_under_cause = over_causes[bvID];
 			Cause prev_over_cause = over_causes[bvID];
 			bool changed = updateApproximations(bvID);
-
+			changed|= under_causes[bvID].cause_is_decision;
+			changed|= over_causes[bvID].cause_is_decision;//force propagation if a decision was made.
+		/*	if(!changed && decisionLevel()>0){
+				altered_bvs.pop(); //this isn't safe to do, because recently enforced comparisons need to be proapgated, even if the under/over approx didn't change.
+				alteredBV[bvID]=false;
+				continue;
+			}*/
 			Weight & underApprox = under_approx[bvID];
 			Weight & overApprox = over_approx[bvID];
 			printf("iter %d, bv %d, under ",realprops , bvID); //: %d, over %d\n", bvID, underApprox,overApprox);
@@ -2927,23 +2937,22 @@ public:
 			int lev = over_causes[bvID].index;
 			assert(lev>=0);
 			assert(lev<=decisionLevel());
-			Lit reason = newComparison(op,bvID, to,var_Undef,opt_cmp_lits_decidable);
-
+			Lit reason = newComparison(Comparison::leq,bvID, over_cur,var_Undef,opt_cmp_lits_decidable);
 			assert(value(reason)!=l_False);
 			conflict.push(~reason);
 
-			S->prependToTrail(toSolver(reason),lev);//this is a decision that was made, without a corresponding literal in the solver at the time it was made.
+			//S->prependToTrail(toSolver(reason),lev);//this is a decision that was made, without a corresponding literal in the solver at the time it was made.
 			//need to ensure that this lit can be properly analyzed, so prepend it to the trail at this decision level.
 			return;
 		}else if (!compare_over &&  under_causes[bvID].cause_is_decision){
 			int lev = under_causes[bvID].index;
 			assert(lev>=0);
 			assert(lev<=decisionLevel());
-			Lit reason = newComparison(op,bvID, to,var_Undef,opt_cmp_lits_decidable);
+			Lit reason = newComparison(Comparison::geq,bvID, under_cur,var_Undef,opt_cmp_lits_decidable);
 			assert(value(reason)!=l_False);
 			conflict.push(~reason);
 
-			S->prependToTrail(toSolver(reason),lev);//this is a decision that was made, without a corresponding literal in the solver at the time it was made.
+			//S->prependToTrail(toSolver(reason),lev);//this is a decision that was made, without a corresponding literal in the solver at the time it was made.
 			//need to ensure that this lit can be properly analyzed, so prepend it to the trail at this decision level.
 			return;
 		}
@@ -3975,9 +3984,13 @@ private:
 	Lit getComparison(Comparison op, int bvID,const Weight & w){
 		//could do a binary search here:
 		int cID = getComparisonID(op,bvID,w);
-		if(cID<0)
-			return lit_Undef;
-		else
+		if(cID<0){
+			cID = getComparisonID(-op,bvID,w);//this can be improved upon...
+			if(cID<0)
+				return lit_Undef;
+			else
+				return ~comparisons[cID].l;
+		}else
 			return comparisons[cID].l;
 	}
 	int getComparisonID(Comparison op, int bvID,const Weight & w){
@@ -4150,6 +4163,18 @@ public:
 		}
 		while(eq_bitvectors[bvID]!=bvID)
 			bvID=eq_bitvectors[bvID];
+
+		if( outerVar == var_Undef){
+			//canonicalize the comparison operator to <=
+			if(op==Comparison::gt){
+				return ~newComparison(Comparison::leq, bvID,to, outerVar, decidable);
+			}else if (op == Comparison::geq){
+				return ~newComparison(Comparison::leq, bvID,to-1, outerVar, decidable);
+			}else if (op == Comparison::lt){
+				return newComparison(Comparison::leq, bvID,to-1, outerVar, decidable);
+			}
+		}
+
 		int comparisonID = comparisons.size();
 		if(comparisonID==8){
 			int a=1;
@@ -4213,101 +4238,175 @@ public:
 		Weight & overApprox = over_approx[bvID];
 		Cause  prev_under_cause = under_causes[bvID];
 		Cause  prev_over_cause = over_causes[bvID];
-		switch (op){
-			case Comparison::lt:
-				if (overApprox<to){
-					if(value(l)==l_True){
-						//do nothing
-					}else if (value(l)==l_False){
-						assert(false);//this should not happen!
-					}else {
-						assert(value(l)==l_Undef);
+		{
 
-						enqueueEager(l,bvID,underApprox,overApprox,prev_under_cause,prev_over_cause, comparisonprop_marker);
+			switch (op){
+				case Comparison::lt:
+					if (overApprox<to){
+						if(value(l)==l_True){
+							//do nothing
+						}else if (value(l)==l_False){
+							assert(false);//this should not happen!
+						}else {
+							assert(value(l)==l_Undef);
+							if (over_causes[bvID].cause_is_decision && overApprox==to-1 ){
+
+								int lev = over_causes[bvID].index;
+										assert(lev>=0);
+										assert(lev<=decisionLevel());
+								if(S->value(toSolver(l))==l_Undef)
+									S->instantiateLazyDecision(toSolver(l),lev);
+							}else{
+								enqueue(l,comparisonprop_marker);
+							}
+
+							//enqueueEager(l,bvID,underApprox,overApprox,prev_under_cause,prev_over_cause, comparisonprop_marker);
+						}
 					}
-				}
 
-				if (underApprox>=to){
-					if(value(l)==l_True){
-						assert(false);
-					}else if (value(l)==l_False){
-						//do nothing
-					}else {
-						assert(value(l)==l_Undef);
-						enqueueEager(~l,bvID,underApprox,overApprox,prev_under_cause,prev_over_cause, comparisonprop_marker);
+					if (underApprox>=to){
+						if(value(l)==l_True){
+							assert(false);
+						}else if (value(l)==l_False){
+							//do nothing
+						}else {
+							assert(value(l)==l_Undef);
+							//enqueueEager(~l,bvID,underApprox,overApprox,prev_under_cause,prev_over_cause, comparisonprop_marker);
+
+							if (under_causes[bvID].cause_is_decision && underApprox==to ){
+								int lev = under_causes[bvID].index;
+								assert(lev>=0);
+								assert(lev<=decisionLevel());
+								if(S->value(toSolver(l))==l_Undef)
+									S->instantiateLazyDecision(toSolver(~l),lev);
+							}else
+								enqueue(~l,comparisonprop_marker);
+						}
 					}
-				}
-				break;
-			case Comparison::leq:
-				if (overApprox<=to){
-					if(value(l)==l_True){
-						//do nothing
-					}else if (value(l)==l_False){
-						assert(false);//this should not happen!
-					}else {
-						assert(value(l)==l_Undef);
-						enqueueEager(l,bvID,underApprox,overApprox,prev_under_cause,prev_over_cause, comparisonprop_marker);
+					break;
+				case Comparison::leq:
+					if (overApprox<=to){
+						if(value(l)==l_True){
+							//do nothing
+						}else if (value(l)==l_False){
+							assert(false);//this should not happen!
+						}else {
+							assert(value(l)==l_Undef);
+							//enqueueEager(l,bvID,underApprox,overApprox,prev_under_cause,prev_over_cause, comparisonprop_marker);
+							//if this was a decision
+							if (over_causes[bvID].cause_is_decision && overApprox==to ){
+								int lev = over_causes[bvID].index;
+								assert(lev>=0);
+								assert(lev<=decisionLevel());
+								if(S->value(toSolver(l))==l_Undef)
+									S->instantiateLazyDecision(toSolver(l),lev);
+							}else
+								enqueue(l,comparisonprop_marker);
+						}
 					}
-				}
 
-				if (underApprox>to){
-					if(value(l)==l_True){
-						assert(false);
-					}else if (value(l)==l_False){
-						//do nothing
-					}else {
-						assert(value(l)==l_Undef);
-						enqueueEager(~l,bvID,underApprox,overApprox,prev_under_cause,prev_over_cause, comparisonprop_marker);
+					if (underApprox>to){
+						if(value(l)==l_True){
+							assert(false);
+						}else if (value(l)==l_False){
+							//do nothing
+						}else {
+							assert(value(l)==l_Undef);
+							//enqueueEager(~l,bvID,underApprox,overApprox,prev_under_cause,prev_over_cause, comparisonprop_marker);
+							if (under_causes[bvID].cause_is_decision && underApprox==to+1 ){
+								int lev = under_causes[bvID].index;
+								assert(lev>=0);
+								assert(lev<=decisionLevel());
+								if(S->value(toSolver(l))==l_Undef)
+									S->instantiateLazyDecision(toSolver(~l),lev);
+							}else
+								enqueue(~l,comparisonprop_marker);
+
+						}
 					}
-				}
-				break;
-			case Comparison::gt:
-				if (overApprox<=to){
-					if(value(l)==l_True){
-						assert(false);
-					}else if (value(l)==l_False){
+					break;
+				case Comparison::gt:
+					if (overApprox<=to){
+						if(value(l)==l_True){
+							assert(false);
+						}else if (value(l)==l_False){
 
-					}else {
-						assert(value(l)==l_Undef);
-						enqueueEager(~l,bvID,underApprox,overApprox,prev_under_cause,prev_over_cause, comparisonprop_marker);
+						}else {
+							assert(value(l)==l_Undef);
+							//enqueueEager(~l,bvID,underApprox,overApprox,prev_under_cause,prev_over_cause, comparisonprop_marker);
+							if (over_causes[bvID].cause_is_decision && overApprox==to ){
+								int lev = over_causes[bvID].index;
+								assert(lev>=0);
+								assert(lev<=decisionLevel());
+								if(S->value(toSolver(l))==l_Undef)
+									S->instantiateLazyDecision(toSolver(~l),lev);
+							}else
+								enqueue(~l,comparisonprop_marker);
+						}
 					}
-				}
 
-				if (underApprox>to){
-					if(value(l)==l_True){
+					if (underApprox>to){
+						if(value(l)==l_True){
 
-					}else if (value(l)==l_False){
-						assert(false);
-					}else {
-						assert(value(l)==l_Undef);
-						enqueueEager(l,bvID,underApprox,overApprox,prev_under_cause,prev_over_cause, comparisonprop_marker);
+						}else if (value(l)==l_False){
+							assert(false);
+						}else {
+							assert(value(l)==l_Undef);
+							//enqueueEager(l,bvID,underApprox,overApprox,prev_under_cause,prev_over_cause, comparisonprop_marker);
+							if (under_causes[bvID].cause_is_decision && underApprox==to+1 ){
+								int lev = under_causes[bvID].index;
+								assert(lev>=0);
+								assert(lev<=decisionLevel());
+								if(S->value(toSolver(l))==l_Undef)
+									S->instantiateLazyDecision(toSolver(l),lev);
+							}else
+								enqueue(l,comparisonprop_marker);
+
+						}
 					}
-				}
-				break;
-			case Comparison::geq:
-			default:
-				if (overApprox<to){
-					if(value(l)==l_True){
-						assert(false);
-					}else if (value(l)==l_False){
+					break;
+				case Comparison::geq:
+				default:
+					if (overApprox<to){
+						if(value(l)==l_True){
+							assert(false);
+						}else if (value(l)==l_False){
 
-					}else {
-						assert(value(l)==l_Undef);
-						enqueueEager(~l,bvID,underApprox,overApprox,prev_under_cause,prev_over_cause, comparisonprop_marker);
+						}else {
+							assert(value(l)==l_Undef);
+							//enqueueEager(~l,bvID,underApprox,overApprox,prev_under_cause,prev_over_cause, comparisonprop_marker);
+
+							if (over_causes[bvID].cause_is_decision && overApprox==to-1 ){
+								int lev = over_causes[bvID].index;
+								assert(lev>=0);
+								assert(lev<=decisionLevel());
+								if(S->value(toSolver(l))==l_Undef)
+									S->instantiateLazyDecision(toSolver(~l),lev);
+							}else
+								enqueue(~l,comparisonprop_marker);
+						}
 					}
-				}
 
-				if (underApprox>=to){
-					if(value(l)==l_True){
+					if (underApprox>=to){
+						if(value(l)==l_True){
 
-					}else if (value(l)==l_False){
-						assert(false);
-					}else {
-						assert(value(l)==l_Undef);
-						enqueueEager(l,bvID,underApprox,overApprox,prev_under_cause,prev_over_cause, comparisonprop_marker);
+						}else if (value(l)==l_False){
+							assert(false);
+						}else {
+							assert(value(l)==l_Undef);
+							//enqueueEager(l,bvID,underApprox,overApprox,prev_under_cause,prev_over_cause, comparisonprop_marker);
+							if (under_causes[bvID].cause_is_decision && underApprox==to ){
+								int lev = under_causes[bvID].index;
+								assert(lev>=0);
+								assert(lev<=decisionLevel());
+								if(S->value(toSolver(l))==l_Undef)
+									S->instantiateLazyDecision(toSolver(l),lev);
+							}else
+								enqueue(l,comparisonprop_marker);
+						}
 					}
-				}
-				break;
+					break;
+			}
 		}
 		return l;
 	}
