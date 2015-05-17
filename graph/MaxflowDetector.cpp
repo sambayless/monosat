@@ -519,13 +519,14 @@ void MaxflowDetector<Weight>::buildMaxFlowTooLowReason(Weight maxflow, vec<Lit> 
 					assert(learn_graph.getWeight(edgeid)==0x0FF0F0);
 				}else{
 					assert(learn_graph.edgeEnabled(edgeid) == ((level0capacity-capacity)>0));
-					assert(learn_graph.getWeight(edgeid)==level0capacity-capacity);
+					assert(learn_graph.getWeight(edgeid)==(((level0capacity-capacity) > 0) ? 1:0));
 				}
 			}else{
 				//flow is 0.
 				assert(!learn_graph.edgeEnabled(back_edges[edgeid]));
 				assert(learn_graph.getWeight(back_edges[edgeid])==0);//capacity of this edge in the backward direction is the same as the forward flow, which is 0.
-				assert(learn_graph.getWeight(edgeid)== (outer->hasBitVector(edgeid)?	 outer->getEdgeBV(edgeid).getOver(true):outer->edge_weights[edgeid]));
+				Weight w = (outer->hasBitVector(edgeid)?	 outer->getEdgeBV(edgeid).getOver(true):outer->edge_weights[edgeid]);
+				assert(learn_graph.getWeight(edgeid)==(w>0?1:0));
 
 			}
 
@@ -952,6 +953,7 @@ bool MaxflowDetector<Weight>::propagate(vec<Lit> & conflict, bool backtrackOnly,
 }
 template<typename Weight>
 bool MaxflowDetector<Weight>::checkSatisfied() {
+	g_under.drawFull(true);
 	EdmondsKarpAdj<Weight> underCheck(g_under, source, target);
 	EdmondsKarpAdj<Weight> overCheck(g_over, source, target);
 	for (int j = 0; j < flow_lits.size(); j++) {
@@ -1098,7 +1100,7 @@ void MaxflowDetector<Weight>::collectDisabledEdges() {
 						learn_graph.setEdgeWeight(edgeid,0x0FF0F0);
 						learn_graph.enableEdge(edgeid);
 					}else{
-						learn_graph.setEdgeWeight(edgeid,level0capacity-capacity);
+						learn_graph.setEdgeWeight(edgeid,(level0capacity-capacity > 0) ? 1:0);
 						if(learn_graph.getWeight(edgeid)>0){
 							learn_graph.enableEdge(edgeid);
 						}else{
@@ -1108,8 +1110,8 @@ void MaxflowDetector<Weight>::collectDisabledEdges() {
 				}else{
 					//flow is 0.
 					learn_graph.setEdgeWeight(back_edges[edgeid],0);//capacity of this edge in the backward direction is the same as the forward flow, which is 0.
-					learn_graph.setEdgeWeight(edgeid, outer->hasBitVector(edgeid)?	 outer->getEdgeBV(edgeid).getOver(true):outer->edge_weights[edgeid]);
-
+					Weight w =outer->hasBitVector(edgeid)?	 outer->getEdgeBV(edgeid).getOver(true):outer->edge_weights[edgeid];
+					learn_graph.setEdgeWeight(edgeid,  (w>0) ? 1:0 );
 					learn_graph.disableEdge(back_edges[edgeid]);
 					if(learn_graph.getWeight(edgeid)>0){
 						learn_graph.enableEdge(edgeid);
@@ -1141,7 +1143,7 @@ void MaxflowDetector<Weight>::collectDisabledEdges() {
 						learn_graph.setEdgeWeight(edgeid,0x0FF0F0);
 						learn_graph.enableEdge(edgeid);
 					}else{
-						learn_graph.setEdgeWeight(edgeid,level0capacity-capacity);
+						learn_graph.setEdgeWeight(edgeid,(level0capacity-capacity > 0) ? 1:0);
 						if(learn_graph.getWeight(edgeid)>0){
 							learn_graph.enableEdge(edgeid);
 						}else{
@@ -1151,7 +1153,8 @@ void MaxflowDetector<Weight>::collectDisabledEdges() {
 				}else{
 					//flow is 0.
 					learn_graph.setEdgeWeight(back_edges[edgeid],0);//capacity of this edge in the backward direction is the same as the forward flow, which is 0.
-					learn_graph.setEdgeWeight(edgeid, outer->hasBitVector(edgeid)?	 outer->getEdgeBV(edgeid).getOver(true):outer->edge_weights[edgeid]);
+					Weight w =outer->hasBitVector(edgeid)?	 outer->getEdgeBV(edgeid).getOver(true):outer->edge_weights[edgeid];
+					learn_graph.setEdgeWeight(edgeid,  (w>0) ? 1:0 );
 
 					learn_graph.disableEdge(back_edges[edgeid]);
 					if(learn_graph.getWeight(edgeid)>0){
@@ -1255,7 +1258,7 @@ void MaxflowDetector<Weight>::collectChangedEdges() {
 					learn_graph.setEdgeWeight(edgeid,0x0FF0F0);
 					learn_graph.enableEdge(edgeid);
 				}else{
-					learn_graph.setEdgeWeight(edgeid,level0capacity-capacity);
+					learn_graph.setEdgeWeight(edgeid,(level0capacity-capacity > 0) ? 1:0);
 					if(learn_graph.getWeight(edgeid)>0){
 						learn_graph.enableEdge(edgeid);
 					}else{
@@ -1265,7 +1268,8 @@ void MaxflowDetector<Weight>::collectChangedEdges() {
 			}else{
 				//flow is 0.
 				learn_graph.setEdgeWeight(back_edges[edgeid],0);//capacity of this edge in the backward direction is the same as the forward flow, which is 0.
-				learn_graph.setEdgeWeight(edgeid, outer->hasBitVector(edgeid)?	 outer->getEdgeBV(edgeid).getOver(true):outer->edge_weights[edgeid]);
+				Weight w =outer->hasBitVector(edgeid)?	 outer->getEdgeBV(edgeid).getOver(true):outer->edge_weights[edgeid];
+				learn_graph.setEdgeWeight(edgeid,  (w>0) ? 1:0 );
 
 				learn_graph.disableEdge(back_edges[edgeid]);
 				if(learn_graph.getWeight(edgeid)>0){

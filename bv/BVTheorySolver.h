@@ -915,10 +915,10 @@ public:
 					over_approx[bvID]=e.previous_over;
 					under_causes[bvID]=e.prev_under_cause;
 					over_causes[bvID]=e.prev_over_cause;
-					printf("backtrack bv %d, under ", bvID);
+					/*printf("backtrack bv %d, under ", bvID);
 					std::cout<<e.previous_under << " over ";
 					std::cout<<e.previous_over << "\n";
-					fflush(stdout);
+					fflush(stdout);*/
 
 					if(hasTheory(bvID))
 						getTheory(bvID)->backtrackBV(bvID);//only enqueue the bitvector in the subtheory _after_ it's approximation has been updated!
@@ -1070,11 +1070,11 @@ public:
 
 				Lit d=lit_Undef;
 				if((d = getComparison(op, bvID, to))!=lit_Undef){
-					printf("theory decision %d at level %d\n", dimacs(toSolver(d)),decisionLevel());
+					//printf("theory decision %d at level %d\n", dimacs(toSolver(d)),decisionLevel());
 					return toSolver(d);
 				}else{
 					Lit l = S->theoryDecisionLit(getTheoryIndex());//for now, using lit_Error to signify a decision with no associated literal... is there a better option for this?
-					printf("theory decision %d at level %d\n", dimacs(l),decisionLevel());
+					//printf("theory decision %d at level %d\n", dimacs(l),decisionLevel());
 					return l;
 				}
 			}else{
@@ -1238,7 +1238,7 @@ public:
 
 	void preprocess() {
 		if (const_true==lit_Undef){
-			const_true = mkLit(newVar(var_Undef, -1,-1, false));
+			const_true = mkLit(newVar());
 			addClause(const_true);
 		}
 	}
@@ -2202,10 +2202,10 @@ public:
 			}*/
 			Weight & underApprox = under_approx[bvID];
 			Weight & overApprox = over_approx[bvID];
-			printf("iter %d, bv %d, under ",realprops , bvID); //: %d, over %d\n", bvID, underApprox,overApprox);
+			/*printf("iter %d, bv %d, under ",realprops , bvID); //: %d, over %d\n", bvID, underApprox,overApprox);
 			std::cout<<underApprox << " over ";
 			std::cout<<overApprox << "\n";
-			fflush(stdout);
+			fflush(stdout);*/
 			vec<Lit> & bv = bitvectors[bvID];
 			Weight under =0;
 			Weight over=(1L<<bv.size())-1;
@@ -2275,12 +2275,12 @@ public:
 				}
 				new_change = updateApproximations(bvID);
 				changed|=new_change;
-				if(new_change){
+/*				if(new_change){
 					printf("iter %d, bv %d, under ",realprops , bvID); //: %d, over %d\n", bvID, underApprox,overApprox);
 						std::cout<<underApprox << " over ";
 						std::cout<<overApprox << "\n";
 						fflush(stdout);
-				}
+				}*/
 			}while(new_change);//the bit assignment updates above can force a more precise over or under approximation, which can in turn lead to further bit assignments (I think this can happen?).
 
 			for(int i = 0;i<additions[bvID].size();i++){
@@ -3628,6 +3628,9 @@ public:
 				eqBV=eq_bitvectors[eqBV];
 			}
 
+			if(over_approx[eqBV]!= under_approx[eqBV]){
+				return false;
+			}
 
 
 			vec<Lit> & bv = bitvectors[bvID];
@@ -3881,6 +3884,8 @@ public:
 
 		alteredBV[bvID]=true;
 		altered_bvs.push(bvID);
+		requiresPropagation=true;
+		S->needsPropagation(getTheoryIndex());
 		return BitVector(*this,bvID);
 	}
 
@@ -3944,7 +3949,7 @@ public:
 		if(equivalentBV<0){
 			if (constval>=0){
 				if (const_true==lit_Undef){
-					const_true = mkLit(newVar(var_Undef,-1, -1,false));
+					const_true = mkLit(newVar());
 					addClause(const_true);
 				}
 				bitvectors[bvID].growTo(bitwidth);
@@ -3969,7 +3974,8 @@ public:
 		}
 		alteredBV[bvID]=true;
 		altered_bvs.push(bvID);
-
+		requiresPropagation=true;
+		S->needsPropagation(getTheoryIndex());
 		return BitVector(*this,bvID);
 	}
 
