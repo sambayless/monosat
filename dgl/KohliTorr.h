@@ -527,8 +527,8 @@ private:
 		local_weights[edgeid]=w;
 
 		sum_of_edge_capacities+=w;
-		if(sum_of_edge_capacities<=0){
-			sum_of_edge_capacities=std::numeric_limits<Weight>::max();
+		if(sum_of_edge_capacities<0){//this is a total hack... how should overflows be dealt with, properly, here?
+			sum_of_edge_capacities=std::numeric_limits<Weight>::max()/2;
 		}
 	}
 	inline void collect_multi_edges(int for_edge) {
@@ -642,7 +642,7 @@ private:
 	void dbg_check_flow(int s, int t) {
 #ifndef NDEBUG
 		//check that the flow is legal
-		for (int i = 0; i < g.edges(); i++) {
+	/*	for (int i = 0; i < g.edges(); i++) {
 			Weight flow = getEdgeFlow(i);
 			bassert(flow >= 0);
 			bassert(flow <= g.getWeight(i));
@@ -676,26 +676,26 @@ private:
 				bassert(excess==f);
 				//bassert(flow_in == 0);//this doesn't have to be the case - their can be spurious flow loops...
 				//bassert(flow_out == f);
-				/*}else{
+				}else{
 				 bassert(flow_in==0);
 				 bassert(flow_out==f);
-				 }*/
+				 }
 			} else if (n == t) {
 				//if(!backward_maxflow){
 				Weight excess = flow_in-flow_out;
 				bassert(excess==f);
 				//bassert(flow_out == 0);
 				//bassert(flow_in == f);
-				/*}else{
+				}else{
 				 bassert(flow_out==0);
 				 bassert(flow_in==f);
-				 }*/
+				 }
 			} else {
 				bassert(flow_in == flow_out);
 			}
 			
 		}
-		
+		*/
 #endif
 	}
 	
@@ -727,7 +727,7 @@ private:
 		dbg_check_flow(source, sink);
 		//}
 		
-		assert(kt->maxflow(true, nullptr) == maxflow);
+		//assert(kt->maxflow(true, nullptr) == maxflow);
 		//stats_calc_time+=  Monosat::rtime(0)-startcalctime;
 		//stats_flow_time+=  startcalctime-startflowtime;
 		//printf("flow calc time %f %f\n", stats_flow_time,stats_calc_time);
@@ -759,9 +759,11 @@ public:
 		//KT allows for all the nodes to be source or sink, if the cut is placed at the final source->'outer source' or 'outer sink' -> sink edge.
 		//Ideally, this shouldn't happen here, because those should have infinite weight edges.
 		if (kt->what_segment(s, SOURCE) == SINK) {
+			std::cerr<<"Error in mincut analysis, exiting\n";
 			exit(3);
 			return -1;
 		} else if (kt->what_segment(t, SOURCE) == SOURCE) {
+			std::cerr<<"Error in mincut analysis, exiting\n";
 			exit(3);
 			return -1;
 		}
@@ -832,6 +834,7 @@ public:
 		 }
 		 cut.resize(j);
 		 */
+/*
 #ifndef NDEBUG
 		Weight dbg_sum = 0;
 		for (int i = 0; i < cut.size(); i++) {
@@ -841,6 +844,7 @@ public:
 		}
 		bassert(dbg_sum == f);
 #endif
+*/
 		
 		return f;
 	}

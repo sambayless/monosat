@@ -228,11 +228,11 @@ public:
 		}
 		int previous(int node) {
 			assert(false);
-			exit(3); //not supported
+			exit(5); //not supported
 		}
 		int incomingEdge(int node) {
 			assert(false);
-			exit(3); //not supported
+			exit(5); //not supported
 		}
 		
 	};

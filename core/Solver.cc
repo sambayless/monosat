@@ -460,7 +460,7 @@ void Solver::instantiateLazyDecision(Lit p,int atLevel, CRef reason){
 		return;
 	assert(curDec==theoryDecision);
 	if(curDec!=theoryDecision){
-		exit(3);
+		exit(6);
 	}
 	trail[trail_pos]=p;
 

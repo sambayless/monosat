@@ -267,7 +267,7 @@ public:
 	vec<vec<int> > compares; //for each bitvector, comparisons are all to unique values, and in ascending order of compareTo.
 	vec<vec<int>> bvcompares;
 	vec<int> eq_bitvectors;//if a bv has been proven to be equivalent to another, lower index bv, put the lowest such index here.
-
+	vec<bool> bv_needs_propagation;
 	vec<bool> comparison_needs_repropagation;
 	vec<int> repropagate_comparisons;
 
@@ -528,6 +528,18 @@ public:
 		eq_bitvectors[bvID1]=bvID2;
 		cause_set[bvID2].push(bvID1);
 
+		bv_needs_propagation[bvID1]=true;
+		if(!alteredBV[bvID1]){
+			alteredBV[bvID1]=true;
+			altered_bvs.push(bvID1);
+		}
+
+		bv_needs_propagation[bvID2]=true;
+		if(!alteredBV[bvID2]){
+			alteredBV[bvID2]=true;
+			altered_bvs.push(bvID2);
+		}
+		requiresPropagation=true;
 		//merge the bitvector's causes.
 	}
 	bool hasBV(int bvID)const{
@@ -1058,6 +1070,8 @@ public:
 				assert(trail.last().previous_over == over_old);
 				assert(trail.last().previous_under == under_old);
 				analysis_trail_pos=trail.size()-1;
+
+				bv_needs_propagation[bvID]=true;
 				if(! alteredBV[bvID]){
 					alteredBV[bvID]=true;
 					altered_bvs.push(bvID);
@@ -1068,6 +1082,7 @@ public:
 					getTheory(bvID)->enqueueBV(bvID);//only enqueue the bitvector in the subtheory _after_ it's approximation has been updated!
 
 				requiresPropagation=true;
+
 				S->needsPropagation(getTheoryIndex());
 
 				Lit d=lit_Undef;
@@ -1320,6 +1335,7 @@ public:
 				if(trail.size()>10 && trail[10].bvID==2){
 								int a=1;
 							}
+				bv_needs_propagation[bvID]=true;
 				analysis_trail_pos=trail.size()-1;
 				//trail.push( { true, !sign(l),edgeID, v });
 				if(!alteredBV[bvID]){
@@ -2152,10 +2168,6 @@ public:
 	}*/
 
 	bool propagateTheory(vec<Lit> & conflict) {
-		return  propagateTheory(conflict, true);
-	}
-
-	bool propagateTheory(vec<Lit> & conflict, bool propagate) {
 		static int realprops = 0;
 		stats_propagations++;
 
@@ -2198,20 +2210,21 @@ public:
 			Cause prev_over_cause = over_causes[bvID];
 
 			bool changed = updateApproximations(bvID);
-			changed|= under_causes[bvID].cause_is_decision;
-			changed|= over_causes[bvID].cause_is_decision;//force propagation if a decision was made.
-		/*	if(!changed && decisionLevel()>0){
-				altered_bvs.pop(); //this isn't safe to do, because recently enforced comparisons need to be proapgated, even if the under/over approx didn't change.
+			changed |=bv_needs_propagation[bvID];
+			if(!changed){
+				altered_bvs.pop(); //this isn't safe to do, because recently enforced comparisons need to be propagated, even if the under/over approx didn't change.
 				alteredBV[bvID]=false;
 				continue;
-			}*/
+			}
+			bv_needs_propagation[bvID]=false;
+
 			Weight & underApprox = under_approx[bvID];
 			Weight & overApprox = over_approx[bvID];
 			stats_bv_propagations++;
-			/*printf("iter %d, bv %d, under ",realprops , bvID); //: %d, over %d\n", bvID, underApprox,overApprox);
+			printf("iter %d, bv %d, under ",realprops , bvID); //: %d, over %d\n", bvID, underApprox,overApprox);
 			std::cout<<underApprox << " over ";
 			std::cout<<overApprox << "\n";
-			fflush(stdout);*/
+			fflush(stdout);
 			vec<Lit> & bv = bitvectors[bvID];
 			Weight under =0;
 			Weight over=(1L<<bv.size())-1;
@@ -2267,25 +2280,23 @@ public:
 
 						}
 					}else{
-						if(propagate){
-							if(over-bit < underApprox){
-								enqueue(l, bvprop_marker);
-								under+=bit;
-							}else if (under+bit>overApprox){
-								enqueue(~l, bvprop_marker);
-								over-=bit;
-							}
+						if(over-bit < underApprox){
+							enqueue(l, bvprop_marker);
+							under+=bit;
+						}else if (under+bit>overApprox){
+							enqueue(~l, bvprop_marker);
+							over-=bit;
 						}
 					}
 				}
 				new_change = updateApproximations(bvID);
 				changed|=new_change;
-/*				if(new_change){
+				if(new_change){
 					printf("iter %d, bv %d, under ",realprops , bvID); //: %d, over %d\n", bvID, underApprox,overApprox);
 						std::cout<<underApprox << " over ";
 						std::cout<<overApprox << "\n";
 						fflush(stdout);
-				}*/
+				}
 			}while(new_change);//the bit assignment updates above can force a more precise over or under approximation, which can in turn lead to further bit assignments (I think this can happen?).
 
 			for(int i = 0;i<additions[bvID].size();i++){
@@ -2432,10 +2443,8 @@ public:
 						stats_conflict_time+=rtime(2)-startconftime;
 						return false;
 					}else {
-						if(propagate){
-							assert(value(l)==l_Undef);
-							enqueue(l,comparisonprop_marker);
-						}
+						assert(value(l)==l_Undef);
+						enqueue(l,comparisonprop_marker);
 					}
 				}else if((op==Comparison::gt && overApprox<=to) ||
 						(op==Comparison::geq && overApprox<to)){
@@ -2451,10 +2460,8 @@ public:
 					}else if (value(l)==l_False){
 
 					}else {
-						if(propagate){
-							assert(value(l)==l_Undef);
-							enqueue(~l, comparisonprop_marker);
-						}
+						assert(value(l)==l_Undef);
+						enqueue(~l, comparisonprop_marker);
 					}
 				}
 			}
@@ -2483,10 +2490,8 @@ public:
 						//do nothing
 
 					}else {
-						if(propagate){
-							assert(value(l)==l_Undef);
-							enqueue(~l, comparisonprop_marker);
-						}
+						assert(value(l)==l_Undef);
+						enqueue(~l, comparisonprop_marker);
 					}
 				}else if((op==Comparison::gt && underApprox>to) ||
 						(op==Comparison::geq && underApprox>=to)){
@@ -2502,10 +2507,8 @@ public:
 						stats_conflict_time+=rtime(2)-startconftime;
 						return false;
 					}else {
-						if(propagate){
-							assert(value(l)==l_Undef);
-							enqueue(l,comparisonprop_marker);
-						}
+						assert(value(l)==l_Undef);
+						enqueue(l,comparisonprop_marker);
 					}
 				}
 			}
@@ -2543,10 +2546,8 @@ public:
 						toSolver(conflict);
 						return false;
 					}*/else {
-						if(propagate){
-							assert(value(l)==l_Undef);
-							enqueue(l,comparisonprop_marker);
-						}
+						assert(value(l)==l_Undef);
+						enqueue(l,comparisonprop_marker);
 					}
 				}else if((op==Comparison::gt && overApprox<=under_compare) ||
 						(op==Comparison::geq && overApprox<under_compare)){
@@ -2562,10 +2563,8 @@ public:
 					}/*else if (value(l)==l_False){
 
 					}*/else {
-						if(propagate){
-							assert(value(l)==l_Undef);
-							enqueue(~l, comparisonprop_marker);
-						}
+						assert(value(l)==l_Undef);
+						enqueue(~l, comparisonprop_marker);
 					}
 				}
 				if(value(l)==l_True &&((op==Comparison::lt && underApprox>=under_compare) ||
@@ -2613,10 +2612,8 @@ public:
 						//do nothing
 
 					}*/else {
-						if(propagate){
-							assert(value(l)==l_Undef);
-							enqueue(~l, comparisonprop_marker);
-						}
+						assert(value(l)==l_Undef);
+						enqueue(~l, comparisonprop_marker);
 					}
 				}else if((op==Comparison::gt && underApprox>over_compare) ||
 						(op==Comparison::geq && underApprox>=over_compare)){
@@ -2629,10 +2626,8 @@ public:
 						toSolver(conflict);
 						return false;
 					}*/else {
-						if(propagate){
-							assert(value(l)==l_Undef);
-							enqueue(l, comparisonprop_marker);
-						}
+						assert(value(l)==l_Undef);
+						enqueue(l, comparisonprop_marker);
 					}
 				}
 				//we can also update the other bv's approximation, possibly:
@@ -2650,7 +2645,7 @@ public:
 				}
 
 			}
-			if(propagate && changed){
+			if(changed){
 				if(hasTheory(bvID))
 					getTheory(bvID)->enqueueBV(bvID);//only enqueue the bitvector in the subtheory _after_ it's approximation has been updated!
 			}
@@ -3839,6 +3834,23 @@ public:
 		if(!cause_set[bID].contains(resultID))
 			cause_set[bID].push(resultID);*/
 		//additions[resultID].w=0;
+
+		bv_needs_propagation[resultID]=true;
+		if(!alteredBV[resultID]){
+			alteredBV[resultID]=true;
+			altered_bvs.push(resultID);
+		}
+		bv_needs_propagation[aID]=true;
+		if(!alteredBV[aID]){
+			alteredBV[aID]=true;
+			altered_bvs.push(aID);
+		}
+		bv_needs_propagation[bID]=true;
+		if(!alteredBV[bID]){
+			alteredBV[bID]=true;
+			altered_bvs.push(bID);
+		}
+		requiresPropagation=true;
 		return getBV(resultID);
 	}
 
@@ -3877,6 +3889,7 @@ public:
 		cause_set.growTo(bvID+1);
 		eq_bitvectors.growTo(bvID+1,-1);
 		eq_bitvectors[bvID]=bvID;
+
 		//bv_callbacks.growTo(bvID+1);
 		if(under_approx[bvID]>-1){
 			assert(false);
@@ -3896,6 +3909,8 @@ public:
 			bitvectors[bvID].push(mkLit(newVar(vars[i],bvID)));
 		}
 
+		bv_needs_propagation.growTo(bvID+1);
+		bv_needs_propagation[bvID]=true;
 		alteredBV[bvID]=true;
 		altered_bvs.push(bvID);
 		requiresPropagation=true;
@@ -3950,6 +3965,8 @@ public:
 		eq_bitvectors.growTo(bvID+1,-1);
 		eq_bitvectors[bvID]=bvID;
 
+		bv_needs_propagation.growTo(bvID+1);
+		bv_needs_propagation[bvID]=true;
 		//bv_callbacks.growTo(bvID+1);
 		if(under_approx[bvID]>-1){
 			assert(false);
@@ -3986,6 +4003,9 @@ public:
 		}else{
 			bitvectors[equivalentBV].copyTo(bitvectors[bvID]);//is this really the right thing to do?
 		}
+
+		bv_needs_propagation.growTo(bvID+1);
+		bv_needs_propagation[bvID]=true;
 		alteredBV[bvID]=true;
 		altered_bvs.push(bvID);
 		requiresPropagation=true;
@@ -4246,6 +4266,8 @@ public:
 			comparison_needs_repropagation[comparisonID]=true;
 			repropagate_comparisons.push(comparisonID);
 		}
+
+		bv_needs_propagation[bvID]=true;
 		if(!alteredBV[bvID]){
 			alteredBV[bvID]=true;
 			altered_bvs.push(bvID);
@@ -4590,10 +4612,13 @@ public:
 		}
 
 
+		bv_needs_propagation[bvID]=true;
 		if(!alteredBV[bvID]){
 			alteredBV[bvID]=true;
 			altered_bvs.push(bvID);
 		}
+
+		bv_needs_propagation[toID]=true;
 		if(!alteredBV[toID]){
 			alteredBV[toID]=true;
 			altered_bvs.push(toID);
