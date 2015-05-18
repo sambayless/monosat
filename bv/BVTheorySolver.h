@@ -285,6 +285,19 @@ public:
 		int sumID=-1;
 	};
 
+	struct ToAnalyze{
+		int bvID;
+		int next_analysis;
+		Weight value;
+		void clear(){
+			bvID=-1;
+			next_analysis=-1;
+		}
+	};
+	vec<ToAnalyze> analyses;
+	vec<int> pending_over_analyses;
+	vec<int> pending_under_analyses;
+	int n_pending_analyses = 0;
 	vec<vec<Addition>> additions;//each bitvector is the result of at most one addition.
 	vec<vec<AdditionArg>> addition_arguments;
 	vec<Weight> under_approx0;//under approx at level 0
@@ -1178,7 +1191,7 @@ public:
 				if(sign(p)){
 					op=-op;
 				}
-				buildValueReason(op,bvID,comparisons[comparisonID].w,reason);
+				buildComparisonReason(op,bvID,comparisons[comparisonID].w,reason);
 			}else{
 				int compareBV = comparisons[comparisonID].compareID;
 				if(sign(p)){
@@ -1201,6 +1214,8 @@ public:
 			static int iterv =0;
 			++iterv;
 
+
+
 			assert(under_approx>=0); assert(overApprox>=0);
 			vec<Lit> & bv = bitvectors[bvID];
 
@@ -1214,30 +1229,12 @@ public:
 				}
 			}
 			Weight bit = 1<<bitpos;
-		/*	if(underApprox==0){
-				assert(overApprox<underApprox+bit);
-				overApprox=bit-1;
-			}
-			if(overApprox==(1L<<bv.size())-1){
-				assert(underApprox> overApprox-bit);
-				underApprox=(1L<<bv.size())-1 - bit+1;
-			}*/
+
 			assert(bitpos>=0);
-			if(!sign(p)){
-				//if this bit is true, then the reason is because the overapprox, minus this bit, would be less than the underapprox.
-				//hence either the underapprox must decrease, or the overapprox must increase.
 
-				buildValueReason(Comparison::leq,bvID,overApprox,reason);
-				buildValueReason(Comparison::geq,bvID,underApprox,reason);
-			}else{
-				//if this bit is false, then the reason is because the underapprox, plus this bit, would be greater than the overapprox.
-				//hence either the underapprox must decrease, or the overapprox must increase.
-				buildValueReason(Comparison::leq,bvID,overApprox,reason);
-				buildValueReason(Comparison::geq,bvID,underApprox,reason);
-			}
-
-
-
+			analyzeValueReason(Comparison::leq,bvID,overApprox,reason);
+			analyzeValueReason(Comparison::geq,bvID,underApprox,reason);
+			analyze(reason);
 		}  else {
 			assert(false);
 		}
@@ -2252,7 +2249,7 @@ public:
 								stats_num_conflicts++;stats_bit_conflicts++;
 
 
-								buildValueReason(Comparison::leq,bvID,overApprox,conflict);
+								buildComparisonReason(Comparison::leq,bvID,overApprox,conflict);
 								toSolver(conflict);
 								stats_conflict_time+=rtime(2)-startconftime;
 								return false;
@@ -2273,7 +2270,7 @@ public:
 									}
 								}
 								stats_num_conflicts++;stats_bit_conflicts++;
-								buildValueReason(Comparison::geq,bvID,underApprox,conflict);
+								buildComparisonReason(Comparison::geq,bvID,underApprox,conflict);
 								toSolver(conflict);
 								stats_conflict_time+=rtime(2)-startconftime;
 								return false;
@@ -2438,7 +2435,7 @@ public:
 						assert(value(l)==l_False);
 						assert(dbg_value(l)==l_False);
 						conflict.push(l);
-						buildValueReason(op,bvID,to,conflict);
+						buildComparisonReason(op,bvID,to,conflict);
 						toSolver(conflict);
 						stats_conflict_time+=rtime(2)-startconftime;
 						return false;
@@ -2453,7 +2450,7 @@ public:
 						propagationtime += startconftime - startproptime;
 						stats_num_conflicts++;stats_compare_conflicts++;
 						conflict.push(~l);
-						buildValueReason(-op,bvID,to,conflict);
+						buildComparisonReason(-op,bvID,to,conflict);
 						toSolver(conflict);
 						stats_conflict_time+=rtime(2)-startconftime;
 						return false;
@@ -2482,7 +2479,7 @@ public:
 						propagationtime += startconftime - startproptime;
 						stats_num_conflicts++;stats_compare_conflicts++;
 						conflict.push(~l);
-						buildValueReason(-op,bvID,to,conflict);
+						buildComparisonReason(-op,bvID,to,conflict);
 						toSolver(conflict);
 						stats_conflict_time+=rtime(2)-startconftime;
 						return false;
@@ -2502,7 +2499,7 @@ public:
 						propagationtime += startconftime - startproptime;
 						stats_num_conflicts++;stats_compare_conflicts++;
 						conflict.push(l);
-						buildValueReason(op,bvID,to,conflict);
+						buildComparisonReason(op,bvID,to,conflict);
 						toSolver(conflict);
 						stats_conflict_time+=rtime(2)-startconftime;
 						return false;
@@ -2682,12 +2679,10 @@ public:
 
 	Weight ceildiv(Weight a, Weight b);
 
-	void buildAdditionArgReason(int bvID, int argindex, vec<Lit> & conflict,int trail_pos=-1){
+	void buildAdditionArgReason(int bvID, int argindex, vec<Lit> & conflict){
 		assert(eq_bitvectors[bvID]==bvID);
-		if (trail_pos<0){
-			trail_pos=trail.size();
-		}
-		rewind_trail_pos(trail_pos);
+		rewind_trail_pos(trail.size()-1);
+
 		stats_build_addition_arg_reason++;
 		Weight  over_cur = over_approx[bvID];
 		Weight  under_cur = under_approx[bvID];
@@ -2714,27 +2709,24 @@ public:
 
 		if(under_cur>over_add){
 			//buildTrivialClause(conflict);
-			buildValueReason(Comparison::leq, sumID,over_approx[sumID],conflict,trail_pos-1);
+			analyzeValueReason(Comparison::leq, sumID,over_approx[sumID],conflict);
 
-			buildValueReason(Comparison::geq, other_argID,under_approx[other_argID],conflict,trail_pos-1);
-			buildValueReason(Comparison::gt, bvID,over_add,conflict,trail_pos-1);
+			analyzeValueReason(Comparison::geq, other_argID,under_approx[other_argID],conflict);
+			analyzeValueReason(Comparison::gt, bvID,over_add,conflict);
 		}else{
 			assert(over_cur<under_add);
 			//buildTrivialClause(conflict);
-			buildValueReason(Comparison::geq, sumID,under_approx[sumID],conflict,trail_pos-1);
-			buildValueReason(Comparison::leq, other_argID,over_approx[other_argID],conflict,trail_pos-1);
-			buildValueReason(Comparison::lt, bvID,under_add,conflict,trail_pos-1);
+			analyzeValueReason(Comparison::geq, sumID,under_approx[sumID],conflict);
+			analyzeValueReason(Comparison::leq, other_argID,over_approx[other_argID],conflict);
+			analyzeValueReason(Comparison::lt, bvID,under_add,conflict);
 
 		}
-
+		analyze(conflict);
 	}
 
-	void buildAdditionReason(int bvID,int addition_index, vec<Lit> & conflict,int trail_pos=-1){
+	void buildAdditionReason(int bvID,int addition_index, vec<Lit> & conflict){
 		assert(eq_bitvectors[bvID]==bvID);
-		if (trail_pos<0){
-			trail_pos=trail.size();
-		}
-		rewind_trail_pos(trail_pos);
+		rewind_trail_pos(trail.size()-1);
 		stats_build_addition_reason++;
 		Weight  over_cur = over_approx[bvID];
 		Weight  under_cur = under_approx[bvID];
@@ -2763,17 +2755,18 @@ public:
 
 		if(under_cur>over_add){
 
-			buildValueReason(Comparison::gt, bvID,over_add,conflict,trail_pos-1);
+			analyzeValueReason(Comparison::gt, bvID,over_add,conflict);
 
-			buildValueReason(Comparison::leq, aID,over_approx[aID],conflict,trail_pos-1);
-			buildValueReason(Comparison::leq, bID,over_approx[bID],conflict,trail_pos-1);
+			analyzeValueReason(Comparison::leq, aID,over_approx[aID],conflict);
+			analyzeValueReason(Comparison::leq, bID,over_approx[bID],conflict);
 		}else{
 			assert(over_cur<under_add);
-			buildValueReason(Comparison::lt, bvID,under_add,conflict,trail_pos-1);
+			analyzeValueReason(Comparison::lt, bvID,under_add,conflict);
 
-			buildValueReason(Comparison::geq, aID,under_approx[aID],conflict,trail_pos-1);
-			buildValueReason(Comparison::geq, bID,under_approx[bID],conflict,trail_pos-1);
+			analyzeValueReason(Comparison::geq, aID,under_approx[aID],conflict);
+			analyzeValueReason(Comparison::geq, bID,under_approx[bID],conflict);
 		}
+		analyze(conflict);
 	}
 
 	void buildValueReasonBV(Comparison op, int bvID,int comparebvID, vec<Lit> & conflict,int trail_pos=-1){
@@ -2816,7 +2809,7 @@ public:
 			//then the reason for the assignment is because this bitvector is (<,<=,>,>=) than the underapproximation of that constant.
 			//newComparison(op,bvID,under_comp);
 			//int cID = getComparisonID(op,bvID,under_comp);
-			buildValueReason(op,bvID,under_comp,conflict,trail_pos-1);
+			analyzeValueReason(op,bvID,under_comp,conflict);
 		}else if (isConst(bvID)){
 			assert(under_cur==over_cur);
 			//if the other bitvector is a constant,
@@ -2824,7 +2817,7 @@ public:
 			op=~op;
 			//newComparison(op,comparebvID,over_cur);
 			//int cID = getComparisonID(op,comparebvID,over_cur);
-			buildValueReason(op,comparebvID,over_cur,conflict,trail_pos-1);
+			analyzeValueReason(op,comparebvID,over_cur,conflict);
 		}else{
 			//neither bitvector is constant. Pick a value between them, and learn relative to that.
 			Weight midval;
@@ -2867,25 +2860,24 @@ public:
 
 			//newComparison(op,bvID,midval);
 			//int cID = getComparisonID(op,bvID,midval);
-			buildValueReason(op,bvID,midval,conflict,trail_pos-1);
+			analyzeValueReason(op,bvID,midval,conflict);
 
 			//newComparison(op,comparebvID,midval);
 			//cID = getComparisonID(op,comparebvID,midval);
-			buildValueReason(cOp,comparebvID,midval,conflict,trail_pos-1);
+			analyzeValueReason(cOp,comparebvID,midval,conflict);
 		}
-
+		analyze(conflict);
 
 	}
 
-	void buildValueReason(Comparison op, int bvID, Weight  to,  vec<Lit> & conflict,int trail_pos=-2){
+	void analyzeValueReason(Comparison op, int bvID, Weight  to,  vec<Lit> & conflict){
 		if(isConst(bvID)){
 			// a constant bitvector needs no reason
 			return;
 		}
-		if (eq_bitvectors[bvID]!=bvID){
-			buildValueReason(op,eq_bitvectors[bvID],to,conflict,trail_pos);
-			return;
-		}
+		while(eq_bitvectors[bvID]!=bvID)
+			bvID=eq_bitvectors[bvID];
+
 		stats_build_value_reason++;
 		static int iter = 0;
 		++iter;
@@ -2893,13 +2885,9 @@ public:
 		if(iter==121){
 			int a=1;
 		}
-		if (trail_pos<-1){
-			trail_pos=trail.size();
-		}else if (trail_pos<0){
-			trail_pos=0;
-		}
-		rewind_trail_pos(trail_pos);
-		trail_pos = rewindUntil(bvID,op,to);
+
+		//rewind_trail_pos(trail_pos);
+		//trail_pos = rewindUntil(bvID,op,to);
 
 
 		bool compare_over;
@@ -2984,8 +2972,11 @@ public:
 
 				}
 			}
-			rewind_trail_pos(trail_pos-1);
-			buildValueReason(Comparison::leq,bvID,over_approx[bvID],conflict,trail_pos-1);
+			assert(trail[analysis_trail_pos].isBoundAssignment());
+			assert(trail[analysis_trail_pos].bvID==bvID);
+			Weight prev_weight = trail[analysis_trail_pos].previous_over;
+			addAnalysis(Comparison::leq,bvID,prev_weight,conflict);
+			//buildValueReason(Comparison::leq,bvID,over_approx[bvID],conflict,trail_pos-1);
 			return;
 		}else if (!compare_over  && under_causes[bvID].refined_cause){
 			//then the reason the underapprox is too large is because of the assignment to the bits
@@ -3006,8 +2997,11 @@ public:
 
 				}
 			}
-			rewind_trail_pos(trail_pos-1);
-			buildValueReason(Comparison::geq,bvID,under_approx[bvID],conflict,trail_pos-1);
+			assert(trail[analysis_trail_pos].isBoundAssignment());
+			assert(trail[analysis_trail_pos].bvID==bvID);
+			Weight prev_weight = trail[analysis_trail_pos].previous_under;
+			addAnalysis(Comparison::geq,bvID,prev_weight,conflict);
+			//buildValueReason(Comparison::geq,bvID,under_approx[bvID],conflict,trail_pos-1);
 			return;
 		}
 
@@ -3063,8 +3057,10 @@ public:
 			Weight over_bid = over_approx[bID];
 			Weight over_aid = over_approx[aID];
 			//then the reason is that aID is <= weight-under(bID), or bID <= weight-under(aID)
-			buildValueReason(op,aID,to-over_bid,conflict,trail_pos-1);
-			buildValueReason(op,bID,to-over_aid,conflict,trail_pos-1);
+			addAnalysis(op,aID,to-over_bid,conflict);
+			addAnalysis(op,bID,to-over_aid,conflict);
+			//buildValueReason(op,aID,to-over_bid,conflict,trail_pos-1);
+			//buildValueReason(op,bID,to-over_aid,conflict,trail_pos-1);
 			return;
 
 		}
@@ -3076,8 +3072,10 @@ public:
 			int bID = additions[bvID][index].bID;
 			Weight under_bid = under_approx[bID];
 			Weight under_aid = under_approx[aID];
-			buildValueReason(op,aID,to-under_bid,conflict,trail_pos-1);
-			buildValueReason(op,bID,to-under_aid,conflict,trail_pos-1);
+			addAnalysis(op,aID,to-under_bid,conflict);
+			addAnalysis(op,bID,to-under_aid,conflict);
+			//buildValueReason(op,aID,to-under_bid,conflict,trail_pos-1);
+			//buildValueReason(op,bID,to-under_aid,conflict,trail_pos-1);
 			return;
 
 		}
@@ -3090,8 +3088,10 @@ public:
 			Weight under_argID = under_approx[other_argID];
 
 			//Weight over = over_approx[sumID] -  under_approx[other_argID];
-			buildValueReason(~op,other_argID,over_sumID-to,conflict,trail_pos-1);
-			buildValueReason(op,sumID,to+under_argID,conflict,trail_pos-1);
+			addAnalysis(~op,other_argID,over_sumID-to,conflict);
+			addAnalysis(op,sumID,to+under_argID,conflict);
+			//buildValueReason(~op,other_argID,over_sumID-to,conflict,trail_pos-1);
+			//buildValueReason(op,sumID,to+under_argID,conflict,trail_pos-1);
 
 			return;
 		}
@@ -3102,8 +3102,10 @@ public:
 			Weight under_sumID = under_approx[sumID];
 			Weight over_argID = over_approx[other_argID];
 			//Weight under = under_approx[sumID] -  over_approx[other_argID];
-			buildValueReason(~op,other_argID,under_sumID-to,conflict,trail_pos-1);
-			buildValueReason(op,sumID,to+over_argID,conflict,trail_pos-1);
+			addAnalysis(~op,other_argID,under_sumID-to,conflict);
+			addAnalysis(op,sumID,to+over_argID,conflict);
+			//buildValueReason(~op,other_argID,under_sumID-to,conflict,trail_pos-1);
+			//buildValueReason(op,sumID,to+over_argID,conflict,trail_pos-1);
 			return;
 		}
 		int cID=-1;
@@ -3116,16 +3118,16 @@ public:
 			ComparisonID & c = comparisons[cID];
 			Comparison cop = c.op();//invert this because we are switch the direction of comparison
 
-
-
 			if(value(c.l)==l_True){
 				assert(value(~c.l)==l_False);
 				conflict.push(~c.l);
 				if(c.bvCompare()){
 					if (compare_over){
-						buildValueReason(Comparison::leq,c.compareID, over_approx[c.compareID],conflict,trail_pos-1);
+						addAnalysis(Comparison::leq,c.compareID, over_approx[c.compareID],conflict);
+						//buildValueReason(Comparison::leq,c.compareID, over_approx[c.compareID],conflict,trail_pos-1);
 					}else{
-						buildValueReason(Comparison::geq,c.compareID, under_approx[c.compareID],conflict,trail_pos-1);
+						addAnalysis(Comparison::geq,c.compareID, under_approx[c.compareID],conflict);
+						//buildValueReason(Comparison::geq,c.compareID, under_approx[c.compareID],conflict,trail_pos-1);
 					}
 				}
 			}else{
@@ -3133,9 +3135,9 @@ public:
 				conflict.push(c.l);
 				if(c.bvCompare()){
 					if (compare_over){
-						buildValueReason(Comparison::leq,c.compareID, over_approx[c.compareID],conflict, trail_pos-1);
+						addAnalysis(Comparison::leq,c.compareID, over_approx[c.compareID],conflict);
 					}else{
-						buildValueReason(Comparison::geq,c.compareID, under_approx[c.compareID],conflict,trail_pos-1);
+						addAnalysis(Comparison::geq,c.compareID, under_approx[c.compareID],conflict);
 					}
 				}
 			}
@@ -3143,484 +3145,127 @@ public:
 
 			return;
 		}
-		assert(false);//no cause was found.
-		exit(4);
 	}
-/*
-	void buildValueLTReason(int bvID, int comparisonID, vec<Lit> & conflict){
-		printf("lt reason %d %d\n",bvID, comparisonID);
-		Weight & lt = getComparison(comparisonID).w;
-		Lit l =  getComparison(comparisonID).l;
 
-		vec<Lit> & bv = bitvectors[bvID];
-		Weight  over_cur = over_approx[bvID];
-		assert(checkApproxUpToDate(bvID));
-		assert(over_cur<lt);
+	void addAnalysis(Comparison op, int bvID, Weight  to,  vec<Lit> & conflict){
+		int aID = analyses.size();
+		bool compare_over;
+		if (op==Comparison::lt){
+			compare_over=true;
+			op=Comparison::leq;
+			to--;
+		}
+		if (op==Comparison::leq){
+			compare_over=true;
+		}
+		if (op==Comparison::geq){
+			compare_over=false;
+		}
+		if (op==Comparison::gt){
+			compare_over=false;
+			op=Comparison::geq;
+			to++;
+		}
+		//add this to bv comparison to the stack of analyses to perform.
+		if(compare_over){
+			//need to check whether this analysis has already been requested for this bitvector, and if not, insert it into the analysis chain in the right position.
+			//should this use a binary search?
+			int cID = pending_over_analyses[bvID];
 
-
-		//the reason that the value is less than the weight 'lt' is that the _overapprox_ of the weight is less than lt.
-		for(int i =0;i<bv.size();i++){
-			Lit bl = bv[i];
-			if(value(bl)==l_False && level(var(bl))>0){
-				Weight bit = 1<<i;
-				if(over+bit<lt){
-					//then we can skip this bit, because we would still have had a conflict even if it was assigned true.
-					over+=bit;
-				}else{
-					conflict.push(bl);
+			int prevID = -1;
+			while(cID>-1 && analyses[cID].value > to){
+				ToAnalyze & c = analyses[cID];
+				prevID = cID;
+				cID = c.next_analysis;
+			}
+			if(cID>=0){
+				if( analyses[cID].value==to){
+					//this analysis was already requested; don't do anything
+					return;
 				}
 			}
-		}
-		Weight under =0;
-		Weight over=0;
-		for(int i = 0;i<bv.size();i++){
-			lbool val = value(bv[i]);
-			if(val==l_True){
-				Weight bit = 1<<i;
-				under+=bit;
-				over+=bit;
-			}else if (val==l_False){
-
+			if(prevID>=0){
+				assert(analyses[prevID].value>to);
+			}
+			n_pending_analyses++;
+			//insert this analysis between prevID (if it exists) and cID
+			analyses.push({bvID,cID,to});//to
+			if(prevID>-1){
+				analyses[prevID].next_analysis=aID;
 			}else{
-				Weight bit = 1<<i;
-				over+=bit;
+				pending_over_analyses[bvID]=aID;
 			}
-		}
-		if (over<lt){
-			//then the reason the underapprox is too large is because of the assignment to the bits
-			for(int i =0;i<bv.size();i++){
-				Lit bl = bv[i];
-				if(value(bl)==l_False ){
-					Weight bit = 1<<i;
-					if(over+bit<lt&& level(var(bl))>0){
-						//then we can skip this bit, because we would still have had a conflict even if it was assigned true.
-						over+=bit;
-					}else{
-						assert(value(bl)==l_False);
-						conflict.push(bl);
-					}
+		}else{
+			//need to check whether this analysis has already been requested for this bitvector, and if not, insert it into the analysis chain in the right position.
+			//should this use a binary search?
+			int cID = pending_under_analyses[bvID];
+
+			int prevID = -1;
+			while(cID>-1 && analyses[cID].value < to){
+				ToAnalyze & c = analyses[cID];
+				prevID = cID;
+				cID = c.next_analysis;
+			}
+			if(cID>=0){
+				if( analyses[cID].value==to){
+					//this analysis was already requested; don't do anything
+					return;
 				}
 			}
-			return;
-		}
-
-		for(int cID:comparisons_lt[bvID]){
-			if(cID == comparisonID)
-				continue;
-			ComparisonID & c = comparisons[cID];
-			if(value( c.l)==l_True && over>=c.w){
-				over=c.w-1;
-			}else if (value(c.l)==l_False && under<c.w){
-				under=c.w;
+			if(prevID>=0){
+				assert(analyses[prevID].value<to);
 			}
-			if (over<lt){
-				//this is the reason for the bitvector being too large
-				assert(value(~c.l)==l_False);
-				conflict.push(~c.l);
-				return;
-			}
-		}
-		for(int cID:comparisons_leq[bvID]){
-			if(cID == comparisonID)
-				continue;
-			ComparisonID & c = comparisons[cID];
-			if(value( c.l)==l_True && over>c.w){
-				over=c.w;
-			}else if (value(c.l)==l_False && under<=c.w){
-				under=c.w+1;
-			}
-			if (over<lt){
-				//this is the reason for the bitvector being too large
-				assert(value(~c.l)==l_False);
-				conflict.push(~c.l);
-				return;
-			}
-		}
-		for(int cID:comparisons_gt[bvID]){
-			if(cID == comparisonID)
-				continue;
-			ComparisonID & c = comparisons[cID];
-			if(value( c.l)==l_True && under<=c.w){
-				under=c.w+1;
-			}else if (value(c.l)==l_False && over>c.w){
-				over=c.w;
-			}
-			if (over<lt){
-				//this is the reason for the bitvector being too large
-				assert(value(c.l)==l_False);
-				conflict.push(c.l);
-				return;
-			}
-		}
-		for(int cID:comparisons_geq[bvID]){
-			if(cID == comparisonID)
-				continue;
-			ComparisonID & c = comparisons[cID];
-			if(value( c.l)==l_True && under<c.w){
-				under=c.w;
-			}else if (value(c.l)==l_False && over>=c.w){
-				over=c.w-1;
-			}
-			if (over<lt){
-				//this is the reason for the bitvector being too large
-				assert(value(c.l)==l_False);
-				conflict.push(c.l);
-				return;
-			}
-		}
-	}
-
-	void buildValueGEQReason(int bvID, int comparisonID, vec<Lit> & conflict){
-		printf("geq reason %d %d\n",bvID, comparisonID);
-		Weight & lt = getComparison(comparisonID).w;
-		Lit l =  getComparison(comparisonID).l;
-
-		vec<Lit> & bv = bitvectors[bvID];
-		Weight  under_cur = under_approx[bvID];
-		assert(checkApproxUpToDate(bvID));
-		assert(under_cur>=lt);
-		//the reason that the value is less than the weight 'lt' is that the _overapprox_ of the weight is less than lt.
-		//the reason for this depends on how the over approximation was computed - that is, whether it is caused by an assignment to a comparison or to the bitvector itself.
-
-		//this analysis is _only_ correct if we have correctly backtracked in the trail to the point where the comparison was assigned.
-
-		Weight under =0;
-		Weight over=0;
-		for(int i = 0;i<bv.size();i++){
-			lbool val = value(bv[i]);
-			if(val==l_True){
-				Weight bit = 1<<i;
-				under+=bit;
-				over+=bit;
-			}else if (val==l_False){
-
+			//insert this analysis between prevID (if it exists) and cID
+			n_pending_analyses++;
+			analyses.push({bvID,cID,to});//op
+			if(prevID>-1){
+				analyses[prevID].next_analysis=aID;
 			}else{
-				Weight bit = 1<<i;
-				over+=bit;
+				pending_under_analyses[bvID]=aID;
 			}
 		}
-		if (under>=lt){
-			//then the reason the underapprox is too large is because of the assignment to the bits
-			for(int i =0;i<bv.size();i++){
-				Lit bl = bv[i];
-				lbool val = value(bl);
-				lbool dbgval = dbg_value(bl);
-				if(value(bl)==l_True){
-					Weight bit = 1<<i;
-					if(under-bit>=lt  && level(var(bl))>0){
-						//then we can skip this bit, because we would still have had a conflict even if it was assigned false.
-						under-=bit;
-					}else{
-						assert(value(~bl)==l_False);
-						conflict.push(~bl);
-					}
-				}
-			}
-			return;
-		}
-
-		for(int cID:comparisons_lt[bvID]){
-			if(cID == comparisonID)
-				continue;
-			ComparisonID & c = comparisons[cID];
-			if(value( c.l)==l_True && over>=c.w){
-				over=c.w-1;
-			}else if (value(c.l)==l_False && under<c.w){
-				under=c.w;
-			}
-			if (under>=lt){
-				//this is the reason for the bitvector being too large
-				assert(value(c.l)==l_False);
-				conflict.push(c.l);
-				return;
-			}
-		}
-		for(int cID:comparisons_leq[bvID]){
-			if(cID == comparisonID)
-				continue;
-			ComparisonID & c = comparisons[cID];
-			if(value( c.l)==l_True && over>c.w){
-				over=c.w;
-			}else if (value(c.l)==l_False && under<=c.w){
-				under=c.w+1;
-			}
-			if (under>=lt){
-				//this is the reason for the bitvector being too large
-				assert(value(c.l)==l_False);
-				conflict.push(c.l);
-				return;
-			}
-		}
-		for(int cID:comparisons_gt[bvID]){
-			if(cID == comparisonID)
-				continue;
-			ComparisonID & c = comparisons[cID];
-			if(value( c.l)==l_True && under<=c.w){
-				under=c.w+1;
-			}else if (value(c.l)==l_False && over>c.w){
-				over=c.w;
-			}
-			if (under>=lt){
-				//this is the reason for the bitvector being too large
-				assert(value(~c.l)==l_False);
-				conflict.push(~c.l);
-				return;
-			}
-		}
-		for(int cID:comparisons_geq[bvID]){
-			if(cID == comparisonID)
-				continue;
-			ComparisonID & c = comparisons[cID];
-			if(value( c.l)==l_True && under<c.w){
-				under=c.w;
-			}else if (value(c.l)==l_False && over>=c.w){
-				over=c.w-1;
-			}
-			if (under>=lt){
-				//this is the reason for the bitvector being too large
-				assert(value(~c.l)==l_False);
-				conflict.push(~c.l);
-				return;
-			}
-		}
-
 
 	}
 
-	void buildValueLEQReason(int bvID, int comparisonID, vec<Lit> & conflict){
-			printf("leq reason %d %d\n",bvID, comparisonID);
-			Weight & lt = getComparison(comparisonID).w;
-			Lit l =  getComparison(comparisonID).l;
+	void buildComparisonReason(Comparison op, int bvID, Weight  to,  vec<Lit> & conflict){
+		rewind_trail_pos(trail.size()-1);
+		int trail_pos = rewindUntil(bvID,op,to);
+		//analyses.push({bvID,op,conflict});
+		analyzeValueReason(op,bvID,to,conflict);
+		analyze(conflict);
+	}
 
-			vec<Lit> & bv = bitvectors[bvID];
-			Weight  over_cur = over_approx[bvID];
-			assert(checkApproxUpToDate(bvID));
-			assert(over_cur<=lt);
-
-
-			Weight under =0;
-			Weight over=0;
-			for(int i = 0;i<bv.size();i++){
-				lbool val = value(bv[i]);
-				if(val==l_True){
-					Weight bit = 1<<i;
-					under+=bit;
-					over+=bit;
-				}else if (val==l_False){
-
-				}else{
-					Weight bit = 1<<i;
-					over+=bit;
+	void analyze(vec<Lit> & conflict){
+		while(n_pending_analyses>0){
+			assert(analysis_trail_pos>=0);
+			Assignment & e = trail[analysis_trail_pos];
+			if (e.isBoundAssignment()){
+				int bvID = e.bvID;
+				if(pending_over_analyses[bvID]>-1 && e.previous_over > analyses[pending_over_analyses[bvID]].value){
+					int aID = pending_over_analyses[bvID];
+					ToAnalyze & a =  analyses[aID];
+					int nID = a.next_analysis;
+					assert(nID!=aID);
+					pending_over_analyses[bvID]=nID;
+					n_pending_analyses--;
+					analyses[aID].clear();
+					analyzeValueReason(Comparison::leq,bvID,a.value,conflict);
+				}
+				if(pending_under_analyses[bvID]>-1 && e.previous_under <  analyses[pending_under_analyses[bvID]].value){
+					int aID = pending_under_analyses[bvID];
+					ToAnalyze & a =  analyses[aID];
+					int nID = a.next_analysis;
+					assert(nID!=aID);
+					pending_under_analyses[bvID]=nID;
+					n_pending_analyses--;
+					analyses[aID].clear();
+					analyzeValueReason(Comparison::geq,bvID,a.value,conflict);
 				}
 			}
-			if (over<=lt){
-				//then the reason the underapprox is too large is because of the assignment to the bits
-				for(int i =0;i<bv.size();i++){
-					Lit bl = bv[i];
-					if(value(bl)==l_False ){
-						Weight bit = 1<<i;
-						if(over+bit<=lt&& level(var(bl))>0){
-							//then we can skip this bit, because we would still have had a conflict even if it was assigned true.
-							over+=bit;
-						}else{
-							assert(value(bl)==l_False);
-							conflict.push(bl);
-						}
-					}
-				}
-				return;
-			}
-
-			for(int cID:comparisons_lt[bvID]){
-				if(cID == comparisonID)
-					continue;
-				ComparisonID & c = comparisons[cID];
-				if(value( c.l)==l_True && over>=c.w){
-					over=c.w-1;
-				}else if (value(c.l)==l_False && under<c.w){
-					under=c.w;
-				}
-				if (over<=lt){
-					//this is the reason for the bitvector being too large
-					assert(value(~c.l)==l_False);
-					conflict.push(~c.l);
-					return;
-				}
-			}
-			for(int cID:comparisons_leq[bvID]){
-				if(cID == comparisonID)
-					continue;
-				ComparisonID & c = comparisons[cID];
-				if(value( c.l)==l_True && over>c.w){
-					over=c.w;
-				}else if (value(c.l)==l_False && under<=c.w){
-					under=c.w+1;
-				}
-				if (over<=lt){
-					//this is the reason for the bitvector being too large
-					assert(value(~c.l)==l_False);
-					conflict.push(~c.l);
-					return;
-				}
-			}
-			for(int cID:comparisons_gt[bvID]){
-				if(cID == comparisonID)
-					continue;
-				ComparisonID & c = comparisons[cID];
-				if(value( c.l)==l_True && under<=c.w){
-					under=c.w+1;
-				}else if (value(c.l)==l_False && over>c.w){
-					over=c.w;
-				}
-				if (over<=lt){
-					//this is the reason for the bitvector being too large
-					assert(value(c.l)==l_False);
-					conflict.push(c.l);
-					return;
-				}
-			}
-			for(int cID:comparisons_geq[bvID]){
-				if(cID == comparisonID)
-					continue;
-				ComparisonID & c = comparisons[cID];
-				if(value( c.l)==l_True && under<c.w){
-					under=c.w;
-				}else if (value(c.l)==l_False && over>=c.w){
-					over=c.w-1;
-				}
-				if (over<=lt){
-					//this is the reason for the bitvector being too large
-					assert(value(c.l)==l_False);
-					conflict.push(c.l);
-					return;
-				}
-			}
+			rewind_trail_pos(analysis_trail_pos-1);
 		}
-
-		void buildValueGTReason(int bvID, int comparisonID, vec<Lit> & conflict){
-			printf("gt reason %d %d\n",bvID, comparisonID);
-			Weight & lt = getComparison(comparisonID).w;
-			Lit l =  getComparison(comparisonID).l;
-
-			vec<Lit> & bv = bitvectors[bvID];
-			Weight  under_cur = under_approx[bvID];
-			assert(checkApproxUpToDate(bvID));
-			assert(under_cur>lt);
-			//the reason that the value is less than the weight 'lt' is that the _overapprox_ of the weight is less than lt.
-
-			for(int i =0;i<bv.size();i++){
-				Lit bl = bv[i];
-				if(value(bl)==l_True && level(var(bl))>0){
-					Weight bit = 1<<i;
-					if(under-bit>lt){
-						//then we can skip this bit, because we would still have had a conflict even if it was assigned false.
-						under-=bit;
-					}else{
-						conflict.push(~bl);
-					}
-				}
-			}
-
-			Weight under =0;
-			Weight over=0;
-			for(int i = 0;i<bv.size();i++){
-				lbool val = value(bv[i]);
-				if(val==l_True){
-					Weight bit = 1<<i;
-					under+=bit;
-					over+=bit;
-				}else if (val==l_False){
-
-				}else{
-					Weight bit = 1<<i;
-					over+=bit;
-				}
-			}
-			if (under>lt){
-				//then the reason the underapprox is too large is because of the assignment to the bits
-				for(int i =0;i<bv.size();i++){
-					Lit bl = bv[i];
-					lbool val = value(bl);
-					lbool dbgval = dbg_value(bl);
-					if(value(bl)==l_True){
-						Weight bit = 1<<i;
-						if(under-bit>lt  && level(var(bl))>0){
-							//then we can skip this bit, because we would still have had a conflict even if it was assigned false.
-							under-=bit;
-						}else{
-							assert(value(~bl)==l_False);
-							conflict.push(~bl);
-						}
-					}
-				}
-				return;
-			}
-
-			for(int cID:comparisons_lt[bvID]){
-				if(cID == comparisonID)
-					continue;
-				ComparisonID & c = comparisons[cID];
-				if(value( c.l)==l_True && over>=c.w){
-					over=c.w-1;
-				}else if (value(c.l)==l_False && under<c.w){
-					under=c.w;
-				}
-				if (under>lt){
-					//this is the reason for the bitvector being too large
-					assert(value(c.l)==l_False);
-					conflict.push(c.l);
-					return;
-				}
-			}
-			for(int cID:comparisons_leq[bvID]){
-				if(cID == comparisonID)
-					continue;
-				ComparisonID & c = comparisons[cID];
-				if(value( c.l)==l_True && over>c.w){
-					over=c.w;
-				}else if (value(c.l)==l_False && under<=c.w){
-					under=c.w+1;
-				}
-				if (under>lt){
-					//this is the reason for the bitvector being too large
-					assert(value(c.l)==l_False);
-					conflict.push(c.l);
-					return;
-				}
-			}
-			for(int cID:comparisons_gt[bvID]){
-				if(cID == comparisonID)
-					continue;
-				ComparisonID & c = comparisons[cID];
-				if(value( c.l)==l_True && under<=c.w){
-					under=c.w+1;
-				}else if (value(c.l)==l_False && over>c.w){
-					over=c.w;
-				}
-				if (under>lt){
-					//this is the reason for the bitvector being too large
-					assert(value(~c.l)==l_False);
-					conflict.push(~c.l);
-					return;
-				}
-			}
-			for(int cID:comparisons_geq[bvID]){
-				if(cID == comparisonID)
-					continue;
-				ComparisonID & c = comparisons[cID];
-				if(value( c.l)==l_True && under<c.w){
-					under=c.w;
-				}else if (value(c.l)==l_False && over>=c.w){
-					over=c.w-1;
-				}
-				if (under>lt){
-					//this is the reason for the bitvector being too large
-					assert(value(~c.l)==l_False);
-					conflict.push(~c.l);
-					return;
-				}
-			}
-		}*/
+		//now walk back through the trail to find the
+	}
 
 	bool solveTheory(vec<Lit> & conflict) {
 		requiresPropagation = true;		//Just to be on the safe side... but this shouldn't really be required.
@@ -3828,12 +3473,6 @@ public:
 		addition_arguments[bID].push();
 		addition_arguments[bID].last().other_argID=aID;
 		addition_arguments[bID].last().sumID=resultID;
-		//addition_arguments[bID].push({aID,resultID});
-	/*	if(!cause_set[aID].contains(resultID))
-			cause_set[aID].push(resultID);
-		if(!cause_set[bID].contains(resultID))
-			cause_set[bID].push(resultID);*/
-		//additions[resultID].w=0;
 
 		bv_needs_propagation[resultID]=true;
 		if(!alteredBV[resultID]){
@@ -3889,8 +3528,9 @@ public:
 		cause_set.growTo(bvID+1);
 		eq_bitvectors.growTo(bvID+1,-1);
 		eq_bitvectors[bvID]=bvID;
+		pending_under_analyses.growTo(bvID+1,-1);
+		pending_over_analyses.growTo(bvID+1,-1);
 
-		//bv_callbacks.growTo(bvID+1);
 		if(under_approx[bvID]>-1){
 			assert(false);
 			fprintf(stderr,"Redefined bitvector, Aborting!");
@@ -3964,7 +3604,8 @@ public:
 		cause_set.growTo(bvID+1);
 		eq_bitvectors.growTo(bvID+1,-1);
 		eq_bitvectors[bvID]=bvID;
-
+		pending_under_analyses.growTo(bvID+1);
+		pending_over_analyses.growTo(bvID+1);
 		bv_needs_propagation.growTo(bvID+1);
 		bv_needs_propagation[bvID]=true;
 		//bv_callbacks.growTo(bvID+1);
@@ -3977,6 +3618,7 @@ public:
 		over_approx[bvID]=(1L<<bitwidth)-1;
 		under_approx0[bvID]=under_approx[bvID];
 		over_approx0[bvID]=over_approx[bvID];
+
 		if(equivalentBV<0){
 			if (constval>=0){
 				if (const_true==lit_Undef){
