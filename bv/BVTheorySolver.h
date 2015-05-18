@@ -337,6 +337,7 @@ public:
 	double propagationtime = 0;
 	double stats_conflict_time = 0;
 	long stats_propagations = 0;
+	long stats_bv_propagations =0;
 	long stats_num_conflicts = 0;
 	long stats_bit_conflicts = 0;
 	long stats_addition_conflicts = 0;
@@ -348,6 +349,7 @@ public:
 	long stats_build_value_bv_reason=0;
 	long stats_build_addition_reason=0;
 	long stats_build_addition_arg_reason =0;
+	double stats_update_time=0;
 	double reachupdatetime = 0;
 	double unreachupdatetime = 0;
 	double stats_initial_propagation_time = 0;
@@ -396,12 +398,12 @@ public:
 	void printStats(int detailLevel) {
 		printf("BV Theory %d stats:\n", this->id);
 
-		printf("%d bitvectors, %ld bits, %d comparisons (bvcomparisons %d), %d additions\n", bitvectors.size(),n_bits,compares.size()+bvcompares.size(),bvcompares.size(), n_additions				 );
-		printf("constant bitvectors (at start, end of deduction): %d, %d\n",n_starting_consts ,n_consts);
+		printf("%d bitvectors, %ld bits, %ld comparisons (bvcomparisons %ld), %ld additions\n", bitvectors.size(),n_bits,compares.size()+bvcompares.size(),bvcompares.size(), n_additions				 );
+		printf("constant bitvectors (at start, end of deduction): %ld, %ld\n",n_starting_consts ,n_consts);
 
 
-		printf("Propagations: %ld (%f s, avg: %f s, %ld skipped), bv updates: %d\n", stats_propagations, propagationtime,
-				(propagationtime) / ((double) stats_propagations + 1), stats_propagations_skipped,statis_bv_updates);
+		printf("Propagations: %ld (%f s, avg: %f s, %ld skipped), bv updates: %ld (%f s), bv propagations %ld\n", stats_propagations, propagationtime,
+				(propagationtime) / ((double) stats_propagations + 1), stats_propagations_skipped,statis_bv_updates,stats_update_time,stats_bv_propagations);
 		printf("Decisions: %ld (%f s, avg: %f s)\n", stats_decisions, stats_decision_time,
 				(stats_decision_time) / ((double) stats_decisions + 1));
 		printf("Conflicts: %ld (bits: %ld, additions: %ld, comparisons: %ld, bv comparisons: %ld), %f seconds\n", stats_num_conflicts,stats_bit_conflicts,stats_addition_conflicts,stats_compare_conflicts,stats_bv_compare_conflicts, stats_conflict_time);
@@ -1353,6 +1355,7 @@ public:
 		if(bvID==4){
 			int a=1;
 		}
+		double update_start_time= rtime(3);
 		statis_bv_updates++;
 		static int iter = 0;
 		++iter;
@@ -1865,7 +1868,7 @@ public:
 		}
 		printf("%d\n", bound_num);*/
 #endif
-
+		stats_update_time+= rtime(3) -update_start_time;
 		return 	any_changed;//return whether either weight has changed.
 	}
 
@@ -2171,7 +2174,7 @@ public:
 			int a =1;
 		}
 		bool any_change = false;
-		double startproptime = rtime(1);
+		double startproptime = rtime(2);
 		//static vec<int> detectors_to_check;
 
 		while (S->decisionLevel() > trail_lim.size()) {
@@ -2182,6 +2185,7 @@ public:
 		
 
 		while(altered_bvs.size()){
+
 			int bvID = altered_bvs.last();
 			if(bvID==18898){
 				int a=1;
@@ -2192,6 +2196,7 @@ public:
 			Weight  overApprox_prev = over_approx[bvID];
 			Cause prev_under_cause = over_causes[bvID];
 			Cause prev_over_cause = over_causes[bvID];
+
 			bool changed = updateApproximations(bvID);
 			changed|= under_causes[bvID].cause_is_decision;
 			changed|= over_causes[bvID].cause_is_decision;//force propagation if a decision was made.
@@ -2202,6 +2207,7 @@ public:
 			}*/
 			Weight & underApprox = under_approx[bvID];
 			Weight & overApprox = over_approx[bvID];
+			stats_bv_propagations++;
 			/*printf("iter %d, bv %d, under ",realprops , bvID); //: %d, over %d\n", bvID, underApprox,overApprox);
 			std::cout<<underApprox << " over ";
 			std::cout<<overApprox << "\n";
@@ -2220,7 +2226,8 @@ public:
 					if(val==l_True){
 						under+=bit;
 						if(under>overApprox){
-
+								double startconftime = rtime(2);
+								propagationtime += startconftime - startproptime;
 								//this is a conflict
 								for(int j = bv.size()-1;j>=i;j--){
 									Weight bit = 1<<j;
@@ -2230,10 +2237,8 @@ public:
 									}
 								}
 								stats_num_conflicts++;stats_bit_conflicts++;
-								if(realprops==1){
-									exit(12);
-								}
-								double startconftime = rtime(2);
+
+
 								buildValueReason(Comparison::leq,bvID,overApprox,conflict);
 								toSolver(conflict);
 								stats_conflict_time+=rtime(2)-startconftime;
@@ -2243,7 +2248,8 @@ public:
 					}else if (val==l_False){
 						over-=bit;
 						if(over<underApprox){
-
+								double startconftime = rtime(2);
+								propagationtime += startconftime - startproptime;
 								//this is a conflict. Either this bit, or any previously assigned false bit, must be true, or the underapprox must be larger than it currently is.
 								//is this really the best way to handle this conflict?
 								for(int j = bv.size()-1;j>=i;j--){
@@ -2253,7 +2259,6 @@ public:
 										conflict.push(bv[j]);
 									}
 								}
-								double startconftime = rtime(2);
 								stats_num_conflicts++;stats_bit_conflicts++;
 								buildValueReason(Comparison::geq,bvID,underApprox,conflict);
 								toSolver(conflict);
@@ -2302,6 +2307,7 @@ public:
 				if(underApprox>over){
 					//then we have a conflict
 					double startconftime = rtime(2);
+					propagationtime += startconftime - startproptime;
 					stats_num_conflicts++;stats_addition_conflicts++;
 					buildAdditionReason(bvID,i,conflict);
 					toSolver(conflict);
@@ -2309,6 +2315,7 @@ public:
 					return false;
 				}else if (overApprox<under){
 					double startconftime = rtime(2);
+					propagationtime += startconftime - startproptime;
 					stats_num_conflicts++;stats_addition_conflicts++;
 					buildAdditionReason(bvID,i,conflict);
 					toSolver(conflict);
@@ -2353,6 +2360,7 @@ public:
 				if(underApprox>over){
 					//then we have a conflict
 					double startconftime = rtime(2);
+					propagationtime += startconftime - startproptime;
 					stats_num_conflicts++;stats_addition_conflicts++;
 					buildAdditionArgReason(bvID,i,conflict);
 					toSolver(conflict);
@@ -2360,6 +2368,7 @@ public:
 					return false;
 				}else if (overApprox<under){
 					double startconftime = rtime(2);
+					propagationtime += startconftime - startproptime;
 					stats_num_conflicts++;stats_addition_conflicts++;
 					buildAdditionArgReason(bvID,i,conflict);
 					toSolver(conflict);
@@ -2413,6 +2422,7 @@ public:
 
 					}else if (value(l)==l_False){
 						double startconftime = rtime(2);
+						propagationtime += startconftime - startproptime;
 						stats_num_conflicts++;stats_compare_conflicts++;
 						assert(value(l)==l_False);
 						assert(dbg_value(l)==l_False);
@@ -2431,6 +2441,7 @@ public:
 						(op==Comparison::geq && overApprox<to)){
 					if(value(l)==l_True){
 						double startconftime = rtime(2);
+						propagationtime += startconftime - startproptime;
 						stats_num_conflicts++;stats_compare_conflicts++;
 						conflict.push(~l);
 						buildValueReason(-op,bvID,to,conflict);
@@ -2461,6 +2472,7 @@ public:
 						(op==Comparison::leq && underApprox>to)){
 					if(value(l)==l_True){
 						double startconftime = rtime(2);
+						propagationtime += startconftime - startproptime;
 						stats_num_conflicts++;stats_compare_conflicts++;
 						conflict.push(~l);
 						buildValueReason(-op,bvID,to,conflict);
@@ -2482,6 +2494,7 @@ public:
 
 					}else if (value(l)==l_False){
 						double startconftime = rtime(2);
+						propagationtime += startconftime - startproptime;
 						stats_num_conflicts++;stats_compare_conflicts++;
 						conflict.push(l);
 						buildValueReason(op,bvID,to,conflict);
@@ -2539,6 +2552,7 @@ public:
 						(op==Comparison::geq && overApprox<under_compare)){
 					if(value(l)==l_True){
 						double startconftime = rtime(2);
+						propagationtime += startconftime - startproptime;
 						stats_num_conflicts++;stats_bv_compare_conflicts++;
 						conflict.push(~l);
 						buildValueReasonBV(-op,bvID,compareID,conflict);
@@ -2588,6 +2602,7 @@ public:
 						(op==Comparison::leq && underApprox>over_compare)){
 					if(value(l)==l_True){
 						double startconftime = rtime(2);
+						propagationtime += startconftime - startproptime;
 						stats_num_conflicts++;stats_bv_compare_conflicts++;
 						conflict.push(~l);
 						buildValueReasonBV(-op,bvID,compareID,conflict);
@@ -2661,8 +2676,7 @@ public:
 		}
 		
 		requiresPropagation = false;
-		double elapsed = rtime(1) - startproptime;
-		propagationtime += elapsed;
+		propagationtime += rtime(2) - startproptime;;
 		assert(dbg_uptodate());
 		if(first_propagation){
 			first_propagation=false;
