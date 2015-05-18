@@ -143,7 +143,7 @@ public:
 			addNode();
 	}
 	//Returns true iff the edge exists and is a self loop
-	bool selfLoop(int edgeID)  {
+	inline bool selfLoop(int edgeID)  {
 		return hasEdge(edgeID) && getEdge(edgeID).from == getEdge(edgeID).to;
 	}
 	bool hasEdge(int from, int to) const {

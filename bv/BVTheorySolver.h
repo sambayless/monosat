@@ -2221,10 +2221,10 @@ public:
 			Weight & underApprox = under_approx[bvID];
 			Weight & overApprox = over_approx[bvID];
 			stats_bv_propagations++;
-			printf("iter %d, bv %d, under ",realprops , bvID); //: %d, over %d\n", bvID, underApprox,overApprox);
+			/*printf("iter %d, bv %d, under ",realprops , bvID); //: %d, over %d\n", bvID, underApprox,overApprox);
 			std::cout<<underApprox << " over ";
 			std::cout<<overApprox << "\n";
-			fflush(stdout);
+			fflush(stdout);*/
 			vec<Lit> & bv = bitvectors[bvID];
 			Weight under =0;
 			Weight over=(1L<<bv.size())-1;
@@ -2291,12 +2291,12 @@ public:
 				}
 				new_change = updateApproximations(bvID);
 				changed|=new_change;
-				if(new_change){
+				/*if(new_change){
 					printf("iter %d, bv %d, under ",realprops , bvID); //: %d, over %d\n", bvID, underApprox,overApprox);
 						std::cout<<underApprox << " over ";
 						std::cout<<overApprox << "\n";
 						fflush(stdout);
-				}
+				}*/
 			}while(new_change);//the bit assignment updates above can force a more precise over or under approximation, which can in turn lead to further bit assignments (I think this can happen?).
 
 			for(int i = 0;i<additions[bvID].size();i++){

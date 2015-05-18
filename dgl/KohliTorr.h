@@ -642,7 +642,7 @@ private:
 	void dbg_check_flow(int s, int t) {
 #ifndef NDEBUG
 		//check that the flow is legal
-	/*	for (int i = 0; i < g.edges(); i++) {
+		for (int i = 0; i < g.edges(); i++) {
 			Weight flow = getEdgeFlow(i);
 			bassert(flow >= 0);
 			bassert(flow <= g.getWeight(i));
@@ -676,26 +676,26 @@ private:
 				bassert(excess==f);
 				//bassert(flow_in == 0);//this doesn't have to be the case - their can be spurious flow loops...
 				//bassert(flow_out == f);
-				}else{
+				/*}else{
 				 bassert(flow_in==0);
 				 bassert(flow_out==f);
-				 }
+				 }*/
 			} else if (n == t) {
 				//if(!backward_maxflow){
 				Weight excess = flow_in-flow_out;
 				bassert(excess==f);
 				//bassert(flow_out == 0);
 				//bassert(flow_in == f);
-				}else{
+				/*}else{
 				 bassert(flow_out==0);
 				 bassert(flow_in==f);
-				 }
+				 }*/
 			} else {
 				bassert(flow_in == flow_out);
 			}
 			
 		}
-		*/
+
 #endif
 	}
 	
@@ -727,7 +727,7 @@ private:
 		dbg_check_flow(source, sink);
 		//}
 		
-		//assert(kt->maxflow(true, nullptr) == maxflow);
+		assert(kt->maxflow(true, nullptr) == maxflow);
 		//stats_calc_time+=  Monosat::rtime(0)-startcalctime;
 		//stats_flow_time+=  startcalctime-startflowtime;
 		//printf("flow calc time %f %f\n", stats_flow_time,stats_calc_time);
@@ -834,7 +834,6 @@ public:
 		 }
 		 cut.resize(j);
 		 */
-/*
 #ifndef NDEBUG
 		Weight dbg_sum = 0;
 		for (int i = 0; i < cut.size(); i++) {
@@ -844,7 +843,6 @@ public:
 		}
 		bassert(dbg_sum == f);
 #endif
-*/
 		
 		return f;
 	}
