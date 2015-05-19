@@ -1158,7 +1158,9 @@ public:
 
 	void buildReason(Lit p, vec<Lit> & reason,CRef marker) {
 		static int iter = 0;
-		++iter;
+		if(++iter==24){//17
+			int a =1;
+		}
 		assert(value(p)!=l_False);
 
 		assert(marker != CRef_Undef);
@@ -1166,7 +1168,7 @@ public:
 		//int d = marker_map[pos];
 		//double initial_start = rtime(1);
 		double start = rtime(1);
-
+		rewind_trail_pos(trail.size());
 		//if the reason is being constructed eagerly, then p won't be assigned yet, and so wont be on the trail, so we skip this.
 		rewindUntil(var(p));
 		assert(value(p)!=l_False);
@@ -1208,7 +1210,8 @@ public:
 			int bvID = getbvID(v);
 
 			reason.push(p);
-
+			rewind_trail_pos(analysis_trail_pos-1);
+			assert(value(p)==l_Undef);
 			Weight underApprox = under_approx[bvID];
 			Weight overApprox = over_approx[bvID];
 			static int iterv =0;
@@ -1228,13 +1231,55 @@ public:
 					break;
 				}
 			}
-			Weight bit = 1<<bitpos;
+			//Weight bit = 1<<bitpos;
 
 			assert(bitpos>=0);
+			Weight under = 0;
+			Weight over=(1L<<bv.size())-1;
 
-			analyzeValueReason(Comparison::leq,bvID,overApprox,reason);
-			analyzeValueReason(Comparison::geq,bvID,underApprox,reason);
-			analyze(reason);
+			for(int i = bv.size()-1;i>=0;i--){
+				Weight bit = 1<<i;
+				lbool val = value(bv[i]);
+				Lit l = bv[i];
+				if(val==l_True){
+					under+=bit;
+					assert(under<=overApprox);
+				}else if (val==l_False){
+					over-=bit;
+					assert(over>=underApprox);
+				}else{
+
+					if(over-bit<underApprox){
+						assert(bitpos==i);
+						//this is a conflict. Either this bit, or any previously assigned false bit, must be true, or the underapprox must be larger than it currently is.
+						//is this really the best way to handle this conflict?
+						for(int j = bv.size()-1;j>=i;j--){
+							Weight bit = 1<<j;
+							lbool val = value(bv[j]);
+							if(val==l_False){
+								reason.push(bv[j]);
+							}
+						}
+						buildComparisonReason(Comparison::geq,bvID,underApprox,reason);
+						break;
+
+					}
+					if(under+bit>overApprox){
+						assert(bitpos==i);
+						//this is a conflict
+						for(int j = bv.size()-1;j>=i;j--){
+							Weight bit = 1<<j;
+							lbool val = value(bv[j]);
+							if(val==l_True){
+								reason.push(~bv[j]);
+							}
+						}
+						buildComparisonReason(Comparison::leq,bvID,overApprox,reason);
+						break;
+					}
+				}
+			}
+
 		}  else {
 			assert(false);
 		}
@@ -2972,10 +3017,18 @@ public:
 
 				}
 			}
+		/*	assert(trail[analysis_trail_pos].isBoundAssignment());
+			assert(trail[analysis_trail_pos].bvID==bvID);
+			Weight prev_weight = trail[analysis_trail_pos].previous_over;*/
+			//search back in the trail
+			int trail_pos = analysis_trail_pos;
+			rewindUntil(bvID,Comparison::leq, over_approx[bvID]);
 			assert(trail[analysis_trail_pos].isBoundAssignment());
 			assert(trail[analysis_trail_pos].bvID==bvID);
 			Weight prev_weight = trail[analysis_trail_pos].previous_over;
 			addAnalysis(Comparison::leq,bvID,prev_weight,conflict);
+			rewind_trail_pos(trail_pos);
+
 			//buildValueReason(Comparison::leq,bvID,over_approx[bvID],conflict,trail_pos-1);
 			return;
 		}else if (!compare_over  && under_causes[bvID].refined_cause){
@@ -2997,10 +3050,14 @@ public:
 
 				}
 			}
+
+			int trail_pos = analysis_trail_pos;
+			rewindUntil(bvID,Comparison::geq, under_approx[bvID]);
 			assert(trail[analysis_trail_pos].isBoundAssignment());
 			assert(trail[analysis_trail_pos].bvID==bvID);
 			Weight prev_weight = trail[analysis_trail_pos].previous_under;
 			addAnalysis(Comparison::geq,bvID,prev_weight,conflict);
+			rewind_trail_pos(trail_pos);
 			//buildValueReason(Comparison::geq,bvID,under_approx[bvID],conflict,trail_pos-1);
 			return;
 		}
@@ -3263,6 +3320,7 @@ public:
 				}
 			}
 			rewind_trail_pos(analysis_trail_pos-1);
+			analyses.clear();
 		}
 		//now walk back through the trail to find the
 	}

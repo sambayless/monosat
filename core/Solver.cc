@@ -517,6 +517,9 @@ void Solver::analyze(CRef confl, vec<Lit>& out_learnt, int& out_btlevel) {
 	cancelUntil(maxlev);//use of lazily enqueued literals can trigger conflicts at earlier decision levels
 	// Generate conflict clause:
 	//
+#ifndef NDEBUG
+	assert(!seen.contains(1));
+#endif
 	bool possibly_missed_1uip=false;
 	to_analyze.clear();
 	out_learnt.push();      // (leave room for the asserting literal)
@@ -536,6 +539,9 @@ void Solver::analyze(CRef confl, vec<Lit>& out_learnt, int& out_btlevel) {
 					assert(value(q)==l_False);assert(var(q)!=var(theoryDecision));
 					varBumpActivity(var(q));
 					seen[var(q)] = 1;
+					if(var(q)==10){
+						int a=1;
+					}
 					if (level(var(q)) >= decisionLevel())
 						pathC++;
 					else
@@ -553,6 +559,9 @@ void Solver::analyze(CRef confl, vec<Lit>& out_learnt, int& out_btlevel) {
 			while (index>= stop && (!seen[var(trail[index--])] || (level(var(trail[index+1]))<decisionLevel())));
 			assert(index >= -1);
 			p = trail[index + 1];
+			if(var(p)==10){
+				int a=1;
+			}
 			assert(var(p)!=var(theoryDecision));
 			confl = reason(var(p));
 			int was_at_level = level(var(p));
@@ -1411,10 +1420,11 @@ void Solver::addClauseSafely(vec<Lit> & ps) {
 }
 bool Solver::addConflictClause(vec<Lit> & ps, CRef & confl_out, bool permanent) {
 	static int nlearnt=0;
-	if(++nlearnt==235){
+	if(++nlearnt== 111){
 		int a=1;
 	}
 #ifndef NDEBUG
+
 	printf("learnt ");
 	for (Lit l:ps){
 		printf(" %d", dimacs(l));
@@ -1610,7 +1620,7 @@ lbool Solver::search(int nof_conflicts) {
 	//last_dec = var_Undef;
 	for (;;) {
 		static int iter = 0;
-		if (++iter == 22) {//40097
+		if (++iter == 183) {//40097
 			int a = 1;
 		}
 		propagate: CRef confl = propagate();

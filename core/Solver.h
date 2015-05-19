@@ -271,7 +271,7 @@ public:
 	//Lazily construct a reason for a literal propagated from a theory
 	CRef constructReason(Lit p) {
 		static int iterp =0;
-		if(++iterp==5){
+		if(++iterp==24){
 			int a=1;
 		}
 		assert(value(p)==l_True);
