@@ -772,9 +772,7 @@ public:
 			analysis_trail_pos=-1;
 			return;
 		}
-		if(trail_pos<0){
-			trail_pos=trail.size()-1;
-		}
+
 		if(trail_pos>=trail.size()){
 			trail_pos=trail.size()-1;
 		}
@@ -1243,11 +1241,11 @@ public:
 				Lit l = bv[i];
 				if(val==l_True){
 					under+=bit;
-					assert(under<=overApprox);
+					//assert(under<=overApprox);
 				}else if (val==l_False){
 					over-=bit;
-					assert(over>=underApprox);
-				}else{
+					//assert(over>=underApprox);
+				}else if (bitpos==i){
 
 					if(over-bit<underApprox){
 						assert(bitpos==i);
@@ -2731,7 +2729,7 @@ public:
 		stats_build_addition_arg_reason++;
 		Weight  over_cur = over_approx[bvID];
 		Weight  under_cur = under_approx[bvID];
-		assert(checkApproxUpToDate(bvID));
+		//assert(checkApproxUpToDate(bvID));
 
 
 		//the reason that the addition is over is the reason that
@@ -3026,8 +3024,9 @@ public:
 			assert(trail[analysis_trail_pos].isBoundAssignment());
 			assert(trail[analysis_trail_pos].bvID==bvID);
 			Weight prev_weight = trail[analysis_trail_pos].previous_over;
-			addAnalysis(Comparison::leq,bvID,prev_weight,conflict);
 			rewind_trail_pos(trail_pos);
+			addAnalysis(Comparison::leq,bvID,prev_weight,conflict);
+
 
 			//buildValueReason(Comparison::leq,bvID,over_approx[bvID],conflict,trail_pos-1);
 			return;
@@ -3056,8 +3055,9 @@ public:
 			assert(trail[analysis_trail_pos].isBoundAssignment());
 			assert(trail[analysis_trail_pos].bvID==bvID);
 			Weight prev_weight = trail[analysis_trail_pos].previous_under;
-			addAnalysis(Comparison::geq,bvID,prev_weight,conflict);
 			rewind_trail_pos(trail_pos);
+			addAnalysis(Comparison::geq,bvID,prev_weight,conflict);
+
 			//buildValueReason(Comparison::geq,bvID,under_approx[bvID],conflict,trail_pos-1);
 			return;
 		}
@@ -3225,6 +3225,8 @@ public:
 		}
 		//add this to bv comparison to the stack of analyses to perform.
 		if(compare_over){
+			if(to>= over_approx0[bvID])
+				return;//no analysis required.
 			//need to check whether this analysis has already been requested for this bitvector, and if not, insert it into the analysis chain in the right position.
 			//should this use a binary search?
 			int cID = pending_over_analyses[bvID];
@@ -3253,6 +3255,8 @@ public:
 				pending_over_analyses[bvID]=aID;
 			}
 		}else{
+			if(to<= under_approx0[bvID])
+				return;//no analysis required.
 			//need to check whether this analysis has already been requested for this bitvector, and if not, insert it into the analysis chain in the right position.
 			//should this use a binary search?
 			int cID = pending_under_analyses[bvID];
@@ -3293,7 +3297,13 @@ public:
 	}
 
 	void analyze(vec<Lit> & conflict){
+		static int iter = 0;
+		int prev_pos = analysis_trail_pos;
 		while(n_pending_analyses>0){
+
+			if(++iter==110){
+				int a=1;
+			}
 			assert(analysis_trail_pos>=0);
 			Assignment & e = trail[analysis_trail_pos];
 			if (e.isBoundAssignment()){
@@ -3302,26 +3312,30 @@ public:
 					int aID = pending_over_analyses[bvID];
 					ToAnalyze & a =  analyses[aID];
 					int nID = a.next_analysis;
+					Weight w = a.value;
 					assert(nID!=aID);
 					pending_over_analyses[bvID]=nID;
 					n_pending_analyses--;
 					analyses[aID].clear();
-					analyzeValueReason(Comparison::leq,bvID,a.value,conflict);
+					analyzeValueReason(Comparison::leq,bvID,w,conflict);
 				}
 				if(pending_under_analyses[bvID]>-1 && e.previous_under <  analyses[pending_under_analyses[bvID]].value){
 					int aID = pending_under_analyses[bvID];
 					ToAnalyze & a =  analyses[aID];
 					int nID = a.next_analysis;
+					Weight w = a.value;
 					assert(nID!=aID);
 					pending_under_analyses[bvID]=nID;
 					n_pending_analyses--;
 					analyses[aID].clear();
-					analyzeValueReason(Comparison::geq,bvID,a.value,conflict);
+					analyzeValueReason(Comparison::geq,bvID,w,conflict);
 				}
 			}
 			rewind_trail_pos(analysis_trail_pos-1);
-			analyses.clear();
+			assert(analysis_trail_pos<prev_pos);
+			prev_pos=analysis_trail_pos;
 		}
+		analyses.clear();
 		//now walk back through the trail to find the
 	}
 
