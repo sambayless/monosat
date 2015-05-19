@@ -1172,7 +1172,8 @@ void MaxflowDetector<Weight>::collectDisabledEdges() {
 
 template<typename Weight>
 void MaxflowDetector<Weight>::collectChangedEdges() {
-	
+	if(!(opt_conflict_min_cut_maxflow || opt_decide_theories))
+		return;
 
 	dbg_decisions();
 	overapprox_conflict_detector->update();
@@ -1203,6 +1204,7 @@ void MaxflowDetector<Weight>::collectChangedEdges() {
 		if(opt_theory_vsids){
 			insertEdgeOrder(edgeid);
 		}
+		if(opt_decide_theories){
 		if (!is_potential_decision[edgeid]) {
 			Lit l = mkLit(outer->getEdgeVar(edgeid), false);
 			if((outer->decidable(l) || outer->level(var(l))>0) || (outer->edgeWeightDecidable(edgeid, DetectorComparison::geq,  overapprox_conflict_detector->getEdgeFlow(edgeid) )) ){
@@ -1233,7 +1235,7 @@ void MaxflowDetector<Weight>::collectChangedEdges() {
 				}
 			}
 		}
-		
+		}
 		if (opt_conflict_min_cut_maxflow) {
 			
 			Lit l = mkLit(outer->getEdgeVar(edgeid), false);
@@ -1380,6 +1382,8 @@ void MaxflowDetector<Weight>::undecideEdgeWeight(int edgeid){
 	if(opt_theory_vsids){
 		insertEdgeOrder(edgeid);
 	}
+	if(!opt_decide_theories)
+		return;
 	if(is_potential_decision[edgeid] && !in_decision_q[edgeid]){
 
 		//problem: this check is applied before any backtracking might occur (if lazy backtracking is not applied).

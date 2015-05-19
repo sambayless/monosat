@@ -1156,7 +1156,7 @@ public:
 
 	void buildReason(Lit p, vec<Lit> & reason,CRef marker) {
 		static int iter = 0;
-		if(++iter==24){//17
+		if(++iter==45){//17
 			int a =1;
 		}
 		assert(value(p)!=l_False);
@@ -3235,6 +3235,9 @@ public:
 			while(cID>-1 && analyses[cID].value > to){
 				ToAnalyze & c = analyses[cID];
 				prevID = cID;
+				if(cID<0 || cID==c.next_analysis){
+					exit(9);//this is a cycle
+				}
 				cID = c.next_analysis;
 			}
 			if(cID>=0){
@@ -3265,6 +3268,9 @@ public:
 			while(cID>-1 && analyses[cID].value < to){
 				ToAnalyze & c = analyses[cID];
 				prevID = cID;
+				if(cID<0 || cID==c.next_analysis){
+					exit(9);//this is a cycle
+				}
 				cID = c.next_analysis;
 			}
 			if(cID>=0){
@@ -3301,7 +3307,7 @@ public:
 		int prev_pos = analysis_trail_pos;
 		while(n_pending_analyses>0){
 
-			if(++iter==110){
+			if(++iter==1153){
 				int a=1;
 			}
 			assert(analysis_trail_pos>=0);
@@ -3336,6 +3342,12 @@ public:
 			prev_pos=analysis_trail_pos;
 		}
 		analyses.clear();
+#ifndef NDEBUG
+		for (int i = 0;i<pending_under_analyses.size();i++){
+			assert(pending_under_analyses[i]==-1)
+			assert(pending_over_analyses[i]==-1)
+		}
+#endif
 		//now walk back through the trail to find the
 	}
 
@@ -3676,8 +3688,8 @@ public:
 		cause_set.growTo(bvID+1);
 		eq_bitvectors.growTo(bvID+1,-1);
 		eq_bitvectors[bvID]=bvID;
-		pending_under_analyses.growTo(bvID+1);
-		pending_over_analyses.growTo(bvID+1);
+		pending_under_analyses.growTo(bvID+1,-1);
+		pending_over_analyses.growTo(bvID+1,-1);
 		bv_needs_propagation.growTo(bvID+1);
 		bv_needs_propagation[bvID]=true;
 		//bv_callbacks.growTo(bvID+1);
