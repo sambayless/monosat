@@ -624,7 +624,9 @@ void ReachDetector<Weight>::buildNonReachReason(int node, vec<Lit> & conflict, b
 	assert(outer->dbg_notreachable(source, u));
 	//assert(!negative_reach_detector->connected_unchecked(node));
 	double starttime = rtime(2);
-	
+	/*if(opt_verb>1){
+		printf("Reach conflict %d, graph %d\n", it, outer->getTheoryIndex());
+	}*/
 	if ((force_maxflow || opt_conflict_min_cut) && (conflict_flow || conflict_flows[node])) {
 		
 		//g_over.drawFull();

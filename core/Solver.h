@@ -70,6 +70,12 @@ public:
 			
 	void setDecisionPriority(Var v, unsigned int p) {
 		priority[v] = p;
+		if(decision[v]){
+			if (order_heap.inHeap(v))
+				order_heap.decrease(v);
+			else
+				order_heap.insert(v);
+		}
 	}
 	
 	//Theory interface

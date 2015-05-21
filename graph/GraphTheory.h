@@ -1460,6 +1460,7 @@ public:
 			Detector * r = detectors[i];
 			Lit l = r->decide();
 			if (l != lit_Undef) {
+
 				if(opt_decide_graph_bv && !sign(l) && isEdgeVar(var(l)) && hasBitVector(getEdgeID(var(l))) && r->supportsEdgeDecisions()){
 					int edgeID = getEdgeID(var(l));
 					EdgeDecider<Weight> * d = dynamic_cast<EdgeDecider<Weight> *>(r); //(EdgeDecider<Weight>*)r;
@@ -1815,7 +1816,6 @@ public:
 			
 			int from = edge_list[edge_num].from;
 			int to = edge_list[edge_num].to;
-
 			if (!sign(l)) {
 				g_under.enableEdge(edge_num);
 			} else {

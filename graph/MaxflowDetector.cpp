@@ -488,6 +488,9 @@ void MaxflowDetector<Weight>::buildMaxFlowTooLowReason(Weight maxflow, vec<Lit> 
 	if (it == 3) {
 		int a = 1;
 	}
+/*	if(opt_verb>1){
+		printf("Maxflow conflict %d, graph %d\n", it, outer->getTheoryIndex());
+	}*/
 	if(g_over.edges()==0)
 		return;
 	//printf("%d\n",it);

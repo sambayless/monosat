@@ -444,7 +444,7 @@ Lit Solver::pickBranchLit() {
 			break;
 		} else
 			next = order_heap.removeMin();
-	
+
 	return next == var_Undef ? lit_Undef : mkLit(next, rnd_pol ? drand(random_seed) < 0.5 : polarity[next]);
 }
 
@@ -782,7 +782,6 @@ void Solver::enqueueLazy(Lit p, int lev, CRef from){
 
 void Solver::uncheckedEnqueue(Lit p, CRef from) {
 	assert(value(p) == l_Undef);
-
 	assigns[var(p)] = lbool(!sign(p));
 	vardata[var(p)] = mkVarData(from, decisionLevel());
 	trail.push_(p);

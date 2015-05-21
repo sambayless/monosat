@@ -141,6 +141,7 @@
 								</option>
 								<option id="gnu.cpp.compiler.option.optimization.flags.994071788" name="Other optimization flags" superClass="gnu.cpp.compiler.option.optimization.flags" value="" valueType="string"/>
 								<option id="gnu.cpp.compiler.option.other.other.347702268" name="Other flags" superClass="gnu.cpp.compiler.option.other.other" value="-c -fmessage-length=0 -std=c++11 -Wno-unused-variable -Wno-unused-but-set-variable   -Wno-sign-compare" valueType="string"/>
+								<option id="gnu.cpp.compiler.option.dialect.std.558166506" name="Language standard" superClass="gnu.cpp.compiler.option.dialect.std" value="gnu.cpp.compiler.dialect.default" valueType="enumerated"/>
 								<inputType id="cdt.managedbuild.tool.gnu.cpp.compiler.input.1990306899" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.input"/>
 							</tool>
 							<tool id="cdt.managedbuild.tool.gnu.c.compiler.exe.release.2036074097" name="GCC C Compiler" superClass="cdt.managedbuild.tool.gnu.c.compiler.exe.release">
@@ -709,6 +710,7 @@
 								</option>
 								<option id="gnu.cpp.compiler.option.optimization.flags.751973662" name="Other optimization flags" superClass="gnu.cpp.compiler.option.optimization.flags" value="" valueType="string"/>
 								<option id="gnu.cpp.compiler.option.other.other.568939767" name="Other flags" superClass="gnu.cpp.compiler.option.other.other" value="-c -fmessage-length=0 -msse2  -std=c++11 -Wno-unused-variable -Wno-unused-but-set-variable " valueType="string"/>
+								<option id="gnu.cpp.compiler.option.dialect.std.514039872" superClass="gnu.cpp.compiler.option.dialect.std" value="gnu.cpp.compiler.dialect.default" valueType="enumerated"/>
 								<inputType id="cdt.managedbuild.tool.gnu.cpp.compiler.input.310482073" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.input"/>
 							</tool>
 							<tool id="cdt.managedbuild.tool.gnu.c.compiler.exe.release.1601842446" name="GCC C Compiler" superClass="cdt.managedbuild.tool.gnu.c.compiler.exe.release">
@@ -1295,6 +1297,7 @@
 		<configuration configurationName="coverage">
 			<resource resourceType="PROJECT" workspacePath="/modsat"/>
 		</configuration>
+		<configuration configurationName="GPerf"/>
 		<configuration configurationName="clang"/>
 	</storageModule>
 	<storageModule moduleId="org.eclipse.cdt.core.LanguageSettingsProviders"/>

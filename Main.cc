@@ -430,7 +430,7 @@ int main(int argc, char** argv) {
 				int p = 0;
 				int total_read = 0;
 				while (fscanf(f, " %d %d ", &v, &p) == 2) {
-					if (v < 1 || v > S.nVars() || p < 0) {
+					if (v < 1 || v > S.nVars() ) {
 						fprintf(stderr, "Bad priority line: %d %d", v, p);
 						exit(1);
 					}
