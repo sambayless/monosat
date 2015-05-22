@@ -45,6 +45,8 @@ namespace Monosat {
 // The MiniSAT Boolean SAT solver, extended to provided basic SMT support.
 class Solver: public Theory,public TheorySolver {
 public:
+	void * _external_data=nullptr;//convenience pointer for external API.
+
 	//fix this...
 	friend class Theory;
 	template<typename Weight> friend class GraphTheorySolver;

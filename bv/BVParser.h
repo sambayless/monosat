@@ -207,16 +207,16 @@ private:
 			return;
 		}
 		//bv_lt bvID var weight
-
+		skipWhitespace(in);
 		int v = parseInt(in) - 1;
 		while (v >= S.nVars())
 			S.newVar();
 		skipWhitespace(in);
 		//bool arg1_is_bv=match(in,"bv");
-		long arg1 = parseLong(in);
+		long arg1 = parseInt(in);
 		skipWhitespace(in);
 		//bool arg2_is_bv=match(in,"bv");
-		long arg2 = parseLong(in);
+		long arg2 = parseInt(in);
 
 
 /*
@@ -240,7 +240,29 @@ private:
 		}*/
 	}
 
+	void readCompare(B& in, Solver& S,Comparison c) {
+			if (opt_ignore_theories) {
+				skipLine(in);
+				return;
+			}
+			//bv_lt bvID var weight
+			skipWhitespace(in);
+			int v = parseInt(in) - 1;
+			while (v >= S.nVars())
+				S.newVar();
+			skipWhitespace(in);
+			//bool arg1_is_bv=match(in,"bv");
+			long arg1 = parseInt(in);
+			skipWhitespace(in);
+			//bool arg2_is_bv=match(in,"bv");
+			long arg2 = parseLong(in);
+			compares.push();
+			compares.last().bvID =  arg1;
+			compares.last().w = arg2;
+			compares.last().c = c;
+			compares.last().var = v;
 
+		}
 
 public:
 	BVParser(){
@@ -261,26 +283,43 @@ public:
 		} else if (match(in, "bv")) {
 			skipWhitespace(in);
 			if (match(in,"const")){
-				readConstBV(in,S);
+				skipWhitespace(in);
+				if (match(in, "<=")) {
+					readCompare(in, S,Comparison::leq);
+					return true;
+				}else if (match(in, "<")) {
+
+					readCompare(in, S,Comparison::lt);
+					return true;
+				}else if (match(in, ">=")) {
+
+					readCompare(in, S,Comparison::geq);
+					return true;
+				}  else if (match(in, ">")) {
+
+					readCompare(in, S,Comparison::gt);
+					return true;
+				}else
+					readConstBV(in,S);
 				return true;
 			}else if (match(in, "+")) {
-				count++;
+
 				readAddBV(in, S);
 				return true;
 			}else if (match(in, "<=")) {
-				count++;
+
 				readCompareBV(in, S,Comparison::leq);
 				return true;
 			}else if (match(in, "<")) {
-				count++;
+
 				readCompareBV(in, S,Comparison::lt);
 				return true;
 			}else if (match(in, ">=")) {
-				count++;
+
 				readCompareBV(in, S,Comparison::geq);
 				return true;
 			}  else if (match(in, ">")) {
-				count++;
+
 				readCompareBV(in, S,Comparison::gt);
 				return true;
 			} else{

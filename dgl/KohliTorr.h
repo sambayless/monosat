@@ -115,7 +115,7 @@ public:
 	void updateMaxCapacity(Weight new_max_capacity){
 		{
 			if(new_max_capacity<1){
-				exit(11);
+				new_max_capacity=1;
 			}
 			assert(new_max_capacity>=max_capacity);
 			if (kt) {
@@ -387,8 +387,8 @@ public:
 			}
 			if(s!=t){
 				assert(max_capacity>=0);
-				if(max_capacity<0){
-					exit(11);
+				if(max_capacity<1){
+					max_capacity=1;//if max capacity is 0, then kt allows the cut to be between the actual kt source and s, which can lead to incorrect results here.
 				}
 				if (dynamic) {
 					//if(!backward_maxflow){
@@ -548,7 +548,7 @@ private:
 	
 	void dbg_print_graph(int from, int to, bool only_flow = false) {
 #ifndef NDEBUG
-		return;
+
 		if (edge_enabled.size() < g.edges())
 			return;
 		static int it = 0;

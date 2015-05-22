@@ -17,3 +17,5 @@ graph/resources/*
 /ClangDebug
 /ClangRelease
 /GPerf
+/SharedLibrary
+/SharedLibraryDbg

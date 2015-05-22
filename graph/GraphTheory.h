@@ -78,7 +78,7 @@ private:
 	int local_q = 0;
 	bool lazy_backtracking_enabled=false;
 public:
-	int id;
+
 	bool all_edges_unit = true;
 	bool all_edges_positive=true;
 	bool has_any_bitvector_edges=false;
@@ -636,22 +636,22 @@ public:
 		
 	} propCutStatus;
 
-	GraphTheorySolver(Solver * S_, int _id = -1) :
-			S(S_), id(_id), cutStatus(*this), propCutStatus(*this){
+	GraphTheorySolver(Solver * S_) :
+			S(S_), cutStatus(*this), propCutStatus(*this){
 #ifdef RECORD
 		{
 			char t[30];
-			sprintf(t, "TEST_GRAPH%d", id);
+			sprintf(t, "TEST_GRAPH%d", S->theories.size());
 			g_under.outfile = fopen(t, "w");
 		}
 		{
 			char t[30];
-			sprintf(t, "TEST_ANTI_GRAPH%d", id);
+			sprintf(t, "TEST_ANTI_GRAPH%d",  S->theories.size());
 			g_over.outfile = fopen(t, "w");
 		}
 		{
 			char t[30];
-			sprintf(t, "TEST_CUT_GRAPH%d", id);
+			sprintf(t, "TEST_CUT_GRAPH%d", S->theories.size());
 			cutGraph.outfile = fopen(t, "w");
 		}
 #endif
@@ -734,7 +734,7 @@ public:
 		theory_index = id;
 	}
 	inline int getGraphID() {
-		return id;
+		return getTheoryIndex();
 	}
 	inline int getTheoryIndexBV(){
 		return theory_index;
@@ -2486,8 +2486,10 @@ public:
 
 	Lit newEdgeBV(int from, int to, Var outerVar,vec<Var> & bitVector) {
 		if(!comparator ){
-			fprintf(stderr,"Undefined bitvector\n");exit(1);
+			fprintf(stderr,"No bitvector theory initialized\n");exit(1);
 		}
+		while(from>=nNodes()||to>=nNodes())
+			newNode();
 		has_any_bitvector_edges=true;
 			assert(outerVar!=var_Undef);
 			assert(edge_weights.size()==0);
@@ -2579,7 +2581,10 @@ public:
 			return mkLit(v, false);
 		}
 	Lit newEdgeBV(int from, int to, Var outerVar,int bvID) {
-		if(!comparator ||!comparator->hasBV(bvID)){
+		if(!comparator){
+			fprintf(stderr,"No bitvector theory initialized\n");exit(1);
+		}
+		if(!comparator->hasBV(bvID)){
 			fprintf(stderr,"Undefined bitvector\n");exit(1);
 		}
 		if(comparator->hasTheory(bvID)){
@@ -2588,6 +2593,8 @@ public:
 		if(isEdgeBV(bvID)){
 			fprintf(stderr,"Bitvector %d used for multiple edge weights\n", bvID);exit(1);
 		}
+		while(from>=nNodes()||to>=nNodes())
+			newNode();
 		has_any_bitvector_edges=true;
 		assert(outerVar!=var_Undef);
 		assert(edge_weights.size()==0);
@@ -2666,6 +2673,9 @@ public:
 			}
 	Lit newEdge(int from, int to, Var outerVar = var_Undef, Weight weight = 1) {
 		assert(outerVar!=var_Undef);
+		while(from>=nNodes()||to>=nNodes())
+			newNode();
+
 		/*	if(outerVar==var_Undef)
 		 outerVar = S->newVar();*/
 		assert(edge_bitvectors.size()==0);
@@ -2674,7 +2684,7 @@ public:
 		int index = edge_list.size();
 		edge_list.push();
 		Var v = newVar(outerVar, index, true);
-		
+
 		/*
 		 if(num_edges>0){
 		 }else
@@ -2799,7 +2809,10 @@ public:
 	}
 
 	void reachesWithinDistanceBV(int from, int to, Var reach_var, int bvID, bool strictComparison) {
-		if(!comparator ||!comparator->hasBV(bvID)){
+		if(!comparator){
+			fprintf(stderr,"No bitvector theory initialized\n");exit(1);
+		}
+		if(!comparator->hasBV(bvID)){
 			fprintf(stderr,"Undefined bitvector\n");exit(1);
 		}
 		comparator->setBitvectorTheory(bvID,this->getTheoryIndex());
@@ -2830,7 +2843,10 @@ public:
 	}
 
 	void implementMaxflowBV(int from, int to, Var v, int bvID, bool strictComparison) {
-		if(!comparator || !comparator->hasBV(bvID)){
+		if(!comparator){
+			fprintf(stderr,"No bitvector theory initialized\n");exit(1);
+		}
+		if(!comparator->hasBV(bvID)){
 			fprintf(stderr,"Undefined bitvector\n");exit(1);
 		}
 		comparator->setBitvectorTheory(bvID,this->getTheoryIndex());

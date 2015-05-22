@@ -159,17 +159,17 @@ class GraphParser: public Parser<B, Solver> {
 		graphs_float.growTo(g + 1);
 		graphs_rational.growTo(g + 1);
 		if (graph_type == GraphType::INTEGER) {
-			GraphTheorySolver<long> *graph = new GraphTheorySolver<long>(&S, g);
+			GraphTheorySolver<long> *graph = new GraphTheorySolver<long>(&S);
 			graph->newNodes(n);
 			graphs[g] = graph;
 			S.addTheory(graph);
 		} else if (graph_type == GraphType::FLOAT) {
-			GraphTheorySolver<double> *graph = new GraphTheorySolver<double>(&S, g);
+			GraphTheorySolver<double> *graph = new GraphTheorySolver<double>(&S);
 			graph->newNodes(n);
 			graphs_float[g] = graph;
 			S.addTheory(graph);
 		} else if (graph_type == GraphType::RATIONAL) {
-			GraphTheorySolver<mpq_class> *graph = new GraphTheorySolver<mpq_class>(&S, g);
+			GraphTheorySolver<mpq_class> *graph = new GraphTheorySolver<mpq_class>(&S);
 			graph->newNodes(n);
 			graphs_rational[g] = graph;
 			S.addTheory(graph);

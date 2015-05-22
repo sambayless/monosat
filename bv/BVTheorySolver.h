@@ -3378,8 +3378,8 @@ public:
 		analyses.clear();
 #ifndef NDEBUG
 		for (int i = 0;i<pending_under_analyses.size();i++){
-			assert(pending_under_analyses[i]==-1)
-			assert(pending_over_analyses[i]==-1)
+			assert(pending_under_analyses[i]==-1);
+			assert(pending_over_analyses[i]==-1);
 		}
 #endif
 		//now walk back through the trail to find the
@@ -3618,10 +3618,12 @@ public:
 	const char * getSymbol(int bvID){
 		return symbols[bvID];
 	}
-
+	int nBitvectors()const{
+		return bitvectors.size();
+	}
 	BitVector newBitvector(int bvID, vec<Var> & vars){
 		if(bvID<0){
-			bvID = bitvectors.size();
+			bvID = nBitvectors();
 		}
 		if(bvID==55349){
 			int a=1;
@@ -3695,7 +3697,7 @@ public:
 
 	BitVector newBitvector(int bvID, int bitwidth,Weight constval=-1, int equivalentBV=-1){
 		if(bvID<0){
-			bvID = bitvectors.size();
+			bvID = nBitvectors();
 		}
 		if(bvID==55349){
 			int a=1;
