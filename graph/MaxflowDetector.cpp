@@ -619,18 +619,24 @@ void MaxflowDetector<Weight>::buildMaxFlowTooLowReason(Weight maxflow, vec<Lit> 
 	/*			std::vector<MaxFlowEdge> ignore;
 	 negative_conflict_detector->minCut(ignore);*/
 	visit.push(target);
+	seen[target]=true;
 	for (int k = 0; k < visit.size(); k++) {
 		int u = visit[k];
-		for (int i = 0; i < g_under.nIncoming(u); i++) {
-			int p = g_under.incoming(u, i).node;
+		for (int i = 0; i < g_over.nIncoming(u); i++) {
+			int p = g_over.incoming(u, i).node;
+			if(p==u)
+				continue;//skip self loop edges, as they cannot be required for the maxflow
 			if (!seen[p]) {
 				
-				int edgeid = g_under.incoming(u, i).id;
+				int edgeid = g_over.incoming(u, i).id;
+
+
 				int v = outer->getEdgeVar(edgeid);
 				
 				//assert( g.incoming(u,i).to==u);
 				if (outer->value(v) != l_False) {
 					//this is an enabled edge in the overapprox
+					assert(overapprox_conflict_detector->getEdgeCapacity(edgeid)== g_over.getWeight(edgeid));
 					
 					Weight residual_capacity = overapprox_conflict_detector->getEdgeResidualCapacity(edgeid);
 					if (residual_capacity > 0) {
@@ -639,6 +645,7 @@ void MaxflowDetector<Weight>::buildMaxFlowTooLowReason(Weight maxflow, vec<Lit> 
 					}else{
 						//if the edge _was_ enabled, and all of its capacity was used, then the reason that it didn't have more capacity must be included.
 						if(outer->hasBitVector(edgeid)){
+							assert(g_over.getWeight(edgeid)==outer->getEdgeBV(edgeid).getOver());
 							outer->buildBVReason(outer->getEdgeBV(edgeid).getID(),Comparison::leq,overapprox_conflict_detector->getEdgeFlow(edgeid),conflict);
 							//outer->buildBVReason(bv.getID(),inclusive ? Comparison::gt:Comparison::geq,bv.getUnder(),conflict);
 						}

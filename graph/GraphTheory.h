@@ -2757,8 +2757,14 @@ public:
 		return edge_weights[edgeID];
 	}*/
 	void reachesWithinSteps(int from, int to, Var reach_var, int within_steps) {
-		
-		assert(from < g_under.nodes());
+		if(to >= g_under.nodes()){
+			fprintf(stderr, "Undefined node %d\n",to);
+			exit(1);
+		}
+		if(from >= g_under.nodes()){
+			fprintf(stderr, "Undefined node %d\n",to);
+			exit(1);
+		}
 		if (within_steps <= -1)
 			within_steps = g_under.nodes();
 		
@@ -2781,8 +2787,14 @@ public:
 
 
 	void reachesWithinDistance(int from, int to, Var reach_var, Weight distance, bool strictComparison) {
-		
-		assert(from < g_under.nodes());
+		if(to >= g_under.nodes()){
+			fprintf(stderr, "Undefined node %d\n",to);
+			exit(1);
+		}
+		if(from >= g_under.nodes()){
+			fprintf(stderr, "Undefined node %d\n",to);
+			exit(1);
+		}
 		
 		if (weighted_dist_info[from].source < 0) {
 			DistanceDetector<Weight> * d;
@@ -2809,6 +2821,14 @@ public:
 	}
 
 	void reachesWithinDistanceBV(int from, int to, Var reach_var, int bvID, bool strictComparison) {
+		if(to >= g_under.nodes()){
+			fprintf(stderr, "Undefined node %d\n",to);
+			exit(1);
+		}
+		if(from >= g_under.nodes()){
+			fprintf(stderr, "Undefined node %d\n",to);
+			exit(1);
+		}
 		if(!comparator){
 			fprintf(stderr,"No bitvector theory initialized\n");exit(1);
 		}
@@ -2843,6 +2863,14 @@ public:
 	}
 
 	void implementMaxflowBV(int from, int to, Var v, int bvID, bool strictComparison) {
+		if(to >= g_under.nodes()){
+			fprintf(stderr, "Undefined node %d\n",to);
+			exit(1);
+		}
+		if(from >= g_under.nodes()){
+			fprintf(stderr, "Undefined node %d\n",to);
+			exit(1);
+		}
 		if(!comparator){
 			fprintf(stderr,"No bitvector theory initialized\n");exit(1);
 		}
@@ -3059,7 +3087,14 @@ public:
 		mstDetector->addTreeEdgeLit(edgeid, var);
 	}
 	void maxflow(int from, int to,Var v, Weight  max_flow,  bool inclusive=true) {
-		
+		if(to >= g_under.nodes()){
+			fprintf(stderr, "Undefined node %d\n",to);
+			exit(1);
+		}
+		if(from >= g_under.nodes()){
+			fprintf(stderr, "Undefined node %d\n",to);
+			exit(1);
+		}
 		for (int i = 0; i < flow_detectors.size(); i++) {
 			if (flow_detectors[i]->source == from && flow_detectors[i]->target == to) {
 				flow_detectors[i]->addFlowLit(max_flow, v,inclusive);

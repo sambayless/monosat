@@ -53,7 +53,7 @@
 
 #include "geometry/GeometryParser.h"
 #include "bv/BVParser.h"
-#include "Monosat.h"
+#include "api/Monosat.h"
 
 using namespace Monosat;
 using namespace std;
