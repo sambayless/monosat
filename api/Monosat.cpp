@@ -187,14 +187,6 @@ void * newSolver(int argc, char**argv){
 		opt_conflict_min_cut_maxflow = true;
 	}
 
-#if defined(__linux__)
-	fpu_control_t oldcw, newcw;
-	_FPU_GETCW(oldcw);
-	newcw = (oldcw & ~_FPU_EXTENDED) | _FPU_DOUBLE;
-	_FPU_SETCW(newcw);
-	if (opt_verb > 0)
-		fprintf(stderr, "WARNING: for repeatability, setting FPU to use double precision\n");
-#endif
 	_selectAlgorithms();
 	  Monosat::SimpSolver * S = new Monosat::SimpSolver();
 
