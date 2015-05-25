@@ -14,7 +14,7 @@ using namespace Monosat;
 using namespace std;
 
 //Select which algorithms to apply for graph and geometric theory solvers, by parsing command line arguments and defaults.
-void selectAlgorithms(){
+void _selectAlgorithms(){
 	mincutalg = MinCutAlg::ALG_EDMONSKARP;
 
 	if (!strcasecmp(opt_maxflow_alg, "edmondskarp-adj")) {
@@ -195,7 +195,7 @@ void * newSolver(int argc, char**argv){
 	if (opt_verb > 0)
 		fprintf(stderr, "WARNING: for repeatability, setting FPU to use double precision\n");
 #endif
-	selectAlgorithms();
+	_selectAlgorithms();
 	  Monosat::SimpSolver * S = new Monosat::SimpSolver();
 
 	  S->_external_data =(void*)new MonosatData();

@@ -351,6 +351,7 @@ public:
 	double stats_conflict_time = 0;
 	long stats_propagations = 0;
 	long stats_bv_propagations =0;
+	long stats_bv_skipped_propagations=0;
 	long stats_num_conflicts = 0;
 	long stats_bit_conflicts = 0;
 	long stats_addition_conflicts = 0;
@@ -415,8 +416,8 @@ public:
 		printf("constant bitvectors (at start, end of deduction): %ld, %ld\n",n_starting_consts ,n_consts);
 
 
-		printf("Propagations: %ld (%f s, avg: %f s, %ld skipped), bv updates: %ld (%f s), bv propagations %ld\n", stats_propagations, propagationtime,
-				(propagationtime) / ((double) stats_propagations + 1), stats_propagations_skipped,statis_bv_updates,stats_update_time,stats_bv_propagations);
+		printf("Propagations: %ld (%f s, avg: %f s, %ld skipped), bv updates: %ld (%f s), bv propagations %ld (%ld skipped)\n", stats_propagations, propagationtime,
+				(propagationtime) / ((double) stats_propagations + 1), stats_propagations_skipped,statis_bv_updates,stats_update_time,stats_bv_propagations,stats_bv_skipped_propagations);
 		printf("Decisions: %ld (%f s, avg: %f s)\n", stats_decisions, stats_decision_time,
 				(stats_decision_time) / ((double) stats_decisions + 1));
 		printf("Conflicts: %ld (bits: %ld, additions: %ld, comparisons: %ld, bv comparisons: %ld), %f seconds\n", stats_num_conflicts,stats_bit_conflicts,stats_addition_conflicts,stats_compare_conflicts,stats_bv_compare_conflicts, stats_conflict_time);
@@ -940,13 +941,19 @@ public:
 					over_approx[bvID]=e.previous_over;
 					under_causes[bvID]=e.prev_under_cause;
 					over_causes[bvID]=e.prev_over_cause;
-					/*printf("backtrack bv %d, under ", bvID);
-					std::cout<<e.previous_under << " over ";
-					std::cout<<e.previous_over << "\n";
-					fflush(stdout);*/
 
 					if(hasTheory(bvID))
 						getTheory(bvID)->backtrackBV(bvID);//only enqueue the bitvector in the subtheory _after_ it's approximation has been updated!
+
+					for(int changedID: cause_set[bvID]){
+						under_approx[changedID]=under_approx[bvID];
+						over_approx[changedID]=over_approx[bvID];
+						under_approx0[changedID]=under_approx0[bvID];
+						over_approx0[changedID]=over_approx0[bvID];
+
+						if(hasTheory(changedID))
+							getTheory(changedID)->backtrackBV(changedID);//only enqueue the bitvector in the subtheory _after_ it's approximation has been updated!
+					}
 				}else{
 					assert(assigns[e.var]!=l_Undef);
 					if (e.isComparator) {
@@ -2252,6 +2259,7 @@ public:
 			bool changed = updateApproximations(bvID);
 			changed |=bv_needs_propagation[bvID];
 			if(!changed){
+				stats_bv_skipped_propagations++;
 				altered_bvs.pop(); //this isn't safe to do, because recently enforced comparisons need to be propagated, even if the under/over approx didn't change.
 				alteredBV[bvID]=false;
 				continue;
@@ -2727,14 +2735,22 @@ public:
 			if(changed){
 				//then any additions this is an argument of need to be updated.
 				for(int changedID: cause_set[bvID]){
-					if(!alteredBV[changedID]){
+					under_approx[changedID]=under_approx[bvID];
+					over_approx[changedID]=over_approx[bvID];
+					under_approx0[changedID]=under_approx0[bvID];
+					over_approx0[changedID]=over_approx0[bvID];
+
+					if(hasTheory(changedID))
+						getTheory(changedID)->enqueueBV(changedID);//only enqueue the bitvector in the subtheory _after_ it's approximation has been updated!
+
+				/*	if(!alteredBV[changedID]){
 						alteredBV[changedID]=true;
 						assert(altered_bvs.last()==bvID);
 						altered_bvs.last()=changedID;
 						assert(altered_bvs.last()==changedID);
 						altered_bvs.push(bvID);
 						assert(altered_bvs.last()==bvID);
-					}
+					}*/
 				}
 			}
 
