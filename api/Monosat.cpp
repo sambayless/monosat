@@ -167,6 +167,14 @@ void selectAlgorithms(){
 		exit(1);
 	}
 }
+void printStats(SimpSolver* solver) {
+	double cpu_time = cpuTime();
+	double mem_used = memUsedPeak();
+	solver->printStats(3);
+	if (mem_used != 0)
+		printf("Memory used           : %.2f MB\n", mem_used);
+	printf("CPU time              : %g s\n", cpu_time);
+}
 
 struct MonosatData{
 	Monosat::BVTheorySolver<long> * bv_theory=nullptr;
@@ -191,7 +199,9 @@ void * newSolver(int argc, char**argv){
 	  Monosat::SimpSolver * S = new Monosat::SimpSolver();
 
 	  S->_external_data =(void*)new MonosatData();
-
+	  if(!opt_pre){
+		  S->eliminate(true);//disable preprocessing.
+	  }
     return S ;
 }
 void deleteSolver (Monosat::SimpSolver * S)
@@ -215,11 +225,9 @@ void * newGraph(Monosat::SimpSolver * S){
 	  return graph;
 }
 bool solve(Monosat::SimpSolver * S){
-		S->preprocess();//do this _even_ if sat based preprocessing is disabled! Some of the theory solvers depend on a preprocessing call being made!
-		S->eliminate(true);
-	  static Monosat::vec<Monosat::Lit> assume;
-	  assert(assume.size()==0);
-	  return S->solve(assume);
+	  static Monosat::vec<int> ignore;
+	  ignore.clear();
+	return solveAssumption(S,&ignore[0],0);
   }
 void backtrack(Monosat::SimpSolver * S){
 	S->cancelUntil(0);
@@ -245,7 +253,12 @@ bool solveAssumption(Monosat::SimpSolver * S,int * assumptions, int n_assumption
 	  for (int i = 0;i<n_assumptions;i++){
 		  assume.push(toLit(assumptions[i]));
 	  }
-	  return S->solve(assume);
+	  bool r= S->solve(assume);
+	if (opt_verb >= 1) {
+		printStats(S);
+
+	}
+	return r;
  }
 
  int newVar(Monosat::SimpSolver * S){

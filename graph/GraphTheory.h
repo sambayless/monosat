@@ -1653,17 +1653,18 @@ public:
 	 }*/
 
 	void preprocess() {
+
 		for (int i = 0; i < detectors.size(); i++) {
 			detectors[i]->preprocess();
 		}
-		g_under.clearHistory(true);
+		/*g_under.clearHistory(true);
 		g_over.clearHistory(true);
 		g_under_weights_over.clearHistory(true);
 		g_over_weights_under.clearHistory(true);
 		cutGraph.clearHistory(true);
 		g_under.clearChanged();
 		g_over.clearChanged();
-		cutGraph.clearChanged();
+		cutGraph.clearChanged();*/
 
 		if(opt_lazy_backtrack){
 			lazy_backtracking_enabled=true;

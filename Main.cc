@@ -20,7 +20,6 @@
  DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
-
 #include <cstddef>
 #include <gmpxx.h>
 #include <fstream>
@@ -32,14 +31,15 @@
 #include <sstream>
 #include <string>
 #include "utils/System.h"
-
+#include "utils/ParseUtils.h"
+#include "utils/Options.h"
 #include "graph/GraphParser.h"
 #include "fsm/FSMParser.h"
 #include "core/Dimacs.h"
 #include "core/AssumptionParser.h"
 #include "fsm/LSystemParser.h"
+#include "core/Solver.h"
 #include "core/Config.h"
-
 #include <unistd.h>
 #include <sys/time.h>
 #include <algorithm>
@@ -47,21 +47,15 @@
 #include <algorithm>
 #include <iterator>
 #include <unordered_map>
-
+#include "simp/SimpSolver.h"
+#include "pb/PbTheory.h"
 #include "pb/PbParser.h"
 #include "mtl/Map.h"
-
-#include "geometry/GeometryParser.h"
-#include "bv/BVParser.h"
-#include "core/Solver.h"
-#include "simp/SimpSolver.h"
 #include "graph/GraphTheory.h"
 #include "geometry/GeometryTheory.h"
-#include "pb/PbTheory.h"
-#include "bv/BVTheorySolver.h"
-#include "core/SolverTypes.h"
+#include "geometry/GeometryParser.h"
+#include "bv/BVParser.h"
 
-#include "api/Monosat.h"
 
 using namespace Monosat;
 using namespace std;
@@ -105,6 +99,161 @@ static void SIGINT_exit(int signum) {
 	_exit(1);
 }
 
+//Select which algorithms to apply for graph and geometric theory solvers, by parsing command line arguments and defaults.
+void selectAlgorithms(){
+	mincutalg = MinCutAlg::ALG_EDMONSKARP;
+
+	if (!strcasecmp(opt_maxflow_alg, "edmondskarp-adj")) {
+		mincutalg = MinCutAlg::ALG_EDKARP_ADJ;
+	} else if (!strcasecmp(opt_maxflow_alg, "edmondskarp")) {
+		mincutalg = MinCutAlg::ALG_EDMONSKARP;
+	} else if (!strcasecmp(opt_maxflow_alg, "edmondskarp-dynamic")) {
+		mincutalg = MinCutAlg::ALG_EDKARP_DYN;
+	} else if (!strcasecmp(opt_maxflow_alg, "dinics")) {
+		//Dinitz is also commonly spelled 'dinics' or 'Dinits', so accept those too...
+		mincutalg = MinCutAlg::ALG_DINITZ;
+	} else if (!strcasecmp(opt_maxflow_alg, "dinics-linkcut")) {
+		mincutalg = MinCutAlg::ALG_DINITZ_LINKCUT;
+	} else if (!strcasecmp(opt_maxflow_alg, "dinitz")) {
+		mincutalg = MinCutAlg::ALG_DINITZ;
+	} else if (!strcasecmp(opt_maxflow_alg, "dinitz-linkcut")) {
+		mincutalg = MinCutAlg::ALG_DINITZ_LINKCUT;
+	} else if (!strcasecmp(opt_maxflow_alg, "dinits")) {
+		//Dinitz is also commonly spelled 'dinics' or 'Dinits', so accept those too...
+		mincutalg = MinCutAlg::ALG_DINITZ;
+	} else if (!strcasecmp(opt_maxflow_alg, "dinits-linkcut")) {
+		mincutalg = MinCutAlg::ALG_DINITZ_LINKCUT;
+	} else if (!strcasecmp(opt_maxflow_alg, "kohli-torr")) {
+		mincutalg = MinCutAlg::ALG_KOHLI_TORR;
+	} else {
+		fprintf(stderr, "Error: unknown max-flow/min-cut algorithm %s, aborting\n",
+				((string) opt_maxflow_alg).c_str());
+		exit(1);
+	}
+
+	componentsalg = ComponentsAlg::ALG_DISJOINT_SETS;
+
+	if (!strcasecmp(opt_components_alg, "disjoint-sets")) {
+		componentsalg = ComponentsAlg::ALG_DISJOINT_SETS;
+	} else {
+		fprintf(stderr, "Error: unknown connectivity algorithm %s, aborting\n",
+				((string) opt_components_alg).c_str());
+		exit(1);
+	}
+
+	cyclealg = CycleAlg::ALG_DFS_CYCLE;
+
+	if (!strcasecmp(opt_cycle_alg, "dfs")) {
+		cyclealg = CycleAlg::ALG_DFS_CYCLE;
+	}else if (!strcasecmp(opt_cycle_alg, "pk")) {
+		cyclealg = CycleAlg::ALG_PK_CYCLE;
+	} else {
+		fprintf(stderr, "Error: unknown cycle detection algorithm %s, aborting\n",
+				((string) opt_cycle_alg).c_str());
+		exit(1);
+	}
+
+
+	mstalg = MinSpanAlg::ALG_KRUSKAL;
+
+	if (!strcasecmp(opt_mst_alg, "kruskal")) {
+		mstalg = MinSpanAlg::ALG_KRUSKAL;
+	} else if (!strcasecmp(opt_mst_alg, "prim")) {
+		mstalg = MinSpanAlg::ALG_PRIM;
+	} else if (!strcasecmp(opt_mst_alg, "spira-pan")) {
+		mstalg = MinSpanAlg::ALG_SPIRA_PAN;
+	} else {
+		fprintf(stderr, "Error: unknown minimum spanning tree algorithm %s, aborting\n",
+				((string) opt_mst_alg).c_str());
+		exit(1);
+	}
+
+	reachalg = ReachAlg::ALG_BFS;
+
+	if (!strcasecmp(opt_reach_alg, "dijkstra")) {
+		reachalg = ReachAlg::ALG_DIJKSTRA;
+
+	} else if (!strcasecmp(opt_reach_alg, "bfs")) {
+		reachalg = ReachAlg::ALG_BFS;
+
+	} else if (!strcasecmp(opt_reach_alg, "dfs")) {
+		reachalg = ReachAlg::ALG_DFS;
+	} else if (!strcasecmp(opt_reach_alg, "cnf")) {
+		reachalg = ReachAlg::ALG_SAT;
+	} else if (!strcasecmp(opt_reach_alg, "ramal-reps")) {
+		reachalg = ReachAlg::ALG_RAMAL_REPS;
+	} else {
+		fprintf(stderr, "Error: unknown reachability algorithm %s, aborting\n", ((string) opt_reach_alg).c_str());
+		exit(1);
+	}
+
+	distalg = DistAlg::ALG_DISTANCE;
+
+	if (!strcasecmp(opt_dist_alg, "dijkstra")) {
+		distalg = DistAlg::ALG_DIJKSTRA;
+
+	} else if (!strcasecmp(opt_dist_alg, "bfs")) {
+		distalg = DistAlg::ALG_DISTANCE;
+
+	} else if (!strcasecmp(opt_dist_alg, "cnf")) {
+		distalg = DistAlg::ALG_SAT;
+	} else if (!strcasecmp(opt_dist_alg, "ramal-reps")) {
+		distalg = DistAlg::ALG_RAMAL_REPS;
+	} else {
+		fprintf(stderr, "Error: unknown distance algorithm %s, aborting\n", ((string) opt_dist_alg).c_str());
+		exit(1);
+	}
+
+	undirectedalg = ConnectivityAlg::ALG_BFS;
+
+	if (!strcasecmp(opt_con_alg, "dijkstra")) {
+		undirectedalg = ConnectivityAlg::ALG_DIJKSTRA;
+
+	} else if (!strcasecmp(opt_con_alg, "bfs")) {
+		undirectedalg = ConnectivityAlg::ALG_BFS;
+
+	} else if (!strcasecmp(opt_con_alg, "dfs")) {
+		undirectedalg = ConnectivityAlg::ALG_DFS;
+	} else if (!strcasecmp(opt_con_alg, "cnf")) {
+		undirectedalg = ConnectivityAlg::ALG_SAT;
+	} else if (!strcasecmp(opt_con_alg, "thorup")) {
+		undirectedalg = ConnectivityAlg::ALG_THORUP;
+	}/*else if (!strcasecmp(opt_con_alg,"ramal-reps")){
+	 undirectedalg = ConnectivityAlg::ALG_RAMAL_REPS;
+	 } */else {
+		fprintf(stderr, "Error: unknown undirected reachability algorithm %s, aborting\n",
+				((string) opt_reach_alg).c_str());
+		exit(1);
+	}
+
+	allpairsalg = AllPairsAlg::ALG_DIJKSTRA_ALLPAIRS;
+
+	if (!strcasecmp(opt_allpairs_alg, "floyd-warshall")) {
+		allpairsalg = AllPairsAlg::ALG_FLOYDWARSHALL;
+	} else if (!strcasecmp(opt_allpairs_alg, "dijkstra")) {
+		allpairsalg = AllPairsAlg::ALG_DIJKSTRA_ALLPAIRS;
+
+	} else {
+		fprintf(stderr, "Error: unknown allpairs reachability algorithm %s, aborting\n",
+				((string) opt_allpairs_alg).c_str());
+		exit(1);
+	}
+
+	undirected_allpairsalg = AllPairsConnectivityAlg::ALG_DIJKSTRA_ALLPAIRS;
+
+	if (!strcasecmp(opt_undir_allpairs_alg, "floyd-warshall")) {
+		undirected_allpairsalg = AllPairsConnectivityAlg::ALG_FLOYDWARSHALL;
+	} else if (!strcasecmp(opt_undir_allpairs_alg, "dijkstra")) {
+		undirected_allpairsalg = AllPairsConnectivityAlg::ALG_DIJKSTRA_ALLPAIRS;
+	} else if (!strcasecmp(opt_undir_allpairs_alg, "thorup")) {
+		undirected_allpairsalg = AllPairsConnectivityAlg::ALG_THORUP;
+	} else {
+		fprintf(stderr, "Error: unknown undirected allpairs reachability algorithm %s, aborting\n",
+				((string) opt_allpairs_alg).c_str());
+		exit(1);
+	}
+}
+
 int main(int argc, char** argv) {
 	try {
 		setUsageHelp(
@@ -136,18 +285,35 @@ int main(int argc, char** argv) {
 		BoolOption opt_witness("MAIN", "witness", "print solution", false);
 		StringOption opt_witness_file("MAIN", "witness-file", "write witness to file", "");
 		StringOption opt_theory_witness_file("MAIN", "theory-witness-file", "write witness for theories to file", "");
-		BoolOption pre("MAIN", "pre", "Completely turn on/off any preprocessing.", true);
+
 		BoolOption opb("PB", "opb", "Parse the input as pseudo-boolean constraints in .opb format", false);
 		BoolOption precise("GEOM", "precise",
 				"Solve geometry using precise rational arithmetic (instead of unsound, but faster, floating point arithmetic)",
 				true);
 
-		init( argc, argv);
+		parseOptions(argc, argv, true);
+		if (opt_adaptive_conflict_mincut == 1) {
+			opt_conflict_min_cut = true;
+			opt_conflict_min_cut_maxflow = true;
+		}
 		bool using_symbols_asp = strlen((const char*) opt_symbols_asp) > 0;
 
 		if (opt_csv) {
 			opt_verb = 0;
 		}
+#if defined(__linux__)
+		fpu_control_t oldcw, newcw;
+		_FPU_GETCW(oldcw);
+		newcw = (oldcw & ~_FPU_EXTENDED) | _FPU_DOUBLE;
+		_FPU_SETCW(newcw);
+		if (opt_verb > 0)
+			fprintf(stderr, "WARNING: for repeatability, setting FPU to use double precision\n");
+#endif
+
+
+		//Select which algorithms to apply for graph and geometric theory solvers, by parsing command line arguments and defaults.
+		selectAlgorithms();
+
 		double initial_time = rtime(0);
 
 		// Use signal handlers that forcibly quit until the solver will be able to respond to
@@ -193,7 +359,7 @@ int main(int argc, char** argv) {
 					"Decision variables restricted to the range (%d..%d), which means a result of satisfiable may not be trustworthy.\n",
 					(uint) opt_min_decision_var, (uint) opt_max_decision_var);
 		}
-		if (!pre)
+		if (!opt_pre)
 			S.eliminate(true);
 
 		gzFile in = (argc == 1) ? gzdopen(0, "rb") : gzopen(argv[1], "rb");
@@ -467,13 +633,13 @@ int main(int argc, char** argv) {
 		S.preprocess();//do this _even_ if sat based preprocessing is disabled! Some of the theory solvers depend on a preprocessing call being made!
 		printf("simplify:\n");
 		fflush(stdout);
-		if (pre)
+		if (opt_pre)
 			S.eliminate(true);
 		fflush(stdout);
 		//exit(0);
 		double after_preprocessing =  rtime(0);
 		double preprocessing_time =after_preprocessing - before_pre_processing;
-		if (opt_verb > 0 && pre) {
+		if (opt_verb > 0 && opt_pre) {
 			printf("Preprocessing time = %f\n", preprocessing_time);
 		}
 		lbool ret = S.solve(assume) ? l_True : l_False;

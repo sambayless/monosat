@@ -55,7 +55,7 @@ DoubleOption Monosat::opt_restart_inc(_cat, "rinc", "Restart interval increase f
 DoubleOption Monosat::opt_garbage_frac(_cat, "gc-frac",
 		"The fraction of wasted memory allowed before a garbage collection is triggered", 0.20,
 		DoubleRange(0, false, HUGE_VAL, false));
-
+BoolOption Monosat::opt_pre("MAIN", "pre", "Completely turn on/off any preprocessing.", true);
 IntOption Monosat::opt_time(_cat, "verb-time", "Detail level of timing benchmarks (these add some overhead)", 0,
 		IntRange(0, 5));
 
