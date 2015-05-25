@@ -92,17 +92,17 @@ public:
 	struct Cause{
 		int cause_is_bits:1;
 		int refined_cause:1;
+		int cause_is_comparison:1;
 		int cause_is_addition:1;
 		int cause_is_addition_argument:1;
-		int cause_is_comparison:1;
 		int cause_is_decision:1;
 		int index:26;
 
-		Cause(const Cause & copy):cause_is_bits(copy.cause_is_bits),refined_cause(copy.refined_cause),cause_is_addition(copy.cause_is_addition),cause_is_comparison(copy.cause_is_comparison),cause_is_addition_argument(copy.cause_is_addition_argument),cause_is_decision(copy.cause_is_decision),index(copy.index){
+		Cause(const Cause & copy):cause_is_bits(copy.cause_is_bits),refined_cause(copy.refined_cause),cause_is_comparison(copy.cause_is_comparison),cause_is_addition(copy.cause_is_addition),cause_is_addition_argument(copy.cause_is_addition_argument),cause_is_decision(copy.cause_is_decision),index(copy.index){
 
 		}
 
-		Cause():cause_is_bits(0),refined_cause(0),cause_is_addition(0),cause_is_addition_argument(0),cause_is_comparison(0),cause_is_decision(0),index(-1){
+		Cause():cause_is_bits(0),refined_cause(0),cause_is_comparison(0),cause_is_addition(0),cause_is_addition_argument(0),cause_is_decision(0),index(-1){
 
 		}
 		/*Cause(bool bits, bool addition, int comparison=-1):cause_is_bits(bits),refined_cause(0),cause_is_addition(addition),cause_is_addition_arg(0),comparison_cause(comparison){
@@ -538,15 +538,20 @@ public:
 			bvcompares[bvID2].push(cID);
 		}
 
-		cause_set[bvID1].push(bvID2);
+		//cause_set[bvID1].push(bvID2);
 		eq_bitvectors[bvID1]=bvID2;
 		cause_set[bvID2].push(bvID1);
-
+		for (int bv:cause_set[bvID1]){
+				if(bv!=bvID2){
+					cause_set[bvID2].push(bv);
+				}
+		}
+		cause_set[bvID2].clear();
 		bv_needs_propagation[bvID1]=true;
-		if(!alteredBV[bvID1]){
+/*		if(!alteredBV[bvID1]){
 			alteredBV[bvID1]=true;
 			altered_bvs.push(bvID1);
-		}
+		}*/
 
 		bv_needs_propagation[bvID2]=true;
 		if(!alteredBV[bvID2]){
@@ -1415,16 +1420,12 @@ public:
 	bool updateApproximations(int bvID, int ignoreCID=-1, Var ignore_bv=var_Undef){
 		if(isConst(bvID))
 			return false;
-		if(bvID==4){
-			int a=1;
-		}
+
 		double update_start_time= rtime(3);
 		statis_bv_updates++;
 		static int iter = 0;
 		++iter;
-		if(iter==540){//75//119
-			int a = 1;
-		}
+
 #ifndef NDEBUG
 /*		for(int i = 0;i<vars.size();i++){
 			if(value(i)==l_True){
@@ -1461,7 +1462,7 @@ public:
 			under_approx0[bvID]=under_approx0[eqBV];
 			over_approx0[bvID]=over_approx0[eqBV];
 
-			bool changed = (under_old != under_approx[bvID]) || (over_old != over_approx[bvID]);
+			/*bool changed = (under_old != under_approx[bvID]) || (over_old != over_approx[bvID]);
 			if(changed){
 				any_changed=true;
 				assert(under_new>=under_old);
@@ -1480,8 +1481,8 @@ public:
 				//ensure that the cause isn't altered if the approx was not changed.
 				under_causes[bvID] = under_cause_old;
 				over_causes[bvID] = over_cause_old;
-			}
-			return changed;
+			}*/
+			return false;
 		}
 
 		Cause under_cause_old = under_causes[bvID];

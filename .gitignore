@@ -19,3 +19,4 @@ graph/resources/*
 /GPerf
 /SharedLibrary
 /SharedLibraryDbg
+/SharedLibrary_profile
