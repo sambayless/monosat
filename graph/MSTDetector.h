@@ -145,6 +145,9 @@ public:
 	const char* getName() {
 		return "MST Detector";
 	}
+	Weight getModel_SpanningTreeWeight(){
+		return underapprox_detector->weight();
+	}
 private:
 	void TarjanOLCA(int node, vec<Lit> & conflict);
 	bool walkback(Weight & weight, int from, int to);

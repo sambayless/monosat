@@ -19,6 +19,7 @@ RM := rm -rf
 -include dgl/alg/subdir.mk
 -include dgl/subdir.mk
 -include core/subdir.mk
+-include api/subdir.mk
 -include subdir.mk
 -include objects.mk
 

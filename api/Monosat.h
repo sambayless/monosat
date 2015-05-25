@@ -8,27 +8,21 @@
 #ifndef MONOSAT_H_
 #define MONOSAT_H_
 //Monosat library interface
-#include "core/Solver.h"
-#include "simp/SimpSolver.h"
-#include "graph/GraphTheory.h"
-#include "geometry/GeometryTheory.h"
-#include "pb/PbTheory.h"
-#include "bv/BVTheorySolver.h"
-#include "core/SolverTypes.h"
+
 
 extern "C"  //Tells the compile to use C-linkage for the next scope.
 {
 
-  void init(int argc, char**argv);
 
-  void * newSolver();
+
+  void * newSolver(int argc, char**argv);
 
 
   void deleteSolver (Monosat::SimpSolver * S);
 
   bool solve(Monosat::SimpSolver * S);
   bool solveAssumption(Monosat::SimpSolver * S,int * assumptions, int n_assumptions);
-
+  void backtrack(Monosat::SimpSolver * S);
   int newVar(Monosat::SimpSolver * S);
 
   bool addClause(Monosat::SimpSolver * S,int * assumptions, int n_assumptions);
@@ -37,7 +31,7 @@ extern "C"  //Tells the compile to use C-linkage for the next scope.
   bool addTertiaryClause(Monosat::SimpSolver * S,int lit1, int lit2, int lit3);
   //theory interface for bitvectors
   void * initBVTheory(Monosat::SimpSolver * S);
-  void newBitvector_const(Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv, int bvWidth, long constval);
+  int newBitvector_const(Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv, int bvWidth, long constval);
   int newBitvector(Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv, int * bits, int n_bits);
   int newBVComparison_const_lt(Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv, int bvID, long weight);
   int newBVComparison_bv_lt(Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv, int bvID, int compareID);
@@ -74,12 +68,15 @@ extern "C"  //Tells the compile to use C-linkage for the next scope.
   int acyclic_directed(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<long> *G);
 
   //model query
-  lbool getAssign(Monosat::SimpSolver * S,int var);//lbool to allow for the possibility of unassigned literals in the future
-  long getBVAssign(Monosat::SimpSolver * S);
+  //For a given literal (not variable!), returns 0 for true, 1 for false, 2 for unassigned.
+  int getModel_Literal(Monosat::SimpSolver * S,int lit);
+  long getModel_BV(Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv, int bvID);
   //graph queries:
-  long getMaxFlow(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<long> *G,int s, int t);
-  long getEdgeFlow(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<long> *G,int s, int t, int edgeLit);
-  long getMinimumSpanningTreeWeight(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<long> *G);
+  //maxflow_literal is the literal (not variable!) that is the atom for the maximum flow query
+  long getModel_MaxFlow(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<long> *G,int maxflow_literal);
+  //maxflow_literal is the literal (not variable!) that is the atom for the maximum flow query
+  long getModel_EdgeFlow(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<long> *G,int maxflow_literal, int edgeLit);
+  long getModel_MinimumSpanningTreeWeight(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<long> *G,int spanning_tree_literal);
 
 }
 #endif /* MONOSAT_H_ */

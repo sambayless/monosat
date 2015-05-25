@@ -1721,9 +1721,7 @@ public:
 	}
 	void enqueueTheory(Lit l) {
 		Var v = var(l);
-		if(v==2046){
-			int a=1;
-		}
+
 		int lev = level(v);//level from the SAT solver.
 		if(!opt_lazy_backtrack){
 			assert(decisionLevel() <= lev);
@@ -3215,6 +3213,34 @@ public:
 
 	void needsPropagation(int theoryID){
 		requiresPropagation=true;
+	}
+
+
+	Weight getModel_MaximumFlow(Lit theoryLit){
+		Var v = var(theoryLit);
+		Detector * d= detectors[getDetector(v)];
+		MaxflowDetector<Weight> * mf = dynamic_cast<MaxflowDetector<Weight>*>(d);
+		if(!mf)
+			return -1;
+		return mf->getModel_Maxflow();
+	}
+	Weight getModel_MaximumFlow_EdgeFlow(Lit theoryLit, Lit edgeLit){
+		Var v = var(theoryLit);
+		assert(isEdgeVar(var(edgeLit)));
+		int edgeID =  getEdgeID(var(edgeLit));
+		Detector * d= detectors[getDetector(v)];
+		MaxflowDetector<Weight> * mf = dynamic_cast<MaxflowDetector<Weight>*>(d);
+		if(!mf)
+			return -1;
+		return mf->getModel_EdgeFlow(edgeID);
+	}
+	Weight getModel_MaximumFlowModel(Lit theoryLit){
+		Var v = var(theoryLit);
+		Detector * d= detectors[getDetector(v)];
+		MSTDetector<Weight> * mst = dynamic_cast<MSTDetector<Weight>*>(d);
+		if(!mst)
+			return -1;
+		return mst->getModel_SpanningTreeWeight();
 	}
 };
 

@@ -53,6 +53,14 @@
 
 #include "geometry/GeometryParser.h"
 #include "bv/BVParser.h"
+#include "core/Solver.h"
+#include "simp/SimpSolver.h"
+#include "graph/GraphTheory.h"
+#include "geometry/GeometryTheory.h"
+#include "pb/PbTheory.h"
+#include "bv/BVTheorySolver.h"
+#include "core/SolverTypes.h"
+
 #include "api/Monosat.h"
 
 using namespace Monosat;

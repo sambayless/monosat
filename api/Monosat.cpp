@@ -1,7 +1,13 @@
 
 #include "utils/ParseUtils.h"
 #include "utils/Options.h"
-
+#include "core/Solver.h"
+#include "simp/SimpSolver.h"
+#include "graph/GraphTheory.h"
+#include "geometry/GeometryTheory.h"
+#include "pb/PbTheory.h"
+#include "bv/BVTheorySolver.h"
+#include "core/SolverTypes.h"
 #include "Monosat.h"
 #include "mtl/Vec.h"
 using namespace Monosat;
@@ -162,7 +168,11 @@ void selectAlgorithms(){
 	}
 }
 
-void init(int argc, char**argv){
+struct MonosatData{
+	Monosat::BVTheorySolver<long> * bv_theory=nullptr;
+	vec< Monosat::GraphTheorySolver<long> *> graphs;
+};
+void * newSolver(int argc, char**argv){
 	parseOptions(argc, argv, true);
 	if (opt_adaptive_conflict_mincut == 1) {
 		opt_conflict_min_cut = true;
@@ -178,12 +188,6 @@ void init(int argc, char**argv){
 		fprintf(stderr, "WARNING: for repeatability, setting FPU to use double precision\n");
 #endif
 	selectAlgorithms();
-}
-struct MonosatData{
-	Monosat::BVTheorySolver<long> * bv_theory=nullptr;
-	vec< Monosat::GraphTheorySolver<long> *> graphs;
-};
-void * newSolver(){
 	  Monosat::SimpSolver * S = new Monosat::SimpSolver();
 
 	  S->_external_data =(void*)new MonosatData();
@@ -211,11 +215,15 @@ void * newGraph(Monosat::SimpSolver * S){
 	  return graph;
 }
 bool solve(Monosat::SimpSolver * S){
+		S->preprocess();//do this _even_ if sat based preprocessing is disabled! Some of the theory solvers depend on a preprocessing call being made!
+		S->eliminate(true);
 	  static Monosat::vec<Monosat::Lit> assume;
 	  assert(assume.size()==0);
 	  return S->solve(assume);
   }
-
+void backtrack(Monosat::SimpSolver * S){
+	S->cancelUntil(0);
+}
 void * initBVTheory(Monosat::SimpSolver * S){
 	MonosatData * d = (MonosatData*) S->_external_data;
 	if(d->bv_theory)
@@ -231,6 +239,8 @@ void * initBVTheory(Monosat::SimpSolver * S){
 }
 bool solveAssumption(Monosat::SimpSolver * S,int * assumptions, int n_assumptions){
 	  static Monosat::vec<Monosat::Lit> assume;
+		S->preprocess();//do this _even_ if sat based preprocessing is disabled! Some of the theory solvers depend on a preprocessing call being made!
+		S->eliminate(true);
 	  assume.clear();
 	  for (int i = 0;i<n_assumptions;i++){
 		  assume.push(toLit(assumptions[i]));
@@ -262,8 +272,8 @@ bool solveAssumption(Monosat::SimpSolver * S,int * assumptions, int n_assumption
 
  //theory interface for bitvectors
 
- void newBitvector_const(Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv, int bvWidth, long constval){
-	  bv->newBitvector(-1,bvWidth,constval);
+ int newBitvector_const(Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv, int bvWidth, long constval){
+	 return bv->newBitvector(-1,bvWidth,constval).getID();
  }
  int newBitvector(Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv, int * bits, int n_bits){
 	  static vec<Var> lits;
@@ -352,89 +362,129 @@ bool solveAssumption(Monosat::SimpSolver * S,int * assumptions, int n_assumption
 	  Var v = newVar(S);
 	  Lit l =mkLit(v);
 	  G->reaches(from, to, v);
+	  G->implementConstraints();
 	  return toInt(l);
  }
  int shortestPathUnweighted_lt_const(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<long> *G,int from, int to, int steps){
 	  Var v = newVar(S);
 	  Lit l =mkLit(v);
 	  G->reaches(from, to, v,steps-1);
+	  G->implementConstraints();
 	  return toInt(l);
  }
  int shortestPathUnweighted_leq_const(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<long> *G,int from, int to, int steps){
 	  Var v = newVar(S);
 	  Lit l =mkLit(v);
 	  G->reaches(from, to, v,steps);
+	  G->implementConstraints();
 	  return toInt(l);
  }
  int shortestPath_lt_const(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<long> *G,int from, int to, long dist){
 	  Var v = newVar(S);
 	  Lit l =mkLit(v);
 	  G->distance(from, to, v,dist, false);
+	  G->implementConstraints();
 	  return toInt(l);
  }
  int shortestPath_leq_const(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<long> *G,int from, int to, long dist){
 	  Var v = newVar(S);
 	  Lit l =mkLit(v);
 	  G->distance(from, to, v,dist, true);
+	  G->implementConstraints();
 	  return toInt(l);
  }
  int shortestPath_lt_bv(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<long> *G,int from, int to, int bvID){
 	  Var v = newVar(S);
 	  Lit l =mkLit(v);
 	  G->distanceBV(from,to, v, bvID,false);
+	  G->implementConstraints();
 	  return toInt(l);
  }
  int shortestPath_leq_bv(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<long> *G,int from, int to, int bvID){
 	  Var v = newVar(S);
 	  Lit l =mkLit(v);
 	  G->distanceBV(from,to, v, bvID,true);
+	  G->implementConstraints();
 	  return toInt(l);
  }
  int maximumFlow_geq(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<long> *G,int source, int sink, long weight){
 	  Var v = newVar(S);
 	  Lit l =mkLit(v);
 	  G->maxflow(source, sink, v, weight,true);
+	  G->implementConstraints();
 	  return toInt(l);
  }
  int maximumFlow_gt(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<long> *G,int source, int sink, long weight){
 	  Var v = newVar(S);
 	  Lit l =mkLit(v);
 	  G->maxflow(source, sink, v, weight,false);
+	  G->implementConstraints();
 	  return toInt(l);
  }
  int maximumFlow_geq_bv(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<long> *G,int source, int sink, int bvID){
 	  Var v = newVar(S);
 	  Lit l =mkLit(v);
 	  G->maxflowBV(source, sink, v, bvID,true);
+	  G->implementConstraints();
 	  return toInt(l);
  }
  int maximumFlow_gt_bv(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<long> *G,int source, int sink, int bvID){
 	  Var v = newVar(S);
 	  Lit l =mkLit(v);
 	  G->maxflowBV(source, sink, v, bvID,false);
+	  G->implementConstraints();
 	  return toInt(l);
  }
  int minimumSpanningTree_leq(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<long> *G, long weight){
 	  Var v = newVar(S);
 	  Lit l =mkLit(v);
 	  G->minimumSpanningTree(v, weight,true);
+	  G->implementConstraints();
 	  return toInt(l);
  }
  int minimumSpanningTree_lt(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<long> *G,int source, int sink, long weight){
 	  Var v = newVar(S);
 	  Lit l =mkLit(v);
 	  G->minimumSpanningTree(v, weight,false);
+	  G->implementConstraints();
 	  return toInt(l);
  }
  int acyclic_undirected(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<long> *G){
 	  Var v = newVar(S);
 	  Lit l =mkLit(v);
 	  G->acyclic(v,false);
+	  G->implementConstraints();
 	  return toInt(l);
  }
  int acyclic_directed(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<long> *G){
 	  Var v = newVar(S);
 	  Lit l =mkLit(v);
 	  G->acyclic(v,true);
+	  G->implementConstraints();
 	  return toInt(l);
+ }
+
+
+ //model query
+ //Returns 0 for true, 1 for false, 2 for unassigned.
+ int getModel_Literal(Monosat::SimpSolver * S,int lit){
+	 return toInt(S->value(toLit(lit)));
+ }
+ long getModel_BV(Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv, int bvID){
+	 return bv->getUnderApprox(bvID);
+ }
+ //graph queries:
+ long getModel_MaxFlow(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<long> *G,int maxflow_literal){
+	 Lit l = toLit(maxflow_literal);
+	 return G->getModel_MaximumFlow(S->getTheoryLit(l));
+ }
+ long getModel_EdgeFlow(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<long> *G,int maxflow_literal, int edge_assignment_literal){
+	 Lit l = toLit(maxflow_literal);
+	 Lit e = toLit(edge_assignment_literal);
+	 return G->getModel_MaximumFlow_EdgeFlow(S->getTheoryLit(l),S->getTheoryLit(e));
+ }
+
+ long getModel_MinimumSpanningTreeWeight(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<long> *G,int spanning_tree_literal){
+	 Lit l = toLit(spanning_tree_literal);
+	 return G->getModel_MaximumFlowModel(S->getTheoryLit(l));
  }

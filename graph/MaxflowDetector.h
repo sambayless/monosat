@@ -164,6 +164,12 @@ public:
 	//Lit decideByPath(int level);
 	void dbg_decisions();
 	void printSolution(std::ostream & write_to);
+	Weight getModel_Maxflow(){
+		return underapprox_detector->maxFlow();
+	}
+	Weight getModel_EdgeFlow(int edgeID){
+		return underapprox_detector->getEdgeFlow(edgeID);
+	}
 	void addFlowLit(Weight max_flow, Var reach_var, bool inclusive);
 	void addFlowBVLessThan(const BitVector<Weight>  &bv, Var v, bool inclusive);
 	MaxflowDetector(int _detectorID, GraphTheorySolver<Weight> * _outer,
