@@ -542,12 +542,12 @@ public:
 		eq_bitvectors[bvID1]=bvID2;
 		cause_set[bvID2].push(bvID1);
 		for (int bv:cause_set[bvID1]){
-				if(bv!=bvID2){
-					cause_set[bvID2].push(bv);
-				}
+			if(bv!=bvID2){
+				cause_set[bvID2].push(bv);
+			}
 		}
-		cause_set[bvID2].clear();
-		bv_needs_propagation[bvID1]=true;
+		cause_set[bvID1].clear();
+		//bv_needs_propagation[bvID1]=true;
 /*		if(!alteredBV[bvID1]){
 			alteredBV[bvID1]=true;
 			altered_bvs.push(bvID1);
