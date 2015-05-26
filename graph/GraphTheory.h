@@ -1508,7 +1508,8 @@ public:
 				stats_decisions++;
 				r->stats_decisions++;
 				stats_decision_time += rtime(1) - start;
-				//printf("g%d: graph decision %d: %d\n", this->id, iter, dimacs(l));
+				if(opt_verb>2)
+					printf("g%d: graph decision %d: %d\n", this->getTheoryIndex(), iter, dimacs(l));
 				return toSolver(l);
 			}
 		}

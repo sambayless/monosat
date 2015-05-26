@@ -546,6 +546,7 @@ int main(int argc, char** argv) {
 		if (opt_verb > 0 && decidable.size()) {
 			printf("Decidable theories: ");
 		}
+		S.decidable_theories.clear();
 		for (int i = 0; i < decidable.size(); i++) {
 			int t = decidable[i];
 			if (t < 0 || t >= S.theories.size()) {

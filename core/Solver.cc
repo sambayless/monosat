@@ -1748,7 +1748,9 @@ lbool Solver::search(int nof_conflicts) {
 				decisions++;
 				next = pickBranchLit();
 				// int p = priority[var(next)];
-				
+				if(opt_verb>2){
+					printf("solver decision\n");
+				}
 				if (next == lit_Undef) {
 					
 					//solve theories if this solver is completely assigned

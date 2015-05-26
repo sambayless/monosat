@@ -238,6 +238,8 @@ void * initBVTheory(Monosat::SimpSolver * S){
 	  return bv;
 }
 bool solveAssumption(Monosat::SimpSolver * S,int * assumptions, int n_assumptions){
+
+
 	  static Monosat::vec<Monosat::Lit> assume;
 		S->preprocess();//do this _even_ if sat based preprocessing is disabled! Some of the theory solvers depend on a preprocessing call being made!
 		S->eliminate(true);

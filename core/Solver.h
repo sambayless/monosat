@@ -83,6 +83,7 @@ public:
 	//Theory interface
 	void addTheory(Theory*t) {
 		theories.push(t);
+		decidable_theories.push(t);
 		theory_queue.capacity(theories.size());
 		in_theory_queue.push(false);
 		t->setTheoryIndex(theories.size() - 1);

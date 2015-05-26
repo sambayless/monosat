@@ -488,9 +488,9 @@ void MaxflowDetector<Weight>::buildMaxFlowTooLowReason(Weight maxflow, vec<Lit> 
 	if (it == 3) {
 		int a = 1;
 	}
-/*	if(opt_verb>1){
+	if(opt_verb>1){
 		printf("Maxflow conflict %d, graph %d\n", it, outer->getTheoryIndex());
-	}*/
+	}
 	if(g_over.edges()==0)
 		return;
 	//printf("%d\n",it);
@@ -1187,7 +1187,7 @@ void MaxflowDetector<Weight>::collectChangedEdges() {
 
 	dbg_decisions();
 	overapprox_conflict_detector->update();
-	
+
 	if (opt_conflict_min_cut_maxflow) {
 
 		buildLearnGraph();
@@ -1521,10 +1521,15 @@ Lit MaxflowDetector<Weight>::decide() {
 			Lit l = mkLit(outer->getEdgeVar(edgeID), false);
 			if ((outer->decidable(l) || outer->edgeWeightDecidable(edgeID, DetectorComparison::geq,  overapprox_conflict_detector->getEdgeFlow(edgeID)))  && over->getEdgeFlow(edgeID) > 0) {
 				//decideEdge(edgeID, true);
+				if(edgeID>446){
+					int a =1;
+				}else{
+					int a =1;
+				}
 				decision = l;
 				//printf("decide edge %d\n", edgeID);
 				break;
-			} else if (outer->value(l) == l_True) {
+			} else if (outer->value(l) != l_False) {
 				if (over->getEdgeFlow(edgeID) > 0) {			//this check is optional
 					//decideEdge(edgeID, true);
 				//	printf("skip decision keep edge %d\n", edgeID);
