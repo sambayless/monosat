@@ -1502,6 +1502,7 @@ Lit MaxflowDetector<Weight>::decide() {
 		collectChangedEdges();
 		//DEBUG:check that the decision_q contains the right elements
 #ifndef NDEBUG
+		if(outer->hasBitVectorEdges()){
 		for(int edgeID = 0;edgeID<g_over.edges();edgeID++){
 			if(g_over.hasEdge(edgeID)){
 				Var v = outer->getEdgeVar(edgeID);
@@ -1516,6 +1517,7 @@ Lit MaxflowDetector<Weight>::decide() {
 					}
 				}
 			}
+		}
 		}
 #endif
 
