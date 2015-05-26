@@ -1460,7 +1460,7 @@ void MaxflowDetector<Weight>::suggestDecision(Lit l){
 template<typename Weight>
 Lit MaxflowDetector<Weight>::decide() {
 	static int it = 0;
-	if (++it == 59) {
+	if (++it == 32) {
 		int a = 1;
 	}
 	double startdecidetime = rtime(2);
@@ -1500,6 +1500,25 @@ Lit MaxflowDetector<Weight>::decide() {
 	if (opt_lazy_maxflow_decisions) {
 
 		collectChangedEdges();
+		//DEBUG:check that the decision_q contains the right elements
+#ifndef NDEBUG
+		for(int edgeID = 0;edgeID<g_over.edges();edgeID++){
+			if(g_over.hasEdge(edgeID)){
+				Var v = outer->getEdgeVar(edgeID);
+				lbool val = outer->value(v);
+				Weight flow =  overapprox_conflict_detector->getEdgeFlow(edgeID);
+				int bvID = outer->getEdgeBV(edgeID).getID();
+				Weight over_weight = outer->getEdgeBV(edgeID).getOver();
+				Weight under_weight = outer->getEdgeBV(edgeID).getUnder();
+				if((val==l_Undef && flow>0) || (flow>0 && flow>under_weight)){
+					if(!in_decision_q[edgeID]){
+						exit(7);
+					}
+				}
+			}
+		}
+#endif
+
 
 		Lit decision = lit_Undef;
 

@@ -1712,13 +1712,17 @@ public:
 	void backtrackBV(int bvID){
 		if (isEdgeBV(bvID)){
 			int edgeID = getBVEdge(bvID);
-
+			for (int i = 0; i < detectors.size(); i++) {
+				Detector * r = detectors[i];
+				r->undecideEdgeWeight(edgeID);
+			}
 			g_under.setEdgeWeight(edgeID,edge_bv_weights[edgeID].getUnder());
 			g_over.setEdgeWeight(edgeID, edge_bv_weights[edgeID].getOver());
 			if(using_neg_weights){
 				g_under_weights_over.setEdgeWeight(edgeID,edge_bv_weights[edgeID].getOver());
 				g_over_weights_under.setEdgeWeight(edgeID, edge_bv_weights[edgeID].getUnder());
 			}
+
 		}
 	}
 	void enqueueTheory(Lit l) {
