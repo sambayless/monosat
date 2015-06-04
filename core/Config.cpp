@@ -30,6 +30,7 @@ int dbg_total_iterations = 0;
 static const char* _cat = "CORE";
 static const char* _cat_sms = "SMS";
 static const char* _cat_graph = "GRAPH";
+static const char* _cat_bv = "BV";
 static const char* _cat_geom = "GEOMETRY";
 static const char* _cat_fsm = "FSM";
 
@@ -259,6 +260,14 @@ BoolOption Monosat::opt_components_learn_connect(_cat_graph, "components-learn-c
 
 BoolOption Monosat::opt_dinics_recursive(_cat_graph, "dinitz-recursive",
 		"Use the recursive (default: iterative) Dinic's Maximum-flow implementation", false);
+
+IntOption  Monosat::opt_graph_prop_skip(_cat_graph, "graph-theory-skip",
+		"Only process every nth graph theory propagation ('1' skips no propagations)",1, IntRange(1,INT32_MAX));
+
+IntOption  Monosat::opt_bv_prop_skip(_cat_bv, "bv-theory-skip",
+		"Only process every nth bv theory propagation ('1' skips no propagations)",1, IntRange(1,INT32_MAX));
+
+
 
 BoolOption Monosat::opt_fsm_negate_underapprox(_cat_fsm, "fsm-negate-under",
 		"", true);

@@ -376,6 +376,7 @@ public:
 	long learnt_cut_clause_length = 0;
 	long stats_pure_skipped = 0;
 	long stats_mc_calls = 0;
+	long propagations =-1;
 	long stats_propagations_skipped = 0;
 	long statis_bv_updates = 0;
 
@@ -412,7 +413,7 @@ public:
 	void printStats(int detailLevel) {
 		printf("BV Theory %d stats:\n", this->id);
 
-		printf("%d bitvectors, %ld bits, %ld comparisons (bvcomparisons %ld), %ld additions\n", bitvectors.size(),n_bits,compares.size()+bvcompares.size(),bvcompares.size(), n_additions				 );
+		printf("%d bitvectors, %ld bits, %l comparisons (bvcomparisons %d), %ld additions\n", bitvectors.size(),n_bits,compares.size()+bvcompares.size(),bvcompares.size(), n_additions				 );
 		printf("constant bitvectors (at start, end of deduction): %ld, %ld\n",n_starting_consts ,n_consts);
 
 
@@ -1209,7 +1210,7 @@ public:
 				if(sign(p)){
 					op=-op;
 				}
-				buildValueReasonBV(op,bvID,compareBV,reason);
+				buildComparisonReasonBV(op,bvID,compareBV,reason);
 			}
 
 
@@ -2214,14 +2215,23 @@ public:
 #endif
 		return true;
 	}*/
-
-	bool propagateTheory(vec<Lit> & conflict) {
+	bool propagateTheory(vec<Lit> & conflict){
+		return propagateTheory(conflict,false);
+	}
+	bool propagateTheory(vec<Lit> & conflict, bool force_propagation) {
 		static int realprops = 0;
 		stats_propagations++;
 
-		if (!requiresPropagation) {
+		if (!force_propagation && !requiresPropagation ) {
 			stats_propagations_skipped++;
 			assert(dbg_uptodate());
+			return true;
+		}
+
+		propagations++;
+
+		if (!force_propagation && (propagations % opt_bv_prop_skip != 0)){
+			stats_propagations_skipped++;
 			return true;
 		}
 
@@ -2437,6 +2447,9 @@ public:
 					double startconftime = rtime(2);
 					propagationtime += startconftime - startproptime;
 					stats_num_conflicts++;stats_addition_conflicts++;
+					if(stats_num_conflicts==416){
+						int a=1;
+					}
 					if(opt_verb>1){
 						printf("bv addition arg conflict %d\n", stats_num_conflicts);
 					}
@@ -2641,7 +2654,7 @@ public:
 							printf("bv bv comparison conflict %d\n", stats_num_conflicts);
 						}
 						conflict.push(~l);
-						buildValueReasonBV(-op,bvID,compareID,conflict);
+						buildComparisonReasonBV(-op,bvID,compareID,conflict);
 						toSolver(conflict);
 						stats_conflict_time+=rtime(2)-startconftime;
 						return false;
@@ -2692,7 +2705,7 @@ public:
 							printf("bv bv comparison conflict %d\n", stats_num_conflicts);
 						}
 						conflict.push(~l);
-						buildValueReasonBV(-op,bvID,compareID,conflict);
+						buildComparisonReasonBV(-op,bvID,compareID,conflict);
 						toSolver(conflict);
 						stats_conflict_time+=rtime(2)-startconftime;
 						return false;
@@ -2779,6 +2792,7 @@ public:
 	Weight ceildiv(Weight a, Weight b);
 
 	void buildAdditionArgReason(int bvID, int argindex, vec<Lit> & conflict){
+		dbg_no_pending_analyses();
 		assert(eq_bitvectors[bvID]==bvID);
 		rewind_trail_pos(trail.size()-1);
 
@@ -2824,6 +2838,7 @@ public:
 	}
 
 	void buildAdditionReason(int bvID,int addition_index, vec<Lit> & conflict){
+		dbg_no_pending_analyses();
 		assert(eq_bitvectors[bvID]==bvID);
 		rewind_trail_pos(trail.size()-1);
 		stats_build_addition_reason++;
@@ -2868,8 +2883,8 @@ public:
 		analyze(conflict);
 	}
 
-	void buildValueReasonBV(Comparison op, int bvID,int comparebvID, vec<Lit> & conflict,int trail_pos=-1){
-		//exit(8);
+	void buildComparisonReasonBV(Comparison op, int bvID,int comparebvID, vec<Lit> & conflict,int trail_pos=-1){
+		dbg_no_pending_analyses();
 		assert(eq_bitvectors[bvID]==bvID);
 		if (trail_pos<0){
 			trail_pos=trail.size();
@@ -3261,6 +3276,14 @@ public:
 	}
 
 	void addAnalysis(Comparison op, int bvID, Weight  to,  vec<Lit> & conflict){
+
+		if (to<=0){
+			to=0;
+		}
+		int width = bitvectors[bvID].size();
+		Weight max_val = ((1L)<<width)-1;
+		if(to>max_val)
+			to=max_val;
 		int aID = analyses.size();
 		bool compare_over;
 		if (op==Comparison::lt){
@@ -3283,6 +3306,7 @@ public:
 		if(compare_over){
 			if(to>= over_approx0[bvID])
 				return;//no analysis required.
+
 			//need to check whether this analysis has already been requested for this bitvector, and if not, insert it into the analysis chain in the right position.
 			//should this use a binary search?
 			int cID = pending_over_analyses[bvID];
@@ -3318,6 +3342,7 @@ public:
 				return;//no analysis required.
 			//need to check whether this analysis has already been requested for this bitvector, and if not, insert it into the analysis chain in the right position.
 			//should this use a binary search?
+
 			int cID = pending_under_analyses[bvID];
 
 			int prevID = -1;
@@ -3351,6 +3376,7 @@ public:
 	}
 
 	void buildComparisonReason(Comparison op, int bvID, Weight  to,  vec<Lit> & conflict){
+		dbg_no_pending_analyses();
 		rewind_trail_pos(trail.size()-1);
 		int trail_pos = rewindUntil(bvID,op,to);
 		//analyses.push({bvID,op,conflict});
@@ -3359,17 +3385,20 @@ public:
 	}
 
 	void analyze(vec<Lit> & conflict){
-		static int iter = 0;
+		static long iter = 0;
 		int prev_pos = analysis_trail_pos;
 		while(n_pending_analyses>0){
 
-			if(++iter==1153){
-				int a=1;
-			}
 			assert(analysis_trail_pos>=0);
+			if(analysis_trail_pos<0 || analysis_trail_pos>=trail.size()){
+				exit(7);
+			}
 			Assignment & e = trail[analysis_trail_pos];
+
 			if (e.isBoundAssignment()){
 				int bvID = e.bvID;
+
+
 				if(pending_over_analyses[bvID]>-1 && e.previous_over > analyses[pending_over_analyses[bvID]].value){
 					int aID = pending_over_analyses[bvID];
 					ToAnalyze & a =  analyses[aID];
@@ -3398,13 +3427,19 @@ public:
 			prev_pos=analysis_trail_pos;
 		}
 		analyses.clear();
+		dbg_no_pending_analyses();
+
+		//now walk back through the trail to find the
+	}
+
+	inline void dbg_no_pending_analyses(){
 #ifndef NDEBUG
 		for (int i = 0;i<pending_under_analyses.size();i++){
 			assert(pending_under_analyses[i]==-1);
 			assert(pending_over_analyses[i]==-1);
 		}
 #endif
-		//now walk back through the trail to find the
+
 	}
 
 	bool solveTheory(vec<Lit> & conflict) {

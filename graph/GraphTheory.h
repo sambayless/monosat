@@ -575,6 +575,7 @@ public:
 	double unreachtime = 0;
 	double pathtime = 0;
 	double propagationtime = 0;
+	long propagations =-1;
 	long stats_propagations = 0;
 	long stats_num_conflicts = 0;
 	long stats_num_lazy_conflicts=0;
@@ -1891,6 +1892,10 @@ public:
 	}*/
 
 	bool propagateTheory(vec<Lit> & conflict) {
+		return propagateTheory(conflict,false);
+	}
+
+	bool propagateTheory(vec<Lit> & conflict, bool force_propagation) {
 		static int itp = 0;
 		if (++itp == 584) {
 			int a = 1;
@@ -1898,12 +1903,23 @@ public:
 
 		stats_propagations++;
 
-		if (!requiresPropagation) {
+		if (!force_propagation && !requiresPropagation) {
 			dbg_sync();
 			stats_propagations_skipped++;
 			assert(dbg_graphsUpToDate());
 			return true;
 		}
+
+
+		propagations++;
+
+		if (!force_propagation && (propagations % opt_graph_prop_skip != 0)){
+			stats_propagations_skipped++;
+
+			return true;
+		}
+
+
 		//this is ugly... what is a cleaner way to ensure that the bitvector theory propagates before this one?
 		if(comparator && !comparator->propagateTheory(conflict)){
 			return false;
@@ -2118,7 +2134,7 @@ public:
 
 	bool solveTheory(vec<Lit> & conflict) {
 		requiresPropagation = true;		//Just to be on the safe side... but this shouldn't really be required.
-		bool ret = propagateTheory(conflict);
+		bool ret = propagateTheory(conflict,true);
 		//Under normal conditions, this should _always_ hold (as propagateTheory should have been called and checked by the parent solver before getting to this point).
 		assert(ret);
 		return ret;

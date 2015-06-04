@@ -65,13 +65,12 @@
 							<tool id="cdt.managedbuild.tool.gnu.c.linker.exe.debug.2129226198" name="GCC C Linker" superClass="cdt.managedbuild.tool.gnu.c.linker.exe.debug"/>
 							<tool id="cdt.managedbuild.tool.gnu.cpp.linker.exe.debug.175228522" name="GCC C++ Linker" superClass="cdt.managedbuild.tool.gnu.cpp.linker.exe.debug">
 								<option id="gnu.cpp.link.option.libs.1498166857" name="Libraries (-l)" superClass="gnu.cpp.link.option.libs" valueType="libs">
-									<listOptionValue builtIn="false" srcPrefixMapping="" srcRootPath="" value="z"/>
-									<listOptionValue builtIn="false" srcPrefixMapping="" srcRootPath="" value="m"/>
-									<listOptionValue builtIn="false" srcPrefixMapping="" srcRootPath="" value="gmpxx"/>
-									<listOptionValue builtIn="false" srcPrefixMapping="" srcRootPath="" value="gmp"/>
-									<listOptionValue builtIn="false" srcPrefixMapping="" srcRootPath="" value="dl"/>
+									<listOptionValue builtIn="false" value="z"/>
+									<listOptionValue builtIn="false" value="m"/>
+									<listOptionValue builtIn="false" value="gmpxx"/>
+									<listOptionValue builtIn="false" value="gmp"/>
 								</option>
-								<option id="gnu.cpp.link.option.flags.667029291" name="Linker flags" superClass="gnu.cpp.link.option.flags" value="-pthread " valueType="string"/>
+								<option id="gnu.cpp.link.option.flags.667029291" name="Linker flags" superClass="gnu.cpp.link.option.flags" value="" valueType="string"/>
 								<option id="gnu.cpp.link.option.paths.819307413" name="Library search path (-L)" superClass="gnu.cpp.link.option.paths" valueType="libPaths">
 									<listOptionValue builtIn="false" value="../lib"/>
 								</option>
@@ -1579,6 +1578,7 @@
 		<configuration configurationName="ClangRelease">
 			<resource resourceType="PROJECT" workspacePath="/modsat"/>
 		</configuration>
+		<configuration configurationName="SharedLibrary_profile"/>
 		<configuration configurationName="Debug">
 			<resource resourceType="PROJECT" workspacePath="/modsat"/>
 		</configuration>

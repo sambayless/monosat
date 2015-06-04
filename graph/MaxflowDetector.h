@@ -60,6 +60,7 @@ public:
 	int alg_id=-1;
 
 	long stats_decision_calculations = 0;
+	double stats_total_prop_time=0;
 	double stats_flow_calc_time = 0;
 	double stats_flow_recalc_time = 0;
 	double stats_redecide_time = 0;
@@ -145,6 +146,7 @@ public:
 	void suggestDecision(Lit l);
 	void printStats() {
 		Detector::printStats();
+		printf("\tTotal Detector Propagation Time: %fs\n",stats_total_prop_time);
 		if (mincutalg == MinCutAlg::ALG_KOHLI_TORR) {
 			KohliTorr<Weight> * kt = (KohliTorr<Weight> *) overapprox_detector;
 			printf(

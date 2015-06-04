@@ -828,7 +828,7 @@ bool MaxflowDetector<Weight>::propagate(vec<Lit> & conflict, bool backtrackOnly,
 	}
 #endif
 	
-
+	double start_prop_time = rtime(2);
 
 	Weight over_maxflow = -1;
 	Weight under_maxflow = -1;
@@ -857,10 +857,6 @@ bool MaxflowDetector<Weight>::propagate(vec<Lit> & conflict, bool backtrackOnly,
 	} else
 		stats_skipped_over_updates++;
 	
-	if(outer->getTheoryIndex()==9){
-		g_over.drawFull(true);
-	}
-
 	for (int j = 0; j < flow_lits.size(); j++) {
 		
 		DistLit f = flow_lits[j];
@@ -878,6 +874,7 @@ bool MaxflowDetector<Weight>::propagate(vec<Lit> & conflict, bool backtrackOnly,
 					outer->enqueue(l, underprop_marker);
 
 				} else if (outer->value(l) == l_False) {
+					stats_total_prop_time += rtime(2)-start_prop_time;
 					if(backtrackOnly){
 						return false;
 						/*conflictLit = findFirstReasonTooHigh(maxflow);
@@ -899,6 +896,7 @@ bool MaxflowDetector<Weight>::propagate(vec<Lit> & conflict, bool backtrackOnly,
 					outer->enqueue(~l, underprop_marker);
 
 				} else if (outer->value(l) == l_True) {
+					stats_total_prop_time += rtime(2)-start_prop_time;
 					if(backtrackOnly){
 						return false;
 					/*	conflictLit= findFirstReasonTooLow(maxflow);
@@ -929,6 +927,7 @@ bool MaxflowDetector<Weight>::propagate(vec<Lit> & conflict, bool backtrackOnly,
 					outer->enqueue(l, underprop_marker);
 					//should also enqueue that the flow is >= under->flow, and <= over->flow...
 				} else if (outer->value(l) == l_False) {
+					stats_total_prop_time += rtime(2)-start_prop_time;
 					if(backtrackOnly)
 						return false;
 
@@ -946,6 +945,7 @@ bool MaxflowDetector<Weight>::propagate(vec<Lit> & conflict, bool backtrackOnly,
 					outer->enqueue(~l, underprop_marker);
 					//should also enqueue that the flow is >= under->flow, and <= over->flow...
 				} else if (outer->value(l) == l_True) {
+					stats_total_prop_time += rtime(2)-start_prop_time;
 					if(backtrackOnly)
 						return false;
 
@@ -958,7 +958,7 @@ bool MaxflowDetector<Weight>::propagate(vec<Lit> & conflict, bool backtrackOnly,
 			}
 		}
 	}
-	
+	stats_total_prop_time += rtime(2)-start_prop_time;
 	return true;
 }
 template<typename Weight>
