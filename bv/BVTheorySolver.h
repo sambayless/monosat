@@ -1485,7 +1485,8 @@ public:
 			}*/
 			return false;
 		}
-
+		assert_in_range(under_new,bvID);
+		assert_in_range(over_new,bvID);
 		Cause under_cause_old = under_causes[bvID];
 		Cause over_cause_old = over_causes[bvID];
 		Cause over_cause_new;
@@ -1531,7 +1532,8 @@ public:
 			assert(bID<bvID);
 			Weight under = under_approx[aID] +  under_approx[bID];
 			Weight over = over_approx[aID] +  over_approx[bID];
-
+			clip_over(under,bvID);
+			clip_over(over,bvID);
 			if(under >under_new){
 				under_new=under;
 				under_cause_new.clear();
@@ -1555,7 +1557,8 @@ public:
 			//assert((other_argID!=bvID &&  over_approx[sumID] <=  over_approx[other_argID] + over_old ) || (other_argID==bvID &&  over_approx[sumID] <=  over_old + over_old ));
 			Weight under = under_approx[sumID] -  over_approx[other_argID];
 			Weight over = over_approx[sumID] -  under_approx[other_argID];
-
+			clip_under(under,bvID);
+			clip_under(over,bvID);
 			if(under >under_new){
 				under_new=under;
 				under_cause_new.clear();
@@ -1569,7 +1572,8 @@ public:
 				over_cause_new.index=i;
 			}
 		}
-
+		assert_in_range(under_new,bvID);
+		assert_in_range(over_new,bvID);
 		for(int i = compares[bvID].size()-1;i>=0;i--){
 			int cID = compares[bvID][i];
 			if(cID==ignoreCID){
@@ -1679,7 +1683,8 @@ public:
 
 		}
 
-
+		assert_in_range(under_new,bvID);
+		assert_in_range(over_new,bvID);
 		for(int i = bvcompares[bvID].size()-1;i>=0;i--){
 			int cID = bvcompares[bvID][i];
 			if(cID==ignoreCID){
@@ -1789,6 +1794,8 @@ public:
 
 		}
 
+		assert_in_range(under_new,bvID);
+		assert_in_range(over_new,bvID);
 		Weight refined_over = refine_lbound(bvID, over_new);
 		if(refined_over>-1 && refined_over< over_new){
 			//std::cout<< "Refined overapprox for bv " << bvID << " from " << over_new << " to " << refined_over << "\n";
@@ -1845,9 +1852,11 @@ public:
 			under_cause_new.clear();
 			under_cause_new.refined_cause=true;
 		}
+		assert_in_range(under_new,bvID);
+		assert_in_range(over_new,bvID);
 
-		int width = bitvectors[bvID].size();
-		Weight max_val = ((1L)<<width)-1;
+		//int width = bitvectors[bvID].size();
+		//Weight max_val = ((1L)<<width)-1;
 		if(under_new>over_approx0[bvID]){
 			under_new=over_approx0[bvID];
 		}
@@ -1860,7 +1869,8 @@ public:
 		if(over_new<under_approx0[bvID]){
 			over_new=under_approx0[bvID];
 		}
-
+		assert_in_range(under_new,bvID);
+		assert_in_range(over_new,bvID);
 		under_approx[bvID]=under_new;
 		over_approx[bvID]=over_new;
 		under_causes[bvID]= under_cause_new;
@@ -2236,7 +2246,7 @@ public:
 		}
 
 		rewind_trail_pos(trail.size());
-		if(++realprops==10){
+		if(++realprops==14){
 			int a =1;
 		}
 		//printf("bv prop %d\n",stats_propagations);
@@ -2271,10 +2281,13 @@ public:
 			Weight  overApprox_prev = over_approx[bvID];
 			Cause prev_under_cause = over_causes[bvID];
 			Cause prev_over_cause = over_causes[bvID];
-
+			if(stats_bv_propagations==17){
+				int a=1;
+			}
 			bool changed = updateApproximations(bvID);
 			changed |=bv_needs_propagation[bvID];
 			if(!changed){
+				assert( under_approx[bvID]<= over_approx[bvID]);
 				stats_bv_skipped_propagations++;
 				altered_bvs.pop(); //this isn't safe to do, because recently enforced comparisons need to be propagated, even if the under/over approx didn't change.
 				alteredBV[bvID]=false;
@@ -2285,15 +2298,39 @@ public:
 			Weight & underApprox = under_approx[bvID];
 			Weight & overApprox = over_approx[bvID];
 			stats_bv_propagations++;
+			if(stats_bv_propagations==18){
+				int a=1;
+			}
+
 			/*printf("iter %d, bv %d, under ",realprops , bvID); //: %d, over %d\n", bvID, underApprox,overApprox);
 			std::cout<<underApprox << " over ";
 			std::cout<<overApprox << "\n";
 			fflush(stdout);*/
+
 			vec<Lit> & bv = bitvectors[bvID];
-			Weight under =0;
-			Weight over=(1L<<bv.size())-1;
+			Weight under;
+			Weight over;
 			bool new_change;
 			do{
+				if(underApprox>overApprox){
+					double startconftime = rtime(2);
+					stats_num_conflicts++;
+					if(opt_verb>1){
+						printf("bv approximation update conflict %d\n", stats_num_conflicts);
+					}
+					propagationtime += startconftime - startproptime;
+					//this is already a conflict;
+					analyzeValueReason(Comparison::geq, bvID,underApprox,conflict);
+					analyzeValueReason(Comparison::leq, bvID,overApprox,conflict);
+
+					analyze(conflict);
+					toSolver(conflict);
+					stats_conflict_time+=rtime(2)-startconftime;
+					return false;
+				}
+
+				under =0;
+				over=(1L<<bv.size())-1;
 				new_change=false;
 				//for(int i = 0;i<bv.size();i++){
 				for(int i = bv.size()-1;i>=0;i--){
@@ -2302,6 +2339,7 @@ public:
 					Lit l = bv[i];
 					if(val==l_True){
 						under+=bit;
+						assert_in_range(under,bvID);
 						if(under>overApprox){
 								double startconftime = rtime(2);
 								propagationtime += startconftime - startproptime;
@@ -2325,6 +2363,7 @@ public:
 						}
 					}else if (val==l_False){
 						over-=bit;
+						assert_in_range(under,bvID);
 						if(over<underApprox){
 								double startconftime = rtime(2);
 								propagationtime += startconftime - startproptime;
@@ -2348,6 +2387,8 @@ public:
 
 						}
 					}else{
+						assert_in_range(over-bit,bvID);
+						assert_in_range(under+bit,bvID);
 						if(over-bit < underApprox){
 							enqueue(l, bvprop_marker);
 							under+=bit;
@@ -2374,15 +2415,8 @@ public:
 				assert(bID<bvID);
 				Weight under = under_approx[aID] +  under_approx[bID];
 				Weight over = over_approx[aID] +  over_approx[bID];
-				int width = bitvectors[bvID].size();
-				Weight max_val = ((1L)<<width)-1;
-				if(under>max_val){
-					under=max_val;
-				}
-				if(over>max_val){
-					over=max_val;
-				}
-
+				clip_over(under,bvID);
+				clip_over(over,bvID);
 				if(underApprox>over){
 					//then we have a conflict
 					double startconftime = rtime(2);
@@ -2407,9 +2441,12 @@ public:
 					stats_conflict_time+=rtime(2)-startconftime;
 					return false;
 				}
-
+				Weight under_arg_b = underApprox - over_approx[bID];
+				Weight over_arg_b = overApprox - under_approx[bID];
+				clip_under(under_arg_b,bvID);
+				clip_under(over_arg_b,bvID);
 				//this check may be especially important when either aID or bID is really a constant...
-				if(( underApprox - over_approx[bID]> under_approx[aID]) || ( overApprox - under_approx[bID]< over_approx[aID])){
+				if((under_arg_b> under_approx[aID]) || (over_arg_b < over_approx[aID])){
 					//the other bv needs to be updated
 					if(!alteredBV[aID]){
 						alteredBV[aID]=true;
@@ -2420,7 +2457,11 @@ public:
 						assert(altered_bvs.last()==bvID);
 					}
 				}
-				if(( underApprox - over_approx[aID]> under_approx[bID]) || ( overApprox - under_approx[aID]< over_approx[bID])){
+				Weight under_arg_a =underApprox - over_approx[aID];
+				Weight over_arg_a =  overApprox - under_approx[aID];
+				clip_under(under_arg_a,bvID);
+				clip_under(over_arg_a,bvID);
+				if((under_arg_a > under_approx[bID]) || (over_arg_a< over_approx[bID])){
 					//the other bv needs to be updated
 					if(!alteredBV[bID]){
 						alteredBV[bID]=true;
@@ -2441,7 +2482,8 @@ public:
 
 				Weight under = under_approx[sumID] -  over_approx[other_argID];
 				Weight over = over_approx[sumID] -  under_approx[other_argID];
-
+				clip_under(under,bvID);
+				clip_under(over,bvID);
 				if(underApprox>over){
 					//then we have a conflict
 					double startconftime = rtime(2);
@@ -2469,8 +2511,12 @@ public:
 					stats_conflict_time+=rtime(2)-startconftime;
 					return false;
 				}
+				Weight under_arg = underApprox + under_approx[other_argID];
+				clip_over(under_arg,bvID);
+				Weight over_arg =  overApprox + over_approx[other_argID];
+				clip_over(over_arg,bvID);
 				//this check may be especially important when either aID or bID is really a constant...
-				if(( underApprox + under_approx[other_argID]> under_approx[sumID]) || ( overApprox + over_approx[other_argID]< over_approx[sumID])){
+				if((under_arg > under_approx[sumID]) || (over_arg< over_approx[sumID])){
 					//the other bv needs to be updated
 
 					if(!alteredBV[sumID]){
@@ -2483,8 +2529,11 @@ public:
 						assert(altered_bvs.last()==bvID);
 					}
 				}
-
-				if( ( under_approx[sumID]  - overApprox> under_approx[other_argID]) || (over_approx[sumID] - underApprox< over_approx[other_argID])){
+				Weight under_sum =  under_approx[sumID]  - overApprox;
+				clip_under(under_sum,bvID);
+				Weight over_sum =  over_approx[sumID] - underApprox;
+				clip_under(over_sum,bvID);
+				if( (under_sum> under_approx[other_argID]) || (over_sum< over_approx[other_argID])){
 					//the other bv needs to be updated
 
 					if(!alteredBV[other_argID]){
@@ -2762,14 +2811,6 @@ public:
 					if(hasTheory(changedID))
 						getTheory(changedID)->enqueueBV(changedID);//only enqueue the bitvector in the subtheory _after_ it's approximation has been updated!
 
-				/*	if(!alteredBV[changedID]){
-						alteredBV[changedID]=true;
-						assert(altered_bvs.last()==bvID);
-						altered_bvs.last()=changedID;
-						assert(altered_bvs.last()==changedID);
-						altered_bvs.push(bvID);
-						assert(altered_bvs.last()==bvID);
-					}*/
 				}
 			}
 
@@ -3274,16 +3315,33 @@ public:
 			return;
 		}
 	}
-
-	void addAnalysis(Comparison op, int bvID, Weight  to,  vec<Lit> & conflict){
-
-		if (to<=0){
-			to=0;
-		}
+	inline void assert_in_range(Weight val, int bvID){
+#ifndef NDEBUG
 		int width = bitvectors[bvID].size();
 		Weight max_val = ((1L)<<width)-1;
-		if(to>max_val)
-			to=max_val;
+		assert(val>=0);
+		assert(val<=max_val);
+#endif
+	}
+	inline void clip(Weight & val, int bvID){
+		clip_under(val,bvID);
+		clip_over(val,bvID);
+		assert_in_range(val,bvID);
+	}
+	inline void clip_under(Weight & val, int bvID){
+		if(val<0)
+			val=0;
+	}
+	inline void clip_over(Weight & val, int bvID){
+		int width = bitvectors[bvID].size();
+		Weight max_val = ((1L)<<width)-1;
+		if(val>max_val)
+			val=max_val;
+	}
+
+	void addAnalysis(Comparison op, int bvID, Weight  to,  vec<Lit> & conflict){
+		clip(to,bvID);
+
 		int aID = analyses.size();
 		bool compare_over;
 		if (op==Comparison::lt){
@@ -3312,7 +3370,7 @@ public:
 			int cID = pending_over_analyses[bvID];
 
 			int prevID = -1;
-			while(cID>-1 && analyses[cID].value > to){
+			while(cID>-1 && analyses[cID].value < to){
 				ToAnalyze & c = analyses[cID];
 				prevID = cID;
 				if(cID<0 || cID==c.next_analysis){
@@ -3346,7 +3404,7 @@ public:
 			int cID = pending_under_analyses[bvID];
 
 			int prevID = -1;
-			while(cID>-1 && analyses[cID].value < to){
+			while(cID>-1 && analyses[cID].value > to){
 				ToAnalyze & c = analyses[cID];
 				prevID = cID;
 				if(cID<0 || cID==c.next_analysis){
