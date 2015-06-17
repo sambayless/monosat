@@ -7,6 +7,7 @@
 #include "geometry/GeometryTheory.h"
 #include "pb/PbTheory.h"
 #include "bv/BVTheorySolver.h"
+#include "amo/AMOTheory.h"
 #include "core/SolverTypes.h"
 #include "Monosat.h"
 #include "mtl/Vec.h"
@@ -259,6 +260,14 @@ bool solveAssumption(Monosat::SimpSolver * S,int * assumptions, int n_assumption
 	  return S->newVar();
  }
 
+ int nVars(Monosat::SimpSolver * S){
+	 return S->nVars();
+ }
+
+ int nClauses(Monosat::SimpSolver * S){
+	 return S->nClauses();
+ }
+
  bool addClause(Monosat::SimpSolver * S,int * assumptions, int n_assumptions){
 	  static vec<Lit> clause;
 	  clause.clear();
@@ -345,6 +354,18 @@ bool solveAssumption(Monosat::SimpSolver * S,int * assumptions, int n_assumption
 
  void bv_addition( Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv, int bvID1, int bvID2, int resultID){
 	  bv->newAdditionBV(resultID,bvID1,bvID2);
+ }
+
+ //simple at-most-one constraint: asserts that at most one of the set of variables (NOT LITERALS) may be true.
+ //for small numbers of variables, consider using a direct CNF encoding instead
+ void at_most_one(Monosat::SimpSolver * S, int * vars, int n_vars){
+	 if(n_vars>1){
+		 AMOTheory* amo = new  AMOTheory(S);
+		 for(int i = 0;i<n_vars;i++){
+			 Var v = vars[i];
+			 amo->addVar(v);
+		 }
+	 }
  }
 
  //theory interface for graphs

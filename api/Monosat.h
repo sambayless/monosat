@@ -8,9 +8,7 @@
 #ifndef MONOSAT_H_
 #define MONOSAT_H_
 //Monosat library interface
-
-
-extern "C"  //Tells the compile to use C-linkage for the next scope.
+extern "C"
 {
 
 
@@ -24,6 +22,8 @@ extern "C"  //Tells the compile to use C-linkage for the next scope.
   bool solveAssumption(Monosat::SimpSolver * S,int * assumptions, int n_assumptions);
   void backtrack(Monosat::SimpSolver * S);
   int newVar(Monosat::SimpSolver * S);
+  int nVars(Monosat::SimpSolver * S);
+  int nClauses(Monosat::SimpSolver * S);
 
   bool addClause(Monosat::SimpSolver * S,int * assumptions, int n_assumptions);
   bool addUnitClause(Monosat::SimpSolver * S,int lit);
@@ -43,6 +43,10 @@ extern "C"  //Tells the compile to use C-linkage for the next scope.
   int newBVComparison_bv_geq(Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv, int bvID, int compareID);
 
   void bv_addition( Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv, int bvID1, int bvID2, int resultID);
+
+  //simple at-most-one constraint: asserts that at most one of the set of variables (NOT LITERALS) may be true.
+  //for small numbers of variables, consider using a direct CNF encoding instead
+  void at_most_one(Monosat::SimpSolver * S, int * vars, int n_vars);
 
   //theory interface for graphs
 

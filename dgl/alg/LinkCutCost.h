@@ -675,10 +675,13 @@ public:
 	
 	//Returns the lowest cost in the tree rooted at x.
 	//x must be a root!
+	//Note: In Sleator and Tarjan (1982), this function instead returns a node of minimum weight.
+	//For the equivalent function in this implementation, see ancecstorFindMin
 	int minCost(int x) {
+		assert(isRoot(x));
 		return grossmin(x);
 	}
-	
+
 	//Find the minimum weight ancestor of s that is either closest to root(s) (if leftdir is false), or closest to s.
 	int ancecstorFindMin(int u, bool leftdir = false) {
 		expose(u);
@@ -693,8 +696,10 @@ public:
 			return -1;
 		return solidFind(p.right, alpha - nodes[p.right].netcost - p.netcost, leftdir);
 	}
-	//Find the ancestor of s with the lowest weight.
-	int ancecstorFindWeight(int u, int alpha, bool leftdir) {
+	//Find an ancestor of s with weight at most alpha, that is closest to s if leftdir is true, or cloests to root(s) if if leftdir is false.
+	//Note that this follows the terminology from Klein and Mozes, and differs from Sleator and Tarjan's somewhat.
+	//Returns -1 if no node is found
+	int ancecstorFindWeight(int u, int alpha=0, bool leftdir=true) {
 		expose(u);
 		Node & p = nodes[u];
 		
@@ -752,6 +757,15 @@ public:
 		return !nodes[u].hasRealParent;
 	}
 	
+	//Returns -1 if u is a root
+	//is this correct?
+	int parent(int u){
+		if(!isRoot(u)){
+			return nodes[u].parent;
+		}else{
+			return -1;
+		}
+	}
 	int numRoots() {
 		assert(dbgSetCount());
 		return setCount;

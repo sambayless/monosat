@@ -45,6 +45,8 @@ extern BoolOption opt_interpolate;
 extern IntOption opt_eager_prop;
 extern IntOption opt_subsearch;
 
+extern BoolOption opt_amo_eager_prop;
+
 extern BoolOption opt_graph;
 extern BoolOption opt_inc_graph;
 extern IntOption opt_dec_graph;

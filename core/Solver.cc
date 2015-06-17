@@ -757,7 +757,6 @@ void Solver::analyzeFinal(Lit p, vec<Lit>& out_conflict) {
 }
 
 void Solver::enqueueLazy(Lit p, int lev, CRef from){
-
 	assert(value(p)!=l_False);
 	if(value(p)==l_True && lev < level(var(p))){
 		//then the lit was already implied, but needs to be (lazily) moved to an earlier level.

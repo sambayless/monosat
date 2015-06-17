@@ -1215,7 +1215,7 @@ void MaxflowDetector<Weight>::collectChangedEdges() {
 			insertEdgeOrder(edgeid);
 		}
 		if(opt_decide_theories){
-		if (!is_potential_decision[edgeid]) {
+		//if (!is_potential_decision[edgeid]) {
 			Lit l = mkLit(outer->getEdgeVar(edgeid), false);
 			if((outer->decidable(l) || outer->level(var(l))>0) || (outer->edgeWeightDecidable(edgeid, DetectorComparison::geq,  overapprox_conflict_detector->getEdgeFlow(edgeid) )) ){
 				if (overapprox_conflict_detector->getEdgeFlow(edgeid) > 0) {
@@ -1245,7 +1245,7 @@ void MaxflowDetector<Weight>::collectChangedEdges() {
 				}
 			}
 		}
-		}
+		//}
 		if (opt_conflict_min_cut_maxflow) {
 			
 			Lit l = mkLit(outer->getEdgeVar(edgeid), false);
@@ -1460,7 +1460,7 @@ void MaxflowDetector<Weight>::suggestDecision(Lit l){
 template<typename Weight>
 Lit MaxflowDetector<Weight>::decide() {
 	static int it = 0;
-	if (++it == 32) {
+	if (++it == 22) {
 		int a = 1;
 	}
 	double startdecidetime = rtime(2);
@@ -1513,7 +1513,7 @@ Lit MaxflowDetector<Weight>::decide() {
 				Weight under_weight = outer->getEdgeBV(edgeID).getUnder();
 				if((val==l_Undef && flow>0) || (flow>0 && flow>under_weight)){
 					if(!in_decision_q[edgeID]){
-						exit(7);
+						exit(8);
 					}
 				}
 			}

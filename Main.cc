@@ -55,7 +55,8 @@
 #include "geometry/GeometryTheory.h"
 #include "geometry/GeometryParser.h"
 #include "bv/BVParser.h"
-
+#include "amo/AMOTheory.h"
+#include "amo/AMOParser.h"
 
 using namespace Monosat;
 using namespace std;
@@ -388,19 +389,19 @@ int main(int argc, char** argv) {
 		LSystemParser<char*,SimpSolver>  lparser;
 		parser.addParser(&lparser);
 
+		AMOParser<char *, SimpSolver> amo;
+		parser.addParser(&amo);
 
 
 		if (precise) {
 			GeometryParser<char *, SimpSolver, mpq_class>  geometryParser;
 			parser.addParser(&geometryParser);
-			parser.parse_DIMACS(in, S);
+			parser.parse_DIMACS(in, S);//this call must happen here, otherwise the geometryParser will be de-allocated!
 		} else {
 			GeometryParser<char *, SimpSolver, double> geometryParser;
 			parser.addParser(&geometryParser);
-			parser.parse_DIMACS(in, S);
+			parser.parse_DIMACS(in, S);//this call must happen here, otherwise the geometryParser will be de-allocated!
 		}
-
-
 
 		gzclose(in);
 

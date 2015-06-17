@@ -243,7 +243,7 @@ private:
 	}
 
 public:
-	int id;
+
 	bool first_propagation=true;
 	long n_bits =0;
 	long n_consts = 0;
@@ -411,7 +411,7 @@ public:
 	}
 
 	void printStats(int detailLevel) {
-		printf("BV Theory %d stats:\n", this->id);
+		printf("BV Theory %d stats:\n", this->getTheoryIndex());
 
 		printf("%d bitvectors, %ld bits, %l comparisons (bvcomparisons %d), %ld additions\n", bitvectors.size(),n_bits,compares.size()+bvcompares.size(),bvcompares.size(), n_additions				 );
 		printf("constant bitvectors (at start, end of deduction): %ld, %ld\n",n_starting_consts ,n_consts);

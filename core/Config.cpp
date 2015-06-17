@@ -31,6 +31,7 @@ static const char* _cat = "CORE";
 static const char* _cat_sms = "SMS";
 static const char* _cat_graph = "GRAPH";
 static const char* _cat_bv = "BV";
+static const char* _cat_amo = "AMO";
 static const char* _cat_geom = "GEOMETRY";
 static const char* _cat_fsm = "FSM";
 
@@ -66,6 +67,8 @@ DoubleOption Monosat::opt_random_theory_freq(_cat, "rnd-theory-freq",
 BoolOption Monosat::opt_early_theory_prop(_cat, "early-theory-prop",
 		"If false, the solver waits until all literals are propagated before propagating theories; if true, theories are propagated while the solver is still propagating literals",
 		false);
+
+BoolOption Monosat::opt_amo_eager_prop(_cat_amo,"amo-eager-prop","Propagate a-m-o literals as soon as they are implied, instead of waiting for theory propagation",true);
 
 BoolOption Monosat::opt_interpolate(_cat_sms, "interpolate",
 		"Store learnt interface clauses to form interpolants between modules", false);
