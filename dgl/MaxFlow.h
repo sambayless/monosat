@@ -40,9 +40,9 @@ public:
 	}
 	;
 
-	virtual void setCapacity(int u, int w, Weight c)=0;
+/*	virtual void setCapacity(int u, int w, Weight c)=0;
 
-	virtual void setAllEdgeCapacities(Weight c)=0;
+	virtual void setAllEdgeCapacities(Weight c)=0;*/
 	const Weight maxFlow() {
 		return update();
 	}

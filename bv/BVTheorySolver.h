@@ -217,6 +217,11 @@ public:
 		vec<Lit> & getBits()const{
 			return outer->getBits(id);
 		}
+
+		bool isConstant()const{
+			return outer->isConst(id);
+		}
+
 		int width()const{
 			return getBits().size();
 		}

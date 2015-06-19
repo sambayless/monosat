@@ -160,6 +160,8 @@ extern BoolOption opt_fsm_edge_prop;
 
 extern BoolOption opt_fsm_as_graph;
 
+extern BoolOption opt_learn_acyclic_flows;
+
 enum class PointInPolygonAlg {
 	ALG_FULL, ALG_RECURSIVE_SPLIT
 };

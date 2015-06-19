@@ -32,6 +32,8 @@
 #include "utils/System.h"
 #include "Detector.h"
 #include "bv/BVTheorySolver.h"
+#include "dgl/AcyclicFlow.h"
+#include <vector>
 using namespace dgl;
 namespace Monosat {
 template<typename Weight>
@@ -55,6 +57,10 @@ public:
 	MaxFlow<Weight> * overapprox_detector = nullptr;
 	MaxFlow<Weight> * underapprox_conflict_detector = nullptr;
 	MaxFlow<Weight> * overapprox_conflict_detector = nullptr;
+	AcyclicFlow<Weight> * acyclic_flow=nullptr;
+	std::vector<Weight> refined_flow;
+	std::vector<Weight> refined_flow_model;
+
 	int last_decision_status = -1;
 	int last_decision_q_pos = 0;
 	int alg_id=-1;
@@ -171,6 +177,28 @@ public:
 	}
 	Weight getModel_EdgeFlow(int edgeID){
 		return underapprox_detector->getEdgeFlow(edgeID);
+	}
+
+	Weight getModel_AcyclicEdgeFlow(int edgeID){
+		if(!acyclic_flow){
+			acyclic_flow=new AcyclicFlow<Weight>(g_under);
+		}
+		if(refined_flow_model.size()==0){
+			refined_flow_model.resize(g_under.edges());
+			for(int i = 0;i<g_under.edges();i++){
+				if(g_under.hasEdge(i) && g_under.edgeEnabled(i)){
+					refined_flow_model[i]=underapprox_conflict_detector->getEdgeFlow(i);
+				}else{
+					refined_flow_model[i]=0;
+				}
+			}
+			acyclic_flow->getAcyclicFlow(source,target,refined_flow_model);
+		}
+		return refined_flow_model[edgeID];
+
+	}
+	void buildModel(){
+		refined_flow_model.clear();
 	}
 	void addFlowLit(Weight max_flow, Var reach_var, bool inclusive);
 	void addFlowBVLessThan(const BitVector<Weight>  &bv, Var v, bool inclusive);
@@ -334,10 +362,8 @@ private:
 			order_heap.decrease(v);
 	}
 
-	void buildDinitzLinkCut();
+
 };
-template<>
-void MaxflowDetector<int>::buildDinitzLinkCut();
 
 }
 ;

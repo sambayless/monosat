@@ -32,12 +32,12 @@
 #include <climits>
 //Implementation of the Link/Cut Tree (aka Dynamic Tree) max-flow algorithm from Sleator and Tarjan, 1983).
 namespace dgl {
-
-class DinitzLinkCut: public MaxFlow<int> {
+template<typename Weight>
+class DinitzLinkCut: public MaxFlow<Weight> {
 	
 public:
 	
-	std::vector<int> F;
+	std::vector<Weight> F;
 
 	struct LocalEdge {
 		int from;
@@ -48,7 +48,8 @@ public:
 			
 		}
 	};
-	int curflow;
+	bool dinics_recursive=false;
+	Weight curflow;
 	int last_modification;
 	int last_deletion;
 	int last_addition;
@@ -60,11 +61,11 @@ public:
 	std::vector<int> dist;
 	std::vector<int> pos;    //position in the combined forward and backward adjacency list of each node in the DFS.
 	std::vector<bool> changed;
-	DynamicGraph<int>& g;
+	DynamicGraph<Weight>& g;
 
 	int source = -1;
 	int sink = -1;
-	int INF;
+	Weight INF;
 	int src=-1;
 	int dst=-1;
 	struct ParentEdge {
@@ -86,7 +87,7 @@ public:
 	 EdgeInTree():data(0){}
 	 };
 	 std::vector<EdgeInTree> tree_edges;//for each edge.*/
-	LinkCutCost forest;
+	LinkCutCost<Weight> forest;
 	std::vector<int> Q;
 	struct Link {
 		int u;
@@ -95,34 +96,25 @@ public:
 		int edgeID :31;
 	};
 	std::vector<Link> toLink;
-#ifdef DEBUG_MAXFLOW
-	EdmondsKarpAdj<Capacity> ek;
-#endif
-	
-	double augtime = 0;
-	double augtime_search = 0;
-	double augtime_cleanup = 0;
-	double bfstime = 0;
-	double totaltime = 0;
+
+
 	long stats_augmenting_rounds = 0;
 	long stats_rounds = 0;
 	long stats_backtracks = 0;
 	long stats_avoided_backtracks = 0;
 	void printStats() {
 		printf("Dinics Link Cut:\n");
-		printf("Total time: %f\n", totaltime);
+		/*printf("Total time: %f\n", totaltime);
 		printf("BFS Time: %f\n", bfstime);
 		printf("Augmenting Path Time: %f (search: %f, cleanup: %f)\n", augtime, augtime_search, augtime_cleanup);
-		printf("Rounds: %ld, Augmenting Rounds: %ld\n", stats_rounds, stats_augmenting_rounds);
+*/		printf("Rounds: %ld, Augmenting Rounds: %ld\n", stats_rounds, stats_augmenting_rounds);
 		printf("Backtracks %ld (%ld avoided)\n", stats_backtracks, stats_avoided_backtracks);
 	}
 	
 public:
-	DinitzLinkCut(DynamicGraph<int>& _g,  int source = -1, int sink = -1) :
+	DinitzLinkCut(DynamicGraph<Weight>& _g,  int source = -1, int sink = -1) :
 			g(_g),  source(source), sink(sink), INF(0xF0F0F0)
-#ifdef DEBUG_MAXFLOW
-	,ek(_g,cap,source,sink)
-#endif
+
 	{
 		curflow = 0;
 		last_modification = -1;
@@ -139,18 +131,11 @@ public:
 	int getSink() const {
 		return sink;
 	}
-	void setCapacity(int u, int w, int c) {
-		//C.resize(g.edges());
-		//C[ ]=c;
-		
-	}
-	void setAllEdgeCapacities(int c) {
-		
-	}
+
 	void dbg_print_graph(int from, int to) {
 		
 #ifndef NDEBUG
-		return;
+	/*	return;
 		
 		printf("digraph{\n");
 		for (int i = 0; i < g.nodes(); i++) {
@@ -205,12 +190,12 @@ public:
 			}
 		}
 		
-		printf("}\n");
+		printf("}\n");*/
 #endif
 		
 	}
 	bool buildLevelGraph(int src, int dst) {
-		double start_time = rtime(3);
+
 		dist.clear();
 		dist.resize(g.nodes(), -1);
 		dist[src] = 0;
@@ -241,7 +226,7 @@ public:
 			}
 		}
 		Q.clear();
-		bfstime += rtime(3) - start_time;
+
 		return dist[dst] >= 0;
 	}
 	bool dbg_hasLink(int u) {
@@ -276,12 +261,12 @@ public:
 		return true;
 	}
 	
-	int findAugmentingPath(int src, int dst) {
+	Weight findAugmentingPath(int src, int dst) {
 		dbg_print_graph(src, dst);
 		//static int outerit = 0;
 		//static int innerit = 0;
 		toLink.clear();
-		int f = 0;
+		Weight f = 0;
 		int u = forest.findRoot(src);
 		while (true) {
 			/*if(++outerit==10){
@@ -329,7 +314,7 @@ public:
 								continue;
 							
 							//these are backwards edges, which have capacity exactly if the forward edge has non-zero flow
-							if (F[edgeID]) {
+							if (F[edgeID]!=0) {
 								// assert(parentEdge[u].edgeID==-1);
 								assert(!dbg_hasLink(u));
 								toLink.push_back( { u, v, true, edgeID });
@@ -385,12 +370,12 @@ public:
 				
 				//found s-t augmenting path.
 				//Find the minimum capacity of any edge from src to dst on that path
-				int c = forest.minCost(src);
+				Weight c = forest.minCost(src);
 				//subtract that capacity from all edges on the path
 				f += c;
 				forest.updateCostOfPathToRoot(src, -c);
 				//delete edges with no remaining capacity
-				int minC = 0;
+				Weight minC = 0;
 				while (minC == 0) {
 					int u = forest.ancecstorFindMin(src);
 					assert(forest.getCost(u) == minC);
@@ -420,7 +405,7 @@ public:
 					for (int u = 0; u < g.nodes(); u++) {
 						if (parentEdge[u].edgeID >= 0) {
 							assert(!forest.isRoot(u));
-							int c = forest.getCost(u);
+							Weight c = forest.getCost(u);
 							
 							int edgeID = parentEdge[u].edgeID;
 							assert(c <= g.getWeight(edgeID));
@@ -457,7 +442,7 @@ public:
 							if (parentEdge[v].edgeID == edgeID) {
 								//need to remember the remaining flow on this edge...
 								assert(F[edgeID] > 0);    					 //else this edge wouldn't be in the tree
-								int residual_capacity = forest.getCost(v);
+								Weight residual_capacity = forest.getCost(v);
 								F[edgeID] = residual_capacity;
 								assert(F[edgeID] >= 0);
 								forest.cut(v);    					 //this is a backward edge into u
@@ -471,7 +456,7 @@ public:
 							if (!g.edgeEnabled(edgeID))
 								continue;
 							if (parentEdge[v].edgeID == edgeID) {
-								int residual_capacity = forest.getCost(v);
+								Weight residual_capacity = forest.getCost(v);
 								F[edgeID] = g.getWeight(edgeID) - residual_capacity;
 								assert(F[edgeID] >= 0);
 								forest.cut(v);
@@ -492,13 +477,13 @@ public:
 		return f;
 	}
 	
-	int findAugmentingPath_pointers(int src, int dst) {
-		int f = 0;
+	Weight findAugmentingPath_pointers(int src, int dst) {
+		Weight f = 0;
 		while (true) {
 			
 			bool found = true;
 			bool foundPath = false;
-			double starttime = rtime(4);
+
 			//dbg_print_graph(src,dst);
 			int u = forest.findRoot(src);
 			while (found) {
@@ -556,8 +541,7 @@ public:
 				
 			}
 			//forest.dbg_print_forest(true);
-			double ctime = rtime(4);
-			augtime_search += ctime - starttime;
+
 			assert(!found);
 			if (foundPath) {
 				stats_augmenting_rounds++;
@@ -569,7 +553,7 @@ public:
 				forest.updateCostOfPathToRoot(src, -c);
 				//delete edges with no remaining capacity
 				//forest.dbg_print_forest(true);
-				int minC = 0;
+				Weight minC = 0;
 				while (minC == 0) {
 					
 					int u = forest.ancecstorFindMin(src);
@@ -598,7 +582,7 @@ public:
 					//Clean up the state of the tree:
 					for (int u = 0; u < g.nodes(); u++) {
 						if (parentEdge[u].edgeID >= 0) {
-							int c = forest.getCost(u);
+							Weight c = forest.getCost(u);
 							int edgeID = parentEdge[u].edgeID;
 							if (!parentEdge[u].backward) {
 								F[edgeID] = g.getWeight(edgeID) - c;
@@ -628,7 +612,7 @@ public:
 						if (parentEdge[v].edgeID == edgeID) {
 							//need to remember the remaining flow on this edge...
 							assert(F[edgeID] > 0);					 //else this edge wouldn't be in the tree
-							int residual_capacity = forest.getCost(v);
+							Weight residual_capacity = forest.getCost(v);
 							F[edgeID] = residual_capacity;
 							assert(F[edgeID] >= 0);
 							forest.cut(v);					 //this is a backward edge into u
@@ -642,7 +626,7 @@ public:
 						if (!g.edgeEnabled(edgeID))
 							continue;
 						if (parentEdge[v].edgeID == edgeID) {
-							int residual_capacity = forest.getCost(v);
+							Weight residual_capacity = forest.getCost(v);
 							F[edgeID] = g.getWeight(edgeID) - residual_capacity;
 							assert(F[edgeID] >= 0);
 							forest.cut(v);
@@ -651,15 +635,15 @@ public:
 					}
 				}
 			}
-			augtime_cleanup += rtime(4) - ctime;
+
 		}
 		
 		return f;
 	}
 	
-	int findAugmentingPath_original(int src, int dst) {
+	Weight findAugmentingPath_original(int src, int dst) {
 		
-		int f = 0;
+		Weight f = 0;
 		while (true) {
 			stats_augmenting_rounds++;
 			bool found = true;
@@ -722,13 +706,13 @@ public:
 			if (foundPath) {
 				//found s-t augmenting path.
 				//Find the minimum capacity of any edge from src to dst on that path
-				int c = forest.minCost(src);
+				Weight c = forest.minCost(src);
 				//subtract that capacity from all edges on the path
 				f += c;
 				forest.updateCostOfPathToRoot(src, -c);
 				//delete edges with no remaining capacity
 				//forest.dbg_print_forest(true);
-				int minC = 0;
+				Weight minC = 0;
 				while (minC == 0) {
 					
 					int u = forest.ancecstorFindMin(src);
@@ -758,7 +742,7 @@ public:
 					//Clean up the state of the tree:
 					for (int u = 0; u < g.nodes(); u++) {
 						if (parentEdge[u].edgeID >= 0) {
-							int c = forest.getCost(u);
+							Weight c = forest.getCost(u);
 							int edgeID = parentEdge[u].edgeID;
 							if (!parentEdge[u].edgeID) {
 								// if(tree_edges[edgeID].in_tree){
@@ -793,7 +777,7 @@ public:
 						if (parentEdge[v].edgeID == edgeID) {
 							//need to remember the remaining flow on this edge...
 							assert(F[edgeID] > 0);    					//else this edge wouldn't be in the tree
-							int residual_capacity = forest.getCost(v);
+							Weight residual_capacity = forest.getCost(v);
 							F[edgeID] = residual_capacity;
 							assert(F[edgeID] >= 0);
 							forest.cut(v);    					//this is a backward edge into u
@@ -807,7 +791,7 @@ public:
 						if (!g.edgeEnabled(edgeID))
 							continue;
 						if (parentEdge[v].edgeID == edgeID) {
-							int residual_capacity = forest.getCost(v);
+							Weight residual_capacity = forest.getCost(v);
 							F[edgeID] = g.getWeight(edgeID) - residual_capacity;
 							assert(F[edgeID] >= 0);
 							forest.cut(v);
@@ -825,7 +809,7 @@ public:
 	int numUpdates() const {
 		return num_updates;
 	}
-	const int update() {
+	const Weight update() {
 		return maxFlow(source, sink);
 	}
 	std::vector<int> changed_edges;
@@ -863,8 +847,8 @@ public:
 		sink = t;
 		last_modification = g.modifications - 1;
 	}
-	const int maxFlow(int s, int t) {
-		int f = 0;
+	const Weight maxFlow(int s, int t) {
+		Weight f = 0;
 #ifdef RECORD
 		if (g.outfile) {
 			fprintf(g.outfile, "f %d %d\n", s, t);
@@ -894,7 +878,7 @@ public:
 		
 		while (buildLevelGraph(s, t)) {
 			stats_rounds++;
-			double start_time = rtime(3);
+
 			dbg_print_graph(s, t);
 			for (int i = 0; i < pos.size(); i++)
 				pos[i] = 0;
@@ -903,19 +887,19 @@ public:
 				parentEdge[i]= {false,-1};
 			}
 
-			if (opt_dinics_recursive) {
-				int delta = findAugmentingPath_original(src, dst);
+			if (dinics_recursive) {
+				Weight delta = findAugmentingPath_original(src, dst);
 				f += delta;
 			} else {
-				int delta = findAugmentingPath(src, dst);
+				Weight delta = findAugmentingPath(src, dst);
 				f += delta;
 			}
 			dbg_print_graph(s, t);
-			augtime += rtime(3) - start_time;
+
 		}
 		
 #ifdef DEBUG_MAXFLOW
-		int expected_flow =ek.maxFlow(s,t);
+		Weight expected_flow =ek.maxFlow(s,t);
 #endif
 		
 #ifdef DEBUG_MAXFLOW
@@ -935,11 +919,11 @@ public:
 	
 	std::vector<bool> seen;
 	std::vector<bool> visited;
-	const int minCut(std::vector<MaxFlowEdge> & cut) {
+	const Weight minCut(std::vector<MaxFlowEdge> & cut) {
 		return minCut(source, sink, cut);
 	}
-	const int minCut(int s, int t, std::vector<dgl::MaxFlowEdge> & cut) {
-		const int f = maxFlow(s, t);
+	const Weight minCut(int s, int t, std::vector<dgl::MaxFlowEdge> & cut) {
+		const Weight f = maxFlow(s, t);
 		//ok, now find the cut
 		Q.clear();
 		Q.push_back(s);
@@ -987,7 +971,7 @@ public:
 		}
 		cut.resize(j);
 #ifndef NDEBUG
-		int dbg_sum = 0;
+		Weight dbg_sum = 0;
 		for (int i = 0; i < cut.size(); i++) {
 			int id = cut[i].id;
 			assert(F[id] == g.getWeight(id));
@@ -997,15 +981,16 @@ public:
 #endif
 		return f;
 	}
-	const int getEdgeCapacity(int id) {
+
+	const Weight getEdgeCapacity(int id) {
 		assert(g.edgeEnabled(id));
 		return g.getWeight(id);
 	}
-	const int getEdgeFlow(int id) {
+	const Weight getEdgeFlow(int id) {
 		assert(g.edgeEnabled(id));
 		return F[id];    					// reserve(id);
 	}
-	const int getEdgeResidualCapacity(int id) {
+	const Weight getEdgeResidualCapacity(int id) {
 		assert(g.edgeEnabled(id));
 		return g.getWeight(id) - F[id];    					// reserve(id);
 	}

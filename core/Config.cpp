@@ -278,6 +278,8 @@ BoolOption Monosat::opt_fsm_edge_prop(_cat_fsm, "fsm-edge-prop",
 		"", true);
 BoolOption Monosat::opt_fsm_as_graph(_cat_fsm, "fsm-as-graph",
 		"", true);
+BoolOption Monosat::opt_learn_acyclic_flows(_cat_graph, "learn-acyclic-flows",
+		"", false);
 
 
 IntOption Monosat::opt_width("GRAPH", "width", "Width of graph.\n", 0, IntRange(0, INT32_MAX));

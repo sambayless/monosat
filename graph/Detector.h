@@ -107,6 +107,10 @@ public:
 	virtual void undecide(Lit l){
 
 	}
+	virtual void buildModel(){
+
+	}
+
 	virtual Lit decide()=0;
 	virtual bool supportsEdgeDecisions(){
 		return false;

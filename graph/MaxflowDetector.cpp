@@ -42,22 +42,6 @@
 
 using namespace Monosat;
 
-template<>
-void MaxflowDetector<int>::buildDinitzLinkCut() {
-	underapprox_detector = new DinitzLinkCut(g_under, source, target);
-	overapprox_detector = new DinitzLinkCut(g_over, source, target);
-}
-
-template<typename Weight>
-void MaxflowDetector<Weight>::buildDinitzLinkCut() {
-	underapprox_detector = nullptr;
-	overapprox_detector = nullptr;
-	assert(false);
-	fprintf(stderr,
-			"Warning: Dinitz Link/Cut Tree implementation only supports unweighted or integer weight graphs, aborting!\n");
-	exit(1);
-}
-
 template<typename Weight>
 MaxflowDetector<Weight>::MaxflowDetector(int _detectorID, GraphTheorySolver<Weight> * _outer,
 		 DynamicGraph<Weight>  &_g, DynamicGraph<Weight>  &_antig, int from, int _target, double seed) :
@@ -99,10 +83,11 @@ MaxflowDetector<Weight>::MaxflowDetector(int _detectorID, GraphTheorySolver<Weig
 			learn_cut = new Dinitz<Weight>(learn_graph, source, target);
 	} else if (alg == MinCutAlg::ALG_DINITZ_LINKCUT) {
 		//link-cut tree currently only supports ints (enforcing this using tempalte specialization...).
-		buildDinitzLinkCut();
-		underapprox_conflict_detector = new EdmondsKarpAdj<Weight>(_g, source, target);
-		overapprox_conflict_detector = new EdmondsKarpAdj<Weight>(_antig, source,
-				target);
+		underapprox_detector = new DinitzLinkCut<Weight>(g_under, source, target);
+		overapprox_detector = new DinitzLinkCut<Weight>(g_over, source, target);
+		underapprox_conflict_detector = underapprox_detector;
+			overapprox_conflict_detector = overapprox_detector;
+
 		if (opt_conflict_min_cut_maxflow || opt_adaptive_conflict_mincut)
 			learn_cut = new EdmondsKarpAdj<Weight>(learn_graph, source, target);
 	} else if (alg == MinCutAlg::ALG_KOHLI_TORR) {
@@ -147,6 +132,9 @@ MaxflowDetector<Weight>::MaxflowDetector(int _detectorID, GraphTheorySolver<Weig
 		alg_id = g_over.addDynamicAlgorithm(this);
 	}
 
+	if (opt_learn_acyclic_flows){
+		acyclic_flow=new AcyclicFlow<Weight>(g_under);
+	}
 
 #ifdef RECORD
 	{
@@ -356,23 +344,50 @@ void MaxflowDetector<Weight>::buildMaxFlowTooHighReason(Weight flow, vec<Lit> & 
 	double starttime = rtime(2);
 	tmp_cut.clear();
 	Weight actual_flow = underapprox_conflict_detector->maxFlow();
-	
-	//just collect the set of edges which have non-zero flow, and return them
-	//(Or, I could return a cut, probably)
-	for (int i = 0; i < g_under.edges(); i++) {
-		if (g_under.edgeEnabled(i)) {
-			if (underapprox_conflict_detector->getEdgeFlow(i) > 0) {
-				Var v = outer->edge_list[i].v;
-				assert(outer->value(v)==l_True);
-				if(!g_under.isConstant(i)){
-					conflict.push(mkLit(v, true));
-				}
-				if(outer->hasBitVector(i)){
-					outer->buildBVReason(outer->getEdgeBV(i).getID(),Comparison::geq,underapprox_conflict_detector->getEdgeFlow(i),conflict);
-					//outer->buildBVReason(bv.getID(),inclusive ? Comparison::gt:Comparison::geq,bv.getUnder(),conflict);
-				}
-			}
+	if(opt_learn_acyclic_flows){
 
+		refined_flow.resize(g_under.edges());
+		for(int i = 0;i<g_under.edges();i++){
+			if(g_under.hasEdge(i) && g_under.edgeEnabled(i)){
+				refined_flow[i]=underapprox_conflict_detector->getEdgeFlow(i);
+			}else{
+				refined_flow[i]=0;
+			}
+		}
+
+		acyclic_flow->getAcyclicFlow(source,target,refined_flow);
+		for (int i = 0; i < g_under.edges(); i++) {
+			if (g_under.edgeEnabled(i)) {
+				if (refined_flow[i] > 0) {
+					Var v = outer->edge_list[i].v;
+					assert(outer->value(v)==l_True);
+					if(!g_under.isConstant(i)){
+						conflict.push(mkLit(v, true));
+					}
+					if(outer->hasBitVector(i) && ! outer->getEdgeBV(i).isConst()){
+						outer->buildBVReason(outer->getEdgeBV(i).getID(),Comparison::geq,refined_flow[i],conflict);
+					}
+				}
+
+			}
+		}
+	}else{
+		//just collect the set of edges which have non-zero flow, and return them
+		for (int i = 0; i < g_under.edges(); i++) {
+			if (g_under.edgeEnabled(i)) {
+				if (underapprox_conflict_detector->getEdgeFlow(i) > 0) {
+					Var v = outer->edge_list[i].v;
+					assert(outer->value(v)==l_True);
+					if(!g_under.isConstant(i)){
+						conflict.push(mkLit(v, true));
+					}
+					if(outer->hasBitVector(i)){
+						outer->buildBVReason(outer->getEdgeBV(i).getID(),Comparison::geq,underapprox_conflict_detector->getEdgeFlow(i),conflict);
+						//outer->buildBVReason(bv.getID(),inclusive ? Comparison::gt:Comparison::geq,bv.getUnder(),conflict);
+					}
+				}
+	
+			}
 		}
 	}
 	bumpConflictEdges(conflict);
@@ -566,7 +581,7 @@ void MaxflowDetector<Weight>::buildMaxFlowTooLowReason(Weight maxflow, vec<Lit> 
 					bassert(outer->value(l) == l_False);
 					conflict.push(l);
 
-				}else if(outer->hasBitVector(edgeID)){
+				}else if(outer->hasBitVector(edgeID) && ! outer->getEdgeBV(edgeID).isConst()){
 					Weight residual = overapprox_conflict_detector->getEdgeResidualCapacity(edgeID);
 					assert(overapprox_conflict_detector->getEdgeResidualCapacity(edgeID)==0);//the edge has no residual capacity, so its capacity must be increased.
 					outer->buildBVReason(outer->getEdgeBV(edgeID).getID(),Comparison::leq,g_over.getWeight(edgeID),conflict);
@@ -644,7 +659,7 @@ void MaxflowDetector<Weight>::buildMaxFlowTooLowReason(Weight maxflow, vec<Lit> 
 						visit.push(p);
 					}else{
 						//if the edge _was_ enabled, and all of its capacity was used, then the reason that it didn't have more capacity must be included.
-						if(outer->hasBitVector(edgeid)){
+						if(outer->hasBitVector(edgeid) && ! outer->getEdgeBV(edgeID).isConst()){
 							assert(g_over.getWeight(edgeid)==outer->getEdgeBV(edgeid).getOver());
 							outer->buildBVReason(outer->getEdgeBV(edgeid).getID(),Comparison::leq,overapprox_conflict_detector->getEdgeFlow(edgeid),conflict);
 							//outer->buildBVReason(bv.getID(),inclusive ? Comparison::gt:Comparison::geq,bv.getUnder(),conflict);

@@ -511,8 +511,13 @@ bool solveAssumption(Monosat::SimpSolver * S,int * assumptions, int n_assumption
 	 Lit e = toLit(edge_assignment_literal);
 	 return G->getModel_MaximumFlow_EdgeFlow(S->getTheoryLit(l),S->getTheoryLit(e));
  }
+ long getModel_AcyclicEdgeFlow(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<long> *G,int maxflow_literal, int edge_assignment_literal){
+	 Lit l = toLit(maxflow_literal);
+	 Lit e = toLit(edge_assignment_literal);
+	 return G->getModel_MaximumFlow_AcyclicEdgeFlow(S->getTheoryLit(l),S->getTheoryLit(e));
+ }
 
  long getModel_MinimumSpanningTreeWeight(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<long> *G,int spanning_tree_literal){
 	 Lit l = toLit(spanning_tree_literal);
-	 return G->getModel_MaximumFlowModel(S->getTheoryLit(l));
+	 return G->getModel_MinimumSpanningWeight(S->getTheoryLit(l));
  }

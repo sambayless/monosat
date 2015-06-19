@@ -24,10 +24,10 @@
 
 #include <cstddef>
 #include <cassert>
-#include <climits>
+
 #include <algorithm>
-#include "mtl/Vec.h"
-using namespace Monosat;
+
+
 #ifdef NDEBUG
 #define NDEBUG_LINKCUT
 #endif
@@ -42,25 +42,29 @@ using namespace Monosat;
 //Note that is probably not the minimum cost that you might naturally expect the tree to compute: its is NOT the minimum cost of any node in the abstract tree beneath the node.
 //This is especially a point of potential confusion, given that the way this minimum path cost is computed is by finding the minimum cost of any node in the concrete splay tree beneath the node in question (after exposing it).
 
+//Watchout - this class is very likely broken for non-integer weights!
+template<typename Weight>
 class LinkCutCost {
-	static const int INF = INT_MAX / 2;
+	static const Weight INF;//Fix this !!
 	int setCount;
 	struct Node {
 		
-		int netcost = INF; //costs on the node are stored in 'delta' representation, following klein & mozes' description in the appendix in Planarity
-		int netmin = 0;
+		Weight netcost = INF; //costs on the node are stored in 'delta' representation, following klein & mozes' description in the appendix in Planarity
+		Weight netmin = 0;
+		//Note: this data structure doesn't store the identify of the actual parent of the node in the link-cut tree (but only the current parent in the underlying splay tree).
+		//However, that information can be easily maintained outside the structure, at each link/cut operation.
 		bool hasRealParent = false; //used to skip splays in some cases.
 		bool deleted = false;
 #ifndef NDEBUG_LINKCUT
-		int cost = INF;
-		int min = INF;
-		int dbg_min = INF;
+		Weight cost = INF;
+		Weight min = INF;
+		Weight dbg_min = INF;
 		int dbg_parent = -1;
 		int dbg_ID;
 #endif
-		int left = -1;
-		int right = -1;
-		int parent = -1;
+		int left = -1;//Splay tree
+		int right = -1;//Splay tree
+		int parent = -1;//Splay tree
 		Node(int id) {
 #ifndef NDEBUG
 			dbg_ID = id;
@@ -69,22 +73,23 @@ class LinkCutCost {
 		;
 		
 	};
-	vec<Node> nodes;
-	int grossmin(int v) {
+	std::vector<Node> nodes;
+	Weight grossmin(int v) {
 		dbg_min(v);
 		expose(v);
+		dbg_min(v);
 		return nodes[v].netmin + nodes[v].netcost;
 	}
-	int grosscost(int v) {
+	Weight grosscost(int v) {
 		//int cost = v.netcost + grossmin(v);
 		//assert(cost==v.cost);
 #ifndef NDEBUG_LINKCUT
-		int cp = nodes[v].cost;
+		Weight cp = nodes[v].cost;
 #endif
 		expose(v);
 		dbg_print_forest();
 		//int it = iter;
-		int cost = nodes[v].netcost;
+		Weight cost = nodes[v].netcost;
 #ifndef NDEBUG_LINKCUT
 		assert(cost == cp);
 #endif
@@ -98,7 +103,7 @@ class LinkCutCost {
 	}
 	inline void update(Node & v) {
 #ifndef NDEBUG_LINKCUT
-		int mincost = v.cost;
+		Weight mincost = v.cost;
 		
 		if (v.left > -1) {
 			mincost = std::min(mincost, nodes[v.left].min);
@@ -106,7 +111,7 @@ class LinkCutCost {
 		if (v.right > -1) {
 			mincost = std::min(mincost, nodes[v.right].min);
 		}
-		if (mincost == INF)
+		if (mincost >= INF)
 			mincost = 0;
 		v.min = mincost;
 		
@@ -119,7 +124,7 @@ class LinkCutCost {
 			if (v.right > -1) {
 				v.dbg_min = std::min(v.dbg_min, nodes[v.right].dbg_min);
 			}
-			if (v.dbg_min == INF)
+			if (v.dbg_min >= INF)
 				v.dbg_min = 0;
 			assert(v.dbg_min == v.min);
 		}
@@ -128,7 +133,7 @@ class LinkCutCost {
 	
 	//Update the costs on every edge in the path of the tree from v to root v by delta.
 	//has NO EFFECT if v is a root in the abstract tree (as roots have no edges on the path to themselves).
-	void updatePathCost(int v, int delta) {
+	void updatePathCost(int v, Weight delta) {
 		expose(v);
 		nodes[v].netcost += delta;
 #ifndef NDEBUG_LINKCUT
@@ -157,11 +162,11 @@ class LinkCutCost {
 			return;
 		}
 		
-		int m = nodes[v].netmin;
-		int dbg_min = nodes[v].cost;
+		Weight m = nodes[v].netmin;
+		Weight dbg_min = nodes[v].cost;
 		int p = v;
 		
-		int c = nodes[v].netcost;
+		Weight c = nodes[v].netcost;
 		
 		while (nodes[p].parent > -1) {
 			if (nodes[p].dbg_ID == nodes[nodes[p].parent].left || nodes[p].dbg_ID == nodes[nodes[p].parent].right) {
@@ -188,20 +193,20 @@ class LinkCutCost {
 			
 		}
 		
-		int minGrossCost = nodes[v].cost;
+		Weight minGrossCost = nodes[v].cost;
 		
-		vec<int> Q;
-		Q.push(v);
+		std::vector<int> Q;
+		Q.push_back(v);
 		while (Q.size()) {
-			assert(Q.last() > -1);
-			Node & w = nodes[Q.last()];
-			Q.pop();
+			assert(Q.back() > -1);
+			Node & w = nodes[Q.back()];
+			Q.pop_back();
 			minGrossCost = std::min(minGrossCost, w.cost);
 			if (w.right > -1)
-				Q.push(w.right);
+				Q.push_back(w.right);
 			
 			if (w.left > -1)
-				Q.push(w.left);
+				Q.push_back(w.left);
 		}
 		// if(minGrossCost==INF)
 		//	  minGrossCost=0;
@@ -237,7 +242,7 @@ class LinkCutCost {
 		 if(iter== 1415555){
 		 int a =1;
 		 }*/
-
+/*
 		printf("digraph{\n");
 		for (int i = 0; i < nodes.size(); i++) {
 			printf("n%d [label=\"%d: c%d, m%d\"]\n", i, i, nodes[i].netcost, nodes[i].min);
@@ -257,16 +262,16 @@ class LinkCutCost {
 					s = "red";
 				}
 				
-				/*if(value(e.v)==l_True)
+				if(value(e.v)==l_True)
 				 s="blue";
 				 else if (value(e.v)==l_False)
-				 s="red";*/
+				 s="red";
 				printf("n%d . n%d [label=\"%d: %d\",color=\"%s\"]\n", i, nodes[n.parent].dbg_ID, i, n.cost, s);
 			}
 			
 		}
 		
-		printf("}\n");
+		printf("}\n");*/
 		
 #endif
 	}
@@ -275,7 +280,7 @@ class LinkCutCost {
 #ifndef NDEBUG_LINKCUT
 		if (v == -1)
 			return;
-		int c = nodes[v].netcost;
+		Weight c = nodes[v].netcost;
 		int p = v;
 		while (nodes[p].parent > -1) {
 			if (p == nodes[nodes[p].parent].left || p == nodes[nodes[p].parent].right) {
@@ -308,9 +313,9 @@ class LinkCutCost {
 			int a = 1;
 		}
 		// dbg_print_forest();
-		int minGrossCost = nodes[v].cost;
+		Weight minGrossCost = nodes[v].cost;
 		
-		vec<int> Q;
+		std::vector<int> Q;
 		/* for(int i = 0;i<nodes.size();i++){
 		 Node & y = nodes[i];
 		 if(dbg_is_ancestor(y,v)){
@@ -318,18 +323,18 @@ class LinkCutCost {
 		 assert(minGrossCost>=v.min);
 		 }
 		 }*/
-		Q.push(v);
+		Q.push_back(v);
 		while (Q.size()) {
-			Node & w = nodes[Q.last()];
-			Q.pop();
+			Node & w = nodes[Q.back()];
+			Q.pop_back();
 			minGrossCost = std::min(minGrossCost, w.cost);
 			if (w.right)
-				Q.push(w.right);
+				Q.push_back(w.right);
 			
 			if (w.left)
-				Q.push(w.left);
+				Q.push_back(w.left);
 		}
-		if (minGrossCost == INF)
+		if (minGrossCost >= INF)
 			minGrossCost = 0;
 		assert(minGrossCost == min);
 #endif
@@ -357,10 +362,10 @@ class LinkCutCost {
 		int rID = q.parent;
 		Node & r = nodes[q.parent];
 #ifndef NDEBUG_LINKCUT
-		int cp = p.cost;
-		int cq = q.cost;
+		Weight cp = p.cost;
+		Weight cq = q.cost;
 		//int cr = r? grosscost(r):0;
-		int cb = p.right > -1 ? nodes[p.right].cost : 0;
+		Weight cb = p.right > -1 ? nodes[p.right].cost : 0;
 		dbg_cost(qID);
 		dbg_cost(pID);
 		dbg_cost(rID);
@@ -368,9 +373,9 @@ class LinkCutCost {
 #endif
 		
 		//delta weight/minweight update rules from Klein and Mozes's Planarity, chapter 17
-		int deltap = p.netcost;
-		int deltaq = q.netcost;
-		int deltab = p.right > -1 ? nodes[p.right].netcost : 0;
+		Weight deltap = p.netcost;
+		Weight deltaq = q.netcost;
+		Weight deltab = p.right > -1 ? nodes[p.right].netcost : 0;
 		
 		if ((q.left = p.right) > -1) {
 			nodes[q.left].parent = qID;
@@ -410,18 +415,18 @@ class LinkCutCost {
 		int rID = q.parent;
 		Node & r = nodes[q.parent];
 #ifndef NDEBUG_LINKCUT
-		int cp = p.cost;
-		int cq = q.cost;
+		Weight cp = p.cost;
+		Weight cq = q.cost;
 		//int cr = r? grosscost(r):0;
-		int cb = p.left > -1 ? nodes[p.left].cost : 0;
+		Weight cb = p.left > -1 ? nodes[p.left].cost : 0;
 		dbg_cost(qID);
 		dbg_cost(pID);
 		dbg_cost(rID);
 #endif
 		
-		int deltap = p.netcost;
-		int deltaq = q.netcost;
-		int deltab = p.left > -1 ? nodes[p.left].netcost : 0;
+		Weight deltap = p.netcost;
+		Weight deltaq = q.netcost;
+		Weight deltab = p.left > -1 ? nodes[p.left].netcost : 0;
 		
 		if ((q.right = p.left) > -1) {
 			nodes[q.right].parent = qID;
@@ -458,7 +463,7 @@ class LinkCutCost {
 		Node & p = nodes[pID];
 #ifndef NDEBUG_LINKCUT
 		dbg_print_forest();
-		int cp = p.cost;
+		Weight cp = p.cost;
 #endif
 		while (!isSplayRoot(pID)) {
 			int qID = p.parent;
@@ -495,8 +500,8 @@ class LinkCutCost {
 	
 	inline void childChange(int xID) {
 		Node & x = nodes[xID];
-		x.netmin = std::min(0, x.left > -1 ? (nodes[x.left].netmin + nodes[x.left].netcost) : 0);
-		x.netmin = std::min(x.netmin, x.right > -1 ? (nodes[x.right].netmin + nodes[x.right].netcost) : 0);
+		x.netmin = std::min((Weight)0, x.left > -1 ? (nodes[x.left].netmin + nodes[x.left].netcost) :(Weight) 0);
+		x.netmin = std::min(x.netmin, x.right > -1 ? (nodes[x.right].netmin + nodes[x.right].netcost) :(Weight) 0);
 	}
 	
 	// Makes node x the root of the virtual tree, and also x is the leftmost
@@ -558,7 +563,7 @@ class LinkCutCost {
 	}
 	
 	// prerequisite: x and y are in distinct trees, AND x is the root of its tree
-	void _link(int x, int y, int cost = 0) {
+	void _link(int x, int y, Weight cost = 0) {
 		//assert (_findRoot(x) != _findRoot(y));
 #ifndef NDEBUG_LINKCUT
 		int sY = _findRoot(y);
@@ -610,7 +615,7 @@ class LinkCutCost {
 	
 	//u is the node to search from; a is a weight greater to or equal to the delta_minw(s)
 	//returns the rightmost (or leftmost, if leftdir is true) solid descendent v of u such that w(v) <= a+w(u)
-	int solidFind(int u, int alpha, bool leftdir) {
+	int solidFind(int u, Weight alpha, bool leftdir) {
 		assert(u > -1);
 		assert(alpha >= nodes[u].netmin);
 		int u1 = nodes[u].left;
@@ -637,7 +642,7 @@ public:
 	int addNode() {
 		//return new Node();
 		setCount++;
-		nodes.push(nodes.size());	//new Node(nodes.size()));
+		nodes.push_back(nodes.size());	//new Node(nodes.size()));
 		return nodes.size() - 1;
 	}
 	int nNodes() {
@@ -651,7 +656,7 @@ public:
 	}
 	
 	// prerequisite: x and y are in distinct trees. y becomes the parent of x.
-	void link(int x, int y, int cost = 0) {
+	void link(int x, int y, Weight cost = 0) {
 		if (x == y)
 			return;
 		_link(x, y, cost);
@@ -668,16 +673,18 @@ public:
 	}
 	
 	//Returns the cost of the edge connecting x to the tree; x must not be a root.
-	int getCost(int x) {
+	Weight getCost(int x) {
 		assert(!isRoot(x));
 		return grosscost(x);
 	}
 	
-	//Returns the lowest cost in the tree rooted at x.
+	//Returns the lowest cost in the ENTIRE tree rooted at x.
+	//This is not the lowest cost among the ancestors of x - indeed, x must be a root to use this function.
+	//Instead, to find the lowest cost among the ancestors of x, use ancestorFindMin() to find the ancestor a of x with minimum cost, and then get the cost of that ancestor using getCost(a).
 	//x must be a root!
 	//Note: In Sleator and Tarjan (1982), this function instead returns a node of minimum weight.
 	//For the equivalent function in this implementation, see ancecstorFindMin
-	int minCost(int x) {
+	Weight minCost(int x) {
 		assert(isRoot(x));
 		return grossmin(x);
 	}
@@ -686,7 +693,7 @@ public:
 	int ancecstorFindMin(int u, bool leftdir = false) {
 		expose(u);
 		Node & p = nodes[u];
-		int alpha = p.netcost + p.netmin;
+		Weight alpha = p.netcost + p.netmin;
 		bool u_is_candidate = p.netcost <= alpha;
 		bool candidate_on_right = p.right > -1 && (nodes[p.right].netmin + nodes[p.right].netcost + p.netcost <= alpha);
 		if (u_is_candidate && (leftdir || !candidate_on_right)) {
@@ -699,7 +706,7 @@ public:
 	//Find an ancestor of s with weight at most alpha, that is closest to s if leftdir is true, or cloests to root(s) if if leftdir is false.
 	//Note that this follows the terminology from Klein and Mozes, and differs from Sleator and Tarjan's somewhat.
 	//Returns -1 if no node is found
-	int ancecstorFindWeight(int u, int alpha=0, bool leftdir=true) {
+	int ancecstorFindWeight(int u, Weight alpha=0, bool leftdir=true) {
 		expose(u);
 		Node & p = nodes[u];
 		
@@ -723,7 +730,7 @@ public:
 	}
 	
 	//updates the cost of each element in x's path to root.
-	void updateCostOfPathToRoot(int x, int delta) {
+	void updateCostOfPathToRoot(int x, Weight delta) {
 		updatePathCost(x, delta);
 	}
 	
@@ -757,15 +764,6 @@ public:
 		return !nodes[u].hasRealParent;
 	}
 	
-	//Returns -1 if u is a root
-	//is this correct?
-	int parent(int u){
-		if(!isRoot(u)){
-			return nodes[u].parent;
-		}else{
-			return -1;
-		}
-	}
 	int numRoots() {
 		assert(dbgSetCount());
 		return setCount;
@@ -780,4 +778,7 @@ public:
 	}
 	
 };
+
+
+
 #endif

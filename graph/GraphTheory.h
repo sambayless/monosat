@@ -1527,9 +1527,7 @@ public:
 
 	void buildBVReason(int bvID, Comparison comp, Weight compareTo, vec<Lit> &reason){
 		static int iter = 0;
-		if(++iter==7){
-			int a =1;
-		}
+		//todo: optimize this for case where bv is statically known to satisfy or fail the constraint...
 		BitVector<Weight> bv = comparator->getBV(bvID);
 		Lit c = getBV_COMP(bvID,-comp,compareTo);
 		assert(dbg_value(c)==l_False);
@@ -2135,6 +2133,10 @@ public:
 	bool solveTheory(vec<Lit> & conflict) {
 		requiresPropagation = true;		//Just to be on the safe side... but this shouldn't really be required.
 		bool ret = propagateTheory(conflict,true);
+		if(ret){
+			for (Detector *d:detectors)
+				d->buildModel();
+		}
 		//Under normal conditions, this should _always_ hold (as propagateTheory should have been called and checked by the parent solver before getting to this point).
 		assert(ret);
 		return ret;
@@ -3256,7 +3258,17 @@ public:
 			return -1;
 		return mf->getModel_EdgeFlow(edgeID);
 	}
-	Weight getModel_MaximumFlowModel(Lit theoryLit){
+	Weight getModel_MaximumFlow_AcyclicEdgeFlow(Lit theoryLit, Lit edgeLit){
+		Var v = var(theoryLit);
+		assert(isEdgeVar(var(edgeLit)));
+		int edgeID =  getEdgeID(var(edgeLit));
+		Detector * d= detectors[getDetector(v)];
+		MaxflowDetector<Weight> * mf = dynamic_cast<MaxflowDetector<Weight>*>(d);
+		if(!mf)
+			return -1;
+		return mf->getModel_AcyclicEdgeFlow(edgeID);
+	}
+	Weight getModel_MinimumSpanningWeight(Lit theoryLit){
 		Var v = var(theoryLit);
 		Detector * d= detectors[getDetector(v)];
 		MSTDetector<Weight> * mst = dynamic_cast<MSTDetector<Weight>*>(d);
