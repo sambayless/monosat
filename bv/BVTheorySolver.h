@@ -218,7 +218,7 @@ public:
 			return outer->getBits(id);
 		}
 
-		bool isConstant()const{
+		bool isConst()const{
 			return outer->isConst(id);
 		}
 

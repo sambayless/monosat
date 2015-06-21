@@ -3276,6 +3276,38 @@ public:
 			return -1;
 		return mst->getModel_SpanningTreeWeight();
 	}
+
+
+	 //Get a valid path, in terms of nodes, (from a reachability or shortest path constraint)
+	 //store_path must point to an array of ints of sufficient length to store the path (the path length can be optained by a call to getModel_PathLength)
+	//Or, return false if there is no such path
+	bool getModel_Path(Lit theoryLit, std::vector<int> & store_path){
+		store_path.clear();
+		Var v = var(theoryLit);
+		Detector * d= detectors[getDetector(v)];
+		ReachDetector<Weight> * r = dynamic_cast<ReachDetector<Weight>*>(d);
+		if(!r){
+			assert(false);
+			return false;
+		}
+		int node = r->getNode(v);
+		return r->getModel_Path(node,store_path);
+	 }
+	 //Get a valid path, in terms of edges, (from a reachability or shortest path constraint)
+	 //store_path must point to an array of ints of sufficient length to store the path (the path length can be optained by a call to getModel_PathLength)
+	//Or, return false if there is no such path
+	bool getModel_PathByEdgeLit(Lit theoryLit, std::vector<Lit> & store_path){
+		store_path.clear();
+		Var v = var(theoryLit);
+		Detector * d= detectors[getDetector(v)];
+		ReachDetector<Weight> * r = dynamic_cast<ReachDetector<Weight>*>(d);
+		if(!r){
+			assert(false);
+			return false;
+		}
+		int node = r->getNode(v);
+		return r->getModel_PathByEdgeLit(node,store_path);
+	}
 };
 
 }

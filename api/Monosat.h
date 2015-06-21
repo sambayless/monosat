@@ -83,6 +83,13 @@ extern "C"
   long getModel_AcyclicEdgeFlow(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<long> *G,int maxflow_literal, int edgeLit);
 
   long getModel_MinimumSpanningTreeWeight(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<long> *G,int spanning_tree_literal);
+/*
+  //Returns the number of nodes in the path length for this reachability or shortest path literal (1+number of edges)
+  int getModel_PathLength(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<long> *G,int reach_or_shortest_path_lit);
+  void getModel_Path(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<long> *G,int reach_or_shortest_path_lit, int * store_path);
+  void getModel_PathByEdgeLit(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<long> *G,int reach_or_shortest_path_lit, int * store_path);
+*/
+
 
 }
 #endif /* MONOSAT_H_ */

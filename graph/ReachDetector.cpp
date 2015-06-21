@@ -316,21 +316,21 @@ void ReachDetector<Weight>::buildSATConstraints(bool onlyUnderApprox, int within
 	} else {
 		if (constraintsBuiltUnder < 0) {
 			constraintsBuiltUnder = g_under.nodes();
-			
+			cnf_reach_lits.growTo(g_under.nodes(),lit_Undef);
+
 			//for each node, it cannot be reachable if none of its incoming.edges() are enabled.
 			for (int n = 0; n < g_under.nodes(); n++) {
-				if (reach_lits[n] == lit_Undef) {
+				if (reach_lits[n]!=lit_Undef){
+					cnf_reach_lits[n]=reach_lits[n];
+				}else if (cnf_reach_lits[n] == lit_Undef) {
 					Var reach_var;
-					if (this->underapprox_detector || this->overapprox_reach_detector)
-						reach_var = outer->newVar(detectorID, true);
-					else {
+					//if (this->underapprox_detector || this->overapprox_reach_detector)
+					//	reach_var = outer->newVar(detectorID, true);
+					//else {
 						reach_var = outer->newVar(-1, false);
-					}
-					reach_lits[n] = mkLit(reach_var); //since this is _only_ the underapproximation, these variables _do_ need to be connected to the theory solver
-					while (reach_lit_map.size() <= reach_var - first_reach_var) {
-						reach_lit_map.push(-1);
-					}
-					reach_lit_map[reach_var - first_reach_var] = n;
+					//}
+					cnf_reach_lits[n] = mkLit(reach_var); //since this is _only_ the underapproximation, these variables _do_ need to be connected to the theory solver
+
 					
 				}
 			}
@@ -340,10 +340,10 @@ void ReachDetector<Weight>::buildSATConstraints(bool onlyUnderApprox, int within
 			for (int n = 0; n < g_under.nodes(); n++) {
 				
 				if (n == source) {
-					outer->addClause(reach_lits[n]); //source node is unconditionally reachable
+					outer->addClause(cnf_reach_lits[n]); //source node is unconditionally reachable
 				} else {
 					c.clear();
-					c.push(~reach_lits[n]);
+					c.push(~cnf_reach_lits[n]);
 					//for(auto edge:g.inverted_adjacency[n]){
 					for (int i = 0; i < g_under.nIncoming(n); i++) {
 						auto & edge = g_under.incoming(n, i);
@@ -360,13 +360,13 @@ void ReachDetector<Weight>::buildSATConstraints(bool onlyUnderApprox, int within
 					outer->addClause(c);
 					c.clear();
 					//either an incoming node must be true, or reach_lit must be false
-					c.push(~reach_lits[n]);
+					c.push(~cnf_reach_lits[n]);
 					for (int i = 0; i < g_under.nIncoming(n); i++) {
 						auto & edge = g_under.incoming(n, i);
 						int edgeID = edge.id;
 						int from = edge.node;
 						if (from != n) { //ignore trivial cycles
-							c.push(reach_lits[from]);
+							c.push(cnf_reach_lits[from]);
 						}
 					}
 					//Either at least one incoming node must be true, or the reach_lit must be false (unless this is the source reach node);
@@ -375,14 +375,14 @@ void ReachDetector<Weight>::buildSATConstraints(bool onlyUnderApprox, int within
 					//Either at least incoming edge AND its corresponding from node must BOTH be simultaneously true, or the node is must not be reachable
 					c.clear();
 					//either an incoming node must be true, or reach_lit must be false
-					c.push(~reach_lits[n]);
+					c.push(~cnf_reach_lits[n]);
 					for (int i = 0; i < g_under.nIncoming(n); i++) {
 						auto & edge = g_under.incoming(n, i);
 						int edgeID = edge.id;
 						int from = edge.node;
 						if (from != n) { //ignore trivial cycles
 							Lit e = mkLit(outer->getEdgeVar(edgeID));
-							Lit incoming = reach_lits[from];
+							Lit incoming = cnf_reach_lits[from];
 							
 							Lit andGate = mkLit(outer->newVar());
 							//Either the andgate is true, or at least one of e, incoming is false
@@ -404,14 +404,15 @@ void ReachDetector<Weight>::buildSATConstraints(bool onlyUnderApprox, int within
 					int to = edge.node;
 					if (to != n) { //ignore trivial cycles
 						Lit e = mkLit(outer->getEdgeVar(edgeID));
-						Lit outgoing = reach_lits[to];
-						outer->addClause(~reach_lits[n], ~e, outgoing);
+						Lit outgoing = cnf_reach_lits[to];
+						outer->addClause(~cnf_reach_lits[n], ~e, outgoing);
 					}
 				}
 				
 			}
 		}
 	}
+
 }
 template<typename Weight>
 void ReachDetector<Weight>::addLit(int from, int to, Var outer_reach_var) {
@@ -450,6 +451,13 @@ void ReachDetector<Weight>::addLit(int from, int to, Var outer_reach_var) {
 	assert(from == source);
 	if (opt_encode_reach_underapprox_as_sat || !underapprox_detector) {
 		buildSATConstraints(true);
+		if(cnf_reach_lits[to]!=lit_Undef && cnf_reach_lits[to]!=reach_lits[to]){
+			Lit r = cnf_reach_lits[to];
+			//force equality between the new lit and the old reach lit, in the SAT solver
+			outer->makeEqualInSolver(outer->toSolver(r), mkLit(outer_reach_var));
+			return;
+		}
+
 	}
 	if (!overapprox_reach_detector) {
 		buildSATConstraints(false);
@@ -1594,6 +1602,52 @@ Lit ReachDetector<Weight>::decide() {
 	return lit_Undef;
 }
 ;
+
+
+//Return the path (in terms of nodes)
+template<typename Weight>
+bool ReachDetector<Weight>::getModel_Path(int node, std::vector<int> & store_path){
+	store_path.clear();
+	 Reach & d = *underapprox_path_detector;
+	 if(!d.connected(node))
+		 return false;
+	 int u = node;
+	 int p;
+	while ((p = d.previous(u)) != -1) {
+		Edge & edg = outer->edge_list[d.incomingEdge(u)]; //outer->edges[p][u];
+		Var e = edg.v;
+		lbool val = outer->value(e);
+		assert(outer->value(e)==l_True);
+		store_path.push_back(u);
+		u = p;
+	}
+	assert(u==this->source);
+	store_path.push_back(u);
+	std::reverse(store_path.begin(),store_path.end());
+	return true;
+ }
+
+template<typename Weight>
+bool ReachDetector<Weight>::getModel_PathByEdgeLit(int node, std::vector<Lit> & store_path){
+	store_path.clear();
+	 Reach & d = *underapprox_path_detector;
+	 if(!d.connected(node))
+		 return false;
+	 int u = node;
+	 int p;
+	while ((p = d.previous(u)) != -1) {
+		Edge & edg = outer->edge_list[d.incomingEdge(u)]; //outer->edges[p][u];
+		Var e = edg.v;
+		assert(outer->value(e)==l_True);
+		lbool val = outer->value(e);
+		assert(outer->value(e)==l_True);
+		store_path.push_back(mkLit(e,false));
+		u = p;
+	}
+	assert(u==this->source);
+	std::reverse(store_path.begin(),store_path.end());
+	return true;
+ }
 
 template class Monosat::ReachDetector<int> ;
 template class Monosat::ReachDetector<long> ;

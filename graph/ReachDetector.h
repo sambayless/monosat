@@ -69,6 +69,7 @@ public:
 	Distance<int> * negative_distance_detector = nullptr;
 	vec<bool> original_reach_lits;
 	vec<Lit> reach_lits;
+	vec<Lit> cnf_reach_lits;
 	Var first_reach_var;
 	vec<int> order_vec;
 	vec<int> reach_lit_map;
@@ -328,7 +329,10 @@ public:
 #endif
 		return true;
 	}
-	
+
+	//Return the path (in terms of nodes)
+	bool getModel_Path(int node, std::vector<int> & store_path);
+	bool getModel_PathByEdgeLit(int node, std::vector<Lit> & store_path);
 };
 }
 ;

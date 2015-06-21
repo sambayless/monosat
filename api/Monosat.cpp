@@ -239,7 +239,7 @@ void * initBVTheory(Monosat::SimpSolver * S){
 	  return bv;
 }
 bool solveAssumption(Monosat::SimpSolver * S,int * assumptions, int n_assumptions){
-
+	S->cancelUntil(0);
 
 	  static Monosat::vec<Monosat::Lit> assume;
 		S->preprocess();//do this _even_ if sat based preprocessing is disabled! Some of the theory solvers depend on a preprocessing call being made!
@@ -496,7 +496,17 @@ bool solveAssumption(Monosat::SimpSolver * S,int * assumptions, int n_assumption
  //model query
  //Returns 0 for true, 1 for false, 2 for unassigned.
  int getModel_Literal(Monosat::SimpSolver * S,int lit){
-	 return toInt(S->value(toLit(lit)));
+	 Lit l = toLit(lit);
+	 lbool val = S->model[var(l)];
+	 assert(val==l_True || val==l_False || val==l_Undef);
+	 if (sign(l)){
+		 if (val==l_True)
+			 val=l_False;
+		 else if (val==l_False){
+			 val=l_True;
+		 }
+	 }
+	 return toInt(val);//toInt(S->value(toLit(lit)));
  }
  long getModel_BV(Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv, int bvID){
 	 return bv->getUnderApprox(bvID);
@@ -521,3 +531,34 @@ bool solveAssumption(Monosat::SimpSolver * S,int * assumptions, int n_assumption
 	 Lit l = toLit(spanning_tree_literal);
 	 return G->getModel_MinimumSpanningWeight(S->getTheoryLit(l));
  }
+/* //Get the length of a valid path (from a reachability or shortest path constraint)
+ long getModel_PathLength(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<long> *G,int reach_or_shortest_path_lit){
+	 Lit l = toLit(reach_or_shortest_path_lit);
+	 return G->getModel_PathLength(S->getTheoryLit(l));
+ }
+ //Get a valid path (from a reachability or shortest path constraint)
+ //store_path must point to an array of ints of sufficient length to store the path (the path length can be optained by a call to getModel_PathLength)
+ void getModel_Path(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<long> *G,int reach_or_shortest_path_lit, int * store_path){
+	 Lit l = toLit(reach_or_shortest_path_lit);
+	 std::vector<int> path;
+	 G->getModel_Path(S->getTheoryLit(l),path);
+	 for (int i = 0;i<path->size();i++){
+		 store_path[i]=path[i];
+	 }
+	 //Returns the number of nodes in the path length for this reachability or shortest path literal (1+number of edges)
+	   int getModel_PathLength(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<long> *G,int reach_or_shortest_path_lit){
+
+	   }
+
+		bool getModel_Path(Lit theoryLit,  int * store_path){
+
+		 }
+		 //Get a valid path, in terms of edges, (from a reachability or shortest path constraint)
+		 //store_path must point to an array of ints of sufficient length to store the path (the path length can be optained by a call to getModel_PathLength)
+		//Or, return false if there is no such path
+		bool getModel_PathByEdgeLit(Lit theoryLit, int * store_path){
+
+		}
+ }
+
+*/

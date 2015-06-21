@@ -659,7 +659,7 @@ void MaxflowDetector<Weight>::buildMaxFlowTooLowReason(Weight maxflow, vec<Lit> 
 						visit.push(p);
 					}else{
 						//if the edge _was_ enabled, and all of its capacity was used, then the reason that it didn't have more capacity must be included.
-						if(outer->hasBitVector(edgeid) && ! outer->getEdgeBV(edgeID).isConst()){
+						if(outer->hasBitVector(edgeid) && ! outer->getEdgeBV(edgeid).isConst()){
 							assert(g_over.getWeight(edgeid)==outer->getEdgeBV(edgeid).getOver());
 							outer->buildBVReason(outer->getEdgeBV(edgeid).getID(),Comparison::leq,overapprox_conflict_detector->getEdgeFlow(edgeid),conflict);
 							//outer->buildBVReason(bv.getID(),inclusive ? Comparison::gt:Comparison::geq,bv.getUnder(),conflict);

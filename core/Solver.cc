@@ -997,10 +997,10 @@ CRef Solver::propagate(bool propagate_theories) {
 			}
 			
 			Lit p = trail[qhead++];     // 'p' is enqueued fact to propagate.
+
 			vec<Watcher>& ws = watches[p];
 			Watcher *i, *j, *end;
 			num_props++;
-			
 			for (i = j = (Watcher*) ws, end = i + ws.size(); i != end;) {
 				// Try to avoid inspecting the clause:
 				Lit blocker = i->blocker;
@@ -2047,7 +2047,8 @@ void Solver::relocAll(ClauseAllocator& to) {
 	//
 	// for (int i = 0; i < watches.size(); i++)
 	watches.cleanAll();
-	for (int v = 0; v < nVars(); v++)
+	for (int v = 0; v < nVars(); v++){
+
 		for (int s = 0; s < 2; s++) {
 			Lit p = mkLit(v, s);
 			// printf(" >>> RELOCING: %s%d\n", sign(p)?"-":"", var(p)+1);
@@ -2055,7 +2056,7 @@ void Solver::relocAll(ClauseAllocator& to) {
 			for (int j = 0; j < ws.size(); j++)
 				ca.reloc(ws[j].cref, to);
 		}
-	
+	}
 	// All reasons:
 	//
 	for (int i = 0; i < trail.size(); i++) {

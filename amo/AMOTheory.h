@@ -70,7 +70,6 @@ public:
 
 	//Add a variable (not literal!) to the set of which at most one may be true.
 	void addVar(Var solverVar){
-
 		S->newTheoryVar(solverVar, getTheoryIndex(),solverVar);//using same variable indices in the theory as out of the theory
 		amo.push(solverVar);
 	}

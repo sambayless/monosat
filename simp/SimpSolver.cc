@@ -159,7 +159,6 @@ bool SimpSolver::addClause_(vec<Lit>& ps) {
 
 void SimpSolver::removeClause(CRef cr) {
 	const Clause& c = ca[cr];
-	
 	if (use_simplification)
 		for (int i = 0; i < c.size(); i++) {
 			n_occ[toInt(c[i])]--;
@@ -475,7 +474,6 @@ bool SimpSolver::eliminateVar(Var v) {
 	assert(!frozen[v]);
 	assert(!isEliminated(v));
 	assert(value(v) == l_Undef);
-	
 	// Split the occurrences into positive and negative:
 	//
 	const vec<CRef>& cls = occurs.lookup(v);
