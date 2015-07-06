@@ -168,6 +168,9 @@ public:
 				conflicts / cpu_time, learnts.size(), stats_removed_clauses);
 		printf("decisions             : %-12" PRIu64 "   (%4.2f %% random) (%.0f /sec)\n", decisions,
 				(float) rnd_decisions * 100 / (float) decisions, decisions / cpu_time);
+		if(opt_decide_theories){
+		printf("Theory decision rounds: %ld/%ld\n",n_theory_decision_rounds,starts);
+		}
 		printf("propagations          : %-12" PRIu64 "   (%.0f /sec)\n", propagations, propagations / cpu_time);
 		printf("conflict literals     : %-12" PRIu64 "   (%4.2f %% deleted)\n", tot_literals,
 				(max_literals - tot_literals) * 100 / (double) max_literals);
@@ -175,6 +178,7 @@ public:
 			printf("pure literals     : %ld (%ld theory lits) (%ld rounds, %f time)\n", stats_pure_lits,
 					stats_pure_theory_lits, pure_literal_detections, stats_pure_lit_time);
 		}
+
 		if(opt_check_solution){
 			printf("Solution double-checking time (disable with -no-check-solution): %f s\n",stats_solution_checking_time);
 		}
@@ -474,6 +478,10 @@ public:
 			pure_literal_detections, stats_removed_clauses;
 	uint64_t dec_vars, clauses_literals, learnts_literals, max_literals, tot_literals;
 	double stats_pure_lit_time=0;
+	uint64_t n_theory_conflicts=0;
+	int consecutive_theory_conflicts=0;
+	uint64_t next_theory_decision = 0;
+	uint64_t n_theory_decision_rounds=0;
 
 	//Var last_dec=var_Undef;
 protected:

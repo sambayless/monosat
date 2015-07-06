@@ -633,16 +633,24 @@ int main(int argc, char** argv) {
 			printf("Parsing time = %f\n", parsing_time);
 		}
 		S.preprocess();//do this _even_ if sat based preprocessing is disabled! Some of the theory solvers depend on a preprocessing call being made!
-		printf("simplify:\n");
-		fflush(stdout);
-		if (opt_pre)
+
+		if (opt_pre){
+			if (opt_verb > 0){
+				printf("simplify:\n");
+				fflush(stdout);
+			}
 			S.eliminate(true);
+		}
 		fflush(stdout);
 		//exit(0);
 		double after_preprocessing =  rtime(0);
 		double preprocessing_time =after_preprocessing - before_pre_processing;
 		if (opt_verb > 0 && opt_pre) {
 			printf("Preprocessing time = %f\n", preprocessing_time);
+		}
+		if (opt_verb > 0){
+			printf("solving:\n");
+			fflush(stdout);
 		}
 		lbool ret = S.solve(assume) ? l_True : l_False;
 		double solving_time = rtime(0) - after_preprocessing;

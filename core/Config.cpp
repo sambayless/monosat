@@ -61,6 +61,11 @@ BoolOption Monosat::opt_pre("MAIN", "pre", "Completely turn on/off any preproces
 IntOption Monosat::opt_time(_cat, "verb-time", "Detail level of timing benchmarks (these add some overhead)", 0,
 		IntRange(0, 5));
 
+
+IntOption Monosat::opt_theory_conflict_max(_cat, "theory-conflict-limit",
+		"The maximum number of consecutive times the theory solver's can conflict before theory decisions are temporarily disabled (0 to all infinite theory conflicts)", 0,
+		IntRange(0,INT32_MAX));
+
 DoubleOption Monosat::opt_random_theory_freq(_cat, "rnd-theory-freq",
 		"The frequency with which the decision theory solvers are selected to make decisions", 1,
 		DoubleRange(0, true, 1, true));

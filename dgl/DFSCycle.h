@@ -27,12 +27,12 @@
 #include "DynamicGraph.h"
 #include "core/Config.h"
 #include "Reach.h"
-
+#include "Cycle.h"
 namespace dgl {
-template <typename Weight,bool directed=true, bool undirected=true>
+template <typename Weight,bool directed=true, bool undirected=false>
 class DFSCycle: public Cycle {
 public:
-	
+
 	DynamicGraph<Weight> & g;
 
 	int last_modification=0;
@@ -53,7 +53,7 @@ public:
 	const int reportPolarity;
 
 	//std::vector<char> old_seen;
-	std::vector<bool> processed;
+	std::vector<int> processed;
 	std::vector<bool> seen;
 	std::vector<bool> ever_seen;
 
@@ -76,12 +76,15 @@ public:
 	}
 	
 	void computeCycles(){
+
+		//This is totally broken. Fix it!
+
 		path.clear();
 		q.clear();
 		for (int i = 0; i < g.nodes(); i++) {
 			seen[i] = false;
 			ever_seen[i]=false;
-			processed[i]=false;
+			processed[i]=0;
 			undirected_prev[i]=-1;
 		}
 		
@@ -98,16 +101,17 @@ public:
 				int u = q.back();
 
 				if(directed){
-					if (processed[u]) {
+					assert(processed[u]<=g.nIncident(u));
+					if (processed[u]==g.nIncident(u)) {
 						q.pop_back();
 						if(u!=k)
 							path.pop_back();
 						seen[u]=false;
-						processed[u] = false;
+						//processed[u] = 0;
 						continue;
-					} else {
+					} /*else {
 						processed[u] = true;
-					}
+					}*/
 				}
 
 				int fromEdge = -1;
@@ -119,17 +123,21 @@ public:
 
 				assert(seen[u]);
 				assert(!undirected|| ever_seen[u]);
-				for (int i = 0; i < g.nIncident(u); i++) {
-					if (!g.edgeEnabled(g.incident(u, i).id))
-						continue;
-					int v = g.incident(u, i).node;
+				for (;u == q.back() && processed[u] < g.nIncident(u); processed[u]++) {
+					int i = processed[u];
+
 					int id = g.incident(u, i).id;
+					if (!g.hasEdge(id) || !g.edgeEnabled(id)){
+						continue;
+					}
+					int v = g.incident(u, i).node;
 
 					if(directed){
 						if (!seen[v]) {
 							seen[v] = true;//for directed cycles
 							q.push_back(v);
 							path.push_back(id);
+							continue;
 						}else{
 							assert(!has_directed_cycle);
 							has_directed_cycle = true;
@@ -182,10 +190,10 @@ public:
 				if(undirected && !has_undirected_cycle){
 					//for undirected cycles, we are treating edges as undirected, so follow back edges here
 					for (int i = 0; i < g.nIncoming(u); i++) {
-						if (!g.edgeEnabled(g.incoming(u, i).id))
+						int id = g.incoming(u, i).id;
+						if (!g.hasEdge(id) || !g.edgeEnabled(id))
 							continue;
 						int v = g.incoming(u, i).node;
-						int id = g.incoming(u, i).id;
 						if(id==fromEdge)
 							continue;
 

@@ -642,17 +642,17 @@ public:
 #ifdef RECORD
 		{
 			char t[30];
-			sprintf(t, "TEST_GRAPH%d", S->theories.size());
+			sprintf(t, "/tmp/TEST_GRAPH%d", S->theories.size());
 			g_under.outfile = fopen(t, "w");
 		}
 		{
 			char t[30];
-			sprintf(t, "TEST_ANTI_GRAPH%d",  S->theories.size());
+			sprintf(t, "/tmp/TEST_ANTI_GRAPH%d",  S->theories.size());
 			g_over.outfile = fopen(t, "w");
 		}
 		{
 			char t[30];
-			sprintf(t, "TEST_CUT_GRAPH%d", S->theories.size());
+			sprintf(t, "/tmp/TEST_CUT_GRAPH%d", S->theories.size());
 			cutGraph.outfile = fopen(t, "w");
 		}
 #endif

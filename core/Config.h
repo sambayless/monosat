@@ -39,6 +39,7 @@ extern DoubleOption opt_restart_inc;
 extern DoubleOption opt_garbage_frac;
 extern BoolOption opt_rnd_restart;
 
+extern IntOption opt_theory_conflict_max;
 extern DoubleOption opt_random_theory_freq;
 
 extern BoolOption opt_interpolate;

@@ -1613,8 +1613,10 @@ lbool Solver::search(int nof_conflicts) {
 	int backtrack_level;
 	int conflictC = 0;
 	vec<Lit> learnt_clause;
-	
+	bool last_decision_was_theory=false;
 	starts++;
+	bool using_theory_decisions= opt_decide_theories && drand(random_seed) < opt_random_theory_freq;
+	n_theory_decision_rounds+=using_theory_decisions;
 	//last_dec = var_Undef;
 	for (;;) {
 		static int iter = 0;
@@ -1626,6 +1628,16 @@ lbool Solver::search(int nof_conflicts) {
 			// CONFLICT
 			conflicts++;
 			conflictC++;
+			if(last_decision_was_theory){
+				n_theory_conflicts++;
+				consecutive_theory_conflicts++;
+				if(opt_theory_conflict_max && consecutive_theory_conflicts>=opt_theory_conflict_max){
+					next_theory_decision=conflicts+consecutive_theory_conflicts;
+					consecutive_theory_conflicts=0;
+				}
+			}else{
+				consecutive_theory_conflicts=0;
+			}
 			if (decisionLevel() == 0)
 				return l_False;
 			learnt_clause.clear();
@@ -1709,7 +1721,7 @@ lbool Solver::search(int nof_conflicts) {
 			if (learnts.size() - nAssigns() >= max_learnts)
 				// Reduce the set of learnt clauses:
 				reduceDB();
-
+			last_decision_was_theory=false;
 			Lit next = lit_Undef;
 			while (decisionLevel() < assumptions.size()) {
 				// Perform user provided assumption:
@@ -1729,7 +1741,7 @@ lbool Solver::search(int nof_conflicts) {
 			//Note: decision level is now added before theories make their decisions, to allow them to decide multiple literals at once.
 			newDecisionLevel();
 
-			if (opt_decide_theories && next == lit_Undef && drand(random_seed) < opt_random_theory_freq) {
+			if (opt_decide_theories && using_theory_decisions && next == lit_Undef && (opt_theory_conflict_max==0 || conflicts>=next_theory_decision) ) {
 				/**
 				 * Give the theory solvers a chance to make decisions
 				 */
@@ -1739,6 +1751,9 @@ lbool Solver::search(int nof_conflicts) {
 					if(theoryDecision !=lit_Undef && var(next)==var(theoryDecision)){
 						assigns[var(theoryDecision)]=l_Undef;
 					}
+				}
+				if (next!=lit_Undef){
+					last_decision_was_theory=true;
 				}
 			}
 			
