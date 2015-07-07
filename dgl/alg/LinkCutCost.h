@@ -24,7 +24,7 @@
 
 #include <cstddef>
 #include <cassert>
-
+#include <iostream>
 #include <algorithm>
 
 
@@ -87,7 +87,7 @@ class LinkCutCost {
 		Weight cp = nodes[v].cost;
 #endif
 		expose(v);
-		dbg_print_forest();
+		//dbg_print_forest();
 		//int it = iter;
 		Weight cost = nodes[v].netcost;
 #ifndef NDEBUG_LINKCUT
@@ -230,22 +230,23 @@ class LinkCutCost {
 		}
 		return false;
 	}
-	
+
 	inline void dbg_print_forest(bool force = false) {
 #ifndef NDEBUG_LINKCUT
 		int iter = 0;
-		if (!force)
-			return;
+		/*if (!force)
+			return;*/
 		/* if(++iter<= 1415550){
 		 return;
 		 }
 		 if(iter== 1415555){
 		 int a =1;
 		 }*/
-/*
+
 		printf("digraph{\n");
 		for (int i = 0; i < nodes.size(); i++) {
-			printf("n%d [label=\"%d: c%d, m%d\"]\n", i, i, nodes[i].netcost, nodes[i].min);
+			//printf("n%d [label=\"%d: c%d, m%d\"]\n", i, i, nodes[i].netcost, nodes[i].min);
+			std::cout<<"n" << i << "[label=\"" << i << ": c" <<  nodes[i].netcost << " m" << nodes[i].min  << "\"]";
 		}
 		
 		for (int i = 0; i < nodes.size(); i++) {
@@ -262,20 +263,60 @@ class LinkCutCost {
 					s = "red";
 				}
 				
-				if(value(e.v)==l_True)
-				 s="blue";
-				 else if (value(e.v)==l_False)
-				 s="red";
-				printf("n%d . n%d [label=\"%d: %d\",color=\"%s\"]\n", i, nodes[n.parent].dbg_ID, i, n.cost, s);
+				std::cout<<"n" << i << " . n" << nodes[n.parent].dbg_ID << "[label=\"" << i << ": " << n.cost << "\",color=\"" << s << "\"\n";
+				//printf("n%d . n%d [label=\"%d: %d\",color=\"%s\"]\n", i, nodes[n.parent].dbg_ID, i, n.cost, s);
 			}
 			
 		}
 		
-		printf("}\n");*/
+		printf("}\n");
 		
 #endif
 	}
-	
+public:
+	inline void print_forest(bool force = false) {
+#ifndef NDEBUG
+		int iter = 0;
+		/*if (!force)
+			return;*/
+		/* if(++iter<= 1415550){
+		 return;
+		 }
+		 if(iter== 1415555){
+		 int a =1;
+		 }*/
+
+		printf("digraph{\n");
+		for (int i = 0; i < nodes.size(); i++) {
+			//printf("n%d [label=\"%d: c%d, m%d\"]\n", i, i, nodes[i].netcost, nodes[i].min);
+			if(!isRoot(i))
+				std::cout<<"n" << i << "[label=\"" << i << ": c" <<  getCost(i) << " m" << ancecstorFindMin(i)  << "\"]\n";
+		}
+
+		/*for (int i = 0; i < nodes.size(); i++) {
+
+			Node & n = nodes[i];
+			if (n.parent>=0) {
+				const char * s = "black";
+				if (n.dbg_ID == nodes[n.parent].left) {
+					s = "blue";
+					assert(n.dbg_ID != nodes[n.parent].right);
+				}
+
+				if (n.dbg_ID == nodes[n.parent].right) {
+					s = "red";
+				}
+				printf("n%d -> n%d\n",i,n.parent);
+				//std::cout<<"n" << i << " . n" << nodes[n.parent].dbg_ID << "[label=\"" << i << ": " << n.cost << "\",color=\"" << s << "\"\n";
+				//printf("n%d . n%d [label=\"%d: %d\",color=\"%s\"]\n", i, nodes[n.parent].dbg_ID, i, n.cost, s);
+			}
+
+		}
+*/
+		printf("}\n");
+
+#endif
+	}
 	void dbg_cost(int v) {
 #ifndef NDEBUG_LINKCUT
 		if (v == -1)
@@ -462,7 +503,7 @@ class LinkCutCost {
 	void splay(int pID) {
 		Node & p = nodes[pID];
 #ifndef NDEBUG_LINKCUT
-		dbg_print_forest();
+		//dbg_print_forest();
 		Weight cp = p.cost;
 #endif
 		while (!isSplayRoot(pID)) {
@@ -706,7 +747,7 @@ public:
 	//Find an ancestor of s with weight at most alpha, that is closest to s if leftdir is true, or cloests to root(s) if if leftdir is false.
 	//Note that this follows the terminology from Klein and Mozes, and differs from Sleator and Tarjan's somewhat.
 	//Returns -1 if no node is found
-	int ancecstorFindWeight(int u, Weight alpha=0, bool leftdir=true) {
+	int ancecstorFindWeight(int u, Weight alpha=0, bool leftdir=false) {
 		expose(u);
 		Node & p = nodes[u];
 		

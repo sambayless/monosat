@@ -44,7 +44,6 @@ public:
 #endif
 #ifndef NDEBUG
 
-
 		Weight expected_flow=-1;
 		{
 			DynamicGraph<Weight> test;
@@ -67,7 +66,6 @@ public:
 			expected_flow = mf.maxFlow(s,t);
 		}
 
-		bool is_valid_flow=true;
 		for(int v = 0;v<g.nodes();v++){
 			Weight sum_in=0;
 			Weight sum_out=0;
@@ -97,6 +95,7 @@ public:
 				exit(5);
 			}
 		}
+
 #endif
 		new_flow.clear();
 		new_flow.resize(flow_store.size(),0);
@@ -125,7 +124,7 @@ public:
 			//step 1
 			int v = forest.findRoot(s);//can we optimize this to findRoot(v) after the first iteration?
 			bool done=true;
-			if(v==1181 || v==1184 || v==1280 || v==1340){
+			if(v==586 || v==537 ){
 				int a=1;
 			}
 			//check if any edges with non-zero flow leave v
@@ -146,7 +145,18 @@ public:
 						}
 						assert(flow_store[edgeID]>=flow);
 						flow_store[edgeID]-=flow;
+		/*				printf("digraph{\n");
+						for(int j =0;j<g.nodes();j++){
+							if(parent_edge[j]!=-1){
+								printf("%d -> %d label=\"v%d\"\n",j,parents[j],parent_edge[j]);
+							}
+						}
+						printf("\n}\n");*/
+
+						//forest.print_forest();
 						forest.updateCostOfPathToRoot(to,-flow);
+						//forest.print_forest();
+
 						assert(flow_store[edgeID]==0 || forest.getCost(forest.ancecstorFindMin(to))==0);//the flow cycle must have been broken
 
 						//step 4:
@@ -173,6 +183,7 @@ public:
 							//should also reduce the edge cost of (mincost_ancestor,parent(mincost_ancestor)) here...
 							mincost_ancestor = forest.ancecstorFindWeight(to,0);
 						}
+						//forest.print_forest();
 						done=false;
 						break;//go back to step 1
 					}else{
@@ -192,7 +203,7 @@ public:
 				//step 2: all paths from v to t are acyclic.
 				if(v==s){
 					//compute the current flow of every tree edge and stop
-
+					//step 2a
 					for(int n = 0;n<g.nodes();n++){
 						if (!forest.isRoot(n)){
 							int edgeID = parent_edge[n];
@@ -201,7 +212,9 @@ public:
 							}
 							assert(edgeID>=0);
 							Weight flow = forest.getCost(n);
-							new_flow[edgeID]+=flow;
+							//new_flow[edgeID]+=flow; //the paper suggests we should include these disconnected flows,
+							//but it seems to me that any such flows are actually part of disconnected cycles that no longer are reachable from
+							//source, and that we should as such leave them out.
 							forest.cut(n);//can this flow extraction be done more efficiently?
 							parent_edge[n]=-1;
 							parents[n]=-1;
@@ -236,17 +249,47 @@ public:
 						fprintf(stderr,"Cycle remains in acyclic flow, aborting!\n");
 						exit(8);
 					}
-
 					EdmondsKarpAdj<Weight> mf(test,s,t);
 					if(expected_flow>=0 && mf.maxFlow(s,t)!=expected_flow){
 						//fflush(g.outfile);
 						fprintf(stderr,"Flow is altered by cycle removal, aborting!\n");
 						exit(8);
 					}
+
+					for(int v = 0;v<g.nodes();v++){
+						Weight sum_in=0;
+						Weight sum_out=0;
+
+						for (int i = 0;i<g.nIncident(v);i++){
+								int edgeID = g.incident(v,i).id;
+								int to = g.incident(v,i).node;
+								if (g.hasEdge(edgeID) && g.edgeEnabled(edgeID)  && flow_store[edgeID]>0){
+									sum_out+=flow_store[edgeID];
+								}
+						}
+						for (int i = 0;i<g.nIncoming(v);i++){
+								int edgeID = g.incoming(v,i).id;
+								int to = g.incoming(v,i).node;
+								if (g.hasEdge(edgeID) && g.edgeEnabled(edgeID)  && flow_store[edgeID]>0){
+									sum_in+=flow_store[edgeID];
+								}
+						}
+						if(sum_in!=sum_out){
+							if (v==s && sum_out-sum_in==expected_flow){
+								continue;
+							}
+							if (v==t && sum_in-sum_out==expected_flow){
+								continue;
+							}
+							//fflush(g.outfile);
+							printf("Bad flow after acyclic removal, aborting\n");
+							exit(4);
+						}
+					}
 #endif
 					return;
 				}else{
-
+					//step 2b
 					for (int i = 0;i<g.nIncoming(v);i++){
 						int edgeID = g.incoming(v,i).id;
 						int from = g.incoming(v,i).node;
@@ -260,14 +303,14 @@ public:
 								//record the current flow
 								Weight flow = forest.getCost(from);
 								assert(flow_store[edgeID]>=flow);
-								flow_store[edgeID]-=flow;
+								flow_store[edgeID]=0;
 								forest.cut(from);
 								parent_edge[from]=-1;
 								parents[from]=-1;
 								if(edgeID==4025){
 									int a =1;
 								}
-								new_flow[edgeID]+=flow;//Is this correct?
+								new_flow[edgeID]=flow;//Is this correct?
 
 							}
 						}
