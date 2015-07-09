@@ -349,6 +349,14 @@ public:
 	FullEdge & getEdge(int id)  {
 		return all_edges[id];
 	}
+	void setEdgeEnabled(int id, bool enable){
+		if(enable){
+			enableEdge(id);
+		}else{
+			disableEdge(id);
+		}
+	}
+
 	void enableEdge(int id) {
 		enableEdge(all_edges[id].from, all_edges[id].to, id);
 	}

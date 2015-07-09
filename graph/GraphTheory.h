@@ -1626,16 +1626,42 @@ public:
 
 			if(val==l_True || val==l_Undef) {
 				assert(g_over.edgeEnabled(i));
+				if(using_neg_weights){
+					if(!g_over_weights_under.edgeEnabled(i)){
+						exit(3);
+					}
+				}
 				//assert(antig.hasEdge(e.from,e.to));
 			} else {
 				assert(!g_over.edgeEnabled(i));
+				if(using_neg_weights){
+					if(g_over_weights_under.edgeEnabled(i)){
+						exit(3);
+					}
+				}
 				//assert(!antig.hasEdge(e.from,e.to));
 			}
 			if(val==l_True) {
 				assert(g_under.edgeEnabled(i));
+				if(!g_under.edgeEnabled(i)){
+					exit(3);
+				}
+				if(using_neg_weights){
+					if(!g_under_weights_over.edgeEnabled(i)){
+						exit(3);
+					}
+				}
 				//assert(g.hasEdge(e.from,e.to));
 			} else {
+				if(g_under.edgeEnabled(i)){
+					exit(3);
+				}
 				assert(!g_under.edgeEnabled(i));
+				if(using_neg_weights){
+					if(g_under_weights_over.edgeEnabled(i)){
+						exit(3);
+					}
+				}
 				//assert(!g.hasEdge(e.from,e.to));
 			}
 		}
@@ -1898,13 +1924,14 @@ public:
 		if (++itp == 584) {
 			int a = 1;
 		}
-
+		dbg_graphsUpToDate();
 		stats_propagations++;
 
 		if (!force_propagation && !requiresPropagation) {
 			dbg_sync();
 			stats_propagations_skipped++;
 			assert(dbg_graphsUpToDate());
+			dbg_graphsUpToDate();
 			return true;
 		}
 
@@ -2118,7 +2145,7 @@ public:
 		g_over_weights_under.clearChanged();
 		g_under_weights_over.clearHistory();
 		g_over_weights_under.clearHistory();
-		
+		dbg_graphsUpToDate();
 		double elapsed = rtime(1) - startproptime;
 		propagationtime += elapsed;
 		dbg_sync();
@@ -2196,6 +2223,7 @@ public:
 		if (opt_print_graph) {
 			drawFull();
 		}
+		dbg_graphsUpToDate();
 		for (int i = 0; i < edge_list.size(); i++) {
 			if (edge_list[i].v < 0)
 				continue;
@@ -2807,6 +2835,22 @@ public:
 		
 	}
 
+	void enableNegativeWeights(){
+		if(!using_neg_weights){
+			using_neg_weights=true;
+
+			for(int i = 0;i<edge_list.size();i++) {
+				if(edge_list[i].v<0)
+				continue;
+				Edge e = edge_list[i];
+				lbool val = value(e.v);
+				g_under_weights_over.setEdgeEnabled(i, (g_under.edgeEnabled(i)));
+				g_over_weights_under.setEdgeEnabled(i, (g_over.edgeEnabled(i)));
+				g_under_weights_over.setEdgeWeight(i,g_over.getWeight(i) );
+				g_over_weights_under.setEdgeWeight(i, g_under.getWeight(i));
+			}
+		}
+	}
 
 	void reachesWithinDistance(int from, int to, Var reach_var, Weight distance, bool strictComparison) {
 		if(to >= g_under.nodes()){
@@ -2821,7 +2865,7 @@ public:
 		if (weighted_dist_info[from].source < 0) {
 			DistanceDetector<Weight> * d;
 			if(edge_bv_weights.size()>0){
-				using_neg_weights=true;
+				enableNegativeWeights();
 				d = new DistanceDetector<Weight>(detectors.size(), this,  g_under_weights_over, g_over_weights_under,
 						from, drand(rnd_seed));
 			}else{
@@ -2863,7 +2907,7 @@ public:
 		if (weighted_dist_info[from].source < 0) {
 			DistanceDetector<Weight> * d;
 			if(edge_bv_weights.size()>0){
-				using_neg_weights=true;
+				enableNegativeWeights();
 				d = new DistanceDetector<Weight>(detectors.size(), this,  g_under_weights_over, g_over_weights_under,
 						from, drand(rnd_seed));
 			}else{
