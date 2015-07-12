@@ -1,14 +1,14 @@
-#/ClangDebug
-#/ClangRelease
+/ClangDebug
+/ClangRelease
 /GPerf
 *.o
 *.d
-#Release/*
+Release/*
 Release2/*
-#Debug/*
+Debug/*
 Klee/*
 coverage/*
-#Static/*
+Static/*
 Win32/*
 Win64/*
 DbgRelease/*
@@ -17,5 +17,5 @@ Test/*
 graph/resources/*
 /DbgRelease
 /Test
-#/Static
 /Win64
+*.pyc
