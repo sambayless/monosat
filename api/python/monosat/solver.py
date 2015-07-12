@@ -1,6 +1,6 @@
 from monosat.monosat_c import Monosat
 from monosat.logic import *
-from monosat.bvtheory import bv
+from monosat.bvtheory import BitVector
 from monosat.graphtheory import Graph
 from monosat.pbtheory import PBManager
 import time
@@ -8,7 +8,7 @@ _monosat = Monosat()
 _pbm = PBManager()
 _pbm.elapsed_time=0
 _monosat.elapsed_time=0
-def solve(assumptions=None, preprocessing=True):
+def Solve(assumptions=None, preprocessing=True):
     #first, write any pseudoboolean constraints
     _writePBCosntraints()
         
@@ -17,7 +17,7 @@ def solve(assumptions=None, preprocessing=True):
     print("Solving in Monosat...")
     t = time.clock()
     if assumptions is not None:
-        r= _monosat.solveAssumptions((x.getLit() for x in assumptions))
+        r= _monosat.solveAssumptions([x.getLit() for x in assumptions])
     else:        
         r= _monosat.solve()
     _monosat.elapsed_time +=  time.clock()-t

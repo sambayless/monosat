@@ -19,7 +19,7 @@ extern "C"
   void deleteSolver (Monosat::SimpSolver * S);
 
   bool solve(Monosat::SimpSolver * S);
-  bool solveAssumption(Monosat::SimpSolver * S,int * assumptions, int n_assumptions);
+  bool solveAssumptions(Monosat::SimpSolver * S,int * assumptions, int n_assumptions);
   void backtrack(Monosat::SimpSolver * S);
   int newVar(Monosat::SimpSolver * S);
 

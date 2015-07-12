@@ -18,11 +18,11 @@ print("RandomSeed=" + str(seed))
 
 
 
-bv = bv(8)
+bv = BitVector(5)
 Assert(bv<=0)
 Assert(bv>8)
 
-result=solve()
+result=Solve()
 print("Result is " + str(result))
 assert(result==False)
 

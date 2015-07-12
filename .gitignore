@@ -3,6 +3,7 @@
 /GPerf
 *.o
 *.d
+*.so
 Release/*
 Release2/*
 Debug/*

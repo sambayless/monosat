@@ -45,7 +45,7 @@ Assert(g.reaches(0,8))
 Assert(g.reaches(8,0))    
 #This is unsat, because the second two constraints force a cycle, while the first prohibits it
 
-result = solve()
+result = Solve()
 print("Result is " + str(result))
 assert(result==False)
 

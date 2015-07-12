@@ -72,14 +72,14 @@ class Monosat(metaclass=Singleton):
         self.monosat_c.solve.argtypes=[c_solver_p]
         self.monosat_c.solve.restype=c_bool
         
-        self.monosat_c.solveAssumption.argtypes=[c_solver_p,c_literal_p,c_int]
-        self.monosat_c.solveAssumption.restype=c_bool       
+        self.monosat_c.solveAssumptions.argtypes=[c_solver_p,c_literal_p,c_int]
+        self.monosat_c.solveAssumptions.restype=c_bool       
         
         self.monosat_c.backtrack.argtypes=[c_solver_p]
         
 
         self.monosat_c.newVar.argtypes=[c_solver_p]
-        self.monosat_c.solveAssumption.restype=c_int
+        self.monosat_c.newVar.restype=c_int
 
         self.monosat_c.disallowLiteralSimplification.argtypes=[c_solver_p,c_literal]
         self.monosat_c.disallowLiteralSimplification.restype=c_bool
