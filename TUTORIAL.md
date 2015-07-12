@@ -2,7 +2,7 @@
 
 This is a brief introduction to MonoSAT's Z3-inspired Python 3 library, which you can use to
 conveniently construct and solve formulas with MonoSAT. 
-You can find the corresponding code, along with many other examples, in examples/python/tutorial.py
+You can find the corresponding code, along with many other examples, in [tutorial.py].
 
 Before going any further, see the installation instructions for the Python library in [README].
 Also, be warned that this library has only been tested with Python 3.3+, and may not work on earlier
@@ -223,5 +223,5 @@ Assert(~g3.minimumSpanningTreeLessEq(1))
 (Minimum spanning tree constraints don't support bitvectors yet, but they could in the future)
 
 
-
+[tutorial.py]: examples/python/tutorial.py
 [README]: README.md
