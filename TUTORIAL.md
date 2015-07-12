@@ -29,9 +29,7 @@ else:
 
 ```
 	
-You can continue making further assertions, creating new variables, and making incremental calls to the solver
-Note that currently, as soon as you add a new clause or assertion, the solver interally resets and discards its
-any assignments to variables (so calls to value() will stop working until the next call to Solve())
+You can continue making further assertions, creating new variables, and making incremental calls to the solver:
 
 ```
 d= Var()
@@ -49,7 +47,7 @@ else:
 	print("UNSAT")
 ```	
 
-MonoSAT also supports an alternative syntax using Python's bitwise infix operators:
+MonoSAT also supports an alternative syntax using Python's bitwise operators:
 
 ```
 Assert(~(a & b))
@@ -74,10 +72,9 @@ result = Solve([~b])
 ### Theory Support
  
 Now, onto the interesting stuff. 
-MonoSAT also has support for several useful theories, including both common ones (Bitvectors, Cardinality constraints), 
-And uncommon ones - especially, graph predicates such as reachability, shortest paths, maximum flows, and minimum spanning tree length.
-In fact, MonoSAT has support for many more theories from other domains, including geometry, finite state machines, and more,
-but the graph theory is the most well supported, currently.
+MonoSAT has support for several useful theories, including some common ones (Bitvectors, Cardinality constraints), 
+and some uncommon ones - especially, graph predicates such as reachability, shortest paths, maximum flows, and minimum spanning tree length.
+In fact, MonoSAT has support for many more theories from other domains, including geometry, finite state machines, and more, but the graph theory is the most well supported, currently.
 
 Constructing a graph in MonoSAT is as easy as:
 
@@ -220,7 +217,7 @@ Assert(g3.minimumSpanningTreeLessEq(3))
 Assert(~g3.minimumSpanningTreeLessEq(1))
 ```
 
-(Minimum spanning tree constraints don't support bitvectors yet, but they could in the future)
+(Watch out, though: minimum spanning tree constraints don't support bitvectors yet.)
 
 
 [tutorial.py]: examples/python/tutorial.py
