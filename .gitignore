@@ -13,3 +13,5 @@ graph/resources/*
 /DbgRelease
 /Test
 /Static
+/ClangDebug
+/ClangRelease
