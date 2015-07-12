@@ -24,11 +24,11 @@ from os import path
 from monosat.singleton import Singleton
 
 import os
-module_path = os.path.abspath(path.dirname(__file__))
+#module_path = os.path.abspath(path.dirname(__file__))
 try:
-    _monosat_c= cdll.LoadLibrary(module_path+"/libmonosat.so")
+    _monosat_c= cdll.LoadLibrary("libmonosat.so")
 except:
-    _monosat_c= cdll.LoadLibrary(module_path+'/monosat.dll')
+    _monosat_c= cdll.LoadLibrary('monosat.dll')
     
 #Python interface to MonoSAT
     
