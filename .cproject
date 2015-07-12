@@ -69,8 +69,6 @@
 									<listOptionValue builtIn="false" srcPrefixMapping="" srcRootPath="" value="m"/>
 									<listOptionValue builtIn="false" srcPrefixMapping="" srcRootPath="" value="gmpxx"/>
 									<listOptionValue builtIn="false" srcPrefixMapping="" srcRootPath="" value="gmp"/>
-									<listOptionValue builtIn="false" srcPrefixMapping="" srcRootPath="" value="fst"/>
-									<listOptionValue builtIn="false" srcPrefixMapping="" srcRootPath="" value="dl"/>
 								</option>
 								<option id="gnu.cpp.link.option.flags.667029291" name="Linker flags" superClass="gnu.cpp.link.option.flags" value="-pthread " valueType="string"/>
 								<option id="gnu.cpp.link.option.paths.819307413" name="Library search path (-L)" superClass="gnu.cpp.link.option.paths" valueType="libPaths">
@@ -164,8 +162,6 @@
 									<listOptionValue builtIn="false" value="m"/>
 									<listOptionValue builtIn="false" srcPrefixMapping="" srcRootPath="" value="gmpxx"/>
 									<listOptionValue builtIn="false" srcPrefixMapping="" srcRootPath="" value="gmp"/>
-									<listOptionValue builtIn="false" srcPrefixMapping="" srcRootPath="" value="fst"/>
-									<listOptionValue builtIn="false" srcPrefixMapping="" srcRootPath="" value="dl"/>
 								</option>
 								<option id="gnu.cpp.link.option.flags.979290315" name="Linker flags" superClass="gnu.cpp.link.option.flags" value="" valueType="string"/>
 								<option id="gnu.cpp.link.option.paths.1063550757" name="Library search path (-L)" superClass="gnu.cpp.link.option.paths" valueType="libPaths">
@@ -255,8 +251,6 @@
 									<listOptionValue builtIn="false" value="m"/>
 									<listOptionValue builtIn="false" srcPrefixMapping="" srcRootPath="" value="gmp"/>
 									<listOptionValue builtIn="false" srcPrefixMapping="" srcRootPath="" value="gmpxx"/>
-									<listOptionValue builtIn="false" srcPrefixMapping="" srcRootPath="" value="CGAL"/>
-									<listOptionValue builtIn="false" srcPrefixMapping="" srcRootPath="" value="CGAL_Core"/>
 								</option>
 								<option id="gnu.cpp.link.option.flags.124577283" name="Linker flags" superClass="gnu.cpp.link.option.flags" value="-static    -static-libstdc++  -m32" valueType="string"/>
 								<option id="gnu.cpp.link.option.paths.819550187" name="Library search path (-L)" superClass="gnu.cpp.link.option.paths" valueType="libPaths">
@@ -404,7 +398,7 @@
 									<listOptionValue builtIn="false" value=".././"/>
 									<listOptionValue builtIn="false" value=".././"/>
 								</option>
-								<option id="gnu.cpp.compiler.option.other.other.2130553311" name="Other flags" superClass="gnu.cpp.compiler.option.other.other" value="-c -fmessage-length=0 -std=c++0x  -Wno-unused-variable -Wno-unused-but-set-variable  -static-libstdc++" valueType="string"/>
+								<option id="gnu.cpp.compiler.option.other.other.2130553311" name="Other flags" superClass="gnu.cpp.compiler.option.other.other" value="-c -fmessage-length=0 -std=c++0x -m64  -Wno-unused-variable -Wno-unused-but-set-variable  -static-libstdc++" valueType="string"/>
 								<inputType id="cdt.managedbuild.tool.gnu.cpp.compiler.input.984393645" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.input"/>
 							</tool>
 							<tool command="x86_64-w64-mingw32-gcc" id="cdt.managedbuild.tool.gnu.c.compiler.exe.debug.1037882495" name="GCC C Compiler" superClass="cdt.managedbuild.tool.gnu.c.compiler.exe.debug">
@@ -421,7 +415,7 @@
 								<option id="gnu.c.compiler.option.preprocessor.undef.symbol.827842947" name="Undefined symbols (-U)" superClass="gnu.c.compiler.option.preprocessor.undef.symbol" valueType="undefDefinedSymbols">
 									<listOptionValue builtIn="false" value="__amd64"/>
 								</option>
-								<option id="gnu.c.compiler.option.misc.other.1390939637" name="Other flags" superClass="gnu.c.compiler.option.misc.other" value="-c -fmessage-length=0  -static " valueType="string"/>
+								<option id="gnu.c.compiler.option.misc.other.1390939637" name="Other flags" superClass="gnu.c.compiler.option.misc.other" value="-c -fmessage-length=0  -static -m64 " valueType="string"/>
 								<inputType id="cdt.managedbuild.tool.gnu.c.compiler.input.2090190392" superClass="cdt.managedbuild.tool.gnu.c.compiler.input"/>
 							</tool>
 							<tool id="cdt.managedbuild.tool.gnu.c.linker.exe.debug.2118007744" name="GCC C Linker" superClass="cdt.managedbuild.tool.gnu.c.linker.exe.debug"/>
@@ -431,8 +425,6 @@
 									<listOptionValue builtIn="false" value="m"/>
 									<listOptionValue builtIn="false" srcPrefixMapping="" srcRootPath="" value="gmp"/>
 									<listOptionValue builtIn="false" srcPrefixMapping="" srcRootPath="" value="gmpxx"/>
-									<listOptionValue builtIn="false" srcPrefixMapping="" srcRootPath="" value="CGAL"/>
-									<listOptionValue builtIn="false" srcPrefixMapping="" srcRootPath="" value="CGAL_Core"/>
 								</option>
 								<option id="gnu.cpp.link.option.flags.396033601" name="Linker flags" superClass="gnu.cpp.link.option.flags" value="-static   -static-libstdc++" valueType="string"/>
 								<option id="gnu.cpp.link.option.paths.1800242183" name="Library search path (-L)" superClass="gnu.cpp.link.option.paths" valueType="libPaths">

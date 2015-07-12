@@ -21,6 +21,7 @@
 
 #ifndef GEOMETRY_TYPES_H_
 #define GEOMETRY_TYPES_H_
+#include <cstddef>
 #include <initializer_list>
 #include "core/SolverTypes.h"
 #include "mtl/Rnd.h"

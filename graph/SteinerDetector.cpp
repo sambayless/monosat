@@ -424,7 +424,7 @@ bool SteinerDetector<Weight>::checkSatisfied() {
 				if (positive_checker.weight() <= dist) {
 					return false;
 				}
-				if (!negative_checker.weight() > dist) {
+				if (negative_checker.weight() > dist) {
 					return false;
 				}
 			}

@@ -110,6 +110,7 @@ public:
 		return sink;
 	}
 	
+
 	void setSource(int s) {
 		if (source == s) {
 			return;
@@ -117,19 +118,41 @@ public:
 		if (kt) {
 			
 			if (dynamic) {
-				kt->edit_tweights(source, 0, 0);
+				Weight curweight = kt->getTweight(source);
+				Weight newWeight = curweight-max_capacity;
+				if(newWeight>=0){
+					kt->edit_tweights(source, newWeight, 0);
+				}else{
+					kt->edit_tweights(source, 0,-newWeight);
+				}
 				//if(!backward_maxflow){
-				kt->edit_tweights(s, max_capacity, 0);
+				curweight = kt->getTweight(s);
+			    newWeight = curweight+max_capacity;
+				if(newWeight>=0){
+					kt->edit_tweights(s, newWeight, 0);
+				}else{
+					kt->edit_tweights(s, 0,-newWeight);
+				}
+
 				/*}else{
 				 kt->edit_tweights(s,0,max_capacity);
 				 }*/
 			} else {
-				kt->edit_tweights_wt(source, 0, 0);
+				Weight curweight = kt->getTweight(source);
+				Weight newWeight = curweight-max_capacity;
+				if(newWeight>=0){
+					kt->edit_tweights_wt(source, newWeight, 0);
+				}else{
+					kt->edit_tweights_wt(source, 0,-newWeight);
+				}
 				//if(!backward_maxflow){
-				kt->edit_tweights_wt(s, max_capacity, 0);
-				/*}else{
-				 kt->edit_tweights_wt(s,0,max_capacity);
-				 }*/
+				curweight = kt->getTweight(s);
+				newWeight = curweight+max_capacity;
+				if(newWeight>=0){
+					kt->edit_tweights_wt(s, newWeight, 0);
+				}else{
+					kt->edit_tweights_wt(s, 0,-newWeight);
+				}
 			}
 		}
 		source = s;
@@ -142,21 +165,38 @@ public:
 			return;
 		}
 		if (kt) {
-			
 			if (dynamic) {
-				kt->edit_tweights(sink, 0, 0);
-				//if(!backward_maxflow){
-				kt->edit_tweights(t, 0, max_capacity);
-				/*}else{
-				 kt->edit_tweights(t,max_capacity,0);
-				 }*/
+				Weight curweight = -kt->getTweight(sink);
+				Weight newWeight = curweight-max_capacity;
+				if(newWeight>=0){
+					kt->edit_tweights(sink, 0, newWeight);
+				}else{
+					kt->edit_tweights(sink, -newWeight,0);
+				}
+				curweight = -kt->getTweight(t);
+				newWeight = curweight+max_capacity;
+				if(newWeight>=0){
+					kt->edit_tweights(t, 0, newWeight);
+				}else{
+					kt->edit_tweights(t, -newWeight,0);
+				}
 			} else {
-				kt->edit_tweights_wt(sink, 0, 0);
+				Weight curweight = -kt->getTweight(sink);
+				Weight newWeight = curweight-max_capacity;
+				if(newWeight>=0){
+					kt->edit_tweights_wt(sink, 0, newWeight);
+				}else{
+					kt->edit_tweights_wt(sink, -newWeight,0);
+				}
 				//if(!backward_maxflow){
-				kt->edit_tweights(t, 0, max_capacity);
-				/*}else{
-				 kt->edit_tweights(t,max_capacity,0);
-				 }*/
+				curweight = -kt->getTweight(t);
+				newWeight = curweight+max_capacity;
+				if(newWeight>=0){
+					kt->edit_tweights_wt(t, 0, newWeight);
+				}else{
+					kt->edit_tweights_wt(t, -newWeight,0);
+				}
+
 			}
 		}
 		sink = t;
@@ -164,6 +204,7 @@ public:
 		flow_needs_recalc = true;
 	}
 	
+
 	void setCapacity(int u, int w, Weight c) {
 		
 	}
@@ -174,7 +215,7 @@ public:
 	int numUpdates() const {
 		return num_updates;
 	}
-	
+
 	const Weight update() {
 		int s = source;
 		int t = sink;
@@ -282,22 +323,24 @@ public:
 					 }*/
 				}
 			}
-			if (dynamic) {
-				//if(!backward_maxflow){
-				kt->edit_tweights(s, max_capacity, 0);
-				kt->edit_tweights(t, 0, max_capacity);
-				/*	}else{
-				 kt->edit_tweights(t,max_capacity,0);
-				 kt->edit_tweights(s,0,max_capacity);
-				 }*/
-			} else {
-				//if(!backward_maxflow){
-				kt->edit_tweights_wt(s, max_capacity, 0);
-				kt->edit_tweights_wt(t, 0, max_capacity);
-				/*	}else{
-				 kt->edit_tweights_wt(t,max_capacity,0);
-				 kt->edit_tweights_wt(s,0,max_capacity);
-				 }*/
+			if(s!=t){
+				if (dynamic) {
+					//if(!backward_maxflow){
+					kt->edit_tweights(s, max_capacity, 0);
+					kt->edit_tweights(t, 0, max_capacity);
+					/*	}else{
+					 kt->edit_tweights(t,max_capacity,0);
+					 kt->edit_tweights(s,0,max_capacity);
+					 }*/
+				} else {
+					//if(!backward_maxflow){
+					kt->edit_tweights_wt(s, max_capacity, 0);
+					kt->edit_tweights_wt(t, 0, max_capacity);
+					/*	}else{
+					 kt->edit_tweights_wt(t,max_capacity,0);
+					 kt->edit_tweights_wt(s,0,max_capacity);
+					 }*/
+				}
 			}
 		} else if (g.historyclears != last_history_clear || g.changed()) {
 			flow_needs_recalc = true;
@@ -358,7 +401,7 @@ public:
 
 #endif
 		//dbg_print_graph(s,t,true);
-		
+
 #ifndef NDEBUG
 		
 		for (int i = 0; i < g.edges(); i++) {
@@ -716,7 +759,7 @@ public:
 	const Weight getEdgeFlow(int flow_edge) {
 		if (g.getEdge(flow_edge).from == g.getEdge(flow_edge).to)
 			return 0;    	//self edges have no flow.
-			
+
 		calc_flow();
 		collect_multi_edges(flow_edge);
 		//we need to pick, possibly arbitrarily (but deterministically), which of the edges have flow
