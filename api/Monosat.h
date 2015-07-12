@@ -22,6 +22,10 @@ extern "C"
   bool solveAssumption(Monosat::SimpSolver * S,int * assumptions, int n_assumptions);
   void backtrack(Monosat::SimpSolver * S);
   int newVar(Monosat::SimpSolver * S);
+
+  //Prevents this literal from being simplified by the preprocessor
+  bool disallowLiteralSimplification(Monosat::SimpSolver * S, int lit);
+
   int nVars(Monosat::SimpSolver * S);
   int nClauses(Monosat::SimpSolver * S);
 

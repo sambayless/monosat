@@ -260,6 +260,15 @@ bool solveAssumption(Monosat::SimpSolver * S,int * assumptions, int n_assumption
 	  return S->newVar();
  }
 
+ bool disallowLiteralSimplification(Monosat::SimpSolver * S, int lit){
+	 if(S->isEliminated(var(toLit(lit)))){
+		 fprintf(stderr,"Warning: Literal %d has already been eliminated by the pre-processor\n", dimacs(toLit(lit)));
+		 return false;
+	 }else
+		 S->setFrozen(var(toLit(lit)),true);
+	 return true;
+ }
+
  int nVars(Monosat::SimpSolver * S){
 	 return S->nVars();
  }
@@ -268,11 +277,11 @@ bool solveAssumption(Monosat::SimpSolver * S,int * assumptions, int n_assumption
 	 return S->nClauses();
  }
 
- bool addClause(Monosat::SimpSolver * S,int * assumptions, int n_assumptions){
+ bool addClause(Monosat::SimpSolver * S,int * lits, int n_lits){
 	  static vec<Lit> clause;
 	  clause.clear();
-	  for (int i = 0;i<n_assumptions;i++){
-		  clause.push(toLit(assumptions[i]));
+	  for (int i = 0;i<n_lits;i++){
+		  clause.push(toLit(lits[i]));
 	  }
 	  return S->addClause(clause);
  }
