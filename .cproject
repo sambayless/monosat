@@ -350,7 +350,7 @@
 								<option id="gnu.cpp.link.option.paths.1658328741" name="Library search path (-L)" superClass="gnu.cpp.link.option.paths" valueType="libPaths">
 									<listOptionValue builtIn="false" value=".././lib"/>
 								</option>
-								<option id="gnu.cpp.link.option.shared.2057389565" name="Shared (-shared)" superClass="gnu.cpp.link.option.shared" value="true" valueType="boolean"/>
+								<option id="gnu.cpp.link.option.shared.2057389565" name="Shared (-shared)" superClass="gnu.cpp.link.option.shared" value="false" valueType="boolean"/>
 								<option id="gnu.cpp.link.option.soname.1925144510" name="Shared object name (-Wl,-soname=)" superClass="gnu.cpp.link.option.soname" value="libmonosat.so" valueType="string"/>
 								<option id="gnu.cpp.link.option.implname.1213591298" name="Import Library name (-Wl,--out-implib=)" superClass="gnu.cpp.link.option.implname" value="" valueType="string"/>
 								<inputType id="cdt.managedbuild.tool.gnu.cpp.linker.input.1094842176" superClass="cdt.managedbuild.tool.gnu.cpp.linker.input">

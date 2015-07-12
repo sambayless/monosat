@@ -18,6 +18,7 @@ RM := rm -rf
 -include dgl/alg/subdir.mk
 -include dgl/subdir.mk
 -include core/subdir.mk
+-include api/subdir.mk
 -include subdir.mk
 -include objects.mk
 
@@ -53,7 +54,7 @@ all: monosat
 monosat: $(OBJS) $(USER_OBJS)
 	@echo 'Building target: $@'
 	@echo 'Invoking: GCC C++ Linker'
-	g++  -L.././lib -static-libgcc   -static-libstdc++  -static -o "monosat" $(OBJS) $(USER_OBJS) $(LIBS)
+	g++  -L.././lib -static-libgcc   -static-libstdc++  -static -Wl,-soname=libmonosat.so -o "monosat" $(OBJS) $(USER_OBJS) $(LIBS)
 	@echo 'Finished building target: $@'
 	@echo ' '
 
