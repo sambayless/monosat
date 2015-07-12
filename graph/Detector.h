@@ -52,6 +52,8 @@ public:
 	long stats_skipped_over_updates = 0;
 	long stats_decisions = 0;
 	double stats_decide_time = 0;
+	long n_stats_priority_decisions =0;
+	long n_stats_vsids_decisions=0;
 	long stats_under_clause_length = 0;
 	long stats_over_clause_length = 0;
 
@@ -73,8 +75,8 @@ public:
 			printf("\tOver-approx updates: %ld (%ld skipped)  (%f s total, %f s avg)\n", stats_over_updates,
 					stats_skipped_over_updates, (double) stats_over_update_time,
 					(double) stats_over_update_time / (double) (stats_over_updates + 1));
-			printf("\tTheory Decisions: %ld (%f s total, %f s avg)\n", stats_decisions, (double) stats_decide_time,
-					(double) stats_decide_time / (double) (stats_decisions + 1));
+			printf("\tTheory Decisions: %ld (%f s total, %f s avg, %d priority)\n", stats_decisions, (double) stats_decide_time,
+					(double) stats_decide_time / (double) (stats_decisions + 1),n_stats_priority_decisions);
 			printf(
 					"\tConflicts (under,over): %ld (clause literals: %ld), %ld, (clause literals: %ld), (under time %f s, over time %f s)\n",
 					stats_under_conflicts, stats_under_clause_length, stats_over_conflicts, stats_over_clause_length,
@@ -87,6 +89,10 @@ public:
 	}
 	
 	virtual bool propagate(vec<Lit> & conflict)=0;
+	virtual bool propagate(vec<Lit> & conflict	, bool backtrackOnly, Lit & conflictLit){
+		return propagate(conflict);
+	}
+
 	virtual void buildReason(Lit p, vec<Lit> & reason, CRef marker)=0;
 	virtual bool checkSatisfied()=0;
 	virtual void preprocess() {
@@ -95,7 +101,23 @@ public:
 	virtual void backtrack(int level) {
 		//do nothing
 	}
-	virtual Lit decide(int level)=0;
+	virtual void undecideEdgeWeight(int edgeID){
+
+	}
+	virtual void undecide(Lit l){
+
+	}
+	virtual void buildModel(){
+
+	}
+
+	virtual Lit decide()=0;
+	virtual bool supportsEdgeDecisions(){
+		return false;
+	}
+	virtual void suggestDecision(Lit l){
+		//do nothing
+	}
 	virtual void setOccurs(Lit l, bool occurs) {
 		if (!occurs) {
 			if (sign(l))
@@ -145,7 +167,20 @@ public:
 	}
 };
 
-class LevelDetector: public Detector {
+enum class DetectorComparison{
+	lt,leq,gt,geq,eq,ne
+};
+
+template<typename Weight>
+class EdgeDecider{
+public:
+	virtual bool decideEdgeWeight(int edgeID, Weight & store, DetectorComparison & op)=0;
+	virtual ~EdgeDecider() {
+
+	}
+};
+
+/*class LevelDetector: public Detector {
 	
 	vec<int> level_trail;
 
@@ -177,7 +212,7 @@ public:
 		level_trail.push(outer_level);
 	}
 	
-};
+};*/
 
 }
 ;

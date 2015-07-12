@@ -33,7 +33,7 @@
 #include "utils/System.h"
 #include "FSMDetector.h"
 #include "alg/NFALinearGeneratorAcceptor.h"
-
+#include "graph/GraphTheory.h"
 using namespace dgl;
 namespace Monosat {
 
@@ -65,8 +65,8 @@ public:
 	AcceptStatus *underReachStatus = nullptr;
 	AcceptStatus *overReachStatus = nullptr;
 
-	NFALinearGeneratorAcceptor<AcceptStatus> * underapprox_detector;
-	NFALinearGeneratorAcceptor<AcceptStatus> * overapprox_detector;
+	NFALinearGeneratorAcceptor<AcceptStatus> * underapprox_detector = nullptr;
+	NFALinearGeneratorAcceptor<AcceptStatus> * overapprox_detector = nullptr;
 
 
 
@@ -109,21 +109,28 @@ public:
 	double stats_fast_update_time = 0;
 
 	Map<Var,Lit> forcedVars;
+	vec<Var> lit_backward_map;
 
+	GraphTheorySolver<long> * graph=nullptr;//for if we reduce the nfa to a graph
+	vec<vec<int> > nodes;
 
 	void printStats() {
 		//printf("Reach detector\n");
-		FSMDetector::printStats();
-		if (opt_detect_pure_theory_lits)
-			printf("\tPropagations skipped by pure literal detection: %d\n", stats_pure_skipped);
-		if (opt_shrink_theory_conflicts) {
-			printf("\t%d lits removed by shrinking conflicts\n", stats_shrink_removed);
+		if(graph){
+			graph->printStats(1);
+		}else{
+			FSMDetector::printStats();
+			if (opt_detect_pure_theory_lits)
+				printf("\tPropagations skipped by pure literal detection: %d\n", stats_pure_skipped);
+			if (opt_shrink_theory_conflicts) {
+				printf("\t%d lits removed by shrinking conflicts\n", stats_shrink_removed);
+			}
+			if (opt_learn_unreachable_component) {
+				printf("\t%d components learned, average component size: %f\n", stats_learnt_components,
+						stats_learnt_components_sz / (float) stats_learnt_components);
+			}
+			printf("Forced edge assignments: %ld\n", stats_forced_edges);
 		}
-		if (opt_learn_unreachable_component) {
-			printf("\t%d components learned, average component size: %f\n", stats_learnt_components,
-					stats_learnt_components_sz / (float) stats_learnt_components);
-		}
-		printf("Forced edge assignments: %d\n", stats_forced_edges);
 	}
 
 	inline void setForcedVar(Var edgeVar, Lit forcedBy){
@@ -164,14 +171,16 @@ public:
 	void buildAcceptReason(int genFinal, int acceptFinal, vec<Lit> & conflict);
 	void buildNonAcceptReason(int genFinal, int acceptFinal, vec<Lit> & conflict);
 	void buildForcedEdgeReason(int genFinal, int acceptFinal,int forcedEdge, int forcedLabel,  vec<Lit> & conflict);
-
+	 void preprocess() ;
 	void buildReason(Lit p, vec<Lit> & reason, CRef marker);
 	bool checkSatisfied();
 	void printSolution(std::ostream& write_to);
 
 	void addAcceptLit(int state, int strID, Var reach_var);
 
-
+	Var getDetectorVar(int gen_final, int accept_final){
+		return lit_backward_map[gen_final +accept_final*g_over.states()];
+	}
 
 	FSMGeneratorAcceptorDetector(int _detectorID, FSMTheorySolver * _outer, DynamicFSM &g_under, DynamicFSM &g_over,DynamicFSM & acceptor_under,DynamicFSM & acceptor_over,
 			int gen_source,int acceptor_source, double seed = 1);
@@ -183,6 +192,15 @@ public:
 		return "NFA Generator Acceptor Detector";
 	}
 private:
+
+	struct Transition{
+		int edgeID;
+		int in;
+		int out;
+	};
+
+	void constructAllPaths();
+	void stepGeneratorForward(vec<Transition> & store, vec<bool> & store_seen, int & cur_gen_state);
 	vec<int> next;
 	vec<int> cur;
 
@@ -195,11 +213,45 @@ private:
 	vec<bool> gen_cur_seen;
 	vec<int> chars;
 	vec<bool> seen_chars;
+	vec<vec<Bitset>>  prefixTables;
+
+	int last_prefix_update=-1;
 	bool isAttractor(int acceptorState);
 	bool find_gen_path(int gen_final, int accept_final,int forcedEdge,int forcedLabel, vec<NFATransition> & path,bool invertAcceptance = false, bool all_paths=false);
 	bool stepGenerator(int final,int forcedEdge,int forcedLabel, vec<int> & store, vec<bool> & store_seen, int & cur_gen_state, vec<NFATransition> * path=nullptr);
+	bool buildSuffixCut(int gen_final,int accept_final,vec<Lit> & cut, bool accepting_state_is_attractor, bool invertAcceptance);
+	bool stepGeneratorBackward(int final,vec<Bitset> & prefixTable, vec<Lit> & cut,  vec<int> & store, vec<bool> & store_seen, vec<NFATransition> * path=nullptr);
 
-	
+	void updatePrefixTable(int gen_final, int accept_final);
+
+	vec<Bitset> & getPrefixTable(int gen_final, int accept_final){
+		updatePrefixTable(gen_final,accept_final);
+		Var v = getDetectorVar(gen_final,accept_final);
+		assert(v!=var_Undef);
+		int index = v - first_var;
+		return prefixTables[index];
+	}
+
+	bool isAttractor(DynamicFSM & accept, int acceptorState){
+		if(acceptorState<0){
+			return true;
+		}else{
+			//should really fix this to work correctly for epsilon transitions between multiple acceptor states...
+			for(int i = 0;i<accept.nIncident(acceptorState);i++){
+				int edgeID = accept.incident(acceptorState,i).id;
+				int to =  accept.incident(acceptorState,i).node;
+				if(to==acceptorState){
+					for(int c = 1;c<accept.inAlphabet();c++){
+						if(!accept.transitionEnabled(edgeID,c,-1)){
+							return false;
+						}
+					}
+					return true;
+				}
+			}
+		}
+		return false;
+	}
 
 };
 }

@@ -32,10 +32,10 @@
 
 using namespace dgl;
 
-template<class Weight = double, bool undirected = false>
+template<class GraphWeight, class Weight = double, bool undirected = false>
 class WeightedDijkstra: public Distance<Weight> {
 public:
-	DynamicGraph & g;
+	DynamicGraph<GraphWeight> & g;
 	std::vector<Weight> & weights;
 	int last_modification;
 	int last_addition;
@@ -77,7 +77,7 @@ public:
 
 	double stats_full_update_time = 0;
 	double stats_fast_update_time = 0;
-	WeightedDijkstra(int s, DynamicGraph & graph, std::vector<Weight> & weights) :
+	WeightedDijkstra(int s, DynamicGraph<GraphWeight> & graph, std::vector<Weight> & weights) :
 			g(graph), weights(weights), last_modification(-1), last_addition(-1), last_deletion(-1), history_qhead(0), last_history_clear(
 					0), source(s), INF(0), q(DistCmp(dist)) {
 		
@@ -118,9 +118,9 @@ public:
 			last_history_clear = g.historyclears;
 		}
 		//ok, now check if any of the added edges allow for a decrease in distance.
-		for (int i = history_qhead; i < g.history.size(); i++) {
-			assert(g.history[i].addition); //NOTE: Currently, this is glitchy in some circumstances - specifically, ./modsat -rinc=1.05 -rnd-restart  -conflict-shortest-path  -no-conflict-min-cut   -rnd-init -rnd-seed=01231 -rnd-freq=0.01 /home/sam/data/gnf/unit_tests/unit_test_17_reduced.gnf can trigger this assertion!
-			int edgeID = g.history[i].id;
+		for (int i = history_qhead; i < g.historySize(); i++) {
+			assert(g.getChange(i).addition); //NOTE: Currently, this is glitchy in some circumstances - specifically, ./modsat -rinc=1.05 -rnd-restart  -conflict-shortest-path  -no-conflict-min-cut   -rnd-init -rnd-seed=01231 -rnd-freq=0.01 /home/sam/data/gnf/unit_tests/unit_test_17_reduced.gnf can trigger this assertion!
+			int edgeID = g.getChange(i).id;
 			int u = g.all_edges[edgeID].from;
 			int v = g.all_edges[edgeID].to;
 			Weight alt = dist[u] + weights[u];
@@ -159,7 +159,7 @@ public:
 				}
 			}
 		}
-		history_qhead = g.history.size();
+		history_qhead = g.historySize();
 		
 		while (q.size()) {
 			int u = q.removeMin();
@@ -222,9 +222,9 @@ public:
 		 bool need_recompute = false;
 		 //ok, now check if any of the added edges allow for a decrease in distance.
 		 for (int i = history_qhead;i<g.history.size();i++){
-		 assert(!g.history[i].addition);
-		 int u=g.history[i].u;
-		 int v=g.history[i].v;
+		 assert(!g.getChange(i).addition);
+		 int u=g.getChange(i).u;
+		 int v=g.getChange(i).v;
 		 if(prev[v]==u){
 		 history_qhead = i-1;
 		 need_recompute=true;
@@ -317,7 +317,7 @@ public:
 		last_deletion = g.deletions;
 		last_addition = g.additions;
 		
-		history_qhead = g.history.size();
+		history_qhead = g.historySize();
 		last_history_clear = g.historyclears;
 		
 		;
@@ -381,11 +381,11 @@ public:
 	int previous(int t) {
 		if (prev[t] < 0)
 			return -1;
-		if (undirected && g.all_edges[incomingEdge(t)].from == t) {
-			return g.all_edges[incomingEdge(t)].to;
+		if (undirected && g.getEdge(incomingEdge(t)).from == t) {
+			return g.getEdge(incomingEdge(t)).to;
 		}
-		assert(g.all_edges[incomingEdge(t)].to == t);
-		return g.all_edges[incomingEdge(t)].from;
+		assert(g.getEdge(incomingEdge(t)).to == t);
+		return g.getEdge(incomingEdge(t)).from;
 	}
 	
 };

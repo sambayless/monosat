@@ -27,7 +27,7 @@
 #include "utils/ParseUtils.h"
 #include "core/SolverTypes.h"
 #include "graph/GraphTheory.h"
-
+#include "bv/BVTheorySolver.h"
 #include "core/Config.h"
 #include "pb/PbTheory.h"
 #include "core/Dimacs.h"
@@ -51,7 +51,8 @@ struct SteinerStruct {
 // GRAPH Parser:
 template<class B, class Solver>
 class GraphParser: public Parser<B, Solver> {
-
+	bool precise;
+	BVTheorySolver<long>*& bvTheory;
 	vec<GraphTheorySolver<long>*> graphs;
 	vec<GraphTheorySolver<double>*> graphs_float;
 	vec<GraphTheorySolver<mpq_class>*> graphs_rational;
@@ -59,15 +60,83 @@ class GraphParser: public Parser<B, Solver> {
 	enum class GraphType {
 		INTEGER, FLOAT, RATIONAL
 	};
-	bool precise;
+
 	vec<vec<SteinerStruct*>> steiners;
 	PbTheory * pbtheory = nullptr;
 
 	vec<int> weights;
 	vec<Lit> lits;
 	int count = 0;
+
+	struct EdgePriority{
+		int graphID;
+		int edgeVar;
+		int priority;
+	};
+
+	vec<EdgePriority> edgePriorities;
+
 	vec<char> tmp;
 	
+	struct BVEdge{
+		int graphID;
+		int from;
+		int to;
+		int edgeVar;
+		int bvID;
+	};
+	vec<BVEdge> bvedges;
+
+	struct BVDistance{
+		int graphID;
+		int from;
+		int to;
+		int var;
+		int bvID;
+		bool strict;
+	};
+
+	vec<BVDistance> bvdistances;
+
+	struct BVMaxFlow{
+		int graphID;
+		int s;
+		int t;
+		int var;
+		int bvID;
+		bool strict;
+	};
+
+	vec<BVMaxFlow> bvmaxflows;
+
+	template<typename Weight>
+	struct Distance{
+		int graphID;
+		int from;
+		int to;
+		int var;
+		bool strict;
+		Weight weight;
+	};
+
+	vec<Distance<long>> distances_long;
+	vec<Distance<double>> distances_float;
+	vec<Distance<mpq_class>> distances_rational;
+
+	template<typename Weight>
+	struct MaxFlow{
+		int graphID;
+		int s;
+		int t;
+		int var;
+		bool strict;
+		Weight weight;
+	};
+
+	vec<MaxFlow<long>> maxflows_long;
+	vec<MaxFlow<double>> maxflows_float;
+	vec<MaxFlow<mpq_class>> maxflows_rational;
+
 	void readDiGraph(B& in, GraphType graph_type, Solver& S) {
 		if (opt_ignore_theories) {
 			skipLine(in);
@@ -90,24 +159,100 @@ class GraphParser: public Parser<B, Solver> {
 		graphs_float.growTo(g + 1);
 		graphs_rational.growTo(g + 1);
 		if (graph_type == GraphType::INTEGER) {
-			GraphTheorySolver<long> *graph = new GraphTheorySolver<long>(&S, g);
+			GraphTheorySolver<long> *graph = new GraphTheorySolver<long>(&S);
 			graph->newNodes(n);
 			graphs[g] = graph;
 			S.addTheory(graph);
 		} else if (graph_type == GraphType::FLOAT) {
-			GraphTheorySolver<double> *graph = new GraphTheorySolver<double>(&S, g);
+			GraphTheorySolver<double> *graph = new GraphTheorySolver<double>(&S);
 			graph->newNodes(n);
 			graphs_float[g] = graph;
 			S.addTheory(graph);
 		} else if (graph_type == GraphType::RATIONAL) {
-			GraphTheorySolver<mpq_class> *graph = new GraphTheorySolver<mpq_class>(&S, g);
+			GraphTheorySolver<mpq_class> *graph = new GraphTheorySolver<mpq_class>(&S);
 			graph->newNodes(n);
 			graphs_rational[g] = graph;
 			S.addTheory(graph);
 		}
 		//  return ev;
 	}
+	void readEdgePriority(B & in){
+		if (opt_ignore_theories) {
+			skipLine(in);
+			return;
+		}
 
+		++in;
+
+		int graphID = parseInt(in);
+		int edgeVar = parseInt(in) - 1;
+		int priority = parseInt(in);
+
+		if (graphID < 0 || graphID >= graphs.size()) {
+			printf("PARSE ERROR! Undeclared graph identifier %d for edge %d\n", graphID, edgeVar), exit(1);
+		}
+		if (edgeVar < 0) {
+			printf("PARSE ERROR! Edge variables must be >=0, was %d\n", edgeVar), exit(1);
+		}
+
+		edgePriorities.push({graphID, edgeVar,priority});
+
+		if (graphs[graphID]) {
+
+		} else if (graphs_float[graphID]) {
+
+		} else if (graphs_rational[graphID]) {
+
+		} else {
+			printf("PARSE ERROR! Undeclared graph identifier %d for edge %d\n", graphID, edgeVar), exit(1);
+			exit(1);
+		}
+	}
+	void readEdgeBV(B& in, Solver& S) {
+		if (opt_ignore_theories) {
+			skipLine(in);
+			return;
+		}
+
+		++in;
+
+		int graphID = parseInt(in);
+		int from = parseInt(in);
+		int to = parseInt(in);
+		int edgeVar = parseInt(in) - 1;
+
+		if (graphID < 0 || graphID >= graphs.size()) {
+			printf("PARSE ERROR! Undeclared graph identifier %d for edge %d\n", graphID, edgeVar), exit(1);
+		}
+		if (edgeVar < 0) {
+			printf("PARSE ERROR! Edge variables must be >=0, was %d\n", edgeVar), exit(1);
+		}
+		while (edgeVar >= S.nVars())
+			S.newVar();
+
+		skipWhitespace(in);
+		int bvID = parseInt(in);
+/*		static vec<Var> bv;
+		bv.clear();
+
+		while(*in != "\n"){
+			skipWhitespace(in);
+			int bvVar = parseInt(in)-1;
+			bv.push(bvVar);
+		}*/
+
+		if (graphs[graphID]) {
+			bvedges.push({graphID,from, to, edgeVar, bvID});
+			//graphs[graphID]->newEdgeBV(from, to, edgeVar, bvID);
+		}/* else if (graphs_float[graphID]) {
+			graphs_float[graphID]->newEdge(from, to, edgeVar,bvID);
+		} else if (graphs_rational[graphID]) {
+			graphs_rational[graphID]->newEdge(from, to, edgeVar,bvID);
+		} */else {
+			printf("PARSE ERROR! Undeclared graph identifier %d for edge %d\n", graphID, edgeVar), exit(1);
+			exit(1);
+		}
+	}
 	
 	void readEdge(B& in, Solver& S) {
 		if (opt_ignore_theories) {
@@ -259,30 +404,70 @@ class GraphParser: public Parser<B, Solver> {
 			exit(1);
 		}
 	}
-	void readShortestPath(B& in, Solver& S, bool leq = false) {
+
+	void readShortestPathBV(B& in, Solver& S, bool leq = false) {
 		if (opt_ignore_theories) {
 			skipLine(in);
 			return;
 		}
 		//distance_lt grachID u w var dist is a reach query: var is true if can u reach w in graph g, false otherwise
-		
+
 		++in;
 		static vec<char> tmp;
 		int graphID = parseInt(in);
 		int from = parseInt(in);
 		int to = parseInt(in);
 		int reachVar = parseInt(in) - 1;
-		
+
 		if (graphID < 0 || graphID >= graphs.size()) {
 			printf("PARSE ERROR! Undeclared graph identifier %d for edge %d\n", graphID, reachVar), exit(1);
 		}
 		if (reachVar < 0) {
 			printf("PARSE ERROR! Edge variables must be >=0, was %d\n", reachVar), exit(1);
 		}
-		
+
+		skipWhitespace(in);
+		int bvID = parseInt(in);
+		if (graphs[graphID]) {
+			bvdistances.push({graphID,from, to,reachVar, bvID,!leq});
+			//graphs[graphID]->newEdgeBV(from, to, edgeVar, bvID);
+		}/* else if (graphs_float[graphID]) {
+			graphs_float[graphID]->newEdge(from, to, edgeVar,bvID);
+		} else if (graphs_rational[graphID]) {
+			graphs_rational[graphID]->newEdge(from, to, edgeVar,bvID);
+		} */else {
+			printf("PARSE ERROR! Undeclared graph identifier %d for edge %d\n", graphID, reachVar), exit(1);
+			exit(1);
+		}
+
+	}
+
+	void readShortestPath(B& in, Solver& S, bool leq = false) {
+		if (opt_ignore_theories) {
+			skipLine(in);
+			return;
+		}
+		//distance_lt grachID u w var dist is a reach query: var is true if can u reach w in graph g, false otherwise
+
+		++in;
+		static vec<char> tmp;
+		int graphID = parseInt(in);
+		int from = parseInt(in);
+		int to = parseInt(in);
+		int reachVar = parseInt(in) - 1;
+
+		if (graphID < 0 || graphID >= graphs.size()) {
+			printf("PARSE ERROR! Undeclared graph identifier %d for edge %d\n", graphID, reachVar), exit(1);
+		}
+		if (reachVar < 0) {
+			printf("PARSE ERROR! Edge variables must be >=0, was %d\n", reachVar), exit(1);
+		}
+
+
 		if (graphs[graphID]) {
 			int weight = parseInt(in);
-			graphs[graphID]->reachesWithinDistance(from, to, reachVar, weight);
+			distances_long.push({graphID,from,to,reachVar,!leq,weight});
+			//graphs[graphID]->distance(from, to, reachVar, weight);
 		} else if (graphs_float[graphID]) {
 			double weight = parseDouble(in, tmp);
 			skipWhitespace(in);
@@ -291,7 +476,8 @@ class GraphParser: public Parser<B, Solver> {
 				double denom = parseDouble(in, tmp);
 				weight /= denom;
 			}
-			graphs_float[graphID]->reachesWithinDistance(from, to, reachVar, weight);
+			distances_float.push({graphID,from,to,reachVar,!leq,weight});
+			//graphs_float[graphID]->distance(from, to, reachVar, weight);
 		} else if (graphs_rational[graphID]) {
 			std::stringstream ss;
 			skipWhitespace(in);
@@ -305,14 +491,16 @@ class GraphParser: public Parser<B, Solver> {
 				double value = std::stod(ss.str());
 				mpq_class weight(value);
 				weight.canonicalize();
-				graphs_rational[graphID]->reachesWithinDistance(from, to, reachVar, weight);
+				//graphs_rational[graphID]->distance(from, to, reachVar, weight);
+				distances_rational.push({graphID,from,to,reachVar,!leq,weight});
 			} catch (std::exception& e) {
 				//if that fails, attempt to read it in directly as an fraction:
 				mpq_class weight(ss.str());
 				weight.canonicalize();
-				graphs_rational[graphID]->reachesWithinDistance(from, to, reachVar, weight);
+				distances_rational.push({graphID,from,to,reachVar,!leq,weight});
+				//graphs_rational[graphID]->distance(from, to, reachVar, weight);
 			}
-			
+
 		} else {
 			printf("PARSE ERROR! Undeclared graph identifier %d\n", graphID), exit(1);
 			exit(1);
@@ -449,42 +637,73 @@ class GraphParser: public Parser<B, Solver> {
 			exit(1);
 		}
 	}
+
+
+	void readMaxFlowConstraintBV(B& in, Solver& S, bool inclusive) {
+			if (opt_ignore_theories) {
+				skipLine(in);
+				return;
+			}
+
+			++in;
+
+			int graphID = parseInt(in);
+			int s = parseInt(in);
+			int t = parseInt(in);
+			int reachVar = parseInt(in) - 1; //note: switched the order of reachVar and flow after the paper, to allow for non-integer flow constraints in the future...
+
+
+			if (graphID < 0 || graphID >= graphs.size()) {
+				printf("PARSE ERROR! Undeclared graph identifier %d for edge %d\n", graphID, reachVar), exit(1);
+			}
+			if (reachVar < 0) {
+				printf("PARSE ERROR! Edge variables must be >=0, was %d\n", reachVar), exit(1);
+			}
+
+			while (reachVar >= S.nVars())
+				S.newVar();
+
+			//parse the flow constraint appropriately for the type of the graph:
+			int bvID = parseInt(in);
+			bvmaxflows.push({graphID,s,t,reachVar,bvID,!inclusive});
+
+		}
 	void readOldMaxFlowConstraint(B& in, Solver& S) {
-		if (opt_ignore_theories) {
-			skipLine(in);
-			return;
+			if (opt_ignore_theories) {
+				skipLine(in);
+				return;
+			}
+
+			++in;
+
+			int graphID = parseInt(in);
+			int s = parseInt(in);
+			int t = parseInt(in);
+			long flow = parseInt(in); //old maxflow constraints always compared to an int
+			int reachVar = parseInt(in) - 1; //note: maximum flow constraint format has been changed since the paper. The order of reachVar and flow after the paper, to allow for non-integer flow constraints.
+			bool inclusive=true;//old maxflow constraints were always inclusive.
+
+			if (graphID < 0 || graphID >= graphs.size()) {
+				printf("PARSE ERROR! Undeclared graph identifier %d for edge %d\n", graphID, reachVar), exit(1);
+			}
+			if (reachVar < 0) {
+				printf("PARSE ERROR! Edge variables must be >=0, was %d\n", reachVar), exit(1);
+			}
+
+			while (reachVar >= S.nVars())
+				S.newVar();
+
+			if (graphs[graphID]) {
+				maxflows_long.push({graphID,s,t,reachVar,!inclusive,flow});
+			} else if (graphs_float[graphID]) {
+				maxflows_float.push({graphID,s,t,reachVar,!inclusive,(double)flow});
+			} else if (graphs_rational[graphID]) {
+				maxflows_rational.push({graphID,s,t,reachVar,!inclusive,(mpq_class)flow});
+			} else {
+				printf("PARSE ERROR! Undeclared graph identifier %d\n", graphID), exit(1);
+				exit(1);
+			}
 		}
-
-		++in;
-
-		int graphID = parseInt(in);
-		int s = parseInt(in);
-		int t = parseInt(in);
-		long flow = parseInt(in);
-		int reachVar = parseInt(in) - 1; //note: maximum flow constraint format has been changed since the paper. The order of reachVar and flow after the paper, to allow for non-integer flow constraints.
-
-
-		if (graphID < 0 || graphID >= graphs.size()) {
-			printf("PARSE ERROR! Undeclared graph identifier %d for edge %d\n", graphID, reachVar), exit(1);
-		}
-		if (reachVar < 0) {
-			printf("PARSE ERROR! Edge variables must be >=0, was %d\n", reachVar), exit(1);
-		}
-
-		while (reachVar >= S.nVars())
-			S.newVar();
-
-		if (graphs[graphID]) {
-			graphs[graphID]->maxFlow(s, t, flow, reachVar);
-		} else if (graphs_float[graphID]) {
-			graphs_float[graphID]->maxFlow(s, t, flow, reachVar);
-		} else if (graphs_rational[graphID]) {
-			graphs_rational[graphID]->maxFlow(s, t, flow, reachVar);
-		} else {
-			printf("PARSE ERROR! Undeclared graph identifier %d\n", graphID), exit(1);
-			exit(1);
-		}
-	}
 	void readMaxFlowConstraint(B& in, Solver& S, bool inclusive) {
 		if (opt_ignore_theories) {
 			skipLine(in);
@@ -513,7 +732,9 @@ class GraphParser: public Parser<B, Solver> {
 
 		if (graphs[graphID]) {
 			long flow = parseInt(in);
-			graphs[graphID]->maxFlow(s, t, flow, reachVar,inclusive);
+
+			maxflows_long.push({graphID,s,t,reachVar,!inclusive,flow});
+			//graphs[graphID]->maxFlow(s, t, flow, reachVar,inclusive);
 		} else if (graphs_float[graphID]) {
 			//float can be either a plain integer, or a rational (interpreted at floating point precision) in the form '123/456', or a floating point in decimal format
 			double flow = parseDouble(in, tmp);
@@ -523,7 +744,8 @@ class GraphParser: public Parser<B, Solver> {
 				double denom = parseDouble(in, tmp);
 				flow /= denom;
 			}
-			graphs_float[graphID]->maxFlow(s, t, flow, reachVar,inclusive);
+			maxflows_float.push({graphID,s,t,reachVar,!inclusive,flow});
+			//graphs_float[graphID]->maxFlow(s, t, flow, reachVar,inclusive);
 		} else if (graphs_rational[graphID]) {
 			//rational can be either a plain integer, or a rational in the form '123/456', or a floating point value
 			std::stringstream ss;
@@ -539,12 +761,14 @@ class GraphParser: public Parser<B, Solver> {
 				double value = std::stod(ss.str());
 				mpq_class flow(value);
 				flow.canonicalize();
-				graphs_rational[graphID]->maxFlow(s, t, flow, reachVar,inclusive);
+				//graphs_rational[graphID]->maxFlow(s, t, flow, reachVar,inclusive);
+				maxflows_rational.push({graphID,s,t,reachVar,!inclusive,flow});
 			} catch (std::exception& e) {
 				//if that fails, attempt to read it in directly as an fraction:
 				mpq_class flow(ss.str());
 				flow.canonicalize();
-				graphs_rational[graphID]->maxFlow(s, t, flow, reachVar,inclusive);
+				maxflows_rational.push({graphID,s,t,reachVar,!inclusive,flow});
+				//graphs_rational[graphID]->maxFlow(s, t, flow, reachVar,inclusive);
 			}
 
 		} else {
@@ -659,6 +883,14 @@ class GraphParser: public Parser<B, Solver> {
 		steiners[graphID][steinerID]->weight_constraints.push( { maxweight, var });
 	}
 	
+	void readBV(B& in, Solver& S){
+		if (opt_ignore_theories) {
+			skipLine(in);
+			return;
+		}
+
+	}
+
 	void readPB(B & in, vec<Lit> & lits, vec<int> & weights, Solver & S, PbTheory * pb) {
 		if (opt_ignore_theories) {
 			skipLine(in);
@@ -763,8 +995,8 @@ class GraphParser: public Parser<B, Solver> {
 	}
 	
 public:
-	GraphParser(bool precise = true) :
-			precise(precise) {
+	GraphParser(bool precise, BVTheorySolver<long>*& bvTheory) :
+			precise(precise),bvTheory(bvTheory) {
 		
 	}
 	bool parseLine(B& in, Solver& S) {
@@ -796,6 +1028,13 @@ public:
 			//	printf("PARSE ERROR! Unexpected char: %c\n", *in), exit(1);
 			//}
 			return true;
+		}else if (match(in, "edge_priority")) {
+			readEdgePriority(in);
+			return true;
+		}else if (match(in, "edge_bv")) {
+			count++;
+			readEdgeBV(in, S);
+			return true;
 		} else if (match(in, "edge")) {
 			count++;
 			readEdge(in, S);
@@ -819,6 +1058,12 @@ public:
 		} else if (match(in, "weighted_distance_leq")) {
 			readShortestPath(in, S, true);
 			return true;
+		}else if (match(in, "weighted_distance_bv_lt")) {
+			readShortestPathBV(in, S);
+			return true;
+		} else if (match(in, "weighted_distance_bv_leq")) {
+			readShortestPathBV(in, S, true);
+			return true;
 		}else if (match(in, "mst_weight_leq")) {
 			readMinSpanningTreeConstraint(in, S,true);
 			return true;
@@ -828,7 +1073,14 @@ public:
 		}else if (match(in, "mst_edge")) {
 			readMinSpanningTreeEdgeConstraint(in, S);
 			return true;
-		} else if (match(in, "maximum_flow_geq")) {
+		}else if (match(in, "maximum_flow_bv_geq")) {
+			readMaxFlowConstraintBV(in, S,true);
+			return true;
+		} else if (match(in, "maximum_flow_bv_gt")) {
+			readMaxFlowConstraintBV(in, S,false);
+			return true;
+		}
+		else if (match(in, "maximum_flow_geq")) {
 			readMaxFlowConstraint(in, S,true);
 			return true;
 		} else if (match(in, "maximum_flow_gt")) {
@@ -862,20 +1114,68 @@ public:
 	}
 	
 	void implementConstraints(Solver & S) {
-		
-		//not really implemented, yet!
-	/*	for (int gid = 0; gid < steiners.size(); gid++) {
-			for (auto & steiner : steiners[gid]) {
-				if (steiner) {
-					graphs[gid]->steinerTree(steiner->terminals, steiner->id);
-					for (auto & weight : steiner->weight_constraints) {
-						graphs[gid]->addSteinerWeightConstraint(steiner->id, weight.first, weight.second);
-					}
-					delete (steiner);
-				}
+		for (int i = 0; i < graphs.size(); i++) {
+			if(graphs[i])
+				graphs[i]->setBVTheory(bvTheory);
+		}
+
+		for (auto & e:bvedges){
+			if(!bvTheory->hasBV(e.bvID)){
+				printf("PARSE ERROR! Undefined bitvector %d for edge %d\n", e.bvID, e.edgeVar), exit(1);
 			}
-		}*/
-		
+		}
+		for (auto & e:bvedges){
+			graphs[e.graphID]->newEdgeBV(e.from, e.to, e.edgeVar, e.bvID);
+		}
+
+		for (auto & e: distances_long){
+			graphs[e.graphID]->distance(e.from, e.to, e.var, e.weight,!e.strict);
+		}
+		for (auto & e: distances_float){
+			graphs_float[e.graphID]->distance(e.from, e.to, e.var, e.weight,!e.strict);
+		}
+
+		for (auto & e: distances_rational){
+			graphs_rational[e.graphID]->distance(e.from, e.to, e.var, e.weight,!e.strict);
+		}
+
+		for(auto & e:bvdistances){
+			graphs[e.graphID]->distanceBV(e.from, e.to, e.var, e.bvID,!e.strict);
+
+		}
+
+		for (auto & e: maxflows_long){
+			graphs[e.graphID]->maxflow(e.s, e.t, e.var, e.weight,!e.strict);
+		}
+
+		for (auto & e: maxflows_float){
+			graphs_float[e.graphID]->maxflow(e.s, e.t, e.var, e.weight,!e.strict);
+		}
+
+		for (auto & e: maxflows_rational){
+			graphs_rational[e.graphID]->maxflow(e.s, e.t, e.var, e.weight,!e.strict);
+		}
+
+		for(auto & e:bvmaxflows){
+			graphs[e.graphID]->maxflowBV(e.s, e.t, e.var, e.bvID,!e.strict);
+		}
+
+
+		for (auto p:edgePriorities){
+/*			int graphID = p.graphID;
+			Var v = S.getTheoryVar( p.edgeVar);
+			if (graphs[graphID])
+				graphs[graphID]->setEdgePriority(graphs[graphID]->getEdgeID(v),p.priority);
+			else if (graphs_float[graphID])
+				graphs_float[graphID]->setEdgePriority(graphs_float[graphID]->getEdgeID(v),p.priority);
+			else if (graphs_rational[graphID])
+				graphs_rational[graphID]->setEdgePriority(graphs_rational[graphID]->getEdgeID(v),p.priority);
+			else {
+				printf("PARSE ERROR! Undeclared graph identifier %d\n", graphID), exit(1);
+				exit(1);
+			}*/
+		}
+
 		for (int i = 0; i < graphs.size(); i++) {
 			if (graphs[i])
 				graphs[i]->implementConstraints();

@@ -31,6 +31,7 @@
 #include "utils/Options.h"
 #include "core/SolverTypes.h"
 #include "core/Theory.h"
+#include "core/TheorySolver.h"
 #include "core/Config.h"
 
 //this is _really_ ugly...
@@ -42,17 +43,17 @@ namespace Monosat {
 //=================================================================================================
 // Solver -- the main class:
 // The MiniSAT Boolean SAT solver, extended to provided basic SMT support.
-class Solver: public Theory {
+class Solver: public Theory,public TheorySolver {
 public:
+	void * _external_data=nullptr;//convenience pointer for external API.
+
 	//fix this...
 	friend class Theory;
 	template<typename Weight> friend class GraphTheorySolver;
-	template<unsigned int D, class T> friend class GeometryTheorySolver;
+	//template<unsigned int D, class T> friend class GeometryTheorySolver;
 	friend class FSMTheorySolver;
 	friend class LSystemSolver;
-#ifdef DEBUG_SOLVER
-	Solver * dbg_solver;
-#endif
+
 	// Constructor/Destructor:
 	//
 	Solver();
@@ -71,11 +72,18 @@ public:
 			
 	void setDecisionPriority(Var v, unsigned int p) {
 		priority[v] = p;
+		if(decision[v]){
+			if (order_heap.inHeap(v))
+				order_heap.decrease(v);
+			else
+				order_heap.insert(v);
+		}
 	}
 	
 	//Theory interface
 	void addTheory(Theory*t) {
 		theories.push(t);
+		decidable_theories.push(t);
 		theory_queue.capacity(theories.size());
 		in_theory_queue.push(false);
 		t->setTheoryIndex(theories.size() - 1);
@@ -160,12 +168,19 @@ public:
 				conflicts / cpu_time, learnts.size(), stats_removed_clauses);
 		printf("decisions             : %-12" PRIu64 "   (%4.2f %% random) (%.0f /sec)\n", decisions,
 				(float) rnd_decisions * 100 / (float) decisions, decisions / cpu_time);
+		if(opt_decide_theories){
+		printf("Theory decision rounds: %ld/%ld\n",n_theory_decision_rounds,starts);
+		}
 		printf("propagations          : %-12" PRIu64 "   (%.0f /sec)\n", propagations, propagations / cpu_time);
 		printf("conflict literals     : %-12" PRIu64 "   (%4.2f %% deleted)\n", tot_literals,
 				(max_literals - tot_literals) * 100 / (double) max_literals);
 		if (opt_detect_pure_theory_lits) {
 			printf("pure literals     : %ld (%ld theory lits) (%ld rounds, %f time)\n", stats_pure_lits,
 					stats_pure_theory_lits, pure_literal_detections, stats_pure_lit_time);
+		}
+
+		if(opt_check_solution){
+			printf("Solution double-checking time (disable with -no-check-solution): %f s\n",stats_solution_checking_time);
 		}
 		for (int i = 0; i < theories.size(); i++) {
 			theories[i]->printStats(detail_level);
@@ -228,7 +243,13 @@ public:
 		assert(hasTheory(l));
 		return mkLit(getTheoryVar(var(l)), sign(l));
 	}
-	
+	virtual Var newTheoryVar(Var solverVar, int theoryID, Var theoryVar){
+		while(nVars()<=solverVar)
+			newVar();
+		Var v = solverVar;
+		setTheoryVar(solverVar,theoryID,theoryVar);
+		return v;
+	}
 	//Connect a variable in the SAT solver to a variable in a theory.
 	virtual void setTheoryVar(Var solverVar, int theory, Var theoryVar) {
 		if (hasTheory(solverVar)) {
@@ -254,16 +275,31 @@ public:
 		theory_vars[solverVar].theory_var = newTheoryVar;
 	}
 	
+	void preprocess(){
+		for(Theory *t:theories){
+			t->preprocess();
+		}
+	}
+
 	//Lazily construct a reason for a literal propagated from a theory
 	CRef constructReason(Lit p) {
+		static int iterp =0;
+		if(++iterp==24){
+			int a=1;
+		}
+		assert(value(p)==l_True);
 		CRef cr = reason(var(p));
 		assert(isTheoryCause(cr));
 		assert(!ca.isClause(cr));
 		assert(cr != CRef_Undef);
+		int trail_pos = trail.size();
 		int t = getTheory(cr);
 		assert(hasTheory(p));
 		theory_reason.clear();
-		theories[t]->buildReason(getTheoryLit(p), theory_reason);
+		if(p.x==269 ){
+			int a =1;
+		}
+		theories[t]->buildReason(getTheoryLit(p), theory_reason, cr);
 		assert(theory_reason[0] == p);
 		assert(value(p)==l_True);
 #ifdef DEBUG_SOLVER
@@ -278,13 +314,20 @@ public:
 			assert(marks[var(theory_reason[i])]);
 		}
 #endif
-		
-		CRef reason = attachClauseSafe(theory_reason);
-		if (theory_reason.size() < 2) {
-			assert(false);
-			exit(5);
-		}
+
+		int lev = decisionLevel();
+		CRef reason = attachReasonClause(p,theory_reason);
 		vardata[var(p)] = mkVarData(reason, level(var(p)));
+		assert(decisionLevel()==lev);//ensure no backtracking happened while adding this clause!
+		assert(ok);
+
+		//collect any newly enqueued vars - we need to analyze them
+
+		for(int i = trail_pos;i<trail.size();i++){
+			to_analyze.push(trail[i]);
+		}
+
+
 		return reason;
 	}
 	
@@ -331,7 +374,7 @@ public:
 	// 
 	void setPolarity(Var v, bool b); // Declare which polarity the decision heuristic should use for a variable. Requires mode 'polarity_user'.
 	void setDecisionVar(Var v, bool b); // Declare if a variable should be eligible for selection in the decision heuristic.
-			
+
 	// Read state:
 	//
 	lbool value(Var x) const;       // The current value of a variable.
@@ -359,6 +402,7 @@ public:
 	void checkGarbage(double gf);
 	void checkGarbage();
 
+
 	// Extra results: (read-only member variable)
 	//
 	vec<lbool> model;             // If problem is satisfiable, this vector contains the model (if any).
@@ -366,7 +410,7 @@ public:
 								// this vector represent the final conflict clause expressed in the assumptions.
 	vec<vec<Lit> > interpolant; //This vector represents an interpolant between this module and its super solver ('S'), if it is attached to such a solver and the instance is UNSAT.
 								// Variables in each clause in the interpolant vector are in the super solver's variable space, not the subsolver's.
-	
+	Lit theoryDecision = lit_Undef;
 	vec<Lit> theory_reason;
 	vec<Lit> theory_conflict;
 	vec<Theory*> theories;
@@ -429,10 +473,15 @@ public:
 
 	// Statistics: (read-only member variable)
 	//
+	double stats_solution_checking_time=0;
 	uint64_t solves, starts, decisions, rnd_decisions, propagations, conflicts, stats_pure_lits, stats_pure_theory_lits,
 			pure_literal_detections, stats_removed_clauses;
 	uint64_t dec_vars, clauses_literals, learnts_literals, max_literals, tot_literals;
 	double stats_pure_lit_time=0;
+	uint64_t n_theory_conflicts=0;
+	int consecutive_theory_conflicts=0;
+	uint64_t next_theory_decision = 0;
+	uint64_t n_theory_decision_rounds=0;
 
 	//Var last_dec=var_Undef;
 protected:
@@ -472,6 +521,19 @@ protected:
 		}
 	};
 
+	struct LazyLevelLt{
+
+		Solver * outer;
+		bool operator ()(int x, int y) const {
+			Var vx = toInt(toLit(x));
+			Var vy = toInt(toLit(y));
+			return outer->level(vx)>outer->level(vy);
+		}
+		LazyLevelLt(Solver * outer) :
+			outer(outer){
+		}
+	};
+
 	struct VarOrderLt {
 		const vec<double>& activity;
 		const vec<int> & priority;
@@ -490,8 +552,8 @@ protected:
 	struct TheoryData {
 		union {
 			struct {
-				unsigned int theory :11;
-				unsigned int theory_var :21;
+				unsigned int theory ;
+				unsigned int theory_var;//these were previously packed together into a 32bit int, but that has proved insufficient in practice.
 			};
 			unsigned int isTheoryVar; //true if non-zero - this property is ensured by adding 1 to theory_var
 		};
@@ -518,6 +580,8 @@ protected:
 	vec<char> decision;         // Declares if a variable is eligible for selection in the decision heuristic.
 	vec<int> priority;		  // Static, lexicographic heuristic
 	vec<TheoryData> theory_vars;
+	vec<Lit> to_analyze;
+	vec<Lit> to_reenqueue;
 	vec<Lit> trail;            // Assignment stack; stores all assigments made in the order they were made.
 	vec<int> trail_lim;        // Separator indices for different decision levels in 'trail'.
 	vec<VarData> vardata;          // Stores reason and level for each variable.
@@ -526,6 +590,7 @@ protected:
 	int64_t simpDB_props;   // Remaining number of propagations that must be made before next execution of 'simplify()'.
 	vec<Lit> assumptions;      // Current set of assumptions provided to solve by the user.
 	Heap<VarOrderLt> order_heap;       // A priority queue of variables ordered with respect to the variable activity.
+	//Heap<LazyLevelLt> lazy_heap;       // A priority queue of variables to be propagated at earlier levels, lazily.
 	double progress_estimate;       // Set by 'search()'.
 	bool remove_satisfied; // Indicates whether possibly inefficient linear scan for satisfied clauses should be performed in 'simplify'.
 	
@@ -556,10 +621,17 @@ protected:
 	void insertVarOrder(Var x);                               // Insert a variable in the decision order priority queue.
 	Lit pickBranchLit();                                                      // Return the next decision variable.
 public:
+	void instantiateLazyDecision(Lit l, int atLevel, CRef reason);
+	Lit theoryDecisionLit(int theoryID){
+		if(theoryDecision==lit_Undef){
+			theoryDecision = mkLit(newVar(true,false));
+		}
+		return theoryDecision;
+	}
 	void newDecisionLevel();                                                      // Begins a new decision level.
 	void uncheckedEnqueue(Lit p, CRef from = CRef_Undef);   // Enqueue a literal. Assumes value of literal is undefined.
 	bool enqueue(Lit p, CRef from = CRef_Undef);       // Test if fact 'p' contradicts current state, enqueue otherwise.
-			
+	void enqueueLazy(Lit p,int level, CRef from = CRef_Undef);
 protected:
 	CRef propagate(bool propagate_theories = true);    // Perform unit propagation. Returns possibly conflicting clause.
 	void enqueueTheory(Lit l);
@@ -569,13 +641,17 @@ protected:
 	void buildReason(Lit p, vec<Lit> & reason);
 	void backtrackUntil(int level);
 	//Add a clause to the clause database safely, even if the solver is in the middle of search, propagation, or clause analysis.
-	//(In reality, the clause will be added to the database sometime later)
-	void addClauseSafely(vec<Lit> & ps) {
-		clauses_to_add.push();
-		ps.copyTo(clauses_to_add.last());
-	}
+	//(In reality, the clause may be added to the database sometime later)
+	void addClauseSafely(vec<Lit> & ps);
 public:
 	void cancelUntil(int level);                                             // Backtrack until a certain level.
+	inline void needsPropagation(int theoryID){
+		if (!in_theory_queue[theoryID]) {
+			in_theory_queue[theoryID] = true;
+			theory_queue.push(theoryID);
+			assert(theory_queue.size() <= theories.size());
+		}
+	}
 protected:
 	void analyze(CRef confl, vec<Lit>& out_learnt, int& out_btlevel);    // (bt = backtrack)
 	void analyzeFinal(CRef confl, Lit skip_lit, vec<Lit>& out_conflict);
@@ -597,7 +673,7 @@ protected:
 			
 	// Operations on clauses:
 	//
-	CRef attachClauseSafe(vec<Lit> & ps);
+	CRef attachReasonClause(Lit r,vec<Lit> & ps);
 	void attachClause(CRef cr);               // Attach a clause to watcher lists.
 	void detachClause(CRef cr, bool strict = false); // Detach a clause to watcher lists.
 	void removeClause(CRef cr);               // Detach and free a clause.
@@ -614,6 +690,11 @@ public:
 	CRef reason(Var x) const;
 	int level(Var x) const;
 	double progressEstimate() const; // DELETE THIS ?? IT'S NOT VERY USEFUL ...
+
+	 bool isConstant(Var v)const{
+		 return value(v)!=l_Undef && (level(v)==0);
+	 }
+
 private:
 	bool withinBudget() const;
 	bool addConflictClause(vec<Lit> & theory_conflict, CRef & confl_out, bool permanent = false);
@@ -671,41 +752,7 @@ private:
 		return v >= min_super && v <= max_super;
 	}
 	
-	inline void dbg_check_propagation(Lit p) {
-#ifdef DEBUG_SOLVER
-		if (dbg_solver) {
 
-			static vec<Lit> c;
-			c.clear();
-			for(int i = 0;i<trail.size();i++)
-			{	
-				c.push(trail[i]);
-			}
-			c.push(~p);
-			bool res = dbg_solver->solve(c);
-
-			assert(!res);
-		}
-#endif
-	}
-	
-	inline void dbg_check(const vec<Lit> & clause) {
-#ifdef DEBUG_SOLVER
-		if (dbg_solver) {
-			static bool first = true;
-			static vec<Lit> c;
-			c.clear();
-			for(int i = 0;i<clause.size();i++)
-			{	
-				c.push(~ clause[i]);
-			}
-
-			bool res = dbg_solver->solve(c);
-
-			assert(!res);
-		}
-#endif
-	}
 	
 };
 
@@ -803,6 +850,8 @@ inline bool Solver::locked(const Clause& c) const {
 inline void Solver::newDecisionLevel() {
 	trail_lim.push(trail.size());
 }
+
+
 
 inline int Solver::decisionLevel() const {
 	return trail_lim.size();

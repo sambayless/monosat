@@ -24,13 +24,24 @@
 #include <vector>
 #include <algorithm>
 #include <cassert>
+#include <sstream>
 #ifndef NDEBUG
+#include <sstream>
 //Used to track graph operations for debugging purposes - you can probably ignore this.
 #define RECORD
+
 #include <cstdio>
 #endif
 
+
 namespace dgl {
+
+class DynamicGraphAlgorithm{
+public:
+	virtual ~DynamicGraphAlgorithm(){}
+
+	virtual void updateHistory()=0;
+};
 
 /**
  * A dynamic graph.
@@ -45,22 +56,34 @@ namespace dgl {
  *
  * Most algorithms in the library are optimized for moderate sized, sparsely connected graphs (<10,000 edges/nodes).
  */
+template<typename Weight>
 class DynamicGraph {
 	
 	std::vector<bool> edge_status;
+	std::vector<bool> edge_status_const;
+	std::vector<Weight> weights;
 	int num_nodes=0;
 	int num_edges=0;
 	int next_id=0;
 	bool is_changed=false;
+	std::vector<DynamicGraphAlgorithm*> dynamic_algs;
+	std::vector<int> dynamic_history_pos;
+
+	long history_offset=0;
 
 public:
+	bool disable_history_clears=false;
+	int dynamic_history_clears=0;
+
 	bool adaptive_history_clear = false;
 	long historyClearInterval = 1000;
 	int modifications=0;
 	int additions=0;
 	int deletions=0;
+	int edge_increases = 0;
+	int edge_decreases = 0;
 	long historyclears=0;
-
+	long skipped_historyclears=0;
 	struct Edge {
 		int node;
 		int id;
@@ -82,24 +105,28 @@ public:
 		} //,weight(weight){}
 	};
 
-	//std::vector<int> weights;
+private:
+#ifndef NDEBUG
+public:
+#endif
 	std::vector<FullEdge> all_edges;
-
+public:
 	struct EdgeChange {
 		bool addition;
-		/*
-		 int u;//from
-		 int v;//top
-		 */
+		bool deletion;
+		bool weight_increase;
+		bool weight_decrease;
 		int id;
 		int mod;
 		int prev_mod;
 	};
+private:
 	std::vector<EdgeChange> history;
+public:
 #ifdef RECORD
 	FILE * outfile;
 #endif
-public:
+
 	DynamicGraph() {
 		//allocated=true;
 #ifdef RECORD
@@ -116,7 +143,7 @@ public:
 			addNode();
 	}
 	//Returns true iff the edge exists and is a self loop
-	bool selfLoop(int edgeID) const {
+	inline bool selfLoop(int edgeID)  {
 		return hasEdge(edgeID) && getEdge(edgeID).from == getEdge(edgeID).to;
 	}
 	bool hasEdge(int from, int to) const {
@@ -153,6 +180,8 @@ public:
 		modifications++;
 		additions = modifications;
 		deletions = modifications;
+		edge_increases = modifications;
+		edge_decreases = modifications;
 		markChanged();
 		clearHistory(true);
 #ifdef RECORD
@@ -163,7 +192,15 @@ public:
 #endif
 		return num_nodes++;
 	}
-	
+	//true iff the edge's current assignment will never be altered.
+	bool isConstant(int edgeID) const{
+		return edge_status_const[edgeID];
+	}
+
+	void makeEdgeAssignmentConstant(int edgeID){
+		edge_status_const[edgeID]=true;
+	}
+
 	bool edgeEnabled(int edgeID) const {
 		assert(edgeID < edge_status.size());
 		return edge_status[edgeID];
@@ -175,7 +212,7 @@ public:
 		return isEdge(edgeID);
 	}
 	//Instead of actually adding and removing edges, tag each edge with an 'enabled/disabled' label, and just expect reading algorithms to check and respect that label.
-	int addEdge(int from, int to, int id = -1) { //, int weight=1
+	int addEdge(int from, int to, int id = -1, Weight weight=1){
 		assert(from < num_nodes);
 		assert(to < num_nodes);
 		assert(from >= 0);
@@ -194,26 +231,36 @@ public:
 		adjacency_undirected_list[to].push_back( { from, id });
 		if (edge_status.size() <= id)
 			edge_status.resize(id + 1);
+
+		if(edge_status_const.size()<=id){
+			edge_status_const.resize(id+1,false);
+		}
+
 		inverted_adjacency_list[to].push_back( { from, id });
 		if (all_edges.size() <= id)
 			all_edges.resize(id + 1);
 		all_edges[id]= {from,to,id}; //,weight};
-		//if(weights.size()<=id)
-		//	weights.resize(id+1,0);
-		//weights[id]=weight;
-		//weights.push_back(weight);
+		if(weights.size()<=id)
+			weights.resize(id+1,0);
+		weights[id]=weight;
+
 		modifications++;
 		additions = modifications;
+		edge_increases = modifications;
 		markChanged();
 		
 #ifdef RECORD
 		if (outfile) {
 			fprintf(outfile, "edge %d %d %d %d\n", from, to, 1, id + 1);
+			std::stringstream ss;
+			ss<<weight;
+			fprintf(outfile, "edge_weight %d %s\n", id + 1, ss.str().c_str());
 			fflush(outfile);
 		}
 #endif
 //		history.push_back({true,id,modifications});
 		enableEdge(from, to, id);		//default to enabled
+
 		return id;
 	}
 	int nEdgeIDs() {
@@ -284,16 +331,32 @@ public:
 			return inverted_adjacency_list[node][i];
 		}
 	}
-	/*	std::vector<int> & getWeights(){
-	 return weights;
+	std::vector<FullEdge> & getEdges(){
+		return all_edges;
+	}
+
+	std::vector<Weight> & getWeights(){
+		return weights;
 	 }
-	 int getWeight(int edgeID){
-	 return weights[edgeID];
+/*	 Weight getWeight(int edgeID){
+		 return weights[edgeID];
 	 //return all_edges[edgeID].weight;
 	 }*/
-	FullEdge getEdge(int id) const {
+	 Weight  getWeight(int edgeID){
+		 return weights[edgeID];
+	 //return all_edges[edgeID].weight;
+	 }
+	FullEdge & getEdge(int id)  {
 		return all_edges[id];
 	}
+	void setEdgeEnabled(int id, bool enable){
+		if(enable){
+			enableEdge(id);
+		}else{
+			disableEdge(id);
+		}
+	}
+
 	void enableEdge(int id) {
 		enableEdge(all_edges[id].from, all_edges[id].to, id);
 	}
@@ -310,7 +373,7 @@ public:
 			
 			modifications++;
 			additions = modifications;
-			history.push_back( { true, id, modifications, additions });
+			history.push_back( { true,false,false,false, id, modifications, additions });
 #ifdef RECORD
 			if (outfile) {
 				
@@ -365,7 +428,7 @@ public:
 			
 			modifications++;
 			
-			history.push_back( { false, id, modifications, deletions });
+			history.push_back( { false,true,false,false, id, modifications, deletions });
 			deletions = modifications;
 		}
 	}
@@ -395,6 +458,36 @@ public:
 		return false;
 	}
 	
+	void setEdgeWeight(int id,const Weight & w) {
+			assert(id >= 0);
+			assert(id < edge_status.size());
+			assert(isEdge(id));
+			if(w==getWeight(id)){
+				return;
+			}
+
+			modifications++;
+			if(w>getWeight(id)){
+				history.push_back( {false,false, true,false, id, modifications, additions });
+				edge_increases = modifications;
+			}else{
+				assert(w<getWeight(id));
+				history.push_back( {false,false, false, true, id, modifications, additions });
+				edge_decreases = modifications;
+			}
+			weights[id]=w;
+#ifdef RECORD
+			if (outfile) {
+				std::stringstream ss;
+				ss<<w;
+				fprintf(outfile, "edge_weight %d %s\n", id + 1, ss.str().c_str());
+				fflush(outfile);
+			}
+#endif
+
+		}
+
+
 	void drawFull(bool showWeights = false) {
 #ifndef NDEBUG
 		printf("digraph{\n");
@@ -408,14 +501,16 @@ public:
 				int u = adjacency_list[i][j].node;
 				const char * s = "black";
 				if (edgeEnabled(id))
-					s = "blue";
-				else
 					s = "red";
-				//if(showWeights){
-				//	printf("n%d -> n%d [label=\"v%d w=%d\",color=\"%s\"]\n", i,u, id,getWeight(id), s);
-				//}else{
+				else
+					s = "blue";
+				if(showWeights){
+					std::stringstream ss;
+					ss<<getWeight(id);
+					printf("n%d -> n%d [label=\"v%d w=%s\",color=\"%s\"]\n", i,u, id,ss.str().c_str(), s);
+				}else{
 				printf("n%d -> n%d [label=\"v%d\",color=\"%s\"]\n", i, u, id, s);
-				//}
+				}
 			}
 		}
 		printf("}\n");
@@ -431,7 +526,7 @@ public:
 				if (!undoEnableEdge(e.id)) {
 					return false;
 				}
-			} else {
+			} else if(e.deletion) {
 				if (!undoDisableEdge(e.id)) {
 					return false;
 				}
@@ -441,18 +536,80 @@ public:
 		assert(modifications == cur_modifications - steps);
 		return true;
 	}
-	
+	/**
+	 * Returns a unique identifier for this algorithm.
+	 */
+	int addDynamicAlgorithm(DynamicGraphAlgorithm*alg){
+		dynamic_algs.push_back(alg);
+		dynamic_history_pos.push_back(0);
+		//n_dynamic_algs_updtodate+= (historySize()==0);
+		return dynamic_algs.size()-1;
+	}
+
+	void updateAlgorithmHistory(DynamicGraphAlgorithm * alg, int algorithmID, int historyPos){
+		assert(dynamic_algs[algorithmID]==alg);//sanity check
+		//bool was_uptodate = dynamic_history_pos[algorithmID]==historySize();
+		dynamic_history_pos[algorithmID]=historyPos;
+/*		if(!was_uptodate && historyPos ==historySize()){
+			dynamic_history_pos[algorithmID]++;
+		}*/
+	}
+
+	EdgeChange & getChange(long historyPos){
+		assert(historyPos-history_offset>=0);
+		assert(historyPos-history_offset<history.size());
+		return history[historyPos-history_offset];
+	}
+
+	int historySize(){
+		return history.size() + history_offset;
+	}
+
 	int getCurrentHistory() {
 		return modifications;
 	}
 	
+
+
 	void clearHistory(bool forceClear = false) {
 		//long expect=std::max(1000,historyClearInterval*edges());
+		//check whether we can do a cheap history cleanup (without resetting all the dynamic algorithms)
+		if(disable_history_clears)
+			return;
+
 		if (history.size()
 				&& (forceClear
 						|| (history.size()
-								> (adaptive_history_clear ?
-										std::max(1000L, historyClearInterval * edges()) : historyClearInterval)))) {//){
+								>= (std::min((long)history.max_size(), (adaptive_history_clear ?
+										std::max(1000L, historyClearInterval * edges()) : historyClearInterval)))))) {//){
+
+
+			if(!forceClear && dynamic_history_clears>0){
+				int n_uptodate=0;
+				for(int algorithmID = 0;algorithmID<dynamic_algs.size();algorithmID++){
+					if (dynamic_history_pos[algorithmID]!=historySize()){
+						if(dynamic_history_clears==2){
+							dynamic_algs[algorithmID]->updateHistory();
+							if (dynamic_history_pos[algorithmID]==historySize()){
+								n_uptodate++;
+							}
+						}
+					}else{
+						n_uptodate++;
+					}
+				}
+
+				if(n_uptodate==dynamic_algs.size()){
+					//we can skip this history clear.
+					history_offset=historySize();
+					skipped_historyclears++;
+					history.clear();
+					assert(history_offset == historySize());
+					return;
+				}
+			}
+
+			history_offset=0;
 			history.clear();
 			historyclears++;
 #ifdef RECORD

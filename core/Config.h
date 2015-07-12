@@ -25,6 +25,7 @@
 #include "utils/System.h"
 namespace Monosat {
 extern IntOption opt_verb;
+extern BoolOption opt_pre;
 extern DoubleOption opt_var_decay;
 extern DoubleOption opt_clause_decay;
 extern DoubleOption opt_random_var_freq;
@@ -38,11 +39,14 @@ extern DoubleOption opt_restart_inc;
 extern DoubleOption opt_garbage_frac;
 extern BoolOption opt_rnd_restart;
 
+extern IntOption opt_theory_conflict_max;
 extern DoubleOption opt_random_theory_freq;
 
 extern BoolOption opt_interpolate;
 extern IntOption opt_eager_prop;
 extern IntOption opt_subsearch;
+
+extern BoolOption opt_amo_eager_prop;
 
 extern BoolOption opt_graph;
 extern BoolOption opt_inc_graph;
@@ -61,6 +65,17 @@ extern StringOption opt_mst_alg;
 extern StringOption opt_components_alg;
 extern StringOption opt_cycle_alg;
 extern IntOption opt_adaptive_history_clear;
+extern BoolOption disable_history_clears;
+extern IntOption opt_dynamic_history_clear;
+extern BoolOption opt_lazy_backtrack;
+extern BoolOption opt_lazy_backtrack_decisions;
+extern IntOption opt_lazy_conflicts;
+extern BoolOption opt_keep_lazy_conflicts;
+extern BoolOption opt_lazy_backtrack_redecide;
+extern BoolOption opt_theory_vsids;
+extern BoolOption opt_theory_prioritize_conflicts;
+extern BoolOption opt_theory_priority_clear;
+
 extern BoolOption opt_check_solution;
 extern BoolOption opt_print_reach;
 extern BoolOption opt_print_graph;
@@ -75,6 +90,11 @@ extern BoolOption opt_init_rnd_phase;
 extern BoolOption opt_reach_prop;
 extern BoolOption opt_decide_theories;
 extern BoolOption opt_decide_graph_distance;
+extern BoolOption opt_decide_graph_bv;
+extern BoolOption opt_cmp_lits_decidable;
+extern BoolOption opt_decide_bv_bitwise;
+extern BoolOption opt_decide_bv_intrinsic;
+extern BoolOption opt_decide_theories_reverse;
 extern BoolOption opt_use_random_path_for_decisions;
 extern BoolOption opt_use_optimal_path_for_decisions;
 extern DoubleOption opt_decide_graph_re_rnd;
@@ -125,14 +145,23 @@ extern BoolOption opt_conflict_min_cut_maxflow;
 extern IntOption opt_history_clear;
 extern BoolOption opt_kt_preserve_order;
 extern BoolOption opt_lazy_maxflow_decisions;
+extern BoolOption opt_maxflow_allow_cycles;
 extern BoolOption opt_old_lazy_maxflow_decisions;
 extern IntOption opt_maxflow_decisions_q;
+extern IntOption opt_maxflow_decision_paths;
 extern BoolOption opt_reach_detector_combined_maxflow;
 extern IntOption opt_adaptive_conflict_mincut;
 extern BoolOption opt_shortest_path_prune_dist;
-extern BoolOption opt_conflict_min_cut_shortest_paths;
+
+extern IntOption opt_graph_prop_skip;
+extern IntOption opt_bv_prop_skip;
+
 extern BoolOption opt_fsm_negate_underapprox;
 extern BoolOption opt_fsm_edge_prop;
+
+extern BoolOption opt_fsm_as_graph;
+
+extern BoolOption opt_learn_acyclic_flows;
 
 enum class PointInPolygonAlg {
 	ALG_FULL, ALG_RECURSIVE_SPLIT

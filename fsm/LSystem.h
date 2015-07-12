@@ -22,8 +22,6 @@ namespace Monosat {
 //This models a context-free, non-deterministic lsystem
 class LSystem{
 
-
-	bool has_epsilon=true;
 	bool is_changed = true;
 public:
 	vec<bool> enabled_rules;

@@ -27,16 +27,16 @@
 using namespace Monosat;
 template<typename Weight>
 ConnectedComponentsDetector<Weight>::ConnectedComponentsDetector(int _detectorID, GraphTheorySolver<Weight> * _outer,
-		DynamicGraph &_g, DynamicGraph &_antig, double seed) :
+		DynamicGraph<Weight>  &_g, DynamicGraph<Weight>  &_antig, double seed) :
 		Detector(_detectorID), outer(_outer), g_under(_g), g_over(_antig), rnd_seed(seed), underapprox_component_detector(
 				NULL), overapprox_component_detector(NULL), positiveReachStatus(NULL), negativeReachStatus(NULL) {
 	
 	positiveReachStatus = new ConnectedComponentsDetector<Weight>::ConnectedComponentsStatus(*this, true);
 	negativeReachStatus = new ConnectedComponentsDetector<Weight>::ConnectedComponentsStatus(*this, false);
 	//Note: these are _intentionalyl_ swapped
-	overapprox_component_detector = new DisjointSetsConnectedComponents<
+	overapprox_component_detector = new DisjointSetsConnectedComponents<Weight,
 			ConnectedComponentsDetector<Weight>::ConnectedComponentsStatus>(_g, *(negativeReachStatus), 1);
-	underapprox_component_detector = new DisjointSetsConnectedComponents<
+	underapprox_component_detector = new DisjointSetsConnectedComponents<Weight,
 			ConnectedComponentsDetector<Weight>::ConnectedComponentsStatus>(_antig, *(positiveReachStatus), 1);
 	
 	components_low_marker = outer->newReasonMarker(getID());
@@ -301,7 +301,7 @@ void ConnectedComponentsDetector<Weight>::buildNodesConnectedReason(int source, 
 		std::swap(source, node);
 	}
 	
-	UnweightedBFS<Reach::NullStatus, true> d(source, g_under);
+	UnweightedBFS<Weight,Distance<int>::NullStatus, true> d(source, g_under);
 	double starttime = rtime(2);
 	d.update();
 	
@@ -600,7 +600,7 @@ bool ConnectedComponentsDetector<Weight>::propagate(vec<Lit> & conflict) {
 }
 
 template<typename Weight>
-void ConnectedComponentsDetector<Weight>::printSolution() {
+void ConnectedComponentsDetector<Weight>::printSolution(std::ostream & write_to) {
 	if (opt_verb > 0) {
 		int numComponents = underapprox_component_detector->numComponents();
 		printf("Number of connected components (graph %d) is: %d\n", outer->getGraphID(), numComponents);
@@ -629,7 +629,7 @@ bool ConnectedComponentsDetector<Weight>::checkSatisfied() {
 				if (overapprox_component_detector->numComponents() > moreThanThisManyComponents) {
 					return false;
 				}
-				if (!underapprox_component_detector->numComponents() <= moreThanThisManyComponents) {
+				if (underapprox_component_detector->numComponents() <= moreThanThisManyComponents) {
 					return false;
 				}
 			}
@@ -639,7 +639,7 @@ bool ConnectedComponentsDetector<Weight>::checkSatisfied() {
 	return true;
 }
 template<typename Weight>
-Lit ConnectedComponentsDetector<Weight>::decide(int level) {
+Lit ConnectedComponentsDetector<Weight>::decide() {
 	/*ConnectedComponentsDetector *r =this;
 	 MinimumSpanningTree<ConnectedComponentsDetector<Weight>::ConnectedComponentsStatus> * over = (MinimumSpanningTree<ConnectedComponentsDetector<Weight>::ConnectedComponentsStatus>*) r->negative_reach_detector;
 
@@ -802,9 +802,9 @@ Lit ConnectedComponentsDetector<Weight>::decide(int level) {
 	return lit_Undef;
 }
 ;
-template class ConnectedComponentsDetector<int> ;
-template class ConnectedComponentsDetector<long> ;
-template class ConnectedComponentsDetector<double> ;
+template class Monosat::ConnectedComponentsDetector<int> ;
+template class Monosat::ConnectedComponentsDetector<long> ;
+template class Monosat::ConnectedComponentsDetector<double> ;
 #include <gmpxx.h>
-template class ConnectedComponentsDetector<mpq_class> ;
+template class Monosat::ConnectedComponentsDetector<mpq_class> ;
 

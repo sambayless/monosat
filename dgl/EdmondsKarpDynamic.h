@@ -30,8 +30,8 @@
 #include "EdmondsKarpAdj.h"
 #include <algorithm>
 namespace dgl {
-template<class Capacity, typename Weight>
-class EdmondsKarpDynamic: public MaxFlow<Weight> {
+template<typename Weight>
+class EdmondsKarpDynamic: public MaxFlow<Weight>, public DynamicGraphAlgorithm {
 	Weight f = 0;
 	std::vector<Weight> F;
 
@@ -47,19 +47,20 @@ class EdmondsKarpDynamic: public MaxFlow<Weight> {
 		}
 	};
 	Weight curflow;
-	int last_modification;
-	int last_deletion;
-	int last_addition;
+	int last_modification=-1;
+	int last_deletion=0;
+	int last_addition=0;
 
-	int history_qhead;
-	int last_history_clear;
+	int history_qhead=0;
+	int alg_id=-1;
+	int last_history_clear=0;
 	std::vector<LocalEdge> prev;
 	std::vector<Weight> M;
 	std::vector<int> changed_edges;
 	std::vector<bool> changed;
-	DynamicGraph& g;
-	Capacity & capacity;
-	bool allow_flow_cycles = false;
+	DynamicGraph<Weight>& g;
+
+	bool allow_flow_cycles = true; //actually, this flag doesn't appear to work - spurious flow cycles are still sometimes produced.
 	int source = -1;
 	int sink = -1;
 	Weight INF;
@@ -92,7 +93,7 @@ class EdmondsKarpDynamic: public MaxFlow<Weight> {
 				///(If there is available capacity, and v is not seen before in search)
 				
 				Weight& f = F[id];
-				Weight c = capacity[id];
+				Weight c = g.getWeight(id);
 				
 				//  int fr = F[id];
 				if (((c - F[id]) > 0) && (prev[v].from == -1)) {
@@ -145,19 +146,15 @@ class EdmondsKarpDynamic: public MaxFlow<Weight> {
 	}
 	
 public:
-	EdmondsKarpDynamic(DynamicGraph& _g, Capacity & cap, int source, int sink) :
-			g(_g), capacity(cap), source(source), sink(sink), INF(0xF0F0F0)
+	EdmondsKarpDynamic(DynamicGraph<Weight>& _g,  int source, int sink) :
+			g(_g),  source(source), sink(sink), INF(0xF0F0F0)
 #ifdef DEBUG_MAXFLOW
 	,ek(_g,cap,source,sink)
 #endif
 	{
 		curflow = 0;
-		last_modification = -1;
-		last_deletion = -1;
-		last_addition = -1;
-		
-		history_qhead = 0;
-		last_history_clear = -1;
+
+		alg_id=g.addDynamicAlgorithm(this);
 		//setAllEdgeCapacities(1);
 	}
 	int getSource() const {
@@ -213,7 +210,7 @@ public:
 			if(!g.hasEdge(i))
 			continue;
 			int id = g.all_edges[i].id;
-			Weight cap = capacity[id];
+			Weight cap = g.getWeight(id);
 			int from = g.all_edges[i].from;
 			int to = g.all_edges[i].to;
 
@@ -224,14 +221,14 @@ public:
 #ifdef DEBUG_MAXFLOW
 			Weight expected_flow =ek.maxFlow(s,t);
 #endif
-			
+
 #ifdef DEBUG_MAXFLOW
 			assert(curflow==expected_flow);
 #endif
 			return curflow;
 		} else if (last_modification <= 0 || g.historyclears != last_history_clear || g.changed()) {
 			F.clear();
-			F.resize(g.all_edges.size());
+			F.resize(g.edges());
 			changed.resize(g.nEdgeIDs());
 			prev.resize(g.nodes());
 			M.resize(g.nodes());
@@ -264,12 +261,12 @@ public:
 		bool added_Edges = false;
 		bool needsReflow = false;
 		
-		for (int i = history_qhead; i < g.history.size(); i++) {
-			int edgeid = g.history[i].id;
-			if (g.history[i].addition && g.edgeEnabled(edgeid)) {
+		for (int i = history_qhead; i < g.historySize(); i++) {
+			int edgeid = g.getChange(i).id;
+			if (g.getChange(i).addition && g.edgeEnabled(edgeid)) {
 				added_Edges = true;
 				edge_enabled[edgeid] = true;
-			} else if (!g.history[i].addition && !g.edgeEnabled(edgeid)) {
+			} else if (!g.getChange(i).addition && !g.edgeEnabled(edgeid)) {
 				//assert(edge_enabled[edgeid]);
 				edge_enabled[edgeid] = false;
 				Weight fv = F[edgeid]; //g.all_edges[edgeid].from;
@@ -278,8 +275,8 @@ public:
 				} else {
 					//ok, check if the maxflow from u to v has not lowered now that we've removed this edge.
 					//if it hasn't, then we are still safe
-					int u = g.all_edges[edgeid].from;
-					int v = g.all_edges[edgeid].to;
+					int u = g.getEdge(edgeid).from;
+					int v = g.getEdge(edgeid).to;
 					
 					if (fv < 0) {
 						std::swap(u, v);
@@ -317,9 +314,17 @@ public:
 					assert(F[edge.id] == 0);
 				}
 			}
+			for (int i = 0; i < g.nIncoming(s); i++) {
+				auto & edge = g.incoming(s, i);
+				if (edge_enabled[edge.id]) {
+					f -= F[edge.id];
+				} else {
+					assert(F[edge.id] == 0);
+				}
+			}
 			dbg_print_graph(s, t, -1, -1);
 #ifndef NDEBUG
-			if (!allow_flow_cycles) {
+		/*	if (!allow_flow_cycles) {
 				for (int i = 0; i < g.nIncoming(s); i++) {
 					auto & edge = g.incoming(s, i);
 					if (edge_enabled[edge.id]) {
@@ -328,7 +333,8 @@ public:
 						assert(F[edge.id] == 0);
 					}
 				}
-			} else {
+			} else */
+			{
 				Weight in_flow = 0;
 				for (int i = 0; i < g.nIncoming(s); i++) {
 					auto & edge = g.incoming(s, i);
@@ -385,11 +391,14 @@ public:
 		last_deletion = g.deletions;
 		last_addition = g.additions;
 		
-		history_qhead = g.history.size();
+		history_qhead = g.historySize();
+		g.updateAlgorithmHistory(this,alg_id,history_qhead);
 		last_history_clear = g.historyclears;
 		return f;
 	}
-	
+	void updateHistory(){
+		update();
+	}
 	std::vector<int> & getChangedEdges() {
 		return changed_edges;
 	}
@@ -466,7 +475,7 @@ private:
 				 F[rev[id]]-=m;
 				 }*/
 				// F[v][u] = F[v][u] - m;
-				assert(F[id] <= capacity[id]);
+				assert(F[id] <= g.getWeight(id));
 				v = u;
 			}
 			dbg_print_graph(s, t, -1, -1);
@@ -516,7 +525,7 @@ private:
 					 }*/
 				}
 				markChanged(id);
-				assert(F[id] <= capacity[id]);
+				assert(F[id] <= g.getWeight(id));
 				// F[v][u] = F[v][u] - m;
 				v = u;
 			}
@@ -525,7 +534,7 @@ private:
 		
 #ifndef NDEBUG
 		//EdmondsKarp<EdgeStatus> ek_check(g);
-		EdmondsKarpAdj<Capacity, Weight> ek_check(g, capacity);
+		EdmondsKarpAdj<Weight> ek_check(g);
 		Weight expect = ek_check.maxFlow(s, t);
 		assert(f == expect);
 #endif
@@ -596,7 +605,7 @@ private:
 						int a = 1;
 					}
 					Weight f = F[id];
-					const Weight& c = capacity[id];
+					const Weight& c = g.getWeight(id);
 					
 					//  int fr = F[id];
 					if (((c - f) > 0) && (prev[v].from == -1)) {
@@ -619,7 +628,7 @@ private:
 	
 	void dbg_print_graph(int from, int to, Weight shortCircuitFrom = -1, Weight shortCircuitTo = -1) {
 #ifndef NDEBUG
-
+		return;
 		static int it = 0;
 		if (++it == 6) {
 			int a = 1;
@@ -637,9 +646,9 @@ private:
 		
 		for (int i = 0; i < g.edges(); i++) {
 			if (edge_enabled[i]) {
-				auto & e = g.all_edges[i];
+				auto & e = g.getEdge(i);
 				const char * s = "black";
-				std::cout << "n" << e.from << " -> n" << e.to << " [label=\"" << i << ": " << F[i] << "/" << capacity[i]
+				std::cout << "n" << e.from << " -> n" << e.to << " [label=\"" << i << ": " << F[i] << "/" << g.getWeight(i)
 						<< "\" color=\"" << s << "\"]\n";
 				//printf("n%d -> n%d [label=\"%d: %d/%d\",color=\"%s\"]\n", e.from,e.to, i, F[i],capacity[i] , s);
 			}
@@ -725,8 +734,8 @@ private:
 					markChanged(id);
 					assert(id >= 0);
 					assert(id < F.size());
-					assert(id < capacity.size());
-					assert(F[id] <= capacity[id]);
+
+					assert(F[id] <= g.getWeight(id));
 				} else {
 					u = shortCircuitFrom;
 				}
@@ -782,9 +791,9 @@ private:
 			if (u != s && u != t) {
 				assert(inflow == outflow);
 			} else if (u == s) {
-				assert(outflow == f);
+				assert(outflow-inflow == f);
 			} else if (u == t) {
-				assert(inflow == f);
+				assert(inflow-outflow == f);
 			}
 		}
 		
@@ -823,7 +832,7 @@ public:
 					continue;
 				int v = g.incident(u, i).node;
 				int id = g.incident(u, i).id;
-				if (capacity[id] - F[id] == 0) {
+				if (g.getWeight(id) - F[id] == 0) {
 					cut.push_back(MaxFlowEdge { u, v, id });    	//potential element of the cut
 				} else if (!seen[v]) {
 					Q.push_back(v);
@@ -855,7 +864,7 @@ public:
 		Weight dbg_sum = 0;
 		for (int i = 0; i < cut.size(); i++) {
 			int id = cut[i].id;
-			assert(F[id] == capacity[id]);
+			assert(F[id] == g.getWeight(id));
 			dbg_sum += F[id];
 		}
 		assert(dbg_sum == f);
@@ -864,7 +873,7 @@ public:
 	}
 	const Weight getEdgeCapacity(int id) {
 		//assert(g.edgeEnabled(id));
-		return capacity[id];
+		return g.getWeight(id);
 	}
 	const Weight getEdgeFlow(int id) {
 		//assert(g.edgeEnabled(id));
@@ -872,7 +881,7 @@ public:
 	}
 	const Weight getEdgeResidualCapacity(int id) {
 		//assert(g.edgeEnabled(id));
-		return capacity[id] - F[id];    	// reserve(id);
+		return g.getWeight(id) - F[id];    	// reserve(id);
 	}
 };
 }

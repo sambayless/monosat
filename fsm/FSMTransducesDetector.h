@@ -25,7 +25,7 @@
 #include "dgl/DynamicGraph.h"
 
 #include "DynamicFSM.h"
-
+#include <tuple>
 #include "core/SolverTypes.h"
 #include "mtl/Map.h"
 #include <algorithm>

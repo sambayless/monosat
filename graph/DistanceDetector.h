@@ -36,6 +36,7 @@
 #include <gmpxx.h>
 #include "utils/System.h"
 #include "Detector.h"
+#include "bv/BVTheorySolver.h"
 #include <vector>
 using namespace dgl;
 namespace Monosat {
@@ -47,9 +48,8 @@ class DistanceDetector: public Detector {
 public:
 	GraphTheorySolver<Weight> * outer;
 
-	std::vector<Weight> & weights;
-	DynamicGraph &g_under;
-	DynamicGraph &g_over;
+	DynamicGraph<Weight>  &g_under;
+	DynamicGraph<Weight>  &g_over;
 	//int within;
 	int source;
 	double rnd_seed;
@@ -100,11 +100,20 @@ public:
 		Lit l;
 		int u;
 		Weight min_distance;
+		bool strictComparison;
 		bool operator <(WeightedDistLit & b) const {
 			return min_distance < b.min_distance;
 		}
 	};
 	vec<WeightedDistLit> weighted_dist_lits;
+
+	struct WeightedDistBVLit {
+		Lit l;
+		int u;
+		BitVector<Weight> bv;
+		bool strictComparison;
+	};
+	vec<WeightedDistBVLit> weighted_dist_bv_lits;
 
 	struct Change {
 		//Var v;
@@ -117,7 +126,7 @@ public:
 
 	std::vector<double> rnd_weight;
 
-	WeightedDijkstra<double> * rnd_path;
+	WeightedDijkstra<Weight,double> * rnd_path;
 	/*struct OptimalWeightEdgeStatus{
 	 DistanceDetector & detector;
 	 int operator [] (int edge) const ;
@@ -156,7 +165,7 @@ public:
 		}
 	};
 
-	struct CutStatus {
+	/*struct CutStatus {
 		long one = 1;
 		long inf = 0xFFFF;
 		DistanceDetector & outer;
@@ -175,7 +184,7 @@ public:
 				outer(_outer) {
 		}
 		
-	} cutStatus;
+	} cutStatus;*/
 	std::vector<MaxFlowEdge> cut;
 
 	ReachStatus *positiveReachStatus;
@@ -210,9 +219,7 @@ public:
 	 return reach_lits[node];
 
 	 }*/
-	void backtrack(int level) {
-		
-	}
+
 	void unassign(Lit l) {
 		Detector::unassign(l);
 		int index = var(l) - first_reach_var;
@@ -225,20 +232,23 @@ public:
 			}
 		}
 	}
+	void preprocess();
 	bool propagate(vec<Lit> & conflict);
 	void buildUnweightedDistanceLEQReason(int node, vec<Lit> & conflict);
 	void buildUnweightedDistanceGTReason(int node, vec<Lit> & conflict);
-	void buildDistanceLEQReason(int to, Weight & min_distance, vec<Lit> & conflict);
-	void buildDistanceGTReason(int to, Weight & min_distance, vec<Lit> & conflict);
+	void buildDistanceLEQReason(int to, Weight & min_distance, vec<Lit> & conflict, bool strictComparison=false);
+	void buildDistanceGTReason(int to, Weight & min_distance, vec<Lit> & conflict, bool strictComparison=true);
 
 	void buildReason(Lit p, vec<Lit> & reason, CRef marker);
 	bool checkSatisfied();
-	Lit decide(int level);
+	Lit decide();
 	void updateShortestPaths(bool unweighted);
 	void addUnweightedShortestPathLit(int from, int to, Var reach_var, int within_steps = -1);
-	void addWeightedShortestPathLit(int from, int to, Var reach_var, Weight within_distance);
-	DistanceDetector(int _detectorID, GraphTheorySolver<Weight> * _outer, std::vector<Weight> & weights,
-			DynamicGraph &_g, DynamicGraph &_antig, int _source, double seed = 1);//:Detector(_detectorID),outer(_outer),within(-1),source(_source),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL){}
+	void addWeightedShortestPathLit(int from, int to, Var reach_var, Weight within_distance, bool strictComparison);
+	void addWeightedShortestPathBVLit(int from, int to, Var reach_var, const BitVector<Weight> & bv, bool strictComparison);
+
+	DistanceDetector(int _detectorID, GraphTheorySolver<Weight> * _outer,
+			DynamicGraph<Weight>  &_g, DynamicGraph<Weight>  &_antig, int _source, double seed = 1);//:Detector(_detectorID),outer(_outer),within(-1),source(_source),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL){}
 	virtual ~DistanceDetector() {
 		
 	}

@@ -39,7 +39,7 @@ public:
 	;
 	virtual int getTheoryIndex()=0;
 	virtual void setTheoryIndex(int id)=0;
-	virtual void backtrackUntil(int level)=0;
+	virtual void backtrackUntil(int untilLevel)=0;
 	virtual void newDecisionLevel()=0;
 	virtual void enqueueTheory(Lit p)=0;
 	virtual bool propagateTheory(vec<Lit> & conflict)=0;
@@ -47,8 +47,24 @@ public:
 	virtual Lit decideTheory() {
 		return lit_Undef;
 	}
+	virtual void undecideTheory(Lit l){
+
+	}
 	//Lazily construct the reason clause explaining this propagation
-	virtual void buildReason(Lit p, vec<Lit> & reason)=0;
+	virtual void buildReason(Lit p, vec<Lit> & reason, CRef reason_marker){
+		return buildReason(p,reason);
+	}
+	virtual bool supportsLazyBacktracking(){
+		return false;
+	}
+
+
+
+protected:
+	virtual void buildReason(Lit p, vec<Lit> & reason){
+
+	}
+public:
 	//Informs the theory solver about whether this literal (with this polarity!) ever occurs in its parent solver
 	virtual void setLiteralOccurs(Lit l, bool occurs) {
 		
@@ -64,6 +80,9 @@ public:
 	}
 	virtual void writeTheoryWitness(std::ostream& write_to) {
 		//do nothing
+	}
+	virtual void preprocess(){
+
 	}
 };
 

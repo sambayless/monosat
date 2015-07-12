@@ -4,13 +4,16 @@
 
 # Add inputs and outputs from these tool invocations to the build variables 
 CPP_SRCS += \
-../dgl/alg/DisjointSets.cpp 
+../dgl/alg/DisjointSets.cpp \
+../dgl/alg/LinkCutCost.cpp 
 
 OBJS += \
-./dgl/alg/DisjointSets.o 
+./dgl/alg/DisjointSets.o \
+./dgl/alg/LinkCutCost.o 
 
 CPP_DEPS += \
-./dgl/alg/DisjointSets.d 
+./dgl/alg/DisjointSets.d \
+./dgl/alg/LinkCutCost.d 
 
 
 # Each subdirectory must supply rules for building sources it contributes

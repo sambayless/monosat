@@ -29,6 +29,7 @@
 #include <vector>
 #include <cmath>
 #include <algorithm>
+#include <cstddef>
 #include <gmpxx.h>
 #include <iostream>
 
@@ -131,7 +132,7 @@ struct Point {
 	const T& operator [](int index) const {
 		assert(&x == &vector[0]);
 		assert(&y == &vector[1]);
-		assert(&z == &vector[2]);
+		assert(&z == &vector[D>2?2:1]);
 		assert(index < D);
 		assert(index >= 0);
 		return vector[index];
@@ -139,19 +140,20 @@ struct Point {
 	T& operator [](int index) {
 		assert(&x == &vector[0]);
 		assert(&y == &vector[1]);
-		assert(&z == &vector[2]);
+		assert(&z == &vector[D>2?2:1]);
 		assert(index < D);
 		assert(index >= 0);
 		return vector[index];
 	}
 	
 	Point() :
-			id(-1), x(vector[0]), y(vector[1]), z(vector[2]) {
+			id(-1), x(vector[0]), y(vector[1]), z(vector[D>2?2:1]) {
 		/*	for(int i = 0;i<D;i++){//this is not required; it is already built-in to the constructor.
 		 new (&vector[i]) T();
 		 }*/
 		assert(&x == &vector[0]);
-		assert(&y == &vector[1]);assert(&z == &vector[2]);
+		assert(&y == &vector[1]);
+		assert(&z == &vector[D>2?2:1]);
 	}
 	
 	~Point() {
@@ -159,49 +161,49 @@ struct Point {
 	}
 	
 	Point(const std::vector<T> & list) :
-			id(-1), x(vector[0]), y(vector[1]), z(vector[2]) {
+			id(-1), x(vector[0]), y(vector[1]), z(vector[D>2?2:1]) {
 		assert(list.size() == D);
 		for (int i = 0; i < D; i++) {
 			vector[i].~T();
 			new (&vector[i]) T(list[i]);
 		}
 		assert(&x == &vector[0]);
-		assert(&y == &vector[1]);assert(&z == &vector[2]);
+		assert(&y == &vector[1]);assert(&z == &vector[D>2?2:1]);
 	}
 	Point(const vec<T> & list) :
-			id(-1), x(vector[0]), y(vector[1]), z(vector[2]) {
+			id(-1), x(vector[0]), y(vector[1]), z(vector[D>2?2:1]) {
 		assert(list.size() == D);
 		for (int i = 0; i < D; i++) {
 			vector[i].~T();
 			new (&vector[i]) T(list[i]);
 		}
 		assert(&x == &vector[0]);
-		assert(&y == &vector[1]);assert(&z == &vector[2]);
+		assert(&y == &vector[1]);assert(&z == &vector[D>2?2:1]);
 	}
 	//Copy constructor
 	Point(const Point<D, T> & v) :
-			id(v.id), x(vector[0]), y(vector[1]), z(vector[2]) {
+			id(v.id), x(vector[0]), y(vector[1]), z(vector[D>2?2:1]) {
 		assert(v.size() == D);
 		for (int i = 0; i < D; i++) {
 			vector[i].~T();
 			new (&vector[i]) T(v[i]);
 		}
 		assert(&x == &vector[0]);
-		assert(&y == &vector[1]);assert(&z == &vector[2]);
+		assert(&y == &vector[1]);assert(&z == &vector[D>2?2:1]);
 	}
 	
 	Point(std::initializer_list<T> list) :
-			id(-1), x(vector[0]), y(vector[1]), z(vector[2]) {
+			id(-1), x(vector[0]), y(vector[1]), z(vector[D>2?2:1]) {
 		assert(list.size() == size());
 		vector = list;
 		assert(&x == &vector[0]);
-		assert(&y == &vector[1]);assert(&z == &vector[2]);
+		assert(&y == &vector[1]);assert(&z == &vector[D>2?2:1]);
 	}
 	template<typename ... Ts>
 	Point(Ts ... args) :
-			id(-1), vector { args... }, x(vector[0]), y(vector[1]), z(vector[2]) {
+			id(-1), vector { args... }, x(vector[0]), y(vector[1]), z(vector[D>2?2:1]) {
 		assert(&x == &vector[0]);
-		assert(&y == &vector[1]);assert(&z == &vector[2]);
+		assert(&y == &vector[1]);assert(&z == &vector[D>2?2:1]);
 	}
 	Point& operator=(const Point & v) {
 		id = v.id;
@@ -211,14 +213,14 @@ struct Point {
 		}
 		assert(&x == &vector[0]);
 		assert(&y == &vector[1]);
-		assert(&z == &vector[2]);
+		assert(&z == &vector[D>2?2:1]);
 		return *this;
 	}
 	int getID() const {
 		assert(hasID());
 		assert(&x == &vector[0]);
 		assert(&y == &vector[1]);
-		assert(&z == &vector[2]);
+		assert(&z == &vector[D>2?2:1]);
 		return id;
 	}
 	bool hasID() const {
@@ -234,7 +236,7 @@ struct Point {
 		}
 		assert(&x == &vector[0]);
 		assert(&y == &vector[1]);
-		assert(&z == &vector[2]);
+		assert(&z == &vector[D>2?2:1]);
 		return sum;
 	}
 	void zero() {

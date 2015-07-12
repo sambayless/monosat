@@ -41,8 +41,8 @@ class ConnectedComponentsDetector: public Detector {
 public:
 	GraphTheorySolver<Weight> * outer;
 	//int within;
-	DynamicGraph & g_under;
-	DynamicGraph & g_over;
+	DynamicGraph<Weight>  & g_under;
+	DynamicGraph<Weight>  & g_over;
 
 	double rnd_seed;
 	CRef components_low_marker;
@@ -127,13 +127,13 @@ public:
 	void buildNodesNotConnectedReason(int u, int v, vec<Lit> & conflict);
 	void buildReason(Lit p, vec<Lit> & reason, CRef marker);
 	bool checkSatisfied();
-	void printSolution();
-	Lit decide(int level);
+	void printSolution(std::ostream & write_to);
+	Lit decide();
 	void addTreeEdgeLit(int edge_id, Var reach_var);
 	void addConnectedComponentsLit(Var weight_var, int min_components);
 	void addConnectedLit(Var outer_weight_var, int node1, int node2);
-	ConnectedComponentsDetector(int _detectorID, GraphTheorySolver<Weight> * _outer, DynamicGraph &_g,
-			DynamicGraph &_antig, double seed = 1); //:Detector(_detectorID),outer(_outer),within(-1),source(_source),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL){}
+	ConnectedComponentsDetector(int _detectorID, GraphTheorySolver<Weight> * _outer, DynamicGraph<Weight>  &_g,
+			DynamicGraph<Weight>  &_antig, double seed = 1); //:Detector(_detectorID),outer(_outer),within(-1),source(_source),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL){}
 	virtual ~ConnectedComponentsDetector() {
 		
 	}

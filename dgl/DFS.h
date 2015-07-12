@@ -30,11 +30,11 @@
 
 namespace dgl {
 
-template<class Status, bool undirected = false>
+template<typename Weight,class Status, bool undirected = false>
 class DFSReachability: public Reach {
 public:
 	
-	DynamicGraph & g;
+	DynamicGraph<Weight> & g;
 	Status & status;
 	int last_modification;
 	int last_addition;
@@ -74,7 +74,7 @@ public:
 	double stats_full_update_time;
 	double stats_fast_update_time;
 
-	DFSReachability(int s, DynamicGraph & graph, Status & _status, int _reportPolarity = 0) :
+	DFSReachability(int s, DynamicGraph<Weight> & graph, Status & _status, int _reportPolarity = 0) :
 			g(graph), status(_status), last_modification(-1), last_addition(-1), last_deletion(-1), history_qhead(0), last_history_clear(
 					0), source(s), INF(0), reportPolarity(_reportPolarity) {
 		
@@ -289,11 +289,11 @@ public:
 		//old_seen.resize(g.nodes());
 		q.clear();
 		
-		for (int i = history_qhead; i < g.history.size(); i++) {
-			int edgeid = g.history[i].id;
-			int from = g.all_edges[edgeid].from;
-			int to = g.all_edges[edgeid].to;
-			if (g.history[i].addition) {
+		for (int i = history_qhead; i < g.historySize(); i++) {
+			int edgeid = g.getChange(i).id;
+			int from = g.getEdge(edgeid).from;
+			int to = g.getEdge(edgeid).to;
+			if (g.getChange(i).addition) {
 				//incrementally add edge
 				if (seen[from] && !seen[to]) {
 					seen[to] = 1;
@@ -324,15 +324,15 @@ public:
 		}
 		
 		stats_fast_updates++;
-		history_qhead = g.history.size();
 		
+
 		assert(dbg_uptodate());
 		
 		last_modification = g.modifications;
 		last_deletion = g.deletions;
 		last_addition = g.additions;
 		
-		history_qhead = g.history.size();
+		history_qhead = g.historySize();
 		last_history_clear = g.historyclears;
 		
 		return true;
@@ -350,12 +350,12 @@ public:
 		//old_seen.resize(g.nodes());
 		q.clear();
 		
-		for (int i = history_qhead; i < g.history.size(); i++) {
-			int edgeid = g.history[i].id;
-			int from = g.all_edges[edgeid].from;
-			int to = g.all_edges[edgeid].to;
+		for (int i = history_qhead; i < g.historySize(); i++) {
+			int edgeid = g.getChange(i).id;
+			int from = g.getEdge(edgeid).from;
+			int to = g.getEdge(edgeid).to;
 			
-			if (g.history[i].addition && g.edgeEnabled(g.history[i].id)) {
+			if (g.getChange(i).addition && g.edgeEnabled(g.getChange(i).id)) {
 				//incrementally add edge
 				
 				if (seen[from] && !seen[to]) {
@@ -370,7 +370,7 @@ public:
 					}
 				}
 				
-			} else if (!g.history[i].addition && !g.edgeEnabled(g.history[i].id)) {
+			} else if (!g.getChange(i).addition && !g.edgeEnabled(g.getChange(i).id)) {
 				
 				if ((to == source || !seen[from] || (seen[to] && seen[previous(to)] && previous(to) != from))
 						&& (!undirected
@@ -388,15 +388,14 @@ public:
 		}
 		
 		stats_fast_updates++;
-		history_qhead = g.history.size();
-		
+
 		assert(dbg_uptodate());
 		
 		last_modification = g.modifications;
 		last_deletion = g.deletions;
 		last_addition = g.additions;
 		
-		history_qhead = g.history.size();
+		history_qhead = g.historySize();
 		last_history_clear = g.historyclears;
 		
 		return true;
@@ -441,11 +440,11 @@ public:
 					
 					//scan through the deletions and check if any of them matter..
 					bool safe = true;
-					for (int i = history_qhead; i < g.history.size(); i++) {
-						int edgeid = g.history[i].id;
-						int from = g.all_edges[edgeid].from;
-						int to = g.all_edges[edgeid].to;
-						if (g.history[i].addition) {
+					for (int i = history_qhead; i < g.historySize(); i++) {
+						int edgeid = g.getChange(i).id;
+						int from = g.getEdge(edgeid).from;
+						int to = g.getEdge(edgeid).to;
+						if (g.getChange(i).addition) {
 							//safe
 						} else if (!seen[from] || (seen[to] && seen[previous(to)] && previous(to) != from)) {
 							//then deleting this edge has no impact on connectivity, so don't need to do anything
@@ -454,9 +453,9 @@ public:
 							break;
 						}
 						if (undirected) {
-							int from = g.all_edges[edgeid].to;
-							int to = g.all_edges[edgeid].from;
-							if (g.history[i].addition) {
+							int from = g.getEdge(edgeid).to;
+							int to = g.getEdge(edgeid).from;
+							if (g.getChange(i).addition) {
 								//safe
 							} else if (!seen[from] || (seen[to] && seen[previous(to)] && previous(to) != from)) {
 								//then deleting this edge has no impact on connectivity, so don't need to do anything
@@ -526,7 +525,7 @@ public:
 		last_deletion = g.deletions;
 		last_addition = g.additions;
 		
-		history_qhead = g.history.size();
+		history_qhead = g.historySize();
 		last_history_clear = g.historyclears;
 		
 		;
@@ -642,11 +641,11 @@ public:
 	int previous(int t) {
 		if (prev[t] < 0)
 			return -1;
-		if (undirected && g.all_edges[incomingEdge(t)].from == t) {
-			return g.all_edges[incomingEdge(t)].to;
+		if (undirected && g.getEdge(incomingEdge(t)).from == t) {
+			return g.getEdge(incomingEdge(t)).to;
 		}
-		assert(g.all_edges[incomingEdge(t)].to == t);
-		return g.all_edges[incomingEdge(t)].from;
+		assert(g.getEdge(incomingEdge(t)).to == t);
+		return g.getEdge(incomingEdge(t)).from;
 	}
 	
 };

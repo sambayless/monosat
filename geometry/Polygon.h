@@ -506,6 +506,7 @@ T Polygon<D, T>::getArea2d() {
 		Point<2, T>& cur = (*this)[i];
 		sum += prev[0] * cur[1] - cur[0] * prev[1];
 	}
+	using namespace std;
 	return abs(sum / 2.0);
 }
 

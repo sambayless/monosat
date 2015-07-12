@@ -30,11 +30,11 @@
 #include "alg/DisjointSets.h"
 #include <limits>
 namespace dgl {
-template<class Status = ConnectedComponents::NullConnectedComponentsStatus>
+template<typename Weight, class Status = ConnectedComponents::NullConnectedComponentsStatus>
 class DisjointSetsConnectedComponents: public ConnectedComponents {
 public:
 	
-	DynamicGraph & g;
+	DynamicGraph<Weight> & g;
 	Status & status;
 	int last_modification;
 
@@ -71,13 +71,13 @@ public:
 	double stats_fast_update_time = 0;
 
 public:
-	DisjointSetsConnectedComponents(DynamicGraph & graph, Status & _status, int _reportPolarity = 0) :
+	DisjointSetsConnectedComponents(DynamicGraph<Weight> & graph, Status & _status, int _reportPolarity = 0) :
 			g(graph), status(_status), last_modification(-1), last_addition(-1), last_deletion(-1), history_qhead(0), last_history_clear(
 					0), INF(0), reportPolarity(_reportPolarity) {
 		
 	}
 	
-	DisjointSetsConnectedComponents(DynamicGraph & graph, int _reportPolarity = 0) :
+	DisjointSetsConnectedComponents(DynamicGraph<Weight> & graph, int _reportPolarity = 0) :
 			g(graph), status(nullConnectedComponentsStatus), last_modification(-1), last_addition(-1), last_deletion(
 					-1), history_qhead(0), last_history_clear(0), INF(0), reportPolarity(_reportPolarity) {
 		
@@ -115,8 +115,8 @@ public:
 		
 		for (int i = 0; i < g.edges(); i++) {
 			if (g.edgeEnabled(i)) {
-				int u = g.all_edges[i].from;
-				int v = g.all_edges[i].to;
+				int u = g.getEdge(i).from;
+				int v = g.getEdge(i).to;
 				sets.UnionElements(u, v);
 			}
 		}
@@ -138,7 +138,7 @@ public:
 		last_deletion = g.deletions;
 		last_addition = g.additions;
 		
-		history_qhead = g.history.size();
+		history_qhead = g.historySize();
 		last_history_clear = g.historyclears;
 	}
 	

@@ -27,13 +27,13 @@
 #include "DynamicGraph.h"
 #include "core/Config.h"
 #include "Reach.h"
-
+#include "Cycle.h"
 namespace dgl {
-template <bool directed=true, bool undirected=true>
+template <typename Weight,bool directed=true, bool undirected=false>
 class DFSCycle: public Cycle {
 public:
-	
-	DynamicGraph & g;
+
+	DynamicGraph<Weight> & g;
 
 	int last_modification=0;
 	int last_addition=0;
@@ -53,7 +53,7 @@ public:
 	const int reportPolarity;
 
 	//std::vector<char> old_seen;
-	std::vector<bool> processed;
+	std::vector<int> processed;
 	std::vector<bool> seen;
 	std::vector<bool> ever_seen;
 
@@ -76,60 +76,54 @@ public:
 	}
 	
 	void computeCycles(){
+
 		path.clear();
 		q.clear();
 		for (int i = 0; i < g.nodes(); i++) {
 			seen[i] = false;
 			ever_seen[i]=false;
-			processed[i]=false;
+			processed[i]=0;
 			undirected_prev[i]=-1;
 		}
 		
 		directed_cycle.clear();
 		undirected_cycle.clear();
-		for (int k = 0; k < g.nodes(); k++) { //to handle disconnected graph
-			if (ever_seen[k])
-				continue;
-			q.push_back(k);
-
-			ever_seen[k]=true;
-			seen[k]=true;
-			while (q.size()) { //dfs
-				int u = q.back();
-
-				if(directed){
-					if (processed[u]) {
+		if(directed){
+			for (int k = 0; k < g.nodes(); k++) { //to handle disconnected graph
+				if (ever_seen[k])
+					continue;
+				q.push_back(k);
+				ever_seen[k]=true;
+				seen[k]=true;
+				while (q.size()) { //dfs
+					int u = q.back();
+					assert(processed[u]<=g.nIncident(u));
+					if (processed[u]==g.nIncident(u)) {
 						q.pop_back();
 						if(u!=k)
 							path.pop_back();
 						seen[u]=false;
-						processed[u] = false;
+
 						continue;
-					} else {
-						processed[u] = true;
 					}
-				}
-
-				int fromEdge = -1;
-				if(u!=k){
-					fromEdge=path.back();
-					assert(g.getEdge(fromEdge).to==u);
-				}
 
 
-				assert(seen[u]);
-				assert(!undirected|| ever_seen[u]);
-				for (int i = 0; i < g.nIncident(u); i++) {
-					if (!g.edgeEnabled(g.incident(u, i).id))
-						continue;
-					int v = g.incident(u, i).node;
-					int id = g.incident(u, i).id;
+					assert(seen[u]);
 
-					if(directed){
+					for (;u == q.back() && processed[u] < g.nIncident(u); processed[u]++) {
+						int i = processed[u];
+
+						int id = g.incident(u, i).id;
+						if (!g.hasEdge(id) || !g.edgeEnabled(id)){
+							continue;
+						}
+						int v = g.incident(u, i).node;
 						if (!seen[v]) {
 							seen[v] = true;//for directed cycles
+							ever_seen[v]=true;
 							q.push_back(v);
 							path.push_back(id);
+							continue;
 						}else{
 							assert(!has_directed_cycle);
 							has_directed_cycle = true;
@@ -141,84 +135,76 @@ public:
 									directed_cycle.push_back(path[j - 1]);
 								}
 							}
-							if(!has_undirected_cycle){
+							if(undirected && !has_undirected_cycle){
 								//a directed cycle is also an undirected cycle.
 								has_undirected_cycle=true;
 								undirected_cycle= directed_cycle;
 							}
-							break;
-
+							return;
 						}
+
 					}
+				}
+			}
+		}
 
+		if(undirected && !has_undirected_cycle){
+			path.clear();
+			q.clear();
+			for (int i = 0; i < g.nodes(); i++) {
 
-					if(undirected){
-						if (!ever_seen[v]){//for undirected cycles
-							ever_seen[v] = true;//for directed cycles
-							undirected_prev[v] = id;
-						}else {
-							if (!has_undirected_cycle) {
-								//there is a cycle
-								undirected_cycle.clear();
-								undirected_cycle.push_back(id);
-								while(v != u){
-									int edgeID = undirected_prev[v];
-									int from = g.getEdge(edgeID).from;
-									if(from==v){
-										from =  g.getEdge(edgeID).to;
-									}
-									undirected_cycle.push_back(edgeID);
-									assert(from!=v);
-									u=v;
+				ever_seen[i]=false;
+				processed[i]=0;
+				undirected_prev[i]=-1;
+			}
+
+			for (int k = 0; k < g.nodes(); k++) { //to handle disconnected graph
+				if (ever_seen[k])
+					continue;
+				q.push_back(k);
+				ever_seen[k]=true;
+
+				while (q.size()) { //dfs
+					int u = q.back();
+					assert(processed[u]<=g.nIncident(u,true));
+					if (processed[u]==g.nIncident(u,true)) {
+						q.pop_back();
+						if(u!=k)
+							path.pop_back();
+						continue;
+					}
+					int fromEdge = -1;
+					if(u!=k){
+						fromEdge=path.back();
+						assert((g.getEdge(fromEdge).to==u) || g.getEdge(fromEdge).from==u);
+					}
+					assert(ever_seen[u]);
+
+					for (;u == q.back() && processed[u] < g.nIncident(u,true); processed[u]++) {
+						int i = processed[u];
+
+						int id = g.incident(u, i,true).id;
+						if (!g.hasEdge(id) || !g.edgeEnabled(id) || id==fromEdge){
+							continue;
+						}
+						int v = g.incident(u, i,true).node;
+						if (!ever_seen[v]) {
+							ever_seen[v]=true;
+							q.push_back(v);
+							path.push_back(id);
+							continue;
+						}else{
+							//a directed cycle is also an undirected cycle.
+							has_undirected_cycle=true;
+							assert(path.size() == q.size() - 1);
+							for (int j = 1; j < q.size(); j++) {
+								if (seen[j]) {
+									undirected_cycle.push_back(path[j - 1]);
 								}
 							}
-							has_undirected_cycle = true;
-							if(!directed){
-								break;
-							}
+							return;
 						}
 					}
-				}
-				if(undirected && !has_undirected_cycle){
-					//for undirected cycles, we are treating edges as undirected, so follow back edges here
-					for (int i = 0; i < g.nIncoming(u); i++) {
-						if (!g.edgeEnabled(g.incoming(u, i).id))
-							continue;
-						int v = g.incoming(u, i).node;
-						int id = g.incoming(u, i).id;
-						if(id==fromEdge)
-							continue;
-
-						if (!ever_seen[v]){//for undirected cycles
-							ever_seen[v] = true;//for directed cycles
-							undirected_prev[v] = id;
-						}else {
-							if (!has_undirected_cycle) {
-								//there is a cycle
-								undirected_cycle.clear();
-								undirected_cycle.push_back(id);
-								while(v != u){
-									int edgeID = undirected_prev[v];
-									int from = g.getEdge(edgeID).from;
-									if(from==v){
-										from =  g.getEdge(edgeID).to;
-									}
-									undirected_cycle.push_back(edgeID);
-									assert(from!=v);
-									u=v;
-								}
-							}
-							has_undirected_cycle = true;
-							break;
-						}
-					}
-				}
-
-				if(directed && has_directed_cycle){
-					return;
-				}
-				else if (!directed && has_undirected_cycle){
-					return;
 				}
 			}
 		}
@@ -226,7 +212,7 @@ public:
 
 public:
 
-	DFSCycle(DynamicGraph & graph, bool _directed = true, int _reportPolarity = 0) :
+	DFSCycle(DynamicGraph<Weight> & graph, bool _directed = true, int _reportPolarity = 0) :
 			g(graph),  last_modification(-1), last_addition(-1), last_deletion(-1), history_qhead(
 					0), last_history_clear(0), INF(0), reportPolarity(_reportPolarity) {
 
@@ -259,7 +245,7 @@ public:
 		last_deletion = g.deletions;
 		last_addition = g.additions;
 		
-		history_qhead = g.history.size();
+		history_qhead = g.historySize();
 		last_history_clear = g.historyclears;
 		;
 	}

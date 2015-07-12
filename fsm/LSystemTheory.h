@@ -70,7 +70,7 @@ public:
 	vec<vec<int>> * strings=nullptr;
 private:
 	Solver * S;
-	int local_q = 0;
+
 public:
 	int id;
 

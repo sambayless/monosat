@@ -21,7 +21,7 @@ namespace Monosat {
 
 
 class DynamicFSM{
-	DynamicGraph g;
+	DynamicGraph<bool> g;
 	//std::vector<Bitset> edge_status;
 	int id;
 	bool has_epsilon=true;
@@ -29,6 +29,8 @@ class DynamicFSM{
 	bool is_generator=true;
 	bool is_acceptor=true;
 	bool is_linear=true;
+	bool is_deterministic=false;
+	bool must_be_deterministic=false;
 public:
 	vec<Bitset> transitions;
 
@@ -69,7 +71,13 @@ public:
 	bool isLinear()const{
 		return is_linear;
 	}
-
+	//True if every state _must_ have exactly one outgoing transition in the final solution
+	bool mustBeDeterministic()const{
+		return must_be_deterministic;
+	}
+	bool isDeterministic()const{
+		return is_deterministic;
+	}
 	int getID(){
 		return id;
 	}
@@ -227,7 +235,7 @@ public:
 	inline int nDirectedEdges(int node, bool incoming) {
 		return g.nDirectedEdges(node,incoming);
 	}
-	inline DynamicGraph::Edge & directedEdges(int node, int i, bool is_incoming) {
+	inline DynamicGraph<bool>::Edge & directedEdges(int node, int i, bool is_incoming) {
 		return g.directedEdges(node,i,is_incoming);
 	}
 
@@ -235,14 +243,14 @@ public:
 		return g.nIncoming(node,undirected);
 	}
 
-	inline DynamicGraph::Edge & incident(int node, int i, bool undirected = false) {
+	inline DynamicGraph<bool>::Edge & incident(int node, int i, bool undirected = false) {
 		return g.incident(node,i,undirected);
 	}
-	inline DynamicGraph::Edge & incoming(int node, int i, bool undirected = false) {
+	inline DynamicGraph<bool>::Edge & incoming(int node, int i, bool undirected = false) {
 		return g.incoming(node,i,undirected);
 	}
 
-	DynamicGraph::FullEdge getEdge(int id) const {
+	DynamicGraph<bool>::FullEdge getEdge(int id)  {
 		return g.getEdge(id);
 	}
 
@@ -314,13 +322,13 @@ public:
 								if(in==0){
 									printf("{},");
 								}else{
-									printf("%c:,",'a'+in-1);
+									printf("%d:,",in);
 								}
 							}else{
 								if(in==0){
-									printf(":%c,",'a'+out-1);
+									printf(":%d,",out);
 								}else{
-									printf("%c:%c,",'a'+in-1,'a'+out-1);
+									printf("%d:%d,",in,out);
 								}
 							}
 

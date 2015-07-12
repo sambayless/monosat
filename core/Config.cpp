@@ -30,6 +30,8 @@ int dbg_total_iterations = 0;
 static const char* _cat = "CORE";
 static const char* _cat_sms = "SMS";
 static const char* _cat_graph = "GRAPH";
+static const char* _cat_bv = "BV";
+static const char* _cat_amo = "AMO";
 static const char* _cat_geom = "GEOMETRY";
 static const char* _cat_fsm = "FSM";
 
@@ -55,9 +57,14 @@ DoubleOption Monosat::opt_restart_inc(_cat, "rinc", "Restart interval increase f
 DoubleOption Monosat::opt_garbage_frac(_cat, "gc-frac",
 		"The fraction of wasted memory allowed before a garbage collection is triggered", 0.20,
 		DoubleRange(0, false, HUGE_VAL, false));
-
+BoolOption Monosat::opt_pre("MAIN", "pre", "Completely turn on/off any preprocessing.", true);
 IntOption Monosat::opt_time(_cat, "verb-time", "Detail level of timing benchmarks (these add some overhead)", 0,
 		IntRange(0, 5));
+
+
+IntOption Monosat::opt_theory_conflict_max(_cat, "theory-conflict-limit",
+		"The maximum number of consecutive times the theory solver's can conflict before theory decisions are temporarily disabled (0 to all infinite theory conflicts)", 0,
+		IntRange(0,INT32_MAX));
 
 DoubleOption Monosat::opt_random_theory_freq(_cat, "rnd-theory-freq",
 		"The frequency with which the decision theory solvers are selected to make decisions", 1,
@@ -65,6 +72,8 @@ DoubleOption Monosat::opt_random_theory_freq(_cat, "rnd-theory-freq",
 BoolOption Monosat::opt_early_theory_prop(_cat, "early-theory-prop",
 		"If false, the solver waits until all literals are propagated before propagating theories; if true, theories are propagated while the solver is still propagating literals",
 		false);
+
+BoolOption Monosat::opt_amo_eager_prop(_cat_amo,"amo-eager-prop","Propagate a-m-o literals as soon as they are implied, instead of waiting for theory propagation",true);
 
 BoolOption Monosat::opt_interpolate(_cat_sms, "interpolate",
 		"Store learnt interface clauses to form interpolants between modules", false);
@@ -122,6 +131,18 @@ IntOption Monosat::opt_history_clear(_cat_graph, "history-clear",
 IntOption Monosat::opt_adaptive_history_clear(_cat_graph, "adaptive-history-clear",
 		"If >0, ignore the history clear option, and instead set the history clear rate to be this value multiplied by the number of edges in the graph",
 		0, IntRange(0, INT32_MAX));
+BoolOption Monosat::disable_history_clears(_cat_graph,"disable-history-clear","",false);
+IntOption Monosat::opt_dynamic_history_clear(_cat_graph, "dynamic-history-clear", "0=dont use dynamic history clears,1=use opportunistic dynamic history clears (falling back on normal history clears if that fails), 2=force dynamic history clears",0, IntRange(0, 2));
+
+BoolOption Monosat::opt_lazy_backtrack(_cat_graph, "lazy-backtrack", "", false);
+BoolOption Monosat::opt_lazy_backtrack_decisions(_cat_graph, "lazy-backtrack-decisions", "", false);
+IntOption Monosat::opt_lazy_conflicts(_cat_graph, "lazy-conflicts", "0= unassign all lazy lits and reprop, 1=unassign all lazy lits in the clause, reprop, 2=unassign one lit, reprop, 3=skip lazy conflict analysis",0,IntRange(0,3));
+BoolOption Monosat::opt_keep_lazy_conflicts(_cat_graph, "keep-lazy-conflicts", "Keep clauses from lazy conflicts (only relevant if lazy-backtracking is enabled)",true);
+BoolOption Monosat::opt_lazy_backtrack_redecide(_cat_graph, "lazy-backtrack-redecide", "",false);
+BoolOption Monosat::opt_theory_vsids(_cat_graph, "theory-vsids", "Use vsids decision heuristic within theory solvers",false);
+BoolOption Monosat::opt_theory_prioritize_conflicts(_cat_graph, "theory-prioritize-conflicts", "",false);
+BoolOption Monosat::opt_theory_priority_clear(_cat_graph, "theory-prioritize-clear", "",false);
+
 BoolOption Monosat::opt_check_solution(_cat_graph, "check-solution", "Double check solution", true);
 BoolOption Monosat::opt_print_reach(_cat_graph, "print-reach", "Print reachability graphs", false);
 BoolOption Monosat::opt_print_graph(_cat_graph, "print-graph", "Print digraph", false);
@@ -153,7 +174,11 @@ BoolOption Monosat::opt_reach_prop(_cat_graph, "prop-reach", "", false);
 
 BoolOption Monosat::opt_decide_theories(_cat_graph, "decide-theories", "", false);
 BoolOption Monosat::opt_decide_graph_distance(_cat_graph, "decide-graph-dist", "", false);
-
+BoolOption Monosat::opt_decide_graph_bv(_cat_graph,"decide-graph-bv","",false);
+BoolOption Monosat::opt_cmp_lits_decidable(_cat_graph,"decide-cmp-lits","Controls whether or not comparison lits introduced by the bv solver (but not in the original formula) can be chosen as decisions by the SAT solver",false);
+BoolOption Monosat::opt_decide_bv_intrinsic(_cat_graph,"decide-bv-intrinsic","",false);
+BoolOption Monosat::opt_decide_bv_bitwise(_cat_graph,"decide-bv-bitwise","",false);
+BoolOption Monosat::opt_decide_theories_reverse(_cat_graph,"decide-theories-reverse","Decide theories in reverse order, if theory decisions are enabled",false);
 BoolOption Monosat::opt_use_random_path_for_decisions(_cat_graph, "decide-graph-rnd", "", false);
 BoolOption Monosat::opt_use_optimal_path_for_decisions(_cat_graph, "decide-graph-opt",
 		"When selecting a path during decisions, find the shortest path, excluding the weight of already assigned edges.",
@@ -214,10 +239,14 @@ BoolOption Monosat::opt_kt_preserve_order(_cat_graph, "kt-preserve-order",
 		"Attempt to preserve the order of flow assigned by the kohli-torr maxflow algorithm", false);
 
 BoolOption Monosat::opt_lazy_maxflow_decisions(_cat_graph, "lazy-maxflow-decisions", "", true);
+BoolOption Monosat::opt_maxflow_allow_cycles(_cat_graph, "allow-maxflow-cycles", "Allow (superfluous) cycles in the maxflow solution", false);
 
 BoolOption Monosat::opt_old_lazy_maxflow_decisions(_cat_graph, "old-lazy-maxflow-decisions", "", false);
 IntOption Monosat::opt_maxflow_decisions_q(_cat_graph, "maxflow-decisions-q",
 		"Use a FIFO (instead of LIFO) decision order in the maxflow theory", 1, IntRange(0, 4));
+IntOption Monosat::opt_maxflow_decision_paths(_cat_graph, "maxflow-decision-paths",
+		"Make maxflow decisions path by path (0 = never, 1 = forward, 2= backward)",0, IntRange(0,3));
+
 BoolOption Monosat::opt_reach_detector_combined_maxflow(_cat_graph, "reach-combined-maxflow", "", true);
 IntOption Monosat::opt_adaptive_conflict_mincut(_cat_graph, "adaptive-conflict-mincut",
 		"First try applying conflict detection without mincut analysis (which is faster), then try again with mincut analysis if the learnt clause is >= this length (0 to disable, 1 to always use mincut analysis)",
@@ -225,8 +254,6 @@ IntOption Monosat::opt_adaptive_conflict_mincut(_cat_graph, "adaptive-conflict-m
 
 BoolOption Monosat::opt_shortest_path_prune_dist(_cat_graph, "shortest-paths-prune-dist",
 		"Prune edges based on distances from learnt clauses for the shortest paths theory", false);
-BoolOption Monosat::opt_conflict_min_cut_shortest_paths(_cat_graph, "conflict-min-cut-shortest-path",
-		"When a node is unreachable in a shortest path constraint, find the minimum separating cut", false);
 
 ConvexHullAlg Monosat::hullAlg = ConvexHullAlg::ALG_MONOTONE_HULL;
 
@@ -242,10 +269,23 @@ BoolOption Monosat::opt_components_learn_connect(_cat_graph, "components-learn-c
 BoolOption Monosat::opt_dinics_recursive(_cat_graph, "dinitz-recursive",
 		"Use the recursive (default: iterative) Dinic's Maximum-flow implementation", false);
 
+IntOption  Monosat::opt_graph_prop_skip(_cat_graph, "graph-theory-skip",
+		"Only process every nth graph theory propagation ('1' skips no propagations)",1, IntRange(1,INT32_MAX));
+
+IntOption  Monosat::opt_bv_prop_skip(_cat_bv, "bv-theory-skip",
+		"Only process every nth bv theory propagation ('1' skips no propagations)",1, IntRange(1,INT32_MAX));
+
+
+
 BoolOption Monosat::opt_fsm_negate_underapprox(_cat_fsm, "fsm-negate-under",
 		"", true);
 BoolOption Monosat::opt_fsm_edge_prop(_cat_fsm, "fsm-edge-prop",
 		"", true);
+BoolOption Monosat::opt_fsm_as_graph(_cat_fsm, "fsm-as-graph",
+		"", true);
+BoolOption Monosat::opt_learn_acyclic_flows(_cat_graph, "learn-acyclic-flows",
+		"", false);
+
 
 IntOption Monosat::opt_width("GRAPH", "width", "Width of graph.\n", 0, IntRange(0, INT32_MAX));
 IntOption Monosat::opt_height("GRAPH", "height", "Height of graph.\n", 0, IntRange(0, INT32_MAX));

@@ -75,7 +75,7 @@ public:
 	vec<vec<int>> * strings=nullptr;
 private:
 	Solver * S;
-	int local_q = 0;
+
 public:
 	int id;
 
@@ -175,7 +175,9 @@ public:
 			delete(f);
 		}
 	}
-	
+	Solver * getSolver(){
+		return S;
+	}
 	void printStats(int detailLevel) {
 		if (detailLevel > 0) {
 			for (FSMDetector * d : detectors)

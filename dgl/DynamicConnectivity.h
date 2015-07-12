@@ -33,11 +33,11 @@
 #include "ThorupDynamicConnectivity.h"
 
 namespace dgl {
-template<class Status>
+template<typename Weight, class Status>
 class DynamicConnectivity: public Reach, public AllPairs, public ConnectedComponents {
 public:
 	
-	DynamicGraph & g;
+	DynamicGraph<Weight> & g;
 	Status & status;
 	int last_modification;
 	int last_addition;
@@ -87,7 +87,7 @@ public:
 	double stats_full_update_time=0;
 	double stats_fast_update_time=0;
 
-	DynamicConnectivity(DynamicGraph & graph, Status & status, int _reportPolarity = 0) :
+	DynamicConnectivity(DynamicGraph<Weight> & graph, Status & status, int _reportPolarity = 0) :
 			g(graph), status(status), last_modification(-1), last_addition(-1), last_deletion(-1), history_qhead(0), last_history_clear(
 					0), INF(0), reportPolarity(_reportPolarity) {
 		default_source = -1;
@@ -348,9 +348,9 @@ public:
 			
 		} else {
 			//incremental/decremental update
-			for (; history_qhead < g.history.size(); history_qhead++) {
-				int edgeid = g.history[history_qhead].id;
-				bool add = g.history[history_qhead].addition;
+			for (; history_qhead < g.historySize(); history_qhead++) {
+				int edgeid = g.getChange(history_qhead).id;
+				bool add = g.getChange(history_qhead).addition;
 				int u = g.all_edges[edgeid].from;
 				int v = g.all_edges[edgeid].to;
 				updateEdge(u, v, edgeid, add);
@@ -440,7 +440,7 @@ public:
 		last_deletion = g.deletions;
 		last_addition = g.additions;
 		
-		history_qhead = g.history.size();
+		history_qhead = g.historySize();
 		last_history_clear = g.historyclears;
 		
 		//stats_full_update_time+=cpuTime()-startdupdatetime;;

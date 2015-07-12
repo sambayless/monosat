@@ -58,8 +58,9 @@ class NFALinearGeneratorAcceptor{
 	vec<int> gen_next;
 	vec<bool> gen_next_seen;
 	vec<bool> gen_cur_seen;
-	int accept_source;
 	int gen_source;
+	int accept_source;
+
 	vec<Bitset> suffixTable;
 	vec<int> chars;
 	vec<bool> seen_chars;
@@ -109,7 +110,7 @@ public:
 
 private:
 
-	bool stepGeneratorBackward(int final, vec<int> & store, vec<bool> & store_seen, vec<NFATransition> * path=nullptr){
+	bool stepGeneratorBackward(int final, vec<int> & store, vec<bool> & store_seen, int & cur_gen_state, vec<NFATransition> * path=nullptr){
 			DynamicFSM & g = gen;
 
 
@@ -237,7 +238,7 @@ private:
 		}
 		return false;
 	}
-
+public:
 	bool buildSuffixTable(int gen_final,int accept_final,vec<Bitset> & suffixTable, bool accepting_state_is_attractor, bool invertAcceptance){
 		//run the nfa backwards from the end of the generator, and collect the set of reachable fsa states at each step in the (linear) generator.
 
@@ -278,7 +279,7 @@ private:
 		gen_cur.push(gen_final);
 		chars.clear();
 		DynamicFSM & g = accept;
-		bool any_non_acceptors=!cur_seen[accept_final];
+		bool any_non_acceptors=!cur_seen[accept_final];//should this be 'accept_source'?
 		bool any_non_acceptors_next=false;
 		//initial emove pass:
 		if(g.emovesEnabled()){
@@ -322,7 +323,8 @@ private:
 
 		//use the linear generator to produce a (set) of strings. Because the generator is linear, it is only ever in one state, which greatly simplifies the reasoning here...
 		while(!accepted){
-			bool accepting = stepGeneratorBackward(gen_final, chars,seen_chars);//get set of next strings
+			int ignore;
+			bool accepting = stepGeneratorBackward(gen_final, chars,seen_chars,ignore);//get set of next strings
 			if(accepting_state_is_attractor){
 				accepting =true;
 			}
@@ -413,7 +415,183 @@ private:
 		return accepted;
 
 	}
+	bool buildPrefixTable(int gen_final,int accept_final,vec<Bitset> & suffixTable, bool accepting_state_is_attractor, bool invertAcceptance){
+			//run the nfa backwards from the end of the generator, and collect the set of reachable fsa states at each step in the (linear) generator.
 
+			suffixTable.growTo(gen.states());
+			for(int i = 0;i<suffixTable.size();i++){
+				suffixTable[i].clear();
+				suffixTable[i].growTo(accept.states());
+			}
+
+			for(int s:cur){
+				assert(cur_seen);
+				cur_seen[s]=false;
+			}
+			cur.clear();
+			assert(next.size()==0);
+			int gen_pos = gen.states()-1;
+			if(!invertAcceptance){
+				cur_seen[accept_source]=true;
+				cur.push(accept_source);
+				suffixTable[gen_pos].set(accept_source);
+			}else{
+				for(int i = 0;i<accept.states();i++){
+					if(i!=accept_source){
+						cur_seen[i]=true;
+						cur.push(i);
+						suffixTable[gen_pos].set(i);
+					}
+				}
+			}
+
+			for(int s:gen_cur){
+				assert(gen_cur_seen);
+				gen_cur_seen[s]=false;
+			}
+			gen_cur.clear();
+			assert(next.size()==0);
+			gen_cur_seen[gen_source]=true;
+			gen_cur.push(gen_source);
+			chars.clear();
+			DynamicFSM & g = accept;
+			bool any_non_acceptors=!cur_seen[accept_final];//check this!
+			bool any_non_acceptors_next=false;
+			//initial emove pass:
+			if(g.emovesEnabled()){
+				for(int i = 0;i<cur.size();i++){
+					int s = cur[i];
+					for(int j = 0;j<g.nIncident(s);j++){
+						//now check if the label is active
+						int edgeID= g.incident(s,j).id;
+						int to = g.incident(s,j).node;
+						if(!cur_seen[to] && g.transitionEnabled(edgeID,0,0)){
+							cur_seen[to]=true;
+							suffixTable[gen_pos].set(to);
+							cur.push(to);
+							if(to!=accept_final)
+								any_non_acceptors=true;
+						}
+
+					}
+				}
+			}
+			//initial emove pass:
+			if(gen.emovesEnabled()){
+				for(int i = 0;i<gen_cur.size();i++){
+					int s = gen_cur[i];
+					for(int j = 0;j<gen.nIncident(s);j++){
+						//now check if the label is active
+						int edgeID= gen.incident(s,j).id;
+						int to = gen.incident(s,j).node;
+						if(!gen_cur_seen[to] && gen.transitionEnabled(edgeID,0,0)){
+							gen_cur_seen[to]=true;
+							gen_cur.push(to);
+
+						}
+					}
+				}
+			}
+
+			bool prev_accepting=accepting_state_is_attractor ? true:gen_cur_seen[gen_source];
+			bool accepted=false;
+
+
+			//use the linear generator to produce a (set) of strings. Because the generator is linear, it is only ever in one state, which greatly simplifies the reasoning here...
+			while(!accepted){
+				int ignore;
+				bool accepting = stepGenerator(gen_final, chars,seen_chars,ignore);//get set of next strings
+				if(accepting_state_is_attractor){
+					accepting =true;
+				}
+				if(chars.size()==0){
+					for(int i = 0;i<cur.size();i++){
+						int s = cur[i];
+						for(int j = 0;j<g.nIncident(s);j++){
+							//now check if the label is active
+							int edgeID= g.incident(s,j).id;
+							int to = g.incident(s,j).node;
+							if(!cur_seen[to] && g.transitionEnabled(edgeID,0,0)){
+								cur_seen[to]=true;
+								cur.push(to);
+								suffixTable[gen_pos].set(to);
+								if(to!=accept_final)
+									any_non_acceptors=true;
+
+							}
+						}
+					}
+				}else{
+					for(int l:chars)
+					{
+						assert(l>0);
+						for(int i = 0;i<cur.size();i++){
+							int s = cur[i];
+							for(int j = 0;j<g.nIncident(s);j++){
+								//now check if the label is active
+								int edgeID= g.incident(s,j).id;
+								int to = g.incident(s,j).node;
+								if(!cur_seen[to] && g.transitionEnabled(edgeID,0,0)){
+									cur_seen[to]=true;
+									cur.push(to);
+									suffixTable[gen_pos].set(to);
+									if(to!=accept_final)
+										any_non_acceptors=true;
+									//status.reaches(str,to,edgeID,0);
+								}
+
+								if (!next_seen[to] && g.transitionEnabled(edgeID,l,0)){
+									if(gen_pos>0){
+										suffixTable[gen_pos-1].set(to);
+									}
+									//status.reaches(str,to,edgeID,l);
+									next_seen[to]=true;
+									next.push(to);
+									if(to!=accept_final)
+										any_non_acceptors_next=true;
+								}
+							}
+						}
+					}
+				}
+				if(prev_accepting && cur_seen[accept_source]){
+						accepted=true;
+					}
+				/*if(!invertAcceptance){
+
+				}else{
+					if(prev_accepting && any_non_acceptors){
+						accepted=true;
+					}
+				}*/
+				next.swap(cur);
+				next_seen.swap(cur_seen);
+
+				for(int s:next){
+					assert(next_seen[s]);
+					next_seen[s]=false;
+				}
+				next.clear();
+				if(chars.size()==0){
+					//must eventually happen because the generator is linear.
+					break;
+				}
+
+				for(int l :chars){
+					assert(seen_chars[l]);
+					seen_chars[l]=false;
+				}
+				chars.clear();
+				prev_accepting = accepting;
+				any_non_acceptors= any_non_acceptors_next;
+				any_non_acceptors_next=false;
+				gen_pos++;
+			}
+
+			return accepted;
+
+		}
+private:
 	bool find_accepts(int gen_final, int accept_final, bool invertAcceptance, vec<ForcedTransition> * forced_edges=nullptr){
 		bool accepting_state_is_attractor= !invertAcceptance && isAttractor(accept_final) ;
 		bool hasSuffix = false;

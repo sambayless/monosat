@@ -43,9 +43,9 @@ class SteinerDetector: public Detector {
 public:
 	GraphTheorySolver<Weight> * outer;
 
-	DynamicGraph & g_under;
-	DynamicGraph & g_over;
-	std::vector<Weight>& weights;
+	DynamicGraph<Weight> & g_under;
+	DynamicGraph<Weight> & g_over;
+
 	DynamicNodes underTerminalSet;
 	DynamicNodes overTerminalSet;
 	double rnd_seed;
@@ -109,12 +109,12 @@ public:
 
 	void buildReason(Lit p, vec<Lit> & reason, CRef marker);
 	bool checkSatisfied();
-	Lit decide(int level);
+	Lit decide();
 
 	void addWeightLit(Weight &min_weight, Var weight_var);
 	void addTerminalNode(int node, Var theoryVar);
-	SteinerDetector(int _detectorID, GraphTheorySolver<Weight> * _outer, std::vector<Weight>& weights, DynamicGraph &_g,
-			DynamicGraph &_antig, double seed = 1); //:Detector(_detectorID),outer(_outer),within(-1),source(_source),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL){}
+	SteinerDetector(int _detectorID, GraphTheorySolver<Weight> * _outer,DynamicGraph<Weight> &_g,
+			DynamicGraph<Weight>  &_antig, double seed = 1); //:Detector(_detectorID),outer(_outer),within(-1),source(_source),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL){}
 			
 	virtual void assign(Lit l) {
 		Detector::assign(l);

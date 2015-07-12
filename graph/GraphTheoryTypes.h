@@ -27,41 +27,20 @@
 
 namespace Monosat {
 
-struct ReachabilityConstraint {
-	int from;
-	int to;
-	int distance;
-	Var reach_var;
-};
 
-struct Assignment {
-	bool isEdge :1;
-	bool assign :1;
-	int from :30;
-	int to;
-	Var var;
-	Assignment(bool _isEdge, bool _assign, int _from, int _to, Var v) :
-			isEdge(_isEdge), assign(_assign), from(_from), to(_to), var(v) {
-		
-	}
-	Assignment() :
-			isEdge(false), assign(false), from(0), to(0), var(var_Undef) {
-		
-	}
-};
 struct Edge {
 	Var v;
 	Var outerVar;
 	int from;
 	int to;
 	int edgeID;
-
-	Edge(Var v, Var outerVar, int from, int to, int edgeID) :
-			v(v), outerVar(outerVar), from(from), to(to), edgeID(edgeID) { //,weight(weight){
+	int bvID;
+	Edge(Var v, Var outerVar, int from, int to, int edgeID, int bvID=-1) :
+			v(v), outerVar(outerVar), from(from), to(to), edgeID(edgeID),bvID(bvID) { //,weight(weight){
 	
 	}
 	Edge() :
-			v(var_Undef), outerVar(var_Undef), from(-1), to(-1), edgeID(-1) { //,weight(0){
+			v(var_Undef), outerVar(var_Undef), from(-1), to(-1), edgeID(-1),bvID(-1) { //,weight(0){
 	
 	}
 };

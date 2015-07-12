@@ -27,14 +27,14 @@
 #include "DynamicGraph.h"
 #include "core/Config.h"
 #include "Reach.h"
-
+#include "Distance.h"
 namespace dgl {
 
-template<class Status = Reach::NullStatus, bool undirected = false>
+template<typename Weight, class Status = Reach::NullStatus, bool undirected = false>
 class BFSReachability: public Reach {
 public:
 	
-	DynamicGraph & g;
+	DynamicGraph<Weight> & g;
 	Status & status;
 	int last_modification;
 	int last_addition;
@@ -74,7 +74,7 @@ public:
 	double stats_full_update_time;
 	double stats_fast_update_time;
 
-	BFSReachability(int s, DynamicGraph & graph, Status & _status = Reach::nullStatus, int _reportPolarity = 0) :
+	BFSReachability(int s, DynamicGraph<Weight> & graph, Status & _status = Reach::nullStatus, int _reportPolarity = 0) :
 			g(graph), status(_status), last_modification(-1), last_addition(-1), last_deletion(-1), history_qhead(0), last_history_clear(
 					0), source(s), INF(0), reportPolarity(_reportPolarity) {
 		
@@ -308,11 +308,11 @@ public:
 		//old_seen.resize(g.nodes());
 		q.clear();
 		
-		for (int i = history_qhead; i < g.history.size(); i++) {
-			int edgeid = g.history[i].id;
-			int from = g.all_edges[edgeid].from;
-			int to = g.all_edges[edgeid].to;
-			if (g.history[i].addition) {
+		for (int i = history_qhead; i < g.historySize(); i++) {
+			int edgeid = g.getChange(i).id;
+			int from = g.getEdge(edgeid).from;
+			int to = g.getEdge(edgeid).to;
+			if (g.getChange(i).addition) {
 				//incrementally add edge
 				
 				if (seen[from] && !seen[to]) {
@@ -346,7 +346,7 @@ public:
 		}
 		
 		stats_fast_updates++;
-		history_qhead = g.history.size();
+
 		
 		assert(dbg_uptodate());
 		
@@ -354,7 +354,7 @@ public:
 		last_deletion = g.deletions;
 		last_addition = g.additions;
 		
-		history_qhead = g.history.size();
+		history_qhead = g.historySize();
 		last_history_clear = g.historyclears;
 		
 		return true;
@@ -372,12 +372,12 @@ public:
 		//old_seen.resize(g.nodes());
 		q.clear();
 		
-		for (int i = history_qhead; i < g.history.size(); i++) {
-			int edgeid = g.history[i].id;
-			int from = g.all_edges[edgeid].from;
-			int to = g.all_edges[edgeid].to;
+		for (int i = history_qhead; i < g.historySize(); i++) {
+			int edgeid = g.getChange(i).id;
+			int from = g.getEdge(edgeid).from;
+			int to = g.getEdge(edgeid).to;
 			
-			if (g.history[i].addition && g.edgeEnabled(g.history[i].id)) {
+			if (g.getChange(i).addition && g.edgeEnabled(g.getChange(i).id)) {
 				//incrementally add edge
 				
 				if (seen[from] && !seen[to]) {
@@ -391,7 +391,7 @@ public:
 						add_update(from, true);
 					}
 				}
-			} else if (!g.history[i].addition && !g.edgeEnabled(g.history[i].id)) {
+			} else if (!g.getChange(i).addition && !g.edgeEnabled(g.getChange(i).id)) {
 				
 				if (!undirected
 						&& (to == source || !seen[from] || (seen[to] && seen[previous(to)] && previous(to) != from))) {
@@ -414,7 +414,7 @@ public:
 		}
 		
 		stats_fast_updates++;
-		history_qhead = g.history.size();
+
 		
 		assert(dbg_uptodate());
 		
@@ -422,7 +422,7 @@ public:
 		last_deletion = g.deletions;
 		last_addition = g.additions;
 		
-		history_qhead = g.history.size();
+		history_qhead = g.historySize();
 		last_history_clear = g.historyclears;
 		
 		return true;
@@ -461,7 +461,7 @@ public:
 		if (g.historyclears != last_history_clear) {
 			last_history_clear = g.historyclears;
 			history_qhead = 0;
-		} else if (opt_inc_graph && last_modification > 0 && (g.historyclears <= (last_history_clear + 1))) {// && (g.history.size()-history_qhead < g.edges()*mod_percentage)){
+		} else if (opt_inc_graph && last_modification > 0 && (g.historyclears <= (last_history_clear + 1))) {// && (g.historySize()-history_qhead < g.edges()*mod_percentage)){
 			if (opt_dec_graph == 2) {
 				if (incrementalUpdate())
 					return;
@@ -470,11 +470,11 @@ public:
 					
 					//scan through the deletions and check if any of them matter..
 					bool safe = true;
-					for (int i = history_qhead; i < g.history.size(); i++) {
-						int edgeid = g.history[i].id;
-						int from = g.all_edges[edgeid].from;
-						int to = g.all_edges[edgeid].to;
-						if (g.history[i].addition) {
+					for (int i = history_qhead; i < g.historySize(); i++) {
+						int edgeid = g.getChange(i).id;
+						int from = g.getEdge(edgeid).from;
+						int to = g.getEdge(edgeid).to;
+						if (g.getChange(i).addition) {
 							//safe
 						} else if (!undirected
 								&& (!seen[from] || (seen[to] && seen[previous(to)] && previous(to) != from))) {
@@ -546,7 +546,7 @@ public:
 		last_deletion = g.deletions;
 		last_addition = g.additions;
 		
-		history_qhead = g.history.size();
+		history_qhead = g.historySize();
 		last_history_clear = g.historyclears;
 		
 		;
@@ -601,6 +601,7 @@ public:
 		printf("}\n");
 	}
 	bool dbg_uptodate() {
+/*
 #ifdef DEBUG_DIJKSTRA
 		if(last_modification<=0)
 		return true;
@@ -624,6 +625,7 @@ public:
 			}
 		}
 #endif
+*/
 		return true;
 	}
 	
@@ -662,22 +664,24 @@ public:
 	int previous(int t) {
 		if (prev[t] < 0)
 			return -1;
-		if (undirected && g.all_edges[incomingEdge(t)].from == t) {
-			return g.all_edges[incomingEdge(t)].to;
+		if (undirected && g.getEdge(incomingEdge(t)).from == t) {
+			return g.getEdge(incomingEdge(t)).to;
 		}
-		assert(g.all_edges[incomingEdge(t)].to == t);
-		return g.all_edges[incomingEdge(t)].from;
+		assert(g.getEdge(incomingEdge(t)).to == t);
+		return g.getEdge(incomingEdge(t)).from;
 	}
 };
 
 /**
  * Detect connectivity within a number of steps in unweighted, directed graphs
  */
-template<class Status = Reach::NullStatus, bool undirected = false>
+template<typename Weight,class Status = Distance<int>::NullStatus, bool undirected = false>
 class UnweightedBFS: public Distance<int> {
+	using Distance<int>::inf;
+	using Distance<int>::unreachable;
 public:
 	
-	DynamicGraph & g;
+	DynamicGraph<Weight> & g;
 	Status & status;
 	int last_modification;
 	int last_addition;
@@ -687,7 +691,7 @@ public:
 	int last_history_clear;
 
 	int source;
-	int INF;
+
 	int maxDistance;
 
 	std::vector<int> q;
@@ -715,9 +719,9 @@ public:
 
 public:
 	
-	UnweightedBFS(int s, DynamicGraph & graph, int _reportPolarity = 0) :
-			g(graph), status(Reach::nullStatus), last_modification(-1), last_addition(-1), last_deletion(-1), history_qhead(
-					0), last_history_clear(0), source(s), INF(0), reportPolarity(_reportPolarity) {
+	UnweightedBFS(int s, DynamicGraph<Weight> & graph, int _reportPolarity = 0) :
+			g(graph), status(Distance<int>::nullStatus), last_modification(-1), last_addition(-1), last_deletion(-1), history_qhead(
+					0), last_history_clear(0), source(s), reportPolarity(_reportPolarity) {
 		maxDistance = -1;
 		mod_percentage = 0.2;
 		stats_full_updates = 0;
@@ -730,9 +734,9 @@ public:
 		stats_fast_failed_updates = 0;
 	}
 	
-	UnweightedBFS(int s, DynamicGraph & graph, Status & _status, int _reportPolarity = 0) :
+	UnweightedBFS(int s, DynamicGraph<Weight> & graph, Status & _status, int _reportPolarity = 0) :
 			g(graph), status(_status), last_modification(-1), last_addition(-1), last_deletion(-1), history_qhead(0), last_history_clear(
-					0), source(s), INF(0), reportPolarity(_reportPolarity) {
+					0), source(s),  reportPolarity(_reportPolarity) {
 		maxDistance = -1;
 		mod_percentage = 0.2;
 		stats_full_updates = 0;
@@ -745,9 +749,9 @@ public:
 		stats_fast_failed_updates = 0;
 	}
 	//Connectivity(const Connectivity& d):g(d.g), last_modification(-1),last_addition(-1),last_deletion(-1),history_qhead(0),last_history_clear(0),source(d.source),INF(0),mod_percentage(0.2),stats_full_updates(0),stats_fast_updates(0),stats_skip_deletes(0),stats_skipped_updates(0),stats_full_update_time(0),stats_fast_update_time(0){marked=false;};
-	void setMaxDistance(int _maxDistance) {
+	void setMaxDistance(int & _maxDistance) {
 		if (_maxDistance < 0) {
-			maxDistance = INF;
+			maxDistance = inf();
 		} else
 			maxDistance = _maxDistance;
 	}
@@ -766,9 +770,8 @@ public:
 		q.reserve(n);
 		dist.resize(n);
 		prev.resize(n);
-		INF = g.nodes() + 1;
 		if (maxDistance < 0)
-			maxDistance = INF;
+			maxDistance =  inf();
 	}
 	long num_updates = 0;
 	int numUpdates() const {
@@ -798,7 +801,7 @@ public:
 		
 		q.clear();
 		for (int i = 0; i < g.nodes(); i++) {
-			dist[i] = INF;
+			dist[i] =  inf();
 			prev[i] = -1;
 		}
 		
@@ -806,7 +809,7 @@ public:
 		q.push_back(source);
 		for (int i = 0; i < q.size(); i++) {
 			int u = q[i];
-			assert(dist[u] < INF);
+			assert(dist[u] <  inf());
 			if (reportPolarity >= 0)
 				status.setMininumDistance(u, true, dist[u]);
 			int d = dist[u];
@@ -818,7 +821,7 @@ public:
 				int dv = dist[v];
 				int alt = d + 1;
 				if (alt > maxDistance)
-					alt = INF;			//Abort BFS early
+					alt =  inf();			//Abort BFS early
 				if (dist[v] > alt) {
 					dist[v] = alt;
 					prev[v] = edgeID;
@@ -829,8 +832,8 @@ public:
 		
 		if (reportPolarity <= 0) {
 			for (int u = 0; u < g.nodes(); u++) {
-				if (dist[u] >= INF) {
-					status.setMininumDistance(u, dist[u] < INF, dist[u]);
+				if (dist[u] >=  inf()) {
+					status.setMininumDistance(u, dist[u] <  inf(), dist[u]);
 				}
 			}
 		}
@@ -840,7 +843,7 @@ public:
 		last_deletion = g.deletions;
 		last_addition = g.additions;
 		
-		history_qhead = g.history.size();
+		history_qhead = g.historySize();
 		last_history_clear = g.historyclears;
 		
 		;
@@ -870,7 +873,7 @@ public:
 		printf("digraph{\n");
 		for (int i = 0; i < g.nodes(); i++) {
 			
-			if (dist[i] < INF) {
+			if (dist[i] <  inf()) {
 				printf("n%d [label=\"n%d %d \" fillcolor=blue style=filled]\n", i, i, dist[i]);
 			} else {
 				printf("n%d \n", i);
@@ -906,7 +909,7 @@ public:
 			int distance = dist[i];
 			int dbgdist = d.dist[i];
 			if(dbgdist>maxDistance)
-			dbgdist=INF;
+			dbgdist= inf();
 			assert(distance==dbgdist);
 		}
 #endif
@@ -914,7 +917,7 @@ public:
 	}
 	
 	bool connected_unsafe(int t) {
-		return t < dist.size() && dist[t] < INF;
+		return t < dist.size() && dist[t] <  inf();
 	}
 	bool connected_unchecked(int t) {
 		assert(last_modification == g.modifications);
@@ -926,21 +929,21 @@ public:
 		
 		assert(dbg_uptodate());
 		
-		return dist[t] < INF;
+		return dist[t] <  inf();
 	}
 	
 	int & distance(int t) {
 		if (connected(t)) {
 			return dist[t];
 		} else {
-			return INF;
+			return  inf();
 		}
 	}
 	int & distance_unsafe(int t) {
 		if (connected_unsafe(t))
 			return dist[t];
 		else
-			return INF;
+			return  inf();
 	}
 	int incomingEdge(int t) {
 		
@@ -952,11 +955,11 @@ public:
 		
 		if (incomingEdge(t) < 0)
 			return -1;
-		if (undirected && g.all_edges[incomingEdge(t)].from == t) {
-			return g.all_edges[incomingEdge(t)].to;
+		if (undirected && g.getEdge(incomingEdge(t)).from == t) {
+			return g.getEdge(incomingEdge(t)).to;
 		}
-		assert(g.all_edges[incomingEdge(t)].to == t);
-		return g.all_edges[incomingEdge(t)].from;
+		assert(g.getEdge(incomingEdge(t)).to == t);
+		return g.getEdge(incomingEdge(t)).from;
 	}
 	
 };

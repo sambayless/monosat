@@ -14,7 +14,7 @@
 
  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT
  NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+ NONinf()RINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
  DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
@@ -28,26 +28,30 @@
 #include "Reach.h"
 #include "Distance.h"
 #include "core/Config.h"
-
+#include <limits>
 namespace dgl {
 
-template<typename Weight = int, class Status = typename Distance<Weight>::NullStatus, bool undirected = false>
+template<typename Weight = long, class Status = typename Distance<Weight>::NullStatus, bool undirected = false>
 class Dijkstra: public Distance<Weight> {
+	using Distance<Weight>::inf;
+	using Distance<Weight>::unreachable;
 public:
-	DynamicGraph & g;
-	std::vector<Weight> & weights;
+	DynamicGraph<Weight> & g;
+
 	Status & status;
 	int reportPolarity;
 
-	int last_modification;
-	int last_addition;
-	int last_deletion;
-	int history_qhead;
+	int last_modification=-1;
+	int last_addition=0;
+	int last_deletion=0;
+	int last_edge_inc =0;
+	int last_edge_dec = 0;
+	int history_qhead=0;
 
-	int last_history_clear;
+	int last_history_clear=0;
 
 	int source;
-	Weight INF;
+	//Weight inf();
 	std::vector<Weight> dist;
 	std::vector<int> prev;
 	struct DistCmp {
@@ -74,24 +78,22 @@ public:
 
 	double stats_full_update_time = 0;
 	double stats_fast_update_time = 0;
-	Dijkstra(int s, DynamicGraph & graph, std::vector<Weight> & weights, Status & status, int reportPolarity = 0) :
-			g(graph), weights(weights), status(status), reportPolarity(reportPolarity), last_modification(-1), last_addition(
-					-1), last_deletion(-1), history_qhead(0), last_history_clear(0), source(s), INF(0), q(DistCmp(dist)) {
+	Dijkstra(int s, DynamicGraph<Weight> & graph, Status & status, int reportPolarity = 0) :
+			g(graph), status(status), reportPolarity(reportPolarity), source(s),  q(DistCmp(dist)) {
 		
 		mod_percentage = 0.2;
 		
 	}
 	
-	Dijkstra(int s, DynamicGraph & graph, std::vector<Weight> & weights, int reportPolarity = 0) :
-			g(graph), weights(weights), status(Distance<Weight>::nullStatus), reportPolarity(reportPolarity), last_modification(
-					-1), last_addition(-1), last_deletion(-1), history_qhead(0), last_history_clear(0), source(s), INF(
-					0), q(DistCmp(dist)) {
+	Dijkstra(int s, DynamicGraph<Weight>  & graph,  int reportPolarity = 0) :
+			g(graph), status(Distance<Weight>::nullStatus), reportPolarity(reportPolarity),  source(s), q(DistCmp(dist)) {
 		
 		mod_percentage = 0.2;
+		//inf()=std::numeric_limits<Weight>::max()/2;
 		
 	}
-	//Dijkstra(const Dijkstra& d):g(d.g), last_modification(-1),last_addition(-1),last_deletion(-1),history_qhead(0),last_history_clear(0),source(d.source),INF(0),q(DistCmp(dist)),stats_full_updates(0),stats_fast_updates(0),stats_skip_deletes(0),stats_skipped_updates(0),stats_full_update_time(0),stats_fast_update_time(0){marked=false;};
-	
+	//Dijkstra(const Dijkstra& d):g(d.g), last_modification(-1),last_addition(-1),last_deletion(-1),history_qhead(0),last_history_clear(0),source(d.source),inf()(0),q(DistCmp(dist)),stats_full_updates(0),stats_fast_updates(0),stats_skip_deletes(0),stats_skipped_updates(0),stats_full_update_time(0),stats_fast_update_time(0){marked=false;};
+
 	void setSource(int s) {
 		source = s;
 		last_modification = -1;
@@ -116,7 +118,7 @@ public:
 		if (last_modification > 0 && g.modifications == last_modification)
 			return;
 		
-		if (last_addition == g.additions && last_modification > 0) {
+		if (last_addition == g.additions && last_edge_inc==g.edge_increases  && last_edge_dec==g.edge_decreases  && last_modification > 0) {
 			//if none of the deletions were to edges that were the previous edge of some shortest path, then we don't need to do anything
 			if (last_history_clear != g.historyclears) {
 				history_qhead = 0;
@@ -124,11 +126,11 @@ public:
 			}
 			bool need_recompute = false;
 			//ok, now check if any of the added edges allow for a decrease in distance.
-			for (int i = history_qhead; i < g.history.size(); i++) {
-				assert(!g.history[i].addition);
-				int edgeid = g.history[i].id;
-				int u = g.all_edges[edgeid].from;
-				int v = g.all_edges[edgeid].to;
+			for (int i = history_qhead; i < g.historySize(); i++) {
+				assert(!g.getChange(i).addition);
+				int edgeid = g.getChange(i).id;
+				int u = g.getEdge(edgeid).from;
+				int v = g.getEdge(edgeid).to;
 				if (incomingEdge(u) == edgeid || incomingEdge(v) == edgeid) {
 					history_qhead = i - 1;
 					need_recompute = true;
@@ -148,8 +150,9 @@ public:
 				last_modification = g.modifications;
 				last_deletion = g.deletions;
 				last_addition = g.additions;
-				
-				history_qhead = g.history.size();
+				last_edge_inc = g.edge_increases;
+				last_edge_dec = g.edge_decreases;
+				history_qhead = g.historySize();
 				last_history_clear = g.historyclears;
 				
 				assert(dbg_uptodate());
@@ -161,10 +164,11 @@ public:
 		stats_full_updates++;
 		if (dist.size() != g.nodes()) {
 			
-			INF = 1;
-			for (auto & e : g.all_edges) {
-				INF += weights[e.id];
-			}
+/*			inf() = 1;
+			for (int edgeID = 0;edgeID<g.edges();edgeID++) {
+				if(g.hasEdge(edgeID))
+					inf() += g.getWeight(edgeID);
+			}*/
 			dist.resize(g.nodes());
 			prev.resize(g.nodes());
 		}
@@ -172,8 +176,8 @@ public:
 		//old_dist.resize(g.nodes());
 		q.clear();
 		for (int i = 0; i < g.nodes(); i++) {
-			//old_dist[i]=last_modification > 0 ? dist[i]:INF;//this won't work properly if we added nodes...
-			dist[i] = INF;
+			//old_dist[i]=last_modification > 0 ? dist[i]:inf();//this won't work properly if we added nodes...
+			dist[i] =  inf();
 			prev[i] = -1;
 		}
 		
@@ -181,9 +185,9 @@ public:
 		q.insert(source);
 		while (q.size()) {
 			int u = q.peakMin();
-			if (dist[u] == INF)
+			if (dist[u] == inf())
 				break;
-			/*if(old_dist[u]>=INF){
+			/*if(old_dist[u]>=inf()){
 			 changed.push_back(u);
 			 }*/
 			q.removeMin();
@@ -192,7 +196,7 @@ public:
 					continue;
 				int edgeID = g.incident(u, i, undirected).id;
 				int v = g.incident(u, i, undirected).node;
-				Weight alt = dist[u] + weights[edgeID];
+				Weight alt = dist[u] +  g.getWeight(edgeID);
 				if (alt < dist[v]) {
 					dist[v] = alt;
 					prev[v] = edgeID;
@@ -206,20 +210,21 @@ public:
 		
 		assert(dbg_uptodate());
 		for (int u = 0; u < g.nodes(); u++) {
-			if (reportPolarity <= 0 && dist[u] >= INF) {
+			if (reportPolarity <= 0 && dist[u] >= inf()) {
 				status.setReachable(u, false);
-				status.setMininumDistance(u, dist[u] < INF, dist[u]);
-			} else if (reportPolarity >= 0 && dist[u] < INF) {
+				status.setMininumDistance(u, dist[u] < inf(), dist[u]);
+			} else if (reportPolarity >= 0 && dist[u] < inf()) {
 				status.setReachable(u, true);
-				status.setMininumDistance(u, dist[u] < INF, dist[u]);
+				status.setMininumDistance(u, dist[u] < inf(), dist[u]);
 			}
 		}
 		num_updates++;
 		last_modification = g.modifications;
 		last_deletion = g.deletions;
 		last_addition = g.additions;
-		
-		history_qhead = g.history.size();
+		last_edge_inc = g.edge_increases;
+		last_edge_dec = g.edge_decreases;
+		history_qhead = g.historySize();
 		last_history_clear = g.historyclears;
 		
 	}
@@ -271,7 +276,7 @@ public:
 	}
 	
 	bool connected_unsafe(int t) {
-		return t < dist.size() && dist[t] < INF;
+		return t < dist.size() && dist[t] < inf();
 	}
 	bool connected_unchecked(int t) {
 		assert(last_modification == g.modifications);
@@ -283,7 +288,7 @@ public:
 		
 		assert(dbg_uptodate());
 		
-		return dist[t] < INF;
+		return dist[t] < inf();
 	}
 	Weight & distance(int t) {
 		if (last_modification != g.modifications)
@@ -306,30 +311,32 @@ public:
 	int previous(int t) {
 		if (prev[t] < 0)
 			return -1;
-		if (undirected && g.all_edges[incomingEdge(t)].from == t) {
-			return g.all_edges[incomingEdge(t)].to;
+		if (undirected && g.getEdge(incomingEdge(t)).from == t) {
+			return g.getEdge(incomingEdge(t)).to;
 		}
-		assert(g.all_edges[incomingEdge(t)].to == t);
-		return g.all_edges[incomingEdge(t)].from;
+		assert(g.getEdge(incomingEdge(t)).to == t);
+		return g.getEdge(incomingEdge(t)).from;
 	}
 };
 
-template<class Status = Reach::NullStatus, bool undirected = false>
+template<typename Weight, class Status =typename Distance<int>::NullStatus, bool undirected = false>
 class UnweightedDijkstra: public Distance<int> {
+	using Distance<int>::inf;
+	using Distance<int>::unreachable;
 public:
-	DynamicGraph & g;
+	DynamicGraph<Weight>  & g;
 	Status & status;
 	int reportPolarity;
 
-	int last_modification;
-	int last_addition;
-	int last_deletion;
-	int history_qhead;
+	int last_modification=-1;
+	int last_addition=-1;
+	int last_deletion=-1;
+	int history_qhead=0;
 
-	int last_history_clear;
+	int last_history_clear=0;
 
 	int source;
-	int INF;
+
 	std::vector<int> dist;
 	std::vector<int> prev;
 	struct DistCmp {
@@ -356,23 +363,21 @@ public:
 
 	double stats_full_update_time = 0;
 	double stats_fast_update_time = 0;
-	UnweightedDijkstra(int s, DynamicGraph & graph, Status & status, int reportPolarity = 0) :
-			g(graph), status(status), reportPolarity(reportPolarity), last_modification(-1), last_addition(-1), last_deletion(
-					-1), history_qhead(0), last_history_clear(0), source(s), INF(0), q(DistCmp(dist)) {
+	UnweightedDijkstra(int s, DynamicGraph<Weight>  & graph, Status & status, int reportPolarity = 0) :
+			g(graph), status(status), reportPolarity(reportPolarity),source(s),  q(DistCmp(dist)) {
 		
 		mod_percentage = 0.2;
 		
 	}
 	
-	UnweightedDijkstra(int s, DynamicGraph & graph, int reportPolarity = 0) :
-			g(graph), status(Reach::nullStatus), reportPolarity(reportPolarity), last_modification(-1), last_addition(
-					-1), last_deletion(-1), history_qhead(0), last_history_clear(0), source(s), INF(0), q(DistCmp(dist)) {
+	UnweightedDijkstra(int s, DynamicGraph<Weight>  & graph, int reportPolarity = 0) :
+			g(graph), status(Distance<int>::nullStatus), reportPolarity(reportPolarity), source(s),  q(DistCmp(dist)) {
 		
 		mod_percentage = 0.2;
 		
 	}
-	//Dijkstra(const Dijkstra& d):g(d.g), last_modification(-1),last_addition(-1),last_deletion(-1),history_qhead(0),last_history_clear(0),source(d.source),INF(0),q(DistCmp(dist)),stats_full_updates(0),stats_fast_updates(0),stats_skip_deletes(0),stats_skipped_updates(0),stats_full_update_time(0),stats_fast_update_time(0){marked=false;};
-	
+	//Dijkstra(const Dijkstra& d):g(d.g), last_modification(-1),last_addition(-1),last_deletion(-1),history_qhead(0),last_history_clear(0),source(d.source),inf()(0),q(DistCmp(dist)),stats_full_updates(0),stats_fast_updates(0),stats_skip_deletes(0),stats_skipped_updates(0),stats_full_update_time(0),stats_fast_update_time(0){marked=false;};
+
 	void setSource(int s) {
 		source = s;
 		last_modification = -1;
@@ -394,7 +399,7 @@ public:
 	 assert(last_deletion==g.deletions);
 	 last_modification=g.modifications;
 	 last_addition=g.additions;
-	 INF=g.nodes()+1;
+
 	 dist.resize(g.nodes());
 	 prev.resize(g.nodes());
 	 q.clear();
@@ -403,15 +408,15 @@ public:
 	 last_history_clear=g.historyclears;
 	 }
 	 //ok, now check if any of the added edges allow for a decrease in distance.
-	 for (int i = history_qhead;i<g.history.size();i++){
-	 assert(g.history[i].addition); //NOTE: Currently, this is glitchy in some circumstances - specifically, ./modsat -rinc=1.05 -rnd-restart  -conflict-shortest-path  -no-conflict-min-cut   -rnd-init -rnd-seed=01231 -rnd-freq=0.01 /home/sam/data/gnf/unit_tests/unit_test_17_reduced.gnf can trigger this assertion!
-	 int u=g.history[i].u;
-	 int v=g.history[i].v;
-	 int edgeID = g.history[i].id;
+	 for (int i = history_qhead;i<g.historySize();i++){
+	 assert(g.getChange(i).addition); //NOTE: Currently, this is glitchy in some circumstances - specifically, ./modsat -rinc=1.05 -rnd-restart  -conflict-shortest-path  -no-conflict-min-cut   -rnd-init -rnd-seed=01231 -rnd-freq=0.01 /home/sam/data/gnf/unit_tests/unit_test_17_reduced.gnf can trigger this assertion!
+	 int u=g.getChange(i).u;
+	 int v=g.getChange(i).v;
+	 int edgeID = g.getChange(i).id;
 	 int alt = dist[u]+1 ;
 	 if(alt< dist[v]){
 
-	 if(dist[v]>=INF){
+	 if(dist[v]>=inf()){
 	 //this was changed
 	 changed.push_back(v);
 	 }
@@ -424,11 +429,11 @@ public:
 	 else
 	 q.decrease(v);
 	 }else if (undirected){
-	 int u=g.history[i].v;
-	 int v=g.history[i].u;
+	 int u=g.getChange(i).v;
+	 int v=g.getChange(i).u;
 	 int alt = dist[u]+1 ;
 	 if(alt< dist[v]){
-	 if(dist[v]>=INF){
+	 if(dist[v]>=inf()){
 	 //this was changed
 	 changed.push_back(v);
 	 }
@@ -448,7 +453,7 @@ public:
 	 *
 	 *
 	 //Is this altered code still correct? Well, not for dijkstras, but probably for connectivity
-	 if(dist[v]>=INF){
+	 if(dist[v]>=inf()){
 	 //this was changed
 	 changed.push_back(v);
 
@@ -462,11 +467,11 @@ public:
 
 
 	 }
-	 history_qhead=g.history.size();
+	 history_qhead=g.historySize();
 	 auto & adjacency = undirected? g.adjacency_undirected:g.adjacency;
 	 while(q.size()){
 	 int u = q.removeMin();
-	 if(dist[u]==INF)
+	 if(dist[u]==inf())
 	 break;
 
 	 for(int i = 0;i<adjacency[u].size();i++){
@@ -476,7 +481,7 @@ public:
 	 int edgeID = adjacency[u][i].id;
 	 int alt = dist[u]+ 1;
 	 if(alt<dist[v]){
-	 if(dist[v]>=INF){
+	 if(dist[v]>=inf()){
 	 //this was changed
 	 changed.push_back(v);
 	 }
@@ -493,12 +498,12 @@ public:
 	 }
 
 	 for(int u:changed){
-	 if(reportPolarity<=0 && dist[u]>=INF){
+	 if(reportPolarity<=0 && dist[u]>=inf()){
 	 status.setReachable(u,false);
-	 status.setMininumDistance(u,dist[u]<INF,dist[u]);
-	 }else if (reportPolarity>=0 && dist[u]<INF){
+	 status.setMininumDistance(u,dist[u]<inf(),dist[u]);
+	 }else if (reportPolarity>=0 && dist[u]<inf()){
 	 status.setReachable(u,true);
-	 status.setMininumDistance(u,dist[u]<INF,dist[u]);
+	 status.setMininumDistance(u,dist[u]<inf(),dist[u]);
 	 }
 	 }
 	 changed.clear();
@@ -534,11 +539,11 @@ public:
 			}
 			bool need_recompute = false;
 			//ok, now check if any of the added edges allow for a decrease in distance.
-			for (int i = history_qhead; i < g.history.size(); i++) {
-				assert(!g.history[i].addition);
-				int edgeid = g.history[i].id;
-				int u = g.all_edges[edgeid].from;
-				int v = g.all_edges[edgeid].to;
+			for (int i = history_qhead; i <g.historySize();i++) {
+				assert(!g.getChange(i).addition);
+				int edgeid = g.getChange(i).id;
+				int u = g.getEdge(edgeid).from;
+				int v = g.getEdge(edgeid).to;
 				if (incomingEdge(u) == edgeid || incomingEdge(v) == edgeid) {
 					history_qhead = i - 1;
 					need_recompute = true;
@@ -559,7 +564,7 @@ public:
 				last_deletion = g.deletions;
 				last_addition = g.additions;
 				
-				history_qhead = g.history.size();
+				history_qhead = g.historySize();
 				last_history_clear = g.historyclears;
 				
 				assert(dbg_uptodate());
@@ -583,15 +588,14 @@ public:
 		 }*/
 
 		stats_full_updates++;
-		
-		INF = g.nodes() + 1;
+
 		dist.resize(g.nodes());
 		prev.resize(g.nodes());
 		//old_dist.resize(g.nodes());
 		q.clear();
 		for (int i = 0; i < g.nodes(); i++) {
-			//old_dist[i]=last_modification > 0 ? dist[i]:INF;//this won't work properly if we added nodes...
-			dist[i] = INF;
+			//old_dist[i]=last_modification > 0 ? dist[i]:inf();//this won't work properly if we added nodes...
+			dist[i] = inf();
 			prev[i] = -1;
 		}
 		
@@ -599,9 +603,9 @@ public:
 		q.insert(source);
 		while (q.size()) {
 			int u = q.peakMin();
-			if (dist[u] == INF)
+			if (dist[u] == inf())
 				break;
-			/*if(old_dist[u]>=INF){
+			/*if(old_dist[u]>=inf()){
 			 changed.push_back(u);
 			 }*/
 			q.removeMin();
@@ -626,27 +630,27 @@ public:
 		 //while(q.size()){
 		 //iterate through the unreached nodes and check which ones were previously reached
 
-		 if(last_modification <=0  || (old_dist[u]<INF && dist[u]>=INF)){
+		 if(last_modification <=0  || (old_dist[u]<inf() && dist[u]>=inf())){
 		 changed.push_back(u);
 		 }
 		 }*/
 		//}
 		assert(dbg_uptodate());
 		for (int u = 0; u < g.nodes(); u++) {
-			if (reportPolarity <= 0 && dist[u] >= INF) {
+			if (reportPolarity <= 0 && dist[u] >= inf()) {
 				status.setReachable(u, false);
-				status.setMininumDistance(u, dist[u] < INF, dist[u]);
-			} else if (reportPolarity >= 0 && dist[u] < INF) {
+				status.setMininumDistance(u, dist[u] < inf(), dist[u]);
+			} else if (reportPolarity >= 0 && dist[u] < inf()) {
 				status.setReachable(u, true);
-				status.setMininumDistance(u, dist[u] < INF, dist[u]);
+				status.setMininumDistance(u, dist[u] < inf(), dist[u]);
 			}
 		}
 		num_updates++;
 		last_modification = g.modifications;
 		last_deletion = g.deletions;
 		last_addition = g.additions;
-		
-		history_qhead = g.history.size();
+
+		history_qhead = g.historySize();
 		last_history_clear = g.historyclears;
 		
 	}
@@ -698,7 +702,7 @@ public:
 	}
 	
 	bool connected_unsafe(int t) {
-		return t < dist.size() && dist[t] < INF;
+		return t < dist.size() && dist[t] < inf();
 	}
 	bool connected_unchecked(int t) {
 		assert(last_modification == g.modifications);
@@ -710,7 +714,7 @@ public:
 		
 		assert(dbg_uptodate());
 		
-		return dist[t] < INF;
+		return dist[t] < inf();
 	}
 	int & distance(int t) {
 		if (last_modification != g.modifications)
@@ -723,7 +727,7 @@ public:
 		if (connected_unsafe(t))
 			return dist[t];
 		else
-			return this->unreachable(); //return INF;
+			return this->unreachable(); //return inf();
 	}
 	int incomingEdge(int t) {
 		assert(t >= 0 && t < prev.size());
@@ -733,11 +737,11 @@ public:
 	int previous(int t) {
 		if (prev[t] < 0)
 			return -1;
-		if (undirected && g.all_edges[incomingEdge(t)].from == t) {
-			return g.all_edges[incomingEdge(t)].to;
+		if (undirected && g.getEdge(incomingEdge(t)).from == t) {
+			return g.getEdge(incomingEdge(t)).to;
 		}
-		assert(g.all_edges[incomingEdge(t)].to == t);
-		return g.all_edges[incomingEdge(t)].from;
+		assert(g.getEdge(incomingEdge(t)).to == t);
+		return g.getEdge(incomingEdge(t)).from;
 	}
 };
 }

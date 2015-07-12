@@ -26,17 +26,17 @@
 #include "dgl/ThorupDynamicConnectivity.h"
 using namespace Monosat;
 template<typename Weight>
-AllPairsDetector<Weight>::AllPairsDetector(int _detectorID, GraphTheorySolver<Weight> * _outer, DynamicGraph &_g,
-		DynamicGraph &_antig, double seed) :
+AllPairsDetector<Weight>::AllPairsDetector(int _detectorID, GraphTheorySolver<Weight> * _outer, DynamicGraph<Weight> &_g,
+		DynamicGraph<Weight> &_antig, double seed) :
 		Detector(_detectorID), outer(_outer), g_under(_g), g_over(_antig), rnd_seed(seed), underapprox_reach_detector(NULL), overapprox_reach_detector(
 				NULL), underapprox_path_detector(NULL), positiveReachStatus(NULL), negativeReachStatus(NULL) {
 	
 	positiveReachStatus = new AllPairsDetector<Weight>::ReachStatus(*this, true);
 	negativeReachStatus = new AllPairsDetector<Weight>::ReachStatus(*this, false);
 	if (allpairsalg == AllPairsAlg::ALG_FLOYDWARSHALL) {
-		underapprox_reach_detector = new FloydWarshall<AllPairsDetector<Weight>::ReachStatus>(_g,
+		underapprox_reach_detector = new FloydWarshall<Weight,AllPairsDetector<Weight>::ReachStatus>(_g,
 				*(positiveReachStatus), 1);
-		overapprox_reach_detector = new FloydWarshall<AllPairsDetector<Weight>::ReachStatus>(_antig,
+		overapprox_reach_detector = new FloydWarshall<Weight,AllPairsDetector<Weight>::ReachStatus>(_antig,
 				*(negativeReachStatus), -1);
 		underapprox_path_detector = underapprox_reach_detector;
 	}/*else if (allpairsalg==ALG_THORUP_ALLPAIRS){
@@ -44,9 +44,9 @@ AllPairsDetector<Weight>::AllPairsDetector(int _detectorID, GraphTheorySolver<We
 	 negative_reach_detector = new DynamicConnectivity<AllPairsDetector<Weight>::ReachStatus>(_antig,*(negativeReachStatus),-1);
 	 positive_path_detector = positive_reach_detector;
 	 }*/else {
-		underapprox_reach_detector = new DijkstraAllPairs<AllPairsDetector<Weight>::ReachStatus>(_g,
+		underapprox_reach_detector = new DijkstraAllPairs<Weight,AllPairsDetector<Weight>::ReachStatus>(_g,
 				*(positiveReachStatus), 1);
-		overapprox_reach_detector = new DijkstraAllPairs<AllPairsDetector<Weight>::ReachStatus>(_antig,
+		overapprox_reach_detector = new DijkstraAllPairs<Weight,AllPairsDetector<Weight>::ReachStatus>(_antig,
 				*(negativeReachStatus), -1);
 		underapprox_path_detector = underapprox_reach_detector;
 	}
@@ -473,7 +473,7 @@ bool AllPairsDetector<Weight>::checkSatisfied() {
 						if (underapprox_reach_detector->distance(s, node) <= dist) {
 							return false;
 						}
-						if (!overapprox_reach_detector->distance(s, node) > dist) {
+						if (overapprox_reach_detector->distance(s, node) > dist) {
 							return false;
 						}
 					}
@@ -484,7 +484,7 @@ bool AllPairsDetector<Weight>::checkSatisfied() {
 	return true;
 }
 template<typename Weight>
-Lit AllPairsDetector<Weight>::decide(int level) {
+Lit AllPairsDetector<Weight>::decide() {
 	
 	//AllPairs * over = (FloydWarshall<AllPairsDetector<Weight>::ReachStatus>*) negative_reach_detector;
 	
@@ -587,9 +587,9 @@ Lit AllPairsDetector<Weight>::decide(int level) {
 	return lit_Undef;
 }
 ;
-template class AllPairsDetector<int> ;
-template class AllPairsDetector<long> ;
-template class AllPairsDetector<double> ;
+template class Monosat::AllPairsDetector<int> ;
+template class Monosat::AllPairsDetector<long> ;
+template class Monosat::AllPairsDetector<double> ;
 #include <gmpxx.h>
-template class AllPairsDetector<mpq_class> ;
+template class Monosat::AllPairsDetector<mpq_class> ;
 

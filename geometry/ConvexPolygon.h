@@ -25,7 +25,7 @@
 #include <gmpxx.h>
 #include "core/Config.h"
 #include "Line.h"
-
+#include <cmath>
 #include <iostream>
 template<unsigned int D, class T>
 class NConvexPolygon;
@@ -487,7 +487,7 @@ bool ConvexPolygon<D, T>::containsInSplit2d(const Point<2, T> & point, int first
 			T dxl = p2.x - p1.x;
 			T dyl = p2.y - p1.y;
 			bool contains;
-			
+			using namespace std;
 			//check if the point is between the end points
 			if (abs(dxl) >= abs(dyl))
 				contains = dxl > 0 ? p1.x <= point.x && point.x <= p2.x : p2.x <= point.x && point.x <= p1.x;
@@ -777,6 +777,7 @@ bool ConvexPolygon<D, T>::containsInRange2d(const Point<2, T> & point, int first
 			T dxl = p2.x - p1.x;
 			T dyl = p2.y - p1.y;
 			bool contains;
+			using namespace std;
 			//check if the point is between the end points
 			if (abs(dxl) >= abs(dyl)) {
 				contains = dxl > 0 ? p1.x <= point.x && point.x <= p2.x : p2.x <= point.x && point.x <= p1.x;

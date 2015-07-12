@@ -32,11 +32,11 @@
 #include <algorithm>
 
 namespace dgl {
-template<class Status = ConnectedComponents::NullConnectedComponentsStatus>
+template<typename Weight, class Status = ConnectedComponents::NullConnectedComponentsStatus>
 class TarjansSCC: public ConnectedComponents {
 public:
 	
-	DynamicGraph & g;
+	DynamicGraph<Weight> & g;
 	Status & status;
 	int last_modification;
 
@@ -86,13 +86,13 @@ public:
 	double stats_fast_update_time = 0;
 
 public:
-	TarjansSCC(DynamicGraph & graph) :
+	TarjansSCC(DynamicGraph<Weight> & graph) :
 			g(graph), status(nullConnectedComponentsStatus), last_modification(-1), last_addition(-1), last_deletion(
 					-1), history_qhead(0), last_history_clear(0), INF(0) {
 		
 	}
 	
-	TarjansSCC(DynamicGraph & graph, Status & _status) :
+	TarjansSCC(DynamicGraph<Weight> & graph, Status & _status) :
 			g(graph), status(_status), last_modification(-1), last_addition(-1), last_deletion(-1), history_qhead(0), last_history_clear(
 					0), INF(0) {
 		
@@ -226,7 +226,7 @@ public:
 		last_deletion = g.deletions;
 		last_addition = g.additions;
 		
-		history_qhead = g.history.size();
+		history_qhead = g.historySize();
 		last_history_clear = g.historyclears;
 		;
 	}
@@ -269,8 +269,8 @@ public:
 
 	//Compute the SCC for a single node.
 	//This is faster for one-shot scc computations from a single source than doing a full update().
-	static void getSCC(int node, DynamicGraph & graph, std::vector<int>&scc) {
-		TarjansSCC<> s(graph);
+	static void getSCC(int node, DynamicGraph<Weight> & graph, std::vector<int>&scc) {
+		TarjansSCC<Weight> s(graph);
 		s.setNodes(graph.nodes());
 		int index = 0;
 		s.strongConnect(node,-1, index, &scc);

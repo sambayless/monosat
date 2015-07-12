@@ -33,18 +33,18 @@ using namespace Monosat;
 
 template<typename Weight>
 SteinerDetector<Weight>::SteinerDetector(int detectorID, GraphTheorySolver<Weight> * outer,
-		std::vector<Weight> &weights, DynamicGraph &g, DynamicGraph &antig, double seed) :
-		Detector(detectorID), outer(outer), g_under(g), g_over(antig), weights(weights), rnd_seed(seed) {
+		 DynamicGraph<Weight>  &g, DynamicGraph<Weight>  &antig, double seed) :
+		Detector(detectorID), outer(outer), g_under(g), g_over(antig), rnd_seed(seed) {
 	checked_unique = false;
 	all_unique = true;
 	positiveStatus = new SteinerDetector<Weight>::SteinerStatus(*this, true);
 	negativeStatus = new SteinerDetector<Weight>::SteinerStatus(*this, false);
 	
 	//NOTE: the terminal sets are intentionally swapped, in order to preserve monotonicity
-	underapprox_detector = new SteinerApprox<DynamicNodes, SteinerDetector<Weight>::SteinerStatus, Weight>(g, weights,
+	underapprox_detector = new SteinerApprox<DynamicNodes, SteinerDetector<Weight>::SteinerStatus, Weight>(g,
 			overTerminalSet, *positiveStatus, 1); //new SpiraPan<SteinerDetector<Weight>::MSTStatus>(_g,*(positiveReachStatus),1);
 	overapprox_detector = new SteinerApprox<DynamicNodes, SteinerDetector<Weight>::SteinerStatus, Weight>(antig,
-			weights, underTerminalSet, *negativeStatus, -1);
+			 underTerminalSet, *negativeStatus, -1);
 	
 	underprop_marker = outer->newReasonMarker(getID());
 	overprop_marker = outer->newReasonMarker(getID());
@@ -245,13 +245,13 @@ void SteinerDetector<Weight>::buildMinWeightTooLargeReason(Weight &weight, vec<L
 	}
 	
 	//all pairs shortest paths
-	FloydWarshall<> fw(g_over);
+	FloydWarshall<Weight> fw(g_over);
 	
 	for (int i = 0; i < g_over.edges(); i++) {
 		if (g_over.isEdge(i) && !g_over.edgeEnabled(i)) {
 			int u = g_over.getEdge(i).from;
 			int v = g_over.getEdge(i).to;
-			if (weights[i] < fw.distance(u, v)) {
+			if (g_over.getWeight(i) < fw.distance(u, v)) {
 				//then adding this edge can potentially decrease the steiner tree
 				//(there is probably an additional test we can do to include fewer edges...)
 				conflict.push(mkLit(outer->getEdgeVar(i), false));
@@ -399,9 +399,9 @@ bool SteinerDetector<Weight>::checkSatisfied() {
 	
 	assert(underTerminalSet.numEnabled() == overTerminalSet.numEnabled());
 	
-	SteinerApprox<DynamicNodes, typename SteinerTree<Weight>::NullStatus, Weight> positive_checker(g_under, weights,
+	SteinerApprox<DynamicNodes, typename SteinerTree<Weight>::NullStatus, Weight> positive_checker(g_under,
 			overTerminalSet, SteinerTree<Weight>::nullStatus, 0);
-	SteinerApprox<DynamicNodes, typename SteinerTree<Weight>::NullStatus, Weight> negative_checker(g_over, weights,
+	SteinerApprox<DynamicNodes, typename SteinerTree<Weight>::NullStatus, Weight> negative_checker(g_over,
 			underTerminalSet, SteinerTree<Weight>::nullStatus, 0);
 	positive_checker.update();
 	negative_checker.update();
@@ -434,13 +434,13 @@ bool SteinerDetector<Weight>::checkSatisfied() {
 	return true;
 }
 template<typename Weight>
-Lit SteinerDetector<Weight>::decide(int level) {
+Lit SteinerDetector<Weight>::decide() {
 	
 	return lit_Undef;
 }
 ;
-template class SteinerDetector<int> ;
-template class SteinerDetector<long> ;
-template class SteinerDetector<double> ;
+template class Monosat::SteinerDetector<int> ;
+template class Monosat::SteinerDetector<long> ;
+template class Monosat::SteinerDetector<double> ;
 #include <gmpxx.h>
-template class SteinerDetector<mpq_class> ;
+template class Monosat::SteinerDetector<mpq_class> ;

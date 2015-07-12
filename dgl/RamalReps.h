@@ -33,9 +33,9 @@
 
 namespace dgl {
 template<typename Weight = int, class Status = typename Distance<Weight>::NullStatus>
-class RamalReps: public Distance<Weight> {
+class RamalReps: public Distance<Weight>, public DynamicGraphAlgorithm {
 public:
-	DynamicGraph & g;
+	DynamicGraph<Weight> & g;
 	std::vector<Weight> & weights;
 	Status & status;
 	int reportPolarity;
@@ -70,6 +70,7 @@ public:
 	std::vector<int> edgeInShortestPathGraph;
 	std::vector<int> delta;
 	std::vector<int> changeset;
+	int alg_id;
 public:
 	
 	long stats_full_updates=0;
@@ -82,14 +83,14 @@ public:
 
 	double stats_full_update_time=0;
 	double stats_fast_update_time=0;
-	RamalReps(int s, DynamicGraph & graph, std::vector<Weight> & weights, Status & status, int reportPolarity = 0,
+	RamalReps(int s, DynamicGraph<Weight> & graph,Status & status, int reportPolarity = 0,
 			bool reportDistance = false) :
-			g(graph), weights(weights), status(status), reportPolarity(reportPolarity), reportDistance(reportDistance), last_modification(
+			g(graph), weights(g.getWeights()), status(status), reportPolarity(reportPolarity), reportDistance(reportDistance), last_modification(
 					-1), last_addition(-1), last_deletion(-1), history_qhead(0), last_history_clear(0), source(s), INF(
 					0), q(DistCmp(dist)) {
 		
 		mod_percentage = 0.2;
-
+		alg_id=g.addDynamicAlgorithm(this);
 	}
 	//Dijkstra(const Dijkstra& d):g(d.g), last_modification(-1),last_addition(-1),last_deletion(-1),history_qhead(0),last_history_clear(0),source(d.source),INF(0),q(DistCmp(dist)),stats_full_updates(0),stats_fast_updates(0),stats_skip_deletes(0),stats_skipped_updates(0),stats_full_update_time(0),stats_fast_update_time(0){marked=false;};
 	
@@ -155,7 +156,7 @@ public:
 					continue;
 				
 				int edgeID = g.incoming(u, i).id;
-				int v = g.all_edges[edgeID].from;
+				int v = g.getEdge(edgeID).from;
 				Weight alt = dbg_dist[v] + weights[edgeID];
 				assert(alt >= dbg_dist[u]);
 				/*	if (alt==dbg_dist[u]){
@@ -168,7 +169,7 @@ public:
 					continue;
 				
 				int edgeID = g.incident(u, i).id;
-				int v = g.all_edges[edgeID].to;
+				int v = g.getEdge(edgeID).to;
 				Weight alt = dbg_dist[u] + weights[edgeID];
 				if (alt < dbg_dist[v]) {
 					
@@ -193,7 +194,7 @@ public:
 					continue;
 				
 				int edgeID = g.incoming(u, i).id;
-				int v = g.all_edges[edgeID].from;
+				int v = g.getEdge(edgeID).from;
 				
 				Weight alt = dbg_dist[v] + weights[edgeID];
 				assert(alt >= dbg_dist[u]);
@@ -230,8 +231,8 @@ public:
 		assert(g.edgeEnabled(edgeID));
 		if (edgeInShortestPathGraph[edgeID])
 			return;
-		int ru = g.all_edges[edgeID].from;
-		int rv = g.all_edges[edgeID].to;
+		int ru = g.getEdge(edgeID).from;
+		int rv = g.getEdge(edgeID).to;
 		
 		Weight & rdv = dist[rv];
 		Weight & rdu = dist[ru];
@@ -266,8 +267,8 @@ public:
 				int adjID = e.id;
 				if (g.edgeEnabled(adjID)) {
 					
-					assert(g.all_edges[adjID].to == u);
-					int v = g.all_edges[adjID].from;
+					assert(g.getEdge(adjID).to == u);
+					int v = g.getEdge(adjID).from;
 					Weight & w = weights[adjID]; //assume a weight of one for now
 					Weight & du = dist[u];
 					Weight & dv = dist[v];
@@ -293,8 +294,8 @@ public:
 				auto & e = g.incident(u, i);
 				int adjID = e.id;
 				if (g.edgeEnabled(adjID)) {
-					assert(g.all_edges[adjID].from == u);
-					int s = g.all_edges[adjID].to;
+					assert(g.getEdge(adjID).from == u);
+					int s = g.getEdge(adjID).to;
 					Weight & w = weights[adjID];							//assume a weight of one for now
 					Weight & du = dist[u];
 					Weight & ds = dist[s];
@@ -319,7 +320,7 @@ public:
 			for (int i = 0; i < g.nIncoming(u); i++) {
 				auto & e = g.incoming(u, i);
 				int adjID = e.id;
-				int from = g.all_edges[adjID].from;
+				int from = g.getEdge(adjID).from;
 				
 				Weight dfrom = dist[from];
 				if (edgeInShortestPathGraph[adjID])
@@ -339,8 +340,8 @@ public:
 			return;
 		edgeInShortestPathGraph[edgeID] = false;						//remove this edge from the shortest path graph
 				
-		int ru = g.all_edges[edgeID].from;
-		int rv = g.all_edges[edgeID].to;
+		int ru = g.getEdge(edgeID).from;
+		int rv = g.getEdge(edgeID).to;
 		assert(delta[rv] > 0);
 		delta[rv]--;
 		if (delta[rv] > 0)
@@ -360,8 +361,8 @@ public:
 				if (g.edgeEnabled(adjID)) {
 					if (edgeInShortestPathGraph[adjID]) {
 						edgeInShortestPathGraph[adjID] = false;
-						assert(g.all_edges[adjID].from == u);
-						int s = g.all_edges[adjID].to;
+						assert(g.getEdge(adjID).from == u);
+						int s = g.getEdge(adjID).to;
 						assert(delta[s] > 0);
 						delta[s]--;
 						if (delta[s] == 0) {
@@ -380,8 +381,8 @@ public:
 				int adjID = e.id;
 				
 				if (g.edgeEnabled(adjID)) {
-					assert(g.all_edges[adjID].to == u);
-					int v = g.all_edges[adjID].from;
+					assert(g.getEdge(adjID).to == u);
+					int v = g.getEdge(adjID).from;
 					Weight & w = weights[adjID]; //assume a weight of one for now
 					Weight alt = dist[v] + w;
 					assert(!edgeInShortestPathGraph[adjID]);
@@ -432,8 +433,8 @@ public:
 				auto & e = g.incident(u, i);
 				int adjID = e.id;
 				if (g.edgeEnabled(adjID)) {
-					assert(g.all_edges[adjID].from == u);
-					int s = g.all_edges[adjID].to;
+					assert(g.getEdge(adjID).from == u);
+					int s = g.getEdge(adjID).to;
 					Weight w = weights[adjID];				//assume a weight of one for now
 					Weight alt = dist[u] + w;
 					if (dist[s] > alt) {
@@ -460,8 +461,8 @@ public:
 				int adjID = e.id;
 				if (g.edgeEnabled(adjID)) {
 					
-					assert(g.all_edges[adjID].to == u);
-					int v = g.all_edges[adjID].from;
+					assert(g.getEdge(adjID).to == u);
+					int v = g.getEdge(adjID).from;
 					Weight & dv = dist[v];
 					Weight & du = dist[u];
 					bool edgeIn = edgeInShortestPathGraph[adjID];
@@ -531,11 +532,11 @@ public:
 			
 		}
 		
-		for (int i = history_qhead; i < g.history.size(); i++) {
-			int edgeid = g.history[i].id;
-			if (g.history[i].addition && g.edgeEnabled(edgeid)) {
+		for (int i = history_qhead; i < g.historySize(); i++) {
+			int edgeid = g.getChange(i).id;
+			if (g.getChange(i).addition && g.edgeEnabled(edgeid)) {
 				GRRInc(edgeid);
-			} else if (!g.history[i].addition && !g.edgeEnabled(edgeid)) {
+			} else if (!g.getChange(i).addition && !g.edgeEnabled(edgeid)) {
 				GRRDec(edgeid);
 			}
 		}
@@ -562,13 +563,15 @@ public:
 		last_modification = g.modifications;
 		last_deletion = g.deletions;
 		last_addition = g.additions;
-		
-		history_qhead = g.history.size();
+		g.updateAlgorithmHistory(this,alg_id,history_qhead);
+		history_qhead = g.historySize();
 		last_history_clear = g.historyclears;
 		
 		;
 	}
-	
+	void updateHistory(){
+		update();
+	}
 	bool dbg_path(int to) {
 #ifdef DEBUG_DIJKSTRA
 		/*	assert(connected(to));
@@ -665,10 +668,10 @@ public:
 	}
 };
 
-template<class Status>
-class UnweightedRamalReps: public Distance<int> {
+template<typename Weight, class Status>
+class UnweightedRamalReps: public Distance<int>, public DynamicGraphAlgorithm {
 public:
-	DynamicGraph & g;
+	DynamicGraph<Weight> & g;
 	Status & status;
 	int reportPolarity;
 	bool reportDistance;
@@ -707,6 +710,7 @@ public:
 	std::vector<int> edgeInShortestPathGraph;
 	std::vector<int> delta;
 	std::vector<int> changeset;
+	int alg_id;
 public:
 	
 	long stats_full_updates=0;
@@ -719,16 +723,17 @@ public:
 
 	double stats_full_update_time=0;
 	double stats_fast_update_time=0;
-	UnweightedRamalReps(int s, DynamicGraph & graph, Status & status, int reportPolarity = 0,
+	UnweightedRamalReps(int s, DynamicGraph<Weight> & graph, Status & status, int reportPolarity = 0,
 			bool reportDistance = true) :
 			g(graph), status(status), reportPolarity(reportPolarity), reportDistance(reportDistance), last_modification(
 					-1), last_addition(-1), last_deletion(-1), history_qhead(0), last_history_clear(0), source(s), INF(
 					-1) {
 		maxDistance = -1;
 		mod_percentage = 0.2;
+		alg_id=g.addDynamicAlgorithm(this);
 	}
 	//Dijkstra(const Dijkstra& d):g(d.g), last_modification(-1),last_addition(-1),last_deletion(-1),history_qhead(0),last_history_clear(0),source(d.source),INF(0),q(DistCmp(dist)),stats_full_updates(0),stats_fast_updates(0),stats_skip_deletes(0),stats_skipped_updates(0),stats_full_update_time(0),stats_fast_update_time(0){marked=false;};
-	void setMaxDistance(int _maxDistance) {
+	void setMaxDistance(int &_maxDistance) {
 		if (_maxDistance != maxDistance) {
 			last_modification = -1;		//force the next update to recompute from scratch
 			if (_maxDistance < 0) {
@@ -761,7 +766,7 @@ public:
 	
 	void dbg_delta() {
 #ifndef NDEBUG
-		
+		//g.drawFull();
 		dbg_delta_lite();
 		assert(delta.size() == g.nodes());
 		
@@ -805,7 +810,7 @@ public:
 					continue;
 				
 				int edgeID = g.incoming(u, i).id;
-				int v = g.all_edges[edgeID].from;
+				int v = g.getEdge(edgeID).from;
 				int alt = dbg_dist[v] + 1;
 				if (maxDistance >= 0 && alt > maxDistance)
 					alt = INF;
@@ -820,7 +825,7 @@ public:
 					continue;
 				
 				int edgeID = g.incident(u, i).id;
-				int v = g.all_edges[edgeID].to;
+				int v = g.getEdge(edgeID).to;
 				int alt = dbg_dist[u] + 1;
 				if (maxDistance >= 0 && alt > maxDistance)
 					alt = INF;
@@ -847,7 +852,7 @@ public:
 					continue;
 				
 				int edgeID = g.incoming(u, i).id;
-				int v = g.all_edges[edgeID].from;
+				int v = g.getEdge(edgeID).from;
 				int alt = dbg_dist[v] + 1;
 				int du = dbg_dist[u];
 				if (maxDistance >= 0 && alt > maxDistance)
@@ -886,8 +891,8 @@ public:
 		assert(g.edgeEnabled(edgeID));
 		if (edgeInShortestPathGraph[edgeID])
 			return;
-		int ru = g.all_edges[edgeID].from;
-		int rv = g.all_edges[edgeID].to;
+		int ru = g.getEdge(edgeID).from;
+		int rv = g.getEdge(edgeID).to;
 		
 		int rdv = dist[rv];
 		int rdu = dist[ru];
@@ -933,8 +938,8 @@ public:
 				int adjID = e.id;
 				if (g.edgeEnabled(adjID)) {
 					
-					assert(g.all_edges[adjID].to == u);
-					int v = g.all_edges[adjID].from;
+					assert(g.getEdge(adjID).to == u);
+					int v = g.getEdge(adjID).from;
 					int w = 1;		//assume a weight of one for now
 					int du = dist[u];
 					int dv = dist[v];
@@ -964,8 +969,8 @@ public:
 				auto & e = g.incident(u, j);
 				int adjID = e.id;
 				if (g.edgeEnabled(adjID)) {
-					assert(g.all_edges[adjID].from == u);
-					int s = g.all_edges[adjID].to;
+					assert(g.getEdge(adjID).from == u);
+					int s = g.getEdge(adjID).to;
 					int w = 1;							//assume a weight of one for now
 					int du = dist[u];
 					int ds = dist[s];
@@ -1045,7 +1050,7 @@ public:
 			for (int i = 0; i < g.nIncoming(u); i++) {
 				auto & e = g.incoming(u, i);
 				int adjID = e.id;
-				int from = g.all_edges[adjID].from;
+				int from = g.getEdge(adjID).from;
 				
 				int dfrom = dist[from];
 				if (edgeInShortestPathGraph[adjID]) {
@@ -1068,8 +1073,8 @@ public:
 			return;
 		edgeInShortestPathGraph[edgeID] = false;						//remove this edge from the shortest path graph
 				
-		int ru = g.all_edges[edgeID].from;
-		int rv = g.all_edges[edgeID].to;
+		int ru = g.getEdge(edgeID).from;
+		int rv = g.getEdge(edgeID).to;
 		
 		assert(delta[rv] > 0);
 		delta[rv]--;
@@ -1097,8 +1102,8 @@ public:
 				if (g.edgeEnabled(adjID)) {
 					if (edgeInShortestPathGraph[adjID]) {
 						edgeInShortestPathGraph[adjID] = false;
-						assert(g.all_edges[adjID].from == u);
-						int s = g.all_edges[adjID].to;
+						assert(g.getEdge(adjID).from == u);
+						int s = g.getEdge(adjID).to;
 						
 						assert(delta[s] > 0);
 						delta[s]--;
@@ -1120,8 +1125,8 @@ public:
 				int adjID = e.id;
 				
 				if (g.edgeEnabled(adjID)) {
-					assert(g.all_edges[adjID].to == u);
-					int v = g.all_edges[adjID].from;
+					assert(g.getEdge(adjID).to == u);
+					int v = g.getEdge(adjID).from;
 					int w = 1; //assume a weight of one for now
 					int alt = dist[v] + w;
 					if (alt > maxDistance)
@@ -1193,8 +1198,8 @@ public:
 				auto & e = g.incident(u, i);
 				int adjID = e.id;
 				if (g.edgeEnabled(adjID)) {
-					assert(g.all_edges[adjID].from == u);
-					int s = g.all_edges[adjID].to;
+					assert(g.getEdge(adjID).from == u);
+					int s = g.getEdge(adjID).to;
 					int w = 1;				//assume a weight of one for now
 					int alt = dist[u] + w;
 					if (alt > maxDistance)
@@ -1231,8 +1236,8 @@ public:
 				int adjID = e.id;
 				if (g.edgeEnabled(adjID)) {
 					
-					assert(g.all_edges[adjID].to == u);
-					int v = g.all_edges[adjID].from;
+					assert(g.getEdge(adjID).to == u);
+					int v = g.getEdge(adjID).from;
 					int dv = dist[v];
 					int du = dist[u];
 					bool edgeIn = edgeInShortestPathGraph[adjID];
@@ -1309,11 +1314,11 @@ public:
 			}
 		}
 		
-		for (int i = history_qhead; i < g.history.size(); i++) {
-			int edgeid = g.history[i].id;
-			if (g.history[i].addition && g.edgeEnabled(edgeid)) {
+		for (int i = history_qhead; i < g.historySize(); i++) {
+			int edgeid = g.getChange(i).id;
+			if (g.getChange(i).addition && g.edgeEnabled(edgeid)) {
 				GRRInc(edgeid);
-			} else if (!g.history[i].addition && !g.edgeEnabled(edgeid)) {
+			} else if (!g.getChange(i).addition && !g.edgeEnabled(edgeid)) {
 				GRRDec(edgeid);
 			}
 		}
@@ -1340,11 +1345,16 @@ public:
 		last_deletion = g.deletions;
 		last_addition = g.additions;
 		
-		history_qhead = g.history.size();
+		history_qhead = g.historySize();
+		g.updateAlgorithmHistory(this,alg_id,history_qhead);
 		last_history_clear = g.historyclears;
 		assert(dbg_uptodate());
 		
 	}
+	void updateHistory(){
+		update();
+	}
+
 	bool dbg_path(int to) {
 #ifdef DEBUG_DIJKSTRA
 		assert(connected(to));

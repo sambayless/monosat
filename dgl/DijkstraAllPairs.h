@@ -29,11 +29,11 @@
 #include "AllPairs.h"
 
 namespace dgl {
-template<class Status>
+template<typename Weight,class Status>
 class DijkstraAllPairs: public AllPairs {
 public:
 	
-	DynamicGraph & g;
+	DynamicGraph<Weight>  & g;
 	Status & status;
 	int last_modification;
 	int last_addition;
@@ -77,7 +77,7 @@ public:
 	double stats_full_update_time;
 	double stats_fast_update_time;
 
-	DijkstraAllPairs(DynamicGraph & graph, Status & _status, int _reportPolarity = 0) :
+	DijkstraAllPairs(DynamicGraph<Weight>  & graph, Status & _status, int _reportPolarity = 0) :
 			g(graph), status(_status), last_modification(-1), last_addition(-1), last_deletion(-1), history_qhead(0), last_history_clear(
 					0), INF(0), reportPolarity(0), q(DistCmp(&dist_ptr)) {
 		
@@ -196,7 +196,7 @@ public:
 		last_deletion = g.deletions;
 		last_addition = g.additions;
 		
-		history_qhead = g.history.size();
+		history_qhead = g.historySize();
 		last_history_clear = g.historyclears;
 		
 	}

@@ -47,9 +47,9 @@ template<typename Weight>
 class ReachDetector: public Detector {
 public:
 	GraphTheorySolver<Weight> * outer;
-	DynamicGraph &g_under;
-	DynamicGraph &g_over;
-	DynamicGraph cutgraph;
+	DynamicGraph<Weight> &g_under;
+	DynamicGraph<Weight> &g_over;
+	DynamicGraph<Weight> cutgraph;
 	int within;
 	int source;
 	double rnd_seed;
@@ -69,6 +69,7 @@ public:
 	Distance<int> * negative_distance_detector = nullptr;
 	vec<bool> original_reach_lits;
 	vec<Lit> reach_lits;
+	vec<Lit> cnf_reach_lits;
 	Var first_reach_var;
 	vec<int> order_vec;
 	vec<int> reach_lit_map;
@@ -132,7 +133,7 @@ public:
 			return false;
 		}
 		
-		void setMininumDistance(int u, bool reachable, int distance);
+		void setMininumDistance(int u, bool reachable, Weight distance);
 
 		ReachStatus(ReachDetector & _outer, bool _polarity) :
 				detector(_outer), polarity(_polarity) {
@@ -143,7 +144,7 @@ public:
 	MaxFlow<long> * conflict_flow = nullptr;
 	std::vector<MaxFlow<long> *> conflict_flows;
 
-	WeightedDijkstra<double> * rnd_path = nullptr;
+	WeightedDijkstra<Weight,double> * rnd_path = nullptr;
 	std::vector<double> rnd_weight;
 	/*struct OptimalWeightEdgeStatus{
 	 ReachDetector & detector;
@@ -156,7 +157,7 @@ public:
 	 OptimalWeightEdgeStatus opt_weight;
 	 WeightedDijkstra<OptimalWeightEdgeStatus> * opt_path;*/
 	Reach * chokepoint_detector = nullptr;
-	struct CutStatus {
+/*	struct CutStatus {
 		long one = 1;
 		long inf = 0xFFFF;
 		ReachDetector & outer;
@@ -175,7 +176,7 @@ public:
 				outer(_outer) {
 		}
 		
-	} cutStatus;
+	} cutStatus;*/
 	std::vector<MaxFlowEdge> cut;
 	/*		struct ChokepointStatus{
 	 ReachDetector & detector;
@@ -228,11 +229,11 @@ public:
 		}
 		int previous(int node) {
 			assert(false);
-			exit(3); //not supported
+			exit(5); //not supported
 		}
 		int incomingEdge(int node) {
 			assert(false);
-			exit(3); //not supported
+			exit(5); //not supported
 		}
 		
 	};
@@ -276,11 +277,11 @@ public:
 	void printSolution(std::ostream& write_to);
 
 	void addLit(int from, int to, Var reach_var);
-	Lit decide(int level);
+	Lit decide();
 	void preprocess();
 	void dbg_sync_reachability();
 
-	ReachDetector(int _detectorID, GraphTheorySolver<Weight> * _outer, DynamicGraph &_g, DynamicGraph &_antig,
+	ReachDetector(int _detectorID, GraphTheorySolver<Weight> * _outer, DynamicGraph<Weight>  &_g, DynamicGraph<Weight>  &_antig,
 			int _source, double seed = 1); //:Detector(_detectorID),outer(_outer),within(-1),source(_source),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL),chokepoint_status(*this),chokepoint(chokepoint_status, _antig,source){}
 	virtual ~ReachDetector() {
 		
@@ -290,13 +291,13 @@ public:
 		return "Reachability Detector";
 	}
 	
-	bool dbg_cut(std::vector<MaxFlowEdge> & cut, DynamicGraph & graph, int source, int node) {
+	bool dbg_cut(std::vector<MaxFlowEdge> & cut, DynamicGraph<Weight>  & graph, int source, int node) {
 #ifndef NDEBUG
 		
-		DynamicGraph t;
+		DynamicGraph<int>  t;
 		for (int i = 0; i < graph.nodes(); i++)
 			t.addNode();
-		std::vector<int> capacity;
+
 		for (int id = 0; id < graph.edges(); id++) {
 			t.addEdge(graph.getEdge(id).from, graph.getEdge(id).to, id);
 			if (id % 2 == 0) {
@@ -308,16 +309,16 @@ public:
 					}
 				}
 				if (incut) {
-					capacity.push_back(0);
+					t.setEdgeWeight(id, 0);
 					t.disableEdge(id);
 				} else
-					capacity.push_back(1);
+					t.setEdgeWeight(id, 1);
 			} else {
-				capacity.push_back(0xFFFF);
+				t.setEdgeWeight(id, 0xFFFF);
 			}
 			
 		}
-		EdmondsKarpAdj<std::vector<int>, int> check(t, capacity, source, node);
+		EdmondsKarpAdj<int> check(t,  source, node);
 		std::vector<MaxFlowEdge> check_cut;
 		int flow = check.minCut(check_cut);
 		assert(flow < 0xFFFF);
@@ -328,7 +329,10 @@ public:
 #endif
 		return true;
 	}
-	
+
+	//Return the path (in terms of nodes)
+	bool getModel_Path(int node, std::vector<int> & store_path);
+	bool getModel_PathByEdgeLit(int node, std::vector<Lit> & store_path);
 };
 }
 ;
