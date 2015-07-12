@@ -1,7 +1,9 @@
 # MonoSAT
 MonoSAT is a SAT Modulo Theory solver for *[Boolean monotonic theories]*. It supports a wide set of graph predicates (including reachability, shortest paths, maximum *s-t* flow, minimum spanning tree, and acyclicity constraints). MonoSAT also has limited support for geometric constraints involving convex hulls of point sets, and experimental support for constraints on finite state machines.
 
-To see examples of use cases for MonoSAT, and details on the (very simple) input file format that MonoSAT accepts, see  [FORMAT].
+MonoSAT now comes with a simplified, Z3-inspired Python 3 interface (see api/python). See installation instructions below; see also the [TUTORIAL].
+
+To see further examples of use cases for MonoSAT, and details on the (very simple) input file format that MonoSAT accepts, see  [FORMAT].
 
 ###Building
 From the root directory, build MonoSAT with:
@@ -18,9 +20,29 @@ $cd Static
 $make
 ```
 
-MonoSAT requires C++11 support, zlib, and GMP >= 5.1.3. Tested on Ubuntu 14.04, with G++ 4.8.2 and G++ 4.9. 
+or (to build the shared library, required by the Python interface):
+
+```
+$cd SharedLibrary
+$make
+```
+
+MonoSAT requires C++11 support, zlib, and GMP >= 5.1.3. Tested on Ubuntu 14.04, with G++ 4.8.2 and G++ 4.9. The python library requires Python 3.3+.
 
 If you build MonoSAT without using the provided makefiles, it is critically important to compile with `NDEBUG` set (*i.e.,* `-DNDEBUG`), as otherwise many very expensive debugging assertions will be enabled. 
+
+###Install the Python Library
+
+To install the Python library (system-wide), first install the shared library, and then use Python's setuptools to install the Python library.
+
+On Ubuntu (14.04):
+
+$cd SharedLibrary
+$make
+$sudo cp libmonosat.so /usr/local/lib/
+$cd ../api/python
+$sudo python3 setup.py install
+
 
 ###Usage
 MonoSAT is based on [MiniSat 2][Minisat], and supports many of the same calling conventions:
