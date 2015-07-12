@@ -52,7 +52,7 @@ class BVManager(metaclass=Singleton):
         self.comparisons=[]        
     
     #Each "string" must actually be a list of positive integers
-    def bv(self,  width=8, const_value=None):
+    def Bv(self,  width=8, const_value=None):
 
         return BitVector(self,width,const_value)
   
@@ -76,12 +76,19 @@ class BVManager(metaclass=Singleton):
             bv.write(f)
             
 _bv_manager = BVManager() 
-def bv(width, const_value=None):
-    return _bv_manager.bv(width,const_value)                   
+#def Bv(width, const_value=None):
+#    return _bv_manager.Bv(width,const_value)                   
        
 class BitVector():    
-    def __init__(self,mgr,width,op=None,args=None):
+    def __init__(self,mgr,width=None,op=None,args=None):
+        if isinstance(mgr,int):
+            #Shift the arguments over 1
+            op = width
+            width = mgr
+            mgr = BVManager()
         
+        assert(width is not None)   
+            
         self.mgr = mgr
         self._bv=None
         self.symbol=None   

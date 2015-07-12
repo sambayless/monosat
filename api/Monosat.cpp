@@ -220,7 +220,7 @@ void * newGraph(Monosat::SimpSolver * S){
 bool solve(Monosat::SimpSolver * S){
 	  static Monosat::vec<int> ignore;
 	  ignore.clear();
-	return solveAssumption(S,&ignore[0],0);
+	return solveAssumptions(S,&ignore[0],0);
   }
 void backtrack(Monosat::SimpSolver * S){
 	S->cancelUntil(0);
@@ -238,7 +238,7 @@ void * initBVTheory(Monosat::SimpSolver * S){
 
 	  return bv;
 }
-bool solveAssumption(Monosat::SimpSolver * S,int * assumptions, int n_assumptions){
+bool solveAssumptions(Monosat::SimpSolver * S,int * assumptions, int n_assumptions){
 	S->cancelUntil(0);
 
 	  static Monosat::vec<Monosat::Lit> assume;

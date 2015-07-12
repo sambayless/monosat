@@ -17,7 +17,7 @@ AssertEqualPB(vars,2);
 AssertLessEqPB(vars, 4)
 AssertGreaterThanPB(vars, 1)
 
-result=solve()
+result=Solve()
 print("Result is " + str(result))
 assert(result==True)
 

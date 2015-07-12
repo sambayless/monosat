@@ -43,7 +43,7 @@ AssertLessThanPB((a,b,Not(d)),4);
 mf = g.maxFlowGreaterOrEqualTo(0,3,1)
 Assert(mf)
 
-result=solve()
+result=Solve()
    
 print(str(result))
 if result:

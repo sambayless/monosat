@@ -17,10 +17,10 @@ print("RandomSeed=" + str(seed))
 
 
 
-bv1 = bv(4)
-bv2 = bv(4)
-bv3 = bv(4)
-bv4 = bv(4)
+bv1 = BitVector(4)
+bv2 = BitVector(4)
+bv3 = BitVector(4)
+bv4 = BitVector(4)
 
 
 g = Graph()
@@ -34,8 +34,8 @@ Assert(g.addEdge(0,2,bv2))
 Assert(g.addEdge(1,2,bv3))
 Assert(g.addEdge(2,3,bv4))
 
-bv5 = bv(4)
-bv6 = bv(4)
+bv5 = BitVector(4)
+bv6 = BitVector(4)
 
 Assert(g.distance_leq(0,3,bv5))
 Assert(Not(g.distance_lt(0,3,bv5)))
@@ -54,7 +54,7 @@ Assert(bv5+bv6>8)
 #Assert(bv6>6)
 #Assert(bv6<10)
 
-result=solve()
+result=Solve()
 print("Result is " + str(result))
 
 if result:

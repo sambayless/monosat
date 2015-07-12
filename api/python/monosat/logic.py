@@ -34,8 +34,8 @@ def getSymbols():
 class Var:
     
     def __init__(self,symbol=None, allow_simplification=False):
-        #Warning: if allow_simplification is set to true, then the variable may be eliminated by the solver at the next solve();
-        #After that point, the variable would no longer be safe to use in clauses or constraints in subsequent calls to solve(). 
+        #Warning: if allow_simplification is set to true, then the variable may be eliminated by the solver at the next Solve();
+        #After that point, the variable would no longer be safe to use in clauses or constraints in subsequent calls to Solve(). 
         #Use carefully!
         if isinstance(symbol,bool):  
             self.lit = _monosat.true() if symbol else _monosat.false()

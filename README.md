@@ -100,7 +100,7 @@ MonoSAT was made possible by the use of several open-source projects, including 
 
 [Boolean monotonic theories]: http://www.cs.ubc.ca/labs/isd/Projects/monosat/smmt.pdf
 [FORMAT]: FORMAT.md
-
+[TUTORIAL]: TUTORIAL.md
 [MiniSat]:http://minisat.se/
 
 [MIT license]: http://opensource.org/licenses/MIT

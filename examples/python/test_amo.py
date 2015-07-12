@@ -16,14 +16,14 @@ for v in range(10):
     
 AssertAtMostOne(vars)
 
-result=solve()
+result=Solve()
 print("Result is " + str(result))
 assert(result==True)
 for v in vars:
     print(v.value())
 
 AssertOr(vars)
-result=solve()
+result=Solve()
 print("Result is " + str(result))
 assert(result==True)
 for v in vars:
@@ -31,6 +31,6 @@ for v in vars:
     
 Assert(vars[0])
 Assert(vars[1])
-result=solve()
+result=Solve()
 print("Result is " + str(result))
 assert(result==False)

@@ -118,7 +118,7 @@ for i,nxg in enumerate(graphs):
         
 
 
-result = solve()
+result = Solve()
 print("Result is " + str(result))
 assert(result==True)
 

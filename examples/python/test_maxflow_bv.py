@@ -23,10 +23,10 @@ Monosat().init("-decide-graph-bv -no-decide-theories -no-decide-graph-rnd   -laz
 Monosat().setOutputFile(open(filename,'w'))
 
 
-bv0 = bv(4)
-bv1 = bv(4)
-bv2 = bv(4)
-bv3 = bv(4)
+bv0 = BitVector(4)
+bv1 = BitVector(4)
+bv2 = BitVector(4)
+bv3 = BitVector(4)
 
 
 
@@ -42,8 +42,8 @@ Assert(g.addEdge(0,2,bv1))
 Assert(g.addEdge(1,2,bv2))
 Assert(g.addEdge(2,3,bv3))
 
-bv4 = bv(4)
-bv5 = bv(4)
+bv4 = BitVector(4)
+bv5 = BitVector(4)
 
 #Assert(g.distance_leq(0,3,bv5))
 #Assert(Not(g.distance_lt(0,3,bv5)))
@@ -67,7 +67,7 @@ bvs=[bv0,bv1,bv2,bv3,bv4,bv5]
 #Assert(bv6>6)
 #Assert(bv6<10)
 
-result=solve()
+result=Solve()
    
 print(str(result))
 if result:

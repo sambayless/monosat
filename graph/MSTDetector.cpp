@@ -715,7 +715,10 @@ bool MSTDetector<Weight>::propagate(vec<Lit> & conflict) {
 	if (++it == 7) {
 		int a = 1;
 	}
-
+	if(outer->has_any_bitvector_edges){
+		fprintf(stderr,"MST constraints don't yet support bitvector weight edges, aborting!\n");
+		exit(1);
+	}
 	//printf("it %d: \n",it);
 //	changed_edges.clear();
 //changed_weights.clear();
