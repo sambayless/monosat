@@ -1,5 +1,5 @@
 # MonoSAT
-MonoSAT is a SAT Modulo Theory solver for *[Boolean monotonic theories]*. It supports a wide set of graph predicates (including reachability, shortest paths, maximum *s-t* flow, minimum spanning tree, and acyclicity constraints). MonoSAT also has limited support for geometric constraints involving convex hulls of point sets, and experimental support for constraints on finite state machines.
+MonoSAT is a SAT Modulo Theory solver for *[monotonic theories]*, over Booleans and bitvectors. It supports a wide set of graph predicates (including reachability, shortest paths, maximum *s-t* flow, minimum spanning tree, and acyclicity constraints). MonoSAT also has limited support for geometric constraints involving convex hulls of point sets, and experimental support for constraints on finite state machines. 
 
 MonoSAT now comes with a simplified, Z3-inspired Python 3 interface (see api/python). See installation instructions below; see also the [tutorial].
 
@@ -98,7 +98,7 @@ MonoSAT as a whole is currently released under the [GPL] (version 3 or later).
 
 MonoSAT was made possible by the use of several open-source projects, including the afore-mentioned [MiniSat], as well as a high-performance [dynamic maximum-flow algorithm] by Pushmeet Kohli and Philip Torr, Emil Stefanov's implementation of [Disjoint Sets], a [Link-Cut Tree] implementation by Daniel Sleator, and a [computational geometry library] by Chelton Evans.
 
-[Boolean monotonic theories]: http://www.cs.ubc.ca/labs/isd/Projects/monosat/smmt.pdf
+[monotonic theories]: http://www.cs.ubc.ca/labs/isd/Projects/monosat/smmt.pdf
 [FORMAT]: FORMAT.md
 [tutorial]: TUTORIAL.md
 [MiniSat]:http://minisat.se/
