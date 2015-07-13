@@ -104,7 +104,7 @@ public:
 
 	struct DistLit {
 		Lit l;
-		Weight max_flow=-1;
+		Weight max_flow=(Weight)-1;
 		BitVector<Weight>  bv;
 		bool inclusive;//If inclusive true, l is true iff the maximum flow is >= max_flow; else, l is true iff the maximum flow is > max_flow.
 	};
