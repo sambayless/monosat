@@ -16,7 +16,7 @@ from monosat import *
 #Create two Boolean variables:
 a = Var() 
 b = Var() 
-c = Or(a, Not(b)) #An equivalent way to write this is
+c = Or(a, Not(b)) 
 
 #Add a unit clause to the solver, asserting that variable c must be true
 Assert(c)
