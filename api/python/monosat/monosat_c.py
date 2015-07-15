@@ -284,16 +284,24 @@ class Monosat(metaclass=Singleton):
     def solve(self):
         if self.output:
             self.output.flush()
-        return self.monosat_c.solve(self.solver)
-
+        self._has_model=False
+        ret = self.monosat_c.solve(self.solver)
+        if ret is True:
+            self._has_model=True
+        return ret
 
     def solveAssumptions(self,assumptions):
         if self.output:
             self.output.flush()
         lp = self.getIntArray(assumptions)
-        return self.monosat_c.solveAssumptions(self.solver,lp,len(assumptions))
+        self._has_model=False
+        ret = self.monosat_c.solveAssumptions(self.solver,lp,len(assumptions))
+        if ret is True:
+            self._has_model=True
+        return ret
     
     def backtrack(self):
+        self._has_model=False;
         if self.output:
             self.output.flush()
         return self.monosat_c.backtrack(self.solver)        
@@ -631,21 +639,33 @@ class Monosat(metaclass=Singleton):
   
     #0 = true, 1=false, 2=unassigned
     def getModel_Literal(self, lit):
+        if not self._has_model:
+            raise RuntimeError("MonoSAT has no Model (you must call Solve())") 
         return self.monosat_c.getModel_Literal(self.solver, lit);
 
     def getModel_BV(self, bvID):
+        if not self._has_model:
+            raise RuntimeError("MonoSAT has no Model (you must call Solve())") 
         return self.monosat_c.getModel_BV(self.solver, self.bvtheory,c_bvID(bvID));
         
     def getModel_MaxFlow(self, graph, flowlit):
+        if not self._has_model:
+            raise RuntimeError("MonoSAT has no Model (you must call Solve())") 
         return self.monosat_c.getModel_MaxFlow(self.solver, graph,flowlit);
         
     def getModel_EdgeFlow(self, graph, flowlit,edgelit):
+        if not self._has_model:
+            raise RuntimeError("MonoSAT has no Model (you must call Solve())") 
         return self.monosat_c.getModel_EdgeFlow(self.solver, graph,flowlit, edgelit);
 
     def getModel_AcyclicEdgeFlow(self, graph, flowlit,edgelit):
+        if not self._has_model:
+            raise RuntimeError("MonoSAT has no Model (you must call Solve())") 
         return self.monosat_c.getModel_AcyclicEdgeFlow(self.solver, graph,flowlit, edgelit);
 
 
     def getModel_MinimumSpanningTreeWeight(self, graph, mstlit):
+        if not self._has_model:
+            raise RuntimeError("MonoSAT has no Model (you must call Solve())") 
         return self.monosat_c.getModel_MinimumSpanningTreeWeight(self.solver, graph,mstlit); 
 
