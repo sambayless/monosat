@@ -170,12 +170,9 @@ void _selectAlgorithms(){
 }
 void printStats(SimpSolver* solver) {
 	double cpu_time = cpuTime();
-    
-#if defined(__APPLE__)
-    double mem_used = 0;
-#else
+
     double mem_used = memUsedPeak(); // not available in osx
-#endif
+
     
 	solver->printStats(3);
 	if (mem_used != 0)

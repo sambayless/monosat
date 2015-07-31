@@ -164,11 +164,8 @@ public:
         
         double cpu_time = cpuTime();
 
-#if defined(__APPLE__)
-        double mem_used = 0;
-#else
         double mem_used = memUsedPeak(); // not available in osx
-#endif
+
         
 		printf("restarts              : %" PRIu64 "\n", starts);
 		printf("conflicts             : %-12" PRIu64 "   (%.0f /sec, %d learnts, %" PRId64 " removed)\n", conflicts,
