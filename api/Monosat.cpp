@@ -170,10 +170,8 @@ void _selectAlgorithms(){
 }
 void printStats(SimpSolver* solver) {
 	double cpu_time = cpuTime();
-
     double mem_used = memUsedPeak(); // not available in osx
 
-    
 	solver->printStats(3);
 	if (mem_used != 0)
 		printf("Memory used           : %.2f MB\n", mem_used);
