@@ -128,7 +128,7 @@ public:
 			int node = accept_lit_map[index].to;
 			int str =  accept_lit_map[index].str;
 			//if (!is_changed[index]) {
-				changed.push( { var(l), node,str });
+            changed.push( { {var(l)}, node,str });
 			//	is_changed[index] = true;
 			//}
 		}

@@ -26,6 +26,7 @@
 #include <cassert>
 #include <iostream>
 #include <algorithm>
+#include <vector>
 
 
 #ifdef NDEBUG

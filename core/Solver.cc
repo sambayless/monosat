@@ -1552,7 +1552,7 @@ bool Solver::addConflictClause(vec<Lit> & ps, CRef & confl_out, bool permanent) 
 					max_learnts *= learntsize_inc;
 					
 					if (verbosity >= 1)
-						printf("| %9d | %7d %8d %8d | %8d %8d %6.0f | %ld removed |\n", (int) conflicts,
+						printf("| %9d | %7d %8d %8d | %8d %8d %6.0f | %" PRId64 " removed |\n", (int) conflicts,
 								(int) dec_vars - (trail_lim.size() == 0 ? trail.size() : trail_lim[0]), nClauses(),
 								(int) clauses_literals, (int) max_learnts, nLearnts(),
 								(double) learnts_literals / nLearnts(), stats_removed_clauses);
@@ -1683,7 +1683,7 @@ lbool Solver::search(int nof_conflicts) {
 				max_learnts *= learntsize_inc;
 				
 				if (verbosity >= 1)
-					printf("| %9d | %7d %8d %8d | %8d %8d %6.0f | %ld removed |\n", (int) conflicts,
+					printf("| %9d | %7d %8d %8d | %8d %8d %6.0f | %" PRId64 " removed |\n", (int) conflicts,
 							(int) dec_vars - (trail_lim.size() == 0 ? trail.size() : trail_lim[0]), nClauses(),
 							(int) clauses_literals, (int) max_learnts, nLearnts(),
 							(double) learnts_literals / nLearnts(), stats_removed_clauses);

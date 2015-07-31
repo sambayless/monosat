@@ -33,6 +33,7 @@
 #include "core/Theory.h"
 #include "core/TheorySolver.h"
 #include "core/Config.h"
+#include <cinttypes>
 
 //this is _really_ ugly...
 template<unsigned int D, class T> class GeometryTheorySolver;
@@ -160,22 +161,28 @@ public:
 	}
 	
 	void printStats(int detail_level = 0) {
-		double cpu_time = cpuTime();
-		double mem_used = memUsedPeak();
-		
+        
+        double cpu_time = cpuTime();
+
+#if defined(__APPLE__)
+        double mem_used = 0;
+#else
+        double mem_used = memUsedPeak(); // not available in osx
+#endif
+        
 		printf("restarts              : %" PRIu64 "\n", starts);
-		printf("conflicts             : %-12" PRIu64 "   (%.0f /sec, %d learnts, %ld removed)\n", conflicts,
+		printf("conflicts             : %-12" PRIu64 "   (%.0f /sec, %d learnts, %" PRId64 " removed)\n", conflicts,
 				conflicts / cpu_time, learnts.size(), stats_removed_clauses);
 		printf("decisions             : %-12" PRIu64 "   (%4.2f %% random) (%.0f /sec)\n", decisions,
 				(float) rnd_decisions * 100 / (float) decisions, decisions / cpu_time);
 		if(opt_decide_theories){
-		printf("Theory decision rounds: %ld/%ld\n",n_theory_decision_rounds,starts);
+		printf("Theory decision rounds: %" PRId64 "/%" PRId64 "\n",n_theory_decision_rounds,starts);
 		}
 		printf("propagations          : %-12" PRIu64 "   (%.0f /sec)\n", propagations, propagations / cpu_time);
 		printf("conflict literals     : %-12" PRIu64 "   (%4.2f %% deleted)\n", tot_literals,
 				(max_literals - tot_literals) * 100 / (double) max_literals);
 		if (opt_detect_pure_theory_lits) {
-			printf("pure literals     : %ld (%ld theory lits) (%ld rounds, %f time)\n", stats_pure_lits,
+			printf("pure literals     : %" PRId64 " (%" PRId64 " theory lits) (%" PRId64 " rounds, %f time)\n", stats_pure_lits,
 					stats_pure_theory_lits, pure_literal_detections, stats_pure_lit_time);
 		}
 

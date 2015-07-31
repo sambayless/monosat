@@ -75,7 +75,7 @@ public:
 			printf("\tOver-approx updates: %ld (%ld skipped)  (%f s total, %f s avg)\n", stats_over_updates,
 					stats_skipped_over_updates, (double) stats_over_update_time,
 					(double) stats_over_update_time / (double) (stats_over_updates + 1));
-			printf("\tTheory Decisions: %ld (%f s total, %f s avg, %d priority)\n", stats_decisions, (double) stats_decide_time,
+			printf("\tTheory Decisions: %ld (%f s total, %f s avg, %ld priority)\n", stats_decisions, (double) stats_decide_time,
 					(double) stats_decide_time / (double) (stats_decisions + 1),n_stats_priority_decisions);
 			printf(
 					"\tConflicts (under,over): %ld (clause literals: %ld), %ld, (clause literals: %ld), (under time %f s, over time %f s)\n",
