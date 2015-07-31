@@ -418,7 +418,7 @@ public:
 	void printStats(int detailLevel) {
 		printf("BV Theory %d stats:\n", this->getTheoryIndex());
 
-		printf("%d bitvectors, %ld bits, %l comparisons (bvcomparisons %d), %ld additions\n", bitvectors.size(),n_bits,compares.size()+bvcompares.size(),bvcompares.size(), n_additions				 );
+		printf("%d bitvectors, %ld bits, %d comparisons (bvcomparisons %d), %ld additions\n", bitvectors.size(),n_bits,compares.size()+bvcompares.size(),bvcompares.size(), n_additions				 );
 		printf("constant bitvectors (at start, end of deduction): %ld, %ld\n",n_starting_consts ,n_consts);
 
 
@@ -2321,7 +2321,7 @@ public:
 					double startconftime = rtime(2);
 					stats_num_conflicts++;
 					if(opt_verb>1){
-						printf("bv approximation update conflict %d\n", stats_num_conflicts);
+						printf("bv approximation update conflict %ld\n", stats_num_conflicts);
 					}
 					propagationtime += startconftime - startproptime;
 					//this is already a conflict;
@@ -2358,7 +2358,7 @@ public:
 								}
 								stats_num_conflicts++;stats_bit_conflicts++;
 								if(opt_verb>1){
-									printf("bv bit conflict %d\n", stats_num_conflicts);
+									printf("bv bit conflict %ld\n", stats_num_conflicts);
 								}
 								buildComparisonReason(Comparison::leq,bvID,overApprox,conflict);
 								toSolver(conflict);
@@ -2383,7 +2383,7 @@ public:
 								}
 								stats_num_conflicts++;stats_bit_conflicts++;
 								if(opt_verb>1){
-									printf("bv bit conflict %d\n", stats_num_conflicts);
+									printf("bv bit conflict %ld\n", stats_num_conflicts);
 								}
 								buildComparisonReason(Comparison::geq,bvID,underApprox,conflict);
 								toSolver(conflict);
@@ -2428,7 +2428,7 @@ public:
 					propagationtime += startconftime - startproptime;
 					stats_num_conflicts++;stats_addition_conflicts++;
 					if(opt_verb>1){
-						printf("bv addition conflict %d\n", stats_num_conflicts);
+						printf("bv addition conflict %ld\n", stats_num_conflicts);
 					}
 					buildAdditionReason(bvID,i,conflict);
 					toSolver(conflict);
@@ -2438,7 +2438,7 @@ public:
 					double startconftime = rtime(2);
 					propagationtime += startconftime - startproptime;
 					if(opt_verb>1){
-						printf("bv addition conflict %d\n", stats_num_conflicts);
+						printf("bv addition conflict %ld\n", stats_num_conflicts);
 					}
 					stats_num_conflicts++;stats_addition_conflicts++;
 					buildAdditionReason(bvID,i,conflict);
@@ -2498,7 +2498,7 @@ public:
 						int a=1;
 					}
 					if(opt_verb>1){
-						printf("bv addition arg conflict %d\n", stats_num_conflicts);
+						printf("bv addition arg conflict %ld\n", stats_num_conflicts);
 					}
 					buildAdditionArgReason(bvID,i,conflict);
 					toSolver(conflict);
@@ -2509,7 +2509,7 @@ public:
 					propagationtime += startconftime - startproptime;
 					stats_num_conflicts++;stats_addition_conflicts++;
 					if(opt_verb>1){
-						printf("bv addition arg conflict %d\n", stats_num_conflicts);
+						printf("bv addition arg conflict %ld\n", stats_num_conflicts);
 					}
 					buildAdditionArgReason(bvID,i,conflict);
 					toSolver(conflict);
@@ -2573,7 +2573,7 @@ public:
 						propagationtime += startconftime - startproptime;
 						stats_num_conflicts++;stats_compare_conflicts++;
 						if(opt_verb>1){
-							printf("bv comparison conflict %d\n", stats_num_conflicts);
+							printf("bv comparison conflict %ld\n", stats_num_conflicts);
 						}
 						assert(value(l)==l_False);
 						assert(dbg_value(l)==l_False);
@@ -2593,7 +2593,7 @@ public:
 						propagationtime += startconftime - startproptime;
 						stats_num_conflicts++;stats_compare_conflicts++;
 						if(opt_verb>1){
-							printf("bv comparison conflict %d\n", stats_num_conflicts);
+							printf("bv comparison conflict %ld\n", stats_num_conflicts);
 						}
 						conflict.push(~l);
 						buildComparisonReason(-op,bvID,to,conflict);
@@ -2625,7 +2625,7 @@ public:
 						propagationtime += startconftime - startproptime;
 						stats_num_conflicts++;stats_compare_conflicts++;
 						if(opt_verb>1){
-							printf("bv comparison conflict %d\n", stats_num_conflicts);
+							printf("bv comparison conflict %ld\n", stats_num_conflicts);
 						}
 						conflict.push(~l);
 						buildComparisonReason(-op,bvID,to,conflict);
@@ -2648,7 +2648,7 @@ public:
 						propagationtime += startconftime - startproptime;
 						stats_num_conflicts++;stats_compare_conflicts++;
 						if(opt_verb>1){
-							printf("bv comparison conflict %d\n", stats_num_conflicts);
+							printf("bv comparison conflict %ld\n", stats_num_conflicts);
 						}
 						conflict.push(l);
 						buildComparisonReason(op,bvID,to,conflict);
@@ -2705,7 +2705,7 @@ public:
 						propagationtime += startconftime - startproptime;
 						stats_num_conflicts++;stats_bv_compare_conflicts++;
 						if(opt_verb>1){
-							printf("bv bv comparison conflict %d\n", stats_num_conflicts);
+							printf("bv bv comparison conflict %ld\n", stats_num_conflicts);
 						}
 						conflict.push(~l);
 						buildComparisonReasonBV(-op,bvID,compareID,conflict);
@@ -2756,7 +2756,7 @@ public:
 						propagationtime += startconftime - startproptime;
 						stats_num_conflicts++;stats_bv_compare_conflicts++;
 						if(opt_verb>1){
-							printf("bv bv comparison conflict %d\n", stats_num_conflicts);
+							printf("bv bv comparison conflict %ld\n", stats_num_conflicts);
 						}
 						conflict.push(~l);
 						buildComparisonReasonBV(-op,bvID,compareID,conflict);
@@ -4810,17 +4810,21 @@ template<typename Weight>
 
 template<>
 inline mpq_class BVTheorySolver<mpq_class>::refine_ubound_check(int bvID, mpq_class bound, Var ignore_bit){
+    exit(1);
 }
 template<>
 inline double BVTheorySolver<double>::refine_ubound_check(int bvID, double bound, Var ignore_bit){
+    exit(1);
 }
 
 
 template<>
 inline mpq_class BVTheorySolver<mpq_class>::refine_lbound_check(int bvID, mpq_class bound, Var ignore_bit){
+    exit(1);
 }
 template<>
 inline double BVTheorySolver<double>::refine_lbound_check(int bvID, double bound, Var ignore_bit){
+    exit(1);
 }
 
 template<>

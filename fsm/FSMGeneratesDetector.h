@@ -126,7 +126,7 @@ public:
 
 			int str =  generate_lit_map[index].str;
 			//if (!is_changed[index]) {
-				changed.push( { var(l), str });
+            changed.push( { {var(l)}, str });
 			//	is_changed[index] = true;
 			//}
 		}

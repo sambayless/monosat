@@ -354,7 +354,7 @@ void FSMGeneratorAcceptorDetector::addAcceptLit(int generatorFinalState, int acc
 	lit_backward_map[generatorFinalState + acceptorFinalState*g_over.states()]= var(acceptLit);
 
 	while (accept_lit_map.size() <= accept_var - first_var) {
-		accept_lit_map.push({-1,-1});
+        accept_lit_map.push({{-1},-1});
 	}
 	accept_lit_map[accept_var - first_var] = {acceptLit,generatorFinalState,acceptorFinalState};
 	all_accept_lits.push( {acceptLit,generatorFinalState,acceptorFinalState});

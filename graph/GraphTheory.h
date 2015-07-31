@@ -706,7 +706,7 @@ public:
 				(propagationtime) / ((double) stats_propagations + 1), stats_propagations_skipped);
 		printf("Decisions: %ld (%f s, avg: %f s), lazy decisions: %ld\n", stats_decisions, stats_decision_time,
 				(stats_decision_time) / ((double) stats_decisions + 1), stats_lazy_decisions);
-		printf("Conflicts: %ld (lazy conflicts %d)\n", stats_num_conflicts,stats_num_lazy_conflicts);
+		printf("Conflicts: %ld (lazy conflicts %ld)\n", stats_num_conflicts,stats_num_lazy_conflicts);
 		printf("Reasons: %ld (%f s, avg: %f s)\n", stats_num_reasons, stats_reason_time,
 				(stats_reason_time) / ((double) stats_num_reasons + 1));
 
