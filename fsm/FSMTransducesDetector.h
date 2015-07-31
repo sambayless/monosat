@@ -141,7 +141,7 @@ public:
 			int str1 =  accept_lit_map[index].str1;
 			int str2 =  accept_lit_map[index].str2;
 			//if (!is_changed[index]) {
-				changed.push( { var(l), node,str1,str2 });
+            changed.push( { {var(l)}, node,str1,str2 });
 			//	is_changed[index] = true;
 			//}
 		}

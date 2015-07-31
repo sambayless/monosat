@@ -29,6 +29,8 @@ $make
 
 MonoSAT requires C++11 support, zlib, and GMP >= 5.1.3. Tested on Ubuntu 14.04, with G++ 4.8.2 and G++ 4.9. The python library requires Python 3.3+.
 
+If you get errors along the lines of "error: could not convert ‘x’ from ‘__gmp_expr<__mpq_struct [1], __mpq_struct [1]>’ to ‘bool’", then you likely need to install a more recent version of GMP.
+
 If you build MonoSAT without using the provided makefiles, it is critically important to compile with `NDEBUG` set (*i.e.,* `-DNDEBUG`), as otherwise many very expensive debugging assertions will be enabled. 
 
 ###Install the Python Library
