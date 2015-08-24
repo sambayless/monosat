@@ -178,7 +178,7 @@ CRef Solver::attachReasonClause(Lit r,vec<Lit> & ps) {
 
 		int nfalse = 0;
 		int max_lev = 0;
-		bool satisfied = false;
+		//bool satisfied = false;
 		int notFalsePos1 = -1;
 		int notFalsePos2 = -1;
 		for (int j = 1; j < ps.size(); j++) {
@@ -188,8 +188,8 @@ CRef Solver::attachReasonClause(Lit r,vec<Lit> & ps) {
 				nfalse++;
 			} else {
 
-				if (value(ps[j]) == l_True)
-					satisfied = true;
+				//if (value(ps[j]) == l_True)
+				//	satisfied = true;
 				if (notFalsePos1 < 0)
 					notFalsePos1 = j;
 				else if (notFalsePos2 < 0) {
@@ -822,8 +822,8 @@ void Solver::analyzeFinal(CRef confl, Lit skip_lit, vec<Lit>& out_conflict) {
 			assert(x != var(skip_lit));
 			CRef r = reason(x);
 			if (r == CRef_Undef) {
-				Var v = var(trail[i]);
-				int lev = level(v);
+				//Var v = var(trail[i]);
+				//int lev = level(v);
 				out_conflict.push(~trail[i]);
 			} else {
 				if (isTheoryCause(r)) {
@@ -866,7 +866,7 @@ bool Solver::propagateTheory(vec<Lit> & conflict_out) {
 	assert(decisionLevel() <= S->decisionLevel());
 	
 	CRef confl = CRef_Undef;
-	int curLev = decisionLevel();
+
 	while (confl == CRef_Undef && super_qhead < S->qhead) {
 		Lit out_l = S->trail[super_qhead++];
 		
@@ -1354,7 +1354,7 @@ void Solver::addClauseSafely(vec<Lit> & ps) {
 				bool conflicting = true;
 				int nfalse = 0;
 				int max_lev = 0;
-				bool satisfied = false;
+				//bool satisfied = false;
 				int notFalsePos1 = -1;
 				int notFalsePos2 = -1;
 				for (int j = 0; j < ps.size(); j++) {
@@ -1364,8 +1364,8 @@ void Solver::addClauseSafely(vec<Lit> & ps) {
 						nfalse++;
 					} else {
 						conflicting = false;
-						if (value(ps[j]) == l_True)
-							satisfied = true;
+						//if (value(ps[j]) == l_True)
+						//	satisfied = true;
 						if (notFalsePos1 < 0)
 							notFalsePos1 = j;
 						else if (notFalsePos2 < 0) {
@@ -1429,14 +1429,14 @@ bool Solver::addConflictClause(vec<Lit> & ps, CRef & confl_out, bool permanent) 
 	}
 	printf(" 0\n");
 #endif
-	bool any_undef=false;
+	//bool any_undef=false;
 	sort(ps);
 	Lit p;
 	int i, j;
 	for (i = j = 0, p = lit_Undef; i < ps.size(); i++){
 		assert(var(ps[i])!=var(theoryDecision));
-		if(decisionLevel()>0 && value(ps[i])==l_Undef)
-			any_undef=true;
+		//if(decisionLevel()>0 && value(ps[i])==l_Undef)
+		//	any_undef=true;
 		if (((value(ps[i]) == l_True && level(var(ps[i])) == 0)) || ps[i] == ~p)
 			return true;
 		else if ((value(ps[i]) != l_False || level(var(ps[i])) != 0) && ps[i] != p)
