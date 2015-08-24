@@ -51,6 +51,8 @@ DistanceDetector<Weight>::DistanceDetector(int _detectorID, GraphTheorySolver<We
 	if (distalg == DistAlg::ALG_SAT) {
 		positiveReachStatus = nullptr;
 		negativeReachStatus = nullptr;
+		positiveDistanceStatus=nullptr;
+		negativeDistanceStatus=nullptr;
 		underapprox_unweighted_distance_detector = nullptr;
 		overapprox_unweighted_distance_detector = nullptr;
 		underapprox_path_detector = nullptr;

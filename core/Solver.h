@@ -163,7 +163,7 @@ public:
 	void printStats(int detail_level = 0) {
         
         double cpu_time = cpuTime();
-        double mem_used = memUsedPeak(); // not available in osx
+        //double mem_used = memUsedPeak();
 
         
 		printf("restarts              : %" PRIu64 "\n", starts);

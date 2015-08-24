@@ -84,6 +84,9 @@ public:
 	bool cycleComputed=false;
 	bool has_topo=false;
 	int nextOrd =0;
+
+	int lower_bound=0;
+	int upper_bound=0;
 	std::vector<bool> edge_enabled;
 	struct Ord_LT {
 		std::vector<int> & ord;
@@ -227,8 +230,6 @@ private:
 
 	//PK Algorithm:
 
-	int lower_bound;
-	int upper_bound;
 	void addEdge(int edgeID){
 #ifndef NDEBUG
 		for(int i = 0;i<visited.size();i++){
