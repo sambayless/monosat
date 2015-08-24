@@ -135,7 +135,15 @@ public:
 	ConnectedComponentsDetector(int _detectorID, GraphTheorySolver<Weight> * _outer, DynamicGraph<Weight>  &_g,
 			DynamicGraph<Weight>  &_antig, double seed = 1); //:Detector(_detectorID),outer(_outer),within(-1),source(_source),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL){}
 	virtual ~ConnectedComponentsDetector() {
-		
+		if (positiveReachStatus)
+			delete positiveReachStatus;
+		if (negativeReachStatus)
+			 delete negativeReachStatus;
+		if (overapprox_component_detector)
+			delete overapprox_component_detector;
+		if (underapprox_component_detector)
+			delete underapprox_component_detector;
+
 	}
 private:
 	Lit getConnectLit(int u, int v);

@@ -284,7 +284,34 @@ public:
 	ReachDetector(int _detectorID, GraphTheorySolver<Weight> * _outer, DynamicGraph<Weight>  &_g, DynamicGraph<Weight>  &_antig,
 			int _source, double seed = 1); //:Detector(_detectorID),outer(_outer),within(-1),source(_source),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL),chokepoint_status(*this),chokepoint(chokepoint_status, _antig,source){}
 	virtual ~ReachDetector() {
+		if (rnd_path)
+			delete rnd_path;
+		if (chokepoint_detector)
+			delete chokepoint_detector;
+		if (cutgraph_detector)
+			delete cutgraph_detector;
+
+		if (positiveReachStatus)
+			delete positiveReachStatus;
+		if (negativeReachStatus)
+			delete negativeReachStatus;
+
+		if (underapprox_detector)
+			delete underapprox_detector;
+
+		if (overapprox_reach_detector)
+			delete overapprox_reach_detector;
+
+		if(underapprox_path_detector && underapprox_path_detector != underapprox_detector)
+			delete underapprox_path_detector;
 		
+		if(overapprox_path_detector && overapprox_path_detector != overapprox_reach_detector)
+			delete overapprox_path_detector;
+
+		if (underapprox_fast_detector && underapprox_fast_detector != underapprox_path_detector){
+			delete underapprox_path_detector;
+		}
+
 	}
 	
 	const char* getName() {

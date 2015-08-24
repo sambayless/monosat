@@ -1678,7 +1678,7 @@
 					<folderInfo id="cdt.managedbuild.config.gnu.exe.debug.1003838172.1351069767.424676409." name="/" resourcePath="">
 						<toolChain id="cdt.managedbuild.toolchain.gnu.exe.debug.387057732" name="Linux GCC" superClass="cdt.managedbuild.toolchain.gnu.exe.debug">
 							<targetPlatform id="cdt.managedbuild.target.gnu.platform.exe.debug.1890376863" name="Debug Platform" superClass="cdt.managedbuild.target.gnu.platform.exe.debug"/>
-							<builder arguments="-disable-checker deadcode.DeadStores -V make -j 6" buildPath="${workspace_loc:/Minisat2/Debug}" command="scan-build-3.5" id="cdt.managedbuild.target.gnu.builder.exe.debug.1443273828" keepEnvironmentInBuildfile="false" managedBuildOn="true" name="Gnu Make Builder" superClass="cdt.managedbuild.target.gnu.builder.exe.debug">
+							<builder arguments="-V make -j 6" buildPath="${workspace_loc:/Minisat2/Debug}" command="scan-build-3.5" id="cdt.managedbuild.target.gnu.builder.exe.debug.1443273828" keepEnvironmentInBuildfile="false" managedBuildOn="true" name="Gnu Make Builder" superClass="cdt.managedbuild.target.gnu.builder.exe.debug">
 								<outputEntries>
 									<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="outputPath" name="Debug"/>
 									<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="outputPath" name="Release"/>
@@ -1703,7 +1703,7 @@
 								<option id="gnu.cpp.compiler.option.include.paths.1542438118" name="Include paths (-I)" superClass="gnu.cpp.compiler.option.include.paths" useByScannerDiscovery="false" valueType="includePath">
 									<listOptionValue builtIn="false" value=".././"/>
 								</option>
-								<option id="gnu.cpp.compiler.option.other.other.1269272386" name="Other flags" superClass="gnu.cpp.compiler.option.other.other" useByScannerDiscovery="false" value="-c -fmessage-length=0 -std=c++11 -W-no-unused-but-set-variable -Wno-missing-braces  -Wno-unused-variable   -Wno-sign-compare" valueType="string"/>
+								<option id="gnu.cpp.compiler.option.other.other.1269272386" name="Other flags" superClass="gnu.cpp.compiler.option.other.other" useByScannerDiscovery="false" value="-c -fmessage-length=0 -std=c++11 -Wno-unused-but-set-variable -Wno-missing-braces  -Wno-unused-variable   -Wno-sign-compare" valueType="string"/>
 								<option id="gnu.cpp.compiler.option.dialect.std.1692938007" name="Language standard" superClass="gnu.cpp.compiler.option.dialect.std" useByScannerDiscovery="true" value="gnu.cpp.compiler.dialect.c++1y" valueType="enumerated"/>
 								<inputType id="cdt.managedbuild.tool.gnu.cpp.compiler.input.190377677" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.input"/>
 							</tool>

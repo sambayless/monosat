@@ -115,7 +115,12 @@ public:
 	void addTerminalNode(int node, Var theoryVar);
 	SteinerDetector(int _detectorID, GraphTheorySolver<Weight> * _outer,DynamicGraph<Weight> &_g,
 			DynamicGraph<Weight>  &_antig, double seed = 1); //:Detector(_detectorID),outer(_outer),within(-1),source(_source),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL){}
-			
+
+	virtual ~SteinerDetector() {
+		delete underapprox_detector;
+		delete overapprox_detector;
+	}
+
 	virtual void assign(Lit l) {
 		Detector::assign(l);
 		if (var(l) < terminal_var_map.size()) {

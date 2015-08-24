@@ -140,7 +140,21 @@ public:
 	MSTDetector(int _detectorID, GraphTheorySolver<Weight> * _outer, DynamicGraph<Weight>  &_g, DynamicGraph<Weight>  &_antig,
 			double seed = 1); //:Detector(_detectorID),outer(_outer),within(-1),source(_source),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL){}
 	virtual ~MSTDetector() {
+		if (positiveReachStatus)
+			delete positiveReachStatus;
+		if (negativeReachStatus)
+			delete negativeReachStatus;
+
+		if (underapprox_detector)
+			delete underapprox_detector;
+		if (overapprox_detector)
+			delete overapprox_detector;
+
+		if (underapprox_conflict_detector && underapprox_conflict_detector != underapprox_detector)
+			delete underapprox_conflict_detector;
 		
+		if (overapprox_conflict_detector && overapprox_conflict_detector != overapprox_detector)
+			delete overapprox_conflict_detector;
 	}
 	const char* getName() {
 		return "MST Detector";

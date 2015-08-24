@@ -250,7 +250,36 @@ public:
 	DistanceDetector(int _detectorID, GraphTheorySolver<Weight> * _outer,
 			DynamicGraph<Weight>  &_g, DynamicGraph<Weight>  &_antig, int _source, double seed = 1);//:Detector(_detectorID),outer(_outer),within(-1),source(_source),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL){}
 	virtual ~DistanceDetector() {
-		
+		if(positiveReachStatus)
+			delete positiveReachStatus;
+		if (negativeReachStatus)
+			delete negativeReachStatus;
+		if (positiveDistanceStatus && positiveDistanceStatus != positiveDistanceStatus)
+			delete positiveDistanceStatus;
+		if (negativeDistanceStatus && negativeDistanceStatus != negativeDistanceStatus)
+			delete negativeDistanceStatus;
+
+		if (underapprox_unweighted_distance_detector)
+			delete underapprox_unweighted_distance_detector;
+
+		if (overapprox_unweighted_distance_detector)
+			delete overapprox_unweighted_distance_detector;
+
+		if (underapprox_path_detector && underapprox_path_detector != underapprox_unweighted_distance_detector)
+			delete underapprox_path_detector;
+
+
+
+		if (underapprox_weighted_distance_detector)
+			delete underapprox_weighted_distance_detector;
+
+		if (overapprox_weighted_distance_detector)
+			delete overapprox_weighted_distance_detector;
+
+		if (underapprox_weighted_path_detector && underapprox_weighted_path_detector != underapprox_weighted_distance_detector)
+			delete underapprox_weighted_path_detector;
+
+
 	}
 	const char* getName() {
 		return "Shortest Path Detector";
