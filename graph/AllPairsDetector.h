@@ -151,6 +151,11 @@ public:
 	AllPairsDetector(int _detectorID, GraphTheorySolver<Weight> * _outer, DynamicGraph<Weight>  &_g, DynamicGraph<Weight>  &_antig,
 			double seed = 1); //:Detector(_detectorID),outer(_outer),within(-1),source(_source),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL){}
 	virtual ~AllPairsDetector() {
+		if (underapprox_path_detector && underapprox_path_detector!=overapprox_reach_detector){
+			delete underapprox_path_detector;
+		}
+
+
 		if(underapprox_reach_detector){
 			delete underapprox_reach_detector;
 
@@ -158,9 +163,6 @@ public:
 		if (overapprox_reach_detector){
 			delete overapprox_reach_detector;
 
-		}
-		if (underapprox_path_detector && underapprox_path_detector!=overapprox_reach_detector){
-			delete underapprox_path_detector;
 		}
 
 #ifdef DEBUG_ALLPAIRS

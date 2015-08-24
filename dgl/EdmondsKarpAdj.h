@@ -162,7 +162,7 @@ public:
 	}
 	void dbg_print_graph(int from, int to) {
 #ifndef NDEBUG
-		return;
+/*		return;
 		static int it = 0;
 		if (++it == 6) {
 			int a = 1;
@@ -188,7 +188,7 @@ public:
 			}
 		}
 		
-		printf("}\n");
+		printf("}\n");*/
 #endif
 	}
 	long num_updates = 0;

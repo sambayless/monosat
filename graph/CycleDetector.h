@@ -83,15 +83,15 @@ public:
 	CycleDetector(int _detectorID, GraphTheorySolver<Weight> * _outer, DynamicGraph<Weight>  &_g, DynamicGraph<Weight>  &_antig,
 			bool detect_directed_cycles = true, double seed = 1); //:Detector(_detectorID),outer(_outer),within(-1),source(_source),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL){}
 	virtual ~CycleDetector() {
-
-		if(underapprox_directed_cycle_detector)
-			delete underapprox_directed_cycle_detector;
-		if(overapprox_directed_cycle_detector)
-			delete overapprox_directed_cycle_detector;
 		if (overapprox_undirected_cycle_detector && overapprox_undirected_cycle_detector != overapprox_directed_cycle_detector)
 			delete overapprox_undirected_cycle_detector;
 		if(underapprox_undirected_cycle_detector && underapprox_undirected_cycle_detector != underapprox_directed_cycle_detector)
 			delete underapprox_undirected_cycle_detector;
+		if(underapprox_directed_cycle_detector)
+			delete underapprox_directed_cycle_detector;
+		if(overapprox_directed_cycle_detector)
+			delete overapprox_directed_cycle_detector;
+
 	}
 	const char* getName() {
 		return "Cycle Detector";

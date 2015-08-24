@@ -205,16 +205,20 @@ public:
 	MaxflowDetector(int _detectorID, GraphTheorySolver<Weight> * _outer,
 			DynamicGraph<Weight>  &_g, DynamicGraph<Weight>  &_antig, int _source, int _target, double seed = 1); //:Detector(_detectorID),outer(_outer),within(-1),source(_source),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL){}
 	~MaxflowDetector() {
-		if (underapprox_detector)
-			delete underapprox_detector;
-		if (overapprox_detector)
-			delete overapprox_detector;
 		if (underapprox_conflict_detector && underapprox_conflict_detector!=underapprox_detector)
 			delete 	underapprox_conflict_detector;
 		if (overapprox_conflict_detector && overapprox_conflict_detector!=overapprox_detector)
 			delete 	overapprox_conflict_detector;
+
+		if (underapprox_detector)
+			delete underapprox_detector;
+		if (overapprox_detector)
+			delete overapprox_detector;
+
 		if (learn_cut)
 			delete learn_cut;
+		if (acyclic_flow)
+			delete acyclic_flow;
 	}
 	const char* getName() {
 		return "Max-flow Detector";

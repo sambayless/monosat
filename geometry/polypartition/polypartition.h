@@ -1735,7 +1735,7 @@ int TPPLPartition<T>::MonotonePartition(list<TPPLPoly<T>> *inpolys, list<TPPLPol
 						&edgeTree, helpers);
 				vindex2 = newnumvertices - 2;
 				v2 = &(vertices[vindex2]);
-				//helper(e j)�vi
+				//helper(e j)vi
 				helpers[edgeIter->index] = vindex;
 				//Insert ei in T and set helper(ei) to vi.
 				newedge.p1 = v2->p;
@@ -1753,7 +1753,7 @@ int TPPLPartition<T>::MonotonePartition(list<TPPLPoly<T>> *inpolys, list<TPPLPol
 					AddDiagonal(vertices, &newnumvertices, vindex, helpers[v->previous], vertextypes, edgeTreeIterators,
 							&edgeTree, helpers);
 					vindex2 = newnumvertices - 2;
-					v2 = &(vertices[vindex2]);
+					//v2 = &(vertices[vindex2]); //this assignment isn't used
 				}
 				//Delete ei-1 from T.
 				edgeTree.erase(edgeTreeIterators[v->previous]);
@@ -1772,7 +1772,7 @@ int TPPLPartition<T>::MonotonePartition(list<TPPLPoly<T>> *inpolys, list<TPPLPol
 					AddDiagonal(vertices, &newnumvertices, vindex2, helpers[edgeIter->index], vertextypes,
 							edgeTreeIterators, &edgeTree, helpers);
 				}
-				//helper(e j)�vi
+				//helper(e j)vi
 				helpers[edgeIter->index] = vindex2;
 				break;
 				

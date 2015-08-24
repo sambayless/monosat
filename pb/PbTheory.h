@@ -1053,7 +1053,7 @@ private:
 	
 	void dbg_prove(const PbClause & c, const vec<Lit> & clause) {
 #ifndef NDEBUG
-		return;
+	/*	return;
 		bool rhs_val = true;
 		for (Lit l : clause) {
 			if (var(l) == var(c.rhs.lit)) {
@@ -1106,7 +1106,7 @@ private:
 		fflush(f);
 		fclose(f);
 		r = system("minisat+ testa.opb >/dev/null") >> 8;
-		assert(r == 20);
+		assert(r == 20);*/
 #endif
 	}
 	void dbg_unprove(const PbClause & c, const vec<Lit> & clause) {

@@ -296,12 +296,6 @@ public:
 		if (negativeReachStatus)
 			delete negativeReachStatus;
 
-		if (underapprox_detector)
-			delete underapprox_detector;
-
-		if (overapprox_reach_detector)
-			delete overapprox_reach_detector;
-
 		if(underapprox_path_detector && underapprox_path_detector != underapprox_detector)
 			delete underapprox_path_detector;
 		
@@ -309,9 +303,28 @@ public:
 			delete overapprox_path_detector;
 
 		if (underapprox_fast_detector && underapprox_fast_detector != underapprox_path_detector){
-			delete underapprox_path_detector;
+			delete underapprox_fast_detector;
 		}
 
+		if (negative_distance_detector && negative_distance_detector != overapprox_path_detector)
+			delete negative_distance_detector;
+
+		if (underapprox_detector)
+			delete underapprox_detector;
+
+		if (overapprox_reach_detector)
+			delete overapprox_reach_detector;
+
+
+
+
+		if(conflict_flow)
+			delete conflict_flow;
+
+		for (auto * c: conflict_flows){
+			if (c)
+				delete c;
+		}
 	}
 	
 	const char* getName() {
