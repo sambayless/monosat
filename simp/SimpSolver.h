@@ -68,12 +68,33 @@ public:
 
 	// Solving:
 	//
-	bool solve(const vec<Lit>& assumps, bool do_simp = true, bool turn_off_simp = false);
-	lbool solveLimited(const vec<Lit>& assumps, bool do_simp = true, bool turn_off_simp = false);
-	bool solve(bool do_simp = true, bool turn_off_simp = false);
-	bool solve(Lit p, bool do_simp = true, bool turn_off_simp = false);
-	bool solve(Lit p, Lit q, bool do_simp = true, bool turn_off_simp = false);
-	bool solve(Lit p, Lit q, Lit r, bool do_simp = true, bool turn_off_simp = false);
+	bool solve(const vec<Lit>& assumps, bool do_simp, bool turn_off_simp = false);
+	lbool solveLimited(const vec<Lit>& assumps, bool do_simp, bool turn_off_simp = false);
+	bool solve(bool do_simp, bool turn_off_simp = false);
+	bool solve(Lit p, bool do_simp, bool turn_off_simp = false);
+	bool solve(Lit p, Lit q, bool do_simp, bool turn_off_simp = false);
+	bool solve(Lit p, Lit q, Lit r, bool do_simp, bool turn_off_simp = false);
+
+	//Also override the Solver's constructors
+	bool solve(const vec<Lit>& assumps){
+		return solve(assumps,true,false);
+	}
+	lbool solveLimited(const vec<Lit>& assumps){
+		return solveLimited(assumps,true,false);
+	}
+	bool solve(){
+		return solve(true,false);
+	}
+	bool solve(Lit p){
+		return solve(p,true,false);
+	}
+	bool solve(Lit p, Lit q){
+		return solve(p,q,true,false);
+	}
+	bool solve(Lit p, Lit q, Lit r){
+		return solve(p,q,r,true,false);
+	}
+
 	bool eliminate(bool turn_off_elim = false);  // Perform variable elimination based simplification. 
 			
 	// Memory managment:
