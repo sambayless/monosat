@@ -66,7 +66,7 @@ public:
 		bool inclusive;
 		Weight min_weight;
 		MSTWeightLit() :
-				l(lit_Undef), min_weight(-1) {
+				l(lit_Undef),inclusive(false), min_weight(-1) {
 		}
 	};
 	bool checked_unique;

@@ -251,20 +251,20 @@ bool CycleDetector<Weight>::propagate(vec<Lit> & conflict) {
 }
 template<typename Weight>
 bool CycleDetector<Weight>::checkSatisfied() {
-	Cycle * checkDirected = new DFSCycle<Weight,true,false>(g_under, true, 1);
-	Cycle * checkUndirected = new DFSCycle<Weight,false,true>(g_under, false, 1);
+	DFSCycle<Weight,true,false> checkDirected (g_under, true, 1);
+	DFSCycle<Weight,false,true> checkUndirected(g_under, false, 1);
 	if(directed_acyclic_lit != lit_Undef){
-		if(outer->value(directed_acyclic_lit)==l_True && checkDirected->hasDirectedCycle()){
+		if(outer->value(directed_acyclic_lit)==l_True && checkDirected.hasDirectedCycle()){
 			return false;
-		}else if (outer->value(directed_acyclic_lit)==l_False && !checkDirected->hasDirectedCycle()){
+		}else if (outer->value(directed_acyclic_lit)==l_False && !checkDirected.hasDirectedCycle()){
 			return false;
 		}
 
 	}
 	if(undirected_acyclic_lit != lit_Undef){
-		if(outer->value(undirected_acyclic_lit)==l_True && checkUndirected->hasUndirectedCycle()){
+		if(outer->value(undirected_acyclic_lit)==l_True && checkUndirected.hasUndirectedCycle()){
 			return false;
-		}else if (outer->value(undirected_acyclic_lit)==l_False && !checkUndirected->hasUndirectedCycle()){
+		}else if (outer->value(undirected_acyclic_lit)==l_False && !checkUndirected.hasUndirectedCycle()){
 			return false;
 		}
 

@@ -1678,7 +1678,7 @@
 					<folderInfo id="cdt.managedbuild.config.gnu.exe.debug.1003838172.1351069767.424676409." name="/" resourcePath="">
 						<toolChain id="cdt.managedbuild.toolchain.gnu.exe.debug.387057732" name="Linux GCC" superClass="cdt.managedbuild.toolchain.gnu.exe.debug">
 							<targetPlatform id="cdt.managedbuild.target.gnu.platform.exe.debug.1890376863" name="Debug Platform" superClass="cdt.managedbuild.target.gnu.platform.exe.debug"/>
-							<builder arguments="-V make -j 6" buildPath="${workspace_loc:/Minisat2/Debug}" command="scan-build-3.5" id="cdt.managedbuild.target.gnu.builder.exe.debug.1443273828" keepEnvironmentInBuildfile="false" managedBuildOn="true" name="Gnu Make Builder" superClass="cdt.managedbuild.target.gnu.builder.exe.debug">
+							<builder arguments="make -j 6" buildPath="${workspace_loc:/Minisat2/Debug}" command="scan-build-3.5" id="cdt.managedbuild.target.gnu.builder.exe.debug.1443273828" keepEnvironmentInBuildfile="false" managedBuildOn="true" name="Gnu Make Builder" superClass="cdt.managedbuild.target.gnu.builder.exe.debug">
 								<outputEntries>
 									<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="outputPath" name="Debug"/>
 									<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="outputPath" name="Release"/>

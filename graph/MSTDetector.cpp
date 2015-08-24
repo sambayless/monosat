@@ -811,9 +811,9 @@ bool MSTDetector<Weight>::propagate(vec<Lit> & conflict) {
 		Lit l;
 		Var edgevar = outer->edge_list[edgeID].v;
 		lbool edge_val = outer->value(edgevar);
-		if (overapprox_detector && (!g_over.edgeEnabled(edgeID) || overapprox_detector->edgeInTree(edgeID))) {
+		if ( (!g_over.edgeEnabled(edgeID) || overapprox_detector->edgeInTree(edgeID))) {
 			l = mkLit(v, false);
-		} else if (underapprox_detector && g_under.edgeEnabled(edgeID) && !underapprox_detector->edgeInTree(edgeID)) {
+		} else if (g_under.edgeEnabled(edgeID) && !underapprox_detector->edgeInTree(edgeID)) {
 			
 			assert(outer->value(edgevar)!=l_False);			//else the edge counts as in the tree
 			l = mkLit(v, true);
