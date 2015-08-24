@@ -147,7 +147,8 @@ class Graph():
     
     #add edge from v to w
     def addEdge(self,v,w, weight=1):
-      
+        while(v>=self.numNodes() or w>=self.numNodes()):
+            self.addNode()
 
         if(weight and isinstance(weight,float)):
             assert(self.graph_type==Graph.GraphType.float or self.graph_type==Graph.GraphType.rational)
@@ -175,6 +176,8 @@ class Graph():
         return e[2]
     
     def addUndirectedEdge(self,v,w, weight=1):
+        while(v>=self.numNodes() or w>=self.numNodes()):
+            self.addNode()
         if(weight and isinstance(weight,float)):
             assert(self.graph_type==Graph.GraphType.float or self.graph_type==Graph.GraphType.rational)
         elif weight and isinstance(weight, tuple):

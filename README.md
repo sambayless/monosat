@@ -1,7 +1,7 @@
 # MonoSAT
-MonoSAT is a SAT Modulo Theory solver for *[Boolean monotonic theories]*. It supports a wide set of graph predicates (including reachability, shortest paths, maximum *s-t* flow, minimum spanning tree, and acyclicity constraints). MonoSAT also has limited support for geometric constraints involving convex hulls of point sets, and experimental support for constraints on finite state machines.
+MonoSAT is a SAT Modulo Theory solver for *[monotonic theories]*, over Booleans and bitvectors. It supports a wide set of graph predicates (including reachability, shortest paths, maximum *s-t* flow, minimum spanning tree, and acyclicity constraints). MonoSAT also has limited support for geometric constraints involving convex hulls of point sets, and experimental support for constraints on finite state machines. 
 
-MonoSAT now comes with a simplified, Z3-inspired Python 3 interface (see api/python). See installation instructions below; see also the [TUTORIAL].
+MonoSAT now comes with a simplified, Z3-inspired Python 3 interface (see api/python). See installation instructions below; see also the [tutorial].
 
 To see further examples of use cases for MonoSAT, and details on the (very simple) input file format that MonoSAT accepts, see  [FORMAT].
 
@@ -28,6 +28,8 @@ $make
 ```
 
 MonoSAT requires C++11 support, zlib, and GMP >= 5.1.3. Tested on Ubuntu 14.04, with G++ 4.8.2 and G++ 4.9. The python library requires Python 3.3+.
+
+If you get errors along the lines of "error: could not convert ‘x’ from ‘__gmp_expr<__mpq_struct [1], __mpq_struct [1]>’ to ‘bool’", then you likely need to install a more recent version of GMP.
 
 If you build MonoSAT without using the provided makefiles, it is critically important to compile with `NDEBUG` set (*i.e.,* `-DNDEBUG`), as otherwise many very expensive debugging assertions will be enabled. 
 
@@ -98,9 +100,9 @@ MonoSAT as a whole is currently released under the [GPL] (version 3 or later).
 
 MonoSAT was made possible by the use of several open-source projects, including the afore-mentioned [MiniSat], as well as a high-performance [dynamic maximum-flow algorithm] by Pushmeet Kohli and Philip Torr, Emil Stefanov's implementation of [Disjoint Sets], a [Link-Cut Tree] implementation by Daniel Sleator, and a [computational geometry library] by Chelton Evans.
 
-[Boolean monotonic theories]: http://www.cs.ubc.ca/labs/isd/Projects/monosat/smmt.pdf
+[monotonic theories]: http://www.cs.ubc.ca/labs/isd/Projects/monosat/smmt.pdf
 [FORMAT]: FORMAT.md
-[TUTORIAL]: TUTORIAL.md
+[tutorial]: TUTORIAL.md
 [MiniSat]:http://minisat.se/
 
 [MIT license]: http://opensource.org/licenses/MIT
