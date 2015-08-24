@@ -179,7 +179,7 @@ CRef Solver::attachReasonClause(Lit r,vec<Lit> & ps) {
 		int nfalse = 0;
 		int max_lev = 0;
 		bool satisfied = false;
-		int notFalsePos1 = 0;
+		int notFalsePos1 = -1;
 		int notFalsePos2 = -1;
 		for (int j = 1; j < ps.size(); j++) {
 			assert(var(ps[j]) < nVars());
