@@ -123,15 +123,10 @@ public:
 private:
 	std::vector<EdgeChange> history;
 public:
-#ifdef RECORD
-	FILE * outfile;
-#endif
+	//Logfile information if recording is enabled.
+	FILE * outfile=nullptr;
 
 	DynamicGraph() {
-		//allocated=true;
-#ifdef RECORD
-		outfile = nullptr;
-#endif
 	}
 	
 	~DynamicGraph() {

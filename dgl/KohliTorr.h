@@ -610,7 +610,7 @@ private:
 #ifndef NDEBUG
 		assert(c);
 		if (!c) {
-			exit(4);
+			throw std::logic_error("Assertion Fail!");
 		}
 #endif
 	}
@@ -759,13 +759,9 @@ public:
 		//KT allows for all the nodes to be source or sink, if the cut is placed at the final source->'outer source' or 'outer sink' -> sink edge.
 		//Ideally, this shouldn't happen here, because those should have infinite weight edges.
 		if (kt->what_segment(s, SOURCE) == SINK) {
-			std::cerr<<"Error in mincut analysis, exiting\n";
-			exit(3);
-			return -1;
+			throw std::logic_error("Error in mincut analysis");
 		} else if (kt->what_segment(t, SOURCE) == SOURCE) {
-			std::cerr<<"Error in mincut analysis, exiting\n";
-			exit(3);
-			return -1;
+			throw std::logic_error("Error in mincut analysis");
 		}
 		
 		for (int n = 0; n < g.nodes(); n++) {

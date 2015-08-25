@@ -128,7 +128,7 @@ public:
 	// to the graph, and the second argument is an estimate of the maximum number of edges.
 	// The last (optional) argument is the pointer to the function which will be called 
 	// if an error occurs; an error message is passed to this function. 
-	// If this argument is omitted, exit(1) will be called.
+	// If this argument is omitted, an exception will be thrown.
 	//
 	// IMPORTANT: It is possible to add more nodes to the graph than node_num_max 
 	// (and node_num_max can be zero). However, if the count is exceeded, then 
@@ -277,10 +277,7 @@ public:
 			a = a->next;
 		
 		if (a->head != &nodes[to]) {
-			printf("Error: Specified edge doesn't exist\n");
-			assert(false);
-			exit(4);
-			return -1;
+			throw std::invalid_argument("Specified edge doesn't exist");
 		} else {
 			return a->e_cap;
 		}
@@ -400,7 +397,7 @@ private:
 
 	void (*error_function)(const char *);	// this function is called if a error occurs,
 	// with a corresponding error message
-	// (or exit(1) is called if it's NULL)
+	// An exception will be thrown if this is NULL.
 	/////////////////////////////////////////////////////////////////////////
 	
 	node *queue_first[2], *queue_last[2];	// list of active nodes
@@ -892,7 +889,7 @@ Graph<captype, tcaptype, flowtype>::Graph(int node_num_max, int edge_num_max, vo
 	if (!nodes || !arcs) {
 		if (error_function)
 			(*error_function)("Not enough memory!");
-		exit(1);
+		throw  std::bad_alloc();
 	}
 	
 	for (int i = 0; i < node_num_max; i++) {
@@ -956,7 +953,7 @@ void Graph<captype, tcaptype, flowtype>::reallocate_nodes(int num) {
 	if (!nodes) {
 		if (error_function)
 			(*error_function)("Not enough memory!");
-		exit(1);
+		throw  std::bad_alloc();
 	}
 	
 	for (int i = num_nodes; i < node_num_max; i++) {
@@ -987,7 +984,7 @@ void Graph<captype, tcaptype, flowtype>::reallocate_arcs() {
 	if (!arcs) {
 		if (error_function)
 			(*error_function)("Not enough memory!");
-		exit(1);
+		throw  std::bad_alloc();
 	}
 	
 	for (int i = arc_num; i < arc_num_max; i++) {
@@ -1093,9 +1090,7 @@ void Graph<captype, tcaptype, flowtype>::edit_edge_inc(node_id from, node_id to,
 		a = a->next;
 	
 	if (!a || a->head != &nodes[to]) {
-		fprintf(stderr, "Error: Specified edge doesn't exist\n");
-		assert(false);
-		exit(4);
+		throw std::invalid_argument("Specified edge doesn't exist");
 	} else {
 		// Modifying flow value
 		
@@ -1235,9 +1230,7 @@ void Graph<captype, tcaptype, flowtype>::edit_edge(node_id from, node_id to, cap
 		a = a->next;
 	
 	if (a->head != &nodes[to]) {
-		fprintf(stderr, "Error: Specified edge doesn't exist\n");
-		assert(false);
-		exit(4);
+		throw std::invalid_argument("Specified edge doesn't exist");
 	} else {
 		// Modifying flow value 
 		
@@ -1377,9 +1370,7 @@ void Graph<captype, tcaptype, flowtype>::edit_edge_wt(node_id from, node_id to, 
 		a = a->next;
 	
 	if (a->head != &nodes[to]) {
-		fprintf(stderr, "Error: Specified edge doesn't exist\n");
-		assert(false);
-		exit(4);
+		throw std::invalid_argument("Specified edge doesn't exist");
 	} else {
 		if (nodes[from].t_cap > 0)
 			flow -= MIN(nodes[from].t_cap - nodes[from].tr_cap, nodes[from].t_cap);

@@ -116,7 +116,7 @@ public:
 	}
 	
 	void dbg_delta() {
-#ifndef NDEBUG
+#ifdef DEBUG_RAMAL
 		dbg_delta_lite();
 		assert(delta.size() == g.nodes());
 		
@@ -312,7 +312,7 @@ public:
 		dbg_delta_lite();
 	}
 	void dbg_delta_lite() {
-#ifndef NDEBUG
+#ifdef DEBUG_RAMAL
 		for (int u = 0; u < g.nodes(); u++) {
 			int del = delta[u];
 			Weight d = dist[u];
@@ -490,11 +490,11 @@ public:
 	}
 	
 	void update() {
-#ifdef RECORD
+
 		if (g.outfile) {
 			fprintf(g.outfile, "r %d\n", getSource());
 		}
-#endif
+
 		static int iteration = 0;
 		int local_it = ++iteration;
 		if (local_it == 7668) {
@@ -507,9 +507,7 @@ public:
 			for (Weight & w : weights) {
 				if (w <= 0) {
 					//Note: in the future, we could implement the DFMN algorithm (Maintaining Shortest Paths in Digraphs with Arbitrary Arc Weights: An Experimental Study), which does support negative length weights, but is slower than RR.
-					fprintf(stderr,
-							"Ramalingham-Reps doesn't support zero-weight edges (select a different distance algorithm, such as dijkstra).\n");
-					exit(1);
+					throw std::invalid_argument("Ramalingham-Reps doesn't support zero-weight edges (select a different distance algorithm, such as dijkstra)");
 				}
 				INF += w;
 			}
@@ -573,7 +571,7 @@ public:
 		update();
 	}
 	bool dbg_path(int to) {
-#ifdef DEBUG_DIJKSTRA
+#ifdef DEBUG_RAMAL
 		/*	assert(connected(to));
 		 if(to == source){
 		 return true;
@@ -593,7 +591,7 @@ public:
 		return true;
 	}
 	bool dbg_uptodate() {
-#ifdef DEBUG_DIJKSTRA
+#ifdef DEBUG_RAMAL
 		/*if(last_modification<0)
 		 return true;
 		 dbg_delta();
@@ -609,7 +607,7 @@ public:
 
 		 if(dis!=dbgdist){
 		 assert(false);
-		 exit(4);
+		 throw std::logic_error();
 		 }
 		 }*/
 //#endif
@@ -654,8 +652,7 @@ public:
 		 assert(prev[t]>=-1 );
 		 return prev[t];*/
 		//not supported
-		assert(false);
-		exit(1);
+		 throw std::exception("not implemented");
 	}
 	int previous(int t) {
 		/*if(prev[t]<0)
@@ -663,8 +660,7 @@ public:
 
 		 assert(g.all_edges[incomingEdge(t)].to==t);
 		 return g.all_edges[incomingEdge(t)].from;*/
-		assert(false);
-		exit(1);
+		 throw std::exception("not implemented");
 	}
 };
 
@@ -765,7 +761,7 @@ public:
 	}
 	
 	void dbg_delta() {
-#ifndef NDEBUG
+#ifdef DEBUG_RAMAL
 		//g.drawFull();
 		dbg_delta_lite();
 		assert(delta.size() == g.nodes());
@@ -774,7 +770,7 @@ public:
 			if (!g.edgeEnabled(i)) {
 				assert(!edgeInShortestPathGraph[i]);
 				if (edgeInShortestPathGraph[i]) {
-					exit(3);
+					throw std::logic_error();
 				}
 			}
 		}
@@ -997,6 +993,7 @@ public:
 		dbg_delta_lite();
 	}
 	void dbg_not_seen_q(std::vector<int> & q, int u, int from) {
+#ifdef DEBUG_RAMAL
 		bool found = false;
 		for (int i = from; i < q.size(); i++) {
 			if (q[i] == u) {
@@ -1005,9 +1002,10 @@ public:
 			}
 		}
 		assert(found);
+#endif
 	}
 	void dbg_Q_add(std::vector<int> & q, int u) {
-#ifndef NDEBUG
+#ifdef DEBUG_RAMAL
 		//assert(!in_queue[u]);
 		for (int v : q) {
 			assert(u != v);
@@ -1018,7 +1016,7 @@ public:
 #endif
 	}
 	void dbg_Q_order(std::vector<int> & _q) {
-#ifndef NDEBUG
+#ifdef DEBUG_RAMAL
 		
 		for (int i = 1; i < _q.size(); i++) {
 			int v = _q[i];
@@ -1042,7 +1040,7 @@ public:
 	}
 	
 	void dbg_delta_lite() {
-#ifndef NDEBUG
+#ifdef DEBUG_RAMAL
 		for (int u = 0; u < g.nodes(); u++) {
 			int del = delta[u];
 			int d = dist[u];
@@ -1270,11 +1268,11 @@ public:
 	}
 	
 	void update() {
-#ifdef RECORD
+
 		if (g.outfile) {
 			fprintf(g.outfile, "r %d\n", getSource());
 		}
-#endif
+
 		
 		static int iteration = 0;
 		int local_it = ++iteration;
@@ -1356,7 +1354,7 @@ public:
 	}
 
 	bool dbg_path(int to) {
-#ifdef DEBUG_DIJKSTRA
+#ifdef DEBUG_RAMAL
 		assert(connected(to));
 		if(to == source) {
 			return true;
@@ -1377,7 +1375,7 @@ public:
 	}
 	bool dbg_uptodate() {
 //#ifdef DEBUG_GRAPH
-#ifdef DEBUG_DIJKSTRA
+#ifdef DEBUG_RAMAL
 		if(last_modification<0)
 		return true;
 		dbg_delta();
@@ -1397,7 +1395,7 @@ public:
 			}
 			if(dis!=dbgdist) {
 				assert(false);
-				exit(4);
+				throw std::logic_error();
 			}
 		}
 //#endif
@@ -1441,8 +1439,8 @@ public:
 		 assert(t>=0 && t<prev.size());
 		 assert(prev[t]>=-1 );
 		 return prev[t];*/
-		assert(false);
-		exit(1);
+
+		throw std::exception("not implemented");
 	}
 	int previous(int t) {
 		/*		if(prev[t]<0)
@@ -1450,8 +1448,7 @@ public:
 
 		 assert(g.all_edges[incomingEdge(t)].to==t);
 		 return g.all_edges[incomingEdge(t)].from;*/
-		assert(false);
-		exit(1);
+		 throw std::exception("not implemented");
 	}
 };
 

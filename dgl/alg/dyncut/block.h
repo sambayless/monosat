@@ -175,8 +175,8 @@ public:
 				block *next = (block *) new char[sizeof(block) + (block_size - 1) * sizeof(Type)];
 				if (!next) {
 					if (error_function)
-						(*error_function)("Not enough memory!");
-					exit(1);
+						(*error_function)();
+					throw  std::bad_alloc();
 				}
 				if (last)
 					last->next = next;
@@ -286,7 +286,7 @@ public:
 			if (!first) {
 				if (error_function)
 					(*error_function)("Not enough memory!");
-				exit(1);
+				throw  std::bad_alloc();
 			}
 			first_free = &(first->data[0]);
 			for (item = first_free; item < first_free + block_size - 1; item++)

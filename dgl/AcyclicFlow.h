@@ -91,8 +91,7 @@ public:
 				if (v==t && sum_in-sum_out==expected_flow){
 					continue;
 				}
-				printf("Bad flow for acyclic removal, aborting\n");
-				exit(5);
+				throw std::invalid_argument("Bad flow for acyclic removal");
 			}
 		}
 
@@ -246,14 +245,12 @@ public:
 					DFSCycle<Weight> cycle(test);
 					if(cycle.hasDirectedCycle()){
 						//fflush(g.outfile);
-						fprintf(stderr,"Cycle remains in acyclic flow, aborting!\n");
-						exit(8);
+			     		throw std::logic_error( "Cycle remains in acyclic flow" );
 					}
 					EdmondsKarpAdj<Weight> mf(test,s,t);
 					if(expected_flow>=0 && mf.maxFlow(s,t)!=expected_flow){
 						//fflush(g.outfile);
-						fprintf(stderr,"Flow is altered by cycle removal, aborting!\n");
-						exit(8);
+						throw std::logic_error( "Flow is altered by cycle removal");
 					}
 
 					for(int v = 0;v<g.nodes();v++){
@@ -282,8 +279,7 @@ public:
 								continue;
 							}
 							//fflush(g.outfile);
-							printf("Bad flow after acyclic removal, aborting\n");
-							exit(4);
+							throw std::logic_error("Bad flow after acyclic removal");
 						}
 					}
 #endif

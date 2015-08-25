@@ -310,7 +310,7 @@ private:
 					if (edge < 0)
 						continue;
 					if (edge >= in_tree.size())
-						exit(3);
+						throw std::logic_error("Error in Kruskal");
 					if (in_tree[edge]) {
 						
 						if (parents[to] == -1 && to != root) {
