@@ -31,10 +31,12 @@
 #include "core/Config.h"
 #include <algorithm>
 #include <exception>
+
 namespace dgl {
 template<typename Weight = int, class Status = typename Distance<Weight>::NullStatus>
 class RamalReps: public Distance<Weight>, public DynamicGraphAlgorithm {
 public:
+	static bool ever_warned_about_zero_weights;
 	DynamicGraph<Weight> & g;
 	std::vector<Weight> & weights;
 	Status & status;
@@ -71,6 +73,42 @@ public:
 	std::vector<int> delta;
 	std::vector<int> changeset;
 	int alg_id;
+
+	struct LocalDistanceStatus {
+		RamalReps & outer;
+
+		void setReachable(int u, bool reachable){
+
+		}
+		bool isReachable(int u) const {
+			return false;
+		}
+
+		void setMininumDistance(int u, bool reachable, Weight& distance){
+			if(reachable){
+				if(outer.dist[u]!=distance){
+					outer.dist[u]=distance;
+					if(!outer.node_changed[u]){
+						outer.node_changed[u]=true;
+						outer.changed.push_back(u);
+					}
+				}
+			}else{
+				if(outer.dist[u]!=outer.INF){
+					outer.dist[u]=outer.INF;
+					if(!outer.node_changed[u]){
+						outer.node_changed[u]=true;
+						outer.changed.push_back(u);
+					}
+				}
+			}
+		}
+		LocalDistanceStatus(RamalReps & _outer) :
+			outer(_outer) {
+		}
+	} local_distance_status;
+	Dijkstra<Weight,LocalDistanceStatus> dijkstras;
+	bool has_zero_weights=false;
 public:
 	
 	long stats_full_updates=0;
@@ -87,7 +125,7 @@ public:
 			bool reportDistance = false) :
 			g(graph), weights(g.getWeights()), status(status), reportPolarity(reportPolarity), reportDistance(reportDistance), last_modification(
 					-1), last_addition(-1), last_deletion(-1), history_qhead(0), last_history_clear(0), source(s), INF(
-					0), q(DistCmp(dist)) {
+					0), q(DistCmp(dist)),local_distance_status(*this),dijkstras(s,graph,local_distance_status,reportPolarity) {
 		
 		mod_percentage = 0.2;
 		alg_id=g.addDynamicAlgorithm(this);
@@ -253,7 +291,6 @@ public:
 		q.insert(rv);
 		
 		while (q.size()) {
-			
 			int u = q.removeMin();
 			
 			if (!node_changed[u]) {
@@ -504,10 +541,14 @@ public:
 			return;
 		if (last_modification <= 0 || g.changed()) {
 			INF = 1;							//g.nodes()+1;
+			has_zero_weights=false;
 			for (Weight & w : weights) {
 				if (w <= 0) {
 					//Note: in the future, we could implement the DFMN algorithm (Maintaining Shortest Paths in Digraphs with Arbitrary Arc Weights: An Experimental Study), which does support negative length weights, but is slower than RR.
-					throw std::invalid_argument("Ramalingham-Reps doesn't support zero-weight edges (select a different distance algorithm, such as dijkstra)");
+					//throw std::invalid_argument("Ramalingham-Reps doesn't support zero-weight edges (select a different distance algorithm, such as dijkstra)");
+					//for the moment: the _first_ time <0 weights are detected, simply fallback on dijkstra's, permanently.
+
+					has_zero_weights=true;
 				}
 				INF += w;
 			}
@@ -530,32 +571,39 @@ public:
 			
 		}
 		
-		for (int i = history_qhead; i < g.historySize(); i++) {
-			int edgeid = g.getChange(i).id;
-			if (g.getChange(i).addition && g.edgeEnabled(edgeid)) {
-				GRRInc(edgeid);
-			} else if (!g.getChange(i).addition && !g.edgeEnabled(edgeid)) {
-				GRRDec(edgeid);
+		if(has_zero_weights){
+			if(!ever_warned_about_zero_weights){
+				ever_warned_about_zero_weights=true;
+				fprintf(stderr,"Warning: Ramalingham-Reps doesn't support zero-weight edges; falling back on Dijkstra's (which is much slower)\n");
+			}
+			dijkstras.update();
+		}else{
+			for (int i = history_qhead; i < g.historySize(); i++) {
+				int edgeid = g.getChange(i).id;
+				if (g.getChange(i).addition && g.edgeEnabled(edgeid)) {
+					GRRInc(edgeid);
+				} else if (!g.getChange(i).addition && !g.edgeEnabled(edgeid)) {
+					GRRDec(edgeid);
+				}
 			}
 		}
-		
-		//for(int i = 0;i<g.nodes();i++){
-		//	int u=i;
-		for (int u : changed) {
-			//int u = changed[i];
-			node_changed[u] = false;
-			//CANNOT clear the change flag here, because if we backtrack and then immediately re-propagate an edge before calling theoryPropagate, the change to this node may be missed.
-			
-			if (reportPolarity <= 0 && dist[u] >= INF) {
-				status.setReachable(u, false);
-				status.setMininumDistance(u, dist[u] < INF, dist[u]);
-			} else if (reportPolarity >= 0 && dist[u] < INF) {
-				status.setReachable(u, true);
-				status.setMininumDistance(u, dist[u] < INF, dist[u]);
+			//for(int i = 0;i<g.nodes();i++){
+			//	int u=i;
+			for (int u : changed) {
+				//int u = changed[i];
+				node_changed[u] = false;
+				//CANNOT clear the change flag here, because if we backtrack and then immediately re-propagate an edge before calling theoryPropagate, the change to this node may be missed.
+				if (reportPolarity <= 0 && dist[u] >= INF) {
+					status.setReachable(u, false);
+					status.setMininumDistance(u, dist[u] < INF, dist[u]);
+				} else if (reportPolarity >= 0 && dist[u] < INF) {
+					status.setReachable(u, true);
+					status.setMininumDistance(u, dist[u] < INF, dist[u]);
+				}
 			}
-		}
-		changed.clear();
-		//}
+			changed.clear();
+
+
 		assert(dbg_uptodate());
 		num_updates++;
 		last_modification = g.modifications;
@@ -626,7 +674,7 @@ public:
 	bool connected(int t) {
 		if (last_modification != g.modifications)
 			update();
-		
+
 		assert(dbg_uptodate());
 		
 		return dist[t] < INF;
@@ -1451,7 +1499,8 @@ public:
 		 throw std::runtime_error("not implemented");
 	}
 };
-
+template<typename Weight, class Status>
+bool RamalReps<Weight,Status>::ever_warned_about_zero_weights = 0;
 }
 ;
 #endif

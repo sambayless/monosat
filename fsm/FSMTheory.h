@@ -448,7 +448,7 @@ public:
 				Assignment & e = trail[i];
 				assert(assigns[e.var]!=l_Undef);
 				if (e.isEdge) {
-					assert(dbg_value(e.var)==l_Undef);
+					assert(dbg_value(e.var)==value(e.var));
 					int fsmID = getFsmID(e.var);
 					int edgeID = getEdgeID(e.var); //e.var-min_edge_var;
 					int input = getInput(e.var);
@@ -950,6 +950,10 @@ public:
 		}
 		if(!g_overs[fsmID2]->isAcceptor()){
 			fprintf(stderr,"Only compositions of linear generators with FSAs are supported, aborting\n");
+			exit(1);
+		}
+		if (g_overs[fsmID1]->out_alphabet != g_overs[fsmID2]->in_alphabet){
+			fprintf(stderr,"Output alphabet of first fsm (was %d) must match input alphabet of second fsm (was %d), aborting\n",g_overs[fsmID1]->out_alphabet,g_overs[fsmID2]->in_alphabet);
 			exit(1);
 		}
 		FSMGeneratorAcceptorDetector * d = new FSMGeneratorAcceptorDetector(detectors.size(), this, *g_unders[fsmID1],*g_overs[fsmID1], *g_unders[fsmID2],*g_overs[fsmID2], from1,from2,drand(rnd_seed));

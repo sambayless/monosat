@@ -543,7 +543,6 @@ void MaxflowDetector<Weight>::buildMaxFlowTooLowReason(Weight maxflow, vec<Lit> 
 				assert(learn_graph.getWeight(back_edges[edgeid])==0);//capacity of this edge in the backward direction is the same as the forward flow, which is 0.
 				Weight w = (outer->hasBitVector(edgeid)?	 outer->getEdgeBV(edgeid).getOver(true):outer->edge_weights[edgeid]);
 				assert(learn_graph.getWeight(edgeid)==(w>0?1:0));
-
 			}
 
 		}
