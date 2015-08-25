@@ -392,13 +392,11 @@ public:
 	}
 	const Weight maxFlow(int s, int t) {
 		Weight f = 0;
-#ifdef RECORD
 		if (g.outfile) {
 			fprintf(g.outfile, "f %d %d\n", s, t);
 			fflush(g.outfile);
 		}
-#endif
-		
+
 		if (last_modification > 0 && g.modifications == last_modification) {
 			return curflow;
 		}

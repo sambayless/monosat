@@ -277,12 +277,12 @@ public:
 		if (++it == 95) {
 			int a = 1;
 		}
-#ifdef RECORD
+
 		if (g.outfile) {
 			fprintf(g.outfile, "f %d %d\n", s, t);
 			fflush(g.outfile);
 		}
-#endif
+
 		
 		//C.resize(g.nodes());
 #ifdef DEBUG_MAXFLOW
@@ -742,12 +742,12 @@ public:
 		
 		int s = source;
 		int t = sink;
-#ifdef RECORD
+
 		if (g.outfile) {
 			fprintf(g.outfile, "m %d %d\n", s, t);
 			fflush(g.outfile);
 		}
-#endif
+
 		cut.clear();
 		dbg_print_graph(s, t);
 		/*   	if(f==0)

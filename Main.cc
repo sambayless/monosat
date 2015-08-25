@@ -293,6 +293,7 @@ int main(int argc, char** argv) {
 				true);
 
 		parseOptions(argc, argv, true);
+		Monosat::opt_record=strlen(opt_record_file)>0;
 		if (opt_adaptive_conflict_mincut == 1) {
 			opt_conflict_min_cut = true;
 			opt_conflict_min_cut_maxflow = true;

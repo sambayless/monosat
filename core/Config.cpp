@@ -61,6 +61,10 @@ BoolOption Monosat::opt_pre("MAIN", "pre", "Completely turn on/off any preproces
 IntOption Monosat::opt_time(_cat, "verb-time", "Detail level of timing benchmarks (these add some overhead)", 0,
 		IntRange(0, 5));
 
+StringOption Monosat::opt_record_file(_cat, "debug-log",
+		"Log (very expensive) debugging info at extensions of the following path (empty string (recommended) disables)", "");
+bool Monosat::opt_record=false;
+
 
 IntOption Monosat::opt_theory_conflict_max(_cat, "theory-conflict-limit",
 		"The maximum number of consecutive times the theory solver's can conflict before theory decisions are temporarily disabled (0 to all infinite theory conflicts)", 0,

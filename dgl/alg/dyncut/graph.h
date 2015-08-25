@@ -88,6 +88,7 @@
 #include <assert.h>
 #include <new>
 #include <algorithm>
+#include <stdexcept>
 // NOTE: in UNIX you need to use -DNDEBUG preprocessor option to suppress assert's!!!
 
 namespace kohli_torr {

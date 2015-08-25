@@ -117,12 +117,12 @@ public:
 	void update() {
 		static int iteration = 0;
 		int local_it = ++iteration;
-#ifdef RECORD
+
 		if (g.outfile) {
 			fprintf(g.outfile, "m\n");
 			fflush(g.outfile);
 		}
-#endif
+
 		if (last_modification > 0 && g.modifications == last_modification) {
 			stats_skipped_updates++;
 			return;

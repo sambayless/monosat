@@ -39,7 +39,7 @@
 #include <cstdlib>
 #include <iostream>
 #include <vector>
-
+#include <string>
 using namespace Monosat;
 
 template<typename Weight>
@@ -136,19 +136,15 @@ MaxflowDetector<Weight>::MaxflowDetector(int _detectorID, GraphTheorySolver<Weig
 		acyclic_flow=new AcyclicFlow<Weight>(g_under);
 	}
 
-#ifdef RECORD
-	{
-		char t[30];
-		sprintf(t, "LEARN_GRAPH%d", getID());
-		learn_graph.outfile = fopen(t, "w");
+	if(opt_record){
+		std::string t = (const char*)opt_record_file;
+		t+="/LOG_LEARN_GRAPH" +std::to_string(getID());
+		learn_graph.outfile = fopen(t.c_str(), "w");
 	}
-	
-#endif
-	
+
 	first_reach_var = var_Undef;
 	underprop_marker = outer->newReasonMarker(getID());
 	overprop_marker = outer->newReasonMarker(getID());
-	
 }
 
 template<typename Weight>
@@ -391,9 +387,10 @@ void MaxflowDetector<Weight>::buildMaxFlowTooHighReason(Weight flow, vec<Lit> & 
 		}
 	}
 	bumpConflictEdges(conflict);
-#ifdef RECORD
-	std::sort(conflict.begin(), conflict.end());
+
+
 	if (g_under.outfile) {
+		std::sort(conflict.begin(), conflict.end());
 		fprintf(g_under.outfile, "toohigh ");
 		for (int i = 0; i < conflict.size(); i++) {
 			fprintf(g_under.outfile, "%d,", dimacs(conflict[i]));
@@ -402,6 +399,7 @@ void MaxflowDetector<Weight>::buildMaxFlowTooHighReason(Weight flow, vec<Lit> & 
 		fflush(g_under.outfile);
 	}
 	if (g_over.outfile) {
+		std::sort(conflict.begin(), conflict.end());
 		fprintf(g_over.outfile, "toohigh ");
 		for (int i = 0; i < conflict.size(); i++) {
 			fprintf(g_over.outfile, "%d,", dimacs(conflict[i]));
@@ -409,7 +407,7 @@ void MaxflowDetector<Weight>::buildMaxFlowTooHighReason(Weight flow, vec<Lit> & 
 		fprintf(g_over.outfile, "\n");
 		fflush(g_over.outfile);
 	}
-#endif
+
 	stats_under_conflicts++;
 	outer->num_learnt_paths++;
 	outer->learnt_path_clause_length += (conflict.size() - 1);
@@ -732,13 +730,17 @@ void MaxflowDetector<Weight>::buildMaxFlowTooLowReason(Weight maxflow, vec<Lit> 
 	/*if(conflict.size()<dbg_minconflict()){
 	 exit(4);
 	 }*/
-#ifdef RECORD
+#ifndef NDEBUG
 	if (overapprox_detector != overapprox_conflict_detector) {
 		Weight foundflow2 = overapprox_detector->maxFlow();
 		assert(foundflow == foundflow2);
 	}
-	std::sort(conflict.begin(), conflict.end());
+#endif
+
+
+
 	if (g_under.outfile) {
+		std::sort(conflict.begin(), conflict.end());
 		fprintf(g_under.outfile, "toolow ");
 		for (int i = 0; i < conflict.size(); i++) {
 			fprintf(g_under.outfile, "%d,", dimacs(conflict[i]));
@@ -747,6 +749,7 @@ void MaxflowDetector<Weight>::buildMaxFlowTooLowReason(Weight maxflow, vec<Lit> 
 		fflush(g_under.outfile);
 	}
 	if (g_over.outfile) {
+		std::sort(conflict.begin(), conflict.end());
 		fprintf(g_over.outfile, "toolow ");
 		for (int i = 0; i < conflict.size(); i++) {
 			fprintf(g_over.outfile, "%d,", dimacs(conflict[i]));
@@ -754,7 +757,7 @@ void MaxflowDetector<Weight>::buildMaxFlowTooLowReason(Weight maxflow, vec<Lit> 
 		fprintf(g_over.outfile, "\n");
 		fflush(g_over.outfile);
 	}
-#endif
+
 	outer->num_learnt_cuts++;
 	outer->learnt_cut_clause_length += (conflict.size() - 1);
 	stats_over_conflicts++;
@@ -832,7 +835,7 @@ bool MaxflowDetector<Weight>::propagate(vec<Lit> & conflict, bool backtrackOnly,
 	if (++iter1 == 79) {
 		int a = 1;
 	}
-#ifdef RECORD
+
 	if (g_under.outfile) {
 		fprintf(g_under.outfile, "iter %d\n", iter1);
 		fflush(g_under.outfile);
@@ -841,7 +844,7 @@ bool MaxflowDetector<Weight>::propagate(vec<Lit> & conflict, bool backtrackOnly,
 		fprintf(g_over.outfile, "iter %d\n", iter1);
 		fflush(g_over.outfile);
 	}
-#endif
+
 	
 	double start_prop_time = rtime(2);
 

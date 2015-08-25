@@ -91,7 +91,7 @@
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="dgl"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="fsm"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="pb"/>
-						<entry excluding="test_acyclic_flow_file.cpp|test_acyclic_flow.cpp|test_collisions.cpp|test_dinics_linkcut.cpp|test_spirapan.cpp|test_kohlitorr_dynamic_old.cpp|test_kohlitorr_dynamic.cpp|test_edmondskarp_dynamic.cpp|test_eulertree.cpp|test_maxflow.cpp|test_kohlitorr_dynamic_combined.cpp|test_ramal_reps.cpp|test_edmondskarp.cpp|test_thorup.cpp|test_linkcuttree.cpp|test_ramal_reps_weighted.cpp|test_dinics.cpp" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="tests"/>
+						<entry excluding="dgl|test_acyclic_flow_file.cpp|test_acyclic_flow.cpp|test_collisions.cpp|test_dinics_linkcut.cpp|test_spirapan.cpp|test_kohlitorr_dynamic_old.cpp|test_kohlitorr_dynamic.cpp|test_edmondskarp_dynamic.cpp|test_eulertree.cpp|test_maxflow.cpp|test_kohlitorr_dynamic_combined.cpp|test_ramal_reps.cpp|test_edmondskarp.cpp|test_thorup.cpp|test_linkcuttree.cpp|test_ramal_reps_weighted.cpp|test_dinics.cpp" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="tests"/>
 					</sourceEntries>
 				</configuration>
 			</storageModule>
@@ -190,7 +190,7 @@
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="fsm"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="pb"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="smt"/>
-						<entry excluding="test_acyclic_flow_file.cpp|test_acyclic_flow.cpp|test_collisions.cpp|test_dinics_linkcut.cpp|test_spirapan.cpp|test_kohlitorr_dynamic_old.cpp|test_kohlitorr_dynamic.cpp|test_edmondskarp_dynamic.cpp|test_eulertree.cpp|test_maxflow.cpp|test_kohlitorr_dynamic_combined.cpp|test_ramal_reps.cpp|test_thorup.cpp|test_edmondskarp.cpp|test_linkcuttree.cpp|test_ramal_reps_weighted.cpp|test_dinics.cpp" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="tests"/>
+						<entry excluding="dgl|test_acyclic_flow_file.cpp|test_acyclic_flow.cpp|test_collisions.cpp|test_dinics_linkcut.cpp|test_spirapan.cpp|test_kohlitorr_dynamic_old.cpp|test_kohlitorr_dynamic.cpp|test_edmondskarp_dynamic.cpp|test_eulertree.cpp|test_maxflow.cpp|test_kohlitorr_dynamic_combined.cpp|test_ramal_reps.cpp|test_thorup.cpp|test_edmondskarp.cpp|test_linkcuttree.cpp|test_ramal_reps_weighted.cpp|test_dinics.cpp" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="tests"/>
 					</sourceEntries>
 				</configuration>
 			</storageModule>
@@ -282,7 +282,7 @@
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="fsm"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="pb"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="smt"/>
-						<entry excluding="test_acyclic_flow_file.cpp|test_acyclic_flow.cpp|test_collisions.cpp|test_dinics_linkcut.cpp|test_spirapan.cpp|test_kohlitorr_dynamic_old.cpp|test_kohlitorr_dynamic.cpp|test_edmondskarp_dynamic.cpp|test_eulertree.cpp|test_maxflow.cpp|test_kohlitorr_dynamic_combined.cpp|test_ramal_reps.cpp|test_thorup.cpp|test_edmondskarp.cpp|test_linkcuttree.cpp|test_ramal_reps_weighted.cpp|test_dinics.cpp" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="tests"/>
+						<entry excluding="dgl|test_acyclic_flow_file.cpp|test_acyclic_flow.cpp|test_collisions.cpp|test_dinics_linkcut.cpp|test_spirapan.cpp|test_kohlitorr_dynamic_old.cpp|test_kohlitorr_dynamic.cpp|test_edmondskarp_dynamic.cpp|test_eulertree.cpp|test_maxflow.cpp|test_kohlitorr_dynamic_combined.cpp|test_ramal_reps.cpp|test_thorup.cpp|test_edmondskarp.cpp|test_linkcuttree.cpp|test_ramal_reps_weighted.cpp|test_dinics.cpp" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="tests"/>
 					</sourceEntries>
 				</configuration>
 			</storageModule>
@@ -374,7 +374,7 @@
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="fsm"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="pb"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="smt"/>
-						<entry excluding="test_acyclic_flow_file.cpp|test_acyclic_flow.cpp|test_collisions.cpp|test_dinics_linkcut.cpp|test_spirapan.cpp|test_kohlitorr_dynamic_old.cpp|test_kohlitorr_dynamic.cpp|test_edmondskarp_dynamic.cpp|test_eulertree.cpp|test_maxflow.cpp|test_kohlitorr_dynamic_combined.cpp|test_ramal_reps.cpp|test_thorup.cpp|test_edmondskarp.cpp|test_linkcuttree.cpp|test_ramal_reps_weighted.cpp|test_dinics.cpp" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="tests"/>
+						<entry excluding="dgl|test_acyclic_flow_file.cpp|test_acyclic_flow.cpp|test_collisions.cpp|test_dinics_linkcut.cpp|test_spirapan.cpp|test_kohlitorr_dynamic_old.cpp|test_kohlitorr_dynamic.cpp|test_edmondskarp_dynamic.cpp|test_eulertree.cpp|test_maxflow.cpp|test_kohlitorr_dynamic_combined.cpp|test_ramal_reps.cpp|test_thorup.cpp|test_edmondskarp.cpp|test_linkcuttree.cpp|test_ramal_reps_weighted.cpp|test_dinics.cpp" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="tests"/>
 					</sourceEntries>
 				</configuration>
 			</storageModule>
@@ -465,7 +465,7 @@
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="fsm"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="pb"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="smt"/>
-						<entry excluding="test_acyclic_flow_file.cpp|test_acyclic_flow.cpp|test_collisions.cpp|test_dinics_linkcut.cpp|test_spirapan.cpp|test_kohlitorr_dynamic_old.cpp|test_kohlitorr_dynamic.cpp|test_edmondskarp_dynamic.cpp|test_eulertree.cpp|test_maxflow.cpp|test_kohlitorr_dynamic_combined.cpp|test_ramal_reps.cpp|test_thorup.cpp|test_edmondskarp.cpp|test_linkcuttree.cpp|test_ramal_reps_weighted.cpp|test_dinics.cpp" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="tests"/>
+						<entry excluding="dgl|test_acyclic_flow_file.cpp|test_acyclic_flow.cpp|test_collisions.cpp|test_dinics_linkcut.cpp|test_spirapan.cpp|test_kohlitorr_dynamic_old.cpp|test_kohlitorr_dynamic.cpp|test_edmondskarp_dynamic.cpp|test_eulertree.cpp|test_maxflow.cpp|test_kohlitorr_dynamic_combined.cpp|test_ramal_reps.cpp|test_thorup.cpp|test_edmondskarp.cpp|test_linkcuttree.cpp|test_ramal_reps_weighted.cpp|test_dinics.cpp" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="tests"/>
 					</sourceEntries>
 				</configuration>
 			</storageModule>
@@ -565,7 +565,7 @@
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="fsm"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="pb"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="smt"/>
-						<entry excluding="test_acyclic_flow_file.cpp|test_acyclic_flow.cpp|test_collisions.cpp|test_dinics_linkcut.cpp|test_spirapan.cpp|test_kohlitorr_dynamic_old.cpp|test_kohlitorr_dynamic.cpp|test_edmondskarp_dynamic.cpp|test_eulertree.cpp|test_maxflow.cpp|test_kohlitorr_dynamic_combined.cpp|test_ramal_reps.cpp|test_thorup.cpp|test_edmondskarp.cpp|test_linkcuttree.cpp|test_ramal_reps_weighted.cpp|test_dinics.cpp" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="tests"/>
+						<entry excluding="dgl|test_acyclic_flow_file.cpp|test_acyclic_flow.cpp|test_collisions.cpp|test_dinics_linkcut.cpp|test_spirapan.cpp|test_kohlitorr_dynamic_old.cpp|test_kohlitorr_dynamic.cpp|test_edmondskarp_dynamic.cpp|test_eulertree.cpp|test_maxflow.cpp|test_kohlitorr_dynamic_combined.cpp|test_ramal_reps.cpp|test_thorup.cpp|test_edmondskarp.cpp|test_linkcuttree.cpp|test_ramal_reps_weighted.cpp|test_dinics.cpp" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="tests"/>
 					</sourceEntries>
 				</configuration>
 			</storageModule>
@@ -665,7 +665,7 @@
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="fsm"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="pb"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="smt"/>
-						<entry excluding="test_acyclic_flow_file.cpp|test_acyclic_flow.cpp|test_collisions.cpp|test_dinics_linkcut.cpp|test_spirapan.cpp|test_kohlitorr_dynamic_old.cpp|test_kohlitorr_dynamic.cpp|test_edmondskarp_dynamic.cpp|test_eulertree.cpp|test_maxflow.cpp|test_kohlitorr_dynamic_combined.cpp|test_ramal_reps.cpp|test_thorup.cpp|test_edmondskarp.cpp|test_linkcuttree.cpp|test_ramal_reps_weighted.cpp|test_dinics.cpp" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="tests"/>
+						<entry excluding="dgl|test_acyclic_flow_file.cpp|test_acyclic_flow.cpp|test_collisions.cpp|test_dinics_linkcut.cpp|test_spirapan.cpp|test_kohlitorr_dynamic_old.cpp|test_kohlitorr_dynamic.cpp|test_edmondskarp_dynamic.cpp|test_eulertree.cpp|test_maxflow.cpp|test_kohlitorr_dynamic_combined.cpp|test_ramal_reps.cpp|test_thorup.cpp|test_edmondskarp.cpp|test_linkcuttree.cpp|test_ramal_reps_weighted.cpp|test_dinics.cpp" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="tests"/>
 					</sourceEntries>
 				</configuration>
 			</storageModule>
@@ -767,7 +767,7 @@
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="fsm"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="pb"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="smt"/>
-						<entry excluding="test_acyclic_flow_file.cpp|test_acyclic_flow.cpp|test_collisions.cpp|test_dinics_linkcut.cpp|test_spirapan.cpp|test_kohlitorr_dynamic_old.cpp|test_kohlitorr_dynamic.cpp|test_edmondskarp_dynamic.cpp|test_eulertree.cpp|test_maxflow.cpp|test_kohlitorr_dynamic_combined.cpp|test_ramal_reps.cpp|test_thorup.cpp|test_edmondskarp.cpp|test_linkcuttree.cpp|test_ramal_reps_weighted.cpp|test_dinics.cpp" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="tests"/>
+						<entry excluding="dgl|test_acyclic_flow_file.cpp|test_acyclic_flow.cpp|test_collisions.cpp|test_dinics_linkcut.cpp|test_spirapan.cpp|test_kohlitorr_dynamic_old.cpp|test_kohlitorr_dynamic.cpp|test_edmondskarp_dynamic.cpp|test_eulertree.cpp|test_maxflow.cpp|test_kohlitorr_dynamic_combined.cpp|test_ramal_reps.cpp|test_thorup.cpp|test_edmondskarp.cpp|test_linkcuttree.cpp|test_ramal_reps_weighted.cpp|test_dinics.cpp" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="tests"/>
 					</sourceEntries>
 				</configuration>
 			</storageModule>
@@ -865,7 +865,7 @@
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="dgl"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="fsm"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="pb"/>
-						<entry excluding="test_acyclic_flow.cpp|test_kohlitorr_dynamic_combined.cpp|test_collisions.cpp|test_dinics_linkcut.cpp|test_spirapan.cpp|test_kohlitorr_dynamic.cpp|test_kohlitorr_dynamic_old.cpp|test_edmondskarp_dynamic.cpp|test_eulertree.cpp|test_maxflow.cpp|test_ramal_reps.cpp|test_thorup.cpp|test_edmondskarp.cpp|test_linkcuttree.cpp|test_ramal_reps_weighted.cpp|test_dinics.cpp" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="tests"/>
+						<entry excluding="dgl|test_acyclic_flow.cpp|test_kohlitorr_dynamic_combined.cpp|test_collisions.cpp|test_dinics_linkcut.cpp|test_spirapan.cpp|test_kohlitorr_dynamic.cpp|test_kohlitorr_dynamic_old.cpp|test_edmondskarp_dynamic.cpp|test_eulertree.cpp|test_maxflow.cpp|test_ramal_reps.cpp|test_thorup.cpp|test_edmondskarp.cpp|test_linkcuttree.cpp|test_ramal_reps_weighted.cpp|test_dinics.cpp" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="tests"/>
 					</sourceEntries>
 				</configuration>
 			</storageModule>
@@ -965,7 +965,7 @@
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="dgl"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="fsm"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="pb"/>
-						<entry excluding="test_acyclic_flow_file.cpp|test_acyclic_flow.cpp|test_collisions.cpp|test_dinics_linkcut.cpp|test_spirapan.cpp|test_kohlitorr_dynamic.cpp|test_kohlitorr_dynamic_old.cpp|test_edmondskarp_dynamic.cpp|test_eulertree.cpp|test_maxflow.cpp|test_kohlitorr_dynamic_combined.cpp|test_ramal_reps.cpp|test_thorup.cpp|test_edmondskarp.cpp|test_linkcuttree.cpp|test_ramal_reps_weighted.cpp|test_dinics.cpp" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="tests"/>
+						<entry excluding="dgl|test_acyclic_flow_file.cpp|test_acyclic_flow.cpp|test_collisions.cpp|test_dinics_linkcut.cpp|test_spirapan.cpp|test_kohlitorr_dynamic.cpp|test_kohlitorr_dynamic_old.cpp|test_edmondskarp_dynamic.cpp|test_eulertree.cpp|test_maxflow.cpp|test_kohlitorr_dynamic_combined.cpp|test_ramal_reps.cpp|test_thorup.cpp|test_edmondskarp.cpp|test_linkcuttree.cpp|test_ramal_reps_weighted.cpp|test_dinics.cpp" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="tests"/>
 					</sourceEntries>
 				</configuration>
 			</storageModule>
@@ -1063,7 +1063,7 @@
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="dgl"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="fsm"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="pb"/>
-						<entry excluding="test_acyclic_flow_file.cpp|test_acyclic_flow.cpp|test_collisions.cpp|test_dinics_linkcut.cpp|test_spirapan.cpp|test_kohlitorr_dynamic_old.cpp|test_kohlitorr_dynamic.cpp|test_edmondskarp_dynamic.cpp|test_eulertree.cpp|test_maxflow.cpp|test_kohlitorr_dynamic_combined.cpp|test_ramal_reps.cpp|test_edmondskarp.cpp|test_thorup.cpp|test_linkcuttree.cpp|test_ramal_reps_weighted.cpp|test_dinics.cpp" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="tests"/>
+						<entry excluding="dgl|test_acyclic_flow_file.cpp|test_acyclic_flow.cpp|test_collisions.cpp|test_dinics_linkcut.cpp|test_spirapan.cpp|test_kohlitorr_dynamic_old.cpp|test_kohlitorr_dynamic.cpp|test_edmondskarp_dynamic.cpp|test_eulertree.cpp|test_maxflow.cpp|test_kohlitorr_dynamic_combined.cpp|test_ramal_reps.cpp|test_edmondskarp.cpp|test_thorup.cpp|test_linkcuttree.cpp|test_ramal_reps_weighted.cpp|test_dinics.cpp" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="tests"/>
 					</sourceEntries>
 				</configuration>
 			</storageModule>
@@ -1162,7 +1162,7 @@
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="dgl"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="fsm"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="pb"/>
-						<entry excluding="test_acyclic_flow_file.cpp|test_acyclic_flow.cpp|test_collisions.cpp|test_dinics_linkcut.cpp|test_spirapan.cpp|test_kohlitorr_dynamic_old.cpp|test_kohlitorr_dynamic.cpp|test_edmondskarp_dynamic.cpp|test_eulertree.cpp|test_maxflow.cpp|test_kohlitorr_dynamic_combined.cpp|test_ramal_reps.cpp|test_edmondskarp.cpp|test_thorup.cpp|test_linkcuttree.cpp|test_ramal_reps_weighted.cpp|test_dinics.cpp" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="tests"/>
+						<entry excluding="dgl|test_acyclic_flow_file.cpp|test_acyclic_flow.cpp|test_collisions.cpp|test_dinics_linkcut.cpp|test_spirapan.cpp|test_kohlitorr_dynamic_old.cpp|test_kohlitorr_dynamic.cpp|test_edmondskarp_dynamic.cpp|test_eulertree.cpp|test_maxflow.cpp|test_kohlitorr_dynamic_combined.cpp|test_ramal_reps.cpp|test_edmondskarp.cpp|test_thorup.cpp|test_linkcuttree.cpp|test_ramal_reps_weighted.cpp|test_dinics.cpp" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="tests"/>
 					</sourceEntries>
 				</configuration>
 			</storageModule>
@@ -1258,7 +1258,7 @@
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="fsm"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="pb"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="smt"/>
-						<entry excluding="test_acyclic_flow_file.cpp|test_acyclic_flow.cpp|test_collisions.cpp|test_dinics_linkcut.cpp|test_spirapan.cpp|test_kohlitorr_dynamic_old.cpp|test_kohlitorr_dynamic.cpp|test_edmondskarp_dynamic.cpp|test_eulertree.cpp|test_maxflow.cpp|test_kohlitorr_dynamic_combined.cpp|test_ramal_reps.cpp|test_thorup.cpp|test_edmondskarp.cpp|test_linkcuttree.cpp|test_ramal_reps_weighted.cpp|test_dinics.cpp" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="tests"/>
+						<entry excluding="dgl|test_acyclic_flow_file.cpp|test_acyclic_flow.cpp|test_collisions.cpp|test_dinics_linkcut.cpp|test_spirapan.cpp|test_kohlitorr_dynamic_old.cpp|test_kohlitorr_dynamic.cpp|test_edmondskarp_dynamic.cpp|test_eulertree.cpp|test_maxflow.cpp|test_kohlitorr_dynamic_combined.cpp|test_ramal_reps.cpp|test_thorup.cpp|test_edmondskarp.cpp|test_linkcuttree.cpp|test_ramal_reps_weighted.cpp|test_dinics.cpp" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="tests"/>
 					</sourceEntries>
 				</configuration>
 			</storageModule>
@@ -1356,7 +1356,7 @@
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="fsm"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="pb"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="smt"/>
-						<entry excluding="test_acyclic_flow_file.cpp|test_acyclic_flow.cpp|test_collisions.cpp|test_dinics_linkcut.cpp|test_spirapan.cpp|test_kohlitorr_dynamic_old.cpp|test_kohlitorr_dynamic.cpp|test_edmondskarp_dynamic.cpp|test_eulertree.cpp|test_maxflow.cpp|test_kohlitorr_dynamic_combined.cpp|test_ramal_reps.cpp|test_thorup.cpp|test_edmondskarp.cpp|test_linkcuttree.cpp|test_ramal_reps_weighted.cpp|test_dinics.cpp" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="tests"/>
+						<entry excluding="dgl|test_acyclic_flow_file.cpp|test_acyclic_flow.cpp|test_collisions.cpp|test_dinics_linkcut.cpp|test_spirapan.cpp|test_kohlitorr_dynamic_old.cpp|test_kohlitorr_dynamic.cpp|test_edmondskarp_dynamic.cpp|test_eulertree.cpp|test_maxflow.cpp|test_kohlitorr_dynamic_combined.cpp|test_ramal_reps.cpp|test_thorup.cpp|test_edmondskarp.cpp|test_linkcuttree.cpp|test_ramal_reps_weighted.cpp|test_dinics.cpp" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="tests"/>
 					</sourceEntries>
 				</configuration>
 			</storageModule>
@@ -1453,7 +1453,7 @@
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="fsm"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="pb"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="smt"/>
-						<entry excluding="test_acyclic_flow_file.cpp|test_acyclic_flow.cpp|test_collisions.cpp|test_dinics_linkcut.cpp|test_spirapan.cpp|test_kohlitorr_dynamic_old.cpp|test_kohlitorr_dynamic.cpp|test_edmondskarp_dynamic.cpp|test_eulertree.cpp|test_maxflow.cpp|test_kohlitorr_dynamic_combined.cpp|test_ramal_reps.cpp|test_thorup.cpp|test_edmondskarp.cpp|test_linkcuttree.cpp|test_ramal_reps_weighted.cpp|test_dinics.cpp" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="tests"/>
+						<entry excluding="dgl|test_acyclic_flow_file.cpp|test_acyclic_flow.cpp|test_collisions.cpp|test_dinics_linkcut.cpp|test_spirapan.cpp|test_kohlitorr_dynamic_old.cpp|test_kohlitorr_dynamic.cpp|test_edmondskarp_dynamic.cpp|test_eulertree.cpp|test_maxflow.cpp|test_kohlitorr_dynamic_combined.cpp|test_ramal_reps.cpp|test_thorup.cpp|test_edmondskarp.cpp|test_linkcuttree.cpp|test_ramal_reps_weighted.cpp|test_dinics.cpp" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="tests"/>
 					</sourceEntries>
 				</configuration>
 			</storageModule>
@@ -1550,7 +1550,7 @@
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="fsm"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="pb"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="smt"/>
-						<entry excluding="test_acyclic_flow_file.cpp|test_acyclic_flow.cpp|test_collisions.cpp|test_dinics_linkcut.cpp|test_spirapan.cpp|test_kohlitorr_dynamic_old.cpp|test_kohlitorr_dynamic.cpp|test_edmondskarp_dynamic.cpp|test_eulertree.cpp|test_maxflow.cpp|test_kohlitorr_dynamic_combined.cpp|test_ramal_reps.cpp|test_thorup.cpp|test_edmondskarp.cpp|test_linkcuttree.cpp|test_ramal_reps_weighted.cpp|test_dinics.cpp" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="tests"/>
+						<entry excluding="dgl|test_acyclic_flow_file.cpp|test_acyclic_flow.cpp|test_collisions.cpp|test_dinics_linkcut.cpp|test_spirapan.cpp|test_kohlitorr_dynamic_old.cpp|test_kohlitorr_dynamic.cpp|test_edmondskarp_dynamic.cpp|test_eulertree.cpp|test_maxflow.cpp|test_kohlitorr_dynamic_combined.cpp|test_ramal_reps.cpp|test_thorup.cpp|test_edmondskarp.cpp|test_linkcuttree.cpp|test_ramal_reps_weighted.cpp|test_dinics.cpp" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="tests"/>
 					</sourceEntries>
 				</configuration>
 			</storageModule>
@@ -1561,7 +1561,9 @@
 				<externalSettings>
 					<externalSetting>
 						<entry flags="VALUE_WORKSPACE_PATH" kind="includePath" name="/monosat"/>
+						<entry flags="VALUE_WORKSPACE_PATH" kind="includePath" name="/modsat"/>
 						<entry flags="VALUE_WORKSPACE_PATH" kind="libraryPath" name="/monosat/Win64SharedLibrary"/>
+						<entry flags="VALUE_WORKSPACE_PATH" kind="libraryPath" name="/modsat/Win64SharedLibrary"/>
 						<entry flags="RESOLVED" kind="libraryFile" name="monosat" srcPrefixMapping="" srcRootPath=""/>
 					</externalSetting>
 				</externalSettings>
@@ -1655,7 +1657,7 @@
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="fsm"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="pb"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="smt"/>
-						<entry excluding="test_acyclic_flow_file.cpp|test_acyclic_flow.cpp|test_collisions.cpp|test_dinics_linkcut.cpp|test_spirapan.cpp|test_kohlitorr_dynamic_old.cpp|test_kohlitorr_dynamic.cpp|test_edmondskarp_dynamic.cpp|test_eulertree.cpp|test_maxflow.cpp|test_kohlitorr_dynamic_combined.cpp|test_ramal_reps.cpp|test_thorup.cpp|test_edmondskarp.cpp|test_linkcuttree.cpp|test_ramal_reps_weighted.cpp|test_dinics.cpp" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="tests"/>
+						<entry excluding="dgl|test_acyclic_flow_file.cpp|test_acyclic_flow.cpp|test_collisions.cpp|test_dinics_linkcut.cpp|test_spirapan.cpp|test_kohlitorr_dynamic_old.cpp|test_kohlitorr_dynamic.cpp|test_edmondskarp_dynamic.cpp|test_eulertree.cpp|test_maxflow.cpp|test_kohlitorr_dynamic_combined.cpp|test_ramal_reps.cpp|test_thorup.cpp|test_edmondskarp.cpp|test_linkcuttree.cpp|test_ramal_reps_weighted.cpp|test_dinics.cpp" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="tests"/>
 					</sourceEntries>
 				</configuration>
 			</storageModule>
@@ -1754,7 +1756,7 @@
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="dgl"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="fsm"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="pb"/>
-						<entry excluding="test_acyclic_flow_file.cpp|test_acyclic_flow.cpp|test_collisions.cpp|test_dinics_linkcut.cpp|test_spirapan.cpp|test_kohlitorr_dynamic_old.cpp|test_kohlitorr_dynamic.cpp|test_edmondskarp_dynamic.cpp|test_eulertree.cpp|test_maxflow.cpp|test_kohlitorr_dynamic_combined.cpp|test_ramal_reps.cpp|test_edmondskarp.cpp|test_thorup.cpp|test_linkcuttree.cpp|test_ramal_reps_weighted.cpp|test_dinics.cpp" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="tests"/>
+						<entry excluding="dgl|test_acyclic_flow_file.cpp|test_acyclic_flow.cpp|test_collisions.cpp|test_dinics_linkcut.cpp|test_spirapan.cpp|test_kohlitorr_dynamic_old.cpp|test_kohlitorr_dynamic.cpp|test_edmondskarp_dynamic.cpp|test_eulertree.cpp|test_maxflow.cpp|test_kohlitorr_dynamic_combined.cpp|test_ramal_reps.cpp|test_edmondskarp.cpp|test_thorup.cpp|test_linkcuttree.cpp|test_ramal_reps_weighted.cpp|test_dinics.cpp" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="tests"/>
 					</sourceEntries>
 				</configuration>
 			</storageModule>

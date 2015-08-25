@@ -30,7 +30,7 @@
 #include "Dijkstra.h"
 #include "core/Config.h"
 #include <algorithm>
-
+#include <exception>
 namespace dgl {
 template<typename Weight = int, class Status = typename Distance<Weight>::NullStatus>
 class RamalReps: public Distance<Weight>, public DynamicGraphAlgorithm {
@@ -652,7 +652,7 @@ public:
 		 assert(prev[t]>=-1 );
 		 return prev[t];*/
 		//not supported
-		 throw std::exception("not implemented");
+		 throw std::runtime_error("not implemented");
 	}
 	int previous(int t) {
 		/*if(prev[t]<0)
@@ -660,7 +660,7 @@ public:
 
 		 assert(g.all_edges[incomingEdge(t)].to==t);
 		 return g.all_edges[incomingEdge(t)].from;*/
-		 throw std::exception("not implemented");
+		 throw std::runtime_error("not implemented");
 	}
 };
 
@@ -1440,7 +1440,7 @@ public:
 		 assert(prev[t]>=-1 );
 		 return prev[t];*/
 
-		throw std::exception("not implemented");
+		throw std::runtime_error("not implemented");
 	}
 	int previous(int t) {
 		/*		if(prev[t]<0)
@@ -1448,7 +1448,7 @@ public:
 
 		 assert(g.all_edges[incomingEdge(t)].to==t);
 		 return g.all_edges[incomingEdge(t)].from;*/
-		 throw std::exception("not implemented");
+		 throw std::runtime_error("not implemented");
 	}
 };
 

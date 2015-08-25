@@ -136,6 +136,7 @@
 #define __KOHLI_TORR_BLOCK_H__
 
 #include <stdlib.h>
+#include <stdexcept>
 namespace kohli_torr {
 /***********************************************************************/
 /***********************************************************************/
@@ -175,7 +176,7 @@ public:
 				block *next = (block *) new char[sizeof(block) + (block_size - 1) * sizeof(Type)];
 				if (!next) {
 					if (error_function)
-						(*error_function)();
+						(*error_function)("Not enough memory!");
 					throw  std::bad_alloc();
 				}
 				if (last)

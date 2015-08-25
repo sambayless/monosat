@@ -7,9 +7,8 @@
 #include "EdmondsKarpAdj.h"
 //#include "MaxFlow.h"
 #include "alg/LinkCutCost.h"
-#ifdef RECORD
 #include <sstream>
-#endif
+#include <stdexcept>
 namespace dgl {
 
 //Implementation of the acyclic flow algorithm from Sleator and Tarjan (1983)
@@ -32,7 +31,7 @@ public:
 		if (s<0 || s>=g.nodes() || t<0 ||t>=g.nodes()){
 			return;
 		}
-#ifdef RECORD
+
 		if (g.outfile) {
 			fprintf(g.outfile, "acyclic_flow %d %d:  ",s,t);
 			std::stringstream ss;
@@ -41,7 +40,7 @@ public:
 			}
 			fprintf(g.outfile, "%s\n",ss.str().c_str());
 		}
-#endif
+
 #ifndef NDEBUG
 
 		Weight expected_flow=-1;

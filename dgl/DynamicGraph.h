@@ -25,14 +25,9 @@
 #include <algorithm>
 #include <cassert>
 #include <sstream>
-#ifndef NDEBUG
+
 #include <sstream>
-//Used to track graph operations for debugging purposes - you can probably ignore this.
-#define RECORD
-
 #include <cstdio>
-#endif
-
 
 namespace dgl {
 
@@ -179,12 +174,12 @@ public:
 		edge_decreases = modifications;
 		markChanged();
 		clearHistory(true);
-#ifdef RECORD
+
 		if (outfile) {
 			fprintf(outfile, "node %d\n", num_nodes);
 			fflush(outfile);
 		}
-#endif
+
 		return num_nodes++;
 	}
 	//true iff the edge's current assignment will never be altered.
@@ -244,7 +239,7 @@ public:
 		edge_increases = modifications;
 		markChanged();
 		
-#ifdef RECORD
+
 		if (outfile) {
 			fprintf(outfile, "edge %d %d %d %d\n", from, to, 1, id + 1);
 			std::stringstream ss;
@@ -252,7 +247,7 @@ public:
 			fprintf(outfile, "edge_weight %d %s\n", id + 1, ss.str().c_str());
 			fflush(outfile);
 		}
-#endif
+
 //		history.push_back({true,id,modifications});
 		enableEdge(from, to, id);		//default to enabled
 
@@ -369,13 +364,13 @@ public:
 			modifications++;
 			additions = modifications;
 			history.push_back( { true,false,false,false, id, modifications, additions });
-#ifdef RECORD
+
 			if (outfile) {
 				
 				fprintf(outfile, "%d\n", id + 1);
 				fflush(outfile);
 			}
-#endif
+
 		}
 	}
 	
@@ -389,7 +384,7 @@ public:
 		if (history.back().addition && history.back().id == id && history.back().mod == modifications) {
 			//edge_status.setStatus(id,false);
 			edge_status[id] = false;
-#ifdef RECORD
+
 			if (outfile) {
 				if (id + 1 == 89486) {
 					int a = 1;
@@ -397,7 +392,7 @@ public:
 				fprintf(outfile, "-%d\n", id + 1);
 				fflush(outfile);
 			}
-#endif
+
 			modifications--;
 			additions = history.back().prev_mod;
 			history.pop_back();
@@ -413,13 +408,11 @@ public:
 		if (edge_status[id]) {
 			//edge_status.setStatus(id,false);
 			edge_status[id] = false;
-#ifdef RECORD
+
 			if (outfile) {
-				
 				fprintf(outfile, "-%d\n", id + 1);
 				fflush(outfile);
 			}
-#endif
 			
 			modifications++;
 			
@@ -438,13 +431,13 @@ public:
 		if (!history.back().addition && history.back().id == id && history.back().mod == modifications) {
 			//edge_status.setStatus(id,true);
 			edge_status[id] = true;
-#ifdef RECORD
+
 			if (outfile) {
 				
 				fprintf(outfile, "%d\n", id + 1);
 				fflush(outfile);
 			}
-#endif
+
 			modifications--;
 			deletions = history.back().prev_mod;
 			history.pop_back();
@@ -471,14 +464,14 @@ public:
 				edge_decreases = modifications;
 			}
 			weights[id]=w;
-#ifdef RECORD
+
 			if (outfile) {
 				std::stringstream ss;
 				ss<<w;
 				fprintf(outfile, "edge_weight %d %s\n", id + 1, ss.str().c_str());
 				fflush(outfile);
 			}
-#endif
+
 
 		}
 
@@ -607,12 +600,12 @@ public:
 			history_offset=0;
 			history.clear();
 			historyclears++;
-#ifdef RECORD
+
 			if (outfile) {
 				fprintf(outfile, "clearHistory\n");
 				fflush(outfile);
 			}
-#endif
+
 		}
 	}
 	//force a new modification
@@ -622,22 +615,22 @@ public:
 		modifications++;
 		deletions = modifications;
 		is_changed = true;
-#ifdef RECORD
+
 		if (outfile) {
 			fprintf(outfile, "invalidate\n");
 			fflush(outfile);
 		}
-#endif
+
 	}
 	
 	void markChanged() {
 		is_changed = true;
-#ifdef RECORD
+
 		if (outfile) {
 			fprintf(outfile, "markChanged\n");
 			fflush(outfile);
 		}
-#endif
+
 	}
 	bool changed() {
 		return is_changed;
@@ -645,12 +638,12 @@ public:
 	
 	void clearChanged() {
 		is_changed = false;
-#ifdef RECORD
+
 		if (outfile) {
 			fprintf(outfile, "clearChanged\n");
 			fflush(outfile);
 		}
-#endif
+
 	}
 
 	void clear(){

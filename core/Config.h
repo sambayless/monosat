@@ -39,6 +39,9 @@ extern DoubleOption opt_restart_inc;
 extern DoubleOption opt_garbage_frac;
 extern BoolOption opt_rnd_restart;
 
+extern StringOption opt_record_file;
+extern bool opt_record;
+
 extern IntOption opt_theory_conflict_max;
 extern DoubleOption opt_random_theory_freq;
 

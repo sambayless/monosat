@@ -181,7 +181,7 @@ CRef Solver::attachReasonClause(Lit r,vec<Lit> & ps) {
 		//bool satisfied = false;
 		int notFalsePos1 = -1;
 		int notFalsePos2 = -1;
-		for (int j = 1; j < ps.size(); j++) {
+		for (int j = 0; j < ps.size(); j++) {
 			assert(var(ps[j]) < nVars());
 			//assert(value(ps[j])==l_False);
 			if (value(ps[j]) == l_False) {
@@ -204,6 +204,11 @@ CRef Solver::attachReasonClause(Lit r,vec<Lit> & ps) {
 			}
 		}
 
+		if(notFalsePos1<0){
+			//all literals in this clause are false - this is the usual case for reason clauses.
+			//so just treat the first literal as the non-false one
+			notFalsePos1=0;
+		}
 
 		assert(notFalsePos1 >= 0);
 		if (notFalsePos1 >= 0 && notFalsePos2 >= 0) {
