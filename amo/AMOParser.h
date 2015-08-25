@@ -44,7 +44,7 @@ class AMOParser: public Parser<B, Solver> {
 	vec<Var> vars;
 	
 public:
-	AMOParser() {
+	AMOParser():Parser<B, Solver> ("At-Most-One") {
 		
 	}
 	bool parseLine(B& in, Solver& S) {

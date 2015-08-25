@@ -398,7 +398,7 @@ class FSMParser: public Parser<B, Solver> {
 	}
 
 public:
-	FSMParser(){
+	FSMParser():Parser<B, Solver>("Finite State Machine"){
 		
 	}
 

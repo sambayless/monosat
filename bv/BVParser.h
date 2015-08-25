@@ -265,7 +265,7 @@ private:
 		}
 
 public:
-	BVParser(){
+	BVParser():Parser<B, Solver>("BitVector"){
 
 	}
 	bool parseLine(B& in, Solver& S) {

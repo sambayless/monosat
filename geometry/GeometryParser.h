@@ -242,6 +242,11 @@ class GeometryParser: public Parser<B, Solver> {
 	
 public:
 	
+	GeometryParser():Parser<B, Solver>("Geometry"){
+
+	}
+
+
 	bool parseLine(B& in, Solver& S) {
 		
 		skipWhitespace(in);

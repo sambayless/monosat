@@ -40,6 +40,7 @@ public:
 	 explicit parse_error(const std::string& arg): std::runtime_error(arg ) {}
 };
 
+//Supporting function for throwing parse errors
 void parse_errorf(const char *fmt, ...) {
     va_list args;
     va_start(args, fmt);
@@ -52,13 +53,17 @@ void parse_errorf(const char *fmt, ...) {
 
 template<class B, class Solver>
 class Parser {
+	const char * parser_name;
 public:
-	Parser() {
+	Parser(const char * parser_name):parser_name(parser_name) {
 	}
 	virtual ~Parser() {
 	}
 	virtual bool parseLine(B& in, Solver& S)=0;
 	virtual void implementConstraints(Solver & S)=0;
+	const char * getParserName() const{
+		return parser_name;
+	}
 };
 
 //A simple parser to allow for named variables
@@ -67,7 +72,7 @@ class SymbolParser: public Parser<B, Solver> {
 	vec<std::pair<int, std::string> >  symbols;
 	std::string symbol;
 public:
-	SymbolParser(){
+	SymbolParser():Parser<B, Solver>("Symbol"){
 
 	}
 
@@ -158,11 +163,24 @@ private:
 		}
 	}
 	
-	virtual bool parseLine(const char * line, Solver& S) {
+	virtual bool parseLine(const char * line,int line_number, Solver& S) {
 		for (auto * p : parsers) {
 			char * ln = (char*) line; //intentionally discard const qualifier
-			if (p->parseLine(ln, S)) {
-				return true;
+			try{
+				if (p->parseLine(ln, S)) {
+					return true;
+				}
+			}catch(const parse_error& e){
+				std::cerr << e.what() << "\n";
+				std::cerr<<"PARSE ERROR in " << p->getParserName() << " parser at line " << line_number << ": " << line <<"\n";
+				exit(1);
+			}catch(const std::exception & e){
+				std::cerr << e.what() << "\n";
+				std::cerr<<"PARSE ERROR in " << p->getParserName() << " parser at line " << line_number << ": " << line <<"\n";
+				exit(1);
+			}catch(...){
+				std::cerr<<"PARSE ERROR in " << p->getParserName() << " parser at line " << line_number << ": " << line <<"\n";
+				exit(1);
 			}
 		}
 		return false;
@@ -190,15 +208,17 @@ private:
 		vec<Lit> lits;
 		int vars = 0;
 		int clauses = 0;
-		int cnt = 0;
+		int cluase_count=0;
+		int line_num=0;
 		
 		vec<char> linebuf;
 		for (;;) {
 			skipWhitespace(in);
 			if (*in == EOF)
 				break;
+			line_num++;
 			readLine(linebuf, in);
-			if (parseLine(linebuf.begin(), S)) {
+			if (parseLine(linebuf.begin(),line_num, S)) {
 				//do nothing
 			} else if (linebuf[0] == 'p') {
 				char * b = linebuf.begin();
@@ -213,7 +233,7 @@ private:
 				//skipLine(in);
 			} else {
 				//if nothing else works, attempt to parse this line as a clause.
-				cnt++;
+				cluase_count++;
 				readClause(linebuf.begin(), S, lits);
 				S.addClause_(lits);
 			}
@@ -223,9 +243,17 @@ private:
 			fprintf(stderr, "WARNING! DIMACS header mismatch: wrong number of variables.\n");
 		if (cnt != clauses)
 			fprintf(stderr, "WARNING! DIMACS header mismatch: wrong number of clauses.\n");*/
-		
 		for (auto * p : parsers) {
-			p->implementConstraints(S);
+			try{
+				p->implementConstraints(S);
+			}catch(const std::exception & e){
+				std::cerr << e.what() << "\n";
+				std::cerr<<"PARSE ERROR in " << p->getParserName() << " parser.\n";
+				exit(1);
+			}catch(...){
+				std::cerr<<"PARSE ERROR in " << p->getParserName() << " parser.\n";
+				exit(1);
+			}
 		}
 	}
 public:

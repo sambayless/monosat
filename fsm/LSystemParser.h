@@ -218,7 +218,7 @@ class LSystemParser: public Parser<B, Solver> {
 
 
 public:
-	LSystemParser(){
+	LSystemParser():Parser<B, Solver>("LSystem"){
 		
 	}
 

@@ -1000,7 +1000,7 @@ class GraphParser: public Parser<B, Solver> {
 	}
 	
 public:
-	GraphParser(bool precise, BVTheorySolver<long>*& bvTheory) :
+	GraphParser(bool precise, BVTheorySolver<long>*& bvTheory) :Parser<B, Solver>("Graph"),
 			precise(precise),bvTheory(bvTheory) {
 		
 	}
