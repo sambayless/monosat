@@ -40,6 +40,7 @@
 #include <unistd.h>
 #include <sstream>
 #include <iostream>
+#include <exception>
 template<typename Weight>
 class BVTheorySolver;
 
@@ -3379,7 +3380,7 @@ public:
 				ToAnalyze & c = analyses[cID];
 				prevID = cID;
 				if(cID<0 || cID==c.next_analysis){
-					exit(9);//this is a cycle
+					throw std::logic_error("Cycle in BV Theory Solver!");//this is a cycle
 				}
 				cID = c.next_analysis;
 			}
@@ -3413,7 +3414,7 @@ public:
 				ToAnalyze & c = analyses[cID];
 				prevID = cID;
 				if(cID<0 || cID==c.next_analysis){
-					exit(9);//this is a cycle
+					throw std::logic_error("Cycle in BV Theory Solver!");//this is a cycle
 				}
 				cID = c.next_analysis;
 			}
@@ -3454,7 +3455,7 @@ public:
 
 			assert(analysis_trail_pos>=0);
 			if(analysis_trail_pos<0 || analysis_trail_pos>=trail.size()){
-				exit(7);
+				throw std::runtime_error("Error in BV Theory Solver!");
 			}
 			Assignment & e = trail[analysis_trail_pos];
 
@@ -3688,16 +3689,13 @@ public:
 
 		int bitwidth = getBV(resultID).width();
 		if(resultID<=aID || resultID<=bID){
-			std::cerr<<"Addition result must have a strictly greater id than its arguments\n";
-			exit(1);
+			throw std::invalid_argument("Addition result must have a strictly greater id than its arguments");
 		}
 		if(bitwidth !=  getBV(aID).width()){
-			std::cerr<<"Bit widths must match for bitvectors\n";
-			exit(1);
+			throw std::invalid_argument("Bit widths must match for bitvectors");
 		}
 		if(bitwidth !=  getBV(bID).width()){
-			std::cerr<<"Bit widths must match for bitvectors\n";
-			exit(1);
+			throw std::invalid_argument("Bit widths must match for bitvectors");
 		}
 
 		additions[resultID].push();
@@ -3772,9 +3770,7 @@ public:
 		pending_over_analyses.growTo(bvID+1,-1);
 
 		if(under_approx[bvID]>-1){
-			assert(false);
-			fprintf(stderr,"Redefined bitvector, Aborting!");
-			exit(1);
+			throw std::invalid_argument("Redefined bitvector ID " + std::to_string(bvID) );
 		}
 		under_approx[bvID]=0;
 		if(vars.size()>0)
@@ -3850,9 +3846,7 @@ public:
 		bv_needs_propagation[bvID]=true;
 		//bv_callbacks.growTo(bvID+1);
 		if(under_approx[bvID]>-1){
-			assert(false);
-			fprintf(stderr,"Redefined bitvector, Aborting!");
-			exit(1);
+			throw std::invalid_argument("Redefined bitvector ID " + std::to_string(bvID) );
 		}
 		under_approx[bvID]=0;
 		over_approx[bvID]=(1L<<bitwidth)-1;
@@ -4081,7 +4075,7 @@ public:
 	Lit newComparison(Comparison op, int bvID,const Weight & to, Var outerVar = var_Undef, bool decidable=true) {
 		Lit l;
 		if(!hasBV(bvID)){
-			printf("ERROR! Undefined bitvector %d\n", bvID), exit(1);
+			throw std::runtime_error("Undefined bitvector ID " + std::to_string(bvID) );
 		}
 		while(eq_bitvectors[bvID]!=bvID)
 			bvID=eq_bitvectors[bvID];
@@ -4340,10 +4334,10 @@ public:
 	Lit newComparisonBV(Comparison op, int bvID,int toID, Var outerVar = var_Undef) {
 
 		if(!hasBV(bvID)){
-			printf("PARSE ERROR! Undefined bitvector %d\n", bvID), exit(1);
+			throw std::runtime_error("Undefined bitvector ID " + std::to_string(toID));
 		}
 		if(!hasBV(toID)){
-			printf("PARSE ERROR! Undefined bitvector %d\n", toID), exit(1);
+			throw std::runtime_error("Undefined bitvector ID " + std::to_string(toID));
 		}
 		while(eq_bitvectors[bvID]!=bvID)
 			bvID=eq_bitvectors[bvID];
@@ -4757,35 +4751,35 @@ inline float BVTheorySolver<float>::ceildiv(float a, float b){
 }
 template<>
 inline mpq_class BVTheorySolver<mpq_class>::lowest(int bvID){
-	exit(1);
+	throw std::runtime_error("Unimplemented");
 }
 template<>
 inline mpq_class BVTheorySolver<mpq_class>::highest(int bvID){
-	exit(1);
+	throw std::runtime_error("Unimplemented");
 }
 template<>
 inline mpq_class BVTheorySolver<mpq_class>::refine_ubound(int bvID, mpq_class bound, Var ignore_bit){
-	exit(1);
+	throw std::runtime_error("Unimplemented");
 }
 template<>
 inline double BVTheorySolver<double>::lowest(int bvID){
-	exit(1);
+	throw std::runtime_error("Unimplemented");
 }
 template<>
 inline double BVTheorySolver<double>::highest(int bvID){
-	exit(1);
+	throw std::runtime_error("Unimplemented");
 }
 template<>
 inline double BVTheorySolver<double>::refine_ubound(int bvID, double bound, Var ignore_bit){
-	exit(1);
+	throw std::runtime_error("Unimplemented");
 }
 template<>
 inline mpq_class BVTheorySolver<mpq_class>::refine_lbound(int bvID, mpq_class bound, Var ignore_bit){
-	exit(1);
+	throw std::runtime_error("Unimplemented");
 }
 template<>
 inline double BVTheorySolver<double>::refine_lbound(int bvID, double bound, Var ignore_bit){
-	exit(1);
+	throw std::runtime_error("Unimplemented");
 }
 template<typename Weight>
 Weight BVTheorySolver<Weight>::lowest(int bvID){
@@ -4810,21 +4804,21 @@ template<typename Weight>
 
 template<>
 inline mpq_class BVTheorySolver<mpq_class>::refine_ubound_check(int bvID, mpq_class bound, Var ignore_bit){
-    exit(1);
+	throw std::runtime_error("Unimplemented");
 }
 template<>
 inline double BVTheorySolver<double>::refine_ubound_check(int bvID, double bound, Var ignore_bit){
-    exit(1);
+	throw std::runtime_error("Unimplemented");
 }
 
 
 template<>
 inline mpq_class BVTheorySolver<mpq_class>::refine_lbound_check(int bvID, mpq_class bound, Var ignore_bit){
-    exit(1);
+	throw std::runtime_error("Unimplemented");
 }
 template<>
 inline double BVTheorySolver<double>::refine_lbound_check(int bvID, double bound, Var ignore_bit){
-    exit(1);
+	throw std::runtime_error("Unimplemented");
 }
 
 template<>

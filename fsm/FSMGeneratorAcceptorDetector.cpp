@@ -791,7 +791,7 @@ void FSMGeneratorAcceptorDetector::buildForcedEdgeReason(int genFinal, int accep
 
 	if(!opt_fsm_negate_underapprox){
 		assert(false);
-		exit(1);
+		throw std::logic_error("Bad fsm option");
 	}else{
 
 		static vec<NFATransition> path;

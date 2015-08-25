@@ -115,15 +115,15 @@ class FSMParser: public Parser<B, Solver> {
 		int n_labels = parseInt(in);
 		bool hasEpsilon= parseInt(in)>0;
 		if (fsmID < 0 ) {
-			printf("PARSE ERROR! FSM id must be >=0, was %d\n", fsmID), exit(1);
+			parse_errorf("FSM id must be >=0, was %d\n", fsmID);
 		}
 		if (n_labels<0){
-			printf("PARSE ERROR! Number of transition labels must be >=0, was %d\n", n_labels), exit(1);
+			parse_errorf("Number of transition labels must be >=0, was %d\n", n_labels);
 		}
 
 		fsmIDs.growTo(fsmID + 1,-1);
 		if(fsmIDs[fsmID]>=0){
-			printf("PARSE ERROR! FSM id %d declared twice!\n", fsmID), exit(1);
+			parse_errorf("FSM id %d declared twice!\n", fsmID);
 		}
 		//fsms[fsmID]= new FSMTheorySolver(&S);
 		fsmIDs[fsmID]=fsmID;
@@ -148,7 +148,7 @@ class FSMParser: public Parser<B, Solver> {
 		created_strings.growTo(strID+1);
 		stringLabels.growTo(strID+1);
 		if(strID<0 || created_strings[strID]){
-			printf("PARSE ERROR! Bad string id %d\n", strID), exit(1);
+			parse_errorf("Bad string id %d\n", strID);
 		}
 
 		created_strings[strID]=true;
@@ -158,7 +158,7 @@ class FSMParser: public Parser<B, Solver> {
 			return;
 		while(int i = parseInt(in)){
 			if (i<=0){
-				printf("PARSE ERROR! FSM strings must contain only positive (non-zero) integers, found %d\n", i), exit(1);
+				parse_errorf("FSM strings must contain only positive (non-zero) integers, found %d\n", i);
 			}
 			strings[strID].push(i);
 			stringLabels[strID]= std::max(stringLabels[strID],i+1);
@@ -186,16 +186,16 @@ class FSMParser: public Parser<B, Solver> {
 		int edgeVar = parseInt(in) - 1;
 		
 		if (fsmID < 0 || fsmID >= fsmIDs.size()) {
-			printf("PARSE ERROR! Undeclared fsm identifier %d for edge %d\n", fsmID, edgeVar), exit(1);
+			parse_errorf("Undeclared fsm identifier %d for edge %d\n", fsmID, edgeVar);
 		}
 		if (input<0){
-			printf("PARSE ERROR! Transition inputs  must be >=0, was %d\n", input), exit(1);
+			parse_errorf("Transition inputs  must be >=0, was %d\n", input);
 		}
 		if (output<0){
-				printf("PARSE ERROR! Transition outputs  must be >=0, was %d\n", output), exit(1);
+				parse_errorf("Transition outputs  must be >=0, was %d\n", output);
 			}
 		if (edgeVar < 0) {
-			printf("PARSE ERROR! Edge variables must be >=0, was %d\n", edgeVar), exit(1);
+			parse_errorf("Edge variables must be >=0, was %d\n", edgeVar);
 		}
 
 		if (input==0){
@@ -234,17 +234,17 @@ class FSMParser: public Parser<B, Solver> {
 		accepts[fsmID].last().reachVar = reachVar;
 
 		if (fsmID < 0 || fsmID >= fsmIDs.size()) {
-			printf("PARSE ERROR! Undeclared fsm identifier %d for edge %d\n", fsmID, reachVar), exit(1);
+			parse_errorf("Undeclared fsm identifier %d for edge %d\n", fsmID, reachVar);
 		}
 
 		if (from<0){
-				printf("PARSE ERROR! Source state must be a node id (a non-negative integer), was %d\n", from), exit(1);
+				parse_errorf("Source state must be a node id (a non-negative integer), was %d\n", from);
 			}
 		if (to<0){
-			printf("PARSE ERROR! Accepting state must be a node id (a non-negative integer), was %d\n", to), exit(1);
+			parse_errorf("Accepting state must be a node id (a non-negative integer), was %d\n", to);
 		}
 		if (reachVar < 0) {
-			printf("PARSE ERROR! Edge variables must be >=0, was %d\n", reachVar), exit(1);
+			parse_errorf("Edge variables must be >=0, was %d\n", reachVar);
 		}
 		
 		while (reachVar >= S.nVars())
@@ -284,25 +284,25 @@ class FSMParser: public Parser<B, Solver> {
 
 
 		if (from1<0){
-				printf("PARSE ERROR! Source state must be a node id (a non-negative integer), was %d\n", from1), exit(1);
+				parse_errorf("Source state must be a node id (a non-negative integer), was %d\n", from1);
 			}
 		if (to1<0){
-			printf("PARSE ERROR! Accepting state must be a node id (a non-negative integer), was %d\n", to1), exit(1);
+			parse_errorf("Accepting state must be a node id (a non-negative integer), was %d\n", to1);
 		}
 
 		if (fsmID2 < 0 || fsmID2 >= fsmIDs.size()) {
-			printf("PARSE ERROR! Undeclared fsm identifier %d for edge %d\n", fsmID2, reachVar), exit(1);
+			parse_errorf("Undeclared fsm identifier %d for edge %d\n", fsmID2, reachVar);
 		}
 
 		if (from2<0){
-				printf("PARSE ERROR! Source state must be a node id (a non-negative integer), was %d\n", from2), exit(1);
+				parse_errorf("Source state must be a node id (a non-negative integer), was %d\n", from2);
 			}
 		if (to2<0){
-			printf("PARSE ERROR! Accepting state must be a node id (a non-negative integer), was %d\n", to2), exit(1);
+			parse_errorf("Accepting state must be a node id (a non-negative integer), was %d\n", to2);
 		}
 
 		if (reachVar < 0) {
-			printf("PARSE ERROR! Edge variables must be >=0, was %d\n", reachVar), exit(1);
+			parse_errorf("Edge variables must be >=0, was %d\n", reachVar);
 		}
 
 		while (reachVar >= S.nVars())
@@ -334,15 +334,15 @@ class FSMParser: public Parser<B, Solver> {
 		generates[fsmID].last().reachVar = reachVar;
 
 		if (fsmID < 0 || fsmID >= fsmIDs.size()) {
-			printf("PARSE ERROR! Undeclared fsm identifier %d for edge %d\n", fsmID, reachVar), exit(1);
+			parse_errorf("Undeclared fsm identifier %d for edge %d\n", fsmID, reachVar);
 		}
 
 		if (from<0){
-				printf("PARSE ERROR! Source state must be a node id (a non-negative integer), was %d\n", from), exit(1);
+				parse_errorf("Source state must be a node id (a non-negative integer), was %d\n", from);
 			}
 
 		if (reachVar < 0) {
-			printf("PARSE ERROR! Edge variables must be >=0, was %d\n", reachVar), exit(1);
+			parse_errorf("Edge variables must be >=0, was %d\n", reachVar);
 		}
 
 		while (reachVar >= S.nVars())
@@ -378,17 +378,17 @@ class FSMParser: public Parser<B, Solver> {
 		transduces[fsmID].last().reachVar = reachVar;
 
 		if (fsmID < 0 || fsmID >= fsmIDs.size()) {
-			printf("PARSE ERROR! Undeclared fsm identifier %d for edge %d\n", fsmID, reachVar), exit(1);
+			parse_errorf("Undeclared fsm identifier %d for edge %d\n", fsmID, reachVar);
 		}
 
 		if (from<0){
-				printf("PARSE ERROR! Source state must be a node id (a non-negative integer), was %d\n", from), exit(1);
+				parse_errorf("Source state must be a node id (a non-negative integer), was %d\n", from);
 			}
 		if (to<0){
-				printf("PARSE ERROR! Accepting state must be a node id (a non-negative integer), was %d\n", to), exit(1);
+				parse_errorf("Accepting state must be a node id (a non-negative integer), was %d\n", to);
 			}
 		if (reachVar < 0) {
-			printf("PARSE ERROR! Edge variables must be >=0, was %d\n", reachVar), exit(1);
+			parse_errorf("Edge variables must be >=0, was %d\n", reachVar);
 		}
 
 		while (reachVar >= S.nVars())
@@ -462,13 +462,13 @@ public:
 				for(auto & a: accepts[i]){
 
 					if (a.strID<0 || !created_strings[a.strID]){
-						printf("PARSE ERROR! String ID must be a non-negative integer, was %d\n", a.strID), exit(1);
+						parse_errorf("String ID must be a non-negative integer, was %d\n", a.strID);
 					}
 					if(a.from<0 || a.from>=theory->nNodes(fsmID)){
-							printf("PARSE ERROR! %d is not a valid state\n", a.from), exit(1);
+							parse_errorf("%d is not a valid state\n", a.from);
 						}
 					if(a.to<0 || a.to>=theory->nNodes(fsmID)){
-						printf("PARSE ERROR! %d is not a valid state\n", a.to), exit(1);
+						parse_errorf("%d is not a valid state\n", a.to);
 					}
 
 					theory->addAcceptLit(fsmID,a.from, a.to,a.strID,a.reachVar);
@@ -477,10 +477,10 @@ public:
 				for(auto & a: generates[i]){
 
 					if (a.strID<0 || !created_strings[a.strID]){
-						printf("PARSE ERROR! String ID must be a non-negative integer, was %d\n", a.strID), exit(1);
+						parse_errorf("String ID must be a non-negative integer, was %d\n", a.strID);
 					}
 					if(a.from<0 || a.from>=theory->nNodes(fsmID)){
-							printf("PARSE ERROR! %d is not a valid state\n", a.from), exit(1);
+							parse_errorf("%d is not a valid state\n", a.from);
 						}
 
 					theory->addGenerateLit(fsmID,a.from, a.strID,a.reachVar);
@@ -489,13 +489,13 @@ public:
 				for(auto & a: transduces[i]){
 
 					if (a.strID<0 || !created_strings[a.strID]){
-						printf("PARSE ERROR! String ID must be a non-negative integer, was %d\n", a.strID), exit(1);
+						parse_errorf("String ID must be a non-negative integer, was %d\n", a.strID);
 					}
 					if(a.from<0 || a.from>=theory->nNodes(fsmID)){
-							printf("PARSE ERROR! %d is not a valid state\n", a.from), exit(1);
+							parse_errorf("%d is not a valid state\n", a.from);
 						}
 					if(a.to<0 || a.to>=theory->nNodes(fsmID)){
-									printf("PARSE ERROR! %d is not a valid state\n", a.from), exit(1);
+									parse_errorf("%d is not a valid state\n", a.from);
 								}
 					theory->addTransduceLit(fsmID,a.from,a.to, a.strID,a.strID2,a.reachVar);
 				}
@@ -505,8 +505,8 @@ public:
 		}
 		for(auto & c: compose_accepts){
 			if(!theory){
-				printf("PARSE ERROR! No fsms declared!\n"), exit(1);
-				exit(1);
+				parse_errorf("No fsms declared!\n");
+
 			}
 
 			theory->addComposeAcceptLit(c.fsmID1,c.fsmID2,c.from1,c.to1,c.from2,c.to2, c.strID,c.reachVar);

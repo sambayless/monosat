@@ -226,7 +226,7 @@ Lit MaxflowDetector<Weight>::findFirstReasonTooHigh(Weight flow) {
 					return l;
 				}
 				if(outer->hasBitVector(i)){
-					exit(8);
+					throw std::runtime_error("Error in maxflow");
 					//outer->buildBVReason(outer->getEdgeBV(i).getID(),Comparison::geq,underapprox_conflict_detector->getEdgeFlow(i),conflict);
 					//outer->buildBVReason(bv.getID(),inclusive ? Comparison::gt:Comparison::geq,bv.getUnder(),conflict);
 				}
@@ -262,7 +262,7 @@ Lit MaxflowDetector<Weight>::findFirstReasonTooLow(Weight flow) {
 					}else{
 						//if the edge _was_ enabled, and all of its capacity was used, then the reason that it didn't have more capacity must be included.
 						if(outer->hasBitVector(edgeid)){
-							exit(7);
+							throw std::runtime_error("Error in maxflow");
 						}
 					}
 				} else {
@@ -302,7 +302,7 @@ Lit MaxflowDetector<Weight>::findFirstReasonTooLow(Weight flow) {
 						//if the edge _was_ enabled, and it had no capacity capacity was used, then the reason that it didn't have more capacity must be included.
 						//does this really hold for backwards edges?
 						if(outer->hasBitVector(edgeid)){
-							exit(6);
+							throw std::runtime_error("Error in maxflow");
 							//outer->buildBVReason(bv.getID(),inclusive ? Comparison::gt:Comparison::geq,bv.getUnder(),conflict);
 						}
 					}
@@ -489,7 +489,7 @@ void bassert(bool condition) {
 #ifndef NDEBUG
 	assert(condition);
 	if (!condition) {
-		exit(3);
+		throw std::runtime_error("Assertion error");
 	}
 #endif
 }
@@ -1530,7 +1530,7 @@ Lit MaxflowDetector<Weight>::decide() {
 				Weight under_weight = outer->getEdgeBV(edgeID).getUnder();
 				if((val==l_Undef && flow>0) || (flow>0 && flow>under_weight)){
 					if(!in_decision_q[edgeID]){
-						exit(8);
+						throw std::runtime_error("Error in maxflow");
 					}
 				}
 			}

@@ -104,7 +104,7 @@ private:
 
 		if(bvs[id].id!=-1){
 
-			printf("PARSE ERROR! Re-defined bitvector %d\n", id), exit(1);
+			parse_errorf("Re-defined bitvector %d\n", id);
 
 		}
 		bvs[id].id = id;
@@ -122,7 +122,7 @@ private:
 
 		if(bvs[id].id!=-1){
 
-			printf("PARSE ERROR! Re-defined bitvector %d\n", id), exit(1);
+			parse_errorf("Re-defined bitvector %d\n", id);
 
 		}
 		bvs[id].id = id;
@@ -143,7 +143,7 @@ private:
 		}
 		skipWhitespace(in);
 	/*	if(! match(in,"bv")){
-			printf("PARSE ERROR! Result of addition must be bitvector\n"), exit(1);
+			parse_errorf("Result of addition must be bitvector\n");
 		}*/
 		int resultID = parseInt(in);
 		skipWhitespace(in);
@@ -189,10 +189,10 @@ private:
 			++in;
 		}
 		if (symbol.size() == 0) {
-			printf("PARSE ERROR! Empty symbol: %c\n", *in), exit(1);
+			parse_errorf("Empty symbol: %c\n", *in);
 		}
 		/*   		if(symbols && used_symbols.count(symbol)){
-		 printf("PARSE ERROR! Duplicated symbol: %c\n", *symbol.c_str()), exit(1);
+		 parse_errorf("Duplicated symbol: %c\n", *symbol.c_str());
 		 }
 		 used_symbols.insert(symbol);*/
 
@@ -381,7 +381,7 @@ public:
 
 		}else if (addbvs.size() || comparebvs.size() || compares.size()){
 
-			printf("PARSE ERROR! Undefined bitvector\n"), exit(1);
+			parse_errorf("Undefined bitvector\n");
 
 		}
 

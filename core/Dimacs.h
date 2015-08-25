@@ -30,7 +30,25 @@
 #include "mtl/Vec.h"
 #include <string>
 #include <algorithm>
+#include <stdexcept>
+#include <string>
 namespace Monosat {
+
+
+class parse_error: public std::runtime_error {
+public:
+	 explicit parse_error(const std::string& arg): std::runtime_error(arg ) {}
+};
+
+void parse_errorf(const char *fmt, ...) {
+    va_list args;
+    va_start(args, fmt);
+    char buf[1000];
+    vsnprintf(buf, sizeof buf,fmt, args);
+    va_end(args);
+    throw parse_error(buf);
+
+}
 
 template<class B, class Solver>
 class Parser {
@@ -63,7 +81,7 @@ public:
 				skipWhitespace(in);
 				int v = parseInt(in);
 				if (v <= 0) {
-					//printf("PARSE ERROR! Variables must be positive: %c\n", *in), exit(1);
+					//parse_errorf("Variables must be positive: %c\n", *in);
 					v = -v;
 				}
 
@@ -76,10 +94,10 @@ public:
 					++in;
 				}
 				if (symbol.size() == 0) {
-					printf("PARSE ERROR! Empty symbol: %c\n", *in), exit(1);
+					parse_errorf("Empty symbol: %c\n", *in);
 				}
 				/*   		if(symbols && used_symbols.count(symbol)){
-				 printf("PARSE ERROR! Duplicated symbol: %c\n", *symbol.c_str()), exit(1);
+				 parse_errorf("Duplicated symbol: %c\n", *symbol.c_str());
 				 }
 				 used_symbols.insert(symbol);*/
 
@@ -188,7 +206,7 @@ private:
 					vars = parseInt(b);
 					clauses = parseInt(b);
 				} else {
-					printf("PARSE ERROR! Unexpected char: %c\n", *in), exit(3);
+					parse_errorf("Unexpected char: %c\n", *in);
 				}
 			} else if (linebuf[0] == 'c') {
 				//comment line
