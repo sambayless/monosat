@@ -45,7 +45,8 @@ template<typename Weight>
 class BVTheorySolver;
 
 namespace Monosat {
-
+using std::min;
+using std::max;
 enum class Comparison{
 		lt,leq,gt,geq
 };
@@ -96,14 +97,16 @@ public:
 		int cause_is_comparison:1;
 		int cause_is_addition:1;
 		int cause_is_addition_argument:1;
+		int cause_is_condition:1;
+		int cause_is_condition_argument:1;
 		int cause_is_decision:1;
 		int index:26;
 
-		Cause(const Cause & copy):cause_is_bits(copy.cause_is_bits),refined_cause(copy.refined_cause),cause_is_comparison(copy.cause_is_comparison),cause_is_addition(copy.cause_is_addition),cause_is_addition_argument(copy.cause_is_addition_argument),cause_is_decision(copy.cause_is_decision),index(copy.index){
+		Cause(const Cause & copy):cause_is_bits(copy.cause_is_bits),refined_cause(copy.refined_cause),cause_is_comparison(copy.cause_is_comparison),cause_is_addition(copy.cause_is_addition),cause_is_addition_argument(copy.cause_is_addition_argument),cause_is_condition(copy.cause_is_condition),cause_is_condition_argument(copy.cause_is_condition_argument),cause_is_decision(copy.cause_is_decision),index(copy.index){
 
 		}
 
-		Cause():cause_is_bits(0),refined_cause(0),cause_is_comparison(0),cause_is_addition(0),cause_is_addition_argument(0),cause_is_decision(0),index(-1){
+		Cause():cause_is_bits(0),refined_cause(0),cause_is_comparison(0),cause_is_addition(0),cause_is_addition_argument(0),cause_is_condition(0),cause_is_condition_argument(0),cause_is_decision(0),index(-1){
 
 		}
 		/*Cause(bool bits, bool addition, int comparison=-1):cause_is_bits(bits),refined_cause(0),cause_is_addition(addition),cause_is_addition_arg(0),comparison_cause(comparison){
@@ -111,7 +114,7 @@ public:
 		}*/
 		bool hasCause(){
 			//this can be improved, if we want.
-			return cause_is_bits|| cause_is_addition || cause_is_addition_argument|| cause_is_comparison || cause_is_decision|| refined_cause;
+			return cause_is_bits|| cause_is_addition || cause_is_addition_argument|| cause_is_condition || cause_is_condition_argument|| cause_is_comparison || cause_is_decision|| refined_cause;
 		}
 		void clear(){
 			cause_is_decision=0;
@@ -119,6 +122,8 @@ public:
 			refined_cause=0;
 			cause_is_addition=0;
 			cause_is_addition_argument=0;
+			cause_is_condition=0;
+			cause_is_condition_argument=0;
 			cause_is_comparison=0;
 			index=-1;
 		}
@@ -152,6 +157,7 @@ public:
 			return new_under>-1;
 		}
 	};
+
 
 	struct ComparisonID{
 		Weight w;
@@ -257,6 +263,7 @@ public:
 	long n_additions=0;
 	vec<lbool> assigns;
 	CRef comparisonprop_marker;
+	CRef conditionprop_marker;
 	CRef bvprop_marker;
 	Lit const_true=lit_Undef;
 	vec<const char*> symbols;
@@ -268,6 +275,27 @@ public:
 	vec<Cause> over_causes;
 	//Bitvectors are unsigned, and have least significant bit at index 0
 	vec<vec<Lit> > bitvectors;
+
+
+	struct ConditionalID{
+		Lit l=lit_Undef;
+		int bvThenID;
+		int bvElseID;
+
+		bool hasITE()const{
+			return l!=lit_Undef;
+		}
+	};
+
+	struct ConditionalArg{
+		Lit l=lit_Undef;
+		int other_argID=-1;
+		int resultID=-1;
+	};
+
+
+	vec<vec<ConditionalID>> conditionals;//ITE bvs
+	vec<vec<ConditionalArg>> conditional_arguments;
 	vec<ComparisonID> comparisons;
 	vec<vec<int> > cause_set;//for each bv, this is the set of all bitvectors that have a greater id and might need to have their approx updated when this bv's approx changes.
 	vec<vec<int> > compares; //for each bitvector, comparisons are all to unique values, and in ascending order of compareTo.
@@ -304,6 +332,7 @@ public:
 	vec<int> pending_over_analyses;
 	vec<int> pending_under_analyses;
 	int n_pending_analyses = 0;
+
 	vec<vec<Addition>> additions;//each bitvector is the result of at most one addition.
 	vec<vec<AdditionArg>> addition_arguments;
 	vec<Weight> under_approx0;//under approx at level 0
@@ -367,6 +396,8 @@ public:
 	long stats_num_reasons = 0;
 	long stats_build_value_reason=0;
 	long stats_build_value_bv_reason=0;
+	long stats_build_condition_reason=0;
+	long stats_build_condition_arg_reason=0;
 	long stats_build_addition_reason=0;
 	long stats_build_addition_arg_reason =0;
 	double stats_update_time=0;
@@ -391,6 +422,7 @@ public:
 		rnd_seed = opt_random_seed;
 		S->addTheory(this);
 		comparisonprop_marker = S->newReasonMarker(this);
+		conditionprop_marker = S->newReasonMarker(this);
 		bvprop_marker = S->newReasonMarker(this);
 
 	}
@@ -483,6 +515,24 @@ public:
 			assert(bitvectors[bvID1].size()==bitvectors[bvID2].size());
 			for(int i = 0;i<bitvectors[bvID1].size();i++){
 				makeEqual(bitvectors[bvID1][i],bitvectors[bvID2][i]);
+			}
+		}
+		//move the conditionals of bvID1 into bvID2.
+		for(int i = 0;i<conditionals[bvID1].size();i++){
+			conditionals[bvID2].push(conditionals[bvID1][i]);
+			//fix the other bitvector's references.
+			int arg1 = conditionals[bvID2][i].bvThenID;
+			int arg2 = conditionals[bvID2][i].bvElseID;
+
+			for(int j = 0;j<conditional_arguments[arg1].size();j++){
+				if(conditional_arguments[arg1][j].resultID==bvID1){
+					conditional_arguments[arg1][j].resultID=bvID2;
+				}
+			}
+			for(int j = 0;j<conditional_arguments[arg2].size();j++){
+				if(conditional_arguments[arg2][j].resultID==bvID1){
+					conditional_arguments[arg2][j].resultID=bvID2;
+				}
 			}
 		}
 
@@ -1531,6 +1581,69 @@ public:
 			over_cause_new=over_cause_old;
 		}
 
+		for(int i = 0;i<conditionals[bvID].size();i++){
+			Lit condition = conditionals[bvID][i].l;
+			int bvThenID = conditionals[bvID][i].bvThenID;
+			int bvElseID = conditionals[bvID][i].bvElseID;
+			assert(bvThenID<bvID);
+			assert(bvElseID<bvID);
+			Weight under;
+			Weight over;
+			if (value(condition)==l_True){
+				under = under_approx[bvThenID];
+				over = over_approx[bvThenID];
+			}else if (value(condition)==l_False){
+				under = under_approx[bvElseID];
+				over = over_approx[bvElseID];
+			}else{
+				under = min( under_approx[bvThenID], under_approx[bvElseID]);
+				over = max( over_approx[bvThenID], over_approx[bvElseID]);
+			}
+		/*	clip_over(under,bvID);
+			clip_over(over,bvID);*/
+			if(under >under_new){
+				under_new=under;
+				under_cause_new.clear();
+				under_cause_new.cause_is_condition=true;
+				under_cause_new.index=i;
+			}
+			if(over<over_new){
+				over_new=over;
+				over_cause_new.clear();
+				over_cause_new.cause_is_condition=true;
+				over_cause_new.index=i;
+			}
+		}
+
+		//also need to iterate through the additions that this bv is an argument of...
+		for(int i = 0;i<conditional_arguments[bvID].size();i++){
+
+			Lit condition=conditional_arguments[bvID][i].l;
+			int other_argID=conditional_arguments[bvID][i].other_argID;
+			int resultID=conditional_arguments[bvID][i].resultID;
+
+			assert(other_argID>=0);assert(resultID>=0);
+			if(value(condition)==l_True){
+				Weight under = under_approx[resultID];
+				Weight over = over_approx[resultID];
+	/*			clip_under(under,bvID);
+				clip_under(over,bvID);*/
+				if(under >under_new){
+					under_new=under;
+					under_cause_new.clear();
+					under_cause_new.cause_is_condition_argument=true;
+					under_cause_new.index=i;
+				}
+				if(over<over_new){
+					over_new=over;
+					over_cause_new.clear();
+					over_cause_new.cause_is_condition_argument=true;
+					over_cause_new.index=i;
+				}
+			}
+		}
+
+
 		for(int i = 0;i<additions[bvID].size();i++){
 			int aID = additions[bvID][i].aID;
 			int bID = additions[bvID][i].bID;
@@ -2016,6 +2129,27 @@ public:
 				}
 			}
 
+			for(int i = 0;i< conditionals[bvID].size();i++){
+				int thenID = conditionals[bvID][i].bvThenID;
+				int elseID = conditionals[bvID][i].bvElseID;
+				Lit condition = conditionals[bvID][i].l;
+
+				if(value(condition)==l_Undef){
+					if(under_approx[bvID]< min( under_approx[thenID],under_approx[elseID]) ||
+							over_approx[bvID]> max( over_approx[thenID],over_approx[elseID])){
+						return false;
+					}
+				}else if(value(condition)==l_True){
+					if(under_approx[bvID]!= under_approx[thenID] || over_approx[bvID]!=over_approx[thenID]){
+						return false;
+					}
+				}else if(value(condition)==l_False){
+					if(under_approx[bvID]!= under_approx[elseID] || over_approx[bvID]!=over_approx[elseID]){
+						return false;
+					}
+				}
+			}
+
 			for(int i = 0;i<additions[bvID].size();i++){
 				int aID = additions[bvID][i].aID;
 				int bID = additions[bvID][i].bID;
@@ -2413,6 +2547,162 @@ public:
 						fflush(stdout);
 				}*/
 			}while(new_change);//the bit assignment updates above can force a more precise over or under approximation, which can in turn lead to further bit assignments (I think this can happen?).
+
+			for(int i = 0;i<conditionals[bvID].size();i++){
+				Lit condition = conditionals[bvID][i].l;
+				int bvThenID = conditionals[bvID][i].bvThenID;
+				int bvElseID = conditionals[bvID][i].bvElseID;
+				assert(bvThenID<bvID);
+				assert(bvElseID<bvID);
+
+				bool changed=true;
+				while(changed){
+					changed=false;
+
+					Weight under;
+					Weight over;
+					if (value(condition)==l_True){
+						under = under_approx[bvThenID];
+						over = over_approx[bvThenID];
+					}else if (value(condition)==l_False){
+						under = under_approx[bvElseID];
+						over = over_approx[bvElseID];
+					}else{
+						under = min( under_approx[bvThenID], under_approx[bvElseID]);
+						over = max( over_approx[bvThenID], over_approx[bvElseID]);
+					}
+
+					if(underApprox>over){
+						//then we have a conflict
+						double startconftime = rtime(2);
+						propagationtime += startconftime - startproptime;
+						stats_num_conflicts++;stats_addition_conflicts++;
+						if(opt_verb>1){
+							printf("bv condition conflict %ld\n", stats_num_conflicts);
+						}
+						if(value(condition)==l_True){
+							conflict.push(~condition);
+						}else if(value(condition)==l_False){
+							conflict.push(condition);
+						}
+						buildConditionalReason(bvID,i,conflict);
+						toSolver(conflict);
+						stats_conflict_time+=rtime(2)-startconftime;
+						return false;
+					}else if (overApprox<under){
+						double startconftime = rtime(2);
+						propagationtime += startconftime - startproptime;
+						if(opt_verb>1){
+							printf("bv condition conflict %ld\n", stats_num_conflicts);
+						}
+						stats_num_conflicts++;stats_addition_conflicts++;
+						if(value(condition)==l_True){
+							conflict.push(~condition);
+						}else if(value(condition)==l_False){
+							conflict.push(condition);
+						}
+						buildConditionalReason(bvID,i,conflict);
+						toSolver(conflict);
+						stats_conflict_time+=rtime(2)-startconftime;
+						return false;
+					}
+
+					if(value(condition)==l_True){
+						if((under> under_approx[bvThenID]) || (over < over_approx[bvThenID])){
+							//the other bv needs to be updated
+							if(!alteredBV[bvThenID]){
+								alteredBV[bvThenID]=true;
+								assert(altered_bvs.last()==bvID);
+								altered_bvs.last()=bvThenID;
+								assert(altered_bvs.last()==bvThenID);
+								altered_bvs.push(bvID);
+								assert(altered_bvs.last()==bvID);
+							}
+						}
+					}else if (value(condition)==l_False){
+						if((under> under_approx[bvElseID]) || (over < over_approx[bvElseID])){
+							//the other bv needs to be updated
+							if(!alteredBV[bvElseID]){
+								alteredBV[bvElseID]=true;
+								assert(altered_bvs.last()==bvID);
+								altered_bvs.last()=bvElseID;
+								assert(altered_bvs.last()==bvElseID);
+								altered_bvs.push(bvID);
+								assert(altered_bvs.last()==bvID);
+							}
+						}
+					}else{
+						//we can propagate the value of condition, based on the values of its arguments:
+						//if thenID is out of range of result ID, then condition must be false.
+						//if elseID is out of range of result ID, then condition must be true
+						//(if both are the case, then we would already have hit a conflict above(?))
+
+						if(under_approx[bvThenID]>over_approx[bvID] || over_approx[bvThenID]<under_approx[bvID]){
+							//condition must be false
+
+							if(under_approx[bvElseID]>over_approx[bvID] || over_approx[bvElseID]<under_approx[bvID]){
+
+								//condition must be both true and false, which is a conflict.
+								//
+
+								buildConditionalReason(bvID,i,conflict);
+								//buildConditionalReason(bvID,bvElseID,underApprox,conflict);
+								return false;
+							}else{
+								enqueue(~condition, conditionprop_marker);
+								changed=true;
+							}
+
+						}else if(under_approx[bvElseID]>over_approx[bvID] || over_approx[bvElseID]<under_approx[bvID]){
+							enqueue(condition, conditionprop_marker);
+							changed=true;
+							//condition must be true
+						}
+					}
+				}
+
+			}
+
+			for(int i = 0;i<conditional_arguments[bvID].size();i++){
+				Lit condition = conditional_arguments[bvID][i].l;
+				int other_argID = conditional_arguments[bvID][i].other_argID;
+				int resultID = conditional_arguments[bvID][i].resultID;
+				assert(other_argID>=0);assert(resultID>=0);
+
+				if(value(condition)==l_True){
+					if(under_approx[bvID]>over_approx[resultID] || over_approx[bvID]<under_approx[resultID]){
+						//this is a conflict
+						conflict.push(~condition);
+						buildConditionalArgReason(bvID,i,conflict);
+						return false;
+					}
+				}else if (value(condition)==l_Undef){
+					//can potentially propagate the falsehood of the conditional, if this bv is out of range of the result bv
+					if(under_approx[bvID]>over_approx[resultID] || over_approx[bvID]<under_approx[resultID]){
+						enqueue(~condition,conditionprop_marker);
+
+						if(!alteredBV[other_argID]){
+							//exit(8);
+							alteredBV[other_argID]=true;
+							assert(altered_bvs.last()==bvID);
+							altered_bvs.last()=other_argID;
+							assert(altered_bvs.last()==other_argID);
+							altered_bvs.push(bvID);
+							assert(altered_bvs.last()==bvID);
+						}
+						if(!alteredBV[resultID]){
+							alteredBV[resultID]=true;
+							assert(altered_bvs.last()==bvID);
+							altered_bvs.last()=resultID;
+							assert(altered_bvs.last()==resultID);
+							altered_bvs.push(bvID);
+							assert(altered_bvs.last()==bvID);
+						}
+					}
+				}
+			}
+
+
 
 			for(int i = 0;i<additions[bvID].size();i++){
 				int aID = additions[bvID][i].aID;
@@ -2813,10 +3103,8 @@ public:
 					over_approx[changedID]=over_approx[bvID];
 					under_approx0[changedID]=under_approx0[bvID];
 					over_approx0[changedID]=over_approx0[bvID];
-
 					if(hasTheory(changedID))
 						getTheory(changedID)->enqueueBV(changedID);//only enqueue the bitvector in the subtheory _after_ it's approximation has been updated!
-
 				}
 			}
 
@@ -2837,6 +3125,110 @@ public:
 	};
 
 	Weight ceildiv(Weight a, Weight b);
+	void buildConditionalReason(int bvID,int conditional_index, vec<Lit> & conflict){
+		dbg_no_pending_analyses();
+		assert(eq_bitvectors[bvID]==bvID);
+		rewind_trail_pos(trail.size()-1);
+		stats_build_condition_reason++;
+		Weight  over_cur = over_approx[bvID];
+		Weight  under_cur = under_approx[bvID];
+		assert(checkApproxUpToDate(bvID));
+
+
+		//the reason that the addition is over is the reason that
+		//bvID > addition_under, or the reason that addition_under>= its current value.
+		int bvThenID = conditionals[bvID][conditional_index].bvThenID;
+		int bvElseID = conditionals[bvID][conditional_index].bvElseID;
+		Lit condition =  conditionals[bvID][conditional_index].l;
+		assert(bvThenID<bvID);
+		assert(bvElseID<bvID);
+
+		Weight under;
+		Weight over;
+		if (value(condition)==l_True){
+			under = under_approx[bvThenID];
+			over = over_approx[bvThenID];
+			if(under_cur>over){
+				analyzeValueReason(Comparison::gt, bvID,over,conflict);
+				analyzeValueReason(Comparison::leq, bvThenID,over,conflict);
+			}else{
+				assert(over_cur<under);
+				analyzeValueReason(Comparison::lt, bvID,under,conflict);
+				analyzeValueReason(Comparison::geq, bvThenID,under,conflict);
+			}
+		}else if (value(condition)==l_False){
+			under = under_approx[bvElseID];
+			over = over_approx[bvElseID];
+			if(under_cur>over){
+				analyzeValueReason(Comparison::gt, bvID,over,conflict);
+				analyzeValueReason(Comparison::leq, bvElseID,over,conflict);
+			}else{
+				assert(over_cur<under);
+				analyzeValueReason(Comparison::lt, bvID,under,conflict);
+				analyzeValueReason(Comparison::geq, bvElseID,under,conflict);
+			}
+		}else{
+			under = min( under_approx[bvThenID], under_approx[bvElseID]);
+			over = max( over_approx[bvThenID], over_approx[bvElseID]);
+			if(under_cur>over){
+				if(over_approx[bvThenID]>= over_approx[bvElseID]){
+					//pick bvThenID over elseID, arbitrarily in the case of a tie
+					analyzeValueReason(Comparison::gt, bvID,over,conflict);
+					analyzeValueReason(Comparison::leq, bvThenID,over,conflict);
+				}else{
+					analyzeValueReason(Comparison::gt, bvID,over,conflict);
+					analyzeValueReason(Comparison::leq, bvElseID,over,conflict);
+				}
+			}else{
+				assert(over_cur<under);
+				if ( under_approx[bvThenID]< under_approx[bvElseID]){
+					analyzeValueReason(Comparison::lt, bvID,under,conflict);
+					analyzeValueReason(Comparison::geq, bvThenID,under,conflict);
+				}else {
+					analyzeValueReason(Comparison::lt, bvID,under,conflict);
+					analyzeValueReason(Comparison::geq, bvElseID,under,conflict);
+				}
+			}
+		}
+
+		analyze(conflict);
+	}
+	void buildConditionalArgReason(int bvID, int argindex, vec<Lit> & conflict){
+			dbg_no_pending_analyses();
+			assert(eq_bitvectors[bvID]==bvID);
+			rewind_trail_pos(trail.size()-1);
+
+			stats_build_condition_arg_reason++;
+			Weight  over_cur = over_approx[bvID];
+			Weight  under_cur = under_approx[bvID];
+			//assert(checkApproxUpToDate(bvID));
+
+			Lit condition =  conditional_arguments[bvID][argindex].l;
+			assert(value(condition)==l_True);
+			//the reason that the addition is over is the reason that
+			//bvID > addition_under, or the reason that addition_under>= its current value.
+			int other_argID = conditional_arguments[bvID][argindex].other_argID;
+			int resultID = conditional_arguments[bvID][argindex].resultID;
+
+			Weight under_result = under_approx[resultID];
+			Weight over_result = over_approx[resultID];
+
+			//conflict.push(~condition);
+
+			if(under_cur>over_result){
+				//buildTrivialClause(conflict);
+				analyzeValueReason(Comparison::leq, resultID,over_approx[resultID],conflict);
+				analyzeValueReason(Comparison::gt, bvID,over_result,conflict);
+			}else{
+				assert(over_cur<under_result);
+
+				analyzeValueReason(Comparison::geq, resultID,under_approx[resultID],conflict);
+				analyzeValueReason(Comparison::lt, bvID,under_result,conflict);
+
+			}
+			analyze(conflict);
+		}
+
 
 	void buildAdditionArgReason(int bvID, int argindex, vec<Lit> & conflict){
 		dbg_no_pending_analyses();
@@ -3547,6 +3939,23 @@ public:
 				over=over_approx[eqBV];
 				under=under_approx[eqBV];
 			}
+
+			for(int i = 0;i< conditionals[bvID].size();i++){
+				int thenID = conditionals[bvID][i].bvThenID;
+				int elseID = conditionals[bvID][i].bvElseID;
+				Lit condition = conditionals[bvID][i].l;
+				if(value(condition)!=l_False){
+					if(under_approx[bvID]!= under_approx[thenID] || over_approx[bvID]!=over_approx[thenID]){
+						return false;
+					}
+				}
+				if(value(condition)!=l_True){
+					if(under_approx[bvID]!= under_approx[elseID] || over_approx[bvID]!=over_approx[elseID]){
+						return false;
+					}
+				}
+			}
+
 			for(int i = 0;i< additions[bvID].size();i++){
 				int aID = additions[bvID][i].aID;
 				int bID = additions[bvID][i].bID;
@@ -3678,6 +4087,57 @@ public:
 		theoryIds[bvID]=theoryID;
 	}
 
+	//ITE with BV arguments
+	BitVector newConditionalBV(Lit condition, int resultID, int bvThenID, int bvElseID){
+	/*	if(conditionals[resultID].hasCondition()){
+			throw std::invalid_argument("Bitvectors can have at most one defined conditional (ITE)");
+		}*/
+		int bitwidth = getBV(resultID).width();
+		if(resultID<=bvThenID || resultID<=bvElseID){
+			throw std::invalid_argument("Condition result must have a strictly greater id than its arguments");
+		}
+		if(bitwidth !=  getBV(bvThenID).width()){
+			throw std::invalid_argument("Bit widths must match for bitvectors");
+		}
+		if(bitwidth !=  getBV(bvElseID).width()){
+			throw std::invalid_argument("Bit widths must match for bitvectors");
+		}
+
+		conditionals[resultID].push();
+		conditionals[resultID].last().l = condition;
+		conditionals[resultID].last().bvThenID = bvThenID;
+		conditionals[resultID].last().bvElseID = bvElseID;
+
+		conditional_arguments[bvThenID].push();
+		conditional_arguments[bvThenID].last().l = condition;
+		conditional_arguments[bvThenID].last().other_argID=bvElseID;
+		conditional_arguments[bvThenID].last().resultID=resultID;
+
+		conditional_arguments[bvElseID].push();
+		conditional_arguments[bvElseID].last().l = ~condition;
+		conditional_arguments[bvElseID].last().other_argID=bvThenID;
+		conditional_arguments[bvElseID].last().resultID=resultID;
+
+		bv_needs_propagation[resultID]=true;
+		if(!alteredBV[resultID]){
+			alteredBV[resultID]=true;
+			altered_bvs.push(resultID);
+		}
+		bv_needs_propagation[bvThenID]=true;
+		if(!alteredBV[bvThenID]){
+			alteredBV[bvThenID]=true;
+			altered_bvs.push(bvThenID);
+		}
+		bv_needs_propagation[bvElseID]=true;
+		if(!alteredBV[bvElseID]){
+			alteredBV[bvElseID]=true;
+			altered_bvs.push(bvElseID);
+		}
+		requiresPropagation=true;
+
+		return getBV(resultID);
+
+	}
 
 	BitVector newAdditionBV(int resultID, int aID, int bID){
 		while(eq_bitvectors[resultID]!=resultID)
@@ -3761,6 +4221,8 @@ public:
 		bvconst.growTo(bvID+1);
 		additions.growTo(bvID+1);
 		addition_arguments.growTo(bvID+1);
+		conditionals.growTo(bvID+1);
+		conditional_arguments.growTo(bvID+1);
 		under_causes.growTo(bvID+1);
 		over_causes.growTo(bvID+1);
 		cause_set.growTo(bvID+1);
@@ -3835,6 +4297,8 @@ public:
 		compares.growTo(bvID+1);
 		additions.growTo(bvID+1);
 		addition_arguments.growTo(bvID+1);
+		conditionals.growTo(bvID+1);
+		conditional_arguments.growTo(bvID+1);
 		under_causes.growTo(bvID+1);
 		over_causes.growTo(bvID+1);
 		cause_set.growTo(bvID+1);

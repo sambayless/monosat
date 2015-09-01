@@ -174,6 +174,11 @@ BoolOption Monosat::opt_init_rnd_phase(_cat, "init-rnd-phase", "", false);
 BoolOption Monosat::opt_encode_reach_underapprox_as_sat(_cat_graph, "reach-underapprox-cnf",
 		"Compute the under-approximate side of reachability constraints using CNF (only requires linear number of constraints), instead of the chosen algorithm",
 		false);
+
+IntOption Monosat::opt_encode_dist_underapprox_as_sat(_cat_graph, "dist-underapprox-cnf",
+		"Compute the under-approximate side of distance constraints using CNF, instead of the chosen algorithm (0=don't use CNF encoding)",
+		0,IntRange(0,2));
+
 BoolOption Monosat::opt_reach_prop(_cat_graph, "prop-reach", "", false);
 
 BoolOption Monosat::opt_decide_theories(_cat_graph, "decide-theories", "", false);

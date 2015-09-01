@@ -136,6 +136,7 @@ public:
 	inline bool selfLoop(int edgeID)  {
 		return hasEdge(edgeID) && getEdge(edgeID).from == getEdge(edgeID).to;
 	}
+	//SLOW!
 	bool hasEdge(int from, int to) const {
 		for (int i = 0; i < adjacency_list[from].size(); i++) {
 			if (adjacency_list[from][i].node == to && edgeEnabled(adjacency_list[from][i].id)) {
@@ -144,7 +145,7 @@ public:
 		}
 		return false;
 	}
-	//Returns -1 if there is no edge
+	//SLOW! Returns -1 if there is no edge
 	int getEdge(int from, int to) const {
 		for (int i = 0; i < adjacency_list[from].size(); i++) {
 			if (adjacency_list[from][i].node == to && edgeEnabled(adjacency_list[from][i].id)) {

@@ -94,6 +94,7 @@ public:
 		int min_unweighted_distance;
 		
 	};
+
 	vec<vec<UnweightedDistLit> > unweighted_dist_lits;
 
 	struct WeightedDistLit {
@@ -291,7 +292,7 @@ public:
 		return "Shortest Path Detector";
 	}
 private:
-	void buildSATConstraints(int distance = -1);
+	void buildUnweightedSATConstraints(bool onlyUnderApprox,int distance = -1);
 };
 
 }

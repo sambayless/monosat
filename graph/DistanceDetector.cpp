@@ -38,6 +38,7 @@
 #include <iostream>
 #include <iomanip>
 using namespace Monosat;
+
 template<typename Weight>
 DistanceDetector<Weight>::DistanceDetector(int _detectorID, GraphTheorySolver<Weight> * outer,
 		DynamicGraph<Weight>  &_g, DynamicGraph<Weight>  &_antig, int from, double seed) :
@@ -85,14 +86,23 @@ DistanceDetector<Weight>::DistanceDetector(int _detectorID, GraphTheorySolver<We
 	//select the unweighted distance detectors
 	if (distalg == DistAlg::ALG_DISTANCE) {
 		if (outer->all_edges_unit) {
-			underapprox_unweighted_distance_detector = new UnweightedBFS<Weight,typename DistanceDetector<Weight>::ReachStatus>(from,
+			if (!opt_encode_dist_underapprox_as_sat)
+				underapprox_unweighted_distance_detector = new UnweightedBFS<Weight,typename DistanceDetector<Weight>::ReachStatus>(from,
 					_g, *(positiveReachStatus), 0);
 			overapprox_unweighted_distance_detector = new UnweightedBFS<Weight,typename DistanceDetector<Weight>::ReachStatus>(from,
 					_antig, *(negativeReachStatus), 0);
-			underapprox_path_detector = underapprox_unweighted_distance_detector;
+			if(underapprox_unweighted_distance_detector)
+				underapprox_path_detector = underapprox_unweighted_distance_detector;
+			else{
+				underapprox_path_detector = new UnweightedBFS<Weight,typename DistanceDetector<Weight>::ReachStatus>(from,
+									_g, *(positiveReachStatus), 0);
+			}
+
 		} else {
-			underapprox_unweighted_distance_detector = new UnweightedDijkstra<Weight,typename DistanceDetector<Weight>::ReachStatus>(
-					from, _g, *positiveReachStatus, 0);
+			if (!opt_encode_dist_underapprox_as_sat){
+				underapprox_unweighted_distance_detector = new UnweightedDijkstra<Weight,typename DistanceDetector<Weight>::ReachStatus>(
+						from, _g, *positiveReachStatus, 0);
+			}
 			overapprox_unweighted_distance_detector = new UnweightedDijkstra<Weight,typename DistanceDetector<Weight>::ReachStatus>(
 					from, _antig, *negativeReachStatus, 0);
 			underapprox_path_detector = new UnweightedBFS<Weight,Distance<int>::NullStatus>(from, _g, Distance<int>::nullStatus, 0);
@@ -101,20 +111,30 @@ DistanceDetector<Weight>::DistanceDetector(int _detectorID, GraphTheorySolver<We
 		/*	if(opt_conflict_shortest_path)
 		 reach_detectors.last()->positive_dist_detector = new Dijkstra<PositiveEdgeStatus>(from,g);*/
 	} else if (distalg == DistAlg::ALG_RAMAL_REPS) {
-		underapprox_unweighted_distance_detector = new UnweightedRamalReps<Weight,
-				typename DistanceDetector<Weight>::ReachStatus>(from, _g, *(positiveReachStatus), 0);
+		if (!opt_encode_dist_underapprox_as_sat){
+			underapprox_unweighted_distance_detector = new UnweightedRamalReps<Weight,
+					typename DistanceDetector<Weight>::ReachStatus>(from, _g, *(positiveReachStatus), 0);
+		}
 		overapprox_unweighted_distance_detector =
 				new UnweightedRamalReps<Weight,typename DistanceDetector<Weight>::ReachStatus>(from, _antig,
 						*(negativeReachStatus), 0);
+		//fix this? Can RamalReps report paths?
 		underapprox_path_detector = new UnweightedBFS<Weight,Distance<int>::NullStatus>(from, _g, Distance<int>::nullStatus, 0);
 	} else {
-		underapprox_unweighted_distance_detector =
-				new UnweightedDijkstra<Weight,typename DistanceDetector<Weight>::ReachStatus>(from, _g, *positiveReachStatus,
-						0);
+		if (!opt_encode_dist_underapprox_as_sat){
+			underapprox_unweighted_distance_detector =
+					new UnweightedDijkstra<Weight,typename DistanceDetector<Weight>::ReachStatus>(from, _g, *positiveReachStatus,
+							0);
+		}
 		overapprox_unweighted_distance_detector =
 				new UnweightedDijkstra<Weight,typename DistanceDetector<Weight>::ReachStatus>(from, _antig,
 						*negativeReachStatus, 0);
-		underapprox_path_detector = underapprox_unweighted_distance_detector;
+
+		if(underapprox_unweighted_distance_detector)
+			underapprox_path_detector = underapprox_unweighted_distance_detector;
+		else{
+			underapprox_path_detector =	new UnweightedDijkstra<Weight,typename DistanceDetector<Weight>::ReachStatus>(from, _g, *positiveReachStatus,0);
+		}
 		//reach_detectors.last()->positive_dist_detector = new Dijkstra(from,g);
 	}
 	
@@ -179,7 +199,7 @@ DistanceDetector<Weight>::DistanceDetector(int _detectorID, GraphTheorySolver<We
 }
 
 template<typename Weight>
-void DistanceDetector<Weight>::buildSATConstraints(int within_steps) {
+void DistanceDetector<Weight>::buildUnweightedSATConstraints(bool onlyUnderApprox, int within_steps) {
 	if (within_steps < 0)
 		within_steps = g_under.nodes();
 	if (within_steps > g_under.nodes())
@@ -189,72 +209,208 @@ void DistanceDetector<Weight>::buildSATConstraints(int within_steps) {
 	if (constraintsBuilt >= within_steps)
 		return;
 	
-	assert(outer->decisionLevel() == 0);
-	vec<Lit> c;
-	
-	if (constraintsBuilt <= 0) {
-		constraintsBuilt = 0;
-		unweighted_dist_lits.push();
+	if (onlyUnderApprox && opt_encode_dist_underapprox_as_sat==2){
+		//this is only correct for directed graphs.
+		//To do the same for undirected graps, also non-deterministically set the direction of each edge.
 		Lit True = mkLit(outer->newVar());
 		outer->addClause(True);
-		assert(outer->value(True)==l_True);
-		Lit False = ~True;
-		for (int i = 0; i < g_under.nodes(); i++) {
-			unweighted_sat_lits[0].push(False);
-		}
-		unweighted_sat_lits[0][source] = True;
-	}
-	
-	vec<Lit> reaches;
-	
-	//bellman-ford:
-	for (int i = constraintsBuilt; i < within_steps; i++) {
-		unweighted_sat_lits.last().copyTo(reaches);
-		unweighted_sat_lits.push();
-		reaches.copyTo(unweighted_sat_lits.last());
-		assert(outer->value( reaches[source])==l_True);
-		//For each edge:
-		for (int j = 0; j < g_under.nodes(); j++) {
-			Lit r_cur = reaches[j];
-			
-			for (Edge & e : outer->inv_adj[j]) {
-				if (outer->value(unweighted_sat_lits.last()[e.to]) == l_True) {
-					//do nothing
-				} else if (outer->value(reaches[e.from]) == l_False) {
-					//do nothing
-				} else {
-					Lit l = mkLit(e.v, false);
-					Lit r = mkLit(outer->newVar(), false);
-					
-					c.clear();
-					c.push(~r);
-					c.push(reaches[e.to]);
-					c.push(l); //r -> (e.l or reaches[e.to])
-					outer->addClause(c);
-					c.clear();
-					c.push(~r);
-					c.push(reaches[e.to]);
-					c.push(reaches[e.from]); //r -> (reaches[e.from]) or reaches[e.to])
-					outer->addClause(c);
-					c.clear();
-					c.push(r);
-					c.push(~reaches[e.to]); //~r -> ~reaches[e.to]
-					outer->addClause(c);
-					c.clear();
-					c.push(r);
-					c.push(~reaches[e.from]);
-					c.push(~l); //~r -> (~reaches[e.from] or ~e.l)
-					outer->addClause(c);
-					r_cur = r;
-					
+		for(int  to = 0;to<unweighted_dist_lits.size();to++){
+			if(unweighted_dist_lits[to].size() && to!=source){
+
+				//For each target node, create an Alexander Nadel style nondeterministic graph
+				//then non-deterministically pick an acyclic path
+				//and assert that it's length is less than the target length
+				vec<Lit> induced_graph_edges;
+				induced_graph_edges.growTo(g_under.edges(),lit_Undef);
+				for (int edgeID = 0;edgeID<g_under.edges();edgeID++){
+					if(g_over.hasEdge(edgeID) ){//&& g_over.edgeEnabled(edgeID)
+						int from = g_under.getEdge(edgeID).from;
+						int to = g_under.getEdge(edgeID).to;
+						Lit edge_enabled = mkLit(outer->getEdgeVar(edgeID),false);
+						Lit induced_edge_enabled = mkLit(outer->newVar(), false);
+
+						induced_graph_edges[edgeID]=induced_edge_enabled;
+						//If the edge is disabled, then our induced graph edge must also be disabled (but _not_ vice versa).
+						outer->addClause(edge_enabled,~induced_edge_enabled);
+
+					}
 				}
+
+				vec<BitVector<Weight>> node_distances;
+				//introduce a bitvector distance for each node
+				for(int n = 0;n<g_under.nodes();n++){
+					if (n==source){
+						node_distances.push(outer->newBV(0));//source has constant 0 distance
+					}else{
+						BitVector<Weight> bv = outer->newBV();
+						node_distances.push(bv);
+					}
+
+				}
+
+				//now, non-deterministically select an acyclic path from source out of this graph, asserting that it ends at the target node
+
+				//every vertex (other than source or to) has at most one in-coming edge enabled, and if it has such an edge, then it has exactly one outgoing edge enabled (else no outgoing edges)
+				//source has no outgoing edge, and exactly one outgoing edge
+				for(int n = 0;n<g_under.nodes();n++){
+					{
+						//Lit any_incoming_enabled= mkLit( outer->newVar(),false); //~True;
+						//vec<Lit> any_incoming_clause;
+						//any_incoming_clause.push(~any_incoming_enabled);
+						Lit any_incoming_enabled= ~True;
+						BitVector<Weight> dist = node_distances[n];
+						if(n!=source){
+							for(int i = 0;i<g_over.nIncoming(n);i++){
+								int edgeID = g_over.incoming(n,i).id;
+
+								Lit l= induced_graph_edges[edgeID];
+								//If any prior incoming edge is enabled, this one must be disabled
+								outer->addClause(~any_incoming_enabled,~l);
+
+								//if any prior incoming edge was enabled, or l is enabled, then next_incoming is enabled
+								Lit next_incoming = mkLit(outer->newVar(),false);
+
+								outer->addClause(~any_incoming_enabled,next_incoming);
+								outer->addClause(~l,next_incoming);
+								//if both incoming nor l are false, then next incoming is false
+								outer->addClause(l,any_incoming_enabled,~next_incoming);
+								any_incoming_enabled=next_incoming;
+
+								//outer->conditionalBitvector()
+
+								//outer->comparator->newAddition()
+								//outer->addClause()
+							}
+						}else{
+							//all incoming edges must be disabled
+							for(int i = 0;i<g_over.nIncoming(n);i++){
+								int edgeID = g_over.incoming(n,i).id;
+								outer->addClause(~induced_graph_edges[edgeID]);
+							}
+						}
+						//any incoming enabled is true if any incoming edges are enabled
+						//also, at most one incoming edge can possibly be enabled.
+
+						Lit any_outgoing_enabled=~True;
+
+						//exactly one outgoing edge can be enabled, but _only_ if any incoming edges are enabled.
+						if(n!=to){
+							for(int i = 0;i<g_over.nIncident(n);i++){
+								int edgeID = g_over.incident(n,i).id;
+								Lit l= induced_graph_edges[edgeID];
+
+								//if no incoming edge was enabled, then all outgoing edges must be disabled
+								outer->addClause(any_incoming_enabled,~l);
+
+								//If any prior incoming edge is enabled, this one must be disabled
+								outer->addClause(~any_outgoing_enabled,~l);
+
+								//if any prior incoming edge was enabled, or l is enabled, then next_incoming is enabled
+								Lit next_outgoing = mkLit(outer->newVar(),false);
+
+								outer->addClause(~any_outgoing_enabled,next_outgoing);
+								outer->addClause(~l,next_outgoing);
+								//if both incoming nor l are false, then next incoming is false
+								outer->addClause(l,any_outgoing_enabled,~next_outgoing);
+								any_outgoing_enabled=next_outgoing;
+							}
+						}else{
+							//all outgoing edges must be disabled
+							for(int i = 0;i<g_over.nIncident(n);i++){
+								int edgeID = g_over.incident(n,i).id;
+								outer->addClause(~induced_graph_edges[edgeID]);
+							}
+						}
+						if(n==source){
+							outer->addClause(any_outgoing_enabled);
+						}else if (n==to){
+							outer->addClause(any_incoming_enabled);
+						}else{
+							//if and only if any incoming edge is enabled, then exactly one outgoing edge must be enabled
+							outer->addClause(~any_incoming_enabled,any_outgoing_enabled);
+							outer->addClause(any_incoming_enabled,~any_outgoing_enabled);
+						}
+					}
+				}
+				//for each distance, assert that it's lit is true iff the distance on the path is <= 'distance'
+				//following Erez and Nadel 2015's non-graph aware encoding, use bitvectors
+				//Var lit = unweighted_dist_lits[to].l;
+				//int distance = unweighted_dist_lits[to].min_unweighted_distance;
+
+
+
+
+
 			}
-			unweighted_sat_lits.last()[j] = r_cur; //reaches[e.to] == (var & reaches[e.from])| reaches[e.to];
+		}
+	}else{
+		assert(outer->decisionLevel() == 0);
+		vec<Lit> c;
+
+		if (constraintsBuilt <= 0) {
+			constraintsBuilt = 0;
+			unweighted_dist_lits.push();
+			Lit True = mkLit(outer->newVar());
+			outer->addClause(True);
+			assert(outer->value(True)==l_True);
+			Lit False = ~True;
+			for (int i = 0; i < g_under.nodes(); i++) {
+				unweighted_sat_lits[0].push(False);
+			}
+			unweighted_sat_lits[0][source] = True;
+		}
+
+		vec<Lit> reaches;
+
+		//bellman-ford:
+		for (int i = constraintsBuilt; i < within_steps; i++) {
+			unweighted_sat_lits.last().copyTo(reaches);
+			unweighted_sat_lits.push();
+			reaches.copyTo(unweighted_sat_lits.last());
+			assert(outer->value( reaches[source])==l_True);
+			//For each edge:
+			for (int j = 0; j < g_under.nodes(); j++) {
+				Lit r_cur = reaches[j];
+
+				for (Edge & e : outer->inv_adj[j]) {
+					if (outer->value(unweighted_sat_lits.last()[e.to]) == l_True) {
+						//do nothing
+					} else if (outer->value(reaches[e.from]) == l_False) {
+						//do nothing
+					} else {
+						Lit l = mkLit(e.v, false);
+						Lit r = mkLit(outer->newVar(), false);
+
+						c.clear();
+						c.push(~r);
+						c.push(reaches[e.to]);
+						c.push(l); //r -> (e.l or reaches[e.to])
+						outer->addClause(c);
+						c.clear();
+						c.push(~r);
+						c.push(reaches[e.to]);
+						c.push(reaches[e.from]); //r -> (reaches[e.from]) or reaches[e.to])
+						outer->addClause(c);
+						c.clear();
+						c.push(r);
+						c.push(~reaches[e.to]); //~r -> ~reaches[e.to]
+						outer->addClause(c);
+						c.clear();
+						c.push(r);
+						c.push(~reaches[e.from]);
+						c.push(~l); //~r -> (~reaches[e.from] or ~e.l)
+						outer->addClause(c);
+						r_cur = r;
+
+					}
+				}
+				unweighted_sat_lits.last()[j] = r_cur; //reaches[e.to] == (var & reaches[e.from])| reaches[e.to];
+			}
+
 		}
 		
+		constraintsBuilt = within_steps;
 	}
-	
-	constraintsBuilt = within_steps;
 }
 
 template<typename Weight>
@@ -308,19 +464,7 @@ void DistanceDetector<Weight>::addUnweightedShortestPathLit(int from, int to, Va
 	}
 	
 	Lit reachLit = mkLit(reach_var, false);
-	
-	if (distalg == DistAlg::ALG_SAT) {
-		buildSATConstraints(within_steps);
-		
-		if (unweighted_sat_lits.size() >= within_steps) {
-			//then we are using the sat encoding and can directly look up its corresponding distance lit
-			
-			Lit r = unweighted_sat_lits[within_steps][to];
-			//force equality between the new lit and the old reach lit, in the SAT solver
-			outer->makeEqual(r, reachLit);
-		}
-		return;
-	}
+
 	
 	while (unweighted_dist_lits.size() <= to)
 		unweighted_dist_lits.push();
@@ -341,10 +485,10 @@ void DistanceDetector<Weight>::addUnweightedShortestPathLit(int from, int to, Va
 		unweighted_dist_lits[to].push();
 		unweighted_dist_lits[to].last().l = reachLit;
 		unweighted_dist_lits[to].last().min_unweighted_distance = within_steps;
+
 		while (reach_lit_map.size() <= reach_var - first_reach_var) {
 			reach_lit_map.push(-1);
 		}
-		
 		reach_lit_map[reach_var - first_reach_var] = to;
 	}
 	
@@ -935,7 +1079,28 @@ void DistanceDetector<Weight>::updateShortestPaths(bool unweighted) {
 template<typename Weight>
 void DistanceDetector<Weight>::preprocess() {
 	is_changed.growTo(g_under.nodes());
+
+	if(overapprox_unweighted_distance_detector){
+		buildUnweightedSATConstraints(false);
+	}else if (opt_encode_reach_underapprox_as_sat || !underapprox_unweighted_distance_detector) {
+		//can optimize
+		buildUnweightedSATConstraints(true);
+/*
+		if (unweighted_sat_lits.size() >= within_steps) {
+			//then we are using the sat encoding and can directly look up its corresponding distance lit
+
+			Lit r = unweighted_sat_lits[within_steps][to];
+			//force equality between the new lit and the old reach lit, in the SAT solver
+			outer->makeEqual(r, reachLit);
+		}*/
+
+	}
+
+
 }
+
+
+
 
 template<typename Weight>
 bool DistanceDetector<Weight>::propagate(vec<Lit> & conflict) {

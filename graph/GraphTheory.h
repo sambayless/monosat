@@ -2532,6 +2532,21 @@ public:
 		assert(isBVVar(v));
 		return vars[v].detector_edge;
 	}
+	int getEdgeWeightBitWidth(){
+		if(edge_bv_weights.size()>0){
+			return edge_bv_weights[0].width();
+		}else{
+			assert(false);
+			return -1;
+		}
+	}
+	//Create a fresh bitvector
+	BitVector<Weight> newBV(Weight constval=-1,int bitwidth=-1) {
+		if (bitwidth<0)
+			bitwidth = getEdgeWeightBitWidth();
+		BitVector<Weight> bv = comparator->newBitvector(-1,bitwidth,constval);
+		return bv;
+	}
 
 	Lit newEdgeBV(int from, int to, Var outerVar,vec<Var> & bitVector) {
 		if(!comparator ){
