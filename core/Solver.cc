@@ -145,13 +145,16 @@ bool Solver::addClause_(vec<Lit>& ps) {
 
 CRef Solver::attachReasonClause(Lit r,vec<Lit> & ps) {
 	assert(value(r)==l_True);
-#ifndef NDEBUG
-	printf("learnt ");
-	for (Lit l:ps){
-		printf(" %d", dimacs(l));
+
+	if(opt_write_learnt_clauses){
+		fprintf(opt_write_learnt_clauses,"learnt ");
+		for (Lit l:ps){
+			fprintf(opt_write_learnt_clauses," %d", dimacs(l));
+		}
+		fprintf(opt_write_learnt_clauses," 0\n");
+		fflush(opt_write_learnt_clauses);
 	}
-	printf(" 0\n");
-#endif
+
 	//sort(ps);
 	Lit p;
 	int i, j;
@@ -1310,13 +1313,15 @@ bool Solver::simplify() {
 	return true;
 }
 void Solver::addClauseSafely(vec<Lit> & ps) {
-#ifndef NDEBUG
-	printf("learnt fact ");
-	for (Lit l:ps){
-		printf(" %d", dimacs(l));
+	if(opt_write_learnt_clauses){
+		fprintf(opt_write_learnt_clauses,"learnt fact ");
+		for (Lit l:ps){
+			fprintf(opt_write_learnt_clauses," %d", dimacs(l));
+		}
+		fprintf(opt_write_learnt_clauses," 0\n");
+		fflush(opt_write_learnt_clauses);
 	}
-	printf(" 0\n");
-#endif
+
 	if(decisionLevel()==0){
 		addClause(ps);
 	}else{
@@ -1426,14 +1431,14 @@ bool Solver::addConflictClause(vec<Lit> & ps, CRef & confl_out, bool permanent) 
 	if(++nlearnt== 111){
 		int a=1;
 	}
-#ifndef NDEBUG
-
-	printf("learnt ");
-	for (Lit l:ps){
-		printf(" %d", dimacs(l));
+	if(opt_write_learnt_clauses){
+		fprintf(opt_write_learnt_clauses,"learnt ");
+		for (Lit l:ps){
+			fprintf(opt_write_learnt_clauses," %d", dimacs(l));
+		}
+		fprintf(opt_write_learnt_clauses," 0\n");
+		fflush(opt_write_learnt_clauses);
 	}
-	printf(" 0\n");
-#endif
 	//bool any_undef=false;
 	sort(ps);
 	Lit p;

@@ -66,6 +66,12 @@ StringOption Monosat::opt_record_file(_cat, "debug-log",
 bool Monosat::opt_record=false;
 
 
+StringOption Monosat::opt_debug_learnt_clauses(_cat, "debug-learnts",
+		"Write all learnt clauses to the following file (empty string (recommended) disables)", "");
+FILE* Monosat::opt_write_learnt_clauses = nullptr;
+
+BoolOption Monosat::opt_write_bv_bounds(_cat, "debug-bounds","",false);
+
 IntOption Monosat::opt_theory_conflict_max(_cat, "theory-conflict-limit",
 		"The maximum number of consecutive times the theory solver's can conflict before theory decisions are temporarily disabled (0 to all infinite theory conflicts)", 0,
 		IntRange(0,INT32_MAX));
@@ -178,7 +184,7 @@ BoolOption Monosat::opt_encode_reach_underapprox_as_sat(_cat_graph, "reach-under
 IntOption Monosat::opt_encode_dist_underapprox_as_sat(_cat_graph, "dist-underapprox-cnf",
 		"Compute the under-approximate side of distance constraints using CNF, instead of the chosen algorithm (0=don't use CNF encoding)",
 		0,IntRange(0,2));
-
+BoolOption Monosat::opt_sat_distance_encoding_unconstrained_default(_cat_graph,"dist-underapprox-cnf-dst-unconstrained","",true);
 BoolOption Monosat::opt_reach_prop(_cat_graph, "prop-reach", "", false);
 
 BoolOption Monosat::opt_decide_theories(_cat_graph, "decide-theories", "", false);

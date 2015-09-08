@@ -23,16 +23,16 @@ C_UPPER_DEPS :=
 
 # Every subdirectory with source files must be described here
 SUBDIRS := \
-. \
-api \
-core \
-dgl \
-dgl/alg \
-fsm \
-geometry \
-geometry/cevans \
-geometry/polypartition \
-graph \
-simp \
 utils \
+simp \
+graph \
+geometry/polypartition \
+geometry/cevans \
+geometry \
+fsm \
+dgl/alg \
+dgl \
+core \
+api \
+. \
 

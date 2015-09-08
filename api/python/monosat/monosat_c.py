@@ -27,7 +27,9 @@ import os
 #module_path = os.path.abspath(path.dirname(__file__))
 try:
     _monosat_c= cdll.LoadLibrary("libmonosat.so")
-except:
+except Exception as e:
+    print (e)
+
     _monosat_c= cdll.LoadLibrary('monosat.dll')
     
 #Python interface to MonoSAT
@@ -124,6 +126,22 @@ class Monosat(metaclass=Singleton):
         self.monosat_c.newBVComparison_bv_geq.restype=c_literal
         
         self.monosat_c.bv_addition.argtypes=[c_solver_p,c_bv_p,c_bvID, c_bvID, c_bvID]
+        self.monosat_c.bv_subtraction.argtypes=[c_solver_p,c_bv_p,c_bvID, c_bvID, c_bvID]
+        
+        self.monosat_c.bv_ite.argtypes=[c_solver_p,c_bv_p,c_literal, c_bvID,c_bvID,c_bvID]
+
+        self.monosat_c.bv_not.argtypes=[c_solver_p,c_bv_p,c_bvID,c_bvID]
+        self.monosat_c.bv_and.argtypes=[c_solver_p,c_bv_p,c_bvID,c_bvID,c_bvID]
+        self.monosat_c.bv_nand.argtypes=[c_solver_p,c_bv_p,c_bvID,c_bvID,c_bvID]    
+        self.monosat_c.bv_or.argtypes=[c_solver_p,c_bv_p,c_bvID,c_bvID,c_bvID]   
+        self.monosat_c.bv_nor.argtypes=[c_solver_p,c_bv_p,c_bvID,c_bvID,c_bvID]        
+        self.monosat_c.bv_xor.argtypes=[c_solver_p,c_bv_p,c_bvID,c_bvID,c_bvID]        
+        self.monosat_c.bv_xnor.argtypes=[c_solver_p,c_bv_p,c_bvID,c_bvID,c_bvID]
+
+        self.monosat_c.bv_concat.argtypes=[c_solver_p,c_bv_p,c_bvID,c_bvID,c_bvID]
+    
+        self.monosat_c.bv_slice.argtypes=[c_solver_p,c_bv_p,c_bvID,c_int,c_int,c_bvID]
+
         self.monosat_c.newGraph.argtypes=[c_solver_p]
         self.monosat_c.newGraph.restype=c_graph_p
 
@@ -492,7 +510,80 @@ class Monosat(metaclass=Singleton):
         self.monosat_c.bv_addition(self.solver, self.bvtheory, c_bvID(aID), c_bvID(bID), c_bvID(resultID))
         if self.output:
             self._echoOutput("bv + %d %d %d\n"%(resultID,aID,bID))
+
+    def bv_subtraction(self, aID,bID, resultID):
+        self.backtrack()
+        self.monosat_c.bv_subtraction(self.solver, self.bvtheory, c_bvID(aID), c_bvID(bID), c_bvID(resultID))
+        if self.output:
+            self._echoOutput("bv - %d %d %d\n"%(resultID,aID,bID))
+
+    def bv_ite(self, condition_lit, thnID,elsID, resultID):
+        self.backtrack()
+        self.monosat_c.bv_ite(self.solver, self.bvtheory,condition_lit, c_bvID(thnID), c_bvID(elsID), c_bvID(resultID))
+        if self.output:
+            self._echoOutput("bv ite %d %d %d %d\n"%(dimacs(condition_lit),thnID,elsID,resultID))
     
+    def bv_not(self, aID,resultID):
+        self.backtrack()
+        self.monosat_c.bv_not(self.solver, self.bvtheory, c_bvID(aID),c_bvID(resultID))
+        if self.output:
+            self._echoOutput("bv not %d %d\n"%(aID,resultID))    
+    
+    def bv_and(self, aID,bID,resultID):
+        self.backtrack()
+        self.monosat_c.bv_and(self.solver, self.bvtheory, c_bvID(aID), c_bvID(bID),c_bvID(resultID))
+        if self.output:
+            self._echoOutput("bv and %d %d %d \n"%(aID,bID,resultID))
+        
+    
+    def bv_nand(self, aID,bID,resultID):
+        self.backtrack()
+        self.monosat_c.bv_nand(self.solver, self.bvtheory, c_bvID(aID), c_bvID(bID),c_bvID(resultID))
+        if self.output:
+            self._echoOutput("bv nand %d %d %d \n"%(aID,bID,resultID))
+     
+    
+    def bv_or(self, aID,bID,resultID):
+        self.backtrack()
+        self.monosat_c.bv_or(self.solver, self.bvtheory, c_bvID(aID), c_bvID(bID),c_bvID(resultID))
+        if self.output:
+            self._echoOutput("bv or %d %d %d \n"%(aID,bID,resultID))
+ 
+    
+    def bv_nor(self, aID,bID,resultID):
+        self.backtrack()
+        self.monosat_c.bv_nor(self.solver, self.bvtheory, c_bvID(aID), c_bvID(bID),c_bvID(resultID))
+        if self.output:
+            self._echoOutput("bv nor %d %d %d \n"%(aID,bID,resultID))
+
+        
+    def bv_xor(self, aID,bID,resultID):
+        self.backtrack()
+        self.monosat_c.bv_xor(self.solver, self.bvtheory, c_bvID(aID), c_bvID(bID),c_bvID(resultID))
+        if self.output:
+            self._echoOutput("bv xor %d %d %d \n"%(aID,bID,resultID))
+
+    
+    def bv_xnor(self, aID,bID,resultID):
+        self.backtrack()
+        self.monosat_c.bv_xnor(self.solver, self.bvtheory, c_bvID(aID), c_bvID(bID),c_bvID(resultID))
+        if self.output:
+            self._echoOutput("bv xnor %d %d %d \n"%(aID,bID,resultID))
+
+
+    def bv_concat(self, aID,bID,resultID):
+        self.backtrack()
+        self.monosat_c.bv_concat(self.solver, self.bvtheory, c_bvID(aID), c_bvID(bID),c_bvID(resultID))
+        if self.output:
+            self._echoOutput("bv concat %d %d %d\n"%(aID,bID,resultID))
+
+
+    def bv_slice(self, aID,lower, upper,resultID):
+        self.backtrack()
+        self.monosat_c.bv_slice(self.solver, self.bvtheory, c_bvID(aID),lower,upper,c_bvID(resultID))
+        if self.output:
+            self._echoOutput("bv slice %d %d %d %d\n"%(aID,lower,upper, resultID))
+
     #Monosat graph interface
     
     def newGraph(self):

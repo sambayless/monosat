@@ -51,6 +51,10 @@ extern IntOption opt_subsearch;
 
 extern BoolOption opt_amo_eager_prop;
 
+extern StringOption opt_debug_learnt_clauses;
+extern BoolOption opt_write_bv_bounds;
+extern FILE* opt_write_learnt_clauses;
+
 extern BoolOption opt_graph;
 extern BoolOption opt_inc_graph;
 extern IntOption opt_dec_graph;
@@ -131,6 +135,7 @@ extern IntOption opt_height;
 extern IntOption opt_bits;
 extern BoolOption opt_encode_reach_underapprox_as_sat;
 extern IntOption opt_encode_dist_underapprox_as_sat;
+extern BoolOption opt_sat_distance_encoding_unconstrained_default;
 extern BoolOption opt_csv;
 extern BoolOption opt_rnd_shuffle;
 extern BoolOption opt_components_learn_connect;

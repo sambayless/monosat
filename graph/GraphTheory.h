@@ -819,6 +819,26 @@ public:
 		tmp_clause.push(o3);
 		S->addClauseSafely(tmp_clause);
 	}
+	void addClauseToSolver(Lit l1) {
+		tmp_clause.clear();
+		tmp_clause.push(l1);
+		S->addClauseSafely(tmp_clause);
+	}
+	void addClauseToSolver(Lit l1, Lit l2) {
+		tmp_clause.clear();
+		tmp_clause.push(l1);
+		tmp_clause.push(l2);
+
+		S->addClauseSafely(tmp_clause);
+	}
+	void addClauseToSolver(Lit l1, Lit l2, Lit l3) {
+		tmp_clause.clear();
+		tmp_clause.push(l1);
+		tmp_clause.push(l2);
+		tmp_clause.push(l3);
+		S->addClauseSafely(tmp_clause);
+	}
+
 	void addClause(vec<Lit> & c) {
 		tmp_clause.clear();
 		c.copyTo(tmp_clause);

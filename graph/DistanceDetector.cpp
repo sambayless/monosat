@@ -214,10 +214,11 @@ void DistanceDetector<Weight>::buildUnweightedSATConstraints(bool onlyUnderAppro
 		//To do the same for undirected graps, also non-deterministically set the direction of each edge.
 		Lit True = mkLit(outer->newVar());
 		outer->addClause(True);
+		BitVector<Weight> one = outer->comparator->newBitvector(-1,outer->getEdgeWeightBitWidth() ,1);
 		for(int  to = 0;to<unweighted_dist_lits.size();to++){
 			if(unweighted_dist_lits[to].size() && to!=source){
 
-				//For each target node, create an Alexander Nadel style nondeterministic graph
+				//For each target node, create an Erez-Nadel style nondeterministic graph
 				//then non-deterministically pick an acyclic path
 				//and assert that it's length is less than the target length
 				vec<Lit> induced_graph_edges;
@@ -228,11 +229,9 @@ void DistanceDetector<Weight>::buildUnweightedSATConstraints(bool onlyUnderAppro
 						int to = g_under.getEdge(edgeID).to;
 						Lit edge_enabled = mkLit(outer->getEdgeVar(edgeID),false);
 						Lit induced_edge_enabled = mkLit(outer->newVar(), false);
-
 						induced_graph_edges[edgeID]=induced_edge_enabled;
 						//If the edge is disabled, then our induced graph edge must also be disabled (but _not_ vice versa).
 						outer->addClause(edge_enabled,~induced_edge_enabled);
-
 					}
 				}
 
@@ -245,11 +244,10 @@ void DistanceDetector<Weight>::buildUnweightedSATConstraints(bool onlyUnderAppro
 						BitVector<Weight> bv = outer->newBV();
 						node_distances.push(bv);
 					}
-
 				}
 
 				//now, non-deterministically select an acyclic path from source out of this graph, asserting that it ends at the target node
-
+				Lit reaches_to=lit_Undef;
 				//every vertex (other than source or to) has at most one in-coming edge enabled, and if it has such an edge, then it has exactly one outgoing edge enabled (else no outgoing edges)
 				//source has no outgoing edge, and exactly one outgoing edge
 				for(int n = 0;n<g_under.nodes();n++){
@@ -260,9 +258,12 @@ void DistanceDetector<Weight>::buildUnweightedSATConstraints(bool onlyUnderAppro
 						Lit any_incoming_enabled= ~True;
 						BitVector<Weight> dist = node_distances[n];
 						if(n!=source){
+							BitVector<Weight> dist =opt_sat_distance_encoding_unconstrained_default?  outer->newBV() : outer->newBV(0);//should this be unconstrained, or zero?
 							for(int i = 0;i<g_over.nIncoming(n);i++){
 								int edgeID = g_over.incoming(n,i).id;
-
+								int from = g_over.incoming(n,i).node;
+								if(from==n)
+									continue;//no need to consider self loops
 								Lit l= induced_graph_edges[edgeID];
 								//If any prior incoming edge is enabled, this one must be disabled
 								outer->addClause(~any_incoming_enabled,~l);
@@ -272,15 +273,21 @@ void DistanceDetector<Weight>::buildUnweightedSATConstraints(bool onlyUnderAppro
 
 								outer->addClause(~any_incoming_enabled,next_incoming);
 								outer->addClause(~l,next_incoming);
-								//if both incoming nor l are false, then next incoming is false
+								//if both incoming and l are false, then next incoming is false
 								outer->addClause(l,any_incoming_enabled,~next_incoming);
 								any_incoming_enabled=next_incoming;
 
-								//outer->conditionalBitvector()
+								BitVector<Weight> sum = outer->newBV();
 
-								//outer->comparator->newAddition()
-								//outer->addClause()
+								//this is an unweighted constraint, so just add 1
+								outer->comparator->newAdditionBV(sum.getID(), node_distances[from].getID(),one.getID());
+								BitVector<Weight> new_dist = outer->newBV();
+								//If this incoming edge is enabled, then the distance is the cost of this edge
+								outer->comparator->newConditionalBV(l,new_dist.getID(),sum.getID(),dist.getID());
+
+								dist = new_dist;
 							}
+							outer->comparator->makeEquivalent(dist.getID(),node_distances[to].getID());
 						}else{
 							//all incoming edges must be disabled
 							for(int i = 0;i<g_over.nIncoming(n);i++){
@@ -290,9 +297,10 @@ void DistanceDetector<Weight>::buildUnweightedSATConstraints(bool onlyUnderAppro
 						}
 						//any incoming enabled is true if any incoming edges are enabled
 						//also, at most one incoming edge can possibly be enabled.
-
+						if(n==to){
+							reaches_to=any_incoming_enabled;
+						}
 						Lit any_outgoing_enabled=~True;
-
 						//exactly one outgoing edge can be enabled, but _only_ if any incoming edges are enabled.
 						if(n!=to){
 							for(int i = 0;i<g_over.nIncident(n);i++){
@@ -337,10 +345,22 @@ void DistanceDetector<Weight>::buildUnweightedSATConstraints(bool onlyUnderAppro
 				//Var lit = unweighted_dist_lits[to].l;
 				//int distance = unweighted_dist_lits[to].min_unweighted_distance;
 
+				BitVector<Weight> dist = node_distances[to];
+				for(int i = 0;i<unweighted_dist_lits[to].size();i++){
+					Lit l = unweighted_dist_lits[to][i].l;
+					int min_unweighted_distance = unweighted_dist_lits[to][i].min_unweighted_distance;
+					BitVector<Weight> comparison =  outer->comparator->newBitvector(-1,outer->getEdgeWeightBitWidth() ,min_unweighted_distance);
+					Lit conditional = outer->comparator->newComparison(Comparison::leq, dist.getID() ,comparison.getID());
 
+					Lit s_l = outer->toSolver(l);
+					Lit s_conditional =  outer->comparator->toSolver(conditional);
+					Lit s_reaches = outer->toSolver(reaches_to);
 
-
-
+					//l is true if the distance is <= comparison, AND their exists a path to node
+					outer->addClauseToSolver(~s_l,s_conditional);
+					outer->addClauseToSolver(~s_l,s_reaches);
+					outer->addClauseToSolver(s_l,~s_conditional,~s_reaches);
+				}
 			}
 		}
 	}else{
@@ -1080,9 +1100,9 @@ template<typename Weight>
 void DistanceDetector<Weight>::preprocess() {
 	is_changed.growTo(g_under.nodes());
 
-	if(overapprox_unweighted_distance_detector){
+	if(!overapprox_unweighted_distance_detector){
 		buildUnweightedSATConstraints(false);
-	}else if (opt_encode_reach_underapprox_as_sat || !underapprox_unweighted_distance_detector) {
+	}else if (!underapprox_unweighted_distance_detector) {
 		//can optimize
 		buildUnweightedSATConstraints(true);
 /*
