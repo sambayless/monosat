@@ -65,11 +65,14 @@ StringOption Monosat::opt_record_file(_cat, "debug-log",
 		"Log (very expensive) debugging info at extensions of the following path (empty string (recommended) disables)", "");
 bool Monosat::opt_record=false;
 
+long Monosat::opt_n_learnts=0;
+BoolOption Monosat::opt_debug_model(_cat,"debug-model","",false);
 
 StringOption Monosat::opt_debug_learnt_clauses(_cat, "debug-learnts",
 		"Write all learnt clauses to the following file (empty string (recommended) disables)", "");
 FILE* Monosat::opt_write_learnt_clauses = nullptr;
 
+BoolOption Monosat::opt_write_bv_analysis(_cat, "debug-analysis","",false);
 BoolOption Monosat::opt_write_bv_bounds(_cat, "debug-bounds","",false);
 
 IntOption Monosat::opt_theory_conflict_max(_cat, "theory-conflict-limit",

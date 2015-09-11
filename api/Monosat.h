@@ -23,6 +23,10 @@ extern "C"
   void backtrack(Monosat::SimpSolver * S);
   int newVar(Monosat::SimpSolver * S);
 
+  //The solver will (sometimes) instantiate an arbitrary true literal for use as a constant.
+  //Call this method to a) force that literal to be instantiate, and b) get that literal.
+  int true_lit(Monosat::SimpSolver * S);
+
   //Prevents this literal from being simplified by the preprocessor
   bool disallowLiteralSimplification(Monosat::SimpSolver * S, int lit);
 
@@ -45,6 +49,7 @@ extern "C"
   int newBVComparison_bv_gt(Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv, int bvID, int compareID);
   int newBVComparison_const_geq(Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv, int bvID, long weight);
   int newBVComparison_bv_geq(Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv, int bvID, int compareID);
+
 
 
   void bv_concat( Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv,int aID, int bID, int resultID);

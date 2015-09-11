@@ -104,7 +104,9 @@ Var Solver::newVar(bool sign, bool dvar) {
 	if (v < min_decision_var)
 		dvar = false;
 	setDecisionVar(v, dvar);
-
+	if(v+1==559){
+		int a=1;
+	}
 
 	return v;
 }
@@ -147,6 +149,9 @@ CRef Solver::attachReasonClause(Lit r,vec<Lit> & ps) {
 	assert(value(r)==l_True);
 
 	if(opt_write_learnt_clauses){
+		if((++opt_n_learnts)==58108|| opt_n_learnts==58109){
+			int a=1;
+		}
 		fprintf(opt_write_learnt_clauses,"learnt ");
 		for (Lit l:ps){
 			fprintf(opt_write_learnt_clauses," %d", dimacs(l));
@@ -1314,6 +1319,9 @@ bool Solver::simplify() {
 }
 void Solver::addClauseSafely(vec<Lit> & ps) {
 	if(opt_write_learnt_clauses){
+		if(++opt_n_learnts==58108){
+			int a=1;
+		}
 		fprintf(opt_write_learnt_clauses,"learnt fact ");
 		for (Lit l:ps){
 			fprintf(opt_write_learnt_clauses," %d", dimacs(l));
@@ -1432,6 +1440,9 @@ bool Solver::addConflictClause(vec<Lit> & ps, CRef & confl_out, bool permanent) 
 		int a=1;
 	}
 	if(opt_write_learnt_clauses){
+		if(++opt_n_learnts==58108){
+			int a=1;
+		}
 		fprintf(opt_write_learnt_clauses,"learnt ");
 		for (Lit l:ps){
 			fprintf(opt_write_learnt_clauses," %d", dimacs(l));
@@ -1924,7 +1935,30 @@ lbool Solver::solve_() {
 			}
 			stats_solution_checking_time+=rtime(1)-check_start;
 		}
+		if(opt_write_learnt_clauses && opt_debug_model){
+			//write the model out
+			fprintf(opt_write_learnt_clauses,"s SATISFIABLE\n");
+			fprintf(opt_write_learnt_clauses,"v ");
+			for (int i = 0;i<nVars();i++){
+				Lit l = mkLit(i,false);
+				if(value(i)==l_True){
+					fprintf(opt_write_learnt_clauses," %d",dimacs(l));
+				}else if(value(i)==l_False){
+					fprintf(opt_write_learnt_clauses," %d",dimacs(~l));
+				}else{
+					fprintf(opt_write_learnt_clauses," %d",dimacs(l));//optional
+				}
+			}
+			fprintf(opt_write_learnt_clauses,"\n");
 
+			for(Theory * t:theories){
+				std::stringstream ss;
+				t->writeTheoryWitness(ss);
+				fprintf(opt_write_learnt_clauses,"%s",ss.str().c_str());
+			}
+
+
+		}
 		
 	} else if (status == l_False && conflict.size() == 0) {
 		ok = false;

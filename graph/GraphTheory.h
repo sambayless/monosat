@@ -682,7 +682,15 @@ public:
 		rnd_seed = opt_random_seed;
 
 	}
-
+	Lit const_true= lit_Undef;
+	Lit True(){
+		if (const_true==lit_Undef){
+			backtrackUntil(0);
+			const_true = mkLit(newVar(var(S->True()),-1,false,true));
+			enqueueTheory(const_true);
+		}
+		return const_true;
+	}
 
 	void printStats(int detailLevel) {
 
@@ -853,7 +861,7 @@ public:
 		S->addClauseSafely(tmp_clause);
 	}
 	Var newVar(bool polarity = true, bool dvar = true){
-		return newVar(-1,false);
+		return newVar(-1,false);//does this shadow the below method, or vice versa?
 	}
 	Var newVar(int forDetector, bool connectToTheory = false) {
 		Var s = S->newVar();

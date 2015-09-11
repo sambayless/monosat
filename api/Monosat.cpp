@@ -283,7 +283,9 @@ bool solveAssumptions(Monosat::SimpSolver * S,int * assumptions, int n_assumptio
  int nClauses(Monosat::SimpSolver * S){
 	 return S->nClauses();
  }
-
+ int true_lit(Monosat::SimpSolver * S){
+	 return toInt(S->True());
+ }
  bool addClause(Monosat::SimpSolver * S,int * lits, int n_lits){
 	  static vec<Lit> clause;
 	  clause.clear();

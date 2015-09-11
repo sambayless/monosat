@@ -98,6 +98,9 @@ class Monosat(metaclass=Singleton):
         self.monosat_c.addTertiaryClause.argtypes=[c_solver_p,c_literal,c_literal,c_literal]
         self.monosat_c.addTertiaryClause.restype=c_bool
         
+        self.monosat_c.true_lit.argtypes=[c_solver_p]
+        self.monosat_c.true_lit.restype=c_int 
+        
         self.monosat_c.at_most_one.argtypes=[c_solver_p,c_var_p,c_int]
 
         
@@ -268,8 +271,8 @@ class Monosat(metaclass=Singleton):
   
         self.graphs = []
         self.graph_ids=dict()
-        self._true = self.newLit()
-        self.addUnitClause(self._true)   
+        self._true = self.getTrue()
+
     
     def getOutputFile(self):
         return self.output
@@ -448,6 +451,12 @@ class Monosat(metaclass=Singleton):
         if self.output:       
             self._echoOutput("bv %d %d "%(bvID, len(bits)) + " ".join((str(l+1) for l in bits)) +"\n" )   
         return bvID
+    
+    def getTrue(self):
+        self.backtrack()
+        l = self.monosat_c.true_lit(self.solver)
+        self.addUnitClause(l)#This isn't technically required by the solver; only doing it to ensure the unit clause gets recorded in the GNF...
+        return l
     
     def newBVComparison_const_lt(self, bvID, val):
         self.backtrack()
