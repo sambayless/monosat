@@ -257,6 +257,7 @@ public:
 	//(Added by Sam)
 	//Don't use - linear search!
 	bool has_edge(node_id from, node_id to) {
+
 		arc *a, *a_rev;
 		a = nodes[from].first;
 		
@@ -272,12 +273,25 @@ public:
 	
 	//(Added by Sam)
 	//Don't use - linear search!
-	captype get_edge_capacity(node_id from, node_id to) {
+	captype get_edge_capacity(node_id from, node_id to,arc*ac=nullptr) {
 		arc *a, *a_rev;
-		a = nodes[from].first;
-		
-		while ((a != NULL) && (a != a->next) && (a->head != &nodes[to]))
-			a = a->next;
+		if(!ac){
+			assert(false);
+			a = nodes[from].first;
+
+			while ((a != NULL) && (a != a->next) && (a->head != &nodes[to]))
+				a = a->next;
+		}else{
+#ifndef NDEBUG
+			a = nodes[from].first;
+			while ((a != NULL) && (a != a->next) && (a->head != &nodes[to]))
+				a = a->next;
+			assert(a==ac);
+#endif
+			a = ac;
+			assert(a->head==&nodes[to]);
+
+		}
 		
 		if (a->head != &nodes[to]) {
 			throw std::invalid_argument("Specified edge doesn't exist");
@@ -288,14 +302,14 @@ public:
 
 	// Edit capacity of n-edge when "using" tree-recycling, by adding (or subtracting) from the existing capacity
 	//(Added by Sam)
-	void edit_edge_inc(node_id from, node_id to, captype added_cap, captype added_rev_cap);
+	void edit_edge_inc(node_id from, node_id to, captype added_cap, captype added_rev_cap,arc*a=nullptr);
 
 	// Edit capacity of n-edge when "using" tree-recycling 
-	void edit_edge(node_id from, node_id to, captype cap, captype rev_cap);
+	void edit_edge(node_id from, node_id to, captype cap, captype rev_cap,arc*a=nullptr);
 
 	// Edit capacity of n-edge when "not using" tree-recycling :		
 	// If you are editing capacities using this function, "maxflow(false)" needs to be called
-	void edit_edge_wt(node_id from, node_id to, captype cap, captype rev_cap);
+	void edit_edge_wt(node_id from, node_id to, captype cap, captype rev_cap,arc*a=nullptr);
 
 	tcaptype MIN(tcaptype a, tcaptype b);
 	tcaptype MAX(tcaptype a, tcaptype b);
@@ -1085,12 +1099,26 @@ void Graph<captype, tcaptype, flowtype>::edit_tweights_wt(node_id i, tcaptype ca
 // Edit capacity of n-edge when "using" tree-recycling, by adding (or subtracting) from the existing capacity
 template<typename captype, typename tcaptype, typename flowtype>
 void Graph<captype, tcaptype, flowtype>::edit_edge_inc(node_id from, node_id to, captype added_cap,
-		captype added_rev_cap) {
+		captype added_rev_cap,arc*ac) {
 	arc *a, *a_rev;
-	a = nodes[from].first;
 	
-	while ((a != NULL) && (a != a->next) && (a->head != &nodes[to]))
-		a = a->next;
+	if(!ac){
+		assert(false);
+		a = nodes[from].first;
+		while ((a != NULL) && (a != a->next) && (a->head != &nodes[to]))
+			a = a->next;
+	}else{
+#ifndef NDEBUG
+		a = nodes[from].first;
+		while ((a != NULL) && (a != a->next) && (a->head != &nodes[to]))
+			a = a->next;
+		assert(a==ac);
+#endif
+		a = ac;
+		assert(a->head==&nodes[to]);
+
+	}
+
 	
 	if (!a || a->head != &nodes[to]) {
 		throw std::invalid_argument("Specified edge doesn't exist");
@@ -1225,12 +1253,24 @@ void Graph<captype, tcaptype, flowtype>::edit_edge_inc(node_id from, node_id to,
 }
 
 template<typename captype, typename tcaptype, typename flowtype>
-void Graph<captype, tcaptype, flowtype>::edit_edge(node_id from, node_id to, captype cap, captype rev_cap) {
+void Graph<captype, tcaptype, flowtype>::edit_edge(node_id from, node_id to, captype cap, captype rev_cap, arc*ac) {
 	arc *a, *a_rev;
-	a = nodes[from].first;
-	
-	while ((a != NULL) && (a != a->next) && (a->head != &nodes[to]))
-		a = a->next;
+	if(!ac){
+		assert(false);
+		a = nodes[from].first;
+
+		while ((a != NULL) && (a != a->next) && (a->head != &nodes[to]))
+			a = a->next;
+	}else{
+#ifndef NDEBUG
+		a = nodes[from].first;
+		while ((a != NULL) && (a != a->next) && (a->head != &nodes[to]))
+			a = a->next;
+		assert(a==ac);
+#endif
+		a = ac;
+		assert(a->head==&nodes[to]);
+	}
 	
 	if (a->head != &nodes[to]) {
 		throw std::invalid_argument("Specified edge doesn't exist");
@@ -1365,13 +1405,24 @@ void Graph<captype, tcaptype, flowtype>::edit_edge(node_id from, node_id to, cap
 /***********************************************************************************************/
 
 template<typename captype, typename tcaptype, typename flowtype>
-void Graph<captype, tcaptype, flowtype>::edit_edge_wt(node_id from, node_id to, captype cap, captype rev_cap) {
+void Graph<captype, tcaptype, flowtype>::edit_edge_wt(node_id from, node_id to, captype cap, captype rev_cap, arc * ac) {
 	arc *a, *a_rev;
-	a = nodes[from].first;
-	
-	while ((a != NULL) && (a != a->next) && (a->head != &nodes[to]))
-		a = a->next;
-	
+	if(!ac){
+		assert(false);
+		a = nodes[from].first;
+
+		while ((a != NULL) && (a != a->next) && (a->head != &nodes[to]))
+			a = a->next;
+	}else{
+	#ifndef NDEBUG
+			a = nodes[from].first;
+			while ((a != NULL) && (a != a->next) && (a->head != &nodes[to]))
+				a = a->next;
+			assert(a==ac);
+	#endif
+			a = ac;
+			assert(a->head==&nodes[to]);
+		}
 	if (a->head != &nodes[to]) {
 		throw std::invalid_argument("Specified edge doesn't exist");
 	} else {

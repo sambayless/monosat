@@ -341,59 +341,96 @@ public:
 			local_weights.clear();
 			local_weights.resize(g.edges(),0);
 			edge_enabled.resize(g.edges(), false);
-			multi_edges.clear();
+			multi_edges.clear();//fix this
 			multi_edges.resize(g.edges());
 			arc_map.clear();
 			arc_map.resize(g.edges(), -1);
 			edge_map.clear();
 			
-			for (int edgeID = 0; edgeID < g.edges(); edgeID++) {
-				if(edgeID==386){
-					int a =1;
-				}
-
-				if (!g.hasEdge(edgeID) || g.selfLoop(edgeID))
-					continue;
-
-
-				max_capacity += g.getWeight(edgeID);
-				int from = g.getEdge(edgeID).from;
-				int to = g.getEdge(edgeID).to;
-				edge_enabled[edgeID] = false;
-				if (from == to)
-					continue; //skip self edges.
-				if (!kt->has_edge(from, to)) {//this has to be removed! It does a linear search!
-					assert(arc_map[edgeID] == -1);
-					int arc_id = kt->add_edge(from, to, 0, 0);
-					
-					if (edge_map.size() <= arc_id + 1)
-						edge_map.resize(arc_id + 2);
-					
-					arc_map[edgeID] = arc_id;
-					//set the corresponding arc for each other from-to edge
-					for (int i = 0; i < g.nIncident(from, true); i++) {
-						int edgeid = g.incident(from, i, true).id;
-						if (g.getEdge(edgeid).from == from && g.getEdge(edgeid).to == to) {
-							edge_map[arc_id].push_back(edgeid);
-							arc_map[edgeid] = arc_id;
-						} else if (g.getEdge(edgeid).from == to && g.getEdge(edgeid).to == from) {
-							edge_map[arc_id + 1].push_back(edgeid);
-							arc_map[edgeid] = arc_id + 1; //the reverse arc is always stored right after the forward arc
-						}
+			//auto gcmp = [this](int edgeA, int edgeB)->bool{return this->g.getEdge(edgeA).to < this->g.getEdge(edgeB).to;};
+			for(int n = 0;n<g.nodes();n++){
+		/*		tmp_edges.clear();
+				for (int i = 0; i < g.nIncident(n); i++) {
+					int edgeID = g.incident(n,i);
+					if(!g.selfLoop(edgeID))
+						tmp_edges.push_back(edgeID);
+				}*/
+				//std::sort(tmp_edges.begin(),tmp_edges.end(),gcmp);
+				//int last_to = -1;
+				//int arc_id=-1;
+				for (int i = 0; i < g.nIncident(n,false); i++){//for(int i = 0;i<tmp_edges.size();i++){
+					int edgeID = g.incident(n,i,false).id;
+					//int edgeID = tmp_edges[i];
+					if(arc_map[edgeID]!=-1){
+						continue;
 					}
+					int from = g.getEdge(edgeID).from;
+					int to = g.getEdge(edgeID).to;
+					assert(from==n);
+					assert(from!=to);
+					multi_edges[edgeID].clear();
+					max_capacity += g.getWeight(edgeID);
+					edge_enabled[edgeID] = false;
+/*
+					if(to==last_to){
+						assert(arc_id!=-1);
+						// edge_map[arc_id].push_back(edgeID);
+						//arc_map[edgeid] = arc_id;
+					}else{*/
+						assert(!kt->has_edge(from, to));
+						assert(arc_map[edgeID] == -1);
+						int arc_id = kt->add_edge(from, to, 0, 0);
+
+						if (edge_map.size() <= arc_id + 1)
+							edge_map.resize(arc_id + 2);
+
+						arc_map[edgeID] = arc_id;
+						//set the corresponding arc for each other from-to edge
+						for (int i = 0; i < g.nIncident(from, true); i++) {
+							int edgeid = g.incident(from, i, true).id;
+							if (g.getEdge(edgeid).from == from && g.getEdge(edgeid).to == to) {
+								edge_map[arc_id].push_back(edgeid);
+								arc_map[edgeid] = arc_id;
+							} else if (g.getEdge(edgeid).from == to && g.getEdge(edgeid).to == from) {
+								edge_map[arc_id + 1].push_back(edgeid);
+								arc_map[edgeid] = arc_id + 1; //the reverse arc is always stored right after the forward arc
+							}
+						}
+					//}
+					//last_to=to;
 				}
+/*
+
+				if (multi_edges[for_edge].size() == 0) {
+						int from = g.getEdge(for_edge).from;
+						int to = g.getEdge(for_edge).to;
+						//for(int i = g.nIncident(from,true)-1;i>=0;i--){
+						for (int i = 0; i < g.nIncident(from, true); i++) {
+							int edgeid = g.incident(from, i, true).id;
+							if ((g.getEdge(edgeid).from == from && g.getEdge(edgeid).to == to)) {
+								multi_edges[for_edge].push_back(edgeid);
+							}
+						}
+					}*/
+
+			}
+
+			for (int edgeID = 0; edgeID < g.edges(); edgeID++) {
+				if (!g.hasEdge(edgeID) || g.selfLoop(edgeID))
+						continue;
 				if (g.edgeEnabled(edgeID)) {
+					int from = g.getEdge(edgeID).from;
+					int to = g.getEdge(edgeID).to;
 					edge_enabled[edgeID] = true;
-					//if(!backward_maxflow){
 					set_local_weight(edgeID,g.getWeight(edgeID));
-					kt->edit_edge_inc(from, to, g.getWeight(edgeID), 0);
-					/*}else{
-					 kt->edit_edge_inc(to,from,g.getWeight(edgeID),0);
-					 }*/
+					kt->edit_edge_inc(from, to, g.getWeight(edgeID), 0,getArc(edgeID));
+
 				}else{
 					set_local_weight(edgeID,0);
 				}
 			}
+
+
 			if(s!=t){
 				assert(max_capacity>=0);
 				if(max_capacity<1){
@@ -427,7 +464,7 @@ public:
 					edge_enabled[edgeid] = true;
 					set_local_weight(edgeid,g.getWeight(edgeid));
 					//if(!backward_maxflow){
-					kt->edit_edge_inc(g.getEdge(edgeid).from, g.getEdge(edgeid).to, g.getWeight(edgeid), 0);
+					kt->edit_edge_inc(g.getEdge(edgeid).from, g.getEdge(edgeid).to, g.getWeight(edgeid), 0,getArc(edgeid));
 
 					/*}else{
 					 kt->edit_edge_inc(g.getEdge(edgeid).to,g.getEdge(edgeid).from,g.getWeight(edgeID),0);
@@ -435,13 +472,13 @@ public:
 				}else if (g.edgeEnabled(edgeid) && edge_enabled[edgeid] && g.getWeight(edgeid) != local_weight(edgeid)){
 					Weight dif =g.getWeight(edgeid)- local_weight(edgeid);
 
-					kt->edit_edge_inc(g.getEdge(edgeid).from, g.getEdge(edgeid).to, dif, 0);
+					kt->edit_edge_inc(g.getEdge(edgeid).from, g.getEdge(edgeid).to, dif, 0,getArc(edgeid));
 					set_local_weight(edgeid, g.getWeight(edgeid));
 				}else if (!g.edgeEnabled(edgeid) && edge_enabled[edgeid]) {
 					assert(edge_enabled[edgeid]);
 					edge_enabled[edgeid] = false;
 					//if(!backward_maxflow){
-					kt->edit_edge_inc(g.getEdge(edgeid).from, g.getEdge(edgeid).to, -local_weight(edgeid), 0);
+					kt->edit_edge_inc(g.getEdge(edgeid).from, g.getEdge(edgeid).to, -local_weight(edgeid), 0,getArc(edgeid));
 					set_local_weight(edgeid,0);
 					/*	}else{
 					 kt->edit_edge_inc(g.getEdge(edgeid).to,g.getEdge(edgeid).from,-g.getWeight(edgeID),0);
@@ -463,16 +500,16 @@ public:
 				edge_enabled[edgeid] = true;
 				set_local_weight(edgeid,g.getWeight(edgeid));
 				//if(!backward_maxflow){
-				kt->edit_edge_inc(g.getEdge(edgeid).from, g.getEdge(edgeid).to, g.getWeight(edgeid), 0);
+				kt->edit_edge_inc(g.getEdge(edgeid).from, g.getEdge(edgeid).to, g.getWeight(edgeid), 0,getArc(edgeid));
 
 			}else if ((g.getChange(i).weight_increase || g.getChange(i).weight_decrease) && g.edgeEnabled(edgeid) && edge_enabled[edgeid] && g.getWeight(edgeid) != local_weight(edgeid)){
 				Weight dif = g.getWeight(edgeid)-local_weight(edgeid);
-				kt->edit_edge_inc(g.getEdge(edgeid).from, g.getEdge(edgeid).to, dif, 0);
+				kt->edit_edge_inc(g.getEdge(edgeid).from, g.getEdge(edgeid).to, dif, 0,getArc(edgeid));
 				set_local_weight(edgeid, g.getWeight(edgeid));
 			}else if (g.getChange(i).deletion && !g.edgeEnabled(edgeid) && edge_enabled[edgeid]) {
 				assert(edge_enabled[edgeid]);
 				edge_enabled[edgeid] = false;
-				kt->edit_edge_inc(g.getEdge(edgeid).from, g.getEdge(edgeid).to, -local_weight(edgeid), 0);
+				kt->edit_edge_inc(g.getEdge(edgeid).from, g.getEdge(edgeid).to, -local_weight(edgeid), 0,getArc(edgeid));
 				set_local_weight(edgeid,0);
 			}
 		}
@@ -541,7 +578,7 @@ private:
 		}
 	}
 	inline void collect_multi_edges(int for_edge) {
-
+		//this has to go - it is too slow!
 		if (multi_edges[for_edge].size() == 0) {
 			int from = g.getEdge(for_edge).from;
 			int to = g.getEdge(for_edge).to;

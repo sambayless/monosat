@@ -278,7 +278,7 @@ ConvexHullAlg Monosat::hullAlg = ConvexHullAlg::ALG_MONOTONE_HULL;
 
 BoolOption Monosat::opt_propagate_theories_during_simplification(_cat, "theory-prop-during-simp",
 		"Apply propagation to theory solvers during simplification. Can be very expensive (depending on the theory).",
-		false);
+		true);
 BoolOption Monosat::opt_shrink_theory_conflicts(_cat, "shrink-theory-conflicts", "", false);
 
 BoolOption Monosat::opt_rnd_shuffle(_cat_graph, "rnd-shuffle",
