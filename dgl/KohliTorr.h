@@ -358,12 +358,16 @@ public:
 				//std::sort(tmp_edges.begin(),tmp_edges.end(),gcmp);
 				//int last_to = -1;
 				//int arc_id=-1;
-				for (int i = 0; i < g.nIncident(n,false); i++){//for(int i = 0;i<tmp_edges.size();i++){
+
+				for (int i = 0; i < g.nIncident(n,false); i++){/
 					int edgeID = g.incident(n,i,false).id;
+					if(g.selfLoop(edgeID))
+						continue;
 					//int edgeID = tmp_edges[i];
 					if(arc_map[edgeID]!=-1){
 						continue;
 					}
+
 					int from = g.getEdge(edgeID).from;
 					int to = g.getEdge(edgeID).to;
 					assert(from==n);
@@ -385,7 +389,7 @@ public:
 							edge_map.resize(arc_id + 2);
 
 						arc_map[edgeID] = arc_id;
-						//set the corresponding arc for each other from-to edge
+						//set the corresponding arc for each other  from-to edge
 						for (int i = 0; i < g.nIncident(from, true); i++) {
 							int edgeid = g.incident(from, i, true).id;
 							if (g.getEdge(edgeid).from == from && g.getEdge(edgeid).to == to) {
