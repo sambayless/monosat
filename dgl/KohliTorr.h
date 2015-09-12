@@ -85,6 +85,13 @@ class KohliTorr: public MaxFlow<Weight>, public DynamicGraphAlgorithm {
 	std::vector<int> changed_edges;
 	bool flow_needs_recalc = true;
 	int alg_id;
+
+	inline typename kohli_torr::Graph<Weight, Weight, Weight>::arc_id  getArc(int edgeID){
+		assert(edgeID<arc_map.size());
+		assert(arc_map[edgeID]!=-1);
+		return kt->get_arc( arc_map[edgeID]);
+	}
+
 public:
 	double stats_calc_time = 0;
 	double stats_flow_time = 0;
@@ -268,6 +275,8 @@ public:
 	void updateHistory(){
 		update();
 	}
+
+
 	const Weight update() {
 		int s = source;
 		int t = sink;
@@ -353,7 +362,7 @@ public:
 				edge_enabled[edgeID] = false;
 				if (from == to)
 					continue; //skip self edges.
-				if (!kt->has_edge(from, to)) {
+				if (!kt->has_edge(from, to)) {//this has to be removed! It does a linear search!
 					assert(arc_map[edgeID] == -1);
 					int arc_id = kt->add_edge(from, to, 0, 0);
 					

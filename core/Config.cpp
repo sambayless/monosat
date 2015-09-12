@@ -68,6 +68,7 @@ bool Monosat::opt_record=false;
 long Monosat::opt_n_learnts=0;
 BoolOption Monosat::opt_debug_model(_cat,"debug-model","",false);
 
+
 StringOption Monosat::opt_debug_learnt_clauses(_cat, "debug-learnts",
 		"Write all learnt clauses to the following file (empty string (recommended) disables)", "");
 FILE* Monosat::opt_write_learnt_clauses = nullptr;
@@ -277,7 +278,7 @@ ConvexHullAlg Monosat::hullAlg = ConvexHullAlg::ALG_MONOTONE_HULL;
 
 BoolOption Monosat::opt_propagate_theories_during_simplification(_cat, "theory-prop-during-simp",
 		"Apply propagation to theory solvers during simplification. Can be very expensive (depending on the theory).",
-		true);
+		false);
 BoolOption Monosat::opt_shrink_theory_conflicts(_cat, "shrink-theory-conflicts", "", false);
 
 BoolOption Monosat::opt_rnd_shuffle(_cat_graph, "rnd-shuffle",

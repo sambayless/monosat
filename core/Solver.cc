@@ -104,9 +104,9 @@ Var Solver::newVar(bool sign, bool dvar) {
 	if (v < min_decision_var)
 		dvar = false;
 	setDecisionVar(v, dvar);
-	if(v+1==559){
-		int a=1;
-	}
+
+
+
 
 	return v;
 }

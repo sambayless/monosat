@@ -255,6 +255,7 @@ public:
 	void edit_tweights_wt(node_id i, tcaptype cap_source, tcaptype cap_sink);
 
 	//(Added by Sam)
+	//Don't use - linear search!
 	bool has_edge(node_id from, node_id to) {
 		arc *a, *a_rev;
 		a = nodes[from].first;
@@ -270,6 +271,7 @@ public:
 	}
 	
 	//(Added by Sam)
+	//Don't use - linear search!
 	captype get_edge_capacity(node_id from, node_id to) {
 		arc *a, *a_rev;
 		a = nodes[from].first;
@@ -283,7 +285,7 @@ public:
 			return a->e_cap;
 		}
 	}
-	
+
 	// Edit capacity of n-edge when "using" tree-recycling, by adding (or subtracting) from the existing capacity
 	//(Added by Sam)
 	void edit_edge_inc(node_id from, node_id to, captype added_cap, captype added_rev_cap);

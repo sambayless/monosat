@@ -49,6 +49,8 @@ extern BoolOption opt_interpolate;
 extern IntOption opt_eager_prop;
 extern IntOption opt_subsearch;
 
+
+
 extern BoolOption opt_amo_eager_prop;
 
 extern StringOption opt_debug_learnt_clauses;
@@ -241,7 +243,7 @@ extern IntOption opt_time;
 
 static inline double rtime(int level = 1) {
 	if (level <= opt_time) {
-		return cpuTime();
+		return fastTime();
 	} else {
 		return 0;
 	}

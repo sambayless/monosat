@@ -249,8 +249,12 @@ bool solveAssumptions(Monosat::SimpSolver * S,int * assumptions, int n_assumptio
 	S->cancelUntil(0);
 
 	  static Monosat::vec<Monosat::Lit> assume;
-		S->preprocess();//do this _even_ if sat based preprocessing is disabled! Some of the theory solvers depend on a preprocessing call being made!
-		S->eliminate(true);
+	  S->preprocess();//do this _even_ if sat based preprocessing is disabled! Some of the theory solvers depend on a preprocessing call being made!
+
+	  if (opt_pre){
+
+		S->eliminate(false);//should this really be set to disable future preprocessing here?
+	 }
 	  assume.clear();
 	  for (int i = 0;i<n_assumptions;i++){
 		  assume.push(toLit(assumptions[i]));

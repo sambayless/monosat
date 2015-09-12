@@ -30,7 +30,7 @@
 //-------------------------------------------------------------------------------------------------
 
 namespace Monosat {
-
+static inline double fastTime(void); // CPU-time in seconds (fast, poosibly less accurate).
 static inline double cpuTime(void); // CPU-time in seconds.
 extern double memUsed();            // Memory in mega bytes (returns 0 for unsupported architectures).
 extern double memUsedPeak();        // Peak-memory in mega bytes (returns 0 for unsupported architectures).
@@ -44,12 +44,20 @@ extern double memUsedPeak();        // Peak-memory in mega bytes (returns 0 for 
 #include <time.h>
 
 static inline double Monosat::cpuTime(void) {return (double)clock() / CLOCKS_PER_SEC;}
+static inline double Monosat::fastTime(void) {return (double)clock() / CLOCKS_PER_SEC;}
 
 #else
 #include <sys/time.h>
 #include <sys/resource.h>
 #include <unistd.h>
-
+static inline double Monosat::fastTime(void) {
+	struct rusage ru;
+	getrusage(RUSAGE_SELF, &ru);
+	return (double) ru.ru_utime.tv_sec + (double) ru.ru_utime.tv_usec / 1000000;
+/*	 struct timespec ts;
+	 clock_gettime(CLOCK_MONOTONIC,&ts);
+	 return (double) ts.tv_sec + (double) ts.tv_nsec / 1000000;*/
+}
 static inline double Monosat::cpuTime(void) {
 	struct rusage ru;
 	getrusage(RUSAGE_SELF, &ru);
