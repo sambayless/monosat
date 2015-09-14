@@ -58,7 +58,7 @@ class KohliTorr: public MaxFlow<Weight>, public DynamicGraphAlgorithm {
 	int last_deletion;
 	int last_addition;
 	std::vector<int> tmp_edges;
-
+	std::vector<std::vector<int>> tmp_edge_map;
 	int history_qhead;
 	int last_history_clear;
 	//bool backward_maxflow=false;
@@ -68,8 +68,14 @@ class KohliTorr: public MaxFlow<Weight>, public DynamicGraphAlgorithm {
 
 	typedef typename kohli_torr::Graph<Weight, Weight, Weight>::arc_id arc;
 
+
 	std::vector<int> arc_map; //map from edgeids to arcs (note: this may be many to one)
-	std::vector<std::vector<int>> edge_map; //map from arc ids to edgeids
+	//A brief explanation here:
+	//The implementation of Kohli and Torr's maxflow algorithm assumes at most one (directed) arc between any two nodes (and a separate reverse arc for every forward arc).
+	//In contrast, the DGL allows for multiple (directed) edges between the same two nodes, and for forward edges without matching backward edges.
+	//This makes translating between KT and the DGL a pain; the vectors below form a one-to-many map of KT arc ids to all directed dgl edge ids with the same start and end point.
+	std::vector<std::pair<int,int>> edge_map_ind;
+	std::vector<int> edge_map;
 
 	Weight INF;
 
@@ -93,6 +99,14 @@ class KohliTorr: public MaxFlow<Weight>, public DynamicGraphAlgorithm {
 		return kt->get_arc( arc_map[edgeID]);
 	}
 
+	 std::vector<int>::iterator  getArcEdges(int arcID){
+		assert(arcID<edge_map_ind.size());
+		return edge_map.begin() + edge_map_ind[arcID].first;
+	}
+	 std::vector<int>::iterator  getArcEdgesEnd(int arcID){
+		assert(arcID<edge_map_ind.size());
+		return edge_map.begin() + edge_map_ind[arcID].second;
+	}
 public:
 	double stats_calc_time = 0;
 	double stats_flow_time = 0;
@@ -346,37 +360,23 @@ public:
 			//multi_edges.resize(g.edges());
 			arc_map.clear();
 			arc_map.resize(g.edges(), -1);
-			edge_map.resize(kt->get_arc_num());
-			for(int i = 0;i<edge_map.size();i++)
-				edge_map[i].clear();
+			edge_map_ind.clear();
+			edge_map_ind.resize(kt->get_arc_num(),{-1,-1});
 
-			auto tcmp = [this](int edgeA, int edgeB)->bool{return this->g.getEdge(edgeA).to < this->g.getEdge(edgeB).to;};
-			auto fcmp = [this](int edgeA, int edgeB)->bool{return this->g.getEdge(edgeA).from < this->g.getEdge(edgeB).from;};
+			edge_map.clear();//.resize(kt->get_arc_num());
+			for(int i = 0;i<tmp_edge_map.size();i++)
+				tmp_edge_map[i].clear();
+
+
+
 			tmp_edges.clear();
 			tmp_edges.resize(g.nodes(),-1);
 			for(int n = 0;n<g.nodes();n++){
-
-
-		/*		tmp_edges.clear();
-				for (int i = 0; i < g.nIncident(n); i++) {
-					int edgeID = g.incident(n,i);
-					if(!g.selfLoop(edgeID))
-						tmp_edges.push_back(edgeID);
-				}
-				std::sort(tmp_edges.begin(),tmp_edges.end(),tcmp);
-
-				tmp_edges2.clear();
-				for (int i = 0; i < g.nIncident(n); i++) {
-					int edgeID = g.incident(n,i);
-					if(!g.selfLoop(edgeID))
-						tmp_edges2.push_back(edgeID);
-				}*/
-				//std::sort(tmp_edges2.begin(),tmp_edges2.end(),fcmp);
-
+				int first_arc_id=kt->get_arc_num();
 				for (int i = 0; i < g.nIncident(n,false); i++){
-				//for(int i = 0;i<tmp_edges.size();i++){
+
 					int edgeID = g.incident(n,i,false).id;
-					//int edgeID = tmp_edges[i];
+
 					if(g.selfLoop(edgeID))
 						continue;
 
@@ -394,23 +394,23 @@ public:
 
 					if (tmp_edges[to]>-1){
 						int arc_id = tmp_edges[to];
-						assert(g.getEdge(edge_map[arc_id].back()).to == to);
-						assert(g.getEdge(edge_map[arc_id].back()).from == from);
-						edge_map[arc_id].push_back(edgeID);
+						assert(g.getEdge(tmp_edge_map[arc_id-first_arc_id].back()).to == to);
+						assert(g.getEdge(tmp_edge_map[arc_id-first_arc_id].back()).from == from);
+						tmp_edge_map[arc_id-first_arc_id].push_back(edgeID);
 						arc_map[edgeID] =arc_id;
 					}else{
 
 						assert(!kt->has_edge(from, to));
 						assert(arc_map[edgeID] == -1);
 						int arc_id = kt->add_edge(from, to, 0, 0);
+
 						tmp_edges[to]=arc_id;
-						if (edge_map.size() <= arc_id + 1)
-							edge_map.resize(arc_id + 2);
-						edge_map[arc_id].push_back(edgeID);
+						if(tmp_edge_map.size()<arc_id-first_arc_id+2)
+							tmp_edge_map.resize((arc_id-first_arc_id) + 2);
+						tmp_edge_map[arc_id-first_arc_id].push_back(edgeID);
 						arc_map[edgeID] = arc_id;
 					}
 				}
-
 				//set the corresponding arc for each other  from-to edge
 				for (int i = 0; i < g.nIncoming(n, false); i++) {
 					int edgeID = g.incoming(n, i, false).id;
@@ -422,14 +422,45 @@ public:
 
 					if(tmp_edges[from]!=-1 && arc_map[edgeID]==-1){
 						//this is a backward edge corresponding to a forward edge
-						int arc_id = tmp_edges[from]+1;//the reverse arc is always stored right after the forward arc
+						int arc_id = tmp_edges[from]+1;// the reverse arc is always stored right after the forward arc
 						assert(arc_id>-1);
-						edge_map[arc_id].push_back(edgeID);
+						tmp_edge_map[arc_id-first_arc_id].push_back(edgeID);
 						arc_map[edgeID] = arc_id;
 
 						max_capacity += g.getWeight(edgeID);
 						edge_enabled[edgeID] = false;
 					}
+				}
+				edge_map_ind.resize(kt->get_arc_num(),{-1,-1});
+				for(int i=0;i<tmp_edge_map.size();i++){
+					int arc_id = i+first_arc_id;
+					if(arc_id>=kt->get_arc_num())
+						break;
+					int first_ind = edge_map.size();
+					for(int edgeID:tmp_edge_map[i]){
+						edge_map.push_back(edgeID);
+					}
+					int last_ind = edge_map.size();
+					assert(arc_id<kt->get_arc_num());
+					edge_map_ind[arc_id]={first_ind,last_ind};
+
+
+#ifndef NDEBUG
+					for(int edgeID:tmp_edge_map[i]){
+						int arcID=arc_map[edgeID];
+						assert(arcID==arc_id);
+						bool found=false;
+						for (auto  it = getArcEdges(arcID);it!=getArcEdgesEnd(arcID);++it){
+							int eID = *it;
+							if(eID==edgeID){
+								found=true;
+								break;
+							}
+						}
+						assert(found);
+					}
+#endif
+					tmp_edge_map[i].clear();
 				}
 
 				for (int i = 0; i < g.nIncident(n,false); i++){
@@ -443,6 +474,24 @@ public:
 					assert(tmp_edges[i]==-1);
 #endif
 			}
+
+#ifndef NDEBUG
+			for (int edgeID = 0; edgeID < g.edges(); edgeID++) {
+				if (!g.hasEdge(edgeID) || g.selfLoop(edgeID))
+						continue;
+				int arcID = arc_map[edgeID];
+				assert(arcID>-1);
+				bool found=false;
+				for (auto  it = getArcEdges(arcID);it!=getArcEdgesEnd(arcID);++it){
+					int eID = *it;
+					if(eID==edgeID){
+						found=true;
+						break;
+					}
+				}
+				assert(found);
+			}
+#endif
 
 			for (int edgeID = 0; edgeID < g.edges(); edgeID++) {
 				if (!g.hasEdge(edgeID) || g.selfLoop(edgeID))
@@ -581,8 +630,10 @@ public:
 			int arc = kt->changed_edges.back();
 			kt->changed_edges.pop_back();
 			kt->unmarkFlowEdge(kt->get_arc(arc));
-			assert(arc < edge_map.size());
-			for (int edgeID : edge_map[arc]) {
+			for (auto  it = getArcEdges(arc);it!=getArcEdgesEnd(arc);++it){
+				int edgeID = *it;
+				assert(arc_map[edgeID]==arc);
+			//for (int edgeID =  : edge_map[arc]) {
 				changed_edges.push_back(edgeID);
 			}
 		}
@@ -922,8 +973,9 @@ public:
 		if (remaining_flow <= 0)
 			return 0;
 
-		for (int edgeid : edge_map [arc_id]) {
-			
+		//for (int edgeid : edge_map [arc_id]) {
+		for (auto  it = getArcEdges(arc_id);it!=getArcEdgesEnd(arc_id);++it){
+			int edgeid = *it;
 			assert(g.getEdge(edgeid).from == g.getEdge(flow_edge).from);
 			assert(g.getEdge(edgeid).to == g.getEdge(flow_edge).to);
 			

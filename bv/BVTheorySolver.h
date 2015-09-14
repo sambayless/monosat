@@ -1017,7 +1017,7 @@ public:
 			alteredBV[bvID]=false;
 		}
 		altered_bvs.clear();*/
-		static int it = 0;
+
 		rewind_trail_pos(trail.size());
 		//need to remove and add edges in the two graphs accordingly.
 		if (trail_lim.size() > level) {
@@ -1028,9 +1028,7 @@ public:
 				Assignment & e = trail[i];
 				if(e.isBoundAssignment()){
 					int bvID = e.bvID;
-					if(bvID==6){
-						int a =1;
-					}
+
 					under_approx[bvID]=e.previous_under;
 					over_approx[bvID]=e.previous_over;
 					under_causes[bvID]=e.prev_under_cause;
@@ -2856,9 +2854,9 @@ public:
 							//condition must be false
 
 							if(under_approx[bvElseID]>over_approx[bvID] || over_approx[bvElseID]<under_approx[bvID]){
-
 								//condition must be both true and false, which is a conflict.
 								buildConditionalReason(bvID,cID,conflict);
+								toSolver(conflict);
 								//buildConditionalReason(bvID,bvElseID,underApprox,conflict);
 								return false;
 							}else{
@@ -2888,6 +2886,7 @@ public:
 						//this is a conflict
 						conflict.push(~condition);
 						buildConditionalArgReason(bvID,cID,conflict);
+						toSolver(conflict);
 						return false;
 					}else if(under_approx[bvID]>under_approx[resultID] || over_approx[bvID]<over_approx[resultID]){
 						if(!alteredBV[resultID]){
