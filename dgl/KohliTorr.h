@@ -32,7 +32,7 @@
 #include <algorithm>
 #include <limits>
 #ifndef NDEBUG
-//#define DEBUG_MAXFLOW2
+#define DEBUG_MAXFLOW2
 #endif
 namespace dgl {
 template<typename Weight>
@@ -84,9 +84,7 @@ class KohliTorr: public MaxFlow<Weight>, public DynamicGraphAlgorithm {
 
 	static const auto KT_SOURCE = kohli_torr::Graph<Weight, Weight, Weight>::SOURCE;
 	static const auto KT_SINK = kohli_torr::Graph<Weight, Weight, Weight>::SINK;
-#ifdef DEBUG_MAXFLOW2
-	EdmondsKarpDynamic<Weight> ek;
-#endif
+
 	
 	Weight max_capacity = 1; //start this at 1, not 0
 	Weight sum_of_edge_capacities=0;
@@ -116,9 +114,6 @@ public:
 	long stats_flow_calcs = 0;
 	KohliTorr(DynamicGraph<Weight>& g, int source, int sink, bool kt_preserve_order = false) :
 			g(g), source(source), sink(sink), kt_preserve_order(kt_preserve_order), INF(0xF0F0F0)
-#ifdef DEBUG_MAXFLOW2
-	,ek(g,source,sink)
-#endif
 	{
 		curflow = 0;
 		last_modification = -1;
@@ -310,22 +305,12 @@ public:
 			fflush(g.outfile);
 		}
 
-		
-		//C.resize(g.nodes());
-#ifdef DEBUG_MAXFLOW2
-		for(int i = 0;i<g.all_edges.size();i++) {
-			if(!g.hasEdge(i))
-			continue;
-			int id = g.all_edges[i].id;
-			Weight cap = g.getWeight(id);
-			int from = g.all_edges[i].from;
-			int to = g.all_edges[i].to;
 
-			ek.setCapacity(from,to,cap);
-		}
-#endif
+		//C.resize(g.nodes());
+
 		if (last_modification > 0 && g.modifications == last_modification) {
 #ifdef DEBUG_MAXFLOW2
+			EdmondsKarpDynamic<Weight> ek(g,source,sink);
 			Weight expected_flow =ek.maxFlow(source,sink);
 #endif
 			
@@ -599,6 +584,7 @@ public:
 		f = kt->maxflow(dynamic);
 		
 #ifdef DEBUG_MAXFLOW2
+		EdmondsKarpDynamic<Weight> ek(g,source,sink);
 		Weight expected_flow =ek.maxFlow(source,sink);
 		bassert(f == expected_flow);
 #endif
