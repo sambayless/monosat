@@ -69,7 +69,11 @@ public:
 
 	//vec<Lit>  reach_lits;
 	Var first_reach_var;
-	vec<int> reach_lit_map;
+	struct ReachLit{
+		int to;
+		int within;
+	};
+	vec<ReachLit> reach_lit_map;
 	vec<int> force_reason;
 	bool has_unweighted_shortest_paths_overapprox = false;
 	bool has_weighted_shortest_paths_overapprox = false;
@@ -196,10 +200,16 @@ public:
 		assert(reachVar >= first_reach_var);
 		int index = reachVar - first_reach_var;
 		assert(index < reach_lit_map.size());
-		assert(reach_lit_map[index] >= 0);
-		return reach_lit_map[index];
+		assert(reach_lit_map[index].to >= 0);
+		return reach_lit_map[index].to;
 	}
-	
+	int getMaximumDistance(Var reachVar) {
+			assert(reachVar >= first_reach_var);
+			int index = reachVar - first_reach_var;
+			assert(index < reach_lit_map.size());
+			assert(reach_lit_map[index].within >= 0);
+			return reach_lit_map[index].within;
+		}
 	void printStats() {
 		//printf("Distance detector\n");
 		Detector::printStats();
@@ -225,8 +235,8 @@ public:
 		Detector::unassign(l);
 		int index = var(l) - first_reach_var;
 		
-		if (index >= 0 && index < reach_lit_map.size() && reach_lit_map[index] != -1) {
-			int node = reach_lit_map[index];
+		if (index >= 0 && index < reach_lit_map.size() && reach_lit_map[index].to != -1) {
+			int node = reach_lit_map[index].to;
 			if (!is_changed[node]) {
 				changed.push( { node });
 				is_changed[node] = true;
@@ -236,7 +246,7 @@ public:
 	void preprocess();
 	bool propagate(vec<Lit> & conflict);
 	void buildUnweightedDistanceLEQReason(int node, vec<Lit> & conflict);
-	void buildUnweightedDistanceGTReason(int node, vec<Lit> & conflict);
+	void buildUnweightedDistanceGTReason(int node, int within_steps, vec<Lit> & conflict);
 	void buildDistanceLEQReason(int to, Weight & min_distance, vec<Lit> & conflict, bool strictComparison=false);
 	void buildDistanceGTReason(int to, Weight & min_distance, vec<Lit> & conflict, bool strictComparison=true);
 

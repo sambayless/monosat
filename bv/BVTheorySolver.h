@@ -1320,9 +1320,6 @@ public:
 			assert(value(p)==l_Undef);
 			Weight underApprox = under_approx[bvID];
 			Weight overApprox = over_approx[bvID];
-			static int iterv =0;
-			++iterv;
-
 
 
 			assert(under_approx>=0); assert(overApprox>=0);

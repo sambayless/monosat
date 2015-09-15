@@ -112,8 +112,10 @@ DistanceDetector<Weight>::DistanceDetector(int _detectorID, GraphTheorySolver<We
 		 reach_detectors.last()->positive_dist_detector = new Dijkstra<PositiveEdgeStatus>(from,g);*/
 	} else if (distalg == DistAlg::ALG_RAMAL_REPS) {
 		if (!opt_encode_dist_underapprox_as_sat){
-			underapprox_unweighted_distance_detector = new UnweightedRamalReps<Weight,
-					typename DistanceDetector<Weight>::ReachStatus>(from, _g, *(positiveReachStatus), 0);
+			/*underapprox_unweighted_distance_detector = new UnweightedRamalReps<Weight,
+					typename DistanceDetector<Weight>::ReachStatus>(from, _g, *(positiveReachStatus), 0);*/
+			underapprox_unweighted_distance_detector = new UnweightedDijkstra<Weight,typename DistanceDetector<Weight>::ReachStatus>(
+							from, _g, *positiveReachStatus, 0);
 		}
 		overapprox_unweighted_distance_detector =
 				new UnweightedRamalReps<Weight,typename DistanceDetector<Weight>::ReachStatus>(from, _antig,
@@ -507,9 +509,9 @@ void DistanceDetector<Weight>::addUnweightedShortestPathLit(int from, int to, Va
 		unweighted_dist_lits[to].last().min_unweighted_distance = within_steps;
 
 		while (reach_lit_map.size() <= reach_var - first_reach_var) {
-			reach_lit_map.push(-1);
+			reach_lit_map.push({-1,-1});
 		}
-		reach_lit_map[reach_var - first_reach_var] = to;
+		reach_lit_map[reach_var - first_reach_var] = {to,within_steps};
 	}
 	
 }
@@ -635,7 +637,7 @@ void DistanceDetector<Weight>::buildUnweightedDistanceLEQReason(int node, vec<Li
 	
 }
 template<typename Weight>
-void DistanceDetector<Weight>::buildUnweightedDistanceGTReason(int node, vec<Lit> & conflict) {
+void DistanceDetector<Weight>::buildUnweightedDistanceGTReason(int node, int within_steps, vec<Lit> & conflict) {
 	static int it = 0;
 	stats_unweighted_gt_reasons++;
 	stats_over_conflicts++;
@@ -644,7 +646,8 @@ void DistanceDetector<Weight>::buildUnweightedDistanceGTReason(int node, vec<Lit
 	int u = node;
 	bool reaches = overapprox_unweighted_distance_detector->connected(node);
 	
-	if (!reaches && opt_conflict_min_cut && conflict_flow) {
+	if (!reaches && within_steps>=g_over.nodes() && opt_conflict_min_cut && conflict_flow) {
+
 		g_over.drawFull();
 		cut.clear();
 		long f;
@@ -652,9 +655,10 @@ void DistanceDetector<Weight>::buildUnweightedDistanceGTReason(int node, vec<Lit
 		assert(conflict_flow->getSource() == source);
 		conflict_flow->setSink(node);
 		f = conflict_flow->minCut(cut);
-		
 		assert(f == cut.size()); //because edges are only ever infinity or 1
-
+		if(f != cut.size()){
+			throw  std::runtime_error("Bad learnt cut");
+		}
 		for (int i = 0; i < cut.size(); i++) {
 			MaxFlowEdge e = cut[i];
 			int cut_id = e.id;
@@ -1069,7 +1073,8 @@ void DistanceDetector<Weight>::buildReason(Lit p, vec<Lit> & reason, CRef marker
 		
 		Var v = var(p);
 		int t = getNode(v); // v- var(reach_lits[d][0]);
-		buildUnweightedDistanceGTReason(t, reason);
+		int within = getMaximumDistance(v);
+		buildUnweightedDistanceGTReason(t,within, reason);
 		
 	} else {
 		exit(3);
@@ -1222,7 +1227,7 @@ bool DistanceDetector<Weight>::propagate(vec<Lit> & conflict) {
 					
 				} else {
 					//The reason is a cut separating s from t
-					buildUnweightedDistanceGTReason(u, conflict);
+					buildUnweightedDistanceGTReason(u,getMaximumDistance(v), conflict);
 					
 				}
 #ifdef DEBUG_GRAPH

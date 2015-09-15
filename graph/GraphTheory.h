@@ -647,7 +647,7 @@ public:
 		}
 		if(opt_record){
 			std::string t = (const char*)opt_record_file;
-			t+="/TEST_GRAPH_OVER" +std::to_string(S->theories.size());
+			t+="/LOG_GRAPH_OVER" +std::to_string(S->theories.size());
 			g_over.outfile = fopen(t.c_str(), "w");
 		}
 		if(opt_record){
@@ -2797,24 +2797,7 @@ public:
 		cutGraph.disableEdge(from, to, index * 2);
 		
 
-		if (g_under.outfile) {
-			std::stringstream wt;
-			wt << weight;
-			fprintf(g_under.outfile, "edge_weight %d %s\n", index, wt.str().c_str());
-			fflush(g_under.outfile);
-		}
-		if (g_over.outfile) {
-			std::stringstream wt;
-			wt << weight;
-			fprintf(g_over.outfile, "edge_weight %d %s\n", index, wt.str().c_str());
-			fflush(g_over.outfile);
-		}
-/*		if (cutGraph.outfile) {
-			
-			fprintf(cutGraph.outfile, "edge_weight %d %d\n", index * 2, 1);
-			fprintf(cutGraph.outfile, "edge_weight %d %d\n", index * 2 + 1, 0xFFFF);
-			fflush(cutGraph.outfile);
-		}*/
+
 
 		return mkLit(v, false);
 	}

@@ -31,6 +31,9 @@
 #include "EdmondsKarpDynamic.h"
 #include <algorithm>
 #include <limits>
+#ifndef NDEBUG
+//#define DEBUG_MAXFLOW2
+#endif
 namespace dgl {
 template<typename Weight>
 class KohliTorr: public MaxFlow<Weight>, public DynamicGraphAlgorithm {
@@ -81,7 +84,7 @@ class KohliTorr: public MaxFlow<Weight>, public DynamicGraphAlgorithm {
 
 	static const auto KT_SOURCE = kohli_torr::Graph<Weight, Weight, Weight>::SOURCE;
 	static const auto KT_SINK = kohli_torr::Graph<Weight, Weight, Weight>::SINK;
-#ifdef DEBUG_MAXFLOW
+#ifdef DEBUG_MAXFLOW2
 	EdmondsKarpDynamic<Weight> ek;
 #endif
 	
@@ -113,8 +116,8 @@ public:
 	long stats_flow_calcs = 0;
 	KohliTorr(DynamicGraph<Weight>& g, int source, int sink, bool kt_preserve_order = false) :
 			g(g), source(source), sink(sink), kt_preserve_order(kt_preserve_order), INF(0xF0F0F0)
-#ifdef DEBUG_MAXFLOW
-	,ek(_g,source,sink)
+#ifdef DEBUG_MAXFLOW2
+	,ek(g,source,sink)
 #endif
 	{
 		curflow = 0;
@@ -309,7 +312,7 @@ public:
 
 		
 		//C.resize(g.nodes());
-#ifdef DEBUG_MAXFLOW
+#ifdef DEBUG_MAXFLOW2
 		for(int i = 0;i<g.all_edges.size();i++) {
 			if(!g.hasEdge(i))
 			continue;
@@ -322,11 +325,11 @@ public:
 		}
 #endif
 		if (last_modification > 0 && g.modifications == last_modification) {
-#ifdef DEBUG_MAXFLOW
+#ifdef DEBUG_MAXFLOW2
 			Weight expected_flow =ek.maxFlow(source,sink);
 #endif
 			
-#ifdef DEBUG_MAXFLOW
+#ifdef DEBUG_MAXFLOW2
 			assert(curflow==expected_flow);
 			bassert(curflow == expected_flow);
 
@@ -595,10 +598,9 @@ public:
 		}
 		f = kt->maxflow(dynamic);
 		
-#ifdef DEBUG_MAXFLOW
+#ifdef DEBUG_MAXFLOW2
 		Weight expected_flow =ek.maxFlow(source,sink);
 		bassert(f == expected_flow);
-
 #endif
 		//dbg_print_graph(s,t,true);
 		//g.drawFull(true);
@@ -611,6 +613,7 @@ public:
 		}
 		
 #endif
+
 		dbg_check_flow(s, t);
 		curflow = f;
 		num_updates++;
@@ -876,6 +879,7 @@ public:
 					if (g.edgeEnabled(e.id)) {
 						auto segment = kt->what_segment(e.node, SINK);
 						if (segment == SOURCE) {
+							Weight fe = g.getWeight(e.id);
 							//then this edge is on the cut
 							cut.push_back(MaxFlowEdge { n, e.node, e.id });
 						}

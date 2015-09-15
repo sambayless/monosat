@@ -44,7 +44,7 @@
 									<listOptionValue builtIn="false" value=".././"/>
 								</option>
 								<option id="gnu.cpp.compiler.option.other.other.561945821" name="Other flags" superClass="gnu.cpp.compiler.option.other.other" useByScannerDiscovery="false" value="-c -fmessage-length=0  -Wno-unused-variable -Wno-unused-but-set-variable   -Wno-sign-compare" valueType="string"/>
-								<option id="gnu.cpp.compiler.option.dialect.std.60047531" superClass="gnu.cpp.compiler.option.dialect.std" value="gnu.cpp.compiler.dialect.c++1y" valueType="enumerated"/>
+								<option id="gnu.cpp.compiler.option.dialect.std.60047531" name="Language standard" superClass="gnu.cpp.compiler.option.dialect.std" useByScannerDiscovery="true" value="gnu.cpp.compiler.dialect.c++1y" valueType="enumerated"/>
 								<inputType id="cdt.managedbuild.tool.gnu.cpp.compiler.input.758743014" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.input"/>
 							</tool>
 							<tool id="cdt.managedbuild.tool.gnu.c.compiler.exe.debug.399221987" name="GCC C Compiler" superClass="cdt.managedbuild.tool.gnu.c.compiler.exe.debug">
@@ -61,7 +61,7 @@
 									<listOptionValue builtIn="false" value="__amd64"/>
 								</option>
 								<option id="gnu.c.compiler.option.misc.other.139927328" name="Other flags" superClass="gnu.c.compiler.option.misc.other" useByScannerDiscovery="false" value="-c -fmessage-length=0 " valueType="string"/>
-								<option id="gnu.c.compiler.option.dialect.std.804635615" superClass="gnu.c.compiler.option.dialect.std" value="gnu.c.compiler.dialect.c11" valueType="enumerated"/>
+								<option id="gnu.c.compiler.option.dialect.std.804635615" name="Language standard" superClass="gnu.c.compiler.option.dialect.std" useByScannerDiscovery="true" value="gnu.c.compiler.dialect.c11" valueType="enumerated"/>
 								<inputType id="cdt.managedbuild.tool.gnu.c.compiler.input.1701141315" superClass="cdt.managedbuild.tool.gnu.c.compiler.input"/>
 							</tool>
 							<tool id="cdt.managedbuild.tool.gnu.c.linker.exe.debug.2129226198" name="GCC C Linker" superClass="cdt.managedbuild.tool.gnu.c.linker.exe.debug"/>
@@ -867,7 +867,7 @@
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="dgl"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="fsm"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="pb"/>
-						<entry excluding="dgl|test_acyclic_flow.cpp|test_kohlitorr_dynamic_combined.cpp|test_collisions.cpp|test_dinics_linkcut.cpp|test_spirapan.cpp|test_kohlitorr_dynamic.cpp|test_kohlitorr_dynamic_old.cpp|test_edmondskarp_dynamic.cpp|test_eulertree.cpp|test_maxflow.cpp|test_ramal_reps.cpp|test_thorup.cpp|test_edmondskarp.cpp|test_linkcuttree.cpp|test_ramal_reps_weighted.cpp|test_dinics.cpp" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="tests"/>
+						<entry excluding="dgl/test_maxflow.cpp|dgl/test_dinics.cpp|dgl/test_thorup.cpp|dgl/test_spirapan.cpp|dgl/test_linkcuttree.cpp|dgl/test_kohlitorr_dynamic.cpp|dgl/test_kohlitorr_dynamic_old.cpp|dgl/test_eulertree.cpp|dgl/test_edmondskarp.cpp|dgl/test_edmondskarp_dynamic.cpp|dgl/test_dinics_linkcut.cpp|dgl/test_acyclic_flow.cpp|dgl/test_acyclic_flow_file.cpp|dgl/test_collisions.cpp|dgl/test_kohlitorr_dynamic_combined.cpp|test_acyclic_flow.cpp|test_kohlitorr_dynamic_combined.cpp|test_collisions.cpp|test_dinics_linkcut.cpp|test_spirapan.cpp|test_kohlitorr_dynamic.cpp|test_kohlitorr_dynamic_old.cpp|test_edmondskarp_dynamic.cpp|test_eulertree.cpp|test_maxflow.cpp|test_ramal_reps.cpp|test_thorup.cpp|test_edmondskarp.cpp|test_linkcuttree.cpp|test_ramal_reps_weighted.cpp|test_dinics.cpp" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="tests"/>
 					</sourceEntries>
 				</configuration>
 			</storageModule>

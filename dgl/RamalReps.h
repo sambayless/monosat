@@ -22,15 +22,21 @@
 #ifndef RAMAL_REPS_H_
 #define RAMAL_REPS_H_
 
+#include <dgl/alg/Heap.h>
+#include <dgl/Dijkstra.h>
+#include <dgl/Distance.h>
+#include <dgl/DynamicGraph.h>
+#include <dgl/Reach.h>
+//#include "core/Config.h"
+//#include <algorithm>
+#include <cassert>
+#include <cstdio>
+//#include <exception>
+#include <sstream>
+#include <stdexcept>
+#include <string>
 #include <vector>
-#include "alg/Heap.h"
-#include "DynamicGraph.h"
-#include "Reach.h"
-#include "Distance.h"
-#include "Dijkstra.h"
-#include "core/Config.h"
-#include <algorithm>
-#include <exception>
+
 
 namespace dgl {
 template<typename Weight = int, class Status = typename Distance<Weight>::NullStatus>
@@ -818,7 +824,7 @@ public:
 			if (!g.edgeEnabled(i)) {
 				assert(!edgeInShortestPathGraph[i]);
 				if (edgeInShortestPathGraph[i]) {
-					throw std::logic_error();
+					throw std::runtime_error("");
 				}
 			}
 		}
@@ -1318,17 +1324,12 @@ public:
 	void update() {
 
 		if (g.outfile) {
-			fprintf(g.outfile, "r %d\n", getSource());
+			fprintf(g.outfile, "r %d %d %d %d %d\n", getSource(),last_modification, g.modifications,g.changed(), g.historySize() );
 		}
 
-		
-		static int iteration = 0;
-		int local_it = ++iteration;
-		if (local_it == 671) {
-			int a = 1;
-		}
-		if (last_modification > 0 && g.modifications == last_modification)
+		if (last_modification > 0 && g.modifications == last_modification){
 			return;
+		}
 		if (last_modification <= 0 || g.changed()) {//Note for the future: there is probably room to improve this further.
 			stats_full_updates++;
 			INF = g.nodes() + 1;
@@ -1395,7 +1396,7 @@ public:
 		g.updateAlgorithmHistory(this,alg_id,history_qhead);
 		last_history_clear = g.historyclears;
 		assert(dbg_uptodate());
-		
+
 	}
 	void updateHistory(){
 		update();
@@ -1427,7 +1428,7 @@ public:
 		if(last_modification<0)
 		return true;
 		dbg_delta();
-		UnweightedDijkstra<Reach::NullStatus,false> d(source,g);
+		UnweightedDijkstra<Weight> d(source,g);
 
 		for(int i = 0;i<g.nodes();i++) {
 			int dis = dist[i];
@@ -1443,8 +1444,27 @@ public:
 			}
 			if(dis!=dbgdist) {
 				assert(false);
-				throw std::logic_error();
+				throw std::runtime_error("");
 			}
+			if(d.connected(i) && d.distance(i)<maxDistance){
+
+				int dd =d.dist[i];
+				int mdis = dist[i];
+				if(! (mdis< INF)){
+					assert(false);
+					throw std::runtime_error("");
+				}
+				if(dd!=mdis) {
+					assert(false);
+					throw std::runtime_error("");
+				}
+			}else{
+				if(dist[i]<maxDistance){
+					assert(false);
+					throw std::runtime_error("");
+				}
+			}
+
 		}
 //#endif
 #endif
@@ -1460,16 +1480,18 @@ public:
 		return connected_unsafe(t);
 	}
 	bool connected(int t) {
-		if (last_modification != g.modifications)
+		if (last_modification < 0 ||  last_modification != g.modifications)
 			update();
-		
+
+
 		assert(dbg_uptodate());
 		
 		return dist[t] < INF;
 	}
 	int& distance(int t) {
-		if (last_modification != g.modifications)
+		if (last_modification < 0 ||  last_modification != g.modifications)
 			update();
+
 		if (connected_unsafe(t))
 			return dist[t];
 		else

@@ -897,7 +897,7 @@ public:
 		}
 		
 #ifdef DEBUG_MAXFLOW
-		Weight expected_flow =ek.maxFlow(s,t);
+		Weight expected_flow = ek.maxFlow(s,t);
 #endif
 		
 #ifdef DEBUG_MAXFLOW
