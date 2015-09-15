@@ -172,7 +172,7 @@ public:
 					continue;
 				int v = g.incoming(u, j).node;
 				//this is a backward edge, so it has capacity exactly if the forward edge has flow
-				if (dist[v] < 0 && F[edgeID]) {
+				if (dist[v] < 0 && F[edgeID]>0) {
 					dist[v] = dist[u] + 1;
 					Q.push_back(v);
 				}
@@ -337,7 +337,7 @@ public:
 				continue;
 			int v = g.incoming(u, pos[u] - g.nIncident(u)).node;
 			//these are backwards edges, which have capacity exactly if the forward edge has non-zero flow
-			if (dist[v] == dist[u] + 1 && F[edgeID]) {
+			if (dist[v] == dist[u] + 1 && F[edgeID]>0) {
 				//printf("-%d\n",edgeID);
 				Weight df = findAugmentingPath_recursive(v, std::min(f, F[edgeID]));
 				if (df > 0) {
