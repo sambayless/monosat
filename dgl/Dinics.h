@@ -232,7 +232,7 @@ public:
 						continue;
 					int v = g.incoming(u, pos[u] - g.nIncident(u)).node;
 					//these are backwards edges, which have capacity exactly if the forward edge has non-zero flow
-					if (dist[v] == dist[u] + 1 && F[edgeID]) {
+					if (dist[v] == dist[u] + 1 && F[edgeID]>0) {
 						//printf("-%d\n",edgeID);
 						found = true;
 						M[v] = std::min(M[u], F[edgeID]);
@@ -298,7 +298,7 @@ public:
 			continue;
 			int v = g.incoming(u,dbg_pos[u]-g.nIncident(u)).node;
 			//these are backwards edges, which have capacity exactly if the forward edge has non-zero flow
-			if (dist[v] == dist[u] + 1 && F[edgeID]) {
+			if (dist[v] == dist[u] + 1 && F[edgeID]>0) {
 				int df = dbg_findAugmentingPath_recursive(v, std::min(f, F[edgeID]));
 				if (df > 0) {
 					//F[edgeID] -= df;
