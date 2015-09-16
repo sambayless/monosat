@@ -47,16 +47,19 @@ static inline double Monosat::cpuTime(void) {return (double)clock() / CLOCKS_PER
 static inline double Monosat::fastTime(void) {return (double)clock() / CLOCKS_PER_SEC;}
 
 #else
+#include <time.h>
 #include <sys/time.h>
 #include <sys/resource.h>
 #include <unistd.h>
 static inline double Monosat::fastTime(void) {
-	struct rusage ru;
-	getrusage(RUSAGE_SELF, &ru);
-	return (double) ru.ru_utime.tv_sec + (double) ru.ru_utime.tv_usec / 1000000;
-/*	 struct timespec ts;
+
+	 struct timespec ts;
+#ifdef CLOCK_MONOTONIC_RAW
+	 clock_gettime(CLOCK_MONOTONIC_RAW,&ts);
+#else
 	 clock_gettime(CLOCK_MONOTONIC,&ts);
-	 return (double) ts.tv_sec + (double) ts.tv_nsec / 1000000;*/
+#endif
+	 return (double) ts.tv_sec + (double) ts.tv_nsec / 1000000000.0;
 }
 static inline double Monosat::cpuTime(void) {
 	struct rusage ru;

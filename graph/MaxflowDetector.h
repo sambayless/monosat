@@ -156,9 +156,9 @@ public:
 		if (mincutalg == MinCutAlg::ALG_KOHLI_TORR) {
 			KohliTorr<Weight> * kt = (KohliTorr<Weight> *) overapprox_detector;
 			printf(
-					"\tDecision flow calculations: %ld, (redecide: %f s) flow_calc %f s, flow_discovery %f s, (%ld) (maxflow %f,flow assignment %f)\n",
-					stats_decision_calculations, stats_redecide_time, stats_flow_calc_time, stats_flow_recalc_time,
-					kt->stats_flow_calcs, kt->stats_flow_time, kt->stats_calc_time);
+					"\tInit Time %f, Decision flow calculations: %ld, (redecide: %f s) flow_calc %f s, flow_discovery %f s, (%ld) (maxflow %f,flow assignment %f),  inits: %ld,re-inits %ld\n",
+					kt->stats_init_time, stats_decision_calculations, stats_redecide_time, stats_flow_calc_time, stats_flow_recalc_time,
+					kt->stats_flow_calcs, kt->stats_flow_time, kt->stats_calc_time, kt->stats_inits, kt->stats_reinits);
 		} else
 			printf("\tDecision flow calculations: %ld\n", stats_decision_calculations);
 		if(n_stats_priority_decisions>0){

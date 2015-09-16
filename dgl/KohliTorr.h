@@ -111,7 +111,10 @@ class KohliTorr: public MaxFlow<Weight>, public DynamicGraphAlgorithm {
 public:
 	double stats_calc_time = 0;
 	double stats_flow_time = 0;
+	double stats_init_time = 0;
 	long stats_flow_calcs = 0;
+	long stats_inits=0;
+	long stats_reinits=0;
 	KohliTorr(DynamicGraph<Weight>& g, int source, int sink, bool kt_preserve_order = false) :
 			g(g), source(source), sink(sink), kt_preserve_order(kt_preserve_order), INF(0xF0F0F0)
 	{
@@ -289,6 +292,125 @@ public:
 		update();
 	}
 
+	void rebuildEdges(){
+		arc_map.clear();
+		arc_map.resize(g.edges(), -1);
+		edge_map_ind.clear();
+		edge_map_ind.resize(kt->get_arc_num(),{-1,-1});
+
+		edge_map.clear();//.resize(kt->get_arc_num());
+		for(int i = 0;i<tmp_edge_map.size();i++)
+			tmp_edge_map[i].clear();
+
+
+
+		tmp_edges.clear();
+		tmp_edges.resize(g.nodes(),-1);
+		for(int n = 0;n<g.nodes();n++){
+			int first_arc_id=kt->get_arc_num();
+			for (int i = 0; i < g.nIncident(n,false); i++){
+
+				int edgeID = g.incident(n,i,false).id;
+
+				if(g.selfLoop(edgeID))
+					continue;
+
+				if(arc_map[edgeID]!=-1){
+					continue;
+				}
+
+				int from = g.getEdge(edgeID).from;
+				int to = g.getEdge(edgeID).to;
+				assert(from==n);
+				assert(from!=to);
+
+				max_capacity += g.getWeight(edgeID);
+				edge_enabled[edgeID] = false;
+
+				if (tmp_edges[to]>-1){
+					int arc_id = tmp_edges[to];
+					assert(g.getEdge(tmp_edge_map[arc_id-first_arc_id].back()).to == to);
+					assert(g.getEdge(tmp_edge_map[arc_id-first_arc_id].back()).from == from);
+					tmp_edge_map[arc_id-first_arc_id].push_back(edgeID);
+					arc_map[edgeID] =arc_id;
+				}else{
+
+					assert(!kt->has_edge(from, to));
+					assert(arc_map[edgeID] == -1);
+					int arc_id = kt->add_edge(from, to, 0, 0);
+
+					tmp_edges[to]=arc_id;
+					if(tmp_edge_map.size()<arc_id-first_arc_id+2)
+						tmp_edge_map.resize((arc_id-first_arc_id) + 2);
+					tmp_edge_map[arc_id-first_arc_id].push_back(edgeID);
+					arc_map[edgeID] = arc_id;
+				}
+			}
+			//set the corresponding arc for each other  from-to edge
+			for (int i = 0; i < g.nIncoming(n, false); i++) {
+				int edgeID = g.incoming(n, i, false).id;
+				if(g.selfLoop(edgeID))
+					continue;
+				int from = g.getEdge(edgeID).from;
+				int to = g.getEdge(edgeID).to;
+				assert(to==n);
+
+				if(tmp_edges[from]!=-1 && arc_map[edgeID]==-1){
+					//this is a backward edge corresponding to a forward edge
+					int arc_id = tmp_edges[from]+1;// the reverse arc is always stored right after the forward arc
+					assert(arc_id>-1);
+					tmp_edge_map[arc_id-first_arc_id].push_back(edgeID);
+					arc_map[edgeID] = arc_id;
+
+					max_capacity += g.getWeight(edgeID);
+					edge_enabled[edgeID] = false;
+				}
+			}
+			edge_map_ind.resize(kt->get_arc_num(),{-1,-1});
+			for(int i=0;i<tmp_edge_map.size();i++){
+				int arc_id = i+first_arc_id;
+				if(arc_id>=kt->get_arc_num())
+					break;
+				int first_ind = edge_map.size();
+				for(int edgeID:tmp_edge_map[i]){
+					edge_map.push_back(edgeID);
+				}
+				int last_ind = edge_map.size();
+				assert(arc_id<kt->get_arc_num());
+				edge_map_ind[arc_id]={first_ind,last_ind};
+
+
+#ifndef NDEBUG
+				for(int edgeID:tmp_edge_map[i]){
+					int arcID=arc_map[edgeID];
+					assert(arcID==arc_id);
+					bool found=false;
+					for (auto  it = getArcEdges(arcID);it!=getArcEdgesEnd(arcID);++it){
+						int eID = *it;
+						if(eID==edgeID){
+							found=true;
+							break;
+						}
+					}
+					assert(found);
+				}
+#endif
+				tmp_edge_map[i].clear();
+			}
+
+			for (int i = 0; i < g.nIncident(n,false); i++){
+				int edgeID = g.incident(n,i,false).id;
+				int to = g.getEdge(edgeID).to;
+				tmp_edges[to]=-1;
+			}
+
+#ifndef NDEBUG
+			for(int i = 0;i<tmp_edges.size();i++)
+				assert(tmp_edges[i]==-1);
+#endif
+
+		}
+	}
 
 	const Weight update() {
 		int s = source;
@@ -322,6 +444,7 @@ public:
 			return curflow;
 		} else if (!kt || last_modification <= 0 || kt->get_node_num() != g.nodes()
 				|| edge_enabled.size() != g.edges()) {
+			stats_inits++;
 			clearChangedEdges();
 			edge_enabled.clear();
 			flow_needs_recalc = true;
@@ -346,122 +469,7 @@ public:
 			edge_enabled.resize(g.edges(), false);
 			//multi_edges.clear();//fix this
 			//multi_edges.resize(g.edges());
-			arc_map.clear();
-			arc_map.resize(g.edges(), -1);
-			edge_map_ind.clear();
-			edge_map_ind.resize(kt->get_arc_num(),{-1,-1});
-
-			edge_map.clear();//.resize(kt->get_arc_num());
-			for(int i = 0;i<tmp_edge_map.size();i++)
-				tmp_edge_map[i].clear();
-
-
-
-			tmp_edges.clear();
-			tmp_edges.resize(g.nodes(),-1);
-			for(int n = 0;n<g.nodes();n++){
-				int first_arc_id=kt->get_arc_num();
-				for (int i = 0; i < g.nIncident(n,false); i++){
-
-					int edgeID = g.incident(n,i,false).id;
-
-					if(g.selfLoop(edgeID))
-						continue;
-
-					if(arc_map[edgeID]!=-1){
-						continue;
-					}
-
-					int from = g.getEdge(edgeID).from;
-					int to = g.getEdge(edgeID).to;
-					assert(from==n);
-					assert(from!=to);
-
-					max_capacity += g.getWeight(edgeID);
-					edge_enabled[edgeID] = false;
-
-					if (tmp_edges[to]>-1){
-						int arc_id = tmp_edges[to];
-						assert(g.getEdge(tmp_edge_map[arc_id-first_arc_id].back()).to == to);
-						assert(g.getEdge(tmp_edge_map[arc_id-first_arc_id].back()).from == from);
-						tmp_edge_map[arc_id-first_arc_id].push_back(edgeID);
-						arc_map[edgeID] =arc_id;
-					}else{
-
-						assert(!kt->has_edge(from, to));
-						assert(arc_map[edgeID] == -1);
-						int arc_id = kt->add_edge(from, to, 0, 0);
-
-						tmp_edges[to]=arc_id;
-						if(tmp_edge_map.size()<arc_id-first_arc_id+2)
-							tmp_edge_map.resize((arc_id-first_arc_id) + 2);
-						tmp_edge_map[arc_id-first_arc_id].push_back(edgeID);
-						arc_map[edgeID] = arc_id;
-					}
-				}
-				//set the corresponding arc for each other  from-to edge
-				for (int i = 0; i < g.nIncoming(n, false); i++) {
-					int edgeID = g.incoming(n, i, false).id;
-					if(g.selfLoop(edgeID))
-						continue;
-					int from = g.getEdge(edgeID).from;
-					int to = g.getEdge(edgeID).to;
-					assert(to==n);
-
-					if(tmp_edges[from]!=-1 && arc_map[edgeID]==-1){
-						//this is a backward edge corresponding to a forward edge
-						int arc_id = tmp_edges[from]+1;// the reverse arc is always stored right after the forward arc
-						assert(arc_id>-1);
-						tmp_edge_map[arc_id-first_arc_id].push_back(edgeID);
-						arc_map[edgeID] = arc_id;
-
-						max_capacity += g.getWeight(edgeID);
-						edge_enabled[edgeID] = false;
-					}
-				}
-				edge_map_ind.resize(kt->get_arc_num(),{-1,-1});
-				for(int i=0;i<tmp_edge_map.size();i++){
-					int arc_id = i+first_arc_id;
-					if(arc_id>=kt->get_arc_num())
-						break;
-					int first_ind = edge_map.size();
-					for(int edgeID:tmp_edge_map[i]){
-						edge_map.push_back(edgeID);
-					}
-					int last_ind = edge_map.size();
-					assert(arc_id<kt->get_arc_num());
-					edge_map_ind[arc_id]={first_ind,last_ind};
-
-
-#ifndef NDEBUG
-					for(int edgeID:tmp_edge_map[i]){
-						int arcID=arc_map[edgeID];
-						assert(arcID==arc_id);
-						bool found=false;
-						for (auto  it = getArcEdges(arcID);it!=getArcEdgesEnd(arcID);++it){
-							int eID = *it;
-							if(eID==edgeID){
-								found=true;
-								break;
-							}
-						}
-						assert(found);
-					}
-#endif
-					tmp_edge_map[i].clear();
-				}
-
-				for (int i = 0; i < g.nIncident(n,false); i++){
-					int edgeID = g.incident(n,i,false).id;
-					int to = g.getEdge(edgeID).to;
-					tmp_edges[to]=-1;
-				}
-
-#ifndef NDEBUG
-				for(int i = 0;i<tmp_edges.size();i++)
-					assert(tmp_edges[i]==-1);
-#endif
-			}
+			rebuildEdges();
 
 #ifndef NDEBUG
 			for (int edgeID = 0; edgeID < g.edges(); edgeID++) {
@@ -520,6 +528,7 @@ public:
 				}
 			}
 		} else if (g.historyclears != last_history_clear || g.changed()) {
+			stats_reinits++;
 			flow_needs_recalc = true;
 			for (int edgeid = 0; edgeid < g.edges(); edgeid++) {
 				if (!g.hasEdge(edgeid) || g.selfLoop(edgeid))
