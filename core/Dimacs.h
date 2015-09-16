@@ -32,6 +32,7 @@
 #include <algorithm>
 #include <stdexcept>
 #include <string>
+#include <cstdarg>
 namespace Monosat {
 
 
