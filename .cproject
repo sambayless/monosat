@@ -71,6 +71,7 @@
 									<listOptionValue builtIn="false" value="m"/>
 									<listOptionValue builtIn="false" value="gmpxx"/>
 									<listOptionValue builtIn="false" value="gmp"/>
+									<listOptionValue builtIn="false" srcPrefixMapping="" srcRootPath="" value="rt"/>
 								</option>
 								<option id="gnu.cpp.link.option.flags.667029291" name="Linker flags" superClass="gnu.cpp.link.option.flags" value="" valueType="string"/>
 								<option id="gnu.cpp.link.option.paths.819307413" name="Library search path (-L)" superClass="gnu.cpp.link.option.paths" valueType="libPaths">
@@ -166,6 +167,7 @@
 									<listOptionValue builtIn="false" value="m"/>
 									<listOptionValue builtIn="false" value="gmpxx"/>
 									<listOptionValue builtIn="false" value="gmp"/>
+									<listOptionValue builtIn="false" srcPrefixMapping="" srcRootPath="" value="rt"/>
 								</option>
 								<option id="gnu.cpp.link.option.flags.979290315" name="Linker flags" superClass="gnu.cpp.link.option.flags" value="" valueType="string"/>
 								<option id="gnu.cpp.link.option.paths.1063550757" name="Library search path (-L)" superClass="gnu.cpp.link.option.paths" valueType="libPaths">
@@ -258,6 +260,7 @@
 									<listOptionValue builtIn="false" srcPrefixMapping="" srcRootPath="" value="gmpxx"/>
 									<listOptionValue builtIn="false" srcPrefixMapping="" srcRootPath="" value="CGAL"/>
 									<listOptionValue builtIn="false" srcPrefixMapping="" srcRootPath="" value="CGAL_Core"/>
+									<listOptionValue builtIn="false" srcPrefixMapping="" srcRootPath="" value="rt"/>
 								</option>
 								<option id="gnu.cpp.link.option.flags.124577283" name="Linker flags" superClass="gnu.cpp.link.option.flags" value="-static    -static-libstdc++  -m32" valueType="string"/>
 								<option id="gnu.cpp.link.option.paths.819550187" name="Library search path (-L)" superClass="gnu.cpp.link.option.paths" valueType="libPaths">
@@ -347,6 +350,7 @@
 									<listOptionValue builtIn="false" value="m"/>
 									<listOptionValue builtIn="false" value="gmpxx"/>
 									<listOptionValue builtIn="false" value="gmp"/>
+									<listOptionValue builtIn="false" srcPrefixMapping="" srcRootPath="" value="rt"/>
 								</option>
 								<option id="gnu.cpp.link.option.flags.191165620" name="Linker flags" superClass="gnu.cpp.link.option.flags" value="-static-libgcc   -static-libstdc++  -static" valueType="string"/>
 								<option id="gnu.cpp.link.option.paths.1658328741" name="Library search path (-L)" superClass="gnu.cpp.link.option.paths" valueType="libPaths">
@@ -441,6 +445,7 @@
 									<listOptionValue builtIn="false" value="m"/>
 									<listOptionValue builtIn="false" value="gmpxx"/>
 									<listOptionValue builtIn="false" value="gmp"/>
+									<listOptionValue builtIn="false" srcPrefixMapping="" srcRootPath="" value="rt"/>
 								</option>
 								<option id="gnu.cpp.link.option.flags.396033601" name="Linker flags" superClass="gnu.cpp.link.option.flags" value="-static   -static-libstdc++" valueType="string"/>
 								<option id="gnu.cpp.link.option.paths.1800242183" name="Library search path (-L)" superClass="gnu.cpp.link.option.paths" valueType="libPaths">
@@ -539,6 +544,7 @@
 									<listOptionValue builtIn="false" value="m"/>
 									<listOptionValue builtIn="false" srcPrefixMapping="" srcRootPath="" value="CGAL"/>
 									<listOptionValue builtIn="false" srcPrefixMapping="" srcRootPath="" value="CGAL_Core"/>
+									<listOptionValue builtIn="false" srcPrefixMapping="" srcRootPath="" value="rt"/>
 								</option>
 								<option id="gnu.cpp.link.option.flags.148549110" name="Linker flags" superClass="gnu.cpp.link.option.flags" value="-pthread -lgcov -coverage" valueType="string"/>
 								<option id="gnu.cpp.link.option.paths.1411800830" name="Library search path (-L)" superClass="gnu.cpp.link.option.paths" valueType="libPaths">
@@ -639,6 +645,7 @@
 									<listOptionValue builtIn="false" value="m"/>
 									<listOptionValue builtIn="false" srcPrefixMapping="" srcRootPath="" value="CGAL"/>
 									<listOptionValue builtIn="false" srcPrefixMapping="" srcRootPath="" value="CGAL_Core"/>
+									<listOptionValue builtIn="false" srcPrefixMapping="" srcRootPath="" value="rt"/>
 								</option>
 								<option id="gnu.cpp.link.option.flags.1140861557" name="Linker flags" superClass="gnu.cpp.link.option.flags" value="-pthread" valueType="string"/>
 								<option id="gnu.cpp.link.option.paths.1836132352" name="Library search path (-L)" superClass="gnu.cpp.link.option.paths" valueType="libPaths">
@@ -743,6 +750,7 @@
 									<listOptionValue builtIn="false" srcPrefixMapping="" srcRootPath="" value="gmpxx"/>
 									<listOptionValue builtIn="false" srcPrefixMapping="" srcRootPath="" value="CGAL"/>
 									<listOptionValue builtIn="false" srcPrefixMapping="" srcRootPath="" value="CGAL_Core"/>
+									<listOptionValue builtIn="false" srcPrefixMapping="" srcRootPath="" value="rt"/>
 								</option>
 								<option id="gnu.cpp.link.option.flags.341357675" name="Linker flags" superClass="gnu.cpp.link.option.flags" value="" valueType="string"/>
 								<option id="gnu.cpp.link.option.paths.2137633453" name="Library search path (-L)" superClass="gnu.cpp.link.option.paths" valueType="libPaths">
@@ -842,6 +850,7 @@
 									<listOptionValue builtIn="false" srcPrefixMapping="" srcRootPath="" value="gmpxx"/>
 									<listOptionValue builtIn="false" srcPrefixMapping="" srcRootPath="" value="CGAL"/>
 									<listOptionValue builtIn="false" srcPrefixMapping="" srcRootPath="" value="CGAL_Core"/>
+									<listOptionValue builtIn="false" srcPrefixMapping="" srcRootPath="" value="rt"/>
 								</option>
 								<option id="gnu.cpp.link.option.flags.2060495493" name="Linker flags" superClass="gnu.cpp.link.option.flags" value="-pthread" valueType="string"/>
 								<option id="gnu.cpp.link.option.paths.232037957" name="Library search path (-L)" superClass="gnu.cpp.link.option.paths" valueType="libPaths">
@@ -942,6 +951,7 @@
 									<listOptionValue builtIn="false" srcPrefixMapping="" srcRootPath="" value="gmpxx"/>
 									<listOptionValue builtIn="false" srcPrefixMapping="" srcRootPath="" value="CGAL"/>
 									<listOptionValue builtIn="false" srcPrefixMapping="" srcRootPath="" value="CGAL_Core"/>
+									<listOptionValue builtIn="false" srcPrefixMapping="" srcRootPath="" value="rt"/>
 								</option>
 								<option id="gnu.cpp.link.option.flags.1487528602" name="Linker flags" superClass="gnu.cpp.link.option.flags" value="-pthread" valueType="string"/>
 								<option id="gnu.cpp.link.option.paths.247286704" name="Library search path (-L)" superClass="gnu.cpp.link.option.paths" valueType="libPaths">
@@ -1043,6 +1053,7 @@
 									<listOptionValue builtIn="false" srcPrefixMapping="" srcRootPath="" value="gmpxx"/>
 									<listOptionValue builtIn="false" srcPrefixMapping="" srcRootPath="" value="gmp"/>
 									<listOptionValue builtIn="false" srcPrefixMapping="" srcRootPath="" value="dl"/>
+									<listOptionValue builtIn="false" srcPrefixMapping="" srcRootPath="" value="rt"/>
 								</option>
 								<option id="gnu.cpp.link.option.flags.893444625" name="Linker flags" superClass="gnu.cpp.link.option.flags" value="" valueType="string"/>
 								<option id="gnu.cpp.link.option.paths.1659467360" name="Library search path (-L)" superClass="gnu.cpp.link.option.paths" valueType="libPaths">
@@ -1142,6 +1153,7 @@
 									<listOptionValue builtIn="false" srcPrefixMapping="" srcRootPath="" value="gmpxx"/>
 									<listOptionValue builtIn="false" srcPrefixMapping="" srcRootPath="" value="gmp"/>
 									<listOptionValue builtIn="false" srcPrefixMapping="" srcRootPath="" value="dl"/>
+									<listOptionValue builtIn="false" srcPrefixMapping="" srcRootPath="" value="rt"/>
 								</option>
 								<option id="gnu.cpp.link.option.flags.548799683" name="Linker flags" superClass="gnu.cpp.link.option.flags" value="" valueType="string"/>
 								<option id="gnu.cpp.link.option.paths.592113478" name="Library search path (-L)" superClass="gnu.cpp.link.option.paths" valueType="libPaths">
@@ -1236,6 +1248,7 @@
 									<listOptionValue builtIn="false" value="m"/>
 									<listOptionValue builtIn="false" value="gmpxx"/>
 									<listOptionValue builtIn="false" value="gmp"/>
+									<listOptionValue builtIn="false" srcPrefixMapping="" srcRootPath="" value="rt"/>
 								</option>
 								<option id="gnu.cpp.link.option.flags.924942699" name="Linker flags" superClass="gnu.cpp.link.option.flags" value="-Wl,--no-as-needed -lprofiler -Wl,--as-needed" valueType="string"/>
 								<option id="gnu.cpp.link.option.paths.208532659" name="Library search path (-L)" superClass="gnu.cpp.link.option.paths"/>
@@ -1330,6 +1343,7 @@
 									<listOptionValue builtIn="false" value="m"/>
 									<listOptionValue builtIn="false" value="gmpxx"/>
 									<listOptionValue builtIn="false" value="gmp"/>
+									<listOptionValue builtIn="false" srcPrefixMapping="" srcRootPath="" value="rt"/>
 								</option>
 								<option id="gnu.cpp.link.option.flags.1728992073" name="Linker flags" superClass="gnu.cpp.link.option.flags" value="" valueType="string"/>
 								<option id="gnu.cpp.link.option.paths.1712672948" name="Library search path (-L)" superClass="gnu.cpp.link.option.paths" valueType="libPaths">
@@ -1428,6 +1442,7 @@
 									<listOptionValue builtIn="false" value="m"/>
 									<listOptionValue builtIn="false" value="gmpxx"/>
 									<listOptionValue builtIn="false" value="gmp"/>
+									<listOptionValue builtIn="false" srcPrefixMapping="" srcRootPath="" value="rt"/>
 								</option>
 								<option id="gnu.cpp.link.option.flags.1910718394" name="Linker flags" superClass="gnu.cpp.link.option.flags" value="" valueType="string"/>
 								<option id="gnu.cpp.link.option.paths.1893701551" name="Library search path (-L)" superClass="gnu.cpp.link.option.paths" valueType="libPaths">
@@ -1525,6 +1540,7 @@
 									<listOptionValue builtIn="false" value="m"/>
 									<listOptionValue builtIn="false" value="gmpxx"/>
 									<listOptionValue builtIn="false" value="gmp"/>
+									<listOptionValue builtIn="false" srcPrefixMapping="" srcRootPath="" value="rt"/>
 								</option>
 								<option id="gnu.cpp.link.option.flags.434587811" name="Linker flags" superClass="gnu.cpp.link.option.flags" value="-Wl,--no-as-needed -lprofiler -Wl,--as-needed" valueType="string"/>
 								<option id="gnu.cpp.link.option.paths.1290362974" name="Library search path (-L)" superClass="gnu.cpp.link.option.paths" valueType="libPaths">
@@ -1629,6 +1645,7 @@
 									<listOptionValue builtIn="false" value="m"/>
 									<listOptionValue builtIn="false" value="gmpxx"/>
 									<listOptionValue builtIn="false" value="gmp"/>
+									<listOptionValue builtIn="false" srcPrefixMapping="" srcRootPath="" value="rt"/>
 								</option>
 								<option id="gnu.cpp.link.option.flags.1294088590" name="Linker flags" superClass="gnu.cpp.link.option.flags" value="-static   -static-libstdc++  -Wl,-no-undefined -Wl,--enable-runtime-pseudo-reloc" valueType="string"/>
 								<option id="gnu.cpp.link.option.paths.766930487" name="Library search path (-L)" superClass="gnu.cpp.link.option.paths" valueType="libPaths">
@@ -1736,6 +1753,7 @@
 									<listOptionValue builtIn="false" srcPrefixMapping="" srcRootPath="" value="gmpxx"/>
 									<listOptionValue builtIn="false" srcPrefixMapping="" srcRootPath="" value="gmp"/>
 									<listOptionValue builtIn="false" srcPrefixMapping="" srcRootPath="" value="dl"/>
+									<listOptionValue builtIn="false" srcPrefixMapping="" srcRootPath="" value="rt"/>
 								</option>
 								<option id="gnu.cpp.link.option.flags.900301641" name="Linker flags" superClass="gnu.cpp.link.option.flags" value="" valueType="string"/>
 								<option id="gnu.cpp.link.option.paths.1990242305" name="Library search path (-L)" superClass="gnu.cpp.link.option.paths" valueType="libPaths">
@@ -1816,47 +1834,38 @@
 	<storageModule moduleId="org.eclipse.cdt.make.core.buildtargets"/>
 	<storageModule moduleId="scannerConfiguration">
 		<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
-		<scannerConfigBuildInfo instanceId="cdt.managedbuild.config.gnu.exe.debug.1003838172.661131711.1852035064;cdt.managedbuild.config.gnu.exe.debug.1003838172.661131711.1852035064.;cdt.managedbuild.tool.gnu.cpp.compiler.exe.debug.1950590051;cdt.managedbuild.tool.gnu.cpp.compiler.input.984393645">
-			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId="org.eclipse.cdt.managedbuilder.core.GCCManagedMakePerProjectProfileCPP"/>
-		</scannerConfigBuildInfo>
 		<scannerConfigBuildInfo instanceId="cdt.managedbuild.config.gnu.exe.release.1052123975.874841032;cdt.managedbuild.config.gnu.exe.release.1052123975.874841032.;cdt.managedbuild.tool.gnu.cpp.compiler.exe.release.1720157147;cdt.managedbuild.tool.gnu.cpp.compiler.input.1004090440">
 			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId="org.eclipse.cdt.managedbuilder.core.GCCManagedMakePerProjectProfileCPP"/>
-		</scannerConfigBuildInfo>
-		<scannerConfigBuildInfo instanceId="cdt.managedbuild.config.gnu.exe.debug.1003838172.1809949427;cdt.managedbuild.config.gnu.exe.debug.1003838172.1809949427.;cdt.managedbuild.tool.gnu.c.compiler.exe.debug.2000755024;cdt.managedbuild.tool.gnu.c.compiler.input.1302518036">
-			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId="org.eclipse.cdt.managedbuilder.core.GCCManagedMakePerProjectProfileC"/>
 		</scannerConfigBuildInfo>
 		<scannerConfigBuildInfo instanceId="cdt.managedbuild.config.gnu.exe.debug.1003838172;cdt.managedbuild.config.gnu.exe.debug.1003838172.;cdt.managedbuild.tool.gnu.cpp.compiler.exe.debug.713419155;cdt.managedbuild.tool.gnu.cpp.compiler.input.758743014">
 			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId="org.eclipse.cdt.managedbuilder.core.GCCManagedMakePerProjectProfileCPP"/>
 		</scannerConfigBuildInfo>
-		<scannerConfigBuildInfo instanceId="cdt.managedbuild.config.gnu.exe.release.1052123975.2065358793;cdt.managedbuild.config.gnu.exe.release.1052123975.2065358793.;cdt.managedbuild.tool.gnu.c.compiler.exe.release.1916406613;cdt.managedbuild.tool.gnu.c.compiler.input.439442248">
-			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId="org.eclipse.cdt.managedbuilder.core.GCCManagedMakePerProjectProfileC"/>
+		<scannerConfigBuildInfo instanceId="cdt.managedbuild.config.gnu.exe.debug.1003838172.1351069767.508396635;cdt.managedbuild.config.gnu.exe.debug.1003838172.1351069767.508396635.;cdt.managedbuild.tool.gnu.cpp.compiler.exe.debug.342660404;cdt.managedbuild.tool.gnu.cpp.compiler.input.172644459">
+			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
 		</scannerConfigBuildInfo>
-		<scannerConfigBuildInfo instanceId="cdt.managedbuild.config.gnu.exe.debug.1003838172.661131711;cdt.managedbuild.config.gnu.exe.debug.1003838172.661131711.;cdt.managedbuild.tool.gnu.c.compiler.exe.debug.1281223420;cdt.managedbuild.tool.gnu.c.compiler.input.984981827">
-			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId="org.eclipse.cdt.managedbuilder.core.GCCManagedMakePerProjectProfileC"/>
+		<scannerConfigBuildInfo instanceId="cdt.managedbuild.config.gnu.exe.debug.1003838172.1351069767.424676409;cdt.managedbuild.config.gnu.exe.debug.1003838172.1351069767.424676409.;cdt.managedbuild.tool.gnu.c.compiler.exe.debug.227492787;cdt.managedbuild.tool.gnu.c.compiler.input.1415726967">
+			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
 		</scannerConfigBuildInfo>
 		<scannerConfigBuildInfo instanceId="cdt.managedbuild.config.gnu.exe.debug.1003838172.493741181.152364776;cdt.managedbuild.config.gnu.exe.debug.1003838172.493741181.152364776.;cdt.managedbuild.tool.gnu.c.compiler.exe.debug.1959742601;cdt.managedbuild.tool.gnu.c.compiler.input.1558119680">
 			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
 		</scannerConfigBuildInfo>
-		<scannerConfigBuildInfo instanceId="cdt.managedbuild.config.gnu.exe.debug.1003838172.503882809;cdt.managedbuild.config.gnu.exe.debug.1003838172.503882809.;cdt.managedbuild.tool.gnu.cpp.compiler.exe.debug.2145627582;cdt.managedbuild.tool.gnu.cpp.compiler.input.475482048">
-			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId="org.eclipse.cdt.managedbuilder.core.GCCManagedMakePerProjectProfileCPP"/>
-		</scannerConfigBuildInfo>
 		<scannerConfigBuildInfo instanceId="cdt.managedbuild.config.gnu.exe.release.1052123975.366680122;cdt.managedbuild.config.gnu.exe.release.1052123975.366680122.;cdt.managedbuild.tool.gnu.cpp.compiler.exe.release.1839805581;cdt.managedbuild.tool.gnu.cpp.compiler.input.310482073">
-			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId="org.eclipse.cdt.managedbuilder.core.GCCManagedMakePerProjectProfileCPP"/>
-		</scannerConfigBuildInfo>
-		<scannerConfigBuildInfo instanceId="cdt.managedbuild.config.gnu.exe.release.1052123975;cdt.managedbuild.config.gnu.exe.release.1052123975.;cdt.managedbuild.tool.gnu.cpp.compiler.exe.release.560036326;cdt.managedbuild.tool.gnu.cpp.compiler.input.1990306899">
 			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId="org.eclipse.cdt.managedbuilder.core.GCCManagedMakePerProjectProfileCPP"/>
 		</scannerConfigBuildInfo>
 		<scannerConfigBuildInfo instanceId="cdt.managedbuild.config.gnu.exe.debug.1003838172.493741181.152364776;cdt.managedbuild.config.gnu.exe.debug.1003838172.493741181.152364776.;cdt.managedbuild.tool.gnu.cpp.compiler.exe.debug.1617810252;cdt.managedbuild.tool.gnu.cpp.compiler.input.488289797">
 			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
 		</scannerConfigBuildInfo>
+		<scannerConfigBuildInfo instanceId="cdt.managedbuild.config.gnu.exe.release.1052123975.1783042530;cdt.managedbuild.config.gnu.exe.release.1052123975.1783042530.;cdt.managedbuild.tool.gnu.cpp.compiler.exe.release.391026666;cdt.managedbuild.tool.gnu.cpp.compiler.input.1104045819">
+			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
+		</scannerConfigBuildInfo>
 		<scannerConfigBuildInfo instanceId="cdt.managedbuild.config.gnu.exe.debug.1003838172.661131711;cdt.managedbuild.config.gnu.exe.debug.1003838172.661131711.;cdt.managedbuild.tool.gnu.cpp.compiler.exe.debug.1164074496;cdt.managedbuild.tool.gnu.cpp.compiler.input.324880369">
 			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId="org.eclipse.cdt.managedbuilder.core.GCCManagedMakePerProjectProfileCPP"/>
 		</scannerConfigBuildInfo>
-		<scannerConfigBuildInfo instanceId="cdt.managedbuild.config.gnu.exe.debug.1003838172.661131711.1852035064;cdt.managedbuild.config.gnu.exe.debug.1003838172.661131711.1852035064.;cdt.managedbuild.tool.gnu.c.compiler.exe.debug.1037882495;cdt.managedbuild.tool.gnu.c.compiler.input.2090190392">
-			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId="org.eclipse.cdt.managedbuilder.core.GCCManagedMakePerProjectProfileC"/>
+		<scannerConfigBuildInfo instanceId="cdt.managedbuild.config.gnu.exe.release.1052123975.1783042530;cdt.managedbuild.config.gnu.exe.release.1052123975.1783042530.;cdt.managedbuild.tool.gnu.c.compiler.exe.release.153161629;cdt.managedbuild.tool.gnu.c.compiler.input.344426252">
+			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
 		</scannerConfigBuildInfo>
-		<scannerConfigBuildInfo instanceId="cdt.managedbuild.config.gnu.exe.release.1052123975.366680122;cdt.managedbuild.config.gnu.exe.release.1052123975.366680122.;cdt.managedbuild.tool.gnu.c.compiler.exe.release.1601842446;cdt.managedbuild.tool.gnu.c.compiler.input.1425989944">
-			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId="org.eclipse.cdt.managedbuilder.core.GCCManagedMakePerProjectProfileC"/>
+		<scannerConfigBuildInfo instanceId="cdt.managedbuild.config.gnu.exe.debug.1003838172.1351069767;cdt.managedbuild.config.gnu.exe.debug.1003838172.1351069767.;cdt.managedbuild.tool.gnu.cpp.compiler.exe.debug.779932956;cdt.managedbuild.tool.gnu.cpp.compiler.input.550197124">
+			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
 		</scannerConfigBuildInfo>
 		<scannerConfigBuildInfo instanceId="cdt.managedbuild.config.gnu.exe.debug.1003838172.493741181;cdt.managedbuild.config.gnu.exe.debug.1003838172.493741181.;cdt.managedbuild.tool.gnu.c.compiler.exe.debug.971448118;cdt.managedbuild.tool.gnu.c.compiler.input.1438038404">
 			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
@@ -1867,13 +1876,67 @@
 		<scannerConfigBuildInfo instanceId="cdt.managedbuild.config.gnu.exe.release.1052123975.2065358793;cdt.managedbuild.config.gnu.exe.release.1052123975.2065358793.;cdt.managedbuild.tool.gnu.cpp.compiler.exe.release.960177342;cdt.managedbuild.tool.gnu.cpp.compiler.input.593731700">
 			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId="org.eclipse.cdt.managedbuilder.core.GCCManagedMakePerProjectProfileCPP"/>
 		</scannerConfigBuildInfo>
+		<scannerConfigBuildInfo instanceId="cdt.managedbuild.config.gnu.exe.release.1052123975.874841032;cdt.managedbuild.config.gnu.exe.release.1052123975.874841032.;cdt.managedbuild.tool.gnu.c.compiler.exe.release.687502783;cdt.managedbuild.tool.gnu.c.compiler.input.1931028451">
+			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId="org.eclipse.cdt.managedbuilder.core.GCCManagedMakePerProjectProfileC"/>
+		</scannerConfigBuildInfo>
+		<scannerConfigBuildInfo instanceId="cdt.managedbuild.config.gnu.exe.release.1052123975.874841032.1476738042.1740127881;cdt.managedbuild.config.gnu.exe.release.1052123975.874841032.1476738042.1740127881.;cdt.managedbuild.tool.gnu.cpp.compiler.exe.release.1654668833;cdt.managedbuild.tool.gnu.cpp.compiler.input.2085994304">
+			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
+		</scannerConfigBuildInfo>
+		<scannerConfigBuildInfo instanceId="cdt.managedbuild.config.gnu.exe.debug.1003838172.661131711.1852035064;cdt.managedbuild.config.gnu.exe.debug.1003838172.661131711.1852035064.;cdt.managedbuild.tool.gnu.cpp.compiler.exe.debug.1950590051;cdt.managedbuild.tool.gnu.cpp.compiler.input.984393645">
+			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId="org.eclipse.cdt.managedbuilder.core.GCCManagedMakePerProjectProfileCPP"/>
+		</scannerConfigBuildInfo>
+		<scannerConfigBuildInfo instanceId="cdt.managedbuild.config.gnu.exe.debug.1003838172.1809949427;cdt.managedbuild.config.gnu.exe.debug.1003838172.1809949427.;cdt.managedbuild.tool.gnu.c.compiler.exe.debug.2000755024;cdt.managedbuild.tool.gnu.c.compiler.input.1302518036">
+			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId="org.eclipse.cdt.managedbuilder.core.GCCManagedMakePerProjectProfileC"/>
+		</scannerConfigBuildInfo>
+		<scannerConfigBuildInfo instanceId="cdt.managedbuild.config.gnu.exe.release.1052123975.874841032.1476738042;cdt.managedbuild.config.gnu.exe.release.1052123975.874841032.1476738042.;cdt.managedbuild.tool.gnu.c.compiler.exe.release.581819841;cdt.managedbuild.tool.gnu.c.compiler.input.1707532121">
+			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
+		</scannerConfigBuildInfo>
+		<scannerConfigBuildInfo instanceId="cdt.managedbuild.config.gnu.exe.debug.1003838172.1351069767.508396635;cdt.managedbuild.config.gnu.exe.debug.1003838172.1351069767.508396635.;cdt.managedbuild.tool.gnu.c.compiler.exe.debug.446780442;cdt.managedbuild.tool.gnu.c.compiler.input.467194607">
+			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
+		</scannerConfigBuildInfo>
+		<scannerConfigBuildInfo instanceId="cdt.managedbuild.config.gnu.exe.debug.1003838172.661131711.1852035064.1271167263;cdt.managedbuild.config.gnu.exe.debug.1003838172.661131711.1852035064.1271167263.;cdt.managedbuild.tool.gnu.cpp.compiler.exe.debug.1198636491;cdt.managedbuild.tool.gnu.cpp.compiler.input.587907595">
+			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
+		</scannerConfigBuildInfo>
+		<scannerConfigBuildInfo instanceId="cdt.managedbuild.config.gnu.exe.debug.1003838172.661131711;cdt.managedbuild.config.gnu.exe.debug.1003838172.661131711.;cdt.managedbuild.tool.gnu.c.compiler.exe.debug.1281223420;cdt.managedbuild.tool.gnu.c.compiler.input.984981827">
+			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId="org.eclipse.cdt.managedbuilder.core.GCCManagedMakePerProjectProfileC"/>
+		</scannerConfigBuildInfo>
+		<scannerConfigBuildInfo instanceId="cdt.managedbuild.config.gnu.exe.release.1052123975.2065358793;cdt.managedbuild.config.gnu.exe.release.1052123975.2065358793.;cdt.managedbuild.tool.gnu.c.compiler.exe.release.1916406613;cdt.managedbuild.tool.gnu.c.compiler.input.439442248">
+			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId="org.eclipse.cdt.managedbuilder.core.GCCManagedMakePerProjectProfileC"/>
+		</scannerConfigBuildInfo>
+		<scannerConfigBuildInfo instanceId="cdt.managedbuild.config.gnu.exe.debug.1003838172.503882809;cdt.managedbuild.config.gnu.exe.debug.1003838172.503882809.;cdt.managedbuild.tool.gnu.cpp.compiler.exe.debug.2145627582;cdt.managedbuild.tool.gnu.cpp.compiler.input.475482048">
+			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId="org.eclipse.cdt.managedbuilder.core.GCCManagedMakePerProjectProfileCPP"/>
+		</scannerConfigBuildInfo>
+		<scannerConfigBuildInfo instanceId="cdt.managedbuild.config.gnu.exe.release.1052123975;cdt.managedbuild.config.gnu.exe.release.1052123975.;cdt.managedbuild.tool.gnu.cpp.compiler.exe.release.560036326;cdt.managedbuild.tool.gnu.cpp.compiler.input.1990306899">
+			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId="org.eclipse.cdt.managedbuilder.core.GCCManagedMakePerProjectProfileCPP"/>
+		</scannerConfigBuildInfo>
+		<scannerConfigBuildInfo instanceId="cdt.managedbuild.config.gnu.exe.debug.1003838172.661131711.1852035064;cdt.managedbuild.config.gnu.exe.debug.1003838172.661131711.1852035064.;cdt.managedbuild.tool.gnu.c.compiler.exe.debug.1037882495;cdt.managedbuild.tool.gnu.c.compiler.input.2090190392">
+			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId="org.eclipse.cdt.managedbuilder.core.GCCManagedMakePerProjectProfileC"/>
+		</scannerConfigBuildInfo>
+		<scannerConfigBuildInfo instanceId="cdt.managedbuild.config.gnu.exe.debug.1003838172.1351069767.424676409;cdt.managedbuild.config.gnu.exe.debug.1003838172.1351069767.424676409.;cdt.managedbuild.tool.gnu.cpp.compiler.exe.debug.1399019591;cdt.managedbuild.tool.gnu.cpp.compiler.input.190377677">
+			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
+		</scannerConfigBuildInfo>
+		<scannerConfigBuildInfo instanceId="cdt.managedbuild.config.gnu.exe.release.1052123975.366680122;cdt.managedbuild.config.gnu.exe.release.1052123975.366680122.;cdt.managedbuild.tool.gnu.c.compiler.exe.release.1601842446;cdt.managedbuild.tool.gnu.c.compiler.input.1425989944">
+			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId="org.eclipse.cdt.managedbuilder.core.GCCManagedMakePerProjectProfileC"/>
+		</scannerConfigBuildInfo>
+		<scannerConfigBuildInfo instanceId="cdt.managedbuild.config.gnu.exe.debug.1003838172.1351069767;cdt.managedbuild.config.gnu.exe.debug.1003838172.1351069767.;cdt.managedbuild.tool.gnu.c.compiler.exe.debug.880432577;cdt.managedbuild.tool.gnu.c.compiler.input.443657865">
+			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
+		</scannerConfigBuildInfo>
+		<scannerConfigBuildInfo instanceId="cdt.managedbuild.config.gnu.exe.release.1052123975.874841032.1476738042.1271233822;cdt.managedbuild.config.gnu.exe.release.1052123975.874841032.1476738042.1271233822.;cdt.managedbuild.tool.gnu.c.compiler.exe.release.1187324946;cdt.managedbuild.tool.gnu.c.compiler.input.1825558767">
+			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
+		</scannerConfigBuildInfo>
+		<scannerConfigBuildInfo instanceId="cdt.managedbuild.config.gnu.exe.release.1052123975.874841032.1476738042.1271233822;cdt.managedbuild.config.gnu.exe.release.1052123975.874841032.1476738042.1271233822.;cdt.managedbuild.tool.gnu.cpp.compiler.exe.release.2138736546;cdt.managedbuild.tool.gnu.cpp.compiler.input.1727496266">
+			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
+		</scannerConfigBuildInfo>
+		<scannerConfigBuildInfo instanceId="cdt.managedbuild.config.gnu.exe.release.1052123975.874841032.1476738042;cdt.managedbuild.config.gnu.exe.release.1052123975.874841032.1476738042.;cdt.managedbuild.tool.gnu.cpp.compiler.exe.release.1013931442;cdt.managedbuild.tool.gnu.cpp.compiler.input.1570857703">
+			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
+		</scannerConfigBuildInfo>
+		<scannerConfigBuildInfo instanceId="cdt.managedbuild.config.gnu.exe.debug.1003838172.661131711.1852035064.1271167263;cdt.managedbuild.config.gnu.exe.debug.1003838172.661131711.1852035064.1271167263.;cdt.managedbuild.tool.gnu.c.compiler.exe.debug.1169359105;cdt.managedbuild.tool.gnu.c.compiler.input.596659335">
+			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
+		</scannerConfigBuildInfo>
 		<scannerConfigBuildInfo instanceId="cdt.managedbuild.config.gnu.exe.debug.1003838172.503882809;cdt.managedbuild.config.gnu.exe.debug.1003838172.503882809.;cdt.managedbuild.tool.gnu.c.compiler.exe.debug.605072271;cdt.managedbuild.tool.gnu.c.compiler.input.959395968">
 			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId="org.eclipse.cdt.managedbuilder.core.GCCManagedMakePerProjectProfileC"/>
 		</scannerConfigBuildInfo>
 		<scannerConfigBuildInfo instanceId="cdt.managedbuild.config.gnu.exe.release.1052123975;cdt.managedbuild.config.gnu.exe.release.1052123975.;cdt.managedbuild.tool.gnu.c.compiler.exe.release.2036074097;cdt.managedbuild.tool.gnu.c.compiler.input.49293408">
-			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId="org.eclipse.cdt.managedbuilder.core.GCCManagedMakePerProjectProfileC"/>
-		</scannerConfigBuildInfo>
-		<scannerConfigBuildInfo instanceId="cdt.managedbuild.config.gnu.exe.release.1052123975.874841032;cdt.managedbuild.config.gnu.exe.release.1052123975.874841032.;cdt.managedbuild.tool.gnu.c.compiler.exe.release.687502783;cdt.managedbuild.tool.gnu.c.compiler.input.1931028451">
 			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId="org.eclipse.cdt.managedbuilder.core.GCCManagedMakePerProjectProfileC"/>
 		</scannerConfigBuildInfo>
 		<scannerConfigBuildInfo instanceId="cdt.managedbuild.config.gnu.exe.debug.1003838172;cdt.managedbuild.config.gnu.exe.debug.1003838172.;cdt.managedbuild.tool.gnu.c.compiler.exe.debug.399221987;cdt.managedbuild.tool.gnu.c.compiler.input.1701141315">
@@ -1881,6 +1944,9 @@
 		</scannerConfigBuildInfo>
 		<scannerConfigBuildInfo instanceId="cdt.managedbuild.config.gnu.exe.debug.1003838172.1809949427;cdt.managedbuild.config.gnu.exe.debug.1003838172.1809949427.;cdt.managedbuild.tool.gnu.cpp.compiler.exe.debug.1242101135;cdt.managedbuild.tool.gnu.cpp.compiler.input.1111804667">
 			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId="org.eclipse.cdt.managedbuilder.core.GCCManagedMakePerProjectProfileCPP"/>
+		</scannerConfigBuildInfo>
+		<scannerConfigBuildInfo instanceId="cdt.managedbuild.config.gnu.exe.release.1052123975.874841032.1476738042.1740127881;cdt.managedbuild.config.gnu.exe.release.1052123975.874841032.1476738042.1740127881.;cdt.managedbuild.tool.gnu.c.compiler.exe.release.772388444;cdt.managedbuild.tool.gnu.c.compiler.input.1674105888">
+			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
 		</scannerConfigBuildInfo>
 	</storageModule>
 </cproject>

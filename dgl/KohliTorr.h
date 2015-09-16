@@ -292,7 +292,35 @@ public:
 		update();
 	}
 
-	void rebuildEdges(){
+
+
+	void initKT(){
+		stats_inits++;
+		clearChangedEdges();
+		edge_enabled.clear();
+		flow_needs_recalc = true;
+		if (kt) {
+			delete (kt);
+			kt = nullptr;
+		}
+		if (!kt) {
+			kt = new kohli_torr::Graph<Weight, Weight, Weight>(g.nodes(), g.edges());
+			kt->preserve_backward_order = kt_preserve_order;
+			kt->maxflow(false); //just to initialize things.
+		}
+
+		while (kt->get_node_num() < g.nodes()) {
+			int node_id = kt->add_node();
+			assert(node_id == kt->get_node_num() - 1);
+		}
+		max_capacity=0;
+		sum_of_edge_capacities=0;
+		local_weights.clear();
+		local_weights.resize(g.edges(),0);
+		edge_enabled.resize(g.edges(), false);
+		//multi_edges.clear();//fix this
+		//multi_edges.resize(g.edges());
+
 		arc_map.clear();
 		arc_map.resize(g.edges(), -1);
 		edge_map_ind.clear();
@@ -410,6 +438,64 @@ public:
 #endif
 
 		}
+
+#ifndef NDEBUG
+				for (int edgeID = 0; edgeID < g.edges(); edgeID++) {
+					if (!g.hasEdge(edgeID) || g.selfLoop(edgeID))
+							continue;
+					int arcID = arc_map[edgeID];
+					assert(arcID>-1);
+					bool found=false;
+					for (auto  it = getArcEdges(arcID);it!=getArcEdgesEnd(arcID);++it){
+						int eID = *it;
+						if(eID==edgeID){
+							found=true;
+							break;
+						}
+					}
+					assert(found);
+				}
+	#endif
+
+				for (int edgeID = 0; edgeID < g.edges(); edgeID++) {
+					if (!g.hasEdge(edgeID) || g.selfLoop(edgeID))
+							continue;
+					assert(arc_map[edgeID]>-1);
+					if (g.edgeEnabled(edgeID)) {
+						int from = g.getEdge(edgeID).from;
+						int to = g.getEdge(edgeID).to;
+						edge_enabled[edgeID] = true;
+						set_local_weight(edgeID,g.getWeight(edgeID));
+						kt->edit_edge_inc(from, to, g.getWeight(edgeID), 0,getArc(edgeID));
+					}else{
+						set_local_weight(edgeID,0);
+					}
+				}
+				int s = source;
+					int t = sink;
+				if(source!=sink){
+					assert(max_capacity>=0);
+					if(max_capacity<1){
+						max_capacity=1;//if max capacity is 0, then kt allows the cut to be between the actual kt source and s, which can lead to incorrect results here.
+					}
+					if (dynamic) {
+						//if(!backward_maxflow){
+						kt->edit_tweights(s, max_capacity, 0);
+						kt->edit_tweights(t, 0, max_capacity);
+					/*	}else{
+						 kt->edit_tweights(t,max_capacity,0);
+						 kt->edit_tweights(s,0,max_capacity);
+						 }*/
+					} else {
+						//if(!backward_maxflow){
+						kt->edit_tweights_wt(s, max_capacity, 0);
+						kt->edit_tweights_wt(t, 0, max_capacity);
+				/*			}else{
+						 kt->edit_tweights_wt(t,max_capacity,0);
+						 kt->edit_tweights_wt(s,0,max_capacity);
+						 }*/
+					}
+				}
 	}
 
 	const Weight update() {
@@ -434,9 +520,7 @@ public:
 #ifdef DEBUG_MAXFLOW2
 			EdmondsKarpDynamic<Weight> ek(g,source,sink);
 			Weight expected_flow =ek.maxFlow(source,sink);
-#endif
-			
-#ifdef DEBUG_MAXFLOW2
+
 			assert(curflow==expected_flow);
 			bassert(curflow == expected_flow);
 
@@ -444,89 +528,7 @@ public:
 			return curflow;
 		} else if (!kt || last_modification <= 0 || kt->get_node_num() != g.nodes()
 				|| edge_enabled.size() != g.edges()) {
-			stats_inits++;
-			clearChangedEdges();
-			edge_enabled.clear();
-			flow_needs_recalc = true;
-			if (kt) {
-				delete (kt);
-				kt = nullptr;
-			}
-			if (!kt) {
-				kt = new kohli_torr::Graph<Weight, Weight, Weight>(g.nodes(), g.edges());
-				kt->preserve_backward_order = kt_preserve_order;
-				kt->maxflow(false); //just to initialize things.
-			}
-			
-			while (kt->get_node_num() < g.nodes()) {
-				int node_id = kt->add_node();
-				assert(node_id == kt->get_node_num() - 1);
-			}
-			max_capacity=0;
-			sum_of_edge_capacities=0;
-			local_weights.clear();
-			local_weights.resize(g.edges(),0);
-			edge_enabled.resize(g.edges(), false);
-			//multi_edges.clear();//fix this
-			//multi_edges.resize(g.edges());
-			rebuildEdges();
-
-#ifndef NDEBUG
-			for (int edgeID = 0; edgeID < g.edges(); edgeID++) {
-				if (!g.hasEdge(edgeID) || g.selfLoop(edgeID))
-						continue;
-				int arcID = arc_map[edgeID];
-				assert(arcID>-1);
-				bool found=false;
-				for (auto  it = getArcEdges(arcID);it!=getArcEdgesEnd(arcID);++it){
-					int eID = *it;
-					if(eID==edgeID){
-						found=true;
-						break;
-					}
-				}
-				assert(found);
-			}
-#endif
-
-			for (int edgeID = 0; edgeID < g.edges(); edgeID++) {
-				if (!g.hasEdge(edgeID) || g.selfLoop(edgeID))
-						continue;
-				assert(arc_map[edgeID]>-1);
-				if (g.edgeEnabled(edgeID)) {
-					int from = g.getEdge(edgeID).from;
-					int to = g.getEdge(edgeID).to;
-					edge_enabled[edgeID] = true;
-					set_local_weight(edgeID,g.getWeight(edgeID));
-					kt->edit_edge_inc(from, to, g.getWeight(edgeID), 0,getArc(edgeID));
-				}else{
-					set_local_weight(edgeID,0);
-				}
-			}
-
-			if(s!=t){
-				assert(max_capacity>=0);
-				if(max_capacity<1){
-					max_capacity=1;//if max capacity is 0, then kt allows the cut to be between the actual kt source and s, which can lead to incorrect results here.
-				}
-				if (dynamic) {
-					//if(!backward_maxflow){
-					kt->edit_tweights(s, max_capacity, 0);
-					kt->edit_tweights(t, 0, max_capacity);
-				/*	}else{
-					 kt->edit_tweights(t,max_capacity,0);
-					 kt->edit_tweights(s,0,max_capacity);
-					 }*/
-				} else {
-					//if(!backward_maxflow){
-					kt->edit_tweights_wt(s, max_capacity, 0);
-					kt->edit_tweights_wt(t, 0, max_capacity);
-			/*			}else{
-					 kt->edit_tweights_wt(t,max_capacity,0);
-					 kt->edit_tweights_wt(s,0,max_capacity);
-					 }*/
-				}
-			}
+			initKT();
 		} else if (g.historyclears != last_history_clear || g.changed()) {
 			stats_reinits++;
 			flow_needs_recalc = true;
