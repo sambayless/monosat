@@ -648,7 +648,7 @@ class MinisatPlus:
                     invarmap[l]=nvars
                     varmap[nvars]=v.getLit()
                     
-      
+        n_pbs=0
         nvars+=1
         fopb.write("* #variable= " + str(nvars) + " #constraint= " + str(len(self.constraints)) + "\n")
         for (clause,val,op,weights) in self.constraints:
@@ -658,7 +658,7 @@ class MinisatPlus:
                 pass
             if len(clause)==0:
                 clause = [false]
-                
+            n_pbs+=1
             while(len(weights)<len(clause)):
                 weights.append(1) #Default weight
     
@@ -682,11 +682,11 @@ class MinisatPlus:
         if status!=0:            
             raise RuntimeError("In order to use PB constraints, minisat+ (1.0) must be installed and on the path.\nEither it wasn't found, or it was but still returned an exit code of %d\n"%(status))
                         
-        print("Importing pseudoboolean cnf into Monosat...")
+        print("Importing %d pseudoboolean constraints into Monosat..."%(n_pbs))
         t=time.clock();
         
         _monosat.comment("pseudoboolean constraints")
-
+        n_cls =0 
         convcnf =open(tmpcnf,'r')
         for line in convcnf.readlines():
             if line.startswith("p cnf"): #Header
@@ -697,6 +697,7 @@ class MinisatPlus:
             elif len(line.split())==0:
                 pass
             else:
+                n_cls+=1
                 clause =list(map(int, line.split()))
                 newclause=[]
                 assert(len(clause)>1)
@@ -722,7 +723,7 @@ class MinisatPlus:
         os.remove(tmpopb)
         os.remove(tmpcnf)
         _pbm.import_time+=time.clock()-t;
-        print("Done Importing pseudoboolean cnf into Monosat")
+        print("Imported pseudoboolean constraints into Monosat (%d clauses)"%(n_cls))
 class PBSugar:
     def  __init__(self):
         self.constraints=[]
