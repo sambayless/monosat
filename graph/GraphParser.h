@@ -142,6 +142,12 @@ class GraphParser: public Parser<B, Solver> {
 	vec<MaxFlow<double>> maxflows_float;
 	vec<MaxFlow<mpq_class>> maxflows_rational;
 
+	struct ParseEdgeSet{
+		int graphID=-1;
+		vec<int> edges;
+	};
+	vec<ParseEdgeSet> edge_sets;
+
 	void readDiGraph(B& in, GraphType graph_type, Solver& S) {
 		if (opt_ignore_theories) {
 			skipLine(in);
@@ -258,7 +264,24 @@ class GraphParser: public Parser<B, Solver> {
 
 		}
 	}
-	
+	void readEdgeSet(B& in, Solver& S) {
+		if (opt_ignore_theories) {
+			skipLine(in);
+			return;
+		}
+
+		++in;
+
+		int graphID = parseInt(in);
+		int n_edges = parseInt(in);
+		edge_sets.push();
+		edge_sets.last().graphID=graphID;
+		vec<int> & edges = edge_sets.last().edges;
+		for(int i = 0;i<n_edges;i++){
+			edges.push(parseInt(in));
+		}
+
+	}
 	void readEdge(B& in, Solver& S) {
 		if (opt_ignore_theories) {
 			skipLine(in);
@@ -1036,6 +1059,9 @@ public:
 		}else if (match(in, "edge_priority")) {
 			readEdgePriority(in);
 			return true;
+		}else if (match(in, "edge_set")) {
+			readEdgeSet(in,S);
+			return true;
 		}else if (match(in, "edge_bv")) {
 			count++;
 			readEdgeBV(in, S);
@@ -1131,6 +1157,20 @@ public:
 		}
 		for (auto & e:bvedges){
 			graphs[e.graphID]->newEdgeBV(e.from, e.to, e.edgeVar, e.bvID);
+		}
+
+		for(int i = 0;i<edge_sets.size();i++){
+			int graphID = edge_sets[i].graphID;
+			assert(graphID>-1);
+			if(graphs[graphID]){
+				graphs[graphID]->newEdgeSet(edge_sets[i].edges);
+			}else if (graphs_float[graphID]){
+				graphs_float[graphID]->newEdgeSet(edge_sets[i].edges);
+			}else if (graphs_float[graphID]){
+				graphs_rational[graphID]->newEdgeSet(edge_sets[i].edges);
+			}else{
+				parse_errorf("PARSE ERROR! Undefined graph %d for edgeset %d\n", graphID, i);
+			}
 		}
 
 		for (auto & e: distances_long){

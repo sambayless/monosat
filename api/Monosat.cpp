@@ -560,6 +560,14 @@ void bv_slice( Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv,int a
 	  return toInt(l);
  }
 
+ void newEdgeSet(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<long> *G,int * edges, int n_edges){
+	  static vec<int> edge_set;
+	  edge_set.clear();
+	  for (int i = 0;i<n_edges;i++){
+		  edge_set.push(edges[i]);
+	  }
+	  G->newEdgeSet(edge_set);
+ }
 
  //model query
  //Returns 0 for true, 1 for false, 2 for unassigned.

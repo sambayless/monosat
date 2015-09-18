@@ -305,6 +305,7 @@ BoolOption Monosat::opt_fsm_as_graph(_cat_fsm, "fsm-as-graph",
 BoolOption Monosat::opt_learn_acyclic_flows(_cat_graph, "learn-acyclic-flows",
 		"", false);
 
+IntOption Monosat::opt_min_edgeset(_cat_graph,"min-edge-set","set to 0 to accept all edge sets, or -1 to disable all edge sets",10,IntRange(-1,INT32_MAX));
 
 IntOption Monosat::opt_width("GRAPH", "width", "Width of graph.\n", 0, IntRange(0, INT32_MAX));
 IntOption Monosat::opt_height("GRAPH", "height", "Height of graph.\n", 0, IntRange(0, INT32_MAX));

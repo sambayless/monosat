@@ -211,7 +211,8 @@ class Monosat(metaclass=Singleton):
         self.monosat_c.acyclic_directed.argtypes=[c_solver_p,c_graph_p]
         self.monosat_c.acyclic_directed.restype=c_literal            
         
-        
+        self.monosat_c.newEdgeSet.argtypes=[c_solver_p,c_graph_p,c_literal_p,c_int]
+
         
         self.monosat_c.getModel_Literal.argtypes=[c_solver_p,c_literal]
         self.monosat_c.getModel_Literal.restype=c_int      
@@ -623,7 +624,15 @@ class Monosat(metaclass=Singleton):
         if self.output:
             self._echoOutput("edge_bv " + str(self.getGID(graph)) + " " + str(u) + " " + str(v) + " " +  str(dimacs(l)) + " " + str((bvID))  + "\n")
         return l
-       
+    
+    def newEdgeSet(self,graph,edges):
+        self.backtrack()
+        if self.output:
+            edgestr = "edge_set %d %d "%(self.getGID(graph), len(edges))
+            self._echoOutput(edgestr.join((str(dimacs(c)) for c in edges))+"\n")
+        lp = self.getIntArray(edges)
+        self.monosat_c.newEdgeSet(self.solver,graph,lp,len(edges))  
+    
     def reaches(self, graph, u,v):
         self.backtrack()
         l= self.monosat_c.reaches(self.solver,graph,c_int(u),c_int(v))

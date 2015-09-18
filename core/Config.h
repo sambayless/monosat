@@ -177,6 +177,8 @@ extern BoolOption opt_fsm_as_graph;
 
 extern BoolOption opt_learn_acyclic_flows;
 
+extern IntOption opt_min_edgeset;
+
 enum class PointInPolygonAlg {
 	ALG_FULL, ALG_RECURSIVE_SPLIT
 };

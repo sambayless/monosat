@@ -120,12 +120,65 @@ public:
 		};
 	vec<MaxflowConstraintBV> unimplemented_maxflow_constraints_bv;
 
+	//A set of edges of which exactly one will be in the final graph.
+	struct EdgeSet{
+		GraphTheorySolver & outer;
+		vec<int> edges;
+		int assigned_edge=-1;//-1 if no edge is assigned
+		bool clauses_constructed=false;
+
+		EdgeSet(GraphTheorySolver & outer):outer(outer){}
+
+		void buildReasonForEdge(int edgeID,vec<Lit> & conflict){
+			if(edgeID==assigned_edge){
+				assert(outer.g_under.edgeEnabled(edgeID));
+				Var v = outer.getEdgeVar(edgeID);
+				Lit l = mkLit(v,false);
+				assert(outer.value(l)==l_True);
+				conflict.push(~l);
+			}else{
+				assert(!outer.g_under.edgeEnabled(edgeID));
+				Var v = outer.getEdgeVar(edgeID);
+				Lit l = mkLit(v,false);
+				assert(outer.value(l)==l_False);
+				conflict.push(l);
+			}
+		}
+		void assignEdge(int edgeID){
+			assert(assigned_edge==-1);
+			assigned_edge=edgeID;
+		}
+		void unassignEdge(int edgeID){
+			assert(assigned_edge==edgeID);
+			assigned_edge=-1;
+		}
+		void init(){
+			if(!clauses_constructed){
+				clauses_constructed=true;
+				//build clauses enforcing atleast-one and at-most-one relationship for the edge set...
+			}
+		}
+
+	};
+
+	vec<EdgeSet*> edge_sets;
+	vec<int> edge_set_map;//mapping from edgeID's to the edge set they belong to (if there is such a set)
+	int n_assigned_edge_sets=0;
 
 	DynamicGraph<Weight> g_under;
 	DynamicGraph<Weight> g_over;
+	DynamicGraph<Weight> g_over_edgeset;//extra over approximation graph for when edge sets are unassigned
 	bool using_neg_weights = false;
 	DynamicGraph<Weight> g_under_weights_over;
 	DynamicGraph<Weight> g_over_weights_under;
+	DynamicGraph<Weight> g_over_weights_under_edgeset;
+
+	bool allEdgeSetsAssigned(){
+		return n_assigned_edge_sets==edge_sets.size();
+	}
+	bool hasEdgeSets(){
+		return edge_sets.size();
+	}
 
 	/**
 	 * The cutgraph is (optionally) used for conflict analysis by some graph theories.
@@ -494,10 +547,13 @@ public:
 public:
 	vec<Theory*> theories;
 	vec<Detector*> detectors;
+
 	vec<ReachDetector<Weight>*> reach_detectors;
 	vec<DistanceDetector<Weight>*> distance_detectors;
 	vec<DistanceDetector<Weight>*> weighted_distance_detectors;
 	vec<MaxflowDetector<Weight>*> flow_detectors;
+	vec<MaxflowDetector<Weight>*> edgeset_flow_detectors;
+
 	ConnectedComponentsDetector<Weight>* component_detector = nullptr;
 	CycleDetector<Weight> * cycle_detector = nullptr;
 	vec<SteinerDetector<Weight>*> steiner_detectors;
@@ -768,6 +824,9 @@ public:
 		assert(isEdgeVar(v));
 		return vars[v].detector_edge;
 	}
+	inline int getEdgeSetID(int edgeID){
+		return edge_set_map[edgeID];
+	}
 	inline int getDetector(Var v) {
 		assert(!isEdgeVar(v));
 		return vars[v].detector_edge;
@@ -910,6 +969,11 @@ public:
 	Var newVar(Var solverVar, int detector, bool isEdge = false, bool connectToTheory = true) {
 		while (S->nVars() <= solverVar)
 			S->newVar();
+
+		if(S->hasTheory(solverVar) &&  S->getTheoryID(solverVar)==getTheoryIndex()){
+			return S->getTheoryVar(solverVar);
+		}
+
 		Var v = vars.size();
 		vars.push();
 		vars[v].isEdge = isEdge;
@@ -1034,6 +1098,11 @@ public:
 		cutGraph.addNode();
 		g_under_weights_over.addNode();
 		g_over_weights_under.addNode();
+
+		if(opt_min_edgeset>=0){
+			g_over_edgeset.addNode();
+			g_over_weights_under_edgeset.addNode();
+		}
 		seen.growTo(nNodes());
 		
 		return g_under.addNode();
@@ -1256,14 +1325,23 @@ public:
 		lbool assign = sign(l)?l_False:l_True;
 			if (isEdgeVar(v)) {
 				int edge_num = getEdgeID(v); //e.var-min_edge_var;
+				int edgeSetID = getEdgeSetID(edge_num);
 				assert(assigns[v]!=l_Undef);
 
 				if (assign==l_True) {
 					g_under.disableEdge(edge_num);
-
+					if(edgeSetID>-1){
+						g_over_edgeset.disableEdge(edge_num);
+						assert(g_over.edgeEnabled(edge_num));
+					}
 					assert(!cutGraph.edgeEnabled(edge_num * 2));
 				} else {
-					g_over.enableEdge(edge_num);
+					if(edgeSetID>-1){
+						assert(g_over.edgeEnabled(edge_num));
+						assert(!g_over_edgeset.edgeEnabled(edge_num));
+					}else{
+						g_over.enableEdge(edge_num);
+					}
 					if (opt_conflict_min_cut) {
 						assert(cutGraph.edgeEnabled(edge_num * 2));
 						cutGraph.disableEdge(edge_num * 2);
@@ -1274,8 +1352,17 @@ public:
 				if(using_neg_weights){
 					if (assign==l_True) {
 						g_under_weights_over.disableEdge(edge_num);
+						if(edgeSetID>-1){
+							g_over_weights_under_edgeset.disableEdge(edge_num);
+							assert(g_over_weights_under.edgeEnabled(edge_num));
+						}
 					} else {
-						g_over_weights_under.enableEdge(edge_num);
+						if(edgeSetID>-1){
+							assert(g_over_weights_under_edgeset.edgeEnabled(edge_num));
+							assert(!g_over_weights_under.edgeEnabled(edge_num));
+						}else{
+							g_over_weights_under.enableEdge(edge_num);
+						}
 					}
 				}
 			} else {
@@ -1808,6 +1895,8 @@ public:
 			//on_trail=true;
 			if (isEdgeVar(v)) {
 				int edge_num = getEdgeID(v); //e.var-min_edge_var;
+				int edgeSetID = getEdgeSetID(edge_num);
+				assert(edgeSetID==-1);//not supporting edge sets here yet!
 				if (assign) {
 					g_under.disableEdge( edge_num);
 					assert(!cutGraph.edgeEnabled(edge_num * 2));
@@ -1869,13 +1958,25 @@ public:
 			//this is an edge assignment
 			int edge_num = getEdgeID(var(l)); //v-min_edge_var;
 			assert(edge_list[edge_num].v == var(l));
+			int edgeSetID = getEdgeSetID(edge_num);
 			
 			int from = edge_list[edge_num].from;
 			int to = edge_list[edge_num].to;
 			if (!sign(l)) {
 				g_under.enableEdge(edge_num);
+				if(edgeSetID>-1){
+					EdgeSet & set = *edge_sets[edgeSetID];
+					set.assignEdge(edge_num);
+					g_over_edgeset.enableEdge(edge_num);
+					n_assigned_edge_sets++;
+				}
 			} else {
-				g_over.disableEdge( edge_num);
+				if(edgeSetID>-1){
+					EdgeSet & set =* edge_sets[edgeSetID];
+					assert(!g_over_edgeset.edgeEnabled(edge_num));
+				}else{
+					g_over.disableEdge(edge_num);//edge set edges are never removed from g_over.
+				}
 				if (opt_conflict_min_cut) {//can optimize this by also checking if any installed detectors are actually using the cutgraph!
 					assert(cutGraph.edgeEnabled(edge_num * 2 + 1));
 					assert(!cutGraph.edgeEnabled(edge_num * 2));
@@ -2576,6 +2677,22 @@ public:
 		return bv;
 	}
 
+	void newEdgeSet(vec<int> & edges){
+		if(opt_min_edgeset>=0 && opt_min_edgeset<=edges.size()){
+			int edge_setID=edge_sets.size();
+			edge_sets.push(new EdgeSet(*this));
+			assert(edge_setID<edge_sets.size());
+			for(int edgeID:edges){
+				assert(edge_set_map[edgeID]==-1);
+				edge_set_map[edgeID]=edge_setID;
+				EdgeSet & set= *edge_sets[edge_setID];
+				set.edges.push(edgeID);
+			}
+		}
+	}
+
+
+
 	Lit newEdgeBV(int from, int to, Var outerVar,vec<Var> & bitVector) {
 		if(!comparator ){
 			fprintf(stderr,"No bitvector theory initialized\n");exit(1);
@@ -2610,6 +2727,7 @@ public:
 			all_edges_unit &= (bv.getUnder()== 1 && bv.getOver()==1);
 			all_edges_positive &= bv.getUnder()>0;
 			edge_list.push();
+			edge_set_map.push(-1);
 			Var v = newVar(outerVar, index, true);
 			comparisons_lt.growTo(bv.getID()+1);
 			comparisons_gt.growTo(bv.getID()+1);
@@ -2642,6 +2760,10 @@ public:
 			g_under_weights_over.disableEdge(from, to, index);
 			g_over_weights_under.addEdge(from, to, index,bv.getUnder());
 
+			if(opt_min_edgeset>=0){
+				g_over_edgeset.addEdge(from, to, index,bv.getOver());
+				g_over_weights_under_edgeset.addEdge(from, to, index,bv.getOver());
+			}
 
 			cutGraph.addEdge(from, to, index * 2,1);
 			cutGraph.addEdge(from, to, index * 2 + 1,0xFFFF);
@@ -2704,6 +2826,7 @@ public:
 		all_edges_unit &= (bv.getUnder()== 1 && bv.getOver()==1);
 		all_edges_positive &= bv.getUnder()>0;
 		edge_list.push();
+		edge_set_map.push(-1);
 		Var v = newVar(outerVar, index, true);
 		//bv_needs_update.growTo(bv.getID()+1);
 		undirected_adj[to].push( { v, outerVar, from, to, index });
@@ -2733,13 +2856,17 @@ public:
 		g_under_weights_over.disableEdge(from, to, index);
 		g_over_weights_under.addEdge(from, to, index,bv.getUnder());
 
+		if(opt_min_edgeset>=0){
+			g_over_edgeset.addEdge(from, to, index,bv.getOver());
+			g_over_weights_under_edgeset.addEdge(from, to, index,bv.getOver());
+		}
 
 		cutGraph.addEdge(from, to, index * 2,1);
 		cutGraph.addEdge(from, to, index * 2 + 1,0xFFFF);
 		cutGraph.disableEdge(from, to, index * 2);
+		return mkLit(v, false);
+	}
 
-				return mkLit(v, false);
-			}
 	Lit newEdge(int from, int to, Var outerVar = var_Undef, Weight weight = 1) {
 		assert(outerVar!=var_Undef);
 		while(from>=nNodes()||to>=nNodes())
@@ -2752,6 +2879,7 @@ public:
 		all_edges_positive &= weight>0;
 		int index = edge_list.size();
 		edge_list.push();
+		edge_set_map.push(-1);
 		Var v = newVar(outerVar, index, true);
 
 		/*
@@ -2791,6 +2919,10 @@ public:
 		g_under_weights_over.disableEdge(from, to, index);
 		g_over_weights_under.addEdge(from, to, index,weight);
 
+		if(opt_min_edgeset>=0){
+			g_over_edgeset.addEdge(from, to, index,weight);
+			g_over_weights_under_edgeset.addEdge(from, to, index,weight);
+		}
 
 		cutGraph.addEdge(from, to, index * 2,1);
 		cutGraph.addEdge(from, to, index * 2 + 1,0xFFFF);
@@ -2928,6 +3060,7 @@ public:
 		BitVector<Weight> bv = comparator->getBV(bvID);
 		d->addWeightedShortestPathBVLit(from, to, reach_var,bv,strictComparison );
 
+
 	}
 
 	void implementMaxflowBV(int from, int to, Var v, int bvID, bool strictComparison) {
@@ -2949,14 +3082,25 @@ public:
 		for (int i = 0; i < flow_detectors.size(); i++) {
 			if (flow_detectors[i]->source == from && flow_detectors[i]->target == to) {
 				flow_detectors[i]->addFlowBVLessThan(comparator->getBV(bvID), v,!strictComparison);
+				if(edgeset_flow_detectors[i])
+					edgeset_flow_detectors[i]->addFlowBVLessThan(comparator->getBV(bvID), v,!strictComparison);
 				return;
 			}
 		}
 		MaxflowDetector<Weight> *f = new MaxflowDetector<Weight>(detectors.size(), this,  g_under, g_over, from,
 				to, drand(rnd_seed));
 		flow_detectors.push(f);
+
 		detectors.push(f);
 		f->addFlowBVLessThan(comparator->getBV(bvID), v,!strictComparison);
+
+		if(opt_min_edgeset>=0){
+			edgeset_flow_detectors.growTo(flow_detectors.size());
+			f = new MaxflowDetector<Weight>(detectors.size(), this,  g_under, g_over_edgeset, from,to, drand(rnd_seed));
+			edgeset_flow_detectors.last() =f;
+			detectors.push(f);
+			f->addFlowBVLessThan(comparator->getBV(bvID), v,!strictComparison);
+		}
 	}
 
 	void implementConstraints() {
@@ -3174,6 +3318,14 @@ public:
 		flow_detectors.push(f);
 		detectors.push(f);
 		f->addFlowLit(max_flow, v,inclusive);
+
+		if(opt_min_edgeset>=0){
+			edgeset_flow_detectors.growTo(flow_detectors.size());
+			f = new MaxflowDetector<Weight>(detectors.size(), this,  g_under, g_over_edgeset, from,to, drand(rnd_seed));
+			edgeset_flow_detectors.last() =f;
+			detectors.push(f);
+			f->addFlowLit(max_flow, v,inclusive);
+		}
 	}
 
 	void minConnectedComponents(int min_components, Var v) {
