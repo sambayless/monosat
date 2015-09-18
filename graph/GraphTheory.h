@@ -547,7 +547,8 @@ public:
 public:
 	vec<Theory*> theories;
 	vec<Detector*> detectors;
-
+	vec<Detector*> edge_set_detectors;
+	vec<Detector*> normal_detectors;
 	vec<ReachDetector<Weight>*> reach_detectors;
 	vec<DistanceDetector<Weight>*> distance_detectors;
 	vec<DistanceDetector<Weight>*> weighted_distance_detectors;
@@ -1183,6 +1184,10 @@ public:
 		for (int i = 0; i < edge_list.size(); i++) {
 			if (edge_list[i].v < 0)
 				continue;
+			if(i==412){
+				int a=1;
+			}
+			int edge_set_id = getEdgeSetID(i);
 			Edge & e = edge_list[i];
 			lbool val = value(e.v);
 			if(edge_bv_weights.size()){
@@ -1201,14 +1206,77 @@ public:
 				if (!g_over.edgeEnabled(e.edgeID)) {
 					assert( false);
 				}
+				if(using_neg_weights){
+					if(!g_under_weights_over.edgeEnabled(e.edgeID)){
+						assert(false);
+					}
+					if(!g_over_weights_under.edgeEnabled(e.edgeID)){
+						assert(false);
+					}
+				}
+				if(opt_min_edgeset>=0 && edge_sets.size()){
+					if(!g_over_edgeset.edgeEnabled(e.edgeID)){
+						assert(false);
+					}
+					if(using_neg_weights){
+						if(!g_over_weights_under_edgeset.edgeEnabled(e.edgeID)){
+							assert(false);
+						}
+					}
+				}
 
 			} else  if (val == l_False) {
 				if (g_under.edgeEnabled(e.edgeID)) {
 					assert( false);
 				}
-				if (g_over.edgeEnabled(e.edgeID)) {
-					assert( false);
+				if(edge_set_id<0){
+					if (g_over.edgeEnabled(e.edgeID)) {
+						assert( false);
+					}
+				}else{
+					//edges in edge sets are never disabled in g_over
+					if (!g_over.edgeEnabled(e.edgeID)) {
+						assert( false);
+					}
 				}
+				if(using_neg_weights){
+					if(g_under_weights_over.edgeEnabled(e.edgeID)){
+						assert(false);
+					}
+					if(g_over_weights_under.edgeEnabled(e.edgeID)){
+						assert(false);
+					}
+				}
+
+				if(opt_min_edgeset>=0 && edge_sets.size()){
+					if(g_over_edgeset.edgeEnabled(e.edgeID)){
+						assert(false);
+					}
+					if(using_neg_weights){
+						if(g_over_weights_under_edgeset.edgeEnabled(e.edgeID)){
+							assert(false);
+						}
+					}
+				}
+
+			}else{
+				if(edge_set_id>=0 && edge_sets.size()){
+					//edges in edge sets are never disabled in g_over
+					if (!g_over.edgeEnabled(e.edgeID)) {
+						assert( false);
+					}
+					//unassigned edgeset edges are never enabled in g_over_edgeset
+					if(g_over_edgeset.edgeEnabled(e.edgeID)){
+						assert(false);
+					}
+					if(using_neg_weights){
+						if(g_over_weights_under_edgeset.edgeEnabled(e.edgeID)){
+							assert(false);
+						}
+					}
+				}
+
+
 			}
 		}
 
@@ -1341,6 +1409,8 @@ public:
 						assert(!g_over_edgeset.edgeEnabled(edge_num));
 					}else{
 						g_over.enableEdge(edge_num);
+						if(edge_sets.size())
+							g_over_edgeset.disableEdge(edge_num);
 					}
 					if (opt_conflict_min_cut) {
 						assert(cutGraph.edgeEnabled(edge_num * 2));
@@ -1546,7 +1616,7 @@ public:
 		static int iter = 0;
 		iter++;
 
-		if(iter==5940){
+		if(iter==10){
 			int a=1;
 		}
 		/*if(iter>128451){
@@ -1572,6 +1642,9 @@ public:
 			}
 		}
 
+		//for(int t = (edge_sets.size() ==0) ;t<2;t++){
+			//vec<Detector*> & dets = t?normal_detectors:edge_set_detectors;
+		vec<Detector*> & detectors = (hasEdgeSets() && allEdgeSetsAssigned()) ? edge_set_detectors:normal_detectors;
 		for (int i = 0; i < detectors.size(); i++) {
 			Detector * r = detectors[i];
 			Lit l = r->decide();
@@ -1629,6 +1702,7 @@ public:
 				return toSolver(l);
 			}
 		}
+
 		stats_decision_time += rtime(1) - start;
 		return lit_Undef;
 	}
@@ -1843,10 +1917,15 @@ public:
 			}
 			g_under.setEdgeWeight(edgeID,edge_bv_weights[edgeID].getUnder());
 			g_over.setEdgeWeight(edgeID, edge_bv_weights[edgeID].getOver());
+			if(edge_sets.size())
+				g_over_edgeset.setEdgeWeight(edgeID, edge_bv_weights[edgeID].getOver());
 			if(using_neg_weights){
 				g_under_weights_over.setEdgeWeight(edgeID,edge_bv_weights[edgeID].getOver());
 				g_over_weights_under.setEdgeWeight(edgeID, edge_bv_weights[edgeID].getUnder());
+				if(edge_sets.size())
+					g_over_weights_under_edgeset.setEdgeWeight(edgeID, edge_bv_weights[edgeID].getUnder());
 			}
+
 		}
 	}
 	void backtrackBV(int bvID){
@@ -1858,9 +1937,13 @@ public:
 			}
 			g_under.setEdgeWeight(edgeID,edge_bv_weights[edgeID].getUnder());
 			g_over.setEdgeWeight(edgeID, edge_bv_weights[edgeID].getOver());
+			if(edge_sets.size())
+				g_over_edgeset.setEdgeWeight(edgeID, edge_bv_weights[edgeID].getOver());
 			if(using_neg_weights){
 				g_under_weights_over.setEdgeWeight(edgeID,edge_bv_weights[edgeID].getOver());
 				g_over_weights_under.setEdgeWeight(edgeID, edge_bv_weights[edgeID].getUnder());
+				if(edge_sets.size())
+					g_over_weights_under_edgeset.setEdgeWeight(edgeID, edge_bv_weights[edgeID].getUnder());
 			}
 
 		}
@@ -1957,6 +2040,9 @@ public:
 			
 			//this is an edge assignment
 			int edge_num = getEdgeID(var(l)); //v-min_edge_var;
+			if(edge_num==414){
+				int a=1;
+			}
 			assert(edge_list[edge_num].v == var(l));
 			int edgeSetID = getEdgeSetID(edge_num);
 			
@@ -1976,6 +2062,8 @@ public:
 					assert(!g_over_edgeset.edgeEnabled(edge_num));
 				}else{
 					g_over.disableEdge(edge_num);//edge set edges are never removed from g_over.
+					if(edge_sets.size())
+						g_over_edgeset.disableEdge(edge_num);
 				}
 				if (opt_conflict_min_cut) {//can optimize this by also checking if any installed detectors are actually using the cutgraph!
 					assert(cutGraph.edgeEnabled(edge_num * 2 + 1));
@@ -2128,7 +2216,7 @@ public:
 
 		dbg_sync();
 		assert(dbg_graphsUpToDate());
-
+		vec<Detector*> & detectors = (hasEdgeSets() && allEdgeSetsAssigned()) ? edge_set_detectors:normal_detectors;
 		for (int d = 0; d < detectors.size(); d++) {
 			assert(conflict.size() == 0);
 			Lit l = lit_Undef;
@@ -2171,7 +2259,7 @@ public:
 					}
 #endif
 
-					//assert(!seen.contains(true));
+					// assert(!seen.contains(true));
 					//seen.growTo(vars.size());
 
 					bool any_seen=false;
@@ -2440,6 +2528,7 @@ public:
 
 			}
 		}
+		vec<Detector*> & detectors = (hasEdgeSets() && allEdgeSetsAssigned()) ? edge_set_detectors:normal_detectors;
 		for (int i = 0; i < detectors.size(); i++) {
 			if (!detectors[i]->checkSatisfied()) {
 				return false;
@@ -2683,10 +2772,12 @@ public:
 			edge_sets.push(new EdgeSet(*this));
 			assert(edge_setID<edge_sets.size());
 			for(int edgeID:edges){
+				assert(g_over.hasEdge(edgeID));
 				assert(edge_set_map[edgeID]==-1);
 				edge_set_map[edgeID]=edge_setID;
 				EdgeSet & set= *edge_sets[edge_setID];
 				set.edges.push(edgeID);
+				g_over_edgeset.disableEdge(edgeID);
 			}
 		}
 	}
@@ -2956,6 +3047,7 @@ public:
 			DistanceDetector<Weight> * d = new DistanceDetector<Weight>(detectors.size(), this,  g_under, g_over,
 					from, drand(rnd_seed));
 			detectors.push(d);
+			normal_detectors.push(d);
 			distance_detectors.push(d);
 			assert(detectors.last()->getID() == detectors.size() - 1);
 			dist_info[from].source = from;
@@ -2982,6 +3074,8 @@ public:
 				g_over_weights_under.setEdgeEnabled(i, (g_over.edgeEnabled(i)));
 				g_under_weights_over.setEdgeWeight(i,g_over.getWeight(i) );
 				g_over_weights_under.setEdgeWeight(i, g_under.getWeight(i));
+				if(edge_sets.size())
+					g_over_weights_under_edgeset.setEdgeWeight(i, g_under.getWeight(i));
 			}
 		}
 	}
@@ -3007,6 +3101,7 @@ public:
 						from, drand(rnd_seed));
 			}
 			detectors.push(d);
+			normal_detectors.push(d);
 			weighted_distance_detectors.push(d);
 			assert(detectors.last()->getID() == detectors.size() - 1);
 			weighted_dist_info[from].source = from;
@@ -3049,6 +3144,7 @@ public:
 						from, drand(rnd_seed));
 			}
 			detectors.push(d);
+			normal_detectors.push(d);
 			weighted_distance_detectors.push(d);
 			assert(detectors.last()->getID() == detectors.size() - 1);
 			weighted_dist_info[from].source = from;
@@ -3090,7 +3186,7 @@ public:
 		MaxflowDetector<Weight> *f = new MaxflowDetector<Weight>(detectors.size(), this,  g_under, g_over, from,
 				to, drand(rnd_seed));
 		flow_detectors.push(f);
-
+		normal_detectors.push(f);
 		detectors.push(f);
 		f->addFlowBVLessThan(comparator->getBV(bvID), v,!strictComparison);
 
@@ -3099,6 +3195,7 @@ public:
 			f = new MaxflowDetector<Weight>(detectors.size(), this,  g_under, g_over_edgeset, from,to, drand(rnd_seed));
 			edgeset_flow_detectors.last() =f;
 			detectors.push(f);
+			edge_set_detectors.push(f);
 			f->addFlowBVLessThan(comparator->getBV(bvID), v,!strictComparison);
 		}
 	}
@@ -3177,7 +3274,7 @@ public:
 			
 			detectors.push(new AllPairsDetector<Weight>(detectors.size(), this, g_under, g_over, drand(rnd_seed)));
 			//reach_detectors.push(reach_detectors.last());
-			
+			normal_detectors.push(detectors.last());
 			assert(detectors.last()->getID() == detectors.size() - 1);
 			
 			//reach_detectors.last()->negative_dist_detector = new Dijkstra(from,antig);
@@ -3214,7 +3311,7 @@ public:
 					drand(rnd_seed));
 			detectors.push(rd);
 			reach_detectors.push(rd);
-			
+			normal_detectors.push(detectors.last());
 			assert(detectors.last()->getID() == detectors.size() - 1);
 			
 			//reach_detectors.last()->negative_dist_detector = new Dijkstra(from,antig);
@@ -3276,6 +3373,7 @@ public:
 		if (!mstDetector) {
 			mstDetector = new MSTDetector<Weight>(detectors.size(), this, g_under, g_over,  drand(rnd_seed));
 			detectors.push(mstDetector);
+			normal_detectors.push(detectors.last());
 		}
 		mstDetector->addWeightLit(v, minimum_weight,inclusive);
 	}
@@ -3283,6 +3381,7 @@ public:
 		if (!mstDetector) {
 			mstDetector = new MSTDetector<Weight>(detectors.size(), this, g_under, g_over,  drand(rnd_seed));
 			detectors.push(mstDetector);
+			normal_detectors.push(detectors.last());
 		}
 		if (!S->hasTheory(edgeVar) || (S->getTheoryID(edgeVar) != getTheoryIndex())
 				|| !isEdgeVar(S->getTheoryVar(edgeVar))) {
@@ -3317,6 +3416,7 @@ public:
 				to, drand(rnd_seed));
 		flow_detectors.push(f);
 		detectors.push(f);
+		normal_detectors.push(f);
 		f->addFlowLit(max_flow, v,inclusive);
 
 		if(opt_min_edgeset>=0){
@@ -3324,6 +3424,7 @@ public:
 			f = new MaxflowDetector<Weight>(detectors.size(), this,  g_under, g_over_edgeset, from,to, drand(rnd_seed));
 			edgeset_flow_detectors.last() =f;
 			detectors.push(f);
+			edge_set_detectors.push(f);
 			f->addFlowLit(max_flow, v,inclusive);
 		}
 	}
@@ -3333,6 +3434,7 @@ public:
 			component_detector = new ConnectedComponentsDetector<Weight>(detectors.size(), this, g_under, g_over,
 					drand(rnd_seed));
 			detectors.push(component_detector);
+			normal_detectors.push(detectors.last());
 		}
 		component_detector->addConnectedComponentsLit(v, min_components);
 	}
@@ -3340,6 +3442,7 @@ public:
 		if (!cycle_detector) {
 			cycle_detector = new CycleDetector<Weight>(detectors.size(), this, g_under, g_over, true, drand(rnd_seed));
 			detectors.push(cycle_detector);
+			normal_detectors.push(detectors.last());
 		}
 		cycle_detector->addAcyclicLit(directed, v);
 	}
@@ -3350,6 +3453,7 @@ public:
 		steiner_detectors[steinerTreeID] = new SteinerDetector<Weight>(detectors.size(), this,  g_under, g_over,
 				drand(rnd_seed));
 		detectors.push(steiner_detectors[steinerTreeID]);
+		normal_detectors.push(detectors.last());
 		for (int i = 0; i < terminals.size(); i++) {
 			steiner_detectors[steinerTreeID]->addTerminalNode(terminals[i].first, terminals[i].second);
 		}

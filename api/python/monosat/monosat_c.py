@@ -629,7 +629,7 @@ class Monosat(metaclass=Singleton):
         self.backtrack()
         if self.output:
             edgestr = "edge_set %d %d "%(self.getGID(graph), len(edges))
-            self._echoOutput(edgestr.join((str(dimacs(c)) for c in edges))+"\n")
+            self._echoOutput(edgestr + " ".join((str(dimacs(c)) for c in edges))+"\n")
         lp = self.getIntArray(edges)
         self.monosat_c.newEdgeSet(self.solver,graph,lp,len(edges))  
     

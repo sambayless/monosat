@@ -564,7 +564,7 @@ void bv_slice( Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv,int a
 	  static vec<int> edge_set;
 	  edge_set.clear();
 	  for (int i = 0;i<n_edges;i++){
-		  edge_set.push(edges[i]);
+		  edge_set.push(G->getEdgeID(S->getTheoryVar(var(toLit(edges[i])))));
 	  }
 	  G->newEdgeSet(edge_set);
  }

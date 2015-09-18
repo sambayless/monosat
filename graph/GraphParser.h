@@ -278,7 +278,8 @@ class GraphParser: public Parser<B, Solver> {
 		edge_sets.last().graphID=graphID;
 		vec<int> & edges = edge_sets.last().edges;
 		for(int i = 0;i<n_edges;i++){
-			edges.push(parseInt(in));
+			int edgeVar = parseInt(in)- 1;
+			edges.push(edgeVar);
 		}
 
 	}
@@ -1158,16 +1159,41 @@ public:
 		for (auto & e:bvedges){
 			graphs[e.graphID]->newEdgeBV(e.from, e.to, e.edgeVar, e.bvID);
 		}
-
+		vec<int> edgeset;
 		for(int i = 0;i<edge_sets.size();i++){
 			int graphID = edge_sets[i].graphID;
+			edgeset.clear();
 			assert(graphID>-1);
 			if(graphs[graphID]){
-				graphs[graphID]->newEdgeSet(edge_sets[i].edges);
+				for(Var edgeV:edge_sets[i].edges){
+					if(!S.hasTheory(edgeV) || S.getTheoryID(edgeV)!=graphs[graphID]->getTheoryIndex()){
+						parse_errorf("PARSE ERROR! Undefined edge %d for edgeset %d\n", edgeV+1, i);
+					}
+					int edgeID = graphs[graphID]->getEdgeID(S.getTheoryVar(edgeV));
+					edgeset.push(edgeID);
+				}
+				graphs[graphID]->newEdgeSet(edgeset);
 			}else if (graphs_float[graphID]){
-				graphs_float[graphID]->newEdgeSet(edge_sets[i].edges);
-			}else if (graphs_float[graphID]){
-				graphs_rational[graphID]->newEdgeSet(edge_sets[i].edges);
+				for(Var edgeV:edge_sets[i].edges){
+					if(!S.hasTheory(edgeV) || S.getTheoryID(edgeV)!=graphs_float[graphID]->getTheoryIndex()){
+						parse_errorf("PARSE ERROR! Undefined edge %d for edgeset %d\n", edgeV+1, i);
+					}
+					int edgeID = graphs_float[graphID]->getEdgeID(S.getTheoryVar(edgeV));
+					edgeset.push(edgeID);
+				}
+				graphs_float[graphID]->newEdgeSet(edgeset);
+
+			}else if (graphs_rational[graphID]){
+				for(Var edgeV:edge_sets[i].edges){
+					if(!S.hasTheory(edgeV) || S.getTheoryID(edgeV)!=graphs_rational[graphID]->getTheoryIndex()){
+						parse_errorf("PARSE ERROR! Undefined edge %d for edgeset %d\n", edgeV+1, i);
+					}
+					int edgeID = graphs_rational[graphID]->getEdgeID(S.getTheoryVar(edgeV));
+					edgeset.push(edgeID);
+				}
+				graphs_rational[graphID]->newEdgeSet(edgeset);
+
+
 			}else{
 				parse_errorf("PARSE ERROR! Undefined graph %d for edgeset %d\n", graphID, i);
 			}

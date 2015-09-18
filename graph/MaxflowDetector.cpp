@@ -1521,7 +1521,7 @@ Lit MaxflowDetector<Weight>::decide() {
 #ifndef NDEBUG
 		if(outer->hasBitVectorEdges()){
 		for(int edgeID = 0;edgeID<g_over.edges();edgeID++){
-			if(g_over.hasEdge(edgeID)){
+			if(g_over.hasEdge(edgeID) && g_over.edgeEnabled(edgeID)){
 				Var v = outer->getEdgeVar(edgeID);
 				lbool val = outer->value(v);
 				Weight flow =  overapprox_conflict_detector->getEdgeFlow(edgeID);
@@ -1557,6 +1557,7 @@ Lit MaxflowDetector<Weight>::decide() {
 			in_decision_q[edgeID]=false;
 			assert(is_potential_decision[edgeID]);
 			Lit l = mkLit(outer->getEdgeVar(edgeID), false);
+			lbool val = outer->value(l);
 			if ((outer->decidable(l) || outer->edgeWeightDecidable(edgeID, DetectorComparison::geq,  overapprox_conflict_detector->getEdgeFlow(edgeID)))  && over->getEdgeFlow(edgeID) > 0) {
 				//decideEdge(edgeID, true);
 				if(edgeID>446){
@@ -1576,6 +1577,13 @@ Lit MaxflowDetector<Weight>::decide() {
 				//	printf("skip decision remove edge %d\n", edgeID);
 				}
 			} else {
+				if(edgeID==413){
+					bool en = g_over.edgeEnabled(edgeID);
+					Weight w = over->getEdgeFlow(edgeID);
+					Weight w2 = g_over.getWeight(edgeID);
+					int a=1;
+
+				}
 				assert(over->getEdgeFlow(edgeID) == 0);
 				is_potential_decision[edgeID] = false;
 				//printf("skip decision remove edge %d\n", edgeID);
