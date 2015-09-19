@@ -1558,6 +1558,7 @@ Lit MaxflowDetector<Weight>::decide() {
 			assert(is_potential_decision[edgeID]);
 			Lit l = mkLit(outer->getEdgeVar(edgeID), false);
 			lbool val = outer->value(l);
+
 			if ((outer->decidable(l) || outer->edgeWeightDecidable(edgeID, DetectorComparison::geq,  overapprox_conflict_detector->getEdgeFlow(edgeID)))  && over->getEdgeFlow(edgeID) > 0) {
 				//decideEdge(edgeID, true);
 				if(edgeID>446){

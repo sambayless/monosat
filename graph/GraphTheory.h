@@ -62,7 +62,7 @@
 #include <cstdlib>
 #include <unistd.h>
 #include <sstream>
-
+#include <amo/AMOTheory.h>
 using namespace dgl;
 namespace Monosat {
 
@@ -144,13 +144,18 @@ public:
 				conflict.push(l);
 			}
 		}
+		bool isAssigned()const{
+			return assigned_edge>-1;
+		}
 		void assignEdge(int edgeID){
 			assert(assigned_edge==-1);
 			assigned_edge=edgeID;
+			outer.n_assigned_edge_sets++;
 		}
 		void unassignEdge(int edgeID){
 			assert(assigned_edge==edgeID);
 			assigned_edge=-1;
+			outer.n_assigned_edge_sets--;
 		}
 		void init(){
 			if(!clauses_constructed){
@@ -1234,10 +1239,7 @@ public:
 						assert( false);
 					}
 				}else{
-					//edges in edge sets are never disabled in g_over
-					if (!g_over.edgeEnabled(e.edgeID)) {
-						assert( false);
-					}
+
 				}
 				if(using_neg_weights){
 					if(g_under_weights_over.edgeEnabled(e.edgeID)){
@@ -1261,7 +1263,7 @@ public:
 
 			}else{
 				if(edge_set_id>=0 && edge_sets.size()){
-					//edges in edge sets are never disabled in g_over
+					//unassigned edges in edge sets are never disabled in g_over
 					if (!g_over.edgeEnabled(e.edgeID)) {
 						assert( false);
 					}
@@ -1395,22 +1397,33 @@ public:
 				int edge_num = getEdgeID(v); //e.var-min_edge_var;
 				int edgeSetID = getEdgeSetID(edge_num);
 				assert(assigns[v]!=l_Undef);
-
+				if(edge_num==613){
+					int a=1;
+				}
 				if (assign==l_True) {
 					g_under.disableEdge(edge_num);
 					if(edgeSetID>-1){
 						g_over_edgeset.disableEdge(edge_num);
 						assert(g_over.edgeEnabled(edge_num));
+						EdgeSet & edge_set = *edge_sets[edgeSetID];
+						if(edge_set.assigned_edge==edge_num){
+							edge_set.unassignEdge(edge_num);
+						}
 					}
 					assert(!cutGraph.edgeEnabled(edge_num * 2));
 				} else {
 					if(edgeSetID>-1){
-						assert(g_over.edgeEnabled(edge_num));
+						EdgeSet & edge_set = *edge_sets[edgeSetID];
+						if(edge_set.isAssigned()){
+							assert(g_over.edgeEnabled(edge_num));
+						}else{
+							g_over.enableEdge(edge_num);
+						}
 						assert(!g_over_edgeset.edgeEnabled(edge_num));
 					}else{
 						g_over.enableEdge(edge_num);
 						if(edge_sets.size())
-							g_over_edgeset.disableEdge(edge_num);
+							g_over_edgeset.enableEdge(edge_num);
 					}
 					if (opt_conflict_min_cut) {
 						assert(cutGraph.edgeEnabled(edge_num * 2));
@@ -2054,12 +2067,15 @@ public:
 					EdgeSet & set = *edge_sets[edgeSetID];
 					set.assignEdge(edge_num);
 					g_over_edgeset.enableEdge(edge_num);
-					n_assigned_edge_sets++;
+
 				}
 			} else {
 				if(edgeSetID>-1){
 					EdgeSet & set =* edge_sets[edgeSetID];
 					assert(!g_over_edgeset.edgeEnabled(edge_num));
+					if (!set.isAssigned()){
+						g_over.disableEdge(edge_num);
+					}
 				}else{
 					g_over.disableEdge(edge_num);//edge set edges are never removed from g_over.
 					if(edge_sets.size())
@@ -2074,9 +2090,10 @@ public:
 			}
 
 			if(decisionLevel()==0){
-				assert(g_under.edgeEnabled(edge_num)== g_over.edgeEnabled(edge_num));
+				//assert(g_under.edgeEnabled(edge_num)== g_over.edgeEnabled(edge_num));
 				g_under.makeEdgeAssignmentConstant(edge_num);
-				g_over.makeEdgeAssignmentConstant(edge_num);
+				if(!hasEdgeSets())
+					g_over.makeEdgeAssignmentConstant(edge_num);
 			}
 
 			if(using_neg_weights){
@@ -2216,7 +2233,8 @@ public:
 
 		dbg_sync();
 		assert(dbg_graphsUpToDate());
-		vec<Detector*> & detectors = (hasEdgeSets() && allEdgeSetsAssigned()) ? edge_set_detectors:normal_detectors;
+		bool using_edgesets = hasEdgeSets() && allEdgeSetsAssigned();
+		vec<Detector*> & detectors = using_edgesets ? edge_set_detectors:normal_detectors;
 		for (int d = 0; d < detectors.size(); d++) {
 			assert(conflict.size() == 0);
 			Lit l = lit_Undef;
@@ -2462,6 +2480,11 @@ public:
 				if (!g_over.edgeEnabled(e.edgeID)) {
 					return false;
 				}
+				if(hasEdgeSets()){
+					if (!g_over_edgeset.edgeEnabled(e.edgeID)) {
+						return false;
+					}
+				}
 				if(edge_bv_weights.size()){
 					BitVector<Weight> & bv = edge_bv_weights[e.edgeID];
 					if(g_under.getWeight(e.edgeID)!= bv.getUnder()){
@@ -2478,28 +2501,40 @@ public:
 				if (g_under.edgeEnabled(e.edgeID)) {
 					return false;
 				}
-				if (g_over.edgeEnabled(e.edgeID)) {
-					return false;
+				int edge_set_id = edge_set_map[e.edgeID];
+				if(edge_set_id<0){
+					if (g_over.edgeEnabled(e.edgeID)) {
+						return false;
+					}
+					if(hasEdgeSets()){
+						if (g_over_edgeset.edgeEnabled(e.edgeID)) {
+							return false;
+						}
+					}
+				}else{
+					if (g_over_edgeset.edgeEnabled(e.edgeID)) {
+						return false;
+					}
 				}
-				/*if(antig.hasEdge(e.from,e.to)){
-				 return false;
-				 }*/
+
+
+
 
 			}
 			if(using_neg_weights){
 
 				if (val == l_True) {
-					/*	if(!g.hasEdge(e.from,e.to)){
-					 return false;
-					 }
-					 if(!antig.hasEdge(e.from,e.to)){
-					 return false;
-					 }*/
+
 					if (!g_under_weights_over.edgeEnabled(e.edgeID)) {
 						return false;
 					}
 					if (!g_over_weights_under.edgeEnabled(e.edgeID)) {
 						return false;
+					}
+					if(hasEdgeSets()){
+						if (!g_over_weights_under_edgeset.edgeEnabled(e.edgeID)) {
+							return false;
+						}
 					}
 					if(edge_bv_weights.size()){
 						BitVector<Weight> & bv = edge_bv_weights[e.edgeID];
@@ -2511,23 +2546,38 @@ public:
 						}
 					}
 				} else {
-					/*if(g.hasEdge(e.from,e.to)){
-					 return false;
-					 }*/
+
 					if (g_under_weights_over.edgeEnabled(e.edgeID)) {
 						return false;
 					}
-					if (g_over_weights_under.edgeEnabled(e.edgeID)) {
-						return false;
+					int edge_set_id = edge_set_map[e.edgeID];
+					if(edge_set_id<0){
+						if (g_over_weights_under.edgeEnabled(e.edgeID)) {
+							return false;
+						}
+						if(hasEdgeSets()){
+							if (g_over_weights_under_edgeset.edgeEnabled(e.edgeID)) {
+								return false;
+							}
+						}
+					}else{
+						if (g_over_weights_under_edgeset.edgeEnabled(e.edgeID)) {
+							return false;
+						}
 					}
-					/*if(antig.hasEdge(e.from,e.to)){
-					 return false;
-					 }*/
+
+
+
 
 				}
 
 			}
 		}
+
+		if(hasEdgeSets() && !allEdgeSetsAssigned()){
+			return false;
+		}
+
 		vec<Detector*> & detectors = (hasEdgeSets() && allEdgeSetsAssigned()) ? edge_set_detectors:normal_detectors;
 		for (int i = 0; i < detectors.size(); i++) {
 			if (!detectors[i]->checkSatisfied()) {
@@ -2771,6 +2821,7 @@ public:
 			int edge_setID=edge_sets.size();
 			edge_sets.push(new EdgeSet(*this));
 			assert(edge_setID<edge_sets.size());
+
 			for(int edgeID:edges){
 				assert(g_over.hasEdge(edgeID));
 				assert(edge_set_map[edgeID]==-1);
@@ -2778,8 +2829,22 @@ public:
 				EdgeSet & set= *edge_sets[edge_setID];
 				set.edges.push(edgeID);
 				g_over_edgeset.disableEdge(edgeID);
+
 			}
 		}
+		vec<Lit> edge_lits;
+		for(int edgeID:edges){
+			edge_lits.push(mkLit(toSolver(getEdgeVar(edgeID))));
+		}
+		//enforce that _exactly_ one edge from this edge set is assigned in the SAT solver
+		S->addClause(edge_lits);
+
+		 AMOTheory* amo = new  AMOTheory(S);
+		 for(Lit l:edge_lits){
+			 Var v = S->newVar();
+			 makeEqualInSolver(mkLit(v),l);
+			 amo->addVar(v);
+		 }
 	}
 
 
@@ -3196,7 +3261,9 @@ public:
 			edgeset_flow_detectors.last() =f;
 			detectors.push(f);
 			edge_set_detectors.push(f);
-			f->addFlowBVLessThan(comparator->getBV(bvID), v,!strictComparison);
+			Var outer = S->newVar();
+			makeEqualInSolver(mkLit(outer),mkLit(v));
+			f->addFlowBVLessThan(comparator->getBV(bvID), outer,!strictComparison);
 		}
 	}
 
@@ -3425,7 +3492,9 @@ public:
 			edgeset_flow_detectors.last() =f;
 			detectors.push(f);
 			edge_set_detectors.push(f);
-			f->addFlowLit(max_flow, v,inclusive);
+			Var outer = S->newVar();
+			makeEqualInSolver(mkLit(outer),mkLit(v));
+			f->addFlowLit(max_flow, outer,inclusive);
 		}
 	}
 

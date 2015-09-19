@@ -368,17 +368,18 @@ public:
 	bool okay() const;                  // FALSE means solver is in a conflicting state
 	
 	Lit True(){
+
 		if(const_true==lit_Undef){
 			//try using the first assigned const literal
-			if (trail.size()>0){
+			/*if (trail.size()>0){
 				Lit l = trail[0];
 				if(level(var(l))==0){
 					const_true=l;
 				}
-			}else{
+			}else{*/
 				const_true=mkLit(newVar(false,false));
 				addClause(const_true);
-			}
+			//}
 		}
 
 		return const_true;
