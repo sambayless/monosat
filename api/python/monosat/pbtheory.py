@@ -18,6 +18,7 @@
 #OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 import os
+import sys
 import shutil
 from tempfile import NamedTemporaryFile
 import time
