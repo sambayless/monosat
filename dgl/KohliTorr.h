@@ -539,12 +539,9 @@ public:
 					assert(local_weight(edgeid)==0);
 					edge_enabled[edgeid] = true;
 					set_local_weight(edgeid,g.getWeight(edgeid));
-					//if(!backward_maxflow){
+
 					kt->edit_edge_inc(g.getEdge(edgeid).from, g.getEdge(edgeid).to, g.getWeight(edgeid), 0,getArc(edgeid));
 
-					/*}else{
-					 kt->edit_edge_inc(g.getEdge(edgeid).to,g.getEdge(edgeid).from,g.getWeight(edgeID),0);
-					 }*/
 				}else if (g.edgeEnabled(edgeid) && edge_enabled[edgeid] && g.getWeight(edgeid) != local_weight(edgeid)){
 					Weight dif =g.getWeight(edgeid)- local_weight(edgeid);
 

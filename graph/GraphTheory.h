@@ -1171,6 +1171,14 @@ public:
 #endif
 		
 	}
+	void bassert(bool condition) {
+	#ifndef NDEBUG
+		assert(condition);
+		if (!condition) {
+			throw std::runtime_error("Assertion error");
+		}
+	#endif
+	}
 	void dbg_sync() {
 #ifndef NDEBUG
 		dbg_check_trails();
@@ -1178,11 +1186,11 @@ public:
 		if (opt_conflict_min_cut) {
 			for (int i = 0; i < edge_list.size(); i++) {
 				if (value(edge_list[i].v) == l_False) {
-					assert(cutGraph.edgeEnabled(i * 2));
-					assert(!cutGraph.edgeEnabled(i * 2 + 1));
+					bassert(cutGraph.edgeEnabled(i * 2));
+					bassert(!cutGraph.edgeEnabled(i * 2 + 1));
 				} else {
-					assert(!cutGraph.edgeEnabled(i * 2));
-					assert(cutGraph.edgeEnabled(i * 2 + 1));
+					bassert(!cutGraph.edgeEnabled(i * 2));
+					bassert(cutGraph.edgeEnabled(i * 2 + 1));
 				}
 			}
 		}
@@ -1198,65 +1206,65 @@ public:
 			if(edge_bv_weights.size()){
 				BitVector<Weight> & bv = edge_bv_weights[e.edgeID];
 				if(g_under.getWeight(e.edgeID)!= bv.getUnder()){
-					assert( false);
+					bassert( false);
 				}
 				if(g_over.getWeight(e.edgeID)!=bv.getOver()){
-					assert( false);
+					bassert( false);
 				}
 			}
 			if (val == l_True) {
 				if (!g_under.edgeEnabled(e.edgeID)) {
-					assert( false);
+					bassert( false);
 				}
 				if (!g_over.edgeEnabled(e.edgeID)) {
-					assert( false);
+					bassert( false);
 				}
 				if(using_neg_weights){
 					if(!g_under_weights_over.edgeEnabled(e.edgeID)){
-						assert(false);
+						bassert(false);
 					}
 					if(!g_over_weights_under.edgeEnabled(e.edgeID)){
-						assert(false);
+						bassert(false);
 					}
 				}
 				if(opt_min_edgeset>=0 && edge_sets.size()){
 					if(!g_over_edgeset.edgeEnabled(e.edgeID)){
-						assert(false);
+						bassert(false);
 					}
 					if(using_neg_weights){
 						if(!g_over_weights_under_edgeset.edgeEnabled(e.edgeID)){
-							assert(false);
+							bassert(false);
 						}
 					}
 				}
 
 			} else  if (val == l_False) {
 				if (g_under.edgeEnabled(e.edgeID)) {
-					assert( false);
+					bassert( false);
 				}
 				if(edge_set_id<0){
 					if (g_over.edgeEnabled(e.edgeID)) {
-						assert( false);
+						bassert( false);
 					}
 				}else{
 
 				}
 				if(using_neg_weights){
 					if(g_under_weights_over.edgeEnabled(e.edgeID)){
-						assert(false);
+						bassert(false);
 					}
 					if(g_over_weights_under.edgeEnabled(e.edgeID)){
-						assert(false);
+						bassert(false);
 					}
 				}
 
-				if(opt_min_edgeset>=0 && edge_sets.size()){
+				if(opt_min_edgeset>=0 && hasEdgeSets()){
 					if(g_over_edgeset.edgeEnabled(e.edgeID)){
-						assert(false);
+						bassert(false);
 					}
 					if(using_neg_weights){
 						if(g_over_weights_under_edgeset.edgeEnabled(e.edgeID)){
-							assert(false);
+							bassert(false);
 						}
 					}
 				}
@@ -1265,20 +1273,18 @@ public:
 				if(edge_set_id>=0 && edge_sets.size()){
 					//unassigned edges in edge sets are never disabled in g_over
 					if (!g_over.edgeEnabled(e.edgeID)) {
-						assert( false);
+						bassert( false);
 					}
 					//unassigned edgeset edges are never enabled in g_over_edgeset
 					if(g_over_edgeset.edgeEnabled(e.edgeID)){
-						assert(false);
+						bassert(false);
 					}
 					if(using_neg_weights){
 						if(g_over_weights_under_edgeset.edgeEnabled(e.edgeID)){
-							assert(false);
+							bassert(false);
 						}
 					}
 				}
-
-
 			}
 		}
 
@@ -1422,7 +1428,7 @@ public:
 						assert(!g_over_edgeset.edgeEnabled(edge_num));
 					}else{
 						g_over.enableEdge(edge_num);
-						if(edge_sets.size())
+						if(hasEdgeSets())
 							g_over_edgeset.enableEdge(edge_num);
 					}
 					if (opt_conflict_min_cut) {
@@ -2053,7 +2059,7 @@ public:
 			
 			//this is an edge assignment
 			int edge_num = getEdgeID(var(l)); //v-min_edge_var;
-			if(edge_num==414){
+			if(edge_num==4133){
 				int a=1;
 			}
 			assert(edge_list[edge_num].v == var(l));
@@ -2078,7 +2084,7 @@ public:
 					}
 				}else{
 					g_over.disableEdge(edge_num);//edge set edges are never removed from g_over.
-					if(edge_sets.size())
+					if(hasEdgeSets() || (opt_min_edgeset>=0 && decisionLevel()==0))
 						g_over_edgeset.disableEdge(edge_num);
 				}
 				if (opt_conflict_min_cut) {//can optimize this by also checking if any installed detectors are actually using the cutgraph!
@@ -2092,8 +2098,7 @@ public:
 			if(decisionLevel()==0){
 				//assert(g_under.edgeEnabled(edge_num)== g_over.edgeEnabled(edge_num));
 				g_under.makeEdgeAssignmentConstant(edge_num);
-				if(!hasEdgeSets())
-					g_over.makeEdgeAssignmentConstant(edge_num);
+				g_over.makeEdgeAssignmentConstant(edge_num);
 			}
 
 			if(using_neg_weights){
@@ -2367,18 +2372,26 @@ public:
 		dbg_full_sync();
 		
 		requiresPropagation = false;
+
 		g_under.clearChanged();
 		g_over.clearChanged();
 		cutGraph.clearChanged();
-		
+		g_over_edgeset.clearChanged();
+
 		g_under.clearHistory();
 		g_over.clearHistory();
 		cutGraph.clearHistory();
+		g_over_edgeset.clearHistory();
 
 		g_under_weights_over.clearChanged();
 		g_over_weights_under.clearChanged();
+		g_over_weights_under_edgeset.clearChanged();
+
 		g_under_weights_over.clearHistory();
 		g_over_weights_under.clearHistory();
+		g_over_weights_under_edgeset.clearHistory();
+
+
 		dbg_graphsUpToDate();
 		double elapsed = rtime(1) - startproptime;
 		propagationtime += elapsed;
