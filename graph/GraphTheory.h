@@ -640,6 +640,7 @@ public:
 	long propagations =-1;
 	long stats_propagations = 0;
 	long stats_num_conflicts = 0;
+	long stats_num_skipped_edgeset_props=0;
 	long stats_num_lazy_conflicts=0;
 	long stats_decisions = 0;
 	long stats_num_reasons = 0;
@@ -774,6 +775,9 @@ public:
 				g_under.skipped_historyclears, cutGraph.skipped_historyclears);
 		printf("Propagations: %ld (%f s, avg: %f s, %ld skipped)\n", stats_propagations, propagationtime,
 				(propagationtime) / ((double) stats_propagations + 1), stats_propagations_skipped);
+		if(opt_only_prop_edgeset){
+			printf("Skipped proapgations due to unassigned edgesets %ld\n", stats_num_skipped_edgeset_props);
+		}
 		printf("Decisions: %ld (%f s, avg: %f s), lazy decisions: %ld\n", stats_decisions, stats_decision_time,
 				(stats_decision_time) / ((double) stats_decisions + 1), stats_lazy_decisions);
 		printf("Conflicts: %ld (lazy conflicts %ld)\n", stats_num_conflicts,stats_num_lazy_conflicts);
@@ -1661,8 +1665,7 @@ public:
 			}
 		}
 
-		//for(int t = (edge_sets.size() ==0) ;t<2;t++){
-			//vec<Detector*> & dets = t?normal_detectors:edge_set_detectors;
+
 		vec<Detector*> & detectors = (hasEdgeSets() && allEdgeSetsAssigned()) ? edge_set_detectors:normal_detectors;
 		for (int i = 0; i < detectors.size(); i++) {
 			Detector * r = detectors[i];
@@ -2238,137 +2241,141 @@ public:
 
 		dbg_sync();
 		assert(dbg_graphsUpToDate());
-		bool using_edgesets = hasEdgeSets() && allEdgeSetsAssigned();
-		vec<Detector*> & detectors = using_edgesets ? edge_set_detectors:normal_detectors;
-		for (int d = 0; d < detectors.size(); d++) {
-			assert(conflict.size() == 0);
-			Lit l = lit_Undef;
-			bool backtrackOnly = lazy_backtracking_enabled && (opt_lazy_conflicts==3) &&  lazy_trail_head!=var_Undef;
-			bool r = detectors[d]->propagate(conflict,backtrackOnly,l);
-			if(!r && backtrackOnly && conflict.size()==0){
-				backtrackUntil(decisionLevel());
-				stats_num_lazy_conflicts++;
-				d=-1;
-				continue;
-			}
+		if (opt_only_prop_edgeset && hasEdgeSets() && !allEdgeSetsAssigned()){
+			stats_num_skipped_edgeset_props++;
+		}else{
+			bool using_edgesets = hasEdgeSets() && allEdgeSetsAssigned();
 
-			if (!r) {
+			vec<Detector*> & detectors = using_edgesets ? edge_set_detectors:normal_detectors;
+			for (int d = 0; d < detectors.size(); d++) {
+				assert(conflict.size() == 0);
+				Lit l = lit_Undef;
+				bool backtrackOnly = lazy_backtracking_enabled && (opt_lazy_conflicts==3) &&  lazy_trail_head!=var_Undef;
+				bool r = detectors[d]->propagate(conflict,backtrackOnly,l);
+				if(!r && backtrackOnly && conflict.size()==0){
+					backtrackUntil(decisionLevel());
+					stats_num_lazy_conflicts++;
+					d=-1;
+					continue;
+				}
+
+				if (!r) {
 
 
-				if(conflict.size() && lazy_backtracking_enabled && lazy_trail_head!=var_Undef){
-					//find the highest level lit in the conflict; if it is a higher level than the SAT solver, then this isn't a conflict in the SAT solver (though the learnt clause is a valid one)
+					if(conflict.size() && lazy_backtracking_enabled && lazy_trail_head!=var_Undef){
+						//find the highest level lit in the conflict; if it is a higher level than the SAT solver, then this isn't a conflict in the SAT solver (though the learnt clause is a valid one)
 
-					//There are several options for how to deal with this:
+						//There are several options for how to deal with this:
 
-					//0) Completely sync up the theory solver with the SAT solver at this point, and re-propagate
-					//1) add the clause to the SAT solver, and simply unassign the lit in the theory solver.
-					//2) Unassign _all_ lazy lits from the conflict, and repropagate.
-					//3) flip the assignment of one of the lits _in the theory solver_; propagate again.
-					//(it might also be a good idea to add that assignment as a decision in the SAT solver.)
+						//0) Completely sync up the theory solver with the SAT solver at this point, and re-propagate
+						//1) add the clause to the SAT solver, and simply unassign the lit in the theory solver.
+						//2) Unassign _all_ lazy lits from the conflict, and repropagate.
+						//3) flip the assignment of one of the lits _in the theory solver_; propagate again.
+						//(it might also be a good idea to add that assignment as a decision in the SAT solver.)
 
-					//if lits are unassigned, we may also want to put those at the head of the decision heuristic (to make the sat solver revisit them).
+						//if lits are unassigned, we may also want to put those at the head of the decision heuristic (to make the sat solver revisit them).
 
-#ifndef NDEBUG
-					for (Lit l:conflict){
-						if(S->value(toSolver(l))!=value(l)){
-							assert(onLazyTrail(var(l)));
-							if(!onLazyTrail(var(l))){
-								exit(5);
-							}
-							if(value(~l)!=l_True){
-								exit(4);
-							}
-						}
-					}
-#endif
-
-					// assert(!seen.contains(true));
-					//seen.growTo(vars.size());
-
-					bool any_seen=false;
-					if(opt_lazy_conflicts==0){
+	#ifndef NDEBUG
 						for (Lit l:conflict){
 							if(S->value(toSolver(l))!=value(l)){
-								any_seen=true;
 								assert(onLazyTrail(var(l)));
-								break;
+								if(!onLazyTrail(var(l))){
+									exit(5);
+								}
+								if(value(~l)!=l_True){
+									exit(4);
+								}
 							}
 						}
-						if(any_seen){
-							//sync the solver:
-							backtrackUntil(decisionLevel());
-							assert(lazy_trail_head==var_Undef);
-							if(opt_lazy_backtrack_redecide){
-								//redecide the lits of the conflict
-								for (Lit l:conflict){
-									if(isEdgeVar(var(l)) && S->value(var(toSolver(l)))==l_Undef){
+	#endif
+
+						// assert(!seen.contains(true));
+						//seen.growTo(vars.size());
+
+						bool any_seen=false;
+						if(opt_lazy_conflicts==0){
+							for (Lit l:conflict){
+								if(S->value(toSolver(l))!=value(l)){
+									any_seen=true;
+									assert(onLazyTrail(var(l)));
+									break;
+								}
+							}
+							if(any_seen){
+								//sync the solver:
+								backtrackUntil(decisionLevel());
+								assert(lazy_trail_head==var_Undef);
+								if(opt_lazy_backtrack_redecide){
+									//redecide the lits of the conflict
+									for (Lit l:conflict){
+										if(isEdgeVar(var(l)) && S->value(var(toSolver(l)))==l_Undef){
+											for (int i = 0; i < detectors.size(); i++) {
+												Detector * r = detectors[i];
+												r->suggestDecision(l);
+											}
+										}
+									}
+								}
+
+							}
+						}else if(opt_lazy_conflicts==1){
+							for (Lit l:conflict){
+								if(S->value(toSolver(l))!=value(l)){
+									any_seen=true;
+									assert(onLazyTrail(var(l)));
+
+									removeFromTrail(var(l));
+									backtrackAssign(~l);
+									if(opt_lazy_backtrack_redecide && isEdgeVar(var(l))){
 										for (int i = 0; i < detectors.size(); i++) {
 											Detector * r = detectors[i];
 											r->suggestDecision(l);
 										}
 									}
+
 								}
 							}
+						}else if(opt_lazy_conflicts==2){
+							for (Lit l:conflict){
+								if(S->value(toSolver(l))!=value(l)){
 
-						}
-					}else if(opt_lazy_conflicts==1){
-						for (Lit l:conflict){
-							if(S->value(toSolver(l))!=value(l)){
-								any_seen=true;
-								assert(onLazyTrail(var(l)));
+									any_seen=true;
+									assert(onLazyTrail(var(l)));
 
-								removeFromTrail(var(l));
-								backtrackAssign(~l);
-								if(opt_lazy_backtrack_redecide && isEdgeVar(var(l))){
-									for (int i = 0; i < detectors.size(); i++) {
-										Detector * r = detectors[i];
-										r->suggestDecision(l);
+									removeFromTrail(var(l));
+									backtrackAssign(~l);
+									if(opt_lazy_backtrack_redecide && isEdgeVar(var(l))){
+										for (int i = 0; i < detectors.size(); i++) {
+											Detector * r = detectors[i];
+											r->suggestDecision(l);
+										}
 									}
+									break;
 								}
-
 							}
 						}
-					}else if(opt_lazy_conflicts==2){
-						for (Lit l:conflict){
-							if(S->value(toSolver(l))!=value(l)){
+						if(any_seen){
 
-								any_seen=true;
-								assert(onLazyTrail(var(l)));
-
-								removeFromTrail(var(l));
-								backtrackAssign(~l);
-								if(opt_lazy_backtrack_redecide && isEdgeVar(var(l))){
-									for (int i = 0; i < detectors.size(); i++) {
-										Detector * r = detectors[i];
-										r->suggestDecision(l);
-									}
-								}
-								break;
+							//the conflict should now be eliminated.
+							if(opt_keep_lazy_conflicts){
+								toSolver(conflict);
+								S->addClauseSafely(conflict);
 							}
+							stats_num_lazy_conflicts++;
+							conflict.clear();
+							//restart the loop, as assignments have changed... actually, this shouldn't be neccesary (only the current propagation should be re-started)
+							//as we have not backtracked past the current level in the SAT solver.
+							d=-1;
+							continue;
 						}
 					}
-					if(any_seen){
-
-						//the conflict should now be eliminated.
-						if(opt_keep_lazy_conflicts){
-							toSolver(conflict);
-							S->addClauseSafely(conflict);
-						}
-						stats_num_lazy_conflicts++;
-						conflict.clear();
-						//restart the loop, as assignments have changed... actually, this shouldn't be neccesary (only the current propagation should be re-started)
-						//as we have not backtracked past the current level in the SAT solver.
-						d=-1;
-						continue;
-					}
+					stats_num_conflicts++;
+					toSolver(conflict);
+					propagationtime += rtime(1) - startproptime;
+					return false;
 				}
-				stats_num_conflicts++;
-				toSolver(conflict);
-				propagationtime += rtime(1) - startproptime;
-				return false;
 			}
 		}
-		
 		dbg_full_sync();
 		
 		requiresPropagation = false;
