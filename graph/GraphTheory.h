@@ -152,6 +152,10 @@ public:
 			assigned_edge=edgeID;
 			outer.n_assigned_edge_sets++;
 		}
+		int assignedEdge()const{
+			assert(isAssigned());
+			return assigned_edge;
+		}
 		void unassignEdge(int edgeID){
 			assert(assigned_edge==edgeID);
 			assigned_edge=-1;
@@ -1414,6 +1418,7 @@ public:
 					g_under.disableEdge(edge_num);
 					if(edgeSetID>-1){
 						g_over_edgeset.disableEdge(edge_num);
+						g_over_edgeset.setEdgeWeight(edge_num,0);
 						assert(g_over.edgeEnabled(edge_num));
 						EdgeSet & edge_set = *edge_sets[edgeSetID];
 						if(edge_set.assigned_edge==edge_num){
@@ -1430,10 +1435,13 @@ public:
 							g_over.enableEdge(edge_num);
 						}
 						assert(!g_over_edgeset.edgeEnabled(edge_num));
+						assert(g_over_edgeset.getEdgeWeight(edge_num)==0);
 					}else{
 						g_over.enableEdge(edge_num);
-						if(hasEdgeSets())
+						if(hasEdgeSets()){
 							g_over_edgeset.enableEdge(edge_num);
+							assert(g_over_edgeset.getEdgeWeight(edge_num)==g_over.getEdgeWeight(edge_num));
+						}
 					}
 					if (opt_conflict_min_cut) {
 						assert(cutGraph.edgeEnabled(edge_num * 2));
@@ -1939,8 +1947,15 @@ public:
 			}
 			g_under.setEdgeWeight(edgeID,edge_bv_weights[edgeID].getUnder());
 			g_over.setEdgeWeight(edgeID, edge_bv_weights[edgeID].getOver());
-			if(edge_sets.size())
-				g_over_edgeset.setEdgeWeight(edgeID, edge_bv_weights[edgeID].getOver());
+			if(edge_sets.size()){
+				int edge_set_id = getEdgeSetID(edgeID);
+				if(edge_set_id>-1 && !g_under.edgeEnabled(edgeID)){
+					assert(!g_over_edgeset.edgeEnabled(edgeID));
+					assert(g_over_edgeset.getEdgeWeight(edgeID)==0);
+				}else{
+					g_over_edgeset.setEdgeWeight(edgeID, edge_bv_weights[edgeID].getOver());
+				}
+			}
 			if(using_neg_weights){
 				g_under_weights_over.setEdgeWeight(edgeID,edge_bv_weights[edgeID].getOver());
 				g_over_weights_under.setEdgeWeight(edgeID, edge_bv_weights[edgeID].getUnder());
@@ -1959,8 +1974,15 @@ public:
 			}
 			g_under.setEdgeWeight(edgeID,edge_bv_weights[edgeID].getUnder());
 			g_over.setEdgeWeight(edgeID, edge_bv_weights[edgeID].getOver());
-			if(edge_sets.size())
-				g_over_edgeset.setEdgeWeight(edgeID, edge_bv_weights[edgeID].getOver());
+			if(edge_sets.size()){
+				int edge_set_id = getEdgeSetID(edgeID);
+				if(edge_set_id>-1 && !g_under.edgeEnabled(edgeID)){
+					assert(!g_over_edgeset.edgeEnabled(edgeID));
+					assert(g_over_edgeset.getEdgeWeight(edgeID)==0);
+				}else{
+					g_over_edgeset.setEdgeWeight(edgeID, edge_bv_weights[edgeID].getOver());
+				}
+			}
 			if(using_neg_weights){
 				g_under_weights_over.setEdgeWeight(edgeID,edge_bv_weights[edgeID].getOver());
 				g_over_weights_under.setEdgeWeight(edgeID, edge_bv_weights[edgeID].getUnder());
@@ -2076,12 +2098,13 @@ public:
 					EdgeSet & set = *edge_sets[edgeSetID];
 					set.assignEdge(edge_num);
 					g_over_edgeset.enableEdge(edge_num);
-
+					g_over_edgeset.setEdgeWeight(edge_num,g_over.getEdgeWeight(edge_num));
 				}
 			} else {
 				if(edgeSetID>-1){
 					EdgeSet & set =* edge_sets[edgeSetID];
 					assert(!g_over_edgeset.edgeEnabled(edge_num));
+					assert(g_over_edgeset.getEdgeWeight(edge_num)==0);
 					if (!set.isAssigned()){
 						g_over.disableEdge(edge_num);
 					}
@@ -2849,6 +2872,7 @@ public:
 				EdgeSet & set= *edge_sets[edge_setID];
 				set.edges.push(edgeID);
 				g_over_edgeset.disableEdge(edgeID);
+				g_over_edgeset.setEdgeWeight(edgeID,0);
 
 			}
 		}
@@ -3277,7 +3301,7 @@ public:
 
 		if(opt_min_edgeset>=0){
 			edgeset_flow_detectors.growTo(flow_detectors.size());
-			f = new MaxflowDetector<Weight>(detectors.size(), this,  g_under, g_over_edgeset, from,to, drand(rnd_seed));
+			f = new MaxflowDetector<Weight>(detectors.size(), this,  g_under, g_over_edgeset, from,to, drand(rnd_seed),true);
 			edgeset_flow_detectors.last() =f;
 			detectors.push(f);
 			edge_set_detectors.push(f);
@@ -3508,7 +3532,7 @@ public:
 
 		if(opt_min_edgeset>=0){
 			edgeset_flow_detectors.growTo(flow_detectors.size());
-			f = new MaxflowDetector<Weight>(detectors.size(), this,  g_under, g_over_edgeset, from,to, drand(rnd_seed));
+			f = new MaxflowDetector<Weight>(detectors.size(), this,  g_under, g_over_edgeset, from,to, drand(rnd_seed),true);
 			edgeset_flow_detectors.last() =f;
 			detectors.push(f);
 			edge_set_detectors.push(f);

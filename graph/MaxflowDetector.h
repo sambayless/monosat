@@ -93,6 +93,7 @@ public:
 	vec<int> back_edges;
 	int learngraph_history_qhead = 0;
 	int learngraph_history_clears = -1;
+	bool overIsEdgeSet=false;
 	MaxFlow<Weight> * learn_cut = nullptr;
 	//int current_decision_edge=-1;
 	//vec<Lit>  reach_lits;
@@ -203,7 +204,7 @@ public:
 	void addFlowLit(Weight max_flow, Var reach_var, bool inclusive);
 	void addFlowBVLessThan(const BitVector<Weight>  &bv, Var v, bool inclusive);
 	MaxflowDetector(int _detectorID, GraphTheorySolver<Weight> * _outer,
-			DynamicGraph<Weight>  &_g, DynamicGraph<Weight>  &_antig, int _source, int _target, double seed = 1); //:Detector(_detectorID),outer(_outer),within(-1),source(_source),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL){}
+			DynamicGraph<Weight>  &_g, DynamicGraph<Weight>  &_antig, int _source, int _target, double seed = 1, bool overIsEdgeSet=false); //:Detector(_detectorID),outer(_outer),within(-1),source(_source),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL){}
 	~MaxflowDetector() {
 		if (underapprox_conflict_detector && underapprox_conflict_detector!=underapprox_detector)
 			delete 	underapprox_conflict_detector;
