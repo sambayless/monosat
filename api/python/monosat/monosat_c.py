@@ -113,6 +113,8 @@ class Monosat(metaclass=Singleton):
         self.monosat_c.newBitvector.argtypes=[c_solver_p,c_bv_p, c_var_p, c_int]
         self.monosat_c.newBitvector.restype=c_bvID
         
+        self.monosat_c.nBitvectors.argtypes=[c_solver_p,c_bv_p]
+        self.monosat_c.nBitvectors.restype=c_int
         self.monosat_c.newBVComparison_const_lt.argtypes=[c_solver_p,c_bv_p,c_bvID, c_long]
         self.monosat_c.newBVComparison_const_lt.restype=c_literal
         
@@ -305,12 +307,14 @@ class Monosat(metaclass=Singleton):
 
     def solve(self):
         if self.output:
+            self._echoOutput("solve\n")
             self.output.flush()
         return self.monosat_c.solve(self.solver)
 
 
     def solveAssumptions(self,assumptions):
         if self.output:
+            self._echoOutput("solve" + " ".join((str(dimacs(c)) for c in clause))+"\n")
             self.output.flush()
         lp = self.getIntArray(assumptions)
         return self.monosat_c.solveAssumptions(self.solver,lp,len(assumptions))
@@ -437,18 +441,22 @@ class Monosat(metaclass=Singleton):
     def initBVTheory(self):
         self.bvtheory= self.monosat_c.initBVTheory(self.solver)
         
-        
     def newBitvector_const(self, width,val):
         self.backtrack()
         bvID = self.monosat_c.newBitvector_const(self.solver,self.bvtheory, width, c_long(val))
         if self.output:
             self._echoOutput("bv const %d %d "%(bvID, width) + str((val)) +"\n" )   
         return bvID
-        
+    
+    
+    def nBitvectors(self):
+        return self.monosat_c.nBitvectors(self.solver,self.bvtheory)
+    
     def newBitvector(self, bits):
         self.backtrack()
         arr = self.getIntArray(bits)
         bvID = self.monosat_c.newBitvector(self.solver,self.bvtheory,arr,c_int(len(bits)))
+        self._num_bvs=bvID+1
         if self.output:       
             self._echoOutput("bv %d %d "%(bvID, len(bits)) + " ".join((str(l+1) for l in bits)) +"\n" )   
         return bvID
@@ -606,6 +614,15 @@ class Monosat(metaclass=Singleton):
             self._echoOutput("digraph 0 0 %d\n"%(gid)) 
         
         return g
+    
+    def getGraph(self,id):
+        return self.graphs[id]
+    
+    def nGraphs(self):
+        return len(self.graphs)
+    
+    def hasGraph(self,gID):
+        return gID in self.graph_ids
     
     def newNode(self, graph):
         self.backtrack()

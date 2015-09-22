@@ -32,6 +32,7 @@ extern "C"
 
   int nVars(Monosat::SimpSolver * S);
   int nClauses(Monosat::SimpSolver * S);
+  int nBitvectors(Monosat::SimpSolver * S,Monosat::BVTheorySolver<long> * bv);
 
   bool addClause(Monosat::SimpSolver * S,int * assumptions, int n_assumptions);
   bool addUnitClause(Monosat::SimpSolver * S,int lit);

@@ -167,6 +167,9 @@ private:
 	virtual bool parseLine(const char * line,int line_number, Solver& S) {
 		for (auto * p : parsers) {
 			char * ln = (char*) line; //intentionally discard const qualifier
+			if (!strncmp(ln,"solve",5)){
+				continue;//solve lines are not supported yet.
+			}
 			try{
 				if (p->parseLine(ln, S)) {
 					return true;

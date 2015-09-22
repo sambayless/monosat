@@ -460,6 +460,7 @@ public:
 		return theories[theoryIds[bvID]];
 	}
 
+
 	void addTheory(BVTheory* theory){
 		theories.growTo(theory->getTheoryIndexBV()+1);
 		actual_theories.push(theory);
