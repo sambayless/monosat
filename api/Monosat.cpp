@@ -12,6 +12,11 @@
 #include "core/SolverTypes.h"
 #include "Monosat.h"
 #include "mtl/Vec.h"
+#include "core/Dimacs.h"
+#include "bv/BVParser.h"
+#include "graph/GraphParser.h"
+#include "utils/ParseUtils.h"
+#include "amo/AMOParser.h"
 using namespace Monosat;
 using namespace std;
 
@@ -211,6 +216,33 @@ void deleteSolver (Monosat::SimpSolver * S)
 		  S->_external_data=nullptr;
 	  }
      delete (S);
+}
+
+void readGNF(Monosat::SimpSolver * S, const char  * filename){
+	bool precise = true;
+
+	gzFile in = gzopen(filename, "rb");
+	if (in == nullptr)
+		throw std::runtime_error("ERROR! Could not open file");
+
+
+	Dimacs<StreamBuffer, SimpSolver> parser;
+	BVParser<char *, SimpSolver> bvParser;
+	parser.addParser(&bvParser);
+
+	SymbolParser<char*,SimpSolver> symbolParser;
+	parser.addParser(&symbolParser);
+
+	GraphParser<char *, SimpSolver> graphParser(precise,bvParser.theory);
+	parser.addParser(&graphParser);
+
+	AMOParser<char *, SimpSolver> amo;
+	parser.addParser(&amo);
+
+	parser.parse_DIMACS(in, *S);
+
+	gzclose(in);
+
 }
 
 void * newGraph(Monosat::SimpSolver * S){

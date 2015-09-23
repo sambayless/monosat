@@ -455,6 +455,7 @@ public:
 	vec<int> marker_theory;
 	int theory_index = 0;
 	Solver * S = nullptr;    							//super solver
+	Theory * bvtheory=nullptr;
 	bool initialPropagate = true;    				//to force propagation to occur at least once to the theory solvers
 	int super_qhead = 0;
 	int local_qhead = 0;
@@ -659,6 +660,9 @@ public:
 	void uncheckedEnqueue(Lit p, CRef from = CRef_Undef);   // Enqueue a literal. Assumes value of literal is undefined.
 	bool enqueue(Lit p, CRef from = CRef_Undef);       // Test if fact 'p' contradicts current state, enqueue otherwise.
 	void enqueueLazy(Lit p,int level, CRef from = CRef_Undef);
+	void setBVTheory(Theory * t){
+		bvtheory=t;
+		}
 protected:
 	CRef propagate(bool propagate_theories = true);    // Perform unit propagation. Returns possibly conflicting clause.
 	void enqueueTheory(Lit l);

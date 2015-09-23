@@ -437,6 +437,7 @@ public:
 			S(S){
 		rnd_seed = opt_random_seed;
 		S->addTheory(this);
+		S->setBVTheory(this);
 		comparisonprop_marker = S->newReasonMarker(this);
 		conditionthen_prop_marker = S->newReasonMarker(this);
 		conditionelse_prop_marker = S->newReasonMarker(this);

@@ -365,7 +365,10 @@ public:
 
 	void implementConstraints(Solver & S) {
 		if(bvs.size()){
-			theory = new BVTheorySolver<long>(&S);
+
+			theory = (BVTheorySolver<long>*) S.bvtheory;
+			if(!theory)
+				theory = new BVTheorySolver<long>(&S);
 
 
 			for (auto & bv:bvs){

@@ -18,6 +18,8 @@ extern "C"
 
   void deleteSolver (Monosat::SimpSolver * S);
 
+  void readGNF(Monosat::SimpSolver * S, const char  * filename);
+
   bool solve(Monosat::SimpSolver * S);
   bool solveAssumptions(Monosat::SimpSolver * S,int * assumptions, int n_assumptions);
   void backtrack(Monosat::SimpSolver * S);

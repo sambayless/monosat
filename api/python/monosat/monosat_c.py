@@ -71,6 +71,8 @@ class Monosat(metaclass=Singleton):
         
         self.monosat_c.deleteSolver.argtypes=[c_solver_p]
         
+        self.monosat_c.readGNF.argtypes=[c_solver_p, c_char_p]
+        
         self.monosat_c.solve.argtypes=[c_solver_p]
         self.monosat_c.solve.restype=c_bool
         
@@ -276,6 +278,8 @@ class Monosat(metaclass=Singleton):
         self.graph_ids=dict()
         self._true = self.getTrue()
 
+    def readGNF(self, filename):
+        self.monosat_c.readGNF(self.solver,c_char_p(filename.encode('ascii')))
     
     def getOutputFile(self):
         return self.output
@@ -306,6 +310,7 @@ class Monosat(metaclass=Singleton):
         
 
     def solve(self):
+        self.backtrack()
         if self.output:
             self._echoOutput("solve\n")
             self.output.flush()
@@ -313,6 +318,7 @@ class Monosat(metaclass=Singleton):
 
 
     def solveAssumptions(self,assumptions):
+        self.backtrack()
         if self.output:
             self._echoOutput("solve" + " ".join((str(dimacs(c)) for c in clause))+"\n")
             self.output.flush()

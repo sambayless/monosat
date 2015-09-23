@@ -43,6 +43,9 @@ public:
 	virtual void instantiateLazyDecision(Lit l,int atLevel, CRef reason=CRef_Undef){
 
 	}
+	virtual void setBVTheory(Theory * t){
+
+	}
 	/*virtual void prependToTrail(Lit solverLit, int atLevel){
 
 	}*/
