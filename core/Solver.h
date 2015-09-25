@@ -84,11 +84,16 @@ public:
 	//Theory interface
 	void addTheory(Theory*t) {
 		theories.push(t);
-		if(t->supportsDecisions())
+		theory_activity.push(opt_randomomize_theory_order ? drand(random_seed) * 0.00001 : 0);
+		t->setTheoryIndex(theories.size() - 1);
+
+		if(t->supportsDecisions()){
 			decidable_theories.push(t);
+			theory_order_heap.insert(t->getTheoryIndex());
+		}
 		theory_queue.capacity(theories.size());
 		in_theory_queue.push(false);
-		t->setTheoryIndex(theories.size() - 1);
+
 		cancelUntil(0);
 		resetInitialPropagation();
 	}
@@ -443,6 +448,7 @@ public:
 	vec<Lit> theory_conflict;
 	vec<Theory*> theories;
 	vec<Theory*> decidable_theories;
+	vec<double> theory_activity;         // A heuristic measurement of the activity of a theory
 	vec<Var> all_theory_vars;
 	struct LitCount {
 		char occurs :1;
@@ -577,6 +583,15 @@ protected:
 				activity(act), priority(pri) {
 		}
 	};
+	struct TheoryOrderLt {
+			const vec<double>& activity;
+			bool operator ()(Var x, Var y) const {
+				return activity[x] > activity[y];
+			}
+			TheoryOrderLt(const vec<double>& act) :
+					activity(act){
+			}
+		};
 
 	struct TheoryData {
 		union {
@@ -619,6 +634,10 @@ protected:
 	int64_t simpDB_props;   // Remaining number of propagations that must be made before next execution of 'simplify()'.
 	vec<Lit> assumptions;      // Current set of assumptions provided to solve by the user.
 	Heap<VarOrderLt> order_heap;       // A priority queue of variables ordered with respect to the variable activity.
+	double theory_inc;
+	double theory_decay;
+	Heap<TheoryOrderLt> theory_order_heap;
+	vec<std::pair<int,int>> theory_decision_trail;
 	//Heap<LazyLevelLt> lazy_heap;       // A priority queue of variables to be propagated at earlier levels, lazily.
 	double progress_estimate;       // Set by 'search()'.
 	bool remove_satisfied; // Indicates whether possibly inefficient linear scan for satisfied clauses should be performed in 'simplify'.
@@ -663,7 +682,7 @@ public:
 	void enqueueLazy(Lit p,int level, CRef from = CRef_Undef);
 	void setBVTheory(Theory * t){
 		bvtheory=t;
-		}
+	}
 protected:
 	CRef propagate(bool propagate_theories = true);    // Perform unit propagation. Returns possibly conflicting clause.
 	void enqueueTheory(Lit l);
@@ -702,7 +721,22 @@ protected:
 	void varBumpActivity(Var v);                 // Increase a variable with the current 'bump' value.
 	void claDecayActivity(); // Decay all clauses with the specified factor. Implemented by increasing the 'bump' value instead.
 	void claBumpActivity(Clause& c);             // Increase a clause with the current 'bump' value.
-			
+	void theoryBumpActivity(int theoryID) {
+
+		if ((theory_activity[theoryID] += theory_inc) > 1e100) {
+			// Rescale:
+			for (Theory * t:decidable_theories)
+				theory_activity[t->getTheoryIndex()] *= 1e-100;
+			theory_inc *= 1e-100;
+		}
+
+		// Update order_heap with respect to new activity:
+		if (theory_order_heap.inHeap(theoryID))
+			theory_order_heap.decrease(theoryID);
+	}
+	inline void theoryDecayActivity() {
+		theory_inc *= (1 / theory_decay);
+	}
 	// Operations on clauses:
 	//
 	CRef attachReasonClause(Lit r,vec<Lit> & ps);
@@ -821,6 +855,7 @@ inline void Solver::varBumpActivity(Var v, double inc) {
 	if (order_heap.inHeap(v))
 		order_heap.decrease(v);
 }
+
 
 inline void Solver::claDecayActivity() {
 	cla_inc *= (1 / clause_decay);

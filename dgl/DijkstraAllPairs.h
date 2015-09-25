@@ -156,7 +156,7 @@ public:
 			dist[source][source] = 0;
 			q.insert(source);
 			while (q.size()) {
-				int u = q.peakMin();
+				int u = q.peekMin();
 				if (dist[source][u] == INF)
 					break;
 				

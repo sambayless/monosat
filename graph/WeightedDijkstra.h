@@ -276,7 +276,7 @@ public:
 		dist[source] = 0;
 		q.insert(source);
 		while (q.size()) {
-			int u = q.peakMin();
+			int u = q.peekMin();
 			if (dist[u] == INF)
 				break;
 			if (old_dist[u] >= INF) {

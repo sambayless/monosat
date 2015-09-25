@@ -40,6 +40,8 @@ DoubleOption Monosat::opt_var_decay(_cat, "var-decay", "The variable activity de
 		DoubleRange(0, false, 1, false));
 DoubleOption Monosat::opt_clause_decay(_cat, "cla-decay", "The clause activity decay factor", 0.999,
 		DoubleRange(0, false, 1, false));
+DoubleOption Monosat::opt_theory_decay(_cat, "theory-decay", "The theory activity decay factor", 0.95,
+		DoubleRange(0, false, 1, false));
 DoubleOption Monosat::opt_random_var_freq(_cat, "rnd-freq",
 		"The frequency with which the decision heuristic tries to choose a random variable", 0,
 		DoubleRange(0, true, 1, true));
@@ -157,6 +159,7 @@ BoolOption Monosat::opt_lazy_backtrack_decisions(_cat_graph, "lazy-backtrack-dec
 IntOption Monosat::opt_lazy_conflicts(_cat_graph, "lazy-conflicts", "0= unassign all lazy lits and reprop, 1=unassign all lazy lits in the clause, reprop, 2=unassign one lit, reprop, 3=skip lazy conflict analysis",0,IntRange(0,3));
 BoolOption Monosat::opt_keep_lazy_conflicts(_cat_graph, "keep-lazy-conflicts", "Keep clauses from lazy conflicts (only relevant if lazy-backtracking is enabled)",true);
 BoolOption Monosat::opt_lazy_backtrack_redecide(_cat_graph, "lazy-backtrack-redecide", "",false);
+BoolOption Monosat::opt_theory_order_vsids(_cat_graph, "theory-order-vsids", "Use vsids decision heuristic outside of theory solvers, to pick which theory solver to make decisions next",false);
 BoolOption Monosat::opt_theory_vsids(_cat_graph, "theory-vsids", "Use vsids decision heuristic within theory solvers",false);
 BoolOption Monosat::opt_theory_prioritize_conflicts(_cat_graph, "theory-prioritize-conflicts", "",false);
 BoolOption Monosat::opt_theory_priority_clear(_cat_graph, "theory-prioritize-clear", "",false);

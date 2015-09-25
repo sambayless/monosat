@@ -120,7 +120,7 @@ public:
 		percolateUp(indices[n]);
 	}
 	
-	int peakMin() {
+	int peekMin() {
 		return heap[0];
 	}
 	

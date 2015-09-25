@@ -41,7 +41,7 @@ Solver::Solver() :
 		
 		// Parameters (user settable):
 		//
-		verbosity(opt_verb), var_decay(opt_var_decay), clause_decay(opt_clause_decay), random_var_freq(
+		verbosity(opt_verb), var_decay(opt_var_decay), clause_decay(opt_clause_decay), theory_decay(opt_var_decay), random_var_freq(
 				opt_random_var_freq), random_seed(opt_random_seed), luby_restart(opt_luby_restart), ccmin_mode(
 				opt_ccmin_mode), phase_saving(opt_phase_saving), rnd_pol(false), rnd_init_act(opt_rnd_init_act), garbage_frac(
 				opt_garbage_frac), restart_first(opt_restart_first), restart_inc(opt_restart_inc)
@@ -59,8 +59,8 @@ Solver::Solver() :
 				, solves(0), starts(0), decisions(0), rnd_decisions(0), propagations(0), conflicts(0), stats_pure_lits(
 				0), stats_pure_theory_lits(0), pure_literal_detections(0), stats_removed_clauses(0), dec_vars(0), clauses_literals(
 				0), learnts_literals(0), max_literals(0), tot_literals(0), stats_pure_lit_time(0),  ok(
-				true), cla_inc(1), var_inc(1), watches(WatcherDeleted(ca)), qhead(0), simpDB_assigns(-1), simpDB_props(
-				0), order_heap(VarOrderLt(activity, priority)), progress_estimate(0), remove_satisfied(true) //lazy_heap( LazyLevelLt(this)),
+				true), cla_inc(1), var_inc(1), theory_inc(1), watches(WatcherDeleted(ca)), qhead(0), simpDB_assigns(-1), simpDB_props(
+				0), order_heap(VarOrderLt(activity, priority)),theory_order_heap(TheoryOrderLt(theory_activity)), progress_estimate(0), remove_satisfied(true) //lazy_heap( LazyLevelLt(this)),
 
 		// Resource constraints:
 		//
@@ -400,7 +400,7 @@ void Solver::cancelUntil(int lev) {
 		trail_lim.shrink(trail_lim.size() - lev);
 
 		//remove any lits from the lazy heap that are now unassigned.
-/*		while(lazy_heap.size() && value(toLit( lazy_heap.peakMin())) == l_Undef ){
+/*		while(lazy_heap.size() && value(toLit( lazy_heap.peekMin())) == l_Undef ){
 			lazy_heap.pop();
 		}*/
 
@@ -429,6 +429,13 @@ void Solver::cancelUntil(int lev) {
 		}
 		//should qhead be adjusted, here? Or do we want to repropagate these literals? (currently, re-propagating these literals).
 
+		//If opt_theory_order_vsids is enabled, need to add back into the theory decision heap theories that may now be able to make decisions again.
+		while(theory_decision_trail.size() && theory_decision_trail.last().second>=decisionLevel()){
+			int theoryID = theory_decision_trail.last().first;
+			assert(!theory_order_heap.inHeap(theoryID));
+			theory_order_heap.insert(theoryID);
+			theory_decision_trail.pop();
+		}
 	}
 }
 
@@ -1100,7 +1107,8 @@ CRef Solver::propagate(bool propagate_theories) {
 				bool has_conflict=true;
 
 				if (has_conflict && !addConflictClause(theory_conflict, confl)) {
-
+					theoryBumpActivity(theoryID);
+					theoryDecayActivity();
 					qhead = trail.size();
 					return confl;
 				}
@@ -1636,7 +1644,7 @@ lbool Solver::search(int nof_conflicts) {
 	bool last_decision_was_theory=false;
 	starts++;
 	bool using_theory_decisions= opt_decide_theories && drand(random_seed) < opt_random_theory_freq;
-	if(opt_decide_theories && opt_randomomize_theory_order){
+	if(opt_decide_theories && !opt_theory_order_vsids && opt_randomomize_theory_order){
 		randomShuffle(random_seed, decidable_theories);
 	}
 	n_theory_decision_rounds+=using_theory_decisions;
@@ -1767,11 +1775,25 @@ lbool Solver::search(int nof_conflicts) {
 				/**
 				 * Give the theory solvers a chance to make decisions
 				 */
-				for (int i = 0; i < decidable_theories.size() && next == lit_Undef; i++) {
-					
-					next = decidable_theories[i]->decideTheory();
-					if(theoryDecision !=lit_Undef && var(next)==var(theoryDecision)){
-						assigns[var(theoryDecision)]=l_Undef;
+				if(opt_theory_order_vsids){
+
+					while (next==lit_Undef && !theory_order_heap.empty()) {
+						int theoryID = theory_order_heap.peekMin();
+						assert(theories[theoryID]->supportsDecisions());
+						next = theories[theoryID]->decideTheory();
+						if(next==lit_Undef){
+							theory_order_heap.removeMin();
+							if(decisionLevel()>0)
+								theory_decision_trail.push({theoryID,decisionLevel()});
+						}
+					}
+				}else{
+					for (int i = 0; i < decidable_theories.size() && next == lit_Undef; i++) {
+
+						next = decidable_theories[i]->decideTheory();
+						if(theoryDecision !=lit_Undef && var(next)==var(theoryDecision)){
+							assigns[var(theoryDecision)]=l_Undef;
+						}
 					}
 				}
 				if (next!=lit_Undef){
