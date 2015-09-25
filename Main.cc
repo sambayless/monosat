@@ -319,7 +319,6 @@ int main(int argc, char** argv) {
 			fprintf(stderr, "WARNING: for repeatability, setting FPU to use double precision\n");
 #endif
 
-
 		//Select which algorithms to apply for graph and geometric theory solvers, by parsing command line arguments and defaults.
 		selectAlgorithms();
 

@@ -1150,8 +1150,7 @@ struct reduceDB_lt {
 		 if(ca[y].fromTheory() && ! ca[x].fromTheory())
 		 return false;
 		 return ca[x].activity() < ca[y].activity();*/
-	}
-	
+	}	
 };
 void Solver::reduceDB() {
 	int i, j;
@@ -1641,7 +1640,6 @@ lbool Solver::search(int nof_conflicts) {
 		randomShuffle(random_seed, decidable_theories);
 	}
 	n_theory_decision_rounds+=using_theory_decisions;
-	//last_dec = var_Undef;
 	for (;;) {
 		static int iter = 0;
 		if (++iter == 183) {//40097
@@ -2145,7 +2143,6 @@ void Solver::garbageCollect() {
 	// Initialize the next region to a size corresponding to the estimated utilization degree. This
 	// is not precise but should avoid some unnecessary reallocations for the new region:
 	ClauseAllocator to(ca.size() - ca.wasted());
-	
 	relocAll(to);
 	if (verbosity >= 2)
 		printf("|  Garbage collection:   %12d bytes => %12d bytes             |\n",
