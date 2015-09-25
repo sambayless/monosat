@@ -1250,7 +1250,9 @@ public:
 
 		return lit_Undef;
 	}
-	
+	bool supportsDecisions() {
+		return false;
+	}
 
 
 

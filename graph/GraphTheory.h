@@ -160,7 +160,7 @@ public:
 			}
 		}
 		int assignedEdge()const{
-			assert(isAssigned);
+			assert(isAssigned());
 			return assigned_edge;
 		}
 		void unassignEdge(int edgeID){
@@ -183,7 +183,9 @@ public:
 
 	};
 
+	Lit invalid_edgeset_lit=lit_Undef;
 	vec<EdgeSet*> edge_sets;
+
 	vec<int> edge_set_map;//mapping from edgeID's to the edge set they belong to (if there is such a set)
 	int n_assigned_edge_sets=0;
 
@@ -838,8 +840,9 @@ public:
 
 	void setBVTheory(BVTheorySolver<Weight> * bv){
 		comparator = bv;
-		this->propagation_required_theories.push(bv);
+
 		if(bv){
+			this->propagation_required_theories.push(bv);
 			bv->addTheory(this);
 		}
 	}
@@ -1202,6 +1205,31 @@ public:
 	#endif
 	}
 	void dbg_sync() {
+/*		if(this->hasEdgeSets()){
+			for(int edgeID =0;edgeID<g_over_edgeset.edges();edgeID++){
+				if(g_over_edgeset.hasEdge(edgeID)){
+					int edge_set_id = this->getEdgeSetID(edgeID);
+					Weight w = g_over_edgeset.getWeight(edgeID);
+					if(edge_set_id<0){
+						if(w!=g_over.getWeight(edgeID)){
+							throw std::runtime_error("Bad edge weight in edge set (1)!");
+						}
+					}else{
+						if(g_over_edgeset.edgeEnabled(edgeID)){
+							if(w!=g_over.getWeight(edgeID)){
+								throw std::runtime_error("Bad edge weight in edge set (2)!");
+							}
+						}else{
+							if(w!=0){
+								throw std::runtime_error("Bad edge weight in edge set (3)!");
+							}
+						}
+					}
+				}
+			}
+		}*/
+
+
 #ifndef NDEBUG
 		dbg_check_trails();
 
@@ -1418,6 +1446,11 @@ public:
 #endif
 	}
 	void backtrackAssign(Lit l){
+		assert(l!=lit_Undef);
+		if(l==invalid_edgeset_lit){
+			invalid_edgeset_lit=lit_Undef;
+
+		}
 		Var v = var(l);
 		assert(value(l)==l_True);
 		lbool assign = sign(l)?l_False:l_True;
@@ -1732,7 +1765,6 @@ public:
 							stats_decisions++;
 							r->undecide(l);
 							stats_decision_time += rtime(1) - start;
-
 							return bv_decision;
 						}
 					}
@@ -1751,9 +1783,12 @@ public:
 		return lit_Undef;
 	}
 
-
+	bool supportsDecisions() {
+		return true;
+	}
 	void newDecisionLevel() {
 		//trail_lim.push(trail.size());
+		assert(invalid_edgeset_lit==lit_Undef);
 		decisions.push(var_Undef);
 	}
 
@@ -2007,6 +2042,9 @@ public:
 		}
 	}
 	void enqueueTheory(Lit l) {
+		if(invalid_edgeset_lit!=lit_Undef){
+			return;
+		}
 		Var v = var(l);
 
 		int lev = level(v);//level from the SAT solver.
@@ -2110,10 +2148,19 @@ public:
 				g_under.enableEdge(edge_num);
 				if(edgeSetID>-1){
 					EdgeSet & set = *edge_sets[edgeSetID];
+					if (set.isAssigned()){
+						invalid_edgeset_lit=l;
+						return;
+					}
+
 					set.assignEdge(edge_num);
+
 					g_over_edgeset.enableEdge(edge_num);
 					g_over_edgeset.setEdgeWeight(edge_num,g_over.getEdgeWeight(edge_num));
+
+
 				}
+
 			} else {
 				if(edgeSetID>-1){
 					EdgeSet & set =* edge_sets[edgeSetID];
@@ -2198,6 +2245,9 @@ public:
 	}
 
 	bool propagateTheory(vec<Lit> & conflict, bool force_propagation) {
+		if(invalid_edgeset_lit!=lit_Undef){
+			return true;
+		}
 		static int itp = 0;
 		if (++itp == 584) {
 			int a = 1;
@@ -2515,12 +2565,17 @@ public:
 			drawFull();
 		}
 		dbg_graphsUpToDate();
+		if(invalid_edgeset_lit!=lit_Undef){
+			throw std::runtime_error("BAD SOLUTION: Invalid edge set in solution!");
+			return false;
+		}
 		for (int i = 0; i < edge_list.size(); i++) {
 			if (edge_list[i].v < 0)
 				continue;
 			Edge & e = edge_list[i];
 			lbool val = value(e.v);
 			if (val == l_Undef) {
+				throw std::runtime_error("BAD SOLUTION: Unassigned edge!");
 				return false;
 			}
 
@@ -2532,23 +2587,34 @@ public:
 				 return false;
 				 }*/
 				if (!g_under.edgeEnabled(e.edgeID)) {
+					throw std::runtime_error("BAD SOLUTION: missing true edge in g_under");
 					return false;
 				}
 				if (!g_over.edgeEnabled(e.edgeID)) {
+					throw std::runtime_error("BAD SOLUTION: missing true edge in g_over");
 					return false;
 				}
 				if(hasEdgeSets()){
 					if (!g_over_edgeset.edgeEnabled(e.edgeID)) {
+						throw std::runtime_error("BAD SOLUTION: missing true edge in g_over_edgeset");
 						return false;
 					}
 				}
 				if(edge_bv_weights.size()){
 					BitVector<Weight> & bv = edge_bv_weights[e.edgeID];
 					if(g_under.getWeight(e.edgeID)!= bv.getUnder()){
+						throw std::runtime_error("BAD SOLUTION: bad edge weight in g_under");
 						return false;
 					}
 					if(g_over.getWeight(e.edgeID)!=bv.getOver()){
+						throw std::runtime_error("BAD SOLUTION: bad edge weight in g_over");
 						return false;
+					}
+					if(hasEdgeSets()){
+						if (g_over_edgeset.getWeight(e.edgeID)!=bv.getOver()) {
+							throw std::runtime_error("BAD SOLUTION: bad edge weight in g_over_edgeset");
+							return false;
+						}
 					}
 				}
 			} else {
@@ -2556,20 +2622,24 @@ public:
 				 return false;
 				 }*/
 				if (g_under.edgeEnabled(e.edgeID)) {
+					throw std::runtime_error("BAD SOLUTION: included false edge in g_under");
 					return false;
 				}
 				int edge_set_id = edge_set_map[e.edgeID];
 				if(edge_set_id<0){
 					if (g_over.edgeEnabled(e.edgeID)) {
+						throw std::runtime_error("BAD SOLUTION: included false edge in g_over");
 						return false;
 					}
 					if(hasEdgeSets()){
 						if (g_over_edgeset.edgeEnabled(e.edgeID)) {
+							throw std::runtime_error("BAD SOLUTION: included false edge in g_over_edgeset");
 							return false;
 						}
 					}
 				}else{
 					if (g_over_edgeset.edgeEnabled(e.edgeID)) {
+						throw std::runtime_error("BAD SOLUTION: included false edge set edge in g_over_edgeset");
 						return false;
 					}
 				}
@@ -2632,12 +2702,33 @@ public:
 		}
 
 		if(hasEdgeSets() && !allEdgeSetsAssigned()){
+			throw std::runtime_error("BAD SOLUTION: not all edge sets assigned");
 			return false;
+		}
+		for(EdgeSet * edge_set:edge_sets){
+
+			int assignedID = edge_set->assigned_edge;
+			if(value(getEdgeVar(assignedID))!=l_True){
+				throw std::runtime_error("BAD SOLUTION: edge set is incorrectly assigned");
+				return false;
+			}
+			int n_assigned = 0;
+			for(int edgeID:edge_set->edges){
+				Var v = getEdgeVar(edgeID);
+				if(value(v)!=l_False){
+					n_assigned++;
+				}
+			}
+			if (n_assigned!=1){
+				throw std::runtime_error("BAD SOLUTION: edge set has the too many non-false edges");
+				return false;
+			}
 		}
 
 		vec<Detector*> & detectors = (hasEdgeSets() && allEdgeSetsAssigned()) ? edge_set_detectors:normal_detectors;
 		for (int i = 0; i < detectors.size(); i++) {
 			if (!detectors[i]->checkSatisfied()) {
+				throw std::runtime_error("BAD SOLUTION: failure in graph theory detector");
 				return false;
 			}
 		}

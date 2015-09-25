@@ -1587,11 +1587,7 @@ Lit MaxflowDetector<Weight>::decide() {
 
 			if ((outer->decidable(l) || outer->edgeWeightDecidable(edgeID, DetectorComparison::geq,  overapprox_conflict_detector->getEdgeFlow(edgeID)))  && over->getEdgeFlow(edgeID) > 0) {
 				//decideEdge(edgeID, true);
-				if(edgeID>446){
-					int a =1;
-				}else{
-					int a =1;
-				}
+
 				decision = l;
 				//printf("decide edge %d\n", edgeID);
 				break;
@@ -1604,13 +1600,7 @@ Lit MaxflowDetector<Weight>::decide() {
 				//	printf("skip decision remove edge %d\n", edgeID);
 				}
 			} else {
-				if(edgeID==413){
-					bool en = g_over.edgeEnabled(edgeID);
-					Weight w = over->getEdgeFlow(edgeID);
-					Weight w2 = g_over.getWeight(edgeID);
-					int a=1;
 
-				}
 				assert(over->getEdgeFlow(edgeID) == 0);
 				is_potential_decision[edgeID] = false;
 				//printf("skip decision remove edge %d\n", edgeID);

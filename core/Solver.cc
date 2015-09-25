@@ -1637,6 +1637,9 @@ lbool Solver::search(int nof_conflicts) {
 	bool last_decision_was_theory=false;
 	starts++;
 	bool using_theory_decisions= opt_decide_theories && drand(random_seed) < opt_random_theory_freq;
+	if(opt_decide_theories && opt_randomomize_theory_order){
+		randomShuffle(random_seed, decidable_theories);
+	}
 	n_theory_decision_rounds+=using_theory_decisions;
 	//last_dec = var_Undef;
 	for (;;) {

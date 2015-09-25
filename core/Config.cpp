@@ -83,6 +83,10 @@ IntOption Monosat::opt_theory_conflict_max(_cat, "theory-conflict-limit",
 DoubleOption Monosat::opt_random_theory_freq(_cat, "rnd-theory-freq",
 		"The frequency with which the decision theory solvers are selected to make decisions", 1,
 		DoubleRange(0, true, 1, true));
+
+BoolOption Monosat::opt_randomomize_theory_order(_cat, "rnd-theory-order",
+		"If theory decisions are used, randomize the order that theories are decided at each restart", false);
+
 BoolOption Monosat::opt_early_theory_prop(_cat, "early-theory-prop",
 		"If false, the solver waits until all literals are propagated before propagating theories; if true, theories are propagated while the solver is still propagating literals",
 		false);
@@ -306,7 +310,7 @@ BoolOption Monosat::opt_learn_acyclic_flows(_cat_graph, "learn-acyclic-flows",
 		"", false);
 
 IntOption Monosat::opt_min_edgeset(_cat_graph,"min-edge-set","set to 0 to accept all edge sets, or -1 to disable all edge sets",10,IntRange(-1,INT32_MAX));
-BoolOption Monosat::opt_only_prop_edgeset(_cat_graph,"only-prop-edge-sets","",false);
+BoolOption Monosat::opt_only_prop_edgeset(_cat_graph,"only-prop-edgesets","",false);
 
 
 IntOption Monosat::opt_width("GRAPH", "width", "Width of graph.\n", 0, IntRange(0, INT32_MAX));

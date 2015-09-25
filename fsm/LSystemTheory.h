@@ -416,7 +416,9 @@ public:
 		dbg_sync();
 		
 	};
-
+	virtual bool supportsDecisions() {
+		return true;
+	}
 	Lit decideTheory() {
 		if (!opt_decide_theories)
 			return lit_Undef;

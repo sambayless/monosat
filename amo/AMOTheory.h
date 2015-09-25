@@ -108,6 +108,7 @@ public:
 					assert(!needs_propagation);
 					if(opt_amo_eager_prop){
 						//enqueue all of the remaining lits in the solver, now.
+						stats_propagations++;
 						for(Var v:amo){
 							if(v!=true_var){
 								S->enqueue(mkLit(v,true),assign_false_reason);
@@ -136,8 +137,10 @@ public:
 			conflict.push(mkLit(conflict_var,true));
 			conflict.push(mkLit(true_var,true));
 			needs_propagation=false;
+			stats_conflicts++;
 			return false;
 		}else if (true_var!=var_Undef && needs_propagation){
+			stats_propagations++;
 			needs_propagation=false;
 			assert(!opt_amo_eager_prop);
 			//enqueue all of the remaining lits in the solver, now.
@@ -149,10 +152,23 @@ public:
 		}
 		return true;
 	}
+	void printStats(int detailLevel) {
+		printf("AMO Theory %d stats:\n", this->getTheoryIndex());
+
+		printf("Propagations: %ld (%f s, avg: %f s, %ld skipped)\n", stats_propagations, propagationtime,
+				(propagationtime) / ((double) stats_propagations + 1), stats_propagations_skipped);
+
+		printf("Conflicts: %ld\n", stats_conflicts);
+		printf("Reasons: %ld\n", stats_reasons);
+
+		fflush(stdout);
+	}
+
 	inline bool solveTheory(vec<Lit> & conflict){
 		return propagateTheory(conflict);
 	}
 	inline void buildReason(Lit p, vec<Lit> & reason, CRef reason_marker){
+		stats_reasons++;
 		assert(reason_marker==assign_false_reason);
 		if(var(p)!=true_var){
 			assert(sign(p));

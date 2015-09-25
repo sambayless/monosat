@@ -47,6 +47,9 @@ public:
 	virtual Lit decideTheory() {
 		return lit_Undef;
 	}
+	virtual bool supportsDecisions() {
+		return false;
+	}
 	virtual void undecideTheory(Lit l){
 
 	}
@@ -72,6 +75,7 @@ public:
 	virtual void printStats(int detailLevel = 0) {
 		
 	}
+
 	virtual bool check_solved() {
 		return true;
 	}
