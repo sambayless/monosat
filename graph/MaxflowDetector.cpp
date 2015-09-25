@@ -1554,9 +1554,17 @@ Lit MaxflowDetector<Weight>::decide() {
 				int bvID = outer->getEdgeBV(edgeID).getID();
 				Weight over_weight = outer->getEdgeBV(edgeID).getOver();
 				Weight under_weight = outer->getEdgeBV(edgeID).getUnder();
-				if((val==l_Undef && flow>0) || (flow>0 && flow>under_weight)){
-					if(!in_decision_q[edgeID]){
-						throw std::runtime_error("Error in maxflow");
+				if(opt_decide_graph_bv){
+					if((val==l_Undef && flow>0) || (flow>0 && flow>under_weight)){
+						if(!in_decision_q[edgeID]){
+							throw std::runtime_error("Error in maxflow");
+						}
+					}
+				}else{
+					if((val==l_Undef && flow>0)){
+						if(!in_decision_q[edgeID]){
+							throw std::runtime_error("Error in maxflow");
+						}
 					}
 				}
 			}
