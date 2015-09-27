@@ -21,12 +21,12 @@
 import monosat.monosat_c
 from monosat.logic import *
 from monosat.bvtheory import BitVector
-from monosat.singleton import Singleton
+from monosat.manager import Manager
 import sys
 debug=False   
 
 #Collects a set of graphs to encode together into a formula
-class GraphManager(metaclass=Singleton):
+class GraphManager(metaclass=Manager):
     
  
     
@@ -42,9 +42,7 @@ class GraphManager(metaclass=Singleton):
     def getGraph(self,gid):
         return self.graphs[gid]
     
-_graph_manager = GraphManager()
- 
-  
+
 
 class Graph():
     class GraphType():
@@ -52,9 +50,10 @@ class Graph():
         float=2
         rational=3
         
-    def __init__(self, manager=_graph_manager,graph_type=1):
+    def __init__(self,graph_type=1):
         self._monosat = monosat.monosat_c.Monosat()
-    
+        manager = GraphManager()
+        manager.addGraph(self)
         self.graph = self._monosat.newGraph()
         
         self.id = len(manager.graphs)
@@ -77,7 +76,7 @@ class Graph():
         self.steiners=[]        
         self.distance_rational_queries=[]
         self.distance_float_queries=[]
-        manager.addGraph(self)
+        
         self.dbg_reaches=[]
         self.graph_type=graph_type
         self.edge_priorities=[]

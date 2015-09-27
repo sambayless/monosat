@@ -18,13 +18,14 @@
 #OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 import monosat.monosat_c
+from monosat.monosat_c import Monosat
 from monosat.logic import *
-from monosat.singleton import Singleton
+from monosat.manager import Manager
 
 import sys
 debug=False  
 #Collects a set of graphs to encode together into a formula
-class BVManager(metaclass=Singleton):
+class BVManager(metaclass=Manager):
         
     def  __init__(self):
         self.bvs = []
@@ -51,7 +52,7 @@ class BVManager(metaclass=Singleton):
         self.aux_bvs=[]
         self.comparisons=[]     
         self.ites=[]   
-    
+        self.consts=[]
     #Each "string" must actually be a list of positive integers
     def Bv(self,  width=8, const_value=None):
 
@@ -89,14 +90,19 @@ class BVManager(metaclass=Singleton):
         for (i,t,e,r) in self.ites:
             f.write("bv_Ite %d %d %d %d\n"%(dimacs(i),t.getID(),e.getID(),r.getID()))
             
-_bv_manager = BVManager() 
+
 
 
 def _bv_Ite(i,t,e):
-    return _bv_manager.Ite(i,t,e)
+    return BVManager().Ite(i,t,e)
 #def Bv(width, const_value=None):
-#    return _bv_manager.Bv(width,const_value)                   
-       
+#    return BVManager().Bv(width,const_value)                   
+
+def _checkBVs(bvs):
+    for bv in bvs:
+        assert(isinstance(bv,BitVector))
+        assert(bv.mgr._solver==Monosat()._getSolver())
+   
 class BitVector():    
     def __init__(self,mgr,width=None,op=None,args=None):
         if isinstance(mgr,int):
@@ -104,7 +110,7 @@ class BitVector():
             op = width
             width = mgr
             mgr = BVManager()
-        
+        assert(mgr._solver==Monosat()._getSolver())
         assert(width is not None)   
             
         self.mgr = mgr
@@ -164,6 +170,7 @@ class BitVector():
 
         if op == '+':
             assert(len(args)==2)
+            _checkBVs((self,args[0],args[1]))
             if not mgr.bitblast_addition:
                 mgr._monosat.bv_addition(args[0].getID(), args[1].getID(), self.getID())
             if mgr.bitblast_addition or mgr.bitblast_addition_shadow:
@@ -174,25 +181,35 @@ class BitVector():
                     carry=carry2
                 Assert(Not(carry))#disallow overflow.
         elif op=="-":
+            _checkBVs((self,args[0],args[1]))
             #mgr._monosat.bv_addition(self.getID(), args[1].getID(), args[0].getID())
             mgr._monosat.bv_subtraction(args[0].getID(), args[1].getID(), self.getID())
         elif op=="~":
+            _checkBVs((self,args[0]))
             mgr._monosat.bv_not(args[0].getID(), self.getID())
         elif op=="&":
+            _checkBVs((self,args[0]))
             mgr._monosat.bv_and(args[0].getID(), args[1].getID(), self.getID())   
         elif op=="~&":
+            _checkBVs((self,args[0]))
             mgr._monosat.bv_nand(args[0].getID(), args[1].getID(), self.getID())    
         elif op=="|":
+            _checkBVs((self,args[0]))
             mgr._monosat.bv_or(args[0].getID(), args[1].getID(), self.getID())   
         elif op=="~|":
+            _checkBVs((self,args[0]))
             mgr._monosat.bv_nor(args[0].getID(), args[1].getID(), self.getID())   
         elif op=="^":
+            _checkBVs((self,args[0]))
             mgr._monosat.bv_xor(args[0].getID(), args[1].getID(), self.getID())   
         elif op=="~^":
+            _checkBVs((self,args[0]))
             mgr._monosat.bv_xnor(args[0].getID(), args[1].getID(), self.getID())   
         elif op=="slice":
+            _checkBVs((self,args[0]))
             mgr._monosat.bv_slice(args[0].getID(), args[1],args[2], self.getID()) 
         elif op=="concat":
+            _checkBVs((self,args[0],args[1]))
             mgr._monosat.bv_concat(args[0].getID(), args[1].getID(), self.getID())   
 
    

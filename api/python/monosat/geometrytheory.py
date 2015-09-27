@@ -21,8 +21,8 @@ from enum import Enum
 from monosat.logic import *
 debug=False   
 #Collects a set of graphs to encode together into a formula
-from monosat.singleton import Singleton
-class GeometryManager(metaclass=Singleton):
+from monosat.manager import Manager
+class GeometryManager(metaclass=Manager):
         
     def  __init__(self):
         self.pointsets = []

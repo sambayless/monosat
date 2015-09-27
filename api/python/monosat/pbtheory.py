@@ -25,14 +25,14 @@ import time
 
 from monosat.logic import *
 from monosat.monosat_c import Monosat, dimacs
-from monosat.singleton import Singleton
+from monosat.manager import Manager
 
 
 debug=False   
 _monosat = Monosat()
 
 #Collects a set of graphs to encode together into a formula
-class PBManager(metaclass=Singleton):
+class PBManager(metaclass=Manager):
     
     def setPB(self,pb):
         self.pb = pb
@@ -726,7 +726,7 @@ class MinisatPlus:
         
         os.remove(tmpopb)
         os.remove(tmpcnf)
-        _pbm.import_time+=time.clock()-t;
+        PBManager().import_time+=time.clock()-t;
         print("Imported pseudoboolean constraints into Monosat (%d clauses)"%(n_cls))
 class PBSugar:
     def  __init__(self):
@@ -1051,66 +1051,63 @@ class PBSugar:
                 fcnf.write("0\n")
         fcnf.write("c end of pseudoboolean constraints\n")
         fcnf.close()                     
-   
-        
-_pbm = PBManager()
 
 def AssertLessThanPB( clause, val, weights=None):
-    _pbm.AssertPB(clause,val,'<',weights)
+    PBManager().AssertPB(clause,val,'<',weights)
 
 def AssertGreaterThanPB(clause, val, weights=None):
-    _pbm.AssertPB(clause,val,'>',weights)
+    PBManager().AssertPB(clause,val,'>',weights)
     
 def AssertLessEqPB(clause, val, weights=None):
-    _pbm.AssertPB(clause,val,'<=',weights)
+    PBManager().AssertPB(clause,val,'<=',weights)
 
 def AssertGreaterEqPB( clause, val, weights=None):
-    _pbm.AssertPB(clause,val,'>=',weights)
+    PBManager().AssertPB(clause,val,'>=',weights)
   
 def AssertEqualPB( clause, val, weights=None):
-    _pbm.AssertPB(clause,val,'=',weights)
+    PBManager().AssertPB(clause,val,'=',weights)
 
 def AssertNotEqualPB(clause, val, weights=None):
-    _pbm.AssertPB(clause,val,'!=',weights)
+    PBManager().AssertPB(clause,val,'!=',weights)
 
 def AssertRangePB(clause, lowerBound,upperBound, weights=None):
-    _pbm.pb.AssertRangePB(clause,lowerBound,upperBound,weights);
+    PBManager().pb.AssertRangePB(clause,lowerBound,upperBound,weights);
     
 def AssertPB(clause,val,constraint,weights=None):
-    _pbm.pb.AssertPB(clause,val,constraint,weights)       
+    PBManager().pb.AssertPB(clause,val,constraint,weights)       
 
 def twoSidedRangePB(clause,lowerBound,upperBound,weights=None):
-    return _pbm.pb.twoSidedRangePB(clause,lowerBound,upperBound,weights)        
+    return PBManager().pb.twoSidedRangePB(clause,lowerBound,upperBound,weights)        
 
 def twoSidedPB(clause,val,constraint,weights=None,condition=None):        
-    return _pbm.pb.twoSidedPB(clause,val,constraint,weights,condition)
+    return PBManager().pb.twoSidedPB(clause,val,constraint,weights,condition)
 
 def conditionalPB(clause,val,constraint,weights=None,condition=None):
-    return _pbm.pb.conditionalPB(clause,val,constraint,weights,condition)
+    return PBManager().pb.conditionalPB(clause,val,constraint,weights,condition)
 
 def conditionalRangePB(clause,lowerBound,upperBound,weights=None,condition=None):
-    return _pbm.pb.conditionalRangePB(clause,lowerBound,upperBound,weights,condition)
+    return PBManager().pb.conditionalRangePB(clause,lowerBound,upperBound,weights,condition)
 
 def LessThanPB( clause, val, weights=None,condition=None):
-    return _pbm.conditionalPB(clause,val,'<',weights,condition)
+    return PBManager().conditionalPB(clause,val,'<',weights,condition)
 
 def GreaterThanPB( clause, val,weights=None,condition=None):
-    return _pbm.conditionalPB(clause,val,'>',weights,condition)
+    return PBManager().conditionalPB(clause,val,'>',weights,condition)
     
 def LessEqPB( clause, val, weights=None,condition=None):
-    return _pbm.conditionalPB(clause,val,'<=',weights,condition)
+    return PBManager().conditionalPB(clause,val,'<=',weights,condition)
 
 def GreaterEqPB( clause, val, weights=None,condition=None):
-    return _pbm.conditionalPB(clause,val,'>=',weights,condition)
+    return PBManager().conditionalPB(clause,val,'>=',weights,condition)
         
 def EqualPB( clause, val,weights=None,condition=None):
-    return _pbm.conditionalPB(clause,val,'=',weights,condition)
+    return PBManager().conditionalPB(clause,val,'=',weights,condition)
 
 def AssertExactlyOne(clause):
-    _pbm.AssertExactlyOne(clause)    
+    PBManager().AssertExactlyOne(clause)    
     
 def AssertAtMostOne(clause):
-    _pbm.AssertAtMostOne(clause)        
+    PBManager().AssertAtMostOne(clause)        
     
     
 

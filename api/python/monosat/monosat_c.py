@@ -31,7 +31,7 @@ except Exception as e:
     print (e)
 
     _monosat_c= cdll.LoadLibrary('monosat.dll')
-    
+
 #Python interface to MonoSAT
     
 #libc = CDLL('libc.so.6')
@@ -61,6 +61,7 @@ def dimacs(l):
 #very simple, low-level python to Monosat's C interface.
 class Monosat(metaclass=Singleton):       
     def __init__(self):
+        self._managers=dict()
         self.monosat_c=_monosat_c
         
         self._int_array = (c_int * (1024))()
@@ -239,11 +240,21 @@ class Monosat(metaclass=Singleton):
         self.bvtheory = None
         self.graphs = []
         self.graph_ids=dict()
-
+        
         self.init("-verb=0 -verb-time=0 -rnd-theory-freq=0.99 -no-decide-bv-intrinsic  -decide-bv-bitwise  -decide-graph-bv -decide-theories -no-decide-graph-rnd   -lazy-maxflow-decisions -conflict-min-cut -conflict-min-cut-maxflow -reach-underapprox-cnf -check-solution ")
 
     def getGID(self,graph):
         return self.graph_ids[graph]
+    
+    
+    def _getManagers(self):
+        solver = self._getSolver()
+        if solver not in self._managers:
+            self._managers[solver]=dict()
+        return self._managers[solver]
+    
+    def _getSolver(self):
+        return self.solver
     
     #Until a better system is created, this can be used to re-initialize Monosat with a new configuration.
     #This call is _only_ safe to make before any variables, graphs, theories, etc have been allocated. It will hopefully be fixed or replaced in the future...
@@ -344,7 +355,7 @@ class Monosat(metaclass=Singleton):
             assert(False)
 
     def addBinaryClause(self,l0,l1):
-        self.backtrack()
+        self.backtrack()        
         if self.output:       
             self._echoOutput(" ".join((str(dimacs(c)) for c in (l0,l1)))+" 0\n")    
         self.monosat_c.addBinaryClause(self.solver,l0,l1)           
@@ -781,3 +792,7 @@ class Monosat(metaclass=Singleton):
     def getModel_MinimumSpanningTreeWeight(self, graph, mstlit):
         return self.monosat_c.getModel_MinimumSpanningTreeWeight(self.solver, graph,mstlit); 
 
+
+
+    
+        
