@@ -40,6 +40,7 @@ class PBManager(metaclass=Manager):
     def  __init__(self):
         self.pb = MinisatPlus()
         self.import_time=0
+        self.elapsed_time=0
     
     def clear(self):
         if(self.pb):
@@ -642,7 +643,7 @@ class MinisatPlus:
         nvars = 0
         for (clause,val,op,weights) in self.constraints:
             if len(clause)==0:
-                clause = [false]  
+                clause = [false()]  
             if len(clause)>longest_constraint:
                 longest_constraint = len(clause)
             for v in clause:
@@ -661,7 +662,7 @@ class MinisatPlus:
             if (len(weights)>0):
                 pass
             if len(clause)==0:
-                clause = [false]
+                clause = [false()]
             n_pbs+=1
             while(len(weights)<len(clause)):
                 weights.append(1) #Default weight

@@ -111,6 +111,9 @@ class Graph():
 
         return n
     
+    def getSymbol(self,node):
+        return self.names[node]
+    
     def getMaxFlow(self, flowlit):
         return self._monosat.getModel_MaxFlow(self.graph,flowlit.getLit())
 
@@ -124,7 +127,7 @@ class Graph():
     
     
     def getEdge(self,f,t):
-        for (v,w,var) in self.out_edges[f]:
+        for (v,w,var,weight) in self.out_edges[f]:
             if(w==t):
                 return var;
            
@@ -223,8 +226,11 @@ class Graph():
     def numNodes(self):
         return self.nodes
     
+    def getNodes(self):
+        return range(self.nodes)
+    
     def getEdgeFromVar(self,var):
-        return self.edgemap[var]
+        return self.edgemap[var.getLit()]
     
     def getEdges(self,node=-1, undirected=False):
         if(node>=0):

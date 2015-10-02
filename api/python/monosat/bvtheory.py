@@ -34,7 +34,6 @@ class BVManager(metaclass=Manager):
         self.consts=dict()
         self.ites=[]
         self._monosat = monosat.monosat_c.Monosat()
-        self._monosat.initBVTheory()
         self.bitblast_addition=False
         self.bitblast_addition_shadow=False
     
@@ -101,7 +100,8 @@ def _bv_Ite(i,t,e):
 def _checkBVs(bvs):
     for bv in bvs:
         assert(isinstance(bv,BitVector))
-        assert(bv.mgr._solver==Monosat()._getSolver())
+        if(bv.mgr._solver!=Monosat().getSolver()):
+            raise RuntimeError('Bitvector %s does not belong to current solver, aborting (use setSolver() to correct this)'%(str(bv)))
    
 class BitVector():    
     def __init__(self,mgr,width=None,op=None,args=None):
@@ -110,7 +110,7 @@ class BitVector():
             op = width
             width = mgr
             mgr = BVManager()
-        assert(mgr._solver==Monosat()._getSolver())
+        assert(mgr._solver==Monosat().getSolver())
         assert(width is not None)   
             
         self.mgr = mgr
@@ -153,9 +153,9 @@ class BitVector():
                 v = 1<<i
                 if val>=v:
                     val-=v
-                    self._bv[i]=true 
+                    self._bv[i]=true() 
                 else:
-                    self._bv[i]=false            
+                    self._bv[i]=false()        
             
         else:
             self._bv=[] 
@@ -174,7 +174,7 @@ class BitVector():
             if not mgr.bitblast_addition:
                 mgr._monosat.bv_addition(args[0].getID(), args[1].getID(), self.getID())
             if mgr.bitblast_addition or mgr.bitblast_addition_shadow:
-                carry = false
+                carry = false()
                 for i, (a,b,out) in enumerate(zip(args[0],args[1],self)):
                     r,carry2=Add(a,b,carry)
                     Assert(out==r)

@@ -32,8 +32,8 @@ _monosat = monosat.monosat_c.Monosat()
 def _checkLits(vars):
     for v in vars:
         assert(isinstance(v,Var))
-        assert(v._solver == _monosat._getSolver())
-        
+        if(v._solver != _monosat.getSolver()):
+            raise RuntimeError('Variable %s does not belong to current solver, aborting (use setSolver() to correct this)'%(str(v)))
 
 def getSymbols():
     return _monosat.symbolmap    
@@ -44,7 +44,7 @@ class Var:
         #Warning: if allow_simplification is set to true, then the variable may be eliminated by the solver at the next Solve();
         #After that point, the variable would no longer be safe to use in clauses or constraints in subsequent calls to Solve(). 
         #Use carefully!
-        self._solver = _monosat._getSolver();
+        self._solver = _monosat.getSolver();
         if isinstance(symbol,bool):  
             self.lit = _monosat.true() if symbol else _monosat.false()
         elif isinstance(symbol, int):           
@@ -275,7 +275,7 @@ def IsBoolVar(a):
     elif isinstance(a, bool):
         #Yes, I mean this to be an explicit check against true, false literals, and not against falsy-ness.
         return True
-    elif isinstance(a,BitVector) or  isinstance(e, numbers.Integral):
+    elif isinstance(a,BitVector) or  isinstance(a, numbers.Integral):
         return False
     else:
         return False
@@ -292,7 +292,7 @@ def VAR(a):
             return true()
         else:
             return false()
-    elif isinstance(a,BitVector) or  isinstance(e, numbers.Integral):
+    elif isinstance(a,BitVector) or  isinstance(a, numbers.Integral):
         raise TypeError('Cannot use BitVectors as arguments to functions requiring symbolic Booleans')
     else:
         raise TypeError('Cannot convert to symbolic Booleans')
@@ -500,6 +500,9 @@ def AssertXnor(args):
 def AssertImplies(a,b):
     _addSafeClause((~VAR(a),VAR(b)))  
     #return Not(VAR(a)) | VAR(b) #VAR(a) & Not(b)
+
+def AssertIff(a,b):
+    AssertXnor((a,b))
 
 def AssertEq(a,b):
     AssertXnor((a,b))
