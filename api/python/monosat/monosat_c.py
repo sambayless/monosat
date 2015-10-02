@@ -59,7 +59,7 @@ def dimacs(l):
         
 class Solver():
     def __init__(self,monosat_c,arguments=None):
-        
+        self.elapsed_time=0
         if arguments is None:
             arguments=[]    
         elif isinstance(arguments,str):
@@ -94,7 +94,7 @@ class Monosat(metaclass=Singleton):
     def __init__(self):
         self._managers=dict()
         self.monosat_c=_monosat_c
-        
+        self.elapsed_time=0
         self._int_array = (c_int * (1024))()
         
         #Set the return types for each function

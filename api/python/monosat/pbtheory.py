@@ -26,10 +26,10 @@ import time
 from monosat.logic import *
 from monosat.monosat_c import Monosat, dimacs
 from monosat.manager import Manager
-
+from monosat.singleton import Singleton
 
 debug=False   
-_monosat = Monosat()
+
 
 #Collects a set of graphs to encode together into a formula
 class PBManager(metaclass=Manager):
@@ -115,7 +115,7 @@ class PBManager(metaclass=Manager):
             new_clause.append(l2)
             AssertEq(l2,l)    
  
-        _monosat.AssertAtMostOne([l.getLit() for l in new_clause])
+        Monosat().AssertAtMostOne([l.getLit() for l in new_clause])
         
     def AssertExactlyOne(self,clause):
         AssertClause(clause)
@@ -351,7 +351,7 @@ class MinisatPlus:
             elif l.isConstFalse():                
                 continue
             
-            if _monosat.isPositive(l.getLit()):
+            if Monosat().isPositive(l.getLit()):
                 nclause.append(l);
                 nweights.append(w)
             else:
@@ -690,7 +690,7 @@ class MinisatPlus:
         print("Importing %d pseudoboolean constraints into Monosat..."%(n_pbs))
         t=time.clock();
         
-        _monosat.comment("pseudoboolean constraints")
+        Monosat().comment("pseudoboolean constraints")
         n_cls =0 
         convcnf =open(tmpcnf,'r')
         for line in convcnf.readlines():
@@ -714,16 +714,16 @@ class MinisatPlus:
                         continue
                     v = abs(l)
                     if v not in varmap:
-                        varmap[v]= _monosat.newLit()
+                        varmap[v]= Monosat().newLit()
                         
                     newl = varmap[v]
                     if l<0:
-                        newl=_monosat.Not(newl)
+                        newl=Monosat().Not(newl)
                     newclause.append(newl)
                     #fcnf.write(str(v) + " ")
                 #fcnf.write("0\n")
-                _monosat.addClause(newclause)
-        _monosat.comment("end of pseudoboolean constraints")
+                Monosat().addClause(newclause)
+        Monosat().comment("end of pseudoboolean constraints")
         
         os.remove(tmpopb)
         os.remove(tmpcnf)
