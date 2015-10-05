@@ -17,8 +17,24 @@
 #include "graph/GraphParser.h"
 #include "utils/ParseUtils.h"
 #include "amo/AMOParser.h"
+#include <stdexcept>
 using namespace Monosat;
 using namespace std;
+
+
+
+//Supporting function for throwing parse errors
+inline void api_errorf(const char *fmt, ...) {
+    va_list args;
+    va_start(args, fmt);
+    char buf[1000];
+    vsnprintf(buf, sizeof buf,fmt, args);
+    va_end(args);
+    fprintf(stderr, buf);
+    fflush(stderr);
+    throw std::runtime_error(buf);
+
+}
 
 //Select which algorithms to apply for graph and geometric theory solvers, by parsing command line arguments and defaults.
 void _selectAlgorithms(){
@@ -47,9 +63,9 @@ void _selectAlgorithms(){
 	} else if (!strcasecmp(opt_maxflow_alg, "kohli-torr")) {
 		mincutalg = MinCutAlg::ALG_KOHLI_TORR;
 	} else {
-		fprintf(stderr, "Error: unknown max-flow/min-cut algorithm %s, aborting\n",
+		api_errorf( "Error: unknown max-flow/min-cut algorithm %s, aborting\n",
 				((string) opt_maxflow_alg).c_str());
-		exit(1);
+
 	}
 
 	componentsalg = ComponentsAlg::ALG_DISJOINT_SETS;
@@ -57,9 +73,9 @@ void _selectAlgorithms(){
 	if (!strcasecmp(opt_components_alg, "disjoint-sets")) {
 		componentsalg = ComponentsAlg::ALG_DISJOINT_SETS;
 	} else {
-		fprintf(stderr, "Error: unknown connectivity algorithm %s, aborting\n",
+		api_errorf(  "Error: unknown connectivity algorithm %s, aborting\n",
 				((string) opt_components_alg).c_str());
-		exit(1);
+
 	}
 
 	cyclealg = CycleAlg::ALG_DFS_CYCLE;
@@ -69,9 +85,9 @@ void _selectAlgorithms(){
 	}else if (!strcasecmp(opt_cycle_alg, "pk")) {
 		cyclealg = CycleAlg::ALG_PK_CYCLE;
 	} else {
-		fprintf(stderr, "Error: unknown cycle detection algorithm %s, aborting\n",
+		api_errorf( "Error: unknown cycle detection algorithm %s, aborting\n",
 				((string) opt_cycle_alg).c_str());
-		exit(1);
+
 	}
 
 
@@ -84,9 +100,9 @@ void _selectAlgorithms(){
 	} else if (!strcasecmp(opt_mst_alg, "spira-pan")) {
 		mstalg = MinSpanAlg::ALG_SPIRA_PAN;
 	} else {
-		fprintf(stderr, "Error: unknown minimum spanning tree algorithm %s, aborting\n",
+		api_errorf( "Error: unknown minimum spanning tree algorithm %s, aborting\n",
 				((string) opt_mst_alg).c_str());
-		exit(1);
+
 	}
 
 	reachalg = ReachAlg::ALG_BFS;
@@ -104,8 +120,8 @@ void _selectAlgorithms(){
 	} else if (!strcasecmp(opt_reach_alg, "ramal-reps")) {
 		reachalg = ReachAlg::ALG_RAMAL_REPS;
 	} else {
-		fprintf(stderr, "Error: unknown reachability algorithm %s, aborting\n", ((string) opt_reach_alg).c_str());
-		exit(1);
+		api_errorf( "Error: unknown reachability algorithm %s, aborting\n", ((string) opt_reach_alg).c_str());
+
 	}
 
 	distalg = DistAlg::ALG_DISTANCE;
@@ -121,8 +137,8 @@ void _selectAlgorithms(){
 	} else if (!strcasecmp(opt_dist_alg, "ramal-reps")) {
 		distalg = DistAlg::ALG_RAMAL_REPS;
 	} else {
-		fprintf(stderr, "Error: unknown distance algorithm %s, aborting\n", ((string) opt_dist_alg).c_str());
-		exit(1);
+		api_errorf(  "Error: unknown distance algorithm %s, aborting\n", ((string) opt_dist_alg).c_str());
+
 	}
 
 	undirectedalg = ConnectivityAlg::ALG_BFS;
@@ -142,9 +158,9 @@ void _selectAlgorithms(){
 	}/*else if (!strcasecmp(opt_con_alg,"ramal-reps")){
 	 undirectedalg = ConnectivityAlg::ALG_RAMAL_REPS;
 	 } */else {
-		fprintf(stderr, "Error: unknown undirected reachability algorithm %s, aborting\n",
+		 api_errorf(  "Error: unknown undirected reachability algorithm %s, aborting\n",
 				((string) opt_reach_alg).c_str());
-		exit(1);
+
 	}
 
 	allpairsalg = AllPairsAlg::ALG_DIJKSTRA_ALLPAIRS;
@@ -155,9 +171,9 @@ void _selectAlgorithms(){
 		allpairsalg = AllPairsAlg::ALG_DIJKSTRA_ALLPAIRS;
 
 	} else {
-		fprintf(stderr, "Error: unknown allpairs reachability algorithm %s, aborting\n",
+		api_errorf(  "Error: unknown allpairs reachability algorithm %s, aborting\n",
 				((string) opt_allpairs_alg).c_str());
-		exit(1);
+
 	}
 
 	undirected_allpairsalg = AllPairsConnectivityAlg::ALG_DIJKSTRA_ALLPAIRS;
@@ -169,9 +185,9 @@ void _selectAlgorithms(){
 	} else if (!strcasecmp(opt_undir_allpairs_alg, "thorup")) {
 		undirected_allpairsalg = AllPairsConnectivityAlg::ALG_THORUP;
 	} else {
-		fprintf(stderr, "Error: unknown undirected allpairs reachability algorithm %s, aborting\n",
+		api_errorf(  "Error: unknown undirected allpairs reachability algorithm %s, aborting\n",
 				((string) opt_allpairs_alg).c_str());
-		exit(1);
+
 	}
 }
 void printStats(SimpSolver* solver) {

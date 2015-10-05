@@ -1692,7 +1692,10 @@ lbool Solver::search(int nof_conflicts) {
 
 					assert(S);
 					if(!S){
-						exit(1);
+						fprintf(stderr,"Critical error: bad learnt clause. Aborting\n");
+						fflush(stderr);
+						exit(3);
+						//throw std::runtime_error("Critical error: bad learnt clause. Aborting\n");
 					}
 					//this is _not_ an asserting clause, its a conflict that must be passed up to the super solver.
 					analyzeFinal(cr, lit_Undef, conflict);
