@@ -62,6 +62,8 @@ public:
 	}
 	inline Var mapVar(Solver & S, Var var){
 		if(!opt_remap_vars){
+			while (var >= S.nVars())
+				S.newVar();
 			return var;
 		}
 		if (inVarMap(var)){
@@ -177,6 +179,7 @@ public:
 //A simple parser to allow for named variables
 template<class B, class Solver>
 class SymbolParser: public Parser<B, Solver> {
+	using Parser<B, Solver>::mapVar;
 	vec<std::pair<int, std::string> >  symbols;
 	std::string symbol;
 public:
@@ -199,7 +202,7 @@ public:
 				}
 
 				v--; //subtract one to get the variable id
-
+				v = mapVar(S,v);
 				symbol.clear();
 				skipWhitespace(in);
 				while (*in != '\n' && !isWhitespace(*in)) {

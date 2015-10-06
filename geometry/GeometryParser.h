@@ -119,7 +119,8 @@ class GeometryParser: public Parser<B, Solver> {
 		
 		int pointsetID = parseInt(in);
 		
-		int v = parseInt(in);
+		Var v = parseInt(in)-1;
+		v = mapVar(S,v);
 		int d = parseInt(in);
 		pointsets.growTo(pointsetID + 1);
 		pointsets[pointsetID].push();
@@ -127,15 +128,16 @@ class GeometryParser: public Parser<B, Solver> {
 		ParsePoint & point = pointsets[pointsetID].last();
 		parsePoint(in, d, point);
 		
-		point.var = v - 1;
-		point.var= mapVar(S,point.var);
+		point.var = v;
+
 	}
 	
 	void readConvexHullArea(B& in, Solver& S) {
 		
 		//hull_area_lt pointsetID area var
 		int pointset = parseInt(in); //ID of the hull
-		int var = parseInt(in) - 1;
+		Var var = parseInt(in) - 1;
+		var = mapVar(S,var);
 		stringstream ss(in);
 		T area;
 		ss >> area;
@@ -149,7 +151,8 @@ class GeometryParser: public Parser<B, Solver> {
 		convex_hull_polygon_intersections.last().inclusive = inclusive;
 		
 		int pointsetID = parseInt(in);
-		int v = parseInt(in) - 1;
+		Var v = parseInt(in) - 1;
+		v = mapVar(S,v);
 		convex_hull_polygon_intersections.last().pointsetID = pointsetID;
 		convex_hull_polygon_intersections.last().var = v;
 		int numPoints = parseInt(in);
@@ -225,7 +228,8 @@ class GeometryParser: public Parser<B, Solver> {
 		
 		int pointsetID = parseInt(in);
 		int pointVar = parseInt(in) - 1;
-		int var = parseInt(in) - 1;
+		Var var = parseInt(in) - 1;
+		var = mapVar(S,var);
 		convex_hull_points.push( { pointsetID, pointVar, var });
 	}
 	
@@ -235,7 +239,8 @@ class GeometryParser: public Parser<B, Solver> {
 		//v is true iff the two convex hulls intersect
 		int pointsetID1 = parseInt(in);
 		int pointsetID2 = parseInt(in);
-		int v = parseInt(in) - 1;
+		Var v = parseInt(in) - 1;
+		v = mapVar(S,v);
 		convex_hulls_intersect.push( { pointsetID1, pointsetID2, v, inclusive });
 		
 	}

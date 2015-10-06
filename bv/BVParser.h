@@ -43,6 +43,7 @@ namespace Monosat {
 
 template<class B, class Solver>
 class BVParser: public Parser<B, Solver> {
+	using Parser<B, Solver>::mapVar;
 public:
 	BVTheorySolver<long>* theory=nullptr;
 private:
@@ -135,9 +136,8 @@ private:
 		bvs[id].id = id;
 		bvs[id].width=width;
 		for(int i =0;i<width;i++){
-			int v = parseInt(in) - 1;
-			while (v >= S.nVars())
-				S.newVar();
+			Var v = parseInt(in) - 1;
+			v= mapVar(S,v);
 			bvs[id].vector.push(v);
 		}
 	}
@@ -187,8 +187,8 @@ private:
 	void readSymbol(B& in, Solver& S){
 		//this is a variable symbol map
 		skipWhitespace(in);
-		int v = parseInt(in);
-
+		Var v = parseInt(in);
+		v= mapVar(S,v);
 		symbol.clear();
 		skipWhitespace(in);
 		while (*in != '\n' && !isWhitespace(*in)) {
@@ -213,8 +213,8 @@ private:
 		int parsed_lit = parseInt(in);
 		if (parsed_lit == 0)
 			parse_errorf("If argument to bv If-Then-Else must be a valid dimacs literal (was 0)\n");
-		int var = abs(parsed_lit) - 1;
-
+		Var var = abs(parsed_lit) - 1;
+		var= mapVar(S,var);
 		int thenId = parseInt(in);
 		int elseId = parseInt(in);
 
@@ -236,9 +236,8 @@ private:
 		}
 		//bv_lt bvID var weight
 		skipWhitespace(in);
-		int v = parseInt(in) - 1;
-		while (v >= S.nVars())
-			S.newVar();
+		Var v = parseInt(in) - 1;
+		v= mapVar(S,v);
 		skipWhitespace(in);
 		//bool arg1_is_bv=match(in,"bv");
 		long arg1 = parseInt(in);
@@ -275,9 +274,8 @@ private:
 			}
 			//bv_lt bvID var weight
 			skipWhitespace(in);
-			int v = parseInt(in) - 1;
-			while (v >= S.nVars())
-				S.newVar();
+			Var v = parseInt(in) - 1;
+			v= mapVar(S,v);
 			skipWhitespace(in);
 			//bool arg1_is_bv=match(in,"bv");
 			long arg1 = parseInt(in);

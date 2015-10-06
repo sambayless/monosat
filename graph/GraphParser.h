@@ -410,7 +410,7 @@ class GraphParser: public Parser<B, Solver> {
 		int graphID = parseInt(in);
 		int from = parseInt(in);
 		int to = parseInt(in);
-		int reachVar = parseInt(in) - 1;
+		Var reachVar = parseInt(in) - 1;
 		int steps = parseInt(in);
 		if (graphID < 0 || graphID >= graphs.size()) {
 			parse_errorf("PARSE ERROR! Undeclared graph identifier %d for edge %d\n", graphID, reachVar);
@@ -418,7 +418,7 @@ class GraphParser: public Parser<B, Solver> {
 		if (reachVar < 0) {
 			parse_errorf("PARSE ERROR! Edge variables must be >=0, was %d\n", reachVar);
 		}
-		
+		reachVar = mapVar(S,reachVar);
 		if (graphs[graphID]) {
 			graphs[graphID]->reaches(from, to, reachVar, steps);
 		} else if (graphs_float[graphID]) {
@@ -443,7 +443,7 @@ class GraphParser: public Parser<B, Solver> {
 		int graphID = parseInt(in);
 		int from = parseInt(in);
 		int to = parseInt(in);
-		int reachVar = parseInt(in) - 1;
+		Var reachVar = parseInt(in) - 1;
 
 		if (graphID < 0 || graphID >= graphs.size()) {
 			parse_errorf("PARSE ERROR! Undeclared graph identifier %d for edge %d\n", graphID, reachVar);
@@ -451,7 +451,7 @@ class GraphParser: public Parser<B, Solver> {
 		if (reachVar < 0) {
 			parse_errorf("PARSE ERROR! Edge variables must be >=0, was %d\n", reachVar);
 		}
-
+		reachVar = mapVar(S,reachVar);
 		skipWhitespace(in);
 		int bvID = parseInt(in);
 		if (graphs[graphID]) {
@@ -480,7 +480,7 @@ class GraphParser: public Parser<B, Solver> {
 		int graphID = parseInt(in);
 		int from = parseInt(in);
 		int to = parseInt(in);
-		int reachVar = parseInt(in) - 1;
+		Var reachVar = parseInt(in) - 1;
 
 		if (graphID < 0 || graphID >= graphs.size()) {
 			parse_errorf("PARSE ERROR! Undeclared graph identifier %d for edge %d\n", graphID, reachVar);
@@ -489,6 +489,7 @@ class GraphParser: public Parser<B, Solver> {
 			parse_errorf("PARSE ERROR! Edge variables must be >=0, was %d\n", reachVar);
 		}
 
+		reachVar = mapVar(S,reachVar);
 
 		if (graphs[graphID]) {
 			int weight = parseInt(in);
@@ -551,6 +552,7 @@ class GraphParser: public Parser<B, Solver> {
 			if (reachVar < 0) {
 				parse_errorf("PARSE ERROR! Variables must be >=0, was %d\n", reachVar);
 			}
+			reachVar= mapVar(S,reachVar);
 			if (graphs[graphID]) {
 				graphs[graphID]->acyclic(reachVar,directed);
 			} else if (graphs_float[graphID]) {
@@ -637,17 +639,17 @@ class GraphParser: public Parser<B, Solver> {
 		++in;
 		
 		int graphID = parseInt(in);
-		int edgeVar = parseInt(in) - 1;
+		Var edgeVar = parseInt(in) - 1;
 		//int from = parseInt(in);
 		//int to = parseInt(in);
-		int reachVar = parseInt(in) - 1;
+		Var reachVar = parseInt(in) - 1;
 		if (graphID < 0 || graphID >= graphs.size()) {
 			parse_errorf("PARSE ERROR! Undeclared graph identifier %d for edge %d\n", graphID, reachVar);
 		}
 		if (reachVar < 0) {
 			parse_errorf("PARSE ERROR! Edge variables must be >=0, was %d\n", reachVar);
 		}
-		
+		edgeVar= mapVar(S,edgeVar);
 		reachVar= mapVar(S,reachVar);
 		
 		if (graphs[graphID]) {
@@ -674,7 +676,7 @@ class GraphParser: public Parser<B, Solver> {
 			int graphID = parseInt(in);
 			int s = parseInt(in);
 			int t = parseInt(in);
-			int reachVar = parseInt(in) - 1; //note: switched the order of reachVar and flow after the paper, to allow for non-integer flow constraints in the future...
+			Var reachVar = parseInt(in) - 1; //note: switched the order of reachVar and flow after the paper, to allow for non-integer flow constraints in the future...
 
 
 			if (graphID < 0 || graphID >= graphs.size()) {
@@ -810,7 +812,7 @@ class GraphParser: public Parser<B, Solver> {
 		
 		int graphID = parseInt(in);
 		int min_components = parseInt(in);
-		int reachVar = parseInt(in) - 1;
+		Var reachVar = parseInt(in) - 1;
 		if (graphID < 0 || graphID >= graphs.size()) {
 			parse_errorf("PARSE ERROR! Undeclared graph identifier %d for edge %d\n", graphID, reachVar);
 		}
@@ -869,10 +871,11 @@ class GraphParser: public Parser<B, Solver> {
 		int graphID = parseInt(in);
 		int steinerID = parseInt(in);
 		int node = parseInt(in);
-		int var = parseInt(in) - 1;
+		Var var = parseInt(in) - 1;
 		if (graphID < 0 || graphID >= graphs.size()) {
 			parse_errorf("PARSE ERROR! Undeclared graph identifier %d \n", graphID);
 		}
+		var= mapVar(S,var);
 		steiners.growTo(graphs.size());
 		steiners[graphID].growTo(steinerID + 1);
 		if (!steiners[graphID][steinerID]) {
@@ -891,10 +894,11 @@ class GraphParser: public Parser<B, Solver> {
 		int graphID = parseInt(in);
 		int steinerID = parseInt(in);
 		int maxweight = parseInt(in);
-		int var = parseInt(in) - 1;
+		Var var = parseInt(in) - 1;
 		if (graphID < 0 || graphID >= graphs.size()) {
 			parse_errorf("PARSE ERROR! Undeclared graph identifier %d \n", graphID);
 		}
+		var= mapVar(S,var);
 		steiners.growTo(graphs.size());
 		steiners[graphID].growTo(steinerID + 1);
 		if (!steiners[graphID][steinerID]) {
@@ -1123,7 +1127,7 @@ public:
 			readAcyclic(in, S,false);
 			return true;
 		}else if (match(in, "pb_lt")) {
-
+			//this shouldn't be here...
 			if (!pbtheory) {
 				pbtheory = new PbTheory(&S);
 				S.addTheory(pbtheory);
@@ -1153,6 +1157,10 @@ public:
 			int graphID = edge_sets[i].graphID;
 			edgeset.clear();
 			assert(graphID>-1);
+
+			for (Var & edgeV: edge_sets[i].edges)
+				edgeV = mapVar(S,edgeV);
+
 			if(graphs[graphID]){
 				for(Var edgeV:edge_sets[i].edges){
 					if(!S.hasTheory(edgeV) || S.getTheoryID(edgeV)!=graphs[graphID]->getTheoryIndex()){
@@ -1223,7 +1231,8 @@ public:
 
 		for (auto p:edgePriorities){
 /*			int graphID = p.graphID;
-			Var v = S.getTheoryVar( p.edgeVar);
+			Var v = S.getTheoryVar(mapVar(S, p.edgeVar));
+
 			if (graphs[graphID])
 				graphs[graphID]->setEdgePriority(graphs[graphID]->getEdgeID(v),p.priority);
 			else if (graphs_float[graphID])
