@@ -619,6 +619,7 @@ protected:
 	vec<double> activity;         // A heuristic measurement of the activity of a variable.
 	double var_inc;          // Amount to bump next variable with.
 	OccLists<Lit, vec<Watcher>, WatcherDeleted> watches; // 'watches[lit]' is a list of constraints watching 'lit' (will go there if literal becomes true).
+
 	vec<lbool> assigns;          // The current assignments.
 	vec<char> polarity;         // The preferred polarity of each variable.
 	vec<char> decision;         // Declares if a variable is eligible for selection in the decision heuristic.
@@ -686,7 +687,12 @@ public:
 	Theory * getBVTheory(){
 		return bvtheory;
 	}
+
+
+
 protected:
+
+
 	CRef propagate(bool propagate_theories = true);    // Perform unit propagation. Returns possibly conflicting clause.
 	void enqueueTheory(Lit l);
 	bool propagateTheory(vec<Lit> & conflict);

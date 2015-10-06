@@ -343,17 +343,23 @@ class Monosat(metaclass=Singleton):
 
     def solveAssumptions(self,assumptions,minimize_bvs=None):
         self.backtrack()
-        if self.solver.output:
-            self._echoOutput("solve" + " ".join((str(dimacs(c)) for c in clause))+"\n")
-            self.solver.output.flush()
+
         lp = self.getIntArray(assumptions)
         
-        if minimize_bvs is not None:
+        if minimize_bvs is not None and len(minimize_bvs)>0:
+            if self.solver.output:
+                for i,n in enumerate(minimize_bvs):  
+                    self._echoOutput("minimize bv " + minimize_bvs[i]+"\n")
+                self._echoOutput("solve" + " ".join((str(dimacs(c)) for c in assumptions))+"\n")
+                self.solver.output.flush()
             lp2 = (c_int * len(minimize_bvs))()
             for i,n in enumerate(minimize_bvs):            
                 lp2[i]=c_int(n)
             return self.monosat_c.solveAssumptions_MinBVs(self.solver._ptr,lp,len(assumptions),lp2,len(minimize_bvs))
         else:
+            if self.solver.output:
+                self._echoOutput("solve" + " ".join((str(dimacs(c)) for c in assumptions))+"\n")
+                self.solver.output.flush()
             return self.monosat_c.solveAssumptions(self.solver._ptr,lp,len(assumptions))
         
     
