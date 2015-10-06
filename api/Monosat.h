@@ -22,6 +22,8 @@ extern "C"
 
   bool solve(Monosat::SimpSolver * S);
   bool solveAssumptions(Monosat::SimpSolver * S,int * assumptions, int n_assumptions);
+  //Solve under assumptions, and also minimize a set of BVs (in order of precedence)
+  bool solveAssumptions_MinBVs(Monosat::SimpSolver * S,int * assumptions, int n_assumptions, int * minimize_bvs, int n_minimize_bvs);
   void backtrack(Monosat::SimpSolver * S);
   int newVar(Monosat::SimpSolver * S);
 
@@ -100,7 +102,9 @@ extern "C"
   //model query
   //For a given literal (not variable!), returns 0 for true, 1 for false, 2 for unassigned.
   int getModel_Literal(Monosat::SimpSolver * S,int lit);
-  long getModel_BV(Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv, int bvID);
+  //Get an assignment to a bitvector in the model. The model may find a range of satisfying assignments to the bitvector;
+  //If getMaximumValue is true, this function returns the maximum satisfying assignment to the bitvector in the model; else it returns the smallest.
+  long getModel_BV(Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv, int bvID, bool getMaximumValue);
   //graph queries:
   //maxflow_literal is the literal (not variable!) that is the atom for the maximum flow query
   long getModel_MaxFlow(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<long> *G,int maxflow_literal);

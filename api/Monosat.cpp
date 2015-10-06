@@ -294,26 +294,105 @@ void * initBVTheory(Monosat::SimpSolver * S){
 	  return bv;
 }
 bool solveAssumptions(Monosat::SimpSolver * S,int * assumptions, int n_assumptions){
+	return solveAssumptions_MinBVs(S,assumptions,n_assumptions,nullptr,0);
+ }
+
+bool solveAssumptions_MinBVs(Monosat::SimpSolver * S,int * assumptions, int n_assumptions, int * minimize_bvs, int n_minimize_bvs){
+	using namespace Monosat;
 	S->cancelUntil(0);
 
-	  static Monosat::vec<Monosat::Lit> assume;
 	  S->preprocess();//do this _even_ if sat based preprocessing is disabled! Some of the theory solvers depend on a preprocessing call being made!
 
-	  if (opt_pre){
-
-		S->eliminate(false);//should this really be set to disable future preprocessing here?
-	 }
-	  assume.clear();
+	  vec<Monosat::Lit> assume;
 	  for (int i = 0;i<n_assumptions;i++){
-		  assume.push(toLit(assumptions[i]));
+		   Lit l =toLit( assumptions[i]);
+		   if (var(l)>=S->nVars()){
+			   api_errorf("Assumption ltieral %d is not allocated",dimacs(l));
+		   }
+		  assume.push(l);
+		  //S->setFrozen(v,true); //this is done in the solve() call
 	  }
-	  bool r= S->solve(assume);
+
+/*	  if (opt_pre){
+		S->eliminate(false);//should this really be set to disable future preprocessing here?
+	 }*/
+
+	  vec<int> bvs;//bit vectors to minimize
+	  for (int i = 0;i<n_minimize_bvs;i++){
+		  int bvID = minimize_bvs[i];
+		  if(!S->getBVTheory()){
+			  api_errorf("No bitvector theory created (call initBVTheory())!");
+		  }
+		  if(! ((Monosat::BVTheorySolver<long> *) S->getBVTheory())->hasBV(bvID)){
+			  api_errorf("Minimization bitvector %d is not allocated",bvID);
+		  }
+		  bvs.push(bvID);
+	  }
+
+	  bool r= S->solve(assume,opt_pre,!opt_pre);
+	  if(r && bvs.size()){
+		  Monosat::BVTheorySolver<long> * bvTheory = (Monosat::BVTheorySolver<long> *) S->getBVTheory();
+		  vec<long> min_values;
+		  min_values.growTo(bvs.size());
+		  long n_solves = 1;
+		  for (int i = 0;i<bvs.size();i++){
+			  int bvID = minimize_bvs[i];
+			  long value = bvTheory->getUnderApprox(bvID);
+			  min_values[i]=value;
+			  // int bvID,const Weight & to, Var outerVar = var_Undef, bool decidable=true
+			  Lit last_decision_lit = bvTheory->newComparison(Comparison::leq,bvID,value,var_Undef,false);
+			  while(value>0){
+				  Lit decision_lit = bvTheory->newComparison(Comparison::leq,bvID,value-1,var_Undef,false);
+				  assume.push(decision_lit);
+				  n_solves++;
+				  if (S->solve(assume,false,false)){
+					  last_decision_lit=decision_lit;
+					  value = bvTheory->getUnderApprox(bvID);
+					  min_values[i]=value;
+					  assume.pop();
+				  }else{
+					  assume.pop();
+					  assume.push(last_decision_lit);
+					  r = S->solve(assume,false,false); //this can be improved...
+
+					  if(!r){
+						  throw std::runtime_error("Error in optimization (instance has become unsat)");
+					  }
+					  if(min_values[i]!= bvTheory->getUnderApprox(bvID)){
+						  throw std::runtime_error("Error in optimization (minimum values are inconsistent with model)");
+					  }
+					  break;
+				  }
+			  }
+
+		  }
+		  assert(r);
+
+		  if(opt_verb>0){
+			  printf("Minimum values found (after %ld calls) : ",n_solves);
+			  for(int i = 0;i<min_values.size();i++){
+				  int bvID = bvs[i];
+				  printf("bv%d=%ld,",bvID,min_values[i]);
+			  }
+			  printf("\n");
+		  }
+		  if(opt_check_solution){
+			  for(int i = 0;i<bvs.size();i++){
+				  int bvID = bvs[i];
+				  long min_value = min_values[i];
+				  long model_val = bvTheory->getUnderApprox(bvID);
+				  if(min_value!=model_val){
+					  throw std::runtime_error("Error in optimization (minimum values are inconsistent with model)");
+				  }
+			  }
+		  }
+	  }
 	if (opt_verb >= 1) {
 		printStats(S);
 
 	}
 	return r;
- }
+}
 
  int newVar(Monosat::SimpSolver * S){
 	  return S->newVar();
@@ -636,8 +715,13 @@ void bv_slice( Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv,int a
 	 }
 	 return toInt(val);//toInt(S->value(toLit(lit)));
  }
- long getModel_BV(Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv, int bvID){
-	 return bv->getUnderApprox(bvID);
+ long getModel_BV(Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv, int bvID, bool getMaximumValue){
+	 if(getMaximumValue){
+		 return bv->getOverApprox(bvID);
+	 }else{
+		 return bv->getUnderApprox(bvID);
+	 }
+
  }
  //graph queries:
  long getModel_MaxFlow(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<long> *G,int maxflow_literal){

@@ -46,6 +46,9 @@ public:
 	virtual void setBVTheory(Theory * t){
 
 	}
+	virtual Theory * getBVTheory(){
+		return nullptr;
+	}
 	/*virtual void prependToTrail(Lit solverLit, int atLevel){
 
 	}*/

@@ -683,6 +683,9 @@ public:
 	void setBVTheory(Theory * t){
 		bvtheory=t;
 	}
+	Theory * getBVTheory(){
+		return bvtheory;
+	}
 protected:
 	CRef propagate(bool propagate_theories = true);    // Perform unit propagation. Returns possibly conflicting clause.
 	void enqueueTheory(Lit l);

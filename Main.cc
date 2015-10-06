@@ -489,7 +489,7 @@ int main(int argc, char** argv) {
 				decidable.push(i);
 			}
 		}
-		//really simple, unsophisticated incremental BMC:
+
 		vec<Lit> assume;
 
 		const char * assume_str = opt_assume;

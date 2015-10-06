@@ -111,6 +111,9 @@ class Monosat(metaclass=Singleton):
         self.monosat_c.solveAssumptions.argtypes=[c_solver_p,c_literal_p,c_int]
         self.monosat_c.solveAssumptions.restype=c_bool       
         
+        self.monosat_c.solveAssumptions_MinBVs.argtypes=[c_solver_p,c_literal_p,c_int,c_int_p,c_int]
+        self.monosat_c.solveAssumptions_MinBVs.restype=c_bool       
+        
         self.monosat_c.backtrack.argtypes=[c_solver_p]
         
 
@@ -253,7 +256,7 @@ class Monosat(metaclass=Singleton):
         self.monosat_c.getModel_Literal.argtypes=[c_solver_p,c_literal]
         self.monosat_c.getModel_Literal.restype=c_int      
 
-        self.monosat_c.getModel_BV.argtypes=[c_solver_p,c_bv_p, c_bvID]
+        self.monosat_c.getModel_BV.argtypes=[c_solver_p,c_bv_p, c_bvID, c_bool]
         self.monosat_c.getModel_BV.restype=c_long    
 
         self.monosat_c.getModel_MaxFlow.argtypes=[c_solver_p,c_graph_p, c_literal]
@@ -338,13 +341,22 @@ class Monosat(metaclass=Singleton):
         return self.monosat_c.solve(self.solver._ptr)
 
 
-    def solveAssumptions(self,assumptions):
+    def solveAssumptions(self,assumptions,minimize_bvs=None):
         self.backtrack()
         if self.solver.output:
             self._echoOutput("solve" + " ".join((str(dimacs(c)) for c in clause))+"\n")
             self.solver.output.flush()
         lp = self.getIntArray(assumptions)
-        return self.monosat_c.solveAssumptions(self.solver._ptr,lp,len(assumptions))
+        
+        if minimize_bvs is not None:
+            lp2 = (c_int * len(minimize_bvs))()
+            for i,n in enumerate(minimize_bvs):            
+                lp2[i]=c_int(n)
+            return self.monosat_c.solveAssumptions_MinBVs(self.solver._ptr,lp,len(assumptions),lp2,len(minimize_bvs))
+        else:
+            return self.monosat_c.solveAssumptions(self.solver._ptr,lp,len(assumptions))
+        
+    
     
     def backtrack(self):
         if self.solver.output:
@@ -786,8 +798,8 @@ class Monosat(metaclass=Singleton):
     def getModel_Literal(self, lit):
         return self.monosat_c.getModel_Literal(self.solver._ptr, lit);
 
-    def getModel_BV(self, bvID):
-        return self.monosat_c.getModel_BV(self.solver._ptr, self.solver.bvtheory,c_bvID(bvID));
+    def getModel_BV(self, bvID,getMaximumValue=False):
+        return self.monosat_c.getModel_BV(self.solver._ptr, self.solver.bvtheory,c_bvID(bvID),c_bool(getMaximumValue));
         
     def getModel_MaxFlow(self, graph, flowlit):
         return self.monosat_c.getModel_MaxFlow(self.solver._ptr, graph,flowlit);
