@@ -42,7 +42,7 @@ namespace Monosat {
 // GRAPH Parser:
 template<class B, class Solver>
 class LSystemParser: public Parser<B, Solver> {
-
+	using Parser<B, Solver>::mapVar;
 	vec<LSystemSolver*> lsystems;
 	vec<int> alphabets;
 
@@ -154,10 +154,7 @@ class LSystemParser: public Parser<B, Solver> {
 			parse_errorf("Edge variables must be >=0, was %d\n", edgeVar);
 		}
 
-
-		while (edgeVar >= S.nVars())
-			S.newVar();
-
+		edgeVar= mapVar(S,edgeVar);
 		alphabets[lsystemID]=std::max(alphabets[lsystemID],from);
 
 		rules[lsystemID].push();
@@ -210,9 +207,7 @@ class LSystemParser: public Parser<B, Solver> {
 			parse_errorf("Edge variables must be >=0, was %d\n", reachVar);
 		}
 		
-		while (reachVar >= S.nVars())
-			S.newVar();
-
+		reachVar= mapVar(S,reachVar);
 
 	}
 

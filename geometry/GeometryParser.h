@@ -39,6 +39,7 @@ namespace Monosat {
 // GEOMETRY Parser:
 template<class B, class Solver, class T = double>
 class GeometryParser: public Parser<B, Solver> {
+	using Parser<B, Solver>::mapVar;
 	//vec<GeometryTheorySolver<1,mpq_class>*> space_1D;
 	GeometryTheorySolver<2, T> *space_2D = nullptr;
 	//vec<GeometryTheorySolver<3,double>*> space_3D;
@@ -127,8 +128,7 @@ class GeometryParser: public Parser<B, Solver> {
 		parsePoint(in, d, point);
 		
 		point.var = v - 1;
-		while (point.var >= S.nVars())
-			S.newVar();
+		point.var= mapVar(S,point.var);
 	}
 	
 	void readConvexHullArea(B& in, Solver& S) {

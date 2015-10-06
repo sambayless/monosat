@@ -42,6 +42,7 @@ namespace Monosat {
 // GRAPH Parser:
 template<class B, class Solver>
 class FSMParser: public Parser<B, Solver> {
+	using Parser<B, Solver>::mapVar;
 	vec<int> fsmIDs;
 
 	vec<int> inAlphabets;
@@ -202,9 +203,7 @@ class FSMParser: public Parser<B, Solver> {
 			hasEpsilonTransitions[fsmID]=true;
 		}
 
-		while (edgeVar >= S.nVars())
-			S.newVar();
-		
+		edgeVar= mapVar(S,edgeVar);
 		inAlphabets[fsmID]=std::max(inAlphabets[fsmID],input);
 		outAlphabets[fsmID]=std::max(outAlphabets[fsmID],output);
 		transitions[fsmID].push({fsmID,from,to,input,output,edgeVar});
@@ -246,10 +245,8 @@ class FSMParser: public Parser<B, Solver> {
 		if (reachVar < 0) {
 			parse_errorf("Edge variables must be >=0, was %d\n", reachVar);
 		}
-		
-		while (reachVar >= S.nVars())
-			S.newVar();
 
+		reachVar= mapVar(S,reachVar);
 
 	}
 	
@@ -305,8 +302,7 @@ class FSMParser: public Parser<B, Solver> {
 			parse_errorf("Edge variables must be >=0, was %d\n", reachVar);
 		}
 
-		while (reachVar >= S.nVars())
-			S.newVar();
+		reachVar= mapVar(S,reachVar);
 
 	}
 
@@ -345,8 +341,7 @@ class FSMParser: public Parser<B, Solver> {
 			parse_errorf("Edge variables must be >=0, was %d\n", reachVar);
 		}
 
-		while (reachVar >= S.nVars())
-			S.newVar();
+		reachVar= mapVar(S,reachVar);
 
 
 	}
@@ -391,9 +386,7 @@ class FSMParser: public Parser<B, Solver> {
 			parse_errorf("Edge variables must be >=0, was %d\n", reachVar);
 		}
 
-		while (reachVar >= S.nVars())
-			S.newVar();
-
+		reachVar= mapVar(S,reachVar);
 
 	}
 

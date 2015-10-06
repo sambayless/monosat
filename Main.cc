@@ -673,9 +673,9 @@ int main(int argc, char** argv) {
 					fprintf(f, "v ");
 					for (int v = 0; v < S.nVars(); v++) {
 						if (S.model[v] == l_True) {
-							fprintf(f, "%d ", (v + 1));
+							fprintf(f, "%d ", (parser.unmap(v) + 1));
 						} else if (S.model[v] == l_False) {
-							fprintf(f, "%d ", -(v + 1));
+							fprintf(f, "%d ", -(parser.unmap(v) + 1));
 						}
 					}
 					fprintf(f, "0\n");
@@ -709,9 +709,9 @@ int main(int argc, char** argv) {
 				printf("v ");
 				for (int v = 0; v < S.nVars(); v++) {
 					if (S.model[v] == l_True) {
-						printf("%d ", (v + 1));
+						printf("%d ", (parser.unmap(v) + 1));
 					} else if (S.model[v] == l_False) {
-						printf("%d ", -(v + 1));
+						printf("%d ", -(parser.unmap(v) + 1));
 					}
 				}
 				printf("0\n");

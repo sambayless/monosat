@@ -56,6 +56,7 @@ struct SteinerStruct {
 // GRAPH Parser:
 template<class B, class Solver>
 class GraphParser: public Parser<B, Solver> {
+	using Parser<B, Solver>::mapVar;
 	bool precise;
 	BVTheorySolver<long>*& bvTheory;
 	vec<GraphTheorySolver<long>*> graphs;
@@ -238,9 +239,7 @@ class GraphParser: public Parser<B, Solver> {
 		if (edgeVar < 0) {
 			parse_errorf("PARSE ERROR! Edge variables must be >=0, was %d\n", edgeVar);
 		}
-		while (edgeVar >= S.nVars())
-			S.newVar();
-
+		edgeVar= mapVar(S,edgeVar);
 		skipWhitespace(in);
 		int bvID = parseInt(in);
 /*		static vec<Var> bv;
@@ -302,8 +301,7 @@ class GraphParser: public Parser<B, Solver> {
 		if (edgeVar < 0) {
 			parse_errorf("PARSE ERROR! Edge variables must be >=0, was %d\n", edgeVar);
 		}
-		while (edgeVar >= S.nVars())
-			S.newVar();
+		edgeVar= mapVar(S,edgeVar);
 		
 		skipWhitespace(in);
 		if(*in=='\n' || *in==0){
@@ -386,8 +384,7 @@ class GraphParser: public Parser<B, Solver> {
 			parse_errorf("PARSE ERROR! Edge variables must be >=0, was %d\n", reachVar);
 		}
 		
-		while (reachVar >= S.nVars())
-			S.newVar();
+		reachVar= mapVar(S,reachVar);
 		
 		if (graphs[graphID]) {
 			graphs[graphID]->reaches(from, to, reachVar);
@@ -586,8 +583,7 @@ class GraphParser: public Parser<B, Solver> {
 			parse_errorf("PARSE ERROR! Edge variables must be >=0, was %d\n", reachVar);
 		}
 		
-		while (reachVar >= S.nVars())
-			S.newVar();
+		reachVar= mapVar(S,reachVar);
 		if (graphs[graphID]) {
 			long maxweight = parseInt(in);
 			graphs[graphID]->minimumSpanningTree(reachVar, maxweight,inclusive);
@@ -652,8 +648,7 @@ class GraphParser: public Parser<B, Solver> {
 			parse_errorf("PARSE ERROR! Edge variables must be >=0, was %d\n", reachVar);
 		}
 		
-		while (reachVar >= S.nVars())
-			S.newVar();
+		reachVar= mapVar(S,reachVar);
 		
 		if (graphs[graphID]) {
 			graphs[graphID]->edgeInMinimumSpanningTree(edgeVar, reachVar);
@@ -689,8 +684,7 @@ class GraphParser: public Parser<B, Solver> {
 				parse_errorf("PARSE ERROR! Edge variables must be >=0, was %d\n", reachVar);
 			}
 
-			while (reachVar >= S.nVars())
-				S.newVar();
+			reachVar= mapVar(S,reachVar);
 
 			//parse the flow constraint appropriately for the type of the graph:
 			int bvID = parseInt(in);
@@ -719,8 +713,7 @@ class GraphParser: public Parser<B, Solver> {
 				parse_errorf("PARSE ERROR! Edge variables must be >=0, was %d\n", reachVar);
 			}
 
-			while (reachVar >= S.nVars())
-				S.newVar();
+			reachVar= mapVar(S,reachVar);
 
 			if (graphs[graphID]) {
 				maxflows_long.push({graphID,s,t,reachVar,!inclusive,flow});
@@ -754,8 +747,7 @@ class GraphParser: public Parser<B, Solver> {
 			parse_errorf("PARSE ERROR! Edge variables must be >=0, was %d\n", reachVar);
 		}
 
-		while (reachVar >= S.nVars())
-			S.newVar();
+		reachVar= mapVar(S,reachVar);
 
 		//parse the flow constraint appropriately for the type of the graph:
 
@@ -826,8 +818,7 @@ class GraphParser: public Parser<B, Solver> {
 			parse_errorf("PARSE ERROR! Edge variables must be >=0, was %d\n", reachVar);
 		}
 		
-		while (reachVar >= S.nVars())
-			S.newVar();
+		reachVar= mapVar(S,reachVar);
 		
 		if (graphs[graphID]) {
 			graphs[graphID]->minConnectedComponents(min_components, reachVar);
@@ -951,8 +942,7 @@ class GraphParser: public Parser<B, Solver> {
 			if (parsed_lit == 0)
 				break;
 			int v = abs(parsed_lit) - 1;
-			while (v >= S.nVars())
-				S.newVar();
+			v= mapVar(S,v);
 			lits.push((parsed_lit > 0) ? mkLit(v) : ~mkLit(v));
 		}
 		
@@ -1014,8 +1004,7 @@ class GraphParser: public Parser<B, Solver> {
 			int parsed_lit = parseInt(in);
 			
 			int v = abs(parsed_lit) - 1;
-			while (v >= S.nVars())
-				S.newVar();
+			v= mapVar(S,v);
 			head = (parsed_lit > 0) ? mkLit(v) : ~mkLit(v);
 		}
 		assert(lits.size() == weights.size());

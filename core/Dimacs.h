@@ -52,10 +52,73 @@ inline void parse_errorf(const char *fmt, ...) {
 
 }
 
+class DimacsMap{
+	vec<Var> var_map;//Map of external variables to internal varialbes
+	vec<Var> var_reverse_map; //Map of internal variables to internal variables
+public:
+	DimacsMap(){
+	}
+	virtual ~DimacsMap() {
+	}
+	inline Var mapVar(Solver & S, Var var){
+		if (inVarMap(var)){
+			return getVarFromExternalVar(var);
+		}else{
+			Var v =S.newVar();
+			addVarToMap(var,v);
+			return v;
+		}
+	}
+
+	inline bool inVarMap(Var externalVar){
+			if(externalVar==var_Undef){
+				return false;
+			}
+			return externalVar< var_map.size() && var_map[externalVar] !=var_Undef;
+		}
+	inline	Var unmap(Var internalVar){
+			if (internalVar< var_map.size() && var_reverse_map[internalVar]!=var_Undef){
+				return var_reverse_map[internalVar];
+			}
+			return var_Undef;
+		}
+	inline	void addVarToMap(Var v, Var map_to){
+			if(inVarMap(v)){
+				throw std::runtime_error("Variables can only be mapped at most once!");
+			}
+			var_map.growTo(v+1,var_Undef);
+			var_map[v]=map_to;
+			var_reverse_map.growTo(map_to+1,var_Undef);
+			var_reverse_map[map_to]=v;
+		}
+	inline	bool hasMappedVar(Var internalVar){
+			if(internalVar==var_Undef){
+				return false;
+			}
+			return internalVar< var_reverse_map.size() && var_reverse_map[internalVar] !=var_Undef;
+		}
+	inline	Var getVarFromExternalVar(Var externalVar){
+			if (inVarMap(externalVar)){
+				return var_map[externalVar];
+			}
+			return var_Undef;
+		}
+
+	inline	int dimacs(Var v){
+				return dimacs(mkLit(v));
+			}
+	inline	int dimacs(Lit l){
+				return sign(l) ? -(unmap(var(l)) + 1) : (unmap(var(l)) + 1);
+			}
+
+};
+
 template<class B, class Solver>
 class Parser {
 	const char * parser_name;
+	DimacsMap * dimacsParser;
 public:
+
 	Parser(const char * parser_name):parser_name(parser_name) {
 	}
 	virtual ~Parser() {
@@ -65,7 +128,39 @@ public:
 	const char * getParserName() const{
 		return parser_name;
 	}
+
+	Var mapVar(Solver & S, Var v){
+		return dimacsParser->mapVar(S,v);
+	}
+
+	void setDimacs(DimacsMap * dimacs){
+		this->dimacsParser=dimacs;
+	}
+	bool inVarMap(Var externalVar){
+		return dimacsParser->inVarMap(externalVar);
+	}
+	Var unmap(Var internalVar){
+		return dimacsParser->unmap(internalVar);
+	}
+	void addVarToMap(Var v, Var map_to){
+		dimacsParser->addVarToMap(v,map_to);
+	}
+	bool hasMappedVar(Var internalVar){
+		return dimacsParser->hasMappedVar(internalVar);
+	}
+	Var getVarFromExternalVar(Var externalVar){
+		return dimacsParser->getVarFromExternalVar(externalVar);
+	}
+
+	int dimacs(Var v){
+		return dimacsParser->dimacs(v);
+	}
+	int dimacs(Lit l){
+		return dimacsParser->dimacs(l);
+	}
+
 };
+
 
 //A simple parser to allow for named variables
 template<class B, class Solver>
@@ -136,17 +231,23 @@ public:
 	}
 };
 
+
+
 //The MiniSAT DIMACS Parser, converted to be extensible...
 template<class B, class Solver>
-class Dimacs {
+class Dimacs :public DimacsMap{
 	vec<Parser<char*, Solver>*> parsers;
+
 public:
 	Dimacs() {
-		
+
 	}
-	
+
 	virtual ~Dimacs() {
 	}
+
+
+
 
 private:
 	
@@ -158,14 +259,18 @@ private:
 			if (parsed_lit == 0)
 				break;
 			var = abs(parsed_lit) - 1;
-			while (var >= S.nVars())
-				S.newVar();
+			var = mapVar(S,var);
 			lits.push((parsed_lit > 0) ? mkLit(var) : ~mkLit(var));
 		}
 	}
 	
 	virtual bool parseLine(const char * line,int line_number, Solver& S) {
 		if (!strncmp(line,"solve",5)){
+			fprintf(stderr,"Solve statements not yet supported\n");
+			return true;
+		}
+		if (!strncmp(line,"minimize",8)){
+			fprintf(stderr,"minimize statements not yet supported\n");
 			return true;
 		}
 		for (auto * p : parsers) {
@@ -262,6 +367,7 @@ private:
 	}
 public:
 	void addParser(Parser<char*, Solver> * parser) {
+		parser->setDimacs(this);
 		parsers.push(parser);
 	}
 	// Inserts problem into solver.
