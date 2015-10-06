@@ -61,6 +61,9 @@ public:
 	virtual ~DimacsMap() {
 	}
 	inline Var mapVar(Solver & S, Var var){
+		if(!opt_remap_vars){
+			return var;
+		}
 		if (inVarMap(var)){
 			return getVarFromExternalVar(var);
 		}else{
@@ -71,18 +74,24 @@ public:
 	}
 
 	inline bool inVarMap(Var externalVar){
-			if(externalVar==var_Undef){
-				return false;
-			}
-			return externalVar< var_map.size() && var_map[externalVar] !=var_Undef;
+		if(externalVar==var_Undef){
+			return false;
 		}
+		return externalVar< var_map.size() && var_map[externalVar] !=var_Undef;
+	}
 	inline	Var unmap(Var internalVar){
+			if(!opt_remap_vars){
+				return internalVar;
+			}
 			if (internalVar< var_map.size() && var_reverse_map[internalVar]!=var_Undef){
 				return var_reverse_map[internalVar];
 			}
 			return var_Undef;
 		}
 	inline	void addVarToMap(Var v, Var map_to){
+			if(!opt_remap_vars){
+				return;
+			}
 			if(inVarMap(v)){
 				throw std::runtime_error("Variables can only be mapped at most once!");
 			}
@@ -98,6 +107,9 @@ public:
 			return internalVar< var_reverse_map.size() && var_reverse_map[internalVar] !=var_Undef;
 		}
 	inline	Var getVarFromExternalVar(Var externalVar){
+		if(!opt_remap_vars){
+					return externalVar;
+				}
 			if (inVarMap(externalVar)){
 				return var_map[externalVar];
 			}

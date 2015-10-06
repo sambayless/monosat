@@ -93,6 +93,9 @@ BoolOption Monosat::opt_early_theory_prop(_cat, "early-theory-prop",
 		"If false, the solver waits until all literals are propagated before propagating theories; if true, theories are propagated while the solver is still propagating literals",
 		false);
 
+ BoolOption Monosat::opt_remap_vars(_cat,"remap-vars","Remap variables in the GNF internally in the solver, to minimize space required",true);
+
+
 BoolOption Monosat::opt_amo_eager_prop(_cat_amo,"amo-eager-prop","Propagate a-m-o literals as soon as they are implied, instead of waiting for theory propagation",true);
 
 BoolOption Monosat::opt_interpolate(_cat_sms, "interpolate",
