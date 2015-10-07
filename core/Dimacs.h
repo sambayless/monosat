@@ -313,6 +313,7 @@ private:
 	int clauses = 0;
 	int cluase_count=0;
 	int line_num=0;
+	int solves=0;
 	bool parse_(B& in, Solver& S) {
 		vec<Lit> lits;
 
@@ -356,6 +357,7 @@ private:
 					var = mapVar(S,var);
 					assumptions.push((parsed_lit > 0) ? mkLit(var) : ~mkLit(var));
 				}
+				solves++;
 				solve=true;
 			}else if (match(b,"minimize")){
 				//fprintf(stderr,"minimize statements not yet supported\n");

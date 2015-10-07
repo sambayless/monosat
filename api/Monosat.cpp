@@ -715,7 +715,21 @@ void bv_slice( Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv,int a
 	  static vec<int> edge_set;
 	  edge_set.clear();
 	  for (int i = 0;i<n_edges;i++){
-		  edge_set.push(G->getEdgeID(S->getTheoryVar(var(toLit(edges[i])))));
+		  Var outer=var(toLit(edges[i]));
+		  if(outer>=S->nVars()){
+			  api_errorf("Bad edge set variable %d",outer+1);
+		  }
+		  if(!S->hasTheory(outer)){
+			  api_errorf("Bad edge set variable %d",outer+1);
+		  }
+		  if(S->getTheoryID(outer)!=G->getTheoryIndex()){
+			  api_errorf("Wrong graph (%d) for variable %d",G->getTheoryIndex(),outer+1);
+		  }
+		  Var v = S->getTheoryVar(outer);
+		  if(!G->isEdgeVar(v)){
+			  api_errorf("Variable %d is not an edge variable",outer+1);
+		  }
+		  edge_set.push(G->getEdgeID(v));
 	  }
 	  G->newEdgeSet(edge_set);
  }

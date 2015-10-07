@@ -750,6 +750,8 @@ int main(int argc, char** argv) {
 		processSymbols( symbols,assume,opt_assume,opt_assume_symbols, using_symbols_asp);
 		processPriority(S,(const char *) opt_priority);
 		processDecidable(S , (const char*) opt_decidable);
+		for (Lit l:assume)
+			parser.assumptions.push(l);
 
 		double before_pre_processing = rtime(0);
 		double parsing_time = before_pre_processing - initial_time;
@@ -790,8 +792,7 @@ int main(int argc, char** argv) {
 			fflush(stdout);
 		}
 
-		for (Lit l:assume)
-			parser.assumptions.push(l);
+
 
 		lbool ret = runSolve(S,parser.assumptions,parser.bv_minimize) ? l_True : l_False;;
 		double solving_time = rtime(0) - after_preprocessing;
