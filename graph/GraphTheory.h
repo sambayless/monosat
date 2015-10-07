@@ -839,11 +839,13 @@ public:
 	}
 
 	void setBVTheory(BVTheorySolver<Weight> * bv){
-		comparator = bv;
+		if(comparator!=bv){
+			comparator = bv;
 
-		if(bv){
-			this->propagation_required_theories.push(bv);
-			bv->addTheory(this);
+			if(bv){
+				this->propagation_required_theories.push(bv);
+				bv->addTheory(this);
+			}
 		}
 	}
 

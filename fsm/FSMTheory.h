@@ -708,11 +708,13 @@ public:
 		
 		requiresPropagation = false;
 		for(int i = 0;i<nFsms();i++){
-			g_unders[i]->clearChanged();
-			g_overs[i]->clearChanged();
+			if(g_unders[i]){
+				g_unders[i]->clearChanged();
+				g_overs[i]->clearChanged();
 
-			g_unders[i]->clearHistory();
-			g_overs[i]->clearHistory();
+				g_unders[i]->clearHistory();
+				g_overs[i]->clearHistory();
+			}
 		}
 
 		//detectors_to_check.clear();

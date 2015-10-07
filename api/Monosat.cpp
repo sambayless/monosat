@@ -255,7 +255,27 @@ void readGNF(Monosat::SimpSolver * S, const char  * filename){
 	AMOParser<char *, SimpSolver> amo;
 	parser.addParser(&amo);
 
-	parser.parse_DIMACS(in, *S);
+	StreamBuffer strm(in);
+	vec<int> assumps;
+	bool ran_last_solve=false;
+	while(parser.parse(strm, *S)){
+		assumps.clear();
+		for(Lit l:parser.assumptions){
+			assumps.push(toInt(l));
+		}
+		solveAssumptions_MinBVs(S,&assumps[0],assumps.size(),&parser.bv_minimize[0],parser.bv_minimize.size());
+		if(*strm==EOF){
+			ran_last_solve=true;
+		}
+	}
+	assert(*strm==EOF);
+	if(!ran_last_solve){
+		for(Lit l:parser.assumptions){
+			assumps.push(toInt(l));
+		}
+		solveAssumptions_MinBVs(S,&assumps[0],assumps.size(),&parser.bv_minimize[0],parser.bv_minimize.size());
+	}
+
 
 	gzclose(in);
 
@@ -336,7 +356,7 @@ bool solveAssumptions_MinBVs(Monosat::SimpSolver * S,int * assumptions, int n_as
 		  min_values.growTo(bvs.size());
 		  long n_solves = 1;
 		  for (int i = 0;i<bvs.size();i++){
-			  int bvID = minimize_bvs[i];
+			  int bvID = bvs[i];
 			  long value = bvTheory->getUnderApprox(bvID);
 			  min_values[i]=value;
 			  // int bvID,const Weight & to, Var outerVar = var_Undef, bool decidable=true

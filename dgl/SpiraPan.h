@@ -719,6 +719,7 @@ public:
 			int edgeid = g.getChange(i).id;
 			if (g.getChange(i).addition && g.edgeEnabled(edgeid) && !edge_enabled[edgeid]) {
 				prims();//to maintain correctness in spirapan, prims apparently must be called before addEdgeToMST.
+				//however, the current implementation can likely be improved by only running prims on the components of the endpoints of edgeid...
 				edge_enabled[edgeid]=true;
 				addEdgeToMST(edgeid);
 			} else if (!g.getChange(i).addition && !g.edgeEnabled(edgeid) && edge_enabled[edgeid]) {

@@ -222,7 +222,7 @@ class FSMParser: public Parser<B, Solver> {
 		int to = parseInt(in);
 		int strID = parseInt(in);
 		int reachVar = parseInt(in) - 1;
-
+		reachVar= mapVar(S,reachVar);
 		//now read in the string
 		accepts[fsmID].push();
 
@@ -246,7 +246,7 @@ class FSMParser: public Parser<B, Solver> {
 			parse_errorf("Edge variables must be >=0, was %d\n", reachVar);
 		}
 
-		reachVar= mapVar(S,reachVar);
+
 
 	}
 	
@@ -266,7 +266,7 @@ class FSMParser: public Parser<B, Solver> {
 		int to2 = parseInt(in);
 		int strID = parseInt(in);
 		int reachVar = parseInt(in) - 1;
-
+		reachVar= mapVar(S,reachVar);
 		//now read in the string
 		compose_accepts.push();
 
@@ -302,7 +302,7 @@ class FSMParser: public Parser<B, Solver> {
 			parse_errorf("Edge variables must be >=0, was %d\n", reachVar);
 		}
 
-		reachVar= mapVar(S,reachVar);
+
 
 	}
 
@@ -319,7 +319,7 @@ class FSMParser: public Parser<B, Solver> {
 
 		int strID = parseInt(in);
 		int reachVar = parseInt(in) - 1;
-
+		reachVar= mapVar(S,reachVar);
 		//now read in the string
 		generates[fsmID].push();
 
@@ -341,7 +341,7 @@ class FSMParser: public Parser<B, Solver> {
 			parse_errorf("Edge variables must be >=0, was %d\n", reachVar);
 		}
 
-		reachVar= mapVar(S,reachVar);
+
 
 
 	}
@@ -360,7 +360,7 @@ class FSMParser: public Parser<B, Solver> {
 		int strID = parseInt(in);
 		int strID2 = parseInt(in);
 		int reachVar = parseInt(in) - 1;
-
+		reachVar= mapVar(S,reachVar);
 		//now read in the string
 		transduces[fsmID].push();
 
@@ -386,7 +386,7 @@ class FSMParser: public Parser<B, Solver> {
 			parse_errorf("Edge variables must be >=0, was %d\n", reachVar);
 		}
 
-		reachVar= mapVar(S,reachVar);
+
 
 	}
 
@@ -414,6 +414,9 @@ public:
 		}else if (match(in,"str")){
 			readString(in,S);
 			return true;
+		}else if (match(in,"accepts_composition")){//previously, was 'composition_accepts'; changed to avoid conflicting with comments
+			readCompositionAccepts(in,S);
+			return true;
 		}else if (match(in, "accepts")) {
 			readAccepts(in, S);
 			return true;
@@ -422,9 +425,6 @@ public:
 			return true;
 		}else if (match(in,"transduces")){
 			readTransduces(in,S);
-			return true;
-		}else if (match(in,"composition_accepts")){
-			readCompositionAccepts(in,S);
 			return true;
 		}
 		return false;

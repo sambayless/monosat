@@ -64,6 +64,9 @@ public:
 	// Variable mode:
 	// 
 	void setFrozen(Var v, bool b); // If a variable is frozen it will not be eliminated.
+	bool isFrozen(Var v){
+		return frozen[v];
+	}
 	bool isEliminated(Var v) const;
 
 	// Solving:

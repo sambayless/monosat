@@ -1149,9 +1149,12 @@ public:
 				parse_errorf("PARSE ERROR! Undefined bitvector %d for edge %d\n", e.bvID, e.edgeVar);
 			}
 		}
+
 		for (auto & e:bvedges){
 			graphs[e.graphID]->newEdgeBV(e.from, e.to, e.edgeVar, e.bvID);
 		}
+		bvedges.clear();
+
 		vec<int> edgeset;
 		for(int i = 0;i<edge_sets.size();i++){
 			int graphID = edge_sets[i].graphID;
@@ -1195,39 +1198,42 @@ public:
 				parse_errorf("PARSE ERROR! Undefined graph %d for edgeset %d\n", graphID, i);
 			}
 		}
+		edge_sets.clear();
 
 		for (auto & e: distances_long){
 			graphs[e.graphID]->distance(e.from, e.to, e.var, e.weight,!e.strict);
 		}
+		distances_long.clear();
 		for (auto & e: distances_float){
 			graphs_float[e.graphID]->distance(e.from, e.to, e.var, e.weight,!e.strict);
 		}
-
+		distances_float.clear();
 		for (auto & e: distances_rational){
 			graphs_rational[e.graphID]->distance(e.from, e.to, e.var, e.weight,!e.strict);
 		}
-
+		distances_rational.clear();
 		for(auto & e:bvdistances){
 			graphs[e.graphID]->distanceBV(e.from, e.to, e.var, e.bvID,!e.strict);
 
 		}
+		bvdistances.clear();
 
 		for (auto & e: maxflows_long){
 			graphs[e.graphID]->maxflow(e.s, e.t, e.var, e.weight,!e.strict);
 		}
-
+		maxflows_long.clear();
 		for (auto & e: maxflows_float){
 			graphs_float[e.graphID]->maxflow(e.s, e.t, e.var, e.weight,!e.strict);
 		}
-
+		maxflows_float.clear();
 		for (auto & e: maxflows_rational){
 			graphs_rational[e.graphID]->maxflow(e.s, e.t, e.var, e.weight,!e.strict);
 		}
-
+		maxflows_rational.clear();
 		for(auto & e:bvmaxflows){
 			graphs[e.graphID]->maxflowBV(e.s, e.t, e.var, e.bvID,!e.strict);
 		}
-
+		bvmaxflows.clear();
 
 		for (auto p:edgePriorities){
 /*			int graphID = p.graphID;
@@ -1244,7 +1250,7 @@ public:
 
 			}*/
 		}
-
+		edgePriorities.clear();
 		for (int i = 0; i < graphs.size(); i++) {
 			if (graphs[i])
 				graphs[i]->implementConstraints();

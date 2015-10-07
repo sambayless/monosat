@@ -362,9 +362,9 @@ public:
 	}
 
 	void implementConstraints(Solver & S) {
-		if(bvs.size()){
+		theory = (BVTheorySolver<long>*) S.bvtheory;
+		if(bvs.size() || theory){
 
-			theory = (BVTheorySolver<long>*) S.bvtheory;
 			if(!theory)
 				theory = new BVTheorySolver<long>(&S);
 
@@ -378,23 +378,14 @@ public:
 					}
 				}
 			}
-
-
-			/*for(auto & c:addconsts){
-				int newBV = theory->newBitvector(-1,theory->getBV(c.aBV).width()).getID();
-				theory->makeConst(newBV,c.b);
-				addbvs.push();
-				addbvs.last().resultID = c.resultID;
-				addbvs.last().aBV =  c.aBV;
-				addbvs.last().bBV = newBV;
-			}*/
-
+			bvs.clear();
 			for(auto & c:compares){
 				if(!theory->hasBV(c.bvID)){
 					parse_errorf("Undefined bitvector ID %d",c.bvID);
 				}
 				theory->newComparison(c.c,c.bvID,c.w,c.var);
 			}
+			compares.clear();
 
 			for(auto & c:comparebvs){
 				if(!theory->hasBV(c.bvID)){
@@ -406,6 +397,7 @@ public:
 
 				theory->newComparisonBV(c.c,c.bvID,c.compareID,c.var);
 			}
+			comparebvs.clear();
 
 			for(auto & c:addbvs){
 				if(!theory->hasBV(c.aBV)){
@@ -419,6 +411,7 @@ public:
 				}
 				theory->newAdditionBV(c.resultID,c.aBV,c.bBV);
 			}
+			addbvs.clear();
 
 			for (auto & c:itebvs){
 				if(!theory->hasBV(c.thenId)){
@@ -432,7 +425,7 @@ public:
 				}
 				theory->newConditionalBV(c.condition,c.thenId,c.elseId, c.resultId);
 			}
-
+			itebvs.clear();
 			for (int i = 0; i < symbols.size(); i++) {
 				int bvID = symbols[i].first;
 				string & s = symbols[i].second;
@@ -442,6 +435,9 @@ public:
 					fprintf(stderr,"Unmatched bv symbol definition for %d : %s\n",bvID,s.c_str());
 				}
 			}
+			symbols.clear();
+
+
 
 		}else if (addbvs.size() || comparebvs.size() || compares.size()){
 

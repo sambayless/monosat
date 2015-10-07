@@ -36,21 +36,6 @@
 namespace Monosat {
 
 
-class parse_error: public std::runtime_error {
-public:
-	 explicit parse_error(const std::string& arg): std::runtime_error(arg ) {}
-};
-
-//Supporting function for throwing parse errors
-inline void parse_errorf(const char *fmt, ...) {
-    va_list args;
-    va_start(args, fmt);
-    char buf[1000];
-    vsnprintf(buf, sizeof buf,fmt, args);
-    va_end(args);
-    throw parse_error(buf);
-
-}
 
 class DimacsMap{
 	vec<Var> var_map;//Map of external variables to internal varialbes
@@ -190,8 +175,8 @@ public:
 	bool parseLine(B& in, Solver& S) {
 		if (*in == EOF)
 			return false;
-		else if (*in == 'c') {
-			if (match(in, "c var ")) {
+		else if (*in == 's') {
+			if (match(in, "symbol")) { //used to use "c var" for symbols
 
 				//this is a variable symbol map
 				skipWhitespace(in);
@@ -253,7 +238,11 @@ template<class B, class Solver>
 class Dimacs :public DimacsMap{
 	vec<Parser<char*, Solver>*> parsers;
 
+
 public:
+	vec<int> bv_minimize;
+	vec<Lit> assumptions;
+
 	Dimacs() {
 
 	}
@@ -265,8 +254,9 @@ public:
 
 
 private:
-	
-	void readClause(char * in, Solver& S, vec<Lit>& lits) {
+
+
+	void readClause(B& in, Solver& S, vec<Lit>& lits) {
 		int parsed_lit, var;
 		lits.clear();
 		for (;;) {
@@ -280,14 +270,6 @@ private:
 	}
 	
 	virtual bool parseLine(const char * line,int line_number, Solver& S) {
-		if (!strncmp(line,"solve",5)){
-			fprintf(stderr,"Solve statements not yet supported\n");
-			return true;
-		}
-		if (!strncmp(line,"minimize",8)){
-			fprintf(stderr,"minimize statements not yet supported\n");
-			return true;
-		}
 		for (auto * p : parsers) {
 			char * ln = (char*) line; //intentionally discard const qualifier
 			try{
@@ -327,70 +309,134 @@ private:
 		linebuf.push(0);
 		return true;
 	}
-	
-	void parse(B& in, Solver& S) {
+	int vars = 0;
+	int clauses = 0;
+	int cluase_count=0;
+	int line_num=0;
+	bool parse_(B& in, Solver& S) {
 		vec<Lit> lits;
-		int vars = 0;
-		int clauses = 0;
-		int cluase_count=0;
-		int line_num=0;
-		
+
+		bv_minimize.clear();
+		assumptions.clear();
+		bool solve=false;
 		vec<char> linebuf;
-		for (;;) {
+		try{
+		while(!solve){
 			skipWhitespace(in);
 			if (*in == EOF)
 				break;
-			line_num++;
+			line_num++;//this will merge line counts if there are multiple blank lines...
+
+			//Typically, 99% of lines are either comments or clauses, and so it makes a lot of sense to handle these first, and before reading the whole line into a buffer.
+			if(*in=='-' || (*in >= '0' && *in<='9')){
+				//this is a clause
+				cluase_count++;
+				readClause(in, S, lits);
+				S.addClause_(lits);
+				continue;
+			}
+			if(*in=='c'){
+				skipLine(in);
+				continue;//comment
+			}
 			readLine(linebuf, in);
-			if (parseLine(linebuf.begin(),line_num, S)) {
+			char * b = linebuf.begin();
+			if (match(b,"solve")){
+				int parsed_lit, var;
+				lits.clear();
+				for (;;) {
+					while(*b==' ')
+						++b;
+					if(*b=='\n')
+						break;
+					parsed_lit = parseInt(b);
+					if (parsed_lit == 0)
+						break;
+					var = abs(parsed_lit) - 1;
+					var = mapVar(S,var);
+					assumptions.push((parsed_lit > 0) ? mkLit(var) : ~mkLit(var));
+				}
+				solve=true;
+			}else if (match(b,"minimize")){
+				//fprintf(stderr,"minimize statements not yet supported\n");
+				b+=8;
+				skipWhitespace(b);
+				int bvID = parseInt(b);
+				assert(bvID>=0);
+				bv_minimize.push(bvID);
+			}else if (parseLine(b,line_num, S)) {
 				//do nothing
 			} else if (linebuf[0] == 'p') {
-				char * b = linebuf.begin();
+
 				if (eagerMatch(b, "p cnf")) {
 					vars = parseInt(b);
 					clauses = parseInt(b);
 				} else {
 					parse_errorf("Unexpected char: %c\n", *in);
 				}
-			} else if (linebuf[0] == 'c') {
-				//comment line
-				//skipLine(in);
-			} else {
+			}  else {
 				//if nothing else works, attempt to parse this line as a clause.
-				cluase_count++;
-				readClause(linebuf.begin(), S, lits);
-				S.addClause_(lits);
+				parse_errorf("Bad line at %d: %s",line_num,linebuf.begin());
 			}
 		}
-		//Disabling this for now, as it is always triggered when there are theory atoms...
-		/*if (vars != S.nVars())
-			fprintf(stderr, "WARNING! DIMACS header mismatch: wrong number of variables.\n");
-		if (cnt != clauses)
-			fprintf(stderr, "WARNING! DIMACS header mismatch: wrong number of clauses.\n");*/
-		for (auto * p : parsers) {
-			try{
-				p->implementConstraints(S);
-			}catch(const std::exception & e){
-				std::cerr << e.what() << "\n";
-				std::cerr<<"PARSE ERROR in " << p->getParserName() << " parser.\n";
-				exit(1);
-			}catch(...){
-				std::cerr<<"PARSE ERROR in " << p->getParserName() << " parser.\n";
-				exit(1);
+		if(solve){
+			//continue reading any blank/comment lines
+			while(*in !=EOF){
+				skipWhitespace(in);
+				if (*in == EOF)
+					break;
+				else if (*in == 'c'){
+					//continue
+				}else{
+					break;
+				}
 			}
 		}
+
+			//Disabling this for now, as it is always triggered when there are theory atoms...
+			/*if (vars != S.nVars())
+				fprintf(stderr, "WARNING! DIMACS header mismatch: wrong number of variables.\n");
+			if (cnt != clauses)
+				fprintf(stderr, "WARNING! DIMACS header mismatch: wrong number of clauses.\n");*/
+			for (auto * p : parsers) {
+				try{
+					p->implementConstraints(S);
+				}catch(const std::exception & e){
+					std::cerr << e.what() << "\n";
+					std::cerr<<"PARSE ERROR in " << p->getParserName() << " parser.\n";
+					exit(1);
+				}catch(...){
+					std::cerr<<"PARSE ERROR in " << p->getParserName() << " parser.\n";
+					exit(1);
+				}
+			}
+		}catch(const parse_error& e){
+			std::cerr << e.what() << "\n";
+			std::cerr<<"PARSE ERROR in DIMACS parser at line " << line_num << "\n";
+			exit(1);
+		}catch(const std::exception & e){
+			std::cerr << e.what() << "\n";
+			std::cerr<<"PARSE ERROR in DIMACS parser at line " << line_num << "\n";
+			exit(1);
+		}catch(...){
+			std::cerr<<"PARSE ERROR in DIMACS parser at line " << line_num << "\n";
+			exit(1);
+		}
+		return solve;
 	}
 public:
 	void addParser(Parser<char*, Solver> * parser) {
 		parser->setDimacs(this);
 		parsers.push(parser);
 	}
-	// Inserts problem into solver.
-	void parse_DIMACS(gzFile input_stream, Solver& S) {
+/*	// Inserts problem into solver.
+	bool parse_DIMACS(gzFile input_stream, Solver& S) {
 		StreamBuffer in(input_stream);
-		parse(in, S);
+		return parse(in, S);
+	}*/
+	bool parse(StreamBuffer & in, Solver& S) {
+		return parse_(in,S);
 	}
-	
 };
 }
 ;

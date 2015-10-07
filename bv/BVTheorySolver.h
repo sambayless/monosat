@@ -1463,7 +1463,8 @@ public:
 
 
 	void preprocess() {
-		const_true=True();
+		if(const_true==lit_Undef)
+			const_true=True();
 
 	}
 	void setLiteralOccurs(Lit l, bool occurs) {
