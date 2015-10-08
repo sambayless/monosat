@@ -112,10 +112,57 @@ public:
 
 };
 
+class BVMap{
+	vec<int> bv_map;//Map of external variables to internal varialbes
+	vec<int> bv_reverse_map; //Map of internal variables to internal variables
+public:
+	BVMap(){
+	}
+	virtual ~BVMap() {
+	}
+	inline int mapBV(Solver & S, int bv){
+		BVTheorySolver<long>* theory = (BVTheorySolver<long>* )S.getBVTheory();
+
+		if(!inBVMap(bv)){
+			parse_errorf("Undefined bitvector bv%d",bv);
+		}
+		return bv_map[bv];
+	}
+
+	inline bool inBVMap(int externalBV){
+		return externalBV>=0 && externalBV< bv_map.size() && bv_map[externalBV] !=-1;
+	}
+
+	inline	void addBVToMap(int bvID, int map_to){
+		if(inBVMap(bvID)){
+			parse_errorf("Bitvector %d mapped multiple times!",bvID);
+		}
+		bv_map.growTo(bvID+1,-1);
+		bv_map[bvID]=map_to;
+		bv_reverse_map.growTo(map_to+1,-1);
+		bv_reverse_map[map_to]=bvID;
+	}
+	inline	bool hasMappedBV(int internalBV){
+		if(internalBV==-1){
+			return false;
+		}
+		return internalBV>=0 && internalBV< bv_reverse_map.size() && bv_reverse_map[internalBV] !=-1;
+	}
+	inline	int getBVFromExternalBV(int externalBV){
+		if (inBVMap(externalBV)){
+			return bv_map[externalBV];
+		}
+		return -1;
+	}
+
+
+};
+
 template<class B, class Solver>
 class Parser {
 	const char * parser_name;
 	DimacsMap * dimacsParser;
+	BVMap * bvmap;
 public:
 
 	Parser(const char * parser_name):parser_name(parser_name) {
@@ -135,6 +182,10 @@ public:
 	void setDimacs(DimacsMap * dimacs){
 		this->dimacsParser=dimacs;
 	}
+	void setBVMap(BVMap * bvmap){
+		this->bvmap=bvmap;
+	}
+
 	bool inVarMap(Var externalVar){
 		return dimacsParser->inVarMap(externalVar);
 	}
@@ -157,6 +208,20 @@ public:
 	int dimacs(Lit l){
 		return dimacsParser->dimacs(l);
 	}
+
+
+	inline int mapBV(Solver & S, int bv){
+		return bvmap->mapBV(S,bv);
+	}
+
+	inline bool inBVMap(int externalBV){
+		return bvmap->inBVMap(externalBV);
+	}
+
+	inline	void addBVToMap(int bvID, int map_to){
+		bvmap->addBVToMap(bvID,map_to);
+	}
+
 
 };
 
@@ -235,7 +300,7 @@ public:
 
 //The MiniSAT DIMACS Parser, converted to be extensible...
 template<class B, class Solver>
-class Dimacs :public DimacsMap{
+class Dimacs :public DimacsMap,public BVMap{
 	vec<Parser<char*, Solver>*> parsers;
 
 
@@ -429,6 +494,7 @@ private:
 public:
 	void addParser(Parser<char*, Solver> * parser) {
 		parser->setDimacs(this);
+		parser->setBVMap(this);
 		parsers.push(parser);
 	}
 /*	// Inserts problem into solver.

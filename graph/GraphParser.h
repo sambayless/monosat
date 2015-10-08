@@ -57,6 +57,7 @@ struct SteinerStruct {
 template<class B, class Solver>
 class GraphParser: public Parser<B, Solver> {
 	using Parser<B, Solver>::mapVar;
+	using Parser<B, Solver>::mapBV;
 	bool precise;
 	BVTheorySolver<long>*& bvTheory;
 	vec<GraphTheorySolver<long>*> graphs;
@@ -1145,13 +1146,13 @@ public:
 		}
 
 		for (auto & e:bvedges){
-			if(!bvTheory->hasBV(e.bvID)){
+			if(!bvTheory->hasBV(mapBV(S,e.bvID))){
 				parse_errorf("PARSE ERROR! Undefined bitvector %d for edge %d\n", e.bvID, e.edgeVar);
 			}
 		}
 
 		for (auto & e:bvedges){
-			graphs[e.graphID]->newEdgeBV(e.from, e.to, e.edgeVar, e.bvID);
+			graphs[e.graphID]->newEdgeBV(e.from, e.to, e.edgeVar, mapBV(S,e.bvID));
 		}
 		bvedges.clear();
 
@@ -1213,7 +1214,7 @@ public:
 		}
 		distances_rational.clear();
 		for(auto & e:bvdistances){
-			graphs[e.graphID]->distanceBV(e.from, e.to, e.var, e.bvID,!e.strict);
+			graphs[e.graphID]->distanceBV(e.from, e.to, e.var, mapBV(S,e.bvID),!e.strict);
 
 		}
 		bvdistances.clear();
@@ -1231,7 +1232,7 @@ public:
 		}
 		maxflows_rational.clear();
 		for(auto & e:bvmaxflows){
-			graphs[e.graphID]->maxflowBV(e.s, e.t, e.var, e.bvID,!e.strict);
+			graphs[e.graphID]->maxflowBV(e.s, e.t, e.var, mapBV(S,e.bvID),!e.strict);
 		}
 		bvmaxflows.clear();
 

@@ -731,7 +731,7 @@ int main(int argc, char** argv) {
 
 		StreamBuffer strm(in);
 
-		while(parser.parse(strm, S)){
+		while(S.okay() && parser.parse(strm, S)){
 			if(*strm==EOF){
 				//Don't run solves from the last line of the file, in order to support pre-processing and other options below.
 				//(This is not a great way to deal with preprocessing...)
@@ -741,7 +741,7 @@ int main(int argc, char** argv) {
 				S.preprocess();//do this _even_ if sat based preprocessing is disabled! Some of the theory solvers depend on a preprocessing call being made!
 				runSolve(S,parser.assumptions,parser.bv_minimize);
 			}else{
-				parser.assumptions.clear();
+				parser.assumptions.clear();parser.bv_minimize.clear();
 			}
 		}
 		gzclose(in);

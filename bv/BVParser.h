@@ -44,6 +44,7 @@ namespace Monosat {
 template<class B, class Solver>
 class BVParser: public Parser<B, Solver> {
 	using Parser<B, Solver>::mapVar;
+	using Parser<B, Solver>::mapBV;
 public:
 	BVTheorySolver<long>* theory=nullptr;
 private:
@@ -129,10 +130,9 @@ private:
 		bvs.growTo(id + 1);
 
 		if(bvs[id].id!=-1){
-
 			parse_errorf("Re-defined bitvector %d\n", id);
-
 		}
+
 		bvs[id].id = id;
 		bvs[id].width=width;
 		for(int i =0;i<width;i++){
@@ -299,16 +299,16 @@ public:
 		skipWhitespace(in);
 		if (*in == EOF)
 			return false;
-		else if (match(in, "c bv")) {
-			//this is a bitvector symbol definition
-			readSymbol(in,S);
-			return true;
-		}else if (*in == 'c') {
+		else if (*in == 'c') {
 			//just a comment
 			return false;
 		} else if (match(in, "bv")) {
 			skipWhitespace(in);
-			if (match(in,"const")){
+			if (match(in, "symbol")) { //previous, used  "c bv" for this
+				//this is a bitvector symbol definition
+				readSymbol(in,S);
+				return true;
+			}else if (match(in,"const")){
 				skipWhitespace(in);
 				if (match(in, "<=")) {
 					readCompare(in, S,Comparison::leq);
@@ -371,15 +371,21 @@ public:
 
 			for (auto & bv:bvs){
 				if(bv.id>-1){
+					int mappedBV = theory->nBitvectors();
+					if(!opt_remap_vars)
+						mappedBV=bv.id;
+					this->addBVToMap(bv.id,mappedBV);
+					assert(mappedBV==mapBV(S,bv.id));
 					if(bv.constval>=0){
-						theory->newBitvector(bv.id,bv.width,bv.constval);
+						theory->newBitvector(mappedBV,bv.width,bv.constval);
 					}else{
-						theory->newBitvector(bv.id,bv.vector);
+						theory->newBitvector(mappedBV,bv.vector);
 					}
 				}
 			}
 			bvs.clear();
 			for(auto & c:compares){
+				c.bvID = mapBV(S,c.bvID);
 				if(!theory->hasBV(c.bvID)){
 					parse_errorf("Undefined bitvector ID %d",c.bvID);
 				}
@@ -388,6 +394,8 @@ public:
 			compares.clear();
 
 			for(auto & c:comparebvs){
+				c.bvID = mapBV(S,c.bvID);
+				c.compareID = mapBV(S,c.compareID);
 				if(!theory->hasBV(c.bvID)){
 					parse_errorf("Undefined bitvector ID %d",c.bvID);
 				}
@@ -400,6 +408,10 @@ public:
 			comparebvs.clear();
 
 			for(auto & c:addbvs){
+				c.aBV = mapBV(S,c.aBV);
+				c.bBV = mapBV(S,c.bBV);
+				c.resultID = mapBV(S,c.resultID);
+
 				if(!theory->hasBV(c.aBV)){
 					parse_errorf("Undefined bitvector ID %d",c.aBV);
 				}
@@ -414,6 +426,10 @@ public:
 			addbvs.clear();
 
 			for (auto & c:itebvs){
+				c.thenId = mapBV(S,c.thenId);
+				c.elseId = mapBV(S,c.elseId);
+				c.resultId = mapBV(S,c.resultId);
+
 				if(!theory->hasBV(c.thenId)){
 					parse_errorf("Undefined bitvector ID %d",c.thenId);
 				}
@@ -427,6 +443,7 @@ public:
 			}
 			itebvs.clear();
 			for (int i = 0; i < symbols.size(); i++) {
+				symbols[i].first = mapBV(S,symbols[i].first);
 				int bvID = symbols[i].first;
 				string & s = symbols[i].second;
 				if (theory->hasBV(bvID)){
