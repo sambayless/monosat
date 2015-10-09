@@ -3715,13 +3715,12 @@ public:
 		analyze(conflict);
 	}
 
-	void buildComparisonReasonBV(Comparison op, int bvID,int comparebvID, vec<Lit> & conflict,int trail_pos=-1){
+	void buildComparisonReasonBV(Comparison op, int bvID,int comparebvID, vec<Lit> & conflict){
 		dbg_no_pending_analyses();
 		assert(eq_bitvectors[bvID]==bvID);
-		if (trail_pos<0){
-			trail_pos=trail.size();
-		}
-		rewind_trail_pos(trail_pos);
+
+
+		//rewind_trail_pos(trail_pos);
 		stats_build_value_bv_reason++;
 		Weight  over_cur = over_approx[bvID];
 		Weight  under_cur = under_approx[bvID];
@@ -4340,7 +4339,7 @@ public:
 
 	void buildComparisonReason(Comparison op, int bvID, Weight  to,  vec<Lit> & conflict){
 		dbg_no_pending_analyses();
-		rewind_trail_pos(trail.size()-1);
+		//rewind_trail_pos(trail.size()-1);
 		int trail_pos = rewindUntil(bvID,op,to);
 		//analyses.push({bvID,op,conflict});
 		analyzeValueReason(op,bvID,to,conflict);
