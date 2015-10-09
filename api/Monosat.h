@@ -11,7 +11,13 @@
 extern "C"
 {
 
+  int varToLit(int var, bool negated){
+	  return toInt(mkLit(var,negated));
+  }
 
+  int litToVar(int lit){
+	  return lit/2;
+  }
 
   void * newSolver(int argc, char**argv);
 
@@ -26,6 +32,15 @@ extern "C"
   bool solveAssumptions_MinBVs(Monosat::SimpSolver * S,int * assumptions, int n_assumptions, int * minimize_bvs, int n_minimize_bvs);
   void backtrack(Monosat::SimpSolver * S);
   int newVar(Monosat::SimpSolver * S);
+  void setDecisionVar(Monosat::SimpSolver * S,int var,bool decidable);
+  bool isDecisionVar(Monosat::SimpSolver * S,int var);
+
+  //Static, lexicographic heuristic. Larger values are higher priority (decided first); default priority is 0
+  void setDecisionPriority(Monosat::SimpSolver * S,int var, int priority);
+  int getDecisionPriority(Monosat::SimpSolver * S,int var);
+  // Which polarity the decision heuristic should use for a variable (by default).
+  void setDecisionPolarity(Monosat::SimpSolver * S,Var v, bool b);
+  bool getDecisionPolarity(Monosat::SimpSolver * S,Var v);
 
   //The solver will (sometimes) instantiate an arbitrary true literal for use as a constant.
   //Call this method to a) force that literal to be instantiate, and b) get that literal.

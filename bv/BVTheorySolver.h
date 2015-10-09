@@ -274,6 +274,8 @@ public:
 	long n_additions=0;
 	vec<lbool> assigns;
 	CRef comparisonprop_marker;
+	CRef comparisonbv_1starg_marker;
+	CRef comparisonbv_2ndarg_marker;
 	CRef conditionthen_prop_marker;
 	CRef conditionelse_prop_marker;
 	CRef conditionarg_prop_marker;
@@ -439,6 +441,8 @@ public:
 		S->addTheory(this);
 		S->setBVTheory(this);
 		comparisonprop_marker = S->newReasonMarker(this);
+		comparisonbv_1starg_marker = S->newReasonMarker(this);
+		comparisonbv_2ndarg_marker=S->newReasonMarker(this);
 		conditionthen_prop_marker = S->newReasonMarker(this);
 		conditionelse_prop_marker = S->newReasonMarker(this);
 		conditionarg_prop_marker= S->newReasonMarker(this);
@@ -836,6 +840,9 @@ public:
 			int a=1;
 		}
 		Lit sl = toSolver(l);
+		if(sl.x ==83){
+			int a=1;
+		}
 #ifndef NDEBUG
 
 	/*printf("learnt ");
@@ -1263,7 +1270,7 @@ public:
 
 	void buildReason(Lit p, vec<Lit> & reason,CRef marker) {
 		static int iter = 0;
-		if(++iter==164){//17
+		if(++iter==55 || iter==56){//17
 			int a =1;
 		}
 		assert(value(p)!=l_False);
@@ -1297,7 +1304,7 @@ public:
 
 			assert(isComparisonVar(v));
 			int comparisonID = getComparisonID(v);
-
+			assert(bvID == comparisons[comparisonID].bvID);
 			Comparison op = comparisons[comparisonID].op();
 			if (comparisons[comparisonID].compareID<0){
 				if(sign(p)){
@@ -1305,12 +1312,60 @@ public:
 				}
 				buildComparisonReason(op,bvID,comparisons[comparisonID].w,reason);
 			}else{
-				int compareBV = comparisons[comparisonID].compareID;
-				if(sign(p)){
-					op=-op;
-				}
-				buildComparisonReasonBV(op,bvID,compareBV,reason);
+				throw std::runtime_error("Critical error in BV solver");
 			}
+
+
+		}else if (marker == comparisonbv_1starg_marker) {
+			reason.push(p);
+			Var v = var(p);
+
+
+			assert(isComparisonVar(v));
+			int comparisonID = getComparisonID(v);
+			int bvID = comparisons[comparisonID].bvID;
+			int compareBV = comparisons[comparisonID].compareID;
+			assert(getbvID(v) == comparisons[comparisonID].bvID);
+			Comparison op = comparisons[comparisonID].op();
+			if (compareBV<0){
+				throw std::runtime_error("Critical error in BV solver");
+			}
+
+			if(sign(p)){
+				op=-op;
+			}
+			buildComparisonReasonBV(op,bvID,compareBV,reason);
+
+
+
+		}else if (marker == comparisonbv_2ndarg_marker) {
+			reason.push(p);
+			Var v = var(p);
+
+			//this is a fragile way to do this... ideally it should be replaced:
+			//since CIDs for comparisonBVs are always assigned in duplicate, one for each side of the
+			//comparison, and sequentially, and that the bvs are always ordered by bvID size (larger first),
+			//the comparisonID for the 2nd argument can be obtained from the same variable as the first, by adding one to
+			//that variables CID...
+			assert(isComparisonVar(v));
+			int comparisonID = getComparisonID(v)+1;
+			assert(comparisons[comparisonID-1].compareID == comparisons[comparisonID].bvID);
+			assert(comparisons[comparisonID-1].bvID == comparisons[comparisonID].compareID);
+			assert(comparisons[comparisonID-1].op() == ~comparisons[comparisonID].op());
+
+			int bvID = comparisons[comparisonID].bvID ;
+			int compareID =comparisons[comparisonID].compareID;
+
+			assert(compareID>=0);
+			assert(compareID == comparisons[comparisonID-1].bvID);
+
+			Comparison op = comparisons[comparisonID].op();
+			int compareBV = comparisons[comparisonID].compareID;
+			if(sign(p)){
+				op=-op;
+			}
+			buildComparisonReasonBV(op,bvID,compareBV,reason);
+
 
 
 		} else if (marker == bvprop_marker) {
@@ -2620,6 +2675,9 @@ public:
 
 		while(altered_bvs.size()){
 			int bvID = altered_bvs.last();
+			if(bvID==1229 || bvID==526){
+				int a=1;
+			}
 			if(eq_bitvectors[bvID]!=bvID)
 			{
 				altered_bvs.pop(); //this isn't safe to do, because recently enforced comparisons need to be propagated, even if the under/over approx didn't change.
@@ -2638,7 +2696,7 @@ public:
 			if(stats_bv_propagations==17){
 				int a=1;
 			}
-			bool changed = updateApproximations(bvID);
+			bool changed = updateApproximations(bvID);//can split this into changedUpper and changedLower...
 			changed |=bv_needs_propagation[bvID];
 			if(!changed){
 				assert( under_approx[bvID]<= over_approx[bvID]);
@@ -3093,6 +3151,9 @@ public:
 			//update over approx lits
 			for(int i = 0;i<compare.size();i++){
 				int cID = compare[i];
+				if(cID==15496 || cID==19416){
+					int a=1;
+				}
 				ComparisonID & c = comparisons[cID];
 				Comparison op = c.op();
 				Weight & to = c.w;
@@ -3147,6 +3208,9 @@ public:
 
 			for(int i=compare.size()-1;i>=0;i--){
 				int cID = compare[i];
+				if(cID==15496 || cID==19416){
+					int a=1;
+				}
 				ComparisonID & c = comparisons[cID];
 				assert(!c.bvCompare());
 				Comparison op = c.op();
@@ -3202,12 +3266,23 @@ public:
 
 			for(int i = 0;i<bvcompare.size();i++){
 				int cID = bvcompare[i];
+
 				ComparisonID & c = comparisons[cID];
 				assert(c.bvCompare());
 				Comparison op = c.op();
 				int compareID = c.compareID;
 				assert(compareID>=0);
 				Lit l =  c.l;
+				CRef marker;
+				if(compareID>bvID){
+					marker = comparisonbv_2ndarg_marker;
+					assert(getComparisonID(var(l))==cID-1);
+				}else{
+					marker = comparisonbv_1starg_marker;
+					assert(getComparisonID(var(l))==cID);
+				}
+
+
 				lbool val = value(l);
 				if(value(l)==l_False){
 					l=~l;
@@ -3230,8 +3305,11 @@ public:
 						toSolver(conflict);
 						return false;
 					}*/else {
+						if(cID==15496 || cID==19416){
+										int a=1;
+									}
 						assert(value(l)==l_Undef);
-						enqueue(l,comparisonprop_marker);
+						enqueue(l,marker);
 					}
 				}else if((op==Comparison::gt && overApprox<=under_compare) ||
 						(op==Comparison::geq && overApprox<under_compare)){
@@ -3250,8 +3328,11 @@ public:
 					}/*else if (value(l)==l_False){
 
 					}*/else {
+						if(cID==15496 || cID==19416){
+										int a=1;
+									}
 						assert(value(l)==l_Undef);
-						enqueue(~l, comparisonprop_marker);
+						enqueue(~l, marker);
 					}
 				}
 				if(value(l)==l_True &&((op==Comparison::lt && underApprox>=under_compare) ||
@@ -3271,11 +3352,23 @@ public:
 
 			for(int i=bvcompare.size()-1;i>=0;i--){
 				int cID = bvcompare[i];
+
 				ComparisonID & c = comparisons[cID];
 				Comparison op = c.op();
 				int compareID = c.compareID;
 				assert(compareID>=0);
 				Lit l =  c.l;
+				CRef marker;
+				if(compareID>bvID){
+					marker = comparisonbv_2ndarg_marker;
+					assert(getComparisonID(var(l))==cID-1);
+				}else{
+					marker = comparisonbv_1starg_marker;
+					assert(getComparisonID(var(l))==cID);
+				}
+
+
+
 				lbool val = value(l);
 				if(value(l)==l_False){
 					l=~l;
@@ -3302,8 +3395,12 @@ public:
 						//do nothing
 
 					}*/else {
+						if(cID==15){
+							int a=1;
+						}
+
 						assert(value(l)==l_Undef);
-						enqueue(~l, comparisonprop_marker);
+						enqueue(~l, marker);
 					}
 				}else if((op==Comparison::gt && underApprox>over_compare) ||
 						(op==Comparison::geq && underApprox>=over_compare)){
@@ -3316,8 +3413,11 @@ public:
 						toSolver(conflict);
 						return false;
 					}*/else {
+						if(cID==15496 || cID==19416){
+								int a=1;
+							}
 						assert(value(l)==l_Undef);
-						enqueue(l, comparisonprop_marker);
+						enqueue(l, marker);
 					}
 				}
 				//we can also update the other bv's approximation, possibly:

@@ -426,6 +426,27 @@ bool solveAssumptions_MinBVs(Monosat::SimpSolver * S,int * assumptions, int n_as
 		 S->setFrozen(var(toLit(lit)),true);
 	 return true;
  }
+ void setDecisionVar(Monosat::SimpSolver * S,int var,bool decidable){
+	 S->setDecisionVar(var,decidable);
+ }
+ void setDecisionPriority(Monosat::SimpSolver * S,int var, int priority){
+	 S->setDecisionPriority(var,priority);
+ }
+ bool isDecisionVar(Monosat::SimpSolver * S,int var){
+	 return S->isDecisionVar(var);
+ }
+ int getDecisionPriority(Monosat::SimpSolver * S,int var){
+	 return S->getDecisionPriority(var);
+ }
+
+ void setDecisionPolarity(Monosat::SimpSolver * S,Var v, bool b){
+	  S->setPolarity(v,b);
+ }
+
+ bool getDecisionPolarity(Monosat::SimpSolver * S,Var v){
+	return S->getPolarity(v);
+ }
+
 
  int nVars(Monosat::SimpSolver * S){
 	 return S->nVars();
@@ -738,6 +759,8 @@ void bv_slice( Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv,int a
  //Returns 0 for true, 1 for false, 2 for unassigned.
  int getModel_Literal(Monosat::SimpSolver * S,int lit){
 	 Lit l = toLit(lit);
+	 if (var(l)>=S->model.size())
+		 return toInt(l_Undef);
 	 lbool val = S->model[var(l)];
 	 assert(val==l_True || val==l_False || val==l_Undef);
 	 if (sign(l)){

@@ -423,7 +423,7 @@ def Neq(a,b):
 #Asserting versions of these, to avoid allocating extra literals...
 
 
-def AssertOr(args):    
+def AssertOr(*args):    
     if len(args)==0:
         Assert(false())
     elif len(args)==1:
@@ -432,44 +432,44 @@ def AssertOr(args):
     else:
         _addClause(args)
 
-def AssertNor(args):    
+def AssertNor(*args):    
     if len(args)==0:
         Assert(true())
     elif len(args)==1:
         if isinstance(args[0], collections.Iterable):
-            AssertNor(args[0])
+            AssertNor(*args[0])
     else:
         #AssertAnd((v.Not() for v in args))
         for v in args:
             Assert(VAR(v).Not())
 
-def AssertAnd(args):    
+def AssertAnd(*args):    
     if len(args)==0:
         Assert(false())
     elif len(args)==1:
         if isinstance(args[0], collections.Iterable):
-            AssertAnd(args[0])
+            AssertAnd(*args[0])
     else:
         for v in args:
             Assert(v)
 
-def AssertNand(args):    
+def AssertNand(*args):    
     if len(args)==0:
         Assert(true())
     elif len(args)==1:
         if isinstance(args[0], collections.Iterable):
-            AssertNand(args[0])
+            AssertNand(*args[0])
     else:
-        AssertOr([VAR(v).Not() for v in args])
+        AssertOr(*[VAR(v).Not() for v in args])
         
             
 
-def AssertXor(args):
+def AssertXor(*args):
     if len(args)==0:
         return false()
     elif len(args)==1:
         if isinstance(args[0], collections.Iterable):
-            AssertXor(args[0])
+            AssertXor(*args[0])
     elif len(args)==2:
         _addSafeClause((VAR(args[0]),VAR(args[1])))  
         _addSafeClause((~VAR(args[0]),~VAR(args[1])))
@@ -480,12 +480,12 @@ def AssertXor(args):
             a=a ^ VAR(args[i])
         Assert(a)
 
-def AssertXnor(args):
+def AssertXnor(*args):
     if len(args)==0:
         return true()
     elif len(args)==1:
         if isinstance(args[0], collections.Iterable):
-            AssertXnor(args[0])
+            AssertXnor(*args[0])
     elif len(args)==2:
         _addSafeClause((~VAR(args[0]),VAR(args[1])))  
         _addSafeClause((VAR(args[0]),~VAR(args[1])))

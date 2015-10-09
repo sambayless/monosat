@@ -70,7 +70,8 @@ public:
 	virtual bool addClause(Lit p, Lit q);                           // Add a binary clause to the solver.
 	virtual bool addClause(Lit p, Lit q, Lit r);                    // Add a ternary clause to the solver.
 	bool addClause_(vec<Lit>& ps);           // Add a clause to the solver without making superflous internal copy. Will
-			
+
+
 	void setDecisionPriority(Var v, unsigned int p) {
 		priority[v] = p;
 		if(decision[v]){
@@ -79,6 +80,9 @@ public:
 			else
 				order_heap.insert(v);
 		}
+	}
+	int getDecisionPriority(Var v) const{
+		return priority[v];
 	}
 	
 	//Theory interface
@@ -297,7 +301,7 @@ public:
 	//Lazily construct a reason for a literal propagated from a theory
 	CRef constructReason(Lit p) {
 		static int iterp =0;
-		if(++iterp==164){
+		if(++iterp==55){
 			int a=1;
 		}
 		assert(value(p)==l_True);
@@ -315,6 +319,11 @@ public:
 		theories[t]->buildReason(getTheoryLit(p), theory_reason, cr);
 		assert(theory_reason[0] == p);
 		assert(value(p)==l_True);
+
+#ifndef NDEBUG
+		for(Lit l:theory_reason)
+			assert(value(l)!=l_Undef);
+#endif
 #ifdef DEBUG_SOLVER
 		//assert all the other reasons in this cause are earlier on the trail than p...
 		static vec<bool> marks;
@@ -404,8 +413,13 @@ public:
 	// Variable mode:
 	// 
 	void setPolarity(Var v, bool b); // Declare which polarity the decision heuristic should use for a variable. Requires mode 'polarity_user'.
+	bool getPolarity(Var v){
+		return polarity[v];
+	}
 	void setDecisionVar(Var v, bool b); // Declare if a variable should be eligible for selection in the decision heuristic.
-
+	bool isDecisionVar(Var v){
+		return decision[v];
+	}
 	// Read state:
 	//
 	lbool value(Var x) const;       // The current value of a variable.
@@ -623,7 +637,7 @@ protected:
 	vec<lbool> assigns;          // The current assignments.
 	vec<char> polarity;         // The preferred polarity of each variable.
 	vec<char> decision;         // Declares if a variable is eligible for selection in the decision heuristic.
-	vec<int> priority;		  // Static, lexicographic heuristic
+	vec<int> priority;		  // Static, lexicographic heuristic. Larger values are higher priority (decided first)
 	vec<TheoryData> theory_vars;
 	vec<Lit> to_analyze;
 	vec<Lit> to_reenqueue;

@@ -120,6 +120,23 @@ class Monosat(metaclass=Singleton):
         self.monosat_c.newVar.argtypes=[c_solver_p]
         self.monosat_c.newVar.restype=c_int
 
+        self.monosat_c.setDecisionVar.argtypes=[c_solver_p,c_var,c_bool]
+    
+        self.monosat_c.isDecisionVar.argtypes=[c_solver_p,c_var]
+        self.monosat_c.isDecisionVar.restype=c_bool
+        
+        self.monosat_c.setDecisionPriority.argtypes=[c_solver_p,c_var,c_int]
+   
+        self.monosat_c.getDecisionPriority.argtypes=[c_solver_p,c_var]
+        self.monosat_c.getDecisionPriority.restype=c_int
+
+        self.monosat_c.setDecisionPolarity.argtypes=[c_solver_p,c_var,c_bool]
+   
+        self.monosat_c.getDecisionPolarity.argtypes=[c_solver_p,c_var]
+        self.monosat_c.getDecisionPolarity.restype=c_bool
+ 
+
+
         self.monosat_c.disallowLiteralSimplification.argtypes=[c_solver_p,c_literal]
         self.monosat_c.disallowLiteralSimplification.restype=c_bool
         
@@ -323,7 +340,7 @@ class Monosat(metaclass=Singleton):
         self.solver.has_comments=True
         self.solver.comments.append(c)
         if self.solver.output:
-            self.solver._echoOutput("c " + c +"\n")           
+            self._echoOutput("c " + c +"\n")           
     
     def getIntArray(self,nums):
         if len(nums)>len(self._int_array):

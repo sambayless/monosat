@@ -381,7 +381,7 @@ private:
 	int solves=0;
 	bool parse_(B& in, Solver& S) {
 		vec<Lit> lits;
-
+		S.cancelUntil(0);
 		bv_minimize.clear();
 		assumptions.clear();
 		bool solve=false;

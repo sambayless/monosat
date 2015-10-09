@@ -86,16 +86,35 @@ class Graph():
         self.edgemap=dict()
         self.acyclic_querries=[]
         
-    def writeDot(self,out=sys.stdout):
+    def writeDot(self,out=sys.stdout, writeModel=True):
         print("digraph{",file=out)
         for n in range(self.nodes):
             print("n%d"%(n),file=out)
             
         for  (v,w,var,weight)  in self.getEdges():
-            if weight:
-                print("n%d -> n%d [label=\"v%d, w%d\"]"%(v,w,var.getInputLiteral(),weight),file=out)
+            if not writeModel:
+                if weight:
+                    print("n%d -> n%d [label=\"v%s, w%s\"]"%(v,w,str(var),str(weight)),file=out)
+                else:
+                    print("n%d -> n%d [label=\"v%s\"]"%(v,w,str(var)),file=out)
             else:
-                print("n%d -> n%d [label=\"v%d\"]"%(v,w,var.getInputLiteral()),file=out)
+                edgeVal = var.value()
+                if edgeVal is None:
+                    edgecol = "black"
+                elif edgeVal:
+                    edgecol="red"
+                else:
+                    edgecol="blue"
+                    
+                if weight:
+                    if edgeVal is not None:
+                        weightVal = weight.value()
+                        print("n%d -> n%d [label=\"v%s, w%s=%s\", color=%s]"%(v,w,str(var),str(weight),str(weightVal),edgecol),file=out)
+                    else:
+                        print("n%d -> n%d [label=\"v%s, w%s\"]"%(v,w,str(var),str(weight)),file=out)
+                else:
+                    print("n%d -> n%d [label=\"v%s\", color=%s]"%(v,w,str(var),edgecol),file=out)
+                
         print("}",file=out)
 
     

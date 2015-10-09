@@ -1105,7 +1105,10 @@ CRef Solver::propagate(bool propagate_theories) {
 			in_theory_queue[theoryID] = false;
 			if (!theories[theoryID]->propagateTheory(theory_conflict)) {
 				bool has_conflict=true;
-
+#ifndef NDEBUG
+				for(Lit l:theory_conflict)
+					assert(value(l)!=l_Undef);
+#endif
 				if (has_conflict && !addConflictClause(theory_conflict, confl)) {
 					theoryBumpActivity(theoryID);
 					theoryDecayActivity();
@@ -1650,7 +1653,7 @@ lbool Solver::search(int nof_conflicts) {
 	n_theory_decision_rounds+=using_theory_decisions;
 	for (;;) {
 		static int iter = 0;
-		if (++iter == 183) {//40097
+		if (++iter == 19) {//40097
 			int a = 1;
 		}
 		propagate: CRef confl = propagate();

@@ -118,7 +118,7 @@ class BitVector():
         self.symbol=None   
 
         self._width=width
-
+        self._constant=None
         
         self.pid = None
               
@@ -212,7 +212,14 @@ class BitVector():
             _checkBVs((self,args[0],args[1]))
             mgr._monosat.bv_concat(args[0].getID(), args[1].getID(), self.getID())   
 
-   
+    def isConst(self):
+        return self._constant is not None
+
+    def __repr__(self):
+        if self.isConst():
+            return "bv%d="%(self.pid) +str(self._constant)
+        else:
+            return "bv%d"%(self.pid)
         
     def checkValue(self,val):
         if val<0 or val>= 1<<self.width():

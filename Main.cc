@@ -467,6 +467,16 @@ void processDecidable(SimpSolver & S, string dstr){
 }
 
 bool runSolve(SimpSolver & S,vec<Lit> & assume,vec<int> & bvs){
+	static int solve_runs=0;
+	solve_runs++;
+	if(opt_verb>=1){
+		if(solve_runs>1){
+			printf("Solving(%d)...\n",solve_runs);
+		}else{
+			printf("Solving...\n");
+		}
+		fflush(stdout);
+	}
 
 	if (opt_verb > 2 && assume.size()) {
 		printf("Assumptions: ");

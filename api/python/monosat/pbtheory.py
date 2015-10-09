@@ -642,6 +642,8 @@ class MinisatPlus:
         varmap = dict()
         nvars = 0
         for (clause,val,op,weights) in self.constraints:
+            if(not isinstance(val, int)):
+                raise TypeError("PB constraints weights must compare to integers, but found " + str(type(val)))
             if len(clause)==0:
                 clause = [false()]  
             if len(clause)>longest_constraint:
