@@ -135,8 +135,6 @@ class Monosat(metaclass=Singleton):
         self.monosat_c.getDecisionPolarity.argtypes=[c_solver_p,c_var]
         self.monosat_c.getDecisionPolarity.restype=c_bool
  
-
-
         self.monosat_c.disallowLiteralSimplification.argtypes=[c_solver_p,c_literal]
         self.monosat_c.disallowLiteralSimplification.restype=c_bool
         
@@ -443,6 +441,24 @@ class Monosat(metaclass=Singleton):
             self.monosat_c.disallowLiteralSimplification(self.solver._ptr,varID*2)
         return varID*2
     
+    def setDecisionVar(self,v, b):        
+        self.monosat_c.setDecisionVar(self.solver._ptr,c_var(v),c_bool(b))
+    
+    def isDecisionVar(self,var):      
+        return self.monosat_c.isDecisionVar(self.solver._ptr,c_var(v))
+
+    def setDecisionPriority(self,v,priority):
+        self.monosat_c.setDecisionPriority(self.solver._ptr,c_var(v),c_int(priority))     
+        
+    def getDecisionPriority(self,v):
+        self.monosat_c.getDecisionPriority(self.solver._ptr,c_var(v))     
+
+    def setDecisionPolarity(self,v, b):        
+        self.monosat_c.setDecisionPolarity(self.solver._ptr,c_var(v),c_bool(b))
+    
+    def getDecisionPolarity(self,var):      
+        return self.monosat_c.getDecisionPolarity(self.solver._ptr,c_var(v))
+
     def nVars(self):
         return self.monosat_c.nVars(self.solver._ptr)
     

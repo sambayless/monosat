@@ -85,6 +85,9 @@ class Var:
         
     def getLit(self):
         return self.lit
+
+    def getVar(self):
+        return self.lit//2
     
     def value(self):
         #0 = true, 1=false, 2=unassigned
