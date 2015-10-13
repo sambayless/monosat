@@ -478,7 +478,7 @@ bool runSolve(SimpSolver & S,vec<Lit> & assume,vec<int> & bvs){
 		fflush(stdout);
 	}
 
-	if (opt_verb > 2 && assume.size()) {
+	if (opt_verb > 1 && assume.size()) {
 		printf("Assumptions: ");
 		for (int i = 0; i < assume.size(); i++) {
 			Lit l = assume[i];
@@ -512,20 +512,20 @@ bool runSolve(SimpSolver & S,vec<Lit> & assume,vec<int> & bvs){
 				  }
 				  long value = bvTheory->getUnderApprox(bvID);
 				  min_values[i]=value;
-				  if(opt_verb>=2){
+				  if(opt_verb>=1){
 					  printf("Min bv%d = %ld",bvID,value);
 				  }
 				  // int bvID,const Weight & to, Var outerVar = var_Undef, bool decidable=true
-				  Lit last_decision_lit = bvTheory->newComparison(Comparison::leq,bvID,value,var_Undef,false);
+				  Lit last_decision_lit = bvTheory->toSolver( bvTheory->newComparison(Comparison::leq,bvID,value,var_Undef,false));
 				  while(value>0){
-					  Lit decision_lit = bvTheory->newComparison(Comparison::leq,bvID,value-1,var_Undef,false);
+					  Lit decision_lit =  bvTheory->toSolver(bvTheory->newComparison(Comparison::leq,bvID,value-1,var_Undef,false));
 					  assume.push(decision_lit);
 					  n_solves++;
 					  if (S.solve(assume,false,false)){
 						  last_decision_lit=decision_lit;
 						  value = bvTheory->getUnderApprox(bvID);
 						  min_values[i]=value;
-						  if(opt_verb>=2){
+						  if(opt_verb>=1){
 							  printf("\rMin bv%d = %ld",bvID,value);
 						  }
 						  assume.pop();
@@ -543,7 +543,7 @@ bool runSolve(SimpSolver & S,vec<Lit> & assume,vec<int> & bvs){
 						  break;
 					  }
 				  }
-				  if(opt_verb>=2){
+				  if(opt_verb>=1){
 					  printf("\rMin bv%d = %ld\n",bvID, min_values[i]);
 				  }
 			  }

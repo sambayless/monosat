@@ -803,7 +803,65 @@ def GreaterEq(num1, num2):
     return LessEq(num2,num1)    
  
 
-def PopCount(vars):
+def PopCount(vars,method="CSA"):
+    if method=="CSA":
+        return _PopCountHarleySeal(vars)
+    else:
+        return _PopCountSimple(vars)
+
+def _CSA(a,b,c):
+    assert(isinstance(a, collections.Iterable) == isinstance(b, collections.Iterable))
+    assert(isinstance(a, collections.Iterable) ==isinstance(c, collections.Iterable))
+    if isinstance(a, collections.Iterable):
+        assert(len(a)==len(b))
+        assert(len(a)==len(c))
+        ps = []
+        sc = []
+        for i in range(len(a)):
+            psi,sci = _SCA(a[i],b[i],c[i])            
+            ps.append(psi)
+            sc.append(sci)
+        return ps,sc
+    
+    #from wikipedia
+    #ps = a xor b xor c
+    #sc = and(a,  b) or and(a,c) or and(b,c)    
+    ps = Xor(a,b,c)
+    sc = Or(And(a,b),And(a,c),And(b,c))
+    return ps,sc
+    
+def _PopCountHarleySeal(vars):
+    #From Hackers Delight, 2nd ed.
+    if len(vars)%2==1:
+        vars = vars+false()
+    maxwidth = math.ceil( math.log(len(vars),2)) +1
+    total = [false()]*maxwidth #is it safe to make this maxwidth-1?
+    #ones=[false()]*len(vars)    
+    ones = false()
+    for i in range(0,len(vars),2):
+        twos,ones = _CSA(ones,vars[i],vars[i+1])
+        total,ignore = AddOne(total,twos) #_AddArray(total,)
+        #assert(ignore.isConstFalse())
+    #total = 2*total + pop(ones) - operating at the bit level, this is equivalent to left shifting total, and putting 'ones' in the 1's column 
+    total2 = [ones]
+    total2.extend(total)
+    return total2
+    
+    
+"""def _PopCountHarleySeal4_3(vars):
+
+    while len(vars)%4!=0:
+        vars = vars+false()
+    
+    sums=[] 
+    for i in range(0,len(vars),4):
+        sum,carry =  Add( vars[i+1],vars[i+2],vars[i+3])
+        sum2,z0 = HalfAdd(vars[i],carry) 
+        z2,z1 = Add(sum,sum2)
+        sums.append([z0,z1,z2])"""
+    
+
+def _PopCountSimple(vars):
     if(isinstance(vars,(int, float, complex))):
         return bin(vars).count('1')
 

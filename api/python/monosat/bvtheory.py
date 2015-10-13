@@ -21,7 +21,7 @@ import monosat.monosat_c
 from monosat.monosat_c import Monosat
 from monosat.logic import *
 from monosat.manager import Manager
-
+import collections
 import sys
 debug=False  
 #Collects a set of graphs to encode together into a formula
@@ -105,11 +105,23 @@ def _checkBVs(bvs):
    
 class BitVector():    
     def __init__(self,mgr,width=None,op=None,args=None):
+        assigned_bits=None
         if isinstance(mgr,int):
             #Shift the arguments over 1
             op = width
             width = mgr
             mgr = BVManager()
+        elif isinstance(mgr,collections.Iterable):
+            assigned_bits = list(mgr)
+            mgr = BVManager()
+            #Build this bitvector from a list of elements
+            assert(op is None)
+            assert(args is None)
+            if width is not None:
+                assert(width==len(assigned_bits))
+            width=len(assigned_bits)
+            
+            
         assert(mgr._solver==Monosat().getSolver())
         assert(width is not None)   
             
@@ -159,8 +171,17 @@ class BitVector():
             
         else:
             self._bv=[] 
-            for _ in range(width):
-                self._bv.append(Var())   
+            if assigned_bits is None:
+                for _ in range(width):
+                    self._bv.append(Var())   
+            else:
+                #Can't do this, because Monosat doesn't support multiple theories on the same variable
+                #self._bv = assigned_bits            
+                for i in range(width):
+                    v= Var()
+                    self._bv.append(v)   
+                    Assert(v==assigned_bits[i])               
+                
             #arr = (c_int*width)()
             #for i,v in enumerate(self._bv):
             #    arr[i]=c_int(v.getLit()//2)

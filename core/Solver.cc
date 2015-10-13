@@ -60,7 +60,7 @@ Solver::Solver() :
 				0), stats_pure_theory_lits(0), pure_literal_detections(0), stats_removed_clauses(0), dec_vars(0), clauses_literals(
 				0), learnts_literals(0), max_literals(0), tot_literals(0), stats_pure_lit_time(0),  ok(
 				true), cla_inc(1), var_inc(1), theory_inc(1), watches(WatcherDeleted(ca)), qhead(0), simpDB_assigns(-1), simpDB_props(
-				0), order_heap(VarOrderLt(activity, priority)),theory_order_heap(TheoryOrderLt(theory_activity)), progress_estimate(0), remove_satisfied(true) //lazy_heap( LazyLevelLt(this)),
+				0), order_heap(VarOrderLt(activity, priority)),theory_order_heap(TheoryOrderLt(theories)), progress_estimate(0), remove_satisfied(true) //lazy_heap( LazyLevelLt(this)),
 
 		// Resource constraints:
 		//
@@ -1778,12 +1778,16 @@ lbool Solver::search(int nof_conflicts) {
 			newDecisionLevel();
 
 			if (opt_decide_theories && using_theory_decisions && next == lit_Undef && (opt_theory_conflict_max==0 || conflicts>=next_theory_decision) ) {
+
+				int next_var_priority=INT_MIN;
+				if(!order_heap.empty())
+					next_var_priority=priority[ order_heap.peekMin()];
+
 				/**
 				 * Give the theory solvers a chance to make decisions
 				 */
 				if(opt_theory_order_vsids){
-
-					while (next==lit_Undef && !theory_order_heap.empty()) {
+					while (next==lit_Undef && !theory_order_heap.empty() && theories[theory_order_heap.peekMin()]->getPriority()>=next_var_priority) {
 						int theoryID = theory_order_heap.peekMin();
 						assert(theories[theoryID]->supportsDecisions());
 						next = theories[theoryID]->decideTheory();
@@ -1795,14 +1799,16 @@ lbool Solver::search(int nof_conflicts) {
 					}
 				}else{
 					for (int i = 0; i < decidable_theories.size() && next == lit_Undef; i++) {
-
-						next = decidable_theories[i]->decideTheory();
-						if(theoryDecision !=lit_Undef && var(next)==var(theoryDecision)){
-							assigns[var(theoryDecision)]=l_Undef;
+						if (decidable_theories[i]->getPriority()>=next_var_priority) {
+							next = decidable_theories[i]->decideTheory();
 						}
 					}
 				}
+
 				if (next!=lit_Undef){
+					if(theoryDecision !=lit_Undef && var(next)==var(theoryDecision)){
+						assigns[var(theoryDecision)]=l_Undef;
+					}
 					last_decision_was_theory=true;
 				}
 			}

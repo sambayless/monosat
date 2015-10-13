@@ -424,12 +424,12 @@ private:
 				}
 				solves++;
 				solve=true;
-			}else if (match(b,"minimize")){
+			}else if (match(b,"minimize bv")){
 				//fprintf(stderr,"minimize statements not yet supported\n");
-				b+=8;
 				skipWhitespace(b);
 				int bvID = parseInt(b);
 				assert(bvID>=0);
+
 				bv_minimize.push(bvID);
 			}else if (parseLine(b,line_num, S)) {
 				//do nothing
@@ -477,6 +477,12 @@ private:
 					exit(1);
 				}
 			}
+			for(int i = 0;i<bv_minimize.size();i++){
+				int bvID = bv_minimize[i];
+				bvID = this->mapBV(S,bvID);
+				bv_minimize[i]=bvID;
+			}
+
 		}catch(const parse_error& e){
 			std::cerr << e.what() << "\n";
 			std::cerr<<"PARSE ERROR in DIMACS parser at line " << line_num << "\n";

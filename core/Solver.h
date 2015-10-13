@@ -88,7 +88,8 @@ public:
 	//Theory interface
 	void addTheory(Theory*t) {
 		theories.push(t);
-		theory_activity.push(opt_randomomize_theory_order ? drand(random_seed) * 0.00001 : 0);
+		t->setActivity(opt_randomomize_theory_order ? drand(random_seed) * 0.00001 : 0);
+		t->setPriority(0);
 		t->setTheoryIndex(theories.size() - 1);
 
 		if(t->supportsDecisions()){
@@ -462,7 +463,7 @@ public:
 	vec<Lit> theory_conflict;
 	vec<Theory*> theories;
 	vec<Theory*> decidable_theories;
-	vec<double> theory_activity;         // A heuristic measurement of the activity of a theory
+
 	vec<Var> all_theory_vars;
 	struct LitCount {
 		char occurs :1;
@@ -598,12 +599,16 @@ protected:
 		}
 	};
 	struct TheoryOrderLt {
-			const vec<double>& activity;
-			bool operator ()(Var x, Var y) const {
-				return activity[x] > activity[y];
+			const vec<Theory*> & theories;
+			bool operator ()(int x, int y) const {
+				if (theories[x]->getPriority()  == theories[y]->getPriority() )
+					return theories[x]->getActivity() > theories[y]->getActivity();
+				else {
+					return theories[x]->getPriority() >theories[y]->getPriority();
+				}
 			}
-			TheoryOrderLt(const vec<double>& act) :
-					activity(act){
+			TheoryOrderLt(const vec<Theory*> & theories) :
+				theories(theories){
 			}
 		};
 
@@ -746,10 +751,10 @@ protected:
 	void claBumpActivity(Clause& c);             // Increase a clause with the current 'bump' value.
 	void theoryBumpActivity(int theoryID) {
 
-		if ((theory_activity[theoryID] += theory_inc) > 1e100) {
+		if ((theories[theoryID]->getActivity() += theory_inc) > 1e100) {
 			// Rescale:
 			for (Theory * t:decidable_theories)
-				theory_activity[t->getTheoryIndex()] *= 1e-100;
+				theories[theoryID]->getActivity() *= 1e-100;
 			theory_inc *= 1e-100;
 		}
 

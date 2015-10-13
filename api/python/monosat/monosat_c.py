@@ -364,7 +364,7 @@ class Monosat(metaclass=Singleton):
         if minimize_bvs is not None and len(minimize_bvs)>0:
             if self.solver.output:
                 for i,n in enumerate(minimize_bvs):  
-                    self._echoOutput("minimize bv " + minimize_bvs[i]+"\n")
+                    self._echoOutput("minimize bv " + str(minimize_bvs[i])+"\n")
                 self._echoOutput("solve" + " ".join((str(dimacs(c)) for c in assumptions))+"\n")
                 self.solver.output.flush()
             lp2 = (c_int * len(minimize_bvs))()
