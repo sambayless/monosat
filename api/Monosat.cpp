@@ -18,6 +18,7 @@
 #include "utils/ParseUtils.h"
 #include "amo/AMOParser.h"
 #include <stdexcept>
+#include <cstdarg>
 using namespace Monosat;
 using namespace std;
 
