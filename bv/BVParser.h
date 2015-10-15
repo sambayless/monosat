@@ -148,13 +148,14 @@ private:
 			bvs[id].vector.push(v);
 		}
 	}
-	void readMinMaxBV(B& in, Solver& S, bool max){
+	void readMinMaxBV(B& in, Solver& S, bool min){
 
 		skipWhitespace(in);
 		//bv min/max bvID nbvs bv1 bv2 bv3...
 		int bvID = parseInt(in);
 		int nArgs = parseInt(in);
 		minmaxs.push();
+		minmaxs.last().min=min;
 		minmaxs.last().id=bvID;
 
 		for (int i =0;i<nArgs;i++){
@@ -364,10 +365,10 @@ public:
 				readIteBV(in,S);
 				return true;
 			}else if (match(in,"min")){
-				readMinMaxBV(in,S,false);
+				readMinMaxBV(in,S,true);
 				return true;
 			}else if (match(in,"max")){
-				readMinMaxBV(in,S,true);
+				readMinMaxBV(in,S,false);
 				return true;
 			}else{
 				readBV(in,S);

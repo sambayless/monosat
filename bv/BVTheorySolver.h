@@ -513,7 +513,7 @@ public:
 				vec<Lit> & bv = bitvectors[bvID];
 				updateApproximations(bvID);
 				Weight under=under_approx[bvID];
-				write_to<<"bv"<<bvID << " = " << under << "\n";
+				write_to<<"bv"<< this->unmapBV(bvID) << " = " << under << "\n";
 
 		}
 	}
@@ -1987,7 +1987,7 @@ public:
 				using std::min;
 				Weight lowest_under = under_approx[resultID];
 
-				if (lowest_under<under_new){
+				if (lowest_under>under_new){
 					under_new=lowest_under;
 					under_cause_new.clear();
 					under_cause_new.cause_is_minmax_argument=true;
@@ -2612,7 +2612,7 @@ public:
 				}else{
 					using std::min;
 					Weight lowest_under = under_approx[resultID];
-					if (lowest_under<under){
+					if (lowest_under>under){
 						under=lowest_under;
 					}
 				}
@@ -3657,7 +3657,7 @@ public:
 						buildMinMaxReason(bvID, cID, conflict);
 						return false;
 					}
-					if(minmax_arg_under < overApprox){
+					if(minmax_arg_under > overApprox){
 						//this is a conflict
 						buildMinMaxReason(bvID, cID, conflict);
 						return false;
@@ -5143,7 +5143,7 @@ public:
 
 		int cID = minmaxs.size();
 		minmaxs.push();
-		minmaxs.last().min=false;
+		minmaxs.last().min=true;
 		for (int bvID:args){
 			minmaxs.last().args.push(bvID);
 		}
