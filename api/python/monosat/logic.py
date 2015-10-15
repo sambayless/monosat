@@ -643,7 +643,28 @@ def _SubtractArray(array1, array2):
         
     return output,carry
 
-def Min(array1, array2):
+def Min(*args):
+    from monosat.bvtheory import BitVector
+    if(len(args)==1 and isinstance(args[0], collections.Iterable)):
+        return Min(*args[0])
+    if len(args)>0 and isinstance(args[0],BitVector):
+        return monosat.bvtheory.Min(*args)
+    else:
+        assert(len(args)==2)#In the future, support more arguments...
+        return _Min(*args)
+    
+def Max(*args):
+    from monosat.bvtheory import BitVector
+    if(len(args)==1 and isinstance(args[0], collections.Iterable)):
+        return Max(*args[0])
+    
+    if len(args)>0 and isinstance(args[0],BitVector):
+        return monosat.bvtheory.Max(*args)
+    else:
+        assert(len(args)==2)#In the future, support more arguments...
+        return _Max(*args)
+    
+def _Min(array1, array2):
     a = list(array1)
     b= list(array2)
     while(len(a)<len(b)):
@@ -657,7 +678,7 @@ def Min(array1, array2):
         output.append(If(a_less_eq,a_bit,b_bit))
     return output
 
-def Max(array1, array2):
+def _Max(array1, array2):
     a = list(array1)
     b= list(array2)
     while(len(a)<len(b)):

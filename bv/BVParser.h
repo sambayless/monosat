@@ -103,6 +103,13 @@ private:
 	};
 	vec<IteBV> itebvs;
 
+	struct MinMax{
+		bool min=false;
+		int id=-1;
+		vec<int> args;
+	};
+	vec<MinMax> minmaxs;
+
 	void readConstBV(B& in,  Solver& S) {
 		//bv id width l0 l1 l2 ...
 
@@ -141,13 +148,22 @@ private:
 			bvs[id].vector.push(v);
 		}
 	}
+	void readMinMaxBV(B& in, Solver& S, bool max){
 
+		skipWhitespace(in);
+		//bv min/max bvID nbvs bv1 bv2 bv3...
+		int bvID = parseInt(in);
+		int nArgs = parseInt(in);
+		minmaxs.push();
+		minmaxs.last().id=bvID;
+
+		for (int i =0;i<nArgs;i++){
+			minmaxs.last().args.push(parseInt(in));
+		}
+	}
 
 	void readAddBV(B& in, Solver& S) {
-		if (opt_ignore_theories) {
-			skipLine(in);
-			return;
-		}
+
 		skipWhitespace(in);
 	/*	if(! match(in,"bv")){
 			parse_errorf("Result of addition must be bitvector\n");
@@ -208,6 +224,8 @@ private:
 		symbols.last().second = symbol;
 	}
 
+
+
 	void readIteBV(B& in, Solver& S){
 		//"bv ite %d %d %d %d\n"%(dimacs(condition_lit),aID,bID,resultID))
 		int parsed_lit = parseInt(in);
@@ -230,10 +248,7 @@ private:
 	}
 
 	void readCompareBV(B& in, Solver& S,Comparison c) {
-		if (opt_ignore_theories) {
-			skipLine(in);
-			return;
-		}
+
 		//bv_lt bvID var weight
 		skipWhitespace(in);
 		Var v = parseInt(in) - 1;
@@ -268,10 +283,7 @@ private:
 	}
 
 	void readCompare(B& in, Solver& S,Comparison c) {
-			if (opt_ignore_theories) {
-				skipLine(in);
-				return;
-			}
+
 			//bv_lt bvID var weight
 			skipWhitespace(in);
 			Var v = parseInt(in) - 1;
@@ -351,6 +363,12 @@ public:
 			}else if (match(in,"ite")){
 				readIteBV(in,S);
 				return true;
+			}else if (match(in,"min")){
+				readMinMaxBV(in,S,false);
+				return true;
+			}else if (match(in,"max")){
+				readMinMaxBV(in,S,true);
+				return true;
 			}else{
 				readBV(in,S);
 				return true;
@@ -365,9 +383,10 @@ public:
 		theory = (BVTheorySolver<long>*) S.bvtheory;
 		if(bvs.size() || theory){
 
-			if(!theory)
+			if(!theory){
 				theory = new BVTheorySolver<long>(&S);
-
+				theory->setBVMap(this->bvmap);
+			}
 
 			for (auto & bv:bvs){
 				if(bv.id>-1){
@@ -442,6 +461,20 @@ public:
 				theory->newConditionalBV(c.condition,c.thenId,c.elseId, c.resultId);
 			}
 			itebvs.clear();
+
+			for (auto & c: minmaxs){
+				c.id = mapBV(S,c.id);
+				for (int & bvID:c.args){
+					bvID = mapBV(S,bvID);
+				}
+				if(c.min){
+					theory->newMinBV(c.id,c.args);
+				}else{
+					theory->newMaxBV(c.id,c.args);
+				}
+
+			}
+
 			for (int i = 0; i < symbols.size(); i++) {
 				symbols[i].first = mapBV(S,symbols[i].first);
 				int bvID = symbols[i].first;

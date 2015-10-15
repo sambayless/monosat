@@ -40,7 +40,7 @@ template<unsigned int D, class T> class GeometryTheorySolver;
 template<typename Weight> class GraphTheorySolver;
 class FSMTheorySolver;
 namespace Monosat {
-
+class DimacsMap;
 //=================================================================================================
 // Solver -- the main class:
 // The MiniSAT Boolean SAT solver, extended to provided basic SMT support.
@@ -302,7 +302,7 @@ public:
 	//Lazily construct a reason for a literal propagated from a theory
 	CRef constructReason(Lit p) {
 		static int iterp =0;
-		if(++iterp==55){
+		if(++iterp==2){
 			int a=1;
 		}
 		assert(value(p)==l_True);
@@ -401,6 +401,11 @@ public:
 		return const_true;
 	}
 
+	Lit unmap(Lit l) override;
+	void setVarMap(DimacsMap * map){
+		varRemap=map;
+	}
+
 	void toDimacs(FILE* f, const vec<Lit>& assumps);            // Write CNF to file in DIMACS-format.
 	void toDimacs(const char *file, const vec<Lit>& assumps);
 	void toDimacs(FILE* f, Clause& c, vec<Var>& map, Var& max);
@@ -497,7 +502,7 @@ public:
 	Var min_local = var_Undef;
 	Var max_local = var_Undef;
 	int super_offset = -1;
-
+	DimacsMap * varRemap=nullptr;
 	// Mode of operation:
 	//
 	bool printed_header = false;

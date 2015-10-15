@@ -79,7 +79,31 @@ class BVManager(metaclass=Manager):
         self._monosat.bv_ite(v.getLit(), t.getID(),e.getID(), result.getID())           
         #self.ites.append((i,t,e,result))
         return result;     
-    
+
+    def Max(self,*bvs):
+        width = None
+        for bv in bvs:
+            if not isinstance(bv,BitVector):
+                raise TypeError("Arguments of Max must be bitvectors")
+            if width is None:
+                width=bv.width();
+            if bv.width()!=width:
+                raise ValueError("All arguments of Max must have same bitwidth")
+              
+        return BitVector(self,width,'max',bvs)     
+        
+    def Min(self,*bvs):
+        width = None
+        for bv in bvs:
+            if not isinstance(bv,BitVector):
+                raise TypeError("Arguments of Min must be bitvectors")
+            if width is None:
+                width=bv.width();
+            if bv.width()!=width:
+                raise ValueError("All arguments of Min must have same bitwidth")
+              
+        return BitVector(self,width,'min',bvs)
+            
     def write(self,f):       
         for bv in self.bvs:
             bv.write(f)
@@ -90,7 +114,8 @@ class BVManager(metaclass=Manager):
             f.write("bv_Ite %d %d %d %d\n"%(dimacs(i),t.getID(),e.getID(),r.getID()))
             
 
-
+Max = BVManager().Max
+Min = BVManager().Min
 
 def _bv_Ite(i,t,e):
     return BVManager().Ite(i,t,e)
@@ -102,7 +127,9 @@ def _checkBVs(bvs):
         assert(isinstance(bv,BitVector))
         if(bv.mgr._solver!=Monosat().getSolver()):
             raise RuntimeError('Bitvector %s does not belong to current solver, aborting (use setSolver() to correct this)'%(str(bv)))
-   
+
+
+ 
 class BitVector():    
     def __init__(self,mgr,width=None,op=None,args=None):
         assigned_bits=None
@@ -232,7 +259,16 @@ class BitVector():
         elif op=="concat":
             _checkBVs((self,args[0],args[1]))
             mgr._monosat.bv_concat(args[0].getID(), args[1].getID(), self.getID())   
-
+        elif op=="min":
+            _checkBVs((self,))
+            _checkBVs((args))
+            mgr._monosat.bv_min([x.getID() for x in args],self.getID()) 
+        elif op=="max":
+            _checkBVs((self,))
+            _checkBVs((args))    
+            mgr._monosat.bv_max([x.getID() for x in args],self.getID())
+            
+                     
     def isConst(self):
         return self._constant is not None
 

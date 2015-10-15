@@ -567,6 +567,18 @@ bool solveAssumptions_MinBVs(Monosat::SimpSolver * S,int * assumptions, int n_as
 	  bv->newComparisonBV(Monosat::Comparison::geq,bvID,compareID,v);
 	  return toInt(l);
  }
+ void bv_min(Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv, int n_args, int* args,int resultID){
+	 vec<int> m_args;
+	 for (int i = 0;i<n_args;i++)
+		 m_args.push(args[i]);
+	 bv->newMinBV(resultID, m_args);
+ }
+ void bv_max(Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv, int n_args, int* args, int resultID){
+	 vec<int> m_args;
+	 for (int i = 0;i<n_args;i++)
+		 m_args.push(args[i]);
+	 bv->newMaxBV(resultID, m_args);
+ }
 
  void bv_addition( Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv, int bvID1, int bvID2, int resultID){
 	  bv->newAdditionBV(resultID,bvID1,bvID2);

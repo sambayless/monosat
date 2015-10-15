@@ -28,6 +28,7 @@
 #include "core/Config.h"
 #include "graph/GraphTheory.h"
 #include <unistd.h>
+#include "core/Remap.h"
 using namespace Monosat;
 
 //=================================================================================================
@@ -149,12 +150,13 @@ CRef Solver::attachReasonClause(Lit r,vec<Lit> & ps) {
 	assert(value(r)==l_True);
 
 	if(opt_write_learnt_clauses){
-		if((++opt_n_learnts)==58108|| opt_n_learnts==58109){
+		if((++opt_n_learnts)==2){
 			int a=1;
 		}
+
 		fprintf(opt_write_learnt_clauses,"learnt ");
 		for (Lit l:ps){
-			fprintf(opt_write_learnt_clauses," %d", dimacs(l));
+			fprintf(opt_write_learnt_clauses," %d", dimacs(unmap(l)));
 		}
 		fprintf(opt_write_learnt_clauses," 0\n");
 		fflush(opt_write_learnt_clauses);
@@ -542,7 +544,7 @@ void Solver::analyze(CRef confl, vec<Lit>& out_learnt, int& out_btlevel) {
 #endif
 	bool possibly_missed_1uip=false;
 	to_analyze.clear();
-	out_learnt.push();      // (leave room for the asserting literal)
+	out_learnt.push(lit_Undef);      // (leave room for the asserting literal)
 	int index = trail.size() - 1;
 	int stop = trail_lim.last();
 	do {
@@ -1329,12 +1331,13 @@ bool Solver::simplify() {
 }
 void Solver::addClauseSafely(vec<Lit> & ps) {
 	if(opt_write_learnt_clauses){
-		if(++opt_n_learnts==58108){
+		if(++opt_n_learnts==838){
 			int a=1;
 		}
+
 		fprintf(opt_write_learnt_clauses,"learnt fact ");
 		for (Lit l:ps){
-			fprintf(opt_write_learnt_clauses," %d", dimacs(l));
+			fprintf(opt_write_learnt_clauses," %d", dimacs(unmap(l)));
 		}
 		fprintf(opt_write_learnt_clauses," 0\n");
 		fflush(opt_write_learnt_clauses);
@@ -1450,12 +1453,13 @@ bool Solver::addConflictClause(vec<Lit> & ps, CRef & confl_out, bool permanent) 
 		int a=1;
 	}
 	if(opt_write_learnt_clauses){
-		if(++opt_n_learnts==58108){
+		if(++opt_n_learnts==838){
 			int a=1;
 		}
+
 		fprintf(opt_write_learnt_clauses,"learnt ");
 		for (Lit l:ps){
-			fprintf(opt_write_learnt_clauses," %d", dimacs(l));
+			fprintf(opt_write_learnt_clauses," %d", dimacs(unmap(l)));
 		}
 		fprintf(opt_write_learnt_clauses," 0\n");
 		fflush(opt_write_learnt_clauses);
@@ -1653,7 +1657,7 @@ lbool Solver::search(int nof_conflicts) {
 	n_theory_decision_rounds+=using_theory_decisions;
 	for (;;) {
 		static int iter = 0;
-		if (++iter == 19) {//40097
+		if (++iter ==  23 || iter==65) {
 			int a = 1;
 		}
 		propagate: CRef confl = propagate();
@@ -1977,11 +1981,11 @@ lbool Solver::solve_() {
 			for (int i = 0;i<nVars();i++){
 				Lit l = mkLit(i,false);
 				if(value(i)==l_True){
-					fprintf(opt_write_learnt_clauses," %d",dimacs(l));
+					fprintf(opt_write_learnt_clauses," %d",dimacs(unmap(l)));
 				}else if(value(i)==l_False){
-					fprintf(opt_write_learnt_clauses," %d",dimacs(~l));
+					fprintf(opt_write_learnt_clauses," %d",dimacs(~unmap(l)));
 				}else{
-					fprintf(opt_write_learnt_clauses," %d",dimacs(l));//optional
+					fprintf(opt_write_learnt_clauses," %d",dimacs(unmap(l)));//optional
 				}
 			}
 			fprintf(opt_write_learnt_clauses,"\n");
@@ -2041,6 +2045,14 @@ bool Solver::solveTheory(vec<Lit> & conflict_out) {
 // Writing CNF to DIMACS:
 // 
 // FIXME: this needs to be rewritten completely.
+
+Lit Solver::unmap(Lit l)  {
+	if(varRemap){
+		return varRemap->unmap(l);
+	}else{
+		return l;
+	}
+}
 
 static Var mapVar(Var x, vec<Var>& map, Var& max) {
 	if (map.size() <= x || map[x] == -1) {

@@ -47,6 +47,7 @@ c_bv_p = c_void_p
 c_literal = c_int
 c_literal_p = c_int_p
 c_bvID=c_int
+c_bvID_p = c_int_p
 c_var = c_int
 c_var_p = c_int_p
 
@@ -186,6 +187,10 @@ class Monosat(metaclass=Singleton):
         self.monosat_c.bv_subtraction.argtypes=[c_solver_p,c_bv_p,c_bvID, c_bvID, c_bvID]
         
         self.monosat_c.bv_ite.argtypes=[c_solver_p,c_bv_p,c_literal, c_bvID,c_bvID,c_bvID]
+
+        self.monosat_c.bv_min.argtypes=[c_solver_p,c_bv_p, c_int, c_bvID_p,c_bvID]
+        self.monosat_c.bv_max.argtypes=[c_solver_p,c_bv_p,  c_int, c_bvID_p,c_bvID]
+        
 
         self.monosat_c.bv_not.argtypes=[c_solver_p,c_bv_p,c_bvID,c_bvID]
         self.monosat_c.bv_and.argtypes=[c_solver_p,c_bv_p,c_bvID,c_bvID,c_bvID]
@@ -618,6 +623,23 @@ class Monosat(metaclass=Singleton):
         self.monosat_c.bv_ite(self.solver._ptr, self.solver.bvtheory,condition_lit, c_bvID(thnID), c_bvID(elsID), c_bvID(resultID))
         if self.solver.output:
             self._echoOutput("bv ite %d %d %d %d\n"%(dimacs(condition_lit),thnID,elsID,resultID))
+    
+    def bv_min(self, args, resultID):
+        self.backtrack()        
+        lp = self.getIntArray(args)                
+        self.monosat_c.bv_min(self.solver._ptr, self.solver.bvtheory, len(args),lp, c_bvID(resultID))
+        if self.solver.output:            
+            argstr = " ".join((str(a) for a in args))
+            self._echoOutput("bv min %d %d %s\n"%(resultID,len(args),argstr))
+
+    def bv_max(self, args, resultID):
+        self.backtrack()        
+        lp = self.getIntArray(args)                
+        self.monosat_c.bv_max(self.solver._ptr, self.solver.bvtheory, len(args),lp, c_bvID(resultID))
+        if self.solver.output:            
+            argstr = " ".join((str(a) for a in args))
+            self._echoOutput("bv max %d %d %s\n"%(resultID,len(args),argstr))
+
     
     def bv_not(self, aID,resultID):
         self.backtrack()

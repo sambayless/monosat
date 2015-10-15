@@ -71,7 +71,6 @@ extern "C"
   int newBVComparison_bv_geq(Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv, int bvID, int compareID);
 
 
-
   void bv_concat( Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv,int aID, int bID, int resultID);
   void bv_slice( Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv,int aID, int lower, int upper, int resultID);
   void bv_not( Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv,int bvaID, int bvResultID);
@@ -86,7 +85,8 @@ extern "C"
 
   void bv_addition( Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv, int bvID1, int bvID2, int resultID);
   void bv_subtraction( Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv, int bvID1, int bvID2, int resultID);
-
+  void bv_min(Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv, int n_args, int* args,int resultID);
+  void bv_max(Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv, int n_args, int* args, int resultID);
   //simple at-most-one constraint: asserts that at most one of the set of variables (NOT LITERALS) may be true.
   //for small numbers of variables, consider using a direct CNF encoding instead
   void at_most_one(Monosat::SimpSolver * S, int * vars, int n_vars);

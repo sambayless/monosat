@@ -41,9 +41,10 @@
 #include <sstream>
 #include <iostream>
 #include <exception>
+
 template<typename Weight>
 class BVTheorySolver;
-
+#include "core/Remap.h"
 namespace Monosat {
 using std::min;
 using std::max;
@@ -100,31 +101,35 @@ public:
 		int cause_is_condition:1;
 		int cause_is_condition_argument:1;
 		int cause_is_decision:1;
-		int index:26;
+		int cause_is_minmax:1;
+		int cause_is_minmax_argument:1;
+		int index:24;
 
-		Cause(const Cause & copy):cause_is_bits(copy.cause_is_bits),refined_cause(copy.refined_cause),cause_is_comparison(copy.cause_is_comparison),cause_is_addition(copy.cause_is_addition),cause_is_addition_argument(copy.cause_is_addition_argument),cause_is_condition(copy.cause_is_condition),cause_is_condition_argument(copy.cause_is_condition_argument),cause_is_decision(copy.cause_is_decision),index(copy.index){
+		Cause(const Cause & copy):cause_is_bits(copy.cause_is_bits),refined_cause(copy.refined_cause),cause_is_comparison(copy.cause_is_comparison),cause_is_addition(copy.cause_is_addition),cause_is_addition_argument(copy.cause_is_addition_argument),cause_is_condition(copy.cause_is_condition),cause_is_condition_argument(copy.cause_is_condition_argument),cause_is_decision(copy.cause_is_decision),cause_is_minmax(copy.cause_is_minmax),cause_is_minmax_argument(copy.cause_is_minmax_argument),index(copy.index){
+
+		}
+
+		Cause():cause_is_bits(0),refined_cause(0),cause_is_comparison(0),cause_is_addition(0),cause_is_addition_argument(0),cause_is_condition(0),cause_is_condition_argument(0),cause_is_decision(0),cause_is_minmax(0),cause_is_minmax_argument(0),index(-1){
 
 		}
 
-		Cause():cause_is_bits(0),refined_cause(0),cause_is_comparison(0),cause_is_addition(0),cause_is_addition_argument(0),cause_is_condition(0),cause_is_condition_argument(0),cause_is_decision(0),index(-1){
-
-		}
-		/*Cause(bool bits, bool addition, int comparison=-1):cause_is_bits(bits),refined_cause(0),cause_is_addition(addition),cause_is_addition_arg(0),comparison_cause(comparison){
-
-		}*/
 		bool hasCause(){
 			//this can be improved, if we want.
-			return cause_is_bits|| cause_is_addition || cause_is_addition_argument|| cause_is_condition || cause_is_condition_argument|| cause_is_comparison || cause_is_decision|| refined_cause;
+			return cause_is_bits|| cause_is_addition || cause_is_addition_argument|| cause_is_condition || cause_is_condition_argument || cause_is_minmax || cause_is_minmax_argument|| cause_is_comparison || cause_is_decision|| refined_cause;
 		}
 		void clear(){
 			cause_is_decision=0;
 			cause_is_bits=0;
 			refined_cause=0;
+			cause_is_comparison=0;
 			cause_is_addition=0;
 			cause_is_addition_argument=0;
 			cause_is_condition=0;
 			cause_is_condition_argument=0;
-			cause_is_comparison=0;
+
+			cause_is_decision=0;
+			cause_is_minmax=0;
+			cause_is_minmax_argument=0;
 			index=-1;
 		}
 	};
@@ -265,6 +270,7 @@ private:
 		}
 	}
 
+	BVMap * bvRemap=nullptr;
 public:
 
 	bool first_propagation=true;
@@ -351,8 +357,19 @@ public:
 	vec<int> pending_under_analyses;
 	int n_pending_analyses = 0;
 
-	vec<vec<Addition>> additions;//each bitvector is the result of at most one addition.
+	vec<vec<Addition>> additions;
 	vec<vec<AdditionArg>> addition_arguments;
+
+	struct MinMaxData{
+		bool min;
+		int resultID;
+		vec<int> args;
+	};
+
+	vec<MinMaxData> minmaxs;
+	vec<vec<int>> minmax_ops;//for now, allowing at most one minmax operation per bvID
+	vec<vec<int>> minmax_args;
+
 	vec<Weight> under_approx0;//under approx at level 0
 	vec<Weight> over_approx0;//over approx at level 0
 	vec<Weight> under_approx;
@@ -1178,7 +1195,9 @@ public:
 					over_causes[bvID].clear();
 					over_causes[bvID].cause_is_decision=true;
 					under_causes[bvID].index=decisionLevel();
-				break;
+					break;
+				default:
+					throw std::runtime_error("Bad bv decision!");
 			}
 
 			if ((under_old != under_approx[bvID]) || (over_old != over_approx[bvID])){
@@ -1270,7 +1289,7 @@ public:
 
 	void buildReason(Lit p, vec<Lit> & reason,CRef marker) {
 		static int iter = 0;
-		if(++iter==55 || iter==56){//17
+		if(++iter==39){//17
 			int a =1;
 		}
 		assert(value(p)!=l_False);
@@ -1892,6 +1911,91 @@ public:
 				over_cause_new.index=i;
 			}
 		}
+
+
+		for(int cID: minmax_ops[bvID]){
+			if(bvID==99){
+				int a=1;
+			}
+			bool isMin = minmaxs[cID].min;
+			vec<int> & args = minmaxs[cID].args;
+			assert(minmaxs[cID].resultID==bvID);
+			if (!isMin){
+				using std::max;
+				Weight highest_over=over_approx[args[0]];
+				Weight highest_under=under_approx[args[0]];
+				for(int i = 0;i<args.size();i++){
+					int argID = args[i];
+					Weight under = under_approx[argID];
+					Weight over = over_approx[argID];
+					highest_under = max(under,highest_under);
+					highest_over = max(over,highest_over);
+				}
+				if (highest_under>under_new){
+					under_new=highest_under;
+					under_cause_new.clear();
+					under_cause_new.cause_is_minmax=true;
+					under_cause_new.index=cID;
+				}
+				if (highest_over<over_new){
+					over_new=highest_over;
+					over_cause_new.clear();
+					over_cause_new.cause_is_minmax=true;
+					over_cause_new.index=cID;
+				}
+			}else{
+				using std::min;
+				Weight lowest_over=over_approx[args[0]];
+				Weight lowest_under=under_approx[args[0]];
+				for(int i = 0;i<args.size();i++){
+					int argID = args[i];
+					Weight under = under_approx[argID];
+					Weight over = over_approx[argID];
+					lowest_under = min(under,lowest_under);
+					lowest_over = min(over,lowest_over);
+				}
+				if (lowest_under>under_new){
+					under_new=lowest_under;
+					under_cause_new.clear();
+					under_cause_new.cause_is_minmax=true;
+					under_cause_new.index=cID;
+				}
+				if (lowest_over<over_new){
+					over_new=lowest_over;
+					over_cause_new.clear();
+					over_cause_new.cause_is_minmax=true;
+					over_cause_new.index=cID;
+				}
+			}
+		}
+
+		for(int cID: minmax_args[bvID]){
+			bool isMin = minmaxs[cID].min;
+			vec<int> & args = minmaxs[cID].args;
+			int resultID = minmaxs[cID].resultID;
+			if (!isMin){
+				using std::max;
+				Weight highest_over = over_approx[resultID];
+
+				if (highest_over<over_new){
+					over_new=highest_over;
+					over_cause_new.clear();
+					over_cause_new.cause_is_minmax_argument=true;
+					over_cause_new.index=cID;
+				}
+			}else{
+				using std::min;
+				Weight lowest_under = under_approx[resultID];
+
+				if (lowest_under<under_new){
+					under_new=lowest_under;
+					under_cause_new.clear();
+					under_cause_new.cause_is_minmax_argument=true;
+					under_cause_new.index=cID;
+				}
+			}
+		}
+
 		assert_in_range(under_new,bvID);
 		assert_in_range(over_new,bvID);
 		for(int i = compares[bvID].size()-1;i>=0;i--){
@@ -2243,7 +2347,7 @@ public:
 
 
 			fprintf(opt_write_learnt_clauses,"learnt bound ");
-			fprintf(opt_write_learnt_clauses," %d <= ", bvID);
+			fprintf(opt_write_learnt_clauses," %d <= ", unmapBV( bvID));
 
 			std::stringstream ss;
 			ss<<over_approx[bvID] << " ";
@@ -2256,7 +2360,7 @@ public:
 					if(value(i)!=l_Undef){
 						Lit l = mkLit(i,value(i)==l_True);
 						assert(value(l)==l_False);
-						fprintf(opt_write_learnt_clauses," %d",dimacs(toSolver(l)));
+						fprintf(opt_write_learnt_clauses," %d",(dimacs(S->unmap(toSolver(l)))));
 					}
 				}
 			}
@@ -2266,18 +2370,18 @@ public:
 				int a=1;
 			}
 			fprintf(opt_write_learnt_clauses,"learnt bound ");
-			fprintf(opt_write_learnt_clauses," %d >= ", bvID);
+			fprintf(opt_write_learnt_clauses," %d >= ", unmapBV( bvID));
 			//std::cout<<under_approx[bvID] << " ";
 			std::stringstream ss2;
 			ss2<<under_approx[bvID] << " ";
-			//fprintf(opt_write_learnt_clauses,"learnt fact bv %d %s %d\n", bvID, ss.str().c_str(),dimacs(toSolver(l)) );
+			//fprintf(opt_write_learnt_clauses,"learnt fact bv %d %s %d\n", unmapBV( bvID), ss.str().c_str(),(dimacs(S.unmaptoSolver(l)) ));
 			fprintf(opt_write_learnt_clauses,"%s",ss2.str().c_str());
 			if(under_approx[bvID]!=under_approx0[bvID]){
 				for (int i = 0;i<nVars();i++){
 					if(value(i)!=l_Undef){
 						Lit l = mkLit(i,value(i)==l_True);
 						assert(value(l)==l_False);
-						fprintf(opt_write_learnt_clauses," %d",dimacs(toSolver(l)));
+						fprintf(opt_write_learnt_clauses," %d",dimacs(S->unmap(toSolver(l))));
 					}
 				}
 			}
@@ -2447,6 +2551,70 @@ public:
 				}
 				if(over_add<over){
 					over=over_add;
+				}
+			}
+
+			for(int cID: minmax_ops[bvID]){
+				bool isMin = minmaxs[cID].min;
+				vec<int> & args = minmaxs[cID].args;
+				assert(minmaxs[cID].resultID==bvID);
+				if (!isMin){
+					using std::max;
+					Weight highest_over=over_approx[args[0]];
+					Weight highest_under=under_approx[args[0]];
+					for(int i = 0;i<args.size();i++){
+						int argID = args[i];
+						Weight under2 = under_approx[argID];
+						Weight over2 = over_approx[argID];
+						highest_under = max(under2,highest_under);
+						highest_over = max(over2,highest_over);
+					}
+					if (highest_under>under){
+						under=highest_under;
+
+					}
+					if (highest_over<over){
+						over=highest_over;
+
+					}
+				}else{
+					using std::min;
+					Weight lowest_over=over_approx[args[0]];
+					Weight lowest_under=under_approx[args[0]];
+					for(int i = 0;i<args.size();i++){
+						int argID = args[i];
+						Weight under2 = under_approx[argID];
+						Weight over2 = over_approx[argID];
+						lowest_under = min(under2,lowest_under);
+						lowest_over = min(over2,lowest_over);
+					}
+					if (lowest_under>under){
+						under=lowest_under;
+
+					}
+					if (lowest_over<over){
+						over=lowest_over;
+
+					}
+				}
+			}
+
+			for(int cID: minmax_args[bvID]){
+				bool isMin = minmaxs[cID].min;
+				vec<int> & args = minmaxs[cID].args;
+				int resultID = minmaxs[cID].resultID;
+				if (!isMin){
+					using std::max;
+					Weight highest_over = over_approx[resultID];
+					if (highest_over<over){
+						over=highest_over;
+					}
+				}else{
+					using std::min;
+					Weight lowest_under = under_approx[resultID];
+					if (lowest_under<under){
+						under=lowest_under;
+					}
 				}
 			}
 
@@ -2659,7 +2827,7 @@ public:
 			int a =1;
 		}
 		//printf("bv prop %d\n",stats_propagations);
-		if(stats_propagations==17){
+		if(stats_propagations==108){
 			int a =1;
 		}
 		bool any_change = false;
@@ -2693,7 +2861,7 @@ public:
 			Weight  overApprox_prev = over_approx[bvID];
 			Cause prev_under_cause = over_causes[bvID];
 			Cause prev_over_cause = over_causes[bvID];
-			if(stats_bv_propagations==17){
+			if(stats_bv_propagations==316){
 				int a=1;
 			}
 			bool changed = updateApproximations(bvID);//can split this into changedUpper and changedLower...
@@ -3146,7 +3314,6 @@ public:
 				}
 			}
 
-
 			vec<int> & compare = compares[bvID];
 			//update over approx lits
 			for(int i = 0;i<compare.size();i++){
@@ -3435,6 +3602,114 @@ public:
 				}
 
 			}
+
+
+
+			for(int cID:minmax_ops[bvID]){
+				bool isMin = minmaxs[cID].min;
+				vec<int> & args = minmaxs[cID].args;
+				assert(minmaxs[cID].resultID==bvID);
+				//If any argument has an upper bound larger than bvID's, then
+				//need to update that arg
+				assert(args.size()>0);
+				//there are two classes of conflicts here (for the max case).
+				//1) the underapprox of bvID is higher than the highest overapprox of its arguments
+				//then the conflict reason is that at least one of them must increase, or bvID must decrease.
+				Weight minmax_arg_under = under_approx[bvID];
+				Weight minmax_arg_over = over_approx[bvID];
+				for(int i = 0;i<args.size();i++){
+					int argID = args[i];
+					Weight arg_over = over_approx[argID];
+					Weight arg_under = under_approx[argID];
+
+					if(isMin){
+						if(arg_under<minmax_arg_under){
+							minmax_arg_under=arg_under;
+						}
+						if(arg_over<minmax_arg_over){
+							minmax_arg_over=arg_over;
+						}
+					}else{
+						if(arg_under>minmax_arg_under){
+							minmax_arg_under=arg_under;
+						}
+						if(arg_over>minmax_arg_over){
+							minmax_arg_over=arg_over;
+						}
+					}
+
+
+					if(isMin ?(arg_over<overApprox || arg_under<underApprox) :( arg_over>overApprox || arg_under>underApprox)){
+						if(!alteredBV[argID]){
+							alteredBV[argID]=true;
+							assert(altered_bvs.last()==bvID);
+							altered_bvs.last()=argID;
+							assert(altered_bvs.last()==argID);
+							altered_bvs.push(bvID);
+							assert(altered_bvs.last()==bvID);
+						}
+					}
+				}
+
+				if(isMin){
+					if(minmax_arg_over < underApprox){
+						//this is a conflict
+						buildMinMaxReason(bvID, cID, conflict);
+						return false;
+					}
+					if(minmax_arg_under < overApprox){
+						//this is a conflict
+						buildMinMaxReason(bvID, cID, conflict);
+						return false;
+					}
+				}else{
+
+					if(minmax_arg_over < underApprox){
+						//this is a conflict
+						buildMinMaxReason(bvID, cID, conflict);
+						return false;
+					}
+					if(minmax_arg_under > overApprox){
+						//this is a conflict
+						buildMinMaxReason(bvID, cID, conflict);
+						return false;
+					}
+
+				}
+
+			}
+			for(int cID:minmax_args[bvID]){
+				bool isMin = minmaxs[cID].min;
+				//vec<int> & args = minmaxs[cID].args;
+
+				int resultID = minmaxs[cID].resultID;
+				Weight res_over = over_approx[resultID];
+				Weight res_under = under_approx[resultID];
+				if(isMin ? (overApprox<res_under) : (underApprox>res_over) ){
+					//conflict
+					double startconftime = rtime(2);
+					propagationtime += startconftime - startproptime;
+					stats_num_conflicts++;stats_addition_conflicts++;
+					if(opt_verb>1){
+						printf("bv minmax conflict %ld\n", stats_num_conflicts);
+					}
+					buildMinMaxArgReason(bvID,cID,conflict);
+					toSolver(conflict);
+					stats_conflict_time+=rtime(2)-startconftime;
+					return false;
+				}
+				if(overApprox<res_over || underApprox>res_under){
+					if(!alteredBV[resultID]){
+						alteredBV[resultID]=true;
+						assert(altered_bvs.last()==bvID);
+						altered_bvs.last()=resultID;
+						assert(altered_bvs.last()==resultID);
+						altered_bvs.push(bvID);
+						assert(altered_bvs.last()==bvID);
+					}
+				}
+			}
+
 			if(changed){
 				if(hasTheory(bvID))
 					getTheory(bvID)->enqueueBV(bvID);//only enqueue the bitvector in the subtheory _after_ it's approximation has been updated!
@@ -3669,6 +3944,114 @@ public:
 		analyze(conflict);
 	}
 
+	void buildMinMaxReason(int bvID,int cID, vec<Lit> & conflict){
+		dbg_no_pending_analyses();
+		assert(eq_bitvectors[bvID]==bvID);
+		//rewind_trail_pos(trail.size()-1);
+		stats_build_addition_reason++;
+		Weight  overApprox = over_approx[bvID];
+		Weight  underApprox = under_approx[bvID];
+		assert(checkApproxUpToDate(bvID));
+
+		MinMaxData & minmax = minmaxs[cID];
+		assert(minmax.resultID==bvID);
+		bool isMin = minmax.min;
+		vec<int> & args = minmax.args;
+
+		Weight minmax_arg_under = under_approx[bvID];
+		Weight minmax_arg_over = over_approx[bvID];
+		int minArg=0;
+		int maxArg=0;
+		for(int i = 0;i<args.size();i++){
+			int argID = args[i];
+			Weight arg_over = over_approx[argID];
+			Weight arg_under = under_approx[argID];
+
+			if(isMin){
+				if(arg_under<minmax_arg_under){
+					minmax_arg_under=arg_under;
+				}
+				if(arg_over<minmax_arg_over){
+					minmax_arg_over=arg_over;
+					minArg=i;
+				}
+			}else{
+				if(arg_under>minmax_arg_under){
+					minmax_arg_under=arg_under;
+					maxArg=i;
+				}
+				if(arg_over>minmax_arg_over){
+					minmax_arg_over=arg_over;
+
+				}
+			}
+		}
+		bool foundConflict=false;
+		if(isMin){
+			if(minmax_arg_over < underApprox){
+				foundConflict=true;
+				//this is a conflict
+				analyzeValueReason(Comparison::gt, bvID,minmax_arg_over,conflict);
+				analyzeValueReason(Comparison::leq, minArg,minmax_arg_over,conflict);
+			}else if(minmax_arg_under > overApprox){
+				//this is a conflict
+				foundConflict=true;
+				analyzeValueReason(Comparison::lt, bvID,minmax_arg_under,conflict);
+				for(int i = 0;i<args.size();i++){
+					int argID = args[i];
+					analyzeValueReason(Comparison::geq, argID,minmax_arg_under,conflict);
+				}
+			}
+		}else{
+			if(minmax_arg_over < underApprox){
+				//this is a conflict
+				foundConflict=true;
+				analyzeValueReason(Comparison::gt, bvID,minmax_arg_over,conflict);
+				for(int i = 0;i<args.size();i++){
+					int argID = args[i];
+					analyzeValueReason(Comparison::leq, argID,minmax_arg_over,conflict);
+				}
+
+			}else if(minmax_arg_under > overApprox){
+				//this is a conflict
+				foundConflict=true;
+				analyzeValueReason(Comparison::lt, bvID,minmax_arg_under,conflict);
+				analyzeValueReason(Comparison::geq, maxArg,minmax_arg_under,conflict);
+			}
+		}
+		assert(foundConflict);
+		analyze(conflict);
+	}
+
+	void buildMinMaxArgReason(int bvID,int cID,  vec<Lit> & conflict){
+		dbg_no_pending_analyses();
+
+		assert(eq_bitvectors[bvID]==bvID);
+		//rewind_trail_pos(trail.size()-1);
+		stats_build_addition_reason++;
+		Weight  overApprox = over_approx[bvID];
+		Weight  underApprox = under_approx[bvID];
+		assert(checkApproxUpToDate(bvID));
+
+		MinMaxData & minmax = minmaxs[cID];
+		int resultID =minmax.resultID;
+		int argID = bvID;
+		Weight arg_under = under_approx[argID];
+		Weight arg_over = over_approx[argID];
+
+		if(minmax.min){
+			if(arg_over>=underApprox)
+				throw std::runtime_error("Error in min reason");
+
+			buildComparisonReasonBV(Comparison::lt,argID,bvID,conflict);
+		}else{
+			if(arg_under<=overApprox)
+				throw std::runtime_error("Error in max reason");
+
+			buildComparisonReasonBV(Comparison::gt,argID,bvID,conflict);
+		}
+
+	}
 	void buildAdditionReason(int bvID,int addition_index, vec<Lit> & conflict){
 		dbg_no_pending_analyses();
 		assert(eq_bitvectors[bvID]==bvID);
@@ -3844,23 +4227,27 @@ public:
 		if (op==Comparison::lt){
 			assert(over_cur<to);
 			compare_over=true;
-			//to = over_cur;
+		/*	assert(to>0);
+			op=Comparison::leq;
+			to-=1;*/
+
 		}
 		if (op==Comparison::leq){
 			assert(over_cur<=to);
 			compare_over=true;
 			//to = over_cur;
 		}
+		if (op==Comparison::gt){
+			assert(under_cur>to);
+			compare_over=false;
+	/*		op=Comparison::geq;
+			to+=1;*/
+		}
 		if (op==Comparison::geq){
 			assert(under_cur>=to);
 			compare_over=false;
 			//to = under_cur;
 		}
-		if (op==Comparison::gt){
-			assert(under_cur>to);
-			compare_over=false;
-		}
-
 		if(!compare_over && under_approx[bvID]<= getUnderApprox(bvID, true) ){
 			//no reason necessary; this is the lowest possible value.
 			return;
@@ -3875,7 +4262,7 @@ public:
 			}
 			std::stringstream ss;
 			ss<< op << " " << to;
-			fprintf(opt_write_learnt_clauses,"learnt analysis bv %d %s ",bvID,ss.str().c_str());
+			fprintf(opt_write_learnt_clauses,"learnt analysis bv %d %s ",unmapBV( bvID),ss.str().c_str());
 		}
 
 		if(compare_over)
@@ -4146,7 +4533,113 @@ public:
 			conflict.push(~condition);
 			addAnalysis(op,resultID,to,conflict);
 
+		}else if ((compare_over && over_causes[bvID].cause_is_minmax) || (!compare_over && under_causes[bvID].cause_is_minmax) ){
+			int cID;
+			if(compare_over)
+				cID= over_causes[bvID].index;
+			else{
+				cID = under_causes[bvID].index;
+			}
+
+			Weight  overApprox = over_approx[bvID];
+			Weight  underApprox = under_approx[bvID];
+
+
+			MinMaxData & minmax = minmaxs[cID];
+			assert(minmax.resultID==bvID);
+			bool isMin = minmax.min;
+			vec<int> & args = minmax.args;
+
+			Weight minmax_arg_under = under_approx[args[0]];
+			Weight minmax_arg_over = over_approx[args[0]];
+			int minArg=args[0];
+			int maxArg=args[0];
+			for(int i = 0;i<args.size();i++){
+				int argID = args[i];
+				Weight arg_over = over_approx[argID];
+				Weight arg_under = under_approx[argID];
+
+				if(isMin){
+					if(arg_under<minmax_arg_under){
+						minmax_arg_under=arg_under;
+					}
+					if(arg_over<minmax_arg_over){
+						minmax_arg_over=arg_over;
+						minArg=argID;
+					}
+				}else{
+					if(arg_under>minmax_arg_under){
+						minmax_arg_under=arg_under;
+						maxArg=argID;
+					}
+					if(arg_over>minmax_arg_over){
+						minmax_arg_over=arg_over;
+
+					}
+				}
+			}
+
+			if(isMin){
+				if(compare_over){
+
+					//analyzeValueReason(Comparison::lt, bvID,minmax_arg_under,conflict);
+
+					//addAnalysis(Comparison::lt,bvID,minmax_arg_under,conflict);
+					addAnalysis(op,minArg,to,conflict);
+				}else{
+					for(int i = 0;i<args.size();i++){
+						int argID = args[i];
+						//analyzeValueReason(Comparison::geq, argID,minmax_arg_under,conflict);
+						addAnalysis(op, argID,to,conflict);
+					}
+
+					//addAnalysis(Comparison::gt, bvID,minmax_arg_over,conflict);
+
+				}
+			}else{
+				if(compare_over){
+
+
+					//addAnalysis(Comparison::lt, bvID,minmax_arg_under,conflict);
+					assert(minmax_arg_over<=to);
+					for(int i = 0;i<args.size();i++){
+						int argID = args[i];
+						addAnalysis(op, argID,to,conflict);
+					}
+				}else{
+
+
+					//addAnalysis(Comparison::gt, bvID,minmax_arg_over,conflict);
+					addAnalysis(op, maxArg,to,conflict);
+
+				}
+			}
+
+		}else if ((compare_over && over_causes[bvID].cause_is_minmax_argument) || (!compare_over && under_causes[bvID].cause_is_minmax_argument) ){
+			int cID;
+			if(compare_over)
+				cID= over_causes[bvID].index;
+			else{
+				cID = under_causes[bvID].index;
+			}
+
+			bool isMin = minmaxs[cID].min;
+			vec<int> & args = minmaxs[cID].args;
+			int resultID = minmaxs[cID].resultID;
+			if (!isMin){
+				using std::max;
+				Weight highest_over = over_approx[resultID];
+				assert(compare_over);
+				addAnalysis(op, resultID,to,conflict);
+			}else{
+				using std::min;
+				Weight lowest_under = under_approx[resultID];
+				assert(!compare_over);
+				addAnalysis(op, resultID,to,conflict);
+			}
+
 		}
+
 
 		int cID=-1;
 		if (compare_over && over_causes[bvID].cause_is_comparison){
@@ -4185,7 +4678,7 @@ public:
 		if(opt_write_learnt_clauses && opt_write_bv_analysis){
 			fprintf(opt_write_learnt_clauses," lits " );
 			for(int i = 0;i<conflict.size();i++){
-				fprintf(opt_write_learnt_clauses,"%d ",dimacs(toSolver(conflict[i])));
+				fprintf(opt_write_learnt_clauses,"%d ",dimacs(S->unmap(toSolver(conflict[i]))));
 			}
 			fprintf(opt_write_learnt_clauses, "\n");
 		}
@@ -4252,6 +4745,7 @@ public:
 		if(compare_over){
 			if(to>= over_approx0[bvID])
 				return false;//no analysis required.
+			assert(to>=over_approx[bvID]);
 
 			//need to check whether this analysis has already been requested for this bitvector, and if not, insert it into the analysis chain in the right position.
 			//should this use a binary search?
@@ -4272,7 +4766,7 @@ public:
 					if( opt_write_learnt_clauses && opt_write_bv_analysis){
 						std::stringstream ss;
 						ss<< op << " " << to;
-						fprintf(opt_write_learnt_clauses, " bv %d %s ",bvID,ss.str().c_str());
+						fprintf(opt_write_learnt_clauses, " bv %d %s ",unmapBV( bvID),ss.str().c_str());
 					}
 					return true;
 				}
@@ -4293,7 +4787,7 @@ public:
 				return false;//no analysis required.
 			//need to check whether this analysis has already been requested for this bitvector, and if not, insert it into the analysis chain in the right position.
 			//should this use a binary search?
-
+			assert(to<=over_approx[bvID]);
 			int cID = pending_under_analyses[bvID];
 
 			int prevID = -1;
@@ -4311,7 +4805,7 @@ public:
 					if( opt_write_learnt_clauses && opt_write_bv_analysis){
 						std::stringstream ss;
 						ss<< op << " " << to;
-						fprintf(opt_write_learnt_clauses, " bv %d %s ",bvID,ss.str().c_str());
+						fprintf(opt_write_learnt_clauses, " bv %d %s ",unmapBV( bvID),ss.str().c_str());
 					}
 					return true;
 				}
@@ -4332,7 +4826,7 @@ public:
 		if( opt_write_learnt_clauses && opt_write_bv_analysis){
 			std::stringstream ss;
 			ss<< op << " " << to;
-			fprintf(opt_write_learnt_clauses, " bv %d %s ",bvID,ss.str().c_str());
+			fprintf(opt_write_learnt_clauses, " bv %d %s ",unmapBV( bvID),ss.str().c_str());
 		}
 		return true;
 	}
@@ -4485,6 +4979,34 @@ public:
 				}
 			}
 
+			for(int i = 0;i< minmaxs.size();i++){
+				MinMaxData & minmax = minmaxs[i];
+				int resultID = minmax.resultID;
+				vec<int> & args = minmax.args;
+				bool isMin = minmax.min;
+
+				Weight min_arg=over_approx[args[0]];
+				Weight max_arg=under_approx[args[0]];
+
+				for (int argID:args){
+					if (over_approx[argID]<min_arg){
+						min_arg=over_approx[argID];
+					}
+					if (under_approx[argID]>max_arg){
+						max_arg=under_approx[argID];
+					}
+				}
+				if(isMin){
+					if(min_arg!=over_approx[resultID]){
+						return false;
+					}
+				}else{
+					if (max_arg!=under_approx[resultID]){
+						return false;
+					}
+				}
+			}
+
 			for(int cID:compares[bvID]){
 				ComparisonID & c = comparisons[cID];
 				assert(c.compareID<0);
@@ -4591,6 +5113,43 @@ public:
 
 	void setBitvectorTheory(int bvID, int theoryID){
 		theoryIds[bvID]=theoryID;
+	}
+
+
+	BitVector newMaxBV(int resultID,vec<int> & args){
+		int cID = minmaxs.size();
+		minmaxs.push();
+		minmaxs.last().min=false;
+		for (int bvID:args){
+				minmaxs.last().args.push(bvID);
+		}
+		minmaxs.last().resultID=resultID;
+
+		minmax_ops[resultID].push(cID);
+		for(int bvID:args){
+			minmax_args[bvID].push(cID);
+		}
+
+		return getBV(resultID);
+	}
+
+
+	BitVector newMinBV(int resultID, vec<int> & args){
+
+		int cID = minmaxs.size();
+		minmaxs.push();
+		minmaxs.last().min=false;
+		for (int bvID:args){
+			minmaxs.last().args.push(bvID);
+		}
+		minmaxs.last().resultID=resultID;
+
+		minmax_ops[resultID].push(cID);
+		for(int bvID:args){
+			minmax_args[bvID].push(cID);
+		}
+
+		return getBV(resultID);
 	}
 
 	//ITE with BV arguments
@@ -4766,8 +5325,12 @@ public:
 		cause_set.growTo(bvID+1);
 		eq_bitvectors.growTo(bvID+1,-1);
 		eq_bitvectors[bvID]=bvID;
+		minmax_args.growTo(bvID+1);
+		minmax_ops.growTo(bvID+1);
 		pending_under_analyses.growTo(bvID+1,-1);
 		pending_over_analyses.growTo(bvID+1,-1);
+		bv_needs_propagation.growTo(bvID+1);
+		bv_needs_propagation[bvID]=true;
 
 		if(under_approx[bvID]>-1){
 			throw std::invalid_argument("Redefined bitvector ID " + std::to_string(bvID) );
@@ -4785,8 +5348,7 @@ public:
 			bitvectors[bvID].push(mkLit(newVar(vars[i],bvID)));
 		}
 
-		bv_needs_propagation.growTo(bvID+1);
-		bv_needs_propagation[bvID]=true;
+
 		alteredBV[bvID]=true;
 		altered_bvs.push(bvID);
 		requiresPropagation=true;
@@ -5013,6 +5575,8 @@ public:
 		cause_set.growTo(bvID+1);
 		eq_bitvectors.growTo(bvID+1,-1);
 		eq_bitvectors[bvID]=bvID;
+		minmax_args.growTo(bvID+1);
+		minmax_ops.growTo(bvID+1);
 		pending_under_analyses.growTo(bvID+1,-1);
 		pending_over_analyses.growTo(bvID+1,-1);
 		bv_needs_propagation.growTo(bvID+1);
@@ -5282,14 +5846,14 @@ public:
 		if(opt_write_learnt_clauses){
 			std::stringstream ss;
 			ss << op << " " << to ;
-			fprintf(opt_write_learnt_clauses,"learnt fact bv %d %s %d\n", bvID, ss.str().c_str(),dimacs(toSolver(l)) );
+			fprintf(opt_write_learnt_clauses,"learnt fact bv %d %s %d\n", unmapBV( bvID), ss.str().c_str(),dimacs(S->unmap(toSolver(l)) ));
 			fflush(opt_write_learnt_clauses);
 			//std::cout << "learnt fact " << "bv " << bvID <<  <<" " << dimacs(toSolver(l)) << "\n";
 		}
 
 
 
-		//updateApproximations(bvID);
+
 		comparisons.push(ComparisonID(to,-1,l,bvID,op));
 
 
@@ -5560,8 +6124,6 @@ public:
 			l = mkLit(newVar(outerVar, bvID,comparisonID));
 		}
 
-		//updateApproximations(bvID);
-		//updateApproximations(toID);
 
 	/*	if(!cause_set[toID].contains(bvID))
 			cause_set[toID].push(bvID);*/
@@ -5891,6 +6453,19 @@ public:
 		}
 #endif
 		return true;
+	}
+
+public:
+	//If bitvectors were renumbered during parsing, this obtains the original numbering
+	int unmapBV(int bvID){
+		if(bvRemap){
+			return bvRemap->unmapBV(bvID);
+		}else{
+			return bvID;
+		}
+	}
+	void setBVMap(BVMap * map){
+		bvRemap=map;
 	}
 
 };

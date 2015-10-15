@@ -69,6 +69,11 @@ public:
 	virtual Lit theoryDecisionLit(int theoryID){
 		return mkLit(newVar(true,false));
 	}
+	//If variables have been renumbered from a user's original input, this will return them to their original numbering, for user-facing output
+	//(Otherwise, it should simply return the original lit)
+	virtual Lit unmap(Lit from){
+		return from;
+	}
 };
 }
 ;
