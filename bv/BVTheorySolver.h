@@ -4585,11 +4585,13 @@ public:
 					//analyzeValueReason(Comparison::lt, bvID,minmax_arg_under,conflict);
 
 					//addAnalysis(Comparison::lt,bvID,minmax_arg_under,conflict);
+					assert(applyOp(op,minArg,to));
 					addAnalysis(op,minArg,to,conflict);
 				}else{
 					for(int i = 0;i<args.size();i++){
 						int argID = args[i];
 						//analyzeValueReason(Comparison::geq, argID,minmax_arg_under,conflict);
+						assert(applyOp(op,argID,to));
 						addAnalysis(op, argID,to,conflict);
 					}
 
@@ -4604,11 +4606,12 @@ public:
 					assert(minmax_arg_over<=to);
 					for(int i = 0;i<args.size();i++){
 						int argID = args[i];
+						assert(applyOp(op,argID,to));
 						addAnalysis(op, argID,to,conflict);
 					}
 				}else{
 
-
+					assert(applyOp(op,maxArg,to));
 					//addAnalysis(Comparison::gt, bvID,minmax_arg_over,conflict);
 					addAnalysis(op, maxArg,to,conflict);
 
@@ -4630,11 +4633,13 @@ public:
 				using std::max;
 				Weight highest_over = over_approx[resultID];
 				assert(compare_over);
+				assert(applyOp(op,resultID,to));
 				addAnalysis(op, resultID,to,conflict);
 			}else{
 				using std::min;
 				Weight lowest_under = under_approx[resultID];
 				assert(!compare_over);
+				assert(applyOp(op,resultID,to));
 				addAnalysis(op, resultID,to,conflict);
 			}
 
@@ -4745,7 +4750,7 @@ public:
 		if(compare_over){
 			if(to>= over_approx0[bvID])
 				return false;//no analysis required.
-			assert(to>=over_approx[bvID]);
+
 
 			//need to check whether this analysis has already been requested for this bitvector, and if not, insert it into the analysis chain in the right position.
 			//should this use a binary search?
@@ -4787,7 +4792,7 @@ public:
 				return false;//no analysis required.
 			//need to check whether this analysis has already been requested for this bitvector, and if not, insert it into the analysis chain in the right position.
 			//should this use a binary search?
-			assert(to<=over_approx[bvID]);
+
 			int cID = pending_under_analyses[bvID];
 
 			int prevID = -1;
@@ -6466,6 +6471,23 @@ public:
 	}
 	void setBVMap(BVMap * map){
 		bvRemap=map;
+	}
+
+	bool applyOp(Comparison op,int bvID,Weight to){
+		switch(op){
+			case Comparison::geq:
+				return under_approx[bvID]>=to;
+			case Comparison::gt:
+				return under_approx[bvID]>to;
+			case Comparison::leq:
+				return over_approx[bvID]<=to;
+			case Comparison::lt:
+				return over_approx[bvID]<to;
+			default:
+				assert(false);
+				return false;
+		}
+
 	}
 
 };
