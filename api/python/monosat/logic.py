@@ -824,11 +824,76 @@ def GreaterEq(num1, num2):
     return LessEq(num2,num1)    
  
 
-def PopCount(vars,method="CSA"):
+def PopCount(vars,method="TREE"):
     if method=="CSA":
         return _PopCountHarleySeal(vars)
+    elif method=="TREE":
+        return _PopCountPairs(vars)
+    elif method=="TABLE":
+        return _PopCountTable(vars)
+    elif method=="NAIVE":
+        return _PopCountNaive(vars)
     else:
-        return _PopCountSimple(vars)
+        raise Exception("Unknown popcount method " + str(method))
+
+
+
+def _next_power_of_2(x):
+    #from http://stackoverflow.com/a/14267557  
+    return 2**(x-1).bit_length()
+
+def _grouper(n, iterable, padvalue=None):
+    from itertools import  chain, repeat
+    "grouper(3, 'abcdefg', 'x') --> ('a','b','c'), ('d','e','f'), ('g','x','x')"
+    return zip(*[chain(iterable, repeat(padvalue, n-1))]*n)
+
+def _PopCountTable(vars, max_value=-1):
+    if(len(vars>10)):
+        print("Warning: building a pop-count table for more than 10 vars (was %d) may require a large amount of memory!"%(len(vars)), file=sys.stderr)
+    if(max_value<0):
+        max_value=len(vars)
+    #for n in range((1<<len(vars)) -1):
+    #    if max_value==len(vars) or  bin(n).count("1") <=max_value: #make this faster in the future!!
+            
+    
+            
+
+def _PopCountPairs(vars):
+    #From Hackers Delight, 2nd ed.
+    #required_len = _next_power_of_2(len(vars))
+    #while( len(vars)<required_len):
+    #    vars = vars+false()
+    maxwidth = math.ceil( math.log(len(vars),2)) +1
+    total = [false()]*maxwidth #is it safe to make this maxwidth-1?
+    #ones=[false()]*len(vars)    
+    ones = false()
+    size = 2
+    #Split the vars into adjacent pairs, sum each pair, the repeat.
+    sums = []
+    for a,b in _grouper(2,vars,false()):
+        sums.append( (a,b))
+    
+    while(len(sums)>1):    
+        next_sums=[]
+        for a,b in _grouper(2,sums,false()): 
+            s,carry  = _AddArray(a, b)
+            #carry will always be false
+            next_sums.append(s)
+        sums = next_sums
+
+        #assert(ignore.isConstFalse())
+    assert(len(sums)==1)
+    output=sums[0]
+    #Add some redundant constraints, so that the sovler doesn't need to work to learn them:
+    any_vars=Or(vars)
+    any_outs = Or(output)
+    AssertEq(any_vars,any_outs)
+
+    #Can't do this, unless vars is a power of 2...
+    #all_vars=And(vars)
+    #all_outs=And(total2)   
+    #AssertEq(all_vars,all_outs)
+    return output
 
 def _CSA(a,b,c):
     assert(isinstance(a, collections.Iterable) == isinstance(b, collections.Iterable))
@@ -866,6 +931,16 @@ def _PopCountHarleySeal(vars):
     #total = 2*total + pop(ones) - operating at the bit level, this is equivalent to left shifting total, and putting 'ones' in the 1's column 
     total2 = [ones]
     total2.extend(total)
+    
+    #Add some redundant constraints, so that the sovler doesn't need to work to learn them:
+    any_vars=Or(vars)
+    any_outs = Or(total2)
+    AssertEq(any_vars,any_outs)
+
+    #Can't do this, unless vars is a power of 2...
+    #all_vars=And(vars)
+    #all_outs=And(total2)   
+    #AssertEq(all_vars,all_outs)
     return total2
     
     
@@ -882,7 +957,7 @@ def _PopCountHarleySeal(vars):
         sums.append([z0,z1,z2])"""
     
 
-def _PopCountSimple(vars):
+def _PopCountNaive(vars):
     if(isinstance(vars,(int, float, complex))):
         return bin(vars).count('1')
 

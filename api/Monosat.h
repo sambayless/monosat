@@ -30,6 +30,14 @@ extern "C"
   bool solveAssumptions(Monosat::SimpSolver * S,int * assumptions, int n_assumptions);
   //Solve under assumptions, and also minimize a set of BVs (in order of precedence)
   bool solveAssumptions_MinBVs(Monosat::SimpSolver * S,int * assumptions, int n_assumptions, int * minimize_bvs, int n_minimize_bvs);
+
+  //Returns 1 for proved false, 2 for proved true, 0 for failed to find a solution within the time limit
+  int solveLimited(Monosat::SimpSolver * S,int time_cutoff_seconds);
+  int solveAssumptionsLimited(Monosat::SimpSolver * S,int time_cutoff_seconds,int * assumptions, int n_assumptions);
+  //Solve under assumptions, and also minimize a set of BVs (in order of precedence)
+  int solveAssumptionsLimited_MinBVs(Monosat::SimpSolver * S,int time_cutoff_seconds,int * assumptions, int n_assumptions, int * minimize_bvs, int n_minimize_bvs);
+
+
   void backtrack(Monosat::SimpSolver * S);
   int newVar(Monosat::SimpSolver * S);
   void setDecisionVar(Monosat::SimpSolver * S,int var,bool decidable);

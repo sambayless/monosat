@@ -1115,6 +1115,7 @@ CRef Solver::propagate(bool propagate_theories) {
 					theoryBumpActivity(theoryID);
 					theoryDecayActivity();
 					qhead = trail.size();
+					stats_theory_conflicts++;
 					return confl;
 				}
 			}
@@ -1959,6 +1960,11 @@ lbool Solver::solve_() {
 		for (int i = 0; i < nVars(); i++)
 			model[i] = value(i);
 		
+		for(Lit l:assumptions){
+			if(value(l)!=l_True){
+				throw std::runtime_error("Model is inconsistent with assumptions!");
+			}
+		}
 		if (opt_check_solution && theories.size()) {
 			if(opt_verb>0){
 				printf("Checking witnesses...\n");

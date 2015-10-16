@@ -516,9 +516,9 @@ bool runSolve(SimpSolver & S,vec<Lit> & assume,vec<int> & bvs){
 					  printf("Min bv%d = %ld",bvID,value);
 				  }
 				  // int bvID,const Weight & to, Var outerVar = var_Undef, bool decidable=true
-				  Lit last_decision_lit = bvTheory->toSolver( bvTheory->newComparison(Comparison::leq,bvID,value,var_Undef,false));
+				  Lit last_decision_lit = bvTheory->toSolver( bvTheory->newComparison(Comparison::leq,bvID,value,var_Undef,true));
 				  while(value>0){
-					  Lit decision_lit =  bvTheory->toSolver(bvTheory->newComparison(Comparison::leq,bvID,value-1,var_Undef,false));
+					  Lit decision_lit =  bvTheory->toSolver(bvTheory->newComparison(Comparison::leq,bvID,value-1,var_Undef,true));
 					  assume.push(decision_lit);
 					  n_solves++;
 					  if (S.solve(assume,false,false)){

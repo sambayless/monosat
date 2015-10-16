@@ -360,6 +360,12 @@ class Monosat(metaclass=Singleton):
             self.solver.output.flush()
         return self.monosat_c.solve(self.solver._ptr)
 
+    def solveLimited(self,time_limit):
+        self.backtrack()
+        if self.solver.output:
+            self._echoOutput("solveLimited %d\n"%(time_limit))
+            self.solver.output.flush()
+        return self.monosat_c.solveLimited(self.solver._ptr)     
 
     def solveAssumptions(self,assumptions,minimize_bvs=None):
         self.backtrack()
@@ -382,7 +388,26 @@ class Monosat(metaclass=Singleton):
                 self.solver.output.flush()
             return self.monosat_c.solveAssumptions(self.solver._ptr,lp,len(assumptions))
         
-    
+    def solveAssumptionsLimited(self,time_limit,assumptions,minimize_bvs=None):
+        self.backtrack()
+
+        lp = self.getIntArray(assumptions)
+        
+        if minimize_bvs is not None and len(minimize_bvs)>0:
+            if self.solver.output:
+                for i,n in enumerate(minimize_bvs):  
+                    self._echoOutput("minimize bv " + str(minimize_bvs[i])+"\n")
+                self._echoOutput("solveLimited %d "%(time_limit) + " ".join((str(dimacs(c)) for c in assumptions))+"\n")
+                self.solver.output.flush()
+            lp2 = (c_int * len(minimize_bvs))()
+            for i,n in enumerate(minimize_bvs):            
+                lp2[i]=c_int(n)
+            return self.monosat_c.solveAssumptionsLimited_MinBVs(self.solver._ptr,lp,len(assumptions),lp2,len(minimize_bvs))
+        else:
+            if self.solver.output:
+                self._echoOutput("solveLimited %d "%(time_limit) + " ".join((str(dimacs(c)) for c in assumptions))+"\n")
+                self.solver.output.flush()
+            return self.monosat_c.solveAssumptionsLimited(self.solver._ptr,lp,len(assumptions))    
     
     def backtrack(self):
         if self.solver.output:

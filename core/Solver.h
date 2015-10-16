@@ -178,8 +178,8 @@ public:
 
         
 		printf("restarts              : %" PRIu64 "\n", starts);
-		printf("conflicts             : %-12" PRIu64 "   (%.0f /sec, %d learnts, %" PRId64 " removed)\n", conflicts,
-				conflicts / cpu_time, learnts.size(), stats_removed_clauses);
+		printf("conflicts             : %-12" PRIu64 "   (%.0f /sec, %d learnts (%d theory learnts), %" PRId64 " removed)\n", conflicts,
+				conflicts / cpu_time, learnts.size(),stats_theory_conflicts, stats_removed_clauses);
 		printf("decisions             : %-12" PRIu64 "   (%4.2f %% random) (%.0f /sec)\n", decisions,
 				(float) rnd_decisions * 100 / (float) decisions, decisions / cpu_time);
 		if(opt_decide_theories){
@@ -532,6 +532,7 @@ public:
 	uint64_t solves, starts, decisions, rnd_decisions, propagations, conflicts, stats_pure_lits, stats_pure_theory_lits,
 			pure_literal_detections, stats_removed_clauses;
 	uint64_t dec_vars, clauses_literals, learnts_literals, max_literals, tot_literals;
+	long stats_theory_conflicts =0;
 	double stats_pure_lit_time=0;
 	uint64_t n_theory_conflicts=0;
 	int consecutive_theory_conflicts=0;

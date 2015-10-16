@@ -337,6 +337,7 @@ private:
 				if (*in == EOF)
 					break;
 				else if (*in == 'c'){
+					skipLine(in);
 					//continue
 				}else{
 					break;
