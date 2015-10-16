@@ -516,13 +516,15 @@ bool runSolve(SimpSolver & S,vec<Lit> & assume,vec<int> & bvs){
 					  printf("Min bv%d = %ld",bvID,value);
 				  }
 				  // int bvID,const Weight & to, Var outerVar = var_Undef, bool decidable=true
-				  Lit last_decision_lit = bvTheory->toSolver( bvTheory->newComparison(Comparison::leq,bvID,value,var_Undef,true));
+				  long last_decision_value=value;
+				  Lit last_decision_lit = bvTheory->toSolver( bvTheory->newComparison(Comparison::leq,bvID,value,var_Undef,false));
 				  while(value>0){
-					  Lit decision_lit =  bvTheory->toSolver(bvTheory->newComparison(Comparison::leq,bvID,value-1,var_Undef,true));
+					  Lit decision_lit =  bvTheory->toSolver(bvTheory->newComparison(Comparison::leq,bvID,value-1,var_Undef,false));
 					  assume.push(decision_lit);
 					  n_solves++;
 					  if (S.solve(assume,false,false)){
 						  last_decision_lit=decision_lit;
+						  last_decision_value=value-1;
 						  value = bvTheory->getUnderApprox(bvID);
 						  min_values[i]=value;
 						  if(opt_verb>=1){
@@ -531,6 +533,13 @@ bool runSolve(SimpSolver & S,vec<Lit> & assume,vec<int> & bvs){
 						  assume.pop();
 					  }else{
 						  assume.pop();
+						  assert(min_values[i]==value);
+						  assert(min_values[i]<=last_decision_value);
+						  if(value<last_decision_value){
+							  //if that last decrease in value was by more than 1
+							  last_decision_lit =  bvTheory->toSolver(bvTheory->newComparison(Comparison::leq,bvID,value,var_Undef,false));
+							  last_decision_value=value;
+						  }
 						  assume.push(last_decision_lit);
 						  r = S.solve(assume,false,false); //this can be improved...
 

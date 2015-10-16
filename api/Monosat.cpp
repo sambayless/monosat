@@ -385,10 +385,10 @@ int solveAssumptionsLimited_MinBVs(Monosat::SimpSolver * S,int time_cutoff,int *
 		  }
 	  }
 	  for(Lit l:assume){
-		if(S->value(l)!=l_True){
-			throw std::runtime_error("Model is inconsistent with assumptions!");
-		}
-	}
+	  		if(S->value(l)!=l_True){
+	  			throw std::runtime_error("Model is inconsistent with assumptions!");
+	  		}
+	  	}
 	  if(r && bvs.size()){
 		  Monosat::BVTheorySolver<long> * bvTheory = (Monosat::BVTheorySolver<long> *) S->getBVTheory();
 		  vec<long> min_values;
@@ -406,10 +406,11 @@ int solveAssumptionsLimited_MinBVs(Monosat::SimpSolver * S,int time_cutoff,int *
 				  printf("Min bv%d = %ld",bvID,value);
 			  }
 			  min_values[i]=value;
+			  long last_decision_value=value;
 			  // int bvID,const Weight & to, Var outerVar = var_Undef, bool decidable=true
-			  Lit last_decision_lit =  bvTheory->toSolver(bvTheory->newComparison(Comparison::leq,bvID,value,var_Undef,true));
+			  Lit last_decision_lit =  bvTheory->toSolver(bvTheory->newComparison(Comparison::leq,bvID,value,var_Undef,false));
 			  while(value>0){
-				  Lit decision_lit = bvTheory->toSolver(bvTheory->newComparison(Comparison::leq,bvID,value-1,var_Undef,true));
+				  Lit decision_lit = bvTheory->toSolver(bvTheory->newComparison(Comparison::leq,bvID,value-1,var_Undef,false));
 				  assume.push(decision_lit);
 				  n_solves++;
 
@@ -430,15 +431,16 @@ int solveAssumptionsLimited_MinBVs(Monosat::SimpSolver * S,int time_cutoff,int *
 
 				  if (r){
 					  last_decision_lit=decision_lit;
+					  last_decision_value=value-1;
 					  if(S->value(decision_lit)!=l_True){
 						  throw std::runtime_error("Error in optimization (comparison not enforced)");
 					  }
+					  for(Lit l:assume){
+					  		if(S->value(l)!=l_True){
+					  			throw std::runtime_error("Model is inconsistent with assumptions!");
+					  		}
+					  	}
 					  long value2 = bvTheory->getUnderApprox(bvID);
-						for(Lit l:assume){
-							if(S->value(l)!=l_True){
-								throw std::runtime_error("Model is inconsistent with assumptions!");
-							}
-						}
 					  if(value2>=value){
 							throw std::runtime_error("Error in optimization (minimum values are inconsistent with model)");
 
@@ -451,6 +453,13 @@ int solveAssumptionsLimited_MinBVs(Monosat::SimpSolver * S,int time_cutoff,int *
 					  }
 				  }else{
 					  assume.pop();
+					  assert(min_values[i]==value);
+					  assert(min_values[i]<=last_decision_value);
+					  if(value<last_decision_value){
+						  //if that last decrease in value was by more than 1
+						  last_decision_lit =  bvTheory->toSolver(bvTheory->newComparison(Comparison::leq,bvID,value,var_Undef,false));
+						  last_decision_value=value;
+					  }
 					  assume.push(last_decision_lit);
 					  //this can be improved...
 					  if (time_cutoff<0){
@@ -466,15 +475,14 @@ int solveAssumptionsLimited_MinBVs(Monosat::SimpSolver * S,int time_cutoff,int *
 							  hit_cutoff=true;
 						  }
 					  }
-
 					  if(!r){
 						  throw std::runtime_error("Error in optimization (instance has become unsat)");
 					  }
 					  for(Lit l:assume){
-							if(S->value(l)!=l_True){
-								throw std::runtime_error("Model is inconsistent with assumptions!");
-							}
-						}
+					  		if(S->value(l)!=l_True){
+					  			throw std::runtime_error("Model is inconsistent with assumptions!");
+					  		}
+					  	}
 					  if(min_values[i]< bvTheory->getUnderApprox(bvID)){
 						  throw std::runtime_error("Error in optimization (minimum values are inconsistent with model)");
 					  }
