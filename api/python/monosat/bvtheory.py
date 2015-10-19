@@ -113,9 +113,11 @@ class BVManager(metaclass=Manager):
         for (i,t,e,r) in self.ites:
             f.write("bv_Ite %d %d %d %d\n"%(dimacs(i),t.getID(),e.getID(),r.getID()))
             
+def _bv_Max(*bvs):
+    return BVManager().Max(*bvs)
+def _bv_Min(*bvs):
+    return BVManager().Min(*bvs)
 
-Max = BVManager().Max
-Min = BVManager().Min
 
 def _bv_Ite(i,t,e):
     return BVManager().Ite(i,t,e)

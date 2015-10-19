@@ -648,7 +648,7 @@ def Min(*args):
     if(len(args)==1 and isinstance(args[0], collections.Iterable)):
         return Min(*args[0])
     if len(args)>0 and isinstance(args[0],BitVector):
-        return monosat.bvtheory.Min(*args)
+        return monosat.bvtheory._bv_Min(*args)
     else:
         assert(len(args)==2)#In the future, support more arguments...
         return _Min(*args)
@@ -659,7 +659,7 @@ def Max(*args):
         return Max(*args[0])
     
     if len(args)>0 and isinstance(args[0],BitVector):
-        return monosat.bvtheory.Max(*args)
+        return monosat.bvtheory._bv_Max(*args)
     else:
         assert(len(args)==2)#In the future, support more arguments...
         return _Max(*args)
@@ -824,13 +824,14 @@ def GreaterEq(num1, num2):
     return LessEq(num2,num1)    
  
 
-def PopCount(vars,method="TREE"):
+def PopCount(vars,**kwargs):
+    method="TREE" if "method" not in  kwargs else kwargs["method"]
     if method=="CSA":
         return _PopCountHarleySeal(vars)
     elif method=="TREE":
         return _PopCountPairs(vars)
     elif method=="TABLE":
-        return _PopCountTable(vars)
+        return _PopCountTable(vars,kwargs["max"] if "max" in kwargs else None)
     elif method=="NAIVE":
         return _PopCountNaive(vars)
     else:
@@ -847,14 +848,41 @@ def _grouper(n, iterable, padvalue=None):
     "grouper(3, 'abcdefg', 'x') --> ('a','b','c'), ('d','e','f'), ('g','x','x')"
     return zip(*[chain(iterable, repeat(padvalue, n-1))]*n)
 
-def _PopCountTable(vars, max_value=-1):
-    if(len(vars>10)):
-        print("Warning: building a pop-count table for more than 10 vars (was %d) may require a large amount of memory!"%(len(vars)), file=sys.stderr)
-    if(max_value<0):
+def _PopCountTable(vars, max_value=None):
+    if(max_value is None):
         max_value=len(vars)
-    #for n in range((1<<len(vars)) -1):
-    #    if max_value==len(vars) or  bin(n).count("1") <=max_value: #make this faster in the future!!
-            
+        
+    if(max_value>10):
+        print("Warning: building a pop-count table for more than 10 values (was %d) may require a large amount of memory!"%(max_value), file=sys.stderr)
+    
+    output = []
+    maxwidth = math.ceil( math.log(len(vars),2))
+    for v in maxwidth:
+        output.append(Var())
+    
+    for n in range((1<<len(vars)) -1):
+        pop = bin(n).count("1") 
+        if pop<=max_value: #make this faster in the future!!
+            a = true()
+            for i,b in enumerate(bin(n)):
+                v= vars[i]
+                if b=='0':
+                    a &= Not(v)
+                else:
+                    a&= v
+            for i in range(maxwidth):
+                bit = 1<<i 
+                if pop & bit:
+                    AssertImplies(a, output[i])
+                else:
+                    AssertImplies(a, Not(output[i]))
+                    
+    #Add some redundant constraints, so that the sovler doesn't need to work to learn them:
+    any_vars=Or(vars)
+    any_outs = Or(output)
+    AssertEq(any_vars,any_outs)
+    
+    return output;  
     
             
 
@@ -870,14 +898,19 @@ def _PopCountPairs(vars):
     size = 2
     #Split the vars into adjacent pairs, sum each pair, the repeat.
     sums = []
-    for a,b in _grouper(2,vars,false()):
+    
+    for a,b in _grouper(2,vars,None):
         sums.append( (a,b))
     
     while(len(sums)>1):    
         next_sums=[]
-        for a,b in _grouper(2,sums,false()): 
-            s,carry  = _AddArray(a, b)
-            #carry will always be false
+        for a,b in _grouper(2,sums,None):
+            assert(a is not None)           
+            if b is not None: 
+                s,carry  = _AddArray(a, b)
+                #carry will always be false
+            else:
+                s = a
             next_sums.append(s)
         sums = next_sums
 

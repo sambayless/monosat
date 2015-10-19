@@ -2281,18 +2281,14 @@ public:
 
 		//int width = bitvectors[bvID].size();
 		//Weight max_val = ((1L)<<width)-1;
-		if(under_new>over_approx0[bvID]){
-			under_new=over_approx0[bvID];
-		}
+
 		if(over_new>over_approx0[bvID]){
 			over_new=over_approx0[bvID];
 		}
 		if(under_new<under_approx0[bvID]){
 			under_new=under_approx0[bvID];
 		}
-		if(over_new<under_approx0[bvID]){
-			over_new=under_approx0[bvID];
-		}
+
 		assert_in_range(under_new,bvID);
 		assert_in_range(over_new,bvID);
 		under_approx[bvID]=under_new;
@@ -2827,7 +2823,7 @@ public:
 			int a =1;
 		}
 		//printf("bv prop %d\n",stats_propagations);
-		if(stats_propagations==108){
+		if(stats_propagations==642){
 			int a =1;
 		}
 		bool any_change = false;
@@ -2843,7 +2839,7 @@ public:
 
 		while(altered_bvs.size()){
 			int bvID = altered_bvs.last();
-			if(bvID==1229 || bvID==526){
+			if(bvID==141){
 				int a=1;
 			}
 			if(eq_bitvectors[bvID]!=bvID)

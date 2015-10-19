@@ -28,6 +28,8 @@ int dbg_total_iterations = 0;
 #endif
 
 static const char* _cat = "CORE";
+static const char* _cat_opt = "OPT";
+
 static const char* _cat_sms = "SMS";
 static const char* _cat_graph = "GRAPH";
 static const char* _cat_bv = "BV";
@@ -94,6 +96,9 @@ BoolOption Monosat::opt_early_theory_prop(_cat, "early-theory-prop",
 		false);
 
  BoolOption Monosat::opt_remap_vars(_cat,"remap-vars","Remap variables in the GNF internally in the solver, to minimize space required",true);
+ BoolOption Monosat::opt_decide_optimization_lits(_cat_opt,"decide-opt-lits","Allow decisions on literals introduced by optimization constraints",true);
+ BoolOption  Monosat::opt_binary_search_optimization(_cat_opt,"binary-search","Use binary search (instead of linear search) for optimization constraints",true);
+
 
 
 BoolOption Monosat::opt_amo_eager_prop(_cat_amo,"amo-eager-prop","Propagate a-m-o literals as soon as they are implied, instead of waiting for theory propagation",true);

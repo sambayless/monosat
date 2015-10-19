@@ -336,6 +336,186 @@ int solveAssumptionsLimited(Monosat::SimpSolver * S,int time_cutoff,int * assump
 	return solveAssumptionsLimited_MinBVs(S,time_cutoff,assumptions,n_assumptions,nullptr,0);
  }
 
+long optimize_linear(Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bvTheory, vec<Lit> & assume,int bvID, int time_cutoff, bool & hit_cutoff, long & n_solves){
+	long value = bvTheory->getUnderApprox(bvID);
+	long last_decision_value=value;
+	  if(opt_verb>=1){
+		  printf("Min bv%d = %ld",bvID,value);
+	  }
+	  // int bvID,const Weight & to, Var outerVar = var_Undef, bool decidable=true
+	  Lit last_decision_lit =  bvTheory->toSolver(bvTheory->newComparison(Comparison::leq,bvID,value,var_Undef,opt_decide_optimization_lits));
+	  while(value>bvTheory->getUnderApprox(bvID,true)){
+		  Lit decision_lit = bvTheory->toSolver(bvTheory->newComparison(Comparison::leq,bvID,value-1,var_Undef,opt_decide_optimization_lits));
+		  assume.push(decision_lit);
+		  n_solves++;
+
+		  bool r;
+		  if (time_cutoff<0){
+			  r= S->solve(assume,false,false);
+		  }else{
+			  lbool res = S->solveLimited(assume,false,false);
+			  if (res==l_True){
+				  r=true;
+			  }else if (res==l_False){
+				  r=false;
+			  }else{
+				  r= false;
+				  hit_cutoff=true;
+			  }
+		  }
+
+		  if (r){
+			  last_decision_lit=decision_lit;
+			  last_decision_value=value-1;
+			  if(S->value(decision_lit)!=l_True){
+				  throw std::runtime_error("Error in optimization (comparison not enforced)");
+			  }
+			  for(Lit l:assume){
+					if(S->value(l)!=l_True){
+						throw std::runtime_error("Error in optimization (model is inconsistent with assumptions)");
+					}
+				}
+			  long value2 = bvTheory->getUnderApprox(bvID);
+			  if(value2>=value){
+					throw std::runtime_error("Error in optimization (minimum values are inconsistent with model)");
+			  }
+			  value=value2;
+
+			  assume.pop();
+			  if(opt_verb>=1){
+				  printf("\rMin bv%d = %ld",bvID,value);
+			  }
+		  }else{
+			  assume.pop();
+
+			  if(value<last_decision_value){
+				  //if that last decrease in value was by more than 1
+				  last_decision_lit =  bvTheory->toSolver(bvTheory->newComparison(Comparison::leq,bvID,value,var_Undef,opt_decide_optimization_lits));
+				  last_decision_value=value;
+			  }
+			  assume.push(last_decision_lit);
+			  //this can be improved...
+			  if (time_cutoff<0){
+				  r= S->solve(assume,false,false);
+			  }else{
+				  lbool res = S->solveLimited(assume,false,false);
+				  if (res==l_True){
+					  r=true;
+				  }else if (res==l_False){
+					  r=false;
+				  }else{
+					  r= false;
+					  hit_cutoff=true;
+				  }
+			  }
+			  if(!r){
+				  throw std::runtime_error("Error in optimization (instance has become unsat)");
+			  }
+			  for(Lit l:assume){
+					if(S->value(l)!=l_True){
+						throw std::runtime_error("Error in optimization (model is inconsistent with assumptions)");
+					}
+				}
+			  if(value!= bvTheory->getUnderApprox(bvID)){
+				  throw std::runtime_error("Error in optimization (minimum values are inconsistent with model)");
+			  }
+			  break;
+		  }
+	  }
+	  return value;
+}
+
+long optimize_binary(Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bvTheory, vec<Lit> & assume,int bvID, int time_cutoff, bool & hit_cutoff, long & n_solves){
+
+
+	  long min_val = bvTheory->getUnderApprox(bvID,true);
+	  long max_val = bvTheory->getUnderApprox(bvID);
+	  if(opt_verb>=1){
+		  printf("Min bv%d = %ld",bvID,max_val);
+	  }
+	  //might be worth trying 0 and 1 and value-1 first...
+
+	  long last_decision_value=max_val;
+	  Lit last_decision_lit =  bvTheory->toSolver(bvTheory->newComparison(Comparison::leq,bvID,max_val,var_Undef,opt_decide_optimization_lits));
+	  while(min_val < max_val){
+		  long mid_point = min_val + (max_val - min_val) / 2;
+		  assert(mid_point>=0);assert(mid_point>=min_val);assert(mid_point<max_val);
+
+		  Lit decision_lit = bvTheory->toSolver(bvTheory->newComparison(Comparison::leq,bvID,mid_point,var_Undef,opt_decide_optimization_lits));
+		  assume.push(decision_lit);
+		  n_solves++;
+
+		  bool r;
+		  if (time_cutoff<0){
+			  r= S->solve(assume,false,false);
+		  }else{
+			  lbool res = S->solveLimited(assume,false,false);
+			  if (res==l_True){
+				  r=true;
+			  }else if (res==l_False){
+				  r=false;
+			  }else{
+				  r= false;
+				  hit_cutoff=true;
+			  }
+		  }
+		  assume.pop();
+		  if (r){
+
+			  last_decision_lit=decision_lit;
+			  last_decision_value=mid_point;
+			  long new_value = bvTheory->getUnderApprox(bvID);
+			  if(new_value>=max_val){
+					throw std::runtime_error("Error in optimization (minimum values are inconsistent with model)");
+			  }
+
+			  assert(new_value<=mid_point);
+			  assert(new_value<max_val);
+			  max_val=new_value;
+
+			  if(opt_verb>=1){
+				  printf("\rMin bv%d = %ld",bvID,max_val);
+			  }
+		  }else{
+			  min_val = mid_point+1;
+		  }
+	  }
+
+
+	  if(max_val<last_decision_value){
+		  //if that last decrease in value was by more than 1
+		  last_decision_lit =  bvTheory->toSolver(bvTheory->newComparison(Comparison::leq,bvID,max_val,var_Undef,opt_decide_optimization_lits));
+		  last_decision_value=max_val;
+	  }
+	  assume.push(last_decision_lit);
+	  //this can be improved...
+	  bool r;
+	  if (time_cutoff<0){
+		  r= S->solve(assume,false,false);
+	  }else{
+		  lbool res = S->solveLimited(assume,false,false);
+		  if (res==l_True){
+			  r=true;
+		  }else if (res==l_False){
+			  r=false;
+		  }else{
+			  r= false;
+			  hit_cutoff=true;
+		  }
+	  }
+	  if(!r){
+		  throw std::runtime_error("Error in optimization (instance has become unsat)");
+	  }
+	  for(Lit l:assume){
+			if(S->value(l)!=l_True){
+				throw std::runtime_error("Error in optimization (model is inconsistent with assumptions)");
+			}
+		}
+	  if(max_val!= bvTheory->getUnderApprox(bvID)){
+		  throw std::runtime_error("Error in optimization (minimum values are inconsistent with model)");
+	  }
+	  return max_val;
+}
 int solveAssumptionsLimited_MinBVs(Monosat::SimpSolver * S,int time_cutoff,int * assumptions, int n_assumptions, int * minimize_bvs, int n_minimize_bvs){
 	using namespace Monosat;
 	bool hit_cutoff=false;
@@ -384,12 +564,13 @@ int solveAssumptionsLimited_MinBVs(Monosat::SimpSolver * S,int time_cutoff,int *
 
 		  }
 	  }
-	  for(Lit l:assume){
-	  		if(S->value(l)!=l_True){
-	  			throw std::runtime_error("Model is inconsistent with assumptions!");
-	  		}
-	  	}
+
 	  if(r && bvs.size()){
+		  for(Lit l:assume){
+				if(S->value(l)!=l_True){
+					throw std::runtime_error("Error in optimization (model is inconsistent with assumptions)");
+				}
+			}
 		  Monosat::BVTheorySolver<long> * bvTheory = (Monosat::BVTheorySolver<long> *) S->getBVTheory();
 		  vec<long> min_values;
 		  min_values.growTo(bvs.size());
@@ -397,98 +578,16 @@ int solveAssumptionsLimited_MinBVs(Monosat::SimpSolver * S,int time_cutoff,int *
 		  for (int i = 0;i<bvs.size();i++){
 
 			  int bvID = bvs[i];
-			  long value = bvTheory->getUnderApprox(bvID);
+
 			  if(opt_verb>=1){
 				  printf("Minimizing bv%d (%d of %d)\n",bvID,i+1,bvs.size());
 			  }
 
-			  if(opt_verb>=1){
-				  printf("Min bv%d = %ld",bvID,value);
-			  }
-			  min_values[i]=value;
-			  long last_decision_value=value;
-			  // int bvID,const Weight & to, Var outerVar = var_Undef, bool decidable=true
-			  Lit last_decision_lit =  bvTheory->toSolver(bvTheory->newComparison(Comparison::leq,bvID,value,var_Undef,false));
-			  while(value>0){
-				  Lit decision_lit = bvTheory->toSolver(bvTheory->newComparison(Comparison::leq,bvID,value-1,var_Undef,false));
-				  assume.push(decision_lit);
-				  n_solves++;
-
-				  bool r;
-				  if (time_cutoff<0){
-					  r= S->solve(assume,false,false);
-				  }else{
-					  lbool res = S->solveLimited(assume,false,false);
-					  if (res==l_True){
-						  r=true;
-					  }else if (res==l_False){
-						  r=false;
-					  }else{
-						  r= false;
-						  hit_cutoff=true;
-					  }
-				  }
-
-				  if (r){
-					  last_decision_lit=decision_lit;
-					  last_decision_value=value-1;
-					  if(S->value(decision_lit)!=l_True){
-						  throw std::runtime_error("Error in optimization (comparison not enforced)");
-					  }
-					  for(Lit l:assume){
-					  		if(S->value(l)!=l_True){
-					  			throw std::runtime_error("Model is inconsistent with assumptions!");
-					  		}
-					  	}
-					  long value2 = bvTheory->getUnderApprox(bvID);
-					  if(value2>=value){
-							throw std::runtime_error("Error in optimization (minimum values are inconsistent with model)");
-
-					  }
-					  value=value2;
-					  min_values[i]=value;
-					  assume.pop();
-					  if(opt_verb>=1){
-						  printf("\rMin bv%d = %ld",bvID,value);
-					  }
-				  }else{
-					  assume.pop();
-					  assert(min_values[i]==value);
-					  assert(min_values[i]<=last_decision_value);
-					  if(value<last_decision_value){
-						  //if that last decrease in value was by more than 1
-						  last_decision_lit =  bvTheory->toSolver(bvTheory->newComparison(Comparison::leq,bvID,value,var_Undef,false));
-						  last_decision_value=value;
-					  }
-					  assume.push(last_decision_lit);
-					  //this can be improved...
-					  if (time_cutoff<0){
-						  r= S->solve(assume,false,false);
-					  }else{
-						  lbool res = S->solveLimited(assume,false,false);
-						  if (res==l_True){
-							  r=true;
-						  }else if (res==l_False){
-							  r=false;
-						  }else{
-							  r= false;
-							  hit_cutoff=true;
-						  }
-					  }
-					  if(!r){
-						  throw std::runtime_error("Error in optimization (instance has become unsat)");
-					  }
-					  for(Lit l:assume){
-					  		if(S->value(l)!=l_True){
-					  			throw std::runtime_error("Model is inconsistent with assumptions!");
-					  		}
-					  	}
-					  if(min_values[i]< bvTheory->getUnderApprox(bvID)){
-						  throw std::runtime_error("Error in optimization (minimum values are inconsistent with model)");
-					  }
-					  break;
-				  }
-			  }
+			  if(!opt_binary_search_optimization)
+				  min_values[i] = optimize_linear(S,bvTheory,assume,bvID,time_cutoff,hit_cutoff,n_solves);
+			  else
+				  min_values[i] = optimize_binary(S,bvTheory,assume,bvID,time_cutoff,hit_cutoff,n_solves);
+			  assert(min_values[i] >=0);
 			  if(opt_verb>=1){
 				  printf("\rMin bv%d = %ld\n",bvID, min_values[i]);
 			  }
