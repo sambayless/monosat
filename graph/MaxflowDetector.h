@@ -165,7 +165,7 @@ public:
 		if(n_stats_priority_decisions>0){
 			printf("\tPriority decisions: %ld\n",n_stats_priority_decisions);
 		}
-		if(opt_theory_vsids){
+		if(opt_theory_internal_vsids){
 			printf("\tVsids decisions: %ld\n",n_stats_vsids_decisions);
 		}
 		
@@ -332,7 +332,7 @@ private:
 	Heap<EdgeOrderLt> order_heap;
 
 	inline void insertEdgeOrder(int edgeID) {
-		if(opt_theory_vsids){
+		if(opt_theory_internal_vsids){
 			if (!order_heap.inHeap(edgeID) && activity[edgeID]>0 )
 				order_heap.insert(edgeID);
 		}
@@ -346,7 +346,7 @@ private:
 				}
 			}
 		}
-		if(opt_theory_vsids){
+		if(opt_theory_internal_vsids){
 			for (Lit l:conflict){
 				if(outer->isEdgeVar(var(l))){
 					int edgeID = outer->getEdgeID(var(l));

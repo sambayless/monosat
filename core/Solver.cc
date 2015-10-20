@@ -1662,8 +1662,21 @@ lbool Solver::search(int nof_conflicts) {
 	bool last_decision_was_theory=false;
 	starts++;
 	bool using_theory_decisions= opt_decide_theories && drand(random_seed) < opt_random_theory_freq;
-	bool using_theory_vsids= opt_decide_theories && opt_theory_vsids && drand(random_seed) < opt_random_theory_vsids_freq;
-
+	bool using_theory_vsids= opt_decide_theories && opt_theory_order_vsids && drand(random_seed) < opt_random_theory_vsids_freq;
+	if(opt_verb>1 && opt_decide_theories && opt_theory_order_vsids && opt_random_theory_vsids_freq<1){
+		if(!using_theory_vsids)
+			printf("Theory vsids disabled for this decision round\n");
+		else{
+			printf("Theory vsids enabled for this decision round\n");
+		}
+	}
+	if(opt_verb>1 && opt_decide_theories && opt_random_theory_freq<1){
+		if(!using_theory_decisions)
+			printf("Theory decisions disabled for this decision round\n");
+		else{
+			printf("Theory decisions enabled for this decision round\n");
+		}
+	}
 	n_theory_decision_rounds+=using_theory_decisions;
 	for (;;) {
 		static int iter = 0;
