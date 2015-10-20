@@ -758,6 +758,9 @@ int main(int argc, char** argv) {
 			}
 			if(!opt_ignore_solve_statements){
 				S.preprocess();//do this _even_ if sat based preprocessing is disabled! Some of the theory solvers depend on a preprocessing call being made!
+				if(!opt_remap_vars){
+					fprintf(stderr,"Warning: Solver will give completely bogus answers if 'solve' statements are processed while variable remapping is disabled (e.g., -no-remap-vars)\n\n");
+				}
 				runSolve(S,parser.assumptions,parser.bv_minimize);
 			}else{
 				parser.assumptions.clear();parser.bv_minimize.clear();

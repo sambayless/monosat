@@ -1332,10 +1332,12 @@ bool Solver::simplify() {
 }
 void Solver::addClauseSafely(vec<Lit> & ps) {
 	if(opt_write_learnt_clauses){
-		if(++opt_n_learnts==838){
+		if(opt_n_learnts++==4150){
 			int a=1;
 		}
-
+		if(ps.size()==2 &&  dimacs(unmap(ps[0])) ==-195621 && dimacs(unmap(ps[1]))== 35361){
+			int a=1;
+		}
 		fprintf(opt_write_learnt_clauses,"learnt fact ");
 		for (Lit l:ps){
 			fprintf(opt_write_learnt_clauses," %d", dimacs(unmap(l)));
