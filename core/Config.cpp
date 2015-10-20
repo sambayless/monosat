@@ -173,7 +173,7 @@ BoolOption Monosat::opt_keep_lazy_conflicts(_cat_graph, "keep-lazy-conflicts", "
 BoolOption Monosat::opt_lazy_backtrack_redecide(_cat_graph, "lazy-backtrack-redecide", "",false);
 BoolOption Monosat::opt_vsids_both(_cat_graph, "vsids-both", "Use vsids decision heuristic for both theories and main solver, in combination",true);
 
-BoolOption Monosat::opt_theory_order_vsids(_cat_graph, "theory-order-vsids", "Use vsids decision heuristic outside of theory solvers, to pick which theory solver to make decisions next",false);
+BoolOption Monosat::opt_theory_order_vsids(_cat_graph, "theory-order-vsids", "Use vsids decision heuristic outside of theory solvers, to pick which theory solver to make decisions next",true);
 BoolOption Monosat::opt_theory_internal_vsids(_cat_graph, "theory-internal-vsids", "Use vsids decision heuristic within theory solvers",false);
 BoolOption Monosat::opt_theory_prioritize_conflicts(_cat_graph, "theory-prioritize-conflicts", "",false);
 BoolOption Monosat::opt_theory_priority_clear(_cat_graph, "theory-prioritize-clear", "",false);
@@ -213,7 +213,7 @@ IntOption Monosat::opt_encode_dist_underapprox_as_sat(_cat_graph, "dist-underapp
 BoolOption Monosat::opt_sat_distance_encoding_unconstrained_default(_cat_graph,"dist-underapprox-cnf-dst-unconstrained","",true);
 BoolOption Monosat::opt_reach_prop(_cat_graph, "prop-reach", "", false);
 
-BoolOption Monosat::opt_decide_theories(_cat_graph, "decide-theories", "", false);
+BoolOption Monosat::opt_decide_theories(_cat_graph, "decide-theories", "", true);
 BoolOption Monosat::opt_decide_graph_distance(_cat_graph, "decide-graph-dist", "", false);
 BoolOption Monosat::opt_decide_graph_bv(_cat_graph,"decide-graph-bv","",false);
 BoolOption Monosat::opt_cmp_lits_decidable(_cat_graph,"decide-cmp-lits","Controls whether or not comparison lits introduced by the bv solver (but not in the original formula) can be chosen as decisions by the SAT solver",false);
