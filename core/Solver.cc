@@ -1807,15 +1807,33 @@ lbool Solver::search(int nof_conflicts) {
 			if (opt_decide_theories && using_theory_decisions && next == lit_Undef && (opt_theory_conflict_max==0 || conflicts>=next_theory_decision) ) {
 
 				int next_var_priority=INT_MIN;
-				if(!order_heap.empty())
-					next_var_priority=priority[ order_heap.peekMin()];
 
+				//remove decided vars from order heap
+				while(!order_heap.empty() && value(order_heap.peekMin())!=l_Undef){
+					order_heap.removeMin();
+				}
+				if(!order_heap.empty()){
+					next_var_priority=priority[ order_heap.peekMin()];
+				}
 				/**
 				 * Give the theory solvers a chance to make decisions
 				 */
 				if(opt_theory_order_vsids && using_theory_vsids){
 					while (next==lit_Undef && !theory_order_heap.empty() && theories[theory_order_heap.peekMin()]->getPriority()>=next_var_priority) {
 						int theoryID = theory_order_heap.peekMin();
+						if(opt_vsids_both && next_var_priority==theories[theory_order_heap.peekMin()]->getPriority()){
+							//give the main solver a chance to make a decision, if it has a variable with higher activity
+							if (!order_heap.empty()) {
+								Var v = order_heap.peekMin();
+								assert(value(v)==l_Undef);//because assigned lits should have been removed from queue above.
+								if(value(v)==l_Undef && activity[v]>theories[theoryID]->getActivity()){
+									stats_solver_preempted_decisions++;
+									break;
+								}
+							}
+
+						}
+
 						assert(theories[theoryID]->supportsDecisions());
 						next = theories[theoryID]->decideTheory();
 						if(next==lit_Undef){
@@ -1833,6 +1851,7 @@ lbool Solver::search(int nof_conflicts) {
 				}
 
 				if (next!=lit_Undef){
+					stats_theory_decisions++;
 					if(theoryDecision !=lit_Undef && var(next)==var(theoryDecision)){
 						assigns[var(theoryDecision)]=l_Undef;
 					}

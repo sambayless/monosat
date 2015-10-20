@@ -183,7 +183,11 @@ public:
 		printf("decisions             : %-12" PRIu64 "   (%4.2f %% random) (%.0f /sec)\n", decisions,
 				(float) rnd_decisions * 100 / (float) decisions, decisions / cpu_time);
 		if(opt_decide_theories){
-		printf("Theory decision rounds: %" PRId64 "/%" PRId64 "\n",n_theory_decision_rounds,starts);
+			printf("Theory decisions: %ld\n",stats_theory_decisions);
+			printf("Theory decision rounds: %" PRId64 "/%" PRId64 "\n",n_theory_decision_rounds,starts);
+		}
+		if(opt_vsids_both){
+			printf("Sovler pre-empted decisions: %ld\n",stats_solver_preempted_decisions);
 		}
 		printf("propagations          : %-12" PRIu64 "   (%.0f /sec)\n", propagations, propagations / cpu_time);
 		printf("conflict literals     : %-12" PRIu64 "   (%4.2f %% deleted)\n", tot_literals,
@@ -533,6 +537,8 @@ public:
 			pure_literal_detections, stats_removed_clauses;
 	uint64_t dec_vars, clauses_literals, learnts_literals, max_literals, tot_literals;
 	long stats_theory_conflicts =0;
+	long stats_solver_preempted_decisions=0;
+	long stats_theory_decisions=0;
 	double stats_pure_lit_time=0;
 	uint64_t n_theory_conflicts=0;
 	int consecutive_theory_conflicts=0;
@@ -760,8 +766,14 @@ protected:
 		if ((theories[theoryID]->getActivity() += theory_inc) > 1e100) {
 			// Rescale:
 			for (Theory * t:decidable_theories)
-				theories[theoryID]->getActivity() *= 1e-100;
+				t->getActivity() *= 1e-100;
 			theory_inc *= 1e-100;
+
+			if(opt_vsids_both){
+				for (int i = 0; i < nVars(); i++)
+						activity[i] *= 1e-100;
+				var_inc *= 1e-100;
+			}
 		}
 
 		// Update order_heap with respect to new activity:
@@ -883,6 +895,12 @@ inline void Solver::varBumpActivity(Var v, double inc) {
 		for (int i = 0; i < nVars(); i++)
 			activity[i] *= 1e-100;
 		var_inc *= 1e-100;
+
+		if(opt_vsids_both){
+			for (Theory * t:decidable_theories)
+				t->getActivity() *= 1e-100;
+			theory_inc *= 1e-100;
+		}
 	}
 	
 	// Update order_heap with respect to new activity:
