@@ -1204,7 +1204,15 @@ void Solver::rebuildOrderHeap() {
 			vs.push(v);
 	order_heap.build(vs);
 }
+void Solver::rebuildTheoryOrderHeap() {
 
+	theory_order_heap.clear();
+	for(int i =0;i<theories.size();i++){
+		if(theories[i]->supportsDecisions()){
+			theory_order_heap.insert(i);
+		}
+	}
+}
 /*_________________________________________________________________________________________________
  |
  |  simplify : [void]  ->  [bool]
@@ -1654,9 +1662,8 @@ lbool Solver::search(int nof_conflicts) {
 	bool last_decision_was_theory=false;
 	starts++;
 	bool using_theory_decisions= opt_decide_theories && drand(random_seed) < opt_random_theory_freq;
-	if(opt_decide_theories && !opt_theory_order_vsids && opt_randomomize_theory_order){
-		randomShuffle(random_seed, decidable_theories);
-	}
+	bool using_theory_vsids= opt_decide_theories && opt_theory_vsids && drand(random_seed) < opt_random_theory_vsids_freq;
+
 	n_theory_decision_rounds+=using_theory_decisions;
 	for (;;) {
 		static int iter = 0;
@@ -1793,7 +1800,7 @@ lbool Solver::search(int nof_conflicts) {
 				/**
 				 * Give the theory solvers a chance to make decisions
 				 */
-				if(opt_theory_order_vsids){
+				if(opt_theory_order_vsids && using_theory_vsids){
 					while (next==lit_Undef && !theory_order_heap.empty() && theories[theory_order_heap.peekMin()]->getPriority()>=next_var_priority) {
 						int theoryID = theory_order_heap.peekMin();
 						assert(theories[theoryID]->supportsDecisions());
@@ -1941,7 +1948,10 @@ lbool Solver::solve_() {
 			for (int i = 0; i < nVars(); i++)
 				polarity[i] = irand(random_seed, 1);
 		}
-		
+		if(opt_decide_theories && !opt_theory_order_vsids && opt_randomomize_theory_order){
+			randomShuffle(random_seed, decidable_theories);
+		}
+
 		status = search(rest_base * restart_first);
 		if (!withinBudget())
 			break;
@@ -1952,7 +1962,14 @@ lbool Solver::solve_() {
 				activity[i] = drand(random_seed) * 0.00001;
 			}
 			rebuildOrderHeap();
-			
+		}
+
+
+		if(opt_theory_order_vsids && opt_rnd_theory_restart  && status == l_Undef){
+			for(int i = 0;i<theories.size();i++){
+				theories[i]->setActivity(  drand(random_seed) * 0.00001);
+			}
+			rebuildTheoryOrderHeap();
 		}
 	}
 	

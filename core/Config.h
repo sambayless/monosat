@@ -39,12 +39,13 @@ extern IntOption opt_restart_first;
 extern DoubleOption opt_restart_inc;
 extern DoubleOption opt_garbage_frac;
 extern BoolOption opt_rnd_restart;
-
+extern BoolOption opt_rnd_theory_restart;
 extern StringOption opt_record_file;
 extern bool opt_record;
 
 extern IntOption opt_theory_conflict_max;
 extern DoubleOption opt_random_theory_freq;
+extern DoubleOption opt_random_theory_vsids_freq;
 extern BoolOption opt_randomomize_theory_order;
 extern BoolOption opt_interpolate;
 extern IntOption opt_eager_prop;

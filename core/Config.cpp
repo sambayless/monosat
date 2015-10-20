@@ -88,6 +88,10 @@ DoubleOption Monosat::opt_random_theory_freq(_cat, "rnd-theory-freq",
 		"The frequency with which the decision theory solvers are selected to make decisions", 1,
 		DoubleRange(0, true, 1, true));
 
+DoubleOption Monosat::opt_random_theory_vsids_freq(_cat, "rnd-theory-vsids-freq",
+		"The frequency with which the decision theory uses vsids to make decisions, if theory-order-vsids is enabled", 1,
+		DoubleRange(0, true, 1, true));
+
 BoolOption Monosat::opt_randomomize_theory_order(_cat, "rnd-theory-order",
 		"If theory decisions are used, randomize the order that theories are decided at each restart", false);
 
@@ -185,6 +189,7 @@ BoolOption Monosat::opt_force_directed(_cat_graph, "force-directed",
 		false);
 
 BoolOption Monosat::opt_rnd_restart(_cat, "rnd-restart", "Randomize activity on restart", false);
+BoolOption Monosat::opt_rnd_theory_restart(_cat, "rnd-theory-restart", "Randomize theory activity on restart", false);
 
 IntOption Monosat::opt_learn_reaches(_cat_graph, "learn-reach",
 		"Learn using reach variables: 0 = Never, 1=Paths, 2=Cuts,3=Always", 0, IntRange(0, 3));
