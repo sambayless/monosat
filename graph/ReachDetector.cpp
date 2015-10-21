@@ -1432,6 +1432,7 @@ Lit ReachDetector<Weight>::decide() {
 							//ok, read back the path from the over to find a candidate edge we can decide
 							//find the earliest unconnected node on this path
 							over_path->update();
+							last_decision_status = over_path->numUpdates();
 							p = j;
 							last = j;
 							while (!under_reach->connected(p)) {
