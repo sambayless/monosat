@@ -55,6 +55,9 @@ public:
 	friend class FSMTheorySolver;
 	friend class LSystemSolver;
 
+
+
+
 	// Constructor/Destructor:
 	//
 	Solver();
@@ -472,7 +475,7 @@ public:
 	vec<Lit> theory_conflict;
 	vec<Theory*> theories;
 	vec<Theory*> decidable_theories;
-
+	Theory * decisionTheory=nullptr;//for opt_vsids_solver_as_theory
 	vec<Var> all_theory_vars;
 	struct LitCount {
 		char occurs :1;
@@ -650,7 +653,7 @@ protected:
 	vec<double> activity;         // A heuristic measurement of the activity of a variable.
 	double var_inc;          // Amount to bump next variable with.
 	OccLists<Lit, vec<Watcher>, WatcherDeleted> watches; // 'watches[lit]' is a list of constraints watching 'lit' (will go there if literal becomes true).
-
+	int theoryConflict=-1;
 	vec<lbool> assigns;          // The current assignments.
 	vec<char> polarity;         // The preferred polarity of each variable.
 	vec<char> decision;         // Declares if a variable is eligible for selection in the decision heuristic.
@@ -761,9 +764,18 @@ protected:
 	void varBumpActivity(Var v);                 // Increase a variable with the current 'bump' value.
 	void claDecayActivity(); // Decay all clauses with the specified factor. Implemented by increasing the 'bump' value instead.
 	void claBumpActivity(Clause& c);             // Increase a clause with the current 'bump' value.
-	void theoryBumpActivity(int theoryID) {
 
-		if ((theories[theoryID]->getActivity() += theory_inc) > 1e100) {
+	void theoryBumpActivity(int theoryID){
+		if(opt_vsids_both){
+			theoryBumpActivity(theoryID,var_inc*opt_theory_vsids_balance);
+		}else{
+			theoryBumpActivity(theoryID,theory_inc);
+		}
+
+	}
+	void theoryBumpActivity(int theoryID, double increase) {
+
+		if ((theories[theoryID]->getActivity() += increase) > 1e100) {
 			// Rescale:
 			for (Theory * t:decidable_theories)
 				t->getActivity() *= 1e-100;
@@ -781,7 +793,12 @@ protected:
 			theory_order_heap.decrease(theoryID);
 	}
 	inline void theoryDecayActivity() {
-		theory_inc *= (1 / theory_decay);
+		if(opt_vsids_both && opt_use_var_decay_for_theory_vsids){
+			varDecayActivity();
+		}else{
+			theory_inc *= (1 / theory_decay);
+		}
+
 	}
 	// Operations on clauses:
 	//
@@ -864,7 +881,43 @@ private:
 		return v >= min_super && v <= max_super;
 	}
 	
+	class SolverDecisionTheory:public Theory{
+		//This is a stub theory solver, that is only used to conveniently allow the main solver to make Boolean-decisions
+		//as part of the theory decision process, if opt_vsids_solver_as_theory is used
+		Solver & S;
+		int theoryID=0;
+	public:
+		SolverDecisionTheory(Solver & S):S(S){
 
+		}
+		Lit decideTheory() {
+			return S.pickBranchLit();
+		}
+		bool supportsDecisions() {
+			return true;
+		}
+		int getTheoryIndex(){
+			return theoryID;
+		}
+		void setTheoryIndex(int id){
+			theoryID=id;
+		}
+		void backtrackUntil(int untilLevel){
+
+		}
+		void newDecisionLevel(){
+
+		}
+		void enqueueTheory(Lit p){
+
+		}
+		bool propagateTheory(vec<Lit> & conflict){
+			return true;
+		}
+		bool solveTheory(vec<Lit> & conflict){
+			return true;
+		}
+	};
 	
 };
 
@@ -906,6 +959,8 @@ inline void Solver::varBumpActivity(Var v, double inc) {
 	// Update order_heap with respect to new activity:
 	if (order_heap.inHeap(v))
 		order_heap.decrease(v);
+
+
 }
 
 

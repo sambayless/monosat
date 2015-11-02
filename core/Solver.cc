@@ -66,7 +66,10 @@ Solver::Solver() :
 		// Resource constraints:
 		//
 				, conflict_budget(-1), propagation_budget(-1) {
-
+			if(opt_vsids_solver_as_theory){
+				decisionTheory = new SolverDecisionTheory(*this);
+				this->addTheory(decisionTheory);
+			}
 }
 
 Solver::~Solver() {
@@ -451,7 +454,7 @@ void Solver::backtrackUntil(int lev) {
 
 Lit Solver::pickBranchLit() {
 	Var next = var_Undef;
-	
+	decisions++;
 	// Random decision:
 	if (drand(random_seed) < random_var_freq && !order_heap.empty()) {
 		next = order_heap[irand(random_seed, order_heap.size())];
@@ -666,7 +669,7 @@ void Solver::analyze(CRef confl, vec<Lit>& out_learnt, int& out_btlevel) {
 	max_literals += out_learnt.size();
 	out_learnt.shrink(i - j);
 	tot_literals += out_learnt.size();
-	
+
 	// Find correct backtrack level:
 	//
 	if (out_learnt.size() == 1)
@@ -993,6 +996,7 @@ CRef Solver::propagate(bool propagate_theories) {
 	if (qhead == trail.size() && (!initialPropagate || decisionLevel() > 0) && (!propagate_theories || !theory_queue.size())) {//it is possible that the theory solvers need propagation, even if the sat solver has an empty queue.
 		return CRef_Undef;
 	}
+	theoryConflict=-1;
 	CRef confl = CRef_Undef;
 	int num_props = 0;
 	watches.cleanAll();
@@ -1112,10 +1116,11 @@ CRef Solver::propagate(bool propagate_theories) {
 					assert(value(l)!=l_Undef);
 #endif
 				if (has_conflict && !addConflictClause(theory_conflict, confl)) {
-					theoryBumpActivity(theoryID);
-					theoryDecayActivity();
+					theoryConflict=theoryID;
+
 					qhead = trail.size();
 					stats_theory_conflicts++;
+
 					return confl;
 				}
 			}
@@ -1670,6 +1675,7 @@ lbool Solver::search(int nof_conflicts) {
 		if (++iter ==  23 || iter==65) {
 			int a = 1;
 		}
+
 		propagate: CRef confl = propagate();
 		conflict: if (!okay() || (confl != CRef_Undef)) {
 			// CONFLICT
@@ -1702,7 +1708,7 @@ lbool Solver::search(int nof_conflicts) {
 				learnts.push(cr);
 				attachClause(cr);
 				claBumpActivity(ca[cr]);
-				
+
 				if (value(learnt_clause[0]) == l_Undef) {
 					uncheckedEnqueue(learnt_clause[0], cr);
 				} else {
@@ -1716,17 +1722,31 @@ lbool Solver::search(int nof_conflicts) {
 					}
 					//this is _not_ an asserting clause, its a conflict that must be passed up to the super solver.
 					analyzeFinal(cr, lit_Undef, conflict);
-					
+					if(theoryConflict>-1){
+						theoryBumpActivity(theoryConflict);
+						theoryDecayActivity();
+						theoryConflict=-1;
+					}else if(opt_vsids_solver_as_theory){
+						theoryBumpActivity(decisionTheory->getTheoryIndex());
+						theoryDecayActivity();
+					}
+
 					varDecayActivity();
 					claDecayActivity();
 					return l_False;
 				}
-				
 			}
-			
+			if(theoryConflict>-1){
+				theoryBumpActivity(theoryConflict);
+				theoryDecayActivity();
+				theoryConflict=-1;
+			}else if(opt_vsids_solver_as_theory){
+				theoryBumpActivity(decisionTheory->getTheoryIndex());
+				theoryDecayActivity();
+			}
 			varDecayActivity();
 			claDecayActivity();
-			
+
 			if (--learntsize_adjust_cnt <= 0) {
 				learntsize_adjust_confl *= learntsize_adjust_inc;
 				learntsize_adjust_cnt = (int) learntsize_adjust_confl;
@@ -1848,7 +1868,7 @@ lbool Solver::search(int nof_conflicts) {
 			
 			if (next == lit_Undef) {
 				// New variable decision:
-				decisions++;
+
 				next = pickBranchLit();
 				// int p = priority[var(next)];
 				if(opt_verb>2){

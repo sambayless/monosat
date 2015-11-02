@@ -1401,7 +1401,7 @@ Lit ReachDetector<Weight>::decide() {
 			if (outer->value(l) == l_True && opt_decide_graph_pos) {
 				//if(S->level(var(l))>0)
 				//	continue;
-				assert(over_path->connected(j));
+
 				if (over_reach->connected(j) && !under_reach->connected(j)) {
 					//then lets try to connect this
 					static vec<bool> print_path;
