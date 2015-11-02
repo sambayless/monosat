@@ -103,19 +103,20 @@ public:
 		int cause_is_decision:1;
 		int cause_is_minmax:1;
 		int cause_is_minmax_argument:1;
-		int index:24;
+		int cause_is_popcount:1;
+		int index:23;
 
-		Cause(const Cause & copy):cause_is_bits(copy.cause_is_bits),refined_cause(copy.refined_cause),cause_is_comparison(copy.cause_is_comparison),cause_is_addition(copy.cause_is_addition),cause_is_addition_argument(copy.cause_is_addition_argument),cause_is_condition(copy.cause_is_condition),cause_is_condition_argument(copy.cause_is_condition_argument),cause_is_decision(copy.cause_is_decision),cause_is_minmax(copy.cause_is_minmax),cause_is_minmax_argument(copy.cause_is_minmax_argument),index(copy.index){
+		Cause(const Cause & copy):cause_is_bits(copy.cause_is_bits),refined_cause(copy.refined_cause),cause_is_comparison(copy.cause_is_comparison),cause_is_addition(copy.cause_is_addition),cause_is_addition_argument(copy.cause_is_addition_argument),cause_is_condition(copy.cause_is_condition),cause_is_condition_argument(copy.cause_is_condition_argument),cause_is_decision(copy.cause_is_decision),cause_is_minmax(copy.cause_is_minmax),cause_is_minmax_argument(copy.cause_is_minmax_argument),cause_is_popcount(copy.cause_is_popcount),index(copy.index){
 
 		}
 
-		Cause():cause_is_bits(0),refined_cause(0),cause_is_comparison(0),cause_is_addition(0),cause_is_addition_argument(0),cause_is_condition(0),cause_is_condition_argument(0),cause_is_decision(0),cause_is_minmax(0),cause_is_minmax_argument(0),index(-1){
+		Cause():cause_is_bits(0),refined_cause(0),cause_is_comparison(0),cause_is_addition(0),cause_is_addition_argument(0),cause_is_condition(0),cause_is_condition_argument(0),cause_is_decision(0),cause_is_minmax(0),cause_is_minmax_argument(0),cause_is_popcount(0),index(-1){
 
 		}
 
 		bool hasCause(){
 			//this can be improved, if we want.
-			return cause_is_bits|| cause_is_addition || cause_is_addition_argument|| cause_is_condition || cause_is_condition_argument || cause_is_minmax || cause_is_minmax_argument|| cause_is_comparison || cause_is_decision|| refined_cause;
+			return cause_is_bits|| cause_is_addition || cause_is_addition_argument|| cause_is_condition || cause_is_condition_argument || cause_is_minmax || cause_is_minmax_argument|| cause_is_comparison || cause_is_decision|| refined_cause || cause_is_popcount;
 		}
 		void clear(){
 			cause_is_decision=0;
@@ -130,6 +131,7 @@ public:
 			cause_is_decision=0;
 			cause_is_minmax=0;
 			cause_is_minmax_argument=0;
+			cause_is_popcount=0;
 			index=-1;
 		}
 	};
@@ -278,6 +280,7 @@ public:
 	long n_consts = 0;
 	long n_starting_consts=0;
 	long n_additions=0;
+	long n_popcounts=0;
 	vec<lbool> assigns;
 	CRef comparisonprop_marker;
 	CRef comparisonbv_1starg_marker;
@@ -359,6 +362,15 @@ public:
 
 	vec<vec<Addition>> additions;
 	vec<vec<AdditionArg>> addition_arguments;
+
+	struct PopCountData{
+		int resultID;
+		vec<int> args;
+		Weight under=0;
+		Weight over=0;
+	};
+	vec<PopCountData> pop_counts;//improve this
+	vec<vec<int>> pop_count_ids;
 
 	struct MinMaxData{
 		bool min;
@@ -614,6 +626,27 @@ public:
 					additions[sumID][j].bID=bvID2;
 				}
 			}
+		}
+
+		for(int i = 0;i< minmax_ops[bvID1].size();i++){
+			minmaxs[minmax_ops[bvID1][i]].resultID=bvID2;
+			minmax_ops[bvID2].push(minmax_ops[bvID1][i]);
+		}
+
+		for(int i = 0;i< minmax_args[bvID1].size();i++){
+			int cID = minmax_args[bvID1][i];
+			vec<int> & args = minmaxs[cID].args;
+			for (int i = 0;i<args.size();i++){
+				if(args[i]==bvID1){
+					args[i]=bvID2;
+				}
+			}
+		}
+
+		for(int i = 0;i< pop_count_ids[bvID1].size();i++){
+			int pop_count_id = pop_count_ids[bvID1][i];
+			pop_count_ids[bvID2].push(pop_count_id);
+			pop_counts[pop_count_id].resultID = bvID2;
 		}
 
 		for(int i = compares[bvID1].size()-1;i>=0;i--){
@@ -1996,6 +2029,38 @@ public:
 			}
 		}
 
+		for(int popcountID:pop_count_ids[bvID]){
+			vec<Lit> & args= pop_counts[popcountID].args;
+			Weight under = pop_counts[popcountID].under;
+			Weight over = pop_counts[popcountID].over;
+#ifndef NDEBUG
+			Weight dbg_min=0;
+			Weight dbg_max = 0;
+			for(Lit l:args){
+				if(value(l)==l_True){
+					dbg_min++;
+					dbg_max++;
+				}else if (value(l)!=l_False){
+					dbg_max++;
+				}
+			}
+			assert(dbg_min==under);
+			assert(dbg_max==over);
+#endif
+			if (over<over_new){
+				over_new=over;
+				over_cause_new.clear();
+				over_cause_new.cause_is_popcount =true;
+				over_cause_new.index=popcountID;
+			}
+			if (under>under_new){
+				under_new=under;
+				under_cause_new.clear();
+				under_cause_new.cause_is_popcount=true;
+				under_cause_new.index=popcountID;
+			}
+		}
+
 		assert_in_range(under_new,bvID);
 		assert_in_range(over_new,bvID);
 		for(int i = compares[bvID].size()-1;i>=0;i--){
@@ -2839,27 +2904,21 @@ public:
 
 		while(altered_bvs.size()){
 			int bvID = altered_bvs.last();
-			if(bvID==141){
-				int a=1;
-			}
+
 			if(eq_bitvectors[bvID]!=bvID)
 			{
 				altered_bvs.pop(); //this isn't safe to do, because recently enforced comparisons need to be propagated, even if the under/over approx didn't change.
 				alteredBV[bvID]=false;
 				continue;
 			}
-			if(bvID==12 || bvID == 8 || bvID==11){
-				int a=1;
-			}
+
 		//for(int bvID = 0;bvID<bitvectors.size();bvID++){
 			assert(alteredBV[bvID]);
 			Weight  underApprox_prev = under_approx[bvID];
 			Weight  overApprox_prev = over_approx[bvID];
 			Cause prev_under_cause = over_causes[bvID];
 			Cause prev_over_cause = over_causes[bvID];
-			if(stats_bv_propagations==316){
-				int a=1;
-			}
+
 			bool changed = updateApproximations(bvID);//can split this into changedUpper and changedLower...
 			changed |=bv_needs_propagation[bvID];
 			if(!changed){
@@ -3599,7 +3658,21 @@ public:
 
 			}
 
+			for(int popcountID:pop_count_ids[bvID]){
+				vec<Lit> & args= pop_counts[popcountID].args;
 
+				int min=0;
+				int max = 0;
+				for(Lit l:args){
+					if(value(l)==l_True){
+						min++;
+						max++;
+					}else if (value(l)!=l_False){
+						max++;
+					}
+				}
+
+			}
 
 			for(int cID:minmax_ops[bvID]){
 				bool isMin = minmaxs[cID].min;
@@ -5287,6 +5360,44 @@ public:
 		return getBV(resultID);
 	}
 
+	BitVector newPopCountBV(int resultID, vec<Lit> & args){
+
+		if(!hasBV(resultID)){
+			throw std::runtime_error("Undefined bitvector ID " + std::to_string(resultID));
+		}
+		while(eq_bitvectors[resultID]!=resultID)
+			resultID=eq_bitvectors[resultID];
+
+
+		int bitwidth = getBV(resultID).width();
+
+		if(bitwidth <  ceil(log2(args.size())) ){
+			throw std::invalid_argument("Bit width is too small to hold population count");
+		}
+
+		int pop_count_id=pop_counts.size()
+		pop_count_ids[resultID].push(pop_count_id);
+		pop_counts.push();
+		pop_counts.last().resultID = resultID;
+
+		pop_counts.last().under=0;
+		pop_counts.last().over=0;
+		for (Lit l :args){
+			Lit condition = mkLit(newVar(l, resultID,pop_count_id,true,true,true));
+			pop_counts.last().args.push(condition);
+			pop_counts.last().over++;
+
+
+		}
+
+		bv_needs_propagation[resultID]=true;
+		if(!alteredBV[resultID]){
+			alteredBV[resultID]=true;
+			altered_bvs.push(resultID);
+		}
+		requiresPropagation=true;
+		return getBV(resultID);
+	}
 	void setSymbol(int bvID, const char* symbol){
 		symbols[bvID]=symbol;
 	}

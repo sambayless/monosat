@@ -832,6 +832,16 @@ def PopCount(vars,**kwargs):
         return _PopCountPairs(vars)
     elif method=="TABLE":
         return _PopCountTable(vars,kwargs["max"] if "max" in kwargs else None)
+    elif method=="UNARY":
+        #Warning: this will return the population count in a unary, not binary, vector, of length len(vars).
+        return _PopCountUnary(vars)
+    elif method=="BVSUM":
+        #Warning: this will return the population count in a unary, not binary, vector, of length len(vars).
+        return _PopCountBVSum(vars,kwargs["tree_addition"] if "tree_addition" in kwargs else False,kwargs["return_bv"] if "return_bv" in kwargs else False)
+    elif method=="BV":
+        #Warning: this will return the population count in a unary, not binary, vector, of length len(vars).
+        return _PopCountBV(vars,kwargs["return_bv"] if "return_bv" in kwargs else False)
+
     elif method=="NAIVE":
         return _PopCountNaive(vars)
     else:
@@ -847,6 +857,67 @@ def _grouper(n, iterable, padvalue=None):
     from itertools import  chain, repeat
     "grouper(3, 'abcdefg', 'x') --> ('a','b','c'), ('d','e','f'), ('g','x','x')"
     return zip(*[chain(iterable, repeat(padvalue, n-1))]*n)
+
+def _PopCountUnary(vars):
+    
+    vars = [false() for v in vars]
+    for v in vars:
+        
+    
+    
+    #Add some redundant constraints, so that the sovler doesn't need to work to learn them:
+    any_vars=Or(vars)
+    any_outs = Or(output)
+    AssertEq(any_vars,any_outs)
+    
+    return output;  
+
+def _PopCountBV(vars,retBitVector=False):
+    from monosat.bvtheory import BitVector
+    bvwidth = len(vars)
+    sm = BitVector(bvwidth,'popcount',vars)    
+    #Add some redundant constraints, so that the sovler doesn't need to work to learn them:
+    output= sm.bits()        
+    any_vars=Or(vars)
+    any_outs = Or(output)
+    AssertEq(any_vars,any_outs)
+    
+    if retBitVector:
+        return sm
+    else:
+        return output 
+
+def _PopCountBVSum(vars,tree_addition=False, retBitVector=False):
+    from monosat.bvtheory import BitVector
+    bvwidth = math.ceil( math.log(len(vars),2))
+    if not tree_addition:
+        sm = bv(bvwidth,0)    
+        for v in vars[i]:
+            sm = If(v,sm+1,sm) 
+        
+    else:
+        elements = [If(v, BitVector(bvwidth,1),BitVector(bvwidth,0))  for v in vars]
+        while(len(elements)>1):
+            if (len(elements)%2 == 1):
+                elements.append(bv(bvwidth,0))
+    
+            next_elements =[]
+            for a,b in zip(elements[::2],elements[1::2]):
+                next_elements.append(a+b)
+            elements= next_elements
+        assert(len(elements)==1);
+        sm = elements[0]
+    
+    #Add some redundant constraints, so that the sovler doesn't need to work to learn them:
+    output= sm.bits()        
+    any_vars=Or(vars)
+    any_outs = Or(output)
+    AssertEq(any_vars,any_outs)
+    
+    if retBitVector:
+        return sm
+    else:
+        return output 
 
 def _PopCountTable(vars, max_value=None):
     if(max_value is None):

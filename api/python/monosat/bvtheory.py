@@ -269,7 +269,8 @@ class BitVector():
             _checkBVs((self,))
             _checkBVs((args))    
             mgr._monosat.bv_max([x.getID() for x in args],self.getID())
-            
+        elif op=="popcount": 
+            mgr._monosat.bv_popcount((l.getLit() for l in args),  self.getID())               
                      
     def isConst(self):
         return self._constant is not None
@@ -322,6 +323,10 @@ class BitVector():
             assert(upper<=self.width())
             return BitVector(self.mgr,upper-lower,'slice',(self,lower,upper-1)) 
         return self._bv[index]
+
+    
+    def bits(self):
+        return list(self._bv)
     
     def __len__(self):
         return self._width

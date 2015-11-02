@@ -201,7 +201,9 @@ class Monosat(metaclass=Singleton):
         self.monosat_c.bv_xnor.argtypes=[c_solver_p,c_bv_p,c_bvID,c_bvID,c_bvID]
 
         self.monosat_c.bv_concat.argtypes=[c_solver_p,c_bv_p,c_bvID,c_bvID,c_bvID]
+        self.monosat_c.bv_popcount.argtypes=[c_solver_p,c_bv_p,c_literal_p,c_int ,c_bvID]
     
+        
         self.monosat_c.bv_slice.argtypes=[c_solver_p,c_bv_p,c_bvID,c_int,c_int,c_bvID]
 
         self.monosat_c.newGraph.argtypes=[c_solver_p]
@@ -726,7 +728,13 @@ class Monosat(metaclass=Singleton):
         self.monosat_c.bv_slice(self.solver._ptr, self.solver.bvtheory, c_bvID(aID),lower,upper,c_bvID(resultID))
         if self.solver.output:
             self._echoOutput("bv slice %d %d %d %d\n"%(aID,lower,upper, resultID))
-
+            
+    def bv_popcount(self,args,resultID):
+        self.backtrack()         
+        lp = self.getIntArray(args)          
+        self.monosat_c.bv_popcount(self.solver._ptr, self.solver.bvtheory,lp,len(args),c_bvID(resultID))
+        if self.solver.output:
+            self._echoOutput("bv popcount %d %d %s\n"%(resultID, len(args)," ".join((str(dimacs(l)) for l in args))))
     #Monosat graph interface
     
     def newGraph(self):
