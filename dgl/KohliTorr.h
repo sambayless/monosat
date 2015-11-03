@@ -979,7 +979,7 @@ public:
 			
 			if (g.edgeEnabled(edgeid)) {
 				assert(arc_map[edgeid] == arc_id);
-				assert(local_weight(edgeid)==g.getWeight(edgeid));
+				//assert(local_weight(edgeid)==g.getWeight(edgeid)); //these might not be in sync, if this is called during backtracking.
 				Weight edge_cap = local_weight(edgeid);
 				if (edgeid == flow_edge) {
 					if (remaining_flow >= edge_cap)

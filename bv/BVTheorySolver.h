@@ -94,21 +94,21 @@ public:
 
 	struct Cause{
 		enum class CauseType{
-			none,cause_is_bits,refined_cause,cause_is_comparison,cause_is_addition,cause_is_addition_argument,cause_is_condition,cause_is_condition_argument,cause_is_decision,cause_is_minmax,cause_is_minmax_argument,cause_is_popcount
+			none = 0,
+			cause_is_bits = 1,
+			refined_cause = 2,
+			cause_is_comparison = 3,
+			cause_is_addition = 4,
+			cause_is_addition_argument = 5,
+			cause_is_condition = 6,
+			cause_is_condition_argument = 7,
+			cause_is_decision=8,
+			cause_is_minmax = 9,
+			cause_is_minmax_argument = 10,
+			cause_is_popcount = 11
 		};
-		/*int cause_is_bits:1;
-		int refined_cause:1;
-		int cause_is_comparison:1;
-		int cause_is_addition:1;
-		int cause_is_addition_argument:1;
-		int cause_is_condition:1;
-		int cause_is_condition_argument:1;
-		int cause_is_decision:1;
-		int cause_is_minmax:1;
-		int cause_is_minmax_argument:1;
-		int cause_is_popcount:1;*/
-		Cause::CauseType type:7;
-		int index:23;
+		Cause::CauseType type:5;
+		int index:27;
 		Cause(const Cause & copy):type(copy.type),index(copy.index){
 
 			}
@@ -3654,21 +3654,7 @@ public:
 
 			}
 
-			for(int popcountID:pop_count_ids[bvID]){
-				vec<Lit> & args= pop_counts[popcountID].args;
 
-				int min=0;
-				int max = 0;
-				for(Lit l:args){
-					if(value(l)==l_True){
-						min++;
-						max++;
-					}else if (value(l)!=l_False){
-						max++;
-					}
-				}
-
-			}
 
 			for(int cID:minmax_ops[bvID]){
 				bool isMin = minmaxs[cID].min;
@@ -5435,6 +5421,7 @@ public:
 		eq_bitvectors[bvID]=bvID;
 		minmax_args.growTo(bvID+1);
 		minmax_ops.growTo(bvID+1);
+		pop_count_ids.growTo(bvID+1);
 		pending_under_analyses.growTo(bvID+1,-1);
 		pending_over_analyses.growTo(bvID+1,-1);
 		bv_needs_propagation.growTo(bvID+1);
@@ -5685,6 +5672,7 @@ public:
 		eq_bitvectors[bvID]=bvID;
 		minmax_args.growTo(bvID+1);
 		minmax_ops.growTo(bvID+1);
+		pop_count_ids.growTo(bvID+1);
 		pending_under_analyses.growTo(bvID+1,-1);
 		pending_over_analyses.growTo(bvID+1,-1);
 		bv_needs_propagation.growTo(bvID+1);
