@@ -134,21 +134,35 @@ public:
 			int getID()const{
 				return op_id;
 			}
-			virtual OperationType getType()const;
+			virtual OperationType getType()const=0;
 
-			virtual bool propagate(int bvID,vec<Lit> & conflict);
-			virtual void updateApprox(int bvID);
-			virtual void buildReason(vec<Lit> & conflict);
+			virtual bool propagate(vec<Lit> & conflict)=0;
+			virtual void updateApprox(Var ignore_bv, Weight & under_new, Weight & over_new, Cause & under_cause_new, Cause & over_cause_new)=0;
+			virtual bool checkApproxUpToDate(Weight & under,Weight&over)override{
+				return true;
+			}
+			virtual void buildReason(vec<Lit> & conflict)=0;
+			virtual void move(int bvID){
 
+			}
 	};
 
 	class BitOp:public Operation{
 		using Operation::getID;
+		int bvID=-1;
+
+	public:
+		BitOp(int operationID):Operation(operationID){
+
+		}
+		 void move(int bvID)override{
+			 this->bvID=bvID;
+		 }
 		OperationType getType()const override{
 			return OperationType::cause_is_bits;
 		}
 
-		bool propagate(int bvID,bool & changed,vec<Lit> & conflict) override{
+		bool propagate(bool & changed,vec<Lit> & conflict) override{
 			vec<Lit> & bv = bitvectors[bvID];
 			Weight & underApprox = under_approx[bvID];
 			Weight & overApprox = over_approx[bvID];
@@ -253,7 +267,7 @@ public:
 			}while(new_change);//the bit assignment updates above can force a more precise over or under approximation, which can in turn lead to further bit assignments (I think this can happen?).
 			return true;
 		}
-		void updateApprox(int bvID,Var ignore_bv, Weight & under_new, Weight & over_new, Cause & under_cause_new, Cause & over_cause_new) override{
+		void updateApprox(Var ignore_bv, Weight & under_new, Weight & over_new, Cause & under_cause_new, Cause & over_cause_new) override{
 			Weight under=0;
 			Weight over=0;
 			vec<Lit> & bv = bitvectors[bvID];
@@ -301,6 +315,8 @@ public:
 		vec<Lit> & args;
 		Weight under;
 		Weight over;
+		int bvID=-1;
+	public:
 			OperationType getType()const override{
 				return OperationType::cause_is_popcount;
 			}
@@ -309,7 +325,7 @@ public:
 
 				return true;
 			}
-			void updateApprox(int bvID,Var ignore_bv, Weight & under_new, Weight & over_new, Cause & under_cause_new, Cause & over_cause_new) override{
+			void updateApprox(Var ignore_bv, Weight & under_new, Weight & over_new, Cause & under_cause_new, Cause & over_cause_new) override{
 
 	#ifndef NDEBUG
 				Weight dbg_min=0;
@@ -344,31 +360,47 @@ public:
 
 		};
 
-
+	class ConditionalArg;
 	class ConditionalID:public Operation{
 		using Operation::getID;
 		Lit l=lit_Undef;
-		int cID=-1;
-		int bvThenID=-1;
-		int bvElseID=-1;
-		int bvResultID=-1;
-		ConditionalID(int operationID){
-			Operation::Operation(operationID);
+		int bvID=-1;
+		ConditionalArg * thenOp;
+		ConditionalArg * elseOp;
+	public:
+		int getThenBV()const{
+			return thenOp->bvID;
+		}
+		int getElseBV()const{
+			return elseOp->bvID;
+		}
+		//int thenCID=-1;
+		//int elseCID=-1;
+
+		ConditionalID(int operationID):Operation(operationID){
+
 		}
 		bool hasITE()const{
 			return l!=lit_Undef;
 		}
+
+		void move(BVTheorySolver * outer, int bvID) override{
+
+			this->bvID=bvID;
+		}
+
 		OperationType getType()const override{
 			return OperationType::cause_is_condition;
 		}
 
-		bool propagate(int bvID, bool & changed_outer,vec<Lit> & conflict) override{
+		bool propagate(bool & changed_outer,vec<Lit> & conflict) override{
 			Lit condition =l;
 			Weight & underApprox = under_approx[bvID];
 			Weight & overApprox = over_approx[bvID];
 			//assert(bvThenID<bvID);
 			//assert(bvElseID<bvID);
-
+			int bvThenID=thenOp->bvID;
+			int bvElseID=elseOp->bvID;
 			bool changed=true;
 			while(changed){
 				changed=false;
@@ -399,7 +431,7 @@ public:
 					}else if(value(condition)==l_False){
 						conflict.push(condition);
 					}
-					buildConditionalReason(bvID,cID,conflict);
+					buildConditionalReason(bvID,getID(),conflict);
 					toSolver(conflict);
 					stats_conflict_time+=rtime(2)-startconftime;
 					return false;
@@ -415,7 +447,7 @@ public:
 					}else if(value(condition)==l_False){
 						conflict.push(condition);
 					}
-					buildConditionalReason(bvID,cID,conflict);
+					buildConditionalReason(bvID,getID(),conflict);
 					toSolver(conflict);
 					stats_conflict_time+=rtime(2)-startconftime;
 					return false;
@@ -456,7 +488,7 @@ public:
 
 						if(under_approx[bvElseID]>over_approx[bvID] || over_approx[bvElseID]<under_approx[bvID]){
 							//condition must be both true and false, which is a conflict.
-							buildConditionalReason(bvID,cID,conflict);
+							buildConditionalReason(bvID,getID(),conflict);
 							toSolver(conflict);
 							//buildConditionalReason(bvID,bvElseID,underApprox,conflict);
 							return false;
@@ -476,8 +508,9 @@ public:
 
 			return true;
 		}
-		void updateApprox(int bvID,Var ignore_bv, Weight & under_new, Weight & over_new, Cause & under_cause_new, Cause & over_cause_new) override{
-
+		void updateApprox(Var ignore_bv, Weight & under_new, Weight & over_new, Cause & under_cause_new, Cause & over_cause_new) override{
+			int bvThenID=thenOp->bvID;
+			int bvElseID=elseOp->bvID;
 			Lit condition = l;
 			Weight under;
 			Weight over;
@@ -510,25 +543,73 @@ public:
 		void buildReason(vec<Lit> & conflict)override{
 			;
 		}
+		bool checkApproxUpToDate(Weight & under,Weight&over)override{
+			int thenID=thenOp->bvID;
+			int elseID=elseOp->bvID;
+			Lit condition = l;
 
+			if(value(condition)==l_Undef){
+				if(under_approx[bvID]< min( under_approx[thenID],under_approx[elseID]) ||
+						over_approx[bvID]> max( over_approx[thenID],over_approx[elseID])){
+					return false;
+				}
+				Weight underc = min( under_approx[thenID], under_approx[elseID]);
+				Weight overc = max( over_approx[thenID], over_approx[elseID]);
+				if(underc >under){
+					under=underc;
+				}
+				if(overc<over){
+					over=overc;
+				}
+			}else if(value(condition)==l_True){
+				if(under_approx[bvID]!= under_approx[thenID] || over_approx[bvID]!=over_approx[thenID]){
+					return false;
+				}
+				if(under_approx[thenID] >under){
+					under=under_approx[thenID];
+				}
+				if(over_approx[thenID]<over){
+					over=over_approx[thenID];
+				}
+			}else if(value(condition)==l_False){
+				if(under_approx[bvID]!= under_approx[elseID] || over_approx[bvID]!=over_approx[elseID]){
+					return false;
+				}
+				if(under_approx[elseID] >under){
+					under=under_approx[elseID];
+				}
+				if(over_approx[elseID]<over){
+					over=over_approx[elseID];
+				}
+			}
+
+			return true;
+		}
 	};
 
 	class ConditionalArg:public Operation{
 		using Operation::getID;
 		Lit l=lit_Undef;
-		int cID=-1;
-		int other_argID=-1;
-		int resultID=-1;
-		ConditionalArg(int operationID){
-			Operation::Operation(operationID);
+		int bvID=-1;
+		ConditionalArg * otherOp;
+		ConditionalID * resultOp;
+	public:
+		ConditionalArg(int operationID):Operation(operationID){
+
 		}
 
 		OperationType getType()const override{
 			return OperationType::cause_is_condition_argument;
 		}
 
-		bool propagate(int bvID, bool & changed_outer,vec<Lit> & conflict) override{
+		void move(BVTheorySolver * outer, int bvID) override{
 
+			this->bvID=bvID;
+		}
+
+		bool propagate(int bvID, bool & changed_outer,vec<Lit> & conflict) override{
+			int other_argID=otherOp->bvID;
+			int resultID=resultOp->bvID;
 			Weight & underApprox = under_approx[bvID];
 			Weight & overApprox = over_approx[bvID];
 			Lit condition =l;
@@ -539,7 +620,7 @@ public:
 				if(under_approx[bvID]>over_approx[resultID] || over_approx[bvID]<under_approx[resultID]){
 					//this is a conflict
 					conflict.push(~condition);
-					buildConditionalArgReason(bvID,cID,conflict);
+					buildConditionalArgReason(bvID,getID(),conflict);
 					toSolver(conflict);
 					return false;
 				}else if(under_approx[bvID]>under_approx[resultID] || over_approx[bvID]<over_approx[resultID]){
@@ -597,7 +678,8 @@ public:
 
 		}
 		void updateApprox(int bvID,Var ignore_bv, Weight & under_new, Weight & over_new, Cause & under_cause_new, Cause & over_cause_new) override{
-
+			int other_argID=otherOp->bvID;
+			int resultID=resultOp->bvID;
 			Lit condition=l;
 
 			assert(other_argID>=0);assert(resultID>=0);
@@ -624,28 +706,63 @@ public:
 		void buildReason(vec<Lit> & conflict)override{
 			;
 		}
-
+		bool checkApproxUpToDate(Weight & under,Weight&over)override{
+			int other_argID=otherOp->bvID;
+			int resultID=resultOp->bvID;
+			Lit condition=l;
+			assert(other_argID>=0);assert(resultID>=0);
+			if(value(condition)==l_True){
+				Weight underc = under_approx[resultID];
+				Weight overc = over_approx[resultID];
+	/*			clip_under(under,bvID);
+				clip_under(over,bvID);*/
+				if(underc >under_approx[bvID]){
+					return false;
+				}
+				if(overc< over_approx[bvID]){
+					return false;
+				}
+				if(under_approx[resultID] >under){
+					under=under_approx[resultID];
+				}
+				if(over_approx[resultID]<over){
+					over=over_approx[resultID];
+				}
+			}
+			return true;
+		}
 	};
 
-
+	class AdditionArg;
 	class Addition:public Operation{
 		using Operation::getID;
-		int aID=-1;
-		int bID=-1;
 
+		AdditionArg * arg1=nullptr;
+		AdditionArg * arg2=nullptr;
+		int bvID=-1;
+	public:
+		Addition(int operationID):Operation(operationID){
+
+		}
 		bool hasAddition()const{
-			return aID>=0;
+			return arg1;
 		}
-		Addition(int operationID){
-			Operation::Operation(operationID);
+
+
+		void move(BVTheorySolver * outer, int bvID) override{
+
+			this->bvID=bvID;
 		}
+
+
 
 		OperationType getType()const override{
 			return OperationType::cause_is_addition;
 		}
 
-		bool propagate(int bvID, bool & changed_outer,vec<Lit> & conflict) override{
-
+		bool propagate(bool & changed_outer,vec<Lit> & conflict) override{
+			int aID=arg1->bvID;
+			int bID=arg2->bvID;
 			Weight & underApprox = under_approx[bvID];
 			Weight & overApprox = over_approx[bvID];
 
@@ -663,7 +780,7 @@ public:
 					if(opt_verb>1){
 						printf("bv addition conflict %ld\n", stats_num_conflicts);
 					}
-					buildAdditionReason(bvID,i,conflict);
+					buildAdditionReason(bvID,getID(),conflict);
 					toSolver(conflict);
 					stats_conflict_time+=rtime(2)-startconftime;
 					return false;
@@ -674,7 +791,7 @@ public:
 						printf("bv addition conflict %ld\n", stats_num_conflicts);
 					}
 					stats_num_conflicts++;stats_addition_conflicts++;
-					buildAdditionReason(bvID,i,conflict);
+					buildAdditionReason(bvID,getID(),conflict);
 					toSolver(conflict);
 					stats_conflict_time+=rtime(2)-startconftime;
 					return false;
@@ -713,8 +830,9 @@ public:
 			return true;
 
 		}
-		void updateApprox(int bvID,Var ignore_bv, Weight & under_new, Weight & over_new, Cause & under_cause_new, Cause & over_cause_new) override{
-
+		void updateApprox(Var ignore_bv, Weight & under_new, Weight & over_new, Cause & under_cause_new, Cause & over_cause_new) override{
+			int aID=arg1->bvID;
+			int bID=arg2->bvID;
 			//assert(aID<bvID);
 			//assert(bID<bvID);
 			Weight under = under_approx[aID] +  under_approx[bID];
@@ -738,24 +856,48 @@ public:
 		void buildReason(vec<Lit> & conflict)override{
 			;
 		}
+		bool checkApproxUpToDate(Weight & under,Weight&over)override{
 
+			int aID=arg1->bvID;
+			int bID=arg2->bvID;
+			//assert(aID<bvID);
+			//assert(bID<bvID);
+			Weight underadd = under_approx[aID] +  under_approx[bID];
+			Weight overadd = over_approx[aID] +  over_approx[bID];
+			if(underadd >under){
+				under=underadd;
+			}
+			if(overadd<over){
+				over=overadd;
+			}
+			return true;
+		}
 	};
 
 
 	class AdditionArg:public Operation{
 		using Operation::getID;
-		int other_argID=-1;
-		int sumID=-1;
-		AdditionArg(int operationID){
-				Operation::Operation(operationID);
+		//int other_argID=-1;
+		//int sumID=-1;
+		AdditionArg * otherOp;
+		Addition * resultOp;
+		int bvID=-1;
+	public:
+		AdditionArg(int operationID):Operation(operationID){
+
 			}
 
+		void move(BVTheorySolver * outer, int bvID) override{
+
+				this->bvID=bvID;
+			}
 			OperationType getType()const override{
 				return OperationType::cause_is_addition_argument;
 			}
 
 			bool propagate(int bvID, bool & changed_outer,vec<Lit> & conflict) override{
-
+				int other_argID=otherOp->bvID;
+				int sumID=resultOp->bvID;
 				Weight & underApprox = under_approx[bvID];
 				Weight & overApprox = over_approx[bvID];
 
@@ -776,7 +918,7 @@ public:
 					if(opt_verb>1){
 						printf("bv addition arg conflict %ld\n", stats_num_conflicts);
 					}
-					buildAdditionArgReason(bvID,i,conflict);
+					buildAdditionArgReason(bvID,getID(),conflict);
 					toSolver(conflict);
 					stats_conflict_time+=rtime(2)-startconftime;
 					return false;
@@ -787,7 +929,7 @@ public:
 					if(opt_verb>1){
 						printf("bv addition arg conflict %ld\n", stats_num_conflicts);
 					}
-					buildAdditionArgReason(bvID,i,conflict);
+					buildAdditionArgReason(bvID,getID(),conflict);
 					toSolver(conflict);
 					stats_conflict_time+=rtime(2)-startconftime;
 					return false;
@@ -832,7 +974,8 @@ public:
 
 			}
 			void updateApprox(int bvID,Var ignore_bv, Weight & under_new, Weight & over_new, Cause & under_cause_new, Cause & over_cause_new) override{
-
+				int other_argID=otherOp->bvID;
+				int sumID=resultOp->bvID;
 
 				assert(other_argID>=0);assert(sumID>=0);
 				//assert((other_argID!=bvID &&   under_approx[sumID] >=  under_approx[other_argID] + under_old  ) || (other_argID==bvID &&   under_approx[sumID] >= under_old + under_old  ));
@@ -845,13 +988,13 @@ public:
 					under_new=under;
 					under_cause_new.clear();
 					under_cause_new.type =OperationType::cause_is_addition_argument;
-					under_cause_new.index=i;
+					under_cause_new.index=getID();
 				}
 				if(over<over_new){
 					over_new=over;
 					over_cause_new.clear();
 					over_cause_new.type =OperationType::cause_is_addition_argument;
-					over_cause_new.index=i;
+					over_cause_new.index=getID();
 				}
 
 
@@ -860,108 +1003,127 @@ public:
 			void buildReason(vec<Lit> & conflict)override{
 				;
 			}
+			bool checkApproxUpToDate(Weight & under,Weight&over)override{
+				int other_argID=otherOp->bvID;
+				int sumID=resultOp->bvID;
 
+				Weight under_add = under_approx[sumID] -  over_approx[other_argID];
+				Weight over_add = over_approx[sumID] -  under_approx[other_argID];
+
+				if(under_add >under){
+					under=under_add;
+				}
+				if(over_add<over){
+					over=over_add;
+				}
+				return true;
+			}
 		};
+	class MinMaxArg;
 	class MinMaxData:public Operation{
 		using Operation::getID;
 		bool min;
-		int resultID;
-		vec<int> args;
-		MinMaxData(int operationID){
-		Operation::Operation(operationID);
-	}
+		int bvID;
+		vec<MinMaxArg*> args;
+	public:
 
-	OperationType getType()const override{
-		return OperationType::cause_is_minmax;
-	}
-
-	bool propagate(int bvID, bool & changed_outer,vec<Lit> & conflict) override{
-
-		Weight & underApprox = under_approx[bvID];
-		Weight & overApprox = over_approx[bvID];
-
-		bool isMin = min;
-		assert(resultID==bvID);
-		//If any argument has an upper bound larger than bvID's, then
-		//need to update that arg
-		assert(args.size()>0);
-		//there are two classes of conflicts here (for the max case).
-		//1) the underapprox of bvID is higher than the highest overapprox of its arguments
-		//then the conflict reason is that at least one of them must increase, or bvID must decrease.
-		Weight minmax_arg_under = under_approx[bvID];
-		Weight minmax_arg_over = over_approx[bvID];
-		for(int i = 0;i<args.size();i++){
-			int argID = args[i];
-			Weight arg_over = over_approx[argID];
-			Weight arg_under = under_approx[argID];
-
-			if(isMin){
-				if(arg_under<minmax_arg_under){
-					minmax_arg_under=arg_under;
-				}
-				if(arg_over<minmax_arg_over){
-					minmax_arg_over=arg_over;
-				}
-			}else{
-				if(arg_under>minmax_arg_under){
-					minmax_arg_under=arg_under;
-				}
-				if(arg_over>minmax_arg_over){
-					minmax_arg_over=arg_over;
-				}
-			}
-
-
-			if(isMin ?(arg_over<overApprox || arg_under<underApprox) :( arg_over>overApprox || arg_under>underApprox)){
-				if(!alteredBV[argID]){
-					alteredBV[argID]=true;
-					assert(altered_bvs.last()==bvID);
-					altered_bvs.last()=argID;
-					assert(altered_bvs.last()==argID);
-					altered_bvs.push(bvID);
-					assert(altered_bvs.last()==bvID);
-				}
-			}
-		}
-
-		if(isMin){
-			if(minmax_arg_over < underApprox){
-				//this is a conflict
-				buildMinMaxReason(bvID, getID(), conflict);
-				return false;
-			}
-			if(minmax_arg_under > overApprox){
-				//this is a conflict
-				buildMinMaxReason(bvID, getID(), conflict);
-				return false;
-			}
-		}else{
-
-			if(minmax_arg_over < underApprox){
-				//this is a conflict
-				buildMinMaxReason(bvID, getID(), conflict);
-				return false;
-			}
-			if(minmax_arg_under > overApprox){
-				//this is a conflict
-				buildMinMaxReason(bvID, getID(), conflict);
-				return false;
-			}
+		MinMaxData(int operationID):Operation(operationID){
 
 		}
-		return true;
+		void move(BVTheorySolver * outer, int bvID) override{
+			this->bvID=bvID;
+		}
+		OperationType getType()const override{
+			return OperationType::cause_is_minmax;
+		}
 
-	}
-		void updateApprox(int bvID,Var ignore_bv, Weight & under_new, Weight & over_new, Cause & under_cause_new, Cause & over_cause_new) override{
+		bool propagate( bool & changed_outer,vec<Lit> & conflict) override{
+
+			Weight & underApprox = under_approx[bvID];
+			Weight & overApprox = over_approx[bvID];
 
 			bool isMin = min;
-			assert(resultID==bvID);
+
+			//If any argument has an upper bound larger than bvID's, then
+			//need to update that arg
+			assert(args.size()>0);
+			//there are two classes of conflicts here (for the max case).
+			//1) the underapprox of bvID is higher than the highest overapprox of its arguments
+			//then the conflict reason is that at least one of them must increase, or bvID must decrease.
+			Weight minmax_arg_under = under_approx[bvID];
+			Weight minmax_arg_over = over_approx[bvID];
+			for(int i = 0;i<args.size();i++){
+				int argID = args[i]->bvID;
+				Weight arg_over = over_approx[argID];
+				Weight arg_under = under_approx[argID];
+
+				if(isMin){
+					if(arg_under<minmax_arg_under){
+						minmax_arg_under=arg_under;
+					}
+					if(arg_over<minmax_arg_over){
+						minmax_arg_over=arg_over;
+					}
+				}else{
+					if(arg_under>minmax_arg_under){
+						minmax_arg_under=arg_under;
+					}
+					if(arg_over>minmax_arg_over){
+						minmax_arg_over=arg_over;
+					}
+				}
+
+
+				if(isMin ?(arg_over<overApprox || arg_under<underApprox) :( arg_over>overApprox || arg_under>underApprox)){
+					if(!alteredBV[argID]){
+						alteredBV[argID]=true;
+						assert(altered_bvs.last()==bvID);
+						altered_bvs.last()=argID;
+						assert(altered_bvs.last()==argID);
+						altered_bvs.push(bvID);
+						assert(altered_bvs.last()==bvID);
+					}
+				}
+			}
+
+			if(isMin){
+				if(minmax_arg_over < underApprox){
+					//this is a conflict
+					buildMinMaxReason(bvID, getID(), conflict);
+					return false;
+				}
+				if(minmax_arg_under > overApprox){
+					//this is a conflict
+					buildMinMaxReason(bvID, getID(), conflict);
+					return false;
+				}
+			}else{
+
+				if(minmax_arg_over < underApprox){
+					//this is a conflict
+					buildMinMaxReason(bvID, getID(), conflict);
+					return false;
+				}
+				if(minmax_arg_under > overApprox){
+					//this is a conflict
+					buildMinMaxReason(bvID, getID(), conflict);
+					return false;
+				}
+
+			}
+			return true;
+
+		}
+		void updateApprox(Var ignore_bv, Weight & under_new, Weight & over_new, Cause & under_cause_new, Cause & over_cause_new) override{
+
+			bool isMin = min;
+
 			if (!isMin){
 				using std::max;
 				Weight highest_over=over_approx[args[0]];
 				Weight highest_under=under_approx[args[0]];
 				for(int i = 0;i<args.size();i++){
-					int argID = args[i];
+					int argID = args[i]->bvID;
 					Weight under = under_approx[argID];
 					Weight over = over_approx[argID];
 					highest_under = max(under,highest_under);
@@ -984,7 +1146,7 @@ public:
 				Weight lowest_over=over_approx[args[0]];
 				Weight lowest_under=under_approx[args[0]];
 				for(int i = 0;i<args.size();i++){
-					int argID = args[i];
+					int argID = args[i]->bvID;
 					Weight under = under_approx[argID];
 					Weight over = over_approx[argID];
 					lowest_under = min(under,lowest_under);
@@ -1011,29 +1173,79 @@ public:
 		void buildReason(vec<Lit> & conflict)override{
 			;
 		}
+		bool checkApproxUpToDate(Weight & under,Weight&over)override{
+			bool isMin = min;
 
+			if (!isMin){
+				using std::max;
+				Weight highest_over=over_approx[args[0]];
+				Weight highest_under=under_approx[args[0]];
+				for(int i = 0;i<args.size();i++){
+					int argID = args[i]->bvID;
+					Weight under2 = under_approx[argID];
+					Weight over2 = over_approx[argID];
+					highest_under = max(under2,highest_under);
+					highest_over = max(over2,highest_over);
+				}
+				if (highest_under>under){
+					under=highest_under;
+
+				}
+				if (highest_over<over){
+					over=highest_over;
+
+				}
+			}else{
+				using std::min;
+				Weight lowest_over=over_approx[args[0]];
+				Weight lowest_under=under_approx[args[0]];
+				for(int i = 0;i<args.size();i++){
+					int argID = args[i]->bvID;
+					Weight under2 = under_approx[argID];
+					Weight over2 = over_approx[argID];
+					lowest_under = min(under2,lowest_under);
+					lowest_over = min(over2,lowest_over);
+				}
+				if (lowest_under>under){
+					under=lowest_under;
+
+				}
+				if (lowest_over<over){
+					over=lowest_over;
+
+				}
+			}
+			return true;
+		}
 	};
 
 	class MinMaxArg:public Operation{
 		using Operation::getID;
 		bool min;
-		int resultID;
-		vec<int> args;
-		MinMaxArg(int operationID){
-			Operation::Operation(operationID);
+		//int resultID;
+		MinMaxData * resultOp=nullptr;
+
+		int bvID=-1;
+	public:
+		void move(BVTheorySolver * outer, int bvID) override{
+			this->bvID=bvID;
+		}
+
+		MinMaxArg(int operationID):Operation(operationID){
+
 		}
 
 		OperationType getType()const override{
 			return OperationType::cause_is_minmax_argument;
 		}
 
-		bool propagate(int bvID, bool & changed_outer,vec<Lit> & conflict) override{
+		bool propagate( bool & changed_outer,vec<Lit> & conflict) override{
 
 			Weight & underApprox = under_approx[bvID];
 			Weight & overApprox = over_approx[bvID];
 
 			bool isMin = min;
-
+			int resultID= resultOp->bvID;
 
 			Weight res_over = over_approx[resultID];
 			Weight res_under = under_approx[resultID];
@@ -1064,10 +1276,10 @@ public:
 			return true;
 
 		}
-			void updateApprox(int bvID,Var ignore_bv, Weight & under_new, Weight & over_new, Cause & under_cause_new, Cause & over_cause_new) override{
+			void updateApprox(Var ignore_bv, Weight & under_new, Weight & over_new, Cause & under_cause_new, Cause & over_cause_new) override{
 
 				bool isMin = min;
-
+				int resultID= resultOp->bvID;
 				if (!isMin){
 					using std::max;
 					Weight highest_over = over_approx[resultID];
@@ -1094,18 +1306,33 @@ public:
 			void buildReason(vec<Lit> & conflict)override{
 				;
 			}
-
+			bool checkApproxUpToDate(Weight & under,Weight&over)override{
+				bool isMin = min;
+				int resultID= resultOp->bvID;
+				if (!isMin){
+					using std::max;
+					Weight highest_over = over_approx[resultID];
+					if (highest_over<over){
+						over=highest_over;
+					}
+				}else{
+					using std::min;
+					Weight lowest_under = under_approx[resultID];
+					if (lowest_under>under){
+						under=lowest_under;
+					}
+				}
+				return true;
+			}
 		};
 
 	vec<vec<int>> operation_ids;
-	struct OpData{
-		OperationType type;
-		int local_op_id;
-	};
-	vec<OpData> operations;
+
+	vec<Operation*> operations;
 
 	Operation & getOperation(int opID){
-		OperationType type = operations[opID].type;
+		return *operations[opID];
+		/*OperationType type = operations[opID].type;
 		int local_id = operations[opID].local_op_id;
 		switch(type){
 			case OperationType::cause_is_bits:
@@ -1130,7 +1357,7 @@ public:
 			case OperationType::cause_is_decision:
 			default:
 				throw std::runtime_error("Bad BV Operation");
-		}
+		}*/
 
 	}
 
@@ -1301,9 +1528,7 @@ public:
 
 
 
-	vec<ConditionalID> all_conditionals;
-	vec<vec<ConditionalID>> conditionals;//ITE bvs
-	vec<vec<ConditionalArg>> conditional_arguments;
+
 
 	vec<ComparisonID> comparisons;
 	vec<vec<int> > cause_set;//for each bv, this is the set of all bitvectors that have a greater id and might need to have their approx updated when this bv's approx changes.
@@ -1331,9 +1556,10 @@ public:
 	vec<int> pending_under_analyses;
 	int n_pending_analyses = 0;
 
-	vec<vec<Addition>> additions;
-	vec<vec<AdditionArg>> addition_arguments;
+/*	vec<vec<Addition>> additions;
+	vec<vec<AdditionArg>> addition_arguments;*/
 
+/*
 	struct PopCountData{
 		int resultID;
 		vec<Lit> args;
@@ -1342,12 +1568,13 @@ public:
 	};
 	vec<PopCountData> pop_counts;//improve this
 	vec<vec<int>> pop_count_ids;
+*/
 
 
-
+/*
 	vec<MinMaxData> minmaxs;
 	vec<vec<int>> minmax_ops;//for now, allowing at most one minmax operation per bvID
-	vec<vec<int>> minmax_args;
+	vec<vec<int>> minmax_args;*/
 
 	vec<Weight> under_approx0;//under approx at level 0
 	vec<Weight> over_approx0;//over approx at level 0
@@ -1538,25 +1765,13 @@ public:
 			}
 		}
 		//move the conditionals of bvID1 into bvID2.
-		for(int i = 0;i<conditionals[bvID1].size();i++){
-			conditionals[bvID2].push(conditionals[bvID1][i]);
-			//fix the other bitvector's references.
-			int arg1 = conditionals[bvID2][i].bvThenID;
-			int arg2 = conditionals[bvID2][i].bvElseID;
-
-			for(int j = 0;j<conditional_arguments[arg1].size();j++){
-				if(conditional_arguments[arg1][j].resultID==bvID1){
-					conditional_arguments[arg1][j].resultID=bvID2;
-				}
-			}
-			for(int j = 0;j<conditional_arguments[arg2].size();j++){
-				if(conditional_arguments[arg2][j].resultID==bvID1){
-					conditional_arguments[arg2][j].resultID=bvID2;
-				}
-			}
+		for (int opID:operation_ids[bvID1]){
+			Operation & op = getOperation(opID);
+			op.move(bvID2);
 		}
 
-		//move the arguments of bvID1 into bvID2.
+
+		/*//move the arguments of bvID1 into bvID2.
 		for(int i = 0;i<additions[bvID1].size();i++){
 			additions[bvID2].push(additions[bvID1][i]);
 			//fix the other bitvector's references.
@@ -1614,7 +1829,7 @@ public:
 			int pop_count_id = pop_count_ids[bvID1][i];
 			pop_count_ids[bvID2].push(pop_count_id);
 			pop_counts[pop_count_id].resultID = bvID2;
-		}
+		}*/
 
 		for(int i = compares[bvID1].size()-1;i>=0;i--){
 			int cID = compares[bvID1][i];
@@ -2470,11 +2685,11 @@ public:
 			writeBounds(bvID);
 			assert(isOperationVar(v));
 			int opID = getOperationID(v);
+			ConditionalID & cID = (ConditionalID &) getOperation(opID);
 
-			ConditionalID & cID = all_conditionals[opID];
 			assert(cID.l==p);
-			int bvThenID = cID.bvThenID;
-			int bvElseID = cID.bvElseID;
+			int bvThenID = cID.getThenBV();
+			int bvElseID = cID.getElseBV();
 
 			assert(under_approx[bvElseID]>over_approx[bvID] || over_approx[bvElseID]<under_approx[bvID]);
 			buildConditionalPropReason(bvID,opID,reason);
@@ -2486,11 +2701,11 @@ public:
 			writeBounds(bvID);
 			assert(isOperationVar(v));
 			int opID = getOperationID(v);
-
-			ConditionalID & cID = all_conditionals[opID];
+			ConditionalID & cID = (ConditionalID &) getOperation(opID);
+			//ConditionalID & cID = all_conditionals[opID];
 			assert(cID.l==~p);
-			int bvThenID = cID.bvThenID;
-			int bvElseID = cID.bvElseID;
+			int bvThenID = cID.getThenBV();
+			int bvElseID = cID.getElseBV();
 			assert(under_approx[bvThenID]>over_approx[bvID] || over_approx[bvThenID]<under_approx[bvID]);
 
 			buildConditionalPropReason(bvID,opID,reason);
@@ -2503,11 +2718,11 @@ public:
 
 			assert(isOperationVar(v));
 			int opID = getOperationID(v);
-
-			ConditionalID & cID = all_conditionals[opID];
-			int resultID = cID.bvResultID;
-			int bvThenID = cID.bvThenID;
-			int bvElseID = cID.bvElseID;
+			ConditionalID & cID = (ConditionalID &) getOperation(opID);
+			//ConditionalID & cID = all_conditionals[opID];
+			int resultID = cID.bvID;
+			int bvThenID = cID.getThenBV();
+			int bvElseID = cID.getElseBV();
 
 			assert(bvID==resultID);
 			if(p ==cID.l){
@@ -2606,13 +2821,13 @@ public:
 
 				int bvID = getbvID(var(l));
 				int cID = getOperationID(var(l));
-				auto & c = all_conditionals[cID];
+				ConditionalID & c =(ConditionalID) getOperation(cID);
 
 				Lit condition=c.l;
 
-				int bvThenID=c.bvThenID;
-				int bvElseID=c.bvElseID;
-				int bvResultID=c.bvResultID;
+				int bvThenID=c.getThenBV();
+				int bvElseID=c.getElseBV();
+				int bvResultID=c.bvID;
 
 				assert(bvID==bvResultID);
 				assert(var(condition)==var(l));
@@ -2749,25 +2964,11 @@ public:
 		Cause over_cause_new;
 		Cause under_cause_new;
 
-		//under_approx[bvID]=0;
-		//over_approx[bvID]=0;
-
-
-
-
-		//also need to iterate through the additions that this bv is an argument of...
-
-
-
-
-
-		//also need to iterate through the additions that this bv is an argument of...
-
-
-
-
-
-
+		for(int opID:operation_ids[bvID]){
+			if(opID==ignoreCID)
+				continue;
+			getOperation(opID).updateApprox(ignore_bv, under_new,  over_new,  under_cause_new,  over_cause_new);
+		}
 
 		assert_in_range(under_new,bvID);
 		assert_in_range(over_new,bvID);
@@ -3226,165 +3427,8 @@ public:
 				}
 			}
 
-			for(int i = 0;i< conditionals[bvID].size();i++){
-				int thenID = conditionals[bvID][i].bvThenID;
-				int elseID = conditionals[bvID][i].bvElseID;
-				Lit condition = conditionals[bvID][i].l;
-
-				if(value(condition)==l_Undef){
-					if(under_approx[bvID]< min( under_approx[thenID],under_approx[elseID]) ||
-							over_approx[bvID]> max( over_approx[thenID],over_approx[elseID])){
-						return false;
-					}
-					Weight underc = min( under_approx[thenID], under_approx[elseID]);
-					Weight overc = max( over_approx[thenID], over_approx[elseID]);
-					if(underc >under){
-						under=underc;
-					}
-					if(overc<over){
-						over=overc;
-					}
-				}else if(value(condition)==l_True){
-					if(under_approx[bvID]!= under_approx[thenID] || over_approx[bvID]!=over_approx[thenID]){
-						return false;
-					}
-					if(under_approx[thenID] >under){
-						under=under_approx[thenID];
-					}
-					if(over_approx[thenID]<over){
-						over=over_approx[thenID];
-					}
-				}else if(value(condition)==l_False){
-					if(under_approx[bvID]!= under_approx[elseID] || over_approx[bvID]!=over_approx[elseID]){
-						return false;
-					}
-					if(under_approx[elseID] >under){
-						under=under_approx[elseID];
-					}
-					if(over_approx[elseID]<over){
-						over=over_approx[elseID];
-					}
-				}
-			}
-
-			for(int i = 0;i< conditional_arguments[bvID].size();i++){
-				Lit condition=conditional_arguments[bvID][i].l;
-				int other_argID=conditional_arguments[bvID][i].other_argID;
-				int resultID=conditional_arguments[bvID][i].resultID;
-				assert(other_argID>=0);assert(resultID>=0);
-				if(value(condition)==l_True){
-					Weight underc = under_approx[resultID];
-					Weight overc = over_approx[resultID];
-		/*			clip_under(under,bvID);
-					clip_under(over,bvID);*/
-					if(underc >under_approx[bvID]){
-						return false;
-					}
-					if(overc< over_approx[bvID]){
-						return false;
-					}
-					if(under_approx[resultID] >under){
-						under=under_approx[resultID];
-					}
-					if(over_approx[resultID]<over){
-						over=over_approx[resultID];
-					}
-				}
-			}
-
-			for(int i = 0;i<additions[bvID].size();i++){
-				int aID = additions[bvID][i].aID;
-				int bID = additions[bvID][i].bID;
-				//assert(aID<bvID);
-				//assert(bID<bvID);
-				Weight underadd = under_approx[aID] +  under_approx[bID];
-				Weight overadd = over_approx[aID] +  over_approx[bID];
-				if(underadd >under){
-					under=underadd;
-				}
-				if(overadd<over){
-					over=overadd;
-				}
-			}
-
-			//also need to iterate through the additions that this bv is an argument of...
-			for(int i = 0;i<addition_arguments[bvID].size();i++){
-				int other_argID = addition_arguments[bvID][i].other_argID;
-				int sumID = addition_arguments[bvID][i].sumID;
-
-				Weight under_add = under_approx[sumID] -  over_approx[other_argID];
-				Weight over_add = over_approx[sumID] -  under_approx[other_argID];
-
-				if(under_add >under){
-					under=under_add;
-				}
-				if(over_add<over){
-					over=over_add;
-				}
-			}
-
-			for(int cID: minmax_ops[bvID]){
-				bool isMin = minmaxs[cID].min;
-				vec<int> & args = minmaxs[cID].args;
-				assert(minmaxs[cID].resultID==bvID);
-				if (!isMin){
-					using std::max;
-					Weight highest_over=over_approx[args[0]];
-					Weight highest_under=under_approx[args[0]];
-					for(int i = 0;i<args.size();i++){
-						int argID = args[i];
-						Weight under2 = under_approx[argID];
-						Weight over2 = over_approx[argID];
-						highest_under = max(under2,highest_under);
-						highest_over = max(over2,highest_over);
-					}
-					if (highest_under>under){
-						under=highest_under;
-
-					}
-					if (highest_over<over){
-						over=highest_over;
-
-					}
-				}else{
-					using std::min;
-					Weight lowest_over=over_approx[args[0]];
-					Weight lowest_under=under_approx[args[0]];
-					for(int i = 0;i<args.size();i++){
-						int argID = args[i];
-						Weight under2 = under_approx[argID];
-						Weight over2 = over_approx[argID];
-						lowest_under = min(under2,lowest_under);
-						lowest_over = min(over2,lowest_over);
-					}
-					if (lowest_under>under){
-						under=lowest_under;
-
-					}
-					if (lowest_over<over){
-						over=lowest_over;
-
-					}
-				}
-			}
-
-			for(int cID: minmax_args[bvID]){
-				bool isMin = minmaxs[cID].min;
-				vec<int> & args = minmaxs[cID].args;
-				int resultID = minmaxs[cID].resultID;
-				if (!isMin){
-					using std::max;
-					Weight highest_over = over_approx[resultID];
-					if (highest_over<over){
-						over=highest_over;
-					}
-				}else{
-					using std::min;
-					Weight lowest_under = under_approx[resultID];
-					if (lowest_under>under){
-						under=lowest_under;
-					}
-				}
+			for (int opID:operation_ids[bvID]){
+				getOperation(opID).checkApproxUpToDate(under,over);
 			}
 
 			for(int cID:compares[bvID]){
@@ -3638,11 +3682,10 @@ public:
 			}
 			bv_needs_propagation[bvID]=false;
 
-
+			Weight & underApprox = under_approx[bvID];
+			Weight & overApprox = over_approx[bvID];
 			stats_bv_propagations++;
-			if(stats_bv_propagations==18){
-				int a=1;
-			}
+			vec<Lit> & bv = bitvectors[bvID];
 
 			/*printf("iter %d, bv %d, under ",realprops , bvID); //: %d, over %d\n", bvID, underApprox,overApprox);
 			std::cout<<underApprox << " over ";
@@ -3651,10 +3694,10 @@ public:
 
 
 			//also need to iterate through the additions that this bv is an argument of...
-			for(int opID:operationIDs[bvID]){
-				OperationType op_type = operations[opID].getType();
-
-				getOperation(op_type,opID).updateApprox(bvID);
+			for(int opID:operation_ids[bvID]){
+				if(!getOperation(opID).propagate(conflict)){
+					return false;
+				}
 			}
 
 			vec<int> & compare = compares[bvID];
