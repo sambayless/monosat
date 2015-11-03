@@ -93,7 +93,10 @@ class BVTheorySolver: public Theory {
 public:
 
 	struct Cause{
-		int cause_is_bits:1;
+		enum class CauseType{
+			none,cause_is_bits,refined_cause,cause_is_comparison,cause_is_addition,cause_is_addition_argument,cause_is_condition,cause_is_condition_argument,cause_is_decision,cause_is_minmax,cause_is_minmax_argument,cause_is_popcount
+		};
+		/*int cause_is_bits:1;
 		int refined_cause:1;
 		int cause_is_comparison:1;
 		int cause_is_addition:1;
@@ -103,38 +106,30 @@ public:
 		int cause_is_decision:1;
 		int cause_is_minmax:1;
 		int cause_is_minmax_argument:1;
-		int cause_is_popcount:1;
+		int cause_is_popcount:1;*/
+		Cause::CauseType type:7;
 		int index:23;
+		Cause(const Cause & copy):type(copy.type),index(copy.index){
 
-		Cause(const Cause & copy):cause_is_bits(copy.cause_is_bits),refined_cause(copy.refined_cause),cause_is_comparison(copy.cause_is_comparison),cause_is_addition(copy.cause_is_addition),cause_is_addition_argument(copy.cause_is_addition_argument),cause_is_condition(copy.cause_is_condition),cause_is_condition_argument(copy.cause_is_condition_argument),cause_is_decision(copy.cause_is_decision),cause_is_minmax(copy.cause_is_minmax),cause_is_minmax_argument(copy.cause_is_minmax_argument),cause_is_popcount(copy.cause_is_popcount),index(copy.index){
-
-		}
-
-		Cause():cause_is_bits(0),refined_cause(0),cause_is_comparison(0),cause_is_addition(0),cause_is_addition_argument(0),cause_is_condition(0),cause_is_condition_argument(0),cause_is_decision(0),cause_is_minmax(0),cause_is_minmax_argument(0),cause_is_popcount(0),index(-1){
+			}
+		Cause():type(Cause::CauseType::none),index(-1){
 
 		}
-
 		bool hasCause(){
 			//this can be improved, if we want.
-			return cause_is_bits|| cause_is_addition || cause_is_addition_argument|| cause_is_condition || cause_is_condition_argument || cause_is_minmax || cause_is_minmax_argument|| cause_is_comparison || cause_is_decision|| refined_cause || cause_is_popcount;
+			return type != Cause::CauseType::none;
 		}
-		void clear(){
-			cause_is_decision=0;
-			cause_is_bits=0;
-			refined_cause=0;
-			cause_is_comparison=0;
-			cause_is_addition=0;
-			cause_is_addition_argument=0;
-			cause_is_condition=0;
-			cause_is_condition_argument=0;
 
-			cause_is_decision=0;
-			cause_is_minmax=0;
-			cause_is_minmax_argument=0;
-			cause_is_popcount=0;
+		void clear(){
+			type= Cause::CauseType::none;
 			index=-1;
 		}
 	};
+
+	class Operation{
+
+	};
+
 	//An assignment is either an assignment to a variable, or is a tightening of a bitvector's bounds
 	struct Assignment {
 
@@ -365,7 +360,7 @@ public:
 
 	struct PopCountData{
 		int resultID;
-		vec<int> args;
+		vec<Lit> args;
 		Weight under=0;
 		Weight over=0;
 	};
@@ -1208,25 +1203,25 @@ public:
 				case Comparison::gt:
 					under_approx[bvID]=to+1;
 					under_causes[bvID].clear();
-					under_causes[bvID].cause_is_decision=true;
+					under_causes[bvID].type=Cause::CauseType::cause_is_decision;
 					under_causes[bvID].index=decisionLevel();
 					break;
 				case Comparison::geq:
 					under_approx[bvID]=to;
 					under_causes[bvID].clear();
-					under_causes[bvID].cause_is_decision=true;
+					under_causes[bvID].type=Cause::CauseType::cause_is_decision;
 					under_causes[bvID].index=decisionLevel();
 					break;
 				case Comparison::lt:
 					over_approx[bvID]=to-1;
 					over_causes[bvID].clear();
-					over_causes[bvID].cause_is_decision=true;
+					over_causes[bvID].type=Cause::CauseType::cause_is_decision;
 					under_causes[bvID].index=decisionLevel();
 					break;
 				case Comparison::leq:
 					over_approx[bvID]=to;
 					over_causes[bvID].clear();
-					over_causes[bvID].cause_is_decision=true;
+					over_causes[bvID].type=Cause::CauseType::cause_is_decision;
 					under_causes[bvID].index=decisionLevel();
 					break;
 				default:
@@ -1636,6 +1631,7 @@ public:
 				}
 			}else if (isOperationVar(var(l))){
 				//for now, this means a conditional ite
+
 				int bvID = getbvID(var(l));
 				int cID = getOperationID(var(l));
 				auto & c = all_conditionals[cID];
@@ -1814,9 +1810,9 @@ public:
 				Weight bit = 1<<i;
 				under_new+=bit;
 				over_new+=bit;
-				under_cause_new.cause_is_bits=true;
+				under_cause_new.type =Cause::CauseType::cause_is_bits;
 			}else if (val==l_False){
-				over_cause_new.cause_is_bits=true;
+				over_cause_new.type =Cause::CauseType::cause_is_bits;
 			}else{
 				Weight bit = 1<<i;
 				over_new+=bit;
@@ -1857,13 +1853,13 @@ public:
 			if(under >under_new){
 				under_new=under;
 				under_cause_new.clear();
-				under_cause_new.cause_is_condition=true;
+				under_cause_new.type =Cause::CauseType::cause_is_condition;
 				under_cause_new.index=i;
 			}
 			if(over<over_new){
 				over_new=over;
 				over_cause_new.clear();
-				over_cause_new.cause_is_condition=true;
+				over_cause_new.type =Cause::CauseType::cause_is_condition;
 				over_cause_new.index=i;
 			}
 		}
@@ -1884,13 +1880,13 @@ public:
 				if(under >under_new){
 					under_new=under;
 					under_cause_new.clear();
-					under_cause_new.cause_is_condition_argument=true;
+					under_cause_new.type =Cause::CauseType::cause_is_condition_argument;
 					under_cause_new.index=i;
 				}
 				if(over<over_new){
 					over_new=over;
 					over_cause_new.clear();
-					over_cause_new.cause_is_condition_argument=true;
+					over_cause_new.type =Cause::CauseType::cause_is_condition_argument;
 					over_cause_new.index=i;
 				}
 			}
@@ -1909,13 +1905,13 @@ public:
 			if(under >under_new){
 				under_new=under;
 				under_cause_new.clear();
-				under_cause_new.cause_is_addition=true;
+				under_cause_new.type =Cause::CauseType::cause_is_addition;
 				under_cause_new.index=i;
 			}
 			if(over<over_new){
 				over_new=over;
 				over_cause_new.clear();
-				over_cause_new.cause_is_addition=true;
+				over_cause_new.type =Cause::CauseType::cause_is_addition;
 				over_cause_new.index=i;
 			}
 		}
@@ -1934,13 +1930,13 @@ public:
 			if(under >under_new){
 				under_new=under;
 				under_cause_new.clear();
-				under_cause_new.cause_is_addition_argument=true;
+				under_cause_new.type =Cause::CauseType::cause_is_addition_argument;
 				under_cause_new.index=i;
 			}
 			if(over<over_new){
 				over_new=over;
 				over_cause_new.clear();
-				over_cause_new.cause_is_addition_argument=true;
+				over_cause_new.type =Cause::CauseType::cause_is_addition_argument;
 				over_cause_new.index=i;
 			}
 		}
@@ -1967,13 +1963,13 @@ public:
 				if (highest_under>under_new){
 					under_new=highest_under;
 					under_cause_new.clear();
-					under_cause_new.cause_is_minmax=true;
+					under_cause_new.type =Cause::CauseType::cause_is_minmax;
 					under_cause_new.index=cID;
 				}
 				if (highest_over<over_new){
 					over_new=highest_over;
 					over_cause_new.clear();
-					over_cause_new.cause_is_minmax=true;
+					over_cause_new.type =Cause::CauseType::cause_is_minmax;
 					over_cause_new.index=cID;
 				}
 			}else{
@@ -1990,13 +1986,13 @@ public:
 				if (lowest_under>under_new){
 					under_new=lowest_under;
 					under_cause_new.clear();
-					under_cause_new.cause_is_minmax=true;
+					under_cause_new.type =Cause::CauseType::cause_is_minmax;
 					under_cause_new.index=cID;
 				}
 				if (lowest_over<over_new){
 					over_new=lowest_over;
 					over_cause_new.clear();
-					over_cause_new.cause_is_minmax=true;
+					over_cause_new.type =Cause::CauseType::cause_is_minmax;
 					over_cause_new.index=cID;
 				}
 			}
@@ -2013,7 +2009,7 @@ public:
 				if (highest_over<over_new){
 					over_new=highest_over;
 					over_cause_new.clear();
-					over_cause_new.cause_is_minmax_argument=true;
+					over_cause_new.type =Cause::CauseType::cause_is_minmax_argument;
 					over_cause_new.index=cID;
 				}
 			}else{
@@ -2023,7 +2019,7 @@ public:
 				if (lowest_under>under_new){
 					under_new=lowest_under;
 					under_cause_new.clear();
-					under_cause_new.cause_is_minmax_argument=true;
+					under_cause_new.type =Cause::CauseType::cause_is_minmax_argument;
 					under_cause_new.index=cID;
 				}
 			}
@@ -2050,13 +2046,13 @@ public:
 			if (over<over_new){
 				over_new=over;
 				over_cause_new.clear();
-				over_cause_new.cause_is_popcount =true;
+				over_cause_new.type =Cause::CauseType::cause_is_popcount;
 				over_cause_new.index=popcountID;
 			}
 			if (under>under_new){
 				under_new=under;
 				under_cause_new.clear();
-				under_cause_new.cause_is_popcount=true;
+				under_cause_new.type =Cause::CauseType::cause_is_popcount;
 				under_cause_new.index=popcountID;
 			}
 		}
@@ -2112,7 +2108,7 @@ public:
 
 			if(setOver){
 				over_cause_new.clear();
-				over_cause_new.cause_is_comparison=true;
+				over_cause_new.type =Cause::CauseType::cause_is_comparison;
 				over_cause_new.index=cID;
 			}
 		}
@@ -2166,7 +2162,7 @@ public:
 
 			if(setUnder){
 				under_cause_new.clear();
-				under_cause_new.cause_is_comparison=true;
+				under_cause_new.type =Cause::CauseType::cause_is_comparison;
 				under_cause_new.index=cID;
 			}
 
@@ -2224,7 +2220,7 @@ public:
 
 			if(setOver){
 				over_cause_new.clear();
-				over_cause_new.cause_is_comparison=true;
+				over_cause_new.type =Cause::CauseType::cause_is_comparison;
 				over_cause_new.index=cID;
 			}
 		}
@@ -2277,7 +2273,7 @@ public:
 
 			if(setUnder){
 				under_cause_new.clear();
-				under_cause_new.cause_is_comparison=true;
+				under_cause_new.type =Cause::CauseType::cause_is_comparison;
 				under_cause_new.index=cID;
 			}
 
@@ -2311,7 +2307,7 @@ public:
 
 			over_new=refined_over;
 			over_cause_new.clear();
-			over_cause_new.refined_cause=true;
+			over_cause_new.type =Cause::CauseType::refined_cause;
 		}
 		Weight refined_under = refine_ubound(bvID, under_new);
 		if(refined_under>-1  && refined_under> under_new){
@@ -2339,7 +2335,7 @@ public:
 
 			under_new=refined_under;
 			under_cause_new.clear();
-			under_cause_new.refined_cause=true;
+			under_cause_new.type =Cause::CauseType::refined_cause;
 		}
 		assert_in_range(under_new,bvID);
 		assert_in_range(over_new,bvID);
@@ -2793,9 +2789,9 @@ public:
 				over=under_approx0[bvID];
 			}
 		}
-		if (!under_causes[bvID].cause_is_decision)
+		if (under_causes[bvID].type !=Cause::CauseType::cause_is_decision)
 			assert(under==under_approx[bvID]);
-		if(!over_causes[bvID].cause_is_decision)
+		if(over_causes[bvID].type !=Cause::CauseType::cause_is_decision)
 			assert(over==over_approx[bvID]);
 
 		assert(under_approx0[bvID]<=under_approx[bvID]);
@@ -4339,7 +4335,7 @@ public:
 		if(!compare_over)
 			assert(under_causes[bvID].hasCause());
 
-		if (compare_over &&  over_causes[bvID].cause_is_decision){
+		if (compare_over &&  over_causes[bvID].type==Cause::CauseType::cause_is_decision){
 			//the reason that the bvID's over approx is <= its current value
 			//is because it was a decision.
 			//Create a literal on the fly to explain this...
@@ -4353,7 +4349,7 @@ public:
 			//S->prependToTrail(toSolver(reason),lev);//this is a decision that was made, without a corresponding literal in the solver at the time it was made.
 			// need to  ensure that this lit can be properly analyzed, so prepend it to the trail at this decision level.
 
-		}else if (!compare_over &&  under_causes[bvID].cause_is_decision){
+		}else if (!compare_over &&  under_causes[bvID].type==Cause::CauseType::cause_is_decision){
 			int lev = under_causes[bvID].index;
 			assert(lev>=0);
 			assert(lev<=decisionLevel());
@@ -4364,7 +4360,7 @@ public:
 			//S->prependToTrail(toSolver(reason),lev);//this is a decision that was made, without a corresponding literal in the solver at the time it was made.
 			//need to ensure that this lit can be properly analyzed, so prepend it to the trail at this decision level.
 
-		}else if (compare_over &&  over_causes[bvID].refined_cause){
+		}else if (compare_over &&  over_causes[bvID].type==Cause::CauseType::refined_cause){
 			//then the reason the underapprox is too large is because of the assignment to the bits
 			//can this analysis be improved upon?
 			for(int i =0;i<bv.size();i++){
@@ -4396,7 +4392,7 @@ public:
 
 			//buildValueReason(Comparison::leq,bvID,over_approx[bvID],conflict,trail_pos-1);
 
-		}else if (!compare_over  && under_causes[bvID].refined_cause){
+		}else if (!compare_over  && under_causes[bvID].type==Cause::CauseType::refined_cause){
 			//then the reason the underapprox is too large is because of the assignment to the bits
 
 			for(int i =0;i<bv.size();i++){
@@ -4426,7 +4422,7 @@ public:
 
 			//buildValueReason(Comparison::geq,bvID,under_approx[bvID],conflict,trail_pos-1);
 
-		}else if (compare_over &&  over_causes[bvID].cause_is_bits){
+		}else if (compare_over &&  over_causes[bvID].type==Cause::CauseType::cause_is_bits){
 			//then the reason the underapprox is too large is because of the assignment to the bits
 			Weight over = over_approx[bvID];
 			for(int i =0;i<bv.size();i++){
@@ -4443,7 +4439,7 @@ public:
 				}
 			}
 
-		}else if (!compare_over  && under_causes[bvID].cause_is_bits){
+		}else if (!compare_over  && under_causes[bvID].type==Cause::CauseType::cause_is_bits){
 			//then the reason the underapprox is too large is because of the assignment to the bits
 			Weight under = under_approx[bvID];
 			for(int i =0;i<bv.size();i++){
@@ -4463,7 +4459,7 @@ public:
 			}
 
 
-		}else if(compare_over && over_causes[bvID].cause_is_addition){
+		}else if(compare_over && over_causes[bvID].type==Cause::CauseType::cause_is_addition){
 			int index = over_causes[bvID].index;
 			assert(index>=0);
 			assert(index< additions[bvID].size());
@@ -4480,7 +4476,7 @@ public:
 			addAnalysis(Comparison::leq,aID,over_approx[bvID]-over_bid,conflict);
 			addAnalysis(Comparison::leq,bID,over_approx[bvID]-over_aid,conflict);
 
-		}else if(!compare_over && under_causes[bvID].cause_is_addition){
+		}else if(!compare_over && under_causes[bvID].type==Cause::CauseType::cause_is_addition){
 			int index = under_causes[bvID].index;
 			assert(index>=0);
 			assert(index< additions[bvID].size());
@@ -4496,7 +4492,7 @@ public:
 			//buildValueReason(op,bID,to-under_aid,conflict,trail_pos-1);
 
 
-		}else if (compare_over && over_causes[bvID].cause_is_addition_argument){
+		}else if (compare_over && over_causes[bvID].type==Cause::CauseType::cause_is_addition_argument){
 			int argindex = over_causes[bvID].index;
 			int other_argID = addition_arguments[bvID][argindex].other_argID;
 			int sumID = addition_arguments[bvID][argindex].sumID;
@@ -4510,7 +4506,7 @@ public:
 			//buildValueReason(~op,other_argID,over_sumID-to,conflict,trail_pos-1);
 			//buildValueReason(op,sumID,to+under_argID,conflict,trail_pos-1);
 
-		}else if (!compare_over && under_causes[bvID].cause_is_addition_argument){
+		}else if (!compare_over && under_causes[bvID].type==Cause::CauseType::cause_is_addition_argument){
 			int argindex = under_causes[bvID].index;
 			int other_argID = addition_arguments[bvID][argindex].other_argID;
 			int sumID = addition_arguments[bvID][argindex].sumID;
@@ -4522,7 +4518,7 @@ public:
 			//buildValueReason(~op,other_argID,under_sumID-to,conflict,trail_pos-1);
 			//buildValueReason(op,sumID,to+over_argID,conflict,trail_pos-1);
 
-		}else if(compare_over && over_causes[bvID].cause_is_condition){
+		}else if(compare_over && over_causes[bvID].type==Cause::CauseType::cause_is_condition){
 
 
 			int index = over_causes[bvID].index;
@@ -4548,7 +4544,7 @@ public:
 				addAnalysis(op,bvThenID,to,conflict);
 				addAnalysis(op,bvElseID,to,conflict);
 			}
-		}else if(!compare_over && under_causes[bvID].cause_is_condition){
+		}else if(!compare_over && under_causes[bvID].type==Cause::CauseType::cause_is_condition){
 			int index = under_causes[bvID].index;
 			assert(index>=0);
 			assert(index< conditionals[bvID].size());
@@ -4574,7 +4570,7 @@ public:
 
 				addAnalysis(op,bvElseID,to,conflict);
 			}
-		}else if (compare_over && over_causes[bvID].cause_is_condition_argument){
+		}else if (compare_over && over_causes[bvID].type==Cause::CauseType::cause_is_condition_argument){
 			int argindex = over_causes[bvID].index;
 			assert(argindex< conditional_arguments[bvID].size());
 			Lit condition =  conditional_arguments[bvID][argindex].l;
@@ -4588,7 +4584,7 @@ public:
 			conflict.push(~condition);
 			addAnalysis(op,resultID,to,conflict);
 
-		}else if (!compare_over && under_causes[bvID].cause_is_condition_argument){
+		}else if (!compare_over && under_causes[bvID].type==Cause::CauseType::cause_is_condition_argument){
 			int argindex = under_causes[bvID].index;
 			assert(argindex< conditional_arguments[bvID].size());
 			Lit condition =  conditional_arguments[bvID][argindex].l;
@@ -4602,7 +4598,7 @@ public:
 			conflict.push(~condition);
 			addAnalysis(op,resultID,to,conflict);
 
-		}else if ((compare_over && over_causes[bvID].cause_is_minmax) || (!compare_over && under_causes[bvID].cause_is_minmax) ){
+		}else if ((compare_over && over_causes[bvID].type==Cause::CauseType::cause_is_minmax) || (!compare_over && under_causes[bvID].type==Cause::CauseType::cause_is_minmax) ){
 			int cID;
 			if(compare_over)
 				cID= over_causes[bvID].index;
@@ -4687,7 +4683,7 @@ public:
 				}
 			}
 
-		}else if ((compare_over && over_causes[bvID].cause_is_minmax_argument) || (!compare_over && under_causes[bvID].cause_is_minmax_argument) ){
+		}else if ((compare_over && over_causes[bvID].type==Cause::CauseType::cause_is_minmax_argument) || (!compare_over && under_causes[bvID].type==Cause::CauseType::cause_is_minmax_argument) ){
 			int cID;
 			if(compare_over)
 				cID= over_causes[bvID].index;
@@ -4716,9 +4712,9 @@ public:
 
 
 		int cID=-1;
-		if (compare_over && over_causes[bvID].cause_is_comparison){
+		if (compare_over && over_causes[bvID].type==Cause::CauseType::cause_is_comparison){
 			cID= over_causes[bvID].index;
-		}else if (!compare_over && under_causes[bvID].cause_is_comparison){
+		}else if (!compare_over && under_causes[bvID].type==Cause::CauseType::cause_is_comparison){
 			cID= under_causes[bvID].index;
 		}
 		if(cID>-1){
@@ -5375,7 +5371,7 @@ public:
 			throw std::invalid_argument("Bit width is too small to hold population count");
 		}
 
-		int pop_count_id=pop_counts.size()
+		int pop_count_id=pop_counts.size();
 		pop_count_ids[resultID].push(pop_count_id);
 		pop_counts.push();
 		pop_counts.last().resultID = resultID;
@@ -6020,7 +6016,7 @@ public:
 							assert(false);//this should not happen!
 						}else {
 							assert(value(l)==l_Undef);
-							if (over_causes[bvID].cause_is_decision && overApprox==to-1 ){
+							if (over_causes[bvID].type==Cause::CauseType::cause_is_decision && overApprox==to-1 ){
 
 								int lev = over_causes[bvID].index;
 										assert(lev>=0);
@@ -6044,7 +6040,7 @@ public:
 							assert(value(l)==l_Undef);
 							//enqueueEager(~l,bvID,underApprox,overApprox,prev_under_cause,prev_over_cause, comparisonprop_marker);
 
-							if (under_causes[bvID].cause_is_decision && underApprox==to ){
+							if (under_causes[bvID].type==Cause::CauseType::cause_is_decision && underApprox==to ){
 								int lev = under_causes[bvID].index;
 								assert(lev>=0);
 								assert(lev<=decisionLevel());
@@ -6065,7 +6061,7 @@ public:
 							assert(value(l)==l_Undef);
 							//enqueueEager(l,bvID,underApprox,overApprox,prev_under_cause,prev_over_cause, comparisonprop_marker);
 							//if this was a decision
-							if (over_causes[bvID].cause_is_decision && overApprox==to ){
+							if (over_causes[bvID].type==Cause::CauseType::cause_is_decision && overApprox==to ){
 								int lev = over_causes[bvID].index;
 								assert(lev>=0);
 								assert(lev<=decisionLevel());
@@ -6084,7 +6080,7 @@ public:
 						}else {
 							assert(value(l)==l_Undef);
 							//enqueueEager(~l,bvID,underApprox,overApprox,prev_under_cause,prev_over_cause, comparisonprop_marker);
-							if (under_causes[bvID].cause_is_decision && underApprox==to+1 ){
+							if (under_causes[bvID].type==Cause::CauseType::cause_is_decision && underApprox==to+1 ){
 								int lev = under_causes[bvID].index;
 								assert(lev>=0);
 								assert(lev<=decisionLevel());
@@ -6105,7 +6101,7 @@ public:
 						}else {
 							assert(value(l)==l_Undef);
 							//enqueueEager(~l,bvID,underApprox,overApprox,prev_under_cause,prev_over_cause, comparisonprop_marker);
-							if (over_causes[bvID].cause_is_decision && overApprox==to ){
+							if (over_causes[bvID].type==Cause::CauseType::cause_is_decision && overApprox==to ){
 								int lev = over_causes[bvID].index;
 								assert(lev>=0);
 								assert(lev<=decisionLevel());
@@ -6124,7 +6120,7 @@ public:
 						}else {
 							assert(value(l)==l_Undef);
 							//enqueueEager(l,bvID,underApprox,overApprox,prev_under_cause,prev_over_cause, comparisonprop_marker);
-							if (under_causes[bvID].cause_is_decision && underApprox==to+1 ){
+							if (under_causes[bvID].type==Cause::CauseType::cause_is_decision && underApprox==to+1 ){
 								int lev = under_causes[bvID].index;
 								assert(lev>=0);
 								assert(lev<=decisionLevel());
@@ -6147,7 +6143,7 @@ public:
 							assert(value(l)==l_Undef);
 							//enqueueEager(~l,bvID,underApprox,overApprox,prev_under_cause,prev_over_cause, comparisonprop_marker);
 
-							if (over_causes[bvID].cause_is_decision && overApprox==to-1 ){
+							if (over_causes[bvID].type==Cause::CauseType::cause_is_decision && overApprox==to-1 ){
 								int lev = over_causes[bvID].index;
 								assert(lev>=0);
 								assert(lev<=decisionLevel());
@@ -6166,7 +6162,7 @@ public:
 						}else {
 							assert(value(l)==l_Undef);
 							//enqueueEager(l,bvID,underApprox,overApprox,prev_under_cause,prev_over_cause, comparisonprop_marker);
-							if (under_causes[bvID].cause_is_decision && underApprox==to ){
+							if (under_causes[bvID].type==Cause::CauseType::cause_is_decision && underApprox==to ){
 								int lev = under_causes[bvID].index;
 								assert(lev>=0);
 								assert(lev<=decisionLevel());
