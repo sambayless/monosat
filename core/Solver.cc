@@ -153,7 +153,7 @@ CRef Solver::attachReasonClause(Lit r,vec<Lit> & ps) {
 	assert(value(r)==l_True);
 
 	if(opt_write_learnt_clauses){
-		if((++opt_n_learnts)==2){
+		if((++opt_n_learnts)==47){
 			int a=1;
 		}
 
@@ -1095,7 +1095,7 @@ CRef Solver::propagate(bool propagate_theories) {
 			initialPropagate = false;
 		}
 		static int iter = 0;
-		if (++iter == 52) {
+		if (++iter == 128) {
 
 			int a = 1;
 		}
@@ -1345,7 +1345,7 @@ bool Solver::simplify() {
 }
 void Solver::addClauseSafely(vec<Lit> & ps) {
 	if(opt_write_learnt_clauses){
-		if(opt_n_learnts++==4150){
+		if(opt_n_learnts++==47){
 			int a=1;
 		}
 		if(ps.size()==2 &&  dimacs(unmap(ps[0])) ==-195621 && dimacs(unmap(ps[1]))== 35361){
@@ -1469,7 +1469,7 @@ bool Solver::addConflictClause(vec<Lit> & ps, CRef & confl_out, bool permanent) 
 		int a=1;
 	}
 	if(opt_write_learnt_clauses){
-		if(++opt_n_learnts==838){
+		if(++opt_n_learnts==47){
 			int a=1;
 		}
 
