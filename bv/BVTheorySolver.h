@@ -5544,7 +5544,7 @@ public:
 		addOperation(resultID,op);
 		for (int argID:args){
 			MinMaxArg * arg = new MinMaxArg(*this, operations.size(),argID,op);
-			addOperation(argID,op);
+			addOperation(argID,arg);
 			op->addArgument(arg);
 		}
 		return getBV(resultID);
