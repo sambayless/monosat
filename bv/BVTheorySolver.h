@@ -126,9 +126,41 @@ public:
 			index=-1;
 		}
 	};
+	//An assignment is either an assignment to a variable, or is a tightening of a bitvector's bounds
+	struct Assignment {
+		bool isOperation:1;
+		bool assign :1;
+		int bvID:30;
+		Var var;
+		Weight previous_under;
+		Weight previous_over;
+		Weight new_under;
+		Weight new_over;
+
+		Cause prev_under_cause;
+		Cause prev_over_cause;
+		Cause new_under_cause;
+		Cause new_over_cause;
+		Assignment( int bvID,Weight previous_under,Weight previous_over,Weight new_under,Weight new_over,
+				Cause prev_under_cause,Cause prev_over_cause,Cause new_under_cause,Cause new_over_cause):isOperation(false),assign(0),bvID(bvID),var(var_Undef),previous_under(previous_under),previous_over(previous_over),new_under(new_under),new_over(new_over),
+				prev_under_cause(prev_under_cause),prev_over_cause(prev_over_cause),new_under_cause(new_under_cause),new_over_cause(new_over_cause){
+
+		}
+		Assignment(bool isOperation, bool assign, int bvID, Var v):isOperation(isOperation),assign(assign),bvID(bvID),var(v),previous_under(-1),previous_over(-1),new_under(-1),new_over(-1),
+				prev_under_cause(),prev_over_cause(),new_under_cause(),new_over_cause(){
+		}
+
+		bool isBoundAssignment()const{
+			if(new_under>-1){
+				assert(!isOperation);
+			}
+			return new_under>-1;
+		}
+	};
 
 	class Operation{
 			int op_id=0;
+
 		protected:
 			BVTheorySolver & theory;
 			vec<Weight> &under_approx;
@@ -171,15 +203,25 @@ public:
 			inline bool enqueue(Lit l,CRef reason){
 				return theory.enqueue(l,reason);
 			}
+			inline Weight & getUnderApprox(int bvID, bool level0=false){
+				return theory.getUnderApprox(bvID,level0);
+			}
+			inline Weight & getOverApprox(int bvID, bool level0=false){
+				return theory.getOverApprox(bvID,level0);
+			}
 		public:
 			int getID()const{
 				return op_id;
 			}
+			virtual int getBV()=0;
 			virtual OperationType getType()const=0;
 
 			virtual bool propagate(bool & changed, vec<Lit> & conflict)=0;
 			virtual void enqueue(Lit l){
 				throw std::runtime_error("No implementation");
+			}
+			virtual void backtrack(Assignment & e){
+
 			}
 			virtual void updateApprox(Var ignore_bv, Weight & under_new, Weight & over_new, Cause & under_cause_new, Cause & over_cause_new)=0;
 			virtual bool checkApproxUpToDate(Weight & under,Weight&over){
@@ -216,7 +258,9 @@ public:
 
 	public:
 		int bvID=-1;
-
+		int getBV()override{
+			return bvID;
+		}
 
 		BitOp(BVTheorySolver & theory,int operationID,int bvID):Operation(theory,operationID),bvID(bvID){
 
@@ -544,7 +588,9 @@ public:
 			ComparisonOp(BVTheorySolver & theory,int operationID,int bvID, Comparison op,Weight w,Lit l):Operation(theory,operationID),bvID(bvID),is_lt(op==Comparison::lt || op==Comparison::leq),is_strict(op==Comparison::lt || op==Comparison::gt),l(l),w(w){
 
 			}
-
+			int getBV()override{
+				return bvID;
+			}
 
 			Comparison getOp(){
 				if(is_lt && is_strict){
@@ -572,6 +618,16 @@ public:
 
 				addAlteredBV(bvID);
 			}
+			void backtrack(Assignment & e)override{
+				if (theory.comparison_needs_repropagation[getID()]){
+					if(!theory.alteredBV[bvID]){
+						theory.alteredBV[bvID]=true;
+						theory.altered_bvs.push(bvID);
+					}
+					theory.requiresPropagation=true;
+					theory.S->needsPropagation(theory.getTheoryIndex());
+				}
+			}
 			bool propagate(bool & changed,vec<Lit> & conflict) override{
 				return propagate(changed,conflict,true) && propagate(changed,conflict,false);
 			}
@@ -589,12 +645,12 @@ public:
 						}else if (value(l)==l_False){
 							double startconftime = rtime(2);
 
-							stats_num_conflicts++;stats_compare_conflicts++;
+							theory.stats_num_conflicts++;theory.stats_compare_conflicts++;
 							if(opt_verb>1){
-								printf("bv comparison conflict %ld\n", stats_num_conflicts);
+								printf("bv comparison conflict %ld\n", theory.stats_num_conflicts);
 							}
 							assert(value(l)==l_False);
-							assert(dbg_value(l)==l_False);
+							assert(theory.dbg_value(l)==l_False);
 							conflict.push(l);
 							theory.buildComparisonReason(op,bvID,to,conflict);
 							toSolver(conflict);
@@ -611,7 +667,7 @@ public:
 
 							theory.stats_num_conflicts++;theory.stats_compare_conflicts++;
 							if(opt_verb>1){
-								printf("bv comparison conflict %ld\n", stats_num_conflicts);
+								printf("bv comparison conflict %ld\n", theory.stats_num_conflicts);
 							}
 							conflict.push(~l);
 							theory.buildComparisonReason(-op,bvID,to,conflict);
@@ -645,7 +701,7 @@ public:
 
 						}else {
 							assert(value(l)==l_Undef);
-							theory.enqueue(~l, comparisonprop_marker);
+							theory.enqueue(~l, theory.comparisonprop_marker);
 						}
 					}else if((op==Comparison::gt && underApprox>to) ||
 							(op==Comparison::geq && underApprox>=to)){
@@ -676,7 +732,7 @@ public:
 				updateApprox(ignore_bv,under_new,over_new,under_cause_new,over_cause_new,false);
 			}
 
-			void updateApprox(Var ignore_bv, Weight & under_new, Weight & over_new, Cause & under_cause_new, Cause & over_cause_new, bool update_over_approx) override{
+			void updateApprox(Var ignore_bv, Weight & under_new, Weight & over_new, Cause & under_cause_new, Cause & over_cause_new, bool update_over_approx){
 				if(update_over_approx){
 					Comparison op = getOp();
 					bool setOver=false;
@@ -898,7 +954,9 @@ public:
 		ComparisonBVOp(BVTheorySolver & theory,int operationID,int bvID, Comparison op,Lit l):Operation(theory,operationID),bvID(bvID),is_lt(op==Comparison::lt || op==Comparison::leq),is_strict(op==Comparison::lt || op==Comparison::gt),l(l){
 
 		}
-
+		int getBV()override{
+			return bvID;
+		}
 		void setOtherOp(ComparisonBVOp * other){
 			this->other=other;
 		}
@@ -1050,7 +1108,7 @@ public:
 			updateApprox(ignore_bv,under_new,over_new,under_cause_new,over_cause_new,false);
 		}
 
-		void updateApprox(Var ignore_bv, Weight & under_new, Weight & over_new, Cause & under_cause_new, Cause & over_cause_new, bool update_over_approx) override{
+		void updateApprox(Var ignore_bv, Weight & under_new, Weight & over_new, Cause & under_cause_new, Cause & over_cause_new, bool update_over_approx) {
 			Comparison op = getOp();
 
 			int compareID= getCompareID();
@@ -1189,7 +1247,7 @@ public:
 		}
 
 		void buildReason(Lit p,CRef marker, vec<Lit> & reason)override{
-			 if (marker == comparisonbv_1starg_marker) {
+			 if (marker == theory.comparisonbv_1starg_marker) {
 				reason.push(p);
 				Var v = var(p);
 				int compareBV = getCompareID();
@@ -1202,8 +1260,8 @@ public:
 					op=-op;
 				}
 				theory.buildComparisonReasonBV(op,bvID,compareBV,reason);
-			}else if (marker == comparisonbv_2ndarg_marker) {
-				other->buildReason(p,comparisonbv_1starg_marker,reason);
+			}else if (marker == theory.comparisonbv_2ndarg_marker) {
+				other->buildReason(p,theory.comparisonbv_1starg_marker,reason);
 			}
 		}
 
@@ -1319,7 +1377,9 @@ public:
 		PopCountOp(BVTheorySolver & theory,int operationID,int bvID):Operation(theory,operationID),bvID(bvID){
 
 		}
-
+		int getBV()override{
+			return bvID;
+		}
 			OperationType getType()const override{
 				return OperationType::cause_is_popcount;
 			}
@@ -1402,6 +1462,9 @@ public:
 		ConditionalID(BVTheorySolver & theory,int operationID,int bvID, Lit condition):Operation(theory,operationID),bvID(bvID),condition(condition){
 
 		}
+		int getBV()override{
+			return bvID;
+		}
 		bool hasITE()const{
 			return condition!=lit_Undef;
 		}
@@ -1437,7 +1500,7 @@ public:
 				bvCondID=bvElseID;
 			}
 
-			theory.trail.push( { false, !sign(l),getID(), v,true });
+			theory.trail.push( { false, !sign(l),getID(), v });
 			theory.analysis_trail_pos=theory.trail.size()-1;
 
 			theory.bv_needs_propagation[bvID]=true;
@@ -1699,39 +1762,37 @@ public:
 		}
 
 		void buildReason(Lit p, CRef marker, vec<Lit> & reason)override{
-			if (marker == conditionthen_prop_marker) {
+			if (marker == theory.conditionthen_prop_marker) {
 				//the 'then' condition must hold if the else condition is out of range
 				assert(value(p)==l_True);
 				reason.push(p);
 				Var v = var(p);
 
-				writeBounds(bvID);
-				assert(isOperationVar(v));
-				int opID = getOperationID(v);
-				assert(opID==getID());
+				theory.writeBounds(bvID);
+
 				int bvThenID = getThenBV();
 				int bvElseID = getElseBV();
 
 				assert(under_approx[bvElseID]>over_approx[bvID] || over_approx[bvElseID]<under_approx[bvID]);
 				buildConditionalPropReason(reason);
-			}else if (marker ==conditionelse_prop_marker){
+			}else if (marker ==theory.conditionelse_prop_marker){
 				assert(value(p)==l_True);
 				reason.push(p);
 				Var v = var(p);
 
-				writeBounds(bvID);
-				assert(isOperationVar(v));
+				theory.writeBounds(bvID);
+
 
 				int bvThenID = getThenBV();
 				int bvElseID = getElseBV();
 				assert(under_approx[bvThenID]>over_approx[bvID] || over_approx[bvThenID]<under_approx[bvID]);
 
 				buildConditionalPropReason(reason);
-			}else if(conditionarg_prop_marker){
+			}else if(marker == theory.conditionarg_prop_marker){
 				assert(value(p)==l_True);
 				reason.push(p);
 				Var v = var(p);
-				assert(isOperationVar(v));
+
 
 				int resultID = bvID;
 				int bvThenID = getThenBV();
@@ -1877,7 +1938,9 @@ public:
 		int bvID=-1;
 		ConditionalArg * otherOp;
 		ConditionalID * resultOp;
-
+		int getBV()override{
+			return bvID;
+		}
 		ConditionalArg(BVTheorySolver & theory,int operationID,int bvID,Lit condition,ConditionalID * result):Operation(theory,operationID),bvID(bvID),condition(condition),resultOp(result){
 
 		}
@@ -2082,6 +2145,9 @@ using Operation::value;
 
 		Addition(BVTheorySolver & theory,int operationID,int bvID):Operation(theory,operationID),bvID(bvID){
 
+		}
+		int getBV()override{
+			return bvID;
 		}
 		bool hasAddition()const{
 			return arg1;
@@ -2331,7 +2397,9 @@ using Operation::value;
 		AdditionArg(BVTheorySolver & theory,int operationID,int bvID, Addition* result):Operation(theory,operationID),bvID(bvID),resultOp(result){
 
 		}
-
+		int getBV()override{
+			return bvID;
+		}
 		void setOtherArg(AdditionArg * otherArg){
 			this->otherOp=otherArg;
 		}
@@ -2571,7 +2639,9 @@ using Operation::value;
 		MinMaxData(BVTheorySolver & theory,int operationID, int bvID, bool min):Operation(theory,operationID),min(min),bvID(bvID){
 
 		}
-
+		int getBV()override{
+			return bvID;
+		}
 		void move( int bvID) override{
 			this->bvID=bvID;
 		}
@@ -2965,7 +3035,9 @@ using Operation::value;
 		MinMaxArg(BVTheorySolver & theory,int operationID, int bvID,MinMaxData * resultOp):Operation(theory,operationID),bvID(bvID),resultOp(resultOp){
 			this->min = resultOp->min;
 		}
-
+		int getBV()override{
+			return bvID;
+		}
 		OperationType getType()const override{
 			return OperationType::cause_is_minmax_argument;
 		}
@@ -3121,42 +3193,7 @@ using Operation::value;
 
 	}
 
-	//An assignment is either an assignment to a variable, or is a tightening of a bitvector's bounds
-	struct Assignment {
 
-		bool isOperation:1;
-		bool isComparator :1;
-		bool assign :1;
-		int bvID:29;
-		Var var;
-		Weight previous_under;
-		Weight previous_over;
-		Weight new_under;
-		Weight new_over;
-
-		Cause prev_under_cause;
-		Cause prev_over_cause;
-		Cause new_under_cause;
-		Cause new_over_cause;
-		Assignment( int bvID,Weight previous_under,Weight previous_over,Weight new_under,Weight new_over,
-				Cause prev_under_cause,Cause prev_over_cause,Cause new_under_cause,Cause new_over_cause):isOperation(false),isComparator(false),assign(0),bvID(bvID),var(var_Undef),previous_under(previous_under),previous_over(previous_over),new_under(new_under),new_over(new_over),
-				prev_under_cause(prev_under_cause),prev_over_cause(prev_over_cause),new_under_cause(new_under_cause),new_over_cause(new_over_cause){
-
-		}
-		Assignment(bool isComparator, bool assign, int bvID, Var v):isOperation(false),isComparator(isComparator),assign(assign),bvID(bvID),var(v),previous_under(-1),previous_over(-1),new_under(-1),new_over(-1),
-				prev_under_cause(),prev_over_cause(),new_under_cause(),new_over_cause(){
-		}
-		Assignment(bool isComparator, bool assign, int bvID, Var v, bool isOperation):isOperation(isOperation),isComparator(isComparator),assign(assign),bvID(bvID),var(v),previous_under(-1),previous_over(-1),new_under(-1),new_over(-1),
-				prev_under_cause(),prev_over_cause(),new_under_cause(),new_over_cause(){
-		}
-		bool isBoundAssignment()const{
-			if(new_under>-1){
-				assert(!isOperation);
-				assert(!isComparator);
-			}
-			return new_under>-1;
-		}
-	};
 
 
 
@@ -3955,24 +3992,9 @@ public:
 					}
 				}else{
 					assert(assigns[e.var]!=l_Undef);
-					if (e.isComparator) {
-						int cID = e.bvID;
-						assert(cID>=0);
-						if (comparison_needs_repropagation[cID]){
-							ComparisonID & c = comparisons[cID];
-							int bvID = c.bvID;
-							if(!alteredBV[bvID]){
-								alteredBV[bvID]=true;
-								altered_bvs.push(bvID);
-							}
-							requiresPropagation=true;
-							S->needsPropagation(getTheoryIndex());
-						}
-					}else if (e.isOperation){
-						int cID = e.bvID;
-						assert(cID>=0);
-						//does anything need to happen here?
-					}
+					int opID = e.bvID;
+					getOperation(opID).backtrack(e);
+
 
 					assigns[e.var] = l_Undef;
 				}
@@ -3987,8 +4009,8 @@ public:
 					assert(comparison_needs_repropagation[cID]);
 					comparison_needs_repropagation[cID]=false;
 					//need to handle the case where we backtracked before ever propagating this comparison's bitvector...
-					ComparisonID & c = comparisons[cID];
-					int bvID = c.bvID;
+					Operation & c = getOperation(cID);
+					int bvID = c.getBV();
 					if(!alteredBV[bvID]){
 						alteredBV[bvID]=true;
 						altered_bvs.push(bvID);
@@ -6000,7 +6022,7 @@ private:
 			int cID1 = bvcompare[i];
 			assert(cID0 != cID1);
 
-			assert(((ComparisonBVOp &) getOperation(cID0)).compareID <= ((ComparisonBVOp &) getOperation(cID1)).compareID);
+			assert(((ComparisonBVOp &) getOperation(cID0)).getCompareID() <= ((ComparisonBVOp &) getOperation(cID1)).getCompareID());
 		}
 #endif
 
@@ -6166,7 +6188,7 @@ public:
 
 
 		ComparisonOp * compOp = new ComparisonOp(*this, operations.size(),bvID,op,to,l);
-		assert(compOp->getID()==operations.size());
+
 		operations.push(compOp);
 
 		dbg_compares_sorted(bvID);
@@ -6436,7 +6458,7 @@ public:
 			l = mkLit(newVar(outerVar, bvID,comparisonID));
 		}
 		ComparisonBVOp * compOp1 = new ComparisonBVOp(*this, comparisonID,bvID,op,l);
-		assert(compOp1->getID()==operations.size());
+
 		operations.push(compOp1);
 
 		dbg_bvcompares_sorted(bvID);
@@ -6485,7 +6507,7 @@ public:
 		comparisonID = operations.size();
 
 		ComparisonBVOp * compOp2 = new ComparisonBVOp(*this, comparisonID,bvID,op,l);
-		assert(compOp2->getID()==operations.size());
+
 		operations.push(compOp2);
 
 		compOp1->setOtherOp(compOp2);
