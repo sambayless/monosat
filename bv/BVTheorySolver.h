@@ -168,6 +168,9 @@ public:
 			inline bool applyOp(Comparison op,int bvID,Weight to){
 				return theory.applyOp(op,bvID,to);
 			}
+			inline bool enqueue(Lit l,CRef reason){
+				return theory.enqueue(l,reason);
+			}
 		public:
 			int getID()const{
 				return op_id;
@@ -175,7 +178,9 @@ public:
 			virtual OperationType getType()const=0;
 
 			virtual bool propagate(bool & changed, vec<Lit> & conflict)=0;
-
+			virtual void enqueue(Lit l){
+				throw std::runtime_error("No implementation");
+			}
 			virtual void updateApprox(Var ignore_bv, Weight & under_new, Weight & over_new, Cause & under_cause_new, Cause & over_cause_new)=0;
 			virtual bool checkApproxUpToDate(Weight & under,Weight&over){
 				return true;
@@ -222,7 +227,14 @@ public:
 		OperationType getType()const override{
 			return OperationType::cause_is_bits;
 		}
+		void enqueue(Lit l){
+			Var v = var(l);
+			theory.trail.push( { false, !sign(l),bvID, v});
 
+			theory.analysis_trail_pos=theory.trail.size()-1;
+
+			addAlteredBV(bvID);
+		}
 		bool propagate(bool & changed,vec<Lit> & conflict) override{
 			vec<Lit> & bv = theory.bitvectors[bvID];
 			Weight & underApprox = under_approx[bvID];
@@ -551,6 +563,15 @@ public:
 			OperationType getType()const override{
 				return OperationType::cause_is_comparison;
 			}
+			void enqueue(Lit l)override{
+				Var v= var(l);
+
+				theory.trail.push( { true, !sign(l),getID(), v });
+				theory.bv_needs_propagation[bvID]=true;
+				theory.analysis_trail_pos=theory.trail.size()-1;
+
+				addAlteredBV(bvID);
+			}
 			bool propagate(bool & changed,vec<Lit> & conflict) override{
 				return propagate(changed,conflict,true) && propagate(changed,conflict,false);
 			}
@@ -581,7 +602,7 @@ public:
 							return false;
 						}else {
 							assert(value(l)==l_Undef);
-							enqueue(l,comparisonprop_marker);
+							theory.enqueue(l,theory.comparisonprop_marker);
 						}
 					}else if((op==Comparison::gt && overApprox<=to) ||
 							(op==Comparison::geq && overApprox<to)){
@@ -624,7 +645,7 @@ public:
 
 						}else {
 							assert(value(l)==l_Undef);
-							enqueue(~l, comparisonprop_marker);
+							theory.enqueue(~l, comparisonprop_marker);
 						}
 					}else if((op==Comparison::gt && underApprox>to) ||
 							(op==Comparison::geq && underApprox>=to)){
@@ -644,7 +665,7 @@ public:
 							return false;
 						}else {
 							assert(value(l)==l_Undef);
-							enqueue(l,theory.comparisonprop_marker);
+							theory.enqueue(l,theory.comparisonprop_marker);
 						}
 					}
 				}
@@ -1364,7 +1385,7 @@ public:
 		using Operation::value;
 
 	public:
-		Lit l=lit_Undef;
+		Lit condition=lit_Undef;
 		int bvID=-1;
 		ConditionalArg * thenOp;
 		ConditionalArg * elseOp;
@@ -1378,11 +1399,11 @@ public:
 		//int thenCID=-1;
 		//int elseCID=-1;
 
-		ConditionalID(BVTheorySolver & theory,int operationID,int bvID, Lit condition):Operation(theory,operationID),bvID(bvID),l(condition){
+		ConditionalID(BVTheorySolver & theory,int operationID,int bvID, Lit condition):Operation(theory,operationID),bvID(bvID),condition(condition){
 
 		}
 		bool hasITE()const{
-			return l!=lit_Undef;
+			return condition!=lit_Undef;
 		}
 		void setThen(ConditionalArg * thn){
 			thenOp=thn;
@@ -1398,9 +1419,36 @@ public:
 		OperationType getType()const override{
 			return OperationType::cause_is_condition;
 		}
+		void enqueue(Lit l)override{
+			Var v= var(l);
 
+
+			int bvThenID=getThenBV();
+			int bvElseID=getElseBV();
+			int bvResultID=bvID;
+
+			assert(bvID==bvResultID);
+			assert(var(condition)==var(l));
+
+			int bvCondID;
+			if(!sign(l)){
+				bvCondID=bvThenID;
+			}else{
+				bvCondID=bvElseID;
+			}
+
+			theory.trail.push( { false, !sign(l),getID(), v,true });
+			theory.analysis_trail_pos=theory.trail.size()-1;
+
+			theory.bv_needs_propagation[bvID]=true;
+			addAlteredBV(bvID);
+			theory.bv_needs_propagation[bvCondID]=true;
+			addAlteredBV(bvCondID);
+
+
+		}
 		bool propagate(bool & changed_outer,vec<Lit> & conflict) override{
-			Lit condition =l;
+
 			Weight & underApprox = under_approx[bvID];
 			Weight & overApprox = over_approx[bvID];
 			//assert(bvThenID<bvID);
@@ -1504,7 +1552,7 @@ public:
 		void updateApprox(Var ignore_bv, Weight & under_new, Weight & over_new, Cause & under_cause_new, Cause & over_cause_new) override{
 			int bvThenID=thenOp->bvID;
 			int bvElseID=elseOp->bvID;
-			Lit condition = l;
+
 			Weight under;
 			Weight over;
 			if (value(condition)==l_True){
@@ -1547,7 +1595,7 @@ public:
 
 			int bvThenID=thenOp->bvID;
 			int bvElseID=elseOp->bvID;
-			Lit condition = l;
+
 			//assert(bvThenID<bvID);
 			//assert(bvElseID<bvID);
 
@@ -1614,7 +1662,7 @@ public:
 			//bvID > addition_under, or the reason that addition_under>= its current value.
 			int bvThenID = getThenBV();
 			int bvElseID = getElseBV();
-			Lit condition = l;
+
 			//assert(bvThenID<bvID);
 			//assert(bvElseID<bvID);
 			assert(value(condition)!=l_Undef);
@@ -1689,13 +1737,13 @@ public:
 				int bvThenID = getThenBV();
 				int bvElseID = getElseBV();
 
-				if(p ==l){
+				if(p ==condition){
 					ConditionalArg * op = elseOp;//the reason is that the else condition was falsified.
 					assert(under_approx[bvElseID]>over_approx[resultID] || over_approx[bvElseID]<under_approx[resultID]);
 					op->buildReason(reason);
 					//buildConditionalArgReason(bvElseID,opID,reason);
 				}else{
-					assert(p==~l);
+					assert(p==~condition);
 					ConditionalArg * op = thenOp;
 					assert(under_approx[bvThenID]>over_approx[resultID] || over_approx[bvThenID]<under_approx[resultID]);
 					//buildConditionalArgReason(bvThenID,opID,reason);
@@ -1707,7 +1755,7 @@ public:
 		bool checkApproxUpToDate(Weight & under,Weight&over)override{
 			int thenID=thenOp->bvID;
 			int elseID=elseOp->bvID;
-			Lit condition = l;
+
 
 			if(value(condition)==l_Undef){
 				if(under_approx[bvID]< min(under_approx[thenID],under_approx[elseID]) ||
@@ -1750,7 +1798,7 @@ public:
 		void analyzeReason(bool compareOver,Comparison op, Weight  to,  vec<Lit> & conflict){
 			int bvThenID=thenOp->bvID;
 			int bvElseID=elseOp->bvID;
-			Lit condition = l;
+
 			if(compareOver){
 
 				//if the condition is assigned (at this point in the trail)
@@ -1793,7 +1841,7 @@ public:
 		bool checkSolved()override{
 			int thenID=thenOp->bvID;
 			int elseID=elseOp->bvID;
-			Lit condition = l;
+
 			if(value(condition)!=l_False){
 				if(under_approx[bvID]!= under_approx[thenID] || over_approx[bvID]!=over_approx[thenID]){
 					return false;
@@ -1825,12 +1873,12 @@ public:
 		using Operation::value;
 
 	public:
-		Lit l=lit_Undef;
+		Lit condition=lit_Undef;
 		int bvID=-1;
 		ConditionalArg * otherOp;
 		ConditionalID * resultOp;
 
-		ConditionalArg(BVTheorySolver & theory,int operationID,int bvID,Lit condition,ConditionalID * result):Operation(theory,operationID),bvID(bvID),l(condition),resultOp(result){
+		ConditionalArg(BVTheorySolver & theory,int operationID,int bvID,Lit condition,ConditionalID * result):Operation(theory,operationID),bvID(bvID),condition(condition),resultOp(result){
 
 		}
 		void setOtherArg(ConditionalArg * otherOp){
@@ -1851,7 +1899,7 @@ public:
 			int resultID=resultOp->bvID;
 			Weight & underApprox = under_approx[bvID];
 			Weight & overApprox = over_approx[bvID];
-			Lit condition =l;
+
 
 			assert(other_argID>=0);assert(resultID>=0);
 
@@ -1891,7 +1939,7 @@ public:
 		void updateApprox(Var ignore_bv, Weight & under_new, Weight & over_new, Cause & under_cause_new, Cause & over_cause_new) override{
 			int other_argID=otherOp->bvID;
 			int resultID=resultOp->bvID;
-			Lit condition=l;
+
 
 			assert(other_argID>=0);assert(resultID>=0);
 			if(value(condition)==l_True){
@@ -1917,7 +1965,7 @@ public:
 		void buildReason(vec<Lit> & conflict)override{
 			int other_argID=otherOp->bvID;
 			int resultID=resultOp->bvID;
-			Lit condition=l;
+
 			theory.dbg_no_pending_analyses();
 			assert(theory.eq_bitvectors[bvID]==bvID);
 
@@ -1950,7 +1998,7 @@ public:
 		void analyzeReason(bool compareOver,Comparison op, Weight  to,  vec<Lit> & conflict){
 			int other_argID=otherOp->bvID;
 			int resultID=resultOp->bvID;
-			Lit condition=l;
+
 			if(compareOver){
 				Weight over_sum = over_approx[resultID];
 				assert(over_sum<=over_approx[bvID]);
@@ -1971,7 +2019,7 @@ public:
 		bool checkApproxUpToDate(Weight & under,Weight&over)override{
 			int other_argID=otherOp->bvID;
 			int resultID=resultOp->bvID;
-			Lit condition=l;
+
 			assert(other_argID>=0);assert(resultID>=0);
 			if(value(condition)==l_True){
 				Weight underc = under_approx[resultID];
@@ -1997,7 +2045,7 @@ public:
 		bool checkSolved()override{
 			int other_argID=otherOp->bvID;
 			int resultID=resultOp->bvID;
-			Lit condition=l;
+
 			if(value(condition)!=l_False){
 				if(under_approx[resultID]!= under_approx[bvID] || over_approx[resultID]!=over_approx[bvID]){
 					return false;
@@ -4204,112 +4252,8 @@ public:
 #endif
 		//if(isBVVar(var(l))){
 		Operation & op = getOperation(l);
+		op.enqueue(l);
 
-			if(isComparisonVar(var(l))) {
-
-				int bvID = getbvID(var(l));
-				int comparisonID = getComparisonID(var(l)); //v-min_edge_var;
-				//status.comparisonAltered(bvID, comparisonID);
-				trail.push( { true, !sign(l),comparisonID, v });
-				bv_needs_propagation[bvID]=true;
-				analysis_trail_pos=trail.size()-1;
-				//trail.push( { true, !sign(l),edgeID, v });
-				if(!alteredBV[bvID]){
-					alteredBV[bvID]=true;
-					if (altered_bvs.size()==0)
-						altered_bvs.push(bvID);
-					else{
-						//preserve last element in alteredbvs, in case this enqueue happened during propagation
-						int lastID = altered_bvs.last();
-						altered_bvs.last()=bvID;
-						assert(altered_bvs.last()==bvID);
-						altered_bvs.push(lastID);
-						assert(altered_bvs.last()==lastID);
-					}
-
-				}
-			}else if (isOperationVar(var(l))){
-				//for now, this means a conditional ite
-
-				int bvID = getbvID(var(l));
-				int cID = getOperationID(var(l));
-				ConditionalID & c =(ConditionalID&) getOperation(cID);
-
-				Lit condition=c.l;
-
-				int bvThenID=c.getThenBV();
-				int bvElseID=c.getElseBV();
-				int bvResultID=c.bvID;
-
-				assert(bvID==bvResultID);
-				assert(var(condition)==var(l));
-
-				int bvCondID;
-				if(!sign(l)){
-					bvCondID=bvThenID;
-				}else{
-					bvCondID=bvElseID;
-				}
-
-				trail.push( { false, !sign(l),cID, v,true });
-				analysis_trail_pos=trail.size()-1;
-
-				bv_needs_propagation[bvID]=true;
-
-				if(!alteredBV[bvID]){
-					alteredBV[bvID]=true;
-					if (altered_bvs.size()==0)
-						altered_bvs.push(bvID);
-					else{
-						//preserve last element in alteredbvs, in case this enqueue happened during propagation
-						int lastID = altered_bvs.last();
-						altered_bvs.last()=bvID;
-						assert(altered_bvs.last()==bvID);
-						altered_bvs.push(lastID);
-						assert(altered_bvs.last()==lastID);
-					}
-
-				}
-
-				bv_needs_propagation[bvCondID]=true;
-				if(!alteredBV[bvCondID]){
-					alteredBV[bvCondID]=true;
-					if (altered_bvs.size()==0)
-						altered_bvs.push(bvCondID);
-					else{
-						//preserve last element in alteredbvs, in case this enqueue happened during propagation
-						int lastID = altered_bvs.last();
-						altered_bvs.last()=bvCondID;
-						assert(altered_bvs.last()==bvCondID);
-						altered_bvs.push(lastID);
-						assert(altered_bvs.last()==lastID);
-					}
-
-				}
-
-
-			}else{
-
-				int bvID = getbvID(v);
-				trail.push( { false, !sign(l),bvID, v});
-
-				analysis_trail_pos=trail.size()-1;
-				if(!alteredBV[bvID]){
-					alteredBV[bvID]=true;
-					if (altered_bvs.size()==0)
-						altered_bvs.push(bvID);
-					else{
-						//preserve last element in alteredbvs, in case this enqueue happened during propagation
-						int lastID = altered_bvs.last();
-						altered_bvs.last()=bvID;
-						assert(altered_bvs.last()==bvID);
-						altered_bvs.push(lastID);
-						assert(altered_bvs.last()==lastID);
-					}
-
-				}
-
-			}
 		//}
 	}
 
@@ -4755,13 +4699,17 @@ public:
 		return true;
 	}*/
 	void addAlteredBV( int newBV){
-		int bvID = altered_bvs.last();
-		if(!alteredBV[newBV]){
-			alteredBV[newBV]=true;
-			altered_bvs.last()=newBV;
-			assert(altered_bvs.last()==newBV);
-			altered_bvs.push(bvID);
-			assert(altered_bvs.last()==bvID);
+		if (altered_bvs.size()==0)
+			altered_bvs.push(newBV);
+		else{
+			int bvID = altered_bvs.last();
+			if(!alteredBV[newBV]){
+				alteredBV[newBV]=true;
+				altered_bvs.last()=newBV;
+				assert(altered_bvs.last()==newBV);
+				altered_bvs.push(bvID);
+				assert(altered_bvs.last()==bvID);
+			}
 		}
 	}
 
