@@ -788,7 +788,14 @@ public:
 			}
 
 			void buildReason(Lit p,CRef marker, vec<Lit> & reason)override{
-
+				reason.push(p);
+				Var v = var(p);
+				assert(marker==theory.comparisonprop_marker);
+				Comparison op = getOp();
+				if(sign(p)){
+					op=-op;
+				}
+				theory.buildComparisonReason(op,bvID,w,reason);
 			}
 
 			void buildReason(vec<Lit> & conflict)override{
@@ -1161,7 +1168,22 @@ public:
 		}
 
 		void buildReason(Lit p,CRef marker, vec<Lit> & reason)override{
+			 if (marker == comparisonbv_1starg_marker) {
+				reason.push(p);
+				Var v = var(p);
+				int compareBV = getCompareID();
+				Comparison op = getOp();
+				if (compareBV<0){
+					throw std::runtime_error("Critical error in BV solver");
+				}
 
+				if(sign(p)){
+					op=-op;
+				}
+				theory.buildComparisonReasonBV(op,bvID,compareBV,reason);
+			}else if (marker == comparisonbv_2ndarg_marker) {
+				other->buildReason(p,comparisonbv_1starg_marker,reason);
+			}
 		}
 
 		void buildReason(vec<Lit> & conflict)override{
@@ -4127,78 +4149,7 @@ public:
 		assert(hasOperation(p));
 		Operation & op = getOperation(p);
 		op.buildReason(p,comparisonprop_marker,reason);
-		if (marker == comparisonprop_marker) {
-			reason.push(p);
-			Var v = var(p);
-			int bvID = getbvID(v);
 
-			assert(isComparisonVar(v));
-			int comparisonID = getComparisonID(v);
-			assert(bvID == comparisons[comparisonID].bvID);
-			Comparison op = comparisons[comparisonID].op();
-			if (comparisons[comparisonID].compareID<0){
-				if(sign(p)){
-					op=-op;
-				}
-				buildComparisonReason(op,bvID,comparisons[comparisonID].w,reason);
-			}else{
-				throw std::runtime_error("Critical error in BV solver");
-			}
-
-
-		}else if (marker == comparisonbv_1starg_marker) {
-			reason.push(p);
-			Var v = var(p);
-
-
-			assert(isComparisonVar(v));
-			int comparisonID = getComparisonID(v);
-			int bvID = comparisons[comparisonID].bvID;
-			int compareBV = comparisons[comparisonID].compareID;
-			assert(getbvID(v) == comparisons[comparisonID].bvID);
-			Comparison op = comparisons[comparisonID].op();
-			if (compareBV<0){
-				throw std::runtime_error("Critical error in BV solver");
-			}
-
-			if(sign(p)){
-				op=-op;
-			}
-			buildComparisonReasonBV(op,bvID,compareBV,reason);
-
-
-
-		}else if (marker == comparisonbv_2ndarg_marker) {
-			reason.push(p);
-			Var v = var(p);
-
-			//this is a fragile way to do this... ideally it should be replaced:
-			//since CIDs for comparisonBVs are always assigned in duplicate, one for each side of the
-			//comparison, and sequentially, and that the bvs are always ordered by bvID size (larger first),
-			//the comparisonID for the 2nd argument can be obtained from the same variable as the first, by adding one to
-			//that variables CID...
-			assert(isComparisonVar(v));
-			int comparisonID = getComparisonID(v)+1;
-			assert(comparisons[comparisonID-1].compareID == comparisons[comparisonID].bvID);
-			assert(comparisons[comparisonID-1].bvID == comparisons[comparisonID].compareID);
-			assert(comparisons[comparisonID-1].op() == ~comparisons[comparisonID].op());
-
-			int bvID = comparisons[comparisonID].bvID ;
-			int compareID =comparisons[comparisonID].compareID;
-
-			assert(compareID>=0);
-			assert(compareID == comparisons[comparisonID-1].bvID);
-
-			Comparison op = comparisons[comparisonID].op();
-			int compareBV = comparisons[comparisonID].compareID;
-			if(sign(p)){
-				op=-op;
-			}
-			buildComparisonReasonBV(op,bvID,compareBV,reason);
-
-		}else {
-			assert(false);
-		}
 
 		toSolver(reason);
 		double finish = rtime(1);
