@@ -159,56 +159,18 @@ public:
 	};
 
 	class Operation{
+			friend BVTheorySolver;
 			int op_id=0;
 
 		protected:
 			BVTheorySolver & theory;
-			vec<Weight> &under_approx;
-			vec<Weight> &over_approx;
 
-			Operation(BVTheorySolver & theory, int op_id):op_id(op_id),theory(theory),
-					under_approx(theory.under_approx),over_approx(theory.over_approx)
+			Operation(BVTheorySolver & theory, int op_id):op_id(op_id),theory(theory)
 			{}
+			virtual ~Operation(){
 
-			inline void toSolver(vec<Lit> & clause){
-				theory.toSolver(clause);
 			}
-			inline	void analyzeValueReason(Comparison op, int bvID, Weight  to,  vec<Lit> & conflict){
-				theory.analyzeValueReason(op,bvID,to,conflict);
-			}
-			inline	void analyze(vec<Lit> & conflict){
-				theory.analyze(conflict);
-			}
-			inline bool addAnalysis(Comparison op, int bvID, Weight  to,  vec<Lit> & conflict){
-				return theory.addAnalysis(op,bvID,to,conflict);
-			}
-			inline void addAlteredBV(int bvID){
-				theory.addAlteredBV(bvID);
-			}
-			inline void clip(Weight & val, int bvID){
-				theory.clip(val,bvID);
-			}
-			inline void clip_under(Weight & val, int bvID){
-				theory.clip_under(val,bvID);
-			}
-			inline void clip_over(Weight & val, int bvID){
-				theory.clip_over(val,bvID);
-			}
-			inline lbool value(Lit l){
-				return theory.value(l);
-			}
-			inline bool applyOp(Comparison op,int bvID,Weight to){
-				return theory.applyOp(op,bvID,to);
-			}
-			inline bool enqueue(Lit l,CRef reason){
-				return theory.enqueue(l,reason);
-			}
-			inline Weight & getUnderApprox(int bvID, bool level0=false){
-				return theory.getUnderApprox(bvID,level0);
-			}
-			inline Weight & getOverApprox(int bvID, bool level0=false){
-				return theory.getOverApprox(bvID,level0);
-			}
+
 		public:
 			int getID()const{
 				return op_id;
@@ -238,22 +200,31 @@ public:
 			}
 			virtual bool checkSolved()=0;
 	};
+//This is a convenience macro, to import a whole bunch of BVTheorySolver functions and methods into the local namespace so that they can be called without 'theory.'
+#define importTheory(theory) vec<Weight> & under_approx =theory.under_approx;\
+	vec<Weight> &over_approx=theory.over_approx;\
+	auto value = [&](Lit l) {return theory.value(l);};\
+	auto clip_over = [&](Weight & val, int bvID) {return theory.clip_over(val,bvID);};\
+	auto clip_under = [&](Weight & val, int bvID) {return theory.clip_under(val,bvID);};\
+	auto clip = [&](Weight & val, int bvID) {return theory.clip(val,bvID);};\
+	auto assert_in_range = [&](Weight  val, int bvID){theory.assert_in_range(val, bvID);};\
+	auto addAlteredBV = [&]( int newBV){theory.addAlteredBV(newBV);};\
+	auto toSolver = [&](vec<Lit> & c){theory.toSolver(c);};\
+	auto analyze = [&](vec<Lit> & c){theory.analyze(c);};\
+	auto analyzeValueReason = [&](Comparison op, int bvID, Weight  to,  vec<Lit> & conflict){theory.analyzeValueReason(op,bvID,to,conflict);};\
+	auto addAnalysis = [&](Comparison op, int bvID, Weight  to,  vec<Lit> & conflict){return theory.addAnalysis(op,bvID,to,conflict);};\
+	auto getUnderApprox = [&](int bvID, bool level0){return theory.getUnderApprox(bvID,level0);};\
+	auto getOverApprox = [&](int bvID, bool level0){return theory.getOverApprox(bvID,level0);};\
+	auto  applyOp = [&](Comparison op,int bvID,Weight to){return theory.applyOp(op,bvID,to);};\
+	auto enqueue = [&](Lit l,CRef reason){return theory.enqueue(l,reason);};
+
+
+
 
 	class BitOp:public Operation{
+	public:
 		using Operation::getID;
 		using Operation::theory;
-
-
-		using Operation::under_approx;
-		using Operation::over_approx;
-		using Operation::analyze;
-		using Operation::addAnalysis;
-		using Operation::addAlteredBV;
-		using Operation::clip;
-		using Operation::clip_under;
-		using Operation::clip_over;
-		using Operation::value;
-
 
 
 	public:
@@ -272,6 +243,7 @@ public:
 			return OperationType::cause_is_bits;
 		}
 		void enqueue(Lit l){
+			importTheory(theory);
 			Var v = var(l);
 			theory.trail.push( { false, !sign(l),bvID, v});
 
@@ -281,6 +253,9 @@ public:
 		}
 		bool propagate(bool & changed,vec<Lit> & conflict) override{
 			vec<Lit> & bv = theory.bitvectors[bvID];
+			importTheory(theory);
+
+
 			Weight & underApprox = under_approx[bvID];
 			Weight & overApprox = over_approx[bvID];
 			Weight under;
@@ -314,7 +289,7 @@ public:
 					Lit l = bv[i];
 					if(val==l_True){
 						under+=bit;
-						theory.assert_in_range(under,bvID);
+						assert_in_range(under,bvID);
 						if(under>overApprox){
 								double startconftime = rtime(2);
 								//propagationtime += startconftime - startproptime;
@@ -338,7 +313,7 @@ public:
 						}
 					}else if (val==l_False){
 						over-=bit;
-						theory.assert_in_range(under,bvID);
+						assert_in_range(under,bvID);
 						if(over<underApprox){
 								double startconftime = rtime(2);
 								//propagationtime += startconftime - startproptime;
@@ -362,13 +337,13 @@ public:
 
 						}
 					}else{
-						theory.assert_in_range(over-bit,bvID);
-						theory.assert_in_range(under+bit,bvID);
+						assert_in_range(over-bit,bvID);
+						assert_in_range(under+bit,bvID);
 						if(over-bit < underApprox){
-							theory.enqueue(l, theory.bvprop_marker);
+							enqueue(l, theory.bvprop_marker);
 							under+=bit;
 						}else if (under+bit>overApprox){
-							theory.enqueue(~l, theory.bvprop_marker);
+							enqueue(~l, theory.bvprop_marker);
 							over-=bit;
 						}
 					}
@@ -385,6 +360,7 @@ public:
 			return true;
 		}
 		void updateApprox(Var ignore_bv, Weight & under_new, Weight & over_new, Cause & under_cause_new, Cause & over_cause_new) override{
+			importTheory(theory);
 			Weight under=0;
 			Weight over=0;
 			vec<Lit> & bv = theory.bitvectors[bvID];
@@ -423,6 +399,7 @@ public:
 		}
 
 		void buildReason(Lit p,CRef marker, vec<Lit> & reason)override{
+			importTheory(theory);
 			assert (marker == theory.bvprop_marker);
 			Var v = var(p);
 			reason.push(p);
@@ -499,6 +476,7 @@ public:
 		}
 
 		void analyzeReason(bool compareOver,Comparison op, Weight  to,  vec<Lit> & conflict) override{
+			importTheory(theory);
 			vec<Lit> & bv = theory.bitvectors[bvID];
 			if(compareOver){
 				Weight over = over_approx[bvID];
@@ -537,6 +515,7 @@ public:
 		}
 
 		bool checkSolved()override{
+			importTheory(theory);
 			vec<Lit> & bv = theory.bitvectors[bvID];
 			Weight over=0;
 			Weight under=0;
@@ -564,17 +543,10 @@ public:
 		}
 	};
 	class ComparisonOp:public Operation{
-			using Operation::getID;
+				public:
+		using Operation::getID;
 			using Operation::theory;
-			using Operation::under_approx;
-			using Operation::over_approx;
-			using Operation::analyze;
-			using Operation::addAnalysis;
-			using Operation::addAlteredBV;
-			using Operation::clip;
-			using Operation::clip_under;
-			using Operation::clip_over;
-			using Operation::value;
+
 
 
 
@@ -610,6 +582,7 @@ public:
 				return OperationType::cause_is_comparison;
 			}
 			void enqueue(Lit l)override{
+				importTheory(theory);
 				Var v= var(l);
 
 				theory.trail.push( { true, !sign(l),getID(), v });
@@ -632,6 +605,7 @@ public:
 				return propagate(changed,conflict,true) && propagate(changed,conflict,false);
 			}
 			bool propagate(bool & changed,vec<Lit> & conflict, bool propagate_over_approx){
+				importTheory(theory);
 				Weight & underApprox = under_approx[bvID];
 				Weight & overApprox = over_approx[bvID];
 				Comparison op = getOp();
@@ -658,7 +632,7 @@ public:
 							return false;
 						}else {
 							assert(value(l)==l_Undef);
-							theory.enqueue(l,theory.comparisonprop_marker);
+							enqueue(l,theory.comparisonprop_marker);
 						}
 					}else if((op==Comparison::gt && overApprox<=to) ||
 							(op==Comparison::geq && overApprox<to)){
@@ -678,7 +652,7 @@ public:
 
 						}else {
 							assert(value(l)==l_Undef);
-							theory.enqueue(~l, theory.comparisonprop_marker);
+							enqueue(~l, theory.comparisonprop_marker);
 						}
 					}
 				}else{
@@ -701,7 +675,7 @@ public:
 
 						}else {
 							assert(value(l)==l_Undef);
-							theory.enqueue(~l, theory.comparisonprop_marker);
+							enqueue(~l, theory.comparisonprop_marker);
 						}
 					}else if((op==Comparison::gt && underApprox>to) ||
 							(op==Comparison::geq && underApprox>=to)){
@@ -721,7 +695,7 @@ public:
 							return false;
 						}else {
 							assert(value(l)==l_Undef);
-							theory.enqueue(l,theory.comparisonprop_marker);
+							enqueue(l,theory.comparisonprop_marker);
 						}
 					}
 				}
@@ -733,13 +707,14 @@ public:
 			}
 
 			void updateApprox(Var ignore_bv, Weight & under_new, Weight & over_new, Cause & under_cause_new, Cause & over_cause_new, bool update_over_approx){
+				importTheory(theory);
 				if(update_over_approx){
 					Comparison op = getOp();
 					bool setOver=false;
 					switch(op){
 						case Comparison::lt:
 							if(value(l)==l_True && over_new>=w){
-								if(w-1>=getUnderApprox(bvID,true)){
+								if(w-1>=theory.getUnderApprox(bvID,true)){
 									over_new=w-1;
 									setOver=true;
 								 }
@@ -747,7 +722,7 @@ public:
 							break;
 						case Comparison::leq:
 							if(value(l)==l_True && over_new>w){
-								if(w>=getUnderApprox(bvID,true)){
+								if(w>=theory.getUnderApprox(bvID,true)){
 									over_new=w;
 									setOver=true;
 								 }
@@ -755,7 +730,7 @@ public:
 							break;
 						case Comparison::gt:
 							if (value(l)==l_False && over_new>w){
-								if(w>=getUnderApprox(bvID,true)){
+								if(w>=theory.getUnderApprox(bvID,true)){
 									over_new=w;
 									setOver=true;
 								 }
@@ -764,7 +739,7 @@ public:
 						case Comparison::geq:
 						default:
 							if (value(l)==l_False && over_new>=w){
-								if(w-1>=getUnderApprox(bvID,true)){
+								if(w-1>=theory.getUnderApprox(bvID,true)){
 									over_new=w-1;
 									setOver=true;
 								 }
@@ -783,7 +758,7 @@ public:
 					switch(op){
 						case Comparison::lt:
 							 if (value(l)==l_False && under_new<w){
-								 if(w<=getOverApprox(bvID,true)){
+								 if(w<=theory.getOverApprox(bvID,true)){
 									 under_new=w;
 									 setUnder=true;
 								 }
@@ -791,7 +766,7 @@ public:
 							break;
 						case Comparison::leq:
 							 if (value(l)==l_False && under_new<=w){
-								 if(w<=getOverApprox(bvID,true)){
+								 if(w<=theory.getOverApprox(bvID,true)){
 									 under_new=w+1;
 									setUnder=true;
 								 }
@@ -799,7 +774,7 @@ public:
 							break;
 						case Comparison::gt:
 							if(value(l)==l_True && under_new<=w){
-								 if(w+1<=getOverApprox(bvID,true)){
+								 if(w+1<=theory.getOverApprox(bvID,true)){
 									 under_new=w+1;
 									 setUnder=true;
 								 }
@@ -808,7 +783,7 @@ public:
 						case Comparison::geq:
 						default:
 							if(value(l)==l_True && under_new<w){
-								 if(w<=getOverApprox(bvID,true)){
+								 if(w<=theory.getOverApprox(bvID,true)){
 									 under_new=w;
 									 setUnder=true;
 								 }
@@ -825,7 +800,7 @@ public:
 			}
 
 			bool checkApproxUpToDate(Weight & under,Weight&over)override{
-
+				importTheory(theory);
 				Comparison op = getOp();
 
 				lbool val = value(l);
@@ -880,6 +855,7 @@ public:
 			}
 
 			void analyzeReason(bool compareOver,Comparison op, Weight  to,  vec<Lit> & conflict) override{
+				importTheory(theory);
 				Comparison cop = getOp();//invert this because we are switch the direction of comparison
 				assert(l!=lit_Undef);
 				if(value(l)==l_True){
@@ -892,6 +868,7 @@ public:
 			}
 
 			bool checkSolved()override{
+				importTheory(theory);
 				Comparison op = getOp();
 				switch (op){
 					case Comparison::lt:
@@ -929,17 +906,10 @@ public:
 			}
 		};
 	class ComparisonBVOp:public Operation{
+			public:
 		using Operation::getID;
 		using Operation::theory;
-		using Operation::under_approx;
-		using Operation::over_approx;
-		using Operation::analyze;
-		using Operation::addAnalysis;
-		using Operation::addAlteredBV;
-		using Operation::clip;
-		using Operation::clip_under;
-		using Operation::clip_over;
-		using Operation::value;
+
 
 
 
@@ -987,6 +957,7 @@ public:
 			return propagate(changed,conflict,true) && propagate(changed,conflict,false);
 		}
 		bool propagate(bool & changed,vec<Lit> & conflict, bool propagate_over_approx){
+			importTheory(theory);
 			Weight & underApprox = under_approx[bvID];
 			Weight & overApprox = over_approx[bvID];
 			Comparison op = getOp();
@@ -1048,7 +1019,7 @@ public:
 
 					}*/else {
 						assert(value(l)==l_Undef);
-						theory.enqueue(~l, marker);
+						enqueue(~l, marker);
 					}
 				}
 				if(value(l)==l_True &&((op==Comparison::lt && underApprox>=under_compare) ||
@@ -1076,7 +1047,7 @@ public:
 
 					}*/else {
 						assert(value(l)==l_Undef);
-						theory.enqueue(~l, marker);
+						enqueue(~l, marker);
 					}
 				}else if((op==Comparison::gt && underApprox>over_compare) ||
 						(op==Comparison::geq && underApprox>=over_compare)){
@@ -1091,7 +1062,7 @@ public:
 					}*/else {
 
 						assert(value(l)==l_Undef);
-						theory.enqueue(l, marker);
+						enqueue(l, marker);
 					}
 				}
 				//we can also update the other bv's approximation, possibly:
@@ -1109,6 +1080,7 @@ public:
 		}
 
 		void updateApprox(Var ignore_bv, Weight & under_new, Weight & over_new, Cause & under_cause_new, Cause & over_cause_new, bool update_over_approx) {
+			importTheory(theory);
 			Comparison op = getOp();
 
 			int compareID= getCompareID();
@@ -1203,7 +1175,7 @@ public:
 		}
 
 		bool checkApproxUpToDate(Weight & under,Weight&over)override{
-
+			importTheory(theory);
 			Comparison op = getOp();
 
 			lbool val = value(l);
@@ -1270,6 +1242,7 @@ public:
 		}
 
 		void analyzeReason(bool compare_over,Comparison op, Weight  to,  vec<Lit> & conflict) override{
+			importTheory(theory);
 			Comparison cop = getOp();//invert this because we are switch the direction of comparison
 			assert(l!=lit_Undef);
 			int compareID = getCompareID();
@@ -1298,6 +1271,7 @@ public:
 		}
 
 		bool checkSolved()override{
+			importTheory(theory);
 			Comparison op = getOp();
 			int toID =getCompareID();
 			vec<Lit> & bv_compare = theory.bitvectors[toID];
@@ -1353,20 +1327,9 @@ public:
 		}
 	};
 	class PopCountOp:public Operation{
+			public:
 		using Operation::getID;
 		using Operation::theory;
-
-
-		using Operation::under_approx;
-		using Operation::over_approx;
-		using Operation::analyze;
-		using Operation::addAnalysis;
-		using Operation::addAlteredBV;
-		using Operation::clip;
-		using Operation::clip_under;
-		using Operation::clip_over;
-		using Operation::value;
-
 
 	public:
 		Weight under=0;
@@ -1389,7 +1352,7 @@ public:
 				return true;
 			}
 			void updateApprox(Var ignore_bv, Weight & under_new, Weight & over_new, Cause & under_cause_new, Cause & over_cause_new) override{
-
+				importTheory(theory);
 	#ifndef NDEBUG
 				Weight dbg_min=0;
 				Weight dbg_max = 0;
@@ -1430,19 +1393,10 @@ public:
 
 	class ConditionalArg;
 	class ConditionalID:public Operation{
+			public:
 		using Operation::getID;
 		using Operation::theory;
 
-
-		using Operation::under_approx;
-		using Operation::over_approx;
-		using Operation::analyze;
-		using Operation::addAnalysis;
-		using Operation::addAlteredBV;
-		using Operation::clip;
-		using Operation::clip_under;
-		using Operation::clip_over;
-		using Operation::value;
 
 	public:
 		Lit condition=lit_Undef;
@@ -1483,6 +1437,7 @@ public:
 			return OperationType::cause_is_condition;
 		}
 		void enqueue(Lit l)override{
+			importTheory(theory);
 			Var v= var(l);
 
 
@@ -1511,7 +1466,7 @@ public:
 
 		}
 		bool propagate(bool & changed_outer,vec<Lit> & conflict) override{
-
+			importTheory(theory);
 			Weight & underApprox = under_approx[bvID];
 			Weight & overApprox = over_approx[bvID];
 			//assert(bvThenID<bvID);
@@ -1597,12 +1552,12 @@ public:
 							//buildConditionalReason(bvID,bvElseID,underApprox,conflict);
 							return false;
 						}else{
-							theory.enqueue(~condition,  theory.conditionelse_prop_marker);
+							enqueue(~condition,  theory.conditionelse_prop_marker);
 							changed=true;
 						}
 
 					}else if(under_approx[bvElseID]>over_approx[bvID] || over_approx[bvElseID]<under_approx[bvID]){
-						theory.enqueue(condition,theory.conditionthen_prop_marker);
+						enqueue(condition,theory.conditionthen_prop_marker);
 						changed=true;
 						//condition must be true
 					}
@@ -1613,6 +1568,7 @@ public:
 			return true;
 		}
 		void updateApprox(Var ignore_bv, Weight & under_new, Weight & over_new, Cause & under_cause_new, Cause & over_cause_new) override{
+			importTheory(theory);
 			int bvThenID=thenOp->bvID;
 			int bvElseID=elseOp->bvID;
 
@@ -1645,6 +1601,7 @@ public:
 
 		}
 		void buildReason( vec<Lit> & conflict)override{
+			importTheory(theory);
 			theory.dbg_no_pending_analyses();
 			assert(theory.eq_bitvectors[bvID]==bvID);
 
@@ -1712,6 +1669,7 @@ public:
 			analyze(conflict);
 		}
 		void buildConditionalPropReason( vec<Lit> & conflict){
+			importTheory(theory);
 			theory.dbg_no_pending_analyses();
 			assert(theory.eq_bitvectors[bvID]==bvID);
 
@@ -1762,6 +1720,7 @@ public:
 		}
 
 		void buildReason(Lit p, CRef marker, vec<Lit> & reason)override{
+			importTheory(theory);
 			if (marker == theory.conditionthen_prop_marker) {
 				//the 'then' condition must hold if the else condition is out of range
 				assert(value(p)==l_True);
@@ -1814,6 +1773,7 @@ public:
 		}
 
 		bool checkApproxUpToDate(Weight & under,Weight&over)override{
+			importTheory(theory);
 			int thenID=thenOp->bvID;
 			int elseID=elseOp->bvID;
 
@@ -1857,6 +1817,7 @@ public:
 		}
 
 		void analyzeReason(bool compareOver,Comparison op, Weight  to,  vec<Lit> & conflict){
+			importTheory(theory);
 			int bvThenID=thenOp->bvID;
 			int bvElseID=elseOp->bvID;
 
@@ -1900,6 +1861,7 @@ public:
 		}
 
 		bool checkSolved()override{
+			importTheory(theory);
 			int thenID=thenOp->bvID;
 			int elseID=elseOp->bvID;
 
@@ -1919,19 +1881,9 @@ public:
 	};
 
 	class ConditionalArg:public Operation{
+			public:
 		using Operation::getID;
 		using Operation::theory;
-
-
-		using Operation::under_approx;
-		using Operation::over_approx;
-		using Operation::analyze;
-		using Operation::addAnalysis;
-		using Operation::addAlteredBV;
-		using Operation::clip;
-		using Operation::clip_under;
-		using Operation::clip_over;
-		using Operation::value;
 
 	public:
 		Lit condition=lit_Undef;
@@ -1958,6 +1910,7 @@ public:
 		}
 
 		bool propagate( bool & changed_outer,vec<Lit> & conflict) override{
+			importTheory(theory);
 			int other_argID=otherOp->bvID;
 			int resultID=resultOp->bvID;
 			Weight & underApprox = under_approx[bvID];
@@ -1979,7 +1932,7 @@ public:
 			}else if (value(condition)==l_Undef){
 				//can potentially propagate the falsehood of the conditional, if this bv is out of range of the result bv
 				if(under_approx[bvID]>over_approx[resultID] || over_approx[bvID]<under_approx[resultID]){
-					theory.enqueue(~condition,theory.conditionarg_prop_marker);
+					enqueue(~condition,theory.conditionarg_prop_marker);
 
 					addAlteredBV(other_argID);
 					addAlteredBV(resultID);
@@ -2000,6 +1953,7 @@ public:
 
 		}
 		void updateApprox(Var ignore_bv, Weight & under_new, Weight & over_new, Cause & under_cause_new, Cause & over_cause_new) override{
+			importTheory(theory);
 			int other_argID=otherOp->bvID;
 			int resultID=resultOp->bvID;
 
@@ -2026,6 +1980,7 @@ public:
 		}
 
 		void buildReason(vec<Lit> & conflict)override{
+			importTheory(theory);
 			int other_argID=otherOp->bvID;
 			int resultID=resultOp->bvID;
 
@@ -2059,6 +2014,7 @@ public:
 		}
 
 		void analyzeReason(bool compareOver,Comparison op, Weight  to,  vec<Lit> & conflict){
+			importTheory(theory);
 			int other_argID=otherOp->bvID;
 			int resultID=resultOp->bvID;
 
@@ -2080,6 +2036,7 @@ public:
 		}
 
 		bool checkApproxUpToDate(Weight & under,Weight&over)override{
+			importTheory(theory);
 			int other_argID=otherOp->bvID;
 			int resultID=resultOp->bvID;
 
@@ -2106,6 +2063,7 @@ public:
 		}
 
 		bool checkSolved()override{
+			importTheory(theory);
 			int other_argID=otherOp->bvID;
 			int resultID=resultOp->bvID;
 
@@ -2125,19 +2083,11 @@ public:
 
 	class AdditionArg;
 	class Addition:public Operation{
+			public:
 		using Operation::getID;
 		using Operation::theory;
 
 
-		using Operation::under_approx;
-		using Operation::over_approx;
-		using Operation::analyze;
-		using Operation::addAnalysis;
-		using Operation::addAlteredBV;
-		using Operation::clip;
-		using Operation::clip_under;
-		using Operation::clip_over;
-using Operation::value;
 	public:
 		AdditionArg * arg1=nullptr;
 		AdditionArg * arg2=nullptr;
@@ -2173,6 +2123,7 @@ using Operation::value;
 		}
 
 		bool propagate(bool & changed_outer,vec<Lit> & conflict) override{
+			importTheory(theory);
 			int aID=arg1->bvID;
 			int bID=arg2->bvID;
 			Weight & underApprox = under_approx[bvID];
@@ -2231,6 +2182,7 @@ using Operation::value;
 
 		}
 		void updateApprox(Var ignore_bv, Weight & under_new, Weight & over_new, Cause & under_cause_new, Cause & over_cause_new) override{
+			importTheory(theory);
 			int aID=arg1->bvID;
 			int bID=arg2->bvID;
 			//assert(aID<bvID);
@@ -2254,6 +2206,7 @@ using Operation::value;
 		}
 
 		void buildReason(vec<Lit> & conflict)override{
+			importTheory(theory);
 			int aID=arg1->bvID;
 			int bID=arg2->bvID;
 			theory.dbg_no_pending_analyses();
@@ -2300,6 +2253,7 @@ using Operation::value;
 		}
 
 		void analyzeReason(bool compareOver,Comparison op, Weight  to,  vec<Lit> & conflict){
+			importTheory(theory);
 			if(compareOver){
 
 				int aID=arg1->bvID;
@@ -2331,7 +2285,7 @@ using Operation::value;
 		}
 
 		bool checkApproxUpToDate(Weight & under,Weight&over)override{
-
+			importTheory(theory);
 			int aID=arg1->bvID;
 			int bID=arg2->bvID;
 			//assert(aID<bvID);
@@ -2348,6 +2302,7 @@ using Operation::value;
 		}
 
 		bool checkSolved()override{
+			importTheory(theory);
 			int aID=arg1->bvID;
 			int bID=arg2->bvID;
 			int width = theory.bitvectors[bvID].size();
@@ -2374,19 +2329,10 @@ using Operation::value;
 
 
 	class AdditionArg:public Operation{
+			public:
 		using Operation::getID;
 		using Operation::theory;
 
-
-		using Operation::under_approx;
-		using Operation::over_approx;
-		using Operation::analyze;
-		using Operation::addAnalysis;
-		using Operation::addAlteredBV;
-		using Operation::clip;
-		using Operation::clip_under;
-		using Operation::clip_over;
-using Operation::value;
 		//int other_argID=-1;
 		//int sumID=-1;
 	public:
@@ -2413,6 +2359,7 @@ using Operation::value;
 		}
 
 		bool propagate(bool & changed_outer,vec<Lit> & conflict) override{
+			importTheory(theory);
 			int other_argID=otherOp->bvID;
 			int sumID=resultOp->bvID;
 			Weight & underApprox = under_approx[bvID];
@@ -2473,6 +2420,7 @@ using Operation::value;
 
 		}
 		void updateApprox(Var ignore_bv, Weight & under_new, Weight & over_new, Cause & under_cause_new, Cause & over_cause_new) override{
+			importTheory(theory);
 			int other_argID=otherOp->bvID;
 			int sumID=resultOp->bvID;
 
@@ -2500,6 +2448,7 @@ using Operation::value;
 		}
 
 		void buildReason(vec<Lit> & conflict)override{
+			importTheory(theory);
 			int other_argID=otherOp->bvID;
 			int sumID=resultOp->bvID;
 			theory.dbg_no_pending_analyses();
@@ -2547,6 +2496,7 @@ using Operation::value;
 		}
 
 		void analyzeReason(bool compareOver,Comparison op, Weight  to,  vec<Lit> & conflict){
+			importTheory(theory);
 			if(compareOver){
 
 				int other_argID=otherOp->bvID;
@@ -2576,6 +2526,7 @@ using Operation::value;
 		}
 
 		bool checkApproxUpToDate(Weight & under,Weight&over)override{
+			importTheory(theory);
 			int other_argID=otherOp->bvID;
 			int sumID=resultOp->bvID;
 
@@ -2591,6 +2542,7 @@ using Operation::value;
 			return true;
 		}
 		bool checkSolved()override{
+			importTheory(theory);
 			int other_argID=otherOp->bvID;
 			int sumID=resultOp->bvID;
 			int width = theory.bitvectors[sumID].size();
@@ -2616,20 +2568,11 @@ using Operation::value;
 	};
 	class MinMaxArg;
 	class MinMaxData:public Operation{
+			public:
 		using Operation::getID;
 		using Operation::theory;
 
 
-		using Operation::under_approx;
-		using Operation::over_approx;
-		using Operation::analyze;
-		using Operation::addAnalysis;
-		using Operation::addAlteredBV;
-		using Operation::clip;
-		using Operation::clip_under;
-		using Operation::clip_over;
-		using Operation::applyOp;
-using Operation::value;
 	public:
 		bool min;
 		int bvID;
@@ -2654,7 +2597,7 @@ using Operation::value;
 		}
 
 		bool propagate( bool & changed_outer,vec<Lit> & conflict) override{
-
+			importTheory(theory);
 			Weight & underApprox = under_approx[bvID];
 			Weight & overApprox = over_approx[bvID];
 
@@ -2724,7 +2667,7 @@ using Operation::value;
 
 		}
 		void updateApprox(Var ignore_bv, Weight & under_new, Weight & over_new, Cause & under_cause_new, Cause & over_cause_new) override{
-
+			importTheory(theory);
 			bool isMin = min;
 
 			if (!isMin){
@@ -2780,6 +2723,7 @@ using Operation::value;
 		}
 
 		void buildReason( vec<Lit> & conflict)override{
+			importTheory(theory);
 			theory.dbg_no_pending_analyses();
 			assert(theory.eq_bitvectors[bvID]==bvID);
 			//rewind_trail_pos(trail.size()-1);
@@ -2856,7 +2800,7 @@ using Operation::value;
 		}
 		void analyzeReason(bool compare_over,Comparison op, Weight  to,  vec<Lit> & conflict){
 
-
+			importTheory(theory);
 			Weight  overApprox = over_approx[bvID];
 			Weight  underApprox = under_approx[bvID];
 
@@ -2934,6 +2878,7 @@ using Operation::value;
 
 		}
 		bool checkApproxUpToDate(Weight & under,Weight&over)override{
+			importTheory(theory);
 			bool isMin = min;
 
 			if (!isMin){
@@ -2979,6 +2924,7 @@ using Operation::value;
 		}
 
 		bool checkSolved()override{
+			importTheory(theory);
 			bool isMin = min;
 
 
@@ -3008,19 +2954,9 @@ using Operation::value;
 	};
 
 	class MinMaxArg:public Operation{
+			public:
 		using Operation::getID;
 		using Operation::theory;
-
-
-		using Operation::under_approx;
-		using Operation::over_approx;
-		using Operation::analyze;
-		using Operation::addAnalysis;
-		using Operation::addAlteredBV;
-		using Operation::clip;
-		using Operation::clip_under;
-		using Operation::clip_over;
-		using Operation::value;
 	public:
 		bool min;
 		//int resultID;
@@ -3043,7 +2979,7 @@ using Operation::value;
 		}
 
 		bool propagate( bool & changed_outer,vec<Lit> & conflict) override{
-
+			importTheory(theory);
 			Weight & underApprox = under_approx[bvID];
 			Weight & overApprox = over_approx[bvID];
 
@@ -3074,7 +3010,7 @@ using Operation::value;
 
 		}
 			void updateApprox(Var ignore_bv, Weight & under_new, Weight & over_new, Cause & under_cause_new, Cause & over_cause_new) override{
-
+				importTheory(theory);
 				bool isMin = min;
 				int resultID= resultOp->bvID;
 				if (!isMin){
@@ -3101,6 +3037,7 @@ using Operation::value;
 			}
 
 			void buildReason(vec<Lit> & conflict)override{
+				importTheory(theory);
 				theory.dbg_no_pending_analyses();
 				bool isMin = min;
 				int resultID= resultOp->bvID;
@@ -3128,6 +3065,7 @@ using Operation::value;
 				}
 			}
 			void analyzeReason(bool compare_over,Comparison op, Weight  to,  vec<Lit> & conflict){
+				importTheory(theory);
 				bool isMin = min;
 				int resultID= resultOp->bvID;
 				if (!isMin){
@@ -3146,6 +3084,7 @@ using Operation::value;
 			}
 
 			bool checkApproxUpToDate(Weight & under,Weight&over)override{
+				importTheory(theory);
 				bool isMin = min;
 				int resultID= resultOp->bvID;
 				if (!isMin){
@@ -3180,6 +3119,7 @@ using Operation::value;
 	}
 	Operation & getOperation(Lit l){
 		int opID = vars[var(l)].operationID;
+		assert(opID>-1);
 		return getOperation(opID);
 	}
 	Operation & getOperation(int opID){
@@ -3676,7 +3616,7 @@ public:
 	}
 	
 
-	Var newVar(Var solverVar=var_Undef, int bvID=-1, int comparisonID=-1, bool connectToTheory = true, bool decidable=true,bool isOperation=false) {
+	Var newVar(Var solverVar=var_Undef, int operationID=-1, bool connectToTheory = true, bool decidable=true) {
 		if(solverVar==var_Undef){
 			solverVar = S->newVar();
 		}
@@ -3695,7 +3635,7 @@ public:
 		vars[v].occursNegative=false;
 		/*vars[v].isOperation=isOperation;
 		vars[v].bvID=bvID;*/
-		vars[v].operationID=comparisonID;
+		vars[v].operationID=operationID;
 		vars[v].solverVar = solverVar;
 
 		assigns.push(l_Undef);
@@ -5475,7 +5415,7 @@ public:
 			throw std::invalid_argument("Bit widths must match for bitvectors");
 		}
 		Var outerVar = var(outer_condition_lit);
-		Lit condition = mkLit(newVar(outerVar, resultID,operations.size(),true,true,true));
+		Lit condition = mkLit(newVar(outerVar, operations.size(),true));
 		ConditionalID * op = new ConditionalID(*this, operations.size(),resultID,condition);
 		addOperation(resultID,op);
 
@@ -5596,7 +5536,7 @@ public:
 		addOperation(resultID,op);
 
 		for (Lit l :args){
-			Lit a = mkLit(newVar(l, resultID,op->getID(),true,true,true));
+			Lit a = mkLit(newVar(l, op->getID(),true));
 			op->args.push(a);
 			op->over++;
 		}
@@ -5663,14 +5603,14 @@ public:
 		under_approx0[bvID]=under_approx[bvID];
 		over_approx0[bvID]=over_approx[bvID];
 
-
+		BitOp * op = new BitOp(*this, operations.size(),bvID);
+		addOperation(bvID,op);
 		for(int i = 0;i<vars.size();i++){
-			bitvectors[bvID].push(mkLit(newVar(vars[i],bvID)));
+			bitvectors[bvID].push(mkLit(newVar(vars[i],op->getID())));
 		}
 
 
-		BitOp * op = new BitOp(*this, operations.size(),bvID);
-		addOperation(bvID,op);
+
 
 		alteredBV[bvID]=true;
 		altered_bvs.push(bvID);
@@ -5861,7 +5801,7 @@ public:
 	Lit True(){
 		if (const_true==lit_Undef){
 			backtrackUntil(0);
-			const_true = mkLit(newVar(var(S->True()),-1,-1,true,false),sign(S->True()));
+			const_true = mkLit(newVar(var(S->True()),-1,true,false),sign(S->True()));
 			enqueueTheory(const_true);
 		}
 		return const_true;
@@ -6170,7 +6110,7 @@ public:
 			}
 			return l;
 		}else{
-			l = mkLit(newVar(outerVar, bvID,comparisonID,true,decidable));
+			l = mkLit(newVar(outerVar, comparisonID,true,decidable));
 
 		}
 		static int iter = 0;
