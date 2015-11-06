@@ -108,7 +108,7 @@ public:
 	};
 	struct Cause{
 
-		OperationType type:5;
+		OperationType type:5;//don't need this anymore.
 		int index:27;
 		Cause(const Cause & copy):type(copy.type),index(copy.index){
 
@@ -132,6 +132,8 @@ public:
 		bool assign :1;
 		int bvID:30;
 		Var var;
+		//ensure that only one of under or over can change per assignment, and only store under or over
+		//replace var, bvID with operationID.
 		Weight previous_under;
 		Weight previous_over;
 		Weight new_under;
@@ -179,7 +181,7 @@ public:
 			virtual OperationType getType()const=0;
 
 			virtual bool propagate(bool & changed, vec<Lit> & conflict)=0;
-			virtual void enqueue(Lit l){
+			virtual void enqueue(Lit l, bool alter_trail=true){
 				throw std::runtime_error("No implementation");
 			}
 			virtual void backtrack(Assignment & e){
@@ -201,6 +203,7 @@ public:
 			virtual bool checkSolved()=0;
 	};
 //This is a convenience macro, to import a whole bunch of BVTheorySolver functions and methods into the local namespace so that they can be called without 'theory.'
+//I'm relying on any unused lambda definitions here being completely optimized out by the compiler
 #define importTheory(theory) vec<Weight> & under_approx =theory.under_approx;\
 	vec<Weight> &over_approx=theory.over_approx;\
 	auto value = [&](Lit l) {return theory.value(l);};\
@@ -242,14 +245,13 @@ public:
 		OperationType getType()const override{
 			return OperationType::cause_is_bits;
 		}
-		void enqueue(Lit l){
+		void enqueue(Lit l, bool alter_trail){
 			importTheory(theory);
 			Var v = var(l);
-			theory.trail.push( { false, !sign(l),bvID, v});
+			if(alter_trail){
 
-			theory.analysis_trail_pos=theory.trail.size()-1;
-
-			addAlteredBV(bvID);
+				addAlteredBV(bvID);
+			}
 		}
 		bool propagate(bool & changed,vec<Lit> & conflict) override{
 			vec<Lit> & bv = theory.bitvectors[bvID];
@@ -607,15 +609,16 @@ public:
 			OperationType getType()const override{
 				return OperationType::cause_is_comparison;
 			}
-			void enqueue(Lit l)override{
+			void enqueue(Lit l, bool alter_trail)override{
 				importTheory(theory);
 				Var v= var(l);
+				if(alter_trail){
+					//theory.trail.push( { true, !sign(l),getID(), v });
+					theory.bv_needs_propagation[bvID]=true;
 
-				theory.trail.push( { true, !sign(l),getID(), v });
-				theory.bv_needs_propagation[bvID]=true;
-				theory.analysis_trail_pos=theory.trail.size()-1;
 
-				addAlteredBV(bvID);
+					addAlteredBV(bvID);
+				}
 			}
 			void backtrack(Assignment & e)override{
 				if (theory.comparison_needs_repropagation[getID()]){
@@ -979,16 +982,18 @@ public:
 		OperationType getType()const override{
 			return OperationType::cause_is_bv_comparison;
 		}
-		void enqueue(Lit l)override{
+		void enqueue(Lit l, bool alter_trail)override{
 			importTheory(theory);
-			Var v= var(l);
+			if(alter_trail){
+				Var v= var(l);
 
-			theory.trail.push( { true, !sign(l),getID(), v });
-			theory.bv_needs_propagation[bvID]=true;
-			theory.analysis_trail_pos=theory.trail.size()-1;
+				//theory.trail.push( { true, !sign(l),getID(), v });
+				theory.bv_needs_propagation[bvID]=true;
 
-			addAlteredBV(bvID);
-			addAlteredBV(getCompareID());
+
+				addAlteredBV(bvID);
+				//addAlteredBV(getCompareID());
+			}
 		}
 		bool propagate(bool & changed,vec<Lit> & conflict) override{
 			return propagate(changed,conflict,true) && propagate(changed,conflict,false);
@@ -1386,60 +1391,220 @@ public:
 		Weight over=0;
 		int bvID=-1;
 
-		vec<Lit>  args;
+		vec<Var>  args;
 		PopCountOp(BVTheorySolver & theory,int operationID,int bvID):Operation(theory,operationID),bvID(bvID){
 
 		}
 		int getBV()override{
 			return bvID;
 		}
-			OperationType getType()const override{
-				return OperationType::cause_is_popcount;
-			}
+		OperationType getType()const override{
+			return OperationType::cause_is_popcount;
+		}
 
-			bool propagate(bool & changed,vec<Lit> & conflict) override{
 
-				return true;
+		void enqueue(Lit l, bool alter_trail)override{
+			importTheory(theory);
+			Var v= var(l);
+			assert(args.contains(v));
+			if(sign(l)){
+				over--;
+			}else{
+				under++;
 			}
-			void updateApprox(Var ignore_bv, Weight & under_new, Weight & over_new, Cause & under_cause_new, Cause & over_cause_new) override{
-				importTheory(theory);
-	#ifndef NDEBUG
-				Weight dbg_min=0;
-				Weight dbg_max = 0;
-				for(Lit l:args){
-					if(value(l)==l_True){
-						dbg_min++;
-						dbg_max++;
-					}else if (value(l)!=l_False){
-						dbg_max++;
+			if(alter_trail){
+				//theory.trail.push( { true, !sign(l),getID(), v });
+
+
+				if(over<over_approx[bvID] || under>under_approx[bvID]){
+					theory.bv_needs_propagation[bvID]=true;
+					addAlteredBV(bvID);
+				}
+			}
+		}
+		virtual void backtrack(Assignment & e){
+			importTheory(theory);
+			if(e.isOperation){
+				assert(e.bvID==getID());
+				Var v = e.var;
+				assert(v!=var_Undef);
+				assert(args.contains(v));
+				assert(value(mkLit(v))!=l_Undef);
+				if(value(mkLit(v))==l_True){
+					under--;
+				}else{
+					assert(value(mkLit(v))==l_False);
+					over++;
+				}
+			}
+		}
+		bool propagate(bool & changed,vec<Lit> & conflict) override{
+			importTheory(theory);
+			if(under_approx[bvID]>over){
+				//this is a conflict
+				buildReason(conflict);
+				return false;
+			}else if (over_approx[bvID]<under){
+				//this is a conflict
+				buildReason(conflict);
+				return false;
+			}else if (under_approx[bvID]==over_approx[bvID] && under<over){
+				assert(under<under_approx[bvID] || over>over_approx[bvID]);
+				if(under<under_approx[bvID]){
+					for(Var v:args){
+						if(value(mkLit(v))==l_Undef)
+							enqueue(mkLit(v,false),theory.popcount_marker);
 					}
-				}
-				assert(dbg_min==under);
-				assert(dbg_max==over);
-	#endif
-				if (over<over_new){
-					over_new=over;
-					over_cause_new.clear();
-					over_cause_new.type =getType();
-					over_cause_new.index=getID();
-				}
-				if (under>under_new){
-					under_new=under;
-					under_cause_new.clear();
-					under_cause_new.type =getType();
-					under_cause_new.index=getID();
+					assert(under==over);
+				}else if(over>over_approx[bvID]){
+					for(Var v:args){
+						if(value(mkLit(v))==l_Undef)
+							enqueue(mkLit(v,true),theory.popcount_marker);
+					}
+					assert(under==over);
 				}
 			}
-			void buildReason(vec<Lit> & conflict)override{
-				;
-			}
-			void analyzeReason(bool compareOver,Comparison op, Weight  to,  vec<Lit> & conflict) override{
 
+
+			return true;
+		}
+		void updateApprox(Var ignore_bv, Weight & under_new, Weight & over_new, Cause & under_cause_new, Cause & over_cause_new) override{
+			importTheory(theory);
+#ifndef NDEBUG
+			Weight dbg_min=0;
+			Weight dbg_max = 0;
+			for(Var v:args){
+				if(value(mkLit(v))==l_True){
+					dbg_min++;
+					dbg_max++;
+				}else if (value(mkLit(v))!=l_False){
+					dbg_max++;
+				}
 			}
-			bool checkSolved()override{
-				return true;
+			assert(dbg_min==under);
+			assert(dbg_max==over);
+#endif
+			if (over<over_new){
+				over_new=over;
+				over_cause_new.clear();
+				over_cause_new.type =getType();
+				over_cause_new.index=getID();
 			}
-		};
+			if (under>under_new){
+				under_new=under;
+				under_cause_new.clear();
+				under_cause_new.type =getType();
+				under_cause_new.index=getID();
+			}
+		}
+		void buildReason(vec<Lit> & conflict)override{
+			importTheory(theory);
+			if(under_approx[bvID]>over){
+				//this is a conflict
+				Weight dbg_under=0;
+				for(Var v:args){
+					if(value(mkLit(v))==l_False)
+						conflict.push(mkLit(v,false));
+					else
+						dbg_under++;
+				}
+				assert(under==dbg_under);
+				theory.buildComparisonReason(Comparison::geq,bvID,under,conflict);
+			}else if (over_approx[bvID]<under){
+				//this is a conflict
+				Weight dbg_over=args.size();
+				for(Var v:args){
+					if(value(mkLit(v))==l_True)
+						conflict.push(mkLit(v,true));
+					else
+						dbg_over--;
+				}
+				assert(over==dbg_over);
+				theory.buildComparisonReason(Comparison::leq,bvID,over,conflict);
+			}
+
+		}
+		void buildReason(Lit p,CRef marker, vec<Lit> & reason)override{
+			importTheory(theory);
+			assert(marker==theory.popcount_marker);
+			reason.push(p);
+			if(sign(p)){
+				//the reason that p was assigned to false, was that either one of the other true literals had to be false,
+				//or bvID had to be larger
+				Weight dbg_over=args.size();
+				for(Var v:args){
+					if(value(mkLit(v))==l_True)
+						reason.push(mkLit(v,true));
+					else
+						dbg_over--;
+				}
+				assert(over==dbg_over);
+				theory.buildComparisonReason(Comparison::leq,bvID,over,reason);
+			}else{
+				//the reason that p was assigned to true, was that either one of the other false literals had to be true,
+				//or bvID had to be smaller
+				Weight dbg_under=0;
+				for(Var v:args){
+					if(value(mkLit(v))==l_False)
+						reason.push(mkLit(v,false));
+					else
+						dbg_under++;
+				}
+				assert(under==dbg_under);
+				theory.buildComparisonReason(Comparison::geq,bvID,under,reason);
+			}
+		}
+		void analyzeReason(bool compareOver,Comparison op, Weight  to,  vec<Lit> & conflict) override{
+			importTheory(theory);
+
+			Weight  overApprox = over_approx[bvID];
+			Weight  underApprox = under_approx[bvID];
+
+			if(compareOver){
+				Weight dbg_over=args.size();
+				for(Var v:args){
+					if(value(mkLit(v))==l_True)
+						conflict.push(mkLit(v,true));
+					else
+						dbg_over--;
+				}
+				assert(over==dbg_over);
+			}else{
+				Weight dbg_under=0;
+				for(Var v:args){
+					if(value(mkLit(v))==l_False)
+						conflict.push(mkLit(v,false));
+					else
+						dbg_under++;
+				}
+				assert(under==dbg_under);
+			}
+		}
+
+		bool checkSolved()override{
+			importTheory(theory);
+			Weight dbg_under=0;
+			Weight dbg_over=args.size();
+			for(Var v:args){
+				if(value(mkLit(v))==l_False)
+					dbg_over--;
+				else if(value(mkLit(v))==l_True)
+					dbg_under++;
+			}
+			if(dbg_over!=over){
+				return false;
+			}
+			if(dbg_over!=over_approx[bvID])
+				return false;
+
+			if(dbg_under!=under){
+				return false;
+			}
+			if(dbg_under!=under_approx[bvID])
+				return false;
+			return true;
+		}
+	};
 
 	class ConditionalArg;
 	class ConditionalID:public Operation{
@@ -1487,33 +1652,33 @@ public:
 		OperationType getType()const override{
 			return OperationType::cause_is_condition;
 		}
-		void enqueue(Lit l)override{
+		void enqueue(Lit l, bool alter_trail)override{
 			importTheory(theory);
 			Var v= var(l);
+			if(alter_trail){
+
+				int bvThenID=getThenBV();
+				int bvElseID=getElseBV();
+				int bvResultID=bvID;
+
+				assert(bvID==bvResultID);
+				assert(var(condition)==var(l));
+
+				int bvCondID;
+				if(!sign(l)){
+					bvCondID=bvThenID;
+				}else{
+					bvCondID=bvElseID;
+				}
+
+				//theory.trail.push( { false, !sign(l),getID(), v });
 
 
-			int bvThenID=getThenBV();
-			int bvElseID=getElseBV();
-			int bvResultID=bvID;
-
-			assert(bvID==bvResultID);
-			assert(var(condition)==var(l));
-
-			int bvCondID;
-			if(!sign(l)){
-				bvCondID=bvThenID;
-			}else{
-				bvCondID=bvElseID;
+				theory.bv_needs_propagation[bvID]=true;
+				addAlteredBV(bvID);
+				theory.bv_needs_propagation[bvCondID]=true;
+				addAlteredBV(bvCondID);
 			}
-
-			theory.trail.push( { false, !sign(l),getID(), v });
-			theory.analysis_trail_pos=theory.trail.size()-1;
-
-			theory.bv_needs_propagation[bvID]=true;
-			addAlteredBV(bvID);
-			theory.bv_needs_propagation[bvCondID]=true;
-			addAlteredBV(bvCondID);
-
 
 		}
 		bool propagate(bool & changed_outer,vec<Lit> & conflict) override{
@@ -3277,6 +3442,7 @@ public:
 	CRef conditionelse_prop_marker;
 	CRef conditionarg_prop_marker;
 	CRef bvprop_marker;
+	CRef popcount_marker;
 	Lit const_true=lit_Undef;
 	vec<const char*> symbols;
 
@@ -3432,6 +3598,7 @@ public:
 		conditionelse_prop_marker = S->newReasonMarker(this);
 		conditionarg_prop_marker= S->newReasonMarker(this);
 		bvprop_marker = S->newReasonMarker(this);
+		popcount_marker = S->newReasonMarker(this);
 
 	}
 	~BVTheorySolver(){
@@ -3829,6 +3996,12 @@ public:
 					Lit p = mkLit(x,!e.assign);
 					assert(value(x)==l_Undef);
 					assigns[x] = sign(p) ? l_False : l_True;
+					if(e.isOperation){
+						int opID = e.bvID;
+						if(opID>-1){
+							getOperation(opID).enqueue(p,false);
+						}
+					}
 				}
 			}
 
@@ -3848,6 +4021,12 @@ public:
 					over_causes[bvID]=e.prev_over_cause;
 				}else{
 					Var x = e.var;
+					if(e.isOperation){
+						int opID = e.bvID;
+						if(opID>-1){
+							getOperation(opID).backtrack(e);
+						}
+					}
 					Lit p = mkLit(x,!e.assign);
 					assert(value(p)==l_True);
 					assigns[x] = l_Undef;
@@ -3905,6 +4084,12 @@ public:
 			}else{
 				Var x = e.var;
 				Lit p = mkLit(x,!e.assign);
+				if(e.isOperation){
+					int opID = e.bvID;
+					if(opID>-1){
+						getOperation(opID).enqueue(p,false);
+					}
+				}
 				assert(value(p)==l_True);
 				assigns[x] = l_Undef;
 			}
@@ -3935,6 +4120,13 @@ public:
 				Var x = e.var;
 				if(x==until_assign){
 					break;
+				}
+				Lit p = mkLit(x,!e.assign);
+				if(e.isOperation){
+					int opID = e.bvID;
+					if(opID>-1){
+						getOperation(opID).enqueue(p,false);
+					}
 				}
 				assigns[x] = l_Undef;
 			}
@@ -3984,8 +4176,10 @@ public:
 					}
 				}else{
 					assert(assigns[e.var]!=l_Undef);
+
 					int opID = e.bvID;
-					getOperation(opID).backtrack(e);
+					if(opID>-1)
+						getOperation(opID).backtrack(e);
 
 
 					assigns[e.var] = l_Undef;
@@ -4264,11 +4458,17 @@ public:
 			}
 		}
 #endif
+		assert(analysis_trail_pos==trail.size()-1);
 		//if(isBVVar(var(l))){
 		if(hasOperation(l)){
 			Operation & op = getOperation(l);
-			op.enqueue(l);
+			trail.push( { true, !sign(l),op.getID(), v});
+			op.enqueue(l,true);
+
+		}else{
+			trail.push( { false, !sign(l),-1, v});
 		}
+		analysis_trail_pos=trail.size()-1;
 
 		//}
 	}
@@ -5569,7 +5769,7 @@ public:
 		return getBV(resultID);
 	}
 
-	BitVector newPopCountBV(int resultID, vec<Lit> & args){
+	BitVector newPopCountBV(int resultID, vec<Var> & args){
 
 		if(!hasBV(resultID)){
 			throw std::runtime_error("Undefined bitvector ID " + std::to_string(resultID));
@@ -5586,8 +5786,8 @@ public:
 		PopCountOp * op = new PopCountOp(*this, operations.size(),resultID);
 		addOperation(resultID,op);
 
-		for (Lit l :args){
-			Lit a = mkLit(newVar(l, op->getID(),true));
+		for (Var v :args){
+			Var a = newVar(v, op->getID(),true);
 			op->args.push(a);
 			op->over++;
 		}

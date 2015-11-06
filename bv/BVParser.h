@@ -110,6 +110,13 @@ private:
 	};
 	vec<MinMax> minmaxs;
 
+	struct PopCount{
+
+		int id=-1;
+		vec<Var> args;
+	};
+	vec<PopCount> popCounts;
+
 	void readConstBV(B& in,  Solver& S) {
 		//bv id width l0 l1 l2 ...
 
@@ -239,7 +246,7 @@ private:
 
 		int resultId = parseInt(in);
 
-		Lit l = mkLit(var,false);
+		Lit l = mkLit(var,parsed_lit<0);
 		itebvs.push();
 		itebvs.last().condition=l;
 		itebvs.last().thenId=thenId;
@@ -302,6 +309,23 @@ private:
 			compares.last().var = v;
 
 		}
+
+	void readPopCount(B & in, Solver & S){
+		//bv_lt bvID var weight
+		popCounts.push();
+		int bvID = parseInt(in);
+		popCounts.last().id=bvID;
+		int nArgs = parseInt(in);
+		assert(nArgs>=0);
+		for(int i = 0;i<nArgs;i++){
+			int parsed_lit =parseInt(in);
+			Var v = abs(parsed_lit) - 1;
+			if(parsed_lit<0)
+				parse_errorf("Popcount arguments must be positive literals");
+			v= mapVar(S,v);
+			popCounts.last().args.push(v);
+		}
+	}
 
 public:
 	BVParser():Parser<B, Solver>("BitVector"){
@@ -370,7 +394,11 @@ public:
 			}else if (match(in,"max")){
 				readMinMaxBV(in,S,false);
 				return true;
-			}else{
+			}else if (match(in,"popcount")){
+				readPopCount(in,S);
+				return true;
+			}
+			else{
 				readBV(in,S);
 				return true;
 			}
@@ -474,6 +502,12 @@ public:
 					theory->newMaxBV(c.id,c.args);
 				}
 
+			}
+
+
+			for(auto & p:popCounts){
+				p.id =  mapBV(S,p.id);
+				theory->newPopCountBV(p.id,p.args);
 			}
 
 			for (int i = 0; i < symbols.size(); i++) {
