@@ -342,7 +342,7 @@ def _boolean_Ite(i,t,e):
     _checkLits((ni,nt,ne))
     l=_monosat.Not(_monosat.addAnd( ni.getLit(),_monosat.Not(nt.getLit()) ))
     r=_monosat.Not(_monosat.addAnd(_monosat.Not( ni.getLit()),_monosat.Not(ne.getLit()) ))
-    _checkLits((l,r))         
+
     return Var(_monosat.addAnd(l,r))
 
 def If(condition, thn, els=None):
@@ -859,7 +859,7 @@ def _grouper(n, iterable, padvalue=None):
     return zip(*[chain(iterable, repeat(padvalue, n-1))]*n)
 
 def _PopCountUnary(vars):
-    
+    """
     vars = [false() for v in vars]
     for v in vars:
         
@@ -870,7 +870,8 @@ def _PopCountUnary(vars):
     any_outs = Or(output)
     AssertEq(any_vars,any_outs)
     
-    return output;  
+    return output;  """
+    pass
 
 def _PopCountBV(vars,retBitVector=False):
     from monosat.bvtheory import BitVector

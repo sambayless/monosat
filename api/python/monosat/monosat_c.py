@@ -201,7 +201,7 @@ class Monosat(metaclass=Singleton):
         self.monosat_c.bv_xnor.argtypes=[c_solver_p,c_bv_p,c_bvID,c_bvID,c_bvID]
 
         self.monosat_c.bv_concat.argtypes=[c_solver_p,c_bv_p,c_bvID,c_bvID,c_bvID]
-        self.monosat_c.bv_popcount.argtypes=[c_solver_p,c_bv_p,c_literal_p,c_int ,c_bvID]
+        self.monosat_c.bv_popcount.argtypes=[c_solver_p,c_bv_p,c_int,c_literal_p ,c_bvID]
     
         
         self.monosat_c.bv_slice.argtypes=[c_solver_p,c_bv_p,c_bvID,c_int,c_int,c_bvID]
@@ -365,9 +365,19 @@ class Monosat(metaclass=Singleton):
     def solveLimited(self,time_limit):
         self.backtrack()
         if self.solver.output:
-            self._echoOutput("solve %d\n"%(time_limit))
+            if time_limit is None:
+                self._echoOutput("solve\n")
+            else:
+                self._echoOutput("solve %d\n"%(time_limit))
             self.solver.output.flush()
-        return self.monosat_c.solveLimited(self.solver._ptr)     
+        r = self.monosat_c.solveLimited(self.solver._ptr)
+        if r==1:
+            return False
+        elif r==0:
+            return True
+        else:
+            assert(r==2)
+            return None     
 
     def solveAssumptions(self,assumptions,minimize_bvs=None):
         self.backtrack()
@@ -731,10 +741,25 @@ class Monosat(metaclass=Singleton):
             
     def bv_popcount(self,args,resultID):
         self.backtrack()         
-        lp = self.getIntArray(args)          
-        self.monosat_c.bv_popcount(self.solver._ptr, self.solver.bvtheory,lp,len(args),c_bvID(resultID))
+        newargs=[]
+        for l in args:
+            if self.isPositive(l):
+                #newargs.append(l)
+                l2 = self.newLit()
+                self.addBinaryClause(self.Not(l), l2)
+                self.addBinaryClause(self.Not(l2), l)
+                newargs.append(l2)
+            else:
+                #Create a new, positive literal and assert that it is equal to the old, negative one.
+                l2 = self.newLit()
+                self.addBinaryClause(self.Not(l), l2)
+                self.addBinaryClause(self.Not(l2), l)
+                newargs.append(l2)
+        
+        lp = self.getIntArray(newargs)          
+        self.monosat_c.bv_popcount(self.solver._ptr, self.solver.bvtheory,len(newargs),lp,c_bvID(resultID))
         if self.solver.output:
-            self._echoOutput("bv popcount %d %d %s\n"%(resultID, len(args)," ".join((str(dimacs(l)) for l in args))))
+            self._echoOutput("bv popcount %d %d %s\n"%(resultID, len(newargs)," ".join((str(dimacs(l)) for l in newargs))))
     #Monosat graph interface
     
     def newGraph(self):

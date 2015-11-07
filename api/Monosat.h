@@ -95,6 +95,8 @@ extern "C"
   void bv_subtraction( Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv, int bvID1, int bvID2, int resultID);
   void bv_min(Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv, int n_args, int* args,int resultID);
   void bv_max(Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv, int n_args, int* args, int resultID);
+  void bv_popcount(Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv, int n_args, int* args, int resultID);
+
   //simple at-most-one constraint: asserts that at most one of the set of variables (NOT LITERALS) may be true.
   //for small numbers of variables, consider using a direct CNF encoding instead
   void at_most_one(Monosat::SimpSolver * S, int * vars, int n_vars);

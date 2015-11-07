@@ -766,6 +766,17 @@ int solveAssumptionsLimited_MinBVs(Monosat::SimpSolver * S,int time_cutoff,int *
 		 m_args.push(args[i]);
 	 bv->newMaxBV(resultID, m_args);
  }
+ void bv_popcount(Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv, int n_args, int* args, int resultID){
+	 vec<int> m_args;
+	 for (int i = 0;i<n_args;i++){
+		 Lit l = toLit(args[i]);
+		 if(sign(l)){
+			 api_errorf("Popcount arguments must all be positive literals");
+		 }
+		 m_args.push(var(l));
+	 }
+	 bv->newPopCountBV(resultID, m_args);
+ }
 
  void bv_addition( Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv, int bvID1, int bvID2, int resultID){
 	  bv->newAdditionBV(resultID,bvID1,bvID2);
@@ -981,7 +992,8 @@ void bv_slice( Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv,int a
  int getModel_Literal(Monosat::SimpSolver * S,int lit){
 	 Lit l = toLit(lit);
 	 if (var(l)>=S->model.size())
-		 return toInt(l_Undef);
+		 api_errorf("Variable %d is undefined",dimacs(l));
+		 //return toInt(l_Undef);
 	 lbool val = S->model[var(l)];
 	 assert(val==l_True || val==l_False || val==l_Undef);
 	 if (sign(l)){

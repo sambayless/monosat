@@ -1412,6 +1412,10 @@ public:
 			}else{
 				under++;
 			}
+			assert(over>=0);
+			assert(under<=args.size());
+			assert(under>=0);
+			assert(over<=args.size());
 			if(alter_trail){
 				//theory.trail.push( { true, !sign(l),getID(), v });
 
@@ -1436,6 +1440,12 @@ public:
 					assert(value(mkLit(v))==l_False);
 					over++;
 				}
+				assert(over>=0);
+				assert(under<=args.size());
+				assert(under>=0);
+				assert(over<=args.size());
+
+
 			}
 		}
 		bool propagate(bool & changed,vec<Lit> & conflict) override{
@@ -1443,20 +1453,22 @@ public:
 			if(under_approx[bvID]>over){
 				//this is a conflict
 				buildReason(conflict);
+				toSolver(conflict);
 				return false;
 			}else if (over_approx[bvID]<under){
 				//this is a conflict
 				buildReason(conflict);
+				toSolver(conflict);
 				return false;
 			}else if (under_approx[bvID]==over_approx[bvID] && under<over){
 				assert(under<under_approx[bvID] || over>over_approx[bvID]);
-				if(under<under_approx[bvID]){
+				if(under<under_approx[bvID] && over==over_approx[bvID]){
 					for(Var v:args){
 						if(value(mkLit(v))==l_Undef)
 							enqueue(mkLit(v,false),theory.popcount_marker);
 					}
 					assert(under==over);
-				}else if(over>over_approx[bvID]){
+				}else if(over>over_approx[bvID] && under==under_approx[bvID]){
 					for(Var v:args){
 						if(value(mkLit(v))==l_Undef)
 							enqueue(mkLit(v,true),theory.popcount_marker);
@@ -1464,7 +1476,6 @@ public:
 					assert(under==over);
 				}
 			}
-
 
 			return true;
 		}
@@ -1497,29 +1508,53 @@ public:
 				under_cause_new.index=getID();
 			}
 		}
+		bool checkApproxUpToDate(Weight & under_new,Weight&over_new)override{
+			importTheory(theory);
+
+			Weight dbg_min=0;
+			Weight dbg_max = 0;
+			for(Var v:args){
+				if(value(mkLit(v))==l_True){
+					dbg_min++;
+					dbg_max++;
+				}else if (value(mkLit(v))!=l_False){
+					dbg_max++;
+				}
+			}
+			assert(dbg_min==under);
+			assert(dbg_max==over);
+
+			if (dbg_max<over_new){
+				over_new=dbg_max;
+
+			}
+			if (dbg_min>under_new){
+				under_new=dbg_min;
+
+			}
+			return true;
+		}
 		void buildReason(vec<Lit> & conflict)override{
 			importTheory(theory);
 			if(under_approx[bvID]>over){
 				//this is a conflict
-				Weight dbg_under=0;
+
 				for(Var v:args){
 					if(value(mkLit(v))==l_False)
 						conflict.push(mkLit(v,false));
-					else
-						dbg_under++;
+
 				}
-				assert(under==dbg_under);
+
 				theory.buildComparisonReason(Comparison::geq,bvID,under,conflict);
 			}else if (over_approx[bvID]<under){
 				//this is a conflict
-				Weight dbg_over=args.size();
+
 				for(Var v:args){
 					if(value(mkLit(v))==l_True)
 						conflict.push(mkLit(v,true));
-					else
-						dbg_over--;
+
 				}
-				assert(over==dbg_over);
+
 				theory.buildComparisonReason(Comparison::leq,bvID,over,conflict);
 			}
 
@@ -1531,27 +1566,27 @@ public:
 			if(sign(p)){
 				//the reason that p was assigned to false, was that either one of the other true literals had to be false,
 				//or bvID had to be larger
-				Weight dbg_over=args.size();
+
 				for(Var v:args){
 					if(value(mkLit(v))==l_True)
 						reason.push(mkLit(v,true));
-					else
-						dbg_over--;
+
 				}
-				assert(over==dbg_over);
-				theory.buildComparisonReason(Comparison::leq,bvID,over,reason);
+				//assert(over==over_approx[bvID]);
+
+
+				theory.buildComparisonReason(Comparison::leq,bvID,over_approx[bvID],reason);
 			}else{
 				//the reason that p was assigned to true, was that either one of the other false literals had to be true,
 				//or bvID had to be smaller
-				Weight dbg_under=0;
+
 				for(Var v:args){
 					if(value(mkLit(v))==l_False)
 						reason.push(mkLit(v,false));
-					else
-						dbg_under++;
+
 				}
-				assert(under==dbg_under);
-				theory.buildComparisonReason(Comparison::geq,bvID,under,reason);
+
+				theory.buildComparisonReason(Comparison::geq,bvID,under_approx[bvID],reason);
 			}
 		}
 		void analyzeReason(bool compareOver,Comparison op, Weight  to,  vec<Lit> & conflict) override{
@@ -1561,23 +1596,17 @@ public:
 			Weight  underApprox = under_approx[bvID];
 
 			if(compareOver){
-				Weight dbg_over=args.size();
-				for(Var v:args){
-					if(value(mkLit(v))==l_True)
-						conflict.push(mkLit(v,true));
-					else
-						dbg_over--;
-				}
-				assert(over==dbg_over);
-			}else{
-				Weight dbg_under=0;
 				for(Var v:args){
 					if(value(mkLit(v))==l_False)
 						conflict.push(mkLit(v,false));
-					else
-						dbg_under++;
 				}
-				assert(under==dbg_under);
+
+			}else{
+
+				for(Var v:args){
+					if(value(mkLit(v))==l_True)
+						conflict.push(mkLit(v,true));
+				}
 			}
 		}
 
@@ -4087,7 +4116,7 @@ public:
 				if(e.isOperation){
 					int opID = e.bvID;
 					if(opID>-1){
-						getOperation(opID).enqueue(p,false);
+						getOperation(opID).backtrack(e);
 					}
 				}
 				assert(value(p)==l_True);
@@ -4125,7 +4154,7 @@ public:
 				if(e.isOperation){
 					int opID = e.bvID;
 					if(opID>-1){
-						getOperation(opID).enqueue(p,false);
+						getOperation(opID).backtrack(e);
 					}
 				}
 				assigns[x] = l_Undef;
@@ -4951,7 +4980,7 @@ public:
 			int a =1;
 		}
 		//printf("bv prop %d\n",stats_propagations);
-		if(stats_propagations==80){
+		if(stats_propagations==22){
 			int a =1;
 		}
 		bool any_change = false;
@@ -5350,7 +5379,6 @@ public:
 			addAnalysis(Comparison::geq,bvID,prev_weight,conflict);
 
 			//buildValueReason(Comparison::geq,bvID,under_approx[bvID],conflict,trail_pos-1);
-
 		}else if (compare_over){
 			getOperation(over_causes[bvID].index).analyzeReason(compare_over,op,to,conflict);
 		}else if (!compare_over ){

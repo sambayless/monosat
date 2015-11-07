@@ -503,12 +503,13 @@ public:
 				}
 
 			}
-
+			minmaxs.clear();
 
 			for(auto & p:popCounts){
 				p.id =  mapBV(S,p.id);
 				theory->newPopCountBV(p.id,p.args);
 			}
+			popCounts.clear();
 
 			for (int i = 0; i < symbols.size(); i++) {
 				symbols[i].first = mapBV(S,symbols[i].first);
@@ -522,9 +523,7 @@ public:
 			}
 			symbols.clear();
 
-
-
-		}else if (addbvs.size() || comparebvs.size() || compares.size()){
+		}else if (addbvs.size() || comparebvs.size() || compares.size() || addbvs.size() || itebvs.size() || minmaxs.size() || popCounts.size() ){
 
 			parse_errorf("Undefined bitvector\n");
 
@@ -532,6 +531,7 @@ public:
 
 
 	}
+
 
 
 };

@@ -137,6 +137,7 @@ class BitVector():
         assigned_bits=None
         if isinstance(mgr,int):
             #Shift the arguments over 1
+            args=op
             op = width
             width = mgr
             mgr = BVManager()
