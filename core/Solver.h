@@ -721,6 +721,9 @@ public:
 	Theory * getBVTheory(){
 		return bvtheory;
 	}
+	double & getRandomSeed()override{
+		return random_seed;
+	}
 
 
 

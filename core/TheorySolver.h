@@ -32,6 +32,7 @@ public:
 	virtual ~TheorySolver() {
 		
 	}
+	virtual double & getRandomSeed()=0;
 	virtual void addTheory(Theory * t)=0;
 	virtual lbool value(Lit l)const=0;
 	virtual lbool value(Var v)const=0;

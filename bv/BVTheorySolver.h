@@ -3616,7 +3616,7 @@ public:
 
 	BVTheorySolver(TheorySolver * S ) :
 			S(S){
-		rnd_seed = opt_random_seed;
+		rnd_seed = drand(S->getRandomSeed());
 		S->addTheory(this);
 		S->setBVTheory(this);
 		comparisonprop_marker = S->newReasonMarker(this);
