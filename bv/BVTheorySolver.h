@@ -4514,7 +4514,9 @@ public:
 	bool updateApproximations(int bvID, int ignoreCID=-1, Var ignore_bv=var_Undef){
 		if(isConst(bvID))
 			return false;
-
+		if(bvID==1288){
+			int a=1;
+		}
 		double update_start_time= rtime(3);
 		statis_bv_updates++;
 		static int iter = 0;
@@ -5034,6 +5036,9 @@ public:
 
 			//also need to iterate through the additions that this bv is an argument of...
 			for(int opID:operation_ids[bvID]){
+				if(opID==1288){
+					int a=1;
+				}
 				if(!getOperation(opID).propagate(changed,conflict)){
 					return false;
 				}
@@ -5845,6 +5850,9 @@ public:
 		if(bvID==55349){
 			int a=1;
 		}
+		if(vars.size()> sizeof(Weight)-1){
+				throw std::runtime_error("Bit widths larger than " + std::to_string(sizeof(Weight)) + " are not currently supported");
+			}
 		n_bits+=vars.size();
 		//bv_callbacks.growTo(id+1,nullptr);
 		bitvectors.growTo(bvID+1);
@@ -6092,6 +6100,9 @@ public:
 		}
 		if(bvID==55349){
 			int a=1;
+		}
+		if(bitwidth> sizeof(Weight)-1){
+			throw std::runtime_error("Bit widths larger than " + std::to_string(sizeof(Weight)) + " are not currently supported");
 		}
 		if (constval<0)
 			n_bits+=bitwidth;

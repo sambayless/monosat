@@ -875,7 +875,7 @@ def _PopCountUnary(vars):
 
 def _PopCountBV(vars,retBitVector=False):
     from monosat.bvtheory import BitVector
-    bvwidth = len(vars)
+    bvwidth = math.ceil( math.log(len(vars),2))
     sm = BitVector(bvwidth,'popcount',vars)    
     #Add some redundant constraints, so that the sovler doesn't need to work to learn them:
     output= sm.bits()        
