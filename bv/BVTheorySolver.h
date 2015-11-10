@@ -5850,8 +5850,8 @@ public:
 		if(bvID==55349){
 			int a=1;
 		}
-		if(vars.size()> sizeof(Weight)-1){
-				throw std::runtime_error("Bit widths larger than " + std::to_string(sizeof(Weight)) + " are not currently supported");
+		if(vars.size()> (sizeof(Weight) *8)-1){
+				throw std::runtime_error("Bit widths larger than " + std::to_string(sizeof(Weight)*8-1) + " are not currently supported (was " + std::to_string(vars.size()) + ")");
 			}
 		n_bits+=vars.size();
 		//bv_callbacks.growTo(id+1,nullptr);
@@ -6101,8 +6101,8 @@ public:
 		if(bvID==55349){
 			int a=1;
 		}
-		if(bitwidth> sizeof(Weight)-1){
-			throw std::runtime_error("Bit widths larger than " + std::to_string(sizeof(Weight)) + " are not currently supported");
+		if(bitwidth> (sizeof(Weight) *8)-1){
+			throw std::runtime_error("Bit widths larger than " + std::to_string((sizeof(Weight) *8)-1) + " are not currently supported  (was " + std::to_string(bitwidth) + ")");
 		}
 		if (constval<0)
 			n_bits+=bitwidth;
