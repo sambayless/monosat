@@ -175,7 +175,7 @@ BoolOption Monosat::opt_lazy_backtrack_decisions(_cat_graph, "lazy-backtrack-dec
 IntOption Monosat::opt_lazy_conflicts(_cat_graph, "lazy-conflicts", "0= unassign all lazy lits and reprop, 1=unassign all lazy lits in the clause, reprop, 2=unassign one lit, reprop, 3=skip lazy conflict analysis",0,IntRange(0,3));
 BoolOption Monosat::opt_keep_lazy_conflicts(_cat_graph, "keep-lazy-conflicts", "Keep clauses from lazy conflicts (only relevant if lazy-backtracking is enabled)",true);
 BoolOption Monosat::opt_lazy_backtrack_redecide(_cat_graph, "lazy-backtrack-redecide", "",false);
-BoolOption Monosat::opt_vsids_both(_cat_graph, "vsids-both", "Use vsids decision heuristic for both theories and main solver, in combination",true);
+BoolOption Monosat::opt_vsids_both(_cat_graph, "vsids-both", "Use vsids decision heuristic for both theories and main solver, in combination",false);
 DoubleOption Monosat::opt_theory_vsids_balance(_cat_graph,"vsids-balance", "",1,DoubleRange(0, false, 10000000, true));
 BoolOption Monosat::opt_vsids_solver_as_theory(_cat_graph, "vsids-solver-as-theory", "Use vsids decision heuristic for both theories and main solver, treating the main solver as a theory",false);
 BoolOption Monosat::opt_use_var_decay_for_theory_vsids(_cat_graph,"use-var-decay-for-theory-vsids-both","",true);
