@@ -447,7 +447,19 @@ long optimize_binary(Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv
 
 		  bool r;
 		  if (time_cutoff<0){
-			  r= S->solve(assume,false,false);
+			  if(opt_limit_conflicts>0){
+				  S->setConfBudget(opt_limit_conflicts);
+				  lbool res = S->solveLimited(assume,false,false);
+				  if (res==l_Undef){
+					  if(opt_verb>0){
+						  printf("\nBudget exceeded during optimization, quiting early (model might not be optimal!)\n");
+					  }
+					  r=false;
+				  }else{
+					  r = res==l_True;
+				  }
+			  }else
+				  r = S->solve(assume,false,false);
 		  }else{
 			  lbool res = S->solveLimited(assume,false,false);
 			  if (res==l_True){

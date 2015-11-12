@@ -885,6 +885,13 @@ public:
 			assert(d);
 			d->printSolution();
 		}
+/*		std::string fsm_file = opt_fsm_model;
+		if(fsm_file.length()>0){
+			std::ofstream theory_out(fsm_file, std::ios::out);
+
+			writeTheoryWitness(write_to);
+		}*/
+
 	}
 	
 	void setStrings(vec<vec<int>>* strings){

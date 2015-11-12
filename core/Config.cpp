@@ -65,6 +65,8 @@ BoolOption Monosat::opt_pre("MAIN", "pre", "Completely turn on/off any preproces
 IntOption Monosat::opt_time(_cat, "verb-time", "Detail level of timing benchmarks (these add some overhead)", 0,
 		IntRange(0, 5));
 
+IntOption Monosat::opt_limit_conflicts(_cat, "limit-conflicts", "Limit solution conflicts before giving up (0 to allow infinite conflicts)", 0, IntRange(0, INT32_MAX));
+
 StringOption Monosat::opt_record_file(_cat, "debug-log",
 		"Log (very expensive) debugging info at extensions of the following path (empty string (recommended) disables)", "");
 bool Monosat::opt_record=false;
@@ -76,6 +78,8 @@ BoolOption Monosat::opt_debug_model(_cat,"debug-model","",false);
 StringOption Monosat::opt_debug_learnt_clauses(_cat, "debug-learnts",
 		"Write all learnt clauses to the following file (empty string (recommended) disables)", "");
 FILE* Monosat::opt_write_learnt_clauses = nullptr;
+
+//StringOption Monosat::StringOption opt_fsm_model(_cat_fsm,"File to write fsm model, if fsm theory is used","","");
 
 BoolOption Monosat::opt_write_bv_analysis(_cat, "debug-analysis","",false);
 BoolOption Monosat::opt_write_bv_bounds(_cat, "debug-bounds","",false);

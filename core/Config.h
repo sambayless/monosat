@@ -41,6 +41,7 @@ extern DoubleOption opt_garbage_frac;
 extern BoolOption opt_rnd_restart;
 extern BoolOption opt_rnd_theory_restart;
 extern StringOption opt_record_file;
+extern IntOption opt_limit_conflicts;
 extern bool opt_record;
 
 extern IntOption opt_theory_conflict_max;
@@ -62,6 +63,7 @@ extern long opt_n_learnts;
 extern BoolOption opt_write_bv_bounds;
 extern BoolOption opt_write_bv_analysis;
 extern FILE* opt_write_learnt_clauses;
+//extern StringOption opt_fsm_model;
 
 extern BoolOption opt_graph;
 extern BoolOption opt_inc_graph;

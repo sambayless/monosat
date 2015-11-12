@@ -493,7 +493,7 @@ bool runSolve(SimpSolver & S,vec<Lit> & assume,vec<int> & bvs){
 			  throw std::runtime_error("No bitvector theory created (call initBVTheory())!");
 		  }
 
-		  bool r= S.solve(assume,false,false);
+		  bool r = S.solve(assume,false,false);
 		  if(r && bvs.size()){
 			  Monosat::BVTheorySolver<long> * bvTheory = (Monosat::BVTheorySolver<long> *) S.getBVTheory();
 			  for(int bvID:bvs){
@@ -522,7 +522,22 @@ bool runSolve(SimpSolver & S,vec<Lit> & assume,vec<int> & bvs){
 					  Lit decision_lit =  bvTheory->toSolver(bvTheory->newComparison(Comparison::leq,bvID,value-1,var_Undef,opt_decide_optimization_lits));
 					  assume.push(decision_lit);
 					  n_solves++;
-					  if (S.solve(assume,false,false)){
+
+					  bool solved;
+					  if(opt_limit_conflicts>0){
+						  S.setConfBudget(opt_limit_conflicts);
+						  lbool res = S.solveLimited(assume,false,false);
+						  if (res==l_Undef){
+							  if(opt_verb>0){
+								  printf("\nBudget exceeded during optimization, quiting early (model might not be optimal!)\n");
+							  }
+							  solved=false;
+						  }else{
+							  solved = res==l_True;
+						  }
+					  }else
+						  solved = S.solve(assume,false,false);
+					  if (solved){
 						  last_decision_lit=decision_lit;
 						  last_decision_value=value-1;
 						  value = bvTheory->getUnderApprox(bvID);
