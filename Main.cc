@@ -477,7 +477,16 @@ bool runSolve(SimpSolver & S,vec<Lit> & assume,vec<int> & bvs){
 		}
 		fflush(stdout);
 	}
-
+	vec<Lit> last_satisfying_assign;
+	for(Var v = 0;v<S.nVars();v++){
+		if(S.value(v)==l_True){
+			last_satisfying_assign.push(mkLit(v));
+		}else if(S.value(v)==l_False){
+			last_satisfying_assign.push(mkLit(v,true));
+		}else{
+			//this variable was unassigned.
+		}
+	}
 	if (opt_verb > 1 && assume.size()) {
 		printf("Assumptions: ");
 		for (int i = 0; i < assume.size(); i++) {
@@ -538,6 +547,16 @@ bool runSolve(SimpSolver & S,vec<Lit> & assume,vec<int> & bvs){
 					  }else
 						  solved = S.solve(assume,false,false);
 					  if (solved){
+						  last_satisfying_assign.clear();
+							for(Var v = 0;v<S.nVars();v++){
+								if(S.value(v)==l_True){
+									last_satisfying_assign.push(mkLit(v));
+								}else if(S.value(v)==l_False){
+									last_satisfying_assign.push(mkLit(v,true));
+								}else{
+									//this variable was unassigned.
+								}
+							}
 						  last_decision_lit=decision_lit;
 						  last_decision_value=value-1;
 						  value = bvTheory->getUnderApprox(bvID);
@@ -554,9 +573,11 @@ bool runSolve(SimpSolver & S,vec<Lit> & assume,vec<int> & bvs){
 							  //if that last decrease in value was by more than 1
 							  last_decision_lit =  bvTheory->toSolver(bvTheory->newComparison(Comparison::leq,bvID,value,var_Undef,opt_decide_optimization_lits));
 							  last_decision_value=value;
+							  last_satisfying_assign.push(last_decision_lit);
 						  }
 						  assume.push(last_decision_lit);
-						  r = S.solve(assume,false,false); //this can be improved...
+
+						  r = S.solve(last_satisfying_assign,false,false);
 
 						  if(!r){
 							  throw std::runtime_error("Error in optimization (instance has become unsat)");

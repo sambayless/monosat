@@ -337,6 +337,17 @@ int solveAssumptionsLimited(Monosat::SimpSolver * S,int time_cutoff,int * assump
  }
 
 long optimize_linear(Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bvTheory, vec<Lit> & assume,int bvID, int time_cutoff, bool & hit_cutoff, long & n_solves){
+	vec<Lit> last_satisfying_assign;
+	for(Var v = 0;v<S->nVars();v++){
+		if(S->value(v)==l_True){
+			last_satisfying_assign.push(mkLit(v));
+		}else if(S->value(v)==l_False){
+			last_satisfying_assign.push(mkLit(v,true));
+		}else{
+			//this variable was unassigned.
+		}
+	}
+
 	long value = bvTheory->getUnderApprox(bvID);
 	long last_decision_value=value;
 	  if(opt_verb>=1){
@@ -351,7 +362,19 @@ long optimize_linear(Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv
 
 		  bool r;
 		  if (time_cutoff<0){
-			  r= S->solve(assume,false,false);
+			  if(opt_limit_conflicts>0){
+				  S->setConfBudget(opt_limit_conflicts);
+				  lbool res = S->solveLimited(assume,false,false);
+				  if (res==l_Undef){
+					  if(opt_verb>0){
+						  printf("\nBudget exceeded during optimization, quiting early (model might not be optimal!)\n");
+					  }
+					  r=false;
+				  }else{
+					  r = res==l_True;
+				  }
+			  }else
+				  r = S->solve(assume,false,false);
 		  }else{
 			  lbool res = S->solveLimited(assume,false,false);
 			  if (res==l_True){
@@ -365,6 +388,16 @@ long optimize_linear(Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv
 		  }
 
 		  if (r){
+			  last_satisfying_assign.clear();
+				for(Var v = 0;v<S->nVars();v++){
+					if(S->value(v)==l_True){
+						last_satisfying_assign.push(mkLit(v));
+					}else if(S->value(v)==l_False){
+						last_satisfying_assign.push(mkLit(v,true));
+					}else{
+						//this variable was unassigned.
+					}
+				}
 			  last_decision_lit=decision_lit;
 			  last_decision_value=value-1;
 			  if(S->value(decision_lit)!=l_True){
@@ -394,20 +427,8 @@ long optimize_linear(Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv
 				  last_decision_value=value;
 			  }
 			  assume.push(last_decision_lit);
-			  //this can be improved...
-			  if (time_cutoff<0){
-				  r= S->solve(assume,false,false);
-			  }else{
-				  lbool res = S->solveLimited(assume,false,false);
-				  if (res==l_True){
-					  r=true;
-				  }else if (res==l_False){
-					  r=false;
-				  }else{
-					  r= false;
-					  hit_cutoff=true;
-				  }
-			  }
+			  r= S->solve(last_satisfying_assign,false,false);
+
 			  if(!r){
 				  throw std::runtime_error("Error in optimization (instance has become unsat)");
 			  }
@@ -426,7 +447,16 @@ long optimize_linear(Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv
 }
 
 long optimize_binary(Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bvTheory, vec<Lit> & assume,int bvID, int time_cutoff, bool & hit_cutoff, long & n_solves){
-
+	vec<Lit> last_satisfying_assign;
+	for(Var v = 0;v<S->nVars();v++){
+		if(S->value(v)==l_True){
+			last_satisfying_assign.push(mkLit(v));
+		}else if(S->value(v)==l_False){
+			last_satisfying_assign.push(mkLit(v,true));
+		}else{
+			//this variable was unassigned.
+		}
+	}
 
 	  long min_val = bvTheory->getUnderApprox(bvID,true);
 	  long max_val = bvTheory->getUnderApprox(bvID);
@@ -473,7 +503,16 @@ long optimize_binary(Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv
 		  }
 		  assume.pop();
 		  if (r){
-
+			  last_satisfying_assign.clear();
+				for(Var v = 0;v<S->nVars();v++){
+					if(S->value(v)==l_True){
+						last_satisfying_assign.push(mkLit(v));
+					}else if(S->value(v)==l_False){
+						last_satisfying_assign.push(mkLit(v,true));
+					}else{
+						//this variable was unassigned.
+					}
+				}
 			  last_decision_lit=decision_lit;
 			  last_decision_value=mid_point;
 			  long new_value = bvTheory->getUnderApprox(bvID);
@@ -484,7 +523,11 @@ long optimize_binary(Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv
 			  assert(new_value<=mid_point);
 			  assert(new_value<max_val);
 			  max_val=new_value;
-
+			  if(new_value<min_val){
+				  //this can only happen if a budget was used and the solver quit early.
+				  min_val=new_value;
+				  assert(min_val>=bvTheory->getUnderApprox(bvID,true));
+			  }
 			  if(opt_verb>=1){
 				  printf("\rMin bv%d = %ld",bvID,max_val);
 			  }
@@ -499,22 +542,10 @@ long optimize_binary(Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv
 		  last_decision_lit =  bvTheory->toSolver(bvTheory->newComparison(Comparison::leq,bvID,max_val,var_Undef,opt_decide_optimization_lits));
 		  last_decision_value=max_val;
 	  }
-	  assume.push(last_decision_lit);
-	  //this can be improved...
 	  bool r;
-	  if (time_cutoff<0){
-		  r= S->solve(assume,false,false);
-	  }else{
-		  lbool res = S->solveLimited(assume,false,false);
-		  if (res==l_True){
-			  r=true;
-		  }else if (res==l_False){
-			  r=false;
-		  }else{
-			  r= false;
-			  hit_cutoff=true;
-		  }
-	  }
+	  assume.push(last_decision_lit);
+	  r= S->solve(last_satisfying_assign,false,false);
+
 	  if(!r){
 		  throw std::runtime_error("Error in optimization (instance has become unsat)");
 	  }
