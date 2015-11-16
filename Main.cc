@@ -466,7 +466,7 @@ void processDecidable(SimpSolver & S, string dstr){
 
 }
 
-bool runSolve(SimpSolver & S,vec<Lit> & assume,vec<int> & bvs){
+lbool runSolve(SimpSolver & S,vec<Lit> & assume,vec<int> & bvs,int conflict_limit){
 	static int solve_runs=0;
 	solve_runs++;
 	if(opt_verb>=1){
@@ -487,13 +487,32 @@ bool runSolve(SimpSolver & S,vec<Lit> & assume,vec<int> & bvs){
 		printf("\n");
 	}
 	if(!bvs.size()){
-		return S.solve(assume,false,false);
+		if(conflict_limit<=0){
+			return S.solve(assume,false,false) ? l_True:l_False;
+		}else{
+			  S.setConfBudget(conflict_limit);
+			  return S.solveLimited(assume,opt_pre,!opt_pre);
+		}
 	}else{
 		  if(!S.getBVTheory()){
 			  throw std::runtime_error("No bitvector theory created (call initBVTheory())!");
 		  }
 
 		  bool r = S.solve(assume,false,false);
+			if(conflict_limit<=0){
+				r = S.solve(assume,false,false) ;
+			}else{
+				  S.setConfBudget(conflict_limit);
+				  lbool res= S.solveLimited(assume,opt_pre,!opt_pre);
+				  if (res==l_True){
+					  r=true;
+				  }else if (res==l_False){
+					  r=false;
+				  }else{
+					  return l_Undef;
+				  }
+			}
+
 		  if(r && bvs.size()){
 			  for(Lit l:assume){
 					if(S.value(l)!=l_True){
@@ -543,7 +562,7 @@ bool runSolve(SimpSolver & S,vec<Lit> & assume,vec<int> & bvs){
 				  }
 			  }
 		  }
-		return r;
+		return r? l_True:l_False;
 	}
 
 
@@ -587,6 +606,8 @@ int main(int argc, char** argv) {
 				true);
 
 		BoolOption opt_ignore_solve_statements("MAIN","ignore-solves","Ignore any solve statements in the GNF",false);
+
+		IntOption opt_conflict_limit("MAIN","conflict-limit","",0,IntRange(0,INT32_MAX));
 
 		parseOptions(argc, argv, true);
 		Monosat::opt_record=strlen(opt_record_file)>0;
@@ -727,7 +748,7 @@ int main(int argc, char** argv) {
 				if(!opt_remap_vars){
 					fprintf(stderr,"Warning: Solver will give completely bogus answers if 'solve' statements are processed while variable remapping is disabled (e.g., -no-remap-vars)\n\n");
 				}
-				runSolve(S,parser.assumptions,parser.bv_minimize);
+				runSolve(S,parser.assumptions,parser.bv_minimize,opt_conflict_limit);
 			}else{
 				parser.assumptions.clear();parser.bv_minimize.clear();
 			}
@@ -782,7 +803,7 @@ int main(int argc, char** argv) {
 
 
 
-		lbool ret = runSolve(S,parser.assumptions,parser.bv_minimize) ? l_True : l_False;;
+		lbool ret = runSolve(S,parser.assumptions,parser.bv_minimize,opt_conflict_limit);
 		double solving_time = rtime(0) - after_preprocessing;
 		if (opt_verb > 0) {
 			printf("Solving time = %f\n", solving_time);

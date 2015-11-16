@@ -31,11 +31,11 @@ extern "C"
   //Solve under assumptions, and also minimize a set of BVs (in order of precedence)
   bool solveAssumptions_MinBVs(Monosat::SimpSolver * S,int * assumptions, int n_assumptions, int * minimize_bvs, int n_minimize_bvs);
 
-  //Returns 1 for proved false, 2 for proved true, 0 for failed to find a solution within the time limit
-  int solveLimited(Monosat::SimpSolver * S,int time_cutoff_seconds);
-  int solveAssumptionsLimited(Monosat::SimpSolver * S,int time_cutoff_seconds,int * assumptions, int n_assumptions);
+  //Returns 1 for proved false, 2 for proved true, 0 for failed to find a solution within the conflict limit
+  int solveLimited(Monosat::SimpSolver * S,int conflict_limit);
+  int solveAssumptionsLimited(Monosat::SimpSolver * S,int conflict_limit,int * assumptions, int n_assumptions);
   //Solve under assumptions, and also minimize a set of BVs (in order of precedence)
-  int solveAssumptionsLimited_MinBVs(Monosat::SimpSolver * S,int time_cutoff_seconds,int * assumptions, int n_assumptions, int * minimize_bvs, int n_minimize_bvs);
+  int solveAssumptionsLimited_MinBVs(Monosat::SimpSolver * S,int conflict_limit,int * assumptions, int n_assumptions, int * minimize_bvs, int n_minimize_bvs);
 
 
   void backtrack(Monosat::SimpSolver * S);
@@ -107,6 +107,7 @@ extern "C"
 
   int newNode(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<long> *G);
   int newEdge(Monosat::SimpSolver * S, Monosat::GraphTheorySolver<long> *G,int from,int  to,  long weight);
+  int newEdge_double(Monosat::SimpSolver * S, Monosat::GraphTheorySolver<double> *G,int from,int  to,  double weight);
   int newEdge_bv(Monosat::SimpSolver * S, Monosat::GraphTheorySolver<long> *G,int from,int  to, int bvID);
   int reaches(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<long> *G,int from, int to);
   int shortestPathUnweighted_lt_const(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<long> *G,int from, int to, int steps);

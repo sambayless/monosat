@@ -214,6 +214,10 @@ class Monosat(metaclass=Singleton):
         
         self.monosat_c.newEdge.argtypes=[c_solver_p,c_graph_p, c_int, c_int, c_long]
         self.monosat_c.newEdge.restype=c_literal
+
+        
+        self.monosat_c.newEdge_double.argtypes=[c_solver_p,c_graph_p, c_int, c_int, c_double]
+        self.monosat_c.newEdge_double.restype=c_literal
        
         self.monosat_c.newEdge_bv.argtypes=[c_solver_p,c_graph_p, c_int, c_int, c_bvID]
         self.monosat_c.newEdge_bv.restype=c_literal
@@ -362,15 +366,14 @@ class Monosat(metaclass=Singleton):
             self.solver.output.flush()
         return self.monosat_c.solve(self.solver._ptr)
 
-    def solveLimited(self,time_limit):
+    def solveLimited(self,conflict_limit):
+        if conflict_limit is None or conflict_limit<=0:
+            return self.solve()
         self.backtrack()
         if self.solver.output:
-            if time_limit is None:
-                self._echoOutput("solve\n")
-            else:
-                self._echoOutput("solve %d\n"%(time_limit))
+            self._echoOutput("solve %d\n"%(conflict_limit))
             self.solver.output.flush()
-        r = self.monosat_c.solveLimited(self.solver._ptr)
+        r = self.monosat_c.solveLimited(self.solver._ptr,conflict_limit)
         if r==1:
             return False
         elif r==0:
@@ -400,26 +403,28 @@ class Monosat(metaclass=Singleton):
                 self.solver.output.flush()
             return self.monosat_c.solveAssumptions(self.solver._ptr,lp,len(assumptions))
         
-    def solveAssumptionsLimited(self,time_limit,assumptions,minimize_bvs=None):
+    def solveAssumptionsLimited(self,conflict_limit,assumptions,minimize_bvs=None):
+        if conflict_limit is None or conflict_limit<=0:
+            return self.solveAssumptions(assumptions, minimize_bvs)
         self.backtrack()
-
+        
         lp = self.getIntArray(assumptions)
         
         if minimize_bvs is not None and len(minimize_bvs)>0:
             if self.solver.output:
                 for i,n in enumerate(minimize_bvs):  
                     self._echoOutput("minimize bv " + str(minimize_bvs[i])+"\n")
-                self._echoOutput("solve %d "%(time_limit) + " ".join((str(dimacs(c)) for c in assumptions))+"\n")
+                self._echoOutput("solve %d "%(conflict_limit) + " ".join((str(dimacs(c)) for c in assumptions))+"\n")
                 self.solver.output.flush()
             lp2 = (c_int * len(minimize_bvs))()
             for i,n in enumerate(minimize_bvs):            
                 lp2[i]=c_int(n)
-            return self.monosat_c.solveAssumptionsLimited_MinBVs(self.solver._ptr,lp,len(assumptions),lp2,len(minimize_bvs))
+            return self.monosat_c.solveAssumptionsLimited_MinBVs(self.solver._ptr,conflict_limit,lp,len(assumptions),lp2,len(minimize_bvs))
         else:
             if self.solver.output:
                 self._echoOutput("solve %d "%(time_limit) + " ".join((str(dimacs(c)) for c in assumptions))+"\n")
                 self.solver.output.flush()
-            return self.monosat_c.solveAssumptionsLimited(self.solver._ptr,lp,len(assumptions))    
+            return self.monosat_c.solveAssumptionsLimited(self.solver._ptr,conflict_limit,lp,len(assumptions))    
     
     def backtrack(self):
         if self.solver.output:
@@ -789,6 +794,13 @@ class Monosat(metaclass=Singleton):
     def newEdge(self, graph, u,v, weight):
         self.backtrack()
         l = self.monosat_c.newEdge(self.solver._ptr,graph,c_int(u),c_int(v),c_long(weight))
+        if self.solver.output:
+            self._echoOutput("edge " + str(self.getGID(graph)) + " " + str(u) + " " + str(v) + " " +  str(dimacs(l)) + " " + str((weight))  + "\n")
+        return l
+    
+    def newEdge_double(self, graph, u,v, weight):
+        self.backtrack()
+        l = self.monosat_c.newEdge_double(self.solver._ptr,graph,c_int(u),c_int(v),c_double(weight))
         if self.solver.output:
             self._echoOutput("edge " + str(self.getGID(graph)) + " " + str(u) + " " + str(v) + " " +  str(dimacs(l)) + " " + str((weight))  + "\n")
         return l

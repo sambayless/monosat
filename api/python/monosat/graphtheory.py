@@ -185,14 +185,18 @@ class Graph():
 
         
         if weight and isinstance(weight, BitVector):
+            assert(self.graph_type==Graph.GraphType.int)
             self.has_any_bv_edges=True
             assert(not self.has_any_non_bv_edges)
             var = Var(self._monosat.newEdge_bv(self.graph,v,w,weight.getID()))
         else:
             self.has_any_non_bv_edges=True
             assert(not self.has_any_bv_edges)
-            var = Var(self._monosat.newEdge(self.graph,v,w,weight))
-        
+            if self.graph_type==Graph.GraphType.int:
+                var = Var(self._monosat.newEdge(self.graph,v,w,weight))
+            elif self.graph_type==Graph.GraphType.float:
+                var = Var(self._monosat.newEdge_double(self.graph,v,w,weight))
+
         
         e=(v,w,var,weight)
         self.alledges.append(e)
@@ -212,6 +216,7 @@ class Graph():
         
         
         if weight and isinstance(weight, BitVector):
+            assert(self.graph_type==Graph.GraphType.int)
             self.has_any_bv_edges=True
             assert(not self.has_any_non_bv_edges)
             v1 = Var(self._monosat.newEdge_bv(self.graph,v,w,weight.getID()))
@@ -219,8 +224,13 @@ class Graph():
         else:
             self.has_any_non_bv_edges=True
             assert(not self.has_any_bv_edges)
-            v1 = Var(self._monosat.newEdge(self.graph,v,w,weight))
-            v2 = Var(self._monosat.newEdge(self.graph,w,v,weight))
+            if self.graph_type==Graph.GraphType.int:
+                v1 = Var(self._monosat.newEdge(self.graph,v,w,weight))
+                v2 = Var(self._monosat.newEdge(self.graph,w,v,weight))
+            elif self.graph_type==Graph.GraphType.float:
+                v1 = Var(self._monosat.newEdge_double(self.graph,v,w,weight))
+                v2 = Var(self._monosat.newEdge_double(self.graph,w,v,weight))
+
                    
         e1=(v,w,v1,weight)
         self.alledges.append(e1)

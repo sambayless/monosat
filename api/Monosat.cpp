@@ -329,16 +329,16 @@ bool solveAssumptions_MinBVs(Monosat::SimpSolver * S,int * assumptions, int n_as
 	}
 }
 
-int solveLimited(Monosat::SimpSolver * S,int time_cutoff){
-	return solveAssumptionsLimited(S,time_cutoff,nullptr,0);
+int solveLimited(Monosat::SimpSolver * S,int conflict_limit){
+	return solveAssumptionsLimited(S,conflict_limit,nullptr,0);
   }
 
-int solveAssumptionsLimited(Monosat::SimpSolver * S,int time_cutoff,int * assumptions, int n_assumptions){
-	return solveAssumptionsLimited_MinBVs(S,time_cutoff,assumptions,n_assumptions,nullptr,0);
+int solveAssumptionsLimited(Monosat::SimpSolver * S,int conflict_limit,int * assumptions, int n_assumptions){
+	return solveAssumptionsLimited_MinBVs(S,conflict_limit,assumptions,n_assumptions,nullptr,0);
  }
 
 
-int solveAssumptionsLimited_MinBVs(Monosat::SimpSolver * S,int time_cutoff,int * assumptions, int n_assumptions, int * minimize_bvs, int n_minimize_bvs){
+int solveAssumptionsLimited_MinBVs(Monosat::SimpSolver * S,int conflict_limit,int * assumptions, int n_assumptions, int * minimize_bvs, int n_minimize_bvs){
 	using namespace Monosat;
 	bool hit_cutoff=false;
 	S->cancelUntil(0);
@@ -349,7 +349,7 @@ int solveAssumptionsLimited_MinBVs(Monosat::SimpSolver * S,int time_cutoff,int *
 	  for (int i = 0;i<n_assumptions;i++){
 		   Lit l =toLit( assumptions[i]);
 		   if (var(l)>=S->nVars()){
-			   api_errorf("Assumption ltieral %d is not allocated",dimacs(l));
+			   api_errorf("Assumption literal %d is not allocated",dimacs(l));
 		   }
 		  assume.push(l);
 		  //S->setFrozen(v,true); //this is done in the solve() call
@@ -372,17 +372,18 @@ int solveAssumptionsLimited_MinBVs(Monosat::SimpSolver * S,int time_cutoff,int *
 	  }
 
 	  bool r;
-	  if (time_cutoff<0){
+	  if (conflict_limit<0){
 		  r= S->solve(assume,opt_pre,!opt_pre);
 	  }else{
+		  S->setConfBudget(conflict_limit);
 		  lbool res = S->solveLimited(assume,opt_pre,!opt_pre);
 		  if (res==l_True){
 			  r=true;
 		  }else if (res==l_False){
 			  r=false;
 		  }else{
-			  r=false;
-			  hit_cutoff=true;
+			  return toInt(l_Undef);
+
 
 		  }
 	  }
@@ -406,9 +407,9 @@ int solveAssumptionsLimited_MinBVs(Monosat::SimpSolver * S,int time_cutoff,int *
 			  }
 
 			  if(!opt_binary_search_optimization)
-				  min_values[i] = optimize_linear(S,bvTheory,assume,bvID,time_cutoff,hit_cutoff,n_solves);
+				  min_values[i] = optimize_linear(S,bvTheory,assume,bvID,conflict_limit,hit_cutoff,n_solves);
 			  else
-				  min_values[i] = optimize_binary(S,bvTheory,assume,bvID,time_cutoff,hit_cutoff,n_solves);
+				  min_values[i] = optimize_binary(S,bvTheory,assume,bvID,conflict_limit,hit_cutoff,n_solves);
 			  assert(min_values[i] >=0);
 			  if(opt_verb>=1){
 				  printf("\rMin bv%d = %ld\n",bvID, min_values[i]);
@@ -440,8 +441,7 @@ int solveAssumptionsLimited_MinBVs(Monosat::SimpSolver * S,int time_cutoff,int *
 		printStats(S);
 
 	}
-	if (hit_cutoff)
-		 return toInt(l_Undef);
+
 	return r?  toInt(l_True): toInt(l_False);
 }
 
@@ -673,6 +673,12 @@ void bv_slice( Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv,int a
 	  G->newEdge( from,  to, v,  weight );
 	  return toInt(l);
  }
+ int newEdge_double(Monosat::SimpSolver * S, Monosat::GraphTheorySolver<double> *G,int from,int  to,  double weight){
+	  Var v = newVar(S);
+	  Lit l =mkLit(v);
+	  G->newEdge( from,  to, v,  weight );
+	  return toInt(l);
+}
  int newEdge_bv(Monosat::SimpSolver * S, Monosat::GraphTheorySolver<long> *G,int from,int  to, int bvID){
 	  Var v = newVar(S);
 	  Lit l =mkLit(v);

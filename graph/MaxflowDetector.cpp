@@ -371,6 +371,10 @@ void MaxflowDetector<Weight>::buildMaxFlowTooHighReason(Weight flow, vec<Lit> & 
 		}
 	}else{
 		//just collect the set of edges which have non-zero flow, and return them
+		//(But! if there are multiple edges between the same nodes, and some of those edges
+		//are constant, we can safely move the flow to those constant edges first!)
+
+		//Also, can we return only the set of saturated edges? Not immediately clear...
 		for (int i = 0; i < g_under.edges(); i++) {
 			if (g_under.edgeEnabled(i)) {
 				if (underapprox_conflict_detector->getEdgeFlow(i) > 0) {

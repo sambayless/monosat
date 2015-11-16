@@ -7,9 +7,10 @@ import time
 
 
 
-def Solve(assumptions=None, preprocessing=True,bvs_to_minimize=None,time_limit=None):
+def Solve(assumptions=None, preprocessing=True,bvs_to_minimize=None,conflict_limit=None):
     WriteConstraints()
-        
+    if conflict_limit <=0:
+        conflict_limit=None
     #if preprocessing:
     #    Monosat().preprocess();
     print("Solving in Monosat...")
@@ -25,15 +26,27 @@ def Solve(assumptions=None, preprocessing=True,bvs_to_minimize=None,time_limit=N
         elif bvs_to_minimize is None:
             bvs_to_minimize=[]
         
-        if time_limit is not None:   
-            r= Monosat().solveAssumptionsLimited(time_limit,[x.getLit() for x in assumptions],[bv.getID() for bv in bvs_to_minimize])
+        if conflict_limit is not None:   
+            res= Monosat().solveAssumptionsLimited(conflict_limit,[x.getLit() for x in assumptions],[bv.getID() for bv in bvs_to_minimize])
+            if res ==0:
+                r=True
+            elif res==1:
+                r=False
+            else:
+                r=None
         else:
             r= Monosat().solveAssumptions([x.getLit() for x in assumptions],[bv.getID() for bv in bvs_to_minimize])
     else:     
-        if time_limit is not None:   
-            r= Monosat().solve()
+        if conflict_limit is not None:
+            res= Monosat().solveLimited(conflict_limit)
+            if res ==0:
+                r=True
+            elif res==1:
+                r=False
+            else:
+                r=None               
         else:
-            r= Monosat().solveLimited(time_limit)
+            r= Monosat().solve()
     Monosat().elapsed_time +=  time.clock()-t
     return r
 

@@ -14,7 +14,7 @@
 #include <cstdarg>
 namespace Monosat{
 
-long optimize_linear(Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bvTheory,const vec<Lit> & assumes,int bvID, int time_cutoff, bool & hit_cutoff, long & n_solves){
+long optimize_linear(Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bvTheory,const vec<Lit> & assumes,int bvID, int conflict_limit, bool & hit_cutoff, long & n_solves){
 	vec<Lit> assume;
 	for(Lit l:assumes)
 		assume.push(l);
@@ -42,31 +42,21 @@ long optimize_linear(Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv
 		  n_solves++;
 
 		  bool r;
-		  if (time_cutoff<0){
-			  if(opt_limit_conflicts>0){
-				  S->setConfBudget(opt_limit_conflicts);
-				  lbool res = S->solveLimited(assume,false,false);
-				  if (res==l_Undef){
-					  if(opt_verb>0){
-						  printf("\nBudget exceeded during optimization, quiting early (model might not be optimal!)\n");
-					  }
-					  r=false;
-				  }else{
-					  r = res==l_True;
-				  }
-			  }else
-				  r = S->solve(assume,false,false);
-		  }else{
+
+		  if(opt_limit_conflicts>0 || conflict_limit>=0){
+			  S->setConfBudget(std::min((int)opt_limit_conflicts,conflict_limit));
 			  lbool res = S->solveLimited(assume,false,false);
-			  if (res==l_True){
-				  r=true;
-			  }else if (res==l_False){
+			  if (res==l_Undef){
+				  if(opt_verb>0){
+					  printf("\nBudget exceeded during optimization, quiting early (model might not be optimal!)\n");
+				  }
 				  r=false;
 			  }else{
-				  r= false;
-				  hit_cutoff=true;
+				  r = res==l_True;
 			  }
-		  }
+		  }else
+			  r = S->solve(assume,false,false);
+
 
 		  if (r){
 			  last_satisfying_assign.clear();
@@ -127,7 +117,7 @@ long optimize_linear(Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv
 	  return value;
 }
 
-long optimize_binary(Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bvTheory,const vec<Lit> & assumes,int bvID, int time_cutoff, bool & hit_cutoff, long & n_solves){
+long optimize_binary(Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bvTheory,const vec<Lit> & assumes,int bvID, int conflict_limit, bool & hit_cutoff, long & n_solves){
 	vec<Lit> assume;
 	for(Lit l:assumes)
 		assume.push(l);
@@ -160,31 +150,21 @@ long optimize_binary(Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv
 		  n_solves++;
 
 		  bool r;
-		  if (time_cutoff<0){
-			  if(opt_limit_conflicts>0){
-				  S->setConfBudget(opt_limit_conflicts);
-				  lbool res = S->solveLimited(assume,false,false);
-				  if (res==l_Undef){
-					  if(opt_verb>0){
-						  printf("\nBudget exceeded during optimization, quiting early (model might not be optimal!)\n");
-					  }
-					  r=false;
-				  }else{
-					  r = res==l_True;
-				  }
-			  }else
-				  r = S->solve(assume,false,false);
-		  }else{
+
+		  if(opt_limit_conflicts>0 || conflict_limit>=0){
+			  S->setConfBudget(std::min((int)opt_limit_conflicts,conflict_limit));
 			  lbool res = S->solveLimited(assume,false,false);
-			  if (res==l_True){
-				  r=true;
-			  }else if (res==l_False){
+			  if (res==l_Undef){
+				  if(opt_verb>0){
+					  printf("\nBudget exceeded during optimization, quiting early (model might not be optimal!)\n");
+				  }
 				  r=false;
 			  }else{
-				  r= false;
-				  hit_cutoff=true;
+				  r = res==l_True;
 			  }
-		  }
+		  }else
+			  r = S->solve(assume,false,false);
+
 		  assume.pop();
 		  if (r){
 			  last_satisfying_assign.clear();
@@ -217,6 +197,12 @@ long optimize_binary(Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv
 			  }
 		  }else{
 			  min_val = mid_point+1;
+			  //set the solver back to its last satisfying assignment
+			  //this is technically not required, but it should be cheap, and will also reset the solvers decision phase heuristic
+			  r= S->solve(last_satisfying_assign,false,false);
+			  if(!r){
+				  throw std::runtime_error("Error in optimization (instance has become unsat)");
+			  }
 		  }
 	  }
 

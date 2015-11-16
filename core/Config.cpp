@@ -65,7 +65,7 @@ BoolOption Monosat::opt_pre("MAIN", "pre", "Completely turn on/off any preproces
 IntOption Monosat::opt_time(_cat, "verb-time", "Detail level of timing benchmarks (these add some overhead)", 0,
 		IntRange(0, 5));
 
-IntOption Monosat::opt_limit_conflicts(_cat, "limit-conflicts", "Limit solution conflicts before giving up (0 to allow infinite conflicts)", 0, IntRange(0, INT32_MAX));
+IntOption Monosat::opt_limit_conflicts(_cat_opt, "opt-conflict-limit", "Limit number of conflicts during optimization rounds before giving up (0 to allow infinite conflicts)", 0, IntRange(0, INT32_MAX));
 
 StringOption Monosat::opt_record_file(_cat, "debug-log",
 		"Log (very expensive) debugging info at extensions of the following path (empty string (recommended) disables)", "");
