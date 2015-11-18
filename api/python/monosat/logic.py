@@ -382,10 +382,10 @@ def Or(*args):
         return a;
 
 def Nand(*args):
-    return And(args).Not()
+    return And(*args).Not()
 
 def Nor(*args):
-    return Or(args).Not()
+    return Or(*args).Not()
         
 def Not(a):
     return VAR(a).Not()
@@ -409,7 +409,7 @@ def Xor(*args):
     #return VAR(a)^VAR(b)        
  
 def Xnor(*args):
-    return Xor(args).Not()
+    return Xor(*args).Not()
 #def Xnor(a,b):
 #    return VAR(a).xnor(VAR(b))
 
@@ -507,8 +507,17 @@ def AssertImplies(a,b):
 def AssertIff(a,b):
     AssertXnor((a,b))
 
-def AssertEq(a,b):
-    AssertXnor((a,b))
+def AssertEq(*args):
+    if(len(args)==1 and isinstance(args[0], collections.Iterable)):
+       return AssertEq(*args[0])
+    if(len(args)==2):
+        AssertXnor(args)
+    elif len(args)>2:
+        AssertOr(And(args),Nor(args))
+    else:
+        print("Warning - equality constraints have no affect on arguments of length %d"%(len(args)))
+        pass
+        
     
 def AssertNeq(a,b):
     AssertXor((a,b))

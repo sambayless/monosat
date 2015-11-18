@@ -9,7 +9,7 @@ import time
 
 def Solve(assumptions=None, preprocessing=True,bvs_to_minimize=None,conflict_limit=None):
     WriteConstraints()
-    if conflict_limit <=0:
+    if conflict_limit is not None and conflict_limit <=0:
         conflict_limit=None
     #if preprocessing:
     #    Monosat().preprocess();
