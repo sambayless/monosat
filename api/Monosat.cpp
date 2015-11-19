@@ -340,7 +340,7 @@ int solveAssumptionsLimited(Monosat::SimpSolver * S,int conflict_limit,int * ass
 
 int solveAssumptionsLimited_MinBVs(Monosat::SimpSolver * S,int conflict_limit,int * assumptions, int n_assumptions, int * minimize_bvs, int n_minimize_bvs){
 	using namespace Monosat;
-	bool hit_cutoff=false;
+
 	S->cancelUntil(0);
 
 	  S->preprocess();//do this _even_ if sat based preprocessing is disabled! Some of the theory solvers depend on a preprocessing call being made!
@@ -371,78 +371,15 @@ int solveAssumptionsLimited_MinBVs(Monosat::SimpSolver * S,int conflict_limit,in
 		  bvs.push(bvID);
 	  }
 
-	  bool r;
-	  if (conflict_limit<0){
-		  r= S->solve(assume,opt_pre,!opt_pre);
-	  }else{
-		  S->setConfBudget(conflict_limit);
-		  lbool res = S->solveLimited(assume,opt_pre,!opt_pre);
-		  if (res==l_True){
-			  r=true;
-		  }else if (res==l_False){
-			  r=false;
-		  }else{
-			  return toInt(l_Undef);
 
+	  lbool r = optimize_and_solve(*S, assume,bvs, conflict_limit);
 
-		  }
-	  }
-
-	  if(r && bvs.size()){
-		  for(Lit l:assume){
-				if(S->value(l)!=l_True){
-					throw std::runtime_error("Error in optimization (model is inconsistent with assumptions)");
-				}
-			}
-		  Monosat::BVTheorySolver<long> * bvTheory = (Monosat::BVTheorySolver<long> *) S->getBVTheory();
-		  vec<long> min_values;
-		  min_values.growTo(bvs.size());
-		  long n_solves = 1;
-		  for (int i = 0;i<bvs.size();i++){
-
-			  int bvID = bvs[i];
-
-			  if(opt_verb>=1){
-				  printf("Minimizing bv%d (%d of %d)\n",bvID,i+1,bvs.size());
-			  }
-
-			  if(!opt_binary_search_optimization)
-				  min_values[i] = optimize_linear(S,bvTheory,assume,bvID,conflict_limit,hit_cutoff,n_solves);
-			  else
-				  min_values[i] = optimize_binary(S,bvTheory,assume,bvID,conflict_limit,hit_cutoff,n_solves);
-			  assert(min_values[i] >=0);
-			  if(opt_verb>=1){
-				  printf("\rMin bv%d = %ld\n",bvID, min_values[i]);
-			  }
-
-		  }
-		  assert(r);
-
-		  if(opt_verb>0){
-			  printf("Minimum values found (after %ld calls) : ",n_solves);
-			  for(int i = 0;i<min_values.size();i++){
-				  int bvID = bvs[i];
-				  printf("bv%d=%ld,",bvID,min_values[i]);
-			  }
-			  printf("\n");
-		  }
-		  if(opt_check_solution){
-			  for(int i = 0;i<bvs.size();i++){
-				  int bvID = bvs[i];
-				  long min_value = min_values[i];
-				  long model_val = bvTheory->getUnderApprox(bvID);
-				  if(min_value!=model_val){
-					  throw std::runtime_error("Error in optimization (minimum values are inconsistent with model)");
-				  }
-			  }
-		  }
-	  }
 	if (opt_verb >= 1) {
 		printStats(S);
 
 	}
 
-	return r?  toInt(l_True): toInt(l_False);
+	return toInt(r);
 }
 
  int newVar(Monosat::SimpSolver * S){

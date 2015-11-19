@@ -22,5 +22,7 @@ namespace Monosat{
 long optimize_linear(Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bvTheory,const vec<Lit> & assume,int bvID, int time_cutoff, bool & hit_cutoff, long & n_solves);
 
 long optimize_binary(Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bvTheory,const vec<Lit> & assume,int bvID, int time_cutoff, bool & hit_cutoff, long & n_solves);
+
+lbool optimize_and_solve(Monosat::SimpSolver & S,const vec<Lit> & assume,const vec<int> & bvs,int conflict_limit);
 };
 #endif /* OPTIMIZE_H_ */

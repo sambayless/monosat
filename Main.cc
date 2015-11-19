@@ -466,107 +466,7 @@ void processDecidable(SimpSolver & S, string dstr){
 
 }
 
-lbool runSolve(SimpSolver & S,vec<Lit> & assume,vec<int> & bvs,int conflict_limit){
-	static int solve_runs=0;
-	solve_runs++;
-	if(opt_verb>=1){
-		if(solve_runs>1){
-			printf("Solving(%d)...\n",solve_runs);
-		}else{
-			printf("Solving...\n");
-		}
-		fflush(stdout);
-	}
 
-	if (opt_verb > 1 && assume.size()) {
-		printf("Assumptions: ");
-		for (int i = 0; i < assume.size(); i++) {
-			Lit l = assume[i];
-			printf("%d, ", dimacs(l));
-		}
-		printf("\n");
-	}
-	if(!bvs.size()){
-		if(conflict_limit<=0){
-			return S.solve(assume,false,false) ? l_True:l_False;
-		}else{
-			  S.setConfBudget(conflict_limit);
-			  return S.solveLimited(assume,opt_pre,!opt_pre);
-		}
-	}else{
-		  if(!S.getBVTheory()){
-			  throw std::runtime_error("No bitvector theory created (call initBVTheory())!");
-		  }
-
-		  bool r = S.solve(assume,false,false);
-			if(conflict_limit<=0){
-				r = S.solve(assume,false,false) ;
-			}else{
-				  S.setConfBudget(conflict_limit);
-				  lbool res= S.solveLimited(assume,opt_pre,!opt_pre);
-				  if (res==l_True){
-					  r=true;
-				  }else if (res==l_False){
-					  r=false;
-				  }else{
-					  return l_Undef;
-				  }
-			}
-
-		  if(r && bvs.size()){
-			  for(Lit l:assume){
-					if(S.value(l)!=l_True){
-						throw std::runtime_error("Error in optimization (model is inconsistent with assumptions)");
-					}
-				}
-			  Monosat::BVTheorySolver<long> * bvTheory = (Monosat::BVTheorySolver<long> *) S.getBVTheory();
-			  vec<long> min_values;
-			  min_values.growTo(bvs.size());
-			  long n_solves = 1;
-			  for (int i = 0;i<bvs.size();i++){
-
-				  int bvID = bvs[i];
-
-				  if(opt_verb>=1){
-					  printf("Minimizing bv%d (%d of %d)\n",bvID,i+1,bvs.size());
-				  }
-				  bool hit_cutoff=false;
-				  if(!opt_binary_search_optimization)
-					  min_values[i] = optimize_linear(&S,bvTheory,assume,bvID,-1,hit_cutoff,n_solves);
-				  else
-					  min_values[i] = optimize_binary(&S,bvTheory,assume,bvID,-1,hit_cutoff,n_solves);
-				  assert(min_values[i] >=0);
-				  if(opt_verb>=1){
-					  printf("\rMin bv%d = %ld\n",bvID, min_values[i]);
-				  }
-
-			  }
-			  assert(r);
-
-			  if(opt_verb>0){
-				  printf("Minimum values found (after %ld calls) : ",n_solves);
-				  for(int i = 0;i<min_values.size();i++){
-					  int bvID = bvs[i];
-					  printf("bv%d=%ld,",bvID,min_values[i]);
-				  }
-				  printf("\n");
-			  }
-			  if(opt_check_solution){
-				  for(int i = 0;i<bvs.size();i++){
-					  int bvID = bvs[i];
-					  long min_value = min_values[i];
-					  long model_val = bvTheory->getUnderApprox(bvID);
-					  if(min_value!=model_val){
-						  throw std::runtime_error("Error in optimization (minimum values are inconsistent with model)");
-					  }
-				  }
-			  }
-		  }
-		return r? l_True:l_False;
-	}
-
-
-}
 
 int main(int argc, char** argv) {
 	try {
@@ -748,7 +648,7 @@ int main(int argc, char** argv) {
 				if(!opt_remap_vars){
 					fprintf(stderr,"Warning: Solver will give completely bogus answers if 'solve' statements are processed while variable remapping is disabled (e.g., -no-remap-vars)\n\n");
 				}
-				runSolve(S,parser.assumptions,parser.bv_minimize,opt_conflict_limit);
+				optimize_and_solve(S,parser.assumptions,parser.bv_minimize,opt_conflict_limit);
 			}else{
 				parser.assumptions.clear();parser.bv_minimize.clear();
 			}
@@ -803,7 +703,7 @@ int main(int argc, char** argv) {
 
 
 
-		lbool ret = runSolve(S,parser.assumptions,parser.bv_minimize,opt_conflict_limit);
+		lbool ret = optimize_and_solve(S,parser.assumptions,parser.bv_minimize,opt_conflict_limit);
 		double solving_time = rtime(0) - after_preprocessing;
 		if (opt_verb > 0) {
 			printf("Solving time = %f\n", solving_time);
