@@ -29,7 +29,7 @@ long optimize_linear(Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv
 		}
 	}
 
-	long value = bvTheory->getUnderApprox(bvID);
+	long value = bvTheory->getOverApprox(bvID);
 	long last_decision_value=value;
 	  if(opt_verb>=1){
 		  printf("Min bv%d = %ld",bvID,value);
@@ -79,7 +79,7 @@ long optimize_linear(Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv
 						throw std::runtime_error("Error in optimization (model is inconsistent with assumptions)");
 					}
 				}
-			  long value2 = bvTheory->getUnderApprox(bvID);
+			  long value2 = bvTheory->getOverApprox(bvID);
 			  if(value2>=value){
 					throw std::runtime_error("Error in optimization (minimum values are inconsistent with model)");
 			  }
@@ -108,7 +108,7 @@ long optimize_linear(Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv
 						throw std::runtime_error("Error in optimization (model is inconsistent with assumptions)");
 					}
 				}
-			  if(value!= bvTheory->getUnderApprox(bvID)){
+			  if(value!= bvTheory->getOverApprox(bvID)){
 				  throw std::runtime_error("Error in optimization (minimum values are inconsistent with model)");
 			  }
 			  break;
@@ -133,7 +133,7 @@ long optimize_binary(Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv
 	}
 
 	  long min_val = bvTheory->getUnderApprox(bvID,true);
-	  long max_val = bvTheory->getUnderApprox(bvID);
+	  long max_val = bvTheory->getOverApprox(bvID);
 	  if(opt_verb>=1){
 		  printf("Min bv%d = %ld",bvID,max_val);
 	  }
@@ -179,7 +179,7 @@ long optimize_binary(Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv
 				}
 			  last_decision_lit=decision_lit;
 			  last_decision_value=mid_point;
-			  long new_value = bvTheory->getUnderApprox(bvID);
+			  long new_value = bvTheory->getOverApprox(bvID);
 			  if(new_value>=max_val){
 					throw std::runtime_error("Error in optimization (minimum values are inconsistent with model)");
 			  }
@@ -224,7 +224,7 @@ long optimize_binary(Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv
 				throw std::runtime_error("Error in optimization (model is inconsistent with assumptions)");
 			}
 		}
-	  if(max_val!= bvTheory->getUnderApprox(bvID)){
+	  if(max_val!= bvTheory->getOverApprox(bvID)){
 		  throw std::runtime_error("Error in optimization (minimum values are inconsistent with model)");
 	  }
 	  return max_val;
@@ -318,7 +318,7 @@ lbool optimize_and_solve(SimpSolver & S,const vec<Lit> & assumes,const vec<int> 
 				  for(int j = 0;j<i;j++){
 					  int bvID = bvs[j];
 					  long min_value = min_values[j];
-					  long model_val = bvTheory->getUnderApprox(bvID);
+					  long model_val = bvTheory->getOverApprox(bvID);
 					  if(min_value<model_val){
 						  throw std::runtime_error("Error in optimization (minimum values are inconsistent with model)");
 					  }else if (model_val<min_value){
@@ -345,7 +345,7 @@ lbool optimize_and_solve(SimpSolver & S,const vec<Lit> & assumes,const vec<int> 
 				  for(int i = 0;i<bvs.size();i++){
 					  int bvID = bvs[i];
 					  long min_value = min_values[i];
-					  long model_val = bvTheory->getUnderApprox(bvID);
+					  long model_val = bvTheory->getOverApprox(bvID);
 					  if(min_value<model_val){
 						  throw std::runtime_error("Error in optimization (minimum values are inconsistent with model)");
 					  }

@@ -127,7 +127,7 @@ public:
         	for(int i = 0;i<max_i;i++){
 
         		uint64_t b = with.buf[i];
-        		buf[i]|=b;
+        		buf[i]&=b;
         	}
 
         }
