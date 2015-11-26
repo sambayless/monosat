@@ -238,7 +238,7 @@ public:
 
 	//typedef BVTheorySolver<Weight,ComparisonStatus>::BitVector BitVector;
 	//if bitvectors weights are supplied, then this manages the resulting weights.
-	BVTheorySolver<Weight> * comparator=nullptr;
+	BVTheorySolver<Weight> * bvTheory=nullptr;
 
 
 
@@ -838,8 +838,8 @@ public:
 	}
 
 	void setBVTheory(BVTheorySolver<Weight> * bv){
-		if(comparator!=bv){
-			comparator = bv;
+		if(bvTheory!=bv){
+			bvTheory = bv;
 
 			if(bv){
 				this->propagation_required_theories.push(bv);
@@ -1066,21 +1066,21 @@ public:
 		Comparison bvOp;
 		if (op==DetectorComparison::leq){
 			bvOp=Comparison::leq;
-			return comparator->decidableBV(bvOp,bvID,edgeWeight);
+			return bvTheory->decidableBV(bvOp,bvID,edgeWeight);
 
 		}else if (op==DetectorComparison::lt){
 			bvOp=Comparison::lt;
-			return comparator->decidableBV(bvOp, bvID, edgeWeight);
+			return bvTheory->decidableBV(bvOp, bvID, edgeWeight);
 		}else if (op==DetectorComparison::geq){
 			/*printf("decide graph %d edge %d bv %d >= ",this->getTheoryIndex(), getEdgeBV(edgeID).getID(),edgeID);
 			std::cout << edgeWeight <<"\n";*/
 			bvOp=Comparison::geq;
-			return comparator->decidableBV(bvOp, bvID, edgeWeight);
+			return bvTheory->decidableBV(bvOp, bvID, edgeWeight);
 		}else if (op==DetectorComparison::gt){
 			bvOp=Comparison::gt;
-			return comparator->decidableBV(bvOp, bvID, edgeWeight);
+			return bvTheory->decidableBV(bvOp, bvID, edgeWeight);
 		}else if (op==DetectorComparison::eq){
-			return comparator->decidableBV(Comparison::leq, bvID, edgeWeight) || comparator->decidableBV(Comparison::geq, bvID, edgeWeight);
+			return bvTheory->decidableBV(Comparison::leq, bvID, edgeWeight) || bvTheory->decidableBV(Comparison::geq, bvID, edgeWeight);
 
 		}else{
 			assert(false);
@@ -1119,6 +1119,72 @@ public:
 			return false;
 		}
 	}
+	struct BVAssign{
+		Var graphAssign;//last assignment on the graph theory trail at the time of assignment
+		int bvTrail;
+		int bvID;
+		int level;//this is redundant and can likely be removed
+	};
+	vec<BVAssign> bvtrail;//connects the graph theory and bv theory trails, for conflict analysis.
+
+	inline bool assignBV(int bvID, Comparison comp,Weight value,typename BVTheorySolver<Weight>::Operation*bvOp){
+		if(bvTheory && opt_graph_bv_prop){
+			int bvTrailSize = bvTheory->trail.size();
+			Var v = getBack(decisionLevel());
+			bool conflict = !bvTheory->assignBV(bvID,comp,value,*bvOp);
+			if(bvTheory->trail.size()>bvTrailSize){
+				//if this enqueue was successful, AND it led to a refinment in the bvTheory
+				bvtrail.push({v ,bvTrailSize+1,bvID,decisionLevel()});
+			}
+			return !conflict;
+		}
+		return true;
+	}
+
+	class GraphTheoryOp: public  BVTheorySolver<Weight>::Operation{
+		using BVTheorySolver<Weight>::Operation::getID;
+		using BVTheorySolver<Weight>::Operation::theory;
+
+		 GraphTheorySolver * outer;
+	public:
+		GraphTheoryOp(BVTheorySolver<Weight> &theory,GraphTheorySolver * outer):BVTheorySolver<Weight>::Operation(theory),outer(outer){
+
+		}
+		int getBV()override=0;
+
+		bool propagate(bool & changed, vec<Lit> & conflict)override{return true;}
+
+	    void updateApprox(Var ignore_bv, Weight & under_new, Weight & over_new,typename BVTheorySolver<Weight>::Cause & under_cause_new, typename BVTheorySolver<Weight>::Cause & over_cause_new)override{}
+
+		virtual void analyzeReason(bool compareOver,Comparison op, Weight  to,  vec<Lit> & conflict)override{
+			int bvTrailPos = theory.analysis_trail_pos;//current position in the bitvector trail that analysis is occuring at.
+			//lookup the corresponding position in the graph theory trail that we should be applying the bv theory analysis
+			bool found=false;
+			Var lastAssign=var_Undef;
+			int graphLevel=-1;
+			const vec<BVAssign> & bvtrail = outer->bvtrail;
+			for(int i = bvtrail.size()-1;i>=0;i--){
+
+				int bvTrail = bvtrail[i].bvTrail;
+				if(bvTrail<=bvTrailPos){
+					found=true;
+					graphLevel = bvtrail[i].level;
+					lastAssign =  bvtrail[i].graphAssign;
+					break;
+				}
+			}
+			if(!found){
+				throw std::runtime_error("Internal error in bv/graph clause learning");
+			}
+			//temporarily backtrack until the graphTrailPos
+			outer->rewindUntil(lastAssign);
+		}
+		void completeAnalysis(){
+			outer->undoRewind();
+		}
+
+		bool checkSolved()override{	return true;}
+	};
 
 	~GraphTheorySolver() {
 	}
@@ -1160,7 +1226,7 @@ public:
 	}
 
 	BitVector<Weight> getEdgeBV(int edgeID){
-		return comparator->getBV(edge_list[edgeID].bvID);
+		return bvTheory->getBV(edge_list[edgeID].bvID);
 	}
 
 	bool dbg_propgation(Lit l) {
@@ -1668,6 +1734,39 @@ public:
 
 
 	}
+
+
+	vec<Lit> rewound_assigns;
+	void rewindUntil(Var until){
+		assert(onTrail(until)||onLazyTrail(until));
+		assert(rewound_assigns.size()==0);
+		Var v;
+		if(!onLazyTrail(until)){
+			v= getBack(decisionLevel());
+		}else{
+			assert(lazy_trail_head!=var_Undef);
+			v = getPrev(lazy_trail_head);
+		}
+
+		//assert(to_reenqueue.size()==0);
+		while(v!=until && v!=var_Undef){
+			Lit l = mkLit(v, value(v)==l_False);
+			rewound_assigns.push(l);
+			assert(assigns[v]!=l_Undef);
+			backtrackAssign(l);
+			Var p = _getPrev(v);
+			v=p;
+		}
+	}
+
+	void undoRewind(){
+		while(rewound_assigns.size()){
+			Lit l =rewound_assigns.last();
+			rewound_assigns.pop();
+			_assign(l);
+		}
+	}
+
 	void undecideBV(int bvID){
 
 		if(isEdgeBV(bvID)){
@@ -1745,24 +1844,24 @@ public:
 						Comparison bvOp;
 						if (op==DetectorComparison::leq){
 							bvOp=Comparison::leq;
-							bv_decision = comparator->decideBV(bvOp, getEdgeBV(edgeID).getID(), edgeWeight);
+							bv_decision = bvTheory->decideBV(bvOp, getEdgeBV(edgeID).getID(), edgeWeight);
 
 
 						}else if (op==DetectorComparison::lt){
 							bvOp=Comparison::lt;
-							bv_decision = comparator->decideBV(bvOp, getEdgeBV(edgeID).getID(), edgeWeight);
+							bv_decision = bvTheory->decideBV(bvOp, getEdgeBV(edgeID).getID(), edgeWeight);
 						}else if (op==DetectorComparison::geq){
 							/*printf("decide graph %d edge %d bv %d >= ",this->getTheoryIndex(), getEdgeBV(edgeID).getID(),edgeID);
 							std::cout << edgeWeight <<"\n";*/
 							bvOp=Comparison::geq;
-							bv_decision = comparator->decideBV(bvOp, getEdgeBV(edgeID).getID(), edgeWeight);
+							bv_decision = bvTheory->decideBV(bvOp, getEdgeBV(edgeID).getID(), edgeWeight);
 						}else if (op==DetectorComparison::gt){
 							bvOp=Comparison::gt;
-							bv_decision = comparator->decideBV(bvOp, getEdgeBV(edgeID).getID(), edgeWeight);
+							bv_decision = bvTheory->decideBV(bvOp, getEdgeBV(edgeID).getID(), edgeWeight);
 						}else if (op==DetectorComparison::eq){
-							bv_decision = comparator->decideBV(Comparison::leq, getEdgeBV(edgeID).getID(), edgeWeight);
+							bv_decision = bvTheory->decideBV(Comparison::leq, getEdgeBV(edgeID).getID(), edgeWeight);
 							if(bv_decision==lit_Undef)
-								bv_decision = comparator->decideBV(Comparison::geq, getEdgeBV(edgeID).getID(), edgeWeight);
+								bv_decision = bvTheory->decideBV(Comparison::geq, getEdgeBV(edgeID).getID(), edgeWeight);
 						}else{
 							exit(1);//ne not supported yet...
 						}
@@ -1802,7 +1901,7 @@ public:
 	void buildBVReason(int bvID, Comparison comp, Weight compareTo, vec<Lit> &reason){
 		static int iter = 0;
 		//todo: optimize this for case where bv is statically known to satisfy or fail the constraint...
-		BitVector<Weight> bv = comparator->getBV(bvID);
+		BitVector<Weight> bv = bvTheory->getBV(bvID);
 		Lit c = getBV_COMP(bvID,-comp,compareTo);
 		assert(dbg_value(c)==l_False);
 		reason.push(c);
@@ -2109,16 +2208,6 @@ public:
 			}
 			removeFromTrail(var(l));
 		}
-		assert(!onTrail(var(l)));
-
-		assert(assigns[var(l)]==l_Undef);
-		assigns[var(l)] = sign(l) ? l_False : l_True;
-		appendToTrail(l,decisionLevel());
-		requiresPropagation = true;
-
-
-		assert(onTrail(var(l)));
-
 
 
 		if (g_under.outfile) {
@@ -2133,6 +2222,18 @@ public:
 			fflush(g_over.outfile);
 		}
 
+		assert(!onTrail(var(l)));
+		appendToTrail(l,decisionLevel());
+		requiresPropagation = true;
+		assert(onTrail(var(l)));
+
+		_assign(l);
+
+	};
+
+	void _assign(Lit l){
+		assert(assigns[var(l)]==l_Undef);
+		assigns[var(l)] = sign(l) ? l_False : l_True;
 		if(hasTheory(var(l))){
 			theories[getTheoryID(var(l))]->enqueueTheory(getTheoryLit(l));
 			return;
@@ -2210,8 +2311,8 @@ public:
 			//this is an assignment to a non-edge atom. (eg, a reachability assertion)
 			detectors[getDetector(var(l))]->assign(l);
 		}
+	}
 
-	};
 /*
 	bool backtrackWhileConflicting(Detector * d,vec<Lit> & conflict){
 		conflict.clear();
@@ -2862,10 +2963,10 @@ public:
 				return l;
 			}
 			int comparisonID = comparisons.size();
-			Lit gt = comparator->newComparison(op,bvID,w,var_Undef,opt_cmp_lits_decidable);
+			Lit gt = bvTheory->newComparison(op,bvID,w,var_Undef,opt_cmp_lits_decidable);
 			l = mkLit(newVar());
 
-			makeEqualInSolver(comparator->toSolver(gt),toSolver(l));
+			makeEqualInSolver(bvTheory->toSolver(gt),toSolver(l));
 
 			comparisons.push({w,l,bvID,true});
 
@@ -2966,7 +3067,7 @@ public:
 	BitVector<Weight> newBV(Weight constval=-1,int bitwidth=-1) {
 		if (bitwidth<0)
 			bitwidth = getEdgeWeightBitWidth();
-		BitVector<Weight> bv = comparator->newBitvector(-1,bitwidth,constval);
+		BitVector<Weight> bv = bvTheory->newBitvector(-1,bitwidth,constval);
 		return bv;
 	}
 
@@ -3006,7 +3107,7 @@ public:
 
 
 	Lit newEdgeBV(int from, int to, Var outerVar,vec<Var> & bitVector) {
-		if(!comparator ){
+		if(!bvTheory ){
 			fprintf(stderr,"No bitvector theory initialized\n");exit(1);
 		}
 		while(from>=nNodes()||to>=nNodes())
@@ -3023,11 +3124,11 @@ public:
 				internalBV.push(newBVVar(v,bvID,index));
 			}
 
-		/*	if(!comparator){
-				comparator = new BVTheorySolver<Weight,ComparisonStatus>(ComparisonStatus(*this, *comparator));
+		/*	if(!bvTheory){
+				bvTheory = new BVTheorySolver<Weight,ComparisonStatus>(ComparisonStatus(*this, *bvTheory));
 			}*/
-			BitVector<Weight> bv = comparator->newBitvector(bvID,bitVector);
-			comparator->setBitvectorTheory(bvID,this->getTheoryIndex());
+			BitVector<Weight> bv = bvTheory->newBitvector(bvID,bitVector);
+			bvTheory->setBitvectorTheory(bvID,this->getTheoryIndex());
 			edge_bitvectors.growTo(bv.getID()+1,-1);
 			if(edge_bitvectors[bv.getID()]!=-1){
 				//else, this is already used!
@@ -3107,14 +3208,14 @@ public:
 			return mkLit(v, false);
 		}
 	Lit newEdgeBV(int from, int to, Var outerVar,int bvID) {
-		if(!comparator){
+		if(!bvTheory){
 			fprintf(stderr,"No bitvector theory initialized\n");exit(1);
 		}
-		if(!comparator->hasBV(bvID)){
+		if(!bvTheory->hasBV(bvID)){
 			fprintf(stderr,"Undefined bitvector\n");exit(1);
 		}
-		if(comparator->hasTheory(bvID)){
-			bvID = comparator->duplicateBV(bvID).getID();
+		if(bvTheory->hasTheory(bvID)){
+			bvID = bvTheory->duplicateBV(bvID).getID();
 		}
 		if(isEdgeBV(bvID)){
 			fprintf(stderr,"Bitvector %d used for multiple edge weights\n", bvID);exit(1);
@@ -3125,11 +3226,11 @@ public:
 		assert(outerVar!=var_Undef);
 		assert(edge_weights.size()==0);
 		int index = edge_list.size();
-		comparator->setBitvectorTheory(bvID,this->getTheoryIndex());
-		BitVector<Weight> bv = comparator->getBV(bvID);
+		bvTheory->setBitvectorTheory(bvID,this->getTheoryIndex());
+		BitVector<Weight> bv = bvTheory->getBV(bvID);
 		edge_bitvectors.growTo(bv.getID()+1,-1);
 		edge_bitvectors[bv.getID()]=index;
-		//comparator->setCallback(bv.getID(),&bvcallback);
+		//bvTheory->setCallback(bv.getID(),&bvcallback);
 		comparisons_lt.growTo(bv.getID()+1);
 		comparisons_gt.growTo(bv.getID()+1);
 		comparisons_leq.growTo(bv.getID()+1);
@@ -3345,13 +3446,13 @@ public:
 			fprintf(stderr, "Undefined node %d\n",to);
 			exit(1);
 		}
-		if(!comparator){
+		if(!bvTheory){
 			fprintf(stderr,"No bitvector theory initialized\n");exit(1);
 		}
-		if(!comparator->hasBV(bvID)){
+		if(!bvTheory->hasBV(bvID)){
 			fprintf(stderr,"Undefined bitvector\n");exit(1);
 		}
-		comparator->setBitvectorTheory(bvID,this->getTheoryIndex());
+		bvTheory->setBitvectorTheory(bvID,this->getTheoryIndex());
 		assert(from < g_under.nodes());
 
 		if (weighted_dist_info[from].source < 0) {
@@ -3374,7 +3475,7 @@ public:
 
 		DistanceDetector<Weight> * d = (DistanceDetector<Weight>*) weighted_dist_info[from].detector;
 		assert(d);
-		BitVector<Weight> bv = comparator->getBV(bvID);
+		BitVector<Weight> bv = bvTheory->getBV(bvID);
 		d->addWeightedShortestPathBVLit(from, to, reach_var,bv,strictComparison );
 
 
@@ -3389,18 +3490,18 @@ public:
 			fprintf(stderr, "Undefined node %d\n",to);
 			exit(1);
 		}
-		if(!comparator){
+		if(!bvTheory){
 			fprintf(stderr,"No bitvector theory initialized\n");exit(1);
 		}
-		if(!comparator->hasBV(bvID)){
+		if(!bvTheory->hasBV(bvID)){
 			fprintf(stderr,"Undefined bitvector\n");exit(1);
 		}
-		comparator->setBitvectorTheory(bvID,this->getTheoryIndex());
+		bvTheory->setBitvectorTheory(bvID,this->getTheoryIndex());
 		for (int i = 0; i < flow_detectors.size(); i++) {
 			if (flow_detectors[i]->source == from && flow_detectors[i]->target == to) {
-				flow_detectors[i]->addFlowBVLessThan(comparator->getBV(bvID), v,!strictComparison);
+				flow_detectors[i]->addFlowBVLessThan(bvTheory->getBV(bvID), v,!strictComparison);
 				if(edgeset_flow_detectors[i])
-					edgeset_flow_detectors[i]->addFlowBVLessThan(comparator->getBV(bvID), v,!strictComparison);
+					edgeset_flow_detectors[i]->addFlowBVLessThan(bvTheory->getBV(bvID), v,!strictComparison);
 				return;
 			}
 		}
@@ -3409,7 +3510,7 @@ public:
 		flow_detectors.push(f);
 		normal_detectors.push(f);
 		detectors.push(f);
-		f->addFlowBVLessThan(comparator->getBV(bvID), v,!strictComparison);
+		f->addFlowBVLessThan(bvTheory->getBV(bvID), v,!strictComparison);
 
 		if(opt_min_edgeset>=0){
 			edgeset_flow_detectors.growTo(flow_detectors.size());
@@ -3419,7 +3520,7 @@ public:
 			edge_set_detectors.push(f);
 			Var outer = S->newVar();
 			makeEqualInSolver(mkLit(outer),mkLit(v));
-			f->addFlowBVLessThan(comparator->getBV(bvID), outer,!strictComparison);
+			f->addFlowBVLessThan(bvTheory->getBV(bvID), outer,!strictComparison);
 		}
 	}
 

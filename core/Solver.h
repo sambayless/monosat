@@ -181,7 +181,7 @@ public:
 
         
 		printf("restarts              : %" PRIu64 "\n", starts);
-		printf("conflicts             : %-12" PRIu64 "   (%.0f /sec, %d learnts (%d theory learnts), %" PRId64 " removed)\n", conflicts,
+		printf("conflicts             : %-12" PRIu64 "   (%.0f /sec, %d learnts (%ld theory learnts), %" PRId64 " removed)\n", conflicts,
 				conflicts / cpu_time, learnts.size(),stats_theory_conflicts, stats_removed_clauses);
 		printf("decisions             : %-12" PRIu64 "   (%4.2f %% random) (%.0f /sec)\n", decisions,
 				(float) rnd_decisions * 100 / (float) decisions, decisions / cpu_time);

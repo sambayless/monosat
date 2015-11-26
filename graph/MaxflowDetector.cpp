@@ -42,12 +42,17 @@
 #include <string>
 using namespace Monosat;
 
+
+
+
 template<typename Weight>
 MaxflowDetector<Weight>::MaxflowDetector(int _detectorID, GraphTheorySolver<Weight> * _outer,
 		 DynamicGraph<Weight>  &_g, DynamicGraph<Weight>  &_antig, int from, int _target, double seed, bool overIsEdgeSet) :
 		Detector(_detectorID), outer(_outer),  g_under(_g), g_over(_antig), source(
 				from), target(_target), rnd_seed(seed),order_heap(EdgeOrderLt(activity)),overIsEdgeSet(overIsEdgeSet) {
 	var_decay =opt_var_decay;
+
+	bvTheory = outer->bvTheory;
 
 	MinCutAlg alg = mincutalg;
 	if(outer->hasBitVectorEdges()){
@@ -147,6 +152,9 @@ MaxflowDetector<Weight>::MaxflowDetector(int _detectorID, GraphTheorySolver<Weig
 	overprop_marker = outer->newReasonMarker(getID());
 }
 
+
+
+
 template<typename Weight>
 void MaxflowDetector<Weight>::addFlowLit(Weight maxflow, Var outer_reach_var, bool inclusive) {
 	g_under.invalidate();
@@ -191,7 +199,7 @@ void MaxflowDetector<Weight>::addFlowBVLessThan(const BitVector<Weight>  &bv, Va
 	} else {
 		assert(reach_var > first_reach_var);
 	}
-
+	int bvID = bv.getID();
 	Lit reachLit = mkLit(reach_var, false);
 	bool found = false;
 
@@ -205,9 +213,11 @@ void MaxflowDetector<Weight>::addFlowBVLessThan(const BitVector<Weight>  &bv, Va
 	}
 
 	reach_lit_map[reach_var - first_reach_var] = flow_lits.size() - 1;
-
+	if(opt_graph_bv_prop){
+		FlowOp *flowOp = new FlowOp(*bvTheory, this,bvID);
+		flow_lits.last().op=flowOp;
+	}
 }
-
 
 /*
 template<typename Weight>
@@ -337,63 +347,72 @@ Lit MaxflowDetector<Weight>::findFirstReasonTooLow(Weight flow) {
 
 
 template<typename Weight>
+void MaxflowDetector<Weight>::analyzeMaxFlowGEQ(Weight flow, vec<Lit> & conflict){
+
+		tmp_cut.clear();
+		Weight actual_flow = underapprox_conflict_detector->maxFlow();
+		if(opt_learn_acyclic_flows){
+
+			refined_flow.resize(g_under.edges());
+			for(int i = 0;i<g_under.edges();i++){
+				if(g_under.hasEdge(i) && g_under.edgeEnabled(i)){
+					refined_flow[i]=underapprox_conflict_detector->getEdgeFlow(i);
+				}else{
+					refined_flow[i]=0;
+				}
+			}
+
+			acyclic_flow->getAcyclicFlow(source,target,refined_flow);
+			for (int i = 0; i < g_under.edges(); i++) {
+				if (g_under.edgeEnabled(i)) {
+					if (refined_flow[i] > 0) {
+						Var v = outer->edge_list[i].v;
+						assert(outer->value(v)==l_True);
+						if(!g_under.isConstant(i)){
+							conflict.push(mkLit(v, true));
+						}
+						if(outer->hasBitVector(i) && ! outer->getEdgeBV(i).isConst()){
+							outer->bvTheory->addAnalysis(Comparison::geq,outer->getEdgeBV(i).getID(),refined_flow[i]);
+							//outer->buildBVReason(outer->getEdgeBV(i).getID(),Comparison::geq,refined_flow[i],conflict);
+						}
+					}
+
+				}
+			}
+		}else{
+			//just collect the set of edges which have non-zero flow, and return them
+			//(But! if there are multiple edges between the same nodes, and some of those edges
+			//are constant, we can safely move the flow to those constant edges first!)
+
+			//Also, can we return only the set of saturated edges? Not immediately clear...
+			for (int i = 0; i < g_under.edges(); i++) {
+				if (g_under.edgeEnabled(i)) {
+					if (underapprox_conflict_detector->getEdgeFlow(i) > 0) {
+						Var v = outer->edge_list[i].v;
+						assert(outer->value(v)==l_True);
+						if(!g_under.isConstant(i)){
+							conflict.push(mkLit(v, true));
+						}
+						if(outer->hasBitVector(i)){
+							outer->bvTheory->addAnalysis(Comparison::geq,outer->getEdgeBV(i).getID(),underapprox_conflict_detector->getEdgeFlow(i));
+							//outer->buildBVReason(outer->getEdgeBV(i).getID(),Comparison::geq,underapprox_conflict_detector->getEdgeFlow(i),conflict);
+							//outer->buildBVReason(bv.getID(),inclusive ? Comparison::gt:Comparison::geq,bv.getUnder(),conflict);
+						}
+					}
+
+				}
+			}
+		}
+}
+
+template<typename Weight>
 void MaxflowDetector<Weight>::buildMaxFlowTooHighReason(Weight flow, vec<Lit> & conflict) {
-	//drawFull();
 	double starttime = rtime(2);
-	tmp_cut.clear();
-	Weight actual_flow = underapprox_conflict_detector->maxFlow();
-	if(opt_learn_acyclic_flows){
+	analyzeMaxFlowGEQ(flow,conflict);
 
-		refined_flow.resize(g_under.edges());
-		for(int i = 0;i<g_under.edges();i++){
-			if(g_under.hasEdge(i) && g_under.edgeEnabled(i)){
-				refined_flow[i]=underapprox_conflict_detector->getEdgeFlow(i);
-			}else{
-				refined_flow[i]=0;
-			}
-		}
-
-		acyclic_flow->getAcyclicFlow(source,target,refined_flow);
-		for (int i = 0; i < g_under.edges(); i++) {
-			if (g_under.edgeEnabled(i)) {
-				if (refined_flow[i] > 0) {
-					Var v = outer->edge_list[i].v;
-					assert(outer->value(v)==l_True);
-					if(!g_under.isConstant(i)){
-						conflict.push(mkLit(v, true));
-					}
-					if(outer->hasBitVector(i) && ! outer->getEdgeBV(i).isConst()){
-						outer->buildBVReason(outer->getEdgeBV(i).getID(),Comparison::geq,refined_flow[i],conflict);
-					}
-				}
-
-			}
-		}
-	}else{
-		//just collect the set of edges which have non-zero flow, and return them
-		//(But! if there are multiple edges between the same nodes, and some of those edges
-		//are constant, we can safely move the flow to those constant edges first!)
-
-		//Also, can we return only the set of saturated edges? Not immediately clear...
-		for (int i = 0; i < g_under.edges(); i++) {
-			if (g_under.edgeEnabled(i)) {
-				if (underapprox_conflict_detector->getEdgeFlow(i) > 0) {
-					Var v = outer->edge_list[i].v;
-					assert(outer->value(v)==l_True);
-					if(!g_under.isConstant(i)){
-						conflict.push(mkLit(v, true));
-					}
-					if(outer->hasBitVector(i)){
-						outer->buildBVReason(outer->getEdgeBV(i).getID(),Comparison::geq,underapprox_conflict_detector->getEdgeFlow(i),conflict);
-						//outer->buildBVReason(bv.getID(),inclusive ? Comparison::gt:Comparison::geq,bv.getUnder(),conflict);
-					}
-				}
-	
-			}
-		}
-	}
 	bumpConflictEdges(conflict);
-
+	if(outer->bvTheory)
+		outer->bvTheory->analyze(conflict);
 
 	if (g_under.outfile) {
 		std::sort(conflict.begin(), conflict.end());
@@ -500,6 +519,260 @@ void bassert(bool condition) {
 //#endif
 }
 
+
+template<typename Weight>
+void MaxflowDetector<Weight>::analyzeMaxFlowLEQ(Weight flow, vec<Lit> & conflict,bool force_maxflow){
+	if(g_over.edges()==0)
+			return;
+
+		if(overIsEdgeSet){
+			for(auto * edgeSet: outer->edge_sets){
+				assert(edgeSet->isAssigned());
+				int assigned = edgeSet->assignedEdge();
+				assert(assigned>-1);
+				Lit l = mkLit(outer->getEdgeVar(assigned), false);
+				assert(outer->value(l)==l_True);
+				conflict.push(~l);
+			}
+		}
+
+		//printf("%d\n",it);
+
+		if (force_maxflow || opt_conflict_min_cut_maxflow) {
+			Weight foundflow = overapprox_conflict_detector->maxFlow();
+			collectChangedEdges();
+			collectDisabledEdges();
+			//g_over.drawFull(true);
+			//learn_graph.drawFull(true);
+	#ifndef NDEBUG
+			for (auto & e : g_over.getEdges()) {
+				int from = e.from;
+				int to = e.to;
+				int v = outer->getEdgeVar(e.id);
+				lbool val = outer->value(v);
+				int edgeid = e.id;
+				if (g_over.hasEdge(edgeid) && g_over.edgeEnabled(edgeid) ){
+
+					Weight flow = overapprox_conflict_detector->getEdgeFlow(edgeid);
+					Weight capacity = overapprox_conflict_detector->getEdgeCapacity(edgeid);
+					assert(capacity<=g_over.getWeight(edgeid));
+					Weight level0capacity =  outer->hasBitVector(edgeid)?	 outer->getEdgeBV(edgeid).getOver(true):capacity;
+
+					assert(learn_graph.getWeight(back_edges[edgeid])==0x0FF0F0);//capacity of this edge in the backward direction is the same as the forward flow.
+					assert(learn_graph.edgeEnabled(back_edges[edgeid]) == (flow>0));
+					if (flow<capacity){
+						//then this edge is not fully utilized, so it cannot be a limiting factor in the maxflow. Set its weight to infinity.
+						assert(learn_graph.getWeight(edgeid)==0x0FF0F0);
+					}else{
+						assert(learn_graph.edgeEnabled(edgeid) == ((level0capacity-capacity)>0));
+						assert(learn_graph.getWeight(edgeid)==(((level0capacity-capacity) > 0) ? 1:0));
+					}
+				}else{
+					//flow is 0.
+					assert(!learn_graph.edgeEnabled(back_edges[edgeid]));
+					assert(learn_graph.getWeight(back_edges[edgeid])==0);//capacity of this edge in the backward direction is the same as the forward flow, which is 0.
+					Weight w = (outer->hasBitVector(edgeid)?	 outer->getEdgeBV(edgeid).getOver(true):outer->edge_weights[edgeid]);
+					assert(learn_graph.getWeight(edgeid)==(w>0?1:0));
+				}
+
+			}
+	#endif
+			//g_over.drawFull(true);
+			//learn_graph.drawFull(true);
+
+			Weight f = learn_cut->minCut(cut);
+			learn_graph.clearChanged();
+			learn_graph.clearHistory();
+
+			/*				{
+
+			 EdmondsKarpAdj<CutStatus,long> ek(learn_graph, cutStatus,source,target);
+			 std::vector<MaxFlowEdge> tmpcut;
+			 long tf = ek.minCut(tmpcut);
+			 printf("cut size:%d, %d, expected: %d, %d \n",cut.size(),f, tmpcut.size(), tf);
+			 if(f != tf || cut.size()!= tmpcut.size()){
+			 exit(3);
+			 }
+
+
+			 }*/
+
+			if (f < 0x0FF0F0) {
+				assert(f < 0x0FF0F0);
+				for (int i = 0; i < cut.size(); i++) {
+					MaxFlowEdge e = cut[i];
+					int edgeID = e.id;//because we've doubled the set of edges in the learn graph relative to g_over/g_under.
+					Lit l = mkLit(outer->getEdgeVar(edgeID), false);
+					int edgeSetID = outer->getEdgeSetID(edgeID);
+					if(overIsEdgeSet && edgeSetID>-1){
+						//don't include edge set edges in the conflict set.
+					}else{
+						if(outer->value(l)==l_False){//it is possible for the edge to be enabled, but to be set to capacity 0.
+							bassert(outer->value(l) == l_False);
+							conflict.push(l);
+
+						}else if(outer->hasBitVector(edgeID) && ! outer->getEdgeBV(edgeID).isConst()){
+							Weight residual = overapprox_conflict_detector->getEdgeResidualCapacity(edgeID);
+							assert(overapprox_conflict_detector->getEdgeResidualCapacity(edgeID)==0);//the edge has no residual capacity, so its capacity must be increased.
+							outer->bvTheory->addAnalysis(Comparison::leq,outer->getEdgeBV(edgeid).getID(),g_over.getWeight(edgeID));
+
+							//outer->buildBVReason(outer->getEdgeBV(edgeID).getID(),Comparison::leq,g_over.getWeight(edgeID),conflict);
+
+						}
+					}
+				}
+			} else {
+				int a = 1;
+
+				//there is no way to increase the max flow.
+			}
+
+		/*	printf("conflict in theory %d ", outer->getTheoryIndex());
+			if (f < 0x0FF0F0) {
+				assert(f < 0x0FF0F0);
+
+				for (int i = 0; i < cut.size(); i++) {
+					MaxFlowEdge e = cut[i];
+					int edgeID = e.id;//because we've doubled the set of edges in the learn graph relative to g_over/g_under.
+					Lit l = mkLit(outer->getEdgeVar(edgeID), false);
+					if(outer->value(l)==l_False){//it is possible for the edge to be enabled, but to be set to capacity 0.
+
+						std::cout << "edge " << edgeID << " enabled ";
+					}else if(outer->hasBitVector(edgeID)){
+						std::cout << "edge " << edgeID << " bvid " << outer->getEdgeBV(edgeID).getID() << " > " << g_over.getWeight(edgeID)<< " ";
+					}
+				}
+			}
+			printf("\n");*/
+
+
+
+			return;
+		}
+
+		//drawFull( non_reach_detectors[detector]->getSource(),u);
+		//assert(outer->dbg_distance( source,u));
+		//g_over.drawFull(true);
+		//The reason why we can't reach this assignment is a cut through the disabled edges in the residual graph from the overapprox.
+		//we could search for a min cut, but instead we will just step back in the RESIDUAL graph, from u to s, collecting disabled edges.
+		assert(!seen.contains(true));
+
+		visit.clear();
+		Weight foundflow = overapprox_conflict_detector->maxFlow();
+		/*			std::vector<MaxFlowEdge> ignore;
+		 negative_conflict_detector->minCut(ignore);*/
+		visit.push(target);
+		seen[target]=true;
+		for (int k = 0; k < visit.size(); k++) {
+			int u = visit[k];
+			for (int i = 0; i < g_over.nIncoming(u); i++) {
+				int p = g_over.incoming(u, i).node;
+				if(p==u)
+					continue;//skip self loop edges, as they cannot be required for the maxflow
+				if (!seen[p]) {
+
+					int edgeid = g_over.incoming(u, i).id;
+					bool skipEdge=false;
+					if(overIsEdgeSet && !g_over.edgeEnabled(edgeid))
+						skipEdge = outer->getEdgeSetID(edgeid) >-1;
+
+					int v = outer->getEdgeVar(edgeid);
+					if(!skipEdge){
+						//assert( g.incoming(u,i).to==u);
+						if (outer->value(v) != l_False) {
+							//this is an enabled edge in the overapprox
+							assert(overapprox_conflict_detector->getEdgeCapacity(edgeid)== g_over.getWeight(edgeid));
+
+							Weight residual_capacity = overapprox_conflict_detector->getEdgeResidualCapacity(edgeid);
+							if (residual_capacity > 0) {
+								seen[p] = true;
+								visit.push(p);
+							}else{
+								//if the edge _was_ enabled, and all of its capacity was used, then the reason that it didn't have more capacity must be included.
+								if(outer->hasBitVector(edgeid) && ! outer->getEdgeBV(edgeid).isConst()){
+									assert(g_over.getWeight(edgeid)==outer->getEdgeBV(edgeid).getOver());
+									outer->bvTheory->addAnalysis(Comparison::leq,outer->getEdgeBV(edgeid).getID(),overapprox_conflict_detector->getEdgeFlow(edgeid));
+									//outer->buildBVReason(outer->getEdgeBV(edgeid).getID(),Comparison::leq,overapprox_conflict_detector->getEdgeFlow(edgeid),conflict);
+
+								}
+							}
+						} else {
+							//this is a disabled edge, and we can add it to the cut.
+							//we're going to assume the edge has non-zero capacity here, otherwise we could exclude it (but it shouldn't really even be in this graph in that case, anyways).
+							if( !g_over.isConstant(edgeid)){
+								//if(g_over.getWeight(edgeid)>0){
+									conflict.push(mkLit(v, false));
+						/*		}else if (!outer->constantWeight(edgeid)){
+									if(outer->hasBitVector(edgeid)){
+										outer->buildBVReason(outer->getEdgeBV(edgeid).getID(),Comparison::leq,0,conflict);
+									}
+								}*/
+							}
+						}
+					}
+				}
+				//pred
+			}
+			//we are walking back in the RESIDUAL graph, which can mean backwards traversal of edges with flow!
+			for (int i = 0; i < g_under.nIncident(u); i++) {
+				int p = g_under.incident(u, i).node;
+				if (!seen[p]) {
+					int edgeid = g_under.incident(u, i).id;
+					int v = outer->getEdgeVar(edgeid);
+					bool skipEdge=false;
+					if(overIsEdgeSet && !g_over.edgeEnabled(edgeid))
+						skipEdge = outer->getEdgeSetID(edgeid) >-1;
+					if(!skipEdge){
+						//assert( g.incoming(u,i).to==u);
+						if (outer->value(v) != l_False) {
+							//this is the residual capacity of the backwards edge in the residual graph - which is equal to the forwards flow on this edge!
+							Weight residual_capacity = overapprox_conflict_detector->getEdgeFlow(edgeid);
+							if (residual_capacity>0) {
+								seen[p] = true;
+								visit.push(p);
+							}else if (g_over.getWeight(edgeid)==0){
+								//if the edge _was_ enabled, and it had no capacity capacity was used, then the reason that it didn't have more capacity must be included.
+								//does this really hold for backwards edges?
+								if(outer->hasBitVector(edgeid)){
+									outer->bvTheory->addAnalysis(Comparison::leq,outer->getEdgeBV(edgeid).getID(),0);
+									//outer->buildBVReason(outer->getEdgeBV(edgeid).getID(),Comparison::leq,0,conflict);
+									//outer->buildBVReason(bv.getID(),inclusive ? Comparison::gt:Comparison::geq,bv.getUnder(),conflict);
+								}
+							}
+						} else {
+							//this is a disabled edge, and we can add it to the cut.
+							//we're going to assume the edge has non-zero capacity here, otherwise we could exclude it (but it shouldn't really even be in this graph in that case, anyways).
+							if( !g_over.isConstant(edgeid)){
+								conflict.push(mkLit(v, false));
+							}
+						}
+					}
+				}
+				//pred
+			}
+		}
+
+		while(visit.size()){
+			seen[visit.last()]=false;
+			visit.pop();
+		}
+
+		if (!force_maxflow && opt_adaptive_conflict_mincut > 0 && (conflict.size() - 1 > opt_adaptive_conflict_mincut)) { //-1 to ignore the predicate's literal stored at position 0
+			double elapsed = rtime(2) - starttime;
+			stats_over_conflict_time += elapsed;
+			conflict.shrink(conflict.size() - 1);
+			assert(conflict.size() == 1);
+			analyzeMaxFlowLEQ(maxflow, conflict, true);
+			return;
+		}
+#ifndef NDEBUG
+	if (overapprox_detector != overapprox_conflict_detector) {
+		Weight foundflow2 = overapprox_detector->maxFlow();
+		assert(foundflow == foundflow2);
+	}
+#endif
+}
+
 template<typename Weight>
 void MaxflowDetector<Weight>::buildMaxFlowTooLowReason(Weight maxflow, vec<Lit> & conflict, bool force_maxflow) {
 	static int it = 0;
@@ -510,261 +783,16 @@ void MaxflowDetector<Weight>::buildMaxFlowTooLowReason(Weight maxflow, vec<Lit> 
 	if(opt_verb>1){
 		printf("Maxflow conflict %d, graph %d\n", it, outer->getTheoryIndex());
 	}
-	if(g_over.edges()==0)
-		return;
-
-	if(overIsEdgeSet){
-		for(auto * edgeSet: outer->edge_sets){
-			assert(edgeSet->isAssigned());
-			int assigned = edgeSet->assignedEdge();
-			assert(assigned>-1);
-			Lit l = mkLit(outer->getEdgeVar(assigned), false);
-			assert(outer->value(l)==l_True);
-			conflict.push(~l);
-		}
-	}
-
-	//printf("%d\n",it);
 	double starttime = rtime(2);
-	if (force_maxflow || opt_conflict_min_cut_maxflow) {
-		Weight foundflow = overapprox_conflict_detector->maxFlow();
-		collectChangedEdges();
-		collectDisabledEdges();
-		//g_over.drawFull(true);
-		//learn_graph.drawFull(true);
-#ifndef NDEBUG
-		for (auto & e : g_over.getEdges()) {
-			int from = e.from;
-			int to = e.to;
-			int v = outer->getEdgeVar(e.id);
-			lbool val = outer->value(v);
-			int edgeid = e.id;
-			if (g_over.hasEdge(edgeid) && g_over.edgeEnabled(edgeid) ){
-
-				Weight flow = overapprox_conflict_detector->getEdgeFlow(edgeid);
-				Weight capacity = overapprox_conflict_detector->getEdgeCapacity(edgeid);
-				assert(capacity<=g_over.getWeight(edgeid));
-				Weight level0capacity =  outer->hasBitVector(edgeid)?	 outer->getEdgeBV(edgeid).getOver(true):capacity;
-
-				assert(learn_graph.getWeight(back_edges[edgeid])==0x0FF0F0);//capacity of this edge in the backward direction is the same as the forward flow.
-				assert(learn_graph.edgeEnabled(back_edges[edgeid]) == (flow>0));
-				if (flow<capacity){
-					//then this edge is not fully utilized, so it cannot be a limiting factor in the maxflow. Set its weight to infinity.
-					assert(learn_graph.getWeight(edgeid)==0x0FF0F0);
-				}else{
-					assert(learn_graph.edgeEnabled(edgeid) == ((level0capacity-capacity)>0));
-					assert(learn_graph.getWeight(edgeid)==(((level0capacity-capacity) > 0) ? 1:0));
-				}
-			}else{
-				//flow is 0.
-				assert(!learn_graph.edgeEnabled(back_edges[edgeid]));
-				assert(learn_graph.getWeight(back_edges[edgeid])==0);//capacity of this edge in the backward direction is the same as the forward flow, which is 0.
-				Weight w = (outer->hasBitVector(edgeid)?	 outer->getEdgeBV(edgeid).getOver(true):outer->edge_weights[edgeid]);
-				assert(learn_graph.getWeight(edgeid)==(w>0?1:0));
-			}
-
-		}
-#endif
-		//g_over.drawFull(true);
-		//learn_graph.drawFull(true);
-
-		Weight f = learn_cut->minCut(cut);
-		learn_graph.clearChanged();
-		learn_graph.clearHistory();
-
-		/*				{
-
-		 EdmondsKarpAdj<CutStatus,long> ek(learn_graph, cutStatus,source,target);
-		 std::vector<MaxFlowEdge> tmpcut;
-		 long tf = ek.minCut(tmpcut);
-		 printf("cut size:%d, %d, expected: %d, %d \n",cut.size(),f, tmpcut.size(), tf);
-		 if(f != tf || cut.size()!= tmpcut.size()){
-		 exit(3);
-		 }
-
-
-		 }*/
-
-		if (f < 0x0FF0F0) {
-			assert(f < 0x0FF0F0);
-			for (int i = 0; i < cut.size(); i++) {
-				MaxFlowEdge e = cut[i];
-				int edgeID = e.id;//because we've doubled the set of edges in the learn graph relative to g_over/g_under.
-				Lit l = mkLit(outer->getEdgeVar(edgeID), false);
-				int edgeSetID = outer->getEdgeSetID(edgeID);
-				if(overIsEdgeSet && edgeSetID>-1){
-					//don't include edge set edges in the conflict set.
-				}else{
-					if(outer->value(l)==l_False){//it is possible for the edge to be enabled, but to be set to capacity 0.
-						bassert(outer->value(l) == l_False);
-						conflict.push(l);
-
-					}else if(outer->hasBitVector(edgeID) && ! outer->getEdgeBV(edgeID).isConst()){
-						Weight residual = overapprox_conflict_detector->getEdgeResidualCapacity(edgeID);
-						assert(overapprox_conflict_detector->getEdgeResidualCapacity(edgeID)==0);//the edge has no residual capacity, so its capacity must be increased.
-						outer->buildBVReason(outer->getEdgeBV(edgeID).getID(),Comparison::leq,g_over.getWeight(edgeID),conflict);
-
-					}
-				}
-			}
-		} else {
-			int a = 1;
-
-			//there is no way to increase the max flow.
-		}
-
-	/*	printf("conflict in theory %d ", outer->getTheoryIndex());
-		if (f < 0x0FF0F0) {
-			assert(f < 0x0FF0F0);
-
-			for (int i = 0; i < cut.size(); i++) {
-				MaxFlowEdge e = cut[i];
-				int edgeID = e.id;//because we've doubled the set of edges in the learn graph relative to g_over/g_under.
-				Lit l = mkLit(outer->getEdgeVar(edgeID), false);
-				if(outer->value(l)==l_False){//it is possible for the edge to be enabled, but to be set to capacity 0.
-
-					std::cout << "edge " << edgeID << " enabled ";
-				}else if(outer->hasBitVector(edgeID)){
-					std::cout << "edge " << edgeID << " bvid " << outer->getEdgeBV(edgeID).getID() << " > " << g_over.getWeight(edgeID)<< " ";
-				}
-			}
-		}
-		printf("\n");*/
-
-		bumpConflictEdges(conflict);
-		outer->num_learnt_cuts++;
-		outer->learnt_cut_clause_length += (conflict.size() - 1);
-		stats_over_conflicts++;
-		double elapsed = rtime(2) - starttime;
-		stats_over_conflict_time += elapsed;
-
-		return;
-	}
-	
-	//drawFull( non_reach_detectors[detector]->getSource(),u);
-	//assert(outer->dbg_distance( source,u));
-	//g_over.drawFull(true);
-	//The reason why we can't reach this assignment is a cut through the disabled edges in the residual graph from the overapprox.
-	//we could search for a min cut, but instead we will just step back in the RESIDUAL graph, from u to s, collecting disabled edges.
-	assert(!seen.contains(true));
-
-	visit.clear();
-	Weight foundflow = overapprox_conflict_detector->maxFlow();
-	/*			std::vector<MaxFlowEdge> ignore;
-	 negative_conflict_detector->minCut(ignore);*/
-	visit.push(target);
-	seen[target]=true;
-	for (int k = 0; k < visit.size(); k++) {
-		int u = visit[k];
-		for (int i = 0; i < g_over.nIncoming(u); i++) {
-			int p = g_over.incoming(u, i).node;
-			if(p==u)
-				continue;//skip self loop edges, as they cannot be required for the maxflow
-			if (!seen[p]) {
-				
-				int edgeid = g_over.incoming(u, i).id;
-				bool skipEdge=false;
-				if(overIsEdgeSet && !g_over.edgeEnabled(edgeid))
-					skipEdge = outer->getEdgeSetID(edgeid) >-1;
-
-				int v = outer->getEdgeVar(edgeid);
-				if(!skipEdge){
-					//assert( g.incoming(u,i).to==u);
-					if (outer->value(v) != l_False) {
-						//this is an enabled edge in the overapprox
-						assert(overapprox_conflict_detector->getEdgeCapacity(edgeid)== g_over.getWeight(edgeid));
-
-						Weight residual_capacity = overapprox_conflict_detector->getEdgeResidualCapacity(edgeid);
-						if (residual_capacity > 0) {
-							seen[p] = true;
-							visit.push(p);
-						}else{
-							//if the edge _was_ enabled, and all of its capacity was used, then the reason that it didn't have more capacity must be included.
-							if(outer->hasBitVector(edgeid) && ! outer->getEdgeBV(edgeid).isConst()){
-								assert(g_over.getWeight(edgeid)==outer->getEdgeBV(edgeid).getOver());
-								outer->buildBVReason(outer->getEdgeBV(edgeid).getID(),Comparison::leq,overapprox_conflict_detector->getEdgeFlow(edgeid),conflict);
-								//outer->buildBVReason(bv.getID(),inclusive ? Comparison::gt:Comparison::geq,bv.getUnder(),conflict);
-							}
-						}
-					} else {
-						//this is a disabled edge, and we can add it to the cut.
-						//we're going to assume the edge has non-zero capacity here, otherwise we could exclude it (but it shouldn't really even be in this graph in that case, anyways).
-						if( !g_over.isConstant(edgeid)){
-							//if(g_over.getWeight(edgeid)>0){
-								conflict.push(mkLit(v, false));
-					/*		}else if (!outer->constantWeight(edgeid)){
-								if(outer->hasBitVector(edgeid)){
-									outer->buildBVReason(outer->getEdgeBV(edgeid).getID(),Comparison::leq,0,conflict);
-								}
-							}*/
-						}
-					}
-				}
-			}
-			//pred
-		}
-		//we are walking back in the RESIDUAL graph, which can mean backwards traversal of edges with flow!
-		for (int i = 0; i < g_under.nIncident(u); i++) {
-			int p = g_under.incident(u, i).node;
-			if (!seen[p]) {
-				int edgeid = g_under.incident(u, i).id;
-				int v = outer->getEdgeVar(edgeid);
-				bool skipEdge=false;
-				if(overIsEdgeSet && !g_over.edgeEnabled(edgeid))
-					skipEdge = outer->getEdgeSetID(edgeid) >-1;
-				if(!skipEdge){
-					//assert( g.incoming(u,i).to==u);
-					if (outer->value(v) != l_False) {
-						//this is the residual capacity of the backwards edge in the residual graph - which is equal to the forwards flow on this edge!
-						Weight residual_capacity = overapprox_conflict_detector->getEdgeFlow(edgeid);
-						if (residual_capacity>0) {
-							seen[p] = true;
-							visit.push(p);
-						}else if (g_over.getWeight(edgeid)==0){
-							//if the edge _was_ enabled, and it had no capacity capacity was used, then the reason that it didn't have more capacity must be included.
-							//does this really hold for backwards edges?
-							if(outer->hasBitVector(edgeid)){
-								outer->buildBVReason(outer->getEdgeBV(edgeid).getID(),Comparison::leq,0,conflict);
-								//outer->buildBVReason(bv.getID(),inclusive ? Comparison::gt:Comparison::geq,bv.getUnder(),conflict);
-							}
-						}
-					} else {
-						//this is a disabled edge, and we can add it to the cut.
-						//we're going to assume the edge has non-zero capacity here, otherwise we could exclude it (but it shouldn't really even be in this graph in that case, anyways).
-						if( !g_over.isConstant(edgeid)){
-							conflict.push(mkLit(v, false));
-						}
-					}
-				}
-			}
-			//pred
-		}
-	}
-	
-	while(visit.size()){
-		seen[visit.last()]=false;
-		visit.pop();
-	}
-
-	if (!force_maxflow && opt_adaptive_conflict_mincut > 0 && (conflict.size() - 1 > opt_adaptive_conflict_mincut)) { //-1 to ignore the predicate's literal stored at position 0
-		double elapsed = rtime(2) - starttime;
-		stats_over_conflict_time += elapsed;
-		conflict.shrink(conflict.size() - 1);
-		assert(conflict.size() == 1);
-		buildMaxFlowTooLowReason(maxflow, conflict, true);
-		return;
-	}
-
+	analyzeMaxFlowLEQ(maxflow,conflict,force_maxflow);
 	bumpConflictEdges(conflict);
+	if(outer->bvTheory)
+		outer->bvTheory->analyze(conflict);
+
 	/*if(conflict.size()<dbg_minconflict()){
 	 exit(4);
 	 }*/
-#ifndef NDEBUG
-	if (overapprox_detector != overapprox_conflict_detector) {
-		Weight foundflow2 = overapprox_detector->maxFlow();
-		assert(foundflow == foundflow2);
-	}
-#endif
+
 
 
 
@@ -893,7 +921,7 @@ bool MaxflowDetector<Weight>::propagate(vec<Lit> & conflict, bool backtrackOnly,
 	} else
 		stats_skipped_under_updates++;
 	
-	if (overapprox_detector && (!opt_detect_pure_theory_lits || unassigned_negatives > 0)) {
+	if (overapprox_detector && ( !opt_detect_pure_theory_lits || unassigned_negatives > 0)) {
 		double startunreachtime = rtime(2);
 		stats_over_updates++;
 		computed_over=true;
@@ -1003,11 +1031,39 @@ bool MaxflowDetector<Weight>::propagate(vec<Lit> & conflict, bool backtrackOnly,
 				}
 
 			}
+
+			if(opt_graph_bv_prop){
+				FlowOp * flowOp = f.op;
+				if (outer->value(l) == l_True ) {
+					outer->assignBV(bv.getID(),inclusive? Comparison::geq : Comparison::gt,under_maxflow,flowOp);
+				}else if (outer->value(l) == l_False){
+					outer->assignBV(bv.getID(),inclusive? Comparison::lt : Comparison::leq,over_maxflow,flowOp);
+				}
+			}
 		}
 	}
 	stats_total_prop_time += rtime(2)-start_prop_time;
 	return true;
 }
+
+template<typename Weight>
+void MaxflowDetector<Weight>::FlowOp::analyzeReason(bool compareOver,Comparison op, Weight  to,  vec<Lit> & conflict){
+//watch out - might need to backtrack the graph theory appropriately, here...
+	 GraphTheorySolver<Weight>::GraphTheoryOp::analyzeReason(compareOver,op,to,conflict);
+
+	 if(!compareOver){
+		 //the reason that the maximum flow is greater or equal to the current value is that their exists a flow of at least that vlaue.
+
+		 assert(under_maxflow>=to);
+
+	 }else{
+
+	 }
+
+	 GraphTheorySolver<Weight>::GraphTheoryOp::completeAnalysis();
+}
+
+
 template<typename Weight>
 bool MaxflowDetector<Weight>::checkSatisfied() {
 	g_under.drawFull(true);

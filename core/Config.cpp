@@ -322,6 +322,7 @@ IntOption  Monosat::opt_graph_prop_skip(_cat_graph, "graph-theory-skip",
 IntOption  Monosat::opt_bv_prop_skip(_cat_bv, "bv-theory-skip",
 		"Only process every nth bv theory propagation ('1' skips no propagations)",1, IntRange(1,INT32_MAX));
 
+BoolOption  Monosat::opt_graph_bv_prop(_cat_graph, "graph-bv-prop","",true);
 
 
 BoolOption Monosat::opt_fsm_negate_underapprox(_cat_fsm, "fsm-negate-under",

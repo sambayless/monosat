@@ -53,6 +53,34 @@ public:
 	CRef underprop_marker;
 	CRef overprop_marker;
 
+	BVTheorySolver<Weight> * bvTheory=nullptr;
+	class FlowOp: public  GraphTheorySolver<Weight>::GraphTheoryOp{
+		const MaxflowDetector * outer;
+		int bvID;
+	public:
+		FlowOp(BVTheorySolver<Weight> &theory,const MaxflowDetector * outer, int bvID):GraphTheorySolver<Weight>::GraphTheoryOp(theory,outer->outer),outer(outer),bvID(bvID){
+
+		}
+		int getBV()override{
+			return bvID;
+		}
+
+		bool propagate(bool & changed, vec<Lit> & conflict)override{
+			return true;
+		}
+
+	    void updateApprox(Var ignore_bv, Weight & under_new, Weight & over_new,typename BVTheorySolver<Weight>::Cause & under_cause_new, typename BVTheorySolver<Weight>::Cause & over_cause_new)override{
+			;
+		}
+
+		void analyzeReason(bool compareOver,Comparison op, Weight  to,  vec<Lit> & conflict)override;
+
+		bool checkSolved()override{
+			return true;
+		}
+	};
+
+
 	MaxFlow<Weight>* underapprox_detector = nullptr;
 	MaxFlow<Weight> * overapprox_detector = nullptr;
 	MaxFlow<Weight> * underapprox_conflict_detector = nullptr;
@@ -108,6 +136,7 @@ public:
 		Weight max_flow=(Weight)-1;
 		BitVector<Weight>  bv;
 		bool inclusive;//If inclusive true, l is true iff the maximum flow is >= max_flow; else, l is true iff the maximum flow is > max_flow.
+		FlowOp * op=nullptr;
 	};
 	vec<DistLit> flow_lits;
 
@@ -136,6 +165,8 @@ public:
 
 
 	bool propagate(vec<Lit> & conflict, bool backtrackOnly, Lit & conflictLit);
+	void analyzeMaxFlowLEQ(Weight flow, vec<Lit> & conflict, bool force_maxflow=false);
+	void analyzeMaxFlowGEQ(Weight flow, vec<Lit> & conflict);
 	void buildMaxFlowTooHighReason(Weight flow, vec<Lit> & conflict);
 	Lit findFirstReasonTooHigh(Weight flow);
 	Lit findFirstReasonTooLow(Weight flow);
@@ -201,6 +232,7 @@ public:
 	void buildModel(){
 		refined_flow_model.clear();
 	}
+	void setFlowBV(const BitVector<Weight>  &bv);
 	void addFlowLit(Weight max_flow, Var reach_var, bool inclusive);
 	void addFlowBVLessThan(const BitVector<Weight>  &bv, Var v, bool inclusive);
 	MaxflowDetector(int _detectorID, GraphTheorySolver<Weight> * _outer,

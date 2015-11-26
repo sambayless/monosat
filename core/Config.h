@@ -176,6 +176,7 @@ extern IntOption opt_maxflow_decision_paths;
 extern BoolOption opt_reach_detector_combined_maxflow;
 extern IntOption opt_adaptive_conflict_mincut;
 extern BoolOption opt_shortest_path_prune_dist;
+extern BoolOption opt_graph_bv_prop;
 
 extern IntOption opt_graph_prop_skip;
 extern IntOption opt_bv_prop_skip;
