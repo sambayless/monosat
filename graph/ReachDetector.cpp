@@ -1057,6 +1057,7 @@ void ReachDetector<Weight>::buildReason(Lit p, vec<Lit> & reason, CRef marker) {
 	} else {
 		assert(false);
 	}
+	outer->toSolver(reason);
 }
 template<typename Weight>
 bool ReachDetector<Weight>::propagate(vec<Lit> & conflict) {
@@ -1143,7 +1144,7 @@ bool ReachDetector<Weight>::propagate(vec<Lit> & conflict) {
 				
 			}
 
-			
+			outer->toSolver(conflict);
 			return false;
 		}
 		

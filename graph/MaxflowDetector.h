@@ -55,10 +55,10 @@ public:
 
 	BVTheorySolver<Weight> * bvTheory=nullptr;
 	class FlowOp: public  GraphTheorySolver<Weight>::GraphTheoryOp{
-		const MaxflowDetector * outer;
+		MaxflowDetector * outer;
 		int bvID;
 	public:
-		FlowOp(BVTheorySolver<Weight> &theory,const MaxflowDetector * outer, int bvID):GraphTheorySolver<Weight>::GraphTheoryOp(theory,outer->outer),outer(outer),bvID(bvID){
+		FlowOp(BVTheorySolver<Weight> &theory,MaxflowDetector * outer, int bvID):GraphTheorySolver<Weight>::GraphTheoryOp(theory,outer->outer),outer(outer),bvID(bvID){
 
 		}
 		int getBV()override{

@@ -703,6 +703,7 @@ void MSTDetector<Weight>::buildReason(Lit p, vec<Lit> & reason, CRef marker) {
 	} else {
 		assert(false);
 	}
+	outer->toSolver(reason);
 }
 
 
@@ -795,7 +796,7 @@ bool MSTDetector<Weight>::propagate(vec<Lit> & conflict) {
 					buildMinWeightTooLargeReason(min_weight, conflict);
 					
 				}
-				
+				outer->toSolver(conflict);
 				return false;
 			} else {
 				int a = 1;
@@ -857,7 +858,7 @@ bool MSTDetector<Weight>::propagate(vec<Lit> & conflict) {
 				buildEdgeNotInTreeReason(edgeID, conflict);
 				
 			}
-			
+			outer->toSolver(conflict);
 			return false;
 		} else {
 			int a = 1;

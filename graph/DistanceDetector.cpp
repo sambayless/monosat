@@ -1080,6 +1080,7 @@ void DistanceDetector<Weight>::buildReason(Lit p, vec<Lit> & reason, CRef marker
 		exit(3);
 		assert(false);
 	}
+	outer->toSolver(reason);
 }
 
 template<typename Weight>
@@ -1238,7 +1239,7 @@ bool DistanceDetector<Weight>::propagate(vec<Lit> & conflict) {
 				if(S->dbg_solver)
 				S->dbg_check(conflict);
 #endif
-				
+				outer->toSolver(conflict);
 				return false;
 			} else {
 				int a = 1;
@@ -1278,7 +1279,7 @@ bool DistanceDetector<Weight>::propagate(vec<Lit> & conflict) {
 				conflict.push(l);
 
 				buildDistanceLEQReason(to, min_dist, conflict,strictComparison);
-
+				outer->toSolver(conflict);
 				return false;
 			}
 		}
@@ -1293,7 +1294,7 @@ bool DistanceDetector<Weight>::propagate(vec<Lit> & conflict) {
 				conflict.push(~l);
 
 				buildDistanceGTReason(to, min_dist, conflict,strictComparison);
-
+				outer->toSolver(conflict);
 				return false;
 			}
 		}
@@ -1341,7 +1342,7 @@ bool DistanceDetector<Weight>::propagate(vec<Lit> & conflict) {
 					outer->buildBVReason(bv.getID(),Comparison::geq,under_dist,conflict);
 					buildDistanceLEQReason(to, min_dist_under, conflict,false);
 				}
-
+				outer->toSolver(conflict);
 				return false;
 			}
 		}
@@ -1377,6 +1378,7 @@ bool DistanceDetector<Weight>::propagate(vec<Lit> & conflict) {
 					}
 					buildDistanceGTReason(to, min_dist_over, conflict,true);
 				}
+				outer->toSolver(conflict);
 				return false;
 			}
 		}

@@ -1917,7 +1917,7 @@ public:
 			double start = rtime(1);
 			assert(d < detectors.size());
 			theories[d]->buildReason(p, reason,marker);
-			toSolver(reason);
+			//toSolver(reason);
 			double finish = rtime(1);
 			stats_reason_time += finish - start;
 			stats_num_reasons++;
@@ -1930,7 +1930,7 @@ public:
 
 			assert(d < detectors.size());
 			detectors[d]->buildReason(p, reason, marker);
-			toSolver(reason);
+			//toSolver(reason);
 			double finish = rtime(1);
 			stats_reason_time += finish - start;
 			stats_num_reasons++;
@@ -2405,7 +2405,7 @@ public:
 		for(Theory * t:theories){
 			if(!t->propagateTheory(conflict)){
 
-				toSolver(conflict);
+
 				return false;
 			}
 		}
@@ -2552,7 +2552,7 @@ public:
 
 							//the conflict should now be eliminated.
 							if(opt_keep_lazy_conflicts){
-								toSolver(conflict);
+
 								S->addClauseSafely(conflict);
 							}
 							stats_num_lazy_conflicts++;
@@ -2564,7 +2564,7 @@ public:
 						}
 					}
 					stats_num_conflicts++;
-					toSolver(conflict);
+
 					propagationtime += rtime(1) - startproptime;
 					return false;
 				}

@@ -517,6 +517,7 @@ void ConnectedComponentsDetector<Weight>::buildReason(Lit p, vec<Lit> & reason, 
 	} else {
 		assert(false);
 	}
+	outer->toSolver(reason);
 }
 template<typename Weight>
 bool ConnectedComponentsDetector<Weight>::propagate(vec<Lit> & conflict) {
@@ -564,7 +565,7 @@ bool ConnectedComponentsDetector<Weight>::propagate(vec<Lit> & conflict) {
 			} else {
 				buildMinComponentsTooLowReason(components, conflict);
 			}
-			
+			outer->toSolver(conflict);
 			return false;
 		} else {
 			int a = 1;
@@ -592,6 +593,7 @@ bool ConnectedComponentsDetector<Weight>::propagate(vec<Lit> & conflict) {
 			} else {
 				buildNodesNotConnectedReason(u, v, conflict);
 			}
+			outer->toSolver(conflict);
 			return false;
 		}
 		

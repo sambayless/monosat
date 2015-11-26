@@ -503,6 +503,7 @@ public:
 					}
 				}
 			}
+			toSolver(reason);
 		}
 
 
@@ -872,6 +873,7 @@ public:
 			}
 
 			void buildReason(Lit p,CRef marker, vec<Lit> & reason)override{
+				importTheory(theory);
 				reason.push(p);
 				Var v = var(p);
 				assert(marker==theory.comparisonprop_marker);
@@ -880,6 +882,7 @@ public:
 					op=-op;
 				}
 				theory.buildComparisonReason(op,bvID,w,reason);
+				toSolver(reason);
 			}
 
 
@@ -1264,6 +1267,7 @@ public:
 		}
 
 		void buildReason(Lit p,CRef marker, vec<Lit> & reason)override{
+			importTheory(theory);
 			 if (marker == theory.comparisonbv_1starg_marker) {
 				reason.push(p);
 				Var v = var(p);
@@ -1290,6 +1294,7 @@ public:
 				int compareBV = getCompareID();
 				theory.buildComparisonReasonBV(op,bvID,compareBV,reason);
 			}
+			toSolver(reason);
 		}
 
 
@@ -1303,10 +1308,10 @@ public:
 				conflict.push(~l);
 
 				if (compare_over){
-					addAnalysis(Comparison::leq,compareID, over_approx[compareID],conflict);
+					addAnalysis(Comparison::leq,compareID, over_approx[compareID]);
 					//buildValueReason(Comparison::leq,c.compareID, over_approx[c.compareID],conflict,trail_pos-1);
 				}else{
-					addAnalysis(Comparison::geq,compareID, under_approx[compareID],conflict);
+					addAnalysis(Comparison::geq,compareID, under_approx[compareID]);
 					//buildValueReason(Comparison::geq,c.compareID, under_approx[c.compareID],conflict,trail_pos-1);
 				}
 
@@ -1314,9 +1319,9 @@ public:
 				assert(value(l)==l_False);
 				conflict.push(l);
 				if (compare_over){
-					addAnalysis(Comparison::leq,compareID, over_approx[compareID],conflict);
+					addAnalysis(Comparison::leq,compareID, over_approx[compareID]);
 				}else{
-					addAnalysis(Comparison::geq,compareID, under_approx[compareID],conflict);
+					addAnalysis(Comparison::geq,compareID, under_approx[compareID]);
 				}
 			}
 
@@ -1585,6 +1590,7 @@ public:
 
 				theory.buildComparisonReason(Comparison::geq,bvID,under_approx[bvID],reason);
 			}
+			toSolver(reason);
 		}
 		void analyzeReason(bool compareOver,Comparison op, Weight  to,  vec<Lit> & conflict) override{
 			importTheory(theory);
@@ -2012,6 +2018,7 @@ public:
 					op->buildReason(reason);
 				}
 			}
+			toSolver(reason);
 		}
 
 		bool checkApproxUpToDate(Weight & under,Weight&over)override{
@@ -3087,13 +3094,13 @@ public:
 
 					//addAnalysis(Comparison::lt,bvID,minmax_arg_under,conflict);
 					assert(applyOp(op,minArg,to));
-					addAnalysis(op,minArg,to,conflict);
+					addAnalysis(op,minArg,to);
 				}else{
 					for(int i = 0;i<args.size();i++){
 						int argID = args[i]->bvID;
 						//analyzeValueReason(Comparison::geq, argID,minmax_arg_under,conflict);
 						assert(applyOp(op,argID,to));
-						addAnalysis(op, argID,to,conflict);
+						addAnalysis(op, argID,to);
 					}
 
 					//addAnalysis(Comparison::gt, bvID,minmax_arg_over,conflict);
@@ -3108,13 +3115,13 @@ public:
 					for(int i = 0;i<args.size();i++){
 						int argID = args[i]->bvID;
 						assert(applyOp(op,argID,to));
-						addAnalysis(op, argID,to,conflict);
+						addAnalysis(op, argID,to);
 					}
 				}else{
 
 					assert(applyOp(op,maxArg,to));
 					//addAnalysis(Comparison::gt, bvID,minmax_arg_over,conflict);
-					addAnalysis(op, maxArg,to,conflict);
+					addAnalysis(op, maxArg,to);
 
 				}
 			}
@@ -3316,13 +3323,13 @@ public:
 					Weight highest_over = over_approx[resultID];
 					assert(compare_over);
 					assert(applyOp(op,resultID,to));
-					addAnalysis(op, resultID,to,conflict);
+					addAnalysis(op, resultID,to);
 				}else{
 					using std::min;
 					Weight lowest_under = under_approx[resultID];
 					assert(!compare_over);
 					assert(applyOp(op,resultID,to));
-					addAnalysis(op, resultID,to,conflict);
+					addAnalysis(op, resultID,to);
 				}
 			}
 
@@ -4433,9 +4440,10 @@ public:
 		assert(hasOperation(p));
 		Operation & op = getOperation(p);
 		op.buildReason(p,marker,reason);
+		//note: the reason has already been transformed into the solvers variable namespace at this point,
+		//do _not_ call 'toSolver' again
 
 
-		toSolver(reason);
 		double finish = rtime(1);
 		stats_reason_time += finish - start;
 		stats_num_reasons++;
@@ -4443,6 +4451,7 @@ public:
 		if(reason.size()<2){
 			int a=1;
 		}
+
 	}
 
 

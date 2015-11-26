@@ -411,9 +411,11 @@ void MaxflowDetector<Weight>::buildMaxFlowTooHighReason(Weight flow, vec<Lit> & 
 	analyzeMaxFlowGEQ(flow,conflict);
 
 	bumpConflictEdges(conflict);
-	if(outer->bvTheory)
+	outer->toSolver(conflict);//convert these into the solver's literal space BEFORE applying bitvector theory solver learning
+	if(outer->bvTheory){
 		outer->bvTheory->analyze(conflict);
-
+		outer->bvTheory->toSolver(conflict);
+	}
 	if (g_under.outfile) {
 		std::sort(conflict.begin(), conflict.end());
 		fprintf(g_under.outfile, "toohigh ");
@@ -614,7 +616,7 @@ void MaxflowDetector<Weight>::analyzeMaxFlowLEQ(Weight flow, vec<Lit> & conflict
 						}else if(outer->hasBitVector(edgeID) && ! outer->getEdgeBV(edgeID).isConst()){
 							Weight residual = overapprox_conflict_detector->getEdgeResidualCapacity(edgeID);
 							assert(overapprox_conflict_detector->getEdgeResidualCapacity(edgeID)==0);//the edge has no residual capacity, so its capacity must be increased.
-							outer->bvTheory->addAnalysis(Comparison::leq,outer->getEdgeBV(edgeid).getID(),g_over.getWeight(edgeID));
+							outer->bvTheory->addAnalysis(Comparison::leq,outer->getEdgeBV(edgeID).getID(),g_over.getWeight(edgeID));
 
 							//outer->buildBVReason(outer->getEdgeBV(edgeID).getID(),Comparison::leq,g_over.getWeight(edgeID),conflict);
 
@@ -758,11 +760,10 @@ void MaxflowDetector<Weight>::analyzeMaxFlowLEQ(Weight flow, vec<Lit> & conflict
 		}
 
 		if (!force_maxflow && opt_adaptive_conflict_mincut > 0 && (conflict.size() - 1 > opt_adaptive_conflict_mincut)) { //-1 to ignore the predicate's literal stored at position 0
-			double elapsed = rtime(2) - starttime;
-			stats_over_conflict_time += elapsed;
+
 			conflict.shrink(conflict.size() - 1);
 			assert(conflict.size() == 1);
-			analyzeMaxFlowLEQ(maxflow, conflict, true);
+			analyzeMaxFlowLEQ(flow, conflict, true);
 			return;
 		}
 #ifndef NDEBUG
@@ -786,9 +787,11 @@ void MaxflowDetector<Weight>::buildMaxFlowTooLowReason(Weight maxflow, vec<Lit> 
 	double starttime = rtime(2);
 	analyzeMaxFlowLEQ(maxflow,conflict,force_maxflow);
 	bumpConflictEdges(conflict);
-	if(outer->bvTheory)
+	outer->toSolver(conflict);//convert these into the solver's literal space BEFORE applying bitvector theory solver learning
+	if(outer->bvTheory){
 		outer->bvTheory->analyze(conflict);
-
+		outer->bvTheory->toSolver(conflict);
+	}
 	/*if(conflict.size()<dbg_minconflict()){
 	 exit(4);
 	 }*/
@@ -827,7 +830,7 @@ template<typename Weight>
 void MaxflowDetector<Weight>::buildReason(Lit p, vec<Lit> & reason, CRef marker) {
 	
 	if (marker == underprop_marker) {
-		reason.push(p);
+		reason.push(outer->toSolver(p));
 		//	double startpathtime = rtime(2);
 		
 		/*Dijkstra & detector = *reach_detectors[d]->positive_dist_detector;
@@ -858,7 +861,7 @@ void MaxflowDetector<Weight>::buildReason(Lit p, vec<Lit> & reason, CRef marker)
 		//double elapsed = rtime(2)-startpathtime;
 		//	pathtime+=elapsed;
 	} else if (marker == overprop_marker) {
-		reason.push(p);
+		reason.push(outer->toSolver(p));
 		
 		//the reason is a cut separating p from s;
 		//We want to find a min-cut in the full graph separating, where activated edges (ie, those still in antig) are weighted infinity, and all others are weighted 1.
@@ -882,6 +885,8 @@ void MaxflowDetector<Weight>::buildReason(Lit p, vec<Lit> & reason, CRef marker)
 	} else {
 		assert(false);
 	}
+
+	//Note: the conflict clause already has 'toSolver' called, in buildMaxFlowTooLowReason/buildMaxFlowTooHighReason
 }
 template<typename Weight>
 bool MaxflowDetector<Weight>::propagate(vec<Lit> & conflict, bool backtrackOnly, Lit & conflictLit) {
@@ -1050,16 +1055,11 @@ template<typename Weight>
 void MaxflowDetector<Weight>::FlowOp::analyzeReason(bool compareOver,Comparison op, Weight  to,  vec<Lit> & conflict){
 //watch out - might need to backtrack the graph theory appropriately, here...
 	 GraphTheorySolver<Weight>::GraphTheoryOp::analyzeReason(compareOver,op,to,conflict);
-
 	 if(!compareOver){
-		 //the reason that the maximum flow is greater or equal to the current value is that their exists a flow of at least that vlaue.
-
-		 assert(under_maxflow>=to);
-
+		 outer->analyzeMaxFlowGEQ(to,conflict);
 	 }else{
-
+		 outer->analyzeMaxFlowLEQ(to,conflict);
 	 }
-
 	 GraphTheorySolver<Weight>::GraphTheoryOp::completeAnalysis();
 }
 
