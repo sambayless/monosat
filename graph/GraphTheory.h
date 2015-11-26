@@ -1150,6 +1150,11 @@ public:
 		GraphTheoryOp(BVTheorySolver<Weight> &theory,GraphTheorySolver * outer):BVTheorySolver<Weight>::Operation(theory),outer(outer){
 
 		}
+		 typename BVTheorySolver<Weight>::OperationType getType()const override{
+			return  BVTheorySolver<Weight>::OperationType::cause_is_theory;
+		}
+
+
 		int getBV()override=0;
 
 		bool propagate(bool & changed, vec<Lit> & conflict)override{return true;}
@@ -1601,6 +1606,7 @@ public:
 		//first, undo any assignments in the lazy trail
 		if(lazy_trail_head!=var_Undef){
 			requiresPropagation = true;
+			S->needsPropagation(getTheoryIndex());
 			Var v = getPrev(lazy_trail_head);
 			while(true){
 				Lit l = mkLit(v, value(v)==l_False);
@@ -1662,6 +1668,7 @@ public:
 
 		if (changed) {
 			requiresPropagation = true;
+			S->needsPropagation(getTheoryIndex());
 		}
 /*		while(to_reenqueue.size()){
 			Lit p = to_reenqueue.last();
@@ -1714,7 +1721,8 @@ public:
 			}
 			v=p;
 		}
-		requiresPropagation = true;
+		requiresPropagation = true;//is this always required?
+		S->needsPropagation(getTheoryIndex());
 
 		for (Detector * d : detectors) {
 			d->backtrack(this->decisionLevel());
@@ -1740,22 +1748,34 @@ public:
 	void rewindUntil(Var until){
 		assert(onTrail(until)||onLazyTrail(until));
 		assert(rewound_assigns.size()==0);
+		int lev;
 		Var v;
-		if(!onLazyTrail(until)){
+		if(lazy_trail_head==var_Undef){
 			v= getBack(decisionLevel());
+			lev = decisionLevel();
 		}else{
+			lev=decisionLevel()+1;
 			assert(lazy_trail_head!=var_Undef);
 			v = getPrev(lazy_trail_head);
 		}
+		while(lev>0){
 
-		//assert(to_reenqueue.size()==0);
-		while(v!=until && v!=var_Undef){
-			Lit l = mkLit(v, value(v)==l_False);
-			rewound_assigns.push(l);
-			assert(assigns[v]!=l_Undef);
-			backtrackAssign(l);
-			Var p = _getPrev(v);
-			v=p;
+			//assert(to_reenqueue.size()==0);
+			while(v!=var_Undef){
+				if(v==until){
+					return;
+				}
+				Lit l = mkLit(v, value(v)==l_False);
+				rewound_assigns.push(l);
+				assert(assigns[v]!=l_Undef);
+				backtrackAssign(l);
+				Var p = _getPrev(v);
+				if(p==v)
+					break;
+				v=p;
+			}
+			lev--;
+			v = getBack(lev);
 		}
 	}
 
@@ -2225,6 +2245,7 @@ public:
 		assert(!onTrail(var(l)));
 		appendToTrail(l,decisionLevel());
 		requiresPropagation = true;
+
 		assert(onTrail(var(l)));
 
 		_assign(l);
@@ -3865,9 +3886,12 @@ public:
 
 	void needsPropagation(int theoryID){
 		requiresPropagation=true;
+		S->needsPropagation(getTheoryIndex());
 	}
 
-
+	bool check_propagated()override{
+		return !requiresPropagation;
+	}
 	Weight getModel_MaximumFlow(Lit theoryLit){
 		Var v = var(theoryLit);
 		Detector * d= detectors[getDetector(v)];

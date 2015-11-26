@@ -1672,7 +1672,7 @@ lbool Solver::search(int nof_conflicts) {
 	n_theory_decision_rounds+=using_theory_decisions;
 	for (;;) {
 		static int iter = 0;
-		if (++iter ==  23 || iter==65) {
+		if (++iter ==  105 || iter==106) {
 			int a = 1;
 		}
 
@@ -1775,6 +1775,11 @@ lbool Solver::search(int nof_conflicts) {
 					goto conflict;
 				}
 			}
+#ifndef NDEBUG
+			for(int i =0;i<theories.size();i++)
+				assert(theories[i]->check_propagated());
+#endif
+
 			
 			// NO CONFLICT
 			if ((nof_conflicts >= 0 && conflictC >= nof_conflicts) || !withinBudget()) {

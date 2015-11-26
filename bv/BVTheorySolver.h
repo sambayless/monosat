@@ -104,7 +104,8 @@ public:
 		cause_is_decision=9,
 		cause_is_minmax = 10,
 		cause_is_minmax_argument = 11,
-		cause_is_popcount = 12
+		cause_is_popcount = 12,
+		cause_is_theory=13
 	};
 	struct Cause{
 
@@ -183,9 +184,7 @@ public:
 				return op_id;
 			}
 			virtual int getBV()=0;
-			virtual OperationType getType()const{
-				return OperationType::none;
-			}
+			virtual OperationType getType()const=0;
 
 			virtual bool propagate(bool & changed, vec<Lit> & conflict)=0;
 			virtual void enqueue(Lit l, bool alter_trail=true){
@@ -4986,9 +4985,9 @@ public:
 				over=under_approx0[bvID];
 			}
 		}
-		if (under_causes[bvID].type !=OperationType::cause_is_decision)
+		if (under_causes[bvID].type !=OperationType::cause_is_decision && under_causes[bvID].type !=OperationType::cause_is_theory)
 			assert(under==under_approx[bvID]);
-		if(over_causes[bvID].type !=OperationType::cause_is_decision)
+		if(over_causes[bvID].type !=OperationType::cause_is_decision  && over_causes[bvID].type !=OperationType::cause_is_theory)
 			assert(over==over_approx[bvID]);
 
 		assert(under_approx0[bvID]<=under_approx[bvID]);
@@ -5078,7 +5077,9 @@ public:
 	bool propagateTheory(vec<Lit> & conflict, bool force_propagation) {
 		static int realprops = 0;
 		stats_propagations++;
-
+		if(stats_propagations==224){
+			int a=1;
+		}
 		if (!force_propagation && !requiresPropagation ) {
 			stats_propagations_skipped++;
 			assert(dbg_uptodate());
@@ -5714,7 +5715,7 @@ public:
 		}
 		analyses.clear();
 		dbg_no_pending_analyses();
-
+		rewind_trail_pos(trail.size()-1);
 		//now walk back through the trail to find the
 	}
 
@@ -5736,6 +5737,9 @@ public:
 		return ret;
 	}
 
+	bool check_propagated()override{
+		return !requiresPropagation;
+	}
 	bool check_solved() {
 
 		for(int bvID = 0;bvID<bitvectors.size();bvID++){

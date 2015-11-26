@@ -790,7 +790,7 @@ void MaxflowDetector<Weight>::buildMaxFlowTooLowReason(Weight maxflow, vec<Lit> 
 	outer->toSolver(conflict);//convert these into the solver's literal space BEFORE applying bitvector theory solver learning
 	if(outer->bvTheory){
 		outer->bvTheory->analyze(conflict);
-		outer->bvTheory->toSolver(conflict);
+
 	}
 	/*if(conflict.size()<dbg_minconflict()){
 	 exit(4);
@@ -855,7 +855,8 @@ void MaxflowDetector<Weight>::buildReason(Lit p, vec<Lit> & reason, CRef marker)
 			buildMaxFlowTooHighReason(flow, reason);
 		}else{
 			auto & bv= f.bv;
-			outer->buildBVReason(bv.getID(),f.inclusive ? Comparison::gt:Comparison::geq,bv.getUnder(),reason);
+			//outer->buildBVReason(bv.getID(),f.inclusive ? Comparison::gt:Comparison::geq,bv.getUnder(),reason);
+			outer->bvTheory->addAnalysis(f.inclusive ? Comparison::gt:Comparison::geq,bv.getID(),bv.getUnder());
 			buildMaxFlowTooHighReason(bv.getOver(), reason);
 		}
 		//double elapsed = rtime(2)-startpathtime;
@@ -877,7 +878,8 @@ void MaxflowDetector<Weight>::buildReason(Lit p, vec<Lit> & reason, CRef marker)
 			buildMaxFlowTooLowReason(flow, reason);
 		}else{
 			auto & bv = f.bv;
-			outer->buildBVReason(bv.getID(),f.inclusive ? Comparison::gt:Comparison::geq,bv.getUnder(),reason);
+			outer->bvTheory->addAnalysis(f.inclusive ? Comparison::leq:Comparison::lt,bv.getID(),bv.getUnder());
+			//outer->buildBVReason(bv.getID(),f.inclusive ? Comparison::gt:Comparison::geq,bv.getUnder(),reason);
 			//int t = getNode(v); // v- var(reach_lits[d][0]);
 			buildMaxFlowTooLowReason(bv.getUnder(), reason);
 		}
@@ -962,9 +964,9 @@ bool MaxflowDetector<Weight>::propagate(vec<Lit> & conflict, bool backtrackOnly,
 							return false;
 						}*/
 					}
-					conflict.push(l);
-					buildMaxFlowTooHighReason(maxflow, conflict);
 
+					buildMaxFlowTooHighReason(maxflow, conflict);
+					conflict.push(outer->toSolver(l));
 					return false;
 				}
 				
@@ -985,8 +987,9 @@ bool MaxflowDetector<Weight>::propagate(vec<Lit> & conflict, bool backtrackOnly,
 						}*/
 					}
 
-					conflict.push(~l);
+
 					buildMaxFlowTooLowReason(maxflow, conflict);
+					conflict.push(outer->toSolver(~l));
 					return false;
 				}
 				
@@ -1011,9 +1014,11 @@ bool MaxflowDetector<Weight>::propagate(vec<Lit> & conflict, bool backtrackOnly,
 					if(backtrackOnly)
 						return false;
 
-					conflict.push(l);
-					outer->buildBVReason(bv.getID(),inclusive ? Comparison::leq:Comparison::lt,under_maxflow,conflict);
+					outer->bvTheory->addAnalysis(inclusive ? Comparison::leq:Comparison::lt,bv.getID(),under_maxflow);
+					//outer->buildBVReason(bv.getID(),inclusive ? Comparison::leq:Comparison::lt,under_maxflow,conflict);
 					buildMaxFlowTooHighReason(bv.getOver(), conflict);
+					conflict.push(outer->toSolver(l));
+
 					return false;
 				}
 
@@ -1029,9 +1034,11 @@ bool MaxflowDetector<Weight>::propagate(vec<Lit> & conflict, bool backtrackOnly,
 					if(backtrackOnly)
 						return false;
 
-					conflict.push(~l);
-					outer->buildBVReason(bv.getID(),inclusive ? Comparison::gt:Comparison::geq,over_maxflow,conflict);
+					outer->bvTheory->addAnalysis(inclusive ? Comparison::gt:Comparison::geq,bv.getID(),over_maxflow);
 					buildMaxFlowTooLowReason(bv.getUnder(), conflict);
+					conflict.push(outer->toSolver(~l));
+					//outer->buildBVReason(bv.getID(),inclusive ? Comparison::gt:Comparison::geq,over_maxflow,conflict);
+
 					return false;
 				}
 
@@ -1039,10 +1046,10 @@ bool MaxflowDetector<Weight>::propagate(vec<Lit> & conflict, bool backtrackOnly,
 
 			if(opt_graph_bv_prop){
 				FlowOp * flowOp = f.op;
-				if (outer->value(l) == l_True ) {
-					outer->assignBV(bv.getID(),inclusive? Comparison::geq : Comparison::gt,under_maxflow,flowOp);
-				}else if (outer->value(l) == l_False){
-					outer->assignBV(bv.getID(),inclusive? Comparison::lt : Comparison::leq,over_maxflow,flowOp);
+				if (outer->value(l) == l_False ) {
+					outer->assignBV(bv.getID(),inclusive? Comparison::gt : Comparison::geq,under_maxflow,flowOp);
+				}else if (outer->value(l) == l_True){
+					outer->assignBV(bv.getID(),inclusive? Comparison::leq : Comparison::lt,over_maxflow,flowOp);
 				}
 			}
 		}
