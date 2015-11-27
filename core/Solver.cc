@@ -1095,7 +1095,7 @@ CRef Solver::propagate(bool propagate_theories) {
 			initialPropagate = false;
 		}
 		static int iter = 0;
-		if (++iter == 932) {
+		if (++iter == 195) {
 
 			int a = 1;
 		}
@@ -1672,7 +1672,7 @@ lbool Solver::search(int nof_conflicts) {
 	n_theory_decision_rounds+=using_theory_decisions;
 	for (;;) {
 		static int iter = 0;
-		if (++iter ==  105 || iter==106) {
+		if (++iter ==  268) {
 			int a = 1;
 		}
 
@@ -1775,10 +1775,6 @@ lbool Solver::search(int nof_conflicts) {
 					goto conflict;
 				}
 			}
-#ifndef NDEBUG
-			for(int i =0;i<theories.size();i++)
-				assert(theories[i]->check_propagated());
-#endif
 
 			
 			// NO CONFLICT

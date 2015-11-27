@@ -217,7 +217,7 @@ public:
 	auto clip = [&](Weight & val, int bvID) {return theory.clip(val,bvID);};\
 	auto assert_in_range = [&](Weight  val, int bvID){theory.assert_in_range(val, bvID);};\
 	auto addAlteredBV = [&]( int newBV){theory.addAlteredBV(newBV);};\
-	auto toSolver = [&](vec<Lit> & c){theory.toSolver(c);};\
+	auto toSolver = [&](Lit l){return theory.toSolver(l);};\
 	auto analyze = [&](vec<Lit> & c){theory.analyze(c);};\
 	auto analyzeValueReason = [&](Comparison op, int bvID, Weight  to,  vec<Lit> & conflict){theory.analyzeValueReason(op,bvID,to,conflict);};\
 	auto addAnalysis = [&](Comparison op, int bvID, Weight  to){return theory.addAnalysis(op,bvID,to);};\
@@ -226,7 +226,7 @@ public:
 	auto  applyOp = [&](Comparison op,int bvID,Weight to){return theory.applyOp(op,bvID,to);};\
 	auto enqueue = [&](Lit l,CRef reason){return theory.enqueue(l,reason);};
 
-
+	/*auto toSolver = [&](vec<Lit> & c){theory.toSolver(c);};\ */
 
 
 	class BitOp:public Operation{
@@ -281,7 +281,7 @@ public:
 					analyzeValueReason(Comparison::leq, bvID,overApprox,conflict);
 
 					analyze(conflict);
-					toSolver(conflict);
+
 					theory.stats_conflict_time+=rtime(2)-startconftime;
 					return false;
 				}
@@ -305,7 +305,7 @@ public:
 									Weight bit = 1<<j;
 									lbool val = value(bv[j]);
 									if(val==l_True){
-										conflict.push(~bv[j]);
+										conflict.push(toSolver(~bv[j]));
 									}
 								}
 								theory.stats_num_conflicts++;theory.stats_bit_conflicts++;
@@ -313,7 +313,7 @@ public:
 									printf("bv bit conflict %ld\n", theory.stats_num_conflicts);
 								}
 								theory.buildComparisonReason(Comparison::leq,bvID,overApprox,conflict);
-								toSolver(conflict);
+
 								theory.stats_conflict_time+=rtime(2)-startconftime;
 								return false;
 
@@ -330,7 +330,7 @@ public:
 									Weight bit = 1<<j;
 									lbool val = value(bv[j]);
 									if(val==l_False){
-										conflict.push(bv[j]);
+										conflict.push(toSolver(bv[j]));
 									}
 								}
 								theory.stats_num_conflicts++;theory.stats_bit_conflicts++;
@@ -338,7 +338,7 @@ public:
 									printf("bv bit conflict %ld\n", theory.stats_num_conflicts);
 								}
 								theory.buildComparisonReason(Comparison::geq,bvID,underApprox,conflict);
-								toSolver(conflict);
+
 								theory.stats_conflict_time+=rtime(2)-startconftime;
 								return false;
 
@@ -435,7 +435,7 @@ public:
 			importTheory(theory);
 			assert (marker == theory.bvprop_marker);
 			Var v = var(p);
-			reason.push(p);
+			reason.push(toSolver(p));
 			theory.rewind_trail_pos(theory.analysis_trail_pos-1);
 			assert(value(p)==l_Undef);
 			Weight underApprox = under_approx[bvID];
@@ -480,7 +480,7 @@ public:
 							Weight bit = 1<<j;
 							lbool val = value(bv[j]);
 							if(val==l_False){
-								reason.push(bv[j]);
+								reason.push(toSolver(bv[j]));
 							}
 						}
 						theory.buildComparisonReason(Comparison::geq,bvID,underApprox,reason);
@@ -494,7 +494,7 @@ public:
 							Weight bit = 1<<j;
 							lbool val = value(bv[j]);
 							if(val==l_True){
-								reason.push(~bv[j]);
+								reason.push(toSolver(~bv[j]));
 							}
 						}
 						theory.buildComparisonReason(Comparison::leq,bvID,overApprox,reason);
@@ -502,7 +502,7 @@ public:
 					}
 				}
 			}
-			toSolver(reason);
+
 		}
 
 
@@ -520,7 +520,7 @@ public:
 							over+=bit;
 						}else{
 							assert(value(bl)==l_False);
-							conflict.push(bl);
+							conflict.push(toSolver(bl));
 						}
 					}
 				}
@@ -537,7 +537,7 @@ public:
 							under-=bit;
 						}else{
 							assert(value(~bl)==l_False);
-							conflict.push(~bl);
+							conflict.push(toSolver(~bl));
 						}
 					}
 				}
@@ -657,9 +657,9 @@ public:
 							}
 							assert(value(l)==l_False);
 							assert(theory.dbg_value(l)==l_False);
-							conflict.push(l);
+							conflict.push(toSolver(l));
 							theory.buildComparisonReason(op,bvID,to,conflict);
-							toSolver(conflict);
+
 							theory.stats_conflict_time+=rtime(2)-startconftime;
 							return false;
 						}else {
@@ -675,9 +675,9 @@ public:
 							if(opt_verb>1){
 								printf("bv comparison conflict %ld\n", theory.stats_num_conflicts);
 							}
-							conflict.push(~l);
+							conflict.push(toSolver(~l));
 							theory.buildComparisonReason(-op,bvID,to,conflict);
-							toSolver(conflict);
+
 							theory.stats_conflict_time+=rtime(2)-startconftime;
 							return false;
 						}else if (value(l)==l_False){
@@ -697,9 +697,9 @@ public:
 							if(opt_verb>1){
 								printf("bv comparison conflict %ld\n", theory.stats_num_conflicts);
 							}
-							conflict.push(~l);
+							conflict.push(toSolver(~l));
 							theory.buildComparisonReason(-op,bvID,to,conflict);
-							toSolver(conflict);
+
 							theory.stats_conflict_time+=rtime(2)-startconftime;
 							return false;
 						}else if (value(l)==l_False){
@@ -720,9 +720,9 @@ public:
 							if(opt_verb>1){
 								printf("bv comparison conflict %ld\n", theory.stats_num_conflicts);
 							}
-							conflict.push(l);
+							conflict.push(toSolver(l));
 							theory.buildComparisonReason(op,bvID,to,conflict);
-							toSolver(conflict);
+
 							theory.stats_conflict_time+=rtime(2)-startconftime;
 							return false;
 						}else {
@@ -873,7 +873,7 @@ public:
 
 			void buildReason(Lit p,CRef marker, vec<Lit> & reason)override{
 				importTheory(theory);
-				reason.push(p);
+				reason.push(toSolver(p));
 				Var v = var(p);
 				assert(marker==theory.comparisonprop_marker);
 				Comparison op = getOp();
@@ -881,7 +881,7 @@ public:
 					op=-op;
 				}
 				theory.buildComparisonReason(op,bvID,w,reason);
-				toSolver(reason);
+
 			}
 
 
@@ -891,10 +891,10 @@ public:
 				assert(l!=lit_Undef);
 				if(value(l)==l_True){
 					assert(value(~l)==l_False);
-					conflict.push(~l);
+					conflict.push(toSolver(~l));
 				}else{
 					assert(value(l)==l_False);
-					conflict.push(l);
+					conflict.push(toSolver(l));
 				}
 			}
 
@@ -1037,9 +1037,9 @@ public:
 
 						assert(value(l)==l_False);
 						assert(dbg_value(l)==l_False);
-						conflict.push(l);
+						conflict.push(toSolver(l));
 						buildValueReasonBV(op,bvID,compareID,conflict);
-						toSolver(conflict);
+
 						return false;
 					}*/else {
 
@@ -1055,9 +1055,9 @@ public:
 						if(opt_verb>1){
 							printf("bv bv comparison conflict %ld\n", theory.stats_num_conflicts);
 						}
-						conflict.push(~l);
+						conflict.push(toSolver(~l));
 						theory.buildComparisonReasonBV(-op,bvID,compareID,conflict);
-						toSolver(conflict);
+
 						theory.stats_conflict_time+=rtime(2)-startconftime;
 						return false;
 					}/*else if (value(l)==l_False){
@@ -1082,9 +1082,9 @@ public:
 						if(opt_verb>1){
 							printf("bv bv comparison conflict %ld\n", theory.stats_num_conflicts);
 						}
-						conflict.push(~l);
+						conflict.push(toSolver(~l));
 						theory.buildComparisonReasonBV(-op,bvID,compareID,conflict);
-						toSolver(conflict);
+
 						theory.stats_conflict_time+=rtime(2)-startconftime;
 						return false;
 					}/*else if (value(l)==l_False){
@@ -1100,9 +1100,9 @@ public:
 
 					}/*else if (value(l)==l_False){
 
-						conflict.push(l);
+						conflict.push(toSolver(l));
 						buildValueReasonBV(op,bvID,compareID,conflict);
-						toSolver(conflict);
+
 						return false;
 					}*/else {
 
@@ -1268,7 +1268,7 @@ public:
 		void buildReason(Lit p,CRef marker, vec<Lit> & reason)override{
 			importTheory(theory);
 			 if (marker == theory.comparisonbv_1starg_marker) {
-				reason.push(p);
+				reason.push(toSolver(p));
 				Var v = var(p);
 				int compareBV = getCompareID();
 				Comparison op = getOp();
@@ -1283,7 +1283,7 @@ public:
 			}else if (marker == theory.comparisonbv_2ndarg_marker) {
 				other->buildReason(p,theory.comparisonbv_1starg_marker,reason);
 			}else if (marker == theory.comparisonbv_prop_marker){
-				reason.push(p);
+				reason.push(toSolver(p));
 				Var v = var(p);
 
 				Comparison op = getOp();
@@ -1293,7 +1293,7 @@ public:
 				int compareBV = getCompareID();
 				theory.buildComparisonReasonBV(op,bvID,compareBV,reason);
 			}
-			toSolver(reason);
+
 		}
 
 
@@ -1304,7 +1304,7 @@ public:
 			int compareID = getCompareID();
 			if(value(l)==l_True){
 				assert(value(~l)==l_False);
-				conflict.push(~l);
+				conflict.push(toSolver(~l));
 
 				if (compare_over){
 					addAnalysis(Comparison::leq,compareID, over_approx[compareID]);
@@ -1316,7 +1316,7 @@ public:
 
 			}else{
 				assert(value(l)==l_False);
-				conflict.push(l);
+				conflict.push(toSolver(l));
 				if (compare_over){
 					addAnalysis(Comparison::leq,compareID, over_approx[compareID]);
 				}else{
@@ -1454,12 +1454,12 @@ public:
 			if(under_approx[bvID]>over){
 				//this is a conflict
 				buildReason(conflict);
-				toSolver(conflict);
+
 				return false;
 			}else if (over_approx[bvID]<under){
 				//this is a conflict
 				buildReason(conflict);
-				toSolver(conflict);
+
 				return false;
 			}else if (under_approx[bvID]==over_approx[bvID] && under<over){
 				assert(under<under_approx[bvID] || over>over_approx[bvID]);
@@ -1542,7 +1542,7 @@ public:
 
 				for(Var v:args){
 					if(value(mkLit(v))==l_False)
-						conflict.push(mkLit(v,false));
+						conflict.push(toSolver(mkLit(v,false)));
 
 				}
 
@@ -1552,7 +1552,7 @@ public:
 
 				for(Var v:args){
 					if(value(mkLit(v))==l_True)
-						conflict.push(mkLit(v,true));
+						conflict.push(toSolver(mkLit(v,true)));
 
 				}
 
@@ -1563,14 +1563,14 @@ public:
 		void buildReason(Lit p,CRef marker, vec<Lit> & reason)override{
 			importTheory(theory);
 			assert(marker==theory.popcount_marker);
-			reason.push(p);
+			reason.push(toSolver(p));
 			if(sign(p)){
 				//the reason that p was assigned to false, was that either one of the other true literals had to be false,
 				//or bvID had to be larger
 
 				for(Var v:args){
 					if(value(mkLit(v))==l_True)
-						reason.push(mkLit(v,true));
+						reason.push(toSolver(mkLit(v,true)));
 
 				}
 				//assert(over==over_approx[bvID]);
@@ -1583,13 +1583,13 @@ public:
 
 				for(Var v:args){
 					if(value(mkLit(v))==l_False)
-						reason.push(mkLit(v,false));
+						reason.push(toSolver(mkLit(v,false)));
 
 				}
 
 				theory.buildComparisonReason(Comparison::geq,bvID,under_approx[bvID],reason);
 			}
-			toSolver(reason);
+
 		}
 		void analyzeReason(bool compareOver,Comparison op, Weight  to,  vec<Lit> & conflict) override{
 			importTheory(theory);
@@ -1600,14 +1600,14 @@ public:
 			if(compareOver){
 				for(Var v:args){
 					if(value(mkLit(v))==l_False)
-						conflict.push(mkLit(v,false));
+						conflict.push(toSolver(mkLit(v,false)));
 				}
 
 			}else{
 
 				for(Var v:args){
 					if(value(mkLit(v))==l_True)
-						conflict.push(mkLit(v,true));
+						conflict.push(toSolver(mkLit(v,true)));
 				}
 			}
 		}
@@ -1746,12 +1746,12 @@ public:
 						printf("bv condition conflict %ld\n", theory.stats_num_conflicts);
 					}
 					if(value(condition)==l_True){
-						conflict.push(~condition);
+						conflict.push(toSolver(~condition));
 					}else if(value(condition)==l_False){
-						conflict.push(condition);
+						conflict.push(toSolver(condition));
 					}
 					buildReason(conflict);
-					toSolver(conflict);
+
 					theory.stats_conflict_time+=rtime(2)-startconftime;
 					return false;
 				}else if (overApprox<under){
@@ -1762,12 +1762,12 @@ public:
 					}
 					theory.stats_num_conflicts++;theory.stats_addition_conflicts++;
 					if(value(condition)==l_True){
-						conflict.push(~condition);
+						conflict.push(toSolver(~condition));
 					}else if(value(condition)==l_False){
-						conflict.push(condition);
+						conflict.push(toSolver(condition));
 					}
 					buildReason(conflict);
-					toSolver(conflict);
+
 					theory.stats_conflict_time+=rtime(2)-startconftime;
 					return false;
 				}
@@ -1795,7 +1795,7 @@ public:
 						if(under_approx[bvElseID]>over_approx[bvID] || over_approx[bvElseID]<under_approx[bvID]){
 							//condition must be both true and false, which is a conflict.
 							buildReason(conflict);
-							toSolver(conflict);
+
 							//buildConditionalReason(bvID,bvElseID,underApprox,conflict);
 							return false;
 						}else{
@@ -1971,7 +1971,7 @@ public:
 			if (marker == theory.conditionthen_prop_marker) {
 				//the 'then' condition must hold if the else condition is out of range
 				assert(value(p)==l_True);
-				reason.push(p);
+				reason.push(toSolver(p));
 				Var v = var(p);
 
 				theory.writeBounds(bvID);
@@ -1983,7 +1983,7 @@ public:
 				buildConditionalPropReason(reason);
 			}else if (marker ==theory.conditionelse_prop_marker){
 				assert(value(p)==l_True);
-				reason.push(p);
+				reason.push(toSolver(p));
 				Var v = var(p);
 
 				theory.writeBounds(bvID);
@@ -1996,7 +1996,7 @@ public:
 				buildConditionalPropReason(reason);
 			}else if(marker == theory.conditionarg_prop_marker){
 				assert(value(p)==l_True);
-				reason.push(p);
+				reason.push(toSolver(p));
 				Var v = var(p);
 
 
@@ -2017,7 +2017,7 @@ public:
 					op->buildReason(reason);
 				}
 			}
-			toSolver(reason);
+
 		}
 
 		bool checkApproxUpToDate(Weight & under,Weight&over)override{
@@ -2073,11 +2073,11 @@ public:
 
 				//if the condition is assigned (at this point in the trail)
 				if (value(condition)==l_True ){
-					conflict.push(~condition);
+					conflict.push(toSolver(~condition));
 					assert(over_approx[bvThenID]<=over_approx[bvID]);//this is the cause
 					addAnalysis(op,bvThenID,to);
 				}else if (value(condition)==l_False ){
-					conflict.push(condition);
+					conflict.push(toSolver(condition));
 					assert(over_approx[bvElseID]<=over_approx[bvID]);//this is the cause
 					addAnalysis(op,bvElseID,to);
 				}else{//else if (over_approx[bvThenID]>=over_approx[bvElseID]){
@@ -2090,11 +2090,11 @@ public:
 
 				//if the condition is assigned (at this point in the trail)
 				if (value(condition)==l_True ){
-					conflict.push(~condition);
+					conflict.push(toSolver(~condition));
 					assert(under_approx[bvThenID]>=under_approx[bvID]);//this is the cause
 					addAnalysis(op,bvThenID,to);
 				}else if (value(condition)==l_False){
-					conflict.push(condition);
+					conflict.push(toSolver(condition));
 					assert(under_approx[bvElseID]>=under_approx[bvID]);//this is the cause
 					addAnalysis(op,bvElseID,to);
 				}else{//if ( under_approx[bvThenID]<=under_approx[bvElseID]){
@@ -2171,9 +2171,9 @@ public:
 			if(value(condition)==l_True){
 				if(under_approx[bvID]>over_approx[resultID] || over_approx[bvID]<under_approx[resultID]){
 					//this is a conflict
-					conflict.push(~condition);
+					conflict.push(toSolver(~condition));
 					buildReason(conflict);
-					toSolver(conflict);
+
 					return false;
 				}else if(under_approx[bvID]>under_approx[resultID] || over_approx[bvID]<over_approx[resultID]){
 					addAlteredBV(resultID);
@@ -2271,14 +2271,14 @@ public:
 				Weight over_sum = over_approx[resultID];
 				assert(over_sum<=over_approx[bvID]);
 				assert(value(condition)==l_True);
-				conflict.push(~condition);
+				conflict.push(toSolver(~condition));
 				addAnalysis(op,resultID,to);
 			}else{
 				Weight under_sum = under_approx[resultID];
 				assert(under_sum>=under_approx[bvID]);
 				assert(value(condition)==l_True);
 
-				conflict.push(~condition);
+				conflict.push(toSolver(~condition));
 				addAnalysis(op,resultID,to);
 			}
 
@@ -2394,7 +2394,7 @@ public:
 						printf("bv addition conflict %ld\n", theory.stats_num_conflicts);
 					}
 					buildReason(conflict);
-					toSolver(conflict);
+
 					theory.stats_conflict_time+=rtime(2)-startconftime;
 					return false;
 				}else if (overApprox<under){
@@ -2406,7 +2406,7 @@ public:
 					theory.stats_num_conflicts++;
 					theory.stats_addition_conflicts++;
 					buildReason(conflict);
-					toSolver(conflict);
+
 					theory.stats_conflict_time+=rtime(2)-startconftime;
 					return false;
 				}
@@ -2630,7 +2630,7 @@ public:
 					printf("bv addition arg conflict %ld\n", theory.stats_num_conflicts);
 				}
 				buildReason(conflict);
-				toSolver(conflict);
+
 				theory.stats_conflict_time+=rtime(2)-startconftime;
 				return false;
 			}else if (overApprox<under){
@@ -2641,7 +2641,7 @@ public:
 					printf("bv addition arg conflict %ld\n", theory.stats_num_conflicts);
 				}
 				buildReason(conflict);
-				toSolver(conflict);
+
 				theory.stats_conflict_time+=rtime(2)-startconftime;
 				return false;
 			}
@@ -3246,7 +3246,7 @@ public:
 					printf("bv minmax conflict %ld\n", theory.stats_num_conflicts);
 				}
 				buildReason(conflict);
-				toSolver(conflict);
+
 				theory.stats_conflict_time+=rtime(2)-startconftime;
 				return false;
 			}
@@ -4023,6 +4023,8 @@ public:
 					over_approx[bvID]=e.new_over;
 					under_causes[bvID]=e.new_under_cause;
 					over_causes[bvID]=e.new_over_cause;
+					if(hasTheory(bvID))
+						getTheory(bvID)->rewindBV(bvID);
 				}else{
 					Var x = e.var;
 					Lit p = mkLit(x,!e.assign);
@@ -4051,6 +4053,8 @@ public:
 					over_approx[bvID]=e.previous_over;
 					under_causes[bvID]=e.prev_under_cause;
 					over_causes[bvID]=e.prev_over_cause;
+					if(hasTheory(bvID))
+						getTheory(bvID)->rewindBV(bvID);
 				}else{
 					Var x = e.var;
 					if(e.isOperation){
@@ -4113,6 +4117,8 @@ public:
 				over_approx[bvID]=e.previous_over;
 				under_causes[bvID]=e.prev_under_cause;
 				over_causes[bvID]=e.prev_over_cause;
+				if(hasTheory(bvID))
+					getTheory(bvID)->rewindBV(bvID);
 			}else{
 				Var x = e.var;
 				Lit p = mkLit(x,!e.assign);
@@ -4148,6 +4154,8 @@ public:
 				over_approx[bvID]=e.previous_over;
 				under_causes[bvID]=e.prev_under_cause;
 				over_causes[bvID]=e.prev_over_cause;
+				if(hasTheory(bvID))
+					getTheory(bvID)->rewindBV(bvID);
 			}else{
 				Var x = e.var;
 				if(x==until_assign){
@@ -4217,8 +4225,9 @@ public:
 					assigns[e.var] = l_Undef;
 				}
 				//changed = true;
+				trail.pop();
 			}
-			trail.shrink(trail.size() - stop);
+			//trail.shrink(trail.size() - stop);
 			trail_lim.shrink(trail_lim.size() - level);
 			assert(trail_lim.size() == level);
 			assert(dbg_uptodate());
@@ -4490,8 +4499,8 @@ public:
 		assert_in_range(over_new,bvID);
 		Cause under_cause_old = under_causes[bvID];
 		Cause over_cause_old = over_causes[bvID];
-		Cause over_cause_new;
-		Cause under_cause_new;
+		Cause over_cause_new = over_cause_old;
+		Cause under_cause_new = under_cause_old;
 
 
 
@@ -4927,7 +4936,7 @@ public:
 			if(value(i)!=l_Undef){
 				Lit l = mkLit(i,value(i)==l_True);
 				assert(value(l)==l_False);
-				conflict.push(l);
+				conflict.push(toSolver(l));
 			}
 		}
 	}
@@ -5077,7 +5086,7 @@ public:
 	bool propagateTheory(vec<Lit> & conflict, bool force_propagation) {
 		static int realprops = 0;
 		stats_propagations++;
-		if(stats_propagations==224){
+		if(stats_propagations==408 || stats_propagations==409){
 			int a=1;
 		}
 		if (!force_propagation && !requiresPropagation ) {
@@ -5126,7 +5135,7 @@ public:
 			assert(alteredBV[bvID]);
 			Weight  underApprox_prev = under_approx[bvID];
 			Weight  overApprox_prev = over_approx[bvID];
-			Cause prev_under_cause = over_causes[bvID];
+			Cause prev_under_cause = under_causes[bvID];
 			Cause prev_over_cause = over_causes[bvID];
 
 			bool changed = updateApproximations(bvID);//can split this into changedUpper and changedLower...
@@ -5423,7 +5432,7 @@ public:
 			assert(lev<=decisionLevel());
 			Lit reason = newComparison(Comparison::leq,bvID, over_cur,var_Undef,opt_cmp_lits_decidable);
 			assert(value(reason)!=l_False);
-			conflict.push(~reason);
+			conflict.push(toSolver(~reason));
 
 			//S->prependToTrail(toSolver(reason),lev);//this is a decision that was made, without a corresponding literal in the solver at the time it was made.
 			// need to  ensure that this lit can be properly analyzed, so prepend it to the trail at this decision level.
@@ -5434,7 +5443,7 @@ public:
 			assert(lev<=decisionLevel());
 			Lit reason = newComparison(Comparison::geq,bvID, under_cur,var_Undef,opt_cmp_lits_decidable);
 			assert(value(reason)!=l_False);
-			conflict.push(~reason);
+			conflict.push(toSolver(~reason));
 
 			//S->prependToTrail(toSolver(reason),lev);//this is a decision that was made, without a corresponding literal in the solver at the time it was made.
 			//need to ensure that this lit can be properly analyzed, so prepend it to the trail at this decision level.
@@ -5447,12 +5456,12 @@ public:
 				if(value(bl)==l_False){
 
 						assert(value(bl)==l_False);
-						conflict.push(bl);
+						conflict.push(toSolver(bl));
 
 				}else if(value(bl)==l_True){
 
 					assert(value(~bl)==l_False);
-					conflict.push(~bl);
+					conflict.push(toSolver(~bl));
 
 				}
 			}
@@ -5481,12 +5490,12 @@ public:
 				if(value(bl)==l_False){
 
 						assert(value(bl)==l_False);
-						conflict.push(bl);
+						conflict.push(toSolver(bl));
 
 				}else if(value(bl)==l_True){
 
 					assert(value(~bl)==l_False);
-					conflict.push(~bl);
+					conflict.push(toSolver(~bl));
 
 				}
 			}
@@ -5539,7 +5548,8 @@ public:
 	}
 
 	bool addAnalysis(Comparison op, int bvID, Weight  to){
-
+		while(eq_bitvectors[bvID]!=bvID)
+			bvID=eq_bitvectors[bvID];
 		if(op==Comparison::geq && to<=0){
 			return false;
 		}else if (op==Comparison::gt && to<0){

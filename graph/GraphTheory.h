@@ -415,8 +415,13 @@ public:
 	}
 	bool removeFromTrail(Var v){
 		//dbg_check_trails();
+
 		int lev =trail[v].level;
 		if(lev>=0 || lev==-2){
+			while(bvtrail.size() && bvtrail.last().graphAssign==v){
+				bvtrail.pop();
+			}
+
 			Var prev = trail[v].prev_var;
 			Var next = trail[v].next_var;
 			assert(prev!=var_Undef);
@@ -456,6 +461,10 @@ public:
 	}
 	//Returns true if the trail at this level is now empty.
 	inline bool _removeFromTrail(Var v, int lev){
+			while(bvtrail.size() && bvtrail.last().graphAssign==v){
+				bvtrail.pop();
+			}
+
 			assert(lev>=0);
 			Var prev = trail[v].prev_var;
 			Var next = trail[v].next_var;
@@ -484,7 +493,7 @@ public:
 		}
 	void dbg_check_trail(int lev){
 #ifndef NDEBUG
-		/*static vec<bool> seen;
+		static vec<bool> seen;
 		seen.clear();
 		seen.growTo(vars.size());
 		if(lev>=0){
@@ -527,13 +536,24 @@ public:
 					v=trail[v].next_var;
 				}
 			}
-		}*/
+		}
 #endif
 	}
 
 	void dbg_check_trails(){
 #ifndef NDEBUG
-		/*dbg_check_trail(-2);//lazy trail
+		int last_pos=-1;
+		for(int i = 0;i<bvtrail.size();i++){
+			Var v = bvtrail[i].graphAssign;
+			int bvpos = bvtrail[i].bvTrail;
+			if(v!=var_Undef)
+				assert(value(v)!=l_Undef);
+			assert(bvpos>=last_pos);
+			last_pos=bvpos;
+			assert(bvpos<bvTheory->trail.size());
+		}
+
+		dbg_check_trail(-2);//lazy trail
 		for(int l = 0;l<decisions.size();l++){
 			dbg_check_trail(l);
 		}
@@ -546,7 +566,7 @@ public:
 				assert(opt_lazy_backtrack && supportsLazyBacktracking());
 				assert(lazy_trail_head!=var_Undef);
 			}
-		}*/
+		}
 #endif
 	}
 
@@ -1128,13 +1148,22 @@ public:
 	vec<BVAssign> bvtrail;//connects the graph theory and bv theory trails, for conflict analysis.
 
 	inline bool assignBV(int bvID, Comparison comp,Weight value,typename BVTheorySolver<Weight>::Operation*bvOp){
+		dbg_check_trails();
 		if(bvTheory && opt_graph_bv_prop){
 			int bvTrailSize = bvTheory->trail.size();
-			Var v = getBack(decisionLevel());
+
 			bool conflict = !bvTheory->assignBV(bvID,comp,value,*bvOp);
 			if(bvTheory->trail.size()>bvTrailSize){
+				int lev = decisionLevel();
+				Var v = getBack(lev);
+				//temporarily backtrack until the graphTrailPos
+				while(v==-1 && lev>0 ){
+					lev--;
+					v = getBack(lev);
+				}
 				//if this enqueue was successful, AND it led to a refinment in the bvTheory
-				bvtrail.push({v ,bvTrailSize+1,bvID,decisionLevel()});
+				bvtrail.push({v ,bvTrailSize,bvID,lev});
+				dbg_check_trails();
 			}
 			return !conflict;
 		}
@@ -1162,6 +1191,7 @@ public:
 	    void updateApprox(Var ignore_bv, Weight & under_new, Weight & over_new,typename BVTheorySolver<Weight>::Cause & under_cause_new, typename BVTheorySolver<Weight>::Cause & over_cause_new)override{}
 
 		virtual void analyzeReason(bool compareOver,Comparison op, Weight  to,  vec<Lit> & conflict)override{
+			outer->dbg_check_trails();
 			int bvTrailPos = theory.analysis_trail_pos;//current position in the bitvector trail that analysis is occuring at.
 			//lookup the corresponding position in the graph theory trail that we should be applying the bv theory analysis
 			bool found=false;
@@ -1181,7 +1211,7 @@ public:
 			if(!found){
 				throw std::runtime_error("Internal error in bv/graph clause learning");
 			}
-			//temporarily backtrack until the graphTrailPos
+
 			outer->rewindUntil(lastAssign);
 		}
 		void completeAnalysis(){
@@ -1746,6 +1776,12 @@ public:
 
 	vec<Lit> rewound_assigns;
 	void rewindUntil(Var until){
+		dbg_check_trails();
+		if(decisionLevel()==0)
+			return;
+		if(until==-1){
+			until = getBack(0);
+		}
 		assert(onTrail(until)||onLazyTrail(until));
 		assert(rewound_assigns.size()==0);
 		int lev;
@@ -1770,7 +1806,7 @@ public:
 				assert(assigns[v]!=l_Undef);
 				backtrackAssign(l);
 				Var p = _getPrev(v);
-				if(p==v)
+				if(p==v || p==getBack(lev))
 					break;
 				v=p;
 			}
@@ -2139,7 +2175,34 @@ public:
 
 		}
 	}
-	void backtrackBV(int bvID){
+	void rewindBV(int bvID)override{
+		if (isEdgeBV(bvID)){
+			int edgeID = getBVEdge(bvID);
+
+			g_under.setEdgeWeight(edgeID,edge_bv_weights[edgeID].getUnder());
+			g_over.setEdgeWeight(edgeID, edge_bv_weights[edgeID].getOver());
+			if(edge_sets.size()){
+				int edge_set_id = getEdgeSetID(edgeID);
+				if(edge_set_id>-1 && !g_under.edgeEnabled(edgeID)){
+					assert(!g_over_edgeset.edgeEnabled(edgeID));
+					assert(g_over_edgeset.getEdgeWeight(edgeID)==0);
+				}else{
+					g_over_edgeset.setEdgeWeight(edgeID, edge_bv_weights[edgeID].getOver());
+				}
+			}
+			if(using_neg_weights){
+				g_under_weights_over.setEdgeWeight(edgeID,edge_bv_weights[edgeID].getOver());
+				g_over_weights_under.setEdgeWeight(edgeID, edge_bv_weights[edgeID].getUnder());
+				if(edge_sets.size())
+					g_over_weights_under_edgeset.setEdgeWeight(edgeID, edge_bv_weights[edgeID].getUnder());
+			}
+
+		}
+	}
+	void backtrackBV(int bvID)override{
+		while(bvtrail.size() && bvtrail.last().bvID==bvID && bvtrail.last().bvTrail+1==bvTheory->trail.size()){
+			bvtrail.pop();
+		}
 		if (isEdgeBV(bvID)){
 			int edgeID = getBVEdge(bvID);
 			for (int i = 0; i < detectors.size(); i++) {
@@ -2373,11 +2436,12 @@ public:
 	}
 
 	bool propagateTheory(vec<Lit> & conflict, bool force_propagation) {
+		dbg_check_trails();
 		if(invalid_edgeset_lit!=lit_Undef){
 			return true;
 		}
 		static int itp = 0;
-		if (++itp == 584) {
+		if (++itp == 198) {
 			int a = 1;
 		}
 		dbg_graphsUpToDate();
@@ -2619,6 +2683,7 @@ public:
 		propagationtime += elapsed;
 		dbg_sync();
 		dbg_sync_reachability();
+		dbg_check_trails();
 		return true;
 	}
 

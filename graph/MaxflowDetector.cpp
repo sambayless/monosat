@@ -369,7 +369,7 @@ void MaxflowDetector<Weight>::analyzeMaxFlowGEQ(Weight flow, vec<Lit> & conflict
 						Var v = outer->edge_list[i].v;
 						assert(outer->value(v)==l_True);
 						if(!g_under.isConstant(i)){
-							conflict.push(mkLit(v, true));
+							conflict.push(outer->toSolver(mkLit(v, true)));
 						}
 						if(outer->hasBitVector(i) && ! outer->getEdgeBV(i).isConst()){
 							outer->bvTheory->addAnalysis(Comparison::geq,outer->getEdgeBV(i).getID(),refined_flow[i]);
@@ -391,7 +391,7 @@ void MaxflowDetector<Weight>::analyzeMaxFlowGEQ(Weight flow, vec<Lit> & conflict
 						Var v = outer->edge_list[i].v;
 						assert(outer->value(v)==l_True);
 						if(!g_under.isConstant(i)){
-							conflict.push(mkLit(v, true));
+							conflict.push(outer->toSolver(mkLit(v, true)));
 						}
 						if(outer->hasBitVector(i)){
 							outer->bvTheory->addAnalysis(Comparison::geq,outer->getEdgeBV(i).getID(),underapprox_conflict_detector->getEdgeFlow(i));
@@ -408,13 +408,15 @@ void MaxflowDetector<Weight>::analyzeMaxFlowGEQ(Weight flow, vec<Lit> & conflict
 template<typename Weight>
 void MaxflowDetector<Weight>::buildMaxFlowTooHighReason(Weight flow, vec<Lit> & conflict) {
 	double starttime = rtime(2);
+	if(outer->bvTheory){
+		outer->bvTheory->rewind_trail_pos(outer->bvTheory->trail.size());
+	}
 	analyzeMaxFlowGEQ(flow,conflict);
 
 	bumpConflictEdges(conflict);
-	outer->toSolver(conflict);//convert these into the solver's literal space BEFORE applying bitvector theory solver learning
+
 	if(outer->bvTheory){
 		outer->bvTheory->analyze(conflict);
-		outer->bvTheory->toSolver(conflict);
 	}
 	if (g_under.outfile) {
 		std::sort(conflict.begin(), conflict.end());
@@ -534,7 +536,7 @@ void MaxflowDetector<Weight>::analyzeMaxFlowLEQ(Weight flow, vec<Lit> & conflict
 				assert(assigned>-1);
 				Lit l = mkLit(outer->getEdgeVar(assigned), false);
 				assert(outer->value(l)==l_True);
-				conflict.push(~l);
+				conflict.push(outer->toSolver(~l));
 			}
 		}
 
@@ -611,7 +613,7 @@ void MaxflowDetector<Weight>::analyzeMaxFlowLEQ(Weight flow, vec<Lit> & conflict
 					}else{
 						if(outer->value(l)==l_False){//it is possible for the edge to be enabled, but to be set to capacity 0.
 							bassert(outer->value(l) == l_False);
-							conflict.push(l);
+							conflict.push(outer->toSolver(l));
 
 						}else if(outer->hasBitVector(edgeID) && ! outer->getEdgeBV(edgeID).isConst()){
 							Weight residual = overapprox_conflict_detector->getEdgeResidualCapacity(edgeID);
@@ -703,7 +705,7 @@ void MaxflowDetector<Weight>::analyzeMaxFlowLEQ(Weight flow, vec<Lit> & conflict
 							//we're going to assume the edge has non-zero capacity here, otherwise we could exclude it (but it shouldn't really even be in this graph in that case, anyways).
 							if( !g_over.isConstant(edgeid)){
 								//if(g_over.getWeight(edgeid)>0){
-									conflict.push(mkLit(v, false));
+									conflict.push(outer->toSolver(mkLit(v, false)));
 						/*		}else if (!outer->constantWeight(edgeid)){
 									if(outer->hasBitVector(edgeid)){
 										outer->buildBVReason(outer->getEdgeBV(edgeid).getID(),Comparison::leq,0,conflict);
@@ -745,7 +747,7 @@ void MaxflowDetector<Weight>::analyzeMaxFlowLEQ(Weight flow, vec<Lit> & conflict
 							//this is a disabled edge, and we can add it to the cut.
 							//we're going to assume the edge has non-zero capacity here, otherwise we could exclude it (but it shouldn't really even be in this graph in that case, anyways).
 							if( !g_over.isConstant(edgeid)){
-								conflict.push(mkLit(v, false));
+								conflict.push(outer->toSolver(mkLit(v, false)));
 							}
 						}
 					}
@@ -785,9 +787,12 @@ void MaxflowDetector<Weight>::buildMaxFlowTooLowReason(Weight maxflow, vec<Lit> 
 		printf("Maxflow conflict %d, graph %d\n", it, outer->getTheoryIndex());
 	}
 	double starttime = rtime(2);
+	if(outer->bvTheory){
+		outer->bvTheory->rewind_trail_pos(outer->bvTheory->trail.size());
+	}
 	analyzeMaxFlowLEQ(maxflow,conflict,force_maxflow);
 	bumpConflictEdges(conflict);
-	outer->toSolver(conflict);//convert these into the solver's literal space BEFORE applying bitvector theory solver learning
+
 	if(outer->bvTheory){
 		outer->bvTheory->analyze(conflict);
 
@@ -844,7 +849,7 @@ void MaxflowDetector<Weight>::buildReason(Lit p, vec<Lit> & reason, CRef marker)
 		 while(( w= detector.previous(u)) > -1){
 		 Lit l = mkLit( edges[w][u].v,true );
 		 assert(S->value(l)==l_False);
-		 reason.push(l);
+		 reason.push(outer->toSolver(l));
 		 u=w;
 		 }*/
 		Var v = var(p);
@@ -1061,6 +1066,10 @@ bool MaxflowDetector<Weight>::propagate(vec<Lit> & conflict, bool backtrackOnly,
 template<typename Weight>
 void MaxflowDetector<Weight>::FlowOp::analyzeReason(bool compareOver,Comparison op, Weight  to,  vec<Lit> & conflict){
 //watch out - might need to backtrack the graph theory appropriately, here...
+	static int iter = 0;
+	if(++iter==46){
+		int a=1;
+	}
 	 GraphTheorySolver<Weight>::GraphTheoryOp::analyzeReason(compareOver,op,to,conflict);
 	 if(!compareOver){
 		 outer->analyzeMaxFlowGEQ(to,conflict);

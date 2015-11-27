@@ -175,7 +175,7 @@ public:
 	void buildReason(Lit p, vec<Lit> & reason, CRef marker);
 	bool checkSatisfied();
 	bool decideEdgeWeight(int edgeID, Weight & store, DetectorComparison & op);
-	void undecideEdgeWeight(int edgeID);
+	void undecideEdgeWeight(int edgeID)override;
 	void undecide(Lit l);
 	Lit decide();
 	bool supportsEdgeDecisions(){

@@ -21,6 +21,10 @@ public:
 	virtual int getTheoryIndexBV()=0;
 	virtual void enqueueBV(int bvID)=0;
 	virtual void backtrackBV(int bvID)=0;
+	//Optional interface, if optimized BV clause learning is supported
+	virtual void rewindBV(int bvID){
+
+	}
 };
 
 };
