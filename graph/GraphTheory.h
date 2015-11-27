@@ -2176,6 +2176,7 @@ public:
 		}
 	}
 	void rewindBV(int bvID)override{
+		if(opt_graph_bv_prop){
 		if (isEdgeBV(bvID)){
 			int edgeID = getBVEdge(bvID);
 
@@ -2197,6 +2198,7 @@ public:
 					g_over_weights_under_edgeset.setEdgeWeight(edgeID, edge_bv_weights[edgeID].getUnder());
 			}
 
+		}
 		}
 	}
 	void backtrackBV(int bvID)override{
