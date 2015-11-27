@@ -1513,7 +1513,7 @@ void MaxflowDetector<Weight>::undecideEdgeWeight(int edgeid){
 	}
 	if(!opt_decide_theories)
 		return;
-	if(is_potential_decision[edgeid] && !in_decision_q[edgeid]){
+	if((outer->hasBitVector(edgeid) || is_potential_decision[edgeid]) && !in_decision_q[edgeid]){
 
 		//problem: this check is applied before any backtracking might occur (if lazy backtracking is not applied).
 		if (overapprox_conflict_detector->getEdgeFlow(edgeid) > 0) {			//this check is optional
@@ -1665,7 +1665,7 @@ Lit MaxflowDetector<Weight>::decide() {
 			}
 			assert(in_decision_q[edgeID]);
 			in_decision_q[edgeID]=false;
-			assert(is_potential_decision[edgeID]);
+			assert(outer->hasBitVector(edgeID) || is_potential_decision[edgeID]);
 			Lit l = mkLit(outer->getEdgeVar(edgeID), false);
 			lbool val = outer->value(l);
 

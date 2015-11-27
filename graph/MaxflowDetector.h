@@ -102,7 +102,7 @@ public:
 	Lit last_decision_lit = lit_Undef;
 
 	//vec<Lit> decisions;
-	vec<bool> is_potential_decision;
+	vec<bool> is_potential_decision;//not used for bitvector edges
 	vec<bool> in_decision_q;
 	vec<int> potential_decisions;
 	struct DecisionS{
