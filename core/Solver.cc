@@ -1095,7 +1095,7 @@ CRef Solver::propagate(bool propagate_theories) {
 			initialPropagate = false;
 		}
 		static int iter = 0;
-		if (++iter == 195) {
+		if (++iter == 36) {
 
 			int a = 1;
 		}

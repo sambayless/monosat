@@ -2443,7 +2443,7 @@ public:
 			return true;
 		}
 		static int itp = 0;
-		if (++itp == 198) {
+		if (++itp == 30) {
 			int a = 1;
 		}
 		dbg_graphsUpToDate();

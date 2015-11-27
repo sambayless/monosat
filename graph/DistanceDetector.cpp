@@ -1134,7 +1134,7 @@ bool DistanceDetector<Weight>::propagate(vec<Lit> & conflict) {
 		return true;
 	
 	static int iter = 0;
-	if (++iter == 267) { //18303
+	if (++iter == 29) { //18303
 		int a = 1;
 	}
 

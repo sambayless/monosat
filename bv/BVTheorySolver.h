@@ -173,7 +173,7 @@ public:
 			{
 				op_id = theory.operations.size();
 				theory.operations.push(this);
-
+				theory.comparison_needs_repropagation.growTo(theory.operations.size(),false);
 			}
 			virtual ~Operation(){
 
@@ -190,9 +190,10 @@ public:
 			virtual void enqueue(Lit l, bool alter_trail=true){
 				throw std::runtime_error("No implementation");
 			}
-			virtual void backtrack(Assignment & e){
+			virtual void backtrack(Assignment & e, bool rewind){
 
 			}
+
 			virtual void updateApprox(Var ignore_bv, Weight & under_new, Weight & over_new, Cause & under_cause_new, Cause & over_cause_new)=0;
 			virtual bool checkApproxUpToDate(Weight & under,Weight&over){
 				return true;
@@ -623,14 +624,17 @@ public:
 					addAlteredBV(bvID);
 				}
 			}
-			void backtrack(Assignment & e)override{
-				if (theory.comparison_needs_repropagation[getID()]){
-					if(!theory.alteredBV[bvID]){
-						theory.alteredBV[bvID]=true;
-						theory.altered_bvs.push(bvID);
+			void backtrack(Assignment & e, bool rewind)override{
+				if(!rewind){
+					if (theory.comparison_needs_repropagation[getID()]){
+						if(!theory.alteredBV[bvID]){
+							theory.alteredBV[bvID]=true;
+							theory.altered_bvs.push(bvID);
+						}
+						theory.bv_needs_propagation[bvID]=true;
+						theory.requiresPropagation=true;
+						theory.S->needsPropagation(theory.getTheoryIndex());
 					}
-					theory.requiresPropagation=true;
-					theory.S->needsPropagation(theory.getTheoryIndex());
 				}
 			}
 			bool propagate(bool & changed,vec<Lit> & conflict) override{
@@ -995,6 +999,19 @@ public:
 
 				addAlteredBV(bvID);
 				//addAlteredBV(getCompareID());
+			}
+		}
+		void backtrack(Assignment & e, bool rewind)override{
+			if(!rewind){
+				if (theory.comparison_needs_repropagation[getID()]){
+					if(!theory.alteredBV[bvID]){
+						theory.alteredBV[bvID]=true;
+						theory.altered_bvs.push(bvID);
+					}
+					theory.bv_needs_propagation[bvID]=true;
+					theory.requiresPropagation=true;
+					theory.S->needsPropagation(theory.getTheoryIndex());
+				}
 			}
 		}
 		bool propagate(bool & changed,vec<Lit> & conflict) override{
@@ -1427,7 +1444,7 @@ public:
 				}
 			}
 		}
-		virtual void backtrack(Assignment & e){
+		virtual void backtrack(Assignment & e, bool rewind){
 			importTheory(theory);
 			if(e.isOperation){
 				assert(e.bvID==getID());
@@ -4060,7 +4077,7 @@ public:
 					if(e.isOperation){
 						int opID = e.bvID;
 						if(opID>-1){
-							getOperation(opID).backtrack(e);
+							getOperation(opID).backtrack(e,true);
 						}
 					}
 					Lit p = mkLit(x,!e.assign);
@@ -4125,7 +4142,7 @@ public:
 				if(e.isOperation){
 					int opID = e.bvID;
 					if(opID>-1){
-						getOperation(opID).backtrack(e);
+						getOperation(opID).backtrack(e,true);
 					}
 				}
 				assert(value(p)==l_True);
@@ -4165,7 +4182,7 @@ public:
 				if(e.isOperation){
 					int opID = e.bvID;
 					if(opID>-1){
-						getOperation(opID).backtrack(e);
+						getOperation(opID).backtrack(e,true);
 					}
 				}
 				assigns[x] = l_Undef;
@@ -4219,7 +4236,7 @@ public:
 
 					int opID = e.bvID;
 					if(opID>-1)
-						getOperation(opID).backtrack(e);
+						getOperation(opID).backtrack(e,false);
 
 
 					assigns[e.var] = l_Undef;
@@ -4242,6 +4259,7 @@ public:
 						alteredBV[bvID]=true;
 						altered_bvs.push(bvID);
 					}
+					bv_needs_propagation[bvID]=true;
 					requiresPropagation=true;
 					S->needsPropagation(getTheoryIndex());
 				}
@@ -5086,7 +5104,7 @@ public:
 	bool propagateTheory(vec<Lit> & conflict, bool force_propagation) {
 		static int realprops = 0;
 		stats_propagations++;
-		if(stats_propagations==408 || stats_propagations==409){
+		if(stats_propagations==55){
 			int a=1;
 		}
 		if (!force_propagation && !requiresPropagation ) {
@@ -5147,7 +5165,7 @@ public:
 				alteredBV[bvID]=false;
 				continue;
 			}
-			bv_needs_propagation[bvID]=false;
+
 
 
 			stats_bv_propagations++;
@@ -5213,7 +5231,7 @@ public:
 					return false;
 
 			}*/
-
+			bv_needs_propagation[bvID]=false;
 			if(changed){
 				if(hasTheory(bvID))
 					getTheory(bvID)->enqueueBV(bvID);//only enqueue the bitvector in the subtheory _after_ it's approximation has been updated!
