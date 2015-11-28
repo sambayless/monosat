@@ -257,7 +257,7 @@ private:
 	}
 	int vars = 0;
 	int clauses = 0;
-	int cluase_count=0;
+	int clause_count=0;
 	int line_num=0;
 	int solves=0;
 	bool parse_(B& in, Solver& S) {
@@ -280,7 +280,7 @@ private:
 			//Typically, 99% of lines are either comments or clauses, and so it makes a lot of sense to handle these first, and before reading the whole line into a buffer.
 			if(*in=='-' || (*in >= '0' && *in<='9')){
 				//this is a clause
-				cluase_count++;
+				clause_count++;
 				readClause(in, S, lits);
 				S.addClause_(lits);
 				continue;
