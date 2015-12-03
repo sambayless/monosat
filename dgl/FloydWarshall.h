@@ -100,12 +100,12 @@ public:
 		INF = g.nodes() + 1;
 		if (dist.size() < n) {
 			dist.resize(n);
-			
 			for (int i = 0; i < dist.size(); i++)
 				dist[i].resize(n);
-			
+		}
+		if (next.size()<n){
 			next.resize(n);
-			for (int i = 0; i < dist.size(); i++)
+			for (int i = 0; i < next.size(); i++)
 				next[i].resize(n);
 		}
 	}

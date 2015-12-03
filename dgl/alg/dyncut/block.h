@@ -136,6 +136,7 @@
 #define __KOHLI_TORR_BLOCK_H__
 
 #include <stdlib.h>
+#include <stdexcept>
 namespace kohli_torr {
 /***********************************************************************/
 /***********************************************************************/
@@ -176,7 +177,7 @@ public:
 				if (!next) {
 					if (error_function)
 						(*error_function)("Not enough memory!");
-					exit(1);
+					throw  std::bad_alloc();
 				}
 				if (last)
 					last->next = next;
@@ -286,7 +287,7 @@ public:
 			if (!first) {
 				if (error_function)
 					(*error_function)("Not enough memory!");
-				exit(1);
+				throw  std::bad_alloc();
 			}
 			first_free = &(first->data[0]);
 			for (item = first_free; item < first_free + block_size - 1; item++)

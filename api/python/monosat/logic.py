@@ -19,6 +19,7 @@
 
 import monosat.monosat_c     
 from tempfile import mktemp
+import numbers
 import collections
 import functools
 import math
@@ -248,20 +249,70 @@ def _addClause(args):
 def _addSafeClause(args):
     _monosat.addClause([x.getLit() for x in args])
 
+def IsBoolVar(a):
+    from monosat.bvtheory import BitVector
+    if a is None:
+        return False
+    if (isinstance(a, Var)):
+        return True;
+    elif isinstance(a, bool):
+        #Yes, I mean this to be an explicit check against true, false literals, and not against falsy-ness.
+        return True
+    elif isinstance(a,BitVector) or  isinstance(e, numbers.Integral):
+        return False
+    else:
+        return False
+    
 def VAR(a):
-    assert(a is not None)
+    from monosat.bvtheory import BitVector
+    if a is None:
+        raise TypeError('Cannot convert None to symbolic Booleans')
     if (isinstance(a, Var)):
         return a;
-    else:
+    elif isinstance(a, bool):
+        #Yes, I mean this to be an explicit check against true, false literals, and not against falsy-ness.
         if a:
             return true
         else:
             return false
+    elif isinstance(a,BitVector) or  isinstance(e, numbers.Integral):
+        raise TypeError('Cannot use BitVectors as arguments to functions requiring symbolic Booleans')
+    else:
+        raise TypeError('Cannot convert to symbolic Booleans')
     
 
 def Ite(i,t,e):
+    #Is there a cleaner way to do this?
+    from monosat.bvtheory import BitVector
+    if IsBoolVar(t) and IsBoolVar(e):
+        return _boolean_Ite(i,t,e)    
+    if isinstance(t, BitVector) :
+        bi = VAR(i)
+        if isinstance(e, BitVector):
+            pass
+        elif isinstance(e, numbers.Integral):
+            e = monosat.BitVector(t.width(),int(e))
+        else:
+            raise TypeError('Cannot mix BitVectors and symbolic Booleans in If-Then-Else arguments')
+        return  monosat.bvtheory._bv_Ite(bi,t,e)
+    elif  isinstance(t, numbers.Integral) and isinstance(e, BitVector):
+        bi = VAR(i)
+        t = monosat.BitVector(t.width(),int(e))
+        return  monosat.bvtheory._bv_Ite(bi,t,e)
+    elif isinstance(t, numbers.Integral) and  isinstance(e, numbers.Integral):
+        #Cannot (easily) derive the width of the bitvector if both arguments are ints
+        raise TypeError('At least one of the (Then,Else) arguments to If-Then-Else must be a symbolic Boolean or a BitVector (they cannot both be Python primitives)')
+    else:
+        raise TypeError('Arguments to If-Then-Else must either be symbolic Booleans, or BitVectors')
+
+
+#This needs to work for other types of then/else args, too
+def _boolean_Ite(i,t,e):
     ni = VAR(i)
     nt = VAR(t)
+    
+    if e is None:
+        e=true #Not false!
     ne = VAR(e)
     
     if isTrue(ni):
@@ -274,7 +325,7 @@ def Ite(i,t,e):
             
     return Var(_monosat.addAnd(l,r))
 
-def If(condition, thn, els=true):
+def If(condition, thn, els=None):
     return Ite(condition,thn,els)
 
 def And(*args):

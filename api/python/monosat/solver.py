@@ -8,9 +8,10 @@ _monosat = Monosat()
 _pbm = PBManager()
 _pbm.elapsed_time=0
 _monosat.elapsed_time=0
+
+
 def Solve(assumptions=None, preprocessing=True):
-    #first, write any pseudoboolean constraints
-    _writePBCosntraints()
+    WriteConstraints()
         
     #if preprocessing:
     #    _monosat.preprocess();
@@ -23,8 +24,12 @@ def Solve(assumptions=None, preprocessing=True):
     _monosat.elapsed_time +=  time.clock()-t
     return r
 
-def _writePBCosntraints():
+def WriteConstraints():
+    
+    _writePBCosntraints()
 
+def _writePBCosntraints():
+    #write any pseudoboolean constraints
     if not _pbm.hasConstraints():
         return
     

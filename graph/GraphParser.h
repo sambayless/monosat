@@ -35,6 +35,8 @@
 #include <set>
 #include <string>
 #include <sstream>
+#include <cstdarg>
+#include <cstdio>
 namespace Monosat {
 
 struct SteinerStruct {
@@ -46,6 +48,9 @@ struct SteinerStruct {
 		
 	}
 };
+
+
+
 
 //=================================================================================================
 // GRAPH Parser:
@@ -189,10 +194,10 @@ class GraphParser: public Parser<B, Solver> {
 		int priority = parseInt(in);
 
 		if (graphID < 0 || graphID >= graphs.size()) {
-			printf("PARSE ERROR! Undeclared graph identifier %d for edge %d\n", graphID, edgeVar), exit(1);
+			parse_errorf("PARSE ERROR! Undeclared graph identifier %d for edge %d\n", graphID, edgeVar);
 		}
 		if (edgeVar < 0) {
-			printf("PARSE ERROR! Edge variables must be >=0, was %d\n", edgeVar), exit(1);
+			parse_errorf("PARSE ERROR! Edge variables must be >=0, was %d\n", edgeVar);
 		}
 
 		edgePriorities.push({graphID, edgeVar,priority});
@@ -204,8 +209,8 @@ class GraphParser: public Parser<B, Solver> {
 		} else if (graphs_rational[graphID]) {
 
 		} else {
-			printf("PARSE ERROR! Undeclared graph identifier %d for edge %d\n", graphID, edgeVar), exit(1);
-			exit(1);
+			parse_errorf("PARSE ERROR! Undeclared graph identifier %d for edge %d\n", graphID, edgeVar);
+
 		}
 	}
 	void readEdgeBV(B& in, Solver& S) {
@@ -222,10 +227,10 @@ class GraphParser: public Parser<B, Solver> {
 		int edgeVar = parseInt(in) - 1;
 
 		if (graphID < 0 || graphID >= graphs.size()) {
-			printf("PARSE ERROR! Undeclared graph identifier %d for edge %d\n", graphID, edgeVar), exit(1);
+			parse_errorf("PARSE ERROR! Undeclared graph identifier %d for edge %d\n", graphID, edgeVar);
 		}
 		if (edgeVar < 0) {
-			printf("PARSE ERROR! Edge variables must be >=0, was %d\n", edgeVar), exit(1);
+			parse_errorf("PARSE ERROR! Edge variables must be >=0, was %d\n", edgeVar);
 		}
 		while (edgeVar >= S.nVars())
 			S.newVar();
@@ -249,8 +254,8 @@ class GraphParser: public Parser<B, Solver> {
 		} else if (graphs_rational[graphID]) {
 			graphs_rational[graphID]->newEdge(from, to, edgeVar,bvID);
 		} */else {
-			printf("PARSE ERROR! Undeclared graph identifier %d for edge %d\n", graphID, edgeVar), exit(1);
-			exit(1);
+			parse_errorf("PARSE ERROR! Undeclared graph identifier %d for edge %d\n", graphID, edgeVar);
+
 		}
 	}
 	
@@ -268,10 +273,10 @@ class GraphParser: public Parser<B, Solver> {
 		int edgeVar = parseInt(in) - 1;
 		
 		if (graphID < 0 || graphID >= graphs.size()) {
-			printf("PARSE ERROR! Undeclared graph identifier %d for edge %d\n", graphID, edgeVar), exit(1);
+			parse_errorf("PARSE ERROR! Undeclared graph identifier %d for edge %d\n", graphID, edgeVar);
 		}
 		if (edgeVar < 0) {
-			printf("PARSE ERROR! Edge variables must be >=0, was %d\n", edgeVar), exit(1);
+			parse_errorf("PARSE ERROR! Edge variables must be >=0, was %d\n", edgeVar);
 		}
 		while (edgeVar >= S.nVars())
 			S.newVar();
@@ -287,8 +292,8 @@ class GraphParser: public Parser<B, Solver> {
 			} else if (graphs_rational[graphID]) {
 				graphs_rational[graphID]->newEdge(from, to, edgeVar);
 			} else {
-				printf("PARSE ERROR! Undeclared graph identifier %d for edge %d\n", graphID, edgeVar), exit(1);
-				exit(1);
+				parse_errorf("PARSE ERROR! Undeclared graph identifier %d for edge %d\n", graphID, edgeVar);
+
 			}
 			
 		}else{
@@ -330,8 +335,8 @@ class GraphParser: public Parser<B, Solver> {
 				}
 
 			} else {
-				printf("PARSE ERROR! Undeclared graph identifier %d for edge %d\n", graphID, edgeVar), exit(1);
-				exit(1);
+				parse_errorf("PARSE ERROR! Undeclared graph identifier %d for edge %d\n", graphID, edgeVar);
+
 			}
 		}
 	}
@@ -351,10 +356,10 @@ class GraphParser: public Parser<B, Solver> {
 		int to = parseInt(in);
 		int reachVar = parseInt(in) - 1;
 		if (graphID < 0 || graphID >= graphs.size()) {
-			printf("PARSE ERROR! Undeclared graph identifier %d for edge %d\n", graphID, reachVar), exit(1);
+			parse_errorf("PARSE ERROR! Undeclared graph identifier %d for edge %d\n", graphID, reachVar);
 		}
 		if (reachVar < 0) {
-			printf("PARSE ERROR! Edge variables must be >=0, was %d\n", reachVar), exit(1);
+			parse_errorf("PARSE ERROR! Edge variables must be >=0, was %d\n", reachVar);
 		}
 		
 		while (reachVar >= S.nVars())
@@ -367,8 +372,8 @@ class GraphParser: public Parser<B, Solver> {
 		} else if (graphs_rational[graphID]) {
 			graphs_rational[graphID]->reaches(from, to, reachVar);
 		} else {
-			printf("PARSE ERROR! Undeclared graph identifier %d\n", graphID), exit(1);
-			exit(1);
+			parse_errorf("PARSE ERROR! Undeclared graph identifier %d\n", graphID);
+
 		}
 	}
 	
@@ -387,10 +392,10 @@ class GraphParser: public Parser<B, Solver> {
 		int reachVar = parseInt(in) - 1;
 		int steps = parseInt(in);
 		if (graphID < 0 || graphID >= graphs.size()) {
-			printf("PARSE ERROR! Undeclared graph identifier %d for edge %d\n", graphID, reachVar), exit(1);
+			parse_errorf("PARSE ERROR! Undeclared graph identifier %d for edge %d\n", graphID, reachVar);
 		}
 		if (reachVar < 0) {
-			printf("PARSE ERROR! Edge variables must be >=0, was %d\n", reachVar), exit(1);
+			parse_errorf("PARSE ERROR! Edge variables must be >=0, was %d\n", reachVar);
 		}
 		
 		if (graphs[graphID]) {
@@ -400,8 +405,8 @@ class GraphParser: public Parser<B, Solver> {
 		} else if (graphs_rational[graphID]) {
 			graphs_rational[graphID]->reaches(from, to, reachVar, steps);
 		} else {
-			printf("PARSE ERROR! Undeclared graph identifier %d\n", graphID), exit(1);
-			exit(1);
+			parse_errorf("PARSE ERROR! Undeclared graph identifier %d\n", graphID);
+
 		}
 	}
 
@@ -420,10 +425,10 @@ class GraphParser: public Parser<B, Solver> {
 		int reachVar = parseInt(in) - 1;
 
 		if (graphID < 0 || graphID >= graphs.size()) {
-			printf("PARSE ERROR! Undeclared graph identifier %d for edge %d\n", graphID, reachVar), exit(1);
+			parse_errorf("PARSE ERROR! Undeclared graph identifier %d for edge %d\n", graphID, reachVar);
 		}
 		if (reachVar < 0) {
-			printf("PARSE ERROR! Edge variables must be >=0, was %d\n", reachVar), exit(1);
+			parse_errorf("PARSE ERROR! Edge variables must be >=0, was %d\n", reachVar);
 		}
 
 		skipWhitespace(in);
@@ -436,8 +441,8 @@ class GraphParser: public Parser<B, Solver> {
 		} else if (graphs_rational[graphID]) {
 			graphs_rational[graphID]->newEdge(from, to, edgeVar,bvID);
 		} */else {
-			printf("PARSE ERROR! Undeclared graph identifier %d for edge %d\n", graphID, reachVar), exit(1);
-			exit(1);
+			parse_errorf("PARSE ERROR! Undeclared graph identifier %d for edge %d\n", graphID, reachVar);
+
 		}
 
 	}
@@ -457,10 +462,10 @@ class GraphParser: public Parser<B, Solver> {
 		int reachVar = parseInt(in) - 1;
 
 		if (graphID < 0 || graphID >= graphs.size()) {
-			printf("PARSE ERROR! Undeclared graph identifier %d for edge %d\n", graphID, reachVar), exit(1);
+			parse_errorf("PARSE ERROR! Undeclared graph identifier %d for edge %d\n", graphID, reachVar);
 		}
 		if (reachVar < 0) {
-			printf("PARSE ERROR! Edge variables must be >=0, was %d\n", reachVar), exit(1);
+			parse_errorf("PARSE ERROR! Edge variables must be >=0, was %d\n", reachVar);
 		}
 
 
@@ -502,8 +507,8 @@ class GraphParser: public Parser<B, Solver> {
 			}
 
 		} else {
-			printf("PARSE ERROR! Undeclared graph identifier %d\n", graphID), exit(1);
-			exit(1);
+			parse_errorf("PARSE ERROR! Undeclared graph identifier %d\n", graphID);
+
 		}
 	}
 
@@ -520,10 +525,10 @@ class GraphParser: public Parser<B, Solver> {
 			int reachVar = parseInt(in) - 1;
 
 			if (graphID < 0 || graphID >= graphs.size()) {
-				printf("PARSE ERROR! Undeclared graph identifier %d for edge %d\n", graphID, reachVar), exit(1);
+				parse_errorf("PARSE ERROR! Undeclared graph identifier %d for edge %d\n", graphID, reachVar);
 			}
 			if (reachVar < 0) {
-				printf("PARSE ERROR! Variables must be >=0, was %d\n", reachVar), exit(1);
+				parse_errorf("PARSE ERROR! Variables must be >=0, was %d\n", reachVar);
 			}
 			if (graphs[graphID]) {
 				graphs[graphID]->acyclic(reachVar,directed);
@@ -532,8 +537,8 @@ class GraphParser: public Parser<B, Solver> {
 			} else if (graphs_rational[graphID]) {
 				graphs_rational[graphID]->acyclic(reachVar,directed);
 			} else {
-				printf("PARSE ERROR! Undeclared graph identifier %d\n", graphID), exit(1);
-				exit(1);
+				parse_errorf("PARSE ERROR! Undeclared graph identifier %d\n", graphID);
+
 			}
 		}
 
@@ -551,10 +556,10 @@ class GraphParser: public Parser<B, Solver> {
 
 
 		if (graphID < 0 || graphID >= graphs.size()) {
-			printf("PARSE ERROR! Undeclared graph identifier %d for edge %d\n", graphID, reachVar), exit(1);
+			parse_errorf("PARSE ERROR! Undeclared graph identifier %d for edge %d\n", graphID, reachVar);
 		}
 		if (reachVar < 0) {
-			printf("PARSE ERROR! Edge variables must be >=0, was %d\n", reachVar), exit(1);
+			parse_errorf("PARSE ERROR! Edge variables must be >=0, was %d\n", reachVar);
 		}
 		
 		while (reachVar >= S.nVars())
@@ -596,8 +601,8 @@ class GraphParser: public Parser<B, Solver> {
 			}
 
 		} else {
-			printf("PARSE ERROR! Undeclared graph identifier %d\n", graphID), exit(1);
-			exit(1);
+			parse_errorf("PARSE ERROR! Undeclared graph identifier %d\n", graphID);
+
 		}
 
 	}
@@ -617,10 +622,10 @@ class GraphParser: public Parser<B, Solver> {
 		//int to = parseInt(in);
 		int reachVar = parseInt(in) - 1;
 		if (graphID < 0 || graphID >= graphs.size()) {
-			printf("PARSE ERROR! Undeclared graph identifier %d for edge %d\n", graphID, reachVar), exit(1);
+			parse_errorf("PARSE ERROR! Undeclared graph identifier %d for edge %d\n", graphID, reachVar);
 		}
 		if (reachVar < 0) {
-			printf("PARSE ERROR! Edge variables must be >=0, was %d\n", reachVar), exit(1);
+			parse_errorf("PARSE ERROR! Edge variables must be >=0, was %d\n", reachVar);
 		}
 		
 		while (reachVar >= S.nVars())
@@ -633,8 +638,8 @@ class GraphParser: public Parser<B, Solver> {
 		} else if (graphs_rational[graphID]) {
 			graphs_rational[graphID]->edgeInMinimumSpanningTree(edgeVar, reachVar);
 		} else {
-			printf("PARSE ERROR! Undeclared graph identifier %d\n", graphID), exit(1);
-			exit(1);
+			parse_errorf("PARSE ERROR! Undeclared graph identifier %d\n", graphID);
+
 		}
 	}
 
@@ -654,10 +659,10 @@ class GraphParser: public Parser<B, Solver> {
 
 
 			if (graphID < 0 || graphID >= graphs.size()) {
-				printf("PARSE ERROR! Undeclared graph identifier %d for edge %d\n", graphID, reachVar), exit(1);
+				parse_errorf("PARSE ERROR! Undeclared graph identifier %d for edge %d\n", graphID, reachVar);
 			}
 			if (reachVar < 0) {
-				printf("PARSE ERROR! Edge variables must be >=0, was %d\n", reachVar), exit(1);
+				parse_errorf("PARSE ERROR! Edge variables must be >=0, was %d\n", reachVar);
 			}
 
 			while (reachVar >= S.nVars())
@@ -684,10 +689,10 @@ class GraphParser: public Parser<B, Solver> {
 			bool inclusive=true;//old maxflow constraints were always inclusive.
 
 			if (graphID < 0 || graphID >= graphs.size()) {
-				printf("PARSE ERROR! Undeclared graph identifier %d for edge %d\n", graphID, reachVar), exit(1);
+				parse_errorf("PARSE ERROR! Undeclared graph identifier %d for edge %d\n", graphID, reachVar);
 			}
 			if (reachVar < 0) {
-				printf("PARSE ERROR! Edge variables must be >=0, was %d\n", reachVar), exit(1);
+				parse_errorf("PARSE ERROR! Edge variables must be >=0, was %d\n", reachVar);
 			}
 
 			while (reachVar >= S.nVars())
@@ -700,8 +705,8 @@ class GraphParser: public Parser<B, Solver> {
 			} else if (graphs_rational[graphID]) {
 				maxflows_rational.push({graphID,s,t,reachVar,!inclusive,(mpq_class)flow});
 			} else {
-				printf("PARSE ERROR! Undeclared graph identifier %d\n", graphID), exit(1);
-				exit(1);
+				parse_errorf("PARSE ERROR! Undeclared graph identifier %d\n", graphID);
+
 			}
 		}
 	void readMaxFlowConstraint(B& in, Solver& S, bool inclusive) {
@@ -719,10 +724,10 @@ class GraphParser: public Parser<B, Solver> {
 
 
 		if (graphID < 0 || graphID >= graphs.size()) {
-			printf("PARSE ERROR! Undeclared graph identifier %d for edge %d\n", graphID, reachVar), exit(1);
+			parse_errorf("PARSE ERROR! Undeclared graph identifier %d for edge %d\n", graphID, reachVar);
 		}
 		if (reachVar < 0) {
-			printf("PARSE ERROR! Edge variables must be >=0, was %d\n", reachVar), exit(1);
+			parse_errorf("PARSE ERROR! Edge variables must be >=0, was %d\n", reachVar);
 		}
 
 		while (reachVar >= S.nVars())
@@ -772,8 +777,8 @@ class GraphParser: public Parser<B, Solver> {
 			}
 
 		} else {
-			printf("PARSE ERROR! Undeclared graph identifier %d\n", graphID), exit(1);
-			exit(1);
+			parse_errorf("PARSE ERROR! Undeclared graph identifier %d\n", graphID);
+
 		}
 
 	}
@@ -791,10 +796,10 @@ class GraphParser: public Parser<B, Solver> {
 		int min_components = parseInt(in);
 		int reachVar = parseInt(in) - 1;
 		if (graphID < 0 || graphID >= graphs.size()) {
-			printf("PARSE ERROR! Undeclared graph identifier %d for edge %d\n", graphID, reachVar), exit(1);
+			parse_errorf("PARSE ERROR! Undeclared graph identifier %d for edge %d\n", graphID, reachVar);
 		}
 		if (reachVar < 0) {
-			printf("PARSE ERROR! Edge variables must be >=0, was %d\n", reachVar), exit(1);
+			parse_errorf("PARSE ERROR! Edge variables must be >=0, was %d\n", reachVar);
 		}
 		
 		while (reachVar >= S.nVars())
@@ -807,8 +812,8 @@ class GraphParser: public Parser<B, Solver> {
 		} else if (graphs_rational[graphID]) {
 			graphs_rational[graphID]->minConnectedComponents(min_components, reachVar);
 		} else {
-			printf("PARSE ERROR! Undeclared graph identifier %d\n", graphID), exit(1);
-			exit(1);
+			parse_errorf("PARSE ERROR! Undeclared graph identifier %d\n", graphID);
+
 		}
 	}
 	
@@ -820,7 +825,7 @@ class GraphParser: public Parser<B, Solver> {
 	 //steiner_tree graphID steinerID
 	 //Creates a steiner tree with the given id. Steiner constraints can then refer to that steinerID.
 	 if(!eagerMatch(in,"steiner_tree")){
-	 printf("PARSE ERROR! Unexpected char: %c\n", *in), exit(1);
+	 parse_errorf("PARSE ERROR! Unexpected char: %c\n", *in);
 	 }
 
 
@@ -828,13 +833,13 @@ class GraphParser: public Parser<B, Solver> {
 	 int steinerID = parseInt(in);
 
 	 if(graphID <0 || graphID>=graphs.size()){
-	 printf("PARSE ERROR! Undeclared graph identifier %d\n",graphID), exit(1);
+	 parse_errorf("PARSE ERROR! Undeclared graph identifier %d\n",graphID);
 	 }
 
 	 steiners.growTo(graphs.size());
 	 steiners[graphID].growTo(steinerID+1);
 	 if(steiners[graphID][steinerID]!=0){
-	 printf("PARSE ERROR! Multiple declarations of steiner tree %d for graph %d\n",steinerID, graphID), exit(1);
+	 parse_errorf("PARSE ERROR! Multiple declarations of steiner tree %d for graph %d\n",steinerID, graphID);
 	 }
 	 steiners[graphID][steinerID] = new SteinerStruct{steinerID};
 	 }*/
@@ -851,7 +856,7 @@ class GraphParser: public Parser<B, Solver> {
 		int node = parseInt(in);
 		int var = parseInt(in) - 1;
 		if (graphID < 0 || graphID >= graphs.size()) {
-			printf("PARSE ERROR! Undeclared graph identifier %d \n", graphID), exit(1);
+			parse_errorf("PARSE ERROR! Undeclared graph identifier %d \n", graphID);
 		}
 		steiners.growTo(graphs.size());
 		steiners[graphID].growTo(steinerID + 1);
@@ -873,7 +878,7 @@ class GraphParser: public Parser<B, Solver> {
 		int maxweight = parseInt(in);
 		int var = parseInt(in) - 1;
 		if (graphID < 0 || graphID >= graphs.size()) {
-			printf("PARSE ERROR! Undeclared graph identifier %d \n", graphID), exit(1);
+			parse_errorf("PARSE ERROR! Undeclared graph identifier %d \n", graphID);
 		}
 		steiners.growTo(graphs.size());
 		steiners[graphID].growTo(steinerID + 1);
@@ -914,7 +919,7 @@ class GraphParser: public Parser<B, Solver> {
 		weights.clear();
 		int size = parseInt(in);
 		if (size <= 0) {
-			printf("PARSE ERROR! Empty PB clause\n"), exit(1);
+			parse_errorf("PARSE ERROR! Empty PB clause\n");
 		}
 		
 		for (int i = 0; i < size; i++) {
@@ -929,7 +934,7 @@ class GraphParser: public Parser<B, Solver> {
 		
 		int wsize = parseInt(in);
 		if (wsize != 0 && wsize != size) {
-			printf("PARSE ERROR! Number of weights must either be the same as the size of the clause, or 0.\n"), exit(1);
+			parse_errorf("PARSE ERROR! Number of weights must either be the same as the size of the clause, or 0.\n");
 		}
 		for (int i = 0; i < wsize; i++) {
 			int parsed_weight = parseInt(in);
@@ -961,7 +966,7 @@ class GraphParser: public Parser<B, Solver> {
 		} else if (*in == '!') {
 			++in;
 			if (*in != '=') {
-				printf("PARSE ERROR! Unexpected char: %c\n", *in), exit(1);
+				parse_errorf("PARSE ERROR! Unexpected char: %c\n", *in);
 			}
 			++in;
 			op = PbTheory::PbType::NE;
@@ -969,7 +974,7 @@ class GraphParser: public Parser<B, Solver> {
 			++in;
 			op = PbTheory::PbType::EQ;
 		}else{
-			printf("PARSE ERROR! Bad PB constraint\n"), exit(1);
+			parse_errorf("PARSE ERROR! Bad PB constraint\n");
 		}
 		int comparison = parseInt(in);
 		int type = parseInt(in);
@@ -995,7 +1000,7 @@ class GraphParser: public Parser<B, Solver> {
 	}
 	
 public:
-	GraphParser(bool precise, BVTheorySolver<long>*& bvTheory) :
+	GraphParser(bool precise, BVTheorySolver<long>*& bvTheory) :Parser<B, Solver>("Graph"),
 			precise(precise),bvTheory(bvTheory) {
 		
 	}
@@ -1025,7 +1030,7 @@ public:
 			//for now, only digraphs are supported
 			
 			//}else{
-			//	printf("PARSE ERROR! Unexpected char: %c\n", *in), exit(1);
+			//	parse_errorf("PARSE ERROR! Unexpected char: %c\n", *in);
 			//}
 			return true;
 		}else if (match(in, "edge_priority")) {
@@ -1121,7 +1126,7 @@ public:
 
 		for (auto & e:bvedges){
 			if(!bvTheory->hasBV(e.bvID)){
-				printf("PARSE ERROR! Undefined bitvector %d for edge %d\n", e.bvID, e.edgeVar), exit(1);
+				parse_errorf("PARSE ERROR! Undefined bitvector %d for edge %d\n", e.bvID, e.edgeVar);
 			}
 		}
 		for (auto & e:bvedges){
@@ -1171,8 +1176,8 @@ public:
 			else if (graphs_rational[graphID])
 				graphs_rational[graphID]->setEdgePriority(graphs_rational[graphID]->getEdgeID(v),p.priority);
 			else {
-				printf("PARSE ERROR! Undeclared graph identifier %d\n", graphID), exit(1);
-				exit(1);
+				parse_errorf("PARSE ERROR! Undeclared graph identifier %d\n", graphID);
+
 			}*/
 		}
 

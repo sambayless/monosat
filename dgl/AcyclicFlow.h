@@ -7,9 +7,8 @@
 #include "EdmondsKarpAdj.h"
 //#include "MaxFlow.h"
 #include "alg/LinkCutCost.h"
-#ifdef RECORD
 #include <sstream>
-#endif
+#include <stdexcept>
 namespace dgl {
 
 //Implementation of the acyclic flow algorithm from Sleator and Tarjan (1983)
@@ -32,7 +31,7 @@ public:
 		if (s<0 || s>=g.nodes() || t<0 ||t>=g.nodes()){
 			return;
 		}
-#ifdef RECORD
+
 		if (g.outfile) {
 			fprintf(g.outfile, "acyclic_flow %d %d:  ",s,t);
 			std::stringstream ss;
@@ -41,7 +40,7 @@ public:
 			}
 			fprintf(g.outfile, "%s\n",ss.str().c_str());
 		}
-#endif
+
 #ifndef NDEBUG
 
 		Weight expected_flow=-1;
@@ -91,8 +90,7 @@ public:
 				if (v==t && sum_in-sum_out==expected_flow){
 					continue;
 				}
-				printf("Bad flow for acyclic removal, aborting\n");
-				exit(5);
+				throw std::invalid_argument("Bad flow for acyclic removal");
 			}
 		}
 
@@ -246,14 +244,12 @@ public:
 					DFSCycle<Weight> cycle(test);
 					if(cycle.hasDirectedCycle()){
 						//fflush(g.outfile);
-						fprintf(stderr,"Cycle remains in acyclic flow, aborting!\n");
-						exit(8);
+			     		throw std::logic_error( "Cycle remains in acyclic flow" );
 					}
 					EdmondsKarpAdj<Weight> mf(test,s,t);
 					if(expected_flow>=0 && mf.maxFlow(s,t)!=expected_flow){
 						//fflush(g.outfile);
-						fprintf(stderr,"Flow is altered by cycle removal, aborting!\n");
-						exit(8);
+						throw std::logic_error( "Flow is altered by cycle removal");
 					}
 
 					for(int v = 0;v<g.nodes();v++){
@@ -282,8 +278,7 @@ public:
 								continue;
 							}
 							//fflush(g.outfile);
-							printf("Bad flow after acyclic removal, aborting\n");
-							exit(4);
+							throw std::logic_error("Bad flow after acyclic removal");
 						}
 					}
 #endif

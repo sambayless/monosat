@@ -163,7 +163,7 @@ public:
 	void printStats(int detail_level = 0) {
         
         double cpu_time = cpuTime();
-        double mem_used = memUsedPeak(); // not available in osx
+        //double mem_used = memUsedPeak();
 
         
 		printf("restarts              : %" PRIu64 "\n", starts);
@@ -255,6 +255,10 @@ public:
 	}
 	//Connect a variable in the SAT solver to a variable in a theory.
 	virtual void setTheoryVar(Var solverVar, int theory, Var theoryVar) {
+		if (solverVar==var(const_true)){
+			//handle the True literal specially, so that all the theories can share it...
+			return;
+		}
 		if (hasTheory(solverVar)) {
 			fprintf(stderr, "Variable %d is used for multiple atoms. Theory variables may not be re-used! Aborting.\n",
 					solverVar + 1);
@@ -287,7 +291,7 @@ public:
 	//Lazily construct a reason for a literal propagated from a theory
 	CRef constructReason(Lit p) {
 		static int iterp =0;
-		if(++iterp==24){
+		if(++iterp==164){
 			int a=1;
 		}
 		assert(value(p)==l_True);
@@ -324,7 +328,7 @@ public:
 		assert(decisionLevel()==lev);//ensure no backtracking happened while adding this clause!
 		assert(ok);
 
-		//collect any newly enqueued vars - we need to analyze them
+		//collect any newly enqueued vars -  we need to analyze them
 
 		for(int i = trail_pos;i<trail.size();i++){
 			to_analyze.push(trail[i]);
@@ -363,6 +367,23 @@ public:
 	virtual bool solve(Lit p, Lit q, Lit r);     // Search for a model that respects three assumptions.
 	bool okay() const;                  // FALSE means solver is in a conflicting state
 	
+	Lit True(){
+		if(const_true==lit_Undef){
+			//try using the first assigned const literal
+			if (trail.size()>0){
+				Lit l = trail[0];
+				if(level(var(l))==0){
+					const_true=l;
+				}
+			}else{
+				const_true=mkLit(newVar(false,false));
+				addClause(const_true);
+			}
+		}
+
+		return const_true;
+	}
+
 	void toDimacs(FILE* f, const vec<Lit>& assumps);            // Write CNF to file in DIMACS-format.
 	void toDimacs(const char *file, const vec<Lit>& assumps);
 	void toDimacs(FILE* f, Clause& c, vec<Var>& map, Var& max);
@@ -413,6 +434,8 @@ public:
 								// this vector represent the final conflict clause expressed in the assumptions.
 	vec<vec<Lit> > interpolant; //This vector represents an interpolant between this module and its super solver ('S'), if it is attached to such a solver and the instance is UNSAT.
 								// Variables in each clause in the interpolant vector are in the super solver's variable space, not the subsolver's.
+
+	Lit const_true=lit_Undef;
 	Lit theoryDecision = lit_Undef;
 	vec<Lit> theory_reason;
 	vec<Lit> theory_conflict;

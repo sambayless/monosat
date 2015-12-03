@@ -83,13 +83,13 @@ class LSystemParser: public Parser<B, Solver> {
 		int chars = parseInt(in);
 		int nrules= parseInt(in);
 		if (lsystemID < 0 ) {
-			printf("PARSE ERROR! lsystem id must be >=0, was %d\n", lsystemID), exit(1);
+			parse_errorf("lsystem id must be >=0, was %d\n", lsystemID);
 		}
 
 
 		lsystems.growTo(lsystemID + 1);
 		if(lsystems[lsystemID]){
-			printf("PARSE ERROR! lsystem id %d declared twice!\n", lsystemID), exit(1);
+			parse_errorf("lsystem id %d declared twice!\n", lsystemID);
 		}
 		lsystems[lsystemID]= new LSystemSolver(&S);
 		S.addTheory(lsystems[lsystemID]);
@@ -111,7 +111,7 @@ class LSystemParser: public Parser<B, Solver> {
 		created_strings.growTo(strID+1);
 		stringLabels.growTo(strID+1);
 		if(strID<0 || created_strings[strID]){
-			printf("PARSE ERROR! Bad string id %d\n", strID), exit(1);
+			parse_errorf("Bad string id %d\n", strID);
 		}
 
 		created_strings[strID]=true;
@@ -121,7 +121,7 @@ class LSystemParser: public Parser<B, Solver> {
 			return;
 		while(int i = parseInt(in)){
 			if (i<=0){
-				printf("PARSE ERROR! lsystem strings must contain only positive (non-zero) integers, found %d\n", i), exit(1);
+				parse_errorf("lsystem strings must contain only positive (non-zero) integers, found %d\n", i);
 			}
 			strings[strID].push(i);
 			stringLabels[strID]= std::max(stringLabels[strID],i+1);
@@ -147,11 +147,11 @@ class LSystemParser: public Parser<B, Solver> {
 
 
 		if (lsystemID < 0 || lsystemID >= lsystems.size()) {
-			printf("PARSE ERROR! Undeclared lsystem identifier %d for edge %d\n", lsystemID, edgeVar), exit(1);
+			parse_errorf("Undeclared lsystem identifier %d for edge %d\n", lsystemID, edgeVar);
 		}
 
 		if (edgeVar < 0) {
-			printf("PARSE ERROR! Edge variables must be >=0, was %d\n", edgeVar), exit(1);
+			parse_errorf("Edge variables must be >=0, was %d\n", edgeVar);
 		}
 
 
@@ -201,13 +201,13 @@ class LSystemParser: public Parser<B, Solver> {
 		produces[lsystemID].last().reachVar = reachVar;
 
 		if (lsystemID < 0 || lsystemID >= lsystems.size()) {
-			printf("PARSE ERROR! Undeclared lsystem identifier %d for edge %d\n", lsystemID, reachVar), exit(1);
+			parse_errorf("Undeclared lsystem identifier %d for edge %d\n", lsystemID, reachVar);
 		}
 
 
 
 		if (reachVar < 0) {
-			printf("PARSE ERROR! Edge variables must be >=0, was %d\n", reachVar), exit(1);
+			parse_errorf("Edge variables must be >=0, was %d\n", reachVar);
 		}
 		
 		while (reachVar >= S.nVars())
@@ -218,7 +218,7 @@ class LSystemParser: public Parser<B, Solver> {
 
 
 public:
-	LSystemParser(){
+	LSystemParser():Parser<B, Solver>("LSystem"){
 		
 	}
 
@@ -266,7 +266,7 @@ public:
 				for(auto & a: produces[i]){
 
 					if (a.strID<0 || !created_strings[a.strID]){
-						printf("PARSE ERROR! String ID must be a non-negative integer, was %d\n", a.strID), exit(1);
+						parse_errorf("String ID must be a non-negative integer, was %d\n", a.strID);
 					}
 
 

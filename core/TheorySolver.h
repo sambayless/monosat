@@ -46,6 +46,7 @@ public:
 	/*virtual void prependToTrail(Lit solverLit, int atLevel){
 
 	}*/
+	virtual Lit True()=0;
 	//Set whether a variable can be a chosen as a decision in the SAT solver or not
 	virtual void setDecisionVar(Var solverVar, bool decidable)=0;
 	virtual Var newTheoryVar(Var solverVar, int theoryID, Var theoryVar)=0;

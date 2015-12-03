@@ -716,6 +716,7 @@ public:
 	
 	//Returns the cost of the edge connecting x to the tree; x must not be a root.
 	Weight getCost(int x) {
+		assert(x>=0);
 		assert(!isRoot(x));
 		return grosscost(x);
 	}
@@ -727,6 +728,7 @@ public:
 	//Note: In Sleator and Tarjan (1982), this function instead returns a node of minimum weight.
 	//For the equivalent function in this implementation, see ancecstorFindMin
 	Weight minCost(int x) {
+		assert(x>=0);
 		assert(isRoot(x));
 		return grossmin(x);
 	}
@@ -803,6 +805,7 @@ public:
 	}
 	//True if u is a root in the forest
 	bool isRoot(int u) {
+		assert(u>=0);
 		return !nodes[u].hasRealParent;
 	}
 	

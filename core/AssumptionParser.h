@@ -85,14 +85,14 @@ static void parse_Assumptions(gzFile input_stream, vec<Lit>& assumptions, Solver
 				}
 				if (symbol.size() > 0) {
 					if (symbol_table.count(symbol) == 0) {
-						printf("PARSE ERROR! Unknown symbol: %s\n", symbol.c_str()), exit(3);
+						parse_errorf("Unknown symbol: %s\n", symbol.c_str()), exit(3);
 					} else {
 						int v = symbol_table[symbol];
 						Lit l = mkLit(v, neg);
 						assumptions.push(l);
 					}
 				} else {
-					printf("PARSE ERROR! Empty symbol!\n"), exit(3);
+					parse_errorf("Empty symbol!\n"), exit(3);
 				}
 				
 			}
@@ -104,15 +104,13 @@ static void parse_Assumptions(gzFile input_stream, vec<Lit>& assumptions, Solver
 	for (int i = 0; i < assumptions.size(); i++) {
 		Lit l = assumptions[i];
 		if (var(l) < 0) {
-			fprintf(stderr, "Bad assumption %d: %d is not a valid variable id\n", dimacs(l), var(l) + 1);
-			exit(1);
+			parse_errorf("Bad assumption %d: %d is not a valid variable id\n", dimacs(l), var(l) + 1);
 		} else if (var(l) >= S.nVars()) {
-			fprintf(stderr, "Bad assumption %d: %d is larger than the largest variable in the GNF\n", dimacs(l),
+			parse_errorf("Bad assumption %d: %d is larger than the largest variable in the GNF\n", dimacs(l),
 					var(l) + 1);
-			exit(1);
 		} else if (l == ~prev) {
 			fprintf(stderr,
-					"Bad assumption %d: Variable %d assumed multiple times with conflicting polarity, this is unsolveable\n",
+					"Warning: Bad assumption %d: Variable %d assumed multiple times with conflicting polarity, this is unsolveable\n",
 					dimacs(l), var(l) + 1);
 			
 		} else if (l == prev) {

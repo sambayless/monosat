@@ -39,6 +39,9 @@ extern DoubleOption opt_restart_inc;
 extern DoubleOption opt_garbage_frac;
 extern BoolOption opt_rnd_restart;
 
+extern StringOption opt_record_file;
+extern bool opt_record;
+
 extern IntOption opt_theory_conflict_max;
 extern DoubleOption opt_random_theory_freq;
 
@@ -46,7 +49,16 @@ extern BoolOption opt_interpolate;
 extern IntOption opt_eager_prop;
 extern IntOption opt_subsearch;
 
+
+
 extern BoolOption opt_amo_eager_prop;
+
+extern StringOption opt_debug_learnt_clauses;
+extern BoolOption opt_debug_model;
+extern long opt_n_learnts;
+extern BoolOption opt_write_bv_bounds;
+extern BoolOption opt_write_bv_analysis;
+extern FILE* opt_write_learnt_clauses;
 
 extern BoolOption opt_graph;
 extern BoolOption opt_inc_graph;
@@ -127,6 +139,8 @@ extern IntOption opt_width;
 extern IntOption opt_height;
 extern IntOption opt_bits;
 extern BoolOption opt_encode_reach_underapprox_as_sat;
+extern IntOption opt_encode_dist_underapprox_as_sat;
+extern BoolOption opt_sat_distance_encoding_unconstrained_default;
 extern BoolOption opt_csv;
 extern BoolOption opt_rnd_shuffle;
 extern BoolOption opt_components_learn_connect;
@@ -229,7 +243,7 @@ extern IntOption opt_time;
 
 static inline double rtime(int level = 1) {
 	if (level <= opt_time) {
-		return cpuTime();
+		return fastTime();
 	} else {
 		return 0;
 	}

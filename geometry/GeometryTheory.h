@@ -415,7 +415,7 @@ public:
 				Assignment & e = trail[i];
 				assert(assigns[e.var]!=l_Undef);
 				if (e.isPoint) {
-					assert(dbg_value(e.var)==l_Undef);
+					assert(dbg_value(e.var)==value(e.var));
 					int point_num = getPointID(e.var); //e.var-min_point_var;
 					int pointSet = points[point_num].pointset;
 					int pointsetIndex = getPointsetIndex(point_num);

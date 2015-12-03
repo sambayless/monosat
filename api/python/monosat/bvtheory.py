@@ -31,7 +31,7 @@ class BVManager(metaclass=Singleton):
         self.aux_bvs=[]
         self.comparisons=[]
         self.consts=dict()
-        
+        self.ites=[]
         self._monosat = monosat.monosat_c.Monosat()
         self._monosat.initBVTheory()
         self.bitblast_addition=False
@@ -49,7 +49,8 @@ class BVManager(metaclass=Singleton):
     def clear(self):
         self.bvs = []
         self.aux_bvs=[]
-        self.comparisons=[]        
+        self.comparisons=[]     
+        self.ites=[]   
     
     #Each "string" must actually be a list of positive integers
     def Bv(self,  width=8, const_value=None):
@@ -65,17 +66,34 @@ class BVManager(metaclass=Singleton):
     
     def getBitVectors(self):
         return self.bvs
+ 
+    def Ite(self, i, t,e):
+        assert(isinstance(i,Var))
+        assert(isinstance(t,BitVector))
+        assert(isinstance(e,BitVector))
+        assert(t.width()==e.width())
+        result = self.Bv(t.width())
+        #introduce a fresh Var to avoid re-using the same var for multiple atoms
+        v = Var()
+        Assert(v==i)        
+        self._monosat.bv_ite(v.getLit(), t.getID(),e.getID(), result.getID())           
+        #self.ites.append((i,t,e,result))
+        return result;     
     
-    def write(self,f):
-  
-        
+    def write(self,f):       
         for bv in self.bvs:
             bv.write(f)
         for i,bv in enumerate(self.aux_bvs):
             bv.pid = len(self.bvs)+i
             bv.write(f)
+        for (i,t,e,r) in self.ites:
+            f.write("bv_Ite %d %d %d %d\n"%(dimacs(i),t.getID(),e.getID(),r.getID()))
             
 _bv_manager = BVManager() 
+
+
+def _bv_Ite(i,t,e):
+    return _bv_manager.Ite(i,t,e)
 #def Bv(width, const_value=None):
 #    return _bv_manager.Bv(width,const_value)                   
        
@@ -103,8 +121,9 @@ class BitVector():
             originalval=val
 
             if val<0:
-                val=0
-                print("Warning: negative bitvectors not yet supported, setting to 0", file=sys.stderr)
+                val += 1<<width 
+                #val=0
+                #print("Warning: negative bitvectors not yet supported, setting to 0", file=sys.stderr)
             
             if  val>= (1<<width):
                 val = (1<<width)-1
@@ -154,7 +173,30 @@ class BitVector():
                     Assert(out==r)
                     carry=carry2
                 Assert(Not(carry))#disallow overflow.
-    
+        elif op=="-":
+            #mgr._monosat.bv_addition(self.getID(), args[1].getID(), args[0].getID())
+            mgr._monosat.bv_subtraction(args[0].getID(), args[1].getID(), self.getID())
+        elif op=="~":
+            mgr._monosat.bv_not(args[0].getID(), self.getID())
+        elif op=="&":
+            mgr._monosat.bv_and(args[0].getID(), args[1].getID(), self.getID())   
+        elif op=="~&":
+            mgr._monosat.bv_nand(args[0].getID(), args[1].getID(), self.getID())    
+        elif op=="|":
+            mgr._monosat.bv_or(args[0].getID(), args[1].getID(), self.getID())   
+        elif op=="~|":
+            mgr._monosat.bv_nor(args[0].getID(), args[1].getID(), self.getID())   
+        elif op=="^":
+            mgr._monosat.bv_xor(args[0].getID(), args[1].getID(), self.getID())   
+        elif op=="~^":
+            mgr._monosat.bv_xnor(args[0].getID(), args[1].getID(), self.getID())   
+        elif op=="slice":
+            mgr._monosat.bv_slice(args[0].getID(), args[1],args[2], self.getID()) 
+        elif op=="concat":
+            mgr._monosat.bv_concat(args[0].getID(), args[1].getID(), self.getID())   
+
+   
+        
     def checkValue(self,val):
         if val<0 or val>= 1<<self.width():
             print("Error: value %d is too large to represent with a width-%d bitvector"%(val,self.width()), file=sys.stderr)
@@ -188,6 +230,14 @@ class BitVector():
         return self.pid
     
     def __getitem__(self,index):
+        if isinstance(index, slice):
+            assert(index.step is None or index.step==1);
+            lower = index.start if index.start else 0
+            upper = index.stop if index.stop else self.width()-1
+            assert(upper>lower)
+            assert(lower>=0)
+            assert(upper<=self.width())
+            return BitVector(self.mgr,upper-lower,'slice',(self,lower,upper-1)) 
         return self._bv[index]
     
     def __len__(self):
@@ -199,6 +249,13 @@ class BitVector():
         return BitVector(self.mgr,self.width(),'+',(self,other))
     
     __radd__ = __add__    
+
+    def __sub__(self,other):
+        if not isinstance(other, BitVector):
+            other = BitVector(self.mgr,self.width(),other)
+        return BitVector(self.mgr,self.width(),'-',(self,other))
+    
+    __rsub__ = __sub__    
     
     def lt(self,compareTo):
         if  isinstance(compareTo, BitVector):
@@ -240,7 +297,7 @@ class BitVector():
         #if not isinstance(compareTo, BitVector):
         #    compareTo = BitVector(self.mgr,self.width(),compareTo)
         return Nand(self.leq(compareTo),self.geq(compareTo))
-    
+
     def __lt__(self,other):
         return self.lt(other)
 
@@ -258,6 +315,51 @@ class BitVector():
 
     def __ne__(self,other):
         return self.neq(other)     
+    
+    def Not(self):
+        return BitVector(self.mgr,self.width(),'~',(self,))  
+    
+    def __invert__(self):
+        return self.Not()
+    
+    #bitwise operators
+    def And(self,other):
+        return BitVector(self.mgr,self.width(),'&',(self,other)) 
+    
+    def Nand(self,other):
+        return BitVector(self.mgr,self.width(),'~&',(self,other)) 
+        
+    def Or(self,other):
+        return BitVector(self.mgr,self.width(),'|',(self,other))     
+
+    def Nor(self,other):
+        return BitVector(self.mgr,self.width(),'~|',(self,other))     
+
+    def Xor(self,other):
+        return BitVector(self.mgr,self.width(),'^',(self,other)) 
+
+    def Xnor(self,other):
+        return BitVector(self.mgr,self.width(),'~^',(self,other)) 
+    
+    def __and__(self,other):
+        return self.And(other)
+
+    def __or__(self,other):
+        return self.Or(other)
+
+    def __xor__(self,other):
+        return self.Xor(other)
+    
+
+    
+    """def __getslice__(self,lower,upper):
+        assert(upper>lower)
+        assert(lower>0)
+        assert(upper<=self.width())
+        return BitVector(self.mgr,upper-lower,'slice',(self,lower,upper)) """
+    
+    def concat(self,other):
+        return BitVector(self.mgr,self.width()+other.width(),'concat',(self,other))     
     
     def write(self,f):
         

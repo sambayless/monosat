@@ -51,7 +51,7 @@ public:
 	std::vector<std::vector<int> > dist;
 	std::vector<std::vector<int> > prev;
 
-	std::vector<int> * dist_ptr;
+	std::vector<int> * dist_ptr=nullptr;
 	struct DistCmp {
 		std::vector<int> ** _dist;
 		bool operator()(int a, int b) const {

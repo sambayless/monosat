@@ -70,7 +70,7 @@ double Monosat::memUsed() {
 	return (double) memReadStat(0) * (double) getpagesize() / (1024 * 1024);
 }
 double Monosat::memUsedPeak() {
-	double peak = memReadPeak() / 1024;
+	double peak = memReadPeak() / 1024.0;
 	return peak == 0 ? memUsed() : peak;
 }
 
@@ -79,7 +79,7 @@ double Monosat::memUsedPeak() {
 double Monosat::memUsed(void) {
 	struct rusage ru;
 	getrusage(RUSAGE_SELF, &ru);
-	return (double)ru.ru_maxrss / 1024;}
+	return (double)ru.ru_maxrss / 1024.0;}
 double Monosat::memUsedPeak(void) {return memUsed();}
 
 #elif defined(__APPLE__)

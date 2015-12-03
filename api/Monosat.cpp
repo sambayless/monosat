@@ -2,6 +2,7 @@
 #include "utils/ParseUtils.h"
 #include "utils/Options.h"
 #include "core/Solver.h"
+#include "core/Config.h"
 #include "simp/SimpSolver.h"
 #include "graph/GraphTheory.h"
 #include "geometry/GeometryTheory.h"
@@ -188,7 +189,12 @@ void * newSolver(int argc, char**argv){
 		opt_conflict_min_cut = true;
 		opt_conflict_min_cut_maxflow = true;
 	}
-
+	Monosat::opt_record=strlen(opt_record_file)>0;
+	if(strlen(opt_debug_learnt_clauses)>0){
+		opt_write_learnt_clauses=fopen(opt_debug_learnt_clauses,"w");
+	}else{
+		opt_write_learnt_clauses=nullptr;
+	}
 	_selectAlgorithms();
 	  Monosat::SimpSolver * S = new Monosat::SimpSolver();
 
@@ -243,8 +249,12 @@ bool solveAssumptions(Monosat::SimpSolver * S,int * assumptions, int n_assumptio
 	S->cancelUntil(0);
 
 	  static Monosat::vec<Monosat::Lit> assume;
-		S->preprocess();//do this _even_ if sat based preprocessing is disabled! Some of the theory solvers depend on a preprocessing call being made!
-		S->eliminate(true);
+	  S->preprocess();//do this _even_ if sat based preprocessing is disabled! Some of the theory solvers depend on a preprocessing call being made!
+
+	  if (opt_pre){
+
+		S->eliminate(false);//should this really be set to disable future preprocessing here?
+	 }
 	  assume.clear();
 	  for (int i = 0;i<n_assumptions;i++){
 		  assume.push(toLit(assumptions[i]));
@@ -277,7 +287,9 @@ bool solveAssumptions(Monosat::SimpSolver * S,int * assumptions, int n_assumptio
  int nClauses(Monosat::SimpSolver * S){
 	 return S->nClauses();
  }
-
+ int true_lit(Monosat::SimpSolver * S){
+	 return toInt(S->True());
+ }
  bool addClause(Monosat::SimpSolver * S,int * lits, int n_lits){
 	  static vec<Lit> clause;
 	  clause.clear();
@@ -365,6 +377,52 @@ bool solveAssumptions(Monosat::SimpSolver * S,int * assumptions, int n_assumptio
  void bv_addition( Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv, int bvID1, int bvID2, int resultID){
 	  bv->newAdditionBV(resultID,bvID1,bvID2);
  }
+ void bv_subtraction( Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv, int bvID1, int bvID2, int resultID){
+ 	  bv->newSubtractionBV(resultID,bvID1,bvID2);
+  }
+
+void bv_ite( Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv, int condition_lit,int bvThenID, int bvElseID, int bvResultID){
+	Lit l = toLit(condition_lit);
+	bv->newConditionalBV(l,bvThenID,bvElseID,bvResultID);
+}
+
+void bv_not(Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv,int a,  int out){
+	//return bv->bitwiseAnd(bv->getBV(a),bv->getBV(b)).getID();
+	bv->bitwiseNot(bv->getBV(a),bv->getBV(out));
+}
+
+void bv_and(Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv,int a, int b, int out){
+	//return bv->bitwiseAnd(bv->getBV(a),bv->getBV(b)).getID();
+	bv->bitwiseAnd(bv->getBV(a),bv->getBV(b),bv->getBV(out));
+}
+void bv_nand( Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv,int a, int b, int out){
+	//return bv->bitwiseNand(bv->getBV(a),bv->getBV(b)).getID();
+	bv->bitwiseNand(bv->getBV(a),bv->getBV(b),bv->getBV(out));
+}
+void bv_or( Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv,int a, int b, int out){
+	//return bv->bitwiseOr(bv->getBV(a),bv->getBV(b)).getID();
+	bv->bitwiseOr(bv->getBV(a),bv->getBV(b),bv->getBV(out));
+}
+void bv_nor( Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv,int a, int b, int out){
+	//return bv->bitwiseNor(bv->getBV(a),bv->getBV(b)).getID();
+	bv->bitwiseNor(bv->getBV(a),bv->getBV(b),bv->getBV(out));
+}
+void bv_xor( Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv,int a, int b, int out){
+	//return bv->bitwiseXor(bv->getBV(a),bv->getBV(b)).getID();
+	bv->bitwiseXor(bv->getBV(a),bv->getBV(b),bv->getBV(out));
+}
+void bv_xnor( Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv,int a, int b, int out){
+	//return bv->bitwiseXnor(bv->getBV(a),bv->getBV(b)).getID();
+	bv->bitwiseXnor(bv->getBV(a),bv->getBV(b),bv->getBV(out));
+}
+
+void bv_concat( Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv,int aID, int bID, int resultID){
+	bv->concat(bv->getBV(aID), bv->getBV(bID),bv->getBV(resultID));
+}
+
+void bv_slice( Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv,int aID, int lower, int upper, int resultID){
+	bv->slice(bv->getBV(aID),lower,upper,bv->getBV(resultID));
+}
 
  //simple at-most-one constraint: asserts that at most one of the set of variables (NOT LITERALS) may be true.
  //for small numbers of variables, consider using a direct CNF encoding instead

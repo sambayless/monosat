@@ -22,19 +22,27 @@
 #ifndef RAMAL_REPS_H_
 #define RAMAL_REPS_H_
 
+#include <dgl/alg/Heap.h>
+#include <dgl/Dijkstra.h>
+#include <dgl/Distance.h>
+#include <dgl/DynamicGraph.h>
+#include <dgl/Reach.h>
+//#include "core/Config.h"
+//#include <algorithm>
+#include <cassert>
+#include <cstdio>
+//#include <exception>
+#include <sstream>
+#include <stdexcept>
+#include <string>
 #include <vector>
-#include "alg/Heap.h"
-#include "DynamicGraph.h"
-#include "Reach.h"
-#include "Distance.h"
-#include "Dijkstra.h"
-#include "core/Config.h"
-#include <algorithm>
+
 
 namespace dgl {
 template<typename Weight = int, class Status = typename Distance<Weight>::NullStatus>
 class RamalReps: public Distance<Weight>, public DynamicGraphAlgorithm {
 public:
+	static bool ever_warned_about_zero_weights;
 	DynamicGraph<Weight> & g;
 	std::vector<Weight> & weights;
 	Status & status;
@@ -71,6 +79,42 @@ public:
 	std::vector<int> delta;
 	std::vector<int> changeset;
 	int alg_id;
+
+	struct LocalDistanceStatus {
+		RamalReps & outer;
+
+		void setReachable(int u, bool reachable){
+
+		}
+		bool isReachable(int u) const {
+			return false;
+		}
+
+		void setMininumDistance(int u, bool reachable, Weight& distance){
+			if(reachable){
+				if(outer.dist[u]!=distance){
+					outer.dist[u]=distance;
+					if(!outer.node_changed[u]){
+						outer.node_changed[u]=true;
+						outer.changed.push_back(u);
+					}
+				}
+			}else{
+				if(outer.dist[u]!=outer.INF){
+					outer.dist[u]=outer.INF;
+					if(!outer.node_changed[u]){
+						outer.node_changed[u]=true;
+						outer.changed.push_back(u);
+					}
+				}
+			}
+		}
+		LocalDistanceStatus(RamalReps & _outer) :
+			outer(_outer) {
+		}
+	} local_distance_status;
+	Dijkstra<Weight,LocalDistanceStatus> dijkstras;
+	bool has_zero_weights=false;
 public:
 	
 	long stats_full_updates=0;
@@ -87,7 +131,7 @@ public:
 			bool reportDistance = false) :
 			g(graph), weights(g.getWeights()), status(status), reportPolarity(reportPolarity), reportDistance(reportDistance), last_modification(
 					-1), last_addition(-1), last_deletion(-1), history_qhead(0), last_history_clear(0), source(s), INF(
-					0), q(DistCmp(dist)) {
+					0), q(DistCmp(dist)),local_distance_status(*this),dijkstras(s,graph,local_distance_status,reportPolarity) {
 		
 		mod_percentage = 0.2;
 		alg_id=g.addDynamicAlgorithm(this);
@@ -116,7 +160,7 @@ public:
 	}
 	
 	void dbg_delta() {
-#ifndef NDEBUG
+#ifdef DEBUG_RAMAL
 		dbg_delta_lite();
 		assert(delta.size() == g.nodes());
 		
@@ -253,7 +297,6 @@ public:
 		q.insert(rv);
 		
 		while (q.size()) {
-			
 			int u = q.removeMin();
 			
 			if (!node_changed[u]) {
@@ -312,7 +355,7 @@ public:
 		dbg_delta_lite();
 	}
 	void dbg_delta_lite() {
-#ifndef NDEBUG
+#ifdef DEBUG_RAMAL
 		for (int u = 0; u < g.nodes(); u++) {
 			int del = delta[u];
 			Weight d = dist[u];
@@ -490,11 +533,11 @@ public:
 	}
 	
 	void update() {
-#ifdef RECORD
+
 		if (g.outfile) {
 			fprintf(g.outfile, "r %d\n", getSource());
 		}
-#endif
+
 		static int iteration = 0;
 		int local_it = ++iteration;
 		if (local_it == 7668) {
@@ -504,12 +547,14 @@ public:
 			return;
 		if (last_modification <= 0 || g.changed()) {
 			INF = 1;							//g.nodes()+1;
+			has_zero_weights=false;
 			for (Weight & w : weights) {
 				if (w <= 0) {
 					//Note: in the future, we could implement the DFMN algorithm (Maintaining Shortest Paths in Digraphs with Arbitrary Arc Weights: An Experimental Study), which does support negative length weights, but is slower than RR.
-					fprintf(stderr,
-							"Ramalingham-Reps doesn't support zero-weight edges (select a different distance algorithm, such as dijkstra).\n");
-					exit(1);
+					//throw std::invalid_argument("Ramalingham-Reps doesn't support zero-weight edges (select a different distance algorithm, such as dijkstra)");
+					//for the moment: the _first_ time <0 weights are detected, simply fallback on dijkstra's, permanently.
+
+					has_zero_weights=true;
 				}
 				INF += w;
 			}
@@ -532,32 +577,39 @@ public:
 			
 		}
 		
-		for (int i = history_qhead; i < g.historySize(); i++) {
-			int edgeid = g.getChange(i).id;
-			if (g.getChange(i).addition && g.edgeEnabled(edgeid)) {
-				GRRInc(edgeid);
-			} else if (!g.getChange(i).addition && !g.edgeEnabled(edgeid)) {
-				GRRDec(edgeid);
+		if(has_zero_weights){
+			if(!ever_warned_about_zero_weights){
+				ever_warned_about_zero_weights=true;
+				fprintf(stderr,"Warning: Ramalingham-Reps doesn't support zero-weight edges; falling back on Dijkstra's (which is much slower)\n");
+			}
+			dijkstras.update();
+		}else{
+			for (int i = history_qhead; i < g.historySize(); i++) {
+				int edgeid = g.getChange(i).id;
+				if (g.getChange(i).addition && g.edgeEnabled(edgeid)) {
+					GRRInc(edgeid);
+				} else if (!g.getChange(i).addition && !g.edgeEnabled(edgeid)) {
+					GRRDec(edgeid);
+				}
 			}
 		}
-		
-		//for(int i = 0;i<g.nodes();i++){
-		//	int u=i;
-		for (int u : changed) {
-			//int u = changed[i];
-			node_changed[u] = false;
-			//CANNOT clear the change flag here, because if we backtrack and then immediately re-propagate an edge before calling theoryPropagate, the change to this node may be missed.
-			
-			if (reportPolarity <= 0 && dist[u] >= INF) {
-				status.setReachable(u, false);
-				status.setMininumDistance(u, dist[u] < INF, dist[u]);
-			} else if (reportPolarity >= 0 && dist[u] < INF) {
-				status.setReachable(u, true);
-				status.setMininumDistance(u, dist[u] < INF, dist[u]);
+			//for(int i = 0;i<g.nodes();i++){
+			//	int u=i;
+			for (int u : changed) {
+				//int u = changed[i];
+				node_changed[u] = false;
+				//CANNOT clear the change flag here, because if we backtrack and then immediately re-propagate an edge before calling theoryPropagate, the change to this node may be missed.
+				if (reportPolarity <= 0 && dist[u] >= INF) {
+					status.setReachable(u, false);
+					status.setMininumDistance(u, dist[u] < INF, dist[u]);
+				} else if (reportPolarity >= 0 && dist[u] < INF) {
+					status.setReachable(u, true);
+					status.setMininumDistance(u, dist[u] < INF, dist[u]);
+				}
 			}
-		}
-		changed.clear();
-		//}
+			changed.clear();
+
+
 		assert(dbg_uptodate());
 		num_updates++;
 		last_modification = g.modifications;
@@ -573,7 +625,7 @@ public:
 		update();
 	}
 	bool dbg_path(int to) {
-#ifdef DEBUG_DIJKSTRA
+#ifdef DEBUG_RAMAL
 		/*	assert(connected(to));
 		 if(to == source){
 		 return true;
@@ -593,7 +645,7 @@ public:
 		return true;
 	}
 	bool dbg_uptodate() {
-#ifdef DEBUG_DIJKSTRA
+#ifdef DEBUG_RAMAL
 		/*if(last_modification<0)
 		 return true;
 		 dbg_delta();
@@ -609,7 +661,7 @@ public:
 
 		 if(dis!=dbgdist){
 		 assert(false);
-		 exit(4);
+		 throw std::logic_error();
 		 }
 		 }*/
 //#endif
@@ -628,7 +680,7 @@ public:
 	bool connected(int t) {
 		if (last_modification != g.modifications)
 			update();
-		
+
 		assert(dbg_uptodate());
 		
 		return dist[t] < INF;
@@ -654,8 +706,7 @@ public:
 		 assert(prev[t]>=-1 );
 		 return prev[t];*/
 		//not supported
-		assert(false);
-		exit(1);
+		 throw std::runtime_error("not implemented");
 	}
 	int previous(int t) {
 		/*if(prev[t]<0)
@@ -663,8 +714,7 @@ public:
 
 		 assert(g.all_edges[incomingEdge(t)].to==t);
 		 return g.all_edges[incomingEdge(t)].from;*/
-		assert(false);
-		exit(1);
+		 throw std::runtime_error("not implemented");
 	}
 };
 
@@ -765,7 +815,7 @@ public:
 	}
 	
 	void dbg_delta() {
-#ifndef NDEBUG
+#ifdef DEBUG_RAMAL
 		//g.drawFull();
 		dbg_delta_lite();
 		assert(delta.size() == g.nodes());
@@ -774,7 +824,7 @@ public:
 			if (!g.edgeEnabled(i)) {
 				assert(!edgeInShortestPathGraph[i]);
 				if (edgeInShortestPathGraph[i]) {
-					exit(3);
+					throw std::runtime_error("");
 				}
 			}
 		}
@@ -997,6 +1047,7 @@ public:
 		dbg_delta_lite();
 	}
 	void dbg_not_seen_q(std::vector<int> & q, int u, int from) {
+#ifdef DEBUG_RAMAL
 		bool found = false;
 		for (int i = from; i < q.size(); i++) {
 			if (q[i] == u) {
@@ -1005,9 +1056,10 @@ public:
 			}
 		}
 		assert(found);
+#endif
 	}
 	void dbg_Q_add(std::vector<int> & q, int u) {
-#ifndef NDEBUG
+#ifdef DEBUG_RAMAL
 		//assert(!in_queue[u]);
 		for (int v : q) {
 			assert(u != v);
@@ -1018,7 +1070,7 @@ public:
 #endif
 	}
 	void dbg_Q_order(std::vector<int> & _q) {
-#ifndef NDEBUG
+#ifdef DEBUG_RAMAL
 		
 		for (int i = 1; i < _q.size(); i++) {
 			int v = _q[i];
@@ -1042,7 +1094,7 @@ public:
 	}
 	
 	void dbg_delta_lite() {
-#ifndef NDEBUG
+#ifdef DEBUG_RAMAL
 		for (int u = 0; u < g.nodes(); u++) {
 			int del = delta[u];
 			int d = dist[u];
@@ -1270,19 +1322,14 @@ public:
 	}
 	
 	void update() {
-#ifdef RECORD
+
 		if (g.outfile) {
-			fprintf(g.outfile, "r %d\n", getSource());
+			fprintf(g.outfile, "r %d %d %d %d %d\n", getSource(),last_modification, g.modifications,g.changed(), g.historySize() );
 		}
-#endif
-		
-		static int iteration = 0;
-		int local_it = ++iteration;
-		if (local_it == 671) {
-			int a = 1;
-		}
-		if (last_modification > 0 && g.modifications == last_modification)
+
+		if (last_modification > 0 && g.modifications == last_modification){
 			return;
+		}
 		if (last_modification <= 0 || g.changed()) {//Note for the future: there is probably room to improve this further.
 			stats_full_updates++;
 			INF = g.nodes() + 1;
@@ -1349,14 +1396,14 @@ public:
 		g.updateAlgorithmHistory(this,alg_id,history_qhead);
 		last_history_clear = g.historyclears;
 		assert(dbg_uptodate());
-		
+
 	}
 	void updateHistory(){
 		update();
 	}
 
 	bool dbg_path(int to) {
-#ifdef DEBUG_DIJKSTRA
+#ifdef DEBUG_RAMAL
 		assert(connected(to));
 		if(to == source) {
 			return true;
@@ -1377,11 +1424,11 @@ public:
 	}
 	bool dbg_uptodate() {
 //#ifdef DEBUG_GRAPH
-#ifdef DEBUG_DIJKSTRA
+#ifdef DEBUG_RAMAL
 		if(last_modification<0)
 		return true;
 		dbg_delta();
-		UnweightedDijkstra<Reach::NullStatus,false> d(source,g);
+		UnweightedDijkstra<Weight> d(source,g);
 
 		for(int i = 0;i<g.nodes();i++) {
 			int dis = dist[i];
@@ -1397,8 +1444,27 @@ public:
 			}
 			if(dis!=dbgdist) {
 				assert(false);
-				exit(4);
+				throw std::runtime_error("");
 			}
+			if(d.connected(i) && d.distance(i)<maxDistance){
+
+				int dd =d.dist[i];
+				int mdis = dist[i];
+				if(! (mdis< INF)){
+					assert(false);
+					throw std::runtime_error("");
+				}
+				if(dd!=mdis) {
+					assert(false);
+					throw std::runtime_error("");
+				}
+			}else{
+				if(dist[i]<maxDistance){
+					assert(false);
+					throw std::runtime_error("");
+				}
+			}
+
 		}
 //#endif
 #endif
@@ -1414,16 +1480,18 @@ public:
 		return connected_unsafe(t);
 	}
 	bool connected(int t) {
-		if (last_modification != g.modifications)
+		if (last_modification < 0 ||  last_modification != g.modifications)
 			update();
-		
+
+
 		assert(dbg_uptodate());
 		
 		return dist[t] < INF;
 	}
 	int& distance(int t) {
-		if (last_modification != g.modifications)
+		if (last_modification < 0 ||  last_modification != g.modifications)
 			update();
+
 		if (connected_unsafe(t))
 			return dist[t];
 		else
@@ -1441,8 +1509,8 @@ public:
 		 assert(t>=0 && t<prev.size());
 		 assert(prev[t]>=-1 );
 		 return prev[t];*/
-		assert(false);
-		exit(1);
+
+		throw std::runtime_error("not implemented");
 	}
 	int previous(int t) {
 		/*		if(prev[t]<0)
@@ -1450,11 +1518,11 @@ public:
 
 		 assert(g.all_edges[incomingEdge(t)].to==t);
 		 return g.all_edges[incomingEdge(t)].from;*/
-		assert(false);
-		exit(1);
+		 throw std::runtime_error("not implemented");
 	}
 };
-
+template<typename Weight, class Status>
+bool RamalReps<Weight,Status>::ever_warned_about_zero_weights = 0;
 }
 ;
 #endif

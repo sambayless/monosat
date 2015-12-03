@@ -172,7 +172,7 @@ public:
 					continue;
 				int v = g.incoming(u, j).node;
 				//this is a backward edge, so it has capacity exactly if the forward edge has flow
-				if (dist[v] < 0 && F[edgeID]) {
+				if (dist[v] < 0 && F[edgeID]>0) {
 					dist[v] = dist[u] + 1;
 					Q.push_back(v);
 				}
@@ -232,7 +232,7 @@ public:
 						continue;
 					int v = g.incoming(u, pos[u] - g.nIncident(u)).node;
 					//these are backwards edges, which have capacity exactly if the forward edge has non-zero flow
-					if (dist[v] == dist[u] + 1 && F[edgeID]) {
+					if (dist[v] == dist[u] + 1 && F[edgeID]>0) {
 						//printf("-%d\n",edgeID);
 						found = true;
 						M[v] = std::min(M[u], F[edgeID]);
@@ -298,7 +298,7 @@ public:
 			continue;
 			int v = g.incoming(u,dbg_pos[u]-g.nIncident(u)).node;
 			//these are backwards edges, which have capacity exactly if the forward edge has non-zero flow
-			if (dist[v] == dist[u] + 1 && F[edgeID]) {
+			if (dist[v] == dist[u] + 1 && F[edgeID]>0) {
 				int df = dbg_findAugmentingPath_recursive(v, std::min(f, F[edgeID]));
 				if (df > 0) {
 					//F[edgeID] -= df;
@@ -337,7 +337,7 @@ public:
 				continue;
 			int v = g.incoming(u, pos[u] - g.nIncident(u)).node;
 			//these are backwards edges, which have capacity exactly if the forward edge has non-zero flow
-			if (dist[v] == dist[u] + 1 && F[edgeID]) {
+			if (dist[v] == dist[u] + 1 && F[edgeID]>0) {
 				//printf("-%d\n",edgeID);
 				Weight df = findAugmentingPath_recursive(v, std::min(f, F[edgeID]));
 				if (df > 0) {
@@ -392,13 +392,11 @@ public:
 	}
 	const Weight maxFlow(int s, int t) {
 		Weight f = 0;
-#ifdef RECORD
 		if (g.outfile) {
 			fprintf(g.outfile, "f %d %d\n", s, t);
 			fflush(g.outfile);
 		}
-#endif
-		
+
 		if (last_modification > 0 && g.modifications == last_modification) {
 			return curflow;
 		}

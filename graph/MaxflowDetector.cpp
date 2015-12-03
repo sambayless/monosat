@@ -39,7 +39,7 @@
 #include <cstdlib>
 #include <iostream>
 #include <vector>
-
+#include <string>
 using namespace Monosat;
 
 template<typename Weight>
@@ -136,19 +136,15 @@ MaxflowDetector<Weight>::MaxflowDetector(int _detectorID, GraphTheorySolver<Weig
 		acyclic_flow=new AcyclicFlow<Weight>(g_under);
 	}
 
-#ifdef RECORD
-	{
-		char t[30];
-		sprintf(t, "LEARN_GRAPH%d", getID());
-		learn_graph.outfile = fopen(t, "w");
+	if(opt_record){
+		std::string t = (const char*)opt_record_file;
+		t+="/LOG_LEARN_GRAPH" +std::to_string(getID());
+		learn_graph.outfile = fopen(t.c_str(), "w");
 	}
-	
-#endif
-	
+
 	first_reach_var = var_Undef;
 	underprop_marker = outer->newReasonMarker(getID());
 	overprop_marker = outer->newReasonMarker(getID());
-	
 }
 
 template<typename Weight>
@@ -230,7 +226,7 @@ Lit MaxflowDetector<Weight>::findFirstReasonTooHigh(Weight flow) {
 					return l;
 				}
 				if(outer->hasBitVector(i)){
-					exit(8);
+					throw std::runtime_error("Error in maxflow");
 					//outer->buildBVReason(outer->getEdgeBV(i).getID(),Comparison::geq,underapprox_conflict_detector->getEdgeFlow(i),conflict);
 					//outer->buildBVReason(bv.getID(),inclusive ? Comparison::gt:Comparison::geq,bv.getUnder(),conflict);
 				}
@@ -266,7 +262,7 @@ Lit MaxflowDetector<Weight>::findFirstReasonTooLow(Weight flow) {
 					}else{
 						//if the edge _was_ enabled, and all of its capacity was used, then the reason that it didn't have more capacity must be included.
 						if(outer->hasBitVector(edgeid)){
-							exit(7);
+							throw std::runtime_error("Error in maxflow");
 						}
 					}
 				} else {
@@ -306,7 +302,7 @@ Lit MaxflowDetector<Weight>::findFirstReasonTooLow(Weight flow) {
 						//if the edge _was_ enabled, and it had no capacity capacity was used, then the reason that it didn't have more capacity must be included.
 						//does this really hold for backwards edges?
 						if(outer->hasBitVector(edgeid)){
-							exit(6);
+							throw std::runtime_error("Error in maxflow");
 							//outer->buildBVReason(bv.getID(),inclusive ? Comparison::gt:Comparison::geq,bv.getUnder(),conflict);
 						}
 					}
@@ -391,9 +387,10 @@ void MaxflowDetector<Weight>::buildMaxFlowTooHighReason(Weight flow, vec<Lit> & 
 		}
 	}
 	bumpConflictEdges(conflict);
-#ifdef RECORD
-	std::sort(conflict.begin(), conflict.end());
+
+
 	if (g_under.outfile) {
+		std::sort(conflict.begin(), conflict.end());
 		fprintf(g_under.outfile, "toohigh ");
 		for (int i = 0; i < conflict.size(); i++) {
 			fprintf(g_under.outfile, "%d,", dimacs(conflict[i]));
@@ -402,6 +399,7 @@ void MaxflowDetector<Weight>::buildMaxFlowTooHighReason(Weight flow, vec<Lit> & 
 		fflush(g_under.outfile);
 	}
 	if (g_over.outfile) {
+		std::sort(conflict.begin(), conflict.end());
 		fprintf(g_over.outfile, "toohigh ");
 		for (int i = 0; i < conflict.size(); i++) {
 			fprintf(g_over.outfile, "%d,", dimacs(conflict[i]));
@@ -409,7 +407,7 @@ void MaxflowDetector<Weight>::buildMaxFlowTooHighReason(Weight flow, vec<Lit> & 
 		fprintf(g_over.outfile, "\n");
 		fflush(g_over.outfile);
 	}
-#endif
+
 	stats_under_conflicts++;
 	outer->num_learnt_paths++;
 	outer->learnt_path_clause_length += (conflict.size() - 1);
@@ -491,7 +489,7 @@ void bassert(bool condition) {
 #ifndef NDEBUG
 	assert(condition);
 	if (!condition) {
-		exit(3);
+		throw std::runtime_error("Assertion error");
 	}
 #endif
 }
@@ -545,7 +543,6 @@ void MaxflowDetector<Weight>::buildMaxFlowTooLowReason(Weight maxflow, vec<Lit> 
 				assert(learn_graph.getWeight(back_edges[edgeid])==0);//capacity of this edge in the backward direction is the same as the forward flow, which is 0.
 				Weight w = (outer->hasBitVector(edgeid)?	 outer->getEdgeBV(edgeid).getOver(true):outer->edge_weights[edgeid]);
 				assert(learn_graph.getWeight(edgeid)==(w>0?1:0));
-
 			}
 
 		}
@@ -732,13 +729,17 @@ void MaxflowDetector<Weight>::buildMaxFlowTooLowReason(Weight maxflow, vec<Lit> 
 	/*if(conflict.size()<dbg_minconflict()){
 	 exit(4);
 	 }*/
-#ifdef RECORD
+#ifndef NDEBUG
 	if (overapprox_detector != overapprox_conflict_detector) {
 		Weight foundflow2 = overapprox_detector->maxFlow();
 		assert(foundflow == foundflow2);
 	}
-	std::sort(conflict.begin(), conflict.end());
+#endif
+
+
+
 	if (g_under.outfile) {
+		std::sort(conflict.begin(), conflict.end());
 		fprintf(g_under.outfile, "toolow ");
 		for (int i = 0; i < conflict.size(); i++) {
 			fprintf(g_under.outfile, "%d,", dimacs(conflict[i]));
@@ -747,6 +748,7 @@ void MaxflowDetector<Weight>::buildMaxFlowTooLowReason(Weight maxflow, vec<Lit> 
 		fflush(g_under.outfile);
 	}
 	if (g_over.outfile) {
+		std::sort(conflict.begin(), conflict.end());
 		fprintf(g_over.outfile, "toolow ");
 		for (int i = 0; i < conflict.size(); i++) {
 			fprintf(g_over.outfile, "%d,", dimacs(conflict[i]));
@@ -754,7 +756,7 @@ void MaxflowDetector<Weight>::buildMaxFlowTooLowReason(Weight maxflow, vec<Lit> 
 		fprintf(g_over.outfile, "\n");
 		fflush(g_over.outfile);
 	}
-#endif
+
 	outer->num_learnt_cuts++;
 	outer->learnt_cut_clause_length += (conflict.size() - 1);
 	stats_over_conflicts++;
@@ -832,7 +834,7 @@ bool MaxflowDetector<Weight>::propagate(vec<Lit> & conflict, bool backtrackOnly,
 	if (++iter1 == 79) {
 		int a = 1;
 	}
-#ifdef RECORD
+
 	if (g_under.outfile) {
 		fprintf(g_under.outfile, "iter %d\n", iter1);
 		fflush(g_under.outfile);
@@ -841,7 +843,7 @@ bool MaxflowDetector<Weight>::propagate(vec<Lit> & conflict, bool backtrackOnly,
 		fprintf(g_over.outfile, "iter %d\n", iter1);
 		fflush(g_over.outfile);
 	}
-#endif
+
 	
 	double start_prop_time = rtime(2);
 
@@ -1528,7 +1530,7 @@ Lit MaxflowDetector<Weight>::decide() {
 				Weight under_weight = outer->getEdgeBV(edgeID).getUnder();
 				if((val==l_Undef && flow>0) || (flow>0 && flow>under_weight)){
 					if(!in_decision_q[edgeID]){
-						exit(8);
+						throw std::runtime_error("Error in maxflow");
 					}
 				}
 			}

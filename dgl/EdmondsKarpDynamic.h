@@ -197,12 +197,12 @@ public:
 		if (++it == 56) {
 			int a = 1;
 		}
-#ifdef RECORD
+
 		if (g.outfile) {
 			fprintf(g.outfile, "f %d %d\n", s, t);
 			fflush(g.outfile);
 		}
-#endif
+
 		
 		//C.resize(g.nodes());
 #ifdef DEBUG_MAXFLOW

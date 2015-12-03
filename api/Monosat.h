@@ -23,6 +23,10 @@ extern "C"
   void backtrack(Monosat::SimpSolver * S);
   int newVar(Monosat::SimpSolver * S);
 
+  //The solver will (sometimes) instantiate an arbitrary true literal for use as a constant.
+  //Call this method to a) force that literal to be instantiate, and b) get that literal.
+  int true_lit(Monosat::SimpSolver * S);
+
   //Prevents this literal from being simplified by the preprocessor
   bool disallowLiteralSimplification(Monosat::SimpSolver * S, int lit);
 
@@ -46,7 +50,22 @@ extern "C"
   int newBVComparison_const_geq(Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv, int bvID, long weight);
   int newBVComparison_bv_geq(Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv, int bvID, int compareID);
 
+
+
+  void bv_concat( Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv,int aID, int bID, int resultID);
+  void bv_slice( Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv,int aID, int lower, int upper, int resultID);
+  void bv_not( Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv,int bvaID, int bvResultID);
+  void bv_and( Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv,int bvaID, int bvbID, int bvResultID);
+  void bv_nand( Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv,int bvaID, int bvbID, int bvResultID);
+  void bv_or( Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv,int bvaID, int bvbID, int bvResultID);
+  void bv_nor( Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv,int bvaID, int bvbID, int bvResultID);
+  void bv_xor( Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv,int bvaID, int bvbID, int bvResultID);
+  void bv_xnor( Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv,int bvaID, int bvbID, int bvResultID);
+
+  void bv_ite( Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv, int condition_lit,int bvThenID, int bvElseID, int bvResultID);
+
   void bv_addition( Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv, int bvID1, int bvID2, int resultID);
+  void bv_subtraction( Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv, int bvID1, int bvID2, int resultID);
 
   //simple at-most-one constraint: asserts that at most one of the set of variables (NOT LITERALS) may be true.
   //for small numbers of variables, consider using a direct CNF encoding instead

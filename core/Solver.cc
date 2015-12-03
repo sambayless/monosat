@@ -106,6 +106,8 @@ Var Solver::newVar(bool sign, bool dvar) {
 	setDecisionVar(v, dvar);
 
 
+
+
 	return v;
 }
 
@@ -145,13 +147,19 @@ bool Solver::addClause_(vec<Lit>& ps) {
 
 CRef Solver::attachReasonClause(Lit r,vec<Lit> & ps) {
 	assert(value(r)==l_True);
-#ifndef NDEBUG
-	printf("learnt ");
-	for (Lit l:ps){
-		printf(" %d", dimacs(l));
+
+	if(opt_write_learnt_clauses){
+		if((++opt_n_learnts)==58108|| opt_n_learnts==58109){
+			int a=1;
+		}
+		fprintf(opt_write_learnt_clauses,"learnt ");
+		for (Lit l:ps){
+			fprintf(opt_write_learnt_clauses," %d", dimacs(l));
+		}
+		fprintf(opt_write_learnt_clauses," 0\n");
+		fflush(opt_write_learnt_clauses);
 	}
-	printf(" 0\n");
-#endif
+
 	//sort(ps);
 	Lit p;
 	int i, j;
@@ -178,18 +186,18 @@ CRef Solver::attachReasonClause(Lit r,vec<Lit> & ps) {
 
 		int nfalse = 0;
 		int max_lev = 0;
-		bool satisfied = false;
-		int notFalsePos1 = 0;
+		//bool satisfied = false;
+		int notFalsePos1 = -1;
 		int notFalsePos2 = -1;
-		for (int j = 1; j < ps.size(); j++) {
+		for (int j = 0; j < ps.size(); j++) {
 			assert(var(ps[j]) < nVars());
 			//assert(value(ps[j])==l_False);
 			if (value(ps[j]) == l_False) {
 				nfalse++;
 			} else {
 
-				if (value(ps[j]) == l_True)
-					satisfied = true;
+				//if (value(ps[j]) == l_True)
+				//	satisfied = true;
 				if (notFalsePos1 < 0)
 					notFalsePos1 = j;
 				else if (notFalsePos2 < 0) {
@@ -204,6 +212,11 @@ CRef Solver::attachReasonClause(Lit r,vec<Lit> & ps) {
 			}
 		}
 
+		if(notFalsePos1<0){
+			//all literals in this clause are false - this is the usual case for reason clauses.
+			//so just treat the first literal as the non-false one
+			notFalsePos1=0;
+		}
 
 		assert(notFalsePos1 >= 0);
 		if (notFalsePos1 >= 0 && notFalsePos2 >= 0) {
@@ -822,8 +835,8 @@ void Solver::analyzeFinal(CRef confl, Lit skip_lit, vec<Lit>& out_conflict) {
 			assert(x != var(skip_lit));
 			CRef r = reason(x);
 			if (r == CRef_Undef) {
-				Var v = var(trail[i]);
-				int lev = level(v);
+				//Var v = var(trail[i]);
+				//int lev = level(v);
 				out_conflict.push(~trail[i]);
 			} else {
 				if (isTheoryCause(r)) {
@@ -866,7 +879,7 @@ bool Solver::propagateTheory(vec<Lit> & conflict_out) {
 	assert(decisionLevel() <= S->decisionLevel());
 	
 	CRef confl = CRef_Undef;
-	int curLev = decisionLevel();
+
 	while (confl == CRef_Undef && super_qhead < S->qhead) {
 		Lit out_l = S->trail[super_qhead++];
 		
@@ -1305,13 +1318,18 @@ bool Solver::simplify() {
 	return true;
 }
 void Solver::addClauseSafely(vec<Lit> & ps) {
-#ifndef NDEBUG
-	printf("learnt fact ");
-	for (Lit l:ps){
-		printf(" %d", dimacs(l));
+	if(opt_write_learnt_clauses){
+		if(++opt_n_learnts==58108){
+			int a=1;
+		}
+		fprintf(opt_write_learnt_clauses,"learnt fact ");
+		for (Lit l:ps){
+			fprintf(opt_write_learnt_clauses," %d", dimacs(l));
+		}
+		fprintf(opt_write_learnt_clauses," 0\n");
+		fflush(opt_write_learnt_clauses);
 	}
-	printf(" 0\n");
-#endif
+
 	if(decisionLevel()==0){
 		addClause(ps);
 	}else{
@@ -1354,7 +1372,7 @@ void Solver::addClauseSafely(vec<Lit> & ps) {
 				bool conflicting = true;
 				int nfalse = 0;
 				int max_lev = 0;
-				bool satisfied = false;
+				//bool satisfied = false;
 				int notFalsePos1 = -1;
 				int notFalsePos2 = -1;
 				for (int j = 0; j < ps.size(); j++) {
@@ -1364,8 +1382,8 @@ void Solver::addClauseSafely(vec<Lit> & ps) {
 						nfalse++;
 					} else {
 						conflicting = false;
-						if (value(ps[j]) == l_True)
-							satisfied = true;
+						//if (value(ps[j]) == l_True)
+						//	satisfied = true;
 						if (notFalsePos1 < 0)
 							notFalsePos1 = j;
 						else if (notFalsePos2 < 0) {
@@ -1421,22 +1439,25 @@ bool Solver::addConflictClause(vec<Lit> & ps, CRef & confl_out, bool permanent) 
 	if(++nlearnt== 111){
 		int a=1;
 	}
-#ifndef NDEBUG
-
-	printf("learnt ");
-	for (Lit l:ps){
-		printf(" %d", dimacs(l));
+	if(opt_write_learnt_clauses){
+		if(++opt_n_learnts==58108){
+			int a=1;
+		}
+		fprintf(opt_write_learnt_clauses,"learnt ");
+		for (Lit l:ps){
+			fprintf(opt_write_learnt_clauses," %d", dimacs(l));
+		}
+		fprintf(opt_write_learnt_clauses," 0\n");
+		fflush(opt_write_learnt_clauses);
 	}
-	printf(" 0\n");
-#endif
-	bool any_undef=false;
+	//bool any_undef=false;
 	sort(ps);
 	Lit p;
 	int i, j;
 	for (i = j = 0, p = lit_Undef; i < ps.size(); i++){
 		assert(var(ps[i])!=var(theoryDecision));
-		if(decisionLevel()>0 && value(ps[i])==l_Undef)
-			any_undef=true;
+		//if(decisionLevel()>0 && value(ps[i])==l_Undef)
+		//	any_undef=true;
 		if (((value(ps[i]) == l_True && level(var(ps[i])) == 0)) || ps[i] == ~p)
 			return true;
 		else if ((value(ps[i]) != l_False || level(var(ps[i])) != 0) && ps[i] != p)
@@ -1826,16 +1847,18 @@ double Solver::progressEstimate() const {
  */
 
 static double luby(double y, int x) {
-	
+	assert(x>=0);
 	// Find the finite subsequence that contains index 'x', and the
 	// size of that subsequence:
 	int size, seq;
-	for (size = 1, seq = 0; size < x + 1; seq++, size = 2 * size + 1)
-		;
-	
+	for (size = 1, seq = 0; size < x + 1; seq++, size = 2 * size + 1);
+
+	assert(size>x);
 	while (size - 1 != x) {
 		size = (size - 1) >> 1;
 		seq--;
+		//According to Coverity: size can be zero at this line, leading to a mod by zero...
+		//However, since size must be >= x+1 above, and always > x in this loop, and x is positive, this is safe.
 		x = x % size;
 	}
 	
@@ -1912,7 +1935,30 @@ lbool Solver::solve_() {
 			}
 			stats_solution_checking_time+=rtime(1)-check_start;
 		}
+		if(opt_write_learnt_clauses && opt_debug_model){
+			//write the model out
+			fprintf(opt_write_learnt_clauses,"s SATISFIABLE\n");
+			fprintf(opt_write_learnt_clauses,"v ");
+			for (int i = 0;i<nVars();i++){
+				Lit l = mkLit(i,false);
+				if(value(i)==l_True){
+					fprintf(opt_write_learnt_clauses," %d",dimacs(l));
+				}else if(value(i)==l_False){
+					fprintf(opt_write_learnt_clauses," %d",dimacs(~l));
+				}else{
+					fprintf(opt_write_learnt_clauses," %d",dimacs(l));//optional
+				}
+			}
+			fprintf(opt_write_learnt_clauses,"\n");
 
+			for(Theory * t:theories){
+				std::stringstream ss;
+				t->writeTheoryWitness(ss);
+				fprintf(opt_write_learnt_clauses,"%s",ss.str().c_str());
+			}
+
+
+		}
 		
 	} else if (status == l_False && conflict.size() == 0) {
 		ok = false;

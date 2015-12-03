@@ -639,23 +639,23 @@ public:
 
 	GraphTheorySolver(Solver * S_) :
 			S(S_), cutStatus(*this), propCutStatus(*this){
-#ifdef RECORD
-		{
-			char t[30];
-			sprintf(t, "/tmp/TEST_GRAPH%d", S->theories.size());
-			g_under.outfile = fopen(t, "w");
+
+		if(opt_record){
+			std::string t = (const char*)opt_record_file;
+			t+="/LOG_GRAPH_UNDER" +std::to_string(S->theories.size());
+			g_under.outfile = fopen(t.c_str(), "w");
 		}
-		{
-			char t[30];
-			sprintf(t, "/tmp/TEST_ANTI_GRAPH%d",  S->theories.size());
-			g_over.outfile = fopen(t, "w");
+		if(opt_record){
+			std::string t = (const char*)opt_record_file;
+			t+="/LOG_GRAPH_OVER" +std::to_string(S->theories.size());
+			g_over.outfile = fopen(t.c_str(), "w");
 		}
-		{
-			char t[30];
-			sprintf(t, "/tmp/TEST_CUT_GRAPH%d", S->theories.size());
-			cutGraph.outfile = fopen(t, "w");
+		if(opt_record){
+			std::string t = (const char*)opt_record_file;
+			t+="/LOG_GRAPH_CUT" +std::to_string(S->theories.size());
+			cutGraph.outfile = fopen(t.c_str(), "w");
 		}
-#endif
+
 		g_under.disable_history_clears=disable_history_clears;
 		g_over.disable_history_clears=disable_history_clears;
 		cutGraph.disable_history_clears=disable_history_clears;
@@ -682,7 +682,15 @@ public:
 		rnd_seed = opt_random_seed;
 
 	}
-
+	Lit const_true= lit_Undef;
+	Lit True(){
+		if (const_true==lit_Undef){
+			backtrackUntil(0);
+			const_true = mkLit(newVar(var(S->True()),-1,false,true));
+			enqueueTheory(const_true);
+		}
+		return const_true;
+	}
 
 	void printStats(int detailLevel) {
 
@@ -819,6 +827,26 @@ public:
 		tmp_clause.push(o3);
 		S->addClauseSafely(tmp_clause);
 	}
+	void addClauseToSolver(Lit l1) {
+		tmp_clause.clear();
+		tmp_clause.push(l1);
+		S->addClauseSafely(tmp_clause);
+	}
+	void addClauseToSolver(Lit l1, Lit l2) {
+		tmp_clause.clear();
+		tmp_clause.push(l1);
+		tmp_clause.push(l2);
+
+		S->addClauseSafely(tmp_clause);
+	}
+	void addClauseToSolver(Lit l1, Lit l2, Lit l3) {
+		tmp_clause.clear();
+		tmp_clause.push(l1);
+		tmp_clause.push(l2);
+		tmp_clause.push(l3);
+		S->addClauseSafely(tmp_clause);
+	}
+
 	void addClause(vec<Lit> & c) {
 		tmp_clause.clear();
 		c.copyTo(tmp_clause);
@@ -833,7 +861,7 @@ public:
 		S->addClauseSafely(tmp_clause);
 	}
 	Var newVar(bool polarity = true, bool dvar = true){
-		return newVar(-1,false);
+		return newVar(-1,false);//does this shadow the below method, or vice versa?
 	}
 	Var newVar(int forDetector, bool connectToTheory = false) {
 		Var s = S->newVar();
@@ -1818,7 +1846,7 @@ public:
 		assert(onTrail(var(l)));
 
 
-#ifdef RECORD
+
 		if (g_under.outfile) {
 			fprintf(g_under.outfile, "enqueue %d\n", dimacs(l));
 			
@@ -1830,7 +1858,6 @@ public:
 			fprintf(g_over.outfile, "\n");
 			fflush(g_over.outfile);
 		}
-#endif
 
 		if(hasTheory(var(l))){
 			theories[getTheoryID(var(l))]->enqueueTheory(getTheoryLit(l));
@@ -2533,6 +2560,21 @@ public:
 		assert(isBVVar(v));
 		return vars[v].detector_edge;
 	}
+	int getEdgeWeightBitWidth(){
+		if(edge_bv_weights.size()>0){
+			return edge_bv_weights[0].width();
+		}else{
+			assert(false);
+			return -1;
+		}
+	}
+	//Create a fresh bitvector
+	BitVector<Weight> newBV(Weight constval=-1,int bitwidth=-1) {
+		if (bitwidth<0)
+			bitwidth = getEdgeWeightBitWidth();
+		BitVector<Weight> bv = comparator->newBitvector(-1,bitwidth,constval);
+		return bv;
+	}
 
 	Lit newEdgeBV(int from, int to, Var outerVar,vec<Var> & bitVector) {
 		if(!comparator ){
@@ -2605,7 +2647,7 @@ public:
 			cutGraph.addEdge(from, to, index * 2 + 1,0xFFFF);
 			cutGraph.disableEdge(from, to, index * 2);
 
-	#ifdef RECORD
+
 			if (g_under.outfile) {
 
 				fprintf(g_under.outfile, "edge_bv_weight %d", index);
@@ -2627,7 +2669,7 @@ public:
 			//	fprintf(cutGraph.outfile, "edge_weight %d %d\n", index * 2 + 1, 0xFFFF);
 				fflush(cutGraph.outfile);
 			}
-	#endif
+
 			return mkLit(v, false);
 		}
 	Lit newEdgeBV(int from, int to, Var outerVar,int bvID) {
@@ -2696,29 +2738,6 @@ public:
 		cutGraph.addEdge(from, to, index * 2 + 1,0xFFFF);
 		cutGraph.disableEdge(from, to, index * 2);
 
-		#ifdef RECORD
-	/*			if (g_under.outfile) {
-
-					fprintf(g_under.outfile, "edge_bv_weight %d", index);
-					for(Var v:bitVector)
-						fprintf(g_under.outfile," %d", v+1);
-					fprintf(g_under.outfile,"\n");
-					fflush(g_under.outfile);
-				}
-				if (g_over.outfile) {
-					fprintf(g_over.outfile, "edge_bv_weight %d", index);
-					for(Var v:bitVector)
-						fprintf(g_over.outfile," %d", v+1);
-					fprintf(g_over.outfile,"\n");
-					fflush(g_over.outfile);
-				}*/
-		/*		if (cutGraph.outfile) {
-
-					fprintf(cutGraph.outfile, "edge_weight %d %d\n", index * 2, 1);
-					fprintf(cutGraph.outfile, "edge_weight %d %d\n", index * 2 + 1, 0xFFFF);
-					fflush(cutGraph.outfile);
-				}*/
-		#endif
 				return mkLit(v, false);
 			}
 	Lit newEdge(int from, int to, Var outerVar = var_Undef, Weight weight = 1) {
@@ -2777,26 +2796,9 @@ public:
 		cutGraph.addEdge(from, to, index * 2 + 1,0xFFFF);
 		cutGraph.disableEdge(from, to, index * 2);
 		
-#ifdef RECORD
-		if (g_under.outfile) {
-			std::stringstream wt;
-			wt << weight;
-			fprintf(g_under.outfile, "edge_weight %d %s\n", index, wt.str().c_str());
-			fflush(g_under.outfile);
-		}
-		if (g_over.outfile) {
-			std::stringstream wt;
-			wt << weight;
-			fprintf(g_over.outfile, "edge_weight %d %s\n", index, wt.str().c_str());
-			fflush(g_over.outfile);
-		}
-/*		if (cutGraph.outfile) {
-			
-			fprintf(cutGraph.outfile, "edge_weight %d %d\n", index * 2, 1);
-			fprintf(cutGraph.outfile, "edge_weight %d %d\n", index * 2 + 1, 0xFFFF);
-			fflush(cutGraph.outfile);
-		}*/
-#endif
+
+
+
 		return mkLit(v, false);
 	}
 	/*	int getEdgeID(int from, int to){

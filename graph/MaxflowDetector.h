@@ -156,9 +156,9 @@ public:
 		if (mincutalg == MinCutAlg::ALG_KOHLI_TORR) {
 			KohliTorr<Weight> * kt = (KohliTorr<Weight> *) overapprox_detector;
 			printf(
-					"\tDecision flow calculations: %ld, (redecide: %f s) flow_calc %f s, flow_discovery %f s, (%ld) (maxflow %f,flow assignment %f)\n",
-					stats_decision_calculations, stats_redecide_time, stats_flow_calc_time, stats_flow_recalc_time,
-					kt->stats_flow_calcs, kt->stats_flow_time, kt->stats_calc_time);
+					"\tInit Time %f, Decision flow calculations: %ld, (redecide: %f s) flow_calc %f s, flow_discovery %f s, (%ld) (maxflow %f,flow assignment %f),  inits: %ld,re-inits %ld\n",
+					kt->stats_init_time, stats_decision_calculations, stats_redecide_time, stats_flow_calc_time, stats_flow_recalc_time,
+					kt->stats_flow_calcs, kt->stats_flow_time, kt->stats_calc_time, kt->stats_inits, kt->stats_reinits);
 		} else
 			printf("\tDecision flow calculations: %ld\n", stats_decision_calculations);
 		if(n_stats_priority_decisions>0){
@@ -205,7 +205,20 @@ public:
 	MaxflowDetector(int _detectorID, GraphTheorySolver<Weight> * _outer,
 			DynamicGraph<Weight>  &_g, DynamicGraph<Weight>  &_antig, int _source, int _target, double seed = 1); //:Detector(_detectorID),outer(_outer),within(-1),source(_source),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL){}
 	~MaxflowDetector() {
-		
+		if (underapprox_conflict_detector && underapprox_conflict_detector!=underapprox_detector)
+			delete 	underapprox_conflict_detector;
+		if (overapprox_conflict_detector && overapprox_conflict_detector!=overapprox_detector)
+			delete 	overapprox_conflict_detector;
+
+		if (underapprox_detector)
+			delete underapprox_detector;
+		if (overapprox_detector)
+			delete overapprox_detector;
+
+		if (learn_cut)
+			delete learn_cut;
+		if (acyclic_flow)
+			delete acyclic_flow;
 	}
 	const char* getName() {
 		return "Max-flow Detector";

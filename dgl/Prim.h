@@ -128,12 +128,12 @@ public:
 	void update() {
 		static int iteration = 0;
 		int local_it = ++iteration;
-#ifdef RECORD
+
 		if (g.outfile) {
 			fprintf(g.outfile, "m\n");
 			fflush(g.outfile);
 		}
-#endif
+
 		if (g.modifications == 89) {
 			int a = 1;
 		}

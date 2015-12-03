@@ -565,7 +565,7 @@ public:
 		
 		//ok, f is before b in the tour
 		
-		Tree::Node * tleft = nullptr;
+		//Tree::Node * tleft = nullptr;
 		
 		if (f)
 			t.concat(f, forward_edges[edgeID]->node);
@@ -590,12 +590,13 @@ public:
 			otherNode->setIncidentEdgeB(backward_edges[edgeID]);
 			t.concat(node->incidentEdgeA(), backward_edges[edgeID]->node);
 		}
-		if (tleft) {
+		//Is this a bug?
+		/*if (tleft) {
 			t.concat(backward_edges[edgeID]->node, tleft);
 			node->setIncidentEdgeB(tleft->value);
-		} else {
-			node->setIncidentEdgeB(backward_edges[edgeID]);
-		}
+		} else {*/
+		node->setIncidentEdgeB(backward_edges[edgeID]);
+		//}
 		node->dbg_insert(otherNode);
 		dbg_printTour(node);
 		

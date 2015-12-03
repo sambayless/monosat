@@ -93,6 +93,13 @@ private:
 	};
 	vec<AddBV> addbvs;
 
+	struct IteBV{
+		Lit condition;
+		int thenId;
+		int elseId;
+		int resultId;
+	};
+	vec<IteBV> itebvs;
 
 	void readConstBV(B& in,  Solver& S) {
 		//bv id width l0 l1 l2 ...
@@ -104,7 +111,7 @@ private:
 
 		if(bvs[id].id!=-1){
 
-			printf("PARSE ERROR! Re-defined bitvector %d\n", id), exit(1);
+			parse_errorf("Re-defined bitvector %d\n", id);
 
 		}
 		bvs[id].id = id;
@@ -122,7 +129,7 @@ private:
 
 		if(bvs[id].id!=-1){
 
-			printf("PARSE ERROR! Re-defined bitvector %d\n", id), exit(1);
+			parse_errorf("Re-defined bitvector %d\n", id);
 
 		}
 		bvs[id].id = id;
@@ -143,7 +150,7 @@ private:
 		}
 		skipWhitespace(in);
 	/*	if(! match(in,"bv")){
-			printf("PARSE ERROR! Result of addition must be bitvector\n"), exit(1);
+			parse_errorf("Result of addition must be bitvector\n");
 		}*/
 		int resultID = parseInt(in);
 		skipWhitespace(in);
@@ -189,16 +196,37 @@ private:
 			++in;
 		}
 		if (symbol.size() == 0) {
-			printf("PARSE ERROR! Empty symbol: %c\n", *in), exit(1);
+			parse_errorf("Empty symbol: %c\n", *in);
 		}
 		/*   		if(symbols && used_symbols.count(symbol)){
-		 printf("PARSE ERROR! Duplicated symbol: %c\n", *symbol.c_str()), exit(1);
+		 parse_errorf("Duplicated symbol: %c\n", *symbol.c_str());
 		 }
 		 used_symbols.insert(symbol);*/
 
 		symbols.push();
 		symbols.last().first = v;
 		symbols.last().second = symbol;
+	}
+
+	void readIteBV(B& in, Solver& S){
+		//"bv ite %d %d %d %d\n"%(dimacs(condition_lit),aID,bID,resultID))
+		int parsed_lit = parseInt(in);
+		if (parsed_lit == 0)
+			parse_errorf("If argument to bv If-Then-Else must be a valid dimacs literal (was 0)\n");
+		int var = abs(parsed_lit) - 1;
+
+		int thenId = parseInt(in);
+		int elseId = parseInt(in);
+
+		int resultId = parseInt(in);
+
+		Lit l = mkLit(var,false);
+		itebvs.push();
+		itebvs.last().condition=l;
+		itebvs.last().thenId=thenId;
+		itebvs.last().elseId=elseId;
+		itebvs.last().resultId=resultId;
+
 	}
 
 	void readCompareBV(B& in, Solver& S,Comparison c) {
@@ -265,7 +293,7 @@ private:
 		}
 
 public:
-	BVParser(){
+	BVParser():Parser<B, Solver>("BitVector"){
 
 	}
 	bool parseLine(B& in, Solver& S) {
@@ -322,7 +350,10 @@ public:
 
 				readCompareBV(in, S,Comparison::gt);
 				return true;
-			} else{
+			}else if (match(in,"ite")){
+				readIteBV(in,S);
+				return true;
+			}else{
 				readBV(in,S);
 				return true;
 			}
@@ -358,15 +389,47 @@ public:
 			}*/
 
 			for(auto & c:compares){
+				if(!theory->hasBV(c.bvID)){
+					parse_errorf("Undefined bitvector ID %d",c.bvID);
+				}
 				theory->newComparison(c.c,c.bvID,c.w,c.var);
 			}
 
 			for(auto & c:comparebvs){
+				if(!theory->hasBV(c.bvID)){
+					parse_errorf("Undefined bitvector ID %d",c.bvID);
+				}
+				if(!theory->hasBV(c.compareID)){
+					parse_errorf("Undefined bitvector ID %d",c.compareID);
+				}
+
 				theory->newComparisonBV(c.c,c.bvID,c.compareID,c.var);
 			}
 
 			for(auto & c:addbvs){
+				if(!theory->hasBV(c.aBV)){
+					parse_errorf("Undefined bitvector ID %d",c.aBV);
+				}
+				if(!theory->hasBV(c.bBV)){
+					parse_errorf("Undefined bitvector ID %d",c.bBV);
+				}
+				if(!theory->hasBV(c.resultID)){
+					parse_errorf("Undefined bitvector ID %d",c.resultID);
+				}
 				theory->newAdditionBV(c.resultID,c.aBV,c.bBV);
+			}
+
+			for (auto & c:itebvs){
+				if(!theory->hasBV(c.thenId)){
+					parse_errorf("Undefined bitvector ID %d",c.thenId);
+				}
+				if(!theory->hasBV(c.elseId)){
+					parse_errorf("Undefined bitvector ID %d",c.elseId);
+				}
+				if(!theory->hasBV(c.resultId)){
+					parse_errorf("Undefined bitvector ID %d",c.resultId);
+				}
+				theory->newConditionalBV(c.condition,c.thenId,c.elseId, c.resultId);
 			}
 
 			for (int i = 0; i < symbols.size(); i++) {
@@ -381,7 +444,7 @@ public:
 
 		}else if (addbvs.size() || comparebvs.size() || compares.size()){
 
-			printf("PARSE ERROR! Undefined bitvector\n"), exit(1);
+			parse_errorf("Undefined bitvector\n");
 
 		}
 

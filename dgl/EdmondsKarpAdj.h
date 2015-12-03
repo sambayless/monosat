@@ -162,7 +162,7 @@ public:
 	}
 	void dbg_print_graph(int from, int to) {
 #ifndef NDEBUG
-		return;
+/*		return;
 		static int it = 0;
 		if (++it == 6) {
 			int a = 1;
@@ -188,7 +188,7 @@ public:
 			}
 		}
 		
-		printf("}\n");
+		printf("}\n");*/
 #endif
 	}
 	long num_updates = 0;
@@ -225,12 +225,12 @@ public:
 	}
 	const Weight maxFlow(int s, int t) {
 		Weight f = 0;
-#ifdef RECORD
+
 		if (g.outfile) {
 			fprintf(g.outfile, "f %d %d\n", s, t);
 			fflush(g.outfile);
 		}
-#endif
+
 		
 		if (last_modification > 0 && g.modifications == last_modification && s==last_s && t==last_t) {
 

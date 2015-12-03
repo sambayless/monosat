@@ -61,6 +61,20 @@ BoolOption Monosat::opt_pre("MAIN", "pre", "Completely turn on/off any preproces
 IntOption Monosat::opt_time(_cat, "verb-time", "Detail level of timing benchmarks (these add some overhead)", 0,
 		IntRange(0, 5));
 
+StringOption Monosat::opt_record_file(_cat, "debug-log",
+		"Log (very expensive) debugging info at extensions of the following path (empty string (recommended) disables)", "");
+bool Monosat::opt_record=false;
+
+long Monosat::opt_n_learnts=0;
+BoolOption Monosat::opt_debug_model(_cat,"debug-model","",false);
+
+
+StringOption Monosat::opt_debug_learnt_clauses(_cat, "debug-learnts",
+		"Write all learnt clauses to the following file (empty string (recommended) disables)", "");
+FILE* Monosat::opt_write_learnt_clauses = nullptr;
+
+BoolOption Monosat::opt_write_bv_analysis(_cat, "debug-analysis","",false);
+BoolOption Monosat::opt_write_bv_bounds(_cat, "debug-bounds","",false);
 
 IntOption Monosat::opt_theory_conflict_max(_cat, "theory-conflict-limit",
 		"The maximum number of consecutive times the theory solver's can conflict before theory decisions are temporarily disabled (0 to all infinite theory conflicts)", 0,
@@ -170,6 +184,11 @@ BoolOption Monosat::opt_init_rnd_phase(_cat, "init-rnd-phase", "", false);
 BoolOption Monosat::opt_encode_reach_underapprox_as_sat(_cat_graph, "reach-underapprox-cnf",
 		"Compute the under-approximate side of reachability constraints using CNF (only requires linear number of constraints), instead of the chosen algorithm",
 		false);
+
+IntOption Monosat::opt_encode_dist_underapprox_as_sat(_cat_graph, "dist-underapprox-cnf",
+		"Compute the under-approximate side of distance constraints using CNF, instead of the chosen algorithm (0=don't use CNF encoding)",
+		0,IntRange(0,2));
+BoolOption Monosat::opt_sat_distance_encoding_unconstrained_default(_cat_graph,"dist-underapprox-cnf-dst-unconstrained","",true);
 BoolOption Monosat::opt_reach_prop(_cat_graph, "prop-reach", "", false);
 
 BoolOption Monosat::opt_decide_theories(_cat_graph, "decide-theories", "", false);

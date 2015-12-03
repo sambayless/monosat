@@ -242,6 +242,11 @@ class GeometryParser: public Parser<B, Solver> {
 	
 public:
 	
+	GeometryParser():Parser<B, Solver>("Geometry"){
+
+	}
+
+
 	bool parseLine(B& in, Solver& S) {
 		
 		skipWhitespace(in);
@@ -311,18 +316,17 @@ public:
 			 }
 			 }*/else {
 				
-				fprintf(stderr,
-						"Only points of dimension 1 and 2 currently supported (found point %d of dimension %d), aborting\n",
+				parse_errorf("Only points of dimension 1 and 2 currently supported (found point %d of dimension %d), aborting\n",
 						i, D);
-				exit(2);
+
 			}
 			
 			pointsetDim.growTo(i + 1, -1);
 			pointsetDim[i] = D;
 			for (ParsePoint & p : pointset) {
 				if (p.position.size() != D) {
-					fprintf(stderr, "All points in a pointset must have the same dimensionality\n");
-					exit(2);
+					parse_errorf("All points in a pointset must have the same dimensionality\n");
+
 				}
 				if (D == 1) {
 					/* Point<1,double> pnt(p.position);
@@ -341,11 +345,11 @@ public:
 		
 		for (auto & c : convex_hull_areas) {
 			if (c.pointsetID >= pointsetDim.size() || c.pointsetID < 0 || pointsetDim[c.pointsetID] < 0) {
-				fprintf(stderr, "Bad pointsetID %d\n", c.pointsetID);
+				parse_errorf("Bad pointsetID %d\n", c.pointsetID);
 			}
 			if (c.pointsetID < 0 || c.pointsetID >= pointsetDim.size() || pointsetDim[c.pointsetID] < 0) {
-				fprintf(stderr, "Pointset %d is undefined, aborting!", c.pointsetID);
-				exit(2);
+				parse_errorf( "Pointset %d is undefined, aborting!", c.pointsetID);
+
 			}
 			int D = pointsetDim[c.pointsetID];
 			
@@ -362,11 +366,11 @@ public:
 		}
 		for (auto & c : convex_hull_polygon_intersections) {
 			if (c.pointsetID >= pointsetDim.size() || c.pointsetID < 0 || pointsetDim[c.pointsetID] < 0) {
-				fprintf(stderr, "Bad pointsetID %d\n", c.pointsetID);
+				parse_errorf( "Bad pointsetID %d\n", c.pointsetID);
 			}
 			if (c.pointsetID < 0 || c.pointsetID >= pointsetDim.size() || pointsetDim[c.pointsetID] < 0) {
-				fprintf(stderr, "Pointset %d is undefined, aborting!", c.pointsetID);
-				exit(2);
+				parse_errorf( "Pointset %d is undefined, aborting!", c.pointsetID);
+
 			}
 			int D = pointsetDim[c.pointsetID];
 			
@@ -388,7 +392,7 @@ public:
 		}
 		/*	 for (auto & c: convex_hull_point_containments){
 		 if(c.pointsetID>=pointsetDim.size() || c.pointsetID<0 || pointsetDim[c.pointsetID]<0){
-		 fprintf(stderr,"Bad pointsetID %d\n", c.pointsetID);
+		 parse_errorf("Bad pointsetID %d\n", c.pointsetID);
 		 }
 		 int D = pointsetDim[c.pointsetID];
 
@@ -408,7 +412,7 @@ public:
 
 		/*	 for (auto & c:convex_hull_line_intersections){
 		 if(c.pointsetID>=pointsetDim.size() || c.pointsetID<0 || pointsetDim[c.pointsetID]<0){
-		 fprintf(stderr,"Bad pointsetID %d\n", c.pointsetID);
+		 parse_errorf("Bad pointsetID %d\n", c.pointsetID);
 		 }
 		 int D = pointsetDim[c.pointsetID];
 
@@ -429,22 +433,22 @@ public:
 
 		for (auto & c : convex_hull_points) {
 			if (c.pointsetID >= pointsetDim.size() || c.pointsetID < 0 || pointsetDim[c.pointsetID] < 0) {
-				fprintf(stderr, "Bad pointsetID %d\n", c.pointsetID);
+				parse_errorf( "Bad pointsetID %d\n", c.pointsetID);
 			}
 			if (c.pointsetID < 0 || c.pointsetID >= pointsetDim.size() || pointsetDim[c.pointsetID] < 0) {
-				fprintf(stderr, "Pointset %d is undefined, aborting!", c.pointsetID);
-				exit(2);
+				parse_errorf( "Pointset %d is undefined, aborting!", c.pointsetID);
+
 			}
-			printf("point_on_convex_hull not currently supported, aborting.\n");
-			exit(1);
+			parse_errorf("point_on_convex_hull not currently supported, aborting.\n");
+
 			/* int D = pointsetDim[c.pointsetID];
 
 			 if(D==1){
 			 //space_1D[c.pointsetID]->convexHullContains(c.pointVar,c.pointOnHull);
 			 }else if(D==2){
 			 if(!S.hasTheory(c.pointVar)){
-			 fprintf(stderr,"Variable %d is not a point variable, aborting!",c.pointVar);
-			 exit(2);
+			 parse_errorf("Variable %d is not a point variable, aborting!",c.pointVar);
+
 			 }
 			 Var theoryVar = S.getTheoryVar(c.pointVar);
 			 int pointID = space_2D->getPointID(theoryVar);
@@ -465,18 +469,18 @@ public:
 		for (auto & c : convex_hulls_intersect) {
 			if (c.pointsetID1 < 0 || c.pointsetID1 >= pointsetDim.size() || c.pointsetID1 < 0
 					|| pointsetDim[c.pointsetID1] < 0) {
-				fprintf(stderr, "Bad pointsetID %d\n", c.pointsetID1);
-				exit(2);
+				parse_errorf( "Bad pointsetID %d\n", c.pointsetID1);
+
 			}
 			if (c.pointsetID2 < 0 || c.pointsetID2 >= pointsetDim.size() || c.pointsetID2 < 0
 					|| pointsetDim[c.pointsetID2] < 0) {
-				fprintf(stderr, "Bad pointsetID %d\n", c.pointsetID2);
-				exit(2);
+				parse_errorf( "Bad pointsetID %d\n", c.pointsetID2);
+
 			}
 			int D = pointsetDim[c.pointsetID1];
 			
 			if (pointsetDim[c.pointsetID2] != D) {
-				fprintf(stderr,
+				parse_errorf(
 						"Cannot intersect convex hulls in different dimensions (%d has dimension %d, while %d has dimension %d)\n",
 						c.pointsetID1, D, c.pointsetID2, pointsetDim[c.pointsetID2]);
 			}

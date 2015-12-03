@@ -30,17 +30,41 @@
 #include "mtl/Vec.h"
 #include <string>
 #include <algorithm>
+#include <stdexcept>
+#include <string>
+#include <cstdarg>
 namespace Monosat {
+
+
+class parse_error: public std::runtime_error {
+public:
+	 explicit parse_error(const std::string& arg): std::runtime_error(arg ) {}
+};
+
+//Supporting function for throwing parse errors
+void parse_errorf(const char *fmt, ...) {
+    va_list args;
+    va_start(args, fmt);
+    char buf[1000];
+    vsnprintf(buf, sizeof buf,fmt, args);
+    va_end(args);
+    throw parse_error(buf);
+
+}
 
 template<class B, class Solver>
 class Parser {
+	const char * parser_name;
 public:
-	Parser() {
+	Parser(const char * parser_name):parser_name(parser_name) {
 	}
 	virtual ~Parser() {
 	}
 	virtual bool parseLine(B& in, Solver& S)=0;
 	virtual void implementConstraints(Solver & S)=0;
+	const char * getParserName() const{
+		return parser_name;
+	}
 };
 
 //A simple parser to allow for named variables
@@ -49,7 +73,7 @@ class SymbolParser: public Parser<B, Solver> {
 	vec<std::pair<int, std::string> >  symbols;
 	std::string symbol;
 public:
-	SymbolParser(){
+	SymbolParser():Parser<B, Solver>("Symbol"){
 
 	}
 
@@ -63,7 +87,7 @@ public:
 				skipWhitespace(in);
 				int v = parseInt(in);
 				if (v <= 0) {
-					//printf("PARSE ERROR! Variables must be positive: %c\n", *in), exit(1);
+					//parse_errorf("Variables must be positive: %c\n", *in);
 					v = -v;
 				}
 
@@ -76,10 +100,10 @@ public:
 					++in;
 				}
 				if (symbol.size() == 0) {
-					printf("PARSE ERROR! Empty symbol: %c\n", *in), exit(1);
+					parse_errorf("Empty symbol: %c\n", *in);
 				}
 				/*   		if(symbols && used_symbols.count(symbol)){
-				 printf("PARSE ERROR! Duplicated symbol: %c\n", *symbol.c_str()), exit(1);
+				 parse_errorf("Duplicated symbol: %c\n", *symbol.c_str());
 				 }
 				 used_symbols.insert(symbol);*/
 
@@ -140,11 +164,24 @@ private:
 		}
 	}
 	
-	virtual bool parseLine(const char * line, Solver& S) {
+	virtual bool parseLine(const char * line,int line_number, Solver& S) {
 		for (auto * p : parsers) {
 			char * ln = (char*) line; //intentionally discard const qualifier
-			if (p->parseLine(ln, S)) {
-				return true;
+			try{
+				if (p->parseLine(ln, S)) {
+					return true;
+				}
+			}catch(const parse_error& e){
+				std::cerr << e.what() << "\n";
+				std::cerr<<"PARSE ERROR in " << p->getParserName() << " parser at line " << line_number << ": " << line <<"\n";
+				exit(1);
+			}catch(const std::exception & e){
+				std::cerr << e.what() << "\n";
+				std::cerr<<"PARSE ERROR in " << p->getParserName() << " parser at line " << line_number << ": " << line <<"\n";
+				exit(1);
+			}catch(...){
+				std::cerr<<"PARSE ERROR in " << p->getParserName() << " parser at line " << line_number << ": " << line <<"\n";
+				exit(1);
 			}
 		}
 		return false;
@@ -172,15 +209,17 @@ private:
 		vec<Lit> lits;
 		int vars = 0;
 		int clauses = 0;
-		int cnt = 0;
+		int cluase_count=0;
+		int line_num=0;
 		
 		vec<char> linebuf;
 		for (;;) {
 			skipWhitespace(in);
 			if (*in == EOF)
 				break;
+			line_num++;
 			readLine(linebuf, in);
-			if (parseLine(linebuf.begin(), S)) {
+			if (parseLine(linebuf.begin(),line_num, S)) {
 				//do nothing
 			} else if (linebuf[0] == 'p') {
 				char * b = linebuf.begin();
@@ -188,14 +227,14 @@ private:
 					vars = parseInt(b);
 					clauses = parseInt(b);
 				} else {
-					printf("PARSE ERROR! Unexpected char: %c\n", *in), exit(3);
+					parse_errorf("Unexpected char: %c\n", *in);
 				}
 			} else if (linebuf[0] == 'c') {
 				//comment line
 				//skipLine(in);
 			} else {
 				//if nothing else works, attempt to parse this line as a clause.
-				cnt++;
+				cluase_count++;
 				readClause(linebuf.begin(), S, lits);
 				S.addClause_(lits);
 			}
@@ -205,9 +244,17 @@ private:
 			fprintf(stderr, "WARNING! DIMACS header mismatch: wrong number of variables.\n");
 		if (cnt != clauses)
 			fprintf(stderr, "WARNING! DIMACS header mismatch: wrong number of clauses.\n");*/
-		
 		for (auto * p : parsers) {
-			p->implementConstraints(S);
+			try{
+				p->implementConstraints(S);
+			}catch(const std::exception & e){
+				std::cerr << e.what() << "\n";
+				std::cerr<<"PARSE ERROR in " << p->getParserName() << " parser.\n";
+				exit(1);
+			}catch(...){
+				std::cerr<<"PARSE ERROR in " << p->getParserName() << " parser.\n";
+				exit(1);
+			}
 		}
 	}
 public:

@@ -523,7 +523,7 @@ bool ConnectedComponentsDetector<Weight>::propagate(vec<Lit> & conflict) {
 	
 	changed.clear();
 	changed_weights.clear();
-	if (underapprox_component_detector && (!opt_detect_pure_theory_lits || unassigned_positives > 0)) {
+	if (!opt_detect_pure_theory_lits || unassigned_positives > 0) {
 		double startdreachtime = rtime(2);
 		underapprox_component_detector->update();
 		double reachUpdateElapsed = rtime(2) - startdreachtime;
@@ -532,7 +532,7 @@ bool ConnectedComponentsDetector<Weight>::propagate(vec<Lit> & conflict) {
 		outer->stats_pure_skipped++;
 	}
 	
-	if (overapprox_component_detector && (!opt_detect_pure_theory_lits || unassigned_negatives > 0)) {
+	if (!opt_detect_pure_theory_lits || unassigned_negatives > 0) {
 		double startunreachtime = rtime(2);
 		overapprox_component_detector->update();
 		double unreachUpdateElapsed = rtime(2) - startunreachtime;
