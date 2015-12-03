@@ -163,7 +163,7 @@ void FSMGeneratorAcceptorDetector::constructAllPaths(){
 	int gen_prev_state = gen_source;
 	//use the linear generator to produce a (set) of strings. Because the generator is linear, it is only ever in one state, which greatly simplifies the reasoning here...
 	while(gen_pos<g_over.states()){
-		int gen_state;
+		int gen_state=0;
 		stepGeneratorForward(chars,seen_chars,gen_state);//get set of next strings
 
 		if(chars.size()==0){
@@ -212,7 +212,7 @@ void FSMGeneratorAcceptorDetector::constructAllPaths(){
 						}
 						for(auto transition:chars)
 						{
-							int genEdge = transition.edgeID;
+							//int genEdge = transition.edgeID;
 							int l = transition.out;
 							assert(l>0);
 							if (!next_seen[to] && g.transitionEnabled(edgeID,l,0)){
@@ -265,7 +265,7 @@ void FSMGeneratorAcceptorDetector::constructAllPaths(){
 }
 void FSMGeneratorAcceptorDetector::stepGeneratorForward(vec<Transition> & store, vec<bool> & store_seen, int & cur_gen_state){
 		DynamicFSM & g = g_over;
-
+		cur_gen_state=0;
 
 		for(int i = 0;i<gen_cur.size();i++){
 			int s = gen_cur[i];
@@ -442,9 +442,9 @@ bool FSMGeneratorAcceptorDetector::propagate(vec<Lit> & conflict) {
 						if(g_over.transitionEnabled(edgeID,0,label)){
 							Var v = outer->getTransitionVar(g_over.getID(),edgeID,0,label);
 							Lit f = mkLit(v,true);
-							Var test = var(lit);
+							//Var test = var(lit);
 							assert(outer->value(lit)==l_False);
-							int lev = outer->level(var(lit));
+							//int lev = outer->level(var(lit));
 							setForcedVar(v,~lit);
 							if(outer->value(f)==l_Undef){
 								outer->enqueue(f, forcededge_marker);
@@ -483,9 +483,9 @@ void FSMGeneratorAcceptorDetector::buildReason(Lit p, vec<Lit> & reason, CRef ma
 		Var v = var(p);
 
 		Lit forL = getForcedVar(v);
-		lbool val = outer->value(forL);
+		//lbool val = outer->value(forL);
 		Var forV = var(forL);
-		lbool val2 = outer->value(forV);
+		//lbool val2 = outer->value(forV);
 		assert(outer->value(forL)==l_True);
 		assert(outer->value(forV)==l_False);
 		reason.push(~forL);
@@ -791,7 +791,7 @@ void FSMGeneratorAcceptorDetector::buildForcedEdgeReason(int genFinal, int accep
 
 	if(!opt_fsm_negate_underapprox){
 		assert(false);
-		exit(1);
+		throw std::logic_error("Bad fsm option");
 	}else{
 
 		static vec<NFATransition> path;

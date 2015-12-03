@@ -135,6 +135,7 @@ class FSMParser: public Parser<B, Solver> {
 		hasEpsilonTransitions.growTo(fsmID+1);
 		inAlphabets.growTo(fsmID+1,0);
 		outAlphabets.growTo(fsmID+1,0);
+		hasEpsilonTransitions[fsmID]=false;		
 	}
 	
 	void readString(B& in, Solver & S){
@@ -205,8 +206,8 @@ class FSMParser: public Parser<B, Solver> {
 		while (edgeVar >= S.nVars())
 			S.newVar();
 		
-		inAlphabets[fsmID]=std::max(inAlphabets[fsmID],input);
-		outAlphabets[fsmID]=std::max(outAlphabets[fsmID],output);
+		inAlphabets[fsmID]=std::max(inAlphabets[fsmID],input+1);
+		outAlphabets[fsmID]=std::max(outAlphabets[fsmID],output+1);
 		transitions[fsmID].push({fsmID,from,to,input,output,edgeVar});
 	}
 
@@ -421,6 +422,9 @@ public:
 		}else if (match(in,"str")){
 			readString(in,S);
 			return true;
+		}else if (match(in,"accepts_composition")){//previously, was 'composition_accepts'; changed to avoid conflicting with comments
+			readCompositionAccepts(in,S);
+			return true;
 		}else if (match(in, "accepts")) {
 			readAccepts(in, S);
 			return true;
@@ -429,9 +433,6 @@ public:
 			return true;
 		}else if (match(in,"transduces")){
 			readTransduces(in,S);
-			return true;
-		}else if (match(in,"composition_accepts")){
-			readCompositionAccepts(in,S);
 			return true;
 		}
 		return false;

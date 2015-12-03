@@ -43,8 +43,11 @@ FSMAcceptDetector::FSMAcceptDetector(int detectorID, FSMTheorySolver * outer, Dy
 
 void FSMAcceptDetector::addAcceptLit(int state, int strID, Var outer_reach_var){
 
-	accept_lits.growTo(strings.size());
-	accept_lits[strID].growTo(g_under.nodes(),lit_Undef);
+	while(accept_lits.size()<strings.size()){
+		accept_lits.push();
+		accept_lits.last().growTo(g_under.nodes(),lit_Undef);
+	}
+
 	if(first_destination==-1)
 		first_destination= state;
 
@@ -58,7 +61,7 @@ void FSMAcceptDetector::addAcceptLit(int state, int strID, Var outer_reach_var){
 	g_under.invalidate();
 	g_over.invalidate();
 
-	Var accept_var = outer->newVar(g_over.getID(),outer_reach_var, getID());
+	Var accept_var = outer->newVar(outer_reach_var, getID(),g_over.getID());
 
 	if (first_var == var_Undef) {
 		first_var = accept_var;
@@ -251,7 +254,7 @@ void FSMAcceptDetector::buildNonAcceptReason(int node,int str, vec<Lit> & confli
 	static vec<int> to_visit;
 	static vec<int> next_visit;
 	vec<int> & string = strings[str];
-/*
+	/*
 	g_over.draw(source);
 
 	printf("%d: Doesn't accept: \"",iter);

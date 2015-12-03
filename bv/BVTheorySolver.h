@@ -130,6 +130,12 @@ public:
 		bool assign :1;
 		int bvID:30;
 		Var var;
+		//should be able to replace the below with a single weight, a single cause, a bool describing which of under/over was altered,
+		//And either integer to the previous trail position holding the previous value so that it can be looked up, or another weight/cause pair.
+
+		//OR, replace the weights with only a _difference_ (because the weights are precise),
+		//and possibly replace the cause with a difference as well.
+
 		Weight previous_under;
 		Weight previous_over;
 		Weight new_under;
