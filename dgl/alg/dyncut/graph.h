@@ -116,9 +116,12 @@ public:
 	typedef int node_id;
 	typedef arc* arc_id;
 	bool preserve_backward_order = false;
-	std::vector<node_id> t_edge_nodes;
-	std::vector<node_id> s_edge_nodes;
-	std::vector<int> changed_edges;
+	std::vector<node_id> t_edge_nodes;//added by sam; used to find the flows on each edge
+	std::vector<node_id> s_edge_nodes;//added by sam; used to find the flows on each edge
+	std::vector<int> changed_edges;//added by sam; keeps track of edges whose flows might have changed during the current call
+	std::vector<node_id> nodes_partition_changed; //added by sam: keeps track of nodes whose partition might have changed.
+											  //See also changed_list, from the original implementation, which is similar but has slightly different behaviour.
+
 	/////////////////////////////////////////////////////////////////////////
 	//                     BASIC INTERFACE FUNCTIONS                       //
 	//              (should be enough for most applications)               //
@@ -373,9 +376,10 @@ private:
 		int DIST = 0;		// distance to the terminal
 		int is_sink :1;	// flag showing whether the node is in the source or in the sink tree (if parent!=NULL)
 		int is_marked :1;	// set by mark_node()
-		int is_in_changed_list :1; // set by maxflow if
-		int in_t_edges_set :1;
-		int in_s_edges_set :1;
+		int is_in_changed_list :1; // set by maxflow if node has changed partitions since last assignment
+		int is_in_partition_list :1; //added by sam: set if a node has changed partitions, ever (including first assignment)
+		int in_t_edges_set :1;//added by sam
+		int in_s_edges_set :1;//added by sam
 		tcaptype tr_cap;		// if tr_cap > 0 then tr_cap is residual capacity of the arc SOURCE->node
 		// otherwise         -tr_cap is residual capacity of the arc node->SINK 
 		
@@ -387,7 +391,7 @@ private:
 		node *head = nullptr;		// node the arc points to
 		arc *next = nullptr;		// next arc with the same originating node
 		arc *sister = nullptr;	// reverse arc
-		bool might_have_flow = false;
+		bool might_have_flow = false; //added by sam
 		captype r_cap;		// residual capacity
 		captype e_cap;		// original capacity
 	};
@@ -552,8 +556,20 @@ private:
 		store_flow = 0;
 		return -2;
 	}
+	void unmarkPartitionAssignment(node * n){
+		n->is_in_partition_list=false;
+	}
 public:
-	
+	inline void partitionAssignment(node * n){
+		if(!n->is_in_partition_list){
+			n->is_in_partition_list=true;
+			nodes_partition_changed.push_back( (node_id) (n - nodes));
+		}
+	}
+
+	void unmarkPartitionAssignment(int node_id){
+		unmarkPartitionAssignment(nodes+node_id);
+	}
 	void markFlowEdge(arc * edge) {
 		if (!edge->might_have_flow) {
 			assert(!edge->sister->might_have_flow);
@@ -570,6 +586,7 @@ public:
 		edge->might_have_flow = false;
 		edge->sister->might_have_flow = false;
 	}
+
 	
 	//Run edmonds-karp to remove any excess flow on t-edges
 	void clear_t_edges(int source_node, int sink_node) {
@@ -747,6 +764,7 @@ inline typename Graph<captype, tcaptype, flowtype>::node_id Graph<captype, tcapt
 		node_last->con_flow = 0;
 		node_last->is_marked = 0;
 		node_last->is_in_changed_list = 0;
+		node_last->is_in_partition_list = 0;
 		node_last->in_t_edges_set = 0;
 		node_last->in_s_edges_set = 0;
 		node_last++;
@@ -1589,6 +1607,7 @@ inline void Graph<captype, tcaptype, flowtype>::add_to_changed_list(node *i) {
 		*ptr = (node_id) (i - nodes);
 		i->is_in_changed_list = true;
 	}
+	partitionAssignment(i);
 }
 
 /***********************************************************************/
@@ -1612,12 +1631,14 @@ void Graph<captype, tcaptype, flowtype>::maxflow_init() {
 			/* i is connected to the source */
 			i->is_sink = 0;
 			i->parent = TERMINAL;
+			partitionAssignment(i);
 			set_active(i);
 			i->DIST = 1;
 		} else if (i->tr_cap < 0) {
 			/* i is connected to the sink */
 			i->is_sink = 1;
 			i->parent = TERMINAL;
+			partitionAssignment(i);
 			set_active(i);
 			i->DIST = 1;
 		} else {
@@ -1667,6 +1688,7 @@ void Graph<captype, tcaptype, flowtype>::maxflow_reuse_trees_init() {
 					}
 				}
 				add_to_changed_list(i);
+
 			}
 		} else {
 			if (!i->parent || !i->is_sink) {
@@ -1681,11 +1703,13 @@ void Graph<captype, tcaptype, flowtype>::maxflow_reuse_trees_init() {
 					}
 				}
 				add_to_changed_list(i);
+
 			}
 		}
 		i->parent = TERMINAL;
 		i->TS = TIME;
 		i->DIST = 1;
+
 	}
 	
 	//test_consistency();
@@ -1841,7 +1865,7 @@ void Graph<captype, tcaptype, flowtype>::process_source_orphan(node *i) {
 	} else {
 		/* no parent is found */
 		add_to_changed_list(i);
-		
+
 		/* process neighbors */
 		for (a0 = i->first; a0; a0 = a0->next) {
 			j = a0->head;
@@ -1909,7 +1933,7 @@ void Graph<captype, tcaptype, flowtype>::process_sink_orphan(node *i) {
 	} else {
 		/* no parent is found */
 		add_to_changed_list(i);
-		
+
 		/* process neighbors */
 		for (a0 = i->first; a0; a0 = a0->next) {
 			j = a0->head;
@@ -1983,6 +2007,7 @@ flowtype Graph<captype, tcaptype, flowtype>::maxflow(bool reuse_trees, Block<nod
 						j->DIST = i->DIST + 1;
 						set_active(j);
 						add_to_changed_list(j);
+
 					} else if (j->is_sink)
 						break;
 					else if (j->TS <= i->TS && j->DIST > i->DIST) {
@@ -2004,6 +2029,7 @@ flowtype Graph<captype, tcaptype, flowtype>::maxflow(bool reuse_trees, Block<nod
 						j->DIST = i->DIST + 1;
 						set_active(j);
 						add_to_changed_list(j);
+
 					} else if (!j->is_sink) {
 						a = a->sister;
 						break;

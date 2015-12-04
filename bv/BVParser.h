@@ -55,6 +55,7 @@ private:
 		int id=-1;
 		int width=0;
 		long constval=-1;
+		bool anon=false;
 		vec<Var> vector;
 	};
 	vec<BV> bvs;
@@ -117,6 +118,11 @@ private:
 	};
 	vec<PopCount> popCounts;
 
+	struct InvertBV{
+		int argID;
+		int resultID;
+	};
+	vec<InvertBV> invertbvs;
 	void readConstBV(B& in,  Solver& S) {
 		//bv id width l0 l1 l2 ...
 
@@ -133,6 +139,24 @@ private:
 		bvs[id].id = id;
 		bvs[id].width=width;
 		bvs[id].constval=parseLong(in);
+	}
+
+	void readAnonBV(B& in,  Solver& S) {
+		//bv id width l0 l1 l2 ...
+
+		int id = parseInt(in);
+		int width = parseInt(in);
+
+		bvs.growTo(id + 1);
+
+		if(bvs[id].id!=-1){
+
+			parse_errorf("Re-defined bitvector %d\n", id);
+
+		}
+		bvs[id].id = id;
+		bvs[id].width=width;
+		bvs[id].anon=true;
 	}
 
 	void readBV(B& in,  Solver& S) {
@@ -232,7 +256,19 @@ private:
 		symbols.last().second = symbol;
 	}
 
+	void readNotBV(B& in, Solver& S){
+		//"bv ite %d %d %d %d\n"%(dimacs(condition_lit),aID,bID,resultID))
 
+		int argID = parseInt(in);
+		int resultID = parseInt(in);
+
+
+		invertbvs.push();
+		invertbvs.last().argID=argID;
+		invertbvs.last().resultID=resultID;
+
+
+	}
 
 	void readIteBV(B& in, Solver& S){
 		//"bv ite %d %d %d %d\n"%(dimacs(condition_lit),aID,bID,resultID))
@@ -365,6 +401,10 @@ public:
 				}else
 					readConstBV(in,S);
 				return true;
+			}else if (match(in,"anon")){
+				//create an anonymous bitvector, with no associated literals
+				readAnonBV(in,S);
+				return true;
 			}else if (match(in, "+")) {
 
 				readAddBV(in, S);
@@ -397,6 +437,9 @@ public:
 			}else if (match(in,"popcount")){
 				readPopCount(in,S);
 				return true;
+			}else if (match(in,"not")){
+				readNotBV(in,S);
+				return true;
 			}
 			else{
 				readBV(in,S);
@@ -424,7 +467,11 @@ public:
 						mappedBV=bv.id;
 					this->addBVToMap(bv.id,mappedBV);
 					assert(mappedBV==mapBV(S,bv.id));
-					if(bv.constval>=0){
+					if(bv.anon){
+						assert(bv.vector.size()==0);
+						assert(bv.constval<0);
+						theory->newBitvector_Anon(mappedBV,bv.width);
+					}else if(bv.constval>=0){
 						theory->newBitvector(mappedBV,bv.width,bv.constval);
 					}else{
 						theory->newBitvector(mappedBV,bv.vector);
@@ -511,6 +558,12 @@ public:
 			}
 			popCounts.clear();
 
+			for(auto & i:invertbvs){
+				i.argID =  mapBV(S,i.argID);
+				i.resultID =  mapBV(S,i.resultID);
+				theory->newInvertBV(i.resultID, i.argID);
+			}
+			invertbvs.clear();
 			for (int i = 0; i < symbols.size(); i++) {
 				symbols[i].first = mapBV(S,symbols[i].first);
 				int bvID = symbols[i].first;

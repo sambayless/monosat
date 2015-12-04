@@ -105,7 +105,8 @@ public:
 		cause_is_minmax = 10,
 		cause_is_minmax_argument = 11,
 		cause_is_popcount = 12,
-		cause_is_theory=13
+		cause_is_theory=13,
+		cause_is_invert = 14
 	};
 	struct Cause{
 
@@ -3376,7 +3377,181 @@ public:
 				return true;
 			}
 		};
+	class Invert:public Operation{
+				public:
+			using Operation::getID;
+			using Operation::theory;
+		public:
 
+			 int iter = 0;
+			int bvID=-1;
+			Invert * argOp;
+			void move( int bvID) override{
+				this->bvID=bvID;
+			}
+
+			Invert(BVTheorySolver & theory, int bvID):Operation(theory),bvID(bvID){
+
+			}
+			void setArg(Invert * arg){
+				this->argOp = arg;
+			}
+			int getBV()override{
+				return bvID;
+			}
+			OperationType getType()const override{
+				return OperationType::cause_is_invert;
+			}
+
+			bool propagate( bool & changed_outer,vec<Lit> & conflict) override{
+				importTheory(theory);
+				Weight & underApprox = under_approx[bvID];
+				Weight & overApprox = over_approx[bvID];
+
+				int width =  theory.bitvectors[bvID].size();
+				Weight max_val = ((1L)<<width)-1;
+				Weight & otherUnder = under_approx[ argOp->bvID];
+				Weight & otherOver = over_approx[ argOp->bvID];
+
+
+				Weight thisNewOver = max_val -otherUnder;
+				Weight thisNewUnder = max_val -otherOver;
+
+
+				Weight otherNewOver = max_val -underApprox;
+				Weight otherNewUnder = max_val -overApprox;
+
+				if(thisNewOver <underApprox ){
+					//conflict
+					double startconftime = rtime(2);
+					//propagationtime += startconftime - startproptime;
+					theory.stats_num_conflicts++;theory.stats_addition_conflicts++;
+					if(opt_verb>1){
+						printf("bv inversion conflict %ld\n", theory.stats_num_conflicts);
+					}
+
+					//the reason is that either this bv needs to be less than underApprox
+					theory.buildComparisonReason(Comparison::geq,bvID,underApprox,conflict);
+					//or argID needs to be greater
+					theory.buildComparisonReason(Comparison::leq,argOp->getBV(),otherOver,conflict);
+
+
+					theory.stats_conflict_time+=rtime(2)-startconftime;
+					return false;
+				}else if(thisNewUnder >overApprox ){
+					//conflict
+					double startconftime = rtime(2);
+					//propagationtime += startconftime - startproptime;
+					theory.stats_num_conflicts++;theory.stats_addition_conflicts++;
+					if(opt_verb>1){
+						printf("bv inversion conflict %ld\n", theory.stats_num_conflicts);
+					}
+					//the reason is that either this bv needs to be less than underApprox
+					theory.buildComparisonReason(Comparison::leq,bvID,overApprox,conflict);
+					//or argID needs to be greater
+					theory.buildComparisonReason(Comparison::geq,argOp->getBV(),otherUnder,conflict);
+
+
+					theory.stats_conflict_time+=rtime(2)-startconftime;
+					return false;
+				}else if (otherNewUnder>otherUnder){
+					addAlteredBV(argOp->getBV());
+				}else if (otherNewUnder<otherOver){
+					addAlteredBV(argOp->getBV());
+				}
+
+
+				return true;
+
+			}
+				void updateApprox(Var ignore_bv, Weight & under_new, Weight & over_new, Cause & under_cause_new, Cause & over_cause_new) override{
+					importTheory(theory);
+
+					++iter;
+					//printf("inv %d iter %d\n",bvID,iter);
+					if(iter>=176){
+						int a=1;
+					}
+					int width =  theory.bitvectors[bvID].size();
+					Weight max_val = ((1L)<<width)-1;
+					Weight & otherUnder = under_approx[ argOp->bvID];
+					Weight & otherOver = over_approx[ argOp->bvID];
+
+					Weight thisOver = max_val -otherUnder;
+					Weight thisUnder = max_val -otherOver;
+					assert(thisOver>=0);
+					assert(thisUnder>=0);
+					assert(thisOver<=max_val);
+					assert(thisUnder<=max_val);
+
+					if (thisOver<over_new){
+						over_new=thisOver;
+						over_cause_new.clear();
+						over_cause_new.type =getType();
+						over_cause_new.index=getID();
+					}
+					if (thisUnder>under_new){
+						under_new=thisUnder;
+						under_cause_new.clear();
+						under_cause_new.type =getType();
+						under_cause_new.index=getID();
+					}
+				}
+
+
+				void analyzeReason(bool compare_over,Comparison op, Weight  to,  vec<Lit> & conflict){
+					importTheory(theory);
+					int width =  theory.bitvectors[bvID].size();
+					Weight max_val = ((1L)<<width)-1;
+					Weight val = max_val-to;
+					theory.analyzeValueReason(~op,argOp->getBV(),val,conflict);
+				}
+
+				bool checkApproxUpToDate(Weight & under,Weight&over)override{
+					importTheory(theory);
+					int width =  theory.bitvectors[bvID].size();
+					Weight max_val = ((1L)<<width)-1;
+					Weight & otherUnder = under_approx[ argOp->bvID];
+					Weight & otherOver = over_approx[ argOp->bvID];
+
+					Weight thisOver = max_val -otherUnder;
+					Weight thisUnder = max_val -otherOver;
+					assert(thisOver>=0);
+					assert(thisUnder>=0);
+					assert(thisOver<=max_val);
+					assert(thisUnder<=max_val);
+
+					if (thisOver<over){
+						over=thisOver;
+					}
+					if (thisUnder>over){
+						over=thisUnder;
+					}
+					return true;
+				}
+
+				bool checkSolved()override{
+					importTheory(theory);
+					int width =  theory.bitvectors[bvID].size();
+					Weight max_val = ((1L)<<width)-1;
+					Weight & otherUnder = under_approx[ argOp->bvID];
+					Weight & otherOver = over_approx[ argOp->bvID];
+
+					Weight thisOver = max_val -otherUnder;
+					Weight thisUnder = max_val -otherOver;
+
+					Weight & underApprox = under_approx[bvID];
+					Weight & overApprox = over_approx[bvID];
+
+
+					if(thisOver<underApprox){
+						return false;
+					}else if (thisUnder>overApprox){
+						return false;
+					}
+					return true;
+				}
+			};
 	vec<vec<int>> operation_ids;
 
 	vec<Operation*> operations;
@@ -5948,7 +6123,48 @@ public:
 		requiresPropagation=true;
 		return getBV(resultID);
 	}
+	BitVector newInvertBV(int resultID, int argID){
 
+			if(!hasBV(resultID)){
+				throw std::runtime_error("Undefined bitvector ID " + std::to_string(resultID));
+			}
+			while(eq_bitvectors[resultID]!=resultID)
+				resultID=eq_bitvectors[resultID];
+
+
+			int bitwidth = getBV(resultID).width();
+
+
+			Invert * op1 = new Invert(*this, resultID);
+			addOperation(resultID,op1);
+			Invert * op2 = new Invert(*this,  argID);
+			addOperation(argID,op2);
+
+			op1->setArg(op2);
+			op2->setArg(op1);
+
+			bv_needs_propagation[argID]=true;
+			bv_needs_propagation[resultID]=true;
+			if(!alteredBV[resultID]){
+				alteredBV[resultID]=true;
+				altered_bvs.push(resultID);
+			}
+			if(!alteredBV[argID]){
+				alteredBV[argID]=true;
+				altered_bvs.push(argID);
+			}
+			requiresPropagation=true;
+
+			for(int i = 0;i<bitvectors[resultID].size();i++){
+				Lit l1 = bitvectors[resultID][i];
+				Lit l2 = bitvectors[argID][i];
+				//the bits of result, arg must have opposite assignments.
+				addClause(l1,l2);
+				addClause(~l1,~l2);
+			}
+
+			return getBV(resultID);
+		}
 	BitVector newPopCountBV(int resultID, vec<Var> & args){
 
 		if(!hasBV(resultID)){
@@ -6239,6 +6455,65 @@ public:
 			enqueueTheory(const_true);
 		}
 		return const_true;
+	}
+	BitVector newBitvector_Anon(int bvID,int bitwidth){
+		if(bvID<0){
+			bvID = nBitvectors();
+		}
+		if(bvID==792){
+			int a=1;
+		}
+
+		//bv_callbacks.growTo(id+1,nullptr);
+
+		bitvectors.growTo(bvID+1);
+		theoryIds.growTo(bvID+1,-1);
+		symbols.growTo(bvID+1,nullptr);
+		under_approx.growTo(bvID+1,-1);
+		over_approx.growTo(bvID+1,-1);
+		under_approx0.growTo(bvID+1,-1);
+		over_approx0.growTo(bvID+1,-1);
+		bvconst.growTo(bvID+1);
+		alteredBV.growTo(bvID+1);
+		bvcompares.growTo(bvID+1);
+		compares.growTo(bvID+1);
+		operation_ids.growTo(bvID+1);
+		under_causes.growTo(bvID+1);
+		over_causes.growTo(bvID+1);
+		cause_set.growTo(bvID+1);
+		eq_bitvectors.growTo(bvID+1,-1);
+		eq_bitvectors[bvID]=bvID;
+
+		pending_under_analyses.growTo(bvID+1,-1);
+		pending_over_analyses.growTo(bvID+1,-1);
+		bv_needs_propagation.growTo(bvID+1);
+		bv_needs_propagation[bvID]=true;
+		//bv_callbacks.growTo(bvID+1);
+		if(under_approx[bvID]>-1){
+			throw std::invalid_argument("Redefined bitvector ID " + std::to_string(bvID) );
+		}
+		under_approx[bvID]=0;
+		over_approx[bvID]=(1L<<bitwidth)-1;
+		under_approx0[bvID]=under_approx[bvID];
+		over_approx0[bvID]=over_approx[bvID];
+
+
+
+		for(int i = 0;i<bitwidth;i++){
+			bitvectors[bvID].push(mkLit(newVar(var_Undef,bvID,true,false)));
+		}
+		BitOp * op = new BitOp(*this, bvID);
+		addOperation(bvID,op);
+
+
+
+		bv_needs_propagation.growTo(bvID+1);
+		bv_needs_propagation[bvID]=true;
+		alteredBV[bvID]=true;
+		altered_bvs.push(bvID);
+		requiresPropagation=true;
+		S->needsPropagation(getTheoryIndex());
+		return BitVector(*this,bvID);
 	}
 
 	BitVector newBitvector(int bvID, int bitwidth,Weight constval=-1, int equivalentBV=-1){

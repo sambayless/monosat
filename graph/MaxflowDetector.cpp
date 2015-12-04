@@ -1312,10 +1312,12 @@ void MaxflowDetector<Weight>::collectChangedEdges() {
 		buildLearnGraph();
 	}
 	
+
+
 	std::vector<int> & changed_edges = overapprox_conflict_detector->getChangedEdges();
 
 
-	if (opt_rnd_order_graph_decisions) {
+	if (opt_decide_theories && opt_rnd_order_graph_decisions) {
 		/*			static vec<int> tmp_changed;
 		 tmp_changed.clear();
 		 for(int edge:changed_edges):
@@ -1336,30 +1338,32 @@ void MaxflowDetector<Weight>::collectChangedEdges() {
 		if(opt_decide_theories){
 		//if (!is_potential_decision[edgeid]) {
 			Lit l = mkLit(outer->getEdgeVar(edgeid), false);
-			if((outer->decidable(l) || outer->level(var(l))>0) || (outer->edgeWeightDecidable(edgeid, DetectorComparison::geq,  overapprox_conflict_detector->getEdgeFlow(edgeid) )) ){
-				if (overapprox_conflict_detector->getEdgeFlow(edgeid) > 0) {
+			if(opt_maxflow_decisions_type==1){
+				if((outer->decidable(l) || outer->level(var(l))>0) || (outer->edgeWeightDecidable(edgeid, DetectorComparison::geq,  overapprox_conflict_detector->getEdgeFlow(edgeid) )) ){
+					if (overapprox_conflict_detector->getEdgeFlow(edgeid) > 0) {
 
-					is_potential_decision[edgeid] = true;
-					if(!in_decision_q[edgeid]){
-						in_decision_q[edgeid]=true;
-						if (opt_maxflow_decisions_q == 0) {
-							potential_decisions_q.insertBack(edgeid);
-						} else if (opt_maxflow_decisions_q == 1) {
-							potential_decisions_q.insert(edgeid);		//insertBack
-						} else if (opt_maxflow_decisions_q == 2) {
-							potential_decisions_q.insert(edgeid);
-						} else if (opt_maxflow_decisions_q == 3) {
-							potential_decisions_q.insertBack(edgeid);
-						} else if (opt_maxflow_decisions_q == 4) {
-							potential_decisions_q.insertBack(edgeid);
+						is_potential_decision[edgeid] = true;
+						if(!in_decision_q[edgeid]){
+							in_decision_q[edgeid]=true;
+							if (opt_maxflow_decisions_q == 0) {
+								potential_decisions_q.insertBack(edgeid);
+							} else if (opt_maxflow_decisions_q == 1) {
+								potential_decisions_q.insert(edgeid);		//insertBack
+							} else if (opt_maxflow_decisions_q == 2) {
+								potential_decisions_q.insert(edgeid);
+							} else if (opt_maxflow_decisions_q == 3) {
+								potential_decisions_q.insertBack(edgeid);
+							} else if (opt_maxflow_decisions_q == 4) {
+								potential_decisions_q.insertBack(edgeid);
+							}
+						/*	printf("g%d %d mf collect change q (size %d): ", outer->id,iter,potential_decisions_q.size());
+							for(int i =0;i<potential_decisions_q.size();i++){
+								printf("%d, ",(int) potential_decisions_q[i]);
+								break;
+							}
+							printf("%d, ",(int) potential_decisions_q[potential_decisions_q.size()-1]);
+							printf("\n");*/
 						}
-					/*	printf("g%d %d mf collect change q (size %d): ", outer->id,iter,potential_decisions_q.size());
-						for(int i =0;i<potential_decisions_q.size();i++){
-							printf("%d, ",(int) potential_decisions_q[i]);
-							break;
-						}
-						printf("%d, ",(int) potential_decisions_q[potential_decisions_q.size()-1]);
-						printf("\n");*/
 					}
 				}
 			}
@@ -1413,6 +1417,44 @@ void MaxflowDetector<Weight>::collectChangedEdges() {
 	}
 	
 	overapprox_conflict_detector->clearChangedEdges();
+
+	if(opt_decide_theories && opt_maxflow_decisions_type==2){
+		std::vector<int> & changed_nodes =  overapprox_conflict_detector->getChangedPartition();
+		for(int node:changed_nodes){
+			for(int i = 0;i<g_over.nIncident(node,true);i++){
+				int edgeid = g_over.incident(node,i,true).id;
+				int from = g_over.getEdge(edgeid).from;
+				int to =  g_over.getEdge(edgeid).to;
+				if (overapprox_conflict_detector->isOnCut(edgeid)){
+					//this edge is on the cut
+					Lit l = mkLit(outer->getEdgeVar(edgeid), false);
+					if((outer->decidable(l) || outer->level(var(l))>0) || (outer->edgeWeightDecidable(edgeid, DetectorComparison::geq,  g_under.getWeight(edgeid) )) ){
+						if (overapprox_conflict_detector->isOnCut(edgeid)) {
+
+							is_potential_decision[edgeid] = true;
+							if(!in_decision_q[edgeid]){
+								in_decision_q[edgeid]=true;
+								if (opt_maxflow_decisions_q == 0) {
+									potential_decisions_q.insertBack(edgeid);
+								} else if (opt_maxflow_decisions_q == 1) {
+									potential_decisions_q.insert(edgeid);		//insertBack
+								} else if (opt_maxflow_decisions_q == 2) {
+									potential_decisions_q.insert(edgeid);
+								} else if (opt_maxflow_decisions_q == 3) {
+									potential_decisions_q.insertBack(edgeid);
+								} else if (opt_maxflow_decisions_q == 4) {
+									potential_decisions_q.insertBack(edgeid);
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+		overapprox_conflict_detector->clearChangedPartition();
+	}
+
+
 	dbg_decisions();
 }
 
@@ -1514,36 +1556,49 @@ void MaxflowDetector<Weight>::undecideEdgeWeight(int edgeid){
 	if(!opt_decide_theories)
 		return;
 	if((outer->hasBitVector(edgeid) || is_potential_decision[edgeid]) && !in_decision_q[edgeid]){
+		if(opt_maxflow_decisions_type==1){
+			//problem: this check is applied before any backtracking might occur (if lazy backtracking is not applied).
+			if (overapprox_conflict_detector->getEdgeFlow(edgeid) > 0) {			//this check is optional
 
-		//problem: this check is applied before any backtracking might occur (if lazy backtracking is not applied).
-		if (overapprox_conflict_detector->getEdgeFlow(edgeid) > 0) {			//this check is optional
-
-			if(!in_decision_q[edgeid]){
-				in_decision_q[edgeid]=true;
-				if (opt_maxflow_decisions_q == 0)
-					potential_decisions_q.insertBack(edgeid);
-				else if (opt_maxflow_decisions_q == 1) {
-					potential_decisions_q.insertBack(edgeid);//insert in LIFO order, no FIFO, because we are unwinding the decisions
-				} else if (opt_maxflow_decisions_q == 2) {
-					potential_decisions_q.insert(edgeid);			//insert in FIFO order instead
-				} else if (opt_maxflow_decisions_q == 3) {
-					potential_decisions_q.insertBack(edgeid);//insert in LIFO order, no FIFO, because we are unwinding the decisions
-				} else if (opt_maxflow_decisions_q == 4) {
-					potential_decisions_q.insert(edgeid);//insert in LIFO order, no FIFO, because we are unwinding the decisions
+				if(!in_decision_q[edgeid]){
+					in_decision_q[edgeid]=true;
+					if (opt_maxflow_decisions_q == 0)
+						potential_decisions_q.insertBack(edgeid);
+					else if (opt_maxflow_decisions_q == 1) {
+						potential_decisions_q.insertBack(edgeid);//insert in LIFO order, no FIFO, because we are unwinding the decisions
+					} else if (opt_maxflow_decisions_q == 2) {
+						potential_decisions_q.insert(edgeid);			//insert in FIFO order instead
+					} else if (opt_maxflow_decisions_q == 3) {
+						potential_decisions_q.insertBack(edgeid);//insert in LIFO order, no FIFO, because we are unwinding the decisions
+					} else if (opt_maxflow_decisions_q == 4) {
+						potential_decisions_q.insert(edgeid);//insert in LIFO order, no FIFO, because we are unwinding the decisions
+					}
 				}
+
+			} else {
+				is_potential_decision[edgeid] = false;			//discard this edge from the set of potential decisions
+				//printf("undecide remove from q %d\n", edgeid);
 			}
-		/*	printf("g%d mf backtrack q (size %d): ", outer->id,potential_decisions_q.size());
-			for(int i =0;i<potential_decisions_q.size();i++){
-				printf("%d, ",(int) potential_decisions_q[i]);
-				break;
+		}else if(opt_maxflow_decisions_type==2){
+			int from = g_over.getEdge(edgeid).from;
+			int to =  g_over.getEdge(edgeid).to;
+			if (overapprox_conflict_detector->isOnCut(edgeid)){
+				if(!in_decision_q[edgeid]){
+					in_decision_q[edgeid]=true;
+					if (opt_maxflow_decisions_q == 0)
+						potential_decisions_q.insertBack(edgeid);
+					else if (opt_maxflow_decisions_q == 1) {
+						potential_decisions_q.insertBack(edgeid);//insert in LIFO order, no FIFO, because we are unwinding the decisions
+					} else if (opt_maxflow_decisions_q == 2) {
+						potential_decisions_q.insert(edgeid);			//insert in FIFO order instead
+					} else if (opt_maxflow_decisions_q == 3) {
+						potential_decisions_q.insertBack(edgeid);//insert in LIFO order, no FIFO, because we are unwinding the decisions
+					} else if (opt_maxflow_decisions_q == 4) {
+						potential_decisions_q.insert(edgeid);//insert in LIFO order, no FIFO, because we are unwinding the decisions
+					}
+				}
+
 			}
-			if(potential_decisions_q.size()){
-				printf("%d, ",(int) potential_decisions_q[potential_decisions_q.size()-1]);
-			}
-			printf("\n");*/
-		} else {
-			is_potential_decision[edgeid] = false;			//discard this edge from the set of potential decisions
-			//printf("undecide remove from q %d\n", edgeid);
 		}
 	}
 }
@@ -1621,76 +1676,109 @@ Lit MaxflowDetector<Weight>::decide() {
 		collectChangedEdges();
 		//DEBUG:check that the decision_q contains the right elements
 #ifndef NDEBUG
-		if(outer->hasBitVectorEdges()){
-		for(int edgeID = 0;edgeID<g_over.edges();edgeID++){
-			if(g_over.hasEdge(edgeID) && g_over.edgeEnabled(edgeID)){
-				Var v = outer->getEdgeVar(edgeID);
-				lbool val = outer->value(v);
-				Weight flow =  overapprox_conflict_detector->getEdgeFlow(edgeID);
-				int bvID = outer->getEdgeBV(edgeID).getID();
-				Weight over_weight = outer->getEdgeBV(edgeID).getOver();
-				Weight under_weight = outer->getEdgeBV(edgeID).getUnder();
-				if(opt_decide_graph_bv){
-					if((val==l_Undef && flow>0) || (flow>0 && flow>under_weight)){
-						if(!in_decision_q[edgeID]){
-							throw std::runtime_error("Error in maxflow");
+		if(opt_maxflow_decisions_type==1){
+			if(outer->hasBitVectorEdges()){
+			for(int edgeID = 0;edgeID<g_over.edges();edgeID++){
+				if(g_over.hasEdge(edgeID) && g_over.edgeEnabled(edgeID)){
+					Var v = outer->getEdgeVar(edgeID);
+					lbool val = outer->value(v);
+					Weight flow =  overapprox_conflict_detector->getEdgeFlow(edgeID);
+					int bvID = outer->getEdgeBV(edgeID).getID();
+					Weight over_weight = outer->getEdgeBV(edgeID).getOver();
+					Weight under_weight = outer->getEdgeBV(edgeID).getUnder();
+					if(opt_decide_graph_bv){
+						if((val==l_Undef && flow>0) || (flow>0 && flow>under_weight)){
+							if(!in_decision_q[edgeID]){
+								throw std::runtime_error("Error in maxflow");
+							}
 						}
-					}
-				}else{
-					if((val==l_Undef && flow>0)){
-						if(!in_decision_q[edgeID]){
-							throw std::runtime_error("Error in maxflow");
+					}else{
+						if((val==l_Undef && flow>0)){
+							if(!in_decision_q[edgeID]){
+								throw std::runtime_error("Error in maxflow");
+							}
 						}
 					}
 				}
 			}
-		}
+			}
 		}
 #endif
 
 
 		Lit decision = lit_Undef;
-
-		while (potential_decisions_q.size() > 0) {
-			int edgeID;
-			//bool path_decision=false;
-			if (opt_maxflow_decisions_q == 0) {
-				edgeID = potential_decisions_q.peekBack();
-				//path_decision = potential_decisions_q.peekBack().path_decision;
-				potential_decisions_q.popBack();
-			} else {
-				edgeID = potential_decisions_q.peek();
-				//path_decision = potential_decisions_q.peek().path_decision;
-				potential_decisions_q.pop();
-			}
-			assert(in_decision_q[edgeID]);
-			in_decision_q[edgeID]=false;
-			assert(outer->hasBitVector(edgeID) || is_potential_decision[edgeID]);
-			Lit l = mkLit(outer->getEdgeVar(edgeID), false);
-			lbool val = outer->value(l);
-
-			if ((outer->decidable(l) || outer->edgeWeightDecidable(edgeID, DetectorComparison::geq,  overapprox_conflict_detector->getEdgeFlow(edgeID)))  && over->getEdgeFlow(edgeID) > 0) {
-				//decideEdge(edgeID, true);
-
-				decision = l;
-				//printf("decide edge %d\n", edgeID);
-				break;
-			} else if (outer->value(l) != l_False) {
-				if (over->getEdgeFlow(edgeID) > 0) {			//this check is optional
-					//decideEdge(edgeID, true);
-				//	printf("skip decision keep edge %d\n", edgeID);
+		if(opt_maxflow_decisions_type==1){
+			//flow based decision
+			while (potential_decisions_q.size() > 0) {
+				int edgeID;
+				//bool path_decision=false;
+				if (opt_maxflow_decisions_q == 0) {
+					edgeID = potential_decisions_q.peekBack();
+					//path_decision = potential_decisions_q.peekBack().path_decision;
+					potential_decisions_q.popBack();
 				} else {
-					is_potential_decision[edgeID] = false;
-				//	printf("skip decision remove edge %d\n", edgeID);
+					edgeID = potential_decisions_q.peek();
+					//path_decision = potential_decisions_q.peek().path_decision;
+					potential_decisions_q.pop();
 				}
-			} else {
+				assert(in_decision_q[edgeID]);
+				in_decision_q[edgeID]=false;
+				assert(outer->hasBitVector(edgeID) || is_potential_decision[edgeID]);
+				Lit l = mkLit(outer->getEdgeVar(edgeID), false);
+				lbool val = outer->value(l);
 
-				assert(over->getEdgeFlow(edgeID) == 0);
-				is_potential_decision[edgeID] = false;
-				//printf("skip decision remove edge %d\n", edgeID);
+				if ((outer->decidable(l) || outer->edgeWeightDecidable(edgeID, DetectorComparison::geq,  overapprox_conflict_detector->getEdgeFlow(edgeID)))  && over->getEdgeFlow(edgeID) > 0) {
+					//decideEdge(edgeID, true);
+
+					decision = l;
+					//printf("decide edge %d\n", edgeID);
+					break;
+				} else if (outer->value(l) != l_False) {
+					if (over->getEdgeFlow(edgeID) > 0) {			//this check is optional
+						//decideEdge(edgeID, true);
+					//	printf("skip decision keep edge %d\n", edgeID);
+					} else {
+						is_potential_decision[edgeID] = false;
+					//	printf("skip decision remove edge %d\n", edgeID);
+					}
+				} else {
+
+					assert(over->getEdgeFlow(edgeID) == 0);
+					is_potential_decision[edgeID] = false;
+					//printf("skip decision remove edge %d\n", edgeID);
+				}
 			}
+		}else if (opt_maxflow_decisions_type==2){
+			//cut based decision
+			while (potential_decisions_q.size() > 0) {
+				int edgeID;
+				//bool path_decision=false;
+				if (opt_maxflow_decisions_q == 0) {
+					edgeID = potential_decisions_q.peekBack();
+					//path_decision = potential_decisions_q.peekBack().path_decision;
+					potential_decisions_q.popBack();
+				} else {
+					edgeID = potential_decisions_q.peek();
+					//path_decision = potential_decisions_q.peek().path_decision;
+					potential_decisions_q.pop();
+				}
+				assert(in_decision_q[edgeID]);
+				in_decision_q[edgeID]=false;
+				assert(outer->hasBitVector(edgeID) || is_potential_decision[edgeID]);
+				Lit l = mkLit(outer->getEdgeVar(edgeID), false);
+				lbool val = outer->value(l);
+
+				if ((outer->decidable(l) || outer->edgeWeightDecidable(edgeID, DetectorComparison::geq,  g_under.getWeight(edgeID))) && over->isOnCut(edgeID) > 0) {
+					//decideEdge(edgeID, true);
+
+					decision = l;
+					//printf("decide edge %d\n", edgeID);
+					break;
+				}
+			}
+		}else{
+			//no decision
 		}
-		//}
 
 		double post_time = rtime(2);
 		stats_decide_time += post_time - startdecidetime;

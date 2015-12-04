@@ -32,7 +32,7 @@
 #include <algorithm>
 #include <limits>
 #ifndef NDEBUG
-#define DEBUG_MAXFLOW2
+//#define DEBUG_MAXFLOW2
 #endif
 namespace dgl {
 template<typename Weight>
@@ -91,6 +91,7 @@ class KohliTorr: public MaxFlow<Weight>, public DynamicGraphAlgorithm {
 	std::vector<Weight> local_weights;
 	std::vector<bool> edge_enabled;
 	std::vector<int> changed_edges;
+	std::vector<int> changed_partition;
 	bool flow_needs_recalc = true;
 	int alg_id;
 
@@ -520,10 +521,8 @@ public:
 #ifdef DEBUG_MAXFLOW2
 			EdmondsKarpDynamic<Weight> ek(g,source,sink);
 			Weight expected_flow =ek.maxFlow(source,sink);
-
 			assert(curflow==expected_flow);
 			bassert(curflow == expected_flow);
-
 #endif
 			return curflow;
 		} else if (!kt || last_modification <= 0 || kt->get_node_num() != g.nodes()
@@ -621,7 +620,7 @@ public:
 		return f;
 	}
 	
-	std::vector<int> & getChangedEdges() {
+	std::vector<int> & getChangedEdges()override {
 		calc_flow();
 		while (kt->changed_edges.size()) {
 			int arc = kt->changed_edges.back();
@@ -637,8 +636,25 @@ public:
 		return changed_edges;
 	}
 	
-	void clearChangedEdges() {
+	void clearChangedEdges() override{
 		changed_edges.clear();
+	}
+
+	std::vector<int> & getChangedPartition()override{
+		while (kt->nodes_partition_changed.size()) {
+			int node = kt->nodes_partition_changed.back();
+			kt->nodes_partition_changed.pop_back();
+			changed_partition.push_back(node);
+		}
+		return changed_partition;
+	}
+	void clearChangedPartition()override{
+		while(changed_partition.size()){
+			int node_id = changed_partition.back();
+			changed_partition.pop_back();
+			kt->unmarkPartitionAssignment(node_id);
+		}
+
 	}
 private:
 	inline Weight & local_weight(int edgeid){
@@ -948,6 +964,27 @@ public:
 	}
 	
 public:
+	const bool inSourcePartition(int node){
+		update();
+		auto SOURCE = kohli_torr::Graph<Weight, Weight, Weight>::SOURCE; // backward_maxflow? kohli_torr::Graph<Weight,Weight,Weight>::SINK : kohli_torr::Graph<Weight,Weight,Weight>::SOURCE;
+		auto SINK = kohli_torr::Graph<Weight, Weight, Weight>::SINK; //backward_maxflow? kohli_torr::Graph<Weight,Weight,Weight>::SOURCE :  kohli_torr::Graph<Weight,Weight,Weight>::SINK;
+		return kt->what_segment(node, SOURCE)==SOURCE;
+	}
+
+	const bool isOnCut(int edgeID){
+		if (g.getEdge(edgeID).from == g.getEdge(edgeID).to)
+			return false;    	//self edges are never on the cut
+
+		update();
+
+		auto SOURCE = kohli_torr::Graph<Weight, Weight, Weight>::SOURCE; // backward_maxflow? kohli_torr::Graph<Weight,Weight,Weight>::SINK : kohli_torr::Graph<Weight,Weight,Weight>::SOURCE;
+		auto SINK = kohli_torr::Graph<Weight, Weight, Weight>::SINK; //backward_maxflow? kohli_torr::Graph<Weight,Weight,Weight>::SOURCE :  kohli_torr::Graph<Weight,Weight,Weight>::SINK;
+
+		int u = g.getEdge(edgeID).from;
+		int v = g.getEdge(edgeID).to;
+		return kt->what_segment(u, SOURCE) == SOURCE && kt->what_segment(v, SOURCE)==SINK;
+	}
+
 	const Weight getEdgeFlow(int flow_edge) {
 		if (g.getEdge(flow_edge).from == g.getEdge(flow_edge).to)
 			return 0;    	//self edges have no flow.

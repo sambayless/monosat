@@ -285,6 +285,7 @@ BoolOption Monosat::opt_use_kt_for_conflicts(_cat_graph, "use-kt-for-conflicts",
 BoolOption Monosat::opt_kt_preserve_order(_cat_graph, "kt-preserve-order",
 		"Attempt to preserve the order of flow assigned by the kohli-torr maxflow algorithm", false);
 
+IntOption Monosat::opt_maxflow_decisions_type(_cat_graph, "maxflow-decisions", "0=None, 1=flow-based, 2=cut-based", 1,IntRange(0,2));
 BoolOption Monosat::opt_lazy_maxflow_decisions(_cat_graph, "lazy-maxflow-decisions", "", true);
 BoolOption Monosat::opt_maxflow_allow_cycles(_cat_graph, "allow-maxflow-cycles", "Allow (superfluous) cycles in the maxflow solution", false);
 
