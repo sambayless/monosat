@@ -186,6 +186,7 @@ extern BoolOption opt_fsm_negate_underapprox;
 extern BoolOption opt_fsm_edge_prop;
 
 extern BoolOption opt_fsm_as_graph;
+extern IntOption opt_fsm_symmetry_breaking;
 
 extern BoolOption opt_learn_acyclic_flows;
 

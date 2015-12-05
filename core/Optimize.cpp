@@ -44,7 +44,13 @@ long optimize_linear(Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv
 		  bool r;
 
 		  if(opt_limit_conflicts>0 || conflict_limit>=0){
-			  S->setConfBudget(std::min((int)opt_limit_conflicts,conflict_limit));
+			  if(conflict_limit<0)
+				  conflict_limit=INT32_MAX;
+			  int opt_lim = opt_limit_conflicts;
+			  if(opt_lim<=0)
+				  opt_lim=INT32_MAX;
+			  int limit = std::min(opt_lim,conflict_limit);
+			  S->setConfBudget(limit);
 			  lbool res = S->solveLimited(assume,false,false);
 			  if (res==l_Undef){
 				  if(opt_verb>0){
@@ -152,7 +158,13 @@ long optimize_binary(Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv
 		  bool r;
 
 		  if(opt_limit_conflicts>0 || conflict_limit>=0){
-			  S->setConfBudget(std::min((int)opt_limit_conflicts,conflict_limit));
+			  if(conflict_limit<0)
+				  conflict_limit=INT32_MAX;
+			  int opt_lim = opt_limit_conflicts;
+			  if(opt_lim<=0)
+				  opt_lim=INT32_MAX;
+			  int limit = std::min(opt_lim,conflict_limit);
+			  S->setConfBudget(limit);
 			  lbool res = S->solveLimited(assume,false,false);
 			  if (res==l_Undef){
 				  if(opt_verb>0){

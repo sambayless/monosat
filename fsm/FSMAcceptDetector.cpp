@@ -80,7 +80,8 @@ void FSMAcceptDetector::addAcceptLit(int state, int strID, Var outer_reach_var){
 		accept_lit_map.push({-1,-1});
 	}
 	accept_lit_map[accept_var - first_var] = {strID,state};
-
+	accepting_state.growTo(g_over.states());
+	accepting_state[state]=true;
 }
 
 void FSMAcceptDetector::AcceptStatus::accepts(int string,int state,int edgeID,int label, bool accepts){
@@ -105,6 +106,12 @@ bool FSMAcceptDetector::propagate(vec<Lit> & conflict) {
 	if (++iter == 87) {
 		int a = 1;
 	}
+
+	if(opt_fsm_symmetry_breaking){
+		if(!checkSymmetryConstraints(conflict))
+			return false;
+	}
+
 	changed.clear();
 	bool skipped_positive = false;
 	if (underapprox_detector && (!opt_detect_pure_theory_lits || unassigned_positives > 0)) {
@@ -211,6 +218,75 @@ void FSMAcceptDetector::buildReason(Lit p, vec<Lit> & reason, CRef marker) {
 		assert(false);
 	}
 }
+
+
+
+	bool FSMAcceptDetector::checkSymmetryConstraints(vec<Lit> & conflict) {
+		for (int i = 0; i < g_over.states(); i++) {
+			if (i == source || accepting_state[i])
+				continue;
+
+			int n_enabled_outgoing_over = 0;
+			for(int k = 0;k<g_over.nIncident(i);k++){
+				int edgeID = g_over.incident(i,k).id;
+				for(int l = 0;l< g_over.inAlphabet();l++ ){
+					n_enabled_outgoing_over+=g_over.transitionEnabled(edgeID,l,0);
+				}
+			}
+			if (n_enabled_outgoing_over==0)
+				continue;
+
+			for (int j = i+1; j < g_over.states(); j++) {
+				if (j == source || accepting_state[j] )
+					continue;
+
+					//if i is < j, then the number of enabled transitions in i must be <= the number in j
+					int n_enabled_outgoing_under = 0;
+					for(int k = 0;k<g_under.nIncident(j);k++){
+						int edgeID = g_under.incident(j,k).id;
+						for(int l = 0;l< g_under.inAlphabet();l++ ){
+							n_enabled_outgoing_under+=g_under.transitionEnabled(edgeID,l,0);
+						}
+					}
+					if (n_enabled_outgoing_under>n_enabled_outgoing_over){
+						//this is a symmetry conflict
+						//either node i must enable a disabled transition, or node j must disable an enabled transition
+						for(int k = 0;k<g_over.nIncident(i);k++){
+							int edgeID = g_over.incident(i,k).id;
+							for(int l = 0;l< g_over.inAlphabet();l++ ){
+								if(!g_over.transitionEnabled(edgeID,l,0)){
+									Var v = outer->getTransitionVar(g_over.getID(), edgeID,l,0);
+									if(v!=var_Undef){
+										conflict.push(mkLit(v));
+									}
+								}
+							}
+						}
+
+						for(int k = 0;k<g_under.nIncident(j);k++){
+							int edgeID = g_under.incident(j,k).id;
+							for(int l = 0;l< g_under.inAlphabet();l++ ){
+								if(g_under.transitionEnabled(edgeID,l,0)){
+									Var v = outer->getTransitionVar(g_over.getID(), edgeID,l,0);
+									if(v!=var_Undef){
+										conflict.push(~mkLit(v));
+									}
+									//conflict.push(~mkLit(outer->getTransitionVar(g_under.getID(), edgeID,l,0)));
+								}
+							}
+						}
+						if(opt_verb>1){
+							printf("FSM Symmetry breaking clause, with %d lits\n", conflict.size());
+						}
+						return false;
+					}
+
+			}
+		}
+		return true;
+	}
+
+
 
 void FSMAcceptDetector::buildAcceptReason(int node,int str, vec<Lit> & conflict){
 	static int iter = 0;

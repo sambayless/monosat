@@ -325,7 +325,8 @@ IntOption  Monosat::opt_bv_prop_skip(_cat_bv, "bv-theory-skip",
 
 BoolOption  Monosat::opt_graph_bv_prop(_cat_graph, "graph-bv-prop","",false);
 
-
+IntOption Monosat::opt_fsm_symmetry_breaking(_cat_fsm, "fsm-symmetry-breaking",
+			"", 0,IntRange(0,2));
 BoolOption Monosat::opt_fsm_negate_underapprox(_cat_fsm, "fsm-negate-under",
 		"", true);
 BoolOption Monosat::opt_fsm_edge_prop(_cat_fsm, "fsm-edge-prop",
