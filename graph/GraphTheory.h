@@ -679,7 +679,7 @@ public:
 
 
 
-		rnd_seed = opt_random_seed;
+		this->rnd_seed=drand(S->random_seed);
 
 	}
 	Lit const_true= lit_Undef;
@@ -956,6 +956,10 @@ public:
 		for (int i = 0; i < c.size(); i++) {
 			c[i] = toSolver(c[i]);
 		}
+	}
+	
+	double & getRandomSeed()override{
+		return rnd_seed;
 	}
 	
 	inline bool edgeWeightDecidable(int edgeID,DetectorComparison op, Weight edgeWeight) {

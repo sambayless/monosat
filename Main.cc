@@ -57,7 +57,7 @@
 #include "bv/BVParser.h"
 #include "amo/AMOTheory.h"
 #include "amo/AMOParser.h"
-
+#include "core/Optimize.h"
 using namespace Monosat;
 using namespace std;
 //=================================================================================================
@@ -255,6 +255,219 @@ void selectAlgorithms(){
 	}
 }
 
+void processSymbols(vec<std::pair<int, std::string> > & symbols,vec<Lit> & assume,const char * assume_str ,const char* opt_assume_symbols, bool using_symbols_asp=false){
+
+
+			if (opt_verb > 2) {
+				for (int i = 0; i < symbols.size(); i++) {
+					int v = symbols[i].first;
+					string s = symbols[i].second;
+					std::cout << "Symbol: " << (v + 1) << " = " << s << "\n";
+				}
+			}
+
+			if (strlen(assume_str)) {
+
+				std::ifstream infile(assume_str);
+				std::string symbol;
+
+				std::unordered_map<std::string, int> symbol_table;
+				if (using_symbols_asp) {
+					for (int i = 0; i < symbols.size(); i++) {
+						int var = symbols[i].first;
+						string symbol = symbols[i].second;
+						symbol_table[symbol] = var;
+					}
+				}
+
+				while (std::getline(infile, symbol)) {
+					std::stringstream trimmer;
+					trimmer << symbol;
+					symbol.clear();
+					trimmer >> symbol;
+					if (symbol.length() > 0) {
+						bool neg = false;
+						if (symbol[0] == '-') {
+							neg = true;
+							symbol.erase(0, 1);
+						}
+						if (symbol.size() > 0) {
+							if (symbol_table.count(symbol) == 0) {
+								printf("PARSE ERROR! Unknown symbol: %s\n", symbol.c_str()), exit(3);
+							} else {
+								int v = symbol_table[symbol];
+								Lit l = mkLit(v, neg);
+								assume.push(l);
+								if (opt_verb > 2) {
+									if (neg)
+										printf("Assume not %s (%d)\n", symbol.c_str(), dimacs(l));
+									else
+										printf("Assume %s = (%d)\n", symbol.c_str(), dimacs(l));
+								}
+							}
+						} else {
+							printf("PARSE ERROR! Empty symbol!\n"), exit(3);
+						}
+					}
+				}
+				if (assume.size() == 0) {
+					printf("Warning: no assumptions read from %s\n", assume_str);
+				}
+			}
+			if (strlen(opt_assume_symbols) > 0) {
+
+				std::ifstream infile(opt_assume_symbols);
+
+				std::string line;
+
+				std::unordered_map<string, int> symbolmap;
+				for (auto p : symbols) {
+					symbolmap[p.second] = p.first;
+				}
+
+				while (std::getline(infile, line)) {
+					if (line[0] == '%')
+						continue;
+
+					std::istringstream iss(line);
+
+					string s1;
+					string s2;
+					string symbol;
+					bool sign = true;
+					iss >> s1 >> s2;
+					if (s1.compare(":-")) {
+						assert(false);
+						fprintf(stderr, "Bad assumption: %s\n", line.c_str());
+						exit(1);
+					} else if (!s2.compare("not")) {
+						//Then this is a _true_ assumption (yes, its intentionally backward...)
+						iss >> symbol;
+						sign = false;
+					} else {
+						symbol = s2;
+					}
+					if (symbol.back() != '.') {
+						assert(false);
+						fprintf(stderr, "Bad assumption: %s\n", line.c_str());
+						exit(1);
+					}
+					symbol.pop_back();
+					if (!symbolmap.count(symbol)) {
+						assert(false);
+						fprintf(stderr, "Unmapped assumption symbol: %s\n", symbol.c_str());
+						exit(1);
+					}
+					int var = symbolmap[symbol];
+					assert(var >= 0);
+
+					Lit a = mkLit(var, sign);
+					assume.push(a);
+
+				}
+			}
+
+}
+
+void processPriority(SimpSolver & S,const char * priority_file){
+	if (strlen(priority_file) > 0) {
+		FILE * f = fopen(priority_file, "r");
+		if (f) {
+			char * line = NULL;
+			int v = 0;
+			int p = 0;
+			int total_read = 0;
+			while (fscanf(f, " %d %d ", &v, &p) == 2) {
+				if (v < 1 || v > S.nVars() ) {
+					fprintf(stderr, "Bad priority line: %d %d", v, p);
+					exit(1);
+				}
+				v--;
+				total_read++;
+				S.setDecisionPriority(v, p);
+			}
+			if (total_read == 0) {
+				fprintf(stderr, "Warning: read no priorities from priority file!");
+			}
+			fclose(f);
+		} else {
+			fprintf(stderr, "Failed to read priority file!\n");
+		}
+	}
+}
+
+void processDecidable(SimpSolver & S, string dstr){
+
+
+	vec<int> decidable;
+
+
+	if (dstr.length() > 0) {
+		std::replace(dstr.begin(), dstr.end(), '\'', ' ');
+		std::replace(dstr.begin(), dstr.end(), '\"', ' ');
+		std::replace(dstr.begin(), dstr.end(), ',', ' ');
+
+		istringstream iss(dstr);
+
+		do {
+			string sub;
+			iss >> sub;
+			if (sub.length() == 0)
+				continue;
+			//int value = atoi(sub.c_str());
+
+			const char * s = sub.c_str();
+			char* p = NULL;
+			long value = strtol(s, &p, 10);
+			if (*p) {
+				// conversion failed because the input wasn't a number
+			} else {
+
+				decidable.push(value);
+			}
+
+		} while (iss);
+	} else {
+		//default to all theories decidable
+		for (int i = 0; i < S.theories.size(); i++) {
+			decidable.push(i);
+		}
+	}
+
+	if (opt_verb > 0 && decidable.size()) {
+		printf("Decidable theories: ");
+	}
+	S.decidable_theories.clear();
+	for (int i = 0; i < decidable.size(); i++) {
+		int t = decidable[i];
+		if (t < 0 || t >= S.theories.size()) {
+			fprintf(stderr, "Cannot set theory %d to be decidable, because there is no such theory\n", t);
+			fflush(stderr);
+			exit(1);
+		}
+		if (opt_verb > 0) {
+			printf("%d, ", t);
+		}
+		S.decidable_theories.push(S.theories[t]);
+	}
+	if (opt_verb > 0 && decidable.size()) {
+		printf("\n");
+	}
+
+	if(opt_decide_theories_reverse){
+		vec<Theory*> v;
+		for (int i = S.decidable_theories.size()-1;i>=0;i--){
+			v.push(S.decidable_theories[i]);
+		}
+		S.decidable_theories.clear();
+		for (Theory * t:v)
+			S.decidable_theories.push(t);
+	}
+
+}
+
+
+
 int main(int argc, char** argv) {
 	try {
 		setUsageHelp(
@@ -292,6 +505,10 @@ int main(int argc, char** argv) {
 				"Solve geometry using precise rational arithmetic (instead of unsound, but faster, floating point arithmetic)",
 				true);
 
+		BoolOption opt_ignore_solve_statements("MAIN","ignore-solves","Ignore any solve statements in the GNF",false);
+
+		IntOption opt_conflict_limit("MAIN","conflict-limit","",0,IntRange(0,INT32_MAX));
+
 		parseOptions(argc, argv, true);
 		Monosat::opt_record=strlen(opt_record_file)>0;
 
@@ -318,7 +535,6 @@ int main(int argc, char** argv) {
 		if (opt_verb > 0)
 			fprintf(stderr, "WARNING: for repeatability, setting FPU to use double precision\n");
 #endif
-
 
 		//Select which algorithms to apply for graph and geometric theory solvers, by parsing command line arguments and defaults.
 		selectAlgorithms();
@@ -402,26 +618,14 @@ int main(int argc, char** argv) {
 
 
 		if (precise) {
-			GeometryParser<char *, SimpSolver, mpq_class>  geometryParser;
-			parser.addParser(&geometryParser);
-			parser.parse_DIMACS(in, S);//this call must happen here, otherwise the geometryParser will be de-allocated!
+			GeometryParser<char *, SimpSolver, mpq_class> * geometryParser = new GeometryParser<char *, SimpSolver, mpq_class>();
+			parser.addParser(geometryParser);
 		} else {
-			GeometryParser<char *, SimpSolver, double> geometryParser;
-			parser.addParser(&geometryParser);
-			parser.parse_DIMACS(in, S);//this call must happen here, otherwise the geometryParser will be de-allocated!
+			GeometryParser<char *, SimpSolver, double>* geometryParser = new GeometryParser<char *, SimpSolver, double> ();
+			parser.addParser(geometryParser);
 		}
 
-		gzclose(in);
 
-		vec<std::pair<int, std::string> > & symbols = symbolParser.getSymbols();
-
-		if (opt_verb > 2) {
-			for (int i = 0; i < symbols.size(); i++) {
-				int v = symbols[i].first;
-				string s = symbols[i].second;
-				std::cout << "Symbol: " << (v + 1) << " = " << s << "\n";
-			}
-		}
 
 		// Change to signal-handlers that will only notify the solver and allow it to terminate
 		// voluntarily:
@@ -429,211 +633,34 @@ int main(int argc, char** argv) {
 		signal(SIGINT, SIGINT_interrupt);
 		signal(SIGXCPU, SIGINT_interrupt);
 #endif
-
-		const char * priority_file = opt_priority;
-		if (strlen(priority_file) > 0) {
-			FILE * f = fopen(priority_file, "r");
-			if (f) {
-				char * line = NULL;
-				int v = 0;
-				int p = 0;
-				int total_read = 0;
-				while (fscanf(f, " %d %d ", &v, &p) == 2) {
-					if (v < 1 || v > S.nVars() ) {
-						fprintf(stderr, "Bad priority line: %d %d", v, p);
-						exit(1);
-					}
-					v--;
-					total_read++;
-					S.setDecisionPriority(v, p);
-				}
-				if (total_read == 0) {
-					fprintf(stderr, "Warning: read no priorities from priority file!");
-				}
-				fclose(f);
-			} else {
-				fprintf(stderr, "Failed to read priority file!\n");
-			}
-		}
-
-		vec<int> decidable;
-
-		string dstr = (const char*) opt_decidable;
-		if (dstr.length() > 0) {
-			std::replace(dstr.begin(), dstr.end(), '\'', ' ');
-			std::replace(dstr.begin(), dstr.end(), '\"', ' ');
-			std::replace(dstr.begin(), dstr.end(), ',', ' ');
-
-			istringstream iss(dstr);
-
-			do {
-				string sub;
-				iss >> sub;
-				if (sub.length() == 0)
-					continue;
-				//int value = atoi(sub.c_str());
-
-				const char * s = sub.c_str();
-				char* p = NULL;
-				long value = strtol(s, &p, 10);
-				if (*p) {
-					// conversion failed because the input wasn't a number
-				} else {
-
-					decidable.push(value);
-				}
-
-			} while (iss);
-		} else {
-			//default to all theories decidable
-			for (int i = 0; i < S.theories.size(); i++) {
-				decidable.push(i);
-			}
-		}
-		//really simple, unsophisticated incremental BMC:
 		vec<Lit> assume;
 
-		const char * assume_str = opt_assume;
-		if (strlen(assume_str)) {
+		StreamBuffer strm(in);
 
-			std::ifstream infile(assume_str);
-			std::string symbol;
-
-			std::unordered_map<std::string, int> symbol_table;
-			if (using_symbols_asp) {
-				for (int i = 0; i < symbols.size(); i++) {
-					int var = symbols[i].first;
-					string symbol = symbols[i].second;
-					symbol_table[symbol] = var;
+		while(S.okay() && parser.parse(strm, S)){
+			if(*strm==EOF){
+				//Don't run solves from the last line of the file, in order to support pre-processing and other options below.
+				//(This is not a great way to deal with preprocessing...)
+				break;
+			}
+			if(!opt_ignore_solve_statements){
+				S.preprocess();//do this _even_ if sat based preprocessing is disabled! Some of the theory solvers depend on a preprocessing call being made!
+				if(!opt_remap_vars){
+					fprintf(stderr,"Warning: Solver will give completely bogus answers if 'solve' statements are processed while variable remapping is disabled (e.g., -no-remap-vars)\n\n");
 				}
-			}
-
-			while (std::getline(infile, symbol)) {
-				std::stringstream trimmer;
-				trimmer << symbol;
-				symbol.clear();
-				trimmer >> symbol;
-				if (symbol.length() > 0) {
-					bool neg = false;
-					if (symbol[0] == '-') {
-						neg = true;
-						symbol.erase(0, 1);
-					}
-					if (symbol.size() > 0) {
-						if (symbol_table.count(symbol) == 0) {
-							printf("PARSE ERROR! Unknown symbol: %s\n", symbol.c_str()), exit(3);
-						} else {
-							int v = symbol_table[symbol];
-							Lit l = mkLit(v, neg);
-							assume.push(l);
-							if (opt_verb > 2) {
-								if (neg)
-									printf("Assume not %s (%d)\n", symbol.c_str(), dimacs(l));
-								else
-									printf("Assume %s = (%d)\n", symbol.c_str(), dimacs(l));
-							}
-						}
-					} else {
-						printf("PARSE ERROR! Empty symbol!\n"), exit(3);
-					}
-				}
-			}
-			if (assume.size() == 0) {
-				printf("Warning: no assumptions read from %s\n", assume_str);
+				optimize_and_solve(S,parser.assumptions,parser.bv_minimize,opt_conflict_limit);
+			}else{
+				parser.assumptions.clear();parser.bv_minimize.clear();
 			}
 		}
-		if (opt_verb > 2 && assume.size()) {
+		gzclose(in);
 
-			printf("Assumptions: ");
-			for (int i = 0; i < assume.size(); i++) {
-				Lit l = assume[i];
-				printf("%d, ", dimacs(l));
-			}
-			printf("\n");
-		}
-
-		if (opt_verb > 0 && decidable.size()) {
-			printf("Decidable theories: ");
-		}
-		S.decidable_theories.clear();
-		for (int i = 0; i < decidable.size(); i++) {
-			int t = decidable[i];
-			if (t < 0 || t >= S.theories.size()) {
-				fprintf(stderr, "Cannot set theory %d to be decidable, because there is no such theory\n", t);
-				fflush(stderr);
-				exit(1);
-			}
-			if (opt_verb > 0) {
-				printf("%d, ", t);
-			}
-			S.decidable_theories.push(S.theories[t]);
-		}
-		if (opt_verb > 0 && decidable.size()) {
-			printf("\n");
-		}
-
-		if(opt_decide_theories_reverse){
-			vec<Theory*> v;
-			for (int i = S.decidable_theories.size()-1;i>=0;i--){
-				v.push(S.decidable_theories[i]);
-			}
-			S.decidable_theories.clear();
-			for (Theory * t:v)
-				S.decidable_theories.push(t);
-		}
-
-		if (strlen((const char*) opt_assume_symbols) > 0) {
-
-			std::ifstream infile((const char*) opt_assume_symbols);
-
-			std::string line;
-
-			std::unordered_map<string, int> symbolmap;
-			for (auto p : symbols) {
-				symbolmap[p.second] = p.first;
-			}
-
-			while (std::getline(infile, line)) {
-				if (line[0] == '%')
-					continue;
-
-				std::istringstream iss(line);
-
-				string s1;
-				string s2;
-				string symbol;
-				bool sign = true;
-				iss >> s1 >> s2;
-				if (s1.compare(":-")) {
-					assert(false);
-					fprintf(stderr, "Bad assumption: %s\n", line.c_str());
-					exit(1);
-				} else if (!s2.compare("not")) {
-					//Then this is a _true_ assumption (yes, its intentionally backward...)
-					iss >> symbol;
-					sign = false;
-				} else {
-					symbol = s2;
-				}
-				if (symbol.back() != '.') {
-					assert(false);
-					fprintf(stderr, "Bad assumption: %s\n", line.c_str());
-					exit(1);
-				}
-				symbol.pop_back();
-				if (!symbolmap.count(symbol)) {
-					assert(false);
-					fprintf(stderr, "Unmapped assumption symbol: %s\n", symbol.c_str());
-					exit(1);
-				}
-				int var = symbolmap[symbol];
-				assert(var >= 0);
-
-				Lit a = mkLit(var, sign);
-				assume.push(a);
-
-			}
-		}
+		vec<std::pair<int, std::string> > & symbols  = symbolParser.getSymbols();
+		processSymbols( symbols,assume,opt_assume,opt_assume_symbols, using_symbols_asp);
+		processPriority(S,(const char *) opt_priority);
+		processDecidable(S , (const char*) opt_decidable);
+		for (Lit l:assume)
+			parser.assumptions.push(l);
 
 		double before_pre_processing = rtime(0);
 		double parsing_time = before_pre_processing - initial_time;
@@ -647,7 +674,20 @@ int main(int argc, char** argv) {
 				printf("simplify:\n");
 				fflush(stdout);
 			}
+			// Assumptions must be temporarily frozen to run variable elimination:
+			for (int i = 0; i < parser.assumptions.size(); i++) {
+				Var v = var(parser.assumptions[i]);
+
+				// If an assumption has been eliminated, remember it.
+				assert(!S.isEliminated(v));
+
+				if (!S.isFrozen(v)) {
+					// Freeze and store.
+					S.setFrozen(v, true);
+				}
+			}
 			S.eliminate(true);
+			//in principle, should unfreeze these lits after solving...
 		}
 		fflush(stdout);
 		//exit(0);
@@ -660,7 +700,10 @@ int main(int argc, char** argv) {
 			printf("solving:\n");
 			fflush(stdout);
 		}
-		lbool ret = S.solve(assume) ? l_True : l_False;
+
+
+
+		lbool ret = optimize_and_solve(S,parser.assumptions,parser.bv_minimize,opt_conflict_limit);
 		double solving_time = rtime(0) - after_preprocessing;
 		if (opt_verb > 0) {
 			printf("Solving time = %f\n", solving_time);
@@ -674,9 +717,9 @@ int main(int argc, char** argv) {
 					fprintf(f, "v ");
 					for (int v = 0; v < S.nVars(); v++) {
 						if (S.model[v] == l_True) {
-							fprintf(f, "%d ", (v + 1));
+							fprintf(f, "%d ", (parser.unmap(v) + 1));
 						} else if (S.model[v] == l_False) {
-							fprintf(f, "%d ", -(v + 1));
+							fprintf(f, "%d ", -(parser.unmap(v) + 1));
 						}
 					}
 					fprintf(f, "0\n");
@@ -710,9 +753,9 @@ int main(int argc, char** argv) {
 				printf("v ");
 				for (int v = 0; v < S.nVars(); v++) {
 					if (S.model[v] == l_True) {
-						printf("%d ", (v + 1));
+						printf("%d ", (parser.unmap(v) + 1));
 					} else if (S.model[v] == l_False) {
-						printf("%d ", -(v + 1));
+						printf("%d ", -(parser.unmap(v) + 1));
 					}
 				}
 				printf("0\n");

@@ -127,7 +127,7 @@ public:
         	for(int i = 0;i<max_i;i++){
 
         		uint64_t b = with.buf[i];
-        		buf[i]|=b;
+        		buf[i]&=b;
         	}
 
         }
@@ -185,6 +185,26 @@ public:
         	}
         	out.sz=sz;
         }
+        
+         bool GreaterThan(const Bitset & with){
+         //Thanks to Tobias for this implementation
+          	int max = size();
+          	if(max != with.size()){
+          		return false;
+          	}
+          	if(size() == 0){
+          		return false;
+          	}
+          	int max_i=max/BITSET_ELEMENT_SIZE;
+          	for(int i = max_i;i>=0;i--){
+          		if (buf[i] < with.buf[i]) {
+          			return false;
+          		} if (buf[i] > with.buf[i]) {
+          			return true;
+          		}
+          	}
+          	return false;
+    	}
 };
 //=================================================================================================
 }
