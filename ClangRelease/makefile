@@ -13,7 +13,6 @@ RM := rm -rf
 -include graph/subdir.mk
 -include geometry/polypartition/subdir.mk
 -include geometry/cevans/subdir.mk
--include geometry/bitmap/subdir.mk
 -include geometry/subdir.mk
 -include fsm/subdir.mk
 -include dgl/alg/subdir.mk
@@ -55,7 +54,7 @@ all: monosat
 monosat: $(OBJS) $(USER_OBJS)
 	@echo 'Building target: $@'
 	@echo 'Invoking: GCC C++ Linker'
-	clang++ -L../lib -pthread -o "monosat" $(OBJS) $(USER_OBJS) $(LIBS)
+	clang++ -L../lib -o "monosat" $(OBJS) $(USER_OBJS) $(LIBS)
 	@echo 'Finished building target: $@'
 	@echo ' '
 

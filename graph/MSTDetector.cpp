@@ -185,9 +185,9 @@ void MSTDetector<Weight>::MSTStatus::inMinimumSpanningTree(int edgeid, bool in_t
 			} else if (polarity && !in_tree) {
 				if (!detector.is_edge_changed[edgeid]) {
 					detector.is_edge_changed[edgeid] = true;
-					Var edgevar = detector.outer->edge_list[edgeid].v;
-					assert(detector.outer->value(edgevar)!=l_False);		//else the edge counts as in the tree
-					detector.changed_edges.push( { edgevar, edgeid });
+					//Var edgevar = detector.outer->edge_list[edgeid].v;
+					//assert(detector.outer->value(edgevar)!=l_False);		//else the edge counts as in the tree
+					detector.changed_edges.push( {  var(l), edgeid });
 				}
 			}
 		}
@@ -679,6 +679,7 @@ void MSTDetector<Weight>::buildReason(Lit p, vec<Lit> & reason, CRef marker) {
 		reason.push(p);
 		
 		Var v = var(p);
+		assert(v>=first_reach_var);
 		int edgeid = tree_edge_lits_map[v - first_reach_var];
 		
 		buildEdgeInTreeReason(edgeid, reason);
@@ -695,7 +696,7 @@ void MSTDetector<Weight>::buildReason(Lit p, vec<Lit> & reason, CRef marker) {
 		//assign the mincut edge weights if they aren't already assigned.
 		
 		Var v = var(p);
-		
+		assert(v>=first_reach_var);
 		int edgeid = tree_edge_lits_map[v - first_reach_var];
 		buildEdgeNotInTreeReason(edgeid, reason);
 		

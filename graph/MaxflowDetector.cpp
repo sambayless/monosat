@@ -1213,7 +1213,7 @@ void MaxflowDetector<Weight>::collectChangedEdges() {
 	std::vector<int> & changed_edges = overapprox_conflict_detector->getChangedEdges();
 
 
-	if (opt_rnd_order_graph_decisions) {
+	if (opt_decide_theories &&  opt_rnd_order_graph_decisions) {
 		/*			static vec<int> tmp_changed;
 		 tmp_changed.clear();
 		 for(int edge:changed_edges):
@@ -1521,16 +1521,24 @@ Lit MaxflowDetector<Weight>::decide() {
 #ifndef NDEBUG
 		if(outer->hasBitVectorEdges()){
 		for(int edgeID = 0;edgeID<g_over.edges();edgeID++){
-			if(g_over.hasEdge(edgeID)){
+			if(g_over.hasEdge(edgeID) && g_over.edgeEnabled(edgeID)){
 				Var v = outer->getEdgeVar(edgeID);
 				lbool val = outer->value(v);
 				Weight flow =  overapprox_conflict_detector->getEdgeFlow(edgeID);
 				int bvID = outer->getEdgeBV(edgeID).getID();
 				Weight over_weight = outer->getEdgeBV(edgeID).getOver();
 				Weight under_weight = outer->getEdgeBV(edgeID).getUnder();
-				if((val==l_Undef && flow>0) || (flow>0 && flow>under_weight)){
-					if(!in_decision_q[edgeID]){
-						throw std::runtime_error("Error in maxflow");
+				if(opt_decide_graph_bv){
+					if((val==l_Undef && flow>0) || (flow>0 && flow>under_weight)){
+						if(!in_decision_q[edgeID]){
+							throw std::runtime_error("Error in maxflow");
+						}
+					}
+				}else{
+					if((val==l_Undef && flow>0)){
+						if(!in_decision_q[edgeID]){
+							throw std::runtime_error("Error in maxflow");
+						}
 					}
 				}
 			}
