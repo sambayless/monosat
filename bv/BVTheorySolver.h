@@ -3866,7 +3866,7 @@ public:
 
 		fflush(stdout);
 	}
-
+	
 	void writeTheoryWitness(std::ostream& write_to) {
 		for(int bvID = 0;bvID<bitvectors.size();bvID++){
 				vec<Lit> & bv = bitvectors[bvID];
@@ -3876,7 +3876,7 @@ public:
 
 		}
 	}
-
+	
 	inline int getTheoryIndex() {
 		return theory_index;
 	}
@@ -4054,10 +4054,10 @@ public:
 		tmp_clause.clear();
 		c.copyTo(tmp_clause);
 		toSolver(tmp_clause);
-
+		
 		S->addClauseSafely(tmp_clause);
 	}
-
+	
 
 	Var newVar(Var solverVar=var_Undef, int operationID=-1, bool connectToTheory = true, bool decidable=true) {
 		if(solverVar==var_Undef){
@@ -4103,23 +4103,23 @@ public:
 		//assert(S->getTheoryVar(vars[v].solverVar)==v);
 		return vars[v].solverVar;
 	}
-
+	
 	inline Lit toSolver(Lit l) {
 		//assert(S->hasTheory(vars[var(l)].solverVar));
 		//assert(S->getTheoryVar(vars[var(l)].solverVar)==var(l));
 		return mkLit(vars[var(l)].solverVar, sign(l));
 	}
-
+	
 	void toSolver(vec<Lit> & c) {
 		for (int i = 0; i < c.size(); i++) {
 			c[i] = toSolver(c[i]);
 		}
 	}
-
+	
 	inline lbool value(Var v) {
 		if (assigns[v] != l_Undef)
 			assert(S->value(toSolver(v)) == assigns[v]);
-
+		
 		return assigns[v]; //S->value(toSolver(v));
 	}
 	inline lbool value(Lit l) {
@@ -4381,10 +4381,10 @@ public:
 		rewind_trail_pos(trail.size());
 		//need to remove and add edges in the two graphs accordingly.
 		if (trail_lim.size() > level) {
-
+			
 			int stop = trail_lim[level];
 			for (int i = trail.size() - 1; i >= trail_lim[level]; i--) {
-
+				
 				Assignment & e = trail[i];
 				if(e.isBoundAssignment()){
 					int bvID = e.bvID;
@@ -4671,7 +4671,7 @@ public:
 			else if (sign(l) && vars[var(l)].occursNegative != occurs)
 				detectors[getDetector(var(l))]->setOccurs(l, occurs);
 		}*/
-
+		
 	}
 
 	//Can only be used to make the assignment to a BV _more_ precise than it previously was.
@@ -4788,7 +4788,7 @@ public:
 		while (lev > trail_lim.size()) {
 			newDecisionLevel();
 		}
-
+		
 		if (assigns[var(l)] != l_Undef) {
 			return;			//this is already enqueued.
 		}
@@ -5310,9 +5310,9 @@ public:
 		while (S->decisionLevel() > trail_lim.size()) {
 			newDecisionLevel();
 		}
-
+		
 		conflict.clear();
-
+		
 
 		while(altered_bvs.size()){
 			int bvID = altered_bvs.last();
@@ -5429,7 +5429,7 @@ public:
 			altered_bvs.pop();
 			alteredBV[bvID]=false;
 		}
-
+		
 		requiresPropagation = false;
 		propagationtime += rtime(2) - startproptime;;
 		assert(dbg_uptodate());
@@ -5964,7 +5964,7 @@ public:
 
 		return true;
 	}
-
+	
 	bool dbg_solved() {
 
 		return true;
