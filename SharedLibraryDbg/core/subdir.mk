@@ -4,20 +4,23 @@
 
 # Add inputs and outputs from these tool invocations to the build variables 
 CPP_SRCS += \
-../core/Config.cpp 
+../core/Config.cpp \
+../core/Optimize.cpp 
 
 CC_SRCS += \
 ../core/Solver.cc 
 
 OBJS += \
 ./core/Config.o \
+./core/Optimize.o \
 ./core/Solver.o 
 
 CC_DEPS += \
 ./core/Solver.d 
 
 CPP_DEPS += \
-./core/Config.d 
+./core/Config.d \
+./core/Optimize.d 
 
 
 # Each subdirectory must supply rules for building sources it contributes
