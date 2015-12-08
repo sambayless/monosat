@@ -21,12 +21,12 @@
 import monosat.monosat_c
 from monosat.logic import *
 from monosat.bvtheory import BitVector
-from monosat.singleton import Singleton
+from monosat.manager import Manager
 import sys
 debug=False   
 
 #Collects a set of graphs to encode together into a formula
-class GraphManager(metaclass=Singleton):
+class GraphManager(metaclass=Manager):
     
  
     
@@ -42,9 +42,7 @@ class GraphManager(metaclass=Singleton):
     def getGraph(self,gid):
         return self.graphs[gid]
     
-_graph_manager = GraphManager()
- 
-  
+
 
 class Graph():
     class GraphType():
@@ -52,9 +50,10 @@ class Graph():
         float=2
         rational=3
         
-    def __init__(self, manager=_graph_manager,graph_type=1):
+    def __init__(self,graph_type=1):
         self._monosat = monosat.monosat_c.Monosat()
-    
+        manager = GraphManager()
+        manager.addGraph(self)
         self.graph = self._monosat.newGraph()
         
         self.id = len(manager.graphs)
@@ -77,7 +76,7 @@ class Graph():
         self.steiners=[]        
         self.distance_rational_queries=[]
         self.distance_float_queries=[]
-        manager.addGraph(self)
+        
         self.dbg_reaches=[]
         self.graph_type=graph_type
         self.edge_priorities=[]
@@ -87,16 +86,35 @@ class Graph():
         self.edgemap=dict()
         self.acyclic_querries=[]
         
-    def writeDot(self,out=sys.stdout):
+    def writeDot(self,out=sys.stdout, writeModel=True):
         print("digraph{",file=out)
         for n in range(self.nodes):
             print("n%d"%(n),file=out)
             
         for  (v,w,var,weight)  in self.getEdges():
-            if weight:
-                print("n%d -> n%d [label=\"v%d, w%d\"]"%(v,w,var.getInputLiteral(),weight),file=out)
+            if not writeModel:
+                if weight:
+                    print("n%d -> n%d [label=\"v%s, w%s\"]"%(v,w,str(var),str(weight)),file=out)
+                else:
+                    print("n%d -> n%d [label=\"v%s\"]"%(v,w,str(var)),file=out)
             else:
-                print("n%d -> n%d [label=\"v%d\"]"%(v,w,var.getInputLiteral()),file=out)
+                edgeVal = var.value()
+                if edgeVal is None:
+                    edgecol = "black"
+                elif edgeVal:
+                    edgecol="red"
+                else:
+                    edgecol="blue"
+                    
+                if weight:
+                    if edgeVal is not None:
+                        weightVal = weight.value()
+                        print("n%d -> n%d [label=\"v%s, w%s=%s\", color=%s]"%(v,w,str(var),str(weight),str(weightVal),edgecol),file=out)
+                    else:
+                        print("n%d -> n%d [label=\"v%s, w%s\"]"%(v,w,str(var),str(weight)),file=out)
+                else:
+                    print("n%d -> n%d [label=\"v%s\", color=%s]"%(v,w,str(var),edgecol),file=out)
+                
         print("}",file=out)
 
     
@@ -112,6 +130,9 @@ class Graph():
 
         return n
     
+    def getSymbol(self,node):
+        return self.names[node]
+    
     def getMaxFlow(self, flowlit):
         return self._monosat.getModel_MaxFlow(self.graph,flowlit.getLit())
 
@@ -125,7 +146,7 @@ class Graph():
     
     
     def getEdge(self,f,t):
-        for (v,w,var) in self.out_edges[f]:
+        for (v,w,var,weight) in self.out_edges[f]:
             if(w==t):
                 return var;
            
@@ -144,7 +165,8 @@ class Graph():
                return True;
            
         return False; 
-    
+
+        
     #add edge from v to w
     def addEdge(self,v,w, weight=1):
         while(v>=self.numNodes() or w>=self.numNodes()):
@@ -158,14 +180,18 @@ class Graph():
 
         
         if weight and isinstance(weight, BitVector):
+            assert(self.graph_type==Graph.GraphType.int)
             self.has_any_bv_edges=True
             assert(not self.has_any_non_bv_edges)
             var = Var(self._monosat.newEdge_bv(self.graph,v,w,weight.getID()))
         else:
             self.has_any_non_bv_edges=True
             assert(not self.has_any_bv_edges)
-            var = Var(self._monosat.newEdge(self.graph,v,w,weight))
-        
+            if self.graph_type==Graph.GraphType.int:
+                var = Var(self._monosat.newEdge(self.graph,v,w,weight))
+            elif self.graph_type==Graph.GraphType.float:
+                var = Var(self._monosat.newEdge_double(self.graph,v,w,weight))
+
         
         e=(v,w,var,weight)
         self.alledges.append(e)
@@ -185,6 +211,7 @@ class Graph():
         
         
         if weight and isinstance(weight, BitVector):
+            assert(self.graph_type==Graph.GraphType.int)
             self.has_any_bv_edges=True
             assert(not self.has_any_non_bv_edges)
             v1 = Var(self._monosat.newEdge_bv(self.graph,v,w,weight.getID()))
@@ -192,8 +219,13 @@ class Graph():
         else:
             self.has_any_non_bv_edges=True
             assert(not self.has_any_bv_edges)
-            v1 = Var(self._monosat.newEdge(self.graph,v,w,weight))
-            v2 = Var(self._monosat.newEdge(self.graph,w,v,weight))
+            if self.graph_type==Graph.GraphType.int:
+                v1 = Var(self._monosat.newEdge(self.graph,v,w,weight))
+                v2 = Var(self._monosat.newEdge(self.graph,w,v,weight))
+            elif self.graph_type==Graph.GraphType.float:
+                v1 = Var(self._monosat.newEdge_double(self.graph,v,w,weight))
+                v2 = Var(self._monosat.newEdge_double(self.graph,w,v,weight))
+
                    
         e1=(v,w,v1,weight)
         self.alledges.append(e1)
@@ -218,8 +250,11 @@ class Graph():
     def numNodes(self):
         return self.nodes
     
+    def getNodes(self):
+        return range(self.nodes)
+    
     def getEdgeFromVar(self,var):
-        return self.edgemap[var]
+        return self.edgemap[var.getLit()]
     
     def getEdges(self,node=-1, undirected=False):
         if(node>=0):

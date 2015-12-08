@@ -19,10 +19,10 @@
 
 from enum import Enum
 from monosat.logic import *
-from monosat.singleton import Singleton
+from monosat.manager import Manager
 debug=False   
 #Collects a set of graphs to encode together into a formula
-class FSMManager(metaclass=Singleton):
+class FSMManager(metaclass=Manager):
         
     def  __init__(self):
         self.strings = []

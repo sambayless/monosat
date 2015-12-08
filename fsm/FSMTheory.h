@@ -142,6 +142,7 @@ public:
 	double pathtime = 0;
 	double propagationtime = 0;
 	long stats_propagations = 0;
+	long propagations=0;
 	long stats_num_conflicts = 0;
 	long stats_decisions = 0;
 	long stats_num_reasons = 0;
@@ -667,8 +668,12 @@ public:
 	}
 	;
 	bool propagateTheory(vec<Lit> & conflict) {
+		return propagateTheory(conflict,false);
+	}
+
+	bool propagateTheory(vec<Lit> & conflict, bool force_propagation) {
 		static int itp = 0;
-		if (++itp == 62279) {
+		if (++itp == 11673) {
 			int a = 1;
 		}
 		stats_propagations++;
@@ -679,6 +684,13 @@ public:
 			return true;
 		}
 		
+		propagations++;
+
+		if (propagations>1 && (!force_propagation && (propagations % opt_fsm_prop_skip != 0))){
+			stats_propagations_skipped++;
+			return true;
+		}
+
 		bool any_change = false;
 		double startproptime = rtime(1);
 		//static vec<int> detectors_to_check;
@@ -728,9 +740,13 @@ public:
 
 	bool solveTheory(vec<Lit> & conflict) {
 		requiresPropagation = true;		//Just to be on the safe side... but this shouldn't really be required.
-		bool ret = propagateTheory(conflict);
+		bool ret = propagateTheory(conflict,true);
+		if(ret){
+			requiresPropagation = true;
+			assert(propagateTheory(conflict,true));
+		}
 		//Under normal conditions, this should _always_ hold (as propagateTheory should have been called and checked by the parent solver before getting to this point).
-		assert(ret);
+		assert(ret || opt_fsm_prop_skip>1);
 		return ret;
 	}
 	;

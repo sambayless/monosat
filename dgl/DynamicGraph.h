@@ -446,7 +446,9 @@ public:
 		}
 		return false;
 	}
-	
+	inline Weight  getEdgeWeight(int edgeID){
+		return getWeight(edgeID);
+	}
 	void setEdgeWeight(int id,const Weight & w) {
 			assert(id >= 0);
 			assert(id < edge_status.size());

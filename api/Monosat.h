@@ -11,17 +11,44 @@
 extern "C"
 {
 
+  int varToLit(int var, bool negated){
+	  return toInt(mkLit(var,negated));
+  }
 
+  int litToVar(int lit){
+	  return lit/2;
+  }
 
   void * newSolver(int argc, char**argv);
 
 
   void deleteSolver (Monosat::SimpSolver * S);
 
+  void readGNF(Monosat::SimpSolver * S, const char  * filename);
+
   bool solve(Monosat::SimpSolver * S);
   bool solveAssumptions(Monosat::SimpSolver * S,int * assumptions, int n_assumptions);
+  //Solve under assumptions, and also minimize a set of BVs (in order of precedence)
+  bool solveAssumptions_MinBVs(Monosat::SimpSolver * S,int * assumptions, int n_assumptions, int * minimize_bvs, int n_minimize_bvs);
+
+  //Returns 1 for proved false, 2 for proved true, 0 for failed to find a solution within the conflict limit
+  int solveLimited(Monosat::SimpSolver * S,int conflict_limit);
+  int solveAssumptionsLimited(Monosat::SimpSolver * S,int conflict_limit,int * assumptions, int n_assumptions);
+  //Solve under assumptions, and also minimize a set of BVs (in order of precedence)
+  int solveAssumptionsLimited_MinBVs(Monosat::SimpSolver * S,int conflict_limit,int * assumptions, int n_assumptions, int * minimize_bvs, int n_minimize_bvs);
+
+
   void backtrack(Monosat::SimpSolver * S);
   int newVar(Monosat::SimpSolver * S);
+  void setDecisionVar(Monosat::SimpSolver * S,int var,bool decidable);
+  bool isDecisionVar(Monosat::SimpSolver * S,int var);
+
+  //Static, lexicographic heuristic. Larger values are higher priority (decided first); default priority is 0
+  void setDecisionPriority(Monosat::SimpSolver * S,int var, int priority);
+  int getDecisionPriority(Monosat::SimpSolver * S,int var);
+  // Which polarity the decision heuristic should use for a variable (by default).
+  void setDecisionPolarity(Monosat::SimpSolver * S,Var v, bool b);
+  bool getDecisionPolarity(Monosat::SimpSolver * S,Var v);
 
   //The solver will (sometimes) instantiate an arbitrary true literal for use as a constant.
   //Call this method to a) force that literal to be instantiate, and b) get that literal.
@@ -32,6 +59,7 @@ extern "C"
 
   int nVars(Monosat::SimpSolver * S);
   int nClauses(Monosat::SimpSolver * S);
+  int nBitvectors(Monosat::SimpSolver * S,Monosat::BVTheorySolver<long> * bv);
 
   bool addClause(Monosat::SimpSolver * S,int * assumptions, int n_assumptions);
   bool addUnitClause(Monosat::SimpSolver * S,int lit);
@@ -51,7 +79,6 @@ extern "C"
   int newBVComparison_bv_geq(Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv, int bvID, int compareID);
 
 
-
   void bv_concat( Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv,int aID, int bID, int resultID);
   void bv_slice( Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv,int aID, int lower, int upper, int resultID);
   void bv_not( Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv,int bvaID, int bvResultID);
@@ -66,6 +93,9 @@ extern "C"
 
   void bv_addition( Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv, int bvID1, int bvID2, int resultID);
   void bv_subtraction( Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv, int bvID1, int bvID2, int resultID);
+  void bv_min(Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv, int n_args, int* args,int resultID);
+  void bv_max(Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv, int n_args, int* args, int resultID);
+  void bv_popcount(Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv, int n_args, int* args, int resultID);
 
   //simple at-most-one constraint: asserts that at most one of the set of variables (NOT LITERALS) may be true.
   //for small numbers of variables, consider using a direct CNF encoding instead
@@ -77,6 +107,7 @@ extern "C"
 
   int newNode(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<long> *G);
   int newEdge(Monosat::SimpSolver * S, Monosat::GraphTheorySolver<long> *G,int from,int  to,  long weight);
+  int newEdge_double(Monosat::SimpSolver * S, Monosat::GraphTheorySolver<double> *G,int from,int  to,  double weight);
   int newEdge_bv(Monosat::SimpSolver * S, Monosat::GraphTheorySolver<long> *G,int from,int  to, int bvID);
   int reaches(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<long> *G,int from, int to);
   int shortestPathUnweighted_lt_const(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<long> *G,int from, int to, int steps);
@@ -93,11 +124,12 @@ extern "C"
   int minimumSpanningTree_lt(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<long> *G,int source, int sink, long weight);
   int acyclic_undirected(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<long> *G);
   int acyclic_directed(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<long> *G);
-
   //model query
   //For a given literal (not variable!), returns 0 for true, 1 for false, 2 for unassigned.
   int getModel_Literal(Monosat::SimpSolver * S,int lit);
-  long getModel_BV(Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv, int bvID);
+  //Get an assignment to a bitvector in the model. The model may find a range of satisfying assignments to the bitvector;
+  //If getMaximumValue is true, this function returns the maximum satisfying assignment to the bitvector in the model; else it returns the smallest.
+  long getModel_BV(Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv, int bvID, bool getMaximumValue);
   //graph queries:
   //maxflow_literal is the literal (not variable!) that is the atom for the maximum flow query
   long getModel_MaxFlow(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<long> *G,int maxflow_literal);

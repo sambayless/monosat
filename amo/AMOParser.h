@@ -39,7 +39,7 @@ namespace Monosat {
 // GRAPH Parser:
 template<class B, class Solver>
 class AMOParser: public Parser<B, Solver> {
-
+	using Parser<B, Solver>::mapVar;
 
 	vec<Var> vars;
 	
@@ -64,8 +64,7 @@ public:
 					exit(1);
 				}
 				Var var = parsed_var-1;
-				while (var >= S.nVars())
-					S.newVar();
+				var= mapVar(S,var);
 				vars.push(var);
 			}
 			if(vars.size()>1){

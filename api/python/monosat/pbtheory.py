@@ -18,20 +18,21 @@
 #OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 import os
+import sys
 import shutil
 from tempfile import NamedTemporaryFile
 import time
 
 from monosat.logic import *
 from monosat.monosat_c import Monosat, dimacs
+from monosat.manager import Manager
 from monosat.singleton import Singleton
 
-
 debug=False   
-_monosat = Monosat()
+
 
 #Collects a set of graphs to encode together into a formula
-class PBManager(metaclass=Singleton):
+class PBManager(metaclass=Manager):
     
     def setPB(self,pb):
         self.pb = pb
@@ -39,6 +40,7 @@ class PBManager(metaclass=Singleton):
     def  __init__(self):
         self.pb = MinisatPlus()
         self.import_time=0
+        self.elapsed_time=0
     
     def clear(self):
         if(self.pb):
@@ -113,7 +115,7 @@ class PBManager(metaclass=Singleton):
             new_clause.append(l2)
             AssertEq(l2,l)    
  
-        _monosat.AssertAtMostOne([l.getLit() for l in new_clause])
+        Monosat().AssertAtMostOne([l.getLit() for l in new_clause])
         
     def AssertExactlyOne(self,clause):
         AssertClause(clause)
@@ -349,7 +351,7 @@ class MinisatPlus:
             elif l.isConstFalse():                
                 continue
             
-            if _monosat.isPositive(l.getLit()):
+            if Monosat().isPositive(l.getLit()):
                 nclause.append(l);
                 nweights.append(w)
             else:
@@ -625,11 +627,11 @@ class MinisatPlus:
         tmpcnf = tmpfile.name
         tmpfile.close()  
         longest_constraint=0
+          
         try:
             minisat_plus_path = shutil.which("minisat+")
         except:
             minisat_plus_path = which("minisat+")
-            
         if minisat_plus_path is None:
             raise RuntimeError("In order to use PB constraints, minisat+ (1.0) must be installed and on the path.\n")
          
@@ -640,8 +642,10 @@ class MinisatPlus:
         varmap = dict()
         nvars = 0
         for (clause,val,op,weights) in self.constraints:
+            if(not isinstance(val, int)):
+                raise TypeError("PB constraints weights must compare to integers, but found " + str(type(val)))
             if len(clause)==0:
-                clause = [false]  
+                clause = [false()]  
             if len(clause)>longest_constraint:
                 longest_constraint = len(clause)
             for v in clause:
@@ -660,7 +664,7 @@ class MinisatPlus:
             if (len(weights)>0):
                 pass
             if len(clause)==0:
-                clause = [false]
+                clause = [false()]
             n_pbs+=1
             while(len(weights)<len(clause)):
                 weights.append(1) #Default weight
@@ -688,7 +692,7 @@ class MinisatPlus:
         print("Importing %d pseudoboolean constraints into Monosat..."%(n_pbs))
         t=time.clock();
         
-        _monosat.comment("pseudoboolean constraints")
+        Monosat().comment("pseudoboolean constraints")
         n_cls =0 
         convcnf =open(tmpcnf,'r')
         for line in convcnf.readlines():
@@ -712,20 +716,20 @@ class MinisatPlus:
                         continue
                     v = abs(l)
                     if v not in varmap:
-                        varmap[v]= _monosat.newLit()
+                        varmap[v]= Monosat().newLit()
                         
                     newl = varmap[v]
                     if l<0:
-                        newl=_monosat.Not(newl)
+                        newl=Monosat().Not(newl)
                     newclause.append(newl)
                     #fcnf.write(str(v) + " ")
                 #fcnf.write("0\n")
-                _monosat.addClause(newclause)
-        _monosat.comment("end of pseudoboolean constraints")
+                Monosat().addClause(newclause)
+        Monosat().comment("end of pseudoboolean constraints")
         
         os.remove(tmpopb)
         os.remove(tmpcnf)
-        _pbm.import_time+=time.clock()-t;
+        PBManager().import_time+=time.clock()-t;
         print("Imported pseudoboolean constraints into Monosat (%d clauses)"%(n_cls))
 class PBSugar:
     def  __init__(self):
@@ -1050,66 +1054,64 @@ class PBSugar:
                 fcnf.write("0\n")
         fcnf.write("c end of pseudoboolean constraints\n")
         fcnf.close()                     
-   
-        
-_pbm = PBManager()
 
 def AssertLessThanPB( clause, val, weights=None):
-    _pbm.AssertPB(clause,val,'<',weights)
+    PBManager().AssertPB(clause,val,'<',weights)
 
 def AssertGreaterThanPB(clause, val, weights=None):
-    _pbm.AssertPB(clause,val,'>',weights)
+    PBManager().AssertPB(clause,val,'>',weights)
     
 def AssertLessEqPB(clause, val, weights=None):
-    _pbm.AssertPB(clause,val,'<=',weights)
+    PBManager().AssertPB(clause,val,'<=',weights)
 
 def AssertGreaterEqPB( clause, val, weights=None):
-    _pbm.AssertPB(clause,val,'>=',weights)
+    PBManager().AssertPB(clause,val,'>=',weights)
   
 def AssertEqualPB( clause, val, weights=None):
-    _pbm.AssertPB(clause,val,'=',weights)
+    PBManager().AssertPB(clause,val,'=',weights)
 
 def AssertNotEqualPB(clause, val, weights=None):
-    _pbm.AssertPB(clause,val,'!=',weights)
+    PBManager().AssertPB(clause,val,'!=',weights)
 
 def AssertRangePB(clause, lowerBound,upperBound, weights=None):
-    _pbm.pb.AssertRangePB(clause,lowerBound,upperBound,weights);
+    PBManager().pb.AssertRangePB(clause,lowerBound,upperBound,weights);
     
 def AssertPB(clause,val,constraint,weights=None):
-    _pbm.pb.AssertPB(clause,val,constraint,weights)       
+    PBManager().pb.AssertPB(clause,val,constraint,weights)       
 
 def twoSidedRangePB(clause,lowerBound,upperBound,weights=None):
-    return _pbm.pb.twoSidedRangePB(clause,lowerBound,upperBound,weights)        
+    return PBManager().pb.twoSidedRangePB(clause,lowerBound,upperBound,weights)        
 
 def twoSidedPB(clause,val,constraint,weights=None,condition=None):        
-    return _pbm.pb.twoSidedPB(clause,val,constraint,weights,condition)
+    return PBManager().pb.twoSidedPB(clause,val,constraint,weights,condition)
 
 def conditionalPB(clause,val,constraint,weights=None,condition=None):
-    return _pbm.pb.conditionalPB(clause,val,constraint,weights,condition)
+    return PBManager().pb.conditionalPB(clause,val,constraint,weights,condition)
 
 def conditionalRangePB(clause,lowerBound,upperBound,weights=None,condition=None):
-    return _pbm.pb.conditionalRangePB(clause,lowerBound,upperBound,weights,condition)
+    return PBManager().pb.conditionalRangePB(clause,lowerBound,upperBound,weights,condition)
 
 def LessThanPB( clause, val, weights=None,condition=None):
-    return _pbm.conditionalPB(clause,val,'<',weights,condition)
+    return PBManager().conditionalPB(clause,val,'<',weights,condition)
 
 def GreaterThanPB( clause, val,weights=None,condition=None):
-    return _pbm.conditionalPB(clause,val,'>',weights,condition)
+    return PBManager().conditionalPB(clause,val,'>',weights,condition)
     
 def LessEqPB( clause, val, weights=None,condition=None):
-    return _pbm.conditionalPB(clause,val,'<=',weights,condition)
+    return PBManager().conditionalPB(clause,val,'<=',weights,condition)
 
 def GreaterEqPB( clause, val, weights=None,condition=None):
-    return _pbm.conditionalPB(clause,val,'>=',weights,condition)
+    return PBManager().conditionalPB(clause,val,'>=',weights,condition)
         
 def EqualPB( clause, val,weights=None,condition=None):
-    return _pbm.conditionalPB(clause,val,'=',weights,condition)
+    return PBManager().conditionalPB(clause,val,'=',weights,condition)
 
 def AssertExactlyOne(clause):
-    _pbm.AssertExactlyOne(clause)    
+    PBManager().AssertExactlyOne(clause)    
     
 def AssertAtMostOne(clause):
-    _pbm.AssertAtMostOne(clause)   
+    PBManager().AssertAtMostOne(clause)        
+    
     
 
 #shutil.which, backported from the python 3.3 sources, if python version < 3.3

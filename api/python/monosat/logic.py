@@ -29,6 +29,12 @@ import os
 
 _monosat = monosat.monosat_c.Monosat()
 
+def _checkLits(vars):
+    for v in vars:
+        assert(isinstance(v,Var))
+        if(v._solver != _monosat.getSolver()):
+            raise RuntimeError('Variable %s does not belong to current solver, aborting (use setSolver() to correct this)'%(str(v)))
+
 def getSymbols():
     return _monosat.symbolmap    
 
@@ -38,6 +44,7 @@ class Var:
         #Warning: if allow_simplification is set to true, then the variable may be eliminated by the solver at the next Solve();
         #After that point, the variable would no longer be safe to use in clauses or constraints in subsequent calls to Solve(). 
         #Use carefully!
+        self._solver = _monosat.getSolver();
         if isinstance(symbol,bool):  
             self.lit = _monosat.true() if symbol else _monosat.false()
         elif isinstance(symbol, int):           
@@ -78,6 +85,9 @@ class Var:
         
     def getLit(self):
         return self.lit
+
+    def getVar(self):
+        return self.lit//2
     
     def value(self):
         #0 = true, 1=false, 2=unassigned
@@ -102,13 +112,15 @@ class Var:
     def __and__(self,other):    
         o=VAR(other)
         if(self.isConstFalse() or o.isConstFalse()):
-            return false
+            return false()
         
         if(self.isConstTrue()):
             return o;
         if(o.isConstTrue()):
             return self;
+        
         v=Var()
+        _checkLits((self,o,v))
         _monosat.addTertiaryClause(v.getLit(),_monosat.Not(self.getLit()),_monosat.Not(o.getLit()))
         _monosat.addBinaryClause(_monosat.Not(v.getLit()),self.getLit())
         _monosat.addBinaryClause(_monosat.Not(v.getLit()),o.getLit())
@@ -118,13 +130,14 @@ class Var:
     def __or__(self,other):
         o=VAR(other)
         if(self.isConstTrue() or o.isConstTrue()):
-            return true
+            return true()
         
         if(self.isConstFalse()):
             return o;
         if(o.isConstFalse()):
             return self;
         v=Var()
+        _checkLits((self,o,v))
         _monosat.addTertiaryClause(_monosat.Not( v.getLit()),self.getLit(),o.getLit())
         _monosat.addBinaryClause(v.getLit(),_monosat.Not(self.getLit()))
         _monosat.addBinaryClause(v.getLit(),_monosat.Not(o.getLit()))
@@ -137,7 +150,7 @@ class Var:
         return ~(self.__or__(other))
         """o=VAR(other)
         if(self.isConstTrue() or o.isConstTrue()):
-            return false
+            return false()
         
         if(self.isConstFalse()):
             return o.Not();
@@ -150,7 +163,7 @@ class Var:
         return ~(self.__and__(other))
         """o=VAR(other)
         if(self.isConstFalse() or o.isConstFalse()):
-            return true
+            return true()
         
         if(self.isConstTrue()):
             return o.Not();
@@ -174,7 +187,7 @@ class Var:
         o=VAR(other)
         
         if(self.isConst() and o.isConst()):
-            return true if self.getLit() != o.getLit() else false
+            return true() if self.getLit() != o.getLit() else false()
         
         if(self.isConstTrue()):
             return o.Not();
@@ -189,7 +202,7 @@ class Var:
             return self;
         
         v = Var()
-        
+        _checkLits((self,o,v))
         #If both inputs 0, output must be 0. 
         _monosat.addTertiaryClause(_monosat.Not( v.getLit()),self.getLit(),o.getLit())
         
@@ -213,7 +226,7 @@ class Var:
         """ o=VAR(other)
         
         if(self.isConst() and o.isConst()):
-            return true if self.getLit() == o.getLit() else false
+            return true() if self.getLit() == o.getLit() else false()
         
         if(self.isConstFalse()):
             return o.Not();
@@ -234,19 +247,26 @@ class Var:
         return Var(_monosat.addAnd(_monosat.Not( a),_monosat.Not(b)))        """
         
     def implies(self,other):
+        o = VAR(other)
+        _checkLits((self,o))
         #return ~(self.__and__(~other))
-        return Var(_monosat.Not(_monosat.addAnd( self.getLit(),_monosat.Not(VAR(other).getLit()) )))
+        return Var(_monosat.Not(_monosat.addAnd( self.getLit(),_monosat.Not(o.getLit()) )))
     
 
+def true():
+    return Var(_monosat.true())
 
-true = Var(_monosat.true())
-false = Var(_monosat.false())
+def false():
+    return Var(_monosat.false())
 
 #for internal use only
-def _addClause(args):
-    _monosat.addClause([VAR(x).getLit() for x in args])
+def _addClause(args):    
+    clause = [VAR(x) for x in args]
+    _checkLits(clause)
+    _monosat.addClause([x.getLit() for x in clause])
 
 def _addSafeClause(args):
+    _checkLits(args)
     _monosat.addClause([x.getLit() for x in args])
 
 def IsBoolVar(a):
@@ -258,7 +278,7 @@ def IsBoolVar(a):
     elif isinstance(a, bool):
         #Yes, I mean this to be an explicit check against true, false literals, and not against falsy-ness.
         return True
-    elif isinstance(a,BitVector) or  isinstance(e, numbers.Integral):
+    elif isinstance(a,BitVector) or  isinstance(a, numbers.Integral):
         return False
     else:
         return False
@@ -272,10 +292,10 @@ def VAR(a):
     elif isinstance(a, bool):
         #Yes, I mean this to be an explicit check against true, false literals, and not against falsy-ness.
         if a:
-            return true
+            return true()
         else:
-            return false
-    elif isinstance(a,BitVector) or  isinstance(e, numbers.Integral):
+            return false()
+    elif isinstance(a,BitVector) or  isinstance(a, numbers.Integral):
         raise TypeError('Cannot use BitVectors as arguments to functions requiring symbolic Booleans')
     else:
         raise TypeError('Cannot convert to symbolic Booleans')
@@ -312,17 +332,17 @@ def _boolean_Ite(i,t,e):
     nt = VAR(t)
     
     if e is None:
-        e=true #Not false!
+        e=true() #Not false!
     ne = VAR(e)
     
     if isTrue(ni):
         return t
     elif isFalse(ni):
         return e
-    
+    _checkLits((ni,nt,ne))
     l=_monosat.Not(_monosat.addAnd( ni.getLit(),_monosat.Not(nt.getLit()) ))
     r=_monosat.Not(_monosat.addAnd(_monosat.Not( ni.getLit()),_monosat.Not(ne.getLit()) ))
-            
+
     return Var(_monosat.addAnd(l,r))
 
 def If(condition, thn, els=None):
@@ -331,7 +351,7 @@ def If(condition, thn, els=None):
 def And(*args):
 
     if len(args)==0:
-        return false
+        return false()
     elif len(args)==1:
         if isinstance(args[0], collections.Iterable):
             a=VAR(args[0][0])
@@ -347,7 +367,7 @@ def And(*args):
 
 def Or(*args):
     if len(args)==0:
-        return false
+        return false()
     elif len(args)==1:
         if isinstance(args[0], collections.Iterable):
             a=VAR(args[0][0])
@@ -362,17 +382,17 @@ def Or(*args):
         return a;
 
 def Nand(*args):
-    return And(args).Not()
+    return And(*args).Not()
 
 def Nor(*args):
-    return Or(args).Not()
+    return Or(*args).Not()
         
 def Not(a):
     return VAR(a).Not()
 
 def Xor(*args):
     if len(args)==0:
-        return false
+        return false()
     elif len(args)==1:
         if isinstance(args[0], collections.Iterable):
             a=VAR(args[0][0])
@@ -389,7 +409,7 @@ def Xor(*args):
     #return VAR(a)^VAR(b)        
  
 def Xnor(*args):
-    return Xor(args).Not()
+    return Xor(*args).Not()
 #def Xnor(a,b):
 #    return VAR(a).xnor(VAR(b))
 
@@ -406,53 +426,53 @@ def Neq(a,b):
 #Asserting versions of these, to avoid allocating extra literals...
 
 
-def AssertOr(args):    
+def AssertOr(*args):    
     if len(args)==0:
-        Assert(false)
+        Assert(false())
     elif len(args)==1:
         if isinstance(args[0], collections.Iterable):
             _addClause(args[0])
     else:
         _addClause(args)
 
-def AssertNor(args):    
+def AssertNor(*args):    
     if len(args)==0:
-        Assert(true)
+        Assert(true())
     elif len(args)==1:
         if isinstance(args[0], collections.Iterable):
-            AssertNor(args[0])
+            AssertNor(*args[0])
     else:
         #AssertAnd((v.Not() for v in args))
         for v in args:
             Assert(VAR(v).Not())
 
-def AssertAnd(args):    
+def AssertAnd(*args):    
     if len(args)==0:
-        Assert(false)
+        Assert(false())
     elif len(args)==1:
         if isinstance(args[0], collections.Iterable):
-            AssertAnd(args[0])
+            AssertAnd(*args[0])
     else:
         for v in args:
             Assert(v)
 
-def AssertNand(args):    
+def AssertNand(*args):    
     if len(args)==0:
-        Assert(true)
+        Assert(true())
     elif len(args)==1:
         if isinstance(args[0], collections.Iterable):
-            AssertNand(args[0])
+            AssertNand(*args[0])
     else:
-        AssertOr([VAR(v).Not() for v in args])
+        AssertOr(*[VAR(v).Not() for v in args])
         
             
 
-def AssertXor(args):
+def AssertXor(*args):
     if len(args)==0:
-        return false
+        return false()
     elif len(args)==1:
         if isinstance(args[0], collections.Iterable):
-            AssertXor(args[0])
+            AssertXor(*args[0])
     elif len(args)==2:
         _addSafeClause((VAR(args[0]),VAR(args[1])))  
         _addSafeClause((~VAR(args[0]),~VAR(args[1])))
@@ -463,12 +483,12 @@ def AssertXor(args):
             a=a ^ VAR(args[i])
         Assert(a)
 
-def AssertXnor(args):
+def AssertXnor(*args):
     if len(args)==0:
-        return true
+        return true()
     elif len(args)==1:
         if isinstance(args[0], collections.Iterable):
-            AssertXnor(args[0])
+            AssertXnor(*args[0])
     elif len(args)==2:
         _addSafeClause((~VAR(args[0]),VAR(args[1])))  
         _addSafeClause((VAR(args[0]),~VAR(args[1])))
@@ -484,8 +504,20 @@ def AssertImplies(a,b):
     _addSafeClause((~VAR(a),VAR(b)))  
     #return Not(VAR(a)) | VAR(b) #VAR(a) & Not(b)
 
-def AssertEq(a,b):
+def AssertIff(a,b):
     AssertXnor((a,b))
+
+def AssertEq(*args):
+    if(len(args)==1 and isinstance(args[0], collections.Iterable)):
+       return AssertEq(*args[0])
+    if(len(args)==2):
+        AssertXnor(args)
+    elif len(args)>2:
+        AssertOr(And(args),Nor(args))
+    else:
+        print("Warning - equality constraints have no affect on arguments of length %d"%(len(args)))
+        pass
+        
     
 def AssertNeq(a,b):
     AssertXor((a,b))
@@ -502,6 +534,7 @@ def Assert(a):
     a=VAR(a)
     if(a.isConstFalse()):
         print("Warning: asserted constant false variable")
+    _checkLits((a,))   
     _monosat.addUnitClause(a.getLit())
 
 def AssertIf(If, Thn, Els=None):
@@ -521,7 +554,7 @@ def HalfAdd(a,b):
     return sum,carry  
 
 #Add these bits (or arrays of bits)
-def Add(a,b,c=false):
+def Add(a,b,c=False):
     if(isinstance(a, collections.Iterable)):
         return _AddArray(a,b,c)
     aV = VAR(a)
@@ -552,7 +585,7 @@ def Subtract(a,b):
 
     return sum,carry  
 
-def AddOne(array, bit=true):
+def AddOne(array, bit=True):
     if(isFalse(bit)):
         return list(array)
     a1 = list(array)
@@ -571,15 +604,15 @@ def _numberAsArray(number):
         num=[]
         while (1<<n <= val1):
             if (1<<n & val1) ==0:
-                num.append(false)
+                num.append(false())
             else:
-                num.append(true)
+                num.append(true())
             n+=1
         return num
     else:
         raise(Exception("Cannot convert to binary: " + str(number)))
 
-def _AddArray(array1, array2,carry=false):
+def _AddArray(array1, array2,carry=False):
     if not isinstance(array1, collections.Iterable):
         array1 = _numberAsArray(array1)
     if not isinstance(array2, collections.Iterable):
@@ -588,9 +621,9 @@ def _AddArray(array1, array2,carry=false):
     a1 = list(array1)
     a2= list(array2)
     while(len(a1)<len(a2)):
-        a1.append(false)
+        a1.append(false())
     while(len(a2)<len(a1)):
-        a2.append(false)
+        a2.append(false())
     
     output = []
     for i in range(0, len(a1)):
@@ -608,10 +641,10 @@ def _SubtractArray(array1, array2):
     a1 = list(array1)
     a2= list(array2)
     while(len(a1)<len(a2)):
-        a1.append(false)
+        a1.append(false())
     while(len(a2)<len(a1)):
-        a2.append(false)
-    carry = true
+        a2.append(false())
+    carry = true()
     output = []
     for i in range(0, len(a1)):
         sum,carry = Add(a1[i],Not(a2[i]))
@@ -619,13 +652,34 @@ def _SubtractArray(array1, array2):
         
     return output,carry
 
-def Min(array1, array2):
+def Min(*args):
+    from monosat.bvtheory import BitVector
+    if(len(args)==1 and isinstance(args[0], collections.Iterable)):
+        return Min(*args[0])
+    if len(args)>0 and isinstance(args[0],BitVector):
+        return monosat.bvtheory._bv_Min(*args)
+    else:
+        assert(len(args)==2)#In the future, support more arguments...
+        return _Min(*args)
+    
+def Max(*args):
+    from monosat.bvtheory import BitVector
+    if(len(args)==1 and isinstance(args[0], collections.Iterable)):
+        return Max(*args[0])
+    
+    if len(args)>0 and isinstance(args[0],BitVector):
+        return monosat.bvtheory._bv_Max(*args)
+    else:
+        assert(len(args)==2)#In the future, support more arguments...
+        return _Max(*args)
+    
+def _Min(array1, array2):
     a = list(array1)
     b= list(array2)
     while(len(a)<len(b)):
-        a.append(false)
+        a.append(false())
     while(len(b)<len(a)):
-        b.append(false)
+        b.append(false())
     
     a_less_eq = LessEq(a,b)
     output = []
@@ -633,13 +687,13 @@ def Min(array1, array2):
         output.append(If(a_less_eq,a_bit,b_bit))
     return output
 
-def Max(array1, array2):
+def _Max(array1, array2):
     a = list(array1)
     b= list(array2)
     while(len(a)<len(b)):
-        a.append(false)
+        a.append(false())
     while(len(b)<len(a)):
-        b.append(false)
+        b.append(false())
     
     a_less_eq = LessEq(a,b)
     output = []
@@ -673,9 +727,9 @@ def _LessOrEqual(num1, num2):
             num2=[]
             while (1<<n <= val2):
                 if (1<<n & val2) ==0:
-                    num2.append(false)
+                    num2.append(false())
                 else:
-                    num2.append(true)
+                    num2.append(true())
                 n+=1
         else:
             val2 = 0
@@ -686,16 +740,16 @@ def _LessOrEqual(num1, num2):
                     val2+=1<<i            
         
         if (val2> math.pow(2, len(num1))):
-            return (true,true)
+            return (true(),true())
             
         a2= list(num2)
         while(len(a1)<len(a2)):
-            a1.append(false)
+            a1.append(false())
         while(len(a2)<len(a1)):
-            a2.append(false)
+            a2.append(false())
             
-        lt = false
-        gt = false
+        lt = false()
+        gt = false()
         for i in range(len(a1)-1,-1,-1):
             a = VAR(a1[i])
             b= VAR(a2[i])
@@ -708,11 +762,11 @@ def _LessOrEqual(num1, num2):
     a1 = list(num1)
     a2= list(num2)
     while(len(a1)<len(a2)):
-        a1.append(false)
+        a1.append(false())
     while(len(a2)<len(a1)):
-        a2.append(false)
-    lt = false
-    gt = false
+        a2.append(false())
+    lt = false()
+    gt = false()
     for i in range(len(a1)-1,-1,-1):
         a = VAR(a1[i])
         b= VAR(a2[i])
@@ -748,9 +802,9 @@ def Equal(num1,num2):
         t=[]
         while (1<<n <= num2):
             if (1<<n & num2) ==0:
-                t.append(false)
+                t.append(false())
             else:
-                t.append(true)
+                t.append(true())
             n+=1
         
         num2 = t
@@ -760,11 +814,11 @@ def Equal(num1,num2):
     a = list(num1)
     b = list(num2)
     while(len(a)<len(b)):
-        a.append(false)
+        a.append(false())
     while(len(b)<len(a)):
-        b.append(false)
+        b.append(false())
     
-    allequal=true
+    allequal=true()
     for i in range(len(a)):
         ai = VAR(a[i])
         bi = VAR(b[i])
@@ -779,7 +833,245 @@ def GreaterEq(num1, num2):
     return LessEq(num2,num1)    
  
 
-def PopCount(vars):
+def PopCount(vars,**kwargs):
+    method="TREE" if "method" not in  kwargs else kwargs["method"]
+    if method=="CSA":
+        return _PopCountHarleySeal(vars)
+    elif method=="TREE":
+        return _PopCountPairs(vars)
+    elif method=="TABLE":
+        return _PopCountTable(vars,kwargs["max"] if "max" in kwargs else None)
+    elif method=="UNARY":
+        #Warning: this will return the population count in a unary, not binary, vector, of length len(vars).
+        return _PopCountUnary(vars)
+    elif method=="BVSUM":
+        #Warning: this will return the population count in a unary, not binary, vector, of length len(vars).
+        return _PopCountBVSum(vars,kwargs["tree_addition"] if "tree_addition" in kwargs else False,kwargs["return_bv"] if "return_bv" in kwargs else False)
+    elif method=="BV":
+        #Warning: this will return the population count in a unary, not binary, vector, of length len(vars).
+        return _PopCountBV(vars,kwargs["return_bv"] if "return_bv" in kwargs else False)
+
+    elif method=="NAIVE":
+        return _PopCountNaive(vars)
+    else:
+        raise Exception("Unknown popcount method " + str(method))
+
+
+
+def _next_power_of_2(x):
+    #from http://stackoverflow.com/a/14267557  
+    return 2**(x-1).bit_length()
+
+def _grouper(n, iterable, padvalue=None):
+    from itertools import  chain, repeat
+    "grouper(3, 'abcdefg', 'x') --> ('a','b','c'), ('d','e','f'), ('g','x','x')"
+    return zip(*[chain(iterable, repeat(padvalue, n-1))]*n)
+
+def _PopCountUnary(vars):
+    """
+    vars = [false() for v in vars]
+    for v in vars:
+        
+    
+    
+    #Add some redundant constraints, so that the sovler doesn't need to work to learn them:
+    any_vars=Or(vars)
+    any_outs = Or(output)
+    AssertEq(any_vars,any_outs)
+    
+    return output;  """
+    pass
+
+def _PopCountBV(vars,retBitVector=False):
+    from monosat.bvtheory import BitVector
+    bvwidth = math.ceil( math.log(len(vars),2))
+    sm = BitVector(bvwidth,'popcount',vars)    
+    #Add some redundant constraints, so that the sovler doesn't need to work to learn them:
+    output= sm.bits()        
+    any_vars=Or(vars)
+    any_outs = Or(output)
+    AssertEq(any_vars,any_outs)
+    
+    if retBitVector:
+        return sm
+    else:
+        return output 
+
+def _PopCountBVSum(vars,tree_addition=False, retBitVector=False):
+    from monosat.bvtheory import BitVector
+    bvwidth = math.ceil( math.log(len(vars),2))
+    if not tree_addition:
+        sm = bv(bvwidth,0)    
+        for v in vars[i]:
+            sm = If(v,sm+1,sm) 
+        
+    else:
+        elements = [If(v, BitVector(bvwidth,1),BitVector(bvwidth,0))  for v in vars]
+        while(len(elements)>1):
+            if (len(elements)%2 == 1):
+                elements.append(bv(bvwidth,0))
+    
+            next_elements =[]
+            for a,b in zip(elements[::2],elements[1::2]):
+                next_elements.append(a+b)
+            elements= next_elements
+        assert(len(elements)==1);
+        sm = elements[0]
+    
+    #Add some redundant constraints, so that the sovler doesn't need to work to learn them:
+    output= sm.bits()        
+    any_vars=Or(vars)
+    any_outs = Or(output)
+    AssertEq(any_vars,any_outs)
+    
+    if retBitVector:
+        return sm
+    else:
+        return output 
+
+def _PopCountTable(vars, max_value=None):
+    if(max_value is None):
+        max_value=len(vars)
+        
+    if(max_value>10):
+        print("Warning: building a pop-count table for more than 10 values (was %d) may require a large amount of memory!"%(max_value), file=sys.stderr)
+    
+    output = []
+    maxwidth = math.ceil( math.log(len(vars),2))
+    for v in maxwidth:
+        output.append(Var())
+    
+    for n in range((1<<len(vars)) -1):
+        pop = bin(n).count("1") 
+        if pop<=max_value: #make this faster in the future!!
+            a = true()
+            for i,b in enumerate(bin(n)):
+                v= vars[i]
+                if b=='0':
+                    a &= Not(v)
+                else:
+                    a&= v
+            for i in range(maxwidth):
+                bit = 1<<i 
+                if pop & bit:
+                    AssertImplies(a, output[i])
+                else:
+                    AssertImplies(a, Not(output[i]))
+                    
+    #Add some redundant constraints, so that the sovler doesn't need to work to learn them:
+    any_vars=Or(vars)
+    any_outs = Or(output)
+    AssertEq(any_vars,any_outs)
+    
+    return output;  
+    
+            
+
+def _PopCountPairs(vars):
+    #From Hackers Delight, 2nd ed.
+    #required_len = _next_power_of_2(len(vars))
+    #while( len(vars)<required_len):
+    #    vars = vars+false()
+    maxwidth = math.ceil( math.log(len(vars),2)) +1
+    total = [false()]*maxwidth #is it safe to make this maxwidth-1?
+    #ones=[false()]*len(vars)    
+    ones = false()
+    size = 2
+    #Split the vars into adjacent pairs, sum each pair, the repeat.
+    sums = []
+    
+    for a,b in _grouper(2,vars,None):
+        sums.append( (a,b))
+    
+    while(len(sums)>1):    
+        next_sums=[]
+        for a,b in _grouper(2,sums,None):
+            assert(a is not None)           
+            if b is not None: 
+                s,carry  = _AddArray(a, b)
+                #carry will always be false
+            else:
+                s = a
+            next_sums.append(s)
+        sums = next_sums
+
+        #assert(ignore.isConstFalse())
+    assert(len(sums)==1)
+    output=sums[0]
+    #Add some redundant constraints, so that the sovler doesn't need to work to learn them:
+    any_vars=Or(vars)
+    any_outs = Or(output)
+    AssertEq(any_vars,any_outs)
+
+    #Can't do this, unless vars is a power of 2...
+    #all_vars=And(vars)
+    #all_outs=And(total2)   
+    #AssertEq(all_vars,all_outs)
+    return output
+
+def _CSA(a,b,c):
+    assert(isinstance(a, collections.Iterable) == isinstance(b, collections.Iterable))
+    assert(isinstance(a, collections.Iterable) ==isinstance(c, collections.Iterable))
+    if isinstance(a, collections.Iterable):
+        assert(len(a)==len(b))
+        assert(len(a)==len(c))
+        ps = []
+        sc = []
+        for i in range(len(a)):
+            psi,sci = _SCA(a[i],b[i],c[i])            
+            ps.append(psi)
+            sc.append(sci)
+        return ps,sc
+    
+    #from wikipedia
+    #ps = a xor b xor c
+    #sc = and(a,  b) or and(a,c) or and(b,c)    
+    ps = Xor(a,b,c)
+    sc = Or(And(a,b),And(a,c),And(b,c))
+    return ps,sc
+    
+def _PopCountHarleySeal(vars):
+    #From Hackers Delight, 2nd ed.
+    if len(vars)%2==1:
+        vars = vars+false()
+    maxwidth = math.ceil( math.log(len(vars),2)) +1
+    total = [false()]*maxwidth #is it safe to make this maxwidth-1?
+    #ones=[false()]*len(vars)    
+    ones = false()
+    for i in range(0,len(vars),2):
+        twos,ones = _CSA(ones,vars[i],vars[i+1])
+        total,ignore = AddOne(total,twos) #_AddArray(total,)
+        #assert(ignore.isConstFalse())
+    #total = 2*total + pop(ones) - operating at the bit level, this is equivalent to left shifting total, and putting 'ones' in the 1's column 
+    total2 = [ones]
+    total2.extend(total)
+    
+    #Add some redundant constraints, so that the sovler doesn't need to work to learn them:
+    any_vars=Or(vars)
+    any_outs = Or(total2)
+    AssertEq(any_vars,any_outs)
+
+    #Can't do this, unless vars is a power of 2...
+    #all_vars=And(vars)
+    #all_outs=And(total2)   
+    #AssertEq(all_vars,all_outs)
+    return total2
+    
+    
+"""def _PopCountHarleySeal4_3(vars):
+
+    while len(vars)%4!=0:
+        vars = vars+false()
+    
+    sums=[] 
+    for i in range(0,len(vars),4):
+        sum,carry =  Add( vars[i+1],vars[i+2],vars[i+3])
+        sum2,z0 = HalfAdd(vars[i],carry) 
+        z2,z1 = Add(sum,sum2)
+        sums.append([z0,z1,z2])"""
+    
+
+def _PopCountNaive(vars):
     if(isinstance(vars,(int, float, complex))):
         return bin(vars).count('1')
 
@@ -800,9 +1092,9 @@ def PopCount(vars):
         output=[]
         while (1<<n <= count):
             if (1<<n & count) ==0:
-                output.append(false)
+                output.append(false())
             else:
-                output.append(true)
+                output.append(true())
             n+=1
         return output
 
@@ -810,7 +1102,7 @@ def PopCount(vars):
     maxwidth = math.ceil( math.log(len(vars),2))+2
     output=[]
     for i in range(maxwidth):
-        output.append(false)
+        output.append(false())
     #simple, suboptimal adder
     
     for v in vars:
@@ -830,8 +1122,8 @@ def PopCount(vars):
         for i in range(0,len(vars),3):
             assert(i<len(vars))
             a=vars[i]
-            b=false
-            c=false
+            b=false()
+            c=false()
             if(i+1<len(vars)):
                 b= vars[i+1]
             if(i+2<len(vars)):
@@ -845,9 +1137,9 @@ def PopCount(vars):
 #Returns true if exactly one variable in the array is true.
 #@functools.lru_cache(None)
 def OneHot(*arrayVars):
-    sum,carry = false,false
-    eversum = false
-    evercarry=false
+    sum,carry = false(),false()
+    eversum = false()
+    evercarry=false()
     for x in arrayVars:
         sum,carry = Add(sum,x,carry)
         eversum = eversum | sum
@@ -868,7 +1160,7 @@ def PopEq( compareTo,*arrayVars):
     if (isinstance(compareTo,(bool, int,  float, complex))):
         if(compareTo<0):
             print("Warning: Passed negative constant to popcount methods, which expect unsigned arguments")
-            return false;#shouldn't really come up... 
+            return false();#shouldn't really come up... 
         elif (compareTo==0):
             return Not(Or(*arrayVars))    
         elif(compareTo==1):
@@ -876,7 +1168,7 @@ def PopEq( compareTo,*arrayVars):
         elif compareTo==len(arrayVars):
             return And(*arrayVars)
         elif compareTo>len(arrayVars):
-            return false
+            return false()
 
     count = PopCount(arrayVars)  
     return Equal(count,compareTo)  
@@ -889,9 +1181,9 @@ def PopLT( compareTo,*arrayVars):
     if (isinstance(compareTo,(bool, int, float, complex))):
         if(compareTo<0):
             print("Warning: Passed negative constant to popcount methods, which expect unsigned arguments")
-            return false;#shouldn't really come up... 
+            return false();#shouldn't really come up... 
         elif (compareTo==0):
-            return false    
+            return false()    
         elif(compareTo==1):
             return Not(Or(arrayVars))    
         elif (compareTo==2):
@@ -899,7 +1191,7 @@ def PopLT( compareTo,*arrayVars):
         elif compareTo==len(arrayVars):
             return Not(And(arrayVars))
         elif compareTo>len(arrayVars):
-            return true
+            return true()
     count = PopCount(arrayVars)  
     return LessThan(count,compareTo)  
 

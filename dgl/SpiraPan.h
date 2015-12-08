@@ -71,6 +71,7 @@ public:
 	std::vector<bool> component_needs_visit;
 	std::vector<int> component_member; //pointer to one arbitrary member of each non-empty component
 	std::vector<Weight> component_edge_weight;
+	std::vector<bool> edge_enabled;
 	struct VertLt {
 		const std::vector<Weight>& keys;
 
@@ -137,6 +138,46 @@ public:
 		
 		parent_edges.resize(n, -1);
 	}
+
+	void dbg_printSpanningTree(bool showWeights=true){
+#ifndef NDEBUG
+
+#ifndef NDEBUG
+		printf("graph{\n");
+	/*	for (int i = 0; i < g.nodes(); i++) {
+			printf("n%d\n", i);
+		}*/
+
+		for (int i = 0; i < g.adjacency_list.size(); i++) {
+			for (int j = 0; j < g.adjacency_list[i].size(); j++) {
+				int id = g.adjacency_list[i][j].id;
+
+				int u = g.adjacency_list[i][j].node;
+				const char * s = "black";
+				if(in_tree[id]){
+					s="green";
+					assert(g.edgeEnabled(id));
+				}else if (g.edgeEnabled(id))
+					s = "red";
+				else
+					s = "blue";
+				if(showWeights){
+					std::stringstream ss;
+					ss<<g.getWeight(id);
+					printf("n%d -- n%d [label=\"v%d w=%s\",color=\"%s\"]\n", i,u, id,ss.str().c_str(), s);
+				}else{
+					printf("n%d -- n%d [label=\"v%d\",color=\"%s\"]\n", i, u, id, s);
+				}
+			}
+		}
+		printf("}\n");
+#endif
+
+
+#endif
+
+	}
+
 	/*
 	 * 	//chin houck insertion
 	 void insert(int newNode){
@@ -251,8 +292,8 @@ public:
 		if (components[u] != components[v]) {
 			
 			//If u,v are in separate components, then this edge must be in the mst (and we need to fix the component markings)
-			in_tree[edgeid] = true;
-			num_sets--;
+
+
 			int higher_component = v;
 			int lower_component = u;
 			int new_c = components[u];
@@ -262,6 +303,10 @@ public:
 				std::swap(new_c, old_c);
 			}
 			
+			if(component_needs_visit[old_c] || component_needs_visit[new_c]){
+				return;//let prims connect these two components.
+			}
+
 			if (component_needs_visit[old_c]) {
 #ifndef NDEBUG
 				bool found = false;
@@ -274,9 +319,13 @@ public:
 				if (!component_needs_visit[new_c]) {
 					component_needs_visit[new_c] = true;
 					components_to_visit.push_back(new_c);
+				}else{
+
 				}
 				//component_needs_visit[old_c]=false; //dont do this, because the component has not yet been removed from the components to visit list.
 			}
+			num_sets--;
+			in_tree[edgeid] = true;
 			//ok, now set every node in the higher component to be in the lower component with a simple dfs.
 			//fix the parents at the same time.
 			min_weight += g.getWeight(edgeid);
@@ -555,7 +604,7 @@ public:
 					assert(components[n] == c);
 					for (int i = 0; i < g.nIncident(n, true); i++) {
 						auto & edge = g.incident(n, i, true);
-						if (g.edgeEnabled(edge.id)) {
+						if (edge_enabled[edge.id]) {
 							int t = edge.node;
 							if (!in_tree[edge.id]) {
 								//assert(g.edgeEnabled(edge.id));
@@ -616,12 +665,20 @@ public:
 			assert(num_sets == dbg.numComponents());
 			return;
 		}
+
 		assert(components_to_visit.size() == 0);
 		if (last_modification <= 0 || g.changed() || last_history_clear != g.historyclears) {
 			INF = 1;				//g.nodes()+1;
 			setNodes(g.nodes());
+
 			for (auto & w : g.getWeights())
 				INF += w;
+			edge_enabled.clear();
+			edge_enabled.resize(g.edges());
+			for (int i = 0;i<g.edges();i++)
+				if (g.hasEdge(i) && g.edgeEnabled(i)){
+					edge_enabled[i]=true;//this can be improved (see Kohli-Torr!)
+				}
 			seen.clear();
 			seen.resize(g.nodes());
 			min_weight = 0;
@@ -655,23 +712,34 @@ public:
 			history_qhead = g.historySize();//have to skip any additions or deletions that are left here, as otherwise the tree wont be an MST at the beginning of the addEdgeToMST method, which is an error.
 					
 		}
-		
+
 		//std::cout<<"Weight " << min_weight << " Components " << num_sets << " Dbg Weight: " << dbg.forestWeight() << " Components " << dbg.numComponents() <<"\n";
 		for (int i = history_qhead; i < g.historySize(); i++) {
 			
 			int edgeid = g.getChange(i).id;
-			if (g.getChange(i).addition && g.edgeEnabled(edgeid)) {
+			if (g.getChange(i).addition && g.edgeEnabled(edgeid) && !edge_enabled[edgeid]) {
+				prims();//to maintain correctness in spirapan, prims apparently must be called before addEdgeToMST.
+				//however, the current implementation can likely be improved by only running prims on the components of the endpoints of edgeid...
+				edge_enabled[edgeid]=true;
 				addEdgeToMST(edgeid);
-			} else if (!g.getChange(i).addition && !g.edgeEnabled(edgeid)) {
+			} else if (!g.getChange(i).addition && !g.edgeEnabled(edgeid) && edge_enabled[edgeid]) {
 				removeEdgeFromMST(edgeid);
+				edge_enabled[edgeid]=false;
 			}
 			//std::cout<<"Weight " << min_weight << " Components " << num_sets << " Dbg Weight: " << dbg.forestWeight() << " Components " << dbg.numComponents() <<"\n";
 		}
+#ifndef NDEBUG
+		for(int i = 0;i<g.edges();i++)
+			assert(g.edgeEnabled(i)==edge_enabled[i]);
+#endif
 		prims();
 		//std::cout<<"Weight " << min_weight << " Components " << num_sets << " Dbg Weight: " << dbg.forestWeight() << " Components " << dbg.numComponents() <<"\n";
 		//g.drawFull(true);
 		dbg_parents();
+		//dbg_printSpanningTree();
 #ifndef NDEBUG
+		Weight expect = dbg.forestWeight();
+		//dbg.dbg_printSpanningTree();
 		assert(min_weight == dbg.forestWeight());
 		assert(num_sets == dbg.numComponents());
 #endif

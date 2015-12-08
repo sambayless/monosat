@@ -43,6 +43,8 @@ namespace Monosat {
 
 template<class B, class Solver>
 class BVParser: public Parser<B, Solver> {
+	using Parser<B, Solver>::mapVar;
+	using Parser<B, Solver>::mapBV;
 public:
 	BVTheorySolver<long>* theory=nullptr;
 private:
@@ -53,6 +55,7 @@ private:
 		int id=-1;
 		int width=0;
 		long constval=-1;
+		bool anon=false;
 		vec<Var> vector;
 	};
 	vec<BV> bvs;
@@ -101,6 +104,25 @@ private:
 	};
 	vec<IteBV> itebvs;
 
+	struct MinMax{
+		bool min=false;
+		int id=-1;
+		vec<int> args;
+	};
+	vec<MinMax> minmaxs;
+
+	struct PopCount{
+
+		int id=-1;
+		vec<Var> args;
+	};
+	vec<PopCount> popCounts;
+
+	struct InvertBV{
+		int argID;
+		int resultID;
+	};
+	vec<InvertBV> invertbvs;
 	void readConstBV(B& in,  Solver& S) {
 		//bv id width l0 l1 l2 ...
 
@@ -119,7 +141,7 @@ private:
 		bvs[id].constval=parseLong(in);
 	}
 
-	void readBV(B& in,  Solver& S) {
+	void readAnonBV(B& in,  Solver& S) {
 		//bv id width l0 l1 l2 ...
 
 		int id = parseInt(in);
@@ -134,20 +156,46 @@ private:
 		}
 		bvs[id].id = id;
 		bvs[id].width=width;
+		bvs[id].anon=true;
+	}
+
+	void readBV(B& in,  Solver& S) {
+		//bv id width l0 l1 l2 ...
+
+		int id = parseInt(in);
+		int width = parseInt(in);
+
+		bvs.growTo(id + 1);
+
+		if(bvs[id].id!=-1){
+			parse_errorf("Re-defined bitvector %d\n", id);
+		}
+
+		bvs[id].id = id;
+		bvs[id].width=width;
 		for(int i =0;i<width;i++){
-			int v = parseInt(in) - 1;
-			while (v >= S.nVars())
-				S.newVar();
+			Var v = parseInt(in) - 1;
+			v= mapVar(S,v);
 			bvs[id].vector.push(v);
 		}
 	}
+	void readMinMaxBV(B& in, Solver& S, bool min){
 
+		skipWhitespace(in);
+		//bv min/max bvID nbvs bv1 bv2 bv3...
+		int bvID = parseInt(in);
+		int nArgs = parseInt(in);
+		minmaxs.push();
+		minmaxs.last().min=min;
+		minmaxs.last().id=bvID;
+
+		for (int i =0;i<nArgs;i++){
+			minmaxs.last().args.push(parseInt(in));
+		}
+	}
 
 	void readAddBV(B& in, Solver& S) {
-		if (opt_ignore_theories) {
-			skipLine(in);
-			return;
-		}
+
 		skipWhitespace(in);
 	/*	if(! match(in,"bv")){
 			parse_errorf("Result of addition must be bitvector\n");
@@ -187,8 +235,8 @@ private:
 	void readSymbol(B& in, Solver& S){
 		//this is a variable symbol map
 		skipWhitespace(in);
-		int v = parseInt(in);
-
+		Var v = parseInt(in);
+		v= mapVar(S,v);
 		symbol.clear();
 		skipWhitespace(in);
 		while (*in != '\n' && !isWhitespace(*in)) {
@@ -208,19 +256,33 @@ private:
 		symbols.last().second = symbol;
 	}
 
+	void readNotBV(B& in, Solver& S){
+		//"bv ite %d %d %d %d\n"%(dimacs(condition_lit),aID,bID,resultID))
+
+		int argID = parseInt(in);
+		int resultID = parseInt(in);
+
+
+		invertbvs.push();
+		invertbvs.last().argID=argID;
+		invertbvs.last().resultID=resultID;
+
+
+	}
+
 	void readIteBV(B& in, Solver& S){
 		//"bv ite %d %d %d %d\n"%(dimacs(condition_lit),aID,bID,resultID))
 		int parsed_lit = parseInt(in);
 		if (parsed_lit == 0)
 			parse_errorf("If argument to bv If-Then-Else must be a valid dimacs literal (was 0)\n");
-		int var = abs(parsed_lit) - 1;
-
+		Var var = abs(parsed_lit) - 1;
+		var= mapVar(S,var);
 		int thenId = parseInt(in);
 		int elseId = parseInt(in);
 
 		int resultId = parseInt(in);
 
-		Lit l = mkLit(var,false);
+		Lit l = mkLit(var,parsed_lit<0);
 		itebvs.push();
 		itebvs.last().condition=l;
 		itebvs.last().thenId=thenId;
@@ -230,15 +292,11 @@ private:
 	}
 
 	void readCompareBV(B& in, Solver& S,Comparison c) {
-		if (opt_ignore_theories) {
-			skipLine(in);
-			return;
-		}
+
 		//bv_lt bvID var weight
 		skipWhitespace(in);
-		int v = parseInt(in) - 1;
-		while (v >= S.nVars())
-			S.newVar();
+		Var v = parseInt(in) - 1;
+		v= mapVar(S,v);
 		skipWhitespace(in);
 		//bool arg1_is_bv=match(in,"bv");
 		long arg1 = parseInt(in);
@@ -269,15 +327,11 @@ private:
 	}
 
 	void readCompare(B& in, Solver& S,Comparison c) {
-			if (opt_ignore_theories) {
-				skipLine(in);
-				return;
-			}
+
 			//bv_lt bvID var weight
 			skipWhitespace(in);
-			int v = parseInt(in) - 1;
-			while (v >= S.nVars())
-				S.newVar();
+			Var v = parseInt(in) - 1;
+			v= mapVar(S,v);
 			skipWhitespace(in);
 			//bool arg1_is_bv=match(in,"bv");
 			long arg1 = parseInt(in);
@@ -292,6 +346,23 @@ private:
 
 		}
 
+	void readPopCount(B & in, Solver & S){
+		//bv_lt bvID var weight
+		popCounts.push();
+		int bvID = parseInt(in);
+		popCounts.last().id=bvID;
+		int nArgs = parseInt(in);
+		assert(nArgs>=0);
+		for(int i = 0;i<nArgs;i++){
+			int parsed_lit =parseInt(in);
+			Var v = abs(parsed_lit) - 1;
+			if(parsed_lit<0)
+				parse_errorf("Popcount arguments must be positive literals");
+			v= mapVar(S,v);
+			popCounts.last().args.push(v);
+		}
+	}
+
 public:
 	BVParser():Parser<B, Solver>("BitVector"){
 
@@ -301,16 +372,16 @@ public:
 		skipWhitespace(in);
 		if (*in == EOF)
 			return false;
-		else if (match(in, "c bv")) {
-			//this is a bitvector symbol definition
-			readSymbol(in,S);
-			return true;
-		}else if (*in == 'c') {
+		else if (*in == 'c') {
 			//just a comment
 			return false;
 		} else if (match(in, "bv")) {
 			skipWhitespace(in);
-			if (match(in,"const")){
+			if (match(in, "symbol")) { //previous, used  "c bv" for this
+				//this is a bitvector symbol definition
+				readSymbol(in,S);
+				return true;
+			}else if (match(in,"const")){
 				skipWhitespace(in);
 				if (match(in, "<=")) {
 					readCompare(in, S,Comparison::leq);
@@ -329,6 +400,10 @@ public:
 					return true;
 				}else
 					readConstBV(in,S);
+				return true;
+			}else if (match(in,"anon")){
+				//create an anonymous bitvector, with no associated literals
+				readAnonBV(in,S);
 				return true;
 			}else if (match(in, "+")) {
 
@@ -353,7 +428,20 @@ public:
 			}else if (match(in,"ite")){
 				readIteBV(in,S);
 				return true;
-			}else{
+			}else if (match(in,"min")){
+				readMinMaxBV(in,S,true);
+				return true;
+			}else if (match(in,"max")){
+				readMinMaxBV(in,S,false);
+				return true;
+			}else if (match(in,"popcount")){
+				readPopCount(in,S);
+				return true;
+			}else if (match(in,"not")){
+				readNotBV(in,S);
+				return true;
+			}
+			else{
 				readBV(in,S);
 				return true;
 			}
@@ -364,38 +452,45 @@ public:
 	}
 
 	void implementConstraints(Solver & S) {
-		if(bvs.size()){
-			theory = new BVTheorySolver<long>(&S);
+		theory = (BVTheorySolver<long>*) S.bvtheory;
+		if(bvs.size() || theory){
 
+			if(!theory){
+				theory = new BVTheorySolver<long>(&S);
+				theory->setBVMap(this->bvmap);
+			}
 
 			for (auto & bv:bvs){
 				if(bv.id>-1){
-					if(bv.constval>=0){
-						theory->newBitvector(bv.id,bv.width,bv.constval);
+					int mappedBV = theory->nBitvectors();
+					if(!opt_remap_vars)
+						mappedBV=bv.id;
+					this->addBVToMap(bv.id,mappedBV);
+					assert(mappedBV==mapBV(S,bv.id));
+					if(bv.anon){
+						assert(bv.vector.size()==0);
+						assert(bv.constval<0);
+						theory->newBitvector_Anon(mappedBV,bv.width);
+					}else if(bv.constval>=0){
+						theory->newBitvector(mappedBV,bv.width,bv.constval);
 					}else{
-						theory->newBitvector(bv.id,bv.vector);
+						theory->newBitvector(mappedBV,bv.vector);
 					}
 				}
 			}
-
-
-			/*for(auto & c:addconsts){
-				int newBV = theory->newBitvector(-1,theory->getBV(c.aBV).width()).getID();
-				theory->makeConst(newBV,c.b);
-				addbvs.push();
-				addbvs.last().resultID = c.resultID;
-				addbvs.last().aBV =  c.aBV;
-				addbvs.last().bBV = newBV;
-			}*/
-
+			bvs.clear();
 			for(auto & c:compares){
+				c.bvID = mapBV(S,c.bvID);
 				if(!theory->hasBV(c.bvID)){
 					parse_errorf("Undefined bitvector ID %d",c.bvID);
 				}
 				theory->newComparison(c.c,c.bvID,c.w,c.var);
 			}
+			compares.clear();
 
 			for(auto & c:comparebvs){
+				c.bvID = mapBV(S,c.bvID);
+				c.compareID = mapBV(S,c.compareID);
 				if(!theory->hasBV(c.bvID)){
 					parse_errorf("Undefined bitvector ID %d",c.bvID);
 				}
@@ -405,8 +500,13 @@ public:
 
 				theory->newComparisonBV(c.c,c.bvID,c.compareID,c.var);
 			}
+			comparebvs.clear();
 
 			for(auto & c:addbvs){
+				c.aBV = mapBV(S,c.aBV);
+				c.bBV = mapBV(S,c.bBV);
+				c.resultID = mapBV(S,c.resultID);
+
 				if(!theory->hasBV(c.aBV)){
 					parse_errorf("Undefined bitvector ID %d",c.aBV);
 				}
@@ -418,8 +518,13 @@ public:
 				}
 				theory->newAdditionBV(c.resultID,c.aBV,c.bBV);
 			}
+			addbvs.clear();
 
 			for (auto & c:itebvs){
+				c.thenId = mapBV(S,c.thenId);
+				c.elseId = mapBV(S,c.elseId);
+				c.resultId = mapBV(S,c.resultId);
+
 				if(!theory->hasBV(c.thenId)){
 					parse_errorf("Undefined bitvector ID %d",c.thenId);
 				}
@@ -431,8 +536,36 @@ public:
 				}
 				theory->newConditionalBV(c.condition,c.thenId,c.elseId, c.resultId);
 			}
+			itebvs.clear();
 
+			for (auto & c: minmaxs){
+				c.id = mapBV(S,c.id);
+				for (int & bvID:c.args){
+					bvID = mapBV(S,bvID);
+				}
+				if(c.min){
+					theory->newMinBV(c.id,c.args);
+				}else{
+					theory->newMaxBV(c.id,c.args);
+				}
+
+			}
+			minmaxs.clear();
+
+			for(auto & p:popCounts){
+				p.id =  mapBV(S,p.id);
+				theory->newPopCountBV(p.id,p.args);
+			}
+			popCounts.clear();
+
+			for(auto & i:invertbvs){
+				i.argID =  mapBV(S,i.argID);
+				i.resultID =  mapBV(S,i.resultID);
+				theory->newInvertBV(i.resultID, i.argID);
+			}
+			invertbvs.clear();
 			for (int i = 0; i < symbols.size(); i++) {
+				symbols[i].first = mapBV(S,symbols[i].first);
 				int bvID = symbols[i].first;
 				string & s = symbols[i].second;
 				if (theory->hasBV(bvID)){
@@ -441,8 +574,9 @@ public:
 					fprintf(stderr,"Unmatched bv symbol definition for %d : %s\n",bvID,s.c_str());
 				}
 			}
+			symbols.clear();
 
-		}else if (addbvs.size() || comparebvs.size() || compares.size()){
+		}else if (addbvs.size() || comparebvs.size() || compares.size() || addbvs.size() || itebvs.size() || minmaxs.size() || popCounts.size() ){
 
 			parse_errorf("Undefined bitvector\n");
 
@@ -450,6 +584,7 @@ public:
 
 
 	}
+
 
 
 };

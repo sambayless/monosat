@@ -90,34 +90,38 @@ public:
 	vec<Lit> all_lits;
 	//stats
 	
-	int stats_full_updates = 0;
-	int stats_fast_updates = 0;
-	int stats_fast_failed_updates = 0;
-	int stats_skip_deletes = 0;
-	int stats_skipped_updates = 0;
-	int stats_num_skipable_deletions = 0;
-	int stats_learnt_components = 0;
-	int stats_learnt_components_sz = 0;
+	long stats_full_updates = 0;
+	long stats_fast_updates = 0;
+	long stats_fast_failed_updates = 0;
+	long stats_skip_deletes = 0;
+	long stats_skipped_updates = 0;
+	long stats_num_skipable_deletions = 0;
+	long stats_learnt_components = 0;
+	long stats_learnt_components_sz = 0;
 	double mod_percentage = 0.2;
-	int stats_pure_skipped = 0;
-	int stats_shrink_removed = 0;
+	long stats_pure_skipped = 0;
+	long stats_shrink_removed = 0;
 	double stats_full_update_time = 0;
 	double stats_fast_update_time = 0;
-
-
+	long stats_symmetry_conflicts = 0;
+	vec<int> accepting_state;//maintains a list of all accepting states, which are not considered during symmetry breaking.
 
 
 	void printStats() {
 		//printf("Reach detector\n");
 		FSMDetector::printStats();
 		if (opt_detect_pure_theory_lits)
-			printf("\tPropagations skipped by pure literal detection: %d\n", stats_pure_skipped);
+			printf("\tPropagations skipped by pure literal detection: %ld\n", stats_pure_skipped);
 		if (opt_shrink_theory_conflicts) {
-			printf("\t%d lits removed by shrinking conflicts\n", stats_shrink_removed);
+			printf("\t%ld lits removed by shrinking conflicts\n", stats_shrink_removed);
 		}
+
 		if (opt_learn_unreachable_component) {
-			printf("\t%d components learned, average component size: %f\n", stats_learnt_components,
+			printf("\t%ld components learned, average component size: %f\n", stats_learnt_components,
 					stats_learnt_components_sz / (float) stats_learnt_components);
+		}
+		if(opt_fsm_symmetry_breaking){
+			printf("Symmetry breaking conflicts: %ld\n", stats_symmetry_conflicts);
 		}
 	}
 	
@@ -158,14 +162,21 @@ public:
 	bool propagate(vec<Lit> & conflict);
 	void buildAcceptReason(int node,int str, vec<Lit> & conflict);
 	void buildNonAcceptReason(int node,int str, vec<Lit> & conflict);
-
+	void preprocess()override{
+		accepting_state.growTo(g_over.states());
+	}
 	void buildReason(Lit p, vec<Lit> & reason, CRef marker);
 	bool checkSatisfied();
 	void printSolution(std::ostream& write_to);
 
 	void addAcceptLit(int state, int strID, Var reach_var);
 
-
+	bool checkSymmetryConstraints(vec<Lit> & conflict);
+	bool checkSymmetryConstraintsPopCount(vec<Lit> & conflict);
+	Bitset _bitvec1;
+	Bitset _bitvec2;
+	bool checkSymmetryConstraintsBitVec(vec<Lit> & conflict);
+	void learnClauseSymmetryConflict(vec<Lit> & conflict, int a, int b) ;
 
 	FSMAcceptDetector(int _detectorID, FSMTheorySolver * _outer, DynamicFSM &g_under, DynamicFSM &g_over,
 			int _source, vec<vec<int>> &  strs, double seed = 1);

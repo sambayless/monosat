@@ -18,13 +18,14 @@
 #OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 import monosat.monosat_c
+from monosat.monosat_c import Monosat
 from monosat.logic import *
-from monosat.singleton import Singleton
-
+from monosat.manager import Manager
+import collections
 import sys
 debug=False  
 #Collects a set of graphs to encode together into a formula
-class BVManager(metaclass=Singleton):
+class BVManager(metaclass=Manager):
         
     def  __init__(self):
         self.bvs = []
@@ -33,7 +34,6 @@ class BVManager(metaclass=Singleton):
         self.consts=dict()
         self.ites=[]
         self._monosat = monosat.monosat_c.Monosat()
-        self._monosat.initBVTheory()
         self.bitblast_addition=False
         self.bitblast_addition_shadow=False
     
@@ -51,7 +51,7 @@ class BVManager(metaclass=Singleton):
         self.aux_bvs=[]
         self.comparisons=[]     
         self.ites=[]   
-    
+        self.consts=[]
     #Each "string" must actually be a list of positive integers
     def Bv(self,  width=8, const_value=None):
 
@@ -79,7 +79,31 @@ class BVManager(metaclass=Singleton):
         self._monosat.bv_ite(v.getLit(), t.getID(),e.getID(), result.getID())           
         #self.ites.append((i,t,e,result))
         return result;     
-    
+
+    def Max(self,*bvs):
+        width = None
+        for bv in bvs:
+            if not isinstance(bv,BitVector):
+                raise TypeError("Arguments of Max must be bitvectors")
+            if width is None:
+                width=bv.width();
+            if bv.width()!=width:
+                raise ValueError("All arguments of Max must have same bitwidth")
+              
+        return BitVector(self,width,'max',bvs)     
+        
+    def Min(self,*bvs):
+        width = None
+        for bv in bvs:
+            if not isinstance(bv,BitVector):
+                raise TypeError("Arguments of Min must be bitvectors")
+            if width is None:
+                width=bv.width();
+            if bv.width()!=width:
+                raise ValueError("All arguments of Min must have same bitwidth")
+              
+        return BitVector(self,width,'min',bvs)
+            
     def write(self,f):       
         for bv in self.bvs:
             bv.write(f)
@@ -89,22 +113,46 @@ class BVManager(metaclass=Singleton):
         for (i,t,e,r) in self.ites:
             f.write("bv_Ite %d %d %d %d\n"%(dimacs(i),t.getID(),e.getID(),r.getID()))
             
-_bv_manager = BVManager() 
+def _bv_Max(*bvs):
+    return BVManager().Max(*bvs)
+def _bv_Min(*bvs):
+    return BVManager().Min(*bvs)
 
 
 def _bv_Ite(i,t,e):
-    return _bv_manager.Ite(i,t,e)
+    return BVManager().Ite(i,t,e)
 #def Bv(width, const_value=None):
-#    return _bv_manager.Bv(width,const_value)                   
-       
+#    return BVManager().Bv(width,const_value)                   
+
+def _checkBVs(bvs):
+    for bv in bvs:
+        assert(isinstance(bv,BitVector))
+        if(bv.mgr._solver!=Monosat().getSolver()):
+            raise RuntimeError('Bitvector %s does not belong to current solver, aborting (use setSolver() to correct this)'%(str(bv)))
+
+
+ 
 class BitVector():    
     def __init__(self,mgr,width=None,op=None,args=None):
+        assigned_bits=None
         if isinstance(mgr,int):
             #Shift the arguments over 1
+            args=op
             op = width
             width = mgr
             mgr = BVManager()
-        
+        elif isinstance(mgr,collections.Iterable):
+            assigned_bits = list(mgr)
+            mgr = BVManager()
+            #Build this bitvector from a list of elements
+            assert(op is None)
+            assert(args is None)
+            if width is not None:
+                assert(width==len(assigned_bits))
+            width=len(assigned_bits)
+            
+            
+        assert(mgr._solver==Monosat().getSolver())
         assert(width is not None)   
             
         self.mgr = mgr
@@ -112,7 +160,7 @@ class BitVector():
         self.symbol=None   
 
         self._width=width
-
+        self._constant=None
         
         self.pid = None
               
@@ -147,14 +195,23 @@ class BitVector():
                 v = 1<<i
                 if val>=v:
                     val-=v
-                    self._bv[i]=true 
+                    self._bv[i]=true() 
                 else:
-                    self._bv[i]=false            
+                    self._bv[i]=false()        
             
         else:
             self._bv=[] 
-            for _ in range(width):
-                self._bv.append(Var())   
+            if assigned_bits is None:
+                for _ in range(width):
+                    self._bv.append(Var())   
+            else:
+                #Can't do this, because Monosat doesn't support multiple theories on the same variable
+                #self._bv = assigned_bits            
+                for i in range(width):
+                    v= Var()
+                    self._bv.append(v)   
+                    Assert(v==assigned_bits[i])               
+                
             #arr = (c_int*width)()
             #for i,v in enumerate(self._bv):
             #    arr[i]=c_int(v.getLit()//2)
@@ -164,38 +221,66 @@ class BitVector():
 
         if op == '+':
             assert(len(args)==2)
+            _checkBVs((self,args[0],args[1]))
             if not mgr.bitblast_addition:
                 mgr._monosat.bv_addition(args[0].getID(), args[1].getID(), self.getID())
             if mgr.bitblast_addition or mgr.bitblast_addition_shadow:
-                carry = false
+                carry = false()
                 for i, (a,b,out) in enumerate(zip(args[0],args[1],self)):
                     r,carry2=Add(a,b,carry)
                     Assert(out==r)
                     carry=carry2
                 Assert(Not(carry))#disallow overflow.
         elif op=="-":
+            _checkBVs((self,args[0],args[1]))
             #mgr._monosat.bv_addition(self.getID(), args[1].getID(), args[0].getID())
             mgr._monosat.bv_subtraction(args[0].getID(), args[1].getID(), self.getID())
         elif op=="~":
+            _checkBVs((self,args[0]))
             mgr._monosat.bv_not(args[0].getID(), self.getID())
         elif op=="&":
+            _checkBVs((self,args[0]))
             mgr._monosat.bv_and(args[0].getID(), args[1].getID(), self.getID())   
         elif op=="~&":
+            _checkBVs((self,args[0]))
             mgr._monosat.bv_nand(args[0].getID(), args[1].getID(), self.getID())    
         elif op=="|":
+            _checkBVs((self,args[0]))
             mgr._monosat.bv_or(args[0].getID(), args[1].getID(), self.getID())   
         elif op=="~|":
+            _checkBVs((self,args[0]))
             mgr._monosat.bv_nor(args[0].getID(), args[1].getID(), self.getID())   
         elif op=="^":
+            _checkBVs((self,args[0]))
             mgr._monosat.bv_xor(args[0].getID(), args[1].getID(), self.getID())   
         elif op=="~^":
+            _checkBVs((self,args[0]))
             mgr._monosat.bv_xnor(args[0].getID(), args[1].getID(), self.getID())   
         elif op=="slice":
+            _checkBVs((self,args[0]))
             mgr._monosat.bv_slice(args[0].getID(), args[1],args[2], self.getID()) 
         elif op=="concat":
+            _checkBVs((self,args[0],args[1]))
             mgr._monosat.bv_concat(args[0].getID(), args[1].getID(), self.getID())   
+        elif op=="min":
+            _checkBVs((self,))
+            _checkBVs((args))
+            mgr._monosat.bv_min([x.getID() for x in args],self.getID()) 
+        elif op=="max":
+            _checkBVs((self,))
+            _checkBVs((args))    
+            mgr._monosat.bv_max([x.getID() for x in args],self.getID())
+        elif op=="popcount": 
+            mgr._monosat.bv_popcount((l.getLit() for l in args),  self.getID())               
+                     
+    def isConst(self):
+        return self._constant is not None
 
-   
+    def __repr__(self):
+        if self.isConst():
+            return "bv%d="%(self.pid) +str(self._constant)
+        else:
+            return "bv%d"%(self.pid)
         
     def checkValue(self,val):
         if val<0 or val>= 1<<self.width():
@@ -239,6 +324,10 @@ class BitVector():
             assert(upper<=self.width())
             return BitVector(self.mgr,upper-lower,'slice',(self,lower,upper-1)) 
         return self._bv[index]
+
+    
+    def bits(self):
+        return list(self._bv)
     
     def __len__(self):
         return self._width

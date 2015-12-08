@@ -60,6 +60,13 @@ public:
 	virtual void clearChangedEdges() {
 		
 	}
+	virtual std::vector<int> & getChangedPartition(){
+		throw std::runtime_error("Not implemented");
+	}
+	virtual void clearChangedPartition() {
+
+	}
+
 	virtual void printStats() {
 		
 	}
@@ -75,6 +82,13 @@ public:
 	virtual const Weight getEdgeCapacity(int id)=0;
 
 	virtual const Weight getEdgeResidualCapacity(int id)=0;
+
+	virtual const bool isOnCut(int edgeID){
+		throw std::runtime_error("Not implemented");
+	}
+	virtual const bool inSourcePartition(int node){
+		throw std::runtime_error("Not implemented");
+	}
 };
 }
 ;

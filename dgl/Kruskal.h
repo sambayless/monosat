@@ -30,7 +30,7 @@
 #include "alg/DisjointSets.h"
 #include <limits>
 #include <algorithm>
-
+#include <stdexcept>
 namespace dgl {
 template<class Status, typename Weight = int>
 class Kruskal: public MinimumSpanningTree<Weight> {
@@ -88,7 +88,44 @@ public:
 
 	double stats_full_update_time=0;
 	double stats_fast_update_time=0;
+	void dbg_printSpanningTree(bool showWeights=true){
+#ifndef NDEBUG
 
+#ifndef NDEBUG
+		printf("graph{\n");
+	/*	for (int i = 0; i < g.nodes(); i++) {
+			printf("n%d\n", i);
+		}*/
+
+		for (int i = 0; i < g.adjacency_list.size(); i++) {
+			for (int j = 0; j < g.adjacency_list[i].size(); j++) {
+				int id = g.adjacency_list[i][j].id;
+
+				int u = g.adjacency_list[i][j].node;
+				const char * s = "black";
+				if(in_tree[id]){
+					s="green";
+					assert(g.edgeEnabled(id));
+				}else if (g.edgeEnabled(id))
+					s = "red";
+				else
+					s = "blue";
+				if(showWeights){
+					std::stringstream ss;
+					ss<<g.getWeight(id);
+					printf("n%d -- n%d [label=\"v%d w=%s\",color=\"%s\"]\n", i,u, id,ss.str().c_str(), s);
+				}else{
+					printf("n%d -- n%d [label=\"v%d\",color=\"%s\"]\n", i, u, id, s);
+				}
+			}
+		}
+		printf("}\n");
+#endif
+
+
+#endif
+
+	}
 	Kruskal(DynamicGraph<Weight> & graph, Status & _status =
 			MinimumSpanningTree<Weight>::nullStatus, int _reportPolarity = 0) :
 			g(graph), status(_status), last_modification(-1), last_addition(-1), last_deletion(-1), history_qhead(

@@ -12,8 +12,31 @@
 #include "core/SolverTypes.h"
 #include "Monosat.h"
 #include "mtl/Vec.h"
+#include "core/Dimacs.h"
+#include "bv/BVParser.h"
+#include "graph/GraphParser.h"
+#include "utils/ParseUtils.h"
+#include "amo/AMOParser.h"
+#include <stdexcept>
+#include <cstdarg>
+#include "core/Optimize.h"
 using namespace Monosat;
 using namespace std;
+
+
+
+//Supporting function for throwing parse errors
+inline void api_errorf(const char *fmt, ...) {
+    va_list args;
+    va_start(args, fmt);
+    char buf[1000];
+    vsnprintf(buf, sizeof buf,fmt, args);
+    va_end(args);
+    fprintf(stderr, buf);
+    fflush(stderr);
+    throw std::runtime_error(buf);
+
+}
 
 //Select which algorithms to apply for graph and geometric theory solvers, by parsing command line arguments and defaults.
 void _selectAlgorithms(){
@@ -42,9 +65,9 @@ void _selectAlgorithms(){
 	} else if (!strcasecmp(opt_maxflow_alg, "kohli-torr")) {
 		mincutalg = MinCutAlg::ALG_KOHLI_TORR;
 	} else {
-		fprintf(stderr, "Error: unknown max-flow/min-cut algorithm %s, aborting\n",
+		api_errorf( "Error: unknown max-flow/min-cut algorithm %s, aborting\n",
 				((string) opt_maxflow_alg).c_str());
-		exit(1);
+
 	}
 
 	componentsalg = ComponentsAlg::ALG_DISJOINT_SETS;
@@ -52,9 +75,9 @@ void _selectAlgorithms(){
 	if (!strcasecmp(opt_components_alg, "disjoint-sets")) {
 		componentsalg = ComponentsAlg::ALG_DISJOINT_SETS;
 	} else {
-		fprintf(stderr, "Error: unknown connectivity algorithm %s, aborting\n",
+		api_errorf(  "Error: unknown connectivity algorithm %s, aborting\n",
 				((string) opt_components_alg).c_str());
-		exit(1);
+
 	}
 
 	cyclealg = CycleAlg::ALG_DFS_CYCLE;
@@ -64,9 +87,9 @@ void _selectAlgorithms(){
 	}else if (!strcasecmp(opt_cycle_alg, "pk")) {
 		cyclealg = CycleAlg::ALG_PK_CYCLE;
 	} else {
-		fprintf(stderr, "Error: unknown cycle detection algorithm %s, aborting\n",
+		api_errorf( "Error: unknown cycle detection algorithm %s, aborting\n",
 				((string) opt_cycle_alg).c_str());
-		exit(1);
+
 	}
 
 
@@ -79,9 +102,9 @@ void _selectAlgorithms(){
 	} else if (!strcasecmp(opt_mst_alg, "spira-pan")) {
 		mstalg = MinSpanAlg::ALG_SPIRA_PAN;
 	} else {
-		fprintf(stderr, "Error: unknown minimum spanning tree algorithm %s, aborting\n",
+		api_errorf( "Error: unknown minimum spanning tree algorithm %s, aborting\n",
 				((string) opt_mst_alg).c_str());
-		exit(1);
+
 	}
 
 	reachalg = ReachAlg::ALG_BFS;
@@ -99,8 +122,8 @@ void _selectAlgorithms(){
 	} else if (!strcasecmp(opt_reach_alg, "ramal-reps")) {
 		reachalg = ReachAlg::ALG_RAMAL_REPS;
 	} else {
-		fprintf(stderr, "Error: unknown reachability algorithm %s, aborting\n", ((string) opt_reach_alg).c_str());
-		exit(1);
+		api_errorf( "Error: unknown reachability algorithm %s, aborting\n", ((string) opt_reach_alg).c_str());
+
 	}
 
 	distalg = DistAlg::ALG_DISTANCE;
@@ -116,8 +139,8 @@ void _selectAlgorithms(){
 	} else if (!strcasecmp(opt_dist_alg, "ramal-reps")) {
 		distalg = DistAlg::ALG_RAMAL_REPS;
 	} else {
-		fprintf(stderr, "Error: unknown distance algorithm %s, aborting\n", ((string) opt_dist_alg).c_str());
-		exit(1);
+		api_errorf(  "Error: unknown distance algorithm %s, aborting\n", ((string) opt_dist_alg).c_str());
+
 	}
 
 	undirectedalg = ConnectivityAlg::ALG_BFS;
@@ -137,9 +160,9 @@ void _selectAlgorithms(){
 	}/*else if (!strcasecmp(opt_con_alg,"ramal-reps")){
 	 undirectedalg = ConnectivityAlg::ALG_RAMAL_REPS;
 	 } */else {
-		fprintf(stderr, "Error: unknown undirected reachability algorithm %s, aborting\n",
+		 api_errorf(  "Error: unknown undirected reachability algorithm %s, aborting\n",
 				((string) opt_reach_alg).c_str());
-		exit(1);
+
 	}
 
 	allpairsalg = AllPairsAlg::ALG_DIJKSTRA_ALLPAIRS;
@@ -150,9 +173,9 @@ void _selectAlgorithms(){
 		allpairsalg = AllPairsAlg::ALG_DIJKSTRA_ALLPAIRS;
 
 	} else {
-		fprintf(stderr, "Error: unknown allpairs reachability algorithm %s, aborting\n",
+		api_errorf(  "Error: unknown allpairs reachability algorithm %s, aborting\n",
 				((string) opt_allpairs_alg).c_str());
-		exit(1);
+
 	}
 
 	undirected_allpairsalg = AllPairsConnectivityAlg::ALG_DIJKSTRA_ALLPAIRS;
@@ -164,9 +187,9 @@ void _selectAlgorithms(){
 	} else if (!strcasecmp(opt_undir_allpairs_alg, "thorup")) {
 		undirected_allpairsalg = AllPairsConnectivityAlg::ALG_THORUP;
 	} else {
-		fprintf(stderr, "Error: unknown undirected allpairs reachability algorithm %s, aborting\n",
+		api_errorf(  "Error: unknown undirected allpairs reachability algorithm %s, aborting\n",
 				((string) opt_allpairs_alg).c_str());
-		exit(1);
+
 	}
 }
 void printStats(SimpSolver* solver) {
@@ -213,6 +236,53 @@ void deleteSolver (Monosat::SimpSolver * S)
      delete (S);
 }
 
+void readGNF(Monosat::SimpSolver * S, const char  * filename){
+	bool precise = true;
+
+	gzFile in = gzopen(filename, "rb");
+	if (in == nullptr)
+		throw std::runtime_error("ERROR! Could not open file");
+
+
+	Dimacs<StreamBuffer, SimpSolver> parser;
+	BVParser<char *, SimpSolver> bvParser;
+	parser.addParser(&bvParser);
+
+	SymbolParser<char*,SimpSolver> symbolParser;
+	parser.addParser(&symbolParser);
+
+	GraphParser<char *, SimpSolver> graphParser(precise,bvParser.theory);
+	parser.addParser(&graphParser);
+
+	AMOParser<char *, SimpSolver> amo;
+	parser.addParser(&amo);
+
+	StreamBuffer strm(in);
+	vec<int> assumps;
+	bool ran_last_solve=false;
+	while(parser.parse(strm, *S)){
+		assumps.clear();
+		for(Lit l:parser.assumptions){
+			assumps.push(toInt(l));
+		}
+		solveAssumptions_MinBVs(S,&assumps[0],assumps.size(),&parser.bv_minimize[0],parser.bv_minimize.size());
+		if(*strm==EOF){
+			ran_last_solve=true;
+		}
+	}
+	assert(*strm==EOF);
+	if(!ran_last_solve){
+		for(Lit l:parser.assumptions){
+			assumps.push(toInt(l));
+		}
+		solveAssumptions_MinBVs(S,&assumps[0],assumps.size(),&parser.bv_minimize[0],parser.bv_minimize.size());
+	}
+
+
+	gzclose(in);
+
+}
+
 void * newGraph(Monosat::SimpSolver * S){
 	  MonosatData * d = (MonosatData*) S->_external_data;
 	  Monosat::GraphTheorySolver<long> *graph = new Monosat::GraphTheorySolver<long>(S);
@@ -224,11 +294,6 @@ void * newGraph(Monosat::SimpSolver * S){
 
 	  return graph;
 }
-bool solve(Monosat::SimpSolver * S){
-	  static Monosat::vec<int> ignore;
-	  ignore.clear();
-	return solveAssumptions(S,&ignore[0],0);
-  }
 void backtrack(Monosat::SimpSolver * S){
 	S->cancelUntil(0);
 }
@@ -245,27 +310,77 @@ void * initBVTheory(Monosat::SimpSolver * S){
 
 	  return bv;
 }
+bool solve(Monosat::SimpSolver * S){
+	return solveAssumptions(S,nullptr,0);
+  }
+
 bool solveAssumptions(Monosat::SimpSolver * S,int * assumptions, int n_assumptions){
+	return solveAssumptions_MinBVs(S,assumptions,n_assumptions,nullptr,0);
+ }
+
+bool solveAssumptions_MinBVs(Monosat::SimpSolver * S,int * assumptions, int n_assumptions, int * minimize_bvs, int n_minimize_bvs){
+	lbool ret = toLbool(solveAssumptionsLimited_MinBVs(S,-1,assumptions, n_assumptions, minimize_bvs, n_minimize_bvs));
+	if(ret==l_True){
+		return true;
+	}else if (ret==l_False){
+		return false;
+	}else{
+		throw std::runtime_error("Failed to solve!");
+	}
+}
+
+int solveLimited(Monosat::SimpSolver * S,int conflict_limit){
+	return solveAssumptionsLimited(S,conflict_limit,nullptr,0);
+  }
+
+int solveAssumptionsLimited(Monosat::SimpSolver * S,int conflict_limit,int * assumptions, int n_assumptions){
+	return solveAssumptionsLimited_MinBVs(S,conflict_limit,assumptions,n_assumptions,nullptr,0);
+ }
+
+
+int solveAssumptionsLimited_MinBVs(Monosat::SimpSolver * S,int conflict_limit,int * assumptions, int n_assumptions, int * minimize_bvs, int n_minimize_bvs){
+	using namespace Monosat;
+
 	S->cancelUntil(0);
 
-	  static Monosat::vec<Monosat::Lit> assume;
 	  S->preprocess();//do this _even_ if sat based preprocessing is disabled! Some of the theory solvers depend on a preprocessing call being made!
 
-	  if (opt_pre){
-
-		S->eliminate(false);//should this really be set to disable future preprocessing here?
-	 }
-	  assume.clear();
+	  vec<Monosat::Lit> assume;
 	  for (int i = 0;i<n_assumptions;i++){
-		  assume.push(toLit(assumptions[i]));
+		   Lit l =toLit( assumptions[i]);
+		   if (var(l)>=S->nVars()){
+			   api_errorf("Assumption literal %d is not allocated",dimacs(l));
+		   }
+		  assume.push(l);
+		  //S->setFrozen(v,true); //this is done in the solve() call
 	  }
-	  bool r= S->solve(assume);
+
+/*	  if (opt_pre){
+		S->eliminate(false);//should this really be set to disable future preprocessing here?
+	 }*/
+
+	  vec<int> bvs;//bit vectors to minimize
+	  for (int i = 0;i<n_minimize_bvs;i++){
+		  int bvID = minimize_bvs[i];
+		  if(!S->getBVTheory()){
+			  api_errorf("No bitvector theory created (call initBVTheory())!");
+		  }
+		  if(! ((Monosat::BVTheorySolver<long> *) S->getBVTheory())->hasBV(bvID)){
+			  api_errorf("Minimization bitvector %d is not allocated",bvID);
+		  }
+		  bvs.push(bvID);
+	  }
+
+
+	  lbool r = optimize_and_solve(*S, assume,bvs, conflict_limit);
+
 	if (opt_verb >= 1) {
 		printStats(S);
 
 	}
-	return r;
- }
+
+	return toInt(r);
+}
 
  int newVar(Monosat::SimpSolver * S){
 	  return S->newVar();
@@ -279,6 +394,27 @@ bool solveAssumptions(Monosat::SimpSolver * S,int * assumptions, int n_assumptio
 		 S->setFrozen(var(toLit(lit)),true);
 	 return true;
  }
+ void setDecisionVar(Monosat::SimpSolver * S,int var,bool decidable){
+	 S->setDecisionVar(var,decidable);
+ }
+ void setDecisionPriority(Monosat::SimpSolver * S,int var, int priority){
+	 S->setDecisionPriority(var,priority);
+ }
+ bool isDecisionVar(Monosat::SimpSolver * S,int var){
+	 return S->isDecisionVar(var);
+ }
+ int getDecisionPriority(Monosat::SimpSolver * S,int var){
+	 return S->getDecisionPriority(var);
+ }
+
+ void setDecisionPolarity(Monosat::SimpSolver * S,Var v, bool b){
+	  S->setPolarity(v,b);
+ }
+
+ bool getDecisionPolarity(Monosat::SimpSolver * S,Var v){
+	return S->getPolarity(v);
+ }
+
 
  int nVars(Monosat::SimpSolver * S){
 	 return S->nVars();
@@ -287,6 +423,10 @@ bool solveAssumptions(Monosat::SimpSolver * S,int * assumptions, int n_assumptio
  int nClauses(Monosat::SimpSolver * S){
 	 return S->nClauses();
  }
+ int nBitvectors(Monosat::SimpSolver * S,Monosat::BVTheorySolver<long> * bv){
+	 return bv->nBitvectors();
+ }
+
  int true_lit(Monosat::SimpSolver * S){
 	 return toInt(S->True());
  }
@@ -373,6 +513,29 @@ bool solveAssumptions(Monosat::SimpSolver * S,int * assumptions, int n_assumptio
 	  bv->newComparisonBV(Monosat::Comparison::geq,bvID,compareID,v);
 	  return toInt(l);
  }
+ void bv_min(Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv, int n_args, int* args,int resultID){
+	 vec<int> m_args;
+	 for (int i = 0;i<n_args;i++)
+		 m_args.push(args[i]);
+	 bv->newMinBV(resultID, m_args);
+ }
+ void bv_max(Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv, int n_args, int* args, int resultID){
+	 vec<int> m_args;
+	 for (int i = 0;i<n_args;i++)
+		 m_args.push(args[i]);
+	 bv->newMaxBV(resultID, m_args);
+ }
+ void bv_popcount(Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv, int n_args, int* args, int resultID){
+	 vec<int> m_args;
+	 for (int i = 0;i<n_args;i++){
+		 Lit l = toLit(args[i]);
+		 if(sign(l)){
+			 api_errorf("Popcount arguments must all be positive literals");
+		 }
+		 m_args.push(var(l));
+	 }
+	 bv->newPopCountBV(resultID, m_args);
+ }
 
  void bv_addition( Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv, int bvID1, int bvID2, int resultID){
 	  bv->newAdditionBV(resultID,bvID1,bvID2);
@@ -447,6 +610,12 @@ void bv_slice( Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv,int a
 	  G->newEdge( from,  to, v,  weight );
 	  return toInt(l);
  }
+ int newEdge_double(Monosat::SimpSolver * S, Monosat::GraphTheorySolver<double> *G,int from,int  to,  double weight){
+	  Var v = newVar(S);
+	  Lit l =mkLit(v);
+	  G->newEdge( from,  to, v,  weight );
+	  return toInt(l);
+}
  int newEdge_bv(Monosat::SimpSolver * S, Monosat::GraphTheorySolver<long> *G,int from,int  to, int bvID){
 	  Var v = newVar(S);
 	  Lit l =mkLit(v);
@@ -565,6 +734,9 @@ void bv_slice( Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv,int a
  //Returns 0 for true, 1 for false, 2 for unassigned.
  int getModel_Literal(Monosat::SimpSolver * S,int lit){
 	 Lit l = toLit(lit);
+	 if (var(l)>=S->model.size())
+		 api_errorf("Variable %d is undefined",dimacs(l));
+		 //return toInt(l_Undef);
 	 lbool val = S->model[var(l)];
 	 assert(val==l_True || val==l_False || val==l_Undef);
 	 if (sign(l)){
@@ -576,8 +748,13 @@ void bv_slice( Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv,int a
 	 }
 	 return toInt(val);//toInt(S->value(toLit(lit)));
  }
- long getModel_BV(Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv, int bvID){
-	 return bv->getUnderApprox(bvID);
+ long getModel_BV(Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv, int bvID, bool getMaximumValue){
+	 if(getMaximumValue){
+		 return bv->getOverApprox(bvID);
+	 }else{
+		 return bv->getUnderApprox(bvID);
+	 }
+
  }
  //graph queries:
  long getModel_MaxFlow(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<long> *G,int maxflow_literal){
