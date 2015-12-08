@@ -33,10 +33,26 @@ namespace Monosat {
  * Abstract interface to SMT theory solvers, as accessed by the SAT solver
  */
 class Theory {
+	int priority=0;
+	double activity=0;
 public:
 	virtual ~Theory() {
 	}
-	;
+
+    int getPriority()const{
+		return priority;
+	}
+    void setPriority(int p){
+    	priority=p;
+    }
+
+    double & getActivity(){
+		return activity;
+	}
+    void setActivity(double p){
+    	activity=p;
+    }
+
 	virtual int getTheoryIndex()=0;
 	virtual void setTheoryIndex(int id)=0;
 	virtual void backtrackUntil(int untilLevel)=0;
@@ -47,9 +63,13 @@ public:
 	virtual Lit decideTheory() {
 		return lit_Undef;
 	}
+	virtual bool supportsDecisions() {
+		return false;
+	}
 	virtual void undecideTheory(Lit l){
 
 	}
+
 	//Lazily construct the reason clause explaining this propagation
 	virtual void buildReason(Lit p, vec<Lit> & reason, CRef reason_marker){
 		return buildReason(p,reason);
@@ -71,6 +91,9 @@ public:
 	}
 	virtual void printStats(int detailLevel = 0) {
 		
+	}
+	virtual bool check_propagated(){
+		return true;
 	}
 	virtual bool check_solved() {
 		return true;

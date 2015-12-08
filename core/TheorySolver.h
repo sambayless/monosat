@@ -32,6 +32,7 @@ public:
 	virtual ~TheorySolver() {
 		
 	}
+	virtual double & getRandomSeed()=0;
 	virtual void addTheory(Theory * t)=0;
 	virtual lbool value(Lit l)const=0;
 	virtual lbool value(Var v)const=0;
@@ -42,6 +43,12 @@ public:
 	virtual void needsPropagation(int theoryID)=0;
 	virtual void instantiateLazyDecision(Lit l,int atLevel, CRef reason=CRef_Undef){
 
+	}
+	virtual void setBVTheory(Theory * t){
+
+	}
+	virtual Theory * getBVTheory(){
+		return nullptr;
 	}
 	/*virtual void prependToTrail(Lit solverLit, int atLevel){
 
@@ -62,6 +69,11 @@ public:
 	virtual int decisionLevel()const=0;
 	virtual Lit theoryDecisionLit(int theoryID){
 		return mkLit(newVar(true,false));
+	}
+	//If variables have been renumbered from a user's original input, this will return them to their original numbering, for user-facing output
+	//(Otherwise, it should simply return the original lit)
+	virtual Lit unmap(Lit from){
+		return from;
 	}
 };
 }

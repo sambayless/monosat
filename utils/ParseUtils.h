@@ -26,11 +26,28 @@
 
 #include <zlib.h>
 #include "mtl/Vec.h"
+#include <stdexcept>
+#include <cstdarg>
 namespace Monosat {
 
 //-------------------------------------------------------------------------------------------------
 // A simple buffered character stream class:
 
+class parse_error: public std::runtime_error {
+public:
+	 explicit parse_error(const std::string& arg): std::runtime_error(arg ) {}
+};
+
+//Supporting function for throwing parse errors
+inline void parse_errorf(const char *fmt, ...) {
+    va_list args;
+    va_start(args, fmt);
+    char buf[1000];
+    vsnprintf(buf, sizeof buf,fmt, args);
+    va_end(args);
+    throw parse_error(buf);
+
+}
 static const int buffer_size = 1048576;
 
 class StreamBuffer {
@@ -58,6 +75,11 @@ public:
 	void operator ++() {
 		pos++;
 		assureLookahead();
+	}
+	void operator +=(int n) {
+		assert(n>=0);
+		for(int i = 0;i<n;i++)
+			this->operator ++();
 	}
 	int position() const {
 		return pos;
@@ -112,7 +134,7 @@ static int parseInt(B& in) {
 	else if (*in == '+')
 		++in;
 	if (*in < '0' || *in > '9')
-		fprintf(stderr, "PARSE ERROR! Unexpected char: %c\n", *in), exit(3);
+		parse_errorf("PARSE ERROR! Unexpected char while parsing int: %c\n", *in);
 	while (*in >= '0' && *in <= '9')
 		val = val * 10 + (*in - '0'), ++in;
 	return neg ? -val : val;
@@ -127,7 +149,7 @@ static int parseLong(B& in) {
 	else if (*in == '+')
 		++in;
 	if (*in < '0' || *in > '9')
-		fprintf(stderr, "PARSE ERROR! Unexpected char: %c\n", *in), exit(3);
+		parse_errorf("PARSE ERROR! Unexpected char while parsing long: %c\n", *in);
 	while (*in >= '0' && *in <= '9')
 		val = val * 10 + (*in - '0'), ++in;
 	return neg ? -val : val;

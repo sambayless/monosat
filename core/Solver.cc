@@ -28,6 +28,7 @@
 #include "core/Config.h"
 #include "graph/GraphTheory.h"
 #include <unistd.h>
+#include "core/Remap.h"
 using namespace Monosat;
 
 //=================================================================================================
@@ -41,7 +42,7 @@ Solver::Solver() :
 		
 		// Parameters (user settable):
 		//
-		verbosity(opt_verb), var_decay(opt_var_decay), clause_decay(opt_clause_decay), random_var_freq(
+		verbosity(opt_verb), var_decay(opt_var_decay), clause_decay(opt_clause_decay), theory_decay(opt_var_decay), random_var_freq(
 				opt_random_var_freq), random_seed(opt_random_seed), luby_restart(opt_luby_restart), ccmin_mode(
 				opt_ccmin_mode), phase_saving(opt_phase_saving), rnd_pol(false), rnd_init_act(opt_rnd_init_act), garbage_frac(
 				opt_garbage_frac), restart_first(opt_restart_first), restart_inc(opt_restart_inc)
@@ -59,13 +60,16 @@ Solver::Solver() :
 				, solves(0), starts(0), decisions(0), rnd_decisions(0), propagations(0), conflicts(0), stats_pure_lits(
 				0), stats_pure_theory_lits(0), pure_literal_detections(0), stats_removed_clauses(0), dec_vars(0), clauses_literals(
 				0), learnts_literals(0), max_literals(0), tot_literals(0), stats_pure_lit_time(0),  ok(
-				true), cla_inc(1), var_inc(1), watches(WatcherDeleted(ca)), qhead(0), simpDB_assigns(-1), simpDB_props(
-				0), order_heap(VarOrderLt(activity, priority)), progress_estimate(0), remove_satisfied(true) //lazy_heap( LazyLevelLt(this)),
+				true), cla_inc(1), var_inc(1), theory_inc(1), watches(WatcherDeleted(ca)), qhead(0), simpDB_assigns(-1), simpDB_props(
+				0), order_heap(VarOrderLt(activity, priority)),theory_order_heap(TheoryOrderLt(theories)), progress_estimate(0), remove_satisfied(true) //lazy_heap( LazyLevelLt(this)),
 
 		// Resource constraints:
 		//
 				, conflict_budget(-1), propagation_budget(-1) {
-
+			if(opt_vsids_solver_as_theory){
+				decisionTheory = new SolverDecisionTheory(*this);
+				this->addTheory(decisionTheory);
+			}
 }
 
 Solver::~Solver() {
@@ -149,12 +153,13 @@ CRef Solver::attachReasonClause(Lit r,vec<Lit> & ps) {
 	assert(value(r)==l_True);
 
 	if(opt_write_learnt_clauses){
-		if((++opt_n_learnts)==58108|| opt_n_learnts==58109){
+		if((++opt_n_learnts)==47){
 			int a=1;
 		}
+
 		fprintf(opt_write_learnt_clauses,"learnt ");
 		for (Lit l:ps){
-			fprintf(opt_write_learnt_clauses," %d", dimacs(l));
+			fprintf(opt_write_learnt_clauses," %d", dimacs(unmap(l)));
 		}
 		fprintf(opt_write_learnt_clauses," 0\n");
 		fflush(opt_write_learnt_clauses);
@@ -400,7 +405,7 @@ void Solver::cancelUntil(int lev) {
 		trail_lim.shrink(trail_lim.size() - lev);
 
 		//remove any lits from the lazy heap that are now unassigned.
-/*		while(lazy_heap.size() && value(toLit( lazy_heap.peakMin())) == l_Undef ){
+/*		while(lazy_heap.size() && value(toLit( lazy_heap.peekMin())) == l_Undef ){
 			lazy_heap.pop();
 		}*/
 
@@ -429,6 +434,13 @@ void Solver::cancelUntil(int lev) {
 		}
 		//should qhead be adjusted, here? Or do we want to repropagate these literals? (currently, re-propagating these literals).
 
+		//If opt_theory_order_vsids is enabled, need to add back into the theory decision heap theories that may now be able to make decisions again.
+		while(theory_decision_trail.size() && theory_decision_trail.last().second>=decisionLevel()){
+			int theoryID = theory_decision_trail.last().first;
+			assert(!theory_order_heap.inHeap(theoryID));
+			theory_order_heap.insert(theoryID);
+			theory_decision_trail.pop();
+		}
 	}
 }
 
@@ -442,7 +454,7 @@ void Solver::backtrackUntil(int lev) {
 
 Lit Solver::pickBranchLit() {
 	Var next = var_Undef;
-	
+	decisions++;
 	// Random decision:
 	if (drand(random_seed) < random_var_freq && !order_heap.empty()) {
 		next = order_heap[irand(random_seed, order_heap.size())];
@@ -535,7 +547,7 @@ void Solver::analyze(CRef confl, vec<Lit>& out_learnt, int& out_btlevel) {
 #endif
 	bool possibly_missed_1uip=false;
 	to_analyze.clear();
-	out_learnt.push();      // (leave room for the asserting literal)
+	out_learnt.push(lit_Undef);      // (leave room for the asserting literal)
 	int index = trail.size() - 1;
 	int stop = trail_lim.last();
 	do {
@@ -657,7 +669,7 @@ void Solver::analyze(CRef confl, vec<Lit>& out_learnt, int& out_btlevel) {
 	max_literals += out_learnt.size();
 	out_learnt.shrink(i - j);
 	tot_literals += out_learnt.size();
-	
+
 	// Find correct backtrack level:
 	//
 	if (out_learnt.size() == 1)
@@ -984,6 +996,7 @@ CRef Solver::propagate(bool propagate_theories) {
 	if (qhead == trail.size() && (!initialPropagate || decisionLevel() > 0) && (!propagate_theories || !theory_queue.size())) {//it is possible that the theory solvers need propagation, even if the sat solver has an empty queue.
 		return CRef_Undef;
 	}
+	theoryConflict=-1;
 	CRef confl = CRef_Undef;
 	int num_props = 0;
 	watches.cleanAll();
@@ -1082,7 +1095,7 @@ CRef Solver::propagate(bool propagate_theories) {
 			initialPropagate = false;
 		}
 		static int iter = 0;
-		if (++iter == 52) {
+		if (++iter == 36) {
 
 			int a = 1;
 		}
@@ -1098,10 +1111,16 @@ CRef Solver::propagate(bool propagate_theories) {
 			in_theory_queue[theoryID] = false;
 			if (!theories[theoryID]->propagateTheory(theory_conflict)) {
 				bool has_conflict=true;
-
+#ifndef NDEBUG
+				for(Lit l:theory_conflict)
+					assert(value(l)!=l_Undef);
+#endif
 				if (has_conflict && !addConflictClause(theory_conflict, confl)) {
+					theoryConflict=theoryID;
 
 					qhead = trail.size();
+					stats_theory_conflicts++;
+
 					return confl;
 				}
 			}
@@ -1151,7 +1170,6 @@ struct reduceDB_lt {
 		 return false;
 		 return ca[x].activity() < ca[y].activity();*/
 	}
-	
 };
 void Solver::reduceDB() {
 	int i, j;
@@ -1191,7 +1209,15 @@ void Solver::rebuildOrderHeap() {
 			vs.push(v);
 	order_heap.build(vs);
 }
+void Solver::rebuildTheoryOrderHeap() {
 
+	theory_order_heap.clear();
+	for(int i =0;i<theories.size();i++){
+		if(theories[i]->supportsDecisions()){
+			theory_order_heap.insert(i);
+		}
+	}
+}
 /*_________________________________________________________________________________________________
  |
  |  simplify : [void]  ->  [bool]
@@ -1319,12 +1345,15 @@ bool Solver::simplify() {
 }
 void Solver::addClauseSafely(vec<Lit> & ps) {
 	if(opt_write_learnt_clauses){
-		if(++opt_n_learnts==58108){
+		if(opt_n_learnts++==47){
+			int a=1;
+		}
+		if(ps.size()==2 &&  dimacs(unmap(ps[0])) ==-195621 && dimacs(unmap(ps[1]))== 35361){
 			int a=1;
 		}
 		fprintf(opt_write_learnt_clauses,"learnt fact ");
 		for (Lit l:ps){
-			fprintf(opt_write_learnt_clauses," %d", dimacs(l));
+			fprintf(opt_write_learnt_clauses," %d", dimacs(unmap(l)));
 		}
 		fprintf(opt_write_learnt_clauses," 0\n");
 		fflush(opt_write_learnt_clauses);
@@ -1440,12 +1469,13 @@ bool Solver::addConflictClause(vec<Lit> & ps, CRef & confl_out, bool permanent) 
 		int a=1;
 	}
 	if(opt_write_learnt_clauses){
-		if(++opt_n_learnts==58108){
+		if(++opt_n_learnts==47){
 			int a=1;
 		}
+
 		fprintf(opt_write_learnt_clauses,"learnt ");
 		for (Lit l:ps){
-			fprintf(opt_write_learnt_clauses," %d", dimacs(l));
+			fprintf(opt_write_learnt_clauses," %d", dimacs(unmap(l)));
 		}
 		fprintf(opt_write_learnt_clauses," 0\n");
 		fflush(opt_write_learnt_clauses);
@@ -1637,13 +1667,15 @@ lbool Solver::search(int nof_conflicts) {
 	bool last_decision_was_theory=false;
 	starts++;
 	bool using_theory_decisions= opt_decide_theories && drand(random_seed) < opt_random_theory_freq;
+	bool using_theory_vsids= opt_decide_theories && opt_theory_order_vsids && drand(random_seed) < opt_random_theory_vsids_freq;
+
 	n_theory_decision_rounds+=using_theory_decisions;
-	//last_dec = var_Undef;
 	for (;;) {
 		static int iter = 0;
-		if (++iter == 183) {//40097
+		if (++iter ==  268) {
 			int a = 1;
 		}
+
 		propagate: CRef confl = propagate();
 		conflict: if (!okay() || (confl != CRef_Undef)) {
 			// CONFLICT
@@ -1676,28 +1708,45 @@ lbool Solver::search(int nof_conflicts) {
 				learnts.push(cr);
 				attachClause(cr);
 				claBumpActivity(ca[cr]);
-				
+
 				if (value(learnt_clause[0]) == l_Undef) {
 					uncheckedEnqueue(learnt_clause[0], cr);
 				} else {
 
 					assert(S);
 					if(!S){
-						exit(1);
+						fprintf(stderr,"Critical error: bad learnt clause. Aborting\n");
+						fflush(stderr);
+						exit(3);
+						//throw std::runtime_error("Critical error: bad learnt clause. Aborting\n");
 					}
 					//this is _not_ an asserting clause, its a conflict that must be passed up to the super solver.
 					analyzeFinal(cr, lit_Undef, conflict);
-					
+					if(theoryConflict>-1){
+						theoryBumpActivity(theoryConflict);
+						theoryDecayActivity();
+						theoryConflict=-1;
+					}else if(opt_vsids_solver_as_theory){
+						theoryBumpActivity(decisionTheory->getTheoryIndex());
+						theoryDecayActivity();
+					}
+
 					varDecayActivity();
 					claDecayActivity();
 					return l_False;
 				}
-				
 			}
-			
+			if(theoryConflict>-1){
+				theoryBumpActivity(theoryConflict);
+				theoryDecayActivity();
+				theoryConflict=-1;
+			}else if(opt_vsids_solver_as_theory){
+				theoryBumpActivity(decisionTheory->getTheoryIndex());
+				theoryDecayActivity();
+			}
 			varDecayActivity();
 			claDecayActivity();
-			
+
 			if (--learntsize_adjust_cnt <= 0) {
 				learntsize_adjust_confl *= learntsize_adjust_inc;
 				learntsize_adjust_cnt = (int) learntsize_adjust_confl;
@@ -1726,6 +1775,7 @@ lbool Solver::search(int nof_conflicts) {
 					goto conflict;
 				}
 			}
+
 			
 			// NO CONFLICT
 			if ((nof_conflicts >= 0 && conflictC >= nof_conflicts) || !withinBudget()) {
@@ -1763,24 +1813,63 @@ lbool Solver::search(int nof_conflicts) {
 			newDecisionLevel();
 
 			if (opt_decide_theories && using_theory_decisions && next == lit_Undef && (opt_theory_conflict_max==0 || conflicts>=next_theory_decision) ) {
+
+				int next_var_priority=INT_MIN;
+
+				//remove decided vars from order heap
+				while(!order_heap.empty() && value(order_heap.peekMin())!=l_Undef){
+					order_heap.removeMin();
+				}
+				if(!order_heap.empty()){
+					next_var_priority=priority[ order_heap.peekMin()];
+				}
 				/**
 				 * Give the theory solvers a chance to make decisions
 				 */
-				for (int i = 0; i < decidable_theories.size() && next == lit_Undef; i++) {
-					
-					next = decidable_theories[i]->decideTheory();
+				if(opt_theory_order_vsids && using_theory_vsids){
+					while (next==lit_Undef && !theory_order_heap.empty() && theories[theory_order_heap.peekMin()]->getPriority()>=next_var_priority) {
+						int theoryID = theory_order_heap.peekMin();
+						if(opt_vsids_both && next_var_priority==theories[theory_order_heap.peekMin()]->getPriority()){
+							//give the main solver a chance to make a decision, if it has a variable with higher activity
+							if (!order_heap.empty()) {
+								Var v = order_heap.peekMin();
+								assert(value(v)==l_Undef);//because assigned lits should have been removed from queue above.
+								if(value(v)==l_Undef && activity[v]>theories[theoryID]->getActivity()){
+									stats_solver_preempted_decisions++;
+									break;
+								}
+							}
+
+						}
+
+						assert(theories[theoryID]->supportsDecisions());
+						next = theories[theoryID]->decideTheory();
+						if(next==lit_Undef){
+							theory_order_heap.removeMin();
+							if(decisionLevel()>0)
+								theory_decision_trail.push({theoryID,decisionLevel()});
+						}
+					}
+				}else{
+					for (int i = 0; i < decidable_theories.size() && next == lit_Undef; i++) {
+						if (decidable_theories[i]->getPriority()>=next_var_priority) {
+							next = decidable_theories[i]->decideTheory();
+						}
+					}
+				}
+
+				if (next!=lit_Undef){
+					stats_theory_decisions++;
 					if(theoryDecision !=lit_Undef && var(next)==var(theoryDecision)){
 						assigns[var(theoryDecision)]=l_Undef;
 					}
-				}
-				if (next!=lit_Undef){
 					last_decision_was_theory=true;
 				}
 			}
 			
 			if (next == lit_Undef) {
 				// New variable decision:
-				decisions++;
+
 				next = pickBranchLit();
 				// int p = priority[var(next)];
 				if(opt_verb>2){
@@ -1899,7 +1988,10 @@ lbool Solver::solve_() {
 			for (int i = 0; i < nVars(); i++)
 				polarity[i] = irand(random_seed, 1);
 		}
-		
+		if(opt_decide_theories && !opt_theory_order_vsids && opt_randomomize_theory_order){
+			randomShuffle(random_seed, decidable_theories);
+		}
+
 		status = search(rest_base * restart_first);
 		if (!withinBudget())
 			break;
@@ -1910,7 +2002,14 @@ lbool Solver::solve_() {
 				activity[i] = drand(random_seed) * 0.00001;
 			}
 			rebuildOrderHeap();
-			
+		}
+
+
+		if(opt_theory_order_vsids && opt_rnd_theory_restart  && status == l_Undef){
+			for(int i = 0;i<theories.size();i++){
+				theories[i]->setActivity(  drand(random_seed) * 0.00001);
+			}
+			rebuildTheoryOrderHeap();
 		}
 	}
 	
@@ -1920,6 +2019,11 @@ lbool Solver::solve_() {
 		for (int i = 0; i < nVars(); i++)
 			model[i] = value(i);
 		
+		for(Lit l:assumptions){
+			if(value(l)!=l_True){
+				throw std::runtime_error("Model is inconsistent with assumptions!");
+			}
+		}
 		if (opt_check_solution && theories.size()) {
 			if(opt_verb>0){
 				printf("Checking witnesses...\n");
@@ -1942,11 +2046,11 @@ lbool Solver::solve_() {
 			for (int i = 0;i<nVars();i++){
 				Lit l = mkLit(i,false);
 				if(value(i)==l_True){
-					fprintf(opt_write_learnt_clauses," %d",dimacs(l));
+					fprintf(opt_write_learnt_clauses," %d",dimacs(unmap(l)));
 				}else if(value(i)==l_False){
-					fprintf(opt_write_learnt_clauses," %d",dimacs(~l));
+					fprintf(opt_write_learnt_clauses," %d",dimacs(~unmap(l)));
 				}else{
-					fprintf(opt_write_learnt_clauses," %d",dimacs(l));//optional
+					fprintf(opt_write_learnt_clauses," %d",dimacs(unmap(l)));//optional
 				}
 			}
 			fprintf(opt_write_learnt_clauses,"\n");
@@ -2006,6 +2110,14 @@ bool Solver::solveTheory(vec<Lit> & conflict_out) {
 // Writing CNF to DIMACS:
 // 
 // FIXME: this needs to be rewritten completely.
+
+Lit Solver::unmap(Lit l)  {
+	if(varRemap){
+		return varRemap->unmap(l);
+	}else{
+		return l;
+	}
+}
 
 static Var mapVar(Var x, vec<Var>& map, Var& max) {
 	if (map.size() <= x || map[x] == -1) {
@@ -2142,7 +2254,6 @@ void Solver::garbageCollect() {
 	// Initialize the next region to a size corresponding to the estimated utilization degree. This
 	// is not precise but should avoid some unnecessary reallocations for the new region:
 	ClauseAllocator to(ca.size() - ca.wasted());
-	
 	relocAll(to);
 	if (verbosity >= 2)
 		printf("|  Garbage collection:   %12d bytes => %12d bytes             |\n",

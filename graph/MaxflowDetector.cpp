@@ -1228,7 +1228,7 @@ void MaxflowDetector<Weight>::collectChangedEdges() {
 		static int iter = 0;
 		++iter;
 		int edgeid = changed_edges[j];
-		if(opt_theory_vsids){
+		if(opt_theory_internal_vsids){
 			insertEdgeOrder(edgeid);
 		}
 		if(opt_decide_theories){
@@ -1406,7 +1406,7 @@ bool MaxflowDetector<Weight>::decideEdgeWeight(int edgeID, Weight & store, Detec
 
 template<typename Weight>
 void MaxflowDetector<Weight>::undecideEdgeWeight(int edgeid){
-	if(opt_theory_vsids){
+	if(opt_theory_internal_vsids){
 		insertEdgeOrder(edgeid);
 	}
 	if(!opt_decide_theories)

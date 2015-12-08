@@ -40,7 +40,7 @@ template<unsigned int D, class T> class GeometryTheorySolver;
 template<typename Weight> class GraphTheorySolver;
 class FSMTheorySolver;
 namespace Monosat {
-
+class DimacsMap;
 //=================================================================================================
 // Solver -- the main class:
 // The MiniSAT Boolean SAT solver, extended to provided basic SMT support.
@@ -54,6 +54,9 @@ public:
 	//template<unsigned int D, class T> friend class GeometryTheorySolver;
 	friend class FSMTheorySolver;
 	friend class LSystemSolver;
+
+
+
 
 	// Constructor/Destructor:
 	//
@@ -70,7 +73,8 @@ public:
 	virtual bool addClause(Lit p, Lit q);                           // Add a binary clause to the solver.
 	virtual bool addClause(Lit p, Lit q, Lit r);                    // Add a ternary clause to the solver.
 	bool addClause_(vec<Lit>& ps);           // Add a clause to the solver without making superflous internal copy. Will
-			
+
+
 	void setDecisionPriority(Var v, unsigned int p) {
 		priority[v] = p;
 		if(decision[v]){
@@ -80,14 +84,24 @@ public:
 				order_heap.insert(v);
 		}
 	}
+	int getDecisionPriority(Var v) const{
+		return priority[v];
+	}
 	
 	//Theory interface
 	void addTheory(Theory*t) {
 		theories.push(t);
-		decidable_theories.push(t);
+		t->setActivity(opt_randomomize_theory_order ? drand(random_seed) * 0.00001 : 0);
+		t->setPriority(0);
+		t->setTheoryIndex(theories.size() - 1);
+
+		if(t->supportsDecisions()){
+			decidable_theories.push(t);
+			theory_order_heap.insert(t->getTheoryIndex());
+		}
 		theory_queue.capacity(theories.size());
 		in_theory_queue.push(false);
-		t->setTheoryIndex(theories.size() - 1);
+
 		cancelUntil(0);
 		resetInitialPropagation();
 	}
@@ -167,12 +181,16 @@ public:
 
         
 		printf("restarts              : %" PRIu64 "\n", starts);
-		printf("conflicts             : %-12" PRIu64 "   (%.0f /sec, %d learnts, %" PRId64 " removed)\n", conflicts,
-				conflicts / cpu_time, learnts.size(), stats_removed_clauses);
+		printf("conflicts             : %-12" PRIu64 "   (%.0f /sec, %d learnts (%ld theory learnts), %" PRId64 " removed)\n", conflicts,
+				conflicts / cpu_time, learnts.size(),stats_theory_conflicts, stats_removed_clauses);
 		printf("decisions             : %-12" PRIu64 "   (%4.2f %% random) (%.0f /sec)\n", decisions,
 				(float) rnd_decisions * 100 / (float) decisions, decisions / cpu_time);
 		if(opt_decide_theories){
-		printf("Theory decision rounds: %" PRId64 "/%" PRId64 "\n",n_theory_decision_rounds,starts);
+			printf("Theory decisions: %ld\n",stats_theory_decisions);
+			printf("Theory decision rounds: %" PRId64 "/%" PRId64 "\n",n_theory_decision_rounds,starts);
+		}
+		if(opt_vsids_both){
+			printf("Sovler pre-empted decisions: %ld\n",stats_solver_preempted_decisions);
 		}
 		printf("propagations          : %-12" PRIu64 "   (%.0f /sec)\n", propagations, propagations / cpu_time);
 		printf("conflict literals     : %-12" PRIu64 "   (%4.2f %% deleted)\n", tot_literals,
@@ -291,7 +309,7 @@ public:
 	//Lazily construct a reason for a literal propagated from a theory
 	CRef constructReason(Lit p) {
 		static int iterp =0;
-		if(++iterp==164){
+		if(++iterp==45){
 			int a=1;
 		}
 		assert(value(p)==l_True);
@@ -309,6 +327,11 @@ public:
 		theories[t]->buildReason(getTheoryLit(p), theory_reason, cr);
 		assert(theory_reason[0] == p);
 		assert(value(p)==l_True);
+
+#ifndef NDEBUG
+		for(Lit l:theory_reason)
+			assert(value(l)!=l_Undef);
+#endif
 #ifdef DEBUG_SOLVER
 		//assert all the other reasons in this cause are earlier on the trail than p...
 		static vec<bool> marks;
@@ -368,20 +391,26 @@ public:
 	bool okay() const;                  // FALSE means solver is in a conflicting state
 	
 	Lit True(){
+
 		if(const_true==lit_Undef){
 			//try using the first assigned const literal
-			if (trail.size()>0){
+			/*if (trail.size()>0){
 				Lit l = trail[0];
 				if(level(var(l))==0){
 					const_true=l;
 				}
-			}else{
+			}else{*/
 				const_true=mkLit(newVar(false,false));
 				addClause(const_true);
-			}
+			//}
 		}
 
 		return const_true;
+	}
+
+	Lit unmap(Lit l) override;
+	void setVarMap(DimacsMap * map){
+		varRemap=map;
 	}
 
 	void toDimacs(FILE* f, const vec<Lit>& assumps);            // Write CNF to file in DIMACS-format.
@@ -397,8 +426,13 @@ public:
 	// Variable mode:
 	// 
 	void setPolarity(Var v, bool b); // Declare which polarity the decision heuristic should use for a variable. Requires mode 'polarity_user'.
+	bool getPolarity(Var v){
+		return polarity[v];
+	}
 	void setDecisionVar(Var v, bool b); // Declare if a variable should be eligible for selection in the decision heuristic.
-
+	bool isDecisionVar(Var v){
+		return decision[v];
+	}
 	// Read state:
 	//
 	lbool value(Var x) const;       // The current value of a variable.
@@ -441,6 +475,7 @@ public:
 	vec<Lit> theory_conflict;
 	vec<Theory*> theories;
 	vec<Theory*> decidable_theories;
+	Theory * decisionTheory=nullptr;//for opt_vsids_solver_as_theory
 	vec<Var> all_theory_vars;
 	struct LitCount {
 		char occurs :1;
@@ -454,6 +489,7 @@ public:
 	vec<int> marker_theory;
 	int theory_index = 0;
 	Solver * S = nullptr;    							//super solver
+	Theory * bvtheory=nullptr;
 	bool initialPropagate = true;    				//to force propagation to occur at least once to the theory solvers
 	int super_qhead = 0;
 	int local_qhead = 0;
@@ -473,7 +509,7 @@ public:
 	Var min_local = var_Undef;
 	Var max_local = var_Undef;
 	int super_offset = -1;
-
+	DimacsMap * varRemap=nullptr;
 	// Mode of operation:
 	//
 	bool printed_header = false;
@@ -503,6 +539,9 @@ public:
 	uint64_t solves, starts, decisions, rnd_decisions, propagations, conflicts, stats_pure_lits, stats_pure_theory_lits,
 			pure_literal_detections, stats_removed_clauses;
 	uint64_t dec_vars, clauses_literals, learnts_literals, max_literals, tot_literals;
+	long stats_theory_conflicts =0;
+	long stats_solver_preempted_decisions=0;
+	long stats_theory_decisions=0;
 	double stats_pure_lit_time=0;
 	uint64_t n_theory_conflicts=0;
 	int consecutive_theory_conflicts=0;
@@ -574,6 +613,19 @@ protected:
 				activity(act), priority(pri) {
 		}
 	};
+	struct TheoryOrderLt {
+			const vec<Theory*> & theories;
+			bool operator ()(int x, int y) const {
+				if (theories[x]->getPriority()  == theories[y]->getPriority() )
+					return theories[x]->getActivity() > theories[y]->getActivity();
+				else {
+					return theories[x]->getPriority() >theories[y]->getPriority();
+				}
+			}
+			TheoryOrderLt(const vec<Theory*> & theories) :
+				theories(theories){
+			}
+		};
 
 	struct TheoryData {
 		union {
@@ -601,10 +653,11 @@ protected:
 	vec<double> activity;         // A heuristic measurement of the activity of a variable.
 	double var_inc;          // Amount to bump next variable with.
 	OccLists<Lit, vec<Watcher>, WatcherDeleted> watches; // 'watches[lit]' is a list of constraints watching 'lit' (will go there if literal becomes true).
+	int theoryConflict=-1;
 	vec<lbool> assigns;          // The current assignments.
 	vec<char> polarity;         // The preferred polarity of each variable.
 	vec<char> decision;         // Declares if a variable is eligible for selection in the decision heuristic.
-	vec<int> priority;		  // Static, lexicographic heuristic
+	vec<int> priority;		  // Static, lexicographic heuristic. Larger values are higher priority (decided first)
 	vec<TheoryData> theory_vars;
 	vec<Lit> to_analyze;
 	vec<Lit> to_reenqueue;
@@ -616,6 +669,10 @@ protected:
 	int64_t simpDB_props;   // Remaining number of propagations that must be made before next execution of 'simplify()'.
 	vec<Lit> assumptions;      // Current set of assumptions provided to solve by the user.
 	Heap<VarOrderLt> order_heap;       // A priority queue of variables ordered with respect to the variable activity.
+	double theory_inc;
+	double theory_decay;
+	Heap<TheoryOrderLt> theory_order_heap;
+	vec<std::pair<int,int>> theory_decision_trail;
 	//Heap<LazyLevelLt> lazy_heap;       // A priority queue of variables to be propagated at earlier levels, lazily.
 	double progress_estimate;       // Set by 'search()'.
 	bool remove_satisfied; // Indicates whether possibly inefficient linear scan for satisfied clauses should be performed in 'simplify'.
@@ -658,7 +715,21 @@ public:
 	void uncheckedEnqueue(Lit p, CRef from = CRef_Undef);   // Enqueue a literal. Assumes value of literal is undefined.
 	bool enqueue(Lit p, CRef from = CRef_Undef);       // Test if fact 'p' contradicts current state, enqueue otherwise.
 	void enqueueLazy(Lit p,int level, CRef from = CRef_Undef);
+	void setBVTheory(Theory * t){
+		bvtheory=t;
+	}
+	Theory * getBVTheory(){
+		return bvtheory;
+	}
+	double & getRandomSeed()override{
+		return random_seed;
+	}
+
+
+
 protected:
+
+
 	CRef propagate(bool propagate_theories = true);    // Perform unit propagation. Returns possibly conflicting clause.
 	void enqueueTheory(Lit l);
 	bool propagateTheory(vec<Lit> & conflict);
@@ -688,7 +759,7 @@ protected:
 	void reduceDB();                                                      // Reduce the set of learnt clauses.
 	void removeSatisfied(vec<CRef>& cs);                           // Shrink 'cs' to contain only non-satisfied clauses.
 	void rebuildOrderHeap();
-
+	void rebuildTheoryOrderHeap();
 	// Maintaining Variable/Clause activity:
 	//
 	void varDecayActivity(); // Decay all variables with the specified factor. Implemented by increasing the 'bump' value instead.
@@ -696,7 +767,42 @@ protected:
 	void varBumpActivity(Var v);                 // Increase a variable with the current 'bump' value.
 	void claDecayActivity(); // Decay all clauses with the specified factor. Implemented by increasing the 'bump' value instead.
 	void claBumpActivity(Clause& c);             // Increase a clause with the current 'bump' value.
-			
+
+	void theoryBumpActivity(int theoryID){
+		if(opt_vsids_both){
+			theoryBumpActivity(theoryID,var_inc*opt_theory_vsids_balance);
+		}else{
+			theoryBumpActivity(theoryID,theory_inc);
+		}
+
+	}
+	void theoryBumpActivity(int theoryID, double increase) {
+
+		if ((theories[theoryID]->getActivity() += increase) > 1e100) {
+			// Rescale:
+			for (Theory * t:decidable_theories)
+				t->getActivity() *= 1e-100;
+			theory_inc *= 1e-100;
+
+			if(opt_vsids_both){
+				for (int i = 0; i < nVars(); i++)
+						activity[i] *= 1e-100;
+				var_inc *= 1e-100;
+			}
+		}
+
+		// Update order_heap with respect to new activity:
+		if (theory_order_heap.inHeap(theoryID))
+			theory_order_heap.decrease(theoryID);
+	}
+	inline void theoryDecayActivity() {
+		if(opt_vsids_both && opt_use_var_decay_for_theory_vsids){
+			varDecayActivity();
+		}else{
+			theory_inc *= (1 / theory_decay);
+		}
+
+	}
 	// Operations on clauses:
 	//
 	CRef attachReasonClause(Lit r,vec<Lit> & ps);
@@ -778,7 +884,43 @@ private:
 		return v >= min_super && v <= max_super;
 	}
 	
+	class SolverDecisionTheory:public Theory{
+		//This is a stub theory solver, that is only used to conveniently allow the main solver to make Boolean-decisions
+		//as part of the theory decision process, if opt_vsids_solver_as_theory is used
+		Solver & S;
+		int theoryID=0;
+	public:
+		SolverDecisionTheory(Solver & S):S(S){
 
+		}
+		Lit decideTheory() {
+			return S.pickBranchLit();
+		}
+		bool supportsDecisions() {
+			return true;
+		}
+		int getTheoryIndex(){
+			return theoryID;
+		}
+		void setTheoryIndex(int id){
+			theoryID=id;
+		}
+		void backtrackUntil(int untilLevel){
+
+		}
+		void newDecisionLevel(){
+
+		}
+		void enqueueTheory(Lit p){
+
+		}
+		bool propagateTheory(vec<Lit> & conflict){
+			return true;
+		}
+		bool solveTheory(vec<Lit> & conflict){
+			return true;
+		}
+	};
 	
 };
 
@@ -809,12 +951,21 @@ inline void Solver::varBumpActivity(Var v, double inc) {
 		for (int i = 0; i < nVars(); i++)
 			activity[i] *= 1e-100;
 		var_inc *= 1e-100;
+
+		if(opt_vsids_both){
+			for (Theory * t:decidable_theories)
+				t->getActivity() *= 1e-100;
+			theory_inc *= 1e-100;
+		}
 	}
 	
 	// Update order_heap with respect to new activity:
 	if (order_heap.inHeap(v))
 		order_heap.decrease(v);
+
+
 }
+
 
 inline void Solver::claDecayActivity() {
 	cla_inc *= (1 / clause_decay);
