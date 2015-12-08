@@ -173,6 +173,8 @@ public:
 
 	bool checkSymmetryConstraints(vec<Lit> & conflict);
 	bool checkSymmetryConstraintsPopCount(vec<Lit> & conflict);
+	Bitset _bitvec1;
+	Bitset _bitvec2;
 	bool checkSymmetryConstraintsBitVec(vec<Lit> & conflict);
 	void learnClauseSymmetryConflict(vec<Lit> & conflict, int a, int b) ;
 

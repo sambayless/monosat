@@ -34,8 +34,8 @@ FSMAcceptDetector::FSMAcceptDetector(int detectorID, FSMTheorySolver * outer, Dy
 	underReachStatus = new FSMAcceptDetector::AcceptStatus(*this, true);
 	overReachStatus = new FSMAcceptDetector::AcceptStatus(*this, false);
 
-	underapprox_detector = new NFAAccept<FSMAcceptDetector::AcceptStatus>(g_under,source,str,*underReachStatus);
-	overapprox_detector = new NFAAccept<FSMAcceptDetector::AcceptStatus>(g_over,source,str,*overReachStatus);
+	underapprox_detector = new NFAAccept<FSMAcceptDetector::AcceptStatus>(g_under,source,str,*underReachStatus, opt_fsm_track_used_transitions);
+	overapprox_detector = new NFAAccept<FSMAcceptDetector::AcceptStatus>(g_over,source,str,*overReachStatus, opt_fsm_track_used_transitions);
 
 	underprop_marker = outer->newReasonMarker(getID());
 	overprop_marker = outer->newReasonMarker(getID());
@@ -82,6 +82,9 @@ void FSMAcceptDetector::addAcceptLit(int state, int strID, Var outer_reach_var){
 	accept_lit_map[accept_var - first_var] = {strID,state};
 	accepting_state.growTo(g_over.states());
 	accepting_state[state]=true;
+
+	underapprox_detector->setTrackStringAcceptance(strID,state,true,true);
+	overapprox_detector->setTrackStringAcceptance(strID,state,true,true);
 }
 
 void FSMAcceptDetector::AcceptStatus::accepts(int string,int state,int edgeID,int label, bool accepts){
@@ -103,13 +106,34 @@ void FSMAcceptDetector::AcceptStatus::accepts(int string,int state,int edgeID,in
 
 bool FSMAcceptDetector::propagate(vec<Lit> & conflict) {
 	static int iter = 0;
-	if (++iter == 87) {
+	if (++iter == 17) {
 		int a = 1;
 	}
 
 	if(opt_fsm_symmetry_breaking){
 		if(!checkSymmetryConstraints(conflict))
 			return false;
+	}
+
+	if(outer->decisionLevel()==0){
+		//update which accepting states need to have positive/negative properties checked
+
+		for(Lit l:all_lits){
+			if(l!=lit_Undef){
+				int state =accept_lit_map[var(l) - first_var].to;
+				int str = accept_lit_map[var(l) - first_var].str;
+				if(outer->value(l)==l_False){
+					underapprox_detector->setTrackStringAcceptance(str,state,true,false);
+					overapprox_detector->setTrackStringAcceptance(str,state,true,false);
+				}else if (outer->value(l)==l_True){
+					underapprox_detector->setTrackStringAcceptance(str,state,false,true);
+					overapprox_detector->setTrackStringAcceptance(str,state,false,true);
+				}else{
+					underapprox_detector->setTrackStringAcceptance(str,state,true,true);
+					overapprox_detector->setTrackStringAcceptance(str,state,true,true);
+				}
+			}
+		}
 	}
 
 	changed.clear();
@@ -196,6 +220,26 @@ bool FSMAcceptDetector::propagate(vec<Lit> & conflict) {
 			//is_changed[indexOf(var(l))] = false;
 			changed.pop();
 		}
+	{
+#ifndef NDEBUG
+		NFAAccept<> check(g_over,source,strings);
+
+		for(int str = 0;str<accept_lits.size();str++){
+			vec<int> & string = strings[str];
+			check.run(str);
+			for(int to = 0;to<accept_lits[str].size();to++){
+				if(accept_lits[str][to]!=lit_Undef){
+					Lit l = accept_lits[str][to];
+					 if (outer->value(l)==l_True && !check.accepting(to)){
+						assert( false);
+					}
+
+				}
+			}
+
+		}
+#endif
+	}
 	assert(changed.size()==0);
 	return true;
 }
@@ -219,9 +263,114 @@ void FSMAcceptDetector::buildReason(Lit p, vec<Lit> & reason, CRef marker) {
 	}
 }
 
-
-
 	bool FSMAcceptDetector::checkSymmetryConstraints(vec<Lit> & conflict) {
+		if(opt_fsm_symmetry_breaking==1){
+			return checkSymmetryConstraintsPopCount(conflict);
+		}else if (opt_fsm_symmetry_breaking==2){
+			return checkSymmetryConstraintsBitVec(conflict);
+		}else{
+			return true;
+		}
+	}
+
+	bool FSMAcceptDetector::checkSymmetryConstraintsBitVec(vec<Lit> & conflict) {
+		for (int i = 0; i < g_over.states(); i++) {
+			if (i == source || accepting_state[i])
+				continue;
+
+			Bitset & prevOver = _bitvec1;
+			prevOver.zero();
+
+			int pos = 0;
+			for(int k = 0;k<g_over.nIncident(i);k++){
+				int edgeID = g_over.incident(i,k).id;
+				for(int l = 0;l< g_over.inAlphabet();l++ ){
+					prevOver.growTo(pos+1);
+					if( g_over.transitionEnabled(edgeID,l,0)){
+
+						prevOver.set(pos);
+					}
+					pos++;
+				}
+			}
+
+			for (int j = i+1; j < g_over.states(); j++) {
+				if (j == source || accepting_state[j] )
+					continue;
+					Bitset & curUnder = _bitvec2;
+					curUnder.zero();
+					//if i is < j, then the number of enabled transitions in i must be <= the number in j
+					int pos = 0;
+					for(int k = 0;k<g_under.nIncident(j);k++){
+						int edgeID = g_under.incident(j,k).id;
+						for(int l = 0;l< g_under.inAlphabet();l++ ){
+							curUnder.growTo(pos+1);
+							if(g_under.transitionEnabled(edgeID,l,0)){
+
+								curUnder.set(pos);
+							}
+							pos++;
+						}
+					}
+					if (curUnder.GreaterThan(prevOver)){
+						//this is a symmetry conflict
+						//either node i must enable a disabled transition, or node j must disable an enabled transition
+
+						vec<Var> overVars;
+						vec<Var> underVars;
+						for(int k = 0;k<g_over.nIncident(i);k++){
+							int edgeID = g_over.incident(i,k).id;
+							for(int l = 0;l< g_over.inAlphabet();l++ ){
+								overVars.push(outer->getTransitionVar(g_over.getID(),edgeID,l,0));
+							}
+						}
+
+						for(int k = 0;k<g_under.nIncident(j);k++){
+							int edgeID = g_under.incident(j,k).id;
+							for(int l = 0;l< g_under.inAlphabet();l++ ){
+								Var v = outer->getTransitionVar(g_over.getID(), edgeID,l,0);
+								underVars.push(v);
+							}
+						}
+						assert(underVars.size()==overVars.size());
+						assert(pos==underVars.size());
+						pos--;
+							for(;pos>=0;pos--) {
+
+								if (curUnder[pos]) {
+
+									if(underVars[pos]!=var_Undef){
+										Lit l = ~mkLit(underVars[pos]);
+										conflict.push(l);
+										assert(outer->value(l)==l_False);
+									}
+								}
+								if (!prevOver[pos]) {
+
+									if(overVars[pos]!=var_Undef){
+										Lit l = mkLit(overVars[pos]);
+										conflict.push(l);
+										assert(outer->value(l)==l_False);
+									}
+								}
+								if(prevOver[pos] && !curUnder[pos]){
+									break;
+								}
+							} ;
+						   if(opt_verb>1){
+								printf("FSM Symmetry breaking clause, with %d lits\n", conflict.size());
+							}
+							return false;
+					}
+
+
+					}
+
+			}
+		return true;
+	}
+
+	bool FSMAcceptDetector::checkSymmetryConstraintsPopCount(vec<Lit> & conflict) {
 		for (int i = 0; i < g_over.states(); i++) {
 			if (i == source || accepting_state[i])
 				continue;

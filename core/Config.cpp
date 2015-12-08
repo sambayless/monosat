@@ -323,8 +323,12 @@ IntOption  Monosat::opt_graph_prop_skip(_cat_graph, "graph-theory-skip",
 IntOption  Monosat::opt_bv_prop_skip(_cat_bv, "bv-theory-skip",
 		"Only process every nth bv theory propagation ('1' skips no propagations)",1, IntRange(1,INT32_MAX));
 
+IntOption  Monosat::opt_fsm_prop_skip(_cat_fsm, "fsm-theory-skip",
+		"Only process every nth fsm theory propagation ('1' skips no propagations)",1, IntRange(1,INT32_MAX));
+
 BoolOption  Monosat::opt_graph_bv_prop(_cat_graph, "graph-bv-prop","",false);
 
+BoolOption Monosat::opt_fsm_track_used_transitions(_cat_fsm,"fsm-track-used","",true);
 IntOption Monosat::opt_fsm_symmetry_breaking(_cat_fsm, "fsm-symmetry-breaking",
 			"", 0,IntRange(0,2));
 BoolOption Monosat::opt_fsm_negate_underapprox(_cat_fsm, "fsm-negate-under",

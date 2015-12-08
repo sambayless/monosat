@@ -181,12 +181,14 @@ extern BoolOption opt_graph_bv_prop;
 
 extern IntOption opt_graph_prop_skip;
 extern IntOption opt_bv_prop_skip;
+extern IntOption opt_fsm_prop_skip;
 
 extern BoolOption opt_fsm_negate_underapprox;
 extern BoolOption opt_fsm_edge_prop;
 
 extern BoolOption opt_fsm_as_graph;
 extern IntOption opt_fsm_symmetry_breaking;
+extern BoolOption opt_fsm_track_used_transitions;
 
 extern BoolOption opt_learn_acyclic_flows;
 
