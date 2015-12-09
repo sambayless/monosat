@@ -395,6 +395,11 @@ class GraphParser: public Parser<B, Solver> {
 		if (reachVar < 0) {
 			parse_errorf("PARSE ERROR! Edge variables must be >=0, was %d\n", reachVar);
 		}
+		if(!leq)
+			steps--;
+		if(steps<0){
+			parse_errorf("PARSE ERROR! Graph distances must be non-negative (and, if lt comparisons are used, must be >0)\n");
+		}
 		reachVar = mapVar(S,reachVar);
 		if (graphs[graphID]) {
 			graphs[graphID]->reaches(from, to, reachVar, steps);

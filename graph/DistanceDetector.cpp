@@ -1432,23 +1432,46 @@ bool DistanceDetector<Weight>::checkSatisfied() {
 			Weight & min_dist = dist_lit.min_distance;
 			Weight & over_dist = under.distance(to);
 			Weight & under_dist = over.distance(to);
-			if (under.connected(to) &&  under.distance(to) <= min_dist) {
-				if (outer->value(l) == l_True) {
-					//do nothing
-				} else if (outer->value(l) == l_Undef) {
-					outer->enqueue(l, weighted_underprop_marker);
-				} else if (outer->value(l) == l_False) {
-					return false;
+			bool strictComparison = dist_lit.strictComparison;
+			if(!strictComparison){
+				if (under.connected(to) &&  under.distance(to) <= min_dist) {
+					if (outer->value(l) == l_True) {
+						//do nothing
+					} else if (outer->value(l) == l_Undef) {
+						outer->enqueue(l, weighted_underprop_marker);
+					} else if (outer->value(l) == l_False) {
+						return false;
+					}
 				}
-			}
-			if (!over.connected(to) || over.distance(to) > min_dist) {
-				if (outer->value(~l) == l_True) {
-					//do nothing
-				} else if (outer->value(~l) == l_Undef) {
-					outer->enqueue(~l, weighted_overprop_marker);
-				} else if (outer->value(~l) == l_False) {
-					
-					return false;
+				if (!over.connected(to) || over.distance(to) > min_dist) {
+					if (outer->value(~l) == l_True) {
+						//do nothing
+					} else if (outer->value(~l) == l_Undef) {
+						outer->enqueue(~l, weighted_overprop_marker);
+					} else if (outer->value(~l) == l_False) {
+
+						return false;
+					}
+				}
+			}else{
+				if (under.connected(to) &&  under.distance(to) < min_dist) {
+					if (outer->value(l) == l_True) {
+						//do nothing
+					} else if (outer->value(l) == l_Undef) {
+						outer->enqueue(l, weighted_underprop_marker);
+					} else if (outer->value(l) == l_False) {
+						return false;
+					}
+				}
+				if (!over.connected(to) || over.distance(to) >= min_dist) {
+					if (outer->value(~l) == l_True) {
+						//do nothing
+					} else if (outer->value(~l) == l_Undef) {
+						outer->enqueue(~l, weighted_overprop_marker);
+					} else if (outer->value(~l) == l_False) {
+
+						return false;
+					}
 				}
 			}
 		}
