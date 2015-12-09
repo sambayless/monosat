@@ -515,12 +515,12 @@ void MaxflowDetector<Weight>::buildMaxFlowTooHighReason(Weight flow, vec<Lit> & 
  }
  */
 void bassert(bool condition) {
-//#ifndef NDEBUG
+#ifndef NDEBUG
 	assert(condition);
 	if (!condition) {
 		throw std::runtime_error("Assertion error");
 	}
-//#endif
+#endif
 }
 
 

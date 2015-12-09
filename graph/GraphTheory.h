@@ -1944,7 +1944,7 @@ public:
 		return lit_Undef;
 	}
 
-	bool supportsDecisions() {
+	bool supportsDecisions()override {
 		return true;
 	}
 	void newDecisionLevel() {

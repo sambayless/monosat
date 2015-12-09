@@ -1169,7 +1169,7 @@ struct reduceDB_lt {
 		 if(ca[y].fromTheory() && ! ca[x].fromTheory())
 		 return false;
 		 return ca[x].activity() < ca[y].activity();*/
-	}	
+	}
 };
 void Solver::reduceDB() {
 	int i, j;
