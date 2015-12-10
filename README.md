@@ -36,8 +36,8 @@ If you build MonoSAT without using the provided makefiles, it is critically impo
 ###Install the Python Library
 
 To install the Python library (system-wide), first install the shared library, and then use Python's setuptools to install the Python library.
-The Python library has optional support for pseudo-Boolean constraints, using [MinisatPB](https://github.com/sambayless/minisatpb).  
-In order to use these pseudo-Boolean constraints, you must separately install [MinisatPB](https://github.com/sambayless/minisatpb) on your system path. 
+The Python library has optional support for pseudo-Boolean constraints, using [MinisatPB](https://github.com/sambayless/minisatpb), which is a fork of [Minisat+](https://github.com/niklasso/minisatp).  
+In order to use pseudo-Boolean constraints in the Python library, you must separately install [MinisatPB](https://github.com/sambayless/minisatpb) on your system path. 
 
 On Ubuntu (14.04):
 ```
