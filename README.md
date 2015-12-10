@@ -40,13 +40,13 @@ The Python library has optional support for pseudo-Boolean constraints, using a 
 In order to use these pseudo-Boolean constraints, you must separately install [minisatpb](https://github.com/sambayless/minisatpb) on your system path. 
 
 On Ubuntu (14.04):
-
+```
 $cd SharedLibrary
 $make
 $sudo cp libmonosat.so /usr/local/lib/
 $cd ../api/python
 $sudo python3 setup.py install
-
+```
 
 ###Usage
 MonoSAT is based on [MiniSat 2][Minisat], and supports many of the same calling conventions:
