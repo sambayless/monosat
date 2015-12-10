@@ -293,8 +293,9 @@ class Monosat(metaclass=Singleton):
 
         self.monosat_c.getModel_MinimumSpanningTreeWeight.argtypes=[c_solver_p,c_graph_p, c_literal]
         self.monosat_c.getModel_MinimumSpanningTreeWeight.restype=c_long     
-        self.solver=None       
-        self.newSolver("-verb=0 -verb-time=0 -rnd-theory-freq=0.99 -no-decide-bv-intrinsic  -decide-bv-bitwise  -decide-graph-bv -decide-theories -no-decide-graph-rnd   -lazy-maxflow-decisions -conflict-min-cut -conflict-min-cut-maxflow -reach-underapprox-cnf -check-solution ")
+        self.newSolver()
+        #For many (but not all) instances, the following settings may give good performance: 
+        #self.init("-verb=0 -verb-time=0 -rnd-theory-freq=0.99 -no-decide-bv-intrinsic  -decide-bv-bitwise  -decide-graph-bv -decide-theories -no-decide-graph-rnd   -lazy-maxflow-decisions -conflict-min-cut -conflict-min-cut-maxflow -reach-underapprox-cnf -check-solution ")
 
     def getGID(self,graph):
         return self.solver.graph_ids[graph]

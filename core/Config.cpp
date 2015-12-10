@@ -37,7 +37,7 @@ static const char* _cat_amo = "AMO";
 static const char* _cat_geom = "GEOMETRY";
 static const char* _cat_fsm = "FSM";
 
-IntOption Monosat::opt_verb("MAIN", "verb", "Verbosity level (0=silent, 1=some, 2=more).", 1, IntRange(0, 3));
+IntOption Monosat::opt_verb("MAIN", "verb", "Verbosity level (0=silent, 1=some, 2=more).",0, IntRange(0, 3));
 DoubleOption Monosat::opt_var_decay(_cat, "var-decay", "The variable activity decay factor", 0.95,
 		DoubleRange(0, false, 1, false));
 DoubleOption Monosat::opt_clause_decay(_cat, "cla-decay", "The clause activity decay factor", 0.999,
@@ -211,7 +211,7 @@ BoolOption Monosat::opt_init_rnd_phase(_cat, "init-rnd-phase", "", false);
 
 BoolOption Monosat::opt_encode_reach_underapprox_as_sat(_cat_graph, "reach-underapprox-cnf",
 		"Compute the under-approximate side of reachability constraints using CNF (only requires linear number of constraints), instead of the chosen algorithm",
-		false);
+		true);
 
 IntOption Monosat::opt_encode_dist_underapprox_as_sat(_cat_graph, "dist-underapprox-cnf",
 		"Compute the under-approximate side of distance constraints using CNF, instead of the chosen algorithm (0=don't use CNF encoding)",
@@ -219,7 +219,7 @@ IntOption Monosat::opt_encode_dist_underapprox_as_sat(_cat_graph, "dist-underapp
 BoolOption Monosat::opt_sat_distance_encoding_unconstrained_default(_cat_graph,"dist-underapprox-cnf-dst-unconstrained","",true);
 BoolOption Monosat::opt_reach_prop(_cat_graph, "prop-reach", "", false);
 
-BoolOption Monosat::opt_decide_theories(_cat_graph, "decide-theories", "", true);
+BoolOption Monosat::opt_decide_theories(_cat_graph, "decide-theories", "", false);
 BoolOption Monosat::opt_decide_graph_distance(_cat_graph, "decide-graph-dist", "", false);
 BoolOption Monosat::opt_decide_graph_bv(_cat_graph,"decide-graph-bv","",false);
 BoolOption Monosat::opt_cmp_lits_decidable(_cat_graph,"decide-cmp-lits","Controls whether or not comparison lits introduced by the bv solver (but not in the original formula) can be chosen as decisions by the SAT solver",false);
