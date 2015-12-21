@@ -244,18 +244,21 @@ public:
 	std::vector<int> & getStrictSCCs(){
 		return strict_scc_set;
 	}
-
+	// returns the number of distinct SCCs in the graph.
 	int numComponents() {
 		update();
 		return scc_set.size();
 	}
+	//Returns the index of the SCC in the graph that this node belongs to (assumes update() was previously called)
 	int getComponentUnsafe(int node) {
 			return scc[node].id;
 		}
+	//Returns the index of the SCC in the graph that this node belongs to
 	int getComponent(int node) {
 		update();
 		return scc[node].id;
 	}
+	//returns an (arbitrary) node in the ith SCC
 	int getElement(int sccID) {
 		update();
 		assert(sccID < scc_set.size());
