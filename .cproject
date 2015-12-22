@@ -721,8 +721,6 @@
 									<listOptionValue builtIn="false" value="m"/>
 									<listOptionValue builtIn="false" srcPrefixMapping="" srcRootPath="" value="gmp"/>
 									<listOptionValue builtIn="false" srcPrefixMapping="" srcRootPath="" value="gmpxx"/>
-									<listOptionValue builtIn="false" srcPrefixMapping="" srcRootPath="" value="CGAL"/>
-									<listOptionValue builtIn="false" srcPrefixMapping="" srcRootPath="" value="CGAL_Core"/>
 									<listOptionValue builtIn="false" srcPrefixMapping="" srcRootPath="" value="rt"/>
 								</option>
 								<option id="gnu.cpp.link.option.flags.341357675" name="Linker flags" superClass="gnu.cpp.link.option.flags" value="" valueType="string"/>

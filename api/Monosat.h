@@ -125,6 +125,7 @@ extern "C"
   int acyclic_undirected(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<long> *G);
   int acyclic_directed(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<long> *G);
   void newEdgeSet(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<long> *G,int * edges, int n_edges);
+
   //model query
   //For a given literal (not variable!), returns 0 for true, 1 for false, 2 for unassigned.
   int getModel_Literal(Monosat::SimpSolver * S,int lit);

@@ -1158,6 +1158,7 @@ public:
 
 		for (auto & e:bvedges){
 			graphs[e.graphID]->newEdgeBV(e.from, e.to, e.edgeVar, mapBV(S,e.bvID));
+
 		}
 		bvedges.clear();
 
@@ -1205,6 +1206,10 @@ public:
 			}
 		}
 		edge_sets.clear();
+
+
+
+
 
 		for (auto & e: distances_long){
 			graphs[e.graphID]->distance(e.from, e.to, e.var, e.weight,!e.strict);

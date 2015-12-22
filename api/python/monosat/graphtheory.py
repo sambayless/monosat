@@ -456,9 +456,9 @@ class Graph():
         
         for (v,w,var,weight) in self.getAllEdges():
             if weight is not None:
-                print("""n%d->n%d [label="%d w=%d"]"""%(v, w, var.getInputLiteral(),weight))
+                print("""n%d->n%d [label="%d w=%d"]"""%(v, w, var.getVar(),weight))
             else:
-                print("""n%d->n%d [label="%d"]"""%(v, w, var.getInputLiteral()))
+                print("""n%d->n%d [label="%d"]"""%(v, w, var.getVar()))
             
 
         print("}") 

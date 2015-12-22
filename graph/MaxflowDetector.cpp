@@ -1707,6 +1707,7 @@ Lit MaxflowDetector<Weight>::decide() {
 
 
 		Lit decision = lit_Undef;
+
 		if(opt_maxflow_decisions_type==1){
 			//flow based decision
 			while (potential_decisions_q.size() > 0) {

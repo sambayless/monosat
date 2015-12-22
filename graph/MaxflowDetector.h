@@ -33,6 +33,7 @@
 #include "Detector.h"
 #include "bv/BVTheorySolver.h"
 #include "dgl/AcyclicFlow.h"
+#include "core/Config.h"
 #include <vector>
 using namespace dgl;
 namespace Monosat {

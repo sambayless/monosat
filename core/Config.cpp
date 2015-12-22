@@ -37,6 +37,7 @@ static const char* _cat_amo = "AMO";
 static const char* _cat_geom = "GEOMETRY";
 static const char* _cat_fsm = "FSM";
 
+
 IntOption Monosat::opt_verb("MAIN", "verb", "Verbosity level (0=silent, 1=some, 2=more).", 0, IntRange(0, 3));
 DoubleOption Monosat::opt_var_decay(_cat, "var-decay", "The variable activity decay factor", 0.95,
 		DoubleRange(0, false, 1, false));
@@ -285,7 +286,9 @@ BoolOption Monosat::opt_use_kt_for_conflicts(_cat_graph, "use-kt-for-conflicts",
 BoolOption Monosat::opt_kt_preserve_order(_cat_graph, "kt-preserve-order",
 		"Attempt to preserve the order of flow assigned by the kohli-torr maxflow algorithm", false);
 
+
 IntOption Monosat::opt_maxflow_decisions_type(_cat_graph, "maxflow-decisions", "0=None, 1=flow-based, 2=cut-based", 1,IntRange(0,2));
+
 BoolOption Monosat::opt_lazy_maxflow_decisions(_cat_graph, "lazy-maxflow-decisions", "", true);
 BoolOption Monosat::opt_maxflow_allow_cycles(_cat_graph, "allow-maxflow-cycles", "Allow (superfluous) cycles in the maxflow solution", false);
 
@@ -342,6 +345,7 @@ BoolOption Monosat::opt_learn_acyclic_flows(_cat_graph, "learn-acyclic-flows",
 
 IntOption Monosat::opt_min_edgeset(_cat_graph,"min-edge-set","set to 0 to accept all edge sets, or -1 to disable all edge sets",10,IntRange(-1,INT32_MAX));
 BoolOption Monosat::opt_only_prop_edgeset(_cat_graph,"only-prop-edgesets","",false);
+
 
 
 IntOption Monosat::opt_width("GRAPH", "width", "Width of graph.\n", 0, IntRange(0, INT32_MAX));

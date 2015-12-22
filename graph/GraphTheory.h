@@ -1073,11 +1073,11 @@ public:
 			c[i] = toSolver(c[i]);
 		}
 	}
-
+	
 	double & getRandomSeed()override{
 		return rnd_seed;
 	}
-
+	
 
 	inline bool edgeWeightDecidable(int edgeID,DetectorComparison op, Weight edgeWeight) {
 		if (! hasBitVector(edgeID))
@@ -1847,7 +1847,9 @@ public:
 		}
 
 	}
-
+	bool supportsDecisions()override {
+		return true;
+	}
 	Lit decideTheory() {
 		if (!opt_decide_theories)
 			return lit_Undef;
@@ -1944,9 +1946,7 @@ public:
 		return lit_Undef;
 	}
 
-	bool supportsDecisions()override {
-		return true;
-	}
+
 	void newDecisionLevel() {
 		//trail_lim.push(trail.size());
 		assert(invalid_edgeset_lit==lit_Undef);
