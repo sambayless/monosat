@@ -38,7 +38,7 @@ def Solve(assumptions=None, preprocessing=True,bvs_to_minimize=None,time_limit_s
   
     r= Monosat().solveLimited([x.getLit() for x in assumptions],[bv.getID() for bv in bvs_to_minimize])     
     if r is None:
-        print("Warning: MonoSAT ran out of resources before solving")
+        raise RuntimeError("MonoSAT aborted before solving (possibly do to a time or memory limit)")
     Monosat().elapsed_time +=  time.clock()-t
     return r
 

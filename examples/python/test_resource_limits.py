@@ -116,20 +116,20 @@ Assert( chromatic_graph.distance_leq(startNode, exitNode, max_steps+2))
 
 AssertEqualPB (entranceEdges,1)
 AssertEqualPB(exitEdges,1)
-
-r = Solve(time_limit_seconds=10)
-if r:
-    for y in range(height):
-        for x in range(width):
-            count=0
-            for color,name in zip( room[x][y].color.colorbits,room[x][y].color.colornames) :
-                if color.value():
-                    print(name,end=" ")
-                    count+=1
-            assert(count==1)    
-        print("")
-elif r is None:
-    print("Terminated early")
-else:
-    print("UNSAT")
+try:
+    r = Solve(time_limit_seconds=5)
+    if r:
+        for y in range(height):
+            for x in range(width):
+                count=0
+                for color,name in zip( room[x][y].color.colorbits,room[x][y].color.colornames) :
+                    if color.value():
+                        print(name,end=" ")
+                        count+=1
+                assert(count==1)    
+            print("")
+    else:
+        print("UNSAT")
+except RuntimeError as e:
+    print("Terminated early (as expected)")
 print("Python Script Done!\n")
