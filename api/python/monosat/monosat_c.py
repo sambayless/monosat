@@ -114,6 +114,15 @@ class Monosat(metaclass=Singleton):
         
         self.monosat_c.solveAssumptions_MinBVs.argtypes=[c_solver_p,c_literal_p,c_int,c_int_p,c_int]
         self.monosat_c.solveAssumptions_MinBVs.restype=c_bool       
+
+        self.monosat_c.solveLimited.argtypes=[c_solver_p,c_int,c_int,c_int]
+        self.monosat_c.solveLimited.restype=c_int       
+
+        self.monosat_c.solveAssumptionsLimited.argtypes=[c_solver_p,c_int,c_int,c_int,c_literal_p,c_int]
+        self.monosat_c.solveAssumptionsLimited.restype=c_int      
+
+        self.monosat_c.solveAssumptionsLimited_MinBVs.argtypes=[c_solver_p,c_int,c_int,c_int,c_literal_p,c_int,c_int_p,c_int]
+        self.monosat_c.solveAssumptionsLimited_MinBVs.restype=c_int       
         
         self.monosat_c.backtrack.argtypes=[c_solver_p]
         
@@ -364,14 +373,14 @@ class Monosat(metaclass=Singleton):
             self.solver.output.flush()
         return self.monosat_c.solve(self.solver._ptr)
 
-    def solveLimited(self,conflict_limit):
-        if conflict_limit is None or conflict_limit<=0:
+    def solveLimited(self,time_limit_seconds,mem_limit_mb,conflict_limit):
+        if (time_limit_seconds is None or time_limit_seconds<=0) and (mem_limit_mb is None or mem_limit_mb<=0) and (conflict_limit is None or conflict_limit<=0):
             return self.solve()
         self.backtrack()
         if self.solver.output:
-            self._echoOutput("solve %d\n"%(conflict_limit))
+            self._echoOutput("solve\n")
             self.solver.output.flush()
-        r = self.monosat_c.solveLimited(self.solver._ptr,conflict_limit)
+        r = self.monosat_c.solveLimited(self.solver._ptr,time_limit_seconds,mem_limit_mb,conflict_limit)
         if r==1:
             return False
         elif r==0:
@@ -401,7 +410,7 @@ class Monosat(metaclass=Singleton):
                 self.solver.output.flush()
             return self.monosat_c.solveAssumptions(self.solver._ptr,lp,len(assumptions))
         
-    def solveAssumptionsLimited(self,conflict_limit,assumptions,minimize_bvs=None):
+    def solveAssumptionsLimited(self,time_limit_seconds,mem_limit_mb,conflict_limit,assumptions,minimize_bvs=None):
         if conflict_limit is None or conflict_limit<=0:
             return self.solveAssumptions(assumptions, minimize_bvs)
         self.backtrack()

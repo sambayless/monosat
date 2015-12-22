@@ -32,10 +32,10 @@ extern "C"
   bool solveAssumptions_MinBVs(Monosat::SimpSolver * S,int * assumptions, int n_assumptions, int * minimize_bvs, int n_minimize_bvs);
 
   //Returns 1 for proved false, 2 for proved true, 0 for failed to find a solution within the conflict limit
-  int solveLimited(Monosat::SimpSolver * S,int conflict_limit);
-  int solveAssumptionsLimited(Monosat::SimpSolver * S,int conflict_limit,int * assumptions, int n_assumptions);
+  int solveLimited(Monosat::SimpSolver * S, int time_limit_seconds, int mem_limit_mb,int conflict_limit);
+  int solveAssumptionsLimited(Monosat::SimpSolver * S, int time_limit_seconds, int mem_limit_mb,int conflict_limit,int * assumptions, int n_assumptions);
   //Solve under assumptions, and also minimize a set of BVs (in order of precedence)
-  int solveAssumptionsLimited_MinBVs(Monosat::SimpSolver * S,int conflict_limit,int * assumptions, int n_assumptions, int * minimize_bvs, int n_minimize_bvs);
+  int solveAssumptionsLimited_MinBVs(Monosat::SimpSolver * S, int time_limit_seconds, int mem_limit_mb,int conflict_limit,int * assumptions, int n_assumptions, int * minimize_bvs, int n_minimize_bvs);
 
 
   void backtrack(Monosat::SimpSolver * S);

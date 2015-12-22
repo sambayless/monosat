@@ -319,7 +319,7 @@ bool solveAssumptions(Monosat::SimpSolver * S,int * assumptions, int n_assumptio
  }
 
 bool solveAssumptions_MinBVs(Monosat::SimpSolver * S,int * assumptions, int n_assumptions, int * minimize_bvs, int n_minimize_bvs){
-	lbool ret = toLbool(solveAssumptionsLimited_MinBVs(S,-1,assumptions, n_assumptions, minimize_bvs, n_minimize_bvs));
+	lbool ret = toLbool(solveAssumptionsLimited_MinBVs(S,0,0,0,assumptions, n_assumptions, minimize_bvs, n_minimize_bvs));
 	if(ret==l_True){
 		return true;
 	}else if (ret==l_False){
@@ -329,16 +329,16 @@ bool solveAssumptions_MinBVs(Monosat::SimpSolver * S,int * assumptions, int n_as
 	}
 }
 
-int solveLimited(Monosat::SimpSolver * S,int conflict_limit){
-	return solveAssumptionsLimited(S,conflict_limit,nullptr,0);
+int solveLimited(Monosat::SimpSolver * S, int time_limit_seconds, int mem_limit_mb,int conflict_limit){
+	return solveAssumptionsLimited(S,time_limit_seconds,mem_limit_mb,conflict_limit,nullptr,0);
   }
 
-int solveAssumptionsLimited(Monosat::SimpSolver * S,int conflict_limit,int * assumptions, int n_assumptions){
-	return solveAssumptionsLimited_MinBVs(S,conflict_limit,assumptions,n_assumptions,nullptr,0);
+int solveAssumptionsLimited(Monosat::SimpSolver * S, int time_limit_seconds, int mem_limit_mb,int conflict_limit,int * assumptions, int n_assumptions){
+	return solveAssumptionsLimited_MinBVs(S,time_limit_seconds,mem_limit_mb,conflict_limit,assumptions,n_assumptions,nullptr,0);
  }
 
 
-int solveAssumptionsLimited_MinBVs(Monosat::SimpSolver * S,int conflict_limit,int * assumptions, int n_assumptions, int * minimize_bvs, int n_minimize_bvs){
+int solveAssumptionsLimited_MinBVs(Monosat::SimpSolver * S, int time_limit_seconds, int mem_limit_mb,int conflict_limit,int * assumptions, int n_assumptions, int * minimize_bvs, int n_minimize_bvs){
 	using namespace Monosat;
 
 	S->cancelUntil(0);
