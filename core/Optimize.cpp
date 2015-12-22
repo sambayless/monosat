@@ -278,7 +278,7 @@ lbool optimize_and_solve(SimpSolver & S,const vec<Lit> & assumes,const vec<int> 
 			  throw std::runtime_error("No bitvector theory created (call initBVTheory())!");
 		  }
 
-		  bool r = S.solve(assume,false,false);
+		  bool r;
 			if(conflict_limit<=0){
 				r = S.solve(assume,false,false) ;
 			}else{
