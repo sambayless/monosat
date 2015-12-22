@@ -450,6 +450,8 @@ public:
 	//
 	void setConfBudget(int64_t x);
 	void setPropBudget(int64_t x);
+	int64_t getConflictBudget();
+	int64_t getPropagationBudget();
 	void budgetOff();
 	void interrupt();          // Trigger a (potentially asynchronous) interruption of the solver.
 	void clearInterrupt();     // Clear interrupt indicator flag.
@@ -1079,11 +1081,26 @@ inline void Solver::setDecisionVar(Var v, bool b) {
 	insertVarOrder(v);
 }
 inline void Solver::setConfBudget(int64_t x) {
-	conflict_budget = conflicts + x;
+	if(x<0){
+		conflict_budget=-1;
+	}else{
+		conflict_budget = conflicts + x;
+	}
 }
 inline void Solver::setPropBudget(int64_t x) {
-	propagation_budget = propagations + x;
+	if(x<0){
+		propagation_budget=-1;
+	}else{
+		propagation_budget = propagations + x;
+	}
 }
+inline int64_t Solver::getConflictBudget() {
+	return conflict_budget>-1 ? (conflict_budget-conflicts) : -1;
+}
+inline int64_t Solver::getPropagationBudget() {
+	return propagation_budget>-1? (propagation_budget-propagations) : -1;
+}
+
 inline void Solver::interrupt() {
 	asynch_interrupt = true;
 }

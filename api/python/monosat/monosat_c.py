@@ -115,14 +115,20 @@ class Monosat(metaclass=Singleton):
         self.monosat_c.solveAssumptions_MinBVs.argtypes=[c_solver_p,c_literal_p,c_int,c_int_p,c_int]
         self.monosat_c.solveAssumptions_MinBVs.restype=c_bool       
 
-        self.monosat_c.solveLimited.argtypes=[c_solver_p,c_int,c_int,c_int]
+        self.monosat_c.solveLimited.argtypes=[c_solver_p]
         self.monosat_c.solveLimited.restype=c_int       
 
-        self.monosat_c.solveAssumptionsLimited.argtypes=[c_solver_p,c_int,c_int,c_int,c_literal_p,c_int]
+        self.monosat_c.solveAssumptionsLimited.argtypes=[c_solver_p,c_literal_p,c_int]
         self.monosat_c.solveAssumptionsLimited.restype=c_int      
 
-        self.monosat_c.solveAssumptionsLimited_MinBVs.argtypes=[c_solver_p,c_int,c_int,c_int,c_literal_p,c_int,c_int_p,c_int]
-        self.monosat_c.solveAssumptionsLimited_MinBVs.restype=c_int       
+        self.monosat_c.solveAssumptionsLimited_MinBVs.argtypes=[c_solver_p,c_literal_p,c_int,c_int_p,c_int]
+        self.monosat_c.solveAssumptionsLimited_MinBVs.restype=c_int  
+        
+        
+        self.monosat_c.setTimeLimit.argtypes=[c_solver_p,c_int]
+        self.monosat_c.setMemoryLimit.argtypes=[c_solver_p,c_int]
+        self.monosat_c.setConflictLimit.argtypes=[c_solver_p,c_int]
+        self.monosat_c.setPropagationLimit.argtypes=[c_solver_p,c_int]    
         
         self.monosat_c.backtrack.argtypes=[c_solver_p]
         
@@ -366,31 +372,36 @@ class Monosat(metaclass=Singleton):
         return self._int_array
         
 
-    def solve(self):
-        self.backtrack()
-        if self.solver.output:
-            self._echoOutput("solve\n")
-            self.solver.output.flush()
-        return self.monosat_c.solve(self.solver._ptr)
-
-    def solveLimited(self,time_limit_seconds,mem_limit_mb,conflict_limit):
-        if (time_limit_seconds is None or time_limit_seconds<=0) and (mem_limit_mb is None or mem_limit_mb<=0) and (conflict_limit is None or conflict_limit<=0):
-            return self.solve()
-        self.backtrack()
-        if self.solver.output:
-            self._echoOutput("solve\n")
-            self.solver.output.flush()
-        r = self.monosat_c.solveLimited(self.solver._ptr,time_limit_seconds,mem_limit_mb,conflict_limit)
-        if r==1:
-            return False
-        elif r==0:
-            return True
+    def setTimeLimit(self,seconds):
+        if seconds is None or seconds<0:
+            self.monosat_c.setTimeLimit(self.solver._ptr,-1)
         else:
-            assert(r==2)
-            return None     
+            self.monosat_c.setTimeLimit(self.solver._ptr,seconds)
+            
+    def setMemoryLimit(self,mb):
+        if mb is None or mb<0:
+            self.monosat_c.setMemoryLimit(self.solver._ptr,-1)
+        else:
+            self.monosat_c.setMemoryLimit(self.solver._ptr,mb)
 
-    def solveAssumptions(self,assumptions,minimize_bvs=None):
+    def setConflictLimit(self,conflicts):
+        if conflicts is None or conflicts<0:
+            self.monosat_c.setConflictLimit(self.solver._ptr,-1)
+        else:
+            self.monosat_c.setConflictLimit(self.solver._ptr,conflicts)
+
+    def setPropagationLimit(self,propagations):
+        if propagations is None or propagations<0:
+            self.monosat_c.setPropagationLimit(self.solver._ptr,-1)
+        else:
+            self.monosat_c.setPropagationLimit(self.solver._ptr,propagations)
+
+
+
+    def solve(self,assumptions=None,minimize_bvs=None):
         self.backtrack()
+        if assumptions is None:
+            assumptions=[]
 
         lp = self.getIntArray(assumptions)
         
@@ -410,28 +421,36 @@ class Monosat(metaclass=Singleton):
                 self.solver.output.flush()
             return self.monosat_c.solveAssumptions(self.solver._ptr,lp,len(assumptions))
         
-    def solveAssumptionsLimited(self,time_limit_seconds,mem_limit_mb,conflict_limit,assumptions,minimize_bvs=None):
-        if conflict_limit is None or conflict_limit<=0:
-            return self.solveAssumptions(assumptions, minimize_bvs)
-        self.backtrack()
-        
+    def solveLimited(self,assumptions=None,minimize_bvs=None):
+        self.backtrack()        
+        if assumptions is None:
+            assumptions=[]
+            
         lp = self.getIntArray(assumptions)
         
         if minimize_bvs is not None and len(minimize_bvs)>0:
             if self.solver.output:
                 for i,n in enumerate(minimize_bvs):  
                     self._echoOutput("minimize bv " + str(minimize_bvs[i])+"\n")
-                self._echoOutput("solve %d "%(conflict_limit) + " ".join((str(dimacs(c)) for c in assumptions))+"\n")
+                self._echoOutput("solve "+ " ".join((str(dimacs(c)) for c in assumptions))+"\n")
                 self.solver.output.flush()
             lp2 = (c_int * len(minimize_bvs))()
             for i,n in enumerate(minimize_bvs):            
                 lp2[i]=c_int(n)
-            return self.monosat_c.solveAssumptionsLimited_MinBVs(self.solver._ptr,conflict_limit,lp,len(assumptions),lp2,len(minimize_bvs))
+            r= self.monosat_c.solveAssumptionsLimited_MinBVs(self.solver._ptr,lp,len(assumptions),lp2,len(minimize_bvs))
         else:
             if self.solver.output:
-                self._echoOutput("solve %d "%(time_limit) + " ".join((str(dimacs(c)) for c in assumptions))+"\n")
+                self._echoOutput("solve " + " ".join((str(dimacs(c)) for c in assumptions))+"\n")
                 self.solver.output.flush()
-            return self.monosat_c.solveAssumptionsLimited(self.solver._ptr,conflict_limit,lp,len(assumptions))    
+            r= self.monosat_c.solveAssumptionsLimited(self.solver._ptr,lp,len(assumptions))  
+              
+        if r==0:
+            return True
+        elif r==1:
+            return False
+        else:
+            assert(r==2)
+            return None  
     
     def backtrack(self):
         if self.solver.output:

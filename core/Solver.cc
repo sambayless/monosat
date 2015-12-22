@@ -1957,6 +1957,7 @@ static double luby(double y, int x) {
 // NOTE: assumptions passed in member-variable 'assumptions'.
 lbool Solver::solve_() {
 	cancelUntil(0);
+	clearInterrupt();
 	model.clear();
 	conflict.clear();
 	if (!ok)
@@ -2069,7 +2070,7 @@ lbool Solver::solve_() {
 	} else if (status == l_False) {
 		assert(ok);
 	}
-	
+
 	assumptions.clear();
 	return status;
 }

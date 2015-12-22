@@ -11,6 +11,7 @@
 extern "C"
 {
 
+
   int varToLit(int var, bool negated){
 	  return toInt(mkLit(var,negated));
   }
@@ -31,11 +32,24 @@ extern "C"
   //Solve under assumptions, and also minimize a set of BVs (in order of precedence)
   bool solveAssumptions_MinBVs(Monosat::SimpSolver * S,int * assumptions, int n_assumptions, int * minimize_bvs, int n_minimize_bvs);
 
-  //Returns 1 for proved false, 2 for proved true, 0 for failed to find a solution within the conflict limit
-  int solveLimited(Monosat::SimpSolver * S, int time_limit_seconds, int mem_limit_mb,int conflict_limit);
-  int solveAssumptionsLimited(Monosat::SimpSolver * S, int time_limit_seconds, int mem_limit_mb,int conflict_limit,int * assumptions, int n_assumptions);
+  //Sets the (approximate) time limit in seconds before returning l_Undef from solveLimited; ignored by solve(). Set to <0 to disable time limit.
+  void setTimeLimit(Monosat::SimpSolver * S,int seconds);
+  //Sets the (approximate) memory limit in megabytes before returning l_Undef from solveLimited; ignored by solve(). Set to <0 to disable memory limit.
+  void setMemoryLimit(Monosat::SimpSolver * S,int mb);
+  //Sets the maximum number of (additional) conflicts allowed in the solver before returning l_Undef from solveLimited; ignored by solve(). Set to <0 to disable conflict limit.
+  void setConflictLimit(Monosat::SimpSolver * S,int num_conflicts);
+  //Sets the maximum number of (additional) propagations allowed in the solver before returning l_Undef from solveLimited; ignored by solve(). Set to <0 to disable propagation limit.
+  void setPropagationLimit(Monosat::SimpSolver * S,int num_propagations);
+
+  //Returns 0 for satisfiable, 1 for proved unsatisfiable, 2 for failed to find a solution (within any resource limits that have been set)
+  int solveLimited(Monosat::SimpSolver * S);
+  //Returns 0 for satisfiable, 1 for proved unsatisfiable, 2 for failed to find a solution (within any resource limits that have been set)
+  int solveAssumptionsLimited(Monosat::SimpSolver * S,int * assumptions, int n_assumptions);
+
   //Solve under assumptions, and also minimize a set of BVs (in order of precedence)
-  int solveAssumptionsLimited_MinBVs(Monosat::SimpSolver * S, int time_limit_seconds, int mem_limit_mb,int conflict_limit,int * assumptions, int n_assumptions, int * minimize_bvs, int n_minimize_bvs);
+  //Returns 0 for satisfiable, 1 for proved unsatisfiable, 2 for failed to find a solution (within any resource limits that have been set)
+  int solveAssumptionsLimited_MinBVs(Monosat::SimpSolver * S,int * assumptions, int n_assumptions, int * minimize_bvs, int n_minimize_bvs);
+
 
 
   void backtrack(Monosat::SimpSolver * S);
