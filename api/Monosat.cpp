@@ -6,6 +6,7 @@
 #include "simp/SimpSolver.h"
 #include "graph/GraphTheory.h"
 #include "geometry/GeometryTheory.h"
+#include "fsm/FSMTheory.h"
 #include "pb/PbTheory.h"
 #include "bv/BVTheorySolver.h"
 #include "amo/AMOTheory.h"
@@ -22,6 +23,11 @@
 #include "core/Optimize.h"
 #include <csignal>
 #include <set>
+#include <iostream>
+#include <string>
+#include <sstream>
+#include <algorithm>
+#include <iterator>
 using namespace Monosat;
 using namespace std;
 
@@ -245,7 +251,25 @@ struct MonosatData{
 	Monosat::BVTheorySolver<long> * bv_theory=nullptr;
 	vec< Monosat::GraphTheorySolver<long> *> graphs;
 };
-void * newSolver(int argc, char**argv){
+
+
+Monosat::SimpSolver * newSolver(){
+	return newSolver_arg(nullptr);
+}
+
+Monosat::SimpSolver * newSolver_arg(char*argv){
+	if (argv){
+		istringstream iss(argv);
+		vector<char*> tokens{istream_iterator<char*>{iss},
+		                      istream_iterator<char*>{}};
+		return newSolver_args(tokens.size(),(char **) tokens.data());
+	}else{
+		return newSolver_args(0,nullptr);
+	}
+}
+
+
+Monosat::SimpSolver * newSolver_args(int argc, char**argv){
 	parseOptions(argc, argv, true);
 	if (opt_adaptive_conflict_mincut == 1) {
 		opt_conflict_min_cut = true;
@@ -324,7 +348,7 @@ void readGNF(Monosat::SimpSolver * S, const char  * filename){
 
 }
 
-void * newGraph(Monosat::SimpSolver * S){
+Monosat::GraphTheorySolver<int64_t> *  newGraph(Monosat::SimpSolver * S){
 	  MonosatData * d = (MonosatData*) S->_external_data;
 	  Monosat::GraphTheorySolver<long> *graph = new Monosat::GraphTheorySolver<long>(S);
 	  S->addTheory(graph);
@@ -338,7 +362,7 @@ void * newGraph(Monosat::SimpSolver * S){
 void backtrack(Monosat::SimpSolver * S){
 	S->cancelUntil(0);
 }
-void * initBVTheory(Monosat::SimpSolver * S){
+Monosat::BVTheorySolver<int64_t> * initBVTheory(Monosat::SimpSolver * S){
 	MonosatData * d = (MonosatData*) S->_external_data;
 	if(d->bv_theory)
 		return d->bv_theory;
@@ -591,7 +615,9 @@ int solveAssumptionsLimited_MinBVs(Monosat::SimpSolver * S,int * assumptions, in
  }
 
  //theory interface for bitvectors
-
+ int newBitvector_anon(Monosat::SimpSolver * S,Monosat::BVTheorySolver<long> * bv, int bvWidth){
+	 return bv->newBitvector_Anon(-1,bvWidth).getID();
+ }
  int newBitvector_const(Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv, int bvWidth, long constval){
 	 return bv->newBitvector(-1,bvWidth,constval).getID();
  }
@@ -605,7 +631,9 @@ int solveAssumptionsLimited_MinBVs(Monosat::SimpSolver * S,int * assumptions, in
 	  bv->newBitvector(bvID,lits);
 	  return bvID;
  }
-
+ int bv_width(Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv,int bvID){
+	 return bv->getWidth(bvID);
+ }
  int newBVComparison_const_lt(Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv, int bvID, long weight){
 	  Var v = newVar(S);
 	  Lit l =mkLit(v);
@@ -655,19 +683,19 @@ int solveAssumptionsLimited_MinBVs(Monosat::SimpSolver * S,int * assumptions, in
 	  bv->newComparisonBV(Monosat::Comparison::geq,bvID,compareID,v);
 	  return toInt(l);
  }
- void bv_min(Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv, int n_args, int* args,int resultID){
+ void bv_min(Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv, int* args, int n_args,int resultID){
 	 vec<int> m_args;
 	 for (int i = 0;i<n_args;i++)
 		 m_args.push(args[i]);
 	 bv->newMinBV(resultID, m_args);
  }
- void bv_max(Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv, int n_args, int* args, int resultID){
+ void bv_max(Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv,  int* args,int n_args, int resultID){
 	 vec<int> m_args;
 	 for (int i = 0;i<n_args;i++)
 		 m_args.push(args[i]);
 	 bv->newMaxBV(resultID, m_args);
  }
- void bv_popcount(Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv, int n_args, int* args, int resultID){
+ void bv_popcount(Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv,  int* args,int n_args, int resultID){
 	 vec<int> m_args;
 	 for (int i = 0;i<n_args;i++){
 		 Lit l = toLit(args[i]);
@@ -870,6 +898,47 @@ void bv_slice( Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv,int a
 	  G->implementConstraints();
 	  return toInt(l);
  }
+
+//FSM Interface
+
+ Monosat::FSMTheorySolver * initFSMTheory(Monosat::SimpSolver * S){
+	Monosat::FSMTheorySolver  * theory = new Monosat::FSMTheorySolver(S);
+	S->addTheory(theory);
+	return theory;
+ }
+ int newFSM(Monosat::SimpSolver * S, Monosat::FSMTheorySolver *  fsmTheory, int inputAlphabet, int outputAlphabet){
+	 int fsmID = fsmTheory->newFSM();
+	 fsmTheory->setAlphabets(fsmID,inputAlphabet,outputAlphabet);
+	 return fsmID;
+ }
+ int newState(Monosat::SimpSolver * S, Monosat::FSMTheorySolver *  fsmTheory, int fsmID){
+	 return fsmTheory->newNode(fsmID);
+ }
+
+ int newTransition(Monosat::SimpSolver * S, Monosat::FSMTheorySolver * fsmTheory, int fsmID, int fromNode, int toNode,int inputLabel, int outputLabel){
+	  Var v = newVar(S);
+	  Lit l =mkLit(v);
+	  fsmTheory->newTransition(fsmID,fromNode,toNode,inputLabel,outputLabel,v);
+	  return toInt(l);
+ }
+ int newString(Monosat::SimpSolver * S, Monosat::FSMTheorySolver *  fsmTheory, int * str,int len){
+	 vec<int> string;
+	 for(int i = 0;i<len;i++){
+		 int label = str[i];
+		 if(label<=0){
+			 api_errorf("String must consist of positive integers, found %d at position %d in string %d",label,i,fsmTheory->nStrings());
+		 }
+		 string.push(label);
+	 }
+	 return fsmTheory->newString(string);
+ }
+ int fsmAcceptsString(Monosat::SimpSolver * S, Monosat::FSMTheorySolver *  fsmTheory, int fsmID, int startNode, int acceptNode,int stringID){
+	 Var v = newVar(S);
+	 Lit l =mkLit(v);
+	 fsmTheory->addAcceptLit(fsmID,startNode,acceptNode,stringID,v);
+	 return toInt(l);
+ }
+
 
 
  //model query

@@ -75,7 +75,7 @@ class Solver():
         #In the future, allow multiple solvers to be instantiated...
         self.comments=[]
         
-        self._ptr = monosat_c.newSolver(len(arguments),arr)
+        self._ptr = monosat_c.newSolver_args(len(arguments),arr)
         self.bvtheory=  monosat_c.initBVTheory(self._ptr)
         self.output=None
         self.arguments=None
@@ -99,8 +99,14 @@ class Monosat(metaclass=Singleton):
         self._int_array = (c_int * (1024))()
         
         #Set the return types for each function
-        self.monosat_c.newSolver.argtypes=[c_int, POINTER(c_char_p)]
+        self.monosat_c.newSolver.argtypes=[]
         self.monosat_c.newSolver.restype=c_solver_p
+        
+        self.monosat_c.newSolver_arg.argtypes=[c_char_p]
+        self.monosat_c.newSolver_arg.restype=c_solver_p
+        
+        self.monosat_c.newSolver_args.argtypes=[c_int, POINTER(c_char_p)]
+        self.monosat_c.newSolver_args.restype=c_solver_p
         
         self.monosat_c.deleteSolver.argtypes=[c_solver_p]
         
@@ -203,8 +209,8 @@ class Monosat(metaclass=Singleton):
         
         self.monosat_c.bv_ite.argtypes=[c_solver_p,c_bv_p,c_literal, c_bvID,c_bvID,c_bvID]
 
-        self.monosat_c.bv_min.argtypes=[c_solver_p,c_bv_p, c_int, c_bvID_p,c_bvID]
-        self.monosat_c.bv_max.argtypes=[c_solver_p,c_bv_p,  c_int, c_bvID_p,c_bvID]
+        self.monosat_c.bv_min.argtypes=[c_solver_p,c_bv_p, c_bvID_p, c_int,c_bvID]
+        self.monosat_c.bv_max.argtypes=[c_solver_p,c_bv_p, c_bvID_p, c_int, c_bvID]
         
 
         self.monosat_c.bv_not.argtypes=[c_solver_p,c_bv_p,c_bvID,c_bvID]
@@ -216,7 +222,7 @@ class Monosat(metaclass=Singleton):
         self.monosat_c.bv_xnor.argtypes=[c_solver_p,c_bv_p,c_bvID,c_bvID,c_bvID]
 
         self.monosat_c.bv_concat.argtypes=[c_solver_p,c_bv_p,c_bvID,c_bvID,c_bvID]
-        self.monosat_c.bv_popcount.argtypes=[c_solver_p,c_bv_p,c_int,c_literal_p ,c_bvID]
+        self.monosat_c.bv_popcount.argtypes=[c_solver_p,c_bv_p,c_literal_p,c_int ,c_bvID]
     
         
         self.monosat_c.bv_slice.argtypes=[c_solver_p,c_bv_p,c_bvID,c_int,c_int,c_bvID]
@@ -695,7 +701,7 @@ class Monosat(metaclass=Singleton):
     def bv_min(self, args, resultID):
         self.backtrack()        
         lp = self.getIntArray(args)                
-        self.monosat_c.bv_min(self.solver._ptr, self.solver.bvtheory, len(args),lp, c_bvID(resultID))
+        self.monosat_c.bv_min(self.solver._ptr, self.solver.bvtheory,lp, len(args), c_bvID(resultID))
         if self.solver.output:            
             argstr = " ".join((str(a) for a in args))
             self._echoOutput("bv min %d %d %s\n"%(resultID,len(args),argstr))
@@ -703,7 +709,7 @@ class Monosat(metaclass=Singleton):
     def bv_max(self, args, resultID):
         self.backtrack()        
         lp = self.getIntArray(args)                
-        self.monosat_c.bv_max(self.solver._ptr, self.solver.bvtheory, len(args),lp, c_bvID(resultID))
+        self.monosat_c.bv_max(self.solver._ptr, self.solver.bvtheory, lp,len(args), c_bvID(resultID))
         if self.solver.output:            
             argstr = " ".join((str(a) for a in args))
             self._echoOutput("bv max %d %d %s\n"%(resultID,len(args),argstr))
@@ -788,7 +794,7 @@ class Monosat(metaclass=Singleton):
                 newargs.append(l2)
         
         lp = self.getIntArray(newargs)          
-        self.monosat_c.bv_popcount(self.solver._ptr, self.solver.bvtheory,len(newargs),lp,c_bvID(resultID))
+        self.monosat_c.bv_popcount(self.solver._ptr, self.solver.bvtheory,lp,len(newargs),c_bvID(resultID))
         if self.solver.output:
             self._echoOutput("bv popcount %d %d %s\n"%(resultID, len(newargs)," ".join((str(dimacs(l)) for l in newargs))))
     #Monosat graph interface

@@ -164,11 +164,13 @@ public:
 
 	FSMTheorySolver(Solver * S_, int _id = -1) :
 			S(S_), id(_id){
-
-
+		strings = new vec<vec<int>>();
 		rnd_seed = opt_random_seed;
 	}
 	~FSMTheorySolver(){
+		if(this->strings){
+			delete(this->strings);
+		}
 		for (DynamicFSM * f:g_unders){
 			delete(f);
 		}
@@ -233,6 +235,14 @@ public:
 		for(int i =0;i<edge_labels[fsmID].size();i++){
 			edge_labels[fsmID][i].growTo(inAlphabet(fsmID)*outAlphabet(fsmID));
 		}
+	}
+	int newString(vec<int> & str){
+		strings->push();
+		str.copyTo(strings->last());
+		return strings->size()-1;
+	}
+	int nStrings()const{
+		return strings->size();
 	}
 /*	void addInCharacter(){
 		n_in_alphabet++;
@@ -834,7 +844,10 @@ public:
 		marker_map[mnum] = detectorID;
 		return reasonMarker;
 	}
-	void newFSM(int fsmID){
+	int newFSM(int fsmID=-1){
+		if(fsmID<0){
+			fsmID = g_unders.size();
+		}
 		g_unders.growTo(fsmID+1,nullptr);
 		g_overs.growTo(fsmID+1,nullptr);
 		if(g_unders[fsmID]){
@@ -845,6 +858,7 @@ public:
 		g_overs[fsmID]=new DynamicFSM(fsmID);
 		n_in_alphabets.growTo(fsmID+1,1);//number of transition labels. Transition labels start from 0 (which is the non-consuming epsilon transition) and go to n_labels-1.
 		n_out_alphabets.growTo(fsmID+1,1);
+		return fsmID;
 	}
 
 	Lit newTransition(int fsmID,int from, int to,int input,int output, Var outerVar = var_Undef) {
@@ -911,10 +925,11 @@ public:
 	}
 	
 	void setStrings(vec<vec<int>>* strings){
-		assert(!this->strings);
+		if(this->strings){
+			delete(this->strings);
+		}
 		this->strings=strings;
 	}
-
 
 	void addAcceptLit(int fsmID,int source ,int reach, int strID, Var outer_var){
 		assert(g_unders[fsmID]);

@@ -60,7 +60,7 @@ class FSMParser: public Parser<B, Solver> {
 	vec<bool> created_strings;
 	vec<int> stringIDMap;
 
-	vec<vec<int>> strings;
+	vec<vec<int>> * strings;
 	vec<int> stringLabels;
 	struct Accepts{
 		int fsm;
@@ -148,12 +148,12 @@ class FSMParser: public Parser<B, Solver> {
 		}
 
 		int strID = parseInt(in);
-		//strings.growTo(strID+1);
+		//strings->growTo(strID+1);
 
 		stringIDMap.growTo(strID+1,-1);
-		stringIDMap[strID]=strings.size();
-		strID = strings.size();
-		strings.push();
+		stringIDMap[strID]=strings->size();
+		strID = strings->size();
+		strings->push();
 
 		created_strings.growTo(strID+1);
 		stringLabels.growTo(strID+1);
@@ -170,7 +170,7 @@ class FSMParser: public Parser<B, Solver> {
 			if (i<=0){
 				parse_errorf("FSM strings must contain only positive (non-zero) integers, found %d\n", i);
 			}
-			strings[strID].push(i);
+			strings->[strID].push(i);
 			stringLabels[strID]= std::max(stringLabels[strID],i+1);
 			skipWhitespace(in);
 			if (isEof(in) || *in == '\n')
@@ -404,7 +404,7 @@ class FSMParser: public Parser<B, Solver> {
 
 public:
 	FSMParser():Parser<B, Solver>("Finite State Machine"){
-		
+		strings = new vec<vec<int>>();
 	}
 
 	bool parseLine(B& in, Solver& S) {
@@ -454,7 +454,7 @@ public:
 			if(!theory){
 				theory = new FSMTheorySolver(&S);
 				S.addTheory(theory);
-				theory->setStrings(&strings);
+				theory->setStrings(strings);
 			}
 				theory->newFSM(fsmID);
 
