@@ -68,25 +68,30 @@ class NFAAccept{
 	int n_track_negative=0;
 public:
 	NFAAccept(DynamicFSM & f,int source, vec<vec<int>> & strings,Status & status=fsmNullStatus, bool trackUsedTransitions=false):g(f),status(status),source(source),strings(strings),checkUsed(trackUsedTransitions){
+
+		buildStringTrackers();
+	}
+
+private:
+	void buildStringTrackers(){
 		states_to_track_positive.growTo(strings.size());
 		states_to_track_negative.growTo(strings.size());
-		n_trackingString.growTo(strings.size(),f.states()*2);
+		n_trackingString.growTo(strings.size(),g.states()*2);
 		states_were_accepting.growTo(strings.size());
 		//states_were_rejecting.growTo(strings.size());
 
 		for(int i = 0;i<strings.size();i++){
-			states_to_track_positive[i].growTo(f.states(),true);
-			states_to_track_negative[i].growTo(f.states(),true);
+			states_to_track_positive[i].growTo(g.states(),true);
+			states_to_track_negative[i].growTo(g.states(),true);
 
-			states_were_accepting[i].growTo(f.states());
+			states_were_accepting[i].growTo(g.states());
 			//states_were_rejecting[i].growTo(f.states());
 		}
 
 		n_track_positive = strings.size();
 		n_track_negative=strings.size();
-
 	}
-
+public:
 	bool isTrackedState(int str, int state, bool positive){
 		if(positive)
 			return states_to_track_positive[str][state];
@@ -95,6 +100,7 @@ public:
 	}
 
 	void setTrackStringAcceptance(int str, int state,bool trackPositiveAcceptance, bool trackNegativeAcceptance){
+		buildStringTrackers();
 		if(states_to_track_positive[str][state]!=trackPositiveAcceptance){
 			if(trackPositiveAcceptance){
 				n_track_positive++;

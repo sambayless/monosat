@@ -6,6 +6,7 @@
 #include "simp/SimpSolver.h"
 #include "graph/GraphTheory.h"
 #include "geometry/GeometryTheory.h"
+#include "fsm/FSMTheory.h"
 #include "pb/PbTheory.h"
 #include "bv/BVTheorySolver.h"
 #include "amo/AMOTheory.h"
@@ -20,6 +21,13 @@
 #include <stdexcept>
 #include <cstdarg>
 #include "core/Optimize.h"
+#include <csignal>
+#include <set>
+#include <iostream>
+#include <string>
+#include <sstream>
+#include <algorithm>
+#include <iterator>
 using namespace Monosat;
 using namespace std;
 
@@ -37,6 +45,43 @@ inline void api_errorf(const char *fmt, ...) {
     throw std::runtime_error(buf);
 
 }
+
+//Global time and memory limits shared among all solvers
+static long long time_limit=-1;
+static long long memory_limit=-1;
+
+static bool has_system_time_limit=false;
+static rlim_t system_time_limit;
+static bool has_system_mem_limit=false;
+static rlim_t system_mem_limit;
+
+static std::set<Solver*> solvers;
+
+static sighandler_t system_sigxcpu_handler = nullptr;
+
+//static initializer, following http://stackoverflow.com/a/1681655
+namespace {
+  struct initializer {
+    initializer() {
+    	system_sigxcpu_handler=nullptr;
+    	time_limit=-1;
+    	memory_limit=-1;
+    	has_system_time_limit=false;
+    	has_system_mem_limit=false;
+    }
+
+    ~initializer() {
+    	solvers.clear();
+    }
+  };
+  static initializer i;
+}
+
+static void SIGNAL_HANDLER_api(int signum) {
+	for(Solver* solver:solvers)
+		solver->interrupt();
+}
+
 
 //Select which algorithms to apply for graph and geometric theory solvers, by parsing command line arguments and defaults.
 void _selectAlgorithms(){
@@ -206,7 +251,25 @@ struct MonosatData{
 	Monosat::BVTheorySolver<long> * bv_theory=nullptr;
 	vec< Monosat::GraphTheorySolver<long> *> graphs;
 };
-void * newSolver(int argc, char**argv){
+
+
+Monosat::SimpSolver * newSolver(){
+	return newSolver_arg(nullptr);
+}
+
+Monosat::SimpSolver * newSolver_arg(char*argv){
+	if (argv){
+		istringstream iss(argv);
+		vector<char*> tokens{istream_iterator<char*>{iss},
+		                      istream_iterator<char*>{}};
+		return newSolver_args(tokens.size(),(char **) tokens.data());
+	}else{
+		return newSolver_args(0,nullptr);
+	}
+}
+
+
+Monosat::SimpSolver * newSolver_args(int argc, char**argv){
 	parseOptions(argc, argv, true);
 	if (opt_adaptive_conflict_mincut == 1) {
 		opt_conflict_min_cut = true;
@@ -220,7 +283,7 @@ void * newSolver(int argc, char**argv){
 	}
 	_selectAlgorithms();
 	  Monosat::SimpSolver * S = new Monosat::SimpSolver();
-
+	  solvers.insert(S);//add S to the list of solvers handled by signals
 	  S->_external_data =(void*)new MonosatData();
 	  if(!opt_pre){
 		  S->eliminate(true);//disable preprocessing.
@@ -229,6 +292,8 @@ void * newSolver(int argc, char**argv){
 }
 void deleteSolver (Monosat::SimpSolver * S)
 {
+	S->interrupt();
+	solvers.erase(S);//remove S from the list of solvers in the signal handler
 	  if(S->_external_data){
 		  delete((MonosatData*)S->_external_data);
 		  S->_external_data=nullptr;
@@ -283,7 +348,7 @@ void readGNF(Monosat::SimpSolver * S, const char  * filename){
 
 }
 
-void * newGraph(Monosat::SimpSolver * S){
+Monosat::GraphTheorySolver<int64_t> *  newGraph(Monosat::SimpSolver * S){
 	  MonosatData * d = (MonosatData*) S->_external_data;
 	  Monosat::GraphTheorySolver<long> *graph = new Monosat::GraphTheorySolver<long>(S);
 	  S->addTheory(graph);
@@ -297,7 +362,7 @@ void * newGraph(Monosat::SimpSolver * S){
 void backtrack(Monosat::SimpSolver * S){
 	S->cancelUntil(0);
 }
-void * initBVTheory(Monosat::SimpSolver * S){
+Monosat::BVTheorySolver<int64_t> * initBVTheory(Monosat::SimpSolver * S){
 	MonosatData * d = (MonosatData*) S->_external_data;
 	if(d->bv_theory)
 		return d->bv_theory;
@@ -318,31 +383,115 @@ bool solveAssumptions(Monosat::SimpSolver * S,int * assumptions, int n_assumptio
 	return solveAssumptions_MinBVs(S,assumptions,n_assumptions,nullptr,0);
  }
 
-bool solveAssumptions_MinBVs(Monosat::SimpSolver * S,int * assumptions, int n_assumptions, int * minimize_bvs, int n_minimize_bvs){
-	lbool ret = toLbool(solveAssumptionsLimited_MinBVs(S,-1,assumptions, n_assumptions, minimize_bvs, n_minimize_bvs));
-	if(ret==l_True){
-		return true;
-	}else if (ret==l_False){
-		return false;
+
+void setTimeLimit(Monosat::SimpSolver * S,int seconds){
+	// Set limit on CPU-time:
+	time_limit=seconds;
+}
+void setMemoryLimit(Monosat::SimpSolver * S,int mb){
+	memory_limit=mb;
+}
+void setConflictLimit(Monosat::SimpSolver * S,int num_conflicts){
+	S->setConfBudget(num_conflicts);
+}
+void setPropagationLimit(Monosat::SimpSolver * S,int num_propagations){
+	S->setPropBudget(num_propagations);
+}
+
+
+int solveLimited(Monosat::SimpSolver * S){
+	return solveAssumptionsLimited(S,nullptr,0);
+  }
+
+int solveAssumptionsLimited(Monosat::SimpSolver * S,int * assumptions, int n_assumptions){
+	return solveAssumptionsLimited_MinBVs(S,assumptions,n_assumptions,nullptr,0);
+ }
+
+void enableResourceLimits(){
+	rlimit rl;
+	getrlimit(RLIMIT_CPU, &rl);
+	if(!has_system_time_limit){
+		has_system_time_limit=true;
+		system_time_limit=rl.rlim_cur;
+	}
+	if (time_limit < INT32_MAX && time_limit>=0) {
+
+		if (rl.rlim_max == RLIM_INFINITY || (rlim_t) time_limit < rl.rlim_max) {
+			rl.rlim_cur = time_limit;
+			if (setrlimit(RLIMIT_CPU, &rl) == -1)
+				api_errorf("WARNING! Could not set resource limit: CPU-time.\n");
+		}
 	}else{
-		throw std::runtime_error("Failed to solve!");
+		rl.rlim_cur = rl.rlim_max;
+		if (setrlimit(RLIMIT_CPU, &rl) == -1)
+			api_errorf("WARNING! Could not set resource limit: CPU-time.\n");
+	}
+
+	getrlimit(RLIMIT_AS, &rl);
+	if(!has_system_mem_limit){
+		has_system_mem_limit=true;
+		system_mem_limit=rl.rlim_cur;
+	}
+	// Set limit on virtual memory:
+	if (memory_limit < INT32_MAX && memory_limit>=0) {
+		rlim_t new_mem_lim = (rlim_t) memory_limit * 1024 * 1024; //Is this safe?
+
+		if (rl.rlim_max == RLIM_INFINITY || new_mem_lim < rl.rlim_max) {
+			rl.rlim_cur = new_mem_lim;
+			if (setrlimit(RLIMIT_AS, &rl) == -1)
+				fprintf(stderr, "WARNING! Could not set resource limit: Virtual memory.\n");
+		}else{
+			rl.rlim_cur = rl.rlim_max;
+			if (setrlimit(RLIMIT_AS, &rl) == -1)
+				fprintf(stderr, "WARNING! Could not set resource limit: Virtual memory.\n");
+		}
+	}
+	sighandler_t old_sigxcpu = signal(SIGXCPU, SIGNAL_HANDLER_api);
+	if(old_sigxcpu != SIGNAL_HANDLER_api){
+		system_sigxcpu_handler = old_sigxcpu;//store this value for later
 	}
 }
 
-int solveLimited(Monosat::SimpSolver * S,int conflict_limit){
-	return solveAssumptionsLimited(S,conflict_limit,nullptr,0);
-  }
+void disableResourceLimits(){
+	rlimit rl;
+	getrlimit(RLIMIT_CPU, &rl);
+	if(has_system_time_limit){
+		has_system_time_limit=false;
+		if (rl.rlim_max == RLIM_INFINITY || (rlim_t)system_time_limit < rl.rlim_max) {
+			rl.rlim_cur = system_time_limit;
+			if (setrlimit(RLIMIT_CPU, &rl) == -1)
+				api_errorf("WARNING! Could not set resource limit: CPU-time.\n");
+		}else{
+			rl.rlim_cur = rl.rlim_max;
+			if (setrlimit(RLIMIT_CPU, &rl) == -1)
+				api_errorf("WARNING! Could not set resource limit: CPU-time.\n");
+		}
+	}
+	getrlimit(RLIMIT_AS, &rl);
+	if(has_system_mem_limit){
+		has_system_mem_limit=false;
+		if (rl.rlim_max == RLIM_INFINITY || system_mem_limit < rl.rlim_max) {
+			rl.rlim_cur = system_mem_limit;
+			if (setrlimit(RLIMIT_AS, &rl) == -1)
+				fprintf(stderr, "WARNING! Could not set resource limit: Virtual memory.\n");
+		}else{
+			rl.rlim_cur = rl.rlim_max;
+			if (setrlimit(RLIMIT_AS, &rl) == -1)
+				fprintf(stderr, "WARNING! Could not set resource limit: Virtual memory.\n");
+		}
+	}
+	if (system_sigxcpu_handler){
+		 signal(SIGXCPU, system_sigxcpu_handler);
+		 system_sigxcpu_handler=nullptr;
+	}
+}
 
-int solveAssumptionsLimited(Monosat::SimpSolver * S,int conflict_limit,int * assumptions, int n_assumptions){
-	return solveAssumptionsLimited_MinBVs(S,conflict_limit,assumptions,n_assumptions,nullptr,0);
- }
 
+int _solve(Monosat::SimpSolver * S,int * assumptions, int n_assumptions, int * minimize_bvs, int n_minimize_bvs){
 
-int solveAssumptionsLimited_MinBVs(Monosat::SimpSolver * S,int conflict_limit,int * assumptions, int n_assumptions, int * minimize_bvs, int n_minimize_bvs){
-	using namespace Monosat;
+	enableResourceLimits();
 
 	S->cancelUntil(0);
-
 	  S->preprocess();//do this _even_ if sat based preprocessing is disabled! Some of the theory solvers depend on a preprocessing call being made!
 
 	  vec<Monosat::Lit> assume;
@@ -371,16 +520,33 @@ int solveAssumptionsLimited_MinBVs(Monosat::SimpSolver * S,int conflict_limit,in
 		  bvs.push(bvID);
 	  }
 
-
-	  lbool r = optimize_and_solve(*S, assume,bvs, conflict_limit);
+	  lbool r = optimize_and_solve(*S, assume,bvs);
 
 	if (opt_verb >= 1) {
 		printStats(S);
 
 	}
-
+	disableResourceLimits();
 	return toInt(r);
 }
+
+bool solveAssumptions_MinBVs(Monosat::SimpSolver * S,int * assumptions, int n_assumptions, int * minimize_bvs, int n_minimize_bvs){
+	disableResourceLimits();
+	S->budgetOff();
+	lbool ret = toLbool(_solve(S,assumptions, n_assumptions, minimize_bvs, n_minimize_bvs));
+	if(ret==l_True){
+		return true;
+	}else if (ret==l_False){
+		return false;
+	}else{
+		throw std::runtime_error("Failed to solve!");
+	}
+}
+int solveAssumptionsLimited_MinBVs(Monosat::SimpSolver * S,int * assumptions, int n_assumptions, int * minimize_bvs, int n_minimize_bvs){
+	int r = _solve(S, assumptions,  n_assumptions,  minimize_bvs,  n_minimize_bvs);
+	return r;
+}
+
 
  int newVar(Monosat::SimpSolver * S){
 	  return S->newVar();
@@ -449,7 +615,9 @@ int solveAssumptionsLimited_MinBVs(Monosat::SimpSolver * S,int conflict_limit,in
  }
 
  //theory interface for bitvectors
-
+ int newBitvector_anon(Monosat::SimpSolver * S,Monosat::BVTheorySolver<long> * bv, int bvWidth){
+	 return bv->newBitvector_Anon(-1,bvWidth).getID();
+ }
  int newBitvector_const(Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv, int bvWidth, long constval){
 	 return bv->newBitvector(-1,bvWidth,constval).getID();
  }
@@ -463,7 +631,9 @@ int solveAssumptionsLimited_MinBVs(Monosat::SimpSolver * S,int conflict_limit,in
 	  bv->newBitvector(bvID,lits);
 	  return bvID;
  }
-
+ int bv_width(Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv,int bvID){
+	 return bv->getWidth(bvID);
+ }
  int newBVComparison_const_lt(Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv, int bvID, long weight){
 	  Var v = newVar(S);
 	  Lit l =mkLit(v);
@@ -513,19 +683,19 @@ int solveAssumptionsLimited_MinBVs(Monosat::SimpSolver * S,int conflict_limit,in
 	  bv->newComparisonBV(Monosat::Comparison::geq,bvID,compareID,v);
 	  return toInt(l);
  }
- void bv_min(Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv, int n_args, int* args,int resultID){
+ void bv_min(Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv, int* args, int n_args,int resultID){
 	 vec<int> m_args;
 	 for (int i = 0;i<n_args;i++)
 		 m_args.push(args[i]);
 	 bv->newMinBV(resultID, m_args);
  }
- void bv_max(Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv, int n_args, int* args, int resultID){
+ void bv_max(Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv,  int* args,int n_args, int resultID){
 	 vec<int> m_args;
 	 for (int i = 0;i<n_args;i++)
 		 m_args.push(args[i]);
 	 bv->newMaxBV(resultID, m_args);
  }
- void bv_popcount(Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv, int n_args, int* args, int resultID){
+ void bv_popcount(Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv,  int* args,int n_args, int resultID){
 	 vec<int> m_args;
 	 for (int i = 0;i<n_args;i++){
 		 Lit l = toLit(args[i]);
@@ -729,6 +899,7 @@ void bv_slice( Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv,int a
 	  return toInt(l);
  }
 
+
  void newEdgeSet(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<long> *G,int * edges, int n_edges){
 	  static vec<int> edge_set;
 	  edge_set.clear();
@@ -751,6 +922,47 @@ void bv_slice( Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv,int a
 	  }
 	  G->newEdgeSet(edge_set);
  }
+
+//FSM Interface
+
+ Monosat::FSMTheorySolver * initFSMTheory(Monosat::SimpSolver * S){
+	Monosat::FSMTheorySolver  * theory = new Monosat::FSMTheorySolver(S);
+	S->addTheory(theory);
+	return theory;
+ }
+ int newFSM(Monosat::SimpSolver * S, Monosat::FSMTheorySolver *  fsmTheory, int inputAlphabet, int outputAlphabet){
+	 int fsmID = fsmTheory->newFSM();
+	 fsmTheory->setAlphabets(fsmID,inputAlphabet,outputAlphabet);
+	 return fsmID;
+ }
+ int newState(Monosat::SimpSolver * S, Monosat::FSMTheorySolver *  fsmTheory, int fsmID){
+	 return fsmTheory->newNode(fsmID);
+ }
+
+ int newTransition(Monosat::SimpSolver * S, Monosat::FSMTheorySolver * fsmTheory, int fsmID, int fromNode, int toNode,int inputLabel, int outputLabel){
+	  Var v = newVar(S);
+	  Lit l =mkLit(v);
+	  fsmTheory->newTransition(fsmID,fromNode,toNode,inputLabel,outputLabel,v);
+	  return toInt(l);
+ }
+ int newString(Monosat::SimpSolver * S, Monosat::FSMTheorySolver *  fsmTheory, int * str,int len){
+	 vec<int> string;
+	 for(int i = 0;i<len;i++){
+		 int label = str[i];
+		 if(label<=0){
+			 api_errorf("String must consist of positive integers, found %d at position %d in string %d",label,i,fsmTheory->nStrings());
+		 }
+		 string.push(label);
+	 }
+	 return fsmTheory->newString(string);
+ }
+ int fsmAcceptsString(Monosat::SimpSolver * S, Monosat::FSMTheorySolver *  fsmTheory, int fsmID, int startNode, int acceptNode,int stringID){
+	 Var v = newVar(S);
+	 Lit l =mkLit(v);
+	 fsmTheory->addAcceptLit(fsmID,startNode,acceptNode,stringID,v);
+	 return toInt(l);
+ }
+
 
  //model query
  //Returns 0 for true, 1 for false, 2 for unassigned.

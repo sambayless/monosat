@@ -5116,7 +5116,9 @@ public:
 			return over_approx[bvID];
 		}
 	}
-
+	int getWidth(int bvID){
+		return getBits(bvID).size();
+	}
 	vec<Lit> & getBits(int bvID){
 		//can this be avoided?
 		while(eq_bitvectors[bvID]!=bvID)

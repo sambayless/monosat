@@ -7,46 +7,38 @@ import time
 
 
 
-def Solve(assumptions=None, preprocessing=True,bvs_to_minimize=None,conflict_limit=None):
+def Solve(assumptions=None, preprocessing=True,bvs_to_minimize=None,time_limit_seconds=None, memory_limit_mb=None,conflict_limit=None):
     WriteConstraints()
-    if conflict_limit is not None and conflict_limit <=0:
-        conflict_limit=None
+    if time_limit_seconds is None or time_limit_seconds <=0:
+        time_limit_seconds=-1
+    if memory_limit_mb is None or memory_limit_mb <=0:
+        memory_limit_mb=-1    
+    if conflict_limit is None or conflict_limit <=0:
+        conflict_limit=-1
+
+    Monosat().setTimeLimit(time_limit_seconds)
+    Monosat().setMemoryLimit(memory_limit_mb)
+    Monosat().setConflictLimit(conflict_limit)
+     
     #if preprocessing:
     #    Monosat().preprocess();
     print("Solving in Monosat...")
     t = time.clock()
-    if assumptions is not None or bvs_to_minimize is not None:
-        if isinstance(assumptions,Var):
-            assumptions=[assumptions]
-        elif assumptions is None:
-            assumptions = []
+
+    if isinstance(assumptions,Var):
+        assumptions=[assumptions]
+    elif assumptions is None:
+        assumptions = []
             
-        if isinstance(bvs_to_minimize,BitVector):
-            bvs_to_minimize=[bvs_to_minimize]
-        elif bvs_to_minimize is None:
-            bvs_to_minimize=[]
+    if isinstance(bvs_to_minimize,BitVector):
+        bvs_to_minimize=[bvs_to_minimize]
+    elif bvs_to_minimize is None:
+        bvs_to_minimize=[]
         
-        if conflict_limit is not None:   
-            res= Monosat().solveAssumptionsLimited(conflict_limit,[x.getLit() for x in assumptions],[bv.getID() for bv in bvs_to_minimize])
-            if res ==0:
-                r=True
-            elif res==1:
-                r=False
-            else:
-                r=None
-        else:
-            r= Monosat().solveAssumptions([x.getLit() for x in assumptions],[bv.getID() for bv in bvs_to_minimize])
-    else:     
-        if conflict_limit is not None:
-            res= Monosat().solveLimited(conflict_limit)
-            if res ==0:
-                r=True
-            elif res==1:
-                r=False
-            else:
-                r=None               
-        else:
-            r= Monosat().solve()
+  
+    r= Monosat().solveLimited([x.getLit() for x in assumptions],[bv.getID() for bv in bvs_to_minimize])     
+    if r is None:
+        raise RuntimeError("MonoSAT aborted before solving (possibly do to a time or memory limit)")
     Monosat().elapsed_time +=  time.clock()-t
     return r
 

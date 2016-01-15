@@ -648,7 +648,7 @@ int main(int argc, char** argv) {
 				if(!opt_remap_vars){
 					fprintf(stderr,"Warning: Solver will give completely bogus answers if 'solve' statements are processed while variable remapping is disabled (e.g., -no-remap-vars)\n\n");
 				}
-				optimize_and_solve(S,parser.assumptions,parser.bv_minimize,opt_conflict_limit);
+				optimize_and_solve(S,parser.assumptions,parser.bv_minimize);
 			}else{
 				parser.assumptions.clear();parser.bv_minimize.clear();
 			}
@@ -703,7 +703,7 @@ int main(int argc, char** argv) {
 
 
 
-		lbool ret = optimize_and_solve(S,parser.assumptions,parser.bv_minimize,opt_conflict_limit);
+		lbool ret = optimize_and_solve(S,parser.assumptions,parser.bv_minimize);
 		double solving_time = rtime(0) - after_preprocessing;
 		if (opt_verb > 0) {
 			printf("Solving time = %f\n", solving_time);

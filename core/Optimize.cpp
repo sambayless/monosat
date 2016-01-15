@@ -14,7 +14,7 @@
 #include <cstdarg>
 namespace Monosat{
 
-long optimize_linear(Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bvTheory,const vec<Lit> & assumes,int bvID, int conflict_limit, bool & hit_cutoff, long & n_solves){
+long optimize_linear(Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bvTheory,const vec<Lit> & assumes,int bvID, bool & hit_cutoff, long & n_solves){
 	vec<Lit> assume;
 	for(Lit l:assumes)
 		assume.push(l);
@@ -41,27 +41,29 @@ long optimize_linear(Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv
 		  assume.push(decision_lit);
 		  n_solves++;
 
-		  bool r;
 
-		  if(opt_limit_conflicts>0 || conflict_limit>=0){
-			  if(conflict_limit<0)
-				  conflict_limit=INT32_MAX;
-			  int opt_lim = opt_limit_conflicts;
-			  if(opt_lim<=0)
-				  opt_lim=INT32_MAX;
-			  int limit = std::min(opt_lim,conflict_limit);
-			  S->setConfBudget(limit);
-			  lbool res = S->solveLimited(assume,false,false);
-			  if (res==l_Undef){
-				  if(opt_verb>0){
-					  printf("\nBudget exceeded during optimization, quiting early (model might not be optimal!)\n");
-				  }
-				  r=false;
-			  }else{
-				  r = res==l_True;
+
+		  int conflict_limit = S->getConflictBudget();
+		  if(conflict_limit<0)
+			  conflict_limit=INT32_MAX;
+		  int opt_lim = opt_limit_optimization_conflicts;
+		  if(opt_lim<=0)
+			  opt_lim=INT32_MAX;
+		  int limit = std::min(opt_lim,conflict_limit);
+		  if(limit>= INT32_MAX){
+			limit=-1;//disable limit.
+		  }
+		  S->setConfBudget(limit);
+		  bool r;
+		  lbool res = S->solveLimited(assume,false,false);
+		  if (res==l_Undef){
+			  if(opt_verb>0){
+				  printf("\nBudget exceeded during optimization, quiting early (model might not be optimal!)\n");
 			  }
-		  }else
-			  r = S->solve(assume,false,false);
+			  r=false;
+		  }else{
+			  r = res==l_True;
+		  }
 
 
 		  if (r){
@@ -123,7 +125,7 @@ long optimize_linear(Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv
 	  return value;
 }
 
-long optimize_binary(Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bvTheory,const vec<Lit> & assumes,int bvID, int conflict_limit, bool & hit_cutoff, long & n_solves){
+long optimize_binary(Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bvTheory,const vec<Lit> & assumes,int bvID,  bool & hit_cutoff, long & n_solves){
 	vec<Lit> assume;
 	for(Lit l:assumes)
 		assume.push(l);
@@ -155,27 +157,27 @@ long optimize_binary(Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv
 		  assume.push(decision_lit);
 		  n_solves++;
 
+		  int conflict_limit = S->getConflictBudget();
+		  if(conflict_limit<0)
+			  conflict_limit=INT32_MAX;
+		  int opt_lim = opt_limit_optimization_conflicts;
+		  if(opt_lim<=0)
+			  opt_lim=INT32_MAX;
+		  int limit = std::min(opt_lim,conflict_limit);
+		  if(limit>= INT32_MAX){
+			limit=-1;//disable limit.
+		  }
+		  S->setConfBudget(limit);
 		  bool r;
-
-		  if(opt_limit_conflicts>0 || conflict_limit>=0){
-			  if(conflict_limit<0)
-				  conflict_limit=INT32_MAX;
-			  int opt_lim = opt_limit_conflicts;
-			  if(opt_lim<=0)
-				  opt_lim=INT32_MAX;
-			  int limit = std::min(opt_lim,conflict_limit);
-			  S->setConfBudget(limit);
-			  lbool res = S->solveLimited(assume,false,false);
-			  if (res==l_Undef){
-				  if(opt_verb>0){
-					  printf("\nBudget exceeded during optimization, quiting early (model might not be optimal!)\n");
-				  }
-				  r=false;
-			  }else{
-				  r = res==l_True;
+		  lbool res = S->solveLimited(assume,false,false);
+		  if (res==l_Undef){
+			  if(opt_verb>0){
+				  printf("\nBudget exceeded during optimization, quiting early (model might not be optimal!)\n");
 			  }
-		  }else
-			  r = S->solve(assume,false,false);
+			  r=false;
+		  }else{
+			  r = res==l_True;
+		  }
 
 		  assume.pop();
 		  if (r){
@@ -243,7 +245,7 @@ long optimize_binary(Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv
 }
 
 
-lbool optimize_and_solve(SimpSolver & S,const vec<Lit> & assumes,const vec<int> & bvs,int conflict_limit){
+lbool optimize_and_solve(SimpSolver & S,const vec<Lit> & assumes,const vec<int> & bvs){
 	vec<Lit> assume;
 	for(Lit l:assumes)
 		assume.push(l);
@@ -267,31 +269,23 @@ lbool optimize_and_solve(SimpSolver & S,const vec<Lit> & assumes,const vec<int> 
 		printf("\n");
 	}
 	if(!bvs.size()){
-		if(conflict_limit<=0){
-			return S.solve(assume,false,false) ? l_True:l_False;
-		}else{
-			  S.setConfBudget(conflict_limit);
-			  return S.solveLimited(assume,opt_pre,!opt_pre);
-		}
+
+		  return S.solveLimited(assume,opt_pre,!opt_pre);
+
 	}else{
 		  if(!S.getBVTheory()){
 			  throw std::runtime_error("No bitvector theory created (call initBVTheory())!");
 		  }
 
-		  bool r ;
-			if(conflict_limit<=0){
-				r = S.solve(assume,false,false) ;
-			}else{
-				  S.setConfBudget(conflict_limit);
-				  lbool res= S.solveLimited(assume,opt_pre,!opt_pre);
-				  if (res==l_True){
-					  r=true;
-				  }else if (res==l_False){
-					  r=false;
-				  }else{
-					  return l_Undef;
-				  }
-			}
+		  bool r;
+		  lbool res= S.solveLimited(assume,opt_pre,!opt_pre);
+		  if (res==l_True){
+			  r=true;
+		  }else if (res==l_False){
+			  r=false;
+		  }else{
+			  return l_Undef;
+		  }
 
 		  if(r && bvs.size()){
 			  for(Lit l:assume){
@@ -315,9 +309,9 @@ lbool optimize_and_solve(SimpSolver & S,const vec<Lit> & assumes,const vec<int> 
 				  }
 				  bool hit_cutoff=false;
 				  if(!opt_binary_search_optimization)
-					  min_values[i] = optimize_linear(&S,bvTheory,assume,bvID,-1,hit_cutoff,n_solves);
+					  min_values[i] = optimize_linear(&S,bvTheory,assume,bvID,hit_cutoff,n_solves);
 				  else
-					  min_values[i] = optimize_binary(&S,bvTheory,assume,bvID,-1,hit_cutoff,n_solves);
+					  min_values[i] = optimize_binary(&S,bvTheory,assume,bvID,hit_cutoff,n_solves);
 
 				  assume.push(bvTheory->toSolver(bvTheory->newComparison(Comparison::leq,bvID,min_values[i],var_Undef,opt_decide_optimization_lits)));
 
