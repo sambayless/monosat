@@ -46,42 +46,130 @@ inline void api_errorf(const char *fmt, ...) {
 
 }
 
-//Global time and memory limits shared among all solvers
-static long long time_limit=-1;
-static long long memory_limit=-1;
+namespace APISignal{
+	//Global time and memory limits shared among all solvers
+	static long long time_limit=-1;
+	static long long memory_limit=-1;
 
-static bool has_system_time_limit=false;
-static rlim_t system_time_limit;
-static bool has_system_mem_limit=false;
-static rlim_t system_mem_limit;
+	static bool has_system_time_limit=false;
+	static rlim_t system_time_limit;
+	static bool has_system_mem_limit=false;
+	static rlim_t system_mem_limit;
 
-static std::set<Solver*> solvers;
+	static std::set<Solver*> solvers;
 
-static sighandler_t system_sigxcpu_handler = nullptr;
+	static sighandler_t system_sigxcpu_handler = nullptr;
 
-//static initializer, following http://stackoverflow.com/a/1681655
-namespace {
-  struct initializer {
-    initializer() {
-    	system_sigxcpu_handler=nullptr;
-    	time_limit=-1;
-    	memory_limit=-1;
-    	has_system_time_limit=false;
-    	has_system_mem_limit=false;
-    }
+	//static initializer, following http://stackoverflow.com/a/1681655
+	namespace {
+	  struct initializer {
+		initializer() {
+			system_sigxcpu_handler=nullptr;
+			time_limit=-1;
+			memory_limit=-1;
+			has_system_time_limit=false;
+			has_system_mem_limit=false;
+		}
 
-    ~initializer() {
-    	solvers.clear();
-    }
-  };
-  static initializer i;
+		~initializer() {
+			solvers.clear();
+		}
+	  };
+	  static initializer i;
+	}
+
+	static void SIGNAL_HANDLER_api(int signum) {
+		for(Solver* solver:solvers)
+			solver->interrupt();
+	}
+
+
+	void enableResourceLimits(){
+		struct rusage ru;
+		getrusage(RUSAGE_SELF, &ru);
+		__time_t cur_time = ru.ru_utime.tv_sec;
+
+		rlimit rl;
+		getrlimit(RLIMIT_CPU, &rl);
+		if(!has_system_time_limit){
+			has_system_time_limit=true;
+			system_time_limit=rl.rlim_cur;
+		}
+		if (time_limit < INT32_MAX && time_limit>=0) {
+			assert(cur_time>=0);
+			long long local_time_limit = 	 time_limit+cur_time;//make this a relative time limit
+
+			if (rl.rlim_max == RLIM_INFINITY || (rlim_t) local_time_limit < rl.rlim_max) {
+				rl.rlim_cur = local_time_limit;
+				if (setrlimit(RLIMIT_CPU, &rl) == -1)
+					api_errorf("WARNING! Could not set resource limit: CPU-time.\n");
+			}
+		}else{
+			rl.rlim_cur = rl.rlim_max;
+			if (setrlimit(RLIMIT_CPU, &rl) == -1)
+				api_errorf("WARNING! Could not set resource limit: CPU-time.\n");
+		}
+
+		getrlimit(RLIMIT_AS, &rl);
+		if(!has_system_mem_limit){
+			has_system_mem_limit=true;
+			system_mem_limit=rl.rlim_cur;
+		}
+		// Set limit on virtual memory:
+		if (memory_limit < INT32_MAX && memory_limit>=0) {
+			rlim_t new_mem_lim = (rlim_t) memory_limit * 1024 * 1024; //Is this safe?
+
+			if (rl.rlim_max == RLIM_INFINITY || new_mem_lim < rl.rlim_max) {
+				rl.rlim_cur = new_mem_lim;
+				if (setrlimit(RLIMIT_AS, &rl) == -1)
+					fprintf(stderr, "WARNING! Could not set resource limit: Virtual memory.\n");
+			}else{
+				rl.rlim_cur = rl.rlim_max;
+				if (setrlimit(RLIMIT_AS, &rl) == -1)
+					fprintf(stderr, "WARNING! Could not set resource limit: Virtual memory.\n");
+			}
+		}
+		sighandler_t old_sigxcpu = signal(SIGXCPU, SIGNAL_HANDLER_api);
+		if(old_sigxcpu != SIGNAL_HANDLER_api){
+			system_sigxcpu_handler = old_sigxcpu;//store this value for later
+		}
+	}
+
+	void disableResourceLimits(){
+		rlimit rl;
+		getrlimit(RLIMIT_CPU, &rl);
+		if(has_system_time_limit){
+			has_system_time_limit=false;
+			if (rl.rlim_max == RLIM_INFINITY || (rlim_t)system_time_limit < rl.rlim_max) {
+				rl.rlim_cur = system_time_limit;
+				if (setrlimit(RLIMIT_CPU, &rl) == -1)
+					api_errorf("WARNING! Could not set resource limit: CPU-time.\n");
+			}else{
+				rl.rlim_cur = rl.rlim_max;
+				if (setrlimit(RLIMIT_CPU, &rl) == -1)
+					api_errorf("WARNING! Could not set resource limit: CPU-time.\n");
+			}
+		}
+		getrlimit(RLIMIT_AS, &rl);
+		if(has_system_mem_limit){
+			has_system_mem_limit=false;
+			if (rl.rlim_max == RLIM_INFINITY || system_mem_limit < rl.rlim_max) {
+				rl.rlim_cur = system_mem_limit;
+				if (setrlimit(RLIMIT_AS, &rl) == -1)
+					fprintf(stderr, "WARNING! Could not set resource limit: Virtual memory.\n");
+			}else{
+				rl.rlim_cur = rl.rlim_max;
+				if (setrlimit(RLIMIT_AS, &rl) == -1)
+					fprintf(stderr, "WARNING! Could not set resource limit: Virtual memory.\n");
+			}
+		}
+		if (system_sigxcpu_handler){
+			 signal(SIGXCPU, system_sigxcpu_handler);
+			 system_sigxcpu_handler=nullptr;
+		}
+	}
+
 }
-
-static void SIGNAL_HANDLER_api(int signum) {
-	for(Solver* solver:solvers)
-		solver->interrupt();
-}
-
 
 //Select which algorithms to apply for graph and geometric theory solvers, by parsing command line arguments and defaults.
 void _selectAlgorithms(){
@@ -270,6 +358,7 @@ Monosat::SimpSolver * newSolver_arg(char*argv){
 
 
 Monosat::SimpSolver * newSolver_args(int argc, char**argv){
+	using namespace APISignal;
 	parseOptions(argc, argv, true);
 	if (opt_adaptive_conflict_mincut == 1) {
 		opt_conflict_min_cut = true;
@@ -292,6 +381,7 @@ Monosat::SimpSolver * newSolver_args(int argc, char**argv){
 }
 void deleteSolver (Monosat::SimpSolver * S)
 {
+	using namespace APISignal;
 	S->interrupt();
 	solvers.erase(S);//remove S from the list of solvers in the signal handler
 	  if(S->_external_data){
@@ -385,10 +475,12 @@ bool solveAssumptions(Monosat::SimpSolver * S,int * assumptions, int n_assumptio
 
 
 void setTimeLimit(Monosat::SimpSolver * S,int seconds){
+	using namespace APISignal;
 	// Set limit on CPU-time:
 	time_limit=seconds;
 }
 void setMemoryLimit(Monosat::SimpSolver * S,int mb){
+	using namespace APISignal;
 	memory_limit=mb;
 }
 void setConflictLimit(Monosat::SimpSolver * S,int num_conflicts){
@@ -407,89 +499,10 @@ int solveAssumptionsLimited(Monosat::SimpSolver * S,int * assumptions, int n_ass
 	return solveAssumptionsLimited_MinBVs(S,assumptions,n_assumptions,nullptr,0);
  }
 
-void enableResourceLimits(){
-	rlimit rl;
-	getrlimit(RLIMIT_CPU, &rl);
-	if(!has_system_time_limit){
-		has_system_time_limit=true;
-		system_time_limit=rl.rlim_cur;
-	}
-	if (time_limit < INT32_MAX && time_limit>=0) {
-
-		if (rl.rlim_max == RLIM_INFINITY || (rlim_t) time_limit < rl.rlim_max) {
-			rl.rlim_cur = time_limit;
-			if (setrlimit(RLIMIT_CPU, &rl) == -1)
-				api_errorf("WARNING! Could not set resource limit: CPU-time.\n");
-		}
-	}else{
-		rl.rlim_cur = rl.rlim_max;
-		if (setrlimit(RLIMIT_CPU, &rl) == -1)
-			api_errorf("WARNING! Could not set resource limit: CPU-time.\n");
-	}
-
-	getrlimit(RLIMIT_AS, &rl);
-	if(!has_system_mem_limit){
-		has_system_mem_limit=true;
-		system_mem_limit=rl.rlim_cur;
-	}
-	// Set limit on virtual memory:
-	if (memory_limit < INT32_MAX && memory_limit>=0) {
-		rlim_t new_mem_lim = (rlim_t) memory_limit * 1024 * 1024; //Is this safe?
-
-		if (rl.rlim_max == RLIM_INFINITY || new_mem_lim < rl.rlim_max) {
-			rl.rlim_cur = new_mem_lim;
-			if (setrlimit(RLIMIT_AS, &rl) == -1)
-				fprintf(stderr, "WARNING! Could not set resource limit: Virtual memory.\n");
-		}else{
-			rl.rlim_cur = rl.rlim_max;
-			if (setrlimit(RLIMIT_AS, &rl) == -1)
-				fprintf(stderr, "WARNING! Could not set resource limit: Virtual memory.\n");
-		}
-	}
-	sighandler_t old_sigxcpu = signal(SIGXCPU, SIGNAL_HANDLER_api);
-	if(old_sigxcpu != SIGNAL_HANDLER_api){
-		system_sigxcpu_handler = old_sigxcpu;//store this value for later
-	}
-}
-
-void disableResourceLimits(){
-	rlimit rl;
-	getrlimit(RLIMIT_CPU, &rl);
-	if(has_system_time_limit){
-		has_system_time_limit=false;
-		if (rl.rlim_max == RLIM_INFINITY || (rlim_t)system_time_limit < rl.rlim_max) {
-			rl.rlim_cur = system_time_limit;
-			if (setrlimit(RLIMIT_CPU, &rl) == -1)
-				api_errorf("WARNING! Could not set resource limit: CPU-time.\n");
-		}else{
-			rl.rlim_cur = rl.rlim_max;
-			if (setrlimit(RLIMIT_CPU, &rl) == -1)
-				api_errorf("WARNING! Could not set resource limit: CPU-time.\n");
-		}
-	}
-	getrlimit(RLIMIT_AS, &rl);
-	if(has_system_mem_limit){
-		has_system_mem_limit=false;
-		if (rl.rlim_max == RLIM_INFINITY || system_mem_limit < rl.rlim_max) {
-			rl.rlim_cur = system_mem_limit;
-			if (setrlimit(RLIMIT_AS, &rl) == -1)
-				fprintf(stderr, "WARNING! Could not set resource limit: Virtual memory.\n");
-		}else{
-			rl.rlim_cur = rl.rlim_max;
-			if (setrlimit(RLIMIT_AS, &rl) == -1)
-				fprintf(stderr, "WARNING! Could not set resource limit: Virtual memory.\n");
-		}
-	}
-	if (system_sigxcpu_handler){
-		 signal(SIGXCPU, system_sigxcpu_handler);
-		 system_sigxcpu_handler=nullptr;
-	}
-}
-
 
 int _solve(Monosat::SimpSolver * S,int * assumptions, int n_assumptions, int * minimize_bvs, int n_minimize_bvs){
 
-	enableResourceLimits();
+	APISignal::enableResourceLimits();
 
 	S->cancelUntil(0);
 	  S->preprocess();//do this _even_ if sat based preprocessing is disabled! Some of the theory solvers depend on a preprocessing call being made!
@@ -526,12 +539,12 @@ int _solve(Monosat::SimpSolver * S,int * assumptions, int n_assumptions, int * m
 		printStats(S);
 
 	}
-	disableResourceLimits();
+	APISignal::disableResourceLimits();
 	return toInt(r);
 }
 
 bool solveAssumptions_MinBVs(Monosat::SimpSolver * S,int * assumptions, int n_assumptions, int * minimize_bvs, int n_minimize_bvs){
-	disableResourceLimits();
+	APISignal::disableResourceLimits();
 	S->budgetOff();
 	lbool ret = toLbool(_solve(S,assumptions, n_assumptions, minimize_bvs, n_minimize_bvs));
 	if(ret==l_True){

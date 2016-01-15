@@ -170,7 +170,7 @@ class FSMParser: public Parser<B, Solver> {
 			if (i<=0){
 				parse_errorf("FSM strings must contain only positive (non-zero) integers, found %d\n", i);
 			}
-			strings->[strID].push(i);
+			(*strings)[strID].push(i);
 			stringLabels[strID]= std::max(stringLabels[strID],i+1);
 			skipWhitespace(in);
 			if (isEof(in) || *in == '\n')

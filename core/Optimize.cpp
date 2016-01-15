@@ -9,10 +9,143 @@
 #define OPTIMIZE_CPP_
 #include "Optimize.h"
 #include "core/Config.h"
-
+#include <csignal>
 #include <stdexcept>
 #include <cstdarg>
+
 namespace Monosat{
+
+namespace Optimization{
+	static long long time_limit=-1;
+	static long long memory_limit=-1;
+
+	static bool has_system_time_limit=false;
+	static rlim_t system_time_limit;
+	static bool has_system_mem_limit=false;
+	static rlim_t system_mem_limit;
+
+	static Solver * solver;
+
+	static sighandler_t system_sigxcpu_handler = nullptr;
+
+	//static initializer, following http://stackoverflow.com/a/1681655
+	namespace {
+	  struct initializer {
+		initializer() {
+			system_sigxcpu_handler=nullptr;
+			time_limit=-1;
+			memory_limit=-1;
+			has_system_time_limit=false;
+			has_system_mem_limit=false;
+		}
+
+		~initializer() {
+			solver =nullptr;
+		}
+	  };
+	  static initializer i;
+	}
+
+	static void SIGNAL_HANDLER_api(int signum) {
+		if(solver){
+			fprintf(stderr,"Monosat resource limit reached\n");
+
+			solver->interrupt();
+		}
+	}
+
+
+	void enableResourceLimits(Solver * S){
+		assert(solver==nullptr);
+		solver=S;
+
+		struct rusage ru;
+		getrusage(RUSAGE_SELF, &ru);
+		__time_t cur_time = ru.ru_utime.tv_sec;
+
+		rlimit rl;
+		getrlimit(RLIMIT_CPU, &rl);
+		time_limit = opt_limit_optimization_time;
+		if(!has_system_time_limit){
+			has_system_time_limit=true;
+			system_time_limit=rl.rlim_cur;
+		}
+
+		if (time_limit < INT32_MAX && time_limit>=0) {
+			assert(cur_time>=0);
+			long long local_time_limit = 	 time_limit+cur_time;//make this a relative time limit
+			if (rl.rlim_max == RLIM_INFINITY || (rlim_t) local_time_limit < rl.rlim_max) {
+				rl.rlim_cur = local_time_limit;
+				if (setrlimit(RLIMIT_CPU, &rl) == -1)
+					fprintf(stderr,"WARNING! Could not set resource limit: CPU-time.\n");
+			}
+		}else{
+			rl.rlim_cur = rl.rlim_max;
+			if (setrlimit(RLIMIT_CPU, &rl) == -1)
+				fprintf(stderr,"WARNING! Could not set resource limit: CPU-time.\n");
+		}
+
+		getrlimit(RLIMIT_AS, &rl);
+		if(!has_system_mem_limit){
+			has_system_mem_limit=true;
+			system_mem_limit=rl.rlim_cur;
+		}
+		// Set limit on virtual memory:
+		if (memory_limit < INT32_MAX && memory_limit>=0) {
+			rlim_t new_mem_lim = (rlim_t) memory_limit * 1024 * 1024; //Is this safe?
+
+			if (rl.rlim_max == RLIM_INFINITY || new_mem_lim < rl.rlim_max) {
+				rl.rlim_cur = new_mem_lim;
+				if (setrlimit(RLIMIT_AS, &rl) == -1)
+					fprintf(stderr, "WARNING! Could not set resource limit: Virtual memory.\n");
+			}else{
+				rl.rlim_cur = rl.rlim_max;
+				if (setrlimit(RLIMIT_AS, &rl) == -1)
+					fprintf(stderr, "WARNING! Could not set resource limit: Virtual memory.\n");
+			}
+		}
+		sighandler_t old_sigxcpu = signal(SIGXCPU, SIGNAL_HANDLER_api);
+		if(old_sigxcpu != SIGNAL_HANDLER_api){
+			system_sigxcpu_handler = old_sigxcpu;//store this value for later
+		}
+	}
+
+	void disableResourceLimits(Solver * S){
+		assert(solver!=nullptr);
+		solver=nullptr;
+		rlimit rl;
+		getrlimit(RLIMIT_CPU, &rl);
+		if(has_system_time_limit){
+			has_system_time_limit=false;
+			if (rl.rlim_max == RLIM_INFINITY || (rlim_t)system_time_limit < rl.rlim_max) {
+				rl.rlim_cur = system_time_limit;
+				if (setrlimit(RLIMIT_CPU, &rl) == -1)
+					fprintf(stderr,"WARNING! Could not set resource limit: CPU-time.\n");
+			}else{
+				rl.rlim_cur = rl.rlim_max;
+				if (setrlimit(RLIMIT_CPU, &rl) == -1)
+					fprintf(stderr,"WARNING! Could not set resource limit: CPU-time.\n");
+			}
+		}
+		getrlimit(RLIMIT_AS, &rl);
+		if(has_system_mem_limit){
+			has_system_mem_limit=false;
+			if (rl.rlim_max == RLIM_INFINITY || system_mem_limit < rl.rlim_max) {
+				rl.rlim_cur = system_mem_limit;
+				if (setrlimit(RLIMIT_AS, &rl) == -1)
+					fprintf(stderr, "WARNING! Could not set resource limit: Virtual memory.\n");
+			}else{
+				rl.rlim_cur = rl.rlim_max;
+				if (setrlimit(RLIMIT_AS, &rl) == -1)
+					fprintf(stderr, "WARNING! Could not set resource limit: Virtual memory.\n");
+			}
+		}
+		if (system_sigxcpu_handler){
+			 signal(SIGXCPU, system_sigxcpu_handler);
+			 system_sigxcpu_handler=nullptr;
+		}
+	}
+}
 
 long optimize_linear(Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bvTheory,const vec<Lit> & assumes,int bvID, bool & hit_cutoff, long & n_solves){
 	vec<Lit> assume;
@@ -157,6 +290,7 @@ long optimize_binary(Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv
 		  assume.push(decision_lit);
 		  n_solves++;
 
+		  {
 		  int conflict_limit = S->getConflictBudget();
 		  if(conflict_limit<0)
 			  conflict_limit=INT32_MAX;
@@ -168,9 +302,14 @@ long optimize_binary(Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv
 			limit=-1;//disable limit.
 		  }
 		  S->setConfBudget(limit);
+		  }
+
+		  Optimization::enableResourceLimits(S);
 		  bool r;
 		  lbool res = S->solveLimited(assume,false,false);
+		  Optimization::disableResourceLimits(S);
 		  if (res==l_Undef){
+			  hit_cutoff=true;
 			  if(opt_verb>0){
 				  printf("\nBudget exceeded during optimization, quiting early (model might not be optimal!)\n");
 			  }
@@ -211,12 +350,14 @@ long optimize_binary(Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv
 			  }
 		  }else{
 			  min_val = mid_point+1;
+
 			  //set the solver back to its last satisfying assignment
 			  //this is technically not required, but it should be cheap, and will also reset the solvers decision phase heuristic
 			  r= S->solve(last_satisfying_assign,false,false);
 			  if(!r){
 				  throw std::runtime_error("Error in optimization (instance has become unsat)");
 			  }
+
 		  }
 	  }
 
@@ -288,6 +429,10 @@ lbool optimize_and_solve(SimpSolver & S,const vec<Lit> & assumes,const vec<int> 
 		  }
 
 		  if(r && bvs.size()){
+
+
+
+
 			  for(Lit l:assume){
 					if(S.value(l)!=l_True){
 						throw std::runtime_error("Error in optimization (model is inconsistent with assumptions)");
@@ -300,14 +445,15 @@ lbool optimize_and_solve(SimpSolver & S,const vec<Lit> & assumes,const vec<int> 
 				  min_values[i]=bvTheory->getOverApprox(bvs[i],true);
 			  }
 			  long n_solves = 1;
-			  for (int i = 0;i<bvs.size();i++){
+			  bool hit_cutoff=false;
+			  for (int i = 0;i<bvs.size() && !hit_cutoff;i++){
 
 				  int bvID = bvs[i];
 
 				  if(opt_verb>=1){
 					  printf("Minimizing bv%d (%d of %d)\n",bvID,i+1,bvs.size());
 				  }
-				  bool hit_cutoff=false;
+
 				  if(!opt_binary_search_optimization)
 					  min_values[i] = optimize_linear(&S,bvTheory,assume,bvID,hit_cutoff,n_solves);
 				  else
@@ -358,6 +504,7 @@ lbool optimize_and_solve(SimpSolver & S,const vec<Lit> & assumes,const vec<int> 
 				  }
 			  }
 		  }
+
 		return r? l_True:l_False;
 	}
 

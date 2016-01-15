@@ -42,6 +42,7 @@ extern BoolOption opt_rnd_restart;
 extern BoolOption opt_rnd_theory_restart;
 extern StringOption opt_record_file;
 extern IntOption opt_limit_optimization_conflicts;
+extern IntOption opt_limit_optimization_time;
 extern bool opt_record;
 
 extern IntOption opt_theory_conflict_max;
