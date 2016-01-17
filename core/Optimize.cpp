@@ -49,9 +49,9 @@ namespace Optimization{
 	 static void SIGNAL_HANDLER_api(int signum) {
 		if(solver){
 			fprintf(stderr,"Monosat resource limit reached\n");
-			disableResourceLimits(solver);
-			solver->interrupt();
-
+			Solver * s = solver;
+			disableResourceLimits(s);
+			s->interrupt();
 		}
 	}
 
@@ -153,6 +153,7 @@ namespace Optimization{
 }
 
 long optimize_linear(Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bvTheory,const vec<Lit> & assumes,int bvID, bool & hit_cutoff, long & n_solves){
+	hit_cutoff=false;
 	vec<Lit> assume;
 	for(Lit l:assumes)
 		assume.push(l);
@@ -174,7 +175,7 @@ long optimize_linear(Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv
 	  }
 	  // int bvID,const Weight & to, Var outerVar = var_Undef, bool decidable=true
 	  Lit last_decision_lit =  bvTheory->toSolver(bvTheory->newComparison(Comparison::leq,bvID,value,var_Undef,opt_decide_optimization_lits));
-	  while(value>bvTheory->getUnderApprox(bvID,true)){
+	  while(value>bvTheory->getUnderApprox(bvID,true) && !hit_cutoff){
 		  Lit decision_lit = bvTheory->toSolver(bvTheory->newComparison(Comparison::leq,bvID,value-1,var_Undef,opt_decide_optimization_lits));
 		  assume.push(decision_lit);
 		  n_solves++;
@@ -195,6 +196,7 @@ long optimize_linear(Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv
 		  bool r;
 		  lbool res = S->solveLimited(assume,false,false);
 		  if (res==l_Undef){
+			  hit_cutoff=true;
 			  if(opt_verb>0){
 				  printf("\nBudget exceeded during optimization, quiting early (model might not be optimal!)\n");
 			  }
@@ -264,6 +266,7 @@ long optimize_linear(Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv
 }
 
 long optimize_binary(Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bvTheory,const vec<Lit> & assumes,int bvID,  bool & hit_cutoff, long & n_solves){
+	hit_cutoff=false;
 	vec<Lit> assume;
 	for(Lit l:assumes)
 		assume.push(l);
@@ -287,7 +290,7 @@ long optimize_binary(Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv
 
 	  long last_decision_value=max_val;
 	  Lit last_decision_lit =  bvTheory->toSolver(bvTheory->newComparison(Comparison::leq,bvID,max_val,var_Undef,opt_decide_optimization_lits));
-	  while(min_val < max_val){
+	  while(min_val < max_val && !hit_cutoff){
 		  long mid_point = min_val + (max_val - min_val) / 2;
 		  assert(mid_point>=0);assert(mid_point>=min_val);assert(mid_point<max_val);
 
