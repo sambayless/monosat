@@ -130,6 +130,9 @@ class Monosat(metaclass=Singleton):
         self.monosat_c.solveAssumptionsLimited_MinBVs.argtypes=[c_solver_p,c_literal_p,c_int,c_int_p,c_int]
         self.monosat_c.solveAssumptionsLimited_MinBVs.restype=c_int  
         
+        self.monosat_c.lastSolutionWasOptimal.argtypes=[c_solver_p]
+        self.monosat_c.lastSolutionWasOptimal.restype=c_bool 
+        
         
         self.monosat_c.setTimeLimit.argtypes=[c_solver_p,c_int]
         self.monosat_c.setMemoryLimit.argtypes=[c_solver_p,c_int]
@@ -405,7 +408,8 @@ class Monosat(metaclass=Singleton):
         else:
             self.monosat_c.setPropagationLimit(self.solver._ptr,propagations)
 
-
+    def lastSolutionWasOptimal(self):
+        return self.monosat_c.lastSolutionWasOptimal(self.solver._ptr)
 
     def solve(self,assumptions=None,minimize_bvs=None):
         self.backtrack()

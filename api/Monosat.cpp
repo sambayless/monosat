@@ -340,6 +340,7 @@ void printStats(SimpSolver* solver) {
 struct MonosatData{
 	Monosat::BVTheorySolver<long> * bv_theory=nullptr;
 	vec< Monosat::GraphTheorySolver<long> *> graphs;
+	bool last_solution_optimal=true;
 };
 
 
@@ -503,7 +504,9 @@ int solveAssumptionsLimited(Monosat::SimpSolver * S,int * assumptions, int n_ass
 
 
 int _solve(Monosat::SimpSolver * S,int * assumptions, int n_assumptions, int * minimize_bvs, int n_minimize_bvs){
-
+	bool found_optimal=true;
+	  MonosatData * d = (MonosatData*) S->_external_data;
+	  d->last_solution_optimal=true;
 	APISignal::enableResourceLimits();
 
 	S->cancelUntil(0);
@@ -535,14 +538,23 @@ int _solve(Monosat::SimpSolver * S,int * assumptions, int n_assumptions, int * m
 		  bvs.push(bvID);
 	  }
 
-	  lbool r = optimize_and_solve(*S, assume,bvs);
-
+	  lbool r = optimize_and_solve(*S, assume,bvs,found_optimal);
+	  d->last_solution_optimal=found_optimal;
 	if (opt_verb >= 1) {
 		printStats(S);
 
 	}
 	APISignal::disableResourceLimits();
 	return toInt(r);
+}
+
+bool lastSolutionWasOptimal(Monosat::SimpSolver * S){
+	  MonosatData * d = (MonosatData*) S->_external_data;
+	  if(d){
+		  return d->last_solution_optimal;
+	  }else{
+		  return false;
+	  }
 }
 
 bool solveAssumptions_MinBVs(Monosat::SimpSolver * S,int * assumptions, int n_assumptions, int * minimize_bvs, int n_minimize_bvs){

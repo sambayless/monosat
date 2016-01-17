@@ -394,11 +394,12 @@ long optimize_binary(Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv
 }
 
 
-lbool optimize_and_solve(SimpSolver & S,const vec<Lit> & assumes,const vec<int> & bvs){
+lbool optimize_and_solve(SimpSolver & S,const vec<Lit> & assumes,const vec<int> & bvs, bool & found_optimal){
 	vec<Lit> assume;
 	for(Lit l:assumes)
 		assume.push(l);
 	static int solve_runs=0;
+	found_optimal=true;
 	solve_runs++;
 	if(opt_verb>=1){
 		if(solve_runs>1){
@@ -433,6 +434,7 @@ lbool optimize_and_solve(SimpSolver & S,const vec<Lit> & assumes,const vec<int> 
 		  }else if (res==l_False){
 			  r=false;
 		  }else{
+			  found_optimal=false;
 			  return l_Undef;
 		  }
 
@@ -466,7 +468,9 @@ lbool optimize_and_solve(SimpSolver & S,const vec<Lit> & assumes,const vec<int> 
 					  min_values[i] = optimize_linear(&S,bvTheory,assume,bvID,hit_cutoff,n_solves);
 				  else
 					  min_values[i] = optimize_binary(&S,bvTheory,assume,bvID,hit_cutoff,n_solves);
-
+				  if(hit_cutoff){
+					  found_optimal=false;
+				  }
 				  assume.push(bvTheory->toSolver(bvTheory->newComparison(Comparison::leq,bvID,min_values[i],var_Undef,opt_decide_optimization_lits)));
 
 				  assert(min_values[i] >=0);

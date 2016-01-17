@@ -69,7 +69,7 @@ typedef int Var;
   //Returns 0 for satisfiable, 1 for proved unsatisfiable, 2 for failed to find a solution (within any resource limits that have been set)
   int solveAssumptionsLimited_MinBVs(SolverPtr S,int * assumptions, int n_assumptions, int * minimize_bvs, int n_minimize_bvs);
 
-
+  bool lastSolutionWasOptimal(SolverPtr S);
 
   void backtrack(SolverPtr S);
   int newVar(SolverPtr S);
