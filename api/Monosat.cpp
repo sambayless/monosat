@@ -77,10 +77,12 @@ namespace APISignal{
 	  };
 	  static initializer i;
 	}
-
+	void disableResourceLimits();
 	static void SIGNAL_HANDLER_api(int signum) {
+		disableResourceLimits();
 		for(Solver* solver:solvers)
 			solver->interrupt();
+
 	}
 
 

@@ -49,9 +49,9 @@ namespace Optimization{
 	 static void SIGNAL_HANDLER_api(int signum) {
 		if(solver){
 			fprintf(stderr,"Monosat resource limit reached\n");
-
-			solver->interrupt();
 			disableResourceLimits(solver);
+			solver->interrupt();
+
 		}
 	}
 
