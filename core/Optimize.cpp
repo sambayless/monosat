@@ -45,17 +45,19 @@ namespace Optimization{
 	  };
 	  static initializer i;
 	}
-
-	static void SIGNAL_HANDLER_api(int signum) {
+	 void disableResourceLimits(Solver * S);
+	 static void SIGNAL_HANDLER_api(int signum) {
 		if(solver){
 			fprintf(stderr,"Monosat resource limit reached\n");
 
 			solver->interrupt();
+			disableResourceLimits(solver);
 		}
 	}
 
 
-	void enableResourceLimits(Solver * S){
+	 void enableResourceLimits(Solver * S){
+		if(!solver){
 		assert(solver==nullptr);
 		solver=S;
 
@@ -108,10 +110,12 @@ namespace Optimization{
 		if(old_sigxcpu != SIGNAL_HANDLER_api){
 			system_sigxcpu_handler = old_sigxcpu;//store this value for later
 		}
+		}
 	}
 
-	void disableResourceLimits(Solver * S){
-		assert(solver!=nullptr);
+	 void disableResourceLimits(Solver * S){
+		if(solver){
+
 		solver=nullptr;
 		rlimit rl;
 		getrlimit(RLIMIT_CPU, &rl);
@@ -144,6 +148,7 @@ namespace Optimization{
 			 signal(SIGXCPU, system_sigxcpu_handler);
 			 system_sigxcpu_handler=nullptr;
 		}
+	}
 	}
 }
 
