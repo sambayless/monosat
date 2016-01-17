@@ -22,8 +22,10 @@
 #ifndef CIRCUIT_H_
 #define CIRCUIT_H_
 
-#include "SolverTypes.h"
+#include "core/SolverTypes.h"
 #include "mtl/Vec.h"
+#include <list>
+
 namespace Monosat{
 
 //Barebones helper methods for expressing combinatorial logic in CNF.
@@ -78,11 +80,12 @@ public:
 		S.addClause(lit_True);
 	}
 
-	Lit getTrue(){
+
+	Lit True(){
 		return lit_True;
 	}
 
-	Lit getFalse(){
+	Lit False(){
 		return ~lit_True;
 	}
 
@@ -307,7 +310,8 @@ public:
 
 
 
-	Lit Ite(Lit cond, Lit thn, Lit els=(~lit_True)){
+
+	Lit Ite(Lit cond, Lit thn, Lit els){
 		Lit l = ~And(cond,~thn);
 		Lit r = ~And(~cond,~els);
 		return And(l,r);
