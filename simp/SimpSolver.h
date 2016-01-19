@@ -41,6 +41,7 @@ public:
 	// Problem specification:
 	//
 	Var newVar(bool polarity = true, bool dvar = true);
+    void    releaseVar(Lit l);
 /*	Var newTheoryVar(Var solverVar, int theoryID, Var theoryVar){
 		while(nVars()<=solverVar)
 			newVar();
@@ -64,10 +65,15 @@ public:
 	// Variable mode:
 	// 
 	void setFrozen(Var v, bool b); // If a variable is frozen it will not be eliminated.
+	bool isEliminated(Var v) const;
+
+    // Alternative freeze interface (may replace 'setFrozen()'):
+    void    freezeVar (Var v);         // Freeze one variable so it will not be eliminated.
+    void    thaw      ();              // Thaw all frozen variables.
 	bool isFrozen(Var v){
 		return frozen[v];
 	}
-	bool isEliminated(Var v) const;
+
 
 	// Solving:
 	//
@@ -172,6 +178,7 @@ protected:
 	//
 	int elimorder;
 	bool use_simplification;
+	Var                 max_simp_var;        // Max variable at the point simplification was turned off.
 	vec<uint32_t> elimclauses;
 	vec<char> touched;
 	OccLists<Var, vec<CRef>, ClauseDeleted> occurs;
@@ -179,6 +186,7 @@ protected:
 	Heap<ElimLt> elim_heap;
 	Queue<CRef> subsumption_queue;
 	vec<char> frozen;
+	vec<Var>            frozen_vars;
 	vec<char> eliminated;
 	int bwdsub_assigns;
 	int n_touched;
@@ -253,6 +261,20 @@ inline void SimpSolver::setFrozen(Var v, bool b) {
 		updateElimHeap(v);
 	}
 }
+inline void SimpSolver::freezeVar(Var v){
+    if (!frozen[v]){
+        frozen[v] = 1;
+        frozen_vars.push(v);
+    } }
+
+inline void SimpSolver::thaw(){
+    for (int i = 0; i < frozen_vars.size(); i++){
+        Var v = frozen_vars[i];
+        frozen[v] = 0;
+        if (use_simplification)
+            updateElimHeap(v);
+    }
+    frozen_vars.clear(); }
 
 inline bool SimpSolver::solve(bool do_simp, bool turn_off_simp) {
 	budgetOff();

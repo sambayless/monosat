@@ -79,6 +79,19 @@ Var SimpSolver::newVar(bool sign, bool dvar) {
 	return v;
 }
 
+void SimpSolver::releaseVar(Lit l)
+{
+
+    assert(!isEliminated(var(l)));
+    if (!use_simplification && var(l) >= max_simp_var && !hasTheory(l))
+        // Note: Guarantees that no references to this variable is
+        // left in model extension datastructure. Could be improved!
+        Solver::releaseVar(l);
+    else
+        // Otherwise, don't allow variable to be reused.
+        Solver::addClause(l);
+}
+
 lbool SimpSolver::solve_(bool do_simp, bool turn_off_simp) {
 	vec<Var> extra_frozen;
 	lbool result = l_True;
@@ -649,6 +662,7 @@ bool SimpSolver::eliminate(bool turn_off_elim) {
 		subsumption_queue.clear(true);
 		
 		use_simplification = false;
+	    max_simp_var          = nVars();
 		remove_satisfied = true;
 		ca.extra_clause_field = false;
 		

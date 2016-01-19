@@ -10,7 +10,7 @@
 #include "core/SolverTypes.h"
 #include "mtl/Vec.h"
 #include "core/Solver.h"
-#include "bv/BVTheorySolver.h"
+
 //Classes for handling mapping to and from input formula numberings
 namespace Monosat{
 
@@ -111,7 +111,7 @@ public:
 	virtual ~BVMap() {
 	}
 	inline int mapBV(Solver & S, int bv){
-		BVTheorySolver<long>* theory = (BVTheorySolver<long>* )S.getBVTheory();
+		//BVTheorySolver<long>* theory = (BVTheorySolver<long>* )S.getBVTheory();
 		if(!remap_vars)
 			return bv;
 		if(!inBVMap(bv)){

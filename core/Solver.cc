@@ -115,6 +115,18 @@ Var Solver::newVar(bool sign, bool dvar) {
 	return v;
 }
 
+
+// Note: at the moment, only unassigned variable will be released (this is to avoid duplicate
+// releases of the same variable).
+void Solver::releaseVar(Lit l)
+{
+    if (value(l) == l_Undef && !hasTheory(l)){//dont ever release theory atoms
+        released_vars.push(var(l));
+    }
+    addClause(l);
+}
+
+
 bool Solver::addClause_(vec<Lit>& ps) {
 	
 
@@ -1237,8 +1249,30 @@ bool Solver::simplify() {
 	
 	// Remove satisfied clauses:
 	removeSatisfied(learnts);
-	if (remove_satisfied)        // Can be turned off.
+	if (remove_satisfied){        // Can be turned off.
 		removeSatisfied(clauses);
+
+        // Remove all released variables from the trail:
+        for (int i = 0; i < released_vars.size(); i++){
+            assert(seen[released_vars[i]] == 0);
+            seen[released_vars[i]] = 1;
+        }
+
+        int i, j;
+        for (i = j = 0; i < trail.size(); i++)
+            if (seen[var(trail[i])] == 0)
+                trail[j++] = trail[i];
+        trail.shrink(i - j);
+        //printf("trail.size()= %d, qhead = %d\n", trail.size(), qhead);
+        qhead = trail.size();
+
+        for (int i = 0; i < released_vars.size(); i++)
+            seen[released_vars[i]] = 0;
+
+        // Released variables are now ready to be reused:
+        append(released_vars, free_vars);
+        released_vars.clear();
+	}
 	checkGarbage();
 	rebuildOrderHeap();
 	
@@ -1722,6 +1756,7 @@ lbool Solver::search(int nof_conflicts) {
 					}
 					//this is _not_ an asserting clause, its a conflict that must be passed up to the super solver.
 					analyzeFinal(cr, lit_Undef, conflict);
+
 					if(theoryConflict>-1){
 						theoryBumpActivity(theoryConflict);
 						theoryDecayActivity();
@@ -2098,7 +2133,7 @@ bool Solver::solveTheory(vec<Lit> & conflict_out) {
 		return false;
 	}
 	if (conflict.size()) {
-		toSuper(conflict, conflict_out);
+		toSuper(conflict.toVec(), conflict_out);
 		interpolant.push();
 		conflict_out.copyTo(interpolant.last());    //Add this clause into the interpolant vector
 		return false;

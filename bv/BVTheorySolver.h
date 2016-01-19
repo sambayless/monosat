@@ -32,6 +32,7 @@
 #include "BVTheory.h"
 #include "utils/System.h"
 #include "core/TheorySolver.h"
+#include "core/Remap.h"
 #include <algorithm>
 #include <vector>
 #include <cmath>
@@ -41,6 +42,7 @@
 #include <sstream>
 #include <iostream>
 #include <exception>
+
 
 template<typename Weight>
 class BVTheorySolver;

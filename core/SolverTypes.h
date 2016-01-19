@@ -29,6 +29,7 @@
 #include "mtl/IntTypes.h"
 #include "mtl/Alg.h"
 #include "mtl/Vec.h"
+#include "mtl/IntMap.h"
 #include "mtl/Map.h"
 #include "mtl/Alloc.h"
 
@@ -104,6 +105,12 @@ inline int dimacs(Lit l) {
 
 const Lit lit_Undef = { -2 };  // }- Useful special constants.
 const Lit lit_Error = { -1 };  // }
+
+struct MkIndexLit { int operator()(Lit l) const { return l.x; } };
+
+template<class T> class VMap : public IntMap<Var, T>{};
+template<class T> class LMap : public IntMap<Lit, T, MkIndexLit>{};
+class LSet : public IntSet<Lit, MkIndexLit>{};
 
 //=================================================================================================
 // Lifted booleans:

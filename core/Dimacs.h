@@ -32,6 +32,7 @@
 #include <algorithm>
 #include <stdexcept>
 #include <string>
+#include <iostream>
 #include <cstdarg>
 #include "core/Remap.h"
 namespace Monosat {

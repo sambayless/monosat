@@ -66,7 +66,8 @@ public:
 	// Problem specification:
 	//
 	virtual Var newVar(bool polarity = true, bool dvar = true); // Add a new variable with parameters specifying variable mode.
-			
+    virtual void    releaseVar(Lit l);                                  // Make literal true and promise to never refer to variable again.
+
 	virtual bool addClause(const vec<Lit>& ps);                     // Add a clause to the solver.
 	virtual bool addEmptyClause();                             // Add the empty clause, making the solver contradictory.
 	virtual bool addClause(Lit p);                                  // Add a unit clause to the solver.
@@ -466,8 +467,9 @@ public:
 	// Extra results: (read-only member variable)
 	//
 	vec<lbool> model;             // If problem is satisfiable, this vector contains the model (if any).
-	vec<Lit> conflict;          // If problem is unsatisfiable (possibly under assumptions),
-								// this vector represent the final conflict clause expressed in the assumptions.
+    LSet       conflict;          // If problem is unsatisfiable (possibly under assumptions),
+                                  // this vector represent the final conflict clause expressed in the assumptions.
+
 	vec<vec<Lit> > interpolant; //This vector represents an interpolant between this module and its super solver ('S'), if it is attached to such a solver and the instance is UNSAT.
 								// Variables in each clause in the interpolant vector are in the super solver's variable space, not the subsolver's.
 
@@ -505,6 +507,7 @@ public:
 	int min_priority_var = 0;
 	int max_priority_var = -1;
 	CRef tmp_clause = CRef_Undef;
+	vec<Lit> tmp_conflict;
 	int tmp_clause_sz = 0;
 	Var max_super = var_Undef;
 	Var min_super = var_Undef;
@@ -681,6 +684,9 @@ protected:
 	
 	ClauseAllocator ca;
 
+    vec<Var>            released_vars;
+    vec<Var>            free_vars;
+
 	// Temporaries (to reduce allocation overhead). Each variable is prefixed by the method in which it is
 	// used, exept 'seen' wich is used in several places.
 	//
@@ -754,7 +760,18 @@ public:
 protected:
 	void analyze(CRef confl, vec<Lit>& out_learnt, int& out_btlevel);    // (bt = backtrack)
 	void analyzeFinal(CRef confl, Lit skip_lit, vec<Lit>& out_conflict);
-	void analyzeFinal(Lit p, vec<Lit>& out_conflict); // COULD THIS BE IMPLEMENTED BY THE ORDINARIY "analyze" BY SOME REASONABLE GENERALIZATION?
+	void analyzeFinal(Lit p, vec<Lit>& out_conflict);
+	void analyzeFinal(CRef confl, Lit skip_lit, LSet& out_conflict){
+		analyzeFinal(confl,skip_lit,tmp_conflict);
+		out_conflict.clear();out_conflict.insertAll(tmp_conflict);
+		tmp_conflict.clear();
+	}
+	void analyzeFinal(Lit p, LSet& out_conflict){
+		analyzeFinal(p,tmp_conflict);
+		out_conflict.clear();out_conflict.insertAll(tmp_conflict);
+		tmp_conflict.clear();
+	}
+
 	bool litRedundant(Lit p, uint32_t abstract_levels);                       // (helper method for 'analyze()')
 	lbool search(int nof_conflicts);                                     // Search for a given number of conflicts.
 	lbool solve_();                                           // Main solve method (assumptions given in 'assumptions').
@@ -836,7 +853,7 @@ private:
 	bool addDelayedClauses(CRef & conflict);
 	// Static helpers:
 	//
-	inline void toSuper(vec<Lit> & from, vec<Lit> & to) {
+	inline void toSuper(const vec<Lit> & from, vec<Lit> & to) {
 		
 		to.growTo(from.size());
 		to.shrink(to.size() - from.size());
