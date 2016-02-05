@@ -336,7 +336,7 @@ BoolOption Monosat::opt_fsm_negate_underapprox(_cat_fsm, "fsm-negate-under",
 BoolOption Monosat::opt_fsm_edge_prop(_cat_fsm, "fsm-edge-prop",
 		"", true);
 BoolOption Monosat::opt_fsm_as_graph(_cat_fsm, "fsm-as-graph",
-		"", true);
+		"", false);
 BoolOption Monosat::opt_learn_acyclic_flows(_cat_graph, "learn-acyclic-flows",
 		"", false);
 

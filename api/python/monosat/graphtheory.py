@@ -249,7 +249,10 @@ class Graph():
     
     def numNodes(self):
         return self.nodes
-    
+        
+    def numEdges(self):
+        return self.numedges
+        
     def getNodes(self):
         return range(self.nodes)
     

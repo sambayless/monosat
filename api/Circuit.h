@@ -22,15 +22,17 @@
 #ifndef CIRCUIT_H_
 #define CIRCUIT_H_
 
-#include "SolverTypes.h"
+#include "core/SolverTypes.h"
 #include "mtl/Vec.h"
+#include <list>
+
 namespace Monosat{
 
 //Barebones helper methods for expressing combinatorial logic in CNF.
 template<class Solver>
 class Circuit{
 	Solver & S;
-	Lit lit_True;
+	Lit lit_True=lit_Undef;
 
 	bool isConst(Lit l){
 		return isConstTrue(l) || isConstFalse(l);
@@ -53,7 +55,7 @@ class Circuit{
 		store.push(a);
 	}
 
-
+	//Note: a vector of size zero will always return lit_True
 	Lit bin_op(vec<Lit> & store,Lit (Circuit::*f)(Lit,Lit)){
 		int n = store.size();
 		while(n>1){
@@ -67,8 +69,13 @@ class Circuit{
 			}
 			n=p;
 		}
-		Lit a = store[0];
-		store.clear();
+		Lit a;
+		if(store.size()){
+			a = store[0];
+			store.clear();
+		}else{
+			a = lit_True;
+		}
 		return a;
 	}
 public:
@@ -77,7 +84,9 @@ public:
 		lit_True = mkLit(S.newVar());
 		S.addClause(lit_True);
 	}
-
+	Solver & getSolver(){
+		return S;
+	}
 	Lit getTrue(){
 		return lit_True;
 	}
@@ -307,7 +316,7 @@ public:
 
 
 
-	Lit Ite(Lit cond, Lit thn, Lit els=(~lit_True)){
+	Lit Ite(Lit cond, Lit thn, Lit els){
 		Lit l = ~And(cond,~thn);
 		Lit r = ~And(~cond,~els);
 		return And(l,r);

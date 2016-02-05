@@ -66,14 +66,20 @@ SimpSolver::~SimpSolver() {
 Var SimpSolver::newVar(bool sign, bool dvar) {
 	Var v = Solver::newVar(sign, dvar);
 	
-	frozen.push((char) false);
-	eliminated.push((char) false);
+	frozen.growTo(v+1,(char)false);
+	frozen[v]=(char)false;
+
+	eliminated.growTo(v+1,(char)false);
+	eliminated[v]=(char)false;
 	
 	if (use_simplification) {
-		n_occ.push(0);
-		n_occ.push(0);
+		Lit l = mkLit(v);
+		n_occ.growTo(toInt(l)+2,0);
+		n_occ[toInt(l)]=0;
+		n_occ[toInt(~l)]=0;
 		occurs.init(v);
-		touched.push(0);
+		touched.growTo(v+1,0);
+		touched[v]=0;
 		elim_heap.insert(v);
 	}
 	return v;

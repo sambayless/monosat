@@ -24,7 +24,7 @@
 #include "FSMTheory.h"
 #include "core/Config.h"
 
-
+#include <sstream>
 using namespace Monosat;
 
 FSMGeneratorAcceptorDetector::FSMGeneratorAcceptorDetector(int detectorID, FSMTheorySolver * outer, DynamicFSM &g_under,
@@ -62,7 +62,7 @@ FSMGeneratorAcceptorDetector::FSMGeneratorAcceptorDetector(int detectorID, FSMTh
 
 }
 
-void FSMGeneratorAcceptorDetector::constructAllPaths(){
+void FSMGeneratorAcceptorDetector::constructAllPaths(bool add_graph_symbols){
 	assert(graph);
 	//this assumes that the generator is LINEAR!
 	assert(g_over.isLinear());
@@ -75,9 +75,18 @@ void FSMGeneratorAcceptorDetector::constructAllPaths(){
 	seen_chars.growTo(g_over.outAlphabet()+1);
 
 	nodes.growTo(g_over.states());
+
 	for(int i = 0;i<g_over.states();i++){
 		for(int j = 0;j<acceptor_over.states();j++){
-			nodes[i].push(graph->newNode());
+			int n = graph->newNode();
+			nodes[i].push(n);
+//#ifndef NDEBUG
+			if(add_graph_symbols){
+			std::stringstream ss;
+			ss<<"" << i << ":" << j;
+			graph->setNodeName(n,ss.str().c_str());
+			}
+//#endif
 		}
 	}
 
@@ -152,7 +161,12 @@ void FSMGeneratorAcceptorDetector::constructAllPaths(){
 					Var transitionVar = outer->getTransition(gen.getID() , edgeID, 0,0).outerVar;
 					Var outerVar =  outer->toSolver(outer->newAuxVar());
 					Lit edgeLit = mkLit(outerVar);
-					graph->newEdge(nodes[from][accept_source],nodes[to][accept_source],outerVar);
+					Lit innerLit  = graph->newEdge(nodes[from][accept_source],nodes[to][accept_source],outerVar);
+//#ifndef NDEBUG
+					if(add_graph_symbols){
+					graph->setEdgeName(var(innerLit),"{}");
+					}
+//#endif
 					outer->makeEqualInSolver(mkLit(transitionVar),edgeLit);
 				}
 			}
@@ -185,8 +199,13 @@ void FSMGeneratorAcceptorDetector::constructAllPaths(){
 						Var transitionVar = outer->getTransition(g.getID() , edgeID, 0,0).outerVar;
 						Var outerVar = outer->toSolver(outer->newAuxVar());
 						Lit edgeLit = mkLit(outerVar);
-						graph->newEdge(nodes[gen_prev_state][from],nodes[gen_prev_state][to],outerVar);
+						Lit innerLit  =  graph->newEdge(nodes[gen_prev_state][from],nodes[gen_prev_state][to],outerVar);
 						outer->makeEqualInSolver(mkLit(transitionVar),edgeLit);
+//#ifndef NDEBUG
+						if(add_graph_symbols){
+						graph->setEdgeName(var(innerLit),"{}");
+						}
+//#endif
 					}
 				}
 			}
@@ -207,8 +226,13 @@ void FSMGeneratorAcceptorDetector::constructAllPaths(){
 							Var transitionVar = outer->getTransition(g.getID() , edgeID, 0,0).outerVar;
 							Var outerVar = outer->toSolver(outer->newAuxVar());
 							Lit edgeLit = mkLit(outerVar);
-							graph->newEdge(nodes[gen_prev_state][from],nodes[gen_prev_state][to],outerVar);
+							Lit innerLit  = graph->newEdge(nodes[gen_prev_state][from],nodes[gen_prev_state][to],outerVar);
 							outer->makeEqualInSolver(mkLit(transitionVar),edgeLit);
+//#ifndef NDEBUG
+							if(add_graph_symbols){
+							graph->setEdgeName(var(innerLit),"{}");
+							}
+//#endif
 						}
 						for(auto transition:chars)
 						{
@@ -230,6 +254,14 @@ void FSMGeneratorAcceptorDetector::constructAllPaths(){
 								outer->getSolver()->addClause(genLit,~edgeLit);
 								outer->getSolver()->addClause(acceptLit,~edgeLit);
 								outer->getSolver()->addClause(edgeLit,~genLit,~acceptLit);
+
+//#ifndef NDEBUG
+								if(add_graph_symbols){
+								std::stringstream ss;
+								ss<<l;
+								graph->setEdgeName(inner_edge,ss.str().c_str());
+								}
+//#endif
 							}
 
 						}
@@ -259,9 +291,9 @@ void FSMGeneratorAcceptorDetector::constructAllPaths(){
 		gen_prev_state = gen_state;
 		gen_pos++;
 	}
-	//g_over.draw();
-	//acceptor_over.draw();
-	//graph->drawFull();
+	/*g_over.draw();
+	acceptor_over.draw();
+	graph->drawFull(true);*/
 }
 void FSMGeneratorAcceptorDetector::stepGeneratorForward(vec<Transition> & store, vec<bool> & store_seen, int & cur_gen_state){
 		DynamicFSM & g = g_over;
@@ -321,6 +353,7 @@ void FSMGeneratorAcceptorDetector::addAcceptLit(int generatorFinalState, int acc
 	if(opt_fsm_as_graph){
 		assert(graph);
 		graph->reaches(nodes[gen_source][accept_source],nodes[generatorFinalState][acceptorFinalState], outer_reach_var);
+		graph->implementConstraints();
 		return;
 	}
 
@@ -1200,7 +1233,7 @@ Lit FSMGeneratorAcceptorDetector::decide(int level) {
 	for(auto & t:all_accept_lits){
 
 		Lit l =t.l;
-		if(outer->value(l)==l_False){
+		if(outer->value(l)!=l_False){
 			int gen_to = t.gen_to;
 			int accept_to = t.accept_to;
 			static vec<NFATransition> path;
@@ -1269,7 +1302,10 @@ void FSMGeneratorAcceptorDetector::printSolution(std::ostream& out){
 	}
 }
 bool FSMGeneratorAcceptorDetector::checkSatisfied(){
-	printSolution(std::cout);
+	//printSolution(std::cout);
+	/*g_over.draw();
+	acceptor_over.draw();
+	graph->drawFull(true,false);*/
 	NFALinearGeneratorAcceptor<> check(g_under,acceptor_under,gen_source,accept_source);
 
 	//g_under.draw(gen_source,first_destination );

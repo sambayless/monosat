@@ -700,21 +700,72 @@ public:
 			return this->unreachable();
 	}
 	int incomingEdge(int t) {
-		/*
-		 assert(false);//not yet implemented...
-		 assert(t>=0 && t<prev.size());
-		 assert(prev[t]>=-1 );
-		 return prev[t];*/
-		//not supported
-		 throw std::runtime_error("not implemented");
+
+		if (!connected_unsafe(t)){
+			return -1;
+		}
+		if(t==source)
+			return -1;
+
+		assert( dist[t]>=0);
+		assert( dist[t]!=INF);
+		int prev = -1;
+		int prev_edgeID=-1;
+		Weight min_prev_dist= dist[t];
+		for(int i = 0;i<g.nIncoming(t);i++){
+
+			int edgeID = g.incoming(t,i).id;
+			if(g.edgeEnabled(edgeID)){
+				int from = g.incoming(t,i).node;
+				if(connected_unsafe(from)){
+					assert(dist[from]>=0);
+					assert(dist[from]!=INF);
+					//Note: RamalReps doesn't support 0-weighted edges, so it is safe to assume that the previous node on the path has a lower distance from the source
+					if (dist[from]<min_prev_dist){
+						min_prev_dist=dist[from];
+						prev = from;
+						prev_edgeID=edgeID;
+					}
+				}
+			}
+		}
+		assert(prev!=-1);
+		assert(min_prev_dist<dist[t]);
+
+		return prev_edgeID;
 	}
 	int previous(int t) {
-		/*if(prev[t]<0)
-		 return -1;
 
-		 assert(g.all_edges[incomingEdge(t)].to==t);
-		 return g.all_edges[incomingEdge(t)].from;*/
-		 throw std::runtime_error("not implemented");
+		if (!connected_unsafe(t)){
+			return -1;
+		}
+		if(t==source)
+			return -1;
+
+		assert( dist[t]>=0);
+		assert( dist[t]!=INF);
+		int prev = -1;
+		Weight min_prev_dist= dist[t];
+		for(int i = 0;i<g.nIncoming(t);i++){
+
+			int edgeID = g.incoming(t,i).id;
+			if(g.edgeEnabled(edgeID)){
+				int from = g.incoming(t,i).node;
+				if(connected_unsafe(from)){
+					assert(dist[from]>=0);
+					assert(dist[from]!=INF);
+					//Note: RamalReps doesn't support 0-weighted edges, so it is safe to assume that the previous node on the path has a lower distance from the source
+					if (dist[from]<min_prev_dist){
+						min_prev_dist=dist[from];
+						prev = from;
+					}
+				}
+			}
+		}
+		assert(prev!=-1);
+		assert(min_prev_dist<dist[t]);
+
+		return prev;
 	}
 };
 
@@ -1504,21 +1555,78 @@ public:
 			return this->unreachable();
 	}
 	int incomingEdge(int t) {
-		/*
-		 assert(false);//not yet implemented...
-		 assert(t>=0 && t<prev.size());
-		 assert(prev[t]>=-1 );
-		 return prev[t];*/
 
-		throw std::runtime_error("not implemented");
+		if (!connected_unsafe(t)){
+			return -1;
+		}
+		if(t==source)
+			return -1;
+
+		int d = dist[t];
+
+		assert(d>=0);
+		assert(d!=INF);
+		int prev = -1;
+		int prev_edgeID=-1;
+		int min_prev_dist=d;
+		for(int i = 0;i<g.nIncoming(t);i++){
+
+			int edgeID = g.incoming(t,i).id;
+			if(g.edgeEnabled(edgeID)){
+				int from = g.incoming(t,i).node;
+				if(connected_unsafe(from)){
+					int from_dist = dist[from];
+					assert(from_dist>=0);
+					assert(from_dist!=INF);
+					//Note: RamalReps doesn't support 0-weighted edges, so it is safe to assume that the previous node on the path has a lower distance from the source
+					if (from_dist<min_prev_dist){
+						min_prev_dist=from_dist;
+						prev = from;
+						prev_edgeID=edgeID;
+					}
+				}
+			}
+		}
+		assert(prev!=-1);
+		assert(min_prev_dist<d);
+
+		return prev_edgeID;
 	}
 	int previous(int t) {
-		/*		if(prev[t]<0)
-		 return -1;
 
-		 assert(g.all_edges[incomingEdge(t)].to==t);
-		 return g.all_edges[incomingEdge(t)].from;*/
-		 throw std::runtime_error("not implemented");
+		if (!connected_unsafe(t)){
+			return -1;
+		}
+		if(t==source)
+			return -1;
+
+		int d = dist[t];
+
+		assert(d>=0);
+		assert(d!=INF);
+		int prev = -1;
+		int min_prev_dist=d;
+		for(int i = 0;i<g.nIncoming(t);i++){
+
+			int edgeID = g.incoming(t,i).id;
+			if(g.edgeEnabled(edgeID)){
+				int from = g.incoming(t,i).node;
+				if(connected_unsafe(from)){
+					int from_dist = dist[from];
+					assert(from_dist>=0);
+					assert(from_dist!=INF);
+					//Note: RamalReps doesn't support 0-weighted edges, so it is safe to assume that the previous node on the path has a lower distance from the source
+					if (from_dist<min_prev_dist){
+						min_prev_dist=from_dist;
+						prev = from;
+					}
+				}
+			}
+		}
+		assert(prev!=-1);
+		assert(min_prev_dist<d);
+
+		return prev;
 	}
 };
 template<typename Weight, class Status>

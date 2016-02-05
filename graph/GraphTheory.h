@@ -62,7 +62,7 @@
 #include <cstdlib>
 #include <unistd.h>
 #include <sstream>
-
+#include <string>
 using namespace dgl;
 namespace Monosat {
 
@@ -163,7 +163,8 @@ public:
 	//if bitvectors weights are supplied, then this manages the resulting weights.
 	BVTheorySolver<Weight> * comparator=nullptr;
 
-
+	vec<const char*> node_symbols;
+	vec<const char*> edge_symbols;
 
 	struct Trail{
 		//Lit l=lit_Undef;
@@ -1024,8 +1025,41 @@ public:
 	}
 	
 	~GraphTheorySolver() {
+		for(int i = 0;i<node_symbols.size();i++){
+			if(node_symbols[i]){
+				delete(node_symbols[i]);
+			}
+		}
+		node_symbols.clear();
+		for(int i = 0;i<edge_symbols.size();i++){
+			if(edge_symbols[i]){
+				delete(edge_symbols[i]);
+			}
+		}
+		edge_symbols.clear();
 	}
-
+	void setNodeName(int node,const char * symbol){
+		node_symbols.growTo(node+1,nullptr);
+		node_symbols[node]=strdup(symbol);
+	}
+	const char * getNodeName(int node){
+		if(node>=node_symbols.size())
+			return nullptr;
+		else
+			return node_symbols[node];
+	}
+	void setEdgeName(Var edgeVar,const char * symbol){
+		int edgeID = getEdgeID(edgeVar);
+		edge_symbols.growTo(edgeID+1,nullptr);
+		edge_symbols[edgeID]=strdup(symbol);
+	}
+	const char * getEdgeName(Var edgeVar){
+		int edgeID = getEdgeID(edgeVar);
+		if(edgeID>=edge_symbols.size())
+			return nullptr;
+		else
+			return edge_symbols[edgeID];
+	}
 	int newNode() {
 		
 		inv_adj.push();
@@ -2228,11 +2262,19 @@ public:
 		
 		printf("}\n");
 	}
-	void drawFull() {
-#ifndef NDEBUG
+	void drawFull(bool forceDraw=false, bool drawDisabled=true) {
+
+#ifdef NDEBUG
+		if(!forceDraw)
+			return;
+#endif
 		printf("digraph{\n");
 		for (int i = 0; i < nNodes(); i++) {
-			printf("n%d\n", i);
+			if(getNodeName(i)){
+				printf("n%d[label=\"n%d_%s\"\]\n",i,i,getNodeName(i));
+			}else{
+				printf("n%d\n", i);
+			}
 		}
 		
 		for (int i = 0; i < edge_list.size(); i++) {
@@ -2240,16 +2282,22 @@ public:
 			const char * s = "black";
 			if (value(e.v) == l_True)
 				s = "blue";
-			else if (value(e.v) == l_False)
+			else if (value(e.v) == l_False){
+				if(!drawDisabled)
+					continue;
 				s = "red";
-			else {
+			}else {
 				int a = 1;
 			}
-			printf("n%d -> n%d [label=\"v%d\",color=\"%s\"]\n", e.from, e.to, e.v, s);
+			if(getEdgeName(e.v)){
+				printf("n%d -> n%d [label=\"v%d_%s\",color=\"%s\"]\n", e.from, e.to, e.v,getEdgeName(e.v), s);
+			}else{
+				printf("n%d -> n%d [label=\"v%d\",color=\"%s\"]\n", e.from, e.to, e.v, s);
+			}
 		}
 		
 		printf("}\n");
-#endif
+
 	}
 	
 	bool check_solved() {

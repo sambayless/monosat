@@ -86,23 +86,39 @@ Solver::~Solver() {
 //
 Var Solver::newVar(bool sign, bool dvar) {
 
-	int v = nVars();
+	int v;
+    if (free_vars.size() > 0){
+        v = free_vars.last();
+        free_vars.pop();
+    }else{
+        v = nVars();
+        assigns.push(l_Undef);
+		vardata.push();
+		priority.push();
+		theory_vars.push();
+		activity.push();
+		seen.push(0);
+		polarity.push();
+		decision.push();
+		trail.capacity(v + 1);
+    }
+
 	watches.init(mkLit(v, false));
 	watches.init(mkLit(v, true));
-	assigns.push(l_Undef);
-	vardata.push(mkVarData(CRef_Undef, 0));
+	assigns[v]=l_Undef;
+	vardata[v]=mkVarData(CRef_Undef, 0);
 	int p = 0;
 	if (max_decision_var > 0 && v > max_decision_var)
 		p = 1;
 	if (v < min_decision_var)
 		p = 1;
-	priority.push(p);
-	theory_vars.push();
-	activity.push(rnd_init_act ? drand(random_seed) * 0.00001 : 0);
-	seen.push(0);
-	polarity.push(opt_init_rnd_phase ? irand(random_seed, 1) : sign);
-	decision.push();
-	trail.capacity(v + 1);
+	priority[v]=p;
+	theory_vars[v]=TheoryData();
+	activity[v] = (rnd_init_act ? drand(random_seed) * 0.00001 : 0);
+	seen[v] = 0;
+	polarity[v]=opt_init_rnd_phase ? irand(random_seed, 1) : sign;
+	//decision.push();//set below
+
 	if (max_decision_var > 0 && v > max_decision_var)
 		dvar = false;
 	if (v < min_decision_var)
@@ -1710,7 +1726,7 @@ lbool Solver::search(int nof_conflicts) {
 			int a = 1;
 		}
 
-		propagate: CRef confl = propagate();
+		propagate: CRef confl = propagate(!disable_theories);
 		conflict: if (!okay() || (confl != CRef_Undef)) {
 			// CONFLICT
 			conflicts++;
@@ -1847,7 +1863,7 @@ lbool Solver::search(int nof_conflicts) {
 			//Note: decision level is now added before theories make their decisions, to allow them to decide multiple literals at once.
 			newDecisionLevel();
 
-			if (opt_decide_theories && using_theory_decisions && next == lit_Undef && (opt_theory_conflict_max==0 || conflicts>=next_theory_decision) ) {
+			if (opt_decide_theories && !disable_theories && using_theory_decisions && next == lit_Undef && (opt_theory_conflict_max==0 || conflicts>=next_theory_decision) ) {
 
 				int next_var_priority=INT_MIN;
 
@@ -1913,22 +1929,23 @@ lbool Solver::search(int nof_conflicts) {
 				if (next == lit_Undef) {
 					
 					//solve theories if this solver is completely assigned
-					for (int i = 0; i < theories.size(); i++) {
-						if (opt_subsearch == 3 && track_min_level < initial_level)
-							continue; //Disable attempting to solve sub-solvers if we've backtracked past the super solver's decision level
-							
-						if (!theories[i]->solveTheory(theory_conflict)) {
-							if (!addConflictClause(theory_conflict, confl)) {
-								goto conflict;
-							} else {
-								goto propagate;
+					if(!disable_theories){
+						for (int i = 0; i < theories.size(); i++) {
+							if (opt_subsearch == 3 && track_min_level < initial_level)
+								continue; //Disable attempting to solve sub-solvers if we've backtracked past the super solver's decision level
+
+							if (!theories[i]->solveTheory(theory_conflict)) {
+								if (!addConflictClause(theory_conflict, confl)) {
+									goto conflict;
+								} else {
+									goto propagate;
+								}
 							}
+							//If propagating one of the sub theories caused this solver to backtrack, then go back to propagation
+							if (qhead < trail.size() || hasNextDecision())
+								goto propagate;
 						}
-						//If propagating one of the sub theories caused this solver to backtrack, then go back to propagation
-						if (qhead < trail.size() || nUnassignedVars() > 0)
-							goto propagate;
 					}
-					
 					// Model found:
 					return l_True;
 				}
@@ -2060,7 +2077,7 @@ lbool Solver::solve_() {
 				throw std::runtime_error("Model is inconsistent with assumptions!");
 			}
 		}
-		if (opt_check_solution && theories.size()) {
+		if (opt_check_solution && theories.size() && !disable_theories) {
 			if(opt_verb>0){
 				printf("Checking witnesses...\n");
 			}
@@ -2090,13 +2107,13 @@ lbool Solver::solve_() {
 				}
 			}
 			fprintf(opt_write_learnt_clauses,"\n");
-
+			if(!disable_theories){
 			for(Theory * t:theories){
 				std::stringstream ss;
 				t->writeTheoryWitness(ss);
 				fprintf(opt_write_learnt_clauses,"%s",ss.str().c_str());
 			}
-
+			}
 
 		}
 		

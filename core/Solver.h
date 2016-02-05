@@ -446,7 +446,7 @@ public:
 	int nVars() const;       // The current number of variables.
 	int nUnassignedVars() const;// The number of variables left to assign. Does not include variables that are not decision vars!
 	int nFreeVars() const;		// The number of non-unit variables
-	
+	bool hasNextDecision() const;
 	// Resource contraints:
 	//
 	void setConfBudget(int64_t x);
@@ -502,6 +502,7 @@ public:
 	int initial_level = 0;
 	vec<int> theory_queue;
 	vec<bool> in_theory_queue;
+	bool disable_theories=false;
 	int min_decision_var = 0;
 	int max_decision_var = -1;
 	int min_priority_var = 0;
@@ -749,6 +750,13 @@ protected:
 	//(In reality, the clause may be added to the database sometime later)
 	void addClauseSafely(vec<Lit> & ps);
 public:
+
+	void setTheoriesEnabled(bool enableTheories){
+		disable_theories = !enableTheories;
+	}
+	bool theoriesEnabled()const{
+		return !disable_theories;
+	}
 	void cancelUntil(int level);                                             // Backtrack until a certain level.
 	inline void needsPropagation(int theoryID){
 		if (!in_theory_queue[theoryID]) {
@@ -1080,10 +1088,13 @@ inline int Solver::nVars() const {
 	return vardata.size();
 }
 inline int Solver::nUnassignedVars() const {
-	return (int) dec_vars - trail.size();
+	return (int) nVars() - free_vars.size() - trail.size();
 }
 inline int Solver::nFreeVars() const {
 	return (int) dec_vars - ((trail_lim.size() == 0) ? trail.size() : trail_lim[0]);
+}
+inline bool Solver::hasNextDecision()const{
+	return !order_heap.empty();
 }
 inline void Solver::setPolarity(Var v, bool b) {
 	polarity[v] = b;

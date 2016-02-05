@@ -623,6 +623,7 @@ public:
 	}
 	
 	void enqueueTheory(Lit l) {
+
 		Var v = var(l);
 		
 		int lev = level(v);
@@ -696,7 +697,7 @@ public:
 		
 		propagations++;
 
-		if (propagations>1 && (!force_propagation && (propagations % opt_fsm_prop_skip != 0))){
+		if (propagations>1 && (!force_propagation && (propagations % opt_fsm_prop_skip != 0)) ){
 			stats_propagations_skipped++;
 			return true;
 		}
@@ -751,10 +752,10 @@ public:
 	bool solveTheory(vec<Lit> & conflict) {
 		requiresPropagation = true;		//Just to be on the safe side... but this shouldn't really be required.
 		bool ret = propagateTheory(conflict,true);
-		if(ret){
+/*		if(ret){
 			requiresPropagation = true;
 			assert(propagateTheory(conflict,true));
-		}
+		}*/
 		//Under normal conditions, this should _always_ hold (as propagateTheory should have been called and checked by the parent solver before getting to this point).
 		assert(ret || opt_fsm_prop_skip>1);
 		return ret;

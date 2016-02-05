@@ -34,6 +34,7 @@
 #include "FSMDetector.h"
 #include "alg/NFALinearGeneratorAcceptor.h"
 #include "graph/GraphTheory.h"
+
 using namespace dgl;
 namespace Monosat {
 
@@ -199,7 +200,7 @@ private:
 		int out;
 	};
 
-	void constructAllPaths();
+	void constructAllPaths(bool add_graph_symbols=false);
 	void stepGeneratorForward(vec<Transition> & store, vec<bool> & store_seen, int & cur_gen_state);
 	vec<int> next;
 	vec<int> cur;

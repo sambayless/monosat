@@ -137,16 +137,21 @@ ReachDetector<Weight>::ReachDetector(int _detectorID, GraphTheorySolver<Weight> 
 		if (!opt_encode_reach_underapprox_as_sat) {
 			underapprox_detector = new UnweightedRamalReps<Weight,ReachDetector<Weight>::ReachStatus>(from, _g,
 					*(positiveReachStatus), 1, false);
+			underapprox_path_detector=underapprox_detector;
 		} else {
 			underapprox_fast_detector = new UnweightedRamalReps<Weight,ReachDetector<Weight>::ReachStatus>(from, _g,
 					*(positiveReachStatus), 1, false);
+			underapprox_path_detector=underapprox_fast_detector;
 			//positive_reach_detector = new ReachDetector::CNFReachability(*this,false);
 		}
 		
 		overapprox_reach_detector = new UnweightedRamalReps<Weight,ReachDetector<Weight>::ReachStatus>(from, _antig,
 				*(negativeReachStatus), -1, false);
-		underapprox_path_detector = new UnweightedBFS<Weight,Distance<int>::NullStatus>(from, _g, Distance<int>::nullStatus, 1);
-		overapprox_path_detector = new UnweightedBFS<Weight,Distance<int>::NullStatus>(from, _antig, Distance<int>::nullStatus, -1);
+
+		overapprox_path_detector=overapprox_reach_detector;
+		//RamalReps now supports finding paths
+		//underapprox_path_detector = new UnweightedBFS<Weight,Distance<int>::NullStatus>(from, _g, Distance<int>::nullStatus, 1);
+		//overapprox_path_detector = new UnweightedBFS<Weight,Distance<int>::NullStatus>(from, _antig, Distance<int>::nullStatus, -1);
 		negative_distance_detector = (Distance<int> *) overapprox_path_detector;
 	}/*else if (reachalg==ReachAlg::ALG_THORUP){
 
@@ -246,7 +251,7 @@ void ReachDetector<Weight>::buildSATConstraints(bool onlyUnderApprox, int within
 		vec<Lit> incomingEdges;
 		vec<Lit> incomingNodes;
 		
-		//Note (thanks to Roberto Sebastani for this): clauses added here do not count towards pure literal counts.
+		//Note (thanks to Roberto Sebastiani for this): clauses added here do not count towards pure literal counts.
 
 		//bellman-ford:
 		for (int i = constraintsBuiltOver; i < within_steps; i++) {

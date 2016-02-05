@@ -35,7 +35,9 @@ def Solve(assumptions=None, preprocessing=True,bvs_to_minimize=None,time_limit_s
     elif bvs_to_minimize is None:
         bvs_to_minimize=[]
         
-  
+    if Monosat().getOutputFile():
+        Monosat().getOutputFile().flush()    
+    
     r= Monosat().solveLimited([x.getLit() for x in assumptions],[bv.getID() for bv in bvs_to_minimize])     
     if r is None:
         raise RuntimeError("MonoSAT aborted before solving (possibly do to a time or memory limit)")
