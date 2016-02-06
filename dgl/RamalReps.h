@@ -655,8 +655,8 @@ public:
 	}
 	bool dbg_uptodate() {
 #ifdef DEBUG_RAMAL
-		//if(last_modification<0)
-		// return true;
+		if(last_modification<0)
+		 return true;
 		 dbg_delta();
 		 Dijkstra<Weight> d(source,g);
 
