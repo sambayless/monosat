@@ -1269,6 +1269,8 @@ bool DistanceDetector<Weight>::propagate(vec<Lit> & conflict) {
 	for (auto & dist_lit : weighted_dist_lits) {
 		bool strictComparison = dist_lit.strictComparison;
 		Lit l = dist_lit.l;
+		lbool val = outer->value(l);
+
 		int to = dist_lit.u;
 		Weight & min_dist = dist_lit.min_distance;
 		Weight & over_dist = underapprox_weighted_distance_detector->distance(to);
@@ -1400,7 +1402,7 @@ bool DistanceDetector<Weight>::checkSatisfied() {
 		for (int k = 0; k < unweighted_dist_lits[j].size(); k++) {
 			Lit l = unweighted_dist_lits[j][k].l;
 			int dist = unweighted_dist_lits[j][k].min_unweighted_distance;
-			
+			lbool val = outer->value(l);
 			if (l != lit_Undef) {
 				int node = getNode(var(l));
 				
@@ -1434,6 +1436,7 @@ bool DistanceDetector<Weight>::checkSatisfied() {
 		//now, check for weighted distance lits
 		for (auto & dist_lit : weighted_dist_lits) {
 			Lit l = dist_lit.l;
+			lbool val = outer->value(l);
 			int to = dist_lit.u;
 			Weight & min_dist = dist_lit.min_distance;
 			Weight & over_dist = under.distance(to);

@@ -36,7 +36,7 @@
 #include <stdexcept>
 #include <string>
 #include <vector>
-
+//#define DEBUG_RAMAL
 
 namespace dgl {
 template<typename Weight = int, class Status = typename Distance<Weight>::NullStatus>
@@ -571,12 +571,7 @@ public:
 			}
 		}
 		edgeInShortestPathGraph.resize(g.nEdgeIDs());
-		if (last_history_clear != g.historyclears) {
-			history_qhead = 0;
-			last_history_clear = g.historyclears;
-			
-		}
-		
+				
 		if(has_zero_weights){
 			if(!ever_warned_about_zero_weights){
 				ever_warned_about_zero_weights=true;
@@ -584,6 +579,18 @@ public:
 			}
 			dijkstras.update();
 		}else{
+		
+			if (last_history_clear != g.historyclears) {
+				history_qhead = g.historySize();
+				last_history_clear = g.historyclears;
+				for (int edgeid = 0; edgeid < g.edges(); edgeid++) {
+					if (g.edgeEnabled(edgeid)) {
+						GRRInc(edgeid);
+					} else {
+						GRRDec(edgeid);
+					}
+				}
+			}
 			for (int i = history_qhead; i < g.historySize(); i++) {
 				int edgeid = g.getChange(i).id;
 				if (g.getChange(i).addition && g.edgeEnabled(edgeid)) {
@@ -609,8 +616,8 @@ public:
 			}
 			changed.clear();
 
-
 		assert(dbg_uptodate());
+
 		num_updates++;
 		last_modification = g.modifications;
 		last_deletion = g.deletions;
@@ -646,10 +653,10 @@ public:
 	}
 	bool dbg_uptodate() {
 #ifdef DEBUG_RAMAL
-		/*if(last_modification<0)
+		if(last_modification<0)
 		 return true;
 		 dbg_delta();
-		 Dijkstra<Weight> d(source,g,weights);
+		 Dijkstra<Weight> d(source,g);
 
 		 for(int i = 0;i<g.nodes();i++){
 		 Weight dis = dist[i];
@@ -661,9 +668,9 @@ public:
 
 		 if(dis!=dbgdist){
 		 assert(false);
-		 throw std::logic_error();
+		 throw std::logic_error("Internal error in Ramal Reps");
 		 }
-		 }*/
+		 }
 //#endif
 #endif
 		return true;
@@ -671,6 +678,9 @@ public:
 	
 	bool connected_unsafe(int t) {
 		dbg_uptodate();
+		if(has_zero_weights){
+			return dijkstras.connected_unsafe(t);
+		}
 		return t < dist.size() && dist[t] < INF;
 	}
 	bool connected_unchecked(int t) {
@@ -682,25 +692,35 @@ public:
 			update();
 
 		assert(dbg_uptodate());
-		
+		if(has_zero_weights){
+			return dijkstras.connected(t);
+		}
 		return dist[t] < INF;
 	}
 	Weight & distance(int t) {
 		if (last_modification != g.modifications)
 			update();
+		if(has_zero_weights){
+			return dijkstras.distance(t);
+		}
 		if (connected_unsafe(t))
 			return dist[t];
 		else
 			return this->unreachable();
 	}
 	Weight &distance_unsafe(int t) {
+		if(has_zero_weights){
+			return dijkstras.distance_unsafe(t);
+		}
 		if (connected_unsafe(t))
 			return dist[t];
 		else
 			return this->unreachable();
 	}
 	int incomingEdge(int t) {
-
+		if(has_zero_weights){
+			return dijkstras.incomingEdge(t);
+		}
 		if (!connected_unsafe(t)){
 			return -1;
 		}
@@ -735,7 +755,9 @@ public:
 		return prev_edgeID;
 	}
 	int previous(int t) {
-
+		if(has_zero_weights){
+			return dijkstras.previous(t);
+		}
 		if (!connected_unsafe(t)){
 			return -1;
 		}
