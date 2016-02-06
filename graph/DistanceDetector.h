@@ -249,7 +249,8 @@ public:
 	void buildUnweightedDistanceGTReason(int node, int within_steps, vec<Lit> & conflict);
 	void buildDistanceLEQReason(int to, Weight & min_distance, vec<Lit> & conflict, bool strictComparison=false);
 	void buildDistanceGTReason(int to, Weight & min_distance, vec<Lit> & conflict, bool strictComparison=true);
-
+	void analyzeDistanceLEQReason(int to, Weight & min_distance, vec<Lit> & conflict, bool strictComparison=true);
+	void analyzeDistanceGTReason(int to, Weight & min_distance, vec<Lit> & conflict, bool strictComparison=true);
 	void buildReason(Lit p, vec<Lit> & reason, CRef marker);
 	bool checkSatisfied();
 	Lit decide();

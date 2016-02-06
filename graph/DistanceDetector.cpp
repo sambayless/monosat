@@ -832,12 +832,11 @@ void DistanceDetector<Weight>::printSolution(std::ostream& write_to) {
 }
 
 template<typename Weight>
-void DistanceDetector<Weight>::buildDistanceLEQReason(int to, Weight & min_distance, vec<Lit> & conflict, bool strictComparison) {
-	stats_distance_leq_reasons++;
+void DistanceDetector<Weight>::analyzeDistanceLEQReason(int to, Weight & min_distance, vec<Lit> & conflict, bool strictComparison) {
 	Distance<Weight> & d = *underapprox_weighted_path_detector;
 	underapprox_weighted_distance_detector->update();
 	Weight & actual_dist = underapprox_weighted_distance_detector->distance(to);
-	double starttime = rtime(2);
+
 	d.update();
 	stats_under_conflicts++;
 	assert(outer->dbg_reachable(d.getSource(), to));
@@ -848,8 +847,7 @@ void DistanceDetector<Weight>::buildDistanceLEQReason(int to, Weight & min_dista
 							!= underapprox_weighted_distance_detector->unreachable());
 	assert(d.connected_unchecked(to));
 	if (!d.connected(to) || d.distance(to) > min_distance) {
-		fprintf(stderr, "Error in shortest path detector, aborting\n");
-		exit(4);
+		throw  std::runtime_error("Internal error in shortest path detector");
 	}
 
 	//the reason that the distance is less than or equal to min_distance is because the shortest path is less than this weight
@@ -863,23 +861,26 @@ void DistanceDetector<Weight>::buildDistanceLEQReason(int to, Weight & min_dista
 			lbool val = outer->value(e);
 			assert(outer->value(e)==l_True);
 			if(!g_under.isConstant(edgeID))
-				conflict.push(mkLit(e, true));
+				conflict.push(outer->toSolver(mkLit(e, true)));
 			if(outer->hasBitVector(edgeID)){
-	/*			Lit leq;
-				Weight w = g_under.getWeight(edgeID);
-				if(strictComparison){
-					leq= outer->getEdgeWeightGT(edgeID,w);
-				}else{
-					leq= ~outer->getEdgeWeightLEQ(edgeID,w);
-				}
-				lbool val = outer->dbg_value(leq);
-				assert(val!=l_True);
-				conflict.push(leq);*/
-				outer->buildBVReason(outer->getEdgeBV(edgeID).getID(),Comparison::leq,g_under.getWeight(edgeID),conflict);
+
+
+				outer->bvTheory->addAnalysis(Comparison::leq,outer->getEdgeBV(edgeID).getID(),g_under.getWeight(edgeID));
+				//outer->buildBVReason(outer->getEdgeBV(edgeID).getID(),Comparison::leq,g_under.getWeight(edgeID),conflict);
 			}
 
 			u = p;
 		}
+	}
+}
+template<typename Weight>
+void DistanceDetector<Weight>::buildDistanceLEQReason(int to, Weight & min_distance, vec<Lit> & conflict, bool strictComparison) {
+	stats_distance_leq_reasons++;
+	double starttime = rtime(2);
+
+	analyzeDistanceLEQReason(to,min_distance,conflict,strictComparison);
+	if(outer->bvTheory){
+		outer->bvTheory->analyze(conflict);
 	}
 	outer->num_learnt_paths++;
 	outer->learnt_path_clause_length += (conflict.size() - 1);
@@ -891,16 +892,10 @@ void DistanceDetector<Weight>::buildDistanceLEQReason(int to, Weight & min_dista
 }
 
 template<typename Weight>
-void DistanceDetector<Weight>::buildDistanceGTReason(int to, Weight & min_distance, vec<Lit> & conflict, bool strictComparison) {
-	static int it = 0;
-	stats_distance_gt_reasons++;
-	stats_over_conflicts++;
-	++it;
-	double starttime = rtime(2);
-	int u = to;
+void DistanceDetector<Weight>::analyzeDistanceGTReason(int to, Weight & min_distance, vec<Lit> & conflict, bool strictComparison) {
 	bool reaches = overapprox_weighted_distance_detector->connected(to);
 	if (!reaches && opt_conflict_min_cut && conflict_flow) {
-		g_over.drawFull();
+
 		cut.clear();
 		long f;
 		
@@ -918,23 +913,14 @@ void DistanceDetector<Weight>::buildDistanceGTReason(int to, Weight & min_distan
 			if(!g_over.isConstant(edgeID)){
 				Lit l = mkLit(outer->getEdgeVar(edgeID), false);
 				assert(outer->value(l)==l_False);
-				conflict.push(l);
+				conflict.push(outer->toSolver(l));
 			}
 		}
-		outer->learnt_cut_clause_length += (conflict.size() - 1);
-		
-		stats_over_clause_length += (conflict.size() - 1);
-		double elapsed = rtime(2) - starttime;
-		outer->mctime += elapsed;
+
 		return;
 	}
 	Weight & actual_dist = overapprox_weighted_distance_detector->distance(to);
-	/*for(auto & e:antig.all_edges){
-	 if(antig.edgeEnabled(e.id)){
-	 printf("nxg.add_edge(%d,%d,weight=",e.from,e.to);
-	 std::cout<<outer->getWeight(e.id)<<")\n";
-	 }
-	 }*/
+
 	bool connected = overapprox_weighted_distance_detector->connected(to);
 #ifndef NDEBUG
 	Dijkstra<Weight> d(source, g_over);
@@ -996,7 +982,7 @@ void DistanceDetector<Weight>::buildDistanceGTReason(int to, Weight & min_distan
 					//if we are already planning on visiting the from node, then we don't need to include it in the conflict (is this correct?)
 					//if(!seen[from])
 					if(!g_over.isConstant(edge_num)){
-						conflict.push(mkLit(edge_enabled,false));
+						conflict.push(outer->toSolver(mkLit(edge_enabled)));
 					}
 				} else{
 
@@ -1006,18 +992,18 @@ void DistanceDetector<Weight>::buildDistanceGTReason(int to, Weight & min_distan
 						if(!outer->constantWeight(edge_num)){
 							Weight w = g_over.getWeight(edge_num);
 
-							Lit gt;
+
 							if(strictComparison){
-								gt= ~outer->getEdgeWeightGEQ(edge_num,w);
+								outer->bvTheory->addAnalysis(Comparison::geq,outer->getEdgeBV(edge_num).getID(),w);
+								//gt= ~outer->getEdgeWeightGEQ(edge_num,w);
 								//gt= outer->getEdgeWeightLT(edge_num,w);
 							}else{
-								gt= ~outer->getEdgeWeightGEQ(edge_num,w);
+								outer->bvTheory->addAnalysis(Comparison::geq,outer->getEdgeBV(edge_num).getID(),w);
+								//gt= ~outer->getEdgeWeightGEQ(edge_num,w);
 								//gt= outer->getEdgeWeightLEQ(edge_num,w);
 								//gt= ~outer->getEdgeWeightGT(edge_num,w);
 							}
-							lbool val = outer->dbg_value(gt);
-							assert(val!=l_True);
-							conflict.push(gt);
+
 						}
 					}
 					//for distance analysis, we _can_ end up reaching source.
@@ -1031,9 +1017,21 @@ void DistanceDetector<Weight>::buildDistanceGTReason(int to, Weight & min_distan
 				}
 			}
 		} while (to_visit.size());
-		
 	}
-	
+}
+
+template<typename Weight>
+void DistanceDetector<Weight>::buildDistanceGTReason(int to, Weight & min_distance, vec<Lit> & conflict, bool strictComparison) {
+	static int it = 0;
+	stats_distance_gt_reasons++;
+	stats_over_conflicts++;
+	++it;
+	double starttime = rtime(2);
+	int u = to;
+	analyzeDistanceGTReason(to,min_distance,conflict,strictComparison);
+	if(outer->bvTheory){
+			outer->bvTheory->analyze(conflict);
+		}
 	outer->learnt_cut_clause_length += (conflict.size() - 1);
 	
 	stats_over_clause_length += (conflict.size() - 1);
@@ -1284,10 +1282,10 @@ bool DistanceDetector<Weight>::propagate(vec<Lit> & conflict) {
 				outer->enqueue(l, weighted_underprop_marker);
 			} else if (outer->value(l) == l_False) {
 				//conflict
-				conflict.push(l);
+				conflict.push(outer->toSolver(l));
 
 				buildDistanceLEQReason(to, min_dist, conflict,strictComparison);
-				outer->toSolver(conflict);
+
 				return false;
 			}
 		}
@@ -1299,10 +1297,10 @@ bool DistanceDetector<Weight>::propagate(vec<Lit> & conflict) {
 				outer->enqueue(~l, weighted_overprop_marker);
 			} else if (outer->value(~l) == l_False) {
 				//conflict
-				conflict.push(~l);
+				conflict.push(outer->toSolver(~l));
 
 				buildDistanceGTReason(to, min_dist, conflict,strictComparison);
-				outer->toSolver(conflict);
+
 				return false;
 			}
 		}
@@ -1330,7 +1328,7 @@ bool DistanceDetector<Weight>::propagate(vec<Lit> & conflict) {
 			} else if (outer->value(l) == l_False) {
 				//conflict
 
-				conflict.push(l);
+				conflict.push(outer->toSolver(l));
 				//conflict.push(~outer->getBV_LEQ(bv.getID(),min_dist_under));
 				if(strictComparison){
 					//std::cout<<"distance conflict " << under_dist << " < " << bv.getID() << "\n";
@@ -1339,7 +1337,8 @@ bool DistanceDetector<Weight>::propagate(vec<Lit> & conflict) {
 					lbool val = outer->value(d);
 					lbool dbgval = outer->dbg_value(d);
 					assert(dbgval!=l_True);*/
-					outer->buildBVReason(bv.getID(),Comparison::gt,under_dist,conflict);
+					outer->bvTheory->addAnalysis(Comparison::gt,bv.getID(),under_dist);
+					//outer->buildBVReason(bv.getID(),Comparison::gt,under_dist,conflict);
 					buildDistanceLEQReason(to, min_dist_under, conflict,true);
 				}else{
 					//std::cout<<"distance conflict " << under_dist << " <= " << bv.getID() << "\n";
@@ -1347,10 +1346,12 @@ bool DistanceDetector<Weight>::propagate(vec<Lit> & conflict) {
 					lbool val = outer->value(outer->getBV_LT(bv.getID(),under_dist));
 					lbool dbgval = outer->dbg_value(outer->getBV_LT(bv.getID(),under_dist));
 					assert(dbgval!=l_True);*/
-					outer->buildBVReason(bv.getID(),Comparison::geq,under_dist,conflict);
+
+					outer->bvTheory->addAnalysis(Comparison::geq,bv.getID(),under_dist);
+					//outer->buildBVReason(bv.getID(),Comparison::geq,under_dist,conflict);
 					buildDistanceLEQReason(to, min_dist_under, conflict,false);
 				}
-				outer->toSolver(conflict);
+
 				return false;
 			}
 		}
@@ -1362,31 +1363,25 @@ bool DistanceDetector<Weight>::propagate(vec<Lit> & conflict) {
 				outer->enqueue(~l, weighted_overprop_marker);
 			} else if (outer->value(~l) == l_False) {
 				//conflict
-				conflict.push(~l);
+				conflict.push(outer->toSolver(~l));
 				if(strictComparison){
 					//std::cout<<"distance conflict " << over_dist << " > " << bv.getID() << "\n";
 					//conflict.push(outer->getBV_LT(bv.getID(),min_dist_over));
 					if(overapprox_weighted_distance_detector->connected(to)){
-			/*			conflict.push(outer->getBV_GT(bv.getID(),over_dist));
-						lbool val = outer->value(outer->getBV_GEQ(bv.getID(),over_dist));
-						lbool dbgval = outer->dbg_value(outer->getBV_GEQ(bv.getID(),over_dist));
-						assert(dbgval!=l_True);*/
-						outer->buildBVReason(bv.getID(),Comparison::leq,over_dist,conflict);
+						outer->bvTheory->addAnalysis(Comparison::leq,bv.getID(),over_dist);
+						//outer->buildBVReason(bv.getID(),Comparison::leq,over_dist,conflict);
 					}
 					buildDistanceGTReason(to, min_dist_over, conflict,false);
 				}else{
 					//std::cout<<"distance conflict " << over_dist << " >= " << bv.getID() << "\n";
 					//conflict.push(outer->getBV_LT(bv.getID(),min_dist_over));
 					if(overapprox_weighted_distance_detector->connected(to)){
-		/*				conflict.push(outer->getBV_GEQ(bv.getID(),over_dist));
-						lbool val = outer->value(outer->getBV_GEQ(bv.getID(),over_dist));
-						lbool dbgval = outer->dbg_value(outer->getBV_GEQ(bv.getID(),over_dist));
-						assert(dbgval!=l_True);*/
-						outer->buildBVReason(bv.getID(),Comparison::lt,over_dist,conflict);
+						outer->bvTheory->addAnalysis(Comparison::lt,bv.getID(),over_dist);
+						//outer->buildBVReason(bv.getID(),Comparison::lt,over_dist,conflict);
 					}
 					buildDistanceGTReason(to, min_dist_over, conflict,true);
 				}
-				outer->toSolver(conflict);
+
 				return false;
 			}
 		}
@@ -1431,8 +1426,8 @@ bool DistanceDetector<Weight>::checkSatisfied() {
 	{
 		Dijkstra<Weight> under(source, g_under);
 		Dijkstra<Weight> over(source, g_over);
-		g_under.drawFull(true);
-		g_over.drawFull(true);
+		//g_under.drawFull(true);
+		//g_over.drawFull(true);
 		under.update();
 		over.update();
 		//now, check for weighted distance lits
