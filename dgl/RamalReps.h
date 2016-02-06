@@ -37,6 +37,7 @@
 #include <string>
 #include <vector>
 
+//#define DEBUG_RAMAL
 
 namespace dgl {
 template<typename Weight = int, class Status = typename Distance<Weight>::NullStatus>
@@ -571,11 +572,7 @@ public:
 			}
 		}
 		edgeInShortestPathGraph.resize(g.nEdgeIDs());
-		if (last_history_clear != g.historyclears) {
-			history_qhead = 0;
-			last_history_clear = g.historyclears;
-			
-		}
+
 		
 		if(has_zero_weights){
 			if(!ever_warned_about_zero_weights){
@@ -584,6 +581,18 @@ public:
 			}
 			dijkstras.update();
 		}else{
+
+			if (last_history_clear != g.historyclears) {
+				history_qhead = g.historySize();
+				last_history_clear = g.historyclears;
+				for (int edgeid = 0; edgeid < g.edges(); edgeid++) {
+					if (g.edgeEnabled(edgeid)) {
+						GRRInc(edgeid);
+					} else {
+						GRRDec(edgeid);
+					}
+				}
+			}
 			for (int i = history_qhead; i < g.historySize(); i++) {
 				int edgeid = g.getChange(i).id;
 				if (g.getChange(i).addition && g.edgeEnabled(edgeid)) {
@@ -646,10 +655,10 @@ public:
 	}
 	bool dbg_uptodate() {
 #ifdef DEBUG_RAMAL
-		/*if(last_modification<0)
-		 return true;
+		//if(last_modification<0)
+		// return true;
 		 dbg_delta();
-		 Dijkstra<Weight> d(source,g,weights);
+		 Dijkstra<Weight> d(source,g);
 
 		 for(int i = 0;i<g.nodes();i++){
 		 Weight dis = dist[i];
@@ -661,9 +670,9 @@ public:
 
 		 if(dis!=dbgdist){
 		 assert(false);
-		 throw std::logic_error();
+		 throw std::logic_error("Internal error in Ramal-Reps");
 		 }
-		 }*/
+		 }
 //#endif
 #endif
 		return true;
@@ -671,6 +680,9 @@ public:
 	
 	bool connected_unsafe(int t) {
 		dbg_uptodate();
+		if(has_zero_weights){
+			return dijkstras.connected_unsafe(t);
+		}
 		return t < dist.size() && dist[t] < INF;
 	}
 	bool connected_unchecked(int t) {
@@ -682,18 +694,26 @@ public:
 			update();
 
 		assert(dbg_uptodate());
-		
+		if(has_zero_weights){
+			return dijkstras.connected(t);
+		}
 		return dist[t] < INF;
 	}
 	Weight & distance(int t) {
 		if (last_modification != g.modifications)
 			update();
+		if(has_zero_weights){
+			return dijkstras.distance(t);
+		}
 		if (connected_unsafe(t))
 			return dist[t];
 		else
 			return this->unreachable();
 	}
 	Weight &distance_unsafe(int t) {
+		if(has_zero_weights){
+			return dijkstras.distance_unsafe(t);
+		}
 		if (connected_unsafe(t))
 			return dist[t];
 		else
@@ -1095,7 +1115,7 @@ public:
 	
 	void dbg_delta_lite() {
 #ifdef DEBUG_RAMAL
-		for (int u = 0; u < g.nodes(); u++) {
+	/*	for (int u = 0; u < g.nodes(); u++) {
 			int del = delta[u];
 			int d = dist[u];
 			int num_in = 0;
@@ -1112,7 +1132,7 @@ public:
 				}
 			}
 			assert(del == num_in);
-		}
+		}*/
 #endif
 		
 	}
