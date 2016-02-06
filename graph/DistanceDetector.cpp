@@ -222,7 +222,7 @@ void DistanceDetector<Weight>::buildUnweightedSATConstraints(bool onlyUnderAppro
 		//To do the same for undirected graps, also non-deterministically set the direction of each edge.
 		Lit True = mkLit(outer->newVar());
 		outer->addClause(True);
-		BitVector<Weight> one = outer->comparator->newBitvector(-1,outer->getEdgeWeightBitWidth() ,1);
+		BitVector<Weight> one = outer->bvTheory->newBitvector(-1,outer->getEdgeWeightBitWidth() ,1);
 		for(int  to = 0;to<unweighted_dist_lits.size();to++){
 			if(unweighted_dist_lits[to].size() && to!=source){
 
@@ -288,14 +288,14 @@ void DistanceDetector<Weight>::buildUnweightedSATConstraints(bool onlyUnderAppro
 								BitVector<Weight> sum = outer->newBV();
 
 								//this is an unweighted constraint, so just add 1
-								outer->comparator->newAdditionBV(sum.getID(), node_distances[from].getID(),one.getID());
+								outer->bvTheory->newAdditionBV(sum.getID(), node_distances[from].getID(),one.getID());
 								BitVector<Weight> new_dist = outer->newBV();
 								//If this incoming edge is enabled, then the distance is the cost of this edge
-								outer->comparator->newConditionalBV(l,new_dist.getID(),sum.getID(),dist.getID());
+								outer->bvTheory->newConditionalBV(l,new_dist.getID(),sum.getID(),dist.getID());
 
 								dist = new_dist;
 							}
-							outer->comparator->makeEquivalent(dist.getID(),node_distances[to].getID());
+							outer->bvTheory->makeEquivalent(dist.getID(),node_distances[to].getID());
 						}else{
 							//all incoming edges must be disabled
 							for(int i = 0;i<g_over.nIncoming(n);i++){
@@ -357,11 +357,11 @@ void DistanceDetector<Weight>::buildUnweightedSATConstraints(bool onlyUnderAppro
 				for(int i = 0;i<unweighted_dist_lits[to].size();i++){
 					Lit l = unweighted_dist_lits[to][i].l;
 					int min_unweighted_distance = unweighted_dist_lits[to][i].min_unweighted_distance;
-					BitVector<Weight> comparison =  outer->comparator->newBitvector(-1,outer->getEdgeWeightBitWidth() ,min_unweighted_distance);
-					Lit conditional = outer->comparator->newComparison(Comparison::leq, dist.getID() ,comparison.getID());
+					BitVector<Weight> comparison =  outer->bvTheory->newBitvector(-1,outer->getEdgeWeightBitWidth() ,min_unweighted_distance);
+					Lit conditional = outer->bvTheory->newComparison(Comparison::leq, dist.getID() ,comparison.getID());
 
 					Lit s_l = outer->toSolver(l);
-					Lit s_conditional =  outer->comparator->toSolver(conditional);
+					Lit s_conditional =  outer->bvTheory->toSolver(conditional);
 					Lit s_reaches = outer->toSolver(reaches_to);
 
 					//l is true if the distance is <= comparison, AND their exists a path to node
@@ -1086,6 +1086,7 @@ void DistanceDetector<Weight>::buildReason(Lit p, vec<Lit> & reason, CRef marker
 		exit(3);
 		assert(false);
 	}
+	outer->toSolver(reason);
 }
 
 template<typename Weight>
@@ -1139,7 +1140,7 @@ bool DistanceDetector<Weight>::propagate(vec<Lit> & conflict) {
 		return true;
 	
 	static int iter = 0;
-	if (++iter == 267) { //18303
+	if (++iter == 29) { //18303
 		int a = 1;
 	}
 
@@ -1244,7 +1245,7 @@ bool DistanceDetector<Weight>::propagate(vec<Lit> & conflict) {
 				if(S->dbg_solver)
 				S->dbg_check(conflict);
 #endif
-				
+				outer->toSolver(conflict);
 				return false;
 			} else {
 				int a = 1;
@@ -1286,7 +1287,7 @@ bool DistanceDetector<Weight>::propagate(vec<Lit> & conflict) {
 				conflict.push(l);
 
 				buildDistanceLEQReason(to, min_dist, conflict,strictComparison);
-
+				outer->toSolver(conflict);
 				return false;
 			}
 		}
@@ -1301,7 +1302,7 @@ bool DistanceDetector<Weight>::propagate(vec<Lit> & conflict) {
 				conflict.push(~l);
 
 				buildDistanceGTReason(to, min_dist, conflict,strictComparison);
-
+				outer->toSolver(conflict);
 				return false;
 			}
 		}
@@ -1349,7 +1350,7 @@ bool DistanceDetector<Weight>::propagate(vec<Lit> & conflict) {
 					outer->buildBVReason(bv.getID(),Comparison::geq,under_dist,conflict);
 					buildDistanceLEQReason(to, min_dist_under, conflict,false);
 				}
-
+				outer->toSolver(conflict);
 				return false;
 			}
 		}
@@ -1385,6 +1386,7 @@ bool DistanceDetector<Weight>::propagate(vec<Lit> & conflict) {
 					}
 					buildDistanceGTReason(to, min_dist_over, conflict,true);
 				}
+				outer->toSolver(conflict);
 				return false;
 			}
 		}

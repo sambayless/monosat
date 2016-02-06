@@ -63,6 +63,8 @@
 #include <unistd.h>
 #include <sstream>
 #include <string>
+#include <amo/AMOTheory.h>
+
 using namespace dgl;
 namespace Monosat {
 
@@ -77,6 +79,7 @@ private:
 	Solver * S;
 	int local_q = 0;
 	bool lazy_backtracking_enabled=false;
+	vec<Theory*> propagation_required_theories;
 public:
 
 	bool all_edges_unit = true;
@@ -120,12 +123,88 @@ public:
 		};
 	vec<MaxflowConstraintBV> unimplemented_maxflow_constraints_bv;
 
+	//A set of edges of which exactly one will be in the final graph.
+	struct EdgeSet{
+		GraphTheorySolver & outer;
+		vec<int> edges;
+		int assigned_edge=-1;//-1 if no edge is assigned
+		bool clauses_constructed=false;
+
+		EdgeSet(GraphTheorySolver & outer):outer(outer){}
+
+		void buildReasonForEdge(int edgeID,vec<Lit> & conflict){
+			if(edgeID==assigned_edge){
+				assert(outer.g_under.edgeEnabled(edgeID));
+				Var v = outer.getEdgeVar(edgeID);
+				Lit l = mkLit(v,false);
+				assert(outer.value(l)==l_True);
+				conflict.push(~l);
+			}else{
+				assert(!outer.g_under.edgeEnabled(edgeID));
+				Var v = outer.getEdgeVar(edgeID);
+				Lit l = mkLit(v,false);
+				assert(outer.value(l)==l_False);
+				conflict.push(l);
+			}
+		}
+		bool isAssigned()const{
+			return assigned_edge>-1;
+		}
+		void assignEdge(int edgeID){
+			assert(assigned_edge==-1);
+			if(assigned_edge!= -1){
+				throw std::runtime_error("Bad edge set assignment!");
+			}
+			assigned_edge=edgeID;
+			outer.n_assigned_edge_sets++;
+			if(outer.n_assigned_edge_sets>outer.edge_sets.size()){
+				throw std::runtime_error("Bad edge set assignment!");
+			}
+		}
+		int assignedEdge()const{
+			assert(isAssigned());
+			return assigned_edge;
+		}
+		void unassignEdge(int edgeID){
+			assert(assigned_edge==edgeID);
+			if(assigned_edge== -1){
+				throw std::runtime_error("Bad edge set unassignment!");
+			}
+			assigned_edge=-1;
+			outer.n_assigned_edge_sets--;
+			if(outer.n_assigned_edge_sets<0){
+				throw std::runtime_error("Bad edge set unassignment!");
+			}
+		}
+		void init(){
+			if(!clauses_constructed){
+				clauses_constructed=true;
+				//build clauses enforcing atleast-one and at-most-one relationship for the edge set...
+			}
+		}
+
+	};
+
+	Lit invalid_edgeset_lit=lit_Undef;
+	vec<EdgeSet*> edge_sets;
+
+	vec<int> edge_set_map;//mapping from edgeID's to the edge set they belong to (if there is such a set)
+	int n_assigned_edge_sets=0;
 
 	DynamicGraph<Weight> g_under;
 	DynamicGraph<Weight> g_over;
+	DynamicGraph<Weight> g_over_edgeset;//extra over approximation graph for when edge sets are unassigned
 	bool using_neg_weights = false;
 	DynamicGraph<Weight> g_under_weights_over;
 	DynamicGraph<Weight> g_over_weights_under;
+	DynamicGraph<Weight> g_over_weights_under_edgeset;
+
+	bool allEdgeSetsAssigned(){
+		return n_assigned_edge_sets==edge_sets.size();
+	}
+	bool hasEdgeSets(){
+		return edge_sets.size();
+	}
 
 	/**
 	 * The cutgraph is (optionally) used for conflict analysis by some graph theories.
@@ -161,7 +240,7 @@ public:
 
 	//typedef BVTheorySolver<Weight,ComparisonStatus>::BitVector BitVector;
 	//if bitvectors weights are supplied, then this manages the resulting weights.
-	BVTheorySolver<Weight> * comparator=nullptr;
+	BVTheorySolver<Weight> * bvTheory=nullptr;
 
 	vec<const char*> node_symbols;
 	vec<const char*> edge_symbols;
@@ -339,8 +418,13 @@ public:
 	}
 	bool removeFromTrail(Var v){
 		//dbg_check_trails();
+
 		int lev =trail[v].level;
 		if(lev>=0 || lev==-2){
+			while(bvtrail.size() && bvtrail.last().graphAssign==v){
+				bvtrail.pop();
+			}
+
 			Var prev = trail[v].prev_var;
 			Var next = trail[v].next_var;
 			assert(prev!=var_Undef);
@@ -380,6 +464,10 @@ public:
 	}
 	//Returns true if the trail at this level is now empty.
 	inline bool _removeFromTrail(Var v, int lev){
+			while(bvtrail.size() && bvtrail.last().graphAssign==v){
+				bvtrail.pop();
+			}
+
 			assert(lev>=0);
 			Var prev = trail[v].prev_var;
 			Var next = trail[v].next_var;
@@ -408,7 +496,7 @@ public:
 		}
 	void dbg_check_trail(int lev){
 #ifndef NDEBUG
-		/*static vec<bool> seen;
+		static vec<bool> seen;
 		seen.clear();
 		seen.growTo(vars.size());
 		if(lev>=0){
@@ -451,13 +539,24 @@ public:
 					v=trail[v].next_var;
 				}
 			}
-		}*/
+		}
 #endif
 	}
 
 	void dbg_check_trails(){
 #ifndef NDEBUG
-		/*dbg_check_trail(-2);//lazy trail
+		int last_pos=-1;
+		for(int i = 0;i<bvtrail.size();i++){
+			Var v = bvtrail[i].graphAssign;
+			int bvpos = bvtrail[i].bvTrail;
+			if(v!=var_Undef)
+				assert(value(v)!=l_Undef);
+			assert(bvpos>=last_pos);
+			last_pos=bvpos;
+			assert(bvpos<bvTheory->trail.size());
+		}
+
+		dbg_check_trail(-2);//lazy trail
 		for(int l = 0;l<decisions.size();l++){
 			dbg_check_trail(l);
 		}
@@ -470,7 +569,7 @@ public:
 				assert(opt_lazy_backtrack && supportsLazyBacktracking());
 				assert(lazy_trail_head!=var_Undef);
 			}
-		}*/
+		}
 #endif
 	}
 
@@ -495,10 +594,14 @@ public:
 public:
 	vec<Theory*> theories;
 	vec<Detector*> detectors;
+	vec<Detector*> edge_set_detectors;
+	vec<Detector*> normal_detectors;
 	vec<ReachDetector<Weight>*> reach_detectors;
 	vec<DistanceDetector<Weight>*> distance_detectors;
 	vec<DistanceDetector<Weight>*> weighted_distance_detectors;
 	vec<MaxflowDetector<Weight>*> flow_detectors;
+	vec<MaxflowDetector<Weight>*> edgeset_flow_detectors;
+
 	ConnectedComponentsDetector<Weight>* component_detector = nullptr;
 	CycleDetector<Weight> * cycle_detector = nullptr;
 	vec<SteinerDetector<Weight>*> steiner_detectors;
@@ -513,7 +616,7 @@ public:
 
 	//Full matrix
 	//vec<vec<Edge> > edges;
-	
+
 	//Just a list of the edges
 	vec<Edge> edge_list;
 	vec<vec<Edge> > undirected_adj;
@@ -570,7 +673,7 @@ public:
 	vec<VarData> vars;
 	int theory_index = 0;
 public:
-	
+
 	double mctime = 0;
 	double reachtime = 0;
 	double unreachtime = 0;
@@ -579,6 +682,7 @@ public:
 	long propagations =-1;
 	long stats_propagations = 0;
 	long stats_num_conflicts = 0;
+	long stats_num_skipped_edgeset_props=0;
 	long stats_num_lazy_conflicts=0;
 	long stats_decisions = 0;
 	long stats_num_reasons = 0;
@@ -618,13 +722,13 @@ public:
 		CutStatus(GraphTheorySolver & _outer) :
 				outer(_outer) {
 		}
-		
+
 	} cutStatus;
 
 	struct PropCutStatus {
 		GraphTheorySolver & outer;
 		int operator ()(int id) const {
-			
+
 			if (outer.value(outer.edge_list[id].v) == l_Undef) {
 				return 1;
 			} else {
@@ -635,7 +739,7 @@ public:
 		PropCutStatus(GraphTheorySolver & _outer) :
 				outer(_outer) {
 		}
-		
+
 	} propCutStatus;
 
 	GraphTheorySolver(Solver * S_) :
@@ -676,7 +780,6 @@ public:
 		g_under.dynamic_history_clears=opt_dynamic_history_clear;
 		g_over.dynamic_history_clears=opt_dynamic_history_clear;
 		cutGraph.dynamic_history_clears=opt_dynamic_history_clear;
-		
 
 
 
@@ -695,7 +798,7 @@ public:
 
 	void printStats(int detailLevel) {
 
-		
+
 		printf("Graph %d stats:\n", getGraphID());
 		/*		printf("Decision Time: %f\n", stats_decision_time);
 		 printf("Prop Time: %f (initial: %f)\n", propagationtime,stats_initial_propagation_time);
@@ -713,6 +816,9 @@ public:
 				g_under.skipped_historyclears, cutGraph.skipped_historyclears);
 		printf("Propagations: %ld (%f s, avg: %f s, %ld skipped)\n", stats_propagations, propagationtime,
 				(propagationtime) / ((double) stats_propagations + 1), stats_propagations_skipped);
+		if(opt_only_prop_edgeset){
+			printf("Skipped proapgations due to unassigned edgesets %ld\n", stats_num_skipped_edgeset_props);
+		}
 		printf("Decisions: %ld (%f s, avg: %f s), lazy decisions: %ld\n", stats_decisions, stats_decision_time,
 				(stats_decision_time) / ((double) stats_decisions + 1), stats_lazy_decisions);
 		printf("Conflicts: %ld (lazy conflicts %ld)\n", stats_num_conflicts,stats_num_lazy_conflicts);
@@ -727,16 +833,16 @@ public:
 		}
 		fflush(stdout);
 	}
-	
+
 	void writeTheoryWitness(std::ostream& write_to) {
-		
+
 		for (Detector * d : detectors) {
 			write_to << "Graph " << this->getGraphID() << ", detector " << d->getID() << ":\n";
 			d->printSolution(write_to);
 		}
-		
+
 	}
-	
+
 	inline int getTheoryIndex() {
 		return theory_index;
 	}
@@ -755,9 +861,13 @@ public:
 	}
 
 	void setBVTheory(BVTheorySolver<Weight> * bv){
-		comparator = bv;
-		if(bv){
-			bv->addTheory(this);
+		if(bvTheory!=bv){
+			bvTheory = bv;
+
+			if(bv){
+				this->propagation_required_theories.push(bv);
+				bv->addTheory(this);
+			}
 		}
 	}
 
@@ -769,18 +879,21 @@ public:
 		assert(isEdgeVar(v));
 		return vars[v].detector_edge;
 	}
+	inline int getEdgeSetID(int edgeID){
+		return edge_set_map[edgeID];
+	}
 	inline int getDetector(Var v) {
 		assert(!isEdgeVar(v));
 		return vars[v].detector_edge;
 	}
-	
+
 	inline Var getEdgeVar(int edgeID) {
 		Var v = edge_list[edgeID].v;
 		assert(v < vars.size());
 		assert(vars[v].isEdge);
 		return v;
 	}
-	
+
 	void makeEqual(Lit l1, Lit l2) {
 		Lit o1 = toSolver(l1);
 		Lit o2 = toSolver(l2);
@@ -858,7 +971,7 @@ public:
 		tmp_clause.clear();
 		c.copyTo(tmp_clause);
 		toSolver(tmp_clause);
-		
+
 		S->addClauseSafely(tmp_clause);
 	}
 	Var newVar(bool polarity = true, bool dvar = true){
@@ -911,6 +1024,11 @@ public:
 	Var newVar(Var solverVar, int detector, bool isEdge = false, bool connectToTheory = true) {
 		while (S->nVars() <= solverVar)
 			S->newVar();
+
+		if(S->hasTheory(solverVar) &&  S->getTheoryID(solverVar)==getTheoryIndex()){
+			return S->getTheoryVar(solverVar);
+		}
+
 		Var v = vars.size();
 		vars.push();
 		vars[v].isEdge = isEdge;
@@ -946,13 +1064,13 @@ public:
 		//assert(S->getTheoryVar(vars[v].solverVar)==v);
 		return vars[v].solverVar;
 	}
-	
+
 	inline Lit toSolver(Lit l)const {
 		//assert(S->hasTheory(vars[var(l)].solverVar));
 		//assert(S->getTheoryVar(vars[var(l)].solverVar)==var(l));
 		return mkLit(vars[var(l)].solverVar, sign(l));
 	}
-	
+
 	void toSolver(vec<Lit> & c) {
 		for (int i = 0; i < c.size(); i++) {
 			c[i] = toSolver(c[i]);
@@ -963,6 +1081,7 @@ public:
 		return rnd_seed;
 	}
 	
+
 	inline bool edgeWeightDecidable(int edgeID,DetectorComparison op, Weight edgeWeight) {
 		if (! hasBitVector(edgeID))
 			return false;
@@ -970,21 +1089,21 @@ public:
 		Comparison bvOp;
 		if (op==DetectorComparison::leq){
 			bvOp=Comparison::leq;
-			return comparator->decidableBV(bvOp,bvID,edgeWeight);
+			return bvTheory->decidableBV(bvOp,bvID,edgeWeight);
 
 		}else if (op==DetectorComparison::lt){
 			bvOp=Comparison::lt;
-			return comparator->decidableBV(bvOp, bvID, edgeWeight);
+			return bvTheory->decidableBV(bvOp, bvID, edgeWeight);
 		}else if (op==DetectorComparison::geq){
 			/*printf("decide graph %d edge %d bv %d >= ",this->getTheoryIndex(), getEdgeBV(edgeID).getID(),edgeID);
 			std::cout << edgeWeight <<"\n";*/
 			bvOp=Comparison::geq;
-			return comparator->decidableBV(bvOp, bvID, edgeWeight);
+			return bvTheory->decidableBV(bvOp, bvID, edgeWeight);
 		}else if (op==DetectorComparison::gt){
 			bvOp=Comparison::gt;
-			return comparator->decidableBV(bvOp, bvID, edgeWeight);
+			return bvTheory->decidableBV(bvOp, bvID, edgeWeight);
 		}else if (op==DetectorComparison::eq){
-			return comparator->decidableBV(Comparison::leq, bvID, edgeWeight) || comparator->decidableBV(Comparison::geq, bvID, edgeWeight);
+			return bvTheory->decidableBV(Comparison::leq, bvID, edgeWeight) || bvTheory->decidableBV(Comparison::geq, bvID, edgeWeight);
 
 		}else{
 			assert(false);
@@ -1014,7 +1133,7 @@ public:
 	}
 	inline bool enqueue(Lit l, CRef reason) {
 		assert(assigns[var(l)]==l_Undef);
-		
+
 		Lit sl = toSolver(l);
 		if (S->enqueue(sl, reason)) {
 			enqueueTheory(l);//is this still needed?
@@ -1023,7 +1142,88 @@ public:
 			return false;
 		}
 	}
-	
+	struct BVAssign{
+		Var graphAssign;//last assignment on the graph theory trail at the time of assignment
+		int bvTrail;
+		int bvID;
+		int level;//this is redundant and can likely be removed
+	};
+	vec<BVAssign> bvtrail;//connects the graph theory and bv theory trails, for conflict analysis.
+
+	inline bool assignBV(int bvID, Comparison comp,Weight value,typename BVTheorySolver<Weight>::Operation*bvOp){
+		dbg_check_trails();
+		if(bvTheory && opt_graph_bv_prop){
+			int bvTrailSize = bvTheory->trail.size();
+
+			bool conflict = !bvTheory->assignBV(bvID,comp,value,*bvOp);
+			if(bvTheory->trail.size()>bvTrailSize){
+				int lev = decisionLevel();
+				Var v = getBack(lev);
+				//temporarily backtrack until the graphTrailPos
+				while(v==-1 && lev>0 ){
+					lev--;
+					v = getBack(lev);
+				}
+				//if this enqueue was successful, AND it led to a refinment in the bvTheory
+				bvtrail.push({v ,bvTrailSize,bvID,lev});
+				dbg_check_trails();
+			}
+			return !conflict;
+		}
+		return true;
+	}
+
+	class GraphTheoryOp: public  BVTheorySolver<Weight>::Operation{
+		using BVTheorySolver<Weight>::Operation::getID;
+		using BVTheorySolver<Weight>::Operation::theory;
+
+		 GraphTheorySolver * outer;
+	public:
+		GraphTheoryOp(BVTheorySolver<Weight> &theory,GraphTheorySolver * outer):BVTheorySolver<Weight>::Operation(theory),outer(outer){
+
+		}
+		 typename BVTheorySolver<Weight>::OperationType getType()const override{
+			return  BVTheorySolver<Weight>::OperationType::cause_is_theory;
+		}
+
+
+		int getBV()override=0;
+
+		bool propagate(bool & changed, vec<Lit> & conflict)override{return true;}
+
+	    void updateApprox(Var ignore_bv, Weight & under_new, Weight & over_new,typename BVTheorySolver<Weight>::Cause & under_cause_new, typename BVTheorySolver<Weight>::Cause & over_cause_new)override{}
+
+		virtual void analyzeReason(bool compareOver,Comparison op, Weight  to,  vec<Lit> & conflict)override{
+			outer->dbg_check_trails();
+			int bvTrailPos = theory.analysis_trail_pos;//current position in the bitvector trail that analysis is occuring at.
+			//lookup the corresponding position in the graph theory trail that we should be applying the bv theory analysis
+			bool found=false;
+			Var lastAssign=var_Undef;
+			int graphLevel=-1;
+			const vec<BVAssign> & bvtrail = outer->bvtrail;
+			for(int i = bvtrail.size()-1;i>=0;i--){
+
+				int bvTrail = bvtrail[i].bvTrail;
+				if(bvTrail<=bvTrailPos){
+					found=true;
+					graphLevel = bvtrail[i].level;
+					lastAssign =  bvtrail[i].graphAssign;
+					break;
+				}
+			}
+			if(!found){
+				throw std::runtime_error("Internal error in bv/graph clause learning");
+			}
+
+			outer->rewindUntil(lastAssign);
+		}
+		void completeAnalysis(){
+			outer->undoRewind();
+		}
+
+		bool checkSolved()override{	return true;}
+	};
+
 	~GraphTheorySolver() {
 		for(int i = 0;i<node_symbols.size();i++){
 			if(node_symbols[i]){
@@ -1061,7 +1261,7 @@ public:
 			return edge_symbols[edgeID];
 	}
 	int newNode() {
-		
+
 		inv_adj.push();
 		undirected_adj.push();
 		reach_info.push();
@@ -1072,8 +1272,13 @@ public:
 		cutGraph.addNode();
 		g_under_weights_over.addNode();
 		g_over_weights_under.addNode();
+
+		if(opt_min_edgeset>=0){
+			g_over_edgeset.addNode();
+			g_over_weights_under_edgeset.addNode();
+		}
 		seen.growTo(nNodes());
-		
+
 		return g_under.addNode();
 	}
 	void newNodes(int n) {
@@ -1086,13 +1291,13 @@ public:
 	bool isNode(int n) {
 		return n >= 0 && n < nNodes();
 	}
-	
+
 	bool hasBitVector(int edgeID){
 		return edge_list[edgeID].bvID>=0;
 	}
 
 	BitVector<Weight> getEdgeBV(int edgeID){
-		return comparator->getBV(edge_list[edgeID].bvID);
+		return bvTheory->getBV(edge_list[edgeID].bvID);
 	}
 
 	bool dbg_propgation(Lit l) {
@@ -1108,7 +1313,7 @@ public:
 				Edge & e = edge_list[getEdgeID(v)];
 				c.push(l);
 			}
-			
+
 			/*		if(v>=min_edge_var && v<min_edge_var+num_edges){
 			 if(edge_list[v-min_edge_var].v<0)
 			 continue;
@@ -1122,68 +1327,163 @@ public:
 #endif
 		return true;
 	}
-	
+
 	void dbg_sync_reachability() {
-		
+
 #ifdef DEBUG_GRAPH
-		
+
 		for(int i = 0;i<reach_detectors.size();i++) {
 			ReachDetector* d = reach_detectors[i];
 			d->dbg_sync_reachability();
 		}
 #endif
-		
+
+	}
+	void bassert(bool condition) {
+	#ifndef NDEBUG
+		assert(condition);
+		if (!condition) {
+			throw std::runtime_error("Assertion error");
+		}
+	#endif
 	}
 	void dbg_sync() {
+/*		if(this->hasEdgeSets()){
+			for(int edgeID =0;edgeID<g_over_edgeset.edges();edgeID++){
+				if(g_over_edgeset.hasEdge(edgeID)){
+					int edge_set_id = this->getEdgeSetID(edgeID);
+					Weight w = g_over_edgeset.getWeight(edgeID);
+					if(edge_set_id<0){
+						if(w!=g_over.getWeight(edgeID)){
+							throw std::runtime_error("Bad edge weight in edge set (1)!");
+						}
+					}else{
+						if(g_over_edgeset.edgeEnabled(edgeID)){
+							if(w!=g_over.getWeight(edgeID)){
+								throw std::runtime_error("Bad edge weight in edge set (2)!");
+							}
+						}else{
+							if(w!=0){
+								throw std::runtime_error("Bad edge weight in edge set (3)!");
+							}
+						}
+					}
+				}
+			}
+		}*/
+
+
 #ifndef NDEBUG
 		dbg_check_trails();
 
 		if (opt_conflict_min_cut) {
 			for (int i = 0; i < edge_list.size(); i++) {
 				if (value(edge_list[i].v) == l_False) {
-					assert(cutGraph.edgeEnabled(i * 2));
-					assert(!cutGraph.edgeEnabled(i * 2 + 1));
+					bassert(cutGraph.edgeEnabled(i * 2));
+					bassert(!cutGraph.edgeEnabled(i * 2 + 1));
 				} else {
-					assert(!cutGraph.edgeEnabled(i * 2));
-					assert(cutGraph.edgeEnabled(i * 2 + 1));
+					bassert(!cutGraph.edgeEnabled(i * 2));
+					bassert(cutGraph.edgeEnabled(i * 2 + 1));
 				}
 			}
 		}
 		for (int i = 0; i < edge_list.size(); i++) {
 			if (edge_list[i].v < 0)
 				continue;
+			if(i==412){
+				int a=1;
+			}
+			int edge_set_id = getEdgeSetID(i);
 			Edge & e = edge_list[i];
 			lbool val = value(e.v);
 			if(edge_bv_weights.size()){
 				BitVector<Weight> & bv = edge_bv_weights[e.edgeID];
 				if(g_under.getWeight(e.edgeID)!= bv.getUnder()){
-					assert( false);
+					bassert( false);
 				}
 				if(g_over.getWeight(e.edgeID)!=bv.getOver()){
-					assert( false);
+					bassert( false);
 				}
 			}
 			if (val == l_True) {
 				if (!g_under.edgeEnabled(e.edgeID)) {
-					assert( false);
+					bassert( false);
 				}
 				if (!g_over.edgeEnabled(e.edgeID)) {
-					assert( false);
+					bassert( false);
+				}
+				if(using_neg_weights){
+					if(!g_under_weights_over.edgeEnabled(e.edgeID)){
+						bassert(false);
+					}
+					if(!g_over_weights_under.edgeEnabled(e.edgeID)){
+						bassert(false);
+					}
+				}
+				if(opt_min_edgeset>=0 && edge_sets.size()){
+					if(!g_over_edgeset.edgeEnabled(e.edgeID)){
+						bassert(false);
+					}
+					if(using_neg_weights){
+						if(!g_over_weights_under_edgeset.edgeEnabled(e.edgeID)){
+							bassert(false);
+						}
+					}
 				}
 
 			} else  if (val == l_False) {
 				if (g_under.edgeEnabled(e.edgeID)) {
-					assert( false);
+					bassert( false);
 				}
-				if (g_over.edgeEnabled(e.edgeID)) {
-					assert( false);
+				if(edge_set_id<0){
+					if (g_over.edgeEnabled(e.edgeID)) {
+						bassert( false);
+					}
+				}else{
+
+				}
+				if(using_neg_weights){
+					if(g_under_weights_over.edgeEnabled(e.edgeID)){
+						bassert(false);
+					}
+					if(g_over_weights_under.edgeEnabled(e.edgeID)){
+						bassert(false);
+					}
+				}
+
+				if(opt_min_edgeset>=0 && hasEdgeSets()){
+					if(g_over_edgeset.edgeEnabled(e.edgeID)){
+						bassert(false);
+					}
+					if(using_neg_weights){
+						if(g_over_weights_under_edgeset.edgeEnabled(e.edgeID)){
+							bassert(false);
+						}
+					}
+				}
+
+			}else{
+				if(edge_set_id>=0 && edge_sets.size()){
+					//unassigned edges in edge sets are never disabled in g_over
+					if (!g_over.edgeEnabled(e.edgeID)) {
+						bassert( false);
+					}
+					//unassigned edgeset edges are never enabled in g_over_edgeset
+					if(g_over_edgeset.edgeEnabled(e.edgeID)){
+						bassert(false);
+					}
+					if(using_neg_weights){
+						if(g_over_weights_under_edgeset.edgeEnabled(e.edgeID)){
+							bassert(false);
+						}
+					}
 				}
 			}
 		}
 
 #endif
 #ifdef DEBUG_DIJKSTRA
-		
+
 		for(int i = 0;i<assigns.size();i++) {
 			lbool val = assigns[i];
 
@@ -1289,19 +1589,50 @@ public:
 #endif
 	}
 	void backtrackAssign(Lit l){
+		assert(l!=lit_Undef);
+		if(l==invalid_edgeset_lit){
+			invalid_edgeset_lit=lit_Undef;
+
+		}
 		Var v = var(l);
 		assert(value(l)==l_True);
 		lbool assign = sign(l)?l_False:l_True;
 			if (isEdgeVar(v)) {
 				int edge_num = getEdgeID(v); //e.var-min_edge_var;
+				int edgeSetID = getEdgeSetID(edge_num);
 				assert(assigns[v]!=l_Undef);
-
+				if(edge_num==10236){
+					int a=1;
+				}
 				if (assign==l_True) {
 					g_under.disableEdge(edge_num);
-
+					if(edgeSetID>-1){
+						g_over_edgeset.disableEdge(edge_num);
+						g_over_edgeset.setEdgeWeight(edge_num,0);
+						assert(g_over.edgeEnabled(edge_num));
+						EdgeSet & edge_set = *edge_sets[edgeSetID];
+						if(edge_set.assigned_edge==edge_num){
+							edge_set.unassignEdge(edge_num);
+						}
+					}
 					assert(!cutGraph.edgeEnabled(edge_num * 2));
 				} else {
-					g_over.enableEdge(edge_num);
+					if(edgeSetID>-1){
+						EdgeSet & edge_set = *edge_sets[edgeSetID];
+						if(edge_set.isAssigned()){
+							assert(g_over.edgeEnabled(edge_num));
+						}else{
+							g_over.enableEdge(edge_num);
+						}
+						assert(!g_over_edgeset.edgeEnabled(edge_num));
+						assert(g_over_edgeset.getEdgeWeight(edge_num)==0);
+					}else{
+						g_over.enableEdge(edge_num);
+						if(hasEdgeSets()){
+							g_over_edgeset.enableEdge(edge_num);
+							assert(g_over_edgeset.getEdgeWeight(edge_num)==g_over.getEdgeWeight(edge_num));
+						}
+					}
 					if (opt_conflict_min_cut) {
 						assert(cutGraph.edgeEnabled(edge_num * 2));
 						cutGraph.disableEdge(edge_num * 2);
@@ -1312,8 +1643,17 @@ public:
 				if(using_neg_weights){
 					if (assign==l_True) {
 						g_under_weights_over.disableEdge(edge_num);
+						if(edgeSetID>-1){
+							g_over_weights_under_edgeset.disableEdge(edge_num);
+							assert(g_over_weights_under.edgeEnabled(edge_num));
+						}
 					} else {
-						g_over_weights_under.enableEdge(edge_num);
+						if(edgeSetID>-1){
+							assert(g_over_weights_under_edgeset.edgeEnabled(edge_num));
+							assert(!g_over_weights_under.edgeEnabled(edge_num));
+						}else{
+							g_over_weights_under.enableEdge(edge_num);
+						}
 					}
 				}
 			} else {
@@ -1332,6 +1672,7 @@ public:
 		//first, undo any assignments in the lazy trail
 		if(lazy_trail_head!=var_Undef){
 			requiresPropagation = true;
+			S->needsPropagation(getTheoryIndex());
 			Var v = getPrev(lazy_trail_head);
 			while(true){
 				Lit l = mkLit(v, value(v)==l_False);
@@ -1393,6 +1734,7 @@ public:
 
 		if (changed) {
 			requiresPropagation = true;
+			S->needsPropagation(getTheoryIndex());
 		}
 /*		while(to_reenqueue.size()){
 			Lit p = to_reenqueue.last();
@@ -1445,7 +1787,8 @@ public:
 			}
 			v=p;
 		}
-		requiresPropagation = true;
+		requiresPropagation = true;//is this always required?
+		S->needsPropagation(getTheoryIndex());
 
 		for (Detector * d : detectors) {
 			d->backtrack(this->decisionLevel());
@@ -1465,6 +1808,57 @@ public:
 
 
 	}
+
+
+	vec<Lit> rewound_assigns;
+	void rewindUntil(Var until){
+		dbg_check_trails();
+		if(decisionLevel()==0)
+			return;
+		if(until==-1){
+			until = getBack(0);
+		}
+		assert(onTrail(until)||onLazyTrail(until));
+		assert(rewound_assigns.size()==0);
+		int lev;
+		Var v;
+		if(lazy_trail_head==var_Undef){
+			v= getBack(decisionLevel());
+			lev = decisionLevel();
+		}else{
+			lev=decisionLevel()+1;
+			assert(lazy_trail_head!=var_Undef);
+			v = getPrev(lazy_trail_head);
+		}
+		while(lev>0){
+
+			//assert(to_reenqueue.size()==0);
+			while(v!=var_Undef){
+				if(v==until){
+					return;
+				}
+				Lit l = mkLit(v, value(v)==l_False);
+				rewound_assigns.push(l);
+				assert(assigns[v]!=l_Undef);
+				backtrackAssign(l);
+				Var p = _getPrev(v);
+				if(p==v || p==getBack(lev))
+					break;
+				v=p;
+			}
+			lev--;
+			v = getBack(lev);
+		}
+	}
+
+	void undoRewind(){
+		while(rewound_assigns.size()){
+			Lit l =rewound_assigns.last();
+			rewound_assigns.pop();
+			_assign(l);
+		}
+	}
+
 	void undecideBV(int bvID){
 
 		if(isEdgeBV(bvID)){
@@ -1499,7 +1893,7 @@ public:
 		static int iter = 0;
 		iter++;
 
-		if(iter==5940){
+		if(iter==10){
 			int a=1;
 		}
 		/*if(iter>128451){
@@ -1525,6 +1919,8 @@ public:
 			}
 		}
 
+
+		vec<Detector*> & detectors = (hasEdgeSets() && allEdgeSetsAssigned()) ? edge_set_detectors:normal_detectors;
 		for (int i = 0; i < detectors.size(); i++) {
 			Detector * r = detectors[i];
 			Lit l = r->decide();
@@ -1542,24 +1938,24 @@ public:
 						Comparison bvOp;
 						if (op==DetectorComparison::leq){
 							bvOp=Comparison::leq;
-							bv_decision = comparator->decideBV(bvOp, getEdgeBV(edgeID).getID(), edgeWeight);
+							bv_decision = bvTheory->decideBV(bvOp, getEdgeBV(edgeID).getID(), edgeWeight);
 
 
 						}else if (op==DetectorComparison::lt){
 							bvOp=Comparison::lt;
-							bv_decision = comparator->decideBV(bvOp, getEdgeBV(edgeID).getID(), edgeWeight);
+							bv_decision = bvTheory->decideBV(bvOp, getEdgeBV(edgeID).getID(), edgeWeight);
 						}else if (op==DetectorComparison::geq){
 							/*printf("decide graph %d edge %d bv %d >= ",this->getTheoryIndex(), getEdgeBV(edgeID).getID(),edgeID);
 							std::cout << edgeWeight <<"\n";*/
 							bvOp=Comparison::geq;
-							bv_decision = comparator->decideBV(bvOp, getEdgeBV(edgeID).getID(), edgeWeight);
+							bv_decision = bvTheory->decideBV(bvOp, getEdgeBV(edgeID).getID(), edgeWeight);
 						}else if (op==DetectorComparison::gt){
 							bvOp=Comparison::gt;
-							bv_decision = comparator->decideBV(bvOp, getEdgeBV(edgeID).getID(), edgeWeight);
+							bv_decision = bvTheory->decideBV(bvOp, getEdgeBV(edgeID).getID(), edgeWeight);
 						}else if (op==DetectorComparison::eq){
-							bv_decision = comparator->decideBV(Comparison::leq, getEdgeBV(edgeID).getID(), edgeWeight);
+							bv_decision = bvTheory->decideBV(Comparison::leq, getEdgeBV(edgeID).getID(), edgeWeight);
 							if(bv_decision==lit_Undef)
-								bv_decision = comparator->decideBV(Comparison::geq, getEdgeBV(edgeID).getID(), edgeWeight);
+								bv_decision = bvTheory->decideBV(Comparison::geq, getEdgeBV(edgeID).getID(), edgeWeight);
 						}else{
 							exit(1);//ne not supported yet...
 						}
@@ -1568,7 +1964,6 @@ public:
 							stats_decisions++;
 							r->undecide(l);
 							stats_decision_time += rtime(1) - start;
-
 							return bv_decision;
 						}
 					}
@@ -1582,13 +1977,15 @@ public:
 				return toSolver(l);
 			}
 		}
+
 		stats_decision_time += rtime(1) - start;
 		return lit_Undef;
 	}
-	
+
 
 	void newDecisionLevel() {
 		//trail_lim.push(trail.size());
+		assert(invalid_edgeset_lit==lit_Undef);
 		decisions.push(var_Undef);
 	}
 
@@ -1596,7 +1993,7 @@ public:
 	void buildBVReason(int bvID, Comparison comp, Weight compareTo, vec<Lit> &reason){
 		static int iter = 0;
 		//todo: optimize this for case where bv is statically known to satisfy or fail the constraint...
-		BitVector<Weight> bv = comparator->getBV(bvID);
+		BitVector<Weight> bv = bvTheory->getBV(bvID);
 		Lit c = getBV_COMP(bvID,-comp,compareTo);
 		assert(dbg_value(c)==l_False);
 		reason.push(c);
@@ -1612,12 +2009,12 @@ public:
 			double start = rtime(1);
 			assert(d < detectors.size());
 			theories[d]->buildReason(p, reason,marker);
-			toSolver(reason);
+			//toSolver(reason);
 			double finish = rtime(1);
 			stats_reason_time += finish - start;
 			stats_num_reasons++;
 		}else{
-		
+
 			int d = marker_map[pos].id;
 			//double initial_start = rtime(1);
 			double start = rtime(1);
@@ -1625,17 +2022,17 @@ public:
 
 			assert(d < detectors.size());
 			detectors[d]->buildReason(p, reason, marker);
-			toSolver(reason);
+			//toSolver(reason);
 			double finish = rtime(1);
 			stats_reason_time += finish - start;
 			stats_num_reasons++;
 			//stats_reason_initial_time+=start-initial_start;
 		}
 	}
-	
+
 	bool dbg_reachable(int from, int to, bool undirected = false) {
 #ifdef DEBUG_DIJKSTRA
-		
+
 		if(undirected) {
 			UnweightedDijkstra<Weight,Distance<int>::NullStatus, true> d(from,g_under);
 			d.update();
@@ -1650,17 +2047,17 @@ public:
 		return true;
 #endif
 	}
-	
+
 	bool dbg_notreachable(int from, int to, bool undirected = false) {
-		
+
 #ifndef NDEBUG
 		//drawFull(from,to);
-		
+
 		/*DynamicGraph<Weight> g;
 		for (int i = 0; i < nNodes(); i++) {
 			g.addNode();
 		}
-		
+
 		for (int i = 0; i < edge_list.size(); i++) {
 			if (edge_list[i].v < 0)
 				continue;
@@ -1672,18 +2069,18 @@ public:
 		}
 		if (undirected) {
 			UnweightedDijkstra<Weight,typename Distance<int>::NullStatus, true> d(from, g);
-			
+
 			return !d.connected(to);
 		} else {
 			UnweightedDijkstra<Weight,typename Distance<int>::NullStatus, false> d(from, g);
-			
+
 			return !d.connected(to);
 		}*/
 #endif
 		return true;
-		
+
 	}
-	
+
 	bool dbg_graphsUpToDate() {
 #ifdef DEBUG_GRAPH
 		for(int i = 0;i<edge_list.size();i++) {
@@ -1737,7 +2134,7 @@ public:
 #endif
 		return true;
 	}
-	
+
 	/*	int getEdgeID(Var v){
 	 assert(v>= min_edge_var && v<min_edge_var+edge_list.size());
 
@@ -1783,9 +2180,9 @@ public:
 			else if (sign(l) && vars[var(l)].occursNegative != occurs)
 				detectors[getDetector(var(l))]->setOccurs(l, occurs);
 		}
-		
+
 	}
-	
+
 	void enqueueBV(int bvID){
 		requiresPropagation=true;
 		S->needsPropagation(getTheoryIndex());
@@ -1796,13 +2193,54 @@ public:
 			}
 			g_under.setEdgeWeight(edgeID,edge_bv_weights[edgeID].getUnder());
 			g_over.setEdgeWeight(edgeID, edge_bv_weights[edgeID].getOver());
+			if(edge_sets.size()){
+				int edge_set_id = getEdgeSetID(edgeID);
+				if(edge_set_id>-1 && !g_under.edgeEnabled(edgeID)){
+					assert(!g_over_edgeset.edgeEnabled(edgeID));
+					assert(g_over_edgeset.getEdgeWeight(edgeID)==0);
+				}else{
+					g_over_edgeset.setEdgeWeight(edgeID, edge_bv_weights[edgeID].getOver());
+				}
+			}
 			if(using_neg_weights){
 				g_under_weights_over.setEdgeWeight(edgeID,edge_bv_weights[edgeID].getOver());
 				g_over_weights_under.setEdgeWeight(edgeID, edge_bv_weights[edgeID].getUnder());
+				if(edge_sets.size())
+					g_over_weights_under_edgeset.setEdgeWeight(edgeID, edge_bv_weights[edgeID].getUnder());
 			}
+
 		}
 	}
-	void backtrackBV(int bvID){
+	void rewindBV(int bvID)override{
+		if(opt_graph_bv_prop){
+		if (isEdgeBV(bvID)){
+			int edgeID = getBVEdge(bvID);
+
+			g_under.setEdgeWeight(edgeID,edge_bv_weights[edgeID].getUnder());
+			g_over.setEdgeWeight(edgeID, edge_bv_weights[edgeID].getOver());
+			if(edge_sets.size()){
+				int edge_set_id = getEdgeSetID(edgeID);
+				if(edge_set_id>-1 && !g_under.edgeEnabled(edgeID)){
+					assert(!g_over_edgeset.edgeEnabled(edgeID));
+					assert(g_over_edgeset.getEdgeWeight(edgeID)==0);
+				}else{
+					g_over_edgeset.setEdgeWeight(edgeID, edge_bv_weights[edgeID].getOver());
+				}
+			}
+			if(using_neg_weights){
+				g_under_weights_over.setEdgeWeight(edgeID,edge_bv_weights[edgeID].getOver());
+				g_over_weights_under.setEdgeWeight(edgeID, edge_bv_weights[edgeID].getUnder());
+				if(edge_sets.size())
+					g_over_weights_under_edgeset.setEdgeWeight(edgeID, edge_bv_weights[edgeID].getUnder());
+			}
+
+		}
+		}
+	}
+	void backtrackBV(int bvID)override{
+		while(bvtrail.size() && bvtrail.last().bvID==bvID && bvtrail.last().bvTrail+1==bvTheory->trail.size()){
+			bvtrail.pop();
+		}
 		if (isEdgeBV(bvID)){
 			int edgeID = getBVEdge(bvID);
 			for (int i = 0; i < detectors.size(); i++) {
@@ -1811,14 +2249,28 @@ public:
 			}
 			g_under.setEdgeWeight(edgeID,edge_bv_weights[edgeID].getUnder());
 			g_over.setEdgeWeight(edgeID, edge_bv_weights[edgeID].getOver());
+			if(edge_sets.size()){
+				int edge_set_id = getEdgeSetID(edgeID);
+				if(edge_set_id>-1 && !g_under.edgeEnabled(edgeID)){
+					assert(!g_over_edgeset.edgeEnabled(edgeID));
+					assert(g_over_edgeset.getEdgeWeight(edgeID)==0);
+				}else{
+					g_over_edgeset.setEdgeWeight(edgeID, edge_bv_weights[edgeID].getOver());
+				}
+			}
 			if(using_neg_weights){
 				g_under_weights_over.setEdgeWeight(edgeID,edge_bv_weights[edgeID].getOver());
 				g_over_weights_under.setEdgeWeight(edgeID, edge_bv_weights[edgeID].getUnder());
+				if(edge_sets.size())
+					g_over_weights_under_edgeset.setEdgeWeight(edgeID, edge_bv_weights[edgeID].getUnder());
 			}
 
 		}
 	}
 	void enqueueTheory(Lit l) {
+		if(invalid_edgeset_lit!=lit_Undef){
+			return;
+		}
 		Var v = var(l);
 
 		int lev = level(v);//level from the SAT solver.
@@ -1848,6 +2300,8 @@ public:
 			//on_trail=true;
 			if (isEdgeVar(v)) {
 				int edge_num = getEdgeID(v); //e.var-min_edge_var;
+				int edgeSetID = getEdgeSetID(edge_num);
+				assert(edgeSetID==-1);//not supporting edge sets here yet!
 				if (assign) {
 					g_under.disableEdge( edge_num);
 					assert(!cutGraph.edgeEnabled(edge_num * 2));
@@ -1875,21 +2329,11 @@ public:
 			}
 			removeFromTrail(var(l));
 		}
-		assert(!onTrail(var(l)));
-
-		assert(assigns[var(l)]==l_Undef);
-		assigns[var(l)] = sign(l) ? l_False : l_True;
-		appendToTrail(l,decisionLevel());
-		requiresPropagation = true;
-
-
-		assert(onTrail(var(l)));
-
 
 
 		if (g_under.outfile) {
 			fprintf(g_under.outfile, "enqueue %d\n", dimacs(l));
-			
+
 			fprintf(g_under.outfile, "\n");
 			fflush(g_under.outfile);
 		}
@@ -1899,23 +2343,66 @@ public:
 			fflush(g_over.outfile);
 		}
 
+		assert(!onTrail(var(l)));
+		appendToTrail(l,decisionLevel());
+		requiresPropagation = true;
+
+		assert(onTrail(var(l)));
+
+		_assign(l);
+
+	};
+
+	void _assign(Lit l){
+		assert(assigns[var(l)]==l_Undef);
+		assigns[var(l)] = sign(l) ? l_False : l_True;
 		if(hasTheory(var(l))){
 			theories[getTheoryID(var(l))]->enqueueTheory(getTheoryLit(l));
 			return;
 		}
 
 		if (isEdgeVar(var(l))) {
-			
+
 			//this is an edge assignment
 			int edge_num = getEdgeID(var(l)); //v-min_edge_var;
+			if(edge_num==10236){
+				int a=1;
+			}
 			assert(edge_list[edge_num].v == var(l));
-			
+			int edgeSetID = getEdgeSetID(edge_num);
+
 			int from = edge_list[edge_num].from;
 			int to = edge_list[edge_num].to;
 			if (!sign(l)) {
 				g_under.enableEdge(edge_num);
+				if(edgeSetID>-1){
+					EdgeSet & set = *edge_sets[edgeSetID];
+					if (set.isAssigned()){
+						invalid_edgeset_lit=l;
+						return;
+					}
+
+					set.assignEdge(edge_num);
+
+					g_over_edgeset.enableEdge(edge_num);
+					g_over_edgeset.setEdgeWeight(edge_num,g_over.getEdgeWeight(edge_num));
+
+
+				}
+
 			} else {
-				g_over.disableEdge( edge_num);
+				if(edgeSetID>-1){
+					EdgeSet & set =* edge_sets[edgeSetID];
+					assert(!g_over_edgeset.edgeEnabled(edge_num));
+					assert(g_over_edgeset.getEdgeWeight(edge_num)==0);
+					if (!set.isAssigned()){
+						g_over.disableEdge(edge_num);
+					}
+				}else{
+					g_over.disableEdge(edge_num);//edge set edges are never removed from g_over.
+					if(hasEdgeSets() || (opt_min_edgeset>=0 && decisionLevel()==0))
+						g_over_edgeset.disableEdge(edge_num);
+				}
 				if (opt_conflict_min_cut) {//can optimize this by also checking if any installed detectors are actually using the cutgraph!
 					assert(cutGraph.edgeEnabled(edge_num * 2 + 1));
 					assert(!cutGraph.edgeEnabled(edge_num * 2));
@@ -1925,7 +2412,7 @@ public:
 			}
 
 			if(decisionLevel()==0){
-				assert(g_under.edgeEnabled(edge_num)== g_over.edgeEnabled(edge_num));
+				//assert(g_under.edgeEnabled(edge_num)== g_over.edgeEnabled(edge_num));
 				g_under.makeEdgeAssignmentConstant(edge_num);
 				g_over.makeEdgeAssignmentConstant(edge_num);
 			}
@@ -1946,8 +2433,8 @@ public:
 			//this is an assignment to a non-edge atom. (eg, a reachability assertion)
 			detectors[getDetector(var(l))]->assign(l);
 		}
-		
-	};
+	}
+
 /*
 	bool backtrackWhileConflicting(Detector * d,vec<Lit> & conflict){
 		conflict.clear();
@@ -1987,8 +2474,12 @@ public:
 	}
 
 	bool propagateTheory(vec<Lit> & conflict, bool force_propagation) {
+		dbg_check_trails();
+		if(invalid_edgeset_lit!=lit_Undef){
+			return true;
+		}
 		static int itp = 0;
-		if (++itp == 584) {
+		if (++itp == 30) {
 			int a = 1;
 		}
 		dbg_graphsUpToDate();
@@ -2011,11 +2502,11 @@ public:
 			return true;
 		}
 
-
-		//this is ugly... what is a cleaner way to ensure that the bitvector theory propagates before this one?
-		if(comparator && !comparator->propagateTheory(conflict)){
-			return false;
+		for(Theory * t:propagation_required_theories){
+			if(!t->propagateTheory(conflict))
+				return false;
 		}
+
 
 		if (opt_lazy_backtrack &&
 				!lazy_backtracking_enabled && decisionLevel()==0 ){
@@ -2037,17 +2528,17 @@ public:
 		for(Theory * t:theories){
 			if(!t->propagateTheory(conflict)){
 
-				toSolver(conflict);
+
 				return false;
 			}
 		}
 		bool any_change = false;
 		double startproptime = rtime(1);
-		
+
 		conflict.clear();
 		//Can probably speed this up alot by a) constant propagating reaches that I care about at level 0, and b) Removing all detectors for nodes that appear only in the opposite polarity (or not at all) in the cnf.
 		//That second one especially.
-		
+
 		//At level 0, need to propagate constant reaches/source nodes/edges...
 
 /*		for (int bvID:bvs_to_update){
@@ -2067,156 +2558,170 @@ public:
 
 		dbg_sync();
 		assert(dbg_graphsUpToDate());
+		if (opt_only_prop_edgeset && hasEdgeSets() && !allEdgeSetsAssigned()){
+			stats_num_skipped_edgeset_props++;
+		}else{
+			bool using_edgesets = hasEdgeSets() && allEdgeSetsAssigned();
 
-		for (int d = 0; d < detectors.size(); d++) {
-			assert(conflict.size() == 0);
-			Lit l = lit_Undef;
-			bool backtrackOnly = lazy_backtracking_enabled && (opt_lazy_conflicts==3) &&  lazy_trail_head!=var_Undef;
-			bool r = detectors[d]->propagate(conflict,backtrackOnly,l);
-			if(!r && backtrackOnly && conflict.size()==0){
-				backtrackUntil(decisionLevel());
-				stats_num_lazy_conflicts++;
-				d=-1;
-				continue;
-			}
+			vec<Detector*> & detectors = using_edgesets ? edge_set_detectors:normal_detectors;
+			for (int d = 0; d < detectors.size(); d++) {
+				assert(conflict.size() == 0);
+				Lit l = lit_Undef;
+				bool backtrackOnly = lazy_backtracking_enabled && (opt_lazy_conflicts==3) &&  lazy_trail_head!=var_Undef;
+				bool r = detectors[d]->propagate(conflict,backtrackOnly,l);
+				if(!r && backtrackOnly && conflict.size()==0){
+					backtrackUntil(decisionLevel());
+					stats_num_lazy_conflicts++;
+					d=-1;
+					continue;
+				}
 
-			if (!r) {
+				if (!r) {
 
 
-				if(conflict.size() && lazy_backtracking_enabled && lazy_trail_head!=var_Undef){
-					//find the highest level lit in the conflict; if it is a higher level than the SAT solver, then this isn't a conflict in the SAT solver (though the learnt clause is a valid one)
+					if(conflict.size() && lazy_backtracking_enabled && lazy_trail_head!=var_Undef){
+						//find the highest level lit in the conflict; if it is a higher level than the SAT solver, then this isn't a conflict in the SAT solver (though the learnt clause is a valid one)
 
-					//There are several options for how to deal with this:
+						//There are several options for how to deal with this:
 
-					//0) Completely sync up the theory solver with the SAT solver at this point, and re-propagate
-					//1) add the clause to the SAT solver, and simply unassign the lit in the theory solver.
-					//2) Unassign _all_ lazy lits from the conflict, and repropagate.
-					//3) flip the assignment of one of the lits _in the theory solver_; propagate again.
-					//(it might also be a good idea to add that assignment as a decision in the SAT solver.)
+						//0) Completely sync up the theory solver with the SAT solver at this point, and re-propagate
+						//1) add the clause to the SAT solver, and simply unassign the lit in the theory solver.
+						//2) Unassign _all_ lazy lits from the conflict, and repropagate.
+						//3) flip the assignment of one of the lits _in the theory solver_; propagate again.
+						//(it might also be a good idea to add that assignment as a decision in the SAT solver.)
 
-					//if lits are unassigned, we may also want to put those at the head of the decision heuristic (to make the sat solver revisit them).
+						//if lits are unassigned, we may also want to put those at the head of the decision heuristic (to make the sat solver revisit them).
 
-#ifndef NDEBUG
-					for (Lit l:conflict){
-						if(S->value(toSolver(l))!=value(l)){
-							assert(onLazyTrail(var(l)));
-							if(!onLazyTrail(var(l))){
-								exit(5);
-							}
-							if(value(~l)!=l_True){
-								exit(4);
-							}
-						}
-					}
-#endif
-
-					//assert(!seen.contains(true));
-					//seen.growTo(vars.size());
-
-					bool any_seen=false;
-					if(opt_lazy_conflicts==0){
+	#ifndef NDEBUG
 						for (Lit l:conflict){
 							if(S->value(toSolver(l))!=value(l)){
-								any_seen=true;
 								assert(onLazyTrail(var(l)));
-								break;
+								if(!onLazyTrail(var(l))){
+									exit(5);
+								}
+								if(value(~l)!=l_True){
+									exit(4);
+								}
 							}
 						}
-						if(any_seen){
-							//sync the solver:
-							backtrackUntil(decisionLevel());
-							assert(lazy_trail_head==var_Undef);
-							if(opt_lazy_backtrack_redecide){
-								//redecide the lits of the conflict
-								for (Lit l:conflict){
-									if(isEdgeVar(var(l)) && S->value(var(toSolver(l)))==l_Undef){
+	#endif
+
+						// assert(!seen.contains(true));
+						//seen.growTo(vars.size());
+
+						bool any_seen=false;
+						if(opt_lazy_conflicts==0){
+							for (Lit l:conflict){
+								if(S->value(toSolver(l))!=value(l)){
+									any_seen=true;
+									assert(onLazyTrail(var(l)));
+									break;
+								}
+							}
+							if(any_seen){
+								//sync the solver:
+								backtrackUntil(decisionLevel());
+								assert(lazy_trail_head==var_Undef);
+								if(opt_lazy_backtrack_redecide){
+									//redecide the lits of the conflict
+									for (Lit l:conflict){
+										if(isEdgeVar(var(l)) && S->value(var(toSolver(l)))==l_Undef){
+											for (int i = 0; i < detectors.size(); i++) {
+												Detector * r = detectors[i];
+												r->suggestDecision(l);
+											}
+										}
+									}
+								}
+
+							}
+						}else if(opt_lazy_conflicts==1){
+							for (Lit l:conflict){
+								if(S->value(toSolver(l))!=value(l)){
+									any_seen=true;
+									assert(onLazyTrail(var(l)));
+
+									removeFromTrail(var(l));
+									backtrackAssign(~l);
+									if(opt_lazy_backtrack_redecide && isEdgeVar(var(l))){
 										for (int i = 0; i < detectors.size(); i++) {
 											Detector * r = detectors[i];
 											r->suggestDecision(l);
 										}
 									}
+
 								}
 							}
+						}else if(opt_lazy_conflicts==2){
+							for (Lit l:conflict){
+								if(S->value(toSolver(l))!=value(l)){
 
-						}
-					}else if(opt_lazy_conflicts==1){
-						for (Lit l:conflict){
-							if(S->value(toSolver(l))!=value(l)){
-								any_seen=true;
-								assert(onLazyTrail(var(l)));
+									any_seen=true;
+									assert(onLazyTrail(var(l)));
 
-								removeFromTrail(var(l));
-								backtrackAssign(~l);
-								if(opt_lazy_backtrack_redecide && isEdgeVar(var(l))){
-									for (int i = 0; i < detectors.size(); i++) {
-										Detector * r = detectors[i];
-										r->suggestDecision(l);
+									removeFromTrail(var(l));
+									backtrackAssign(~l);
+									if(opt_lazy_backtrack_redecide && isEdgeVar(var(l))){
+										for (int i = 0; i < detectors.size(); i++) {
+											Detector * r = detectors[i];
+											r->suggestDecision(l);
+										}
 									}
+									break;
 								}
-
 							}
 						}
-					}else if(opt_lazy_conflicts==2){
-						for (Lit l:conflict){
-							if(S->value(toSolver(l))!=value(l)){
+						if(any_seen){
 
-								any_seen=true;
-								assert(onLazyTrail(var(l)));
+							//the conflict should now be eliminated.
+							if(opt_keep_lazy_conflicts){
 
-								removeFromTrail(var(l));
-								backtrackAssign(~l);
-								if(opt_lazy_backtrack_redecide && isEdgeVar(var(l))){
-									for (int i = 0; i < detectors.size(); i++) {
-										Detector * r = detectors[i];
-										r->suggestDecision(l);
-									}
-								}
-								break;
+								S->addClauseSafely(conflict);
 							}
+							stats_num_lazy_conflicts++;
+							conflict.clear();
+							//restart the loop, as assignments have changed... actually, this shouldn't be neccesary (only the current propagation should be re-started)
+							//as we have not backtracked past the current level in the SAT solver.
+							d=-1;
+							continue;
 						}
 					}
-					if(any_seen){
+					stats_num_conflicts++;
 
-						//the conflict should now be eliminated.
-						if(opt_keep_lazy_conflicts){
-							toSolver(conflict);
-							S->addClauseSafely(conflict);
-						}
-						stats_num_lazy_conflicts++;
-						conflict.clear();
-						//restart the loop, as assignments have changed... actually, this shouldn't be neccesary (only the current propagation should be re-started)
-						//as we have not backtracked past the current level in the SAT solver.
-						d=-1;
-						continue;
-					}
+					propagationtime += rtime(1) - startproptime;
+					return false;
 				}
-				stats_num_conflicts++;
-				toSolver(conflict);
-				propagationtime += rtime(1) - startproptime;
-				return false;
 			}
 		}
-		
 		dbg_full_sync();
-		
+
 		requiresPropagation = false;
+
 		g_under.clearChanged();
 		g_over.clearChanged();
 		cutGraph.clearChanged();
-		
+		g_over_edgeset.clearChanged();
+
 		g_under.clearHistory();
 		g_over.clearHistory();
 		cutGraph.clearHistory();
+		g_over_edgeset.clearHistory();
 
 		g_under_weights_over.clearChanged();
 		g_over_weights_under.clearChanged();
+		g_over_weights_under_edgeset.clearChanged();
+
 		g_under_weights_over.clearHistory();
 		g_over_weights_under.clearHistory();
+		g_over_weights_under_edgeset.clearHistory();
+
+
 		dbg_graphsUpToDate();
 		double elapsed = rtime(1) - startproptime;
 		propagationtime += elapsed;
 		dbg_sync();
 		dbg_sync_reachability();
+		dbg_check_trails();
 		return true;
 	}
 
@@ -2247,7 +2752,7 @@ public:
 			} else
 				printf("n%d\n", i);
 		}
-		
+
 		for (int i = 0; i < edge_list.size(); i++) {
 			if (edge_list[i].v < 0)
 				continue;
@@ -2259,7 +2764,7 @@ public:
 				s = "red";
 			printf("n%d -> n%d [label=\"v%d\",color=\"%s\"]\n", e.from, e.to, e.v, s);
 		}
-		
+
 		printf("}\n");
 	}
 	void drawFull(bool forceDraw=false, bool drawDisabled=true) {
@@ -2276,7 +2781,7 @@ public:
 				printf("n%d\n", i);
 			}
 		}
-		
+
 		for (int i = 0; i < edge_list.size(); i++) {
 			Edge & e = edge_list[i];
 			const char * s = "black";
@@ -2295,25 +2800,30 @@ public:
 				printf("n%d -> n%d [label=\"v%d\",color=\"%s\"]\n", e.from, e.to, e.v, s);
 			}
 		}
-		
+
 		printf("}\n");
 
 	}
-	
+
 	bool check_solved() {
 		if (opt_print_graph) {
 			drawFull();
 		}
 		dbg_graphsUpToDate();
+		if(invalid_edgeset_lit!=lit_Undef){
+			throw std::runtime_error("BAD SOLUTION: Invalid edge set in solution!");
+			return false;
+		}
 		for (int i = 0; i < edge_list.size(); i++) {
 			if (edge_list[i].v < 0)
 				continue;
 			Edge & e = edge_list[i];
 			lbool val = value(e.v);
 			if (val == l_Undef) {
+				throw std::runtime_error("BAD SOLUTION: Unassigned edge!");
 				return false;
 			}
-			
+
 			if (val == l_True) {
 				/*	if(!g.hasEdge(e.from,e.to)){
 				 return false;
@@ -2322,18 +2832,34 @@ public:
 				 return false;
 				 }*/
 				if (!g_under.edgeEnabled(e.edgeID)) {
+					throw std::runtime_error("BAD SOLUTION: missing true edge in g_under");
 					return false;
 				}
 				if (!g_over.edgeEnabled(e.edgeID)) {
+					throw std::runtime_error("BAD SOLUTION: missing true edge in g_over");
 					return false;
+				}
+				if(hasEdgeSets()){
+					if (!g_over_edgeset.edgeEnabled(e.edgeID)) {
+						throw std::runtime_error("BAD SOLUTION: missing true edge in g_over_edgeset");
+						return false;
+					}
 				}
 				if(edge_bv_weights.size()){
 					BitVector<Weight> & bv = edge_bv_weights[e.edgeID];
 					if(g_under.getWeight(e.edgeID)!= bv.getUnder()){
+						throw std::runtime_error("BAD SOLUTION: bad edge weight in g_under");
 						return false;
 					}
 					if(g_over.getWeight(e.edgeID)!=bv.getOver()){
+						throw std::runtime_error("BAD SOLUTION: bad edge weight in g_over");
 						return false;
+					}
+					if(hasEdgeSets()){
+						if (g_over_edgeset.getWeight(e.edgeID)!=bv.getOver()) {
+							throw std::runtime_error("BAD SOLUTION: bad edge weight in g_over_edgeset");
+							return false;
+						}
 					}
 				}
 			} else {
@@ -2341,30 +2867,46 @@ public:
 				 return false;
 				 }*/
 				if (g_under.edgeEnabled(e.edgeID)) {
+					throw std::runtime_error("BAD SOLUTION: included false edge in g_under");
 					return false;
 				}
-				if (g_over.edgeEnabled(e.edgeID)) {
-					return false;
+				int edge_set_id = edge_set_map[e.edgeID];
+				if(edge_set_id<0){
+					if (g_over.edgeEnabled(e.edgeID)) {
+						throw std::runtime_error("BAD SOLUTION: included false edge in g_over");
+						return false;
+					}
+					if(hasEdgeSets()){
+						if (g_over_edgeset.edgeEnabled(e.edgeID)) {
+							throw std::runtime_error("BAD SOLUTION: included false edge in g_over_edgeset");
+							return false;
+						}
+					}
+				}else{
+					if (g_over_edgeset.edgeEnabled(e.edgeID)) {
+						throw std::runtime_error("BAD SOLUTION: included false edge set edge in g_over_edgeset");
+						return false;
+					}
 				}
-				/*if(antig.hasEdge(e.from,e.to)){
-				 return false;
-				 }*/
+
+
+
 
 			}
 			if(using_neg_weights){
 
 				if (val == l_True) {
-					/*	if(!g.hasEdge(e.from,e.to)){
-					 return false;
-					 }
-					 if(!antig.hasEdge(e.from,e.to)){
-					 return false;
-					 }*/
+
 					if (!g_under_weights_over.edgeEnabled(e.edgeID)) {
 						return false;
 					}
 					if (!g_over_weights_under.edgeEnabled(e.edgeID)) {
 						return false;
+					}
+					if(hasEdgeSets()){
+						if (!g_over_weights_under_edgeset.edgeEnabled(e.edgeID)) {
+							return false;
+						}
 					}
 					if(edge_bv_weights.size()){
 						BitVector<Weight> & bv = edge_bv_weights[e.edgeID];
@@ -2376,31 +2918,68 @@ public:
 						}
 					}
 				} else {
-					/*if(g.hasEdge(e.from,e.to)){
-					 return false;
-					 }*/
+
 					if (g_under_weights_over.edgeEnabled(e.edgeID)) {
 						return false;
 					}
-					if (g_over_weights_under.edgeEnabled(e.edgeID)) {
-						return false;
+					int edge_set_id = edge_set_map[e.edgeID];
+					if(edge_set_id<0){
+						if (g_over_weights_under.edgeEnabled(e.edgeID)) {
+							return false;
+						}
+						if(hasEdgeSets()){
+							if (g_over_weights_under_edgeset.edgeEnabled(e.edgeID)) {
+								return false;
+							}
+						}
+					}else{
+						if (g_over_weights_under_edgeset.edgeEnabled(e.edgeID)) {
+							return false;
+						}
 					}
-					/*if(antig.hasEdge(e.from,e.to)){
-					 return false;
-					 }*/
+
+
+
 
 				}
 
 			}
 		}
+
+		if(hasEdgeSets() && !allEdgeSetsAssigned()){
+			throw std::runtime_error("BAD SOLUTION: not all edge sets assigned");
+			return false;
+		}
+		for(EdgeSet * edge_set:edge_sets){
+
+			int assignedID = edge_set->assigned_edge;
+			if(value(getEdgeVar(assignedID))!=l_True){
+				throw std::runtime_error("BAD SOLUTION: edge set is incorrectly assigned");
+				return false;
+			}
+			int n_assigned = 0;
+			for(int edgeID:edge_set->edges){
+				Var v = getEdgeVar(edgeID);
+				if(value(v)!=l_False){
+					n_assigned++;
+				}
+			}
+			if (n_assigned!=1){
+				throw std::runtime_error("BAD SOLUTION: edge set has the too many non-false edges");
+				return false;
+			}
+		}
+
+		vec<Detector*> & detectors = (hasEdgeSets() && allEdgeSetsAssigned()) ? edge_set_detectors:normal_detectors;
 		for (int i = 0; i < detectors.size(); i++) {
 			if (!detectors[i]->checkSatisfied()) {
+				throw std::runtime_error("BAD SOLUTION: failure in graph theory detector");
 				return false;
 			}
 		}
 		return true;
 	}
-	
+
 	bool dbg_solved() {
 #ifdef DEBUG_GRAPH
 		for(int i = 0;i<edge_list.size();i++) {
@@ -2441,7 +3020,7 @@ public:
 #endif
 		return true;
 	}
-	
+
 	void drawCurrent() {
 #ifndef NDEBUG
 		int from = -1;
@@ -2468,7 +3047,7 @@ public:
 				//s = "red";
 			printf("n%d -> n%d [label=\"v%d\",color=\"%s\"]\n", e.from, e.to, e.v, s);
 		}
-		
+
 		printf("}\n");
 #endif
 	}
@@ -2522,10 +3101,10 @@ public:
 				return l;
 			}
 			int comparisonID = comparisons.size();
-			Lit gt = comparator->newComparison(op,bvID,w,var_Undef,opt_cmp_lits_decidable);
+			Lit gt = bvTheory->newComparison(op,bvID,w,var_Undef,opt_cmp_lits_decidable);
 			l = mkLit(newVar());
 
-			makeEqualInSolver(comparator->toSolver(gt),toSolver(l));
+			makeEqualInSolver(bvTheory->toSolver(gt),toSolver(l));
 
 			comparisons.push({w,l,bvID,true});
 
@@ -2626,12 +3205,47 @@ public:
 	BitVector<Weight> newBV(Weight constval=-1,int bitwidth=-1) {
 		if (bitwidth<0)
 			bitwidth = getEdgeWeightBitWidth();
-		BitVector<Weight> bv = comparator->newBitvector(-1,bitwidth,constval);
+		BitVector<Weight> bv = bvTheory->newBitvector(-1,bitwidth,constval);
 		return bv;
 	}
 
+	void newEdgeSet(vec<int> & edges){
+		if(opt_min_edgeset>=0 && opt_min_edgeset<=edges.size()){
+			int edge_setID=edge_sets.size();
+			edge_sets.push(new EdgeSet(*this));
+			assert(edge_setID<edge_sets.size());
+
+			for(int edgeID:edges){
+				assert(g_over.hasEdge(edgeID));
+				assert(edge_set_map[edgeID]==-1);
+				edge_set_map[edgeID]=edge_setID;
+				EdgeSet & set= *edge_sets[edge_setID];
+				set.edges.push(edgeID);
+				g_over_edgeset.disableEdge(edgeID);
+				g_over_edgeset.setEdgeWeight(edgeID,0);
+
+			}
+		}
+		vec<Lit> edge_lits;
+		for(int edgeID:edges){
+			edge_lits.push(mkLit(toSolver(getEdgeVar(edgeID))));
+		}
+		//enforce that _exactly_ one edge from this edge set is assigned in the SAT solver
+		S->addClause(edge_lits);
+
+		 AMOTheory* amo = new  AMOTheory(S);
+		 propagation_required_theories.push(amo);
+		 for(Lit l:edge_lits){
+			 Var v = S->newVar();
+			 makeEqualInSolver(mkLit(v),l);
+			 amo->addVar(v);
+		 }
+	}
+
+
+
 	Lit newEdgeBV(int from, int to, Var outerVar,vec<Var> & bitVector) {
-		if(!comparator ){
+		if(!bvTheory ){
 			fprintf(stderr,"No bitvector theory initialized\n");exit(1);
 		}
 		while(from>=nNodes()||to>=nNodes())
@@ -2648,11 +3262,11 @@ public:
 				internalBV.push(newBVVar(v,bvID,index));
 			}
 
-		/*	if(!comparator){
-				comparator = new BVTheorySolver<Weight,ComparisonStatus>(ComparisonStatus(*this, *comparator));
+		/*	if(!bvTheory){
+				bvTheory = new BVTheorySolver<Weight,ComparisonStatus>(ComparisonStatus(*this, *bvTheory));
 			}*/
-			BitVector<Weight> bv = comparator->newBitvector(bvID,bitVector);
-			comparator->setBitvectorTheory(bvID,this->getTheoryIndex());
+			BitVector<Weight> bv = bvTheory->newBitvector(bvID,bitVector);
+			bvTheory->setBitvectorTheory(bvID,this->getTheoryIndex());
 			edge_bitvectors.growTo(bv.getID()+1,-1);
 			if(edge_bitvectors[bv.getID()]!=-1){
 				//else, this is already used!
@@ -2664,6 +3278,7 @@ public:
 			all_edges_unit &= (bv.getUnder()== 1 && bv.getOver()==1);
 			all_edges_positive &= bv.getUnder()>0;
 			edge_list.push();
+			edge_set_map.push(-1);
 			Var v = newVar(outerVar, index, true);
 			comparisons_lt.growTo(bv.getID()+1);
 			comparisons_gt.growTo(bv.getID()+1);
@@ -2696,6 +3311,10 @@ public:
 			g_under_weights_over.disableEdge(from, to, index);
 			g_over_weights_under.addEdge(from, to, index,bv.getUnder());
 
+			if(opt_min_edgeset>=0){
+				g_over_edgeset.addEdge(from, to, index,bv.getOver());
+				g_over_weights_under_edgeset.addEdge(from, to, index,bv.getOver());
+			}
 
 			cutGraph.addEdge(from, to, index * 2,1);
 			cutGraph.addEdge(from, to, index * 2 + 1,0xFFFF);
@@ -2727,14 +3346,14 @@ public:
 			return mkLit(v, false);
 		}
 	Lit newEdgeBV(int from, int to, Var outerVar,int bvID) {
-		if(!comparator){
+		if(!bvTheory){
 			fprintf(stderr,"No bitvector theory initialized\n");exit(1);
 		}
-		if(!comparator->hasBV(bvID)){
+		if(!bvTheory->hasBV(bvID)){
 			fprintf(stderr,"Undefined bitvector\n");exit(1);
 		}
-		if(comparator->hasTheory(bvID)){
-			bvID = comparator->duplicateBV(bvID).getID();
+		if(bvTheory->hasTheory(bvID)){
+			bvID = bvTheory->duplicateBV(bvID).getID();
 		}
 		if(isEdgeBV(bvID)){
 			fprintf(stderr,"Bitvector %d used for multiple edge weights\n", bvID);exit(1);
@@ -2745,11 +3364,11 @@ public:
 		assert(outerVar!=var_Undef);
 		assert(edge_weights.size()==0);
 		int index = edge_list.size();
-		comparator->setBitvectorTheory(bvID,this->getTheoryIndex());
-		BitVector<Weight> bv = comparator->getBV(bvID);
+		bvTheory->setBitvectorTheory(bvID,this->getTheoryIndex());
+		BitVector<Weight> bv = bvTheory->getBV(bvID);
 		edge_bitvectors.growTo(bv.getID()+1,-1);
 		edge_bitvectors[bv.getID()]=index;
-		//comparator->setCallback(bv.getID(),&bvcallback);
+		//bvTheory->setCallback(bv.getID(),&bvcallback);
 		comparisons_lt.growTo(bv.getID()+1);
 		comparisons_gt.growTo(bv.getID()+1);
 		comparisons_leq.growTo(bv.getID()+1);
@@ -2758,6 +3377,7 @@ public:
 		all_edges_unit &= (bv.getUnder()== 1 && bv.getOver()==1);
 		all_edges_positive &= bv.getUnder()>0;
 		edge_list.push();
+		edge_set_map.push(-1);
 		Var v = newVar(outerVar, index, true);
 		//bv_needs_update.growTo(bv.getID()+1);
 		undirected_adj[to].push( { v, outerVar, from, to, index });
@@ -2787,13 +3407,17 @@ public:
 		g_under_weights_over.disableEdge(from, to, index);
 		g_over_weights_under.addEdge(from, to, index,bv.getUnder());
 
+		if(opt_min_edgeset>=0){
+			g_over_edgeset.addEdge(from, to, index,bv.getOver());
+			g_over_weights_under_edgeset.addEdge(from, to, index,bv.getOver());
+		}
 
 		cutGraph.addEdge(from, to, index * 2,1);
 		cutGraph.addEdge(from, to, index * 2 + 1,0xFFFF);
 		cutGraph.disableEdge(from, to, index * 2);
+		return mkLit(v, false);
+	}
 
-				return mkLit(v, false);
-			}
 	Lit newEdge(int from, int to, Var outerVar = var_Undef, Weight weight = 1) {
 		assert(outerVar!=var_Undef);
 		while(from>=nNodes()||to>=nNodes())
@@ -2806,6 +3430,7 @@ public:
 		all_edges_positive &= weight>0;
 		int index = edge_list.size();
 		edge_list.push();
+		edge_set_map.push(-1);
 		Var v = newVar(outerVar, index, true);
 
 		/*
@@ -2822,7 +3447,7 @@ public:
 		undirected_adj[to].push( { v, outerVar, from, to, index });
 		undirected_adj[from].push( { v, outerVar, to, from, index });
 		inv_adj[to].push( { v, outerVar, from, to, index });
-		
+
 		//num_edges++;
 		edge_list[index].v = v;
 		edge_list[index].outerVar = outerVar;
@@ -2834,7 +3459,7 @@ public:
 			edge_weights.resize(index + 1);
 		}
 		edge_weights[index] = weight;
-		
+
 		//edges[from][to]= {v,outerVar,from,to,index};
 		g_under.addEdge(from, to, index,weight);
 		g_under.disableEdge(from, to, index);
@@ -2845,11 +3470,15 @@ public:
 		g_under_weights_over.disableEdge(from, to, index);
 		g_over_weights_under.addEdge(from, to, index,weight);
 
+		if(opt_min_edgeset>=0){
+			g_over_edgeset.addEdge(from, to, index,weight);
+			g_over_weights_under_edgeset.addEdge(from, to, index,weight);
+		}
 
 		cutGraph.addEdge(from, to, index * 2,1);
 		cutGraph.addEdge(from, to, index * 2 + 1,0xFFFF);
 		cutGraph.disableEdge(from, to, index * 2);
-		
+
 
 
 
@@ -2873,22 +3502,23 @@ public:
 		}
 		if (within_steps <= -1)
 			within_steps = g_under.nodes();
-		
+
 		if (dist_info[from].source < 0) {
 			DistanceDetector<Weight> * d = new DistanceDetector<Weight>(detectors.size(), this,  g_under, g_over,
 					from, drand(rnd_seed));
 			detectors.push(d);
+			normal_detectors.push(d);
 			distance_detectors.push(d);
 			assert(detectors.last()->getID() == detectors.size() - 1);
 			dist_info[from].source = from;
 			dist_info[from].detector = detectors.last();
 		}
-		
+
 		DistanceDetector<Weight> * d = (DistanceDetector<Weight>*) dist_info[from].detector;
 		assert(d);
-		
+
 		d->addUnweightedShortestPathLit(from, to, reach_var, within_steps);
-		
+
 	}
 
 	void enableNegativeWeights(){
@@ -2904,6 +3534,8 @@ public:
 				g_over_weights_under.setEdgeEnabled(i, (g_over.edgeEnabled(i)));
 				g_under_weights_over.setEdgeWeight(i,g_over.getWeight(i) );
 				g_over_weights_under.setEdgeWeight(i, g_under.getWeight(i));
+				if(edge_sets.size())
+					g_over_weights_under_edgeset.setEdgeWeight(i, g_under.getWeight(i));
 			}
 		}
 	}
@@ -2917,7 +3549,7 @@ public:
 			fprintf(stderr, "Undefined node %d\n",to);
 			exit(1);
 		}
-		
+
 		if (weighted_dist_info[from].source < 0) {
 			DistanceDetector<Weight> * d;
 			if(edge_bv_weights.size()>0){
@@ -2929,17 +3561,18 @@ public:
 						from, drand(rnd_seed));
 			}
 			detectors.push(d);
+			normal_detectors.push(d);
 			weighted_distance_detectors.push(d);
 			assert(detectors.last()->getID() == detectors.size() - 1);
 			weighted_dist_info[from].source = from;
 			weighted_dist_info[from].detector = detectors.last();
 		}
-		
+
 		DistanceDetector<Weight> * d = (DistanceDetector<Weight>*) weighted_dist_info[from].detector;
 		assert(d);
-		
+
 		d->addWeightedShortestPathLit(from, to, reach_var, distance,strictComparison);
-		
+
 	}
 
 	void reachesWithinDistanceBV(int from, int to, Var reach_var, int bvID, bool strictComparison) {
@@ -2951,13 +3584,13 @@ public:
 			fprintf(stderr, "Undefined node %d\n",to);
 			exit(1);
 		}
-		if(!comparator){
+		if(!bvTheory){
 			fprintf(stderr,"No bitvector theory initialized\n");exit(1);
 		}
-		if(!comparator->hasBV(bvID)){
+		if(!bvTheory->hasBV(bvID)){
 			fprintf(stderr,"Undefined bitvector\n");exit(1);
 		}
-		comparator->setBitvectorTheory(bvID,this->getTheoryIndex());
+		bvTheory->setBitvectorTheory(bvID,this->getTheoryIndex());
 		assert(from < g_under.nodes());
 
 		if (weighted_dist_info[from].source < 0) {
@@ -2971,6 +3604,7 @@ public:
 						from, drand(rnd_seed));
 			}
 			detectors.push(d);
+			normal_detectors.push(d);
 			weighted_distance_detectors.push(d);
 			assert(detectors.last()->getID() == detectors.size() - 1);
 			weighted_dist_info[from].source = from;
@@ -2979,8 +3613,9 @@ public:
 
 		DistanceDetector<Weight> * d = (DistanceDetector<Weight>*) weighted_dist_info[from].detector;
 		assert(d);
-		BitVector<Weight> bv = comparator->getBV(bvID);
+		BitVector<Weight> bv = bvTheory->getBV(bvID);
 		d->addWeightedShortestPathBVLit(from, to, reach_var,bv,strictComparison );
+
 
 	}
 
@@ -2993,24 +3628,38 @@ public:
 			fprintf(stderr, "Undefined node %d\n",to);
 			exit(1);
 		}
-		if(!comparator){
+		if(!bvTheory){
 			fprintf(stderr,"No bitvector theory initialized\n");exit(1);
 		}
-		if(!comparator->hasBV(bvID)){
+		if(!bvTheory->hasBV(bvID)){
 			fprintf(stderr,"Undefined bitvector\n");exit(1);
 		}
-		comparator->setBitvectorTheory(bvID,this->getTheoryIndex());
+		bvTheory->setBitvectorTheory(bvID,this->getTheoryIndex());
 		for (int i = 0; i < flow_detectors.size(); i++) {
 			if (flow_detectors[i]->source == from && flow_detectors[i]->target == to) {
-				flow_detectors[i]->addFlowBVLessThan(comparator->getBV(bvID), v,!strictComparison);
+				flow_detectors[i]->addFlowBVLessThan(bvTheory->getBV(bvID), v,!strictComparison);
+				if(edgeset_flow_detectors[i])
+					edgeset_flow_detectors[i]->addFlowBVLessThan(bvTheory->getBV(bvID), v,!strictComparison);
 				return;
 			}
 		}
 		MaxflowDetector<Weight> *f = new MaxflowDetector<Weight>(detectors.size(), this,  g_under, g_over, from,
 				to, drand(rnd_seed));
 		flow_detectors.push(f);
+		normal_detectors.push(f);
 		detectors.push(f);
-		f->addFlowBVLessThan(comparator->getBV(bvID), v,!strictComparison);
+		f->addFlowBVLessThan(bvTheory->getBV(bvID), v,!strictComparison);
+
+		if(opt_min_edgeset>=0){
+			edgeset_flow_detectors.growTo(flow_detectors.size());
+			f = new MaxflowDetector<Weight>(detectors.size(), this,  g_under, g_over_edgeset, from,to, drand(rnd_seed),true);
+			edgeset_flow_detectors.last() =f;
+			detectors.push(f);
+			edge_set_detectors.push(f);
+			Var outer = S->newVar();
+			makeEqualInSolver(mkLit(outer),mkLit(v));
+			f->addFlowBVLessThan(bvTheory->getBV(bvID), outer,!strictComparison);
+		}
 	}
 
 	void implementConstraints() {
@@ -3021,7 +3670,7 @@ public:
 				ReachabilityConstraint c = unimplemented_reachability_constraints[i];
 				reaches_private(c.from, c.to, c.reach_var, c.distance);
 			}
-			
+
 		} else if (opt_allpairs_percentage == 0) {
 			for (int i = 0; i < unimplemented_reachability_constraints.size(); i++) {
 				ReachabilityConstraint c = unimplemented_reachability_constraints[i];
@@ -3040,12 +3689,12 @@ public:
 					}
 				}
 				double frac = ((double) count) / ((double) nNodes());
-				
+
 				if (opt_verb > 0 && frac >= opt_allpairs_percentage) {
 					printf("Allpairs solver triggered for graph %d by percentage of source nodes: %d/%d=%f>%f\n",
 							getGraphID(), count, nNodes(), frac, (double) opt_allpairs_percentage);
 				}
-				
+
 				for (int i = 0; i < unimplemented_reachability_constraints.size(); i++) {
 					ReachabilityConstraint c = unimplemented_reachability_constraints[i];
 					if (frac >= opt_allpairs_percentage)
@@ -3056,7 +3705,7 @@ public:
 			}
 		}
 		unimplemented_reachability_constraints.clear();
-		
+
 		for(auto & d:unimplemented_distance_constraints){
 			reachesWithinDistance(d.from, d.to, d.reach_var, d.distance,d.strict);
 		}
@@ -3073,77 +3722,77 @@ public:
 		unimplemented_maxflow_constraints_bv.clear();
 	}
 	void allpairs_undirected(int from, int to, Var reach_var, int within_steps = -1) {
-		
+
 	}
-	
+
 	void allpairs(int from, int to, Var reach_var, int within_steps = -1) {
 		//for now, reachesWithinSteps to be called instead
-		
+
 		assert(from < g_under.nodes());
 		if (within_steps > g_under.nodes())
 			within_steps = -1;
-		
+
 		if (reach_info[from].source < 0) {
-			
+
 			detectors.push(new AllPairsDetector<Weight>(detectors.size(), this, g_under, g_over, drand(rnd_seed)));
 			//reach_detectors.push(reach_detectors.last());
-			
+			normal_detectors.push(detectors.last());
 			assert(detectors.last()->getID() == detectors.size() - 1);
-			
+
 			//reach_detectors.last()->negative_dist_detector = new Dijkstra(from,antig);
 			//reach_detectors.last()->source=from;
-			
+
 			reach_info[from].source = from;
 			reach_info[from].detector = detectors.last();
-			
+
 			//reach_detectors.last()->within=within_steps;
-			
+
 		}
-		
+
 		AllPairsDetector<Weight> * d = (AllPairsDetector<Weight>*) reach_info[from].detector;
 		assert(d);
-		
+
 		d->addLit(from, to, reach_var, within_steps);
-		
+
 	}
-	
+
 	void reaches_private(int from, int to, Var reach_var, int within_steps = -1) {
 		//for now, reachesWithinSteps to be called instead
 		if (within_steps >= 0 || opt_force_distance_solver) {
 			reachesWithinSteps(from, to, reach_var, within_steps);
 			return;
 		}
-		
+
 		assert(from < g_under.nodes());
 		if (within_steps > g_under.nodes())
 			within_steps = -1;
-		
+
 		if (reach_info[from].source < 0) {
-			
+
 			ReachDetector<Weight>*rd = new ReachDetector<Weight>(detectors.size(), this, g_under, g_over, from,
 					drand(rnd_seed));
 			detectors.push(rd);
 			reach_detectors.push(rd);
-			
+			normal_detectors.push(detectors.last());
 			assert(detectors.last()->getID() == detectors.size() - 1);
-			
+
 			//reach_detectors.last()->negative_dist_detector = new Dijkstra(from,antig);
 			//reach_detectors.last()->source=from;
-			
+
 			reach_info[from].source = from;
 			reach_info[from].detector = detectors.last();
-			
+
 			//reach_detectors.last()->within=within_steps;
-			
+
 		}
-		
+
 		ReachDetector<Weight> * d = (ReachDetector<Weight>*) reach_info[from].detector;
 		assert(d);
 		assert(within_steps == -1);
 		d->addLit(from, to, reach_var);
-		
+
 	}
-	
+
 	void reaches(int from, int to, Var reach_var, int within_steps = -1) {
 		unimplemented_reachability_constraints.push( { from, to, within_steps, reach_var });
 		//to allow us to alter the solving algorithm based on the number and type of constraints, we aren't implementing them here directly any more - instead,
@@ -3170,7 +3819,7 @@ public:
 			reaches(from, i, firstVar + i, within_steps);
 		}
 	}
-	
+
 	void reachesAny(int from, vec<Lit> & reachlits_out, int within_steps = -1) {
 		for (int i = 0; i < g_under.nodes(); i++) {
 			Var reachVar = S->newVar();
@@ -3186,6 +3835,7 @@ public:
 		if (!mstDetector) {
 			mstDetector = new MSTDetector<Weight>(detectors.size(), this, g_under, g_over,  drand(rnd_seed));
 			detectors.push(mstDetector);
+			normal_detectors.push(detectors.last());
 		}
 		mstDetector->addWeightLit(v, minimum_weight,inclusive);
 	}
@@ -3193,6 +3843,7 @@ public:
 		if (!mstDetector) {
 			mstDetector = new MSTDetector<Weight>(detectors.size(), this, g_under, g_over,  drand(rnd_seed));
 			detectors.push(mstDetector);
+			normal_detectors.push(detectors.last());
 		}
 		if (!S->hasTheory(edgeVar) || (S->getTheoryID(edgeVar) != getTheoryIndex())
 				|| !isEdgeVar(S->getTheoryVar(edgeVar))) {
@@ -3227,7 +3878,19 @@ public:
 				to, drand(rnd_seed));
 		flow_detectors.push(f);
 		detectors.push(f);
+		normal_detectors.push(f);
 		f->addFlowLit(max_flow, v,inclusive);
+
+		if(opt_min_edgeset>=0){
+			edgeset_flow_detectors.growTo(flow_detectors.size());
+			f = new MaxflowDetector<Weight>(detectors.size(), this,  g_under, g_over_edgeset, from,to, drand(rnd_seed),true);
+			edgeset_flow_detectors.last() =f;
+			detectors.push(f);
+			edge_set_detectors.push(f);
+			Var outer = S->newVar();
+			makeEqualInSolver(mkLit(outer),mkLit(v));
+			f->addFlowLit(max_flow, outer,inclusive);
+		}
 	}
 
 	void minConnectedComponents(int min_components, Var v) {
@@ -3235,6 +3898,7 @@ public:
 			component_detector = new ConnectedComponentsDetector<Weight>(detectors.size(), this, g_under, g_over,
 					drand(rnd_seed));
 			detectors.push(component_detector);
+			normal_detectors.push(detectors.last());
 		}
 		component_detector->addConnectedComponentsLit(v, min_components);
 	}
@@ -3242,21 +3906,23 @@ public:
 		if (!cycle_detector) {
 			cycle_detector = new CycleDetector<Weight>(detectors.size(), this, g_under, g_over, true, drand(rnd_seed));
 			detectors.push(cycle_detector);
+			normal_detectors.push(detectors.last());
 		}
 		cycle_detector->addAcyclicLit(directed, v);
 	}
-	
+
 	void steinerTree(const vec<std::pair<int, Var> > & terminals, int steinerTreeID) {
 		steiner_detectors.growTo(steinerTreeID + 1);
 		assert(!steiner_detectors[steinerTreeID]);
 		steiner_detectors[steinerTreeID] = new SteinerDetector<Weight>(detectors.size(), this,  g_under, g_over,
 				drand(rnd_seed));
 		detectors.push(steiner_detectors[steinerTreeID]);
+		normal_detectors.push(detectors.last());
 		for (int i = 0; i < terminals.size(); i++) {
 			steiner_detectors[steinerTreeID]->addTerminalNode(terminals[i].first, terminals[i].second);
 		}
 	}
-	
+
 	void addSteinerWeightConstraint(int steinerTreeID, Weight weight, Var outerVar) {
 		if (steinerTreeID >= steiner_detectors.size()) {
 			fprintf(stderr, "invalid steinerTreeID %d\n", steinerTreeID);
@@ -3264,7 +3930,7 @@ public:
 		}
 		steiner_detectors[steinerTreeID]->addWeightLit(weight, outerVar);
 	}
-	
+
 	/*	void inTerminalSet(int node, int terminalSet, Var outerVar){
 	 terminalSets.growTo(terminalSet+1);
 	 while(terminalSets[terminalSet].nodes()<node){
@@ -3278,7 +3944,7 @@ public:
 	 }*/
 
 	void printSolution() {
-		
+
 		for (auto * d : detectors) {
 			assert(d);
 			d->printSolution();
@@ -3337,9 +4003,12 @@ public:
 
 	void needsPropagation(int theoryID){
 		requiresPropagation=true;
+		S->needsPropagation(getTheoryIndex());
 	}
 
-
+	bool check_propagated()override{
+		return !requiresPropagation;
+	}
 	Weight getModel_MaximumFlow(Lit theoryLit){
 		Var v = var(theoryLit);
 		Detector * d= detectors[getDetector(v)];

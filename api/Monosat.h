@@ -69,7 +69,7 @@ typedef int Var;
   //Returns 0 for satisfiable, 1 for proved unsatisfiable, 2 for failed to find a solution (within any resource limits that have been set)
   int solveAssumptionsLimited_MinBVs(SolverPtr S,int * assumptions, int n_assumptions, int * minimize_bvs, int n_minimize_bvs);
 
-
+  bool lastSolutionWasOptimal(SolverPtr S);
 
   void backtrack(SolverPtr S);
   int newVar(SolverPtr S);
@@ -159,6 +159,7 @@ typedef int Var;
   int minimumSpanningTree_lt(SolverPtr S,GraphTheorySolver_long G,int source, int sink, int64_t weight);
   int acyclic_undirected(SolverPtr S,GraphTheorySolver_long G);
   int acyclic_directed(SolverPtr S,GraphTheorySolver_long G);
+  void newEdgeSet(SolverPtr S,GraphTheorySolver_long G,int * edges, int n_edges);
 
   //theory interface for finite state machines
   FSMTheorySolverPtr initFSMTheory(SolverPtr S);
@@ -168,6 +169,7 @@ typedef int Var;
   int newTransition(SolverPtr S,FSMTheorySolverPtr fsmTheory, int fsmID, int fromNode, int toNode,int inputLabel, int outputLabel);
   int newString(SolverPtr S,FSMTheorySolverPtr fsmTheory, int * str,int len);
   int fsmAcceptsString(SolverPtr S,FSMTheorySolverPtr fsmTheory, int fsmID, int startNode, int acceptNode,int stringID);
+
 
   //model query
   //For a given literal (not variable!), returns 0 for true, 1 for false, 2 for unassigned.

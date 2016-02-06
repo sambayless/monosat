@@ -84,6 +84,7 @@ public:
 		lit_True = mkLit(S.newVar());
 		S.addClause(lit_True);
 	}
+
 	Solver & getSolver(){
 		return S;
 	}
@@ -91,7 +92,7 @@ public:
 		return lit_True;
 	}
 
-	Lit getFalse(){
+	Lit False(){
 		return ~lit_True;
 	}
 
@@ -312,6 +313,7 @@ public:
 		collect(store,b,args...);
 		return Xnor(store);
 	}
+
 
 
 

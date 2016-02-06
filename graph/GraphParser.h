@@ -144,6 +144,12 @@ class GraphParser: public Parser<B, Solver> {
 	vec<MaxFlow<double>> maxflows_float;
 	vec<MaxFlow<mpq_class>> maxflows_rational;
 
+	struct ParseEdgeSet{
+		int graphID=-1;
+		vec<int> edges;
+	};
+	vec<ParseEdgeSet> edge_sets;
+
 	void readDiGraph(B& in, GraphType graph_type, Solver& S) {
 		if (opt_ignore_theories) {
 			skipLine(in);
@@ -258,7 +264,25 @@ class GraphParser: public Parser<B, Solver> {
 
 		}
 	}
-	
+	void readEdgeSet(B& in, Solver& S) {
+		if (opt_ignore_theories) {
+			skipLine(in);
+			return;
+		}
+
+		++in;
+
+		int graphID = parseInt(in);
+		int n_edges = parseInt(in);
+		edge_sets.push();
+		edge_sets.last().graphID=graphID;
+		vec<int> & edges = edge_sets.last().edges;
+		for(int i = 0;i<n_edges;i++){
+			int edgeVar = parseInt(in)- 1;
+			edges.push(edgeVar);
+		}
+
+	}
 	void readEdge(B& in, Solver& S) {
 		if (opt_ignore_theories) {
 			skipLine(in);
@@ -1035,6 +1059,9 @@ public:
 		}else if (match(in, "edge_priority")) {
 			readEdgePriority(in);
 			return true;
+		}else if (match(in, "edge_set")) {
+			readEdgeSet(in,S);
+			return true;
 		}else if (match(in, "edge_bv")) {
 			count++;
 			readEdgeBV(in, S);
@@ -1131,8 +1158,58 @@ public:
 
 		for (auto & e:bvedges){
 			graphs[e.graphID]->newEdgeBV(e.from, e.to, e.edgeVar, mapBV(S,e.bvID));
+
 		}
 		bvedges.clear();
+
+		vec<int> edgeset;
+		for(int i = 0;i<edge_sets.size();i++){
+			int graphID = edge_sets[i].graphID;
+			edgeset.clear();
+			assert(graphID>-1);
+
+			for (Var & edgeV: edge_sets[i].edges)
+				edgeV = mapVar(S,edgeV);
+
+			if(graphs[graphID]){
+				for(Var edgeV:edge_sets[i].edges){
+					if(!S.hasTheory(edgeV) || S.getTheoryID(edgeV)!=graphs[graphID]->getTheoryIndex()){
+						parse_errorf("PARSE ERROR! Undefined edge %d for edgeset %d\n", edgeV+1, i);
+					}
+					int edgeID = graphs[graphID]->getEdgeID(S.getTheoryVar(edgeV));
+					edgeset.push(edgeID);
+				}
+				graphs[graphID]->newEdgeSet(edgeset);
+			}else if (graphs_float[graphID]){
+				for(Var edgeV:edge_sets[i].edges){
+					if(!S.hasTheory(edgeV) || S.getTheoryID(edgeV)!=graphs_float[graphID]->getTheoryIndex()){
+						parse_errorf("PARSE ERROR! Undefined edge %d for edgeset %d\n", edgeV+1, i);
+					}
+					int edgeID = graphs_float[graphID]->getEdgeID(S.getTheoryVar(edgeV));
+					edgeset.push(edgeID);
+				}
+				graphs_float[graphID]->newEdgeSet(edgeset);
+
+			}else if (graphs_rational[graphID]){
+				for(Var edgeV:edge_sets[i].edges){
+					if(!S.hasTheory(edgeV) || S.getTheoryID(edgeV)!=graphs_rational[graphID]->getTheoryIndex()){
+						parse_errorf("PARSE ERROR! Undefined edge %d for edgeset %d\n", edgeV+1, i);
+					}
+					int edgeID = graphs_rational[graphID]->getEdgeID(S.getTheoryVar(edgeV));
+					edgeset.push(edgeID);
+				}
+				graphs_rational[graphID]->newEdgeSet(edgeset);
+
+
+			}else{
+				parse_errorf("PARSE ERROR! Undefined graph %d for edgeset %d\n", graphID, i);
+			}
+		}
+		edge_sets.clear();
+
+
+
+
 
 		for (auto & e: distances_long){
 			graphs[e.graphID]->distance(e.from, e.to, e.var, e.weight,!e.strict);

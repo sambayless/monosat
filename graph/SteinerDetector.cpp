@@ -328,6 +328,7 @@ void SteinerDetector<Weight>::buildReason(Lit p, vec<Lit> & reason, CRef marker)
 	} else {
 		assert(false);
 	}
+	outer->toSolver(reason);
 }
 template<typename Weight>
 bool SteinerDetector<Weight>::propagate(vec<Lit> & conflict) {
@@ -384,7 +385,7 @@ bool SteinerDetector<Weight>::propagate(vec<Lit> & conflict) {
 				buildMinWeightTooLargeReason(weight, conflict);
 				
 			}
-			
+			outer->toSolver(conflict);
 			return false;
 		} else {
 			int a = 1;

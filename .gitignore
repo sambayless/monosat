@@ -1,6 +1,10 @@
-/ClangDebug
-/ClangRelease
-/GPerf
+ClangDebug/*
+ClangRelease/*
+tests/*
+ClangAnalyze/*
+GPerf/*
+SharedLibrary_profile/*
+SharedLibrary/*
 *.o
 *.d
 *.so
@@ -20,3 +24,4 @@ graph/resources/*
 /Test
 /Win64
 *.pyc
+lib/*

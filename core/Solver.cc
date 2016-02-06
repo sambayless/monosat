@@ -2008,8 +2008,8 @@ static double luby(double y, int x) {
 
 // NOTE: assumptions passed in member-variable 'assumptions'.
 lbool Solver::solve_() {
-	cancelUntil(0);
 	clearInterrupt();
+	cancelUntil(0);
 	model.clear();
 	conflict.clear();
 	if (!ok)

@@ -130,6 +130,9 @@ class Monosat(metaclass=Singleton):
         self.monosat_c.solveAssumptionsLimited_MinBVs.argtypes=[c_solver_p,c_literal_p,c_int,c_int_p,c_int]
         self.monosat_c.solveAssumptionsLimited_MinBVs.restype=c_int  
         
+        self.monosat_c.lastSolutionWasOptimal.argtypes=[c_solver_p]
+        self.monosat_c.lastSolutionWasOptimal.restype=c_bool 
+        
         
         self.monosat_c.setTimeLimit.argtypes=[c_solver_p,c_int]
         self.monosat_c.setMemoryLimit.argtypes=[c_solver_p,c_int]
@@ -297,6 +300,9 @@ class Monosat(metaclass=Singleton):
         self.monosat_c.acyclic_directed.argtypes=[c_solver_p,c_graph_p]
         self.monosat_c.acyclic_directed.restype=c_literal            
         
+        self.monosat_c.newEdgeSet.argtypes=[c_solver_p,c_graph_p,c_literal_p,c_int]
+
+        
         self.monosat_c.getModel_Literal.argtypes=[c_solver_p,c_literal]
         self.monosat_c.getModel_Literal.restype=c_int      
 
@@ -313,7 +319,7 @@ class Monosat(metaclass=Singleton):
         self.monosat_c.getModel_AcyclicEdgeFlow.restype=c_long     
 
         self.monosat_c.getModel_MinimumSpanningTreeWeight.argtypes=[c_solver_p,c_graph_p, c_literal]
-        self.monosat_c.getModel_MinimumSpanningTreeWeight.restype=c_long     
+        self.monosat_c.getModel_MinimumSpanningTreeWeight.restype=c_long         
         self.newSolver()
         #For many (but not all) instances, the following settings may give good performance: 
         #self.init("-verb=0 -verb-time=0 -rnd-theory-freq=0.99 -no-decide-bv-intrinsic  -decide-bv-bitwise  -decide-graph-bv -decide-theories -no-decide-graph-rnd   -lazy-maxflow-decisions -conflict-min-cut -conflict-min-cut-maxflow -reach-underapprox-cnf -check-solution ")
@@ -402,7 +408,8 @@ class Monosat(metaclass=Singleton):
         else:
             self.monosat_c.setPropagationLimit(self.solver._ptr,propagations)
 
-
+    def lastSolutionWasOptimal(self):
+        return self.monosat_c.lastSolutionWasOptimal(self.solver._ptr)
 
     def solve(self,assumptions=None,minimize_bvs=None):
         self.backtrack()
@@ -843,8 +850,15 @@ class Monosat(metaclass=Singleton):
         if self.solver.output:
             self._echoOutput("edge_bv " + str(self.getGID(graph)) + " " + str(u) + " " + str(v) + " " +  str(dimacs(l)) + " " + str((bvID))  + "\n")
         return l
-
     
+    def newEdgeSet(self,graph,edges):
+        self.backtrack()
+        if self.solver.output:
+            edgestr = "edge_set %d %d "%(self.getGID(graph), len(edges))
+            self._echoOutput(edgestr + " ".join((str(dimacs(c)) for c in edges))+"\n")
+        lp = self.getIntArray(edges)
+        self.monosat_c.newEdgeSet(self.solver._ptr,graph,lp,len(edges))  
+
     def reaches(self, graph, u,v):
         self.backtrack()
         l= self.monosat_c.reaches(self.solver._ptr,graph,c_int(u),c_int(v))

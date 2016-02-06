@@ -37,7 +37,8 @@ static const char* _cat_amo = "AMO";
 static const char* _cat_geom = "GEOMETRY";
 static const char* _cat_fsm = "FSM";
 
-IntOption Monosat::opt_verb("MAIN", "verb", "Verbosity level (0=silent, 1=some, 2=more).",0, IntRange(0, 3));
+
+IntOption Monosat::opt_verb("MAIN", "verb", "Verbosity level (0=silent, 1=some, 2=more).", 0, IntRange(0, 3));
 DoubleOption Monosat::opt_var_decay(_cat, "var-decay", "The variable activity decay factor", 0.95,
 		DoubleRange(0, false, 1, false));
 DoubleOption Monosat::opt_clause_decay(_cat, "cla-decay", "The clause activity decay factor", 0.999,
@@ -65,7 +66,8 @@ BoolOption Monosat::opt_pre("MAIN", "pre", "Completely turn on/off any preproces
 IntOption Monosat::opt_time(_cat, "verb-time", "Detail level of timing benchmarks (these add some overhead)", 0,
 		IntRange(0, 5));
 
-IntOption Monosat::opt_limit_optimization_conflicts(_cat_opt, "opt-conflict-limit", "Limit number of conflicts during optimization rounds before giving up (0 to allow infinite conflicts)", 0, IntRange(0, INT32_MAX));
+IntOption Monosat::opt_limit_optimization_conflicts(_cat_opt, "opt-conflict-limit", "Limit number of conflicts during optimization rounds before giving up (-1 to allow infinite conflicts)", -1, IntRange(-1, INT32_MAX));
+IntOption Monosat::opt_limit_optimization_time(_cat_opt, "opt-time-limit", "Limit time spent in optimization (after finding an initial satisfying solution) before giving up (-1 to allow infinite time during optimization)", -1, IntRange(-1, INT32_MAX));
 
 StringOption Monosat::opt_record_file(_cat, "debug-log",
 		"Log (very expensive) debugging info at extensions of the following path (empty string (recommended) disables)", "");
@@ -286,6 +288,8 @@ BoolOption Monosat::opt_kt_preserve_order(_cat_graph, "kt-preserve-order",
 		"Attempt to preserve the order of flow assigned by the kohli-torr maxflow algorithm", false);
 
 
+IntOption Monosat::opt_maxflow_decisions_type(_cat_graph, "maxflow-decisions", "0=None, 1=flow-based, 2=cut-based", 1,IntRange(0,2));
+
 BoolOption Monosat::opt_lazy_maxflow_decisions(_cat_graph, "lazy-maxflow-decisions", "", true);
 BoolOption Monosat::opt_maxflow_allow_cycles(_cat_graph, "allow-maxflow-cycles", "Allow (superfluous) cycles in the maxflow solution", false);
 
@@ -339,6 +343,9 @@ BoolOption Monosat::opt_fsm_as_graph(_cat_fsm, "fsm-as-graph",
 		"", false);
 BoolOption Monosat::opt_learn_acyclic_flows(_cat_graph, "learn-acyclic-flows",
 		"", false);
+
+IntOption Monosat::opt_min_edgeset(_cat_graph,"min-edge-set","set to 0 to accept all edge sets, or -1 to disable all edge sets",10,IntRange(-1,INT32_MAX));
+BoolOption Monosat::opt_only_prop_edgeset(_cat_graph,"only-prop-edgesets","",false);
 
 
 

@@ -101,9 +101,9 @@ void SimpSolver::releaseVar(Lit l)
 lbool SimpSolver::solve_(bool do_simp, bool turn_off_simp) {
 	vec<Var> extra_frozen;
 	lbool result = l_True;
+	clearInterrupt();
 	cancelUntil(0);
 	do_simp &= use_simplification;
-	
 	if (do_simp) {
 		// Assumptions must be temporarily frozen to run variable elimination:
 		for (int i = 0; i < assumptions.size(); i++) {

@@ -217,7 +217,7 @@ void AllPairsDetector<Weight>::buildReachReason(int source, int to, vec<Lit> & c
 	outer->learnt_path_clause_length += (conflict.size() - 1);
 	double elapsed = rtime(2) - starttime;
 	outer->pathtime += elapsed;
-	
+
 }
 template<typename Weight>
 void AllPairsDetector<Weight>::buildNonReachReason(int source, int node, vec<Lit> & conflict) {
@@ -281,7 +281,7 @@ void AllPairsDetector<Weight>::buildNonReachReason(int source, int node, vec<Lit
 	
 	double elapsed = rtime(2) - starttime;
 	outer->mctime += elapsed;
-	
+
 }
 
 template<typename Weight>
@@ -329,6 +329,7 @@ void AllPairsDetector<Weight>::buildReason(Lit p, vec<Lit> & reason, CRef marker
 	} else {
 		assert(false);
 	}
+	outer->toSolver(reason);
 }
 template<typename Weight>
 bool AllPairsDetector<Weight>::propagate(vec<Lit> & conflict) {
@@ -390,7 +391,7 @@ bool AllPairsDetector<Weight>::propagate(vec<Lit> & conflict) {
 			if(S->dbg_solver)
 			S->dbg_check(conflict);
 #endif
-			
+			outer->toSolver(conflict);
 			return false;
 		} else {
 			int a = 1;

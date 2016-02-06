@@ -36,6 +36,7 @@
 #include <stdexcept>
 #include <string>
 #include <vector>
+
 //#define DEBUG_RAMAL
 
 namespace dgl {
@@ -571,7 +572,7 @@ public:
 			}
 		}
 		edgeInShortestPathGraph.resize(g.nEdgeIDs());
-				
+
 		if(has_zero_weights){
 			if(!ever_warned_about_zero_weights){
 				ever_warned_about_zero_weights=true;
@@ -579,7 +580,7 @@ public:
 			}
 			dijkstras.update();
 		}else{
-		
+
 			if (last_history_clear != g.historyclears) {
 				history_qhead = g.historySize();
 				last_history_clear = g.historyclears;
@@ -1168,7 +1169,7 @@ public:
 	
 	void dbg_delta_lite() {
 #ifdef DEBUG_RAMAL
-		for (int u = 0; u < g.nodes(); u++) {
+	/*	for (int u = 0; u < g.nodes(); u++) {
 			int del = delta[u];
 			int d = dist[u];
 			int num_in = 0;
@@ -1185,7 +1186,7 @@ public:
 				}
 			}
 			assert(del == num_in);
-		}
+		}*/
 #endif
 		
 	}

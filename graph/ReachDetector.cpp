@@ -1062,6 +1062,7 @@ void ReachDetector<Weight>::buildReason(Lit p, vec<Lit> & reason, CRef marker) {
 	} else {
 		assert(false);
 	}
+	outer->toSolver(reason);
 }
 template<typename Weight>
 bool ReachDetector<Weight>::propagate(vec<Lit> & conflict) {
@@ -1148,7 +1149,7 @@ bool ReachDetector<Weight>::propagate(vec<Lit> & conflict) {
 				
 			}
 
-			
+			outer->toSolver(conflict);
 			return false;
 		}
 		
@@ -1406,7 +1407,7 @@ Lit ReachDetector<Weight>::decide() {
 			if (outer->value(l) == l_True && opt_decide_graph_pos) {
 				//if(S->level(var(l))>0)
 				//	continue;
-				
+
 				if (over_reach->connected(j) && !under_reach->connected(j)) {
 					//then lets try to connect this
 					static vec<bool> print_path;

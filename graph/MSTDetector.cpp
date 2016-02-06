@@ -703,6 +703,7 @@ void MSTDetector<Weight>::buildReason(Lit p, vec<Lit> & reason, CRef marker) {
 	} else {
 		assert(false);
 	}
+	outer->toSolver(reason);
 }
 
 
@@ -795,7 +796,7 @@ bool MSTDetector<Weight>::propagate(vec<Lit> & conflict) {
 					buildMinWeightTooLargeReason(min_weight, conflict);
 					
 				}
-				
+				outer->toSolver(conflict);
 				return false;
 			} else {
 				int a = 1;
@@ -832,9 +833,12 @@ bool MSTDetector<Weight>::propagate(vec<Lit> & conflict) {
 			//do nothing
 		} else if (outer->value(l) == l_Undef) {
 			//trail.push(Assignment(false,reach,detectorID,0,var(l)));
-			if (reach)
+			if (reach){
+				if(var(l)<72){
+					int a=1;
+				}
 				outer->enqueue(l, underprop_edge_marker);
-			else
+			}else
 				outer->enqueue(l, overprop_edge_marker);
 			
 		} else if (outer->value(l) == l_False) {
@@ -854,7 +858,7 @@ bool MSTDetector<Weight>::propagate(vec<Lit> & conflict) {
 				buildEdgeNotInTreeReason(edgeID, conflict);
 				
 			}
-			
+			outer->toSolver(conflict);
 			return false;
 		} else {
 			int a = 1;

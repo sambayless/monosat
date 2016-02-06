@@ -42,6 +42,7 @@ extern BoolOption opt_rnd_restart;
 extern BoolOption opt_rnd_theory_restart;
 extern StringOption opt_record_file;
 extern IntOption opt_limit_optimization_conflicts;
+extern IntOption opt_limit_optimization_time;
 extern bool opt_record;
 
 extern IntOption opt_theory_conflict_max;
@@ -169,6 +170,8 @@ extern BoolOption opt_conflict_min_cut_maxflow;
 extern IntOption opt_history_clear;
 extern BoolOption opt_kt_preserve_order;
 
+extern IntOption opt_maxflow_decisions_type;
+
 extern BoolOption opt_lazy_maxflow_decisions;
 extern BoolOption opt_maxflow_allow_cycles;
 extern BoolOption opt_old_lazy_maxflow_decisions;
@@ -191,6 +194,10 @@ extern IntOption opt_fsm_symmetry_breaking;
 extern BoolOption opt_fsm_track_used_transitions;
 
 extern BoolOption opt_learn_acyclic_flows;
+
+
+extern IntOption opt_min_edgeset;
+extern BoolOption opt_only_prop_edgeset;
 
 
 enum class PointInPolygonAlg {
