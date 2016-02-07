@@ -5143,6 +5143,11 @@ public:
 		if(bvID==2966){
 			int a=1;
 		}
+		if(opt_graph_bv_prop){
+			(*under_store) = under_approx[bvID];
+			(*over_store) = over_approx[bvID];
+			return true;
+		}
 		Weight under =under_approx0[bvID];
 		Weight over=over_approx0[bvID];
 		vec<Lit> & bv = bitvectors[bvID];
@@ -5154,6 +5159,7 @@ public:
 			assert(under_approx[bvID]==under);
 			return true;
 		}else{
+
 
 
 			for (int opID:operation_ids[bvID]){
@@ -5283,7 +5289,7 @@ public:
 	bool propagateTheory(vec<Lit> & conflict, bool force_propagation) {
 		static int realprops = 0;
 		stats_propagations++;
-		if(stats_propagations==55){
+		if(stats_propagations==77){
 			int a=1;
 		}
 		if (!force_propagation && !requiresPropagation ) {

@@ -95,8 +95,11 @@ public:
 	class DistanceOp: public  GraphTheorySolver<Weight>::GraphTheoryOp{
 		DistanceDetector * outer;
 		int bvID;
+		int to;
+		bool strictCompare;
+		Lit comparisonLit;
 	public:
-		DistanceOp(BVTheorySolver<Weight> &theory,DistanceDetector * outer, int bvID):GraphTheorySolver<Weight>::GraphTheoryOp(theory,outer->outer),outer(outer),bvID(bvID){
+		DistanceOp(BVTheorySolver<Weight> &theory,DistanceDetector * outer, int bvID, int to, bool strictCompare, Lit comparisonLit):GraphTheorySolver<Weight>::GraphTheoryOp(theory,outer->outer),outer(outer),bvID(bvID),to(to),strictCompare(strictCompare),comparisonLit(comparisonLit){
 
 		}
 		int getBV()override{

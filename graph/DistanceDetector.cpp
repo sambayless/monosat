@@ -462,7 +462,7 @@ void DistanceDetector<Weight>::addWeightedShortestPathBVLit(int from, int to, Va
 	weighted_dist_bv_lits.push(WeightedDistBVLit { mkLit(reach_var), to, bv, strictComparison,nullptr });
 	//sort(weighted_dist_lits);
 	if(opt_graph_bv_prop){
-		DistanceOp *distOp = new DistanceOp(*bvTheory, this,bv.getID());
+		DistanceOp *distOp = new DistanceOp(*bvTheory, this,bv.getID(),to,strictComparison,mkLit(reach_var));
 		weighted_dist_bv_lits.last().op=distOp;
 	}
 }
@@ -842,11 +842,23 @@ void DistanceDetector<Weight>::DistanceOp::analyzeReason(bool compareOver,Compar
 		int a=1;
 	}
 	 GraphTheorySolver<Weight>::GraphTheoryOp::analyzeReason(compareOver,op,to,conflict);
-/*	 if(!compareOver){
-		 outer->analyzeDistanceGTReason(to,conflict,op==);
+	 if(!compareOver){
+		 Lit l = this->comparisonLit;
+		 assert(outer->outer->value(l)==l_True);
+
+		 conflict.push(outer->outer->toSolver(~l));
+		 assert(op==Comparison::gt || op==Comparison::geq);
+		 assert(this->strictCompare== (op==Comparison::gt));
+		 outer->analyzeDistanceGTReason(this->to,to,conflict, strictCompare);
 	 }else{
-		 outer->analyzeDistanceLEQReason(to,conflict);
-	 }*/
+		 Lit l = this->comparisonLit;
+		 assert(outer->outer->value(l)==l_False);
+		 conflict.push(outer->outer->toSolver(l));
+		 assert(op==Comparison::lt || op==Comparison::leq);
+		 assert(this->strictCompare== (op==Comparison::lt));
+		 outer->analyzeDistanceLEQReason(this->to, to,conflict,strictCompare);
+
+	 }
 	 GraphTheorySolver<Weight>::GraphTheoryOp::completeAnalysis();
 }
 
