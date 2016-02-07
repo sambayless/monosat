@@ -91,6 +91,33 @@ public:
 	long stats_gt_unweighted_edges_skipped = 0;
 	long stats_gt_weighted_edges_skipped = 0;
 
+	BVTheorySolver<Weight> * bvTheory=nullptr;
+	class DistanceOp: public  GraphTheorySolver<Weight>::GraphTheoryOp{
+		DistanceDetector * outer;
+		int bvID;
+	public:
+		DistanceOp(BVTheorySolver<Weight> &theory,DistanceDetector * outer, int bvID):GraphTheorySolver<Weight>::GraphTheoryOp(theory,outer->outer),outer(outer),bvID(bvID){
+
+		}
+		int getBV()override{
+			return bvID;
+		}
+
+		bool propagate(bool & changed, vec<Lit> & conflict)override{
+			return true;
+		}
+
+	    void updateApprox(Var ignore_bv, Weight & under_new, Weight & over_new,typename BVTheorySolver<Weight>::Cause & under_cause_new, typename BVTheorySolver<Weight>::Cause & over_cause_new)override{
+			;
+		}
+
+		void analyzeReason(bool compareOver,Comparison op, Weight  to,  vec<Lit> & conflict)override;
+
+		bool checkSolved()override{
+			return true;
+		}
+	};
+
 	vec<vec<Lit> > unweighted_sat_lits;
 
 	struct UnweightedDistLit {
@@ -117,6 +144,7 @@ public:
 		int u;
 		BitVector<Weight> bv;
 		bool strictComparison;
+		DistanceOp * op;
 	};
 	vec<WeightedDistBVLit> weighted_dist_bv_lits;
 
@@ -132,6 +160,11 @@ public:
 	std::vector<double> rnd_weight;
 
 	WeightedDijkstra<Weight,double> * rnd_path;
+
+
+
+
+
 	/*struct OptimalWeightEdgeStatus{
 	 DistanceDetector & detector;
 	 int operator [] (int edge) const ;

@@ -1051,10 +1051,12 @@ bool MaxflowDetector<Weight>::propagate(vec<Lit> & conflict, bool backtrackOnly,
 
 			if(opt_graph_bv_prop){
 				FlowOp * flowOp = f.op;
-				if (outer->value(l) == l_False ) {
-					outer->assignBV(bv.getID(),inclusive? Comparison::gt : Comparison::geq,under_maxflow,flowOp);
-				}else if (outer->value(l) == l_True){
-					outer->assignBV(bv.getID(),inclusive? Comparison::leq : Comparison::lt,over_maxflow,flowOp);
+				if(flowOp){
+					if (outer->value(l) == l_False ) {
+						outer->assignBV(bv.getID(),inclusive? Comparison::gt : Comparison::geq,under_maxflow,flowOp);
+					}else if (outer->value(l) == l_True){
+						outer->assignBV(bv.getID(),inclusive? Comparison::leq : Comparison::lt,over_maxflow,flowOp);
+					}
 				}
 			}
 		}

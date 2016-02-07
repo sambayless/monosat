@@ -45,7 +45,7 @@ DistanceDetector<Weight>::DistanceDetector(int _detectorID, GraphTheorySolver<We
 		Detector(_detectorID), outer(outer), g_under(_g), g_over(_antig), source(from), rnd_seed(seed) {
 	max_unweighted_distance = 0;
 	rnd_path = NULL;
-	
+	bvTheory = outer->bvTheory;
 	constraintsBuilt = -1;
 	first_reach_var = var_Undef;
 	stats_pure_skipped = 0;
@@ -459,8 +459,12 @@ void DistanceDetector<Weight>::addWeightedShortestPathBVLit(int from, int to, Va
 	g_over.invalidate();
 	Var reach_var = outer->newVar(outer_reach_var, getID());
 	assert(from == source);
-	weighted_dist_bv_lits.push(WeightedDistBVLit { mkLit(reach_var), to, bv, strictComparison });
+	weighted_dist_bv_lits.push(WeightedDistBVLit { mkLit(reach_var), to, bv, strictComparison,nullptr });
 	//sort(weighted_dist_lits);
+	if(opt_graph_bv_prop){
+		DistanceOp *distOp = new DistanceOp(*bvTheory, this,bv.getID());
+		weighted_dist_bv_lits.last().op=distOp;
+	}
 }
 
 
@@ -829,6 +833,21 @@ void DistanceDetector<Weight>::printSolution(std::ostream& write_to) {
 	}
 	write_to << "\n";
 	
+}
+template<typename Weight>
+void DistanceDetector<Weight>::DistanceOp::analyzeReason(bool compareOver,Comparison op, Weight  to,  vec<Lit> & conflict){
+//watch out - might need to backtrack the graph theory appropriately, here...
+	static int iter = 0;
+	if(++iter==46){
+		int a=1;
+	}
+	 GraphTheorySolver<Weight>::GraphTheoryOp::analyzeReason(compareOver,op,to,conflict);
+/*	 if(!compareOver){
+		 outer->analyzeDistanceGTReason(to,conflict,op==);
+	 }else{
+		 outer->analyzeDistanceLEQReason(to,conflict);
+	 }*/
+	 GraphTheorySolver<Weight>::GraphTheoryOp::completeAnalysis();
 }
 
 template<typename Weight>
@@ -1386,6 +1405,39 @@ bool DistanceDetector<Weight>::propagate(vec<Lit> & conflict) {
 			}
 		}
 
+
+
+		assert(min_dist_under<=min_dist_over);
+		assert(under_dist == -1 || over_dist<=under_dist);
+		if(opt_graph_bv_prop){
+			//std::cout<<"under_dist " << under_dist << " over_dist " << over_dist << "; min_dist_under "<<  min_dist_under << " " << "min_dist_over" <<min_dist_over <<"\n";
+			DistanceOp * distOp = dist_lit.op;
+			if(distOp && !bv.isConst()){
+				 if (outer->value(l) == l_True){
+
+						//propagate over/under constraints on the output lit back to the bitvector theory
+
+
+						if(!overapprox_weighted_distance_detector->connected(to)){
+							//this should have triggered a conflict above
+						}else{
+							if(!outer->assignBV(bv.getID(),strictComparison? Comparison::gt : Comparison::geq,over_dist,distOp)){
+								throw  std::runtime_error("Bad bv assignment in distance detector");
+							}
+
+						}
+				 }else  if (outer->value(l) == l_False){
+						if(!underapprox_weighted_distance_detector->connected(to)){
+
+						}else{
+							if(!outer->assignBV(bv.getID(),strictComparison? Comparison::lt : Comparison::leq,under_dist,distOp)){
+								throw  std::runtime_error("Bad bv assignment in distance detector");
+							}
+						}
+				 }
+
+			}
+		}
 	}
 	return true;
 }
