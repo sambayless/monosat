@@ -17,7 +17,10 @@ struct ForcedTransition{
 	int generator_state;
 	int character;
 };
-
+struct ChokepointTransition{
+	int acceptorEdgeID;
+	int character;
+};
 template<class Status=FSMNullStatus>
 class NFALinearGeneratorAcceptor{
 	DynamicFSM & gen;
@@ -164,7 +167,6 @@ private:
 
 	bool stepGenerator(int final, vec<int> & store, vec<bool> & store_seen, int & cur_gen_state, vec<NFATransition> * path=nullptr){
 		DynamicFSM & g = gen;
-
 
 		for(int i = 0;i<gen_cur.size();i++){
 			int s = gen_cur[i];
@@ -592,11 +594,11 @@ public:
 
 		}
 private:
-	bool find_accepts(int gen_final, int accept_final, bool invertAcceptance, vec<ForcedTransition> * forced_edges=nullptr){
+	bool find_accepts(int gen_final, int accept_final, bool invertAcceptance, vec<vec<ForcedTransition>> * forced_edges=nullptr,vec<ChokepointTransition>  * chokepoint_edges=nullptr){
 		bool accepting_state_is_attractor= !invertAcceptance && isAttractor(accept_final) ;
 		bool hasSuffix = false;
 
-		if(forced_edges){
+		if(forced_edges || chokepoint_edges){
 
 			if(!buildSuffixTable(gen_final, accept_final, suffixTable,accepting_state_is_attractor,invertAcceptance)){
 				return false;
@@ -665,12 +667,18 @@ private:
 
 		bool prev_accepting=accepting_state_is_attractor ? true:gen_cur_seen[gen_final];
 		bool accepted=false;
-
-
+		if(forced_edges)
+			forced_edges->clear();
 		//use the linear generator to produce a (set) of strings. Because the generator is linear, it is only ever in one state, which greatly simplifies the reasoning here...
 		while(!accepted){
+			bool has_chokepoint=true;
+			int chokepoint_edge=-1;
+			int chokepoint_char=-1;
 			int  cur_gen_state=0;
-			bool accepting = stepGenerator(gen_final, chars,seen_chars,cur_gen_state);//get set of next strings
+			if(forced_edges)
+				forced_edges->push();
+
+			bool accepting = stepGenerator(gen_final, chars,seen_chars,cur_gen_state,nullptr);//get set of next strings
 			if(accepting_state_is_attractor){
 				accepting =true;
 			}
@@ -684,6 +692,15 @@ private:
 						if(hasSuffix && !suffixTable[gen_pos][to])
 							continue;
 						if( g.transitionEnabled(edgeID,0,0)){
+							if(has_chokepoint){
+								if(chokepoint_edge<0){
+									chokepoint_edge=edgeID;
+									chokepoint_char=0;
+								}else{
+									has_chokepoint=false;
+								}
+							}
+
 							if(!cur_seen[to]){
 							cur_seen[to]=true;
 							cur.push(to);
@@ -707,8 +724,16 @@ private:
 							int to = g.incident(s,j).node;
 
 							if(g.transitionEnabled(edgeID,0,0)){
-								if(!cur_seen[to]){
-									if(!hasSuffix || suffixTable[gen_pos][to]){
+								if(!hasSuffix || suffixTable[gen_pos][to]){
+									if(has_chokepoint){
+										if(chokepoint_edge<0){
+											chokepoint_edge=edgeID;
+											chokepoint_char=0;
+										}else{
+											has_chokepoint=false;
+										}
+									}
+									if(!cur_seen[to]){
 										cur_seen[to]=true;
 										cur.push(to);
 										if(to!=accept_final)
@@ -722,6 +747,14 @@ private:
 							if (g.transitionEnabled(edgeID,l,0)){
 								//status.reaches(str,to,edgeID,l);
 								if(!hasSuffix || (gen_pos+1<suffixTable.size() && suffixTable[gen_pos+1][to])){
+									if(has_chokepoint){
+										if(chokepoint_edge<0){
+											chokepoint_edge=edgeID;
+											chokepoint_char=l;
+										}else{
+											has_chokepoint=false;
+										}
+									}
 									if(!next_seen[to]){
 										next_seen[to]=true;
 										next.push(to);
@@ -735,10 +768,11 @@ private:
 							}
 						}
 					}
+
 					if(forced_edges && character_cannot_lead_to_accepting_state){
 													//this is an edge that _must_ be disabled, because it leads to a state in the nfa that cannot reach the acceptor.
 													//forced_edges->push(NFATransition{edgeID,l,0});
-						forced_edges->push({cur_gen_state,l});
+						forced_edges->last().push({cur_gen_state,l});
 
 					}
 
@@ -771,6 +805,12 @@ private:
 				seen_chars[l]=false;
 			}
 			chars.clear();
+
+			if(has_chokepoint && chokepoint_edge>=0 && chokepoint_edges){
+				assert(chokepoint_char>=0);
+				(*chokepoint_edges).push({chokepoint_edge,chokepoint_char});
+			}
+
 			prev_accepting = accepting;
 			any_non_acceptors= any_non_acceptors_next;
 			any_non_acceptors_next=false;
@@ -987,8 +1027,8 @@ public:
 public:
 
 
-	bool accepts(int genFinal, int acceptFinal, bool invertAcceptor=false,vec<ForcedTransition> * forced_edges=nullptr){
-		return find_accepts(genFinal, acceptFinal,invertAcceptor,forced_edges);
+	bool accepts(int genFinal, int acceptFinal, bool invertAcceptor=false,vec<vec<ForcedTransition>>  * forced_edges=nullptr,vec<ChokepointTransition>  * chokepoint_edges=nullptr){
+		return find_accepts(genFinal, acceptFinal,invertAcceptor,forced_edges,chokepoint_edges);
 
 	}
 	bool getGeneratorPath(int genFinal, int acceptFinal, vec<NFATransition> & path, bool invert_acceptor=false, bool all_paths = false){

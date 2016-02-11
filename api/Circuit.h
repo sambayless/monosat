@@ -92,7 +92,7 @@ public:
 		return lit_True;
 	}
 
-	Lit False(){
+	Lit getFalse(){
 		return ~lit_True;
 	}
 

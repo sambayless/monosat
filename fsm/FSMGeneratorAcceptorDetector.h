@@ -74,6 +74,9 @@ public:
 	CRef underprop_marker;
 	CRef overprop_marker;
 	CRef forcededge_marker;
+	CRef forced_positive_nondet_edge_marker;
+	CRef deterministic_forcededge_marker;
+	CRef chokepoint_edge_marker;
 	struct Change {
 		Lit l;
 		int u;
@@ -111,6 +114,7 @@ public:
 
 	Map<Var,Lit> forcedVars;
 	vec<Var> lit_backward_map;
+	vec<bool> seen_chars;
 
 	GraphTheorySolver<long> * graph=nullptr;//for if we reduce the nfa to a graph
 	vec<vec<int> > nodes;
@@ -172,7 +176,9 @@ public:
 	void buildAcceptReason(int genFinal, int acceptFinal, vec<Lit> & conflict);
 	void buildNonAcceptReason(int genFinal, int acceptFinal, vec<Lit> & conflict);
 	void buildForcedEdgeReason(int genFinal, int acceptFinal,int forcedEdge, int forcedLabel,  vec<Lit> & conflict);
-	 void preprocess() ;
+	void buildDeterministicForcedEdgeReason(int genFinal, int acceptFinal,int forcedEdge, int forcedLabel,  vec<Lit> & conflict);
+	void buildForcedNondetEdgeReason(int genFinal, int acceptFinal,int forcedEdge, int forcedLabel,  vec<Lit> & conflict);
+	void preprocess() ;
 	void buildReason(Lit p, vec<Lit> & reason, CRef marker);
 	bool checkSatisfied();
 	void printSolution(std::ostream& write_to);
@@ -207,18 +213,26 @@ private:
 
 	vec<bool> next_seen;
 	vec<bool> cur_seen;
-
+	bool generator_is_deterministic=false;
 	vec<int> gen_cur;
 	vec<int> gen_next;
 	vec<bool> gen_next_seen;
 	vec<bool> gen_cur_seen;
 	vec<int> chars;
-	vec<bool> seen_chars;
+	vec<bool> tmp_seen_chars;
 	vec<vec<Bitset>>  prefixTables;
-
+	vec<vec<ForcedTransition>> forced_edges;
+	vec<ChokepointTransition> chokepoint_edges;
+	vec<NFATransition> tmp_path;
 	int last_prefix_update=-1;
+	void setGeneratorDeterministic(bool is_deterministic){
+		generator_is_deterministic=is_deterministic;
+	}
 	bool isAttractor(int acceptorState);
-	bool find_gen_path(int gen_final, int accept_final,int forcedEdge,int forcedLabel, vec<NFATransition> & path,bool invertAcceptance = false, bool all_paths=false);
+
+	//note: forced edge and forced_label refer to the generator fsm, while ignoredEdge and  ignoredLabel refer to the acceptor fsm
+	bool find_gen_path(int gen_final, int accept_final,int forcedEdge,int forcedLabel, vec<NFATransition> & path,bool invertAcceptance = false, bool all_paths=false, bool under_approx=false,int ignoredEdge=-1,int ignoredLabel=-1);
+
 	bool stepGenerator(int final,int forcedEdge,int forcedLabel, vec<int> & store, vec<bool> & store_seen, int & cur_gen_state, vec<NFATransition> * path=nullptr);
 	bool buildSuffixCut(int gen_final,int accept_final,vec<Lit> & cut, bool accepting_state_is_attractor, bool invertAcceptance);
 	bool stepGeneratorBackward(int final,vec<Bitset> & prefixTable, vec<Lit> & cut,  vec<int> & store, vec<bool> & store_seen, vec<NFATransition> * path=nullptr);
