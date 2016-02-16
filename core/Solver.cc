@@ -125,9 +125,6 @@ Var Solver::newVar(bool sign, bool dvar) {
 		dvar = false;
 	setDecisionVar(v, dvar);
 
-
-
-
 	return v;
 }
 
@@ -1257,7 +1254,7 @@ void Solver::rebuildTheoryOrderHeap() {
 bool Solver::simplify() {
 	assert(decisionLevel() == 0);
 	
-	if (!ok || propagate() != CRef_Undef || !ok) //yes, the second ok check is now required, because propagation of a theory can make the solver unsat at this point...
+	if (!ok || propagate(!disable_theories) != CRef_Undef || !ok) //yes, the second ok check is now required, because propagation of a theory can make the solver unsat at this point...
 		return ok = false;
 	
 	if (nAssigns() == simpDB_assigns || (simpDB_props > 0))

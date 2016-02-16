@@ -766,6 +766,14 @@ public:
 	void drawFull(int from, int to) {
 		
 	}
+
+	void drawFSM(int fsmID,int source,int dest, bool over) {
+		if(over){
+			g_overs[fsmID]->draw(source,dest);
+		}else{
+			g_unders[fsmID]->draw(source,dest);
+		}
+	}
 	
 	bool check_solved() {
 		for(int fsmID = 0;fsmID<nFsms();fsmID++){
@@ -967,7 +975,7 @@ public:
 		}
 		transduces[source]->addTransducesLit(dest,strID,strID2,outer_var);
 	}
-	void addComposeAcceptLit(int fsmID1,int fsmID2,int from1,int to1,int from2,int to2, int strID,Var reachVar){
+	void addComposeAcceptLit(int fsmID1,int fsmID2,int from1,int to1,int from2,int to2, int strID,Var reachVar, bool generator_is_deterministic=false){
 		//for now, only linear generator/acceptor compositions are supported
 		if(strID>=0){
 			throw std::invalid_argument("String inputs are not yet supported in compositions");
@@ -998,6 +1006,9 @@ public:
 			throw std::invalid_argument("Size of output alphabet of first fsm (was " + std::to_string(g_overs[fsmID1]->out_alphabet) + ") must match size of input alphabet of second fsm (was " + std::to_string(g_overs[fsmID2]->in_alphabet) + ")");
 		}
 		FSMGeneratorAcceptorDetector * d = new FSMGeneratorAcceptorDetector(detectors.size(), this, *g_unders[fsmID1],*g_overs[fsmID1], *g_unders[fsmID2],*g_overs[fsmID2], from1,from2,drand(rnd_seed));
+		if(generator_is_deterministic){
+			d->setGeneratorDeterministic(true);
+		}
 		detectors.push(d);
 		d->addAcceptLit(to1,to2,reachVar);
 	}

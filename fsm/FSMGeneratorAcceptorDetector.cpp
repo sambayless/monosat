@@ -458,7 +458,7 @@ bool FSMGeneratorAcceptorDetector::propagate(vec<Lit> & conflict) {
 
 				if (outer->value(~l) == l_True) {
 					//do nothing
-				} else if (outer->value(~l) == l_Undef) {
+				} else if (outer->value(l) == l_Undef) {
 					outer->enqueue(~l, overprop_marker);
 				}else{
 					conflict.push(~l);
@@ -611,6 +611,7 @@ bool FSMGeneratorAcceptorDetector::propagate(vec<Lit> & conflict) {
 										Var v = outer->getTransitionVar(g_over.getID(),edgeID,0,label);
 										Lit f = mkLit(v);
 										if(outer->value(f)==l_Undef){
+											setForcedVar(v,lit);
 											stats_det_gen_edge_propagations++;
 											outer->enqueue(~f, deterministic_forcededge_marker);
 										}else if(outer->value(f)==l_True){

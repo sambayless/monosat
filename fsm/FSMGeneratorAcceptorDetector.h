@@ -214,6 +214,9 @@ public:
 	const char* getName() {
 		return "NFA Generator Acceptor Detector";
 	}
+	void setGeneratorDeterministic(bool is_deterministic){
+		generator_is_deterministic=is_deterministic;
+	}
 private:
 
 	struct Transition{
@@ -241,9 +244,7 @@ private:
 	vec<ChokepointTransition> chokepoint_edges;
 	vec<NFATransition> tmp_path;
 	int last_prefix_update=-1;
-	void setGeneratorDeterministic(bool is_deterministic){
-		generator_is_deterministic=is_deterministic;
-	}
+
 	bool isAttractor(int acceptorState);
 
 	//note: forced edge and forced_label refer to the generator fsm, while ignoredEdge and  ignoredLabel refer to the acceptor fsm
