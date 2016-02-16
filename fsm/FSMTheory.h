@@ -182,12 +182,13 @@ public:
 		return S;
 	}
 	void printStats(int detailLevel) {
+		printf("FSM %d stats:\n", getGraphID());
+
 		if (detailLevel > 0) {
 			for (FSMDetector * d : detectors)
 				d->printStats();
 		}
 		
-		printf("FSM %d stats:\n", getGraphID());
 
 		fflush(stdout);
 	}

@@ -188,6 +188,7 @@ extern IntOption opt_fsm_prop_skip;
 
 extern BoolOption opt_fsm_negate_underapprox;
 extern BoolOption opt_fsm_edge_prop;
+extern BoolOption opt_fsm_forced_edge_prop;
 extern BoolOption opt_fsm_chokepoint_prop;
 
 extern BoolOption opt_fsm_as_graph;

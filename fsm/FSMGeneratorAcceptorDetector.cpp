@@ -41,9 +41,9 @@ FSMGeneratorAcceptorDetector::FSMGeneratorAcceptorDetector(int detectorID, FSMTh
 		underprop_marker = outer->newReasonMarker(getID());
 		overprop_marker = outer->newReasonMarker(getID());
 		forcededge_marker= outer->newReasonMarker(getID());
-		forced_positive_nondet_edge_marker= outer->newReasonMarker(getID());
+		forced_positive_nondet_generator_transition_marker= outer->newReasonMarker(getID());
 		deterministic_forcededge_marker= outer->newReasonMarker(getID());
-		chokepoint_edge_marker= outer->newReasonMarker(getID());
+		chokepoint_acceptor_transition_marker= outer->newReasonMarker(getID());
 
 		cur_seen.growTo(acceptor_over.states());
 		gen_cur_seen.growTo(g_over.states());
@@ -430,11 +430,11 @@ bool FSMGeneratorAcceptorDetector::propagate(vec<Lit> & conflict) {
 			int gen_to = t.gen_to;
 			int accept_to = t.accept_to;
 			//assert(is_changed[indexOf(var(l))]);
-
+			if(opt_verb>1){
 			g_over.draw(gen_source,gen_to);
 			acceptor_over.draw(accept_source,accept_to);
-
-			if(!opt_fsm_negate_underapprox && outer->value(l)!=l_True && underapprox_detector->accepts(gen_to,accept_to,false,&forced_edges)){
+			}
+			if(!opt_fsm_negate_underapprox && outer->value(l)!=l_True && underapprox_detector->accepts(gen_to,accept_to,false,opt_fsm_forced_edge_prop ?&forced_edges:nullptr)){
 				if (outer->value(l) == l_True) {
 					//do nothing
 				} else if (outer->value(l) == l_Undef) {
@@ -444,7 +444,7 @@ bool FSMGeneratorAcceptorDetector::propagate(vec<Lit> & conflict) {
 					buildAcceptReason(gen_to,accept_to, conflict);
 					return false;
 				}
-			}else if(opt_fsm_negate_underapprox && outer->value(l)!=l_True && !overapprox_detector->accepts(gen_to,accept_to,true,&forced_edges)){
+			}else if(opt_fsm_negate_underapprox && outer->value(l)!=l_True && !overapprox_detector->accepts(gen_to,accept_to,true, opt_fsm_forced_edge_prop ?&forced_edges:nullptr)){
 				if (outer->value(l) == l_True) {
 					//do nothing
 				} else if (outer->value(l) == l_Undef) {
@@ -469,6 +469,7 @@ bool FSMGeneratorAcceptorDetector::propagate(vec<Lit> & conflict) {
 
 			}
 			if(outer->value(lit)==l_False){
+				if(opt_fsm_forced_edge_prop){
 				for(int s = 0;s<forced_edges.size();s++){
 					for(auto & t:forced_edges[s]){
 						//int edgeID = t.edgeID;
@@ -486,8 +487,10 @@ bool FSMGeneratorAcceptorDetector::propagate(vec<Lit> & conflict) {
 								//Var test = var(lit);
 								assert(outer->value(lit)==l_False);
 								//int lev = outer->level(var(lit));
-								setForcedVar(v,~lit);
+
 								if(outer->value(f)==l_Undef){
+									stats_forced_edge_propagations++;
+									setForcedVar(v,~lit);
 									outer->enqueue(f, forcededge_marker);
 								}else if(outer->value(f)==l_False){
 									conflict.push(f);
@@ -496,6 +499,7 @@ bool FSMGeneratorAcceptorDetector::propagate(vec<Lit> & conflict) {
 							}
 						}
 					}
+				}
 				}
 			}else if(outer->value(lit)==l_True){
 
@@ -521,8 +525,10 @@ bool FSMGeneratorAcceptorDetector::propagate(vec<Lit> & conflict) {
 							//shouldn't be possible
 							throw std::runtime_error("Error in fsm chokepoint propagation");
 						}else{
+							stats_chokepoint_edge_propagations++;
 							assert(outer->value(e)==l_Undef);
-							outer->enqueue(e, chokepoint_edge_marker);
+							setForcedVar(var(e),lit);
+							outer->enqueue(e, chokepoint_acceptor_transition_marker);
 						}
 					}
 
@@ -537,14 +543,16 @@ bool FSMGeneratorAcceptorDetector::propagate(vec<Lit> & conflict) {
 					//set of states that are reached on all paths to the accepting state. Then find the transitions between them that CANNOT lead to the accepting state.
 
 
-					for(int s = 0;s<forced_edges.size();s++){
-						int n_forced = forced_edges[s].size();
+					for(int s2 = 0;s2<forced_edges.size();s2++){
+						int n_forced = forced_edges[s2].size();
 
-
+						if(forced_edges[s2].size()==0)
+							continue;
+						int generator_state = forced_edges[s2][0].generator_state;
 
 						int edgeID = -1;
-						for(int i = 0;i<g_over.nIncident(s);i++){
-							edgeID = g_over.incident(s,i).id;
+						for(int i = 0;i<g_over.nIncident(generator_state);i++){
+							edgeID = g_over.incident(generator_state,i).id;
 						}
 						if(edgeID<0)
 							continue;
@@ -563,9 +571,9 @@ bool FSMGeneratorAcceptorDetector::propagate(vec<Lit> & conflict) {
 
 							//whether or not the generator is deterministic, the remaining unforced edge must be assigned.
 							//find the unforced edge, and assign it
-							for(auto & t:forced_edges[s]){
-								int generator_state = t.generator_state;
-								assert(generator_state==s);
+							for(auto & t:forced_edges[s2]){
+								int generator_state2 = t.generator_state;
+								assert(generator_state2 == generator_state);
 								int label = t.character;
 								assert(!tmp_seen_chars[label]);
 								tmp_seen_chars[label]=true;
@@ -576,8 +584,9 @@ bool FSMGeneratorAcceptorDetector::propagate(vec<Lit> & conflict) {
 									Var v = outer->getTransitionVar(g_over.getID(),edgeID,0,c);
 									Lit f = mkLit(v);
 									if(outer->value(f)==l_Undef){
+										stats_nondet_gen_edge_propagations++;
 										setForcedVar(v,lit);
-										outer->enqueue(f, forced_positive_nondet_edge_marker);
+										outer->enqueue(f, forced_positive_nondet_generator_transition_marker);
 									}
 									assert(outer->value(f)!=l_False);//as that would have been a conflict above
 									/*else if(outer->value(f)==l_False){
@@ -590,10 +599,10 @@ bool FSMGeneratorAcceptorDetector::propagate(vec<Lit> & conflict) {
 							}
 						}else if( generator_is_deterministic){
 							//any transition that cannot lead to the accepting state must be disabled (if the generator is deterministic).
-							for(auto & t:forced_edges[s]){
+							for(auto & t:forced_edges[s2]){
 
 								int generator_state = t.generator_state;
-								assert(generator_state==s);
+
 								int label = t.character;
 
 								for(int i = 0;i<g_over.nIncident(generator_state);i++){
@@ -602,6 +611,7 @@ bool FSMGeneratorAcceptorDetector::propagate(vec<Lit> & conflict) {
 										Var v = outer->getTransitionVar(g_over.getID(),edgeID,0,label);
 										Lit f = mkLit(v);
 										if(outer->value(f)==l_Undef){
+											stats_det_gen_edge_propagations++;
 											outer->enqueue(~f, deterministic_forcededge_marker);
 										}else if(outer->value(f)==l_True){
 											conflict.push(~f);
@@ -651,11 +661,23 @@ void FSMGeneratorAcceptorDetector::buildReason(Lit p, vec<Lit> & reason, CRef ma
 		int forcedEdge = outer->getEdgeID(v);
 		int forcedLabel = outer->getOutput(v);
 		buildForcedEdgeReason(gen_final,accept_final,forcedEdge,  forcedLabel,  reason);
-	}else if (marker ==chokepoint_edge_marker){
-		assert(false);
+	}else if (marker ==chokepoint_acceptor_transition_marker){
+		reason.push(p);
+		Var v = var(p);
+		Lit forL = getForcedVar(v);
+
+		Var forV = var(forL);
+		assert(outer->value(forL)==l_True);
+
+		reason.push(~forL);
+		int gen_final = getGeneratorFinal(forV);
+		int accept_final = getAcceptorFinal(forV);
+		int forcedEdge = outer->getEdgeID(v);
+		int forcedLabel = outer->getInput(v);
+		buildAcceptorChokepointEdgeReason(gen_final,accept_final,forcedEdge,  forcedLabel,  reason);
 	}else if (marker ==deterministic_forcededge_marker){
 		assert(false);
-	}else if (marker ==forced_positive_nondet_edge_marker){
+	}else if (marker ==forced_positive_nondet_generator_transition_marker){
 		reason.push(p);
 		Var v = var(p);
 		Lit forL = getForcedVar(v);
@@ -969,10 +991,10 @@ void FSMGeneratorAcceptorDetector::buildForcedEdgeReason(int genFinal, int accep
 	//the reason that an edge was forced by an _unreachability_ condition, was that if it was negated then that state would be reachable.
 	//so the 'reason' is the same as the reachability reason for that state IF the forced edge was flipped.
 
-	if(!opt_fsm_negate_underapprox){
+	/*if(!opt_fsm_negate_underapprox){
 		assert(false);
 		throw std::logic_error("Bad fsm option");
-	}else{
+	}else{*/
 
 
 		tmp_path.clear();
@@ -993,10 +1015,29 @@ void FSMGeneratorAcceptorDetector::buildForcedEdgeReason(int genFinal, int accep
 		}
 		//printf("\n");
 
+	//}
+}
+
+void FSMGeneratorAcceptorDetector::buildAcceptorChokepointEdgeReason(int genFinal, int acceptFinal,int forcedAcceptorEdge, int forcedAcceptorLabel, vec<Lit> & conflict){
+	if(!opt_fsm_chokepoint_prop){
+		assert(false);
+		throw std::logic_error("Bad fsm option");
+	}else{
+
+
+
+		tmp_path.clear();
+
+		//add an 'ignore edge' parameter to find_gen_path, and show that if the edge is ignored, then the inverse underapprox acceptor will accept the instance.
+		bool c = buildSuffixCut(genFinal,acceptFinal,conflict,false,false,-1,-1,forcedAcceptorEdge,forcedAcceptorLabel);
+		if(c){
+			throw std::runtime_error("Internal error in fsm theory");
+		}
+
 	}
 }
 
-void FSMGeneratorAcceptorDetector::buildForcedNondetEdgeReason(int genFinal, int acceptFinal,int forcedEdge, int forcedLabel, vec<Lit> & conflict){
+void FSMGeneratorAcceptorDetector::buildForcedNondetEdgeReason(int genFinal, int acceptFinal,int forcedGeneratorEdge, int forcedGeneratorLabel, vec<Lit> & conflict){
 	if(!opt_fsm_edge_prop){
 		assert(false);
 		throw std::logic_error("Bad fsm option");
@@ -1007,13 +1048,15 @@ void FSMGeneratorAcceptorDetector::buildForcedNondetEdgeReason(int genFinal, int
 		tmp_path.clear();
 
 		//add an 'ignore edge' parameter to find_gen_path, and show that if the edge is ignored, then the inverse underapprox acceptor will accept the instance.
-
-
+		bool c = buildSuffixCut(genFinal,acceptFinal,conflict,false,false,forcedGeneratorEdge,forcedGeneratorLabel);
+		if(c){
+			throw std::runtime_error("Internal error in fsm theory");
+		}
 		//this edge was forced to be false, because if it was true, then the _inverted_ UNDERapprox acceptor would have an accepting path
 
 		//underapprox_detector->accepts(gen_to,accept_to,false,&forced_edges)
-
-		bool c = find_gen_path(genFinal,acceptFinal,forcedEdge,forcedLabel,tmp_path,true,false,true,forcedEdge,forcedLabel);
+/*
+		bool c = find_gen_path(genFinal,acceptFinal,-1,-1,tmp_path,true,false,true,forcedEdge,forcedLabel);
 		if(!c){
 			throw std::runtime_error("Internal error in fsm theory");
 		}
@@ -1029,7 +1072,7 @@ void FSMGeneratorAcceptorDetector::buildForcedNondetEdgeReason(int genFinal, int
 			if(outer->value(v)==l_True){
 				conflict.push(mkLit(v,true));
 			}
-		}
+		}*/
 		//printf("\n");
 
 	}
@@ -1163,7 +1206,7 @@ void FSMGeneratorAcceptorDetector::updatePrefixTable(int gen_final, int accept_f
 	}
 }
 
-bool FSMGeneratorAcceptorDetector::buildSuffixCut(int gen_final,int accept_final,vec<Lit> & cut, bool accepting_state_is_attractor, bool invertAcceptance){
+bool FSMGeneratorAcceptorDetector::buildSuffixCut(int gen_final,int accept_final,vec<Lit> & cut, bool accepting_state_is_attractor, bool invertAcceptance,int ignoreGeneratorEdge, int ignoreGeneratorLabel,int ignoreAcceptorEdge, int ignoreAcceptorLabel){
 		//run the nfa backwards from the end of the generator, and collect the set of reachable fsa states at each step in the (linear) generator.
 		DynamicFSM & gen = g_over;
 		DynamicFSM & accept = acceptor_over;
@@ -1216,18 +1259,19 @@ bool FSMGeneratorAcceptorDetector::buildSuffixCut(int gen_final,int accept_final
 					//now check if the label is active
 					int edgeID= g.incoming(s,j).id;
 					int to = g.incoming(s,j).node;
-					if(!cur_seen[to] && g.transitionEnabled(edgeID,0,0)){
-						cur_seen[to]=true;
-						cur.push(to);
-						if(to!=accept_final)
-							any_non_acceptors=true;
-					}else if (!g.transitionEnabled(edgeID,0,0)){
-						Var v = outer->getTransitionVar(g.getID(),edgeID,0,0);
-						if(v!=var_Undef &&  outer->value(v)==l_False && outer->level(v)>0){
-							cut.push(mkLit(v));
+					if(edgeID != ignoreAcceptorEdge ||  ignoreAcceptorLabel != 0){
+						if(!cur_seen[to] && g.transitionEnabled(edgeID,0,0)){
+							cur_seen[to]=true;
+							cur.push(to);
+							if(to!=accept_final)
+								any_non_acceptors=true;
+						}else if (!g.transitionEnabled(edgeID,0,0)){
+							Var v = outer->getTransitionVar(g.getID(),edgeID,0,0);
+							if(v!=var_Undef &&  outer->value(v)==l_False && outer->level(v)>0){
+								cut.push(mkLit(v));
+							}
 						}
 					}
-
 				}
 			}
 		}
@@ -1239,13 +1283,15 @@ bool FSMGeneratorAcceptorDetector::buildSuffixCut(int gen_final,int accept_final
 					//now check if the label is active
 					int edgeID= gen.incoming(s,j).id;
 					int to = gen.incoming(s,j).node;
-					if(!gen_cur_seen[to] && gen.transitionEnabled(edgeID,0,0)){
-						gen_cur_seen[to]=true;
-						gen_cur.push(to);
-					}else if (!gen.transitionEnabled(edgeID,0,0)){// && prefixTable[gen_final][to]
-						Var v = outer->getTransitionVar(gen.getID(),edgeID,0,0);
-						if(v!=var_Undef &&  outer->value(v)==l_False && outer->level(v)>0){
-							cut.push(mkLit(v));
+					if(edgeID != ignoreGeneratorEdge ||  ignoreGeneratorLabel != 0){
+						if(!gen_cur_seen[to] && gen.transitionEnabled(edgeID,0,0)){
+							gen_cur_seen[to]=true;
+							gen_cur.push(to);
+						}else if (!gen.transitionEnabled(edgeID,0,0)){// && prefixTable[gen_final][to]
+							Var v = outer->getTransitionVar(gen.getID(),edgeID,0,0);
+							if(v!=var_Undef &&  outer->value(v)==l_False && outer->level(v)>0){
+								cut.push(mkLit(v));
+							}
 						}
 					}
 				}
@@ -1258,7 +1304,7 @@ bool FSMGeneratorAcceptorDetector::buildSuffixCut(int gen_final,int accept_final
 
 		//use the linear generator to produce a (set) of strings. Because the generator is linear, it is only ever in one state, which greatly simplifies the reasoning here...
 		while(!accepted){
-			bool accepting = stepGeneratorBackward(gen_final, prefixTable,cut, chars,seen_chars);//get set of next strings
+			bool accepting = stepGeneratorBackward(gen_final, prefixTable,cut, chars,seen_chars,nullptr,ignoreGeneratorEdge, ignoreGeneratorLabel);//get set of next strings
 			if(accepting_state_is_attractor){
 				accepting =true;
 			}
@@ -1269,17 +1315,19 @@ bool FSMGeneratorAcceptorDetector::buildSuffixCut(int gen_final,int accept_final
 						//now check if the label is active
 						int edgeID= g.incoming(s,j).id;
 						int to = g.incoming(s,j).node;
-						if(!cur_seen[to] && g.transitionEnabled(edgeID,0,0)){
-							cur_seen[to]=true;
-							cur.push(to);
+						if(edgeID != ignoreAcceptorEdge ||  ignoreAcceptorLabel != 0){
+							if(!cur_seen[to] && g.transitionEnabled(edgeID,0,0)){
+								cur_seen[to]=true;
+								cur.push(to);
 
-							if(to!=accept_final)
-								any_non_acceptors=true;
+								if(to!=accept_final)
+									any_non_acceptors=true;
 
-						}else if (!g.transitionEnabled(edgeID,0,0)){
-							Var v = outer->getTransitionVar(g.getID(),edgeID,0,0);
-							if(v!=var_Undef &&  outer->value(v)==l_False && outer->level(v)>0){
-								cut.push(mkLit(v));
+							}else if (!g.transitionEnabled(edgeID,0,0)){
+								Var v = outer->getTransitionVar(g.getID(),edgeID,0,0);
+								if(v!=var_Undef &&  outer->value(v)==l_False && outer->level(v)>0){
+									cut.push(mkLit(v));
+								}
 							}
 						}
 					}
@@ -1294,31 +1342,34 @@ bool FSMGeneratorAcceptorDetector::buildSuffixCut(int gen_final,int accept_final
 							//now check if the label is active
 							int edgeID= g.incoming(s,j).id;
 							int to = g.incoming(s,j).node;
-							if(!cur_seen[to] && g.transitionEnabled(edgeID,0,0)){
-								cur_seen[to]=true;
-								cur.push(to);
+							if(edgeID != ignoreAcceptorEdge ||  ignoreAcceptorLabel != 0){
+								if(!cur_seen[to] && g.transitionEnabled(edgeID,0,0)){
+									cur_seen[to]=true;
+									cur.push(to);
 
-								if(to!=accept_final)
-									any_non_acceptors=true;
-								//status.reaches(str,to,edgeID,0);
-							}else if (!g.transitionEnabled(edgeID,0,0)){
-								Var v = outer->getTransitionVar(g.getID(),edgeID,0,0);
-								if(v!=var_Undef &&  outer->value(v)==l_False && outer->level(v)>0){
-									cut.push(mkLit(v));
+									if(to!=accept_final)
+										any_non_acceptors=true;
+									//status.reaches(str,to,edgeID,0);
+								}else if (!g.transitionEnabled(edgeID,0,0)){
+									Var v = outer->getTransitionVar(g.getID(),edgeID,0,0);
+									if(v!=var_Undef &&  outer->value(v)==l_False && outer->level(v)>0){
+										cut.push(mkLit(v));
+									}
 								}
 							}
+							if(edgeID != ignoreAcceptorEdge ||  ignoreAcceptorLabel != l){
+								if (!next_seen[to] && g.transitionEnabled(edgeID,l,0)){
 
-							if (!next_seen[to] && g.transitionEnabled(edgeID,l,0)){
-
-								//status.reaches(str,to,edgeID,l);
-								next_seen[to]=true;
-								next.push(to);
-								if(to!=accept_final)
-									any_non_acceptors_next=true;
-							}else if (!g.transitionEnabled(edgeID,l,0)){
-								Var v = outer->getTransitionVar(g.getID(),edgeID,l,0);
-								if(v!=var_Undef &&  outer->value(v)==l_False && outer->level(v)>0){
-									cut.push(mkLit(v));
+									//status.reaches(str,to,edgeID,l);
+									next_seen[to]=true;
+									next.push(to);
+									if(to!=accept_final)
+										any_non_acceptors_next=true;
+								}else if (!g.transitionEnabled(edgeID,l,0)){
+									Var v = outer->getTransitionVar(g.getID(),edgeID,l,0);
+									if(v!=var_Undef &&  outer->value(v)==l_False && outer->level(v)>0){
+										cut.push(mkLit(v));
+									}
 								}
 							}
 						}
@@ -1363,7 +1414,7 @@ bool FSMGeneratorAcceptorDetector::buildSuffixCut(int gen_final,int accept_final
 
 	}
 
-bool FSMGeneratorAcceptorDetector::stepGeneratorBackward(int final, vec<Bitset> & prefixTable, vec<Lit> & cut, vec<int> & store, vec<bool> & store_seen, vec<NFATransition> * path){
+bool FSMGeneratorAcceptorDetector::stepGeneratorBackward(int final, vec<Bitset> & prefixTable, vec<Lit> & cut, vec<int> & store, vec<bool> & store_seen, vec<NFATransition> * path, int ignoreGeneratorEdge, int ignoreGeneratorLabel){
 		DynamicFSM & g = g_over;
 
 		for(int i = 0;i<gen_cur.size();i++){
@@ -1372,30 +1423,35 @@ bool FSMGeneratorAcceptorDetector::stepGeneratorBackward(int final, vec<Bitset> 
 				//now check if the label is active
 				int edgeID= g.incoming(s,j).id;
 				int to = g.incoming(s,j).node;
-
-				if(g.transitionEnabled(edgeID,0,0)){
-					if(!gen_cur_seen[to] ){
-						gen_cur_seen[to]=true;
-						gen_cur.push(to);
-					}
-					if(path){
-						path->push({edgeID,0,0});
-					}
-				}else {//if (prefixTable[s][to])
-					Var v = outer->getTransitionVar(g.getID(),edgeID,0,0);
-					if(v!=var_Undef &&  outer->value(v)==l_False && outer->level(v)>0){
-						cut.push(mkLit(v));
+				if(edgeID != ignoreGeneratorEdge ||  ignoreGeneratorLabel != 0){
+					if(g.transitionEnabled(edgeID,0,0)){
+						if(!gen_cur_seen[to] ){
+							gen_cur_seen[to]=true;
+							gen_cur.push(to);
+						}
+						if(path){
+							path->push({edgeID,0,0});
+						}
+					}else {//if (prefixTable[s][to])
+						Var v = outer->getTransitionVar(g.getID(),edgeID,0,0);
+						if(v!=var_Undef &&  outer->value(v)==l_False && outer->level(v)>0){
+							cut.push(mkLit(v));
+						}
 					}
 				}
 
 				int edge_assigned_true=-1;
 				for(int l = 1;l<g_under.outAlphabet();l++){
-					if (g_under.transitionEnabled(edgeID,0,l)){
-						edge_assigned_true=l;
-						break;
+					if(edgeID != ignoreGeneratorEdge ||  ignoreGeneratorLabel != l){
+						if (g_under.transitionEnabled(edgeID,0,l)){
+							edge_assigned_true=l;
+							break;
+						}
 					}
 				}
 				if(edge_assigned_true>=0){
+
+					//TODO: Is this only correct for deterministic generators?
 					//if a character has been decided true, then since exactly one character is learnt in each position, we can just learn !character, rather than learning the negation of the set of disabled characters
 					Var v = outer->getTransitionVar(g.getID(),edgeID,0,edge_assigned_true);
 					if(v!=var_Undef &&  outer->value(v)==l_True && outer->level(v)>0){
@@ -1405,23 +1461,25 @@ bool FSMGeneratorAcceptorDetector::stepGeneratorBackward(int final, vec<Bitset> 
 
 				for(int l = 1;l<g.outAlphabet();l++){
 					//g.mustBeDeterministic() &&
-					 if (g.transitionEnabled(edgeID,0,l)){
-						if(!gen_next_seen[to]){
-							gen_next_seen[to]=true;
-							gen_next.push(to);
-						}
-						if(path){
-							path->push({edgeID,0,l});
-						}
-						if(!store_seen[l]){
-							store_seen[l]=true;
-							store.push(l);
-						}
+					if(edgeID != ignoreGeneratorEdge ||  ignoreGeneratorLabel != l){
+						 if (g.transitionEnabled(edgeID,0,l)){
+							if(!gen_next_seen[to]){
+								gen_next_seen[to]=true;
+								gen_next.push(to);
+							}
+							if(path){
+								path->push({edgeID,0,l});
+							}
+							if(!store_seen[l]){
+								store_seen[l]=true;
+								store.push(l);
+							}
 
-					}else if (edge_assigned_true==-1) {//if (prefixTable[s][to])
-						Var v = outer->getTransitionVar(g.getID(),edgeID,0,l);
-						if(v!=var_Undef &&  outer->value(v)==l_False && outer->level(v)>0){
-							cut.push(mkLit(v));
+						}else if (edge_assigned_true==-1) {//if (prefixTable[s][to])
+							Var v = outer->getTransitionVar(g.getID(),edgeID,0,l);
+							if(v!=var_Undef &&  outer->value(v)==l_False && outer->level(v)>0){
+								cut.push(mkLit(v));
+							}
 						}
 					}
 				}

@@ -337,12 +337,14 @@ IntOption Monosat::opt_fsm_symmetry_breaking(_cat_fsm, "fsm-symmetry-breaking",
 			"", 0,IntRange(0,2));
 BoolOption Monosat::opt_fsm_negate_underapprox(_cat_fsm, "fsm-negate-under",
 		"", true);
+BoolOption Monosat::opt_fsm_forced_edge_prop(_cat_fsm, "fsm-forced-edge-prop",
+		"", true);
 BoolOption Monosat::opt_fsm_edge_prop(_cat_fsm, "fsm-edge-prop",
 		"", true);
 BoolOption Monosat::opt_fsm_as_graph(_cat_fsm, "fsm-as-graph",
 		"", false);
 BoolOption Monosat::opt_fsm_chokepoint_prop(_cat_fsm, "fsm-chokepoint",
-		"", false);
+		"", true);
 
 BoolOption Monosat::opt_learn_acyclic_flows(_cat_graph, "learn-acyclic-flows",
 		"", false);

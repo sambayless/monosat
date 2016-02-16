@@ -74,9 +74,9 @@ public:
 	CRef underprop_marker;
 	CRef overprop_marker;
 	CRef forcededge_marker;
-	CRef forced_positive_nondet_edge_marker;
+	CRef forced_positive_nondet_generator_transition_marker;
 	CRef deterministic_forcededge_marker;
-	CRef chokepoint_edge_marker;
+	CRef chokepoint_acceptor_transition_marker;
 	struct Change {
 		Lit l;
 		int u;
@@ -97,20 +97,25 @@ public:
 
 	//stats
 	
-	int stats_full_updates = 0;
-	int stats_fast_updates = 0;
-	int stats_fast_failed_updates = 0;
-	int stats_skip_deletes = 0;
-	int stats_skipped_updates = 0;
-	int stats_num_skipable_deletions = 0;
-	int stats_learnt_components = 0;
-	int stats_learnt_components_sz = 0;
+	long stats_full_updates = 0;
+	long stats_fast_updates = 0;
+	long stats_fast_failed_updates = 0;
+	long stats_skip_deletes = 0;
+	long stats_skipped_updates = 0;
+	long stats_num_skipable_deletions = 0;
+	long stats_learnt_components = 0;
+	long stats_learnt_components_sz = 0;
 	long stats_forced_edges=0;
 	double mod_percentage = 0.2;
-	int stats_pure_skipped = 0;
-	int stats_shrink_removed = 0;
+	long stats_pure_skipped = 0;
+	long stats_shrink_removed = 0;
 	double stats_full_update_time = 0;
 	double stats_fast_update_time = 0;
+
+	long stats_chokepoint_edge_propagations=0;
+	long stats_forced_edge_propagations=0;
+	long stats_nondet_gen_edge_propagations=0;
+	long stats_det_gen_edge_propagations=0;
 
 	Map<Var,Lit> forcedVars;
 	vec<Var> lit_backward_map;
@@ -134,7 +139,16 @@ public:
 				printf("\t%d components learned, average component size: %f\n", stats_learnt_components,
 						stats_learnt_components_sz / (float) stats_learnt_components);
 			}
-			printf("Forced edge assignments: %ld\n", stats_forced_edges);
+			if(opt_fsm_forced_edge_prop){
+				printf("Forced edge assignments: %ld\n", stats_forced_edge_propagations);
+			}
+			if(opt_fsm_chokepoint_prop){
+				printf("Chokepoint edge assignments: %ld\n", stats_chokepoint_edge_propagations);
+			}
+			if(opt_fsm_edge_prop){
+				printf("Generator edge assignments (deterministic,nondeterministic): %ld,%ld\n", stats_det_gen_edge_propagations,stats_nondet_gen_edge_propagations);
+			}
+
 		}
 	}
 
@@ -176,7 +190,9 @@ public:
 	void buildAcceptReason(int genFinal, int acceptFinal, vec<Lit> & conflict);
 	void buildNonAcceptReason(int genFinal, int acceptFinal, vec<Lit> & conflict);
 	void buildForcedEdgeReason(int genFinal, int acceptFinal,int forcedEdge, int forcedLabel,  vec<Lit> & conflict);
-	void buildDeterministicForcedEdgeReason(int genFinal, int acceptFinal,int forcedEdge, int forcedLabel,  vec<Lit> & conflict);
+	void buildDeterministicForcedEdgeReason(int genFinal, int acceptFinal,int forcedGeneratorEdge, int forcedGeneratorLabel,  vec<Lit> & conflict);
+
+	void buildAcceptorChokepointEdgeReason(int genFinal, int acceptFinal,int forcedAcceptorEdge, int forcedAcceptorLabel,  vec<Lit> & conflict);
 	void buildForcedNondetEdgeReason(int genFinal, int acceptFinal,int forcedEdge, int forcedLabel,  vec<Lit> & conflict);
 	void preprocess() ;
 	void buildReason(Lit p, vec<Lit> & reason, CRef marker);
@@ -234,8 +250,8 @@ private:
 	bool find_gen_path(int gen_final, int accept_final,int forcedEdge,int forcedLabel, vec<NFATransition> & path,bool invertAcceptance = false, bool all_paths=false, bool under_approx=false,int ignoredEdge=-1,int ignoredLabel=-1);
 
 	bool stepGenerator(int final,int forcedEdge,int forcedLabel, vec<int> & store, vec<bool> & store_seen, int & cur_gen_state, vec<NFATransition> * path=nullptr);
-	bool buildSuffixCut(int gen_final,int accept_final,vec<Lit> & cut, bool accepting_state_is_attractor, bool invertAcceptance);
-	bool stepGeneratorBackward(int final,vec<Bitset> & prefixTable, vec<Lit> & cut,  vec<int> & store, vec<bool> & store_seen, vec<NFATransition> * path=nullptr);
+	bool buildSuffixCut(int gen_final,int accept_final,vec<Lit> & cut, bool accepting_state_is_attractor, bool invertAcceptance, int ignoreGeneratorEdge=-1, int ignoreGeneratorLabel=-1,int forcedAcceptorEdge=-1,int forcedAcceptorLabel=-1);
+	bool stepGeneratorBackward(int final,vec<Bitset> & prefixTable, vec<Lit> & cut,  vec<int> & store, vec<bool> & store_seen, vec<NFATransition> * path=nullptr, int ignoreGeneratorEdge=-1, int ignoreGeneratorLabel=-1);
 
 	void updatePrefixTable(int gen_final, int accept_final);
 

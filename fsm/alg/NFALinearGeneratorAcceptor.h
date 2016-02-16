@@ -675,8 +675,7 @@ private:
 			int chokepoint_edge=-1;
 			int chokepoint_char=-1;
 			int  cur_gen_state=0;
-			if(forced_edges)
-				forced_edges->push();
+			bool any_forced=false;
 
 			bool accepting = stepGenerator(gen_final, chars,seen_chars,cur_gen_state,nullptr);//get set of next strings
 			if(accepting_state_is_attractor){
@@ -772,6 +771,11 @@ private:
 					if(forced_edges && character_cannot_lead_to_accepting_state){
 													//this is an edge that _must_ be disabled, because it leads to a state in the nfa that cannot reach the acceptor.
 													//forced_edges->push(NFATransition{edgeID,l,0});
+						if(!any_forced){
+							forced_edges->push();
+							any_forced=true;
+						}
+
 						forced_edges->last().push({cur_gen_state,l});
 
 					}
