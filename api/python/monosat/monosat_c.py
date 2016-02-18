@@ -195,12 +195,21 @@ class Monosat(metaclass=Singleton):
         self.monosat_c.newBVComparison_bv_lt.argtypes=[c_solver_p,c_bv_p,c_bvID, c_bvID]
         self.monosat_c.newBVComparison_bv_lt.restype=c_literal
         
+        self.monosat_c.newBVComparison_const_leq.argtypes=[c_solver_p,c_bv_p,c_bvID, c_long]
+        self.monosat_c.newBVComparison_const_leq.restype=c_literal
+
         self.monosat_c.newBVComparison_bv_leq.argtypes=[c_solver_p,c_bv_p,c_bvID, c_bvID]
         self.monosat_c.newBVComparison_bv_leq.restype=c_literal
         
+        self.monosat_c.newBVComparison_const_gt.argtypes=[c_solver_p,c_bv_p,c_bvID, c_long]
+        self.monosat_c.newBVComparison_const_gt.restype=c_literal
+
         self.monosat_c.newBVComparison_bv_gt.argtypes=[c_solver_p,c_bv_p,c_bvID, c_bvID]
         self.monosat_c.newBVComparison_bv_gt.restype=c_literal
         
+        self.monosat_c.newBVComparison_const_geq.argtypes=[c_solver_p,c_bv_p,c_bvID, c_long]
+        self.monosat_c.newBVComparison_const_geq.restype=c_literal
+
         self.monosat_c.newBVComparison_bv_geq.argtypes=[c_solver_p,c_bv_p,c_bvID, c_bvID]
         self.monosat_c.newBVComparison_bv_geq.restype=c_literal
         

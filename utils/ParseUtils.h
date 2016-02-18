@@ -23,6 +23,7 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <string>
 
 #include <zlib.h>
 #include "mtl/Vec.h"

@@ -2,7 +2,7 @@
 
 from distutils.core import setup
 
-setup(name='Distutils',
+setup(name='monosat',
       version='1.0',
       description='MonoSAT Python Interface',
       author='Sam Bayless',
