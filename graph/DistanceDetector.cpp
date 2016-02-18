@@ -1428,10 +1428,9 @@ bool DistanceDetector<Weight>::propagate(vec<Lit> & conflict) {
 				 if (outer->value(l) == l_True){
 
 						//propagate over/under constraints on the output lit back to the bitvector theory
-
-
 						if(!overapprox_weighted_distance_detector->connected(to)){
 							//this should have triggered a conflict above
+							throw  std::runtime_error("Internal error in distance detector");
 						}else{
 							if(!outer->assignBV(bv.getID(),strictComparison? Comparison::gt : Comparison::geq,over_dist,distOp)){
 								throw  std::runtime_error("Bad bv assignment in distance detector");
@@ -1440,9 +1439,15 @@ bool DistanceDetector<Weight>::propagate(vec<Lit> & conflict) {
 						}
 				 }else  if (outer->value(l) == l_False){
 						if(!underapprox_weighted_distance_detector->connected(to)){
-
+							//this is allowed, but what value should the bv take in this case?
 						}else{
-							if(!outer->assignBV(bv.getID(),strictComparison? Comparison::lt : Comparison::leq,under_dist,distOp)){
+							if(!strictComparison && under_dist==0){
+								//then we can't state that the bv is less than zero (since the distance on the edge must be positive), so
+								//actually this should have been caught as a conflict above
+								throw  std::runtime_error("Bad bv assignment in distance detector");
+							}
+
+							if(!outer->assignBV(bv.getID(),strictComparison? Comparison::leq : Comparison::lt,under_dist,distOp)){
 								throw  std::runtime_error("Bad bv assignment in distance detector");
 							}
 						}
