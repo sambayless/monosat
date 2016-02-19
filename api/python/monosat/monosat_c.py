@@ -24,13 +24,17 @@ from os import path
 from monosat.singleton import Singleton
 
 import os
-#module_path = os.path.abspath(path.dirname(__file__))
-try:
-    _monosat_c= cdll.LoadLibrary("libmonosat.so")
-except Exception as e:
-    print (e)
+import platform
 
-    _monosat_c= cdll.LoadLibrary('monosat.dll')
+module_path = os.path.abspath(path.dirname(__file__))
+library_monosat = "libmonosat.so"
+if platform.system() == 'Windows':
+    library_monosat = "libmonosat.dll"
+try:
+    _monosat_c= cdll.LoadLibrary(os.path.join(module_path, library_monosat))
+except Exception as e:
+    print ("Unable to load libmonosat dynamic library")
+    raise e
 
 #Python interface to MonoSAT
     
