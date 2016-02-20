@@ -765,6 +765,14 @@ public:
 	void drawFull(int from, int to) {
 		
 	}
+
+	void drawFSM(int fsmID,int source,int dest, bool over) {
+		if(over){
+			g_overs[fsmID]->draw(source,dest);
+		}else{
+			g_unders[fsmID]->draw(source,dest);
+		}
+	}
 	
 	bool check_solved() {
 		for(int fsmID = 0;fsmID<nFsms();fsmID++){
