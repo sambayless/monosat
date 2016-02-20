@@ -54,7 +54,7 @@ all: monosat
 monosat: $(OBJS) $(USER_OBJS)
 	@echo 'Building target: $@'
 	@echo 'Invoking: GCC C++ Linker'
-	g++ -L../lib -o "monosat" $(OBJS) $(USER_OBJS) $(LIBS)
+	g++  -o "monosat" $(OBJS) $(USER_OBJS) $(LIBS)
 	@echo 'Finished building target: $@'
 	@echo ' '
 
