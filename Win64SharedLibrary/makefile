@@ -54,7 +54,7 @@ all: monosat.dll
 monosat.dll: $(OBJS) $(USER_OBJS)
 	@echo 'Building target: $@'
 	@echo 'Invoking: GCC C++ Linker'
-	x86_64-w64-mingw32-g++ -L.././lib -static   -static-libstdc++  -Wl,-no-undefined -Wl,--enable-runtime-pseudo-reloc -shared -Wl,-soname=monosat.dll -o "monosat.dll" $(OBJS) $(USER_OBJS) $(LIBS)
+	x86_64-w64-mingw32-g++  -static   -static-libstdc++  -Wl,-no-undefined -Wl,--enable-runtime-pseudo-reloc -shared -Wl,-soname=monosat.dll -o "monosat.dll" $(OBJS) $(USER_OBJS) $(LIBS)
 	@echo 'Finished building target: $@'
 	@echo ' '
 

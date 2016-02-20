@@ -24,13 +24,17 @@ from os import path
 from monosat.singleton import Singleton
 
 import os
-#module_path = os.path.abspath(path.dirname(__file__))
-try:
-    _monosat_c= cdll.LoadLibrary("libmonosat.so")
-except Exception as e:
-    print (e)
+import platform
 
-    _monosat_c= cdll.LoadLibrary('monosat.dll')
+module_path = os.path.abspath(path.dirname(__file__))
+library_monosat = "libmonosat.so"
+if platform.system() == 'Windows':
+    library_monosat = "libmonosat.dll"
+try:
+    _monosat_c= cdll.LoadLibrary(os.path.join(module_path, library_monosat))
+except Exception as e:
+    print ("Unable to load libmonosat dynamic library")
+    raise e
 
 #Python interface to MonoSAT
     
@@ -195,12 +199,21 @@ class Monosat(metaclass=Singleton):
         self.monosat_c.newBVComparison_bv_lt.argtypes=[c_solver_p,c_bv_p,c_bvID, c_bvID]
         self.monosat_c.newBVComparison_bv_lt.restype=c_literal
         
+        self.monosat_c.newBVComparison_const_leq.argtypes=[c_solver_p,c_bv_p,c_bvID, c_long]
+        self.monosat_c.newBVComparison_const_leq.restype=c_literal
+
         self.monosat_c.newBVComparison_bv_leq.argtypes=[c_solver_p,c_bv_p,c_bvID, c_bvID]
         self.monosat_c.newBVComparison_bv_leq.restype=c_literal
         
+        self.monosat_c.newBVComparison_const_gt.argtypes=[c_solver_p,c_bv_p,c_bvID, c_long]
+        self.monosat_c.newBVComparison_const_gt.restype=c_literal
+
         self.monosat_c.newBVComparison_bv_gt.argtypes=[c_solver_p,c_bv_p,c_bvID, c_bvID]
         self.monosat_c.newBVComparison_bv_gt.restype=c_literal
         
+        self.monosat_c.newBVComparison_const_geq.argtypes=[c_solver_p,c_bv_p,c_bvID, c_long]
+        self.monosat_c.newBVComparison_const_geq.restype=c_literal
+
         self.monosat_c.newBVComparison_bv_geq.argtypes=[c_solver_p,c_bv_p,c_bvID, c_bvID]
         self.monosat_c.newBVComparison_bv_geq.restype=c_literal
         

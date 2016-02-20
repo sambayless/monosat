@@ -40,7 +40,7 @@ extern double memUsedPeak();        // Peak-memory in mega bytes (returns 0 for 
 //-------------------------------------------------------------------------------------------------
 // Implementation of inline functions:
 
-#if defined(_MSC_VER) || defined(__MINGW32__)
+#if defined(_MSC_VER) || defined(__MINGW32__) || defined(__APPLE__)
 #include <time.h>
 
 static inline double Monosat::cpuTime(void) {return (double)clock() / CLOCKS_PER_SEC;}
