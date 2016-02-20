@@ -31,7 +31,12 @@ library_monosat = "libmonosat.so"
 if platform.system() == 'Windows':
     library_monosat = "libmonosat.dll"
 try:
-    _monosat_c= cdll.LoadLibrary(os.path.join(module_path, library_monosat))
+    try:
+        #First try loading monosat from the python library directory
+        _monosat_c= cdll.LoadLibrary(os.path.join(module_path, library_monosat))
+    except Exception as e:
+        #then fall back to loading from the system path 
+        _monosat_c= cdll.LoadLibrary(library_monosat)
 except Exception as e:
     print ("Unable to load libmonosat dynamic library")
     raise e
