@@ -8,7 +8,7 @@ import os.path
 import shutil
 import platform
 
-if platform.system != "Windows":
+if platform.system() != "Windows":
     copy_lib = "monosat/libmonosat.so"
     orig_lib = "../../SharedLibrary/libmonosat.so"
     if not os.path.exists(orig_lib) and os.path.exists("../../OSX_SharedLibrary/libmonosat.so"):
