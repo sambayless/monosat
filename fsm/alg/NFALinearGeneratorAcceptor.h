@@ -594,10 +594,12 @@ public:
 
 		}
 private:
-	bool find_accepts(int gen_final, int accept_final, bool invertAcceptance, vec<vec<ForcedTransition>> * forced_edges=nullptr,vec<ChokepointTransition>  * chokepoint_edges=nullptr){
+	bool find_accepts(int gen_final, int accept_final, bool invertAcceptance, vec<vec<ForcedTransition>> * forced_edges=nullptr,vec<ChokepointTransition>  * chokepoint_edges=nullptr,vec<int>  * pre_accepting_states=nullptr){
 		bool accepting_state_is_attractor= !invertAcceptance && isAttractor(accept_final) ;
 		bool hasSuffix = false;
-
+		if(pre_accepting_states){
+			pre_accepting_states->clear();
+		}
 		if(forced_edges || chokepoint_edges){
 
 			if(!buildSuffixTable(gen_final, accept_final, suffixTable,accepting_state_is_attractor,invertAcceptance)){
@@ -705,6 +707,10 @@ private:
 							cur.push(to);
 							if(to!=accept_final)
 								any_non_acceptors=true;
+							}else{
+								if(pre_accepting_states && accepting){
+									pre_accepting_states->push(s);//s is an acceptor fsm state that can lead to the accepting state of the fsm
+								}
 							}
 
 						}
@@ -735,8 +741,13 @@ private:
 									if(!cur_seen[to]){
 										cur_seen[to]=true;
 										cur.push(to);
-										if(to!=accept_final)
+										if(to!=accept_final){
 											any_non_acceptors=true;
+										}else{
+											if(pre_accepting_states && accepting){
+												pre_accepting_states->push(s);//s is an acceptor fsm state that can lead to the accepting state of the fsm
+											}
+										}
 									}
 								}
 
@@ -759,8 +770,13 @@ private:
 										next.push(to);
 									}
 									character_cannot_lead_to_accepting_state=false;
-									if(to!=accept_final)
+									if(to!=accept_final){
 										any_non_acceptors_next=true;
+									}else{
+										if(pre_accepting_states && accepting){
+											pre_accepting_states->push(s);//s is an acceptor fsm state that can lead to the accepting state of the fsm
+										}
+									}
 								}
 
 
@@ -1031,8 +1047,8 @@ public:
 public:
 
 
-	bool accepts(int genFinal, int acceptFinal, bool invertAcceptor=false,vec<vec<ForcedTransition>>  * forced_edges=nullptr,vec<ChokepointTransition>  * chokepoint_edges=nullptr){
-		return find_accepts(genFinal, acceptFinal,invertAcceptor,forced_edges,chokepoint_edges);
+	bool accepts(int genFinal, int acceptFinal, bool invertAcceptor=false,vec<vec<ForcedTransition>>  * forced_edges=nullptr,vec<ChokepointTransition>  * chokepoint_edges=nullptr,vec<int>  * pre_accepting_states=nullptr){
+		return find_accepts(genFinal, acceptFinal,invertAcceptor,forced_edges,chokepoint_edges,pre_accepting_states);
 
 	}
 	bool getGeneratorPath(int genFinal, int acceptFinal, vec<NFATransition> & path, bool invert_acceptor=false, bool all_paths = false){

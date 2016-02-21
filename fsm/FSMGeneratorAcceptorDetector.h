@@ -28,7 +28,7 @@
 
 #include "core/SolverTypes.h"
 #include "mtl/Map.h"
-
+#include "mtl/Bitset.h"
 
 #include "utils/System.h"
 #include "FSMDetector.h"
@@ -47,6 +47,9 @@ public:
 	DynamicFSM &g_over;
 	DynamicFSM &acceptor_under;
 	DynamicFSM &acceptor_over;
+
+	DynamicFSM *g_suffix_under=nullptr;
+	DynamicFSM *g_suffix_over=nullptr;
 
 	int first_destination=-1;
 	int gen_source;
@@ -184,7 +187,10 @@ public:
 		assert(accept_lit_map[index].accept_to >= 0);
 		return accept_lit_map[index].accept_to;
 	}
-
+	void setSuffixGenerator(DynamicFSM *g_suffix_under,DynamicFSM *g_suffix_over){
+		this->g_suffix_under=g_suffix_under;
+		this->g_suffix_over=g_suffix_over;
+	}
 	Lit decide(int level);
 	bool propagate(vec<Lit> & conflict);
 	void buildAcceptReason(int genFinal, int acceptFinal, vec<Lit> & conflict);
@@ -242,9 +248,10 @@ private:
 	vec<vec<Bitset>>  prefixTables;
 	vec<vec<ForcedTransition>> forced_edges;
 	vec<ChokepointTransition> chokepoint_edges;
+	vec<int> pre_accepting_states;//states of the fsm that lead to the accepting state in one transition, in the current generator
 	vec<NFATransition> tmp_path;
 	int last_prefix_update=-1;
-
+	vec<int> dfs_q;
 	bool isAttractor(int acceptorState);
 
 	//note: forced edge and forced_label refer to the generator fsm, while ignoredEdge and  ignoredLabel refer to the acceptor fsm
@@ -255,6 +262,9 @@ private:
 	bool stepGeneratorBackward(int final,vec<Bitset> & prefixTable, vec<Lit> & cut,  vec<int> & store, vec<bool> & store_seen, vec<NFATransition> * path=nullptr, int ignoreGeneratorEdge=-1, int ignoreGeneratorLabel=-1);
 
 	void updatePrefixTable(int gen_final, int accept_final);
+
+	//True if the acceptor fsm, starting from any of 'acceptor_start_states', and starting from ALL suffix_start_states (!), accepts g_suffix
+	bool acceptsSuffix(DynamicFSM & g_suffix, DynamicFSM & acceptor,int accept_to,vec<int> & suffix_start_states,vec<int> & acceptor_start_states);
 
 	vec<Bitset> & getPrefixTable(int gen_final, int accept_final){
 		updatePrefixTable(gen_final,accept_final);

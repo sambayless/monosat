@@ -66,6 +66,15 @@ public:
     	for(int i = 0;i<buf.size();i++)
     		buf[i]=0;
     }
+    void ones(){
+    	for(int i = 0;i<buf.size();i++)
+    		buf[i]=std::numeric_limits<uint64_t>::max();
+    }
+    void invert(){
+    	for(int i = 0;i<buf.size();i++){
+    		buf[i]=~buf[i];
+    	}
+    }
     int  size  () const { return sz; }
     void copyFrom(const Bitset & from){
     	from.buf.copyTo(buf);

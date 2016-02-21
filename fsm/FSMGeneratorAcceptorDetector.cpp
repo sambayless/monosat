@@ -454,10 +454,10 @@ bool FSMGeneratorAcceptorDetector::propagate(vec<Lit> & conflict) {
 					buildAcceptReason(gen_to,accept_to, conflict);
 					return false;
 				}
-			}else if (outer->value(l)!=l_False && !overapprox_detector->accepts(gen_to,accept_to,false,opt_fsm_edge_prop? &forced_edges:nullptr, opt_fsm_chokepoint_prop ? &chokepoint_edges:nullptr)){
+			}else if (outer->value(l)!=l_False && !overapprox_detector->accepts(gen_to,accept_to,false,opt_fsm_edge_prop? &forced_edges:nullptr, opt_fsm_chokepoint_prop ? &chokepoint_edges:nullptr, g_suffix_over ? &pre_accepting_states:nullptr)){
 
-				if (outer->value(~l) == l_True) {
-					//do nothing
+				if (outer->value(l) == l_False) {
+					//do nothing (should be unreachable)
 				} else if (outer->value(l) == l_Undef) {
 					outer->enqueue(~l, overprop_marker);
 				}else{
@@ -465,9 +465,19 @@ bool FSMGeneratorAcceptorDetector::propagate(vec<Lit> & conflict) {
 					buildNonAcceptReason(gen_to,accept_to, conflict);
 					return false;
 				}
-			}else{
-
+			}else if (outer->value(l)!=l_False && g_suffix_over && !acceptsSuffix(*g_suffix_over, acceptor_over,accept_to, pre_accepting_states)){
+				//if the acceptor accepted the generator, check if it also accepts the suffix generator.
+				if (outer->value(l) == l_False) {
+					//do nothing (should be unreachable)
+				} else if (outer->value(l) == l_Undef) {
+					outer->enqueue(~l, overprop_marker);
+				}else{
+					conflict.push(~l);
+					buildNonAcceptReason(gen_to,accept_to, conflict);
+					return false;
+				}
 			}
+
 			if(outer->value(lit)==l_False){
 				if(opt_fsm_forced_edge_prop){
 				for(int s = 0;s<forced_edges.size();s++){
@@ -1607,4 +1617,144 @@ bool FSMGeneratorAcceptorDetector::checkSatisfied(){
 	return true;
 }
 
+bool FSMGeneratorAcceptorDetector::acceptsSuffix(DynamicFSM & g_suffix, DynamicFSM & acceptor,int accept_to,vec<int> & suffix_start_states,vec<int> & acceptor_start_states){
+	if(!suffix_start_states.size())
+		return true;
 
+	//there may or may not be a better way to do this.
+	//but for now, take advantage of knowing that g_suffix_over is shallow and acyclic, with a small alphabet, to just do a dfs
+
+	//for every time step, mark all states of the acceptor with all states that each suffix acceptor start state can lead to
+
+
+	//in order for the solver to accept a string, it must be possible for each suffix to generate a string that can be accepted by the same
+	//sequence of acceptor states. (This is a neccessary but not a sufficient condition)
+
+
+	vec<Bitset> reachable_acceptor_states;
+	vec<Bitset> previous_reachable_acceptor_states;
+	reachable_acceptor_states.growTo(g_suffix.states());
+	reachable_acceptor_states.growTo(suffix_start_states.size());
+
+	previous_reachable_acceptor_states.growTo(g_suffix.states());
+	previous_reachable_acceptor_states.growTo(suffix_start_states.size());
+
+
+	for(int i = 0;i<reachable_acceptor_states.size();i++){
+		reachable_acceptor_states[i].growTo(acceptor.states());
+		reachable_acceptor_states[i].zero();
+		previous_reachable_acceptor_states[i].growTo(acceptor.states());
+		previous_reachable_acceptor_states[i].ones();
+	}
+
+
+	vec<int> next;
+	vec<int> cur;
+
+	vec<bool> next_seen;
+	vec<bool> cur_seen;
+
+	for(int suffix_n = 0;suffix_n<suffix_start_states.size();suffix_n++){
+		//bisimulate each suffix start state with the acceptor, individually
+		int suffix_start_state = suffix_start_states[suffix_n];
+
+		bool hasNextSuffixState=true;
+
+		for(int i = 0;i<reachable_acceptor_states.size();i++){
+			Bitset & bt = reachable_acceptor_states[i];
+			previous_reachable_acceptor_states[i].copyFrom(bt);
+			bt.zero();
+		}
+		{
+			Bitset & bt = reachable_acceptor_states[suffix_start_state];
+			bt.zero();
+
+			for(int j = 0;j<acceptor_start_states.size();j++){
+				int s = acceptor_start_states[j];
+				bt.set(s);
+			}
+		}
+		cur.push(suffix_start_state);
+		cur_seen[suffix_start_state]=true;
+
+		if(g_suffix.emovesEnabled()){
+			for(int i = 0;i<cur.size();i++){
+				int s = cur[i];
+				for(int j = 0;j<g_suffix.nIncident(s);j++){
+					//now check if the label is active
+					int edgeID= g_suffix.incident(s,j).id;
+					int to = g_suffix.incident(s,j).node;
+					if(!cur_seen[to] && g_suffix.transitionEnabled(edgeID,0,0)){
+						cur_seen[to]=true;
+						cur.push(to);
+					}
+				}
+			}
+		}
+
+		while(cur.size()){
+			hasNextSuffixState=false;
+			for(int i = 0;i<cur.size();i++){
+				int s = cur[i];
+				Bitset & bt = reachable_acceptor_states[s];
+				for(int j = 0;j<g_suffix.nIncident(s);j++){
+					//now check if the label is active
+					int edgeID= g_suffix.incident(s,j).id;
+					int gen_to = g_suffix.incident(s,j).node;
+					if(!cur_seen[gen_to] && g_suffix.transitionEnabled(edgeID,0,0)){
+						cur_seen[gen_to]=true;
+						cur.push(gen_to);
+
+						//status.reaches(str,to,edgeID,0);
+					}
+
+					//for each lit accepted by a next state of the NFA acceptor from one of its current states...
+					for(int acceptor_state = 0;acceptor_state<bt.size();acceptor_state++){
+						if(bt[acceptor_state]){
+							//this is a state of the acceptor that could be reached at this state
+							for(int k = 0;k<acceptor.nIncident(acceptor_state);k++){
+								int acceptor_edgeID = acceptor.incident(acceptor_state,k).id;
+								if(!acceptor.edgeEnabled(acceptor_edgeID))
+									continue;
+								int acceptor_to =  acceptor.incident(acceptor_state,k).node;
+								if(previous_reachable_acceptor_states[gen_to][acceptor_to]){
+									for(int l = 0;l<acceptor.inAlphabet();l++){
+										if (acceptor.transitionEnabled(acceptor_edgeID,l,0) && g_suffix.transitionEnabled(edgeID,l,0)){
+
+											reachable_acceptor_states[gen_to].set(acceptor_to);
+											if(!next_seen[gen_to]){
+												next_seen[gen_to]=true;
+												next.push(gen_to);
+											}
+										}
+									}
+								}
+							}
+						}
+					}
+
+				}
+			}
+
+			next.swap(cur);
+			next_seen.swap(cur_seen);
+
+			for(int s:next){
+				assert(next_seen[s]);
+				next_seen[s]=false;
+			}
+			next.clear();
+		}
+
+		next.swap(cur);
+		next_seen.swap(cur_seen);
+
+		for(int s:next){
+			assert(next_seen[s]);
+			next_seen[s]=false;
+		}
+		next.clear();
+	}
+
+
+}
