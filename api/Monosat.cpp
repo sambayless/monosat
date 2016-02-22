@@ -31,7 +31,9 @@
 using namespace Monosat;
 using namespace std;
 
-
+#ifdef __APPLE__
+using sighandler_t = sig_t;
+#endif
 
 //Supporting function for throwing parse errors
 inline void api_errorf(const char *fmt, ...) {
@@ -441,7 +443,7 @@ void readGNF(Monosat::SimpSolver * S, const char  * filename){
 
 }
 
-Monosat::GraphTheorySolver<int64_t> *  newGraph(Monosat::SimpSolver * S){
+Monosat::GraphTheorySolver<long> *  newGraph(Monosat::SimpSolver * S){
 	  MonosatData * d = (MonosatData*) S->_external_data;
 	  Monosat::GraphTheorySolver<long> *graph = new Monosat::GraphTheorySolver<long>(S);
 	  S->addTheory(graph);
@@ -455,7 +457,7 @@ Monosat::GraphTheorySolver<int64_t> *  newGraph(Monosat::SimpSolver * S){
 void backtrack(Monosat::SimpSolver * S){
 	S->cancelUntil(0);
 }
-Monosat::BVTheorySolver<int64_t> * initBVTheory(Monosat::SimpSolver * S){
+Monosat::BVTheorySolver<long> * initBVTheory(Monosat::SimpSolver * S){
 	MonosatData * d = (MonosatData*) S->_external_data;
 	if(d->bv_theory)
 		return d->bv_theory;

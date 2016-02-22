@@ -54,7 +54,7 @@ all: libmonosat_dbg.so
 libmonosat_dbg.so: $(OBJS) $(USER_OBJS)
 	@echo 'Building target: $@'
 	@echo 'Invoking: GCC C++ Linker'
-	g++  -L.././lib -shared -o "libmonosat_dbg.so" $(OBJS) $(USER_OBJS) $(LIBS)
+	g++  -shared -o "libmonosat_dbg.so" $(OBJS) $(USER_OBJS) $(LIBS)
 	@echo 'Finished building target: $@'
 	@echo ' '
 
