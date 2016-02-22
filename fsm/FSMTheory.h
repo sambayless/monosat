@@ -105,7 +105,7 @@ public:
 	vec<Assignment> trail;
 	vec<int> trail_lim;
 
-
+	vec<FSMGeneratorAcceptorDetector*> gen_accept_lit_map;
 public:
 	vec<FSMDetector*> detectors;
 	vec<FSMAcceptDetector*> reach_detectors;
@@ -1011,6 +1011,19 @@ public:
 		}
 		detectors.push(d);
 		d->addAcceptLit(to1,to2,reachVar);
+		gen_accept_lit_map.growTo(reachVar+1,nullptr);
+		gen_accept_lit_map[reachVar]=d;
+	}
+	void addComposeAcceptSuffixFSM(Var composeAcceptVar,int suffix_fsmID){
+		assert(composeAcceptVar<gen_accept_lit_map.size());
+		assert(gen_accept_lit_map[composeAcceptVar]);
+		gen_accept_lit_map[composeAcceptVar]->setSuffixGenerator(this->g_overs[suffix_fsmID]);
+	}
+	void addComposeAcceptSuffixLit(Var composeAcceptVar, int startSuffixState, int acceptSuffixState, Var suffixVar){
+		assert(composeAcceptVar<gen_accept_lit_map.size());
+		assert(gen_accept_lit_map[composeAcceptVar]);
+		Var v = this->S->getTheoryVar(composeAcceptVar);
+		gen_accept_lit_map[composeAcceptVar]->addSuffixLit(mkLit(v),startSuffixState,acceptSuffixState,suffixVar);
 	}
 };
 

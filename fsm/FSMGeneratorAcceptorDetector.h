@@ -48,8 +48,7 @@ public:
 	DynamicFSM &acceptor_under;
 	DynamicFSM &acceptor_over;
 
-	DynamicFSM *g_suffix_under=nullptr;
-	DynamicFSM *g_suffix_over=nullptr;
+	DynamicFSM *suffix_fsm=nullptr;
 
 	int first_destination=-1;
 	int gen_source;
@@ -89,15 +88,35 @@ public:
 	vec<Change> changed;
 
 	Var first_var=var_Undef;
-	struct AcceptLit{
+	struct SuffixLit{
 		Lit l;
-		int gen_to;
-		int accept_to;;
+		Lit accept_l;
+		int suffix_from;
+		int suffix_to;
+
 	};
-	vec<AcceptLit> accept_lit_map;
+	struct AcceptLit{
+		Lit l=lit_Undef;
+		int gen_to=-1;
+		int accept_to=-1;
+		vec<SuffixLit> * suffixLits=nullptr;
+		AcceptLit(){
+
+		}
+		AcceptLit(Lit l, int gen_to, int accept_to):l(l),gen_to(gen_to),accept_to(accept_to){
+
+		}
+		AcceptLit(Lit l, int gen_to, int accept_to,vec<SuffixLit> * suffixLits):l(l),gen_to(gen_to),accept_to(accept_to),suffixLits(suffixLits){
+
+		}
+	};
+	vec<int> accept_lit_map;
 	vec<AcceptLit> all_accept_lits;
 	vec<Lit> all_lits;
 
+
+	vec<SuffixLit> suffix_lit_map;
+	vec<SuffixLit> all_suffix_lits;
 	//stats
 	
 	long stats_full_updates = 0;
@@ -177,24 +196,25 @@ public:
 	int getGeneratorFinal(Var reachVar) {
 		assert(reachVar >= first_var);
 		int index = indexOf(reachVar);
-		assert(accept_lit_map[index].gen_to >= 0);
-		return accept_lit_map[index].gen_to;
+		assert(all_accept_lits[ accept_lit_map[index]].gen_to >= 0);
+		return all_accept_lits[ accept_lit_map[index]].gen_to;
 	}
 	int getAcceptorFinal(Var reachVar) {
 		assert(reachVar >= first_var);
 		int index = indexOf(reachVar);
 
-		assert(accept_lit_map[index].accept_to >= 0);
-		return accept_lit_map[index].accept_to;
+		assert(all_accept_lits[ accept_lit_map[index]].accept_to >= 0);
+		return all_accept_lits[ accept_lit_map[index]].accept_to;
 	}
-	void setSuffixGenerator(DynamicFSM *g_suffix_under,DynamicFSM *g_suffix_over){
-		this->g_suffix_under=g_suffix_under;
-		this->g_suffix_over=g_suffix_over;
+	void setSuffixGenerator(DynamicFSM *suffix_fsm){
+		this->suffix_fsm=suffix_fsm;
 	}
 	Lit decide(int level);
 	bool propagate(vec<Lit> & conflict);
 	void buildAcceptReason(int genFinal, int acceptFinal, vec<Lit> & conflict);
 	void buildNonAcceptReason(int genFinal, int acceptFinal, vec<Lit> & conflict);
+	void buildNonSuffixAcceptReason(int genFinal, int acceptFinal, vec<int> & acceptStartStates,SuffixLit & suffixLit, vec<Lit> & conflict);
+
 	void buildForcedEdgeReason(int genFinal, int acceptFinal,int forcedEdge, int forcedLabel,  vec<Lit> & conflict);
 	void buildDeterministicForcedEdgeReason(int genFinal, int acceptFinal,int forcedGeneratorEdge, int forcedGeneratorLabel,  vec<Lit> & conflict);
 
@@ -206,7 +226,7 @@ public:
 	void printSolution(std::ostream& write_to);
 
 	void addAcceptLit(int state, int strID, Var reach_var);
-
+	void addSuffixLit(Lit acceptorLit, int suffixStartState,int suffixAcceptState, Var outer_reach_var);
 	Var getDetectorVar(int gen_final, int accept_final){
 		return lit_backward_map[gen_final +accept_final*g_over.states()];
 	}
@@ -264,8 +284,8 @@ private:
 	void updatePrefixTable(int gen_final, int accept_final);
 
 	//True if the acceptor fsm, starting from any of 'acceptor_start_states', and starting from ALL suffix_start_states (!), accepts g_suffix
-	bool acceptsSuffix(DynamicFSM & g_suffix, DynamicFSM & acceptor,int accept_to,vec<int> & suffix_start_states,vec<int> & acceptor_start_states);
-
+	bool acceptsSuffixes(DynamicFSM & acceptor,int acceptor_accept_state, vec<SuffixLit> & suffix_lits, vec<int> & acceptor_start_states,int & failedSuffixLit);
+	bool acceptsSuffix(DynamicFSM & g_suffix, DynamicFSM & acceptor,int acceptor_accept_state,int  suffix_start_state, int suffix_accept_state,vec<int> & acceptor_start_states);
 	vec<Bitset> & getPrefixTable(int gen_final, int accept_final){
 		updatePrefixTable(gen_final,accept_final);
 		Var v = getDetectorVar(gen_final,accept_final);
