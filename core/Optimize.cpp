@@ -334,7 +334,7 @@ lbool optimize_and_solve(SimpSolver & S,const vec<Lit> & assumes,const vec<int> 
 						  //is found, enforce that this improved value must be kept in the future.
 						  Lit decision_lit = bvTheory->toSolver(bvTheory->newComparison(Comparison::leq,bvID,model_val,var_Undef,opt_decide_optimization_lits));
 						  assume.push(decision_lit);
-						  min_values[i]=model_val;
+						  min_values[j]=model_val;
 					  }
 
 				  }
