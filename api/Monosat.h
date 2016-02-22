@@ -14,9 +14,9 @@
 extern "C"
 {
 typedef Monosat::SimpSolver *  SolverPtr;
-typedef Monosat::GraphTheorySolver<int64_t> * GraphTheorySolver_long;
+typedef Monosat::GraphTheorySolver<long> * GraphTheorySolver_long;
 typedef Monosat::GraphTheorySolver<double>*  GraphTheorySolver_double;
-typedef Monosat::BVTheorySolver<int64_t>* BVTheoryPtr;
+typedef Monosat::BVTheorySolver<long>* BVTheoryPtr;
 typedef Monosat::FSMTheorySolver * FSMTheorySolverPtr;
 #else
 typedef void * SolverPtr;
@@ -100,17 +100,17 @@ typedef int Var;
   bool addTertiaryClause(SolverPtr S,int lit1, int lit2, int lit3);
   //theory interface for bitvectors
   BVTheoryPtr initBVTheory(SolverPtr S);
-  int newBitvector_const(SolverPtr S, BVTheoryPtr bv, int bvWidth, int64_t constval);
+  int newBitvector_const(SolverPtr S, BVTheoryPtr bv, int bvWidth, long constval);
   int newBitvector_anon(SolverPtr S, BVTheoryPtr bv, int bvWidth);
   int newBitvector(SolverPtr S, BVTheoryPtr bv, int * bits, int n_bits);
   int bv_width(SolverPtr S, BVTheoryPtr  bv,int bvID);
-  int newBVComparison_const_lt(SolverPtr S, BVTheoryPtr bv, int bvID, int64_t weight);
+  int newBVComparison_const_lt(SolverPtr S, BVTheoryPtr bv, int bvID, long weight);
   int newBVComparison_bv_lt(SolverPtr S, BVTheoryPtr bv, int bvID, int compareID);
-  int newBVComparison_const_leq(SolverPtr S, BVTheoryPtr bv, int bvID, int64_t weight);
+  int newBVComparison_const_leq(SolverPtr S, BVTheoryPtr bv, int bvID, long weight);
   int newBVComparison_bv_leq(SolverPtr S, BVTheoryPtr bv, int bvID, int compareID);
-  int newBVComparison_const_gt(SolverPtr S, BVTheoryPtr bv, int bvID, int64_t weight);
+  int newBVComparison_const_gt(SolverPtr S, BVTheoryPtr bv, int bvID, long weight);
   int newBVComparison_bv_gt(SolverPtr S, BVTheoryPtr bv, int bvID, int compareID);
-  int newBVComparison_const_geq(SolverPtr S, BVTheoryPtr bv, int bvID, int64_t weight);
+  int newBVComparison_const_geq(SolverPtr S, BVTheoryPtr bv, int bvID, long weight);
   int newBVComparison_bv_geq(SolverPtr S, BVTheoryPtr bv, int bvID, int compareID);
 
 
@@ -141,22 +141,22 @@ typedef int Var;
   GraphTheorySolver_long newGraph(SolverPtr S);
 
   int newNode(SolverPtr S,GraphTheorySolver_long G);
-  int newEdge(SolverPtr S, GraphTheorySolver_long G,int from,int  to,  int64_t weight);
+  int newEdge(SolverPtr S, GraphTheorySolver_long G,int from,int  to,  long weight);
   int newEdge_double(SolverPtr S, GraphTheorySolver_double G,int from,int  to,  double weight);
   int newEdge_bv(SolverPtr S, GraphTheorySolver_long G,int from,int  to, int bvID);
   int reaches(SolverPtr S,GraphTheorySolver_long G,int from, int to);
   int shortestPathUnweighted_lt_const(SolverPtr S,GraphTheorySolver_long G,int from, int to, int steps);
   int shortestPathUnweighted_leq_const(SolverPtr S,GraphTheorySolver_long G,int from, int to, int steps);
-  int shortestPath_lt_const(SolverPtr S,GraphTheorySolver_long G,int from, int to, int64_t dist);
-  int shortestPath_leq_const(SolverPtr S,GraphTheorySolver_long G,int from, int to, int64_t dist);
+  int shortestPath_lt_const(SolverPtr S,GraphTheorySolver_long G,int from, int to, long dist);
+  int shortestPath_leq_const(SolverPtr S,GraphTheorySolver_long G,int from, int to, long dist);
   int shortestPath_lt_bv(SolverPtr S,GraphTheorySolver_long G,int from, int to, int bvID);
   int shortestPath_leq_bv(SolverPtr S,GraphTheorySolver_long G,int from, int to, int bvID);
-  int maximumFlow_geq(SolverPtr S,GraphTheorySolver_long G,int source, int sink, int64_t weight);
-  int maximumFlow_gt(SolverPtr S,GraphTheorySolver_long G,int source, int sink, int64_t weight);
+  int maximumFlow_geq(SolverPtr S,GraphTheorySolver_long G,int source, int sink, long weight);
+  int maximumFlow_gt(SolverPtr S,GraphTheorySolver_long G,int source, int sink, long weight);
   int maximumFlow_geq_bv(SolverPtr S,GraphTheorySolver_long G,int source, int sink, int bvID);
   int maximumFlow_gt_bv(SolverPtr S,GraphTheorySolver_long G,int source, int sink, int bvID);
-  int minimumSpanningTree_leq(SolverPtr S,GraphTheorySolver_long G, int64_t weight);
-  int minimumSpanningTree_lt(SolverPtr S,GraphTheorySolver_long G,int source, int sink, int64_t weight);
+  int minimumSpanningTree_leq(SolverPtr S,GraphTheorySolver_long G, long weight);
+  int minimumSpanningTree_lt(SolverPtr S,GraphTheorySolver_long G,int source, int sink, long weight);
   int acyclic_undirected(SolverPtr S,GraphTheorySolver_long G);
   int acyclic_directed(SolverPtr S,GraphTheorySolver_long G);
   void newEdgeSet(SolverPtr S,GraphTheorySolver_long G,int * edges, int n_edges);
@@ -176,15 +176,15 @@ typedef int Var;
   int getModel_Literal(SolverPtr S,int lit);
   //Get an assignment to a bitvector in the model. The model may find a range of satisfying assignments to the bitvector;
   //If getMaximumValue is true, this function returns the maximum satisfying assignment to the bitvector in the model; else it returns the smallest.
-  int64_t getModel_BV(SolverPtr S, BVTheoryPtr bv, int bvID, bool getMaximumValue);
+  long getModel_BV(SolverPtr S, BVTheoryPtr bv, int bvID, bool getMaximumValue);
   //graph queries:
   //maxflow_literal is the literal (not variable!) that is the atom for the maximum flow query
-  int64_t getModel_MaxFlow(SolverPtr S,GraphTheorySolver_long G,int maxflow_literal);
+  long getModel_MaxFlow(SolverPtr S,GraphTheorySolver_long G,int maxflow_literal);
   //maxflow_literal is the literal (not variable!) that is the atom for the maximum flow query
-  int64_t getModel_EdgeFlow(SolverPtr S,GraphTheorySolver_long G,int maxflow_literal, int edgeLit);
-  int64_t getModel_AcyclicEdgeFlow(SolverPtr S,GraphTheorySolver_long G,int maxflow_literal, int edgeLit);
+  long getModel_EdgeFlow(SolverPtr S,GraphTheorySolver_long G,int maxflow_literal, int edgeLit);
+  long getModel_AcyclicEdgeFlow(SolverPtr S,GraphTheorySolver_long G,int maxflow_literal, int edgeLit);
 
-  int64_t getModel_MinimumSpanningTreeWeight(SolverPtr S,GraphTheorySolver_long G,int spanning_tree_literal);
+  long getModel_MinimumSpanningTreeWeight(SolverPtr S,GraphTheorySolver_long G,int spanning_tree_literal);
 /*
   //Returns the number of nodes in the path length for this reachability or shortest path literal (1+number of edges)
   int getModel_PathLength(SolverPtr S,GraphTheorySolver_long G,int reach_or_shortest_path_lit);
