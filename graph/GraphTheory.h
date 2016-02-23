@@ -51,6 +51,7 @@
 #include "bv/BVTheorySolver.h"
 
 #include "DistanceDetector.h"
+#include "WeightedDistanceDetector.h"
 #include "MSTDetector.h"
 #include "MaxflowDetector.h"
 #include "ConnectedComponentsDetector.h"
@@ -598,7 +599,7 @@ public:
 	vec<Detector*> normal_detectors;
 	vec<ReachDetector<Weight>*> reach_detectors;
 	vec<DistanceDetector<Weight>*> distance_detectors;
-	vec<DistanceDetector<Weight>*> weighted_distance_detectors;
+	vec<WeightedDistanceDetector<Weight>*> weighted_distance_detectors;
 	vec<MaxflowDetector<Weight>*> flow_detectors;
 	vec<MaxflowDetector<Weight>*> edgeset_flow_detectors;
 
@@ -3551,13 +3552,13 @@ public:
 		}
 
 		if (weighted_dist_info[from].source < 0) {
-			DistanceDetector<Weight> * d;
+			WeightedDistanceDetector<Weight> * d;
 			if(edge_bv_weights.size()>0){
 				enableNegativeWeights();
-				d = new DistanceDetector<Weight>(detectors.size(), this,  g_under_weights_over, g_over_weights_under,
+				d = new WeightedDistanceDetector<Weight>(detectors.size(), this,  g_under_weights_over, g_over_weights_under,
 						from, drand(rnd_seed));
 			}else{
-				d = new DistanceDetector<Weight>(detectors.size(), this,  g_under, g_over,
+				d = new WeightedDistanceDetector<Weight>(detectors.size(), this,  g_under, g_over,
 						from, drand(rnd_seed));
 			}
 			detectors.push(d);
@@ -3568,7 +3569,7 @@ public:
 			weighted_dist_info[from].detector = detectors.last();
 		}
 
-		DistanceDetector<Weight> * d = (DistanceDetector<Weight>*) weighted_dist_info[from].detector;
+		WeightedDistanceDetector<Weight> * d = (WeightedDistanceDetector<Weight>*) weighted_dist_info[from].detector;
 		assert(d);
 
 		d->addWeightedShortestPathLit(from, to, reach_var, distance,strictComparison);
@@ -3594,13 +3595,13 @@ public:
 		assert(from < g_under.nodes());
 
 		if (weighted_dist_info[from].source < 0) {
-			DistanceDetector<Weight> * d;
+			WeightedDistanceDetector<Weight> * d;
 			if(edge_bv_weights.size()>0){
 				enableNegativeWeights();
-				d = new DistanceDetector<Weight>(detectors.size(), this,  g_under_weights_over, g_over_weights_under,
+				d = new WeightedDistanceDetector<Weight>(detectors.size(), this,  g_under_weights_over, g_over_weights_under,
 						from, drand(rnd_seed));
 			}else{
-				d = new DistanceDetector<Weight>(detectors.size(), this,  g_under, g_over,
+				d = new WeightedDistanceDetector<Weight>(detectors.size(), this,  g_under, g_over,
 						from, drand(rnd_seed));
 			}
 			detectors.push(d);
@@ -3611,7 +3612,7 @@ public:
 			weighted_dist_info[from].detector = detectors.last();
 		}
 
-		DistanceDetector<Weight> * d = (DistanceDetector<Weight>*) weighted_dist_info[from].detector;
+		WeightedDistanceDetector<Weight> * d = (WeightedDistanceDetector<Weight>*) weighted_dist_info[from].detector;
 		assert(d);
 		BitVector<Weight> bv = bvTheory->getBV(bvID);
 		d->addWeightedShortestPathBVLit(from, to, reach_var,bv,strictComparison );
@@ -4054,12 +4055,19 @@ public:
 		store_path.clear();
 		Var v = var(theoryLit);
 		Detector * d= detectors[getDetector(v)];
+		//this is awful, fix this!!
 		ReachDetector<Weight> * r = dynamic_cast<ReachDetector<Weight>*>(d);
 		if(!r){
 			DistanceDetector<Weight> * dist = dynamic_cast<DistanceDetector<Weight>*>(d);
-			if(!d){
-				assert(false);
-				return false;
+			if(!dist){
+				WeightedDistanceDetector<Weight> * dist = dynamic_cast<WeightedDistanceDetector<Weight>*>(d);
+				if(!dist){
+					assert(false);
+					return false;
+				}else{
+					int node = dist->getNode(v);
+					return dist->getModel_Path(node,store_path);
+				}
 			}else{
 				int node = dist->getNode(v);
 				return dist->getModel_Path(node,store_path);
@@ -4078,9 +4086,15 @@ public:
 		ReachDetector<Weight> * r = dynamic_cast<ReachDetector<Weight>*>(d);
 		if(!r){
 			DistanceDetector<Weight> * dist = dynamic_cast<DistanceDetector<Weight>*>(d);
-			if(!d){
-				assert(false);
-				return false;
+			if(!dist){
+				WeightedDistanceDetector<Weight> * dist = dynamic_cast<WeightedDistanceDetector<Weight>*>(d);
+				if(!dist){
+					assert(false);
+					return false;
+				}else{
+					int node = dist->getNode(v);
+					return dist->getModel_PathByEdgeLit(node,store_path);
+				}
 			}else{
 				int node = dist->getNode(v);
 				return dist->getModel_PathByEdgeLit(node,store_path);
