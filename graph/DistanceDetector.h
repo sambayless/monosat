@@ -56,33 +56,26 @@ public:
 	int constraintsBuilt;
 	CRef unweighted_underprop_marker= CRef_Undef;
 	CRef unweighted_overprop_marker= CRef_Undef;
-	CRef weighted_underprop_marker= CRef_Undef;
-	CRef weighted_overprop_marker= CRef_Undef;
-	CRef weighted_underprop_bv_marker= CRef_Undef;
-	CRef weighted_overprop_bv_marker= CRef_Undef;
+
 
 	Distance<int> * underapprox_unweighted_distance_detector = nullptr;
 	Distance<int> * overapprox_unweighted_distance_detector = nullptr;
 
-	Distance<Weight> * underapprox_weighted_distance_detector = nullptr;
-	Distance<Weight> * overapprox_weighted_distance_detector = nullptr;
-	Distance<Weight> * underapprox_weighted_path_detector = nullptr;
+
 	Reach * underapprox_path_detector = nullptr;
 
 	//vec<Lit>  reach_lits;
 	Var first_reach_var=var_Undef;
-	enum DistLitType{
-		None,UnweightedLit,WeightedConstLit, WeightedBVLit
-	};
+
 	struct ReachLit{
 		int to;
 		int within;
-		DistLitType type;
+
 	};
 	vec<ReachLit> reach_lit_map;
 	vec<int> force_reason;
 	bool has_unweighted_shortest_paths_overapprox = false;
-	bool has_weighted_shortest_paths_overapprox = false;
+
 	vec<int> unweighted_over_approx_shortest_paths;
 	vec<Weight> over_approx_shortest_paths;
 	MaxFlow<long> * conflict_flow = nullptr;
@@ -98,35 +91,6 @@ public:
 	long stats_gt_unweighted_edges_skipped = 0;
 	long stats_gt_weighted_edges_skipped = 0;
 
-	BVTheorySolver<Weight> * bvTheory=nullptr;
-	class DistanceOp: public  GraphTheorySolver<Weight>::GraphTheoryOp{
-		DistanceDetector * outer;
-		int bvID;
-		int to;
-		bool strictCompare;
-		Lit comparisonLit;
-	public:
-		DistanceOp(BVTheorySolver<Weight> &theory,DistanceDetector * outer, int bvID, int to, bool strictCompare, Lit comparisonLit):GraphTheorySolver<Weight>::GraphTheoryOp(theory,outer->outer),outer(outer),bvID(bvID),to(to),strictCompare(strictCompare),comparisonLit(comparisonLit){
-
-		}
-		int getBV()override{
-			return bvID;
-		}
-
-		bool propagate(bool & changed, vec<Lit> & conflict)override{
-			return true;
-		}
-
-	    void updateApprox(Var ignore_bv, Weight & under_new, Weight & over_new,typename BVTheorySolver<Weight>::Cause & under_cause_new, typename BVTheorySolver<Weight>::Cause & over_cause_new)override{
-			;
-		}
-
-		void analyzeReason(bool compareOver,Comparison op, Weight  to,  vec<Lit> & conflict)override;
-
-		bool checkSolved()override{
-			return true;
-		}
-	};
 
 	vec<vec<Lit> > unweighted_sat_lits;
 
@@ -138,26 +102,7 @@ public:
 
 	vec<vec<UnweightedDistLit> > unweighted_dist_lits;
 
-	struct WeightedDistLit {
-		Lit l;
-		int u;
-		Weight min_distance;
-		bool strictComparison;
-		bool operator <(WeightedDistLit & b) const {
-			return min_distance < b.min_distance;
-		}
-	};
-	vec<WeightedDistLit> weighted_dist_lits;
 
-
-	struct WeightedDistBVLit {
-		Lit l;
-		int u;
-		BitVector<Weight> bv;
-		bool strictComparison;
-		DistanceOp * op;
-	};
-	vec<WeightedDistBVLit> weighted_dist_bv_lits;
 
 	struct Change {
 		//Var v;
@@ -238,44 +183,8 @@ public:
 
 	ReachStatus *positiveReachStatus;
 	ReachStatus *negativeReachStatus;
-	DistanceStatus *positiveDistanceStatus;
-	DistanceStatus *negativeDistanceStatus;
 
-	DistLitType getLitType(Lit reachLit) {
-		return getLitType(var(reachLit));
-	}
 
-	DistLitType getLitType(Var reachVar) {
-		assert(reachVar >= first_reach_var);
-		int index = reachVar - first_reach_var;
-		assert(index < reach_lit_map.size());
-		assert(reach_lit_map[index].to >= 0);
-		return reach_lit_map[index].type;
-	}
-	WeightedDistLit & getDistLit(Var v){
-		assert(v >= first_reach_var);
-		int index = v - first_reach_var;
-		assert(index < reach_lit_map.size());
-		assert(reach_lit_map[index].type==WeightedConstLit);
-		assert(reach_lit_map[index].to >= 0);
-		int w_index = reach_lit_map[index].within;
-		assert(w_index>=0);
-		assert(w_index<weighted_dist_lits.size());
-		assert(var(weighted_dist_lits[w_index].l)==v );
-		return weighted_dist_lits[w_index];
-	}
-	WeightedDistBVLit & getBVDistLit(Var v){
-		assert(v >= first_reach_var);
-		int index = v - first_reach_var;
-		assert(index < reach_lit_map.size());
-		assert(reach_lit_map[index].type==WeightedBVLit);
-		assert(reach_lit_map[index].to >= 0);
-		int w_index = reach_lit_map[index].within;
-		assert(w_index>=0);
-		assert(w_index<weighted_dist_bv_lits.size());
-		assert(var(weighted_dist_bv_lits[w_index].l)==v );
-		return weighted_dist_bv_lits[w_index];
-	}
 
 	int getNode(Var reachVar) {
 		assert(reachVar >= first_reach_var);
@@ -289,7 +198,7 @@ public:
 
 		int index = reachVar - first_reach_var;
 		assert(index < reach_lit_map.size());
-		assert(reach_lit_map[index].type==UnweightedLit);
+
 		assert(reach_lit_map[index].within >= 0);
 		return reach_lit_map[index].within;
 	}
@@ -319,7 +228,7 @@ public:
 		int index = var(l) - first_reach_var;
 		
 		//at the moment, change in assignments are only tracked this way for unweighted lits:
-		if (index >= 0 && index < reach_lit_map.size() && getLitType(l)==UnweightedLit && reach_lit_map[index].to != -1) {
+		if (index >= 0 && index < reach_lit_map.size() && reach_lit_map[index].to != -1) {
 			int node = reach_lit_map[index].to;
 			if (!is_changed[node]) {
 				changed.push( { node });
@@ -338,7 +247,7 @@ public:
 	void buildReason(Lit p, vec<Lit> & reason, CRef marker);
 	bool checkSatisfied();
 	Lit decide();
-	void updateShortestPaths(bool unweighted);
+	void updateShortestPaths();
 	void addUnweightedShortestPathLit(int from, int to, Var reach_var, int within_steps = -1);
 	void addWeightedShortestPathLit(int from, int to, Var reach_var, Weight within_distance, bool strictComparison);
 	void addWeightedShortestPathBVLit(int from, int to, Var reach_var, const BitVector<Weight> & bv, bool strictComparison);
@@ -347,18 +256,13 @@ public:
 	DistanceDetector(int _detectorID, GraphTheorySolver<Weight> * _outer,
 			DynamicGraph<Weight>  &_g, DynamicGraph<Weight>  &_antig, int _source, double seed = 1);//:Detector(_detectorID),outer(_outer),within(-1),source(_source),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL){}
 	virtual ~DistanceDetector() {
-		if (positiveDistanceStatus )
-			delete positiveDistanceStatus;
-		if (negativeDistanceStatus )
-			delete negativeDistanceStatus;
+
 		if (overapprox_unweighted_distance_detector)
 			delete overapprox_unweighted_distance_detector;
 
 		if (underapprox_path_detector && underapprox_path_detector != underapprox_unweighted_distance_detector)
 			delete underapprox_path_detector;
 
-		if (underapprox_weighted_path_detector && underapprox_weighted_path_detector != underapprox_weighted_distance_detector)
-			delete underapprox_weighted_path_detector;
 
 		if(positiveReachStatus)
 			delete positiveReachStatus;
@@ -369,12 +273,6 @@ public:
 			delete underapprox_unweighted_distance_detector;
 
 
-
-		if (underapprox_weighted_distance_detector)
-			delete underapprox_weighted_distance_detector;
-
-		if (overapprox_weighted_distance_detector)
-			delete overapprox_weighted_distance_detector;
 
 
 

@@ -807,39 +807,7 @@ bool WeightedDistanceDetector<Weight>::getModel_PathByEdgeLit(int node, std::vec
 
 template<typename Weight>
 bool WeightedDistanceDetector<Weight>::checkSatisfied() {
-	UnweightedDijkstra<Weight> under(source, g_under);
-	UnweightedDijkstra<Weight> over(source, g_over);
-	under.update();
-	over.update();
-	for (int j = 0; j < unweighted_dist_lits.size(); j++) {
-		for (int k = 0; k < unweighted_dist_lits[j].size(); k++) {
-			Lit l = unweighted_dist_lits[j][k].l;
-			int dist = unweighted_dist_lits[j][k].min_unweighted_distance;
-			lbool val = outer->value(l);
-			if (l != lit_Undef) {
-				int node = getNode(var(l));
-				
-				if (outer->value(l) == l_True) {
-					if (!under.connected(node) || under.distance(node) > dist) {
-						return false;
-					}
-				} else if (outer->value(l) == l_False) {
-					if (under.connected(node) && over.distance(node) <= dist) {
-						return false;
-					}
-				} else {
-					if (under.connected(node) && under.distance(node) <= dist) {
-						return false;
-					}
-					if (!over.connected(node) || over.distance(node) > dist) {
-						return false;
-					}
-				}
-			}
-		}
-	}
 
-	{
 		Dijkstra<Weight> under(source, g_under);
 		Dijkstra<Weight> over(source, g_over);
 		//g_under.drawFull(true);
@@ -898,8 +866,8 @@ bool WeightedDistanceDetector<Weight>::checkSatisfied() {
 			}
 		}
 		
-	}
 	
+
 	//	}
 	return true;
 }
@@ -942,13 +910,27 @@ Lit WeightedDistanceDetector<Weight>::decide() {
 	/*	if(opt_decide_graph_neg){
 
 	 }*/
+	for (int type = 0;type<2;type++){
 
-	for (int k = 0; k < unweighted_dist_lits.size(); k++) {
-		for (int n = 0; n < unweighted_dist_lits[k].size(); n++) {
-			Lit l = unweighted_dist_lits[k][n].l;
-			int min_dist = unweighted_dist_lits[k][n].min_unweighted_distance;
+		for (int k = 0; k < (type ? weighted_dist_bv_lits.size() : weighted_dist_lits.size()); k++) {
+
+			Lit l;
+			if (!type)
+				l = weighted_dist_lits[k].l;
+			else
+				l = weighted_dist_bv_lits[k].l;
+
 			if (l == lit_Undef)
 				continue;
+
+			Weight min_dist;
+			if(!type)
+				min_dist = weighted_dist_lits[k].min_distance;
+			else{
+				min_dist = weighted_dist_bv_lits[k].bv.getUnder();
+			}
+
+
 			int j = r->getNode(var(l));
 			if (outer->value(l) == l_True) {
 				if (opt_decide_graph_pos) {

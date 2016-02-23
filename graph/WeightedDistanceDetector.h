@@ -79,7 +79,7 @@ public:
 	};
 	vec<ReachLit> reach_lit_map;
 	vec<int> force_reason;
-	bool has_unweighted_shortest_paths_overapprox = false;
+
 	bool has_weighted_shortest_paths_overapprox = false;
 	vec<int> unweighted_over_approx_shortest_paths;
 	vec<Weight> over_approx_shortest_paths;
@@ -126,15 +126,7 @@ public:
 		}
 	};
 
-	vec<vec<Lit> > unweighted_sat_lits;
 
-	struct UnweightedDistLit {
-		Lit l;
-		int min_unweighted_distance;
-		
-	};
-
-	vec<vec<UnweightedDistLit> > unweighted_dist_lits;
 
 	struct WeightedDistLit {
 		Lit l;
@@ -318,8 +310,7 @@ public:
 	}
 	void preprocess();
 	bool propagate(vec<Lit> & conflict);
-	void buildUnweightedDistanceLEQReason(int node, vec<Lit> & conflict);
-	void buildUnweightedDistanceGTReason(int node, int within_steps, vec<Lit> & conflict);
+
 	void buildDistanceLEQReason(int to, Weight & min_distance, vec<Lit> & conflict, bool strictComparison=false);
 	void buildDistanceGTReason(int to, Weight & min_distance, vec<Lit> & conflict, bool strictComparison=true);
 	void analyzeDistanceLEQReason(int to, Weight & min_distance, vec<Lit> & conflict, bool strictComparison=true);
@@ -328,7 +319,7 @@ public:
 	bool checkSatisfied();
 	Lit decide();
 	void updateShortestPaths();
-	void addUnweightedShortestPathLit(int from, int to, Var reach_var, int within_steps = -1);
+
 	void addWeightedShortestPathLit(int from, int to, Var reach_var, Weight within_distance, bool strictComparison);
 	void addWeightedShortestPathBVLit(int from, int to, Var reach_var, const BitVector<Weight> & bv, bool strictComparison);
 	bool getModel_Path(int node, std::vector<int> & store_path);
