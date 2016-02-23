@@ -12,7 +12,7 @@
 #include <csignal>
 #include <stdexcept>
 #include <cstdarg>
-
+#include <string>
 namespace Monosat{
 
 namespace Optimization{
@@ -256,8 +256,11 @@ long optimize_linear(Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv
 						throw std::runtime_error("Error in optimization (model is inconsistent with assumptions)");
 					}
 				}
-			  if(value!= bvTheory->getOverApprox(bvID)){
+			  if(value< bvTheory->getOverApprox(bvID)){
 				  throw std::runtime_error("Error in optimization (minimum values are inconsistent with model)");
+			  }
+			  if(bvTheory->getOverApprox(bvID) < value){
+				  value = bvTheory->getOverApprox(bvID);
 			  }
 			  break;
 		  }
@@ -286,12 +289,23 @@ long optimize_binary(Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv
 	  if(opt_verb>=1){
 		  printf("Min bv%d = %ld",bvID,max_val);
 	  }
-	  //might be worth trying 0 and 1 and value-1 first...
+	  long suggested_next_midpoint = -1;
 
+		  //try the minimum possible value first, just in case we get lucky.
+		  //it might also be a good idea to try min_val+1, and max_val-1.
+
+	  long underapprox_sat_val =  bvTheory->getUnderApprox(bvID);
+	  if(underapprox_sat_val<max_val)
+		  suggested_next_midpoint =	underapprox_sat_val;
+
+	  bool first_round=true;
 	  long last_decision_value=max_val;
 	  Lit last_decision_lit =  bvTheory->toSolver(bvTheory->newComparison(Comparison::leq,bvID,max_val,var_Undef,opt_decide_optimization_lits));
 	  while(min_val < max_val && !hit_cutoff){
 		  long mid_point = min_val + (max_val - min_val) / 2;
+
+		  if(suggested_next_midpoint>=min_val && suggested_next_midpoint<mid_point)
+			  mid_point =	suggested_next_midpoint;
 		  assert(mid_point>=0);assert(mid_point>=min_val);assert(mid_point<max_val);
 
 		  Lit decision_lit = bvTheory->toSolver(bvTheory->newComparison(Comparison::leq,bvID,mid_point,var_Undef,opt_decide_optimization_lits));
@@ -344,7 +358,9 @@ long optimize_binary(Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv
 			  if(new_value>=max_val){
 					throw std::runtime_error("Error in optimization (minimum values are inconsistent with model)");
 			  }
-
+			  long underapprox_sat_val =  bvTheory->getUnderApprox(bvID);
+			  if(underapprox_sat_val<max_val)
+				  suggested_next_midpoint =	underapprox_sat_val;
 			  assert(new_value<=mid_point);
 			  assert(new_value<max_val);
 			  max_val=new_value;
@@ -387,8 +403,11 @@ long optimize_binary(Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv
 				throw std::runtime_error("Error in optimization (model is inconsistent with assumptions)");
 			}
 		}
-	  if(max_val!= bvTheory->getOverApprox(bvID)){
+	  if(max_val < bvTheory->getOverApprox(bvID)){
 		  throw std::runtime_error("Error in optimization (minimum values are inconsistent with model)");
+	  }
+	  if(bvTheory->getOverApprox(bvID) < max_val){
+		  max_val = bvTheory->getOverApprox(bvID);
 	  }
 	  return max_val;
 }
@@ -471,6 +490,8 @@ lbool optimize_and_solve(SimpSolver & S,const vec<Lit> & assumes,const vec<int> 
 				  if(hit_cutoff){
 					  found_optimal=false;
 				  }
+				  if(opt_limit_optimization_time_per_arg)
+					  hit_cutoff=false;//keep trying to minimize subsequent arguments
 				  assume.push(bvTheory->toSolver(bvTheory->newComparison(Comparison::leq,bvID,min_values[i],var_Undef,opt_decide_optimization_lits)));
 
 				  assert(min_values[i] >=0);
@@ -484,13 +505,13 @@ lbool optimize_and_solve(SimpSolver & S,const vec<Lit> & assumes,const vec<int> 
 					  long min_value = min_values[j];
 					  long model_val = bvTheory->getOverApprox(bvID);
 					  if(min_value<model_val){
-						  throw std::runtime_error("Error in optimization (minimum values are inconsistent with model)");
+						  throw std::runtime_error("Error in optimization (minimum values are inconsistent with model for bv " + std::to_string(j) + " (bvid " + std::to_string(bvID) + " ): expected value <= " + std::to_string(min_value) +", found " + std::to_string(model_val) + ")");
 					  }else if (model_val<min_value){
 						  //if the best known value for any earlier bitvector, (which can happen if optimization is aborted early),
 						  //is found, enforce that this improved value must be kept in the future.
 						  Lit decision_lit = bvTheory->toSolver(bvTheory->newComparison(Comparison::leq,bvID,model_val,var_Undef,opt_decide_optimization_lits));
 						  assume.push(decision_lit);
-						  min_values[i]=model_val;
+						  min_values[j]=model_val;
 					  }
 
 				  }

@@ -206,9 +206,11 @@ public:
 	void dbg_decisions();
 	void printSolution(std::ostream & write_to);
 	Weight getModel_Maxflow(){
+		underapprox_detector->update();
 		return underapprox_detector->maxFlow();
 	}
 	Weight getModel_EdgeFlow(int edgeID){
+
 		return underapprox_detector->getEdgeFlow(edgeID);
 	}
 
@@ -217,10 +219,11 @@ public:
 			acyclic_flow=new AcyclicFlow<Weight>(g_under);
 		}
 		if(refined_flow_model.size()==0){
+			underapprox_detector->update();
 			refined_flow_model.resize(g_under.edges());
 			for(int i = 0;i<g_under.edges();i++){
 				if(g_under.hasEdge(i) && g_under.edgeEnabled(i)){
-					refined_flow_model[i]=underapprox_conflict_detector->getEdgeFlow(i);
+					refined_flow_model[i]=underapprox_detector->getEdgeFlow(i);
 				}else{
 					refined_flow_model[i]=0;
 				}
@@ -231,6 +234,7 @@ public:
 
 	}
 	void buildModel(){
+		underapprox_detector->update();
 		refined_flow_model.clear();
 	}
 	void setFlowBV(const BitVector<Weight>  &bv);

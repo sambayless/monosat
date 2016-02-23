@@ -68,6 +68,8 @@ IntOption Monosat::opt_time(_cat, "verb-time", "Detail level of timing benchmark
 
 IntOption Monosat::opt_limit_optimization_conflicts(_cat_opt, "opt-conflict-limit", "Limit number of conflicts during optimization rounds before giving up (-1 to allow infinite conflicts)", -1, IntRange(-1, INT32_MAX));
 IntOption Monosat::opt_limit_optimization_time(_cat_opt, "opt-time-limit", "Limit time spent in optimization (after finding an initial satisfying solution) before giving up (-1 to allow infinite time during optimization)", -1, IntRange(-1, INT32_MAX));
+BoolOption Monosat::opt_limit_optimization_time_per_arg(_cat_opt, "opt-time-limit-per-arg", "Apply optimization time limit separately to each individual optimization argument, instead of globally to the whole optimization process", false);
+
 
 StringOption Monosat::opt_record_file(_cat, "debug-log",
 		"Log (very expensive) debugging info at extensions of the following path (empty string (recommended) disables)", "");

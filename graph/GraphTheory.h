@@ -4056,8 +4056,14 @@ public:
 		Detector * d= detectors[getDetector(v)];
 		ReachDetector<Weight> * r = dynamic_cast<ReachDetector<Weight>*>(d);
 		if(!r){
-			assert(false);
-			return false;
+			DistanceDetector<Weight> * dist = dynamic_cast<DistanceDetector<Weight>*>(d);
+			if(!d){
+				assert(false);
+				return false;
+			}else{
+				int node = dist->getNode(v);
+				return dist->getModel_Path(node,store_path);
+			}
 		}
 		int node = r->getNode(v);
 		return r->getModel_Path(node,store_path);
@@ -4071,8 +4077,14 @@ public:
 		Detector * d= detectors[getDetector(v)];
 		ReachDetector<Weight> * r = dynamic_cast<ReachDetector<Weight>*>(d);
 		if(!r){
-			assert(false);
-			return false;
+			DistanceDetector<Weight> * dist = dynamic_cast<DistanceDetector<Weight>*>(d);
+			if(!d){
+				assert(false);
+				return false;
+			}else{
+				int node = dist->getNode(v);
+				return dist->getModel_PathByEdgeLit(node,store_path);
+			}
 		}
 		int node = r->getNode(v);
 		return r->getModel_PathByEdgeLit(node,store_path);

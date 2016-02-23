@@ -54,10 +54,12 @@ public:
 	int source;
 	double rnd_seed;
 	int constraintsBuilt;
-	CRef unweighted_underprop_marker;
-	CRef unweighted_overprop_marker;
-	CRef weighted_underprop_marker;
-	CRef weighted_overprop_marker;
+	CRef unweighted_underprop_marker= CRef_Undef;
+	CRef unweighted_overprop_marker= CRef_Undef;
+	CRef weighted_underprop_marker= CRef_Undef;
+	CRef weighted_overprop_marker= CRef_Undef;
+	CRef weighted_underprop_bv_marker= CRef_Undef;
+	CRef weighted_overprop_bv_marker= CRef_Undef;
 
 	Distance<int> * underapprox_unweighted_distance_detector = nullptr;
 	Distance<int> * overapprox_unweighted_distance_detector = nullptr;
@@ -68,10 +70,14 @@ public:
 	Reach * underapprox_path_detector = nullptr;
 
 	//vec<Lit>  reach_lits;
-	Var first_reach_var;
+	Var first_reach_var=var_Undef;
+	enum DistLitType{
+		None,UnweightedLit,WeightedConstLit, WeightedBVLit
+	};
 	struct ReachLit{
 		int to;
 		int within;
+		DistLitType type;
 	};
 	vec<ReachLit> reach_lit_map;
 	vec<int> force_reason;
@@ -80,6 +86,7 @@ public:
 	vec<int> unweighted_over_approx_shortest_paths;
 	vec<Weight> over_approx_shortest_paths;
 	MaxFlow<long> * conflict_flow = nullptr;
+
 
 	int max_unweighted_distance;
 
@@ -141,6 +148,7 @@ public:
 		}
 	};
 	vec<WeightedDistLit> weighted_dist_lits;
+
 
 	struct WeightedDistBVLit {
 		Lit l;
@@ -232,6 +240,43 @@ public:
 	ReachStatus *negativeReachStatus;
 	DistanceStatus *positiveDistanceStatus;
 	DistanceStatus *negativeDistanceStatus;
+
+	DistLitType getLitType(Lit reachLit) {
+		return getLitType(var(reachLit));
+	}
+
+	DistLitType getLitType(Var reachVar) {
+		assert(reachVar >= first_reach_var);
+		int index = reachVar - first_reach_var;
+		assert(index < reach_lit_map.size());
+		assert(reach_lit_map[index].to >= 0);
+		return reach_lit_map[index].type;
+	}
+	WeightedDistLit & getDistLit(Var v){
+		assert(v >= first_reach_var);
+		int index = v - first_reach_var;
+		assert(index < reach_lit_map.size());
+		assert(reach_lit_map[index].type==WeightedConstLit);
+		assert(reach_lit_map[index].to >= 0);
+		int w_index = reach_lit_map[index].within;
+		assert(w_index>=0);
+		assert(w_index<weighted_dist_lits.size());
+		assert(var(weighted_dist_lits[w_index].l)==v );
+		return weighted_dist_lits[w_index];
+	}
+	WeightedDistBVLit & getBVDistLit(Var v){
+		assert(v >= first_reach_var);
+		int index = v - first_reach_var;
+		assert(index < reach_lit_map.size());
+		assert(reach_lit_map[index].type==WeightedBVLit);
+		assert(reach_lit_map[index].to >= 0);
+		int w_index = reach_lit_map[index].within;
+		assert(w_index>=0);
+		assert(w_index<weighted_dist_bv_lits.size());
+		assert(var(weighted_dist_bv_lits[w_index].l)==v );
+		return weighted_dist_bv_lits[w_index];
+	}
+
 	int getNode(Var reachVar) {
 		assert(reachVar >= first_reach_var);
 		int index = reachVar - first_reach_var;
@@ -240,12 +285,14 @@ public:
 		return reach_lit_map[index].to;
 	}
 	int getMaximumDistance(Var reachVar) {
-			assert(reachVar >= first_reach_var);
-			int index = reachVar - first_reach_var;
-			assert(index < reach_lit_map.size());
-			assert(reach_lit_map[index].within >= 0);
-			return reach_lit_map[index].within;
-		}
+		assert(reachVar >= first_reach_var);
+
+		int index = reachVar - first_reach_var;
+		assert(index < reach_lit_map.size());
+		assert(reach_lit_map[index].type==UnweightedLit);
+		assert(reach_lit_map[index].within >= 0);
+		return reach_lit_map[index].within;
+	}
 	void printStats() {
 		//printf("Distance detector\n");
 		Detector::printStats();
@@ -271,7 +318,8 @@ public:
 		Detector::unassign(l);
 		int index = var(l) - first_reach_var;
 		
-		if (index >= 0 && index < reach_lit_map.size() && reach_lit_map[index].to != -1) {
+		//at the moment, change in assignments are only tracked this way for unweighted lits:
+		if (index >= 0 && index < reach_lit_map.size() && getLitType(l)==UnweightedLit && reach_lit_map[index].to != -1) {
 			int node = reach_lit_map[index].to;
 			if (!is_changed[node]) {
 				changed.push( { node });
@@ -294,7 +342,8 @@ public:
 	void addUnweightedShortestPathLit(int from, int to, Var reach_var, int within_steps = -1);
 	void addWeightedShortestPathLit(int from, int to, Var reach_var, Weight within_distance, bool strictComparison);
 	void addWeightedShortestPathBVLit(int from, int to, Var reach_var, const BitVector<Weight> & bv, bool strictComparison);
-
+	bool getModel_Path(int node, std::vector<int> & store_path);
+	bool getModel_PathByEdgeLit(int node, std::vector<Lit> & store_path);
 	DistanceDetector(int _detectorID, GraphTheorySolver<Weight> * _outer,
 			DynamicGraph<Weight>  &_g, DynamicGraph<Weight>  &_antig, int _source, double seed = 1);//:Detector(_detectorID),outer(_outer),within(-1),source(_source),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL){}
 	virtual ~DistanceDetector() {

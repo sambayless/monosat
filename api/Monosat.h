@@ -185,6 +185,13 @@ typedef int Var;
   long getModel_AcyclicEdgeFlow(SolverPtr S,GraphTheorySolver_long G,int maxflow_literal, int edgeLit);
 
   long getModel_MinimumSpanningTreeWeight(SolverPtr S,GraphTheorySolver_long G,int spanning_tree_literal);
+
+   int getModel_Path_Nodes_Length(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<long> *G,int reach_or_distance_literal);
+   int getModel_Path_Nodes(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<long> *G,int reach_or_distance_literal, int store_length, int * store);
+
+   int getModel_Path_EdgeLits_Length(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<long> *G,int reach_or_distance_literal);
+   int getModel_Path_EdgeLits(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<long> *G,int reach_or_distance_literal, int store_length, int * store);
+
 /*
   //Returns the number of nodes in the path length for this reachability or shortest path literal (1+number of edges)
   int getModel_PathLength(SolverPtr S,GraphTheorySolver_long G,int reach_or_shortest_path_lit);

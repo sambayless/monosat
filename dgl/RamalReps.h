@@ -603,6 +603,7 @@ public:
 		}
 			//for(int i = 0;i<g.nodes();i++){
 			//	int u=i;
+		if(reportPolarity>-2){
 			for (int u : changed) {
 				//int u = changed[i];
 				node_changed[u] = false;
@@ -616,7 +617,7 @@ public:
 				}
 			}
 			changed.clear();
-
+		}
 		assert(dbg_uptodate());
 
 		num_updates++;

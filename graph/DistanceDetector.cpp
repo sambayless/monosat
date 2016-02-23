@@ -57,11 +57,7 @@ DistanceDetector<Weight>::DistanceDetector(int _detectorID, GraphTheorySolver<We
 		underapprox_unweighted_distance_detector = nullptr;
 		overapprox_unweighted_distance_detector = nullptr;
 		underapprox_path_detector = nullptr;
-		unweighted_underprop_marker = CRef_Undef;
-		unweighted_overprop_marker = CRef_Undef;
-		
-		weighted_underprop_marker = CRef_Undef;
-		weighted_overprop_marker = CRef_Undef;
+
 		//we are just going to directly enforce these constraints in the original SAT solver, so _nothing_ will end up happening in this detector (except for creating the clauses needed to enforce these constraints).
 		
 		return;
@@ -112,10 +108,10 @@ DistanceDetector<Weight>::DistanceDetector(int _detectorID, GraphTheorySolver<We
 		 reach_detectors.last()->positive_dist_detector = new Dijkstra<PositiveEdgeStatus>(from,g);*/
 	} else if (distalg == DistAlg::ALG_RAMAL_REPS) {
 		if (!opt_encode_dist_underapprox_as_sat){
-			/*underapprox_unweighted_distance_detector = new UnweightedRamalReps<Weight,
-					typename DistanceDetector<Weight>::ReachStatus>(from, _g, *(positiveReachStatus), 0);*/
-			underapprox_unweighted_distance_detector = new UnweightedDijkstra<Weight,typename DistanceDetector<Weight>::ReachStatus>(
-							from, _g, *positiveReachStatus, 0);
+			 underapprox_unweighted_distance_detector = new UnweightedRamalReps<Weight,
+					typename DistanceDetector<Weight>::ReachStatus>(from, _g, *(positiveReachStatus), 0);
+			//underapprox_unweighted_distance_detector = new UnweightedDijkstra<Weight,typename DistanceDetector<Weight>::ReachStatus>(
+			//				from, _g, *positiveReachStatus, 0);
 		}
 		overapprox_unweighted_distance_detector =
 				new UnweightedRamalReps<Weight,typename DistanceDetector<Weight>::ReachStatus>(from, _antig,
@@ -163,10 +159,10 @@ DistanceDetector<Weight>::DistanceDetector(int _detectorID, GraphTheorySolver<We
 
 		underapprox_weighted_distance_detector =
 				new RamalReps<Weight, typename DistanceDetector<Weight>::DistanceStatus>(from, _g,
-						*(positiveDistanceStatus), 0);
+						*(positiveDistanceStatus), -2);
 		overapprox_weighted_distance_detector =
 				new RamalReps<Weight, typename DistanceDetector<Weight>::DistanceStatus>(from, _antig,
-						*(negativeDistanceStatus), 0);
+						*(negativeDistanceStatus), -2);
 		underapprox_weighted_path_detector =underapprox_weighted_distance_detector; //new Dijkstra<Weight>(from, _g);
 	} else {
 		underapprox_weighted_distance_detector =
@@ -204,6 +200,9 @@ DistanceDetector<Weight>::DistanceDetector(int _detectorID, GraphTheorySolver<We
 	
 	weighted_underprop_marker = outer->newReasonMarker(getID());
 	weighted_overprop_marker = outer->newReasonMarker(getID());
+
+	weighted_underprop_bv_marker = outer->newReasonMarker(getID());
+	weighted_overprop_bv_marker = outer->newReasonMarker(getID());
 }
 
 template<typename Weight>
@@ -449,7 +448,16 @@ void DistanceDetector<Weight>::addWeightedShortestPathLit(int from, int to, Var 
 	Var reach_var = outer->newVar(outer_reach_var, getID());
 	assert(from == source);
 	weighted_dist_lits.push(WeightedDistLit { mkLit(reach_var), to, within_distance,strictComparison });
-	//sort(weighted_dist_lits);
+
+	if (first_reach_var == var_Undef) {
+		first_reach_var = reach_var;
+	} else {
+		assert(reach_var > first_reach_var);
+	}
+	while (reach_lit_map.size() <= reach_var - first_reach_var) {
+		reach_lit_map.push({-1,-1,None});
+	}
+	reach_lit_map[reach_var - first_reach_var] = {to,weighted_dist_lits.size(),WeightedConstLit};
 }
 
 template<typename Weight>
@@ -457,14 +465,26 @@ void DistanceDetector<Weight>::addWeightedShortestPathBVLit(int from, int to, Va
 		const BitVector<Weight>  &bv, bool strictComparison) {
 	g_under.invalidate();
 	g_over.invalidate();
+
 	Var reach_var = outer->newVar(outer_reach_var, getID());
 	assert(from == source);
+
 	weighted_dist_bv_lits.push(WeightedDistBVLit { mkLit(reach_var), to, bv, strictComparison,nullptr });
 	//sort(weighted_dist_lits);
 	if(opt_graph_bv_prop){
 		DistanceOp *distOp = new DistanceOp(*bvTheory, this,bv.getID(),to,strictComparison,mkLit(reach_var));
 		weighted_dist_bv_lits.last().op=distOp;
 	}
+
+	if (first_reach_var == var_Undef) {
+		first_reach_var = reach_var;
+	} else {
+		assert(reach_var > first_reach_var);
+	}
+	while (reach_lit_map.size() <= reach_var - first_reach_var) {
+		reach_lit_map.push({-1,-1,None});
+	}
+	reach_lit_map[reach_var - first_reach_var] = {to,weighted_dist_bv_lits.size(),WeightedBVLit};
 }
 
 
@@ -519,9 +539,9 @@ void DistanceDetector<Weight>::addUnweightedShortestPathLit(int from, int to, Va
 		unweighted_dist_lits[to].last().min_unweighted_distance = within_steps;
 
 		while (reach_lit_map.size() <= reach_var - first_reach_var) {
-			reach_lit_map.push({-1,-1});
+			reach_lit_map.push({-1,-1,None});
 		}
-		reach_lit_map[reach_var - first_reach_var] = {to,within_steps};
+		reach_lit_map[reach_var - first_reach_var] = {to,unweighted_dist_lits.size(),UnweightedLit};
 	}
 	
 }
@@ -1077,20 +1097,7 @@ void DistanceDetector<Weight>::buildReason(Lit p, vec<Lit> & reason, CRef marker
 		reason.push(p);
 		//	double startpathtime = rtime(2);
 		
-		/*Dijkstra & detector = *reach_detectors[d]->positive_dist_detector;
-		 //the reason is a path from s to p(provided by d)
-		 //p is the var for a reachability detector in dijkstra, and corresponds to a node
-		 detector.update();
-		 Var v = var(p);
-		 int u =reach_detectors[d]->getNode(v); //reach_detectors[d]->reach_lit_map[v];
-		 assert(detector.connected(u));
-		 int w;
-		 while(( w= detector.previous(u)) > -1){
-		 Lit l = mkLit( edges[w][u].v,true );
-		 assert(S->value(l)==l_False);
-		 reason.push(l);
-		 u=w;
-		 }*/
+		assert(getLitType(p)==UnweightedLit);
 		Var v = var(p);
 		int u = getNode(v);
 		buildUnweightedDistanceLEQReason(u, reason);
@@ -1107,12 +1114,102 @@ void DistanceDetector<Weight>::buildReason(Lit p, vec<Lit> & reason, CRef marker
 		//assign the mincut edge weights if they aren't already assigned.
 		
 		Var v = var(p);
+		assert(getLitType(p)==UnweightedLit);
 		int t = getNode(v); // v- var(reach_lits[d][0]);
 		int within = getMaximumDistance(v);
 		buildUnweightedDistanceGTReason(t,within, reason);
 		
-	} else {
-		exit(3);
+	}else if (marker ==weighted_underprop_marker) {
+		reason.push(p);
+		assert(getLitType(p)==WeightedConstLit);
+		Var v = var(p);
+		WeightedDistLit & dist_lit = getDistLit(v);
+		bool strictComparison = dist_lit.strictComparison;
+		Lit l = dist_lit.l;
+		lbool val = outer->value(l);
+
+		int to = dist_lit.u;
+		Weight & min_dist = dist_lit.min_distance;
+		Weight & over_dist = underapprox_weighted_distance_detector->distance(to);
+		Weight & under_dist = overapprox_weighted_distance_detector->distance(to);
+
+		buildDistanceLEQReason(to, min_dist, reason,strictComparison);
+
+	} else if (marker == weighted_overprop_marker) {
+		reason.push(p);
+		assert(sign(p));
+		assert(getLitType(p)==WeightedConstLit);
+		Var v = var(p);
+		WeightedDistLit & dist_lit = getDistLit(v);
+		bool strictComparison = dist_lit.strictComparison;
+		Lit l = dist_lit.l;
+		lbool val = outer->value(l);
+
+		int to = dist_lit.u;
+		Weight & min_dist = dist_lit.min_distance;
+		Weight & over_dist = underapprox_weighted_distance_detector->distance(to);
+		Weight & under_dist = overapprox_weighted_distance_detector->distance(to);
+
+		buildDistanceGTReason(to, min_dist, reason,strictComparison);
+
+	}else if (marker ==weighted_underprop_bv_marker) {
+		reason.push(p);
+		assert(getLitType(p)==WeightedBVLit);
+
+		Var v = var(p);
+		WeightedDistBVLit & dist_lit = getBVDistLit(v);
+		Lit l = dist_lit.l;
+		int to = dist_lit.u;
+		bool strictComparison = dist_lit.strictComparison;
+		BitVector<Weight> & bv = dist_lit.bv;
+		Weight & min_dist_under = bv.getUnder();
+		Weight & min_dist_over = bv.getOver();
+		Weight & under_dist = underapprox_weighted_distance_detector->distance(to);
+		Weight & over_dist = overapprox_weighted_distance_detector->distance(to);
+
+		if(strictComparison){
+
+			outer->bvTheory->addAnalysis(Comparison::gt,bv.getID(),under_dist);
+
+			buildDistanceLEQReason(to, min_dist_under, reason,true);
+		}else{
+			outer->bvTheory->addAnalysis(Comparison::geq,bv.getID(),under_dist);
+			buildDistanceLEQReason(to, min_dist_under, reason,false);
+		}
+
+
+	} else if (marker == weighted_overprop_bv_marker) {
+		reason.push(p);
+		assert(sign(p));
+		assert(getLitType(p)==WeightedBVLit);
+
+		Var v = var(p);
+		WeightedDistBVLit & dist_lit = getBVDistLit(v);
+		Lit l = dist_lit.l;
+		int to = dist_lit.u;
+		bool strictComparison = dist_lit.strictComparison;
+		BitVector<Weight> & bv = dist_lit.bv;
+		Weight & min_dist_under = bv.getUnder();
+		Weight & min_dist_over = bv.getOver();
+		Weight & under_dist = underapprox_weighted_distance_detector->distance(to);
+		Weight & over_dist = overapprox_weighted_distance_detector->distance(to);
+
+
+		if(strictComparison){
+			if(overapprox_weighted_distance_detector->connected(to)){
+				outer->bvTheory->addAnalysis(Comparison::leq,bv.getID(),over_dist);
+			}
+			buildDistanceGTReason(to, min_dist_over, reason,false);
+		}else{
+			if(overapprox_weighted_distance_detector->connected(to)){
+				outer->bvTheory->addAnalysis(Comparison::lt,bv.getID(),over_dist);
+			}
+			buildDistanceGTReason(to, min_dist_over, reason,true);
+		}
+
+
+	}  else {
+		throw std::runtime_error("Internal error in distance detector");
 		assert(false);
 	}
 	outer->toSolver(reason);
@@ -1355,7 +1452,7 @@ bool DistanceDetector<Weight>::propagate(vec<Lit> & conflict) {
 			if (outer->value(l) == l_True) {
 				//do nothing
 			} else if (outer->value(l) == l_Undef) {
-				outer->enqueue(l, weighted_underprop_marker);
+				outer->enqueue(l, weighted_underprop_bv_marker);
 			} else if (outer->value(l) == l_False) {
 				//conflict
 
@@ -1391,7 +1488,7 @@ bool DistanceDetector<Weight>::propagate(vec<Lit> & conflict) {
 			if (outer->value(~l) == l_True) {
 				//do nothing
 			} else if (outer->value(~l) == l_Undef) {
-				outer->enqueue(~l, weighted_overprop_marker);
+				outer->enqueue(~l, weighted_overprop_bv_marker);
 			} else if (outer->value(~l) == l_False) {
 				//conflict
 				conflict.push(outer->toSolver(~l));
@@ -1458,6 +1555,53 @@ bool DistanceDetector<Weight>::propagate(vec<Lit> & conflict) {
 	}
 	return true;
 }
+//Return the path (in terms of nodes)
+template<typename Weight>
+bool DistanceDetector<Weight>::getModel_Path(int node, std::vector<int> & store_path){
+	store_path.clear();
+	 Reach & d = *underapprox_path_detector;
+	 d.update();
+	 if(!d.connected(node))
+		 return false;
+	 int u = node;
+	 int p;
+	while ((p = d.previous(u)) != -1) {
+		Edge & edg = outer->edge_list[d.incomingEdge(u)]; //outer->edges[p][u];
+		Var e = edg.v;
+		lbool val = outer->value(e);
+		assert(outer->value(e)==l_True);
+		store_path.push_back(u);
+		u = p;
+	}
+	assert(u==this->source);
+	store_path.push_back(u);
+	std::reverse(store_path.begin(),store_path.end());
+	return true;
+ }
+
+template<typename Weight>
+bool DistanceDetector<Weight>::getModel_PathByEdgeLit(int node, std::vector<Lit> & store_path){
+	store_path.clear();
+	 Reach & d = *underapprox_path_detector;
+	 d.update();
+	 if(!d.connected(node))
+		 return false;
+	 int u = node;
+	 int p;
+	while ((p = d.previous(u)) != -1) {
+		Edge & edg = outer->edge_list[d.incomingEdge(u)]; //outer->edges[p][u];
+		Var e = edg.v;
+		assert(outer->value(e)==l_True);
+		lbool val = outer->value(e);
+		assert(outer->value(e)==l_True);
+		store_path.push_back(mkLit(outer->toSolver(e),false));
+		u = p;
+	}
+	assert(u==this->source);
+	std::reverse(store_path.begin(),store_path.end());
+	return true;
+ }
+
 template<typename Weight>
 bool DistanceDetector<Weight>::checkSatisfied() {
 	UnweightedDijkstra<Weight> under(source, g_under);
