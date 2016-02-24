@@ -81,7 +81,7 @@ public:
 	MaxFlow<long> * conflict_flow = nullptr;
 
 
-	int max_unweighted_distance;
+	int max_unweighted_distance=0;
 
 	long stats_pure_skipped = 0;
 	long stats_distance_gt_reasons = 0;

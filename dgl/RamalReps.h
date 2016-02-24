@@ -867,7 +867,7 @@ public:
 				maxDistance = _maxDistance;
 		}
 	}
-	
+
 	void setSource(int s) {
 		source = s;
 		last_modification = -1;

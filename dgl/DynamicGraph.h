@@ -479,9 +479,12 @@ public:
 		}
 
 
-	void drawFull(bool showWeights = false) {
-
-#ifndef NDEBUG
+	void drawFull(bool showWeights = false, bool force_draw=false) {
+#ifdef NDEBUG
+		if(!force_draw)
+			return;
+#endif
+//#ifndef NDEBUG
 		printf("digraph{\n");
 		for (int i = 0; i < num_nodes; i++) {
 			printf("n%d\n", i);
@@ -506,7 +509,7 @@ public:
 			}
 		}
 		printf("}\n");
-#endif
+//#endif
 
 	}
 	

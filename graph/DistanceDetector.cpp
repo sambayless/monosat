@@ -43,7 +43,7 @@ template<typename Weight>
 DistanceDetector<Weight>::DistanceDetector(int _detectorID, GraphTheorySolver<Weight> * outer,
 		DynamicGraph<Weight>  &_g, DynamicGraph<Weight>  &_antig, int from, double seed) :
 		Detector(_detectorID), outer(outer), g_under(_g), g_over(_antig), source(from), rnd_seed(seed) {
-	max_unweighted_distance = 0;
+	max_unweighted_distance = -1;
 	rnd_path = NULL;
 
 	constraintsBuilt = -1;
@@ -423,7 +423,7 @@ void DistanceDetector<Weight>::addUnweightedShortestPathLit(int from, int to, Va
 	if (within_steps < 0)
 		within_steps = g_under.nodes();
 	
-	if (within_steps >= max_unweighted_distance) {
+	if (within_steps > max_unweighted_distance) {
 		max_unweighted_distance = within_steps;
 		if (opt_compute_max_distance) {
 			underapprox_unweighted_distance_detector->setMaxDistance(max_unweighted_distance);
@@ -458,7 +458,7 @@ void DistanceDetector<Weight>::addUnweightedShortestPathLit(int from, int to, Va
 		while (reach_lit_map.size() <= reach_var - first_reach_var) {
 			reach_lit_map.push({-1,-1});
 		}
-		reach_lit_map[reach_var - first_reach_var] = {to,unweighted_dist_lits.size()};
+		reach_lit_map[reach_var - first_reach_var] = {to,within_steps};
 	}
 	
 }
@@ -589,13 +589,17 @@ void DistanceDetector<Weight>::buildUnweightedDistanceGTReason(int node, int wit
 	stats_unweighted_gt_reasons++;
 	stats_over_conflicts++;
 	double starttime = rtime(2);
-	++it;
+	if(++it ==14){
+		int a=1;
+	}
+
 	int u = node;
 	bool reaches = overapprox_unweighted_distance_detector->connected(node);
-	
+
+
 	if (!reaches && within_steps>=g_over.nodes() && opt_conflict_min_cut && conflict_flow) {
 
-		g_over.drawFull();
+		g_over.drawFull(false);
 		cut.clear();
 		long f;
 		

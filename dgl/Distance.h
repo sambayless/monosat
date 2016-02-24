@@ -75,6 +75,7 @@ public:
 	virtual void setMaxDistance(Weight & maxDistance) {
 		
 	}
+
 };
 template<typename Weight>
 typename Distance<Weight>::NullStatus Distance<Weight>::nullStatus;
