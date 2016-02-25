@@ -51,6 +51,7 @@
 #include "bv/BVTheorySolver.h"
 
 #include "DistanceDetector.h"
+#include "WeightedDistanceDetector.h"
 #include "MSTDetector.h"
 #include "MaxflowDetector.h"
 #include "ConnectedComponentsDetector.h"
@@ -340,6 +341,7 @@ public:
 		//dbg_check_trails();
 		int lev =trail[v].level;
 		if(lev>=0 || lev==-2){
+
 			Var prev = trail[v].prev_var;
 			Var next = trail[v].next_var;
 			assert(prev!=var_Undef);
@@ -379,6 +381,7 @@ public:
 	}
 	//Returns true if the trail at this level is now empty.
 	inline bool _removeFromTrail(Var v, int lev){
+
 			assert(lev>=0);
 			Var prev = trail[v].prev_var;
 			Var next = trail[v].next_var;
@@ -496,7 +499,7 @@ public:
 	vec<Detector*> detectors;
 	vec<ReachDetector<Weight>*> reach_detectors;
 	vec<DistanceDetector<Weight>*> distance_detectors;
-	vec<DistanceDetector<Weight>*> weighted_distance_detectors;
+	vec<WeightedDistanceDetector<Weight>*> weighted_distance_detectors;
 	vec<MaxflowDetector<Weight>*> flow_detectors;
 	ConnectedComponentsDetector<Weight>* component_detector = nullptr;
 	CycleDetector<Weight> * cycle_detector = nullptr;
@@ -910,6 +913,11 @@ public:
 	Var newVar(Var solverVar, int detector, bool isEdge = false, bool connectToTheory = true) {
 		while (S->nVars() <= solverVar)
 			S->newVar();
+
+		if(S->hasTheory(solverVar) &&  S->getTheoryID(solverVar)==getTheoryIndex()){
+			return S->getTheoryVar(solverVar);
+		}
+
 		Var v = vars.size();
 		vars.push();
 		vars[v].isEdge = isEdge;
@@ -1359,6 +1367,7 @@ public:
 
 		if (changed) {
 			requiresPropagation = true;
+			S->needsPropagation(getTheoryIndex());
 		}
 /*		while(to_reenqueue.size()){
 			Lit p = to_reenqueue.last();
@@ -1411,7 +1420,8 @@ public:
 			}
 			v=p;
 		}
-		requiresPropagation = true;
+		requiresPropagation = true;//is this always required?
+		S->needsPropagation(getTheoryIndex());
 
 		for (Detector * d : detectors) {
 			d->backtrack(this->decisionLevel());
@@ -2871,13 +2881,13 @@ public:
 		}
 		
 		if (weighted_dist_info[from].source < 0) {
-			DistanceDetector<Weight> * d;
+			WeightedDistanceDetector<Weight> * d;
 			if(edge_bv_weights.size()>0){
 				enableNegativeWeights();
-				d = new DistanceDetector<Weight>(detectors.size(), this,  g_under_weights_over, g_over_weights_under,
+				d = new WeightedDistanceDetector<Weight>(detectors.size(), this,  g_under_weights_over, g_over_weights_under,
 						from, drand(rnd_seed));
 			}else{
-				d = new DistanceDetector<Weight>(detectors.size(), this,  g_under, g_over,
+				d = new WeightedDistanceDetector<Weight>(detectors.size(), this,  g_under, g_over,
 						from, drand(rnd_seed));
 			}
 			detectors.push(d);
@@ -2886,8 +2896,8 @@ public:
 			weighted_dist_info[from].source = from;
 			weighted_dist_info[from].detector = detectors.last();
 		}
-		
-		DistanceDetector<Weight> * d = (DistanceDetector<Weight>*) weighted_dist_info[from].detector;
+
+		WeightedDistanceDetector<Weight> * d = (WeightedDistanceDetector<Weight>*) weighted_dist_info[from].detector;
 		assert(d);
 		
 		d->addWeightedShortestPathLit(from, to, reach_var, distance,strictComparison);
@@ -2913,13 +2923,13 @@ public:
 		assert(from < g_under.nodes());
 
 		if (weighted_dist_info[from].source < 0) {
-			DistanceDetector<Weight> * d;
+			WeightedDistanceDetector<Weight> * d;
 			if(edge_bv_weights.size()>0){
 				enableNegativeWeights();
-				d = new DistanceDetector<Weight>(detectors.size(), this,  g_under_weights_over, g_over_weights_under,
+				d = new WeightedDistanceDetector<Weight>(detectors.size(), this,  g_under_weights_over, g_over_weights_under,
 						from, drand(rnd_seed));
 			}else{
-				d = new DistanceDetector<Weight>(detectors.size(), this,  g_under, g_over,
+				d = new WeightedDistanceDetector<Weight>(detectors.size(), this,  g_under, g_over,
 						from, drand(rnd_seed));
 			}
 			detectors.push(d);
@@ -2929,7 +2939,7 @@ public:
 			weighted_dist_info[from].detector = detectors.last();
 		}
 
-		DistanceDetector<Weight> * d = (DistanceDetector<Weight>*) weighted_dist_info[from].detector;
+		WeightedDistanceDetector<Weight> * d = (WeightedDistanceDetector<Weight>*) weighted_dist_info[from].detector;
 		assert(d);
 		BitVector<Weight> bv = comparator->getBV(bvID);
 		d->addWeightedShortestPathBVLit(from, to, reach_var,bv,strictComparison );
@@ -3331,8 +3341,9 @@ public:
 
 
 
-	 //Get a valid path, in terms of nodes, (from a reachability or shortest path constraint)
-	 //store_path must point to an array of ints of sufficient length to store the path (the path length can be optained by a call to getModel_PathLength)
+
+	//Get a valid path, in terms of nodes, (from a reachability or shortest path constraint)
+	//store_path must point to an array of ints of sufficient length to store the path (the path length can be optained by a call to getModel_PathLength)
 	//Or, return false if there is no such path
 	bool getModel_Path(Lit theoryLit, std::vector<int> & store_path){
 		store_path.clear();
@@ -3343,8 +3354,14 @@ public:
 		if(!r){
 			DistanceDetector<Weight> * dist = dynamic_cast<DistanceDetector<Weight>*>(d);
 			if(!dist){
-				assert(false);
-				return false;
+				WeightedDistanceDetector<Weight> * dist = dynamic_cast<WeightedDistanceDetector<Weight>*>(d);
+				if(!dist){
+					assert(false);
+					return false;
+				}else{
+					int node = dist->getNode(v);
+					return dist->getModel_Path(node,store_path);
+				}
 			}else{
 				int node = dist->getNode(v);
 				return dist->getModel_Path(node,store_path);
@@ -3364,8 +3381,14 @@ public:
 		if(!r){
 			DistanceDetector<Weight> * dist = dynamic_cast<DistanceDetector<Weight>*>(d);
 			if(!dist){
-				assert(false);
-				return false;
+				WeightedDistanceDetector<Weight> * dist = dynamic_cast<WeightedDistanceDetector<Weight>*>(d);
+				if(!dist){
+					assert(false);
+					return false;
+				}else{
+					int node = dist->getNode(v);
+					return dist->getModel_PathByEdgeLit(node,store_path);
+				}
 			}else{
 				int node = dist->getNode(v);
 				return dist->getModel_PathByEdgeLit(node,store_path);
