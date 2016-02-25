@@ -569,9 +569,9 @@ public:
 					over+=bit;
 				}
 			}
-			if(over!=over_approx[bvID])
+			if(over<over_approx[bvID])
 				return false;
-			if(under!=under_approx[bvID])
+			if(under>under_approx[bvID])
 				return false;
 
 			return true;
@@ -5955,7 +5955,7 @@ public:
 				eqBV=eq_bitvectors[eqBV];
 			}
 
-			if(over_approx[eqBV]!= under_approx[eqBV]){
+			if(over_approx[eqBV] < under_approx[eqBV]){
 				return false;
 			}
 
@@ -6504,7 +6504,7 @@ public:
 
 
 		for(int i = 0;i<bitwidth;i++){
-			bitvectors[bvID].push(mkLit(newVar(var_Undef,bvID,true,false)));
+			bitvectors[bvID].push(mkLit(newVar(var_Undef,operations.size(),true,false)));
 		}
 		BitOp * op = new BitOp(*this, bvID);
 		addOperation(bvID,op);
@@ -6581,7 +6581,7 @@ public:
 				assert(val==0);
 			}else{
 				for(int i = 0;i<bitwidth;i++){
-					bitvectors[bvID].push(mkLit(newVar(var_Undef,bvID)));
+					bitvectors[bvID].push(mkLit(newVar(var_Undef,operations.size())));
 				}
 			}
 			BitOp * op = new BitOp(*this, bvID);
@@ -7093,7 +7093,7 @@ public:
 					return ~True();
 				}
 			}else{
-				Lit l = mkLit(newVar(outerVar, bvID,-1,false));
+				Lit l = mkLit(newVar(outerVar, -1,-1,false));
 				if (op==Comparison::leq || op==Comparison::geq){
 					addClause(l);//const true
 				}else{

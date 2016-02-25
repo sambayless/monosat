@@ -11,7 +11,8 @@ CPP_SRCS += \
 ../graph/MSTDetector.cpp \
 ../graph/MaxflowDetector.cpp \
 ../graph/ReachDetector.cpp \
-../graph/SteinerDetector.cpp 
+../graph/SteinerDetector.cpp \
+../graph/WeightedDistanceDetector.cpp 
 
 OBJS += \
 ./graph/AllPairsDetector.o \
@@ -21,7 +22,8 @@ OBJS += \
 ./graph/MSTDetector.o \
 ./graph/MaxflowDetector.o \
 ./graph/ReachDetector.o \
-./graph/SteinerDetector.o 
+./graph/SteinerDetector.o \
+./graph/WeightedDistanceDetector.o 
 
 CPP_DEPS += \
 ./graph/AllPairsDetector.d \
@@ -31,7 +33,8 @@ CPP_DEPS += \
 ./graph/MSTDetector.d \
 ./graph/MaxflowDetector.d \
 ./graph/ReachDetector.d \
-./graph/SteinerDetector.d 
+./graph/SteinerDetector.d \
+./graph/WeightedDistanceDetector.d 
 
 
 # Each subdirectory must supply rules for building sources it contributes
