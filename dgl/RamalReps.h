@@ -37,6 +37,7 @@
 #include <string>
 #include <vector>
 
+//#define DEBUG_RAMAL
 
 namespace dgl {
 template<typename Weight = int, class Status = typename Distance<Weight>::NullStatus>
@@ -571,12 +572,7 @@ public:
 			}
 		}
 		edgeInShortestPathGraph.resize(g.nEdgeIDs());
-		if (last_history_clear != g.historyclears) {
-			history_qhead = 0;
-			last_history_clear = g.historyclears;
-			
-		}
-		
+
 		if(has_zero_weights){
 			if(!ever_warned_about_zero_weights){
 				ever_warned_about_zero_weights=true;
@@ -584,6 +580,18 @@ public:
 			}
 			dijkstras.update();
 		}else{
+
+			if (last_history_clear != g.historyclears) {
+				history_qhead = g.historySize();
+				last_history_clear = g.historyclears;
+				for (int edgeid = 0; edgeid < g.edges(); edgeid++) {
+					if (g.edgeEnabled(edgeid)) {
+						GRRInc(edgeid);
+					} else {
+						GRRDec(edgeid);
+					}
+				}
+			}
 			for (int i = history_qhead; i < g.historySize(); i++) {
 				int edgeid = g.getChange(i).id;
 				if (g.getChange(i).addition && g.edgeEnabled(edgeid)) {
@@ -595,6 +603,7 @@ public:
 		}
 			//for(int i = 0;i<g.nodes();i++){
 			//	int u=i;
+		if(reportPolarity>-2){
 			for (int u : changed) {
 				//int u = changed[i];
 				node_changed[u] = false;
@@ -608,9 +617,9 @@ public:
 				}
 			}
 			changed.clear();
-
-
+		}
 		assert(dbg_uptodate());
+
 		num_updates++;
 		last_modification = g.modifications;
 		last_deletion = g.deletions;
@@ -646,10 +655,10 @@ public:
 	}
 	bool dbg_uptodate() {
 #ifdef DEBUG_RAMAL
-		/*if(last_modification<0)
+		if(last_modification<0)
 		 return true;
 		 dbg_delta();
-		 Dijkstra<Weight> d(source,g,weights);
+		 Dijkstra<Weight> d(source,g);
 
 		 for(int i = 0;i<g.nodes();i++){
 		 Weight dis = dist[i];
@@ -661,9 +670,9 @@ public:
 
 		 if(dis!=dbgdist){
 		 assert(false);
-		 throw std::logic_error();
+		 throw std::logic_error("Internal error in Ramal Reps");
 		 }
-		 }*/
+		 }
 //#endif
 #endif
 		return true;
@@ -671,6 +680,9 @@ public:
 	
 	bool connected_unsafe(int t) {
 		dbg_uptodate();
+		if(has_zero_weights){
+			return dijkstras.connected_unsafe(t);
+		}
 		return t < dist.size() && dist[t] < INF;
 	}
 	bool connected_unchecked(int t) {
@@ -682,39 +694,102 @@ public:
 			update();
 
 		assert(dbg_uptodate());
-		
+		if(has_zero_weights){
+			return dijkstras.connected(t);
+		}
 		return dist[t] < INF;
 	}
 	Weight & distance(int t) {
 		if (last_modification != g.modifications)
 			update();
+		if(has_zero_weights){
+			return dijkstras.distance(t);
+		}
 		if (connected_unsafe(t))
 			return dist[t];
 		else
 			return this->unreachable();
 	}
 	Weight &distance_unsafe(int t) {
+		if(has_zero_weights){
+			return dijkstras.distance_unsafe(t);
+		}
 		if (connected_unsafe(t))
 			return dist[t];
 		else
 			return this->unreachable();
 	}
 	int incomingEdge(int t) {
-		/*
-		 assert(false);//not yet implemented...
-		 assert(t>=0 && t<prev.size());
-		 assert(prev[t]>=-1 );
-		 return prev[t];*/
-		//not supported
-		 throw std::runtime_error("not implemented");
+		if(has_zero_weights){
+			return dijkstras.incomingEdge(t);
+		}
+		if (!connected_unsafe(t)){
+			return -1;
+		}
+		if(t==source)
+			return -1;
+
+		assert( dist[t]>=0);
+		assert( dist[t]!=INF);
+		int prev = -1;
+		int prev_edgeID=-1;
+		Weight min_prev_dist= dist[t];
+		for(int i = 0;i<g.nIncoming(t);i++){
+
+			int edgeID = g.incoming(t,i).id;
+			if(g.edgeEnabled(edgeID)){
+				int from = g.incoming(t,i).node;
+				if(connected_unsafe(from)){
+					assert(dist[from]>=0);
+					assert(dist[from]!=INF);
+					//Note: RamalReps doesn't support 0-weighted edges, so it is safe to assume that the previous node on the path has a lower distance from the source
+					if (dist[from]<min_prev_dist){
+						min_prev_dist=dist[from];
+						prev = from;
+						prev_edgeID=edgeID;
+					}
+				}
+			}
+		}
+		assert(prev!=-1);
+		assert(min_prev_dist<dist[t]);
+
+		return prev_edgeID;
 	}
 	int previous(int t) {
-		/*if(prev[t]<0)
-		 return -1;
+		if(has_zero_weights){
+			return dijkstras.previous(t);
+		}
+		if (!connected_unsafe(t)){
+			return -1;
+		}
+		if(t==source)
+			return -1;
 
-		 assert(g.all_edges[incomingEdge(t)].to==t);
-		 return g.all_edges[incomingEdge(t)].from;*/
-		 throw std::runtime_error("not implemented");
+		assert( dist[t]>=0);
+		assert( dist[t]!=INF);
+		int prev = -1;
+		Weight min_prev_dist= dist[t];
+		for(int i = 0;i<g.nIncoming(t);i++){
+
+			int edgeID = g.incoming(t,i).id;
+			if(g.edgeEnabled(edgeID)){
+				int from = g.incoming(t,i).node;
+				if(connected_unsafe(from)){
+					assert(dist[from]>=0);
+					assert(dist[from]!=INF);
+					//Note: RamalReps doesn't support 0-weighted edges, so it is safe to assume that the previous node on the path has a lower distance from the source
+					if (dist[from]<min_prev_dist){
+						min_prev_dist=dist[from];
+						prev = from;
+					}
+				}
+			}
+		}
+		assert(prev!=-1);
+		assert(min_prev_dist<dist[t]);
+
+		return prev;
 	}
 };
 
@@ -792,7 +867,7 @@ public:
 				maxDistance = _maxDistance;
 		}
 	}
-	
+
 	void setSource(int s) {
 		source = s;
 		last_modification = -1;
@@ -1095,7 +1170,7 @@ public:
 	
 	void dbg_delta_lite() {
 #ifdef DEBUG_RAMAL
-		for (int u = 0; u < g.nodes(); u++) {
+	/*	for (int u = 0; u < g.nodes(); u++) {
 			int del = delta[u];
 			int d = dist[u];
 			int num_in = 0;
@@ -1112,7 +1187,7 @@ public:
 				}
 			}
 			assert(del == num_in);
-		}
+		}*/
 #endif
 		
 	}
@@ -1504,21 +1579,78 @@ public:
 			return this->unreachable();
 	}
 	int incomingEdge(int t) {
-		/*
-		 assert(false);//not yet implemented...
-		 assert(t>=0 && t<prev.size());
-		 assert(prev[t]>=-1 );
-		 return prev[t];*/
 
-		throw std::runtime_error("not implemented");
+		if (!connected_unsafe(t)){
+			return -1;
+		}
+		if(t==source)
+			return -1;
+
+		int d = dist[t];
+
+		assert(d>=0);
+		assert(d!=INF);
+		int prev = -1;
+		int prev_edgeID=-1;
+		int min_prev_dist=d;
+		for(int i = 0;i<g.nIncoming(t);i++){
+
+			int edgeID = g.incoming(t,i).id;
+			if(g.edgeEnabled(edgeID)){
+				int from = g.incoming(t,i).node;
+				if(connected_unsafe(from)){
+					int from_dist = dist[from];
+					assert(from_dist>=0);
+					assert(from_dist!=INF);
+					//Note: RamalReps doesn't support 0-weighted edges, so it is safe to assume that the previous node on the path has a lower distance from the source
+					if (from_dist<min_prev_dist){
+						min_prev_dist=from_dist;
+						prev = from;
+						prev_edgeID=edgeID;
+					}
+				}
+			}
+		}
+		assert(prev!=-1);
+		assert(min_prev_dist<d);
+
+		return prev_edgeID;
 	}
 	int previous(int t) {
-		/*		if(prev[t]<0)
-		 return -1;
 
-		 assert(g.all_edges[incomingEdge(t)].to==t);
-		 return g.all_edges[incomingEdge(t)].from;*/
-		 throw std::runtime_error("not implemented");
+		if (!connected_unsafe(t)){
+			return -1;
+		}
+		if(t==source)
+			return -1;
+
+		int d = dist[t];
+
+		assert(d>=0);
+		assert(d!=INF);
+		int prev = -1;
+		int min_prev_dist=d;
+		for(int i = 0;i<g.nIncoming(t);i++){
+
+			int edgeID = g.incoming(t,i).id;
+			if(g.edgeEnabled(edgeID)){
+				int from = g.incoming(t,i).node;
+				if(connected_unsafe(from)){
+					int from_dist = dist[from];
+					assert(from_dist>=0);
+					assert(from_dist!=INF);
+					//Note: RamalReps doesn't support 0-weighted edges, so it is safe to assume that the previous node on the path has a lower distance from the source
+					if (from_dist<min_prev_dist){
+						min_prev_dist=from_dist;
+						prev = from;
+					}
+				}
+			}
+		}
+		assert(prev!=-1);
+		assert(min_prev_dist<d);
+
+		return prev;
 	}
 };
 template<typename Weight, class Status>
