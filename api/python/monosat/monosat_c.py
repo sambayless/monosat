@@ -332,6 +332,20 @@ class Monosat(metaclass=Singleton):
 
         self.monosat_c.getModel_MinimumSpanningTreeWeight.argtypes=[c_solver_p,c_graph_p, c_literal]
         self.monosat_c.getModel_MinimumSpanningTreeWeight.restype=c_long     
+    
+        self.monosat_c.getModel_Path_Nodes_Length.argtypes=[c_solver_p,c_graph_p, c_literal]
+        self.monosat_c.getModel_Path_Nodes_Length.restype=c_int    
+
+        self.monosat_c.getModel_Path_Nodes.argtypes=[c_solver_p,c_graph_p, c_literal, c_int, c_int_p]
+        self.monosat_c.getModel_Path_Nodes.restype=c_int 
+
+        self.monosat_c.getModel_Path_EdgeLits_Length.argtypes=[c_solver_p,c_graph_p, c_literal]
+        self.monosat_c.getModel_Path_EdgeLits_Length.restype=c_int    
+
+        self.monosat_c.getModel_Path_EdgeLits.argtypes=[c_solver_p,c_graph_p, c_literal, c_int, c_int_p]
+        self.monosat_c.getModel_Path_EdgeLits.restype=c_int 
+
+
         self.newSolver()
         #For many (but not all) instances, the following settings may give good performance: 
         #self.init("-verb=0 -verb-time=0 -rnd-theory-freq=0.99 -no-decide-bv-intrinsic  -decide-bv-bitwise  -decide-graph-bv -decide-theories -no-decide-graph-rnd   -lazy-maxflow-decisions -conflict-min-cut -conflict-min-cut-maxflow -reach-underapprox-cnf -check-solution ")
@@ -394,7 +408,12 @@ class Monosat(metaclass=Singleton):
         for i,n in enumerate(nums):            
             self._int_array[i]=c_int(n)
         return self._int_array
-        
+    
+    def intArrayToList(self, array_pointer,length):
+        ret = []
+        for i in range(length):
+            ret.append(array_pointer[i])
+        return ret        
 
     def setTimeLimit(self,seconds):
         if seconds is None or seconds<0:
@@ -988,7 +1007,35 @@ class Monosat(metaclass=Singleton):
     def getModel_MinimumSpanningTreeWeight(self, graph, mstlit):
         return self.monosat_c.getModel_MinimumSpanningTreeWeight(self.solver._ptr, graph,mstlit); 
 
+    def getModel_Path_Nodes(self, graph, reach_or_distance_lit):
+        
+        arg_length = self.monosat_c.getModel_Path_Nodes_Length(self.solver._ptr, graph,reach_or_distance_lit);
+        if (arg_length <0):
+            return None
+        elif arg_length == 0:
+            return []
+        path = list(range(arg_length))
+        path_pointer = self.getIntArray(path)
+        l = self.monosat_c.getModel_Path_Nodes(self.solver._ptr, graph,reach_or_distance_lit, arg_length,path_pointer);
+        if l != arg_length:
+            raise RuntimeError("Error reading path model")
+        
+        return self.intArrayToList(path_pointer,arg_length)
 
+    def getModel_Path_EdgeLits(self, graph, reach_or_distance_lit):
+        
+        arg_length = self.monosat_c.getModel_Path_EdgeLits_Length(self.solver._ptr, graph,reach_or_distance_lit);
+        if (arg_length <0):
+            return None
+        elif arg_length == 0:
+            return []
+        path = list(range(arg_length))
+        path_pointer = self.getIntArray(path)
+        l = self.monosat_c.getModel_Path_EdgeLits(self.solver._ptr, graph,reach_or_distance_lit, arg_length,path_pointer);
+        if l != arg_length:
+            raise RuntimeError("Error reading path model")
+        
+        return self.intArrayToList(path_pointer,arg_length)
 
     
         

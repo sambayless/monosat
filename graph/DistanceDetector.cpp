@@ -1384,6 +1384,53 @@ bool DistanceDetector<Weight>::propagate(vec<Lit> & conflict) {
 	}
 	return true;
 }
+//Return the path (in terms of nodes)
+template<typename Weight>
+bool DistanceDetector<Weight>::getModel_Path(int node, std::vector<int> & store_path){
+	store_path.clear();
+	 Reach & d = *underapprox_path_detector;
+	 d.update();
+	 if(!d.connected(node))
+		 return false;
+	 int u = node;
+	 int p;
+	while ((p = d.previous(u)) != -1) {
+		Edge & edg = outer->edge_list[d.incomingEdge(u)]; //outer->edges[p][u];
+		Var e = edg.v;
+		lbool val = outer->value(e);
+		assert(outer->value(e)==l_True);
+		store_path.push_back(u);
+		u = p;
+	}
+	assert(u==this->source);
+	store_path.push_back(u);
+	std::reverse(store_path.begin(),store_path.end());
+	return true;
+ }
+
+template<typename Weight>
+bool DistanceDetector<Weight>::getModel_PathByEdgeLit(int node, std::vector<Lit> & store_path){
+	store_path.clear();
+	 Reach & d = *underapprox_path_detector;
+	 d.update();
+	 if(!d.connected(node))
+		 return false;
+	 int u = node;
+	 int p;
+	while ((p = d.previous(u)) != -1) {
+		Edge & edg = outer->edge_list[d.incomingEdge(u)]; //outer->edges[p][u];
+		Var e = edg.v;
+		assert(outer->value(e)==l_True);
+		lbool val = outer->value(e);
+		assert(outer->value(e)==l_True);
+		store_path.push_back(mkLit(outer->toSolver(e),false));
+		u = p;
+	}
+	assert(u==this->source);
+	std::reverse(store_path.begin(),store_path.end());
+	return true;
+ }
+
 template<typename Weight>
 bool DistanceDetector<Weight>::checkSatisfied() {
 	UnweightedDijkstra<Weight> under(source, g_under);

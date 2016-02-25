@@ -1642,7 +1642,7 @@ bool ReachDetector<Weight>::getModel_PathByEdgeLit(int node, std::vector<Lit> & 
 		assert(outer->value(e)==l_True);
 		lbool val = outer->value(e);
 		assert(outer->value(e)==l_True);
-		store_path.push_back(mkLit(e,false));
+		store_path.push_back(mkLit(outer->toSolver(e),false));
 		u = p;
 	}
 	assert(u==this->source);

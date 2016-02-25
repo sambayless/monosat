@@ -257,7 +257,8 @@ public:
 	void addUnweightedShortestPathLit(int from, int to, Var reach_var, int within_steps = -1);
 	void addWeightedShortestPathLit(int from, int to, Var reach_var, Weight within_distance, bool strictComparison);
 	void addWeightedShortestPathBVLit(int from, int to, Var reach_var, const BitVector<Weight> & bv, bool strictComparison);
-
+	bool getModel_Path(int node, std::vector<int> & store_path);
+	bool getModel_PathByEdgeLit(int node, std::vector<Lit> & store_path);
 	DistanceDetector(int _detectorID, GraphTheorySolver<Weight> * _outer,
 			DynamicGraph<Weight>  &_g, DynamicGraph<Weight>  &_antig, int _source, double seed = 1);//:Detector(_detectorID),outer(_outer),within(-1),source(_source),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL){}
 	virtual ~DistanceDetector() {

@@ -970,6 +970,52 @@ void bv_slice( Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv,int a
 
  }
  //graph queries:
+ int getModel_Path_Nodes_Length(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<long> *G,int reach_or_distance_literal){
+ 	 Lit l = toLit(reach_or_distance_literal);
+ 	std::vector<int> store_path;
+ 	if(! G->getModel_Path(S->getTheoryLit(l),store_path)){
+ 		return -1;
+ 	}else{
+ 		return store_path.size();
+ 	}
+  }
+ int getModel_Path_Nodes(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<long> *G,int reach_or_distance_literal, int store_length, int * store){
+ 	 Lit l = toLit(reach_or_distance_literal);
+ 	std::vector<int> store_path;
+ 	if(! G->getModel_Path(S->getTheoryLit(l),store_path)){
+ 		return -1;
+ 	}else if (store_length<store_path.size()) {
+ 		return store_path.size();
+ 	}else{
+ 		for(int i = 0;i<store_path.size();i++){
+ 			store[i]=store_path[i];
+ 		}
+		return store_path.size();
+ 	}
+  }
+ int getModel_Path_EdgeLits_Length(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<long> *G,int reach_or_distance_literal){
+ 	 Lit l = toLit(reach_or_distance_literal);
+ 	std::vector<Lit> store_path;
+ 	if(! G->getModel_PathByEdgeLit(S->getTheoryLit(l),store_path)){
+ 		return -1;
+ 	}else{
+ 		return store_path.size();
+ 	}
+  }
+ int getModel_Path_EdgeLits(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<long> *G,int reach_or_distance_literal, int store_length, int * store){
+ 	 Lit l = toLit(reach_or_distance_literal);
+  	std::vector<Lit> store_path;
+ 	if(! G->getModel_PathByEdgeLit(S->getTheoryLit(l),store_path)){
+ 		return -1;
+ 	}else if (store_length<store_path.size()) {
+ 		return store_path.size();
+ 	}else{
+ 		for(int i = 0;i<store_path.size();i++){
+ 			store[i]=toInt(store_path[i]);
+ 		}
+		return store_path.size();
+ 	}
+  }
  long getModel_MaxFlow(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<long> *G,int maxflow_literal){
 	 Lit l = toLit(maxflow_literal);
 	 return G->getModel_MaximumFlow(S->getTheoryLit(l));

@@ -3330,6 +3330,7 @@ public:
 	}
 
 
+
 	 //Get a valid path, in terms of nodes, (from a reachability or shortest path constraint)
 	 //store_path must point to an array of ints of sufficient length to store the path (the path length can be optained by a call to getModel_PathLength)
 	//Or, return false if there is no such path
@@ -3337,10 +3338,17 @@ public:
 		store_path.clear();
 		Var v = var(theoryLit);
 		Detector * d= detectors[getDetector(v)];
+		//this is awful, fix this!!
 		ReachDetector<Weight> * r = dynamic_cast<ReachDetector<Weight>*>(d);
 		if(!r){
-			assert(false);
-			return false;
+			DistanceDetector<Weight> * dist = dynamic_cast<DistanceDetector<Weight>*>(d);
+			if(!dist){
+				assert(false);
+				return false;
+			}else{
+				int node = dist->getNode(v);
+				return dist->getModel_Path(node,store_path);
+			}
 		}
 		int node = r->getNode(v);
 		return r->getModel_Path(node,store_path);
@@ -3354,8 +3362,14 @@ public:
 		Detector * d= detectors[getDetector(v)];
 		ReachDetector<Weight> * r = dynamic_cast<ReachDetector<Weight>*>(d);
 		if(!r){
-			assert(false);
-			return false;
+			DistanceDetector<Weight> * dist = dynamic_cast<DistanceDetector<Weight>*>(d);
+			if(!dist){
+				assert(false);
+				return false;
+			}else{
+				int node = dist->getNode(v);
+				return dist->getModel_PathByEdgeLit(node,store_path);
+			}
 		}
 		int node = r->getNode(v);
 		return r->getModel_PathByEdgeLit(node,store_path);

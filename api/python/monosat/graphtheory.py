@@ -142,7 +142,25 @@ class Graph():
         else:
             return self._monosat.getModel_EdgeFlow(self.graph,flowlit.getLit(),edgelit.getLit())
     
-    
+    """
+    Get a path in the graph that satisfies the reachability or shortest path lit, if the shortest path lit is true in the model
+    If 'return_edge_lits' is True, then return the path as a list of edge literals. Otherwise, returns the path as a list of nodes.
+    Must not be caled before solve().
+    """
+    def getPath(self,reach_or_shortest_path_lit,return_edge_lits=False):
+        if not return_edge_lits:
+            return  self._monosat.getModel_Path_Nodes(self.graph, reach_or_shortest_path_lit.getLit())
+        else:
+            
+            lits = self._monosat.getModel_Path_EdgeLits(self.graph, reach_or_shortest_path_lit.getLit())
+            if lits is None:
+                return None
+            lit_list = []
+            for lit in lits:
+                lit_list.append( Var(lit))
+                
+            return lit_list
+
     
     
     def getEdge(self,f,t):
@@ -249,7 +267,10 @@ class Graph():
     
     def numNodes(self):
         return self.nodes
-    
+        
+    def numEdges(self):
+        return self.numedges
+        
     def getNodes(self):
         return range(self.nodes)
     
