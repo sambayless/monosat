@@ -142,7 +142,7 @@ void WeightedDistanceDetector<Weight>::addWeightedShortestPathLit(int from, int 
 	while (reach_lit_map.size() <= reach_var - first_reach_var) {
 		reach_lit_map.push({-1,-1,None});
 	}
-	reach_lit_map[reach_var - first_reach_var] = {to,weighted_dist_lits.size(),WeightedConstLit};
+	reach_lit_map[reach_var - first_reach_var] = {to,weighted_dist_lits.size()-1,WeightedConstLit};
 }
 
 template<typename Weight>
@@ -164,7 +164,7 @@ void WeightedDistanceDetector<Weight>::addWeightedShortestPathBVLit(int from, in
 	while (reach_lit_map.size() <= reach_var - first_reach_var) {
 		reach_lit_map.push({-1,-1,None});
 	}
-	reach_lit_map[reach_var - first_reach_var] = {to,weighted_dist_bv_lits.size(),WeightedBVLit};
+	reach_lit_map[reach_var - first_reach_var] = {to,weighted_dist_bv_lits.size()-1,WeightedBVLit};
 }
 
 
