@@ -636,7 +636,7 @@ int main(int argc, char** argv) {
 		vec<Lit> assume;
 
 		StreamBuffer strm(in);
-
+		bool found_optimal=true;
 		while(S.okay() && parser.parse(strm, S)){
 			if(*strm==EOF){
 				//Don't run solves from the last line of the file, in order to support pre-processing and other options below.
@@ -648,7 +648,7 @@ int main(int argc, char** argv) {
 				if(!opt_remap_vars){
 					fprintf(stderr,"Warning: Solver will give completely bogus answers if 'solve' statements are processed while variable remapping is disabled (e.g., -no-remap-vars)\n\n");
 				}
-				optimize_and_solve(S,parser.assumptions,parser.bv_minimize);
+				optimize_and_solve(S,parser.assumptions,parser.bv_minimize, found_optimal);
 			}else{
 				parser.assumptions.clear();parser.bv_minimize.clear();
 			}
@@ -703,10 +703,13 @@ int main(int argc, char** argv) {
 
 
 
-		lbool ret = optimize_and_solve(S,parser.assumptions,parser.bv_minimize);
+		lbool ret = optimize_and_solve(S,parser.assumptions,parser.bv_minimize,found_optimal);
 		double solving_time = rtime(0) - after_preprocessing;
 		if (opt_verb > 0) {
 			printf("Solving time = %f\n", solving_time);
+			if(!found_optimal){
+				printf("Warning: Gave up before proving solution optimal.\n");
+			}
 		}
 
 		if (ret == l_True) {

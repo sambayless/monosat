@@ -69,7 +69,12 @@ typedef int Var;
   //Returns 0 for satisfiable, 1 for proved unsatisfiable, 2 for failed to find a solution (within any resource limits that have been set)
   int solveAssumptionsLimited_MinBVs(SolverPtr S,int * assumptions, int n_assumptions, int * minimize_bvs, int n_minimize_bvs);
 
+  bool lastSolutionWasOptimal(SolverPtr S);
 
+  //If the last solution was unsat, then this get the 'conflict clause' produced by the solver (a subset of the assumptions which are sufficient to cause the instance to be UNSAT).
+  //Fills the given pointer with the first max_store_size literals of the conflict clause, and returns the number of literals in the conflict clause. Set store_clause to null and max_store_size to 0 to find the size of the conflict clause
+  //Returns -1 if the solver has no conflict clause from the most recent solve() call (because that call was not UNSAT)
+  int getConflictClause(Monosat::SimpSolver * S, int * store_clause, int max_store_size);
 
   void backtrack(SolverPtr S);
   int newVar(SolverPtr S);

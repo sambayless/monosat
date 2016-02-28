@@ -140,6 +140,9 @@ class Monosat(metaclass=Singleton):
         self.monosat_c.solveAssumptionsLimited_MinBVs.restype=c_int  
         
         
+        self.monosat_c.getConflictClause.argtypes=[c_solver_p, c_int_p,c_int]
+        self.monosat_c.getConflictClause.restype=c_int 
+
         self.monosat_c.setTimeLimit.argtypes=[c_solver_p,c_int]
         self.monosat_c.setMemoryLimit.argtypes=[c_solver_p,c_int]
         self.monosat_c.setConflictLimit.argtypes=[c_solver_p,c_int]
@@ -189,6 +192,9 @@ class Monosat(metaclass=Singleton):
         
         self.monosat_c.initBVTheory.argtypes=[c_solver_p];
         self.monosat_c.initBVTheory.restype=c_bv_p;
+                
+        self.monosat_c.newBitvector_anon.argtypes=[c_solver_p,c_bv_p, c_int]
+        self.monosat_c.newBitvector_anon.restype=c_bvID
         
         self.monosat_c.newBitvector_const.argtypes=[c_solver_p,c_bv_p, c_int, c_long]
         self.monosat_c.newBitvector_const.restype=c_bvID
@@ -401,6 +407,11 @@ class Monosat(metaclass=Singleton):
         self.solver.comments.append(c)
         if self.solver.output:
             self._echoOutput("c " + c +"\n")           
+
+    def getEmptyIntArray(self,length):                 
+        if length>len(self._int_array):
+            self._int_array = (c_int * length)()
+        return self._int_array
     
     def getIntArray(self,nums):
         if len(nums)>len(self._int_array):
@@ -438,6 +449,20 @@ class Monosat(metaclass=Singleton):
             self.monosat_c.setPropagationLimit(self.solver._ptr,-1)
         else:
             self.monosat_c.setPropagationLimit(self.solver._ptr,propagations)
+
+
+    def getConflictClause(self):
+        conflict_size =  self.monosat_c.getConflictClause(self.solver._ptr,null_ptr,0)
+        if conflict_size<0:
+            return None #No conflict clause in the solver
+        
+ 
+        conflict_ptr = self.getEmptyIntArray(conflict_size)
+        length = self.monosat_c.getConflictClause(self.solver._ptr,conflict_ptr,conflict_size)
+        if length != conflict_size:
+            raise RuntimeError("Error reading conflict clause")
+        
+        return self.intArrayToList(conflict_ptr,conflict_size)
 
 
 
@@ -632,7 +657,13 @@ class Monosat(metaclass=Singleton):
     #    self.monosat_c.preprocess(disable_future_preprocessing)
     
     #bv interface
-
+    def newBitvector_anon(self,width):
+        self.backtrack()
+        bvID = self.monosat_c.newBitvector_anon(self.solver._ptr,self.solver.bvtheory, width)
+        if self.solver.output:
+            self._echoOutput("bv anon %d %d"%(bvID, width)+"\n" )   
+        return bvID        
+    
     def newBitvector_const(self, width,val):
         self.backtrack()
         bvID = self.monosat_c.newBitvector_const(self.solver._ptr,self.solver.bvtheory, width, c_long(val))
