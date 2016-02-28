@@ -142,7 +142,9 @@ class Monosat(metaclass=Singleton):
         self.monosat_c.lastSolutionWasOptimal.argtypes=[c_solver_p]
         self.monosat_c.lastSolutionWasOptimal.restype=c_bool 
         
-        
+        self.monosat_c.getConflictClause.argtypes=[c_solver_p, c_int_p,c_int]
+        self.monosat_c.getConflictClause.restype=c_int 
+
         self.monosat_c.setTimeLimit.argtypes=[c_solver_p,c_int]
         self.monosat_c.setMemoryLimit.argtypes=[c_solver_p,c_int]
         self.monosat_c.setConflictLimit.argtypes=[c_solver_p,c_int]
@@ -410,8 +412,13 @@ class Monosat(metaclass=Singleton):
         self.solver.comments.append(c)
         if self.solver.output:
             self._echoOutput("c " + c +"\n")           
+
+    def getEmptyIntArray(self,length):                 
+        if length>len(self._int_array):
+            self._int_array = (c_int * length)()
+        return self._int_array
     
-    def getIntArray(self,nums):
+    def getIntArray(self,nums):                 
         if len(nums)>len(self._int_array):
             self._int_array = (c_int * len(nums))()
         for i,n in enumerate(nums):            
@@ -450,6 +457,21 @@ class Monosat(metaclass=Singleton):
 
     def lastSolutionWasOptimal(self):
         return self.monosat_c.lastSolutionWasOptimal(self.solver._ptr)
+
+    def getConflictClause(self):
+        conflict_size =  self.monosat_c.getConflictClause(self.solver._ptr,null_ptr,0)
+        if conflict_size<0:
+            return None #No conflict clause in the solver
+        
+ 
+        conflict_ptr = self.getEmptyIntArray(conflict_size)
+        length = self.monosat_c.getConflictClause(self.solver._ptr,conflict_ptr,conflict_size)
+        if length != conflict_size:
+            raise RuntimeError("Error reading conflict clause")
+        
+        return self.intArrayToList(conflict_ptr,conflict_size)
+
+
 
     def solve(self,assumptions=None,minimize_bvs=None):
         self.backtrack()

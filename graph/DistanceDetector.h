@@ -240,17 +240,11 @@ public:
 	bool propagate(vec<Lit> & conflict);
 	void buildUnweightedDistanceLEQReason(int node, vec<Lit> & conflict);
 	void buildUnweightedDistanceGTReason(int node, int within_steps, vec<Lit> & conflict);
-	void buildDistanceLEQReason(int to, Weight & min_distance, vec<Lit> & conflict, bool strictComparison=false);
-	void buildDistanceGTReason(int to, Weight & min_distance, vec<Lit> & conflict, bool strictComparison=true);
-	void analyzeDistanceLEQReason(int to, Weight & min_distance, vec<Lit> & conflict, bool strictComparison=true);
-	void analyzeDistanceGTReason(int to, Weight & min_distance, vec<Lit> & conflict, bool strictComparison=true);
 	void buildReason(Lit p, vec<Lit> & reason, CRef marker);
 	bool checkSatisfied();
 	Lit decide();
 	void updateShortestPaths();
 	void addUnweightedShortestPathLit(int from, int to, Var reach_var, int within_steps = -1);
-	void addWeightedShortestPathLit(int from, int to, Var reach_var, Weight within_distance, bool strictComparison);
-	void addWeightedShortestPathBVLit(int from, int to, Var reach_var, const BitVector<Weight> & bv, bool strictComparison);
 	bool getModel_Path(int node, std::vector<int> & store_path);
 	bool getModel_PathByEdgeLit(int node, std::vector<Lit> & store_path);
 	DistanceDetector(int _detectorID, GraphTheorySolver<Weight> * _outer,

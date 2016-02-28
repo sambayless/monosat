@@ -53,6 +53,17 @@ def Solve(assumptions=None, preprocessing=True,bvs_to_minimize=None,time_limit_s
 
     return r
 
+#If the most recent solve() call was UNSAT, returns a 
+def getConflictClause():
+    conf_clause = Monosat().getConflictClause()
+    if conf_clause is None:
+        return None
+    else:
+        vars = []
+        for v in conf_clause:
+            vars.append(Var(v))
+        return vars
+    
 def WriteConstraints():
     
     _writePBCosntraints()

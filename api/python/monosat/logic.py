@@ -80,8 +80,10 @@ class Var:
         #    self.symbol = str(s)        
         #    _monosat.symbolmap[self.symbol]=self
             
-    def __hash__(self):
-        return self.lit          
+    #It is NOT safe to treat Vars as hashable, because == doesn't work as dictionary objects would expect      
+    #If one wants to put a var in a dictionary or set, put the underlying lit (var.getLit()) in the dict
+    #def __hash__(self):
+    #    return self.lit            
         
     def getLit(self):
         return self.lit

@@ -343,6 +343,7 @@ struct MonosatData{
 	Monosat::BVTheorySolver<long> * bv_theory=nullptr;
 	vec< Monosat::GraphTheorySolver<long> *> graphs;
 	bool last_solution_optimal=true;
+	bool has_conflict_clause_from_last_solution=false;
 };
 
 
@@ -509,6 +510,7 @@ int _solve(Monosat::SimpSolver * S,int * assumptions, int n_assumptions, int * m
 	bool found_optimal=true;
 	  MonosatData * d = (MonosatData*) S->_external_data;
 	  d->last_solution_optimal=true;
+	  d->has_conflict_clause_from_last_solution=false;
 	APISignal::enableResourceLimits();
 
 	S->cancelUntil(0);
@@ -542,6 +544,9 @@ int _solve(Monosat::SimpSolver * S,int * assumptions, int n_assumptions, int * m
 
 	  lbool r = optimize_and_solve(*S, assume,bvs,found_optimal);
 	  d->last_solution_optimal=found_optimal;
+	  if(r==l_False){
+		  d->has_conflict_clause_from_last_solution=true;
+	  }
 	if (opt_verb >= 1) {
 		printStats(S);
 
@@ -556,6 +561,21 @@ bool lastSolutionWasOptimal(Monosat::SimpSolver * S){
 		  return d->last_solution_optimal;
 	  }else{
 		  return false;
+	  }
+}
+
+
+int getConflictClause(Monosat::SimpSolver * S, int * store_clause, int max_store_size){
+	 MonosatData * d = (MonosatData*) S->_external_data;
+	  if(d && d->has_conflict_clause_from_last_solution){
+		  int size =  S->conflict.size();
+		  for (int i =0;i<size && i<max_store_size;i++){
+			  Lit l = S->conflict[i];
+			  store_clause[i]=toInt(l);
+		  }
+		  return size;
+	  }else{
+		  return -1;
 	  }
 }
 

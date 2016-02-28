@@ -71,6 +71,11 @@ typedef int Var;
 
   bool lastSolutionWasOptimal(SolverPtr S);
 
+  //If the last solution was unsat, then this get the 'conflict clause' produced by the solver (a subset of the assumptions which are sufficient to cause the instance to be UNSAT).
+  //Fills the given pointer with the first max_store_size literals of the conflict clause, and returns the number of literals in the conflict clause. Set store_clause to null and max_store_size to 0 to find the size of the conflict clause
+  //Returns -1 if the solver has no conflict clause from the most recent solve() call (because that call was not UNSAT)
+  int getConflictClause(Monosat::SimpSolver * S, int * store_clause, int max_store_size);
+
   void backtrack(SolverPtr S);
   int newVar(SolverPtr S);
   void setDecisionVar(SolverPtr S,int var,bool decidable);
@@ -170,7 +175,6 @@ typedef int Var;
   int newString(SolverPtr S,FSMTheorySolverPtr fsmTheory, int * str,int len);
   int fsmAcceptsString(SolverPtr S,FSMTheorySolverPtr fsmTheory, int fsmID, int startNode, int acceptNode,int stringID);
 
-
   //model query
   //For a given literal (not variable!), returns 0 for true, 1 for false, 2 for unassigned.
   int getModel_Literal(SolverPtr S,int lit);
@@ -185,19 +189,12 @@ typedef int Var;
   long getModel_AcyclicEdgeFlow(SolverPtr S,GraphTheorySolver_long G,int maxflow_literal, int edgeLit);
 
   long getModel_MinimumSpanningTreeWeight(SolverPtr S,GraphTheorySolver_long G,int spanning_tree_literal);
+  int getModel_Path_Nodes_Length(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<long> *G,int reach_or_distance_literal);
+  int getModel_Path_Nodes(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<long> *G,int reach_or_distance_literal, int store_length, int * store);
 
-   int getModel_Path_Nodes_Length(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<long> *G,int reach_or_distance_literal);
-   int getModel_Path_Nodes(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<long> *G,int reach_or_distance_literal, int store_length, int * store);
+  int getModel_Path_EdgeLits_Length(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<long> *G,int reach_or_distance_literal);
+  int getModel_Path_EdgeLits(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<long> *G,int reach_or_distance_literal, int store_length, int * store);
 
-   int getModel_Path_EdgeLits_Length(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<long> *G,int reach_or_distance_literal);
-   int getModel_Path_EdgeLits(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<long> *G,int reach_or_distance_literal, int store_length, int * store);
-
-/*
-  //Returns the number of nodes in the path length for this reachability or shortest path literal (1+number of edges)
-  int getModel_PathLength(SolverPtr S,GraphTheorySolver_long G,int reach_or_shortest_path_lit);
-  void getModel_Path(SolverPtr S,GraphTheorySolver_long G,int reach_or_shortest_path_lit, int * store_path);
-  void getModel_PathByEdgeLit(SolverPtr S,GraphTheorySolver_long G,int reach_or_shortest_path_lit, int * store_path);
-*/
 
 
 #ifdef __cplusplus

@@ -142,7 +142,7 @@ void WeightedDistanceDetector<Weight>::addWeightedShortestPathLit(int from, int 
 	while (reach_lit_map.size() <= reach_var - first_reach_var) {
 		reach_lit_map.push({-1,-1,None});
 	}
-	reach_lit_map[reach_var - first_reach_var] = {to,weighted_dist_lits.size(),WeightedConstLit};
+	reach_lit_map[reach_var - first_reach_var] = {to,weighted_dist_lits.size()-1,WeightedConstLit};
 }
 
 template<typename Weight>
@@ -169,7 +169,7 @@ void WeightedDistanceDetector<Weight>::addWeightedShortestPathBVLit(int from, in
 	while (reach_lit_map.size() <= reach_var - first_reach_var) {
 		reach_lit_map.push({-1,-1,None});
 	}
-	reach_lit_map[reach_var - first_reach_var] = {to,weighted_dist_bv_lits.size(),WeightedBVLit};
+	reach_lit_map[reach_var - first_reach_var] = {to,weighted_dist_bv_lits.size()-1,WeightedBVLit};
 }
 
 
@@ -428,7 +428,7 @@ template<typename Weight>
 void WeightedDistanceDetector<Weight>::buildReason(Lit p, vec<Lit> & reason, CRef marker) {
 	
 	if (marker ==weighted_underprop_marker) {
-		reason.push(p);
+		reason.push(outer->toSolver(p));
 		assert(getLitType(p)==WeightedConstLit);
 		Var v = var(p);
 		WeightedDistLit & dist_lit = getDistLit(v);
@@ -444,7 +444,7 @@ void WeightedDistanceDetector<Weight>::buildReason(Lit p, vec<Lit> & reason, CRe
 		buildDistanceLEQReason(to, min_dist, reason,strictComparison);
 
 	} else if (marker == weighted_overprop_marker) {
-		reason.push(p);
+		reason.push(outer->toSolver(p));
 		assert(sign(p));
 		assert(getLitType(p)==WeightedConstLit);
 		Var v = var(p);
@@ -461,7 +461,7 @@ void WeightedDistanceDetector<Weight>::buildReason(Lit p, vec<Lit> & reason, CRe
 		buildDistanceGTReason(to, min_dist, reason,strictComparison);
 
 	}else if (marker ==weighted_underprop_bv_marker) {
-		reason.push(p);
+		reason.push(outer->toSolver(p));
 		assert(getLitType(p)==WeightedBVLit);
 
 		Var v = var(p);
@@ -487,7 +487,7 @@ void WeightedDistanceDetector<Weight>::buildReason(Lit p, vec<Lit> & reason, CRe
 
 
 	} else if (marker == weighted_overprop_bv_marker) {
-		reason.push(p);
+		reason.push(outer->toSolver(p));
 		assert(sign(p));
 		assert(getLitType(p)==WeightedBVLit);
 
@@ -520,7 +520,7 @@ void WeightedDistanceDetector<Weight>::buildReason(Lit p, vec<Lit> & reason, CRe
 		throw std::runtime_error("Internal error in distance detector");
 		assert(false);
 	}
-	outer->toSolver(reason);
+
 }
 
 template<typename Weight>
