@@ -145,8 +145,12 @@ ReachDetector<Weight>::ReachDetector(int _detectorID, GraphTheorySolver<Weight> 
 		
 		overapprox_reach_detector = new UnweightedRamalReps<Weight,ReachDetector<Weight>::ReachStatus>(from, _antig,
 				*(negativeReachStatus), -1, false);
-		underapprox_path_detector = new UnweightedBFS<Weight,Distance<int>::NullStatus>(from, _g, Distance<int>::nullStatus, 1);
-		overapprox_path_detector = new UnweightedBFS<Weight,Distance<int>::NullStatus>(from, _antig, Distance<int>::nullStatus, -1);
+		if(underapprox_detector)
+			underapprox_path_detector = underapprox_detector;// new UnweightedBFS<Weight,Distance<int>::NullStatus>(from, _g, Distance<int>::nullStatus, 1);
+		else{
+			underapprox_path_detector=underapprox_fast_detector;
+		}
+		overapprox_path_detector = overapprox_reach_detector;// new UnweightedBFS<Weight,Distance<int>::NullStatus>(from, _antig, Distance<int>::nullStatus, -1);
 		negative_distance_detector = (Distance<int> *) overapprox_path_detector;
 	}/*else if (reachalg==ReachAlg::ALG_THORUP){
 
