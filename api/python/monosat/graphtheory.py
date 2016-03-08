@@ -210,7 +210,6 @@ class Graph():
             elif self.graph_type==Graph.GraphType.float:
                 var = Var(self._monosat.newEdge_double(self.graph,v,w,weight))
 
-        
         e=(v,w,var,weight)
         self.alledges.append(e)
         self.numedges=self.numedges+1
