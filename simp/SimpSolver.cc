@@ -594,11 +594,31 @@ void SimpSolver::extendModel() {
 		next: ;
 	}
 }
+void SimpSolver::disablePreprocessing(){
+	if(use_simplification) {
+		touched.clear(true);
+		occurs.clear(true);
+		n_occ.clear(true);
+		elim_heap.clear(true);
+		subsumption_queue.clear(true);
 
+		use_simplification = false;
+		max_simp_var = nVars();
+		remove_satisfied = true;
+		ca.extra_clause_field = false;
+
+		// Force full cleanup (this is safe and desirable since it only happens once):
+		rebuildOrderHeap();
+		garbageCollect();
+	}
+}
 bool SimpSolver::eliminate(bool turn_off_elim) {
-	if (!simplify())
+	if (!simplify()) {
+		if (turn_off_elim) {
+			disablePreprocessing();
+		}
 		return false;
-	else if (!use_simplification)
+	}else if (!use_simplification)
 		return true;
 	
 	// Main simplification loop:
@@ -661,20 +681,7 @@ bool SimpSolver::eliminate(bool turn_off_elim) {
 
 	// If no more simplification is needed, free all simplification-related data structures:
 	if (turn_off_elim) {
-		touched.clear(true);
-		occurs.clear(true);
-		n_occ.clear(true);
-		elim_heap.clear(true);
-		subsumption_queue.clear(true);
-		
-		use_simplification = false;
-	    max_simp_var          = nVars();
-		remove_satisfied = true;
-		ca.extra_clause_field = false;
-		
-		// Force full cleanup (this is safe and desirable since it only happens once):
-		rebuildOrderHeap();
-		garbageCollect();
+		disablePreprocessing();
 	} else {
 		// Cheaper cleanup:
 		cleanUpClauses(); // TODO: can we make 'cleanUpClauses()' not be linear in the problem size somehow?

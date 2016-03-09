@@ -441,7 +441,7 @@ Lit SteinerDetector<Weight>::decide() {
 }
 ;
 template class Monosat::SteinerDetector<int> ;
-template class Monosat::SteinerDetector<long> ;
+template class Monosat::SteinerDetector<int64_t> ;
 template class Monosat::SteinerDetector<double> ;
 #include <gmpxx.h>
 template class Monosat::SteinerDetector<mpq_class> ;

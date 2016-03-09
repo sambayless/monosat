@@ -284,7 +284,7 @@ Lit CycleDetector<Weight>::decide() {
 ;
 
 template class Monosat::CycleDetector<int> ;
-template class Monosat::CycleDetector<long> ;
+template class Monosat::CycleDetector<int64_t> ;
 template class Monosat::CycleDetector<double> ;
 #include <gmpxx.h>
 template class Monosat::CycleDetector<mpq_class> ;

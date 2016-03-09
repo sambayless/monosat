@@ -589,7 +589,7 @@ Lit AllPairsDetector<Weight>::decide() {
 }
 ;
 template class Monosat::AllPairsDetector<int> ;
-template class Monosat::AllPairsDetector<long> ;
+template class Monosat::AllPairsDetector<int64_t> ;
 template class Monosat::AllPairsDetector<double> ;
 #include <gmpxx.h>
 template class Monosat::AllPairsDetector<mpq_class> ;

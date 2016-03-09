@@ -144,23 +144,23 @@ DistanceDetector<Weight>::DistanceDetector(int _detectorID, GraphTheorySolver<We
 
 	if (opt_conflict_min_cut) {
 		if (mincutalg == MinCutAlg::ALG_EDKARP_DYN) {
-			conflict_flow = new EdmondsKarpDynamic<long>(outer->cutGraph,  source, 0);
+			conflict_flow = new EdmondsKarpDynamic<int64_t>(outer->cutGraph,  source, 0);
 		} else if (mincutalg == MinCutAlg::ALG_EDKARP_ADJ) {
-			conflict_flow = new EdmondsKarpAdj<long>(outer->cutGraph,  source, 0);
+			conflict_flow = new EdmondsKarpAdj<int64_t>(outer->cutGraph,  source, 0);
 		} else if (mincutalg == MinCutAlg::ALG_DINITZ) {
-			conflict_flow = new Dinitz<long>(outer->cutGraph,  source, 0);
+			conflict_flow = new Dinitz<int64_t>(outer->cutGraph,  source, 0);
 		} else if (mincutalg == MinCutAlg::ALG_DINITZ_LINKCUT) {
 			//link-cut tree currently only supports ints
-			conflict_flow = new Dinitz<long>(outer->cutGraph,  source, 0);
+			conflict_flow = new Dinitz<int64_t>(outer->cutGraph,  source, 0);
 			
 		} else if (mincutalg == MinCutAlg::ALG_KOHLI_TORR) {
 			if (opt_use_kt_for_conflicts) {
-				conflict_flow = new KohliTorr<long>(outer->cutGraph, source, 0,
+				conflict_flow = new KohliTorr<int64_t>(outer->cutGraph, source, 0,
 						opt_kt_preserve_order);
 			} else
-				conflict_flow = new EdmondsKarpDynamic<long>(outer->cutGraph,  source, 0);
+				conflict_flow = new EdmondsKarpDynamic<int64_t>(outer->cutGraph,  source, 0);
 		} else {
-			conflict_flow = new EdmondsKarpAdj<long>(outer->cutGraph,  source, 0);
+			conflict_flow = new EdmondsKarpAdj<int64_t>(outer->cutGraph,  source, 0);
 		}
 	}
 	
@@ -601,7 +601,7 @@ void DistanceDetector<Weight>::buildUnweightedDistanceGTReason(int node, int wit
 
 		g_over.drawFull(false);
 		cut.clear();
-		long f;
+		int64_t f;
 		
 		assert(conflict_flow->getSource() == source);
 		conflict_flow->setSink(node);
@@ -1191,7 +1191,7 @@ Lit DistanceDetector<Weight>::decide() {
 ;
 
 template class Monosat::DistanceDetector<int> ;
-template class Monosat::DistanceDetector<long> ;
+template class Monosat::DistanceDetector<int64_t> ;
 template class Monosat::DistanceDetector<double> ;
 #include <gmpxx.h>
 template class Monosat::DistanceDetector<mpq_class> ;

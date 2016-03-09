@@ -1079,7 +1079,7 @@ Lit WeightedDistanceDetector<Weight>::decide() {
 ;
 
 template class Monosat::WeightedDistanceDetector<int> ;
-template class Monosat::WeightedDistanceDetector<long> ;
+template class Monosat::WeightedDistanceDetector<int64_t> ;
 template class Monosat::WeightedDistanceDetector<double> ;
 #include <gmpxx.h>
 template class Monosat::WeightedDistanceDetector<mpq_class> ;

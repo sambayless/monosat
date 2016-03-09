@@ -215,9 +215,9 @@ public:
 	 * Otherwise, if edge ID is unassigned or true, then edge ID*2 is disabled in the cutgraph, and
 	 * edge ID*2+1 is enabled.
 	 */
-	DynamicGraph<long> cutGraph;
+	DynamicGraph<int64_t> cutGraph;
 
-	/*struct ComparisonStatus{//:public BVTheorySolver<long>::CallBack{
+	/*struct ComparisonStatus{//:public BVTheorySolver<int64_t>::CallBack{
 		GraphTheorySolver & outer;
 
 		void comparisonAltered(int bvID, int comparisonID){
@@ -680,13 +680,13 @@ public:
 	double unreachtime = 0;
 	double pathtime = 0;
 	double propagationtime = 0;
-	long propagations =-1;
-	long stats_propagations = 0;
-	long stats_num_conflicts = 0;
-	long stats_num_skipped_edgeset_props=0;
-	long stats_num_lazy_conflicts=0;
-	long stats_decisions = 0;
-	long stats_num_reasons = 0;
+	int64_t propagations =-1;
+	int64_t stats_propagations = 0;
+	int64_t stats_num_conflicts = 0;
+	int64_t stats_num_skipped_edgeset_props=0;
+	int64_t stats_num_lazy_conflicts=0;
+	int64_t stats_decisions = 0;
+	int64_t stats_num_reasons = 0;
 
 	double reachupdatetime = 0;
 	double unreachupdatetime = 0;
@@ -694,14 +694,14 @@ public:
 	double stats_decision_time = 0;
 	double stats_reason_initial_time = 0;
 	double stats_reason_time = 0;
-	long num_learnt_paths = 0;
-	long learnt_path_clause_length = 0;
-	long num_learnt_cuts = 0;
-	long learnt_cut_clause_length = 0;
-	long stats_pure_skipped = 0;
-	long stats_mc_calls = 0;
-	long stats_propagations_skipped = 0;
-	long stats_lazy_decisions = 0;
+	int64_t num_learnt_paths = 0;
+	int64_t learnt_path_clause_length = 0;
+	int64_t num_learnt_cuts = 0;
+	int64_t learnt_cut_clause_length = 0;
+	int64_t stats_pure_skipped = 0;
+	int64_t stats_mc_calls = 0;
+	int64_t stats_propagations_skipped = 0;
+	int64_t stats_lazy_decisions = 0;
 	vec<Lit> reach_cut;
 
 	struct CutStatus {

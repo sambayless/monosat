@@ -104,8 +104,9 @@ public:
 		return solve(p,q,r,true,false);
 	}
 
-	bool eliminate(bool turn_off_elim = false);  // Perform variable elimination based simplification. 
-			
+	bool eliminate(bool turn_off_elim = false);  // Perform variable elimination based simplification.
+	//permanently disable preprocessing
+	void disablePreprocessing();
 	// Memory managment:
 	//
 	virtual void garbageCollect();

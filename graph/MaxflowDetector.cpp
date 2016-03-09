@@ -590,9 +590,9 @@ void MaxflowDetector<Weight>::analyzeMaxFlowLEQ(Weight flow, vec<Lit> & conflict
 
 			/*				{
 
-			 EdmondsKarpAdj<CutStatus,long> ek(learn_graph, cutStatus,source,target);
+			 EdmondsKarpAdj<CutStatus,int64_t> ek(learn_graph, cutStatus,source,target);
 			 std::vector<MaxFlowEdge> tmpcut;
-			 long tf = ek.minCut(tmpcut);
+			 int64_t tf = ek.minCut(tmpcut);
 			 printf("cut size:%d, %d, expected: %d, %d \n",cut.size(),f, tmpcut.size(), tf);
 			 if(f != tf || cut.size()!= tmpcut.size()){
 			 exit(3);
@@ -2099,7 +2099,7 @@ Lit MaxflowDetector<Weight>::decide() {
 ;
 
 template class Monosat::MaxflowDetector<int> ;
-template class Monosat::MaxflowDetector<long> ;
+template class Monosat::MaxflowDetector<int64_t> ;
 template class Monosat::MaxflowDetector<double> ;
 #include <gmpxx.h>
 template class Monosat::MaxflowDetector<mpq_class> ;
