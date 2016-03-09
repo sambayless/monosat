@@ -94,7 +94,7 @@ public:
 	int last_decision_q_pos = 0;
 	int alg_id=-1;
 
-	long stats_decision_calculations = 0;
+	int64_t stats_decision_calculations = 0;
 	double stats_total_prop_time=0;
 	double stats_flow_calc_time = 0;
 	double stats_flow_recalc_time = 0;

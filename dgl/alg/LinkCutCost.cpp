@@ -2,10 +2,11 @@
 #include <climits>
 #include <limits>
 #include <gmpxx.h>
+#include <cstdint>
 template<>
 const int LinkCutCost<int>::INF=INT_MAX/2;
 template<>
-const long LinkCutCost<long>::INF=LONG_MAX/2;
+const long LinkCutCost<int64_t>::INF=LONG_MAX/2;
 template<>
 const mpq_class LinkCutCost<mpq_class>::INF=LONG_MAX;//fix this...
 template<>

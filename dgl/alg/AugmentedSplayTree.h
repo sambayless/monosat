@@ -150,7 +150,7 @@ template<typename T>
 class AugmentedSplayTree: public AugmentedSearchTree<_node<T>> {
 public:
 	//Comp comp;
-	unsigned long p_size;
+	unsigned long long p_size;
 	typedef _node<T> Node;
 private:
 	//node * root;
@@ -712,7 +712,7 @@ public:
 	 }
 	 */
 	//bool empty( ) const { return root == 0; }
-	unsigned long size() const {
+	unsigned long long size() const {
 		return p_size;
 	}
 };

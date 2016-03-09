@@ -25,7 +25,7 @@
 #include <algorithm>
 #include <cassert>
 #include <sstream>
-
+#include <cstdint>
 #include <sstream>
 #include <cstdio>
 
@@ -64,21 +64,21 @@ class DynamicGraph {
 	std::vector<DynamicGraphAlgorithm*> dynamic_algs;
 	std::vector<int> dynamic_history_pos;
 
-	long history_offset=0;
+	int64_t history_offset=0;
 
 public:
 	bool disable_history_clears=false;
 	int dynamic_history_clears=0;
 
 	bool adaptive_history_clear = false;
-	long historyClearInterval = 1000;
+	int64_t historyClearInterval = 1000;
 	int modifications=0;
 	int additions=0;
 	int deletions=0;
 	int edge_increases = 0;
 	int edge_decreases = 0;
-	long historyclears=0;
-	long skipped_historyclears=0;
+	int64_t historyclears=0;
+	int64_t skipped_historyclears=0;
 	struct Edge {
 		int node;
 		int id;
@@ -551,7 +551,7 @@ public:
 		}*/
 	}
 
-	EdgeChange & getChange(long historyPos){
+	EdgeChange & getChange(int64_t historyPos){
 		assert(historyPos-history_offset>=0);
 		assert(historyPos-history_offset<history.size());
 		return history[historyPos-history_offset];
@@ -568,7 +568,7 @@ public:
 
 
 	void clearHistory(bool forceClear = false) {
-		//long expect=std::max(1000,historyClearInterval*edges());
+		//int64_t expect=std::max(1000,historyClearInterval*edges());
 		//check whether we can do a cheap history cleanup (without resetting all the dynamic algorithms)
 		if(disable_history_clears)
 			return;
@@ -576,7 +576,7 @@ public:
 		if (history.size()
 				&& (forceClear
 						|| (history.size()
-								>= (std::min((long)history.max_size(), (adaptive_history_clear ?
+								>= (std::min((int64_t)history.max_size(), (adaptive_history_clear ?
 										std::max(1000L, historyClearInterval * edges()) : historyClearInterval)))))) {//){
 
 

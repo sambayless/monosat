@@ -67,12 +67,12 @@ public:
 public:
 	//stats
 	
-	long stats_full_updates = 0;
-	long stats_fast_updates = 0;
-	long stats_fast_failed_updates = 0;
-	long stats_skip_deletes = 0;
-	long stats_skipped_updates = 0;
-	long stats_num_skipable_deletions = 0;
+	int64_t stats_full_updates = 0;
+	int64_t stats_fast_updates = 0;
+	int64_t stats_fast_failed_updates = 0;
+	int64_t stats_skip_deletes = 0;
+	int64_t stats_skipped_updates = 0;
+	int64_t stats_num_skipable_deletions = 0;
 	double mod_percentage = 0;
 
 	double stats_full_update_time = 0;
@@ -95,7 +95,7 @@ public:
 	int getSource() {
 		return source;
 	}
-	long num_updates = 0;
+	int64_t num_updates = 0;
 	int numUpdates() const {
 		return num_updates;
 	}

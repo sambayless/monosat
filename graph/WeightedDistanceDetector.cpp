@@ -96,23 +96,23 @@ WeightedDistanceDetector<Weight>::WeightedDistanceDetector(int _detectorID, Grap
 	
 	if (opt_conflict_min_cut) {
 		if (mincutalg == MinCutAlg::ALG_EDKARP_DYN) {
-			conflict_flow = new EdmondsKarpDynamic<long>(outer->cutGraph,  source, 0);
+			conflict_flow = new EdmondsKarpDynamic<int64_t>(outer->cutGraph,  source, 0);
 		} else if (mincutalg == MinCutAlg::ALG_EDKARP_ADJ) {
-			conflict_flow = new EdmondsKarpAdj<long>(outer->cutGraph,  source, 0);
+			conflict_flow = new EdmondsKarpAdj<int64_t>(outer->cutGraph,  source, 0);
 		} else if (mincutalg == MinCutAlg::ALG_DINITZ) {
-			conflict_flow = new Dinitz<long>(outer->cutGraph,  source, 0);
+			conflict_flow = new Dinitz<int64_t>(outer->cutGraph,  source, 0);
 		} else if (mincutalg == MinCutAlg::ALG_DINITZ_LINKCUT) {
 			//link-cut tree currently only supports ints
-			conflict_flow = new Dinitz<long>(outer->cutGraph,  source, 0);
+			conflict_flow = new Dinitz<int64_t>(outer->cutGraph,  source, 0);
 			
 		} else if (mincutalg == MinCutAlg::ALG_KOHLI_TORR) {
 			if (opt_use_kt_for_conflicts) {
-				conflict_flow = new KohliTorr<long>(outer->cutGraph, source, 0,
+				conflict_flow = new KohliTorr<int64_t>(outer->cutGraph, source, 0,
 						opt_kt_preserve_order);
 			} else
-				conflict_flow = new EdmondsKarpDynamic<long>(outer->cutGraph,  source, 0);
+				conflict_flow = new EdmondsKarpDynamic<int64_t>(outer->cutGraph,  source, 0);
 		} else {
-			conflict_flow = new EdmondsKarpAdj<long>(outer->cutGraph,  source, 0);
+			conflict_flow = new EdmondsKarpAdj<int64_t>(outer->cutGraph,  source, 0);
 		}
 	}
 
@@ -282,7 +282,7 @@ void WeightedDistanceDetector<Weight>::analyzeDistanceGTReason(int to, Weight & 
 	if (!reaches && opt_conflict_min_cut && conflict_flow) {
 
 		cut.clear();
-		long f;
+		int64_t f;
 		
 		assert(conflict_flow->getSource() == source);
 		conflict_flow->setSink(to);
@@ -373,7 +373,7 @@ void WeightedDistanceDetector<Weight>::analyzeDistanceGTReason(int to, Weight & 
 
 					if(reaches){
 						//if the edge _is_ enabled, and the node _is_ reachable, and the edge weight is symbolic
-						//then part of the reason the shortest path is too long is that this edge is not less than its current weight.
+						//then part of the reason the shortest path is too int64_t is that this edge is not less than its current weight.
 						if(!outer->constantWeight(edge_num)){
 							Weight w = g_over.getWeight(edge_num);
 
@@ -1034,7 +1034,7 @@ Lit WeightedDistanceDetector<Weight>::decide() {
 					//assert(over->distance(j)<=min_dist);//else we would already be in conflict before this decision was attempted!
 					
 					if (over->distance(j) <= min_dist && under->distance(j) > min_dist) {
-						//then lets try to disconnect this node from source by walking back along the path in the over approx, and disabling the first unassigned edge we see.
+						//then lets try to disconnect this node from source by walking back aint64_t the path in the over approx, and disabling the first unassigned edge we see.
 						//(there must be at least one such edge, else the variable would be connected in the under approximation as well - in which case it would already have been propagated.
 						int p = j;
 						int last = j;

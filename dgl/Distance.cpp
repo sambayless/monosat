@@ -20,6 +20,7 @@
  **************************************************************************************************/
 
 #include "Distance.h"
+#include <cstdint>
 using namespace dgl;
 
 
@@ -31,7 +32,7 @@ template<>
 float Distance<float>::INF = std::numeric_limits<float>::infinity();
 
 template<>
-mpq_class Distance<mpq_class>::INF = std::numeric_limits<long>::max();//hopefully big enough...
+mpq_class Distance<mpq_class>::INF = std::numeric_limits<int64_t>::max();//hopefully big enough...
 template<>
-mpz_class Distance<mpz_class>::INF = std::numeric_limits<long>::max();//hopefully big enough...
+mpz_class Distance<mpz_class>::INF = std::numeric_limits<int64_t>::max();//hopefully big enough...
 

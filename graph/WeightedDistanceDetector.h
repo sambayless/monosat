@@ -83,18 +83,18 @@ public:
 	bool has_weighted_shortest_paths_overapprox = false;
 	vec<int> unweighted_over_approx_shortest_paths;
 	vec<Weight> over_approx_shortest_paths;
-	MaxFlow<long> * conflict_flow = nullptr;
+	MaxFlow<int64_t> * conflict_flow = nullptr;
 
 
 	int max_unweighted_distance;
 
-	long stats_pure_skipped = 0;
-	long stats_distance_gt_reasons = 0;
-	long stats_distance_leq_reasons = 0;
-	long stats_unweighted_gt_reasons = 0;
-	long stats_unweighted_leq_reasons = 0;
-	long stats_gt_unweighted_edges_skipped = 0;
-	long stats_gt_weighted_edges_skipped = 0;
+	int64_t stats_pure_skipped = 0;
+	int64_t stats_distance_gt_reasons = 0;
+	int64_t stats_distance_leq_reasons = 0;
+	int64_t stats_unweighted_gt_reasons = 0;
+	int64_t stats_unweighted_leq_reasons = 0;
+	int64_t stats_gt_unweighted_edges_skipped = 0;
+	int64_t stats_gt_weighted_edges_skipped = 0;
 
 	BVTheorySolver<Weight> * bvTheory=nullptr;
 	class DistanceOp: public  GraphTheorySolver<Weight>::GraphTheoryOp{
@@ -205,11 +205,11 @@ public:
 	};
 
 	/*struct CutStatus {
-		long one = 1;
-		long inf = 0xFFFF;
+		int64_t one = 1;
+		int64_t inf = 0xFFFF;
 		WeightedDistanceDetector & outer;
 
-		const long &operator [](int id) const {
+		const int64_t &operator [](int id) const {
 			if (id % 2 == 0) {
 				return one;
 			} else {
