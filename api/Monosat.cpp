@@ -44,7 +44,7 @@ inline void api_errorf(const char *fmt, ...) {
     char buf[1000];
     vsnprintf(buf, sizeof buf,fmt, args);
     va_end(args);
-    fprintf(stderr, buf);
+    fprintf(stderr,"%s", buf);
     fflush(stderr);
     throw std::runtime_error(buf);
 

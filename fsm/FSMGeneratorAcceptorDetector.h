@@ -153,12 +153,12 @@ public:
 		}else{
 			FSMDetector::printStats();
 			if (opt_detect_pure_theory_lits)
-				printf("\tPropagations skipped by pure literal detection: %d\n", stats_pure_skipped);
+				printf("\tPropagations skipped by pure literal detection: %ld\n", stats_pure_skipped);
 			if (opt_shrink_theory_conflicts) {
-				printf("\t%d lits removed by shrinking conflicts\n", stats_shrink_removed);
+				printf("\t%ld lits removed by shrinking conflicts\n", stats_shrink_removed);
 			}
 			if (opt_learn_unreachable_component) {
-				printf("\t%d components learned, average component size: %f\n", stats_learnt_components,
+				printf("\t%ld components learned, average component size: %f\n", stats_learnt_components,
 						stats_learnt_components_sz / (float) stats_learnt_components);
 			}
 			if(opt_fsm_forced_edge_prop){

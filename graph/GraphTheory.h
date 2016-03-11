@@ -2777,7 +2777,7 @@ public:
 		printf("digraph{\n");
 		for (int i = 0; i < nNodes(); i++) {
 			if(getNodeName(i)){
-				printf("n%d[label=\"n%d_%s\"\]\n",i,i,getNodeName(i));
+				printf("n%d[label=\"n%d_%s\"]\n",i,i,getNodeName(i));
 			}else{
 				printf("n%d\n", i);
 			}

@@ -93,41 +93,47 @@ inline std::ostream& operator<<(std::ostream &out, const Comparison &p) {
 template<typename Weight>
 class BVTheorySolver: public Theory {
 public:
-	enum class OperationType{
+	enum class OperationType : char{
 		none = 0,
 		cause_is_bits = 1,
-		refined_cause = 2,
-		cause_is_comparison = 3,
-		cause_is_bv_comparison = 4,
-		cause_is_addition = 5,
-		cause_is_addition_argument = 6,
-		cause_is_condition = 7,
-		cause_is_condition_argument = 8,
-		cause_is_decision=9,
-		cause_is_minmax = 10,
-		cause_is_minmax_argument = 11,
-		cause_is_popcount = 12,
-		cause_is_theory=13,
+		cause_is_decision=2,
+		cause_is_theory=3,
+		refined_cause =4,
+		cause_is_comparison = 5,
+		cause_is_bv_comparison = 6,
+		cause_is_addition = 7,
+		cause_is_addition_argument = 8,
+		cause_is_condition = 9,
+		cause_is_condition_argument = 10,
+		cause_is_minmax = 11,
+		cause_is_minmax_argument = 12,
+		cause_is_popcount = 13,
 		cause_is_invert = 14
 	};
 	struct Cause{
 
-		OperationType type:5;//don't need this anymore.
+		int type:5;//_almost_ don't need this anymore, and could replace it entirely with a little work.
 		int index:27;
 		Cause(const Cause & copy):type(copy.type),index(copy.index){
 
 			}
 
-		Cause():type(OperationType::none),index(-1){
+		Cause():type((int)OperationType::none),index(-1){
 
+		}
+		OperationType getType(){
+			return (OperationType)type;
+		}
+		void setType(OperationType _type){
+			type = (int)_type;
 		}
 		bool hasCause(){
 			//this can be improved, if we want.
-			return type != OperationType::none;
+			return type != (int)OperationType::none;
 		}
 
 		void clear(){
-			type= OperationType::none;
+			type= (int)OperationType::none;
 			index=-1;
 		}
 	};
@@ -424,13 +430,13 @@ public:
 			if(under >under_new){
 				under_new=under;
 				under_cause_new.clear();
-				under_cause_new.type =getType();
+				under_cause_new.setType(getType());
 				under_cause_new.index=getID();
 			}
 			if(over<over_new){
 				over_new=over;
 				over_cause_new.clear();
-				over_cause_new.type =getType();
+				over_cause_new.setType(getType());
 				over_cause_new.index=getID();
 			}
 		}
@@ -788,7 +794,7 @@ public:
 
 					if(setOver){
 						over_cause_new.clear();
-						over_cause_new.type =getType();
+						over_cause_new.setType(getType());
 						over_cause_new.index=getID();
 					}
 				}else{
@@ -832,7 +838,7 @@ public:
 
 					if(setUnder){
 						under_cause_new.clear();
-						under_cause_new.type =getType();
+						under_cause_new.setType(getType());
 						under_cause_new.index=getID();
 					}
 				}
@@ -1191,7 +1197,7 @@ public:
 
 				if(setOver){
 					over_cause_new.clear();
-					over_cause_new.type =getType();
+					over_cause_new.setType(getType());
 					over_cause_new.index=getID();
 				}
 			}else{
@@ -1235,7 +1241,7 @@ public:
 
 				if(setUnder){
 					under_cause_new.clear();
-					under_cause_new.type = getType();
+					under_cause_new.setType(getType());
 					under_cause_new.index=getID();
 				}
 			}
@@ -1519,13 +1525,13 @@ public:
 			if (over<over_new){
 				over_new=over;
 				over_cause_new.clear();
-				over_cause_new.type =getType();
+				over_cause_new.setType(getType());
 				over_cause_new.index=getID();
 			}
 			if (under>under_new){
 				under_new=under;
 				under_cause_new.clear();
-				under_cause_new.type =getType();
+				under_cause_new.setType(getType());
 				under_cause_new.index=getID();
 			}
 		}
@@ -1856,13 +1862,13 @@ public:
 			if(under >under_new){
 				under_new=under;
 				under_cause_new.clear();
-				under_cause_new.type =getType();
+				under_cause_new.setType(getType());
 				under_cause_new.index=getID();
 			}
 			if(over<over_new){
 				over_new=over;
 				over_cause_new.clear();
-				over_cause_new.type =getType();
+				over_cause_new.setType(getType());
 				over_cause_new.index=getID();
 			}
 
@@ -2236,13 +2242,13 @@ public:
 				if(under >under_new){
 					under_new=under;
 					under_cause_new.clear();
-					under_cause_new.type =getType();
+					under_cause_new.setType(getType());
 					under_cause_new.index=getID();
 				}
 				if(over<over_new){
 					over_new=over;
 					over_cause_new.clear();
-					over_cause_new.type =getType();
+					over_cause_new.setType(getType());
 					over_cause_new.index=getID();
 				}
 			}
@@ -2463,13 +2469,13 @@ public:
 			if(under >under_new){
 				under_new=under;
 				under_cause_new.clear();
-				under_cause_new.type =getType();
+				under_cause_new.setType(getType());
 				under_cause_new.index=getID();
 			}
 			if(over<over_new){
 				over_new=over;
 				over_cause_new.clear();
-				over_cause_new.type =getType();
+				over_cause_new.setType(getType());
 				over_cause_new.index=getID();
 			}
 		}
@@ -2703,13 +2709,13 @@ public:
 			if(under >under_new){
 				under_new=under;
 				under_cause_new.clear();
-				under_cause_new.type =OperationType::cause_is_addition_argument;
+				under_cause_new.setType(OperationType::cause_is_addition_argument);
 				under_cause_new.index=getID();
 			}
 			if(over<over_new){
 				over_new=over;
 				over_cause_new.clear();
-				over_cause_new.type =OperationType::cause_is_addition_argument;
+				over_cause_new.setType(OperationType::cause_is_addition_argument);
 				over_cause_new.index=getID();
 			}
 
@@ -2953,13 +2959,13 @@ public:
 				if (highest_under>under_new){
 					under_new=highest_under;
 					under_cause_new.clear();
-					under_cause_new.type =getType();
+					under_cause_new.setType(getType());
 					under_cause_new.index=getID();
 				}
 				if (highest_over<over_new){
 					over_new=highest_over;
 					over_cause_new.clear();
-					over_cause_new.type =getType();
+					over_cause_new.setType(getType());
 					over_cause_new.index=getID();
 				}
 			}else{
@@ -2976,13 +2982,13 @@ public:
 				if (lowest_under>under_new){
 					under_new=lowest_under;
 					under_cause_new.clear();
-					under_cause_new.type =getType();
+					under_cause_new.setType(getType());
 					under_cause_new.index=getID();
 				}
 				if (lowest_over<over_new){
 					over_new=lowest_over;
 					over_cause_new.clear();
-					over_cause_new.type =getType();
+					over_cause_new.setType(getType());
 					over_cause_new.index=getID();
 				}
 			}
@@ -3289,7 +3295,7 @@ public:
 					if (highest_over<over_new){
 						over_new=highest_over;
 						over_cause_new.clear();
-						over_cause_new.type =getType();
+						over_cause_new.setType(getType());
 						over_cause_new.index=getID();
 					}
 				}else{
@@ -3299,7 +3305,7 @@ public:
 					if (lowest_under>under_new){
 						under_new=lowest_under;
 						under_cause_new.clear();
-						under_cause_new.type =getType();
+						under_cause_new.setType(getType());
 						under_cause_new.index=getID();
 					}
 				}
@@ -3489,13 +3495,13 @@ public:
 					if (thisOver<over_new){
 						over_new=thisOver;
 						over_cause_new.clear();
-						over_cause_new.type =getType();
+						over_cause_new.setType(getType());
 						over_cause_new.index=getID();
 					}
 					if (thisUnder>under_new){
 						under_new=thisUnder;
 						under_cause_new.clear();
-						under_cause_new.type =getType();
+						under_cause_new.setType(getType());
 						under_cause_new.index=getID();
 					}
 				}
@@ -4505,25 +4511,25 @@ public:
 				case Comparison::gt:
 					under_approx[bvID]=to+1;
 					under_causes[bvID].clear();
-					under_causes[bvID].type=OperationType::cause_is_decision;
+					under_causes[bvID].setType(OperationType::cause_is_decision);
 					under_causes[bvID].index=decisionLevel();
 					break;
 				case Comparison::geq:
 					under_approx[bvID]=to;
 					under_causes[bvID].clear();
-					under_causes[bvID].type=OperationType::cause_is_decision;
+					under_causes[bvID].setType(OperationType::cause_is_decision);
 					under_causes[bvID].index=decisionLevel();
 					break;
 				case Comparison::lt:
 					over_approx[bvID]=to-1;
 					over_causes[bvID].clear();
-					over_causes[bvID].type=OperationType::cause_is_decision;
+					over_causes[bvID].setType(OperationType::cause_is_decision);
 					under_causes[bvID].index=decisionLevel();
 					break;
 				case Comparison::leq:
 					over_approx[bvID]=to;
 					over_causes[bvID].clear();
-					over_causes[bvID].type=OperationType::cause_is_decision;
+					over_causes[bvID].setType(OperationType::cause_is_decision);
 					under_causes[bvID].index=decisionLevel();
 					break;
 				default:
@@ -4723,7 +4729,7 @@ public:
 			}else{
 				changed=true;
 				under_new = to;
-				under_cause_new.type=cause.getType();
+				under_cause_new.setType(cause.getType());
 				under_cause_new.index = cause.getID();
 			}
 		}else if(op==Comparison::leq){
@@ -4733,7 +4739,7 @@ public:
 			}else{
 				changed=true;
 				over_new = to;
-				over_cause_new.type=cause.getType();
+				over_cause_new.setType(cause.getType());
 				over_cause_new.index = cause.getID();
 			}
 		}
@@ -4965,7 +4971,7 @@ public:
 
 			over_new=refined_over;
 			over_cause_new.clear();
-			over_cause_new.type =OperationType::refined_cause;
+			over_cause_new.setType(OperationType::refined_cause);
 		}
 		Weight refined_under = refine_ubound(bvID, under_new);
 		if(refined_under>-1  && refined_under> under_new){
@@ -4993,7 +4999,7 @@ public:
 
 			under_new=refined_under;
 			under_cause_new.clear();
-			under_cause_new.type =OperationType::refined_cause;
+			under_cause_new.setType(OperationType::refined_cause);
 		}
 		assert_in_range(under_new,bvID);
 		assert_in_range(over_new,bvID);
@@ -5200,9 +5206,9 @@ public:
 				over=under_approx0[bvID];
 			}
 		}
-		if (under_causes[bvID].type !=OperationType::cause_is_decision && under_causes[bvID].type !=OperationType::cause_is_theory)
+		if (under_causes[bvID].getType() !=OperationType::cause_is_decision && under_causes[bvID].getType() !=OperationType::cause_is_theory)
 			assert(under==under_approx[bvID]);
-		if(over_causes[bvID].type !=OperationType::cause_is_decision  && over_causes[bvID].type !=OperationType::cause_is_theory)
+		if(over_causes[bvID].getType() !=OperationType::cause_is_decision  && over_causes[bvID].getType() !=OperationType::cause_is_theory)
 			assert(over==over_approx[bvID]);
 
 		assert(under_approx0[bvID]<=under_approx[bvID]);
@@ -5629,7 +5635,7 @@ public:
 		if(!compare_over)
 			assert(under_causes[bvID].hasCause());
 
-		if (compare_over &&  over_causes[bvID].type==OperationType::cause_is_decision){
+		if (compare_over &&  over_causes[bvID].getType()==OperationType::cause_is_decision){
 			//the reason that the bvID's over approx is <= its current value
 			//is because it was a decision.
 			//Create a literal on the fly to explain this...
@@ -5643,7 +5649,7 @@ public:
 			//S->prependToTrail(toSolver(reason),lev);//this is a decision that was made, without a corresponding literal in the solver at the time it was made.
 			// need to  ensure that this lit can be properly analyzed, so prepend it to the trail at this decision level.
 
-		}else if (!compare_over &&  under_causes[bvID].type==OperationType::cause_is_decision){
+		}else if (!compare_over &&  under_causes[bvID].getType()==OperationType::cause_is_decision){
 			int lev = under_causes[bvID].index;
 			assert(lev>=0);
 			assert(lev<=decisionLevel());
@@ -5654,7 +5660,7 @@ public:
 			//S->prependToTrail(toSolver(reason),lev);//this is a decision that was made, without a corresponding literal in the solver at the time it was made.
 			//need to ensure that this lit can be properly analyzed, so prepend it to the trail at this decision level.
 
-		}else if (compare_over &&  over_causes[bvID].type==OperationType::refined_cause){
+		}else if (compare_over &&  over_causes[bvID].getType()==OperationType::refined_cause){
 			//then the reason the underapprox is too large is because of the assignment to the bits
 			//can this analysis be improved upon?
 			for(int i =0;i<bv.size();i++){
@@ -5686,7 +5692,7 @@ public:
 
 			//buildValueReason(Comparison::leq,bvID,over_approx[bvID],conflict,trail_pos-1);
 
-		}else if (!compare_over  && under_causes[bvID].type==OperationType::refined_cause){
+		}else if (!compare_over  && under_causes[bvID].getType()==OperationType::refined_cause){
 			//then the reason the underapprox is too large is because of the assignment to the bits
 
 			for(int i =0;i<bv.size();i++){
@@ -6907,7 +6913,7 @@ public:
 							assert(false);//this should not happen!
 						}else {
 							assert(value(l)==l_Undef);
-							if (over_causes[bvID].type==OperationType::cause_is_decision && overApprox==to-1 ){
+							if (over_causes[bvID].getType()==OperationType::cause_is_decision && overApprox==to-1 ){
 
 								int lev = over_causes[bvID].index;
 										assert(lev>=0);
@@ -6931,7 +6937,7 @@ public:
 							assert(value(l)==l_Undef);
 							//enqueueEager(~l,bvID,underApprox,overApprox,prev_under_cause,prev_over_cause, comparisonprop_marker);
 
-							if (under_causes[bvID].type==OperationType::cause_is_decision && underApprox==to ){
+							if (under_causes[bvID].getType()==OperationType::cause_is_decision && underApprox==to ){
 								int lev = under_causes[bvID].index;
 								assert(lev>=0);
 								assert(lev<=decisionLevel());
@@ -6952,7 +6958,7 @@ public:
 							assert(value(l)==l_Undef);
 							//enqueueEager(l,bvID,underApprox,overApprox,prev_under_cause,prev_over_cause, comparisonprop_marker);
 							//if this was a decision
-							if (over_causes[bvID].type==OperationType::cause_is_decision && overApprox==to ){
+							if (over_causes[bvID].getType()==OperationType::cause_is_decision && overApprox==to ){
 								int lev = over_causes[bvID].index;
 								assert(lev>=0);
 								assert(lev<=decisionLevel());
@@ -6971,7 +6977,7 @@ public:
 						}else {
 							assert(value(l)==l_Undef);
 							//enqueueEager(~l,bvID,underApprox,overApprox,prev_under_cause,prev_over_cause, comparisonprop_marker);
-							if (under_causes[bvID].type==OperationType::cause_is_decision && underApprox==to+1 ){
+							if (under_causes[bvID].getType()==OperationType::cause_is_decision && underApprox==to+1 ){
 								int lev = under_causes[bvID].index;
 								assert(lev>=0);
 								assert(lev<=decisionLevel());
@@ -6992,7 +6998,7 @@ public:
 						}else {
 							assert(value(l)==l_Undef);
 							//enqueueEager(~l,bvID,underApprox,overApprox,prev_under_cause,prev_over_cause, comparisonprop_marker);
-							if (over_causes[bvID].type==OperationType::cause_is_decision && overApprox==to ){
+							if (over_causes[bvID].getType()==OperationType::cause_is_decision && overApprox==to ){
 								int lev = over_causes[bvID].index;
 								assert(lev>=0);
 								assert(lev<=decisionLevel());
@@ -7011,7 +7017,7 @@ public:
 						}else {
 							assert(value(l)==l_Undef);
 							//enqueueEager(l,bvID,underApprox,overApprox,prev_under_cause,prev_over_cause, comparisonprop_marker);
-							if (under_causes[bvID].type==OperationType::cause_is_decision && underApprox==to+1 ){
+							if (under_causes[bvID].getType()==OperationType::cause_is_decision && underApprox==to+1 ){
 								int lev = under_causes[bvID].index;
 								assert(lev>=0);
 								assert(lev<=decisionLevel());
@@ -7034,7 +7040,7 @@ public:
 							assert(value(l)==l_Undef);
 							//enqueueEager(~l,bvID,underApprox,overApprox,prev_under_cause,prev_over_cause, comparisonprop_marker);
 
-							if (over_causes[bvID].type==OperationType::cause_is_decision && overApprox==to-1 ){
+							if (over_causes[bvID].getType()==OperationType::cause_is_decision && overApprox==to-1 ){
 								int lev = over_causes[bvID].index;
 								assert(lev>=0);
 								assert(lev<=decisionLevel());
@@ -7053,7 +7059,7 @@ public:
 						}else {
 							assert(value(l)==l_Undef);
 							//enqueueEager(l,bvID,underApprox,overApprox,prev_under_cause,prev_over_cause, comparisonprop_marker);
-							if (under_causes[bvID].type==OperationType::cause_is_decision && underApprox==to ){
+							if (under_causes[bvID].getType()==OperationType::cause_is_decision && underApprox==to ){
 								int lev = under_causes[bvID].index;
 								assert(lev>=0);
 								assert(lev<=decisionLevel());
