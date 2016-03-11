@@ -43,6 +43,7 @@ namespace Monosat {
 template<class B, class Solver>
 class FSMParser: public Parser<B, Solver> {
 	using Parser<B, Solver>::mapVar;
+	FSMTheorySolver * theory=nullptr;
 	vec<int> fsmIDs;
 
 	vec<int> inAlphabets;
@@ -194,7 +195,9 @@ class FSMParser: public Parser<B, Solver> {
 		int input = parseInt(in);
 		int output = parseInt(in);
 		int edgeVar = parseInt(in) - 1;
-		
+		if(edgeVar==1){
+			int a =1;
+		}
 		if (fsmID < 0 || fsmID >= fsmIDs.size()) {
 			parse_errorf("Undeclared fsm identifier %d for edge %d\n", fsmID, edgeVar);
 		}
@@ -213,6 +216,9 @@ class FSMParser: public Parser<B, Solver> {
 		}
 
 		edgeVar= mapVar(S,edgeVar);
+		if(edgeVar==1){
+			int a =1;
+		}
 		inAlphabets[fsmID]=std::max(inAlphabets[fsmID],input+1);
 		outAlphabets[fsmID]=std::max(outAlphabets[fsmID],output+1);
 		transitions[fsmID].push({fsmID,from,to,input,output,edgeVar});
@@ -444,27 +450,26 @@ public:
 	
 
 	void implementConstraints(Solver & S) {
-		FSMTheorySolver * theory=nullptr;
 
-		for(int i = 0;i<fsmIDs.size();i++){
+
+		for(int i = 0;i<fsmIDs.size();i++) {
 			int fsmID = fsmIDs[i];
-			if(fsmID<0)
+			if (fsmID < 0)
 				continue;
 
-			if(!theory){
+			if (!theory) {
 				theory = new FSMTheorySolver(&S);
 				S.addTheory(theory);
 				theory->setStrings(strings);
 			}
-				theory->newFSM(fsmID);
-
-
-				theory->setAlphabets(fsmID,inAlphabets[i],outAlphabets[i]);
-
+				if (!theory->hasFSM(fsmID)) {
+					theory->newFSM(fsmID);
+					theory->setAlphabets(fsmID, inAlphabets[i], outAlphabets[i]);
+				}
 				for (auto &t:transitions[i]){
 					theory->newTransition(fsmID,t.from,t.to,t.input,t.output,t.edgeVar);
 				}
-
+				transitions[i].clear();
 				for(auto & a: accepts[i]){
 					if (a.strID<0 ){
 							parse_errorf("String ID must be a non-negative integer, was %d\n", a.strID);
@@ -485,7 +490,7 @@ public:
 
 					theory->addAcceptLit(fsmID,a.from, a.to,a.strID,a.reachVar);
 				}
-
+				accepts[i].clear();
 				for(auto & a: generates[i]){
 					if (a.strID<0 ){
 							parse_errorf("String ID must be a non-negative integer, was %d\n", a.strID);
@@ -501,7 +506,7 @@ public:
 
 					theory->addGenerateLit(fsmID,a.from, a.strID,a.reachVar);
 				}
-
+				generates[i].clear();
 				for(auto & a: transduces[i]){
 					if (a.strID<0 ){
 							parse_errorf("String ID must be a non-negative integer, was %d\n", a.strID);
@@ -524,7 +529,7 @@ public:
 								}
 					theory->addTransduceLit(fsmID,a.from,a.to, a.strID,a.strID2,a.reachVar);
 				}
-
+				transduces[i].clear();
 
 
 		}
@@ -543,7 +548,7 @@ public:
 			}
 			theory->addComposeAcceptLit(c.fsmID1,c.fsmID2,c.from1,c.to1,c.from2,c.to2, c.strID,c.reachVar);
 		}
-
+		compose_accepts.clear();
 
 	}
 

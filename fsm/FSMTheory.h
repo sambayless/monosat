@@ -854,6 +854,9 @@ public:
 		marker_map[mnum] = detectorID;
 		return reasonMarker;
 	}
+	bool hasFSM(int fsmID){
+		return fsmID>=0 && fsmID < g_unders.size()&& g_unders[fsmID] !=nullptr;
+	}
 	int newFSM(int fsmID=-1){
 		if(fsmID<0){
 			fsmID = g_unders.size();

@@ -38,6 +38,6 @@ long optimize_linear(Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv
 
 long optimize_binary(Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bvTheory,const vec<Lit> & assume,int bvID, bool & hit_cutoff, long & n_solves);
 
-lbool optimize_and_solve(Monosat::SimpSolver & S,const vec<Lit> & assume,const vec<int> & bvs, bool & found_optimal);
+lbool optimize_and_solve(Monosat::SimpSolver & S,const vec<Lit> & assume,const vec<int> & bvs, bool do_simp, bool & found_optimal);
 };
 #endif /* OPTIMIZE_H_ */

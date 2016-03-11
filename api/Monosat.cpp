@@ -383,13 +383,47 @@ Monosat::SimpSolver * newSolver(){
 	return newSolver_arg(nullptr);
 }
 
+//adapted from stack overflow, http://stackoverflow.com/a/236803
+std::vector<std::string> &split(const std::string &s, char delim, std::vector<std::string> &elems) {
+	std::stringstream ss(s);
+	std::string item;
+	while (std::getline(ss, item, delim)) {
+		elems.push_back(item);
+	}
+	return elems;
+}
+
+std::vector<char*> &split(const std::string &s, char delim, std::vector<char*> &elems) {
+	std::stringstream ss(s);
+	std::string item;
+	while (std::getline(ss, item, delim)) {
+		const char * arg = item.c_str();
+		char * arg_cpy = new char[item.size()+1];
+		std::strcpy(arg_cpy,arg);
+		elems.push_back(arg_cpy);
+	}
+	return elems;
+}
+
+std::vector<std::string> split(const std::string &s, char delim) {
+	std::vector<std::string> elems;
+	split(s, delim, elems);
+	return elems;
+}
+
 Monosat::SimpSolver * newSolver_arg(char*argv){
-	if (argv){
-		istringstream iss(argv);
-		vector<char*> tokens{istream_iterator<char*>{iss},
-		                      istream_iterator<char*>{}};
-		return newSolver_args(tokens.size(),(char **) tokens.data());
+	if (argv && strlen(argv)>0){
+		std::string args;
+		args = argv;
+		vector<char*> tokens;
+		split(args,' ',tokens);
+		Monosat::SimpSolver * s = newSolver_args(tokens.size(),(char **) tokens.data());
+		for (char * t:tokens){
+			delete(t);
+		}
+		return s;
 	}else{
+
 		return newSolver_args(0,nullptr);
 	}
 }
@@ -401,8 +435,8 @@ Monosat::SimpSolver * newSolver_args(int argc, char**argv){
 	for (int i = 0;i<argc;i++){
 		args.append(" ");
 		args.append(argv[i]);
-
 	}
+
 	parseOptions(argc, argv, true);
 	if (opt_adaptive_conflict_mincut == 1) {
 		opt_conflict_min_cut = true;
@@ -601,7 +635,7 @@ int _solve(Monosat::SimpSolver * S,int * assumptions, int n_assumptions, int * m
 		  bvs.push(bvID);
 	  }
 
-	  lbool r = optimize_and_solve(*S, assume,bvs,found_optimal);
+	  lbool r = optimize_and_solve(*S, assume,bvs,opt_pre,found_optimal);
 	  d->last_solution_optimal=found_optimal;
 	  if(r==l_False){
 		  d->has_conflict_clause_from_last_solution=true;
@@ -1156,7 +1190,7 @@ void bv_slice( Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bv,in
 	  Var v = newVar(S);
 	  Lit l =mkLit(v);
 	  fsmTheory->newTransition(fsmID,fromNode,toNode,inputLabel,outputLabel,v);
-	  write_out(S,"transition %d %d %d %d %d %d\n", fsmID,fromNode,toNode,inputLabel,outputLabel,v+1);
+	  write_out(S,"transition %d %d %d %d %d %d\n", fsmID,fromNode,toNode,inputLabel,outputLabel,dimacs(l));
 	  return toInt(l);
  }
  int newString(Monosat::SimpSolver * S, Monosat::FSMTheorySolver *  fsmTheory, int * str,int len){
