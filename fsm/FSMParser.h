@@ -115,7 +115,7 @@ class FSMParser: public Parser<B, Solver> {
 		}
 
 		int fsmID = parseInt(in);  //id of the fsm
-		int n_labels = parseInt(in);
+		int n_labels = parseInt(in); //not using this anymore
 		bool hasEpsilon= parseInt(in)>0;
 		if (fsmID < 0 ) {
 			parse_errorf("FSM id must be >=0, was %d\n", fsmID);

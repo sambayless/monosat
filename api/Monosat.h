@@ -45,7 +45,8 @@ typedef int64_t Weight;
 #endif
 
   void deleteSolver (SolverPtr S);
-
+  //If set, dump constraints to this file (as they are asserted in the solver)
+  void setOutputFile(SolverPtr S,char * output);
   void readGNF(SolverPtr S, const char  * filename);
 
   bool solve(SolverPtr S);
@@ -197,7 +198,6 @@ typedef int64_t Weight;
 
   int getModel_Path_EdgeLits_Length(SolverPtr S,GraphTheorySolver_long G,int reach_or_distance_literal);
   int getModel_Path_EdgeLits(SolverPtr S,GraphTheorySolver_long G,int reach_or_distance_literal, int store_length, int * store);
-
 
 
 #ifdef __cplusplus
