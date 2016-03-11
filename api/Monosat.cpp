@@ -430,7 +430,12 @@ void deleteSolver (Monosat::SimpSolver * S)
 	S->interrupt();
 	solvers.erase(S);//remove S from the list of solvers in the signal handler
 	  if(S->_external_data){
-		  delete((MonosatData*)S->_external_data);
+		  MonosatData* data = (MonosatData*) S->_external_data;
+		  if(data->outfile){
+			  fclose(data->outfile);
+			  data->outfile = nullptr;
+		  }
+		  delete(data);
 		  S->_external_data=nullptr;
 	  }
      delete (S);
