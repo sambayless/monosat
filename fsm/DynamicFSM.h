@@ -31,6 +31,8 @@ class DynamicFSM{
 	bool is_linear=true;
 	bool is_deterministic=false;
 	bool must_be_deterministic=false;
+	int n_enabled_input_emoves=0;
+	int n_enabled_output_emoves=0;
 public:
 	vec<Bitset> transitions;
 
@@ -85,8 +87,8 @@ public:
 		has_epsilon=enabled;
 	}
 
-	bool emovesEnabled()const{
-		return has_epsilon;
+	bool emovesEnabled(bool inputEmoves=true)const{
+		return has_epsilon && (inputEmoves ? n_enabled_input_emoves>0 : n_enabled_output_emoves);
 	}
 
 /*
@@ -139,8 +141,13 @@ public:
 		transitions.growTo(edgeID+1);
 		transitions[edgeID].growTo(inAlphabet()*outAlphabet());
 		int pos = input +output*inAlphabet();
-		if(defaultEnabled)
+		if(defaultEnabled) {
 			transitions[edgeID].set(pos);
+			if(input==0)
+				n_enabled_input_emoves++;
+			if(output==0)
+				n_enabled_output_emoves++;
+		}
 		return edgeID;
 	}
 
@@ -154,6 +161,10 @@ public:
 			//edge_status.setStatus(id,true);
 			modifications++;
 			additions = modifications;
+			if(input==0)
+				n_enabled_input_emoves++;
+			if(output==0)
+				n_enabled_output_emoves++;
 			history.push_back( { true, edgeID,input,output, modifications, additions });
 		}
 	}
@@ -165,6 +176,12 @@ public:
 		if (transitions[edgeID][pos]) {
 			transitions[edgeID].clear(pos);
 			modifications++;
+			if(input==0)
+				n_enabled_input_emoves--;
+			if(output==0)
+				n_enabled_output_emoves--;
+			assert(n_enabled_input_emoves>=0);
+			assert(n_enabled_output_emoves>=0);
 			history.push_back( { false, edgeID,input,output, modifications, deletions });
 			deletions = modifications;
 		}

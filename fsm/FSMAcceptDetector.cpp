@@ -643,10 +643,11 @@ void FSMAcceptDetector::buildNonAcceptReason(int node,int str, vec<Lit> & confli
 void FSMAcceptDetector::printSolution(std::ostream& out){
 	g_under.draw(source);
 }
-bool FSMAcceptDetector::checkSatisfied(){
-	NFAAccept<> check(g_under,source,strings);
-
-	g_under.draw(source,first_destination );
+bool FSMAcceptDetector::checkSatisfied() {
+	NFAAccept<> check(g_under, source, strings);
+	if (opt_verb > 1) {
+		g_under.draw(source, first_destination);
+	}
 	for(int str = 0;str<accept_lits.size();str++){
 		vec<int> & string = strings[str];
 		check.run(str);
