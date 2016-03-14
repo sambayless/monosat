@@ -19,139 +19,11 @@
 #include <cassert>
 #include <vector>
 #include <dgl/RamalReps.h>
-#include <fsm/alg/radix_tree/radix_tree.hpp>
+
 #include <string>
 #include <iostream>
 #include <stdexcept>
 using namespace Monosat;
-
-class rtentry {
-public:
-	int str_id;
-	vec<vec<int>> * strings;
-	int       start;
-	int 	  end;
-
-	//rtentry() : str_id(-1), prefix_len(0) { }
-	rtentry(int strID=-1,vec<vec<int>> * strings=nullptr, int start=0,int _end=-1) : str_id(strID),strings(strings), start(start) {
-		if (strings) {
-			if (_end < 0 || _end > (*strings)[strID].size()) {
-				end = (*strings)[strID].size();
-			} else {
-				end = _end;
-			}
-		}
-	}
-	rtentry(const  rtentry & from):str_id(from.str_id),strings(from.strings),start(from.start),end(from.end){
-
-	}
-	int operator[] (int n) const {
-		return (*strings)[str_id][n+start];
-	}
-
-	bool operator== (const rtentry &rhs) const {
-		if(str_id == rhs.str_id && start==rhs.start && end ==rhs.end) {
-			return true;
-		}else if (size()==rhs.size()){
-			int i = 0;
-			int j = 0;
-			for(;i<size() && j<rhs.size();i++,j++){
-				if((*this)[i]<rhs[j])
-					return false;
-				if(rhs[j]<(*this)[i])
-					return false;
-			}
-			return true;
-		}else{
-			return false;
-		}
-
-	}
-
-	bool operator!= (const rtentry &rhs) const {
-		return !((*this)==rhs);
-	}
-	int size()const{
-		return end-start;
-	}
-	bool operator< (const rtentry &rhs) const {
-		if (str_id == rhs.str_id)
-			return start < rhs.start || end<rhs.end;
-		else{
-			int i = 0;
-			int j = 0;
-			for(;i<size() && j<rhs.size();i++,j++){
-				if((*this)[i]<rhs[j])
-					return true;
-				if(rhs[j]<(*this)[i])
-					return true;
-			}
-			return (i == size()) && (j != rhs.size());
-		}
-
-	}
-	void print()const{
-		printf("str %d [%d,%d]: ",str_id,start,end);
-		for(int i = 0;i<size();i++){
-			printf("%d", (*this)[i]);
-		}
-		printf("\n");
-	}
-};
-
-template<>
-inline rtentry radix_substr<rtentry>(const rtentry &entry, int begin, int num)
-{
-	return rtentry(entry.str_id,entry.strings,entry.start+begin,entry.start+begin+num);
-}
-
-template<>
-inline rtentry radix_join<rtentry>(const rtentry &entry1, const rtentry &entry2)
-{
-
-	if (entry1.end==entry2.start) {
-		//only implementing this join for the case where entry1 is a prefix of the underlying string of entry2
-#ifndef NDEBUG
-		vec<int> &str1 = (*entry1.strings)[entry1.str_id];
-		vec<int> &str2 = (*entry2.strings)[entry2.str_id];
-		assert(entry1.size() + entry2.size() <= str2.size());
-		assert(entry1.end == entry2.start);
-		for (int j = entry1.size(); j >= 0; j--) {
-			int pos = entry2.start - j - 1;
-			assert(pos >= 0);
-			int a = str2[pos];
-			assert(a == str1[j]);
-		}
-#endif
-
-		return rtentry(entry2.str_id, entry2.strings, entry2.start - entry1.size(), entry1.size() + entry2.size());
-	}else if(entry2.end == entry1.start){
-		//only implementing this join for the case where entry1 is a prefix of the underlying string of entry2
-#ifndef NDEBUG
-		vec<int> &str1 = (*entry1.strings)[entry1.str_id];
-		vec<int> &str2 = (*entry2.strings)[entry2.str_id];
-		assert(entry1.size() + entry2.size() <= str2.size());
-		assert(entry2.end == entry1.start);
-		for (int j = entry2.size(); j >= 0; j--) {
-			int pos = entry1.start - j - 1;
-			assert(pos >= 0);
-			int a = str1[pos];
-			assert(a == str2[j]);
-		}
-#endif
-
-		return rtentry(entry1.str_id, entry1.strings, entry1.start - entry2.size(), entry1.size() + entry2.size());
-	}else{
-		throw std::runtime_error("Radix tree join error");
-	}
-}
-
-template<>
-inline int radix_length<rtentry>(const rtentry &entry)
-{
-	return entry.size();
-}
-
 
 template<class Status=FSMNullStatus>
 class NFAGraphAccept:public NFAAcceptor{
@@ -213,11 +85,7 @@ class NFAGraphAccept:public NFAAcceptor{
 		}
 	};
 	UnweightedRamalReps<int,NFAReachStatus> * rr=nullptr;
-	//tx_tool::tx * trie=nullptr;
-	//cedar::da<int> trie;
 
-
-	radix_tree<rtentry, int> trie;
 public:
 	NFAGraphAccept(DynamicFSM & f,int source, vec<vec<int>> & strings,Status & status=fsmNullStatus, bool trackUsedTransitions=false):f(f),status(status),source(source),strings(strings),checkUsed(trackUsedTransitions){
 
@@ -435,85 +303,9 @@ public:
 
 
 public:
-	int last_n_strings = 0;
-	std::vector<std::vector<int>> t_strings;
 
-	void updateTrie(){
-/*		if (last_n_strings>strings.size() ){
-			while(t_strings.size()<strings.size()){
-				int s = t_strings.size();
-				t_strings.push_back();
-				for(int i:strings[s]){
-					t_strings[s].push_back[i];
-				}
-				trie[t_strings[s]]=s;
-			}
-		}*/
-	}
 	void setTrackStringAcceptance(int str, int state,bool trackPositiveAcceptance, bool trackNegativeAcceptance){
-	/*	tracked_strings.growTo(strings.size(),false);
-		if(tracked_strings[str])
-			return;*/
 		addStringAcceptanceCheck(str,state);
-		/*vec<int> & string = strings[str];
-		rtentry key(str,&strings);
-		printf("string %d: ",str);
-		for(int i:strings[str]){
-			printf("%d",i);
-		}
-		printf("\n");
-		std::vector<typename radix_tree<rtentry, int>::iterator> vect;
-
-		//First check if this key is a prefix of (one or more) existing keys
-		trie.prefix_match(key, vect);
-		if(vect.size()) {
-			const rtentry & prefix_containing_key = vect[0]->first;
-			prefix_containing_key.print();
-
-			//the new string is a prefix of an existing string
-			int pref_strID = prefix_containing_key.str_id;
-			vec<int> & pref_str = strings[pref_strID];
-			assert(pref_str.size()>=string.size());
-			int i = 0;
-			for(;i<pref_str.size();i++){
-				if(pref_str[i]!= string[i])
-					break;
-			}
-			//matching prefix length is i
-
-
-
-		}else{
-			//next check if an existing key is a prefix of this key (and find the longest such key)
-			auto it = trie.longest_match(key);
-			if(it != trie.end()){
-				//found at least one element that is a prefix of this key
-				const rtentry & longest_prefix = it->first;
-				longest_prefix.print();
-
-			}else{
-				trie.greedy_match(key, vect);
-				if(vect.size()) {
-					const rtentry & best_match = vect[0]->first;
-					best_match.print();
-					int pref_strID = prefix_containing_key.str_id;
-					vec<int> & pref_str = strings[pref_strID];
-
-					int i = 0;
-					for(;i<pref_str.size() && i<string.size();i++){
-						if(pref_str[i]!= string[i])
-							break;
-					}
-
-					//longest matching prefix is i
-
-				}
-			}
-		}
-
-		trie[key] = str;*/
-		//tracked_strings[str]=true;
-
 
 	}
 
