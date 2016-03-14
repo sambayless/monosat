@@ -31,6 +31,8 @@ class DynamicFSM{
 	bool is_linear=true;
 	bool is_deterministic=false;
 	bool must_be_deterministic=false;
+	int n_total_input_emoves=0;
+	int n_total_output_emoves=0;
 	int n_enabled_input_emoves=0;
 	int n_enabled_output_emoves=0;
 public:
@@ -86,7 +88,9 @@ public:
 	void setEmovesEnabled(bool enabled){
 		has_epsilon=enabled;
 	}
-
+	bool hasEmoves(bool inputEmoves=true)const{
+		return has_epsilon && (inputEmoves ? n_total_input_emoves>0 : n_total_output_emoves);
+	}
 	bool emovesEnabled(bool inputEmoves=true)const{
 		return has_epsilon && (inputEmoves ? n_enabled_input_emoves>0 : n_enabled_output_emoves);
 	}
@@ -109,6 +113,8 @@ public:
 	void addOutCharacter(){
 		out_alphabet++;
 	}
+
+
 	bool transitionEnabled(int edgeID, int input, int output)const{
 		assert(input<inAlphabet());
 		assert(output<outAlphabet());
@@ -143,10 +149,14 @@ public:
 		int pos = input +output*inAlphabet();
 		if(defaultEnabled) {
 			transitions[edgeID].set(pos);
-			if(input==0)
+			if(input==0) {
 				n_enabled_input_emoves++;
-			if(output==0)
+				n_total_input_emoves++;
+			}
+			if(output==0) {
 				n_enabled_output_emoves++;
+				n_total_output_emoves++;
+			}
 		}
 		return edgeID;
 	}
@@ -273,6 +283,10 @@ public:
 
 	int getCurrentHistory() {
 		return modifications;
+	}
+
+	int historySize(){
+		return history.size();
 	}
 
 	void clearHistory(bool forceClear = false) {

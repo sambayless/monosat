@@ -137,8 +137,15 @@ public:
 		mod_percentage = 0.2;
 		alg_id=g.addDynamicAlgorithm(this);
 	}
-	//Dijkstra(const Dijkstra& d):g(d.g), last_modification(-1),last_addition(-1),last_deletion(-1),history_qhead(0),last_history_clear(0),source(d.source),INF(0),q(DistCmp(dist)),stats_full_updates(0),stats_fast_updates(0),stats_skip_deletes(0),stats_skipped_updates(0),stats_full_update_time(0),stats_fast_update_time(0){marked=false;};
-	
+	RamalReps(int s, DynamicGraph<Weight> & graph,int reportPolarity = 0, bool reportDistance = false) :
+			g(graph), weights(g.getWeights()), status(Distance<Weight>::nullStatus), reportPolarity(reportPolarity), reportDistance(reportDistance), last_modification(
+			-1), last_addition(-1), last_deletion(-1), history_qhead(0), last_history_clear(0), source(s), INF(
+			0), q(DistCmp(dist)),local_distance_status(*this),dijkstras(s,graph,local_distance_status,reportPolarity) {
+
+		mod_percentage = 0.2;
+		alg_id=g.addDynamicAlgorithm(this);
+	}
+
 	void setSource(int s) {
 		source = s;
 		last_modification = -1;
@@ -547,6 +554,7 @@ public:
 		if (last_modification > 0 && g.modifications == last_modification)
 			return;
 		if (last_modification <= 0 || g.changed()) {
+			Weight oldInf = INF;
 			INF = 1;							//g.nodes()+1;
 			has_zero_weights=false;
 			for (Weight & w : weights) {
@@ -558,6 +566,13 @@ public:
 					has_zero_weights=true;
 				}
 				INF += w;
+			}
+			if(INF!=oldInf){
+				for(int i = 0;i<dist.size();i++){
+					if(dist[i]==oldInf){
+						dist[i]=INF;
+					}
+				}
 			}
 			dist.resize(g.nodes(), INF);
 			dist[getSource()] = 0;
@@ -793,7 +808,7 @@ public:
 	}
 };
 
-template<typename Weight, class Status>
+template<typename Weight, class Status= typename Distance<Weight>::NullStatus>
 class UnweightedRamalReps: public Distance<int>, public DynamicGraphAlgorithm {
 public:
 	DynamicGraph<Weight> & g;
@@ -808,7 +823,7 @@ public:
 	int last_history_clear;
 
 	int source;
-	int INF;
+	int INF=-1;
 
 	int maxDistance = -1;
 
@@ -853,6 +868,15 @@ public:
 			g(graph), status(status), reportPolarity(reportPolarity), reportDistance(reportDistance), last_modification(
 					-1), last_addition(-1), last_deletion(-1), history_qhead(0), last_history_clear(0), source(s), INF(
 					-1) {
+		maxDistance = -1;
+		mod_percentage = 0.2;
+		alg_id=g.addDynamicAlgorithm(this);
+	}
+	UnweightedRamalReps(int s, DynamicGraph<Weight> & graph, int reportPolarity = 0,
+						bool reportDistance = true) :
+			g(graph), status(Distance<Weight>::nullStatus), reportPolarity(reportPolarity), reportDistance(reportDistance), last_modification(
+			-1), last_addition(-1), last_deletion(-1), history_qhead(0), last_history_clear(0), source(s), INF(
+			-1) {
 		maxDistance = -1;
 		mod_percentage = 0.2;
 		alg_id=g.addDynamicAlgorithm(this);
@@ -1407,7 +1431,15 @@ public:
 		}
 		if (last_modification <= 0 || g.changed()) {//Note for the future: there is probably room to improve this further.
 			stats_full_updates++;
+			int oldInf = INF;
 			INF = g.nodes() + 1;
+			if(INF!=oldInf){
+				for(int i = 0;i<dist.size();i++){
+					if(dist[i]==oldInf){
+						dist[i]=INF;
+					}
+				}
+			}
 			dist.resize(g.nodes(), INF);
 			dist[getSource()] = 0;
 			delta.resize(g.nodes());
@@ -1425,7 +1457,7 @@ public:
 		}
 		
 		if (last_history_clear != g.historyclears) {
-			history_qhead = 0;
+			history_qhead = g.historySize();
 			last_history_clear = g.historyclears;
 			for (int edgeid = 0; edgeid < g.edges(); edgeid++) {
 				if (g.edgeEnabled(edgeid)) {
@@ -1593,6 +1625,7 @@ public:
 		int prev = -1;
 		int prev_edgeID=-1;
 		int min_prev_dist=d;
+		int n_inc = g.nIncoming(t);
 		for(int i = 0;i<g.nIncoming(t);i++){
 
 			int edgeID = g.incoming(t,i).id;

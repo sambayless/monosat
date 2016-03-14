@@ -64,8 +64,8 @@ public:
 	AcceptStatus *underReachStatus = nullptr;
 	AcceptStatus *overReachStatus = nullptr;
 
-	NFAAccept<AcceptStatus> * underapprox_detector;
-	NFAAccept<AcceptStatus> * overapprox_detector;
+	NFAAcceptor* underapprox_detector;
+	NFAAcceptor * overapprox_detector;
 
 
 

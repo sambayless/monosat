@@ -18,6 +18,9 @@ struct FSMNullStatus {
 	void accepts(int string, int state,int edgeID,int label) {
 
 	}
+	void accepts(int string, int state,int edgeID,int label, bool accepts) {
+
+	}
 	void generates(int string, bool generates){
 
 	}

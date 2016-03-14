@@ -948,6 +948,12 @@ public:
 		assert(g_unders[fsmID]);
 		DynamicFSM & g_under = *g_unders[fsmID];
 		DynamicFSM & g_over = *g_overs[fsmID];
+		for(int i = 0;i<(*strings)[strID].size();i++){
+			int l = (*strings)[strID][i];
+			if(l<0 || l>=g_overs[fsmID]->inAlphabet()){
+				throw std::runtime_error("String has letter " + std::to_string(l) + " out of range for fsm " + std::to_string(fsmID));
+			}
+		}
 		accepts.growTo(source+1);
 		if(!accepts[source]){
 			accepts[source] = new FSMAcceptDetector(detectors.size(), this, g_under,g_over, source,*strings,drand(rnd_seed));

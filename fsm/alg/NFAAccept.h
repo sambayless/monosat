@@ -5,11 +5,12 @@
  *      Author: sam
  */
 
-#ifndef NFAREACH_H_
-#define NFAREACH_H_
+#ifndef NFA_ACCEPT_H_
+#define NFA_ACCEPT_H_
 
 #include <dgl/DynamicGraph.h>
 #include <fsm/alg/NFATypes.h>
+#include <fsm/alg/NFAAcceptor.h>
 #include <fsm/DynamicFSM.h>
 #include <mtl/Vec.h>
 //#include "mtl/Bitset.h"
@@ -20,7 +21,7 @@ using namespace Monosat;
 
 
 template<class Status=FSMNullStatus>
-class NFAAccept{
+class NFAAccept: public NFAAcceptor{
 	DynamicFSM & g;
 	Status & status;
 	int last_modification=-1;

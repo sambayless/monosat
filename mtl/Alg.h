@@ -77,6 +77,17 @@ static inline void append(const vec<T>& from, vec<T>& to) {
 	copy(from, to, true);
 }
 
+template<class T>
+static inline vec<T>&  reverse(vec<T>& from) {
+	int i =0;
+	int j = from.size();
+	while ((i!=j)&&(i!=--j)) {
+		std::swap (from[i],from[j]);
+		++i;
+	}
+	return from;
+}
+
 //=================================================================================================
 }
 

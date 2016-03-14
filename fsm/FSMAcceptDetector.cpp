@@ -18,11 +18,10 @@
  DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
-#include "mtl/Vec.h"
+#include <fsm/alg/NFAGraphAccept.h>
+#include <fsm/alg/NFAAccept.h>
 #include "FSMAcceptDetector.h"
-
 #include "FSMTheory.h"
-#include "core/Config.h"
 
 using namespace Monosat;
 
@@ -33,10 +32,17 @@ FSMAcceptDetector::FSMAcceptDetector(int detectorID, FSMTheorySolver * outer, Dy
 
 	underReachStatus = new FSMAcceptDetector::AcceptStatus(*this, true);
 	overReachStatus = new FSMAcceptDetector::AcceptStatus(*this, false);
-
-	underapprox_detector = new NFAAccept<FSMAcceptDetector::AcceptStatus>(g_under,source,str,*underReachStatus, opt_fsm_track_used_transitions);
-	overapprox_detector = new NFAAccept<FSMAcceptDetector::AcceptStatus>(g_over,source,str,*overReachStatus, opt_fsm_track_used_transitions);
-
+	if(!opt_fsm_as_graph) {
+		underapprox_detector = new NFAAccept<FSMAcceptDetector::AcceptStatus>(g_under, source, str, *underReachStatus,
+																			  opt_fsm_track_used_transitions);
+		overapprox_detector = new NFAAccept<FSMAcceptDetector::AcceptStatus>(g_over, source, str, *overReachStatus,
+																			 opt_fsm_track_used_transitions);
+	}else{
+		underapprox_detector = new NFAGraphAccept<FSMAcceptDetector::AcceptStatus>(g_under, source, str, *underReachStatus,
+																			  opt_fsm_track_used_transitions);
+		overapprox_detector = new NFAGraphAccept<FSMAcceptDetector::AcceptStatus>(g_over, source, str, *overReachStatus,
+																			 opt_fsm_track_used_transitions);
+	}
 	underprop_marker = outer->newReasonMarker(getID());
 	overprop_marker = outer->newReasonMarker(getID());
 }
@@ -222,18 +228,22 @@ bool FSMAcceptDetector::propagate(vec<Lit> & conflict) {
 		}
 	{
 #ifndef NDEBUG
-		NFAAccept<> check(g_over,source,strings);
+		NFAAccept<> check_over(g_over,source,strings);
+		NFAAccept<> check_under(g_under,source,strings);
 
 		for(int str = 0;str<accept_lits.size();str++){
 			vec<int> & string = strings[str];
-			check.run(str);
+			check_over.run(str);
+			check_under.run(str);
 			for(int to = 0;to<accept_lits[str].size();to++){
 				if(accept_lits[str][to]!=lit_Undef){
 					Lit l = accept_lits[str][to];
-					 if (outer->value(l)==l_True && !check.accepting(to)){
+					 if (outer->value(l)==l_True && !check_over.accepting(to)){
 						assert( false);
 					}
-
+					if (outer->value(l)==l_False && check_under.accepting(to)){
+						assert( false);
+					}
 				}
 			}
 
