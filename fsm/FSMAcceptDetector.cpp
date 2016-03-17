@@ -108,7 +108,70 @@ void FSMAcceptDetector::AcceptStatus::accepts(int string,int state,int edgeID,in
 	}
 }
 
+Lit FSMAcceptDetector::decide(int level){
+	if (to_decide.size() && last_decision_status == overapprox_detector->numUpdates()) {
+		while (to_decide.size()) {
+			Lit l = to_decide.last();
+			to_decide.pop();
+			if (outer->value(l) == l_Undef) {
+				return l;
+			}
+		}
+	}
+	for (int k = 0; k < all_lits.size(); k++) {
+		Lit l = all_lits[k];
+		if (l == lit_Undef)
+			continue;
+		int index =  indexOf(var(l));
+		int node = accept_lit_map[index].to;
+		int str = accept_lit_map[index].str;
 
+
+		if (outer->value(l) == l_True && opt_decide_fsm_pos) {
+			int j = node;
+
+			if (overapprox_detector->acceptsString(str,node) && !underapprox_detector->acceptsString(str,node)) {
+
+				to_decide.clear();
+				last_decision_status = overapprox_detector->numUpdates();
+				decision_path.clear();
+
+				int p = j;
+				int last_edge = -1;
+				int last = j;
+
+
+				//ok, read back the path from the over to find a candidate edge we can decide
+				//find the earliest unconnected node on this path
+				overapprox_detector->getAbstractPath(str, node, decision_path);
+				last_decision_status = overapprox_detector->numUpdates();
+				for(NFATransition & t:decision_path){
+					int edgeID = t.edgeID;
+					int input = t.input;
+					Lit l  = mkLit(outer->getTransitionVar(g_over.getID(),edgeID,input,0));
+					if(outer->value(l)==l_Undef)
+						to_decide.push(l);
+				}
+
+
+				if (to_decide.size() && last_decision_status == overapprox_detector->numUpdates()) {
+					while (to_decide.size()) {
+						Lit l = to_decide.last();
+						to_decide.pop();
+						if (outer->value(l) == l_Undef) {
+							return l;
+						}
+					}
+				}
+
+			}
+		}else if (outer->value(l)==l_False && opt_decide_fsm_neg){
+			//find any transitions that are not on any paths of the accepting strings, and assign them false.
+		}
+
+	}
+	return lit_Undef;
+}
 
 bool FSMAcceptDetector::propagate(vec<Lit> & conflict) {
 	static int iter = 0;

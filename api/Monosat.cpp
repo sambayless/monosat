@@ -772,7 +772,7 @@ int solveAssumptionsLimited_MinBVs(Monosat::SimpSolver * S,int * assumptions, in
 	  return S->addClause(toLit(lit1),toLit(lit2));
  }
  bool addTertiaryClause(Monosat::SimpSolver * S,int lit1, int lit2, int lit3){
-	  write_out(S,"%d %d 0\n",dimacs(toLit(lit1)), dimacs(toLit(lit2)), dimacs(toLit(lit3)));
+	  write_out(S,"%d %d %d 0\n",dimacs(toLit(lit1)), dimacs(toLit(lit2)), dimacs(toLit(lit3)));
 	  return S->addClause(toLit(lit1),toLit(lit2),toLit(lit3));
  }
 
@@ -788,6 +788,8 @@ int solveAssumptionsLimited_MinBVs(Monosat::SimpSolver * S,int * assumptions, in
 	 write_out(S,"bv const %d %d %ld\n",bvID, bvWidth, constval);
 	 return bvID;
  }
+
+
  int newBitvector(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bv, int * bits, int n_bits){
 	  static vec<Var> lits;
 	  lits.clear();
@@ -798,7 +800,7 @@ int solveAssumptionsLimited_MinBVs(Monosat::SimpSolver * S,int * assumptions, in
 	  bv->newBitvector(bvID,lits);
 	 write_out(S,"bv %d %d",bvID, n_bits);
 	 for (int i = 0;i<n_bits;i++){
-		 write_out(S," %d",dimacs(mkLit(Var(bits[i]))));
+		 write_out(S," %d",dimacs(mkLit(lits[i])));
 	 }
 	 write_out(S,"\n");
 	  return bvID;
@@ -1218,7 +1220,7 @@ void bv_slice( Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bv,in
 	 Var v = newVar(S);
 	 Lit l =mkLit(v);
 	 fsmTheory->addAcceptLit(fsmID,startNode,acceptNode,stringID,v);
-	 write_out(S,"accepts %d %d %d %d %d\n",fsmID,startNode, acceptNode, stringID, v+1);
+	 write_out(S,"accepts %d %d %d %d %d\n",fsmID,startNode, acceptNode, stringID, dimacs(l));
 	 return toInt(l);
  }
 

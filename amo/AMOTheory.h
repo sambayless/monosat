@@ -54,7 +54,7 @@ public:
 	Var true_var=var_Undef;
 	Var conflict_var=var_Undef;
 	bool needs_propagation=false;
-
+	bool clausified = false;
 public:
 	
 	AMOTheory(Solver * S) :
@@ -67,6 +67,46 @@ public:
 	~AMOTheory() {
 	}
 	;
+
+	static bool clausify_amo(Solver * S,const vec<Lit> & lits) {
+		vec<Lit> set;
+
+		assert(S->decisionLevel() == 0);
+		Lit constant_true_lit = lit_Undef;
+
+		for (int i = 0; i < lits.size(); i++) {
+			Lit l = lits[i];
+			if (S->value(l) == l_False && S->level(var(l)) == 0) {
+				//don't add this to the set
+			} else if (S->value(l) == l_True && S->level(var(l)) == 0) {
+				if (constant_true_lit == lit_Undef) {
+					constant_true_lit = l;
+				} else {
+					//this is a conflict
+					S->addClause(~constant_true_lit, ~l);//this is a conflict
+					return false;
+				}
+			} else {
+				set.push(l);
+			}
+		}
+
+		if (constant_true_lit == lit_Undef) {
+			for (int i = 0; i < set.size(); i++) {
+				for (int j = i + 1; j < set.size(); j++) {
+					S->addClause(~set[i], ~set[j]);
+				}
+			}
+		}else{
+			//all remaining elements of the set must be false, because constant_true_lit is true.
+			for (int i = 0; i < set.size(); i++) {
+				S->addClause(~constant_true_lit,~set[i]);//technically don't need to include ~constant_true_lit here, but it might make things cleaner to reason about elsewhere.
+				// (It will be eliminated by the solver anyhow, so this doesn't cost anything.)
+			}
+		}
+		return true;
+	}
+
 
 	//Add a variable (not literal!) to the set of which at most one may be true.
 	void addVar(Var solverVar){
@@ -101,6 +141,8 @@ public:
 		}
 	}
 	void enqueueTheory(Lit l) {
+		if(clausified)
+			return;
 		if(conflict_var==var_Undef){
 			if (!sign(l)){
 				if (true_var==var_Undef){
@@ -130,6 +172,39 @@ public:
 	}
 	;
 	bool propagateTheory(vec<Lit> & conflict) {
+		if (clausified)
+			return true;
+		if(decisionLevel()==0){
+			//remove constants from the set
+			int n_nonconstants = 0;
+			bool has_true_lit=false;
+			int i,j=0;
+			for (i = 0; i < amo.size(); i++) {
+				Lit l = mkLit(amo[i]);
+				if (S->value(l) == l_False && S->level(var(l)) == 0) {
+					//drop this literal from the set
+				} else if (S->value(l) == l_True && S->level(var(l)) == 0) {
+					amo[j++]=var(l);
+					has_true_lit=true;
+				} else {
+					n_nonconstants++;
+					amo[j++]=var(l);
+				}
+			}
+			amo.shrink(i-j);
+			if(has_true_lit || amo.size()==0 || amo.size()<=opt_clausify_amo){
+				clausified=true;
+				vec<Lit> amoLits;
+				for(Var v:amo){
+					amoLits.push(mkLit(v));
+				}
+				if(opt_verb>1){
+					printf("Clausifying amo theory %d with %d lits\n",this->getTheoryIndex(),amo.size());
+				}
+				return clausify_amo(S,amoLits);
+			}
+		}
+
 		if(conflict_var!=var_Undef){
 			conflict.clear();
 			assert(true_var!=var_Undef);
@@ -153,15 +228,17 @@ public:
 		return true;
 	}
 	void printStats(int detailLevel) {
-		printf("AMO Theory %d stats:\n", this->getTheoryIndex());
+		if(!clausified) {
+			printf("AMO Theory %d stats:\n", this->getTheoryIndex());
 
-		printf("Propagations: %ld (%f s, avg: %f s, %ld skipped)\n", stats_propagations, propagationtime,
-				(propagationtime) / ((double) stats_propagations + 1), stats_propagations_skipped);
+			printf("Propagations: %ld (%f s, avg: %f s, %ld skipped)\n", stats_propagations, propagationtime,
+				   (propagationtime) / ((double) stats_propagations + 1), stats_propagations_skipped);
 
-		printf("Conflicts: %ld\n", stats_conflicts);
-		printf("Reasons: %ld\n", stats_reasons);
+			printf("Conflicts: %ld\n", stats_conflicts);
+			printf("Reasons: %ld\n", stats_reasons);
 
-		fflush(stdout);
+			fflush(stdout);
+		}
 	}
 
 	inline bool solveTheory(vec<Lit> & conflict){

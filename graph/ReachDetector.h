@@ -256,7 +256,7 @@ public:
 		assert(reach_lit_map[index] >= 0);
 		return reach_lit_map[index];
 	}
-	void backtrack(int level) {
+	void backtrack(int level) override{
 		to_decide.clear();
 		last_decision_status = -1;
 		

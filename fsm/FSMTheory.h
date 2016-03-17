@@ -183,7 +183,9 @@ public:
 	}
 	void printStats(int detailLevel) {
 		printf("FSM %d stats:\n", getGraphID());
-
+		if(stats_decisions>0){
+			printf("FSM decisions: %ld\n",stats_decisions);
+		}
 		if (detailLevel > 0) {
 			for (FSMDetector * d : detectors)
 				d->printStats();
@@ -553,7 +555,8 @@ public:
 		
 		trail.shrink(trail.size() - (i + 1));
 		//if(i>0){
-		requiresPropagation = true;
+		requiresPropagation = true;//is this really needed?
+
 		/*			g.markChanged();
 		 antig.markChanged();
 		 cutGraph.markChanged();*/

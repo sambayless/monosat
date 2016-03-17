@@ -19,7 +19,7 @@
 #include <cassert>
 #include <vector>
 #include <dgl/RamalReps.h>
-
+#include <mtl/Bitset.h>
 #include <string>
 #include <iostream>
 #include <stdexcept>
@@ -299,6 +299,11 @@ public:
 		last_history_clear = f.historyclears;
 	}
 
+	int numUpdates() const {
+		if(!rr)
+			return 0;
+		return rr->numUpdates();
+	}
 
 
 
@@ -335,6 +340,34 @@ public:
 			s = p;
 		}
 		reverse(path);
+		return true;
+	}
+	vec<Bitset> used_transition;
+	bool getAbstractPath(int string, int state, vec<NFATransition> &path) {
+		update();
+		int s =string_last_nodes[string]->states[state];
+		if(! rr->connected(s)){
+			return false;
+		}
+		used_transition.growTo(f.edges());
+		//need to map the edges of the unrolled graph to transitions in the fsm
+		while(s != root->states[source]){
+			int edgeID = rr->incomingEdge(s);
+
+			NFATransition & transition = reverse_edge_map[edgeID];
+			used_transition[transition.edgeID].growTo(f.inAlphabet());
+			int l = transition.input;
+			if(!used_transition[transition.edgeID][l]) {
+				path.push(transition);
+				used_transition[transition.edgeID].set(transition.input);
+			}
+			int p = rr->previous(s);
+			s = p;
+		}
+		reverse(path);
+		for(NFATransition & t:path){
+			used_transition[t.edgeID].clear(t.input);
+		}
 		return true;
 	}
 

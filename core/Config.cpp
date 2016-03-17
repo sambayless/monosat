@@ -111,7 +111,9 @@ BoolOption Monosat::opt_early_theory_prop(_cat, "early-theory-prop",
  BoolOption Monosat::opt_decide_optimization_lits(_cat_opt,"decide-opt-lits","Allow decisions on literals introduced by optimization constraints",true);
  BoolOption  Monosat::opt_binary_search_optimization(_cat_opt,"binary-search","Use binary search (instead of linear search) for optimization constraints",true);
 
-
+IntOption Monosat::opt_clausify_amo(_cat_amo, "clausify-amo",
+						   "Eagerly convert at-most-one predicates to clauses, if they have this many or fewer arguments (after removing level 0 constants). 0 to never clausify amo predicates.",
+						   30, IntRange(0, INT32_MAX));
 
 BoolOption Monosat::opt_amo_eager_prop(_cat_amo,"amo-eager-prop","Propagate a-m-o literals as soon as they are implied, instead of waiting for theory propagation",true);
 
@@ -258,7 +260,11 @@ BoolOption Monosat::opt_decide_graph_chokepoints(_cat_graph, "decide-graph-choke
 IntOption Monosat::opt_sort_graph_decisions(_cat_graph, "decide-graph-sort",
 		"0=dont sort, 1=sort by shortest, 2=sort by longest", 0, IntRange(0, 2));
 BoolOption Monosat::opt_rnd_order_graph_decisions(_cat_graph, "decide-graph-rnd-order", "", true);
+BoolOption Monosat::opt_decide_fsm_neg(_cat_fsm, "decide-fsm-neg",
+									   "", false);
 
+BoolOption Monosat::opt_decide_fsm_pos(_cat_fsm, "decide-fsm-pos",
+									   "", true);
 BoolOption Monosat::opt_detect_pure_lits(_cat, "detect-pure-lits",
 		"Detect pure literals in the main solver (only during simplification, not during search)", false);
 

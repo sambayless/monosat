@@ -88,8 +88,11 @@ public:
 	};
 	vec<AcceptLit> accept_lit_map;
 	vec<Lit> all_lits;
+	vec<Lit> to_decide;
+	vec<NFATransition> decision_path;
+	int last_decision_status = -1;
 	//stats
-	
+
 	long stats_full_updates = 0;
 	long stats_fast_updates = 0;
 	long stats_fast_failed_updates = 0;
@@ -158,8 +161,13 @@ public:
 		assert(accept_lit_map[index].to >= 0);
 		return accept_lit_map[index].str;
 	}
+	void backtrack(int level) override{
+		to_decide.clear();
+		last_decision_status = -1;
 
-	bool propagate(vec<Lit> & conflict);
+	}
+	bool propagate(vec<Lit> & conflict)override;
+	Lit decide(int level)override;
 	void buildAcceptReason(int node,int str, vec<Lit> & conflict);
 	void buildNonAcceptReason(int node,int str, vec<Lit> & conflict);
 	void preprocess()override{

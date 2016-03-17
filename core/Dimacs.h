@@ -188,6 +188,7 @@ class Dimacs :public DimacsMap,public BVMap{
 
 public:
 	vec<int> bv_minimize;
+	vec<bool> minimizing;
 	vec<Lit> assumptions;
 
 	Dimacs():DimacsMap(opt_remap_vars),BVMap(opt_remap_vars) {
@@ -268,6 +269,7 @@ private:
 		}
 		S.cancelUntil(0);
 		bv_minimize.clear();
+		minimizing.clear();
 		assumptions.clear();
 		bool solve=false;
 		vec<char> linebuf;
@@ -314,8 +316,11 @@ private:
 				skipWhitespace(b);
 				int bvID = parseInt(b);
 				assert(bvID>=0);
-
-				bv_minimize.push(bvID);
+				minimizing.growTo(bvID+1);
+				if(!minimizing[bvID]) {
+					bv_minimize.push(bvID);
+					minimizing[bvID]=true;
+				}
 			}else if (parseLine(b,line_num, S)) {
 				//do nothing
 			} else if (linebuf[0] == 'p') {

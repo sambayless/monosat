@@ -92,6 +92,7 @@ public:
 	virtual void preprocess() {
 		
 	}
+
 	virtual void backtrack(int level) {
 		//do nothing
 	}

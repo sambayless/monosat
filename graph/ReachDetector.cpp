@@ -1410,7 +1410,7 @@ Lit ReachDetector<Weight>::decide() {
 
 				if (over_reach->connected(j) && !under_reach->connected(j)) {
 					//then lets try to connect this
-					static vec<bool> print_path;
+
 					to_decide.clear();
 					last_decision_status = over_path->numUpdates();
 					

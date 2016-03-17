@@ -58,6 +58,7 @@ extern IntOption opt_subsearch;
 extern BoolOption opt_remap_vars;
 extern BoolOption opt_decide_optimization_lits;
 extern BoolOption opt_binary_search_optimization;
+extern IntOption opt_clausify_amo;
 extern BoolOption opt_amo_eager_prop;
 
 extern StringOption opt_debug_learnt_clauses;
@@ -67,6 +68,7 @@ extern BoolOption opt_write_bv_bounds;
 extern BoolOption opt_write_bv_analysis;
 extern FILE* opt_write_learnt_clauses;
 //extern StringOption opt_fsm_model;
+
 
 extern BoolOption opt_graph;
 extern BoolOption opt_inc_graph;
@@ -141,6 +143,8 @@ extern IntOption opt_temporary_theory_reasons;
 extern BoolOption opt_force_directed;
 extern BoolOption opt_decide_graph_chokepoints;
 extern IntOption opt_sort_graph_decisions;
+extern BoolOption opt_decide_fsm_neg;
+extern BoolOption opt_decide_fsm_pos;
 extern BoolOption opt_rnd_order_graph_decisions;
 extern BoolOption opt_compute_max_distance;
 extern BoolOption opt_detect_pure_theory_lits;

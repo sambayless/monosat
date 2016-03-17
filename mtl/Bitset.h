@@ -29,7 +29,7 @@ namespace Monosat {
 
 //=================================================================================================
 #define BITSET_ELEMENT_SIZE (sizeof(uint64_t))
-class Bitset {
+class Bitset{
     vec<uint64_t>  buf;
     int sz;
 

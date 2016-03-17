@@ -219,8 +219,8 @@ class FSMParser: public Parser<B, Solver> {
 		if(edgeVar==1){
 			int a =1;
 		}
-		inAlphabets[fsmID]=std::max(inAlphabets[fsmID],input+1);
-		outAlphabets[fsmID]=std::max(outAlphabets[fsmID],output+1);
+		inAlphabets[fsmID]=std::max(inAlphabets[fsmID],input);
+		outAlphabets[fsmID]=std::max(outAlphabets[fsmID],output);
 		transitions[fsmID].push({fsmID,from,to,input,output,edgeVar});
 	}
 

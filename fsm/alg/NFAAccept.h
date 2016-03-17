@@ -133,6 +133,11 @@ private:
 			usedTransitions[edgeID][labelIn]=true;
 		}
 	}
+	long num_updates=0;
+	int numUpdates() const {
+
+		return num_updates;
+	}
 
 	void find_accepts(int str){
 
@@ -426,7 +431,7 @@ public:
 				}
 			}
 		}
-
+		num_updates++;
 		hasAcceptanceStates=true;
 
 		last_modification = g.modifications;
@@ -465,7 +470,26 @@ public:
 		return path_rec(source,state,string,0,0,path);
 	}
 
+	vec<Bitset> used_transition;
+	bool getAbstractPath(int string, int state, vec<NFATransition> &path) {
+		update();
+		getPath(string,state,path);
+		used_transition.growTo(g.edges());
+		int i,j=0;
+		for(i = 0;i<path.size();i++){
+			NFATransition & t = path[i];
 
+			if(!used_transition[t.edgeID][t.input]) {
+				path[j++]=t;
+				used_transition[t.edgeID].set(t.input);
+			}
+		}
+		path.shrink(i-j);
+		for(NFATransition & t:path){
+			used_transition[t.edgeID].clear(t.input);
+		}
+		return true;
+	}
 
 };
 

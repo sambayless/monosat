@@ -650,7 +650,7 @@ int main(int argc, char** argv) {
 				}
 				optimize_and_solve(S,parser.assumptions,parser.bv_minimize,false, found_optimal);//disalbe simplification until the last solve call, otherwise literals needed by clauses we haven't read yet may be eliminated
 			}else{
-				parser.assumptions.clear();parser.bv_minimize.clear();
+				parser.assumptions.clear();parser.bv_minimize.clear();parser.minimizing.clear();
 			}
 		}
 		gzclose(in);
