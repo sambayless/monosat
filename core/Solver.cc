@@ -1801,7 +1801,7 @@ lbool Solver::search(int nof_conflicts) {
 				max_learnts *= learntsize_inc;
 				
 				if (verbosity >= 1)
-					printf("| %9d | %7d %8d %8d | %8d %8d %6.0f | %" PRId64 " removed |\n", (int) conflicts,
+					printf("|c%9d | %7d %8d %8d | %8d %8d %6.0f | %" PRId64 " removed |\n", (int) conflicts,
 							(int) dec_vars - (trail_lim.size() == 0 ? trail.size() : trail_lim[0]), nClauses(),
 							(int) clauses_literals, (int) max_learnts, nLearnts(),
 							(double) learnts_literals / nLearnts(), stats_removed_clauses);
@@ -2033,16 +2033,22 @@ lbool Solver::solve_() {
 	int curr_restarts = 0;
 	while (status == l_Undef) {
 		double rest_base = luby_restart ? luby(restart_inc, curr_restarts) : pow(restart_inc, curr_restarts);
-		
+
 		if (opt_rnd_phase) {
 			for (int i = 0; i < nVars(); i++)
 				polarity[i] = irand(random_seed, 1);
 		}
-		if(opt_decide_theories && !opt_theory_order_vsids && opt_randomomize_theory_order){
+		if (opt_decide_theories && !opt_theory_order_vsids && opt_randomomize_theory_order) {
 			randomShuffle(random_seed, decidable_theories);
 		}
 
 		status = search(rest_base * restart_first);
+		if (verbosity >= 1) {
+			printf("|r%9d | %7d %8d %8d | %8d %8d %6.0f | %" PRId64 " removed |\n", (int) conflicts,
+				   (int) dec_vars - (trail_lim.size() == 0 ? trail.size() : trail_lim[0]), nClauses(),
+				   (int) clauses_literals, (int) max_learnts, nLearnts(),
+				   (double) learnts_literals / nLearnts(), stats_removed_clauses);
+		}
 		if (!withinBudget())
 			break;
 		curr_restarts++;

@@ -28,7 +28,7 @@
 
 #include "core/SolverTypes.h"
 #include "mtl/Map.h"
-
+#include "mtl/Heap.h"
 
 #include "utils/System.h"
 #include "FSMDetector.h"
@@ -127,8 +127,21 @@ public:
 			printf("Symmetry breaking conflicts: %ld\n", stats_symmetry_conflicts);
 		}
 	}
-	
-	void unassign(Lit l) {
+
+	void assign(Lit l)override {
+		FSMDetector::assign(l);
+		int index = indexOf(var(l));
+		if (index >= 0 && index < accept_lit_map.size() && accept_lit_map[index].to != -1) {
+			int node = accept_lit_map[index].to;
+			int str =  accept_lit_map[index].str;
+
+			changed.push( { {var(l)}, node,str });
+			if(opt_theory_internal_vsids_fsm && ! order_heap.inHeap(var(l))){
+				order_heap.insert(var(l));
+			}
+		}
+	}
+	void unassign(Lit l)override {
 		FSMDetector::unassign(l);
 		int index = indexOf(var(l));
 		if (index >= 0 && index < accept_lit_map.size() && accept_lit_map[index].to != -1) {
@@ -195,8 +208,80 @@ public:
 	const char* getName() {
 		return "NFA Accepts Detector";
 	}
-	
-	
+
+	double var_inc=1;
+	double var_decay=1;
+	vec<double> activity;
+	struct AcceptOrderLt {
+		FSMAcceptDetector & outer;
+		const vec<double>& activity;
+
+		bool operator ()(Var x, Var y) const {
+			int indexX = outer.indexOf(x);
+			int indexY = outer.indexOf(y);
+			return activity[indexX] > activity[indexY];
+
+		}
+		AcceptOrderLt(FSMAcceptDetector & outer,const vec<double>& act):outer(outer),
+				activity(act) {
+		}
+	};
+
+	//Local vsids implementation for edges...
+	Heap<AcceptOrderLt> order_heap;
+
+
+	inline void insertAcceptOrder(Lit acceptLit) {
+		if(opt_theory_internal_vsids_fsm){
+			int index = indexOf(var(acceptLit));
+			if (!order_heap.inHeap(var(acceptLit)) && activity[index]>0 )
+				order_heap.insert(var(acceptLit));
+		}
+	}
+	inline void bumpConflict(vec<Lit> &  conflict){
+
+		if(opt_theory_internal_vsids_fsm){
+			for(Lit l:conflict) {
+				int index = indexOf(var(l));
+				if (index >= 0 && index < accept_lit_map.size() && accept_lit_map[index].to != -1) {
+
+					edgeBumpActivity(var(l));
+					edgeDecayActivity();
+					if(!order_heap.inHeap(var(l))){
+						order_heap.insert(var(l));
+						//throw std::runtime_error("Internal error in fsm accept detector");
+					}
+				}
+			}
+		}
+
+	}
+	inline void bumpAcceptLit(Lit  conflict){
+
+		if(opt_theory_internal_vsids_fsm){
+			edgeBumpActivity(var(conflict));
+			edgeDecayActivity();
+		}
+
+	}
+	inline void edgeDecayActivity() {
+		var_inc *= (1 / var_decay);
+	}
+	inline void edgeBumpActivity(Var v) {
+		edgeBumpActivity(v, var_inc);
+	}
+	inline void edgeBumpActivity(Var v, double inc) {
+		if ((activity[indexOf(v)] += inc) > 1e100) {
+			// Rescale:
+			for (int i = 0; i < activity.size(); i++)
+				activity[i] *= 1e-100;
+			var_inc *= 1e-100;
+		}
+
+		// Update order_heap with respect to new activity:
+		if (order_heap.inHeap(v))
+			order_heap.decrease(v);
+	}
 
 };
 }

@@ -418,9 +418,10 @@ Monosat::SimpSolver * newSolver_arg(char*argv){
 		vector<char*> tokens;
 		split(args,' ',tokens);
 		Monosat::SimpSolver * s = newSolver_args(tokens.size(),(char **) tokens.data());
-		for (char * t:tokens){
-			delete(t);
-		}
+		//why is the following causing errors with jni?
+		/*for (char * t:tokens){
+			delete[]t;
+		}*/
 		return s;
 	}else{
 

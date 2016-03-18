@@ -28,7 +28,7 @@ using namespace Monosat;
 
 FSMAcceptDetector::FSMAcceptDetector(int detectorID, FSMTheorySolver * outer, DynamicFSM &g_under,
 		DynamicFSM &g_over, int source, vec<vec<int>> & str, double seed) :
-		FSMDetector(detectorID), outer(outer), g_under(g_under), g_over(g_over), source(source),strings(str), rnd_seed(seed){
+		FSMDetector(detectorID), outer(outer), g_under(g_under), g_over(g_over), source(source),strings(str), rnd_seed(seed),order_heap(AcceptOrderLt(*this,activity)){
 
 	underReachStatus = new FSMAcceptDetector::AcceptStatus(*this, true);
 	overReachStatus = new FSMAcceptDetector::AcceptStatus(*this, false);
@@ -88,7 +88,7 @@ void FSMAcceptDetector::addAcceptLit(int state, int strID, Var outer_reach_var){
 	accept_lit_map[accept_var - first_var] = {strID,state};
 	accepting_state.growTo(g_over.states());
 	accepting_state[state]=true;
-
+	activity.growTo(index+1,0);
 	underapprox_detector->setTrackStringAcceptance(strID,state,true,true);
 	overapprox_detector->setTrackStringAcceptance(strID,state,true,true);
 }
@@ -114,62 +114,110 @@ Lit FSMAcceptDetector::decide(int level){
 			Lit l = to_decide.last();
 			to_decide.pop();
 			if (outer->value(l) == l_Undef) {
+				/*if(opt_verb>1){
+					printf("fsm decide %d\n",dimacs(l));
+				}*/
 				return l;
 			}
 		}
 	}
-	for (int k = 0; k < all_lits.size(); k++) {
-		Lit l = all_lits[k];
-		if (l == lit_Undef)
+	int last_size = order_heap.size()+1;
+	while(order_heap.size()){
+		if(order_heap.size()>=last_size){
+			throw std::runtime_error("Error in fsm accept detector");
+		}
+		last_size = order_heap.size();
+		Var acceptVar = order_heap.peekMin();
+		Lit l = mkLit(acceptVar);
+
+
+		if (l == lit_Undef) {
+			order_heap.removeMin();
 			continue;
+		}
 		int index =  indexOf(var(l));
 		int node = accept_lit_map[index].to;
 		int str = accept_lit_map[index].str;
-
+		/*if(opt_verb>1){
+			printf("fsm pick decide %d\n",index);
+		}*/
 
 		if (outer->value(l) == l_True && opt_decide_fsm_pos) {
-			int j = node;
+				int j = node;
 
-			if (overapprox_detector->acceptsString(str,node) && !underapprox_detector->acceptsString(str,node)) {
+				if ( !underapprox_detector->acceptsString(str,node)) {
+					assert(overapprox_detector->acceptsString(str,node));//else we'd have a conflict
+					to_decide.clear();
+					last_decision_status = overapprox_detector->numUpdates();
+					decision_path.clear();
 
-				to_decide.clear();
-				last_decision_status = overapprox_detector->numUpdates();
-				decision_path.clear();
-
-				int p = j;
-				int last_edge = -1;
-				int last = j;
-
-
-				//ok, read back the path from the over to find a candidate edge we can decide
-				//find the earliest unconnected node on this path
-				overapprox_detector->getAbstractPath(str, node, decision_path);
-				last_decision_status = overapprox_detector->numUpdates();
-				for(NFATransition & t:decision_path){
-					int edgeID = t.edgeID;
-					int input = t.input;
-					Lit l  = mkLit(outer->getTransitionVar(g_over.getID(),edgeID,input,0));
-					if(outer->value(l)==l_Undef)
-						to_decide.push(l);
-				}
+					int p = j;
+					int last_edge = -1;
+					int last = j;
 
 
-				if (to_decide.size() && last_decision_status == overapprox_detector->numUpdates()) {
-					while (to_decide.size()) {
-						Lit l = to_decide.last();
-						to_decide.pop();
-						if (outer->value(l) == l_Undef) {
-							return l;
+					//ok, read back the path from the over to find a candidate edge we can decide
+					//find the earliest unconnected node on this path
+					overapprox_detector->getAbstractPath(str, node, decision_path,true);
+					last_decision_status = overapprox_detector->numUpdates();
+					for(NFATransition & t:decision_path){
+						int edgeID = t.edgeID;
+						int input = t.input;
+						Lit l  = mkLit(outer->getTransitionVar(g_over.getID(),edgeID,input,0));
+						if(outer->value(l)==l_Undef)
+							to_decide.push(l);
+					}
+
+
+					if (to_decide.size() && last_decision_status == overapprox_detector->numUpdates()) {
+						while (to_decide.size()) {
+							Lit l = to_decide.last();
+							to_decide.pop();
+							if (outer->value(l) == l_Undef) {
+								/*if(opt_verb>1){
+									printf("fsm decide %d\n",dimacs(l));
+								}*/
+								return l;
+							}
 						}
 					}
 				}
+			}else if (outer->value(l)==l_False && opt_decide_fsm_neg){
+				//find any transitions that are not on any paths of the accepting strings, and assign them false.
+				if (overapprox_detector->acceptsString(str,node) ) {
+					assert(!underapprox_detector->acceptsString(str,node));//else we'd have a conflict
+					//for each negated reachability constraint, we can find a cut through the unassigned edges in the over-approx and disable one of those edges.
+
+
+
+					//try to disconnect this node from source by walking back along the path in the over approx, and disabling the first unassigned edge we see.
+					//(there must be at least one such edge, else the variable would be connected in the under approximation as well - in which case it would already have been propagated.
+					overapprox_detector->getAbstractPath(str, node, decision_path,true);
+					last_decision_status = overapprox_detector->numUpdates();
+					for(NFATransition & t:decision_path){
+						int edgeID = t.edgeID;
+						int input = t.input;
+						Lit l  = mkLit(outer->getTransitionVar(g_over.getID(),edgeID,input,0));
+						if(outer->value(l)==l_Undef) {
+							//to_decide.push(l);
+						/*	if(opt_verb>1){
+								printf("fsm decide %d\n",dimacs(l));
+							}*/
+							return l;
+						}
+					}
+
+
+				}
 
 			}
-		}else if (outer->value(l)==l_False && opt_decide_fsm_neg){
-			//find any transitions that are not on any paths of the accepting strings, and assign them false.
+		if(order_heap.peekMin()==acceptVar){
+			order_heap.removeMin();
 		}
 
-	}
+
+		}
+
 	return lit_Undef;
 }
 
@@ -265,6 +313,9 @@ bool FSMAcceptDetector::propagate(vec<Lit> & conflict) {
 			bool reach = !sign(l);
 			if (outer->value(l) == l_True) {
 				//do nothing
+				if(opt_theory_internal_vsids_fsm && ! order_heap.inHeap(var(l))){
+					order_heap.insert(var(l));
+				}
 			} else if (outer->value(l) == l_Undef) {
 
 				if (reach)
@@ -534,7 +585,7 @@ void FSMAcceptDetector::buildAcceptReason(int node,int str, vec<Lit> & conflict)
 		conflict.push(mkLit(v,true));
 	}
 	//note: if there are repeated edges in this conflict, they will be cheaply removed by the sat solver anyhow, so that is not a major problem.
-
+	bumpConflict(conflict);
 }
 void FSMAcceptDetector::buildNonAcceptReason(int node,int str, vec<Lit> & conflict){
 
@@ -628,7 +679,7 @@ void FSMAcceptDetector::buildNonAcceptReason(int node,int str, vec<Lit> & confli
 			cur_seen[s]=false;
 		}
 		to_visit.clear();
-
+		bumpConflict(conflict);
 		return;
 	}
 
@@ -704,6 +755,7 @@ void FSMAcceptDetector::buildNonAcceptReason(int node,int str, vec<Lit> & confli
 		}
 
 	}
+	bumpConflict(conflict);
 /*	printf("conflict: ");
 	for (int i = 1;i<conflict.size();i++){
 		Lit l = conflict[i];

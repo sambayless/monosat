@@ -343,7 +343,7 @@ public:
 		return true;
 	}
 	vec<Bitset> used_transition;
-	bool getAbstractPath(int string, int state, vec<NFATransition> &path) {
+	bool getAbstractPath(int string, int state, vec<NFATransition> &path, bool reversed) {
 		update();
 		int s =string_last_nodes[string]->states[state];
 		if(! rr->connected(s)){
@@ -364,7 +364,10 @@ public:
 			int p = rr->previous(s);
 			s = p;
 		}
-		reverse(path);
+
+		if(!reversed)
+			reverse(path);
+
 		for(NFATransition & t:path){
 			used_transition[t.edgeID].clear(t.input);
 		}

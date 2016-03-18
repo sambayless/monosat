@@ -49,6 +49,7 @@ extern bool opt_record;
 
 extern IntOption opt_theory_conflict_max;
 extern DoubleOption opt_random_theory_freq;
+extern BoolOption opt_theory_internal_vsids_fsm;
 extern DoubleOption opt_random_theory_vsids_freq;
 extern BoolOption opt_randomomize_theory_order;
 extern BoolOption opt_interpolate;
@@ -143,6 +144,7 @@ extern IntOption opt_temporary_theory_reasons;
 extern BoolOption opt_force_directed;
 extern BoolOption opt_decide_graph_chokepoints;
 extern IntOption opt_sort_graph_decisions;
+
 extern BoolOption opt_decide_fsm_neg;
 extern BoolOption opt_decide_fsm_pos;
 extern BoolOption opt_rnd_order_graph_decisions;

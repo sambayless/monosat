@@ -187,6 +187,7 @@ BoolOption Monosat::opt_vsids_solver_as_theory(_cat_graph, "vsids-solver-as-theo
 BoolOption Monosat::opt_use_var_decay_for_theory_vsids(_cat_graph,"use-var-decay-for-theory-vsids-both","",true);
 BoolOption Monosat::opt_theory_order_vsids(_cat_graph, "theory-order-vsids", "Use vsids decision heuristic outside of theory solvers, to pick which theory solver to make decisions next",true);
 BoolOption Monosat::opt_theory_internal_vsids(_cat_graph, "theory-internal-vsids", "Use vsids decision heuristic within theory solvers",false);
+BoolOption Monosat::opt_theory_internal_vsids_fsm(_cat_fsm, "theory-internal-vsids-fsm", "Use vsids decision heuristic within fsm theory solvers",true);
 BoolOption Monosat::opt_theory_prioritize_conflicts(_cat_graph, "theory-prioritize-conflicts", "",false);
 BoolOption Monosat::opt_theory_priority_clear(_cat_graph, "theory-prioritize-clear", "",false);
 
@@ -261,7 +262,7 @@ IntOption Monosat::opt_sort_graph_decisions(_cat_graph, "decide-graph-sort",
 		"0=dont sort, 1=sort by shortest, 2=sort by longest", 0, IntRange(0, 2));
 BoolOption Monosat::opt_rnd_order_graph_decisions(_cat_graph, "decide-graph-rnd-order", "", true);
 BoolOption Monosat::opt_decide_fsm_neg(_cat_fsm, "decide-fsm-neg",
-									   "", false);
+									   "", true);
 
 BoolOption Monosat::opt_decide_fsm_pos(_cat_fsm, "decide-fsm-pos",
 									   "", true);
