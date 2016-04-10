@@ -84,6 +84,8 @@ public:
 	bool solve(Lit p, Lit q, bool do_simp, bool turn_off_simp = false);
 	bool solve(Lit p, Lit q, Lit r, bool do_simp, bool turn_off_simp = false);
 
+	bool propagateAssignment(const vec<Lit>& assumps);
+
 	//Also override the Solver's constructors
 	bool solve(const vec<Lit>& assumps){
 		return solve(assumps,true,false);

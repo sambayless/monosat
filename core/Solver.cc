@@ -1719,7 +1719,7 @@ lbool Solver::search(int nof_conflicts) {
 	n_theory_decision_rounds+=using_theory_decisions;
 	for (;;) {
 		static int iter = 0;
-		if (++iter ==  268) {
+		if (++iter ==  1564) {
 			int a = 1;
 		}
 
@@ -1808,7 +1808,7 @@ lbool Solver::search(int nof_conflicts) {
 			}
 			
 		} else {
-			assert(theory_queue.size() == 0);
+			assert(theory_queue.size() == 0 || disable_theories);
 			
 			if (!addDelayedClauses(confl))
 				goto conflict;
@@ -1856,9 +1856,14 @@ lbool Solver::search(int nof_conflicts) {
 					break;
 				}
 			}
-			
+
+			if(only_propagate && next ==lit_Undef && decisionLevel() == assumptions.size())
+				return l_True;
+
 			//Note: decision level is now added before theories make their decisions, to allow them to decide multiple literals at once.
 			newDecisionLevel();
+
+
 
 			if (opt_decide_theories && !disable_theories && using_theory_decisions && next == lit_Undef && (opt_theory_conflict_max==0 || conflicts>=next_theory_decision) ) {
 
@@ -2002,7 +2007,15 @@ static double luby(double y, int x) {
 	
 	return pow(y, seq);
 }
+bool Solver::propagateAssignment(const vec<Lit> & assumps){
+	only_propagate=true;
+	budgetOff();
+	assumps.copyTo(assumptions);
 
+	lbool val = solve_();
+	only_propagate=false;
+	return val==l_True;
+}
 // NOTE: assumptions passed in member-variable 'assumptions'.
 lbool Solver::solve_() {
 	clearInterrupt();
@@ -2080,7 +2093,8 @@ lbool Solver::solve_() {
 				throw std::runtime_error("Model is inconsistent with assumptions!");
 			}
 		}
-		if (opt_check_solution && theories.size() && !disable_theories) {
+
+		if (opt_check_solution && theories.size() && !disable_theories && !only_propagate) {
 			if(opt_verb>0){
 				printf("Checking witnesses...\n");
 			}
@@ -2125,7 +2139,7 @@ lbool Solver::solve_() {
 	} else if (status == l_False) {
 		assert(ok);
 	}
-
+	only_propagate=false;
 	assumptions.clear();
 	return status;
 }

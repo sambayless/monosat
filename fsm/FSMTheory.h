@@ -646,14 +646,14 @@ public:
 		requiresPropagation = true;
 		//printf("enqueue %d\n", dimacs(l));
 		
-#ifndef NDEBUG
+/*#ifndef NDEBUG
 		{
 			for (int i = 0; i < trail.size(); i++) {
 				assert(trail[i].var != v);
 			}
 		}
 #endif
-		
+		*/
 
 		
 		if (isEdgeVar(var(l))) {

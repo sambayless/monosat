@@ -497,7 +497,8 @@ bool FSMGeneratorAcceptorDetector::propagate(vec<Lit> & conflict) {
 					SuffixLit & t = (*suffixLits)[i];
 					 if (outer->value(t.l)==l_True && outer->value(t.accept_l)==l_True){
 						 if(!acceptsSuffix(*suffix_fsm,acceptor_over,accept_to,t.suffix_from,t.suffix_to,pre_accepting_states)){
-							 buildNonSuffixAcceptReason(gen_to,accept_to,pre_accepting_states,(*suffixLits)[failedSuffixLit], conflict);
+
+							 buildNonSuffixAcceptReason(gen_to,accept_to,pre_accepting_states,(*suffixLits)[i], conflict);
 							 return false;
 						 }
 					 }
@@ -722,7 +723,7 @@ void FSMGeneratorAcceptorDetector::buildReason(Lit p, vec<Lit> & reason, CRef ma
 
 		Var forV = var(forL);
 		assert(outer->value(forL)==l_True);
-		assert(outer->value(forV)==l_False);
+		//assert(outer->value(forV)==l_False);
 		reason.push(~forL);
 		int gen_final = getGeneratorFinal(forV);
 		int accept_final = getAcceptorFinal(forV);
@@ -1177,6 +1178,9 @@ void  FSMGeneratorAcceptorDetector::buildNonSuffixAcceptReason(int genFinal, int
 
 	vec<bool> next_seen;
 	vec<bool> cur_seen;
+
+	cur_seen.growTo(g_suffix.states());
+	next_seen.growTo(g_suffix.states());
 	emove_acceptor_seen.growTo(acceptor.states());
 	if(acceptor.emovesEnabled()){
 		for(int s : acceptor_start_states){
@@ -1802,9 +1806,9 @@ void FSMGeneratorAcceptorDetector::printSolution(std::ostream& out){
 }
 bool FSMGeneratorAcceptorDetector::checkSatisfied(){
 	//printSolution(std::cout);
-	/*g_over.draw();
+	g_over.draw();
 	acceptor_over.draw();
-	graph->drawFull(true,false);*/
+	//graph->drawFull(true,false);
 	NFALinearGeneratorAcceptor<> check(g_under,acceptor_under,gen_source,accept_source);
 
 	//g_under.draw(gen_source,first_destination );
@@ -1837,7 +1841,8 @@ bool FSMGeneratorAcceptorDetector::acceptsSuffix(DynamicFSM & g_suffix, DynamicF
 	//but for now, take advantage of knowing that g_suffix_over is shallow and acyclic, with a small alphabet, to just do a dfs
 
 	//for every time step, mark all states of the acceptor with all states that each suffix acceptor start state can lead to
-
+	g_suffix.draw(suffix_start_state,suffix_accept_state);
+	acceptor.draw(accept_source, acceptor_accept_state);
 
 	//in order for the solver to accept a string, it must be possible for each suffix to generate a string that can be accepted by the same
 	//sequence of acceptor states. (This is a neccessary but not a sufficient condition)
@@ -1861,8 +1866,10 @@ bool FSMGeneratorAcceptorDetector::acceptsSuffix(DynamicFSM & g_suffix, DynamicF
 	vec<int> next;
 	vec<int> cur;
 
-	vec<bool> next_seen;
-	vec<bool> cur_seen;
+	static vec<bool> next_seen;
+	static vec<bool> cur_seen;
+	cur_seen.growTo(g_suffix.states());
+	next_seen.growTo(g_suffix.states());
 	emove_acceptor_seen.growTo(acceptor.states());
 	if(acceptor.emovesEnabled()){
 		for(int s : acceptor_start_states){
@@ -1995,6 +2002,6 @@ bool FSMGeneratorAcceptorDetector::acceptsSuffix(DynamicFSM & g_suffix, DynamicF
 		}
 		next.clear();
 	}
-	//unreachable
+
 	return accepts;
 }

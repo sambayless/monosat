@@ -93,7 +93,9 @@ public:
 		Lit accept_l;
 		int suffix_from;
 		int suffix_to;
-
+		SuffixLit(Lit l, Lit accept_l, int _suffix_from, int _suffix_to):l(l),accept_l(accept_l),suffix_from(_suffix_from),suffix_to(_suffix_to){
+				int a =1;
+		}
 	};
 	struct AcceptLit{
 		Lit l=lit_Undef;

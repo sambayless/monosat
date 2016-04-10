@@ -98,6 +98,15 @@ void SimpSolver::releaseVar(Lit l)
         Solver::addClause(l);
 }
 
+bool SimpSolver::propagateAssignment(const vec<Lit>& assumps){
+	only_propagate=true;
+	budgetOff();
+	assumps.copyTo(assumptions);
+	lbool val = solve_(false,false);
+	only_propagate=false;
+	return val==l_True;
+}
+
 lbool SimpSolver::solve_(bool do_simp, bool turn_off_simp) {
 	vec<Var> extra_frozen;
 	lbool result = l_True;

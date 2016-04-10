@@ -389,6 +389,7 @@ public:
 	virtual bool solve(Lit p);                   // Search for a model that respects a single assumption.
 	virtual bool solve(Lit p, Lit q);            // Search for a model that respects two assumptions.
 	virtual bool solve(Lit p, Lit q, Lit r);     // Search for a model that respects three assumptions.
+	virtual bool propagateAssignment(const vec<Lit>& assumps); //apply unit propagation to the supplied assumptions, and quit without solving
 	bool okay() const;                  // FALSE means solver is in a conflicting state
 	
 	Lit True(){
@@ -674,6 +675,7 @@ protected:
 	int simpDB_assigns;   // Number of top-level assignments since last execution of 'simplify()'.
 	int64_t simpDB_props;   // Remaining number of propagations that must be made before next execution of 'simplify()'.
 	vec<Lit> assumptions;      // Current set of assumptions provided to solve by the user.
+	bool only_propagate=false; //true if the solver should propagate assumptions and then quit without solving
 	Heap<VarOrderLt> order_heap;       // A priority queue of variables ordered with respect to the variable activity.
 	double theory_inc;
 	double theory_decay;
@@ -854,6 +856,13 @@ public:
 		 return value(v)!=l_Undef && (level(v)==0);
 	 }
 
+    // Iterate over clauses and top-level assignments:
+    ClauseIterator clausesBegin() const;
+    ClauseIterator clausesEnd()   const;
+    TrailIterator  trailBegin()   const;
+    TrailIterator  trailEnd  ()   const;
+
+
 private:
 	bool withinBudget() const;
 	bool addConflictClause(vec<Lit> & theory_conflict, CRef & confl_out, bool permanent = false);
@@ -1019,25 +1028,30 @@ inline bool Solver::enqueue(Lit p, CRef from) {
 	return value(p) != l_Undef ? value(p) != l_False : (uncheckedEnqueue(p, from), true);
 }
 inline bool Solver::addClause(const vec<Lit>& ps) {
+	cancelUntil(0);
 	ps.copyTo(add_tmp);
 	return addClause_(add_tmp);
 }
 inline bool Solver::addEmptyClause() {
+	cancelUntil(0);
 	add_tmp.clear();
 	return addClause_(add_tmp);
 }
 inline bool Solver::addClause(Lit p) {
+	cancelUntil(0);
 	add_tmp.clear();
 	add_tmp.push(p);
 	return addClause_(add_tmp);
 }
 inline bool Solver::addClause(Lit p, Lit q) {
+	cancelUntil(0);
 	add_tmp.clear();
 	add_tmp.push(p);
 	add_tmp.push(q);
 	return addClause_(add_tmp);
 }
 inline bool Solver::addClause(Lit p, Lit q, Lit r) {
+	cancelUntil(0);
 	add_tmp.clear();
 	add_tmp.push(p);
 	add_tmp.push(q);
@@ -1177,6 +1191,7 @@ inline bool Solver::solve(const vec<Lit>& assumps) {
 	assumps.copyTo(assumptions);
 	return solve_() == l_True;
 }
+
 inline lbool Solver::solveLimited(const vec<Lit>& assumps) {
 	assumps.copyTo(assumptions);
 	return solve_();
@@ -1207,6 +1222,11 @@ inline void Solver::toDimacs(const char* file, Lit p, Lit q, Lit r) {
 	as.push(r);
 	toDimacs(file, as);
 }
+	inline ClauseIterator Solver::clausesBegin() const { return ClauseIterator(ca, &clauses[0]); }
+	inline ClauseIterator Solver::clausesEnd  () const { return ClauseIterator(ca, &clauses[clauses.size()]); }
+	inline TrailIterator  Solver::trailBegin  () const { return TrailIterator(&trail[0]); }
+	inline TrailIterator  Solver::trailEnd    () const {
+	return TrailIterator(&trail[decisionLevel() == 0 ? trail.size() : trail_lim[0]]); }
 
 //=================================================================================================
 // Debug etc:
