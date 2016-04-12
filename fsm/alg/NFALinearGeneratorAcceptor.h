@@ -56,7 +56,7 @@ class NFALinearGeneratorAcceptor{
 
 	vec<bool> next_seen;
 	vec<bool> cur_seen;
-
+	vec<bool> pre_accept_state_seen;
 	vec<int> gen_cur;
 	vec<int> gen_next;
 	vec<bool> gen_next_seen;
@@ -597,16 +597,14 @@ private:
 	bool find_accepts(int gen_final, int accept_final, bool invertAcceptance, vec<vec<ForcedTransition>> * forced_edges=nullptr,vec<ChokepointTransition>  * chokepoint_edges=nullptr,vec<int>  * pre_accepting_states=nullptr){
 		bool accepting_state_is_attractor= !invertAcceptance && isAttractor(accept_final) ;
 		bool hasSuffix = false;
-		if(pre_accepting_states){
-			pre_accepting_states->clear();
-		}
-		if(forced_edges || chokepoint_edges){
+
+		/*if(forced_edges || chokepoint_edges){
 
 			if(!buildSuffixTable(gen_final, accept_final, suffixTable,accepting_state_is_attractor,invertAcceptance)){
 				return false;
 			}
 			hasSuffix=true;
-		}
+		}*/
 		int gen_pos = 0;
 		for(int s:cur){
 			assert(cur_seen);
@@ -617,7 +615,11 @@ private:
 		cur_seen[accept_source]=true;
 		cur.push(accept_source);
 
-
+		if(pre_accepting_states) {
+			pre_accept_state_seen.clear();
+			pre_accept_state_seen.growTo(cur_seen.size());
+			pre_accepting_states->clear();
+		}
 		for(int s:gen_cur){
 			assert(gen_cur_seen);
 			gen_cur_seen[s]=false;
@@ -679,7 +681,11 @@ private:
 			int  cur_gen_state=0;
 			bool any_forced=false;
 
+
 			bool accepting = stepGenerator(gen_final, chars,seen_chars,cur_gen_state,nullptr);//get set of next strings
+			if(accepting){
+				int a=1;
+			}
 			if(accepting_state_is_attractor){
 				accepting =true;
 			}
@@ -692,31 +698,40 @@ private:
 						int to = g.incident(s,j).node;
 						if(hasSuffix && !suffixTable[gen_pos][to])
 							continue;
-						if( g.transitionEnabled(edgeID,0,0)){
-							if(has_chokepoint){
-								if(chokepoint_edge<0){
-									chokepoint_edge=edgeID;
-									chokepoint_char=0;
-								}else{
-									has_chokepoint=false;
+						if( g.transitionEnabled(edgeID,0,0)) {
+							if (has_chokepoint) {
+								if (chokepoint_edge < 0) {
+									chokepoint_edge = edgeID;
+									chokepoint_char = 0;
+								} else {
+									has_chokepoint = false;
 								}
 							}
 
-							if(!cur_seen[to]){
-							cur_seen[to]=true;
-							cur.push(to);
-							if(to!=accept_final)
-								any_non_acceptors=true;
-							}else{
-								if(pre_accepting_states && accepting){
-									pre_accepting_states->push(s);//s is an acceptor fsm state that can lead to the accepting state of the fsm
+							if (!cur_seen[to]) {
+								cur_seen[to] = true;
+								cur.push(to);
+							}
+							if (to != accept_final) {
+								any_non_acceptors = true;
+							} else {
+								if (pre_accepting_states && accepting) {
+									if(!pre_accept_state_seen[s]) {
+										pre_accept_state_seen[s]=true;
+										pre_accepting_states->push(s);
+									}
+									//s is an acceptor fsm state that can lead to the accepting state of the fsm
 								}
 							}
-
 						}
 					}
 				}
 			}else{
+				if(pre_accepting_states) {
+					pre_accept_state_seen.clear();
+					pre_accept_state_seen.growTo(cur_seen.size());
+					pre_accepting_states->clear();
+				}
 				for(int l:chars)
 				{
 					bool character_cannot_lead_to_accepting_state=true;
@@ -741,11 +756,15 @@ private:
 									if(!cur_seen[to]){
 										cur_seen[to]=true;
 										cur.push(to);
-										if(to!=accept_final){
-											any_non_acceptors=true;
-										}else{
-											if(pre_accepting_states && accepting){
-												pre_accepting_states->push(s);//s is an acceptor fsm state that can lead to the accepting state of the fsm
+									}
+									if(to!=accept_final){
+										any_non_acceptors=true;
+									}else{
+										if(pre_accepting_states && accepting){
+											if(!pre_accept_state_seen[s]) {
+												pre_accept_state_seen[s] = true;
+												pre_accepting_states->push(s);
+												//s is an acceptor fsm state that can lead to the accepting state of the fsm
 											}
 										}
 									}
@@ -774,7 +793,11 @@ private:
 										any_non_acceptors_next=true;
 									}else{
 										if(pre_accepting_states && accepting){
-											pre_accepting_states->push(s);//s is an acceptor fsm state that can lead to the accepting state of the fsm
+											if(!pre_accept_state_seen[s]) {
+												pre_accept_state_seen[s] = true;
+												pre_accepting_states->push(s);
+												//s is an acceptor fsm state that can lead to the accepting state of the fsm
+											}
 										}
 									}
 								}

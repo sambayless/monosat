@@ -87,6 +87,11 @@ private:
 	}
 public:
 
+	void swap(Bitset & b){
+		buf.swap(b.buf);
+		std::swap(sz,b.sz);
+	}
+
 	//population count (number of 1s in the bitset)
 	int count() const{
 		int n = 0;

@@ -20,7 +20,7 @@
  **************************************************************************************************/
 #include "mtl/Vec.h"
 #include "FSMGeneratorAcceptorDetector.h"
-
+#include "mtl/Bitset.h"
 #include "FSMTheory.h"
 #include "core/Config.h"
 #include <stdexcept>
@@ -455,10 +455,10 @@ bool FSMGeneratorAcceptorDetector::propagate(vec<Lit> & conflict) {
 			vec<SuffixLit> * suffixLits = t.suffixLits;
 			//assert(is_changed[indexOf(var(l))]);
 			pre_accepting_states.clear();
-			if(opt_verb>1){
+		/*	if(opt_verb>1){
 			g_over.draw(gen_source,gen_to);
 			acceptor_over.draw(accept_source,accept_to);
-			}
+			}*/
 			if(!opt_fsm_negate_underapprox && outer->value(l)!=l_True && underapprox_detector->accepts(gen_to,accept_to,false,opt_fsm_forced_edge_prop ?&forced_edges:nullptr)){
 				if (outer->value(l) == l_True) {
 					//do nothing
@@ -496,6 +496,7 @@ bool FSMGeneratorAcceptorDetector::propagate(vec<Lit> & conflict) {
 				for(int i = 0;i<suffixLits->size();i++){
 					SuffixLit & t = (*suffixLits)[i];
 					 if (outer->value(t.l)==l_True && outer->value(t.accept_l)==l_True){
+						 //g_over.draw(gen_source,gen_to);
 						 if(!acceptsSuffix(*suffix_fsm,acceptor_over,accept_to,t.suffix_from,t.suffix_to,pre_accepting_states)){
 
 							 buildNonSuffixAcceptReason(gen_to,accept_to,pre_accepting_states,(*suffixLits)[i], conflict);
@@ -1841,8 +1842,8 @@ bool FSMGeneratorAcceptorDetector::acceptsSuffix(DynamicFSM & g_suffix, DynamicF
 	//but for now, take advantage of knowing that g_suffix_over is shallow and acyclic, with a small alphabet, to just do a dfs
 
 	//for every time step, mark all states of the acceptor with all states that each suffix acceptor start state can lead to
-	g_suffix.draw(suffix_start_state,suffix_accept_state);
-	acceptor.draw(accept_source, acceptor_accept_state);
+	//g_suffix.draw(suffix_start_state,suffix_accept_state);
+	//acceptor.draw(accept_source, acceptor_accept_state);
 
 	//in order for the solver to accept a string, it must be possible for each suffix to generate a string that can be accepted by the same
 	//sequence of acceptor states. (This is a neccessary but not a sufficient condition)
@@ -1925,9 +1926,13 @@ bool FSMGeneratorAcceptorDetector::acceptsSuffix(DynamicFSM & g_suffix, DynamicF
 	}
 	bool accepts=true;
 	while(cur.size()){
+		for(int s = 0;s<reachable_acceptor_states.size();s++){
+			reachable_acceptor_states[s].swap(previous_reachable_acceptor_states[s]);
+		}
 		for(int i = 0;i<cur.size();i++){
 			int s = cur[i];
-			Bitset & bt = reachable_acceptor_states[s];
+			Bitset & prev_bt = previous_reachable_acceptor_states[s];
+			Bitset & cur_bt = reachable_acceptor_states[s];
 			for(int j = 0;j<g_suffix.nIncident(s);j++){
 				//now check if the label is active
 				int edgeID= g_suffix.incident(s,j).id;
@@ -1939,44 +1944,47 @@ bool FSMGeneratorAcceptorDetector::acceptsSuffix(DynamicFSM & g_suffix, DynamicF
 				}
 
 				//for each lit accepted by a next state of the NFA acceptor from one of its current states...
-				for(int acceptor_state = 0;acceptor_state<bt.size();acceptor_state++){
-					if(bt[acceptor_state]){
+				for(int acceptor_state = 0;acceptor_state<prev_bt.size();acceptor_state++){
+					if(prev_bt[acceptor_state]){
 						//this is a state of the acceptor that could be reached at this state
 						for(int k = 0;k<acceptor.nIncident(acceptor_state);k++){
 							int acceptor_edgeID = acceptor.incident(acceptor_state,k).id;
 							if(!acceptor.edgeEnabled(acceptor_edgeID))
 								continue;
 							int acceptor_to =  acceptor.incident(acceptor_state,k).node;
-							if(previous_reachable_acceptor_states[gen_to][acceptor_to]){
-								for(int l = 1;l<acceptor.inAlphabet();l++){
-									if (acceptor.transitionEnabled(acceptor_edgeID,l,0) && g_suffix.transitionEnabled(edgeID,l,0)){
+
+							for(int l = 1;l<acceptor.inAlphabet();l++){
+								if (acceptor.transitionEnabled(acceptor_edgeID,l,0) && g_suffix.transitionEnabled(edgeID,l,0)){
+									if(!reachable_acceptor_states[gen_to][acceptor_to]) {
 										reachable_acceptor_states[gen_to].set(acceptor_to);
 										//also need to add any 0-reachable states
 
-										if(acceptor.emovesEnabled()){
+										if (acceptor.emovesEnabled()) {
 											emove_acceptor_states.clear();
 											emove_acceptor_states.push(acceptor_to);
-											for(int i = 0;i<emove_acceptor_states.size();i++){
+											for (int i = 0; i < emove_acceptor_states.size(); i++) {
 												int s = emove_acceptor_states[i];
 												assert(reachable_acceptor_states[gen_to][s]);
-												for(int j = 0;j<acceptor.nIncident(s);j++){
+												for (int j = 0; j < acceptor.nIncident(s); j++) {
 													//now check if the label is active
-													int edgeID= acceptor.incident(s,j).id;
-													int acceptor_emove_to = acceptor.incident(s,j).node;
-													if(!reachable_acceptor_states[gen_to][acceptor_emove_to] && acceptor.transitionEnabled(edgeID,0,0)){
+													int edgeID = acceptor.incident(s, j).id;
+													int acceptor_emove_to = acceptor.incident(s, j).node;
+													if (!reachable_acceptor_states[gen_to][acceptor_emove_to] &&
+														acceptor.transitionEnabled(edgeID, 0, 0)) {
 														reachable_acceptor_states[gen_to].set(acceptor_emove_to);
 														emove_acceptor_states.push(acceptor_emove_to);
 													}
 												}
 											}
 										}
-										if(!next_seen[gen_to]){
-											next_seen[gen_to]=true;
+										if (!next_seen[gen_to]) {
+											next_seen[gen_to] = true;
 											next.push(gen_to);
 										}
 									}
 								}
 							}
+
 						}
 					}
 				}
@@ -1984,14 +1992,16 @@ bool FSMGeneratorAcceptorDetector::acceptsSuffix(DynamicFSM & g_suffix, DynamicF
 			}
 		}
 
-		if(!next.size()){
+
+
+		//if(!next.size()){
 			//done processing generator
 			if(cur_seen[suffix_accept_state] && reachable_acceptor_states[suffix_accept_state][acceptor_accept_state]){
-				accepts=true;
+				return true;
 			}else{
 				accepts=false;
 			}
-		}
+		//}
 
 		next.swap(cur);
 		next_seen.swap(cur_seen);
