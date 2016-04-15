@@ -497,8 +497,14 @@ bool FSMGeneratorAcceptorDetector::propagate(vec<Lit> & conflict) {
 					SuffixLit & t = (*suffixLits)[i];
 					 if (outer->value(t.l)==l_True && outer->value(t.accept_l)==l_True){
 						 //g_over.draw(gen_source,gen_to);
+						// suffix_fsm->draw(t.suffix_from,t.suffix_to);
+						 //acceptor_over.draw(accept_source, 4);
 						 if(!acceptsSuffix(*suffix_fsm,acceptor_over,accept_to,t.suffix_from,t.suffix_to,pre_accepting_states)){
+							 g_over.draw(gen_source,30);
+							 suffix_fsm->draw(t.suffix_from,t.suffix_to);
+							 acceptor_over.draw(accept_source, 4);
 
+							 assert(!acceptsSuffix(*suffix_fsm,acceptor_over,accept_to,t.suffix_from,t.suffix_to,pre_accepting_states));
 							 buildNonSuffixAcceptReason(gen_to,accept_to,pre_accepting_states,(*suffixLits)[i], conflict);
 							 return false;
 						 }
@@ -1150,10 +1156,17 @@ void FSMGeneratorAcceptorDetector::buildDeterministicForcedEdgeReason(int genFin
 	}
 }
 void  FSMGeneratorAcceptorDetector::buildNonSuffixAcceptReason(int genFinal, int acceptor_accept_state, vec<int> & acceptor_start_states,SuffixLit & suffixLit, vec<Lit> & conflict){
-	//run the acceptor forward, and find a cut of nfa transitions that could be enabled
 	conflict.push(~suffixLit.l);
 	conflict.push(~suffixLit.accept_l);
-
+	printf("Acceptor start states: ");
+	for(int s:acceptor_start_states){
+		printf("%d ",s);
+	}
+	printf("\n");
+	if(!acceptor_start_states.size()) {
+		throw std::runtime_error("Bad suffix reason");
+		return;
+	}
 	vec<Bitset> reachable_acceptor_states;
 	vec<Bitset> previous_reachable_acceptor_states;
 
@@ -1242,9 +1255,13 @@ void  FSMGeneratorAcceptorDetector::buildNonSuffixAcceptReason(int genFinal, int
 	}
 
 	while(cur.size()){
+		for(int s = 0;s<reachable_acceptor_states.size();s++){
+			reachable_acceptor_states[s].swap(previous_reachable_acceptor_states[s]);
+		}
 		for(int i = 0;i<cur.size();i++){
 			int s = cur[i];
-			Bitset & bt = reachable_acceptor_states[s];
+			Bitset & prev_bt = previous_reachable_acceptor_states[s];
+			Bitset & cur_bt = reachable_acceptor_states[s];
 			for(int j = 0;j<g_suffix.nIncident(s);j++){
 				//now check if the label is active
 				int edgeID= g_suffix.incident(s,j).id;
@@ -1256,36 +1273,41 @@ void  FSMGeneratorAcceptorDetector::buildNonSuffixAcceptReason(int genFinal, int
 				}
 
 				//for each lit accepted by a next state of the NFA acceptor from one of its current states...
-				for(int acceptor_state = 0;acceptor_state<bt.size();acceptor_state++){
-					if(bt[acceptor_state]){
+				for(int acceptor_state = 0;acceptor_state<prev_bt.size();acceptor_state++){
+					if(prev_bt[acceptor_state]){
 						//this is a state of the acceptor that could be reached at this state
 						for(int k = 0;k<acceptor.nIncident(acceptor_state);k++){
 							int acceptor_edgeID = acceptor.incident(acceptor_state,k).id;
-							if(!acceptor.edgeEnabled(acceptor_edgeID))
-								continue;
 							int acceptor_to =  acceptor.incident(acceptor_state,k).node;
-							if(previous_reachable_acceptor_states[gen_to][acceptor_to]){
-								for(int l = 1;l<acceptor.inAlphabet();l++){
-									if (acceptor.transitionEnabled(acceptor_edgeID,l,0) && g_suffix.transitionEnabled(edgeID,l,0)){
+							for(int l = 1;l<acceptor.inAlphabet();l++){
 
+								if (g_suffix.transitionEnabled(edgeID,l,0) && !acceptor.transitionEnabled(acceptor_edgeID,l,0)){
+									//if the suffix would accept this edge, but the acceptor does NOT
+									Var v = outer->getTransitionVar(acceptor.getID(),acceptor_edgeID,l,0);
+									if (v!=var_Undef && outer->level(v)>0) {
+										assert(outer->value(v) == l_False);
+										conflict.push(mkLit(v));
+									}
+								}else if (acceptor.transitionEnabled(acceptor_edgeID,l,0) && g_suffix.transitionEnabled(edgeID,l,0)){
+									if(!reachable_acceptor_states[gen_to][acceptor_to]) {
+										reachable_acceptor_states[gen_to].set(acceptor_to);
 										//also need to add any 0-reachable states
 
-										if(!reachable_acceptor_states[gen_to][acceptor_to] && acceptor.emovesEnabled()){
-											reachable_acceptor_states[gen_to].set(acceptor_to);
+										if (acceptor.emovesEnabled()) {
 											emove_acceptor_states.clear();
 											emove_acceptor_states.push(acceptor_to);
-											for(int i = 0;i<emove_acceptor_states.size();i++){
+											for (int i = 0; i < emove_acceptor_states.size(); i++) {
 												int s = emove_acceptor_states[i];
 												assert(reachable_acceptor_states[gen_to][s]);
-												for(int j = 0;j<acceptor.nIncident(s);j++){
+												for (int j = 0; j < acceptor.nIncident(s); j++) {
 													//now check if the label is active
-													int edgeID= acceptor.incident(s,j).id;
+													int edgeID2= acceptor.incident(s,j).id;
 													int acceptor_emove_to = acceptor.incident(s,j).node;
-													if(!reachable_acceptor_states[gen_to][acceptor_emove_to] && acceptor.transitionEnabled(edgeID,0,0)){
+													if(!reachable_acceptor_states[gen_to][acceptor_emove_to] && acceptor.transitionEnabled(edgeID2,0,0)){
 														reachable_acceptor_states[gen_to].set(acceptor_emove_to);
 														emove_acceptor_states.push(acceptor_emove_to);
-													}else if (!reachable_acceptor_states[gen_to][acceptor_emove_to] && !acceptor.transitionEnabled(edgeID,0,0)){
-														Var v = outer->getTransitionVar(acceptor.getID(),edgeID,0,0);
+													}else if (!reachable_acceptor_states[gen_to][acceptor_emove_to] && !acceptor.transitionEnabled(edgeID2,0,0)){
+														Var v = outer->getTransitionVar(acceptor.getID(),edgeID2,0,0);
 														if(v!=var_Undef &&  outer->value(v)==l_False && outer->level(v)>0){
 															conflict.push(mkLit(v));
 														}
@@ -1300,12 +1322,12 @@ void  FSMGeneratorAcceptorDetector::buildNonSuffixAcceptReason(int genFinal, int
 											next_seen[gen_to]=true;
 											next.push(gen_to);
 										}
-									}else if ((!reachable_acceptor_states[gen_to][acceptor_to] || !next_seen[gen_to]) && !acceptor.transitionEnabled(edgeID,l,0)){
+									}/*else if ((!reachable_acceptor_states[gen_to][acceptor_to] || !next_seen[gen_to]) && !acceptor.transitionEnabled(edgeID,l,0)){
 										Var v = outer->getTransitionVar(acceptor.getID(),edgeID,0,0);
 										if(v!=var_Undef &&  outer->value(v)==l_False && outer->level(v)>0){
 											conflict.push(mkLit(v));
 										}
-									}
+									}*/
 								}
 							}
 						}
@@ -1315,15 +1337,24 @@ void  FSMGeneratorAcceptorDetector::buildNonSuffixAcceptReason(int genFinal, int
 			}
 		}
 
-		if(!next.size()){
-			//done processing generator
-			if(cur_seen[suffix_accept_state] && reachable_acceptor_states[suffix_accept_state][acceptor_accept_state]){
-				throw std::runtime_error("Internal error in FSM suffix acceptor");
-				return;
-			}else{
-				return;
+		//if(!next.size()){
+		//done processing generator
+		if(cur_seen[suffix_accept_state] && reachable_acceptor_states[suffix_accept_state][acceptor_accept_state]){
+			throw std::runtime_error("Internal error in FSM suffix acceptor");
+			return;
+		}else if(!next.size()){
+			g_over.draw(gen_source,30);
+			g_suffix.draw(suffix_start_state,suffix_accept_state);
+			acceptor.draw(accept_source, acceptor_accept_state);
+
+			printf("suffix reason: ");
+			for(Lit l:conflict){
+				printf("%d ", dimacs(l));
 			}
+			printf("\n");
+			return;
 		}
+		//}
 
 		next.swap(cur);
 		next_seen.swap(cur_seen);
@@ -1830,7 +1861,10 @@ bool FSMGeneratorAcceptorDetector::checkSatisfied(){
 
 
 	}
-
+	vec<Lit> ignore;
+	if(!propagate(ignore)){
+		return false;
+	}
 
 	return true;
 }
@@ -1869,6 +1903,8 @@ bool FSMGeneratorAcceptorDetector::acceptsSuffix(DynamicFSM & g_suffix, DynamicF
 
 	static vec<bool> next_seen;
 	static vec<bool> cur_seen;
+	cur_seen.clear();
+	next_seen.clear();
 	cur_seen.growTo(g_suffix.states());
 	next_seen.growTo(g_suffix.states());
 	emove_acceptor_seen.growTo(acceptor.states());
@@ -1954,6 +1990,9 @@ bool FSMGeneratorAcceptorDetector::acceptsSuffix(DynamicFSM & g_suffix, DynamicF
 							int acceptor_to =  acceptor.incident(acceptor_state,k).node;
 
 							for(int l = 1;l<acceptor.inAlphabet();l++){
+								bool a_accept = acceptor.transitionEnabled(acceptor_edgeID,l,0);
+								bool g_accept = g_suffix.transitionEnabled(edgeID,l,0);
+								//bool g_accept2 = g_suffix.transitionEnabled(edgeID,0,l);
 								if (acceptor.transitionEnabled(acceptor_edgeID,l,0) && g_suffix.transitionEnabled(edgeID,l,0)){
 									if(!reachable_acceptor_states[gen_to][acceptor_to]) {
 										reachable_acceptor_states[gen_to].set(acceptor_to);
@@ -1967,10 +2006,10 @@ bool FSMGeneratorAcceptorDetector::acceptsSuffix(DynamicFSM & g_suffix, DynamicF
 												assert(reachable_acceptor_states[gen_to][s]);
 												for (int j = 0; j < acceptor.nIncident(s); j++) {
 													//now check if the label is active
-													int edgeID = acceptor.incident(s, j).id;
+													int acceptor_emove_edgeID = acceptor.incident(s, j).id;
 													int acceptor_emove_to = acceptor.incident(s, j).node;
 													if (!reachable_acceptor_states[gen_to][acceptor_emove_to] &&
-														acceptor.transitionEnabled(edgeID, 0, 0)) {
+														acceptor.transitionEnabled(acceptor_emove_edgeID, 0, 0)) {
 														reachable_acceptor_states[gen_to].set(acceptor_emove_to);
 														emove_acceptor_states.push(acceptor_emove_to);
 													}
