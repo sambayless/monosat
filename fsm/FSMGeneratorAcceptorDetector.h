@@ -70,6 +70,7 @@ public:
 
 	NFALinearGeneratorAcceptor<AcceptStatus> * underapprox_detector = nullptr;
 	NFALinearGeneratorAcceptor<AcceptStatus> * overapprox_detector = nullptr;
+	NFALinearGeneratorAcceptor<AcceptStatus> * inverted_overapprox_detector = nullptr;
 
 
 

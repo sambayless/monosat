@@ -31,12 +31,26 @@ FSMGeneratorAcceptorDetector::FSMGeneratorAcceptorDetector(int detectorID, FSMTh
 		DynamicFSM &g_over,DynamicFSM & acceptor_under,DynamicFSM & acceptor_over,int gen_source, int accept_source,  double seed) :
 		FSMDetector(detectorID), outer(outer), g_under(g_under), g_over(g_over), acceptor_under(acceptor_under), acceptor_over(acceptor_over),gen_source(gen_source), accept_source(accept_source), rnd_seed(seed){
 
-	if(!opt_fsm_as_graph){
+	if(!opt_fsm_as_graph) {
 		underReachStatus = new FSMGeneratorAcceptorDetector::AcceptStatus(*this, true);
 		overReachStatus = new FSMGeneratorAcceptorDetector::AcceptStatus(*this, false);
 
-		underapprox_detector = new NFALinearGeneratorAcceptor<FSMGeneratorAcceptorDetector::AcceptStatus>(g_under,acceptor_under,gen_source,accept_source,*underReachStatus);
-		overapprox_detector = new NFALinearGeneratorAcceptor<FSMGeneratorAcceptorDetector::AcceptStatus>(g_over,acceptor_over,gen_source,accept_source,*overReachStatus);
+		underapprox_detector = new NFALinearGeneratorAcceptor<FSMGeneratorAcceptorDetector::AcceptStatus>(g_under,
+																										  acceptor_under,
+																										  gen_source,
+																										  accept_source,
+																										  *underReachStatus);
+		overapprox_detector = new NFALinearGeneratorAcceptor<FSMGeneratorAcceptorDetector::AcceptStatus>(g_over,
+																										 acceptor_over,
+																										 gen_source,
+																										 accept_source,
+																										 *overReachStatus);
+		if (opt_fsm_negate_underapprox) {
+/*			inverted_overapprox_detector = new NFALinearGeneratorAcceptor<>(g_under, acceptor_over, gen_source,
+																		accept_source);*/
+			//not clear if the ivnerted overapprox detector should operator over the under or over-approx generator.
+			inverted_overapprox_detector=overapprox_detector;
+		}
 
 		underprop_marker = outer->newReasonMarker(getID());
 		overprop_marker = outer->newReasonMarker(getID());
@@ -439,7 +453,7 @@ void FSMGeneratorAcceptorDetector::AcceptStatus::accepts(int string,int state,in
 
 bool FSMGeneratorAcceptorDetector::propagate(vec<Lit> & conflict) {
 	static int iter = 0;
-	if (++iter == 87) {
+	if (++iter == 5374) {
 		int a = 1;
 	}
 
@@ -469,10 +483,16 @@ bool FSMGeneratorAcceptorDetector::propagate(vec<Lit> & conflict) {
 					buildAcceptReason(gen_to,accept_to, conflict);
 					return false;
 				}
-			}else if(opt_fsm_negate_underapprox && outer->value(l)!=l_True && !overapprox_detector->accepts(gen_to,accept_to,true, opt_fsm_forced_edge_prop ?&forced_edges:nullptr)){
+			}else if(opt_fsm_negate_underapprox && outer->value(l)!=l_True && !inverted_overapprox_detector->accepts(gen_to,accept_to,true, opt_fsm_forced_edge_prop ?&forced_edges:nullptr)){
+				//This optimization appears to be broken. For example, if the input generator over-approximation has everything free, then this always triggers.
+				//possibly the inverted overapprox acceptor has to be paired with the generator underapprox instead...
+				assert(false);
+
 				if (outer->value(l) == l_True) {
 					//do nothing
 				} else if (outer->value(l) == l_Undef) {
+					//g_under.draw(gen_source,gen_to);
+					//acceptor_over.draw(accept_source,accept_to);
 					outer->enqueue(l, underprop_marker);
 				}else{
 					conflict.push(l);
@@ -523,7 +543,9 @@ bool FSMGeneratorAcceptorDetector::propagate(vec<Lit> & conflict) {
 						int generator_state = t.generator_state;
 						assert(generator_state==s);
 						int label = t.character;
-
+						if(this->gen_source>1){
+							int a=1;
+						}
 						for(int i = 0;i<g_over.nIncident(generator_state);i++){
 							int edgeID = g_over.incident(generator_state,i).id;
 							if(g_over.transitionEnabled(edgeID,0,label)){
@@ -553,7 +575,9 @@ bool FSMGeneratorAcceptorDetector::propagate(vec<Lit> & conflict) {
 					//if a transition _must_ be traversed in order to accept the instance (a chokepoint),
 					//then assert it true
 					for(auto & t:chokepoint_edges){
-
+						if(this->gen_source>1){
+							int a=1;
+						}
 						int edgeID = t.acceptorEdgeID;
 						int from = acceptor_over.getEdge(edgeID).from;
 						int to = acceptor_over.getEdge(edgeID).to;
@@ -590,7 +614,9 @@ bool FSMGeneratorAcceptorDetector::propagate(vec<Lit> & conflict) {
 
 					for(int s2 = 0;s2<forced_edges.size();s2++){
 						int n_forced = forced_edges[s2].size();
-
+						if(this->gen_source>1){
+							int a=1;
+						}
 						if(forced_edges[s2].size()==0)
 							continue;
 						int generator_state = forced_edges[s2][0].generator_state;
@@ -626,6 +652,9 @@ bool FSMGeneratorAcceptorDetector::propagate(vec<Lit> & conflict) {
 							for(int c = 0;c<g_over.outAlphabet();c++){
 								if(g_over.transitionEnabled(edgeID,0,c) && !tmp_seen_chars[c]){
 									//this edge is forced to be true
+									if(this->gen_source>1){
+										int a=1;
+									}
 									Var v = outer->getTransitionVar(g_over.getID(),edgeID,0,c);
 									Lit f = mkLit(v);
 									if(outer->value(f)==l_Undef){
@@ -645,7 +674,9 @@ bool FSMGeneratorAcceptorDetector::propagate(vec<Lit> & conflict) {
 						}else if( generator_is_deterministic){
 							//any transition that cannot lead to the accepting state must be disabled (if the generator is deterministic).
 							for(auto & t:forced_edges[s2]){
-
+								if(this->gen_source>1){
+									int a=1;
+								}
 								int generator_state = t.generator_state;
 
 								int label = t.character;
@@ -679,6 +710,9 @@ bool FSMGeneratorAcceptorDetector::propagate(vec<Lit> & conflict) {
 
 
 void FSMGeneratorAcceptorDetector::buildReason(Lit p, vec<Lit> & reason, CRef marker) {
+	if(this->gen_source>1){
+		int a=1;
+	}
 	if (marker == underprop_marker) {
 		reason.push(p);
 		Var v = var(p);
@@ -745,6 +779,9 @@ void FSMGeneratorAcceptorDetector::buildReason(Lit p, vec<Lit> & reason, CRef ma
 void FSMGeneratorAcceptorDetector::buildAcceptReason(int genFinal, int acceptFinal, vec<Lit> & conflict){
 	static int iter = 0;
 	++iter;
+	if(this->gen_source>1){
+		int a=1;
+	}
 //find a path - ideally, the one that traverses the fewest unique transitions - from source to node, learn that one of the transitions on that path must be disabled.
 	if(!opt_fsm_negate_underapprox){
 		static vec<NFATransition> path;
@@ -764,14 +801,14 @@ void FSMGeneratorAcceptorDetector::buildAcceptReason(int genFinal, int acceptFin
 	}else{
 
 		forced_edges.clear();
-		assert(!overapprox_detector->accepts(genFinal,acceptFinal,true,&forced_edges));
-		assert( !overapprox_detector->accepts(genFinal,acceptFinal,true));
+		assert(!inverted_overapprox_detector->accepts(genFinal,acceptFinal,true,&forced_edges));
+		assert( !inverted_overapprox_detector->accepts(genFinal,acceptFinal,true));
 		//run an NFA to find all transitions that accepting prefixes use.
 		//printf("conflict %d\n",iter);
 		//g_over.draw(gen_source,genFinal);
 		static vec<NFATransition> path;
 		path.clear();
-		overapprox_detector->getGeneratorPath(genFinal,acceptFinal,path,false,true);
+		inverted_overapprox_detector->getGeneratorPath(genFinal,acceptFinal,path,false,true);
 
 		for(auto & t:path){
 			//printf("%d(c%d), ", t.edgeID, t.output);
@@ -1041,7 +1078,9 @@ void FSMGeneratorAcceptorDetector::buildForcedEdgeReason(int genFinal, int accep
 		assert(false);
 		throw std::logic_error("Bad fsm option");
 	}else{*/
-
+	if(this->gen_source>1){
+		int a=1;
+	}
 
 		tmp_path.clear();
 		find_gen_path(genFinal,acceptFinal,forcedEdge,forcedLabel,tmp_path,false,true);
@@ -1070,7 +1109,9 @@ void FSMGeneratorAcceptorDetector::buildAcceptorChokepointEdgeReason(int genFina
 		throw std::logic_error("Bad fsm option");
 	}else{
 
-
+		if(this->gen_source>1){
+			int a=1;
+		}
 
 		tmp_path.clear();
 
@@ -1089,7 +1130,9 @@ void FSMGeneratorAcceptorDetector::buildForcedNondetEdgeReason(int genFinal, int
 		throw std::logic_error("Bad fsm option");
 	}else{
 
-
+		if(this->gen_source>1){
+			int a=1;
+		}
 
 		tmp_path.clear();
 
@@ -1128,7 +1171,9 @@ void FSMGeneratorAcceptorDetector::buildDeterministicForcedEdgeReason(int genFin
 		assert(false);
 		throw std::logic_error("Bad fsm option");
 	}else{
-
+		if(this->gen_source>1){
+			int a=1;
+		}
 
 
 		tmp_path.clear();
@@ -1372,7 +1417,9 @@ void FSMGeneratorAcceptorDetector::buildNonAcceptReason(int genFinal, int accept
 
 	static vec<NFATransition> path;
 	path.clear();
-
+	if(this->gen_source>1){
+		int a=1;
+	}
 	assert( !overapprox_detector->accepts(genFinal,acceptFinal,false));
 	//run an NFA to find all transitions that accepting prefixes use.
 	//printf("conflict %d\n",iter);
@@ -1838,6 +1885,7 @@ void FSMGeneratorAcceptorDetector::printSolution(std::ostream& out){
 }
 bool FSMGeneratorAcceptorDetector::checkSatisfied(){
 	//printSolution(std::cout);
+
 	g_over.draw();
 	acceptor_over.draw();
 	//graph->drawFull(true,false);

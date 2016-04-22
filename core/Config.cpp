@@ -345,7 +345,7 @@ BoolOption Monosat::opt_fsm_track_used_transitions(_cat_fsm,"fsm-track-used","",
 IntOption Monosat::opt_fsm_symmetry_breaking(_cat_fsm, "fsm-symmetry-breaking",
 			"", 0,IntRange(0,2));
 BoolOption Monosat::opt_fsm_negate_underapprox(_cat_fsm, "fsm-negate-under",
-		"", true);
+		"", false);//this option appears to be broken
 BoolOption Monosat::opt_fsm_forced_edge_prop(_cat_fsm, "fsm-forced-edge-prop",
 		"", true);
 BoolOption Monosat::opt_fsm_edge_prop(_cat_fsm, "fsm-edge-prop",

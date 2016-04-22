@@ -671,7 +671,6 @@ private:
 
 		bool prev_accepting=accepting_state_is_attractor ? true:gen_cur_seen[gen_final];
 		bool accepted=false;
-
 		if(forced_edges)
 			forced_edges->clear();
 		//use the linear generator to produce a (set) of strings. Because the generator is linear, it is only ever in one state, which greatly simplifies the reasoning here...
@@ -716,7 +715,7 @@ private:
 							if (to != accept_final) {
 								any_non_acceptors = true;
 							} else {
-								if (pre_accepting_states && prev_accepting) {
+								if (pre_accepting_states && accepting) {
 									if(!pre_accept_state_seen[s]) {
 										pre_accept_state_seen[s]=true;
 										pre_accepting_states->push(s);
@@ -761,7 +760,7 @@ private:
 									if(to!=accept_final){
 										any_non_acceptors=true;
 									}else{
-										if(pre_accepting_states && prev_accepting){
+										if(pre_accepting_states && accepting){
 											if(!pre_accept_state_seen[s]) {
 												pre_accept_state_seen[s] = true;
 												pre_accepting_states->push(s);
@@ -793,7 +792,7 @@ private:
 									if(to!=accept_final){
 										any_non_acceptors_next=true;
 									}else{
-										if(pre_accepting_states && prev_accepting){
+										if(pre_accepting_states && accepting){
 											if(!pre_accept_state_seen[s]) {
 												pre_accept_state_seen[s] = true;
 												pre_accepting_states->push(s);

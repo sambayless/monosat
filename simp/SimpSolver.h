@@ -232,25 +232,30 @@ inline void SimpSolver::updateElimHeap(Var v) {
 }
 
 inline bool SimpSolver::addClause(const vec<Lit>& ps) {
+	cancelUntil(0);
 	ps.copyTo(add_tmp);
 	return addClause_(add_tmp);
 }
 inline bool SimpSolver::addEmptyClause() {
+	cancelUntil(0);
 	add_tmp.clear();
 	return addClause_(add_tmp);
 }
 inline bool SimpSolver::addClause(Lit p) {
+	cancelUntil(0);
 	add_tmp.clear();
 	add_tmp.push(p);
 	return addClause_(add_tmp);
 }
 inline bool SimpSolver::addClause(Lit p, Lit q) {
+	cancelUntil(0);
 	add_tmp.clear();
 	add_tmp.push(p);
 	add_tmp.push(q);
 	return addClause_(add_tmp);
 }
 inline bool SimpSolver::addClause(Lit p, Lit q, Lit r) {
+	cancelUntil(0);
 	add_tmp.clear();
 	add_tmp.push(p);
 	add_tmp.push(q);

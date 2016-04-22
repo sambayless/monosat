@@ -589,7 +589,9 @@ public:
 		//double initial_start = rtime(1);
 		double start = rtime(1);
 		backtrackUntil(p);
-		
+		if (var(p) == 1003){
+			int a=1;
+		}
 		assert(d < detectors.size());
 		detectors[d]->buildReason(p, reason, marker);
 		toSolver(reason);
@@ -629,7 +631,9 @@ public:
 	void enqueueTheory(Lit l) {
 
 		Var v = var(l);
-		
+		if(v==1003){
+			int a=1;
+		}
 		int lev = level(v);
 		
 		assert(decisionLevel() <= lev);
