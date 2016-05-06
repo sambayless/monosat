@@ -1845,6 +1845,8 @@ lbool Solver::search(int nof_conflicts) {
 			while (decisionLevel() < assumptions.size()) {
 				// Perform user provided assumption:
 				Lit p = assumptions[decisionLevel()];
+				assert(p!=lit_Undef);
+				assert(var(p)<nVars());
 				if (value(p) == l_True) {
 					// Dummy decision level:
 					newDecisionLevel();
