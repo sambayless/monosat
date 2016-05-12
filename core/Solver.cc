@@ -1243,6 +1243,115 @@ void Solver::rebuildTheoryOrderHeap() {
 		}
 	}
 }
+
+void Solver::detectPureTheoryLiterals(){
+	//Detect any theory literals that are occur only in positive or negative (or neither) polarity
+	if (opt_detect_pure_lits) {
+		//if(pure_literal_detections==0){
+
+		pure_literal_detections++;
+		double startTime = rtime(1);
+		lit_counts.growTo(nVars() * 2);
+		for (int i = 0; i < lit_counts.size(); i++) {
+			lit_counts[i].seen = false;
+		}
+		assert(decisionLevel() == 0);
+
+		//instead of counting the number of occurrences, just check if there are any occurences
+		for (Lit l : trail) {
+			lit_counts[toInt(l)].seen = true;
+		}
+
+		for (CRef cr : clauses) {
+			Clause & c = ca[cr];
+			for (Lit l : c) {
+				lit_counts[toInt(l)].seen = true;
+			}
+		}
+		//the learnt clauses likely don't need to be counted here...
+		/*for (CRef cr : learnts) {
+			Clause & c = ca[cr];
+			for (Lit l : c) {
+				lit_counts[toInt(l)].seen = true;
+			}
+		}*/
+		for (Var v = 0; v < nVars(); v++) {
+
+			Lit l = mkLit(v, false);
+			if (lit_counts[toInt(l)].seen && !lit_counts[toInt(l)].occurs) {
+				stats_pure_lits--;
+				lit_counts[toInt(l)].occurs = true;
+				if (hasTheory(v)) {
+					stats_pure_theory_lits--;
+					if(value(l)==l_Undef) {
+						theories[getTheoryID(v)]->setLiteralOccurs(~getTheoryLit(l), true);
+					}
+				}
+			}
+			if (lit_counts[toInt(~l)].seen && !lit_counts[toInt(~l)].occurs) {
+				stats_pure_lits--;
+				lit_counts[toInt(~l)].occurs = true;
+				if (hasTheory(v)) {
+					stats_pure_theory_lits--;
+					if(value(l)==l_Undef) {
+						theories[getTheoryID(v)]->setLiteralOccurs(~getTheoryLit(~l), true);
+					}
+				}
+			}
+
+			if (lit_counts[toInt(l)].occurs && !lit_counts[toInt(l)].seen) {
+				lit_counts[toInt(l)].occurs = false;
+				stats_pure_lits++;
+				if (hasTheory(v)) {
+					stats_pure_theory_lits++;
+					if(value(l)==l_Undef) {
+						theories[getTheoryID(v)]->setLiteralOccurs(~getTheoryLit(l), false);
+					}
+					//setPolarity(v,false);
+				} else {
+					//we can safely assign this now...
+					if (!lit_counts[toInt(~l)].seen) {
+						/*	if(decision[v])
+						 setDecisionVar(v,false);*/
+					} else {
+						if (value(l) == l_Undef) {
+							//uncheckedEnqueue(~l);
+						}
+					}
+				}
+			}
+			if (lit_counts[toInt(~l)].occurs && !lit_counts[toInt(~l)].seen) {
+				lit_counts[toInt(~l)].occurs = false;
+				stats_pure_lits++;
+				if (hasTheory(v)) {
+					stats_pure_theory_lits++;
+					if(value(l)==l_Undef) {
+						//level 0 variables are already handled through a separate mechanism in the theory solvers...
+						theories[getTheoryID(v)]->setLiteralOccurs(~getTheoryLit(~l), false);
+					}
+					//setPolarity(v,true);
+					if (!lit_counts[toInt(l)].occurs) {
+						//setDecisionVar(v,false);//If v is pure in both polarities, and is a theory var, then just don't assign it at all - it is unconstrained.
+						//This _should_ be safe to do, if the theory semantics make sense... although there are some clause learning schemes that introduce previosuly unused literals that might break with this...
+					}
+				} else {
+					//we can safely assign this now...
+					if (!lit_counts[toInt(l)].seen) {
+						/*		if(decision[v])
+						 setDecisionVar(v,false);*/
+					} else if (value(l) == l_Undef) {
+						//uncheckedEnqueue(l);
+					}
+				}
+			}
+
+		}
+		assert(stats_pure_lits <= nVars() * 2);
+		stats_pure_lit_time += rtime(1) - startTime;
+		//}
+	}
+}
+
 /*_________________________________________________________________________________________________
  |
  |  simplify : [void]  ->  [bool]
@@ -1253,11 +1362,16 @@ void Solver::rebuildTheoryOrderHeap() {
  |________________________________________________________________________________________________@*/
 bool Solver::simplify() {
 	assert(decisionLevel() == 0);
-	
+	//it is important (for efficiency reasons, not correctness)
+	//to run this pure literal detection before propagate, if new theory atoms have been added since the last call to propagate.
+	if(ok && initialPropagate && opt_detect_pure_lits){
+		detectPureTheoryLiterals();
+	}
+
 	if (!ok || propagate(!disable_theories) != CRef_Undef || !ok) //yes, the second ok check is now required, because propagation of a theory can make the solver unsat at this point...
 		return ok = false;
 	
-	if (nAssigns() == simpDB_assigns || (simpDB_props > 0))
+	if (nAssigns() == simpDB_assigns || (simpDB_props > 0)) //if pure literal detection is enabled, then simplify MUST be called at least once after new theory atoms are added.
 		return true;
 	
 	// Remove satisfied clauses:
@@ -1292,101 +1406,7 @@ bool Solver::simplify() {
 	simpDB_assigns = nAssigns();
 	simpDB_props = clauses_literals + learnts_literals;   // (shouldn't depend on stats really, but it will do for now)
 			
-	//Detect any theory literals that are occur only in positive or negative (or neither) polarity
-	if (opt_detect_pure_lits) {
-		//if(pure_literal_detections==0){
-		
-		pure_literal_detections++;
-		double startTime = rtime(1);
-		lit_counts.growTo(nVars() * 2);
-		for (int i = 0; i < lit_counts.size(); i++) {
-			lit_counts[i].seen = false;
-		}
-		assert(decisionLevel() == 0);
-		
-		//instead of counting the number of occurrences, just check if there are any occurences
-		for (Lit l : trail) {
-			lit_counts[toInt(l)].seen = true;
-		}
-		
-		for (CRef cr : clauses) {
-			Clause & c = ca[cr];
-			for (Lit l : c) {
-				lit_counts[toInt(l)].seen = true;
-			}
-		}
-		for (CRef cr : learnts) {
-			Clause & c = ca[cr];
-			for (Lit l : c) {
-				lit_counts[toInt(l)].seen = true;
-			}
-		}
-		for (Var v = 0; v < nVars(); v++) {
-			
-			Lit l = mkLit(v, false);
-			if (lit_counts[toInt(l)].seen && !lit_counts[toInt(l)].occurs) {
-				stats_pure_lits--;
-				lit_counts[toInt(l)].occurs = true;
-				if (hasTheory(v)) {
-					stats_pure_theory_lits--;
-					theories[getTheoryID(v)]->setLiteralOccurs(getTheoryLit(l), true);
-				}
-			}
-			if (lit_counts[toInt(~l)].seen && !lit_counts[toInt(~l)].occurs) {
-				stats_pure_lits--;
-				lit_counts[toInt(~l)].occurs = true;
-				if (hasTheory(v)) {
-					stats_pure_theory_lits--;
-					theories[getTheoryID(v)]->setLiteralOccurs(getTheoryLit(~l), true);
-				}
-			}
-			
-			if (lit_counts[toInt(l)].occurs && !lit_counts[toInt(l)].seen) {
-				lit_counts[toInt(l)].occurs = false;
-				stats_pure_lits++;
-				if (hasTheory(v)) {
-					stats_pure_theory_lits++;
-					theories[getTheoryID(v)]->setLiteralOccurs(getTheoryLit(l), false);
-					//setPolarity(v,false);
-				} else {
-					//we can safely assign this now...
-					if (!lit_counts[toInt(~l)].seen) {
-						/*	if(decision[v])
-						 setDecisionVar(v,false);*/
-					} else {
-						if (value(l) == l_Undef) {
-							//uncheckedEnqueue(~l);
-						}
-					}
-				}
-			}
-			if (lit_counts[toInt(~l)].occurs && !lit_counts[toInt(~l)].seen) {
-				lit_counts[toInt(~l)].occurs = false;
-				stats_pure_lits++;
-				if (hasTheory(v)) {
-					stats_pure_theory_lits++;
-					theories[getTheoryID(v)]->setLiteralOccurs(getTheoryLit(~l), false);
-					//setPolarity(v,true);
-					if (!lit_counts[toInt(l)].occurs) {
-						//setDecisionVar(v,false);//If v is pure in both polarities, and is a theory var, then just don't assign it at all - it is unconstrained.
-						//This _should_ be safe to do, if the theory semantics make sense... although there are some clause learning schemes that introduce previosuly unused literals that might break with this...
-					}
-				} else {
-					//we can safely assign this now...
-					if (!lit_counts[toInt(l)].seen) {
-						/*		if(decision[v])
-						 setDecisionVar(v,false);*/
-					} else if (value(l) == l_Undef) {
-						//uncheckedEnqueue(l);
-					}
-				}
-			}
-			
-		}
-		assert(stats_pure_lits <= nVars() * 2);
-		stats_pure_lit_time += rtime(1) - startTime;
-		//}
-	}
+	detectPureTheoryLiterals();
 	
 	return true;
 }
@@ -1715,6 +1735,10 @@ lbool Solver::search(int nof_conflicts) {
 	starts++;
 	bool using_theory_decisions= opt_decide_theories && drand(random_seed) < opt_random_theory_freq;
 	bool using_theory_vsids= opt_decide_theories && opt_theory_order_vsids && drand(random_seed) < opt_random_theory_vsids_freq;
+
+	if(decisionLevel()==0 && initialPropagate && opt_detect_pure_lits && !simplify()){
+		return l_False;//if using pure literal detection, and the theories haven't been propagated yet, run simpify
+	}
 
 	n_theory_decision_rounds+=using_theory_decisions;
 	for (;;) {

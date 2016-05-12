@@ -267,7 +267,7 @@ BoolOption Monosat::opt_decide_fsm_neg(_cat_fsm, "decide-fsm-neg",
 BoolOption Monosat::opt_decide_fsm_pos(_cat_fsm, "decide-fsm-pos",
 									   "", true);
 BoolOption Monosat::opt_detect_pure_lits(_cat, "detect-pure-lits",
-		"Detect pure literals in the main solver (only during simplification, not during search)", false);
+		"Detect pure literals in the main solver (only during simplification, not during search)", true);
 
 BoolOption Monosat::opt_detect_pure_theory_lits(_cat, "detect-pure-theory-lits",
 		"Detect pure literals in the theory solvers", true);

@@ -45,6 +45,9 @@
 #include <unistd.h>
 #include <sstream>
 
+
+
+
 using namespace dgl;
 namespace Monosat {
 
@@ -91,6 +94,8 @@ public:
 	vec<FSMAcceptDetector *> accepts;
 	vec<FSMGeneratesDetector *> generates;
 	vec<FSMTransducesDetector *> transduces;
+
+
 	/**
 	 * The cutgraph is (optionally) used for conflict analysis by some graph theories.
 	 * It has two edges for every edge in the real graph (with indices edgeID*2 and edgeID*2+1).
@@ -106,6 +111,41 @@ public:
 	vec<int> trail_lim;
 
 	vec<FSMGeneratorAcceptorDetector*> gen_accept_lit_map;
+	/*struct PairHash {
+		uint32_t operator()(const std::pair<int,int> & x) const {
+			return (uint32_t) std::hash<int>()(x.first) ^ std::hash<int>()(x.second);
+		}
+	};*/
+
+
+
+	template<typename... TTypes>
+	class tuple_hash
+	{
+	private:
+		typedef std::tuple<TTypes...> Tuple;
+
+		template<int N>
+		size_t operator()(const Tuple & value) const { return 0; }
+
+		template<int N, typename THead, typename... TTail>
+		size_t operator()(const Tuple & value) const
+		{
+			constexpr int Index = N - sizeof...(TTail) - 1;
+			return hash_combine(std::hash<THead>()(std::get<Index>(value)), operator()<N, TTail...>(value));
+		}
+		// adapted from boost::hash_combine
+		static std::size_t hash_combine(const std::size_t& h, const std::size_t& v)
+		{
+			return h^(v + 0x9e3779b9 + (h << 6) + (h >> 2));
+		}
+	public:
+		size_t operator()(const Tuple & value) const
+		{
+			return operator()<sizeof...(TTypes), TTypes...>(value);
+		}
+	};
+	Map<std::tuple<int,int,int,int,bool>,FSMGeneratorAcceptorDetector*,tuple_hash<int,int,int,int,bool>> gen_accept_map;
 public:
 	vec<FSMDetector*> detectors;
 	vec<FSMAcceptDetector*> reach_detectors;
@@ -357,6 +397,8 @@ public:
 		vars[v].solverVar = solverVar;
 		vars[v].input=label;
 		vars[v].output = output;
+		vars[v].occursPositive=1;
+		vars[v].occursNegative=1;
 		assigns.push(l_Undef);
 		if (connectToTheory) {
 			S->setTheoryVar(solverVar, getTheoryIndex(), v);
@@ -1021,11 +1063,22 @@ public:
 		if (g_overs[fsmID1]->out_alphabet != g_overs[fsmID2]->in_alphabet){
 			throw std::invalid_argument("Size of output alphabet of first fsm (was " + std::to_string(g_overs[fsmID1]->out_alphabet) + ") must match size of input alphabet of second fsm (was " + std::to_string(g_overs[fsmID2]->in_alphabet) + ")");
 		}
-		FSMGeneratorAcceptorDetector * d = new FSMGeneratorAcceptorDetector(detectors.size(), this, *g_unders[fsmID1],*g_overs[fsmID1], *g_unders[fsmID2],*g_overs[fsmID2], from1,from2,drand(rnd_seed));
-		if(generator_is_deterministic){
-			d->setGeneratorDeterministic(true);
+
+		FSMGeneratorAcceptorDetector * d=nullptr;
+		auto key = std::tuple<int,int,int,int,bool>(fsmID1,fsmID2,from1,from2,generator_is_deterministic);
+		if (gen_accept_map.has(key)){
+			d=gen_accept_map[key];
+		}else {
+
+			d= new FSMGeneratorAcceptorDetector(detectors.size(), this, *g_unders[fsmID1], *g_overs[fsmID1],
+											   *g_unders[fsmID2], *g_overs[fsmID2], from1, from2, drand(rnd_seed));
+			detectors.push(d);
+			if (generator_is_deterministic) {
+				d->setGeneratorDeterministic(true);
+			}
+			gen_accept_map.insert(key,d);
 		}
-		detectors.push(d);
+
 		d->addAcceptLit(to1,to2,reachVar);
 		gen_accept_lit_map.growTo(reachVar+1,nullptr);
 		gen_accept_lit_map[reachVar]=d;

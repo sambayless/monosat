@@ -456,7 +456,25 @@ bool FSMGeneratorAcceptorDetector::propagate(vec<Lit> & conflict) {
 	if (++iter == 5374) {
 		int a = 1;
 	}
+	bool skipped_positive = false;
+	if (underapprox_detector && (!opt_detect_pure_theory_lits || unassigned_positives > 0)) {
 
+	} else {
+		skipped_positive = true;
+		//outer->stats_pure_skipped++;
+		stats_skipped_under_updates++;
+	}
+	bool skipped_negative = false;
+	if (overapprox_detector && (!opt_detect_pure_theory_lits || unassigned_negatives > 0)) {
+
+	} else {
+		skipped_negative = true;
+		stats_skipped_over_updates++;
+	}
+
+	if(skipped_negative && skipped_positive){
+		return true;
+	}
 
 	for(auto & t:all_accept_lits){
 			forced_edges.clear();
@@ -1900,7 +1918,7 @@ bool FSMGeneratorAcceptorDetector::checkSatisfied(){
 
 
 		if(outer->value(l)==l_Undef){
-			return false;
+			return true;//allowing this case for now, although we probably shouldn't
 		}else if (outer->value(l)==l_False && check.accepts(gen_to,accept_to)){
 			return false;
 		}else if (outer->value(l)==l_True && !check.accepts(gen_to,accept_to)){

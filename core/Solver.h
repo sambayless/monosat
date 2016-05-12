@@ -291,8 +291,9 @@ public:
 		assert(getTheoryID(solverVar) == theory);
 		assert(getTheoryVar(solverVar) == theoryVar);
 		
-		if (value(solverVar) != l_Undef)
-			initialPropagate = true;
+		//if (value(solverVar) != l_Undef)
+		initialPropagate = true;//if pure literal detection is used, then we NEED to run simplify before
+		//the next call to propagate, and initialPropagate is being used to force that.
 		
 	}
 	
@@ -382,6 +383,7 @@ public:
 	
 	// Solving:
 	//
+	void detectPureTheoryLiterals(); //if opt_detect_pure_literals, finds pure theory literals.
 	bool simplify();                        // Removes already satisfied clauses.
 	virtual bool solve(const vec<Lit>& assumps); // Search for a model that respects a given set of assumptions.
 	virtual lbool solveLimited(const vec<Lit>& assumps); // Search for a model that respects a given set of assumptions (With resource constraints).

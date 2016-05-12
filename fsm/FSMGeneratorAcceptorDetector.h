@@ -214,6 +214,32 @@ public:
 	}
 	Lit decide(int level);
 	bool propagate(vec<Lit> & conflict);
+
+	/*void unassign(Lit l) override {
+		FSMDetector::unassign(l);
+
+	}
+	void assign(Lit l) override {
+		FSMDetector::assign(l);
+
+	}
+	void setOccurs(Lit l, bool occurs) override {
+		FSMDetector::setOccurs(l,occurs);
+		if (!occurs) {
+			if (sign(l))
+				unassigned_negatives--;
+			else
+				unassigned_positives--;
+		} else {
+			if (sign(l))
+				unassigned_negatives++;
+			else
+				unassigned_positives++;
+		}
+		assert(unassigned_positives >= 0);
+		assert(unassigned_negatives >= 0);
+	}*/
+
 	void buildAcceptReason(int genFinal, int acceptFinal, vec<Lit> & conflict);
 	void buildNonAcceptReason(int genFinal, int acceptFinal, vec<Lit> & conflict);
 	void buildNonSuffixAcceptReason(int genFinal, int acceptFinal, vec<int> & acceptStartStates,SuffixLit & suffixLit, vec<Lit> & conflict);

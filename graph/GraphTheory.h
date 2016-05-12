@@ -993,6 +993,8 @@ public:
 		vars[v].detector_edge = bvID;
 		vars[v].solverVar = solverVar;
 		vars[v].theory_var=var_Undef;
+		vars[v].occursPositive=1;
+		vars[v].occursNegative=1;
 		assigns.push(l_Undef);
 		trail.growTo(v+1);
 		S->setTheoryVar(solverVar, getTheoryIndex(), v);
@@ -1018,6 +1020,8 @@ public:
 		vars[v].detector_edge = theoryID;
 		vars[v].solverVar = solverVar;
 		vars[v].theory_var=theoryVar;
+		vars[v].occursPositive=1;
+		vars[v].occursNegative=1;
 		trail.growTo(v+1);
 		assigns.push(l_Undef);
 		return v;
@@ -1038,6 +1042,8 @@ public:
 		vars[v].detector_edge = detector;
 		vars[v].solverVar = solverVar;
 		vars[v].theory_var=var_Undef;
+		vars[v].occursPositive=1;
+		vars[v].occursNegative=1;
 		trail.growTo(v+1);
 		assigns.push(l_Undef);
 
