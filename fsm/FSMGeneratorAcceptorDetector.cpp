@@ -520,9 +520,9 @@ bool FSMGeneratorAcceptorDetector::propagate(vec<Lit> & conflict) {
 						// suffix_fsm->draw(t.suffix_from,t.suffix_to);
 						 //acceptor_over.draw(accept_source, 4);
 						 if(!acceptsSuffix(*suffix_fsm,acceptor_over,accept_to,t.suffix_from,t.suffix_to,pre_accepting_states)){
-							 g_over.draw(gen_source,30);
+							 /*g_over.draw(gen_source,30);
 							 suffix_fsm->draw(t.suffix_from,t.suffix_to);
-							 acceptor_over.draw(accept_source, 4);
+							 acceptor_over.draw(accept_source, 4);*/
 
 							 assert(!acceptsSuffix(*suffix_fsm,acceptor_over,accept_to,t.suffix_from,t.suffix_to,pre_accepting_states));
 							 buildNonSuffixAcceptReason(gen_to,accept_to,pre_accepting_states,(*suffixLits)[i], conflict);
@@ -1388,7 +1388,7 @@ void  FSMGeneratorAcceptorDetector::buildNonSuffixAcceptReason(int genFinal, int
 			throw std::runtime_error("Internal error in FSM suffix acceptor");
 			return;
 		}else if(!next.size()){
-			g_over.draw(gen_source,30);
+			/*g_over.draw(gen_source,30);
 			g_suffix.draw(suffix_start_state,suffix_accept_state);
 			acceptor.draw(accept_source, acceptor_accept_state);
 
@@ -1396,7 +1396,7 @@ void  FSMGeneratorAcceptorDetector::buildNonSuffixAcceptReason(int genFinal, int
 			for(Lit l:conflict){
 				printf("%d ", dimacs(l));
 			}
-			printf("\n");
+			printf("\n");*/
 			return;
 		}
 		//}
@@ -1886,8 +1886,8 @@ void FSMGeneratorAcceptorDetector::printSolution(std::ostream& out){
 bool FSMGeneratorAcceptorDetector::checkSatisfied(){
 	//printSolution(std::cout);
 
-	g_over.draw();
-	acceptor_over.draw();
+	//g_over.draw();
+	//acceptor_over.draw();
 	//graph->drawFull(true,false);
 	NFALinearGeneratorAcceptor<> check(g_under,acceptor_under,gen_source,accept_source);
 
