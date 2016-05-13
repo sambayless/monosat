@@ -73,7 +73,7 @@ public:
 	virtual bool addClause(Lit p);                                  // Add a unit clause to the solver.
 	virtual bool addClause(Lit p, Lit q);                           // Add a binary clause to the solver.
 	virtual bool addClause(Lit p, Lit q, Lit r);                    // Add a ternary clause to the solver.
-	bool addClause_(vec<Lit>& ps);           // Add a clause to the solver without making superflous internal copy. Will
+	bool addClause_(vec<Lit>& ps, bool is_derived_clause=false);           // Add a clause to the solver without making superflous internal copy. Will
 
 
 	void setDecisionPriority(Var v, unsigned int p) {
@@ -488,7 +488,7 @@ public:
 		char occurs :1;
 		char seen :1;
 		LitCount() :
-				occurs(1), seen(0) {
+				occurs(0), seen(0) {
 		}
 	};
 	vec<LitCount> lit_counts;

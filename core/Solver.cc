@@ -140,7 +140,7 @@ void Solver::releaseVar(Lit l)
 }
 
 
-bool Solver::addClause_(vec<Lit>& ps) {
+bool Solver::addClause_(vec<Lit>& ps, bool is_derived_clause) {
 	
 
 	assert(decisionLevel() == 0);
@@ -157,7 +157,7 @@ bool Solver::addClause_(vec<Lit>& ps) {
 		else if (value(ps[i]) != l_False && ps[i] != p)
 			ps[j++] = p = ps[i];
 	ps.shrink(i - j);
-	
+
 	if (ps.size() == 0)
 		return ok = false;
 	else if (ps.size() == 1) {
@@ -167,6 +167,8 @@ bool Solver::addClause_(vec<Lit>& ps) {
 		return ok;
 	} else {
 		CRef cr = ca.alloc(ps, false);
+		//mark this clause as being either a learned clause, or a clause derived from a theory, or a clause derived from simplification/preprocessing.
+		ca[cr].setDerived(is_derived_clause);
 		clauses.push(cr);
 		attachClause(cr);
 	}
@@ -267,7 +269,7 @@ CRef Solver::attachReasonClause(Lit r,vec<Lit> & ps) {
 
 
 		CRef cr = ca.alloc(ps);
-		ca[cr].setFromTheory(true);
+		ca[cr].setDerived(true);
 		clauses.push(cr);
 		attachClause(cr);
 		enqueueLazy(ps[0],max_lev,cr);
@@ -1185,15 +1187,6 @@ struct reduceDB_lt {
 	}
 	bool operator ()(CRef x, CRef y) {
 		return ca[x].size() > 2 && (ca[y].size() == 2 || ca[x].activity() < ca[y].activity());
-		/*if(ca[x].size()==2)
-		 return false;
-		 if(ca[y].size()==2)
-		 return true;
-		 if(ca[x].fromTheory() && !ca[y].fromTheory())
-		 return true;
-		 if(ca[y].fromTheory() && ! ca[x].fromTheory())
-		 return false;
-		 return ca[x].activity() < ca[y].activity();*/
 	}
 };
 void Solver::reduceDB() {
@@ -1260,12 +1253,15 @@ void Solver::detectPureTheoryLiterals(){
 		//instead of counting the number of occurrences, just check if there are any occurences
 		for (Lit l : trail) {
 			lit_counts[toInt(l)].seen = true;
+
 		}
 
 		for (CRef cr : clauses) {
 			Clause & c = ca[cr];
-			for (Lit l : c) {
-				lit_counts[toInt(l)].seen = true;
+			if(!c.derivedClause()) {
+				for (Lit l : c) {
+					lit_counts[toInt(l)].seen = true;
+				}
 			}
 		}
 		//the learnt clauses likely don't need to be counted here...
@@ -1279,8 +1275,9 @@ void Solver::detectPureTheoryLiterals(){
 
 			Lit l = mkLit(v, false);
 			if (lit_counts[toInt(l)].seen && !lit_counts[toInt(l)].occurs) {
-				stats_pure_lits--;
+				//stats_pure_lits--;
 				lit_counts[toInt(l)].occurs = true;
+
 				if (hasTheory(v)) {
 					stats_pure_theory_lits--;
 					if(value(l)==l_Undef) {
@@ -1289,8 +1286,9 @@ void Solver::detectPureTheoryLiterals(){
 				}
 			}
 			if (lit_counts[toInt(~l)].seen && !lit_counts[toInt(~l)].occurs) {
-				stats_pure_lits--;
+				//stats_pure_lits--;
 				lit_counts[toInt(~l)].occurs = true;
+
 				if (hasTheory(v)) {
 					stats_pure_theory_lits--;
 					if(value(l)==l_Undef) {
@@ -1301,7 +1299,8 @@ void Solver::detectPureTheoryLiterals(){
 
 			if (lit_counts[toInt(l)].occurs && !lit_counts[toInt(l)].seen) {
 				lit_counts[toInt(l)].occurs = false;
-				stats_pure_lits++;
+
+				//stats_pure_lits++;
 				if (hasTheory(v)) {
 					stats_pure_theory_lits++;
 					if(value(l)==l_Undef) {
@@ -1322,7 +1321,8 @@ void Solver::detectPureTheoryLiterals(){
 			}
 			if (lit_counts[toInt(~l)].occurs && !lit_counts[toInt(~l)].seen) {
 				lit_counts[toInt(~l)].occurs = false;
-				stats_pure_lits++;
+
+				//stats_pure_lits++;
 				if (hasTheory(v)) {
 					stats_pure_theory_lits++;
 					if(value(l)==l_Undef) {
@@ -1346,7 +1346,7 @@ void Solver::detectPureTheoryLiterals(){
 			}
 
 		}
-		assert(stats_pure_lits <= nVars() * 2);
+		//assert(stats_pure_lits <= nVars() * 2);
 		stats_pure_lit_time += rtime(1) - startTime;
 		//}
 	}
@@ -1427,7 +1427,7 @@ void Solver::addClauseSafely(vec<Lit> & ps) {
 	}
 
 	if(decisionLevel()==0){
-		addClause(ps);
+		addClause_(ps,true);
 	}else{
 		//clauses_to_add.push();
 		//ps.copyTo(clauses_to_add.last());
@@ -1514,7 +1514,7 @@ void Solver::addClauseSafely(vec<Lit> & ps) {
 				}
 
 				CRef cr = ca.alloc(ps);
-				ca[cr].setFromTheory(true);
+				ca[cr].setDerived(true);
 				clauses.push(cr);
 				attachClause(cr);
 				enqueueLazy(ps[0],max_lev,cr);
@@ -1659,7 +1659,7 @@ bool Solver::addConflictClause(vec<Lit> & ps, CRef & confl_out, bool permanent) 
 		} else {
 			
 			CRef cr = ca.alloc(ps, !permanent && !opt_permanent_theory_conflicts);
-			ca[cr].setFromTheory(true);
+			ca[cr].setDerived(true);
 			if (permanent || opt_permanent_theory_conflicts)
 				clauses.push(cr);
 			else {

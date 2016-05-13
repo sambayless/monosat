@@ -59,7 +59,7 @@ public:
 	bool addClause(Lit p);               // Add a unit clause to the solver.
 	bool addClause(Lit p, Lit q);        // Add a binary clause to the solver.
 	bool addClause(Lit p, Lit q, Lit r); // Add a ternary clause to the solver.
-	bool addClause_(vec<Lit>& ps);
+	bool addClause_(vec<Lit>& ps, bool is_derived_clause=false);
 	bool substitute(Var v, Lit x);  // Replace all occurences of v with x (may cause a contradiction).
 			
 	// Variable mode:

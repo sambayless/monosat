@@ -163,8 +163,8 @@ public:
 	//Data about local theory variables, and how they connect to the sat solver's variables
 	struct VarData {
 		int isEdge :1;
-		int occursPositive :1;
-		int occursNegative :1;
+		//int occursPositive :1;
+		//int occursNegative :1;
 		int detector_edge :29;	//the detector this variable belongs to, or its edge number, if it is an edge variable
 		int input;
 		int output;
@@ -397,8 +397,8 @@ public:
 		vars[v].solverVar = solverVar;
 		vars[v].input=label;
 		vars[v].output = output;
-		vars[v].occursPositive=1;
-		vars[v].occursNegative=1;
+		//vars[v].occursPositive=0;
+		//vars[v].occursNegative=0;
 		assigns.push(l_Undef);
 		if (connectToTheory) {
 			S->setTheoryVar(solverVar, getTheoryIndex(), v);
@@ -662,10 +662,10 @@ public:
 			//don't do anything
 		} else {
 			//this is a graph property detector var
-			if (!sign(l) && vars[var(l)].occursPositive != occurs)
-				detectors[getDetector(var(l))]->setOccurs(l, occurs);
-			else if (sign(l) && vars[var(l)].occursNegative != occurs)
-				detectors[getDetector(var(l))]->setOccurs(l, occurs);
+			//if (!sign(l) && vars[var(l)].occursPositive != occurs)
+			detectors[getDetector(var(l))]->setOccurs(l, occurs);
+			//else if (sign(l) && vars[var(l)].occursNegative != occurs)
+			//	detectors[getDetector(var(l))]->setOccurs(l, occurs);
 		}
 		
 	}
@@ -673,11 +673,9 @@ public:
 	void enqueueTheory(Lit l) {
 
 		Var v = var(l);
-		if(v==1003){
-			int a=1;
-		}
+
 		int lev = level(v);
-		
+
 		assert(decisionLevel() <= lev);
 		
 		while (lev > trail_lim.size()) {
@@ -720,10 +718,13 @@ public:
 			}
 			
 		} else {
-			
+
 			trail.push( { false, !sign(l),-1, v });
 			//this is an assignment to a non-edge atom. (eg, a reachability assertion)
 			detectors[getDetector(var(l))]->assign(l);
+			if(getDetector(var(l))==1){
+				int a=1;
+			}
 		}
 		
 	}

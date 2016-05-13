@@ -147,7 +147,7 @@ lbool SimpSolver::solve_(bool do_simp, bool turn_off_simp) {
 	return result;
 }
 
-bool SimpSolver::addClause_(vec<Lit>& ps) {
+bool SimpSolver::addClause_(vec<Lit>& ps, bool is_derived_clause) {
 #ifndef NDEBUG
 	for (int i = 0; i < ps.size(); i++)
 		assert(!isEliminated(var(ps[i])));
@@ -158,7 +158,7 @@ bool SimpSolver::addClause_(vec<Lit>& ps) {
 	if (use_rcheck && implied(ps))
 		return true;
 	
-	if (!Solver::addClause_(ps))
+	if (!Solver::addClause_(ps,is_derived_clause))
 		return false;
 	
 	if (use_simplification && clauses.size() == nclauses + 1) {
@@ -504,28 +504,28 @@ bool SimpSolver::eliminateVar(Var v) {
 	assert(value(v) == l_Undef);
 	// Split the occurrences into positive and negative:
 	//
-	const vec<CRef>& cls = occurs.lookup(v);
+	const vec<CRef> &cls = occurs.lookup(v);
 	vec<CRef> pos, neg;
 	for (int i = 0; i < cls.size(); i++)
 		(find(ca[cls[i]], mkLit(v)) ? pos : neg).push(cls[i]);
-	
+
 	// Check wether the increase in number of clauses stays within the allowed ('grow'). Moreover, no
 	// clause must exceed the limit on the maximal clause size (if it is set):
 	//
 	int cnt = 0;
 	int clause_size = 0;
-	
+
 	for (int i = 0; i < pos.size(); i++)
 		for (int j = 0; j < neg.size(); j++)
 			if (merge(ca[pos[i]], ca[neg[j]], v, clause_size)
-					&& (++cnt > cls.size() + grow || (clause_lim != -1 && clause_size > clause_lim)))
+				&& (++cnt > cls.size() + grow || (clause_lim != -1 && clause_size > clause_lim)))
 				return true;
-	
+
 	// Delete and store old clauses:
 	eliminated[v] = true;
 	setDecisionVar(v, false);
 	eliminated_vars++;
-	
+
 	if (pos.size() > neg.size()) {
 		for (int i = 0; i < neg.size(); i++)
 			mkElimClause(elimclauses, v, ca[neg[i]]);
@@ -535,15 +535,16 @@ bool SimpSolver::eliminateVar(Var v) {
 			mkElimClause(elimclauses, v, ca[pos[i]]);
 		mkElimClause(elimclauses, ~mkLit(v));
 	}
-	
-	for (int i = 0; i < cls.size(); i++)
+	bool all_derived = true;
+	for (int i = 0; i < cls.size(); i++) {
+		all_derived&=ca[cls[i]].derivedClause();
 		removeClause(cls[i]);
-	
+	}
 	// Produce clauses in cross product:
 	vec<Lit>& resolvent = add_tmp;
 	for (int i = 0; i < pos.size(); i++)
 		for (int j = 0; j < neg.size(); j++)
-			if (merge(ca[pos[i]], ca[neg[j]], v, resolvent) && !addClause_(resolvent))
+			if (merge(ca[pos[i]], ca[neg[j]], v, resolvent) && !addClause_(resolvent, all_derived))//should this clause always be treated as derived?
 				return false;
 	
 	// Free occurs list for this variable:
@@ -582,7 +583,7 @@ bool SimpSolver::substitute(Var v, Lit x) {
 		
 		removeClause(cls[i]);
 		
-		if (!addClause_(subst_clause))
+		if (!addClause_(subst_clause))//should this clause be treated as derived?
 			return ok = false;
 	}
 	

@@ -663,8 +663,8 @@ public:
 		int isEdge :1;
 		int isBV:1;
 		int isTheoryVar;
-		int occursPositive :1;
-		int occursNegative :1;
+		//int occursPositive :1;
+		//int occursNegative :1;
 		int detector_edge :27;	//the detector this variable belongs to, or its edge number, if it is an edge variable
 
 		Var solverVar;
@@ -993,8 +993,8 @@ public:
 		vars[v].detector_edge = bvID;
 		vars[v].solverVar = solverVar;
 		vars[v].theory_var=var_Undef;
-		vars[v].occursPositive=1;
-		vars[v].occursNegative=1;
+		//vars[v].occursPositive=0;
+		//vars[v].occursNegative=0;
 		assigns.push(l_Undef);
 		trail.growTo(v+1);
 		S->setTheoryVar(solverVar, getTheoryIndex(), v);
@@ -1020,8 +1020,8 @@ public:
 		vars[v].detector_edge = theoryID;
 		vars[v].solverVar = solverVar;
 		vars[v].theory_var=theoryVar;
-		vars[v].occursPositive=1;
-		vars[v].occursNegative=1;
+		//vars[v].occursPositive=0;
+		//vars[v].occursNegative=0;
 		trail.growTo(v+1);
 		assigns.push(l_Undef);
 		return v;
@@ -1042,8 +1042,8 @@ public:
 		vars[v].detector_edge = detector;
 		vars[v].solverVar = solverVar;
 		vars[v].theory_var=var_Undef;
-		vars[v].occursPositive=1;
-		vars[v].occursNegative=1;
+		//vars[v].occursPositive=0;
+		//vars[v].occursNegative=0;
 		trail.growTo(v+1);
 		assigns.push(l_Undef);
 
@@ -2182,10 +2182,10 @@ public:
 			//don't do anything
 		} else {
 			//this is a graph property detector var
-			if (!sign(l) && vars[var(l)].occursPositive != occurs)
+			//if (!sign(l) && vars[var(l)].occursPositive != occurs)
 				detectors[getDetector(var(l))]->setOccurs(l, occurs);
-			else if (sign(l) && vars[var(l)].occursNegative != occurs)
-				detectors[getDetector(var(l))]->setOccurs(l, occurs);
+			//else if (sign(l) && vars[var(l)].occursNegative != occurs)
+			//	detectors[getDetector(var(l))]->setOccurs(l, occurs);
 		}
 
 	}

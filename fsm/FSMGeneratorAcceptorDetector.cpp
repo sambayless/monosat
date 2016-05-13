@@ -475,7 +475,9 @@ bool FSMGeneratorAcceptorDetector::propagate(vec<Lit> & conflict) {
 	if(skipped_negative && skipped_positive){
 		return true;
 	}
-
+	if(this->detectorID==1){
+		int a=1;
+	}
 	for(auto & t:all_accept_lits){
 			forced_edges.clear();
 			chokepoint_edges.clear();

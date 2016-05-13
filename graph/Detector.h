@@ -134,19 +134,19 @@ public:
 		assert(unassigned_negatives >= 0);
 	}
 	virtual void assign(Lit l) {
-		if (sign(l))
-			unassigned_negatives--;
+		if (!sign(l))
+			unassigned_negatives++;
 		else
-			unassigned_positives--;
+			unassigned_positives++;
 		assert(unassigned_positives >= 0);
 		assert(unassigned_negatives >= 0);
 		
 	}
 	virtual void unassign(Lit l) {
-		if (sign(l))
-			unassigned_negatives++;
+		if (!sign(l))
+			unassigned_negatives--;
 		else
-			unassigned_positives++;
+			unassigned_positives--;
 	}
 	//virtual vec<int> & getLitMap();
 	Detector(int detectorID) :
@@ -162,8 +162,8 @@ public:
 	 unassigned_positives++;
 	 }*/
 	virtual void addVar(Var v) {
-		unassigned_negatives++;
-		unassigned_positives++;
+		//unassigned_negatives++;
+		//unassigned_positives++;
 	}
 };
 

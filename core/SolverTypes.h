@@ -183,7 +183,7 @@ class Clause {
 		unsigned learnt :1;
 		unsigned has_extra :1;
 		unsigned reloced :1;
-		unsigned fromTheory :1;
+		unsigned derived :1;
 		unsigned size :26;
 	} header;
 	union {
@@ -203,7 +203,7 @@ class Clause {
 		header.has_extra = use_extra;
 		header.reloced = 0;
 		header.size = ps.size();
-		header.fromTheory = 0;
+		header.derived = 0;
 		
 		for (int i = 0; i < ps.size(); i++)
 			data[i].lit = ps[i];
@@ -260,12 +260,12 @@ public:
 		return data[header.size - 1].lit;
 	}
 	
-	bool fromTheory() const {
-		return header.fromTheory;
+	bool derivedClause() const {
+		return header.derived;
 	}
 	
-	void setFromTheory(bool t) {
-		header.fromTheory = t;
+	void setDerived(bool t) {
+		header.derived = t;
 	}
 	
 	bool reloced() const {
@@ -396,7 +396,7 @@ public:
 		
 		cr = to.alloc(c, c.learnt());
 		c.relocate(cr);
-		to[cr].setFromTheory(c.fromTheory());
+		to[cr].setDerived(c.derivedClause());
 		// Copy extra data-fields: 
 		// (This could be cleaned-up. Generalize Clause-constructor to be applicable here instead?)
 		to[cr].mark(c.mark());
