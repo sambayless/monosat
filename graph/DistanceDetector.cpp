@@ -483,27 +483,24 @@ void DistanceDetector<Weight>::ReachStatus::setMininumDistance(int u, bool reach
 	
 	if (u < detector.unweighted_dist_lits.size() && detector.unweighted_dist_lits[u].size()) {
 		assert(distance >= 0);
-		
 		//for(int i = 0;i<detector.unweighted_dist_lits[u].size();i++){
 		//int& min_distance =  detector.unweighted_dist_lits[u][i].min_unweighted_distance;
 		
 		//Lit l = detector.unweighted_dist_lits[u][i].l;
-		if (!detector.is_changed[u]) {
-			
-			if (!polarity) {				// && (!reachable || (distance>min_distance))){
-				//lbool assign = detector.outer->value(l);
-				//if( assign!= l_False ){
-				detector.is_changed[u] = true;
-				detector.changed.push( { u });						//{var(l),u,min_distance});
-				//}
-			} else if (polarity) {						// && reachable && (distance<=min_distance)){
-				//lbool assign = detector.outer->value(l);
-				//if( assign!= l_True ){
-				detector.is_changed[u] = true;
-				detector.changed.push( { u });						//{var(l),u,min_distance});
-				//}
-			}
+
+
+		if (!polarity && !detector.is_changed_over[u]) {				// && (!reachable || (distance>min_distance))){
+			//lbool assign = detector.outer->value(l);
+			//if( assign!= l_False ){
+			detector.is_changed_over[u] = true;
+			detector.changed.push( { u,polarity });						//{var(l),u,min_distance});
+			//}
+		} else if (polarity && !detector.is_changed_under[u]) {						// && reachable && (distance<=min_distance)){
+			detector.is_changed_under[u] = true;
+			detector.changed.push( { u,polarity });						//{var(l),u,min_distance});
+			//}
 		}
+
 		//}
 	}
 	
@@ -764,7 +761,8 @@ void DistanceDetector<Weight>::updateShortestPaths() {
 }
 template<typename Weight>
 void DistanceDetector<Weight>::preprocess() {
-	is_changed.growTo(g_under.nodes());
+	is_changed_under.growTo(g_under.nodes());
+	is_changed_over.growTo(g_over.nodes());
 
 	if(!overapprox_unweighted_distance_detector){
 		buildUnweightedSATConstraints(false);
@@ -794,7 +792,7 @@ bool DistanceDetector<Weight>::propagate(vec<Lit> & conflict) {
 		return true;
 	
 	static int iter = 0;
-	if (++iter == 29) { //18303
+	if (++iter == 1722) { //18303
 		int a = 1;
 	}
 
@@ -827,6 +825,10 @@ bool DistanceDetector<Weight>::propagate(vec<Lit> & conflict) {
 		skipped_negative = true;
 		stats_skipped_over_updates++;
 	}
+
+	if(skipped_positive && skipped_negative){
+		int a=1;
+	}
 	//outer->unreachupdatetime+=unreachUpdateElapsed;
 	
 	if (opt_rnd_shuffle) {
@@ -836,28 +838,25 @@ bool DistanceDetector<Weight>::propagate(vec<Lit> & conflict) {
 	while (changed.size()) {
 		int sz = changed.size();
 		int u = changed.last().u;
-		if (u == 3) {
-			int a = 1;
-		}
-		assert(is_changed[u]);
+		bool polarity = changed.last().polarity;
+		assert(polarity? is_changed_under[u] : is_changed_over[u]);
 		for (int i = 0; i < unweighted_dist_lits[u].size(); i++) {
 			int& min_distance = unweighted_dist_lits[u][i].min_unweighted_distance;
 			
 			Var v = var(unweighted_dist_lits[u][i].l);
 			Lit l;
 			
-			if (underapprox_unweighted_distance_detector && !skipped_positive
+			if (underapprox_unweighted_distance_detector && polarity
 					&& underapprox_unweighted_distance_detector->connected(u)
 					&& underapprox_unweighted_distance_detector->distance(u) <= min_distance) {
 				l = mkLit(v, false);
-			} else if (overapprox_unweighted_distance_detector && !skipped_negative
+			} else if (overapprox_unweighted_distance_detector && !polarity
 					&& (!overapprox_unweighted_distance_detector->connected(u)
 							|| overapprox_unweighted_distance_detector->distance(u) > min_distance)) {
 				l = mkLit(v, true);
 			} else {
 				continue;
 			}
-			
 			bool reach = !sign(l);
 			if (outer->value(l) == l_True) {
 				//do nothing
@@ -905,10 +904,20 @@ bool DistanceDetector<Weight>::propagate(vec<Lit> & conflict) {
 				int a = 1;
 			}
 		}
-		assert(sz == changed.size());
-		assert(changed.last().u == u);
-		is_changed[u] = false;
-		changed.pop();
+		if(sz==changed.size()) {
+			//it is possible, in rare cases, for literals to have been added to the chagned list while processing the changed list.
+			//in that case, don't pop anything off the changed list, and instead accept that this literal may be re-processed
+			//(should only be possible to have this happen at most twice per propagation call, so shouldn't matter too much)
+			assert(sz == changed.size());
+
+			assert(changed.last().u == u);
+			if (polarity) {
+				is_changed_under[u] = false;
+			} else {
+				is_changed_over[u] = false;
+			}
+			changed.pop();
+		}
 	}
 	
 

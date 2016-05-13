@@ -89,8 +89,10 @@ public:
 	struct Change {
 		Var v;
 		int u;
+		bool polarity;
 	};
-	vec<bool> is_changed;
+	vec<bool> is_changed_under;
+	vec<bool> is_changed_over;
 	vec<Change> changed;
 
 	vec<Lit> extra_conflict;
@@ -242,9 +244,14 @@ public:
 		int index = var(l) - first_reach_var;
 		if (index >= 0 && index < reach_lit_map.size() && reach_lit_map[index] != -1) {
 			int node = reach_lit_map[index];
-			if (!is_changed[node]) {
-				changed.push( { var(l), node });
-				is_changed[node] = true;
+
+			if (!is_changed_under[node]) {
+				changed.push( {  var(l), node, true });
+				is_changed_under[node] = true;
+			}
+			if (!is_changed_over[node]) {
+				changed.push( {  var(l), node, false });
+				is_changed_over[node] = true;
 			}
 		}
 	}

@@ -254,6 +254,8 @@ public:
 	bool checkSatisfied();
 	void printSolution(std::ostream& write_to);
 
+	bool checkNegatedPolarity() override;
+
 	void addAcceptLit(int state, int strID, Var reach_var);
 	void addSuffixLit(Lit acceptorLit, int suffixStartState,int suffixAcceptState, Var outer_reach_var);
 	Var getDetectorVar(int gen_final, int accept_final){

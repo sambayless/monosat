@@ -516,11 +516,17 @@ void ReachDetector<Weight>::ReachStatus::setReachable(int u, bool reachable) {
 	}*/
 	if (polarity == reachable && u < detector.reach_lits.size()) {
 		Lit l = detector.reach_lits[u];
-		if (l != lit_Undef && !detector.is_changed[u]) {
+		if (l != lit_Undef && polarity && !detector.is_changed_under[u]) {
 			lbool assign = detector.outer->value(l);
 			if (assign != (reachable ? l_True : l_False)) {
-				detector.is_changed[u] = true;
-				detector.changed.push( { var(l), u });
+				detector.is_changed_under[u] = true;
+				detector.changed.push( { var(l), u,polarity });
+			}
+		}else if (l != lit_Undef && !polarity && !detector.is_changed_over[u]) {
+			lbool assign = detector.outer->value(l);
+			if (assign != (reachable ? l_True : l_False)) {
+				detector.is_changed_over[u] = true;
+				detector.changed.push( { var(l), u,polarity });
 			}
 		}
 	}
@@ -565,7 +571,8 @@ void ReachDetector<Weight>::ReachStatus::setMininumDistance(int u, bool reachabl
  }*/
 template<typename Weight>
 void ReachDetector<Weight>::preprocess() {
-	is_changed.growTo(g_under.nodes());
+	is_changed_under.growTo(g_under.nodes());
+	is_changed_over.growTo(g_over.nodes());
 	//vec<bool> pure;
 	//pure.growTo(reach_lits.size());
 	//can check if all reach lits appear in only one polarity in the solver constraints; if so, then we can disable either check_positive or check_negative
@@ -1104,20 +1111,30 @@ bool ReachDetector<Weight>::propagate(vec<Lit> & conflict) {
 	while (changed.size()) {
 		int sz = changed.size();
 		Change & ch = changed.last();
+		bool polarity = ch.polarity;
 		Var v =ch.v;
 		int u = ch.u;
-		assert(is_changed[u]);
+		assert(polarity ? is_changed_under[u]:is_changed_over[u]);
 		Lit l;
 		
-		if (underapprox_detector && !skipped_positive && underapprox_detector->connected(u)) {
+		if (underapprox_detector && polarity && underapprox_detector->connected(u)) {
 			l = mkLit(v, false);
-		} else if (overapprox_reach_detector && !skipped_negative && !overapprox_reach_detector->connected(u)) {
+		} else if (overapprox_reach_detector && !polarity && !overapprox_reach_detector->connected(u)) {
 			l = mkLit(v, true);
 		} else {
-			assert(sz == changed.size());
-			assert(ch.u == u);
-			is_changed[u] = false;
-			changed.pop();
+			if(sz == changed.size()){
+				//it is possible, in rare cases, for literals to have been added to the chagned list while processing the changed list.
+				//in that case, don't pop anything off the changed list, and instead accept that this literal may be re-processed
+				//(should only be possible to have this happen at most twice per propagation call, so shouldn't matter too much)
+				assert(sz == changed.size());
+				assert(ch.u == u);
+				if (polarity) {
+					is_changed_under[u] = false;
+				} else {
+					is_changed_over[u] = false;
+				}
+				changed.pop();
+			}
 			//this can happen if the changed node's reachability status was reported before a backtrack in the solver.
 			continue;
 		}
@@ -1176,10 +1193,20 @@ bool ReachDetector<Weight>::propagate(vec<Lit> & conflict) {
 		 }
 
 		 }*/
-		assert(sz == changed.size());//This can be really tricky - if you are not careful, an a reach detector's update phase was skipped at the beginning of propagate, then if the reach detector is called during propagate it can push a change onto the list, which can cause the wrong item to be removed here.
-		assert(ch.u == u);
-		is_changed[u] = false;
-		changed.pop();
+		if(sz==changed.size()) {
+			//it is possible, in rare cases, for literals to have been added to the chagned list while processing the changed list.
+			//in that case, don't pop anything off the changed list, and instead accept that this literal may be re-processed
+			//(should only be possible to have this happen at most twice per propagation call, so shouldn't matter too much)
+			assert(sz ==
+				   changed.size());//This can be really tricky - if you are not careful, an a reach detector's update phase was skipped at the beginning of propagate, then if the reach detector is called during propagate it can push a change onto the list, which can cause the wrong item to be removed here.
+			assert(ch.u == u);
+			if (polarity) {
+				is_changed_under[u] = false;
+			} else {
+				is_changed_over[u] = false;
+			}
+			changed.pop();
+		}
 	}
 	
 #ifdef DEBUG_DIJKSTRA

@@ -653,7 +653,7 @@ public:
 	bool requiresPropagation = true;
 	//int n_decisions = 0;
 	//vec<int> var_decision_pos;
-
+	int n_theory_solves=0;
 	vec<char> seen;
 	vec<int> to_visit;
 
@@ -2737,6 +2737,7 @@ public:
 	}
 
 	bool solveTheory(vec<Lit> & conflict) {
+		n_theory_solves++;
 		requiresPropagation = true;		//Just to be on the safe side... but this shouldn't really be required.
 		bool ret = propagateTheory(conflict,true);
 		if(ret){

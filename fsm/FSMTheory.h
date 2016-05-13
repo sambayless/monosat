@@ -65,11 +65,15 @@ public:
 		int outputchar;
 	};
 	struct Assignment {
-		bool isEdge :1;
-		bool assign :1;
-		int edgeID:30;
+		int isEdge :1;
+		int assign :1;
+		int isSat  :1;
+		int edgeID:29;
 		Var var;
-		Assignment(bool isEdge, bool assign, int edgeID, Var v):isEdge(isEdge),assign(assign),edgeID(edgeID),var(v){
+		Assignment(bool isEdge, bool assign, int edgeID, Var v):isEdge(isEdge),assign(assign),isSat(false),edgeID(edgeID),var(v){
+
+		}
+		Assignment(bool isEdge, bool assign, bool issat, int edgeID, Var v):isEdge(isEdge),assign(assign),isSat(issat),edgeID(edgeID),var(v){
 
 		}
 	};
@@ -83,6 +87,7 @@ public:
 	int id;
 
 	vec<lbool> assigns;
+
 
 	vec<int> n_in_alphabets;//number of transition labels. Transition labels start from 0 (which is the non-consuming epsilon transition) and go to n_labels-1.
 	vec<int> n_out_alphabets;
@@ -163,9 +168,10 @@ public:
 	//Data about local theory variables, and how they connect to the sat solver's variables
 	struct VarData {
 		int isEdge :1;
-		//int occursPositive :1;
-		//int occursNegative :1;
-		int detector_edge :29;	//the detector this variable belongs to, or its edge number, if it is an edge variable
+		int occursPositive :1;
+		int occursNegative :1;
+		int isSatisfied:1;
+		int detector_edge :28;	//the detector this variable belongs to, or its edge number, if it is an edge variable
 		int input;
 		int output;
 		int fsmID;
@@ -397,8 +403,9 @@ public:
 		vars[v].solverVar = solverVar;
 		vars[v].input=label;
 		vars[v].output = output;
-		//vars[v].occursPositive=0;
-		//vars[v].occursNegative=0;
+		vars[v].isSatisfied=0;
+		vars[v].occursPositive=0;
+		vars[v].occursNegative=0;
 		assigns.push(l_Undef);
 		if (connectToTheory) {
 			S->setTheoryVar(solverVar, getTheoryIndex(), v);
@@ -503,7 +510,12 @@ public:
 				
 				Assignment & e = trail[i];
 				assert(assigns[e.var]!=l_Undef);
-				if (e.isEdge) {
+				if (e.isSat){
+					Lit l = mkLit(e.var, !e.assign);
+					vars[var(l)].isSatisfied=0;
+					detectors[getDetector(e.var)]->setSatisfied(l,false);
+
+				}else if (e.isEdge) {
 					assert(dbg_value(e.var)==value(e.var));
 					int fsmID = getFsmID(e.var);
 					int edgeID = getEdgeID(e.var); //e.var-min_edge_var;
@@ -576,7 +588,11 @@ public:
 				assert(sign(p) != e.assign);
 				break;
 			}
-			if (e.isEdge) {
+			if (e.isSat){
+				Lit l = mkLit(e.var, !e.assign);
+				vars[var(l)].isSatisfied=0;
+				detectors[getDetector(e.var)]->setSatisfied(l,false);
+			}else if (e.isEdge) {
 				int fsmID = getFsmID(e.var);
 				int edgeID = getEdgeID(e.var); //e.var-min_edge_var;
 				int input = getInput(e.var);
@@ -661,6 +677,11 @@ public:
 		if (isEdgeVar(var(l))) {
 			//don't do anything
 		} else {
+			if(!sign(l)){
+				vars[var(l)].occursPositive=occurs;
+			}else{
+				vars[var(l)].occursNegative=occurs;
+			}
 			//this is a graph property detector var
 			//if (!sign(l) && vars[var(l)].occursPositive != occurs)
 			detectors[getDetector(var(l))]->setOccurs(l, occurs);
@@ -709,7 +730,7 @@ public:
 			int output = getOutput(var(l));
 			assert(getTransition(fsmID,edgeID,input,output).v == var(l));
 
-			trail.push( { true, !sign(l),edgeID, v });
+			trail.push( Assignment( true, !sign(l),edgeID, v ));
 
 			if (!sign(l)) {
 				g_unders[fsmID]->enableTransition(edgeID,input,output);
@@ -719,7 +740,7 @@ public:
 			
 		} else {
 
-			trail.push( { false, !sign(l),-1, v });
+			trail.push( Assignment(false, !sign(l),-1, v ));
 			//this is an assignment to a non-edge atom. (eg, a reachability assertion)
 			detectors[getDetector(var(l))]->assign(l);
 			if(getDetector(var(l))==1){
@@ -728,7 +749,32 @@ public:
 		}
 		
 	}
-	;
+
+	//mark an atom as satisfied in the theory, so it doens't need to be tracked in the future
+	void enqueueSat(Lit l){
+		assert(assigns[var(l)]!=l_Undef);//the literal must be assigned
+		trail.push(Assignment(false,!sign(l),true,-1,var(l)));
+		vars[var(l)].isSatisfied=1;
+		detectors[getDetector(var(l))]->setSatisfied(l,false);
+	}
+	bool isSatisfied(Lit l){
+		assert(!(vars[var(l)].isSatisfied && value(l)!=l_True ));//if the var is marked satisfied, it SHOULD be the case
+		//that it is assigned true.
+		return vars[var(l)].isSatisfied;
+	}
+
+	bool literalOccurs(Lit l){
+		if(!sign(l)){
+			return vars[var(l)].occursPositive || (value(l)==l_False);//false, not true, here
+		}else{
+			return vars[var(l)].occursNegative  || (value(l)==l_False);
+		}
+	}
+
+	bool litIsRelevant(Lit l){
+		return literalOccurs(l) && !isSatisfied(l);
+	}
+
 	bool propagateTheory(vec<Lit> & conflict) {
 		return propagateTheory(conflict,false);
 	}

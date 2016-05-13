@@ -155,7 +155,8 @@ public:
 		//int min_distance;
 	};
 	vec<Change> changed;
-	vec<bool> is_changed;
+	vec<bool> is_changed_under;
+	vec<bool> is_changed_over;
 	vec<Var> tmp_nodes;
 
 	std::vector<double> rnd_weight;

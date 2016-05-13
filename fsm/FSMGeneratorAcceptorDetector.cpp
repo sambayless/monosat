@@ -449,7 +449,13 @@ void FSMGeneratorAcceptorDetector::AcceptStatus::accepts(int string,int state,in
 	}*/
 }
 
-
+bool FSMGeneratorAcceptorDetector::checkNegatedPolarity(){
+	if (opt_detect_satisfied_predicates>0 && outer->decisionLevel() ==0) {
+		return true;
+	}else{
+		return FSMDetector::checkNegatedPolarity();
+	}
+};
 
 bool FSMGeneratorAcceptorDetector::propagate(vec<Lit> & conflict) {
 	static int iter = 0;
@@ -475,14 +481,20 @@ bool FSMGeneratorAcceptorDetector::propagate(vec<Lit> & conflict) {
 	if(skipped_negative && skipped_positive){
 		return true;
 	}
+
+	bool check_negated_polarity = checkNegatedPolarity();
+
 	if(this->detectorID==1){
 		int a=1;
 	}
 	for(auto & t:all_accept_lits){
+
+
 			forced_edges.clear();
 			chokepoint_edges.clear();
 			Lit l =t.l;
 			Lit lit =t.l;
+
 			int gen_to = t.gen_to;
 			int accept_to = t.accept_to;
 			int failedSuffixLit=-1;
@@ -493,38 +505,44 @@ bool FSMGeneratorAcceptorDetector::propagate(vec<Lit> & conflict) {
 			g_over.draw(gen_source,gen_to);
 			acceptor_over.draw(accept_source,accept_to);
 			}*/
-			if(!opt_fsm_negate_underapprox && outer->value(l)!=l_True && underapprox_detector->accepts(gen_to,accept_to,false,opt_fsm_forced_edge_prop ?&forced_edges:nullptr)){
+			if(outer->litIsRelevant(~l) && !opt_fsm_negate_underapprox && (outer->value(l)!=l_True || check_negated_polarity ) && underapprox_detector->accepts(gen_to,accept_to,false,opt_fsm_forced_edge_prop ?&forced_edges:nullptr)){
 				if (outer->value(l) == l_True) {
-					//do nothing
+					assert(check_negated_polarity);
+					outer->enqueueSat(l);
 				} else if (outer->value(l) == l_Undef) {
 					outer->enqueue(l, underprop_marker);
+					outer->enqueueSat(l);
 				}else{
 					conflict.push(l);
 					buildAcceptReason(gen_to,accept_to, conflict);
 					return false;
 				}
-			}else if(opt_fsm_negate_underapprox && outer->value(l)!=l_True && !inverted_overapprox_detector->accepts(gen_to,accept_to,true, opt_fsm_forced_edge_prop ?&forced_edges:nullptr)){
+			}else if(outer->litIsRelevant(~l) && opt_fsm_negate_underapprox &&  (outer->value(l)!=l_True || check_negated_polarity ) && !inverted_overapprox_detector->accepts(gen_to,accept_to,true, opt_fsm_forced_edge_prop ?&forced_edges:nullptr)){
 				//This optimization appears to be broken. For example, if the input generator over-approximation has everything free, then this always triggers.
 				//possibly the inverted overapprox acceptor has to be paired with the generator underapprox instead...
 				assert(false);
 
 				if (outer->value(l) == l_True) {
-					//do nothing
+					assert(check_negated_polarity);
+					outer->enqueueSat(l);
 				} else if (outer->value(l) == l_Undef) {
 					//g_under.draw(gen_source,gen_to);
 					//acceptor_over.draw(accept_source,accept_to);
 					outer->enqueue(l, underprop_marker);
+					outer->enqueueSat(l);
 				}else{
 					conflict.push(l);
 					buildAcceptReason(gen_to,accept_to, conflict);
 					return false;
 				}
-			}else if (outer->value(l)!=l_False && !overapprox_detector->accepts(gen_to,accept_to,false,opt_fsm_edge_prop? &forced_edges:nullptr, opt_fsm_chokepoint_prop ? &chokepoint_edges:nullptr, suffixLits ? &pre_accepting_states:nullptr)){
+			}else if (outer->litIsRelevant(l) && (outer->value(l)!=l_False || check_negated_polarity ) && !overapprox_detector->accepts(gen_to,accept_to,false,opt_fsm_edge_prop? &forced_edges:nullptr, opt_fsm_chokepoint_prop ? &chokepoint_edges:nullptr, suffixLits ? &pre_accepting_states:nullptr)){
 
 				if (outer->value(l) == l_False) {
-					//do nothing (should be unreachable)
+					assert(check_negated_polarity);
+					outer->enqueueSat(~l);
 				} else if (outer->value(l) == l_Undef) {
 					outer->enqueue(~l, overprop_marker);
+					outer->enqueueSat(~l);
 				}else{
 					conflict.push(~l);
 					buildNonAcceptReason(gen_to,accept_to, conflict);
@@ -553,7 +571,7 @@ bool FSMGeneratorAcceptorDetector::propagate(vec<Lit> & conflict) {
 
 			}
 
-			if(outer->value(lit)==l_False){
+			if(outer->litIsRelevant(~l) && outer->value(lit)==l_False){
 				if(opt_fsm_forced_edge_prop){
 				for(int s = 0;s<forced_edges.size();s++){
 					for(auto & t:forced_edges[s]){
@@ -588,7 +606,7 @@ bool FSMGeneratorAcceptorDetector::propagate(vec<Lit> & conflict) {
 					}
 				}
 				}
-			}else if(outer->value(lit)==l_True){
+			}else if(outer->litIsRelevant(l) && outer->value(lit)==l_True){
 
 				if(opt_fsm_chokepoint_prop){
 

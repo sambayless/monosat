@@ -538,7 +538,8 @@ void WeightedDistanceDetector<Weight>::updateShortestPaths() {
 }
 template<typename Weight>
 void WeightedDistanceDetector<Weight>::preprocess() {
-	is_changed.growTo(g_under.nodes());
+	is_changed_under.growTo(g_under.nodes());
+	is_changed_over.growTo(g_over.nodes());
 
 
 

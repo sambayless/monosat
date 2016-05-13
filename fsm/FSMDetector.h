@@ -38,6 +38,7 @@ public:
 
 	int unassigned_positives = 0;
 	int unassigned_negatives = 0;
+	long last_negated_check=0;
 
 	//Stats
 	double stats_under_update_time = 0;
@@ -133,6 +134,20 @@ public:
 			unassigned_positives--;
 		assert(unassigned_positives >= 0);
 		assert(unassigned_negatives >= 0);
+	}
+	virtual void setSatisfied(Lit l, bool isSatisfied){
+
+	}
+	virtual bool checkNegatedPolarity(){
+		if(opt_detect_satisfied_predicates<=0)
+			return false;
+
+		if (++last_negated_check>=opt_detect_satisfied_predicates){
+			last_negated_check=0;
+			return true;
+		}else{
+			return false;
+		}
 	}
 	//virtual vec<int> & getLitMap();
 	FSMDetector(int detectorID) :

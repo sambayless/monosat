@@ -107,10 +107,12 @@ public:
 	struct Change {
 		//Var v;
 		int u;
+		bool polarity;
 		//int min_distance;
 	};
 	vec<Change> changed;
-	vec<bool> is_changed;
+	vec<bool> is_changed_under;
+	vec<bool> is_changed_over;
 	vec<Var> tmp_nodes;
 
 	std::vector<double> rnd_weight;
@@ -230,9 +232,13 @@ public:
 		//at the moment, change in assignments are only tracked this way for unweighted lits:
 		if (index >= 0 && index < reach_lit_map.size() && reach_lit_map[index].to != -1) {
 			int node = reach_lit_map[index].to;
-			if (!is_changed[node]) {
-				changed.push( { node });
-				is_changed[node] = true;
+			if (!is_changed_under[node]) {
+				changed.push( { node, true });
+				is_changed_under[node] = true;
+			}
+			if (!is_changed_over[node]) {
+				changed.push( { node, false });
+				is_changed_over[node] = true;
 			}
 		}
 	}
