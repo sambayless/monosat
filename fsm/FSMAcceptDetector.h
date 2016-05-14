@@ -76,6 +76,7 @@ public:
 		Lit l;
 		int u;
 		int str;
+		bool polarity;
 	};
 	//vec<bool> is_changed;
 	vec<Change> changed;

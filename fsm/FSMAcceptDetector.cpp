@@ -103,7 +103,7 @@ void FSMAcceptDetector::AcceptStatus::accepts(int string,int state,int edgeID,in
 		if (polarity == accepts){
 			lbool assign = detector.outer->value(l);
 			//detector.is_changed[detector.indexOf(var(l))] = true;
-			detector.changed.push( { l, state,string});
+			detector.changed.push( { l, state,string,polarity});
 		}
 	}
 }
@@ -287,26 +287,26 @@ bool FSMAcceptDetector::propagate(vec<Lit> & conflict) {
 	while (changed.size()) {
 			int sz = changed.size();
 			Lit l = changed.last().l;
-
+			bool polarity = changed.last().polarity;
 			int u = changed.last().u;
 			int str = changed.last().str;
 			//assert(is_changed[indexOf(var(l))]);
-			if(sign(l)){
-				assert(!overapprox_detector->acceptsString(str,u));
-			}else{
-				assert(underapprox_detector->acceptsString(str,u));
-			}
 
-			if (underapprox_detector && !skipped_positive && !sign(l)) {
 
-			} else if (overapprox_detector && !skipped_negative && sign(l)) {
+			if (underapprox_detector && polarity && !sign(l) && underapprox_detector->acceptsString(str,u)) {
+
+			} else if (overapprox_detector && !polarity && sign(l) && !overapprox_detector->acceptsString(str,u)) {
 
 			} else {
-				assert(sz == changed.size());
-				assert(changed.last().u == u);
-				//is_changed[indexOf(var(l))] = false;
-				changed.pop();
-				//this can happen if the changed node's reachability status was reported before a backtrack in the solver.
+				if(sz==changed.size()) {
+					//it is possible, in rare cases, for literals to have been added to the chagned list while processing the changed list.
+					//in that case, don't pop anything off the changed list, and instead accept that this literal may be re-processed
+					assert(sz == changed.size());
+					assert(changed.last().u == u);
+					//is_changed[indexOf(var(l))] = false;
+					changed.pop();
+					//this can happen if the changed node's reachability status was reported before a backtrack in the solver.
+				}
 				continue;
 			}
 
@@ -334,11 +334,15 @@ bool FSMAcceptDetector::propagate(vec<Lit> & conflict) {
 
 				return false;
 			}
-
-			assert(sz == changed.size());//This can be really tricky - if you are not careful, an a reach detector's update phase was skipped at the beginning of propagate, then if the reach detector is called during propagate it can push a change onto the list, which can cause the wrong item to be removed here.
-			assert(changed.last().u == u);
-			//is_changed[indexOf(var(l))] = false;
-			changed.pop();
+			if(sz==changed.size()) {
+				//it is possible, in rare cases, for literals to have been added to the chagned list while processing the changed list.
+				//in that case, don't pop anything off the changed list, and instead accept that this literal may be re-processed
+				assert(sz ==
+					   changed.size());//This can be really tricky - if you are not careful, an a reach detector's update phase was skipped at the beginning of propagate, then if the reach detector is called during propagate it can push a change onto the list, which can cause the wrong item to be removed here.
+				assert(changed.last().u == u);
+				//is_changed[indexOf(var(l))] = false;
+				changed.pop();
+			}
 		}
 	{
 #ifndef NDEBUG
@@ -346,6 +350,16 @@ bool FSMAcceptDetector::propagate(vec<Lit> & conflict) {
 		NFAAccept<> check_under(g_under,source,strings);
 
 		for(int str = 0;str<accept_lits.size();str++){
+			bool all_undef =true;
+			for(Lit a:accept_lits[str]){
+				if(a!=lit_Undef)
+				{
+					all_undef=false;
+					break;
+				}
+			}
+			if(all_undef)
+				continue;
 			vec<int> & string = strings[str];
 			check_over.run(str);
 			check_under.run(str);

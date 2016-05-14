@@ -77,13 +77,13 @@ private:
 	void buildStringTrackers(){
 		states_to_track_positive.growTo(strings.size());
 		states_to_track_negative.growTo(strings.size());
-		n_trackingString.growTo(strings.size(),g.states()*2);
+		n_trackingString.growTo(strings.size(),0);//g.states()*2
 		states_were_accepting.growTo(strings.size());
 		//states_were_rejecting.growTo(strings.size());
 
 		for(int i = 0;i<strings.size();i++){
-			states_to_track_positive[i].growTo(g.states(),true);
-			states_to_track_negative[i].growTo(g.states(),true);
+			states_to_track_positive[i].growTo(g.states(),false);
+			states_to_track_negative[i].growTo(g.states(),false);
 
 			states_were_accepting[i].growTo(g.states());
 			//states_were_rejecting[i].growTo(f.states());

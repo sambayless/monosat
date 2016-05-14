@@ -459,7 +459,7 @@ bool FSMGeneratorAcceptorDetector::checkNegatedPolarity(){
 
 bool FSMGeneratorAcceptorDetector::propagate(vec<Lit> & conflict) {
 	static int iter = 0;
-	if (++iter == 5374) {
+	if (++iter == 2600) {
 		int a = 1;
 	}
 	bool skipped_positive = false;
@@ -495,6 +495,8 @@ bool FSMGeneratorAcceptorDetector::propagate(vec<Lit> & conflict) {
 			Lit l =t.l;
 			Lit lit =t.l;
 
+			bool relp = outer->litIsRelevant(l);
+			bool reln = outer->litIsRelevant(~l);
 			int gen_to = t.gen_to;
 			int accept_to = t.accept_to;
 			int failedSuffixLit=-1;

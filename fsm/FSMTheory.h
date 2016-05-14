@@ -772,7 +772,7 @@ public:
 	}
 
 	bool litIsRelevant(Lit l){
-		return literalOccurs(l) && !isSatisfied(l);
+		return literalOccurs(~l) && !isSatisfied(l);
 	}
 
 	bool propagateTheory(vec<Lit> & conflict) {
