@@ -314,9 +314,9 @@ public:
 		return Xnor(store);
 	}
 
-
-
-
+	Lit Implies(Lit a, Lit b){
+		return Or(~a, b);
+	}
 
 	Lit Ite(Lit cond, Lit thn, Lit els){
 		Lit l = ~And(cond,~thn);
@@ -324,7 +324,225 @@ public:
 		return And(l,r);
 	}
 
+	void Assert(Lit l){
+		S.addClause(l);
+	}
 
+	void AssertOr(Lit a)
+	{
+		S.addClause(a);
+	}
+
+	void AssertOr(Lit a, Lit b){
+		S.addClause(a,b);
+	}
+
+	void AssertOr(const std::list<Lit> & vals){
+
+		tmp.clear();
+		for (Lit l:vals)
+			tmp.push(l);
+		S.addClause(tmp);
+
+	}
+
+	void AssertOr(const vec<Lit> & vals){
+		tmp.clear();
+		for (Lit l:vals)
+			tmp.push(l);
+		S.addClause(tmp);
+	}
+
+	template<typename... Args>
+	void AssertOr(Lit a, Lit b, Args... args)
+	{
+		store.clear();
+		store.push(a);
+		collect(store,b,args...);
+		S.addClause(store);
+	}
+
+	void AssertNand(Lit a)
+	{
+		S.addClause(~a);
+	}
+
+	void AssertNand(Lit a, Lit b){
+		S.addClause(~a,~b);
+	}
+
+	void AssertNand(const std::list<Lit> & vals){
+
+		tmp.clear();
+		for (Lit l:vals)
+			tmp.push(~l);
+		S.addClause(tmp);
+
+	}
+
+	void AssertNand(const vec<Lit> & vals){
+		tmp.clear();
+		for (Lit l:vals)
+			tmp.push(~l);
+		S.addClause(tmp);
+	}
+
+	template<typename... Args>
+	void AssertNand(Lit a, Lit b, Args... args)
+	{
+		store.clear();
+		store.push(a);
+		collect(store,b,args...);
+
+		tmp.clear();
+		for (Lit l:store)
+			tmp.push(~l);
+		S.addClause(tmp);
+	}
+
+	void AssertAnd(Lit a)
+	{
+		S.addClause(a);
+	}
+
+	void AssertAnd(Lit a, Lit b){
+		S.addClause(a);
+		S.addClause(b);
+	}
+
+	void AssertAnd(const std::list<Lit> & vals){
+		for (Lit l:vals)
+			S.addClause(l);
+	}
+
+	void AssertAnd(const vec<Lit> & vals){
+		for (Lit l:vals)
+			S.addClause(l);
+	}
+
+	template<typename... Args>
+	void AssertAnd(Lit a, Lit b, Args... args)
+	{
+		store.clear();
+		store.push(a);
+		collect(store,b,args...);
+		for (Lit l:store)
+			S.addClause(l);
+	}
+
+	void AssertNor(Lit a)
+	{
+		S.addClause(~a);
+	}
+
+	void AssertNor(Lit a, Lit b){
+		S.addClause(~a);
+		S.addClause(~b);
+	}
+
+	void AssertNor(const std::list<Lit> & vals){
+		for (Lit l:vals)
+			S.addClause(~l);
+	}
+
+	void AssertNor(const vec<Lit> & vals){
+		for (Lit l:vals)
+			S.addClause(~l);
+	}
+
+	template<typename... Args>
+	void AssertNor(Lit a, Lit b, Args... args)
+	{
+		store.clear();
+		store.push(a);
+		collect(store,b,args...);
+		for (Lit l:store)
+			S.addClause(~l);
+	}
+
+	void AssertXor(Lit a)
+	{
+		S.addClause(a);//is this correct?
+	}
+
+	void AssertXor(Lit a, Lit b){
+		S.addClause(a, b);
+		S.addClause(~a, ~b);
+	}
+
+	void AssertXor(const std::list<Lit> & vals){
+		tmp.clear();
+		for(Lit l:vals)
+			tmp.push(l);
+		AssertXor(tmp);
+	}
+
+	void AssertXor(const vec<Lit> & vals){
+		if(vals.size()==0)
+			Assert(getFalse());
+		else if (vals.size()==1){
+			Assert(vals[0]);
+		}else if (vals.size()==2){
+			S.addClause(vals[0], vals[1]);
+			S.addClause(~vals[0], ~vals[1]);
+		}else{
+			//this can probably be done better...
+			Assert(Xor(vals));
+		}
+	}
+
+	template<typename... Args>
+	void AssertXor(Lit a, Lit b, Args... args)
+	{
+		store.clear();
+		store.push(a);
+		collect(store,b,args...);
+		AssertXor(store);
+	}
+
+	void AssertXnor(Lit a)
+	{
+		S.addClause(a);//is this correct?
+	}
+
+	void AssertXnor(Lit a, Lit b){
+		S.addClause(~a, b);
+		S.addClause(a, ~b);
+	}
+
+	void AssertXnor(const std::list<Lit> & vals){
+		tmp.clear();
+		for(Lit l:vals)
+			tmp.push(l);
+		AssertXnor(tmp);
+	}
+
+	void AssertXnor(const vec<Lit> & vals){
+		if(vals.size()==0)
+			Assert(getFalse());
+		else if (vals.size()==1){
+			Assert(vals[0]);
+		}else if (vals.size()==2){
+			S.addClause(~vals[0], vals[1]);
+			S.addClause(vals[0], ~vals[1]);
+		}else{
+			//this can probably be done better...
+			Assert(Xnor(vals));
+		}
+	}
+
+	template<typename... Args>
+	void AssertXnor(Lit a, Lit b, Args... args)
+	{
+		store.clear();
+		store.push(a);
+		collect(store,b,args...);
+		AssertXnor(store);
+	}
+
+	void AssertImplies(Lit a, Lit b){
+		S.addClause(~a, b);
+	}
 };
 
 };

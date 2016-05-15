@@ -459,9 +459,10 @@ bool FSMGeneratorAcceptorDetector::checkNegatedPolarity(){
 
 bool FSMGeneratorAcceptorDetector::propagate(vec<Lit> & conflict) {
 	static int iter = 0;
-	if (++iter == 2600) {
+	if (++iter == 154696) {
 		int a = 1;
 	}
+
 	bool skipped_positive = false;
 	if (underapprox_detector && (!opt_detect_pure_theory_lits || unassigned_positives > 0)) {
 
@@ -482,7 +483,7 @@ bool FSMGeneratorAcceptorDetector::propagate(vec<Lit> & conflict) {
 		return true;
 	}
 
-	bool check_negated_polarity = checkNegatedPolarity();
+	bool global_check_negated_polarity = checkNegatedPolarity();
 
 	if(this->detectorID==1){
 		int a=1;
@@ -495,11 +496,22 @@ bool FSMGeneratorAcceptorDetector::propagate(vec<Lit> & conflict) {
 			Lit l =t.l;
 			Lit lit =t.l;
 
-			bool relp = outer->litIsRelevant(l);
-			bool reln = outer->litIsRelevant(~l);
+			//relp = outer->litIsRelevant(l);
+			//reln = outer->litIsRelevant(~l);
+
 			int gen_to = t.gen_to;
 			int accept_to = t.accept_to;
 			int failedSuffixLit=-1;
+			if(outer->value(l)==l_False)
+				continue;
+			//accp = underapprox_detector->accepts(gen_to,accept_to,false,opt_fsm_forced_edge_prop ?&forced_edges:nullptr);
+			//accn = overapprox_detector->accepts(gen_to,accept_to,false,opt_fsm_edge_prop? &forced_edges:nullptr, opt_fsm_chokepoint_prop ? &chokepoint_edges:nullptr,nullptr);
+	/*		//this is temporary!
+			if(outer->value(l)==l_False && outer->level(var(l))> 1 ){
+				assert(underapprox_detector->accepts(gen_to,accept_to,false,nullptr));
+			}*/
+			bool check_negated_polarity = global_check_negated_polarity || (opt_detect_satisfied_predicates>0 && outer->level(var(l))==outer->decisionLevel() && outer->decisionLevel()>0) ;
+
 			vec<SuffixLit> * suffixLits = t.suffixLits;
 			//assert(is_changed[indexOf(var(l))]);
 			pre_accepting_states.clear();
@@ -838,6 +850,7 @@ void FSMGeneratorAcceptorDetector::buildAcceptReason(int genFinal, int acceptFin
 			assert(outer->value(v)==l_True);
 			conflict.push(mkLit(v,true));
 		}
+
 	}else{
 
 		forced_edges.clear();
@@ -866,6 +879,7 @@ void FSMGeneratorAcceptorDetector::buildAcceptReason(int genFinal, int acceptFin
 		//printf("\n");
 
 	}
+
 }
 bool FSMGeneratorAcceptorDetector::stepGenerator(int final,int forcedEdge,int forcedLabel, vec<int> & store, vec<bool> & store_seen, int & cur_gen_state, vec<NFATransition> * path){
 	DynamicFSM & g = g_over;
@@ -1940,9 +1954,9 @@ bool FSMGeneratorAcceptorDetector::checkSatisfied(){
 
 
 		if(outer->value(l)==l_Undef){
-			return true;//allowing this case for now, although we probably shouldn't
+			continue;//allowing this case for now, although we probably shouldn't
 		}else if (outer->value(l)==l_False && check.accepts(gen_to,accept_to)){
-			return false;
+			continue;
 		}else if (outer->value(l)==l_True && !check.accepts(gen_to,accept_to)){
 			return false;
 		}

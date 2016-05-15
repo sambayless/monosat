@@ -117,7 +117,10 @@ public:
 	vec<AcceptLit> all_accept_lits;
 	vec<Lit> all_lits;
 
-
+	bool relp = false;
+	bool reln = false;
+	bool accp = false;
+	bool accn = false;
 	vec<SuffixLit> suffix_lit_map;
 	vec<SuffixLit> all_suffix_lits;
 	//stats

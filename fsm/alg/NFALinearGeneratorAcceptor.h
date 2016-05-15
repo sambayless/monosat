@@ -605,6 +605,12 @@ private:
 			}
 			hasSuffix=true;
 		}*/
+		cur_seen.growTo(accept.states());
+		gen_cur_seen.growTo(gen.states());
+		next_seen.growTo(accept.states());
+		gen_next_seen.growTo(gen.states());
+		seen_chars.growTo(gen.outAlphabet()+1);
+
 		int gen_pos = 0;
 		for(int s:cur){
 			assert(cur_seen);
