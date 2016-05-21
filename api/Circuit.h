@@ -543,6 +543,40 @@ public:
 	void AssertImplies(Lit a, Lit b){
 		S.addClause(~a, b);
 	}
+
+	void AssertEqual(Lit a, Lit b){
+		AssertXnor(a,b);
+	}
+
+	void AssertEqual(const std::list<Lit> & vals){
+		tmp.clear();
+		for(Lit l:vals)
+			tmp.push(l);
+		AssertXnor(tmp);
+	}
+
+	void AssertEqual(const vec<Lit> & vals){
+		if(vals.size()==0)
+			Assert(getFalse());
+		else if (vals.size()==1){
+			Assert(vals[0]);
+		}else if (vals.size()==2){
+			S.addClause(~vals[0], vals[1]);
+			S.addClause(vals[0], ~vals[1]);
+		}else{
+			//this can probably be done better...
+			Assert(Xnor(vals));
+		}
+	}
+
+	template<typename... Args>
+	void AssertEqual(Lit a, Lit b, Args... args)
+	{
+		store.clear();
+		store.push(a);
+		collect(store,b,args...);
+		AssertXnor(store);
+	}
 };
 
 };
