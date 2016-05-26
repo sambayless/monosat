@@ -921,7 +921,10 @@ bool MaxflowDetector<Weight>::propagate(vec<Lit> & conflict, bool backtrackOnly,
 	Weight under_maxflow = -1;
 	bool computed_under=false;
 	bool computed_over=false;
-	
+
+	//If all flow lit requirements are >=0, including bitvectors, then we can skip this...
+	//probably the easiest way to do this is using the 'markSatisfied' approach.
+
 	if (underapprox_detector && (!opt_detect_pure_theory_lits || unassigned_positives > 0)) {
 		double startdreachtime = rtime(2);
 		stats_under_updates++;
