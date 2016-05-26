@@ -141,6 +141,17 @@ public:
 	};
 	vec<DistLit> flow_lits;
 
+/*	struct MaxflowBV{
+		int bvID=-1;
+		vec<Lit> lits;
+		Lit l=lit_Undef;
+		bool isSatisfied=false;
+	};*/
+
+	//vec<MaxflowBV> maximum_flow_bvs;
+
+	int n_satisfied_lits=0;
+
 	std::vector<MaxFlowEdge> cut;
 
 	vec<MaxFlowEdge> tmp_cut;
@@ -178,6 +189,9 @@ public:
 	bool decideEdgeWeight(int edgeID, Weight & store, DetectorComparison & op);
 	void undecideEdgeWeight(int edgeID)override;
 	void undecide(Lit l);
+	void assignBV(int bvID)override ;
+	void unassignBV(int bvID) override;
+	void setSatisfied(Lit l, bool isSatisfied)override;
 	Lit decide();
 	bool supportsEdgeDecisions(){
 		return true;
@@ -202,6 +216,40 @@ public:
 		}
 		
 	}
+
+	Weight computeUnderApprox( Weight & computed_under_weight){
+		if(computed_under_weight>-1){
+			return computed_under_weight;
+		}
+		if (underapprox_detector && (!opt_detect_pure_theory_lits || unassigned_positives > 0)) {
+			double startdreachtime = rtime(2);
+			stats_under_updates++;
+
+			computed_under_weight = underapprox_detector->maxFlow();
+			assert(computed_under_weight == underapprox_conflict_detector->maxFlow());
+			double reachUpdateElapsed = rtime(2) - startdreachtime;
+			stats_under_update_time += reachUpdateElapsed;
+			return computed_under_weight;
+		}
+		return 0;
+	}
+
+	Weight computeOverApprox(Weight & computed_over_weight){
+		if(computed_over_weight>-1){
+			return computed_over_weight;
+		}
+		if (overapprox_detector && ( !opt_detect_pure_theory_lits || unassigned_negatives > 0)) {
+			double startunreachtime = rtime(2);
+			stats_over_updates++;
+			computed_over_weight = overapprox_detector->maxFlow();
+			assert(computed_over_weight == overapprox_conflict_detector->maxFlow());
+			double unreachUpdateElapsed = rtime(2) - startunreachtime;
+			stats_over_update_time += unreachUpdateElapsed;
+			return computed_over_weight;
+		}
+		return 0;
+	}
+
 	//Lit decideByPath(int level);
 	void dbg_decisions();
 	void printSolution(std::ostream & write_to);
@@ -239,7 +287,7 @@ public:
 	}
 	void setFlowBV(const BitVector<Weight>  &bv);
 	void addFlowLit(Weight max_flow, Var reach_var, bool inclusive);
-	void addFlowBVLessThan(const BitVector<Weight>  &bv, Var v, bool inclusive);
+	void addMaxFlowGEQ_BV(const BitVector<Weight> &bv, Var v, bool inclusive);
 	MaxflowDetector(int _detectorID, GraphTheorySolver<Weight> * _outer,
 			DynamicGraph<Weight>  &_g, DynamicGraph<Weight>  &_antig, int _source, int _target, double seed = 1, bool overIsEdgeSet=false); //:Detector(_detectorID),outer(_outer),within(-1),source(_source),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL){}
 	~MaxflowDetector() {

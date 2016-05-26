@@ -638,13 +638,14 @@ public:
 	vec<vec<int> > comparisons_leq;
 	vec<vec<int> > comparisons_geq;
 
-/*
-	struct BVInfo{
-		int edgeID;
-	};
-*/
 
-	vec<int> edge_bitvectors;
+	struct BVInfo{
+		int edgeID=-1;
+		int detectorID=-1;
+	};
+
+
+	vec<BVInfo> bitvector_data;
 /*
 	vec<bool> bv_needs_update;
 	vec<int> bvs_to_update;
@@ -662,16 +663,27 @@ public:
 	struct VarData {
 		int isEdge :1;
 		int isBV:1;
-		int isTheoryVar;
+		int isTheoryVar:1;
+		int isSatisfied:1;
 		//int occursPositive :1;
 		//int occursNegative :1;
-		int detector_edge :27;	//the detector this variable belongs to, or its edge number, if it is an edge variable
+		int detector_edge :26;	//the detector this variable belongs to, or its edge number, if it is an edge variable
 
 		Var solverVar;
 		Var theory_var;
 	};
 
 	vec<VarData> vars;
+
+	struct SatisfiedLit{
+		int level=-1;
+		Lit l=lit_Undef;
+		SatisfiedLit(int level, Lit l):level(level),l(l){
+
+		}
+	};
+	vec<SatisfiedLit> satisfied_lits;
+
 	int theory_index = 0;
 public:
 
@@ -990,9 +1002,11 @@ public:
 		vars[v].isEdge = false;
 		vars[v].isBV=true;
 		vars[v].isTheoryVar=false;
+		vars[v].isSatisfied=false;
 		vars[v].detector_edge = bvID;
 		vars[v].solverVar = solverVar;
 		vars[v].theory_var=var_Undef;
+
 		//vars[v].occursPositive=0;
 		//vars[v].occursNegative=0;
 		assigns.push(l_Undef);
@@ -1005,6 +1019,20 @@ public:
 	void setDecisionVar(Var solverVar, bool decidable){
 		S->setDecisionVar(toSolver(solverVar),decidable);
 	}
+	bool bvHasDetector(int bvID){
+		return bvID<bitvector_data.size() && bitvector_data[bvID].detectorID>=0;
+	}
+	int getBVDetectorID(int bvID){
+		assert(bvHasDetector(bvID));
+		return bitvector_data[bvID].detectorID;
+	}
+	void setBVDetectorID(int bvID, int detectorID){
+		bitvector_data.growTo(bvID+1);
+		assert(bitvector_data[bvID].edgeID<0);
+		assert(bitvector_data[bvID].detectorID<0);
+		bitvector_data[bvID].detectorID = detectorID;
+	}
+
 	Var newTheoryVar(Var solverVar, int theoryID, Var theoryVar){
 
 
@@ -1017,6 +1045,7 @@ public:
 		vars[v].isEdge = false;
 		vars[v].isBV=false;
 		vars[v].isTheoryVar=true;
+		vars[v].isSatisfied=false;
 		vars[v].detector_edge = theoryID;
 		vars[v].solverVar = solverVar;
 		vars[v].theory_var=theoryVar;
@@ -1039,6 +1068,7 @@ public:
 		vars[v].isEdge = isEdge;
 		vars[v].isBV=false;
 		vars[v].isTheoryVar=false;
+		vars[v].isSatisfied=false;
 		vars[v].detector_edge = detector;
 		vars[v].solverVar = solverVar;
 		vars[v].theory_var=var_Undef;
@@ -1302,7 +1332,9 @@ public:
 	bool hasBitVector(int edgeID){
 		return edge_list[edgeID].bvID>=0;
 	}
-
+	BitVector<Weight> getBV(int bvID){
+		return bvTheory->getBV(bvID);
+	}
 	BitVector<Weight> getEdgeBV(int edgeID){
 		return bvTheory->getBV(edge_list[edgeID].bvID);
 	}
@@ -1676,6 +1708,22 @@ public:
 		//printf("g%d: backtrack until level %d\n", this->id,untilLevel);
 		//assert(to_reenqueue.size()==0);
 		bool changed = false;
+
+		while(satisfied_lits.size() && satisfied_lits.last().level>untilLevel){
+			int lev = satisfied_lits.last().level;
+			assert(lev>untilLevel);
+			Lit l = satisfied_lits.last().l;
+			assert(value(l)==l_True);
+			assert(vars[var(l)].isSatisfied);
+			vars[var(l)].isSatisfied=false;
+			satisfied_lits.pop();
+			int detector = getDetector(var(l));
+			if(detector>=0) {
+				detectors[detector]->setSatisfied(l, false);
+			}
+
+		}
+
 		//first, undo any assignments in the lazy trail
 		if(lazy_trail_head!=var_Undef){
 			requiresPropagation = true;
@@ -1765,6 +1813,28 @@ public:
 		//printf("g%d : backtrack until lit %d\n", this->id,dimacs(p));
 		//need to remove and add edges in the two graphs accordingly.
 		assert(onTrail(var(p))||onLazyTrail(var(p)));
+
+		//is this safe? there is a bit of a problem here, since I don't know where in the trail the 'satisfied'
+		//information was enqueued (only the level at which it was enqueued).
+		//on the other hand, a satisfied lit shouldn't be involved in a conflict, and
+		//everything should end up correctly in sync after the solver backtracks post-conflict, so this will
+		//*hopefully* not matter...
+		int untilLevel = level(var(p));
+		while(satisfied_lits.size() && satisfied_lits.last().level>untilLevel){
+			int lev = satisfied_lits.last().level;
+			assert(lev>untilLevel);
+			Lit l = satisfied_lits.last().l;
+			assert(value(l)==l_True);
+			assert(vars[var(l)].isSatisfied);
+			vars[var(l)].isSatisfied=false;
+			satisfied_lits.pop();
+			int detector = getDetector(var(l));
+			if(detector>=0) {
+				detectors[detector]->setSatisfied(l, false);
+			}
+
+		}
+
 		Var v;
 		if(!onLazyTrail(var(p))){
 
@@ -1994,6 +2064,7 @@ public:
 		//trail_lim.push(trail.size());
 		assert(invalid_edgeset_lit==lit_Undef);
 		decisions.push(var_Undef);
+		assert(decisionLevel()<=S->decisionLevel());
 	}
 
 
@@ -2191,6 +2262,10 @@ public:
 	}
 
 	void enqueueBV(int bvID){
+		int lev = bvTheory->decisionLevel();//decision level must be synced with bvtheory to ensure the correctness of the enqueueSat method.
+		while (lev > decisionLevel()) {
+            newDecisionLevel();
+        }
 		requiresPropagation=true;
 		S->needsPropagation(getTheoryIndex());
 		if(isEdgeBV(bvID)){
@@ -2216,6 +2291,10 @@ public:
 					g_over_weights_under_edgeset.setEdgeWeight(edgeID, edge_bv_weights[edgeID].getUnder());
 			}
 
+		}else if(bvHasDetector(bvID)){
+			int detectorID = getBVDetectorID(bvID);
+			assert(detectorID>=0);assert(detectorID<detectors.size());assert(detectors[detectorID]);
+			detectors[detectorID]->assignBV(bvID);
 		}
 	}
 	void rewindBV(int bvID)override{
@@ -2241,6 +2320,10 @@ public:
 					g_over_weights_under_edgeset.setEdgeWeight(edgeID, edge_bv_weights[edgeID].getUnder());
 			}
 
+		}else if(bvHasDetector(bvID)){
+			int detectorID = getBVDetectorID(bvID);
+			assert(detectorID>=0);assert(detectorID<detectors.size());assert(detectors[detectorID]);
+			detectors[detectorID]->unassignBV(bvID);
 		}
 		}
 	}
@@ -2272,7 +2355,32 @@ public:
 					g_over_weights_under_edgeset.setEdgeWeight(edgeID, edge_bv_weights[edgeID].getUnder());
 			}
 
+		}else if(bvHasDetector(bvID)){
+			int detectorID = getBVDetectorID(bvID);
+			assert(detectorID>=0);assert(detectorID<detectors.size());assert(detectors[detectorID]);
+			detectors[detectorID]->unassignBV(bvID);
 		}
+	}
+	//mark an atom as satisfied in the theory, so it doens't need to be tracked in the future
+	void enqueueSat(Lit l){
+		assert(value(l)==l_True);//the literal must be assigned true
+		if(opt_detect_satisfied_predicates) {
+			if (!vars[var(l)].isSatisfied) {
+				//int lev = S->decisionLevel();
+				/*while (lev > decisionLevel()) {
+					newDecisionLevel();
+				}*/
+
+				satisfied_lits.push(SatisfiedLit(decisionLevel(), l));
+				vars[var(l)].isSatisfied = 1;
+				detectors[getDetector(var(l))]->setSatisfied(l, true);
+			}
+		}
+	}
+	bool isSatisfied(Lit l){
+		assert(!(vars[var(l)].isSatisfied && value(l)!=l_True ));//if the var is marked satisfied, it SHOULD be the case
+		//that it is assigned true.
+		return vars[var(l)].isSatisfied;
 	}
 	void enqueueTheory(Lit l) {
 		if(invalid_edgeset_lit!=lit_Undef){
@@ -3186,18 +3294,18 @@ public:
 	}*/
 
 	bool isEdgeBV(int bvID){
-		return bvID<edge_bitvectors.size() && edge_bitvectors[bvID]>=0;
+		return bvID<bitvector_data.size() && bitvector_data[bvID].edgeID>=0;
 	}
 	int getBVEdge(int bvID){
 		assert(isEdgeBV(bvID));
-		return edge_bitvectors[bvID];
+		return bitvector_data[bvID].edgeID;
 	}
 
 	bool isBVVar(Var v){
 		return vars[v].isBV;
 	}
 
-	int getBV(Var v){
+	int getBVForVar(Var v){
 		assert(isBVVar(v));
 		return vars[v].detector_edge;
 	}
@@ -3264,7 +3372,7 @@ public:
 			/*	if(outerVar==var_Undef)
 			 outerVar = S->newVar();*/
 			vec<Var> internalBV;
-			int bvID = edge_bitvectors.size();
+			int bvID = bitvector_data.size();
 			int index = edge_list.size();
 			for (Var v:bitVector){
 				internalBV.push(newBVVar(v,bvID,index));
@@ -3275,13 +3383,13 @@ public:
 			}*/
 			BitVector<Weight> bv = bvTheory->newBitvector(bvID,bitVector);
 			bvTheory->setBitvectorTheory(bvID,this->getTheoryIndex());
-			edge_bitvectors.growTo(bv.getID()+1,-1);
-			if(edge_bitvectors[bv.getID()]!=-1){
+			bitvector_data.growTo(bv.getID()+1);
+			if(bitvector_data[bv.getID()].edgeID!=-1 || bitvector_data[bv.getID()].detectorID!=-1){
 				//else, this is already used!
 				fprintf(stderr,"Each bitvector can only be used for one edge!\n");
 				exit(1);
 			}
-			edge_bitvectors[bv.getID()]=index;
+			bitvector_data[bv.getID()].edgeID=index;
 			//bv_needs_update.growTo(bv.getID()+1);
 			all_edges_unit &= (bv.getUnder()== 1 && bv.getOver()==1);
 			all_edges_positive &= bv.getUnder()>0;
@@ -3374,8 +3482,8 @@ public:
 		int index = edge_list.size();
 		bvTheory->setBitvectorTheory(bvID,this->getTheoryIndex());
 		BitVector<Weight> bv = bvTheory->getBV(bvID);
-		edge_bitvectors.growTo(bv.getID()+1,-1);
-		edge_bitvectors[bv.getID()]=index;
+		bitvector_data.growTo(bv.getID()+1);
+		bitvector_data[bv.getID()].edgeID=index;
 		//bvTheory->setCallback(bv.getID(),&bvcallback);
 		comparisons_lt.growTo(bv.getID()+1);
 		comparisons_gt.growTo(bv.getID()+1);
@@ -3433,7 +3541,7 @@ public:
 
 		/*	if(outerVar==var_Undef)
 		 outerVar = S->newVar();*/
-		assert(edge_bitvectors.size()==0);
+		assert(bitvector_data.size()==0);
 		all_edges_unit &= (weight == 1);
 		all_edges_positive &= weight>0;
 		int index = edge_list.size();
@@ -3645,9 +3753,9 @@ public:
 		bvTheory->setBitvectorTheory(bvID,this->getTheoryIndex());
 		for (int i = 0; i < flow_detectors.size(); i++) {
 			if (flow_detectors[i]->source == from && flow_detectors[i]->target == to) {
-				flow_detectors[i]->addFlowBVLessThan(bvTheory->getBV(bvID), v,!strictComparison);
+				flow_detectors[i]->addMaxFlowGEQ_BV(bvTheory->getBV(bvID), v,!strictComparison);
 				if(edgeset_flow_detectors[i])
-					edgeset_flow_detectors[i]->addFlowBVLessThan(bvTheory->getBV(bvID), v,!strictComparison);
+					edgeset_flow_detectors[i]->addMaxFlowGEQ_BV(bvTheory->getBV(bvID), v,!strictComparison);
 				return;
 			}
 		}
@@ -3655,8 +3763,10 @@ public:
 				to, drand(rnd_seed));
 		flow_detectors.push(f);
 		normal_detectors.push(f);
+		int detectorID = detectors.size();
 		detectors.push(f);
-		f->addFlowBVLessThan(bvTheory->getBV(bvID), v,!strictComparison);
+		//setBVDetectorID(bvID, detectorID);
+		f->addMaxFlowGEQ_BV(bvTheory->getBV(bvID), v, !strictComparison);
 
 		if(opt_min_edgeset>=0){
 			edgeset_flow_detectors.growTo(flow_detectors.size());
@@ -3666,7 +3776,7 @@ public:
 			edge_set_detectors.push(f);
 			Var outer = S->newVar();
 			makeEqualInSolver(mkLit(outer),mkLit(v));
-			f->addFlowBVLessThan(bvTheory->getBV(bvID), outer,!strictComparison);
+			f->addMaxFlowGEQ_BV(bvTheory->getBV(bvID), outer, !strictComparison);
 		}
 	}
 

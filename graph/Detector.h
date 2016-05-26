@@ -48,6 +48,7 @@ public:
 	int64_t stats_over_conflicts = 0;
 	double stats_under_conflict_time = 0;
 	double stats_over_conflict_time = 0;
+	int64_t stats_skipped_satisfied_updates = 0;
 	int64_t stats_skipped_under_updates = 0;
 	int64_t stats_skipped_over_updates = 0;
 	int64_t stats_decisions = 0;
@@ -75,6 +76,9 @@ public:
 			printf("\tOver-approx updates: %ld (%ld skipped)  (%f s total, %f s avg)\n", stats_over_updates,
 					stats_skipped_over_updates, (double) stats_over_update_time,
 					(double) stats_over_update_time / (double) (stats_over_updates + 1));
+			if(stats_skipped_satisfied_updates>0){
+				printf("\tUpdates skipped because atoms were marked as satisfied %ld\n", stats_skipped_satisfied_updates);
+			}
 			printf("\tTheory Decisions: %ld (%f s total, %f s avg, %ld priority)\n", stats_decisions, (double) stats_decide_time,
 					(double) stats_decide_time / (double) (stats_decisions + 1),n_stats_priority_decisions);
 			printf(
@@ -147,6 +151,16 @@ public:
 			unassigned_negatives--;
 		else
 			unassigned_positives--;
+	}
+	virtual void assignBV(int bvID) {
+
+
+	}
+	virtual void unassignBV(int bvID) {
+
+	}
+	virtual void setSatisfied(Lit l, bool isSatisfied){
+
 	}
 	//virtual vec<int> & getLitMap();
 	Detector(int detectorID) :

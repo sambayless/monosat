@@ -157,40 +157,48 @@ MaxflowDetector<Weight>::MaxflowDetector(int _detectorID, GraphTheorySolver<Weig
 
 template<typename Weight>
 void MaxflowDetector<Weight>::addFlowLit(Weight maxflow, Var outer_reach_var, bool inclusive) {
-	g_under.invalidate();
-	g_over.invalidate();
-	Var reach_var = outer->newVar(outer_reach_var, getID());
-	if (first_reach_var == var_Undef) {
-		first_reach_var = reach_var;
-	} else {
-		assert(reach_var > first_reach_var);
-	}
-	
-	assert(maxflow >= 0);
-	
-	//while( dist_lits[to].size()<=within_steps)
-	//	dist_lits[to].push({lit_Undef,-1});
-	
-	/*	while(outer->S->nVars()<=reach_var)
-	 outer->S->newVar();*/
+	if(maxflow==0){
+		//The max flow of a graph is _always_ at least 0.
+		//so this literal is trivially true
+		outer->addClauseToSolver(mkLit(outer_reach_var));
+		return;
+	}else {
+		g_under.invalidate();
+		g_over.invalidate();
+		Var reach_var = outer->newVar(outer_reach_var, getID());
+		if (first_reach_var == var_Undef) {
+			first_reach_var = reach_var;
+		} else {
+			assert(reach_var > first_reach_var);
+		}
 
-	Lit reachLit = mkLit(reach_var, false);
-	bool found = false;
-	
-	flow_lits.push();
-	flow_lits.last().l = reachLit;
-	flow_lits.last().max_flow = maxflow;
-	flow_lits.last().inclusive=inclusive;
-	while (reach_lit_map.size() <= reach_var - first_reach_var) {
-		reach_lit_map.push(-1);
+		assert(maxflow >= 0);
+
+
+		//while( dist_lits[to].size()<=within_steps)
+		//	dist_lits[to].push({lit_Undef,-1});
+
+		/*	while(outer->S->nVars()<=reach_var)
+         outer->S->newVar();*/
+
+		Lit reachLit = mkLit(reach_var, false);
+		bool found = false;
+
+
+		flow_lits.push();
+		flow_lits.last().l = reachLit;
+		flow_lits.last().max_flow = maxflow;
+		flow_lits.last().inclusive = inclusive;
+		while (reach_lit_map.size() <= reach_var - first_reach_var) {
+			reach_lit_map.push(-1);
+		}
+
+		reach_lit_map[reach_var - first_reach_var] = flow_lits.size() - 1;
 	}
-	
-	reach_lit_map[reach_var - first_reach_var] = flow_lits.size() - 1;
-	
 }
 
 template<typename Weight>
-void MaxflowDetector<Weight>::addFlowBVLessThan(const BitVector<Weight>  &bv, Var outer_reach_var, bool inclusive) {
+void MaxflowDetector<Weight>::addMaxFlowGEQ_BV(const BitVector<Weight> &bv, Var outer_reach_var, bool inclusive) {
 	g_under.invalidate();
 	g_over.invalidate();
 	Var reach_var = outer->newVar(outer_reach_var, getID());
@@ -211,6 +219,11 @@ void MaxflowDetector<Weight>::addFlowBVLessThan(const BitVector<Weight>  &bv, Va
 	while (reach_lit_map.size() <= reach_var - first_reach_var) {
 		reach_lit_map.push(-1);
 	}
+/*
+	maximum_flow_bvs.growTo(bv.getID()+1);
+	assert(maximum_flow_bvs[bv.getID()].bvID==-1);
+	maximum_flow_bvs[bv.getID()].l = reachLit;
+	maximum_flow_bvs[bv.getID()].bvID = bv.getID();*/
 
 	reach_lit_map[reach_var - first_reach_var] = flow_lits.size() - 1;
 	if(opt_graph_bv_prop){
@@ -913,7 +926,10 @@ bool MaxflowDetector<Weight>::propagate(vec<Lit> & conflict, bool backtrackOnly,
 		fprintf(g_over.outfile, "iter %d\n", iter1);
 		fflush(g_over.outfile);
 	}
-
+	if(n_satisfied_lits==flow_lits.size()) {
+		stats_skipped_satisfied_updates++;
+		return true;
+	}
 	
 	double start_prop_time = rtime(2);
 
@@ -922,31 +938,20 @@ bool MaxflowDetector<Weight>::propagate(vec<Lit> & conflict, bool backtrackOnly,
 	bool computed_under=false;
 	bool computed_over=false;
 
+
 	//If all flow lit requirements are >=0, including bitvectors, then we can skip this...
 	//probably the easiest way to do this is using the 'markSatisfied' approach.
-
 	if (underapprox_detector && (!opt_detect_pure_theory_lits || unassigned_positives > 0)) {
-		double startdreachtime = rtime(2);
-		stats_under_updates++;
 		computed_under=true;
-		under_maxflow = underapprox_detector->maxFlow();
-		assert(under_maxflow == underapprox_conflict_detector->maxFlow());
-		double reachUpdateElapsed = rtime(2) - startdreachtime;
-		stats_under_update_time += reachUpdateElapsed;
-	} else
+	} else {
 		stats_skipped_under_updates++;
-	
+	}
 	if (overapprox_detector && ( !opt_detect_pure_theory_lits || unassigned_negatives > 0)) {
-		double startunreachtime = rtime(2);
-		stats_over_updates++;
 		computed_over=true;
-		over_maxflow = overapprox_detector->maxFlow();
-		assert(over_maxflow == overapprox_conflict_detector->maxFlow());
-		double unreachUpdateElapsed = rtime(2) - startunreachtime;
-		stats_over_update_time += unreachUpdateElapsed;
-	} else
+	} else {
 		stats_skipped_over_updates++;
-	
+	}
+
 	for (int j = 0; j < flow_lits.size(); j++) {
 		
 		DistLit f = flow_lits[j];
@@ -956,13 +961,15 @@ bool MaxflowDetector<Weight>::propagate(vec<Lit> & conflict, bool backtrackOnly,
 			Weight& maxflow = f.max_flow;
 			//int u = getNode(var(l));
 		
-			if (computed_under && ((inclusive && under_maxflow >= maxflow) || (!inclusive && under_maxflow > maxflow))) {
+			if (computed_under && ((inclusive && computeUnderApprox(under_maxflow) >= maxflow) || (!inclusive && computeUnderApprox(under_maxflow) > maxflow))) {
 				if (outer->value(l) == l_True) {
-					//do nothing
+
+					outer->enqueueSat(l);
 				} else if (outer->value(l) == l_Undef) {
 					//trail.push(Assignment(false,true,detectorID,0,var(l)));
 					outer->enqueue(l, underprop_marker);
 
+					outer->enqueueSat(l);
 				} else if (outer->value(l) == l_False) {
 					stats_total_prop_time += rtime(2)-start_prop_time;
 					if(backtrackOnly){
@@ -978,13 +985,13 @@ bool MaxflowDetector<Weight>::propagate(vec<Lit> & conflict, bool backtrackOnly,
 					return false;
 				}
 				
-			} else if (computed_over && ((inclusive && over_maxflow < maxflow) || (!inclusive && over_maxflow <= maxflow))) {
+			} else if (computed_over && ((inclusive && computeOverApprox(over_maxflow) < maxflow) || (!inclusive && computeOverApprox(over_maxflow) <= maxflow))) {
 				if (outer->value(l) == l_False) {
-					//do nothing
+					outer->enqueueSat(~l);
 				} else if (outer->value(l) == l_Undef) {
 					//trail.push(Assignment(false,false,detectorID,0,var(l)));
 					outer->enqueue(~l, underprop_marker);
-
+					outer->enqueueSat(~l);
 				} else if (outer->value(l) == l_True) {
 					stats_total_prop_time += rtime(2)-start_prop_time;
 					if(backtrackOnly){
@@ -1010,19 +1017,22 @@ bool MaxflowDetector<Weight>::propagate(vec<Lit> & conflict, bool backtrackOnly,
 			Weight & max_flow_under = bv.getUnder();
 			Weight & max_flow_over = bv.getOver();
 
-			if  (computed_under && ((inclusive && under_maxflow >= max_flow_over) || (!inclusive && under_maxflow > max_flow_over))) {
+			if  ((max_flow_over==0) || (computed_under && ((inclusive && computeUnderApprox(under_maxflow)  >= max_flow_over) || (!inclusive && computeUnderApprox(under_maxflow)  > max_flow_over)))) {
 				if (outer->value(l) == l_True) {
-					//do nothing
+
+					outer->enqueueSat(l);
 				} else if (outer->value(l) == l_Undef) {
 					//trail.push(Assignment(false,true,detectorID,0,var(l)));
 					outer->enqueue(l, underprop_marker);
+
+					outer->enqueueSat(l);
 					//should also enqueue that the flow is >= under->flow, and <= over->flow...
 				} else if (outer->value(l) == l_False) {
 					stats_total_prop_time += rtime(2)-start_prop_time;
 					if(backtrackOnly)
 						return false;
 
-					outer->bvTheory->addAnalysis(inclusive ? Comparison::leq:Comparison::lt,bv.getID(),under_maxflow);
+					outer->bvTheory->addAnalysis(inclusive ? Comparison::leq:Comparison::lt,bv.getID(),computeUnderApprox(under_maxflow) );
 					//outer->buildBVReason(bv.getID(),inclusive ? Comparison::leq:Comparison::lt,under_maxflow,conflict);
 					buildMaxFlowTooHighReason(bv.getOver(), conflict);
 					conflict.push(outer->toSolver(l));
@@ -1030,19 +1040,22 @@ bool MaxflowDetector<Weight>::propagate(vec<Lit> & conflict, bool backtrackOnly,
 					return false;
 				}
 
-			} else if  (computed_over && ((inclusive && over_maxflow < max_flow_under) || (!inclusive && over_maxflow <= max_flow_under))) {
+			} else if  (computed_over && ((inclusive &&  computeOverApprox(over_maxflow) < max_flow_under) || (!inclusive &&  computeOverApprox(over_maxflow) <= max_flow_under))) {
 				if (outer->value(l) == l_False) {
-					//do nothing
+					if(opt_detect_satisfied_predicates)
+						outer->enqueueSat(~l);
 				} else if (outer->value(l) == l_Undef) {
 					//trail.push(Assignment(false,false,detectorID,0,var(l)));
 					outer->enqueue(~l, underprop_marker);
+					if(opt_detect_satisfied_predicates)
+						outer->enqueueSat(~l);
 					//should also enqueue that the flow is >= under->flow, and <= over->flow...
 				} else if (outer->value(l) == l_True) {
 					stats_total_prop_time += rtime(2)-start_prop_time;
 					if(backtrackOnly)
 						return false;
 
-					outer->bvTheory->addAnalysis(inclusive ? Comparison::gt:Comparison::geq,bv.getID(),over_maxflow);
+					outer->bvTheory->addAnalysis(inclusive ? Comparison::gt:Comparison::geq,bv.getID(), computeOverApprox(over_maxflow));
 					buildMaxFlowTooLowReason(bv.getUnder(), conflict);
 					conflict.push(outer->toSolver(~l));
 					//outer->buildBVReason(bv.getID(),inclusive ? Comparison::gt:Comparison::geq,over_maxflow,conflict);
@@ -1056,9 +1069,9 @@ bool MaxflowDetector<Weight>::propagate(vec<Lit> & conflict, bool backtrackOnly,
 				FlowOp * flowOp = f.op;
 				if(flowOp){
 					if (outer->value(l) == l_False ) {
-						outer->assignBV(bv.getID(),inclusive? Comparison::gt : Comparison::geq,under_maxflow,flowOp);
+						outer->assignBV(bv.getID(),inclusive? Comparison::gt : Comparison::geq,computeUnderApprox(under_maxflow) ,flowOp);
 					}else if (outer->value(l) == l_True){
-						outer->assignBV(bv.getID(),inclusive? Comparison::leq : Comparison::lt,over_maxflow,flowOp);
+						outer->assignBV(bv.getID(),inclusive? Comparison::leq : Comparison::lt, computeOverApprox(over_maxflow),flowOp);
 					}
 				}
 			}
@@ -1609,6 +1622,37 @@ void MaxflowDetector<Weight>::undecideEdgeWeight(int edgeid){
 }
 
 template<typename Weight>
+void MaxflowDetector<Weight>::assignBV(int bvID){
+	/*Weight upper_bound = outer->getBV(bvID).getOver();
+	if (upper_bound==0 && !maximum_flow_bvs[bvID].isSatisfied){
+		//this bv is trivially satisfied
+		maximum_flow_bvs[bvID].isSatisfied=true;
+		n_satisfied_lits++;
+		assert(n_satisfied_lits<=this->flow_lits.size());
+	}*/
+}
+template<typename Weight>
+void MaxflowDetector<Weight>::unassignBV(int bvID){
+	/*Weight upper_bound = outer->getBV(bvID).getOver();
+	if (maximum_flow_bvs[bvID].isSatisfied && upper_bound>0){
+		//this bv is trivially satisfied
+		maximum_flow_bvs[bvID].isSatisfied=false;
+		n_satisfied_lits--;
+		assert(n_satisfied_lits>=0);
+	}*/
+}
+template<typename Weight>
+void MaxflowDetector<Weight>::setSatisfied(Lit l, bool isSatisfied){
+	if(isSatisfied) {
+		n_satisfied_lits++;
+		assert(n_satisfied_lits<=this->flow_lits.size());
+	}else{
+		n_satisfied_lits--;
+		assert(n_satisfied_lits>=0);
+	}
+}
+
+template<typename Weight>
 void MaxflowDetector<Weight>::undecide(Lit l) {
 	static int iter = 0;
 
@@ -1616,8 +1660,6 @@ void MaxflowDetector<Weight>::undecide(Lit l) {
 		++iter;
 		int edgeid = outer->getEdgeID(var(l));
 		undecideEdgeWeight(edgeid);
-
-
 	}
 
 
@@ -1638,6 +1680,10 @@ void MaxflowDetector<Weight>::suggestDecision(Lit l){
 
 template<typename Weight>
 Lit MaxflowDetector<Weight>::decide() {
+	//all constraints are already satisfied
+	if(n_satisfied_lits==flow_lits.size())
+		return lit_Undef;
+
 	static int it = 0;
 	if (++it == 22) {
 		int a = 1;
