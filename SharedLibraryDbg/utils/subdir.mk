@@ -7,13 +7,13 @@ CC_SRCS += \
 ../utils/Options.cc \
 ../utils/System.cc 
 
-OBJS += \
-./utils/Options.o \
-./utils/System.o 
-
 CC_DEPS += \
 ./utils/Options.d \
 ./utils/System.d 
+
+OBJS += \
+./utils/Options.o \
+./utils/System.o 
 
 
 # Each subdirectory must supply rules for building sources it contributes

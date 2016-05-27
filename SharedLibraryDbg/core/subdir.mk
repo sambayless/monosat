@@ -3,20 +3,20 @@
 ################################################################################
 
 # Add inputs and outputs from these tool invocations to the build variables 
+CC_SRCS += \
+../core/Solver.cc 
+
 CPP_SRCS += \
 ../core/Config.cpp \
 ../core/Optimize.cpp 
 
-CC_SRCS += \
-../core/Solver.cc 
+CC_DEPS += \
+./core/Solver.d 
 
 OBJS += \
 ./core/Config.o \
 ./core/Optimize.o \
 ./core/Solver.o 
-
-CC_DEPS += \
-./core/Solver.d 
 
 CPP_DEPS += \
 ./core/Config.d \

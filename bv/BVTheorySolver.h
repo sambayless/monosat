@@ -5973,8 +5973,6 @@ public:
 			if(over_approx[eqBV] < under_approx[eqBV]){
 				return false;
 			}
-
-
 		}
 		for(Operation * op:operations){
 			if(!op->checkSolved())
@@ -6624,7 +6622,7 @@ public:
 private:
 	Lit getComparison(Comparison op, int bvID,const Weight & w){
 		//could do a binary search here:
-		int cID = getComparisonID(op,bvID,w);
+		int cID =  getComparisonID(op,bvID,w);
 
 		if(cID<0){
 			cID = getComparisonID(-op,bvID,w);//this can be improved upon...
@@ -6822,6 +6820,45 @@ public:
 		while(eq_bitvectors[bvID]!=bvID)
 			bvID=eq_bitvectors[bvID];
 
+		int width = bitvectors[bvID].size();
+		Weight max_val = ((1L)<<width)-1;
+
+		if(to<0){
+			std::stringstream ss;
+			ss << to ;
+			throw std::runtime_error("Cannot compare Bitvectors to negative values " + ss.str() );
+		}else if (to>max_val){
+			std::stringstream ss;
+			ss << to ;
+			throw std::runtime_error("Cannot compare Bitvectors to value outside of bitwidth range " + ss.str() );
+		}
+		assert(const_true!=lit_Undef);
+		if(to<=0 && op==Comparison::geq){
+			//trivially true
+			if(outerVar!=var_Undef){
+				makeEqualInSolver(mkLit(outerVar),toSolver(const_true));
+			}
+			return const_true;
+		}else if (to<=0 && op==Comparison::lt){
+			//trivially false
+			if(outerVar!=var_Undef){
+				makeEqualInSolver(mkLit(outerVar),toSolver(~const_true));
+			}
+			return ~const_true;
+		}else if (to>=max_val && op==Comparison::leq){
+			//trivially true
+			if(outerVar!=var_Undef){
+				makeEqualInSolver(mkLit(outerVar),toSolver(const_true));
+			}
+			return const_true;
+		}else if (to>=max_val && op==Comparison::gt){
+			//trivially false
+			if(outerVar!=var_Undef){
+				makeEqualInSolver(mkLit(outerVar),toSolver(~const_true));
+			}
+			return ~const_true;
+		}
+
 		if( outerVar == var_Undef){
 			//canonicalize the comparison operator to <=
 			if(op==Comparison::gt){
@@ -6833,8 +6870,6 @@ public:
 			}
 		}
 		int comparisonID = operations.size();
-
-
 		if((l = getComparison(op, bvID, to))!=lit_Undef){
 			if(outerVar != var_Undef){
 				makeEqualInSolver(mkLit(outerVar),toSolver(l));

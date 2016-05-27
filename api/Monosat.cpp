@@ -812,61 +812,65 @@ int solveAssumptionsLimited_MinBVs(Monosat::SimpSolver * S,int * assumptions, in
 	 return bv->getWidth(bvID);
  }
  int newBVComparison_const_lt(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bv, int bvID, int64_t weight){
-	  Var v = newVar(S);
-	  Lit l =mkLit(v);
-	  bv->newComparison(Monosat::Comparison::lt,bvID,weight,v);
+	  //Var v = newVar(S);
+	  //Lit l =mkLit(v);
+	 Lit l =bv->toSolver(bv->newComparison(Monosat::Comparison::lt,bvID,weight));
 	  write_out(S,"bv const < %d %d %ld\n",dimacs(l),bvID, weight);
 
 	  return toInt(l);
  }
  int newBVComparison_bv_lt(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bv, int bvID, int compareID){
-	  Var v = newVar(S);
-	  Lit l =mkLit(v);
-	  bv->newComparisonBV(Monosat::Comparison::lt,bvID,compareID,v);
+	  //Var v = newVar(S);
+	  //Lit l =mkLit(v);
+	 Lit l =bv->toSolver( bv->newComparisonBV(Monosat::Comparison::lt,bvID,compareID));
 	 write_out(S,"bv < %d %d %d\n",dimacs(l),bvID, compareID);
 
 	 return toInt(l);
  }
  int newBVComparison_const_leq(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bv, int bvID, int64_t weight){
-	  Var v = newVar(S);
-	  Lit l =mkLit(v);
-	  bv->newComparison(Monosat::Comparison::leq,bvID,weight,v);
+	  //Var v = newVar(S);
+	  //Lit l =mkLit(v);
+
+	 Lit l =bv->toSolver(bv->newComparison(Monosat::Comparison::leq,bvID,weight));
+	 //printf("Const bv leq bv %d to %ld = var %d\n",bvID, weight, dimacs(l));
 	  write_out(S,"bv const <= %d %d %ld\n",dimacs(l),bvID, weight);
 	  return toInt(l);
  }
  int newBVComparison_bv_leq(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bv, int bvID, int compareID){
-	  Var v = newVar(S);
-	  Lit l =mkLit(v);
-	  bv->newComparisonBV(Monosat::Comparison::leq,bvID,compareID,v);
+	  //Var v = newVar(S);
+	 // Lit l =mkLit(v);
+	 Lit l =bv->toSolver(bv->newComparisonBV(Monosat::Comparison::leq,bvID,compareID));
 	  write_out(S,"bv <= %d %d %d\n",dimacs(l),bvID, compareID);
 	  return toInt(l);
  }
 
  int newBVComparison_const_gt(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bv, int bvID, int64_t weight){
-	  Var v = newVar(S);
-	  Lit l =mkLit(v);
-	  bv->newComparison(Monosat::Comparison::gt,bvID,weight,v);
+	 // Var v = newVar(S);
+	 // Lit l =mkLit(v);
+	 Lit l =bv->toSolver( bv->newComparison(Monosat::Comparison::gt,bvID,weight));
 	  write_out(S,"bv const > %d %d %ld\n",dimacs(l),bvID, weight);
 	  return toInt(l);
  }
  int newBVComparison_bv_gt(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bv, int bvID, int compareID){
-	  Var v = newVar(S);
-	  Lit l =mkLit(v);
-	  bv->newComparisonBV(Monosat::Comparison::gt,bvID,compareID,v);
+	  //Var v = newVar(S);
+	  //Lit l =mkLit(v);
+	 Lit l =bv->toSolver( bv->newComparisonBV(Monosat::Comparison::gt,bvID,compareID));
 	  write_out(S,"bv > %d %d %d\n",dimacs(l),bvID, compareID);
 	  return toInt(l);
  }
  int newBVComparison_const_geq(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bv, int bvID, int64_t weight){
-	  Var v = newVar(S);
-	  Lit l =mkLit(v);
-	  bv->newComparison(Monosat::Comparison::geq,bvID,weight,v);
-	  write_out(S,"bv const >= %d %d %ld\n",dimacs(l),bvID, weight);
+	  //Var v = newVar(S);
+	  //Lit l =mkLit(v);
+
+	  Lit l =bv->toSolver(bv->newComparison(Monosat::Comparison::geq,bvID,weight));
+	 //printf("Const bv geq bv %d to %ld = var %d\n",bvID, weight, dimacs(l));
+	 write_out(S,"bv const >= %d %d %ld\n",dimacs(l),bvID, weight);
 	  return toInt(l);
  }
  int newBVComparison_bv_geq(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bv, int bvID, int compareID){
-	  Var v = newVar(S);
-	  Lit l =mkLit(v);
-	  bv->newComparisonBV(Monosat::Comparison::geq,bvID,compareID,v);
+	  //Var v = newVar(S);
+	  //Lit l =mkLit(v);
+	  Lit l =bv->toSolver( bv->newComparisonBV(Monosat::Comparison::geq,bvID,compareID));
 	  write_out(S,"bv >= %d %d %d\n",dimacs(l),bvID, compareID);
 	  return toInt(l);
  }

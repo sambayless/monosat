@@ -6,11 +6,11 @@
 CC_SRCS += \
 ../simp/SimpSolver.cc 
 
-OBJS += \
-./simp/SimpSolver.o 
-
 CC_DEPS += \
 ./simp/SimpSolver.d 
+
+OBJS += \
+./simp/SimpSolver.o 
 
 
 # Each subdirectory must supply rules for building sources it contributes
