@@ -1017,6 +1017,8 @@ bool MaxflowDetector<Weight>::propagate(vec<Lit> & conflict, bool backtrackOnly,
 			Weight & max_flow_under = bv.getUnder();
 			Weight & max_flow_over = bv.getOver();
 
+			//std::cout << "theory id " << outer->getTheoryIndex() << " maxflow " << getID()  << " bv "<< (outer->value(l) ==l_True ?  " true " : " undef " ) <<" [" << max_flow_under << "," <<max_flow_over << "]\n";
+
 			if  ((max_flow_over==0) || (computed_under && ((inclusive && computeUnderApprox(under_maxflow)  >= max_flow_over) || (!inclusive && computeUnderApprox(under_maxflow)  > max_flow_over)))) {
 				if (outer->value(l) == l_True) {
 
