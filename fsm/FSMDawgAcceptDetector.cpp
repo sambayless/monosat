@@ -27,25 +27,33 @@ using namespace Monosat;
 
 
 FSMDawgAcceptDetector::FSMDawgAcceptDetector(int detectorID, FSMTheorySolver * outer, DynamicFSM &g_under,
-		DynamicFSM &g_over, int source, vec<vec<int>> & str, double seed) :
-		FSMDetector(detectorID), outer(outer), g_under(g_under), g_over(g_over), source(source),strings(str), rnd_seed(seed),order_heap(AcceptOrderLt(*this,activity)){
+		DynamicFSM &g_over, int source,  double seed) :
+		FSMDetector(detectorID), outer(outer), g_under(g_under), g_over(g_over), source(source), rnd_seed(seed),order_heap(AcceptOrderLt(*this,activity)){
 
 	Dawg * root = new Dawg();
 
 	underReachStatus = new FSMDawgAcceptDetector::AcceptStatus(*this, true);
 	overReachStatus = new FSMDawgAcceptDetector::AcceptStatus(*this, false);
-	underapprox_detector = new NFAAccept<FSMDawgAcceptDetector::AcceptStatus>(g_under, source, str, *underReachStatus,
-																			  opt_fsm_track_used_transitions);
-	overapprox_detector = new NFAAccept<FSMDawgAcceptDetector::AcceptStatus>(g_over, source, str, *overReachStatus,
 
-																			 underprop_marker = outer->newReasonMarker(getID());
+
+		underapprox_detector = new NFAGraphDawgAccept<FSMDawgAcceptDetector::AcceptStatus>(g_under, source,  *underReachStatus,
+																			  opt_fsm_track_used_transitions);
+	overapprox_detector = new NFAGraphDawgAccept<FSMDawgAcceptDetector::AcceptStatus>(g_over, source,  *overReachStatus,
+																			  opt_fsm_track_used_transitions);
+
+	underprop_marker = outer->newReasonMarker(getID());
 	overprop_marker = outer->newReasonMarker(getID());
 }
 void FSMDawgAcceptDetector::releaseDawgLit(Var accept_var){
 
 }
-void FSMDawgAcceptDetector::addAcceptDawgLit(int accepting_state, Dawg * dawg, Var accept_var){
-	while(accept_lits.size()<strings.size()){
+void FSMDawgAcceptDetector::addAcceptDawgLit(int state, Dawg * dawg, Var outer_reach_var){
+	assert(dawg->id<0);
+	dawg->id = trackedDawgs.size();
+	trackedDawgs.push(dawg);
+	int dawgID = dawg->id;
+
+	while(accept_lits.size()<=dawgID){
 		accept_lits.push();
 		accept_lits.last().growTo(g_under.nodes(),lit_Undef);
 	}
@@ -53,8 +61,8 @@ void FSMDawgAcceptDetector::addAcceptDawgLit(int accepting_state, Dawg * dawg, V
 	if(first_destination==-1)
 		first_destination= state;
 
-	if (accept_lits[strID][state] != lit_Undef) {
-		Lit r = accept_lits[strID][state];
+	if (accept_lits[dawgID][state] != lit_Undef) {
+		Lit r = accept_lits[dawgID][state];
 		//force equality between the new lit and the old reach lit, in the SAT solver
 		outer->makeEqualInSolver(outer->toSolver(r), mkLit(outer_reach_var));
 		return;
@@ -75,23 +83,25 @@ void FSMDawgAcceptDetector::addAcceptDawgLit(int accepting_state, Dawg * dawg, V
 	//is_changed.growTo(index+1);
 	Lit acceptLit = mkLit(accept_var, false);
 	all_lits.push(acceptLit);
-	assert(accept_lits[strID][state] == lit_Undef);
+	assert(accept_lits[dawgID][state] == lit_Undef);
 	//if(reach_lits[to]==lit_Undef){
-	accept_lits[strID][state] = acceptLit;
+	accept_lits[dawgID][state] = acceptLit;
 	while (accept_lit_map.size() <= accept_var - first_var) {
 		accept_lit_map.push({-1,-1});
 	}
-	accept_lit_map[accept_var - first_var] = {strID,state};
+	accept_lit_map[accept_var - first_var] = {dawgID,state};
 	accepting_state.growTo(g_over.states());
 	accepting_state[state]=true;
 	activity.growTo(index+1,0);
-	underapprox_detector->setTrackStringAcceptance(strID,state,true,true);
-	overapprox_detector->setTrackStringAcceptance(strID,state,true,true);
+	underapprox_detector->setTrackDawgAcceptance(dawg,state,true,true);
+	overapprox_detector->setTrackDawgAcceptance(dawg,state,true,true);
 }
 
 
-void FSMDawgAcceptDetector::AcceptStatus::accepts(int string,int state,int edgeID,int label, bool accepts){
-	Lit l = detector.accept_lits[string][state];
+void FSMDawgAcceptDetector::AcceptStatus::accepts(Dawg * d,int state,int edgeID,int label, bool accepts){
+	int dawgID = d->id;
+	assert(dawgID>=0);
+	Lit l = detector.accept_lits[dawgID][state];
 
 	if (l != lit_Undef){// && !detector.is_changed[detector.indexOf(var(l))]) {
 		if(!accepts){
@@ -100,7 +110,7 @@ void FSMDawgAcceptDetector::AcceptStatus::accepts(int string,int state,int edgeI
 		if (polarity == accepts){
 			lbool assign = detector.outer->value(l);
 			//detector.is_changed[detector.indexOf(var(l))] = true;
-			detector.changed.push( { l, state,string,polarity});
+			detector.changed.push( { l, state,dawgID,polarity});
 		}
 	}
 }
@@ -134,7 +144,10 @@ Lit FSMDawgAcceptDetector::decide(int level){
 		}
 		int index =  indexOf(var(l));
 		int node = accept_lit_map[index].to;
-		int str = accept_lit_map[index].str;
+		int dawgID = accept_lit_map[index].str;
+		Dawg * dawg = trackedDawgs[dawgID];
+		assert(dawg);
+		assert(dawg->id ==dawgID);
 		/*if(opt_verb>1){
 			printf("fsm pick decide %d\n",index);
 		}*/
@@ -142,8 +155,8 @@ Lit FSMDawgAcceptDetector::decide(int level){
 		if (outer->value(l) == l_True && opt_decide_fsm_pos) {
 				int j = node;
 
-				if ( !underapprox_detector->acceptsString(str,node)) {
-					assert(overapprox_detector->acceptsString(str,node));//else we'd have a conflict
+				if ( !underapprox_detector->acceptsDawg(dawg,node)) {
+					assert(overapprox_detector->acceptsDawg(dawg,node));//else we'd have a conflict
 					to_decide.clear();
 					last_decision_status = overapprox_detector->numUpdates();
 					decision_path.clear();
@@ -155,7 +168,7 @@ Lit FSMDawgAcceptDetector::decide(int level){
 
 					//ok, read back the path from the over to find a candidate edge we can decide
 					//find the earliest unconnected node on this path
-					overapprox_detector->getAbstractPath(str, node, decision_path,true);
+					overapprox_detector->getAbstractPath(dawg, node, decision_path,true);
 					last_decision_status = overapprox_detector->numUpdates();
 					for(NFATransition & t:decision_path){
 						int edgeID = t.edgeID;
@@ -181,15 +194,15 @@ Lit FSMDawgAcceptDetector::decide(int level){
 				}
 			}else if (outer->value(l)==l_False && opt_decide_fsm_neg){
 				//find any transitions that are not on any paths of the accepting strings, and assign them false.
-				if (overapprox_detector->acceptsString(str,node) ) {
-					assert(!underapprox_detector->acceptsString(str,node));//else we'd have a conflict
+				if (overapprox_detector->acceptsDawg(dawg,node) ) {
+					assert(!underapprox_detector->acceptsDawg(dawg,node));//else we'd have a conflict
 					//for each negated reachability constraint, we can find a cut through the unassigned edges in the over-approx and disable one of those edges.
 
 
 
 					//try to disconnect this node from source by walking back along the path in the over approx, and disabling the first unassigned edge we see.
 					//(there must be at least one such edge, else the variable would be connected in the under approximation as well - in which case it would already have been propagated.
-					overapprox_detector->getAbstractPath(str, node, decision_path,true);
+					overapprox_detector->getAbstractPath(dawg, node, decision_path,true);
 					last_decision_status = overapprox_detector->numUpdates();
 					for(NFATransition & t:decision_path){
 						int edgeID = t.edgeID;
@@ -235,16 +248,17 @@ bool FSMDawgAcceptDetector::propagate(vec<Lit> & conflict) {
 		for(Lit l:all_lits){
 			if(l!=lit_Undef){
 				int state =accept_lit_map[var(l) - first_var].to;
-				int str = accept_lit_map[var(l) - first_var].str;
+				int dawgID = accept_lit_map[var(l) - first_var].str;
+				Dawg * dawg = trackedDawgs[dawgID];
 				if(outer->value(l)==l_False){
-					underapprox_detector->setTrackStringAcceptance(str,state,true,false);
-					overapprox_detector->setTrackStringAcceptance(str,state,true,false);
+					underapprox_detector->setTrackDawgAcceptance(dawg,state,true,false);
+					overapprox_detector->setTrackDawgAcceptance(dawg,state,true,false);
 				}else if (outer->value(l)==l_True){
-					underapprox_detector->setTrackStringAcceptance(str,state,false,true);
-					overapprox_detector->setTrackStringAcceptance(str,state,false,true);
+					underapprox_detector->setTrackDawgAcceptance(dawg,state,false,true);
+					overapprox_detector->setTrackDawgAcceptance(dawg,state,false,true);
 				}else{
-					underapprox_detector->setTrackStringAcceptance(str,state,true,true);
-					overapprox_detector->setTrackStringAcceptance(str,state,true,true);
+					underapprox_detector->setTrackDawgAcceptance(dawg,state,true,true);
+					overapprox_detector->setTrackDawgAcceptance(dawg,state,true,true);
 				}
 			}
 		}
@@ -286,13 +300,14 @@ bool FSMDawgAcceptDetector::propagate(vec<Lit> & conflict) {
 			Lit l = changed.last().l;
 			bool polarity = changed.last().polarity;
 			int u = changed.last().u;
-			int str = changed.last().str;
+			int dawgID = changed.last().str;
+			Dawg * dawg = trackedDawgs[dawgID];
 			//assert(is_changed[indexOf(var(l))]);
 
 
-			if (underapprox_detector && polarity && !sign(l) && underapprox_detector->acceptsString(str,u)) {
+			if (underapprox_detector && polarity && !sign(l) && underapprox_detector->acceptsDawg(dawg,u)) {
 
-			} else if (overapprox_detector && !polarity && sign(l) && !overapprox_detector->acceptsString(str,u)) {
+			} else if (overapprox_detector && !polarity && sign(l) && !overapprox_detector->acceptsDawg(dawg,u)) {
 
 			} else {
 				if(sz==changed.size()) {
@@ -323,10 +338,10 @@ bool FSMDawgAcceptDetector::propagate(vec<Lit> & conflict) {
 				conflict.push(l);
 
 				if (reach) {
-					buildAcceptReason(u,str, conflict);
+					buildAcceptReason(u,dawg, conflict);
 				} else {
 					//The reason is a cut separating s from t
-					buildNonAcceptReason(u,str, conflict);
+					buildNonAcceptReason(u,dawg, conflict);
 				}
 
 				return false;
@@ -341,40 +356,7 @@ bool FSMDawgAcceptDetector::propagate(vec<Lit> & conflict) {
 				changed.pop();
 			}
 		}
-	{
-#ifndef NDEBUG
-		NFAAccept<> check_over(g_over,source,strings);
-		NFAAccept<> check_under(g_under,source,strings);
 
-		for(int str = 0;str<accept_lits.size();str++){
-			bool all_undef =true;
-			for(Lit a:accept_lits[str]){
-				if(a!=lit_Undef)
-				{
-					all_undef=false;
-					break;
-				}
-			}
-			if(all_undef)
-				continue;
-			vec<int> & string = strings[str];
-			check_over.run(str);
-			check_under.run(str);
-			for(int to = 0;to<accept_lits[str].size();to++){
-				if(accept_lits[str][to]!=lit_Undef){
-					Lit l = accept_lits[str][to];
-					 if (outer->value(l)==l_True && !check_over.accepting(to)){
-						assert( false);
-					}
-					if (outer->value(l)==l_False && check_under.accepting(to)){
-						assert( false);
-					}
-				}
-			}
-
-		}
-#endif
-	}
 	assert(changed.size()==0);
 	return true;
 }
@@ -385,14 +367,17 @@ void FSMDawgAcceptDetector::buildReason(Lit p, vec<Lit> & reason, CRef marker) {
 		reason.push(p);
 		Var v = var(p);
 		int u = getState(v);
-		int str = getString(v);
-		buildAcceptReason(u,str, reason);
+		int dawgID = getString(v);
+		Dawg * dawg = trackedDawgs[dawgID];
+		buildAcceptReason(u,dawg, reason);
 	} else if (marker == overprop_marker) {
 		reason.push(p);
 		Var v = var(p);
 		int t = getState(v);
-		int str = getString(v);
-		buildNonAcceptReason(t,str, reason);
+
+		int dawgID = getString(v);
+		Dawg * dawg = trackedDawgs[dawgID];
+		buildNonAcceptReason(t,dawg, reason);
 	}  else {
 		assert(false);
 	}
@@ -572,7 +557,7 @@ void FSMDawgAcceptDetector::buildReason(Lit p, vec<Lit> & reason, CRef marker) {
 
 
 
-void FSMDawgAcceptDetector::buildAcceptReason(int node,int str, vec<Lit> & conflict){
+void FSMDawgAcceptDetector::buildAcceptReason(int node,Dawg * dawg, vec<Lit> & conflict){
 	static int iter = 0;
 	++iter;
 //find a path - ideally, the one that traverses the fewest unique transitions - from source to node, learn that one of the transitions on that path must be disabled.
@@ -585,9 +570,9 @@ void FSMDawgAcceptDetector::buildAcceptReason(int node,int str, vec<Lit> & confl
 	printf("\"\n");*/
 	static vec<NFATransition> path;
 	path.clear();
-	bool hasPath =underapprox_detector->getPath(str,node,path);
+	bool hasPath =underapprox_detector->getPath(dawg,node,path);
 	assert(hasPath);
-	assert(underapprox_detector->acceptsString(str,node));
+	assert(underapprox_detector->acceptsDawg(dawg,node));
 	for(auto & t:path){
 		int edgeID = t.edgeID;
 		int input = t.input;
@@ -598,7 +583,7 @@ void FSMDawgAcceptDetector::buildAcceptReason(int node,int str, vec<Lit> & confl
 	//note: if there are repeated edges in this conflict, they will be cheaply removed by the sat solver anyhow, so that is not a major problem.
 	bumpConflict(conflict);
 }
-void FSMDawgAcceptDetector::buildNonAcceptReason(int node,int str, vec<Lit> & conflict){
+void FSMDawgAcceptDetector::buildNonAcceptReason(int node,Dawg * dawg, vec<Lit> & conflict){
 
 	static int iter = 0;
 //optionally, remove all transitions from the graph that would not be traversed by this string operating on the level 0 overapprox graph.
@@ -613,11 +598,11 @@ void FSMDawgAcceptDetector::buildNonAcceptReason(int node,int str, vec<Lit> & co
 	//instead of actually unrolling the graph, I am going to traverse it backwards, 'unrolling it' implicitly.
 	static vec<int> to_visit;
 	static vec<int> next_visit;
-	vec<int> & string = strings[str];
+
 	/*
 	g_over.draw(source);
 
-	printf("%d: Doesn't accept: \"",iter);
+	printf("%d: Doesn't accept: \"",ter);
 	for(int s:string){
 		printf("%d ",s);
 	}
@@ -630,7 +615,7 @@ void FSMDawgAcceptDetector::buildNonAcceptReason(int node,int str, vec<Lit> & co
 		int a=1;
 	}
 
-	assert(!overapprox_detector->acceptsString(str,node));
+	assert(!overapprox_detector->acceptsDawg(dawg,node));
 	//int strpos = string.size()-1;
 	to_visit.clear();
 	next_visit.clear();
@@ -780,30 +765,6 @@ void FSMDawgAcceptDetector::printSolution(std::ostream& out){
 	g_under.draw(source);
 }
 bool FSMDawgAcceptDetector::checkSatisfied() {
-	NFAAccept<> check(g_under, source, strings);
-	if (opt_verb > 1) {
-		g_under.draw(source, first_destination);
-	}
-	for(int str = 0;str<accept_lits.size();str++){
-		vec<int> & string = strings[str];
-		check.run(str);
-		for(int to = 0;to<accept_lits[str].size();to++){
-			if(accept_lits[str][to]!=lit_Undef){
-				Lit l = accept_lits[str][to];
-				if(outer->value(l)==l_Undef){
-					return false;
-				}
-
-				else if (outer->value(l)==l_False && check.accepting(to)){
-					return false;
-				}else if (outer->value(l)==l_True && !check.accepting(to)){
-					return false;
-				}
-
-			}
-		}
-
-	}
 
 	return true;
 }

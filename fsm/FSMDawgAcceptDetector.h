@@ -32,21 +32,13 @@
 
 #include "utils/System.h"
 #include "FSMDetector.h"
-#include "alg/NFAAccept.h"
+#include "alg/NFAGraphDawgAccept.h"
+#include "alg/Dawg.h"
 
 using namespace dgl;
 namespace Monosat {
 
 class FSMTheorySolver;
-
-struct Dawg{
-	bool removed=false;
-	struct DawgTransition{
-		int letter=-1;
-		Dawg * dest=nullptr;
-	};
-	vec<DawgTransition> transitions;
-};
 
 class FSMDawgAcceptDetector: public FSMDetector {
 public:
@@ -62,11 +54,11 @@ public:
 	double rnd_seed;
 
 	struct AcceptStatus {
-		FSMAcceptDetector & detector;
+		FSMDawgAcceptDetector & detector;
 		bool polarity;
-		void accepts(int string, int state,int edgeID,int label, bool accepts);
+		void accepts(Dawg * d, int state,int edgeID,int label, bool accepts);
 
-		AcceptStatus(FSMAcceptDetector & _outer, bool _polarity) :
+		AcceptStatus(FSMDawgAcceptDetector & _outer, bool _polarity) :
 				detector(_outer), polarity(_polarity) {
 		}
 	};
@@ -74,8 +66,8 @@ public:
 	AcceptStatus *underReachStatus = nullptr;
 	AcceptStatus *overReachStatus = nullptr;
 
-	NFAAcceptor* underapprox_detector;
-	NFAAcceptor * overapprox_detector;
+	NFAGraphDawgAccept<AcceptStatus>* underapprox_detector;
+	NFAGraphDawgAccept<AcceptStatus> * overapprox_detector;
 
 	Dawg * root;
 
@@ -120,6 +112,7 @@ public:
 	long stats_symmetry_conflicts = 0;
 	vec<int> accepting_state;//maintains a list of all accepting states, which are not considered during symmetry breaking.
 
+	vec<Dawg*> trackedDawgs;
 
 	void printStats() {
 		//printf("Reach detector\n");
@@ -192,8 +185,8 @@ public:
 	}
 	bool propagate(vec<Lit> & conflict)override;
 	Lit decide(int level)override;
-	void buildAcceptReason(int node,int str, vec<Lit> & conflict);
-	void buildNonAcceptReason(int node,int str, vec<Lit> & conflict);
+	void buildAcceptReason(int node,Dawg* dawg, vec<Lit> & conflict);
+	void buildNonAcceptReason(int node,Dawg* dawg, vec<Lit> & conflict);
 	void preprocess()override{
 		accepting_state.growTo(g_over.states());
 	}
@@ -212,7 +205,7 @@ public:
 	void learnClauseSymmetryConflict(vec<Lit> & conflict, int a, int b) ;
 
 	FSMDawgAcceptDetector(int _detectorID, FSMTheorySolver * _outer, DynamicFSM &g_under, DynamicFSM &g_over,
-			int _source, vec<vec<int>> &  strs, double seed = 1);
+			int _source, double seed = 1);
 	virtual ~FSMDawgAcceptDetector() {
 		
 	}

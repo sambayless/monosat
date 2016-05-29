@@ -95,9 +95,13 @@ set(SOURCE_FILES
     fsm/alg/NFATransduce.h
     fsm/alg/NFATypes.h
     fsm/alg/NP0LAcceptor.h
+    fsm/alg/NFAAcceptor.h
+    fsm/alg/Dawg.h
     fsm/DynamicFSM.h
     fsm/FSMAcceptDetector.cpp
     fsm/FSMAcceptDetector.h
+    fsm/FSMDawgAcceptDetector.cpp
+    fsm/FSMDawgAcceptDetector.h
     fsm/FSMDetector.h
     fsm/FSMGeneratesDetector.cpp
     fsm/FSMGeneratesDetector.h
@@ -235,7 +239,7 @@ if (${UNIX})
     target_link_libraries(monosat_static rt) #not static
 endif (${UNIX})
 
-add_library(libmonosat SHARED ${SOURCE_FILES} fsm/alg/NFAAcceptor.h)
+add_library(libmonosat SHARED ${SOURCE_FILES} )
 set_target_properties(libmonosat PROPERTIES OUTPUT_NAME monosat)
 target_link_libraries(libmonosat z)
 target_link_libraries(libmonosat m)

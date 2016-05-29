@@ -8,7 +8,7 @@
 #ifndef NFA_GRAPH_DAWG_ACCEPT_H_
 #define NFA_GRAPH_DAWG_ACCEPT_H_
 
-
+#include "Dawg.h"
 #include <dgl/DynamicGraph.h>
 #include <fsm/alg/NFATypes.h>
 #include <fsm/alg/NFAAcceptor.h>
@@ -26,7 +26,7 @@
 using namespace Monosat;
 
 template<class Status>
-class NFAGraphDawgAccept:public NFAAcceptor{
+class NFAGraphDawgAccept{
 	DynamicFSM & f;
 	Status & status;
 	DynamicGraph<int> g;
@@ -56,22 +56,31 @@ class NFAGraphDawgAccept:public NFAAcceptor{
 
 
 	bool hasUsed=false;
-
-	void setDawgAccepted(int node,int acceptingState,bool reachable){
-		Dawg * d;
+	vec<Dawg*> trackedDawgs;
+	void setDawgAccepted(int dawgID,int acceptingState,bool reachable){
+		assert(dawgID>=0);
+		Dawg * d = trackedDawgs[dawgID];
 		//look up the
 		status.accepts(d, acceptingState,-1,-1, reachable);
 	}
 
 	//the graph being checked is set up as a prefix tree; each accepting node corresponds to one dawg node (many accepting graph nodes to each dawg),
 
+	//one for every node in the constructed dynamic graph
+	/*struct AcceptanceNode{
+		//Dawg * d =nullptr;
+	};*/
+	vec<int> tracked_node_dawg_ids;
 
 	struct NFADawgReachStatus {
 		NFAGraphDawgAccept & outer;
 
 		void setReachable(int u, bool reachable){
-			for(std::pair<int,int> track: outer.tracked_nodes[u]){
+			/*for(std::pair<int,int> track: outer.tracked_nodes[u]){
 				outer.setDawgAccepted(track.first,track.second, reachable);
+			}*/
+			if(outer.tracked_node_dawg_ids[u]>=0){
+				outer.setDawgAccepted(outer.tracked_node_dawg_ids[u],reachable);
 			}
 		}
 		bool isReachable(int u) const {
@@ -89,7 +98,7 @@ class NFAGraphDawgAccept:public NFAAcceptor{
 	UnweightedRamalReps<int,NFADawgReachStatus> * rr=nullptr;
 
 public:
-	NFAGraphDawgAccept(DynamicFSM & f,int source, Dawg * root_dawg,Status & status=fsmNullStatus, bool trackUsedTransitions=false):f(f),status(status),source(source),root_dawg(root_dawg){
+	NFAGraphDawgAccept(DynamicFSM & f,int source, Status & status, bool trackUsedTransitions=false):f(f),status(status),source(source){
 
 
 	}
@@ -118,12 +127,20 @@ private:
 		int depth =0;
 		vec<int> states;
 	};
-	vec<UnrolledStep*> string_last_nodes;
+	vec<UnrolledStep*> dawg_last_nodes;
 	UnrolledStep * root=nullptr;
 	//int startNode =-1;
 
-	void addStringAcceptanceCheck(int str, int acceptingState){
-		string_last_nodes.growTo(strings.size(),nullptr);
+
+	void addDawgAcceptanceCheck(Dawg * dawg, int acceptingState){
+		//dawg_last_nodes.growTo(strings.size(),nullptr);
+		int dawgID = dawg->id;
+		assert(dawgID>=0);
+		trackedDawgs.growTo(dawgID+1,nullptr);
+		assert(trackedDawgs[dawgID]==nullptr);
+
+		trackedDawgs[dawgID] = dawg;
+
 		if (!root){
 			edge_map.growTo(f.edges());
 			//map from edge ids in f
@@ -165,76 +182,31 @@ private:
 		}
 
 
-
-		vec<int> & string = strings[str];
-
-
 		//build nodes
-
+		vec<UnrolledStep*> last_nodes;
 		UnrolledStep * parent = root;
-		if(!string_last_nodes[str]) {
-			for (int p = 1; p <= string.size(); p++) {
-				int l = string[p - 1];
-
-				if (parent->children[l]) {
-					parent = parent->children[l];
-					continue;
-				}
-				UnrolledStep *child = new UnrolledStep();
-				child->l = l;
-				child->parent = parent;
-				child->children.growTo(f.inAlphabet(), nullptr);
-				child->depth = parent->depth + 1;
-				parent->children[l] = child;
-
-
-				for (int s = 0; s < f.states(); s++) {
-					child->states.push(g.addNode());
-
-					for (int j = 0; j < f.nIncoming(s); j++) {
-						int edgeID = f.incoming(s, j).id;
-						int from = f.incoming(s, j).node;
-						//if (f.transitionEnabled(edgeID, l, 0)) {
-							int newEdgeID = g.addEdge(parent->states[from], child->states[s]);
-							edge_map[edgeID][l].push(newEdgeID);
-							reverse_edge_map.growTo(newEdgeID+1);
-							reverse_edge_map[newEdgeID].edgeID = edgeID;
-							reverse_edge_map[newEdgeID].input = l;
-							reverse_edge_map[newEdgeID].output=0;
-						if (!f.transitionEnabled(edgeID, l, 0)){
-							g.disableEdge(newEdgeID);
-						}
-
-						//}
-					}
-				}
-				if (f.hasEmoves()) {
-					for (int s = 0; s < f.states(); s++) {
-						for (int j = 0; j < f.nIncoming(s); j++) {
-							int edgeID = f.incoming(s, j).id;
-							int from = f.incoming(s, j).node;
-							//if (f.transitionEnabled(edgeID, 0, 0)) {
-								int newEdgeID = g.addEdge(child->states[from], child->states[s]);
-								edge_map[edgeID][0].push(newEdgeID);
-								reverse_edge_map.growTo(newEdgeID+1);
-								reverse_edge_map[newEdgeID].edgeID = edgeID;
-								reverse_edge_map[newEdgeID].input = 0;
-								reverse_edge_map[newEdgeID].output=0;
-							if (!f.transitionEnabled(edgeID, 0, 0)){
-								g.disableEdge(newEdgeID);
-							}
-							//}
-						}
-					}
-				}
-				parent = child;
-			}
-		}else{
-			parent=string_last_nodes[str];
+		//if(!dawg_last_nodes[str]) {
+		for(int l = 0;l<dawg->transitions.size();l++) {
+			if(dawg->transitions[l])
+				buildStep(dawg->transitions[l],l, parent, last_nodes);
 		}
-		tracked_nodes.growTo(g.nodes());
-		string_last_nodes[str]=parent;
-		bool alreadyTracked=false;
+
+		tracked_node_dawg_ids.growTo(g.nodes(),-1);
+		for(UnrolledStep * last: last_nodes) {
+			int acceptingNode = last->states[acceptingState];
+			tracked_node_dawg_ids[acceptingNode] = dawgID;
+		}
+
+
+			//for (int p = 1; p <= string.size(); p++) {
+
+			//}
+		/*}else{
+			parent=dawg_last_nodes[str];
+		}*/
+		//tracked_nodes.growTo(g.nodes());
+		//dawg_last_nodes[str]=parent;
+		/*bool alreadyTracked=false;
 		for(std::pair<int,int>  track: tracked_nodes[parent->states[acceptingState]]){
 			if(track.first==str && track.second==acceptingState){
 				alreadyTracked=true;
@@ -244,12 +216,78 @@ private:
 		if(!alreadyTracked) {
 			acceptancesToCheck.push({str, parent->states[acceptingState]});
 		}
-		tracked_nodes[parent->states[acceptingState]].push({str,acceptingState});
+		tracked_nodes[parent->states[acceptingState]].push({str,acceptingState});*/
 		rr->update();
-		status.accepts(str, acceptingState,-1,-1, rr->connected(parent->states[acceptingState]));
+		status.accepts(dawg, acceptingState,-1,-1, rr->connected(parent->states[acceptingState]));
 
 	}
+	void buildStep(Dawg * dawg, int l, UnrolledStep * parent, vec<UnrolledStep*> & last_nodes){
+		//int l = string[p - 1];
+		if(!dawg)
+			return;
+		if (parent->children[l]) {
+			parent = parent->children[l];
+			return;
+		}
+		UnrolledStep *child = new UnrolledStep();
+		child->l = l;
+		child->parent = parent;
+		child->children.growTo(f.inAlphabet(), nullptr);
+		child->depth = parent->depth + 1;
+		parent->children[l] = child;
 
+
+		for (int s = 0; s < f.states(); s++) {
+			child->states.push(g.addNode());
+
+			for (int j = 0; j < f.nIncoming(s); j++) {
+				int edgeID = f.incoming(s, j).id;
+				int from = f.incoming(s, j).node;
+				//if (f.transitionEnabled(edgeID, l, 0)) {
+				int newEdgeID = g.addEdge(parent->states[from], child->states[s]);
+				edge_map[edgeID][l].push(newEdgeID);
+				reverse_edge_map.growTo(newEdgeID+1);
+				reverse_edge_map[newEdgeID].edgeID = edgeID;
+				reverse_edge_map[newEdgeID].input = l;
+				reverse_edge_map[newEdgeID].output=0;
+				if (!f.transitionEnabled(edgeID, l, 0)){
+					g.disableEdge(newEdgeID);
+				}
+
+				//}
+			}
+		}
+		if (f.hasEmoves()) {
+			for (int s = 0; s < f.states(); s++) {
+				for (int j = 0; j < f.nIncoming(s); j++) {
+					int edgeID = f.incoming(s, j).id;
+					int from = f.incoming(s, j).node;
+					//if (f.transitionEnabled(edgeID, 0, 0)) {
+					int newEdgeID = g.addEdge(child->states[from], child->states[s]);
+					edge_map[edgeID][0].push(newEdgeID);
+					reverse_edge_map.growTo(newEdgeID+1);
+					reverse_edge_map[newEdgeID].edgeID = edgeID;
+					reverse_edge_map[newEdgeID].input = 0;
+					reverse_edge_map[newEdgeID].output=0;
+					if (!f.transitionEnabled(edgeID, 0, 0)){
+						g.disableEdge(newEdgeID);
+					}
+					//}
+				}
+			}
+		}
+		bool any_transitions=false;
+		for(int l = 0;l<dawg->transitions.size();l++) {
+			if(dawg->transitions[l]) {
+				any_transitions=true;
+				buildStep(dawg->transitions[l], l, child,last_nodes);
+			}
+		}
+		if(!any_transitions){
+			last_nodes.push(child);
+		}
+
+	}
 public:
 
 	void update(){
@@ -313,20 +351,26 @@ public:
 
 
 
+	void setTrackDawgAcceptance(Dawg * d, int state,bool trackPositiveAcceptance, bool trackNegativeAcceptance){
+		addDawgAcceptanceCheck(d,state);
+
+	}
+
 
 
 	//inefficient!
 	//If state is -1, then this is true if any state accepts the string.
 	bool acceptsDawg(Dawg * dawg, int state){
-
+		int dawgID = dawg->id;
+		assert(dawgID>=0);
 		update();
-		int s =string_last_nodes[string]->states[state];
+		int s =dawg_last_nodes[dawg->id]->states[state];
 		return rr->connected(s);
 
 	}
-	bool getPath(int string, int state, vec<NFATransition> &path) {
+	bool getPath(Dawg * dawg, int state, vec<NFATransition> &path) {
 		update();
-		int s =string_last_nodes[string]->states[state];
+		int s =dawg_last_nodes[dawg->id]->states[state];
 		if(! rr->connected(s)){
 			return false;
 		}
@@ -342,9 +386,10 @@ public:
 		return true;
 	}
 	vec<Bitset> used_transition;
-	bool getAbstractPath(int string, int state, vec<NFATransition> &path, bool reversed) {
+	bool getAbstractPath(Dawg * dawg, int state, vec<NFATransition> &path, bool reversed) {
 		update();
-		int s =string_last_nodes[string]->states[state];
+		int dawgID = dawg->id;
+		int s =dawg_last_nodes[dawgID]->states[state];
 		if(! rr->connected(s)){
 			return false;
 		}
