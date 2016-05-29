@@ -27,6 +27,7 @@
 #include "dgl/DynamicGraph.h"
 #include "DynamicFSM.h"
 #include "FSMAcceptDetector.h"
+#include "FSMDawgAcceptDetector.h"
 #include "FSMGeneratesDetector.h"
 #include "FSMTransducesDetector.h"
 #include "FSMGeneratorAcceptorDetector.h"
@@ -1140,6 +1141,9 @@ public:
 		assert(gen_accept_lit_map[composeAcceptVar]);
 		Var v = this->S->getTheoryVar(composeAcceptVar);
 		gen_accept_lit_map[composeAcceptVar]->addSuffixLit(mkLit(v),startSuffixState,acceptSuffixState,suffixVar);
+	}
+	void addAcceptDawgLit(int fsmID,int source ,int reach, int strID, Var outer_var){
+
 	}
 };
 
