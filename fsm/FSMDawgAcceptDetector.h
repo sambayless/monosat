@@ -187,6 +187,7 @@ public:
 	Lit decide(int level)override;
 	void buildAcceptReason(int node,Dawg* dawg, vec<Lit> & conflict);
 	void buildNonAcceptReason(int node,Dawg* dawg, vec<Lit> & conflict);
+	void buildNonAcceptReasonRecursive(Dawg * d,vec<int> & to_visit_,vec<Lit> & conflict);
 	void preprocess()override{
 		accepting_state.growTo(g_over.states());
 	}

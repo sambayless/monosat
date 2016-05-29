@@ -8,6 +8,7 @@
 #include <mtl/Vec.h>
 struct Dawg{
     bool removed=false;
+    bool seen=false;
     int id=-1;
     /*struct DawgTransition{
         int letter=-1;

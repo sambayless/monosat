@@ -628,8 +628,13 @@ void FSMDawgAcceptDetector::buildNonAcceptReason(int node,Dawg * dawg, vec<Lit> 
 	next_seen.clear();
 	next_seen.growTo(g_under.states());
 
-	int str_pos = string.size();
-	if(str_pos==0){
+	int n_transitions = 0;
+	for(Dawg * d:dawg->transitions){
+		if(d)
+			n_transitions++;
+	}
+
+	if(n_transitions==0){
 		//special handling for empty string. Only e-move edges are considered.
 		assert(node!=source);//otherwise, this would have been accepted.
 
@@ -642,7 +647,7 @@ void FSMDawgAcceptDetector::buildNonAcceptReason(int node,Dawg * dawg, vec<Lit> 
 		for(int j = 0;j<to_visit.size();j++){
 			int u = to_visit[j];
 
-			assert(str_pos>=0);
+
 
 			for (int i = 0;i<g_under.nIncoming(u);i++){
 				int edgeID = g_under.incoming(u,i).id;
@@ -686,72 +691,12 @@ void FSMDawgAcceptDetector::buildNonAcceptReason(int node,Dawg * dawg, vec<Lit> 
 	}
 	next_visit.clear();
 
-	next_visit.push(node);
-	next_seen[node]=true;
-
-
-	while(next_visit.size()){
-		str_pos --;
-		assert(str_pos>=0);
-		next_visit.swap(to_visit);
-		next_seen.swap(cur_seen);
-
-		for(int s:next_visit){
-			assert(next_seen[s]);
-			next_seen[s]=false;
-		}
-		next_visit.clear();
-
-		int l = string[str_pos];
-
-		for(int j = 0;j<to_visit.size();j++){
-			int u = to_visit[j];
-
-			assert(str_pos>=0);
-
-
-			for (int i = 0;i<g_under.nIncoming(u);i++){
-				int edgeID = g_under.incoming(u,i).id;
-				int from = g_under.incoming(u,i).node;
-
-				if(g_over.emovesEnabled()){
-					if (g_over.transitionEnabled(edgeID,0,0)){
-						if (!cur_seen[from]){
-							cur_seen[from]=true;
-							to_visit.push(from);//emove transition, if enabled
-						}
-					}else{
-						Var v = outer->getTransitionVar(g_over.getID(),edgeID,0,0);
-						if (v!=var_Undef){
-							assert(outer->value(v)==l_False);
-							if (outer->level(v)>0){
-								//learn v
-								conflict.push(mkLit(v));
-							}
-						}
-					}
-				}
-
-				if (g_over.transitionEnabled(edgeID,l,0)){
-					if (!next_seen[from] && str_pos>0){
-						next_seen[from]=true;
-						next_visit.push(from);
-					}
-				}else{
-					Var v = outer->getTransitionVar(g_over.getID(),edgeID,l,0);
-					if (v!=var_Undef){
-						assert(outer->value(v)==l_False);
-						if (outer->level(v)>0){
-							//learn v
-							conflict.push(mkLit(v));//rely on the sat solver to remove duplicates, here...
-						}
-					}
-				}
-			}
-		}
-
-	}
+	next_visit.push(source);
+	next_seen[source]=true;
+	//dawg->seen=true;
+	buildNonAcceptReasonRecursive(dawg,next_visit,conflict);
 	bumpConflict(conflict);
+
 /*	printf("conflict: ");
 	for (int i = 1;i<conflict.size();i++){
 		Lit l = conflict[i];
@@ -761,6 +706,55 @@ void FSMDawgAcceptDetector::buildNonAcceptReason(int node,Dawg * dawg, vec<Lit> 
 		printf("(%d->%d %d),",f,t,outer->getLabel(var(l)));
 	}*/
 }
+
+void FSMDawgAcceptDetector::buildNonAcceptReasonRecursive(Dawg * d,vec<int> & to_visit_,vec<Lit> & conflict){
+
+	vec<int> to_visit;
+
+	for(int v:to_visit_){
+		to_visit.push(v);
+
+	}
+	vec<bool> next_seen;
+
+	vec<int> next_visit;
+	for(int l =0;l<d->transitions.size();l++) {
+		if(!d->transitions[l])
+			continue;
+		next_visit.clear();
+		next_seen.clear();
+		next_seen.growTo(g_under.nodes());
+		Dawg * child = d->transitions[l];
+		for (int j = 0; j < to_visit.size(); j++) {
+			int u = to_visit[j];
+
+			for (int i = 0; i < g_under.nIncoming(u); i++) {
+				int edgeID = g_under.incoming(u, i).id;
+				int from = g_under.incoming(u, i).node;
+				//not supporting emoves yet
+
+				if (g_over.transitionEnabled(edgeID, l, 0)) {
+					if (!next_seen[from]) {
+						next_seen[from] = true;
+						next_visit.push(from);
+					}
+				} else {
+					Var v = outer->getTransitionVar(g_over.getID(), edgeID, l, 0);
+					if (v != var_Undef) {
+						assert(outer->value(v) == l_False);
+						if (outer->level(v) > 0) {
+							//learn v
+							conflict.push(mkLit(v));//rely on the sat solver to remove duplicates, here...
+						}
+					}
+				}
+			}
+		}
+		buildNonAcceptReasonRecursive(child, next_visit ,conflict);
+	}
+
+}
+
 void FSMDawgAcceptDetector::printSolution(std::ostream& out){
 	g_under.draw(source);
 }

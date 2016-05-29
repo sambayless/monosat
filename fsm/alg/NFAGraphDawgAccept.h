@@ -70,7 +70,11 @@ class NFAGraphDawgAccept{
 	/*struct AcceptanceNode{
 		//Dawg * d =nullptr;
 	};*/
-	vec<int> tracked_node_dawg_ids;
+	struct TrackedNode{
+		int dawg_id=-1;
+		int state=-1;
+	};
+	vec<TrackedNode> tracked_node_dawg_ids;
 
 	struct NFADawgReachStatus {
 		NFAGraphDawgAccept & outer;
@@ -79,8 +83,8 @@ class NFAGraphDawgAccept{
 			/*for(std::pair<int,int> track: outer.tracked_nodes[u]){
 				outer.setDawgAccepted(track.first,track.second, reachable);
 			}*/
-			if(outer.tracked_node_dawg_ids[u]>=0){
-				outer.setDawgAccepted(outer.tracked_node_dawg_ids[u],reachable);
+			if(outer.tracked_node_dawg_ids[u].dawg_id>=0){
+				outer.setDawgAccepted(outer.tracked_node_dawg_ids[u].dawg_id,outer.tracked_node_dawg_ids[u].state,reachable);
 			}
 		}
 		bool isReachable(int u) const {
@@ -191,10 +195,11 @@ private:
 				buildStep(dawg->transitions[l],l, parent, last_nodes);
 		}
 
-		tracked_node_dawg_ids.growTo(g.nodes(),-1);
+		tracked_node_dawg_ids.growTo(g.nodes());
 		for(UnrolledStep * last: last_nodes) {
 			int acceptingNode = last->states[acceptingState];
-			tracked_node_dawg_ids[acceptingNode] = dawgID;
+			tracked_node_dawg_ids[acceptingNode].dawg_id = dawgID;
+			tracked_node_dawg_ids[acceptingNode].state = acceptingState;
 		}
 
 
