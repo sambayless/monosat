@@ -99,11 +99,11 @@ void SimpSolver::releaseVar(Lit l)
 }
 
 bool SimpSolver::propagateAssignment(const vec<Lit>& assumps){
-	only_propagate=true;
+	only_propagate_assumptions=true;
 	budgetOff();
 	assumps.copyTo(assumptions);
 	lbool val = solve_(false,false);
-	only_propagate=false;
+	only_propagate_assumptions=false;
 	return val==l_True;
 }
 
@@ -250,7 +250,7 @@ bool SimpSolver::strengthenClause(CRef cr, Lit l) {
 	}
 	
 	return c.size() == 1 ?
-			enqueue(c[0]) && propagate(opt_propagate_theories_during_simplification) == CRef_Undef && ok : true;
+			enqueue(c[0]) && propagate(!disable_theories && opt_propagate_theories_during_fast_simplification) == CRef_Undef && ok : true;
 }
 
 // Returns FALSE if clause is always satisfied ('out_clause' should not be used).
@@ -352,7 +352,7 @@ bool SimpSolver::implied(const vec<Lit>& c) {
 			uncheckedEnqueue(~c[i]);
 		}
 	
-	bool result = propagate(opt_propagate_theories_during_simplification) != CRef_Undef;
+	bool result = propagate(!disable_theories && opt_propagate_theories_during_fast_simplification) != CRef_Undef;
 	cancelUntil(0);
 	return result;
 }
@@ -444,7 +444,7 @@ bool SimpSolver::asymm(Var v, CRef cr) {
 		else
 			l = c[i];
 	
-	if (propagate(opt_propagate_theories_during_simplification) != CRef_Undef) {
+	if (propagate(!disable_theories && opt_propagate_theories_during_fast_simplification) != CRef_Undef) {
 		cancelUntil(0);
 		asymm_lits++;
 		if (!strengthenClause(cr, l))

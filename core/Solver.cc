@@ -1368,7 +1368,9 @@ bool Solver::simplify() {
 		detectPureTheoryLiterals();
 	}
 
-	if (!ok || propagate(!disable_theories) != CRef_Undef || !ok) //yes, the second ok check is now required, because propagation of a theory can make the solver unsat at this point...
+	bool propagate_theories = !disable_theories && opt_propagate_theories_during_simplification;
+
+	if (!ok || propagate(propagate_theories) != CRef_Undef || !ok) //yes, the second ok check is now required, because propagation of a theory can make the solver unsat at this point...
 		return ok = false;
 	
 	if (nAssigns() == simpDB_assigns || (simpDB_props > 0)) //if pure literal detection is enabled, then simplify MUST be called at least once after new theory atoms are added.
@@ -1746,8 +1748,12 @@ lbool Solver::search(int nof_conflicts) {
 		if (++iter ==  1564) {
 			int a = 1;
 		}
-
-		propagate: CRef confl = propagate(!disable_theories);
+		bool all_assumptions_assigned = decisionLevel() >= assumptions.size();
+		bool propagate_theories = (!disable_theories) && (opt_theory_propagate_assumptions  ||  all_assumptions_assigned);
+		if(!propagate_theories){
+			stats_skipped_theory_prop_rounds++;
+		}
+		propagate: CRef confl = propagate(propagate_theories);
 		conflict: if (!okay() || (confl != CRef_Undef)) {
 			// CONFLICT
 			conflicts++;
@@ -1883,7 +1889,7 @@ lbool Solver::search(int nof_conflicts) {
 				}
 			}
 
-			if(only_propagate && next ==lit_Undef && decisionLevel() == assumptions.size())
+			if(only_propagate_assumptions && next ==lit_Undef && decisionLevel() == assumptions.size())
 				return l_True;
 
 			//Note: decision level is now added before theories make their decisions, to allow them to decide multiple literals at once.
@@ -2034,12 +2040,12 @@ static double luby(double y, int x) {
 	return pow(y, seq);
 }
 bool Solver::propagateAssignment(const vec<Lit> & assumps){
-	only_propagate=true;
+	only_propagate_assumptions=true;
 	budgetOff();
 	assumps.copyTo(assumptions);
 
 	lbool val = solve_();
-	only_propagate=false;
+	only_propagate_assumptions=false;
 	return val==l_True;
 }
 // NOTE: assumptions passed in member-variable 'assumptions'.
@@ -2120,7 +2126,7 @@ lbool Solver::solve_() {
 			}
 		}
 
-		if (opt_check_solution && theories.size() && !disable_theories && !only_propagate) {
+		if (opt_check_solution && theories.size() && !disable_theories && !only_propagate_assumptions) {
 			if(opt_verb>0){
 				printf("Checking witnesses...\n");
 			}
@@ -2165,7 +2171,7 @@ lbool Solver::solve_() {
 	} else if (status == l_False) {
 		assert(ok);
 	}
-	only_propagate=false;
+	only_propagate_assumptions=false;
 	assumptions.clear();
 	return status;
 }

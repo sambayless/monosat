@@ -196,6 +196,9 @@ public:
 		printf("propagations          : %-12" PRIu64 "   (%.0f /sec)\n", propagations, propagations / cpu_time);
 		printf("conflict literals     : %-12" PRIu64 "   (%4.2f %% deleted)\n", tot_literals,
 				(max_literals - tot_literals) * 100 / (double) max_literals);
+		if(stats_skipped_theory_prop_rounds>0){
+			printf("theory propagations skipped: %ld\n",stats_skipped_theory_prop_rounds);
+		}
 		if (opt_detect_pure_theory_lits) {
 			printf("pure literals     : %" PRId64 " (%" PRId64 " theory lits) (%" PRId64 " rounds, %f time)\n", stats_pure_lits,
 					stats_pure_theory_lits, pure_literal_detections, stats_pure_lit_time);
@@ -548,6 +551,7 @@ public:
 	uint64_t solves, starts, decisions, rnd_decisions, propagations, conflicts, stats_pure_lits, stats_pure_theory_lits,
 			pure_literal_detections, stats_removed_clauses;
 	uint64_t dec_vars, clauses_literals, learnts_literals, max_literals, tot_literals;
+	long stats_skipped_theory_prop_rounds=0;
 	long stats_theory_conflicts =0;
 	long stats_solver_preempted_decisions=0;
 	long stats_theory_decisions=0;
@@ -677,7 +681,7 @@ protected:
 	int simpDB_assigns;   // Number of top-level assignments since last execution of 'simplify()'.
 	int64_t simpDB_props;   // Remaining number of propagations that must be made before next execution of 'simplify()'.
 	vec<Lit> assumptions;      // Current set of assumptions provided to solve by the user.
-	bool only_propagate=false; //true if the solver should propagate assumptions and then quit without solving
+	bool only_propagate_assumptions=false; //true if the solver should propagate assumptions and then quit without solving
 	Heap<VarOrderLt> order_heap;       // A priority queue of variables ordered with respect to the variable activity.
 	double theory_inc;
 	double theory_decay;

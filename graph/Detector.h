@@ -49,6 +49,7 @@ public:
 	double stats_under_conflict_time = 0;
 	double stats_over_conflict_time = 0;
 	int64_t stats_skipped_satisfied_updates = 0;
+
 	int64_t stats_skipped_under_updates = 0;
 	int64_t stats_skipped_over_updates = 0;
 	int64_t stats_decisions = 0;

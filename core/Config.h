@@ -103,6 +103,7 @@ extern BoolOption opt_vsids_solver_as_theory;
 extern BoolOption opt_theory_internal_vsids;
 extern BoolOption opt_theory_prioritize_conflicts;
 extern BoolOption opt_theory_priority_clear;
+extern BoolOption opt_theory_propagate_assumptions;
 
 extern BoolOption opt_check_solution;
 extern BoolOption opt_print_reach;
@@ -153,6 +154,7 @@ extern BoolOption opt_detect_pure_theory_lits;
 extern BoolOption opt_detect_pure_lits;
 extern IntOption opt_detect_satisfied_predicates;
 extern BoolOption opt_propagate_theories_during_simplification;
+extern BoolOption opt_propagate_theories_during_fast_simplification;
 extern BoolOption opt_shrink_theory_conflicts;
 extern BoolOption opt_early_theory_prop;
 extern IntOption opt_width;

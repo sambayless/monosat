@@ -930,7 +930,7 @@ bool MaxflowDetector<Weight>::propagate(vec<Lit> & conflict, bool backtrackOnly,
 		stats_skipped_satisfied_updates++;
 		return true;
 	}
-	
+
 	double start_prop_time = rtime(2);
 
 	Weight over_maxflow = -1;
@@ -1042,7 +1042,7 @@ bool MaxflowDetector<Weight>::propagate(vec<Lit> & conflict, bool backtrackOnly,
 					return false;
 				}
 
-			} else if  (computed_over && ((inclusive &&  computeOverApprox(over_maxflow) < max_flow_under) || (!inclusive &&  computeOverApprox(over_maxflow) <= max_flow_under))) {
+			} else if  ((max_flow_over>0) &&   (computed_over && ((inclusive &&  computeOverApprox(over_maxflow) < max_flow_under) || (!inclusive &&  computeOverApprox(over_maxflow) <= max_flow_under)))) {
 				if (outer->value(l) == l_False) {
 					if(opt_detect_satisfied_predicates)
 						outer->enqueueSat(~l);
