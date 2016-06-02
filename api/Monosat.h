@@ -88,7 +88,7 @@ typedef int Var;
   //If the last solution was unsat, then this get the 'conflict clause' produced by the solver (a subset of the assumptions which are sufficient to cause the instance to be UNSAT).
   //Fills the given pointer with the first max_store_size literals of the conflict clause, and returns the number of literals in the conflict clause. Set store_clause to null and max_store_size to 0 to find the size of the conflict clause
   //Returns -1 if the solver has no conflict clause from the most recent solve() call (because that call was not UNSAT)
-  int getConflictClause(Monosat::SimpSolver * S, int * store_clause, int max_store_size);
+  int getConflictClause(SolverPtr S, int * store_clause, int max_store_size);
 
   void backtrack(SolverPtr S);
   int newVar(SolverPtr S);
@@ -202,11 +202,11 @@ typedef int Var;
   long getModel_AcyclicEdgeFlow(SolverPtr S,GraphTheorySolver_long G,int maxflow_literal, int edgeLit);
 
   long getModel_MinimumSpanningTreeWeight(SolverPtr S,GraphTheorySolver_long G,int spanning_tree_literal);
-  int getModel_Path_Nodes_Length(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<long> *G,int reach_or_distance_literal);
-  int getModel_Path_Nodes(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<long> *G,int reach_or_distance_literal, int store_length, int * store);
+  int getModel_Path_Nodes_Length(SolverPtr S,GraphTheorySolver_long G,int reach_or_distance_literal);
+  int getModel_Path_Nodes(SolverPtr S,GraphTheorySolver_long G,int reach_or_distance_literal, int store_length, int * store);
 
-  int getModel_Path_EdgeLits_Length(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<long> *G,int reach_or_distance_literal);
-  int getModel_Path_EdgeLits(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<long> *G,int reach_or_distance_literal, int store_length, int * store);
+  int getModel_Path_EdgeLits_Length(SolverPtr S,GraphTheorySolver_long G,int reach_or_distance_literal);
+  int getModel_Path_EdgeLits(SolverPtr S,GraphTheorySolver_long G,int reach_or_distance_literal, int store_length, int * store);
 
 
 

@@ -567,7 +567,7 @@ public:
 			for (int i = 0; i < symbols.size(); i++) {
 				symbols[i].first = mapBV(S,symbols[i].first);
 				int bvID = symbols[i].first;
-				string & s = symbols[i].second;
+				std::string & s = symbols[i].second;
 				if (theory->hasBV(bvID)){
 					theory->setSymbol(bvID, s.c_str());
 				}else{
