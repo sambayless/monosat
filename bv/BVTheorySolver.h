@@ -43,9 +43,10 @@
 #include <iostream>
 #include <exception>
 
-
+namespace Monosat {
 template<typename Weight>
 class BVTheorySolver;
+};
 #include "core/Remap.h"
 namespace Monosat {
 using std::min;

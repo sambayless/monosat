@@ -36,10 +36,12 @@
 #include <cinttypes>
 
 //this is _really_ ugly...
+
 template<unsigned int D, class T> class GeometryTheorySolver;
+namespace Monosat {
 template<typename Weight> class GraphTheorySolver;
 class FSMTheorySolver;
-namespace Monosat {
+
 class DimacsMap;
 //=================================================================================================
 // Solver -- the main class:
