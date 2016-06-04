@@ -5,6 +5,7 @@
 # Add inputs and outputs from these tool invocations to the build variables 
 CPP_SRCS += \
 ../fsm/FSMAcceptDetector.cpp \
+../fsm/FSMDawgAcceptDetector.cpp \
 ../fsm/FSMGeneratesDetector.cpp \
 ../fsm/FSMGeneratorAcceptorDetector.cpp \
 ../fsm/FSMTransducesDetector.cpp \
@@ -12,6 +13,7 @@ CPP_SRCS += \
 
 OBJS += \
 ./fsm/FSMAcceptDetector.o \
+./fsm/FSMDawgAcceptDetector.o \
 ./fsm/FSMGeneratesDetector.o \
 ./fsm/FSMGeneratorAcceptorDetector.o \
 ./fsm/FSMTransducesDetector.o \
@@ -19,6 +21,7 @@ OBJS += \
 
 CPP_DEPS += \
 ./fsm/FSMAcceptDetector.d \
+./fsm/FSMDawgAcceptDetector.d \
 ./fsm/FSMGeneratesDetector.d \
 ./fsm/FSMGeneratorAcceptorDetector.d \
 ./fsm/FSMTransducesDetector.d \

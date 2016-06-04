@@ -52,14 +52,14 @@ class NFAGraphDawgAccept{
 
 	int source;
 
-	Dawg * root_dawg=nullptr;
+	FSMDawg * root_dawg=nullptr;
 
 
 	bool hasUsed=false;
-	vec<Dawg*> trackedDawgs;
+	vec<FSMDawg*> trackedDawgs;
 	void setDawgAccepted(int dawgID,int acceptingState,bool reachable){
 		assert(dawgID>=0);
-		Dawg * d = trackedDawgs[dawgID];
+		FSMDawg * d = trackedDawgs[dawgID];
 		//look up the
 		status.accepts(d, acceptingState,-1,-1, reachable);
 	}
@@ -68,7 +68,7 @@ class NFAGraphDawgAccept{
 
 	//one for every node in the constructed dynamic graph
 	/*struct AcceptanceNode{
-		//Dawg * d =nullptr;
+		//FSMDawg * d =nullptr;
 	};*/
 	struct TrackedNode{
 		int dawg_id=-1;
@@ -136,7 +136,7 @@ private:
 	//int startNode =-1;
 
 
-	void addDawgAcceptanceCheck(Dawg * dawg, int acceptingState){
+	void addDawgAcceptanceCheck(FSMDawg * dawg, int acceptingState){
 		//dawg_last_nodes.growTo(strings.size(),nullptr);
 		int dawgID = dawg->id;
 		assert(dawgID>=0);
@@ -226,7 +226,7 @@ private:
 		status.accepts(dawg, acceptingState,-1,-1, rr->connected(parent->states[acceptingState]));
 
 	}
-	void buildStep(Dawg * dawg, int l, UnrolledStep * parent, vec<UnrolledStep*> & last_nodes){
+	void buildStep(FSMDawg * dawg, int l, UnrolledStep * parent, vec<UnrolledStep*> & last_nodes){
 		//int l = string[p - 1];
 		if(!dawg)
 			return;
@@ -356,7 +356,7 @@ public:
 
 
 
-	void setTrackDawgAcceptance(Dawg * d, int state,bool trackPositiveAcceptance, bool trackNegativeAcceptance){
+	void setTrackDawgAcceptance(FSMDawg * d, int state,bool trackPositiveAcceptance, bool trackNegativeAcceptance){
 		addDawgAcceptanceCheck(d,state);
 
 	}
@@ -365,7 +365,7 @@ public:
 
 	//inefficient!
 	//If state is -1, then this is true if any state accepts the string.
-	bool acceptsDawg(Dawg * dawg, int state){
+	bool acceptsDawg(FSMDawg * dawg, int state){
 		int dawgID = dawg->id;
 		assert(dawgID>=0);
 		update();
@@ -373,7 +373,7 @@ public:
 		return rr->connected(s);
 
 	}
-	bool getPath(Dawg * dawg, int state, vec<NFATransition> &path) {
+	bool getPath(FSMDawg * dawg, int state, vec<NFATransition> &path) {
 		update();
 		int s =dawg_last_nodes[dawg->id]->states[state];
 		if(! rr->connected(s)){
@@ -391,7 +391,7 @@ public:
 		return true;
 	}
 	vec<Bitset> used_transition;
-	bool getAbstractPath(Dawg * dawg, int state, vec<NFATransition> &path, bool reversed) {
+	bool getAbstractPath(FSMDawg * dawg, int state, vec<NFATransition> &path, bool reversed) {
 		update();
 		int dawgID = dawg->id;
 		int s =dawg_last_nodes[dawgID]->states[state];

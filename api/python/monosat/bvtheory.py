@@ -293,7 +293,8 @@ class BitVector():
     def value(self):
         return self.mgr._monosat.getModel_BV(self.pid)
     
-   
+    def bitblast(self):
+        self.mgr._monosat.bv_bitblast(self.pid);
     
     def getSymbol(self):
         return self.symbol

@@ -1142,7 +1142,7 @@ public:
 		Var v = this->S->getTheoryVar(composeAcceptVar);
 		gen_accept_lit_map[composeAcceptVar]->addSuffixLit(mkLit(v),startSuffixState,acceptSuffixState,suffixVar);
 	}
-	void addAcceptDawgLit(int fsmID,int source ,int acceptingState, Dawg * dawg, Var outer_var){
+	void addAcceptDawgLit(int fsmID,int source ,int acceptingState, FSMDawg * dawg, Var outer_var){
 		DynamicFSM & g_under = *g_unders[fsmID];
 		DynamicFSM & g_over = *g_overs[fsmID];
 		FSMDawgAcceptDetector * d = new FSMDawgAcceptDetector(detectors.size(), this, g_under,g_over, source,drand(rnd_seed));

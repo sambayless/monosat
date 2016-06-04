@@ -1838,7 +1838,7 @@ lbool Solver::search(int nof_conflicts) {
 			}
 			
 		} else {
-			assert(theory_queue.size() == 0 || disable_theories);
+			assert(theory_queue.size() == 0 || !propagate_theories);
 			
 			if (!addDelayedClauses(confl))
 				goto conflict;

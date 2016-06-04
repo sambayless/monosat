@@ -1578,7 +1578,9 @@ void MaxflowDetector<Weight>::undecideEdgeWeight(int edgeid){
 	if((outer->hasBitVector(edgeid) || is_potential_decision[edgeid]) && !in_decision_q[edgeid]){
 		if(opt_maxflow_decisions_type==1){
 			//problem: this check is applied before any backtracking might occur (if lazy backtracking is not applied).
-			if (overapprox_conflict_detector->getEdgeFlow(edgeid) > 0) {			//this check is optional
+			//On large problems, this pre-emptive check is too slow, so I disabled it. I'm not sure how important it was to the decision heuristic...
+			//if (overapprox_conflict_detector->getEdgeFlow(edgeid) > 0)
+			// {			//this check is optional
 
 				if(!in_decision_q[edgeid]){
 					in_decision_q[edgeid]=true;
@@ -1595,10 +1597,10 @@ void MaxflowDetector<Weight>::undecideEdgeWeight(int edgeid){
 					}
 				}
 
-			} else {
-				is_potential_decision[edgeid] = false;			//discard this edge from the set of potential decisions
+			//}// else {
+			//	is_potential_decision[edgeid] = false;			//discard this edge from the set of potential decisions
 				//printf("undecide remove from q %d\n", edgeid);
-			}
+			//}
 		}else if(opt_maxflow_decisions_type==2){
 			int from = g_over.getEdge(edgeid).from;
 			int to =  g_over.getEdge(edgeid).to;

@@ -981,6 +981,13 @@ void bv_slice( Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bv,in
 	bv->slice(bv->getBV(aID),lower,upper,bv->getBV(resultID));
 }
 
+//Convert the specified bitvector, as well as any other bitvectors in its cone of influence, into pure CNF
+void bv_bitblast(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bv, int bvID){
+	S->cancelUntil(0);
+	write_out(S,"bv bitblast %d\n",bvID);
+	bv->bitblast(bvID);
+}
+
  //simple at-most-one constraint: asserts that at most one of the set of variables (NOT LITERALS) may be true.
  //for small numbers of variables, consider using a direct CNF encoding instead
  void at_most_one(Monosat::SimpSolver * S, int * vars, int n_vars){
@@ -1149,7 +1156,7 @@ void bv_slice( Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bv,in
  }
 
 
- void newEdgeSet(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<int64_t> *G,int * edges, int n_edges){
+ void newEdgeSet(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<int64_t> *G,int * edges, int n_edges, bool enforceEdgeAssignment){
 	  static vec<int> edge_set;
 	  edge_set.clear();
 	 write_out(S,"edge_set %d %d", G->getGraphID(), n_edges);
@@ -1173,7 +1180,7 @@ void bv_slice( Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bv,in
 	  }
 	  write_out(S,"\n");
 
-	  G->newEdgeSet(edge_set);
+	  G->newEdgeSet(edge_set,enforceEdgeAssignment);
  }
 
 //FSM Interface

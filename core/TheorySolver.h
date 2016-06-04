@@ -62,7 +62,10 @@ public:
 	virtual bool enqueue(Lit l, CRef reason=CRef_Undef)=0;
 	virtual CRef newReasonMarker(Theory * forTheory)=0;
 	virtual CRef reason(Var v)const=0;
-
+	virtual bool addClause(Lit l1)=0;
+	virtual bool addClause(Lit l1, Lit l2) =0;
+	virtual bool addClause(Lit l1, Lit l2, Lit l3)=0;
+	virtual bool addClause(const vec<Lit> & c) =0;
 	virtual void addClauseSafely(vec<Lit> & clause)=0;
 	virtual bool addConflictClause(vec<Lit> & ps, CRef & confl_out, bool permanent)=0;
 	virtual int level(Var v)const=0;

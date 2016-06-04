@@ -123,6 +123,9 @@ private:
 		int resultID;
 	};
 	vec<InvertBV> invertbvs;
+
+	vec<int> tobitblast;
+
 	void readConstBV(B& in,  Solver& S) {
 		//bv id width l0 l1 l2 ...
 
@@ -256,6 +259,21 @@ private:
 		symbols.last().second = symbol;
 	}
 
+	void readBitblast(B& in, Solver& S){
+		//"bv ite %d %d %d %d\n"%(dimacs(condition_lit),aID,bID,resultID))
+
+		int argID = parseInt(in);
+
+
+
+		tobitblast.push();
+		tobitblast.last()=argID;
+
+
+
+	}
+
+
 	void readNotBV(B& in, Solver& S){
 		//"bv ite %d %d %d %d\n"%(dimacs(condition_lit),aID,bID,resultID))
 
@@ -331,6 +349,7 @@ private:
 			//bv_lt bvID var weight
 			skipWhitespace(in);
 			Var v = parseInt(in) - 1;
+			Var ov = v;
 			v= mapVar(S,v);
 			skipWhitespace(in);
 			//bool arg1_is_bv=match(in,"bv");
@@ -343,6 +362,9 @@ private:
 			compares.last().w = arg2;
 			compares.last().c = c;
 			compares.last().var = v;
+			if(v==0){
+				int a=1;
+			}
 
 		}
 
@@ -439,6 +461,9 @@ public:
 				return true;
 			}else if (match(in,"not")){
 				readNotBV(in,S);
+				return true;
+			}else if (match(in,"bitblast")){
+				readBitblast(in,S);
 				return true;
 			}
 			else{
@@ -567,7 +592,7 @@ public:
 			for (int i = 0; i < symbols.size(); i++) {
 				symbols[i].first = mapBV(S,symbols[i].first);
 				int bvID = symbols[i].first;
-				string & s = symbols[i].second;
+				std::string & s = symbols[i].second;
 				if (theory->hasBV(bvID)){
 					theory->setSymbol(bvID, s.c_str());
 				}else{
@@ -575,6 +600,12 @@ public:
 				}
 			}
 			symbols.clear();
+
+			for(int bvID:tobitblast){
+				bvID = mapBV(S,bvID);
+				theory->bitblast(bvID);
+			}
+			tobitblast.clear();
 
 		}else if (addbvs.size() || comparebvs.size() || compares.size() || addbvs.size() || itebvs.size() || minmaxs.size() || popCounts.size() ){
 

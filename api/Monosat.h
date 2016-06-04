@@ -122,6 +122,8 @@ typedef int64_t Weight;
   int newBVComparison_const_geq(SolverPtr S, BVTheoryPtr bv, int bvID, Weight weight);
   int newBVComparison_bv_geq(SolverPtr S, BVTheoryPtr bv, int bvID, int compareID);
 
+  //Convert the specified bitvector, as well as any other bitvectors in its cone of influence, into pure CNF
+  void bv_bitblast(SolverPtr S, BVTheoryPtr bv,int bvID);
 
   void bv_concat( SolverPtr S, BVTheoryPtr bv,int aID, int bID, int resultID);
   void bv_slice( SolverPtr S, BVTheoryPtr bv,int aID, int lower, int upper, int resultID);
@@ -168,7 +170,7 @@ typedef int64_t Weight;
   int minimumSpanningTree_lt(SolverPtr S,GraphTheorySolver_long G,int source, int sink, Weight weight);
   int acyclic_undirected(SolverPtr S,GraphTheorySolver_long G);
   int acyclic_directed(SolverPtr S,GraphTheorySolver_long G);
-  void newEdgeSet(SolverPtr S,GraphTheorySolver_long G,int * edges, int n_edges);
+  void newEdgeSet(SolverPtr S,GraphTheorySolver_long G,int * edges, int n_edges, bool enforceEdgeAssignment);
 
   //theory interface for finite state machines
   FSMTheorySolverPtr initFSMTheory(SolverPtr S);

@@ -82,7 +82,7 @@ private:
 	bool lazy_backtracking_enabled=false;
 	vec<Theory*> propagation_required_theories;
 public:
-
+	int n_satisfied_detectors=0;
 	bool all_edges_unit = true;
 	bool all_edges_positive=true;
 	bool has_any_bitvector_edges=false;
@@ -929,13 +929,14 @@ public:
 		tmp_clause.push(~o2);
 		S->addClauseSafely(tmp_clause);
 	}
-	void addClause(Lit l1) {
+	bool addClause(Lit l1) {
 		Lit o1 = toSolver(l1);
 		tmp_clause.clear();
 		tmp_clause.push(o1);
 		S->addClauseSafely(tmp_clause);
+		return true;
 	}
-	void addClause(Lit l1, Lit l2) {
+	bool addClause(Lit l1, Lit l2) {
 		Lit o1 = toSolver(l1);
 		Lit o2 = toSolver(l2);
 		tmp_clause.clear();
@@ -943,8 +944,9 @@ public:
 		tmp_clause.push(o2);
 
 		S->addClauseSafely(tmp_clause);
+		return true;
 	}
-	void addClause(Lit l1, Lit l2, Lit l3) {
+	bool addClause(Lit l1, Lit l2, Lit l3) {
 		Lit o1 = toSolver(l1);
 		Lit o2 = toSolver(l2);
 		Lit o3 = toSolver(l3);
@@ -953,6 +955,7 @@ public:
 		tmp_clause.push(o2);
 		tmp_clause.push(o3);
 		S->addClauseSafely(tmp_clause);
+		return true;
 	}
 	void addClauseToSolver(Lit l1) {
 		tmp_clause.clear();
@@ -974,11 +977,12 @@ public:
 		S->addClauseSafely(tmp_clause);
 	}
 
-	void addClause(vec<Lit> & c) {
+	bool addClause(const vec<Lit> & c) {
 		tmp_clause.clear();
 		c.copyTo(tmp_clause);
 		toSolver(tmp_clause);
 		S->addClauseSafely(tmp_clause);
+		return true;
 	}
 	void addClauseSafely(vec<Lit> & c) {
 		tmp_clause.clear();
@@ -3325,7 +3329,7 @@ public:
 		return bv;
 	}
 
-	void newEdgeSet(vec<int> & edges){
+	void newEdgeSet(vec<int> & edges, bool enforceEdgeAssignment=true){
 		if(opt_min_edgeset>=0 && opt_min_edgeset<=edges.size()){
 			int edge_setID=edge_sets.size();
 			edge_sets.push(new EdgeSet(*this));
@@ -3347,15 +3351,16 @@ public:
 			edge_lits.push(mkLit(toSolver(getEdgeVar(edgeID))));
 		}
 		//enforce that _exactly_ one edge from this edge set is assigned in the SAT solver
-		S->addClause(edge_lits);
-
-		 AMOTheory* amo = new  AMOTheory(S);
-		 propagation_required_theories.push(amo);
-		 for(Lit l:edge_lits){
-			 Var v = S->newVar();
-			 makeEqualInSolver(mkLit(v),l);
-			 amo->addVar(v);
-		 }
+		if(enforceEdgeAssignment) {
+			S->addClause(edge_lits);
+			AMOTheory *amo = new AMOTheory(S);
+			propagation_required_theories.push(amo);
+			for (Lit l:edge_lits) {
+				Var v = S->newVar();
+				makeEqualInSolver(mkLit(v), l);
+				amo->addVar(v);
+			}
+		}
 	}
 
 

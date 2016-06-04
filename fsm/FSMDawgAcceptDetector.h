@@ -56,7 +56,7 @@ public:
 	struct AcceptStatus {
 		FSMDawgAcceptDetector & detector;
 		bool polarity;
-		void accepts(Dawg * d, int state,int edgeID,int label, bool accepts);
+		void accepts(FSMDawg * d, int state,int edgeID,int label, bool accepts);
 
 		AcceptStatus(FSMDawgAcceptDetector & _outer, bool _polarity) :
 				detector(_outer), polarity(_polarity) {
@@ -69,7 +69,7 @@ public:
 	NFAGraphDawgAccept<AcceptStatus>* underapprox_detector;
 	NFAGraphDawgAccept<AcceptStatus> * overapprox_detector;
 
-	Dawg * root;
+	FSMDawg * root;
 
 	CRef underprop_marker;
 	CRef overprop_marker;
@@ -112,7 +112,7 @@ public:
 	long stats_symmetry_conflicts = 0;
 	vec<int> accepting_state;//maintains a list of all accepting states, which are not considered during symmetry breaking.
 
-	vec<Dawg*> trackedDawgs;
+	vec<FSMDawg*> trackedDawgs;
 
 	void printStats() {
 		//printf("Reach detector\n");
@@ -185,9 +185,9 @@ public:
 	}
 	bool propagate(vec<Lit> & conflict)override;
 	Lit decide(int level)override;
-	void buildAcceptReason(int node,Dawg* dawg, vec<Lit> & conflict);
-	void buildNonAcceptReason(int node,Dawg* dawg, vec<Lit> & conflict);
-	void buildNonAcceptReasonRecursive(Dawg * d,vec<int> & to_visit_,vec<Lit> & conflict);
+	void buildAcceptReason(int node,FSMDawg* dawg, vec<Lit> & conflict);
+	void buildNonAcceptReason(int node,FSMDawg* dawg, vec<Lit> & conflict);
+	void buildNonAcceptReasonRecursive(FSMDawg * d,vec<int> & to_visit_,vec<Lit> & conflict);
 	void preprocess()override{
 		accepting_state.growTo(g_over.states());
 	}
@@ -196,7 +196,7 @@ public:
 	void printSolution(std::ostream& write_to);
 
 	void releaseDawgLit(Var accept_var);
-	void addAcceptDawgLit(int accepting_state, Dawg * dawg, Var accept_var);
+	void addAcceptDawgLit(int accepting_state, FSMDawg * dawg, Var accept_var);
 
 	bool checkSymmetryConstraints(vec<Lit> & conflict);
 	bool checkSymmetryConstraintsPopCount(vec<Lit> & conflict);

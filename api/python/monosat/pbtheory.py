@@ -339,7 +339,7 @@ class MinisatPlus:
         nweights=[]
         #need all the variables to be in positive polarity...
         for i,l in enumerate(clause):
-            if weights is not None:
+            if weights is not None and i<len(weights):
                 w = weights[i]
             else:
                 w=1
