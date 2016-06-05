@@ -163,6 +163,9 @@ public:
 	virtual void setSatisfied(Lit l, bool isSatisfied){
 
 	}
+	virtual bool detectorIsSatisfied(){
+		return false;
+	}
 	//virtual vec<int> & getLitMap();
 	Detector(int detectorID) :
 			detectorID(detectorID), unassigned_positives(0), unassigned_negatives(0) {

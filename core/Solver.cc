@@ -431,6 +431,13 @@ void Solver::cancelUntil(int lev) {
 		trail.shrink(trail.size() - trail_lim[lev]);
 		trail_lim.shrink(trail_lim.size() - lev);
 
+		while(theory_sat_queue.size() && theory_sat_queue.last().trail_size>trail.size()){
+			int theoryID = theory_sat_queue.last().theoryID;
+			assert(satisfied_theories[theoryID]);
+			satisfied_theories[theoryID]=false;
+			theory_sat_queue.pop();
+		}
+
 		//remove any lits from the lazy heap that are now unassigned.
 /*		while(lazy_heap.size() && value(toLit( lazy_heap.peekMin())) == l_Undef ){
 			lazy_heap.pop();
@@ -468,6 +475,9 @@ void Solver::cancelUntil(int lev) {
 			theory_order_heap.insert(theoryID);
 			theory_decision_trail.pop();
 		}
+
+
+
 	}
 }
 
@@ -838,8 +848,10 @@ void Solver::uncheckedEnqueue(Lit p, CRef from) {
 	trail.push_(p);
 	if (hasTheory(p)) {
 		int theoryID = getTheoryID(p);
-		needsPropagation(theoryID);
-		theories[theoryID]->enqueueTheory(getTheoryLit(p));
+		if(!satisfied_theories[theoryID]) {
+			needsPropagation(theoryID);
+			theories[theoryID]->enqueueTheory(getTheoryLit(p));
+		}
 	}
 }
 

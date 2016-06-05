@@ -1657,6 +1657,11 @@ void MaxflowDetector<Weight>::setSatisfied(Lit l, bool isSatisfied){
 }
 
 template<typename Weight>
+bool MaxflowDetector<Weight>::detectorIsSatisfied(){
+	return n_satisfied_lits==flow_lits.size();
+}
+
+template<typename Weight>
 void MaxflowDetector<Weight>::undecide(Lit l) {
 	static int iter = 0;
 

@@ -60,6 +60,9 @@ public:
 	virtual void enqueueTheory(Lit p)=0;
 	virtual bool propagateTheory(vec<Lit> & conflict)=0;
 	virtual bool solveTheory(vec<Lit> & conflict)=0;
+	virtual bool theoryIsSatisfied(){
+		return false;
+	}
 	virtual Lit decideTheory() {
 		return lit_Undef;
 	}

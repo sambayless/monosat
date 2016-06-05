@@ -594,8 +594,10 @@ public:
 	vec<ReachInfo> connect_info;
 public:
 	vec<Theory*> theories;
+	vec<bool> satisfied_detectors;
 	vec<Detector*> detectors;
 	vec<Detector*> edge_set_detectors;
+	vec<Detector*> paired_edge_set_detectors;
 	vec<Detector*> normal_detectors;
 	vec<ReachDetector<Weight>*> reach_detectors;
 	vec<DistanceDetector<Weight>*> distance_detectors;
@@ -1186,7 +1188,8 @@ public:
 	struct BVAssign{
 		Var graphAssign;//last assignment on the graph theory trail at the time of assignment
 		int bvTrail;
-		int bvID;
+		int bvID:31;
+		int theory_is_satisfied:1;
 		int level;//this is redundant and can likely be removed
 	};
 	vec<BVAssign> bvtrail;//connects the graph theory and bv theory trails, for conflict analysis.
@@ -1723,7 +1726,20 @@ public:
 			satisfied_lits.pop();
 			int detector = getDetector(var(l));
 			if(detector>=0) {
+
 				detectors[detector]->setSatisfied(l, false);
+				if(satisfied_detectors[detector] && !detectors[detector]->detectorIsSatisfied()){
+					satisfied_detectors[detector]=false;
+					n_satisfied_detectors--;
+					assert(n_satisfied_detectors>=0);
+
+					if(paired_edge_set_detectors[detector]){
+						int d =paired_edge_set_detectors[detector]->getID();
+						satisfied_detectors[d]=false;
+						n_satisfied_detectors--;
+						assert(n_satisfied_detectors>=0);
+					}
+				}
 			}
 
 		}
@@ -1834,7 +1850,20 @@ public:
 			satisfied_lits.pop();
 			int detector = getDetector(var(l));
 			if(detector>=0) {
+
 				detectors[detector]->setSatisfied(l, false);
+				if(satisfied_detectors[detector] && !detectors[detector]->detectorIsSatisfied()){
+					satisfied_detectors[detector]=false;
+					n_satisfied_detectors--;
+					assert(n_satisfied_detectors>=0);
+
+					if(paired_edge_set_detectors[detector]){
+						int d =paired_edge_set_detectors[detector]->getID();
+						satisfied_detectors[d]=false;
+						n_satisfied_detectors--;
+						assert(n_satisfied_detectors>=0);
+					}
+				}
 			}
 
 		}
@@ -2266,6 +2295,7 @@ public:
 	}
 
 	void enqueueBV(int bvID){
+
 		int lev = bvTheory->decisionLevel();//decision level must be synced with bvtheory to ensure the correctness of the enqueueSat method.
 		while (lev > decisionLevel()) {
             newDecisionLevel();
@@ -2332,6 +2362,7 @@ public:
 		}
 	}
 	void backtrackBV(int bvID)override{
+
 		while(bvtrail.size() && bvtrail.last().bvID==bvID && bvtrail.last().bvTrail+1==bvTheory->trail.size()){
 			bvtrail.pop();
 		}
@@ -2377,7 +2408,36 @@ public:
 
 				satisfied_lits.push(SatisfiedLit(decisionLevel(), l));
 				vars[var(l)].isSatisfied = 1;
-				detectors[getDetector(var(l))]->setSatisfied(l, true);
+				int d = getDetector(var(l));
+				detectors[d]->setSatisfied(l, true);
+				if(!satisfied_detectors[d] && detectors[d]->detectorIsSatisfied()){
+					//if edge sets are used, also set any equivalent detectors in the other edge sets to satisfied.
+					n_satisfied_detectors++;
+					assert(n_satisfied_detectors<=detectors.size());
+
+					satisfied_detectors[d]=true;
+					if(n_satisfied_detectors==detectors.size()){
+						S->setTheorySatisfied(this);
+						if(bvTheory){
+							bvTheory->setTheorySatisfied(this);
+						}
+					}
+
+					if(paired_edge_set_detectors[d]){
+						int paired_detector =paired_edge_set_detectors[d]->getID();
+						n_satisfied_detectors++;
+						assert(n_satisfied_detectors<=detectors.size());
+
+						satisfied_detectors[paired_detector]=true;
+						if(n_satisfied_detectors==detectors.size()){
+							S->setTheorySatisfied(this);
+							if(bvTheory){
+								bvTheory->setTheorySatisfied(this);
+							}
+						}
+					}
+				}
+
 			}
 		}
 	}
@@ -2386,7 +2446,13 @@ public:
 		//that it is assigned true.
 		return vars[var(l)].isSatisfied;
 	}
+	bool theoryIsSatisfied() override{
+		return n_satisfied_detectors==detectors.size();
+	}
+
+
 	void enqueueTheory(Lit l) {
+
 		if(invalid_edgeset_lit!=lit_Undef){
 			return;
 		}
@@ -2597,6 +2663,7 @@ public:
 		if(invalid_edgeset_lit!=lit_Undef){
 			return true;
 		}
+
 		static int itp = 0;
 		if (++itp == 30) {
 			int a = 1;
@@ -2684,6 +2751,8 @@ public:
 
 			vec<Detector*> & detectors = using_edgesets ? edge_set_detectors:normal_detectors;
 			for (int d = 0; d < detectors.size(); d++) {
+				if(satisfied_detectors[d])
+					continue;
 				assert(conflict.size() == 0);
 				Lit l = lit_Undef;
 				bool backtrackOnly = lazy_backtracking_enabled && (opt_lazy_conflicts==3) &&  lazy_trail_head!=var_Undef;
@@ -2939,10 +3008,11 @@ public:
 				continue;
 			Edge & e = edge_list[i];
 			lbool val = value(e.v);
-			if (val == l_Undef) {
+			//this can be allowed
+			/*if (val == l_Undef) {
 				throw std::runtime_error("BAD SOLUTION: Unassigned edge!");
 				return false;
-			}
+			}*/
 
 			if (val == l_True) {
 				/*	if(!g.hasEdge(e.from,e.to)){
@@ -2982,7 +3052,7 @@ public:
 						}
 					}
 				}
-			} else {
+			} else if(val==l_False) {
 				/*if(g.hasEdge(e.from,e.to)){
 				 return false;
 				 }*/
@@ -3627,7 +3697,8 @@ public:
 		if (dist_info[from].source < 0) {
 			DistanceDetector<Weight> * d = new DistanceDetector<Weight>(detectors.size(), this,  g_under, g_over,
 					from, drand(rnd_seed));
-			detectors.push(d);
+
+			addDetector(d);
 			normal_detectors.push(d);
 			distance_detectors.push(d);
 			assert(detectors.last()->getID() == detectors.size() - 1);
@@ -3681,7 +3752,7 @@ public:
 				d = new WeightedDistanceDetector<Weight>(detectors.size(), this,  g_under, g_over,
 						from, drand(rnd_seed));
 			}
-			detectors.push(d);
+			addDetector(d);
 			normal_detectors.push(d);
 			weighted_distance_detectors.push(d);
 			assert(detectors.last()->getID() == detectors.size() - 1);
@@ -3724,7 +3795,7 @@ public:
 				d = new WeightedDistanceDetector<Weight>(detectors.size(), this,  g_under, g_over,
 						from, drand(rnd_seed));
 			}
-			detectors.push(d);
+			addDetector(d);
 			normal_detectors.push(d);
 			weighted_distance_detectors.push(d);
 			assert(detectors.last()->getID() == detectors.size() - 1);
@@ -3769,16 +3840,19 @@ public:
 		flow_detectors.push(f);
 		normal_detectors.push(f);
 		int detectorID = detectors.size();
-		detectors.push(f);
+		addDetector(f);
 		//setBVDetectorID(bvID, detectorID);
 		f->addMaxFlowGEQ_BV(bvTheory->getBV(bvID), v, !strictComparison);
 
 		if(opt_min_edgeset>=0){
+			MaxflowDetector<Weight> *original_detector =f;
 			edgeset_flow_detectors.growTo(flow_detectors.size());
 			f = new MaxflowDetector<Weight>(detectors.size(), this,  g_under, g_over_edgeset, from,to, drand(rnd_seed),true);
 			edgeset_flow_detectors.last() =f;
-			detectors.push(f);
+			addDetector(f);
 			edge_set_detectors.push(f);
+			paired_edge_set_detectors[original_detector->getID()] = f;
+			paired_edge_set_detectors[f->getID()] = original_detector;
 			Var outer = S->newVar();
 			makeEqualInSolver(mkLit(outer),mkLit(v));
 			f->addMaxFlowGEQ_BV(bvTheory->getBV(bvID), outer, !strictComparison);
@@ -3857,7 +3931,7 @@ public:
 
 		if (reach_info[from].source < 0) {
 
-			detectors.push(new AllPairsDetector<Weight>(detectors.size(), this, g_under, g_over, drand(rnd_seed)));
+			addDetector((new AllPairsDetector<Weight>(detectors.size(), this, g_under, g_over, drand(rnd_seed))));
 			//reach_detectors.push(reach_detectors.last());
 			normal_detectors.push(detectors.last());
 			assert(detectors.last()->getID() == detectors.size() - 1);
@@ -3894,7 +3968,7 @@ public:
 
 			ReachDetector<Weight>*rd = new ReachDetector<Weight>(detectors.size(), this, g_under, g_over, from,
 					drand(rnd_seed));
-			detectors.push(rd);
+			addDetector(rd);
 			reach_detectors.push(rd);
 			normal_detectors.push(detectors.last());
 			assert(detectors.last()->getID() == detectors.size() - 1);
@@ -3957,7 +4031,7 @@ public:
 	void minimumSpanningTree(Var v, Weight minimum_weight, bool inclusive) {
 		if (!mstDetector) {
 			mstDetector = new MSTDetector<Weight>(detectors.size(), this, g_under, g_over,  drand(rnd_seed));
-			detectors.push(mstDetector);
+			addDetector(mstDetector);
 			normal_detectors.push(detectors.last());
 		}
 		mstDetector->addWeightLit(v, minimum_weight,inclusive);
@@ -3965,7 +4039,7 @@ public:
 	void edgeInMinimumSpanningTree(Var edgeVar, Var var) {
 		if (!mstDetector) {
 			mstDetector = new MSTDetector<Weight>(detectors.size(), this, g_under, g_over,  drand(rnd_seed));
-			detectors.push(mstDetector);
+			addDetector(mstDetector);
 			normal_detectors.push(detectors.last());
 		}
 		if (!S->hasTheory(edgeVar) || (S->getTheoryID(edgeVar) != getTheoryIndex())
@@ -4000,16 +4074,19 @@ public:
 		MaxflowDetector<Weight> *f = new MaxflowDetector<Weight>(detectors.size(), this,  g_under, g_over, from,
 				to, drand(rnd_seed));
 		flow_detectors.push(f);
-		detectors.push(f);
+		addDetector(f);
 		normal_detectors.push(f);
 		f->addFlowLit(max_flow, v,inclusive);
 
 		if(opt_min_edgeset>=0){
 			edgeset_flow_detectors.growTo(flow_detectors.size());
+			MaxflowDetector<Weight> * original_detector = f;
 			f = new MaxflowDetector<Weight>(detectors.size(), this,  g_under, g_over_edgeset, from,to, drand(rnd_seed),true);
 			edgeset_flow_detectors.last() =f;
-			detectors.push(f);
+			addDetector(f);
 			edge_set_detectors.push(f);
+			paired_edge_set_detectors[original_detector->getID()] = f;
+			paired_edge_set_detectors[f->getID()] = original_detector;
 			Var outer = S->newVar();
 			makeEqualInSolver(mkLit(outer),mkLit(v));
 			f->addFlowLit(max_flow, outer,inclusive);
@@ -4020,15 +4097,21 @@ public:
 		if (!component_detector) {
 			component_detector = new ConnectedComponentsDetector<Weight>(detectors.size(), this, g_under, g_over,
 					drand(rnd_seed));
-			detectors.push(component_detector);
+			addDetector(component_detector);
 			normal_detectors.push(detectors.last());
 		}
 		component_detector->addConnectedComponentsLit(v, min_components);
 	}
+	void addDetector(Detector* detector){
+		detectors.push(detector);
+		paired_edge_set_detectors.growTo(detector->getID()+1,nullptr);
+		satisfied_detectors.push(false);
+	}
 	void acyclic(Var v,bool directed) {
 		if (!cycle_detector) {
 			cycle_detector = new CycleDetector<Weight>(detectors.size(), this, g_under, g_over, true, drand(rnd_seed));
-			detectors.push(cycle_detector);
+			addDetector(cycle_detector);
+
 			normal_detectors.push(detectors.last());
 		}
 		cycle_detector->addAcyclicLit(directed, v);
@@ -4039,7 +4122,8 @@ public:
 		assert(!steiner_detectors[steinerTreeID]);
 		steiner_detectors[steinerTreeID] = new SteinerDetector<Weight>(detectors.size(), this,  g_under, g_over,
 				drand(rnd_seed));
-		detectors.push(steiner_detectors[steinerTreeID]);
+		addDetector(steiner_detectors[steinerTreeID]);
+
 		normal_detectors.push(detectors.last());
 		for (int i = 0; i < terminals.size(); i++) {
 			steiner_detectors[steinerTreeID]->addTerminalNode(terminals[i].first, terminals[i].second);

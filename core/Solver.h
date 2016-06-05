@@ -88,9 +88,16 @@ public:
 	int getDecisionPriority(Var v) const{
 		return priority[v];
 	}
-	
+	virtual void setTheorySatisfied(Theory * theory)override{
+		int theoryID = theory->getTheoryIndex();
+		if(!satisfied_theories[theoryID]){
+			satisfied_theories[theoryID]=true;
+			theory_sat_queue.push(TheorySatisfaction(theoryID,trail.size()));
+		}
+	}
 	//Theory interface
 	void addTheory(Theory*t) {
+		satisfied_theories.push(false);
 		theories.push(t);
 		t->setActivity(opt_randomomize_theory_order ? drand(random_seed) * 0.00001 : 0);
 		t->setPriority(0);
@@ -262,7 +269,7 @@ public:
 		assert(hasTheory(v));
 		return (Var) theory_vars[v].theory_var;
 	}
-	
+
 	//Translate a literal into its corresponding theory literal (if it has a theory literal)
 	Lit getTheoryLit(Lit l) {
 		assert(hasTheory(l));
@@ -484,6 +491,7 @@ public:
 	vec<Lit> theory_reason;
 	vec<Lit> theory_conflict;
 	vec<Theory*> theories;
+	vec<bool> satisfied_theories;
 	vec<Theory*> decidable_theories;
 	Theory * decisionTheory=nullptr;//for opt_vsids_solver_as_theory
 	vec<Var> all_theory_vars;
@@ -506,6 +514,14 @@ public:
 	CRef cause_marker=CRef_Undef;
 	int track_min_level = 0;
 	int initial_level = 0;
+	struct TheorySatisfaction{
+		int theoryID=-1;
+		int trail_size=-1;
+		TheorySatisfaction(int theoryID, int trail_size):theoryID(theoryID),trail_size(trail_size){
+
+		}
+	};
+	vec<TheorySatisfaction> theory_sat_queue;
 	vec<int> theory_queue;
 	vec<bool> in_theory_queue;
 	bool disable_theories=false;
