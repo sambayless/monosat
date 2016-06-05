@@ -1926,21 +1926,25 @@ lbool Solver::search(int nof_conflicts) {
 				if(opt_theory_order_vsids && using_theory_vsids){
 					while (next==lit_Undef && !theory_order_heap.empty() && theories[theory_order_heap.peekMin()]->getPriority()>=next_var_priority) {
 						int theoryID = theory_order_heap.peekMin();
-						if(opt_vsids_both && next_var_priority==theories[theory_order_heap.peekMin()]->getPriority()){
-							//give the main solver a chance to make a decision, if it has a variable with higher activity
-							if (!order_heap.empty()) {
-								Var v = order_heap.peekMin();
-								assert(value(v)==l_Undef);//because assigned lits should have been removed from queue above.
-								if(value(v)==l_Undef && activity[v]>theories[theoryID]->getActivity()){
-									stats_solver_preempted_decisions++;
-									break;
+						if(!satisfied_theories[theoryID]) {
+							if (opt_vsids_both &&
+								next_var_priority == theories[theory_order_heap.peekMin()]->getPriority()) {
+								//give the main solver a chance to make a decision, if it has a variable with higher activity
+								if (!order_heap.empty()) {
+									Var v = order_heap.peekMin();
+									assert(value(v) ==
+										   l_Undef);//because assigned lits should have been removed from queue above.
+									if (value(v) == l_Undef && activity[v] > theories[theoryID]->getActivity()) {
+										stats_solver_preempted_decisions++;
+										break;
+									}
 								}
+
 							}
 
+							assert(theories[theoryID]->supportsDecisions());
+							next = theories[theoryID]->decideTheory();
 						}
-
-						assert(theories[theoryID]->supportsDecisions());
-						next = theories[theoryID]->decideTheory();
 						if(next==lit_Undef){
 							theory_order_heap.removeMin();
 							if(decisionLevel()>0)
@@ -1949,8 +1953,9 @@ lbool Solver::search(int nof_conflicts) {
 					}
 				}else{
 					for (int i = 0; i < decidable_theories.size() && next == lit_Undef; i++) {
-						if (decidable_theories[i]->getPriority()>=next_var_priority) {
-							next = decidable_theories[i]->decideTheory();
+						Theory * t = decidable_theories[i];
+						if (!satisfied_theories[t->getTheoryIndex()] &&  t->getPriority()>=next_var_priority) {
+							next = t->decideTheory();
 						}
 					}
 				}

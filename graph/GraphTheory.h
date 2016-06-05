@@ -2033,6 +2033,8 @@ public:
 		vec<Detector*> & detectors = (hasEdgeSets() && allEdgeSetsAssigned()) ? edge_set_detectors:normal_detectors;
 		for (int i = 0; i < detectors.size(); i++) {
 			Detector * r = detectors[i];
+			if(satisfied_detectors[r->getID()])
+				continue;
 			Lit l = r->decide();
 			if (l != lit_Undef) {
 
