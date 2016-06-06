@@ -71,6 +71,9 @@ public:
 	virtual void setTheorySatisfied(Theory * theory){
 
 	}
+	virtual bool theorySatisfied(Theory * theory){
+		return false;
+	}
 	virtual int level(Var v)const=0;
 	virtual int decisionLevel()const=0;
 	virtual Lit theoryDecisionLit(int theoryID){

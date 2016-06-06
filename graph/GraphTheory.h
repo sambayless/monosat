@@ -1981,14 +1981,15 @@ public:
 	}
 	void undecideTheory(Lit l){
 		//assert(value(l)==l_True); //the value can be locally unassigned if we backtracked while building a propagation reason
+		//The value can also be unassigned if the theory was marked satisfied
 
-		if(supportsLazyBacktracking()){
+		if (supportsLazyBacktracking()) {
 			prependToLazyTrail(l);
 
 		}
 
 		for (int i = 0; i < detectors.size(); i++) {
-			Detector * r = detectors[i];
+			Detector *r = detectors[i];
 			r->undecide(l);
 		}
 
@@ -2912,6 +2913,14 @@ public:
 		dbg_sync();
 		dbg_sync_reachability();
 		dbg_check_trails();
+
+		if(theoryIsSatisfied()){
+			S->setTheorySatisfied(this);
+			if(bvTheory){
+				bvTheory->setTheorySatisfied(this);
+			}
+		}
+
 		return true;
 	}
 

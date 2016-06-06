@@ -90,14 +90,25 @@ public:
 	}
 	virtual void setTheorySatisfied(Theory * theory)override{
 		int theoryID = theory->getTheoryIndex();
-		if(!satisfied_theories[theoryID]){
-			satisfied_theories[theoryID]=true;
-			theory_sat_queue.push(TheorySatisfaction(theoryID,trail.size()));
+		if(!theorySatisfied(theory)){
+			if(trail.size()>0) {
+				satisfied_theory_trail_pos[theoryID] = trail.size() - 1;
+			}else{
+				//this really shouldn't ever happen...
+				satisfied_theory_trail_pos[theoryID]=0;
+			}
+			post_satisfied_theory_trail_pos[theoryID]=satisfied_theory_trail_pos[theoryID];
+			//theory_sat_queue.push(TheorySatisfaction(theoryID,trail.size()));
 		}
+	}
+	virtual bool theorySatisfied(Theory * theory)override{
+		int theoryID = theory->getTheoryIndex();
+		return satisfied_theory_trail_pos[theoryID]>=0;
 	}
 	//Theory interface
 	void addTheory(Theory*t) {
-		satisfied_theories.push(false);
+		satisfied_theory_trail_pos.push(-1);
+		post_satisfied_theory_trail_pos.push(-1);
 		theories.push(t);
 		t->setActivity(opt_randomomize_theory_order ? drand(random_seed) * 0.00001 : 0);
 		t->setPriority(0);
@@ -491,7 +502,8 @@ public:
 	vec<Lit> theory_reason;
 	vec<Lit> theory_conflict;
 	vec<Theory*> theories;
-	vec<bool> satisfied_theories;
+	vec<int> satisfied_theory_trail_pos;
+	vec<int> post_satisfied_theory_trail_pos;
 	vec<Theory*> decidable_theories;
 	Theory * decisionTheory=nullptr;//for opt_vsids_solver_as_theory
 	vec<Var> all_theory_vars;
@@ -514,14 +526,14 @@ public:
 	CRef cause_marker=CRef_Undef;
 	int track_min_level = 0;
 	int initial_level = 0;
-	struct TheorySatisfaction{
+/*	struct TheorySatisfaction{
 		int theoryID=-1;
 		int trail_size=-1;
 		TheorySatisfaction(int theoryID, int trail_size):theoryID(theoryID),trail_size(trail_size){
 
 		}
 	};
-	vec<TheorySatisfaction> theory_sat_queue;
+	vec<TheorySatisfaction> theory_sat_queue;*/
 	vec<int> theory_queue;
 	vec<bool> in_theory_queue;
 	bool disable_theories=false;
@@ -765,6 +777,7 @@ protected:
 
 	CRef propagate(bool propagate_theories = true);    // Perform unit propagation. Returns possibly conflicting clause.
 	void enqueueTheory(Lit l);
+	void enqueueAnyUnqueued(); //in some solving modes, a theory can sometimes delay enqueing some atoms. Check for any such atoms here.
 	bool propagateTheory(vec<Lit> & conflict);
 	bool solveTheory(vec<Lit> & conflict_out);
 

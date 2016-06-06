@@ -4034,16 +4034,10 @@ public:
     vec<bool> in_backtrack_queue;
 
     vec<int> backtrack_queue;
-    vec<bool> satisfied_theories;
 
-    struct BVTheorySatisfaction{
-        int theoryID=-1;
-        int trail_size=-1;
-        BVTheorySatisfaction(int theoryID, int trail_size):theoryID(theoryID),trail_size(trail_size){
+    vec<int> satisfied_theory_trail_pos;
+    vec<int> post_satisfied_theory_trail_pos;
 
-		}
-    };
-    vec<BVTheorySatisfaction> theory_sat_queue;
     vec<BVTheory *> theories;
     vec<BVTheory *> actual_theories;
 public:
@@ -4145,16 +4139,25 @@ public:
     }
     void setTheorySatisfied(BVTheory *theory){
         int theoryID = theory->getTheoryIndexBV();
-        if(!satisfied_theories[theoryID]){
-            satisfied_theories[theoryID]=true;
-            theory_sat_queue.push(BVTheorySatisfaction(theoryID,trail.size()));
-        }
+        /*if(!theorySatisfied(theory)){
+            if(trail.size()>0) {
+                satisfied_theory_trail_pos[theoryID] = trail.size() - 1;
+            }else{
+                //this really shouldn't ever happen...
+                satisfied_theory_trail_pos[theoryID]=0;
+            }
+            post_satisfied_theory_trail_pos[theoryID]=satisfied_theory_trail_pos[theoryID];
+        }*/
     }
-
+    bool theorySatisfied(BVTheory * theory){
+        int theoryID = theory->getTheoryIndexBV();
+        return satisfied_theory_trail_pos[theoryID]>=0;
+    }
     void addTheory(BVTheory *theory) {
 
         theories.growTo(theory->getTheoryIndexBV() + 1);
-        satisfied_theories.growTo(theories.size(),false);
+        satisfied_theory_trail_pos.push(-1);
+        post_satisfied_theory_trail_pos.push(-1);
         actual_theories.push(theory);
         theories[theory->getTheoryIndexBV()] = theory;
     }
@@ -4537,12 +4540,13 @@ public:
         if (trail_pos >= trail.size()) {
             trail_pos = trail.size() - 1;
         }
-        while(theory_sat_queue.size() && theory_sat_queue.last().trail_size>=trail_pos){
+
+        /*while(theory_sat_queue.size() && theory_sat_queue.last().trail_size>=trail_pos){
             int theoryID = theory_sat_queue.last().theoryID;
             assert(satisfied_theories[theoryID]);
             satisfied_theories[theoryID]=false;
             theory_sat_queue.pop();
-        }
+        }*/
         if (analysis_trail_pos < -1) {
             analysis_trail_pos = -1;
         }
@@ -4563,7 +4567,9 @@ public:
                     over_causes[bvID] = e.new_over_cause;
                     if (hasTheory(bvID)) {
                         int theoryID = getTheory(bvID)->getTheoryIndexBV();
-                        if(!satisfied_theories[theoryID]) {
+                        if(satisfied_theory_trail_pos[theoryID]< 0 ) {
+                            getTheory(bvID)->rewindBV(bvID);
+                        }else if (analysis_trail_pos>satisfied_theory_trail_pos[theoryID] && analysis_trail_pos<= post_satisfied_theory_trail_pos[theoryID]){
                             getTheory(bvID)->rewindBV(bvID);
                         }
                     }
@@ -4599,9 +4605,18 @@ public:
                     over_causes[bvID] = e.prev_over_cause;
                     if (hasTheory(bvID)) {
                         int theoryID = getTheory(bvID)->getTheoryIndexBV();
-                        if(!satisfied_theories[theoryID]) {
-                            getTheory(bvID)->rewindBV(bvID);
+                        if(analysis_trail_pos<= satisfied_theory_trail_pos[theoryID]){
+                            satisfied_theory_trail_pos[theoryID]=-1;
+                            post_satisfied_theory_trail_pos[theoryID]=-1;
                         }
+
+                        if(satisfied_theory_trail_pos[theoryID]< 0 ) {
+                            getTheory(bvID)->rewindBV(bvID);
+                        }else if (analysis_trail_pos>satisfied_theory_trail_pos[theoryID] && analysis_trail_pos<= post_satisfied_theory_trail_pos[theoryID]){
+                            getTheory(bvID)->rewindBV(bvID);
+                            post_satisfied_theory_trail_pos[theoryID]= analysis_trail_pos-1;
+                        }
+
                     }
                 } else {
                     Var x = e.var;
@@ -4631,12 +4646,7 @@ public:
         }
         //rewind until the previous under or over approx of bvID violates the comparison.
         for (; analysis_trail_pos >= 0; analysis_trail_pos--) {
-            while(theory_sat_queue.size() && theory_sat_queue.last().trail_size>=analysis_trail_pos){
-                int theoryID = theory_sat_queue.last().theoryID;
-                assert(satisfied_theories[theoryID]);
-                satisfied_theories[theoryID]=false;
-                theory_sat_queue.pop();
-            }
+
             Assignment &e = trail[analysis_trail_pos];
             if (e.isBoundAssignment()) {
                 int bvID = e.bvID;
@@ -4673,9 +4683,18 @@ public:
                 over_causes[bvID] = e.prev_over_cause;
                 if (hasTheory(bvID)) {
                     int theoryID = getTheory(bvID)->getTheoryIndexBV();
-                    if(!satisfied_theories[theoryID]) {
-                        getTheory(bvID)->rewindBV(bvID);
+                    if(analysis_trail_pos<= satisfied_theory_trail_pos[theoryID]){
+                        satisfied_theory_trail_pos[theoryID]=-1;
+                        post_satisfied_theory_trail_pos[theoryID]=-1;
                     }
+
+                    if(satisfied_theory_trail_pos[theoryID]< 0 ) {
+                        getTheory(bvID)->rewindBV(bvID);
+                    }else if (analysis_trail_pos>satisfied_theory_trail_pos[theoryID] && analysis_trail_pos<= post_satisfied_theory_trail_pos[theoryID]){
+                        getTheory(bvID)->rewindBV(bvID);
+                        post_satisfied_theory_trail_pos[theoryID]= analysis_trail_pos-1;
+                    }
+
                 }
             } else {
                 Var x = e.var;
@@ -4705,12 +4724,7 @@ public:
         }
         //rewind until the previous under or over approx of bvID violates the comparison.
         for (; analysis_trail_pos >= 0; analysis_trail_pos--) {
-            while(theory_sat_queue.size() && theory_sat_queue.last().trail_size>=analysis_trail_pos){
-                int theoryID = theory_sat_queue.last().theoryID;
-                assert(satisfied_theories[theoryID]);
-                satisfied_theories[theoryID]=false;
-                theory_sat_queue.pop();
-            }
+
             Assignment &e = trail[analysis_trail_pos];
             if (e.isBoundAssignment()) {
                 int bvID = e.bvID;
@@ -4720,9 +4734,18 @@ public:
                 over_causes[bvID] = e.prev_over_cause;
                 if (hasTheory(bvID)) {
                     int theoryID = getTheory(bvID)->getTheoryIndexBV();
-                    if(!satisfied_theories[theoryID]) {
-                        getTheory(bvID)->rewindBV(bvID);
+                    if(analysis_trail_pos<= satisfied_theory_trail_pos[theoryID]){
+                        satisfied_theory_trail_pos[theoryID]=-1;
+                        post_satisfied_theory_trail_pos[theoryID]=-1;
                     }
+
+                    if(satisfied_theory_trail_pos[theoryID]< 0 ) {
+                        getTheory(bvID)->rewindBV(bvID);
+                    }else if (analysis_trail_pos>satisfied_theory_trail_pos[theoryID] && analysis_trail_pos<= post_satisfied_theory_trail_pos[theoryID]){
+                        getTheory(bvID)->rewindBV(bvID);
+                        post_satisfied_theory_trail_pos[theoryID]= analysis_trail_pos-1;
+                    }
+
                 }
             } else {
                 Var x = e.var;
@@ -4760,12 +4783,7 @@ public:
 
             int stop = trail_lim[level];
             for (int i = trail.size() - 1; i >= trail_lim[level]; i--) {
-                while(theory_sat_queue.size() && theory_sat_queue.last().trail_size>=i){
-                    int theoryID = theory_sat_queue.last().theoryID;
-                    assert(satisfied_theories[theoryID]);
-                    satisfied_theories[theoryID]=false;
-                    theory_sat_queue.pop();
-                }
+
                 Assignment &e = trail[i];
                 if (e.isBoundAssignment()) {
                     int bvID = e.bvID;
@@ -4777,10 +4795,21 @@ public:
 
                     if (hasTheory(bvID)) {
                         int theoryID = getTheory(bvID)->getTheoryIndexBV();
-                        if(!satisfied_theories[theoryID]) {
+                        if(analysis_trail_pos<= satisfied_theory_trail_pos[theoryID]){
+                            satisfied_theory_trail_pos[theoryID]=-1;
+                            post_satisfied_theory_trail_pos[theoryID]=-1;
+                        }
+
+                        if(satisfied_theory_trail_pos[theoryID]< 0 ) {
                             getTheory(bvID)->backtrackBV(
                                     bvID);//only enqueue the bitvector in the subtheory _after_ it's approximation has been updated!
+                        }else if (analysis_trail_pos>satisfied_theory_trail_pos[theoryID] && analysis_trail_pos<= post_satisfied_theory_trail_pos[theoryID]){
+                            getTheory(bvID)->backtrackBV(
+                                    bvID);//only enqueue the bitvector in the subtheory _after_ it's approximation has been updated!
+                            post_satisfied_theory_trail_pos[theoryID]= analysis_trail_pos-1;
                         }
+
+
                     }
                     for (int changedID: cause_set[bvID]) {
                         under_approx[changedID] = under_approx[bvID];
@@ -4789,10 +4818,19 @@ public:
                         over_approx0[changedID] = over_approx0[bvID];
 
                         if (hasTheory(changedID)) {
-                            int theoryID = getTheory(bvID)->getTheoryIndexBV();
-                            if(!satisfied_theories[theoryID]) {
+                            int theoryID = getTheory(changedID)->getTheoryIndexBV();
+                            if(analysis_trail_pos<= satisfied_theory_trail_pos[theoryID]){
+                                satisfied_theory_trail_pos[theoryID]=-1;
+                                post_satisfied_theory_trail_pos[theoryID]=-1;
+                            }
+
+                            if(satisfied_theory_trail_pos[theoryID]< 0 ) {
                                 getTheory(changedID)->backtrackBV(
                                         changedID);//only enqueue the bitvector in the subtheory _after_ it's approximation has been updated!
+                            }else if (analysis_trail_pos>satisfied_theory_trail_pos[theoryID] && analysis_trail_pos<= post_satisfied_theory_trail_pos[theoryID]){
+                                getTheory(changedID)->backtrackBV(
+                                        changedID);//only enqueue the bitvector in the subtheory _after_ it's approximation has been updated!
+                                post_satisfied_theory_trail_pos[theoryID]= analysis_trail_pos-1;
                             }
                         }
                     }
@@ -4940,7 +4978,7 @@ public:
 
                 if (hasTheory(bvID)) {
                     int theoryID = getTheory(bvID)->getTheoryIndexBV();
-                    if(!satisfied_theories[theoryID]) {
+                    if(!theorySatisfied(theories[theoryID])) {
                         getTheory(bvID)->enqueueBV(
                                 bvID);//only enqueue the bitvector in the subtheory _after_ it's approximation has been updated!
                     }
@@ -5178,7 +5216,38 @@ public:
         return true;
 
     }
+    virtual void enqueueAnyUnqueued(){
+        //in some solving modes, a theory can sometimes delay enqueing some atoms. Check for any such atoms here.
+        //so far, this should only happen if the theory was marked as 'satisfied'
 
+        int startingPos = -1;
+        for(BVTheory * t:theories){
+            assert(t);
+            if(theorySatisfied(t)){
+                int start =  post_satisfied_theory_trail_pos[t->getTheoryIndexBV()];
+                assert(post_satisfied_theory_trail_pos[t->getTheoryIndexBV()]>=satisfied_theory_trail_pos[t->getTheoryIndexBV()]);
+                if(start>=0 && (start<startingPos || startingPos<0)){
+                    startingPos = start;
+                }
+            }
+        }
+        if(startingPos<0){
+
+            return;
+        }
+
+        for(int bvID = 0;bvID<bitvectors.size();bvID++){
+            if(hasTheory(bvID)){
+                int theoryID = getTheory(bvID)->getTheoryIndexBV();
+                if(theorySatisfied(getTheory(bvID))) {
+                    getTheory(bvID)->enqueueBV(bvID);
+                    post_satisfied_theory_trail_pos[theoryID] = analysis_trail_pos;
+                }
+            }
+        }
+
+
+    }
     void enqueueTheory(Lit l) {
         Var v = var(l);
         rewind_trail_pos(trail.size());
@@ -5827,7 +5896,7 @@ public:
             if (changed) {
                 if (hasTheory(bvID)) {
                     int theoryID = getTheory(bvID)->getTheoryIndexBV();
-                    if(!satisfied_theories[theoryID]) {
+                    if(!theorySatisfied(theories[theoryID])) {
                         getTheory(bvID)->enqueueBV(
                                 bvID);//only enqueue the bitvector in the subtheory _after_ it's approximation has been updated!
                     }
@@ -5843,7 +5912,7 @@ public:
                     over_approx0[changedID] = over_approx0[bvID];
                     if (hasTheory(changedID)) {
                         int theoryID = getTheory(bvID)->getTheoryIndexBV();
-                        if(!satisfied_theories[theoryID]) {
+                        if(!theorySatisfied(theories[theoryID])) {
                             getTheory(changedID)->enqueueBV(
                                     changedID);//only enqueue the bitvector in the subtheory _after_ it's approximation has been updated!
                         }

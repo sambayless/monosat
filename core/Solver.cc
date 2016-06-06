@@ -412,7 +412,21 @@ void Solver::cancelUntil(int lev) {
 				to_reenqueue.push(trail[c]);
 			}else{
 				if(hasTheory(x)){
-					theories[getTheoryID(x)]->undecideTheory(getTheoryLit(trail[c]));
+					int theoryID = getTheoryID(x);
+
+					if(c<= satisfied_theory_trail_pos[theoryID]){
+						satisfied_theory_trail_pos[theoryID]=-1;
+						post_satisfied_theory_trail_pos[theoryID]=-1;
+					}
+
+					if(satisfied_theory_trail_pos[theoryID]< 0 ) {
+						theories[theoryID]->undecideTheory(getTheoryLit(trail[c]));
+					}else if (c>satisfied_theory_trail_pos[theoryID] && c<= post_satisfied_theory_trail_pos[theoryID]){
+						theories[theoryID]->undecideTheory(getTheoryLit(trail[c]));
+						post_satisfied_theory_trail_pos[theoryID]= c-1;
+					}
+					assert(satisfied_theory_trail_pos[theoryID]<c);
+					assert(post_satisfied_theory_trail_pos[theoryID]<c);
 				}
 				assigns[x] = l_Undef;
 				if (phase_saving > 1 || ((phase_saving == 1) && c > trail_lim.last()))
@@ -431,12 +445,12 @@ void Solver::cancelUntil(int lev) {
 		trail.shrink(trail.size() - trail_lim[lev]);
 		trail_lim.shrink(trail_lim.size() - lev);
 
-		while(theory_sat_queue.size() && theory_sat_queue.last().trail_size>trail.size()){
+		/*while(theory_sat_queue.size() && theory_sat_queue.last().trail_size>trail.size()){
 			int theoryID = theory_sat_queue.last().theoryID;
-			assert(satisfied_theories[theoryID]);
-			satisfied_theories[theoryID]=false;
+			assert(theorySatisfied(theories[theoryID]));
+			satisfied_theory_trail_pos[theoryID]=-1;
 			theory_sat_queue.pop();
-		}
+		}*/
 
 		//remove any lits from the lazy heap that are now unassigned.
 /*		while(lazy_heap.size() && value(toLit( lazy_heap.peekMin())) == l_Undef ){
@@ -460,7 +474,7 @@ void Solver::cancelUntil(int lev) {
 			assert(level(var(p)) <=lev);
 			trail.push(p);
 			//is this really needed?
-			if (hasTheory(p)) {
+			if (hasTheory(p) && ! theorySatisfied(theories[getTheoryID(p)])) {
 				int theoryID = getTheoryID(p);
 				needsPropagation(theoryID);
 				theories[theoryID]->enqueueTheory(getTheoryLit(p));
@@ -526,7 +540,7 @@ void Solver::instantiateLazyDecision(Lit p,int atLevel, CRef reason){
 	}
 	trail[trail_pos]=p;
 
-	if (hasTheory(p)) {
+	if (hasTheory(p)  && ! theorySatisfied(theories[getTheoryID(p)])) {
 		int theoryID = getTheoryID(p);
 		needsPropagation(theoryID);
 		theories[theoryID]->enqueueTheory(getTheoryLit(p));
@@ -829,7 +843,7 @@ void Solver::enqueueLazy(Lit p, int lev, CRef from){
 		vardata[var(p)] = mkVarData(from, lev);
 		trail.push_(p);
 		//lazy_heap.insert(toInt(p));
-		if (hasTheory(p)) {
+		if (hasTheory(p)  && ! theorySatisfied(theories[getTheoryID(p)])) {
 			int theoryID = getTheoryID(p);
 			needsPropagation(theoryID);
 			theories[theoryID]->enqueueTheory(getTheoryLit(p));
@@ -848,7 +862,7 @@ void Solver::uncheckedEnqueue(Lit p, CRef from) {
 	trail.push_(p);
 	if (hasTheory(p)) {
 		int theoryID = getTheoryID(p);
-		if(!satisfied_theories[theoryID]) {
+		if(!theorySatisfied(theories[theoryID])) {
 			needsPropagation(theoryID);
 			theories[theoryID]->enqueueTheory(getTheoryLit(p));
 		}
@@ -913,6 +927,8 @@ void Solver::buildReason(Lit p, vec<Lit> & reason) {
 	interpolant.push();
 	reason.copyTo(interpolant.last());    //Add this clause into the interpolant vector
 }
+
+
 
 void Solver::enqueueTheory(Lit l) {
 	
@@ -1020,6 +1036,66 @@ bool Solver::propagateTheory(vec<Lit> & conflict_out) {
 		return true;
 	}
 }
+
+void Solver::enqueueAnyUnqueued(){
+	//in some solving modes, a theory can sometimes delay enqueing some atoms. Check for any such atoms here.
+	//so far, this should only happen if the theory was marked as 'satisfied'
+
+	int startingPos = -1;
+	for(Theory * t:theories){
+		assert(t);
+		if(theorySatisfied(t)){
+			int start =  post_satisfied_theory_trail_pos[t->getTheoryIndex()];
+			assert(post_satisfied_theory_trail_pos[t->getTheoryIndex()]>=satisfied_theory_trail_pos[t->getTheoryIndex()]);
+			if(start>=0 && (start<startingPos || startingPos<0)){
+				startingPos = start;
+			}
+		}
+	}
+	if(startingPos<0){
+		for(Theory * t:theories){
+			t->enqueueAnyUnqueued();
+		}
+		return;
+	}
+	int lev_0_pos;
+	if(trail_lim.size()){
+		lev_0_pos = trail_lim[0];
+	}else{
+		lev_0_pos = trail.size();
+	}
+	for(int i = startingPos;i< trail.size();i++){
+		Lit l = trail[i];
+		if(hasTheory(l) ){
+			int theoryID = getTheoryID(l);
+
+			int start = post_satisfied_theory_trail_pos[theoryID];
+			if(start>=0 && start<= i) {
+				Theory * theory = theories[theoryID];
+				Lit theoryLit = getTheoryLit(l);
+				theory->enqueueTheory(theoryLit);
+				assert(post_satisfied_theory_trail_pos[theoryID]<=i);
+				post_satisfied_theory_trail_pos[theoryID] = i;
+				assert(post_satisfied_theory_trail_pos[theoryID]>=satisfied_theory_trail_pos[theoryID]);
+			}
+		}
+	}
+	for(Theory * t:theories){
+		assert(t);
+		assert(post_satisfied_theory_trail_pos[t->getTheoryIndex()]>=satisfied_theory_trail_pos[t->getTheoryIndex()]);
+		if(theorySatisfied(t)){
+			int start =  satisfied_theory_trail_pos[t->getTheoryIndex()];
+			if(start>=0 && start<lev_0_pos-1){
+				satisfied_theory_trail_pos[t->getTheoryIndex()]=lev_0_pos-1;
+			}
+		}
+	}
+	for(Theory * t:theories){
+		t->enqueueAnyUnqueued();
+	}
+}
+
+
 /*_________________________________________________________________________________________________
  |
  |  propagate : [void]  ->  [Clause*]
@@ -1926,7 +2002,7 @@ lbool Solver::search(int nof_conflicts) {
 				if(opt_theory_order_vsids && using_theory_vsids){
 					while (next==lit_Undef && !theory_order_heap.empty() && theories[theory_order_heap.peekMin()]->getPriority()>=next_var_priority) {
 						int theoryID = theory_order_heap.peekMin();
-						if(!satisfied_theories[theoryID]) {
+						if(!theorySatisfied(theories[theoryID])) {
 							if (opt_vsids_both &&
 								next_var_priority == theories[theory_order_heap.peekMin()]->getPriority()) {
 								//give the main solver a chance to make a decision, if it has a variable with higher activity
@@ -1954,7 +2030,7 @@ lbool Solver::search(int nof_conflicts) {
 				}else{
 					for (int i = 0; i < decidable_theories.size() && next == lit_Undef; i++) {
 						Theory * t = decidable_theories[i];
-						if (!satisfied_theories[t->getTheoryIndex()] &&  t->getPriority()>=next_var_priority) {
+						if (!theorySatisfied(t) &&  t->getPriority()>=next_var_priority) {
 							next = t->decideTheory();
 						}
 					}
@@ -1984,7 +2060,6 @@ lbool Solver::search(int nof_conflicts) {
 						for (int i = 0; i < theories.size(); i++) {
 							if (opt_subsearch == 3 && track_min_level < initial_level)
 								continue; //Disable attempting to solve sub-solvers if we've backtracked past the super solver's decision level
-
 							if (!theories[i]->solveTheory(theory_conflict)) {
 								if (!addConflictClause(theory_conflict, confl)) {
 									goto conflict;
@@ -2132,6 +2207,7 @@ lbool Solver::solve_() {
 	}
 	
 	if (status == l_True) {
+		enqueueAnyUnqueued();//assign any remaining atoms to theories that were trivially satisfied
 		// Extend & copy model:
 		model.growTo(nVars());
 		for (int i = 0; i < nVars(); i++)

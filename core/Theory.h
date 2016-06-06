@@ -58,6 +58,9 @@ public:
 	virtual void backtrackUntil(int untilLevel)=0;
 	virtual void newDecisionLevel()=0;
 	virtual void enqueueTheory(Lit p)=0;
+	virtual void enqueueAnyUnqueued(){
+
+	}
 	virtual bool propagateTheory(vec<Lit> & conflict)=0;
 	virtual bool solveTheory(vec<Lit> & conflict)=0;
 	virtual bool theoryIsSatisfied(){
