@@ -4155,9 +4155,9 @@ public:
     }
     void addTheory(BVTheory *theory) {
 
-        theories.growTo(theory->getTheoryIndexBV() + 1);
-        satisfied_theory_trail_pos.push(-1);
-        post_satisfied_theory_trail_pos.push(-1);
+        theories.growTo(theory->getTheoryIndexBV() + 1,nullptr);
+        satisfied_theory_trail_pos.growTo(theory->getTheoryIndexBV() + 1,-1);
+        post_satisfied_theory_trail_pos.growTo(theory->getTheoryIndexBV() + 1,-1);
         actual_theories.push(theory);
         theories[theory->getTheoryIndexBV()] = theory;
     }
@@ -5222,7 +5222,8 @@ public:
 
         int startingPos = -1;
         for(BVTheory * t:theories){
-            assert(t);
+            if(!t)
+                continue;
             if(theorySatisfied(t)){
                 int start =  post_satisfied_theory_trail_pos[t->getTheoryIndexBV()];
                 assert(post_satisfied_theory_trail_pos[t->getTheoryIndexBV()]>=satisfied_theory_trail_pos[t->getTheoryIndexBV()]);
