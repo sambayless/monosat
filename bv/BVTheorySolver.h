@@ -4139,7 +4139,7 @@ public:
     }
     void setTheorySatisfied(BVTheory *theory){
         int theoryID = theory->getTheoryIndexBV();
-        /*if(!theorySatisfied(theory)){
+        if(!theorySatisfied(theory)){
             if(trail.size()>0) {
                 satisfied_theory_trail_pos[theoryID] = trail.size() - 1;
             }else{
@@ -4147,7 +4147,7 @@ public:
                 satisfied_theory_trail_pos[theoryID]=0;
             }
             post_satisfied_theory_trail_pos[theoryID]=satisfied_theory_trail_pos[theoryID];
-        }*/
+        }
     }
     bool theorySatisfied(BVTheory * theory){
         int theoryID = theory->getTheoryIndexBV();

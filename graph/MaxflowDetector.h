@@ -189,6 +189,7 @@ public:
 	bool decideEdgeWeight(int edgeID, Weight & store, DetectorComparison & op);
 	void undecideEdgeWeight(int edgeID)override;
 	void undecide(Lit l);
+	void debug_decidable(Var v);
 	void assignBV(int bvID)override ;
 	void unassignBV(int bvID) override;
 	void setSatisfied(Lit l, bool isSatisfied)override;

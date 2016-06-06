@@ -1569,6 +1569,21 @@ bool MaxflowDetector<Weight>::decideEdgeWeight(int edgeID, Weight & store, Detec
 }
 
 template<typename Weight>
+void MaxflowDetector<Weight>::debug_decidable(Var v){
+#ifndef NDEBUG
+    if(opt_maxflow_decisions_type>0) {
+		if (outer->isEdgeVar(v)) {
+
+			int edgeID = outer->getEdgeID(v);
+			if (outer->hasBitVector(edgeID)) {
+				assert(in_decision_q[edgeID]);
+				assert(potential_decisions_q.contains(edgeID));
+			}
+		}
+	}
+#endif
+}
+template<typename Weight>
 void MaxflowDetector<Weight>::undecideEdgeWeight(int edgeid){
 	if(opt_theory_internal_vsids){
 		insertEdgeOrder(edgeid);

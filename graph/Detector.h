@@ -183,6 +183,11 @@ public:
 		//unassigned_negatives++;
 		//unassigned_positives++;
 	}
+
+	virtual void debug_decidable(Var v){
+
+	}
+
 };
 
 enum class DetectorComparison{

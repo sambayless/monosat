@@ -1444,11 +1444,20 @@ public:
 			lbool val = value(e.v);
 			if(edge_bv_weights.size()){
 				BitVector<Weight> & bv = edge_bv_weights[e.edgeID];
-				if(g_under.getWeight(e.edgeID)!= bv.getUnder()){
-					bassert( false);
-				}
-				if(g_over.getWeight(e.edgeID)!=bv.getOver()){
-					bassert( false);
+				if(!theoryIsSatisfied()) {
+					if (g_under.getWeight(e.edgeID) != bv.getUnder()) {
+						bassert(false);
+					}
+					if (g_over.getWeight(e.edgeID) != bv.getOver()) {
+						bassert(false);
+					}
+				}else{
+					if (g_under.getWeight(e.edgeID) > bv.getUnder()) {
+						bassert(false);
+					}
+					if (g_over.getWeight(e.edgeID) < bv.getOver()) {
+						bassert(false);
+					}
 				}
 			}
 			if (val == l_True) {
@@ -1619,6 +1628,22 @@ public:
 
 #endif
 	}
+
+	void debug_decisions(){
+#ifndef NDEBUG
+        for(int v = 0;v<nVars();v++){
+			if(value(v)==l_Undef){
+				for (int i = 0; i < detectors.size(); i++) {
+					Detector *r = detectors[i];
+					r->debug_decidable(v);
+				}
+			}
+		}
+#endif
+	}
+
+
+
 	void dbg_full_sync() {
 
 #ifdef DEBUG_GRAPH
@@ -2029,7 +2054,7 @@ public:
 				return solverLit;
 			}
 		}
-
+		debug_decisions();
 
 		vec<Detector*> & detectors = (hasEdgeSets() && allEdgeSetsAssigned()) ? edge_set_detectors:normal_detectors;
 		for (int i = 0; i < detectors.size(); i++) {
