@@ -1643,6 +1643,15 @@ public:
 	}
 
 
+	void debug_decision(Detector * r){
+#ifndef NDEBUG
+		for(int v = 0;v<nVars();v++){
+			if(value(v)==l_Undef){
+					r->debug_decidable(v);
+			}
+		}
+#endif
+	}
 
 	void dbg_full_sync() {
 
@@ -1806,7 +1815,9 @@ public:
 				while(v!=var_Undef){
 					Lit l = mkLit(v, value(v)==l_False);
 					assert(assigns[v]!=l_Undef);
-
+					if(assigns[v]==l_Undef){
+						throw std::runtime_error("Internal error in backtracking");
+					}
 			/*		if(S->level(toSolver(v))<=untilLevel){
 						if(value(v) != S->value(toSolver(v))){
 							changed=true;
@@ -2054,7 +2065,7 @@ public:
 				return solverLit;
 			}
 		}
-		debug_decisions();
+
 
 		vec<Detector*> & detectors = (hasEdgeSets() && allEdgeSetsAssigned()) ? edge_set_detectors:normal_detectors;
 		for (int i = 0; i < detectors.size(); i++) {
@@ -2062,6 +2073,7 @@ public:
 			if(satisfied_detectors[r->getID()])
 				continue;
 			Lit l = r->decide();
+
 			if (l != lit_Undef) {
 
 				if(opt_decide_graph_bv && !sign(l) && isEdgeVar(var(l)) && hasBitVector(getEdgeID(var(l))) && r->supportsEdgeDecisions()){
@@ -3191,6 +3203,7 @@ public:
 				}
 			}
 			if (n_assigned!=1){
+				exit(7);
 				throw std::runtime_error("BAD SOLUTION: edge set has the too many non-false edges");
 				return false;
 			}

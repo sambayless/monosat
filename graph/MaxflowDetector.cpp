@@ -1575,11 +1575,35 @@ void MaxflowDetector<Weight>::debug_decidable(Var v){
 		if (outer->isEdgeVar(v)) {
 
 			int edgeID = outer->getEdgeID(v);
-			if (outer->hasBitVector(edgeID)) {
-				assert(in_decision_q[edgeID]);
-				assert(potential_decisions_q.contains(edgeID));
+			if(outer->hasBitVectorEdges()){
+
+			if(g_over.hasEdge(edgeID) && g_over.edgeEnabled(edgeID)){
+				Var v = outer->getEdgeVar(edgeID);
+				lbool val = outer->value(v);
+				Weight flow =  overapprox_conflict_detector->getEdgeFlow(edgeID);
+				int bvID = outer->getEdgeBV(edgeID).getID();
+				Weight over_weight = outer->getEdgeBV(edgeID).getOver();
+				Weight under_weight = outer->getEdgeBV(edgeID).getUnder();
+				if(opt_decide_graph_bv){
+					if((val==l_Undef && flow>0) || (flow>0 && flow>under_weight)){
+						if(!in_decision_q[edgeID]){
+							throw std::runtime_error("Error in maxflow");
+						}
+					}
+				}else{
+					if((val==l_Undef && flow>0)){
+						if(!in_decision_q[edgeID]){
+							throw std::runtime_error("Error in maxflow");
+						}
+					}
+				}
+			}
+
 			}
 		}
+	}
+	if(opt_maxflow_decisions_type==1){
+
 	}
 #endif
 }

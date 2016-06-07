@@ -130,6 +130,8 @@ private:
 		assert(labelOut==0);
 		if(checkUsed){
 			hasUsed=true;
+			usedTransitions.growTo(g.nEdgeIDs());
+			usedTransitions[edgeID].growTo(g.inAlphabet()+1);
 			usedTransitions[edgeID][labelIn]=true;
 		}
 	}
@@ -478,7 +480,7 @@ public:
 		int i,j=0;
 		for(i = 0;i<path.size();i++){
 			NFATransition & t = path[i];
-
+			used_transition[t.edgeID].growTo(g.inAlphabet()+1);
 			if(!used_transition[t.edgeID][t.input]) {
 				path[j++]=t;
 				used_transition[t.edgeID].set(t.input);

@@ -348,24 +348,33 @@ private:
 
 			//bv_lt bvID var weight
 			skipWhitespace(in);
-			Var v = parseInt(in) - 1;
-			Var ov = v;
-			v= mapVar(S,v);
-			skipWhitespace(in);
-			//bool arg1_is_bv=match(in,"bv");
-			long arg1 = parseInt(in);
-			skipWhitespace(in);
-			//bool arg2_is_bv=match(in,"bv");
-			long arg2 = parseLong(in);
-			compares.push();
-			compares.last().bvID =  arg1;
-			compares.last().w = arg2;
-			compares.last().c = c;
-			compares.last().var = v;
-			if(v==0){
-				int a=1;
+			int v_int= parseInt(in) - 1;
+			if(v_int<0 || this->inVarMap((Var)v_int)){
+				//fix this later: for now, just ignore negative or repeated comparison vars
+				skipWhitespace(in);
+				long arg1 = parseInt(in);
+				skipWhitespace(in);
+				long arg2 = parseLong(in);
+				return;
+			}else {
+				Var v = (Var)v_int;
+				Var ov = v;
+				v = mapVar(S, v);
+				skipWhitespace(in);
+				//bool arg1_is_bv=match(in,"bv");
+				long arg1 = parseInt(in);
+				skipWhitespace(in);
+				//bool arg2_is_bv=match(in,"bv");
+				long arg2 = parseLong(in);
+				compares.push();
+				compares.last().bvID = arg1;
+				compares.last().w = arg2;
+				compares.last().c = c;
+				compares.last().var = v;
+				if (v == 0) {
+					int a = 1;
+				}
 			}
-
 		}
 
 	void readPopCount(B & in, Solver & S){
