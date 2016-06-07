@@ -4795,7 +4795,7 @@ public:
 
                     if (hasTheory(bvID)) {
                         int theoryID = getTheory(bvID)->getTheoryIndexBV();
-                        if(analysis_trail_pos<= satisfied_theory_trail_pos[theoryID]){
+                        if(i<= satisfied_theory_trail_pos[theoryID]){
                             satisfied_theory_trail_pos[theoryID]=-1;
                             post_satisfied_theory_trail_pos[theoryID]=-1;
                         }
@@ -4803,10 +4803,10 @@ public:
                         if(satisfied_theory_trail_pos[theoryID]< 0 ) {
                             getTheory(bvID)->backtrackBV(
                                     bvID);//only enqueue the bitvector in the subtheory _after_ it's approximation has been updated!
-                        }else if (analysis_trail_pos>satisfied_theory_trail_pos[theoryID] && analysis_trail_pos<= post_satisfied_theory_trail_pos[theoryID]){
+                        }else if (i>satisfied_theory_trail_pos[theoryID] && i<= post_satisfied_theory_trail_pos[theoryID]){
                             getTheory(bvID)->backtrackBV(
                                     bvID);//only enqueue the bitvector in the subtheory _after_ it's approximation has been updated!
-                            post_satisfied_theory_trail_pos[theoryID]= analysis_trail_pos-1;
+                            post_satisfied_theory_trail_pos[theoryID]= i-1;
                         }
 
 
@@ -4819,7 +4819,7 @@ public:
 
                         if (hasTheory(changedID)) {
                             int theoryID = getTheory(changedID)->getTheoryIndexBV();
-                            if(analysis_trail_pos<= satisfied_theory_trail_pos[theoryID]){
+                            if(i<= satisfied_theory_trail_pos[theoryID]){
                                 satisfied_theory_trail_pos[theoryID]=-1;
                                 post_satisfied_theory_trail_pos[theoryID]=-1;
                             }
@@ -4827,10 +4827,10 @@ public:
                             if(satisfied_theory_trail_pos[theoryID]< 0 ) {
                                 getTheory(changedID)->backtrackBV(
                                         changedID);//only enqueue the bitvector in the subtheory _after_ it's approximation has been updated!
-                            }else if (analysis_trail_pos>satisfied_theory_trail_pos[theoryID] && analysis_trail_pos<= post_satisfied_theory_trail_pos[theoryID]){
+                            }else if (i>satisfied_theory_trail_pos[theoryID] && i<= post_satisfied_theory_trail_pos[theoryID]){
                                 getTheory(changedID)->backtrackBV(
                                         changedID);//only enqueue the bitvector in the subtheory _after_ it's approximation has been updated!
-                                post_satisfied_theory_trail_pos[theoryID]= analysis_trail_pos-1;
+                                post_satisfied_theory_trail_pos[theoryID]= i-1;
                             }
                         }
                     }
