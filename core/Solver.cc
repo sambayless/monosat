@@ -417,6 +417,7 @@ void Solver::cancelUntil(int lev) {
 					if(c<= satisfied_theory_trail_pos[theoryID]){
 						satisfied_theory_trail_pos[theoryID]=-1;
 						post_satisfied_theory_trail_pos[theoryID]=-1;
+						//printf("theory %d no longer sat at lev %d\n",theoryID, decisionLevel());
 					}
 
 					if(satisfied_theory_trail_pos[theoryID]< 0 ) {
@@ -444,6 +445,19 @@ void Solver::cancelUntil(int lev) {
 		
 		trail.shrink(trail.size() - trail_lim[lev]);
 		trail_lim.shrink(trail_lim.size() - lev);
+
+		for (int i = 0; i < theories.size(); i++) {
+			int theoryID = theories[i]->getTheoryIndex();
+			int c = trail.size() - 1;
+			if(c<= satisfied_theory_trail_pos[theoryID]){
+				satisfied_theory_trail_pos[theoryID]=-1;
+				post_satisfied_theory_trail_pos[theoryID]=-1;
+				//printf("theory %d no longer sat at lev %d\n",theoryID, decisionLevel());
+			}else if (c>satisfied_theory_trail_pos[theoryID] && c<= post_satisfied_theory_trail_pos[theoryID]){
+				theories[theoryID]->undecideTheory(getTheoryLit(trail[c]));
+				post_satisfied_theory_trail_pos[theoryID]= c-1;
+			}
+		}
 
 		/*while(theory_sat_queue.size() && theory_sat_queue.last().trail_size>trail.size()){
 			int theoryID = theory_sat_queue.last().theoryID;
@@ -856,6 +870,9 @@ void Solver::enqueueLazy(Lit p, int lev, CRef from){
 }
 
 void Solver::uncheckedEnqueue(Lit p, CRef from) {
+	if(var(p)==24979){
+		int a=1;
+	}
 	assert(value(p) == l_Undef);
 	assigns[var(p)] = lbool(!sign(p));
 	vardata[var(p)] = mkVarData(from, decisionLevel());
@@ -1064,15 +1081,19 @@ void Solver::enqueueAnyUnqueued(){
 	}else{
 		lev_0_pos = trail.size();
 	}
-	for(int i = startingPos;i< trail.size();i++){
+	for(int i = 0;i< trail.size();i++){
 		Lit l = trail[i];
+
 		if(hasTheory(l) ){
 			int theoryID = getTheoryID(l);
+			Lit theoryLit = getTheoryLit(l);
+
+
 
 			int start = post_satisfied_theory_trail_pos[theoryID];
 			if(start>=0 && start<= i) {
 				Theory * theory = theories[theoryID];
-				Lit theoryLit = getTheoryLit(l);
+
 				theory->enqueueTheory(theoryLit);
 				assert(post_satisfied_theory_trail_pos[theoryID]<=i);
 				post_satisfied_theory_trail_pos[theoryID] = i;
@@ -1195,14 +1216,7 @@ CRef Solver::propagate(bool propagate_theories) {
 		if (initialPropagate && decisionLevel() == 0 && propagate_theories) {
 			assert(decisionLevel() == 0);
 			//propagate any as yet unpropagated literals to each theory
-			for (int i = 0; i < qhead; i++) {
-				Lit p = trail[i];
-				if (hasTheory(p)) {
-					int theoryID = getTheoryID(p);
-					theories[theoryID]->enqueueTheory(getTheoryLit(p));
-					
-				}
-			}
+
 			//Have to check _all_ the theories, even if we haven't eneueued of their literals, in case they have constants to propagate up.
 			for (int theoryID = 0; theoryID < theories.size(); theoryID++) {
 				needsPropagation(theoryID);
@@ -1456,7 +1470,7 @@ bool Solver::simplify() {
 		detectPureTheoryLiterals();
 	}
 
-	bool propagate_theories = !disable_theories && opt_propagate_theories_during_simplification;
+	bool propagate_theories = !disable_theories && opt_propagate_theories_during_fast_simplification;
 
 	if (!ok || propagate(propagate_theories) != CRef_Undef || !ok) //yes, the second ok check is now required, because propagation of a theory can make the solver unsat at this point...
 		return ok = false;
@@ -2166,6 +2180,16 @@ lbool Solver::solve_() {
 	}
 	initial_level = 0;
 	track_min_level = 0;
+
+	//ensure that any theory atoms that were created _after_ the variable was assigned are enqueued in the theory
+	for (int i = 0; i < qhead; i++) {
+		Lit p = trail[i];
+		if (hasTheory(p)) {
+			int theoryID = getTheoryID(p);
+			theories[theoryID]->enqueueTheory(getTheoryLit(p));
+		}
+	}
+
 	// Search:
 	int curr_restarts = 0;
 	while (status == l_Undef) {
@@ -2207,9 +2231,10 @@ lbool Solver::solve_() {
 	}
 	
 	if (status == l_True) {
+		model.growTo(nVars());
 		enqueueAnyUnqueued();//assign any remaining atoms to theories that were trivially satisfied
 		// Extend & copy model:
-		model.growTo(nVars());
+
 		for (int i = 0; i < nVars(); i++)
 			model[i] = value(i);
 		
@@ -2266,6 +2291,7 @@ lbool Solver::solve_() {
 	}
 	only_propagate_assumptions=false;
 	assumptions.clear();
+	clearSatisfied();
 	return status;
 }
 

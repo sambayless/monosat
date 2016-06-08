@@ -61,6 +61,9 @@ public:
 	virtual void enqueueAnyUnqueued(){
 
 	}
+	virtual void clearSatisfied(){
+
+	}
 	virtual bool propagateTheory(vec<Lit> & conflict)=0;
 	virtual bool solveTheory(vec<Lit> & conflict)=0;
 	virtual bool theoryIsSatisfied(){

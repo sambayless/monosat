@@ -788,7 +788,6 @@ void MaxflowDetector<Weight>::analyzeMaxFlowLEQ(Weight flow, vec<Lit> & conflict
 	}
 #endif
 }
-
 template<typename Weight>
 void MaxflowDetector<Weight>::buildMaxFlowTooLowReason(Weight maxflow, vec<Lit> & conflict, bool force_maxflow) {
 	static int it = 0;
@@ -1139,17 +1138,21 @@ bool MaxflowDetector<Weight>::checkSatisfied() {
 
 				if (outer->value(l) == l_True) {
 					if (underCheck.maxFlow() < dist_under) {
+						std::cout<<("Error in maxflow (true): expected flow >=") << dist_under << "but found flow of " << underCheck.maxFlow() <<"\n" ;
 						return false;
 					}
 				} else if (outer->value(l) == l_False) {
 					if (overCheck.maxFlow() >= dist_over) {
+						std::cout<<("Error in maxflow (false): expected flow <") << dist_over << "but found flow of " << overCheck.maxFlow() <<"\n" ;
 						return false;
 					}
 				} else {
 					if (underCheck.maxFlow() >= dist_under) {
+						std::cout<<"Error in maxflow ("<< toInt(l) << " unassigned): expected flow <" << dist_under << "but found flow of " << underCheck.maxFlow() <<"\n" ;
 						return false;
 					}
 					if (overCheck.maxFlow() < dist_over) {
+						std::cout<<("Error in maxflow (unassigned): expected flow >=") << dist_over << "but found flow of " << overCheck.maxFlow() <<"\n" ;
 						return false;
 					}
 				}

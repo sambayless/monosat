@@ -172,8 +172,11 @@ public:
 	}
 	;
 	bool propagateTheory(vec<Lit> & conflict) {
-		if (clausified)
+		if (clausified) {
+			S->setTheorySatisfied(this);
 			return true;
+		}
+
 		if(decisionLevel()==0){
 			//remove constants from the set
 			int n_nonconstants = 0;
@@ -201,6 +204,7 @@ public:
 				if(opt_verb>1){
 					printf("Clausifying amo theory %d with %d lits\n",this->getTheoryIndex(),amo.size());
 				}
+				S->setTheorySatisfied(this);
 				return clausify_amo(S,amoLits);
 			}
 		}

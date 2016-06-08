@@ -21,8 +21,8 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
 
-#ifndef Minisat_Solver_h
-#define Minisat_Solver_h
+#ifndef Monosat_Solver_h
+#define Monosat_Solver_h
 
 #include "mtl/Vec.h"
 #include "mtl/Heap.h"
@@ -91,6 +91,7 @@ public:
 	virtual void setTheorySatisfied(Theory * theory)override{
 		int theoryID = theory->getTheoryIndex();
 		if(!theorySatisfied(theory)){
+			//printf("Theory %d sat at %d\n",theoryID, decisionLevel());
 			if(trail.size()>0) {
 				satisfied_theory_trail_pos[theoryID] = trail.size() - 1;
 			}else{
@@ -104,6 +105,16 @@ public:
 	virtual bool theorySatisfied(Theory * theory)override{
 		int theoryID = theory->getTheoryIndex();
 		return satisfied_theory_trail_pos[theoryID]>=0;
+	}
+	void clearSatisfied()override{
+		for(Theory * t:theories){
+			if(t){
+				int theoryID = t->getTheoryIndex();
+				satisfied_theory_trail_pos[theoryID]=-1;
+				post_satisfied_theory_trail_pos[theoryID]=-1;
+				t->clearSatisfied();
+			}
+		}
 	}
 	//Theory interface
 	void addTheory(Theory*t) {
@@ -305,6 +316,9 @@ public:
 			exit(1);
 		}
 		assert(!hasTheory(solverVar));
+		if(toInt(mkLit(theoryVar))==10858){
+			dbg++;
+		}
 		theory_vars[solverVar].theory = theory + 1;
 		theory_vars[solverVar].theory_var = theoryVar;
 		all_theory_vars.push(solverVar);
@@ -581,6 +595,7 @@ public:
 	uint64_t dec_vars, clauses_literals, learnts_literals, max_literals, tot_literals;
 	long stats_skipped_theory_prop_rounds=0;
 	long stats_theory_conflicts =0;
+	long dbg=0;
 	long stats_solver_preempted_decisions=0;
 	long stats_theory_decisions=0;
 	double stats_pure_lit_time=0;
@@ -796,6 +811,9 @@ public:
 	}
 	void cancelUntil(int level);                                             // Backtrack until a certain level.
 	inline void needsPropagation(int theoryID){
+		if(theoryID==1){
+			int a=1;
+		}
 		if (!in_theory_queue[theoryID]) {
 			in_theory_queue[theoryID] = true;
 			theory_queue.push(theoryID);

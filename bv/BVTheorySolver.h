@@ -4137,6 +4137,16 @@ public:
         assert(hasTheory(bvID));
         return theories[theoryIds[bvID]];
     }
+    void clearSatisfied()override{
+        for(BVTheory * t:theories){
+            if(t){
+                int theoryID = t->getTheoryIndexBV();
+                satisfied_theory_trail_pos[theoryID]=-1;
+                post_satisfied_theory_trail_pos[theoryID]=-1;
+                //printf("bv theory %d no longer sat at lev %d\n",theoryID, decisionLevel());
+            }
+        }
+    }
     void setTheorySatisfied(BVTheory *theory){
         int theoryID = theory->getTheoryIndexBV();
         if(!theorySatisfied(theory)){
@@ -4147,6 +4157,7 @@ public:
                 satisfied_theory_trail_pos[theoryID]=0;
             }
             post_satisfied_theory_trail_pos[theoryID]=satisfied_theory_trail_pos[theoryID];
+            //printf("bv theory %d is sat at lev %d\n",theoryID, decisionLevel());
         }
     }
     bool theorySatisfied(BVTheory * theory){
@@ -4567,11 +4578,12 @@ public:
                     over_causes[bvID] = e.new_over_cause;
                     if (hasTheory(bvID)) {
                         int theoryID = getTheory(bvID)->getTheoryIndexBV();
-                        if(satisfied_theory_trail_pos[theoryID]< 0 ) {
+                        getTheory(bvID)->rewindBV(bvID);
+                        /*if(satisfied_theory_trail_pos[theoryID]< 0 ) {
                             getTheory(bvID)->rewindBV(bvID);
                         }else if (analysis_trail_pos>satisfied_theory_trail_pos[theoryID] && analysis_trail_pos<= post_satisfied_theory_trail_pos[theoryID]){
                             getTheory(bvID)->rewindBV(bvID);
-                        }
+                        }*/
                     }
                 } else {
                     Var x = e.var;
@@ -4605,9 +4617,10 @@ public:
                     over_causes[bvID] = e.prev_over_cause;
                     if (hasTheory(bvID)) {
                         int theoryID = getTheory(bvID)->getTheoryIndexBV();
-                        if(analysis_trail_pos<= satisfied_theory_trail_pos[theoryID]){
+                       /* if(analysis_trail_pos<= satisfied_theory_trail_pos[theoryID]){
                             satisfied_theory_trail_pos[theoryID]=-1;
                             post_satisfied_theory_trail_pos[theoryID]=-1;
+                            //printf("bv theory %d no longer sat at lev %d\n",theoryID, decisionLevel());
                         }
 
                         if(satisfied_theory_trail_pos[theoryID]< 0 ) {
@@ -4615,8 +4628,8 @@ public:
                         }else if (analysis_trail_pos>satisfied_theory_trail_pos[theoryID] && analysis_trail_pos<= post_satisfied_theory_trail_pos[theoryID]){
                             getTheory(bvID)->rewindBV(bvID);
                             post_satisfied_theory_trail_pos[theoryID]= analysis_trail_pos-1;
-                        }
-
+                        }*/
+                        getTheory(bvID)->rewindBV(bvID);
                     }
                 } else {
                     Var x = e.var;
@@ -4683,9 +4696,10 @@ public:
                 over_causes[bvID] = e.prev_over_cause;
                 if (hasTheory(bvID)) {
                     int theoryID = getTheory(bvID)->getTheoryIndexBV();
-                    if(analysis_trail_pos<= satisfied_theory_trail_pos[theoryID]){
+                    /*if(analysis_trail_pos<= satisfied_theory_trail_pos[theoryID]){
                         satisfied_theory_trail_pos[theoryID]=-1;
                         post_satisfied_theory_trail_pos[theoryID]=-1;
+                       // printf("bv theory %d no longer sat at lev %d\n",theoryID, decisionLevel());
                     }
 
                     if(satisfied_theory_trail_pos[theoryID]< 0 ) {
@@ -4693,8 +4707,8 @@ public:
                     }else if (analysis_trail_pos>satisfied_theory_trail_pos[theoryID] && analysis_trail_pos<= post_satisfied_theory_trail_pos[theoryID]){
                         getTheory(bvID)->rewindBV(bvID);
                         post_satisfied_theory_trail_pos[theoryID]= analysis_trail_pos-1;
-                    }
-
+                    }*/
+                    getTheory(bvID)->rewindBV(bvID);
                 }
             } else {
                 Var x = e.var;
@@ -4734,9 +4748,10 @@ public:
                 over_causes[bvID] = e.prev_over_cause;
                 if (hasTheory(bvID)) {
                     int theoryID = getTheory(bvID)->getTheoryIndexBV();
-                    if(analysis_trail_pos<= satisfied_theory_trail_pos[theoryID]){
+                   /* if(analysis_trail_pos<= satisfied_theory_trail_pos[theoryID]){
                         satisfied_theory_trail_pos[theoryID]=-1;
                         post_satisfied_theory_trail_pos[theoryID]=-1;
+                        // printf("bv theory %d no longer sat at lev %d\n",theoryID, decisionLevel());
                     }
 
                     if(satisfied_theory_trail_pos[theoryID]< 0 ) {
@@ -4744,8 +4759,8 @@ public:
                     }else if (analysis_trail_pos>satisfied_theory_trail_pos[theoryID] && analysis_trail_pos<= post_satisfied_theory_trail_pos[theoryID]){
                         getTheory(bvID)->rewindBV(bvID);
                         post_satisfied_theory_trail_pos[theoryID]= analysis_trail_pos-1;
-                    }
-
+                    }*/
+                    getTheory(bvID)->rewindBV(bvID);
                 }
             } else {
                 Var x = e.var;
@@ -4769,8 +4784,8 @@ public:
     }
 
 
-    void backtrackUntil(int level) {
-        //it is NOT safe to remove altered bitvectors here, because if a comparison was added at a higher level, and then
+    void backtrackUntil(int lev) {
+        //it is NOT safe to remove altered bitvectors here, because if a comparison was added at a higher lev, and then
         //a conflict was discovered _Before_ the comparison was processed, then the comparison may never be propagated at all if the altered_bvs are cleared here.
 /*		for(int bvID:altered_bvs){
 			alteredBV[bvID]=false;
@@ -4779,10 +4794,10 @@ public:
 
         rewind_trail_pos(trail.size());
         //need to remove and add edges in the two graphs accordingly.
-        if (trail_lim.size() > level) {
+        if (trail_lim.size() > lev) {
 
-            int stop = trail_lim[level];
-            for (int i = trail.size() - 1; i >= trail_lim[level]; i--) {
+            int stop = trail_lim[lev];
+            for (int i = trail.size() - 1; i >= trail_lim[lev]; i--) {
 
                 Assignment &e = trail[i];
                 if (e.isBoundAssignment()) {
@@ -4798,6 +4813,7 @@ public:
                         if(i<= satisfied_theory_trail_pos[theoryID]){
                             satisfied_theory_trail_pos[theoryID]=-1;
                             post_satisfied_theory_trail_pos[theoryID]=-1;
+                            //printf("bv theory %d no longer sat at lev %d\n",theoryID, lev);
                         }
 
                         if(satisfied_theory_trail_pos[theoryID]< 0 ) {
@@ -4822,6 +4838,7 @@ public:
                             if(i<= satisfied_theory_trail_pos[theoryID]){
                                 satisfied_theory_trail_pos[theoryID]=-1;
                                 post_satisfied_theory_trail_pos[theoryID]=-1;
+                                //printf("bv theory %d no longer sat at lev %d\n",theoryID, decisionLevel());
                             }
 
                             if(satisfied_theory_trail_pos[theoryID]< 0 ) {
@@ -4848,10 +4865,10 @@ public:
                 trail.pop();
             }
             //trail.shrink(trail.size() - stop);
-            trail_lim.shrink(trail_lim.size() - level);
-            assert(trail_lim.size() == level);
+            trail_lim.shrink(trail_lim.size() - lev);
+            assert(trail_lim.size() == lev);
             assert(dbg_uptodate());
-            if (level ==
+            if (lev ==
                 0) {//decisionLevel()==0 This check can fail if the levels of the theory and sat solver are out of sync
                 for (int cID:repropagate_comparisons) {
                     assert(comparison_needs_repropagation[cID]);

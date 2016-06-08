@@ -444,14 +444,14 @@ lbool optimize_and_solve(SimpSolver & S,const vec<Lit> & assumes,const vec<int> 
 		fflush(stdout);
 	}
 
-	if (opt_verb > 1 && assume.size()) {
+	/*if (opt_verb > 1 && assume.size()) {
 		printf("Assumptions: ");
 		for (int i = 0; i < assume.size(); i++) {
 			Lit l = assume[i];
 			printf("%d, ", dimacs(l));
 		}
 		printf("\n");
-	}
+	}*/
 	if(!bvs.size()){
 
 		  return S.solveLimited(assume,opt_pre && do_simp, !opt_pre && do_simp);

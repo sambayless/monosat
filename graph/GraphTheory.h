@@ -701,7 +701,11 @@ public:
 	int64_t stats_num_lazy_conflicts=0;
 	int64_t stats_decisions = 0;
 	int64_t stats_num_reasons = 0;
-
+	long stats_bv_backtracks =0;
+	long stats_bv_enqueues =0;
+	long stats_bv_enqueue_while_sat=0;
+	long stats_backtrack_assigns = 0;
+	long stats_enqueues=0;
 	double reachupdatetime = 0;
 	double unreachupdatetime = 0;
 	double stats_initial_propagation_time = 0;
@@ -715,6 +719,7 @@ public:
 	int64_t stats_pure_skipped = 0;
 	int64_t stats_mc_calls = 0;
 	int64_t stats_propagations_skipped = 0;
+	long dbg_6=0;
 	int64_t stats_lazy_decisions = 0;
 	vec<Lit> reach_cut;
 
@@ -839,6 +844,7 @@ public:
 		printf("Conflicts: %ld (lazy conflicts %ld)\n", stats_num_conflicts,stats_num_lazy_conflicts);
 		printf("Reasons: %ld (%f s, avg: %f s)\n", stats_num_reasons, stats_reason_time,
 				(stats_reason_time) / ((double) stats_num_reasons + 1));
+		printf("enqueues %ld, backtracks %ld (bv enqueues %ld (%ld while sat), bv backtracks %ld)\n",stats_enqueues,stats_backtrack_assigns,stats_bv_enqueues,stats_bv_enqueue_while_sat,stats_bv_backtracks);
 
 		fflush(stdout);
 
@@ -1669,6 +1675,7 @@ public:
 #endif
 	}
 	void backtrackAssign(Lit l){
+		stats_backtrack_assigns++;
 		assert(l!=lit_Undef);
 		if(l==invalid_edgeset_lit){
 			invalid_edgeset_lit=lit_Undef;
@@ -1746,6 +1753,9 @@ public:
 	void backtrackUntil(int untilLevel) {
 		static int it = 0;
 		++it;
+		if(getTheoryIndex()==6){
+			dbg_6++;
+		}
 		//printf("g%d: backtrack until level %d\n", this->id,untilLevel);
 		//assert(to_reenqueue.size()==0);
 		bool changed = false;
@@ -1869,7 +1879,9 @@ public:
 		//printf("g%d : backtrack until lit %d\n", this->id,dimacs(p));
 		//need to remove and add edges in the two graphs accordingly.
 		assert(onTrail(var(p))||onLazyTrail(var(p)));
-
+		if(getTheoryIndex()==6){
+			dbg_6++;
+		}
 		//is this safe? there is a bit of a problem here, since I don't know where in the trail the 'satisfied'
 		//information was enqueued (only the level at which it was enqueued).
 		//on the other hand, a satisfied lit shouldn't be involved in a conflict, and
@@ -2335,6 +2347,11 @@ public:
 	}
 
 	void enqueueBV(int bvID){
+		if(!S->model.size() && theoryIsSatisfied()){
+			stats_bv_enqueue_while_sat++;
+		}
+		if(!S->model.size())
+			stats_bv_enqueues++;
 
 		int lev = bvTheory->decisionLevel();//decision level must be synced with bvtheory to ensure the correctness of the enqueueSat method.
 		while (lev > decisionLevel()) {
@@ -2347,6 +2364,9 @@ public:
 			if(edgeID==11){
 				int a=1;
 			}
+/*			if((!S->model.size()) && g_under.getEdgeWeight(edgeID) == edge_bv_weights[edgeID].getUnder() && g_over.getEdgeWeight(edgeID) == edge_bv_weights[edgeID].getOver()){
+				printf("useless edge weight update: graph %d edge %d bv %d\n",getTheoryIndex(),edgeID,bvID);
+			}*/
 			g_under.setEdgeWeight(edgeID,edge_bv_weights[edgeID].getUnder());
 			g_over.setEdgeWeight(edgeID, edge_bv_weights[edgeID].getOver());
 			if(edge_sets.size()){
@@ -2402,7 +2422,10 @@ public:
 		}
 	}
 	void backtrackBV(int bvID)override{
-
+		stats_bv_backtracks++;
+		if(getTheoryIndex()!=9 && getTheoryIndex()!=8 && getTheoryIndex()!=7){
+			int a=1;
+		}
 		while(bvtrail.size() && bvtrail.last().bvID==bvID && bvtrail.last().bvTrail+1==bvTheory->trail.size()){
 			bvtrail.pop();
 		}
@@ -2445,7 +2468,9 @@ public:
 				/*while (lev > decisionLevel()) {
 					newDecisionLevel();
 				}*/
-
+				while (decisionLevel()<S->decisionLevel()) {
+					newDecisionLevel();
+				}
 				satisfied_lits.push(SatisfiedLit(decisionLevel(), l));
 				vars[var(l)].isSatisfied = 1;
 				int d = getDetector(var(l));
@@ -2454,27 +2479,13 @@ public:
 					//if edge sets are used, also set any equivalent detectors in the other edge sets to satisfied.
 					n_satisfied_detectors++;
 					assert(n_satisfied_detectors<=detectors.size());
-
 					satisfied_detectors[d]=true;
-					if(n_satisfied_detectors==detectors.size()){
-						S->setTheorySatisfied(this);
-						if(bvTheory){
-							bvTheory->setTheorySatisfied(this);
-						}
-					}
-
 					if(paired_edge_set_detectors[d]){
 						int paired_detector =paired_edge_set_detectors[d]->getID();
 						n_satisfied_detectors++;
 						assert(n_satisfied_detectors<=detectors.size());
-
 						satisfied_detectors[paired_detector]=true;
-						if(n_satisfied_detectors==detectors.size()){
-							S->setTheorySatisfied(this);
-							if(bvTheory){
-								bvTheory->setTheorySatisfied(this);
-							}
-						}
+
 					}
 				}
 
@@ -2497,7 +2508,7 @@ public:
 			return;
 		}
 		Var v = var(l);
-
+		stats_enqueues++;
 		int lev = level(v);//level from the SAT solver.
 		if(!opt_lazy_backtrack){
 			assert(decisionLevel() <= lev);
@@ -2700,12 +2711,51 @@ public:
 
 	bool propagateTheory(vec<Lit> & conflict, bool force_propagation) {
 		dbg_check_trails();
+		if(theoryIsSatisfied()){
+			S->setTheorySatisfied(this);
+			if(bvTheory){
+				bvTheory->setTheorySatisfied(this);
+			}
+			stats_propagations_skipped++;
+			return true;
+		}
+#ifndef NDEBUG
+		for(int v = 0;v<nVars();v++){
+			if(v==var(const_true))
+				continue;
+			Var solverVar = toSolver(v);
+			if(S->hasTheory(solverVar)) {
+				lbool val = value(v);
+				lbool solverVal = S->value(solverVar);
+				if (val != solverVal) {
+					exit(2);
+				}
+			}
+		}
+#endif
+		if(getTheoryIndex()==6){
+			dbg_6++;
+
+			/*Lit l1 = toLit(10860);
+			Lit l2 = toLit(10858);
+			if(nVars()>= var(l1)) {
+
+				Lit t1 = toSolver(l1);
+				Lit t2 = toSolver(l2);
+				if (value(l1) != S->value(t1)) {
+					exit(2);
+				}
+				if (value(l2) != S->value(t2)) {
+					exit(2);
+				}
+			}*/
+		}
 		if(invalid_edgeset_lit!=lit_Undef){
 			return true;
 		}
 
 		static int itp = 0;
-		if (++itp == 30) {
+		if (++itp == 4) {
 			int a = 1;
 		}
 		dbg_graphsUpToDate();
@@ -3203,7 +3253,6 @@ public:
 				}
 			}
 			if (n_assigned!=1){
-				exit(7);
 				throw std::runtime_error("BAD SOLUTION: edge set has the too many non-false edges");
 				return false;
 			}
@@ -3212,6 +3261,7 @@ public:
 		vec<Detector*> & detectors = (hasEdgeSets() && allEdgeSetsAssigned()) ? edge_set_detectors:normal_detectors;
 		for (int i = 0; i < detectors.size(); i++) {
 			if (!detectors[i]->checkSatisfied()) {
+				printf("Error in solution of graph theory %d, in detector %d (%s)\n", this->getTheoryIndex(), i, detectors[i]->getName());
 				throw std::runtime_error("BAD SOLUTION: failure in graph theory detector");
 				return false;
 			}
@@ -3732,6 +3782,9 @@ public:
 		return edge_weights[edgeID];
 	}*/
 	void reachesWithinSteps(int from, int to, Var reach_var, int within_steps) {
+		while(from >= g_under.nodes() || to >= g_under.nodes()){
+			newNode();
+		}
 		if(to >= g_under.nodes()){
 			fprintf(stderr, "Undefined node %d\n",to);
 			exit(1);
@@ -3782,15 +3835,10 @@ public:
 	}
 
 	void reachesWithinDistance(int from, int to, Var reach_var, Weight distance, bool strictComparison) {
-		if(to >= g_under.nodes()){
-			fprintf(stderr, "Undefined node %d\n",to);
-			exit(1);
-		}
-		if(from >= g_under.nodes()){
-			fprintf(stderr, "Undefined node %d\n",to);
-			exit(1);
-		}
 
+		while(from >= g_under.nodes() || to >= g_under.nodes()){
+			newNode();
+		}
 		if (weighted_dist_info[from].source < 0) {
 			WeightedDistanceDetector<Weight> * d;
 			if(edge_bv_weights.size()>0){
@@ -3817,6 +3865,9 @@ public:
 	}
 
 	void reachesWithinDistanceBV(int from, int to, Var reach_var, int bvID, bool strictComparison) {
+		while(from >= g_under.nodes() || to >= g_under.nodes()){
+			newNode();
+		}
 		if(to >= g_under.nodes()){
 			fprintf(stderr, "Undefined node %d\n",to);
 			exit(1);
@@ -3861,14 +3912,10 @@ public:
 	}
 
 	void implementMaxflowBV(int from, int to, Var v, int bvID, bool strictComparison) {
-		if(to >= g_under.nodes()){
-			fprintf(stderr, "Undefined node %d\n",to);
-			exit(1);
+		while(from >= g_under.nodes() || to >= g_under.nodes()){
+			newNode();
 		}
-		if(from >= g_under.nodes()){
-			fprintf(stderr, "Undefined node %d\n",to);
-			exit(1);
-		}
+
 		if(!bvTheory){
 			fprintf(stderr,"No bitvector theory initialized\n");exit(1);
 		}
@@ -3973,7 +4020,9 @@ public:
 
 	void allpairs(int from, int to, Var reach_var, int within_steps = -1) {
 		//for now, reachesWithinSteps to be called instead
-
+		while(from >= g_under.nodes() || to >= g_under.nodes()){
+			newNode();
+		}
 		assert(from < g_under.nodes());
 		if (within_steps > g_under.nodes())
 			within_steps = -1;
@@ -4004,6 +4053,9 @@ public:
 
 	void reaches_private(int from, int to, Var reach_var, int within_steps = -1) {
 		//for now, reachesWithinSteps to be called instead
+		while(from >= g_under.nodes() || to >= g_under.nodes()){
+			newNode();
+		}
 		if (within_steps >= 0 || opt_force_distance_solver) {
 			reachesWithinSteps(from, to, reach_var, within_steps);
 			return;
@@ -4106,6 +4158,9 @@ public:
 		mstDetector->addTreeEdgeLit(edgeid, var);
 	}
 	void maxflow(int from, int to,Var v, Weight  max_flow,  bool inclusive=true) {
+		while(from >= g_under.nodes() || to >= g_under.nodes()){
+			newNode();
+		}
 		if(to >= g_under.nodes()){
 			fprintf(stderr, "Undefined node %d\n",to);
 			exit(1);

@@ -684,7 +684,6 @@ class GraphParser: public Parser<B, Solver> {
 			int t = parseInt(in);
 			Var reachVar = parseInt(in) - 1; //note: switched the order of reachVar and flow after the paper, to allow for non-integer flow constraints in the future...
 
-
 			if (graphID < 0 || graphID >= graphs.size()) {
 				parse_errorf("PARSE ERROR! Undeclared graph identifier %d for edge %d\n", graphID, reachVar);
 			}
