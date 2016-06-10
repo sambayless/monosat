@@ -1115,6 +1115,8 @@ public:
 	}
 
 	inline Lit toSolver(Lit l)const {
+		if(l==lit_Undef)
+			return lit_Undef;
 		//assert(S->hasTheory(vars[var(l)].solverVar));
 		//assert(S->getTheoryVar(vars[var(l)].solverVar)==var(l));
 		return mkLit(vars[var(l)].solverVar, sign(l));
@@ -2092,6 +2094,7 @@ public:
 					int edgeID = getEdgeID(var(l));
 					EdgeDecider<Weight> * d = dynamic_cast<EdgeDecider<Weight> *>(r); //(EdgeDecider<Weight>*)r;
 					Weight edgeWeight=-1;
+
 					DetectorComparison op;
 					if(d->decideEdgeWeight(edgeID,edgeWeight,op)){
 						assert(edgeWeight>=0);
@@ -2126,6 +2129,11 @@ public:
 							stats_decisions++;
 							r->undecide(l);
 							stats_decision_time += rtime(1) - start;
+							if(S->value(bv_decision)!=l_Undef){
+
+								printf("%d %d\n",var(l), dimacs(bv_decision));
+                                throw std::runtime_error("error in decision heuristic");
+                            }
 							return bv_decision;
 						}
 					}

@@ -2094,7 +2094,7 @@ lbool Solver::search(int nof_conflicts) {
 			// Increase decision level and enqueue 'next'
 			assert(next!=lit_Undef);
 			//if(next!=lit_Error)//lit_Error is used to signify a decision that has no literal in the SAT solver (some theories may support this)
-
+			assert(value(next)==l_Undef);
 			enqueue(next);//not unchecked enqueue, because a theory solver _may_ have assigned this literal while making a decision
 		}
 	}

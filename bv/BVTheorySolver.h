@@ -4454,6 +4454,8 @@ public:
     }
 
     inline Lit toSolver(Lit l) {
+        if(l==lit_Undef)
+            return lit_Undef;
         //assert(S->hasTheory(vars[var(l)].solverVar));
         //assert(S->getTheoryVar(vars[var(l)].solverVar)==var(l));
         return mkLit(vars[var(l)].solverVar, sign(l));
@@ -4932,7 +4934,7 @@ public:
             bvID = eq_bitvectors[bvID];
         Lit l = lit_Undef;
 
-        while (S->decisionLevel() > trail_lim.size()) {
+        while (S->decisionLevel() > decisionLevel()) {
             newDecisionLevel();
         }
 
@@ -5028,7 +5030,10 @@ public:
             Weight bit_under = 0;
             for (int i = bits.size() - 1; i >= 0; i--) {
                 Lit b = bits[i];
-                if (value(b) == l_Undef) {
+                if(b==lit_Undef)
+                    continue;
+                Lit sb = toSolver(b);
+                if (S->value(sb) == l_Undef) {
                     Weight bit = 1L << i;
 
                     bool positive = true;
@@ -5036,18 +5041,22 @@ public:
                         positive = false;
                     }
                     l = positive ? b : ~b;
-                    break;
-                } else if (value(b) == l_True) {
+                    return toSolver(l);
+                } else if (S->value(sb) == l_True) {
                     Weight bit = 1L << i;
                     bit_under += bit;
                 } else {
 
                 }
             }
+            return lit_Undef;
         } else {
             l = newComparison(op, bvID, to, var_Undef, opt_cmp_lits_decidable);
+            if (l==lit_Undef || S->value(toSolver(l))!=l_Undef)
+                return lit_Undef;
+            return toSolver(l);
         }
-        return toSolver(l);
+        return lit_Undef;
     }
 
     Lit decideTheory() {

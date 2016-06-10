@@ -864,7 +864,7 @@ int solveAssumptionsLimited_MinBVs(Monosat::SimpSolver * S,int * assumptions, in
 
 	  Lit l =bv->toSolver(bv->newComparison(Monosat::Comparison::geq,bvID,weight));
 	 //printf("Const bv geq bv %d to %ld = var %d\n",bvID, weight, dimacs(l));
-	 write_out(S,"bv const >= %d %d %ld\n",dimacs(l),bvID, weight);
+	  write_out(S,"bv const >= %d %d %ld\n",dimacs(l),bvID, weight);
 	  return toInt(l);
  }
  int newBVComparison_bv_geq(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bv, int bvID, int compareID){
