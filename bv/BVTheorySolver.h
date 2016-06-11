@@ -57,6 +57,16 @@ enum class Comparison {
     lt, leq, gt, geq, none
 };
 
+
+
+ inline long getLong(long w) {
+    return w;
+}
+
+ inline long getLong(mpq_class w){
+    return 0;
+}
+
 inline Comparison operator~(Comparison p) {
     switch (p) {
         case Comparison::lt:
@@ -3858,7 +3868,10 @@ public:
         /*assert(op->getID()==operations.size());
 		operations.push(op);*/
         operation_ids[bvID].push(op->getID());
-
+#ifdef CRC_CHECK
+        S->crc(bvID,"addOpID");
+        S->crc(op->getID(),"newOpID");
+#endif
     }
 
 
@@ -5326,7 +5339,40 @@ private:
     Weight refine_lbound_check(int bvID, Weight bound, Var ignore_bit);
 
     void dbg_evaluate(int bvID, int pos, vec<Weight> &vals, Weight val);
+   /* void test(){
+    	  printf("test\n");
+		printf("test\n");
+		printf("test\n");
+		printf("test\n");
+		printf("test\n");
+		printf("test\n");
+		printf("test\n");
+		printf("test\n");
+		printf("test\n");
+		printf("test\n");
+		printf("test\n");
+		printf("test\n");
+		printf("test\n");
+		printf("test\n");
+		printf("test\n");
+		printf("test\n");
+		printf("test\n");
+		printf("test\n");
+		printf("test\n");
+		printf("test\n");
+		printf("test\n");
+		printf("test\n");
+		printf("test\n");
+		printf("test\n");
+		printf("test\n");
+		printf("test\n");
+		printf("test\n");
+		printf("test\n");
+		printf("test\n");
+		printf("test\n");
+		printf("test\n");
 
+    }*/
 public:
     bool updateApproximations(int bvID, int ignoreCID = -1, Var ignore_bv = var_Undef) {
         if (isConst(bvID))
@@ -5338,7 +5384,10 @@ public:
         statis_bv_updates++;
         static int iter = 0;
         ++iter;
+        if(iter==9253){
+            int a=1;
 
+        }
 #ifndef NDEBUG
 /*		for(int i = 0;i<vars.size();i++){
 			if(value(i)==l_True){
@@ -5376,8 +5425,15 @@ public:
 
             return false;
         }
+        long under_old_l = getLong(under_old);
+        long over_old_l = getLong( over_old);
+#ifdef CRC_CHECK
+        S->crc(under_old_l,"under_old_l");
+        S->crc(over_old_l,"over_old_l");
+#endif
         assert_in_range(under_new, bvID);
         assert_in_range(over_new, bvID);
+
         Cause under_cause_old = under_causes[bvID];
         Cause over_cause_old = over_causes[bvID];
         Cause over_cause_new;
@@ -5386,6 +5442,9 @@ public:
         for (int opID:operation_ids[bvID]) {
             if (opID == ignoreCID)
                 continue;
+#ifdef CRC_CHECK
+            S->crc(opID,"opID");
+#endif
             getOperation(opID).updateApprox(ignore_bv, under_new, over_new, under_cause_new, over_cause_new);
         }
 
@@ -5397,6 +5456,9 @@ public:
             if (cID == ignoreCID) {
                 continue;
             }
+#ifdef CRC_CHECK
+            S->crc(cID,"cID");
+#endif
             ComparisonOp &c = (ComparisonOp &) getOperation(cID);
             c.updateApprox(ignore_bv, under_new, over_new, under_cause_new, over_cause_new, true);
         }
@@ -5405,6 +5467,9 @@ public:
             if (cID == ignoreCID) {
                 continue;
             }
+#ifdef CRC_CHECK
+            S->crc(cID,"cID");
+#endif
             ComparisonOp &c = (ComparisonOp &) getOperation(cID);
             c.updateApprox(ignore_bv, under_new, over_new, under_cause_new, over_cause_new, false);
         }
@@ -5505,7 +5570,12 @@ public:
         over_approx[bvID] = over_new;
         under_causes[bvID] = under_cause_new;
         over_causes[bvID] = over_cause_new;
-
+        long under = getLong(under_new);
+        long over = getLong( over_new);
+#ifdef CRC_CHECK
+        S->crc(under,"under_new");
+        S->crc(over,"over_new");
+#endif
         if (decisionLevel() == 0) {
             under_approx0[bvID] = under_approx[bvID];
             over_approx0[bvID] = over_approx[bvID];
@@ -6604,7 +6674,9 @@ public:
             aID = eq_bitvectors[aID];
         while (eq_bitvectors[bID] != bID)
             bID = eq_bitvectors[bID];
-
+        if(bID<aID){
+        	std::swap(aID,bID);
+        }
         int bitwidth = getBV(resultID).width();
         /*	if(resultID<=aID || resultID<=bID){
 			throw std::invalid_argument("Addition result must have a strictly greater id than its arguments");
@@ -7190,13 +7262,13 @@ private:
     bool dbg_compares_sorted(int bvID) {
 
 #ifndef NDEBUG
-        vec<int> &compare = compares[bvID];
+      /*  vec<int> &compare = compares[bvID];
         for (int i = 1; i < compare.size(); i++) {
             int cID0 = compare[i - 1];
             int cID1 = compare[i];
             assert(cID0 != cID1);
             assert(((ComparisonOp &) getOperation(cID0)).w <= ((ComparisonOp &) getOperation(cID1)).w);
-        }
+        }*/
 #endif
 
         return true;
@@ -7413,7 +7485,10 @@ public:
 
 
         ComparisonOp *compOp = new ComparisonOp(*this, bvID, op, to, l);
-
+#ifdef CRC_CHECK
+        S->crc(bvID,"addComparison");
+        S->crc(comparisonID,"comparisonID");
+#endif
         operations.push(compOp);
 
         dbg_compares_sorted(bvID);
@@ -7423,7 +7498,7 @@ public:
         assert(insertPos >= 0);
         assert(insertPos <= compare.size());
         compare.push(comparisonID);
-        if (insertPos < compare.size() - 1) {
+        /*if (insertPos < compare.size() - 1) {
 
             int curVal = compare[insertPos];
             for (int i = insertPos + 1; i < compare.size(); i++) {
@@ -7432,8 +7507,12 @@ public:
                 curVal = newVal;
             }
             compare[insertPos] = comparisonID;
+        }*/
+#ifdef CRC_CHECK
+        for(int cID_sort:compare){
+            S->crc(cID_sort,"cID_sort");
         }
-
+#endif
         dbg_compares_sorted(bvID);
 
 

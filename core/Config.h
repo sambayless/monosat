@@ -25,6 +25,7 @@
 #include "utils/System.h"
 namespace Monosat {
 extern IntOption opt_verb;
+extern IntOption opt_crc;
 extern BoolOption opt_pre;
 extern DoubleOption opt_var_decay;
 extern DoubleOption opt_clause_decay;
@@ -56,6 +57,7 @@ extern BoolOption opt_interpolate;
 extern IntOption opt_eager_prop;
 extern IntOption opt_subsearch;
 
+extern BoolOption opt_parser_immediate_mode;
 extern BoolOption opt_remap_vars;
 extern BoolOption opt_decide_optimization_lits;
 extern BoolOption opt_binary_search_optimization;
@@ -88,7 +90,7 @@ extern StringOption opt_mst_alg;
 extern StringOption opt_components_alg;
 extern StringOption opt_cycle_alg;
 extern IntOption opt_adaptive_history_clear;
-extern BoolOption disable_history_clears;
+extern BoolOption opt_disable_history_clears;
 extern IntOption opt_dynamic_history_clear;
 extern BoolOption opt_lazy_backtrack;
 extern BoolOption opt_lazy_backtrack_decisions;

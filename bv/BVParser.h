@@ -212,10 +212,7 @@ private:
 		long arg2 = parseLong(in);
 
 		//if(arg1_is_bv && arg2_is_bv){
-		if(arg2<arg1){
 
-			std::swap(arg1,arg2);
-		}
 
 		addbvs.push();
 		addbvs.last().resultID = resultID;
@@ -348,33 +345,30 @@ private:
 
 			//bv_lt bvID var weight
 			skipWhitespace(in);
-			int v_int= parseInt(in) - 1;
-			if(v_int<0 || this->inVarMap((Var)v_int)){
-				//fix this later: for now, just ignore negative or repeated comparison vars
-				skipWhitespace(in);
-				long arg1 = parseInt(in);
-				skipWhitespace(in);
-				long arg2 = parseLong(in);
-				return;
-			}else {
-				Var v = (Var)v_int;
-				Var ov = v;
-				v = mapVar(S, v);
-				skipWhitespace(in);
-				//bool arg1_is_bv=match(in,"bv");
-				long arg1 = parseInt(in);
-				skipWhitespace(in);
-				//bool arg2_is_bv=match(in,"bv");
-				long arg2 = parseLong(in);
-				compares.push();
-				compares.last().bvID = arg1;
-				compares.last().w = arg2;
-				compares.last().c = c;
-				compares.last().var = v;
-				if (v == 0) {
-					int a = 1;
-				}
+			int v_int= parseInt(in);
+			if(v_int<0){
+				v_int = -v_int;
+				c = -c;
 			}
+			v_int = v_int - 1;
+			Var v = (Var)v_int;
+			Var ov = v;
+			v = mapVar(S, v);
+			skipWhitespace(in);
+			//bool arg1_is_bv=match(in,"bv");
+			long arg1 = parseInt(in);
+			skipWhitespace(in);
+			//bool arg2_is_bv=match(in,"bv");
+			long arg2 = parseLong(in);
+			compares.push();
+			compares.last().bvID = arg1;
+			compares.last().w = arg2;
+			compares.last().c = c;
+			compares.last().var = v;
+			if (v == 0) {
+				int a = 1;
+			}
+
 		}
 
 	void readPopCount(B & in, Solver & S){
@@ -487,7 +481,7 @@ public:
 
 	void implementConstraints(Solver & S) {
 		theory = (BVTheorySolver<long>*) S.bvtheory;
-		if(bvs.size() || theory){
+		if(bvs.size() || addbvs.size() || comparebvs.size() || compares.size() || itebvs.size() || minmaxs.size() || popCounts.size()  || theory){
 
 			if(!theory){
 				theory = new BVTheorySolver<long>(&S);

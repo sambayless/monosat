@@ -36,7 +36,7 @@ static const char* _cat_bv = "BV";
 static const char* _cat_amo = "AMO";
 static const char* _cat_geom = "GEOMETRY";
 static const char* _cat_fsm = "FSM";
-
+IntOption Monosat::opt_crc("MAIN", "crc", "Crc level (0=silent, 1=some, 2=more).", 0, IntRange(0, INT32_MAX));
 
 IntOption Monosat::opt_verb("MAIN", "verb", "Verbosity level (0=silent, 1=some, 2=more).", 0, IntRange(0, 3));
 DoubleOption Monosat::opt_var_decay(_cat, "var-decay", "The variable activity decay factor", 0.95,
@@ -106,7 +106,7 @@ BoolOption Monosat::opt_randomomize_theory_order(_cat, "rnd-theory-order",
 BoolOption Monosat::opt_early_theory_prop(_cat, "early-theory-prop",
 		"If false, the solver waits until all literals are propagated before propagating theories; if true, theories are propagated while the solver is still propagating literals",
 		false);
-
+BoolOption Monosat::opt_parser_immediate_mode(_cat,"immediate-parser","",false);
  BoolOption Monosat::opt_remap_vars(_cat,"remap-vars","Remap variables in the GNF internally in the solver, to minimize space required",true);
  BoolOption Monosat::opt_decide_optimization_lits(_cat_opt,"decide-opt-lits","Allow decisions on literals introduced by optimization constraints",true);
  BoolOption  Monosat::opt_binary_search_optimization(_cat_opt,"binary-search","Use binary search (instead of linear search) for optimization constraints",true);
@@ -173,7 +173,7 @@ IntOption Monosat::opt_history_clear(_cat_graph, "history-clear",
 IntOption Monosat::opt_adaptive_history_clear(_cat_graph, "adaptive-history-clear",
 		"If >0, ignore the history clear option, and instead set the history clear rate to be this value multiplied by the number of edges in the graph",
 		0, IntRange(0, INT32_MAX));
-BoolOption Monosat::disable_history_clears(_cat_graph,"disable-history-clear","",false);
+BoolOption Monosat::opt_disable_history_clears(_cat_graph,"disable-history-clear","",false);
 IntOption Monosat::opt_dynamic_history_clear(_cat_graph, "dynamic-history-clear", "0=dont use dynamic history clears,1=use opportunistic dynamic history clears (falling back on normal history clears if that fails), 2=force dynamic history clears",0, IntRange(0, 2));
 
 BoolOption Monosat::opt_lazy_backtrack(_cat_graph, "lazy-backtrack", "", false);

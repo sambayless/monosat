@@ -44,6 +44,10 @@ public:
 	virtual void instantiateLazyDecision(Lit l,int atLevel, CRef reason=CRef_Undef){
 
 	}
+	virtual void crc(long v,const char* descrpt){
+
+	}
+
 	virtual void setBVTheory(Theory * t){
 
 	}

@@ -636,6 +636,9 @@ int main(int argc, char** argv) {
 		vec<Lit> assume;
 
 		StreamBuffer strm(in);
+		if(opt_parser_immediate_mode) {
+			Monosat::BVTheorySolver<int64_t> *bv = new Monosat::BVTheorySolver<int64_t>(&S);//temporary!
+		}
 		bool found_optimal=true;
 		while(S.okay() && parser.parse(strm, S)){
 			if(*strm==EOF){
@@ -668,7 +671,6 @@ int main(int argc, char** argv) {
 			printf("Parsing time = %f\n", parsing_time);
 		}
 		S.preprocess();//do this _even_ if sat based preprocessing is disabled! Some of the theory solvers depend on a preprocessing call being made!
-
 		if (opt_pre){
 			if (opt_verb > 0){
 				printf("simplify:\n");

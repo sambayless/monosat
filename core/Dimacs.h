@@ -222,6 +222,9 @@ private:
 			char * ln = (char*) line; //intentionally discard const qualifier
 			try{
 				if (p->parseLine(ln, S)) {
+					if(opt_parser_immediate_mode){
+						p->implementConstraints(S);
+					}
 					return true;
 				}
 			}catch(const parse_error& e){

@@ -377,6 +377,9 @@ void setOutputFile(Monosat::SimpSolver * S, char * output){
 		d->outfile = fopen(output, "w");
 	}
 	write_out(S,"c monosat %s\n",d->args.c_str());
+	if(S->const_true!=lit_Undef){
+		write_out(S,"%d 0\n",dimacs(S->True()));
+	}
 }
 
 Monosat::SimpSolver * newSolver(){
@@ -861,7 +864,6 @@ int solveAssumptionsLimited_MinBVs(Monosat::SimpSolver * S,int * assumptions, in
  int newBVComparison_const_geq(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bv, int bvID, int64_t weight){
 	  //Var v = newVar(S);
 	  //Lit l =mkLit(v);
-
 	  Lit l =bv->toSolver(bv->newComparison(Monosat::Comparison::geq,bvID,weight));
 	 //printf("Const bv geq bv %d to %ld = var %d\n",bvID, weight, dimacs(l));
 	  write_out(S,"bv const >= %d %d %ld\n",dimacs(l),bvID, weight);

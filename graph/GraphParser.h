@@ -274,6 +274,7 @@ class GraphParser: public Parser<B, Solver> {
 
 		int graphID = parseInt(in);
 		int n_edges = parseInt(in);
+
 		edge_sets.push();
 		edge_sets.last().graphID=graphID;
 		vec<int> & edges = edge_sets.last().edges;
