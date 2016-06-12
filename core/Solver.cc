@@ -2069,7 +2069,6 @@ lbool Solver::search(int nof_conflicts) {
 			newDecisionLevel();
 
 
-
 			if (opt_decide_theories && !disable_theories && using_theory_decisions && next == lit_Undef && (opt_theory_conflict_max==0 || conflicts>=next_theory_decision) ) {
 
 				int next_var_priority=INT_MIN;
@@ -2164,6 +2163,12 @@ lbool Solver::search(int nof_conflicts) {
 			//last_dec = var(next);
 			// Increase decision level and enqueue 'next'
 			assert(next!=lit_Undef);
+			if(next==lit_Undef){
+				throw std::runtime_error("Bad decision");
+			}
+			if(decisionLevel()>nVars()+assumptions.size()+1){
+				throw std::runtime_error("Bad decision level");
+			}
 			//if(next!=lit_Error)//lit_Error is used to signify a decision that has no literal in the SAT solver (some theories may support this)
 			assert(value(next)==l_Undef);
 			CRC(next);
@@ -2464,7 +2469,7 @@ lbool Solver::solve_() {
 			for (int i = 0; i < nVars(); i++)
 				polarity[i] = irand(random_seed, 1);
 		}
-		if (opt_decide_theories && !opt_theory_order_vsids && opt_randomomize_theory_order) {
+		if (opt_decide_theories &&  opt_randomomize_theory_order) {
 			randomShuffle(random_seed, decidable_theories);
 		}
 
