@@ -1529,13 +1529,14 @@ void Solver::detectPureTheoryLiterals(){
  |________________________________________________________________________________________________@*/
 bool Solver::simplify() {
 	assert(decisionLevel() == 0);
+
 	//it is important (for efficiency reasons, not correctness)
 	//to run this pure literal detection before propagate, if new theory atoms have been added since the last call to propagate.
 	if(ok && initialPropagate && opt_detect_pure_lits){
 		detectPureTheoryLiterals();
 	}
 
-	bool propagate_theories = !disable_theories && opt_propagate_theories_during_fast_simplification;
+	bool propagate_theories = !disable_theories;// && opt_propagate_theories_during_fast_simplification; //it is not safe to disable theory props at level 0
 
 	if (!ok || propagate(propagate_theories) != CRef_Undef || !ok) //yes, the second ok check is now required, because propagation of a theory can make the solver unsat at this point...
 		return ok = false;
@@ -1919,7 +1920,7 @@ lbool Solver::search(int nof_conflicts) {
 			int a = 1;
 		}
 		bool all_assumptions_assigned = decisionLevel() >= assumptions.size();
-		bool propagate_theories = (!disable_theories) && (opt_theory_propagate_assumptions  ||  all_assumptions_assigned);
+		bool propagate_theories = (!disable_theories) && (opt_theory_propagate_assumptions  || decisionLevel() ==0 ||   all_assumptions_assigned);
 		if(!propagate_theories){
 			stats_skipped_theory_prop_rounds++;
 		}

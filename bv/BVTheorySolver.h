@@ -4882,7 +4882,8 @@ public:
             //trail.shrink(trail.size() - stop);
             trail_lim.shrink(trail_lim.size() - lev);
             assert(trail_lim.size() == lev);
-            assert(dbg_uptodate());
+            if(opt_theory_propagate_assumptions)
+                assert(dbg_uptodate());
             if (lev ==
                 0) {//decisionLevel()==0 This check can fail if the levels of the theory and sat solver are out of sync
                 for (int cID:repropagate_comparisons) {
@@ -5290,6 +5291,9 @@ public:
     }
     void enqueueTheory(Lit l) {
         Var v = var(l);
+        if(toInt(l)==379148){
+            int a =1;
+        }
         rewind_trail_pos(trail.size());
         int lev = level(v);
         while (lev > trail_lim.size()) {
@@ -5303,13 +5307,13 @@ public:
         assigns[var(l)] = sign(l) ? l_False : l_True;
         requiresPropagation = true;
         //printf("enqueue %d\n", dimacs(l));
-#ifndef NDEBUG
+/*#ifndef NDEBUG
         {
             for (int i = 0; i < trail.size(); i++) {
                 assert(trail[i].var != v);
             }
         }
-#endif
+#endif*/
         assert(analysis_trail_pos == trail.size() - 1);
         //if(isBVVar(var(l))){
         if (hasOperation(l)) {
@@ -5734,7 +5738,9 @@ public:
             assert(under_approx[bvID] == under);
             return true;
         } else {
-
+            if(bvID==2647){
+                int a =1;
+            }
 
             for (int opID:operation_ids[bvID]) {
                 getOperation(opID).checkApproxUpToDate(under, over);
@@ -5883,7 +5889,7 @@ public:
         }
 
         rewind_trail_pos(trail.size());
-        if (++realprops == 14) {
+        if (++realprops == 4) {
             int a = 1;
         }
         //printf("bv prop %d\n",stats_propagations);
@@ -5909,7 +5915,9 @@ public:
                 alteredBV[bvID] = false;
                 continue;
             }
-
+            if(bvID==8036){
+                int a=1;
+            }
             //for(int bvID = 0;bvID<bitvectors.size();bvID++){
             assert(alteredBV[bvID]);
             Weight underApprox_prev = under_approx[bvID];

@@ -623,6 +623,14 @@ void SimpSolver::disablePreprocessing(){
 	}
 }
 bool SimpSolver::eliminate(bool turn_off_elim) {
+	for (int i = 0; i < qhead; i++) {
+		Lit p = trail[i];
+		if (hasTheory(p)) {
+			int theoryID = getTheoryID(p);
+			theories[theoryID]->enqueueTheory(getTheoryLit(p));
+		}
+	}
+
 	if (!simplify()) {
 		if (turn_off_elim) {
 			disablePreprocessing();
@@ -630,7 +638,9 @@ bool SimpSolver::eliminate(bool turn_off_elim) {
 		return false;
 	}else if (!use_simplification)
 		return true;
-	
+
+
+
 	// Main simplification loop:
 	//
 	while (n_touched > 0 || bwdsub_assigns < trail.size() || elim_heap.size() > 0) {

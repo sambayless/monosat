@@ -545,7 +545,7 @@ public:
 	}
 
 	void dbg_check_trails(){
-#ifndef NDEBUG
+/*#ifndef NDEBUG
 		int last_pos=-1;
 		for(int i = 0;i<bvtrail.size();i++){
 			Var v = bvtrail[i].graphAssign;
@@ -571,7 +571,7 @@ public:
 				assert(lazy_trail_head!=var_Undef);
 			}
 		}
-#endif
+#endif*/
 	}
 
 	//vec<Assignment> trail;
