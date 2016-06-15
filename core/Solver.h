@@ -169,6 +169,8 @@ public:
 		satisfied_theory_trail_pos.push(-1);
 		post_satisfied_theory_trail_pos.push(-1);
 		theories.push(t);
+		theory_reprop_trail_pos.push(-1);
+		theory_init_prop_trail_pos.push(-1);
 		t->setActivity(opt_randomomize_theory_order ? drand(random_seed) * 0.00001 : 0);
 		t->setPriority(0);
 		t->setTheoryIndex(theories.size() - 1);
@@ -183,7 +185,12 @@ public:
 		cancelUntil(0);
 		resetInitialPropagation();
 	}
-	
+	void theoryPropagated(Theory * t)override {
+		int theoryID = t->getTheoryIndex();
+		if (decisionLevel() > 0 && theory_init_prop_trail_pos[theoryID] >= 0 && theory_reprop_trail_pos[theoryID] < 0) {
+			theory_reprop_trail_pos[theoryID] = qhead;
+		}
+	}
 	//Call to force at least one round of propagation to each theory solver at the next solve() call
 	void resetInitialPropagation() {
 		if (!initialPropagate) {
@@ -598,6 +605,8 @@ public:
 	vec<TheorySatisfaction> theory_sat_queue;*/
 	vec<int> theory_queue;
 	vec<bool> in_theory_queue;
+	vec<int> theory_reprop_trail_pos;
+	vec<int> theory_init_prop_trail_pos;
 	bool disable_theories=false;
 	int min_decision_var = 0;
 	int max_decision_var = -1;

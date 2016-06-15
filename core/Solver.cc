@@ -512,6 +512,8 @@ void Solver::cancelUntil(int lev) {
 		trail.shrink(trail.size() - trail_lim[lev]);
 		trail_lim.shrink(trail_lim.size() - lev);
 
+
+
 		for (int i = 0; i < theories.size(); i++) {
 			int theoryID = theories[i]->getTheoryIndex();
 			int c = trail.size() - 1;
@@ -545,7 +547,40 @@ void Solver::cancelUntil(int lev) {
 		}
 		theory_queue.clear();
 
+		int lowest_re_enqueue=-1;
+		for (int i = 0; i < theories.size(); i++) {
+			int theoryID = theories[i]->getTheoryIndex();
+			if (qhead < theory_init_prop_trail_pos[theoryID]) {
+				theory_init_prop_trail_pos[theoryID] = -1;
+				theory_reprop_trail_pos[theoryID] = -1;
+			} else if (theory_init_prop_trail_pos[theoryID] >=0 && qhead < theory_reprop_trail_pos[theoryID]) {
+				theory_reprop_trail_pos[theoryID] = -1;
+				assert(theory_init_prop_trail_pos[theoryID] >=0);
 
+				Lit p = trail[theory_init_prop_trail_pos[theoryID]];
+				assert(p!=lit_Undef);
+				int back_lev = level(var(p))-1;
+				if(back_lev<0)
+					back_lev=0;
+				if(lowest_re_enqueue<0 || 	trail_lim[back_lev]  < lowest_re_enqueue){
+					lowest_re_enqueue = trail_lim[back_lev];
+				}
+				theories[theoryID]->backtrackUntil(back_lev);//or back_lev -1?
+			}
+
+		}
+		if(lowest_re_enqueue>-1){
+			for(int q = lowest_re_enqueue;q<=qhead;q++){
+				Lit p = trail[q];
+				if (hasTheory(p)) {
+					int theoryID = getTheoryID(p);
+					if (theory_reprop_trail_pos[theoryID] ==-1 &&  q> theory_init_prop_trail_pos[theoryID] && !theorySatisfied(theories[theoryID])) {
+						needsPropagation(theoryID);
+						theories[theoryID]->enqueueTheory(getTheoryLit(p));
+					}
+				}
+			}
+		}
 
 		//re-enqueue any lazy lits as appropriate
 		while(to_reenqueue.size()){
@@ -1200,6 +1235,7 @@ CRef Solver::propagate(bool propagate_theories) {
 	theoryConflict=-1;
 	CRef confl = CRef_Undef;
 	int num_props = 0;
+	int initial_qhead = qhead;
 	watches.cleanAll();
 	if (decisionLevel() == 0 && !propagate_theories) {
 		initialPropagate = true;//we will need to propagate this assignment to the theories at some point in the future.
@@ -1214,6 +1250,7 @@ CRef Solver::propagate(bool propagate_theories) {
 					int theoryID = theory_queue.last();
 					theory_queue.pop();
 					in_theory_queue[theoryID] = false;
+
 					if (!theories[theoryID]->propagateTheory(theory_conflict)) {
 						if (!addConflictClause(theory_conflict, confl)) {
 							qhead = trail.size();
@@ -1303,6 +1340,7 @@ CRef Solver::propagate(bool propagate_theories) {
 			int theoryID = theory_queue.last();
 			theory_queue.pop();
 			in_theory_queue[theoryID] = false;
+
 			if (!theories[theoryID]->propagateTheory(theory_conflict)) {
 				bool has_conflict=true;
 #ifndef NDEBUG
@@ -1335,7 +1373,17 @@ CRef Solver::propagate(bool propagate_theories) {
 	} while (qhead < trail.size());
 	propagations += num_props;
 	simpDB_props -= num_props;
-	
+
+	//one or more theories was not propagated (this is allowed in some settings)
+	if(confl==CRef_Undef && theory_queue.size() &&  decisionLevel() >0 ){
+		for(int theoryID:theory_queue){
+			if(theory_init_prop_trail_pos[theoryID]<0){
+				theory_init_prop_trail_pos[theoryID]=initial_qhead;
+			}else{
+				assert(theory_init_prop_trail_pos[theoryID]<=initial_qhead);
+			}
+		}
+	}
 	return confl;
 }
 
@@ -2481,8 +2529,21 @@ lbool Solver::solve_() {
 				   (int) clauses_literals, (int) max_learnts, nLearnts(),
 				   (double) learnts_literals / nLearnts(), stats_removed_clauses);
 		}
-		if (!withinBudget())
+		if (!withinBudget()) {
+
+			printf("Solver is giving up due to budget constraints: ");
+			if(conflict_budget >= 0 && conflicts >= conflict_budget){
+				printf("too many conflicts ");
+			}
+			if(propagation_budget >= 0 && propagations >= propagation_budget){
+				printf("too many propagations ");
+			}
+			if(asynch_interrupt){
+				printf("resource limit, memory limit, or user interupt triggered ");
+			}
+			printf("\n");
 			break;
+		}
 		curr_restarts++;
 		if (opt_rnd_restart && status == l_Undef) {
 			

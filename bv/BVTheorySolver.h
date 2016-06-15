@@ -5291,7 +5291,7 @@ public:
     }
     void enqueueTheory(Lit l) {
         Var v = var(l);
-        if(toInt(l)==379148){
+        if(toInt(l)==459453){
             int a =1;
         }
         rewind_trail_pos(trail.size());
@@ -5887,7 +5887,7 @@ public:
             stats_propagations_skipped++;
             return true;
         }
-
+        S->theoryPropagated(this);
         rewind_trail_pos(trail.size());
         if (++realprops == 4) {
             int a = 1;

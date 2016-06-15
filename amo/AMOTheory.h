@@ -176,7 +176,7 @@ public:
 			S->setTheorySatisfied(this);
 			return true;
 		}
-
+		S->theoryPropagated(this);
 		if(decisionLevel()==0){
 			//remove constants from the set
 			int n_nonconstants = 0;

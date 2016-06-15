@@ -352,6 +352,8 @@ private:
 			}
 			v_int = v_int - 1;
 			Var v = (Var)v_int;
+			if(this->inVarMap((Var)v_int))
+				return;//deal with this better in the future...
 			Var ov = v;
 			v = mapVar(S, v);
 			skipWhitespace(in);

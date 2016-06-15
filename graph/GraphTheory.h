@@ -2790,7 +2790,7 @@ public:
 			if(!t->propagateTheory(conflict))
 				return false;
 		}
-
+		S->theoryPropagated(this);
 
 		if (opt_lazy_backtrack &&
 				!lazy_backtracking_enabled && decisionLevel()==0 ){

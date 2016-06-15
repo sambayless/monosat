@@ -84,6 +84,8 @@ namespace APISignal{
 	void disableResourceLimits();
 	static void SIGNAL_HANDLER_api(int signum) {
 		disableResourceLimits();
+		printf("Interupting solver due to resource limit\n");
+		fflush(stdout);
 		for(Solver* solver:solvers)
 			solver->interrupt();
 
@@ -107,11 +109,13 @@ namespace APISignal{
 
 			if (rl.rlim_max == RLIM_INFINITY || (rlim_t) local_time_limit < rl.rlim_max) {
 				rl.rlim_cur = local_time_limit;
+
 				if (setrlimit(RLIMIT_CPU, &rl) == -1)
 					api_errorf("WARNING! Could not set resource limit: CPU-time.\n");
 			}
 		}else{
 			rl.rlim_cur = rl.rlim_max;
+
 			if (setrlimit(RLIMIT_CPU, &rl) == -1)
 				api_errorf("WARNING! Could not set resource limit: CPU-time.\n");
 		}
@@ -127,10 +131,12 @@ namespace APISignal{
 
 			if (rl.rlim_max == RLIM_INFINITY || new_mem_lim < rl.rlim_max) {
 				rl.rlim_cur = new_mem_lim;
+
 				if (setrlimit(RLIMIT_AS, &rl) == -1)
 					fprintf(stderr, "WARNING! Could not set resource limit: Virtual memory.\n");
 			}else{
 				rl.rlim_cur = rl.rlim_max;
+
 				if (setrlimit(RLIMIT_AS, &rl) == -1)
 					fprintf(stderr, "WARNING! Could not set resource limit: Virtual memory.\n");
 			}
@@ -568,10 +574,12 @@ void setTimeLimit(Monosat::SimpSolver * S,int seconds){
 	using namespace APISignal;
 	// Set limit on CPU-time:
 	time_limit=seconds;
+
 }
 void setMemoryLimit(Monosat::SimpSolver * S,int mb){
 	using namespace APISignal;
 	memory_limit=mb;
+
 }
 void setConflictLimit(Monosat::SimpSolver * S,int num_conflicts){
 	S->setConfBudget(num_conflicts);
