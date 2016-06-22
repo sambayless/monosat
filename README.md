@@ -6,45 +6,32 @@ MonoSAT now comes with a simplified, Z3-inspired Python 3 interface (see api/pyt
 To see further examples of use cases for MonoSAT, and details on the (very simple) input file format that MonoSAT accepts, see  [FORMAT].
 
 ###Building
-From the root directory, build MonoSAT with:
+MonoSAT requires CMake (version 2.7 or higher)
+From the root directory, build and install MonoSAT with:
 
 ```
-$cd Release
+$cmake .
 $make
-```
-
-or
-
-```
-$cd Static
-$make
-```
-
-or (to build the shared library, required by the Python interface):
-
-```
-$cd SharedLibrary
-$make
+$sudo make install
 ```
 
 MonoSAT requires C++11 support, zlib, and GMP >= 5.1.3. Tested on Ubuntu 14.04, with G++ 4.8.2 and G++ 4.9. The python library requires Python 3.3+.
 
 If you get errors along the lines of "error: could not convert ‘x’ from ‘__gmp_expr<__mpq_struct [1], __mpq_struct [1]>’ to ‘bool’", then you likely need to install a more recent version of GMP.
 
-If you build MonoSAT without using the provided makefiles, it is critically important to compile with `NDEBUG` set (*i.e.,* `-DNDEBUG`), as otherwise many very expensive debugging assertions will be enabled. 
+If you build MonoSAT without using the provided cmake/makefiles, it is critically important to compile with `NDEBUG` set (*i.e.,* `-DNDEBUG`), as otherwise many very expensive debugging assertions will be enabled. 
 
 ###Install the Python Library
 
-To install the Python library (system-wide), first install the shared library, and then use Python's setuptools to install the Python library.
+To install the Python library (system-wide), first build monosat (see above), cd into 'api/python', and then use Python's setuptools to install the Python library.
 The Python library has optional support for pseudo-Boolean constraints, using [MinisatPB](https://github.com/sambayless/minisatpb), which is a fork of [Minisat+](https://github.com/niklasso/minisatp).  
 In order to use pseudo-Boolean constraints in the Python library, you must separately install [MinisatPB](https://github.com/sambayless/minisatpb) on your system path. 
 
 On Ubuntu (14.04):
 ```
-$cd SharedLibrary
+$cmake .
 $make
-$sudo cp libmonosat.so /usr/local/lib/
-$cd ../api/python
+$cd api/python
 $sudo python3 setup.py install
 ```
 
@@ -83,7 +70,7 @@ The graph and geometry theory solvers can be found in `geometry/` and `graph/`. 
     * [Kruskal](#kruskal)'s algorithm
     * [Prim](#prims)'s algorithm
 * Maximum *s-t* Flow
-    * [Kohli and Torr](#kohlitorr)'s dynamic maximum flow algorithm
+    * [Kohli and Torr](#kohlitorr)'s dynamic variant of Kolmogorov and Boykov's maximum flow algorithm.
     * [Edmonds-Karp](#edmondskarp) algorithm (including a [dynamic variant](#dynamic_edmonds_karp))
     * [Dinitz](#dinitz)'s algorithm (including the [dynamic tree](#dynamic_tree) variant)
 * And many supporting algorithms and data structures, including:
