@@ -19,19 +19,19 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
 
-#include <core/Config.h>
-#include <dgl/RamalReps.h>
+#include <monosat/core/Config.h>
+#include <monosat/dgl/RamalReps.h>
 #include "monosat/dgl/EdmondsKarp.h"
 #include "monosat/dgl/EdmondsKarpAdj.h"
 #include "monosat/dgl/KohliTorr.h"
 #include "monosat/dgl/EdmondsKarpDynamic.h"
 #include "monosat/dgl/Dinics.h"
 #include "monosat/dgl/DinicsLinkCut.h"
-#include <graph/DistanceDetector.h>
-#include <graph/GraphTheory.h>
-#include <mtl/Rnd.h>
-#include <mtl/Vec.h>
-#include <utils/Options.h>
+#include <monosat/graph/DistanceDetector.h>
+#include <monosat/graph/GraphTheory.h>
+#include <monosat/mtl/Rnd.h>
+#include <monosat/mtl/Vec.h>
+#include <monosat/utils/Options.h>
 //#include "monosat/dgl/UnweightedDistance.h"
 #include <cassert>
 #include <cstdlib>

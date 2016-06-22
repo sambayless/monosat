@@ -22,9 +22,9 @@
 #define PRIMS_H_
 
 #include <vector>
-#include "alg/Heap.h"
+#include "monosat/dgl/alg/Heap.h"
 #include "DynamicGraph.h"
-#include "core/Config.h"
+#include "monosat/core/Config.h"
 #include "MinimumSpanningTree.h"
 #include <limits>
 

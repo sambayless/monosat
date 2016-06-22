@@ -27,7 +27,7 @@
 #include <dgl/Distance.h>
 #include <dgl/DynamicGraph.h>
 #include <dgl/Reach.h>
-//#include "core/Config.h"
+//#include "monosat/core/Config.h"
 //#include <algorithm>
 #include <cassert>
 #include <cstdio>

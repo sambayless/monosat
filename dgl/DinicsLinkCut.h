@@ -25,9 +25,9 @@
 #include "DynamicGraph.h"
 #include "MaxFlow.h"
 #include <vector>
-#include "core/Config.h"
+#include "monosat/core/Config.h"
 #include "EdmondsKarpAdj.h"
-#include "alg/LinkCutCost.h"
+#include "monosat/dgl/alg/LinkCutCost.h"
 #include <algorithm>
 #include <climits>
 //Implementation of the Link/Cut Tree (aka Dynamic Tree) max-flow algorithm from Sleator and Tarjan, 1983).

@@ -6,7 +6,7 @@
 #include "DFSCycle.h"
 #include "EdmondsKarpAdj.h"
 //#include "MaxFlow.h"
-#include "alg/LinkCutCost.h"
+#include "monosat/dgl/alg/LinkCutCost.h"
 #include <sstream>
 #include <stdexcept>
 namespace dgl {

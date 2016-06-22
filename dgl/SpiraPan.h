@@ -23,10 +23,10 @@
 #define SPIRA_PAN_H_
 
 #include <vector>
-#include "alg/Heap.h"
-#include "mtl/Sort.h"
+#include "monosat/dgl/alg/Heap.h"
+#include "monosat/mtl/Sort.h"
 #include "DynamicGraph.h"
-#include "core/Config.h"
+#include "monosat/core/Config.h"
 #include "MinimumSpanningTree.h"
 #include "Kruskal.h"
 #include <algorithm>

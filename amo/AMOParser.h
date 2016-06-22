@@ -26,7 +26,7 @@
 
 #include "monosat/utils/ParseUtils.h"
 #include "monosat/core/SolverTypes.h"
-#include "amo/AMOTheory.h"
+#include "monosat/amo/AMOTheory.h"
 #include "monosat/core/Config.h"
 #include "monosat/core/Dimacs.h"
 #include <set>
