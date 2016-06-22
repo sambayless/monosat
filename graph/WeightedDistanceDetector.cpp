@@ -21,18 +21,18 @@
 
 #include <core/Config.h>
 #include <dgl/RamalReps.h>
-#include "dgl/EdmondsKarp.h"
-#include "dgl/EdmondsKarpAdj.h"
-#include "dgl/KohliTorr.h"
-#include "dgl/EdmondsKarpDynamic.h"
-#include "dgl/Dinics.h"
-#include "dgl/DinicsLinkCut.h"
+#include "monosat/dgl/EdmondsKarp.h"
+#include "monosat/dgl/EdmondsKarpAdj.h"
+#include "monosat/dgl/KohliTorr.h"
+#include "monosat/dgl/EdmondsKarpDynamic.h"
+#include "monosat/dgl/Dinics.h"
+#include "monosat/dgl/DinicsLinkCut.h"
 #include <graph/WeightedDistanceDetector.h>
 #include <graph/GraphTheory.h>
 #include <mtl/Rnd.h>
 #include <mtl/Vec.h>
 #include <utils/Options.h>
-//#include "dgl/UnweightedDistance.h"
+//#include "monosat/dgl/UnweightedDistance.h"
 #include <cassert>
 #include <cstdlib>
 #include <iostream>

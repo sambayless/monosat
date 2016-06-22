@@ -22,7 +22,7 @@
 #define GRID_HEIGHTMAP_H
 
 #include "Heightmap.h"
-#include "mtl/Vec.h"
+#include "monosat/mtl/Vec.h"
 #include "PointSet.h"
 //A simple heightmap composed of regularly spaced rectangular prisms
 namespace Monosat {

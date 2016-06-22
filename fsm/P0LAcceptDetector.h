@@ -20,17 +20,17 @@
  **************************************************************************************************/
 #ifndef POL_ACCEPTDETECTOR_H_
 #define POL_ACCEPTDETECTOR_H_
-#include "utils/System.h"
+#include "monosat/utils/System.h"
 
-#include "dgl/DynamicGraph.h"
+#include "monosat/dgl/DynamicGraph.h"
 
 #include "LSystem.h"
 
-#include "core/SolverTypes.h"
-#include "mtl/Map.h"
+#include "monosat/core/SolverTypes.h"
+#include "monosat/mtl/Map.h"
 
 
-#include "utils/System.h"
+#include "monosat/utils/System.h"
 #include "FSMDetector.h"
 #include "alg/NP0LAcceptor.h"
 

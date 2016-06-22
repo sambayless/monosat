@@ -23,9 +23,9 @@
 #define GEOMETRY_TYPES_H_
 #include <cstddef>
 #include <initializer_list>
-#include "core/SolverTypes.h"
-#include "mtl/Rnd.h"
-#include "mtl/Vec.h"
+#include "monosat/core/SolverTypes.h"
+#include "monosat/mtl/Rnd.h"
+#include "monosat/mtl/Vec.h"
 #include <vector>
 #include <cmath>
 #include <algorithm>
@@ -297,7 +297,7 @@ struct Point {
 namespace Monosat {
 template<unsigned int D, class T>
 class vec<::Point<D, T>> ;
-//static_assert(false,"mtl vec cannot be used to store Points (as they are not reallocatable)");
+//static_assert(false,"monosat/mtl vec cannot be used to store Points (as they are not reallocatable)");
 
 }
 ;

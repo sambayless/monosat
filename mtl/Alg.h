@@ -21,7 +21,7 @@
 #ifndef Minisat_Alg_h
 #define Minisat_Alg_h
 
-#include "mtl/Vec.h"
+#include "monosat/mtl/Vec.h"
 
 namespace Monosat {
 

@@ -21,7 +21,7 @@
 #ifndef Minisat_Sort_h
 #define Minisat_Sort_h
 
-#include "mtl/Vec.h"
+#include "monosat/mtl/Vec.h"
 
 //=================================================================================================
 // Some sorting algorithms for vec's

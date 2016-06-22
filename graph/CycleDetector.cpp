@@ -21,9 +21,9 @@
 
 #include "CycleDetector.h"
 #include "GraphTheory.h"
-#include "dgl/PKTopologicalSort.h"
-#include "dgl/DFSCycle.h"
-#include "core/Config.h"
+#include "monosat/dgl/PKTopologicalSort.h"
+#include "monosat/dgl/DFSCycle.h"
+#include "monosat/core/Config.h"
 #include <limits>
 using namespace Monosat;
 template<typename Weight>

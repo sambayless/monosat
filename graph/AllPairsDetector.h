@@ -21,14 +21,14 @@
 
 #ifndef ALLPAIRSDETECTOR_H_
 #define ALLPAIRSDETECTOR_H_
-#include "utils/System.h"
+#include "monosat/utils/System.h"
 #include "GraphTheoryTypes.h"
-#include "dgl/DynamicGraph.h"
-#include "dgl/AllPairs.h"
+#include "monosat/dgl/DynamicGraph.h"
+#include "monosat/dgl/AllPairs.h"
 #include <vector>
-#include "core/SolverTypes.h"
-#include "mtl/Map.h"
-#include "utils/System.h"
+#include "monosat/core/SolverTypes.h"
+#include "monosat/mtl/Map.h"
+#include "monosat/utils/System.h"
 #include "Detector.h"
 
 //#define DEBUG_ALLPAIRS

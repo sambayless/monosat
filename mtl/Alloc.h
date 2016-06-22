@@ -20,8 +20,8 @@
 #ifndef Minisat_Alloc_h
 #define Minisat_Alloc_h
 
-#include "mtl/XAlloc.h"
-#include "mtl/Vec.h"
+#include "monosat/mtl/XAlloc.h"
+#include "monosat/mtl/Vec.h"
 
 namespace Monosat {
 

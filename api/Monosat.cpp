@@ -19,28 +19,28 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
 
-#include "utils/ParseUtils.h"
-#include "utils/Options.h"
-#include "core/Solver.h"
-#include "core/Config.h"
-#include "simp/SimpSolver.h"
-#include "graph/GraphTheory.h"
-#include "geometry/GeometryTheory.h"
-#include "fsm/FSMTheory.h"
-#include "pb/PbTheory.h"
-#include "bv/BVTheorySolver.h"
-#include "amo/AMOTheory.h"
-#include "core/SolverTypes.h"
+#include "monosat/utils/ParseUtils.h"
+#include "monosat/utils/Options.h"
+#include "monosat/core/Solver.h"
+#include "monosat/core/Config.h"
+#include "monosat/simp/SimpSolver.h"
+#include "monosat/graph/GraphTheory.h"
+#include "monosat/geometry/GeometryTheory.h"
+#include "monosat/fsm/FSMTheory.h"
+#include "monosat/pb/PbTheory.h"
+#include "monosat/bv/BVTheorySolver.h"
+#include "monosat/amo/AMOTheory.h"
+#include "monosat/core/SolverTypes.h"
 #include "Monosat.h"
-#include "mtl/Vec.h"
-#include "core/Dimacs.h"
-#include "bv/BVParser.h"
-#include "graph/GraphParser.h"
-#include "utils/ParseUtils.h"
-#include "amo/AMOParser.h"
+#include "monosat/mtl/Vec.h"
+#include "monosat/core/Dimacs.h"
+#include "monosat/bv/BVParser.h"
+#include "monosat/graph/GraphParser.h"
+#include "monosat/utils/ParseUtils.h"
+#include "monosat/amo/AMOParser.h"
 #include <stdexcept>
 #include <cstdarg>
-#include "core/Optimize.h"
+#include "monosat/core/Optimize.h"
 #include <csignal>
 #include <set>
 #include <iostream>

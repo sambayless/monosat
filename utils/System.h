@@ -25,7 +25,7 @@
 #include <fpu_control.h>
 #endif
 
-#include "mtl/IntTypes.h"
+#include "monosat/mtl/IntTypes.h"
 
 //-------------------------------------------------------------------------------------------------
 

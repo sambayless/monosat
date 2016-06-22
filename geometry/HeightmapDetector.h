@@ -20,7 +20,7 @@
  **************************************************************************************************/
 #ifndef CONVEX_DETECTOR_H_
 #define CONVEX_DETECTOR_H_
-#include "core/SolverTypes.h"
+#include "monosat/core/SolverTypes.h"
 
 #include "GeometryDetector.h"
 #include "GeometryTheory.h"

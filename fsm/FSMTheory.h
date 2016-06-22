@@ -22,21 +22,21 @@
 #ifndef FSM_THEORY_H_
 #define FSM_THEORY_H_
 
-#include "utils/System.h"
-#include "core/Theory.h"
-#include "dgl/DynamicGraph.h"
+#include "monosat/utils/System.h"
+#include "monosat/core/Theory.h"
+#include "monosat/dgl/DynamicGraph.h"
 #include "DynamicFSM.h"
 #include "FSMAcceptDetector.h"
 #include "FSMGeneratesDetector.h"
 #include "FSMTransducesDetector.h"
 #include "FSMGeneratorAcceptorDetector.h"
 
-#include "core/SolverTypes.h"
-#include "mtl/Map.h"
+#include "monosat/core/SolverTypes.h"
+#include "monosat/mtl/Map.h"
 
 
-#include "utils/System.h"
-#include "core/Solver.h"
+#include "monosat/utils/System.h"
+#include "monosat/core/Solver.h"
 
 #include <vector>
 

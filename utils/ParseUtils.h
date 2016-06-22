@@ -26,7 +26,7 @@
 #include <string>
 
 #include <zlib.h>
-#include "mtl/Vec.h"
+#include "monosat/mtl/Vec.h"
 #include <stdexcept>
 #include <cstdarg>
 namespace Monosat {

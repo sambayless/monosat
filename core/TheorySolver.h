@@ -21,7 +21,7 @@
 
 #ifndef THEORYSOLVER_H_
 #define THEORYSOLVER_H_
-#include "SolverTypes.h"
+#include "monosat/core/SolverTypes.h"
 namespace Monosat {
 
 /**

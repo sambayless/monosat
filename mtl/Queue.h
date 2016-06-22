@@ -21,7 +21,7 @@
 #ifndef Minisat_Queue_h
 #define Minisat_Queue_h
 
-#include "mtl/Vec.h"
+#include "monosat/mtl/Vec.h"
 
 namespace Monosat {
 

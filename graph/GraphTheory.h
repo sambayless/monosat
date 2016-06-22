@@ -22,41 +22,41 @@
 #ifndef GRAPH_THEORY_H_
 #define GRAPH_THEORY_H_
 
-#include "utils/System.h"
-#include "core/Theory.h"
+#include "monosat/utils/System.h"
+#include "monosat/core/Theory.h"
 
-#include "dgl/Reach.h"
-#include "dgl/Dijkstra.h"
-#include "dgl/BFS.h"
+#include "monosat/dgl/Reach.h"
+#include "monosat/dgl/Dijkstra.h"
+#include "monosat/dgl/BFS.h"
 
-#include "core/SolverTypes.h"
-#include "mtl/Map.h"
-#include "dgl/MaxFlow.h"
-#include "dgl/DynamicGraph.h"
-#include "dgl/EdmondsKarp.h"
-#include "dgl/EdmondsKarpAdj.h"
-#include "dgl/EdmondsKarpDynamic.h"
-#include "dgl/KohliTorr.h"
-#include "dgl/Dinics.h"
-#include "dgl/DinicsLinkCut.h"
+#include "monosat/core/SolverTypes.h"
+#include "monosat/mtl/Map.h"
+#include "monosat/dgl/MaxFlow.h"
+#include "monosat/dgl/DynamicGraph.h"
+#include "monosat/dgl/EdmondsKarp.h"
+#include "monosat/dgl/EdmondsKarpAdj.h"
+#include "monosat/dgl/EdmondsKarpDynamic.h"
+#include "monosat/dgl/KohliTorr.h"
+#include "monosat/dgl/Dinics.h"
+#include "monosat/dgl/DinicsLinkCut.h"
 
-#include "dgl/Chokepoint.h"
-#include "WeightedDijkstra.h"
-#include "GraphTheoryTypes.h"
-#include "utils/System.h"
-#include "core/Solver.h"
+#include "monosat/dgl/Chokepoint.h"
+#include "monosat/graph/WeightedDijkstra.h"
+#include "monosat/graph/GraphTheoryTypes.h"
+#include "monosat/utils/System.h"
+#include "monosat/core/Solver.h"
 
-#include "AllPairsDetector.h"
-#include "ReachDetector.h"
-#include "bv/BVTheorySolver.h"
+#include "monosat/graph/AllPairsDetector.h"
+#include "monosat/graph/ReachDetector.h"
+#include "monosat/bv/BVTheorySolver.h"
 
-#include "DistanceDetector.h"
-#include "WeightedDistanceDetector.h"
-#include "MSTDetector.h"
-#include "MaxflowDetector.h"
-#include "ConnectedComponentsDetector.h"
-#include "CycleDetector.h"
-#include "SteinerDetector.h"
+#include "monosat/graph/DistanceDetector.h"
+#include "monosat/graph/WeightedDistanceDetector.h"
+#include "monosat/graph/MSTDetector.h"
+#include "monosat/graph/MaxflowDetector.h"
+#include "monosat/graph/ConnectedComponentsDetector.h"
+#include "monosat/graph/CycleDetector.h"
+#include "monosat/graph/SteinerDetector.h"
 #include <vector>
 #include <gmpxx.h>
 #include <cstdio>
@@ -2009,7 +2009,7 @@ public:
 
 		dbg_sync();
 		conflict.clear();
-		//printf("graph prop %d\n",stats_propagations);
+		//printf("monosat/graph prop %d\n",stats_propagations);
 		for(Theory * t:theories){
 			if(!t->propagateTheory(conflict)){
 

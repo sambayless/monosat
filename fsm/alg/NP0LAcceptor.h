@@ -8,10 +8,10 @@
 #ifndef NPOL_ACCEPT_H_
 #define NPOL_ACCEPT_H_
 #include "../LSystem.h"
-#include "mtl/Bitset.h"
-#include "mtl/Vec.h"
-#include "NFATypes.h"
-#include "../DynamicFSM.h"
+#include "monosat/mtl/Bitset.h"
+#include "monosat/mtl/Vec.h"
+#include "monosat/fsm/alg/NFATypes.h"
+#include "monosat/fsm/DynamicFSM.h"
 //#include <fst/fstlib.h>
 using namespace Monosat;
 

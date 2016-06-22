@@ -21,8 +21,8 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
 
-#ifndef Minisat_SolverTypes_h
-#define Minisat_SolverTypes_h
+#ifndef Monosat_SolverTypes_h
+#define Monosat_SolverTypes_h
 
 #include <assert.h>
 

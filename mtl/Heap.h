@@ -21,7 +21,7 @@
 #ifndef Minisat_Heap_h
 #define Minisat_Heap_h
 
-#include "mtl/Vec.h"
+#include "monosat/mtl/Vec.h"
 
 namespace Monosat {
 

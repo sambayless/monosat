@@ -27,13 +27,13 @@
 
 #include <stdio.h>
 
-#include "utils/ParseUtils.h"
-#include "core/SolverTypes.h"
-#include "bv/BVTheorySolver.h"
+#include "monosat/utils/ParseUtils.h"
+#include "monosat/core/SolverTypes.h"
+#include "monosat/bv/BVTheorySolver.h"
 
-#include "core/Config.h"
+#include "monosat/core/Config.h"
 
-#include "core/Dimacs.h"
+#include "monosat/core/Dimacs.h"
 #include <gmpxx.h>
 #include <set>
 #include <string>

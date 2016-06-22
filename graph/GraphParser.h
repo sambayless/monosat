@@ -24,13 +24,13 @@
 
 #include <stdio.h>
 
-#include "utils/ParseUtils.h"
-#include "core/SolverTypes.h"
-#include "graph/GraphTheory.h"
-#include "bv/BVTheorySolver.h"
-#include "core/Config.h"
-#include "pb/PbTheory.h"
-#include "core/Dimacs.h"
+#include "monosat/utils/ParseUtils.h"
+#include "monosat/core/SolverTypes.h"
+#include "monosat/graph/GraphTheory.h"
+#include "monosat/bv/BVTheorySolver.h"
+#include "monosat/core/Config.h"
+#include "monosat/pb/PbTheory.h"
+#include "monosat/core/Dimacs.h"
 #include <gmpxx.h>
 #include <set>
 #include <string>
@@ -1105,7 +1105,7 @@ public:
 			//An _undirected_ acyclic graph constraint
 			readAcyclic(in, S,false);
 			return true;
-		}else if (match(in, "pb_lt")) {
+		}else if (match(in, "monosat/pb_lt")) {
 			//this shouldn't be here...
 			if (!pbtheory) {
 				pbtheory = new PbTheory(&S);

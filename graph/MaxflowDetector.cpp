@@ -31,7 +31,7 @@
 #include <mtl/Rnd.h>
 #include <mtl/Vec.h>
 #include <utils/Options.h>
-//#include "dgl/KohliTorr.h"
+//#include "monosat/dgl/KohliTorr.h"
 #include <algorithm>
 #include <cassert>
 #include <cmath>

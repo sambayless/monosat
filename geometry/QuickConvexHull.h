@@ -23,7 +23,7 @@
 #define QUICK_CONVEXHULL_H_
 #include "ConvexHull.h"
 #include "PointSet.h"
-#include "mtl/Sort.h"
+#include "monosat/mtl/Sort.h"
 #include "cevans/quickhull3D.h"
 #include <gmpxx.h>
 #include "ConvexPolygon.h"

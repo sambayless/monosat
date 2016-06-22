@@ -21,14 +21,14 @@
 
 #include "MSTDetector.h"
 #include "GraphTheory.h"
-#include "dgl/Kruskal.h"
-#include "dgl/Prim.h"
-#include "dgl/SpiraPan.h"
+#include "monosat/dgl/Kruskal.h"
+#include "monosat/dgl/Prim.h"
+#include "monosat/dgl/SpiraPan.h"
 
 #include <limits>
 #include <iostream>
 #include <set>
-#include "core/Config.h"
+#include "monosat/core/Config.h"
 using namespace Monosat;
 
 template<typename Weight>

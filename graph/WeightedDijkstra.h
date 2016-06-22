@@ -23,9 +23,9 @@
 #define WEIGHTED_DIJKSTRA_H_
 
 #include <vector>
-#include "dgl/alg/Heap.h"
-#include "dgl/DynamicGraph.h"
-#include "dgl/Reach.h"
+#include "monosat/dgl/alg/Heap.h"
+#include "monosat/dgl/DynamicGraph.h"
+#include "monosat/dgl/Reach.h"
 #include <limits>
 
 //Removed this from the dgl, because it is obsoleted by the (now weighted) Dijkstra implementation.

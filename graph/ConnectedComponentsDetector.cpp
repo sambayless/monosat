@@ -21,8 +21,8 @@
 
 #include "ConnectedComponentsDetector.h"
 #include "GraphTheory.h"
-#include "dgl/BFS.h"
-#include "dgl/Reach.h"
+#include "monosat/dgl/BFS.h"
+#include "monosat/dgl/Reach.h"
 #include <limits>
 using namespace Monosat;
 template<typename Weight>

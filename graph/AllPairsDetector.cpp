@@ -21,9 +21,9 @@
 
 #include "AllPairsDetector.h"
 #include "GraphTheory.h"
-#include "dgl/FloydWarshall.h"
-#include "dgl/DijkstraAllPairs.h"
-#include "dgl/ThorupDynamicConnectivity.h"
+#include "monosat/dgl/FloydWarshall.h"
+#include "monosat/dgl/DijkstraAllPairs.h"
+#include "monosat/dgl/ThorupDynamicConnectivity.h"
 using namespace Monosat;
 template<typename Weight>
 AllPairsDetector<Weight>::AllPairsDetector(int _detectorID, GraphTheorySolver<Weight> * _outer, DynamicGraph<Weight> &_g,

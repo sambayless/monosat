@@ -20,20 +20,20 @@
  **************************************************************************************************/
 #ifndef FSM_GENERATORACCEPTDETECTOR_H_
 #define FSM_GENERATORACCEPTDETECTOR_H_
-#include "utils/System.h"
+#include "monosat/utils/System.h"
 
-#include "dgl/DynamicGraph.h"
+#include "monosat/dgl/DynamicGraph.h"
 
 #include "DynamicFSM.h"
 
-#include "core/SolverTypes.h"
-#include "mtl/Map.h"
+#include "monosat/core/SolverTypes.h"
+#include "monosat/mtl/Map.h"
 
 
-#include "utils/System.h"
+#include "monosat/utils/System.h"
 #include "FSMDetector.h"
 #include "alg/NFALinearGeneratorAcceptor.h"
-#include "graph/GraphTheory.h"
+#include "monosat/graph/GraphTheory.h"
 using namespace dgl;
 namespace Monosat {
 

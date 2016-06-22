@@ -21,8 +21,8 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
 
-#ifndef Minisat_Solver_h
-#define Minisat_Solver_h
+#ifndef Monosat_Solver_h
+#define Monosat_Solver_h
 
 #include "monosat/mtl/Vec.h"
 #include "monosat/mtl/Heap.h"

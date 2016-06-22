@@ -20,8 +20,8 @@
 #ifndef Minisat_Map_h
 #define Minisat_Map_h
 
-#include "mtl/IntTypes.h"
-#include "mtl/Vec.h"
+#include "monosat/mtl/IntTypes.h"
+#include "monosat/mtl/Vec.h"
 
 namespace Monosat {
 

@@ -22,13 +22,13 @@
 #ifndef GEOMETRY_THEORY_H_
 #define GEOMETRY_THEORY_H_
 
-#include "utils/System.h"
-#include "core/Theory.h"
-#include "mtl/Map.h"
+#include "monosat/utils/System.h"
+#include "monosat/core/Theory.h"
+#include "monosat/mtl/Map.h"
 #include "GeometryTypes.h"
-#include "utils/System.h"
-#include "core/Solver.h"
-#include "core/Config.h"
+#include "monosat/utils/System.h"
+#include "monosat/core/Solver.h"
+#include "monosat/core/Config.h"
 #include "GeometryDetector.h"
 #include "PointSet.h"
 #include "ConvexHullDetector.h"

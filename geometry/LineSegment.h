@@ -22,7 +22,7 @@
 #define LINE_SEGMENT_H_
 #include <cmath>
 #include "Shape.h"
-#include "mtl/Vec.h"
+#include "monosat/mtl/Vec.h"
 #include "Line.h"
 #include <algorithm>
 #include "ConvexPolygon.h"

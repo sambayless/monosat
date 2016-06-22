@@ -25,9 +25,9 @@
 #include <math.h>
 #include <string.h>
 
-#include "mtl/IntTypes.h"
-#include "mtl/Vec.h"
-#include "utils/ParseUtils.h"
+#include "monosat/mtl/IntTypes.h"
+#include "monosat/mtl/Vec.h"
+#include "monosat/utils/ParseUtils.h"
 
 namespace Monosat {
 

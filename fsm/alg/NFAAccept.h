@@ -8,11 +8,11 @@
 #ifndef NFAREACH_H_
 #define NFAREACH_H_
 
-#include <dgl/DynamicGraph.h>
-#include <fsm/alg/NFATypes.h>
-#include <fsm/DynamicFSM.h>
-#include <mtl/Vec.h>
-//#include "mtl/Bitset.h"
+#include <monosat/dgl/DynamicGraph.h>
+#include <monosat/fsm/alg/NFATypes.h>
+#include <monosat/fsm/DynamicFSM.h>
+#include <monosat/mtl/Vec.h>
+//#include "monosat/mtl/Bitset.h"
 #include <cassert>
 #include <vector>
 

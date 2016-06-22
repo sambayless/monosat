@@ -25,9 +25,9 @@
 #include <stdio.h>
 
 #include "utils/ParseUtils.h"
-#include "core/SolverTypes.h"
+#include "monosat/core/SolverTypes.h"
 #include "pb/PbTheory.h"
-#include "core/Config.h"
+#include "monosat/core/Config.h"
 #include <sstream>
 #include <set>
 namespace Monosat {

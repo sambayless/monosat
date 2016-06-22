@@ -7,10 +7,10 @@
 
 #ifndef NFA_GENERATE_H_
 #define NFA_GENERATE_H_
-#include "../DynamicFSM.h"
-#include "mtl/Bitset.h"
-#include "mtl/Vec.h"
-#include "NFATypes.h"
+#include "monosat/fsm/DynamicFSM.h"
+#include "monosat/mtl/Bitset.h"
+#include "monosat/mtl/Vec.h"
+#include "monosat/fsm/alg/NFATypes.h"
 
 using namespace Monosat;
 

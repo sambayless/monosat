@@ -21,10 +21,10 @@
 #ifndef CONVEX_DETECTOR_H_
 #define CONVEX_DETECTOR_H_
 #include "GeometryTypes.h"
-#include "core/SolverTypes.h"
+#include "monosat/core/SolverTypes.h"
 #include "PointSet.h"
 #include "GeometryDetector.h"
-#include "core/Config.h"
+#include "monosat/core/Config.h"
 #include "ConvexHull.h"
 #include "MonotoneConvexHull.h"
 #include "QuickConvexHull.h"

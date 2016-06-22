@@ -22,18 +22,18 @@
 #ifndef LSYSTEM_THEORY_H_
 #define LSYSTEM_THEORY_H_
 
-#include "utils/System.h"
-#include "core/Theory.h"
-#include "dgl/DynamicGraph.h"
+#include "monosat/utils/System.h"
+#include "monosat/core/Theory.h"
+#include "monosat/dgl/DynamicGraph.h"
 #include "LSystem.h"
 #include "P0LAcceptDetector.h"
 
-#include "core/SolverTypes.h"
-#include "mtl/Map.h"
+#include "monosat/core/SolverTypes.h"
+#include "monosat/mtl/Map.h"
 
 
-#include "utils/System.h"
-#include "core/Solver.h"
+#include "monosat/utils/System.h"
+#include "monosat/core/Solver.h"
 
 #include <vector>
 

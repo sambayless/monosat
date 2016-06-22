@@ -21,13 +21,13 @@
 
 #include "SteinerDetector.h"
 #include "GraphTheory.h"
-#include "dgl/SteinerApprox.h"
-#include "dgl/DynamicNodes.h"
+#include "monosat/dgl/SteinerApprox.h"
+#include "monosat/dgl/DynamicNodes.h"
 #include <limits>
 #include <set>
-#include "dgl/FloydWarshall.h"
-#include "core/Config.h"
-#include "dgl/alg/DisjointSets.h"
+#include "monosat/dgl/FloydWarshall.h"
+#include "monosat/core/Config.h"
+#include "monosat/dgl/alg/DisjointSets.h"
 
 using namespace Monosat;
 
