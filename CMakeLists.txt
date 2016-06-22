@@ -3,10 +3,10 @@ project(monosat)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wno-unused-variable -Wno-unused-but-set-variable   -Wno-sign-compare  -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS")
 
-#set( CMAKE_VERBOSE_MAKEFILE on )
+set( CMAKE_VERBOSE_MAKEFILE on )
 
 if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
-   message(STATUS "Setting build type to 'Release' as none was specified.")
+   message(STATUS "Setting build type to 'Release' as none was specified.\nUse cmake -DCMAKE_BUILD_TYPE=Debug to seelct Debug release.")
    set(CMAKE_BUILD_TYPE Release CACHE STRING "Choose the type of build." FORCE)
    # Set the possible values of build type for cmake-gui
    set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug" "Release"  "MinSizeRel" "RelWithDebInfo")
@@ -281,6 +281,8 @@ install(DIRECTORY . DESTINATION include/monosat
         PATTERN Static EXCLUDE
         PATTERN ClangDebug EXCLUDE
         PATTERN ClangRelease EXCLUDE
+        PATTERN ClangShared EXCLUDE
+        PATTERN GPerf EXCLUDE
         PATTERN OSX_ClangRelease EXCLUDE
         PATTERN OSX_SharedLibrary EXCLUDE
         PATTERN SharedLibrary EXCLUDE
