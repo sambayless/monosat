@@ -444,10 +444,10 @@ public:
 		}
 		//return Or(And(a, ~b), And(~a,b));
 		Lit out = mkLit(S.newVar());
-		S.addClause(a,b,out);
-		S.addClause(~a,b,~out);
-		S.addClause(a,~b,~out);
-		S.addClause(~a,~b,out);
+		S.addClause(a,b,~out);
+		S.addClause(~a,b,out);
+		S.addClause(a,~b,out);
+		S.addClause(~a,~b,~out);
 		return out;
 	}
 	Lit Xor_(Lit a, Lit b, Lit out){
@@ -478,10 +478,10 @@ public:
 		if(out!=lit_Undef){
 			out = mkLit(S.newVar());
 		}
-		S.addClause(a,b,out);
-		S.addClause(~a,b,~out);
-		S.addClause(a,~b,~out);
-		S.addClause(~a,~b,out);
+		S.addClause(a,b,~out);
+		S.addClause(~a,b,out);
+		S.addClause(a,~b,out);
+		S.addClause(~a,~b,~out);
 		return out;
 	}
 	Lit Xor(const std::list<Lit> & vals){
@@ -550,22 +550,23 @@ public:
 		return And_(l,r,out);
 	}
 
-	Lit halfAdder(Lit a, Lit b, Lit & carry_out){
-		carry_out = And(a,b,carry_out);
+	Lit HalfAdder(Lit a, Lit b, Lit & carry_out){
+		carry_out = And(a,b);
 		return Xor(a,b);
 	}
 
 
-	Lit halfAdder_(Lit a, Lit b, Lit & carry_out, Lit & out){
+	Lit HalfAdder_(Lit a, Lit b, Lit & carry_out, Lit & out){
 		carry_out = And_(a,b,carry_out);
 		return Xor_(a,b,out);
 	}
 
-	void add(vec<Lit> & a, vec<Lit> & b,vec<Lit> & store_out, Lit & carry_out){
+	void Add(vec<Lit> & a, vec<Lit> & b,vec<Lit> & store_out, Lit & carry_out){
 		assert(b.size()==a.size());
 		store_out.clear();
-		Lit carry;
-		Lit sum = halfAdder(a[0],b[0],carry);
+		Lit carry=lit_Undef;
+		Lit sum = HalfAdder(a[0],b[0],carry);
+		store_out.push(sum);
 		for(int i = 1;i<a.size();i++){
 			Lit x1 = Xor(a[i],b[i]);
 			store_out.push(Xor(x1, carry));
@@ -574,11 +575,11 @@ public:
 		}
 		carry_out= carry;
 	}
-	void add_(vec<Lit> & a, vec<Lit> & b,vec<Lit> & store_out, Lit & carry_out){
+	void Add_(vec<Lit> & a, vec<Lit> & b,vec<Lit> & store_out, Lit & carry_out){
 		assert(b.size()==a.size());
 		assert(store_out.size()==a.size());
 		Lit carry=lit_Undef;
-		Lit sum = halfAdder_(a[0],b[0],carry,store_out[0]);
+		Lit sum = HalfAdder_(a[0],b[0],carry,store_out[0]);
 		for(int i = 1;i<a.size();i++){
 			Lit x1 = Xor(a[i],b[i]);
 			Xor_(x1, carry,store_out[i]);
@@ -846,7 +847,6 @@ public:
 		AssertXnor(store);
 	}
 };
-
 };
 
 #endif /* CIRCUIT_H_ */
