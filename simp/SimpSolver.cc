@@ -23,7 +23,7 @@
 
 #include "monosat/mtl/Sort.h"
 #include "monosat/simp/SimpSolver.h"
-#include "utils/System.h"
+#include "monosat/utils/System.h"
 
 using namespace Monosat;
 

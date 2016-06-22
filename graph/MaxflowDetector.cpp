@@ -19,18 +19,18 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
 
-#include <core/Config.h>
-#include <dgl/Dinics.h>
-#include <dgl/DinicsLinkCut.h>
-#include <dgl/EdmondsKarpAdj.h>
-#include <dgl/EdmondsKarpDynamic.h>
-#include <dgl/Reach.h>
-#include <dgl/BFS.h>
-#include <graph/GraphTheory.h>
-#include <graph/MaxflowDetector.h>
-#include <mtl/Rnd.h>
-#include <mtl/Vec.h>
-#include <utils/Options.h>
+#include <monosat/core/Config.h>
+#include <monosat/dgl/Dinics.h>
+#include <monosat/dgl/DinicsLinkCut.h>
+#include <monosat/dgl/EdmondsKarpAdj.h>
+#include <monosat/dgl/EdmondsKarpDynamic.h>
+#include <monosat/dgl/Reach.h>
+#include <monosat/dgl/BFS.h>
+#include <monosat/graph/GraphTheory.h>
+#include <monosat/graph/MaxflowDetector.h>
+#include <monosat/mtl/Rnd.h>
+#include <monosat/mtl/Vec.h>
+#include <monosat/utils/Options.h>
 //#include "monosat/dgl/KohliTorr.h"
 #include <algorithm>
 #include <cassert>

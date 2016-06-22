@@ -22,8 +22,8 @@
 #ifndef CIRCUIT_H_
 #define CIRCUIT_H_
 
-#include "monosat/monosat/core/SolverTypes.h"
-#include "monosat/monosat/mtl/Vec.h"
+#include "monosat/core/SolverTypes.h"
+#include "monosat/mtl/Vec.h"
 #include <list>
 
 namespace Monosat{

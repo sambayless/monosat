@@ -24,7 +24,7 @@
 
 #include "monosat/utils/System.h"
 #include "monosat/core/Theory.h"
-
+#include "monosat/core/Config.h"
 #include "monosat/dgl/Reach.h"
 #include "monosat/dgl/Dijkstra.h"
 #include "monosat/dgl/BFS.h"

@@ -22,11 +22,11 @@
 #ifndef RAMAL_REPS_H_
 #define RAMAL_REPS_H_
 
-#include <dgl/alg/Heap.h>
-#include <dgl/Dijkstra.h>
-#include <dgl/Distance.h>
-#include <dgl/DynamicGraph.h>
-#include <dgl/Reach.h>
+#include <monosat/dgl/alg/Heap.h>
+#include <monosat/dgl/Dijkstra.h>
+#include <monosat/dgl/Distance.h>
+#include <monosat/dgl/DynamicGraph.h>
+#include <monosat/dgl/Reach.h>
 //#include "monosat/core/Config.h"
 //#include <algorithm>
 #include <cassert>

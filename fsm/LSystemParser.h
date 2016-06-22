@@ -26,7 +26,7 @@
 
 #include "monosat/utils/ParseUtils.h"
 #include "monosat/core/SolverTypes.h"
-#include "fsm/LSystemTheory.h"
+#include "monosat/fsm/LSystemTheory.h"
 #include <algorithm>
 #include "monosat/core/Config.h"
 

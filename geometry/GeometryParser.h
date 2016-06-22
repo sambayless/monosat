@@ -25,10 +25,10 @@
 #include <stdio.h>
 #include <gmpxx.h>
 #include "monosat/utils/ParseUtils.h"
-#include "graph/GraphParser.h"
-#include "geometry/GeometryTypes.h"
+#include "monosat/graph/GraphParser.h"
+#include "monosat/geometry/GeometryTypes.h"
 #include "monosat/core/SolverTypes.h"
-#include "geometry/GeometryTheory.h"
+#include "monosat/geometry/GeometryTheory.h"
 #include "monosat/core/Dimacs.h"
 #include "monosat/core/Config.h"
 #include "monosat/mtl/Vec.h"
