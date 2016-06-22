@@ -23,12 +23,12 @@
 
 #include <math.h>
 
-#include "mtl/Sort.h"
-#include "core/Solver.h"
-#include "core/Config.h"
-#include "graph/GraphTheory.h"
+#include "monosat/mtl/Sort.h"
+#include "monosat/core/Solver.h"
+#include "monosat/core/Config.h"
+#include "monosat/graph/GraphTheory.h"
 #include <unistd.h>
-#include "core/Remap.h"
+#include "monosat/core/Remap.h"
 using namespace Monosat;
 
 //=================================================================================================

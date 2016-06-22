@@ -22,13 +22,13 @@
 #ifndef OPTIMIZE_H_
 #define OPTIMIZE_H_
 
-#include "core/Solver.h"
+#include "monosat/core/Solver.h"
 
-#include "simp/SimpSolver.h"
-#include "bv/BVTheorySolver.h"
-#include "core/SolverTypes.h"
+#include "monosat/simp/SimpSolver.h"
+#include "monosat/bv/BVTheorySolver.h"
+#include "monosat/core/SolverTypes.h"
 
-#include "mtl/Vec.h"
+#include "monosat/mtl/Vec.h"
 
 
 namespace Monosat{

@@ -24,15 +24,15 @@
 #ifndef Minisat_Solver_h
 #define Minisat_Solver_h
 
-#include "mtl/Vec.h"
-#include "mtl/Heap.h"
-#include "mtl/Alg.h"
-#include "mtl/Rnd.h"
-#include "utils/Options.h"
-#include "core/SolverTypes.h"
-#include "core/Theory.h"
-#include "core/TheorySolver.h"
-#include "core/Config.h"
+#include "monosat/mtl/Vec.h"
+#include "monosat/mtl/Heap.h"
+#include "monosat/mtl/Alg.h"
+#include "monosat/mtl/Rnd.h"
+#include "monosat/utils/Options.h"
+#include "monosat/core/SolverTypes.h"
+#include "monosat/core/Theory.h"
+#include "monosat/core/TheorySolver.h"
+#include "monosat/core/Config.h"
 #include <cinttypes>
 
 //this is _really_ ugly...

@@ -21,8 +21,8 @@
 #ifndef CONFIG_H_
 #define CONFIG_H_
 
-#include "utils/Options.h"
-#include "utils/System.h"
+#include "monosat/utils/Options.h"
+#include "monosat/utils/System.h"
 namespace Monosat {
 extern IntOption opt_verb;
 extern BoolOption opt_pre;

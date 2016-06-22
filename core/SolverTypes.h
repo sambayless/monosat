@@ -26,12 +26,12 @@
 
 #include <assert.h>
 
-#include "mtl/IntTypes.h"
-#include "mtl/Alg.h"
-#include "mtl/Vec.h"
-#include "mtl/IntMap.h"
-#include "mtl/Map.h"
-#include "mtl/Alloc.h"
+#include "monosat/mtl/IntTypes.h"
+#include "monosat/mtl/Alg.h"
+#include "monosat/mtl/Vec.h"
+#include "monosat/mtl/IntMap.h"
+#include "monosat/mtl/Map.h"
+#include "monosat/mtl/Alloc.h"
 
 namespace Monosat {
 

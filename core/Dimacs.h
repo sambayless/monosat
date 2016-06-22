@@ -24,17 +24,17 @@
 #define Minisat_Dimacs_h
 
 #include <stdio.h>
-#include "core/Config.h"
-#include "utils/ParseUtils.h"
-#include "core/SolverTypes.h"
-#include "mtl/Vec.h"
+#include "monosat/core/Config.h"
+#include "monosat/utils/ParseUtils.h"
+#include "monosat/core/SolverTypes.h"
+#include "monosat/mtl/Vec.h"
 #include <string>
 #include <algorithm>
 #include <stdexcept>
 #include <string>
 #include <iostream>
 #include <cstdarg>
-#include "core/Remap.h"
+#include "monosat/core/Remap.h"
 namespace Monosat {
 
 

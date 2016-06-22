@@ -22,11 +22,11 @@
 #ifndef THEORY_H_
 #define THEORY_H_
 
-#include "mtl/Vec.h"
-#include "mtl/Heap.h"
-#include "mtl/Alg.h"
-#include "utils/Options.h"
-#include "core/SolverTypes.h"
+#include "monosat/mtl/Vec.h"
+#include "monosat/mtl/Heap.h"
+#include "monosat/mtl/Alg.h"
+#include "monosat/utils/Options.h"
+#include "monosat/core/SolverTypes.h"
 #include <ostream>
 namespace Monosat {
 /**
