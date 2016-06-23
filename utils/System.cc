@@ -18,7 +18,7 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
 
-#include "utils/System.h"
+#include "monosat/utils/System.h"
 
 #if defined(__linux__)
 

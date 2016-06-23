@@ -21,9 +21,9 @@
 
 #ifndef GEOMETRY_DETECTOR_H_
 #define GEOMETRY_DETECTOR_H_
-#include "core/SolverTypes.h"
+#include "monosat/core/SolverTypes.h"
 
-#include "mtl/Vec.h"
+#include "monosat/mtl/Vec.h"
 using namespace Monosat;
 
 class GeometryDetector {

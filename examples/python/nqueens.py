@@ -11,9 +11,9 @@
 #Share Alike – If you alter, transform, or build upon this work, you may distribute the resulting work only
 #under the same or similar license to this one.
 #See http://creativecommons.org/licenses/by-nc-sa/3.0/ for more details.
-from monosat import *
 import sys
 import time
+from monosat import *
 
 if len(sys.argv) != 2:
     print("You should give the number of queens as parameter!")

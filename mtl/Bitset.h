@@ -23,7 +23,7 @@
 #ifndef BITSET_H_
 #define BITSET_H_
 
-#include "mtl/Vec.h"
+#include "monosat/mtl/Vec.h"
 #include <limits>
 namespace Monosat {
 

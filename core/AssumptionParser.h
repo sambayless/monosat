@@ -24,10 +24,10 @@
 #include <unordered_map>
 #include <stdio.h>
 #include <string>
-#include "utils/ParseUtils.h"
-#include "core/SolverTypes.h"
-#include "mtl/Vec.h"
-#include "mtl/Sort.h"
+#include "monosat/utils/ParseUtils.h"
+#include "monosat/core/SolverTypes.h"
+#include "monosat/mtl/Vec.h"
+#include "monosat/mtl/Sort.h"
 using namespace std;
 namespace Monosat {
 

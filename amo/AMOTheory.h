@@ -22,9 +22,9 @@
 #ifndef AMOTHEORY_H_
 #define AMOTHEORY_H_
 
-#include "mtl/Vec.h"
-#include "core/SolverTypes.h"
-#include "core/Theory.h"
+#include "monosat/mtl/Vec.h"
+#include "monosat/core/SolverTypes.h"
+#include "monosat/core/Theory.h"
 
 namespace Monosat {
 

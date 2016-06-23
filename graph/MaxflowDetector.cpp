@@ -19,27 +19,14 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
 
-#include <core/Config.h>
-#include <dgl/Dinics.h>
-#include <dgl/DinicsLinkCut.h>
-#include <dgl/EdmondsKarpAdj.h>
-#include <dgl/EdmondsKarpDynamic.h>
-#include <dgl/Reach.h>
-#include <dgl/BFS.h>
-#include <graph/GraphTheory.h>
-#include <graph/MaxflowDetector.h>
-#include <mtl/Rnd.h>
-#include <mtl/Vec.h>
-#include <utils/Options.h>
-//#include "dgl/KohliTorr.h"
-#include <algorithm>
-#include <cassert>
-#include <cmath>
-#include <cstdio>
-#include <cstdlib>
-#include <iostream>
-#include <vector>
-#include <string>
+#include <monosat/core/Config.h>
+#include <monosat/dgl/Dinics.h>
+#include <monosat/dgl/DinicsLinkCut.h>
+#include <monosat/dgl/EdmondsKarpDynamic.h>
+#include <monosat/dgl/Reach.h>
+#include <monosat/dgl/BFS.h>
+#include <monosat/graph/GraphTheory.h>
+//#include "monosat/dgl/KohliTorr.h"
 using namespace Monosat;
 
 
@@ -2201,5 +2188,5 @@ Lit MaxflowDetector<Weight>::decide() {
 template class Monosat::MaxflowDetector<int> ;
 template class Monosat::MaxflowDetector<int64_t> ;
 template class Monosat::MaxflowDetector<double> ;
-#include <gmpxx.h>
+
 template class Monosat::MaxflowDetector<mpq_class> ;

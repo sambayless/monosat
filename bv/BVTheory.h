@@ -8,7 +8,7 @@
 #ifndef BVTHEORY_H_
 #define BVTHEORY_H_
 
-#include "core/Theory.h"
+#include "monosat/core/Theory.h"
 
 namespace Monosat {
 /**

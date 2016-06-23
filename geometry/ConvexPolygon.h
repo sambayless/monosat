@@ -23,7 +23,7 @@
 #define CONVEXPOLYGON_H_
 #include "Polygon.h"
 #include <gmpxx.h>
-#include "core/Config.h"
+#include "monosat/core/Config.h"
 #include "Line.h"
 #include <cmath>
 #include <iostream>

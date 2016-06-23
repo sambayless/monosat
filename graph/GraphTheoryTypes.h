@@ -22,8 +22,8 @@
 #ifndef GRAPHTHEORYTYPES_H_
 #define GRAPHTHEORYTYPES_H_
 #include <cstddef>
-#include "core/SolverTypes.h"
-#include "mtl/Rnd.h"
+#include "monosat/core/SolverTypes.h"
+#include "monosat/mtl/Rnd.h"
 
 namespace Monosat {
 

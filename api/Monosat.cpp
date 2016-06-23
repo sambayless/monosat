@@ -1,26 +1,39 @@
+/****************************************************************************************[Solver.h]
+ The MIT License (MIT)
 
-#include "utils/ParseUtils.h"
-#include "utils/Options.h"
-#include "core/Solver.h"
-#include "core/Config.h"
-#include "simp/SimpSolver.h"
-#include "graph/GraphTheory.h"
-#include "geometry/GeometryTheory.h"
-#include "fsm/FSMTheory.h"
-#include "pb/PbTheory.h"
-#include "bv/BVTheorySolver.h"
-#include "amo/AMOTheory.h"
-#include "core/SolverTypes.h"
+ Copyright (c) 2016, Sam Bayless
+
+ Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
+ associated documentation files (the "Software"), to deal in the Software without restriction,
+ including without limitation the rights to use, copy, modify, merge, publish, distribute,
+ sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is
+ furnished to do so, subject to the following conditions:
+
+ The above copyright notice and this permission notice shall be included in all copies or
+ substantial portions of the Software.
+
+ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT
+ NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+ DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT
+ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ **************************************************************************************************/
+
+#include "monosat/utils/ParseUtils.h"
+#include "monosat/utils/Options.h"
+#include "monosat/core/Solver.h"
+#include "monosat/simp/SimpSolver.h"
+#include "monosat/graph/GraphTheory.h"
+#include "monosat/geometry/GeometryTheory.h"
+#include "monosat/fsm/FSMTheory.h"
+#include "monosat/pb/PbTheory.h"
+#include "monosat/amo/AMOTheory.h"
 #include "Monosat.h"
-#include "mtl/Vec.h"
-#include "core/Dimacs.h"
-#include "bv/BVParser.h"
-#include "graph/GraphParser.h"
-#include "utils/ParseUtils.h"
-#include "amo/AMOParser.h"
-#include <stdexcept>
-#include <cstdarg>
-#include "core/Optimize.h"
+#include "monosat/core/Dimacs.h"
+#include "monosat/bv/BVParser.h"
+#include "monosat/graph/GraphParser.h"
+#include "monosat/amo/AMOParser.h"
+#include "monosat/core/Optimize.h"
 #include <csignal>
 #include <set>
 #include <iostream>

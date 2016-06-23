@@ -21,11 +21,11 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
 
-#ifndef Minisat_SimpSolver_h
-#define Minisat_SimpSolver_h
+#ifndef Monosat_SimpSolver_h
+#define Monosat_SimpSolver_h
 
-#include "mtl/Queue.h"
-#include "core/Solver.h"
+#include "monosat/mtl/Queue.h"
+#include "monosat/core/Solver.h"
 
 namespace Monosat {
 

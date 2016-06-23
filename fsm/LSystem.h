@@ -9,12 +9,12 @@
 #define DYNAMICLSYSTEM_H_
 
 #include <vector>
-#include "mtl/Vec.h"
-#include "mtl/Bitset.h"
+#include "monosat/mtl/Vec.h"
+#include "monosat/mtl/Bitset.h"
 #include <algorithm>
 #include <cassert>
 
-#include "dgl/DynamicGraph.h"
+#include "monosat/dgl/DynamicGraph.h"
 using namespace dgl;
 namespace Monosat {
 

@@ -21,10 +21,10 @@
 
 #ifndef DETECTOR_H_
 #define DETECTOR_H_
-#include "core/SolverTypes.h"
+#include "monosat/core/SolverTypes.h"
 #include "GraphTheoryTypes.h"
-#include "mtl/Vec.h"
-#include "core/Config.h"
+#include "monosat/mtl/Vec.h"
+#include "monosat/core/Config.h"
 #include <cstdio>
 #include <iostream>
 namespace Monosat {

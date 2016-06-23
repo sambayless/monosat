@@ -21,9 +21,7 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
 
-#include "mtl/Sort.h"
-#include "simp/SimpSolver.h"
-#include "utils/System.h"
+#include "monosat/simp/SimpSolver.h"
 
 using namespace Monosat;
 
@@ -42,7 +40,7 @@ static IntOption opt_clause_lim(_cat, "cl-lim",
 static IntOption opt_subsumption_lim(_cat, "sub-lim",
 		"Do not check if subsumption against a clause larger than this. -1 means no limit.", 1000,
 		IntRange(-1, INT32_MAX));
-static DoubleOption opt_simp_garbage_frac(_cat, "simp-gc-frac",
+static DoubleOption opt_simp_garbage_frac(_cat, "monosat/simp-gc-frac",
 		"The fraction of wasted memory allowed before a garbage collection is triggered during simplification.", 0.5,
 		DoubleRange(0, false, HUGE_VAL, false));
 

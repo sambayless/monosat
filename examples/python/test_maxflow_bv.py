@@ -1,12 +1,5 @@
-from monosat import *    
-
-import functools
-import math
-import os
 import random
-import random
-import sys
-
+from monosat import *
 
 print("begin encode");
 

@@ -19,12 +19,8 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
 
-#include "CycleDetector.h"
 #include "GraphTheory.h"
-#include "dgl/PKTopologicalSort.h"
-#include "dgl/DFSCycle.h"
-#include "core/Config.h"
-#include <limits>
+#include "monosat/dgl/PKTopologicalSort.h"
 using namespace Monosat;
 template<typename Weight>
 CycleDetector<Weight>::CycleDetector(int _detectorID, GraphTheorySolver<Weight> * _outer, DynamicGraph<Weight>  &g_under,
@@ -286,5 +282,4 @@ Lit CycleDetector<Weight>::decide() {
 template class Monosat::CycleDetector<int> ;
 template class Monosat::CycleDetector<int64_t> ;
 template class Monosat::CycleDetector<double> ;
-#include <gmpxx.h>
 template class Monosat::CycleDetector<mpq_class> ;

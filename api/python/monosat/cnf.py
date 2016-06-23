@@ -24,16 +24,9 @@ from math import *
 from monosat.aiger import *
 from monosat.graphcircuit import CNFGraph
 from monosat.pbtheory import PBManager
-from tempfile import NamedTemporaryFile, mktemp
-import monosat.graphtheory
-import os
-import platform
-import sys
 
 
-
-
-def writeCNF(circuit, graphmgr, filestr,comments=None, use_unary_encoding=True):    
+def writeCNF(circuit, graphmgr, filestr,comments=None, use_unary_encoding=True):
     print("Writing to " +  filestr + "...\n")
     fileout = open(filestr,'w')
     print("c Created with monosat_py", file=fileout)

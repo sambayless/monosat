@@ -1,13 +1,5 @@
 from monosat import *
 
-import functools
-import math
-import os
-import random
-import random
-import sys
-
-
 print("Note: currently, pseudo-Boolean encodings rely on MinisatPB (a variant of Minisat+), which must be installed and on the path (as 'minisatpb') in order for MonoSAT to use it.")
 vars=[]
 for v in range(10):

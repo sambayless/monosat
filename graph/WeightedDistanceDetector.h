@@ -21,22 +21,22 @@
 
 #ifndef WEIGHTED_DISTANCEETECTOR_H_
 #define WEIGHTED_DISTANCEETECTOR_H_
-#include "utils/System.h"
+#include "monosat/utils/System.h"
 
-#include "GraphTheoryTypes.h"
-#include "dgl/DynamicGraph.h"
-#include "dgl/Reach.h"
-#include "dgl/Distance.h"
-#include "dgl/Dijkstra.h"
-#include "dgl/BFS.h"
-#include "dgl/MaxFlow.h"
-#include "core/SolverTypes.h"
-#include "mtl/Map.h"
-#include "WeightedDijkstra.h"
+#include "monosat/graph/GraphTheoryTypes.h"
+#include "monosat/dgl/DynamicGraph.h"
+#include "monosat/dgl/Reach.h"
+#include "monosat/dgl/Distance.h"
+#include "monosat/dgl/Dijkstra.h"
+#include "monosat/dgl/BFS.h"
+#include "monosat/dgl/MaxFlow.h"
+#include "monosat/core/SolverTypes.h"
+#include "monosat/mtl/Map.h"
+#include "monosat/graph/WeightedDijkstra.h"
 #include <gmpxx.h>
-#include "utils/System.h"
-#include "Detector.h"
-#include "bv/BVTheorySolver.h"
+#include "monosat/utils/System.h"
+#include "monosat/graph/Detector.h"
+#include "monosat/bv/BVTheorySolver.h"
 #include <vector>
 using namespace dgl;
 namespace Monosat {

@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 2.7)
 project(monosat)
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -Wno-unused-variable -Wno-unused-but-set-variable   -Wno-sign-compare  -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS ")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wno-unused-variable -Wno-unused-but-set-variable   -Wno-sign-compare  -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS")
 
 set( CMAKE_VERBOSE_MAKEFILE on )
 
@@ -12,7 +12,7 @@ if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
    set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug" "Release"  "MinSizeRel" "RelWithDebInfo")
 endif()
 message(STATUS "build type is " ${CMAKE_BUILD_TYPE})
-include_directories(./)
+include_directories(../)
 
 set(SOURCE_FILES
     amo/AMOParser.h
@@ -285,6 +285,8 @@ install(DIRECTORY . DESTINATION include/monosat
         PATTERN Static EXCLUDE
         PATTERN ClangDebug EXCLUDE
         PATTERN ClangRelease EXCLUDE
+        PATTERN ClangShared EXCLUDE
+        PATTERN GPerf EXCLUDE
         PATTERN OSX_ClangRelease EXCLUDE
         PATTERN OSX_SharedLibrary EXCLUDE
         PATTERN SharedLibrary EXCLUDE

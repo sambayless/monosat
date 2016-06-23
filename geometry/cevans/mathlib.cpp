@@ -1,8 +1,6 @@
 #include "mathlib.h"
 
 #include <algorithm>
-#include <cmath>
-#include <sstream>
 using namespace std;
 
 namespace cevans {

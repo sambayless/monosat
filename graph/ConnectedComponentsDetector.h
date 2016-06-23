@@ -20,17 +20,17 @@
  **************************************************************************************************/
 #ifndef CONNECTED_COMPONENTS_DETECTOR_H_
 #define CONNECTED_COMPONENTS_DETECTOR_H_
-#include "utils/System.h"
+#include "monosat/utils/System.h"
 #include "GraphTheoryTypes.h"
-#include "dgl/DynamicGraph.h"
-#include "dgl/ConnectedComponents.h"
+#include "monosat/dgl/DynamicGraph.h"
+#include "monosat/dgl/ConnectedComponents.h"
 
-#include "core/SolverTypes.h"
-#include "mtl/Map.h"
-#include "dgl/DisjointSetConnectedComponents.h"
+#include "monosat/core/SolverTypes.h"
+#include "monosat/mtl/Map.h"
+#include "monosat/dgl/DisjointSetConnectedComponents.h"
 
-#include "dgl/alg/DisjointSets.h"
-#include "utils/System.h"
+#include "monosat/dgl/alg/DisjointSets.h"
+#include "monosat/utils/System.h"
 #include "Detector.h"
 using namespace dgl;
 namespace Monosat {

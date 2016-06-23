@@ -17,19 +17,17 @@
 #DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT
 #OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 from __future__ import division, print_function
-from monosat.logic import *
+
+import os
+import sys
+import tempfile
 from monosat.bvtheory import BVManager
 from monosat.fsmtheory import FSMManager
 from monosat.geometrytheory import GeometryManager
 from monosat.graphtheory import GraphManager
+from monosat.logic import *
 from monosat.pbtheory import PBManager
-from tempfile import NamedTemporaryFile, mktemp
-import os
-import platform
-import sys
-import tempfile
-
-
+from tempfile import mktemp
 
 
 def clear():

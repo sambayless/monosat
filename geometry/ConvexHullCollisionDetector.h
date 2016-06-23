@@ -22,10 +22,10 @@
 #ifndef CONVEX_HULL_COLLISION_DETECTOR_H_
 #define CONVEX_HULL_COLLISION_DETECTOR_H_
 
-#include "core/SolverTypes.h"
+#include "monosat/core/SolverTypes.h"
 #include "PointSet.h"
 #include "GeometryDetector.h"
-#include "core/Config.h"
+#include "monosat/core/Config.h"
 #include "ConvexHull.h"
 #include "MonotoneConvexHull.h"
 #include "QuickConvexHull.h"

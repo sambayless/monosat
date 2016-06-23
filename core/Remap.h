@@ -7,9 +7,9 @@
 
 #ifndef REMAP_H_
 #define REMAP_H_
-#include "core/SolverTypes.h"
-#include "mtl/Vec.h"
-#include "core/Solver.h"
+#include "monosat/core/SolverTypes.h"
+#include "monosat/mtl/Vec.h"
+#include "monosat/core/Solver.h"
 
 //Classes for handling mapping to and from input formula numberings
 namespace Monosat{

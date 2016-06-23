@@ -18,14 +18,14 @@
  DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
-#include "mtl/Vec.h"
-#include "ReachDetector.h"
-#include "dgl/RamalReps.h"
-#include "dgl/BFS.h"
-#include "GraphTheory.h"
-#include "core/Config.h"
-#include "dgl/DynamicConnectivity.h"
-#include "dgl/TarjansSCC.h"
+#include "monosat/mtl/Vec.h"
+#include "monosat/graph/ReachDetector.h"
+#include "monosat/dgl/RamalReps.h"
+#include "monosat/dgl/BFS.h"
+#include "monosat/graph/GraphTheory.h"
+#include "monosat/core/Config.h"
+#include "monosat/dgl/DynamicConnectivity.h"
+#include "monosat/dgl/TarjansSCC.h"
 using namespace Monosat;
 template<typename Weight>
 ReachDetector<Weight>::ReachDetector(int _detectorID, GraphTheorySolver<Weight> * _outer, DynamicGraph<Weight>  &_g,

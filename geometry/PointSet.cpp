@@ -20,7 +20,6 @@
  **************************************************************************************************/
 
 #include "PointSet.h"
-#include <algorithm>
 template<>
 void PointSet<2, double>::buildClockwise() {
 	points_clockwise.clear();

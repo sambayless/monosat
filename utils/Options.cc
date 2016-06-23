@@ -17,9 +17,8 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
 
-#include "mtl/Sort.h"
-#include "utils/Options.h"
-#include "utils/ParseUtils.h"
+#include "monosat/mtl/Sort.h"
+#include "monosat/utils/Options.h"
 
 using namespace Monosat;
 

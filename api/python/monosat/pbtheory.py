@@ -18,17 +18,15 @@
 #OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 import os
-import sys
 import shutil
-from tempfile import NamedTemporaryFile
+import sys
 import time
-
 from monosat.logic import *
-from monosat.monosat_c import Monosat, dimacs
 from monosat.manager import Manager
-from monosat.singleton import Singleton
+from monosat.monosat_c import Monosat, dimacs
+from tempfile import NamedTemporaryFile
 
-debug=False   
+debug=False
 
 
 #Collects a set of graphs to encode together into a formula

@@ -19,7 +19,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #ifndef Minisat_IntMap_h
 #define Minisat_IntMap_h
 
-#include "mtl/Vec.h"
+#include "monosat/mtl/Vec.h"
 
 namespace Monosat {
 

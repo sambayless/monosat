@@ -30,16 +30,16 @@
 #include <zlib.h>
 #include <sstream>
 #include <string>
-#include "utils/System.h"
-#include "utils/ParseUtils.h"
-#include "utils/Options.h"
-#include "graph/GraphParser.h"
-#include "fsm/FSMParser.h"
-#include "core/Dimacs.h"
-#include "core/AssumptionParser.h"
-#include "fsm/LSystemParser.h"
-#include "core/Solver.h"
-#include "core/Config.h"
+#include "monosat/utils/System.h"
+#include "monosat/utils/ParseUtils.h"
+#include "monosat/utils/Options.h"
+#include "monosat/graph/GraphParser.h"
+#include "monosat/fsm/FSMParser.h"
+#include "monosat/core/Dimacs.h"
+#include "monosat/core/AssumptionParser.h"
+#include "monosat/fsm/LSystemParser.h"
+#include "monosat/core/Solver.h"
+#include "monosat/core/Config.h"
 #include <unistd.h>
 #include <sys/time.h>
 #include <algorithm>
@@ -47,17 +47,17 @@
 #include <algorithm>
 #include <iterator>
 #include <unordered_map>
-#include "simp/SimpSolver.h"
-#include "pb/PbTheory.h"
-#include "pb/PbParser.h"
-#include "mtl/Map.h"
-#include "graph/GraphTheory.h"
-#include "geometry/GeometryTheory.h"
-#include "geometry/GeometryParser.h"
-#include "bv/BVParser.h"
-#include "amo/AMOTheory.h"
-#include "amo/AMOParser.h"
-#include "core/Optimize.h"
+#include "monosat/simp/SimpSolver.h"
+#include "monosat/pb/PbTheory.h"
+#include "monosat/pb/PbParser.h"
+#include "monosat/mtl/Map.h"
+#include "monosat/graph/GraphTheory.h"
+#include "monosat/geometry/GeometryTheory.h"
+#include "monosat/geometry/GeometryParser.h"
+#include "monosat/bv/BVParser.h"
+#include "monosat/amo/AMOTheory.h"
+#include "monosat/amo/AMOParser.h"
+#include "monosat/core/Optimize.h"
 using namespace Monosat;
 using namespace std;
 //=================================================================================================

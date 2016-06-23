@@ -25,16 +25,14 @@ if __name__ == "__main__":
     import sys
     #Setup PYTHONPATH... if anyone knows a better way to do this without a shell script, I'm all ears..
     sys.path.append(os.path.abspath(os.path.join( path.dirname(__file__),os.pardir)))
-    
-from monosat.logic import *
-from monosat.gnf import writeGNF
-from monosat.graphcircuit import Graph, GraphManager
-from monosat.pbtheory import PBManager, MinisatPlus
+
 import argparse
 import tempfile
+from monosat.gnf import writeGNF
+from monosat.graphcircuit import Graph, GraphManager
+from monosat.logic import *
+from monosat.pbtheory import PBManager, MinisatPlus
 
-
-    
 parser = argparse.ArgumentParser(description='Convert GNF format to plain CNF format')
 parser.add_argument('input', type=str,
                    help='Input file, in GNF format')

@@ -18,10 +18,10 @@
  DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
-#include <fsm/alg/NFAGraphAccept.h>
-#include <fsm/alg/NFAAccept.h>
-#include "FSMAcceptDetector.h"
-#include "FSMTheory.h"
+#include "monosat/fsm/alg/NFAGraphAccept.h"
+#include "monosat/fsm/alg/NFAAccept.h"
+#include "monosat/fsm/FSMAcceptDetector.h"
+#include "monosat/fsm/FSMTheory.h"
 
 using namespace Monosat;
 
@@ -784,9 +784,9 @@ void FSMAcceptDetector::printSolution(std::ostream& out){
 }
 bool FSMAcceptDetector::checkSatisfied() {
 	NFAAccept<> check(g_under, source, strings);
-	if (opt_verb > 1) {
-		g_under.draw(source, first_destination);
-	}
+	//if (opt_verb > 1) {
+	//	g_under.draw(source, first_destination);
+	//}
 	for(int str = 0;str<accept_lits.size();str++){
 		vec<int> & string = strings[str];
 		check.run(str);

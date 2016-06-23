@@ -27,7 +27,7 @@
 #include "DynamicGraph.h"
 #include "MaxFlow.h"
 #include <vector>
-#include "alg/dyncut/graph.h"
+#include "monosat/dgl/alg/dyncut/graph.h"
 #include "EdmondsKarpDynamic.h"
 #include <algorithm>
 #include <limits>

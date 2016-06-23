@@ -21,17 +21,17 @@
 
 #ifndef STEINER_DETECTOR_H_
 #define STEINER_DETECTOR_H_
-#include "utils/System.h"
+#include "monosat/utils/System.h"
 #include "GraphTheoryTypes.h"
-#include "dgl/DynamicGraph.h"
-#include "dgl/MinimumSpanningTree.h"
-#include "dgl/SteinerTree.h"
-#include "core/SolverTypes.h"
-#include "mtl/Map.h"
+#include "monosat/dgl/DynamicGraph.h"
+#include "monosat/dgl/MinimumSpanningTree.h"
+#include "monosat/dgl/SteinerTree.h"
+#include "monosat/core/SolverTypes.h"
+#include "monosat/mtl/Map.h"
 
-#include "dgl/alg/DisjointSets.h"
-#include "dgl/DynamicNodes.h"
-#include "utils/System.h"
+#include "monosat/dgl/alg/DisjointSets.h"
+#include "monosat/dgl/DynamicNodes.h"
+#include "monosat/utils/System.h"
 #include "Detector.h"
 
 using namespace dgl;

@@ -23,15 +23,16 @@
 
 #ifndef Monosat_Solver_h
 #define Monosat_Solver_h
-#include "mtl/Vec.h"
-#include "mtl/Heap.h"
-#include "mtl/Alg.h"
-#include "mtl/Rnd.h"
-#include "utils/Options.h"
-#include "core/SolverTypes.h"
-#include "core/Theory.h"
-#include "core/TheorySolver.h"
-#include "core/Config.h"
+
+#include "monosat/mtl/Vec.h"
+#include "monosat/mtl/Heap.h"
+#include "monosat/mtl/Alg.h"
+#include "monosat/mtl/Rnd.h"
+#include "monosat/utils/Options.h"
+#include "monosat/core/SolverTypes.h"
+#include "monosat/core/Theory.h"
+#include "monosat/core/TheorySolver.h"
+#include "monosat/core/Config.h"
 #include <cinttypes>
 
 //#define CRC_CHECK
@@ -40,11 +41,14 @@
 #else
 #define CRC(x) (static_cast<void> (0))
 #endif
+
 //this is _really_ ugly...
 template<unsigned int D, class T> class GeometryTheorySolver;
+
+namespace Monosat {
 template<typename Weight> class GraphTheorySolver;
 class FSMTheorySolver;
-namespace Monosat {
+
 class DimacsMap;
 //=================================================================================================
 // Solver -- the main class:
@@ -67,16 +71,10 @@ public:
 	unsigned long crc (){
 		return crc_val;
 	}
-	//void test();
 	void crc(long v,const char* descrpt=""){
 		crc_val ^= v + 0x9e3779b9 + (crc_val<<6) + (crc_val>>2);
 		crc_updates++;
 
-		if(crc_updates== 1735520){//1460764
-			int a=1;
-			printf("testmark\n");
-			//test();
-		}
 		if(opt_crc>0 && (crc_updates-1) %(opt_crc)==0){
 			fflush(stdout);printf("crc %ld: %lu\t%ld\t(%s)\n",crc_updates,crc_val,v,descrpt);fflush(stdout);
 		}
@@ -371,9 +369,6 @@ public:
 			exit(1);
 		}
 		assert(!hasTheory(solverVar));
-		if(toInt(mkLit(theoryVar))==10858){
-			dbg++;
-		}
 		theory_vars[solverVar].theory = theory + 1;
 		theory_vars[solverVar].theory_var = theoryVar;
 		all_theory_vars.push(solverVar);
@@ -868,9 +863,6 @@ public:
 	}
 	void cancelUntil(int level);                                             // Backtrack until a certain level.
 	inline void needsPropagation(int theoryID){
-		if(theoryID==1){
-			int a=1;
-		}
 		if (!in_theory_queue[theoryID]) {
 			in_theory_queue[theoryID] = true;
 			theory_queue.push(theoryID);

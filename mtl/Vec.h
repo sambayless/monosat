@@ -24,8 +24,8 @@
 #include <assert.h>
 #include <new>
 #include <algorithm>
-#include "mtl/IntTypes.h"
-#include "mtl/XAlloc.h"
+#include "monosat/mtl/IntTypes.h"
+#include "monosat/mtl/XAlloc.h"
 
 namespace Monosat {
 

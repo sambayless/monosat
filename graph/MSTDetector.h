@@ -20,17 +20,17 @@
  **************************************************************************************************/
 #ifndef MST_DETECTOR_H_
 #define MST_DETECTOR_H_
-#include "utils/System.h"
+#include "monosat/utils/System.h"
 
 #include "GraphTheoryTypes.h"
-#include "dgl/DynamicGraph.h"
-#include "dgl/MinimumSpanningTree.h"
+#include "monosat/dgl/DynamicGraph.h"
+#include "monosat/dgl/MinimumSpanningTree.h"
 
-#include "core/SolverTypes.h"
-#include "mtl/Map.h"
+#include "monosat/core/SolverTypes.h"
+#include "monosat/mtl/Map.h"
 
-#include "dgl/alg/DisjointSets.h"
-#include "utils/System.h"
+#include "monosat/dgl/alg/DisjointSets.h"
+#include "monosat/utils/System.h"
 #include "Detector.h"
 
 using namespace dgl;

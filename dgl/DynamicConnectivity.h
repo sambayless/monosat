@@ -23,13 +23,13 @@
 #define DYNAMIC_CONNECTIVITY_H_
 
 #include <vector>
-#include "alg/Heap.h"
+#include "monosat/dgl/alg/Heap.h"
 #include "DynamicGraph.h"
-#include "alg/EulerTree.h"
-#include "alg/TreapCustom.h"
-#include "core/Config.h"
+#include "monosat/dgl/alg/EulerTree.h"
+#include "monosat/dgl/alg/TreapCustom.h"
+#include "monosat/core/Config.h"
 #include "Reach.h"
-#include "mtl/Sort.h"
+#include "monosat/mtl/Sort.h"
 #include "ThorupDynamicConnectivity.h"
 
 namespace dgl {

@@ -20,16 +20,16 @@
  **************************************************************************************************/
 #ifndef CYCLE_DETECTOR_H_
 #define CYCLE_DETECTOR_H_
-#include "utils/System.h"
+#include "monosat/utils/System.h"
 
 #include "GraphTheoryTypes.h"
-#include "dgl/DynamicGraph.h"
-#include "dgl/ConnectedComponents.h"
-#include "dgl/Cycle.h"
-#include "core/SolverTypes.h"
-#include "mtl/Map.h"
+#include "monosat/dgl/DynamicGraph.h"
+#include "monosat/dgl/ConnectedComponents.h"
+#include "monosat/dgl/Cycle.h"
+#include "monosat/core/SolverTypes.h"
+#include "monosat/mtl/Map.h"
 
-#include "utils/System.h"
+#include "monosat/utils/System.h"
 #include "Detector.h"
 using namespace dgl;
 namespace Monosat {

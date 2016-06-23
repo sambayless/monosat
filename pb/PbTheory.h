@@ -22,11 +22,11 @@
 #ifndef PBTHEORY_H_
 #define PBTHEORY_H_
 
-#include "mtl/Vec.h"
-#include "mtl/Map.h"
-#include "mtl/Sort.h"
-#include "core/SolverTypes.h"
-#include "core/Theory.h"
+#include "monosat/mtl/Vec.h"
+#include "monosat/mtl/Map.h"
+#include "monosat/mtl/Sort.h"
+#include "monosat/core/SolverTypes.h"
+#include "monosat/core/Theory.h"
 #include <cmath>
 namespace Monosat {
 

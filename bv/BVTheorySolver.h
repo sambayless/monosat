@@ -21,19 +21,18 @@
 
 #ifndef BV_THEORY_SOLVER_H_
 #define BV_THEORY_SOLVER_H_
-
 #include <cstddef>
 #include <gmpxx.h>
-#include "utils/System.h"
-#include "core/Theory.h"
+#include "monosat/utils/System.h"
+#include "monosat/core/Theory.h"
 
-#include "core/SolverTypes.h"
-#include "mtl/Map.h"
+#include "monosat/core/SolverTypes.h"
+#include "monosat/mtl/Map.h"
 
-#include "BVTheory.h"
-#include "utils/System.h"
-#include "core/TheorySolver.h"
-#include "core/Remap.h"
+#include "monosat/bv/BVTheory.h"
+#include "monosat/utils/System.h"
+#include "monosat/core/TheorySolver.h"
+#include "monosat/core/Remap.h"
 #include <algorithm>
 #include <vector>
 #include <cmath>
@@ -43,13 +42,13 @@
 #include <sstream>
 #include <iostream>
 #include <exception>
-#include "api/Circuit.h"
+#include "monosat/api/Circuit.h"
 
+namespace Monosat {
 template<typename Weight>
 class BVTheorySolver;
-
-#include "core/Remap.h"
-
+};
+#include "monosat/core/Remap.h"
 namespace Monosat {
 using std::min;
 using std::max;

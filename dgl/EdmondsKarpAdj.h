@@ -26,8 +26,8 @@
 #include "MaxFlow.h"
 #include <vector>
 #include <algorithm>
-#include "core/Config.h"
-#include "dgl/EdmondsKarp.h"
+#include "monosat/core/Config.h"
+#include "monosat/dgl/EdmondsKarp.h"
 
 namespace dgl {
 template<typename Weight = int>

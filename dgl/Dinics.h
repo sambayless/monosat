@@ -25,7 +25,7 @@
 #include "DynamicGraph.h"
 #include "MaxFlow.h"
 #include <vector>
-#include "core/Config.h"
+#include "monosat/core/Config.h"
 #include "EdmondsKarpAdj.h"
 #include <algorithm>
 #include <climits>

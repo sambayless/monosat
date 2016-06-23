@@ -19,11 +19,13 @@
 
 
 import monosat.monosat_c
-from monosat.logic import *
-from monosat.bvtheory import BitVector
-from monosat.manager import Manager
 import sys
+from monosat.bvtheory import BitVector
+from monosat.logic import *
+from monosat.manager import Manager
+
 debug=False   
+
 
 #Collects a set of graphs to encode together into a formula
 class GraphManager(metaclass=Manager):
@@ -142,6 +144,11 @@ class Graph():
         else:
             return self._monosat.getModel_EdgeFlow(self.graph,flowlit.getLit(),edgelit.getLit())
     
+    """
+    Get a path in the graph that satisfies the reachability or shortest path lit, if the shortest path lit is true in the model
+    If 'return_edge_lits' is True, then return the path as a list of edge literals. Otherwise, returns the path as a list of nodes.
+    Must not be caled before solve().
+    """
     def getPath(self,reach_or_shortest_path_lit,return_edge_lits=False):
         if not return_edge_lits:
             return  self._monosat.getModel_Path_Nodes(self.graph, reach_or_shortest_path_lit.getLit())
@@ -477,4 +484,3 @@ class Graph():
             
 
         print("}") 
-        

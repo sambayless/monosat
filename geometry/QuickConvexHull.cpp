@@ -21,15 +21,8 @@
 
 #include "QuickConvexHull.h"
 
-#include <vector>
-#include "GeometryTypes.h"
-#include "MonotoneConvexHull.h"
-#include <vector>
-#include <algorithm>
 
-#include "cevans/quickhull3D.h"
 #include "cevans/quickhull2D.h"
-#include "cevans/zero.h"
 template<>
 double cevans::zero<double>::val = 1E-10;
 template<>

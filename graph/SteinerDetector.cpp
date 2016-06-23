@@ -19,15 +19,9 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
 
-#include "SteinerDetector.h"
 #include "GraphTheory.h"
-#include "dgl/SteinerApprox.h"
-#include "dgl/DynamicNodes.h"
-#include <limits>
-#include <set>
-#include "dgl/FloydWarshall.h"
-#include "core/Config.h"
-#include "dgl/alg/DisjointSets.h"
+#include "monosat/dgl/SteinerApprox.h"
+#include "monosat/dgl/FloydWarshall.h"
 
 using namespace Monosat;
 
@@ -443,5 +437,4 @@ Lit SteinerDetector<Weight>::decide() {
 template class Monosat::SteinerDetector<int> ;
 template class Monosat::SteinerDetector<int64_t> ;
 template class Monosat::SteinerDetector<double> ;
-#include <gmpxx.h>
 template class Monosat::SteinerDetector<mpq_class> ;

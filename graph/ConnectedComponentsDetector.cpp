@@ -19,11 +19,7 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
 
-#include "ConnectedComponentsDetector.h"
 #include "GraphTheory.h"
-#include "dgl/BFS.h"
-#include "dgl/Reach.h"
-#include <limits>
 using namespace Monosat;
 template<typename Weight>
 ConnectedComponentsDetector<Weight>::ConnectedComponentsDetector(int _detectorID, GraphTheorySolver<Weight> * _outer,
@@ -807,6 +803,5 @@ Lit ConnectedComponentsDetector<Weight>::decide() {
 template class Monosat::ConnectedComponentsDetector<int> ;
 template class Monosat::ConnectedComponentsDetector<int64_t> ;
 template class Monosat::ConnectedComponentsDetector<double> ;
-#include <gmpxx.h>
 template class Monosat::ConnectedComponentsDetector<mpq_class> ;
 

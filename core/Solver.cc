@@ -23,12 +23,8 @@
 
 #include <math.h>
 
-#include "mtl/Sort.h"
-#include "core/Solver.h"
-#include "core/Config.h"
-#include "graph/GraphTheory.h"
-#include <unistd.h>
-#include "core/Remap.h"
+#include "monosat/mtl/Sort.h"
+#include "monosat/graph/GraphTheory.h"
 using namespace Monosat;
 
 //= " + std::to_string(x)

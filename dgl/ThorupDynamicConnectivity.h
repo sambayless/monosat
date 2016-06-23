@@ -23,11 +23,11 @@
 #define THORUPDYNAMICCONNECT_H_
 
 #include "DynamicConnectivityImpl.h"
-#include "alg/EulerTree.h"
+#include "monosat/dgl/alg/EulerTree.h"
 #include <cmath>
 #include <algorithm>
 #ifndef NDEBUG
-#include "mtl/Sort.h"
+#include "monosat/mtl/Sort.h"
 #include "NaiveDynamicConnectivity.h"
 #endif
 namespace dgl {

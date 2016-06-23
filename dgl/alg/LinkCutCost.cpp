@@ -1,6 +1,5 @@
 #include "LinkCutCost.h"
 #include <climits>
-#include <limits>
 #include <gmpxx.h>
 #include <cstdint>
 template<>

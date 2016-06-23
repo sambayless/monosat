@@ -20,19 +20,19 @@
  **************************************************************************************************/
 #ifndef FSM_ACCEPTDETECTOR_H_
 #define FSM_ACCEPTDETECTOR_H_
-#include "utils/System.h"
+#include "monosat/utils/System.h"
 
-#include "dgl/DynamicGraph.h"
+#include "monosat/dgl/DynamicGraph.h"
 
-#include "DynamicFSM.h"
+#include "monosat/fsm/DynamicFSM.h"
 
-#include "core/SolverTypes.h"
-#include "mtl/Map.h"
-#include "mtl/Heap.h"
+#include "monosat/core/SolverTypes.h"
+#include "monosat/mtl/Map.h"
 
-#include "utils/System.h"
-#include "FSMDetector.h"
-#include "alg/NFAAccept.h"
+
+#include "monosat/utils/System.h"
+#include "monosat/fsm/FSMDetector.h"
+#include "monosat/fsm/alg/NFAAccept.h"
 
 using namespace dgl;
 namespace Monosat {

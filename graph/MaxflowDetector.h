@@ -20,20 +20,20 @@
  **************************************************************************************************/
 #ifndef MAXFLOWDETECTOR_H_
 #define MAXFLOWDETECTOR_H_
-#include "utils/System.h"
-#include "dgl/KohliTorr.h"
+#include "monosat/utils/System.h"
+#include "monosat/dgl/KohliTorr.h"
 #include "GraphTheoryTypes.h"
-#include "dgl/DynamicGraph.h"
-#include "dgl/MaxFlow.h"
-#include "dgl/EdmondsKarp.h"
-#include "core/SolverTypes.h"
-#include "mtl/Map.h"
-#include "mtl/Deque.h"
-#include "utils/System.h"
+#include "monosat/dgl/DynamicGraph.h"
+#include "monosat/dgl/MaxFlow.h"
+#include "monosat/dgl/EdmondsKarp.h"
+#include "monosat/core/SolverTypes.h"
+#include "monosat/mtl/Map.h"
+#include "monosat/mtl/Deque.h"
+#include "monosat/utils/System.h"
 #include "Detector.h"
-#include "bv/BVTheorySolver.h"
-#include "dgl/AcyclicFlow.h"
-#include "core/Config.h"
+#include "monosat/bv/BVTheorySolver.h"
+#include "monosat/dgl/AcyclicFlow.h"
+#include "monosat/core/Config.h"
 #include <vector>
 using namespace dgl;
 namespace Monosat {

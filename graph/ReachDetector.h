@@ -20,24 +20,24 @@
  **************************************************************************************************/
 #ifndef REACHDETECTOR_H_
 #define REACHDETECTOR_H_
-#include "utils/System.h"
+#include "monosat/utils/System.h"
 #include "GraphTheoryTypes.h"
-#include "dgl/DynamicGraph.h"
-#include "dgl/Reach.h"
-#include "dgl/Dijkstra.h"
-#include "dgl/BFS.h"
-#include "dgl/DFS.h"
+#include "monosat/dgl/DynamicGraph.h"
+#include "monosat/dgl/Reach.h"
+#include "monosat/dgl/Dijkstra.h"
+#include "monosat/dgl/BFS.h"
+#include "monosat/dgl/DFS.h"
 
-#include "core/SolverTypes.h"
-#include "mtl/Map.h"
-#include "dgl/MaxFlow.h"
+#include "monosat/core/SolverTypes.h"
+#include "monosat/mtl/Map.h"
+#include "monosat/dgl/MaxFlow.h"
 
-#include "dgl/EdmondsKarp.h"
-#include "dgl/EdmondsKarpAdj.h"
-#include "dgl/Chokepoint.h"
+#include "monosat/dgl/EdmondsKarp.h"
+#include "monosat/dgl/EdmondsKarpAdj.h"
+#include "monosat/dgl/Chokepoint.h"
 #include "WeightedDijkstra.h"
 
-#include "utils/System.h"
+#include "monosat/utils/System.h"
 #include "Detector.h"
 using namespace dgl;
 namespace Monosat {

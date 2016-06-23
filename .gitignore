@@ -8,6 +8,8 @@ SharedLibrary/*
 *.o
 *.d
 *.so
+/CMakeFiles
+/api/python/build
 Release/*
 Release2/*
 Debug/*
