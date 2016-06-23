@@ -19,11 +19,9 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
 
-#include "AllPairsDetector.h"
 #include "GraphTheory.h"
 #include "monosat/dgl/FloydWarshall.h"
 #include "monosat/dgl/DijkstraAllPairs.h"
-#include "monosat/dgl/ThorupDynamicConnectivity.h"
 using namespace Monosat;
 template<typename Weight>
 AllPairsDetector<Weight>::AllPairsDetector(int _detectorID, GraphTheorySolver<Weight> * _outer, DynamicGraph<Weight> &_g,
@@ -590,6 +588,5 @@ Lit AllPairsDetector<Weight>::decide() {
 template class Monosat::AllPairsDetector<int> ;
 template class Monosat::AllPairsDetector<long> ;
 template class Monosat::AllPairsDetector<double> ;
-#include <gmpxx.h>
 template class Monosat::AllPairsDetector<mpq_class> ;
 

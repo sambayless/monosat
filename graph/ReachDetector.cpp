@@ -18,13 +18,8 @@
  DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
-#include "monosat/mtl/Vec.h"
-#include "ReachDetector.h"
 #include "monosat/dgl/RamalReps.h"
-#include "monosat/dgl/BFS.h"
 #include "GraphTheory.h"
-#include "monosat/core/Config.h"
-#include "monosat/dgl/DynamicConnectivity.h"
 #include "monosat/dgl/TarjansSCC.h"
 using namespace Monosat;
 template<typename Weight>
@@ -1657,5 +1652,4 @@ bool ReachDetector<Weight>::getModel_PathByEdgeLit(int node, std::vector<Lit> & 
 template class Monosat::ReachDetector<int> ;
 template class Monosat::ReachDetector<long> ;
 template class Monosat::ReachDetector<double> ;
-#include <gmpxx.h>
 template class Monosat::ReachDetector<mpq_class> ;

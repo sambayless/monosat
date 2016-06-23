@@ -24,11 +24,7 @@
 #include <math.h>
 
 #include "monosat/mtl/Sort.h"
-#include "monosat/core/Solver.h"
-#include "monosat/core/Config.h"
 #include "monosat/graph/GraphTheory.h"
-#include <unistd.h>
-#include "monosat/core/Remap.h"
 using namespace Monosat;
 
 //=================================================================================================

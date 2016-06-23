@@ -21,9 +21,7 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
 
-#include "monosat/mtl/Sort.h"
 #include "monosat/simp/SimpSolver.h"
-#include "monosat/utils/System.h"
 
 using namespace Monosat;
 

@@ -21,11 +21,7 @@
 
 #include "DelaunayPolypartition.h"
 
-#include "alg/Heap.h"
-#include <set>
-#include <algorithm>
 #include "polypartition/polypartition.h"
-#include <list>
 template<>
 DelaunayPolypartition<2, double>::DelaunayPolypartition(PolygonSet<2, double> & p) :
 		polygons(p) {

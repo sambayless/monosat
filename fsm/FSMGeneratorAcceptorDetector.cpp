@@ -19,10 +19,8 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
 #include "monosat/mtl/Vec.h"
-#include "FSMGeneratorAcceptorDetector.h"
 
 #include "FSMTheory.h"
-#include "monosat/core/Config.h"
 
 
 using namespace Monosat;

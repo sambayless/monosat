@@ -19,16 +19,11 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
 
-#include "MSTDetector.h"
 #include "GraphTheory.h"
-#include "monosat/dgl/Kruskal.h"
 #include "monosat/dgl/Prim.h"
 #include "monosat/dgl/SpiraPan.h"
 
-#include <limits>
-#include <iostream>
 #include <set>
-#include "monosat/core/Config.h"
 using namespace Monosat;
 
 template<typename Weight>
@@ -1170,5 +1165,4 @@ Lit MSTDetector<Weight>::decide() {
 template class Monosat::MSTDetector<int> ;
 template class Monosat::MSTDetector<long> ;
 template class Monosat::MSTDetector<double> ;
-#include <gmpxx.h>
 template class Monosat::MSTDetector<mpq_class> ;

@@ -19,7 +19,6 @@
 
 #include "monosat/mtl/Sort.h"
 #include "monosat/utils/Options.h"
-#include "monosat/utils/ParseUtils.h"
 
 using namespace Monosat;
 
