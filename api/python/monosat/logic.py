@@ -17,15 +17,10 @@
 #DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT
 #OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-import monosat.monosat_c     
-from tempfile import mktemp
-import numbers
 import collections
-import functools
 import math
-import platform
-import re
-import os
+import monosat.monosat_c
+import numbers
 
 _monosat = monosat.monosat_c.Monosat()
 

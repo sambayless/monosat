@@ -1,18 +1,8 @@
-import functools
-import math
-import networkx.algorithms.components
-from networkx.algorithms.dag import is_directed_acyclic_graph
-from networkx.relabel import convert_node_labels_to_integers
-import networkx.algorithms.tree
-import os
-import random
-import random
-import sys
-
-from monosat import *
-
 import networkx as nx
-
+import networkx.algorithms.tree
+import random
+from monosat import *
+from networkx.relabel import convert_node_labels_to_integers
 
 print("begin encode");
 

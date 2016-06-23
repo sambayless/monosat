@@ -1,12 +1,11 @@
 #!/usr/bin/env python3
 from __future__ import print_function
-from distutils.core import setup
 
-
-import sys
 import os.path
-import shutil
 import platform
+import shutil
+import sys
+from distutils.core import setup
 
 if platform.system() != "Windows":
     copy_lib = "monosat/libmonosat.so"

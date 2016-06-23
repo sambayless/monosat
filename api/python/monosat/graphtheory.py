@@ -19,10 +19,11 @@
 
 
 import monosat.monosat_c
-from monosat.logic import *
-from monosat.bvtheory import BitVector
-from monosat.manager import Manager
 import sys
+from monosat.bvtheory import BitVector
+from monosat.logic import *
+from monosat.manager import Manager
+
 debug=False   
 
 #Collects a set of graphs to encode together into a formula

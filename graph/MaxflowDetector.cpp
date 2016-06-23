@@ -22,24 +22,11 @@
 #include <monosat/core/Config.h>
 #include <monosat/dgl/Dinics.h>
 #include <monosat/dgl/DinicsLinkCut.h>
-#include <monosat/dgl/EdmondsKarpAdj.h>
 #include <monosat/dgl/EdmondsKarpDynamic.h>
 #include <monosat/dgl/Reach.h>
 #include <monosat/dgl/BFS.h>
 #include <monosat/graph/GraphTheory.h>
-#include <monosat/graph/MaxflowDetector.h>
-#include <monosat/mtl/Rnd.h>
-#include <monosat/mtl/Vec.h>
-#include <monosat/utils/Options.h>
 //#include "monosat/dgl/KohliTorr.h"
-#include <algorithm>
-#include <cassert>
-#include <cmath>
-#include <cstdio>
-#include <cstdlib>
-#include <iostream>
-#include <vector>
-#include <string>
 using namespace Monosat;
 
 template<typename Weight>
@@ -1909,5 +1896,5 @@ Lit MaxflowDetector<Weight>::decide() {
 template class Monosat::MaxflowDetector<int> ;
 template class Monosat::MaxflowDetector<long> ;
 template class Monosat::MaxflowDetector<double> ;
-#include <gmpxx.h>
+
 template class Monosat::MaxflowDetector<mpq_class> ;

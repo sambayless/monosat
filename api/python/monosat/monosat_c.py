@@ -18,13 +18,12 @@
 #OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 from __future__ import division
 from __future__ import print_function
-from ctypes import *
-from os import path
-
-from monosat.singleton import Singleton
 
 import os
 import platform
+from ctypes import *
+from monosat.singleton import Singleton
+from os import path
 
 module_path = os.path.abspath(path.dirname(__file__))
 library_monosat = "libmonosat.so"

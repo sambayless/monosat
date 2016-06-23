@@ -11,11 +11,10 @@
 #Share Alike – If you alter, transform, or build upon this work, you may distribute the resulting work only
 #under the same or similar license to this one.
 #See http://creativecommons.org/licenses/by-nc-sa/3.0/ for more details.
-from monosat import *
-import sys
-import time
-import random
 import colorama
+import sys
+from monosat import *
+
 colorama.init()
 
 if len(sys.argv) != 5:
@@ -188,9 +187,7 @@ for i in range( GRID_SIZE ):
                 )
             )
 
-import random
-
-# starting point in the maze
+        # starting point in the maze
 #ENTRY_COL = random.randrange( GRID_SIZE-1 )
 print( "Maze entry in col %d on row 0" % ENTRY_COL )
 start = nodes[0,ENTRY_COL]

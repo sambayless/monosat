@@ -22,31 +22,19 @@
 #include "monosat/utils/ParseUtils.h"
 #include "monosat/utils/Options.h"
 #include "monosat/core/Solver.h"
-#include "monosat/core/Config.h"
 #include "monosat/simp/SimpSolver.h"
 #include "monosat/graph/GraphTheory.h"
 #include "monosat/geometry/GeometryTheory.h"
 #include "monosat/fsm/FSMTheory.h"
 #include "monosat/pb/PbTheory.h"
-#include "monosat/bv/BVTheorySolver.h"
 #include "monosat/amo/AMOTheory.h"
-#include "monosat/core/SolverTypes.h"
 #include "Monosat.h"
-#include "monosat/mtl/Vec.h"
 #include "monosat/core/Dimacs.h"
 #include "monosat/bv/BVParser.h"
 #include "monosat/graph/GraphParser.h"
-#include "monosat/utils/ParseUtils.h"
 #include "monosat/amo/AMOParser.h"
-#include <stdexcept>
-#include <cstdarg>
 #include "monosat/core/Optimize.h"
 #include <csignal>
-#include <set>
-#include <iostream>
-#include <string>
-#include <sstream>
-#include <algorithm>
 #include <iterator>
 using namespace Monosat;
 using namespace std;

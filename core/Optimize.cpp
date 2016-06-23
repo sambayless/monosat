@@ -23,11 +23,8 @@
 #ifndef OPTIMIZE_CPP_
 #define OPTIMIZE_CPP_
 #include "monosat/core/Optimize.h"
-#include "monosat/core/Config.h"
 #include <csignal>
-#include <stdexcept>
-#include <cstdarg>
-#include <string>
+
 namespace Monosat{
 
 namespace Optimization{

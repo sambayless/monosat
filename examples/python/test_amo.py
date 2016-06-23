@@ -1,13 +1,5 @@
 from monosat import *
 
-import functools
-import math
-import os
-import random
-import random
-import sys
-
-
 print("Testing MonoSAT's simple at-most-one constraint theory")
 print("For small numbers of variables, try also pseudo-Boolean constraint encodings.")
 vars=[]

@@ -24,18 +24,10 @@
 #include "monosat/dgl/EdmondsKarp.h"
 #include "monosat/dgl/EdmondsKarpAdj.h"
 #include "monosat/dgl/KohliTorr.h"
-#include "monosat/dgl/EdmondsKarpDynamic.h"
 #include "monosat/dgl/Dinics.h"
-#include "monosat/dgl/DinicsLinkCut.h"
 #include <monosat/graph/WeightedDistanceDetector.h>
 #include <monosat/graph/GraphTheory.h>
-#include <monosat/mtl/Rnd.h>
-#include <monosat/mtl/Vec.h>
-#include <monosat/utils/Options.h>
 //#include "monosat/dgl/UnweightedDistance.h"
-#include <cassert>
-#include <cstdlib>
-#include <iostream>
 #include <iomanip>
 using namespace Monosat;
 
@@ -1021,5 +1013,5 @@ Lit WeightedDistanceDetector<Weight>::decide() {
 template class Monosat::WeightedDistanceDetector<int> ;
 template class Monosat::WeightedDistanceDetector<long> ;
 template class Monosat::WeightedDistanceDetector<double> ;
-#include <gmpxx.h>
+
 template class Monosat::WeightedDistanceDetector<mpq_class> ;

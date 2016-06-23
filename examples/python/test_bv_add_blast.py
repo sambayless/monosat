@@ -1,11 +1,6 @@
+import random
 from monosat import *
 
-import functools
-import math
-import os
-import random
-import random
-import sys
 monosat.bvtheory.BVManager().bitblast_addition=True
 
 print("begin encode");
