@@ -1,0 +1,16 @@
+From: http://www.fluxionsdividebyzero.com/doc01.html
+License for the cevans geometry library:
+
+The code is open source. No distinction is made between commercial and non-commercial users or uses. This is a Copycenter licience.
+
+You are free to use the ideas and code. Clearly a lot of this is my own work, however I stand on the shoulders of giants and on them as well (each new computer generation ignores the previous one - with good reason). I own my source code.
+
+Where I do use other open source code I have documented it as such, there you and I will need to follow their copyright.
+
+I own the source code. Any changes to this declaration will not be retrospective but forward in time so you can saftely use this code in your applications.
+
+For example you could get commandline.h commandline.cpp from misclib project and add command line processing to your application. This can be done by downloading the source and extracting the necessary files.
+
+There is no warranty. I have placed this notice as the code is free. I want everybody who has the interest to have access to the code from the internet for free. The code is in the public domain.
+
+Copywrite declaration on 2009-02-19.
