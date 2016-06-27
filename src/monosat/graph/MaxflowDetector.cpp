@@ -980,21 +980,39 @@ bool MaxflowDetector<Weight>::checkSatisfied() {
 			
 			if (l != lit_Undef) {
 				//int node =getNode(var(l));
-
-				if (outer->value(l) == l_True) {
-					if (underCheck.maxFlow() < dist) {
-						return false;
+				if(flow_lits[j].inclusive) {
+					if (outer->value(l) == l_True) {
+						if (underCheck.maxFlow() < dist) {
+							return false;
+						}
+					} else if (outer->value(l) == l_False) {
+						if (overCheck.maxFlow() >= dist) {
+							return false;
+						}
+					} else {
+						if (underCheck.maxFlow() >= dist) {
+							return false;
+						}
+						if (overCheck.maxFlow() < dist) {
+							return false;
+						}
 					}
-				} else if (outer->value(l) == l_False) {
-					if (overCheck.maxFlow() >= dist) {
-						return false;
-					}
-				} else {
-					if (underCheck.maxFlow() >= dist) {
-						return false;
-					}
-					if (overCheck.maxFlow() < dist) {
-						return false;
+				}else{
+					if (outer->value(l) == l_True) {
+						if (underCheck.maxFlow() <= dist) {
+							return false;
+						}
+					} else if (outer->value(l) == l_False) {
+						if (overCheck.maxFlow() > dist) {
+							return false;
+						}
+					} else {
+						if (underCheck.maxFlow() > dist) {
+							return false;
+						}
+						if (overCheck.maxFlow() <= dist) {
+							return false;
+						}
 					}
 				}
 			}
@@ -1004,21 +1022,39 @@ bool MaxflowDetector<Weight>::checkSatisfied() {
 
 			if (l != lit_Undef) {
 				//int node =getNode(var(l));
-
-				if (outer->value(l) == l_True) {
-					if (underCheck.maxFlow() < dist_under) {
-						return false;
+				if(flow_lits[j].inclusive) {
+					if (outer->value(l) == l_True) {
+						if (underCheck.maxFlow() < dist_under) {
+							return false;
+						}
+					} else if (outer->value(l) == l_False) {
+						if (overCheck.maxFlow() >= dist_over) {
+							return false;
+						}
+					} else {
+						if (underCheck.maxFlow() >= dist_under) {
+							return false;
+						}
+						if (overCheck.maxFlow() < dist_over) {
+							return false;
+						}
 					}
-				} else if (outer->value(l) == l_False) {
-					if (overCheck.maxFlow() >= dist_over) {
-						return false;
-					}
-				} else {
-					if (underCheck.maxFlow() >= dist_under) {
-						return false;
-					}
-					if (overCheck.maxFlow() < dist_over) {
-						return false;
+				}else{
+					if (outer->value(l) == l_True) {
+						if (underCheck.maxFlow() <= dist_under) {
+							return false;
+						}
+					} else if (outer->value(l) == l_False) {
+						if (overCheck.maxFlow() > dist_over) {
+							return false;
+						}
+					} else {
+						if (underCheck.maxFlow() > dist_under) {
+							return false;
+						}
+						if (overCheck.maxFlow() <= dist_over) {
+							return false;
+						}
 					}
 				}
 			}
