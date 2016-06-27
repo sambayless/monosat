@@ -264,7 +264,7 @@ install(TARGETS monosat_static libmonosat libmonosat_static
         ARCHIVE DESTINATION lib
         #INCLUDES DESTINATION include/monosat
         )
-install(DIRECTORY . DESTINATION include/monosat
+install(DIRECTORY src/monosat DESTINATION include
         FILES_MATCHING PATTERN "*.h"
         PATTERN api/python EXCLUDE
         PATTERN api/java EXCLUDE

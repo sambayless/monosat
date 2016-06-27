@@ -127,6 +127,9 @@ public:
 		history_qhead = 0;
 		last_history_clear = -1;
 		alg_id=g.addDynamicAlgorithm(this);
+		if(source==sink){
+			throw std::runtime_error("Kohli-torr source and sink nodes cannot be the same");
+		}
 	}
 	
 	int getSource() const {
@@ -190,6 +193,10 @@ public:
 		if (source == s) {
 			return;
 		}
+		if(s==sink){
+			throw std::runtime_error("Kohli-torr source and sink nodes cannot be the same");
+		}
+
 		if (kt) {
 			
 			if (dynamic) {
@@ -238,6 +245,9 @@ public:
 	void setSink(int t) {
 		if (sink == t) {
 			return;
+		}
+		if(t==source){
+			throw std::runtime_error("Kohli-torr source and sink nodes cannot be the same");
 		}
 		if (kt) {
 			if (dynamic) {

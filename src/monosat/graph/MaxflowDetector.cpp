@@ -35,7 +35,9 @@ MaxflowDetector<Weight>::MaxflowDetector(int _detectorID, GraphTheorySolver<Weig
 		Detector(_detectorID), outer(_outer),  g_under(_g), g_over(_antig), source(
 				from), target(_target), rnd_seed(seed),order_heap(EdgeOrderLt(activity)) {
 	var_decay =opt_var_decay;
-
+	if(from==target){
+		throw std::runtime_error("Maxflow source and target nodes cannot be the same");
+	}
 	MinCutAlg alg = mincutalg;
 	if(outer->hasBitVectorEdges()){
 		if (alg!= MinCutAlg::ALG_EDKARP_ADJ && alg != MinCutAlg::ALG_KOHLI_TORR){
@@ -136,6 +138,7 @@ MaxflowDetector<Weight>::MaxflowDetector(int _detectorID, GraphTheorySolver<Weig
 
 template<typename Weight>
 void MaxflowDetector<Weight>::addFlowLit(Weight maxflow, Var outer_reach_var, bool inclusive) {
+
 	g_under.invalidate();
 	g_over.invalidate();
 	Var reach_var = outer->newVar(outer_reach_var, getID());

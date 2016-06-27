@@ -2955,6 +2955,14 @@ public:
 			fprintf(stderr, "Undefined node %d\n",to);
 			exit(1);
 		}
+		if(from==to){
+			//The maxflow from a node to itself is always infinite, and so that flow is never less than any specific weight
+			if(v!=var_Undef) {
+				S->addClause(~mkLit(v));
+			}
+			return;
+		}
+
 		if(!comparator){
 			fprintf(stderr,"No bitvector theory initialized\n");exit(1);
 		}
@@ -3179,6 +3187,15 @@ public:
 			fprintf(stderr, "Undefined node %d\n",to);
 			exit(1);
 		}
+
+		if(from==to){
+			//The maxflow from a node to itself is always infinite, and so that flow is never less than any specific weight
+			if(v!=var_Undef) {
+				S->addClause(~mkLit(v));
+			}
+			return;
+		}
+
 		for (int i = 0; i < flow_detectors.size(); i++) {
 			if (flow_detectors[i]->source == from && flow_detectors[i]->target == to) {
 				flow_detectors[i]->addFlowLit(max_flow, v,inclusive);
