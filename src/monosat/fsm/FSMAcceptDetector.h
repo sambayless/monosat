@@ -28,7 +28,7 @@
 
 #include "monosat/core/SolverTypes.h"
 #include "monosat/mtl/Map.h"
-
+#include "monosat/mtl/Heap.h"
 
 #include "monosat/utils/System.h"
 #include "monosat/fsm/FSMDetector.h"
