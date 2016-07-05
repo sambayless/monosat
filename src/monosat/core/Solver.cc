@@ -508,7 +508,9 @@ void Solver::cancelUntil(int lev) {
 		trail.shrink(trail.size() - trail_lim[lev]);
 		trail_lim.shrink(trail_lim.size() - lev);
 
-
+		if(qhead>trail.size()){
+			throw std::runtime_error("Internal error in backtracking");
+		}
 
 		for (int i = 0; i < theories.size(); i++) {
 			int theoryID = theories[i]->getTheoryIndex();
@@ -566,11 +568,11 @@ void Solver::cancelUntil(int lev) {
 
 		}
 		if(lowest_re_enqueue>-1){
-			for(int q = lowest_re_enqueue;q<=qhead;q++){
+			for(int q = lowest_re_enqueue;q<qhead;q++){ //should this be q<qhead, or q<=qhead?
 				Lit p = trail[q];
 				if (hasTheory(p)) {
 					int theoryID = getTheoryID(p);
-					if (theory_reprop_trail_pos[theoryID] ==-1 &&  q> theory_init_prop_trail_pos[theoryID] && !theorySatisfied(theories[theoryID])) {
+					if (theory_reprop_trail_pos[theoryID] ==-1 &&  q>= theory_init_prop_trail_pos[theoryID] && !theorySatisfied(theories[theoryID])) {
 						needsPropagation(theoryID);
 						theories[theoryID]->enqueueTheory(getTheoryLit(p));
 					}

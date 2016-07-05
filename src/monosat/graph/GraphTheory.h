@@ -546,6 +546,7 @@ public:
 
 	void dbg_check_trails(){
 /*#ifndef NDEBUG
+
 		int last_pos=-1;
 		for(int i = 0;i<bvtrail.size();i++){
 			Var v = bvtrail[i].graphAssign;
@@ -1428,7 +1429,7 @@ public:
 
 
 #ifndef NDEBUG
-		dbg_check_trails();
+		/*dbg_check_trails();
 
 		if (opt_conflict_min_cut) {
 			for (int i = 0; i < edge_list.size(); i++) {
@@ -1542,7 +1543,7 @@ public:
 					}
 				}
 			}
-		}
+		}*/
 
 #endif
 #ifdef DEBUG_DIJKSTRA
@@ -1755,9 +1756,8 @@ public:
 	void backtrackUntil(int untilLevel) {
 		static int it = 0;
 		++it;
-		if(getTheoryIndex()==6){
-			dbg_6++;
-		}
+		undoRewind();
+
 		//printf("g%d: backtrack until level %d\n", this->id,untilLevel);
 		//assert(to_reenqueue.size()==0);
 		bool changed = false;
@@ -1878,12 +1878,11 @@ public:
 	void backtrackUntil(Lit p) {
 		static int it=0;
 		++it;
+		undoRewind();
 		//printf("g%d : backtrack until lit %d\n", this->id,dimacs(p));
 		//need to remove and add edges in the two graphs accordingly.
 		assert(onTrail(var(p))||onLazyTrail(var(p)));
-		if(getTheoryIndex()==6){
-			dbg_6++;
-		}
+
 		//is this safe? there is a bit of a problem here, since I don't know where in the trail the 'satisfied'
 		//information was enqueued (only the level at which it was enqueued).
 		//on the other hand, a satisfied lit shouldn't be involved in a conflict, and
@@ -2518,9 +2517,7 @@ public:
 		Var v = var(l);
 		stats_enqueues++;
 		int lev = level(v);//level from the SAT solver.
-		if(!opt_lazy_backtrack){
-			assert(decisionLevel() <= lev);
-		}
+
 
 		while (lev > decisionLevel()) {
 			newDecisionLevel();
@@ -2529,13 +2526,23 @@ public:
 		//if we are assigning lazily, then there are additional possibilities.
 		//bool on_trail=false;
 		if (value(v)==S->value(toSolver(v))) {
-			//this is already enqueued.
-			//place it into the correct place on the trail
-			removeFromTrail(var(l));
-			appendToTrail(l,decisionLevel());
+			if(value(v)==l_Undef){
+				throw std::runtime_error("Internal error in graph enqueue");
+			}
+			if(lev == decisionLevel()) {
+				//this is already enqueued.
+				//place it into the correct place on the trail
+				removeFromTrail(var(l));
+				appendToTrail(l, decisionLevel());
+			}
 			return;
 		}else if (opt_lazy_backtrack && value(v)!=l_Undef){
-
+			if(!opt_lazy_backtrack){
+				assert(decisionLevel() <= lev);
+				if(decisionLevel() > lev){
+					throw std::runtime_error("Internal error in graph enqueue");
+				}
+			}
 			assert(value(v)!=S->value(toSolver(v)));
 			//this literal was already assigned, and then we backtracked _lazily_ without unassigning it in the theory solver.
 			//unassign it now, by itself.
@@ -2573,7 +2580,12 @@ public:
 			}
 			removeFromTrail(var(l));
 		}
-
+		if(!opt_lazy_backtrack){
+			assert(decisionLevel() <= lev);
+			if(decisionLevel() > lev){
+				throw std::runtime_error("Internal error in graph enqueue");
+			}
+		}
 
 		if (g_under.outfile) {
 			fprintf(g_under.outfile, "enqueue %d\n", dimacs(l));
@@ -2840,7 +2852,7 @@ public:
 		}
 		bvs_to_update.clear();*/
 
-		dbg_sync();
+		//dbg_sync();
 		assert(dbg_graphsUpToDate());
 		if (opt_only_prop_edgeset && hasEdgeSets() && !allEdgeSetsAssigned()){
 			stats_num_skipped_edgeset_props++;

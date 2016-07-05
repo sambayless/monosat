@@ -764,7 +764,7 @@ private:
 	
 
 	void dbg_check_flow(int s, int t) {
-#ifndef NDEBUG
+/*#ifndef NDEBUG
 		//check that the flow is legal
 		for (int i = 0; i < g.edges(); i++) {
 			Weight flow = getEdgeFlow(i);
@@ -800,27 +800,27 @@ private:
 				bassert(excess==f);
 				//bassert(flow_in == 0);//this doesn't have to be the case - their can be spurious flow loops...
 				//bassert(flow_out == f);
-				/*}else{
+				*//*}else{
 				 bassert(flow_in==0);
 				 bassert(flow_out==f);
-				 }*/
+				 }*//*
 			} else if (n == t) {
 				//if(!backward_maxflow){
 				Weight excess = flow_in-flow_out;
 				bassert(excess==f);
 				//bassert(flow_out == 0);
 				//bassert(flow_in == f);
-				/*}else{
+				*//*}else{
 				 bassert(flow_out==0);
 				 bassert(flow_in==f);
-				 }*/
+				 }*//*
 			} else {
 				bassert(flow_in == flow_out);
 			}
 			
 		}
 
-#endif
+#endif*/
 	}
 	
 	std::vector<bool> seen;

@@ -8058,6 +8058,7 @@ public:
 
 	bool dbg_uptodate() {
 #ifndef NDEBUG
+        return true;
 		//dbg_synced();
 		for (int bvID = 0; bvID < bitvectors.size(); bvID++) {
 			Weight under;
