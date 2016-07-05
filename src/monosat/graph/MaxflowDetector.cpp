@@ -41,6 +41,7 @@ MaxflowDetector<Weight>::MaxflowDetector(int _detectorID, GraphTheorySolver<Weig
 	if(from==target){
 		throw std::runtime_error("Maxflow source and target nodes cannot be the same");
 	}
+
 	bvTheory = outer->bvTheory;
 
 	MinCutAlg alg = mincutalg;
@@ -146,6 +147,7 @@ MaxflowDetector<Weight>::MaxflowDetector(int _detectorID, GraphTheorySolver<Weig
 
 template<typename Weight>
 void MaxflowDetector<Weight>::addFlowLit(Weight maxflow, Var outer_reach_var, bool inclusive) {
+
 	if(maxflow==0){
 		//The max flow of a graph is _always_ at least 0.
 		//so this literal is trivially true
@@ -160,6 +162,7 @@ void MaxflowDetector<Weight>::addFlowLit(Weight maxflow, Var outer_reach_var, bo
 		} else {
 			assert(reach_var > first_reach_var);
 		}
+
 
 		assert(maxflow >= 0);
 
@@ -1155,6 +1158,7 @@ bool MaxflowDetector<Weight>::checkSatisfied() {
 						}
 					} else {
 						if (underCheck.maxFlow() >= dist_under) {
+
 							std::cout<<"Error in maxflow ("<< toInt(l) << " unassigned): expected flow <" << dist_under << "but found flow of " << underCheck.maxFlow() <<"\n" ;
 							return false;
 						}

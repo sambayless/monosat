@@ -4192,6 +4192,7 @@ public:
 			}
 			return;
 		}
+
 		for (int i = 0; i < flow_detectors.size(); i++) {
 			if (flow_detectors[i]->source == from && flow_detectors[i]->target == to) {
 				flow_detectors[i]->addFlowLit(max_flow, v,inclusive);
