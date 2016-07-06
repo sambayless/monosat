@@ -23,7 +23,7 @@ If you build MonoSAT without using the provided cmake/makefiles, it is criticall
 
 ###Install the Python Library
 
-To install the Python library (system-wide), first build monosat (see above), cd into 'api/python', and then use Python's setuptools to install the Python library.
+To install the Python library (system-wide), first build monosat (see above), cd into 'src/monosat/api/python', and then use Python's setuptools to install the Python library (see below).
 The Python library has optional support for pseudo-Boolean constraints, using [MinisatPB](https://github.com/sambayless/minisatpb), which is a fork of [Minisat+](https://github.com/niklasso/minisatp).  
 In order to use pseudo-Boolean constraints in the Python library, you must separately install [MinisatPB](https://github.com/sambayless/minisatpb) on your system path. 
 
@@ -31,7 +31,7 @@ On Ubuntu (14.04):
 ```
 $cmake .
 $make
-$cd api/python
+$cd src/monosat/api/python
 $sudo python3 setup.py install
 ```
 
