@@ -42,7 +42,13 @@ using Monosat::l_True;
 using Monosat::var_Undef;*/
 //=================================================================================================
 // Linear -- a class for storing pseudo-boolean constraints:
-
+enum Ineq{
+    LT = -2,
+    LEQ = -1,
+    EQ = 0,
+    GEQ = 1,
+    GT = 2
+};
 
 class Linear {
     int orig_size;  // Allocated terms in constraint.
@@ -166,17 +172,26 @@ public:
 
     void addGoal(const vec<Lit> &ps, const vec<Int> &Cs);
 
-    bool addConstr(const vec<Lit> &ps, const vec<Int> &Cs, Int rhs, int ineq);
 
+    bool addConstr(const vec<Lit> &ps, const vec<Int> &Cs, Int rhs, int ineq);
+    bool addConstr(const vec<Lit> &ps, const vec<Int> &Cs, Int rhs, Ineq ineq){
+        return addConstr(ps,Cs,rhs,(int)ineq);
+    }
     // Solve:
     //
     bool okay(void) { return sat_solver.okay(); }
 
     enum solve_Command {
-        sc_Minimize, sc_FirstSolution, sc_AllSolutions
+        sc_Minimize, sc_FirstSolution, sc_AllSolutions,
+        sc_Convert //convert the instance to cnf (in the sat solver) and stop
     };
 
     void solve(solve_Command cmd = sc_Minimize);    // Returns best/first solution found or Int_MAX if UNSAT.
+    //convert the pb constraints into cnfs in the sat solver and return without solving
+    void convert(){
+        solve(sc_Convert);
+    }
+
 };
 }
 }

@@ -59,7 +59,6 @@ void PbSolver::addGoal(const vec<Lit> &ps, const vec<Int> &Cs) {
                                                                                                Int_MAX);
 }
 
-
 bool PbSolver::addConstr(const vec<Lit> &ps, const vec<Int> &Cs, Int rhs, int ineq) {
     //**/debug_names = &index2name;
     //**/static cchar* ineq_name[5] = { "<", "<=" ,"==", ">=", ">" };
@@ -543,6 +542,10 @@ void PbSolver::solve(solve_Command cmd) {
     if (opt_goal != Int_MAX)
         addConstr(goal_ps, goal_Cs, opt_goal, -1),
                 convertPbs(false);
+
+    if(cmd== sc_Convert){
+        return;
+    }
 
     if (opt_cnf != NULL)
         reportf("Exporting CNF to: \b%s\b\n", opt_cnf),

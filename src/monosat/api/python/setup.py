@@ -9,11 +9,11 @@ from distutils.core import setup
 
 if platform.system() != "Windows":
     copy_lib = "monosat/libmonosat.so"
-    orig_lib = "../../libmonosat.so"
+    orig_lib = "../../../../libmonosat.so"
 
-    if not os.path.exists(orig_lib) and os.path.exists("../../SharedLibrary/libmonosat.so"):
+    if not os.path.exists(orig_lib) and os.path.exists("../../../../SharedLibrary/libmonosat.so"):
         orig_lib = "../../SharedLibrary/libmonosat.so"
-    if not os.path.exists(orig_lib) and os.path.exists("../../OSX_SharedLibrary/libmonosat.so"):
+    if not os.path.exists(orig_lib) and os.path.exists("../../../../OSX_SharedLibrary/libmonosat.so"):
         orig_lib = "../../OSX_SharedLibrary/libmonosat.so"
 
     if os.path.exists(orig_lib):                     
@@ -23,9 +23,9 @@ if platform.system() != "Windows":
             shutil.copy2(orig_lib, "monosat")
 else:
     copy_lib = "monosat/libmonosat.dll"
-    orig_lib = "../../libmonosat.dll"
-    if not os.path.exists(orig_lib) and os.path.exists("../../Win64SharedLibrary/libmonosat.dll"):
-        orig_lib = "../../Win64SharedLibrary/libmonosat.dll"
+    orig_lib = "../../../../libmonosat.dll"
+    if not os.path.exists(orig_lib) and os.path.exists("../../../../Win64SharedLibrary/libmonosat.dll"):
+        orig_lib = "../../../../Win64SharedLibrary/libmonosat.dll"
     if os.path.exists(orig_lib):
         if not os.path.exists(copy_lib):
             shutil.copy2(orig_lib, "monosat")

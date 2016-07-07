@@ -34,143 +34,162 @@
 
 namespace Monosat {
 
+
 template<class B, class Solver>
-static void parse_PB_main(B& in, Solver& S, vec<std::pair<int, std::string> > * symbols = NULL) {
-	PbTheory * theory = new PbTheory(&S);
-	S.addTheory(theory);
+class PBParser: public Parser<B, Solver> {
+	using Parser<B, Solver>::mapVar;
+	using Parser<B, Solver>::mapBV;
+	PbTheory *pbtheory=nullptr;
+	PB::PbSolver * pbsolver = nullptr;
+	Solver & S;
+public:
+	PBParser(Solver& S) :Parser<B, Solver>("PB"), S(S){
+
+	}
+
+	void init(){
+		if (opt_pb_theory) {
+			pbtheory = new PbTheory(&S);
+			S.addTheory(pbtheory);
+
+		}else {
+			pbsolver = new PB::PbSolver(S);
+
+		}
+	}
 	vec<Lit> lits;
 	vec<int> weights;
 	int vars = 0;
 	int clauses = 0;
-	int cnt = 0;
-	vec<bool> hasSymbol;
-	//std::set<std::string> used_symbols;
-	int line = 0;
-	
-	for (;;) {
-		line++;
+	vec<PB::Int> coefs;
+	bool parseLine(B& in, Solver& S) {
+
 		skipWhitespace(in);
 		if (*in == EOF)
-			break;
-		else if (*in == '*') {
+			return false;
+		else if (*in == 'c') {
+			//just a comment
+			return false;
+		} else if (match(in, "pb")) {
+			init();
+			readPB(in);
+		}
+		return false;
+	}
+
+	void readPB(B & in) {
+		if (opt_ignore_theories) {
 			skipLine(in);
-			
-		} else if (*in == 'm') {
-			fprintf(stderr, "PARSE ERROR! Minimization statements are not supported!\n");
-			fflush(stderr);
-			exit(1);
-		} else {
-			cnt++;
-			//a line is a sequence of pairs (integer, varID) followed by an operater and an integer and a semicolon
-			
-			lits.clear();
-			weights.clear();
-			for (;;) {
-				skipWhitespace(in);
-				if (*in == '>' || *in == '<' || *in == '=') {
-					int rhs = 0;
-					
-					PbTheory::PbType op;
-					if (*in == '>') {
-						++in;
-						if (*in == '=') {
-							op = PbTheory::PbType::GE;
-							++in;
-						} else {
-							op = PbTheory::PbType::GT;
-						}
-					} else if (*in == '<') {
-						++in;
-						if (*in == '=') {
-							op = PbTheory::PbType::LE;
-							++in;
-						} else {
-							op = PbTheory::PbType::LT;
-						}
-					} else {
-						assert(*in == '=');
-						++in;
-						op = PbTheory::PbType::EQ;
-					}
-					
-					skipWhitespace(in);
-					rhs = parseInt(in);
-					
-					if (lits.size() == 0) {
-						fprintf(stderr, "Parse ERROR at line %d! Clause cannot be empty\n", line);
-						exit(1);
-					}
-					
-					assert(lits.size() == weights.size());
-					theory->addConstraint(lits, weights, rhs, lit_Undef, op);
-					break;
-				} else {
-					
-					if (*in == '+')
-						++in; //skip this
-					int parsed_weight = parseInt(in);
-					weights.push(parsed_weight);
-					
-					skipWhitespace(in);
-					//A variableID is the letter 'x' followed by an integer
-					if (*in == 'x') {
-						++in;
-					} else {
-						fprintf(stderr, "Parse ERROR at line %d! Expected variable id\n", line);
-						exit(1);
-					}
-					
-					int parsed_ID = parseInt(in);
-					if (parsed_ID <= 0) {
-						fprintf(stderr,
-								"Parse ERROR  at line %d! variable ids must be positive integers of the form 'xN'.\n",
-								line);
-						exit(1);
-					}
-					Var v = parsed_ID - 1;
-					
-					while (v >= S.nVars())
-						S.newVar();
-					lits.push(mkLit(v));
-					
-					if (symbols) {
-						hasSymbol.growTo(v + 1);
-						if (!hasSymbol[v]) {
-							hasSymbol[v] = true;
-							
-							std::stringstream ss;
-							ss << "x" << parsed_ID;
-							
-							symbols->push();
-							symbols->last().first = v;
-							symbols->last().second = ss.str();
-						}
-					}
-					
-				}
+			return;
+		}
+		//pb constraints are in this form:
+		//pb lt rhs <size> lit1 lit2 ... [0 | <n_weights> weight1 weight2 ...]
+		PbTheory::PbType op = PbTheory::PbType::EQ;
+		//read the operator:
+
+		if (*in == '<') {
+			++in;
+			if (*in == '=') {
+				++in;
+				op = PbTheory::PbType::LE;
+			} else {
+				op = PbTheory::PbType::LT;
 			}
-			skipWhitespace(in);
-			if (*in != ';') {
-				fprintf(stderr, "Parse ERROR  at line %d! Line must end with semicolon\n", line);
-				exit(1);
+		} else if (*in == '>') {
+			++in;
+			if (*in == '=') {
+				++in;
+				op = PbTheory::PbType::GE;
+			} else {
+				op = PbTheory::PbType::GT;
+			}
+		} else if (*in == '!') {
+			++in;
+			if (*in != '=') {
+				parse_errorf("PARSE ERROR! Unexpected char: %c\n", *in);
 			}
 			++in;
+			op = PbTheory::PbType::NE;
+		} else if (*in == '=') {
+			++in;
+			if(*in=='=')
+				++in; //second '=' is optional
+			op = PbTheory::PbType::EQ;
+		}else{
+			parse_errorf("PARSE ERROR! Bad PB constraint\n");
 		}
-		
+		if(op==PbTheory::PbType::NE && !opt_pb_theory){
+			parse_errorf("PARSE ERROR! Minisat+ doesnt support dis-equalities (!=)\n");
+		}
+
+		lits.clear();
+		weights.clear();
+		int size = parseInt(in);
+		if (size <= 0) {
+			parse_errorf("PARSE ERROR! Empty PB clause\n");
+		}
+		int rhs = parseInt(in);
+
+		for (int i = 0; i < size; i++) {
+			int parsed_lit = parseInt(in);
+			if (parsed_lit == 0)
+				break;
+			int v = abs(parsed_lit) - 1;
+			v= mapVar(S,v);
+			lits.push((parsed_lit > 0) ? mkLit(v) : ~mkLit(v));
+		}
+
+		int wsize = parseInt(in);
+		if (wsize != 0 && wsize != size) {
+			parse_errorf("PARSE ERROR! Number of weights must either be the same as the size of the clause, or 0.\n");
+		}
+		for (int i = 0; i < wsize; i++) {
+			int parsed_weight = parseInt(in);
+			weights.push(parsed_weight);
+		}
+		if (wsize == 0) {
+			for (int i = 0; i < size; i++)
+				weights.push(1);
+		}
+		skipWhitespace(in);
+
+		if(opt_pb_theory) {
+			assert(lits.size() == weights.size());
+			pbtheory->addConstraint(lits, weights, rhs, lit_Undef, op,
+							   PbTheory::ConstraintSide::Both);
+		}else{
+
+			coefs.clear();
+			for(int w:weights){
+				coefs.push(PB::Int(w));
+			}
+			PB::Ineq ineq_op;
+			if(op==PbTheory::PbType::EQ){
+				ineq_op = PB::Ineq::EQ;
+			}else if(op==PbTheory::PbType::LE){
+				ineq_op = PB::Ineq::LEQ;
+			}else if(op==PbTheory::PbType::LT){
+				ineq_op = PB::Ineq::LT;
+			}else if(op==PbTheory::PbType::GE ){
+				ineq_op = PB::Ineq::GEQ;
+			}else if(op==PbTheory::PbType::GT){
+				ineq_op = PB::Ineq::GT;
+			}else if(op==PbTheory::PbType::NE){
+				parse_errorf("PARSE ERROR! Minisat+ doesnt support dis-equalities (!=)\n");
+			}
+
+			pbsolver->addConstr(lits,coefs,PB::Int(rhs),ineq_op);
+		}
 	}
-	theory->implementConstraints();
-	
-}
-
-// Inserts problem into solver.
-//
-template<class Solver>
-static void parse_PB(gzFile input_stream, Solver& S, vec<std::pair<int, std::string> > * symbols = NULL) {
-	StreamBuffer in(input_stream);
-	parse_PB_main(in, S, symbols);
-	
-}
-
+	void implementConstraints(Solver & S)override{
+		if(pbtheory){
+			pbtheory->implementConstraints();
+		}
+		if (pbsolver){
+			pbsolver->convert();
+		}
+	}
+};
 //=================================================================================================
 }
 

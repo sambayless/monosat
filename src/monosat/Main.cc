@@ -591,7 +591,8 @@ int main(int argc, char** argv) {
 		GraphParser<char *, SimpSolver> graphParser(precise,bvParser.theory);
 		parser.addParser(&graphParser);
 
-
+		PBParser<char *, SimpSolver> pbParser(S);
+		parser.addParser(&pbParser);
 
 		FSMParser<char*,SimpSolver> fsmParser;
 		parser.addParser(&fsmParser);

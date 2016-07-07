@@ -41,7 +41,7 @@ public:
 	// Problem specification:
 	//
 	Var newVar(bool polarity = true, bool dvar = true);
-    void    releaseVar(Lit l);
+	void    releaseVar(Lit l);
 /*	Var newTheoryVar(Var solverVar, int theoryID, Var theoryVar){
 		while(nVars()<=solverVar)
 			newVar();
@@ -59,17 +59,18 @@ public:
 	bool addClause(Lit p);               // Add a unit clause to the solver.
 	bool addClause(Lit p, Lit q);        // Add a binary clause to the solver.
 	bool addClause(Lit p, Lit q, Lit r); // Add a ternary clause to the solver.
-	bool addClause_(vec<Lit>& ps);
+
+	bool addClause_(vec<Lit>& ps, bool is_derived_clause=false);
 	bool substitute(Var v, Lit x);  // Replace all occurences of v with x (may cause a contradiction).
-			
+
 	// Variable mode:
-	// 
+	//
 	void setFrozen(Var v, bool b); // If a variable is frozen it will not be eliminated.
 	bool isEliminated(Var v) const;
 
-    // Alternative freeze interface (may replace 'setFrozen()'):
-    void    freezeVar (Var v);         // Freeze one variable so it will not be eliminated.
-    void    thaw      ();              // Thaw all frozen variables.
+	// Alternative freeze interface (may replace 'setFrozen()'):
+	void    freezeVar (Var v);         // Freeze one variable so it will not be eliminated.
+	void    thaw      ();              // Thaw all frozen variables.
 	bool isFrozen(Var v){
 		return frozen[v];
 	}
@@ -83,6 +84,8 @@ public:
 	bool solve(Lit p, bool do_simp, bool turn_off_simp = false);
 	bool solve(Lit p, Lit q, bool do_simp, bool turn_off_simp = false);
 	bool solve(Lit p, Lit q, Lit r, bool do_simp, bool turn_off_simp = false);
+
+	bool propagateAssignment(const vec<Lit>& assumps);
 
 	//Also override the Solver's constructors
 	bool solve(const vec<Lit>& assumps){
@@ -104,8 +107,9 @@ public:
 		return solve(p,q,r,true,false);
 	}
 
-	bool eliminate(bool turn_off_elim = false);  // Perform variable elimination based simplification. 
-			
+	bool eliminate(bool turn_off_elim = false);  // Perform variable elimination based simplification.
+	//permanently disable preprocessing
+	void disablePreprocessing();
 	// Memory managment:
 	//
 	virtual void garbageCollect();
@@ -119,19 +123,19 @@ public:
 	void toDimacs (const char* file, Lit p, Lit q);
 	void toDimacs (const char* file, Lit p, Lit q, Lit r);
 #endif
-	
+
 	// Mode of operation:
 	//
 	int grow;              // Allow a variable elimination step to grow by a number of clauses (default to zero).
 	int clause_lim;        // Variables are not eliminated if it produces a resolvent with a length above this limit.
-						   // -1 means no limit.
+	// -1 means no limit.
 	int subsumption_lim;   // Do not check if subsumption against a clause larger than this. -1 means no limit.
 	double simp_garbage_frac; // A different limit for when to issue a GC during simplification (Also see 'garbage_frac').
-	
+
 	bool use_asymm;         // Shrink clauses by asymmetric branching.
 	bool use_rcheck;        // Check if a clause is already implied. Prett costly, and subsumes subsumptions :)
 	bool use_elim;          // Perform variable elimination.
-	
+
 	// Statistics:
 	//
 	int merges;
@@ -139,7 +143,7 @@ public:
 	int eliminated_vars;
 
 protected:
-	
+
 	// Helper structures:
 	//
 	struct ElimLt {
@@ -147,7 +151,7 @@ protected:
 		explicit ElimLt(const vec<int>& no) :
 				n_occ(no) {
 		}
-		
+
 		// TODO: are 64-bit operations here noticably bad on 32-bit platforms? Could use a saturating
 		// 32-bit implementation instead then, but this will have to do for now.
 		uint64_t cost(Var x) const {
@@ -156,9 +160,9 @@ protected:
 		bool operator()(Var x, Var y) const {
 			return cost(x) < cost(y);
 		}
-		
+
 		// TODO: investigate this order alternative more.
-		// bool operator()(Var x, Var y) const { 
+		// bool operator()(Var x, Var y) const {
 		//     int c_x = cost(x);
 		//     int c_y = cost(y);
 		//     return c_x < c_y || c_x == c_y && x < y; }
@@ -229,25 +233,30 @@ inline void SimpSolver::updateElimHeap(Var v) {
 }
 
 inline bool SimpSolver::addClause(const vec<Lit>& ps) {
+	cancelUntil(0);
 	ps.copyTo(add_tmp);
 	return addClause_(add_tmp);
 }
 inline bool SimpSolver::addEmptyClause() {
+	cancelUntil(0);
 	add_tmp.clear();
 	return addClause_(add_tmp);
 }
 inline bool SimpSolver::addClause(Lit p) {
+	cancelUntil(0);
 	add_tmp.clear();
 	add_tmp.push(p);
 	return addClause_(add_tmp);
 }
 inline bool SimpSolver::addClause(Lit p, Lit q) {
+	cancelUntil(0);
 	add_tmp.clear();
 	add_tmp.push(p);
 	add_tmp.push(q);
 	return addClause_(add_tmp);
 }
 inline bool SimpSolver::addClause(Lit p, Lit q, Lit r) {
+	cancelUntil(0);
 	add_tmp.clear();
 	add_tmp.push(p);
 	add_tmp.push(q);
@@ -262,19 +271,19 @@ inline void SimpSolver::setFrozen(Var v, bool b) {
 	}
 }
 inline void SimpSolver::freezeVar(Var v){
-    if (!frozen[v]){
-        frozen[v] = 1;
-        frozen_vars.push(v);
-    } }
+	if (!frozen[v]){
+		frozen[v] = 1;
+		frozen_vars.push(v);
+	} }
 
 inline void SimpSolver::thaw(){
-    for (int i = 0; i < frozen_vars.size(); i++){
-        Var v = frozen_vars[i];
-        frozen[v] = 0;
-        if (use_simplification)
-            updateElimHeap(v);
-    }
-    frozen_vars.clear(); }
+	for (int i = 0; i < frozen_vars.size(); i++){
+		Var v = frozen_vars[i];
+		frozen[v] = 0;
+		if (use_simplification)
+			updateElimHeap(v);
+	}
+	frozen_vars.clear(); }
 
 inline bool SimpSolver::solve(bool do_simp, bool turn_off_simp) {
 	budgetOff();

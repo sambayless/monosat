@@ -298,7 +298,7 @@ bool parseConstrs(B &in, S &solver, bool old_format) {
         if (!skipText(in, ";")) throw xstrdup("Expecting ';' after constraint.");
         skipEndOfLine(in);
 
-        if (!solver.addConstr(ps, Cs, rhs, ineq))
+        if (!solver.addConstr(ps, Cs, rhs,  ineq))
             return false;
         ps.clear();
         Cs.clear();

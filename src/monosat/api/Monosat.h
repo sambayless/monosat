@@ -22,9 +22,24 @@
 #ifndef MONOSAT_H_
 #define MONOSAT_H_
 //Monosat library interface, in C
-#ifdef __cplusplus
 #include <stdint.h>
-
+#ifdef __cplusplus
+#include "monosat/utils/ParseUtils.h"
+#include "monosat/utils/Options.h"
+#include "monosat/core/Solver.h"
+#include "monosat/simp/SimpSolver.h"
+#include "monosat/graph/GraphTheory.h"
+#include "monosat/geometry/GeometryTheory.h"
+#include "monosat/fsm/FSMTheory.h"
+#include "monosat/pb/PbTheory.h"
+#include "monosat/amo/AMOTheory.h"
+#include "Monosat.h"
+#include "monosat/core/Dimacs.h"
+#include "monosat/bv/BVParser.h"
+#include "monosat/graph/GraphParser.h"
+#include "monosat/amo/AMOParser.h"
+#include "monosat/core/Optimize.h"
+#include "monosatpb/PbSolver.h"
 extern "C"
 {
 typedef Monosat::SimpSolver *  SolverPtr;
@@ -57,7 +72,7 @@ typedef int Var;
 #endif
 
   void deleteSolver (SolverPtr S);
-
+  void setOutputFile(SolverPtr S,char * output);
   void readGNF(SolverPtr S, const char  * filename);
 
   bool solve(SolverPtr S);
@@ -155,8 +170,13 @@ typedef int Var;
   //for small numbers of variables, consider using a direct CNF encoding instead
   void at_most_one(SolverPtr S, int * vars, int n_vars);
 
-  void assertPB_lt(SolverPtr S, int64_t rhs, int n_args, int * literals, int64_t * coefficients);
-
+  void assertPB_lt(SolverPtr S, int rhs, int n_args, int * literals, int * coefficients);
+  void assertPB_leq(SolverPtr S, int rhs, int n_args, int * literals, int * coefficients);
+  void assertPB_eq(SolverPtr S, int rhs, int n_args, int * literals, int * coefficients);
+  void assertPB_geq(SolverPtr S, int rhs, int n_args, int * literals, int * coefficients);
+  void assertPB_gt(SolverPtr S, int rhs, int n_args, int * literals, int * coefficients);
+  //Convert any pb constraints in the solver into cnf (will be called automatically before solve())
+  void flushPB(SolverPtr S);
 //theory interface for graphs
 
   GraphTheorySolver_long newGraph(SolverPtr S);

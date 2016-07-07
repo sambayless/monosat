@@ -44,6 +44,7 @@ extern StringOption opt_record_file;
 extern IntOption opt_limit_optimization_conflicts;
 extern IntOption opt_limit_optimization_time;
 extern BoolOption opt_limit_optimization_time_per_arg;
+extern BoolOption opt_pb_theory;
 extern bool opt_record;
 
 extern IntOption opt_theory_conflict_max;

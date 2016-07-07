@@ -18,14 +18,13 @@
 #OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 from __future__ import division
 from __future__ import print_function
-from ctypes import *
-from os import path
-
-from monosat.singleton import Singleton
 
 import os
 import platform
-
+from ctypes import *
+from monosat.singleton import Singleton
+from os import path
+from enum import Enum
 module_path = os.path.abspath(path.dirname(__file__))
 library_monosat = "libmonosat.so"
 if platform.system() == 'Windows':
@@ -48,6 +47,7 @@ null_ptr = POINTER(c_int)()
 
 c_uint_p = POINTER(c_int)
 c_int_p = POINTER(c_int)
+c_long_p = POINTER(c_long)
 
 c_solver_p = c_void_p
 c_graph_p = c_void_p
@@ -66,7 +66,14 @@ def dimacs(l):
         return -(l//2 +1)
     else:
         return l//2+1
-        
+
+class Ineq(Enum):
+    LT=-2
+    LEQ=-1
+    EQ=0
+    GEQ=1
+    GT=2
+
 class Solver():
     def __init__(self,monosat_c,arguments=None):
         self.elapsed_time=0
@@ -106,7 +113,8 @@ class Monosat(metaclass=Singleton):
         self.monosat_c=_monosat_c
         self.elapsed_time=0
         self._int_array = (c_int * (1024))()
-        
+        self._int_array2 = (c_int * (1024))()
+        self._long_array= (c_long * (1024))()
         #Set the return types for each function
         self.monosat_c.newSolver.argtypes=[]
         self.monosat_c.newSolver.restype=c_solver_p
@@ -188,8 +196,13 @@ class Monosat(metaclass=Singleton):
         self.monosat_c.true_lit.restype=c_int 
         
         self.monosat_c.at_most_one.argtypes=[c_solver_p,c_var_p,c_int]
+        self.monosat_c.assertPB_lt.argtypes=[c_solver_p,c_long, c_int, c_int_p, c_long_p]
+        self.monosat_c.assertPB_leq.argtypes=[c_solver_p,c_long, c_int, c_int_p, c_long_p]
+        self.monosat_c.assertPB_eq.argtypes=[c_solver_p,c_long, c_int, c_int_p, c_long_p]
+        self.monosat_c.assertPB_geq.argtypes=[c_solver_p,c_long, c_int, c_int_p, c_long_p]
+        self.monosat_c.assertPB_gt.argtypes=[c_solver_p,c_long, c_int, c_int_p, c_long_p]
+        self.monosat_c.flushPB.argtypes=[c_solver_p]
 
-        
         self.monosat_c.initBVTheory.argtypes=[c_solver_p];
         self.monosat_c.initBVTheory.restype=c_bv_p;
                 
@@ -419,7 +432,21 @@ class Monosat(metaclass=Singleton):
         for i,n in enumerate(nums):            
             self._int_array[i]=c_int(n)
         return self._int_array
-    
+
+    def getIntArray2(self,nums):
+        if len(nums)>len(self._int_array2):
+            self._int_array2 = (c_int * len(nums))()
+        for i,n in enumerate(nums):
+            self._int_array2[i]=c_int(n)
+        return self._int_array2
+
+    def getLongArray(self,nums):
+        if len(nums)>len(self._long_array):
+            self._long_array = (c_long * len(nums))()
+        for i,n in enumerate(nums):
+            self._long_array[i]=c_long(n)
+        return self._long_array
+
     def intArrayToList(self, array_pointer,length):
         ret = []
         for i in range(length):
@@ -651,8 +678,30 @@ class Monosat(metaclass=Singleton):
             assert(l%2==0)#all of the literals must be positive
             lp[i]=l//2
 
-        self.monosat_c.at_most_one(self.solver._ptr,lp,len(newclause))  
-    
+        self.monosat_c.at_most_one(self.solver._ptr,lp,len(newclause))
+
+
+
+    def AssertPB(self, lits, coefs, op, rhs):
+        self.backtrack()
+        lp = self.getIntArray(lits)
+        lp2 = self.getLongArray(coefs)
+        crhs = c_long(rhs)
+        if op==Ineq.LT:
+            self.monosat_c.assertPB_lt(self.solver._ptr,crhs,len(lits),lp,lp2)
+        elif op==Ineq.LEQ:
+            self.monosat_c.assertPB_leq(self.solver._ptr,crhs,len(lits),lp,lp2)
+        elif op==Ineq.EQ:
+            self.monosat_c.assertPB_eq(self.solver._ptr,crhs,len(lits),lp,lp2)
+        elif op==Ineq.GEQ:
+            self.monosat_c.assertPB_geq(self.solver._ptr,crhs,len(lits),lp,lp2)
+        elif op==Ineq.GT:
+            self.monosat_c.assertPB_gt(self.solver._ptr,crhs,len(lits),lp,lp2)
+
+    #Convert any psuedo-boolean constraints into cnf in the solver (will be called automatically during solving)
+    def flushPB(self):
+        self.monosat_c.flushPB()
+
     #def preprocess(self,disable_future_preprocessing=False):
     #    self.monosat_c.preprocess(disable_future_preprocessing)
     
