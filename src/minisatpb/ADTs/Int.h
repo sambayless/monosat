@@ -21,21 +21,24 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #define Int_h
 #include "Global.h"
 //=================================================================================================
-
+namespace Monosat {
+namespace PB {
 
 struct Exception_IntOverflow {
-    char* where;
-    Exception_IntOverflow(char* w) : where(w) {}    // (takes ownership of string)
+    char *where;
+
+    Exception_IntOverflow(char *w) : where(w) { }    // (takes ownership of string)
 };
-
-
+}
+}
 
 #ifdef NO_GMP
 //=================================================================================================
 // Fake bignums using 'int64':
 //=================================================================================================
 
-
+namespace Monosat {
+namespace PB {
 #define Int_Max__   9223372036854775807LL
 #define Int_Min__   (-Int_Max__)
 #define Int_Undef__ (-Int_Max__ - 1LL)
@@ -91,17 +94,19 @@ public:
 
 #undef A1
 #undef A2
-
+}
+}
 
 #else
 //=================================================================================================
 // Real bignums using "GNU Multiple Precision Arithmetic Library"
 //=================================================================================================
-
+#include <cstddef>
 #include "gmp.h"
 
 //=================================================================================================
-
+namespace Monosat {
+namespace PB {
 
 #define A1 assert(!small());
 #define A2 assert(!small()); assert(!other.small());
@@ -113,50 +118,56 @@ public:
 
 
 class Int {
-    mpz_t*  data;       // This pointer is meant to contain small integers when bit 0 is set (for efficiency). 
-                        // Currently the only small integers used are the special values 'Int_MIN' and 'Int_MAX'.
-    bool small() const { return ((intp)data & 1) != 0; }
+    mpz_t *data;       // This pointer is meant to contain small integers when bit 0 is set (for efficiency).
+    // Currently the only small integers used are the special values 'Int_MIN' and 'Int_MAX'.
+    bool small() const { return ((intp) data & 1) != 0; }
 
 public:
     // Constructors/Destructor (+assignment operator)
     //
-    Int(mpz_t* d) : data(d) {}      // Low-level constructor -- don't use!
+    Int(mpz_t *d) : data(d) { }      // Low-level constructor -- don't use!
 
     Int() {
-        data = xmalloc<mpz_t>(1); assert(((intp)data & 1) == 0);
+        data = xmalloc<mpz_t>(1);
+        assert(((intp) data & 1) == 0);
         mpz_init(*data);
     }
 
     Int(int x) {
-        data = xmalloc<mpz_t>(1); assert(((intp)data & 1) == 0);
+        data = xmalloc<mpz_t>(1);
+        assert(((intp) data & 1) == 0);
         mpz_init_set_si(*data, x);
     }
 
-    Int(const Int& src) {
+    Int(const Int &src) {
         if (src.small())
             data = src.data;
-        else{
-            data = xmalloc<mpz_t>(1); assert(((intp)data & 1) == 0);
-            mpz_init_set(*data, *src.data); }
+        else {
+            data = xmalloc<mpz_t>(1);
+            assert(((intp) data & 1) == 0);
+            mpz_init_set(*data, *src.data);
+        }
     }
 
-   ~Int() {
-        if (!small()){
+    ~Int() {
+        if (!small()) {
             mpz_clear(*data);
-            xfree(data); }
+            xfree(data);
+        }
         data = 0;
     }
 
-    Int& operator = (const Int& other) {
-        if (&other != this){
-            if (other.small()){
+    Int &operator=(const Int &other) {
+        if (&other != this) {
+            if (other.small()) {
                 this->~Int();
                 data = other.data;
-            }else{
-                if (small()){
-                    data = xmalloc<mpz_t>(1); assert(((intp)data & 1) == 0);
+            } else {
+                if (small()) {
+                    data = xmalloc<mpz_t>(1);
+                    assert(((intp) data & 1) == 0);
                     mpz_init_set(*data, *other.data);
-                }else
+                } else
                     mpz_set(*data, *other.data);
             }
         }
@@ -168,95 +179,171 @@ public:
 
     // -- Comparison (supports infinity)
     //    '+oo' and '-oo' are treated as two unique points beyond the integers. For instanse '+oo' is not < than itself, but <= than itself.
-    bool operator == (const Int& other) const {
+    bool operator==(const Int &other) const {
         if (small())
             return other.small() ? (data == other.data) : false;
         else
             return other.small() ? false : mpz_cmp(*data, *other.data) == 0;
     }
 
-    bool operator <  (const Int& other) const {
-        if (small()){
+    bool operator<(const Int &other) const {
+        if (small()) {
             if (data == Int_MIN.data)
                 return (!other.small() || other.data != Int_MIN.data);
-            else{ assert(data == Int_MAX.data);
-                return false; }
-        }else{
-            if (other.small()){
+            else {
+                assert(data == Int_MAX.data);
+                return false;
+            }
+        } else {
+            if (other.small()) {
                 if (other.data == Int_MIN.data)
                     return false;
-                else{ assert(other.data == Int_MAX.data);
-                    return true; }
-            }else
+                else {
+                    assert(other.data == Int_MAX.data);
+                    return true;
+                }
+            } else
                 return mpz_cmp(*data, *other.data) < 0;
         }
     }
 
-    bool operator != (const Int& other) const { return !(*this == other); }
-    bool operator >= (const Int& other) const { return !(*this < other); }
-    bool operator >  (const Int& other) const { return other < *this; }
-    bool operator <= (const Int& other) const { return !(*this > other); }
+    bool operator!=(const Int &other) const { return !(*this == other); }
+
+    bool operator>=(const Int &other) const { return !(*this < other); }
+
+    bool operator>(const Int &other) const { return other < *this; }
+
+    bool operator<=(const Int &other) const { return !(*this > other); }
 
 
     // -- Arithmetic (not allowed on infinity except for unary '-')
-    Int  operator + (const Int& other) const {A2  Int ret; mpz_add   (*ret.data, *data, *other.data); return ret; }
-    Int  operator - (const Int& other) const {A2  Int ret; mpz_sub   (*ret.data, *data, *other.data); return ret; }
-    Int  operator * (const Int& other) const {A2  Int ret; mpz_mul   (*ret.data, *data, *other.data); return ret; }
-    Int  operator / (const Int& other) const {A2  Int ret; mpz_tdiv_q(*ret.data, *data, *other.data); return ret; }
-    Int  operator % (const Int& other) const {A2  Int ret; mpz_tdiv_r(*ret.data, *data, *other.data); return ret; }
+    Int  operator+(const Int &other) const {
+        A2
+        Int ret;
+        mpz_add(*ret.data, *data, *other.data);
+        return ret;
+    }
 
-    Int& operator += (const Int& other) {A2  mpz_add   (*data, *data, *other.data); return *this; }
-    Int& operator -= (const Int& other) {A2  mpz_sub   (*data, *data, *other.data); return *this; }
-    Int& operator *= (const Int& other) {A2  mpz_mul   (*data, *data, *other.data); return *this; }
-    Int& operator /= (const Int& other) {A2  mpz_tdiv_q(*data, *data, *other.data); return *this; }
-    Int& operator %= (const Int& other) {A2  mpz_tdiv_r(*data, *data, *other.data); return *this; }
-    Int& operator ++ () { return *this += Int(1); }
-    Int& operator -- () { return *this -= Int(1); }
+    Int  operator-(const Int &other) const {
+        A2
+        Int ret;
+        mpz_sub(*ret.data, *data, *other.data);
+        return ret;
+    }
 
-    Int operator - () const {
+    Int  operator*(const Int &other) const {
+        A2
+        Int ret;
+        mpz_mul(*ret.data, *data, *other.data);
+        return ret;
+    }
+
+    Int  operator/(const Int &other) const {
+        A2
+        Int ret;
+        mpz_tdiv_q(*ret.data, *data, *other.data);
+        return ret;
+    }
+
+    Int  operator%(const Int &other) const {
+        A2
+        Int ret;
+        mpz_tdiv_r(*ret.data, *data, *other.data);
+        return ret;
+    }
+
+    Int &operator+=(const Int &other) {
+        A2
+        mpz_add(*data, *data, *other.data);
+        return *this;
+    }
+
+    Int &operator-=(const Int &other) {
+        A2
+        mpz_sub(*data, *data, *other.data);
+        return *this;
+    }
+
+    Int &operator*=(const Int &other) {
+        A2
+        mpz_mul(*data, *data, *other.data);
+        return *this;
+    }
+
+    Int &operator/=(const Int &other) {
+        A2
+        mpz_tdiv_q(*data, *data, *other.data);
+        return *this;
+    }
+
+    Int &operator%=(const Int &other) {
+        A2
+        mpz_tdiv_r(*data, *data, *other.data);
+        return *this;
+    }
+
+    Int &operator++() { return *this += Int(1); }
+
+    Int &operator--() { return *this -= Int(1); }
+
+    Int operator-() const {
         if (small())
-            return Int((mpz_t*)(-(intp)data));
-        else{
-            Int ret; mpz_neg(*ret.data, *data); return ret; }
+            return Int((mpz_t *) (-(intp) data));
+        else {
+            Int ret;
+            mpz_neg(*ret.data, *data);
+            return ret;
+        }
     }
 
     // -- Bit operators (incomplete; we don't need more at the moment)
-    Int  operator & (const Int& other) const {A2  Int ret; mpz_and(*ret.data, *data, *other.data); return ret; }
-    Int& operator >>= (int n) {A1  mpz_fdiv_q_2exp(*data, *data, n); return *this; }
+    Int  operator&(const Int &other) const {
+        A2
+        Int ret;
+        mpz_and(*ret.data, *data, *other.data);
+        return ret;
+    }
+
+    Int &operator>>=(int n) {
+        A1
+        mpz_fdiv_q_2exp(*data, *data, n);
+        return *this;
+    }
 
     // Methods:
     //
-    friend char* toString(Int num) {
-        if      (num == Int_MIN) return xstrdup("-oo");
+    friend char *toString(Int num) {
+        if (num == Int_MIN) return xstrdup("-oo");
         else if (num == Int_MAX) return xstrdup("+oo");
         assert(!num.small());
-        char* tmp = xmalloc<char>(mpz_sizeinbase (*num.data, 10) + 2);
+        char *tmp = xmalloc<char>(mpz_sizeinbase(*num.data, 10) + 2);
         mpz_get_str(tmp, 10, *num.data);
         return tmp;
     }
 
-    friend int toint (Int num) {
+    friend int toint(Int num) {
         if (num.small() || !mpz_fits_sint_p(*num.data))
             throw Exception_IntOverflow(xstrdup("toint"));
-        return (int)mpz_get_si(*num.data);
+        return (int) mpz_get_si(*num.data);
     }
 
     uint hash() const {   // primitive hash function -- not good with bit-shifts
         mp_size_t size = mpz_size(*data);
         mp_limb_t val = 0;
-        for (mp_size_t i = 0; i < size; i++){
-            mp_limb_t   limb = mpz_getlimbn(*data, i);
+        for (mp_size_t i = 0; i < size; i++) {
+            mp_limb_t limb = mpz_getlimbn(*data, i);
             val ^= limb;
         }
-      #ifdef LP64
-        return (uint)val | (uint)(val >> 32);
-      #else
+#ifdef LP64
+        return (uint) val | (uint) (val >> 32);
+#else
         return (uint)val;
-      #endif
+#endif
     }
 };
 
-
+}
+}
 //=================================================================================================
 #endif
 

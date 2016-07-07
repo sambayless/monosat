@@ -30,6 +30,8 @@
 #include "monosat/core/Config.h"
 #include <sstream>
 #include <set>
+#include "minisatpb/PbSolver.h"
+
 namespace Monosat {
 
 template<class B, class Solver>

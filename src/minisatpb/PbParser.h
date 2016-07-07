@@ -21,12 +21,14 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #define PbParser_h
 
 #include "PbSolver.h"
-
+namespace Monosat {
+namespace PB {
 
 //=================================================================================================
 
 
-void parse_PB_file(cchar* filename, PbSolver& solver, bool old_format = false, bool abort_on_error = true);
-
+void parse_PB_file(cchar *filename, PbSolver &solver, bool old_format = false, bool abort_on_error = true);
+}
+}
 //=================================================================================================
 #endif
