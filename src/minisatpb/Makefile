@@ -1,104 +1,177 @@
-##
-##  Makefile for Standard, Profile, Debug, and Release version of MiniSat
-##
+## TODO ###########################################################################################
+#
 
-CSRCS     = $(wildcard *.C)
-CHDRS     = $(wildcard *.h)
-COBJS     = $(addsuffix .o, $(basename $(CSRCS))) ADTs/Global.o ADTs/FEnv.o ADTs/File.o
-#COBJS     = PbSolver_convertSort.o PbSolver.o PbSolver_convertAdd.o PbSolver_convertBdd.o PbSolver_convert.o Debug.o Hardware_adders.o Hardware_clausify.o Hardware_sorters.o Main.o MiniSat.o PbParser.o SatELite.o ADTs/Global.o ADTs/FEnv.o ADTs/File.o
-PCOBJS    = $(addsuffix p,  $(COBJS))
-DCOBJS    = $(addsuffix d,  $(COBJS))
-RCOBJS    = $(addsuffix r,  $(COBJS))
-R64COBJS  = $(addsuffix x,  $(COBJS))
+.PHONY:	r d p sh cr cd cp csh lr ld lp lsh config all install clean \
+	distclean
+all:	r lr lsh
 
-prefix=/usr/local
+## Load Previous Configuration ####################################################################
 
-EXEC      = minisatpb
+-include config.mk
 
-CXX       = g++
-#CXX      = icpc
-CFLAGS    = -Wall -ffloat-store 
-CFLAGS   += -IADTs -include Global.h -include Main.h -D_FILE_OFFSET_BITS=64 
-COPTIMIZE = -O3 #-fomit-frame-pointer # -falign-loops=4 -falign-functions=16 -foptimize-sibling-calls -finline-functions -fcse-follow-jumps -fcse-skip-blocks -frerun-cse-after-loop -frerun-loop-opt -fgcse
+## Configurable options ###########################################################################
 
+# Directory to store object files, libraries, executables, and dependencies:
+BUILD_DIR      ?= build
 
-.PHONY : s p d r build clean depend
+# Include debug-symbols in release builds
+MINISATP_RELSYM ?= -g
 
-s:	WAY=standard
-p:	WAY=profile
-d:	WAY=debug
-r:	WAY=release
-rs:	WAY="release static / bignums"
-rx:	WAY="release static / 64-bit integers"
+# Sets of compile flags for different build types
+MINISATP_REL    ?= -O3 -D NDEBUG
+MINISATP_DEB    ?= -O0 -D DEBUG 
+MINISATP_PRF    ?= -O3 -D NDEBUG
+MINISATP_FPIC   ?= -fpic
 
-s:	CFLAGS+=$(COPTIMIZE) -ggdb -D DEBUG
-p:	CFLAGS+=$(COPTIMIZE) -pg -ggdb -D DEBUG
-d:	CFLAGS+=-O0 -ggdb -D DEBUG
-r:	CFLAGS+=$(COPTIMIZE) -D NDEBUG
-rs:	CFLAGS+=$(COPTIMIZE) -D NDEBUG
-rx:	CFLAGS+=$(COPTIMIZE) -D NDEBUG -D NO_GMP
+# GNU Standard Install Variables
+exec_prefix ?= $(prefix)
+includedir  ?= $(prefix)/include
+bindir      ?= $(exec_prefix)/bin
+libdir      ?= $(exec_prefix)/lib
+datarootdir ?= $(prefix)/share
+mandir      ?= $(datarootdir)/man
 
-s:	build $(EXEC)
-p:	build $(EXEC)_profile
-d:	build $(EXEC)_debug
-r:	build $(EXEC)_release
-rs:	build $(EXEC)_bignum_static
-rx:	build $(EXEC)_64-bit_static
+# Dependencies
+MINISAT_INCLUDE?=-I$(includedir)
+MINISAT_LIB    ?=-L$(libdir) -lminisat
 
-build:
-	@echo Building $(EXEC) "("$(WAY)")"
+## Write Configuration  ###########################################################################
+
+config:
+	@( echo 'BUILD_DIR?=$(BUILD_DIR)'             ; \
+	   echo 'MINISATP_RELSYM?=$(MINISATP_RELSYM)'           ; \
+	   echo 'MINISATP_REL?=$(MINISATP_REL)'                 ; \
+	   echo 'MINISATP_DEB?=$(MINISATP_DEB)'                 ; \
+	   echo 'MINISATP_PRF?=$(MINISATP_PRF)'                 ; \
+	   echo 'MINISATP_FPIC?=$(MINISATP_FPIC)'               ; \
+	   echo 'MINISAT_INCLUDE?=$(MINISAT_INCLUDE)' ; \
+	   echo 'MINISAT_LIB?=$(MINISAT_LIB)'         ; \
+	   echo 'MCL_INCLUDE?=$(MCL_INCLUDE)'         ; \
+	   echo 'MCL_LIB?=$(MCL_LIB)'                 ; \
+	   echo 'prefix?=$(prefix)'                   ) > config.mk
+
+## Configurable options end #######################################################################
+
+INSTALL ?= install
+
+# Target file names
+MINISATP      = minisatp#  Name of MiniSat+ main executable.
+MINISATP_SLIB = libminisatp.a#  Name of MiniSat+ static library.
+MINISATP_DLIB = libminisatp.so# Name of MiniSat+ shared library.
+
+# Shared Library Version
+SOMAJOR=1
+SOMINOR=0
+SORELEASE?=.0#   Declare empty to leave out from library file name.
+
+MINISATP_CXXFLAGS = -IADTs -include Global.h -include Main.h -D_FILE_OFFSET_BITS=64 -D __STDC_LIMIT_MACROS -D __STDC_FORMAT_MACROS -Wall -Wno-parentheses -Wextra  $(MCL_INCLUDE) $(MINISAT_INCLUDE)
+MINISATP_LDFLAGS  = -Wall  $(MCL_LIB) $(MINISAT_LIB) -lz -lgmp
+
+ifeq ($(VERB),)
+ECHO=@
+VERB=@
+else
+ECHO=#
+VERB=
+endif
+
+SRCS = $(wildcard *.cc) $(wildcard ADTs/*.cc)
+HDRS = $(wildcard *.h)
+OBJS = $(filter-out %Main.o, $(SRCS:.cc=.o))
+
+r:	$(BUILD_DIR)/release/bin/$(MINISATP)
+d:	$(BUILD_DIR)/debug/bin/$(MINISATP)
+p:	$(BUILD_DIR)/profile/bin/$(MINISATP)
+sh:	$(BUILD_DIR)/dynamic/bin/$(MINISATP)
+
+lr:	$(BUILD_DIR)/release/lib/$(MINISATP_SLIB)
+ld:	$(BUILD_DIR)/debug/lib/$(MINISATP_SLIB)
+lp:	$(BUILD_DIR)/profile/lib/$(MINISATP_SLIB)
+lsh:	$(BUILD_DIR)/dynamic/lib/$(MINISATP_DLIB).$(SOMAJOR).$(SOMINOR)$(SORELEASE)
+
+## Build-type Compile-flags:
+$(BUILD_DIR)/release/%.o:			MINISATP_CXXFLAGS +=$(MINISATP_REL) $(MINISATP_RELSYM)
+$(BUILD_DIR)/debug/%.o:				MINISATP_CXXFLAGS +=$(MINISATP_DEB) -g
+$(BUILD_DIR)/profile/%.o:			MINISATP_CXXFLAGS +=$(MINISATP_PRF) -pg
+$(BUILD_DIR)/dynamic/%.o:			MINISATP_CXXFLAGS +=$(MINISATP_REL) $(MINISATP_FPIC)
+
+## Build-type Link-flags:
+$(BUILD_DIR)/profile/bin/$(MINISATP):		MINISATP_LDFLAGS += -pg
+$(BUILD_DIR)/release/bin/$(MINISATP):		MINISATP_LDFLAGS += --static $(MINISATP_RELSYM)
+$(BUILD_DIR)/debug/bin/$(MINISATP):	        MINISATP_LDFLAGS += --static
+
+## Executable dependencies
+$(BUILD_DIR)/release/bin/$(MINISATP):	 	$(BUILD_DIR)/release/Main.o $(BUILD_DIR)/release/lib/$(MINISATP_SLIB)
+$(BUILD_DIR)/debug/bin/$(MINISATP):	 	$(BUILD_DIR)/debug/Main.o $(BUILD_DIR)/debug/lib/$(MINISATP_SLIB)
+$(BUILD_DIR)/profile/bin/$(MINISATP):	 	$(BUILD_DIR)/profile/Main.o $(BUILD_DIR)/profile/lib/$(MINISATP_SLIB)
+# need the main-file be compiled with fpic?
+$(BUILD_DIR)/dynamic/bin/$(MINISATP):	 	$(BUILD_DIR)/dynamic/Main.o $(BUILD_DIR)/dynamic/lib/$(MINISATP_DLIB)
+
+## Library dependencies
+$(BUILD_DIR)/release/lib/$(MINISATP_SLIB):	$(foreach o,$(OBJS),$(BUILD_DIR)/release/$(o))
+$(BUILD_DIR)/debug/lib/$(MINISATP_SLIB):	$(foreach o,$(OBJS),$(BUILD_DIR)/debug/$(o))
+$(BUILD_DIR)/profile/lib/$(MINISATP_SLIB):	$(foreach o,$(OBJS),$(BUILD_DIR)/profile/$(o))
+$(BUILD_DIR)/dynamic/lib/$(MINISATP_DLIB).$(SOMAJOR).$(SOMINOR)$(SORELEASE):	$(foreach o,$(OBJS),$(BUILD_DIR)/dynamic/$(o))
+
+## Compile rules (these should be unified, buit I have not yet found a way which works in GNU Make)
+$(BUILD_DIR)/release/%.o:	%.cc
+	$(ECHO) echo Compiling: $@
+	$(VERB) mkdir -p $(dir $@) $(dir $(BUILD_DIR)/dep/$*.d)
+	$(VERB) $(CXX) $(MINISATP_CXXFLAGS) $(CXXFLAGS) -c -o $@ $< -MMD -MF $(BUILD_DIR)/dep/$*.d
+
+$(BUILD_DIR)/profile/%.o:	%.cc
+	$(ECHO) echo Compiling: $@
+	$(VERB) mkdir -p $(dir $@) $(dir $(BUILD_DIR)/dep/$*.d)
+	$(VERB) $(CXX) $(MINISATP_CXXFLAGS) $(CXXFLAGS) -c -o $@ $< -MMD -MF $(BUILD_DIR)/dep/$*.d
+
+$(BUILD_DIR)/debug/%.o:	%.cc
+	$(ECHO) echo Compiling: $@
+	$(VERB) mkdir -p $(dir $@) $(dir $(BUILD_DIR)/dep/$*.d)
+	$(VERB) $(CXX) $(MINISATP_CXXFLAGS) $(CXXFLAGS) -c -o $@ $< -MMD -MF $(BUILD_DIR)/dep/$*.d
+
+$(BUILD_DIR)/dynamic/%.o:	%.cc
+	$(ECHO) echo Compiling: $@
+	$(VERB) mkdir -p $(dir $@) $(dir $(BUILD_DIR)/dep/$*.d)
+	$(VERB) $(CXX) $(MINISATP_CXXFLAGS) $(CXXFLAGS) -c -o $@ $< -MMD -MF $(BUILD_DIR)/dep/$*.d
+
+## Linking rule
+$(BUILD_DIR)/release/bin/$(MINISATP) $(BUILD_DIR)/debug/bin/$(MINISATP) $(BUILD_DIR)/profile/bin/$(MINISATP) $(BUILD_DIR)/dynamic/bin/$(MINISATP):
+	$(ECHO) echo Linking Binary: $@
+	$(VERB) mkdir -p $(dir $@)
+	$(VERB) $(CXX) $^ $(MINISATP_LDFLAGS) $(LDFLAGS) -o $@
+
+## Static Library rule
+%/lib/$(MINISATP_SLIB):
+	$(ECHO) echo Linking Static Library: $@
+	$(VERB) mkdir -p $(dir $@)
+	$(VERB) $(AR) -rcs $@ $^
+
+## Shared Library rule
+$(BUILD_DIR)/dynamic/lib/$(MINISATP_DLIB).$(SOMAJOR).$(SOMINOR)$(SORELEASE)\
+ $(BUILD_DIR)/dynamic/lib/$(MINISATP_DLIB).$(SOMAJOR)\
+ $(BUILD_DIR)/dynamic/lib/$(MINISATP_DLIB):
+	$(ECHO) echo Linking Shared Library: $@
+	$(VERB) mkdir -p $(dir $@)
+	$(VERB) $(CXX) $(MINISATP_LDFLAGS) -o $@ -shared -Wl,-soname,$(MINISATP_DLIB).$(SOMAJOR) $^
+	$(VERB) ln -sf $(MINISATP_DLIB).$(SOMAJOR).$(SOMINOR)$(SORELEASE) $(BUILD_DIR)/dynamic/lib/$(MINISATP_DLIB).$(SOMAJOR)
+	$(VERB) ln -sf $(MINISATP_DLIB).$(SOMAJOR) $(BUILD_DIR)/dynamic/lib/$(MINISATP_DLIB)
+
+install:	install-bin
+
+install-bin: $(BUILD_DIR)/release/bin/$(MINISATP)
+	$(INSTALL) -d $(DESTDIR)$(bindir)
+	$(INSTALL) $(BUILD_DIR)/release/bin/$(MINISATP) $(DESTDIR)$(bindir)/
 
 clean:
-	@rm -f $(EXEC) $(EXEC)_profile $(EXEC)_debug $(EXEC)_release $(EXEC)_static \
-	  $(COBJS) $(PCOBJS) $(DCOBJS) $(RCOBJS) $(R64COBJS) depend.mak
+	rm -f $(foreach t, release debug profile dynamic, $(foreach o, $(SRCS:.cc=.o), $(BUILD_DIR)/$t/$o)) \
+	  $(foreach d, $(SRCS:.cc=.d), $(BUILD_DIR)/dep/$d) \
+	  $(foreach t, release debug profile dynamic, $(BUILD_DIR)/$t/bin/$(MINISATP)) \
+	  $(foreach t, release debug profile, $(BUILD_DIR)/$t/lib/$(MINISATP_SLIB)) \
+	  $(BUILD_DIR)/dynamic/lib/$(MINISATP_DLIB).$(SOMAJOR).$(SOMINOR)$(SORELEASE)
 
-## Build rule
-%.o %.op %.od %.or %.ox: %.C
-	@echo Compiling: $<
-	@$(CXX) $(CFLAGS) -c -o $@ $<
+distclean:	clean
+	rm -f config.mk
 
-## Linking rules (standard/profile/debug/release)
-$(EXEC): $(COBJS)
-	@echo Linking $(EXEC)
-	@$(CXX) $(COBJS) -lz -lgmp -ggdb -Wall -o $@ 
-
-$(EXEC)_profile: $(PCOBJS)
-	@echo Linking $@
-	@$(CXX) $(PCOBJS) -lz -lgmp -ggdb -Wall -pg -o $@
-
-$(EXEC)_debug:	$(DCOBJS)
-	@echo Linking $@
-	@$(CXX) $(DCOBJS) -lz -lgmp -ggdb -Wall -o $@
-
-$(EXEC)_release: $(RCOBJS)
-	@echo Linking $@
-	@$(CXX) $(RCOBJS) -lz -lgmp -Wall -o $@
-
-$(EXEC)_bignum_static: $(RCOBJS)
-	@echo Linking $@
-	@$(CXX) --static $(RCOBJS) -lz -lgmp -Wall -o $@
-
-$(EXEC)_64-bit_static: $(R64COBJS)
-	@echo Linking $@
-	@$(CXX) --static $(R64COBJS) -lz -Wall -o $@
-
-install: $(EXEC)
-	install -d $(prefix)/bin
-	install -m 0755 $(EXEC) $(prefix)/bin
-    	
-    
-.PHONY: install
-
-## Make dependencies
-depend:	depend.mak
-depend.mak:	$(CSRCS) $(CHDRS)
-	@echo Making dependencies...
-	@$(CXX) -MM $(CSRCS) $(CFLAGS) > depend.mak
-	@cp depend.mak /tmp/depend.mak.tmp
-	@sed "s/o:/op:/" /tmp/depend.mak.tmp >> depend.mak
-	@sed "s/o:/od:/" /tmp/depend.mak.tmp >> depend.mak
-	@sed "s/o:/or:/" /tmp/depend.mak.tmp >> depend.mak
-	@sed "s/o:/ox:/" /tmp/depend.mak.tmp >> depend.mak
-	@rm /tmp/depend.mak.tmp
-
-include depend.mak
+## Include generated dependencies
+## NOTE: dependencies are assumed to be the same in all build modes at the moment!
+-include $(foreach s, $(SRCS:.cc=.d), $(BUILD_DIR)/dep/$s)

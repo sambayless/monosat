@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 2.7)
 project(monosat)
 
+set (PB_SUPPORT 1)
+
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wno-unused-variable -Wno-unused-but-set-variable   -Wno-sign-compare  -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS")
 
 set( CMAKE_VERBOSE_MAKEFILE on )
@@ -205,6 +207,44 @@ set(SOURCE_FILES
     src/monosat/utils/System.cc
     src/monosat/utils/System.h
     src/monosat/Main.cc)
+
+
+set(SOURCE_FILES_PB
+        src/minisatpb/Config_pb.h
+        src/minisatpb/Config_pb.cpp
+        src/minisatpb/Debug.h
+        src/minisatpb/Debug.cc
+        src/minisatpb/Hardware.h
+        src/minisatpb/Hardware_adders.cc
+        src/minisatpb/Hardware_clausify.cc
+        src/minisatpb/Hardware_sorters.cc
+        src/minisatpb/PbParser.cc
+        src/minisatpb/PbParser.h
+        src/minisatpb/PbSolver.cc
+        src/minisatpb/PbSolver.h
+        src/minisatpb/PbSolver_convert.cc
+        src/minisatpb/PbSolver_convertAdd.cc
+        src/minisatpb/PbSolver_convertBdd.cc
+        src/minisatpb/PbSolver_convertSort.cc
+        src/minisatpb/ADTs/FEnv.h
+        src/minisatpb/ADTs/FEnv.cc
+        src/minisatpb/ADTs/File.h
+        src/minisatpb/ADTs/File.cc
+        src/minisatpb/ADTs/Global.h
+        src/minisatpb/ADTs/Global.cc
+        src/minisatpb/ADTs/Hash_standard.h
+        src/minisatpb/ADTs/Heap.h
+        src/minisatpb/ADTs/Int.h
+        src/minisatpb/ADTs/Map.h
+        src/minisatpb/ADTs/Sort.h
+        src/minisatpb/ADTs/StackAlloc.h
+        src/minisatpb/ADTs/VecAlloc.h
+        src/minisatpb/ADTs/VecMaps.h
+        )
+
+if (${PB_SUPPORT})
+    set(SOURCE_FILES ${SOURCE_FILES} ${SOURCE_FILES_PB})
+endif (${PB_SUPPORT})
 
 add_executable(monosat ${SOURCE_FILES})
 set_target_properties(monosat PROPERTIES EXCLUDE_FROM_ALL 1)

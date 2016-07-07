@@ -2,7 +2,7 @@
 #define VecAlloc_h
 
 #include <typeinfo>
-#include "Global.h"
+#include "minisatpb/ADTs/Global.h"
 //=================================================================================================
 
 template <class T, int chunk_size = 100>
@@ -38,7 +38,7 @@ public:
    ~VecAlloc(void) {
       #ifdef DEBUG
         //if (nallocs != 0) fprintf(stderr, "WARNING! VecAlloc detected leak of %d unit(s) of type '%s'.\n", nallocs, typeid(T).name());
-        if (nallocs != 0) fprintf(stderr, "WARNING! VecAlloc detected leak of %d unit(s) of size %d.\n", nallocs, sizeof(T));
+        if (nallocs != 0) fprintf(stderr, "WARNING! VecAlloc detected leak of %d unit(s) of size %lu.\n", nallocs, sizeof(T));
       #endif
         Slot*   curr,* next;
         curr = table;

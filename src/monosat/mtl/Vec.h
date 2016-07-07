@@ -75,7 +75,9 @@ public:
 	~vec() {
 		clear(true);
 	}
-	
+
+	vec(T* array, int size)     : data(array), sz(size), cap(size) { }      // (takes ownership of array -- will be deallocated with 'free')
+
 	// Pointer to first element:
 	operator T*(void) {
 		return data;

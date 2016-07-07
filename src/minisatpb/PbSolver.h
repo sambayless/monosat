@@ -20,11 +20,23 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #ifndef PbSolver_h
 #define PbSolver_h
 
-#include "Solver.h"
-#include "Map.h"
-#include "StackAlloc.h"
-#include "Global.h"
+#include "monosat/mtl/Vec.h"
+#include "monosat/simp/SimpSolver.h"
 
+#include "minisatpb/ADTs/Map.h"
+#include "minisatpb/ADTs/StackAlloc.h"
+#include "minisatpb/ADTs/Int.h"
+#include "minisatpb/Config_pb.h"
+using Monosat::Var;
+using Monosat::Lit;
+using Monosat::SimpSolver;
+using Monosat::lbool;
+using Monosat::mkLit;
+using Monosat::lit_Undef;
+/*using Monosat::l_Undef;
+using Monosat::l_False;
+using Monosat::l_True;
+using Monosat::var_Undef;*/
 //=================================================================================================
 // Linear -- a class for storing pseudo-boolean constraints:
 
@@ -44,6 +56,12 @@ public:
         for (int i = 0; i < ps.size(); i++) *(Lit*)p = ps[i], p += sizeof(Lit);
         for (int i = 0; i < Cs.size(); i++) new ((Int*)p) Int(Cs[i]), p += sizeof(Int); }
 
+    ~Linear()
+    {
+        for (int i = 0; i < size; i++)
+            (*this)(i).~Int();
+    }
+
     Lit operator [] (int i) const { return *(Lit*)(data + sizeof(Lit)*i); }
     Int operator () (int i) const { return *(Int*)(data + sizeof(Lit)*orig_size + sizeof(Int)*i); }
     Lit& operator [] (int i) { return *(Lit*)(data + sizeof(Lit)*i); }
@@ -56,11 +74,9 @@ public:
 
 
 class PbSolver {
-public:
-    Solver              sat_solver;     // Underlying SAT solver.
-    bool&               ok;             // True means unsatisfiability has not been detected.
-    vec<int>&           assigns;        // Var -> lbool: The current assignments (lbool:s stored as char:s).  ('atype' is 'char' or 'int' depending on solver) 
-    vec<Lit>&           trail;          // Chronological assignment stack.
+protected:
+    SimpSolver          sat_solver;     // Underlying SAT solver.
+    vec<Lit>            trail;          // Chronological assignment stack.
 
     StackAlloc<char*>   mem;            // Used to allocate the 'Linear' constraints stored in 'constrs' (other 'Linear's, such as the goal function, are allocated with 'xmalloc()')
 
@@ -72,13 +88,19 @@ protected:
     vec<vec<int> >      occur;          // Lit -> vec<int>: Occur lists. Left empty until 'setupOccurs()' is called.
 
     int                 propQ_head;     // Head of propagation queue (index into 'trail').
-
+    Monosat::vec<Lit>   tmp_clause;
 
     // Main internal methods:
     //
     bool    propagate(Linear& c);
     void    propagate();
-    bool    addUnit  (Lit p) { return sat_solver.addUnit(p); }
+    bool    addUnit  (Lit p) {
+        if (value(p) == l_Undef) trail.push(p);
+        return sat_solver.addClause(p); }
+    bool    addClause(const vec<Lit>& ps){
+        tmp_clause.clear(); for (int i = 0; i < ps.size(); i++) tmp_clause.push(ps[i]);
+        return sat_solver.addClause_(tmp_clause); }
+        
     bool    normalizePb(vec<Lit>& ps, vec<Int>& Cs, Int& C);
     void    storePb    (const vec<Lit>& ps, const vec<Int>& Cs, Int lo, Int hi);
     void    setupOccurs();   // Called on demand from 'propagate()'.
@@ -87,27 +109,29 @@ protected:
     bool    convertPbs(bool first_call);   // Called from 'solve()' to convert PB constraints to clauses.
 
 public:
-    PbSolver()  : sat_solver(opt_solver == st_MiniSat)
-                , ok     (sat_solver.ok_ref())
-                , assigns(sat_solver.assigns_ref())
-                , trail  (sat_solver.trail_ref())
-                , goal(NULL)
+    PbSolver(bool use_preprocessing = false) 
+                : goal(NULL)
                 , propQ_head(0)
-                , stats(sat_solver.stats_ref())
+                  //, stats(sat_solver.stats_ref())
                 , declared_n_vars(-1)
                 , declared_n_constrs(-1)
                 , best_goalvalue(Int_MAX)
-                {}
+                {
+                    // Turn off preprocessing if wanted.
+                    if (!use_preprocessing) 
+                        sat_solver.eliminate(true); 
+                }
 
     // Helpers (semi-internal):
     //
-    lbool   value(Var x) const { return toLbool(assigns[x]); }
-    lbool   value(Lit p) const { return sign(p) ? ~toLbool(assigns[var(p)]) : toLbool(assigns[var(p)]); }
-    int     nVars()      const { return assigns.size(); }
+    lbool   value(Var x) const { return sat_solver.value(x); }
+    lbool   value(Lit p) const { return sat_solver.value(p); }
+    int     nVars()      const { return sat_solver.nVars(); }
     int     nConstrs()   const { return constrs.size(); }
 
     // Public variables:
-    BasicSolverStats& stats;
+    //BasicSolverStats& stats;
+    void    printStats();
 
     int     declared_n_vars;            // Number of variables declared in file header (-1 = not specified).
     int     declared_n_constrs;         // Number of constraints declared in file header (-1 = not specified).
@@ -128,7 +152,7 @@ public:
 
     // Solve:
     //
-    bool    okay(void) { return ok; }
+    bool    okay(void) { return sat_solver.okay(); }
 
     enum solve_Command { sc_Minimize, sc_FirstSolution, sc_AllSolutions };
     void    solve(solve_Command cmd = sc_Minimize);    // Returns best/first solution found or Int_MAX if UNSAT.

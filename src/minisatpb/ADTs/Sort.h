@@ -29,8 +29,8 @@ Template based sorting routines: sort, sortUnique (remove duplicates). Can be ap
 #define Sort_h
 
 //#include <cstdlib>
-
-
+#include "monosat/mtl/Vec.h"
+#include "monosat/mtl/Rnd.h"
 //=================================================================================================
 
 
@@ -69,7 +69,7 @@ void sort(T* array, int size, LessThan lt, double& seed)
         selectionSort(array, size, lt);
 
     else{
-        T           pivot = array[irand(seed, size)];
+        T           pivot = array[Monosat::irand(seed, size)];
         T           tmp;
         int         i = -1;
         int         j = size;
@@ -121,19 +121,19 @@ template <class T> static inline void sortUnique(T* array, int& size) {
 // For 'vec's:
 
 
-template <class T, class LessThan> void sort(vec<T>& v, LessThan lt) {
+template <class T, class LessThan> void sort(Monosat::vec<T>& v, LessThan lt) {
     sort((T*)v, v.size(), lt); }
-template <class T> void sort(vec<T>& v) {
+template <class T> void sort(Monosat::vec<T>& v) {
     sort(v, LessThan_default<T>()); }
 
 
-template <class T, class LessThan> void sortUnique(vec<T>& v, LessThan lt) {
+template <class T, class LessThan> void sortUnique(Monosat::vec<T>& v, LessThan lt) {
     int     size = v.size();
     T*      data = v.release();
     sortUnique(data, size, lt);
-    v.~vec<T>();
-    new (&v) vec<T>(data, size); }
-template <class T> void sortUnique(vec<T>& v) {
+    v.~vec();
+    new (&v) Monosat::vec<T>(data, size); }
+template <class T> void sortUnique(Monosat::vec<T>& v) {
     sortUnique(v, LessThan_default<T>()); }
 
 

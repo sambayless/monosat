@@ -19,7 +19,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 #ifndef VecMaps_h
 #define VecMaps_h
-#include "Global.h"
+
 //=================================================================================================
 
 // TODO: Adapt constructors of 'BitMap' and 'DeckMap' to those of VecMap.

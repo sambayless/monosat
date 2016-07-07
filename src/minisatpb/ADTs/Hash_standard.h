@@ -20,7 +20,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #ifndef Hash_standard_h
 #define Hash_standard_h
 
-#include "Global.h"
+
 //=================================================================================================
 // Some Primes...
 

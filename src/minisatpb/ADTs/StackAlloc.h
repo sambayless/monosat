@@ -21,7 +21,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #define StackAlloc_h
 
 //=================================================================================================
-
+#include "minisatpb/ADTs/Global.h"
 
 template<class T>
 struct Allocator {

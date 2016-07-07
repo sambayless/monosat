@@ -1,6 +1,0 @@
-MinisatPB is a minor variant of Minisat+, intended for use with MonoSAT.
-To install, use:
-
-make
-sudo make install
-

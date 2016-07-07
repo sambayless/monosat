@@ -46,6 +46,7 @@ using namespace Monosat;
 using namespace std;
 //=================================================================================================
 
+
 void printStats(Solver& solver) {
 	double cpu_time = cpuTime();
 	double mem_used = memUsedPeak();

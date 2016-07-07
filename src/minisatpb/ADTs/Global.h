@@ -2,7 +2,6 @@
 Copyright (c) 2005-2010, Niklas Een, Niklas Sorensson
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
-associated documentation files (the "Software"), to deal in the Software without restriction,
 including without limitation the rights to use, copy, modify, merge, publish, distribute,
 sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is
 furnished to do so, subject to the following conditions:
@@ -25,16 +24,18 @@ Contains types, macros, and inline functions generally useful in a C++ program.
 
 #ifndef Global_h
 #define Global_h
-
+#include <cstddef>
 #include <cassert>
 #include <cstdio>
+#include <cstdarg>
 #include <cstdlib>
 #include <cstring>
 #include <climits>
 #include <cfloat>
 #include <new>
 
-
+#include "monosat/mtl/Vec.h"
+using Monosat::vec;
 //=================================================================================================
 // Basic Types & Minor Things:
 
@@ -222,6 +223,7 @@ inline Pair<Fst, Snd> Pair_new(const Fst& x, const Snd& y) {
 
 
 // NOTE! Don't use this vector on datatypes that cannot be re-located in memory (with realloc)
+/*
 
 template<class T>
 class vec {
@@ -313,6 +315,7 @@ void vec<T>::clear(bool dealloc) {
         for (int i = 0; i < sz; i++) data[i].~T();
         sz = 0;
         if (dealloc) xfree(data), data = NULL, cap = 0; } }
+*/
 
 //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 // (for convenience)
@@ -328,7 +331,7 @@ macro void xfreeAll(vec<T*>& ptrs) {
 //=================================================================================================
 // Lifted booleans:
 
-
+#if 0
 class lbool {
     int     value;
     explicit lbool(int v) : value(v) { }
@@ -354,7 +357,7 @@ const lbool l_True  = toLbool( 1);
 const lbool l_False = toLbool(-1);
 const lbool l_Undef = toLbool( 0);
 const lbool l_Error = toLbool(1 << (sizeof(int)*8-1));
-
+#endif
 
 //=================================================================================================
 // Relation operators -- extend definitions from '==' and '<'
@@ -368,7 +371,12 @@ template <class T> macro bool operator <= (const T& x, const T& y) { return !(y 
 template <class T> macro bool operator >= (const T& x, const T& y) { return !(x < y);  }
 #endif
 
+extern bool     opt_satlive;
+extern bool     opt_ansi;
 
+//- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+void reportf(const char* format, ...);      // 'printf()' replacer -- will put "c " first at each line if 'opt_satlive' is TRUE.
 
 //=================================================================================================
 #endif

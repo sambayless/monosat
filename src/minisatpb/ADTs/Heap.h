@@ -19,7 +19,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 #ifndef __HEAP__
 #define __HEAP__
-#include "Global.h"
+
 static inline int left (int i)  { return i * 2; }
 static inline int right(int i)  { return i * 2 + 1; }
 static inline int parent(int i) { return i / 2; }

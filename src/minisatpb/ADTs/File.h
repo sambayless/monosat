@@ -23,11 +23,12 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/stat.h>
+#include "Global.h"
 
 #define lseek64 lseek   // }- (disable explicit 64-bit support for FreeBSD...)
 #define open64  ::open  // }
 
-#include "Global.h"
+
 //=================================================================================================
 // A buffered file abstraction with only 'putChar()' and 'getChar()'.
 
@@ -103,9 +104,10 @@ public:
       #ifdef PARANOID
         assert(mode == WRITE);
       #endif
-        if (pos == File_BufSize)
-            write(fd, buf, File_BufSize),
-            pos = 0;
+        if (pos == File_BufSize){
+            ssize_t wrote = write(fd, buf, File_BufSize);
+            if (wrote != File_BufSize) printf("ERROR! Write failed.\n"), exit(1);
+            pos = 0; }
         return buf[pos++] = (uchar)chr; }
 
     int getChar(void) {
@@ -127,7 +129,8 @@ public:
 
     void flush(void) {
         assert(mode == WRITE);
-        write(fd, buf, pos);
+        ssize_t wrote = write(fd, buf, pos);
+        if (wrote != pos) printf("ERROR! Write failed.\n"), exit(1);
         pos = 0; }
 
     void  seek(int64 pos, int whence = SEEK_SET);

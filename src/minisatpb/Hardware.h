@@ -20,8 +20,8 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #ifndef Hardware_h
 #define Hardware_h
 
-#include "FEnv.h"
 #include "PbSolver.h"
+#include "minisatpb/ADTs/FEnv.h"
 
 //=================================================================================================
 
@@ -31,8 +31,8 @@ void oddEvenSort(vec<Formula>& fs);
 void rippleAdder(const vec<Formula>& xs, const vec<Formula>& ys, vec<Formula>& out);
 void addPb(const vec<Formula>& ps, const vec<Int>& Cs_, vec<Formula>& out, int bits);
 
-void clausify(Solver& s, const vec<Formula>& fs, vec<Lit>& out);
-void clausify(Solver& s, const vec<Formula>& fs);
+void clausify(SimpSolver& s, const vec<Formula>& fs, vec<Lit>& out);
+void clausify(SimpSolver& s, const vec<Formula>& fs);
 
 
 //=================================================================================================
