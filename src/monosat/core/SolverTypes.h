@@ -131,14 +131,14 @@ public:
 	explicit lbool(uint8_t v) :
 			value(v) {
 	}
-	
+
 	lbool() :
 			value(0) {
 	}
 	explicit lbool(bool x) :
 			value(!x) {
 	}
-	
+
 	bool operator ==(lbool b) const {
 		return ((b.value & 2) & (value & 2)) | (!(b.value & 2) & (value == b.value));
 	}
@@ -148,19 +148,19 @@ public:
 	lbool operator ^(bool b) const {
 		return lbool((uint8_t) (value ^ (uint8_t) b));
 	}
-	
+
 	lbool operator &&(lbool b) const {
 		uint8_t sel = (this->value << 1) | (b.value << 3);
 		uint8_t v = (0xF7F755F4 >> sel) & 3;
 		return lbool(v);
 	}
-	
+
 	lbool operator ||(lbool b) const {
 		uint8_t sel = (this->value << 1) | (b.value << 3);
 		uint8_t v = (0xFCFCF400 >> sel) & 3;
 		return lbool(v);
 	}
-	
+
 	friend int toInt(lbool l);
 	friend lbool toLbool(int v);
 };
@@ -183,7 +183,7 @@ class Clause {
 		unsigned learnt :1;
 		unsigned has_extra :1;
 		unsigned reloced :1;
-		unsigned fromTheory :1;
+		unsigned derived :1;
 		unsigned size :26;
 	} header;
 	union {
@@ -203,11 +203,11 @@ class Clause {
 		header.has_extra = use_extra;
 		header.reloced = 0;
 		header.size = ps.size();
-		header.fromTheory = 0;
-		
+		header.derived = 0;
+
 		for (int i = 0; i < ps.size(); i++)
 			data[i].lit = ps[i];
-		
+
 		if (header.has_extra) {
 			if (header.learnt)
 				data[header.size].act = 0;
@@ -215,7 +215,7 @@ class Clause {
 				calcAbstraction();
 		}
 	}
-	
+
 public:
 	void calcAbstraction() {
 		assert(header.has_extra);
@@ -224,7 +224,7 @@ public:
 			abstraction |= 1 << (var(data[i].lit) & 31);
 		data[header.size].abs = abstraction;
 	}
-	
+
 	int size() const {
 		return header.size;
 	}
@@ -259,15 +259,15 @@ public:
 	const Lit& last() const {
 		return data[header.size - 1].lit;
 	}
-	
-	bool fromTheory() const {
-		return header.fromTheory;
+
+	bool derivedClause() const {
+		return header.derived;
 	}
-	
-	void setFromTheory(bool t) {
-		header.fromTheory = t;
+
+	void setDerived(bool t) {
+		header.derived = t;
 	}
-	
+
 	bool reloced() const {
 		return header.reloced;
 	}
@@ -278,7 +278,7 @@ public:
 		header.reloced = 1;
 		data[0].rel = c;
 	}
-	
+
 	// NOTE: somewhat unsafe to change the clause in-place! Must manually call 'calcAbstraction' afterwards for
 	//       subsumption operations to behave correctly.
 	Lit& operator [](int i) {
@@ -290,7 +290,7 @@ public:
 	operator const Lit*(void) const {
 		return (Lit*) data;
 	}
-	
+
 	float& activity() {
 		assert(header.has_extra);
 		return data[header.size].act;
@@ -299,7 +299,7 @@ public:
 		assert(header.has_extra);
 		return data[header.size].abs;
 	}
-	
+
 	Lit subsumes(const Clause& other) const;
 	void strengthen(Lit p);
 
@@ -307,7 +307,7 @@ public:
 	const Lit * begin() const {
 		return &data[0].lit;
 	}
-	
+
 	const Lit* end() const {
 		return &data[size()].lit;
 	}
@@ -328,35 +328,35 @@ public:
 	CRef makeMarkerReference() {
 		return --marker_refs;
 	}
-	
+
 	bool isClause(const CRef & cr) const {
 		return cr < marker_refs;
 	}
-	
+
 	ClauseAllocator(uint32_t start_cap) :
 			RegionAllocator<uint32_t>(start_cap), extra_clause_field(false), marker_refs(CRef_Undef) {
 	}
 	ClauseAllocator() :
 			extra_clause_field(false), marker_refs(CRef_Undef) {
 	}
-	
+
 	void moveTo(ClauseAllocator& to) {
 		to.extra_clause_field = extra_clause_field;
 		RegionAllocator<uint32_t>::moveTo(to);
 	}
-	
+
 	template<class Lits>
 	CRef alloc(const Lits& ps, bool learnt = false) {
 		assert(sizeof(Lit) == sizeof(uint32_t));
 		assert(sizeof(float) == sizeof(uint32_t));
 		bool use_extra = learnt | extra_clause_field;
-		
+
 		CRef cid = RegionAllocator<uint32_t>::alloc(clauseWord32Size(ps.size(), use_extra));
 		new (lea(cid)) Clause(ps, use_extra, learnt);
-		
+
 		return cid;
 	}
-	
+
 	// Deref, Load Effective Address (LEA), Inverse of LEA (AEL):
 	Clause& operator[](Ref r) {
 		return (Clause&) RegionAllocator<uint32_t>::operator[](r);
@@ -373,7 +373,7 @@ public:
 	Ref ael(const Clause* t) {
 		return RegionAllocator<uint32_t>::ael((uint32_t*) t);
 	}
-	
+
 	void free(CRef cid) {
 		if (cid >= marker_refs) {
 			assert(false);
@@ -382,22 +382,22 @@ public:
 		Clause& c = operator[](cid);
 		RegionAllocator<uint32_t>::free(clauseWord32Size(c.size(), c.has_extra()));
 	}
-	
+
 	void reloc(CRef& cr, ClauseAllocator& to) {
 		if (cr >= marker_refs) {
 			return;
 		}
 		Clause& c = operator[](cr);
-		
+
 		if (c.reloced()) {
 			cr = c.relocation();
 			return;
 		}
-		
+
 		cr = to.alloc(c, c.learnt());
 		c.relocate(cr);
-		to[cr].setFromTheory(c.fromTheory());
-		// Copy extra data-fields: 
+		to[cr].setDerived(c.derivedClause());
+		// Copy extra data-fields:
 		// (This could be cleaned-up. Generalize Clause-constructor to be applicable here instead?)
 		to[cr].mark(c.mark());
 		if (to[cr].learnt())
@@ -421,10 +421,11 @@ public:
 	OccLists(const Deleted& d) :
 			deleted(d) {
 	}
-	
+
 	void init(const Idx& idx) {
 		occs.growTo(toInt(idx) + 1);
 		dirty.growTo(toInt(idx) + 1, 0);
+		occs[toInt(idx)].clear();
 	}
 	// Vec&  operator[](const Idx& idx){ return occs[toInt(idx)]; }
 	Vec& operator[](const Idx& idx) {
@@ -435,7 +436,7 @@ public:
 			clean(idx);
 		return occs[toInt(idx)];
 	}
-	
+
 	void cleanAll();
 	void clean(const Idx& idx);
 	void smudge(const Idx& idx) {
@@ -444,7 +445,7 @@ public:
 			dirties.push(idx);
 		}
 	}
-	
+
 	void clear(bool free = true) {
 		occs.clear(free);
 		dirty.clear(free);
@@ -494,7 +495,7 @@ public:
 	int size() const {
 		return map.elems();
 	}
-	
+
 	// Insert/Remove/Test mapping:
 	void insert(CRef cr, const T& t) {
 		map.insert(cr, t);
@@ -508,7 +509,7 @@ public:
 	bool has(CRef cr, T& t) {
 		return map.peek(cr, t);
 	}
-	
+
 	// Vector interface (the clause 'c' must already exist):
 	const T& operator [](CRef cr) const {
 		return map[cr];
@@ -516,7 +517,7 @@ public:
 	T& operator [](CRef cr) {
 		return map[cr];
 	}
-	
+
 	// Iteration (not transparent at all at the moment):
 	int bucket_count() const {
 		return map.bucket_count();
@@ -524,12 +525,12 @@ public:
 	const vec<typename HashTable::Pair>& bucket(int i) const {
 		return map.bucket(i);
 	}
-	
+
 	// Move contents to other map:
 	void moveTo(CMap& other) {
 		map.moveTo(other.map);
 	}
-	
+
 	// TMP debug:
 	void debug() {
 		printf(" --- size = %d, bucket_count = %d\n", size(), map.bucket_count());
@@ -539,11 +540,11 @@ public:
 /*_________________________________________________________________________________________________
  |
  |  subsumes : (other : const Clause&)  ->  Lit
- |  
+ |
  |  Description:
  |       Checks if clause subsumes 'other', and at the same time, if it can be used to simplify 'other'
  |       by subsumption resolution.
- |  
+ |
  |    Result:
  |       lit_Error  - No subsumption or simplification
  |       lit_Undef  - Clause subsumes 'other'
@@ -558,11 +559,11 @@ inline Lit Clause::subsumes(const Clause& other) const {
 	assert(other.header.has_extra);
 	if (other.header.size < header.size || (data[header.size].abs & ~other.data[other.header.size].abs) != 0)
 		return lit_Error;
-	
+
 	Lit ret = lit_Undef;
 	const Lit* c = (const Lit*) (*this);
 	const Lit* d = (const Lit*) other;
-	
+
 	for (unsigned i = 0; i < header.size; i++) {
 		// search for c[i] or ~c[i]
 		for (unsigned j = 0; j < other.header.size; j++)
@@ -572,12 +573,12 @@ inline Lit Clause::subsumes(const Clause& other) const {
 				ret = c[i];
 				goto ok;
 			}
-		
+
 		// did not find it
 		return lit_Error;
 		ok: ;
 	}
-	
+
 	return ret;
 }
 
@@ -586,6 +587,35 @@ inline void Clause::strengthen(Lit p) {
 	calcAbstraction();
 }
 
+//=================================================================================================
+// Simple iterator classes (for iterating over clauses and top-level assignments):
+
+class ClauseIterator {
+	const ClauseAllocator& ca;
+	const CRef*            crefs;
+public:
+	ClauseIterator(const ClauseAllocator& _ca, const CRef* _crefs) : ca(_ca), crefs(_crefs){}
+
+	void operator++(){ crefs++; }
+	const Clause& operator*() const { return ca[*crefs]; }
+
+	// NOTE: does not compare that references use the same clause-allocator:
+	bool operator==(const ClauseIterator& ci) const { return crefs == ci.crefs; }
+	bool operator!=(const ClauseIterator& ci) const { return crefs != ci.crefs; }
+};
+
+
+class TrailIterator {
+	const Lit* lits;
+public:
+	TrailIterator(const Lit* _lits) : lits(_lits){}
+
+	void operator++()   { lits++; }
+	Lit  operator*() const { return *lits; }
+
+	bool operator==(const TrailIterator& ti) const { return lits == ti.lits; }
+	bool operator!=(const TrailIterator& ti) const { return lits != ti.lits; }
+};
 //=================================================================================================
 }
 

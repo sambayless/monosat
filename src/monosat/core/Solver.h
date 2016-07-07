@@ -1,7 +1,7 @@
 /****************************************************************************************[Solver.h]
  The MIT License (MIT)
 
- Copyright (c) 2014, Sam Bayless
+ Copyright (c) 2014-2016, Sam Bayless
  Copyright (c) 2003-2006, Niklas Een, Niklas Sorensson
  Copyright (c) 2007-2010, Niklas Sorensson
 
@@ -36,8 +36,8 @@
 #include <cinttypes>
 
 //this is _really_ ugly...
-
 template<unsigned int D, class T> class GeometryTheorySolver;
+
 namespace Monosat {
 template<typename Weight> class GraphTheorySolver;
 class FSMTheorySolver;
@@ -68,14 +68,14 @@ public:
 	// Problem specification:
 	//
 	virtual Var newVar(bool polarity = true, bool dvar = true); // Add a new variable with parameters specifying variable mode.
-    virtual void    releaseVar(Lit l);                                  // Make literal true and promise to never refer to variable again.
+	virtual void    releaseVar(Lit l);                                  // Make literal true and promise to never refer to variable again.
 
 	virtual bool addClause(const vec<Lit>& ps);                     // Add a clause to the solver.
 	virtual bool addEmptyClause();                             // Add the empty clause, making the solver contradictory.
 	virtual bool addClause(Lit p);                                  // Add a unit clause to the solver.
 	virtual bool addClause(Lit p, Lit q);                           // Add a binary clause to the solver.
 	virtual bool addClause(Lit p, Lit q, Lit r);                    // Add a ternary clause to the solver.
-	bool addClause_(vec<Lit>& ps);           // Add a clause to the solver without making superflous internal copy. Will
+	bool addClause_(vec<Lit>& ps, bool is_derived_clause=false);           // Add a clause to the solver without making superflous internal copy. Will
 
 
 	void setDecisionPriority(Var v, unsigned int p) {
@@ -90,7 +90,7 @@ public:
 	int getDecisionPriority(Var v) const{
 		return priority[v];
 	}
-	
+
 	//Theory interface
 	void addTheory(Theory*t) {
 		theories.push(t);
@@ -108,7 +108,7 @@ public:
 		cancelUntil(0);
 		resetInitialPropagation();
 	}
-	
+
 	//Call to force at least one round of propagation to each theory solver at the next solve() call
 	void resetInitialPropagation() {
 		if (!initialPropagate) {
@@ -118,7 +118,7 @@ public:
 			}
 		}
 	}
-	
+
 	void detatchTheory(Theory*t) {
 		assert(decisionLevel() == 0);
 		assert(theory_queue.size() == 0);
@@ -147,24 +147,24 @@ public:
 		}
 		theories.shrink(i - j);
 		in_theory_queue.shrink(i - j);
-		
+
 		cancelUntil(0);
 	}
-	
+
 	int getTheoryIndex() {
 		return theory_index;
 	}
 	void setTheoryIndex(int id) {
 		theory_index = id;
 	}
-	
+
 	//Generate a new, unique `temporary value' for explaining conflicts
 	CRef newReasonMarker(Theory * forTheory) {
 		markers.push(ca.makeMarkerReference());
-		
+
 		int marker_num = CRef_Undef - markers.last() - 1;
 		marker_theory.growTo(marker_num + 1, -1);
-		
+
 		//this could be done more efficiently
 		for (int i = 0; i < theories.size(); i++) {
 			if (theories[i] == forTheory) {
@@ -173,21 +173,21 @@ public:
 			}
 		}
 		assert(marker_theory[marker_num] >= 0);
-		
+
 		return markers.last();
 	}
-	
-	void printStats(int detail_level = 0) {
-        
-        double cpu_time = cpuTime();
-        //double mem_used = memUsedPeak();
 
-        
+	void printStats(int detail_level = 0) {
+
+		double cpu_time = cpuTime();
+		//double mem_used = memUsedPeak();
+
+
 		printf("restarts              : %" PRIu64 "\n", starts);
 		printf("conflicts             : %-12" PRIu64 "   (%.0f /sec, %d learnts (%ld theory learnts), %" PRId64 " removed)\n", conflicts,
-				conflicts / cpu_time, learnts.size(),stats_theory_conflicts, stats_removed_clauses);
+			   conflicts / cpu_time, learnts.size(),stats_theory_conflicts, stats_removed_clauses);
 		printf("decisions             : %-12" PRIu64 "   (%4.2f %% random) (%.0f /sec)\n", decisions,
-				(float) rnd_decisions * 100 / (float) decisions, decisions / cpu_time);
+			   (float) rnd_decisions * 100 / (float) decisions, decisions / cpu_time);
 		if(opt_decide_theories){
 			printf("Theory decisions: %ld\n",stats_theory_decisions);
 			printf("Theory decision rounds: %" PRId64 "/%" PRId64 "\n",n_theory_decision_rounds,starts);
@@ -197,10 +197,10 @@ public:
 		}
 		printf("propagations          : %-12" PRIu64 "   (%.0f /sec)\n", propagations, propagations / cpu_time);
 		printf("conflict literals     : %-12" PRIu64 "   (%4.2f %% deleted)\n", tot_literals,
-				(max_literals - tot_literals) * 100 / (double) max_literals);
+			   (max_literals - tot_literals) * 100 / (double) max_literals);
 		if (opt_detect_pure_theory_lits) {
 			printf("pure literals     : %" PRId64 " (%" PRId64 " theory lits) (%" PRId64 " rounds, %f time)\n", stats_pure_lits,
-					stats_pure_theory_lits, pure_literal_detections, stats_pure_lit_time);
+				   stats_pure_theory_lits, pure_literal_detections, stats_pure_lit_time);
 		}
 
 		if(opt_check_solution){
@@ -210,7 +210,7 @@ public:
 			theories[i]->printStats(detail_level);
 		}
 	}
-	
+
 	void writeTheoryWitness(std::ostream& write_to) {
 		if (!ok) {
 			write_to << "s UNSATISFIABLE\n";
@@ -227,24 +227,24 @@ public:
 				}
 			}
 			write_to << " 0\n";
-			
+
 			for (Theory * t : theories) {
 				t->writeTheoryWitness(write_to);
 			}
 		}
 	}
-	
+
 	bool isTheoryCause(CRef cr) {
 		return cr != CRef_Undef && !ca.isClause(cr);
 	}
-	
+
 	int getTheory(CRef cr) {
 		assert(isTheoryCause(cr));
 		// UINT32_MAX-cr - 1;
 		int marker = CRef_Undef - cr - 1;
 		return marker_theory[marker];
 	}
-	
+
 	bool hasTheory(Var v) {
 		return theory_vars[v].isTheoryVar;
 	}
@@ -261,7 +261,7 @@ public:
 		assert(hasTheory(v));
 		return (Var) theory_vars[v].theory_var;
 	}
-	
+
 	//Translate a literal into its corresponding theory literal (if it has a theory literal)
 	Lit getTheoryLit(Lit l) {
 		assert(hasTheory(l));
@@ -292,17 +292,18 @@ public:
 		assert(hasTheory(solverVar));
 		assert(getTheoryID(solverVar) == theory);
 		assert(getTheoryVar(solverVar) == theoryVar);
-		
-		if (value(solverVar) != l_Undef)
-			initialPropagate = true;
-		
+
+		//if (value(solverVar) != l_Undef)
+		initialPropagate = true;//if pure literal detection is used, then we NEED to run simplify before
+		//the next call to propagate, and initialPropagate is being used to force that.
+
 	}
-	
+
 	void remapTheoryVar(Var solverVar, Var newTheoryVar) {
 		assert(hasTheory(solverVar));
 		theory_vars[solverVar].theory_var = newTheoryVar;
 	}
-	
+
 	void preprocess(){
 		for(Theory *t:theories){
 			t->preprocess();
@@ -363,7 +364,7 @@ public:
 
 		return reason;
 	}
-	
+
 	//Attach this solver to the next, connecting literals in the super solver to literals in this solver
 	//Super_vars and local_vars _must_ be consecutive sets of variables in the super solver.
 	void attachTo(Solver * super, vec<Var> & super_vars, vec<Var> & local_vars) {
@@ -381,7 +382,7 @@ public:
 		cause_marker = super->newReasonMarker(this);
 	}
 	// change the passed vector 'ps'.
-	
+
 	// Solving:
 	//
 	bool simplify();                        // Removes already satisfied clauses.
@@ -391,8 +392,9 @@ public:
 	virtual bool solve(Lit p);                   // Search for a model that respects a single assumption.
 	virtual bool solve(Lit p, Lit q);            // Search for a model that respects two assumptions.
 	virtual bool solve(Lit p, Lit q, Lit r);     // Search for a model that respects three assumptions.
+	virtual bool propagateAssignment(const vec<Lit>& assumps); //apply unit propagation to the supplied assumptions, and quit without solving
 	bool okay() const;                  // FALSE means solver is in a conflicting state
-	
+
 	Lit True(){
 
 		if(const_true==lit_Undef){
@@ -403,8 +405,8 @@ public:
 					const_true=l;
 				}
 			}else{*/
-				const_true=mkLit(newVar(false,false));
-				addClause(const_true);
+			const_true=mkLit(newVar(false,false));
+			addClause(const_true);
 			//}
 		}
 
@@ -427,7 +429,7 @@ public:
 	void toDimacs(const char* file, Lit p, Lit q, Lit r);
 
 	// Variable mode:
-	// 
+	//
 	void setPolarity(Var v, bool b); // Declare which polarity the decision heuristic should use for a variable. Requires mode 'polarity_user'.
 	bool getPolarity(Var v){
 		return polarity[v];
@@ -448,7 +450,7 @@ public:
 	int nVars() const;       // The current number of variables.
 	int nUnassignedVars() const;// The number of variables left to assign. Does not include variables that are not decision vars!
 	int nFreeVars() const;		// The number of non-unit variables
-	
+	bool hasNextDecision() const;
 	// Resource contraints:
 	//
 	void setConfBudget(int64_t x);
@@ -458,7 +460,7 @@ public:
 	void budgetOff();
 	void interrupt();          // Trigger a (potentially asynchronous) interruption of the solver.
 	void clearInterrupt();     // Clear interrupt indicator flag.
-	
+
 	// Memory managment:
 	//
 	virtual void garbageCollect();
@@ -469,11 +471,11 @@ public:
 	// Extra results: (read-only member variable)
 	//
 	vec<lbool> model;             // If problem is satisfiable, this vector contains the model (if any).
-    LSet       conflict;          // If problem is unsatisfiable (possibly under assumptions),
-                                  // this vector represent the final conflict clause expressed in the assumptions.
+	LSet       conflict;          // If problem is unsatisfiable (possibly under assumptions),
+	// this vector represent the final conflict clause expressed in the assumptions.
 
 	vec<vec<Lit> > interpolant; //This vector represents an interpolant between this module and its super solver ('S'), if it is attached to such a solver and the instance is UNSAT.
-								// Variables in each clause in the interpolant vector are in the super solver's variable space, not the subsolver's.
+	// Variables in each clause in the interpolant vector are in the super solver's variable space, not the subsolver's.
 
 	Lit const_true=lit_Undef;
 	Lit theoryDecision = lit_Undef;
@@ -487,7 +489,7 @@ public:
 		char occurs :1;
 		char seen :1;
 		LitCount() :
-				occurs(1), seen(0) {
+				occurs(0), seen(0) {
 		}
 	};
 	vec<LitCount> lit_counts;
@@ -504,6 +506,7 @@ public:
 	int initial_level = 0;
 	vec<int> theory_queue;
 	vec<bool> in_theory_queue;
+	bool disable_theories=false;
 	int min_decision_var = 0;
 	int max_decision_var = -1;
 	int min_priority_var = 0;
@@ -531,12 +534,12 @@ public:
 	bool rnd_pol;            // Use random polarities for branching heuristics.
 	bool rnd_init_act;       // Initialize variable activities with a small random value.
 	double garbage_frac;       // The fraction of wasted memory allowed before a garbage collection is triggered.
-	
+
 	int restart_first; // The initial restart limit.                                                                (default 100)
 	double restart_inc; // The factor with which the restart limit is multiplied in each restart.                    (default 1.5)
 	double learntsize_factor; // The intitial limit for learnt clauses is a factor of the original clauses.                (default 1 / 3)
 	double learntsize_inc; // The limit for learnt clauses is multiplied with this factor each restart.                 (default 1.1)
-	
+
 	int learntsize_adjust_start_confl;
 	double learntsize_adjust_inc;
 
@@ -557,7 +560,7 @@ public:
 
 	//Var last_dec=var_Undef;
 protected:
-	
+
 	// Helper structures:
 	//
 	struct VarData {
@@ -568,7 +571,7 @@ protected:
 		VarData d = { cr, l };
 		return d;
 	}
-	
+
 	struct Watcher {
 		CRef cref;
 		Lit blocker;
@@ -602,7 +605,7 @@ protected:
 			return outer->level(vx)>outer->level(vy);
 		}
 		LazyLevelLt(Solver * outer) :
-			outer(outer){
+				outer(outer){
 		}
 	};
 
@@ -621,18 +624,18 @@ protected:
 		}
 	};
 	struct TheoryOrderLt {
-			const vec<Theory*> & theories;
-			bool operator ()(int x, int y) const {
-				if (theories[x]->getPriority()  == theories[y]->getPriority() )
-					return theories[x]->getActivity() > theories[y]->getActivity();
-				else {
-					return theories[x]->getPriority() >theories[y]->getPriority();
-				}
+		const vec<Theory*> & theories;
+		bool operator ()(int x, int y) const {
+			if (theories[x]->getPriority()  == theories[y]->getPriority() )
+				return theories[x]->getActivity() > theories[y]->getActivity();
+			else {
+				return theories[x]->getPriority() >theories[y]->getPriority();
 			}
-			TheoryOrderLt(const vec<Theory*> & theories) :
+		}
+		TheoryOrderLt(const vec<Theory*> & theories) :
 				theories(theories){
-			}
-		};
+		}
+	};
 
 	struct TheoryData {
 		union {
@@ -647,7 +650,7 @@ protected:
 		}
 		TheoryData(unsigned int theory, unsigned int theory_lit) :
 				theory(theory), theory_var(theory_lit) {
-			
+
 		}
 	};
 
@@ -675,6 +678,7 @@ protected:
 	int simpDB_assigns;   // Number of top-level assignments since last execution of 'simplify()'.
 	int64_t simpDB_props;   // Remaining number of propagations that must be made before next execution of 'simplify()'.
 	vec<Lit> assumptions;      // Current set of assumptions provided to solve by the user.
+	bool only_propagate_assumptions=false; //true if the solver should propagate assumptions and then quit without solving
 	Heap<VarOrderLt> order_heap;       // A priority queue of variables ordered with respect to the variable activity.
 	double theory_inc;
 	double theory_decay;
@@ -683,11 +687,11 @@ protected:
 	//Heap<LazyLevelLt> lazy_heap;       // A priority queue of variables to be propagated at earlier levels, lazily.
 	double progress_estimate;       // Set by 'search()'.
 	bool remove_satisfied; // Indicates whether possibly inefficient linear scan for satisfied clauses should be performed in 'simplify'.
-	
+
 	ClauseAllocator ca;
 
-    vec<Var>            released_vars;
-    vec<Var>            free_vars;
+	vec<Var>            released_vars;
+	vec<Var>            free_vars;
 
 	// Temporaries (to reduce allocation overhead). Each variable is prefixed by the method in which it is
 	// used, exept 'seen' wich is used in several places.
@@ -751,6 +755,13 @@ protected:
 	//(In reality, the clause may be added to the database sometime later)
 	void addClauseSafely(vec<Lit> & ps);
 public:
+
+	void setTheoriesEnabled(bool enableTheories){
+		disable_theories = !enableTheories;
+	}
+	bool theoriesEnabled()const{
+		return !disable_theories;
+	}
 	void cancelUntil(int level);                                             // Backtrack until a certain level.
 	inline void needsPropagation(int theoryID){
 		if (!in_theory_queue[theoryID]) {
@@ -807,7 +818,7 @@ protected:
 
 			if(opt_vsids_both){
 				for (int i = 0; i < nVars(); i++)
-						activity[i] *= 1e-100;
+					activity[i] *= 1e-100;
 				var_inc *= 1e-100;
 			}
 		}
@@ -832,21 +843,28 @@ protected:
 	void removeClause(CRef cr);               // Detach and free a clause.
 	bool locked(const Clause& c) const; // Returns TRUE if a clause is a reason for some implication in the current state.
 	bool satisfied(const Clause& c) const; // Returns TRUE if a clause is satisfied in the current state.
-			
+
 	void relocAll(ClauseAllocator& to);
 public:
 	// Misc:
 	//
 	int decisionLevel() const; // Gives the current decisionlevel.
 	uint32_t abstractLevel(Var x) const; // Used to represent an abstraction of sets of decision levels.
-			
+
 	CRef reason(Var x) const;
 	int level(Var x) const;
 	double progressEstimate() const; // DELETE THIS ?? IT'S NOT VERY USEFUL ...
 
-	 bool isConstant(Var v)const{
-		 return value(v)!=l_Undef && (level(v)==0);
-	 }
+	bool isConstant(Var v)const{
+		return value(v)!=l_Undef && (level(v)==0);
+	}
+
+	// Iterate over clauses and top-level assignments:
+	ClauseIterator clausesBegin() const;
+	ClauseIterator clausesEnd()   const;
+	TrailIterator  trailBegin()   const;
+	TrailIterator  trailEnd  ()   const;
+
 
 private:
 	bool withinBudget() const;
@@ -856,7 +874,7 @@ private:
 	// Static helpers:
 	//
 	inline void toSuper(const vec<Lit> & from, vec<Lit> & to) {
-		
+
 		to.growTo(from.size());
 		to.shrink(to.size() - from.size());
 		for (int i = 0; i < from.size(); i++) {
@@ -866,7 +884,7 @@ private:
 			assert(super_interface(to[i]));
 		}
 	}
-	
+
 	inline Var toSuper(Var p) {
 		assert(p < nVars());
 		assert(local_interface(p));
@@ -875,11 +893,11 @@ private:
 		assert(super_interface(v));
 		return v;
 	}
-	
+
 	inline Lit toSuper(Lit p) {
 		assert(var(p) < nVars());
 		assert(local_interface(p));
-		
+
 		Lit l = mkLit(var(p) + super_offset, sign(p));
 		assert(var(l) < S->nVars());
 		assert(super_interface(l));
@@ -888,7 +906,7 @@ private:
 	inline Var fromSuper(Var p) {
 		return p - super_offset;
 	}
-	
+
 	inline Lit fromSuper(Lit p) {
 		return mkLit(var(p) - super_offset, sign(p));
 	}
@@ -904,7 +922,7 @@ private:
 	inline bool super_interface(Var v) const {
 		return v >= min_super && v <= max_super;
 	}
-	
+
 	class SolverDecisionTheory:public Theory{
 		//This is a stub theory solver, that is only used to conveniently allow the main solver to make Boolean-decisions
 		//as part of the theory decision process, if opt_vsids_solver_as_theory is used
@@ -942,7 +960,7 @@ private:
 			return true;
 		}
 	};
-	
+
 };
 
 //=================================================================================================
@@ -979,7 +997,7 @@ inline void Solver::varBumpActivity(Var v, double inc) {
 			theory_inc *= 1e-100;
 		}
 	}
-	
+
 	// Update order_heap with respect to new activity:
 	if (order_heap.inHeap(v))
 		order_heap.decrease(v);
@@ -1013,25 +1031,30 @@ inline bool Solver::enqueue(Lit p, CRef from) {
 	return value(p) != l_Undef ? value(p) != l_False : (uncheckedEnqueue(p, from), true);
 }
 inline bool Solver::addClause(const vec<Lit>& ps) {
+	cancelUntil(0);
 	ps.copyTo(add_tmp);
 	return addClause_(add_tmp);
 }
 inline bool Solver::addEmptyClause() {
+	cancelUntil(0);
 	add_tmp.clear();
 	return addClause_(add_tmp);
 }
 inline bool Solver::addClause(Lit p) {
+	cancelUntil(0);
 	add_tmp.clear();
 	add_tmp.push(p);
 	return addClause_(add_tmp);
 }
 inline bool Solver::addClause(Lit p, Lit q) {
+	cancelUntil(0);
 	add_tmp.clear();
 	add_tmp.push(p);
 	add_tmp.push(q);
 	return addClause_(add_tmp);
 }
 inline bool Solver::addClause(Lit p, Lit q, Lit r) {
+	cancelUntil(0);
 	add_tmp.clear();
 	add_tmp.push(p);
 	add_tmp.push(q);
@@ -1082,10 +1105,13 @@ inline int Solver::nVars() const {
 	return vardata.size();
 }
 inline int Solver::nUnassignedVars() const {
-	return (int) dec_vars - trail.size();
+	return (int) nVars() - free_vars.size() - trail.size();
 }
 inline int Solver::nFreeVars() const {
 	return (int) dec_vars - ((trail_lim.size() == 0) ? trail.size() : trail_lim[0]);
+}
+inline bool Solver::hasNextDecision()const{
+	return !order_heap.empty();
 }
 inline void Solver::setPolarity(Var v, bool b) {
 	polarity[v] = b;
@@ -1095,7 +1121,7 @@ inline void Solver::setDecisionVar(Var v, bool b) {
 		dec_vars++;
 	else if (!b && decision[v])
 		dec_vars--;
-	
+
 	decision[v] = b;
 	insertVarOrder(v);
 }
@@ -1131,7 +1157,7 @@ inline void Solver::budgetOff() {
 }
 inline bool Solver::withinBudget() const {
 	return !asynch_interrupt && (conflict_budget < 0 || conflicts < (uint64_t) conflict_budget)
-			&& (propagation_budget < 0 || propagations < (uint64_t) propagation_budget);
+		   && (propagation_budget < 0 || propagations < (uint64_t) propagation_budget);
 }
 
 // FIXME: after the introduction of asynchronous interrruptions the solve-versions that return a
@@ -1198,6 +1224,11 @@ inline void Solver::toDimacs(const char* file, Lit p, Lit q, Lit r) {
 	as.push(r);
 	toDimacs(file, as);
 }
+inline ClauseIterator Solver::clausesBegin() const { return ClauseIterator(ca, &clauses[0]); }
+inline ClauseIterator Solver::clausesEnd  () const { return ClauseIterator(ca, &clauses[clauses.size()]); }
+inline TrailIterator  Solver::trailBegin  () const { return TrailIterator(&trail[0]); }
+inline TrailIterator  Solver::trailEnd    () const {
+	return TrailIterator(&trail[decisionLevel() == 0 ? trail.size() : trail_lim[0]]); }
 
 //=================================================================================================
 // Debug etc:
