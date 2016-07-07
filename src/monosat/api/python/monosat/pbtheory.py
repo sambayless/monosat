@@ -627,11 +627,11 @@ class MinisatPlus:
         longest_constraint=0
           
         try:
-            minisat_plus_path = shutil.which("minisatpb")
+            minisat_plus_path = shutil.which("monosatpb")
         except:
-            minisat_plus_path = which("minisatpb")
+            minisat_plus_path = which("monosatpb")
         if minisat_plus_path is None:
-            raise RuntimeError("In order to use PB constraints, minisatpb must be installed and on the path (see README).\n")
+            raise RuntimeError("In order to use PB constraints, monosatpb must be installed and on the path (see README).\n")
          
          
         print("Encoding pb constraints using %s using temporary files %s and %s "%(minisat_plus_path,tmpopb,tmpcnf))

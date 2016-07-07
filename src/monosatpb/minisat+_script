@@ -1,0 +1,18 @@
+#!/bin/sh
+
+if [ -L $0 ]; then
+  XDIR=`ls -l --color=no $0 | sed "s%.*-> \(.*\)/.*$%\1%"`
+else
+  XDIR=`echo $0 | sed "s%\(.*\)/.*$%\1%"`
+fi
+
+$XDIR/minisat+_64-bit_static -try "$@"
+EXIT=$?
+
+if [ $EXIT = 5 ]; then
+  echo "c OK -- Running BigNum-version instead..."
+  $XDIR/minisat+_bignum_static* "$@"
+  EXIT=$?
+fi
+exit $EXIT
+

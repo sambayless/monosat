@@ -1,4 +1,4 @@
-#include "minisatpb/Config_pb.h"
+#include "monosatpb/Config_pb.h"
 namespace Monosat {
 namespace PB {
 

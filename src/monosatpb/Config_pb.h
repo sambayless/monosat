@@ -4,8 +4,8 @@
 
 #ifndef MONOSAT_CONFIG_PB_H
 #define MONOSAT_CONFIG_PB_H
-#include "minisatpb/ADTs/Int.h"
-#include "minisatpb/ADTs/Global.h"
+#include "monosatpb/ADTs/Int.h"
+#include "monosatpb/ADTs/Global.h"
 
 namespace Monosat {
 namespace PB {

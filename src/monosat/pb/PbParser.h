@@ -30,7 +30,7 @@
 #include "monosat/core/Config.h"
 #include <sstream>
 #include <set>
-#include "minisatpb/PbSolver.h"
+#include "monosatpb/PbSolver.h"
 
 namespace Monosat {
 

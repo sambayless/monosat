@@ -210,36 +210,36 @@ set(SOURCE_FILES
 
 
 set(SOURCE_FILES_PB
-        src/minisatpb/Config_pb.h
-        src/minisatpb/Config_pb.cpp
-        src/minisatpb/Debug.h
-        src/minisatpb/Debug.cc
-        src/minisatpb/Hardware.h
-        src/minisatpb/Hardware_adders.cc
-        src/minisatpb/Hardware_clausify.cc
-        src/minisatpb/Hardware_sorters.cc
-        src/minisatpb/PbParser.cc
-        src/minisatpb/PbParser.h
-        src/minisatpb/PbSolver.cc
-        src/minisatpb/PbSolver.h
-        src/minisatpb/PbSolver_convert.cc
-        src/minisatpb/PbSolver_convertAdd.cc
-        src/minisatpb/PbSolver_convertBdd.cc
-        src/minisatpb/PbSolver_convertSort.cc
-        src/minisatpb/ADTs/FEnv.h
-        src/minisatpb/ADTs/FEnv.cc
-        src/minisatpb/ADTs/File.h
-        src/minisatpb/ADTs/File.cc
-        src/minisatpb/ADTs/Global.h
-        src/minisatpb/ADTs/Global.cc
-        src/minisatpb/ADTs/Hash_standard.h
-        src/minisatpb/ADTs/Heap.h
-        src/minisatpb/ADTs/Int.h
-        src/minisatpb/ADTs/Map.h
-        src/minisatpb/ADTs/Sort.h
-        src/minisatpb/ADTs/StackAlloc.h
-        src/minisatpb/ADTs/VecAlloc.h
-        src/minisatpb/ADTs/VecMaps.h
+        src/monosatpb/Config_pb.h
+        src/monosatpb/Config_pb.cpp
+        src/monosatpb/Debug.h
+        src/monosatpb/Debug.cc
+        src/monosatpb/Hardware.h
+        src/monosatpb/Hardware_adders.cc
+        src/monosatpb/Hardware_clausify.cc
+        src/monosatpb/Hardware_sorters.cc
+        src/monosatpb/PbParser.cc
+        src/monosatpb/PbParser.h
+        src/monosatpb/PbSolver.cc
+        src/monosatpb/PbSolver.h
+        src/monosatpb/PbSolver_convert.cc
+        src/monosatpb/PbSolver_convertAdd.cc
+        src/monosatpb/PbSolver_convertBdd.cc
+        src/monosatpb/PbSolver_convertSort.cc
+        src/monosatpb/ADTs/FEnv.h
+        src/monosatpb/ADTs/FEnv.cc
+        src/monosatpb/ADTs/File.h
+        src/monosatpb/ADTs/File.cc
+        src/monosatpb/ADTs/Global.h
+        src/monosatpb/ADTs/Global.cc
+        src/monosatpb/ADTs/Hash_standard.h
+        src/monosatpb/ADTs/Heap.h
+        src/monosatpb/ADTs/Int.h
+        src/monosatpb/ADTs/Map.h
+        src/monosatpb/ADTs/Sort.h
+        src/monosatpb/ADTs/StackAlloc.h
+        src/monosatpb/ADTs/VecAlloc.h
+        src/monosatpb/ADTs/VecMaps.h
         )
 
 if (${PB_SUPPORT})
