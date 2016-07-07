@@ -88,23 +88,23 @@ WeightedDistanceDetector<Weight>::WeightedDistanceDetector(int _detectorID, Grap
 	
 	if (opt_conflict_min_cut) {
 		if (mincutalg == MinCutAlg::ALG_EDKARP_DYN) {
-			conflict_flow = new EdmondsKarpDynamic<long>(outer->cutGraph,  source, 0);
+			conflict_flow = new EdmondsKarpDynamic<int64_t>(outer->cutGraph,  source, 0);
 		} else if (mincutalg == MinCutAlg::ALG_EDKARP_ADJ) {
-			conflict_flow = new EdmondsKarpAdj<long>(outer->cutGraph,  source, 0);
+			conflict_flow = new EdmondsKarpAdj<int64_t>(outer->cutGraph,  source, 0);
 		} else if (mincutalg == MinCutAlg::ALG_DINITZ) {
-			conflict_flow = new Dinitz<long>(outer->cutGraph,  source, 0);
+			conflict_flow = new Dinitz<int64_t>(outer->cutGraph,  source, 0);
 		} else if (mincutalg == MinCutAlg::ALG_DINITZ_LINKCUT) {
 			//link-cut tree currently only supports ints
-			conflict_flow = new Dinitz<long>(outer->cutGraph,  source, 0);
+			conflict_flow = new Dinitz<int64_t>(outer->cutGraph,  source, 0);
 			
 		} else if (mincutalg == MinCutAlg::ALG_KOHLI_TORR) {
 			if (opt_use_kt_for_conflicts) {
-				conflict_flow = new KohliTorr<long>(outer->cutGraph, source, 0,
+				conflict_flow = new KohliTorr<int64_t>(outer->cutGraph, source, 0,
 						opt_kt_preserve_order);
 			} else
-				conflict_flow = new EdmondsKarpDynamic<long>(outer->cutGraph,  source, 0);
+				conflict_flow = new EdmondsKarpDynamic<int64_t>(outer->cutGraph,  source, 0);
 		} else {
-			conflict_flow = new EdmondsKarpAdj<long>(outer->cutGraph,  source, 0);
+			conflict_flow = new EdmondsKarpAdj<int64_t>(outer->cutGraph,  source, 0);
 		}
 	}
 
@@ -247,7 +247,7 @@ void WeightedDistanceDetector<Weight>::buildDistanceGTReason(int to, Weight & mi
 	if (!reaches && opt_conflict_min_cut && conflict_flow) {
 		g_over.drawFull();
 		cut.clear();
-		long f;
+		int64_t f;
 		
 		assert(conflict_flow->getSource() == source);
 		conflict_flow->setSink(to);
@@ -1011,7 +1011,7 @@ Lit WeightedDistanceDetector<Weight>::decide() {
 ;
 
 template class Monosat::WeightedDistanceDetector<int> ;
-template class Monosat::WeightedDistanceDetector<long> ;
+template class Monosat::WeightedDistanceDetector<int64_t> ;
 template class Monosat::WeightedDistanceDetector<double> ;
 
 template class Monosat::WeightedDistanceDetector<mpq_class> ;

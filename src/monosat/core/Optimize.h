@@ -33,9 +33,9 @@
 
 namespace Monosat{
 
-long optimize_linear(Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bvTheory,const vec<Lit> & assume,int bvID, bool & hit_cutoff, long & n_solves);
+int64_t optimize_linear(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bvTheory,const vec<Lit> & assume,int bvID, bool & hit_cutoff, int64_t & n_solves);
 
-long optimize_binary(Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bvTheory,const vec<Lit> & assume,int bvID, bool & hit_cutoff, long & n_solves);
+int64_t optimize_binary(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bvTheory,const vec<Lit> & assume,int bvID, bool & hit_cutoff, int64_t & n_solves);
 
 lbool optimize_and_solve(Monosat::SimpSolver & S,const vec<Lit> & assume,const vec<int> & bvs, bool & found_optimal);
 };

@@ -799,7 +799,7 @@ Lit ConnectedComponentsDetector<Weight>::decide() {
 }
 ;
 template class Monosat::ConnectedComponentsDetector<int> ;
-template class Monosat::ConnectedComponentsDetector<long> ;
+template class Monosat::ConnectedComponentsDetector<int64_t> ;
 template class Monosat::ConnectedComponentsDetector<double> ;
 template class Monosat::ConnectedComponentsDetector<mpq_class> ;
 

@@ -136,9 +136,9 @@ public:
 	 * Otherwise, if edge ID is unassigned or true, then edge ID*2 is disabled in the cutgraph, and
 	 * edge ID*2+1 is enabled.
 	 */
-	DynamicGraph<long> cutGraph;
+	DynamicGraph<int64_t> cutGraph;
 
-	/*struct ComparisonStatus{//:public BVTheorySolver<long>::CallBack{
+	/*struct ComparisonStatus{//:public BVTheorySolver<int64_t>::CallBack{
 		GraphTheorySolver & outer;
 
 		void comparisonAltered(int bvID, int comparisonID){

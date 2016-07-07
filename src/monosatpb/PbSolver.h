@@ -81,7 +81,7 @@ public:
 
 class PbSolver {
 protected:
-    SimpSolver sat_solver;     // Underlying SAT solver.
+    SimpSolver & sat_solver;     // Underlying SAT solver.
     vec<Lit> trail;          // Chronological assignment stack.
 
     StackAlloc<char *> mem;            // Used to allocate the 'Linear' constraints stored in 'constrs' (other 'Linear's, such as the goal function, are allocated with 'xmalloc()')
@@ -125,8 +125,8 @@ protected:
     bool convertPbs(bool first_call);   // Called from 'solve()' to convert PB constraints to clauses.
 
 public:
-    PbSolver(bool use_preprocessing = false)
-            : goal(NULL), propQ_head(0)
+    PbSolver(SimpSolver & sat_solver, bool use_preprocessing = false)
+            : sat_solver(sat_solver), goal(NULL), propQ_head(0)
             //, stats(sat_solver.stats_ref())
             , declared_n_vars(-1), declared_n_constrs(-1), best_goalvalue(Int_MAX) {
         // Turn off preprocessing if wanted.

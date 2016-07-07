@@ -34,6 +34,7 @@
 #include "monosat/graph/GraphParser.h"
 #include "monosat/amo/AMOParser.h"
 #include "monosat/core/Optimize.h"
+#include "monosatpb/PbSolver.h"
 #include <csignal>
 #include <iterator>
 using namespace Monosat;
@@ -348,8 +349,9 @@ void printStats(SimpSolver* solver) {
 }
 
 struct MonosatData{
-	Monosat::BVTheorySolver<long> * bv_theory=nullptr;
-	vec< Monosat::GraphTheorySolver<long> *> graphs;
+	Monosat::BVTheorySolver<int64_t> * bv_theory=nullptr;
+	PB::PbSolver * pbsolver=nullptr;
+	vec< Monosat::GraphTheorySolver<int64_t> *> graphs;
 	bool last_solution_optimal=true;
 	bool has_conflict_clause_from_last_solution=false;
 };
@@ -452,9 +454,9 @@ void readGNF(Monosat::SimpSolver * S, const char  * filename){
 
 }
 
-Monosat::GraphTheorySolver<long> *  newGraph(Monosat::SimpSolver * S){
+Monosat::GraphTheorySolver<int64_t> *  newGraph(Monosat::SimpSolver * S){
 	  MonosatData * d = (MonosatData*) S->_external_data;
-	  Monosat::GraphTheorySolver<long> *graph = new Monosat::GraphTheorySolver<long>(S);
+	  Monosat::GraphTheorySolver<int64_t> *graph = new Monosat::GraphTheorySolver<int64_t>(S);
 	  S->addTheory(graph);
 	  d->graphs.push(graph);
 	  if( d->bv_theory){
@@ -466,12 +468,12 @@ Monosat::GraphTheorySolver<long> *  newGraph(Monosat::SimpSolver * S){
 void backtrack(Monosat::SimpSolver * S){
 	S->cancelUntil(0);
 }
-Monosat::BVTheorySolver<long> * initBVTheory(Monosat::SimpSolver * S){
+Monosat::BVTheorySolver<int64_t> * initBVTheory(Monosat::SimpSolver * S){
 	MonosatData * d = (MonosatData*) S->_external_data;
 	if(d->bv_theory)
 		return d->bv_theory;
 
-	  Monosat::BVTheorySolver<long> * bv = new Monosat::BVTheorySolver<long>(S);
+	  Monosat::BVTheorySolver<int64_t> * bv = new Monosat::BVTheorySolver<int64_t>(S);
 
 	  d->bv_theory=bv;
 	  for (auto graph:d->graphs)
@@ -544,7 +546,7 @@ int _solve(Monosat::SimpSolver * S,int * assumptions, int n_assumptions, int * m
 		  if(!S->getBVTheory()){
 			  api_errorf("No bitvector theory created (call initBVTheory())!");
 		  }
-		  if(! ((Monosat::BVTheorySolver<long> *) S->getBVTheory())->hasBV(bvID)){
+		  if(! ((Monosat::BVTheorySolver<int64_t> *) S->getBVTheory())->hasBV(bvID)){
 			  api_errorf("Minimization bitvector %d is not allocated",bvID);
 		  }
 		  bvs.push(bvID);
@@ -646,7 +648,7 @@ int solveAssumptionsLimited_MinBVs(Monosat::SimpSolver * S,int * assumptions, in
  int nClauses(Monosat::SimpSolver * S){
 	 return S->nClauses();
  }
- int nBitvectors(Monosat::SimpSolver * S,Monosat::BVTheorySolver<long> * bv){
+ int nBitvectors(Monosat::SimpSolver * S,Monosat::BVTheorySolver<int64_t> * bv){
 	 return bv->nBitvectors();
  }
 
@@ -672,13 +674,13 @@ int solveAssumptionsLimited_MinBVs(Monosat::SimpSolver * S,int * assumptions, in
  }
 
  //theory interface for bitvectors
- int newBitvector_anon(Monosat::SimpSolver * S,Monosat::BVTheorySolver<long> * bv, int bvWidth){
+ int newBitvector_anon(Monosat::SimpSolver * S,Monosat::BVTheorySolver<int64_t> * bv, int bvWidth){
 	 return bv->newBitvector_Anon(-1,bvWidth).getID();
  }
- int newBitvector_const(Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv, int bvWidth, long constval){
+ int newBitvector_const(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bv, int bvWidth, int64_t constval){
 	 return bv->newBitvector(-1,bvWidth,constval).getID();
  }
- int newBitvector(Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv, int * bits, int n_bits){
+ int newBitvector(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bv, int * bits, int n_bits){
 	  static vec<Var> lits;
 	  lits.clear();
 	  for (int i = 0;i<n_bits;i++){
@@ -688,71 +690,71 @@ int solveAssumptionsLimited_MinBVs(Monosat::SimpSolver * S,int * assumptions, in
 	  bv->newBitvector(bvID,lits);
 	  return bvID;
  }
- int bv_width(Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv,int bvID){
+ int bv_width(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bv,int bvID){
 	 return bv->getWidth(bvID);
  }
- int newBVComparison_const_lt(Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv, int bvID, long weight){
+ int newBVComparison_const_lt(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bv, int bvID, int64_t weight){
 	  Var v = newVar(S);
 	  Lit l =mkLit(v);
 	  bv->newComparison(Monosat::Comparison::lt,bvID,weight,v);
 	  return toInt(l);
  }
- int newBVComparison_bv_lt(Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv, int bvID, int compareID){
+ int newBVComparison_bv_lt(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bv, int bvID, int compareID){
 	  Var v = newVar(S);
 	  Lit l =mkLit(v);
 	  bv->newComparisonBV(Monosat::Comparison::lt,bvID,compareID,v);
 	  return toInt(l);
  }
- int newBVComparison_const_leq(Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv, int bvID, long weight){
+ int newBVComparison_const_leq(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bv, int bvID, int64_t weight){
 	  Var v = newVar(S);
 	  Lit l =mkLit(v);
 	  bv->newComparison(Monosat::Comparison::leq,bvID,weight,v);
 	  return toInt(l);
  }
- int newBVComparison_bv_leq(Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv, int bvID, int compareID){
+ int newBVComparison_bv_leq(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bv, int bvID, int compareID){
 	  Var v = newVar(S);
 	  Lit l =mkLit(v);
 	  bv->newComparisonBV(Monosat::Comparison::leq,bvID,compareID,v);
 	  return toInt(l);
  }
 
- int newBVComparison_const_gt(Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv, int bvID, long weight){
+ int newBVComparison_const_gt(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bv, int bvID, int64_t weight){
 	  Var v = newVar(S);
 	  Lit l =mkLit(v);
 	  bv->newComparison(Monosat::Comparison::gt,bvID,weight,v);
 	  return toInt(l);
  }
- int newBVComparison_bv_gt(Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv, int bvID, int compareID){
+ int newBVComparison_bv_gt(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bv, int bvID, int compareID){
 	  Var v = newVar(S);
 	  Lit l =mkLit(v);
 	  bv->newComparisonBV(Monosat::Comparison::gt,bvID,compareID,v);
 	  return toInt(l);
  }
- int newBVComparison_const_geq(Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv, int bvID, long weight){
+ int newBVComparison_const_geq(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bv, int bvID, int64_t weight){
 	  Var v = newVar(S);
 	  Lit l =mkLit(v);
 	  bv->newComparison(Monosat::Comparison::geq,bvID,weight,v);
 	  return toInt(l);
  }
- int newBVComparison_bv_geq(Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv, int bvID, int compareID){
+ int newBVComparison_bv_geq(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bv, int bvID, int compareID){
 	  Var v = newVar(S);
 	  Lit l =mkLit(v);
 	  bv->newComparisonBV(Monosat::Comparison::geq,bvID,compareID,v);
 	  return toInt(l);
  }
- void bv_min(Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv, int* args, int n_args,int resultID){
+ void bv_min(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bv, int* args, int n_args,int resultID){
 	 vec<int> m_args;
 	 for (int i = 0;i<n_args;i++)
 		 m_args.push(args[i]);
 	 bv->newMinBV(resultID, m_args);
  }
- void bv_max(Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv,  int* args,int n_args, int resultID){
+ void bv_max(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bv,  int* args,int n_args, int resultID){
 	 vec<int> m_args;
 	 for (int i = 0;i<n_args;i++)
 		 m_args.push(args[i]);
 	 bv->newMaxBV(resultID, m_args);
  }
- void bv_popcount(Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv,  int* args,int n_args, int resultID){
+ void bv_popcount(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bv,  int* args,int n_args, int resultID){
 	 vec<int> m_args;
 	 for (int i = 0;i<n_args;i++){
 		 Lit l = toLit(args[i]);
@@ -764,53 +766,53 @@ int solveAssumptionsLimited_MinBVs(Monosat::SimpSolver * S,int * assumptions, in
 	 bv->newPopCountBV(resultID, m_args);
  }
 
- void bv_addition( Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv, int bvID1, int bvID2, int resultID){
+ void bv_addition( Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bv, int bvID1, int bvID2, int resultID){
 	  bv->newAdditionBV(resultID,bvID1,bvID2);
  }
- void bv_subtraction( Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv, int bvID1, int bvID2, int resultID){
+ void bv_subtraction( Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bv, int bvID1, int bvID2, int resultID){
  	  bv->newSubtractionBV(resultID,bvID1,bvID2);
   }
 
-void bv_ite( Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv, int condition_lit,int bvThenID, int bvElseID, int bvResultID){
+void bv_ite( Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bv, int condition_lit,int bvThenID, int bvElseID, int bvResultID){
 	Lit l = toLit(condition_lit);
 	bv->newConditionalBV(l,bvThenID,bvElseID,bvResultID);
 }
 
-void bv_not(Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv,int a,  int out){
+void bv_not(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bv,int a,  int out){
 	//return bv->bitwiseAnd(bv->getBV(a),bv->getBV(b)).getID();
 	bv->bitwiseNot(bv->getBV(a),bv->getBV(out));
 }
 
-void bv_and(Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv,int a, int b, int out){
+void bv_and(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bv,int a, int b, int out){
 	//return bv->bitwiseAnd(bv->getBV(a),bv->getBV(b)).getID();
 	bv->bitwiseAnd(bv->getBV(a),bv->getBV(b),bv->getBV(out));
 }
-void bv_nand( Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv,int a, int b, int out){
+void bv_nand( Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bv,int a, int b, int out){
 	//return bv->bitwiseNand(bv->getBV(a),bv->getBV(b)).getID();
 	bv->bitwiseNand(bv->getBV(a),bv->getBV(b),bv->getBV(out));
 }
-void bv_or( Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv,int a, int b, int out){
+void bv_or( Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bv,int a, int b, int out){
 	//return bv->bitwiseOr(bv->getBV(a),bv->getBV(b)).getID();
 	bv->bitwiseOr(bv->getBV(a),bv->getBV(b),bv->getBV(out));
 }
-void bv_nor( Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv,int a, int b, int out){
+void bv_nor( Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bv,int a, int b, int out){
 	//return bv->bitwiseNor(bv->getBV(a),bv->getBV(b)).getID();
 	bv->bitwiseNor(bv->getBV(a),bv->getBV(b),bv->getBV(out));
 }
-void bv_xor( Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv,int a, int b, int out){
+void bv_xor( Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bv,int a, int b, int out){
 	//return bv->bitwiseXor(bv->getBV(a),bv->getBV(b)).getID();
 	bv->bitwiseXor(bv->getBV(a),bv->getBV(b),bv->getBV(out));
 }
-void bv_xnor( Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv,int a, int b, int out){
+void bv_xnor( Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bv,int a, int b, int out){
 	//return bv->bitwiseXnor(bv->getBV(a),bv->getBV(b)).getID();
 	bv->bitwiseXnor(bv->getBV(a),bv->getBV(b),bv->getBV(out));
 }
 
-void bv_concat( Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv,int aID, int bID, int resultID){
+void bv_concat( Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bv,int aID, int bID, int resultID){
 	bv->concat(bv->getBV(aID), bv->getBV(bID),bv->getBV(resultID));
 }
 
-void bv_slice( Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv,int aID, int lower, int upper, int resultID){
+void bv_slice( Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bv,int aID, int lower, int upper, int resultID){
 	bv->slice(bv->getBV(aID),lower,upper,bv->getBV(resultID));
 }
 
@@ -826,12 +828,38 @@ void bv_slice( Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv,int a
 	 }
  }
 
+void assertPB_lt(Monosat::SimpSolver * S, int rhs, int n_args, int * literals, int * coefficients){
+	if(n_args>0) {
+		MonosatData *d = (MonosatData *) S->_external_data;
+		if (!d->pbsolver) {
+			d->pbsolver = new PB::PbSolver(*S, false);
+		}
+
+		static vec<Lit> lits;
+		lits.clear();
+		for (int i = 0; i < n_args; i++) {
+			lits.push(toLit(literals[i]));
+		}
+		static vec<PB::Int> coefs;
+		coefs.clear();
+		for (int i = 0; i < n_args; i++) {
+			coefs.push(PB::Int(coefficients[i]));
+		}
+/*
+
+		pbsolver->addConstr(ps,
+		const vec<Int> &Cs, Int
+		rhs, int
+		ineq);*/
+	}
+}
+
  //theory interface for graphs
 
- int newNode(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<long> *G){
+ int newNode(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<int64_t> *G){
 	  return G->newNode();
  }
- int newEdge(Monosat::SimpSolver * S, Monosat::GraphTheorySolver<long> *G,int from,int  to,  long weight){
+ int newEdge(Monosat::SimpSolver * S, Monosat::GraphTheorySolver<int64_t> *G,int from,int  to,  int64_t weight){
 	  Var v = newVar(S);
 	  Lit l =mkLit(v);
 	  G->newEdge( from,  to, v,  weight );
@@ -843,112 +871,112 @@ void bv_slice( Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv,int a
 	  G->newEdge( from,  to, v,  weight );
 	  return toInt(l);
 }
- int newEdge_bv(Monosat::SimpSolver * S, Monosat::GraphTheorySolver<long> *G,int from,int  to, int bvID){
+ int newEdge_bv(Monosat::SimpSolver * S, Monosat::GraphTheorySolver<int64_t> *G,int from,int  to, int bvID){
 	  Var v = newVar(S);
 	  Lit l =mkLit(v);
 	  G->newEdgeBV( from,  to, v,  bvID );
 	  return toInt(l);
  }
 
- int reaches(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<long> *G,int from, int to){
+ int reaches(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<int64_t> *G,int from, int to){
 	  Var v = newVar(S);
 	  Lit l =mkLit(v);
 	  G->reaches(from, to, v);
 	  G->implementConstraints();
 	  return toInt(l);
  }
- int shortestPathUnweighted_lt_const(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<long> *G,int from, int to, int steps){
+ int shortestPathUnweighted_lt_const(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<int64_t> *G,int from, int to, int steps){
 	  Var v = newVar(S);
 	  Lit l =mkLit(v);
 	  G->reaches(from, to, v,steps-1);
 	  G->implementConstraints();
 	  return toInt(l);
  }
- int shortestPathUnweighted_leq_const(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<long> *G,int from, int to, int steps){
+ int shortestPathUnweighted_leq_const(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<int64_t> *G,int from, int to, int steps){
 	  Var v = newVar(S);
 	  Lit l =mkLit(v);
 	  G->reaches(from, to, v,steps);
 	  G->implementConstraints();
 	  return toInt(l);
  }
- int shortestPath_lt_const(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<long> *G,int from, int to, long dist){
+ int shortestPath_lt_const(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<int64_t> *G,int from, int to, int64_t dist){
 	  Var v = newVar(S);
 	  Lit l =mkLit(v);
 	  G->distance(from, to, v,dist, false);
 	  G->implementConstraints();
 	  return toInt(l);
  }
- int shortestPath_leq_const(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<long> *G,int from, int to, long dist){
+ int shortestPath_leq_const(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<int64_t> *G,int from, int to, int64_t dist){
 	  Var v = newVar(S);
 	  Lit l =mkLit(v);
 	  G->distance(from, to, v,dist, true);
 	  G->implementConstraints();
 	  return toInt(l);
  }
- int shortestPath_lt_bv(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<long> *G,int from, int to, int bvID){
+ int shortestPath_lt_bv(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<int64_t> *G,int from, int to, int bvID){
 	  Var v = newVar(S);
 	  Lit l =mkLit(v);
 	  G->distanceBV(from,to, v, bvID,false);
 	  G->implementConstraints();
 	  return toInt(l);
  }
- int shortestPath_leq_bv(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<long> *G,int from, int to, int bvID){
+ int shortestPath_leq_bv(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<int64_t> *G,int from, int to, int bvID){
 	  Var v = newVar(S);
 	  Lit l =mkLit(v);
 	  G->distanceBV(from,to, v, bvID,true);
 	  G->implementConstraints();
 	  return toInt(l);
  }
- int maximumFlow_geq(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<long> *G,int source, int sink, long weight){
+ int maximumFlow_geq(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<int64_t> *G,int source, int sink, int64_t weight){
 	  Var v = newVar(S);
 	  Lit l =mkLit(v);
 	  G->maxflow(source, sink, v, weight,true);
 	  G->implementConstraints();
 	  return toInt(l);
  }
- int maximumFlow_gt(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<long> *G,int source, int sink, long weight){
+ int maximumFlow_gt(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<int64_t> *G,int source, int sink, int64_t weight){
 	  Var v = newVar(S);
 	  Lit l =mkLit(v);
 	  G->maxflow(source, sink, v, weight,false);
 	  G->implementConstraints();
 	  return toInt(l);
  }
- int maximumFlow_geq_bv(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<long> *G,int source, int sink, int bvID){
+ int maximumFlow_geq_bv(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<int64_t> *G,int source, int sink, int bvID){
 	  Var v = newVar(S);
 	  Lit l =mkLit(v);
 	  G->maxflowBV(source, sink, v, bvID,true);
 	  G->implementConstraints();
 	  return toInt(l);
  }
- int maximumFlow_gt_bv(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<long> *G,int source, int sink, int bvID){
+ int maximumFlow_gt_bv(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<int64_t> *G,int source, int sink, int bvID){
 	  Var v = newVar(S);
 	  Lit l =mkLit(v);
 	  G->maxflowBV(source, sink, v, bvID,false);
 	  G->implementConstraints();
 	  return toInt(l);
  }
- int minimumSpanningTree_leq(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<long> *G, long weight){
+ int minimumSpanningTree_leq(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<int64_t> *G, int64_t weight){
 	  Var v = newVar(S);
 	  Lit l =mkLit(v);
 	  G->minimumSpanningTree(v, weight,true);
 	  G->implementConstraints();
 	  return toInt(l);
  }
- int minimumSpanningTree_lt(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<long> *G,int source, int sink, long weight){
+ int minimumSpanningTree_lt(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<int64_t> *G,int source, int sink, int64_t weight){
 	  Var v = newVar(S);
 	  Lit l =mkLit(v);
 	  G->minimumSpanningTree(v, weight,false);
 	  G->implementConstraints();
 	  return toInt(l);
  }
- int acyclic_undirected(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<long> *G){
+ int acyclic_undirected(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<int64_t> *G){
 	  Var v = newVar(S);
 	  Lit l =mkLit(v);
 	  G->acyclic(v,false);
 	  G->implementConstraints();
 	  return toInt(l);
  }
- int acyclic_directed(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<long> *G){
+ int acyclic_directed(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<int64_t> *G){
 	  Var v = newVar(S);
 	  Lit l =mkLit(v);
 	  G->acyclic(v,true);
@@ -1015,7 +1043,7 @@ void bv_slice( Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv,int a
 	 }
 	 return toInt(val);//toInt(S->value(toLit(lit)));
  }
- long getModel_BV(Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv, int bvID, bool getMaximumValue){
+ int64_t getModel_BV(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bv, int bvID, bool getMaximumValue){
 	 if(getMaximumValue){
 		 return bv->getOverApprox(bvID);
 	 }else{
@@ -1024,7 +1052,7 @@ void bv_slice( Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv,int a
 
  }
  //graph queries:
- int getModel_Path_Nodes_Length(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<long> *G,int reach_or_distance_literal){
+ int getModel_Path_Nodes_Length(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<int64_t> *G,int reach_or_distance_literal){
  	 Lit l = toLit(reach_or_distance_literal);
  	std::vector<int> store_path;
  	if(! G->getModel_Path(S->getTheoryLit(l),store_path)){
@@ -1033,7 +1061,7 @@ void bv_slice( Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv,int a
  		return store_path.size();
  	}
   }
- int getModel_Path_Nodes(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<long> *G,int reach_or_distance_literal, int store_length, int * store){
+ int getModel_Path_Nodes(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<int64_t> *G,int reach_or_distance_literal, int store_length, int * store){
  	 Lit l = toLit(reach_or_distance_literal);
  	std::vector<int> store_path;
  	if(! G->getModel_Path(S->getTheoryLit(l),store_path)){
@@ -1047,7 +1075,7 @@ void bv_slice( Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv,int a
 		return store_path.size();
  	}
   }
- int getModel_Path_EdgeLits_Length(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<long> *G,int reach_or_distance_literal){
+ int getModel_Path_EdgeLits_Length(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<int64_t> *G,int reach_or_distance_literal){
  	 Lit l = toLit(reach_or_distance_literal);
  	std::vector<Lit> store_path;
  	if(! G->getModel_PathByEdgeLit(S->getTheoryLit(l),store_path)){
@@ -1056,7 +1084,7 @@ void bv_slice( Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv,int a
  		return store_path.size();
  	}
   }
- int getModel_Path_EdgeLits(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<long> *G,int reach_or_distance_literal, int store_length, int * store){
+ int getModel_Path_EdgeLits(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<int64_t> *G,int reach_or_distance_literal, int store_length, int * store){
  	 Lit l = toLit(reach_or_distance_literal);
   	std::vector<Lit> store_path;
  	if(! G->getModel_PathByEdgeLit(S->getTheoryLit(l),store_path)){
@@ -1070,33 +1098,33 @@ void bv_slice( Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv,int a
 		return store_path.size();
  	}
   }
- long getModel_MaxFlow(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<long> *G,int maxflow_literal){
+ int64_t getModel_MaxFlow(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<int64_t> *G,int maxflow_literal){
 	 Lit l = toLit(maxflow_literal);
 	 return G->getModel_MaximumFlow(S->getTheoryLit(l));
  }
- long getModel_EdgeFlow(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<long> *G,int maxflow_literal, int edge_assignment_literal){
+ int64_t getModel_EdgeFlow(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<int64_t> *G,int maxflow_literal, int edge_assignment_literal){
 	 Lit l = toLit(maxflow_literal);
 	 Lit e = toLit(edge_assignment_literal);
 	 return G->getModel_MaximumFlow_EdgeFlow(S->getTheoryLit(l),S->getTheoryLit(e));
  }
- long getModel_AcyclicEdgeFlow(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<long> *G,int maxflow_literal, int edge_assignment_literal){
+ int64_t getModel_AcyclicEdgeFlow(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<int64_t> *G,int maxflow_literal, int edge_assignment_literal){
 	 Lit l = toLit(maxflow_literal);
 	 Lit e = toLit(edge_assignment_literal);
 	 return G->getModel_MaximumFlow_AcyclicEdgeFlow(S->getTheoryLit(l),S->getTheoryLit(e));
  }
 
- long getModel_MinimumSpanningTreeWeight(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<long> *G,int spanning_tree_literal){
+ int64_t getModel_MinimumSpanningTreeWeight(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<int64_t> *G,int spanning_tree_literal){
 	 Lit l = toLit(spanning_tree_literal);
 	 return G->getModel_MinimumSpanningWeight(S->getTheoryLit(l));
  }
 /* //Get the length of a valid path (from a reachability or shortest path constraint)
- long getModel_PathLength(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<long> *G,int reach_or_shortest_path_lit){
+ int64_t getModel_PathLength(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<int64_t> *G,int reach_or_shortest_path_lit){
 	 Lit l = toLit(reach_or_shortest_path_lit);
 	 return G->getModel_PathLength(S->getTheoryLit(l));
  }
  //Get a valid path (from a reachability or shortest path constraint)
  //store_path must point to an array of ints of sufficient length to store the path (the path length can be optained by a call to getModel_PathLength)
- void getModel_Path(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<long> *G,int reach_or_shortest_path_lit, int * store_path){
+ void getModel_Path(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<int64_t> *G,int reach_or_shortest_path_lit, int * store_path){
 	 Lit l = toLit(reach_or_shortest_path_lit);
 	 std::vector<int> path;
 	 G->getModel_Path(S->getTheoryLit(l),path);
@@ -1104,7 +1132,7 @@ void bv_slice( Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv,int a
 		 store_path[i]=path[i];
 	 }
 	 //Returns the number of nodes in the path length for this reachability or shortest path literal (1+number of edges)
-	   int getModel_PathLength(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<long> *G,int reach_or_shortest_path_lit){
+	   int getModel_PathLength(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<int64_t> *G,int reach_or_shortest_path_lit){
 
 	   }
 

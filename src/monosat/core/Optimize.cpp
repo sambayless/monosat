@@ -164,7 +164,7 @@ namespace Optimization{
 	}
 }
 
-long optimize_linear(Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bvTheory,const vec<Lit> & assumes,int bvID, bool & hit_cutoff, long & n_solves){
+int64_t optimize_linear(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bvTheory,const vec<Lit> & assumes,int bvID, bool & hit_cutoff, int64_t & n_solves){
 	hit_cutoff=false;
 	vec<Lit> assume;
 	for(Lit l:assumes)
@@ -180,8 +180,8 @@ long optimize_linear(Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv
 		}
 	}
 
-	long value = bvTheory->getOverApprox(bvID);
-	long last_decision_value=value;
+	int64_t value = bvTheory->getOverApprox(bvID);
+	int64_t last_decision_value=value;
 	  if(opt_verb>=1){
 		  printf("Min bv%d = %ld",bvID,value);
 	  }
@@ -239,7 +239,7 @@ long optimize_linear(Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv
 						throw std::runtime_error("Error in optimization (model is inconsistent with assumptions)");
 					}
 				}
-			  long value2 = bvTheory->getOverApprox(bvID);
+			  int64_t value2 = bvTheory->getOverApprox(bvID);
 			  if(value2>=value){
 					throw std::runtime_error("Error in optimization (minimum values are inconsistent with model)");
 			  }
@@ -280,7 +280,7 @@ long optimize_linear(Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv
 	  return value;
 }
 
-long optimize_binary(Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bvTheory,const vec<Lit> & assumes,int bvID,  bool & hit_cutoff, long & n_solves){
+int64_t optimize_binary(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bvTheory,const vec<Lit> & assumes,int bvID,  bool & hit_cutoff, int64_t & n_solves){
 	hit_cutoff=false;
 	vec<Lit> assume;
 	for(Lit l:assumes)
@@ -296,25 +296,25 @@ long optimize_binary(Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv
 		}
 	}
 
-	  long min_val = bvTheory->getUnderApprox(bvID,true);
-	  long max_val = bvTheory->getOverApprox(bvID);
+	  int64_t min_val = bvTheory->getUnderApprox(bvID,true);
+	  int64_t max_val = bvTheory->getOverApprox(bvID);
 	  if(opt_verb>=1){
 		  printf("Min bv%d = %ld",bvID,max_val);
 	  }
-	  long suggested_next_midpoint = -1;
+	  int64_t suggested_next_midpoint = -1;
 
 		  //try the minimum possible value first, just in case we get lucky.
 		  //it might also be a good idea to try min_val+1, and max_val-1.
 
-	  long underapprox_sat_val =  bvTheory->getUnderApprox(bvID);
+	  int64_t underapprox_sat_val =  bvTheory->getUnderApprox(bvID);
 	  if(underapprox_sat_val<max_val)
 		  suggested_next_midpoint =	underapprox_sat_val;
 
 	  bool first_round=true;
-	  long last_decision_value=max_val;
+	  int64_t last_decision_value=max_val;
 	  Lit last_decision_lit =  bvTheory->toSolver(bvTheory->newComparison(Comparison::leq,bvID,max_val,var_Undef,opt_decide_optimization_lits));
 	  while(min_val < max_val && !hit_cutoff){
-		  long mid_point = min_val + (max_val - min_val) / 2;
+		  int64_t mid_point = min_val + (max_val - min_val) / 2;
 
 		  if(suggested_next_midpoint>=min_val && suggested_next_midpoint<mid_point)
 			  mid_point =	suggested_next_midpoint;
@@ -366,11 +366,11 @@ long optimize_binary(Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bv
 				}
 			  last_decision_lit=decision_lit;
 			  last_decision_value=mid_point;
-			  long new_value = bvTheory->getOverApprox(bvID);
+			  int64_t new_value = bvTheory->getOverApprox(bvID);
 			  if(new_value>=max_val){
 					throw std::runtime_error("Error in optimization (minimum values are inconsistent with model)");
 			  }
-			  long underapprox_sat_val =  bvTheory->getUnderApprox(bvID);
+			  int64_t underapprox_sat_val =  bvTheory->getUnderApprox(bvID);
 			  if(underapprox_sat_val<max_val)
 				  suggested_next_midpoint =	underapprox_sat_val;
 			  assert(new_value<=mid_point);
@@ -475,13 +475,13 @@ lbool optimize_and_solve(SimpSolver & S,const vec<Lit> & assumes,const vec<int> 
 						throw std::runtime_error("Error in optimization (model is inconsistent with assumptions)");
 					}
 				}
-			  Monosat::BVTheorySolver<long> * bvTheory = (Monosat::BVTheorySolver<long> *) S.getBVTheory();
-			  vec<long> min_values;
+			  Monosat::BVTheorySolver<int64_t> * bvTheory = (Monosat::BVTheorySolver<int64_t> *) S.getBVTheory();
+			  vec<int64_t> min_values;
 			  min_values.growTo(bvs.size());
 			  for(int i = 0;i<min_values.size();i++){
 				  min_values[i]=bvTheory->getOverApprox(bvs[i],true);
 			  }
-			  long n_solves = 1;
+			  int64_t n_solves = 1;
 			  bool hit_cutoff=false;
 			  for (int i = 0;i<bvs.size() && !hit_cutoff;i++){
 
@@ -510,8 +510,8 @@ lbool optimize_and_solve(SimpSolver & S,const vec<Lit> & assumes,const vec<int> 
 
 				  for(int j = 0;j<i;j++){
 					  int bvID = bvs[j];
-					  long min_value = min_values[j];
-					  long model_val = bvTheory->getOverApprox(bvID);
+					  int64_t min_value = min_values[j];
+					  int64_t model_val = bvTheory->getOverApprox(bvID);
 					  if(min_value<model_val){
 						  throw std::runtime_error("Error in optimization (minimum values are inconsistent with model for bv " + std::to_string(j) + " (bvid " + std::to_string(bvID) + " ): expected value <= " + std::to_string(min_value) +", found " + std::to_string(model_val) + ")");
 					  }else if (model_val<min_value){
@@ -537,8 +537,8 @@ lbool optimize_and_solve(SimpSolver & S,const vec<Lit> & assumes,const vec<int> 
 			  if(opt_check_solution){
 				  for(int i = 0;i<bvs.size();i++){
 					  int bvID = bvs[i];
-					  long min_value = min_values[i];
-					  long model_val = bvTheory->getOverApprox(bvID);
+					  int64_t min_value = min_values[i];
+					  int64_t model_val = bvTheory->getOverApprox(bvID);
 					  if(min_value<model_val){
 						  throw std::runtime_error("Error in optimization (minimum values are inconsistent with model)");
 					  }

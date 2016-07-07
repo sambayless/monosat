@@ -111,7 +111,7 @@ public:
 	virtual ~BVMap() {
 	}
 	inline int mapBV(Solver & S, int bv){
-		//BVTheorySolver<long>* theory = (BVTheorySolver<long>* )S.getBVTheory();
+		//BVTheorySolver<int64_t>* theory = (BVTheorySolver<int64_t>* )S.getBVTheory();
 		if(!remap_vars)
 			return bv;
 		if(!inBVMap(bv)){

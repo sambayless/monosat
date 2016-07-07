@@ -141,8 +141,8 @@ public:
 	};
 	ReachStatus *positiveReachStatus = nullptr;
 	ReachStatus *negativeReachStatus = nullptr;
-	MaxFlow<long> * conflict_flow = nullptr;
-	std::vector<MaxFlow<long> *> conflict_flows;
+	MaxFlow<int64_t> * conflict_flow = nullptr;
+	std::vector<MaxFlow<int64_t> *> conflict_flows;
 
 	WeightedDijkstra<Weight,double> * rnd_path = nullptr;
 	std::vector<double> rnd_weight;
@@ -158,11 +158,11 @@ public:
 	 WeightedDijkstra<OptimalWeightEdgeStatus> * opt_path;*/
 	Reach * chokepoint_detector = nullptr;
 /*	struct CutStatus {
-		long one = 1;
-		long inf = 0xFFFF;
+		int64_t one = 1;
+		int64_t inf = 0xFFFF;
 		ReachDetector & outer;
 
-		const long &operator [](int id) const {
+		const int64_t &operator [](int id) const {
 			if (id % 2 == 0) {
 				return one;
 			} else {

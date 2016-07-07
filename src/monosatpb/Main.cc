@@ -96,7 +96,8 @@ int main(int argc, char** argv)
     /*DEBUG*/if (argc > 1 && (strcmp(argv[1], "-debug") == 0 || strcmp(argv[1], "--debug") == 0)){ void test(); test(); exit(0); }
 
     parseOptions(argc, argv);
-    pb_solver = new PbSolver(opt_preprocess);
+    SimpSolver S;
+    pb_solver = new PbSolver(S,opt_preprocess);
     signal(SIGINT , SIGINT_handler);
     signal(SIGTERM, SIGTERM_handler);
 

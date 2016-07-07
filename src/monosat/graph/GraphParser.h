@@ -59,8 +59,8 @@ class GraphParser: public Parser<B, Solver> {
 	using Parser<B, Solver>::mapVar;
 	using Parser<B, Solver>::mapBV;
 	bool precise;
-	BVTheorySolver<long>*& bvTheory;
-	vec<GraphTheorySolver<long>*> graphs;
+	BVTheorySolver<int64_t>*& bvTheory;
+	vec<GraphTheorySolver<int64_t>*> graphs;
 	vec<GraphTheorySolver<double>*> graphs_float;
 	vec<GraphTheorySolver<mpq_class>*> graphs_rational;
 
@@ -126,7 +126,7 @@ class GraphParser: public Parser<B, Solver> {
 		Weight weight;
 	};
 
-	vec<Distance<long>> distances_long;
+	vec<Distance<int64_t>> distances_long;
 	vec<Distance<double>> distances_float;
 	vec<Distance<mpq_class>> distances_rational;
 
@@ -140,7 +140,7 @@ class GraphParser: public Parser<B, Solver> {
 		Weight weight;
 	};
 
-	vec<MaxFlow<long>> maxflows_long;
+	vec<MaxFlow<int64_t>> maxflows_long;
 	vec<MaxFlow<double>> maxflows_float;
 	vec<MaxFlow<mpq_class>> maxflows_rational;
 
@@ -166,7 +166,7 @@ class GraphParser: public Parser<B, Solver> {
 		graphs_float.growTo(g + 1);
 		graphs_rational.growTo(g + 1);
 		if (graph_type == GraphType::INTEGER) {
-			GraphTheorySolver<long> *graph = new GraphTheorySolver<long>(&S);
+			GraphTheorySolver<int64_t> *graph = new GraphTheorySolver<int64_t>(&S);
 			graph->newNodes(n);
 			graphs[g] = graph;
 			S.addTheory(graph);
@@ -569,7 +569,7 @@ class GraphParser: public Parser<B, Solver> {
 		
 		reachVar= mapVar(S,reachVar);
 		if (graphs[graphID]) {
-			long maxweight = parseInt(in);
+			int64_t maxweight = parseInt(in);
 			graphs[graphID]->minimumSpanningTree(reachVar, maxweight,inclusive);
 		} else if (graphs_float[graphID]) {
 			//float can be either a plain integer, or a rational (interpreted at floating point precision) in the form '123/456', or a floating point in decimal format
@@ -686,7 +686,7 @@ class GraphParser: public Parser<B, Solver> {
 			int graphID = parseInt(in);
 			int s = parseInt(in);
 			int t = parseInt(in);
-			long flow = parseInt(in); //old maxflow constraints always compared to an int
+			int64_t flow = parseInt(in); //old maxflow constraints always compared to an int
 			int reachVar = parseInt(in) - 1; //note: maximum flow constraint format has been changed since the paper. The order of reachVar and flow after the paper, to allow for non-integer flow constraints.
 			bool inclusive=true;//old maxflow constraints were always inclusive.
 
@@ -736,7 +736,7 @@ class GraphParser: public Parser<B, Solver> {
 		//parse the flow constraint appropriately for the type of the graph:
 
 		if (graphs[graphID]) {
-			long flow = parseInt(in);
+			int64_t flow = parseInt(in);
 
 			maxflows_long.push({graphID,s,t,reachVar,!inclusive,flow});
 			//graphs[graphID]->maxFlow(s, t, flow, reachVar,inclusive);
@@ -999,7 +999,7 @@ class GraphParser: public Parser<B, Solver> {
 	}
 	
 public:
-	GraphParser(bool precise, BVTheorySolver<long>*& bvTheory) :Parser<B, Solver>("Graph"),
+	GraphParser(bool precise, BVTheorySolver<int64_t>*& bvTheory) :Parser<B, Solver>("Graph"),
 			precise(precise),bvTheory(bvTheory) {
 		
 	}

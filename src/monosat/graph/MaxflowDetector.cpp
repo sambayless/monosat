@@ -1933,7 +1933,7 @@ Lit MaxflowDetector<Weight>::decide() {
 ;
 
 template class Monosat::MaxflowDetector<int> ;
-template class Monosat::MaxflowDetector<long> ;
+template class Monosat::MaxflowDetector<int64_t> ;
 template class Monosat::MaxflowDetector<double> ;
 
 template class Monosat::MaxflowDetector<mpq_class> ;
