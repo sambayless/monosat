@@ -21,11 +21,11 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 namespace Monosat {
 namespace PB {
 struct Clausifier {
-    SimpSolver &s;
+    PbSolver &s;
     Monosat::vec<Lit> tmp_clause;
     vec<Formula> tmp_marked;
 
-    Clausifier(SimpSolver &_s) : s(_s) { }
+    Clausifier(PbSolver &_s) : s(_s) { }
 
     static /*WARNING*/ CMap<int> occ;
     static /*WARNING*/ CMap<Var> vmap;
@@ -329,7 +329,7 @@ Lit Clausifier::basicClausify(Formula f) {
 }
 
 
-void clausify(SimpSolver &s, const vec<Formula> &fs, Monosat::vec<Lit> &out) {
+void clausify(PbSolver &s, const vec<Formula> &fs, Monosat::vec<Lit> &out) {
     Clausifier c(s);
 
     for (int i = 0; i < fs.size(); i++)
@@ -344,7 +344,7 @@ void clausify(SimpSolver &s, const vec<Formula> &fs, Monosat::vec<Lit> &out) {
 }
 
 
-void clausify(SimpSolver &s, const vec<Formula> &fs) {
+void clausify(PbSolver &s, const vec<Formula> &fs) {
     Monosat::vec<Lit> out;
     clausify(s, fs, out);
     for (int i = 0; i < out.size(); i++)

@@ -3,7 +3,7 @@ project(monosat)
 
 set (PB_SUPPORT 1)
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wno-unused-variable -Wno-unused-but-set-variable   -Wno-sign-compare  -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DNO_GMP -std=c++11 -Wno-unused-variable -Wno-unused-but-set-variable   -Wno-sign-compare  -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS")
 
 set( CMAKE_VERBOSE_MAKEFILE on )
 
@@ -218,8 +218,6 @@ set(SOURCE_FILES_PB
         src/monosatpb/Hardware_adders.cc
         src/monosatpb/Hardware_clausify.cc
         src/monosatpb/Hardware_sorters.cc
-        src/monosatpb/PbParser.cc
-        src/monosatpb/PbParser.h
         src/monosatpb/PbSolver.cc
         src/monosatpb/PbSolver.h
         src/monosatpb/PbSolver_convert.cc

@@ -27,7 +27,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "monosatpb/ADTs/StackAlloc.h"
 #include "monosatpb/ADTs/Int.h"
 #include "monosatpb/Config_pb.h"
-
+#include <sstream>
 namespace Monosat {
 namespace PB{
 using Monosat::Var;
@@ -88,8 +88,10 @@ public:
 class PbSolver {
 protected:
     SimpSolver & sat_solver;     // Underlying SAT solver.
+    vec<Var> vars;
+    vec<int> var_indices;
     vec<Lit> trail;          // Chronological assignment stack.
-
+    vec<Lit> tmp;
     StackAlloc<char *> mem;            // Used to allocate the 'Linear' constraints stored in 'constrs' (other 'Linear's, such as the goal function, are allocated with 'xmalloc()')
 
 public:
@@ -108,16 +110,7 @@ protected:
 
     void propagate();
 
-    bool addUnit(Lit p) {
-        if (value(p) == l_Undef) trail.push(p);
-        return sat_solver.addClause(p);
-    }
 
-    bool addClause(const vec<Lit> &ps) {
-        tmp_clause.clear();
-        for (int i = 0; i < ps.size(); i++) tmp_clause.push(ps[i]);
-        return sat_solver.addClause_(tmp_clause);
-    }
 
     bool normalizePb(vec<Lit> &ps, vec<Int> &Cs, Int &C);
 
@@ -129,24 +122,93 @@ protected:
     bool rewriteAlmostClauses();
 
     bool convertPbs(bool first_call);   // Called from 'solve()' to convert PB constraints to clauses.
+    /*int getIndex(Var v){
+        assert(v>=0);
+        assert(v<var_indices.size());
+        assert(var_indices[v]>=0);
+        return var_indices[v];
+    }*/
+    /*int getIndex(Lit l){
+        return getIndex(var(l))*2 + sign(l);
+    }*/
+    //put the variable into the pbsolver's namespace
+    Var fromSolver(Var v){
+        return  getPBVar(v);
+    }
+
+    Var toSolver(Var pbVar) const{
+       assert(pbVar<vars.size());
+       assert(pbVar>=0);
+       return vars[pbVar];
+    }
+    Lit fromSolver(Lit l){
+        return mkLit(fromSolver(var(l)),sign(l));
+    }
+
+    Lit toSolver(Lit l) const{
+        return mkLit(toSolver(var(l)),sign(l));
+    }
+    void fromSolver(vec<Lit> & lits){
+        for (int i = 0;i<lits.size();i++){
+            lits[i]=fromSolver(lits[i]);
+        }
+    }
+
+    void toSolver(vec<Lit> & lits) const{
+        for (int i = 0;i<lits.size();i++){
+            lits[i]=toSolver(lits[i]);
+        }
+    }
+    void fromSolver(const vec<Lit> & lits, vec<Lit> & store){
+        store.clear();
+        for (int i = 0;i<lits.size();i++){
+            store.push(fromSolver(lits[i]));
+        }
+    }
+    void toSolver(const vec<Lit> & lits, vec<Lit> & store) const{
+        store.clear();
+        for (int i = 0;i<lits.size();i++){
+            store.push(toSolver(lits[i]));
+        }
+    }
+
 
 public:
-    PbSolver(SimpSolver & sat_solver, bool use_preprocessing = false)
+    PbSolver(SimpSolver & sat_solver)
             : sat_solver(sat_solver), goal(NULL), propQ_head(0)
             //, stats(sat_solver.stats_ref())
             , declared_n_vars(-1), declared_n_constrs(-1), best_goalvalue(Int_MAX) {
-        // Turn off preprocessing if wanted.
-        if (!use_preprocessing)
-            sat_solver.eliminate(true);
-    }
 
+    }
+    Var newVar(bool polarity = true, bool dvar = true){
+        return getPBVar(var_Undef,polarity,dvar);
+    }
+    bool isEliminated(Var v){
+        return sat_solver.isEliminated(toSolver(v));
+    }
+    bool addUnit(Lit p) {
+        if (value(p) == l_Undef) trail.push(p);
+        return sat_solver.addClause(toSolver(p));
+    }
+    bool addClause(Lit p) {
+        if (value(p) == l_Undef) trail.push(p);
+        return sat_solver.addClause(toSolver(p));
+    }
+    bool addClause(const vec<Lit> &ps) {
+        if(ps.size()==1){
+            return addUnit(ps[0]);
+        }
+        tmp_clause.clear();
+        for (int i = 0; i < ps.size(); i++) tmp_clause.push(toSolver(ps[i]));
+        return sat_solver.addClause_(tmp_clause);
+    }
     // Helpers (semi-internal):
     //
-    lbool value(Var x) const { return sat_solver.value(x); }
+    lbool value(Var x) const { return sat_solver.value(toSolver(x)); }
 
-    lbool value(Lit p) const { return sat_solver.value(p); }
+    lbool value(Lit p) const { return sat_solver.value(toSolver(p)); }
 
-    int nVars() const { return sat_solver.nVars(); }
+    int nVars() const { return vars.size(); }
 
     int nConstrs() const { return constrs.size(); }
 
@@ -158,16 +220,16 @@ public:
     int declared_n_constrs;         // Number of constraints declared in file header (-1 = not specified).
     int pb_n_vars;                  // Actual number of variables (before clausification).
     int pb_n_constrs;               // Actual number of constraints (before clausification).
-
-    Map<cchar *, int> name2index;
-    vec<cchar *> index2name;
+    //std::stringstream sstr;
+    //Map<cchar *, int> name2index;
+    //vec<cchar *> index2name;
     vec<bool> best_model;     // Best model found (size is 'pb_n_vars').
     Int best_goalvalue; // Value of goal function for that model (or 'Int_MAX' if no models were found).
 
     // Problem specification:
     //
-    int getVar(cchar *name);
-
+    //int getVar(cchar *name);
+    int getPBVar(Var v=var_Undef,bool polarity = true, bool dvar = true);
     void allocConstrs(int n_vars, int n_constrs);
 
     void addGoal(const vec<Lit> &ps, const vec<Int> &Cs);

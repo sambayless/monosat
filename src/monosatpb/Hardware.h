@@ -35,9 +35,9 @@ void rippleAdder(const vec<Formula> &xs, const vec<Formula> &ys, vec<Formula> &o
 
 void addPb(const vec<Formula> &ps, const vec<Int> &Cs_, vec<Formula> &out, int bits);
 
-void clausify(SimpSolver &s, const vec<Formula> &fs, vec<Lit> &out);
+void clausify(PbSolver &s, const vec<Formula> &fs, vec<Lit> &out);
 
-void clausify(SimpSolver &s, const vec<Formula> &fs);
+void clausify(PbSolver &s, const vec<Formula> &fs);
 }
 }
 

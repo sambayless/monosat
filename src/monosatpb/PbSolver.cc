@@ -28,22 +28,47 @@ using Monosat::vec;
 //=================================================================================================
 // Interface required by parser:
 
-
+/*
 int PbSolver::getVar(cchar *name) {
     int ret;
     if (!name2index.peek(name, ret)) {
         // Create new variable:
-        Var x = index2name.size();
-        index2name.push(xstrdup(name));
+        Var x = sat_solver.newVar();        // (reserve one SAT variable for each PB variable)
+        vars.push(x);
+        var_indices.growTo(x+1,-1);
+        var_indices[x]=vars.size()-1;
+        index2name.growTo(x+1,nullptr);
+        //index2name.size();
+        index2name[x] = xstrdup(name);
         n_occurs.push(0);
         n_occurs.push(0);
         //assigns   .push(toInt(l_Undef));
-        sat_solver.newVar();        // (reserve one SAT variable for each PB variable)
+
         ret = name2index.set(index2name.last(), x);
     }
     return ret;
-}
+}*/
+int PbSolver::getPBVar(Var var,bool polarity, bool dvar) {
+    if(var==var_Undef){
+        var = sat_solver.newVar(polarity,dvar);
+    }
+    var_indices.growTo(var+1,-1);
+    if (var_indices[var]<0) {
+        vars.push(var);
+        var_indices.growTo(var+1,-1);
+        Var x = vars.size()-1;
+        var_indices[var]=x;
 
+        n_occurs.push(0);
+        n_occurs.push(0);
+        //assigns   .push(toInt(l_Undef));
+
+        if(value(x)!=l_Undef){
+            trail.push(mkLit(x,value(x)==l_False));
+        }
+    }
+    return var_indices[var];
+}
 
 void PbSolver::allocConstrs(int n_vars, int n_constrs) {
     declared_n_vars = n_vars;
@@ -51,19 +76,17 @@ void PbSolver::allocConstrs(int n_vars, int n_constrs) {
 }
 
 
-void PbSolver::addGoal(const vec<Lit> &ps, const vec<Int> &Cs) {
-    /**/debug_names = &index2name;
-    //**/reportf("MIN: "); dump(ps, Cs); reportf("\n");
-
-    goal = new(xmalloc<char>(sizeof(Linear) + ps.size() * (sizeof(Lit) + sizeof(Int)))) Linear(ps, Cs, Int_MIN,
+void PbSolver::addGoal(const vec<Lit> &ps_, const vec<Int> &Cs) {
+    tmp.clear();
+    fromSolver(ps_, tmp);
+    goal = new(xmalloc<char>(sizeof(Linear) + tmp.size() * (sizeof(Lit) + sizeof(Int)))) Linear(tmp, Cs, Int_MIN,
                                                                                                Int_MAX);
 }
 
-bool PbSolver::addConstr(const vec<Lit> &ps, const vec<Int> &Cs, Int rhs, int ineq) {
-    //**/debug_names = &index2name;
-    //**/static cchar* ineq_name[5] = { "<", "<=" ,"==", ">=", ">" };
-    //**/reportf("CONSTR: "); dump(ps, Cs, assigns); reportf(" %s ", ineq_name[ineq+2]); dump(rhs); reportf("\n");
-
+bool PbSolver::addConstr(const vec<Lit> &ps_, const vec<Int> &Cs, Int rhs, int ineq) {
+    tmp.clear();
+    fromSolver(ps_, tmp);
+    vec<Lit> & ps = tmp;
     vec<Lit> norm_ps;
     vec<Int> norm_Cs;
     Int norm_rhs;
@@ -414,7 +437,7 @@ bool PbSolver::rewriteAlmostClauses() {
     vec<Int> Cs;
     bool found = false;
     int n_splits = 0;
-    char buf[20];
+    //char buf[20];
 
     if (opt_verbosity >= 1)
         reportf("  -- Clauses(.)/Splits(s): ");
@@ -441,12 +464,11 @@ bool PbSolver::rewriteAlmostClauses() {
 
         } else if (c.size - n >= 3) {
             // Split clause part:
-            if (opt_verbosity >= 1) reportf("s");
+            //if (opt_verbosity >= 1) reportf("s");
             found = true;
-            sprintf(buf, "@split%d", n_splits);
+            //sprintf(buf, "@split%d", n_splits);
             n_splits++;
-            Var x = getVar(buf);
-            assert(x == sat_solver.nVars() - 1);
+            Var x = getPBVar();
             ps.clear();
             ps.push(mkLit(x));
             for (int j = n; j < c.size; j++)
@@ -515,12 +537,12 @@ void PbSolver::solve(solve_Command cmd) {
     // Freeze goal function variables (for SatELite):
     if (goal != NULL) {
         for (int i = 0; i < goal->size; i++)
-            sat_solver.setFrozen(var((*goal)[i]), true);
+            sat_solver.setFrozen(toSolver(var((*goal)[i])), true);
     }
 
     // Solver (optimize):
     //sat_solver.setVerbosity(opt_verbosity);
-    sat_solver.verbosity = opt_verbosity;
+    //sat_solver.verbosity = opt_verbosity;
 
     vec<Lit> goal_ps;
     if (goal != NULL) { for (int i = 0; i < goal->size; i++) goal_ps.push((*goal)[i]); }
@@ -531,7 +553,7 @@ void PbSolver::solve(solve_Command cmd) {
     if (opt_polarity_sug != 0) {
         for (int i = 0; i < goal_Cs.size(); i++) {
             bool dir = goal_Cs[i] * opt_polarity_sug > 0 ? !sign(goal_ps[i]) : sign(goal_ps[i]);
-            sat_solver.setPolarity(var(goal_ps[i]), dir);
+            sat_solver.setPolarity(toSolver(var(goal_ps[i])), dir);
         }
     }
 
@@ -561,18 +583,19 @@ void PbSolver::solve(solve_Command cmd) {
             n_solutions++;
             reportf("MODEL# %d:", n_solutions);
             for (Var x = 0; x < pb_n_vars; x++) {
-                assert(sat_solver.model[x] != l_Undef);
-                ban.push(mkLit(x, sat_solver.model[x] == l_True));
-                reportf(" %s%s", (sat_solver.model[x] == l_False) ? "-" : "", index2name[x]);
+                assert(sat_solver.model[toSolver(x)] != l_Undef);
+                ban.push(mkLit(x, sat_solver.model[toSolver(x)] == l_True));
+                //reportf(" %s%s", (sat_solver.model[x] == l_False) ? "-" : "", index2name[x]);
             }
             reportf("\n");
+            toSolver(ban);
             sat_solver.addClause(ban);
 
         } else {
             best_model.clear();
             for (Var x = 0; x < pb_n_vars; x++)
-                assert(sat_solver.model[x] != l_Undef),
-                        best_model.push(sat_solver.model[x] == l_True);
+                assert(sat_solver.model[toSolver(x)] != l_Undef),
+                        best_model.push(sat_solver.model[toSolver(x)] == l_True);
 
             if (goal == NULL)   // ((fix: moved here Oct 4, 2005))
                 break;

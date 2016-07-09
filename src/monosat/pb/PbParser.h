@@ -73,6 +73,7 @@ public:
 		} else if (match(in, "pb")) {
 			init();
 			readPB(in);
+			return true;
 		}
 		return false;
 	}
@@ -82,6 +83,7 @@ public:
 			skipLine(in);
 			return;
 		}
+		skipWhitespace(in);
 		//pb constraints are in this form:
 		//pb lt rhs <size> lit1 lit2 ... [0 | <n_weights> weight1 weight2 ...]
 		PbTheory::PbType op = PbTheory::PbType::EQ;
@@ -124,11 +126,11 @@ public:
 
 		lits.clear();
 		weights.clear();
+		int rhs = parseInt(in);
 		int size = parseInt(in);
 		if (size <= 0) {
 			parse_errorf("PARSE ERROR! Empty PB clause\n");
 		}
-		int rhs = parseInt(in);
 
 		for (int i = 0; i < size; i++) {
 			int parsed_lit = parseInt(in);

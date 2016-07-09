@@ -1022,28 +1022,53 @@ void flushPB(Monosat::SimpSolver * S){
 	}
 }
 
+const char * ineqToStr(PB::Ineq ineq){
+	switch(ineq){
+		case PB::LT:
+			return "<";
+		case PB::LEQ:
+			return "<=";
+		case PB::EQ:
+			return "==";
+		case PB::GEQ:
+			return ">=";
+		case PB::GT:
+			return ">";
+		default:
+			return "!=";//not supported yet
+	}
+}
+
 void assertPB(Monosat::SimpSolver * S, int _rhs, int n_args, int * literals, int * coefficients, PB::Ineq ineq){
 	if(n_args>0) {
 
 		MonosatData *d = (MonosatData *) S->_external_data;
 
 		//could try to detect if the pb constraint is trivially false or true before creating the pbsolver here...
+		write_out(S,"pb %s %d %d ", ineqToStr(ineq), _rhs, n_args);
+
 
 		if (!d->pbsolver) {
-			d->pbsolver = new PB::PbSolver(*S, false);
+			d->pbsolver = new PB::PbSolver(*S);
 		}
 
 		static vec<Lit> lits;
 		lits.clear();
 		for (int i = 0; i < n_args; i++) {
-			lits.push(toLit(literals[i]));
+			Lit l = toLit(literals[i]);
+			lits.push(l);
+			write_out(S,"%d ", dimacs(l));
 		}
+		write_out(S,"%d ", n_args);
 		static vec<PB::Int> coefs;
 		coefs.clear();
 		for (int i = 0; i < n_args; i++) {
 			coefs.push(PB::Int(coefficients[i]));
+			write_out(S,"%d ", coefficients[i]);
 		}
-		PB::Int rhs = rhs;
+		PB::Int rhs = _rhs;
+
+		write_out(S,"\n");
 
 		d->pbsolver->addConstr(lits, coefs, rhs, ineq);
 	}

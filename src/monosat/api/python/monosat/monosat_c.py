@@ -196,11 +196,11 @@ class Monosat(metaclass=Singleton):
         self.monosat_c.true_lit.restype=c_int 
         
         self.monosat_c.at_most_one.argtypes=[c_solver_p,c_var_p,c_int]
-        self.monosat_c.assertPB_lt.argtypes=[c_solver_p,c_long, c_int, c_int_p, c_long_p]
-        self.monosat_c.assertPB_leq.argtypes=[c_solver_p,c_long, c_int, c_int_p, c_long_p]
-        self.monosat_c.assertPB_eq.argtypes=[c_solver_p,c_long, c_int, c_int_p, c_long_p]
-        self.monosat_c.assertPB_geq.argtypes=[c_solver_p,c_long, c_int, c_int_p, c_long_p]
-        self.monosat_c.assertPB_gt.argtypes=[c_solver_p,c_long, c_int, c_int_p, c_long_p]
+        self.monosat_c.assertPB_lt.argtypes=[c_solver_p,c_int, c_int, c_int_p, c_int_p]
+        self.monosat_c.assertPB_leq.argtypes=[c_solver_p,c_int, c_int, c_int_p, c_int_p]
+        self.monosat_c.assertPB_eq.argtypes=[c_solver_p,c_int, c_int, c_int_p, c_int_p]
+        self.monosat_c.assertPB_geq.argtypes=[c_solver_p,c_int, c_int, c_int_p, c_int_p]
+        self.monosat_c.assertPB_gt.argtypes=[c_solver_p,c_int, c_int, c_int_p, c_int_p]
         self.monosat_c.flushPB.argtypes=[c_solver_p]
 
         self.monosat_c.initBVTheory.argtypes=[c_solver_p];
@@ -697,12 +697,11 @@ class Monosat(metaclass=Singleton):
     def AssertPB(self, lits, coefs, op, rhs):
         self.backtrack()
         lp = self.getIntArray(lits)
-        lp2 = self.getLongArray(coefs)
-        crhs = c_long(rhs)
+        lp2 = self.getIntArray2(coefs)
+        crhs = c_int(rhs)
         assert(len(lits) == len(coefs))
         if self.solver.output:
-            self._echoOutput("pb " + self.pbOpToStr(op) + " %d %d "%(rhs, len(lits))   + " ".join((str(dimacs(c)) for c in lits) + " " + str(len(lits)) + " " +  " ".join((str(w) for w in coefs))
-
+            self._echoOutput("pb " + self.pbOpToStr(op) + " %d %d "%(rhs, len(lits))   + " ".join((str(dimacs(c)) for c in lits)) + " " + str(len(lits)) + " " +  " ".join((str(w) for w in coefs)))
         if op==Ineq.LT:
             self.monosat_c.assertPB_lt(self.solver._ptr,crhs,len(lits),lp,lp2)
         elif op==Ineq.LEQ:
