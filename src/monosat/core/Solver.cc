@@ -31,69 +31,6 @@ using namespace Monosat;
 //=================================================================================================
 // Options:
 // Collected in Config.h
-/*void Solver::test(){
-	printf("testing\n");
-	printf("testing2\n");
-	printf("testing3\n");
-	printf("testing4\n");
-	printf("testing\n");
-	printf("testing\n");
-	printf("testing\n");
-	printf("testing\n");
-	printf("testing\n");
-	printf("testing\n");
-	printf("testing\n");
-	printf("testing5\n");
-	printf("testing\n");
-	printf("testing2\n");
-	printf("testing3\n");
-	printf("testing4\n");
-	printf("testing\n");
-	printf("testing\n");
-	printf("testing\n");
-	printf("testing\n");
-	printf("testing\n");
-	printf("testing\n");
-	printf("testing\n");
-	printf("testing5\n");
-	printf("testing\n");
-	printf("testing2\n");
-	printf("testing3\n");
-	printf("testing4\n");
-	printf("testing\n");
-	printf("testing\n");
-	printf("testing\n");
-	printf("testing\n");
-	printf("testing\n");
-	printf("testing\n");
-	printf("testing\n");
-	printf("testing5\n");
-	printf("testing\n");
-	printf("testing2\n");
-	printf("testing3\n");
-	printf("testing4\n");
-	printf("testing\n");
-	printf("testing\n");
-	printf("testing\n");
-	printf("testing\n");
-	printf("testing\n");
-	printf("testing\n");
-	printf("testing\n");
-	printf("testing5\n");
-	printf("testing\n");
-	printf("testing2\n");
-	printf("testing3\n");
-	printf("testing4\n");
-	printf("testing\n");
-	printf("testing\n");
-	printf("testing\n");
-	printf("testing\n");
-	printf("testing\n");
-	printf("testing\n");
-	printf("testing\n");
-	printf("testing5\n");
-
-}*/
 //=================================================================================================
 // Constructor/Destructor:
 

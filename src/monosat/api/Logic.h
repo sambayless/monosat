@@ -434,20 +434,20 @@ void AssertEqual(Lit a, Lit b, Args... args) {
 }
 
 namespace Internal {
-BVTheorySolver<long> *getBVTheory() {
+BVTheorySolver<int64_t> *getBVTheory() {
     SimpSolver &S = Internal::getCircuit().getSolver();
-    BVTheorySolver<long> *bv = (BVTheorySolver<long> *) S.getBVTheory();
+    BVTheorySolver<int64_t> *bv = (BVTheorySolver<int64_t> *) S.getBVTheory();
     if (!bv) {
-        bv = new BVTheorySolver<long>(&S);
+        bv = new BVTheorySolver<int64_t>(&S);
         S.setBVTheory(bv);//ensure that the solver has a bitvector theory
     }
     return bv;
 }
 }
 
-GraphTheorySolver<long> *newGraph() {
+GraphTheorySolver<int64_t> *newGraph() {
     SimpSolver &S = Internal::getCircuit().getSolver();
-    GraphTheorySolver<long> *G = new GraphTheorySolver<long>(&S);
+    GraphTheorySolver<int64_t> *G = new GraphTheorySolver<int64_t>(&S);
     S.addTheory(G);
     G->setBVTheory(Internal::getBVTheory());//you only need this if you are using weighted edges
     return G;
