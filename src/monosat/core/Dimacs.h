@@ -27,6 +27,7 @@
 #include "monosat/core/Config.h"
 #include "monosat/utils/ParseUtils.h"
 #include "monosat/core/SolverTypes.h"
+#include "monosat/core/Optimize.h"
 #include "monosat/mtl/Vec.h"
 #include <string>
 #include <algorithm>
@@ -187,7 +188,7 @@ class Dimacs :public DimacsMap,public BVMap{
 
 
 public:
-	vec<int> bv_minimize;
+	vec<Objective> objectives;
 	vec<Lit> assumptions;
 
 	Dimacs():DimacsMap(opt_remap_vars),BVMap(opt_remap_vars) {
@@ -267,7 +268,7 @@ private:
 			S.setVarMap(this);
 		}
 		S.cancelUntil(0);
-		bv_minimize.clear();
+		objectives.clear();
 		assumptions.clear();
 		bool solve=false;
 		vec<char> linebuf;
@@ -315,7 +316,7 @@ private:
 				int bvID = parseInt(b);
 				assert(bvID>=0);
 
-				bv_minimize.push(bvID);
+				objectives.push(Objective(bvID,false));
 			}else if (parseLine(b,line_num, S)) {
 				//do nothing
 			} else if (linebuf[0] == 'p') {
@@ -363,10 +364,12 @@ private:
 					exit(1);
 				}
 			}
-			for(int i = 0;i<bv_minimize.size();i++){
-				int bvID = bv_minimize[i];
-				bvID = this->mapBV(S,bvID);
-				bv_minimize[i]=bvID;
+			for(int i = 0;i<objectives.size();i++){
+				if(objectives[i].isBV()) {
+					int bvID = objectives[i].bvID;
+					bvID = this->mapBV(S, bvID);
+					objectives[i].bvID = bvID;
+				}
 			}
 
 		}catch(const parse_error& e){

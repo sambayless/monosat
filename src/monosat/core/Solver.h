@@ -498,6 +498,7 @@ public:
 	int theory_index = 0;
 	Solver * S = nullptr;    							//super solver
 	Theory * bvtheory=nullptr;
+	PB::PBConstraintSolver * pbsolver = nullptr;
 	bool initialPropagate = true;    				//to force propagation to occur at least once to the theory solvers
 	int super_qhead = 0;
 	int local_qhead = 0;
@@ -732,8 +733,11 @@ public:
 	void setBVTheory(Theory * t){
 		bvtheory=t;
 	}
-	Theory * getBVTheory(){
+	Theory * getBVTheory() override{
 		return bvtheory;
+	}
+	PB::PBConstraintSolver * getPB()override{
+		return pbsolver;
 	}
 	double & getRandomSeed()override{
 		return random_seed;

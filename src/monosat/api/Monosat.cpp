@@ -525,7 +525,7 @@ void readGNF(Monosat::SimpSolver * S, const char  * filename){
 		for(Lit l:parser.assumptions){
 			assumps.push(toInt(l));
 		}
-		solveAssumptions_MinBVs(S,&assumps[0],assumps.size(),&parser.bv_minimize[0],parser.bv_minimize.size());
+		solveAssumptions_MinBVs(S,&assumps[0],assumps.size(),&parser.objectives[0],parser.objectives.size());
 		if(*strm==EOF){
 			ran_last_solve=true;
 		}
@@ -535,7 +535,7 @@ void readGNF(Monosat::SimpSolver * S, const char  * filename){
 		for(Lit l:parser.assumptions){
 			assumps.push(toInt(l));
 		}
-		solveAssumptions_MinBVs(S,&assumps[0],assumps.size(),&parser.bv_minimize[0],parser.bv_minimize.size());
+		solveAssumptions_MinBVs(S,&assumps[0],assumps.size(),&parser.objectives[0],parser.objectives.size());
 	}
 
 
@@ -644,7 +644,7 @@ int _solve(Monosat::SimpSolver * S,int * assumptions, int n_assumptions, int * m
 		S->eliminate(false);//should this really be set to disable future preprocessing here?
 	 }*/
 
-	vec<int> bvs;//bit vectors to minimize
+	vec<Objective> objectives;//bit vectors to minimize
 	for (int i = 0;i<n_minimize_bvs;i++){
 		int bvID = minimize_bvs[i];
 		if(!S->getBVTheory()){
@@ -653,13 +653,13 @@ int _solve(Monosat::SimpSolver * S,int * assumptions, int n_assumptions, int * m
 		if(! ((Monosat::BVTheorySolver<int64_t> *) S->getBVTheory())->hasBV(bvID)){
 			api_errorf("Minimization bitvector %d is not allocated",bvID);
 		}
-		bvs.push(bvID);
+		objectives.push(Objective(bvID,false));
 	}
 
 	if (d->pbsolver) {
 		d->pbsolver->convert();
 	}
-	lbool r = optimize_and_solve(*S, assume,bvs,opt_pre,found_optimal);
+	lbool r = optimize_and_solve(*S, assume,objectives,opt_pre,found_optimal);
 	d->last_solution_optimal=found_optimal;
 	if(r==l_False){
 		d->has_conflict_clause_from_last_solution=true;

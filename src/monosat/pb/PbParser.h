@@ -31,7 +31,7 @@
 #include <sstream>
 #include <set>
 #include "monosatpb/PbSolver.h"
-
+#include "monosat/pb/Pb.h"
 namespace Monosat {
 
 

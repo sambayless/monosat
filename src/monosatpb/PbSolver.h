@@ -27,6 +27,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "monosatpb/ADTs/StackAlloc.h"
 #include "monosatpb/ADTs/Int.h"
 #include "monosatpb/Config_pb.h"
+#include "monosat/pb/Pb.h"
 #include <sstream>
 namespace Monosat {
 namespace PB{
@@ -42,13 +43,7 @@ using Monosat::l_True;
 using Monosat::var_Undef;*/
 //=================================================================================================
 // Linear -- a class for storing pseudo-boolean constraints:
-enum Ineq{
-    LT = -2,
-    LEQ = -1,
-    EQ = 0,
-    GEQ = 1,
-    GT = 2
-};
+
 
 class Linear {
     int orig_size;  // Allocated terms in constraint.
@@ -85,7 +80,7 @@ public:
 // PbSolver -- Pseudo-boolean solver (linear boolean constraints):
 
 
-class PbSolver {
+class PbSolver : public PBConstraintSolver {
 protected:
     SimpSolver & sat_solver;     // Underlying SAT solver.
     vec<Var> vars;
@@ -215,7 +210,7 @@ public:
     // Public variables:
     //BasicSolverStats& stats;
     void printStats();
-
+    vec<Int> tmp_weights;
     int declared_n_vars;            // Number of variables declared in file header (-1 = not specified).
     int declared_n_constrs;         // Number of constraints declared in file header (-1 = not specified).
     int pb_n_vars;                  // Actual number of variables (before clausification).
@@ -233,10 +228,20 @@ public:
     void allocConstrs(int n_vars, int n_constrs);
 
     void addGoal(const vec<Lit> &ps, const vec<Int> &Cs);
-
-
+    Lit addConditionalConstr(const vec<Lit> &ps, const vec<int> &Cs, int rhs, Ineq ineq, Lit cond)override{
+        return cond;//todo
+    }
+    bool addConstr(const vec<Lit> &ps, const vec<int> &Cs, int rhs, Ineq ineq)override{
+        tmp_weights.clear();
+        for(int w:Cs){
+            tmp_weights.push((Int)w);
+        }
+         return addConstr(ps,tmp_weights,(Int)rhs,(int)ineq);
+    }
     bool addConstr(const vec<Lit> &ps, const vec<Int> &Cs, Int rhs, int ineq);
-    bool addConstr(const vec<Lit> &ps, const vec<Int> &Cs, Int rhs, Ineq ineq){
+
+
+    bool addConstr(const vec<Lit> &ps, const vec<Int> &Cs, Int rhs, Ineq ineq) {
         return addConstr(ps,Cs,rhs,(int)ineq);
     }
     // Solve:
