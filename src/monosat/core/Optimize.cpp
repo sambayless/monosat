@@ -747,7 +747,7 @@ lbool optimize_and_solve(SimpSolver & S,const vec<Lit> & assumes,const vec<Objec
 		bool any_pb=false;
 		bool any_bv = false;
 		for(Objective & o:objectives){
-			any_pb|= o.isPB();
+			any_pb|= (o.isPB() && o.pb_lits.size()>0 ); //don't need to create the pb theory solver if there is only 1 lit
 			any_bv|= o.isBV();
 		}
 
@@ -823,7 +823,6 @@ lbool optimize_and_solve(SimpSolver & S,const vec<Lit> & assumes,const vec<Objec
 					}
 
 				}else{
-
 
 					if (opt_verb >= 1) {
 						printf("Minimizing pb (%d of %d)\n", i + 1, objectives.size());

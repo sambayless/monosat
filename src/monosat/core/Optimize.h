@@ -50,6 +50,10 @@ struct Objective{
     bool isBV()const{
         return type == Type::PB;
     }
+    Objective(const Objective & from):maximize(from.maximize), type(from.type),bvID(from.bvID){
+        from.pb_lits.copyTo(pb_lits);
+        from.pb_weights.copyTo(pb_weights);
+    }
 
     Objective(Objective && from):maximize(from.maximize), type(from.type),bvID(from.bvID){
         from.pb_lits.copyTo(pb_lits);
@@ -71,7 +75,8 @@ struct Objective{
             from.bvID=-1;
         }
     }
-
+    Objective():maximize(false),type(Type::BV),bvID(-1){
+    }
     Objective(int bvID, bool maximize):maximize(maximize),type(Type::BV),bvID(bvID){
     }
     Objective(const vec<Lit> & lits, bool maximize):maximize(maximize),type(Type::PB),bvID(-1){

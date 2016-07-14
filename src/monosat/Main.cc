@@ -636,7 +636,7 @@ int main(int argc, char** argv) {
 				}
 				optimize_and_solve(S,parser.assumptions,parser.objectives,false, found_optimal);
 			}else{
-				parser.assumptions.clear();parser.bv_minimize.clear();
+				parser.assumptions.clear();
 			}
 		}
 		gzclose(in);
@@ -689,7 +689,7 @@ int main(int argc, char** argv) {
 
 
 
-		lbool ret = optimize_and_solve(S,parser.assumptions,parser.bv_minimize,false,found_optimal);
+		lbool ret = optimize_and_solve(S,parser.assumptions,parser.objectives,false,found_optimal);
 		double solving_time = rtime(0) - after_preprocessing;
 		if (opt_verb > 0) {
 			printf("Solving time = %f\n", solving_time);

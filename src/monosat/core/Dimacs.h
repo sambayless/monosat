@@ -310,6 +310,8 @@ private:
 				}
 				solves++;
 				solve=true;
+			}else if (match(b,"clear_opt")) {
+				objectives.clear();
 			}else if (match(b,"minimize bv")){
 				//fprintf(stderr,"minimize statements not yet supported\n");
 				skipWhitespace(b);
@@ -317,6 +319,69 @@ private:
 				assert(bvID>=0);
 
 				objectives.push(Objective(bvID,false));
+			}else if (match(b,"maximize bv")){
+				//fprintf(stderr,"minimize statements not yet supported\n");
+				skipWhitespace(b);
+				int bvID = parseInt(b);
+				assert(bvID>=0);
+
+				objectives.push(Objective(bvID,true));
+			}else if (match(b,"maximize lits")){
+				//fprintf(stderr,"minimize statements not yet supported\n");
+				skipWhitespace(b);
+				objectives.push();
+				objectives.last().type = Objective::Type::PB;
+				objectives.last().maximize=true;
+				int n_lits = parseInt(b);
+				for (int i = 0;i<n_lits;i++) {
+					int parsed_lit = parseInt(in);
+					if(parsed_lit==0){
+						parse_errorf("Bad literal: 0\n");
+					}
+					Var var = abs(parsed_lit) - 1;
+					var = mapVar(S,var);
+					objectives.last().pb_lits.push((parsed_lit > 0) ? mkLit(var) : ~mkLit(var));
+				}
+
+				while (true) {
+					int weight = parseInt(in);
+					if (weight == 0)
+						break;
+					objectives.last().pb_weights.push(weight);
+				}
+
+				if (objectives.last().pb_weights.size()>objectives.last().pb_lits.size()){
+					objectives.last().pb_weights.shrink(objectives.last().pb_weights.size()- objectives.last().pb_lits.size());
+				}
+				objectives.last().pb_weights.growTo(objectives.last().pb_weights.size(),1);
+			}else if (match(b,"minimize lits")){
+				//fprintf(stderr,"minimize statements not yet supported\n");
+				skipWhitespace(b);
+				objectives.push();
+				objectives.last().type = Objective::Type::PB;
+				objectives.last().maximize=false;
+				int n_lits = parseInt(b);
+				for (int i = 0;i<n_lits;i++) {
+					int parsed_lit = parseInt(in);
+					if(parsed_lit==0){
+						parse_errorf("Bad literal: 0\n");
+					}
+					Var var = abs(parsed_lit) - 1;
+					var = mapVar(S,var);
+					objectives.last().pb_lits.push((parsed_lit > 0) ? mkLit(var) : ~mkLit(var));
+				}
+
+				while (true) {
+					int weight = parseInt(in);
+					if (weight == 0)
+						break;
+					objectives.last().pb_weights.push(weight);
+				}
+
+				if (objectives.last().pb_weights.size()>objectives.last().pb_lits.size()){
+					objectives.last().pb_weights.shrink(objectives.last().pb_weights.size()- objectives.last().pb_lits.size());
+				}
+				objectives.last().pb_weights.growTo(objectives.last().pb_weights.size(),1);
 			}else if (parseLine(b,line_num, S)) {
 				//do nothing
 			} else if (linebuf[0] == 'p') {

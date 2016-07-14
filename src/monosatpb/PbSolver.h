@@ -221,6 +221,9 @@ public:
     vec<bool> best_model;     // Best model found (size is 'pb_n_vars').
     Int best_goalvalue; // Value of goal function for that model (or 'Int_MAX' if no models were found).
 
+    vec<Lit> tmp_cond_lits;
+    vec<Int> tmp_cond_coefs;
+
     // Problem specification:
     //
     //int getVar(cchar *name);
@@ -228,8 +231,63 @@ public:
     void allocConstrs(int n_vars, int n_constrs);
 
     void addGoal(const vec<Lit> &ps, const vec<Int> &Cs);
-    Lit addConditionalConstr(const vec<Lit> &ps, const vec<int> &Cs, int rhs, Ineq ineq, Lit cond)override{
-        return cond;//todo
+    Lit addConditionalConstr(const vec<Lit> &ps, const vec<int> &cs, int rhs, Ineq ineq, Lit cond)override{
+
+        //Create a one-sided pb constraint that is enforced only if 'cond' is True, and is unenforced (has no effect) if cond is false.
+        //since minisat+ doesn't have native support for such constraints, I'm simulating this by adding an extra, weighted
+        //literal that is sufficient to satisfy the constraint if true.
+        //If anyone knows a better way to do this, I've be grateful.
+
+        if(cond==lit_Undef){
+            cond = mkLit(sat_solver.newVar());
+        }
+        getPBVar(var(cond));
+
+        if(ineq==Ineq::EQ){
+            addConditionalConstr(ps,cs,rhs,Ineq::GEQ,cond);
+            addConditionalConstr(ps,cs,rhs,Ineq::LEQ,cond);
+            return cond;
+        }
+
+        tmp_cond_lits.clear();
+        ps.copyTo(tmp_cond_lits);
+        tmp_cond_coefs.clear();
+        for(int w:cs){
+            tmp_cond_coefs.push((Int)w);
+        }
+
+        Int sum = Int(0);
+        if(ineq==Ineq::LEQ || ineq == Ineq::LT){
+            for (Int & w:tmp_cond_coefs){
+                if(w>0) {
+                    sum += w;
+                }
+            }
+            assert(sum>=0);
+            if (rhs<0){
+                sum+=-rhs;
+            }
+            assert(sum>=0);
+            if(ineq==Ineq::LT)
+                sum+=1;
+            sum = -sum;
+        }else if(ineq==Ineq::GEQ || ineq == Ineq::GT){
+            for (Int & w:tmp_cond_coefs){
+                if(w<0) {
+                    sum += -w;
+                }
+            }
+            assert(sum>=0);
+            if (rhs>0){
+                sum+=rhs;
+            }
+            assert(sum>=0);
+            if(ineq==Ineq::GT)
+                sum+=1;
+        }
+        tmp_cond_lits.push(cond);
+        tmp_cond_coefs.push(sum);
+        return cond;
     }
     bool addConstr(const vec<Lit> &ps, const vec<int> &Cs, int rhs, Ineq ineq)override{
         tmp_weights.clear();

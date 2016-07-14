@@ -78,7 +78,7 @@ typedef int Var;
   bool solve(SolverPtr S);
   bool solveAssumptions(SolverPtr S,int * assumptions, int n_assumptions);
   //Solve under assumptions, and also minimize a set of BVs (in order of precedence)
-  bool solveAssumptions_MinBVs(SolverPtr S,int * assumptions, int n_assumptions, int * minimize_bvs, int n_minimize_bvs);
+  //bool solveAssumptions_MinBVs(SolverPtr S,int * assumptions, int n_assumptions, int * minimize_bvs, int n_minimize_bvs);
 
   //Sets the (approximate) time limit in seconds before returning l_Undef from solveLimited; ignored by solve(). Set to <0 to disable time limit.
   void setTimeLimit(SolverPtr S,int seconds);
@@ -96,7 +96,7 @@ typedef int Var;
 
   //Solve under assumptions, and also minimize a set of BVs (in order of precedence)
   //Returns 0 for satisfiable, 1 for proved unsatisfiable, 2 for failed to find a solution (within any resource limits that have been set)
-  int solveAssumptionsLimited_MinBVs(SolverPtr S,int * assumptions, int n_assumptions, int * minimize_bvs, int n_minimize_bvs);
+  //int solveAssumptionsLimited_MinBVs(SolverPtr S,int * assumptions, int n_assumptions, int * minimize_bvs, int n_minimize_bvs);
 
   bool lastSolutionWasOptimal(SolverPtr S);
 
@@ -132,7 +132,18 @@ typedef int Var;
   bool addUnitClause(SolverPtr S,int lit);
   bool addBinaryClause(SolverPtr S,int lit1, int lit2);
   bool addTertiaryClause(SolverPtr S,int lit1, int lit2, int lit3);
-  //theory interface for bitvectors
+
+  //remove any optimization objectives from the solver
+  void clearOptimizationObjectives(SolverPtr S);
+
+  void maximizeBV(SolverPtr S,  BVTheoryPtr bv, int bvID);
+  void minimizeBV(SolverPtr S,  BVTheoryPtr bv, int bvID);
+  void maximizeLits(SolverPtr S, int * lits, int n_lits);
+  void minimizeLits(SolverPtr S, int * lits, int n_lits);
+  void maximizeWeightedLits(SolverPtr S, int * lits, int * weights, int n_lits);
+  void minimizeWeightedLits(SolverPtr S, int * lits, int * weights, int n_lits);
+
+//theory interface for bitvectors
   BVTheoryPtr initBVTheory(SolverPtr S);
   int newBitvector_const(SolverPtr S, BVTheoryPtr bv, int bvWidth, int64_t constval);
   int newBitvector_anon(SolverPtr S, BVTheoryPtr bv, int bvWidth);
