@@ -353,7 +353,7 @@ private:
 				if (objectives.last().pb_weights.size()>objectives.last().pb_lits.size()){
 					objectives.last().pb_weights.shrink(objectives.last().pb_weights.size()- objectives.last().pb_lits.size());
 				}
-				objectives.last().pb_weights.growTo(objectives.last().pb_weights.size(),1);
+				objectives.last().pb_weights.growTo(objectives.last().pb_lits.size(),1);
 			}else if (match(b,"minimize lits")){
 				//fprintf(stderr,"minimize statements not yet supported\n");
 				skipWhitespace(b);
@@ -381,7 +381,7 @@ private:
 				if (objectives.last().pb_weights.size()>objectives.last().pb_lits.size()){
 					objectives.last().pb_weights.shrink(objectives.last().pb_weights.size()- objectives.last().pb_lits.size());
 				}
-				objectives.last().pb_weights.growTo(objectives.last().pb_weights.size(),1);
+				objectives.last().pb_weights.growTo(objectives.last().pb_lits.size(),1);
 			}else if (parseLine(b,line_num, S)) {
 				//do nothing
 			} else if (linebuf[0] == 'p') {
