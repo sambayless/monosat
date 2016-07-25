@@ -52,6 +52,8 @@ c_long_p = POINTER(c_long)
 c_solver_p = c_void_p
 c_graph_p = c_void_p
 c_bv_p = c_void_p
+c_fsm_theory_p = c_void_p
+c_fsm_p = c_void_p
 
 c_literal = c_int
 c_literal_p = c_int_p
@@ -134,9 +136,7 @@ class Monosat(metaclass=Singleton):
         
         self.monosat_c.solveAssumptions.argtypes=[c_solver_p,c_literal_p,c_int]
         self.monosat_c.solveAssumptions.restype=c_bool       
-        
-        self.monosat_c.solveAssumptions_MinBVs.argtypes=[c_solver_p,c_literal_p,c_int,c_int_p,c_int]
-        self.monosat_c.solveAssumptions_MinBVs.restype=c_bool       
+
 
         self.monosat_c.solveLimited.argtypes=[c_solver_p]
         self.monosat_c.solveLimited.restype=c_int       
@@ -144,8 +144,7 @@ class Monosat(metaclass=Singleton):
         self.monosat_c.solveAssumptionsLimited.argtypes=[c_solver_p,c_literal_p,c_int]
         self.monosat_c.solveAssumptionsLimited.restype=c_int      
 
-        self.monosat_c.solveAssumptionsLimited_MinBVs.argtypes=[c_solver_p,c_literal_p,c_int,c_int_p,c_int]
-        self.monosat_c.solveAssumptionsLimited_MinBVs.restype=c_int  
+
         
         
         self.monosat_c.getConflictClause.argtypes=[c_solver_p, c_int_p,c_int]
@@ -193,8 +192,17 @@ class Monosat(metaclass=Singleton):
         self.monosat_c.addTertiaryClause.restype=c_bool
         
         self.monosat_c.true_lit.argtypes=[c_solver_p]
-        self.monosat_c.true_lit.restype=c_int 
-        
+        self.monosat_c.true_lit.restype=c_int
+
+        self.monosat_c.clearOptimizationObjectives.argtypes=[c_solver_p]
+        self.monosat_c.maximizeBV.argtypes=[c_solver_p,c_bv_p, c_int]
+        self.monosat_c.minimizeBV.argtypes=[c_solver_p,c_bv_p, c_int]
+        self.monosat_c.maximizeLits.argtypes=[c_solver_p,c_int_p, c_int]
+        self.monosat_c.minimizeLits.argtypes=[c_solver_p,c_int_p, c_int]
+        self.monosat_c.maximizeWeightedLits.argtypes=[c_solver_p,c_int_p,c_int_p, c_int]
+        self.monosat_c.minimizeWeightedLits.argtypes=[c_solver_p,c_int_p,c_int_p, c_int]
+
+
         self.monosat_c.at_most_one.argtypes=[c_solver_p,c_var_p,c_int]
         self.monosat_c.assertPB_lt.argtypes=[c_solver_p,c_int, c_int, c_int_p, c_int_p]
         self.monosat_c.assertPB_leq.argtypes=[c_solver_p,c_int, c_int, c_int_p, c_int_p]
@@ -332,8 +340,30 @@ class Monosat(metaclass=Singleton):
         self.monosat_c.acyclic_undirected.restype=c_literal      
         
         self.monosat_c.acyclic_directed.argtypes=[c_solver_p,c_graph_p]
-        self.monosat_c.acyclic_directed.restype=c_literal            
-        
+        self.monosat_c.acyclic_directed.restype=c_literal
+
+
+        self.monosat_c.initFSMTheory.argtypes =[c_solver_p]
+        self.monosat_c.initFSMTheory.restype=c_fsm_theory_p
+
+        self.monosat_c.newFSM.argtypes =[c_solver_p, c_fsm_theory_p,c_int,c_int]
+        self.monosat_c.newFSM.restype=c_int
+
+        self.monosat_c.newState.argtypes =[c_solver_p, c_fsm_theory_p,c_int]
+        self.monosat_c.newState.restype=c_int
+
+        self.monosat_c.newTransition.argtypes =[c_solver_p, c_fsm_theory_p,c_int, c_int, c_int, c_int, c_int]
+        self.monosat_c.newTransition.restype=c_int
+
+        self.monosat_c.newString.argtypes =[c_solver_p, c_fsm_theory_p,c_int_p, c_int]
+        self.monosat_c.newString.restype=c_int
+
+        self.monosat_c.fsmAcceptsString.argtypes =[c_solver_p, c_fsm_theory_p,c_int, c_int, c_int, c_int]
+        self.monosat_c.fsmAcceptsString.restype=c_int
+
+        self.monosat_c.fsmCompositionAccepts.argtypes =[c_solver_p, c_fsm_theory_p,c_int, c_int, c_int, c_int,c_int, c_int, c_int, c_int,c_int]
+        self.monosat_c.fsmCompositionAccepts.restype=c_int
+
         self.monosat_c.getModel_Literal.argtypes=[c_solver_p,c_literal]
         self.monosat_c.getModel_Literal.restype=c_int      
 
@@ -494,52 +524,31 @@ class Monosat(metaclass=Singleton):
 
 
 
-    def solve(self,assumptions=None,minimize_bvs=None):
+    def solve(self,assumptions=None):
         self.backtrack()
         if assumptions is None:
             assumptions=[]
 
         lp = self.getIntArray(assumptions)
+
+        if self.solver.output:
+            self._echoOutput("solve" + " ".join((str(dimacs(c)) for c in assumptions))+"\n")
+            self.solver.output.flush()
+        return self.monosat_c.solveAssumptions(self.solver._ptr,lp,len(assumptions))
         
-        if minimize_bvs is not None and len(minimize_bvs)>0:
-            if self.solver.output:
-                for i,n in enumerate(minimize_bvs):  
-                    self._echoOutput("minimize bv " + str(minimize_bvs[i])+"\n")
-                self._echoOutput("solve" + " ".join((str(dimacs(c)) for c in assumptions))+"\n")
-                self.solver.output.flush()
-            lp2 = (c_int * len(minimize_bvs))()
-            for i,n in enumerate(minimize_bvs):            
-                lp2[i]=c_int(n)
-            return self.monosat_c.solveAssumptions_MinBVs(self.solver._ptr,lp,len(assumptions),lp2,len(minimize_bvs))
-        else:
-            if self.solver.output:
-                self._echoOutput("solve" + " ".join((str(dimacs(c)) for c in assumptions))+"\n")
-                self.solver.output.flush()
-            return self.monosat_c.solveAssumptions(self.solver._ptr,lp,len(assumptions))
-        
-    def solveLimited(self,assumptions=None,minimize_bvs=None):
+    def solveLimited(self,assumptions=None):
         self.backtrack()        
         if assumptions is None:
             assumptions=[]
             
         lp = self.getIntArray(assumptions)
         
-        if minimize_bvs is not None and len(minimize_bvs)>0:
-            if self.solver.output:
-                for i,n in enumerate(minimize_bvs):  
-                    self._echoOutput("minimize bv " + str(minimize_bvs[i])+"\n")
-                self._echoOutput("solve "+ " ".join((str(dimacs(c)) for c in assumptions))+"\n")
-                self.solver.output.flush()
-            lp2 = (c_int * len(minimize_bvs))()
-            for i,n in enumerate(minimize_bvs):            
-                lp2[i]=c_int(n)
-            r= self.monosat_c.solveAssumptionsLimited_MinBVs(self.solver._ptr,lp,len(assumptions),lp2,len(minimize_bvs))
-        else:
-            if self.solver.output:
-                self._echoOutput("solve " + " ".join((str(dimacs(c)) for c in assumptions))+"\n")
-                self.solver.output.flush()
-            r= self.monosat_c.solveAssumptionsLimited(self.solver._ptr,lp,len(assumptions))  
-              
+
+        if self.solver.output:
+            self._echoOutput("solve " + " ".join((str(dimacs(c)) for c in assumptions))+"\n")
+            self.solver.output.flush()
+        r= self.monosat_c.solveAssumptionsLimited(self.solver._ptr,lp,len(assumptions))
+
         if r==0:
             return True
         elif r==1:
@@ -594,8 +603,44 @@ class Monosat(metaclass=Singleton):
             if self.solver.output:
                 self._echoOutput(" ".join((str(dimacs(c)) for c in clause))+" 0\n")
             lp = self.getIntArray(clause)
-            self.monosat_c.addClause(self.solver._ptr,lp,len(clause))  
-            
+            self.monosat_c.addClause(self.solver._ptr,lp,len(clause))
+
+    def clearOptimizationObjectives(self):
+        if self.solver.output:
+            self._echoOutput("clear_opt\n")
+        self.monosat_c.clearOptimizationObjectives(self.solver._ptr)
+
+    def maximizeBV(self, bvID):
+        if self.solver.output:
+            self._echoOutput("maximize bv %d\n"%(bvID))
+
+        self.monosat_c.maximizeBV(self.solver._ptr, self.solver.bvtheory, c_int(bvID))
+
+    def minimizeBV(self, bvID):
+        if self.solver.output:
+            self._echoOutput("minimize bv %d\n"%(bvID))
+        self.monosat_c.minimizeBV(self.solver._ptr, self.solver.bvtheory, c_int(bvID))
+
+    def maximizeLits(self, lits):
+        if self.solver.output:
+            self._echoOutput("maximize lits "  + "\n")
+        lp = self.getIntArray(lits)
+        self.monosat_c.maximizeLits(self.solver._ptr, lp, len(lits))
+
+    def minimizeLits(self, lits):
+        lp = self.getIntArray(lits)
+        self.monosat_c.minimizeLits(self.solver._ptr, lp, len(lits))
+
+    def maximizeWeightedLits(self, lits,weights):
+        lp = self.getIntArray(lits)
+        lp2 = self.getIntArray2(weights)
+        self.monosat_c.maximizeWeightedLits(self.solver._ptr, lp,lp2, len(lits))
+
+    def minimizeWeightedLits(self, lits,weights):
+        lp = self.getIntArray(lits)
+        lp2 = self.getIntArray2(weights)
+        self.monosat_c.minimizeWeightedLits(self.solver._ptr, lp,lp2, len(lits))
+
     #convenience code to and together to lits and return a new 
     def addAnd(self, lit1, lit2):
         out = self.newLit()
@@ -655,7 +700,11 @@ class Monosat(metaclass=Singleton):
 
     def getSymbol(self,lit):
         pass
-    
+
+    def clearOptimizationObjectives(self):
+        if self.solver.output:
+            self._echoOutput("clear_opt\n");
+        self.monosat_c.clear_optimizaiton_objectives(self.solver._ptr)
        
     def AssertAtMostOne(self,clause):
         self.backtrack()     
@@ -929,6 +978,34 @@ class Monosat(metaclass=Singleton):
         self.monosat_c.bv_popcount(self.solver._ptr, self.solver.bvtheory,lp,len(newargs),c_bvID(resultID))
         if self.solver.output:
             self._echoOutput("bv popcount %d %d %s\n"%(resultID, len(newargs)," ".join((str(dimacs(l)) for l in newargs))))
+
+
+    #Monosat fsm interface
+
+    def newFSM(self, in_labels,out_labels):
+        return self.monosat_c.newFSM.argtypes(self.solver._ptr, null_ptr,in_labels,out_labels)
+
+    def newState(self, fsm_id):
+        return self.monosat_c.newState(self.solver._ptr,null_ptr, fsm_id)
+
+    def newTransition(self, fsm_id, from_state, to_state,in_label,out_label):
+        return self.monosat_c.newTransition(self.solver._ptr,null_ptr, fsm_id)
+
+    def newTransition(self, fsm_id, from_state, to_state,in_label,out_label):
+        return self.monosat_c.newTransition(self.solver._ptr,null_ptr, fsm_id)
+
+    #A string is an array of positive integers
+    def newString(self, string_int_array):
+        lp = self.getIntArray(string_int_array)
+        return self.monosat_c.newString(self.solver._ptr,null_ptr, lp, len(string_int_array))
+
+    def fsmAcceptsString(self, fsm_id, starting_state, accepting_state, strID):
+        return self.monosat_c.fsmAcceptsString(self.solver._ptr,null_ptr, fsm_id,starting_state,accepting_state,strID)
+
+    def fsmCompositionAccepts(self, fsm_generator_id, fsm_acceptor_id, gen_starting_state, gen_accepting_state, accept_starting_state, accept_accepting_state, strID):
+        return self.monosat_c.fsmCompositionAccepts(self.solver._ptr,null_ptr, fsm_generator_id,fsm_acceptor_id, gen_starting_state, gen_accepting_state, accept_starting_state, accept_accepting_state, strID)
+
+
     #Monosat graph interface
     
     def newGraph(self):
@@ -941,7 +1018,7 @@ class Monosat(metaclass=Singleton):
             self._echoOutput("digraph 0 0 %d\n"%(gid)) 
         
         return g
-    
+
     def getGraph(self,id):
         return self.solver.graphs[id]
     

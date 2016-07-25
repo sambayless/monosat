@@ -1,10 +1,8 @@
-from monosat.monosat_c import Monosat
-from monosat.logic import *
-from monosat.bvtheory import BitVector
-from monosat.graphtheory import Graph
-from monosat.pbtheory import PBManager
 import time
-
+from monosat.bvtheory import BitVector
+from monosat.logic import *
+from monosat.monosat_c import Monosat
+from monosat.pbtheory import PBManager
 
 
 def Solve(assumptions=None, preprocessing=True,bvs_to_minimize=None,time_limit_seconds=None, memory_limit_mb=None,conflict_limit=None):
@@ -35,8 +33,13 @@ def Solve(assumptions=None, preprocessing=True,bvs_to_minimize=None,time_limit_s
     elif bvs_to_minimize is None:
         bvs_to_minimize=[]
         
-  
-    r= Monosat().solveLimited([x.getLit() for x in assumptions],[bv.getID() for bv in bvs_to_minimize])     
+    for bv in bvs_to_minimize:
+        bvID = bv.getID()
+        Monosat().minimizeBV(bvID)
+
+
+    r= Monosat().solveLimited([x.getLit() for x in assumptions])
+    Monosat().clearOptimizationObjectives();
     if r is None:
         raise RuntimeError("MonoSAT aborted before solving (possibly do to a time or memory limit)")
     Monosat().elapsed_time +=  time.clock()-t

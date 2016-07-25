@@ -17,8 +17,11 @@
 #DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT
 #OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
+import monosat.monosat_c
+import sys
 from monosat.logic import *
 from monosat.manager import Manager
+
 debug=False   
 #Collects a set of graphs to encode together into a formula
 class FSMManager(metaclass=Manager):
@@ -26,134 +29,59 @@ class FSMManager(metaclass=Manager):
     def  __init__(self):
         self.strings = []
         self.fsms=[]
-    
-    def clear(self):
-        self.strings = []
-        self.fsms=[]        
+
     
     #Each "string" must actually be a list of positive integers
-    def addString(self, string):
+    def newString(self, string):
         ints = []
         for s in string:
             if(isinstance( s, int )):
                 ints.append(s+1)
             else:
                 ints.append(ord(s)-ord('a')+1)
-            
-        self.strings.append(ints)
-        return len(self.strings)-1
-    
 
-    
-    def newFSM(self, fsm):        
-        self.fsms.append(fsm);
-        return len(self.fsms)-1
-    
-    def write(self,f):
-  
-        
-        for fsm in self.fsms:
-            fsm.write(f)
-        
-        for id, string in enumerate(self.strings):
-            f.write("str %d"%(id))
-            for i in string:
-                assert(i>0)                
-                f.write(" %d"%(i))
-            f.write("\n")       
-                   
+        return monosat.monosat_c.Monosat().newString(ints)
+
        
 class FSM():    
-    def __init__(self,mgr):
-        self.pid = mgr.newFSM(self)
-        self.hasEpsilon=True 
-        self.n_labels=1
-        self.n_out_labels=1
-        self.n_states=0
-        
+    def __init__(self,in_labels,out_labels=0, hasEpsilon=True):
+        self._monosat = monosat.monosat_c.Monosat()
+        self.pid = self._monosat.newFSM(in_labels,out_labels)
+        self.hasEpsilon=True
+        self._n_states=0
         self._transitions=[]
-        
-        self._accepts =[]
-        self._generates=[]
-        self._transduces=[]
-        self._accepts_generator=[]
-        
-    
+
+
     def getID(self):
         return self.pid
 
-    def addInLabel(self):
-        self.n_labels+=1
-        return self.n_labels-1
-        
-    def addLabel(self):
-        return self.addInLabel()
-
-    def addOutLabel(self):
-        self.n_out_labels+=1
-        return self.n_out_labels-1
-    
-    def nInLabels(self):
-        return self.n_labels
-    
-    def nOutLabels(self):
-        return self.n_out_labels 
-    
     def addState(self):
-        self.n_states+=1
-        return self.n_states-1
+        self._n_states+=1
+        return self._monosat.newState(self.getID())
     
     def nStates(self):
-        return self.n_states;
-    def getTransitions(self):
-        return self._transitions
-    def addTransition(self, u,v, label, output=0):
+        return self._monosat.numStates(self.getID());
+
+
+    def addTransition(self, u,v, in_label, out_label=0):
         assert(u<self.n_states)
         assert(u>=0)
         assert(v<self.n_states)
         assert(v>=0)
-        var = Var()
-        self._transitions.append((u,v,label,output,var))
+        var = Var(self._monosat.newTransition(self.getID(), u, v,in_label,out_label))
+        self._transitions.append((u,v,in_label,out_label,var))
         return var
-    
-    def accepts(self,stringID,source,dest):
-        v = Var()
-        self._accepts.append((v,stringID,source,dest))
-        return v
- 
-    def generates(self,stringID,source):
-        v = Var()
-        self._generates.append((v,stringID,source))
-        return v
-    
-    def transduces(self,stringID1,stringID2,source,dest):
-        v = Var()
-        self._transduces.append((v,stringID1,stringID2,source,dest))
-        return v  
-    
-    def accepts_generator(self,generator,generator_source, generator_dest,acceptor_source,acceptor_dest):
-        v = Var()
-        self._accepts_generator.append((v,generator,generator_source,generator_dest,acceptor_source,acceptor_dest,-1))
-        return v           
-    
-    def write(self,f):
-        f.write("fsm %d %d %d\n"%(self.pid, self.n_labels, 1 if self.hasEpsilon else 0))       
-        
-        for (u,v,label,output,var) in self._transitions:
-            f.write("transition %d %d %d %d %d %d\n"%( self.pid,u,v,label,output, var.getInputLiteral()))
-        
-        for (v,stringID,source,dest) in self._accepts:
-            f.write("accepts %d %d %d %d %d\n"%( self.pid,source,dest, stringID, v.getInputLiteral()))
 
-        for (v,stringID,source) in self._generates:
-            f.write("generates %d %d %d %d\n"%( self.pid,source, stringID, v.getInputLiteral()))
-           
-        for (v, stringID1,stringID2,source,dest) in self._transduces:
-            f.write("transduces %d %d %d %d %d %d\n"%( self.pid,source,dest, stringID1,stringID2, v.getInputLiteral()))
-            
-        for (v,generator,generator_source,generator_dest,acceptor_source,acceptor_dest, stringID) in  self._accepts_generator:
-            f.write("composition_accepts %d %d %d %d %d %d %d %d\n"%( generator.pid,self.pid,generator_source,generator_dest,acceptor_source,acceptor_dest,stringID, v.getInputLiteral()))
-            
+    def getTransitions(self):
+        return self._transitions
+
+    def accepts(self,starting_state,accepting_state,stringID):
+        return Var(self._monosat.fsmAcceptsString(self.getID(), starting_state, accepting_state,stringID))
+
+    def acceptsFSM(self,generator,generator_source, generator_dest,starting_state,accepting_state):
+        return Var(self._monosat.fsmCompositionAccepts(generator,self.getID(),generator_source, generator_dest, starting_state, accepting_state,0))
+    
+
     def draw(self):
         
         print("digraph{")

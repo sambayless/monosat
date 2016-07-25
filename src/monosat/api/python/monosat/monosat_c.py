@@ -52,6 +52,8 @@ c_long_p = POINTER(c_long)
 c_solver_p = c_void_p
 c_graph_p = c_void_p
 c_bv_p = c_void_p
+c_fsm_theory_p = c_void_p
+c_fsm_p = c_void_p
 
 c_literal = c_int
 c_literal_p = c_int_p
@@ -190,7 +192,7 @@ class Monosat(metaclass=Singleton):
         self.monosat_c.addTertiaryClause.restype=c_bool
         
         self.monosat_c.true_lit.argtypes=[c_solver_p]
-        self.monosat_c.true_lit.restype=c_int 
+        self.monosat_c.true_lit.restype=c_int
 
         self.monosat_c.clearOptimizationObjectives.argtypes=[c_solver_p]
         self.monosat_c.maximizeBV.argtypes=[c_solver_p,c_bv_p, c_int]
@@ -338,8 +340,30 @@ class Monosat(metaclass=Singleton):
         self.monosat_c.acyclic_undirected.restype=c_literal      
         
         self.monosat_c.acyclic_directed.argtypes=[c_solver_p,c_graph_p]
-        self.monosat_c.acyclic_directed.restype=c_literal            
-        
+        self.monosat_c.acyclic_directed.restype=c_literal
+
+
+        self.monosat_c.initFSMTheory.argtypes =[c_solver_p]
+        self.monosat_c.initFSMTheory.restype=c_fsm_theory_p
+
+        self.monosat_c.newFSM.argtypes =[c_solver_p, c_fsm_theory_p,c_int,c_int]
+        self.monosat_c.newFSM.restype=c_int
+
+        self.monosat_c.newState.argtypes =[c_solver_p, c_fsm_theory_p,c_int]
+        self.monosat_c.newState.restype=c_int
+
+        self.monosat_c.newTransition.argtypes =[c_solver_p, c_fsm_theory_p,c_int, c_int, c_int, c_int, c_int]
+        self.monosat_c.newTransition.restype=c_int
+
+        self.monosat_c.newString.argtypes =[c_solver_p, c_fsm_theory_p,c_int_p, c_int]
+        self.monosat_c.newString.restype=c_int
+
+        self.monosat_c.fsmAcceptsString.argtypes =[c_solver_p, c_fsm_theory_p,c_int, c_int, c_int, c_int]
+        self.monosat_c.fsmAcceptsString.restype=c_int
+
+        self.monosat_c.fsmCompositionAccepts.argtypes =[c_solver_p, c_fsm_theory_p,c_int, c_int, c_int, c_int,c_int, c_int, c_int, c_int,c_int]
+        self.monosat_c.fsmCompositionAccepts.restype=c_int
+
         self.monosat_c.getModel_Literal.argtypes=[c_solver_p,c_literal]
         self.monosat_c.getModel_Literal.restype=c_int      
 
@@ -954,6 +978,34 @@ class Monosat(metaclass=Singleton):
         self.monosat_c.bv_popcount(self.solver._ptr, self.solver.bvtheory,lp,len(newargs),c_bvID(resultID))
         if self.solver.output:
             self._echoOutput("bv popcount %d %d %s\n"%(resultID, len(newargs)," ".join((str(dimacs(l)) for l in newargs))))
+
+
+    #Monosat fsm interface
+
+    def newFSM(self, in_labels,out_labels):
+        return self.monosat_c.newFSM.argtypes(self.solver._ptr, null_ptr,in_labels,out_labels)
+
+    def newState(self, fsm_id):
+        return self.monosat_c.newState(self.solver._ptr,null_ptr, fsm_id)
+
+    def newTransition(self, fsm_id, from_state, to_state,in_label,out_label):
+        return self.monosat_c.newTransition(self.solver._ptr,null_ptr, fsm_id)
+
+    def newTransition(self, fsm_id, from_state, to_state,in_label,out_label):
+        return self.monosat_c.newTransition(self.solver._ptr,null_ptr, fsm_id)
+
+    #A string is an array of positive integers
+    def newString(self, string_int_array):
+        lp = self.getIntArray(string_int_array)
+        return self.monosat_c.newString(self.solver._ptr,null_ptr, lp, len(string_int_array))
+
+    def fsmAcceptsString(self, fsm_id, starting_state, accepting_state, strID):
+        return self.monosat_c.fsmAcceptsString(self.solver._ptr,null_ptr, fsm_id,starting_state,accepting_state,strID)
+
+    def fsmCompositionAccepts(self, fsm_generator_id, fsm_acceptor_id, gen_starting_state, gen_accepting_state, accept_starting_state, accept_accepting_state, strID):
+        return self.monosat_c.fsmCompositionAccepts(self.solver._ptr,null_ptr, fsm_generator_id,fsm_acceptor_id, gen_starting_state, gen_accepting_state, accept_starting_state, accept_accepting_state, strID)
+
+
     #Monosat graph interface
     
     def newGraph(self):
@@ -966,7 +1018,7 @@ class Monosat(metaclass=Singleton):
             self._echoOutput("digraph 0 0 %d\n"%(gid)) 
         
         return g
-    
+
     def getGraph(self,id):
         return self.solver.graphs[id]
     
