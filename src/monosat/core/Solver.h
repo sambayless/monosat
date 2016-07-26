@@ -736,6 +736,9 @@ public:
 	Theory * getBVTheory() override{
 		return bvtheory;
 	}
+	void setPBSolver(PB::PBConstraintSolver * t){
+		pbsolver=t;
+	}
 	PB::PBConstraintSolver * getPB()override{
 		return pbsolver;
 	}

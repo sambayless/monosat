@@ -5,6 +5,7 @@ from monosat.monosat_c import Monosat
 from monosat.pbtheory import PBManager
 
 
+
 def Solve(assumptions=None, preprocessing=True,bvs_to_minimize=None,time_limit_seconds=None, memory_limit_mb=None,conflict_limit=None):
     WriteConstraints()
     if time_limit_seconds is None or time_limit_seconds <=0:
@@ -39,14 +40,48 @@ def Solve(assumptions=None, preprocessing=True,bvs_to_minimize=None,time_limit_s
 
 
     r= Monosat().solveLimited([x.getLit() for x in assumptions])
-    Monosat().clearOptimizationObjectives();
+    #Monosat().clearOptimizationObjectives();
     if r is None:
         raise RuntimeError("MonoSAT aborted before solving (possibly do to a time or memory limit)")
     Monosat().elapsed_time +=  time.clock()-t
     return r
 
+
+#optimization support
+def clearOptimizationObjectives():
+    Monosat().clearOptimizationObjectives()
+
+def maximize(bitvector_or_literals,weights=None):
+    if isinstance(bitvector_or_literals,Var):
+        arg = [bitvector_or_literals]
+    if isinstance(weights,int):
+        weights = [weights]
+
+    if isinstance(bitvector_or_literals,int):
+        Monosat().maximizeBV(bitvector_or_literals)
+    else:
+        lit_ints = [l.getLit() for l in bitvector_or_literals]
+        if weights is None:
+            Monosat().maximizeLits(lit_ints)
+        else:
+            Monosat().maximizeWeightedLits(lit_ints,weights)
+
+def minimize(bitvector_or_literals,weights=None):
+    if isinstance(bitvector_or_literals,Var):
+        bitvector_or_literals = [bitvector_or_literals]
+    if isinstance(weights,int):
+        weights = [weights]
+
+    if isinstance(bitvector_or_literals,int):
+        Monosat().minimizeBV(bitvector_or_literals)
+    else:
+        lit_ints = [l.getLit() for l in bitvector_or_literals]
+        if weights is None:
+            Monosat().minimizeLits(lit_ints)
+        else:
+            Monosat().minimizeWeightedLits(lit_ints,weights)
+
 def WriteConstraints():
-    
     _writePBCosntraints()
 
 def _writePBCosntraints():

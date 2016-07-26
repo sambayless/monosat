@@ -2015,6 +2015,10 @@ lbool Solver::solve_() {
 	if (!ok)
 		return l_False;
 
+	if(pbsolver){
+		pbsolver->convert();
+	}
+
 	solves++;
 
 	max_learnts = nClauses() * learntsize_factor;

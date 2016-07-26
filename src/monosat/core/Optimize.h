@@ -48,7 +48,7 @@ struct Objective{
         return type == Type::PB;
     }
     bool isBV()const{
-        return type == Type::PB;
+        return type == Type::BV;
     }
     Objective(const Objective & from):maximize(from.maximize), type(from.type),bvID(from.bvID){
         from.pb_lits.copyTo(pb_lits);

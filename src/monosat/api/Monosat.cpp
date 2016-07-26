@@ -474,6 +474,9 @@ Monosat::SimpSolver * newSolver_args(int argc, char**argv){
 	_selectAlgorithms();
 	Monosat::SimpSolver * S = new Monosat::SimpSolver();
 	solvers.insert(S);//add S to the list of solvers handled by signals
+
+    S->setPBSolver(new PB::PbSolver(*S));
+
 	S->_external_data =(void*)new MonosatData();
 	((MonosatData*)S->_external_data)->args =args;
 	if(!opt_pre){
@@ -541,7 +544,7 @@ void maximizeLits(Monosat::SimpSolver *  S, int * lits, int n_lits){
 	for(Lit l:lits_opt){
 		write_out(S,"%d ",dimacs(l));
 	}
-	write_out(S,"0\n");
+	write_out(S,"\n");
 
 	d->optimization_objectives.push(Objective(lits_opt,true));
 }
@@ -558,7 +561,7 @@ void minimizeLits(Monosat::SimpSolver *  S, int * lits, int n_lits){
 	for(Lit l:lits_opt){
 		write_out(S,"%d ",dimacs(l));
 	}
-	write_out(S,"0\n");
+	write_out(S,"\n");
 
 	d->optimization_objectives.push(Objective(lits_opt,false));
 }

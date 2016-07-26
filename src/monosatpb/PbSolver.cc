@@ -256,6 +256,10 @@ bool PbSolver::normalizePb(vec<Lit> &ps, vec<Int> &Cs, Int &C) {
 
 void PbSolver::storePb(const vec<Lit> &ps, const vec<Int> &Cs, Int lo, Int hi) {
     assert(ps.size() == Cs.size());
+    for(Lit l:ps){
+        sat_solver.setFrozen(var(l),true);//don't allow pb argument lits to be eliminated
+    }
+
     for (int i = 0; i < ps.size(); i++)
         n_occurs[toInt(ps[i])]++;
     constrs.push(new(mem.alloc(sizeof(Linear) + ps.size() * (sizeof(Lit) + sizeof(Int)))) Linear(ps, Cs, lo, hi));

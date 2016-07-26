@@ -564,6 +564,8 @@ int main(int argc, char** argv) {
 		S.min_priority_var = opt_min_priority_decision_var - 1;
 		S.max_priority_var = opt_max_priority_decision_var - 1;
 
+		S.setPBSolver(new PB::PbSolver(S));
+
 		if (opt_min_decision_var > 1 || opt_max_decision_var > 0) {
 			printf(
 					"Decision variables restricted to the range (%d..%d), which means a result of satisfiable may not be trustworthy.\n",
@@ -667,10 +669,10 @@ int main(int argc, char** argv) {
 				// If an assumption has been eliminated, remember it.
 				assert(!S.isEliminated(v));
 
-				if (!S.isFrozen(v)) {
+				S.freezeVar(v);//) {
 					// Freeze and store.
-					S.setFrozen(v, true);
-				}
+					//S.setFrozen(v, true);
+				//}
 			}
 			S.eliminate(true);
 			//in principle, should unfreeze these lits after solving...

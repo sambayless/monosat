@@ -334,19 +334,21 @@ private:
 				objectives.last().maximize=true;
 				int n_lits = parseInt(b);
 				for (int i = 0;i<n_lits;i++) {
-					int parsed_lit = parseInt(in);
+					int parsed_lit = parseInt(b);
 					if(parsed_lit==0){
 						parse_errorf("Bad literal: 0\n");
 					}
 					Var var = abs(parsed_lit) - 1;
 					var = mapVar(S,var);
+					S.setFrozen(var,true);
 					objectives.last().pb_lits.push((parsed_lit > 0) ? mkLit(var) : ~mkLit(var));
 				}
 
-				while (true) {
-					int weight = parseInt(in);
-					if (weight == 0)
-						break;
+                for (int i = 0;i<n_lits;i++) {
+                    skipWhitespaceNoNewLines(b);
+                    if(*b=='\n')
+                        break;
+					int weight = parseInt(b);
 					objectives.last().pb_weights.push(weight);
 				}
 
@@ -362,21 +364,23 @@ private:
 				objectives.last().maximize=false;
 				int n_lits = parseInt(b);
 				for (int i = 0;i<n_lits;i++) {
-					int parsed_lit = parseInt(in);
+					int parsed_lit = parseInt(b);
 					if(parsed_lit==0){
 						parse_errorf("Bad literal: 0\n");
 					}
 					Var var = abs(parsed_lit) - 1;
 					var = mapVar(S,var);
+					S.setFrozen(var,true);
 					objectives.last().pb_lits.push((parsed_lit > 0) ? mkLit(var) : ~mkLit(var));
 				}
 
-				while (true) {
-					int weight = parseInt(in);
-					if (weight == 0)
-						break;
-					objectives.last().pb_weights.push(weight);
-				}
+                for (int i = 0;i<n_lits;i++) {
+                    skipWhitespaceNoNewLines(b);
+                    if(*b=='\n')
+                        break;
+                    int weight = parseInt(b);
+                    objectives.last().pb_weights.push(weight);
+                }
 
 				if (objectives.last().pb_weights.size()>objectives.last().pb_lits.size()){
 					objectives.last().pb_weights.shrink(objectives.last().pb_weights.size()- objectives.last().pb_lits.size());
@@ -434,7 +438,9 @@ private:
 					int bvID = objectives[i].bvID;
 					bvID = this->mapBV(S, bvID);
 					objectives[i].bvID = bvID;
-				}
+				}else{
+                   //lits are already remapped
+                }
 			}
 
 		}catch(const parse_error& e){

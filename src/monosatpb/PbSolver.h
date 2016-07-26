@@ -236,7 +236,7 @@ public:
         //Create a one-sided pb constraint that is enforced only if 'cond' is True, and is unenforced (has no effect) if cond is false.
         //since minisat+ doesn't have native support for such constraints, I'm simulating this by adding an extra, weighted
         //literal that is sufficient to satisfy the constraint if true.
-        //If anyone knows a better way to do this, I've be grateful.
+        //If anyone knows a better way to do this, I'd be grateful.
 
         if(cond==lit_Undef){
             cond = mkLit(sat_solver.newVar());
@@ -285,8 +285,9 @@ public:
             if(ineq==Ineq::GT)
                 sum+=1;
         }
-        tmp_cond_lits.push(cond);
+        tmp_cond_lits.push(~cond); //constraints are enforced if cond is true
         tmp_cond_coefs.push(sum);
+        addConstr(tmp_cond_lits,tmp_cond_coefs,rhs,ineq);
         return cond;
     }
     bool addConstr(const vec<Lit> &ps, const vec<int> &Cs, int rhs, Ineq ineq)override{
@@ -313,7 +314,7 @@ public:
 
     void solve(solve_Command cmd = sc_Minimize);    // Returns best/first solution found or Int_MAX if UNSAT.
     //convert the pb constraints into cnfs in the sat solver and return without solving
-    void convert(){
+    void convert()override{
         solve(sc_Convert);
     }
 

@@ -24,9 +24,12 @@
 #define OPTIMIZE_CPP_
 #include "monosat/core/Optimize.h"
 #include <csignal>
+#include <sys/resource.h>
 #include <stdexcept>
 #include <cstdarg>
 #include <string>
+#include <cstdint>
+#include <limits>
 namespace Monosat{
 
 namespace Optimization{
@@ -173,12 +176,14 @@ int64_t optimize_linear(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t
 		assume.push(l);
 	vec<Lit> last_satisfying_assign;
 	for(Var v = 0;v<S->nVars();v++){
-		if(S->value(v)==l_True){
-			last_satisfying_assign.push(mkLit(v));
-		}else if(S->value(v)==l_False){
-			last_satisfying_assign.push(mkLit(v,true));
-		}else{
-			//this variable was unassigned.
+		if(!S->isEliminated(v)) {
+			if (S->value(v) == l_True) {
+				last_satisfying_assign.push(mkLit(v));
+			} else if (S->value(v) == l_False) {
+				last_satisfying_assign.push(mkLit(v, true));
+			} else {
+				//this variable was unassigned.
+			}
 		}
 	}
 
@@ -223,12 +228,14 @@ int64_t optimize_linear(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t
 		if (r){
 			last_satisfying_assign.clear();
 			for(Var v = 0;v<S->nVars();v++){
-				if(S->value(v)==l_True){
-					last_satisfying_assign.push(mkLit(v));
-				}else if(S->value(v)==l_False){
-					last_satisfying_assign.push(mkLit(v,true));
-				}else{
-					//this variable was unassigned.
+				if(!S->isEliminated(v)) {
+					if (S->value(v) == l_True) {
+						last_satisfying_assign.push(mkLit(v));
+					} else if (S->value(v) == l_False) {
+						last_satisfying_assign.push(mkLit(v, true));
+					} else {
+						//this variable was unassigned.
+					}
 				}
 			}
 			last_decision_lit=decision_lit;
@@ -314,12 +321,14 @@ int64_t optimize_linear_pb(Monosat::SimpSolver * S, PB::PBConstraintSolver * pbS
 		assume.push(l);
 	vec<Lit> last_satisfying_assign;
 	for(Var v = 0;v<S->nVars();v++){
-		if(S->value(v)==l_True){
-			last_satisfying_assign.push(mkLit(v));
-		}else if(S->value(v)==l_False){
-			last_satisfying_assign.push(mkLit(v,true));
-		}else{
-			//this variable was unassigned.
+		if(!S->isEliminated(v)) {
+			if (S->value(v) == l_True) {
+				last_satisfying_assign.push(mkLit(v));
+			} else if (S->value(v) == l_False) {
+				last_satisfying_assign.push(mkLit(v, true));
+			} else {
+				//this variable was unassigned.
+			}
 		}
 	}
 
@@ -363,12 +372,14 @@ int64_t optimize_linear_pb(Monosat::SimpSolver * S, PB::PBConstraintSolver * pbS
 		if (r){
 			last_satisfying_assign.clear();
 			for(Var v = 0;v<S->nVars();v++){
-				if(S->value(v)==l_True){
-					last_satisfying_assign.push(mkLit(v));
-				}else if(S->value(v)==l_False){
-					last_satisfying_assign.push(mkLit(v,true));
-				}else{
-					//this variable was unassigned.
+				if(!S->isEliminated(v)) {
+					if (S->value(v) == l_True) {
+						last_satisfying_assign.push(mkLit(v));
+					} else if (S->value(v) == l_False) {
+						last_satisfying_assign.push(mkLit(v, true));
+					} else {
+						//this variable was unassigned.
+					}
 				}
 			}
 			last_decision_lit=decision_lit;
@@ -430,12 +441,14 @@ int64_t optimize_binary_pb(Monosat::SimpSolver * S,  PB::PBConstraintSolver * pb
 		assume.push(l);
 	vec<Lit> last_satisfying_assign;
 	for(Var v = 0;v<S->nVars();v++){
-		if(S->value(v)==l_True){
-			last_satisfying_assign.push(mkLit(v));
-		}else if(S->value(v)==l_False){
-			last_satisfying_assign.push(mkLit(v,true));
-		}else{
-			//this variable was unassigned.
+		if(!S->isEliminated(v)) {
+			if (S->value(v) == l_True) {
+				last_satisfying_assign.push(mkLit(v));
+			} else if (S->value(v) == l_False) {
+				last_satisfying_assign.push(mkLit(v, true));
+			} else {
+				//this variable was unassigned.
+			}
 		}
 	}
 
@@ -453,14 +466,14 @@ int64_t optimize_binary_pb(Monosat::SimpSolver * S,  PB::PBConstraintSolver * pb
 
 	bool first_round=true;
 	int64_t last_decision_value=max_val;
-	Lit last_decision_lit =   pbSolver->addConditionalConstr(o.pb_lits, o.pb_weights,max_val, PB::Ineq::LEQ); //bvTheory->toSolver(bvTheory->newComparison(Comparison::leq,bvID,max_val,var_Undef,opt_decide_optimization_lits));
+	Lit last_decision_lit =  lit_Undef;//  pbSolver->addConditionalConstr(o.pb_lits, o.pb_weights,max_val, PB::Ineq::LEQ); //bvTheory->toSolver(bvTheory->newComparison(Comparison::leq,bvID,max_val,var_Undef,opt_decide_optimization_lits));
 	while(min_val < max_val && !hit_cutoff){
 		int64_t mid_point = min_val + (max_val - min_val) / 2;
-
+		if(mid_point>=max_val)
+			mid_point=max_val-1;//can this ever happen?
 		if(suggested_next_midpoint>=min_val && suggested_next_midpoint<mid_point)
 			mid_point =	suggested_next_midpoint;
 		assert(mid_point>=0);assert(mid_point>=min_val);assert(mid_point<max_val);
-
 		Lit decision_lit =  pbSolver->addConditionalConstr(o.pb_lits, o.pb_weights,mid_point, PB::Ineq::LEQ);
 				//bvTheory->toSolver(bvTheory->newComparison(Comparison::leq,bvID,mid_point,var_Undef,opt_decide_optimization_lits));
 		assume.push(decision_lit);
@@ -498,15 +511,19 @@ int64_t optimize_binary_pb(Monosat::SimpSolver * S,  PB::PBConstraintSolver * pb
 		if (r){
 			last_satisfying_assign.clear();
 			for(Var v = 0;v<S->nVars();v++){
-				if(S->value(v)==l_True){
-					last_satisfying_assign.push(mkLit(v));
-				}else if(S->value(v)==l_False){
-					last_satisfying_assign.push(mkLit(v,true));
-				}else{
-					//this variable was unassigned.
+				if(!S->isEliminated(v) && v != var(last_decision_lit)) {
+					if (S->value(v) == l_True) {
+						last_satisfying_assign.push(mkLit(v));
+					} else if (S->value(v) == l_False) {
+						last_satisfying_assign.push(mkLit(v, true));
+					} else {
+						//this variable was unassigned.
+					}
 				}
 			}
+            S->addClause(~last_decision_lit);
 			last_decision_lit=decision_lit;
+            last_satisfying_assign.push(decision_lit);
 			last_decision_value=mid_point;
 			int new_value = evalPB(*S, o, true);//bvTheory->getOverApprox(bvID);
 			if(new_value>=max_val){
@@ -538,11 +555,12 @@ int64_t optimize_binary_pb(Monosat::SimpSolver * S,  PB::PBConstraintSolver * pb
 	}
 
 
-	if(max_val<last_decision_value){
+	if(max_val<last_decision_value || last_decision_lit==lit_Undef){
 		//if that last decrease in value was by more than 1
 		last_decision_lit = pbSolver->addConditionalConstr(o.pb_lits, o.pb_weights,max_val, PB::Ineq::LEQ);
 				//bvTheory->toSolver(bvTheory->newComparison(Comparison::leq,bvID,max_val,var_Undef,opt_decide_optimization_lits));
 		last_decision_value=max_val;
+        last_satisfying_assign.push(last_decision_lit);
 	}
 	bool r;
 	assume.push(last_decision_lit);
@@ -576,12 +594,14 @@ int64_t optimize_binary(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t
 		assume.push(l);
 	vec<Lit> last_satisfying_assign;
 	for(Var v = 0;v<S->nVars();v++){
-		if(S->value(v)==l_True){
-			last_satisfying_assign.push(mkLit(v));
-		}else if(S->value(v)==l_False){
-			last_satisfying_assign.push(mkLit(v,true));
-		}else{
-			//this variable was unassigned.
+		if(!S->isEliminated(v)) {
+			if (S->value(v) == l_True) {
+				last_satisfying_assign.push(mkLit(v));
+			} else if (S->value(v) == l_False) {
+				last_satisfying_assign.push(mkLit(v, true));
+			} else {
+				//this variable was unassigned.
+			}
 		}
 	}
 
@@ -645,12 +665,14 @@ int64_t optimize_binary(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t
 		if (r){
 			last_satisfying_assign.clear();
 			for(Var v = 0;v<S->nVars();v++){
+				if(!S->isEliminated(v)) {
 				if(S->value(v)==l_True){
 					last_satisfying_assign.push(mkLit(v));
 				}else if(S->value(v)==l_False){
 					last_satisfying_assign.push(mkLit(v,true));
-				}else{
+				}else {
 					//this variable was unassigned.
+				}
 				}
 			}
 			last_decision_lit=decision_lit;
@@ -895,12 +917,22 @@ lbool optimize_and_solve(SimpSolver & S,const vec<Lit> & assumes,const vec<Objec
 			}
 			if(opt_check_solution){
 				for(int i = 0;i<objectives.size();i++){
-					int bvID = objectives[i].bvID;
-					int64_t min_value = min_values[i];
-					int64_t model_val = bvTheory->getOverApprox(bvID);
-					if(min_value<model_val){
-						throw std::runtime_error("Error in optimization (minimum values are inconsistent with model)");
-					}
+                    if(objectives[i].isBV()) {
+                        int bvID = objectives[i].bvID;
+                        int64_t min_value = min_values[i];
+                        int64_t model_val = bvTheory->getOverApprox(bvID);
+                        if (min_value < model_val) {
+                            throw std::runtime_error(
+                                    "Error in optimization (minimum values are inconsistent with model)");
+                        }
+                    }else{
+                        int64_t min_value = min_values[i];
+                        int64_t model_val =evalPB(S, objectives[i],true);
+                        if (min_value < model_val) {
+                            throw std::runtime_error(
+                                    "Error in optimization (minimum values are inconsistent with model)");
+                        }
+                    }
 				}
 			}
 		}
