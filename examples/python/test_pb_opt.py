@@ -12,8 +12,11 @@ weights = list(range(10))
 
 maximize(vars,weights)
 result=Solve()
-for v in vars:
+sum = 0
+for i,v in enumerate(vars):
     print(v.value())
+    if (v.value()):
+        sum+=weights[i]
 print("Result is " + str(result))
 assert(result==True)
 

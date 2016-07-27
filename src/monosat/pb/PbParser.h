@@ -53,8 +53,12 @@ public:
 			S.addTheory(pbtheory);
 
 		}else {
-			pbsolver = new PB::PbSolver(S);
-
+			if(!S.getPB()) {
+				pbsolver = new PB::PbSolver(S);
+				S.setPBSolver(pbsolver);
+			}else{
+				pbsolver = (PB::PbSolver*)S.getPB();//fix this!
+			}
 		}
 	}
 	vec<Lit> lits;

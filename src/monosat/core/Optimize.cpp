@@ -336,7 +336,7 @@ int64_t optimize_linear_pb(Monosat::SimpSolver * S, PB::PBConstraintSolver * pbS
 	int last_decision_value=value;
 
 	// int bvID,const Weight & to, Var outerVar = var_Undef, bool decidable=true
-	Lit last_decision_lit =   pbSolver->addConditionalConstr(o.pb_lits, o.pb_weights,value, PB::Ineq::LEQ);
+	Lit last_decision_lit =  lit_Undef;// pbSolver->addConditionalConstr(o.pb_lits, o.pb_weights,value, PB::Ineq::LEQ);
 	while(value>evalPB(*S,o,false) && !hit_cutoff){
 		Lit decision_lit =  pbSolver->addConditionalConstr(o.pb_lits, o.pb_weights,value-1, PB::Ineq::LEQ);
 
@@ -372,7 +372,7 @@ int64_t optimize_linear_pb(Monosat::SimpSolver * S, PB::PBConstraintSolver * pbS
 		if (r){
 			last_satisfying_assign.clear();
 			for(Var v = 0;v<S->nVars();v++){
-				if(!S->isEliminated(v)) {
+				if(!S->isEliminated(v)  && v != var(last_decision_lit) ) {
 					if (S->value(v) == l_True) {
 						last_satisfying_assign.push(mkLit(v));
 					} else if (S->value(v) == l_False) {
@@ -384,6 +384,7 @@ int64_t optimize_linear_pb(Monosat::SimpSolver * S, PB::PBConstraintSolver * pbS
 			}
 			last_decision_lit=decision_lit;
 			last_decision_value=value-1;
+            last_satisfying_assign.push(decision_lit);
 			if(S->value(decision_lit)!=l_True){
 				throw std::runtime_error("Error in optimization (comparison not enforced)");
 			}
@@ -403,7 +404,7 @@ int64_t optimize_linear_pb(Monosat::SimpSolver * S, PB::PBConstraintSolver * pbS
 		}else{
 			assume.pop();
 
-			if(value<last_decision_value){
+			if(value<last_decision_value  || last_decision_lit==lit_Undef){
 				//if that last decrease in value was by more than 1
 				last_decision_lit = pbSolver->addConditionalConstr(o.pb_lits, o.pb_weights,value, PB::Ineq::LEQ);
 						//bvTheory->toSolver(bvTheory->newComparison(Comparison::leq,bvID,value,var_Undef,opt_decide_optimization_lits));
