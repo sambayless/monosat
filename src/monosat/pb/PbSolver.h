@@ -23,10 +23,10 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "monosat/mtl/Vec.h"
 #include "monosat/simp/SimpSolver.h"
 
-#include "monosatpb/ADTs/Map.h"
-#include "monosatpb/ADTs/StackAlloc.h"
-#include "monosatpb/ADTs/Int.h"
-#include "monosatpb/Config_pb.h"
+#include "monosat/pb/ADTs/Map.h"
+#include "monosat/pb/ADTs/StackAlloc.h"
+#include "monosat/pb/ADTs/Int.h"
+#include "Config_pb.h"
 #include "monosat/pb/Pb.h"
 #include <sstream>
 namespace Monosat {

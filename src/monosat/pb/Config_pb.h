@@ -4,8 +4,10 @@
 
 #ifndef MONOSAT_CONFIG_PB_H
 #define MONOSAT_CONFIG_PB_H
-#include "monosatpb/ADTs/Int.h"
-#include "monosatpb/ADTs/Global.h"
+#include "monosat/pb/ADTs/Int.h"
+#include "monosat/pb/ADTs/Global.h"
+#include "monosat/utils/Options.h"
+
 
 namespace Monosat {
 namespace PB {
@@ -23,25 +25,22 @@ enum Command {
 //these two moved to Global.h
 /*extern bool     opt_satlive;
 extern bool     opt_ansi;*/
-extern char *opt_cnf;
-extern int opt_verbosity;
-extern bool opt_try;
+
+extern IntOption opt_verbosity;
+extern BoolOption opt_try;
 
 // -- solver options:
 extern ConvertT opt_convert;
 extern ConvertT opt_convert_goal;
-extern bool opt_convert_weak;
-extern double opt_bdd_thres;
-extern double opt_sort_thres;
-extern double opt_goal_bias;
-extern Int opt_goal;
+extern BoolOption opt_convert_weak;
+extern DoubleOption opt_bdd_thres;
+extern DoubleOption opt_sort_thres;
+extern DoubleOption opt_goal_bias;
+extern Int64Option opt_goal;
 extern Command opt_command;
-extern bool opt_branch_pbvars;
-extern int opt_polarity_sug;
-
-// -- files:
-extern char *opt_input;
-extern char *opt_result;
+extern BoolOption opt_branch_pbvars;
+extern IntOption opt_polarity_sug;
+extern BoolOption opt_preprocess;
 }
 }
 #endif //MONOSAT_CONFIG_PB_H

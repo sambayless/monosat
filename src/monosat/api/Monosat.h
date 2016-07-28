@@ -39,7 +39,7 @@
 #include "monosat/graph/GraphParser.h"
 #include "monosat/amo/AMOParser.h"
 #include "monosat/core/Optimize.h"
-#include "monosatpb/PbSolver.h"
+#include "monosat/pb/PbSolver.h"
 extern "C"
 {
 typedef Monosat::SimpSolver *  SolverPtr;

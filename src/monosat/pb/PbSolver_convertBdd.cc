@@ -18,7 +18,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 **************************************************************************************************/
 
 #include "PbSolver.h"
-#include "monosatpb/ADTs/FEnv.h"
+#include "monosat/pb/ADTs/FEnv.h"
 #include "Debug.h"
 namespace Monosat {
 namespace PB {

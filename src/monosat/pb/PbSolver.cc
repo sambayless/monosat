@@ -18,7 +18,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 **************************************************************************************************/
 #include "monosat/mtl/Vec.h"
 #include "monosat/utils/System.h"
-#include "monosatpb/ADTs/Sort.h"
+#include "monosat/pb/ADTs/Sort.h"
 #include "Debug.h"
 namespace Monosat {
 namespace PB {
@@ -557,7 +557,7 @@ void PbSolver::solve(solve_Command cmd) {
 
     if (opt_polarity_sug != 0) {
         for (int i = 0; i < goal_Cs.size(); i++) {
-            bool dir = goal_Cs[i] * opt_polarity_sug > 0 ? !sign(goal_ps[i]) : sign(goal_ps[i]);
+            bool dir = ((goal_Cs[i] * ((int64) opt_polarity_sug)) > 0) ? !sign(goal_ps[i]) : sign(goal_ps[i]);
             sat_solver.setPolarity(toSolver(var(goal_ps[i])), dir);
         }
     }
@@ -566,18 +566,18 @@ void PbSolver::solve(solve_Command cmd) {
         opt_convert = opt_convert_goal;
     opt_sort_thres *= opt_goal_bias;
 
-    if (opt_goal != Int_MAX)
-        addConstr(goal_ps, goal_Cs, opt_goal, -1),
+    if (Int((int64)opt_goal) != Int_MAX)
+        addConstr(goal_ps, goal_Cs,(int64) opt_goal, -1),
                 convertPbs(false);
 
     if(cmd== sc_Convert){
         return;
     }
 
-    if (opt_cnf != NULL)
+ /*   if (opt_cnf != NULL)
         reportf("Exporting CNF to: \b%s\b\n", opt_cnf),
                 sat_solver.toDimacs(opt_cnf),
-                exit(0);
+                exit(0);*/
 
     bool sat = false;
     int n_solutions = 0;    // (only for AllSolutions mode)

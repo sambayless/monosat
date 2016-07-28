@@ -21,7 +21,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #define StackAlloc_h
 
 //=================================================================================================
-#include "monosatpb/ADTs/Global.h"
+#include "Global.h"
 namespace Monosat {
 namespace PB {
 template<class T>

@@ -210,34 +210,34 @@ set(SOURCE_FILES
 
 
 set(SOURCE_FILES_PB
-        src/monosatpb/Config_pb.h
-        src/monosatpb/Config_pb.cpp
-        src/monosatpb/Debug.h
-        src/monosatpb/Debug.cc
-        src/monosatpb/Hardware.h
-        src/monosatpb/Hardware_adders.cc
-        src/monosatpb/Hardware_clausify.cc
-        src/monosatpb/Hardware_sorters.cc
-        src/monosatpb/PbSolver.cc
-        src/monosatpb/PbSolver.h
-        src/monosatpb/PbSolver_convert.cc
-        src/monosatpb/PbSolver_convertAdd.cc
-        src/monosatpb/PbSolver_convertBdd.cc
-        src/monosatpb/PbSolver_convertSort.cc
-        src/monosatpb/ADTs/FEnv.h
-        src/monosatpb/ADTs/FEnv.cc
-        src/monosatpb/ADTs/File.h
-        src/monosatpb/ADTs/File.cc
-        src/monosatpb/ADTs/Global.h
-        src/monosatpb/ADTs/Global.cc
-        src/monosatpb/ADTs/Hash_standard.h
-        src/monosatpb/ADTs/Heap.h
-        src/monosatpb/ADTs/Int.h
-        src/monosatpb/ADTs/Map.h
-        src/monosatpb/ADTs/Sort.h
-        src/monosatpb/ADTs/StackAlloc.h
-        src/monosatpb/ADTs/VecAlloc.h
-        src/monosatpb/ADTs/VecMaps.h
+        src/monosat/pb/Config_pb.h
+        src/monosat/pb/Config_pb.cpp
+        src/monosat/pb/Debug.h
+        src/monosat/pb/Debug.cc
+        src/monosat/pb/Hardware.h
+        src/monosat/pb/Hardware_adders.cc
+        src/monosat/pb/Hardware_clausify.cc
+        src/monosat/pb/Hardware_sorters.cc
+        src/monosat/pb/PbSolver.cc
+        src/monosat/pb/PbSolver.h
+        src/monosat/pb/PbSolver_convert.cc
+        src/monosat/pb/PbSolver_convertAdd.cc
+        src/monosat/pb/PbSolver_convertBdd.cc
+        src/monosat/pb/PbSolver_convertSort.cc
+        src/monosat/pb/ADTs/FEnv.h
+        src/monosat/pb/ADTs/FEnv.cc
+        src/monosat/pb/ADTs/File.h
+        src/monosat/pb/ADTs/File.cc
+        src/monosat/pb/ADTs/Global.h
+        src/monosat/pb/ADTs/Global.cc
+        src/monosat/pb/ADTs/Hash_standard.h
+        src/monosat/pb/ADTs/Heap.h
+        src/monosat/pb/ADTs/Int.h
+        src/monosat/pb/ADTs/Map.h
+        src/monosat/pb/ADTs/Sort.h
+        src/monosat/pb/ADTs/StackAlloc.h
+        src/monosat/pb/ADTs/VecAlloc.h
+        src/monosat/pb/ADTs/VecMaps.h
         )
 
 if (${PB_SUPPORT})

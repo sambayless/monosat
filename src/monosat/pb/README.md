@@ -1,3 +1,10 @@
+MonosatPB
+---
+MonosatPB is a fork of Minisat+ that has been altered for use with [MonoSAT](https://github.com/sambayless/monosat).
+If you are just looking for a pseudo-Boolean constraint solver, consider [Minisat+](https://github.com/niklasso/minisatp).
+
+Minisat+ was originally released with the following license:
+
 MiniSat+ -- Copyright (c) 2005-2010, Niklas Een, Niklas Sorensson
 
 Permission is hereby granted, free of charge, to any person obtaining a

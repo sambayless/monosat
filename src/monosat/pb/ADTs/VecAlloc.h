@@ -2,7 +2,7 @@
 #define VecAlloc_h
 
 #include <typeinfo>
-#include "monosatpb/ADTs/Global.h"
+#include "Global.h"
 //=================================================================================================
 namespace Monosat {
 namespace PB {

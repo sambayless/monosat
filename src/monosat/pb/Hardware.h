@@ -1,4 +1,4 @@
-/*****************************************************************************************[Debug.h]
+/**************************************************************************************[Hardware.h]
 Copyright (c) 2005-2010, Niklas Een, Niklas Sorensson
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
@@ -17,37 +17,27 @@ DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
 OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 **************************************************************************************************/
 
-#ifndef Debug_h
-#define Debug_h
+#ifndef Hardware_h
+#define Hardware_h
 
-#include "monosat/core/SolverTypes.h"
 #include "PbSolver.h"
-#include "monosatpb/ADTs/FEnv.h"
-
+#include "monosat/pb/ADTs/FEnv.h"
 
 //=================================================================================================
 namespace Monosat {
 namespace PB {
 
-extern vec<cchar *> *debug_names;
+int estimatedAdderCost(const Linear &c);
 
-void dump(Int num);
+void oddEvenSort(vec<Formula> &fs);
 
-void dump(Lit p);
+void rippleAdder(const vec<Formula> &xs, const vec<Formula> &ys, vec<Formula> &out);
 
-void dump(Formula f);
+void addPb(const vec<Formula> &ps, const vec<Int> &Cs_, vec<Formula> &out, int bits);
 
-void dump(const vec<Lit> &ps, const vec<Int> &Cs);
+void clausify(PbSolver &s, const vec<Formula> &fs, vec<Lit> &out);
 
-void dump(const vec<Lit> &ps, const vec<Int> &Cs, const vec<int> &assigns);
-
-void dump(const vec<Formula> &ps, const vec<Int> &Cs);
-
-void dump(const Linear &pb, const vec<int> &assigns);
-
-void dump(const Linear &pb);
-
-macro void dump(Linear *pb) { dump(*pb); }
+void clausify(PbSolver &s, const vec<Formula> &fs);
 }
 }
 
