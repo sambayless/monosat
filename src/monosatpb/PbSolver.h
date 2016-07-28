@@ -237,10 +237,11 @@ public:
         //since minisat+ doesn't have native support for such constraints, I'm simulating this by adding an extra, weighted
         //literal that is sufficient to satisfy the constraint if true.
         //If anyone knows a better way to do this, I'd be grateful.
-
+        sat_solver.cancelUntil(0);
         if(cond==lit_Undef){
             cond = mkLit(sat_solver.newVar());
         }
+        //printf("%d\n",cond.x);
         getPBVar(var(cond));
 
         if(ineq==Ineq::EQ){

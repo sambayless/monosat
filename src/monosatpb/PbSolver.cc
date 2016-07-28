@@ -84,6 +84,7 @@ void PbSolver::addGoal(const vec<Lit> &ps_, const vec<Int> &Cs) {
 }
 
 bool PbSolver::addConstr(const vec<Lit> &ps_, const vec<Int> &Cs, Int rhs, int ineq) {
+    sat_solver.cancelUntil(0);
     tmp.clear();
     fromSolver(ps_, tmp);
     vec<Lit> & ps = tmp;

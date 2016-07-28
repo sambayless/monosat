@@ -57,7 +57,8 @@ extern IntOption opt_subsearch;
 
 extern BoolOption opt_remap_vars;
 extern BoolOption opt_decide_optimization_lits;
-extern BoolOption opt_binary_search_optimization;
+extern BoolOption opt_binary_search_optimization_pb;
+extern BoolOption opt_binary_search_optimization_bv;
 extern BoolOption opt_amo_eager_prop;
 
 extern StringOption opt_debug_learnt_clauses;
