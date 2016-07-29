@@ -57,8 +57,11 @@ public:
     Linear(const vec<Lit> &ps, const vec<Int> &Cs, Int low, Int high) {
         orig_size = size = ps.size(), lo = low, hi = high;
         char *p = data;
-        for (int i = 0; i < ps.size(); i++) *(Lit *) p = ps[i], p += sizeof(Lit);
+        //important: changed the memory layout to put the coefficients before the lits, because the coeffs will be 8 bytes
+        //on many systems, while the lits are always 4byte, and so if the coeffs are placed after an odd number of lits then
+        //there may be memory alignment errors.
         for (int i = 0; i < Cs.size(); i++) new((Int *) p) Int(Cs[i]), p += sizeof(Int);
+        for (int i = 0; i < ps.size(); i++) *(Lit *) p = ps[i], p += sizeof(Lit);
     }
 
     ~Linear() {
@@ -66,13 +69,13 @@ public:
             (*this)(i).~Int();
     }
 
-    Lit operator[](int i) const { return *(Lit *) (data + sizeof(Lit) * i); }
+    Lit operator[](int i) const { return *(Lit *) (data + sizeof(Int) * orig_size  + sizeof(Lit) * i); }
 
-    Int operator()(int i) const { return *(Int *) (data + sizeof(Lit) * orig_size + sizeof(Int) * i); }
+    Int operator()(int i) const { return *(Int *) (data + sizeof(Int) * i); }
 
-    Lit &operator[](int i) { return *(Lit *) (data + sizeof(Lit) * i); }
+    Lit &operator[](int i) { return *(Lit *) (data + sizeof(Int) * orig_size + sizeof(Lit) * i); }
 
-    Int &operator()(int i) { return *(Int *) (data + sizeof(Lit) * orig_size + sizeof(Int) * i); }
+    Int &operator()(int i) { return *(Int *) (data + sizeof(Int) * i); }
 };
 
 
@@ -87,7 +90,8 @@ protected:
     vec<int> var_indices;
     vec<Lit> trail;          // Chronological assignment stack.
     vec<Lit> tmp;
-    StackAlloc<char *> mem;            // Used to allocate the 'Linear' constraints stored in 'constrs' (other 'Linear's, such as the goal function, are allocated with 'xmalloc()')
+    //should this instead be StackAlloc<char> mem;?
+    StackAlloc<char*> mem;            // Used to allocate the 'Linear' constraints stored in 'constrs' (other 'Linear's, such as the goal function, are allocated with 'xmalloc()')
 
 public:
     vec<Linear *> constrs;        // Vector with all constraints.

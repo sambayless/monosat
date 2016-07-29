@@ -3,7 +3,7 @@ project(monosat)
 
 set (PB_SUPPORT 1)
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DNO_GMP -std=c++11 -Wno-unused-variable -Wno-unused-but-set-variable   -Wno-sign-compare  -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g3  -DNO_GMP -std=c++11 -Wno-unused-variable -Wno-unused-but-set-variable   -Wno-sign-compare  -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS")
 
 set( CMAKE_VERBOSE_MAKEFILE on )
 
@@ -11,26 +11,26 @@ if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
    message(STATUS "Setting build type to 'Release' as none was specified.\nUse cmake -DCMAKE_BUILD_TYPE=Debug to seelct Debug release.")
    set(CMAKE_BUILD_TYPE Release CACHE STRING "Choose the type of build." FORCE)
    # Set the possible values of build type for cmake-gui
-   set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug" "Release"  "MinSizeRel" "RelWithDebInfo" "Sanetize")
+   set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug" "Release"  "MinSizeRel" "RelWithDebInfo" "Sanitize")
 endif()
 
-
+set(CMAKE_CONFIGURATION_TYPES "Release;Debug;MinSizeRel;RelWithDebInfo;Sanitize" CACHE STRING "" FORCE)
 
 message("* Adding build types...")
-SET(CMAKE_CXX_FLAGS_SANETIZE
-        "${CMAKE_CXX_FLAGS_DEBUG} -fsanitize=address"
+SET(CMAKE_CXX_FLAGS_SANITIZE
+        "${CMAKE_CXX_FLAGS_DEBUG} -fsanitize=address -fsanitize=undefined"
         CACHE STRING "Flags used by the C++ compiler during address sanetize  builds."
         FORCE )
-SET(CMAKE_C_FLAGS_SANETIZE
-        "${CMAKE_C_FLAGS_DEBUG} -fsanitize=address"
+SET(CMAKE_C_FLAGS_SANITIZE
+        "${CMAKE_C_FLAGS_DEBUG} -fsanitize=address -fsanitize=undefined"
         CACHE STRING "Flags used by the C compiler during address sanetize builds."
         FORCE )
-SET(CMAKE_EXE_LINKER_FLAGS_SANETIZE
-        "${CMAKE_EXE_LINKER_FLAGS} -fsanitize=address"
+SET(CMAKE_EXE_LINKER_FLAGS_SANITIZE
+        "${CMAKE_EXE_LINKER_FLAGS} -fsanitize=address -fsanitize=undefined"
         CACHE STRING "Flags used for linking binaries during address sanetize builds."
         FORCE )
-SET(CMAKE_SHARED_LINKER_FLAGS_SANETIZE
-        "${CMAKE_SHARED_LINKER_FLAGS} -fsanitize=address"
+SET(CMAKE_SHARED_LINKER_FLAGS_SANITIZE
+        "${CMAKE_SHARED_LINKER_FLAGS} -fsanitize=address -fsanitize=undefined"
         CACHE STRING "Flags used by the shared libraries linker during address sanetize builds."
         FORCE )
 MARK_AS_ADVANCED(

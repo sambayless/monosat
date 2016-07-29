@@ -101,6 +101,7 @@ void reportf(const char *format, ...) {
             col0 = (*p == '\n' || *p == '\r');
         }
     }
+    xfree(text);
     fflush(stdout);
 }
 }
