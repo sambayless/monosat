@@ -45,6 +45,7 @@ class StackAlloc : public Allocator<T> {
 
     StackAlloc(T *d, StackAlloc *p, int i) : data(d), prev(p), index(i) { }
 
+
     void init(void) {
         data = xmalloc<T>(cap);
         index = 0;
@@ -53,7 +54,9 @@ class StackAlloc : public Allocator<T> {
 
 public:
     StackAlloc(void) { init(); }
-
+    virtual ~StackAlloc() {
+        freeAll();
+    }
     T *alloc(int n) {
         if (index + n <= cap) {
             T *tmp = data + index;

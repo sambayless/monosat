@@ -42,6 +42,8 @@
 #include "amo/AMOTheory.h"
 #include "amo/AMOParser.h"
 #include "core/Optimize.h"
+#include "core/Config.h"
+#include "pb/Config_pb.h"
 using namespace Monosat;
 using namespace std;
 //=================================================================================================
@@ -603,14 +605,12 @@ int main(int argc, char** argv) {
 
 		AMOParser<char *, SimpSolver> amo;
 		parser.addParser(&amo);
-
-
+        GeometryParser<char *, SimpSolver, mpq_class>  preciseGeometryParser;
+        GeometryParser<char *, SimpSolver, double> doubleGeometryParser;
 		if (precise) {
-			GeometryParser<char *, SimpSolver, mpq_class> * geometryParser = new GeometryParser<char *, SimpSolver, mpq_class>();
-			parser.addParser(geometryParser);
+			parser.addParser(&preciseGeometryParser);
 		} else {
-			GeometryParser<char *, SimpSolver, double>* geometryParser = new GeometryParser<char *, SimpSolver, double> ();
-			parser.addParser(geometryParser);
+			parser.addParser(&doubleGeometryParser);
 		}
 
 

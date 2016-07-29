@@ -622,8 +622,6 @@ class Monosat(metaclass=Singleton):
         self.monosat_c.minimizeBV(self.solver._ptr, self.solver.bvtheory, c_int(bvID))
 
     def maximizeLits(self, lits):
-        if self.solver.output:
-            self._echoOutput("maximize lits "  + "\n")
         lp = self.getIntArray(lits)
         self.monosat_c.maximizeLits(self.solver._ptr, lp, len(lits))
 

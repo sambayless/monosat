@@ -175,6 +175,9 @@ public:
             , declared_n_vars(-1), declared_n_constrs(-1), best_goalvalue(Int_MAX) {
 
     }
+    virtual ~PbSolver(){
+
+    }
     Var newVar(bool polarity = true, bool dvar = true){
         return getPBVar(var_Undef,polarity,dvar);
     }

@@ -72,6 +72,9 @@ Solver::~Solver() {
 	for (Theory * t : theories) {
 		delete (t);
 	}
+	if(pbsolver){
+		delete pbsolver;
+	}
 }
 
 //=================================================================================================

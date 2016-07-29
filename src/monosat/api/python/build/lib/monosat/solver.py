@@ -66,9 +66,6 @@ def maximize(bitvector_or_literals,weights=None):
         else:
             Monosat().maximizeWeightedLits(lit_ints,weights)
 
-
-
-
 def minimize(bitvector_or_literals,weights=None):
     if isinstance(bitvector_or_literals,Var):
         bitvector_or_literals = [bitvector_or_literals]
@@ -84,10 +81,7 @@ def minimize(bitvector_or_literals,weights=None):
         else:
             Monosat().minimizeWeightedLits(lit_ints,weights)
 
-
-
 def WriteConstraints():
-    
     _writePBCosntraints()
 
 def _writePBCosntraints():

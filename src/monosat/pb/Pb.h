@@ -35,6 +35,9 @@ enum Ineq{
 //abstract interface to Psuedoboolean constraint solver
 class PBConstraintSolver {
 public:
+    virtual ~PBConstraintSolver(){
+
+    }
     virtual bool addConstr(const vec<Lit> &ps, const vec<int> &Cs, int rhs, Ineq ineq)=0;
     virtual Lit addConditionalConstr(const vec<Lit> &ps, const vec<int> &Cs, int rhs, Ineq ineq, Lit cond = lit_Undef)=0;
     virtual void convert(){

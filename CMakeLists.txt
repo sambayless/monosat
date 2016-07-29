@@ -11,8 +11,33 @@ if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
    message(STATUS "Setting build type to 'Release' as none was specified.\nUse cmake -DCMAKE_BUILD_TYPE=Debug to seelct Debug release.")
    set(CMAKE_BUILD_TYPE Release CACHE STRING "Choose the type of build." FORCE)
    # Set the possible values of build type for cmake-gui
-   set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug" "Release"  "MinSizeRel" "RelWithDebInfo")
+   set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug" "Release"  "MinSizeRel" "RelWithDebInfo" "Sanetize")
 endif()
+
+
+
+message("* Adding build types...")
+SET(CMAKE_CXX_FLAGS_SANETIZE
+        "${CMAKE_CXX_FLAGS_DEBUG} -fsanitize=address"
+        CACHE STRING "Flags used by the C++ compiler during address sanetize  builds."
+        FORCE )
+SET(CMAKE_C_FLAGS_SANETIZE
+        "${CMAKE_C_FLAGS_DEBUG} -fsanitize=address"
+        CACHE STRING "Flags used by the C compiler during address sanetize builds."
+        FORCE )
+SET(CMAKE_EXE_LINKER_FLAGS_SANETIZE
+        "${CMAKE_EXE_LINKER_FLAGS} -fsanitize=address"
+        CACHE STRING "Flags used for linking binaries during address sanetize builds."
+        FORCE )
+SET(CMAKE_SHARED_LINKER_FLAGS_SANETIZE
+        "${CMAKE_SHARED_LINKER_FLAGS} -fsanitize=address"
+        CACHE STRING "Flags used by the shared libraries linker during address sanetize builds."
+        FORCE )
+MARK_AS_ADVANCED(
+        CMAKE_CXX_FLAGS_SANETIZE
+        CMAKE_C_FLAGS_SANETIZE
+        CMAKE_EXE_LINKER_FLAGS_SANETIZE
+        CMAKE_SHARED_LINKER_FLAGS_SANETIZE )
 
 include_directories(src/)
 
