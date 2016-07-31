@@ -96,7 +96,7 @@ for line in (bz2.open(filename,"rt") if filename.endswith("bz2") else open(filen
                     const = 1
                 lit = var if not neg else Not(var)
                 lits.append(lit)
-                pbs.append(varnum if not neg else ~varnum)
+                pbs.append(varnum if not neg else -varnum)
                 weights.append(const)
                 const = None
 
@@ -146,20 +146,28 @@ if result:
     witstr = "v ";
     for pb,l in used_vars.items():
         lit = Var(l)
+
         if lit.value():
             witstr+="x%d "%(pb)
             witness.append(pb)
             model[pb]=True
+            model[-pb]=False
+            print("adding model for %d"%(pb))
         elif lit.value()==False:
             witstr+="-x%d "%(pb)
             witness.append(-pb)
             model[pb]=False
+            model[-pb]=True
+            print("adding model for %d"%(pb))
+        else:
+            print("No full model for x%d"%(pb), file=sys.stderr)
+            assert(False)
     witstr.rstrip();
     goalval = 0
     for pb,w in zip(goal[2],goal[3]):
-        if pb not in model:
+        if pb not in model or -pb not in model:
             print("No model for x%d"%(pb), file=sys.stderr)
-        assert(pb in model)
+        assert(pb in model and -pb in model)
         if pb>=0:
             if model[pb]:
                 goalval+=w
@@ -168,4 +176,5 @@ if result:
                 goalval+=w
     print("c Optimal solution: %d"%(goalval))
     print("s OPTIMUM FOUND")
+    print("o %d"%(goalval))
     print(witstr)
