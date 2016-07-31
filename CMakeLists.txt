@@ -3,7 +3,7 @@ project(monosat)
 
 set (PB_SUPPORT 1)
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g3  -DNO_GMP -std=c++11 -Wno-unused-variable -Wno-unused-but-set-variable   -Wno-sign-compare  -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}  -DNO_GMP -std=c++11 -Wno-unused-variable -Wno-unused-but-set-variable   -Wno-sign-compare  -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS")
 
 set( CMAKE_VERBOSE_MAKEFILE on )
 
@@ -235,6 +235,8 @@ set(SOURCE_FILES
 
 
 set(SOURCE_FILES_PB
+        src/monosat/pb/Pb.h
+        src/monosat/pb/Clausify.h
         src/monosat/pb/Config_pb.h
         src/monosat/pb/Config_pb.cpp
         src/monosat/pb/Debug.h
@@ -296,7 +298,7 @@ if (${UNIX})
     target_link_libraries(monosat_static rt) #not static
 endif (${UNIX})
 
-add_library(libmonosat SHARED ${SOURCE_FILES} src/monosat/pb/Pb.h)
+add_library(libmonosat SHARED ${SOURCE_FILES} )
 set_target_properties(libmonosat PROPERTIES OUTPUT_NAME monosat)
 target_link_libraries(libmonosat z)
 target_link_libraries(libmonosat m)

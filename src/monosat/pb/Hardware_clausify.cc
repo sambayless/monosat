@@ -18,18 +18,20 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 **************************************************************************************************/
 
 #include "Hardware.h"
+#include "Clausify.h"
 namespace Monosat {
 namespace PB {
 struct Clausifier {
     PbSolver &s;
     Monosat::vec<Lit> tmp_clause;
     vec<Formula> tmp_marked;
+    ClausifyContext & context;
+    Clausifier(PbSolver &_s) : s(_s),context(s.clausifyContext) { }
 
-    Clausifier(PbSolver &_s) : s(_s) { }
-
-    static /*WARNING*/ CMap<int> occ;
-    static /*WARNING*/ CMap<Var> vmap;
-    static /*WARNING*/ CMap<Lit, true> vmapp;
+    //moved these into a per-solver 'clausify context', rather than using static variables
+/*    static *//*WARNING*//* CMap<int> occ;
+    static *//*WARNING*//* CMap<Var> vmap;
+    static *//*WARNING*//* CMap<Lit, true> vmapp;*/
     FMap<bool> seen;
 
     inline void clause(Lit a, Lit b) {
@@ -68,17 +70,17 @@ struct Clausifier {
     Lit polarityClausify(Formula f);
 };
 
-CMap<int>      Clausifier::occ(0);
+/*CMap<int>      Clausifier::occ(0);
 CMap<Var>      Clausifier::vmap(var_Undef);
-CMap<Lit, true> Clausifier::vmapp(lit_Undef);
+CMap<Lit, true> Clausifier::vmapp(lit_Undef);*/
 
-void Clausifier::usage(Formula f) {
+void Clausifier::usage( Formula f) {
     if (Atom_p(f))
         return;
 
-    occ.set(f, occ.at(f) + 1);
+    context.occ.set(f, context.occ.at(f) + 1);
 
-    if (occ.at(f) == 1) {
+    if (context.occ.at(f) == 1) {
         if (Bin_p(f)) {
             usage(left(f));
             usage(right(f));
@@ -107,7 +109,7 @@ void Clausifier::_collect(Formula f, vec<Formula> &out) {
     if (!seen.at(f)) {
         seen.set(f, true);
         tmp_marked.push(f);
-        if (Bin_p(f) && op(f) == op_And && !sign(f) && occ.at(f) == 1) {
+        if (Bin_p(f) && op(f) == op_And && !sign(f) && context.occ.at(f) == 1) {
             _collect(left(f), out);
             _collect(right(f), out);
         }
@@ -130,12 +132,12 @@ Lit Clausifier::polarityClausify(Formula f) {
         } else
 #endif
             result = mkLit(index(f), sign(f));
-    } else if (vmapp.at(f) != lit_Undef && !s.isEliminated(var(vmapp.at(f)))) {
-        result = vmapp.at(f);
+    } else if (context.vmapp.at(f) != lit_Undef && !s.isEliminated(var(context.vmapp.at(f)))) {
+        result = context.vmapp.at(f);
     } else {
 #if 1
-        result = vmapp.at(~f) != lit_Undef && !s.isEliminated(var(vmapp.at(~f))) ?
-                 mkLit(var(vmapp.at(~f))) : mkLit(s.newVar(true, !opt_branch_pbvars));
+        result = context.vmapp.at(~f) != lit_Undef && !s.isEliminated(var(context.vmapp.at(~f))) ?
+                 mkLit(var(context.vmapp.at(~f))) : mkLit(s.newVar(true, !opt_branch_pbvars));
 #else
         result = mkLit(s.newVar(l_Undef, !opt_branch_pbvars));
 #endif
@@ -234,8 +236,9 @@ Lit Clausifier::polarityClausify(Formula f) {
                 }
             }
         }
+        assert(var(result)<s.nVars());
         result = mkLit(var(result), sign(f));
-        vmapp.set(f, result);
+        context.vmapp.set(f, result);
     }
 
     assert(result != lit_Undef);
@@ -249,8 +252,8 @@ Lit Clausifier::basicClausify(Formula f) {
     if (Atom_p(f)) {
         assert(!Const_p(f));
         result = index(f);
-    } else if (vmap.at(f) != var_Undef && !s.isEliminated(vmap.at(f))) {
-        result = vmap.at(f);
+    } else if (context.vmap.at(f) != var_Undef && !s.isEliminated(context.vmap.at(f))) {
+        result = context.vmap.at(f);
     } else {
         result = s.newVar(true, !opt_branch_pbvars);
         Lit p = mkLit(result);
@@ -320,7 +323,7 @@ Lit Clausifier::basicClausify(Formula f) {
                 clause(p, c, a, ~b);
             }
         }
-        vmap.set(f, result);
+        context.vmap.set(f, result);
     }
 
     assert(result != var_Undef);

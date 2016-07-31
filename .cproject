@@ -87,7 +87,7 @@
 						</toolChain>
 					</folderInfo>
 					<sourceEntries>
-						<entry excluding="CMakeFiles|geometry/bitmap|tests|fsm|pb|bv|graph/resources|cgal|strings|geometry/MonotoneDelaunay.cpp|dgl|smt|smtlib|polypartition|graph/kbtest.c|test/test_thorup.cpp|alg|asp|graph/TreeReachDetector.cpp|resources" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+						<entry excluding="src/monosat/geometry/MonotoneDelaunay.cpp|CMakeFiles|geometry/bitmap|tests|fsm|pb|bv|graph/resources|cgal|strings|geometry/MonotoneDelaunay.cpp|dgl|smt|smtlib|polypartition|graph/kbtest.c|test/test_thorup.cpp|alg|asp|graph/TreeReachDetector.cpp|resources" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
 						<entry excluding="dgl|test_acyclic_flow_file.cpp|test_acyclic_flow.cpp|test_collisions.cpp|test_dinics_linkcut.cpp|test_spirapan.cpp|test_kohlitorr_dynamic_old.cpp|test_kohlitorr_dynamic.cpp|test_edmondskarp_dynamic.cpp|test_eulertree.cpp|test_maxflow.cpp|test_kohlitorr_dynamic_combined.cpp|test_ramal_reps.cpp|test_edmondskarp.cpp|test_thorup.cpp|test_linkcuttree.cpp|test_ramal_reps_weighted.cpp|test_dinics.cpp" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="tests"/>
 					</sourceEntries>
 				</configuration>
@@ -180,7 +180,7 @@
 						</toolChain>
 					</folderInfo>
 					<sourceEntries>
-						<entry excluding="CMakeFiles|geometry/bitmap|tests|fsm|pb|strings|bv|graph/resources|cgal|geometry/MonotoneDelaunay.cpp|dgl|smt|smtlib|graph/kbtest.c|polypartition|test/test_thorup.cpp|alg|asp|graph/TreeReachDetector.cpp|resources|geometry/cgal" flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name=""/>
+						<entry excluding="src/monosat/geometry/MonotoneDelaunay.cpp|CMakeFiles|geometry/bitmap|tests|fsm|pb|strings|bv|graph/resources|cgal|geometry/MonotoneDelaunay.cpp|dgl|smt|smtlib|graph/kbtest.c|polypartition|test/test_thorup.cpp|alg|asp|graph/TreeReachDetector.cpp|resources|geometry/cgal" flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name=""/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="smt"/>
 						<entry excluding="dgl|test_acyclic_flow_file.cpp|test_acyclic_flow.cpp|test_collisions.cpp|test_dinics_linkcut.cpp|test_spirapan.cpp|test_kohlitorr_dynamic_old.cpp|test_kohlitorr_dynamic.cpp|test_edmondskarp_dynamic.cpp|test_eulertree.cpp|test_maxflow.cpp|test_kohlitorr_dynamic_combined.cpp|test_ramal_reps.cpp|test_thorup.cpp|test_edmondskarp.cpp|test_linkcuttree.cpp|test_ramal_reps_weighted.cpp|test_dinics.cpp" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="tests"/>
 					</sourceEntries>
@@ -269,7 +269,7 @@
 						</toolChain>
 					</folderInfo>
 					<sourceEntries>
-						<entry excluding="CMakeFiles|geometry/bitmap|tests|fsm|pb|strings|bv|graph/resources|cgal|geometry/MonotoneDelaunay.cpp|dgl|smt|smtlib|graph/kbtest.c|polypartition|test/test_thorup.cpp|alg|schedule|asp|graph/TreeReachDetector.cpp|resources|geometry/cgal" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+						<entry excluding="src/monosat/geometry/MonotoneDelaunay.cpp|CMakeFiles|geometry/bitmap|tests|fsm|pb|strings|bv|graph/resources|cgal|geometry/MonotoneDelaunay.cpp|dgl|smt|smtlib|graph/kbtest.c|polypartition|test/test_thorup.cpp|alg|schedule|asp|graph/TreeReachDetector.cpp|resources|geometry/cgal" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="smt"/>
 						<entry excluding="dgl|test_acyclic_flow_file.cpp|test_acyclic_flow.cpp|test_collisions.cpp|test_dinics_linkcut.cpp|test_spirapan.cpp|test_kohlitorr_dynamic_old.cpp|test_kohlitorr_dynamic.cpp|test_edmondskarp_dynamic.cpp|test_eulertree.cpp|test_maxflow.cpp|test_kohlitorr_dynamic_combined.cpp|test_ramal_reps.cpp|test_thorup.cpp|test_edmondskarp.cpp|test_linkcuttree.cpp|test_ramal_reps_weighted.cpp|test_dinics.cpp" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="tests"/>
 					</sourceEntries>
@@ -356,7 +356,7 @@
 						</toolChain>
 					</folderInfo>
 					<sourceEntries>
-						<entry excluding="CMakeFiles|geometry/bitmap|tests|fsm|pb|strings|bv|graph/resources|cgal|geometry/MonotoneDelaunay.cpp|dgl|smt|smtlib|graph/kbtest.c|polypartition|test/test_thorup.cpp|alg|schedule|asp|graph/TreeReachDetector.cpp|resources|geometry/cgal" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+						<entry excluding="src/monosat/geometry/MonotoneDelaunay.cpp|CMakeFiles|geometry/bitmap|tests|fsm|pb|strings|bv|graph/resources|cgal|geometry/MonotoneDelaunay.cpp|dgl|smt|smtlib|graph/kbtest.c|polypartition|test/test_thorup.cpp|alg|schedule|asp|graph/TreeReachDetector.cpp|resources|geometry/cgal" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="smt"/>
 						<entry excluding="dgl|test_acyclic_flow_file.cpp|test_acyclic_flow.cpp|test_collisions.cpp|test_dinics_linkcut.cpp|test_spirapan.cpp|test_kohlitorr_dynamic_old.cpp|test_kohlitorr_dynamic.cpp|test_edmondskarp_dynamic.cpp|test_eulertree.cpp|test_maxflow.cpp|test_kohlitorr_dynamic_combined.cpp|test_ramal_reps.cpp|test_thorup.cpp|test_edmondskarp.cpp|test_linkcuttree.cpp|test_ramal_reps_weighted.cpp|test_dinics.cpp" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="tests"/>
 					</sourceEntries>
@@ -444,7 +444,7 @@
 						</toolChain>
 					</folderInfo>
 					<sourceEntries>
-						<entry excluding="CMakeFiles|geometry/bitmap|tests|fsm|pb|strings|bv|graph/resources|cgal|geometry/MonotoneDelaunay.cpp|dgl|smt|smtlib|graph/kbtest.c|polypartition|test/test_thorup.cpp|alg|schedule|asp|graph/TreeReachDetector.cpp|resources|geometry/cgal" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+						<entry excluding="src/monosat/geometry/MonotoneDelaunay.cpp|CMakeFiles|geometry/bitmap|tests|fsm|pb|strings|bv|graph/resources|cgal|geometry/MonotoneDelaunay.cpp|dgl|smt|smtlib|graph/kbtest.c|polypartition|test/test_thorup.cpp|alg|schedule|asp|graph/TreeReachDetector.cpp|resources|geometry/cgal" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="smt"/>
 						<entry excluding="dgl|test_acyclic_flow_file.cpp|test_acyclic_flow.cpp|test_collisions.cpp|test_dinics_linkcut.cpp|test_spirapan.cpp|test_kohlitorr_dynamic_old.cpp|test_kohlitorr_dynamic.cpp|test_edmondskarp_dynamic.cpp|test_eulertree.cpp|test_maxflow.cpp|test_kohlitorr_dynamic_combined.cpp|test_ramal_reps.cpp|test_thorup.cpp|test_edmondskarp.cpp|test_linkcuttree.cpp|test_ramal_reps_weighted.cpp|test_dinics.cpp" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="tests"/>
 					</sourceEntries>
@@ -541,7 +541,7 @@
 						</toolChain>
 					</folderInfo>
 					<sourceEntries>
-						<entry excluding="CMakeFiles|geometry/bitmap|tests|fsm|pb|strings|bv|graph/resources|cgal|geometry/MonotoneDelaunay.cpp|dgl|smt|smtlib|graph/kbtest.c|polypartition|test/test_thorup.cpp|alg|Main.cc|schedule|asp|graph/TreeReachDetector.cpp|resources|geometry/cgal" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+						<entry excluding="src/monosat/geometry/MonotoneDelaunay.cpp|CMakeFiles|geometry/bitmap|tests|fsm|pb|strings|bv|graph/resources|cgal|geometry/MonotoneDelaunay.cpp|dgl|smt|smtlib|graph/kbtest.c|polypartition|test/test_thorup.cpp|alg|Main.cc|schedule|asp|graph/TreeReachDetector.cpp|resources|geometry/cgal" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="smt"/>
 						<entry excluding="dgl|test_acyclic_flow_file.cpp|test_acyclic_flow.cpp|test_collisions.cpp|test_dinics_linkcut.cpp|test_spirapan.cpp|test_kohlitorr_dynamic_old.cpp|test_kohlitorr_dynamic.cpp|test_edmondskarp_dynamic.cpp|test_eulertree.cpp|test_maxflow.cpp|test_kohlitorr_dynamic_combined.cpp|test_ramal_reps.cpp|test_thorup.cpp|test_edmondskarp.cpp|test_linkcuttree.cpp|test_ramal_reps_weighted.cpp|test_dinics.cpp" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="tests"/>
 					</sourceEntries>
@@ -638,7 +638,7 @@
 						</toolChain>
 					</folderInfo>
 					<sourceEntries>
-						<entry excluding="CMakeFiles|geometry/bitmap|tests|fsm|pb|strings|bv|graph/resources|cgal|geometry/MonotoneDelaunay.cpp|dgl|smt|smtlib|graph/kbtest.c|polypartition|test/test_thorup.cpp|alg|schedule|asp|graph/TreeReachDetector.cpp|resources|geometry/cgal" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+						<entry excluding="src/monosat/geometry/MonotoneDelaunay.cpp|CMakeFiles|geometry/bitmap|tests|fsm|pb|strings|bv|graph/resources|cgal|geometry/MonotoneDelaunay.cpp|dgl|smt|smtlib|graph/kbtest.c|polypartition|test/test_thorup.cpp|alg|schedule|asp|graph/TreeReachDetector.cpp|resources|geometry/cgal" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="smt"/>
 						<entry excluding="dgl|test_acyclic_flow_file.cpp|test_acyclic_flow.cpp|test_collisions.cpp|test_dinics_linkcut.cpp|test_spirapan.cpp|test_kohlitorr_dynamic_old.cpp|test_kohlitorr_dynamic.cpp|test_edmondskarp_dynamic.cpp|test_eulertree.cpp|test_maxflow.cpp|test_kohlitorr_dynamic_combined.cpp|test_ramal_reps.cpp|test_thorup.cpp|test_edmondskarp.cpp|test_linkcuttree.cpp|test_ramal_reps_weighted.cpp|test_dinics.cpp" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="tests"/>
 					</sourceEntries>
@@ -735,7 +735,7 @@
 						</toolChain>
 					</folderInfo>
 					<sourceEntries>
-						<entry excluding="CMakeFiles|geometry/bitmap|tests|fsm|pb|strings|bv|graph/resources|cgal|geometry/MonotoneDelaunay.cpp|dgl|smt|smtlib|graph/kbtest.c|polypartition|test/test_thorup.cpp|alg|asp|graph/TreeReachDetector.cpp|resources|geometry/cgal" flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name=""/>
+						<entry excluding="src/monosat/geometry/MonotoneDelaunay.cpp|CMakeFiles|geometry/bitmap|tests|fsm|pb|strings|bv|graph/resources|cgal|geometry/MonotoneDelaunay.cpp|dgl|smt|smtlib|graph/kbtest.c|polypartition|test/test_thorup.cpp|alg|asp|graph/TreeReachDetector.cpp|resources|geometry/cgal" flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name=""/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="smt"/>
 						<entry excluding="dgl|test_acyclic_flow_file.cpp|test_acyclic_flow.cpp|test_collisions.cpp|test_dinics_linkcut.cpp|test_spirapan.cpp|test_kohlitorr_dynamic_old.cpp|test_kohlitorr_dynamic.cpp|test_edmondskarp_dynamic.cpp|test_eulertree.cpp|test_maxflow.cpp|test_kohlitorr_dynamic_combined.cpp|test_ramal_reps.cpp|test_thorup.cpp|test_edmondskarp.cpp|test_linkcuttree.cpp|test_ramal_reps_weighted.cpp|test_dinics.cpp" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="tests"/>
 					</sourceEntries>
@@ -831,7 +831,7 @@
 						</toolChain>
 					</folderInfo>
 					<sourceEntries>
-						<entry excluding="CMakeFiles|geometry/bitmap|tests|fsm|pb|strings|bv|graph/resources|cgal|geometry/MonotoneDelaunay.cpp|dgl|smtlib|smt|graph/kbtest.c|polypartition|test/test_thorup.cpp|alg|Main.cc|asp|graph/TreeReachDetector.cpp|resources|geometry/cgal" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+						<entry excluding="src/monosat/geometry/MonotoneDelaunay.cpp|CMakeFiles|geometry/bitmap|tests|fsm|pb|strings|bv|graph/resources|cgal|geometry/MonotoneDelaunay.cpp|dgl|smtlib|smt|graph/kbtest.c|polypartition|test/test_thorup.cpp|alg|Main.cc|asp|graph/TreeReachDetector.cpp|resources|geometry/cgal" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
 						<entry excluding="dgl/test_ramal_reps.cpp|dgl/test_maxflow.cpp|dgl/test_dinics.cpp|dgl/test_thorup.cpp|dgl/test_spirapan.cpp|dgl/test_linkcuttree.cpp|dgl/test_kohlitorr_dynamic.cpp|dgl/test_kohlitorr_dynamic_old.cpp|dgl/test_eulertree.cpp|dgl/test_edmondskarp.cpp|dgl/test_edmondskarp_dynamic.cpp|dgl/test_dinics_linkcut.cpp|dgl/test_acyclic_flow.cpp|dgl/test_acyclic_flow_file.cpp|dgl/test_collisions.cpp|test_acyclic_flow.cpp|test_kohlitorr_dynamic_combined.cpp|test_collisions.cpp|test_dinics_linkcut.cpp|test_spirapan.cpp|test_kohlitorr_dynamic.cpp|test_kohlitorr_dynamic_old.cpp|test_edmondskarp_dynamic.cpp|test_eulertree.cpp|test_maxflow.cpp|test_ramal_reps.cpp|test_thorup.cpp|test_edmondskarp.cpp|test_linkcuttree.cpp|test_ramal_reps_weighted.cpp|test_dinics.cpp" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="tests"/>
 					</sourceEntries>
 				</configuration>
@@ -928,7 +928,7 @@
 						</toolChain>
 					</folderInfo>
 					<sourceEntries>
-						<entry excluding="CMakeFiles|geometry/bitmap|tests|fsm|pb|strings|bv|graph/resources|cgal|geometry/MonotoneDelaunay.cpp|dgl|smtlib|smt|graph/kbtest.c|polypartition|test/test_thorup.cpp|alg|Main.cc|asp|graph/TreeReachDetector.cpp|resources|geometry/cgal" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+						<entry excluding="src/monosat/geometry/MonotoneDelaunay.cpp|CMakeFiles|geometry/bitmap|tests|fsm|pb|strings|bv|graph/resources|cgal|geometry/MonotoneDelaunay.cpp|dgl|smtlib|smt|graph/kbtest.c|polypartition|test/test_thorup.cpp|alg|Main.cc|asp|graph/TreeReachDetector.cpp|resources|geometry/cgal" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
 						<entry excluding="dgl|test_acyclic_flow_file.cpp|test_acyclic_flow.cpp|test_collisions.cpp|test_dinics_linkcut.cpp|test_spirapan.cpp|test_kohlitorr_dynamic.cpp|test_kohlitorr_dynamic_old.cpp|test_edmondskarp_dynamic.cpp|test_eulertree.cpp|test_maxflow.cpp|test_kohlitorr_dynamic_combined.cpp|test_ramal_reps.cpp|test_thorup.cpp|test_edmondskarp.cpp|test_linkcuttree.cpp|test_ramal_reps_weighted.cpp|test_dinics.cpp" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="tests"/>
 					</sourceEntries>
 				</configuration>
@@ -1020,7 +1020,7 @@
 						</toolChain>
 					</folderInfo>
 					<sourceEntries>
-						<entry excluding="CMakeFiles|geometry/bitmap|tests|fsm|pb|bv|graph/resources|cgal|strings|geometry/MonotoneDelaunay.cpp|dgl|smt|smtlib|polypartition|graph/kbtest.c|test/test_thorup.cpp|alg|asp|graph/TreeReachDetector.cpp|resources" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+						<entry excluding="src/monosat/geometry/MonotoneDelaunay.cpp|CMakeFiles|geometry/bitmap|tests|fsm|pb|bv|graph/resources|cgal|strings|geometry/MonotoneDelaunay.cpp|dgl|smt|smtlib|polypartition|graph/kbtest.c|test/test_thorup.cpp|alg|asp|graph/TreeReachDetector.cpp|resources" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
 						<entry excluding="dgl|test_acyclic_flow_file.cpp|test_acyclic_flow.cpp|test_collisions.cpp|test_dinics_linkcut.cpp|test_spirapan.cpp|test_kohlitorr_dynamic_old.cpp|test_kohlitorr_dynamic.cpp|test_edmondskarp_dynamic.cpp|test_eulertree.cpp|test_maxflow.cpp|test_kohlitorr_dynamic_combined.cpp|test_ramal_reps.cpp|test_edmondskarp.cpp|test_thorup.cpp|test_linkcuttree.cpp|test_ramal_reps_weighted.cpp|test_dinics.cpp" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="tests"/>
 					</sourceEntries>
 				</configuration>
@@ -1113,7 +1113,7 @@
 						</toolChain>
 					</folderInfo>
 					<sourceEntries>
-						<entry excluding="CMakeFiles|geometry/bitmap|tests|fsm|pb|bv|graph/resources|cgal|strings|geometry/MonotoneDelaunay.cpp|dgl|smt|smtlib|polypartition|graph/kbtest.c|test/test_thorup.cpp|alg|asp|graph/TreeReachDetector.cpp|resources" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+						<entry excluding="src/monosat/geometry/MonotoneDelaunay.cpp|CMakeFiles|geometry/bitmap|tests|fsm|pb|bv|graph/resources|cgal|strings|geometry/MonotoneDelaunay.cpp|dgl|smt|smtlib|polypartition|graph/kbtest.c|test/test_thorup.cpp|alg|asp|graph/TreeReachDetector.cpp|resources" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
 						<entry excluding="dgl|test_acyclic_flow_file.cpp|test_acyclic_flow.cpp|test_collisions.cpp|test_dinics_linkcut.cpp|test_spirapan.cpp|test_kohlitorr_dynamic_old.cpp|test_kohlitorr_dynamic.cpp|test_edmondskarp_dynamic.cpp|test_eulertree.cpp|test_maxflow.cpp|test_kohlitorr_dynamic_combined.cpp|test_ramal_reps.cpp|test_edmondskarp.cpp|test_thorup.cpp|test_linkcuttree.cpp|test_ramal_reps_weighted.cpp|test_dinics.cpp" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="tests"/>
 					</sourceEntries>
 				</configuration>
@@ -1205,7 +1205,7 @@
 						</toolChain>
 					</folderInfo>
 					<sourceEntries>
-						<entry excluding="CMakeFiles|geometry/bitmap|tests|fsm|pb|strings|bv|graph/resources|cgal|geometry/MonotoneDelaunay.cpp|dgl|smt|smtlib|graph/kbtest.c|polypartition|test/test_thorup.cpp|alg|asp|graph/TreeReachDetector.cpp|resources|geometry/cgal" flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name=""/>
+						<entry excluding="src/monosat/geometry/MonotoneDelaunay.cpp|CMakeFiles|geometry/bitmap|tests|fsm|pb|strings|bv|graph/resources|cgal|geometry/MonotoneDelaunay.cpp|dgl|smt|smtlib|graph/kbtest.c|polypartition|test/test_thorup.cpp|alg|asp|graph/TreeReachDetector.cpp|resources|geometry/cgal" flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name=""/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="smt"/>
 						<entry excluding="dgl|test_acyclic_flow_file.cpp|test_acyclic_flow.cpp|test_collisions.cpp|test_dinics_linkcut.cpp|test_spirapan.cpp|test_kohlitorr_dynamic_old.cpp|test_kohlitorr_dynamic.cpp|test_edmondskarp_dynamic.cpp|test_eulertree.cpp|test_maxflow.cpp|test_kohlitorr_dynamic_combined.cpp|test_ramal_reps.cpp|test_thorup.cpp|test_edmondskarp.cpp|test_linkcuttree.cpp|test_ramal_reps_weighted.cpp|test_dinics.cpp" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="tests"/>
 					</sourceEntries>
@@ -1300,7 +1300,7 @@
 						</toolChain>
 					</folderInfo>
 					<sourceEntries>
-						<entry excluding="CMakeFiles|geometry/bitmap|Main.cc|tests|fsm|pb|strings|bv|graph/resources|cgal|geometry/MonotoneDelaunay.cpp|dgl|smt|smtlib|graph/kbtest.c|polypartition|test/test_thorup.cpp|alg|schedule|asp|graph/TreeReachDetector.cpp|resources|geometry/cgal" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+						<entry excluding="src/monosat/geometry/MonotoneDelaunay.cpp|CMakeFiles|geometry/bitmap|Main.cc|tests|fsm|pb|strings|bv|graph/resources|cgal|geometry/MonotoneDelaunay.cpp|dgl|smt|smtlib|graph/kbtest.c|polypartition|test/test_thorup.cpp|alg|schedule|asp|graph/TreeReachDetector.cpp|resources|geometry/cgal" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="smt"/>
 						<entry excluding="dgl|test_acyclic_flow_file.cpp|test_acyclic_flow.cpp|test_collisions.cpp|test_dinics_linkcut.cpp|test_spirapan.cpp|test_kohlitorr_dynamic_old.cpp|test_kohlitorr_dynamic.cpp|test_edmondskarp_dynamic.cpp|test_eulertree.cpp|test_maxflow.cpp|test_kohlitorr_dynamic_combined.cpp|test_ramal_reps.cpp|test_thorup.cpp|test_edmondskarp.cpp|test_linkcuttree.cpp|test_ramal_reps_weighted.cpp|test_dinics.cpp" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="tests"/>
 					</sourceEntries>
@@ -1333,7 +1333,7 @@
 					<folderInfo id="cdt.managedbuild.config.gnu.exe.release.1052123975.874841032.1476738042.1271233822." name="/" resourcePath="">
 						<toolChain id="cdt.managedbuild.toolchain.gnu.exe.release.1992187690" name="Linux GCC" superClass="cdt.managedbuild.toolchain.gnu.exe.release">
 							<targetPlatform id="cdt.managedbuild.target.gnu.platform.exe.release.402117329" name="Debug Platform" superClass="cdt.managedbuild.target.gnu.platform.exe.release"/>
-							<builder buildPath="${workspace_loc:/Minisat2/Release}" id="cdt.managedbuild.target.gnu.builder.exe.release.49048372" keepEnvironmentInBuildfile="false" managedBuildOn="true" name="Gnu Make Builder" superClass="cdt.managedbuild.target.gnu.builder.exe.release"/>
+							<builder arguments="-j32" buildPath="${workspace_loc:/Minisat2/Release}" command="make" id="cdt.managedbuild.target.gnu.builder.exe.release.49048372" keepEnvironmentInBuildfile="false" managedBuildOn="true" name="Gnu Make Builder" superClass="cdt.managedbuild.target.gnu.builder.exe.release"/>
 							<tool id="cdt.managedbuild.tool.gnu.archiver.base.1921383621" name="GCC Archiver" superClass="cdt.managedbuild.tool.gnu.archiver.base"/>
 							<tool id="cdt.managedbuild.tool.gnu.cpp.compiler.exe.release.2138736546" name="GCC C++ Compiler" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.exe.release">
 								<option id="gnu.cpp.compiler.exe.release.option.optimization.level.1184186673" name="Optimization Level" superClass="gnu.cpp.compiler.exe.release.option.optimization.level" value="gnu.cpp.compiler.optimization.level.none" valueType="enumerated"/>
@@ -1395,7 +1395,7 @@
 						</toolChain>
 					</folderInfo>
 					<sourceEntries>
-						<entry excluding="CMakeFiles|geometry/bitmap|Main.cc|tests|fsm|pb|strings|bv|graph/resources|cgal|geometry/MonotoneDelaunay.cpp|dgl|smt|smtlib|graph/kbtest.c|polypartition|test/test_thorup.cpp|alg|schedule|asp|graph/TreeReachDetector.cpp|resources|geometry/cgal" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+						<entry excluding="src/monosat/geometry/MonotoneDelaunay.cpp|CMakeFiles|geometry/bitmap|Main.cc|tests|fsm|pb|strings|bv|graph/resources|cgal|geometry/MonotoneDelaunay.cpp|dgl|smt|smtlib|graph/kbtest.c|polypartition|test/test_thorup.cpp|alg|schedule|asp|graph/TreeReachDetector.cpp|resources|geometry/cgal" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="smt"/>
 						<entry excluding="dgl|test_acyclic_flow_file.cpp|test_acyclic_flow.cpp|test_collisions.cpp|test_dinics_linkcut.cpp|test_spirapan.cpp|test_kohlitorr_dynamic_old.cpp|test_kohlitorr_dynamic.cpp|test_edmondskarp_dynamic.cpp|test_eulertree.cpp|test_maxflow.cpp|test_kohlitorr_dynamic_combined.cpp|test_ramal_reps.cpp|test_thorup.cpp|test_edmondskarp.cpp|test_linkcuttree.cpp|test_ramal_reps_weighted.cpp|test_dinics.cpp" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="tests"/>
 					</sourceEntries>
@@ -1491,7 +1491,7 @@
 						</toolChain>
 					</folderInfo>
 					<sourceEntries>
-						<entry excluding="CMakeFiles|geometry/bitmap|Main.cc|tests|fsm|pb|strings|bv|graph/resources|cgal|geometry/MonotoneDelaunay.cpp|dgl|smt|smtlib|graph/kbtest.c|polypartition|test/test_thorup.cpp|alg|schedule|asp|graph/TreeReachDetector.cpp|resources|geometry/cgal" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+						<entry excluding="src/monosat/geometry/MonotoneDelaunay.cpp|CMakeFiles|geometry/bitmap|Main.cc|tests|fsm|pb|strings|bv|graph/resources|cgal|geometry/MonotoneDelaunay.cpp|dgl|smt|smtlib|graph/kbtest.c|polypartition|test/test_thorup.cpp|alg|schedule|asp|graph/TreeReachDetector.cpp|resources|geometry/cgal" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="smt"/>
 						<entry excluding="dgl|test_acyclic_flow_file.cpp|test_acyclic_flow.cpp|test_collisions.cpp|test_dinics_linkcut.cpp|test_spirapan.cpp|test_kohlitorr_dynamic_old.cpp|test_kohlitorr_dynamic.cpp|test_edmondskarp_dynamic.cpp|test_eulertree.cpp|test_maxflow.cpp|test_kohlitorr_dynamic_combined.cpp|test_ramal_reps.cpp|test_thorup.cpp|test_edmondskarp.cpp|test_linkcuttree.cpp|test_ramal_reps_weighted.cpp|test_dinics.cpp" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="tests"/>
 					</sourceEntries>
@@ -1595,7 +1595,7 @@
 						</toolChain>
 					</folderInfo>
 					<sourceEntries>
-						<entry excluding="CMakeFiles|geometry/bitmap|tests|fsm|pb|strings|bv|graph/resources|cgal|geometry/MonotoneDelaunay.cpp|dgl|smt|smtlib|graph/kbtest.c|polypartition|test/test_thorup.cpp|alg|schedule|asp|graph/TreeReachDetector.cpp|resources|geometry/cgal" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+						<entry excluding="src/monosat/geometry/MonotoneDelaunay.cpp|CMakeFiles|geometry/bitmap|tests|fsm|pb|strings|bv|graph/resources|cgal|geometry/MonotoneDelaunay.cpp|dgl|smt|smtlib|graph/kbtest.c|polypartition|test/test_thorup.cpp|alg|schedule|asp|graph/TreeReachDetector.cpp|resources|geometry/cgal" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="smt"/>
 						<entry excluding="dgl|test_acyclic_flow_file.cpp|test_acyclic_flow.cpp|test_collisions.cpp|test_dinics_linkcut.cpp|test_spirapan.cpp|test_kohlitorr_dynamic_old.cpp|test_kohlitorr_dynamic.cpp|test_edmondskarp_dynamic.cpp|test_eulertree.cpp|test_maxflow.cpp|test_kohlitorr_dynamic_combined.cpp|test_ramal_reps.cpp|test_thorup.cpp|test_edmondskarp.cpp|test_linkcuttree.cpp|test_ramal_reps_weighted.cpp|test_dinics.cpp" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="tests"/>
 					</sourceEntries>
@@ -1692,7 +1692,7 @@
 						</toolChain>
 					</folderInfo>
 					<sourceEntries>
-						<entry excluding="CMakeFiles|geometry/bitmap|tests|fsm|pb|bv|graph/resources|cgal|strings|geometry/MonotoneDelaunay.cpp|dgl|smt|smtlib|polypartition|graph/kbtest.c|test/test_thorup.cpp|alg|asp|graph/TreeReachDetector.cpp|resources" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+						<entry excluding="src/monosat/geometry/MonotoneDelaunay.cpp|CMakeFiles|geometry/bitmap|tests|fsm|pb|bv|graph/resources|cgal|strings|geometry/MonotoneDelaunay.cpp|dgl|smt|smtlib|polypartition|graph/kbtest.c|test/test_thorup.cpp|alg|asp|graph/TreeReachDetector.cpp|resources" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
 						<entry excluding="dgl|test_acyclic_flow_file.cpp|test_acyclic_flow.cpp|test_collisions.cpp|test_dinics_linkcut.cpp|test_spirapan.cpp|test_kohlitorr_dynamic_old.cpp|test_kohlitorr_dynamic.cpp|test_edmondskarp_dynamic.cpp|test_eulertree.cpp|test_maxflow.cpp|test_kohlitorr_dynamic_combined.cpp|test_ramal_reps.cpp|test_edmondskarp.cpp|test_thorup.cpp|test_linkcuttree.cpp|test_ramal_reps_weighted.cpp|test_dinics.cpp" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="tests"/>
 					</sourceEntries>
 				</configuration>
@@ -1783,7 +1783,7 @@
 						</toolChain>
 					</folderInfo>
 					<sourceEntries>
-						<entry excluding="CMakeFiles|geometry/bitmap|Main.cc|tests|fsm|pb|strings|bv|graph/resources|cgal|geometry/MonotoneDelaunay.cpp|dgl|smt|smtlib|graph/kbtest.c|polypartition|test/test_thorup.cpp|alg|schedule|asp|graph/TreeReachDetector.cpp|resources|geometry/cgal" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+						<entry excluding="src/monosat/geometry/MonotoneDelaunay.cpp|CMakeFiles|geometry/bitmap|Main.cc|tests|fsm|pb|strings|bv|graph/resources|cgal|geometry/MonotoneDelaunay.cpp|dgl|smt|smtlib|graph/kbtest.c|polypartition|test/test_thorup.cpp|alg|schedule|asp|graph/TreeReachDetector.cpp|resources|geometry/cgal" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="smt"/>
 						<entry excluding="dgl|test_acyclic_flow_file.cpp|test_acyclic_flow.cpp|test_collisions.cpp|test_dinics_linkcut.cpp|test_spirapan.cpp|test_kohlitorr_dynamic_old.cpp|test_kohlitorr_dynamic.cpp|test_edmondskarp_dynamic.cpp|test_eulertree.cpp|test_maxflow.cpp|test_kohlitorr_dynamic_combined.cpp|test_ramal_reps.cpp|test_thorup.cpp|test_edmondskarp.cpp|test_linkcuttree.cpp|test_ramal_reps_weighted.cpp|test_dinics.cpp" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="tests"/>
 					</sourceEntries>
@@ -1876,7 +1876,7 @@
 						</toolChain>
 					</folderInfo>
 					<sourceEntries>
-						<entry excluding="CMakeFiles|geometry/bitmap|tests|fsm|pb|bv|graph/resources|cgal|strings|geometry/MonotoneDelaunay.cpp|dgl|smt|smtlib|polypartition|graph/kbtest.c|test/test_thorup.cpp|alg|asp|graph/TreeReachDetector.cpp|resources" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+						<entry excluding="src/monosat/geometry/MonotoneDelaunay.cpp|CMakeFiles|geometry/bitmap|tests|fsm|pb|bv|graph/resources|cgal|strings|geometry/MonotoneDelaunay.cpp|dgl|smt|smtlib|polypartition|graph/kbtest.c|test/test_thorup.cpp|alg|asp|graph/TreeReachDetector.cpp|resources" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
 						<entry excluding="dgl|test_acyclic_flow_file.cpp|test_acyclic_flow.cpp|test_collisions.cpp|test_dinics_linkcut.cpp|test_spirapan.cpp|test_kohlitorr_dynamic_old.cpp|test_kohlitorr_dynamic.cpp|test_edmondskarp_dynamic.cpp|test_eulertree.cpp|test_maxflow.cpp|test_kohlitorr_dynamic_combined.cpp|test_ramal_reps.cpp|test_edmondskarp.cpp|test_thorup.cpp|test_linkcuttree.cpp|test_ramal_reps_weighted.cpp|test_dinics.cpp" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="tests"/>
 					</sourceEntries>
 				</configuration>
@@ -1888,47 +1888,49 @@
 		<project id="Minisat2.cdt.managedbuild.target.gnu.exe.655301749" name="Executable" projectType="cdt.managedbuild.target.gnu.exe"/>
 	</storageModule>
 	<storageModule moduleId="refreshScope" versionNumber="2">
-		<configuration configurationName="ClangAnalyze">
+		<configuration configurationName="Win32">
 			<resource resourceType="PROJECT" workspacePath="/modsat"/>
 		</configuration>
-		<configuration configurationName="DbgRelease">
+		<configuration configurationName="coverage">
 			<resource resourceType="PROJECT" workspacePath="/modsat"/>
 		</configuration>
 		<configuration configurationName="Win64">
 			<resource resourceType="PROJECT" workspacePath="/modsat"/>
 		</configuration>
-		<configuration configurationName="TestRelease"/>
-		<configuration configurationName="Win32">
+		<configuration configurationName="Klee">
 			<resource resourceType="PROJECT" workspacePath="/modsat"/>
 		</configuration>
+		<configuration configurationName="OSX_SharedLibrary"/>
+		<configuration configurationName="ClangDebug">
+			<resource resourceType="PROJECT" workspacePath="/modsat"/>
+		</configuration>
+		<configuration configurationName="Win64SharedLibrary"/>
+		<configuration configurationName="SharedLibraryDbg"/>
+		<configuration configurationName="OSX_ClangRelease"/>
+		<configuration configurationName="SharedLibrary_profile"/>
 		<configuration configurationName="SharedLibrary"/>
+		<configuration configurationName="TestRelease"/>
+		<configuration configurationName="clang"/>
+		<configuration configurationName="Test"/>
+		<configuration configurationName="DbgRelease">
+			<resource resourceType="PROJECT" workspacePath="/modsat"/>
+		</configuration>
+		<configuration configurationName="ClangAnalyze">
+			<resource resourceType="PROJECT" workspacePath="/modsat"/>
+		</configuration>
 		<configuration configurationName="Static">
+			<resource resourceType="PROJECT" workspacePath="/modsat"/>
+		</configuration>
+		<configuration configurationName="Debug">
+			<resource resourceType="PROJECT" workspacePath="/modsat"/>
+		</configuration>
+		<configuration configurationName="Release">
 			<resource resourceType="PROJECT" workspacePath="/modsat"/>
 		</configuration>
 		<configuration configurationName="ClangRelease">
 			<resource resourceType="PROJECT" workspacePath="/modsat"/>
 		</configuration>
-		<configuration configurationName="SharedLibrary_profile"/>
-		<configuration configurationName="Debug">
-			<resource resourceType="PROJECT" workspacePath="/modsat"/>
-		</configuration>
-		<configuration configurationName="ClangDebug">
-			<resource resourceType="PROJECT" workspacePath="/modsat"/>
-		</configuration>
-		<configuration configurationName="Win64SharedLibrary"/>
-		<configuration configurationName="Release">
-			<resource resourceType="PROJECT" workspacePath="/modsat"/>
-		</configuration>
-		<configuration configurationName="Klee">
-			<resource resourceType="PROJECT" workspacePath="/modsat"/>
-		</configuration>
-		<configuration configurationName="Test"/>
-		<configuration configurationName="coverage">
-			<resource resourceType="PROJECT" workspacePath="/modsat"/>
-		</configuration>
 		<configuration configurationName="GPerf"/>
-		<configuration configurationName="clang"/>
-		<configuration configurationName="SharedLibraryDbg"/>
 	</storageModule>
 	<storageModule moduleId="org.eclipse.cdt.core.LanguageSettingsProviders"/>
 	<storageModule moduleId="org.eclipse.cdt.internal.ui.text.commentOwnerProjectMappings"/>

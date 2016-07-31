@@ -423,7 +423,7 @@ int64_t optimize_linear_pb(Monosat::SimpSolver * S, PB::PBConstraintSolver * pbS
             Lit old_dec_lit = last_decision_lit;
 			last_decision_lit=decision_lit;
 			last_decision_value= invert ? value+1:  value-1;
-            last_satisfying_assign.push(decision_lit);
+            //last_satisfying_assign.push(decision_lit);
 			if(S->value(decision_lit)!=l_True){
 				throw std::runtime_error("Error in optimization (comparison not enforced)");
 			}
@@ -450,12 +450,12 @@ int64_t optimize_linear_pb(Monosat::SimpSolver * S, PB::PBConstraintSolver * pbS
 				//if that last decrease in value was by more than 1
                 //if(last_decision_lit!=lit_Undef)
                 //    S->addClause(~last_decision_lit);
-				last_decision_lit = pbSolver->addConditionalConstr(o.pb_lits, o.pb_weights,value,invert ? PB::Ineq::GEQ : PB::Ineq::LEQ);
+				//last_decision_lit = pbSolver->addConditionalConstr(o.pb_lits, o.pb_weights,value,invert ? PB::Ineq::GEQ : PB::Ineq::LEQ);
 						//bvTheory->toSolver(bvTheory->newComparison(Comparison::leq,bvID,value,var_Undef,opt_decide_optimization_lits));
 				last_decision_value=value;
-                last_satisfying_assign.push(last_decision_lit);
+                //last_satisfying_assign.push(last_decision_lit);
 			}
-			assume.push(last_decision_lit);
+			//assume.push(last_decision_lit);
 			r= S->solve(last_satisfying_assign,false,false);
 
 			if(!r){

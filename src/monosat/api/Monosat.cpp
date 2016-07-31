@@ -475,13 +475,14 @@ Monosat::SimpSolver * newSolver_args(int argc, char**argv){
 	Monosat::SimpSolver * S = new Monosat::SimpSolver();
 	solvers.insert(S);//add S to the list of solvers handled by signals
 
-    S->setPBSolver(new PB::PbSolver(*S));
 
 	S->_external_data =(void*)new MonosatData();
 	((MonosatData*)S->_external_data)->args =args;
 	if(!opt_pre){
 		S->eliminate(true);//disable preprocessing.
 	}
+	((MonosatData*)S->_external_data)->pbsolver = new PB::PbSolver(*S);
+	S->setPBSolver(((MonosatData*)S->_external_data)->pbsolver);
 	return S ;
 }
 void deleteSolver (Monosat::SimpSolver * S)
@@ -579,6 +580,12 @@ void maximizeWeightedLits(Monosat::SimpSolver *  S, int * lits, int * weights, i
 	for (int i = 0;i<n_lits;i++){
 		weights_opt.push(weights[i]);
 	}
+    while(weights_opt.size()>lits_opt.size()){
+        weights_opt.pop();
+    }
+    while(weights_opt.size()<lits_opt.size()){
+        weights_opt.push(1);
+    }
 
 	write_out(S,"maximize lits %d ",lits_opt.size());
 	for(Lit l:lits_opt){
@@ -589,7 +596,7 @@ void maximizeWeightedLits(Monosat::SimpSolver *  S, int * lits, int * weights, i
 	}
 	write_out(S,"0\n");
 
-	d->optimization_objectives.push(Objective(lits_opt,true));
+	d->optimization_objectives.push(Objective(lits_opt,weights_opt,true));
 }
 void minimizeWeightedLits(Monosat::SimpSolver *  S, int * lits, int * weights, int n_lits){
 	if(n_lits<=0)
@@ -605,7 +612,12 @@ void minimizeWeightedLits(Monosat::SimpSolver *  S, int * lits, int * weights, i
 	for (int i = 0;i<n_lits;i++){
 		weights_opt.push(weights[i]);
 	}
-
+    while(weights_opt.size()>lits_opt.size()){
+        weights_opt.pop();
+    }
+    while(weights_opt.size()<lits_opt.size()){
+        weights_opt.push(1);
+    }
 	write_out(S,"minimize lits %d ",lits_opt.size());
 	for(Lit l:lits_opt){
 		write_out(S,"%d ",dimacs(l));
@@ -614,7 +626,7 @@ void minimizeWeightedLits(Monosat::SimpSolver *  S, int * lits, int * weights, i
 		write_out(S,"%d ",w);
 	}
 	write_out(S,"0\n");
-	d->optimization_objectives.push(Objective(lits_opt,false));
+	d->optimization_objectives.push(Objective(lits_opt,weights_opt,false));
 }
 
 

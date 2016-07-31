@@ -22,13 +22,14 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 #include "monosat/mtl/Vec.h"
 #include "monosat/simp/SimpSolver.h"
-
+#include "Clausify.h"
 #include "monosat/pb/ADTs/Map.h"
 #include "monosat/pb/ADTs/StackAlloc.h"
 #include "monosat/pb/ADTs/Int.h"
 #include "Config_pb.h"
 #include "monosat/pb/Pb.h"
 #include <sstream>
+
 namespace Monosat {
 namespace PB{
 using Monosat::Var;
@@ -93,9 +94,11 @@ protected:
     //should this instead be StackAlloc<char> mem;?
     StackAlloc<char*> mem;            // Used to allocate the 'Linear' constraints stored in 'constrs' (other 'Linear's, such as the goal function, are allocated with 'xmalloc()')
 
+
 public:
     vec<Linear *> constrs;        // Vector with all constraints.
     Linear *goal;           // Non-normalized goal function (used in optimization). NULL means no goal function specified. NOTE! We are always minimizing.
+    ClausifyContext clausifyContext;
 protected:
     vec<int> n_occurs;       // Lit -> int: Number of occurrences.
     vec<vec<int> > occur;          // Lit -> vec<int>: Occur lists. Left empty until 'setupOccurs()' is called.

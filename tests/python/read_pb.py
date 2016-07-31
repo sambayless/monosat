@@ -12,7 +12,7 @@ import sys
 import itertools
 import bz2
 #note: for testing purposes, not recommended for practical pb solving!
-Monosat().init("-pb-verb=0")
+Monosat().init("-verb=1 -pb-verb=1 -no-pb-binary-search")
 
 
 
@@ -152,13 +152,11 @@ if result:
             witness.append(pb)
             model[pb]=True
             model[-pb]=False
-            print("adding model for %d"%(pb))
         elif lit.value()==False:
             witstr+="-x%d "%(pb)
             witness.append(-pb)
             model[pb]=False
             model[-pb]=True
-            print("adding model for %d"%(pb))
         else:
             print("No full model for x%d"%(pb), file=sys.stderr)
             assert(False)
@@ -168,13 +166,12 @@ if result:
         if pb not in model or -pb not in model:
             print("No model for x%d"%(pb), file=sys.stderr)
         assert(pb in model and -pb in model)
-        if pb>=0:
-            if model[pb]:
-                goalval+=w
-        else:
-            if not model[-pb]:
-                goalval+=w
+
+        if model[pb]:
+            goalval+=w
     print("c Optimal solution: %d"%(goalval))
     print("s OPTIMUM FOUND")
     print("o %d"%(goalval))
     print(witstr)
+else:
+    print("s UNSATISFIABLE")

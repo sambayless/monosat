@@ -187,9 +187,12 @@ class MonosatPB:
         if(constraint=='!=' or constraint=='<>'):
             self.AssertNotEqualPB(clause,val,weights);
             return
-        nclause=[]
-        nweights=[]
+        nclause=[l.getLit() for l in clause]
+        nweights= weights
+
+
         #need all the variables to be in positive polarity...
+        """
         for i,l in enumerate(clause):
             if weights is not None:
                 w = weights[i]
@@ -210,7 +213,7 @@ class MonosatPB:
                 nclause.append(Not(l).getLit())
                 nweights.append(-w)
                 val-=w
-
+        """
 
         self._monosat.AssertPB(nclause, nweights , self.getIneq(constraint), val)
 
