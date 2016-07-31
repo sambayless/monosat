@@ -55,7 +55,7 @@ class StackAlloc : public Allocator<T> {
 public:
     StackAlloc(void) { init(); }
     virtual ~StackAlloc() {
-        freeAll();
+
     }
     T *alloc(int n) {
         if (index + n <= cap) {

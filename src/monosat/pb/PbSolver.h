@@ -180,7 +180,7 @@ public:
 
     }
     virtual ~PbSolver(){
-
+        mem.freeAll();
     }
     Var newVar(bool polarity = true, bool dvar = true){
         return getPBVar(var_Undef,polarity,dvar);
