@@ -9,11 +9,8 @@ random.seed(seed)
 print("RandomSeed=" + str(seed))
 
 
-filename="/tmp/test_bv"
-
-filename = filename +  ".gnf"
 Monosat().init("-decide-graph-bv -no-decide-theories -no-decide-graph-rnd   -lazy-maxflow-decisions -conflict-min-cut -conflict-min-cut-maxflow -reach-underapprox-cnf ")
-Monosat().setOutputFile(open(filename,'w'))
+
 
 
 bv0 = BitVector(4)

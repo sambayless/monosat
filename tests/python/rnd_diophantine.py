@@ -9,7 +9,7 @@ import sys
 
 def run(seed,filename):
     if filename is not None:
-        Monosat().setOutputFile(open(filename,'w'))
+        Monosat().setOutputFile(filename)
         print("Writing to %s"%(filename))
     
     

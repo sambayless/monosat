@@ -11,7 +11,7 @@ def run(seed,filename):
     #-debug-learnts=/tmp/testlearnts4.gnf -debug-bounds -debug-analysis
     Monosat().init("  -verb=0 -verb-time=0 -rnd-theory-freq=0.99 -no-decide-bv-intrinsic  -decide-bv-bitwise  -decide-graph-bv -decide-theories -no-decide-graph-rnd   -lazy-maxflow-decisions -conflict-min-cut -conflict-min-cut-maxflow -reach-underapprox-cnf -check-solution ")
     if filename is not None:
-        Monosat().setOutputFile(open(filename,'w'))
+        Monosat().setOutputFile(filename)
         print("Writing to %s"%(filename))
     
     

@@ -24,7 +24,7 @@ print("begin encode");
 
 #seed = random.randint(1,100000) # 3538
 if filename is not None:
-    Monosat().setOutputFile(open(filename,'w'))
+    Monosat().setOutputFile(filename)
 random.seed(seed)
 print("RandomSeed=" + str(seed))
 

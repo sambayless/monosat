@@ -29,14 +29,14 @@ random.seed(seed)
 if filename is None:
     print("Usage: python3 read_pb.py <filename.opb>")
     sys.exit(0)
-
+Monosat().setOutputFile("/tmp/monosat_pb.gnf")
 used_vars = dict()
 
 goal = []
 
 print("begin encode");
 for line in (bz2.open(filename,"rt") if filename.endswith("bz2") else open(filename)):
-    #print(line)
+    print(line, file=sys.stderr)
     line = line.strip();
     if line.startswith("*"):
         continue
@@ -87,10 +87,11 @@ for line in (bz2.open(filename,"rt") if filename.endswith("bz2") else open(filen
                     w = w[1:]
                 assert(w[0]=="x")
                 varnum = int(w[1:])
+                assert(varnum>0)
                 if varnum not in used_vars:
-                    used_vars[varnum] = Var("x%d"%(varnum))
+                    used_vars[varnum] = Var("x%d"%(varnum)).getLit()
 
-                var = used_vars[varnum]
+                var = Var(used_vars[varnum])
                 if const is None:
                     const = 1
                 lit = var if not neg else Not(var)
@@ -138,12 +139,13 @@ result=Solve()
 
 
 print("Result is " + str(result))
-assert(result==True)
+
 if result:
     witness = []
     model = dict()
     witstr = "v ";
-    for pb,lit in used_vars.items():
+    for pb,l in used_vars.items():
+        lit = Var(l)
         if lit.value():
             witstr+="x%d "%(pb)
             witness.append(pb)
@@ -155,6 +157,8 @@ if result:
     witstr.rstrip();
     goalval = 0
     for pb,w in zip(goal[2],goal[3]):
+        if pb not in model:
+            print("No model for x%d"%(pb), file=sys.stderr)
         assert(pb in model)
         if pb>=0:
             if model[pb]:

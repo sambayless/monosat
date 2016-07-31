@@ -1,5 +1,5 @@
 from monosat import *
-Monosat().setOutputFile("/tmp/test.gnf")
+
 vars=[]
 for v in range(10):
     vars.append(Var())
