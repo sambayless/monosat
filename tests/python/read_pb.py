@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+from __future__ import division, print_function
 from monosat import *
 import functools
 import math
@@ -10,7 +12,7 @@ import sys
 import itertools
 import bz2
 #note: for testing purposes, not recommended for practical pb solving!
-Monosat().init("-pb-verb=1")
+Monosat().init("-pb-verb=0")
 
 
 
@@ -24,11 +26,17 @@ if __name__ == "__main__":
         seed=int(sys.argv[2])
 random.seed(seed)
 
+if filename is None:
+    print("Usage: python3 read_pb.py <filename.opb>")
+    sys.exit(0)
+
 used_vars = dict()
 
+goal = []
+
 print("begin encode");
-for line in bz2.open(filename,"rt"):
-    print(line)
+for line in (bz2.open(filename,"rt") if filename.endswith("bz2") else open(filename)):
+    #print(line)
     line = line.strip();
     if line.startswith("*"):
         continue
@@ -52,6 +60,7 @@ for line in bz2.open(filename,"rt"):
     comp = None
     rhs = None
     lits = []
+    pbs = []
     weights = []
     for w in words:
 
@@ -86,15 +95,16 @@ for line in bz2.open(filename,"rt"):
                     const = 1
                 lit = var if not neg else Not(var)
                 lits.append(lit)
+                pbs.append(varnum if not neg else ~varnum)
                 weights.append(const)
                 const = None
 
     assert(const is None)
     assert(len(weights) == len(lits))
-    print(lits)
-    print(weights)
-    print(comp)
-    print(rhs)
+    #print(lits)
+    #print(weights)
+    #print(comp)
+    #print(rhs)
 
     if not is_objective:
         assert(comp is not None)
@@ -112,6 +122,7 @@ for line in bz2.open(filename,"rt"):
         else:
             raise Exception("Unknown operator " + str(comp))
     else:
+        goal = [objective,lits,pbs,weights]
         assert(comp is None)
         assert(rhs is None)
         assert(objective is not None)
@@ -121,10 +132,36 @@ for line in bz2.open(filename,"rt"):
             maximize(lits,weights)
         else:
             raise Exception("Unknown objective " + str(objective))
-print("RandomSeed=" + str(seed))
+#print("RandomSeed=" + str(seed))
 
 result=Solve()
 
+
 print("Result is " + str(result))
 assert(result==True)
-
+if result:
+    witness = []
+    model = dict()
+    witstr = "v ";
+    for pb,lit in used_vars.items():
+        if lit.value():
+            witstr+="x%d "%(pb)
+            witness.append(pb)
+            model[pb]=True
+        elif lit.value()==False:
+            witstr+="-x%d "%(pb)
+            witness.append(-pb)
+            model[pb]=False
+    witstr.rstrip();
+    goalval = 0
+    for pb,w in zip(goal[2],goal[3]):
+        assert(pb in model)
+        if pb>=0:
+            if model[pb]:
+                goalval+=w
+        else:
+            if not model[-pb]:
+                goalval+=w
+    print("c Optimal solution: %d"%(goalval))
+    print("s OPTIMUM FOUND")
+    print(witstr)
