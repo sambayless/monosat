@@ -308,7 +308,8 @@ public:
         }
          return addConstr(ps,tmp_weights,(Int)rhs,(int)ineq);
     }
-    bool addConstr(const vec<Lit> &ps, const vec<Int> &Cs, Int rhs, int ineq);
+    bool addConstr(const vec<Lit> &solver_ps, const vec<Int> &Cs, Int rhs, int ineq);
+    bool addConstr_(const vec<Lit> &ps, const vec<Int> &Cs, Int rhs, int ineq);
 
 
     bool addConstr(const vec<Lit> &ps, const vec<Int> &Cs, Int rhs, Ineq ineq) {

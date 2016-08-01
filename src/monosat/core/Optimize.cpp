@@ -440,8 +440,9 @@ int64_t optimize_linear_pb(Monosat::SimpSolver * S, PB::PBConstraintSolver * pbS
 			value=value2;
 
 			assume.pop();
-            if(old_dec_lit!=lit_Undef)
-                S->addClause(~old_dec_lit);
+            assert(S->solve(last_satisfying_assign,false,false));
+            //if(old_dec_lit!=lit_Undef)
+            //    S->addClause(~old_dec_lit); //why isn't this safe?
             assert(S->solve(last_satisfying_assign,false,false));
 		}else{
 			assume.pop();

@@ -82,12 +82,18 @@ void PbSolver::addGoal(const vec<Lit> &ps_, const vec<Int> &Cs) {
     goal = new(xmalloc<char>(sizeof(Linear) + tmp.size() * (sizeof(Lit) + sizeof(Int)))) Linear(tmp, Cs, Int_MIN,
                                                                                                Int_MAX);
 }
-
-bool PbSolver::addConstr(const vec<Lit> &ps_, const vec<Int> &Cs, Int rhs, int ineq) {
-    sat_solver.cancelUntil(0);
+bool PbSolver:: addConstr(const vec<Lit> &solver_ps, const vec<Int> &Cs, Int rhs, int ineq){
     tmp.clear();
-    fromSolver(ps_, tmp);
-    vec<Lit> & ps = tmp;
+    fromSolver(solver_ps, tmp);
+    return addConstr_(tmp,Cs,rhs,ineq);
+}
+bool PbSolver::addConstr_(const vec<Lit> &ps, const vec<Int> &Cs, Int rhs, int ineq) {
+    sat_solver.cancelUntil(0);
+#ifndef NDEBUG
+    for(Lit l:ps){
+        assert(var(l)<nVars());
+    }
+#endif
     vec<Lit> norm_ps;
     vec<Int> norm_Cs;
     Int norm_rhs;
@@ -491,7 +497,7 @@ bool PbSolver::rewriteAlmostClauses() {
             for (int j = 0; j < n; j++)
                 ps.push(c[j]),
                         Cs.push(c(j));
-            if (!addConstr(ps, Cs, c.lo, 1)) {
+            if (!addConstr_(ps, Cs, c.lo, 1)) {
                 reportf("\n");
                 return false;
             }
@@ -567,7 +573,7 @@ void PbSolver::solve(solve_Command cmd) {
     opt_sort_thres *= opt_goal_bias;
 
     if (Int((int64)opt_goal) != Int_MAX)
-        addConstr(goal_ps, goal_Cs,(int64) opt_goal, -1),
+        addConstr_(goal_ps, goal_Cs,(int64) opt_goal, -1),
                 convertPbs(false);
 
     if(cmd== sc_Convert){
@@ -613,7 +619,7 @@ void PbSolver::solve(solve_Command cmd) {
                 reportf("\bFound solution: %s\b\n", tmp);
                 xfree(tmp);
             }
-            if (!addConstr(goal_ps, goal_Cs, best_goalvalue, -2))
+            if (!addConstr_(goal_ps, goal_Cs, best_goalvalue, -2))
                 break;
             convertPbs(false);
         }
