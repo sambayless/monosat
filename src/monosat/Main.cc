@@ -42,9 +42,12 @@
 #include "amo/AMOTheory.h"
 #include "amo/AMOParser.h"
 #include "core/Optimize.h"
+#include "core/Config.h"
+#include "pb/Config_pb.h"
 using namespace Monosat;
 using namespace std;
 //=================================================================================================
+
 
 void printStats(Solver& solver) {
 	double cpu_time = cpuTime();
@@ -563,6 +566,8 @@ int main(int argc, char** argv) {
 		S.min_priority_var = opt_min_priority_decision_var - 1;
 		S.max_priority_var = opt_max_priority_decision_var - 1;
 
+		S.setPBSolver(new PB::PbSolver(S));
+
 		if (opt_min_decision_var > 1 || opt_max_decision_var > 0) {
 			printf(
 					"Decision variables restricted to the range (%d..%d), which means a result of satisfiable may not be trustworthy.\n",
@@ -590,7 +595,8 @@ int main(int argc, char** argv) {
 		GraphParser<char *, SimpSolver> graphParser(precise,bvParser.theory);
 		parser.addParser(&graphParser);
 
-
+		PBParser<char *, SimpSolver> pbParser(S);
+		parser.addParser(&pbParser);
 
 		FSMParser<char*,SimpSolver> fsmParser;
 		parser.addParser(&fsmParser);
@@ -599,14 +605,12 @@ int main(int argc, char** argv) {
 
 		AMOParser<char *, SimpSolver> amo;
 		parser.addParser(&amo);
-
-
+        GeometryParser<char *, SimpSolver, mpq_class>  preciseGeometryParser;
+        GeometryParser<char *, SimpSolver, double> doubleGeometryParser;
 		if (precise) {
-			GeometryParser<char *, SimpSolver, mpq_class> * geometryParser = new GeometryParser<char *, SimpSolver, mpq_class>();
-			parser.addParser(geometryParser);
+			parser.addParser(&preciseGeometryParser);
 		} else {
-			GeometryParser<char *, SimpSolver, double>* geometryParser = new GeometryParser<char *, SimpSolver, double> ();
-			parser.addParser(geometryParser);
+			parser.addParser(&doubleGeometryParser);
 		}
 
 
@@ -632,9 +636,9 @@ int main(int argc, char** argv) {
 				if(!opt_remap_vars){
 					fprintf(stderr,"Warning: Solver will give completely bogus answers if 'solve' statements are processed while variable remapping is disabled (e.g., -no-remap-vars)\n\n");
 				}
-				optimize_and_solve(S,parser.assumptions,parser.bv_minimize, found_optimal);
+				optimize_and_solve(S,parser.assumptions,parser.objectives,false, found_optimal);
 			}else{
-				parser.assumptions.clear();parser.bv_minimize.clear();
+				parser.assumptions.clear();
 			}
 		}
 		gzclose(in);
@@ -665,10 +669,10 @@ int main(int argc, char** argv) {
 				// If an assumption has been eliminated, remember it.
 				assert(!S.isEliminated(v));
 
-				if (!S.isFrozen(v)) {
+				S.freezeVar(v);//) {
 					// Freeze and store.
-					S.setFrozen(v, true);
-				}
+					//S.setFrozen(v, true);
+				//}
 			}
 			S.eliminate(true);
 			//in principle, should unfreeze these lits after solving...
@@ -687,7 +691,7 @@ int main(int argc, char** argv) {
 
 
 
-		lbool ret = optimize_and_solve(S,parser.assumptions,parser.bv_minimize,found_optimal);
+		lbool ret = optimize_and_solve(S,parser.assumptions,parser.objectives,false,found_optimal);
 		double solving_time = rtime(0) - after_preprocessing;
 		if (opt_verb > 0) {
 			printf("Solving time = %f\n", solving_time);

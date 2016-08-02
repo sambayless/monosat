@@ -87,7 +87,7 @@ template<typename T> struct numeric {
 		}
 	}
 };
-template<typename T> T numeric<T>::inf = std::numeric_limits<long>::max(); //hopefully large enough for common use cases...
+template<typename T> T numeric<T>::inf = std::numeric_limits<int64_t>::max(); //hopefully large enough for common use cases...
 		
 //This may have rounding errors! Use carefully!
 inline mpq_class sqrt(mpq_class v) {

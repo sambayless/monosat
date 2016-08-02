@@ -37,6 +37,7 @@ static const char* _cat_amo = "AMO";
 static const char* _cat_geom = "GEOMETRY";
 static const char* _cat_fsm = "FSM";
 
+
 IntOption Monosat::opt_verb("MAIN", "verb", "Verbosity level (0=silent, 1=some, 2=more).",0, IntRange(0, 3));
 DoubleOption Monosat::opt_var_decay(_cat, "var-decay", "The variable activity decay factor", 0.95,
 		DoubleRange(0, false, 1, false));
@@ -64,6 +65,9 @@ DoubleOption Monosat::opt_garbage_frac(_cat, "gc-frac",
 BoolOption Monosat::opt_pre("MAIN", "pre", "Completely turn on/off any preprocessing.", true);
 IntOption Monosat::opt_time(_cat, "verb-time", "Detail level of timing benchmarks (these add some overhead)", 0,
 		IntRange(0, 5));
+
+
+BoolOption  Monosat::opt_pb_theory("PB","pb-theory","Use experimental lazy pseudo-boolean constraint solver (not recommended!) instead of minisat+",false);
 
 IntOption Monosat::opt_limit_optimization_conflicts(_cat_opt, "opt-conflict-limit", "Limit number of conflicts during optimization rounds before giving up (-1 to allow infinite conflicts)", -1, IntRange(-1, INT32_MAX));
 IntOption Monosat::opt_limit_optimization_time(_cat_opt, "opt-time-limit", "Limit time spent in optimization (after finding an initial satisfying solution) before giving up (-1 to allow infinite time during optimization)", -1, IntRange(-1, INT32_MAX));
@@ -108,9 +112,8 @@ BoolOption Monosat::opt_early_theory_prop(_cat, "early-theory-prop",
 
  BoolOption Monosat::opt_remap_vars(_cat,"remap-vars","Remap variables in the GNF internally in the solver, to minimize space required",true);
  BoolOption Monosat::opt_decide_optimization_lits(_cat_opt,"decide-opt-lits","Allow decisions on literals introduced by optimization constraints",true);
- BoolOption  Monosat::opt_binary_search_optimization(_cat_opt,"binary-search","Use binary search (instead of linear search) for optimization constraints",true);
-
-
+ BoolOption  Monosat::opt_binary_search_optimization_bv(_cat_opt,"binary-search-bv","Use binary search for bitvector optimization (instead of linear search)",true);
+BoolOption  Monosat::opt_binary_search_optimization_pb(_cat_opt,"pb-binary-search","Use binary search for pseudo-boolean constraint optimization (instead of linear search)",false);
 
 BoolOption Monosat::opt_amo_eager_prop(_cat_amo,"amo-eager-prop","Propagate a-m-o literals as soon as they are implied, instead of waiting for theory propagation",true);
 

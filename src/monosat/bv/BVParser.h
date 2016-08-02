@@ -46,7 +46,7 @@ class BVParser: public Parser<B, Solver> {
 	using Parser<B, Solver>::mapVar;
 	using Parser<B, Solver>::mapBV;
 public:
-	BVTheorySolver<long>* theory=nullptr;
+	BVTheorySolver<int64_t>* theory=nullptr;
 private:
 	vec<std::pair<int, std::string> >  symbols;
 	std::string symbol;
@@ -54,7 +54,7 @@ private:
 	struct BV{
 		int id=-1;
 		int width=0;
-		long constval=-1;
+		int64_t constval=-1;
 		bool anon=false;
 		vec<Var> vector;
 	};
@@ -68,7 +68,7 @@ private:
 	vec<char> tmp;
 	struct Compare{
 		int bvID;
-		long w;
+		int64_t w;
 		Comparison c;
 		Var var;
 	};
@@ -84,7 +84,7 @@ private:
 /*	struct AddConst{
 		int resultID;
 		int aBV;
-		long b;
+		int64_t b;
 	};
 
 	vec<AddConst> addconsts;*/
@@ -203,10 +203,10 @@ private:
 		int resultID = parseInt(in);
 		skipWhitespace(in);
 		//bool arg1_is_bv=match(in,"bv");
-		long arg1 = parseLong(in);
+		int64_t arg1 = parseLong(in);
 		skipWhitespace(in);
 		//bool arg2_is_bv=match(in,"bv");
-		long arg2 = parseLong(in);
+		int64_t arg2 = parseLong(in);
 
 		//if(arg1_is_bv && arg2_is_bv){
 		if(arg2<arg1){
@@ -299,10 +299,10 @@ private:
 		v= mapVar(S,v);
 		skipWhitespace(in);
 		//bool arg1_is_bv=match(in,"bv");
-		long arg1 = parseInt(in);
+		int64_t arg1 = parseInt(in);
 		skipWhitespace(in);
 		//bool arg2_is_bv=match(in,"bv");
-		long arg2 = parseInt(in);
+		int64_t arg2 = parseInt(in);
 
 
 /*
@@ -334,10 +334,10 @@ private:
 			v= mapVar(S,v);
 			skipWhitespace(in);
 			//bool arg1_is_bv=match(in,"bv");
-			long arg1 = parseInt(in);
+			int64_t arg1 = parseInt(in);
 			skipWhitespace(in);
 			//bool arg2_is_bv=match(in,"bv");
-			long arg2 = parseLong(in);
+			int64_t arg2 = parseLong(in);
 			compares.push();
 			compares.last().bvID =  arg1;
 			compares.last().w = arg2;
@@ -452,11 +452,11 @@ public:
 	}
 
 	void implementConstraints(Solver & S) {
-		theory = (BVTheorySolver<long>*) S.bvtheory;
+		theory = (BVTheorySolver<int64_t>*) S.bvtheory;
 		if(bvs.size() || theory){
 
 			if(!theory){
-				theory = new BVTheorySolver<long>(&S);
+				theory = new BVTheorySolver<int64_t>(&S);
 				theory->setBVMap(this->bvmap);
 			}
 

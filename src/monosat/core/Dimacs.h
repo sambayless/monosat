@@ -27,6 +27,7 @@
 #include "monosat/core/Config.h"
 #include "monosat/utils/ParseUtils.h"
 #include "monosat/core/SolverTypes.h"
+#include "monosat/core/Optimize.h"
 #include "monosat/mtl/Vec.h"
 #include <string>
 #include <algorithm>
@@ -187,7 +188,7 @@ class Dimacs :public DimacsMap,public BVMap{
 
 
 public:
-	vec<int> bv_minimize;
+	vec<Objective> objectives;
 	vec<Lit> assumptions;
 
 	Dimacs():DimacsMap(opt_remap_vars),BVMap(opt_remap_vars) {
@@ -267,7 +268,7 @@ private:
 			S.setVarMap(this);
 		}
 		S.cancelUntil(0);
-		bv_minimize.clear();
+		objectives.clear();
 		assumptions.clear();
 		bool solve=false;
 		vec<char> linebuf;
@@ -309,13 +310,82 @@ private:
 				}
 				solves++;
 				solve=true;
+			}else if (match(b,"clear_opt")) {
+				objectives.clear();
 			}else if (match(b,"minimize bv")){
 				//fprintf(stderr,"minimize statements not yet supported\n");
 				skipWhitespace(b);
 				int bvID = parseInt(b);
 				assert(bvID>=0);
 
-				bv_minimize.push(bvID);
+				objectives.push(Objective(bvID,false));
+			}else if (match(b,"maximize bv")){
+				//fprintf(stderr,"minimize statements not yet supported\n");
+				skipWhitespace(b);
+				int bvID = parseInt(b);
+				assert(bvID>=0);
+
+				objectives.push(Objective(bvID,true));
+			}else if (match(b,"maximize lits")){
+				//fprintf(stderr,"minimize statements not yet supported\n");
+				skipWhitespace(b);
+				objectives.push();
+				objectives.last().type = Objective::Type::PB;
+				objectives.last().maximize=true;
+				int n_lits = parseInt(b);
+				for (int i = 0;i<n_lits;i++) {
+					int parsed_lit = parseInt(b);
+					if(parsed_lit==0){
+						parse_errorf("Bad literal: 0\n");
+					}
+					Var var = abs(parsed_lit) - 1;
+					var = mapVar(S,var);
+					S.setFrozen(var,true);
+					objectives.last().pb_lits.push((parsed_lit > 0) ? mkLit(var) : ~mkLit(var));
+				}
+
+                for (int i = 0;i<n_lits;i++) {
+                    skipWhitespaceNoNewLines(b);
+                    if(*b=='\n')
+                        break;
+					int weight = parseInt(b);
+					objectives.last().pb_weights.push(weight);
+				}
+
+				if (objectives.last().pb_weights.size()>objectives.last().pb_lits.size()){
+					objectives.last().pb_weights.shrink(objectives.last().pb_weights.size()- objectives.last().pb_lits.size());
+				}
+				objectives.last().pb_weights.growTo(objectives.last().pb_lits.size(),1);
+			}else if (match(b,"minimize lits")){
+				//fprintf(stderr,"minimize statements not yet supported\n");
+				skipWhitespace(b);
+				objectives.push();
+				objectives.last().type = Objective::Type::PB;
+				objectives.last().maximize=false;
+				int n_lits = parseInt(b);
+				for (int i = 0;i<n_lits;i++) {
+					int parsed_lit = parseInt(b);
+					if(parsed_lit==0){
+						parse_errorf("Bad literal: 0\n");
+					}
+					Var var = abs(parsed_lit) - 1;
+					var = mapVar(S,var);
+					S.setFrozen(var,true);
+					objectives.last().pb_lits.push((parsed_lit > 0) ? mkLit(var) : ~mkLit(var));
+				}
+
+                for (int i = 0;i<n_lits;i++) {
+                    skipWhitespaceNoNewLines(b);
+                    if(*b=='\n')
+                        break;
+                    int weight = parseInt(b);
+                    objectives.last().pb_weights.push(weight);
+                }
+
+				if (objectives.last().pb_weights.size()>objectives.last().pb_lits.size()){
+					objectives.last().pb_weights.shrink(objectives.last().pb_weights.size()- objectives.last().pb_lits.size());
+				}
+				objectives.last().pb_weights.growTo(objectives.last().pb_lits.size(),1);
 			}else if (parseLine(b,line_num, S)) {
 				//do nothing
 			} else if (linebuf[0] == 'p') {
@@ -363,10 +433,14 @@ private:
 					exit(1);
 				}
 			}
-			for(int i = 0;i<bv_minimize.size();i++){
-				int bvID = bv_minimize[i];
-				bvID = this->mapBV(S,bvID);
-				bv_minimize[i]=bvID;
+			for(int i = 0;i<objectives.size();i++){
+				if(objectives[i].isBV()) {
+					int bvID = objectives[i].bvID;
+					bvID = this->mapBV(S, bvID);
+					objectives[i].bvID = bvID;
+				}else{
+                   //lits are already remapped
+                }
 			}
 
 		}catch(const parse_error& e){

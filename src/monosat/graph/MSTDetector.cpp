@@ -1163,6 +1163,6 @@ Lit MSTDetector<Weight>::decide() {
 ;
 
 template class Monosat::MSTDetector<int> ;
-template class Monosat::MSTDetector<long> ;
+template class Monosat::MSTDetector<int64_t> ;
 template class Monosat::MSTDetector<double> ;
 template class Monosat::MSTDetector<mpq_class> ;

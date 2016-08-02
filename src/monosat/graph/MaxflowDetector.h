@@ -119,9 +119,10 @@ public:
 	vec<bool> seen_path;
 
 
-	void backtrack(int level) {
+	void backtrack(int level) override {
 		to_decide.clear();
 		last_decision_status = -1;
+		has_flow_model=false;
 		//LevelDetector::backtrack(level);
 	}
 	void collectChangedEdges();
@@ -173,17 +174,26 @@ public:
 	//Lit decideByPath(int level);
 	void dbg_decisions();
 	void printSolution(std::ostream & write_to);
+	bool has_flow_model= false;
 	Weight getModel_Maxflow(){
+		has_flow_model=true;
 		return underapprox_detector->maxFlow();
 	}
 	Weight getModel_EdgeFlow(int edgeID){
+		if(!has_flow_model){
+			getModel_Maxflow();
+		}
 		return underapprox_detector->getEdgeFlow(edgeID);
 	}
 
 	Weight getModel_AcyclicEdgeFlow(int edgeID){
+		if(!has_flow_model){
+			getModel_Maxflow();
+		}
 		if(!acyclic_flow){
 			acyclic_flow=new AcyclicFlow<Weight>(g_under);
 		}
+
 		if(refined_flow_model.size()==0){
 			refined_flow_model.resize(g_under.edges());
 			for(int i = 0;i<g_under.edges();i++){
@@ -199,6 +209,7 @@ public:
 
 	}
 	void buildModel(){
+		has_flow_model=false;
 		refined_flow_model.clear();
 	}
 	void addFlowLit(Weight max_flow, Var reach_var, bool inclusive);

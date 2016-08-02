@@ -9,7 +9,7 @@ random.seed(seed)
 print("RandomSeed=" + str(seed))
 filename="/tmp/test.gnf"
 Monosat().init("""-debug-learnts=/tmp/test_learnts.cnf -decide-graph-bv -no-decide-theories -no-decide-graph-rnd   -lazy-maxflow-decisions -conflict-min-cut -conflict-min-cut-maxflow -reach-underapprox-cnf """)
-Monosat().setOutputFile(open(filename,'w'))
+
 print("Writing file to " + filename)
 
 bv1 = BitVector(4)

@@ -22,8 +22,9 @@
 #ifndef THEORYSOLVER_H_
 #define THEORYSOLVER_H_
 #include "monosat/core/SolverTypes.h"
-namespace Monosat {
+#include "monosat/pb/Pb.h"
 
+namespace Monosat {
 /**
  * Abstract interface to SMT theory solvers, as accessed by components of the theory solver.
  */
@@ -48,6 +49,9 @@ public:
 
 	}
 	virtual Theory * getBVTheory(){
+		return nullptr;
+	}
+	virtual PB::PBConstraintSolver * getPB(){
 		return nullptr;
 	}
 	/*virtual void prependToTrail(Lit solverLit, int atLevel){

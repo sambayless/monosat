@@ -22,15 +22,30 @@
 #ifndef MONOSAT_H_
 #define MONOSAT_H_
 //Monosat library interface, in C
-#ifdef __cplusplus
 #include <stdint.h>
-
+#ifdef __cplusplus
+#include "monosat/utils/ParseUtils.h"
+#include "monosat/utils/Options.h"
+#include "monosat/core/Solver.h"
+#include "monosat/simp/SimpSolver.h"
+#include "monosat/graph/GraphTheory.h"
+#include "monosat/geometry/GeometryTheory.h"
+#include "monosat/fsm/FSMTheory.h"
+#include "monosat/pb/PbTheory.h"
+#include "monosat/amo/AMOTheory.h"
+#include "Monosat.h"
+#include "monosat/core/Dimacs.h"
+#include "monosat/bv/BVParser.h"
+#include "monosat/graph/GraphParser.h"
+#include "monosat/amo/AMOParser.h"
+#include "monosat/core/Optimize.h"
+#include "monosat/pb/PbSolver.h"
 extern "C"
 {
 typedef Monosat::SimpSolver *  SolverPtr;
-typedef Monosat::GraphTheorySolver<long> * GraphTheorySolver_long;
+typedef Monosat::GraphTheorySolver<int64_t> * GraphTheorySolver_long;
 typedef Monosat::GraphTheorySolver<double>*  GraphTheorySolver_double;
-typedef Monosat::BVTheorySolver<long>* BVTheoryPtr;
+typedef Monosat::BVTheorySolver<int64_t>* BVTheoryPtr;
 typedef Monosat::FSMTheorySolver * FSMTheorySolverPtr;
 #else
 typedef void * SolverPtr;
@@ -57,13 +72,13 @@ typedef int Var;
 #endif
 
   void deleteSolver (SolverPtr S);
-
+  void setOutputFile(SolverPtr S,char * output);
   void readGNF(SolverPtr S, const char  * filename);
 
   bool solve(SolverPtr S);
   bool solveAssumptions(SolverPtr S,int * assumptions, int n_assumptions);
   //Solve under assumptions, and also minimize a set of BVs (in order of precedence)
-  bool solveAssumptions_MinBVs(SolverPtr S,int * assumptions, int n_assumptions, int * minimize_bvs, int n_minimize_bvs);
+  //bool solveAssumptions_MinBVs(SolverPtr S,int * assumptions, int n_assumptions, int * minimize_bvs, int n_minimize_bvs);
 
   //Sets the (approximate) time limit in seconds before returning l_Undef from solveLimited; ignored by solve(). Set to <0 to disable time limit.
   void setTimeLimit(SolverPtr S,int seconds);
@@ -81,7 +96,7 @@ typedef int Var;
 
   //Solve under assumptions, and also minimize a set of BVs (in order of precedence)
   //Returns 0 for satisfiable, 1 for proved unsatisfiable, 2 for failed to find a solution (within any resource limits that have been set)
-  int solveAssumptionsLimited_MinBVs(SolverPtr S,int * assumptions, int n_assumptions, int * minimize_bvs, int n_minimize_bvs);
+  //int solveAssumptionsLimited_MinBVs(SolverPtr S,int * assumptions, int n_assumptions, int * minimize_bvs, int n_minimize_bvs);
 
   bool lastSolutionWasOptimal(SolverPtr S);
 
@@ -117,19 +132,30 @@ typedef int Var;
   bool addUnitClause(SolverPtr S,int lit);
   bool addBinaryClause(SolverPtr S,int lit1, int lit2);
   bool addTertiaryClause(SolverPtr S,int lit1, int lit2, int lit3);
-  //theory interface for bitvectors
+
+  //remove any optimization objectives from the solver
+  void clearOptimizationObjectives(SolverPtr S);
+
+  void maximizeBV(SolverPtr S,  BVTheoryPtr bv, int bvID);
+  void minimizeBV(SolverPtr S,  BVTheoryPtr bv, int bvID);
+  void maximizeLits(SolverPtr S, int * lits, int n_lits);
+  void minimizeLits(SolverPtr S, int * lits, int n_lits);
+  void maximizeWeightedLits(SolverPtr S, int * lits, int * weights, int n_lits);
+  void minimizeWeightedLits(SolverPtr S, int * lits, int * weights, int n_lits);
+
+//theory interface for bitvectors
   BVTheoryPtr initBVTheory(SolverPtr S);
-  int newBitvector_const(SolverPtr S, BVTheoryPtr bv, int bvWidth, long constval);
+  int newBitvector_const(SolverPtr S, BVTheoryPtr bv, int bvWidth, int64_t constval);
   int newBitvector_anon(SolverPtr S, BVTheoryPtr bv, int bvWidth);
   int newBitvector(SolverPtr S, BVTheoryPtr bv, int * bits, int n_bits);
   int bv_width(SolverPtr S, BVTheoryPtr  bv,int bvID);
-  int newBVComparison_const_lt(SolverPtr S, BVTheoryPtr bv, int bvID, long weight);
+  int newBVComparison_const_lt(SolverPtr S, BVTheoryPtr bv, int bvID, int64_t weight);
   int newBVComparison_bv_lt(SolverPtr S, BVTheoryPtr bv, int bvID, int compareID);
-  int newBVComparison_const_leq(SolverPtr S, BVTheoryPtr bv, int bvID, long weight);
+  int newBVComparison_const_leq(SolverPtr S, BVTheoryPtr bv, int bvID, int64_t weight);
   int newBVComparison_bv_leq(SolverPtr S, BVTheoryPtr bv, int bvID, int compareID);
-  int newBVComparison_const_gt(SolverPtr S, BVTheoryPtr bv, int bvID, long weight);
+  int newBVComparison_const_gt(SolverPtr S, BVTheoryPtr bv, int bvID, int64_t weight);
   int newBVComparison_bv_gt(SolverPtr S, BVTheoryPtr bv, int bvID, int compareID);
-  int newBVComparison_const_geq(SolverPtr S, BVTheoryPtr bv, int bvID, long weight);
+  int newBVComparison_const_geq(SolverPtr S, BVTheoryPtr bv, int bvID, int64_t weight);
   int newBVComparison_bv_geq(SolverPtr S, BVTheoryPtr bv, int bvID, int compareID);
 
 
@@ -155,27 +181,34 @@ typedef int Var;
   //for small numbers of variables, consider using a direct CNF encoding instead
   void at_most_one(SolverPtr S, int * vars, int n_vars);
 
-  //theory interface for graphs
+  void assertPB_lt(SolverPtr S, int rhs, int n_args, int * literals, int * coefficients);
+  void assertPB_leq(SolverPtr S, int rhs, int n_args, int * literals, int * coefficients);
+  void assertPB_eq(SolverPtr S, int rhs, int n_args, int * literals, int * coefficients);
+  void assertPB_geq(SolverPtr S, int rhs, int n_args, int * literals, int * coefficients);
+  void assertPB_gt(SolverPtr S, int rhs, int n_args, int * literals, int * coefficients);
+  //Convert any pb constraints in the solver into cnf (will be called automatically before solve())
+  void flushPB(SolverPtr S);
+//theory interface for graphs
 
   GraphTheorySolver_long newGraph(SolverPtr S);
 
   int newNode(SolverPtr S,GraphTheorySolver_long G);
-  int newEdge(SolverPtr S, GraphTheorySolver_long G,int from,int  to,  long weight);
+  int newEdge(SolverPtr S, GraphTheorySolver_long G,int from,int  to,  int64_t weight);
   int newEdge_double(SolverPtr S, GraphTheorySolver_double G,int from,int  to,  double weight);
   int newEdge_bv(SolverPtr S, GraphTheorySolver_long G,int from,int  to, int bvID);
   int reaches(SolverPtr S,GraphTheorySolver_long G,int from, int to);
   int shortestPathUnweighted_lt_const(SolverPtr S,GraphTheorySolver_long G,int from, int to, int steps);
   int shortestPathUnweighted_leq_const(SolverPtr S,GraphTheorySolver_long G,int from, int to, int steps);
-  int shortestPath_lt_const(SolverPtr S,GraphTheorySolver_long G,int from, int to, long dist);
-  int shortestPath_leq_const(SolverPtr S,GraphTheorySolver_long G,int from, int to, long dist);
+  int shortestPath_lt_const(SolverPtr S,GraphTheorySolver_long G,int from, int to, int64_t dist);
+  int shortestPath_leq_const(SolverPtr S,GraphTheorySolver_long G,int from, int to, int64_t dist);
   int shortestPath_lt_bv(SolverPtr S,GraphTheorySolver_long G,int from, int to, int bvID);
   int shortestPath_leq_bv(SolverPtr S,GraphTheorySolver_long G,int from, int to, int bvID);
-  int maximumFlow_geq(SolverPtr S,GraphTheorySolver_long G,int source, int sink, long weight);
-  int maximumFlow_gt(SolverPtr S,GraphTheorySolver_long G,int source, int sink, long weight);
+  int maximumFlow_geq(SolverPtr S,GraphTheorySolver_long G,int source, int sink, int64_t weight);
+  int maximumFlow_gt(SolverPtr S,GraphTheorySolver_long G,int source, int sink, int64_t weight);
   int maximumFlow_geq_bv(SolverPtr S,GraphTheorySolver_long G,int source, int sink, int bvID);
   int maximumFlow_gt_bv(SolverPtr S,GraphTheorySolver_long G,int source, int sink, int bvID);
-  int minimumSpanningTree_leq(SolverPtr S,GraphTheorySolver_long G, long weight);
-  int minimumSpanningTree_lt(SolverPtr S,GraphTheorySolver_long G,int source, int sink, long weight);
+  int minimumSpanningTree_leq(SolverPtr S,GraphTheorySolver_long G, int64_t weight);
+  int minimumSpanningTree_lt(SolverPtr S,GraphTheorySolver_long G,int source, int sink, int64_t weight);
   int acyclic_undirected(SolverPtr S,GraphTheorySolver_long G);
   int acyclic_directed(SolverPtr S,GraphTheorySolver_long G);
 
@@ -187,28 +220,27 @@ typedef int Var;
   int newTransition(SolverPtr S,FSMTheorySolverPtr fsmTheory, int fsmID, int fromNode, int toNode,int inputLabel, int outputLabel);
   int newString(SolverPtr S,FSMTheorySolverPtr fsmTheory, int * str,int len);
   int fsmAcceptsString(SolverPtr S,FSMTheorySolverPtr fsmTheory, int fsmID, int startNode, int acceptNode,int stringID);
+  int fsmCompositionAccepts(Monosat::SimpSolver * S, Monosat::FSMTheorySolver *  fsmTheory,   int fsmGeneratorID,int fsmAcceptorID, int gen_startNode, int gen_acceptNode, int acceptor_startNode, int acceptor_acceptNode, int stringID);
 
   //model query
   //For a given literal (not variable!), returns 0 for true, 1 for false, 2 for unassigned.
   int getModel_Literal(SolverPtr S,int lit);
   //Get an assignment to a bitvector in the model. The model may find a range of satisfying assignments to the bitvector;
   //If getMaximumValue is true, this function returns the maximum satisfying assignment to the bitvector in the model; else it returns the smallest.
-  long getModel_BV(SolverPtr S, BVTheoryPtr bv, int bvID, bool getMaximumValue);
+  int64_t getModel_BV(SolverPtr S, BVTheoryPtr bv, int bvID, bool getMaximumValue);
   //graph queries:
   //maxflow_literal is the literal (not variable!) that is the atom for the maximum flow query
-  long getModel_MaxFlow(SolverPtr S,GraphTheorySolver_long G,int maxflow_literal);
+  int64_t getModel_MaxFlow(SolverPtr S,GraphTheorySolver_long G,int maxflow_literal);
   //maxflow_literal is the literal (not variable!) that is the atom for the maximum flow query
-  long getModel_EdgeFlow(SolverPtr S,GraphTheorySolver_long G,int maxflow_literal, int edgeLit);
-  long getModel_AcyclicEdgeFlow(SolverPtr S,GraphTheorySolver_long G,int maxflow_literal, int edgeLit);
+  int64_t getModel_EdgeFlow(SolverPtr S,GraphTheorySolver_long G,int maxflow_literal, int edgeLit);
+  int64_t getModel_AcyclicEdgeFlow(SolverPtr S,GraphTheorySolver_long G,int maxflow_literal, int edgeLit);
 
-  long getModel_MinimumSpanningTreeWeight(SolverPtr S,GraphTheorySolver_long G,int spanning_tree_literal);
+  int64_t getModel_MinimumSpanningTreeWeight(SolverPtr S,GraphTheorySolver_long G,int spanning_tree_literal);
   int getModel_Path_Nodes_Length(SolverPtr S,GraphTheorySolver_long G,int reach_or_distance_literal);
   int getModel_Path_Nodes(SolverPtr S,GraphTheorySolver_long G,int reach_or_distance_literal, int store_length, int * store);
 
   int getModel_Path_EdgeLits_Length(SolverPtr S,GraphTheorySolver_long G,int reach_or_distance_literal);
   int getModel_Path_EdgeLits(SolverPtr S,GraphTheorySolver_long G,int reach_or_distance_literal, int store_length, int * store);
-
-
 
 #ifdef __cplusplus
 }

@@ -406,7 +406,9 @@ public:
 	FSMParser():Parser<B, Solver>("Finite State Machine"){
 		strings = new vec<vec<int>>();
 	}
-
+	virtual ~FSMParser(){
+		delete strings;
+	}
 	bool parseLine(B& in, Solver& S) {
 
 		skipWhitespace(in);

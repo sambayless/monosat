@@ -24,8 +24,6 @@ If you build MonoSAT without using the provided cmake/makefiles, it is criticall
 ###Install the Python Library
 
 To install the Python library (system-wide), first build monosat (see above), cd into 'src/monosat/api/python', and then use Python's setuptools to install the Python library (see below).
-The Python library has optional support for pseudo-Boolean constraints, using [MinisatPB](https://github.com/sambayless/minisatpb), which is a fork of [Minisat+](https://github.com/niklasso/minisatp).  
-In order to use pseudo-Boolean constraints in the Python library, you must separately install [MinisatPB](https://github.com/sambayless/minisatpb) on your system path. 
 
 On Ubuntu (14.04):
 ```
@@ -42,7 +40,7 @@ MonoSAT is based on [MiniSat 2][Minisat], and supports many of the same calling 
 $monosat [-witness|-witness-file=filename] input_file.gnf
 ```
 
-Where input_file.gnf is a file in [GNF format][FORMAT] (a very simple extension of DIMACS CNF format to support graph and geometry predicates). Use `-witness` to print the solution (if one exists) to stdout, or `-witness-file` to save it to file.
+Where input_file.gnf is a file in [GNF format][FORMAT] (a very simple extension of DIMACS CNF format to support graph, finite state machine, and geometry predicates). Use `-witness` to print the solution (if one exists) to stdout, or `-witness-file` to save it to file.
 
 MonoSAT includes a very large set of configuration options - most of which you should stay away from unless you know what you are doing or want to explore the internals of MonoSAT (also, some of those configuration options might lead to buggy behaviour). Two options that often have a large impact on performance are `-decide-theories` and `-conflict-min-cut`:
 
@@ -55,7 +53,7 @@ The `-decide-theories` option will cause the solver to make heuristic decisions 
 ###Source Overview
 MonoSAT is written in C++. Core SAT solver functionality is in the `core/` and `simp/` directories; in particular, note `core/Config.cpp`, which is a central listing of all the configuration options available to MonoSAT. 
 
-The graph and geometry theory solvers can be found in `geometry/` and `graph/`. Many of the graph algorithsms used by MonoSAT are collected in  `dgl/` (for 'Dynamic Graph Library'). 
+The graph and finite state machine theory solvers can be found in `graph/` and `fsm/`, the (not currently maintained) geometry theory is in `geom/`. Many of the graph algorithsms used by MonoSAT are collected in  `dgl/` (for 'Dynamic Graph Library'). 
 
 `dgl/` incldudes C++ implementations of several dynamic graph algorithms (as well as some more common graph algorithms), and is well-optimized for medium sized (<20,000 nodes, < 100,000 edges), sparse graphs. The algorithms in dgl are designed for the case where the set of *possible* edges (and nodes) is fixed and known in advance (or only changes infrequently), and from that fixed set of possible edges many subsets of edges will subsequently be selected to be included in or excluded from the graph. 'dgl' supports templated edge weights and edge capacities, and has been tested successfully with integers, floats, and GMP arbitrary precision rationals.
 
@@ -74,11 +72,12 @@ The graph and geometry theory solvers can be found in `geometry/` and `graph/`. 
     * [Edmonds-Karp](#edmondskarp) algorithm (including a [dynamic variant](#dynamic_edmonds_karp))
     * [Dinitz](#dinitz)'s algorithm (including the [dynamic tree](#dynamic_tree) variant)
 * And many supporting algorithms and data structures, including:
+    * [Pearce and Kelly's `PK'](#pktopo) algorithm for dynamic topological sort in DAGs
     * [Euler Tree](http://en.wikipedia.org/wiki/Euler_tour_technique)
     * [Link Cut Tree](http://en.wikipedia.org/?title=Link/cut_tree)
+    * [Tarjan's SCC](https://en.wikipedia.org/wiki/Tarjan%27s_strongly_connected_components_algorithm)
     * Splay Tree
     * Disjoint Set
-
 
 
 ###Licensing
@@ -104,40 +103,16 @@ MonoSAT was made possible by the use of several open-source projects, including 
 
 ###References
 
-
-<a name="buriol2008speeding">
-[Buriol, Luciana S., Mauricio GC Resende, and Mikkel Thorup. "Speeding up dynamic shortest-path algorithms." INFORMS Journal on Computing 20.2 (2008): 191-204.](http://dx.doi.org/10.1287/ijoc.1070.0231)</a>
-
-
-<a name="dijkstra1959note">
-[Dijkstra, Edsger W. "A note on two problems in connexion with graphs." Numerische mathematik 1.1 (1959): 269-271](http://dx.doi.org/10.1007%2FBF01386390)</a>
-
-<a name="dinitz">
-[Dinitz, Y. "Algorithm for solution of a problem of maximum flow in a network with power estimation". Doklady Akademii nauk SSSR 11: 1277–1280  (1970)](http://www.cs.bgu.ac.il/~dinitz/D70.pdf) </a>
-
-<a name="edmondskarp">[Edmonds, Jack, and Richard M. Karp. "Theoretical improvements in algorithmic efficiency for network flow problems." Journal of the ACM (JACM) 19.2 (1972): 248-264](http://dx.doi.org/10.1145%2F321694.321699)</a>
-
-<a name="kohli2005efficiently">
-[Kohli, Pushmeet, and Philip HS Torr. "Efficiently solving dynamic markov random fields using graph cuts." Computer Vision, 2005. ICCV 2005. Tenth IEEE International Conference on. Vol. 2. IEEE, 2005](http://dx.doi.org/10.1109/ICCV.2005.81)</a>
-
-<a name="dynamic_edmonds_karp">
-[Korduban, D. "Incremental Maximum Flow in Dynamic graphs." Theoretical Computer Science Stack Exchange. http://cstheory.stackexchange.com/q/10186, 2012](http://cstheory.stackexchange.com/a/10186)</a>
-
-<a name="kruskal">
-[Kruskal, Joseph B. "On the shortest spanning subtree of a graph and the traveling salesman problem." Proceedings of the American Mathematical society 7.1 (1956): 48-50](http://dx.doi.org/10.1090%2FS0002-9939-1956-0078686-7)</a>
-
-<a name="prim">
-Prim, Robert Clay. "Shortest connection networks and some generalizations." Bell system technical journal 36.6 (1957): 1389-140](http://dx.doi.org/10.1002/j.1538-7305.1957.tb01515.x)</a>
-
-<a name="ramalingam1996incremental"> [Ramalingam, Ganesan, and Thomas Reps. "An incremental algorithm for a generalization of the shortest-path problem." Journal of Algorithms 21.2 (1996): 267-305.](http://dx.doi.org/10.1006/jagm.1996.0046)</a>
-
-
-<a name="dynamic_tree">
-[Sleator, Daniel D., and Robert Endre Tarjan. "A data structure for dynamic trees." Proceedings of the thirteenth annual ACM symposium on Theory of computing. ACM, 1981.](http://dx.doi.org/10.1145/800076.802464)</a>
-
-
-<a name="spira1975finding">
-[Spira, Philip M., and A. Pan. "On finding and updating spanning trees and shortest paths." SIAM Journal on Computing 4.3 (1975): 375-380.](http://dx.doi.org/10.1137/0204032)</a>
-
-<a name="thorup2000near">
-[Thorup, Mikkel. "Near-optimal fully-dynamic graph connectivity." Proceedings of the thirty-second annual ACM symposium on Theory of computing. ACM, 2000.](http://dx.doi.org/10.1145/335305.335345)</a>
+* <a name="buriol2008speeding">[Buriol, Luciana S., Mauricio GC Resende, and Mikkel Thorup. "Speeding up dynamic shortest-path algorithms." INFORMS Journal on Computing 20.2 (2008): 191-204.](http://dx.doi.org/10.1287/ijoc.1070.0231)</a>
+* <a name="dijkstra1959note">[Dijkstra, Edsger W. "A note on two problems in connexion with graphs." Numerische mathematik 1.1 (1959): 269-271](http://dx.doi.org/10.1007%2FBF01386390)</a>
+* <a name="dinitz">[Dinitz, Y. "Algorithm for solution of a problem of maximum flow in a network with power estimation". Doklady Akademii nauk SSSR 11: 1277–1280  (1970)](http://www.cs.bgu.ac.il/~dinitz/D70.pdf) </a>
+* <a name="edmondskarp">[Edmonds, Jack, and Richard M. Karp. "Theoretical improvements in algorithmic efficiency for network flow problems." Journal of the ACM (JACM) 19.2 (1972): 248-264](http://dx.doi.org/10.1145%2F321694.321699)</a>
+* <a name="kohli2005efficiently">[Kohli, Pushmeet, and Philip HS Torr. "Efficiently solving dynamic markov random fields using graph cuts." Computer Vision, 2005. ICCV 2005. Tenth IEEE International Conference on. Vol. 2. IEEE, 2005](http://dx.doi.org/10.1109/ICCV.2005.81)</a>
+* <a name="dynamic_edmonds_karp">[Korduban, D. "Incremental Maximum Flow in Dynamic graphs." Theoretical Computer Science Stack Exchange. http://cstheory.stackexchange.com/q/10186, 2012](http://cstheory.stackexchange.com/a/10186)</a>
+* <a name="kruskal">[Kruskal, Joseph B. "On the shortest spanning subtree of a graph and the traveling salesman problem." Proceedings of the American Mathematical society 7.1 (1956): 48-50](http://dx.doi.org/10.1090%2FS0002-9939-1956-0078686-7)</a>
+* <a name="prim">Prim, Robert Clay. "Shortest connection networks and some generalizations." Bell system technical journal 36.6 (1957): 1389-140](http://dx.doi.org/10.1002/j.1538-7305.1957.tb01515.x)</a>
+* <a name="ramalingam1996incremental"> [Ramalingam, Ganesan, and Thomas Reps. "An incremental algorithm for a generalization of the shortest-path problem." Journal of Algorithms 21.2 (1996): 267-305.](http://dx.doi.org/10.1006/jagm.1996.0046)</a>
+* <a name="dynamic_tree">[Sleator, Daniel D., and Robert Endre Tarjan. "A data structure for dynamic trees." Proceedings of the thirteenth annual ACM symposium on Theory of computing. ACM, 1981.](http://dx.doi.org/10.1145/800076.802464)</a>
+* <a name="spira1975finding">[Spira, Philip M., and A. Pan. "On finding and updating spanning trees and shortest paths." SIAM Journal on Computing 4.3 (1975): 375-380.](http://dx.doi.org/10.1137/0204032)</a>
+* <a name="thorup2000near">[Thorup, Mikkel. "Near-optimal fully-dynamic graph connectivity." Proceedings of the thirty-second annual ACM symposium on Theory of computing. ACM, 2000.](http://dx.doi.org/10.1145/335305.335345)</a>
+* <a name="pktopo">[Pearce, David J., and Kelly, Paul H. J. "A Dynamic Topological Sort Algorithm for Directed Acyclic Graphs", 2006](http://dx.doi.org/10.1145/1187436.1210590)</a>

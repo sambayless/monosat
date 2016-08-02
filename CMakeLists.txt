@@ -1,7 +1,9 @@
 cmake_minimum_required(VERSION 2.7)
 project(monosat)
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wno-unused-variable -Wno-unused-but-set-variable   -Wno-sign-compare  -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS")
+set (PB_SUPPORT 1)
+
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}  -DNO_GMP -std=c++11 -Wno-unused-variable -Wno-unused-but-set-variable   -Wno-sign-compare  -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS")
 
 set( CMAKE_VERBOSE_MAKEFILE on )
 
@@ -9,8 +11,33 @@ if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
    message(STATUS "Setting build type to 'Release' as none was specified.\nUse cmake -DCMAKE_BUILD_TYPE=Debug to seelct Debug release.")
    set(CMAKE_BUILD_TYPE Release CACHE STRING "Choose the type of build." FORCE)
    # Set the possible values of build type for cmake-gui
-   set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug" "Release"  "MinSizeRel" "RelWithDebInfo")
+   set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug" "Release"  "MinSizeRel" "RelWithDebInfo" "Sanitize")
 endif()
+
+set(CMAKE_CONFIGURATION_TYPES "Release;Debug;MinSizeRel;RelWithDebInfo;Sanitize" CACHE STRING "" FORCE)
+
+message("* Adding build types...")
+SET(CMAKE_CXX_FLAGS_SANITIZE
+        "${CMAKE_CXX_FLAGS_DEBUG} -fsanitize=address -fsanitize=undefined"
+        CACHE STRING "Flags used by the C++ compiler during address sanetize  builds."
+        FORCE )
+SET(CMAKE_C_FLAGS_SANITIZE
+        "${CMAKE_C_FLAGS_DEBUG} -fsanitize=address -fsanitize=undefined"
+        CACHE STRING "Flags used by the C compiler during address sanetize builds."
+        FORCE )
+SET(CMAKE_EXE_LINKER_FLAGS_SANITIZE
+        "${CMAKE_EXE_LINKER_FLAGS} -fsanitize=address -fsanitize=undefined"
+        CACHE STRING "Flags used for linking binaries during address sanetize builds."
+        FORCE )
+SET(CMAKE_SHARED_LINKER_FLAGS_SANITIZE
+        "${CMAKE_SHARED_LINKER_FLAGS} -fsanitize=address -fsanitize=undefined"
+        CACHE STRING "Flags used by the shared libraries linker during address sanetize builds."
+        FORCE )
+MARK_AS_ADVANCED(
+        CMAKE_CXX_FLAGS_SANETIZE
+        CMAKE_C_FLAGS_SANETIZE
+        CMAKE_EXE_LINKER_FLAGS_SANETIZE
+        CMAKE_SHARED_LINKER_FLAGS_SANETIZE )
 
 include_directories(src/)
 
@@ -206,6 +233,44 @@ set(SOURCE_FILES
     src/monosat/utils/System.h
     src/monosat/Main.cc)
 
+
+set(SOURCE_FILES_PB
+        src/monosat/pb/Pb.h
+        src/monosat/pb/Clausify.h
+        src/monosat/pb/Config_pb.h
+        src/monosat/pb/Config_pb.cpp
+        src/monosat/pb/Debug.h
+        src/monosat/pb/Debug.cc
+        src/monosat/pb/Hardware.h
+        src/monosat/pb/Hardware_adders.cc
+        src/monosat/pb/Hardware_clausify.cc
+        src/monosat/pb/Hardware_sorters.cc
+        src/monosat/pb/PbSolver.cc
+        src/monosat/pb/PbSolver.h
+        src/monosat/pb/PbSolver_convert.cc
+        src/monosat/pb/PbSolver_convertAdd.cc
+        src/monosat/pb/PbSolver_convertBdd.cc
+        src/monosat/pb/PbSolver_convertSort.cc
+        src/monosat/pb/ADTs/FEnv.h
+        src/monosat/pb/ADTs/FEnv.cc
+        src/monosat/pb/ADTs/File.h
+        src/monosat/pb/ADTs/File.cc
+        src/monosat/pb/ADTs/Global.h
+        src/monosat/pb/ADTs/Global.cc
+        src/monosat/pb/ADTs/Hash_standard.h
+        src/monosat/pb/ADTs/Heap.h
+        src/monosat/pb/ADTs/Int.h
+        src/monosat/pb/ADTs/Map.h
+        src/monosat/pb/ADTs/Sort.h
+        src/monosat/pb/ADTs/StackAlloc.h
+        src/monosat/pb/ADTs/VecAlloc.h
+        src/monosat/pb/ADTs/VecMaps.h
+        )
+
+if (${PB_SUPPORT})
+    set(SOURCE_FILES ${SOURCE_FILES} ${SOURCE_FILES_PB})
+endif (${PB_SUPPORT})
+
 add_executable(monosat ${SOURCE_FILES})
 set_target_properties(monosat PROPERTIES EXCLUDE_FROM_ALL 1)
 target_link_libraries(monosat z)
@@ -233,7 +298,7 @@ if (${UNIX})
     target_link_libraries(monosat_static rt) #not static
 endif (${UNIX})
 
-add_library(libmonosat SHARED ${SOURCE_FILES})
+add_library(libmonosat SHARED ${SOURCE_FILES} )
 set_target_properties(libmonosat PROPERTIES OUTPUT_NAME monosat)
 target_link_libraries(libmonosat z)
 target_link_libraries(libmonosat m)

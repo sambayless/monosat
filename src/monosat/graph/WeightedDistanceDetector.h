@@ -83,7 +83,7 @@ public:
 	bool has_weighted_shortest_paths_overapprox = false;
 	vec<int> unweighted_over_approx_shortest_paths;
 	vec<Weight> over_approx_shortest_paths;
-	MaxFlow<long> * conflict_flow = nullptr;
+	MaxFlow<int64_t> * conflict_flow = nullptr;
 
 
 	int max_unweighted_distance;
@@ -175,11 +175,11 @@ public:
 	};
 
 	/*struct CutStatus {
-		long one = 1;
-		long inf = 0xFFFF;
+		int64_t one = 1;
+		int64_t inf = 0xFFFF;
 		WeightedDistanceDetector & outer;
 
-		const long &operator [](int id) const {
+		const int64_t &operator [](int id) const {
 			if (id % 2 == 0) {
 				return one;
 			} else {
