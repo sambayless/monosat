@@ -760,8 +760,8 @@ protected:
 	void backtrackUntil(int level);
 	//Add a clause to the clause database safely, even if the solver is in the middle of search, propagation, or clause analysis.
 	//(In reality, the clause may be added to the database sometime later)
-	void addClauseSafely(vec<Lit> & ps);
 public:
+	void addClauseSafely(vec<Lit> & ps)override;
 
 	void setTheoriesEnabled(bool enableTheories){
 		disable_theories = !enableTheories;
