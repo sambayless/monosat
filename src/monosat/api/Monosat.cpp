@@ -362,6 +362,7 @@ void printStats(SimpSolver* solver) {
 
 struct MonosatData{
 	Monosat::BVTheorySolver<int64_t> * bv_theory=nullptr;
+	Monosat::FSMTheorySolver * fsm_theory=nullptr;
 	vec< Monosat::GraphTheorySolver<int64_t> *> graphs;
 
 	bool last_solution_optimal=true;
@@ -1209,12 +1210,18 @@ void bv_bitblast(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bv,
 //FSM Interface
 
  Monosat::FSMTheorySolver * initFSMTheory(Monosat::SimpSolver * S){
+	MonosatData * d = (MonosatData*) S->_external_data;
+	if(d->fsm_theory)
+	    return d->fsm_theory;
 	Monosat::FSMTheorySolver  * theory = new Monosat::FSMTheorySolver(S);
 	S->addTheory(theory);
-
+	d->fsm_theory=theory;
 	return theory;
  }
  int newFSM(Monosat::SimpSolver * S, Monosat::FSMTheorySolver *  fsmTheory, int inputAlphabet, int outputAlphabet){
+	 if(!fsmTheory){
+		 fsmTheory = initFSMTheory(S);
+	 }
 	 int fsmID = fsmTheory->newFSM();
 	 fsmTheory->setAlphabets(fsmID,inputAlphabet,outputAlphabet);
 	 write_out(S,"fsm %d 0 0\n", fsmID);
@@ -1222,10 +1229,16 @@ void bv_bitblast(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bv,
 	 return fsmID;
  }
  int newState(Monosat::SimpSolver * S, Monosat::FSMTheorySolver *  fsmTheory, int fsmID){
+	 if(!fsmTheory){
+		 fsmTheory = initFSMTheory(S);
+	 }ndroid
 	 return fsmTheory->newNode(fsmID);
  }
 
  int newTransition(Monosat::SimpSolver * S, Monosat::FSMTheorySolver * fsmTheory, int fsmID, int fromNode, int toNode,int inputLabel, int outputLabel){
+	 if(!fsmTheory){
+		 fsmTheory = initFSMTheory(S);
+	 }
 	  Var v = newVar(S);
 	  Lit l =mkLit(v);
 	  fsmTheory->newTransition(fsmID,fromNode,toNode,inputLabel,outputLabel,v);
@@ -1233,6 +1246,9 @@ void bv_bitblast(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bv,
 	  return toInt(l);
  }
  int newString(Monosat::SimpSolver * S, Monosat::FSMTheorySolver *  fsmTheory, int * str,int len){
+	 if(!fsmTheory){
+		 fsmTheory = initFSMTheory(S);
+	 }
 	 vec<int> string;
 	 for(int i = 0;i<len;i++){
 		 int label = str[i];
@@ -1254,6 +1270,9 @@ void bv_bitblast(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bv,
  }
 
  int fsmAcceptsString(Monosat::SimpSolver * S, Monosat::FSMTheorySolver *  fsmTheory, int fsmID, int startNode, int acceptNode,int stringID){
+	 if(!fsmTheory){
+		 fsmTheory = initFSMTheory(S);
+	 }
 	 Var v = newVar(S);
 	 Lit l =mkLit(v);
 	 fsmTheory->addAcceptLit(fsmID,startNode,acceptNode,stringID,v);
