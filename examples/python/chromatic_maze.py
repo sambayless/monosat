@@ -78,19 +78,19 @@ for x in range(width):
         if(x<width-1):
             e =chromatic_graph.addEdge( room[x][y].node,room[x+1][y].node)
             #this edge is enabled IFF you can transition between the colors in this room
-            Assert(e==passable(room[x][y].color,room[x+1][y].color))
+            Assert(Eq(e,passable(room[x][y].color,room[x+1][y].color)))
         if(y<height-1):
             e =chromatic_graph.addEdge( room[x][y].node,room[x][y+1].node)
             #this edge is enabled IFF you can transition between the colors in this room
-            Assert(e==passable(room[x][y].color,room[x][y+1].color))
+            Assert(Eq(e,passable(room[x][y].color,room[x][y+1].color)))
         if(x>0):
             e =chromatic_graph.addEdge( room[x][y].node,room[x-1][y].node)
             #this edge is enabled IFF you can transition between the colors in this room
-            Assert(e==passable(room[x][y].color,room[x-1][y].color))
+            Assert(Eq(e,passable(room[x][y].color,room[x-1][y].color)))
         if(y>0):
             e =chromatic_graph.addEdge( room[x][y].node,room[x][y-1].node)
             #this edge is enabled IFF you can transition between the colors in this room
-            Assert(e==passable(room[x][y].color,room[x][y-1].color))
+            Assert(Eq(e,passable(room[x][y].color,room[x][y-1].color)))
 
 #connect start and exit to every node
 

@@ -189,7 +189,11 @@ class MonosatPB:
             return
         nclause=[l.getLit() for l in clause]
         nweights= weights
-
+        if nweights is None:
+            nweights = []
+        nweights = list(nweights)
+        while len(nweights)<len(nclause):
+            nweights.append(1)
 
         #need all the variables to be in positive polarity...
         """

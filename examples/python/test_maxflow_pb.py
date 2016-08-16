@@ -29,7 +29,7 @@ a = g.addEdge(0,1)
 b = g.addEdge(1,2)
 c = g.addEdge(2,3)
 d = Var()
-Assert(d==Not(c))
+Assert(Eq(d,Not(c)))
 AssertLessThanPB((a,b,Not(d)),4);
 
 mf = g.maxFlowGreaterOrEqualTo(0,3,1)

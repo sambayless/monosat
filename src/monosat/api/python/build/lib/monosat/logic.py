@@ -17,15 +17,10 @@
 #DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT
 #OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-import monosat.monosat_c     
-from tempfile import mktemp
-import numbers
 import collections
-import functools
 import math
-import platform
-import re
-import os
+import monosat.monosat_c
+import numbers
 
 _monosat = monosat.monosat_c.Monosat()
 
@@ -109,7 +104,7 @@ class Var:
     def isConstFalse(self):
         return self.getLit()==_monosat.false()
  
-    def __and__(self,other):    
+    def And(self,other):
         o=VAR(other)
         if(self.isConstFalse() or o.isConstFalse()):
             return false()
@@ -127,7 +122,7 @@ class Var:
         return v
         #return Var(_monosat.addAnd( self.getLit(),o.getLit()))
      
-    def __or__(self,other):
+    def Or(self,other):
         o=VAR(other)
         if(self.isConstTrue() or o.isConstTrue()):
             return true()
@@ -146,8 +141,8 @@ class Var:
         #return Var()
         #return Var(_monosat.Not( _monosat.addAnd(  _monosat.Not( self.getLit()),_monosat.Not(o.getLit()))))
 
-    def nor(self,other):
-        return ~(self.__or__(other))
+    def Nor(self,other):
+        return ~(self.Or(other))
         """o=VAR(other)
         if(self.isConstTrue() or o.isConstTrue()):
             return false()
@@ -159,8 +154,8 @@ class Var:
         
         #return Var( _monosat.addAnd(  _monosat.Not( self.getLit()),_monosat.Not(o.getLit())))
         
-    def nand(self,other):
-        return ~(self.__and__(other))
+    def Nand(self,other):
+        return ~(self.And(other))
         """o=VAR(other)
         if(self.isConstFalse() or o.isConstFalse()):
             return true()
@@ -170,59 +165,61 @@ class Var:
         if(o.isConstTrue()):
             return self.Not();
         return Var(_monosat.Not(_monosat.addAnd( self.getLit(),o.getLit())))"""
- 
+
+    #Keep this operator overload
     def __invert__(self):
         return self.Not()
  
     def Not(self):
         return Var(_monosat.Not(self.getLit())) 
+    #No longer overloading the __==__ operator, as that caused problems with dictionaries/hash functions.
+    def Eq(self,other):
+        return self.Xnor(other)
     
-    def __eq__(self,other):                
-        return self.xnor(other)
-    
-    def __ne__(self,other):
-        return self.__xor__(other)
-    
-    def __xor__(self,other):
+    def Neq(self,other):
+        return self.Xor(other)
+
+    #Note: No longer overloading the __xor__ operator, as that caused problems with dictionaries/hash functions.
+    def Xor(self,other):
         o=VAR(other)
-        
+
         if(self.isConst() and o.isConst()):
             return true() if self.getLit() != o.getLit() else false()
-        
+
         if(self.isConstTrue()):
             return o.Not();
-        
+
         if(self.isConstFalse()):
             return o;
-        
+
         if(o.isConstTrue()):
             return self.Not();
-        
+
         if(o.isConstFalse()):
             return self;
-        
+
         v = Var()
         _checkLits((self,o,v))
-        #If both inputs 0, output must be 0. 
+        #If both inputs 0, output must be 0.
         _monosat.addTertiaryClause(_monosat.Not( v.getLit()),self.getLit(),o.getLit())
-        
-        #If one in put 1, the other input 0, output must be 1. 
+
+        #If one in put 1, the other input 0, output must be 1.
         _monosat.addTertiaryClause(v.getLit(),_monosat.Not( self.getLit()),o.getLit())
-        
-        #If one in put 1, the other input 0, output must be 1. 
+
+        #If one in put 1, the other input 0, output must be 1.
         _monosat.addTertiaryClause(v.getLit(), self.getLit(),_monosat.Not(o.getLit()))
-        
+
         # If both inputs 1, output must be 0.
         _monosat.addTertiaryClause(_monosat.Not(v.getLit()), _monosat.Not(self.getLit()),_monosat.Not(o.getLit()))
-        
+
         #a=_monosat.addAnd(self.getLit(),_monosat.Not( o.getLit()))
         #b=_monosat.addAnd(_monosat.Not(self.getLit()),o.getLit())
-        
+
         #return Var(_monosat.Not(_monosat.addAnd(_monosat.Not( a),_monosat.Not(b))))
         return v
 
-    def xnor(self,other):
-        return ~(self.__xor__(other))
+    def Xnor(self,other):
+        return ~(self.Xor(other))
         """ o=VAR(other)
         
         if(self.isConst() and o.isConst()):
@@ -246,10 +243,10 @@ class Var:
         
         return Var(_monosat.addAnd(_monosat.Not( a),_monosat.Not(b)))        """
         
-    def implies(self,other):
+    def Implies(self,other):
         o = VAR(other)
         _checkLits((self,o))
-        #return ~(self.__and__(~other))
+        #return ~(self.And(~other))
         return Var(_monosat.Not(_monosat.addAnd( self.getLit(),_monosat.Not(o.getLit()) )))
     
 
@@ -356,13 +353,13 @@ def And(*args):
         if isinstance(args[0], collections.Iterable):
             a=VAR(args[0][0])
             for i in range(1,len(args[0])):
-                a=a & VAR(args[0][i])
+                a=a.And(VAR(args[0][i]))
             return a
         return VAR(args[0])
     else:
         a=VAR(args[0])
         for i in range(1,len(args)):
-            a=a & VAR(args[i])
+            a=a.And(VAR(args[i]))
         return a;
 
 def Or(*args):
@@ -372,13 +369,13 @@ def Or(*args):
         if isinstance(args[0], collections.Iterable):
             a=VAR(args[0][0])
             for i in range(1,len(args[0])):
-                a=a | VAR(args[0][i])
+                a=a.Or(VAR(args[0][i]))
             return a
         return VAR(args[0])
     else:
         a=VAR(args[0])
         for i in range(1,len(args)):
-            a=a| VAR(args[i])
+            a=a.Or(VAR(args[i]))
         return a;
 
 def Nand(*args):
@@ -397,25 +394,25 @@ def Xor(*args):
         if isinstance(args[0], collections.Iterable):
             a=VAR(args[0][0])
             for i in range(1,len(args[0])):
-                a=a ^ VAR(args[0][i])
+                a=a.Xor(VAR(args[0][i]))
             return a
         return VAR(args[0])
     else:
         a=VAR(args[0])
         for i in range(1,len(args)):
-            a=a ^ VAR(args[i])
+            a=a.Xor(VAR(args[i]))
         return a;
     
-    #return VAR(a)^VAR(b)        
+    #return VAR(a).Xor(VAR(b))
  
 def Xnor(*args):
     return Xor(*args).Not()
 #def Xnor(a,b):
-#    return VAR(a).xnor(VAR(b))
+#    return VAR(a).Xnor(VAR(b))
 
 #a implies b
 def Implies(a,b):
-    return Not(VAR(a)) | VAR(b) #VAR(a) & Not(b)
+    return Or(Not(VAR(a)) , VAR(b)) #VAR(a) & Not(b)
 
 def Eq(a,b):
     return Xnor(a,b)
@@ -480,7 +477,7 @@ def AssertXor(*args):
         #This can probably be done better...  
         a=VAR(args[0])
         for i in range(1,len(args)):
-            a=a ^ VAR(args[i])
+            a=a.Xor(VAR(args[i]))
         Assert(a)
 
 def AssertXnor(*args):
@@ -496,13 +493,13 @@ def AssertXnor(*args):
         #This can probably be done better...  
         a=VAR(args[0])
         for i in range(1,len(args)):
-            a=a ^ VAR(args[i])
+            a=a.Xor(VAR(args[i]))
         Assert(~a)
 
 #a implies b
 def AssertImplies(a,b):
     _addSafeClause((~VAR(a),VAR(b)))  
-    #return Not(VAR(a)) | VAR(b) #VAR(a) & Not(b)
+    #return Not(VAR(a)).Or(  VAR(b)) #VAR(a).And( Not(b))
 
 def AssertIff(a,b):
     AssertXnor((a,b))
@@ -548,8 +545,8 @@ def HalfAdd(a,b):
     aV = VAR(a)
     bV = VAR(b)
 
-    sum = (a ^ b) 
-    carry = (a &b)
+    sum = (a.Xor(b))
+    carry = (a.And(b))
 
     return sum,carry  
 
@@ -562,14 +559,14 @@ def Add(a,b,c=False):
     cV= VAR(c)
         
     if(cV.isConstFalse()):
-        sum = (a ^ b)
-        carry = (a &b)
+        sum = (a.Xor(b))
+        carry = (a.And(b))
     elif cV.isConstTrue():
-        sum = (a ^ b).Not()
-        carry = (a | b) #Because carry is true, if either a or b, then we will output a carry
+        sum = (a.Xor(b)).Not()
+        carry = (a.Or(b)) #Because carry is true, if either a or b, then we will output a carry
     else:    
-        sum = (a ^ b) ^ c
-        carry = ((a &b) | (c & (a^b)))
+        sum = (a.Xor( b)).Xor(c)
+        carry = ((a.And(b)).Or((c.And( (a.Xor(b))))))
 
     return sum,carry  
 
@@ -580,8 +577,8 @@ def Subtract(a,b):
     aV = VAR(a)
     bV = Not(VAR(b))
 
-    sum = (a ^ b).Not()
-    carry = (a | b) #Because carry is true, if either a or b, then we will output a carry
+    sum = (a.Xor(b)).Not()
+    carry = (a.Or(b)) #Because carry is true, if either a or b, then we will output a carry
 
     return sum,carry  
 
@@ -753,8 +750,8 @@ def _LessOrEqual(num1, num2):
         for i in range(len(a1)-1,-1,-1):
             a = VAR(a1[i])
             b= VAR(a2[i])
-            gt |= And(Not(lt), a, Not(b))
-            lt |= And(Not(gt), Not(a),b)
+            gt = gt.Or(And(Not(lt), a, Not(b)))
+            lt = gt.Or(And(Not(gt), Not(a),b))
         
         return lt, Or(lt, Not(gt))
     
@@ -770,8 +767,8 @@ def _LessOrEqual(num1, num2):
     for i in range(len(a1)-1,-1,-1):
         a = VAR(a1[i])
         b= VAR(a2[i])
-        gt |= And(Not(lt), a, Not(b))
-        lt |= And(Not(gt), Not(a),b)
+        gt = gt.Or(And(Not(lt), a, Not(b)))
+        lt = gt.Or(And(Not(gt), Not(a),b))
     
     return lt, Or(lt, Not(gt))
 
@@ -822,7 +819,7 @@ def Equal(num1,num2):
     for i in range(len(a)):
         ai = VAR(a[i])
         bi = VAR(b[i])
-        allequal &= ai.xnor(bi)
+        allequal = allequal.And(ai.Xnor(bi))
     return allequal
         
 
@@ -948,9 +945,9 @@ def _PopCountTable(vars, max_value=None):
             for i,b in enumerate(bin(n)):
                 v= vars[i]
                 if b=='0':
-                    a &= Not(v)
+                    a = a.And(Not(v))
                 else:
-                    a&= v
+                    a = a.And(v)
             for i in range(maxwidth):
                 bit = 1<<i 
                 if pop & bit:
@@ -1135,17 +1132,16 @@ def _PopCountNaive(vars):
     
 
 #Returns true if exactly one variable in the array is true.
-#@functools.lru_cache(None)
 def OneHot(*arrayVars):
     sum,carry = false(),false()
     eversum = false()
     evercarry=false()
     for x in arrayVars:
         sum,carry = Add(sum,x,carry)
-        eversum = eversum | sum
-        evercarry = evercarry | carry
+        eversum = Or(eversum, sum)
+        evercarry = Or(evercarry, carry)
         
-    return eversum & ~evercarry
+    return And(eversum, ~evercarry)
 
 def PopLE( constant,*arrayVars):
     return PopLT(constant+1,*arrayVars)

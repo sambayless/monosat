@@ -48,9 +48,9 @@ if result:
 	print("d: " + str(d.value()))
 else:
 	print("UNSAT")
-	
-#MonoSAT also supports an alternative syntax using Python's bitwise infix operators:
-Assert(~(a & b))
+
+#You can use the '~' operator to apply negation, the same way as Not()
+Assert(~(And(a, b)))
 result = Solve()
 if result:
 	print("SAT")
