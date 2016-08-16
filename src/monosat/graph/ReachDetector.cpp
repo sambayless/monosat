@@ -175,27 +175,31 @@ ReachDetector<Weight>::ReachDetector(int _detectorID, GraphTheorySolver<Weight> 
 	}
 	if (underapprox_detector && !underapprox_fast_detector)
 		underapprox_fast_detector = underapprox_detector;
-	
+	int sink = 0;
+	if (source == 0)
+		sink = 1;
 	if (opt_reach_detector_combined_maxflow) {
 		if (mincutalg == MinCutAlg::ALG_EDKARP_DYN) {
-			conflict_flow = new EdmondsKarpDynamic<int64_t>(outer->cutGraph,  source, 0);
+			conflict_flow = new EdmondsKarpDynamic<int64_t>(outer->cutGraph,  source, sink);
 		} else if (mincutalg == MinCutAlg::ALG_EDKARP_ADJ) {
-			conflict_flow = new EdmondsKarpAdj<int64_t>(outer->cutGraph,  source, 0);
+			conflict_flow = new EdmondsKarpAdj<int64_t>(outer->cutGraph,  source, sink);
 		} else if (mincutalg == MinCutAlg::ALG_DINITZ) {
-			conflict_flow = new Dinitz<int64_t>(outer->cutGraph,  source, 0);
+			conflict_flow = new Dinitz<int64_t>(outer->cutGraph,  source, sink);
 		} else if (mincutalg == MinCutAlg::ALG_DINITZ_LINKCUT) {
 			//link-cut tree currently only supports ints (enforcing this using tempalte specialization...).
 			
-			conflict_flow = new Dinitz<int64_t>(outer->cutGraph,  source, 0);
+			conflict_flow = new Dinitz<int64_t>(outer->cutGraph,  source, sink);
 			
 		} else if (mincutalg == MinCutAlg::ALG_KOHLI_TORR) {
+
 			if (opt_use_kt_for_conflicts) {
-				conflict_flow = new KohliTorr<int64_t>(outer->cutGraph,  source, 0,
+
+				conflict_flow = new KohliTorr<int64_t>(outer->cutGraph,  source, sink,
 						opt_kt_preserve_order);
 			} else
-				conflict_flow = new EdmondsKarpDynamic<int64_t>(outer->cutGraph,  source, 0);
+				conflict_flow = new EdmondsKarpDynamic<int64_t>(outer->cutGraph,  source, sink);
 		} else {
-			conflict_flow = new EdmondsKarpAdj<int64_t>(outer->cutGraph,  source, 0);
+			conflict_flow = new EdmondsKarpAdj<int64_t>(outer->cutGraph,  source, sink);
 		}
 	}
 	if (underapprox_detector)
