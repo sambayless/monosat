@@ -1135,7 +1135,8 @@ void at_most_one(Monosat::SimpSolver * S, int * vars, int n_vars){
 		for(int i = 0;i<n_vars;i++){
 			write_out(S," %d",dimacs(mkLit(vars[i])));
 		}
-		write_out(S,"\n");
+
+		write_out(S," 0\n");
 		AMOTheory* amo = new  AMOTheory(S);
 		for(int i = 0;i<n_vars;i++){
 			Var v = vars[i];
