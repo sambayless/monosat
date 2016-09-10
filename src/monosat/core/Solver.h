@@ -584,6 +584,7 @@ public:
 	int theory_index = 0;
 	Solver * S = nullptr;    							//super solver
 	Theory * bvtheory=nullptr;
+	PB::PBConstraintSolver * pbsolver = nullptr;
 	bool initialPropagate = true;    				//to force propagation to occur at least once to the theory solvers
 	int super_qhead = 0;
 	int local_qhead = 0;
@@ -830,8 +831,14 @@ public:
 	void setBVTheory(Theory * t){
 		bvtheory=t;
 	}
-	Theory * getBVTheory(){
+	Theory * getBVTheory() override{
 		return bvtheory;
+	}
+	void setPBSolver(PB::PBConstraintSolver * t){
+		pbsolver=t;
+	}
+	PB::PBConstraintSolver * getPB()override{
+		return pbsolver;
 	}
 	double & getRandomSeed()override{
 		return random_seed;
@@ -852,9 +859,9 @@ protected:
 	void backtrackUntil(int level);
 	//Add a clause to the clause database safely, even if the solver is in the middle of search, propagation, or clause analysis.
 	//(In reality, the clause may be added to the database sometime later)
-	void addClauseSafely(vec<Lit> & ps);
-public:
 
+public:
+	void addClauseSafely(vec<Lit> & ps)override;
 	void setTheoriesEnabled(bool enableTheories){
 		disable_theories = !enableTheories;
 	}

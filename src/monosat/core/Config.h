@@ -45,7 +45,7 @@ extern StringOption opt_record_file;
 extern IntOption opt_limit_optimization_conflicts;
 extern IntOption opt_limit_optimization_time;
 extern BoolOption opt_limit_optimization_time_per_arg;
-
+extern BoolOption opt_pb_theory;
 extern bool opt_record;
 
 extern IntOption opt_theory_conflict_max;
@@ -60,7 +60,8 @@ extern IntOption opt_subsearch;
 extern BoolOption opt_parser_immediate_mode;
 extern BoolOption opt_remap_vars;
 extern BoolOption opt_decide_optimization_lits;
-extern BoolOption opt_binary_search_optimization;
+extern BoolOption opt_binary_search_optimization_pb;
+extern BoolOption opt_binary_search_optimization_bv;
 extern IntOption opt_clausify_amo;
 extern BoolOption opt_amo_eager_prop;
 

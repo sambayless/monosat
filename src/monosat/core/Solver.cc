@@ -27,7 +27,6 @@
 #include "monosat/graph/GraphTheory.h"
 using namespace Monosat;
 
-//= " + std::to_string(x)
 //=================================================================================================
 // Options:
 // Collected in Config.h
@@ -71,6 +70,9 @@ Solver::Solver() :
 Solver::~Solver() {
 	for (Theory * t : theories) {
 		delete (t);
+	}
+	if(pbsolver){
+		delete pbsolver;
 	}
 }
 
@@ -2225,194 +2227,8 @@ lbool Solver::solve_() {
 	conflict.clear();
 	if (!ok)
 		return l_False;
-	
-	{
-		CRC(opt_verb);
-		CRC(opt_pre);
-		CRC(opt_var_decay);
-		CRC(opt_clause_decay);
-		CRC(opt_theory_decay);
-		CRC(opt_random_var_freq);
-		CRC(opt_random_seed);
-		CRC(opt_ccmin_mode);
-		CRC(opt_phase_saving);
-		CRC(opt_rnd_init_act);
-		CRC(opt_luby_restart);
-		CRC(opt_restart_first);
-		CRC(opt_restart_inc);
-		CRC(opt_garbage_frac);
-		CRC(opt_rnd_restart);
-		CRC(opt_rnd_theory_restart);
-
-		CRC(opt_limit_optimization_conflicts);
-		CRC(opt_limit_optimization_time);
-		CRC(opt_limit_optimization_time_per_arg);
-
-		CRC(opt_record);
-
-		CRC(opt_theory_conflict_max);
-		CRC(opt_random_theory_freq);
-		CRC(opt_theory_internal_vsids_fsm);
-		CRC(opt_random_theory_vsids_freq);
-		CRC(opt_randomomize_theory_order);
-		CRC(opt_interpolate);
-		CRC(opt_eager_prop);
-		CRC(opt_subsearch);
-
-		CRC(opt_remap_vars);
-		CRC(opt_decide_optimization_lits);
-		CRC(opt_binary_search_optimization);
-		CRC(opt_clausify_amo);
-		CRC(opt_amo_eager_prop);
-
-		CRC(opt_debug_learnt_clauses);
-		CRC(opt_debug_model);
-		CRC(opt_n_learnts);
-		CRC(opt_write_bv_bounds);
-		CRC(opt_write_bv_analysis);
-
-
-		CRC(opt_graph);
-		CRC(opt_inc_graph);
-		CRC(opt_dec_graph);
-		CRC(opt_conflict_shortest_path);
-		CRC(opt_conflict_min_cut);
-
-		CRC(opt_maxflow_alg);
-		CRC(opt_reach_alg);
-		CRC(opt_con_alg);
-		CRC(opt_allpairs_alg);
-		CRC(opt_undir_allpairs_alg);
-		CRC(opt_dist_alg);
-		CRC(opt_mst_alg);
-
-		CRC(opt_components_alg);
-		CRC(opt_cycle_alg);
-		CRC(opt_adaptive_history_clear);
-		CRC(opt_disable_history_clears);
-		CRC(opt_dynamic_history_clear);
-		CRC(opt_lazy_backtrack);
-		CRC(opt_lazy_backtrack_decisions);
-		CRC(opt_lazy_conflicts);
-		CRC(opt_keep_lazy_conflicts);
-		CRC(opt_lazy_backtrack_redecide);
-		CRC(opt_theory_order_vsids);
-		CRC(opt_vsids_both);
-		CRC(opt_theory_vsids_balance);
-		CRC(opt_use_var_decay_for_theory_vsids);
-		CRC(opt_vsids_solver_as_theory);
-		CRC(opt_theory_internal_vsids);
-		CRC(opt_theory_prioritize_conflicts);
-		CRC(opt_theory_priority_clear);
-		CRC(opt_theory_propagate_assumptions);
-
-		CRC(opt_check_solution);
-		CRC(opt_print_reach);
-		CRC(opt_print_graph);
-
-		CRC(opt_learn_reaches);
-		CRC(opt_priority);
-
-		CRC(opt_print_conflicts);
-		CRC(opt_rnd_phase);
-		CRC(opt_init_rnd_phase);
-
-		CRC(opt_reach_prop);
-		CRC(opt_decide_theories);
-		CRC(opt_decide_graph_distance);
-		CRC(opt_decide_graph_bv);
-		CRC(opt_cmp_lits_decidable);
-		CRC(opt_decide_bv_bitwise);
-		CRC(opt_decide_bv_intrinsic);
-		CRC(opt_decide_theories_reverse);
-		CRC(opt_use_random_path_for_decisions);
-		CRC(opt_use_optimal_path_for_decisions);
-		CRC(opt_decide_graph_re_rnd);
-		CRC(opt_print_decision_path);
-		CRC(opt_force_distance_solver);
-		CRC(opt_allpairs_percentage);
-		CRC(opt_decide_graph_neg);
-		CRC(opt_decide_graph_pos);
-		CRC(opt_ignore_theories);
-
-		CRC(opt_mst_min_cut);
-		CRC(opt_connected_components_min_cut);
-		CRC(opt_optimize_mst);
-		CRC(opt_skip_deletions);
-		CRC(opt_skip_additions);
-		CRC(opt_permanent_theory_conflicts);
-		CRC(opt_temporary_theory_conflicts);
-		CRC(opt_temporary_theory_reasons);
-		CRC(opt_force_directed);
-		CRC(opt_decide_graph_chokepoints);
-		CRC(opt_sort_graph_decisions);
-
-		CRC(opt_decide_fsm_neg);
-		CRC(opt_decide_fsm_pos);
-		CRC(opt_rnd_order_graph_decisions);
-		CRC(opt_compute_max_distance);
-		CRC(opt_detect_pure_theory_lits);
-		CRC(opt_detect_pure_lits);
-		CRC(opt_detect_satisfied_predicates);
-		CRC(opt_propagate_theories_during_simplification);
-		CRC(opt_propagate_theories_during_fast_simplification);
-		CRC(opt_shrink_theory_conflicts);
-		CRC(opt_early_theory_prop);
-		CRC(opt_width);
-		CRC(opt_height);
-		CRC(opt_bits);
-		CRC(opt_encode_reach_underapprox_as_sat);
-		CRC(opt_encode_dist_underapprox_as_sat);
-		CRC(opt_sat_distance_encoding_unconstrained_default);
-		CRC(opt_csv);
-		CRC(opt_rnd_shuffle);
-		CRC(opt_components_learn_connect);
-		CRC(opt_learn_unreachable_component);
-		CRC(opt_dinics_recursive);
-		CRC(opt_hull_alg);
-
-
-		CRC(opt_conflict_dfs);
-		CRC(opt_conflict_from_source);
-		CRC(opt_allow_reach_decisions);
-		CRC(opt_conflict_1uip);
-		CRC(opt_use_kt_for_conflicts);
-
-		CRC(opt_conflict_min_cut_maxflow);
-		CRC(opt_history_clear);
-		CRC(opt_kt_preserve_order);
-
-		CRC(opt_maxflow_decisions_type);
-
-		CRC(opt_lazy_maxflow_decisions);
-		CRC(opt_maxflow_allow_cycles);
-		CRC(opt_old_lazy_maxflow_decisions);
-		CRC(opt_maxflow_decisions_q);
-		CRC(opt_maxflow_decision_paths);
-		CRC(opt_reach_detector_combined_maxflow);
-		CRC(opt_adaptive_conflict_mincut);
-		CRC(opt_shortest_path_prune_dist);
-		CRC(opt_graph_bv_prop);
-
-		CRC(opt_graph_prop_skip);
-		CRC(opt_bv_prop_skip);
-		CRC(opt_fsm_prop_skip);
-
-		CRC(opt_fsm_negate_underapprox);
-		CRC(opt_fsm_edge_prop);
-		CRC(opt_fsm_forced_edge_prop);
-		CRC(opt_fsm_chokepoint_prop);
-
-		CRC(opt_fsm_as_graph);
-		CRC(opt_fsm_symmetry_breaking);
-		CRC(opt_fsm_track_used_transitions);
-
-		CRC(opt_learn_acyclic_flows);
-
-
-		CRC(opt_min_edgeset);
-		CRC(opt_only_prop_edgeset);
-
+	if(pbsolver) {
+		pbsolver->convert();
 	}
 
 	solves++;

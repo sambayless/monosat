@@ -116,6 +116,7 @@ public:
 	long stats_flow_calcs = 0;
 	long stats_inits=0;
 	long stats_reinits=0;
+	bool same_source_sink = false;//if the sink and source are the same node, flow is infinite, and lots of logic is bypassed to avoid putting KT in a bad state.
 	KohliTorr(DynamicGraph<Weight>& g, int source, int sink, bool kt_preserve_order = false) :
 			g(g), source(source), sink(sink), kt_preserve_order(kt_preserve_order), INF(0xF0F0F0)
 	{
@@ -126,10 +127,16 @@ public:
 		
 		history_qhead = 0;
 		last_history_clear = -1;
+        if(source==sink){
+            if (source == 0)
+                this->sink = 1; //but what if the graph has only 1 node...?
+            else
+                this->sink =0;
+
+            same_source_sink=true;
+        }
 		alg_id=g.addDynamicAlgorithm(this);
-		if(source==sink){
-			throw std::runtime_error("Kohli-torr source and sink nodes cannot be the same");
-		}
+
 	}
 	
 	int getSource() const {
@@ -140,6 +147,8 @@ public:
 	}
 
 	void updateMaxCapacity(Weight new_max_capacity){
+		if(same_source_sink)
+			return;
 		{
 			if(new_max_capacity<1){
 				new_max_capacity=1;
@@ -190,11 +199,14 @@ public:
 		flow_needs_recalc = true;
 	}
 	void setSource(int s) {
+		same_source_sink=false;
+		assert(source!=sink);
 		if (source == s) {
 			return;
 		}
 		if(s==sink){
-			throw std::runtime_error("Kohli-torr source and sink nodes cannot be the same");
+			same_source_sink = true;
+			return;
 		}
 		if (kt) {
 			
@@ -242,11 +254,14 @@ public:
 	}
 	
 	void setSink(int t) {
+		same_source_sink=false;
+		assert(source!=sink);
 		if (sink == t) {
 			return;
 		}
 		if(t==source){
-			throw std::runtime_error("Kohli-torr source and sink nodes cannot be the same");
+			same_source_sink = true;
+			return;
 		}
 		if (kt) {
 			if (dynamic) {
@@ -305,6 +320,8 @@ public:
 
 
 	void initKT(){
+		if(same_source_sink)
+			return;
 		stats_inits++;
 		clearChangedEdges();
 		edge_enabled.clear();
@@ -511,7 +528,8 @@ public:
 	const Weight update() {
 		int s = source;
 		int t = sink;
-		
+		if(same_source_sink)
+			return INF;
 		//see http://cstheory.stackexchange.com/a/10186
 		static int it = 0;
 		if (++it == 95) {
@@ -827,6 +845,8 @@ private:
 	std::vector<bool> visited;
 
 	inline void calc_flow() {
+		if(same_source_sink)
+			return;
 		if (!flow_needs_recalc)
 			return;
 		if(!kt){
@@ -862,6 +882,8 @@ private:
 public:
 	
 	const Weight minCut(std::vector<MaxFlowEdge> & cut) {
+		if(same_source_sink)
+			return INF;
 		Weight f = this->maxFlow();
 		
 		int s = source;
@@ -974,6 +996,8 @@ public:
 	
 public:
 	const bool inSourcePartition(int node){
+		if(same_source_sink)
+			return node==source;
 		update();
 		auto SOURCE = kohli_torr::Graph<Weight, Weight, Weight>::SOURCE; // backward_maxflow? kohli_torr::Graph<Weight,Weight,Weight>::SINK : kohli_torr::Graph<Weight,Weight,Weight>::SOURCE;
 		auto SINK = kohli_torr::Graph<Weight, Weight, Weight>::SINK; //backward_maxflow? kohli_torr::Graph<Weight,Weight,Weight>::SOURCE :  kohli_torr::Graph<Weight,Weight,Weight>::SINK;
@@ -981,6 +1005,8 @@ public:
 	}
 
 	const bool isOnCut(int edgeID){
+		if(same_source_sink)
+			return false;
 		if (g.getEdge(edgeID).from == g.getEdge(edgeID).to)
 			return false;    	//self edges are never on the cut
 
@@ -995,6 +1021,8 @@ public:
 	}
 
 	const Weight getEdgeFlow(int flow_edge) {
+		if(same_source_sink)
+			return 0;
 		if (g.getEdge(flow_edge).from == g.getEdge(flow_edge).to)
 			return 0;    	//self edges have no flow.
 

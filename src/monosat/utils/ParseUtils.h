@@ -113,6 +113,12 @@ static void skipWhitespace(B& in) {
 }
 
 template<class B>
+static void skipWhitespaceNoNewLines(B& in) {
+	while ((*in == 9 || *in == 11 || *in == 12) || *in == 32)
+		++in;
+}
+
+template<class B>
 static void skipLine(B& in) {
 	for (;;) {
 		if (isEof(in))

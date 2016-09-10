@@ -722,10 +722,6 @@ bool solve(Monosat::SimpSolver * S){
 	return solveAssumptions(S,nullptr,0);
   }
 
-bool solveAssumptions(Monosat::SimpSolver * S,int * assumptions, int n_assumptions){
-	return solveAssumptions_MinBVs(S,assumptions,n_assumptions,nullptr,0);
- }
-
 
 void setTimeLimit(Monosat::SimpSolver * S,int seconds){
 	using namespace APISignal;
@@ -746,13 +742,6 @@ void setPropagationLimit(Monosat::SimpSolver * S,int num_propagations){
 }
 
 
-int solveLimited(Monosat::SimpSolver * S){
-	return solveAssumptionsLimited(S,nullptr,0);
-  }
-
-int solveAssumptionsLimited(Monosat::SimpSolver * S,int * assumptions, int n_assumptions){
-	return solveAssumptionsLimited_MinBVs(S,assumptions,n_assumptions,nullptr,0);
- }
 
 
 int _solve(Monosat::SimpSolver * S,int * assumptions, int n_assumptions){

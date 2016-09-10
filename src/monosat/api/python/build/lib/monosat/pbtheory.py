@@ -18,34 +18,33 @@
 #OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 import os
-import sys
 import shutil
-from tempfile import NamedTemporaryFile
+import sys
 import time
-
+import monosat.monosat_c
 from monosat.logic import *
-from monosat.monosat_c import Monosat, dimacs
 from monosat.manager import Manager
-from monosat.singleton import Singleton
+from monosat.monosat_c import Monosat, dimacs,Ineq
+from tempfile import NamedTemporaryFile
 
-debug=False   
+debug=False
 
 
 #Collects a set of graphs to encode together into a formula
 class PBManager(metaclass=Manager):
-    
+
     def setPB(self,pb):
         self.pb = pb
-    
+
     def  __init__(self):
-        self.pb = MinisatPlus()
+        self.pb = MonosatPB() #MinisatPlus()
         self.import_time=0
         self.elapsed_time=0
-    
+
     def clear(self):
         if(self.pb):
             self.pb.clear()
-    
+
     def AssertLessThanPB(self, clause, val, weights=None):
         self.AssertPB(clause,val,'<',weights)
         #self.constraints.append((clause,val,'<',weights))
@@ -53,7 +52,7 @@ class PBManager(metaclass=Manager):
     def AssertGreaterThanPB(self, clause, val, weights=None):
         self.AssertPB(clause,val,'>',weights)
         #self.constraints.append((clause,val,'>',weights))
-        
+
     def AssertLessEqPB(self, clause, val, weights=None):
         self.AssertPB(clause,val,'<=',weights)
         #self.constraints.append((clause,val,'<=',weights))
@@ -61,7 +60,7 @@ class PBManager(metaclass=Manager):
     def AssertGreaterEqPB(self, clause, val, weights=None):
         self.AssertPB(clause,val,'>=',weights)
         #self.constraints.append((clause,val,'>=',weights))
-        
+
     def AssertEqualPB(self, clause, val, weights=None):
         #self.constraints.append((clause,val,'=',weights))
         self.AssertPB(clause,val,'=',weights)
@@ -72,14 +71,14 @@ class PBManager(metaclass=Manager):
 
     def AssertRangePB(self, clause, lowerBound,upperBound, weights=None):
         self.pb.AssertRangePB(clause,lowerBound,upperBound,weights);
-        
+
     def AssertPB(self,clause,val,constraint,weights=None):
-        self.pb.AssertPB(clause,val,constraint,weights)       
+        self.pb.AssertPB(clause,val,constraint,weights)
 
     def twoSidedRangePB(self,clause,lowerBound,upperBound,weights=None):
-        return self.pb.twoSidedRangePB(clause,lowerBound,upperBound,weights)        
+        return self.pb.twoSidedRangePB(clause,lowerBound,upperBound,weights)
 
-    def twoSidedPB(self,clause,val,constraint,weights=None,condition=None):        
+    def twoSidedPB(self,clause,val,constraint,weights=None,condition=None):
         return self.pb.twoSidedPB(clause,val,constraint,weights,condition)
 
     def conditionalPB(self,clause,val,constraint,weights=None,condition=None):
@@ -94,7 +93,7 @@ class PBManager(metaclass=Manager):
     def GreaterThanPB(self, clause, val,weights=None,condition=None):
         #self.conditional_constraints.append((clause,val,condition,'>',weights))
         return self.conditionalPB(clause,val,'>',weights,condition)
-        
+
     def LessEqPB(self, clause, val, weights=None,condition=None):
         #self.conditional_constraints.append((clause,val,condition,'<=',weights))
         return self.conditionalPB(clause,val,'<=',weights,condition)
@@ -102,206 +101,46 @@ class PBManager(metaclass=Manager):
     def GreaterEqPB(self, clause, val, weights=None,condition=None):
         #self.conditional_constraints.append((clause,val,condition,'>=',weights))
         return self.conditionalPB(clause,val,'>=',weights,condition)
-            
+
     def EqualPB(self, clause, val,weights=None,condition=None):
         #self.conditional_constraints.append((clause,val,condition,'=',weights))
         return self.conditionalPB(clause,val,'=',weights,condition)
-    
+
     def AssertAtMostOne(self,clause):
         new_clause=[]
         #create fresh variables, so that theory vars can be used as arguments here.
         for l in clause:
             l2 = Var()
             new_clause.append(l2)
-            AssertEq(l2,l)    
- 
+            AssertEq(l2,l)
+
         Monosat().AssertAtMostOne([l.getLit() for l in new_clause])
-        
+
     def AssertExactlyOne(self,clause):
         AssertClause(clause)
         self.AssertAtMostOne(clause)
-    
+
     def hasConstraints(self):
         return self.pb.hasConstraints();
-    
+
     def write(self):
         self.pb.write();
 
     def flush(self):
         self.pb.write()
         self.pb.clear()
-       
-       
+
+
+
+
 class MonosatPB:
-    
+
     def  __init__(self):
-        self.constraints=[]       
-    
+        self._monosat = monosat.monosat_c.Monosat()
+
     def clear(self):
-        self.constraints=[]
-    
-    def hasConstraints(self):
-        return len(self.constraints)>0
-    
-    def AssertLessThanPB(self, clause, val, weights=None):
-        self.AssertPB(clause,val,'<',weights)
+        pass
 
-    def AssertGreaterThanPB(self, clause, val, weights=None):
-        self.AssertPB(clause,val,'>',weights)
-        
-    def AssertLessEqPB(self, clause, val, weights=None):
-        self.AssertPB(clause,val,'<=',weights)
-
-    def AssertGreaterEqPB(self, clause, val, weights=None):
-        self.AssertPB(clause,val,'>=',weights)
-        
-    def AssertEqualPB(self, clause, val, weights=None):
-        self.AssertPB(clause,val,'=',weights)
-
-    def AssertRangePB(self, clause, lowerBound,upperBound, weights=None):
-        
-        if(lowerBound==upperBound):
-            self.AssertEqualPB(clause,lowerBound,weights);
-        else:
-            self.AssertGreaterEqPB(clause,lowerBound,weights)
-            self.AssertLessEqPB(clause,upperBound,weights)
-        
-    
-    def AssertPB(self,clause,val,constraint,weights=None):
-        nclause = list(clause)       
-        self.constraints.append((nclause,val,constraint,list(weights) if weights is not None else [], None, False));
-
-    def twoSidedRangePB(self,clause,lowerBound,upperBound,weights=None,condition=None): 
-        if condition is None:
-            condition = Var();
-        elif not condition.isInput:
-            v=Var()
-            Assert(v==condition)
-            condition=v
-        
-        if(lowerBound==upperBound):            
-            return self.twoSided(clause,lowerBound,'=',weights,condition);
-        
-        c1= self.twoSidedPB(clause,lowerBound,'>=',weights)
-        c2= self.twoSidedPB(clause,upperBound,'<=',weights)
-        if condition is None:
-            condition = And(c1,c2)
-        else:
-            Assert(condition== And(c1,c2))      
-        
-        return condition
-
-    def twoSidedPB(self,clause,val,constraint,weights=None, condition=None):
-        if condition is None:
-            condition = Var();
-        elif not condition.isInput:
-            v=Var()
-            Assert(v==condition)
-            condition=v
-                  
-        nclause = []
-        for v in clause:
-            if(not  v.isInput()):
-                v2 = Var()
-                Assert(v2==v)
-                nclause.append(v2)
-            else:
-                nclause.append(v)
-        self.constraints.append((nclause,val,constraint,list(weights) if weights is not None else [], condition, False));
-        
-        return condition       
-        
-
-    def conditionalPB(self,clause,val,constraint,weights=None,condition=None):
-        if condition is None:
-            condition = Var();        
-        elif not condition.isInput:
-            v=Var()
-            Assert(v==condition)
-            condition=v
-                
-        nclause = []
-        for v in clause:
-            if(not  v.isInput()):
-                v2 = Var()
-                Assert(v2==v)
-                nclause.append(v2)
-            else:
-                nclause.append(v)
-        self.constraints.append((nclause,val,constraint,list(weights) if weights is not None else [], condition, True));      
-        
-        return condition
-        
-        
-
-    def conditionalRangePB(self,clause,lowerBound,upperBound,weights=None,condition=None):       
-        if(lowerBound==upperBound):            
-            return self.conditionalPB(clause,lowerBound,'=',weights,condition);
-        
-        c1= self.twoSidedPB(clause,lowerBound,'>=',weights)
-        c2= self.twoSidedPB(clause,upperBound,'<=',weights)
-        if condition is None:
-            condition = And(c1,c2)
-        else:
-            Assert(condition== And(c1,c2))    
-           
-        return condition
-
-
-
-    def LessThanPB(self, clause, val, weights=None,condition=None):
-        return self.conditionalPB(clause,val,'<',weights,condition)
-
-    def GreaterThanPB(self, clause, val,weights=None,condition=None):
-        #self.conditional_constraints.append((clause,val,condition,'>',weights))
-        return self.conditionalPB(clause,val,'>',weights,condition)
-        
-    def LessEqPB(self, clause, val, weights=None,condition=None):
-        #self.conditional_constraints.append((clause,val,condition,'<=',weights))
-        return self.conditionalPB(clause,val,'<=',weights,condition)
-
-    def GreaterEqPB(self, clause, val, weights=None,condition=None):
-        #self.conditional_constraints.append((clause,val,condition,'>=',weights))
-        return self.conditionalPB(clause,val,'>=',weights,condition)
-            
-    def EqualPB(self, clause, val,weights=None,condition=None):
-        #self.conditional_constraints.append((clause,val,condition,'=',weights))
-        return self.conditionalPB(clause,val,'=',weights,condition)
-    
-    def write(self,filename):
-        f = open(filename,'a')
-        for clause,val,constraint,weights, conditionVar, oneSided in self.constraints:
-            assert(len(clause)==len(weights) or len(weights)==0);
-            assert(len(clause)>0)
-            f.write("pb_lt " + str(len(clause)) + " "); 
-            for v in clause:
-                assert(v.isInput())
-                f.write(str(v.getInputLiteral()) + " ")
-            f.write(str(len(weights)) + " ")
-            for w in weights:
-                f.write(str(w) + " ")
-                
-            f.write(constraint + " " + str(val) + " ")
-            if conditionVar is None:
-                f.write("0")
-            else:
-                if(oneSided):
-                    f.write("1 ")
-                else:
-                    f.write("2 ")
-                assert(conditionVar.isInput())
-                f.write(str(conditionVar.getInputLiteral()))
-            f.write("\n")
-            pass
-                     
-class MinisatPlus:
-    
-    def  __init__(self):
-        self.constraints=[]
-        
-    def clear(self):
-        self.constraints=[]
-            
     def AssertLessThanPB(self, clause, val, weights=None):
         self.AssertPB(clause,val,'<',weights)
         #self.constraints.append((clause,val,'<',weights))
@@ -309,7 +148,7 @@ class MinisatPlus:
     def AssertGreaterThanPB(self, clause, val, weights=None):
         self.AssertPB(clause,val,'>',weights)
         #self.constraints.append((clause,val,'>',weights))
-        
+
     def AssertLessEqPB(self, clause, val, weights=None):
         self.AssertPB(clause,val,'<=',weights)
         #self.constraints.append((clause,val,'<=',weights))
@@ -317,7 +156,7 @@ class MinisatPlus:
     def AssertGreaterEqPB(self, clause, val, weights=None):
         self.AssertPB(clause,val,'>=',weights)
         #self.constraints.append((clause,val,'>=',weights))
-        
+
     def AssertEqualPB(self, clause, val, weights=None):
         #self.constraints.append((clause,val,'=',weights))
         self.AssertPB(clause,val,'=',weights)
@@ -330,14 +169,34 @@ class MinisatPlus:
             self.AssertLessEqPB(clause,upperBound,weights)
             #self.constraints.append((clause,lowerBound,'>=',weights))
             #self.constraints.append((clause,upperBound,'<=',weights))
-    
-    def AssertPB(self,clause,val,constraint,weights=None):        
+    def getIneq(self,constraint):
+        if(constraint=="<"):
+            return Ineq.LT
+        elif(constraint=="<="):
+            return Ineq.LEQ
+        elif(constraint=="=" or constraint=="=="):
+            return Ineq.EQ
+        elif(constraint==">="):
+            return Ineq.GEQ
+        elif(constraint==">"):
+            return Ineq.GEQ
+        else:
+            raise Exception("Unknown operator " + str(constraint))
+
+    def AssertPB(self,clause,val,constraint,weights=None):
         if(constraint=='!=' or constraint=='<>'):
             self.AssertNotEqualPB(clause,val,weights);
             return
-        nclause=[]
-        nweights=[]
+        nclause=[l.getLit() for l in clause]
+        nweights= weights
+        if nweights is None:
+            nweights = []
+        nweights = list(nweights)
+        while len(nweights)<len(nclause):
+            nweights.append(1)
+
         #need all the variables to be in positive polarity...
+        """
         for i,l in enumerate(clause):
             if weights is not None:
                 w = weights[i]
@@ -348,18 +207,20 @@ class MinisatPlus:
             if l.isConstTrue():
                 val-=w
                 continue
-            elif l.isConstFalse():                
+            elif l.isConstFalse():
                 continue
-            
+
             if Monosat().isPositive(l.getLit()):
-                nclause.append(l);
+                nclause.append(l.getLit());
                 nweights.append(w)
             else:
-                nclause.append(Not(l))
+                nclause.append(Not(l).getLit())
                 nweights.append(-w)
                 val-=w
-             
-        self.constraints.append((nclause,val,constraint,nweights));
+        """
+
+        self._monosat.AssertPB(nclause, nweights , self.getIneq(constraint), val)
+
 
     def _negate(self,constraint):
         if(constraint=='<'):
@@ -369,59 +230,59 @@ class MinisatPlus:
         elif(constraint=='>'):
             return '<=';
         elif (constraint=='>='):
-            return '<';      
+            return '<';
         elif (constraint=='='):
             raise Exception("Cannot negate equality")
             #return '='; #!= is not directly supported in opb format, need to handle it separately
         else:
             raise Exception("Unknown operator " + constraint)
-    
+
     def AssertNotEqualPB(self,clause,value,weights=None):
         Assert(Not(self.twoSidedPB(clause,value,'=',weights)))
-    
+
     def twoSidedRangePB(self,clause,lowerBound,upperBound,weights=None):
         #Because opb doesn't support an inequality operator, we are instead going to make yet another choice, and then conditionally enforce that either > or < holds
-        
+
         if(lowerBound==upperBound):
             return self.twoSidedPB(clause,lowerBound,'=',weights)
         elif lowerBound is None:
             return self.twoSidedPB(clause,upperBound,'<=',weights)
         elif (upperBound is None):
-            return self.twoSidedPB(clause,lowerBound,'>=',weights)       
-        
+            return self.twoSidedPB(clause,lowerBound,'>=',weights)
+
         condition=Var()
         self.conditionalRangePB(clause,lowerBound,upperBound,weights,condition)
-        
+
         #If the condition that we are within (inclusive) the range of [lowerBound,upperBound] is false, then we must be outside that range
-        
+
         condition_g = Var() #If variable condition_g is true, AND variable condition is false, then enforce the > condition.
         conditional_clause=[]
         for v in clause:
             c = Var()
             conditional_clause.append(c)
-            AssertImplies(And(Not(condition),condition_g),c==v)        
-        self.AssertPB(conditional_clause,upperBound,'>',weights)            
-        
+            AssertImplies(And(Not(condition),condition_g),c==v)
+        self.AssertPB(conditional_clause,upperBound,'>',weights)
+
         conditional_clause=[]
         for v in clause:
             c = Var()
             conditional_clause.append(c)
-            AssertImplies(And(Not(condition),Not(condition_g)),c==v)       
-        self.AssertPB(conditional_clause,lowerBound,'<',weights) 
-        
+            AssertImplies(And(Not(condition),Not(condition_g)),c==v)
+        self.AssertPB(conditional_clause,lowerBound,'<',weights)
+
         return condition
 
     def twoSidedPB(self,clause,val,constraint,weights=None,condition=None):
         if(constraint=='!=' or constraint=='<>'):
             return Not(self.twoSidedPB(clause,val,'=',weights,condition))
-        
+
         if condition is None:
             condition = Var();
         elif not condition.isInput:
             v=Var()
             Assert(v==condition)
             condition=v
-            
+
         nclause = []
         for v in clause:
             if(not  v.isInput()):
@@ -433,41 +294,8 @@ class MinisatPlus:
         if weights is None:
             weights=[]
         while(len(weights)<len(clause)):
-            weights.append(1)                
-            
-        """
-        conditional_clause=[]
-        for v in clause:
-            c = Var()
-            conditional_clause.append(c)
-            Assert(Implies(condition,c==v))
-        self.AssertPB(conditional_clause,val,constraint,weights)
-        if(constraint != '='):
-            conditional_clause=[]
-            for v in clause:
-                c = Var()
-                conditional_clause.append(c)
-                Assert(Implies(Not(condition),c==v))        
-            self.AssertPB(conditional_clause,val,self._negate(constraint),weights)
-            #This doesn't work. If constraint is (1 a 1 b <= 2), then the second side becomes
-            #1 c 1 d > 2, which is not UNSAT.
-        else:
-            #Because opb doesn't support an inequality operator, we are instead going to make yet another choice, and then conditionally enforce that either > or < holds
-            condition_g = Var() #If variable condition_g is true, AND variable condition is false, then enforce the > condition.
-            conditional_clause=[]
-            for v in clause:
-                c = Var()
-                conditional_clause.append(c)
-                Assert(Implies(And(Not(condition),condition_g),c==v))        
-            self.AssertPB(conditional_clause,val,'>',weights)            
-            
-            conditional_clause=[]
-            for v in clause:
-                c = Var()
-                conditional_clause.append(c)
-                Assert(Implies(And(Not(condition),Not(condition_g)),c==v))        
-            self.AssertPB(conditional_clause,val,'<',weights)              
-        """
+            weights.append(1)
+
         if(constraint != '='):
             #a two sided constraint is just two one-sided conditional constraints
             self.conditionalPB(nclause,val,constraint,weights,condition)
@@ -478,7 +306,7 @@ class MinisatPlus:
             self.conditionalPB(nclause,val,'<=',weights,condition)
             self.conditionalPB(nclause,val,'>',weights,Not(condition))
             self.conditionalPB(nclause,val,'<',weights,Not(condition))
-            
+
         return condition
 
     def conditionalPB_old(self,clause,val,constraint,weights=None,condition=None):
@@ -498,16 +326,494 @@ class MinisatPlus:
             v= Or(self.conditionalPB(clause,val,"<",weights),self.conditionalPB(clause,val,">",weights))
             if(condition is not None):
                 AssertEq(v,condition)
-            return v;           
-            
-        
+            return v;
+
+
         if condition is None:
             condition = Var();
         else:
             v = Var()
             AssertEq(v,Not(condition))
             condition=v
-                   
+
+        if weights is None:
+            weights=[]
+        while(len(weights)<len(clause)):
+            weights.append(1)
+        nclause = []
+        for v in clause:
+            #For now, it is a limitation of the pb constraint solver that all variables it deals with must be input variables in the circuit.
+            #So, we create them here if needed
+            if(not  v.isInput()):
+                v2 = Var()
+                AssertEq(v2,v)
+                nclause.append(v2)
+            else:
+                nclause.append(v)
+
+        if (constraint=='>' or constraint==">=" or constraint=='=' or constraint== '=='):
+            negWeightSum=0
+            for w in weights:
+                if(w<0):
+                    negWeightSum+=abs(w)
+
+            total = negWeightSum + val
+            if(constraint=='>'):
+                total+=1
+
+            nclause.append(condition)
+            weights.append(total)
+
+            if(constraint=='>' or constraint=='>='):
+                self.AssertPB(nclause,val,constraint,weights)
+            else:
+                self.AssertPB(nclause,val,'>=',weights)
+            nclause.pop()
+            weights.pop()
+        if (constraint=='<' or constraint=='<=' or constraint=='=' or constraint== '=='):
+            posWeightSum=0
+            for w in weights:
+                if(w>0):
+                    posWeightSum+=abs(w)
+
+            total = posWeightSum + val
+            if(constraint=='<'):
+                total+=1
+
+            nclause.append(condition)
+            weights.append(-total)
+            if(constraint=='<' or constraint=='<='):
+                self.AssertPB(nclause,val,constraint,weights)
+            else:
+                self.AssertPB(nclause,val,'<=',weights)
+            nclause.pop()
+            weights.pop()
+        return Not(condition) #The property is enforced if the condition variable is false
+
+    def conditionalRangePB(self,clause,lowerBound,upperBound,weights=None,condition=None):
+
+        if(lowerBound==upperBound):
+            return self.EqualPB(clause,lowerBound,weights,condition);
+        elif (lowerBound is None):
+            return self.conditionalPB(clause,upperBound,'<=',weights,condition)
+        elif (upperBound is None):
+            return self.conditionalPB(clause,lowerBound,'>=',weights,condition)
+
+        if condition is None:
+            condition = Var();
+        conditional_clause=[]
+        for v in clause:
+            c = Var()
+            conditional_clause.append(c)
+            AssertImplies(condition,c==v)
+        self.AssertPB(conditional_clause,lowerBound,'>=',weights)
+        self.AssertPB(conditional_clause,upperBound,'<=',weights)
+        return condition
+
+
+
+    def LessThanPB(self, clause, val, weights=None,condition=None):
+        return self.conditionalPB(clause,val,'<',weights,condition)
+
+    def GreaterThanPB(self, clause, val,weights=None,condition=None):
+        #self.conditional_constraints.append((clause,val,condition,'>',weights))
+        return self.conditionalPB(clause,val,'>',weights,condition)
+
+    def LessEqPB(self, clause, val, weights=None,condition=None):
+        #self.conditional_constraints.append((clause,val,condition,'<=',weights))
+        return self.conditionalPB(clause,val,'<=',weights,condition)
+
+    def GreaterEqPB(self, clause, val, weights=None,condition=None):
+        #self.conditional_constraints.append((clause,val,condition,'>=',weights))
+        return self.conditionalPB(clause,val,'>=',weights,condition)
+
+    def EqualPB(self, clause, val,weights=None,condition=None):
+        #self.conditional_constraints.append((clause,val,condition,'=',weights))
+        return self.conditionalPB(clause,val,'=',weights,condition)
+
+    def hasConstraints(self):
+        return False;
+
+    #not required, will be called automatically inside monosat
+    def write(self):
+        self._monoast.flushPB()
+
+class MonosatTheoryPB:
+
+    def  __init__(self):
+        self.constraints=[]
+
+    def clear(self):
+        self.constraints=[]
+
+    def hasConstraints(self):
+        return len(self.constraints)>0
+
+    def AssertLessThanPB(self, clause, val, weights=None):
+        self.AssertPB(clause,val,'<',weights)
+
+    def AssertGreaterThanPB(self, clause, val, weights=None):
+        self.AssertPB(clause,val,'>',weights)
+
+    def AssertLessEqPB(self, clause, val, weights=None):
+        self.AssertPB(clause,val,'<=',weights)
+
+    def AssertGreaterEqPB(self, clause, val, weights=None):
+        self.AssertPB(clause,val,'>=',weights)
+
+    def AssertEqualPB(self, clause, val, weights=None):
+        self.AssertPB(clause,val,'=',weights)
+
+    def AssertRangePB(self, clause, lowerBound,upperBound, weights=None):
+
+        if(lowerBound==upperBound):
+            self.AssertEqualPB(clause,lowerBound,weights);
+        else:
+            self.AssertGreaterEqPB(clause,lowerBound,weights)
+            self.AssertLessEqPB(clause,upperBound,weights)
+
+
+    def AssertPB(self,clause,val,constraint,weights=None):
+        nclause = list(clause)
+        self.constraints.append((nclause,val,constraint,list(weights) if weights is not None else [], None, False));
+
+    def twoSidedRangePB(self,clause,lowerBound,upperBound,weights=None,condition=None):
+        if condition is None:
+            condition = Var();
+        elif not condition.isInput:
+            v=Var()
+            Assert(v==condition)
+            condition=v
+
+        if(lowerBound==upperBound):
+            return self.twoSided(clause,lowerBound,'=',weights,condition);
+
+        c1= self.twoSidedPB(clause,lowerBound,'>=',weights)
+        c2= self.twoSidedPB(clause,upperBound,'<=',weights)
+        if condition is None:
+            condition = And(c1,c2)
+        else:
+            Assert(condition== And(c1,c2))
+
+        return condition
+
+    def twoSidedPB(self,clause,val,constraint,weights=None, condition=None):
+        if condition is None:
+            condition = Var();
+        elif not condition.isInput:
+            v=Var()
+            Assert(v==condition)
+            condition=v
+
+        nclause = []
+        for v in clause:
+            if(not  v.isInput()):
+                v2 = Var()
+                Assert(v2==v)
+                nclause.append(v2)
+            else:
+                nclause.append(v)
+        self.constraints.append((nclause,val,constraint,list(weights) if weights is not None else [], condition, False));
+
+        return condition
+
+
+    def conditionalPB(self,clause,val,constraint,weights=None,condition=None):
+        if condition is None:
+            condition = Var();
+        elif not condition.isInput:
+            v=Var()
+            Assert(v==condition)
+            condition=v
+
+        nclause = []
+        for v in clause:
+            if(not  v.isInput()):
+                v2 = Var()
+                Assert(v2==v)
+                nclause.append(v2)
+            else:
+                nclause.append(v)
+        self.constraints.append((nclause,val,constraint,list(weights) if weights is not None else [], condition, True));
+
+        return condition
+
+
+
+    def conditionalRangePB(self,clause,lowerBound,upperBound,weights=None,condition=None):
+        if(lowerBound==upperBound):
+            return self.conditionalPB(clause,lowerBound,'=',weights,condition);
+
+        c1= self.twoSidedPB(clause,lowerBound,'>=',weights)
+        c2= self.twoSidedPB(clause,upperBound,'<=',weights)
+        if condition is None:
+            condition = And(c1,c2)
+        else:
+            Assert(condition== And(c1,c2))
+
+        return condition
+
+
+
+    def LessThanPB(self, clause, val, weights=None,condition=None):
+        return self.conditionalPB(clause,val,'<',weights,condition)
+
+    def GreaterThanPB(self, clause, val,weights=None,condition=None):
+        #self.conditional_constraints.append((clause,val,condition,'>',weights))
+        return self.conditionalPB(clause,val,'>',weights,condition)
+
+    def LessEqPB(self, clause, val, weights=None,condition=None):
+        #self.conditional_constraints.append((clause,val,condition,'<=',weights))
+        return self.conditionalPB(clause,val,'<=',weights,condition)
+
+    def GreaterEqPB(self, clause, val, weights=None,condition=None):
+        #self.conditional_constraints.append((clause,val,condition,'>=',weights))
+        return self.conditionalPB(clause,val,'>=',weights,condition)
+
+    def EqualPB(self, clause, val,weights=None,condition=None):
+        #self.conditional_constraints.append((clause,val,condition,'=',weights))
+        return self.conditionalPB(clause,val,'=',weights,condition)
+
+    def write(self,filename):
+        f = open(filename,'a')
+        for clause,val,constraint,weights, conditionVar, oneSided in self.constraints:
+            assert(len(clause)==len(weights) or len(weights)==0);
+            assert(len(clause)>0)
+            f.write("pb_lt " + str(len(clause)) + " ");
+            for v in clause:
+                assert(v.isInput())
+                f.write(str(v.getInputLiteral()) + " ")
+            f.write(str(len(weights)) + " ")
+            for w in weights:
+                f.write(str(w) + " ")
+
+            f.write(constraint + " " + str(val) + " ")
+            if conditionVar is None:
+                f.write("0")
+            else:
+                if(oneSided):
+                    f.write("1 ")
+                else:
+                    f.write("2 ")
+                assert(conditionVar.isInput())
+                f.write(str(conditionVar.getInputLiteral()))
+            f.write("\n")
+            pass
+
+class MinisatPlus:
+
+    def  __init__(self):
+        self.constraints=[]
+
+    def clear(self):
+        self.constraints=[]
+
+    def AssertLessThanPB(self, clause, val, weights=None):
+        self.AssertPB(clause,val,'<',weights)
+        #self.constraints.append((clause,val,'<',weights))
+
+    def AssertGreaterThanPB(self, clause, val, weights=None):
+        self.AssertPB(clause,val,'>',weights)
+        #self.constraints.append((clause,val,'>',weights))
+
+    def AssertLessEqPB(self, clause, val, weights=None):
+        self.AssertPB(clause,val,'<=',weights)
+        #self.constraints.append((clause,val,'<=',weights))
+
+    def AssertGreaterEqPB(self, clause, val, weights=None):
+        self.AssertPB(clause,val,'>=',weights)
+        #self.constraints.append((clause,val,'>=',weights))
+
+    def AssertEqualPB(self, clause, val, weights=None):
+        #self.constraints.append((clause,val,'=',weights))
+        self.AssertPB(clause,val,'=',weights)
+
+    def AssertRangePB(self, clause, lowerBound,upperBound, weights=None):
+        if(lowerBound==upperBound):
+            self.AssertEqualPB(clause,lowerBound,weights);
+        else:
+            self.AssertGreaterEqPB(clause,lowerBound,weights)
+            self.AssertLessEqPB(clause,upperBound,weights)
+            #self.constraints.append((clause,lowerBound,'>=',weights))
+            #self.constraints.append((clause,upperBound,'<=',weights))
+
+    def AssertPB(self,clause,val,constraint,weights=None):
+        if(constraint=='!=' or constraint=='<>'):
+            self.AssertNotEqualPB(clause,val,weights);
+            return
+        nclause=[]
+        nweights=[]
+        #need all the variables to be in positive polarity...
+        for i,l in enumerate(clause):
+            if weights is not None:
+                w = weights[i]
+            else:
+                w=1
+            if w==0:
+                continue
+            if l.isConstTrue():
+                val-=w
+                continue
+            elif l.isConstFalse():
+                continue
+
+            if Monosat().isPositive(l.getLit()):
+                nclause.append(l);
+                nweights.append(w)
+            else:
+                nclause.append(Not(l))
+                nweights.append(-w)
+                val-=w
+
+        self.constraints.append((nclause,val,constraint,nweights));
+
+    def _negate(self,constraint):
+        if(constraint=='<'):
+            return '>=';
+        elif (constraint=='<='):
+            return '>';
+        elif(constraint=='>'):
+            return '<=';
+        elif (constraint=='>='):
+            return '<';
+        elif (constraint=='='):
+            raise Exception("Cannot negate equality")
+            #return '='; #!= is not directly supported in opb format, need to handle it separately
+        else:
+            raise Exception("Unknown operator " + constraint)
+
+    def AssertNotEqualPB(self,clause,value,weights=None):
+        Assert(Not(self.twoSidedPB(clause,value,'=',weights)))
+
+    def twoSidedRangePB(self,clause,lowerBound,upperBound,weights=None):
+        #Because opb doesn't support an inequality operator, we are instead going to make yet another choice, and then conditionally enforce that either > or < holds
+
+        if(lowerBound==upperBound):
+            return self.twoSidedPB(clause,lowerBound,'=',weights)
+        elif lowerBound is None:
+            return self.twoSidedPB(clause,upperBound,'<=',weights)
+        elif (upperBound is None):
+            return self.twoSidedPB(clause,lowerBound,'>=',weights)
+
+        condition=Var()
+        self.conditionalRangePB(clause,lowerBound,upperBound,weights,condition)
+
+        #If the condition that we are within (inclusive) the range of [lowerBound,upperBound] is false, then we must be outside that range
+
+        condition_g = Var() #If variable condition_g is true, AND variable condition is false, then enforce the > condition.
+        conditional_clause=[]
+        for v in clause:
+            c = Var()
+            conditional_clause.append(c)
+            AssertImplies(And(Not(condition),condition_g),c==v)
+        self.AssertPB(conditional_clause,upperBound,'>',weights)
+
+        conditional_clause=[]
+        for v in clause:
+            c = Var()
+            conditional_clause.append(c)
+            AssertImplies(And(Not(condition),Not(condition_g)),c==v)
+        self.AssertPB(conditional_clause,lowerBound,'<',weights)
+
+        return condition
+
+    def twoSidedPB(self,clause,val,constraint,weights=None,condition=None):
+        if(constraint=='!=' or constraint=='<>'):
+            return Not(self.twoSidedPB(clause,val,'=',weights,condition))
+
+        if condition is None:
+            condition = Var();
+        elif not condition.isInput:
+            v=Var()
+            Assert(v==condition)
+            condition=v
+
+        nclause = []
+        for v in clause:
+            if(not  v.isInput()):
+                v2 = Var()
+                AssertEq(v2,v)
+                nclause.append(v2)
+            else:
+                nclause.append(v)
+        if weights is None:
+            weights=[]
+        while(len(weights)<len(clause)):
+            weights.append(1)
+
+        """
+        conditional_clause=[]
+        for v in clause:
+            c = Var()
+            conditional_clause.append(c)
+            Assert(Implies(condition,c==v))
+        self.AssertPB(conditional_clause,val,constraint,weights)
+        if(constraint != '='):
+            conditional_clause=[]
+            for v in clause:
+                c = Var()
+                conditional_clause.append(c)
+                Assert(Implies(Not(condition),c==v))
+            self.AssertPB(conditional_clause,val,self._negate(constraint),weights)
+            #This doesn't work. If constraint is (1 a 1 b <= 2), then the second side becomes
+            #1 c 1 d > 2, which is not UNSAT.
+        else:
+            #Because opb doesn't support an inequality operator, we are instead going to make yet another choice, and then conditionally enforce that either > or < holds
+            condition_g = Var() #If variable condition_g is true, AND variable condition is false, then enforce the > condition.
+            conditional_clause=[]
+            for v in clause:
+                c = Var()
+                conditional_clause.append(c)
+                Assert(Implies(And(Not(condition),condition_g),c==v))
+            self.AssertPB(conditional_clause,val,'>',weights)
+
+            conditional_clause=[]
+            for v in clause:
+                c = Var()
+                conditional_clause.append(c)
+                Assert(Implies(And(Not(condition),Not(condition_g)),c==v))
+            self.AssertPB(conditional_clause,val,'<',weights)
+        """
+        if(constraint != '='):
+            #a two sided constraint is just two one-sided conditional constraints
+            self.conditionalPB(nclause,val,constraint,weights,condition)
+            self.conditionalPB(nclause,val,self._negate(constraint),weights,Not(condition))
+        else:
+            #Is there a more efficient way to build a two sided equality constraint out of onesided constraints?
+            self.conditionalPB(nclause,val,'>=',weights,condition)
+            self.conditionalPB(nclause,val,'<=',weights,condition)
+            self.conditionalPB(nclause,val,'>',weights,Not(condition))
+            self.conditionalPB(nclause,val,'<',weights,Not(condition))
+
+        return condition
+
+    def conditionalPB_old(self,clause,val,constraint,weights=None,condition=None):
+        if condition is None:
+            condition = Var();
+
+        conditional_clause=[]
+        for v in clause:
+            c = Var()
+            conditional_clause.append(c)
+            Assert(Implies(condition,c==v))
+        self.AssertPB(conditional_clause,val,constraint,weights)
+        return condition
+
+    def conditionalPB(self,clause,val,constraint,weights=None,condition=None):
+        if(constraint=='!=' or constraint=='<>'):
+            v= Or(self.conditionalPB(clause,val,"<",weights),self.conditionalPB(clause,val,">",weights))
+            if(condition is not None):
+                AssertEq(v,condition)
+            return v;
+
+
+        if condition is None:
+            condition = Var();
+        else:
+            v = Var()
+            AssertEq(v,Not(condition))
+            condition=v
+
         """
         conditional_clause=[]
         for v in clause:
@@ -530,20 +836,20 @@ class MinisatPlus:
                 nclause.append(v2)
             else:
                 nclause.append(v)
-          
-        if (constraint=='>' or constraint==">=" or constraint=='=' or constraint== '=='):    
+
+        if (constraint=='>' or constraint==">=" or constraint=='=' or constraint== '=='):
             negWeightSum=0
             for w in weights:
                 if(w<0):
                     negWeightSum+=abs(w)
-            
+
             total = negWeightSum + val
             if(constraint=='>'):
                 total+=1
-            
-            nclause.append(condition)            
+
+            nclause.append(condition)
             weights.append(total)
-            
+
             if(constraint=='>' or constraint=='>='):
                 self.AssertPB(nclause,val,constraint,weights)
             else:
@@ -555,11 +861,11 @@ class MinisatPlus:
             for w in weights:
                 if(w>0):
                     posWeightSum+=abs(w)
-            
-            total = posWeightSum + val 
+
+            total = posWeightSum + val
             if(constraint=='<'):
                 total+=1
-                
+
             nclause.append(condition)
             weights.append(-total)
             if(constraint=='<' or constraint=='<='):
@@ -571,23 +877,23 @@ class MinisatPlus:
         return Not(condition) #The property is enforced if the condition variable is false
 
     def conditionalRangePB(self,clause,lowerBound,upperBound,weights=None,condition=None):
-        
+
         if(lowerBound==upperBound):
             return self.EqualPB(clause,lowerBound,weights,condition);
         elif (lowerBound is None):
             return self.conditionalPB(clause,upperBound,'<=',weights,condition)
         elif (upperBound is None):
-            return self.conditionalPB(clause,lowerBound,'>=',weights,condition)       
-        
+            return self.conditionalPB(clause,lowerBound,'>=',weights,condition)
+
         if condition is None:
-            condition = Var();        
+            condition = Var();
         conditional_clause=[]
         for v in clause:
             c = Var()
             conditional_clause.append(c)
             AssertImplies(condition,c==v)
-        self.AssertPB(conditional_clause,lowerBound,'>=',weights)   
-        self.AssertPB(conditional_clause,upperBound,'<=',weights) 
+        self.AssertPB(conditional_clause,lowerBound,'>=',weights)
+        self.AssertPB(conditional_clause,upperBound,'<=',weights)
         return condition
 
 
@@ -598,7 +904,7 @@ class MinisatPlus:
     def GreaterThanPB(self, clause, val,weights=None,condition=None):
         #self.conditional_constraints.append((clause,val,condition,'>',weights))
         return self.conditionalPB(clause,val,'>',weights,condition)
-        
+
     def LessEqPB(self, clause, val, weights=None,condition=None):
         #self.conditional_constraints.append((clause,val,condition,'<=',weights))
         return self.conditionalPB(clause,val,'<=',weights,condition)
@@ -606,36 +912,36 @@ class MinisatPlus:
     def GreaterEqPB(self, clause, val, weights=None,condition=None):
         #self.conditional_constraints.append((clause,val,condition,'>=',weights))
         return self.conditionalPB(clause,val,'>=',weights,condition)
-            
+
     def EqualPB(self, clause, val,weights=None,condition=None):
         #self.conditional_constraints.append((clause,val,condition,'=',weights))
         return self.conditionalPB(clause,val,'=',weights,condition)
 
-    
+
     def hasConstraints(self):
         return len(self.constraints)>0
 
     def write(self):
         if(len(self.constraints)==0):
             return
-        
+
         tmpfile = NamedTemporaryFile(delete=False,suffix=".opb")
         tmpopb = tmpfile.name
-        tmpfile.close() 
- 
+        tmpfile.close()
+
         tmpfile = NamedTemporaryFile(delete=False,suffix=".cnf")
         tmpcnf = tmpfile.name
-        tmpfile.close()  
+        tmpfile.close()
         longest_constraint=0
-          
+
         try:
-            minisat_plus_path = shutil.which("minisatpb")
+            minisat_plus_path = shutil.which("monosatpb")
         except:
-            minisat_plus_path = which("minisatpb")
+            minisat_plus_path = which("monosatpb")
         if minisat_plus_path is None:
-            raise RuntimeError("In order to use PB constraints, minisatpb must be installed and on the path (see README).\n")
-         
-         
+            raise RuntimeError("In order to use PB constraints, monosatpb must be installed and on the path (see README).\n")
+
+
         print("Encoding pb constraints using %s using temporary files %s and %s "%(minisat_plus_path,tmpopb,tmpcnf))
         fopb = open(tmpopb,'w')
         invarmap=dict()
@@ -646,16 +952,16 @@ class MinisatPlus:
             if(not isinstance(val, int)):
                 raise TypeError("PB constraints weights must compare to integers, but found " + str(type(val)))
             if len(clause)==0:
-                clause = [false()]  
+                clause = [false()]
             if len(clause)>longest_constraint:
                 longest_constraint = len(clause)
             for v in clause:
-                l = dimacs(v.getLit())     
-                if(l not in invarmap): 
-                    nvars+=1                                 
+                l = dimacs(v.getLit())
+                if(l not in invarmap):
+                    nvars+=1
                     invarmap[l]=nvars
                     varmap[nvars]=v.getLit()
-                    
+
         n_pbs=0
         nvars+=1
         fopb.write("* #variable= " + str(nvars) + " #constraint= " + str(len(self.constraints)) + "\n")
@@ -669,11 +975,11 @@ class MinisatPlus:
             n_pbs+=1
             while(len(weights)<len(clause)):
                 weights.append(1) #Default weight
-    
-                
+
+
             for (v,w) in zip(clause,weights):
-                l = dimacs(v.getLit())     
-                fopb.write(("+" if w>=0 else "") + str(w)+ " x" +str(invarmap[l]) + " " )        
+                l = dimacs(v.getLit())
+                fopb.write(("+" if w>=0 else "") + str(w)+ " x" +str(invarmap[l]) + " " )
             fopb.write(op + " " + str(val) + " ;\n")
 
         fopb.close()
@@ -684,17 +990,17 @@ class MinisatPlus:
             opts="-ca" #Switch to simple adder encoding if there are very large pb constraints, or else minisat+ will be inordinately slow
             print("Note: using minisat+ %s encoding because largest pb constraint has %d > 5000 arguments"%(opts,longest_constraint))
         #This call is designed for the original Minisat+; it can easily be adapted for other pb constraint->cnf encoders.
-        
-         
+
+
         status = os.system("%s %s -a -s -v0 -cnf="%(minisat_plus_path,opts) + tmpcnf + " " + tmpopb ) #a turns off ansi-codes in output, -s turns off sat competition output, and -v0 sets verbosity to 0.
-        if status!=0:            
+        if status!=0:
             raise RuntimeError("In order to use PB constraints, minisat+ (1.0) must be installed and on the path.\nEither it wasn't found, or it was but still returned an exit code of %d\n"%(status))
-                        
+
         print("Importing %d pseudoboolean constraints into Monosat..."%(n_pbs))
         t=time.clock();
-        
+
         Monosat().comment("pseudoboolean constraints")
-        n_cls =0 
+        n_cls =0
         convcnf =open(tmpcnf,'r')
         for line in convcnf.readlines():
             if line.startswith("p cnf"): #Header
@@ -710,15 +1016,15 @@ class MinisatPlus:
                 newclause=[]
                 assert(len(clause)>1)
                 assert(clause[-1]==0)
-                
+
                 for i in range(len(clause)):
                     l = clause[i]
-                    if l==0:                        
+                    if l==0:
                         continue
                     v = abs(l)
                     if v not in varmap:
                         varmap[v]= Monosat().newLit()
-                        
+
                     newl = varmap[v]
                     if l<0:
                         newl=Monosat().Not(newl)
@@ -727,7 +1033,7 @@ class MinisatPlus:
                 #fcnf.write("0\n")
                 Monosat().addClause(newclause)
         Monosat().comment("end of pseudoboolean constraints")
-        
+
         os.remove(tmpopb)
         os.remove(tmpcnf)
         PBManager().import_time+=time.clock()-t;
@@ -735,13 +1041,13 @@ class MinisatPlus:
 class PBSugar:
     def  __init__(self):
         self.constraints=[]
-        
+
     def clear(self):
         self.constraints=[]
 
     def hasConstraints(self):
         return len(self.constraints)>0
-        
+
     def AssertLessThanPB(self, clause, val, weights=None):
         self.AssertPB(clause,val,'<',weights)
         #self.constraints.append((clause,val,'<',weights))
@@ -749,7 +1055,7 @@ class PBSugar:
     def AssertGreaterThanPB(self, clause, val, weights=None):
         self.AssertPB(clause,val,'>',weights)
         #self.constraints.append((clause,val,'>',weights))
-        
+
     def AssertLessEqPB(self, clause, val, weights=None):
         self.AssertPB(clause,val,'<=',weights)
         #self.constraints.append((clause,val,'<=',weights))
@@ -757,7 +1063,7 @@ class PBSugar:
     def AssertGreaterEqPB(self, clause, val, weights=None):
         self.AssertPB(clause,val,'>=',weights)
         #self.constraints.append((clause,val,'>=',weights))
-        
+
     def AssertEqualPB(self, clause, val, weights=None):
         #self.constraints.append((clause,val,'=',weights))
         self.AssertPB(clause,val,'=',weights)
@@ -770,7 +1076,7 @@ class PBSugar:
             self.AssertLessEqPB(clause,upperBound,weights)
             #self.constraints.append((clause,lowerBound,'>=',weights))
             #self.constraints.append((clause,upperBound,'<=',weights))
-    
+
     def AssertPB(self,clause,val,constraint,weights=None):
         nclause = list(clause)
         self.constraints.append((nclause,val,constraint,list(weights) if weights is not None else []));
@@ -783,44 +1089,44 @@ class PBSugar:
         elif(constraint=='>'):
             return '<=';
         elif (constraint=='>='):
-            return '<';      
+            return '<';
         elif (constraint=='='):
             raise Exception("Cannot negate equality")
             #return '='; #!= is not directly supported in opb format, need to handle it separately
         else:
             raise Exception("Unknown operator " + constraint)
-        
+
 
     def twoSidedRangePB(self,clause,lowerBound,upperBound,weights=None):
         #Because opb doesn't support an inequality operator, we are instead going to make yet another choice, and then conditionally enforce that either > or < holds
-        
+
         if(lowerBound==upperBound):
             return self.twoSidedPB(clause,lowerBound,'=',weights)
         elif lowerBound is None:
             return self.twoSidedPB(clause,upperBound,'<=',weights)
         elif (upperBound is None):
-            return self.twoSidedPB(clause,lowerBound,'>=',weights)       
-        
+            return self.twoSidedPB(clause,lowerBound,'>=',weights)
+
         condition=Var()
         self.conditionalRangePB(clause,lowerBound,upperBound,weights,condition)
-        
+
         #If the condition that we are within (inclusive) the range of [lowerBound,upperBound] is false, then we must be outside that range
-        
+
         condition_g = Var() #If variable condition_g is true, AND variable condition is false, then enforce the > condition.
         conditional_clause=[]
         for v in clause:
             c = Var()
             conditional_clause.append(c)
-            Assert(Implies(And(Not(condition),condition_g),c==v))        
-        self.AssertPB(conditional_clause,upperBound,'>',weights)            
-        
+            Assert(Implies(And(Not(condition),condition_g),c==v))
+        self.AssertPB(conditional_clause,upperBound,'>',weights)
+
         conditional_clause=[]
         for v in clause:
             c = Var()
             conditional_clause.append(c)
-            Assert(Implies(And(Not(condition),Not(condition_g)),c==v))        
-        self.AssertPB(conditional_clause,lowerBound,'<',weights) 
-        
+            Assert(Implies(And(Not(condition),Not(condition_g)),c==v))
+        self.AssertPB(conditional_clause,lowerBound,'<',weights)
+
         return condition
 
     def twoSidedPB(self,clause,val,constraint,weights=None):
@@ -836,7 +1142,7 @@ class PBSugar:
             for v in clause:
                 c = Var()
                 conditional_clause.append(c)
-                Assert(Implies(Not(condition),c==v))        
+                Assert(Implies(Not(condition),c==v))
             self.AssertPB(conditional_clause,val,self._negate(constraint),weights)
         else:
             #Because opb doesn't support an inequality operator, we are instead going to make yet another choice, and then conditionally enforce that either > or < holds
@@ -845,16 +1151,16 @@ class PBSugar:
             for v in clause:
                 c = Var()
                 conditional_clause.append(c)
-                Assert(Implies(And(Not(condition),condition_g),c==v))        
-            self.AssertPB(conditional_clause,val,'>',weights)            
-            
+                Assert(Implies(And(Not(condition),condition_g),c==v))
+            self.AssertPB(conditional_clause,val,'>',weights)
+
             conditional_clause=[]
             for v in clause:
                 c = Var()
                 conditional_clause.append(c)
-                Assert(Implies(And(Not(condition),Not(condition_g)),c==v))        
-            self.AssertPB(conditional_clause,val,'<',weights)              
-            
+                Assert(Implies(And(Not(condition),Not(condition_g)),c==v))
+            self.AssertPB(conditional_clause,val,'<',weights)
+
         return condition
 
     def conditionalPB_old(self,clause,val,constraint,weights=None,condition=None):
@@ -876,7 +1182,7 @@ class PBSugar:
             v = Var()
             Assert(v==Not(condition))
             condition=v
-                   
+
         """
         conditional_clause=[]
         for v in clause:
@@ -899,20 +1205,20 @@ class PBSugar:
                 nclause.append(v2)
             else:
                 nclause.append(v)
-          
-        if (constraint=='>' or constraint==">=" or constraint=='=' or constraint== '=='):    
+
+        if (constraint=='>' or constraint==">=" or constraint=='=' or constraint== '=='):
             negWeightSum=0
             for w in weights:
                 if(w<0):
                     negWeightSum+=abs(w)
-            
+
             total = negWeightSum + val
             if(constraint=='>'):
                 total+=1
-            
-            nclause.append(condition)            
+
+            nclause.append(condition)
             weights.append(total)
-            
+
             if(constraint=='>' or constraint=='>='):
                 self.AssertPB(nclause,val,constraint,weights)
             else:
@@ -924,11 +1230,11 @@ class PBSugar:
             for w in weights:
                 if(w>0):
                     posWeightSum+=abs(w)
-            
-            total = posWeightSum + val 
+
+            total = posWeightSum + val
             if(constraint=='<'):
                 total+=1
-                
+
             nclause.append(condition)
             weights.append(-total)
             if(constraint=='<' or constraint=='<='):
@@ -940,23 +1246,23 @@ class PBSugar:
         return Not(condition) #The property is enforced if the condition variable is false
 
     def conditionalRangePB(self,clause,lowerBound,upperBound,weights=None,condition=None):
-        
+
         if(lowerBound==upperBound):
             return self.EqualPB(clause,lowerBound,weights,condition);
         elif (lowerBound is None):
             return self.conditionalPB(clause,upperBound,'<=',weights,condition)
         elif (upperBound is None):
-            return self.conditionalPB(clause,lowerBound,'>=',weights,condition)       
-        
+            return self.conditionalPB(clause,lowerBound,'>=',weights,condition)
+
         if condition is None:
-            condition = Var();        
+            condition = Var();
         conditional_clause=[]
         for v in clause:
             c = Var()
             conditional_clause.append(c)
             Assert(Implies(condition,c==v))
-        self.AssertPB(conditional_clause,lowerBound,'>=',weights)   
-        self.AssertPB(conditional_clause,upperBound,'<=',weights) 
+        self.AssertPB(conditional_clause,lowerBound,'>=',weights)
+        self.AssertPB(conditional_clause,upperBound,'<=',weights)
         return condition
 
 
@@ -967,7 +1273,7 @@ class PBSugar:
     def GreaterThanPB(self, clause, val,weights=None,condition=None):
         #self.conditional_constraints.append((clause,val,condition,'>',weights))
         return self.conditionalPB(clause,val,'>',weights,condition)
-        
+
     def LessEqPB(self, clause, val, weights=None,condition=None):
         #self.conditional_constraints.append((clause,val,condition,'<=',weights))
         return self.conditionalPB(clause,val,'<=',weights,condition)
@@ -975,15 +1281,15 @@ class PBSugar:
     def GreaterEqPB(self, clause, val, weights=None,condition=None):
         #self.conditional_constraints.append((clause,val,condition,'>=',weights))
         return self.conditionalPB(clause,val,'>=',weights,condition)
-            
+
     def EqualPB(self, clause, val,weights=None,condition=None):
         #self.conditional_constraints.append((clause,val,condition,'=',weights))
         return self.conditionalPB(clause,val,'=',weights,condition)
-    
+
     def write(self,cnf):
         if(len(self.constraints)==0):
             return
-        
+
         print("Encoding pb constraints")
         fopb = open("convert.opb",'w')
         nvars = 0
@@ -995,9 +1301,9 @@ class PBSugar:
         fopb.write("* #variable= " + str(nvars) + " #constraint= " + str(len(self.constraints)) + "\n")
         for (clause,val,op) in self.constraints:
             for v in clause:
-                fopb.write("+1 x" +str(v.getInputLiteral()) + " " )        
+                fopb.write("+1 x" +str(v.getInputLiteral()) + " " )
             fopb.write(op + " " + str(val) + " ;\n")
-       
+
         fopb.close()
         os.system("./pbsugar -map convert.map -n -sat convert.cnf -jar ./pbsugar-v1-1-1.jar " +"convert.opb" )
         fmap =open("convert.map",'r')
@@ -1011,20 +1317,20 @@ class PBSugar:
             varmap[invar]=outvar
             maxvarmap = max(maxvarmap,outvar)
         fmap.close()
-        
+
         #now find the largest var in the cnf, so we can cleanly place the pb cnf in its own namespace
         fcnf = open(cnf,'r')
         vars=0
         for line in fcnf.readlines():
             if line.startswith("p cnf"): #Header
                 header =line.split()
-                vars = int(header[2]) 
+                vars = int(header[2])
         fcnf.close()
         fcnf = open(cnf,'a')
         fcnf.write("c pseudoboolean constraints:\n")
         vars = max(vars,maxvarmap)
         nextVar = vars+1
-        
+
         convcnf =open("convert.cnf",'r')
         for line in convcnf.readlines():
             if line.startswith("p cnf"): #Header
@@ -1038,10 +1344,10 @@ class PBSugar:
                 clause =list(map(int, line.split()))
                 assert(len(clause)>1)
                 assert(clause[-1]==0)
-                
+
                 for l in clause:
                     if l==0:
-                        
+
                         continue
                     v = abs(l)
                     if v not in varmap:
@@ -1050,24 +1356,24 @@ class PBSugar:
                     v = varmap[v]
                     if l<0:
                         v=-v
-                    
+
                     fcnf.write(str(v) + " ")
                 fcnf.write("0\n")
         fcnf.write("c end of pseudoboolean constraints\n")
-        fcnf.close()                     
+        fcnf.close()
 
 def AssertLessThanPB( clause, val, weights=None):
     PBManager().AssertPB(clause,val,'<',weights)
 
 def AssertGreaterThanPB(clause, val, weights=None):
     PBManager().AssertPB(clause,val,'>',weights)
-    
+
 def AssertLessEqPB(clause, val, weights=None):
     PBManager().AssertPB(clause,val,'<=',weights)
 
 def AssertGreaterEqPB( clause, val, weights=None):
     PBManager().AssertPB(clause,val,'>=',weights)
-  
+
 def AssertEqualPB( clause, val, weights=None):
     PBManager().AssertPB(clause,val,'=',weights)
 
@@ -1076,14 +1382,14 @@ def AssertNotEqualPB(clause, val, weights=None):
 
 def AssertRangePB(clause, lowerBound,upperBound, weights=None):
     PBManager().pb.AssertRangePB(clause,lowerBound,upperBound,weights);
-    
+
 def AssertPB(clause,val,constraint,weights=None):
-    PBManager().pb.AssertPB(clause,val,constraint,weights)       
+    PBManager().pb.AssertPB(clause,val,constraint,weights)
 
 def twoSidedRangePB(clause,lowerBound,upperBound,weights=None):
-    return PBManager().pb.twoSidedRangePB(clause,lowerBound,upperBound,weights)        
+    return PBManager().pb.twoSidedRangePB(clause,lowerBound,upperBound,weights)
 
-def twoSidedPB(clause,val,constraint,weights=None,condition=None):        
+def twoSidedPB(clause,val,constraint,weights=None,condition=None):
     return PBManager().pb.twoSidedPB(clause,val,constraint,weights,condition)
 
 def conditionalPB(clause,val,constraint,weights=None,condition=None):
@@ -1097,23 +1403,23 @@ def LessThanPB( clause, val, weights=None,condition=None):
 
 def GreaterThanPB( clause, val,weights=None,condition=None):
     return PBManager().conditionalPB(clause,val,'>',weights,condition)
-    
+
 def LessEqPB( clause, val, weights=None,condition=None):
     return PBManager().conditionalPB(clause,val,'<=',weights,condition)
 
 def GreaterEqPB( clause, val, weights=None,condition=None):
     return PBManager().conditionalPB(clause,val,'>=',weights,condition)
-        
+
 def EqualPB( clause, val,weights=None,condition=None):
     return PBManager().conditionalPB(clause,val,'=',weights,condition)
 
 def AssertExactlyOne(clause):
-    PBManager().AssertExactlyOne(clause)    
-    
+    PBManager().AssertExactlyOne(clause)
+
 def AssertAtMostOne(clause):
-    PBManager().AssertAtMostOne(clause)        
-    
-    
+    PBManager().AssertAtMostOne(clause)
+
+
 
 #shutil.which, backported from the python 3.3 sources, if python version < 3.3
 #The 'which' function included here falls under Python's PSF

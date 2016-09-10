@@ -30,7 +30,7 @@
 #include "monosat/core/SolverTypes.h"
 #include "monosat/mtl/Map.h"
 
-#include "BVTheory.h"
+#include "monosat/bv/BVTheory.h"
 #include "monosat/utils/System.h"
 #include "monosat/core/TheorySolver.h"
 #include "monosat/core/Remap.h"
@@ -45,11 +45,11 @@
 #include <exception>
 #include "monosat/api/Circuit.h"
 
+namespace Monosat {
 template<typename Weight>
 class BVTheorySolver;
-
+};
 #include "monosat/core/Remap.h"
-
 namespace Monosat {
 using std::min;
 using std::max;

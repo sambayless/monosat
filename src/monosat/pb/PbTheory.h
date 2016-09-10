@@ -22,6 +22,8 @@
 #ifndef PBTHEORY_H_
 #define PBTHEORY_H_
 
+//this pb theory isn't used anymore; it has been replaced by a fork of minisat+
+
 #include "monosat/mtl/Vec.h"
 #include "monosat/mtl/Map.h"
 #include "monosat/mtl/Sort.h"

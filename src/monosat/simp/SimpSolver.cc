@@ -110,8 +110,11 @@ lbool SimpSolver::solve_(bool do_simp, bool turn_off_simp) {
 	lbool result = l_True;
 	clearInterrupt();
 	cancelUntil(0);
-	do_simp &= use_simplification;
+	do_simp &=ok && use_simplification;
 	if (do_simp) {
+		if(pbsolver){
+			pbsolver->convert();
+		}
 		// Assumptions must be temporarily frozen to run variable elimination:
 		for (int i = 0; i < assumptions.size(); i++) {
 			Var v = var(assumptions[i]);

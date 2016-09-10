@@ -20,7 +20,7 @@
 
 #ifndef Minisat_System_h
 #define Minisat_System_h
-
+#include <cstdint>
 #if defined(__linux__)
 #include <fpu_control.h>
 #endif

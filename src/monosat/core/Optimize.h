@@ -33,10 +33,69 @@
 
 namespace Monosat{
 
-long optimize_linear(Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bvTheory,const vec<Lit> & assume,int bvID, bool & hit_cutoff, long & n_solves);
+//An individual goal during optimization. If there are multiple goals, they will be optimized in lexicographic order.
+struct Objective{
+    enum class Type{
+        BV,PB
+    };
+    bool maximize=false;//else, minimize
+    Type type;
+    int bvID=-1;//used if type is BV
+    //Used if type is PB
+    vec<Lit> pb_lits;
+    vec<int> pb_weights; //if empty, weights are treated as '1'
+    bool isPB()const{
+        return type == Type::PB;
+    }
+    bool isBV()const{
+        return type == Type::BV;
+    }
+    Objective(const Objective & from):maximize(from.maximize), type(from.type),bvID(from.bvID){
+        from.pb_lits.copyTo(pb_lits);
+        from.pb_weights.copyTo(pb_weights);
+    }
 
-long optimize_binary(Monosat::SimpSolver * S, Monosat::BVTheorySolver<long> * bvTheory,const vec<Lit> & assume,int bvID, bool & hit_cutoff, long & n_solves);
+    Objective(Objective && from):maximize(from.maximize), type(from.type),bvID(from.bvID){
+        from.pb_lits.copyTo(pb_lits);
+        from.pb_weights.copyTo(pb_weights);
+        from.pb_lits.clear();
+        from.pb_weights.clear();
+        from.bvID=-1;
+    }
 
-lbool optimize_and_solve(Monosat::SimpSolver & S,const vec<Lit> & assume,const vec<int> & bvs, bool do_simp, bool & found_optimal);
+    Objective& operator=(Objective&& from){
+        if(this != &from){
+            maximize = from.maximize;
+            type = from.type;
+            bvID = from.bvID;
+            from.pb_lits.copyTo(pb_lits);
+            from.pb_weights.copyTo(pb_weights);
+            from.pb_lits.clear();
+            from.pb_weights.clear();
+            from.bvID=-1;
+        }
+    }
+    Objective():maximize(false),type(Type::BV),bvID(-1){
+    }
+    Objective(int bvID, bool maximize):maximize(maximize),type(Type::BV),bvID(bvID){
+    }
+    Objective(const vec<Lit> & lits, bool maximize):maximize(maximize),type(Type::PB),bvID(-1){
+        lits.copyTo(pb_lits);
+        pb_weights.growTo(pb_lits.size(),1);
+    }
+    Objective(const vec<Lit> & lits,const vec<int> & weights, bool maximize):maximize(maximize),type(Type::PB),bvID(-1){
+        lits.copyTo(pb_lits);
+        weights.copyTo(pb_weights);
+        if(pb_weights.size()>pb_lits.size())
+            pb_weights.shrink(pb_weights.size()-pb_lits.size());
+        pb_weights.growTo(pb_lits.size(),1);
+    }
+};
+
+int64_t optimize_linear(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bvTheory,const vec<Lit> & assume,int bvID, bool & hit_cutoff, int64_t & n_solves);
+
+int64_t optimize_binary(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bvTheory,const vec<Lit> & assume,int bvID, bool & hit_cutoff, int64_t & n_solves);
+
+lbool optimize_and_solve(Monosat::SimpSolver & S,const vec<Lit> & assume,const vec<Objective> & objectives, bool do_simp, bool & found_optimal);
 };
 #endif /* OPTIMIZE_H_ */

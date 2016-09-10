@@ -22,6 +22,8 @@
 #ifndef THEORYSOLVER_H_
 #define THEORYSOLVER_H_
 #include "monosat/core/SolverTypes.h"
+#include "monosat/pb/Pb.h"
+
 namespace Monosat {
 
 /**
@@ -52,6 +54,9 @@ public:
 
 	}
 	virtual Theory * getBVTheory(){
+		return nullptr;
+	}
+	virtual PB::PBConstraintSolver * getPB(){
 		return nullptr;
 	}
 	/*virtual void prependToTrail(Lit solverLit, int atLevel){

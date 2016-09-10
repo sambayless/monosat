@@ -265,12 +265,16 @@ inline bool SimpSolver::addClause(Lit p, Lit q, Lit r) {
 }
 inline void SimpSolver::setFrozen(Var v, bool b) {
 	assert(v < nVars());
-	frozen[v] = (char) b;
-	if (use_simplification && !b) {
-		updateElimHeap(v);
+	assert(!isEliminated(v));
+	if(b!=frozen[v]) {
+		frozen[v] = (char) b;
+		if (use_simplification && !b) {
+			updateElimHeap(v);
+		}
 	}
 }
 inline void SimpSolver::freezeVar(Var v){
+	assert(!isEliminated(v));
     if (!frozen[v]){
         frozen[v] = 1;
         frozen_vars.push(v);
