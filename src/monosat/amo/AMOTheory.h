@@ -56,7 +56,7 @@ public:
 	bool needs_propagation=false;
 
 public:
-	
+
 	AMOTheory(Solver * S) :
 			S(S) {
 		S->addTheory(this);
@@ -156,7 +156,7 @@ public:
 		printf("AMO Theory %d stats:\n", this->getTheoryIndex());
 
 		printf("Propagations: %ld (%f s, avg: %f s, %ld skipped)\n", stats_propagations, propagationtime,
-				(propagationtime) / ((double) stats_propagations + 1), stats_propagations_skipped);
+			   (propagationtime) / ((double) stats_propagations + 1), stats_propagations_skipped);
 
 		printf("Conflicts: %ld\n", stats_conflicts);
 		printf("Reasons: %ld\n", stats_reasons);
@@ -195,7 +195,7 @@ public:
 	}
 private:
 
-	
+
 };
 
 }

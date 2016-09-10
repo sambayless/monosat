@@ -198,8 +198,10 @@ class BitVector():
                     val-=v
                     self._bv[i]=true() 
                 else:
-                    self._bv[i]=false()        
-            
+                    self._bv[i]=false()
+        elif  (args is None and op=="anon") or op=='~':
+            #create an anomymous bitvector (has no literals)
+            self.pid = mgr._monosat.newBitvector_anon(width)
         else:
             self._bv=[] 
             if assigned_bits is None:
