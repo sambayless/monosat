@@ -34,6 +34,7 @@
 #include "monosat/graph/GraphParser.h"
 #include "monosat/amo/AMOParser.h"
 #include "monosat/core/Optimize.h"
+#include "monosat/pb/PbSolver.h"
 #include <csignal>
 #include <set>
 #include <iostream>
@@ -41,7 +42,7 @@
 #include <sstream>
 #include <algorithm>
 #include <iterator>
-#include <stdint.h>
+#include <cstdint>
 
 using namespace Monosat;
 using namespace std;
@@ -363,10 +364,12 @@ void printStats(SimpSolver* solver) {
 struct MonosatData{
 	Monosat::BVTheorySolver<int64_t> * bv_theory=nullptr;
 	Monosat::FSMTheorySolver * fsm_theory=nullptr;
+	PB::PbSolver * pbsolver=nullptr;
 	vec< Monosat::GraphTheorySolver<int64_t> *> graphs;
 
 	bool last_solution_optimal=true;
 	bool has_conflict_clause_from_last_solution=false;
+	vec<Objective> optimization_objectives;
 	FILE * outfile =nullptr;
 	string args = "";
 };
@@ -482,6 +485,8 @@ Monosat::SimpSolver * newSolver_args(int argc, char**argv){
 	  if(!opt_pre){
 		  S->eliminate(true);//disable preprocessing.
 	  }
+	((MonosatData*)S->_external_data)->pbsolver = new PB::PbSolver(*S);
+	S->setPBSolver(((MonosatData*)S->_external_data)->pbsolver);
     return S ;
 }
 void deleteSolver (Monosat::SimpSolver * S)
@@ -501,13 +506,141 @@ void deleteSolver (Monosat::SimpSolver * S)
      delete (S);
 }
 
+void clearOptimizationObjectives(Monosat::SimpSolver * S){
+	MonosatData * d = (MonosatData*) S->_external_data;
+	write_out(S,"clear_opt\n");
+	d->optimization_objectives.clear();
+}
+
+void maximizeBV(Monosat::SimpSolver *  S,  Monosat::BVTheorySolver<int64_t> *  bv, int bvID){
+	MonosatData * d = (MonosatData*) S->_external_data;
+	write_out(S,"maximize bv %d\n", bvID);
+	if(!S->getBVTheory()){
+		api_errorf("No bitvector theory created (call initBVTheory())!");
+	}
+	if(! ((Monosat::BVTheorySolver<int64_t> *) S->getBVTheory())->hasBV(bvID)){
+		api_errorf("Minimization bitvector %d is not allocated",bvID);
+	}
+	d->optimization_objectives.push(Objective(bvID,true));
+}
+
+void minimizeBV(Monosat::SimpSolver *  S,  Monosat::BVTheorySolver<int64_t> *  bv, int bvID){
+	MonosatData * d = (MonosatData*) S->_external_data;
+	write_out(S,"minimize bv %d\n", bvID);
+	if(!S->getBVTheory()){
+		api_errorf("No bitvector theory created (call initBVTheory())!");
+	}
+	if(! ((Monosat::BVTheorySolver<int64_t> *) S->getBVTheory())->hasBV(bvID)){
+		api_errorf("Minimization bitvector %d is not allocated",bvID);
+	}
+	d->optimization_objectives.push(Objective(bvID,false));
+}
+
+void maximizeLits(Monosat::SimpSolver *  S, int * lits, int n_lits){
+	if(n_lits<=0)
+		return;
+	MonosatData * d = (MonosatData*) S->_external_data;
+	static vec<Lit> lits_opt;
+	lits_opt.clear();
+	for (int i = 0;i<n_lits;i++){
+		lits_opt.push(toLit(lits[i]));
+	}
+	write_out(S,"maximize lits %d ",lits_opt.size());
+	for(Lit l:lits_opt){
+		write_out(S,"%d ",dimacs(l));
+	}
+	write_out(S,"\n");
+
+	d->optimization_objectives.push(Objective(lits_opt,true));
+}
+void minimizeLits(Monosat::SimpSolver *  S, int * lits, int n_lits){
+	if(n_lits<=0)
+		return;
+	MonosatData * d = (MonosatData*) S->_external_data;
+	static vec<Lit> lits_opt;
+	lits_opt.clear();
+	for (int i = 0;i<n_lits;i++){
+		lits_opt.push(toLit(lits[i]));
+	}
+	write_out(S,"minimize lits %d ",lits_opt.size());
+	for(Lit l:lits_opt){
+		write_out(S,"%d ",dimacs(l));
+	}
+	write_out(S,"\n");
+
+	d->optimization_objectives.push(Objective(lits_opt,false));
+}
+void maximizeWeightedLits(Monosat::SimpSolver *  S, int * lits, int * weights, int n_lits){
+	if(n_lits<=0)
+		return;
+	MonosatData * d = (MonosatData*) S->_external_data;
+	static vec<Lit> lits_opt;
+	static vec<int> weights_opt;
+	lits_opt.clear();
+	for (int i = 0;i<n_lits;i++){
+		lits_opt.push(toLit(lits[i]));
+	}
+	weights_opt.clear();
+	for (int i = 0;i<n_lits;i++){
+		weights_opt.push(weights[i]);
+	}
+    while(weights_opt.size()>lits_opt.size()){
+        weights_opt.pop();
+    }
+    while(weights_opt.size()<lits_opt.size()){
+        weights_opt.push(1);
+    }
+
+	write_out(S,"maximize lits %d ",lits_opt.size());
+	for(Lit l:lits_opt){
+		write_out(S,"%d ",dimacs(l));
+	}
+	for(int w:weights_opt){
+		write_out(S,"%d ",w);
+	}
+	write_out(S,"0\n");
+
+	d->optimization_objectives.push(Objective(lits_opt,weights_opt,true));
+}
+void minimizeWeightedLits(Monosat::SimpSolver *  S, int * lits, int * weights, int n_lits){
+	if(n_lits<=0)
+		return;
+	MonosatData * d = (MonosatData*) S->_external_data;
+	static vec<Lit> lits_opt;
+	static vec<int> weights_opt;
+	lits_opt.clear();
+	for (int i = 0;i<n_lits;i++){
+		lits_opt.push(toLit(lits[i]));
+	}
+	weights_opt.clear();
+	for (int i = 0;i<n_lits;i++){
+		weights_opt.push(weights[i]);
+	}
+    while(weights_opt.size()>lits_opt.size()){
+        weights_opt.pop();
+    }
+    while(weights_opt.size()<lits_opt.size()){
+        weights_opt.push(1);
+    }
+	write_out(S,"minimize lits %d ",lits_opt.size());
+	for(Lit l:lits_opt){
+		write_out(S,"%d ",dimacs(l));
+	}
+	for(int w:weights_opt){
+		write_out(S,"%d ",w);
+	}
+	write_out(S,"0\n");
+	d->optimization_objectives.push(Objective(lits_opt,weights_opt,false));
+}
+
+
 void readGNF(Monosat::SimpSolver * S, const char  * filename){
 	bool precise = true;
 
 	gzFile in = gzopen(filename, "rb");
 	if (in == nullptr)
 		throw std::runtime_error("ERROR! Could not open file");
-
+	MonosatData * d = (MonosatData*) S->_external_data;
 
 	Dimacs<StreamBuffer, SimpSolver> parser;
 	BVParser<char *, SimpSolver> bvParser;
@@ -525,12 +658,18 @@ void readGNF(Monosat::SimpSolver * S, const char  * filename){
 	StreamBuffer strm(in);
 	vec<int> assumps;
 	bool ran_last_solve=false;
+	d->optimization_objectives.clear();
 	while(parser.parse(strm, *S)){
 		assumps.clear();
 		for(Lit l:parser.assumptions){
 			assumps.push(toInt(l));
 		}
-		solveAssumptions_MinBVs(S,&assumps[0],assumps.size(),&parser.bv_minimize[0],parser.bv_minimize.size());
+		d->optimization_objectives.clear();
+		for(Objective & o:parser.objectives){
+			d->optimization_objectives.push(o);
+		}
+
+		solveAssumptions(S,&assumps[0],assumps.size());
 		if(*strm==EOF){
 			ran_last_solve=true;
 		}
@@ -540,9 +679,13 @@ void readGNF(Monosat::SimpSolver * S, const char  * filename){
 		for(Lit l:parser.assumptions){
 			assumps.push(toInt(l));
 		}
-		solveAssumptions_MinBVs(S,&assumps[0],assumps.size(),&parser.bv_minimize[0],parser.bv_minimize.size());
+		d->optimization_objectives.clear();
+		for(Objective & o:parser.objectives){
+			d->optimization_objectives.push(o);
 	}
-
+		solveAssumptions(S,&assumps[0],assumps.size());
+	}
+	d->optimization_objectives.clear();
 
 	gzclose(in);
 
@@ -612,16 +755,12 @@ int solveAssumptionsLimited(Monosat::SimpSolver * S,int * assumptions, int n_ass
  }
 
 
-int _solve(Monosat::SimpSolver * S,int * assumptions, int n_assumptions, int * minimize_bvs, int n_minimize_bvs){
+int _solve(Monosat::SimpSolver * S,int * assumptions, int n_assumptions){
 	bool found_optimal=true;
 	  MonosatData * d = (MonosatData*) S->_external_data;
 	  d->last_solution_optimal=true;
 	  d->has_conflict_clause_from_last_solution=false;
 
-	if(n_minimize_bvs>0){
-		for(int i = 0;i<n_minimize_bvs;i++)
-			write_out(S,"minimize bv %d\n", minimize_bvs[i]);
-	}
 
 	write_out(S,"solve");
 	for(int i = 0;i<n_assumptions;i++){
@@ -651,19 +790,11 @@ int _solve(Monosat::SimpSolver * S,int * assumptions, int n_assumptions, int * m
 		S->eliminate(false);//should this really be set to disable future preprocessing here?
 	 }*/
 
-	  vec<int> bvs;//bit vectors to minimize
-	  for (int i = 0;i<n_minimize_bvs;i++){
-		  int bvID = minimize_bvs[i];
-		  if(!S->getBVTheory()){
-			  api_errorf("No bitvector theory created (call initBVTheory())!");
+	vec<Objective> & objectives = d->optimization_objectives;//bit vectors to minimize
+	if (d->pbsolver) {
+		d->pbsolver->convert();
 		  }
-		  if(! ((Monosat::BVTheorySolver<int64_t> *) S->getBVTheory())->hasBV(bvID)){
-			  api_errorf("Minimization bitvector %d is not allocated",bvID);
-		  }
-		  bvs.push(bvID);
-	  }
-
-	  lbool r = optimize_and_solve(*S, assume,bvs,opt_pre,found_optimal);
+	lbool r = optimize_and_solve(*S, assume,objectives,opt_pre,found_optimal);
 	  d->last_solution_optimal=found_optimal;
 	  if(r==l_False){
 		  d->has_conflict_clause_from_last_solution=true;
@@ -676,6 +807,18 @@ int _solve(Monosat::SimpSolver * S,int * assumptions, int n_assumptions, int * m
 	return toInt(r);
 }
 
+int solveLimited(Monosat::SimpSolver * S){
+	return solveAssumptionsLimited(S,nullptr,0);
+}
+
+int solveAssumptionsLimited(Monosat::SimpSolver * S,int * assumptions, int n_assumptions){
+	return _solve(S, assumptions,  n_assumptions);
+	//return solveAssumptionsLimited_MinBVs(S,assumptions,n_assumptions,nullptr,0);
+}
+
+bool solveAssumptions(Monosat::SimpSolver * S,int * assumptions, int n_assumptions){
+	return _solve(S,assumptions,n_assumptions);
+}
 bool lastSolutionWasOptimal(Monosat::SimpSolver * S){
 	  MonosatData * d = (MonosatData*) S->_external_data;
 	  if(d){
@@ -700,6 +843,8 @@ int getConflictClause(Monosat::SimpSolver * S, int * store_clause, int max_store
 	  }
 }
 
+
+/*
 bool solveAssumptions_MinBVs(Monosat::SimpSolver * S,int * assumptions, int n_assumptions, int * minimize_bvs, int n_minimize_bvs){
 	APISignal::disableResourceLimits();
 	S->budgetOff();
@@ -715,7 +860,7 @@ bool solveAssumptions_MinBVs(Monosat::SimpSolver * S,int * assumptions, int n_as
 int solveAssumptionsLimited_MinBVs(Monosat::SimpSolver * S,int * assumptions, int n_assumptions, int * minimize_bvs, int n_minimize_bvs){
 	int r = _solve(S, assumptions,  n_assumptions,  minimize_bvs,  n_minimize_bvs);
 	return r;
-}
+}*/
 
 
  int newVar(Monosat::SimpSolver * S){
@@ -1029,6 +1174,80 @@ void bv_bitblast(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bv,
 	 }
  }
 
+void flushPB(Monosat::SimpSolver * S){
+	MonosatData *d = (MonosatData *) S->_external_data;
+
+	if (d->pbsolver) {
+		d->pbsolver->convert();
+	}
+}
+
+const char * ineqToStr(PB::Ineq ineq){
+	switch(ineq){
+		case PB::LT:
+			return "<";
+		case PB::LEQ:
+			return "<=";
+		case PB::EQ:
+			return "==";
+		case PB::GEQ:
+			return ">=";
+		case PB::GT:
+			return ">";
+		default:
+			return "!=";//not supported yet
+	}
+}
+
+void assertPB(Monosat::SimpSolver * S, int _rhs, int n_args, int * literals, int * coefficients, PB::Ineq ineq){
+	if(n_args>0) {
+
+		MonosatData *d = (MonosatData *) S->_external_data;
+
+		//could try to detect if the pb constraint is trivially false or true before creating the pbsolver here...
+		write_out(S,"pb %s %d %d ", ineqToStr(ineq), _rhs, n_args);
+
+
+		if (!d->pbsolver) {
+			d->pbsolver = new PB::PbSolver(*S);
+		}
+
+		static vec<Lit> lits;
+		lits.clear();
+		for (int i = 0; i < n_args; i++) {
+			Lit l = toLit(literals[i]);
+			lits.push(l);
+			write_out(S,"%d ", dimacs(l));
+		}
+		write_out(S,"%d ", n_args);
+		static vec<PB::Int> coefs;
+		coefs.clear();
+		for (int i = 0; i < n_args; i++) {
+			coefs.push(PB::Int(coefficients[i]));
+			write_out(S,"%d ", coefficients[i]);
+		}
+		PB::Int rhs = _rhs;
+
+		write_out(S,"\n");
+
+		d->pbsolver->addConstr(lits, coefs, rhs, ineq);
+	}
+}
+void assertPB_lt(Monosat::SimpSolver * S, int _rhs, int n_args, int * literals, int * coefficients){
+	assertPB(S,_rhs,n_args,literals,coefficients,PB::Ineq::LT);
+}
+void assertPB_leq(Monosat::SimpSolver * S, int _rhs, int n_args, int * literals, int * coefficients){
+	assertPB(S,_rhs,n_args,literals,coefficients,PB::Ineq::LEQ);
+}
+void assertPB_eq(Monosat::SimpSolver * S, int _rhs, int n_args, int * literals, int * coefficients){
+	assertPB(S,_rhs,n_args,literals,coefficients,PB::Ineq::EQ);
+}
+void assertPB_geq(Monosat::SimpSolver * S, int _rhs, int n_args, int * literals, int * coefficients){
+	assertPB(S,_rhs,n_args,literals,coefficients,PB::Ineq::GEQ);
+}
+void assertPB_gt(Monosat::SimpSolver * S, int _rhs, int n_args, int * literals, int * coefficients){
+	assertPB(S,_rhs,n_args,literals,coefficients,PB::Ineq::GT);
+}
  //theory interface for graphs
 
  int newNode(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<int64_t> *G){
@@ -1231,7 +1450,7 @@ void bv_bitblast(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bv,
  int newState(Monosat::SimpSolver * S, Monosat::FSMTheorySolver *  fsmTheory, int fsmID){
 	 if(!fsmTheory){
 		 fsmTheory = initFSMTheory(S);
-	 }ndroid
+	 }
 	 return fsmTheory->newNode(fsmID);
  }
 
@@ -1279,7 +1498,16 @@ void bv_bitblast(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bv,
 	 write_out(S,"accepts %d %d %d %d %d\n",fsmID,startNode, acceptNode, stringID, dimacs(l));
 	 return toInt(l);
  }
-
+int fsmCompositionAccepts(Monosat::SimpSolver * S, Monosat::FSMTheorySolver *  fsmTheory,   int fsmGeneratorID,int fsmAcceptorID, int gen_startNode, int gen_acceptNode, int acceptor_startNode, int acceptor_acceptNode,int stringID){
+	if(!fsmTheory){
+		fsmTheory = initFSMTheory(S);
+	}
+	Var v = newVar(S);
+	Lit l =mkLit(v);
+	fsmTheory->addComposeAcceptLit(fsmGeneratorID,fsmAcceptorID,gen_startNode,gen_acceptNode,acceptor_startNode,acceptor_acceptNode, stringID,v);
+	write_out(S,"accepts_composition %d %d %d %d %d %d %d %d\n",fsmGeneratorID,fsmAcceptorID,gen_startNode,gen_acceptNode,acceptor_startNode,acceptor_acceptNode, stringID, dimacs(l));
+	return toInt(l);
+}
 
  //model query
  //Returns 0 for true, 1 for false, 2 for unassigned.

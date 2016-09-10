@@ -22,10 +22,24 @@
 #ifndef MONOSAT_H_
 #define MONOSAT_H_
 //Monosat library interface, in C
-#ifdef __cplusplus
 #include <stdint.h>
-
-
+#ifdef __cplusplus
+#include "monosat/utils/ParseUtils.h"
+#include "monosat/utils/Options.h"
+#include "monosat/core/Solver.h"
+#include "monosat/simp/SimpSolver.h"
+#include "monosat/graph/GraphTheory.h"
+#include "monosat/geometry/GeometryTheory.h"
+#include "monosat/fsm/FSMTheory.h"
+#include "monosat/pb/PbTheory.h"
+#include "monosat/amo/AMOTheory.h"
+#include "Monosat.h"
+#include "monosat/core/Dimacs.h"
+#include "monosat/bv/BVParser.h"
+#include "monosat/graph/GraphParser.h"
+#include "monosat/amo/AMOParser.h"
+#include "monosat/core/Optimize.h"
+#include "monosat/pb/PbSolver.h"
 extern "C"
 {
 typedef Monosat::SimpSolver *  SolverPtr;
@@ -67,7 +81,7 @@ typedef int64_t Weight;
   bool solve(SolverPtr S);
   bool solveAssumptions(SolverPtr S,int * assumptions, int n_assumptions);
   //Solve under assumptions, and also minimize a set of BVs (in order of precedence)
-  bool solveAssumptions_MinBVs(SolverPtr S,int * assumptions, int n_assumptions, int * minimize_bvs, int n_minimize_bvs);
+  //bool solveAssumptions_MinBVs(SolverPtr S,int * assumptions, int n_assumptions, int * minimize_bvs, int n_minimize_bvs);
 
   //Sets the (approximate) time limit in seconds before returning l_Undef from solveLimited; ignored by solve(). Set to <0 to disable time limit.
   void setTimeLimit(SolverPtr S,int seconds);
@@ -85,7 +99,7 @@ typedef int64_t Weight;
 
   //Solve under assumptions, and also minimize a set of BVs (in order of precedence)
   //Returns 0 for satisfiable, 1 for proved unsatisfiable, 2 for failed to find a solution (within any resource limits that have been set)
-  int solveAssumptionsLimited_MinBVs(SolverPtr S,int * assumptions, int n_assumptions, int * minimize_bvs, int n_minimize_bvs);
+  //int solveAssumptionsLimited_MinBVs(SolverPtr S,int * assumptions, int n_assumptions, int * minimize_bvs, int n_minimize_bvs);
 
   bool lastSolutionWasOptimal(SolverPtr S);
 
@@ -122,6 +136,17 @@ typedef int64_t Weight;
   bool addUnitClause(SolverPtr S,int lit);
   bool addBinaryClause(SolverPtr S,int lit1, int lit2);
   bool addTertiaryClause(SolverPtr S,int lit1, int lit2, int lit3);
+
+  //remove any optimization objectives from the solver
+  void clearOptimizationObjectives(SolverPtr S);
+
+  void maximizeBV(SolverPtr S,  BVTheoryPtr bv, int bvID);
+  void minimizeBV(SolverPtr S,  BVTheoryPtr bv, int bvID);
+  void maximizeLits(SolverPtr S, int * lits, int n_lits);
+  void minimizeLits(SolverPtr S, int * lits, int n_lits);
+  void maximizeWeightedLits(SolverPtr S, int * lits, int * weights, int n_lits);
+  void minimizeWeightedLits(SolverPtr S, int * lits, int * weights, int n_lits);
+
   //theory interface for bitvectors
   BVTheoryPtr initBVTheory(SolverPtr S);
   int newBitvector_const(SolverPtr S, BVTheoryPtr bv, int bvWidth, Weight constval);
@@ -162,6 +187,13 @@ typedef int64_t Weight;
   //for small numbers of variables, consider using a direct CNF encoding instead
   void at_most_one(SolverPtr S, int * vars, int n_vars);
 
+  void assertPB_lt(SolverPtr S, int rhs, int n_args, int * literals, int * coefficients);
+  void assertPB_leq(SolverPtr S, int rhs, int n_args, int * literals, int * coefficients);
+  void assertPB_eq(SolverPtr S, int rhs, int n_args, int * literals, int * coefficients);
+  void assertPB_geq(SolverPtr S, int rhs, int n_args, int * literals, int * coefficients);
+  void assertPB_gt(SolverPtr S, int rhs, int n_args, int * literals, int * coefficients);
+  //Convert any pb constraints in the solver into cnf (will be called automatically before solve())
+  void flushPB(SolverPtr S);
   //theory interface for graphs
 
   GraphTheorySolver_long newGraph(SolverPtr S);
@@ -195,6 +227,7 @@ typedef int64_t Weight;
   int newTransition(SolverPtr S,FSMTheorySolverPtr fsmTheory, int fsmID, int fromNode, int toNode,int inputLabel, int outputLabel);
   int newString(SolverPtr S,FSMTheorySolverPtr fsmTheory, int * str,int len);
   int fsmAcceptsString(SolverPtr S,FSMTheorySolverPtr fsmTheory, int fsmID, int startNode, int acceptNode,int stringID);
+  int fsmCompositionAccepts(Monosat::SimpSolver * S, Monosat::FSMTheorySolver *  fsmTheory,   int fsmGeneratorID,int fsmAcceptorID, int gen_startNode, int gen_acceptNode, int acceptor_startNode, int acceptor_acceptNode, int stringID);
 
   //model query
   //For a given literal (not variable!), returns 0 for true, 1 for false, 2 for unassigned.

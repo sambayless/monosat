@@ -35,9 +35,10 @@ def Solve(assumptions=None, preprocessing=True,bvs_to_minimize=None,time_limit_s
     elif bvs_to_minimize is None:
         bvs_to_minimize=[]
         
+    for bv in bvs_to_minimize:
+        bvID = bv.getID()
+        Monosat().minimizeBV(bvID)
 
-    if Monosat().getOutputFile():
-        Monosat().getOutputFile().flush()    
     
     r= Monosat().solveLimited([x.getLit() for x in assumptions],[bv.getID() for bv in bvs_to_minimize])     
     if r is None:
@@ -63,6 +64,40 @@ def getConflictClause():
             vars.append(Var(v))
         return vars
     
+#optimization support
+def clearOptimizationObjectives():
+    Monosat().clearOptimizationObjectives()
+
+def maximize(bitvector_or_literals,weights=None):
+    if isinstance(bitvector_or_literals,Var):
+        arg = [bitvector_or_literals]
+    if isinstance(weights,int):
+        weights = [weights]
+
+    if isinstance(bitvector_or_literals,int):
+        Monosat().maximizeBV(bitvector_or_literals)
+    else:
+        lit_ints = [l.getLit() for l in bitvector_or_literals]
+        if weights is None:
+            Monosat().maximizeLits(lit_ints)
+        else:
+            Monosat().maximizeWeightedLits(lit_ints,weights)
+
+def minimize(bitvector_or_literals,weights=None):
+    if isinstance(bitvector_or_literals,Var):
+        bitvector_or_literals = [bitvector_or_literals]
+    if isinstance(weights,int):
+        weights = [weights]
+
+    if isinstance(bitvector_or_literals,int):
+        Monosat().minimizeBV(bitvector_or_literals)
+    else:
+        lit_ints = [l.getLit() for l in bitvector_or_literals]
+        if weights is None:
+            Monosat().minimizeLits(lit_ints)
+        else:
+            Monosat().minimizeWeightedLits(lit_ints,weights)
+
 def WriteConstraints():
     
     _writePBCosntraints()

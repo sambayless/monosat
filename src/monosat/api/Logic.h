@@ -62,7 +62,7 @@ SimpSolver *newSolver() {
     Internal::api_owns_solver = true;
     Internal::api_owns_circuit = true;
     SimpSolver *S = new SimpSolver();
-    BVTheorySolver<long> *bv = new BVTheorySolver<long>(S);
+    BVTheorySolver<int64_t> *bv = new BVTheorySolver<int64_t>(S);
     Internal::circ_ptr = new Circuit<SimpSolver>(*S);
 }
 
