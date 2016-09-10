@@ -66,7 +66,42 @@ public:
     	for(int i = 0;i<buf.size();i++)
     		buf[i]=0;
     }
+    void ones(){
+    	for(int i = 0;i<buf.size();i++)
+    		buf[i]=std::numeric_limits<uint64_t>::max();
+    }
+    void invert(){
+    	for(int i = 0;i<buf.size();i++){
+    		buf[i]=~buf[i];
+    	}
+    }
     int  size  () const { return sz; }
+
+private:
+	static int popcount(uint64_t i){
+		//http://stackoverflow.com/a/2709523
+		//should replace this with a platform specific popcnt instruction
+		i = i - ((i >> 1) & 0x5555555555555555UL);
+		i = (i & 0x3333333333333333UL) + ((i >> 2) & 0x3333333333333333UL);
+		return (int)((((i + (i >> 4)) & 0xF0F0F0F0F0F0F0FUL) * 0x101010101010101UL) >> 56);
+	}
+public:
+
+	void swap(Bitset & b){
+		buf.swap(b.buf);
+		std::swap(sz,b.sz);
+	}
+
+	//population count (number of 1s in the bitset)
+	int count() const{
+		int n = 0;
+		for(int i = 0;i<buf.size();i++){
+			uint64_t b = buf[i];
+			n+=popcount(b);
+		}
+		return n;
+	}
+
     void copyFrom(const Bitset & from){
     	from.buf.copyTo(buf);
     	sz=from.size();
@@ -107,6 +142,35 @@ public:
     	buf[i]^= (1<<r);
 
     }
+	bool equals(Bitset & c){
+		if(c.size()!=size())
+			return false;
+		int max_i=size()/BITSET_ELEMENT_SIZE+1;
+		for(int i = 0;i<max_i;i++){
+			uint64_t b = c.buf[i];
+			if(b != buf[i]){
+				return false;
+			}
+		}
+		return true;
+	}
+	//true if all 1's of c are 1's of this bitset
+	bool contains(Bitset & c){
+		int max = size();
+		if(max>c.size()){
+			max= c.size();
+		}
+		int max_i=max/BITSET_ELEMENT_SIZE+1;
+		for(int i = 0;i<max_i;i++){
+
+			uint64_t b = c.buf[i];
+			if(b & ~buf[i]){
+				return false;
+			}
+		}
+		return true;
+	}
+
     void Not(Bitset & out){
         	out.clear();
         	out.growTo(size());

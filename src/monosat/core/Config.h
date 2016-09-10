@@ -86,7 +86,7 @@ extern StringOption opt_mst_alg;
 extern StringOption opt_components_alg;
 extern StringOption opt_cycle_alg;
 extern IntOption opt_adaptive_history_clear;
-extern BoolOption disable_history_clears;
+extern BoolOption opt_disable_history_clears;
 extern IntOption opt_dynamic_history_clear;
 extern BoolOption opt_lazy_backtrack;
 extern BoolOption opt_lazy_backtrack_decisions;

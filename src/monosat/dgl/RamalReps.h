@@ -547,6 +547,7 @@ public:
 		if (last_modification > 0 && g.modifications == last_modification)
 			return;
 		if (last_modification <= 0 || g.changed()) {
+			Weight oldInf = INF;
 			INF = 1;							//g.nodes()+1;
 			has_zero_weights=false;
 			for (Weight & w : weights) {
@@ -558,6 +559,13 @@ public:
 					has_zero_weights=true;
 				}
 				INF += w;
+			}
+			if(INF!=oldInf){
+				for(int i = 0;i<dist.size();i++){
+					if(dist[i]==oldInf){
+						dist[i]=INF;
+					}
+				}
 			}
 			dist.resize(g.nodes(), INF);
 			dist[getSource()] = 0;
@@ -808,7 +816,7 @@ public:
 	int last_history_clear;
 
 	int source;
-	int INF;
+	int INF=-1;
 
 	int maxDistance = -1;
 
@@ -1407,7 +1415,15 @@ public:
 		}
 		if (last_modification <= 0 || g.changed()) {//Note for the future: there is probably room to improve this further.
 			stats_full_updates++;
+			int oldInf = INF;
 			INF = g.nodes() + 1;
+			if(INF!=oldInf){
+				for(int i = 0;i<dist.size();i++){
+					if(dist[i]==oldInf){
+						dist[i]=INF;
+					}
+				}
+			}
 			dist.resize(g.nodes(), INF);
 			dist[getSource()] = 0;
 			delta.resize(g.nodes());
@@ -1425,7 +1441,7 @@ public:
 		}
 		
 		if (last_history_clear != g.historyclears) {
-			history_qhead = 0;
+			history_qhead = g.historySize();
 			last_history_clear = g.historyclears;
 			for (int edgeid = 0; edgeid < g.edges(); edgeid++) {
 				if (g.edgeEnabled(edgeid)) {

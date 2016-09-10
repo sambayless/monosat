@@ -659,9 +659,9 @@ public:
 			cutGraph.outfile = fopen(t.c_str(), "w");
 		}
 
-		g_under.disable_history_clears=disable_history_clears;
-		g_over.disable_history_clears=disable_history_clears;
-		cutGraph.disable_history_clears=disable_history_clears;
+		g_under.disable_history_clears=opt_disable_history_clears;
+		g_over.disable_history_clears=opt_disable_history_clears;
+		cutGraph.disable_history_clears=opt_disable_history_clears;
 
 		if (opt_adaptive_history_clear > 0) {
 			g_under.adaptive_history_clear = true;

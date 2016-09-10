@@ -3655,11 +3655,11 @@ private:
 public:
 
 	bool first_propagation=true;
-	long n_bits =0;
-	long n_consts = 0;
-	long n_starting_consts=0;
-	long n_additions=0;
-	long n_popcounts=0;
+	int64_t n_bits =0;
+	int64_t n_consts = 0;
+	int64_t n_starting_consts=0;
+	int64_t n_additions=0;
+	int64_t n_popcounts=0;
 	vec<lbool> assigns;
 	CRef comparisonprop_marker;
 	CRef comparisonbv_prop_marker;

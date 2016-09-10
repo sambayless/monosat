@@ -265,6 +265,27 @@ public:
 		return scc_set[sccID].element;
 	}
 	
+	//Returns the next node in the cyclic linked list representing this scc (in arbitrary order)
+	int nextNode(int node){
+		update();
+		return scc[node].next;
+	}
+	//Returns the next node in the cyclic linked list representing this scc (in arbitrary order). Update() must have been called before this method.
+	int nextNodeUnsafe(int node){
+		return scc[node].next;
+	}
+	//get all the nodes strongly connected to this node (including this one)
+	void getConnectedComponent(int forNode, std::vector<int> & store){
+		update();
+		store.clear();
+		store.push_back(forNode);
+		int n = nextNodeUnsafe(forNode);
+		while(n!=forNode){
+			store.push_back(n);
+			n = nextNodeUnsafe(n);
+		}
+	}
+
 	bool dbg_uptodate() {
 		return true;
 	}

@@ -25,6 +25,8 @@ public:
 	virtual ~DimacsMap() {
 	}
 	inline Var mapVar(Solver & S, Var var){
+		if(var==var_Undef)
+			return var;
 		if(!remap_vars){
 			while (var >= S.nVars())
 				S.newVar();
@@ -59,13 +61,15 @@ public:
 			return internalLit;
 		}
 		Var internalVar = var(internalLit);
+		if(internalVar==var_Undef)
+			return lit_Undef;
 		if (internalVar< var_map.size() && var_reverse_map[internalVar]!=var_Undef){
 			return mkLit(var_reverse_map[internalVar],sign(internalLit));
 		}
 		return lit_Undef;
 	}
 	inline	void addVarToMap(Var v, Var map_to){
-			if(!remap_vars){
+			if(!remap_vars || v==var_Undef){
 				return;
 			}
 			if(inVarMap(v)){

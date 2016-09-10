@@ -1,6 +1,7 @@
 #include "LinkCutCost.h"
 #include <climits>
 #include <gmpxx.h>
+#include <cstdint>
 template<>
 const int LinkCutCost<int>::INF=INT_MAX/2;
 template<>
