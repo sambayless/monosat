@@ -175,7 +175,7 @@ bool CycleDetector<Weight>::propagate(vec<Lit> & conflict) {
 	}*/
 
 	double startdreachtime = rtime(2);
-	if(directed_acyclic_lit != lit_Undef && outer->value(directed_acyclic_lit)==l_False && outer->level(var(directed_acyclic_lit))==0){
+	if(directed_acyclic_lit != lit_Undef && outer->value(directed_acyclic_lit)==l_True && outer->level(var(directed_acyclic_lit))==0){
 		underapprox_directed_cycle_detector->forceDAG();
 	}
 	

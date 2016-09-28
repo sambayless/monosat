@@ -44,7 +44,7 @@ public:
 	}
 
 	//hint to the algorithm that any discovered cycles will be removed.
-	void forceDAG(){
+	virtual void forceDAG(){
 
 	}
 	virtual bool hasDirectedCycle()=0;
