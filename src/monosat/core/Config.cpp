@@ -169,7 +169,7 @@ BoolOption Monosat::opt_conflict_min_cut_maxflow(_cat_graph, "conflict-min-cut-m
 		"Use min-cut (instead of arbitrary cut) for conflict resolution for maximum flow properties", false);
 
 IntOption Monosat::opt_history_clear(_cat_graph, "history-clear",
-		"Rate at which the history of dynamic graphs is cleared", 1000, IntRange(1, INT32_MAX));
+		"Rate at which the history of dynamic graphs is cleared", 100000, IntRange(1, INT32_MAX));
 IntOption Monosat::opt_adaptive_history_clear(_cat_graph, "adaptive-history-clear",
 		"If >0, ignore the history clear option, and instead set the history clear rate to be this value multiplied by the number of edges in the graph",
 		0, IntRange(0, INT32_MAX));

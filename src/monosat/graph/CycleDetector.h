@@ -96,6 +96,14 @@ public:
 	const char* getName() {
 		return "Cycle Detector";
 	}
+	void printStats() {
+		//printf("Reach detector\n");
+		Detector::printStats();
+		if (underapprox_directed_cycle_detector && overapprox_directed_cycle_detector) {
+		printf("Cycle history clears: %ld, %ld\n", underapprox_directed_cycle_detector->stats_history_clears,
+			   overapprox_directed_cycle_detector->stats_history_clears);
+		}
+	}
 };
 }
 ;

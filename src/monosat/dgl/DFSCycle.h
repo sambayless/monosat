@@ -74,7 +74,26 @@ public:
 		undirected_prev.resize(n);
 		INF = g.nodes() + 1;
 	}
-	
+	void checkDirectedCycle(){
+#ifndef NDEBUG
+		if(has_directed_cycle) {
+			std::vector<int> count;
+			count.clear();
+			count.resize(g.nodes(), 0);
+			for (int edgeID:directed_cycle) {
+				int f = g.getEdge(edgeID).from;
+				int t = g.getEdge(edgeID).to;
+
+				count[f] = count[f] - 1;
+				count[t] = count[t] + 1;
+			}
+
+			for (int i:count) {
+				assert(i == 0);
+			}
+		}
+#endif
+	}
 	void computeCycles(){
 
 		path.clear();
@@ -235,12 +254,12 @@ public:
 		}
 		has_undirected_cycle=false;
 		has_directed_cycle=false;
-
-
+		directed_cycle.clear();
+		undirected_cycle.clear();
 		stats_full_updates++;
 
 		computeCycles();
-
+		checkDirectedCycle();
 		last_modification = g.modifications;
 		last_deletion = g.deletions;
 		last_addition = g.additions;
@@ -252,6 +271,7 @@ public:
 	
 	bool hasDirectedCycle() {
 		update();
+		checkDirectedCycle();
 		return has_directed_cycle;
 	}
 	bool hasUndirectedCycle() {
@@ -265,6 +285,7 @@ public:
 	}
 	std::vector<int> & getDirectedCycle() {
 		update();
+		checkDirectedCycle();
 		return directed_cycle;
 	}
 };

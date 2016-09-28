@@ -439,7 +439,7 @@ public:
 				//assert(n_Free>0);
 				assert(overApprox >= total);
 				//if(n_Free==1){
-				if (overApprox - 2 < total) {
+				//if (overApprox - 2 < total) {
 					//then the largest unassigned weight is forced
 					//assert(smallestUnassignedWeight==largestUnassignedWeight);
 					/*assert(largestUnassigned!=lit_Undef);
@@ -462,7 +462,7 @@ public:
 						}
 					}
 					//}
-				}
+				//}
 			}
 			clauses[clauseID].inQueue = false;
 			inq.pop();

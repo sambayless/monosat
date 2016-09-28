@@ -57,7 +57,7 @@ public:
 	int alg_id=-1;
 
 	int INF;
-
+	std::vector<bool> edge_in_cycle;
 	std::vector<bool> in_cycle;
 	std::vector<int> cycle;
 	std::vector<int> store_cycle;
@@ -101,7 +101,7 @@ public:
 
 public:
 
-	void forceDAG(){
+	void forceDAG()override{
 		//If true, force the (analyzed) graph to remain a DAG.
 		//This is only valid if it is known that any discovered cycles will be eliminated.
 		//In practice, what will happen is that as soon as a cycle is created on edge addition, that edge addition will be cancelled (but the cycle will be stored in "cycle" for analysis)
@@ -116,6 +116,7 @@ public:
 
 	void setNodes(int n) {
 		in_cycle.resize(n);
+		edge_in_cycle.resize(g.edges());
 		visited.resize(n);
 		ord.resize(n);//how should this be initialised?
 		is_strict_scc.resize(n);
@@ -143,6 +144,7 @@ private:
 				int to = g.getEdge(edgeID).to;
 				assert(in_cycle[from]);
 				assert(in_cycle[to]);
+				assert(edge_in_cycle[edgeID]);
 			}
 
 #endif
@@ -154,6 +156,7 @@ private:
 					int to = g.getEdge(edgeID).to;
 					in_cycle[from]=false;
 					in_cycle[to]=false;
+					edge_in_cycle[edgeID]=false;
 				}
 				cycle.clear();
 				cycleComputed=false;
@@ -180,19 +183,26 @@ private:
 				int to = g.getEdge(edgeID).to;
 				in_cycle[from]=false;
 				in_cycle[to]=false;
+				edge_in_cycle[edgeID]=false;
 			}
 			cycle.clear();
 			//search for a cycle
-			cycle = dfs_cycle.getDirectedCycle();
-			for(int edgeID:cycle){
-				int from = g.getEdge(edgeID).from;
-				int to = g.getEdge(edgeID).to;
-				in_cycle[from]=true;
-				in_cycle[to]=true;
+			if(dfs_cycle.has_directed_cycle) {
+				cycle = dfs_cycle.getDirectedCycle();
+				for (int edgeID:cycle) {
+					int from = g.getEdge(edgeID).from;
+					int to = g.getEdge(edgeID).to;
+					in_cycle[from] = true;
+					in_cycle[to] = true;
+					edge_in_cycle[edgeID]=true;
+				}
 			}
 			has_cycle=cycle.size()>0;
 			num_strict_sccs=has_cycle?1:0;
 			cycleComputed=has_cycle;
+			if(has_cycle){
+				checkCycle();
+			}
 		}
 		if(has_cycle){
 			assert(cycle.size()>0);
@@ -206,20 +216,26 @@ private:
 			//don't need to do anything at all.
 			return;
 		}else{
+			checkCycle();
 			//int from = g.getEdge(edgeID).from;
 			int to = g.getEdge(edgeID).to;
 			if(!cycleComputed){
 				updateSCCs();
 			}
-			if(inSCC(to)){
+			if(edge_in_cycle[edgeID]){
 
 				//then we have just broken an existing cycle, and need to check if the graph is still cyclic.
 				invalidateSCC(to);
-				//what to do in this case? for now, first: check if tarjan's scc still has any sccs that are not broken.
-				if(num_strict_sccs>0){
-					//then we still have at least one scc, somewhere. mark the current cycle invalid in scc.
-				}else{
-					updateSCCs();
+				if(force_dag){
+					has_cycle=false;
+				}else {
+					//what to do in this case? for now, first: check if tarjan's scc still has any sccs that are not broken.
+					if (num_strict_sccs > 0) {
+						//then we still have at least one scc, somewhere. mark the current cycle invalid in scc.
+					} else {
+						updateSCCs();
+
+					}
 				}
 			}else{
 				//there is still at least one cycle in this graph.
@@ -241,8 +257,10 @@ private:
 			return;
 		if(!has_topo){
 			topologicalSort();//re-initialized topological sort
-			if(has_cycle)
+			if(has_cycle) {
+				checkCycle();
 				return;
+			}
 		}
 		int from = g.getEdge(edgeID).from;
 		int to = g.getEdge(edgeID).to;
@@ -250,8 +268,14 @@ private:
 		 upper_bound = ord[from];
 		if(lower_bound<upper_bound){
 			dfs_forward(to);
+			if(has_cycle){
+				//visited[to]=false;
+
+			}
+
+
 			if(!has_cycle){
-				dfs_backward(from);
+				dfs_backward(from,has_cycle ? to : -1,edgeID);
 				reorder();
 #ifndef NDEBUG
 		for(int i = 0;i<visited.size();i++){
@@ -259,6 +283,13 @@ private:
 		}
 #endif
 			}else{
+				cycle.push_back(edgeID);
+				in_cycle[from]=true;
+				in_cycle[to]=true;
+				edge_in_cycle[edgeID]=true;
+				assert(visited[to]);
+				checkCycle();
+
 				for(int i =0;i<l_xy_B.size();i++){
 					visited[l_xy_B[i]]=false;
 				}
@@ -272,14 +303,57 @@ private:
 #endif
 				l_xy_F.clear();
 				l_xy_B.clear();
-				if(force_dag){
+				/*if(force_dag){
 					has_cycle=false;//ignore the edge that caused a cycle to be introduced, because it is guaranteed that any edges creating cycles will be removed.
-				}else{
+				}else{*/
 					has_topo=false;//topological sort is no longer valid.
-				}
+				//}
 			}
 		}
 
+	}
+
+	void checkCycle(){
+#ifndef NDEBUG
+        std::vector<bool> seen;
+		seen.clear();
+		seen.resize(g.nodes(),false);
+		//first, check that the in_cycle vector is correct
+		for(int edgeID:cycle){
+			int f = g.getEdge(edgeID).from;
+			int t = g.getEdge(edgeID).to;
+			assert(in_cycle[f]);
+			assert(in_cycle[t]);
+			assert(edge_in_cycle[edgeID]);
+			seen[f]=true;
+			seen[t]=true;
+		}
+		for(int i = 0;i<in_cycle.size();i++){
+			if(in_cycle[i]){
+				assert(seen[i]);
+			}
+		}
+
+		std::vector<int> count;
+		count.clear();
+		count.resize(g.nodes(),0);
+		for(int edgeID:cycle){
+			int f = g.getEdge(edgeID).from;
+			int t = g.getEdge(edgeID).to;
+			assert(in_cycle[f]);
+			assert(in_cycle[t]);
+			count[f]= count[f]-1;
+			count[t]= count[t] +1;
+		}
+
+		for(int i:count){
+			if(i!=0){
+				exit(4);
+			}
+			assert(i==0);
+		}
+
+#endif
 	}
 
 	bool dfs_forward(int n){
@@ -300,7 +374,7 @@ private:
 					cycle.push_back(edgeID);
 					in_cycle[n]=true;
 					in_cycle[w]=true;
-
+					edge_in_cycle[edgeID]=true;
 					return false;
 				}
 				if(!visited[w] && ord[w]<upper_bound){
@@ -308,6 +382,7 @@ private:
 						cycle.push_back(edgeID);
 						in_cycle[n]=true;
 						in_cycle[w]=true;
+						edge_in_cycle[edgeID]=true;
 						return false;
 					}
 				}
@@ -317,16 +392,31 @@ private:
 	}
 
 
-	void dfs_backward(int n){
-		assert(!has_cycle);
+	void dfs_backward(int n, int cycleNode=-1, int skipEdge=-1){
+
 		visited[n]=true;
 		l_xy_B.push_back(n);
 		for (int i = 0;i<g.nIncoming(n);i++){
 			int edgeID = g.incoming(n,i).id;
-			if(edge_enabled[edgeID]){
+			if(edgeID != skipEdge && edge_enabled[edgeID]){
 				int w = g.incoming(n,i).node;
+				if (!visited[w] && w==cycleNode){
+					visited[w]=true;
+					l_xy_B.push_back(w);
+					if(has_cycle){
 
-				if(!visited[w] && lower_bound<ord[w]){
+						cycle.push_back(edgeID);
+						in_cycle[n]=true;
+						in_cycle[w]=true;
+						edge_in_cycle[edgeID]=true;
+					}
+				}else if(!visited[w] && lower_bound<ord[w]){
+					if(has_cycle){
+						cycle.push_back(edgeID);
+						edge_in_cycle[edgeID]=true;
+						in_cycle[n]=true;
+						in_cycle[w]=true;
+					}
 					dfs_backward(w);
 				}
 			}
@@ -432,12 +522,15 @@ public:
 			has_cycle=false;
 			has_topo=false;
 			cycle.clear();
+			history_qhead =  g.historySize();
+			stats_history_clears++;
 			for(int edgeID = 0;edgeID<g.edges();edgeID++){
 				edge_enabled[edgeID]=g.edgeEnabled(edgeID);
 			}
 			if(!topologicalSort()){
 				updateSCCs();
 			}
+
 		}
 
 		for (int i = history_qhead; i < g.historySize(); i++) {
@@ -467,9 +560,12 @@ public:
 	}
 
 private:
+	int cycle_node=-1;
 	bool sortVisit(int node){
+
 		if(tmp_mark[node]){
 			has_cycle=true;
+			cycle_node=node;
 			tmp_mark[node]=false;
 			//assert(cycleComputed==false);//cycle will be computed next time it is relevant.
 			cycleComputed=true;
@@ -487,9 +583,14 @@ private:
 					if(!sortVisit(g.incident(node,j).node)){
 						assert(has_cycle);
 						tmp_mark[node]=false;
-						cycle.push_back(edgeID);
-						in_cycle[node]=true;
-						in_cycle[g.incident(node,j).node]=true;
+						if(cycle_node>=0) {
+							if(node==cycle_node)
+								cycle_node=-1;
+							cycle.push_back(edgeID);
+							edge_in_cycle[edgeID] = true;
+							in_cycle[node] = true;
+							in_cycle[g.incident(node, j).node] = true;
+						}
 						return false;
 					}
 				}
@@ -514,6 +615,7 @@ private:
 			assert(!visited[i]);
 		}
 #endif
+		cycle_node =-1;
 		for(int n = 0;n<g.nodes();n++){
 			if(!visited[n]){
 				if(!sortVisit(n)){
@@ -526,6 +628,7 @@ private:
 				}
 			}
 		}
+		assert(cycle_node==-1);
 		for(int i = 0;i<visited.size();i++){
 			visited[i]=false;
 		}
@@ -542,7 +645,7 @@ public:
 	//get _any_ directed cycle from this graph (must be cyclic)
 	std::vector<int> &  getDirectedCycle() {
 		update();
-
+		checkCycle();
 
 
 		return cycle;

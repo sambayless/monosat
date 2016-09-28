@@ -130,6 +130,7 @@ void CycleDetector<Weight>::buildDirectedCycleReason(vec<Lit> & conflict) {
 	assert(underapprox_directed_cycle_detector->hasDirectedCycle());
 	
 	std::vector<int> & cycle = underapprox_directed_cycle_detector->getDirectedCycle();
+	assert(cycle.size()>1);
 	for (int i = 0; i < cycle.size(); i++) {
 		int edgeID = cycle[i];
 		Lit l = mkLit(outer->getEdgeVar(edgeID), false);
@@ -174,10 +175,11 @@ bool CycleDetector<Weight>::propagate(vec<Lit> & conflict) {
 	}*/
 
 	double startdreachtime = rtime(2);
-	if(directed_acyclic_lit != lit_Undef && outer->value(directed_acyclic_lit)==l_False && outer->level(var(directed_acyclic_lit))==0){
+	if(directed_acyclic_lit != lit_Undef && outer->value(directed_acyclic_lit)==l_True && outer->level(var(directed_acyclic_lit))==0){
+		//this doesn't work yet
 		underapprox_directed_cycle_detector->forceDAG();
 	}
-	
+
 
 	
 	if (directed_acyclic_lit != lit_Undef) {
