@@ -130,7 +130,7 @@ void CycleDetector<Weight>::buildDirectedCycleReason(vec<Lit> & conflict) {
 	assert(underapprox_directed_cycle_detector->hasDirectedCycle());
 	
 	std::vector<int> & cycle = underapprox_directed_cycle_detector->getDirectedCycle();
-	assert(cycle.size()>1);
+
 	for (int i = 0; i < cycle.size(); i++) {
 		int edgeID = cycle[i];
 		Lit l = mkLit(outer->getEdgeVar(edgeID), false);

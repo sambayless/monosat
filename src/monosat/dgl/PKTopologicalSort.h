@@ -306,8 +306,9 @@ private:
 				/*if(force_dag){
 					has_cycle=false;//ignore the edge that caused a cycle to be introduced, because it is guaranteed that any edges creating cycles will be removed.
 				}else{*/
+				if(!force_dag){
 					has_topo=false;//topological sort is no longer valid.
-				//}
+				}
 			}
 		}
 
