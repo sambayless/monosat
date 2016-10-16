@@ -293,10 +293,10 @@ class Monosat(metaclass=Singleton):
         self.monosat_c.reaches.argtypes=[c_solver_p,c_graph_p, c_int, c_int]
         self.monosat_c.reaches.restype=c_literal
 
-        self.monosat_c.shortestPathUnweighted_lt_const.argtypes=[c_solver_p,c_graph_p, c_int, c_int,c_int]
+        self.monosat_c.shortestPathUnweighted_lt_const.argtypes=[c_solver_p,c_graph_p, c_int, c_int,c_long]
         self.monosat_c.shortestPathUnweighted_lt_const.restype=c_literal
 
-        self.monosat_c.shortestPathUnweighted_leq_const.argtypes=[c_solver_p,c_graph_p, c_int, c_int,c_int]
+        self.monosat_c.shortestPathUnweighted_leq_const.argtypes=[c_solver_p,c_graph_p, c_int, c_int,c_long]
         self.monosat_c.shortestPathUnweighted_leq_const.restype=c_literal
 
 
