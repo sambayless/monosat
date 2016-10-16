@@ -76,7 +76,7 @@ class BVManager(metaclass=Manager):
         result = self.Bv(t.width())
         #introduce a fresh Var to avoid re-using the same var for multiple atoms
         v = Var()
-        Assert(v==i)        
+        AssertEq(v,i)
         self._monosat.bv_ite(v.getLit(), t.getID(),e.getID(), result.getID())           
         #self.ites.append((i,t,e,result))
         return result;     
@@ -213,7 +213,7 @@ class BitVector():
                 for i in range(width):
                     v= Var()
                     self._bv.append(v)   
-                    Assert(v==assigned_bits[i])               
+                    AssertEq(v,assigned_bits[i])
                 
             #arr = (c_int*width)()
             #for i,v in enumerate(self._bv):
@@ -231,7 +231,7 @@ class BitVector():
                 carry = false()
                 for i, (a,b,out) in enumerate(zip(args[0],args[1],self)):
                     r,carry2=Add(a,b,carry)
-                    Assert(out==r)
+                    AssertEq(out,r)
                     carry=carry2
                 Assert(Not(carry))#disallow overflow.
         elif op=="-":

@@ -259,7 +259,7 @@ class Graph():
         self.in_edges[v].append(e2)
         self.edgemap[v1.getLit()] =e1
         self.edgemap[v2.getLit()] =e2
-        Assert(v1==v2)
+        AssertEq(v1,v2)
         self.all_undirectededges.append(e1)
         return v1
     
@@ -371,14 +371,17 @@ class Graph():
         else:
             withinSteps=int(withinSteps)
         
-        if(withinSteps is not None and withinSteps>self.numNodes()):
-            withinSteps=self.numNodes();
-        
+        if(withinSteps is not None and withinSteps>=self.numNodes()):
+            withinSteps=None;
+
         #Check to see if we have already encoded this property
         if (start,to,withinSteps) in self.queryLookup:
             return self.queryLookup[(start,to,withinSteps)]
-        v = Var(self._monosat.reaches(self.graph,start,to))               
-        #v = Var("distance_leq(%d,%d,%d,%d)"%(self.id, start,to,withinSteps) if withinSteps is not None else "reaches(%d,%d,%d)"%(self.id, start,to))
+        if withinSteps is None:
+            v = Var(self._monosat.reaches(self.graph,start,to))
+        else:
+            v = Var(self._monosat.shortestPathUnweighted_leq_const(self.graph,start,to,withinSteps))
+            #v = Var("distance_leq(%d,%d,%d,%d)"%(self.id, start,to,withinSteps) if withinSteps is not None else "reaches(%d,%d,%d)"%(self.id, start,to))
         #self.queries.append((start,withinSteps,to,v))
         self.queryLookup[(start,to,withinSteps)]=v
         return v

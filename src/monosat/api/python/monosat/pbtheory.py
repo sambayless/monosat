@@ -260,14 +260,14 @@ class MonosatPB:
         for v in clause:
             c = Var()
             conditional_clause.append(c)
-            AssertImplies(And(Not(condition),condition_g),c==v)
+            AssertImplies(And(Not(condition),condition_g),Equal(c,v))
         self.AssertPB(conditional_clause,upperBound,'>',weights)
 
         conditional_clause=[]
         for v in clause:
             c = Var()
             conditional_clause.append(c)
-            AssertImplies(And(Not(condition),Not(condition_g)),c==v)
+            AssertImplies(And(Not(condition),Not(condition_g)),Equal(c,v))
         self.AssertPB(conditional_clause,lowerBound,'<',weights)
 
         return condition
@@ -278,19 +278,19 @@ class MonosatPB:
 
         if condition is None:
             condition = Var();
-        elif not condition.isInput:
-            v=Var()
-            Assert(v==condition)
-            condition=v
+        #elif not condition.isInput:
+        #    v=Var()
+        #    Assert(v==condition)
+        #    condition=v
 
         nclause = []
         for v in clause:
-            if(not  v.isInput()):
-                v2 = Var()
-                AssertEq(v2,v)
-                nclause.append(v2)
-            else:
-                nclause.append(v)
+            #if(not  v.isInput()):
+            #    v2 = Var()
+            #    AssertEq(v2,v)
+            #    nclause.append(v2)
+            #else:
+            nclause.append(v)
         if weights is None:
             weights=[]
         while(len(weights)<len(clause)):
@@ -317,7 +317,7 @@ class MonosatPB:
         for v in clause:
             c = Var()
             conditional_clause.append(c)
-            Assert(Implies(condition,c==v))
+            Assert(Implies(condition,Equal(c,v)))
         self.AssertPB(conditional_clause,val,constraint,weights)
         return condition
 
@@ -344,12 +344,12 @@ class MonosatPB:
         for v in clause:
             #For now, it is a limitation of the pb constraint solver that all variables it deals with must be input variables in the circuit.
             #So, we create them here if needed
-            if(not  v.isInput()):
-                v2 = Var()
-                AssertEq(v2,v)
-                nclause.append(v2)
-            else:
-                nclause.append(v)
+            #if(not  v.isInput()):
+            #    v2 = Var()
+            #    AssertEq(v2,v)
+            #    nclause.append(v2)
+            #else:
+            nclause.append(v)
 
         if (constraint=='>' or constraint==">=" or constraint=='=' or constraint== '=='):
             negWeightSum=0
@@ -405,7 +405,7 @@ class MonosatPB:
         for v in clause:
             c = Var()
             conditional_clause.append(c)
-            AssertImplies(condition,c==v)
+            AssertImplies(condition,Equal(c,v))
         self.AssertPB(conditional_clause,lowerBound,'>=',weights)
         self.AssertPB(conditional_clause,upperBound,'<=',weights)
         return condition
@@ -480,10 +480,10 @@ class MonosatTheoryPB:
     def twoSidedRangePB(self,clause,lowerBound,upperBound,weights=None,condition=None): 
         if condition is None:
             condition = Var();
-        elif not condition.isInput:
-            v=Var()
-            Assert(v==condition)
-            condition=v
+        #elif not condition.isInput:
+        #    v=Var()
+        #    Assert(v==condition)
+        #    condition=v
         
         if(lowerBound==upperBound):            
             return self.twoSided(clause,lowerBound,'=',weights,condition);
@@ -493,26 +493,26 @@ class MonosatTheoryPB:
         if condition is None:
             condition = And(c1,c2)
         else:
-            Assert(condition== And(c1,c2))      
+            AssertEq(condition,And(c1,c2))      
         
         return condition
 
     def twoSidedPB(self,clause,val,constraint,weights=None, condition=None):
         if condition is None:
             condition = Var();
-        elif not condition.isInput:
-            v=Var()
-            Assert(v==condition)
-            condition=v
+        #elif not condition.isInput:
+        #    v=Var()
+        #    Assert(v==condition)
+        #    condition=v
                   
         nclause = []
         for v in clause:
-            if(not  v.isInput()):
-                v2 = Var()
-                Assert(v2==v)
-                nclause.append(v2)
-            else:
-                nclause.append(v)
+            #if(not  v.isInput()):
+            #    v2 = Var()
+            #    Assert(Equal(v2,v))
+            #    nclause.append(v2)
+            #else:
+            nclause.append(v)
         self.constraints.append((nclause,val,constraint,list(weights) if weights is not None else [], condition, False));
         
         return condition       
@@ -521,19 +521,19 @@ class MonosatTheoryPB:
     def conditionalPB(self,clause,val,constraint,weights=None,condition=None):
         if condition is None:
             condition = Var();        
-        elif not condition.isInput:
-            v=Var()
-            Assert(v==condition)
-            condition=v
+        #elif not condition.isInput:
+        #    v=Var()
+        #    Assert(v==condition)
+        #    condition=v
                 
         nclause = []
         for v in clause:
-            if(not  v.isInput()):
-                v2 = Var()
-                Assert(v2==v)
-                nclause.append(v2)
-            else:
-                nclause.append(v)
+            #if(not  v.isInput()):
+            #    v2 = Var()
+            #    Assert(Equal(v2,v))
+            #    nclause.append(v2)
+            #else:
+            nclause.append(v)
         self.constraints.append((nclause,val,constraint,list(weights) if weights is not None else [], condition, True));      
         
         return condition
@@ -549,7 +549,7 @@ class MonosatTheoryPB:
         if condition is None:
             condition = And(c1,c2)
         else:
-            Assert(condition== And(c1,c2))    
+            Assert(Equal(condition,And(c1,c2)))
            
         return condition
 
@@ -581,7 +581,7 @@ class MonosatTheoryPB:
             assert(len(clause)>0)
             f.write("pb_lt " + str(len(clause)) + " "); 
             for v in clause:
-                assert(v.isInput())
+
                 f.write(str(v.getInputLiteral()) + " ")
             f.write(str(len(weights)) + " ")
             for w in weights:
@@ -595,7 +595,7 @@ class MonosatTheoryPB:
                     f.write("1 ")
                 else:
                     f.write("2 ")
-                assert(conditionVar.isInput())
+
                 f.write(str(conditionVar.getInputLiteral()))
             f.write("\n")
             pass
@@ -705,14 +705,14 @@ class MinisatPlus:
         for v in clause:
             c = Var()
             conditional_clause.append(c)
-            AssertImplies(And(Not(condition),condition_g),c==v)        
+            AssertImplies(And(Not(condition),condition_g),Equal(c,v))        
         self.AssertPB(conditional_clause,upperBound,'>',weights)            
         
         conditional_clause=[]
         for v in clause:
             c = Var()
             conditional_clause.append(c)
-            AssertImplies(And(Not(condition),Not(condition_g)),c==v)       
+            AssertImplies(And(Not(condition),Not(condition_g)),Equal(c,v))       
         self.AssertPB(conditional_clause,lowerBound,'<',weights) 
         
         return condition
@@ -723,19 +723,19 @@ class MinisatPlus:
         
         if condition is None:
             condition = Var();
-        elif not condition.isInput:
-            v=Var()
-            Assert(v==condition)
-            condition=v
+        #elif not condition.isInput:
+        #    v=Var()
+        #    Assert(v==condition)
+        #    condition=v
             
         nclause = []
         for v in clause:
-            if(not  v.isInput()):
-                v2 = Var()
-                AssertEq(v2,v)
-                nclause.append(v2)
-            else:
-                nclause.append(v)
+            #if(not  v.isInput()):
+            #    v2 = Var()
+            #    AssertEq(v2,v)
+            #    nclause.append(v2)
+            #else:
+            nclause.append(v)
         if weights is None:
             weights=[]
         while(len(weights)<len(clause)):
@@ -746,14 +746,14 @@ class MinisatPlus:
         for v in clause:
             c = Var()
             conditional_clause.append(c)
-            Assert(Implies(condition,c==v))
+            Assert(Implies(condition,Equal(c,v)))
         self.AssertPB(conditional_clause,val,constraint,weights)
         if(constraint != '='):
             conditional_clause=[]
             for v in clause:
                 c = Var()
                 conditional_clause.append(c)
-                Assert(Implies(Not(condition),c==v))        
+                Assert(Implies(Not(condition),Equal(c,v)))        
             self.AssertPB(conditional_clause,val,self._negate(constraint),weights)
             #This doesn't work. If constraint is (1 a 1 b <= 2), then the second side becomes
             #1 c 1 d > 2, which is not UNSAT.
@@ -764,14 +764,14 @@ class MinisatPlus:
             for v in clause:
                 c = Var()
                 conditional_clause.append(c)
-                Assert(Implies(And(Not(condition),condition_g),c==v))        
+                Assert(Implies(And(Not(condition),condition_g),Equal(c,v)))        
             self.AssertPB(conditional_clause,val,'>',weights)            
             
             conditional_clause=[]
             for v in clause:
                 c = Var()
                 conditional_clause.append(c)
-                Assert(Implies(And(Not(condition),Not(condition_g)),c==v))        
+                Assert(Implies(And(Not(condition),Not(condition_g)),Equal(c,v)))        
             self.AssertPB(conditional_clause,val,'<',weights)              
         """
         if(constraint != '='):
@@ -795,7 +795,7 @@ class MinisatPlus:
         for v in clause:
             c = Var()
             conditional_clause.append(c)
-            Assert(Implies(condition,c==v))
+            Assert(Implies(condition,Equal(c,v)))
         self.AssertPB(conditional_clause,val,constraint,weights)
         return condition
 
@@ -819,7 +819,7 @@ class MinisatPlus:
         for v in clause:
             c = Var()
             conditional_clause.append(c)
-            Assert(Implies(condition,c==v))
+            Assert(Implies(condition,Equal(c,v)))
         self.AssertPB(conditional_clause,val,constraint,weights)
         """
         if weights is None:
@@ -830,12 +830,12 @@ class MinisatPlus:
         for v in clause:
             #For now, it is a limitation of the pb constraint solver that all variables it deals with must be input variables in the circuit.
             #So, we create them here if needed
-            if(not  v.isInput()):
-                v2 = Var()
-                AssertEq(v2,v)
-                nclause.append(v2)
-            else:
-                nclause.append(v)
+            #if(not  v.isInput()):
+            #    v2 = Var()
+            #    AssertEq(v2,v)
+            #    nclause.append(v2)
+            #else:
+            nclause.append(v)
           
         if (constraint=='>' or constraint==">=" or constraint=='=' or constraint== '=='):    
             negWeightSum=0
@@ -891,7 +891,7 @@ class MinisatPlus:
         for v in clause:
             c = Var()
             conditional_clause.append(c)
-            AssertImplies(condition,c==v)
+            AssertImplies(condition,Equal(c,v))
         self.AssertPB(conditional_clause,lowerBound,'>=',weights)   
         self.AssertPB(conditional_clause,upperBound,'<=',weights) 
         return condition
@@ -1117,14 +1117,14 @@ class PBSugar:
         for v in clause:
             c = Var()
             conditional_clause.append(c)
-            Assert(Implies(And(Not(condition),condition_g),c==v))        
+            Assert(Implies(And(Not(condition),condition_g),Equal(c,v)))        
         self.AssertPB(conditional_clause,upperBound,'>',weights)            
         
         conditional_clause=[]
         for v in clause:
             c = Var()
             conditional_clause.append(c)
-            Assert(Implies(And(Not(condition),Not(condition_g)),c==v))        
+            Assert(Implies(And(Not(condition),Not(condition_g)),Equal(c,v)))        
         self.AssertPB(conditional_clause,lowerBound,'<',weights) 
         
         return condition
@@ -1135,14 +1135,14 @@ class PBSugar:
         for v in clause:
             c = Var()
             conditional_clause.append(c)
-            Assert(Implies(condition,c==v))
+            Assert(Implies(condition,Equal(c,v)))
         self.AssertPB(conditional_clause,val,constraint,weights)
         if(constraint != '='):
             conditional_clause=[]
             for v in clause:
                 c = Var()
                 conditional_clause.append(c)
-                Assert(Implies(Not(condition),c==v))        
+                Assert(Implies(Not(condition),Equal(c,v)))        
             self.AssertPB(conditional_clause,val,self._negate(constraint),weights)
         else:
             #Because opb doesn't support an inequality operator, we are instead going to make yet another choice, and then conditionally enforce that either > or < holds
@@ -1151,14 +1151,14 @@ class PBSugar:
             for v in clause:
                 c = Var()
                 conditional_clause.append(c)
-                Assert(Implies(And(Not(condition),condition_g),c==v))        
+                Assert(Implies(And(Not(condition),condition_g),Equal(c,v)))        
             self.AssertPB(conditional_clause,val,'>',weights)            
             
             conditional_clause=[]
             for v in clause:
                 c = Var()
                 conditional_clause.append(c)
-                Assert(Implies(And(Not(condition),Not(condition_g)),c==v))        
+                Assert(Implies(And(Not(condition),Not(condition_g)),Equal(c,v)))        
             self.AssertPB(conditional_clause,val,'<',weights)              
             
         return condition
@@ -1171,7 +1171,7 @@ class PBSugar:
         for v in clause:
             c = Var()
             conditional_clause.append(c)
-            Assert(Implies(condition,c==v))
+            Assert(Implies(condition,Equal(c,v)))
         self.AssertPB(conditional_clause,val,constraint,weights)
         return condition
 
@@ -1180,7 +1180,7 @@ class PBSugar:
             condition = Var();
         else:
             v = Var()
-            Assert(v==Not(condition))
+            AssertEq(v,Not(condition))
             condition=v
                    
         """
@@ -1188,7 +1188,7 @@ class PBSugar:
         for v in clause:
             c = Var()
             conditional_clause.append(c)
-            Assert(Implies(condition,c==v))
+            Assert(Implies(condition,Equal(c,v)))
         self.AssertPB(conditional_clause,val,constraint,weights)
         """
         if weights is None:
@@ -1199,12 +1199,12 @@ class PBSugar:
         for v in clause:
             #For now, it is a limitation of the pb constraint solver that all variables it deals with must be input variables in the circuit.
             #So, we create them here if needed
-            if(not  v.isInput()):
-                v2 = Var()
-                Assert(v2==v)
-                nclause.append(v2)
-            else:
-                nclause.append(v)
+            #if(not  v.isInput()):
+            #    v2 = Var()
+            #    Assert(Equal(v2,v))
+            #    nclause.append(v2)
+            #else:
+            nclause.append(v)
           
         if (constraint=='>' or constraint==">=" or constraint=='=' or constraint== '=='):    
             negWeightSum=0
@@ -1260,7 +1260,7 @@ class PBSugar:
         for v in clause:
             c = Var()
             conditional_clause.append(c)
-            Assert(Implies(condition,c==v))
+            Assert(Implies(condition,Equal(c,v)))
         self.AssertPB(conditional_clause,lowerBound,'>=',weights)   
         self.AssertPB(conditional_clause,upperBound,'<=',weights) 
         return condition

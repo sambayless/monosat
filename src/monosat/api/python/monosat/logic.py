@@ -526,8 +526,9 @@ def AssertClause(clause):
 
 def Assert(a):
     
-    if(a is False):
-        print("Warning: asserted false literal")
+    if(a is False or a is True):
+        raise Exception("Error: asserted python Boolean literal (not symbolic variable)")
+
     a=VAR(a)
     if(a.isConstFalse()):
         print("Warning: asserted constant false variable")
@@ -791,7 +792,7 @@ def Equal(num1,num2):
     if (isinstance(num1,(bool, int,  float, complex)) and isinstance(num2,(bool, int,  float, complex))):
         return num1==num2
     elif (isinstance(num1,Var) and isinstance(num2,Var)):
-        return num1==num2
+        return num1.Xnor(num2)
     elif (isinstance(num1, (bool, int,  float, complex))):
         return Equal(num2,num1)
     elif (isinstance(num2,(bool, int,  float, complex))):
