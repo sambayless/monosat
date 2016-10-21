@@ -30,7 +30,7 @@ On Ubuntu (14.04):
 $cmake .
 $make
 $cd src/monosat/api/python
-$sudo python3 setup.py install
+$sudo python3 setup.py install -f
 ```
 
 ###Usage
