@@ -1854,7 +1854,7 @@ lbool Solver::search(int nof_conflicts) {
 			//Note: decision level is now added before theories make their decisions, to allow them to decide multiple literals at once.
 			newDecisionLevel();
 
-			if (opt_decide_theories &&!!disable_theories && using_theory_decisions && next == lit_Undef && (opt_theory_conflict_max==0 || conflicts>=next_theory_decision) ) {
+			if (opt_decide_theories && !disable_theories && using_theory_decisions && next == lit_Undef && (opt_theory_conflict_max==0 || conflicts>=next_theory_decision) ) {
 
 				int next_var_priority=INT_MIN;
 
