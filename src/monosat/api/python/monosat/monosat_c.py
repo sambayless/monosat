@@ -142,11 +142,11 @@ class Monosat(metaclass=Singleton):
         self.monosat_c.solveLimited.restype=c_int       
 
         self.monosat_c.solveAssumptionsLimited.argtypes=[c_solver_p,c_literal_p,c_int]
-        self.monosat_c.solveAssumptionsLimited.restype=c_int      
+        self.monosat_c.solveAssumptionsLimited.restype=c_int
 
+        self.monosat_c.lastSolutionWasOptimal.argtypes=[c_solver_p]
+        self.monosat_c.lastSolutionWasOptimal.restype=c_bool
 
-        
-        
         self.monosat_c.getConflictClause.argtypes=[c_solver_p, c_int_p,c_int]
         self.monosat_c.getConflictClause.restype=c_int 
 
@@ -509,6 +509,8 @@ class Monosat(metaclass=Singleton):
         else:
             self.monosat_c.setPropagationLimit(self.solver._ptr,propagations)
 
+    def lastSolutionWasOptimal(self):
+        return self.monosat_c.lastSolutionWasOptimal(self.solver._ptr)
 
     def getConflictClause(self):
         conflict_size =  self.monosat_c.getConflictClause(self.solver._ptr,null_ptr,0)
