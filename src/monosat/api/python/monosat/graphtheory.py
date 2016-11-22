@@ -183,9 +183,14 @@ class Graph():
            if(w==t):
                return True;
            
-        return False; 
+        return False;
 
-        
+    def newEdgeSet(self,edges,enforceEdgeAssignments=True):
+        for v in edges:
+            assert(v.getLit() in self.edgemap)
+        edgelits = [v.getLit() for v in edges]
+        self._monosat.newEdgeSet(self.graph,edgelits,enforceEdgeAssignments)
+
     #add edge from v to w
     def addEdge(self,v,w, weight=1):
         while(v>=self.numNodes() or w>=self.numNodes()):

@@ -105,7 +105,8 @@ extern BoolOption opt_theory_priority_clear;
 extern BoolOption opt_check_solution;
 extern BoolOption opt_print_reach;
 extern BoolOption opt_print_graph;
-
+extern BoolOption opt_theory_propagate_assumptions;//not implemented
+extern IntOption opt_detect_satisfied_predicates;
 extern IntOption opt_learn_reaches;
 extern StringOption opt_priority;
 
@@ -147,6 +148,7 @@ extern BoolOption opt_compute_max_distance;
 extern BoolOption opt_detect_pure_theory_lits;
 extern BoolOption opt_detect_pure_lits;
 extern BoolOption opt_propagate_theories_during_simplification;
+extern BoolOption opt_propagate_theories_during_fast_simplification;
 extern BoolOption opt_shrink_theory_conflicts;
 extern BoolOption opt_early_theory_prop;
 extern IntOption opt_width;

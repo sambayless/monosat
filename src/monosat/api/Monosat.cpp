@@ -1369,6 +1369,47 @@ int acyclic_directed(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<int64_t>
 	return toInt(l);
 }
 
+
+void newEdgeSet(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<int64_t> *G,int * edges, int n_edges, bool enforceEdgeAssignment){
+	static vec<int> edge_set;
+	edge_set.clear();
+	write_out(S,"edge_set %d %d", G->getGraphID(), n_edges);
+	for (int i = 0;i<n_edges;i++){
+		Var outer=var(toLit(edges[i]));
+		write_out(S," %d",dimacs(mkLit(outer)));
+		if(outer>=S->nVars()){
+			api_errorf("Bad edge set variable %d",outer+1);
+		}
+		if(!S->hasTheory(outer)){
+			api_errorf("Bad edge set variable %d",outer+1);
+		}
+		if(S->getTheoryID(outer)!=G->getTheoryIndex()){
+			api_errorf("Wrong graph (%d) for variable %d",G->getTheoryIndex(),outer+1);
+		}
+		Var v = S->getTheoryVar(outer);
+		if(!G->isEdgeVar(v)){
+			api_errorf("Variable %d is not an edge variable",outer+1);
+		}
+		edge_set.push(G->getEdgeID(v));
+	}
+	write_out(S,"\n");
+
+	static vec<Lit> edge_lits;
+	edge_lits.clear();
+	for(int edgeID:edge_set){
+		edge_lits.push(mkLit(G->toSolver(G->getEdgeVar(edgeID))));
+	}
+	//enforce that _exactly_ one edge from this edge set is assigned in the SAT solver
+	if(enforceEdgeAssignment) {
+		S->addClause(edge_lits);
+		AMOTheory *amo = new AMOTheory(S);
+		for (Lit l:edge_lits) {
+			Var v = S->newVar();
+			G->makeEqualInSolver(mkLit(v), l);
+			amo->addVar(v);
+		}
+	}
+}
 //FSM Interface
 
 Monosat::FSMTheorySolver * initFSMTheory(Monosat::SimpSolver * S){

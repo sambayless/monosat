@@ -275,6 +275,8 @@ BoolOption Monosat::opt_optimize_mst(_cat_graph, "opt-mst",
 		"Find the solution that minimizes the spanning tree by making repeated sat checks.", false);
 BoolOption Monosat::opt_skip_deletions(_cat_graph, "skip-deletions", "", false);
 BoolOption Monosat::opt_skip_additions(_cat_graph, "skip-additions", "", false);
+IntOption Monosat::opt_detect_satisfied_predicates(_cat, "detect-sat-predicates", "Take extra effort to detect satisfied"
+        " theory atoms, so that they don't need to be checked subsequently. Check every Nth round (0 to never check, 1 to always check)", 0, IntRange(0,INT32_MAX));
 
 BoolOption Monosat::opt_allow_reach_decisions(_cat_graph, "allow-reach-decision", "", true);
 
@@ -291,6 +293,9 @@ BoolOption Monosat::opt_use_kt_for_conflicts(_cat_graph, "use-kt-for-conflicts",
 BoolOption Monosat::opt_kt_preserve_order(_cat_graph, "kt-preserve-order",
 		"Attempt to preserve the order of flow assigned by the kohli-torr maxflow algorithm", false);
 
+
+BoolOption Monosat::opt_theory_propagate_assumptions(_cat, "theory-prop-during-assumps",
+                                                     "Apply theory propagation well assigning assumptions (can be slow, if there are many assumptions)", false);
 
 BoolOption Monosat::opt_lazy_maxflow_decisions(_cat_graph, "lazy-maxflow-decisions", "", true);
 BoolOption Monosat::opt_maxflow_allow_cycles(_cat_graph, "allow-maxflow-cycles", "Allow (superfluous) cycles in the maxflow solution", false);
@@ -314,6 +319,14 @@ ConvexHullAlg Monosat::hullAlg = ConvexHullAlg::ALG_MONOTONE_HULL;
 BoolOption Monosat::opt_propagate_theories_during_simplification(_cat, "theory-prop-during-simp",
 		"Apply propagation to theory solvers during simplification. Can be very expensive (depending on the theory).",
 		true);
+
+
+
+BoolOption Monosat::opt_propagate_theories_during_fast_simplification(_cat, "theory-prop-during-fast-simp",
+																	  "Apply propagation to theory solvers during (fast) simplification. Can be very expensive (depending on the theory).",
+																	  true);
+
+
 BoolOption Monosat::opt_shrink_theory_conflicts(_cat, "shrink-theory-conflicts", "", false);
 
 BoolOption Monosat::opt_rnd_shuffle(_cat_graph, "rnd-shuffle",

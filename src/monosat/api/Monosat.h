@@ -216,6 +216,7 @@ typedef int64_t Weight;
   int minimumSpanningTree_lt(SolverPtr S,GraphTheorySolver_long G,int source, int sink, Weight weight);
   int acyclic_undirected(SolverPtr S,GraphTheorySolver_long G);
   int acyclic_directed(SolverPtr S,GraphTheorySolver_long G);
+  void newEdgeSet(SolverPtr S,GraphTheorySolver_long G,int * edges, int n_edges, bool enforceEdgeAssignment);
 
   //theory interface for finite state machines
   FSMTheorySolverPtr initFSMTheory(SolverPtr S);
