@@ -2021,7 +2021,12 @@ lbool Solver::solve_() {
 	if(pbsolver){
 		pbsolver->convert();
 	}
-
+#ifndef NDEBUG
+    if(!shown_warning){
+		shown_warning=true;
+		fprintf(stderr,"Warning: MonoSAT compiled without -DNDEBUG (will be very slow!).\n");
+	}
+#endif
 	solves++;
 
 	max_learnts = nClauses() * learntsize_factor;
