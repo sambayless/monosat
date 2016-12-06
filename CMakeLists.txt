@@ -343,6 +343,8 @@ install(DIRECTORY src/monosat DESTINATION include
         PATTERN examples EXCLUDE
         #exclude old build files, in case they are still in the source directory
         PATTERN Debug EXCLUDE
+        PATTERN Test EXCLUDE
+        PATTERN TestRelease EXCLUDE
         PATTERN DbgRelease EXCLUDE
         PATTERN Release EXCLUDE
         PATTERN Static EXCLUDE

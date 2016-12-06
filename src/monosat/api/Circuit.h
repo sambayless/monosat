@@ -328,9 +328,9 @@ public:
 		//all arguments are constant true
 		if(tmp.size()==0){
 			if(out!=lit_Undef){
-				Assert(out);
+				Assert(~out);
 			}
-			return getTrue();//or should this be false?
+			return getFalse();//or should this be true?
 		}else if (tmp.size()==1){
 			if(out!=lit_Undef){
 				AssertEqual(tmp[0],out);
