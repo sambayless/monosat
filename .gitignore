@@ -10,6 +10,7 @@ SharedLibrary/*
 *.so
 /CMakeFiles
 /api/python/build
+/src/monosat/api/python/build
 Release/*
 Release2/*
 Debug/*
