@@ -2219,7 +2219,12 @@ bool Solver::propagateAssignment(const vec<Lit> & assumps){
 }
 // NOTE: assumptions passed in member-variable 'assumptions'.
 lbool Solver::solve_() {
-
+#ifndef NDEBUG
+	if(!shown_warning){
+		shown_warning=true;
+		fprintf(stderr,"Warning: MonoSAT compiled without -DNDEBUG (will be very slow!).\n");
+	}
+#endif
 	CRC(random_seed);
 	clearInterrupt();
 	cancelUntil(0);

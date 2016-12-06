@@ -63,7 +63,7 @@ public:
 	//template<unsigned int D, class T> friend class GeometryTheorySolver;
 	friend class FSMTheorySolver;
 	friend class LSystemSolver;
-
+    bool shown_warning=false;
 
 #ifdef CRC_CHECK
     unsigned long crc_val = 2;
