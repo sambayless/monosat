@@ -1132,14 +1132,6 @@ public:
 			//An _undirected_ acyclic graph constraint
 			readAcyclic(in, S,false);
 			return true;
-		}else if (match(in, "monosat/pb_lt")) {
-			//this shouldn't be here...
-			if (!pbtheory) {
-				pbtheory = new PbTheory(&S);
-				S.addTheory(pbtheory);
-			}
-			readPB(in, lits, weights, S, pbtheory);
-			return true;
 		}
 		return false;
 	}
