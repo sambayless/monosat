@@ -788,7 +788,51 @@ def LessThan(num1, num2):
 def LessEq(num1, num2):        
     return _LessOrEqual(num1,num2)[1]
 
-def Equal(num1,num2):
+def Eq(*args):
+    return Equal(*args)
+
+
+def Equal(*args):
+    if len(args)==1 and isinstance(args, collections.Iterable):
+        args = args[0]
+
+    if(len(args)<2):
+        return true();
+    elif(len(args)==2):
+        return Equal2_(args[0],args[1])
+    from monosat.bvtheory import BitVector
+    all_vars=True
+    all_bv=True
+    assert(len(args)>=2)
+    for a in args:
+        if not isinstance(a,Var):
+            all_vars=False
+        if not isinstance(a,BitVector):
+            all_bv=False
+    assert(not ( all_bv and all_vars))
+
+    if all_vars:
+        allequal=true()
+        for i in range(len(args)-1):
+            ai = VAR(args[i])
+            bi = VAR(args[i+1])
+            allequal = allequal.And(ai.Xnor(bi))
+        return allequal
+    elif all_bv:
+        allequal=true()
+        for i in range(len(args)-1):
+            ai = (args[i])
+            bi = (args[i+1])
+            assert(isinstance(ai,BitVector))
+            assert(isinstance(bi,BitVector))
+            allequal = allequal.And(ai==bi)
+        return allequal
+    else:
+        assert(False)
+
+
+def Equal2_(num1,num2):
+
     if (isinstance(num1,(bool, int,  float, complex)) and isinstance(num2,(bool, int,  float, complex))):
         return num1==num2
     elif (isinstance(num1,Var) and isinstance(num2,Var)):
@@ -804,18 +848,18 @@ def Equal(num1,num2):
             else:
                 t.append(true())
             n+=1
-        
+
         num2 = t
-    
-    
-    
+
+
+
     a = list(num1)
     b = list(num2)
     while(len(a)<len(b)):
         a.append(false())
     while(len(b)<len(a)):
         b.append(false())
-    
+
     allequal=true()
     for i in range(len(a)):
         ai = VAR(a[i])

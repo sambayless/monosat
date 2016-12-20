@@ -16,7 +16,8 @@ endif()
 
 set(CMAKE_CONFIGURATION_TYPES "Release;Debug;MinSizeRel;RelWithDebInfo;Sanitize" CACHE STRING "" FORCE)
 
-message("* Adding build types...")
+MESSAGE( STATUS "CMAKE_BUILD_TYPE: " ${CMAKE_BUILD_TYPE} " (set with -DCMAKE_BUILD_TYPE=<Release/Debug>)" )
+
 SET(CMAKE_CXX_FLAGS_SANITIZE
         "${CMAKE_CXX_FLAGS_DEBUG} -fsanitize=address -fsanitize=undefined"
         CACHE STRING "Flags used by the C++ compiler during address sanetize  builds."
@@ -38,6 +39,7 @@ MARK_AS_ADVANCED(
         CMAKE_C_FLAGS_SANETIZE
         CMAKE_EXE_LINKER_FLAGS_SANETIZE
         CMAKE_SHARED_LINKER_FLAGS_SANETIZE )
+
 
 include_directories(src/)
 

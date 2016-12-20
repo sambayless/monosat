@@ -27,6 +27,7 @@
 #include "monosat/utils/ParseUtils.h"
 #include "monosat/core/SolverTypes.h"
 #include "monosat/graph/GraphTheory.h"
+#include "monosat/amo/AMOTheory.h"
 #include "monosat/bv/BVTheorySolver.h"
 #include "monosat/core/Config.h"
 #include "monosat/pb/PbTheory.h"
@@ -144,6 +145,12 @@ class GraphParser: public Parser<B, Solver> {
 	vec<MaxFlow<double>> maxflows_float;
 	vec<MaxFlow<mpq_class>> maxflows_rational;
 
+	struct ParseEdgeSet{
+		int graphID=-1;
+		vec<Var> edges;
+	};
+	vec<ParseEdgeSet> edge_sets;
+
 	void readDiGraph(B& in, GraphType graph_type, Solver& S) {
 		if (opt_ignore_theories) {
 			skipLine(in);
@@ -258,7 +265,26 @@ class GraphParser: public Parser<B, Solver> {
 
 		}
 	}
-	
+	void readEdgeSet(B& in, Solver& S) {
+		if (opt_ignore_theories) {
+			skipLine(in);
+			return;
+		}
+
+		++in;
+
+		int graphID = parseInt(in);
+		int n_edges = parseInt(in);
+
+		edge_sets.push();
+		edge_sets.last().graphID=graphID;
+		vec<Var> & edges = edge_sets.last().edges;
+		for(int i = 0;i<n_edges;i++){
+			int edgeVar = parseInt(in)- 1;
+			edges.push(edgeVar);
+		}
+
+	}
 	void readEdge(B& in, Solver& S) {
 		if (opt_ignore_theories) {
 			skipLine(in);
@@ -897,6 +923,106 @@ class GraphParser: public Parser<B, Solver> {
 
 	}
 
+	void readPB(B & in, vec<Lit> & lits, vec<int> & weights, Solver & S, PbTheory * pb) {
+		if (opt_ignore_theories) {
+			skipLine(in);
+			return;
+		}
+		//pb constraints are in this form:
+		//first a size integer, >= 1
+		//then, a list of literals
+		//then, either a 0, or another size integer followed by an optional same-length list of weights
+		//next, an operator: '<','<=','=','>','>=', '!=' (the last one is non-standard...)
+		//followed by a comparison integer
+		//next, EITHER a 0, or a 1, or a 2.
+		//If a 0, then this is an unconditionally true constraint.
+		//If a 1 or 2, then there must be one last literal.
+		//If 1, then this is a one sided constraint, which is enforced if the final literal is true, and otherwise has no effect.
+		//If 2, then this is a two sided constraint: if the final literal is false, then the condtion is enforced to be false.
+
+		//pb_lt <size> lit1 lit2 ... [0 | <size>weight1 weight2 ...] 'op' total 2 headLiteral
+
+		lits.clear();
+		weights.clear();
+		int size = parseInt(in);
+		if (size <= 0) {
+			parse_errorf("PARSE ERROR! Empty PB clause\n");
+		}
+
+		for (int i = 0; i < size; i++) {
+			int parsed_lit = parseInt(in);
+			if (parsed_lit == 0)
+				break;
+			int v = abs(parsed_lit) - 1;
+			v= mapVar(S,v);
+			lits.push((parsed_lit > 0) ? mkLit(v) : ~mkLit(v));
+		}
+
+		int wsize = parseInt(in);
+		if (wsize != 0 && wsize != size) {
+			parse_errorf("PARSE ERROR! Number of weights must either be the same as the size of the clause, or 0.\n");
+		}
+		for (int i = 0; i < wsize; i++) {
+			int parsed_weight = parseInt(in);
+			weights.push(parsed_weight);
+		}
+		if (wsize == 0) {
+			for (int i = 0; i < size; i++)
+				weights.push(1);
+		}
+		skipWhitespace(in);
+		PbTheory::PbType op = PbTheory::PbType::EQ;
+		//read the operator:
+		if (*in == '<') {
+			++in;
+			if (*in == '=') {
+				++in;
+				op = PbTheory::PbType::LE;
+			} else {
+				op = PbTheory::PbType::LT;
+			}
+		} else if (*in == '>') {
+			++in;
+			if (*in == '=') {
+				++in;
+				op = PbTheory::PbType::GE;
+			} else {
+				op = PbTheory::PbType::GT;
+			}
+		} else if (*in == '!') {
+			++in;
+			if (*in != '=') {
+				parse_errorf("PARSE ERROR! Unexpected char: %c\n", *in);
+			}
+			++in;
+			op = PbTheory::PbType::NE;
+		} else if (*in == '=') {
+			++in;
+			op = PbTheory::PbType::EQ;
+		}else{
+			parse_errorf("PARSE ERROR! Bad PB constraint\n");
+		}
+		int comparison = parseInt(in);
+		int type = parseInt(in);
+		Lit head = lit_Undef;
+		bool oneSided = false;
+		if (type == 0) {
+			//done
+
+		} else {
+			if (type == 1) {
+				oneSided = true;
+			}
+			int parsed_lit = parseInt(in);
+
+			int v = abs(parsed_lit) - 1;
+			v= mapVar(S,v);
+			head = (parsed_lit > 0) ? mkLit(v) : ~mkLit(v);
+		}
+		assert(lits.size() == weights.size());
+		pb->addConstraint(lits, weights, comparison, head, op,
+				oneSided ? PbTheory::ConstraintSide::Upper : PbTheory::ConstraintSide::Both);
+	}
 
 public:
 	GraphParser(bool precise, BVTheorySolver<int64_t>*& bvTheory) :Parser<B, Solver>("Graph"),
@@ -934,6 +1060,9 @@ public:
 			return true;
 		}else if (match(in, "edge_priority")) {
 			readEdgePriority(in);
+			return true;
+		}else if (match(in, "edge_set")) {
+			readEdgeSet(in,S);
 			return true;
 		}else if (match(in, "edge_bv")) {
 			count++;
@@ -1025,6 +1154,37 @@ public:
 			graphs[e.graphID]->newEdgeBV(e.from, e.to, e.edgeVar, mapBV(S,e.bvID));
 		}
 		bvedges.clear();
+
+		vec<Lit> edgeset;
+		for(int i = 0;i<edge_sets.size();i++){
+			int graphID = edge_sets[i].graphID;
+			edgeset.clear();
+			assert(graphID>-1);
+
+			for (Var edgeV: edge_sets[i].edges)
+				edgeset.push(mkLit(mapVar(S,edgeV)));
+
+
+
+
+			//enforce that _exactly_ one edge from this edge set is assigned in the SAT solver
+
+			S.addClause(edgeset);
+			AMOTheory *amo = new AMOTheory(&S);
+			for (Lit l: edgeset) {
+				Var v = S.newVar();
+				S.addClause(mkLit(v), ~l);//introduce a fresh lit, force it to be equal to the old one
+				S.addClause(~mkLit(v), l);
+				amo->addVar(v);
+			}
+
+
+		}
+		edge_sets.clear();
+
+
+
+
 
 		for (auto & e: distances_long){
 			graphs[e.graphID]->distance(e.from, e.to, e.var, e.weight,!e.strict);
