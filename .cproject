@@ -87,7 +87,7 @@
 						</toolChain>
 					</folderInfo>
 					<sourceEntries>
-						<entry excluding="CMakeFiles|geometry/bitmap|tests|fsm|pb|bv|graph/resources|cgal|strings|geometry/MonotoneDelaunay.cpp|dgl|smt|smtlib|polypartition|graph/kbtest.c|test/test_thorup.cpp|alg|asp|graph/TreeReachDetector.cpp|resources" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+						<entry excluding="src/monosat/geometry/MonotoneDelaunay.cpp|src/monosat/graph/resources|CMakeFiles|geometry/bitmap|tests|fsm|pb|bv|graph/resources|cgal|strings|geometry/MonotoneDelaunay.cpp|dgl|smt|smtlib|polypartition|graph/kbtest.c|test/test_thorup.cpp|alg|asp|graph/TreeReachDetector.cpp|resources" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="bv"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="dgl"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="fsm"/>
@@ -183,7 +183,7 @@
 						</toolChain>
 					</folderInfo>
 					<sourceEntries>
-						<entry excluding="CMakeFiles|geometry/bitmap|tests|fsm|pb|strings|bv|graph/resources|cgal|geometry/MonotoneDelaunay.cpp|dgl|smt|smtlib|graph/kbtest.c|polypartition|test/test_thorup.cpp|alg|asp|graph/TreeReachDetector.cpp|resources|geometry/cgal" flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name=""/>
+						<entry excluding="src/monosat/geometry/MonotoneDelaunay.cpp|src/monosat/graph/resources|CMakeFiles|geometry/bitmap|tests|fsm|pb|strings|bv|graph/resources|cgal|geometry/MonotoneDelaunay.cpp|dgl|smt|smtlib|graph/kbtest.c|polypartition|test/test_thorup.cpp|alg|asp|graph/TreeReachDetector.cpp|resources|geometry/cgal" flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name=""/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="bv"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="dgl"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="fsm"/>
@@ -273,7 +273,7 @@
 						</toolChain>
 					</folderInfo>
 					<sourceEntries>
-						<entry excluding="CMakeFiles|geometry/bitmap|tests|fsm|pb|strings|bv|graph/resources|cgal|geometry/MonotoneDelaunay.cpp|dgl|smt|smtlib|graph/kbtest.c|polypartition|test/test_thorup.cpp|alg|schedule|asp|graph/TreeReachDetector.cpp|resources|geometry/cgal" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+						<entry excluding="src/monosat/geometry/MonotoneDelaunay.cpp|src/monosat/graph/resources|CMakeFiles|geometry/bitmap|tests|fsm|pb|strings|bv|graph/resources|cgal|geometry/MonotoneDelaunay.cpp|dgl|smt|smtlib|graph/kbtest.c|polypartition|test/test_thorup.cpp|alg|schedule|asp|graph/TreeReachDetector.cpp|resources|geometry/cgal" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="bv"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="dgl"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="fsm"/>
@@ -363,7 +363,7 @@
 						</toolChain>
 					</folderInfo>
 					<sourceEntries>
-						<entry excluding="CMakeFiles|geometry/bitmap|tests|fsm|pb|strings|bv|graph/resources|cgal|geometry/MonotoneDelaunay.cpp|dgl|smt|smtlib|graph/kbtest.c|polypartition|test/test_thorup.cpp|alg|schedule|asp|graph/TreeReachDetector.cpp|resources|geometry/cgal" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+						<entry excluding="src/monosat/geometry/MonotoneDelaunay.cpp|src/monosat/graph/resources|CMakeFiles|geometry/bitmap|tests|fsm|pb|strings|bv|graph/resources|cgal|geometry/MonotoneDelaunay.cpp|dgl|smt|smtlib|graph/kbtest.c|polypartition|test/test_thorup.cpp|alg|schedule|asp|graph/TreeReachDetector.cpp|resources|geometry/cgal" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="bv"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="dgl"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="fsm"/>
@@ -452,7 +452,7 @@
 						</toolChain>
 					</folderInfo>
 					<sourceEntries>
-						<entry excluding="CMakeFiles|geometry/bitmap|tests|fsm|pb|strings|bv|graph/resources|cgal|geometry/MonotoneDelaunay.cpp|dgl|smt|smtlib|graph/kbtest.c|polypartition|test/test_thorup.cpp|alg|schedule|asp|graph/TreeReachDetector.cpp|resources|geometry/cgal" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+						<entry excluding="src/monosat/geometry/MonotoneDelaunay.cpp|src/monosat/graph/resources|CMakeFiles|geometry/bitmap|tests|fsm|pb|strings|bv|graph/resources|cgal|geometry/MonotoneDelaunay.cpp|dgl|smt|smtlib|graph/kbtest.c|polypartition|test/test_thorup.cpp|alg|schedule|asp|graph/TreeReachDetector.cpp|resources|geometry/cgal" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="bv"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="dgl"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="fsm"/>
@@ -544,7 +544,7 @@
 						</toolChain>
 					</folderInfo>
 					<sourceEntries>
-						<entry excluding="CMakeFiles|geometry/bitmap|tests|fsm|pb|strings|bv|graph/resources|cgal|geometry/MonotoneDelaunay.cpp|dgl|smt|smtlib|graph/kbtest.c|polypartition|test/test_thorup.cpp|alg|Main.cc|schedule|asp|graph/TreeReachDetector.cpp|resources|geometry/cgal" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+						<entry excluding="src/monosat/geometry/MonotoneDelaunay.cpp|src/monosat/graph/resources|CMakeFiles|geometry/bitmap|tests|fsm|pb|strings|bv|graph/resources|cgal|geometry/MonotoneDelaunay.cpp|dgl|smt|smtlib|graph/kbtest.c|polypartition|test/test_thorup.cpp|alg|Main.cc|schedule|asp|graph/TreeReachDetector.cpp|resources|geometry/cgal" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="bv"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="dgl"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="fsm"/>
@@ -636,7 +636,7 @@
 						</toolChain>
 					</folderInfo>
 					<sourceEntries>
-						<entry excluding="CMakeFiles|geometry/bitmap|tests|fsm|pb|strings|bv|graph/resources|cgal|geometry/MonotoneDelaunay.cpp|dgl|smt|smtlib|graph/kbtest.c|polypartition|test/test_thorup.cpp|alg|schedule|asp|graph/TreeReachDetector.cpp|resources|geometry/cgal" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+						<entry excluding="src/monosat/geometry/MonotoneDelaunay.cpp|src/monosat/graph/resources|CMakeFiles|geometry/bitmap|tests|fsm|pb|strings|bv|graph/resources|cgal|geometry/MonotoneDelaunay.cpp|dgl|smt|smtlib|graph/kbtest.c|polypartition|test/test_thorup.cpp|alg|schedule|asp|graph/TreeReachDetector.cpp|resources|geometry/cgal" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="bv"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="dgl"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="fsm"/>
@@ -735,7 +735,7 @@
 						</toolChain>
 					</folderInfo>
 					<sourceEntries>
-						<entry excluding="CMakeFiles|geometry/bitmap|tests|fsm|pb|strings|bv|graph/resources|cgal|geometry/MonotoneDelaunay.cpp|dgl|smt|smtlib|graph/kbtest.c|polypartition|test/test_thorup.cpp|alg|asp|graph/TreeReachDetector.cpp|resources|geometry/cgal" flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name=""/>
+						<entry excluding="src/monosat/geometry/MonotoneDelaunay.cpp|src/monosat/graph/resources|CMakeFiles|geometry/bitmap|tests|fsm|pb|strings|bv|graph/resources|cgal|geometry/MonotoneDelaunay.cpp|dgl|smt|smtlib|graph/kbtest.c|polypartition|test/test_thorup.cpp|alg|asp|graph/TreeReachDetector.cpp|resources|geometry/cgal" flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name=""/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="bv"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="dgl"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="fsm"/>
@@ -832,7 +832,7 @@
 						</toolChain>
 					</folderInfo>
 					<sourceEntries>
-						<entry excluding="CMakeFiles|geometry/bitmap|tests|fsm|pb|strings|bv|graph/resources|cgal|geometry/MonotoneDelaunay.cpp|dgl|smtlib|smt|graph/kbtest.c|polypartition|test/test_thorup.cpp|alg|Main.cc|asp|graph/TreeReachDetector.cpp|resources|geometry/cgal" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+						<entry excluding="src/monosat/geometry/MonotoneDelaunay.cpp|src/monosat/graph/resources|CMakeFiles|geometry/bitmap|tests|fsm|pb|strings|bv|graph/resources|cgal|geometry/MonotoneDelaunay.cpp|dgl|smtlib|smt|graph/kbtest.c|polypartition|test/test_thorup.cpp|alg|Main.cc|asp|graph/TreeReachDetector.cpp|resources|geometry/cgal" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="bv"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="dgl"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="fsm"/>
@@ -933,7 +933,7 @@
 						</toolChain>
 					</folderInfo>
 					<sourceEntries>
-						<entry excluding="CMakeFiles|geometry/bitmap|tests|fsm|pb|strings|bv|graph/resources|cgal|geometry/MonotoneDelaunay.cpp|dgl|smtlib|smt|graph/kbtest.c|polypartition|test/test_thorup.cpp|alg|Main.cc|asp|graph/TreeReachDetector.cpp|resources|geometry/cgal" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+						<entry excluding="src/monosat/geometry/MonotoneDelaunay.cpp|src/monosat/graph/resources|CMakeFiles|geometry/bitmap|tests|fsm|pb|strings|bv|graph/resources|cgal|geometry/MonotoneDelaunay.cpp|dgl|smtlib|smt|graph/kbtest.c|polypartition|test/test_thorup.cpp|alg|Main.cc|asp|graph/TreeReachDetector.cpp|resources|geometry/cgal" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="bv"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="dgl"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="fsm"/>
@@ -1029,7 +1029,7 @@
 						</toolChain>
 					</folderInfo>
 					<sourceEntries>
-						<entry excluding="CMakeFiles|geometry/bitmap|tests|fsm|pb|bv|graph/resources|cgal|strings|geometry/MonotoneDelaunay.cpp|dgl|smt|smtlib|polypartition|graph/kbtest.c|test/test_thorup.cpp|alg|asp|graph/TreeReachDetector.cpp|resources" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+						<entry excluding="src/monosat/geometry/MonotoneDelaunay.cpp|src/monosat/graph/resources|CMakeFiles|geometry/bitmap|tests|fsm|pb|bv|graph/resources|cgal|strings|geometry/MonotoneDelaunay.cpp|dgl|smt|smtlib|polypartition|graph/kbtest.c|test/test_thorup.cpp|alg|asp|graph/TreeReachDetector.cpp|resources" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="bv"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="dgl"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="fsm"/>
@@ -1126,7 +1126,7 @@
 						</toolChain>
 					</folderInfo>
 					<sourceEntries>
-						<entry excluding="CMakeFiles|geometry/bitmap|tests|fsm|pb|bv|graph/resources|cgal|strings|geometry/MonotoneDelaunay.cpp|dgl|smt|smtlib|polypartition|graph/kbtest.c|test/test_thorup.cpp|alg|asp|graph/TreeReachDetector.cpp|resources" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+						<entry excluding="src/monosat/geometry/MonotoneDelaunay.cpp|src/monosat/graph/resources|CMakeFiles|geometry/bitmap|tests|fsm|pb|bv|graph/resources|cgal|strings|geometry/MonotoneDelaunay.cpp|dgl|smt|smtlib|polypartition|graph/kbtest.c|test/test_thorup.cpp|alg|asp|graph/TreeReachDetector.cpp|resources" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="bv"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="dgl"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="fsm"/>
@@ -1221,7 +1221,7 @@
 						</toolChain>
 					</folderInfo>
 					<sourceEntries>
-						<entry excluding="CMakeFiles|geometry/bitmap|tests|fsm|pb|strings|bv|graph/resources|cgal|geometry/MonotoneDelaunay.cpp|dgl|smt|smtlib|graph/kbtest.c|polypartition|test/test_thorup.cpp|alg|asp|graph/TreeReachDetector.cpp|resources|geometry/cgal" flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name=""/>
+						<entry excluding="src/monosat/geometry/MonotoneDelaunay.cpp|src/monosat/graph/resources|CMakeFiles|geometry/bitmap|tests|fsm|pb|strings|bv|graph/resources|cgal|geometry/MonotoneDelaunay.cpp|dgl|smt|smtlib|graph/kbtest.c|polypartition|test/test_thorup.cpp|alg|asp|graph/TreeReachDetector.cpp|resources|geometry/cgal" flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name=""/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="bv"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="dgl"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="fsm"/>
@@ -1317,7 +1317,7 @@
 						</toolChain>
 					</folderInfo>
 					<sourceEntries>
-						<entry excluding="CMakeFiles|geometry/bitmap|Main.cc|tests|fsm|pb|strings|bv|graph/resources|cgal|geometry/MonotoneDelaunay.cpp|dgl|smt|smtlib|graph/kbtest.c|polypartition|test/test_thorup.cpp|alg|schedule|asp|graph/TreeReachDetector.cpp|resources|geometry/cgal" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+						<entry excluding="src/monosat/geometry/MonotoneDelaunay.cpp|src/monosat/graph/resources|CMakeFiles|geometry/bitmap|Main.cc|tests|fsm|pb|strings|bv|graph/resources|cgal|geometry/MonotoneDelaunay.cpp|dgl|smt|smtlib|graph/kbtest.c|polypartition|test/test_thorup.cpp|alg|schedule|asp|graph/TreeReachDetector.cpp|resources|geometry/cgal" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="bv"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="dgl"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="fsm"/>
@@ -1412,7 +1412,7 @@
 						</toolChain>
 					</folderInfo>
 					<sourceEntries>
-						<entry excluding="CMakeFiles|geometry/bitmap|Main.cc|tests|fsm|pb|strings|bv|graph/resources|cgal|geometry/MonotoneDelaunay.cpp|dgl|smt|smtlib|graph/kbtest.c|polypartition|test/test_thorup.cpp|alg|schedule|asp|graph/TreeReachDetector.cpp|resources|geometry/cgal" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+						<entry excluding="src/monosat/geometry/MonotoneDelaunay.cpp|src/monosat/graph/resources|CMakeFiles|geometry/bitmap|Main.cc|tests|fsm|pb|strings|bv|graph/resources|cgal|geometry/MonotoneDelaunay.cpp|dgl|smt|smtlib|graph/kbtest.c|polypartition|test/test_thorup.cpp|alg|schedule|asp|graph/TreeReachDetector.cpp|resources|geometry/cgal" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="bv"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="dgl"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="fsm"/>
@@ -1509,7 +1509,7 @@
 						</toolChain>
 					</folderInfo>
 					<sourceEntries>
-						<entry excluding="CMakeFiles|geometry/bitmap|Main.cc|tests|fsm|pb|strings|bv|graph/resources|cgal|geometry/MonotoneDelaunay.cpp|dgl|smt|smtlib|graph/kbtest.c|polypartition|test/test_thorup.cpp|alg|schedule|asp|graph/TreeReachDetector.cpp|resources|geometry/cgal" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+						<entry excluding="src/monosat/geometry/MonotoneDelaunay.cpp|src/monosat/graph/resources|CMakeFiles|geometry/bitmap|Main.cc|tests|fsm|pb|strings|bv|graph/resources|cgal|geometry/MonotoneDelaunay.cpp|dgl|smt|smtlib|graph/kbtest.c|polypartition|test/test_thorup.cpp|alg|schedule|asp|graph/TreeReachDetector.cpp|resources|geometry/cgal" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="bv"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="dgl"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="fsm"/>
@@ -1612,7 +1612,7 @@
 						</toolChain>
 					</folderInfo>
 					<sourceEntries>
-						<entry excluding="CMakeFiles|geometry/bitmap|tests|fsm|pb|strings|bv|graph/resources|cgal|geometry/MonotoneDelaunay.cpp|dgl|smt|smtlib|graph/kbtest.c|polypartition|test/test_thorup.cpp|alg|schedule|asp|graph/TreeReachDetector.cpp|resources|geometry/cgal" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+						<entry excluding="src/monosat/geometry/MonotoneDelaunay.cpp|src/monosat/graph/resources|CMakeFiles|geometry/bitmap|tests|fsm|pb|strings|bv|graph/resources|cgal|geometry/MonotoneDelaunay.cpp|dgl|smt|smtlib|graph/kbtest.c|polypartition|test/test_thorup.cpp|alg|schedule|asp|graph/TreeReachDetector.cpp|resources|geometry/cgal" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="bv"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="dgl"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="fsm"/>
@@ -1713,7 +1713,7 @@
 						</toolChain>
 					</folderInfo>
 					<sourceEntries>
-						<entry excluding="CMakeFiles|geometry/bitmap|tests|fsm|pb|bv|graph/resources|cgal|strings|geometry/MonotoneDelaunay.cpp|dgl|smt|smtlib|polypartition|graph/kbtest.c|test/test_thorup.cpp|alg|asp|graph/TreeReachDetector.cpp|resources" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+						<entry excluding="src/monosat/geometry/MonotoneDelaunay.cpp|src/monosat/graph/resources|CMakeFiles|geometry/bitmap|tests|fsm|pb|bv|graph/resources|cgal|strings|geometry/MonotoneDelaunay.cpp|dgl|smt|smtlib|polypartition|graph/kbtest.c|test/test_thorup.cpp|alg|asp|graph/TreeReachDetector.cpp|resources" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="bv"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="dgl"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="fsm"/>
@@ -1810,7 +1810,7 @@
 						</toolChain>
 					</folderInfo>
 					<sourceEntries>
-						<entry excluding="CMakeFiles|geometry/bitmap|Main.cc|tests|fsm|pb|strings|bv|graph/resources|cgal|geometry/MonotoneDelaunay.cpp|dgl|smt|smtlib|graph/kbtest.c|polypartition|test/test_thorup.cpp|alg|schedule|asp|graph/TreeReachDetector.cpp|resources|geometry/cgal" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+						<entry excluding="src/monosat/geometry/MonotoneDelaunay.cpp|src/monosat/graph/resources|CMakeFiles|geometry/bitmap|Main.cc|tests|fsm|pb|strings|bv|graph/resources|cgal|geometry/MonotoneDelaunay.cpp|dgl|smt|smtlib|graph/kbtest.c|polypartition|test/test_thorup.cpp|alg|schedule|asp|graph/TreeReachDetector.cpp|resources|geometry/cgal" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="bv"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="dgl"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="fsm"/>
@@ -1907,7 +1907,7 @@
 						</toolChain>
 					</folderInfo>
 					<sourceEntries>
-						<entry excluding="CMakeFiles|geometry/bitmap|tests|fsm|pb|bv|graph/resources|cgal|strings|geometry/MonotoneDelaunay.cpp|dgl|smt|smtlib|polypartition|graph/kbtest.c|test/test_thorup.cpp|alg|asp|graph/TreeReachDetector.cpp|resources" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+						<entry excluding="src/monosat/geometry/MonotoneDelaunay.cpp|src/monosat/graph/resources|CMakeFiles|geometry/bitmap|tests|fsm|pb|bv|graph/resources|cgal|strings|geometry/MonotoneDelaunay.cpp|dgl|smt|smtlib|polypartition|graph/kbtest.c|test/test_thorup.cpp|alg|asp|graph/TreeReachDetector.cpp|resources" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="bv"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="dgl"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="fsm"/>
@@ -2001,7 +2001,7 @@
 						</toolChain>
 					</folderInfo>
 					<sourceEntries>
-						<entry excluding="CMakeFiles|geometry/bitmap|Main.cc|tests|fsm|pb|strings|bv|graph/resources|cgal|geometry/MonotoneDelaunay.cpp|dgl|smt|smtlib|graph/kbtest.c|polypartition|test/test_thorup.cpp|alg|schedule|asp|graph/TreeReachDetector.cpp|resources|geometry/cgal" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+						<entry excluding="src/monosat/geometry/MonotoneDelaunay.cpp|src/monosat/graph/resources|CMakeFiles|geometry/bitmap|Main.cc|tests|fsm|pb|strings|bv|graph/resources|cgal|geometry/MonotoneDelaunay.cpp|dgl|smt|smtlib|graph/kbtest.c|polypartition|test/test_thorup.cpp|alg|schedule|asp|graph/TreeReachDetector.cpp|resources|geometry/cgal" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="bv"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="dgl"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="fsm"/>

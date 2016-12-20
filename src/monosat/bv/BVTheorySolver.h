@@ -7270,13 +7270,13 @@ private:
 	bool dbg_compares_sorted(int bvID) {
 
 #ifndef NDEBUG
-		/*  vec<int> &compare = compares[bvID];
+		vec<int> &compare = compares[bvID];
         for (int i = 1; i < compare.size(); i++) {
             int cID0 = compare[i - 1];
             int cID1 = compare[i];
             assert(cID0 != cID1);
             assert(((ComparisonOp &) getOperation(cID0)).w <= ((ComparisonOp &) getOperation(cID1)).w);
-        }*/
+        }
 #endif
 
 		return true;
@@ -7506,7 +7506,7 @@ public:
 		assert(insertPos >= 0);
 		assert(insertPos <= compare.size());
 		compare.push(comparisonID);
-		/*if (insertPos < compare.size() - 1) {
+		if (insertPos < compare.size() - 1) {
 
             int curVal = compare[insertPos];
             for (int i = insertPos + 1; i < compare.size(); i++) {
@@ -7515,7 +7515,7 @@ public:
                 curVal = newVal;
             }
             compare[insertPos] = comparisonID;
-        }*/
+        }
 #ifdef CRC_CHECK
 		for(int cID_sort:compare){
             S->crc(cID_sort,"cID_sort");

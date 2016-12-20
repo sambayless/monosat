@@ -8,17 +8,21 @@ RM := rm -rf
 
 # All of the sources participating in the build are defined here
 -include sources.mk
--include utils/subdir.mk
--include simp/subdir.mk
--include graph/subdir.mk
--include geometry/polypartition/subdir.mk
--include geometry/cevans/subdir.mk
--include geometry/subdir.mk
--include fsm/subdir.mk
--include dgl/alg/subdir.mk
--include dgl/subdir.mk
--include core/subdir.mk
--include api/subdir.mk
+-include src/monosat/utils/subdir.mk
+-include src/monosat/simp/subdir.mk
+-include src/monosat/pb/ADTs/subdir.mk
+-include src/monosat/pb/subdir.mk
+-include src/monosat/graph/subdir.mk
+-include src/monosat/geometry/polypartition/subdir.mk
+-include src/monosat/geometry/cevans/subdir.mk
+-include src/monosat/geometry/bitmap/subdir.mk
+-include src/monosat/geometry/subdir.mk
+-include src/monosat/fsm/subdir.mk
+-include src/monosat/dgl/alg/subdir.mk
+-include src/monosat/dgl/subdir.mk
+-include src/monosat/core/subdir.mk
+-include src/monosat/api/subdir.mk
+-include src/monosat/subdir.mk
 -include subdir.mk
 -include objects.mk
 

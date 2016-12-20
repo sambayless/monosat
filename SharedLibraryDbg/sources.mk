@@ -23,15 +23,19 @@ C_DEPS :=
 
 # Every subdirectory with source files must be described here
 SUBDIRS := \
-utils \
-simp \
-graph \
-geometry/polypartition \
-geometry/cevans \
-geometry \
-fsm \
-dgl/alg \
-dgl \
-core \
-api \
+src/monosat/utils \
+src/monosat/simp \
+src/monosat/pb \
+src/monosat/pb/ADTs \
+src/monosat/graph \
+src/monosat/geometry/polypartition \
+src/monosat/geometry/cevans \
+src/monosat/geometry/bitmap \
+src/monosat/geometry \
+src/monosat/fsm \
+src/monosat/dgl/alg \
+src/monosat/dgl \
+src/monosat/core \
+src/monosat/api \
+src/monosat \
 
