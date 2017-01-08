@@ -179,6 +179,8 @@ typedef int64_t Weight;
 
   void bv_addition( SolverPtr S, BVTheoryPtr bv, int bvID1, int bvID2, int resultID);
   void bv_subtraction( SolverPtr S, BVTheoryPtr bv, int bvID1, int bvID2, int resultID);
+  void bv_multiply(SolverPtr S, BVTheoryPtr bv, int bvID1, Weight constant, int resultID);
+  void bv_divide(SolverPtr S, BVTheoryPtr bv, int bvID1, Weight constant, int resultID);
   void bv_min(SolverPtr S, BVTheoryPtr bv,  int* args,int n_args,int resultID);
   void bv_max(SolverPtr S, BVTheoryPtr bv,  int* args,int n_args,int resultID);
   void bv_popcount(SolverPtr S, BVTheoryPtr bv,  int* args,int n_args, int resultID);

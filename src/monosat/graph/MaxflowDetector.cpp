@@ -782,6 +782,8 @@ void MaxflowDetector<Weight>::analyzeMaxFlowLEQ(Weight flow, vec<Lit> & conflict
 }
 template<typename Weight>
 void MaxflowDetector<Weight>::buildMaxFlowTooLowReason(Weight maxflow, vec<Lit> & conflict, bool force_maxflow) {
+	//Consider using the kernigan-lin partitioning heuristic to get a separating cut here, instead of maxflow?
+
 	static int it = 0;
 	++it;
 	if (it == 3) {
