@@ -1072,6 +1072,14 @@ void bv_subtraction( Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> *
 	write_out(S,"bv - %d %d %d\n",resultID,bvID1, bvID2);
 	bv->newSubtractionBV(resultID,bvID1,bvID2);
 }
+void bv_multiply( Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bv, int bvID1, Weight constant, int resultID){
+	write_out(S,"bv * %d %d %ld\n",resultID,bvID1, constant);
+	bv->newMultiplicationBV(resultID,bvID1,constant);
+}
+void bv_divide( Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bv, int bvID1, Weight constant, int resultID){
+	write_out(S,"bv / %d %d %ld\n",resultID,bvID1, constant);
+	bv->newDivisionBV(resultID,bvID1,constant);
+}
 
 void bv_ite( Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bv, int condition_lit,int bvThenID, int bvElseID, int bvResultID){
 	Lit l = toLit(condition_lit);

@@ -96,6 +96,29 @@ private:
 	};
 	vec<AddBV> addbvs;
 
+	struct SubtractionBV{
+		int resultID;
+		int aBV;
+		int bBV;
+
+	};
+	vec<SubtractionBV> subtractionbvs;
+
+	struct MultBV{
+		int resultID;
+		int aBV;
+		long constant;
+	};
+	vec<MultBV> multbvs;
+
+	struct DivBV{
+		int resultID;
+		int aBV;
+		long constant;
+	};
+
+	vec<DivBV> divbvs;
+
 	struct IteBV{
 		Lit condition;
 		int thenId;
@@ -231,7 +254,73 @@ private:
 		addconsts.last().aBV = (int) arg1;
 		addconsts.last().b = arg2;*/
 	}
+	void readSubtractionBV(B& in, Solver& S) {
 
+		skipWhitespace(in);
+		/*	if(! match(in,"bv")){
+                parse_errorf("Result of addition must be bitvector\n");
+            }*/
+		int resultID = parseInt(in);
+		skipWhitespace(in);
+		//bool arg1_is_bv=match(in,"bv");
+		int64_t arg1 = parseLong(in);
+		skipWhitespace(in);
+		//bool arg2_is_bv=match(in,"bv");
+		int64_t arg2 = parseLong(in);
+
+		//if(arg1_is_bv && arg2_is_bv){
+		if(arg2<arg1){
+
+			std::swap(arg1,arg2);
+		}
+
+		subtractionbvs.push();
+		subtractionbvs.last().resultID = resultID;
+		subtractionbvs.last().aBV =  (int) arg1;
+		subtractionbvs.last().bBV = (int) arg2;
+		return;
+
+	}
+	void readMultBV(B& in, Solver& S) {
+
+		skipWhitespace(in);
+
+		int resultID = parseInt(in);
+		skipWhitespace(in);
+
+		int64_t arg = parseLong(in);
+		skipWhitespace(in);
+
+		int64_t constant = parseLong(in);
+
+
+		multbvs.push();
+		multbvs.last().resultID = resultID;
+		multbvs.last().aBV =  (int) arg;
+		multbvs.last().constant = (int) constant;
+		return;
+
+	}
+	void readDivBV(B& in, Solver& S) {
+
+		skipWhitespace(in);
+
+		int resultID = parseInt(in);
+		skipWhitespace(in);
+
+		int64_t arg = parseLong(in);
+		skipWhitespace(in);
+
+		int64_t constant = parseLong(in);
+
+
+		divbvs.push();
+		divbvs.last().resultID = resultID;
+		divbvs.last().aBV =  (int) arg;
+		divbvs.last().constant = (int) constant;
+		return;
+
+	}
 	void readSymbol(B& in, Solver& S){
 		//this is a variable symbol map
 		skipWhitespace(in);
@@ -409,6 +498,18 @@ public:
 
 				readAddBV(in, S);
 				return true;
+			}else if (match(in, "-")) {
+
+				readSubtractionBV(in, S);
+				return true;
+			}else if (match(in, "*")) {
+
+				readMultBV(in, S);
+				return true;
+			}else if (match(in, "/")) {
+
+				readDivBV(in, S);
+				return true;
 			}else if (match(in, "<=")) {
 
 				readCompareBV(in, S,Comparison::leq);
@@ -453,7 +554,8 @@ public:
 
 	void implementConstraints(Solver & S) {
 		theory = (BVTheorySolver<int64_t>*) S.bvtheory;
-		if(bvs.size() || theory){
+		if(bvs.size() || multbvs.size() || divbvs.size()  || addbvs.size()  || subtractionbvs.size()  || comparebvs.size() || compares.size() || itebvs.size() || minmaxs.size() || popCounts.size()  || theory){
+
 
 			if(!theory){
 				theory = new BVTheorySolver<int64_t>(&S);
@@ -520,6 +622,56 @@ public:
 			}
 			addbvs.clear();
 
+
+			for(auto & c:subtractionbvs){
+				c.aBV = mapBV(S,c.aBV);
+				c.bBV = mapBV(S,c.bBV);
+				c.resultID = mapBV(S,c.resultID);
+
+				if(!theory->hasBV(c.aBV)){
+					parse_errorf("Undefined bitvector ID %d",c.aBV);
+				}
+				if(!theory->hasBV(c.bBV)){
+					parse_errorf("Undefined bitvector ID %d",c.bBV);
+				}
+				if(!theory->hasBV(c.resultID)){
+					parse_errorf("Undefined bitvector ID %d",c.resultID);
+				}
+				theory->newSubtractionBV(c.resultID,c.aBV,c.bBV);
+			}
+			subtractionbvs.clear();
+
+			for(auto & c:multbvs){
+				c.aBV = mapBV(S,c.aBV);
+
+				c.resultID = mapBV(S,c.resultID);
+
+				if(!theory->hasBV(c.aBV)){
+					parse_errorf("Undefined bitvector ID %d",c.aBV);
+				}
+
+				if(!theory->hasBV(c.resultID)){
+					parse_errorf("Undefined bitvector ID %d",c.resultID);
+				}
+				theory->newMultiplicationBV(c.resultID,c.aBV,c.constant);
+			}
+			multbvs.clear();
+
+			for(auto & c:divbvs){
+				c.aBV = mapBV(S,c.aBV);
+
+				c.resultID = mapBV(S,c.resultID);
+
+				if(!theory->hasBV(c.aBV)){
+					parse_errorf("Undefined bitvector ID %d",c.aBV);
+				}
+
+				if(!theory->hasBV(c.resultID)){
+					parse_errorf("Undefined bitvector ID %d",c.resultID);
+				}
+				theory->newDivisionBV(c.resultID,c.aBV,c.constant);
+			}
+			divbvs.clear();
 			for (auto & c:itebvs){
 				c.thenId = mapBV(S,c.thenId);
 				c.elseId = mapBV(S,c.elseId);
@@ -576,7 +728,7 @@ public:
 			}
 			symbols.clear();
 
-		}else if (addbvs.size() || comparebvs.size() || compares.size() || addbvs.size() || itebvs.size() || minmaxs.size() || popCounts.size() ){
+		}else if (multbvs.size() || divbvs.size()|| subtractionbvs.size() ||  addbvs.size() || comparebvs.size() || compares.size() || addbvs.size() || itebvs.size() || minmaxs.size() || popCounts.size() ){
 
 			parse_errorf("Undefined bitvector\n");
 

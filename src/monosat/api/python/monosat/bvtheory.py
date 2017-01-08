@@ -238,6 +238,10 @@ class BitVector():
             _checkBVs((self,args[0],args[1]))
             #mgr._monosat.bv_addition(self.getID(), args[1].getID(), args[0].getID())
             mgr._monosat.bv_subtraction(args[0].getID(), args[1].getID(), self.getID())
+        elif op=="*":
+            mgr._monosat.bv_multiplication(args[0].getID(), int(args[1]), self.getID())
+        elif op=="/":
+            mgr._monosat.bv_division(args[0].getID(), int(args[1]), self.getID())
         elif op=="~":
             _checkBVs((self,args[0]))
             mgr._monosat.bv_not(args[0].getID(), self.getID())
