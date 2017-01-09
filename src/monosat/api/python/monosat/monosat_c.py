@@ -270,6 +270,8 @@ class Monosat(metaclass=Singleton):
 
         self.monosat_c.bv_concat.argtypes=[c_solver_p,c_bv_p,c_bvID,c_bvID,c_bvID]
         self.monosat_c.bv_popcount.argtypes=[c_solver_p,c_bv_p,c_literal_p,c_int ,c_bvID]
+        self.monosat_c.bv_unary.argtypes=[c_solver_p,c_bv_p,c_literal_p,c_int ,c_bvID]
+
 
         self.monosat_c.bv_bitblast.argtypes=[c_solver_p,c_bv_p,c_bvID]
 
@@ -1002,6 +1004,29 @@ class Monosat(metaclass=Singleton):
         self.monosat_c.bv_popcount(self.solver._ptr, self.solver.bvtheory,lp,len(newargs),c_bvID(resultID))
         if self.solver.output:
             self._echoOutput("bv popcount %d %d %s\n"%(resultID, len(newargs)," ".join((str(dimacs(l)) for l in newargs))))
+
+    def bv_unary(self,args,resultID):
+        self.backtrack()
+        newargs=[]
+        for l in args:
+            if self.isPositive(l):
+                #newargs.append(l)
+                l2 = self.newLit()
+                self.addBinaryClause(self.Not(l), l2)
+                self.addBinaryClause(self.Not(l2), l)
+                newargs.append(l2)
+            else:
+                #Create a new, positive literal and assert that it is equal to the old, negative one.
+                l2 = self.newLit()
+                self.addBinaryClause(self.Not(l), l2)
+                self.addBinaryClause(self.Not(l2), l)
+                newargs.append(l2)
+
+        lp = self.getIntArray(newargs)
+        self.monosat_c.bv_unary(self.solver._ptr, self.solver.bvtheory,lp,len(newargs),c_bvID(resultID))
+        if self.solver.output:
+            self._echoOutput("bv unary %d %d %s\n"%(resultID, len(newargs)," ".join((str(dimacs(l)) for l in newargs))))
+
 
 
     #Monosat fsm interface
