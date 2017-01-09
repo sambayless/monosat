@@ -351,8 +351,22 @@ class BitVector():
             other = BitVector(self.mgr,self.width(),other)
         return BitVector(self.mgr,self.width(),'-',(self,other))
     
-    __rsub__ = __sub__    
-    
+    __rsub__ = __sub__
+
+    def __mult__(self,other):
+        if isinstance(other, BitVector):
+            raise Exception("Bitvector theory only supports multiplication by constant integers (not other bitvectors)")
+        return BitVector(self.mgr,self.width(),'*',(self,other))
+
+    __rmult__ = __mult__
+
+    def __div__(self,other):
+        if isinstance(other, BitVector):
+            raise Exception("Bitvector theory only supports division by constant integers (not other bitvectors)")
+        return BitVector(self.mgr,self.width(),'/',(self,other))
+
+    __rdiv__ = __div__
+
     def lt(self,compareTo):
         if  isinstance(compareTo, BitVector):
             return Var(self.mgr._monosat.newBVComparison_bv_lt(self.getID(),compareTo.getID()))
