@@ -18,8 +18,10 @@ if platform.system() != "Windows":
 
     if os.path.exists(orig_lib):                     
         if not os.path.exists(copy_lib):
+            print("Copying %s to monosat/libmonosat.so"%(copy_lib))
             shutil.copy2(orig_lib, "monosat")
         if  os.path.getmtime(orig_lib) > os.path.getmtime(copy_lib):
+            print("Copying %s to monosat/libmonosat.so"%(orig_lib))
             shutil.copy2(orig_lib, "monosat")
 else:
     copy_lib = "monosat/libmonosat.dll"
@@ -28,8 +30,10 @@ else:
         orig_lib = "../../../../Win64SharedLibrary/libmonosat.dll"
     if os.path.exists(orig_lib):
         if not os.path.exists(copy_lib):
+            print("Copying %s to monosat/libmonosat.so"%(copy_lib))
             shutil.copy2(orig_lib, "monosat")
         if  os.path.getmtime(orig_lib) > os.path.getmtime(copy_lib):
+            print("Copying %s to monosat/libmonosat.so"%(orig_lib))
             shutil.copy2(orig_lib, "monosat")
 
 if not os.path.exists(copy_lib):
