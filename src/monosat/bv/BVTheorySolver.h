@@ -5255,6 +5255,8 @@ public:
 	};
 
 	bool decidableBV(Comparison op, int bvID, Weight to){
+		if(under_approx[bvID] ==over_approx[bvID])
+			return false;
 		switch(op){
 			case Comparison::gt:
 				return  !(under_approx[bvID]>to);
@@ -5269,6 +5271,8 @@ public:
 	}
 
 	Lit decideBV(Comparison op, int bvID, Weight to){
+		if(under_approx[bvID] ==over_approx[bvID])
+			return lit_Undef;
 		switch(op){
 			case Comparison::gt:
 				if (under_approx[bvID]>to)
@@ -5296,7 +5300,7 @@ public:
 		while (S->decisionLevel() > trail_lim.size()) {
 			newDecisionLevel();
 		}
-
+		assert(checkApproxUpToDate(bvID));
 		if (opt_decide_bv_intrinsic){
 			Weight under_old = under_approx[bvID];
 			Weight over_old = over_approx[bvID];

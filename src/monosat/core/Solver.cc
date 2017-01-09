@@ -1834,6 +1834,7 @@ lbool Solver::search(int nof_conflicts) {
 				reduceDB();
 			last_decision_was_theory=false;
 			Lit next = lit_Undef;
+			bool assumps_processed=false;
 			while (decisionLevel() < assumptions.size()) {
 				// Perform user provided assumption:
 				Lit p = assumptions[decisionLevel()];
@@ -1842,6 +1843,7 @@ lbool Solver::search(int nof_conflicts) {
 				if (value(p) == l_True) {
 					// Dummy decision level:
 					newDecisionLevel();
+					assumps_processed=true;
 				} else if (value(p) == l_False) {
 					analyzeFinal(~p, conflict);
 					return l_False;
@@ -1851,6 +1853,11 @@ lbool Solver::search(int nof_conflicts) {
 				}
 			}
 
+			if(next==lit_Undef && assumps_processed){
+				//allow theory propagation a chance to be applied to the assumptions, in the case that the last assumption
+				//was a dummy assumption, and opt_theory_propagate_assumptions is false
+				continue;
+			}
 			//Note: decision level is now added before theories make their decisions, to allow them to decide multiple literals at once.
 			newDecisionLevel();
 
