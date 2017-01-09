@@ -5723,6 +5723,8 @@ public:
 	};
 
 	bool decidableBV(Comparison op, int bvID, Weight to) {
+		if(under_approx[bvID] ==over_approx[bvID])
+			return false;
 		switch (op) {
 			case Comparison::gt:
 				return !(under_approx[bvID] > to);
@@ -5737,6 +5739,8 @@ public:
 	}
 
 	Lit decideBV(Comparison op, int bvID, Weight to) {
+		if(under_approx[bvID] ==over_approx[bvID])
+			return lit_Undef;
 		switch (op) {
 			case Comparison::gt:
 				if (under_approx[bvID] > to)
@@ -5764,7 +5768,7 @@ public:
 		while (S->decisionLevel() > decisionLevel()) {
 			newDecisionLevel();
 		}
-
+		assert(checkApproxUpToDate(bvID));
 		if (opt_decide_bv_intrinsic) {
 			Weight under_old = under_approx[bvID];
 			Weight over_old = over_approx[bvID];
@@ -5841,6 +5845,7 @@ public:
 					Lit l = S->theoryDecisionLit(
 							getTheoryIndex());//for now, using lit_Error to signify a decision with no associated literal... is there a better option for this?
 					//printf("theory decision %d at level %d\n", dimacs(l),decisionLevel());
+					assert(l==lit_Undef || S->value(l)==l_Undef);
 					return l;
 				}
 			} else {
@@ -5868,6 +5873,7 @@ public:
 						positive = false;
 					}
 					l = positive ? b : ~b;
+					assert(l==lit_Undef || value(l)==l_Undef);
 					return toSolver(l);
 				} else if (S->value(sb) == l_True) {
 					Weight bit = 1L << i;

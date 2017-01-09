@@ -1905,6 +1905,7 @@ lbool Solver::search(int nof_conflicts) {
 			int a = 1;
 		}
 		bool all_assumptions_assigned = decisionLevel() >= assumptions.size();
+
 		bool propagate_theories = (!disable_theories) && (opt_theory_propagate_assumptions  || decisionLevel() ==0 ||   all_assumptions_assigned);
 		if(!propagate_theories){
 			stats_skipped_theory_prop_rounds++;
@@ -2030,6 +2031,7 @@ lbool Solver::search(int nof_conflicts) {
 				// Reduce the set of learnt clauses:
 				reduceDB();
 			last_decision_was_theory=false;
+			bool assumps_processed=false;
 			Lit next = lit_Undef;
 			while (decisionLevel() < assumptions.size()) {
 				// Perform user provided assumption:
@@ -2039,6 +2041,7 @@ lbool Solver::search(int nof_conflicts) {
 				if (value(p) == l_True) {
 					// Dummy decision level:
 					newDecisionLevel();
+					assumps_processed=true;
 				} else if (value(p) == l_False) {
 					analyzeFinal(~p, conflict);
 					return l_False;
@@ -2050,6 +2053,12 @@ lbool Solver::search(int nof_conflicts) {
 
 			if(only_propagate_assumptions && next ==lit_Undef && decisionLevel() == assumptions.size())
 				return l_True;
+
+			if(next==lit_Undef && assumps_processed){
+				//allow theory propagation a chance to be applied to the assumptions, in the case that the last assumption
+				//was a dummy assumption, and opt_theory_propagate_assumptions is false
+				continue;
+			}
 
 			//Note: decision level is now added before theories make their decisions, to allow them to decide multiple literals at once.
 			newDecisionLevel();
@@ -2095,6 +2104,11 @@ lbool Solver::search(int nof_conflicts) {
 							theory_order_heap.removeMin();
 							if(decisionLevel()>0)
 								theory_decision_trail.push({theoryID,decisionLevel()});
+						}else{
+							assert(value(next)==l_Undef);
+							if(value(next)!=l_Undef){
+								throw std::runtime_error("Bad theory decision (already assigned)");
+							}
 						}
 					}
 				}else{
@@ -2152,9 +2166,16 @@ lbool Solver::search(int nof_conflicts) {
 			if(next==lit_Undef){
 				throw std::runtime_error("Bad decision");
 			}
+			if(var(next)>=nVars()){
+				throw std::runtime_error("Bad decision (unknown variable)");
+			}
+			if(value(next)!=l_Undef){
+				throw std::runtime_error("Bad decision (already assigned)");
+			}
 			if(decisionLevel()>nVars()+assumptions.size()+1){
 				throw std::runtime_error("Bad decision level");
 			}
+
 			//if(next!=lit_Error)//lit_Error is used to signify a decision that has no literal in the SAT solver (some theories may support this)
 			assert(value(next)==l_Undef);
 			CRC(next);

@@ -1785,6 +1785,7 @@ Lit MaxflowDetector<Weight>::decide() {
 		priority_decisions.pop();
 
 		Lit l = mkLit(outer->getEdgeVar(edgeID), false);
+
 		if ((outer->decidable(l) || outer->edgeWeightDecidable(edgeID, DetectorComparison::geq,  overapprox_conflict_detector->getEdgeFlow(edgeID)) ) && over->getEdgeFlow(edgeID)>0) {
 			n_stats_priority_decisions++;
 			double post_time = rtime(2);
@@ -1799,6 +1800,7 @@ Lit MaxflowDetector<Weight>::decide() {
 	while(order_heap.size()){
 		int edgeID = order_heap.removeMin();
 		Lit l = mkLit(outer->getEdgeVar(edgeID), false);
+
 		if ((outer->decidable(l) || outer->edgeWeightDecidable(edgeID, DetectorComparison::geq,  overapprox_conflict_detector->getEdgeFlow(edgeID)) ) && over->getEdgeFlow(edgeID) > 0) {
 			n_stats_vsids_decisions++;
 			double post_time = rtime(2);

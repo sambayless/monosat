@@ -2086,7 +2086,6 @@ public:
 			if(satisfied_detectors[r->getID()])
 				continue;
 			Lit l = r->decide();
-
 			if (l != lit_Undef) {
 
 				if(opt_decide_graph_bv && !sign(l) && isEdgeVar(var(l)) && hasBitVector(getEdgeID(var(l))) && r->supportsEdgeDecisions()){
@@ -2123,8 +2122,8 @@ public:
 						}else{
 							exit(1);//ne not supported yet...
 						}
-
 						if(bv_decision!=lit_Undef){
+							assert(S->value(bv_decision)==l_Undef);
 							stats_decisions++;
 							r->undecide(l);
 							stats_decision_time += rtime(1) - start;
@@ -2137,12 +2136,15 @@ public:
 						}
 					}
 				}
-
+				assert(l==lit_Undef || value(l)==l_Undef);
+				assert(l==lit_Undef || S->value(toSolver(l))==l_Undef);
 				stats_decisions++;
 				r->stats_decisions++;
 				stats_decision_time += rtime(1) - start;
 				if(opt_verb>2)
 					printf("g%d: graph decision %d: %d\n", this->getTheoryIndex(), iter, dimacs(l));
+				assert(l==lit_Undef || value(l)==l_Undef);
+				assert(l==lit_Undef || S->value(toSolver(l))==l_Undef);
 				return toSolver(l);
 			}
 		}
