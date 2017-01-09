@@ -111,7 +111,8 @@ public:
 		cause_is_theory=13,
 		cause_is_invert = 14,
         cause_is_mult=15,
-        cause_is_mult_argument=16
+        cause_is_mult_argument=16,
+        cause_is_unary=17
 	};
 	struct Cause{
 
@@ -586,6 +587,313 @@ public:
 			return true;
 		}
 	};
+
+
+
+    class UnaryOrderOp : public Operation {
+    public:
+        using Operation::getID;
+        using Operation::theory;
+        int bvID = -1;
+
+        vec<Var> unary;
+
+        Var highest_true=var_Undef;
+        Var lowest_false=var_Undef;
+        Var zero=var_Undef;
+        Var one=var_Undef;
+        Var largest=var_Undef;
+        Var inf=var_Undef;
+        Weight under;
+        Weight over;
+        int indexOf(Var v){
+            assert(v>=one);
+            assert(v<=largest);
+            return v-one;
+        }
+
+        int getBV() override {
+            return bvID;
+        }
+
+        UnaryOrderOp(BVTheorySolver &theory, int bvID, vec<Var> & _unary) : Operation(theory), bvID(bvID) {
+            _unary.copyTo(unary);
+            //vars must be sequential
+            for(int i = 1;i<unary.size();i++){
+                Var p = unary[i-1];
+                assert(unary[i]==1+p);
+                theory.addClause(~mkLit(p), ~mkLit(unary[i]));
+            }
+
+            if(unary.size()>0){
+                one=unary[0];
+                zero = one-1;
+                largest = unary.last();
+                inf = largest+1;
+            }
+
+            highest_true = zero;
+            lowest_false = inf;
+        }
+
+        void move(int bvID) override {
+            this->bvID = bvID;
+        }
+
+        OperationType getType() const override {
+            return OperationType::cause_is_unary;
+        }
+
+        void enqueue(Lit l, bool alter_trail) override{
+            importTheory(theory);
+            bool changed=false;
+            Var v = var(l);
+            int index = indexOf(v);
+            if (!sign(l)){
+                if (v>highest_true){
+                    highest_true = v;
+                    changed=true;
+                }
+            }else{
+                if (v<lowest_false){
+                    lowest_false=v;
+                    changed=true;
+                }
+            }
+            over =  (Weight)(lowest_false-one);
+            under =  (Weight)(highest_true - zero);
+            if (alter_trail && changed) {
+                addAlteredBV(bvID);
+            }
+        }
+
+        Weight & getOver(){
+            return over;
+        }
+        Weight & getUnder(){
+            return  under;
+        }
+        void backtrack(Assignment &e, bool rewind) override{
+            importTheory(theory);
+            if (!rewind) {
+                if (e.isOperation) {
+                    assert(e.bvID == getID());
+                    Var v = e.var;
+                    Lit p = mkLit(v, !e.assign);
+                    assert(v != var_Undef);
+
+                    int index = indexOf(v);
+                    assert(e.new_over == getOver());
+                    assert(e.new_under == getUnder());
+
+                    Weight & prev_over = e.previous_over;
+                    Weight & prev_under =  e.previous_under;
+
+                    if (!sign(p)){
+                        assert(prev_over==e.new_over);
+                        assert(prev_under<e.new_under);
+                        int old_index =(int) prev_under;
+                        Var old_highest_true = zero+old_index;
+                        assert(old_highest_true<=inf);
+                        assert(old_highest_true>=zero);
+                        highest_true = old_highest_true;
+                    }else{
+                        assert(prev_over>e.new_over);
+                        assert(prev_under==e.new_under);
+                        int old_index =(int) prev_over;
+                        Var old_lowest_false = zero+old_index;
+                        assert(old_lowest_false<=inf);
+                        assert(old_lowest_false>=zero);
+                        lowest_false = old_lowest_false;
+                    }
+                }
+            }
+        }
+
+        bool propagate(bool &changed, vec<Lit> &conflict) override {
+            importTheory(theory);
+
+            Weight &underApprox = under_approx[bvID];
+            Weight &overApprox = over_approx[bvID];
+
+            if (under_approx[bvID] > over) {
+                //this is a conflict
+                buildReason(conflict);
+
+                return false;
+            } else if (over_approx[bvID] < under) {
+                //this is a conflict
+                buildReason(conflict);
+
+                return false;
+            }
+            while(under<under_approx[bvID]){
+                under = under+1;
+                Var v = highest_true+1;
+                highest_true = v;
+                assert(highest_true<=largest);
+                assert((Weight)highest_true == under);
+                enqueue(mkLit(v), theory.unary_prop_marker);
+            }
+            while(over>over_approx[bvID]){
+                over = over-1;
+                Var v = lowest_false-1;
+                lowest_false = v;
+                assert(lowest_false>=one);
+                assert( (Weight)(lowest_false-1) == over);
+                enqueue(~mkLit(v), theory.unary_prop_marker);
+            }
+            if (under_approx[bvID] == over_approx[bvID]) {
+                assert(lowest_false==highest_true-1);
+            }
+            return true;
+        }
+
+
+        bool checkApproxUpToDate(Weight &under_out, Weight &over_out) override {
+            importTheory(theory);
+            Weight under = 0;
+            Weight over = unary.size();
+            bool seen_over = false;
+            for (int i = 0; i < unary.size(); i++) {
+                lbool val = value(mkLit(unary[i]));
+                if (val == l_True) {
+                    if(seen_over){
+                        fprintf(stderr,"Inconsistent unary values!\n");
+                        return false;
+                    }
+                    under += 1;
+                } else if (val == l_False) {
+                    if(!seen_over){
+                        seen_over=true;
+                        over = Weight(i-1);
+                    }
+                }
+            }
+            assert(under<=over);
+            if (under > under_out)
+                under_out = under;
+            if (over < over_out)
+                over_out = over;
+            return true;
+        }
+
+        void updateApprox(Var ignore_bv, Weight &under_new, Weight &over_new, Cause &under_cause_new,
+                          Cause &over_cause_new) override {
+            importTheory(theory);
+            Weight under = 0;
+            Weight over = unary.size();
+            bool seen_over = false;
+            for (int i = 0; i < unary.size(); i++) {
+                lbool val = value(mkLit(unary[i]));
+                if (val == l_True) {
+                    under += 1;
+                } else if (val == l_False) {
+                    if(!seen_over){
+                        seen_over=true;
+                        over = Weight(i-1);
+                    }
+                }
+            }
+            //needed in case a decision was made, to preserve that decision's cause here...
+            if (under > under_new) {
+                under_new = under;
+                under_cause_new.clear();
+                under_cause_new.setType(getType());
+                under_cause_new.index = getID();
+            }
+            if (over < over_new) {
+                over_new = over;
+                over_cause_new.clear();
+                over_cause_new.setType(getType());
+                over_cause_new.index = getID();
+            }
+        }
+
+        void buildReason(Lit p, CRef marker, vec<Lit> &reason) override {
+            importTheory(theory);
+            assert (marker == theory.unary_prop_marker);
+            assert(value(p)==l_True);
+            reason.push(toSolver(p));
+            assert(var(p)>zero);
+            assert(var(p)<=largest);
+            if(sign(p)){
+                Weight val = (var(p)-zero)-1;
+                theory.buildComparisonReason(Comparison::leq, bvID,val, reason);
+            }else{
+                Weight val = (var(p)-zero);
+                theory.buildComparisonReason(Comparison::geq, bvID,val, reason);
+            }
+        }
+        void buildReason(vec<Lit> &conflict) {
+            importTheory(theory);
+            if (under_approx[bvID] > over) {
+                //this is a conflict
+
+                assert((Weight) (lowest_false-1)==over);
+                assert(value(mkLit(lowest_false))==l_False);
+
+                conflict.push(toSolver(mkLit(lowest_false)));
+                theory.buildComparisonReason(Comparison::geq, bvID, over, conflict);
+            } else if (over_approx[bvID] < under) {
+                //this is a conflict
+                assert((Weight) (highest_true)==under);
+                assert(value(mkLit(highest_true))==l_True);
+
+                conflict.push(toSolver(~mkLit(highest_true)));
+                theory.buildComparisonReason(Comparison::leq, bvID, under, conflict);
+            }
+
+        }
+
+
+        void analyzeReason(bool compareOver, Comparison op, Weight to, vec<Lit> &conflict) override {
+            importTheory(theory);
+
+            if (compareOver) {
+                Weight over = over_approx[bvID];
+                assert((Weight) (lowest_false-1)==over);
+                assert(value(mkLit(lowest_false))==l_False);
+                conflict.push(toSolver(mkLit(lowest_false)));
+            } else {
+                assert((Weight) (highest_true)==under);
+                assert(value(mkLit(highest_true))==l_True);
+                conflict.push(toSolver(~mkLit(highest_true)));
+            }
+        }
+
+        bool checkSolved() override {
+            importTheory(theory);
+
+            Weight under = 0;
+            Weight over = unary.size();
+            bool seen_over = false;
+            for (int i = 0; i < unary.size(); i++) {
+                lbool val = value(mkLit(unary[i]));
+                if (val == l_True) {
+                    if(seen_over){
+                        return false;
+                    }
+                    under += 1;
+                } else if (val == l_False) {
+                    if(!seen_over){
+                        seen_over=true;
+                        over = Weight(i-1);
+                    }
+                }
+            }
+            assert(under<=over);
+            if (over < over_approx[bvID])
+                return false;
+            if (under > under_approx[bvID])
+                return false;
+
+            return true;
+        }
+
+    };
+
+
 	class ComparisonOp:public Operation{
 		public:
 			using Operation::getID;
@@ -4164,6 +4472,7 @@ public:
 	CRef conditionarg_prop_marker;
 	CRef bvprop_marker;
 	CRef popcount_marker;
+    CRef unary_prop_marker;
 	Lit const_true=lit_Undef;
 	vec<const char*> symbols;
 
@@ -4321,6 +4630,7 @@ public:
 		conditionarg_prop_marker= S->newReasonMarker(this);
 		bvprop_marker = S->newReasonMarker(this);
 		popcount_marker = S->newReasonMarker(this);
+        unary_prop_marker = S->newReasonMarker(this);
 
 	}
 	~BVTheorySolver(){
@@ -7011,6 +7321,41 @@ public:
 		}
 		return const_true;
 	}
+
+    bool has_warned_unary=false;
+    //If direct_encoding is true, will use a direct encoding, rather than an order encoding
+    void getUnary(int bvid, vec<Lit> & unary,  bool allow_var_decisions=false){
+
+        int width = getWidth(bvid);
+
+        int max_val = ((1UL) << width) - 1;
+        if (max_val>100000 && ! has_warned_unary){
+            has_warned_unary=true;
+            fprintf(stderr,"Warning: creating large (%d vars) unary bitvector, may cause performance degradation\n",max_val);
+        }
+
+        if (unary.size()>0 && max_val != unary.size()){
+            throw std::runtime_error("Wrong number of unary literals");
+        }
+        vec<Var> inner_unary;
+        int op_id = operations.size();
+        if(unary.size()){
+            for (int i = 0; i < max_val; i++) {
+                Lit l = unary[i];
+                inner_unary.push(newVar(var(l), op_id,true, allow_var_decisions));
+            }
+        }else{
+            for (int i = 0; i < max_val; i++) {
+                inner_unary.push(newVar(var_Undef, op_id,true, allow_var_decisions));
+                unary.push(toSolver(mkLit(inner_unary.last())));
+            }
+        }
+
+        UnaryOrderOp *op = new UnaryOrderOp(*this, bvid, inner_unary);
+        assert(op->getID()==op_id);
+        addOperation(bvid, op);
+    }
+
 	BitVector newBitvector_Anon(int bvID,int bitwidth){
 		if(bvID<0){
 			bvID = nBitvectors();

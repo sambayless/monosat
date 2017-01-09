@@ -1063,6 +1063,31 @@ void bv_popcount(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bv,
 	bv->newPopCountBV(resultID, m_args);
 }
 
+void bv_unary(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bv,  int* args,int n_args, int resultID){
+    vec<Lit> m_args;
+    for (int i = 0;i<n_args;i++){
+        Lit l = toLit(args[i]);
+        if(sign(l)){
+            api_errorf("Unary arguments must all be positive literals");
+        }
+        m_args.push(l);
+    }
+    for(int i = 1;i<m_args.size();i++){
+        if(var(m_args[i])!= var(m_args[i-1])+1){
+            api_errorf("Unary arguments must be sequential");
+        }
+    }
+    write_out(S,"bv unary %d %d",resultID, n_args);
+    for(int i = 0;i<n_args;i++){
+        write_out(S," %d",dimacs(m_args[i]));
+    }
+    write_out(S,"\n");
+    //bv->newPopCountBV(resultID, m_args);
+
+    bv->getUnary(resultID, m_args);
+
+
+}
 void bv_addition( Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bv, int bvID1, int bvID2, int resultID){
 	write_out(S,"bv + %d %d %d\n",resultID,bvID1, bvID2);
 	bv->newAdditionBV(resultID,bvID1,bvID2);

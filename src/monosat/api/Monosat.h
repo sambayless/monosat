@@ -183,6 +183,7 @@ void bv_divide(SolverPtr S, BVTheoryPtr bv, int bvID1, Weight constant, int resu
   void bv_min(SolverPtr S, BVTheoryPtr bv,  int* args,int n_args,int resultID);
   void bv_max(SolverPtr S, BVTheoryPtr bv,  int* args,int n_args,int resultID);
   void bv_popcount(SolverPtr S, BVTheoryPtr bv,  int* args,int n_args, int resultID);
+void bv_unary(SolverPtr S, BVTheoryPtr bv, int * args, int n_args, int resultID);
 
   //simple at-most-one constraint: asserts that at most one of the set of variables (NOT LITERALS) may be true.
   //for small numbers of variables, consider using a direct CNF encoding instead
