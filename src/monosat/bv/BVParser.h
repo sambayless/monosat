@@ -106,18 +106,16 @@ private:
 	struct MultBV{
 		int resultID;
 		int aBV;
-		long constant;
+		int bBV;
 	};
 	vec<MultBV> multbvs;
 
 	struct DivBV{
 		int resultID;
 		int aBV;
-		long constant;
+		int bBV;
 	};
-
 	vec<DivBV> divbvs;
-
 
 	struct IteBV{
 		Lit condition;
@@ -229,16 +227,16 @@ private:
 		int resultID = parseInt(in);
 		skipWhitespace(in);
 
-		int64_t arg = parseLong(in);
+		int64_t arg1 = parseInt(in);
 		skipWhitespace(in);
 
-		int64_t constant = parseLong(in);
+		int64_t arg2 = parseInt(in);
 
 
 		multbvs.push();
 		multbvs.last().resultID = resultID;
-		multbvs.last().aBV =  (int) arg;
-		multbvs.last().constant = (int) constant;
+		multbvs.last().aBV =  (int) arg1;
+		multbvs.last().bBV = (int) arg2;
 		return;
 
 	}
@@ -249,16 +247,16 @@ private:
 		int resultID = parseInt(in);
 		skipWhitespace(in);
 
-		int64_t arg = parseLong(in);
+		int64_t arg1 = parseInt(in);
 		skipWhitespace(in);
 
-		int64_t constant = parseLong(in);
+		int64_t arg2 = parseInt(in);
 
 
 		divbvs.push();
 		divbvs.last().resultID = resultID;
-		divbvs.last().aBV =  (int) arg;
-		divbvs.last().constant = (int) constant;
+		divbvs.last().aBV =  (int) arg1;
+		divbvs.last().bBV = (int) arg2;
 		return;
 
 	}
@@ -666,7 +664,7 @@ public:
 
 			for(auto & c:multbvs){
 				c.aBV = mapBV(S,c.aBV);
-
+				c.bBV = mapBV(S,c.bBV);
 				c.resultID = mapBV(S,c.resultID);
 
 				if(!theory->hasBV(c.aBV)){
@@ -676,13 +674,13 @@ public:
 				if(!theory->hasBV(c.resultID)){
 					parse_errorf("Undefined bitvector ID %d",c.resultID);
 				}
-				theory->newMultiplicationBV(c.resultID,c.aBV,c.constant);
+				theory->newMultiplicationBV(c.resultID,c.aBV,c.bBV);
 			}
 			multbvs.clear();
 
 			for(auto & c:divbvs){
 				c.aBV = mapBV(S,c.aBV);
-
+				c.bBV = mapBV(S,c.bBV);
 				c.resultID = mapBV(S,c.resultID);
 
 				if(!theory->hasBV(c.aBV)){
@@ -692,7 +690,7 @@ public:
 				if(!theory->hasBV(c.resultID)){
 					parse_errorf("Undefined bitvector ID %d",c.resultID);
 				}
-				theory->newDivisionBV(c.resultID,c.aBV,c.constant);
+				theory->newDivisionBV(c.resultID,c.aBV,c.bBV);
 			}
 			divbvs.clear();
 

@@ -251,8 +251,8 @@ class Monosat(metaclass=Singleton):
         self.monosat_c.bv_addition.argtypes=[c_solver_p,c_bv_p,c_bvID, c_bvID, c_bvID]
         self.monosat_c.bv_subtraction.argtypes=[c_solver_p,c_bv_p,c_bvID, c_bvID, c_bvID]
 
-        self.monosat_c.bv_multiply.argtypes=[c_solver_p,c_bv_p,c_bvID, c_long, c_bvID]
-        self.monosat_c.bv_divide.argtypes=[c_solver_p,c_bv_p,c_bvID, c_long, c_bvID]
+        self.monosat_c.bv_multiply.argtypes=[c_solver_p,c_bv_p,c_bvID, c_bvID, c_bvID]
+        self.monosat_c.bv_divide.argtypes=[c_solver_p,c_bv_p,c_bvID, c_bvID, c_bvID]
 
         self.monosat_c.bv_ite.argtypes=[c_solver_p,c_bv_p,c_literal, c_bvID,c_bvID,c_bvID]
 
@@ -882,17 +882,17 @@ class Monosat(metaclass=Singleton):
         if self.solver.output:
             self._echoOutput("bv - %d %d %d\n"%(resultID,aID,bID))
 
-    def bv_multiply(self, aID,constant, resultID):
+    def bv_multiply(self, aID,bID, resultID):
         self.backtrack()
-        self.monosat_c.bv_multiply(self.solver._ptr, self.solver.bvtheory, c_bvID(aID), c_long(constant), c_bvID(resultID))
+        self.monosat_c.bv_multiply(self.solver._ptr, self.solver.bvtheory, c_bvID(aID), c_bvID(bID), c_bvID(resultID))
         if self.solver.output:
-            self._echoOutput("bv * %d %d %d\n"%(resultID,aID,constant))
+            self._echoOutput("bv * %d %d %d\n"%(resultID,aID,bID))
 
-    def bv_divide(self, aID,constant, resultID):
+    def bv_divide(self, aID,bID, resultID):
         self.backtrack()
-        self.monosat_c.bv_divide(self.solver._ptr, self.solver.bvtheory, c_bvID(aID), c_long(constant), c_bvID(resultID))
+        self.monosat_c.bv_divide(self.solver._ptr, self.solver.bvtheory, c_bvID(aID), c_bvID(bID), c_bvID(resultID))
         if self.solver.output:
-            self._echoOutput("bv / %d %d %d\n"%(resultID,aID,constant))
+            self._echoOutput("bv / %d %d %d\n"%(resultID,aID,bID))
 
     def bv_ite(self, condition_lit, thnID,elsID, resultID):
         self.backtrack()
