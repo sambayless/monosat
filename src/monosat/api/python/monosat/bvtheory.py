@@ -354,12 +354,12 @@ class BitVector():
     
     __rsub__ = __sub__
 
-    def __mult__(self,other):
+    def __mul__(self,other):
         if isinstance(other, BitVector):
             raise Exception("Bitvector theory only supports multiplication by constant integers (not other bitvectors)")
         return BitVector(self.mgr,self.width(),'*',(self,other))
 
-    __rmult__ = __mult__
+    __rmul__ = __mul__
 
     def __div__(self,other):
         if isinstance(other, BitVector):
