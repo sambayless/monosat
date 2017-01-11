@@ -104,20 +104,19 @@ private:
 	};
 	vec<SubtractionBV> subtractionbvs;
 
-	struct MultBV{
-		int resultID;
-		int aBV;
-		long constant;
-	};
-	vec<MultBV> multbvs;
+    struct MultBV{
+        int resultID;
+        int aBV;
+        int bBV;
+    };
+    vec<MultBV> multbvs;
 
-	struct DivBV{
-		int resultID;
-		int aBV;
-		long constant;
-	};
-
-	vec<DivBV> divbvs;
+    struct DivBV{
+        int resultID;
+        int aBV;
+        int bBV;
+    };
+    vec<DivBV> divbvs;
 
 	struct IteBV{
 		Lit condition;
@@ -281,46 +280,46 @@ private:
 		return;
 
 	}
-	void readMultBV(B& in, Solver& S) {
+    void readMultBV(B& in, Solver& S) {
 
-		skipWhitespace(in);
+        skipWhitespace(in);
 
-		int resultID = parseInt(in);
-		skipWhitespace(in);
+        int resultID = parseInt(in);
+        skipWhitespace(in);
 
-		int64_t arg = parseLong(in);
-		skipWhitespace(in);
+        int64_t arg1 = parseInt(in);
+        skipWhitespace(in);
 
-		int64_t constant = parseLong(in);
-
-
-		multbvs.push();
-		multbvs.last().resultID = resultID;
-		multbvs.last().aBV =  (int) arg;
-		multbvs.last().constant = (int) constant;
-		return;
-
-	}
-	void readDivBV(B& in, Solver& S) {
-
-		skipWhitespace(in);
-
-		int resultID = parseInt(in);
-		skipWhitespace(in);
-
-		int64_t arg = parseLong(in);
-		skipWhitespace(in);
-
-		int64_t constant = parseLong(in);
+        int64_t arg2 = parseInt(in);
 
 
-		divbvs.push();
-		divbvs.last().resultID = resultID;
-		divbvs.last().aBV =  (int) arg;
-		divbvs.last().constant = (int) constant;
-		return;
+        multbvs.push();
+        multbvs.last().resultID = resultID;
+        multbvs.last().aBV =  (int) arg1;
+        multbvs.last().bBV = (int) arg2;
+        return;
 
-	}
+    }
+    void readDivBV(B& in, Solver& S) {
+
+        skipWhitespace(in);
+
+        int resultID = parseInt(in);
+        skipWhitespace(in);
+
+        int64_t arg1 = parseInt(in);
+        skipWhitespace(in);
+
+        int64_t arg2 = parseInt(in);
+
+
+        divbvs.push();
+        divbvs.last().resultID = resultID;
+        divbvs.last().aBV =  (int) arg1;
+        divbvs.last().bBV = (int) arg2;
+        return;
+
+    }
 	void readSymbol(B& in, Solver& S){
 		//this is a variable symbol map
 		skipWhitespace(in);
@@ -641,37 +640,37 @@ public:
 			}
 			subtractionbvs.clear();
 
-			for(auto & c:multbvs){
-				c.aBV = mapBV(S,c.aBV);
+            for(auto & c:multbvs){
+                c.aBV = mapBV(S,c.aBV);
+                c.bBV = mapBV(S,c.bBV);
+                c.resultID = mapBV(S,c.resultID);
 
-				c.resultID = mapBV(S,c.resultID);
+                if(!theory->hasBV(c.aBV)){
+                    parse_errorf("Undefined bitvector ID %d",c.aBV);
+                }
 
-				if(!theory->hasBV(c.aBV)){
-					parse_errorf("Undefined bitvector ID %d",c.aBV);
-				}
+                if(!theory->hasBV(c.resultID)){
+                    parse_errorf("Undefined bitvector ID %d",c.resultID);
+                }
+                theory->newMultiplicationBV(c.resultID,c.aBV,c.bBV);
+            }
+            multbvs.clear();
 
-				if(!theory->hasBV(c.resultID)){
-					parse_errorf("Undefined bitvector ID %d",c.resultID);
-				}
-				theory->newMultiplicationBV(c.resultID,c.aBV,c.constant);
-			}
-			multbvs.clear();
+            for(auto & c:divbvs){
+                c.aBV = mapBV(S,c.aBV);
+                c.bBV = mapBV(S,c.bBV);
+                c.resultID = mapBV(S,c.resultID);
 
-			for(auto & c:divbvs){
-				c.aBV = mapBV(S,c.aBV);
+                if(!theory->hasBV(c.aBV)){
+                    parse_errorf("Undefined bitvector ID %d",c.aBV);
+                }
 
-				c.resultID = mapBV(S,c.resultID);
-
-				if(!theory->hasBV(c.aBV)){
-					parse_errorf("Undefined bitvector ID %d",c.aBV);
-				}
-
-				if(!theory->hasBV(c.resultID)){
-					parse_errorf("Undefined bitvector ID %d",c.resultID);
-				}
-				theory->newDivisionBV(c.resultID,c.aBV,c.constant);
-			}
-			divbvs.clear();
+                if(!theory->hasBV(c.resultID)){
+                    parse_errorf("Undefined bitvector ID %d",c.resultID);
+                }
+                theory->newDivisionBV(c.resultID,c.aBV,c.bBV);
+            }
+            divbvs.clear();
 			for (auto & c:itebvs){
 				c.thenId = mapBV(S,c.thenId);
 				c.elseId = mapBV(S,c.elseId);

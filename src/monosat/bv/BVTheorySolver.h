@@ -3697,492 +3697,499 @@ public:
 			}
 		};
 
-    class MultiplicationArg;
-
-    class Multiplication : public Operation {
-        //Multiply a bitvector by a constant integer
-    public:
-        using Operation::getID;
-        using Operation::theory;
-
-
-    public:
-        MultiplicationArg *arg1 = nullptr;
-        Weight constant;
-        int bvID = -1;
-
-        Multiplication(BVTheorySolver &theory, int bvID, Weight & constant) : Operation(theory), bvID(bvID),constant(constant) {
-
-        }
-
-        int getBV() override {
-            return bvID;
-        }
-
-        bool hasMultiplication() const {
-            return arg1;
-        }
-
-        void setArg1(MultiplicationArg *arg1) {
-            this->arg1 = arg1;
-        }
-
-
-
-        void move(int bvID) override {
-
-            this->bvID = bvID;
-        }
-
-
-        OperationType getType() const override {
-            return OperationType::cause_is_mult;
-        }
-
-        bool propagate(bool &changed_outer, vec<Lit> &conflict) override {
-            importTheory(theory);
-            int aID = arg1->bvID;
-
-            Weight &underApprox = under_approx[bvID];
-            Weight &overApprox = over_approx[bvID];
-
-
-            Weight under = under_approx[aID]*constant;
-            Weight over = over_approx[aID] *constant;
-            clip_over(under, bvID);
-            clip_over(over, bvID);
-            if (underApprox > over) {
-                //then we have a conflict
-                double startconftime = rtime(2);
-                //propagationtime += startconftime - startproptime;
-                theory.stats_num_conflicts++;
-                theory.stats_mult_conflicts++;
-                if (opt_verb > 1) {
-                    printf("bv mult conflict %ld\n", theory.stats_num_conflicts);
-                }
-                buildReason(conflict);
-
-                theory.stats_conflict_time += rtime(2) - startconftime;
-                return false;
-            } else if (overApprox < under) {
-                double startconftime = rtime(2);
-                //propagationtime += startconftime - startproptime;
-                if (opt_verb > 1) {
-                    printf("bv mult conflict %ld\n", theory.stats_num_conflicts);
-                }
-                theory.stats_num_conflicts++;
-                theory.stats_mult_conflicts++;
-                buildReason(conflict);
-
-                theory.stats_conflict_time += rtime(2) - startconftime;
-                return false;
-            }
-            Weight under_arg = underApprox/constant;
-            Weight over_arg = overApprox/constant;
-            clip_under(under_arg, bvID);
-            clip_under(over_arg, bvID);
-            //this check may be especially important when either aID or bID is really a constant...
-            if ((under_arg > under_approx[aID]) || (over_arg < over_approx[aID])) {
-                //the other bv needs to be updated
-                addAlteredBV(aID);
-            }
-
-            return true;
-
-        }
-
-        void updateApprox(Var ignore_bv, Weight &under_new, Weight &over_new, Cause &under_cause_new,
-                          Cause &over_cause_new) override {
-            importTheory(theory);
-            int aID = arg1->bvID;
-
-            //assert(aID<bvID);
-            //assert(bID<bvID);
-            Weight under = under_approx[aID] * constant;
-            Weight over = over_approx[aID] * constant;
-            clip_over(under, bvID);
-            clip_over(over, bvID);
-            if (under > under_new) {
-                under_new = under;
-                under_cause_new.clear();
-                under_cause_new.setType(getType());
-                under_cause_new.index = getID();
-            }
-            if (over < over_new) {
-                over_new = over;
-                over_cause_new.clear();
-                over_cause_new.setType(getType());
-                over_cause_new.index = getID();
-            }
-        }
-
-        void buildReason(vec<Lit> &conflict) {
-            importTheory(theory);
-            int aID = arg1->bvID;
-
-            theory.dbg_no_pending_analyses();
-            assert(theory.eq_bitvectors[bvID] == bvID);
-            //rewind_trail_pos(trail.size()-1);
-            theory.stats_build_addition_reason++;
-            Weight over_cur = over_approx[bvID];
-            Weight under_cur = under_approx[bvID];
-            //assert(theory.checkApproxUpToDate(bvID));
-
-
-            //the reason that the addition is over is the reason that
-            //bvID > addition_under, or the reason that addition_under>= its current value.
-
-            //assert(aID<bvID);
-            //assert(bID<bvID);
-
-            Weight under_add = under_approx[aID] * constant;
-            Weight over_add = over_approx[aID] * constant;
-
-            int width = theory.bitvectors[bvID].size();
-            Weight max_val = ((1L) << width) - 1;
-            if (under_add > max_val) {
-                under_add = max_val;
-            }
-            if (over_add > max_val) {
-                over_add = max_val;
-            }
-
-            if (under_cur > over_add) {
-
-                analyzeValueReason(Comparison::gt, bvID, over_add, conflict);
-
-                analyzeValueReason(Comparison::leq, aID, over_approx[aID], conflict);
-
-            } else {
-                assert(over_cur < under_add);
-                analyzeValueReason(Comparison::lt, bvID, under_add, conflict);
-
-                analyzeValueReason(Comparison::geq, aID, under_approx[aID], conflict);
-
-            }
-            analyze(conflict);
-        }
-
-        void analyzeReason(bool compareOver, Comparison op, Weight to, vec<Lit> &conflict) {
-            importTheory(theory);
-            if (compareOver) {
-
-                int aID = arg1->bvID;
-
-                //assert(aID<bvID);
-                //assert(bID<bvID);
-
-                Weight over_aid = over_approx[aID];
-                //then the reason is that aID is <= weight-under(bID), or bID <= weight-under(aID)
-                //addAnalysis(Comparison::leq,aID,over_aid,conflict);//to-over_bid
-                //addAnalysis(Comparison::leq,bID,over_bid,conflict);//to-over_aid
-
-                addAnalysis(Comparison::leq, aID, over_approx[bvID]/constant);
-
-            } else {
-
-
-                int aID = arg1->bvID;
-
-
-                Weight under_aid = under_approx[aID];
-                //addAnalysis(Comparison::geq,aID,under_aid,conflict);
-                //addAnalysis(Comparison::geq,bID,under_bid,conflict);
-                addAnalysis(Comparison::geq, aID, under_approx[bvID] /constant);
-
-                //buildValueReason(op,aID,to-under_bid,conflict,trail_pos-1);
-                //buildValueReason(op,bID,to-under_aid,conflict,trail_pos-1);
-            }
-        }
-
-        bool checkApproxUpToDate(Weight &under, Weight &over) override {
-            importTheory(theory);
-            int aID = arg1->bvID;
-
-            //assert(aID<bvID);
-            //assert(bID<bvID);
-            Weight underadd = under_approx[aID] *constant;
-            Weight overadd = over_approx[aID] *constant;
-            if (underadd > under) {
-                under = underadd;
-            }
-            if (overadd < over) {
-                over = overadd;
-            }
-            return true;
-        }
-
-        bool checkSolved() override {
-            importTheory(theory);
-            int aID = arg1->bvID;
-
-            int width = theory.bitvectors[bvID].size();
-            Weight max_val = (1L << width) - 1;
-            /*printf("bv %d: ", bvID);
-            for (int i = 0; i < blasted.size(); i++) {
-                Lit l = blasted[i];
-                lbool val = theory.S->value(l);
-                if (val == l_True) {
-                    printf("1");
-                } else {
-                    printf("0");
-                }
-            }
-            printf("\n");*/
-            //assert(aID<bvID);
-            //assert(bID<bvID);
-            Weight underadd = under_approx[aID] *constant;
-            Weight overadd = over_approx[aID]  *constant;
-            if (underadd > max_val) {
-                underadd = max_val;
-            }
-            if (overadd > max_val) {
-                overadd = max_val;
-            }
-            if (underadd > under_approx[bvID]) {
-                return false;
-            }
-            if (overadd < over_approx[bvID]) {
-                return false;
-            }
-            return true;
-        }
-    };
-
-
-    class MultiplicationArg : public Operation {
-    public:
-        using Operation::getID;
-        using Operation::theory;
-
-        //int other_argID=-1;
-        //int sumID=-1;
-    public:
-
-        Multiplication *resultOp;
-        int bvID = -1;
-        Weight constant;
-        MultiplicationArg(BVTheorySolver &theory, int bvID, Multiplication *result) : Operation(theory), bvID(bvID),
-                                                                                      resultOp(result), constant(result->constant) {
-            assert(constant>0);
-        }
-
-        int getBV() override {
-            return bvID;
-        }
-
-
-
-        void move(int bvID) override {
-
-            this->bvID = bvID;
-        }
-                OperationType getType() const override {
-            return OperationType::cause_is_mult_argument;
-        }
-
-        bool propagate(bool &changed_outer, vec<Lit> &conflict) override {
-            importTheory(theory);
-            assert(constant>0);
-            int sumID = resultOp->bvID;
-            Weight &underApprox = under_approx[bvID];
-            Weight &overApprox = over_approx[bvID];
-
-            assert(sumID >= 0);
-
-            Weight under = under_approx[sumID]/constant;
-            Weight over = over_approx[sumID]/constant;
-            clip_under(under, bvID);
-            clip_under(over, bvID);
-            if (underApprox > over) {
-                //then we have a conflict
-                double startconftime = rtime(2);
-                //propagationtime += startconftime - startproptime;
-                theory.stats_num_conflicts++;
-                theory.stats_mult_conflicts++;
-
-                if (opt_verb > 1) {
-                    printf("bv mult arg conflict %ld\n", theory.stats_num_conflicts);
-                }
-                buildReason(conflict);
-
-                theory.stats_conflict_time += rtime(2) - startconftime;
-                return false;
-            } else if (overApprox < under) {
-                double startconftime = rtime(2);
-                //propagationtime += startconftime - startproptime;
-                theory.stats_num_conflicts++;
-                theory.stats_mult_conflicts++;
-                if (opt_verb > 1) {
-                    printf("bv mult arg conflict %ld\n", theory.stats_num_conflicts);
-                }
-                buildReason(conflict);
-
-                theory.stats_conflict_time += rtime(2) - startconftime;
-                return false;
-            }
-            Weight under_arg = underApprox *constant;
-            clip_over(under_arg, bvID);
-            Weight over_arg = overApprox *constant;
-            clip_over(over_arg, bvID);
-            //this check may be especially important when either aID or bID is really a constant...
-            if ((under_arg > under_approx[sumID]) || (over_arg < over_approx[sumID])) {
-                //the other bv needs to be updated
-
-                addAlteredBV(sumID);
-            }
-            return true;
-
-        }
-
-        void updateApprox(Var ignore_bv, Weight &under_new, Weight &over_new, Cause &under_cause_new,
-                          Cause &over_cause_new) override {
-            importTheory(theory);
-            int sumID = resultOp->bvID;
-
-            assert(constant>0);
-            assert(sumID >= 0);
-            //assert((other_argID!=bvID &&   under_approx[sumID] >=  under_approx[other_argID] + under_old  ) || (other_argID==bvID &&   under_approx[sumID] >= under_old + under_old  ));
-            //assert((other_argID!=bvID &&  over_approx[sumID] <=  over_approx[other_argID] + over_old ) || (other_argID==bvID &&  over_approx[sumID] <=  over_old + over_old ));
-            Weight under = under_approx[sumID] /constant;
-            Weight over = over_approx[sumID] /constant;
-            clip_under(under, bvID);
-            clip_under(over, bvID);
-            if (under > under_new) {
-                under_new = under;
-                under_cause_new.clear();
-                under_cause_new.setType(OperationType::cause_is_addition_argument);
-                under_cause_new.index = getID();
-            }
-            if (over < over_new) {
-                over_new = over;
-                over_cause_new.clear();
-                over_cause_new.setType(OperationType::cause_is_addition_argument);
-                over_cause_new.index = getID();
-            }
-
-
-        }
-
-        void buildReason(vec<Lit> &conflict) {
-            importTheory(theory);
-
-            int sumID = resultOp->bvID;
-            theory.dbg_no_pending_analyses();
-            assert(theory.eq_bitvectors[bvID] == bvID);
-            //rewind_trail_pos(trail.size()-1);
-
-            theory.stats_build_addition_arg_reason++;
-            Weight over_cur = over_approx[bvID];
-            Weight under_cur = under_approx[bvID];
-            //assert(checkApproxUpToDate(bvID));
-
-
-            //the reason that the addition is over is the reason that
-            //bvID > addition_under, or the reason that addition_under>= its current value.
-
-
-
-            Weight under_add = under_approx[sumID]  /constant;
-            Weight over_add = over_approx[sumID]  /constant;
-
-            int width = theory.bitvectors[bvID].size();
-            Weight max_val = ((1L) << width) - 1;
-            if (under_add > max_val) {
-                under_add = max_val;
-            }
-            if (over_add > max_val) {
-                over_add = max_val;
-            }
-
-            if (under_cur > over_add) {
-                //buildTrivialClause(conflict);
-                analyzeValueReason(Comparison::leq, sumID, over_approx[sumID], conflict);
-                analyzeValueReason(Comparison::gt, bvID, over_add, conflict);
-            } else {
-                assert(over_cur < under_add);
-                //buildTrivialClause(conflict);
-                analyzeValueReason(Comparison::geq, sumID, under_approx[sumID], conflict);
-                analyzeValueReason(Comparison::lt, bvID, under_add, conflict);
-
-            }
-            analyze(conflict);
-        }
-
-        void analyzeReason(bool compareOver, Comparison op, Weight to, vec<Lit> &conflict) {
-            importTheory(theory);
-            if (compareOver) {
-
-                int sumID = resultOp->bvID;
-                Weight over_sumID = over_approx[sumID];
-
-
-                //Weight over = over_approx[sumID] -  under_approx[other_argID];
-
-                addAnalysis(Comparison::leq, sumID, over_approx[bvID] *constant);
-                //buildValueReason(~op,other_argID,over_sumID-to,conflict,trail_pos-1);
-                //buildValueReason(op,sumID,to+under_argID,conflict,trail_pos-1);
-
-            } else {
-
-                int sumID = resultOp->bvID;
-                Weight under_sumID = under_approx[sumID];
-
-                //Weight under = under_approx[sumID] -  over_approx[other_argID];
-
-                addAnalysis(Comparison::geq, sumID, under_approx[bvID] *constant);
-                //buildValueReason(~op,other_argID,under_sumID-to,conflict,trail_pos-1);
-                //buildValueReason(op,sumID,to+over_argID,conflict,trail_pos-1);
-            }
-        }
-
-        bool checkApproxUpToDate(Weight &under, Weight &over) override {
-            importTheory(theory);
-
-            int sumID = resultOp->bvID;
-
-            Weight under_add = under_approx[sumID] /constant;
-            Weight over_add = over_approx[sumID] /constant;
-
-            if (under_add > under) {
-                under = under_add;
-            }
-            if (over_add < over) {
-                over = over_add;
-            }
-            return true;
-        }
-
-        bool checkSolved() override {
-            importTheory(theory);
-
-            int sumID = resultOp->bvID;
-            int width = theory.bitvectors[sumID].size();
-            Weight max_val = (1L << width) - 1;
-
-
-            //assert(aID<bvID);
-            //assert(bID<bvID);
-            Weight underadd = under_approx[bvID] *constant;
-            Weight overadd = over_approx[bvID] *constant;
-            if (underadd > max_val) {
-                underadd = max_val;
-            }
-            if (overadd > max_val) {
-                overadd = max_val;
-            }
-            if (underadd > under_approx[sumID]) {
-                return false;
-            }
-            if (overadd < over_approx[sumID]) {
-                return false;
-            }
-            return true;
-        }
-    };
-
-
-    class Invert:public Operation{
+
+
+	class MultiplicationArg;
+
+	class Multiplication : public Operation {
+		//Multiply a bitvector by a constant integer
+	public:
+		using Operation::getID;
+		using Operation::theory;
+
+
+	public:
+		MultiplicationArg *arg1 = nullptr;
+		MultiplicationArg *arg2 = nullptr;
+		int bvID = -1;
+
+		Multiplication(BVTheorySolver &theory, int bvID) : Operation(theory), bvID(bvID) {
+
+		}
+
+		int getBV() override {
+			return bvID;
+		}
+
+		bool hasMultiplication() const {
+			return arg1;
+		}
+
+		void setArg1(MultiplicationArg *arg) {
+			this->arg1 = arg;
+		}
+		void setArg2(MultiplicationArg *arg) {
+			this->arg2 = arg;
+		}
+
+		void move(int bvID) override {
+
+			this->bvID = bvID;
+		}
+
+
+
+		void getArgumentBVs(vec<int> &bvIDs) const override {
+			bvIDs.push(arg1->bvID);
+			bvIDs.push(arg2->bvID);
+		};
+
+		OperationType getType() const override {
+			return OperationType::cause_is_mult;
+		}
+
+		bool propagate(bool &changed_outer, vec<Lit> &conflict) override {
+			importTheory(theory);
+			int aID = arg1->bvID;
+			int bID = arg2->bvID;
+			Weight &underApprox = under_approx[bvID];
+			Weight &overApprox = over_approx[bvID];
+
+
+			Weight under = under_approx[aID]*under_approx[bID];
+			Weight over = over_approx[aID] *over_approx[bID];
+			clip_over(under, bvID);
+			clip_over(over, bvID);
+			if (underApprox > over) {
+				//then we have a conflict
+				double startconftime = rtime(2);
+				//propagationtime += startconftime - startproptime;
+				theory.stats_num_conflicts++;
+				theory.stats_mult_conflicts++;
+				if (opt_verb > 1) {
+					printf("bv mult conflict %ld\n", theory.stats_num_conflicts);
+				}
+				buildReason(conflict);
+
+				theory.stats_conflict_time += rtime(2) - startconftime;
+				return false;
+			} else if (overApprox < under) {
+				double startconftime = rtime(2);
+				//propagationtime += startconftime - startproptime;
+				if (opt_verb > 1) {
+					printf("bv mult conflict %ld\n", theory.stats_num_conflicts);
+				}
+				theory.stats_num_conflicts++;
+				theory.stats_mult_conflicts++;
+				buildReason(conflict);
+
+				theory.stats_conflict_time += rtime(2) - startconftime;
+				return false;
+			}
+
+			Weight under_arg_b = underApprox / over_approx[bID];
+			Weight over_arg_b = overApprox / under_approx[bID];
+			clip_under(under_arg_b, bvID);
+			clip_under(over_arg_b, bvID);
+			//this check may be especially important when either aID or bID is really a constant...
+			if ((under_arg_b > under_approx[aID]) || (over_arg_b < over_approx[aID])) {
+				//the other bv needs to be updated
+				addAlteredBV(aID);
+			}
+			Weight under_arg_a = underApprox / over_approx[aID];
+			Weight over_arg_a = overApprox / under_approx[aID];
+			clip_under(under_arg_a, bvID);
+			clip_under(over_arg_a, bvID);
+			if ((under_arg_a > under_approx[bID]) || (over_arg_a < over_approx[bID])) {
+				//the other bv needs to be updated
+				addAlteredBV(bID);
+			}
+			return true;
+
+		}
+
+		void updateApprox(Var ignore_bv, Weight &under_new, Weight &over_new, Cause &under_cause_new,
+						  Cause &over_cause_new) override {
+			importTheory(theory);
+			int aID = arg1->bvID;
+			int bID = arg2->bvID;
+			//assert(aID<bvID);
+			//assert(bID<bvID);
+			Weight under = under_approx[aID] * under_approx[bID];
+			Weight over = over_approx[aID] * over_approx[bID] ;
+			clip_over(under, bvID);
+			clip_over(over, bvID);
+			if (under > under_new) {
+				under_new = under;
+				under_cause_new.clear();
+				under_cause_new.setType(getType());
+				under_cause_new.index = getID();
+			}
+			if (over < over_new) {
+				over_new = over;
+				over_cause_new.clear();
+				over_cause_new.setType(getType());
+				over_cause_new.index = getID();
+			}
+		}
+
+		void buildReason(vec<Lit> &conflict) {
+			importTheory(theory);
+			int aID = arg1->bvID;
+			int bID = arg2->bvID;
+			theory.dbg_no_pending_analyses();
+			assert(theory.eq_bitvectors[bvID] == bvID);
+			//rewind_trail_pos(trail.size()-1);
+			theory.stats_build_addition_reason++;
+			Weight over_cur = over_approx[bvID];
+			Weight under_cur = under_approx[bvID];
+			//assert(theory.checkApproxUpToDate(bvID));
+
+
+			//the reason that the addition is over is the reason that
+			//bvID > addition_under, or the reason that addition_under>= its current value.
+
+			//assert(aID<bvID);
+			//assert(bID<bvID);
+
+			Weight under_add = under_approx[aID] * under_approx[bID] ;
+			Weight over_add = over_approx[aID] * over_approx[bID];
+
+			int width = theory.bitvectors[bvID].size();
+			Weight max_val = ((1L) << width) - 1;
+			if (under_add > max_val) {
+				under_add = max_val;
+			}
+			if (over_add > max_val) {
+				over_add = max_val;
+			}
+
+
+			if (under_cur > over_add) {
+
+				analyzeValueReason(Comparison::gt, bvID, over_add, conflict);
+
+				analyzeValueReason(Comparison::leq, aID, over_approx[aID], conflict);
+				analyzeValueReason(Comparison::leq, bID, over_approx[bID], conflict);
+			} else {
+				assert(over_cur < under_add);
+				analyzeValueReason(Comparison::lt, bvID, under_add, conflict);
+
+				analyzeValueReason(Comparison::geq, aID, under_approx[aID], conflict);
+				analyzeValueReason(Comparison::geq, bID, under_approx[bID], conflict);
+			}
+			analyze(conflict);
+		}
+
+		void analyzeReason(bool compareOver, Comparison op, Weight to, vec<Lit> &conflict) {
+			importTheory(theory);
+			int aID = arg1->bvID;
+			int bID = arg2->bvID;
+
+			if (compareOver) {
+				Weight over_bid = over_approx[bID];
+				Weight over_aid = over_approx[aID];
+
+				addAnalysis(Comparison::leq, aID, over_approx[bvID] / over_bid);
+				addAnalysis(Comparison::leq, bID, over_approx[bvID] / over_aid);
+			} else {
+				Weight under_bid = under_approx[bID];
+				Weight under_aid = under_approx[aID];
+
+				addAnalysis(Comparison::geq, aID, under_approx[bvID] / under_bid);
+				addAnalysis(Comparison::geq, bID, under_approx[bvID] / under_aid);
+
+			}
+		}
+
+		bool checkApproxUpToDate(Weight &under, Weight &over) override {
+			importTheory(theory);
+			int aID = arg1->bvID;
+			int bID = arg2->bvID;
+
+			Weight underadd = under_approx[aID] *under_approx[bID];
+			Weight overadd = over_approx[aID] *over_approx[bID];
+			if (underadd > under) {
+				under = underadd;
+			}
+			if (overadd < over) {
+				over = overadd;
+			}
+			return true;
+		}
+
+		bool checkSolved() override {
+			importTheory(theory);
+			int aID = arg1->bvID;
+			int bID = arg2->bvID;
+
+			int width = theory.bitvectors[bvID].size();
+			Weight max_val = (1L << width) - 1;
+
+			Weight underadd = under_approx[aID] *under_approx[bID];
+			Weight overadd = over_approx[aID]  * over_approx[bID];
+			if (underadd > max_val) {
+				underadd = max_val;
+			}
+			if (overadd > max_val) {
+				overadd = max_val;
+			}
+			if (underadd > under_approx[bvID]) {
+				return false;
+			}
+			if (overadd < over_approx[bvID]) {
+				return false;
+			}
+			return true;
+		}
+	};
+
+
+	class MultiplicationArg : public Operation {
+	public:
+		using Operation::getID;
+		using Operation::theory;
+
+		//int other_argID=-1;
+		//int sumID=-1;
+	public:
+
+		Multiplication *resultOp;
+		MultiplicationArg *otherOp;
+		int bvID = -1;
+		Weight constant;
+		MultiplicationArg(BVTheorySolver &theory, int bvID, Multiplication *result) : Operation(theory), bvID(bvID),
+																					  resultOp(result){
+			assert(constant>0);
+		}
+
+		int getBV() override {
+			return bvID;
+		}
+
+		void setOtherArg(MultiplicationArg *otherArg) {
+			this->otherOp = otherArg;
+		}
+
+		void move(int bvID) override {
+			this->bvID = bvID;
+		}
+
+		void bitblast(Circuit<TheorySolver> &c) override {
+			//do nothing
+		}
+
+		OperationType getType() const override {
+			return OperationType::cause_is_mult_argument;
+		}
+
+		bool propagate(bool &changed_outer, vec<Lit> &conflict) override {
+			importTheory(theory);
+			int other_argID = otherOp->bvID;
+			int sumID = resultOp->bvID;
+			Weight &underApprox = under_approx[bvID];
+			Weight &overApprox = over_approx[bvID];
+
+			assert(other_argID >= 0);
+			assert(sumID >= 0);
+
+			Weight under = under_approx[sumID] / over_approx[other_argID];
+			Weight over = over_approx[sumID] / under_approx[other_argID];
+			clip_under(under, bvID);
+			clip_under(over, bvID);
+			if (underApprox > over) {
+				//then we have a conflict
+				double startconftime = rtime(2);
+				//propagationtime += startconftime - startproptime;
+				theory.stats_num_conflicts++;
+				theory.stats_addition_conflicts++;
+
+				if (opt_verb > 1) {
+					printf("bv addition arg conflict %ld\n", theory.stats_num_conflicts);
+				}
+				buildReason(conflict);
+
+				theory.stats_conflict_time += rtime(2) - startconftime;
+				return false;
+			} else if (overApprox < under) {
+				double startconftime = rtime(2);
+				//propagationtime += startconftime - startproptime;
+				theory.stats_num_conflicts++;
+				theory.stats_addition_conflicts++;
+				if (opt_verb > 1) {
+					printf("bv addition arg conflict %ld\n", theory.stats_num_conflicts);
+				}
+				buildReason(conflict);
+
+				theory.stats_conflict_time += rtime(2) - startconftime;
+				return false;
+			}
+			Weight under_arg = underApprox * under_approx[other_argID];
+			clip_over(under_arg, bvID);
+			Weight over_arg = overApprox * over_approx[other_argID];
+			clip_over(over_arg, bvID);
+			//this check may be especially important when either aID or bID is really a constant...
+			if ((under_arg > under_approx[sumID]) || (over_arg < over_approx[sumID])) {
+				//the other bv needs to be updated
+				addAlteredBV(sumID);
+			}
+			Weight under_sum = under_approx[sumID] / overApprox;
+			clip_under(under_sum, bvID);
+			Weight over_sum = over_approx[sumID] / underApprox;
+			clip_under(over_sum, bvID);
+			if ((under_sum > under_approx[other_argID]) || (over_sum < over_approx[other_argID])) {
+				//the other bv needs to be updated
+				addAlteredBV(other_argID);
+			}
+
+			return true;
+
+		}
+
+		void updateApprox(Var ignore_bv, Weight &under_new, Weight &over_new, Cause &under_cause_new,
+						  Cause &over_cause_new) override {
+			importTheory(theory);
+			int other_argID = otherOp->bvID;
+			int sumID = resultOp->bvID;
+
+			assert(other_argID >= 0);
+			assert(sumID >= 0);
+			Weight under = under_approx[sumID] / over_approx[other_argID];
+			Weight over = over_approx[sumID] / under_approx[other_argID];
+			clip_under(under, bvID);
+			clip_under(over, bvID);
+			if (under > under_new) {
+				under_new = under;
+				under_cause_new.clear();
+				under_cause_new.setType(OperationType::cause_is_mult_argument);
+				under_cause_new.index = getID();
+			}
+			if (over < over_new) {
+				over_new = over;
+				over_cause_new.clear();
+				over_cause_new.setType(OperationType::cause_is_mult_argument);
+				over_cause_new.index = getID();
+			}
+		}
+
+		void buildReason(vec<Lit> &conflict) {
+			importTheory(theory);
+			int other_argID = otherOp->bvID;
+			int sumID = resultOp->bvID;
+			theory.dbg_no_pending_analyses();
+			assert(theory.eq_bitvectors[bvID] == bvID);
+
+			theory.stats_build_addition_arg_reason++;
+			Weight over_cur = over_approx[bvID];
+			Weight under_cur = under_approx[bvID];
+
+			Weight under_add = under_approx[sumID] / over_approx[other_argID];
+			Weight over_add = over_approx[sumID] / under_approx[other_argID];
+
+			int width = theory.bitvectors[bvID].size();
+			Weight max_val = ((1L) << width) - 1;
+			if (under_add > max_val) {
+				under_add = max_val;
+			}
+			if (over_add > max_val) {
+				over_add = max_val;
+			}
+
+			if (under_cur > over_add) {
+				//buildTrivialClause(conflict);
+				analyzeValueReason(Comparison::leq, sumID, over_approx[sumID], conflict);
+				analyzeValueReason(Comparison::geq, other_argID, under_approx[other_argID], conflict);
+				analyzeValueReason(Comparison::gt, bvID, over_add, conflict);
+			} else {
+				assert(over_cur < under_add);
+				//buildTrivialClause(conflict);
+				analyzeValueReason(Comparison::geq, sumID, under_approx[sumID], conflict);
+				analyzeValueReason(Comparison::leq, other_argID, over_approx[other_argID], conflict);
+				analyzeValueReason(Comparison::lt, bvID, under_add, conflict);
+
+			}
+			analyze(conflict);
+		}
+
+		void analyzeReason(bool compareOver, Comparison op, Weight to, vec<Lit> &conflict) {
+			importTheory(theory);
+			if (compareOver) {
+
+				int other_argID = otherOp->bvID;
+				int sumID = resultOp->bvID;
+				Weight over_sumID = over_approx[sumID];
+				Weight under_argID = under_approx[other_argID];
+
+				addAnalysis(Comparison::geq, other_argID, over_sumID / over_approx[bvID]);
+				addAnalysis(Comparison::leq, sumID, over_approx[bvID] * under_argID);
+				//buildValueReason(~op,other_argID,over_sumID-to,conflict,trail_pos-1);
+				//buildValueReason(op,sumID,to+under_argID,conflict,trail_pos-1);
+
+			} else {
+
+				int other_argID = otherOp->bvID;
+				int sumID = resultOp->bvID;
+				Weight under_sumID = under_approx[sumID];
+				Weight over_argID = over_approx[other_argID];
+				//Weight under = under_approx[sumID] -  over_approx[other_argID];
+				addAnalysis(Comparison::leq, other_argID, under_sumID / under_approx[bvID]);
+				addAnalysis(Comparison::geq, sumID, under_approx[bvID] * over_argID);
+				//buildValueReason(~op,other_argID,under_sumID-to,conflict,trail_pos-1);
+				//buildValueReason(op,sumID,to+over_argID,conflict,trail_pos-1);
+			}
+		}
+		bool checkApproxUpToDate(Weight &under, Weight &over) override {
+			importTheory(theory);
+			int other_argID = otherOp->bvID;
+			int sumID = resultOp->bvID;
+
+			Weight under_add = under_approx[sumID] / over_approx[other_argID];
+			Weight over_add = over_approx[sumID] / under_approx[other_argID];
+
+			if (under_add > under) {
+				under = under_add;
+			}
+			if (over_add < over) {
+				over = over_add;
+			}
+			return true;
+		}
+
+		bool checkSolved() override {
+			importTheory(theory);
+			int other_argID = otherOp->bvID;
+			int sumID = resultOp->bvID;
+			int width = theory.bitvectors[sumID].size();
+			Weight max_val = (1L << width) - 1;
+
+
+			//assert(aID<bvID);
+			//assert(bID<bvID);
+			Weight underadd = under_approx[bvID] * under_approx[other_argID];
+			Weight overadd = over_approx[bvID] * over_approx[other_argID];
+			if (underadd > max_val) {
+				underadd = max_val;
+			}
+			if (overadd > max_val) {
+				overadd = max_val;
+			}
+			if (underadd > under_approx[sumID]) {
+				return false;
+			}
+			if (overadd < over_approx[sumID]) {
+				return false;
+			}
+			return true;
+		}
+	};
+
+
+
+
+
+
+
+	class Invert:public Operation{
 				public:
 			using Operation::getID;
 			using Operation::theory;
