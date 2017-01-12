@@ -1771,7 +1771,7 @@ Lit MaxflowDetector<Weight>::decide() {
 		return lit_Undef;
 
 	static int it = 0;
-	if (++it == 22) {
+	if (++it == 91) {
 		int a = 1;
 	}
 	double startdecidetime = rtime(2);

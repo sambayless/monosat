@@ -4289,7 +4289,7 @@ public:
             importTheory(theory);
             int aID = arg1->bvID;
             int bID = arg2->bvID;
-            if(bvID==7){
+            if(bvID==565){
                 int a =1;
             }
             //assert(aID<bvID);
@@ -4549,7 +4549,7 @@ public:
         void updateApprox(Var ignore_bv, Weight &under_new, Weight &over_new, Cause &under_cause_new,
                           Cause &over_cause_new) override {
             importTheory(theory);
-            if(bvID==6 or bvID==0){
+            if(bvID==565 ){
                 int a =1;
             }
             int other_argID = otherOp->bvID;
@@ -5671,7 +5671,9 @@ public:
 				Assignment &e = trail[i];
 				if (e.isBoundAssignment()) {
 					int bvID = e.bvID;
-
+					if(bvID==2){
+						int a=1;
+					}
 					under_approx[bvID] = e.previous_under;
 					over_approx[bvID] = e.previous_over;
 					under_causes[bvID] = e.prev_under_cause;
@@ -5738,8 +5740,8 @@ public:
 			assert(trail_lim.size() == lev);
 			if(opt_theory_propagate_assumptions)
 				assert(dbg_uptodate());
-			if (lev ==
-				0) {//decisionLevel()==0 This check can fail if the levels of the theory and sat solver are out of sync
+			if (lev ==0) {
+				//decisionLevel()==0 This check can fail if the levels of the theory and sat solver are out of sync
 				for (int cID:repropagate_comparisons) {
 					assert(comparison_needs_repropagation[cID]);
 					comparison_needs_repropagation[cID] = false;
@@ -5906,6 +5908,9 @@ public:
 				if(b==lit_Undef)
 					continue;
 				Lit sb = toSolver(b);
+				if(S->value(sb) != value(b)){
+					throw std::runtime_error("Bad decision in bv theory --- assignments out of sync with solver!");
+				}
 				if (S->value(sb) == l_Undef) {
 					Weight bit = 1L << i;
 
@@ -6151,7 +6156,7 @@ public:
 	}
 	void enqueueTheory(Lit l) {
 		Var v = var(l);
-		if(toInt(l)==459453){
+		if(toInt(l)==5610 || toInt(l)==5611){
 			int a =1;
 		}
 		rewind_trail_pos(trail.size());
@@ -6241,7 +6246,7 @@ public:
 	bool updateApproximations(int bvID, int ignoreCID = -1, Var ignore_bv = var_Undef) {
 		if (isConst(bvID))
 			return false;
-		if (bvID == 1288) {
+		if (bvID == 2 || bvID==565) {
 			int a = 1;
 		}
 		double update_start_time = rtime(3);
@@ -6598,7 +6603,7 @@ public:
 			assert(under_approx[bvID] == under);
 			return true;
 		} else {
-			if(bvID==2647){
+			if(bvID==565 || bvID==2){
 				int a =1;
 			}
 
@@ -6741,6 +6746,7 @@ public:
 		if (!force_propagation && !requiresPropagation) {
 			stats_propagations_skipped++;
 			assert(dbg_uptodate());
+			assert(checkAllApproxUpToDate());
 			return true;
 		}
 
@@ -6752,7 +6758,7 @@ public:
 		}
 		S->theoryPropagated(this);
 		rewind_trail_pos(trail.size());
-		if (++realprops == 4) {
+		if (++realprops == 129 || realprops == 130 || realprops == 108 || realprops == 104) {
 			int a = 1;
 		}
 		//printf("bv prop %d\n",stats_propagations);
@@ -6778,7 +6784,7 @@ public:
 				alteredBV[bvID] = false;
 				continue;
 			}
-			if(bvID==565){
+			if(bvID==565 || bvID==2){
 				int a=1;
 			}
 			//for(int bvID = 0;bvID<bitvectors.size();bvID++){
@@ -6901,6 +6907,7 @@ public:
 			first_propagation = false;
 			n_starting_consts = n_consts;
 		}
+		assert(checkAllApproxUpToDate());
 		return true;
 	};
 

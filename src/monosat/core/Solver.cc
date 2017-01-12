@@ -507,7 +507,7 @@ void Solver::cancelUntil(int lev) {
 
 		}
 		if(lowest_re_enqueue>-1){
-			for(int q = lowest_re_enqueue;q<qhead;q++){ //should this be q<qhead, or q<=qhead?
+			for(int q = lowest_re_enqueue;q<trail.size();q++){ //should this be q<qhead, or q<=qhead?
 				Lit p = trail[q];
 				if (hasTheory(p)) {
 					int theoryID = getTheoryID(p);
@@ -910,6 +910,9 @@ void Solver::enqueueLazy(Lit p, int lev, CRef from){
 void Solver::uncheckedEnqueue(Lit p, CRef from) {
 	CRC(p);
 	CRC(from);
+	if(toInt(p)==6238 || toInt(p)==6239){
+		int a=1;
+	}
 	assert(value(p) == l_Undef);
 	assigns[var(p)] = lbool(!sign(p));
 	vardata[var(p)] = mkVarData(from, decisionLevel());
@@ -1901,7 +1904,7 @@ lbool Solver::search(int nof_conflicts) {
 	n_theory_decision_rounds+=using_theory_decisions;
 	for (;;) {
 		static int iter = 0;
-		if (++iter ==  1564) {
+		if (++iter ==  3124) {//3150 //3144
 			int a = 1;
 		}
 		bool all_assumptions_assigned = decisionLevel() >= assumptions.size();
@@ -1934,7 +1937,7 @@ lbool Solver::search(int nof_conflicts) {
 			CRC(learnt_clause);
 			CRC(backtrack_level);
 			cancelUntil(backtrack_level);
-			
+
 			//this is now slightly more complicated, if there are multiple lits implied by the super solver in the current decision level:
 			//The learnt clause may not be asserting.
 			
@@ -1985,6 +1988,34 @@ lbool Solver::search(int nof_conflicts) {
 			varDecayActivity();
 			claDecayActivity();
 
+			if(!opt_theory_propagate_assumptions && backtrack_level>0 && backtrack_level<assumptions.size()){
+				//improve this in the future!
+				//if we backtracked past the assumption level, AND if theory propagate was disabled while assigning assumptions
+				//then some theories (notably, the bv theory) currently require us to re-propagate all theory literals of that bv,
+				//including (surprisingly) theory literals enqueued at LOWER levels than backtrack_level. This is because those
+				//theory literals did not have their effects propagated until after the backtrack level.
+				//with better book-keeping, this could probably be avoided... however, it only occurs when backtracking past the
+				//assumption level, but not to level 0, which in practice should (?) only happen when the assumptions are in conflict.
+				for(Theory * theory:theories) {
+					theory->backtrackUntil(0);
+				}
+				assert(decisionLevel()>0);
+				for(int q = trail_lim[0];q<trail.size();q++){ //should this be q<qhead, or q<trail.size()?
+					Lit p = trail[q];
+					if (hasTheory(p)) {
+						int theoryID = getTheoryID(p);
+						if (!theorySatisfied(theories[theoryID])) {
+							needsPropagation(theoryID);
+							if(toInt(getTheoryLit(p)) == 5610 || toInt(getTheoryLit(p)) == 5611){
+								int a=1;
+							}
+							theories[theoryID]->enqueueTheory(getTheoryLit(p));
+						}
+					}
+				}
+
+			}
+
 			if (--learntsize_adjust_cnt <= 0) {
 				learntsize_adjust_confl *= learntsize_adjust_inc;
 				learntsize_adjust_cnt = (int) learntsize_adjust_confl;
@@ -1996,7 +2027,7 @@ lbool Solver::search(int nof_conflicts) {
 							(int) clauses_literals, (int) max_learnts, nLearnts(),
 							(double) learnts_literals / nLearnts(), stats_removed_clauses);
 			}
-			
+
 		} else {
 			assert(theory_queue.size() == 0 || !propagate_theories);
 			
