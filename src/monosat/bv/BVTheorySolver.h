@@ -6756,7 +6756,7 @@ public:
 			int a = 1;
 		}
 		//printf("bv prop %d\n",stats_propagations);
-		if (stats_propagations == 22) {
+		if (stats_propagations == 359) {
 			int a = 1;
 		}
 		bool any_change = false;
@@ -6778,7 +6778,7 @@ public:
 				alteredBV[bvID] = false;
 				continue;
 			}
-			if(bvID==7){
+			if(bvID==565){
 				int a=1;
 			}
 			//for(int bvID = 0;bvID<bitvectors.size();bvID++){
