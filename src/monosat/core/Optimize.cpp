@@ -682,7 +682,7 @@ int evalPB(SimpSolver & S,const Objective & o, bool over_approx, bool eval_at_le
 
 
 
-int64_t optimize_binary_bv(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bvTheory, bool invert,const vec<Lit> & assumes,int bvID,  bool & hit_cutoff, int64_t & n_solves){
+int64_t optimize_binary_bv(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bvTheory, bool maximize,const vec<Lit> & assumes,int bvID,  bool & hit_cutoff, int64_t & n_solves){
 	hit_cutoff=false;
 	vec<Lit> assume;
 	for(Lit l:assumes)
@@ -700,6 +700,9 @@ int64_t optimize_binary_bv(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int6
 		}
 	}
 
+	bool invert=maximize;
+
+
 	int64_t min_val = getApprox(bvTheory, bvID, invert,true); //bvTheory->getUnderApprox(bvID,true);
 	int64_t max_val = getApprox(bvTheory, bvID, !invert); //bvTheory->getOverApprox(bvID);
 	  if(opt_verb>=1){
@@ -711,15 +714,27 @@ int64_t optimize_binary_bv(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int6
 		  //it might also be a good idea to try min_val+1, and max_val-1.
 
 	int64_t underapprox_sat_val = getApprox(bvTheory, bvID, invert); //bvTheory->getUnderApprox(bvID);
-	if(lt(underapprox_sat_val,max_val,invert))
-		  suggested_next_midpoint =	underapprox_sat_val;
-
+	int64_t overapprox_sat_val = getApprox(bvTheory, bvID, !invert); //bvTheory->getUnderApprox(bvID);
+	if(!maximize) {
+		if (lt(underapprox_sat_val, max_val, invert))
+			suggested_next_midpoint = underapprox_sat_val;
+	}else{
+		if (lt(overapprox_sat_val, max_val, invert))
+			suggested_next_midpoint = overapprox_sat_val;
+	}
 	  bool first_round=true;
 	int64_t last_decision_value=max_val;
 	Lit last_decision_lit =  bvTheory->toSolver(bvTheory->newComparison(invert ? Comparison::geq : Comparison::leq,bvID,max_val,var_Undef,opt_decide_optimization_lits));
-	  while(min_val < max_val && !hit_cutoff){
-		int64_t mid_point = min_val + (max_val - min_val) / 2;
-
+	  while(lt(min_val , max_val,invert) && !hit_cutoff){
+		int64_t mid_point;
+		  if(!invert)
+			  mid_point=min_val + (max_val - min_val) / 2;
+		  else{
+			  mid_point=max_val + (min_val - max_val) / 2;
+			  if(mid_point==max_val){//extra check required because integer division rounds down
+				  mid_point=min_val;
+			  }
+		  }
 		if(suggested_next_midpoint !=-1 && geq(suggested_next_midpoint,min_val,invert) && lt(suggested_next_midpoint,mid_point,invert))
 			  mid_point =	suggested_next_midpoint;
 		assert(mid_point>=0);assert(geq(mid_point,min_val,invert));assert(lt(mid_point,max_val,invert));
@@ -918,11 +933,22 @@ void copyModel(SimpSolver & S, vec<Lit> & dest){
 
 				for(int i = 0;i<objectives.size();i++){
 					if(objectives[i].isBV()){
-						min_values[i]=bvTheory->getOverApprox(objectives[i].bvID,true);
-						max_values[i]=bvTheory->getUnderApprox(objectives[i].bvID,true);
+						if(!objectives[i].maximize){
+							min_values[i]=bvTheory->getOverApprox(objectives[i].bvID,true);
+							max_values[i]=bvTheory->getUnderApprox(objectives[i].bvID,true);
+						}else{
+							min_values[i]=bvTheory->getUnderApprox(objectives[i].bvID,true);
+							max_values[i]=bvTheory->getOverApprox(objectives[i].bvID,true);
+						}
+
 					}else{
-						min_values[i]=evalPB(S,objectives[i],true,true);
-						max_values[i]=evalPB(S, objectives[i],false,true);
+						if(!objectives[i].maximize){
+							min_values[i]=evalPB(S,objectives[i],true,true);
+							max_values[i]=evalPB(S, objectives[i],false,true);
+						}else{
+							min_values[i]=evalPB(S,objectives[i],false,true);
+							max_values[i]=evalPB(S, objectives[i],true,true);
+						}
 					}
 				}
 
@@ -944,10 +970,10 @@ void copyModel(SimpSolver & S, vec<Lit> & dest){
 							val = optimize_binary_bv(&S, bvTheory, objectives[i].maximize,assume, bvID, hit_cutoff, n_solves);
 						}
 						if(objectives[i].maximize){
-							assert(val<=max_values[i]);
+							assert(val>=min_values[i]);assert(val<=max_values[i]);
 							max_values[i] = val;
 						}else{
-							assert(val>=min_values[i]);
+							assert(val>=min_values[i]);assert(val<=max_values[i]);
 							min_values[i] = val;
 						}
 						if (hit_cutoff) {
