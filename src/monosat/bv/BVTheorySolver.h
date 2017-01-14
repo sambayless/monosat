@@ -3713,6 +3713,17 @@ public:
 		MultiplicationArg *arg2 = nullptr;
 		int bvID = -1;
 
+    private:
+
+        inline Weight safeDivide(Weight dividend, Weight divisor, Weight div_zero_val){
+
+            if (divisor==0){
+                return div_zero_val;
+            }else{
+                return dividend/divisor;
+            }
+        }
+    public:
 		Multiplication(BVTheorySolver &theory, int bvID) : Operation(theory), bvID(bvID) {
 
 		}
@@ -3739,11 +3750,6 @@ public:
 
 
 
-		void getArgumentBVs(vec<int> &bvIDs) const override {
-			bvIDs.push(arg1->bvID);
-			bvIDs.push(arg2->bvID);
-		};
-
 		OperationType getType() const override {
 			return OperationType::cause_is_mult;
 		}
@@ -3754,8 +3760,11 @@ public:
 			int bID = arg2->bvID;
 			Weight &underApprox = under_approx[bvID];
 			Weight &overApprox = over_approx[bvID];
-
-
+            int width = theory.bitvectors[bvID].size();
+            Weight max_val = ((1L) << width) - 1;
+            if(bvID==7){
+                int a =1;
+            }
 			Weight under = under_approx[aID]*under_approx[bID];
 			Weight over = over_approx[aID] *over_approx[bID];
 			clip_over(under, bvID);
@@ -3787,19 +3796,22 @@ public:
 				return false;
 			}
 
-			Weight under_arg_b = underApprox / over_approx[bID];
-			Weight over_arg_b = overApprox / under_approx[bID];
-			clip_under(under_arg_b, bvID);
-			clip_under(over_arg_b, bvID);
+
+
+
+            Weight under_arg_b = safeDivide(underApprox, over_approx[bID], 0);
+            Weight over_arg_b = safeDivide(overApprox, under_approx[bID], max_val);
+            clip_over(under_arg_b, bvID);
+            clip_over(over_arg_b, bvID);
 			//this check may be especially important when either aID or bID is really a constant...
 			if ((under_arg_b > under_approx[aID]) || (over_arg_b < over_approx[aID])) {
 				//the other bv needs to be updated
 				addAlteredBV(aID);
 			}
-			Weight under_arg_a = underApprox / over_approx[aID];
-			Weight over_arg_a = overApprox / under_approx[aID];
-			clip_under(under_arg_a, bvID);
-			clip_under(over_arg_a, bvID);
+            Weight under_arg_a = safeDivide(underApprox , over_approx[aID],0);
+            Weight over_arg_a = safeDivide(overApprox , under_approx[aID],max_val);
+            clip_over(under_arg_a, bvID);
+            clip_over(over_arg_a, bvID);
 			if ((under_arg_a > under_approx[bID]) || (over_arg_a < over_approx[bID])) {
 				//the other bv needs to be updated
 				addAlteredBV(bID);
@@ -3813,6 +3825,9 @@ public:
 			importTheory(theory);
 			int aID = arg1->bvID;
 			int bID = arg2->bvID;
+            if(bvID==565){
+                int a =1;
+            }
 			//assert(aID<bvID);
 			//assert(bID<bvID);
 			Weight under = under_approx[aID] * under_approx[bID];
@@ -3831,6 +3846,9 @@ public:
 				over_cause_new.setType(getType());
 				over_cause_new.index = getID();
 			}
+            if(over==0 || over==1){
+                int a =1;
+            }
 		}
 
 		void buildReason(vec<Lit> &conflict) {
@@ -3889,15 +3907,16 @@ public:
 			if (compareOver) {
 				Weight over_bid = over_approx[bID];
 				Weight over_aid = over_approx[aID];
-
-				addAnalysis(Comparison::leq, aID, over_approx[bvID] / over_bid);
-				addAnalysis(Comparison::leq, bID, over_approx[bvID] / over_aid);
+                int width = theory.bitvectors[bvID].size();
+                Weight max_val = ((1L) << width) - 1;
+                addAnalysis(Comparison::leq, aID,safeDivide( over_approx[bvID] , over_bid,max_val));
+                addAnalysis(Comparison::leq, bID, safeDivide(over_approx[bvID] , over_aid,max_val));
 			} else {
 				Weight under_bid = under_approx[bID];
 				Weight under_aid = under_approx[aID];
 
-				addAnalysis(Comparison::geq, aID, under_approx[bvID] / under_bid);
-				addAnalysis(Comparison::geq, bID, under_approx[bvID] / under_aid);
+                addAnalysis(Comparison::geq, aID, safeDivide(under_approx[bvID] , under_bid,0));
+                addAnalysis(Comparison::geq, bID, safeDivide(under_approx[bvID] , under_aid,0));
 
 			}
 		}
@@ -3938,6 +3957,8 @@ public:
 				return false;
 			}
 			if (overadd < over_approx[bvID]) {
+                bool ignore;vec<Lit> ignore_conf;
+                propagate(ignore, ignore_conf);
 				return false;
 			}
 			return true;
@@ -3957,10 +3978,18 @@ public:
 		Multiplication *resultOp;
 		MultiplicationArg *otherOp;
 		int bvID = -1;
-		Weight constant;
+    private:
+        inline Weight safeDivide(Weight dividend, Weight divisor, Weight div_zero_val){
+            if (divisor==0){
+                return div_zero_val;
+            }else{
+                return dividend/divisor;
+            }
+        }
+    public:
 		MultiplicationArg(BVTheorySolver &theory, int bvID, Multiplication *result) : Operation(theory), bvID(bvID),
 																					  resultOp(result){
-			assert(constant>0);
+
 		}
 
 		int getBV() override {
@@ -3975,9 +4004,6 @@ public:
 			this->bvID = bvID;
 		}
 
-		void bitblast(Circuit<TheorySolver> &c) override {
-			//do nothing
-		}
 
 		OperationType getType() const override {
 			return OperationType::cause_is_mult_argument;
@@ -3989,12 +4015,15 @@ public:
 			int sumID = resultOp->bvID;
 			Weight &underApprox = under_approx[bvID];
 			Weight &overApprox = over_approx[bvID];
-
+            if(bvID==0){
+                int a =1;
+            }
 			assert(other_argID >= 0);
 			assert(sumID >= 0);
-
-			Weight under = under_approx[sumID] / over_approx[other_argID];
-			Weight over = over_approx[sumID] / under_approx[other_argID];
+            int width = theory.bitvectors[bvID].size();
+            Weight max_val = ((1L) << width) - 1;
+            Weight under = safeDivide(under_approx[sumID] , over_approx[other_argID],0);
+            Weight over = safeDivide(over_approx[sumID] , under_approx[other_argID],max_val);
 			clip_under(under, bvID);
 			clip_under(over, bvID);
 			if (underApprox > over) {
@@ -4024,23 +4053,27 @@ public:
 				theory.stats_conflict_time += rtime(2) - startconftime;
 				return false;
 			}
-			Weight under_arg = underApprox * under_approx[other_argID];
+
+            //TODO: if the other arg is known to be equal to this arg, then we can improve this bound
+
+            Weight under_arg = safeDivide(under_approx[sumID] , overApprox,0);
 			clip_over(under_arg, bvID);
-			Weight over_arg = overApprox * over_approx[other_argID];
+            Weight over_arg = safeDivide(over_approx[sumID] , underApprox,max_val);
 			clip_over(over_arg, bvID);
 			//this check may be especially important when either aID or bID is really a constant...
-			if ((under_arg > under_approx[sumID]) || (over_arg < over_approx[sumID])) {
-				//the other bv needs to be updated
-				addAlteredBV(sumID);
-			}
-			Weight under_sum = under_approx[sumID] / overApprox;
-			clip_under(under_sum, bvID);
-			Weight over_sum = over_approx[sumID] / underApprox;
-			clip_under(over_sum, bvID);
-			if ((under_sum > under_approx[other_argID]) || (over_sum < over_approx[other_argID])) {
+            if ((under_arg > under_approx[other_argID]) || (over_arg < over_approx[other_argID])) {
 				//the other bv needs to be updated
 				addAlteredBV(other_argID);
 			}
+            Weight under_sum = underApprox * under_approx[other_argID];
+            clip_over(under_sum, bvID);
+            Weight over_sum = overApprox * over_approx[other_argID];
+            clip_over(over_sum, bvID);
+            if ((under_sum > under_approx[sumID]) || (over_sum < over_approx[sumID])) {
+                //the other bv needs to be updated
+
+                addAlteredBV(sumID);
+            }
 
 			return true;
 
@@ -4049,13 +4082,17 @@ public:
 		void updateApprox(Var ignore_bv, Weight &under_new, Weight &over_new, Cause &under_cause_new,
 						  Cause &over_cause_new) override {
 			importTheory(theory);
+            if(bvID==565 ){
+                int a =1;
+            }
 			int other_argID = otherOp->bvID;
 			int sumID = resultOp->bvID;
-
+            int width = theory.bitvectors[bvID].size();
+            Weight max_val = ((1L) << width) - 1;
 			assert(other_argID >= 0);
 			assert(sumID >= 0);
-			Weight under = under_approx[sumID] / over_approx[other_argID];
-			Weight over = over_approx[sumID] / under_approx[other_argID];
+            Weight under = safeDivide(under_approx[sumID] , over_approx[other_argID],0);
+            Weight over = safeDivide(over_approx[sumID] , under_approx[other_argID], max_val);
 			clip_under(under, bvID);
 			clip_under(over, bvID);
 			if (under > under_new) {
@@ -4070,6 +4107,9 @@ public:
 				over_cause_new.setType(OperationType::cause_is_mult_argument);
 				over_cause_new.index = getID();
 			}
+            if(over==0 || over==1){
+                int a =1;
+            }
 		}
 
 		void buildReason(vec<Lit> &conflict) {
@@ -4082,12 +4122,12 @@ public:
 			theory.stats_build_addition_arg_reason++;
 			Weight over_cur = over_approx[bvID];
 			Weight under_cur = under_approx[bvID];
-
-			Weight under_add = under_approx[sumID] / over_approx[other_argID];
-			Weight over_add = over_approx[sumID] / under_approx[other_argID];
-
 			int width = theory.bitvectors[bvID].size();
 			Weight max_val = ((1L) << width) - 1;
+            Weight under_add = safeDivide(under_approx[sumID] , over_approx[other_argID],0);
+            Weight over_add = safeDivide(over_approx[sumID] , under_approx[other_argID],max_val);
+
+
 			if (under_add > max_val) {
 				under_add = max_val;
 			}
@@ -4120,8 +4160,8 @@ public:
 				Weight over_sumID = over_approx[sumID];
 				Weight under_argID = under_approx[other_argID];
 
-				addAnalysis(Comparison::geq, other_argID, over_sumID / over_approx[bvID]);
-				addAnalysis(Comparison::leq, sumID, over_approx[bvID] * under_argID);
+                addAnalysis(Comparison::geq, other_argID, under_argID);//safeDivide(over_sumID , over_approx[bvID])
+                addAnalysis(Comparison::leq, sumID, over_sumID);
 				//buildValueReason(~op,other_argID,over_sumID-to,conflict,trail_pos-1);
 				//buildValueReason(op,sumID,to+under_argID,conflict,trail_pos-1);
 
@@ -4132,8 +4172,8 @@ public:
 				Weight under_sumID = under_approx[sumID];
 				Weight over_argID = over_approx[other_argID];
 				//Weight under = under_approx[sumID] -  over_approx[other_argID];
-				addAnalysis(Comparison::leq, other_argID, under_sumID / under_approx[bvID]);
-				addAnalysis(Comparison::geq, sumID, under_approx[bvID] * over_argID);
+                addAnalysis(Comparison::leq, other_argID, over_argID);//safeDivide(under_sumID , under_approx[bvID])
+                addAnalysis(Comparison::geq, sumID,under_sumID);
 				//buildValueReason(~op,other_argID,under_sumID-to,conflict,trail_pos-1);
 				//buildValueReason(op,sumID,to+over_argID,conflict,trail_pos-1);
 			}
@@ -4142,9 +4182,10 @@ public:
 			importTheory(theory);
 			int other_argID = otherOp->bvID;
 			int sumID = resultOp->bvID;
-
-			Weight under_add = under_approx[sumID] / over_approx[other_argID];
-			Weight over_add = over_approx[sumID] / under_approx[other_argID];
+            int width = theory.bitvectors[bvID].size();
+            Weight max_val = ((1L) << width) - 1;
+            Weight under_add = safeDivide(under_approx[sumID], over_approx[other_argID],0);
+            Weight over_add = safeDivide(over_approx[sumID] , under_approx[other_argID],max_val);
 
 			if (under_add > under) {
 				under = under_add;
@@ -6079,6 +6120,7 @@ public:
 		return true;
 	}*/
 	void addAlteredBV( int newBV){
+        bv_needs_propagation[newBV]=true;//is this really required
 		if (altered_bvs.size()==0){
 			altered_bvs.push(newBV);
 			alteredBV[newBV]=true;
@@ -6944,16 +6986,17 @@ public:
 		requiresPropagation=true;
 		return getBV(resultID);
 	}
-	BitVector newDivisionBV(int resultID, int aID, Weight constant) {
-		return newMultiplicationBV(aID, resultID, constant);
+	BitVector newDivisionBV(int resultID, int aID, int bID) {
+		return newMultiplicationBV(aID, resultID, bID);
 	}
-    BitVector newMultiplicationBV(int resultID, int aID, Weight constant) {
-
+    BitVector newMultiplicationBV(int resultID, int aID, int bID) {
 
         if (!hasBV(aID)) {
             throw std::runtime_error("Undefined bitvector ID " + std::to_string(aID));
         }
-
+        if (!hasBV(bID)) {
+            throw std::runtime_error("Undefined bitvector ID " + std::to_string(bID));
+        }
         if (!hasBV(resultID)) {
             throw std::runtime_error("Undefined bitvector ID " + std::to_string(resultID));
         }
@@ -6964,26 +7007,35 @@ public:
             resultID = eq_bitvectors[resultID];
         while (eq_bitvectors[aID] != aID)
             aID = eq_bitvectors[aID];
-
+        while (eq_bitvectors[bID] != bID)
+            bID = eq_bitvectors[bID];
+        if(bID<aID){
+            std::swap(aID,bID);
+        }
         int bitwidth = getBV(resultID).width();
-
+        /*	if(resultID<=aID || resultID<=bID){
+            throw std::invalid_argument("Addition result must have a strictly greater id than its arguments");
+        }*/
         if (bitwidth != getBV(aID).width()) {
             throw std::invalid_argument("Bit widths must match for bitvectors");
         }
-
-        if (constant==0){
-            return newBitvector(resultID,bitwidth,0);
+        if (bitwidth != getBV(bID).width()) {
+            throw std::invalid_argument("Bit widths must match for bitvectors");
         }
 
-        Multiplication *add = new Multiplication(*this, resultID,constant);
-        addOperation(resultID, add);
+        Multiplication *mult = new Multiplication(*this, resultID);
+        addOperation(resultID, mult);
 
-        MultiplicationArg *arg1 = new MultiplicationArg(*this, aID, add);
+        MultiplicationArg *arg1 = new MultiplicationArg(*this, aID, mult);
         addOperation(aID, arg1);
+        MultiplicationArg *arg2 = new MultiplicationArg(*this, bID, mult);
+        addOperation(bID, arg2);
 
+        mult->setArg1(arg1);
+        mult->setArg2(arg2);
 
-        add->setArg1(arg1);
-
+        arg1->setOtherArg(arg2);
+        arg2->setOtherArg(arg1);
 
         bv_needs_propagation[resultID] = true;
         if (!alteredBV[resultID]) {
@@ -6995,7 +7047,11 @@ public:
             alteredBV[aID] = true;
             altered_bvs.push(aID);
         }
-
+        bv_needs_propagation[bID] = true;
+        if (!alteredBV[bID]) {
+            alteredBV[bID] = true;
+            altered_bvs.push(bID);
+        }
         requiresPropagation = true;
         return getBV(resultID);
     }
