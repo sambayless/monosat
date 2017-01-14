@@ -6715,7 +6715,7 @@ public:
 		return true;
 	}*/
 	void addAlteredBV(int newBV) {
-        bv_needs_propagation[newBV]=true;
+        bv_needs_propagation[newBV]=true;//is this really required
 		if (altered_bvs.size() == 0) {
 			altered_bvs.push(newBV);
 			alteredBV[newBV] = true;
