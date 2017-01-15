@@ -705,10 +705,7 @@ class Monosat(metaclass=Singleton):
     def getSymbol(self,lit):
         pass
 
-    def clearOptimizationObjectives(self):
-        if self.solver.output:
-            self._echoOutput("clear_opt\n");
-        self.monosat_c.clear_optimizaiton_objectives(self.solver._ptr)
+
        
     def AssertAtMostOne(self,clause):
         self.backtrack()     
