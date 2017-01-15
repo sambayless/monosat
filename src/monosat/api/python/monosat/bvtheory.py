@@ -239,9 +239,9 @@ class BitVector():
             #mgr._monosat.bv_addition(self.getID(), args[1].getID(), args[0].getID())
             mgr._monosat.bv_subtraction(args[0].getID(), args[1].getID(), self.getID())
         elif op=="*":
-            mgr._monosat.bv_multiply(args[0].getID(), int(args[1]), self.getID())
+            mgr._monosat.bv_multiply(args[0].getID(),args[1].getID(), self.getID())
         elif op=="/":
-            mgr._monosat.bv_divide(args[0].getID(), int(args[1]), self.getID())
+            mgr._monosat.bv_divide(args[0].getID(), args[1].getID(), self.getID())
         elif op=="~":
             _checkBVs((self,args[0]))
             mgr._monosat.bv_not(args[0].getID(), self.getID())
@@ -353,22 +353,22 @@ class BitVector():
     
     __rsub__ = __sub__
 
-        def __mul__(self,other):
-            if not isinstance(other, BitVector):
-                other = BitVector(self.mgr,self.width(),other)
-            return BitVector(self.mgr,self.width(),'*',(self,other))
+    def __mul__(self,other):
+        if not isinstance(other, BitVector):
+            other = BitVector(self.mgr,self.width(),other)
+        return BitVector(self.mgr,self.width(),'*',(self,other))
 
-        __rmul__ = __mul__
+    __rmul__ = __mul__
 
-        def __div__(self,other):
-            if not isinstance(other, BitVector):
-                other = BitVector(self.mgr,self.width(),other)
-            return BitVector(self.mgr,self.width(),'/',(self,other))
+    def __div__(self,other):
+        if not isinstance(other, BitVector):
+            other = BitVector(self.mgr,self.width(),other)
+        return BitVector(self.mgr,self.width(),'/',(self,other))
 
-        __rdiv__ = __div__
+    __rdiv__ = __div__
 
 
-        def lt(self,compareTo):
+    def lt(self,compareTo):
         if  isinstance(compareTo, BitVector):
             return Var(self.mgr._monosat.newBVComparison_bv_lt(self.getID(),compareTo.getID()))
         else:
