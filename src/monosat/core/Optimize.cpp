@@ -907,6 +907,10 @@ void copyModel(SimpSolver & S, vec<Lit> & dest){
 			}
 
 			bool r;
+			if (opt_verb >= 2 || opt_verb_optimize>=2) {
+				printf("Performing initial solve (before attempting optimization)...\n");
+			}
+			//problem: this initial solve, in which the optimization function is free, can sometimes be much more expensive than the subsequent optimizaiton steps...
 			lbool res= S.solveLimited(assume,opt_pre && do_simp,!opt_pre && do_simp);
 			if (res==l_True){
 				r=true;
@@ -923,6 +927,9 @@ void copyModel(SimpSolver & S, vec<Lit> & dest){
 					if(S.value(l)!=l_True){
 						throw std::runtime_error("Error in optimization (model is inconsistent with assumptions)");
 					}
+				}
+				if (opt_verb >= 2 || opt_verb_optimize>=2) {
+					printf("Begining optimization...\n");
 				}
 				Monosat::BVTheorySolver<int64_t> * bvTheory = (Monosat::BVTheorySolver<int64_t> *) S.getBVTheory();
 				Monosat::PB::PBConstraintSolver * pbSolver = S.getPB();

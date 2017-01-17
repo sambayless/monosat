@@ -105,9 +105,14 @@ DoubleOption Monosat::opt_random_theory_vsids_freq(_cat, "rnd-theory-vsids-freq"
 		"The frequency with which the decision theory uses vsids to make decisions, if theory-order-vsids is enabled", 1,
 		DoubleRange(0, true, 1, true));
 
-BoolOption Monosat::opt_randomomize_theory_order(_cat, "rnd-theory-order",
+BoolOption Monosat::opt_randomize_theory_order(_cat, "rnd-theory-order",
 		"If theory decisions are used, randomize the order that theories are decided at each restart", false);
 
+
+BoolOption Monosat::opt_randomize_theory_order_all(_cat, "rnd-theory-order-all",
+"If theory decisions are used, randomize the order that theories are decided at every decision (not just every restart)", false);
+BoolOption Monosat::opt_theory_decision_round_robin(_cat, "round-robin-theory-order",
+													 "If theory decisions are used, use a round-robin policy for which theory to decide first", false);
 BoolOption Monosat::opt_early_theory_prop(_cat, "early-theory-prop",
 		"If false, the solver waits until all literals are propagated before propagating theories; if true, theories are propagated while the solver is still propagating literals",
 		false);

@@ -169,7 +169,7 @@ public:
 		theories.push(t);
 		theory_reprop_trail_pos.push(-1);
 		theory_init_prop_trail_pos.push(-1);
-		t->setActivity(opt_randomomize_theory_order ? drand(random_seed) * 0.00001 : 0);
+		t->setActivity(opt_randomize_theory_order ? drand(random_seed) * 0.00001 : 0);
 		t->setPriority(0);
 		t->setTheoryIndex(theories.size() - 1);
 
@@ -569,6 +569,7 @@ public:
 	vec<int> satisfied_theory_trail_pos;
 	vec<int> post_satisfied_theory_trail_pos;
 	vec<Theory*> decidable_theories;
+    int theory_decision_round_robin=0;
 	Theory * decisionTheory=nullptr;//for opt_vsids_solver_as_theory
 	vec<Var> all_theory_vars;
 	struct LitCount {
