@@ -367,6 +367,7 @@ class BitVector():
         return BitVector(self.mgr,self.width(),'/',(self,other))
 
     __rdiv__ = __div__
+
     def lt(self,compareTo):
         if  isinstance(compareTo, BitVector):
             return Var(self.mgr._monosat.newBVComparison_bv_lt(self.getID(),compareTo.getID()))

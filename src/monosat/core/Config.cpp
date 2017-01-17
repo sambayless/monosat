@@ -39,6 +39,8 @@ static const char* _cat_fsm = "FSM";
 IntOption Monosat::opt_crc("MAIN", "crc", "Crc level (0=silent, 1=some, 2=more).", 0, IntRange(0, INT32_MAX));
 
 IntOption Monosat::opt_verb("MAIN", "verb", "Verbosity level (0=silent, 1=some, 2=more).", 0, IntRange(0, 3));
+IntOption Monosat::opt_verb_optimize("MAIN", "verb-opt", "Verbosity level for optimization (0=silent, 1=some, 2=more).",0, IntRange(0, 3));
+
 DoubleOption Monosat::opt_var_decay(_cat, "var-decay", "The variable activity decay factor", 0.95,
 		DoubleRange(0, false, 1, false));
 DoubleOption Monosat::opt_clause_decay(_cat, "cla-decay", "The clause activity decay factor", 0.999,

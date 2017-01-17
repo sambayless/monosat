@@ -226,9 +226,9 @@ int64_t optimize_linear_bv(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int6
 
 	int64_t value = getApprox(bvTheory,bvID,!invert);
 	int64_t last_decision_value=value;
-	  if(opt_verb>=1){
-		  printf("Min bv%d = %ld",bvID,value);
-	  }
+	if(opt_verb>=1 || opt_verb_optimize>=1){
+		printf("Best bv%d = %ld",bvID,value);
+	}
 	  // int bvID,const Weight & to, Var outerVar = var_Undef, bool decidable=true
 	Lit last_decision_lit =  bvTheory->toSolver(bvTheory->newComparison(invert ? Comparison::geq : Comparison::leq,bvID,value,var_Undef,opt_decide_optimization_lits));
 	while(gt(value,getApprox(bvTheory,bvID,invert,true),invert) && !hit_cutoff){
@@ -705,8 +705,8 @@ int64_t optimize_binary_bv(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int6
 
 	int64_t min_val = getApprox(bvTheory, bvID, invert,true); //bvTheory->getUnderApprox(bvID,true);
 	int64_t max_val = getApprox(bvTheory, bvID, !invert); //bvTheory->getOverApprox(bvID);
-	  if(opt_verb>=1){
-		  printf("Min bv%d = %ld",bvID,max_val);
+	  if(opt_verb>=1 || opt_verb_optimize>=1){
+		  printf("Best bv%d = %ld",bvID,max_val);
 	  }
 	int64_t suggested_next_midpoint = -1;
 
@@ -763,7 +763,7 @@ int64_t optimize_binary_bv(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int6
 		  Optimization::disableResourceLimits(S);
 		  if (res==l_Undef){
 			  hit_cutoff=true;
-			  if(opt_verb>0){
+			  if(opt_verb>0|| opt_verb_optimize>=1){
 				  printf("\nBudget exceeded during optimization, quiting early (model might not be optimal!)\n");
 			  }
 			  r=false;
@@ -802,8 +802,8 @@ int64_t optimize_binary_bv(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int6
 				  min_val=new_value;
                 assert(gt(min_val,getApprox(bvTheory,bvID,invert,true),invert)); //assert(min_val>=bvTheory->getUnderApprox(bvID,true));
 			  }
-			  if(opt_verb>=1){
-				  printf("\rMin bv%d = %ld",bvID,max_val);
+			  if(opt_verb>=1 || opt_verb_optimize>=1){
+				  printf("\rBest bv%d = %ld",bvID,max_val);
 			  }
 		  }else{
 			min_val = invert ? mid_point-1 : mid_point+1; //yes this is intentionally backward
@@ -870,7 +870,7 @@ void copyModel(SimpSolver & S, vec<Lit> & dest){
 		static int solve_runs=0;
 		found_optimal=true;
 		solve_runs++;
-		if(opt_verb>=1){
+		if(opt_verb>=1 || opt_verb_optimize>=1){
 			if(solve_runs>1){
 				printf("Solving(%d)...\n",solve_runs);
 			}else{
@@ -959,8 +959,8 @@ void copyModel(SimpSolver & S, vec<Lit> & dest){
 					if(objectives[i].isBV()) {
 						int bvID = objectives[i].bvID;
 
-						if (opt_verb >= 1) {
-							printf("Minimizing bv%d (%d of %d)\n", bvID, i + 1, objectives.size());
+						if (opt_verb >= 1 || opt_verb_optimize>=1) {
+							printf("%s bv%d (%d of %d)\n", objectives[i].maximize ? "Maximizing": "Minimizing", bvID, i + 1, objectives.size());
 						}
 						int64_t val=0;
 						if (!opt_binary_search_optimization_bv) {
@@ -992,14 +992,14 @@ void copyModel(SimpSolver & S, vec<Lit> & dest){
 															opt_decide_optimization_lits)));
 						}
 						assert(min_values[i] >= 0);
-						if (opt_verb >= 1) {
-							printf("\rMin bv%d = %ld\n", bvID, min_values[i]);
+						if (opt_verb >= 1 || opt_verb_optimize>=1) {
+							printf("\rBest bv%d = %ld\n", bvID, objectives[i].maximize? max_values[i]: min_values[i]);
 						}
 
 					}else{
 
-						if (opt_verb >= 1) {
-							printf("Minimizing pb (%d of %d)\n", i + 1, objectives.size());
+						if (opt_verb >= 1 || opt_verb_optimize>=1) {
+							printf("%s pb (%d of %d)\n",objectives[i].maximize ? "Maximizing": "Minimizing", i + 1, objectives.size());
 						}
 						int64_t val=0;
 						if (!opt_binary_search_optimization_pb) {
@@ -1101,7 +1101,7 @@ void copyModel(SimpSolver & S, vec<Lit> & dest){
 				}
 				assert(r);
 
-				if(opt_verb>0){
+				if(opt_verb>0 || opt_verb_optimize>=1){
 					printf("Best values found (after %ld calls) : ",n_solves);
 					for(int i = 0;i<min_values.size();i++){
 						int64_t best_value = objectives[i].maximize ? max_values[i] : min_values[i];
