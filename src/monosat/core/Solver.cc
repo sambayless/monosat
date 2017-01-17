@@ -1900,10 +1900,22 @@ lbool Solver::search(int nof_conflicts) {
 						}
 					}
 				}else{
+					if (opt_randomize_theory_order_all) {
+						randomShuffle(random_seed, decidable_theories);
+					}
 					for (int i = 0; i < decidable_theories.size() && next == lit_Undef; i++) {
+						//j only differs from i if round robin theory decisions are enabled
+						int j = (i+ theory_decision_round_robin)% decidable_theories.size();
+						assert(opt_theory_decision_round_robin || j==i);
+						assert(j>=0);assert(j<=decidable_theories.size());
+						Theory * t = decidable_theories[j];
 						if (decidable_theories[i]->getPriority()>=next_var_priority) {
 							next = decidable_theories[i]->decideTheory();
 						}
+					}
+					if(opt_theory_decision_round_robin){
+						theory_decision_round_robin++;
+						theory_decision_round_robin%=decidable_theories.size();
 					}
 				}
 
@@ -2068,7 +2080,7 @@ lbool Solver::solve_() {
 			for (int i = 0; i < nVars(); i++)
 				polarity[i] = irand(random_seed, 1);
 		}
-		if(opt_decide_theories && opt_randomomize_theory_order){
+		if(opt_decide_theories && opt_randomize_theory_order){
 			randomShuffle(random_seed, decidable_theories);
 		}
 

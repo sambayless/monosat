@@ -94,7 +94,7 @@ public:
 	//Theory interface
 	void addTheory(Theory*t) {
 		theories.push(t);
-		t->setActivity(opt_randomomize_theory_order ? drand(random_seed) * 0.00001 : 0);
+		t->setActivity(opt_randomize_theory_order ? drand(random_seed) * 0.00001 : 0);
 		t->setPriority(0);
 		t->setTheoryIndex(theories.size() - 1);
 
@@ -483,6 +483,7 @@ public:
 	vec<Lit> theory_conflict;
 	vec<Theory*> theories;
 	vec<Theory*> decidable_theories;
+	int theory_decision_round_robin=0;
 	Theory * decisionTheory=nullptr;//for opt_vsids_solver_as_theory
 	vec<Var> all_theory_vars;
 	struct LitCount {
