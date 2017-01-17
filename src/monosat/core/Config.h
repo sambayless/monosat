@@ -25,6 +25,7 @@
 #include "monosat/utils/System.h"
 namespace Monosat {
 extern IntOption opt_verb;
+extern IntOption opt_verb_optimize;
 extern BoolOption opt_pre;
 extern DoubleOption opt_var_decay;
 extern DoubleOption opt_clause_decay;
