@@ -107,6 +107,10 @@ DoubleOption Monosat::opt_random_theory_vsids_freq(_cat, "rnd-theory-vsids-freq"
 
 BoolOption Monosat::opt_randomize_theory_order(_cat, "rnd-theory-order",
 		"If theory decisions are used, randomize the order that theories are decided at each restart", false);
+BoolOption Monosat::opt_optimize_internal(_cat, "optimize-internal",
+											   "Perform optimizations within the solver's decision heuristic", false);
+BoolOption Monosat::opt_optimization_init_solve(_cat, "optimize-init-solve",
+										  "Perform an initial, free solving round before applying optimization (this is potentially expensive, but also gives the solver a chance to find good initial bounds)", false);
 
 
 BoolOption Monosat::opt_randomize_theory_order_all(_cat, "rnd-theory-order-all",

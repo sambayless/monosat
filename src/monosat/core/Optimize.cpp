@@ -206,7 +206,8 @@ int64_t getApprox(Monosat::BVTheorySolver<int64_t> * bvTheory, int bvID,bool ove
 	}
 }
 
-int64_t optimize_linear_bv(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bvTheory, bool invert,const vec<Lit> & assumes,int bvID, bool & hit_cutoff, int64_t & n_solves){
+int64_t optimize_linear_bv(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bvTheory, bool invert,const vec<Lit> & assumes,int bvID, bool & hit_cutoff, int64_t & n_solves, bool & found_model){
+	found_model=false;
 	hit_cutoff=false;
 	vec<Lit> assume;
 	for(Lit l:assumes)
@@ -251,6 +252,7 @@ int64_t optimize_linear_bv(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int6
 		  S->setConfBudget(limit);
 		  bool r;
 		  lbool res = S->solveLimited(assume,false,false);
+		  found_model|=(res==l_True);
 		  if (res==l_Undef){
 			  hit_cutoff=true;
 			  if(opt_verb>0){
@@ -351,8 +353,9 @@ int evalPB(SimpSolver & S,const Objective & o, bool over_approx, bool eval_at_le
 	}
 	return sum_val;
 }
-	int64_t optimize_linear_pb(Monosat::SimpSolver * S, PB::PBConstraintSolver * pbSolver, bool invert, const vec<Lit> & assumes, const Objective & o , bool & hit_cutoff, int64_t & n_solves){
+	int64_t optimize_linear_pb(Monosat::SimpSolver * S, PB::PBConstraintSolver * pbSolver, bool invert, const vec<Lit> & assumes, const Objective & o , bool & hit_cutoff, int64_t & n_solves, bool & found_model){
 		hit_cutoff=false;
+		found_model=false;
 		vec<Lit> discarded_pb_constraints;
 		vec<Lit> tmp_clause;
 		vec<Lit> assume;
@@ -400,6 +403,7 @@ int evalPB(SimpSolver & S,const Objective & o, bool over_approx, bool eval_at_le
 				assume.push(~l);
 			}
 			lbool res = S->solveLimited(assume,false,false);
+			found_model|=(res==l_True);
 			if (res==l_Undef){
 				hit_cutoff=true;
 				if(opt_verb>0){
@@ -497,8 +501,9 @@ int evalPB(SimpSolver & S,const Objective & o, bool over_approx, bool eval_at_le
 	}
 
 
-	int64_t optimize_binary_pb(Monosat::SimpSolver * S,  PB::PBConstraintSolver * pbSolver, bool invert, const vec<Lit> & assumes,const Objective & o,  bool & hit_cutoff, int64_t & n_solves){
+	int64_t optimize_binary_pb(Monosat::SimpSolver * S,  PB::PBConstraintSolver * pbSolver, bool invert, const vec<Lit> & assumes,const Objective & o,  bool & hit_cutoff, int64_t & n_solves, bool & found_model){
 		hit_cutoff=false;
+		found_model=false;
 		vec<Lit> discarded_pb_constraints;
 		vec<Lit> assume;
 		vec<Lit> tmp_clause;
@@ -566,6 +571,7 @@ int evalPB(SimpSolver & S,const Objective & o, bool over_approx, bool eval_at_le
 			bool r;
 
 			lbool res = S->solveLimited(assume,false,false);
+			found_model|=(res==l_True);
 			Optimization::disableResourceLimits(S);
 			if (res==l_Undef){
 				hit_cutoff=true;
@@ -682,7 +688,8 @@ int evalPB(SimpSolver & S,const Objective & o, bool over_approx, bool eval_at_le
 
 
 
-int64_t optimize_binary_bv(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bvTheory, bool maximize,const vec<Lit> & assumes,int bvID,  bool & hit_cutoff, int64_t & n_solves){
+int64_t optimize_binary_bv(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bvTheory, bool maximize,const vec<Lit> & assumes,int bvID,  bool & hit_cutoff, int64_t & n_solves, bool & found_model){
+	found_model=false;
 	hit_cutoff=false;
 	vec<Lit> assume;
 	for(Lit l:assumes)
@@ -760,6 +767,7 @@ int64_t optimize_binary_bv(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int6
 		  Optimization::enableResourceLimits(S);
 		  bool r;
 		  lbool res = S->solveLimited(assume,false,false);
+		  found_model|=(res==l_True);
 		  Optimization::disableResourceLimits(S);
 		  if (res==l_Undef){
 			  hit_cutoff=true;
@@ -910,19 +918,51 @@ void copyModel(SimpSolver & S, vec<Lit> & dest){
 			if (opt_verb >= 2 || opt_verb_optimize>=2) {
 				printf("Performing initial solve (before attempting optimization)...\n");
 			}
-			//problem: this initial solve, in which the optimization function is free, can sometimes be much more expensive than the subsequent optimizaiton steps...
-			lbool res= S.solveLimited(assume,opt_pre && do_simp,!opt_pre && do_simp);
-			if (res==l_True){
-				r=true;
-			}else if (res==l_False){
-				r=false;
-			}else{
-				found_optimal=false;
-				return l_Undef;
-			}
+			/*if(opt_begin_optimization_at_minimum ){
+				bool r = S.propagateAssignment(assume);//apply initial propagation to get minimal bounds
+				if(r) {
+					for (int i = 0; i < objectives.size(); i++) {
+						if (objectives[i].isBV()) {
+							if (!objectives[i].maximize) {
+								min_values[i] = bvTheory->getOverApprox(objectives[i].bvID, true);
+								max_values[i] = bvTheory->getUnderApprox(objectives[i].bvID, true);
+							} else {
+								min_values[i] = bvTheory->getUnderApprox(objectives[i].bvID, true);
+								max_values[i] = bvTheory->getOverApprox(objectives[i].bvID, true);
+							}
 
+						} else {
+							if (!objectives[i].maximize) {
+								min_values[i] = evalPB(S, objectives[i], true, true);
+								max_values[i] = evalPB(S, objectives[i], false, true);
+							} else {
+								min_values[i] = evalPB(S, objectives[i], false, true);
+								max_values[i] = evalPB(S, objectives[i], true, true);
+							}
+						}
+					}
+				}
+			}else */
+			r=true;
+			bool ever_solved=false;
+			if(opt_optimization_init_solve){
+				//problem: this initial solve, in which the optimization function is free, can sometimes be much more expensive than the subsequent optimizaiton steps...
+				lbool res = S.solveLimited(assume, opt_pre && do_simp, !opt_pre && do_simp);
+				if (res == l_True) {
+					r = true;
+					ever_solved=true;
+					copyModel(S,best_model);
+				} else if (res == l_False) {
+					r = false;
+				} else {
+					found_optimal = false;
+					return l_Undef;
+				}
+			}else{
+				r = S.propagateAssignment(assume);//apply initial propagation to get minimal bounds
+			}
 			if(r && objectives.size()){
-				copyModel(S,best_model);
+
 				for(Lit l:assume){
 					if(S.value(l)!=l_True){
 						throw std::runtime_error("Error in optimization (model is inconsistent with assumptions)");
@@ -960,7 +1000,7 @@ void copyModel(SimpSolver & S, vec<Lit> & dest){
 				}
 
 
-				int64_t n_solves = 1;
+				int64_t n_solves =  1;
 				bool hit_cutoff=false;
 				for (int i = 0;i<objectives.size() && !hit_cutoff;i++){
 					if(objectives[i].isBV()) {
@@ -971,10 +1011,10 @@ void copyModel(SimpSolver & S, vec<Lit> & dest){
 						}
 						int64_t val=0;
 						if (!opt_binary_search_optimization_bv) {
-							val = optimize_linear_bv(&S, bvTheory,objectives[i].maximize, assume, bvID, hit_cutoff, n_solves);
+							val = optimize_linear_bv(&S, bvTheory,objectives[i].maximize, assume, bvID, hit_cutoff, n_solves, found_model);
 
 						} else {
-							val = optimize_binary_bv(&S, bvTheory, objectives[i].maximize,assume, bvID, hit_cutoff, n_solves);
+							val = optimize_binary_bv(&S, bvTheory, objectives[i].maximize,assume, bvID, hit_cutoff, n_solves, found_model);
 						}
 						if(objectives[i].maximize){
 							assert(val>=min_values[i]);assert(val<=max_values[i]);
@@ -988,7 +1028,8 @@ void copyModel(SimpSolver & S, vec<Lit> & dest){
 						}
 						if (opt_limit_optimization_time_per_arg)
 							hit_cutoff = false;//keep trying to minimize subsequent arguments
-						copyModel(S,best_model);
+						if(ever_solved)
+							copyModel(S,best_model);
 						if(objectives[i].maximize){
 							assume.push(bvTheory->toSolver(
 									bvTheory->newComparison(Comparison::geq, bvID, max_values[i], var_Undef,
@@ -1010,9 +1051,9 @@ void copyModel(SimpSolver & S, vec<Lit> & dest){
 						}
 						int64_t val=0;
 						if (!opt_binary_search_optimization_pb) {
-							val = optimize_linear_pb(&S, pbSolver,objectives[i].maximize, assume, objectives[i], hit_cutoff, n_solves);
+							val = optimize_linear_pb(&S, pbSolver,objectives[i].maximize, assume, objectives[i], hit_cutoff, n_solves, found_model);
 						} else {
-							val = optimize_binary_pb(&S, pbSolver,objectives[i].maximize, assume,  objectives[i], hit_cutoff, n_solves);
+							val = optimize_binary_pb(&S, pbSolver,objectives[i].maximize, assume,  objectives[i], hit_cutoff, n_solves, found_model);
 						}
 						if(objectives[i].maximize){
 							assert(val>=max_values[i]);
@@ -1039,10 +1080,11 @@ void copyModel(SimpSolver & S, vec<Lit> & dest){
 						//however, for pb constraints, because we add clauses to the model to discard irelevant PB constraint
 						//after finding a best solution, the solver must re-solve in order to keep the model consistent
 						//(due to changing values for intermediate values in the PB constraints).
-						if(!S.solve(assume)){
+						if(ever_solved && !S.solve(assume)){
 							throw std::runtime_error("Error in optimization (best values are inconsistent with model)");
 						}
-						copyModel(S,best_model);
+						if(ever_solved)
+							copyModel(S,best_model);
 
 						assert(min_values[i] >= 0);
 

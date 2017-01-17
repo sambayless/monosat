@@ -56,6 +56,8 @@ extern DoubleOption opt_random_theory_vsids_freq;
 extern BoolOption opt_randomize_theory_order;
 extern BoolOption opt_randomize_theory_order_all;
 extern BoolOption opt_theory_decision_round_robin;
+extern BoolOption opt_optimize_internal;
+extern BoolOption opt_optimization_init_solve;
 extern BoolOption opt_interpolate;
 extern IntOption opt_eager_prop;
 extern IntOption opt_subsearch;
