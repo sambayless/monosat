@@ -5985,7 +5985,16 @@ public:
 			bvID=eq_bitvectors[bvID];
 		return bitvectors[bvID];
 	}
-
+	//get the outer solver literals
+	void getLiterals(int bvID, vec<Lit> & lits) {
+		//can this be avoided?
+		while (eq_bitvectors[bvID] != bvID)
+			bvID = eq_bitvectors[bvID];
+		lits.clear();
+		for(Lit l: bitvectors[bvID]){
+			lits.push(toSolver(l));
+		}
+	}
 	void buildTrivialClause(vec<Lit> & conflict){
 		for (int i = 0;i<nVars();i++){
 			if(value(i)!=l_Undef){

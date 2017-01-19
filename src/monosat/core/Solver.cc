@@ -2028,6 +2028,15 @@ bool Solver::propagateAssignment(const vec<Lit> & assumps){
 	only_propagate_assumptions=false;
 	return val==l_True;
 }
+lbool Solver::solveUntilRestart(const vec<Lit> & assumps){
+    quit_at_restart=true;
+    //budgetOff();
+    assumps.copyTo(assumptions);
+
+    lbool val = solve_();
+    quit_at_restart=false;
+    return val;
+}
 // NOTE: assumptions passed in member-variable 'assumptions'.
 lbool Solver::solve_() {
 	cancelUntil(0);
@@ -2073,6 +2082,9 @@ lbool Solver::solve_() {
 	}
 	// Search:
 	int curr_restarts = 0;
+    if(quit_at_restart && override_restart_count>=0){
+        curr_restarts=override_restart_count;
+    }
 	while (status == l_Undef) {
 		double rest_base = luby_restart ? luby(restart_inc, curr_restarts) : pow(restart_inc, curr_restarts);
 
@@ -2116,6 +2128,12 @@ lbool Solver::solve_() {
 			}
 			rebuildTheoryOrderHeap();
 		}
+        if(quit_at_restart && status==l_Undef){
+            override_restart_count = curr_restarts;
+            break;//give up
+        }else{
+            override_restart_count = -1;
+        }
 	}
 
 	if (status == l_True) {
@@ -2174,7 +2192,8 @@ lbool Solver::solve_() {
 	} else if (status == l_False) {
 		assert(ok);
 	}
-
+    quit_at_restart=false;
+    only_propagate_assumptions=false;
 	assumptions.clear();
 	return status;
 }

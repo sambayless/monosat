@@ -393,6 +393,7 @@ public:
 	virtual bool solve(Lit p, Lit q);            // Search for a model that respects two assumptions.
 	virtual bool solve(Lit p, Lit q, Lit r);     // Search for a model that respects three assumptions.
 	virtual bool propagateAssignment(const vec<Lit>& assumps); //apply unit propagation to the supplied assumptions, and quit without solving
+    virtual lbool solveUntilRestart(const vec<Lit>& assumps);//attempt to solve the instance, but quit as soon as the solver restarts
 	bool okay() const;                  // FALSE means solver is in a conflicting state
 
 	Lit True(){
@@ -681,6 +682,8 @@ protected:
 	int64_t simpDB_props;   // Remaining number of propagations that must be made before next execution of 'simplify()'.
 	vec<Lit> assumptions;      // Current set of assumptions provided to solve by the user.
 	bool only_propagate_assumptions=false; //true if the solver should propagate assumptions and then quit without solving
+    bool quit_at_restart=false;//true if the solver should give up as soon as it restarts
+    int override_restart_count=-1;
 	Heap<VarOrderLt> order_heap;       // A priority queue of variables ordered with respect to the variable activity.
 	double theory_inc;
 	double theory_decay;

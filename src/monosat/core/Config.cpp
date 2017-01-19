@@ -117,8 +117,14 @@ BoolOption Monosat::opt_early_theory_prop(_cat, "early-theory-prop",
 
  BoolOption Monosat::opt_remap_vars(_cat,"remap-vars","Remap variables in the GNF internally in the solver, to minimize space required",true);
  BoolOption Monosat::opt_decide_optimization_lits(_cat_opt,"decide-opt-lits","Allow decisions on literals introduced by optimization constraints",true);
- BoolOption  Monosat::opt_binary_search_optimization_bv(_cat_opt,"binary-search-bv","Use binary search for bitvector optimization (instead of linear search)",true);
-BoolOption  Monosat::opt_binary_search_optimization_pb(_cat_opt,"pb-binary-search","Use binary search for pseudo-boolean constraint optimization (instead of linear search)",false);
+IntOption  Monosat::opt_optimization_search_type(_cat_opt,"search","0: Use binary search for optimization. 1: Use linear search. 2: Use binary search, but switch to linear search for hard values.", 0, IntRange(0, 2));
+DoubleOption Monosat::opt_rnd_optimization_freq(_cat_graph,"search-freq", "",0.5,DoubleRange(0, true, 1, true));
+DoubleOption Monosat::opt_rnd_optimization_restart_freq(_cat_graph,"search-restart-freq", "",0.05,DoubleRange(0, true, 1, true));
+BoolOption  Monosat::opt_strict_search_optimization(_cat_opt,"strict-search","Use strict (rather than >=/<=) constraints during optimization (be warned, this is not always safe!)",false);
+BoolOption Monosat::opt_optimization_init_solve(_cat, "optimize-init-solve",
+                                                "Perform an initial, free solving round before applying optimization (this is potentially expensive, but also gives the solver a chance to find good initial bounds)", true);
+BoolOption Monosat::opt_decide_objectives_first(_cat, "decide-objectives-first",
+                                                "Decide any free variables in objective functions first, when performing optimization", true);
 
 BoolOption Monosat::opt_amo_eager_prop(_cat_amo,"amo-eager-prop","Propagate a-m-o literals as soon as they are implied, instead of waiting for theory propagation",true);
 

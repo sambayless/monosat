@@ -60,9 +60,11 @@ extern IntOption opt_subsearch;
 
 extern BoolOption opt_remap_vars;
 extern BoolOption opt_decide_optimization_lits;
-extern BoolOption opt_binary_search_optimization_pb;
-extern BoolOption opt_binary_search_optimization_bv;
+extern IntOption opt_optimization_search_type;
+extern DoubleOption opt_rnd_optimization_freq;
+extern DoubleOption opt_rnd_optimization_restart_freq;
 extern BoolOption opt_amo_eager_prop;
+
 
 extern StringOption opt_debug_learnt_clauses;
 extern BoolOption opt_debug_model;
@@ -104,6 +106,9 @@ extern BoolOption opt_vsids_solver_as_theory;
 extern BoolOption opt_theory_internal_vsids;
 extern BoolOption opt_theory_prioritize_conflicts;
 extern BoolOption opt_theory_priority_clear;
+extern BoolOption opt_optimization_init_solve;
+extern BoolOption opt_decide_objectives_first;
+extern BoolOption opt_strict_search_optimization;
 
 extern BoolOption opt_check_solution;
 extern BoolOption opt_print_reach;
