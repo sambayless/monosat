@@ -910,9 +910,10 @@ void Solver::enqueueLazy(Lit p, int lev, CRef from){
 void Solver::uncheckedEnqueue(Lit p, CRef from) {
 	CRC(p);
 	CRC(from);
-	if(toInt(p)==6238 || toInt(p)==6239){
+	/*if(var(p)>=103451 && var(p)<=103463){
 		int a=1;
-	}
+		printf("Enqueing %d to %s at level %d of %d\n", var(p), sign(p)?"F":"T", decisionLevel(), assumptions.size());
+	}*/
 	assert(value(p) == l_Undef);
 	assigns[var(p)] = lbool(!sign(p));
 	vardata[var(p)] = mkVarData(from, decisionLevel());
@@ -2103,6 +2104,8 @@ lbool Solver::search(int nof_conflicts) {
 				}
 				if(!order_heap.empty()){
 					next_var_priority=priority[ order_heap.peekMin()];
+					//printf("Priority var is %d; with priority %d\n",order_heap.peekMin(), next_var_priority);
+					//printf("Vars %d,%d have assignment %d,%d\n", 91569,91580,value(91569),value(91580));
 				}
 				/**
 				 * Give the theory solvers a chance to make decisions
@@ -2270,6 +2273,7 @@ static double luby(double y, int x) {
 	
 	return pow(y, seq);
 }
+
 bool Solver::propagateAssignment(const vec<Lit> & assumps){
 	only_propagate_assumptions=true;
 	budgetOff();
@@ -2278,6 +2282,15 @@ bool Solver::propagateAssignment(const vec<Lit> & assumps){
 	lbool val = solve_();
 	only_propagate_assumptions=false;
 	return val==l_True;
+}
+lbool Solver::solveUntilRestart(const vec<Lit> & assumps){
+    quit_at_restart=true;
+    //budgetOff();
+    assumps.copyTo(assumptions);
+
+    lbool val = solve_();
+    quit_at_restart=false;
+    return val;
 }
 // NOTE: assumptions passed in member-variable 'assumptions'.
 lbool Solver::solve_() {
@@ -2317,6 +2330,7 @@ lbool Solver::solve_() {
 	track_min_level = 0;
 	CRC(assumptions);
 	//ensure that any theory atoms that were created _after_ the variable was assigned are enqueued in the theory
+    //this can be improved
 	for (int i = 0; i < qhead; i++) {
 		Lit p = trail[i];
 		if (hasTheory(p)) {
@@ -2329,6 +2343,9 @@ lbool Solver::solve_() {
 #endif
 	// Search:
 	int curr_restarts = 0;
+    if(quit_at_restart && override_restart_count>=0){
+        curr_restarts=override_restart_count;
+    }
 	while (status == l_Undef) {
 		double rest_base = luby_restart ? luby(restart_inc, curr_restarts) : pow(restart_inc, curr_restarts);
 
@@ -2340,6 +2357,8 @@ lbool Solver::solve_() {
 			randomShuffle(random_seed, decidable_theories);
 		}
 
+
+
 		status = search(rest_base * restart_first);
 		if (verbosity >= 1) {
 			printf("|r%9d | %7d %8d %8d | %8d %8d %6.0f | %" PRId64 " removed |\n", (int) conflicts,
@@ -2347,6 +2366,7 @@ lbool Solver::solve_() {
 				   (int) clauses_literals, (int) max_learnts, nLearnts(),
 				   (double) learnts_literals / nLearnts(), stats_removed_clauses);
 		}
+
 		if (!withinBudget()) {
 
 			printf("Solver is giving up due to budget constraints: ");
@@ -2378,8 +2398,14 @@ lbool Solver::solve_() {
 			}
 			rebuildTheoryOrderHeap();
 		}
+        if(quit_at_restart && status==l_Undef){
+            override_restart_count = curr_restarts;
+            break;//give up
+        }else{
+        	override_restart_count = -1;
+        }
 	}
-	
+
 	if (status == l_True) {
 		model.growTo(nVars());
 		enqueueAnyUnqueued();//assign any remaining atoms to theories that were trivially satisfied
@@ -2443,6 +2469,7 @@ lbool Solver::solve_() {
 #ifdef CRC_CHECK
 	printf("CRC: %lu\n",crc());
 #endif
+    quit_at_restart=false;
 	only_propagate_assumptions=false;
 	assumptions.clear();
 	clearSatisfied();

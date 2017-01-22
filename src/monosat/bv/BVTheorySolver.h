@@ -630,6 +630,9 @@ public:
 
 			for (int i = 0; i < bv.size(); i++) {
 				lbool val = value(bv[i]);
+                /*if(bvID==7040){
+                    printf("Checking bvid %d bit %d (var %d) assigned %d\n", bvID, i, toSolver(var(bv[i])), val);
+                }*/
 				if (val == l_True) {
 					Weight bit = 1 << i;
 					under += bit;
@@ -6564,14 +6567,23 @@ public:
 	int getWidth(int bvID) {
 		return getBits(bvID).size();
 	}
-
+    //get the _inner_ solver literals
 	vec<Lit> &getBits(int bvID) {
 		//can this be avoided?
 		while (eq_bitvectors[bvID] != bvID)
 			bvID = eq_bitvectors[bvID];
 		return bitvectors[bvID];
 	}
-
+    //get the outer solver literals
+    void getLiterals(int bvID, vec<Lit> & lits) {
+        //can this be avoided?
+        while (eq_bitvectors[bvID] != bvID)
+            bvID = eq_bitvectors[bvID];
+        lits.clear();
+        for(Lit l: bitvectors[bvID]){
+            lits.push(toSolver(l));
+        }
+    }
 	void buildTrivialClause(vec<Lit> &conflict) {
 		for (int i = 0; i < nVars(); i++) {
 			if (value(i) != l_Undef) {

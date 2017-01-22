@@ -107,10 +107,11 @@ DoubleOption Monosat::opt_random_theory_vsids_freq(_cat, "rnd-theory-vsids-freq"
 
 BoolOption Monosat::opt_randomize_theory_order(_cat, "rnd-theory-order",
 		"If theory decisions are used, randomize the order that theories are decided at each restart", false);
-BoolOption Monosat::opt_optimize_internal(_cat, "optimize-internal",
-											   "Perform optimizations within the solver's decision heuristic", false);
+
 BoolOption Monosat::opt_optimization_init_solve(_cat, "optimize-init-solve",
-										  "Perform an initial, free solving round before applying optimization (this is potentially expensive, but also gives the solver a chance to find good initial bounds)", false);
+										  "Perform an initial, free solving round before applying optimization (this is potentially expensive, but also gives the solver a chance to find good initial bounds)", true);
+BoolOption Monosat::opt_decide_objectives_first(_cat, "decide-objectives-first",
+												"Decide any free variables in objective functions first, when performing optimization", true);
 
 
 BoolOption Monosat::opt_randomize_theory_order_all(_cat, "rnd-theory-order-all",
@@ -123,8 +124,10 @@ BoolOption Monosat::opt_early_theory_prop(_cat, "early-theory-prop",
 BoolOption Monosat::opt_parser_immediate_mode(_cat,"immediate-parser","",false);
  BoolOption Monosat::opt_remap_vars(_cat,"remap-vars","Remap variables in the GNF internally in the solver, to minimize space required",true);
  BoolOption Monosat::opt_decide_optimization_lits(_cat_opt,"decide-opt-lits","Allow decisions on literals introduced by optimization constraints",true);
-BoolOption  Monosat::opt_binary_search_optimization_bv(_cat_opt,"binary-search-bv","Use binary search for bitvector optimization (instead of linear search)",true);
-BoolOption  Monosat::opt_binary_search_optimization_pb(_cat_opt,"pb-binary-search","Use binary search for pseudo-boolean constraint optimization (instead of linear search)",false);
+BoolOption  Monosat::opt_strict_search_optimization(_cat_opt,"strict-search","Use strict (rather than >=/<=) constraints during optimization (be warned, this is not always safe!)",false);
+IntOption  Monosat::opt_optimization_search_type(_cat_opt,"search","0: Use binary search for optimization. 1: Use linear search. 2: Use binary search, but switch to linear search for hard values.", 0, IntRange(0, 2));
+DoubleOption Monosat::opt_rnd_optimization_freq(_cat_graph,"search-freq", "",0.5,DoubleRange(0, true, 1, true));
+DoubleOption Monosat::opt_rnd_optimization_restart_freq(_cat_graph,"search-restart-freq", "",0.05,DoubleRange(0, true, 1, true));
 
 IntOption Monosat::opt_clausify_amo(_cat_amo, "clausify-amo",
 						   "Eagerly convert at-most-one predicates to clauses, if they have this many or fewer arguments (after removing level 0 constants). 0 to never clausify amo predicates.",

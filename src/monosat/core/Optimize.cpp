@@ -207,37 +207,70 @@ int64_t getApprox(Monosat::BVTheorySolver<int64_t> * bvTheory, int bvID,bool ove
 }
 
 int64_t optimize_linear_bv(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bvTheory, bool invert,const vec<Lit> & assumes,int bvID, bool & hit_cutoff, int64_t & n_solves, bool & found_model){
-	found_model=false;
+
 	hit_cutoff=false;
 	vec<Lit> assume;
 	for(Lit l:assumes)
 		assume.push(l);
 	vec<Lit> last_satisfying_assign;
-	for(Var v = 0;v<S->nVars();v++){
-		if(!S->isEliminated(v)) {
-			if (S->value(v) == l_True) {
-				last_satisfying_assign.push(mkLit(v));
-			} else if (S->value(v) == l_False) {
-				last_satisfying_assign.push(mkLit(v, true));
-			} else {
-				//this variable was unassigned.
+	if(found_model){
+		for(Var v = 0;v<S->nVars();v++){
+			if(!S->isEliminated(v)) {
+				if (S->value(v) == l_True) {
+					last_satisfying_assign.push(mkLit(v));
+				} else if (S->value(v) == l_False) {
+					last_satisfying_assign.push(mkLit(v, true));
+				} else {
+					//this variable was unassigned.
+				}
 			}
 		}
 	}
-
 	int64_t value = getApprox(bvTheory,bvID,!invert);
 	int64_t last_decision_value=value;
 	if(opt_verb>=1 || opt_verb_optimize>=1){
 		printf("Best bv%d = %ld",bvID,value);
 	}
 	  // int bvID,const Weight & to, Var outerVar = var_Undef, bool decidable=true
-	Lit last_decision_lit =  bvTheory->toSolver(bvTheory->newComparison(invert ? Comparison::geq : Comparison::leq,bvID,value,var_Undef,opt_decide_optimization_lits));
+
+	Lit last_decision_lit;
+	if(!opt_strict_search_optimization) {
+		last_decision_lit =  bvTheory->toSolver(bvTheory->newComparison(invert ? Comparison::geq : Comparison::leq,bvID,value,var_Undef,opt_decide_optimization_lits));
+	}else{
+		Lit a = bvTheory->toSolver(
+				bvTheory->newComparison(invert ? Comparison::geq : Comparison::leq, bvID, value, var_Undef,
+										opt_decide_optimization_lits));
+		Lit b = bvTheory->toSolver(
+				bvTheory->newComparison(invert ? Comparison::leq : Comparison::geq, bvID, value, var_Undef,
+										opt_decide_optimization_lits));
+		last_decision_lit = mkLit(S->newVar(var_Undef,
+											opt_decide_optimization_lits));
+		S->addClause(~last_decision_lit, a);
+		S->addClause(~last_decision_lit, b);
+	}
 	while(gt(value,getApprox(bvTheory,bvID,invert,true),invert) && !hit_cutoff){
-		Lit decision_lit = bvTheory->toSolver(bvTheory->newComparison(invert? Comparison::geq : Comparison::leq,bvID, invert?value+1 : value-1,var_Undef,opt_decide_optimization_lits));
-		  assume.push(decision_lit);
+
+		Lit decision_lit;
+		if(!opt_strict_search_optimization) {
+			decision_lit = bvTheory->toSolver(bvTheory->newComparison(invert? Comparison::geq : Comparison::leq,bvID, invert?value+1 : value-1,var_Undef,opt_decide_optimization_lits));
+
+
+		}else{
+			Lit a =bvTheory->toSolver(bvTheory->newComparison(invert? Comparison::geq : Comparison::leq,bvID, invert?value+1 : value-1,var_Undef,opt_decide_optimization_lits));
+
+			Lit b = bvTheory->toSolver(bvTheory->newComparison(invert? Comparison::leq : Comparison::geq,bvID, invert?value+1 : value-1,var_Undef,opt_decide_optimization_lits));
+
+			decision_lit = mkLit(S->newVar(var_Undef,
+										   opt_decide_optimization_lits));
+			S->addClause(~decision_lit, a);
+			S->addClause(~decision_lit, b);
+		}
+		assume.push(decision_lit);
 		  n_solves++;
 
-
+		if(opt_verb_optimize>=2){
+			printf("Testing bv%d %s %ld...\n",bvID, invert? ">=":"<=",value);
+		}
 
 		  int conflict_limit = S->getConflictBudget();
 		  if(conflict_limit<0)
@@ -292,7 +325,9 @@ int64_t optimize_linear_bv(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int6
 					throw std::runtime_error("Error in optimization (minimum values are inconsistent with model)");
 			  }
 			  value=value2;
-
+			  if(opt_verb_optimize>=2){
+				  printf("Found bv%d = %ld...\n",bvID,value);
+			  }
 			  assume.pop();
 			  if(opt_verb>=1){
 				  printf("\rMin bv%d = %ld",bvID,value);
@@ -302,27 +337,46 @@ int64_t optimize_linear_bv(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int6
 
 			if(lt(value,last_decision_value,invert)){
 				  //if that last decrease in value was by more than 1
-				last_decision_lit =  bvTheory->toSolver(bvTheory->newComparison(invert ? Comparison::geq : Comparison::leq,bvID,value,var_Undef,opt_decide_optimization_lits));
-				  last_decision_value=value;
+				//last_decision_lit =  bvTheory->toSolver(bvTheory->newComparison(invert ? Comparison::geq : Comparison::leq,bvID,value,var_Undef,opt_decide_optimization_lits));
+
+				if(!opt_strict_search_optimization) {
+					last_decision_lit =  bvTheory->toSolver(bvTheory->newComparison(invert ? Comparison::geq : Comparison::leq,bvID,value,var_Undef,opt_decide_optimization_lits));
+				}else{
+					Lit a = bvTheory->toSolver(
+							bvTheory->newComparison(invert ? Comparison::geq : Comparison::leq, bvID, value, var_Undef,
+													opt_decide_optimization_lits));
+					Lit b = bvTheory->toSolver(
+							bvTheory->newComparison(invert ? Comparison::leq : Comparison::geq, bvID, value, var_Undef,
+													opt_decide_optimization_lits));
+					last_decision_lit = mkLit(S->newVar(var_Undef,
+														opt_decide_optimization_lits));
+					S->addClause(~last_decision_lit, a);
+					S->addClause(~last_decision_lit, b);
+				}
+				last_decision_value=value;
 			  }
 			  assume.push(last_decision_lit);
-			  r= S->solve(last_satisfying_assign,false,false);
+			  S->cancelUntil(0);
+			  if(found_model) {
+				  r = S->solve(last_satisfying_assign, false, false);
 
-			  if(!r){
-				  throw std::runtime_error("Error in optimization (instance has become unsat)");
+				  if (!r) {
+					  throw std::runtime_error("Error in optimization (instance has become unsat)");
+				  }
+				  for (Lit l:assume) {
+					  if (S->value(l) != l_True) {
+						  throw std::runtime_error("Error in optimization (model is inconsistent with assumptions)");
+					  }
+				  }
+				if(lt(value, getApprox(bvTheory, bvID, !invert),invert)){//bvTheory->getOverApprox(bvID)){
+						  throw std::runtime_error("Error in optimization (minimum values are inconsistent with model)");
+					  }
+					  //if(bvTheory->getOverApprox(bvID) < value){
+					if(lt(getApprox(bvTheory, bvID, !invert),value,invert)){
+						value = getApprox(bvTheory, bvID, !invert);//bvTheory->getOverApprox(bvID);
+					  }
 			  }
-			  for(Lit l:assume){
-					if(S->value(l)!=l_True){
-						throw std::runtime_error("Error in optimization (model is inconsistent with assumptions)");
-					}
-				}
-			if(lt(value, getApprox(bvTheory, bvID, !invert),invert)){//bvTheory->getOverApprox(bvID)){
-				  throw std::runtime_error("Error in optimization (minimum values are inconsistent with model)");
-			  }
-			  //if(bvTheory->getOverApprox(bvID) < value){
-            if(lt(getApprox(bvTheory, bvID, !invert),value,invert)){
-				value = getApprox(bvTheory, bvID, !invert);//bvTheory->getOverApprox(bvID);
-			  }
+
 			  break;
 		  }
 	  }
@@ -355,25 +409,26 @@ int evalPB(SimpSolver & S,const Objective & o, bool over_approx, bool eval_at_le
 }
 	int64_t optimize_linear_pb(Monosat::SimpSolver * S, PB::PBConstraintSolver * pbSolver, bool invert, const vec<Lit> & assumes, const Objective & o , bool & hit_cutoff, int64_t & n_solves, bool & found_model){
 		hit_cutoff=false;
-		found_model=false;
+
 		vec<Lit> discarded_pb_constraints;
 		vec<Lit> tmp_clause;
 		vec<Lit> assume;
 		for(Lit l:assumes)
 			assume.push(l);
 		vec<Lit> last_satisfying_assign;
-		for(Var v = 0;v<S->nVars();v++){
-			if(!S->isEliminated(v)) {
-				if (S->value(v) == l_True) {
-					last_satisfying_assign.push(mkLit(v));
-				} else if (S->value(v) == l_False) {
-					last_satisfying_assign.push(mkLit(v, true));
-				} else {
-					//this variable was unassigned.
+		if(found_model) {
+			for (Var v = 0; v < S->nVars(); v++) {
+				if (!S->isEliminated(v)) {
+					if (S->value(v) == l_True) {
+						last_satisfying_assign.push(mkLit(v));
+					} else if (S->value(v) == l_False) {
+						last_satisfying_assign.push(mkLit(v, true));
+					} else {
+						//this variable was unassigned.
+					}
 				}
 			}
 		}
-
 		int value = evalPB(*S, o,!invert);
 		int last_decision_value=value;
 
@@ -469,23 +524,27 @@ int evalPB(SimpSolver & S,const Objective & o, bool over_approx, bool eval_at_le
 					//last_satisfying_assign.push(last_decision_lit);
 				}
 				//assume.push(last_decision_lit);
-				r= S->solve(last_satisfying_assign,false,false);
+				S->cancelUntil(0);
+				if(found_model) {
+					r = S->solve(last_satisfying_assign, false, false);
 
-				if(!r){
-					throw std::runtime_error("Error in optimization (instance has become unsat)");
-				}
-				for(Lit l:assume){
-					if(S->value(l)!=l_True){
-						throw std::runtime_error("Error in optimization (model is inconsistent with assumptions)");
+					if (!r) {
+						throw std::runtime_error("Error in optimization (instance has become unsat)");
+					}
+					for (Lit l:assume) {
+						if (S->value(l) != l_True) {
+							throw std::runtime_error("Error in optimization (model is inconsistent with assumptions)");
+						}
+					}
+					int over = evalPB(*S, o, !invert);
+					if(lt(value, over,invert)){
+						throw std::runtime_error("Error in optimization (minimum values are inconsistent with model)");
+					}
+					if(lt(over, value,invert)){
+						value = over;
 					}
 				}
-				int over = evalPB(*S, o, !invert);
-				if(lt(value, over,invert)){
-					throw std::runtime_error("Error in optimization (minimum values are inconsistent with model)");
-				}
-				if(lt(over, value,invert)){
-					value = over;
-				}
+
 				break;
 			}
 			discarded_pb_constraints.push(decision_lit);
@@ -503,25 +562,26 @@ int evalPB(SimpSolver & S,const Objective & o, bool over_approx, bool eval_at_le
 
 	int64_t optimize_binary_pb(Monosat::SimpSolver * S,  PB::PBConstraintSolver * pbSolver, bool invert, const vec<Lit> & assumes,const Objective & o,  bool & hit_cutoff, int64_t & n_solves, bool & found_model){
 		hit_cutoff=false;
-		found_model=false;
+
 		vec<Lit> discarded_pb_constraints;
 		vec<Lit> assume;
 		vec<Lit> tmp_clause;
 		for(Lit l:assumes)
 			assume.push(l);
 		vec<Lit> last_satisfying_assign;
-		for(Var v = 0;v<S->nVars();v++){
-			if(!S->isEliminated(v)) {
-				if (S->value(v) == l_True) {
-					last_satisfying_assign.push(mkLit(v));
-				} else if (S->value(v) == l_False) {
-					last_satisfying_assign.push(mkLit(v, true));
-				} else {
-					//this variable was unassigned.
+		if(found_model){
+			for(Var v = 0;v<S->nVars();v++){
+				if(!S->isEliminated(v)) {
+					if (S->value(v) == l_True) {
+						last_satisfying_assign.push(mkLit(v));
+					} else if (S->value(v) == l_False) {
+						last_satisfying_assign.push(mkLit(v, true));
+					} else {
+						//this variable was unassigned.
+					}
 				}
 			}
 		}
-
 		int min_val = evalPB(*S, o, invert, true);// bvTheory->getUnderApprox(bvID,true);
 		int max_val = evalPB(*S, o, !invert); //bvTheory->getOverApprox(bvID);
 
@@ -638,11 +698,14 @@ int evalPB(SimpSolver & S,const Objective & o, bool over_approx, bool eval_at_le
 				}
 				//set the solver back to its last satisfying assignment
 				//this is technically not required, but it should be cheap, and will also reset the solvers decision phase heuristic
-				r= S->solve(last_satisfying_assign,false,false);
-				if(!r){
-					throw std::runtime_error("Error in optimization (instance has become unsat)");
-				}
 
+				S->cancelUntil(0);
+				if(found_model) {
+					r = S->solve(last_satisfying_assign, false, false);
+					if (!r) {
+						throw std::runtime_error("Error in optimization (instance has become unsat)");
+					}
+				}
 			}
 			discarded_pb_constraints.push(decision_lit);
 		}
@@ -657,23 +720,26 @@ int evalPB(SimpSolver & S,const Objective & o, bool over_approx, bool eval_at_le
 			last_decision_value=max_val;
 			//last_satisfying_assign.push(last_decision_lit);
 		}
-		bool r;
+
 		//assume.push(last_decision_lit);
-		r= S->solve(last_satisfying_assign,false,false);
-		if(!r){
-			throw std::runtime_error("Error in optimization (instance has become unsat)");
-		}
-		for(Lit l:assume){
-			if(S->value(l)!=l_True){
-				throw std::runtime_error("Error in optimization (model is inconsistent with assumptions)");
+		if(found_model){
+			bool r;
+			r= S->solve(last_satisfying_assign,false,false);
+			if(!r){
+				throw std::runtime_error("Error in optimization (instance has become unsat)");
 			}
-		}
-		int over = evalPB(*S, o, !invert);
-		if(lt(max_val,over,invert)){
-			throw std::runtime_error("Error in optimization (minimum values are inconsistent with model)");
-		}
-		if(lt(over, max_val,invert)){
-			max_val = over;
+			for(Lit l:assume){
+				if(S->value(l)!=l_True){
+					throw std::runtime_error("Error in optimization (model is inconsistent with assumptions)");
+				}
+			}
+			int over = evalPB(*S, o, !invert);
+			if(lt(max_val,over,invert)){
+				throw std::runtime_error("Error in optimization (minimum values are inconsistent with model)");
+			}
+			if(lt(over, max_val,invert)){
+				max_val = over;
+			}
 		}
 		while(discarded_pb_constraints.size()){
 			Lit l = discarded_pb_constraints.last();
@@ -689,24 +755,25 @@ int evalPB(SimpSolver & S,const Objective & o, bool over_approx, bool eval_at_le
 
 
 int64_t optimize_binary_bv(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bvTheory, bool maximize,const vec<Lit> & assumes,int bvID,  bool & hit_cutoff, int64_t & n_solves, bool & found_model){
-	found_model=false;
+
 	hit_cutoff=false;
 	vec<Lit> assume;
 	for(Lit l:assumes)
 		assume.push(l);
 	vec<Lit> last_satisfying_assign;
-	for(Var v = 0;v<S->nVars();v++){
-		if(!S->isEliminated(v)) {
-			if (S->value(v) == l_True) {
-				last_satisfying_assign.push(mkLit(v));
-			} else if (S->value(v) == l_False) {
-				last_satisfying_assign.push(mkLit(v, true));
-			} else {
-				//this variable was unassigned.
+	if(found_model) {
+		for (Var v = 0; v < S->nVars(); v++) {
+			if (!S->isEliminated(v)) {
+				if (S->value(v) == l_True) {
+					last_satisfying_assign.push(mkLit(v));
+				} else if (S->value(v) == l_False) {
+					last_satisfying_assign.push(mkLit(v, true));
+				} else {
+					//this variable was unassigned.
+				}
 			}
 		}
 	}
-
 	bool invert=maximize;
 
 
@@ -731,7 +798,21 @@ int64_t optimize_binary_bv(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int6
 	}
 	  bool first_round=true;
 	int64_t last_decision_value=max_val;
-	Lit last_decision_lit =  bvTheory->toSolver(bvTheory->newComparison(invert ? Comparison::geq : Comparison::leq,bvID,max_val,var_Undef,opt_decide_optimization_lits));
+	Lit last_decision_lit;
+	if(!opt_strict_search_optimization) {
+		last_decision_lit =  bvTheory->toSolver(bvTheory->newComparison(invert ? Comparison::geq : Comparison::leq,bvID,max_val,var_Undef,opt_decide_optimization_lits));
+	}else{
+		Lit a = bvTheory->toSolver(
+				bvTheory->newComparison(invert ? Comparison::geq : Comparison::leq, bvID, max_val, var_Undef,
+										opt_decide_optimization_lits));
+		Lit b = bvTheory->toSolver(
+				bvTheory->newComparison(invert ? Comparison::leq : Comparison::geq, bvID, max_val, var_Undef,
+										opt_decide_optimization_lits));
+		last_decision_lit = mkLit(S->newVar(var_Undef,
+									   opt_decide_optimization_lits));
+		S->addClause(~last_decision_lit, a);
+		S->addClause(~last_decision_lit, b);
+	}
 	  while(lt(min_val , max_val,invert) && !hit_cutoff){
 		int64_t mid_point;
 		  if(!invert)
@@ -746,10 +827,31 @@ int64_t optimize_binary_bv(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int6
 			  mid_point =	suggested_next_midpoint;
 		assert(mid_point>=0);assert(geq(mid_point,min_val,invert));assert(lt(mid_point,max_val,invert));
 
-		Lit decision_lit = bvTheory->toSolver(bvTheory->newComparison(invert? Comparison::geq : Comparison::leq,bvID,mid_point,var_Undef,opt_decide_optimization_lits));
-		  assume.push(decision_lit);
-		  n_solves++;
+		Lit decision_lit;
+		  if(!opt_strict_search_optimization) {
+			  decision_lit = bvTheory->toSolver(
+					  bvTheory->newComparison(invert ? Comparison::geq : Comparison::leq, bvID, mid_point, var_Undef,
+											  opt_decide_optimization_lits));
 
+		  }else{
+			  Lit a = bvTheory->toSolver(
+					  bvTheory->newComparison(invert ? Comparison::geq : Comparison::leq, bvID, mid_point, var_Undef,
+											  opt_decide_optimization_lits));
+			  Lit b = bvTheory->toSolver(
+					  bvTheory->newComparison(invert ? Comparison::leq : Comparison::geq, bvID, mid_point, var_Undef,
+											  opt_decide_optimization_lits));
+			  decision_lit = mkLit(S->newVar(var_Undef,
+											 opt_decide_optimization_lits));
+			  S->addClause(~decision_lit, a);
+			  S->addClause(~decision_lit, b);
+		  }
+		  assume.push(decision_lit);
+
+
+		  n_solves++;
+		if(opt_verb_optimize>=2){
+			printf("Testing bv%d %s %ld...\n",bvID, invert? ">=":"<=",mid_point);
+		}
 		  {
 		  int conflict_limit = S->getConflictBudget();
 		  if(conflict_limit<0)
@@ -805,6 +907,9 @@ int64_t optimize_binary_bv(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int6
 			assert(leq(new_value,mid_point,invert));
 			assert(lt(new_value,max_val,invert));
 			  max_val=new_value;
+			  if(opt_verb_optimize>=2){
+				  printf("Found bv%d = %ld...\n",bvID,max_val);
+			  }
 			if(leq(new_value,min_val,invert)){
 				  //this can only happen if a budget was used and the solver quit early.
 				  min_val=new_value;
@@ -818,42 +923,338 @@ int64_t optimize_binary_bv(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int6
 
 			  //set the solver back to its last satisfying assignment
 			  //this is technically not required, but it should be cheap, and will also reset the solvers decision phase heuristic
-			  r= S->solve(last_satisfying_assign,false,false);
-			  if(!r){
-				  throw std::runtime_error("Error in optimization (instance has become unsat)");
+			  if(found_model) {
+				  r = S->solve(last_satisfying_assign, false, false);
+				  if (!r) {
+					  throw std::runtime_error("Error in optimization (instance has become unsat)");
+				  }
 			  }
-
 		  }
 	  }
 
 
 	   if(lt(max_val,last_decision_value,invert)){
 		  //if that last decrease in value was by more than 1
-		  last_decision_lit =  bvTheory->toSolver(bvTheory->newComparison(invert ? Comparison::geq : Comparison::leq,bvID,max_val,var_Undef,opt_decide_optimization_lits));
+		   if(!opt_strict_search_optimization) {
+			   last_decision_lit =  bvTheory->toSolver(bvTheory->newComparison(invert ? Comparison::geq : Comparison::leq,bvID,max_val,var_Undef,opt_decide_optimization_lits));
+		   }else{
+			   Lit a = bvTheory->toSolver(
+					   bvTheory->newComparison(invert ? Comparison::geq : Comparison::leq, bvID, max_val, var_Undef,
+											   opt_decide_optimization_lits));
+			   Lit b = bvTheory->toSolver(
+					   bvTheory->newComparison(invert ? Comparison::leq : Comparison::geq, bvID, max_val, var_Undef,
+											   opt_decide_optimization_lits));
+			   last_decision_lit = mkLit(S->newVar(var_Undef,
+												   opt_decide_optimization_lits));
+			   S->addClause(~last_decision_lit, a);
+			   S->addClause(~last_decision_lit, b);
+		   }
 		  last_decision_value=max_val;
 	  }
 	  bool r;
 	  assume.push(last_decision_lit);
-	  r= S->solve(last_satisfying_assign,false,false);
+	S->cancelUntil(0);
+	if(found_model) {
+		r = S->solve(last_satisfying_assign, false, false);
 
-	  if(!r){
-		  throw std::runtime_error("Error in optimization (instance has become unsat)");
-	  }
-	  for(Lit l:assume){
-			if(S->value(l)!=l_True){
+		if (!r) {
+			throw std::runtime_error("Error in optimization (instance has become unsat)");
+		}
+		for (Lit l:assume) {
+			if (S->value(l) != l_True) {
 				throw std::runtime_error("Error in optimization (model is inconsistent with assumptions)");
 			}
 		}
-	if(lt(max_val , getApprox(bvTheory,bvID,!invert),invert)){//bvTheory->getOverApprox(bvID)){
-		  throw std::runtime_error("Error in optimization (minimum values are inconsistent with model)");
-	  }
-	//if(bvTheory->getOverApprox(bvID) < max_val){
-    if(lt(getApprox(bvTheory,bvID,!invert),max_val,invert)){
-		max_val = getApprox(bvTheory,bvID,!invert); //bvTheory->getOverApprox(bvID);
-	  }
+		if(lt(max_val , getApprox(bvTheory,bvID,!invert),invert)){//bvTheory->getOverApprox(bvID)){
+			  throw std::runtime_error("Error in optimization (minimum values are inconsistent with model)");
+		  }
+		//if(bvTheory->getOverApprox(bvID) < max_val){
+	    if(lt(getApprox(bvTheory,bvID,!invert),max_val,invert)){
+			max_val = getApprox(bvTheory,bvID,!invert); //bvTheory->getOverApprox(bvID);
+		  }
+	}
+
 	  return max_val;
 }
 
+int64_t optimize_binary_restart_bv(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bvTheory, bool maximize,const vec<Lit> & assumes,int bvID,  bool & hit_cutoff, int64_t & n_solves, bool & found_model){
+
+    hit_cutoff=false;
+    vec<Lit> assume;
+    for(Lit l:assumes)
+        assume.push(l);
+    vec<Lit> last_satisfying_assign;
+    if(found_model) {
+        for (Var v = 0; v < S->nVars(); v++) {
+            if (!S->isEliminated(v)) {
+                if (S->value(v) == l_True) {
+                    last_satisfying_assign.push(mkLit(v));
+                } else if (S->value(v) == l_False) {
+                    last_satisfying_assign.push(mkLit(v, true));
+                } else {
+                    //this variable was unassigned.
+                }
+            }
+        }
+    }
+    bool invert=maximize;
+
+
+    int64_t min_val = getApprox(bvTheory, bvID, invert,true); //bvTheory->getUnderApprox(bvID,true);
+    int64_t max_val = getApprox(bvTheory, bvID, !invert); //bvTheory->getOverApprox(bvID);
+    if(opt_verb>=1 || opt_verb_optimize>=1){
+        printf("Best bv%d = %ld",bvID,max_val);
+    }
+    int64_t suggested_next_midpoint = -1;
+
+    //try the minimum possible value first, just in case we get lucky.
+    //it might also be a good idea to try min_val+1, and max_val-1.
+
+    int64_t underapprox_sat_val = getApprox(bvTheory, bvID, invert); //bvTheory->getUnderApprox(bvID);
+    int64_t overapprox_sat_val = getApprox(bvTheory, bvID, !invert); //bvTheory->getUnderApprox(bvID);
+    if(!maximize) {
+        if (lt(underapprox_sat_val, max_val, invert))
+            suggested_next_midpoint = underapprox_sat_val;
+    }else{
+        if (lt(overapprox_sat_val, max_val, invert))
+            suggested_next_midpoint = overapprox_sat_val;
+    }
+    bool first_round=true;
+    int64_t last_decision_value=max_val;
+    Lit last_decision_lit;
+    if(!opt_strict_search_optimization) {
+        last_decision_lit =  bvTheory->toSolver(bvTheory->newComparison(invert ? Comparison::geq : Comparison::leq,bvID,max_val,var_Undef,opt_decide_optimization_lits));
+    }else{
+        Lit a = bvTheory->toSolver(
+                bvTheory->newComparison(invert ? Comparison::geq : Comparison::leq, bvID, max_val, var_Undef,
+                                        opt_decide_optimization_lits));
+        Lit b = bvTheory->toSolver(
+                bvTheory->newComparison(invert ? Comparison::leq : Comparison::geq, bvID, max_val, var_Undef,
+                                        opt_decide_optimization_lits));
+        last_decision_lit = mkLit(S->newVar(var_Undef,
+                                            opt_decide_optimization_lits));
+        S->addClause(~last_decision_lit, a);
+        S->addClause(~last_decision_lit, b);
+    }
+    int64_t apparent_min_val = min_val;
+    int number_of_restarts=0;
+    while(lt(min_val , max_val,invert) && !hit_cutoff){
+    	bool used_suggested_midpoint =false;
+        int64_t mid_point;
+        if(!invert)
+            mid_point=min_val + (max_val - min_val) / 2;
+        else{
+            mid_point=max_val + (min_val - max_val) / 2;
+            if(mid_point<=max_val){//extra check required because integer division rounds down
+                mid_point=max_val+1;
+            }
+        }
+        if(suggested_next_midpoint !=-1 && suggested_next_midpoint != mid_point && geq(suggested_next_midpoint,min_val,invert) ){ //&& lt(suggested_next_midpoint,mid_point,invert)
+            mid_point =	suggested_next_midpoint;
+            used_suggested_midpoint=true;
+        }
+        assert(mid_point>=0);assert(geq(mid_point,min_val,invert));assert(lt(mid_point,max_val,invert));
+        suggested_next_midpoint=-1;
+        Lit decision_lit;
+        if(!opt_strict_search_optimization) {
+            decision_lit = bvTheory->toSolver(
+                    bvTheory->newComparison(invert ? Comparison::geq : Comparison::leq, bvID, mid_point, var_Undef,
+                                            opt_decide_optimization_lits));
+
+        }else{
+            Lit a = bvTheory->toSolver(
+                    bvTheory->newComparison(invert ? Comparison::geq : Comparison::leq, bvID, mid_point, var_Undef,
+                                            opt_decide_optimization_lits));
+            Lit b = bvTheory->toSolver(
+                    bvTheory->newComparison(invert ? Comparison::leq : Comparison::geq, bvID, mid_point, var_Undef,
+                                            opt_decide_optimization_lits));
+            decision_lit = mkLit(S->newVar(var_Undef,
+                                           opt_decide_optimization_lits));
+            S->addClause(~decision_lit, a);
+            S->addClause(~decision_lit, b);
+        }
+        assume.push(decision_lit);
+
+
+        n_solves++;
+        if(opt_verb_optimize>=2){
+            printf("Testing bv%d %s %ld...\n",bvID, invert? ">=":"<=",mid_point);
+        }
+        {
+            int conflict_limit = S->getConflictBudget();
+            if(conflict_limit<0)
+                conflict_limit=INT32_MAX;
+            int opt_lim = opt_limit_optimization_conflicts;
+            if(opt_lim<=0)
+                opt_lim=INT32_MAX;
+            int limit = std::min(opt_lim,conflict_limit);
+            if(limit>= INT32_MAX){
+                limit=-1;//disable limit.
+            }
+            S->setConfBudget(limit);
+        }
+
+        Optimization::enableResourceLimits(S);
+
+        lbool r=l_Undef;
+        if(!used_suggested_midpoint && ( (invert && (mid_point==max_val+1)) || (!invert && mid_point == max_val-1))){
+            //the next value is just one greater than the current value. Try at full strength
+            r = S->solveLimited(assume,false,false);
+            hit_cutoff|=(r==l_Undef);//this was a full solve attempt, so if it fails it is because we hit the resource cut off.
+        }else {
+            r = S->solveUntilRestart(assume);
+            //do NOT set hit_cutoff here
+        }
+
+        found_model|=(r==l_True);
+        Optimization::disableResourceLimits(S);
+
+
+        assume.pop();
+        if (r==l_True){
+            last_satisfying_assign.clear();
+            for(Var v = 0;v<S->nVars();v++){
+                if(!S->isEliminated(v)) {
+                    if(S->value(v)==l_True){
+                        last_satisfying_assign.push(mkLit(v));
+                    }else if(S->value(v)==l_False){
+                        last_satisfying_assign.push(mkLit(v,true));
+                    }else {
+                        //this variable was unassigned.
+                    }
+                }
+            }
+            last_decision_lit=decision_lit;
+            last_decision_value=mid_point;
+            int64_t new_value = getApprox(bvTheory, bvID, !invert); //bvTheory->getOverApprox(bvID);
+            if(opt_verb_optimize>=2){
+			   printf("Found bv%d = %ld...\n",bvID,new_value);
+		   }
+            if(geq(new_value,max_val,invert)){
+                throw std::runtime_error("Error2 in optimization (minimum values are inconsistent with model)");
+            }
+            int64_t underapprox_sat_val =  getApprox(bvTheory, bvID, invert); //bvTheory->getUnderApprox(bvID);
+            if(lt(underapprox_sat_val,max_val,invert))
+                suggested_next_midpoint =	underapprox_sat_val;
+            assert(leq(new_value,mid_point,invert));
+            assert(lt(new_value,max_val,invert));
+            max_val=new_value;
+
+            if(leq(new_value,min_val,invert)){
+                //this can only happen if a budget was used and the solver quit early.
+                min_val=new_value;
+                assert(gt(min_val,getApprox(bvTheory,bvID,invert,true),invert)); //assert(min_val>=bvTheory->getUnderApprox(bvID,true));
+            }
+            if(opt_verb>=1 || opt_verb_optimize>=1){
+                printf("\rBest bv%d = %ld",bvID,max_val);
+            }
+            suggested_next_midpoint=-1;
+            apparent_min_val=min_val;
+        }else if (r==l_Undef){
+
+			int64_t new_apparent_limit = invert ? mid_point - 1 : mid_point + 1; //yes this is intentionally backward
+
+			if (geq(new_apparent_limit, max_val, invert)) {
+				if (invert) {
+					new_apparent_limit = max_val + 1;
+				} else {
+					new_apparent_limit = max_val - 1;
+				}
+			}
+			assert(lt(new_apparent_limit, max_val, invert));
+
+			if (gt(new_apparent_limit, apparent_min_val, invert) || ((drand(S->random_seed)<=opt_rnd_optimization_restart_freq))){
+				apparent_min_val = new_apparent_limit;
+				if(opt_verb_optimize>=2)
+					printf("Updating apparent min val to %ld.\n", apparent_min_val);
+			}
+			if (!invert)
+				suggested_next_midpoint = apparent_min_val + (max_val - apparent_min_val) / 2;
+			else {
+				suggested_next_midpoint = max_val + (apparent_min_val - max_val) / 2;
+				if (suggested_next_midpoint == max_val) {//extra check required because integer division rounds down
+					suggested_next_midpoint = apparent_min_val;
+				}
+			}
+			if(opt_verb_optimize>=2)
+				printf("Suggested mid point is %ld (from minval %ld, maxval %ld, apparent_min_val %ld, current_apparent_min %ld).\n", suggested_next_midpoint,min_val,max_val, apparent_min_val, new_apparent_limit);
+			number_of_restarts++;
+
+			if(drand(S->random_seed)<=opt_rnd_optimization_freq){
+				 suggested_next_midpoint=-1;//keep working on the harder problem, opt_rnd_optimization_freq % of the time
+			}
+            //set the solver back to its last satisfying assignment
+            //this is technically not required, but it should be cheap, and will also reset the solvers decision phase heuristic
+            if(found_model) {
+                bool res = S->solve(last_satisfying_assign, false, false);
+                if (!res) {
+                    throw std::runtime_error("Error in optimization (instance has become unsat)");
+                }
+            }
+        }else{
+            min_val = invert ? mid_point-1 : mid_point+1; //yes this is intentionally backward
+            //set the solver back to its last satisfying assignment
+            //this is technically not required, but it should be cheap, and will also reset the solvers decision phase heuristic
+            if(found_model) {
+                bool res = S->solve(last_satisfying_assign, false, false);
+                if (!res) {
+                    throw std::runtime_error("Error in optimization (instance has become unsat)");
+                }
+            }
+        }
+        if(gt(min_val,apparent_min_val,invert)){
+            apparent_min_val=min_val;
+        }
+        if(lt(max_val,apparent_min_val,invert)){
+            apparent_min_val=max_val;
+        }
+    }
+
+
+    if(lt(max_val,last_decision_value,invert)){
+        //if that last decrease in value was by more than 1
+        if(!opt_strict_search_optimization) {
+            last_decision_lit =  bvTheory->toSolver(bvTheory->newComparison(invert ? Comparison::geq : Comparison::leq,bvID,max_val,var_Undef,opt_decide_optimization_lits));
+        }else{
+            Lit a = bvTheory->toSolver(
+                    bvTheory->newComparison(invert ? Comparison::geq : Comparison::leq, bvID, max_val, var_Undef,
+                                            opt_decide_optimization_lits));
+            Lit b = bvTheory->toSolver(
+                    bvTheory->newComparison(invert ? Comparison::leq : Comparison::geq, bvID, max_val, var_Undef,
+                                            opt_decide_optimization_lits));
+            last_decision_lit = mkLit(S->newVar(var_Undef,
+                                                opt_decide_optimization_lits));
+            S->addClause(~last_decision_lit, a);
+            S->addClause(~last_decision_lit, b);
+        }
+        last_decision_value=max_val;
+    }
+    bool r;
+    assume.push(last_decision_lit);
+    S->cancelUntil(0);
+    if(found_model) {
+        r = S->solve(last_satisfying_assign, false, false);
+
+        if (!r) {
+            throw std::runtime_error("Error in optimization (instance has become unsat)");
+        }
+        for (Lit l:assume) {
+            if (S->value(l) != l_True) {
+                throw std::runtime_error("Error in optimization (model is inconsistent with assumptions)");
+            }
+        }
+        if(lt(max_val , getApprox(bvTheory,bvID,!invert),invert)){//bvTheory->getOverApprox(bvID)){
+            throw std::runtime_error("Error in optimization (minimum values are inconsistent with model)");
+        }
+        //if(bvTheory->getOverApprox(bvID) < max_val){
+         if(lt(getApprox(bvTheory,bvID,!invert),max_val,invert)){
+             max_val = getApprox(bvTheory,bvID,!invert); //bvTheory->getOverApprox(bvID);
+         }
+    }
+
+
+    return max_val;
+}
 void copyModel(SimpSolver & S, vec<Lit> & dest){
     dest.clear();
     for(Var v = 0;v<S.nVars();v++){
@@ -869,6 +1270,12 @@ void copyModel(SimpSolver & S, vec<Lit> & dest){
     }
 }
 
+void resetDecisionPriority(SimpSolver & S,vec<std::pair<Var, int>> & decision_vars){
+	for(auto p:decision_vars){
+		S.setDecisionPriority(p.first, p.second);
+	}
+	decision_vars.clear();
+}
 	lbool optimize_and_solve(SimpSolver & S,const vec<Lit> & assumes,const vec<Objective> & objectives,bool do_simp,  bool & found_optimal){
 		vec<Lit> best_model;
 		vec<Lit> assume;
@@ -895,9 +1302,12 @@ void copyModel(SimpSolver & S, vec<Lit> & dest){
 			}
 			printf("\n");
 		}
+		vec<std::pair<Var,int>> old_decision_priority;
 		if(!objectives.size()){
 
-			return S.solveLimited(assume,opt_pre && do_simp, !opt_pre && do_simp);
+			lbool r =  S.solveLimited(assume,opt_pre && do_simp, !opt_pre && do_simp);
+			resetDecisionPriority(S,old_decision_priority);
+			return r;
 
 		}else{
 			bool any_pb=false;
@@ -915,37 +1325,37 @@ void copyModel(SimpSolver & S, vec<Lit> & dest){
 			}
 
 			bool r;
-			if (opt_verb >= 2 || opt_verb_optimize>=2) {
-				printf("Performing initial solve (before attempting optimization)...\n");
-			}
-			/*if(opt_begin_optimization_at_minimum ){
-				bool r = S.propagateAssignment(assume);//apply initial propagation to get minimal bounds
-				if(r) {
-					for (int i = 0; i < objectives.size(); i++) {
-						if (objectives[i].isBV()) {
-							if (!objectives[i].maximize) {
-								min_values[i] = bvTheory->getOverApprox(objectives[i].bvID, true);
-								max_values[i] = bvTheory->getUnderApprox(objectives[i].bvID, true);
-							} else {
-								min_values[i] = bvTheory->getUnderApprox(objectives[i].bvID, true);
-								max_values[i] = bvTheory->getOverApprox(objectives[i].bvID, true);
-							}
+			if(opt_decide_objectives_first) {
+				for (int i = 0; i < objectives.size(); i++) {
+					if (objectives[i].isBV()) {
+						int bvID =objectives[i].bvID;
+						vec<Lit>  lits;
+						((BVTheorySolver<long>*) S.getBVTheory())->getLiterals(bvID, lits);
+						for(Lit l:lits){
+							//printf("Setting priority for %d to %d\n", var(l), 100);
+							old_decision_priority.push();
+							old_decision_priority.last().first = var(l);
+							old_decision_priority.last().second = S.getDecisionPriority(var(l));
+							S.setDecisionPriority(var(l), 100);//a 'large enough' value?
 
-						} else {
-							if (!objectives[i].maximize) {
-								min_values[i] = evalPB(S, objectives[i], true, true);
-								max_values[i] = evalPB(S, objectives[i], false, true);
-							} else {
-								min_values[i] = evalPB(S, objectives[i], false, true);
-								max_values[i] = evalPB(S, objectives[i], true, true);
-							}
+						}
+
+					} else {
+						for(Lit l:objectives[i].pb_lits){
+							old_decision_priority.push();
+							old_decision_priority.last().first = var(l);
+							old_decision_priority.last().second = S.getDecisionPriority(var(l));
+							S.setDecisionPriority(var(l), 100);//a 'large enough' value?
 						}
 					}
 				}
-			}else */
+			}
 			r=true;
 			bool ever_solved=false;
 			if(opt_optimization_init_solve){
+				if (opt_verb >= 2 || opt_verb_optimize>=2) {
+					printf("Performing initial solve (before attempting optimization)...\n");
+				}
 				//problem: this initial solve, in which the optimization function is free, can sometimes be much more expensive than the subsequent optimizaiton steps...
 				lbool res = S.solveLimited(assume, opt_pre && do_simp, !opt_pre && do_simp);
 				if (res == l_True) {
@@ -956,6 +1366,7 @@ void copyModel(SimpSolver & S, vec<Lit> & dest){
 					r = false;
 				} else {
 					found_optimal = false;
+					resetDecisionPriority(S,old_decision_priority);
 					return l_Undef;
 				}
 			}else{
@@ -1010,12 +1421,16 @@ void copyModel(SimpSolver & S, vec<Lit> & dest){
 							printf("%s bv%d (%d of %d)\n", objectives[i].maximize ? "Maximizing": "Minimizing", bvID, i + 1, objectives.size());
 						}
 						int64_t val=0;
-						if (!opt_binary_search_optimization_bv) {
-							val = optimize_linear_bv(&S, bvTheory,objectives[i].maximize, assume, bvID, hit_cutoff, n_solves, found_model);
+						if (opt_optimization_search_type==1) {
+							val = optimize_linear_bv(&S, bvTheory,objectives[i].maximize, assume, bvID, hit_cutoff, n_solves, ever_solved);
+						} else if (opt_optimization_search_type==0) {
+							val = optimize_binary_bv(&S, bvTheory, objectives[i].maximize,assume, bvID, hit_cutoff, n_solves, ever_solved);
+						}else if (opt_optimization_search_type==2) {
+                            val = optimize_binary_restart_bv(&S, bvTheory, objectives[i].maximize,assume, bvID, hit_cutoff, n_solves, ever_solved);
+                        }else{
+                            throw std::runtime_error("Unknown optimization type");
+                        }
 
-						} else {
-							val = optimize_binary_bv(&S, bvTheory, objectives[i].maximize,assume, bvID, hit_cutoff, n_solves, found_model);
-						}
 						if(objectives[i].maximize){
 							assert(val>=min_values[i]);assert(val<=max_values[i]);
 							max_values[i] = val;
@@ -1050,11 +1465,16 @@ void copyModel(SimpSolver & S, vec<Lit> & dest){
 							printf("%s pb (%d of %d)\n",objectives[i].maximize ? "Maximizing": "Minimizing", i + 1, objectives.size());
 						}
 						int64_t val=0;
-						if (!opt_binary_search_optimization_pb) {
-							val = optimize_linear_pb(&S, pbSolver,objectives[i].maximize, assume, objectives[i], hit_cutoff, n_solves, found_model);
-						} else {
-							val = optimize_binary_pb(&S, pbSolver,objectives[i].maximize, assume,  objectives[i], hit_cutoff, n_solves, found_model);
-						}
+                        if (opt_optimization_search_type==1) {
+                            val = optimize_linear_pb(&S, pbSolver,objectives[i].maximize, assume, objectives[i], hit_cutoff, n_solves, ever_solved);
+                        } else if (opt_optimization_search_type==0) {
+                            val = optimize_binary_pb(&S, pbSolver,objectives[i].maximize, assume,  objectives[i], hit_cutoff, n_solves, ever_solved);
+                        }else if (opt_optimization_search_type==2) {
+                            val = optimize_binary_pb(&S, pbSolver,objectives[i].maximize, assume,  objectives[i], hit_cutoff, n_solves, ever_solved);
+                        }else{
+                            throw std::runtime_error("Unknown optimization type");
+                        }
+
 						if(objectives[i].maximize){
 							assert(val>=max_values[i]);
 							max_values[i] = val;
@@ -1090,7 +1510,13 @@ void copyModel(SimpSolver & S, vec<Lit> & dest){
 
 					}
 					//enforce that this bitvector stays at the best value that was found for it
-
+					if(!ever_solved){
+						if(opt_verb_optimize>=1) {
+							printf("Instance is UNSAT, objective function could not be optimized\n");
+						}
+						resetDecisionPriority(S,old_decision_priority);
+						return l_False;
+					}
 					model_vals.clear();
 					for(int j = 0;j<i;j++){
 						if(objectives[j].isBV()) {
@@ -1194,10 +1620,13 @@ void copyModel(SimpSolver & S, vec<Lit> & dest){
 					}
 				}
 			}
-
-			return r? l_True:l_False;
+			if(opt_verb_optimize>=1 && !ever_solved) {
+				printf("Instance is UNSAT, objective function could not be optimized\n");
+			}
+			resetDecisionPriority(S,old_decision_priority);
+			return ever_solved? l_True:l_False;
 		}
-
+		resetDecisionPriority(S,old_decision_priority);
 
 	}
 };

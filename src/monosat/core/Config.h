@@ -48,7 +48,8 @@ extern IntOption opt_limit_optimization_time;
 extern BoolOption opt_limit_optimization_time_per_arg;
 extern BoolOption opt_pb_theory;
 extern bool opt_record;
-
+extern DoubleOption opt_rnd_optimization_freq;
+extern DoubleOption opt_rnd_optimization_restart_freq;
 extern IntOption opt_theory_conflict_max;
 extern DoubleOption opt_random_theory_freq;
 extern BoolOption opt_theory_internal_vsids_fsm;
@@ -56,8 +57,10 @@ extern DoubleOption opt_random_theory_vsids_freq;
 extern BoolOption opt_randomize_theory_order;
 extern BoolOption opt_randomize_theory_order_all;
 extern BoolOption opt_theory_decision_round_robin;
-extern BoolOption opt_optimize_internal;
+
 extern BoolOption opt_optimization_init_solve;
+extern BoolOption opt_decide_objectives_first;
+extern BoolOption opt_strict_search_optimization;
 extern BoolOption opt_interpolate;
 extern IntOption opt_eager_prop;
 extern IntOption opt_subsearch;
@@ -65,8 +68,8 @@ extern IntOption opt_subsearch;
 extern BoolOption opt_parser_immediate_mode;
 extern BoolOption opt_remap_vars;
 extern BoolOption opt_decide_optimization_lits;
-extern BoolOption opt_binary_search_optimization_pb;
-extern BoolOption opt_binary_search_optimization_bv;
+extern IntOption opt_optimization_search_type;
+
 extern IntOption opt_clausify_amo;
 extern BoolOption opt_amo_eager_prop;
 
