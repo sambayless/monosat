@@ -5,8 +5,9 @@ from monosat.monosat_c import Monosat
 from monosat.pbtheory import PBManager
 
 def FoundOptimal():
-    return Monosat().lastSolutionWasOptimal();   
-
+    return Monosat().lastSolutionWasOptimal();
+class SolveException(Exception):
+    pass
 def Solve(assumptions=None, preprocessing=True,bvs_to_minimize=None,time_limit_seconds=None, memory_limit_mb=None,conflict_limit=None):
     WriteConstraints()
     if time_limit_seconds is None or time_limit_seconds <=0:
@@ -42,12 +43,12 @@ def Solve(assumptions=None, preprocessing=True,bvs_to_minimize=None,time_limit_s
     
     r= Monosat().solveLimited([x.getLit() for x in assumptions])
     if r is None:
-        raise RuntimeError("MonoSAT aborted before solving (possibly do to a time or memory limit)")
+        raise SolveException("MonoSAT aborted before solving (possibly do to a time or memory limit)")
 
     Monosat().elapsed_time +=  time.clock()-t
     found_optimal = Monosat().lastSolutionWasOptimal();   
     if r is None:
-        raise RuntimeError("MonoSAT aborted before solving (possibly due to a time or memory limit)")    
+        raise SolveException("MonoSAT aborted before solving (possibly due to a time or memory limit)")
     elif r and not found_optimal:
         print("MonoSAT found a satisfying solution, but it might not be optimal (due to a time or memory limit)")
 
