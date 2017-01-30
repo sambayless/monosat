@@ -1532,8 +1532,12 @@ int fsmCompositionAccepts(Monosat::SimpSolver * S, Monosat::FSMTheorySolver *  f
 //Returns 0 for true, 1 for false, 2 for unassigned.
 int getModel_Literal(Monosat::SimpSolver * S,int lit){
 	Lit l = toLit(lit);
-	if (var(l)>=S->model.size())
+	//if (var(l)>=S->model.size())
+    if(var(l)<0 || var(l)>=S->nVars())
 		api_errorf("Variable %d is undefined",dimacs(l));
+    else if (var(l) >= S->model.size()){
+        return toInt(l_Undef);
+    }
 	//return toInt(l_Undef);
 	lbool val = S->model[var(l)];
 	assert(val==l_True || val==l_False || val==l_Undef);
