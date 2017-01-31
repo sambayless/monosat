@@ -1535,20 +1535,24 @@ int fsmCompositionAccepts(Monosat::SimpSolver * S, Monosat::FSMTheorySolver *  f
  //model query
  //Returns 0 for true, 1 for false, 2 for unassigned.
  int getModel_Literal(Monosat::SimpSolver * S,int lit){
-	 Lit l = toLit(lit);
-	 if (var(l)>=S->model.size())
-		 api_errorf("Variable %d is undefined",dimacs(l));
-		 //return toInt(l_Undef);
-	 lbool val = S->model[var(l)];
-	 assert(val==l_True || val==l_False || val==l_Undef);
-	 if (sign(l)){
-		 if (val==l_True)
-			 val=l_False;
-		 else if (val==l_False){
-			 val=l_True;
-		 }
-	 }
-	 return toInt(val);//toInt(S->value(toLit(lit)));
+     Lit l = toLit(lit);
+     //if (var(l)>=S->model.size())
+     if(var(l)<0 || var(l)>=S->nVars())
+         api_errorf("Variable %d is undefined",dimacs(l));
+     else if (var(l) >= S->model.size()){
+         return toInt(l_Undef);
+     }
+     //return toInt(l_Undef);
+     lbool val = S->model[var(l)];
+     assert(val==l_True || val==l_False || val==l_Undef);
+     if (sign(l)){
+         if (val==l_True)
+             val=l_False;
+         else if (val==l_False){
+             val=l_True;
+         }
+     }
+     return toInt(val);//toInt(S->value(toLit(lit)));
  }
  int64_t getModel_BV(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bv, int bvID, bool getMaximumValue){
 	 if(getMaximumValue){

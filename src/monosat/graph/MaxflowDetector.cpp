@@ -1771,7 +1771,7 @@ Lit MaxflowDetector<Weight>::decide() {
 		return lit_Undef;
 
 	static int it = 0;
-	if (++it == 91) {
+	if (++it == 1320) {
 		int a = 1;
 	}
 	double startdecidetime = rtime(2);
@@ -1801,7 +1801,7 @@ Lit MaxflowDetector<Weight>::decide() {
 		int edgeID = order_heap.removeMin();
 		Lit l = mkLit(outer->getEdgeVar(edgeID), false);
 
-		if ((outer->decidable(l) || outer->edgeWeightDecidable(edgeID, DetectorComparison::geq,  overapprox_conflict_detector->getEdgeFlow(edgeID)) ) && over->getEdgeFlow(edgeID) > 0) {
+		if ((outer->decidable(l) || (opt_decide_graph_bv && outer->edgeWeightDecidable(edgeID, DetectorComparison::geq,  overapprox_conflict_detector->getEdgeFlow(edgeID)) ) && over->getEdgeFlow(edgeID) > 0)) {
 			n_stats_vsids_decisions++;
 			double post_time = rtime(2);
 			stats_decide_time += post_time - startdecidetime;
@@ -1867,7 +1867,7 @@ Lit MaxflowDetector<Weight>::decide() {
 				Lit l = mkLit(outer->getEdgeVar(edgeID), false);
 				lbool val = outer->value(l);
 
-				if ((outer->decidable(l) || outer->edgeWeightDecidable(edgeID, DetectorComparison::geq,  overapprox_conflict_detector->getEdgeFlow(edgeID)))  && over->getEdgeFlow(edgeID) > 0) {
+				if ((outer->decidable(l) || (opt_decide_graph_bv &&  outer->edgeWeightDecidable(edgeID, DetectorComparison::geq,  overapprox_conflict_detector->getEdgeFlow(edgeID)))  && over->getEdgeFlow(edgeID) > 0) ){
 					//decideEdge(edgeID, true);
 
 					decision = l;
@@ -1908,7 +1908,7 @@ Lit MaxflowDetector<Weight>::decide() {
 				Lit l = mkLit(outer->getEdgeVar(edgeID), false);
 				lbool val = outer->value(l);
 
-				if ((outer->decidable(l) || outer->edgeWeightDecidable(edgeID, DetectorComparison::geq,  g_under.getWeight(edgeID))) && over->isOnCut(edgeID) > 0) {
+				if ((outer->decidable(l) ||  outer->edgeWeightDecidable(edgeID, DetectorComparison::geq,  g_under.getWeight(edgeID))) && over->isOnCut(edgeID) > 0) {
 					//decideEdge(edgeID, true);
 
 					decision = l;

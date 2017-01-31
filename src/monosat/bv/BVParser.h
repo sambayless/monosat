@@ -393,8 +393,17 @@ private:
 
 		//bv_lt bvID var weight
 		skipWhitespace(in);
-		Var v = parseInt(in) - 1;
-		v= mapVar(S,v);
+        int v_int= parseInt(in);
+        if(v_int<0){
+            v_int = -v_int;
+            c = -c;
+        }
+        v_int = v_int - 1;
+        Var v = (Var)v_int;
+        if(this->inVarMap((Var)v_int))
+            return;//deal with this better in the future...
+        Var ov = v;
+        v = mapVar(S, v);
 		skipWhitespace(in);
 		//bool arg1_is_bv=match(in,"bv");
 		int64_t arg1 = parseInt(in);
@@ -476,6 +485,7 @@ public:
 
 	}
 	bool parseLine(B& in, Solver& S) {
+
 
 		skipWhitespace(in);
 		if (*in == EOF)
