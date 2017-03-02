@@ -385,8 +385,17 @@ private:
 
 		//bv_lt bvID var weight
 		skipWhitespace(in);
-		Var v = parseInt(in) - 1;
-		v= mapVar(S,v);
+        int v_int= parseInt(in);
+        if(v_int<0){
+            v_int = -v_int;
+            c = -c;
+        }
+        v_int = v_int - 1;
+        Var v = (Var)v_int;
+        if(this->inVarMap((Var)v_int))
+            return;//deal with this better in the future...
+        Var ov = v;
+        v = mapVar(S, v);
 		skipWhitespace(in);
 		//bool arg1_is_bv=match(in,"bv");
 		int64_t arg1 = parseInt(in);
@@ -419,20 +428,29 @@ private:
 	void readCompare(B& in, Solver& S,Comparison c) {
 
 			//bv_lt bvID var weight
-			skipWhitespace(in);
-			Var v = parseInt(in) - 1;
-			v= mapVar(S,v);
-			skipWhitespace(in);
-			//bool arg1_is_bv=match(in,"bv");
-			int64_t arg1 = parseInt(in);
-			skipWhitespace(in);
-			//bool arg2_is_bv=match(in,"bv");
-			int64_t arg2 = parseLong(in);
-			compares.push();
-			compares.last().bvID =  arg1;
-			compares.last().w = arg2;
-			compares.last().c = c;
-			compares.last().var = v;
+        skipWhitespace(in);
+        int v_int= parseInt(in);
+        if(v_int<0){
+            v_int = -v_int;
+            c = -c;
+        }
+        v_int = v_int - 1;
+        Var v = (Var)v_int;
+        if(this->inVarMap((Var)v_int))
+            return;//deal with this better in the future...
+        Var ov = v;
+        v = mapVar(S, v);
+        skipWhitespace(in);
+        //bool arg1_is_bv=match(in,"bv");
+        int64_t arg1 = parseInt(in);
+        skipWhitespace(in);
+        //bool arg2_is_bv=match(in,"bv");
+        int64_t arg2 = parseLong(in);
+        compares.push();
+        compares.last().bvID = arg1;
+        compares.last().w = arg2;
+        compares.last().c = c;
+        compares.last().var = v;
 
 		}
 

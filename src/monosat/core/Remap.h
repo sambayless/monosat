@@ -37,6 +37,7 @@ public:
 		}else{
 			Var v =S.newVar();
 			addVarToMap(var,v);
+			assert(v>=0);
 			return v;
 		}
 	}
@@ -91,6 +92,7 @@ public:
 					return externalVar;
 				}
 			if (inVarMap(externalVar)){
+				assert(var_map[externalVar]>=0);
 				return var_map[externalVar];
 			}
 			return var_Undef;
