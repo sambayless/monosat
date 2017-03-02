@@ -36,7 +36,6 @@ static const char* _cat_bv = "BV";
 static const char* _cat_amo = "AMO";
 static const char* _cat_geom = "GEOMETRY";
 static const char* _cat_fsm = "FSM";
-IntOption Monosat::opt_crc("MAIN", "crc", "Crc level (0=silent, 1=some, 2=more).", 0, IntRange(0, INT32_MAX));
 
 IntOption Monosat::opt_verb("MAIN", "verb", "Verbosity level (0=silent, 1=some, 2=more).", 0, IntRange(0, 3));
 IntOption Monosat::opt_verb_optimize("MAIN", "verb-opt", "Verbosity level for optimization (0=silent, 1=some, 2=more).",0, IntRange(0, 3));

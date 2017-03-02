@@ -4722,10 +4722,6 @@ public:
 		/*assert(op->getID()==operations.size());
 		operations.push(op);*/
 		operation_ids[bvID].push(op->getID());
-#ifdef CRC_CHECK
-		S->crc(bvID,"addOpID");
-        S->crc(op->getID(),"newOpID");
-#endif
 	}
 
 
@@ -6299,10 +6295,6 @@ public:
 		}
 		long under_old_l = getLong(under_old);
 		long over_old_l = getLong( over_old);
-#ifdef CRC_CHECK
-		S->crc(under_old_l,"under_old_l");
-        S->crc(over_old_l,"over_old_l");
-#endif
 		assert_in_range(under_new, bvID);
 		assert_in_range(over_new, bvID);
 
@@ -6314,9 +6306,6 @@ public:
 		for (int opID:operation_ids[bvID]) {
 			if (opID == ignoreCID)
 				continue;
-#ifdef CRC_CHECK
-			S->crc(opID,"opID");
-#endif
 			getOperation(opID).updateApprox(ignore_bv, under_new, over_new, under_cause_new, over_cause_new);
 		}
 
@@ -6328,9 +6317,6 @@ public:
 			if (cID == ignoreCID) {
 				continue;
 			}
-#ifdef CRC_CHECK
-			S->crc(cID,"cID");
-#endif
 			ComparisonOp &c = (ComparisonOp &) getOperation(cID);
 			c.updateApprox(ignore_bv, under_new, over_new, under_cause_new, over_cause_new, true);
 		}
@@ -6339,9 +6325,6 @@ public:
 			if (cID == ignoreCID) {
 				continue;
 			}
-#ifdef CRC_CHECK
-			S->crc(cID,"cID");
-#endif
 			ComparisonOp &c = (ComparisonOp &) getOperation(cID);
 			c.updateApprox(ignore_bv, under_new, over_new, under_cause_new, over_cause_new, false);
 		}
@@ -6444,10 +6427,6 @@ public:
 		over_causes[bvID] = over_cause_new;
 		long under = getLong(under_new);
 		long over = getLong( over_new);
-#ifdef CRC_CHECK
-		S->crc(under,"under_new");
-        S->crc(over,"over_new");
-#endif
 		if (decisionLevel() == 0) {
 			under_approx0[bvID] = under_approx[bvID];
 			over_approx0[bvID] = over_approx[bvID];
@@ -8476,10 +8455,6 @@ public:
 
 
 		ComparisonOp *compOp = new ComparisonOp(*this, bvID, op, to, l);
-#ifdef CRC_CHECK
-		S->crc(bvID,"addComparison");
-        S->crc(comparisonID,"comparisonID");
-#endif
 		operations.push(compOp);
 
 		dbg_compares_sorted(bvID);
@@ -8499,11 +8474,6 @@ public:
             }
             compare[insertPos] = comparisonID;
         }
-#ifdef CRC_CHECK
-		for(int cID_sort:compare){
-            S->crc(cID_sort,"cID_sort");
-        }
-#endif
 		dbg_compares_sorted(bvID);
 
 

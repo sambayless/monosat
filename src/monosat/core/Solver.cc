@@ -155,7 +155,6 @@ bool Solver::addClause_(vec<Lit>& ps, bool is_derived_clause) {
 		else if (value(ps[i]) != l_False && ps[i] != p)
 			ps[j++] = p = ps[i];
 	ps.shrink(i - j);
-	CRC(ps);
 	if (ps.size() == 0)
 		return ok = false;
 	else if (ps.size() == 1) {
@@ -169,7 +168,6 @@ bool Solver::addClause_(vec<Lit>& ps, bool is_derived_clause) {
 		ca[cr].setDerived(is_derived_clause);
 		clauses.push(cr);
 		attachClause(cr);
-		CRC(cr);
 	}
 	
 	return true;
@@ -373,7 +371,6 @@ void Solver::detachClause(CRef cr, bool strict) {
 
 void Solver::removeClause(CRef cr) {
 	CRef remove_clause = cr;
-	CRC(remove_clause);
 	Clause& c = ca[cr];
 	detachClause(cr);
 	// Don't leave pointers to free'd memory!
@@ -908,8 +905,6 @@ void Solver::enqueueLazy(Lit p, int lev, CRef from){
 }
 
 void Solver::uncheckedEnqueue(Lit p, CRef from) {
-	CRC(p);
-	CRC(from);
 	/*if(var(p)>=103451 && var(p)<=103463){
 		int a=1;
 		printf("Enqueing %d to %s at level %d of %d\n", var(p), sign(p)?"F":"T", decisionLevel(), assumptions.size());
@@ -1549,7 +1544,6 @@ bool Solver::simplify() {
             if (seen[var(trail[i])] == 0)
                 trail[j++] = trail[i];
         trail.shrink(i - j);
-		CRC(trail.size());
         //printf("trail.size()= %d, qhead = %d\n", trail.size(), qhead);
         qhead = trail.size();
 
@@ -1613,7 +1607,6 @@ void Solver::addClauseSafely(vec<Lit> & ps) {
 			}
 		}
 		ps.shrink(i - j);
-		CRC(ps);
 		if(false_count==ps.size()-1){
 			//this clause is unit under the current assignment.
 			//although we _could_ wait until a restart to add this clause, in many cases this will lead to very poor solver behaviour.
@@ -1675,7 +1668,6 @@ void Solver::addClauseSafely(vec<Lit> & ps) {
 				}
 
 				CRef cr = ca.alloc(ps);
-				CRC(cr);
 				ca[cr].setDerived(true);
 				clauses.push(cr);
 				attachClause(cr);
@@ -1917,7 +1909,6 @@ lbool Solver::search(int nof_conflicts) {
 		propagate: CRef confl = propagate(propagate_theories);
 
 		conflict: if (!okay() || (confl != CRef_Undef)) {
-			CRC(confl);
 			// CONFLICT
 			conflicts++;
 			conflictC++;
@@ -1935,8 +1926,6 @@ lbool Solver::search(int nof_conflicts) {
 				return l_False;
 			learnt_clause.clear();
 			analyze(confl, learnt_clause, backtrack_level);
-			CRC(learnt_clause);
-			CRC(backtrack_level);
 			cancelUntil(backtrack_level);
 
 			//this is now slightly more complicated, if there are multiple lits implied by the super solver in the current decision level:
@@ -2222,7 +2211,6 @@ lbool Solver::search(int nof_conflicts) {
 
 			//if(next!=lit_Error)//lit_Error is used to signify a decision that has no literal in the SAT solver (some theories may support this)
 			assert(value(next)==l_Undef);
-			CRC(next);
 			enqueue(next);//not unchecked enqueue, because a theory solver _may_ have assigned this literal while making a decision
 		}
 	}
@@ -2300,7 +2288,6 @@ lbool Solver::solve_() {
 		fprintf(stderr,"Warning: MonoSAT compiled without -DNDEBUG (will be very slow!).\n");
 	}
 #endif
-	CRC(random_seed);
 	clearInterrupt();
 	cancelUntil(0);
 	model.clear();
@@ -2328,7 +2315,6 @@ lbool Solver::solve_() {
 	}
 	initial_level = 0;
 	track_min_level = 0;
-	CRC(assumptions);
 	//ensure that any theory atoms that were created _after_ the variable was assigned are enqueued in the theory
     //this can be improved
 	for (int i = 0; i < qhead; i++) {
@@ -2338,9 +2324,6 @@ lbool Solver::solve_() {
 			theories[theoryID]->enqueueTheory(getTheoryLit(p));
 		}
 	}
-#ifdef CRC_CHECK
-	printf("CRC: %lu\n",crc());
-#endif
 	// Search:
 	int curr_restarts = 0;
     if(quit_at_restart && override_restart_count>=0){
@@ -2465,10 +2448,6 @@ lbool Solver::solve_() {
 	} else if (status == l_False) {
 		assert(ok);
 	}
-	CRC(status);
-#ifdef CRC_CHECK
-	printf("CRC: %lu\n",crc());
-#endif
     quit_at_restart=false;
 	only_propagate_assumptions=false;
 	assumptions.clear();

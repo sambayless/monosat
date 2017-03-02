@@ -35,12 +35,7 @@
 #include "monosat/core/Config.h"
 #include <cinttypes>
 
-//#define CRC_CHECK
-#ifdef CRC_CHECK
-#define CRC(x) (crc(x,"Arg: " #x " "))
-#else
-#define CRC(x) (static_cast<void> (0))
-#endif
+
 
 //this is _really_ ugly...
 template<unsigned int D, class T> class GeometryTheorySolver;
@@ -64,46 +59,6 @@ public:
 	friend class FSMTheorySolver;
 	friend class LSystemSolver;
     bool shown_warning=false;
-
-#ifdef CRC_CHECK
-    unsigned long crc_val = 2;
-	unsigned long crc_updates=0;
-	unsigned long crc (){
-		return crc_val;
-	}
-	void crc(long v,const char* descrpt=""){
-		crc_val ^= v + 0x9e3779b9 + (crc_val<<6) + (crc_val>>2);
-		crc_updates++;
-
-		if(opt_crc>0 && (crc_updates-1) %(opt_crc)==0){
-			fflush(stdout);printf("crc %ld: %lu\t%ld\t(%s)\n",crc_updates,crc_val,v,descrpt);fflush(stdout);
-		}
-	}
-//	void crc(double val,const char* descrpt=""){
-//		crc(*reinterpret_cast<long*>(&val),descrpt);
-//	}
-	void crc(Lit l,const char* descrpt=""){
-		crc(toInt(unmap(l)),descrpt);
-	}
-	void crc(vec<Lit> & vals,const char* descrpt=""){
-		for (Lit l:vals)
-			crc(l,descrpt);
-	}
-	void crc(lbool l,const char* descrpt=""){
-		crc(toInt(l),descrpt);
-	}
-	void crc(const char* value,const char* descrpt=""){
-
-		unsigned long hash = 5381;
-		int c;
-
-		while (c = *value++)
-			hash = ((hash << 5) + hash) + c; /* hash * 33 + c */
-
-		crc(hash);
-	}
-#endif
-
 	// Constructor/Destructor:
 	//
 	Solver();
@@ -1182,7 +1137,6 @@ inline bool Solver::locked(const Clause& c) const {
 }
 inline void Solver::newDecisionLevel() {
 	trail_lim.push(trail.size());
-	CRC(decisionLevel());
 }
 
 
