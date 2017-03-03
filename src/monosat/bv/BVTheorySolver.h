@@ -5937,8 +5937,8 @@ public:
 		return lit_Undef;
 	}
 
-	Lit decideTheory() {
-
+	Lit decideTheory(CRef & decision_reason) {
+        decision_reason = CRef_Undef;
 		return lit_Undef;
 	}
 

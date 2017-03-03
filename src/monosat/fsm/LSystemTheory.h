@@ -419,7 +419,8 @@ public:
 	virtual bool supportsDecisions() {
 		return true;
 	}
-	Lit decideTheory() {
+	Lit decideTheory(CRef & decision_reason) {
+		decision_reason=CRef_Undef;
 		if (!opt_decide_theories)
 			return lit_Undef;
 		double start = rtime(1);
@@ -682,8 +683,8 @@ public:
 	int nEdges() {
 		return rules.size();
 	}
-	CRef newReasonMarker(int detectorID) {
-		CRef reasonMarker = S->newReasonMarker(this);
+	CRef newReasonMarker(int detectorID,bool is_decision=false) {
+		CRef reasonMarker = S->newReasonMarker(this,is_decision);
 		int mnum = CRef_Undef - reasonMarker;
 		marker_map.growTo(mnum + 1);
 		marker_map[mnum] = detectorID;

@@ -194,7 +194,7 @@ public:
 	}
 	
 	//Generate a new, unique `temporary value' for explaining conflicts
-	CRef newReasonMarker(Theory * forTheory) {
+	CRef newReasonMarker(Theory * forTheory, bool is_decision=false) {
 		markers.push(ca.makeMarkerReference());
 		
 		int marker_num = CRef_Undef - markers.last() - 1;
@@ -272,18 +272,21 @@ public:
 		}
 	}
 	
-	bool isTheoryCause(CRef cr) {
+	bool isTheoryCause(CRef cr)const {
 		return cr != CRef_Undef && !ca.isClause(cr);
 	}
 	
-	int getTheory(CRef cr) {
+	int getTheory(CRef cr) const{
 		assert(isTheoryCause(cr));
 		// UINT32_MAX-cr - 1;
 		int marker = CRef_Undef - cr - 1;
-		return marker_theory[marker];
+		return abs(marker_theory[marker]);
 	}
-	
-	bool hasTheory(Var v) {
+
+
+
+
+    bool hasTheory(Var v) {
 		return theory_vars[v].isTheoryVar;
 	}
 	bool hasTheory(Lit l) {
@@ -920,6 +923,8 @@ public:
 			
 	CRef reason(Var x) const;
 	int level(Var x) const;
+    bool isDecisionReason(CRef r) const;
+    CRef decisionReason(Var x) const;
 	double progressEstimate() const; // DELETE THIS ?? IT'S NOT VERY USEFUL ...
 
 	 bool isConstant(Var v)const{
@@ -999,7 +1004,8 @@ private:
 		SolverDecisionTheory(Solver & S):S(S){
 
 		}
-		Lit decideTheory() {
+		Lit decideTheory(CRef & decision_reason) {
+            decision_reason = CRef_Undef;
 			return S.pickBranchLit();
 		}
 		bool supportsDecisions() {
@@ -1034,8 +1040,25 @@ private:
 // Implementation of inline methods:
 
 inline CRef Solver::reason(Var x) const {
-	return vardata[x].reason;
+	CRef r = vardata[x].reason;
+    if(isDecisionReason(r))
+        return CRef_Undef;
+    return r;
 }
+
+inline CRef Solver::decisionReason(Var x) const {
+    CRef r = vardata[x].reason;
+    if(isDecisionReason(r))
+        return r;
+    return CRef_Undef;
+}
+
+inline bool Solver::isDecisionReason(CRef cr)const {
+    assert(isTheoryCause(cr));
+    int marker = CRef_Undef - cr - 1;
+    return marker_theory[marker]<0;
+}
+
 inline int Solver::level(Var x) const {
 	return vardata[x].level;
 }

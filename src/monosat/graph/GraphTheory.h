@@ -186,6 +186,8 @@ public:
 
 	};
 
+	CRef graph_decision_reason = CRef_Undef;
+
 	Lit invalid_edgeset_lit=lit_Undef;
 	vec<EdgeSet*> edge_sets;
 
@@ -781,7 +783,7 @@ public:
 			t+="/LOG_GRAPH_CUT" +std::to_string(S->theories.size());
 			cutGraph.outfile = fopen(t.c_str(), "w");
 		}
-
+		graph_decision_reason = S->newReasonMarker(this,true);
 		g_under.disable_history_clears=opt_disable_history_clears;
 		g_over.disable_history_clears=opt_disable_history_clears;
 		cutGraph.disable_history_clears=opt_disable_history_clears;
@@ -2046,7 +2048,8 @@ public:
 	bool supportsDecisions()override {
 		return true;
 	}
-	Lit decideTheory() {
+	Lit decideTheory(CRef & decision_reason) {
+		decision_reason=CRef_Undef;
 		if (!opt_decide_theories)
 			return lit_Undef;
 		double start = rtime(1);
@@ -2079,12 +2082,13 @@ public:
 			}
 		}
 
-
+		decision_reason = CRef_Undef;
 		vec<Detector*> & detectors = (hasEdgeSets() && allEdgeSetsAssigned()) ? edge_set_detectors:normal_detectors;
 		for (int i = 0; i < detectors.size(); i++) {
 			Detector * r = detectors[i];
 			if(satisfied_detectors[r->getID()])
 				continue;
+
 			Lit l = r->decide();
 			if (l != lit_Undef) {
 
@@ -3365,8 +3369,8 @@ public:
 	int nEdges() {
 		return edge_list.size();
 	}
-	CRef newReasonMarker(int detectorID) {
-		CRef reasonMarker = S->newReasonMarker(this);
+	CRef newReasonMarker(int detectorID,bool is_decision=false) {
+		CRef reasonMarker = S->newReasonMarker(this,is_decision);
 		int mnum = CRef_Undef - reasonMarker;
 		marker_map.growTo(mnum + 1);
 		marker_map[mnum].forTheory=false;
@@ -4318,8 +4322,8 @@ public:
 		return S->addConflictClause(ps,confl_out,permanent);
 	}
 
-	CRef newReasonMarker(Theory * theory) {
-		CRef reasonMarker = S->newReasonMarker(this);
+	CRef newReasonMarker(Theory * theory,bool is_decision=false) {
+		CRef reasonMarker = S->newReasonMarker(this, is_decision);
 		int mnum = CRef_Undef - reasonMarker;
 		marker_map.growTo(mnum + 1);
 		marker_map[mnum].forTheory=true;

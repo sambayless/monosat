@@ -69,7 +69,8 @@ public:
 	virtual bool theoryIsSatisfied(){
 		return false;
 	}
-	virtual Lit decideTheory() {
+	virtual Lit decideTheory(CRef & decision_reason) {
+		decision_reason = CRef_Undef;
 		return lit_Undef;
 	}
 	virtual bool supportsDecisions() {

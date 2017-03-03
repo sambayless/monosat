@@ -2052,6 +2052,8 @@ lbool Solver::search(int nof_conflicts) {
 			last_decision_was_theory=false;
 			bool assumps_processed=false;
 			Lit next = lit_Undef;
+            CRef decision_reason = CRef_Undef;  //If a theory makes a decision, then it can supply a 'reason' for that decision.
+                                                //(That reason may be used by some heuristics, but will not be used by conflict analysis.)
 			while (decisionLevel() < assumptions.size()) {
 				// Perform user provided assumption:
 				Lit p = assumptions[decisionLevel()];
@@ -2119,7 +2121,7 @@ lbool Solver::search(int nof_conflicts) {
 							}
 
 							assert(theories[theoryID]->supportsDecisions());
-							next = theories[theoryID]->decideTheory();
+							next = theories[theoryID]->decideTheory(decision_reason);
 						}
 						if(next==lit_Undef){
 							theory_order_heap.removeMin();
@@ -2144,7 +2146,7 @@ lbool Solver::search(int nof_conflicts) {
                         assert(j>=0);assert(j<=decidable_theories.size());
 						Theory * t = decidable_theories[j];
 						if (!theorySatisfied(t) &&  t->getPriority()>=next_var_priority) {
-							next = t->decideTheory();
+							next = t->decideTheory(decision_reason);
 						}
 					}
                     if(opt_theory_decision_round_robin){
@@ -2211,7 +2213,8 @@ lbool Solver::search(int nof_conflicts) {
 
 			//if(next!=lit_Error)//lit_Error is used to signify a decision that has no literal in the SAT solver (some theories may support this)
 			assert(value(next)==l_Undef);
-			enqueue(next);//not unchecked enqueue, because a theory solver _may_ have assigned this literal while making a decision
+            //Notice that the decision reason here may be CRef_Undef, and in any case is only used to identify which heuristic suggested this decision (it is _not_ used for conflict analysis)
+			enqueue(next,decision_reason);//not unchecked enqueue, because a theory solver _may_ have assigned this literal while making a decision
 		}
 	}
 	//Unreachable
