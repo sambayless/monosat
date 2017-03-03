@@ -115,7 +115,7 @@ public:
 	}
 
 
-	inline int getTheoryIndex() {
+	inline int getTheoryIndex()const {
 		return theory_index;
 	}
 	inline void setTheoryIndex(int id) {

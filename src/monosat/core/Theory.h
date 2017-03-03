@@ -41,7 +41,7 @@ public:
 
 
 
-	virtual int getTheoryIndex()=0;
+	virtual int getTheoryIndex()const=0;
 	virtual void setTheoryIndex(int id)=0;
 	virtual void backtrackUntil(int untilLevel)=0;
 	virtual void newDecisionLevel()=0;
@@ -64,9 +64,7 @@ public:
 	virtual void undecideTheory(Lit l){
 
 	}
-	virtual int getHeuristicIndex(){
-		return getTheoryIndex();
-	}
+
 	//Lazily construct the reason clause explaining this propagation
 	virtual void buildReason(Lit p, vec<Lit> & reason, CRef reason_marker){
 		return buildReason(p,reason);

@@ -74,10 +74,10 @@ public:
 	virtual bool addClause(const vec<Lit> & c) =0;
 	virtual void addClauseSafely(vec<Lit> & clause)=0;
 	virtual bool addConflictClause(vec<Lit> & ps, CRef & confl_out, bool permanent)=0;
-	virtual void setTheorySatisfied(Heuristic * theory){
+	virtual void setTheorySatisfied(Theory * theory){
 
 	}
-	virtual bool theorySatisfied(Heuristic * theory){
+	virtual bool theorySatisfied(Theory * theory){
 		return false;
 	}
 	virtual int level(Var v)const=0;

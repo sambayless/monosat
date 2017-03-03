@@ -30,7 +30,10 @@ namespace Monosat {
 class Heuristic {
     int priority=0;
     double activity=0;
+    int heuristic_index=-1;
 public:
+
+
     virtual ~Heuristic() {
 
     }
@@ -47,10 +50,14 @@ public:
     void setActivity(double p){
         activity=p;
     }
-    virtual int getTheoryIndex()=0;//the theory index of the theory this heuristic belongs to.
+    virtual int getTheoryIndex()const=0;//the theory index of the theory this heuristic belongs to.
 
-    virtual int getHeuristicIndex()=0;
-
+    int getHeuristicIndex()const{
+        return heuristic_index;
+    }
+    void setHeuristicIndex(int id){
+        heuristic_index=id;
+    }
     virtual Lit decideTheory(CRef & decision_reason){
         decision_reason = CRef_Undef;
         return lit_Undef;

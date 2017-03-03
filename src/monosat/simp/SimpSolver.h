@@ -187,7 +187,7 @@ protected:
 	vec<char> touched;
 	OccLists<Var, vec<CRef>, ClauseDeleted> occurs;
 	vec<int> n_occ;
-	Heap<ElimLt> elim_heap;
+	Heap<int,ElimLt> elim_heap;
 	Queue<CRef> subsumption_queue;
 	vec<char> frozen;
 	vec<Var>            frozen_vars;

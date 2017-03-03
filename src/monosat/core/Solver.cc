@@ -56,14 +56,14 @@ Solver::Solver() :
 				0), stats_pure_theory_lits(0), pure_literal_detections(0), stats_removed_clauses(0), dec_vars(0), clauses_literals(
 				0), learnts_literals(0), max_literals(0), tot_literals(0), stats_pure_lit_time(0),  ok(
 				true), cla_inc(1), var_inc(1), theory_inc(1), watches(WatcherDeleted(ca)), qhead(0), simpDB_assigns(-1), simpDB_props(
-				0), order_heap(VarOrderLt(activity, priority)),theory_order_heap(TheoryOrderLt()), progress_estimate(0), remove_satisfied(true) //lazy_heap( LazyLevelLt(this)),
+				0), order_heap(VarOrderLt(activity, priority)),theory_order_heap(TheoryOrderLt(),HeuristicToInt()), progress_estimate(0), remove_satisfied(true) //lazy_heap( LazyLevelLt(this)),
 
 		// Resource constraints:
 		//
 				, conflict_budget(-1), propagation_budget(-1) {
 			if(opt_vsids_solver_as_theory){
 				decisionTheory = new SolverDecisionTheory(*this);
-				this->addTheory(decisionTheory);
+				this->addHeuristic(decisionTheory);
 			}
 }
 
@@ -533,9 +533,9 @@ void Solver::cancelUntil(int lev) {
 
 		//If opt_theory_order_vsids is enabled, need to add back into the theory decision heap theories that may now be able to make decisions again.
 		while(theory_decision_trail.size() && theory_decision_trail.last().second>=decisionLevel()){
-			int theoryID = theory_decision_trail.last().first;
-			assert(!theory_order_heap.inHeap(theoryID));
-			theory_order_heap.insert(theoryID);
+			Heuristic * h = theory_decision_trail.last().first;
+			assert(!theory_order_heap.inHeap(h));
+			theory_order_heap.insert(h);
 			theory_decision_trail.pop();
 		}
 
@@ -1159,7 +1159,7 @@ CRef Solver::propagate(bool propagate_theories) {
 	if (qhead == trail.size() && (!initialPropagate || decisionLevel() > 0) && (!propagate_theories || !theory_queue.size())) {//it is possible that the theory solvers need propagation, even if the sat solver has an empty queue.
 		return CRef_Undef;
 	}
-	theoryConflict=-1;
+	theoryConflict=nullptr;
 	CRef confl = CRef_Undef;
 	int num_props = 0;
 	int initial_qhead = qhead;
@@ -1275,7 +1275,7 @@ CRef Solver::propagate(bool propagate_theories) {
 					assert(value(l)!=l_Undef);
 #endif
 				if (has_conflict && !addConflictClause(theory_conflict, confl)) {
-					theoryConflict=theoryID;
+					theoryConflict=theories[theoryID];
 
 					qhead = trail.size();
 					stats_theory_conflicts++;
@@ -1372,10 +1372,8 @@ void Solver::rebuildOrderHeap() {
 void Solver::rebuildTheoryOrderHeap() {
 
 	theory_order_heap.clear();
-	for(int i =0;i<theories.size();i++){
-		if(theories[i]->supportsDecisions()){
-			theory_order_heap.insert(i);
-		}
+	for(int i =0;i<decision_heuristics.size();i++){
+		theory_order_heap.insert(decision_heuristics[i]);
 	}
 }
 
@@ -1920,7 +1918,7 @@ lbool Solver::search(int nof_conflicts) {
 			cancelUntil(backtrack_level);
 
 
-			if (learnt_clause.size()>1 && theoryConflict>-1 && opt_theory_order_swapping){
+			if (learnt_clause.size()>1 && theoryConflict && opt_theory_order_swapping){
 				//nadel-style theory order swapping
 				int start_size = decision_heuristics.size();
 				//check to see if the analyzed conflict includes any literals
@@ -1930,7 +1928,7 @@ lbool Solver::search(int nof_conflicts) {
 				swapping_uninvolved_post_theories.clear();
 				swapping_involved_theory_order.clear();
 				//vec<int> involved_theories;
-				swapping_involved_theories.insert(theoryConflict);
+				swapping_involved_theories.insert(theoryConflict->getTheoryIndex());
 				for(Lit l:learnt_clause){
 					CRef r = reasonOrDecision(var(l));
 					if(r!=CRef_Undef){
@@ -1947,7 +1945,7 @@ lbool Solver::search(int nof_conflicts) {
 				int lowest_involved_position=decision_heuristics.size();
 				for (int i = 0; i < decision_heuristics.size(); i++) {
 					Heuristic * t = decision_heuristics[i];
-					if(t->getTheoryIndex()==theoryConflict){
+					if(t==theoryConflict){
 						conflict_theory=t;
 						if(i<lowest_involved_position){
 							lowest_involved_position=i;
@@ -1995,35 +1993,35 @@ lbool Solver::search(int nof_conflicts) {
 					//this is _not_ an asserting clause, its a conflict that must be passed up to the super solver.
 					analyzeFinal(cr, lit_Undef, conflict);
 
-					if(theoryConflict>-1){
+					if(theoryConflict){
 						theoryBumpActivity(theoryConflict);
 						theoryDecayActivity();
-						theoryConflict=-1;
 					}else if(opt_vsids_solver_as_theory){
-						theoryBumpActivity(decisionTheory->getTheoryIndex());
+						theoryBumpActivity(decisionTheory);
 						theoryDecayActivity();
 					}
 
 					varDecayActivity();
 					claDecayActivity();
+					theoryConflict=nullptr;
 					return l_False;
 				}
 			}
-			if(theoryConflict>-1){
+			if(theoryConflict){
 				theoryBumpActivity(theoryConflict);
 				theoryDecayActivity();
-				theoryConflict=-1;
+
 			}else if(opt_vsids_solver_as_theory){
-				theoryBumpActivity(decisionTheory->getTheoryIndex());
+				theoryBumpActivity(decisionTheory);
 				theoryDecayActivity();
 			}
 			varDecayActivity();
 			claDecayActivity();
 
-			if(theoryConflict>-1 ){
+			if(theoryConflict){
 				assert(theory_conflict_counters.size()>thoeryConflict);
-				theory_conflict_counters[theoryConflict]++;
-				if(opt_theory_order_conflict_restart>0 && theory_conflict_counters[theoryConflict]>=opt_theory_order_conflict_restart){
+				theory_conflict_counters[theoryConflict->getTheoryIndex()]++;
+				if(opt_theory_order_conflict_restart>0 && theory_conflict_counters[theoryConflict->getTheoryIndex()]>=opt_theory_order_conflict_restart){
 
 
 
@@ -2036,7 +2034,7 @@ lbool Solver::search(int nof_conflicts) {
 						//reorder the conflicting theories to put the decision theory first.
 						int theory_conflict_pos = -1;
 						for(int i = 0;i<decision_heuristics.size();i++){
-							if(decision_heuristics[i]->getTheoryIndex()==theoryConflict){
+							if(decision_heuristics[i]==theoryConflict){
 								theory_conflict_pos = i;
 							}
 						}
@@ -2088,7 +2086,7 @@ lbool Solver::search(int nof_conflicts) {
 							(int) clauses_literals, (int) max_learnts, nLearnts(),
 							(double) learnts_literals / nLearnts(), stats_removed_clauses);
 			}
-
+			theoryConflict=nullptr;
 		} else {
 			assert(theory_queue.size() == 0 || !propagate_theories);
 			
@@ -2175,17 +2173,18 @@ lbool Solver::search(int nof_conflicts) {
 				}
 
 				if(opt_theory_order_vsids && using_theory_vsids){
-					while (next==lit_Undef && !theory_order_heap.empty() && theories[theory_order_heap.peekMin()]->getPriority()>=next_var_priority) {
-						int theoryID = theory_order_heap.peekMin();
-						if(!theorySatisfied(theories[theoryID])) {
+					while (next==lit_Undef && !theory_order_heap.empty() && theory_order_heap.peekMin()->getPriority()>=next_var_priority) {
+						Heuristic * h = theory_order_heap.peekMin();
+						//int theoryID = h->getTheoryIndex();
+						if(!heuristicSatisfied(h)) {
 							if (opt_vsids_both &&
-								next_var_priority == theories[theory_order_heap.peekMin()]->getPriority()) {
+								next_var_priority == theory_order_heap.peekMin()->getPriority()) {
 								//give the main solver a chance to make a decision, if it has a variable with higher activity
 								if (!order_heap.empty()) {
 									Var v = order_heap.peekMin();
 									assert(value(v) ==
 										   l_Undef);//because assigned lits should have been removed from queue above.
-									if (value(v) == l_Undef && activity[v] > theories[theoryID]->getActivity()) {
+									if (value(v) == l_Undef && activity[v] > h->getActivity()) {
 										stats_solver_preempted_decisions++;
 										break;
 									}
@@ -2193,13 +2192,13 @@ lbool Solver::search(int nof_conflicts) {
 
 							}
 
-							assert(theories[theoryID]->supportsDecisions());
-							next = theories[theoryID]->decideTheory(decision_reason);
+							assert(h->supportsDecisions());
+							next =h->decideTheory(decision_reason);
 						}
 						if(next==lit_Undef){
 							theory_order_heap.removeMin();
 							if(decisionLevel()>0)
-								theory_decision_trail.push({theoryID,decisionLevel()});
+								theory_decision_trail.push({h,decisionLevel()});
 						}else{
 							assert(value(next)==l_Undef);
 							if(value(next)!=l_Undef){
@@ -2218,7 +2217,7 @@ lbool Solver::search(int nof_conflicts) {
                         assert(opt_theory_decision_round_robin || j==i);
                         assert(j>=0);assert(j<=decision_heuristics.size());
 						Heuristic * t = decision_heuristics[j];
-						if (!theorySatisfied(t) &&  t->getPriority()>=next_var_priority) {
+						if (!heuristicSatisfied(t) &&  t->getPriority()>=next_var_priority) {
 							next = t->decideTheory(decision_reason);
 						}
 					}

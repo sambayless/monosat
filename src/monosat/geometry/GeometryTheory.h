@@ -179,7 +179,7 @@ public:
 	inline int nPointSets() const {
 		return under_sets.size();
 	}
-	inline int getTheoryIndex() {
+	inline int getTheoryIndex()const {
 		return theory_index;
 	}
 	inline void setTheoryIndex(int id) {

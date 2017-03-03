@@ -89,7 +89,7 @@ public:
 	int getDecisionPriority(Var v) const{
 		return priority[v];
 	}
-	virtual void setTheorySatisfied(Heuristic * theory)override{
+	virtual void setTheorySatisfied(Theory * theory)override{
 		int theoryID = theory->getTheoryIndex();
 		if(!theorySatisfied(theory)){
 			//printf("Theory %d sat at %d\n",theoryID, decisionLevel());
@@ -103,9 +103,17 @@ public:
 			//theory_sat_queue.push(TheorySatisfaction(theoryID,trail.size()));
 		}
 	}
-	virtual bool theorySatisfied(Heuristic * theory)override{
+	virtual bool theorySatisfied(Theory * theory)override{
 		int theoryID = theory->getTheoryIndex();
 		return satisfied_theory_trail_pos[theoryID]>=0;
+	}
+	virtual bool heuristicSatisfied(Heuristic * h){
+		int theoryID = h->getTheoryIndex();
+		if(theoryID>=0) {
+			return satisfied_theory_trail_pos[theoryID] >= 0;
+		}else{
+			return false;
+		}
 	}
 	void clearSatisfied()override{
 		for(Theory * t:theories){
@@ -124,19 +132,31 @@ public:
 		theories.push(t);
 		theory_reprop_trail_pos.push(-1);
 		theory_init_prop_trail_pos.push(-1);
-		t->setActivity(opt_randomize_theory_order ? drand(random_seed) * 0.00001 : 0);
-		t->setPriority(0);
 		t->setTheoryIndex(theories.size() - 1);
-		theory_conflict_counters.growTo(theories.size(),0);
 		if(t->supportsDecisions()){
-			decision_heuristics.push(t);
-			theory_order_heap.insert(t->getTheoryIndex());
+			addHeuristic(t);
 		}
 		theory_queue.capacity(theories.size());
 		in_theory_queue.push(false);
 
 		cancelUntil(0);
 		resetInitialPropagation();
+	}
+	void addHeuristic(Heuristic*t) {
+		if(t->getHeuristicIndex()>=0) {
+			assert(t->getHeuristicIndex()<all_decision_heuristics.size());
+			assert(all_decision_heuristics[t->getHeuristicIndex()]==t);
+			return;
+		}
+		int heuristic_id = all_decision_heuristics.size();
+		t->setHeuristicIndex(heuristic_id);
+		all_decision_heuristics.push(t);
+		decision_heuristics.push(t);
+		theory_order_heap.insert(t);
+		theory_conflict_counters.growTo(decision_heuristics.size(),0);
+
+		t->setActivity(opt_randomize_theory_order ? drand(random_seed) * 0.00001 : 0);
+		t->setPriority(0);
 	}
 	void theoryPropagated(Theory * t)override {
 		int theoryID = t->getTheoryIndex();
@@ -186,7 +206,7 @@ public:
 		cancelUntil(0);
 	}
 	
-	int getTheoryIndex() {
+	int getTheoryIndex() const{
 		return theory_index;
 	}
 	void setTheoryIndex(int id) {
@@ -528,6 +548,7 @@ public:
 	vec<int> satisfied_theory_trail_pos;
 	vec<int> post_satisfied_theory_trail_pos;
 	vec<Heuristic*> decision_heuristics;
+	vec<Heuristic*> all_decision_heuristics;
 	vec<int> theory_conflict_counters;
     int theory_decision_round_robin=0;
 	Heuristic * decisionTheory=nullptr;//for opt_vsids_solver_as_theory
@@ -723,7 +744,7 @@ protected:
 	vec<double> activity;         // A heuristic measurement of the activity of a variable.
 	double var_inc;          // Amount to bump next variable with.
 	OccLists<Lit, vec<Watcher>, WatcherDeleted> watches; // 'watches[lit]' is a list of constraints watching 'lit' (will go there if literal becomes true).
-	int theoryConflict=-1;
+	Theory* theoryConflict=nullptr;
 	vec<lbool> assigns;          // The current assignments.
 	vec<char> polarity;         // The preferred polarity of each variable.
 	vec<char> decision;         // Declares if a variable is eligible for selection in the decision heuristic.
@@ -742,11 +763,15 @@ protected:
 	bool only_propagate_assumptions=false; //true if the solver should propagate assumptions and then quit without solving
     bool quit_at_restart=false;//true if the solver should give up as soon as it restarts
     int override_restart_count=-1;
-	Heap<VarOrderLt> order_heap;       // A priority queue of variables ordered with respect to the variable activity.
+	Heap<Var,VarOrderLt> order_heap;       // A priority queue of variables ordered with respect to the variable activity.
 	double theory_inc;
 	double theory_decay;
-	Heap<TheoryOrderLt> theory_order_heap;
-	vec<std::pair<int,int>> theory_decision_trail;
+	struct HeuristicToInt {
+		int operator()(Heuristic * h) const { return h->getHeuristicIndex(); }
+	};
+
+	Heap<Heuristic*,TheoryOrderLt,HeuristicToInt> theory_order_heap;
+	vec<std::pair<Heuristic*,int>> theory_decision_trail;
 	//Heap<LazyLevelLt> lazy_heap;       // A priority queue of variables to be propagated at earlier levels, lazily.
 	double progress_estimate;       // Set by 'search()'.
 	bool remove_satisfied; // Indicates whether possibly inefficient linear scan for satisfied clauses should be performed in 'simplify'.
@@ -895,8 +920,8 @@ protected:
 		}
 
 		// Update order_heap with respect to new activity:
-		if (theory_order_heap.inHeap(h->getHeuristicIndex()))
-			theory_order_heap.decrease(h->getHeuristicIndex());
+		if (theory_order_heap.inHeap(h))
+			theory_order_heap.decrease(h);
 	}
 	inline void theoryDecayActivity() {
 		if(opt_vsids_both && opt_use_var_decay_for_theory_vsids){
@@ -1017,7 +1042,7 @@ private:
 		bool supportsDecisions() {
 			return true;
 		}
-		int getTheoryIndex(){
+		int getTheoryIndex()const{
 			return theoryID;
 		}
 		void setTheoryIndex(int id){

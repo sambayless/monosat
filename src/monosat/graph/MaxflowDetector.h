@@ -416,7 +416,7 @@ private:
 	};
 
 	//Local vsids implementation for edges...
-	Heap<EdgeOrderLt> order_heap;
+	Heap<int,EdgeOrderLt> order_heap;
 
 	inline void insertEdgeOrder(int edgeID) {
 		if(opt_theory_internal_vsids){

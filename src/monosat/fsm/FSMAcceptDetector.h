@@ -229,7 +229,7 @@ public:
 	};
 
 	//Local vsids implementation for edges...
-	Heap<AcceptOrderLt> order_heap;
+	Heap<int,AcceptOrderLt> order_heap;
 
 
 	inline void insertAcceptOrder(Lit acceptLit) {
