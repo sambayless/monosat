@@ -1364,7 +1364,31 @@ Lit ReachDetector<Weight>::decide() {
 	assert(over_path);
 	assert(over_reach);
 	assert(under_reach);
-	
+
+	{
+		//Routing ideas from Alex Nadel's FMCAD16 paper
+		//1) After a path is established, consider deciding remaining edges to false (only appropriate for some problem domains)
+		//2) When searching for a shortest path, consider setting the weight of already decided edges to 0, to encourage re-use
+		//3) The edge encoding in Alex's paper would be similar to an explicit 'at-most-one-graph-per-edge' framework,
+		//   allowing some learned clauses to be more more efficiently encoded (?).
+		//4)Net swapping. When a reach constraint E is violated, it may be because of decisions made to connect another reach constraint (B).
+		// If we have reach constraints {A,B,C,D,E}, decided in that order, and D is in conflict because of edge assignments made for B,
+		// then net swapping will change the reach decision order as follows: {A,D,B,C,E}. Questions: How does this compare to VSIDS approach,
+		// and how is the conflicting reach constraint (B) determined?
+		// "A reach constraint B blocks reach constraint D, if any edge on the separating cut that is blocking D, is an edge
+		// connecting reach constraint B." Is it the case that at most one reach constraint can be a blocking reach constraint?
+		// Unclear, if more than just two reach constraints are considered.
+		//5) Net restarting. Associate a conflict ocunter with each reach constraint. When it reaches a threshold T ( 10 by default),
+		// restart and place that reach constraint at the front of the reach decision order (and set all conflict ocunters to 0). This
+		// is similar to the current vsids approach.
+
+		//Things from FMCAD16 that do not need to be done: Early net conflict detection - that is already handled by SMMT
+		//
+
+	}
+
+
+
 	if (to_decide.size() && last_decision_status == over_path->numUpdates()) {
 		while (to_decide.size()) {
 			Lit l = to_decide.last();
