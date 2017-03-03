@@ -66,7 +66,7 @@ public:
 	virtual Var newVar(bool polarity = true, bool dvar = true)=0;
 	virtual int nVars()const=0;
 	virtual bool enqueue(Lit l, CRef reason=CRef_Undef)=0;
-	virtual CRef newReasonMarker(Theory * forTheory, bool is_decision=false)=0;
+	virtual CRef newReasonMarker(Heuristic * forTheory, bool is_decision=false)=0;
 	virtual CRef reason(Var v)const=0;
 	virtual bool addClause(Lit l1)=0;
 	virtual bool addClause(Lit l1, Lit l2) =0;

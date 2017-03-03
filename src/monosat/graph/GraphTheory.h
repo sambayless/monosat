@@ -595,10 +595,104 @@ public:
 	vec<ReachInfo> dist_info;
 	vec<ReachInfo> reach_info;
 	vec<ReachInfo> connect_info;
+
+
+    class DetectorHeuristic : public Heuristic{
+        Detector * edge_set_detector=nullptr;
+        Detector * normal_detector;
+        GraphTheorySolver * outer;
+        CRef local_decision_reason=CRef_Undef;
+
+    public:
+        DetectorHeuristic(GraphTheorySolver * outer, Detector * normal_detector):outer(outer),normal_detector(normal_detector){
+            local_decision_reason= outer->newReasonMarker(normal_detector->detectorID,true);
+        }
+        void setEdgeSetDetector(Detector * d){
+            assert(edge_set_detector==nullptr);
+            edge_set_detector=d;
+        }
+        int getTheoryIndex()const override{
+            return outer->getTheoryIndex();
+        }
+        Lit decideTheory(CRef & decision_reason) override {
+            //first, give the main graph theory a chance to make a decision
+            Lit l = outer->decideTheory(decision_reason);
+            if(l!=lit_Undef)
+                return l;
+            decision_reason = CRef_Undef;
+            Detector * r =  (outer->hasEdgeSets() && outer->allEdgeSetsAssigned()) ? edge_set_detector:normal_detector;
+            if(outer->satisfied_detectors[r->getID()])
+                return lit_Undef;
+
+            decision_reason = local_decision_reason;
+            l = r->decide(decision_reason);
+            if (l != lit_Undef) {
+
+                if(opt_decide_graph_bv && !sign(l) && outer->isEdgeVar(var(l)) && outer->hasBitVector(outer->getEdgeID(var(l))) && r->supportsEdgeDecisions()){
+                    int edgeID = outer->getEdgeID(var(l));
+                    EdgeDecider<Weight> * d = dynamic_cast<EdgeDecider<Weight> *>(r); //(EdgeDecider<Weight>*)r;
+                    Weight edgeWeight=-1;
+
+                    DetectorComparison op;
+                    if(d->decideEdgeWeight(edgeID,edgeWeight,op)){
+                        BVTheorySolver<Weight> * bvTheory=outer->bvTheory;
+                        assert(edgeWeight>=0);
+                        Lit bv_decision = lit_Undef;
+
+                        Comparison bvOp;
+                        if (op==DetectorComparison::leq){
+                            bvOp=Comparison::leq;
+                            bv_decision = bvTheory->decideBV(bvOp, outer->getEdgeBV(edgeID).getID(), edgeWeight);
+
+
+                        }else if (op==DetectorComparison::lt){
+                            bvOp=Comparison::lt;
+                            bv_decision = bvTheory->decideBV(bvOp, outer->getEdgeBV(edgeID).getID(), edgeWeight);
+                        }else if (op==DetectorComparison::geq){
+                            /*printf("decide graph %d edge %d bv %d >= ",this->getTheoryIndex(), getEdgeBV(edgeID).getID(),edgeID);
+                            std::cout << edgeWeight <<"\n";*/
+                            bvOp=Comparison::geq;
+                            bv_decision = bvTheory->decideBV(bvOp, outer->getEdgeBV(edgeID).getID(), edgeWeight);
+                        }else if (op==DetectorComparison::gt){
+                            bvOp=Comparison::gt;
+                            bv_decision = bvTheory->decideBV(bvOp, outer->getEdgeBV(edgeID).getID(), edgeWeight);
+                        }else if (op==DetectorComparison::eq){
+                            bv_decision = bvTheory->decideBV(Comparison::leq, outer->getEdgeBV(edgeID).getID(), edgeWeight);
+                            if(bv_decision==lit_Undef)
+                                bv_decision = bvTheory->decideBV(Comparison::geq, outer->getEdgeBV(edgeID).getID(), edgeWeight);
+                        }else{
+                            exit(1);//ne not supported yet...
+                        }
+                        if(bv_decision!=lit_Undef){
+                            assert(S->value(bv_decision)==l_Undef);
+                            outer->stats_decisions++;
+                            r->undecide(l);
+                            if(outer->S->value(bv_decision)!=l_Undef){
+                                throw std::runtime_error("error in decision heuristic");
+                            }
+                            return bv_decision;
+                        }
+                    }
+                }
+                assert(l==lit_Undef || value(l)==l_Undef);
+                assert(l==lit_Undef || S->value(toSolver(l))==l_Undef);
+                outer->stats_decisions++;
+                r->stats_decisions++;
+
+
+                assert(l==lit_Undef || value(l)==l_Undef);
+                assert(l==lit_Undef || S->value(toSolver(l))==l_Undef);
+                return outer->toSolver(l);
+            }
+        }
+
+    };
+
 public:
 	vec<Theory*> theories;
 	vec<bool> satisfied_detectors;
 	vec<Detector*> detectors;
+    vec<DetectorHeuristic*> heuristics;
 	vec<Detector*> edge_set_detectors;
 	vec<Detector*> paired_edge_set_detectors;
 	vec<Detector*> normal_detectors;
@@ -2036,7 +2130,6 @@ public:
 
 		if (supportsLazyBacktracking()) {
 			prependToLazyTrail(l);
-
 		}
 
 		for (int i = 0; i < detectors.size(); i++) {
@@ -2046,23 +2139,13 @@ public:
 
 	}
 	bool supportsDecisions()override {
-		return true;
+		return false; //decideTheory in GraphTheorySolver is currently only called by the detector heuristics, and never directly
 	}
+
+
+
 	Lit decideTheory(CRef & decision_reason) {
 		decision_reason=CRef_Undef;
-		if (!opt_decide_theories)
-			return lit_Undef;
-		double start = rtime(1);
-		static int iter = 0;
-		iter++;
-
-		if(iter==91 && theory_index==4){
-			int a=1;
-		}
-		/*if(iter>128451){
-			fflush(stdout);
-			exit(1);
-		}*/
 		dbg_full_sync();
 		if(opt_lazy_backtrack && supportsLazyBacktracking() && opt_lazy_backtrack_decisions && detectors.size()){//the detectors.size() check is a hack, to prevent empty graphs from forcing the decisions that they didn't originally contribute to.
 			//assert(n_decisions<=decisionLevel());
@@ -2077,83 +2160,13 @@ public:
 				stats_lazy_decisions++;
 				stats_decisions++;
 				//printf("g%d: graph lazy decision %d: %d\n", this->id, iter, dimacs(d));
-				stats_decision_time += rtime(1) - start;
 				return solverLit;
 			}
 		}
 
 
-		vec<Detector*> & detectors = (hasEdgeSets() && allEdgeSetsAssigned()) ? edge_set_detectors:normal_detectors;
-		for (int i = 0; i < detectors.size(); i++) {
-			Detector * r = detectors[i];
-			if(satisfied_detectors[r->getID()])
-				continue;
-			decision_reason = graph_decision_reason;
-			Lit l = r->decide(decision_reason);
-			if (l != lit_Undef) {
-
-				if(opt_decide_graph_bv && !sign(l) && isEdgeVar(var(l)) && hasBitVector(getEdgeID(var(l))) && r->supportsEdgeDecisions()){
-					int edgeID = getEdgeID(var(l));
-					EdgeDecider<Weight> * d = dynamic_cast<EdgeDecider<Weight> *>(r); //(EdgeDecider<Weight>*)r;
-					Weight edgeWeight=-1;
-
-					DetectorComparison op;
-					if(d->decideEdgeWeight(edgeID,edgeWeight,op)){
-						assert(edgeWeight>=0);
-						Lit bv_decision = lit_Undef;
-
-						Comparison bvOp;
-						if (op==DetectorComparison::leq){
-							bvOp=Comparison::leq;
-							bv_decision = bvTheory->decideBV(bvOp, getEdgeBV(edgeID).getID(), edgeWeight);
-
-
-						}else if (op==DetectorComparison::lt){
-							bvOp=Comparison::lt;
-							bv_decision = bvTheory->decideBV(bvOp, getEdgeBV(edgeID).getID(), edgeWeight);
-						}else if (op==DetectorComparison::geq){
-							/*printf("decide graph %d edge %d bv %d >= ",this->getTheoryIndex(), getEdgeBV(edgeID).getID(),edgeID);
-							std::cout << edgeWeight <<"\n";*/
-							bvOp=Comparison::geq;
-							bv_decision = bvTheory->decideBV(bvOp, getEdgeBV(edgeID).getID(), edgeWeight);
-						}else if (op==DetectorComparison::gt){
-							bvOp=Comparison::gt;
-							bv_decision = bvTheory->decideBV(bvOp, getEdgeBV(edgeID).getID(), edgeWeight);
-						}else if (op==DetectorComparison::eq){
-							bv_decision = bvTheory->decideBV(Comparison::leq, getEdgeBV(edgeID).getID(), edgeWeight);
-							if(bv_decision==lit_Undef)
-								bv_decision = bvTheory->decideBV(Comparison::geq, getEdgeBV(edgeID).getID(), edgeWeight);
-						}else{
-							exit(1);//ne not supported yet...
-						}
-						if(bv_decision!=lit_Undef){
-							assert(S->value(bv_decision)==l_Undef);
-							stats_decisions++;
-							r->undecide(l);
-							stats_decision_time += rtime(1) - start;
-							if(S->value(bv_decision)!=l_Undef){
-
-								printf("%d %d\n",var(l), dimacs(bv_decision));
-                                throw std::runtime_error("error in decision heuristic");
-                            }
-							return bv_decision;
-						}
-					}
-				}
-				assert(l==lit_Undef || value(l)==l_Undef);
-				assert(l==lit_Undef || S->value(toSolver(l))==l_Undef);
-				stats_decisions++;
-				r->stats_decisions++;
-				stats_decision_time += rtime(1) - start;
-				if(opt_verb>2)
-					printf("g%d: graph decision %d: %d\n", this->getTheoryIndex(), iter, dimacs(l));
-				assert(l==lit_Undef || value(l)==l_Undef);
-				assert(l==lit_Undef || S->value(toSolver(l))==l_Undef);
-				return toSolver(l);
-			}
-		}
 		decision_reason=CRef_Undef;
-		stats_decision_time += rtime(1) - start;
+
 		return lit_Undef;
 	}
 
@@ -3827,7 +3840,7 @@ public:
 					from, drand(rnd_seed));
 
 			addDetector(d);
-			normal_detectors.push(d);
+
 			distance_detectors.push(d);
 			assert(detectors.last()->getID() == detectors.size() - 1);
 			dist_info[from].source = from;
@@ -3876,7 +3889,7 @@ public:
 						from, drand(rnd_seed));
 			}
 			addDetector(d);
-			normal_detectors.push(d);
+
 			weighted_distance_detectors.push(d);
 			assert(detectors.last()->getID() == detectors.size() - 1);
 			weighted_dist_info[from].source = from;
@@ -3922,7 +3935,7 @@ public:
 						from, drand(rnd_seed));
 			}
 			addDetector(d);
-			normal_detectors.push(d);
+
 			weighted_distance_detectors.push(d);
 			assert(detectors.last()->getID() == detectors.size() - 1);
 			weighted_dist_info[from].source = from;
@@ -3967,7 +3980,7 @@ public:
 		MaxflowDetector<Weight> *f = new MaxflowDetector<Weight>(detectors.size(), this,  g_under, g_over, from,
 				to, drand(rnd_seed));
 		flow_detectors.push(f);
-		normal_detectors.push(f);
+
 		int detectorID = detectors.size();
 		addDetector(f);
 		//setBVDetectorID(bvID, detectorID);
@@ -3978,10 +3991,8 @@ public:
 			edgeset_flow_detectors.growTo(flow_detectors.size());
 			f = new MaxflowDetector<Weight>(detectors.size(), this,  g_under, g_over_edgeset, from,to, drand(rnd_seed),true);
 			edgeset_flow_detectors.last() =f;
-			addDetector(f);
-			edge_set_detectors.push(f);
-			paired_edge_set_detectors[original_detector->getID()] = f;
-			paired_edge_set_detectors[f->getID()] = original_detector;
+			addDetector(f,original_detector);
+
 			Var outer = S->newVar();
 			makeEqualInSolver(mkLit(outer),mkLit(v));
 			f->addMaxFlowGEQ_BV(bvTheory->getBV(bvID), outer, !strictComparison);
@@ -4064,7 +4075,7 @@ public:
 
 			addDetector((new AllPairsDetector<Weight>(detectors.size(), this, g_under, g_over, drand(rnd_seed))));
 			//reach_detectors.push(reach_detectors.last());
-			normal_detectors.push(detectors.last());
+
 			assert(detectors.last()->getID() == detectors.size() - 1);
 
 			//reach_detectors.last()->negative_dist_detector = new Dijkstra(from,antig);
@@ -4104,7 +4115,7 @@ public:
 					drand(rnd_seed));
 			addDetector(rd);
 			reach_detectors.push(rd);
-			normal_detectors.push(detectors.last());
+
 			assert(detectors.last()->getID() == detectors.size() - 1);
 
 			//reach_detectors.last()->negative_dist_detector = new Dijkstra(from,antig);
@@ -4166,7 +4177,7 @@ public:
 		if (!mstDetector) {
 			mstDetector = new MSTDetector<Weight>(detectors.size(), this, g_under, g_over,  drand(rnd_seed));
 			addDetector(mstDetector);
-			normal_detectors.push(detectors.last());
+
 		}
 		mstDetector->addWeightLit(v, minimum_weight,inclusive);
 	}
@@ -4174,7 +4185,7 @@ public:
 		if (!mstDetector) {
 			mstDetector = new MSTDetector<Weight>(detectors.size(), this, g_under, g_over,  drand(rnd_seed));
 			addDetector(mstDetector);
-			normal_detectors.push(detectors.last());
+
 		}
 		if (!S->hasTheory(edgeVar) || (S->getTheoryID(edgeVar) != getTheoryIndex())
 				|| !isEdgeVar(S->getTheoryVar(edgeVar))) {
@@ -4221,7 +4232,7 @@ public:
 				to, drand(rnd_seed));
 		flow_detectors.push(f);
 		addDetector(f);
-		normal_detectors.push(f);
+
 		f->addFlowLit(max_flow, v,inclusive);
 
 		if(opt_min_edgeset>=0){
@@ -4229,10 +4240,8 @@ public:
 			MaxflowDetector<Weight> * original_detector = f;
 			f = new MaxflowDetector<Weight>(detectors.size(), this,  g_under, g_over_edgeset, from,to, drand(rnd_seed),true);
 			edgeset_flow_detectors.last() =f;
-			addDetector(f);
-			edge_set_detectors.push(f);
-			paired_edge_set_detectors[original_detector->getID()] = f;
-			paired_edge_set_detectors[f->getID()] = original_detector;
+			addDetector(f,original_detector);
+
 			Var outer = S->newVar();
 			makeEqualInSolver(mkLit(outer),mkLit(v));
 			f->addFlowLit(max_flow, outer,inclusive);
@@ -4244,21 +4253,33 @@ public:
 			component_detector = new ConnectedComponentsDetector<Weight>(detectors.size(), this, g_under, g_over,
 					drand(rnd_seed));
 			addDetector(component_detector);
-			normal_detectors.push(detectors.last());
+
 		}
 		component_detector->addConnectedComponentsLit(v, min_components);
 	}
-	void addDetector(Detector* detector){
+	void addDetector(Detector* detector, Detector * non_edgeset_detector=nullptr){
 		detectors.push(detector);
 		paired_edge_set_detectors.growTo(detector->getID()+1,nullptr);
 		satisfied_detectors.push(false);
+        if(non_edgeset_detector){
+            edge_set_detectors.push(detector);
+            paired_edge_set_detectors[non_edgeset_detector->getID()] = detector;
+            paired_edge_set_detectors[detector->getID()] = non_edgeset_detector;
+            DetectorHeuristic * h = heuristics[non_edgeset_detector->getID()];
+            h->setEdgeSetDetector(detector);
+            heuristics.push(h);
+        }else{
+            normal_detectors.push(detector);
+            DetectorHeuristic * h = new DetectorHeuristic(this,detector);
+            heuristics.push(h);
+            S->addHeuristic(h);
+        }
+
 	}
 	void acyclic(Var v,bool directed) {
 		if (!cycle_detector) {
 			cycle_detector = new CycleDetector<Weight>(detectors.size(), this, g_under, g_over, true, drand(rnd_seed));
 			addDetector(cycle_detector);
-
-			normal_detectors.push(detectors.last());
 		}
 		cycle_detector->addAcyclicLit(directed, v);
 	}
@@ -4269,8 +4290,6 @@ public:
 		steiner_detectors[steinerTreeID] = new SteinerDetector<Weight>(detectors.size(), this,  g_under, g_over,
 				drand(rnd_seed));
 		addDetector(steiner_detectors[steinerTreeID]);
-
-		normal_detectors.push(detectors.last());
 		for (int i = 0; i < terminals.size(); i++) {
 			steiner_detectors[steinerTreeID]->addTerminalNode(terminals[i].first, terminals[i].second);
 		}
@@ -4322,7 +4341,7 @@ public:
 		return S->addConflictClause(ps,confl_out,permanent);
 	}
 
-	CRef newReasonMarker(Theory * theory,bool is_decision=false) {
+	CRef newReasonMarker(Heuristic * theory,bool is_decision=false) override{
 		CRef reasonMarker = S->newReasonMarker(this, is_decision);
 		int mnum = CRef_Undef - reasonMarker;
 		marker_map.growTo(mnum + 1);

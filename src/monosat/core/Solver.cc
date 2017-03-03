@@ -1932,12 +1932,15 @@ lbool Solver::search(int nof_conflicts) {
 				for(Lit l:learnt_clause){
 					CRef r = reasonOrDecision(var(l));
 					if(r!=CRef_Undef){
-						if (isTheoryCause(r) || isDecisionReason(r)){
-							int theory_id = getTheory(r);
-
-							swapping_involved_theories.insert(theory_id);
-
-						}
+						if (isTheoryCause(r)){
+                            Theory* theory = getTheory(r);
+                            if(theory->supportsDecisions() && theory->getHeuristicIndex()>=0) {
+                                swapping_involved_theories.insert(theory->getHeuristicIndex());//yes, intentionalyl getting the heuristic index here
+                            }
+                        }else if(isDecisionReason(r)){
+                            Heuristic * h = getTheory(r);
+                            swapping_involved_theories.insert(h->getHeuristicIndex());
+                        }
 					}
 				}
 

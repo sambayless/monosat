@@ -214,20 +214,26 @@ public:
 	}
 	
 	//Generate a new, unique `temporary value' for explaining conflicts
-	CRef newReasonMarker(Theory * forTheory, bool is_decision=false) {
+	CRef newReasonMarker(Heuristic * forTheory, bool is_decision=false) override{
 		markers.push(ca.makeMarkerReference());
 		
 		int marker_num = CRef_Undef - markers.last() - 1;
 		marker_theory.growTo(marker_num + 1, -1);
-		
+
+        if(is_decision){
+            marker_theory[marker_num]=-forTheory->getHeuristicIndex();
+        }else{
+            marker_theory[marker_num]=forTheory->getTheoryIndex();
+        }
+
 		//this could be done more efficiently
-		for (int i = 0; i < theories.size(); i++) {
+		/*for (int i = 0; i < theories.size(); i++) {
 			if (theories[i] == forTheory) {
 				marker_theory[marker_num] = i;
 				break;
 			}
-		}
-		assert(marker_theory[marker_num] >= 0);
+		}*/
+		//assert(marker_theory[marker_num] >= 0);
 		
 		return markers.last();
 	}
@@ -296,13 +302,24 @@ public:
 		return cr != CRef_Undef && !ca.isClause(cr);
 	}
 	
-	int getTheory(CRef cr) const{
+	Theory* getTheory(CRef cr) const{
 		assert(isTheoryCause(cr));
+        assert(!isDecisionReason(cr));
 		// UINT32_MAX-cr - 1;
 		int marker = CRef_Undef - cr - 1;
-		return abs(marker_theory[marker]);
+        assert(marker_theory[marker]>=0);
+        assert(marker_theory[marker]<theories.size());
+		return theories[marker_theory[marker]];
 	}
-
+    Heuristic * getHeuristic(CRef cr) const{
+        assert(isDecisionReason(cr));
+        // UINT32_MAX-cr - 1;
+        int marker = CRef_Undef - cr - 1;
+        int hID =  -(marker_theory[marker]);
+        assert(hID>=0);
+        assert(hID<=all_decision_heuristics.size());
+        return all_decision_heuristics[hID];
+    }
 
 
 
@@ -383,13 +400,14 @@ public:
 		assert(!ca.isClause(cr));
 		assert(cr != CRef_Undef);
 		int trail_pos = trail.size();
-		int t = getTheory(cr);
+		Theory * t = getTheory(cr);
+        assert(t);
 		assert(hasTheory(p));
 		theory_reason.clear();
 		if(p.x==269 ){
 			int a =1;
 		}
-		theories[t]->buildReason(getTheoryLit(p), theory_reason, cr);
+		t->buildReason(getTheoryLit(p), theory_reason, cr);
 		assert(theory_reason[0] == p);
 		assert(value(p)==l_True);
 

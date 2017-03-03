@@ -50,7 +50,10 @@ public:
     void setActivity(double p){
         activity=p;
     }
-    virtual int getTheoryIndex()const=0;//the theory index of the theory this heuristic belongs to.
+    //the theory index of the theory this heuristic belongs to, or -1 if there is no theory.
+    virtual int getTheoryIndex()const{
+        return -1;
+    }
 
     int getHeuristicIndex()const{
         return heuristic_index;
