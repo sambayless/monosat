@@ -22,7 +22,7 @@
  **************************************************************************************************/
 
 #include <math.h>
-
+#include <algorithm>
 #include "monosat/mtl/Sort.h"
 #include "monosat/graph/GraphTheory.h"
 using namespace Monosat;
@@ -585,7 +585,7 @@ void Solver::instantiateLazyDecision(Lit p,int atLevel, CRef reason){
 		return;
 	assert(curDec==theoryDecision);
 	if(curDec!=theoryDecision){
-		exit(6);
+		throw std::runtime_error("Critical error: bad decision");
 	}
 	trail[trail_pos]=p;
 
@@ -628,15 +628,6 @@ void Solver::analyze(CRef confl, vec<Lit>& out_learnt, int& out_btlevel) {
 				maxlev=lev;
 			}
 		}
-/*		int maxcount = 0;
-		for(Lit l:check){
-			if(level(var(l))>=maxlev){
-				maxcount++;
-			}
-		}
-		if(maxcount==1){
-		//	exit(7);
-		}*/
 	}
 
 	cancelUntil(maxlev);//use of lazily enqueued literals can trigger conflicts at earlier decision levels
@@ -1928,6 +1919,59 @@ lbool Solver::search(int nof_conflicts) {
 			analyze(confl, learnt_clause, backtrack_level);
 			cancelUntil(backtrack_level);
 
+
+			if (learnt_clause.size()>1 && theoryConflict>-1 && opt_theory_order_swapping){
+				//nadel-style theory order swapping
+				int start_size = decidable_theories.size();
+				//check to see if the analyzed conflict includes any literals
+				//that were either decided or forced by a theory solver
+				swapping_involved_theories.clear();
+				swapping_uninvolved_pre_theories.clear();
+				swapping_uninvolved_post_theories.clear();
+				swapping_involved_theory_order.clear();
+				//vec<int> involved_theories;
+				swapping_involved_theories.insert(theoryConflict);
+				for(Lit l:learnt_clause){
+					CRef r = reasonOrDecision(var(l));
+					if(r!=CRef_Undef){
+						if (isTheoryCause(r) || isDecisionReason(r)){
+							int theory_id = getTheory(r);
+
+							swapping_involved_theories.insert(theory_id);
+
+						}
+					}
+				}
+
+				Theory* conflict_theory=nullptr;
+				int lowest_involved_position=decidable_theories.size();
+				for (int i = 0; i < decidable_theories.size(); i++) {
+					Theory * t = decidable_theories[i];
+					if(t->getTheoryIndex()==theoryConflict){
+						conflict_theory=t;
+						if(i<lowest_involved_position){
+							lowest_involved_position=i;
+						}
+					}else if (swapping_involved_theories[t->getTheoryIndex()]){
+						swapping_involved_theory_order.push(t);
+						if(i<lowest_involved_position){
+							lowest_involved_position=i;
+						}
+					}else if (lowest_involved_position==decidable_theories.size()){
+						swapping_uninvolved_pre_theories.push(t);
+					}else{
+						swapping_uninvolved_post_theories.push(t);
+					}
+				}
+				assert(conflict_theory);
+				decidable_theories.clear();
+				swapping_uninvolved_pre_theories.copyTo(decidable_theories);
+				decidable_theories.push(conflict_theory);
+				decidable_theories.extend(swapping_involved_theory_order);
+				decidable_theories.extend(swapping_uninvolved_post_theories);
+				assert(decidable_theories.size()==start_size);
+			}
+
 			//this is now slightly more complicated, if there are multiple lits implied by the super solver in the current decision level:
 			//The learnt clause may not be asserting.
 			
@@ -1945,9 +1989,7 @@ lbool Solver::search(int nof_conflicts) {
 
 					assert(S);
 					if(!S){
-						fprintf(stderr,"Critical error: bad learnt clause. Aborting\n");
-						fflush(stderr);
-						exit(3);
+						throw std::runtime_error("Critical error: bad learnt clause.");
 						//throw std::runtime_error("Critical error: bad learnt clause. Aborting\n");
 					}
 					//this is _not_ an asserting clause, its a conflict that must be passed up to the super solver.
@@ -1977,6 +2019,29 @@ lbool Solver::search(int nof_conflicts) {
 			}
 			varDecayActivity();
 			claDecayActivity();
+
+			if(theoryConflict>-1 ){
+				assert(theory_conflict_counters.size()>thoeryConflict);
+				theory_conflict_counters[theoryConflict]++;
+				if(opt_theory_order_conflict_restart>0 && theory_conflict_counters[theoryConflict]>=opt_theory_order_conflict_restart){
+
+					for(int i = 0;i<theory_conflict_counters.size();i++){
+						theory_conflict_counters[i]=0;
+					}
+					int theory_conflict_pos = -1;
+					for(int i = 0;i<decidable_theories.size();i++){
+						if(decidable_theories[i]->getTheoryIndex()==theoryConflict){
+							theory_conflict_pos = i;
+						}
+					}
+					assert(theory_conflict_pos>=0);
+					//reorder the conflicting theories to put the decision theory first.
+					if(theory_conflict_pos>0){
+						std::swap(decidable_theories[0],decidable_theories[theory_conflict_pos]);
+					}
+
+				}
+			}
 
 			if(!opt_theory_propagate_assumptions && backtrack_level>0 && backtrack_level<assumptions.size()){
 				//improve this in the future!
@@ -2084,7 +2149,9 @@ lbool Solver::search(int nof_conflicts) {
 			//Note: decision level is now added before theories make their decisions, to allow them to decide multiple literals at once.
 			newDecisionLevel();
 
-
+            /**
+             * Give the theory solvers a chance to make decisions
+             */
 			if (opt_decide_theories && !disable_theories && using_theory_decisions && next == lit_Undef && (opt_theory_conflict_max==0 || conflicts>=next_theory_decision) ) {
 
 				int next_var_priority=INT_MIN;
@@ -2098,9 +2165,7 @@ lbool Solver::search(int nof_conflicts) {
 					//printf("Priority var is %d; with priority %d\n",order_heap.peekMin(), next_var_priority);
 					//printf("Vars %d,%d have assignment %d,%d\n", 91569,91580,value(91569),value(91580));
 				}
-				/**
-				 * Give the theory solvers a chance to make decisions
-				 */
+
 				if(opt_theory_order_vsids && using_theory_vsids){
 					while (next==lit_Undef && !theory_order_heap.empty() && theories[theory_order_heap.peekMin()]->getPriority()>=next_var_priority) {
 						int theoryID = theory_order_heap.peekMin();
@@ -2414,9 +2479,7 @@ lbool Solver::solve_() {
 			for(Theory * t:theories){
 			
 				if (!t->check_solved()) {
-					fprintf(stderr, "Error! Solution doesn't satisfy theory properties!\n");
-					fflush(stderr);
-					exit(4);
+					throw std::runtime_error("Error! Solution doesn't satisfy theory properties!");
 				}
 			}
 			stats_solution_checking_time+=rtime(1)-check_start;
@@ -2523,8 +2586,10 @@ void Solver::toDimacs(FILE* f, Clause& c, vec<Var>& map, Var& max) {
 
 void Solver::toDimacs(const char *file, const vec<Lit>& assumps) {
 	FILE* f = fopen(file, "wr");
-	if (f == NULL)
-		fprintf(stderr, "could not open file %s\n", file), exit(1);
+	if (f == NULL){
+		throw std::runtime_error("could not open file");
+	}
+		//fprintf(stderr, "could not open file %s\n", file), exit(1);
 	toDimacs(f, assumps);
 	fclose(f);
 }

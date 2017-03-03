@@ -184,6 +184,7 @@ public:
 		}
 		return false;
 	}
+
 	int count(const T& element) const {
 		int c = 0;
 		for (int i = 0; i < size(); i++) {
@@ -193,6 +194,7 @@ public:
 		}
 		return c;
 	}
+
 	//remove all instances of the given element, if it exists
 	bool remove(const T& element) {
 		int i, j = 0;
@@ -205,6 +207,13 @@ public:
 		}
 		shrink(i - j);
 		return j < i;
+	}
+
+	//append each element of copyFrom to the end of this vector
+	void extend(vec<T> & copyFrom){
+		for(int i = 0;i<copyFrom.size();i++){
+			this->push(copyFrom[i]);
+		}
 	}
 };
 

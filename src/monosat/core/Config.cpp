@@ -203,6 +203,9 @@ DoubleOption Monosat::opt_theory_vsids_balance(_cat_graph,"vsids-balance", "",1,
 BoolOption Monosat::opt_vsids_solver_as_theory(_cat_graph, "vsids-solver-as-theory", "Use vsids decision heuristic for both theories and main solver, treating the main solver as a theory",false);
 BoolOption Monosat::opt_use_var_decay_for_theory_vsids(_cat_graph,"use-var-decay-for-theory-vsids-both","",true);
 BoolOption Monosat::opt_theory_order_vsids(_cat_graph, "theory-order-vsids", "Use vsids decision heuristic outside of theory solvers, to pick which theory solver to make decisions next",true);
+BoolOption  Monosat::opt_theory_order_swapping(_cat_graph, "theory-order-swapping", "Use Alex Nadel-style theory order swapping decision heuristic to pick which theory solver to make decisions next",false);
+IntOption  Monosat::opt_theory_order_conflict_restart(_cat_graph, "theory-order-conflict-restart", "Use Alex Nadel-style theory order conflict counter-driven theory order restarts; restart the theory order after this many conflicts have occured in a theory (0 to disable)",0, IntRange(0, INT32_MAX));
+
 BoolOption Monosat::opt_theory_internal_vsids(_cat_graph, "theory-internal-vsids", "Use vsids decision heuristic within theory solvers",false);
 BoolOption Monosat::opt_theory_internal_vsids_fsm(_cat_fsm, "theory-internal-vsids-fsm", "Use vsids decision heuristic within fsm theory solvers",true);
 BoolOption Monosat::opt_theory_prioritize_conflicts(_cat_graph, "theory-prioritize-conflicts", "",false);

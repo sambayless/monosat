@@ -127,7 +127,7 @@ public:
 		t->setActivity(opt_randomize_theory_order ? drand(random_seed) * 0.00001 : 0);
 		t->setPriority(0);
 		t->setTheoryIndex(theories.size() - 1);
-
+		theory_conflict_counters.growTo(theories.size(),0);
 		if(t->supportsDecisions()){
 			decidable_theories.push(t);
 			theory_order_heap.insert(t->getTheoryIndex());
@@ -528,6 +528,7 @@ public:
 	vec<int> satisfied_theory_trail_pos;
 	vec<int> post_satisfied_theory_trail_pos;
 	vec<Theory*> decidable_theories;
+	vec<int> theory_conflict_counters;
     int theory_decision_round_robin=0;
 	Theory * decisionTheory=nullptr;//for opt_vsids_solver_as_theory
 	vec<Var> all_theory_vars;
@@ -925,6 +926,7 @@ public:
 	int level(Var x) const;
     bool isDecisionReason(CRef r) const;
     CRef decisionReason(Var x) const;
+	CRef reasonOrDecision(Var x) const;
 	double progressEstimate() const; // DELETE THIS ?? IT'S NOT VERY USEFUL ...
 
 	 bool isConstant(Var v)const{
@@ -939,6 +941,10 @@ public:
 
 
 private:
+	IntSet<int> swapping_involved_theories;
+	vec<Theory*> swapping_uninvolved_pre_theories;
+	vec<Theory*> swapping_uninvolved_post_theories;
+	vec<Theory*> swapping_involved_theory_order;
 	bool withinBudget() const;
 	bool addConflictClause(vec<Lit> & theory_conflict, CRef & confl_out, bool permanent = false);
 
@@ -1052,6 +1058,12 @@ inline CRef Solver::decisionReason(Var x) const {
         return r;
     return CRef_Undef;
 }
+
+inline CRef Solver::reasonOrDecision(Var x) const {
+	CRef r = vardata[x].reason;
+	return r;
+}
+
 
 inline bool Solver::isDecisionReason(CRef cr)const {
     assert(isTheoryCause(cr));
