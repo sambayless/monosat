@@ -27,31 +27,19 @@
 #include "monosat/mtl/Alg.h"
 #include "monosat/utils/Options.h"
 #include "monosat/core/SolverTypes.h"
+#include "monosat/core/Heuristic.h"
 #include <ostream>
 namespace Monosat {
 /**
  * Abstract interface to SMT theory solvers, as accessed by the SAT solver
  */
-class Theory {
-	int priority=0;
-	double activity=0;
+class Theory : public virtual Heuristic{
+
 public:
 	virtual ~Theory() {
 	}
 
-    int getPriority()const{
-		return priority;
-	}
-    void setPriority(int p){
-    	priority=p;
-    }
 
-    double & getActivity(){
-		return activity;
-	}
-    void setActivity(double p){
-    	activity=p;
-    }
 
 	virtual int getTheoryIndex()=0;
 	virtual void setTheoryIndex(int id)=0;
@@ -69,17 +57,16 @@ public:
 	virtual bool theoryIsSatisfied(){
 		return false;
 	}
-	virtual Lit decideTheory(CRef & decision_reason) {
-		decision_reason = CRef_Undef;
-		return lit_Undef;
-	}
+	//virtual Lit decideTheory(CRef & decision_reason)=0;
 	virtual bool supportsDecisions() {
 		return false;
 	}
 	virtual void undecideTheory(Lit l){
 
 	}
-
+	virtual int getHeuristicIndex(){
+		return getTheoryIndex();
+	}
 	//Lazily construct the reason clause explaining this propagation
 	virtual void buildReason(Lit p, vec<Lit> & reason, CRef reason_marker){
 		return buildReason(p,reason);

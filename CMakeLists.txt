@@ -307,7 +307,7 @@ if (${UNIX})
     target_link_libraries(monosat_static rt) #not static
 endif (${UNIX})
 
-add_library(libmonosat SHARED ${SOURCE_FILES} )
+add_library(libmonosat SHARED ${SOURCE_FILES} src/monosat/core/Heuristic.h)
 set_target_properties(libmonosat PROPERTIES OUTPUT_NAME monosat)
 target_link_libraries(libmonosat z)
 target_link_libraries(libmonosat m)

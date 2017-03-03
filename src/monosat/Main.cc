@@ -436,7 +436,7 @@ void processDecidable(SimpSolver & S, string dstr){
 	if (opt_verb > 0 && decidable.size()) {
 		printf("Decidable theories: ");
 	}
-	S.decidable_theories.clear();
+	S.decision_heuristics.clear();
 	for (int i = 0; i < decidable.size(); i++) {
 		int t = decidable[i];
 		if (t < 0 || t >= S.theories.size()) {
@@ -447,20 +447,20 @@ void processDecidable(SimpSolver & S, string dstr){
 		if (opt_verb > 0) {
 			printf("%d, ", t);
 		}
-		S.decidable_theories.push(S.theories[t]);
+		S.decision_heuristics.push(S.theories[t]);
 	}
 	if (opt_verb > 0 && decidable.size()) {
 		printf("\n");
 	}
 
 	if(opt_decide_theories_reverse){
-		vec<Theory*> v;
-		for (int i = S.decidable_theories.size()-1;i>=0;i--){
-			v.push(S.decidable_theories[i]);
+		vec<Heuristic*> v;
+		for (int i = S.decision_heuristics.size()-1;i>=0;i--){
+			v.push(S.decision_heuristics[i]);
 		}
-		S.decidable_theories.clear();
-		for (Theory * t:v)
-			S.decidable_theories.push(t);
+		S.decision_heuristics.clear();
+		for (Heuristic * t:v)
+			S.decision_heuristics.push(t);
 	}
 
 }

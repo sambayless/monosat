@@ -29,6 +29,7 @@ int dbg_total_iterations = 0;
 
 static const char* _cat = "CORE";
 static const char* _cat_opt = "OPT";
+static const char* _cat_theory = "THEORY";
 
 static const char* _cat_sms = "SMS";
 static const char* _cat_graph = "GRAPH";
@@ -193,18 +194,20 @@ IntOption Monosat::opt_adaptive_history_clear(_cat_graph, "adaptive-history-clea
 BoolOption Monosat::opt_disable_history_clears(_cat_graph,"disable-history-clear","",false);
 IntOption Monosat::opt_dynamic_history_clear(_cat_graph, "dynamic-history-clear", "0=dont use dynamic history clears,1=use opportunistic dynamic history clears (falling back on normal history clears if that fails), 2=force dynamic history clears",0, IntRange(0, 2));
 
-BoolOption Monosat::opt_lazy_backtrack(_cat_graph, "lazy-backtrack", "", false);
-BoolOption Monosat::opt_lazy_backtrack_decisions(_cat_graph, "lazy-backtrack-decisions", "", false);
-IntOption Monosat::opt_lazy_conflicts(_cat_graph, "lazy-conflicts", "0= unassign all lazy lits and reprop, 1=unassign all lazy lits in the clause, reprop, 2=unassign one lit, reprop, 3=skip lazy conflict analysis",0,IntRange(0,3));
-BoolOption Monosat::opt_keep_lazy_conflicts(_cat_graph, "keep-lazy-conflicts", "Keep clauses from lazy conflicts (only relevant if lazy-backtracking is enabled)",true);
-BoolOption Monosat::opt_lazy_backtrack_redecide(_cat_graph, "lazy-backtrack-redecide", "",false);
-BoolOption Monosat::opt_vsids_both(_cat_graph, "vsids-both", "Use vsids decision heuristic for both theories and main solver, in combination",false);
-DoubleOption Monosat::opt_theory_vsids_balance(_cat_graph,"vsids-balance", "",1,DoubleRange(0, false, 10000000, true));
-BoolOption Monosat::opt_vsids_solver_as_theory(_cat_graph, "vsids-solver-as-theory", "Use vsids decision heuristic for both theories and main solver, treating the main solver as a theory",false);
-BoolOption Monosat::opt_use_var_decay_for_theory_vsids(_cat_graph,"use-var-decay-for-theory-vsids-both","",true);
-BoolOption Monosat::opt_theory_order_vsids(_cat_graph, "theory-order-vsids", "Use vsids decision heuristic outside of theory solvers, to pick which theory solver to make decisions next",true);
-BoolOption  Monosat::opt_theory_order_swapping(_cat_graph, "theory-order-swapping", "Use Alex Nadel-style theory order swapping decision heuristic to pick which theory solver to make decisions next",false);
-IntOption  Monosat::opt_theory_order_conflict_restart(_cat_graph, "theory-order-conflict-restart", "Use Alex Nadel-style theory order conflict counter-driven theory order restarts; restart the theory order after this many conflicts have occured in a theory (0 to disable)",0, IntRange(0, INT32_MAX));
+BoolOption Monosat::opt_lazy_backtrack(_cat_theory, "lazy-backtrack", "", false);
+BoolOption Monosat::opt_lazy_backtrack_decisions(_cat_theory, "lazy-backtrack-decisions", "", false);
+IntOption Monosat::opt_lazy_conflicts(_cat_theory, "lazy-conflicts", "0= unassign all lazy lits and reprop, 1=unassign all lazy lits in the clause, reprop, 2=unassign one lit, reprop, 3=skip lazy conflict analysis",0,IntRange(0,3));
+BoolOption Monosat::opt_keep_lazy_conflicts(_cat_theory, "keep-lazy-conflicts", "Keep clauses from lazy conflicts (only relevant if lazy-backtracking is enabled)",true);
+BoolOption Monosat::opt_lazy_backtrack_redecide(_cat_theory, "lazy-backtrack-redecide", "",false);
+BoolOption Monosat::opt_vsids_both(_cat_theory, "vsids-both", "Use vsids decision heuristic for both theories and main solver, in combination",false);
+DoubleOption Monosat::opt_theory_vsids_balance(_cat_theory,"vsids-balance", "",1,DoubleRange(0, false, 10000000, true));
+BoolOption Monosat::opt_vsids_solver_as_theory(_cat_theory, "vsids-solver-as-theory", "Use vsids decision heuristic for both theories and main solver, treating the main solver as a theory",false);
+BoolOption Monosat::opt_use_var_decay_for_theory_vsids(_cat_theory,"use-var-decay-for-theory-vsids-both","",true);
+BoolOption Monosat::opt_theory_order_vsids(_cat_theory, "theory-order-vsids", "Use vsids decision heuristic outside of theory solvers, to pick which theory solver to make decisions next",true);
+BoolOption  Monosat::opt_theory_order_swapping(_cat_theory, "theory-order-swapping", "Use Alex Nadel-style theory order swapping decision heuristic to pick which theory solver to make decisions next",false);
+IntOption  Monosat::opt_theory_order_conflict_restart(_cat_theory, "theory-order-conflict-restart", "Use Alex Nadel-style theory order conflict counter-driven theory order restarts; restart the theory order after this many conflicts have occured in a theory (0 to disable)",0, IntRange(0, INT32_MAX));
+BoolOption Monosat::opt_theory_order_conflict_restart_sort(_cat_theory, "theory-order-restart-sorting", "Sort decision heuristics by conflict counter on restarts",false);
+
 
 BoolOption Monosat::opt_theory_internal_vsids(_cat_graph, "theory-internal-vsids", "Use vsids decision heuristic within theory solvers",false);
 BoolOption Monosat::opt_theory_internal_vsids_fsm(_cat_fsm, "theory-internal-vsids-fsm", "Use vsids decision heuristic within fsm theory solvers",true);

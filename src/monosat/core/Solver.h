@@ -89,7 +89,7 @@ public:
 	int getDecisionPriority(Var v) const{
 		return priority[v];
 	}
-	virtual void setTheorySatisfied(Theory * theory)override{
+	virtual void setTheorySatisfied(Heuristic * theory)override{
 		int theoryID = theory->getTheoryIndex();
 		if(!theorySatisfied(theory)){
 			//printf("Theory %d sat at %d\n",theoryID, decisionLevel());
@@ -103,7 +103,7 @@ public:
 			//theory_sat_queue.push(TheorySatisfaction(theoryID,trail.size()));
 		}
 	}
-	virtual bool theorySatisfied(Theory * theory)override{
+	virtual bool theorySatisfied(Heuristic * theory)override{
 		int theoryID = theory->getTheoryIndex();
 		return satisfied_theory_trail_pos[theoryID]>=0;
 	}
@@ -129,7 +129,7 @@ public:
 		t->setTheoryIndex(theories.size() - 1);
 		theory_conflict_counters.growTo(theories.size(),0);
 		if(t->supportsDecisions()){
-			decidable_theories.push(t);
+			decision_heuristics.push(t);
 			theory_order_heap.insert(t->getTheoryIndex());
 		}
 		theory_queue.capacity(theories.size());
@@ -527,10 +527,10 @@ public:
 	vec<Theory*> theories;
 	vec<int> satisfied_theory_trail_pos;
 	vec<int> post_satisfied_theory_trail_pos;
-	vec<Theory*> decidable_theories;
+	vec<Heuristic*> decision_heuristics;
 	vec<int> theory_conflict_counters;
     int theory_decision_round_robin=0;
-	Theory * decisionTheory=nullptr;//for opt_vsids_solver_as_theory
+	Heuristic * decisionTheory=nullptr;//for opt_vsids_solver_as_theory
 	vec<Var> all_theory_vars;
 	struct LitCount {
 		char occurs :1;
@@ -684,16 +684,16 @@ protected:
 		}
 	};
 	struct TheoryOrderLt {
-			const vec<Theory*> & theories;
-			bool operator ()(int x, int y) const {
-				if (theories[x]->getPriority()  == theories[y]->getPriority() )
-					return theories[x]->getActivity() > theories[y]->getActivity();
+			//const vec<Heuristic*> & theories;
+			bool operator ()(Heuristic* x, Heuristic* y) const {
+				if (x->getPriority()  == y->getPriority() )
+					return x->getActivity() > y->getActivity();
 				else {
-					return theories[x]->getPriority() >theories[y]->getPriority();
+					return x->getPriority() >y->getPriority();
 				}
 			}
-			TheoryOrderLt(const vec<Theory*> & theories) :
-				theories(theories){
+			TheoryOrderLt() {
+				//theories(theories){
 			}
 		};
 
@@ -871,19 +871,19 @@ protected:
 	void claDecayActivity(); // Decay all clauses with the specified factor. Implemented by increasing the 'bump' value instead.
 	void claBumpActivity(Clause& c);             // Increase a clause with the current 'bump' value.
 
-	void theoryBumpActivity(int theoryID){
+	void theoryBumpActivity(Heuristic * h){
 		if(opt_vsids_both){
-			theoryBumpActivity(theoryID,var_inc*opt_theory_vsids_balance);
+			theoryBumpActivity(h,var_inc*opt_theory_vsids_balance);
 		}else{
-			theoryBumpActivity(theoryID,theory_inc);
+			theoryBumpActivity(h,theory_inc);
 		}
 
 	}
-	void theoryBumpActivity(int theoryID, double increase) {
+	void theoryBumpActivity(Heuristic * h, double increase) {
 
-		if ((theories[theoryID]->getActivity() += increase) > 1e100) {
+		if ((h->getActivity() += increase) > 1e100) {
 			// Rescale:
-			for (Theory * t:decidable_theories)
+			for (Heuristic * t:decision_heuristics)
 				t->getActivity() *= 1e-100;
 			theory_inc *= 1e-100;
 
@@ -895,8 +895,8 @@ protected:
 		}
 
 		// Update order_heap with respect to new activity:
-		if (theory_order_heap.inHeap(theoryID))
-			theory_order_heap.decrease(theoryID);
+		if (theory_order_heap.inHeap(h->getHeuristicIndex()))
+			theory_order_heap.decrease(h->getHeuristicIndex());
 	}
 	inline void theoryDecayActivity() {
 		if(opt_vsids_both && opt_use_var_decay_for_theory_vsids){
@@ -942,9 +942,9 @@ public:
 
 private:
 	IntSet<int> swapping_involved_theories;
-	vec<Theory*> swapping_uninvolved_pre_theories;
-	vec<Theory*> swapping_uninvolved_post_theories;
-	vec<Theory*> swapping_involved_theory_order;
+	vec<Heuristic*> swapping_uninvolved_pre_theories;
+	vec<Heuristic*> swapping_uninvolved_post_theories;
+	vec<Heuristic*> swapping_involved_theory_order;
 	bool withinBudget() const;
 	bool addConflictClause(vec<Lit> & theory_conflict, CRef & confl_out, bool permanent = false);
 
@@ -1094,7 +1094,7 @@ inline void Solver::varBumpActivity(Var v, double inc) {
 		var_inc *= 1e-100;
 
 		if(opt_vsids_both){
-			for (Theory * t:decidable_theories)
+			for (Heuristic * t:decision_heuristics)
 				t->getActivity() *= 1e-100;
 			theory_inc *= 1e-100;
 		}

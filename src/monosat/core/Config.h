@@ -108,6 +108,7 @@ extern BoolOption opt_lazy_backtrack_redecide;
 extern BoolOption opt_theory_order_vsids;
 extern BoolOption opt_theory_order_swapping;
 extern IntOption opt_theory_order_conflict_restart;
+extern BoolOption opt_theory_order_conflict_restart_sort;
 extern BoolOption opt_vsids_both;
 extern DoubleOption opt_theory_vsids_balance;
 extern BoolOption opt_use_var_decay_for_theory_vsids;
