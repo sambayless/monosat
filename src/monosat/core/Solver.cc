@@ -511,7 +511,7 @@ void Solver::instantiateLazyDecision(Lit p,int atLevel, CRef reason){
 		return;
 	assert(curDec==theoryDecision);
 	if(curDec!=theoryDecision){
-		exit(6);
+        throw std::runtime_error("Critical error: bad decision");
 	}
 	trail[trail_pos]=p;
 
@@ -554,15 +554,6 @@ void Solver::analyze(CRef confl, vec<Lit>& out_learnt, int& out_btlevel) {
 				maxlev=lev;
 			}
 		}
-/*		int maxcount = 0;
-		for(Lit l:check){
-			if(level(var(l))>=maxlev){
-				maxcount++;
-			}
-		}
-		if(maxcount==1){
-		//	exit(7);
-		}*/
 	}
 
 	cancelUntil(maxlev);//use of lazily enqueued literals can trigger conflicts at earlier decision levels
@@ -1754,9 +1745,7 @@ lbool Solver::search(int nof_conflicts) {
 
 					assert(S);
 					if(!S){
-						fprintf(stderr,"Critical error: bad learnt clause. Aborting\n");
-						fflush(stderr);
-						exit(3);
+                        throw std::runtime_error("Critical error: bad learnt clause");
 						//throw std::runtime_error("Critical error: bad learnt clause. Aborting\n");
 					}
 					//this is _not_ an asserting clause, its a conflict that must be passed up to the super solver.
@@ -2155,9 +2144,7 @@ lbool Solver::solve_() {
 			for(Theory * t:theories){
 
 				if (!t->check_solved()) {
-					fprintf(stderr, "Error! Solution doesn't satisfy theory properties!\n");
-					fflush(stderr);
-					exit(4);
+                    throw std::runtime_error("Solution doesn't satisfy theory properties!");
 				}
 			}
 			stats_solution_checking_time+=rtime(1)-check_start;
@@ -2263,8 +2250,9 @@ void Solver::toDimacs(FILE* f, Clause& c, vec<Var>& map, Var& max) {
 
 void Solver::toDimacs(const char *file, const vec<Lit>& assumps) {
 	FILE* f = fopen(file, "wr");
-	if (f == NULL)
-		fprintf(stderr, "could not open file %s\n", file), exit(1);
+	if (f == NULL){
+        throw std::runtime_error("Could not open file");
+    }
 	toDimacs(f, assumps);
 	fclose(f);
 }
