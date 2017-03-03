@@ -116,7 +116,7 @@ public:
 
 	}
 
-	virtual Lit decide()=0;
+	virtual Lit decide(CRef &decision_reason)=0;
 	virtual bool supportsEdgeDecisions(){
 		return false;
 	}

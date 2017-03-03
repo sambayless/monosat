@@ -194,7 +194,7 @@ public:
 	void unassignBV(int bvID) override;
 	void setSatisfied(Lit l, bool isSatisfied)override;
 	bool detectorIsSatisfied()override;
-	Lit decide();
+	Lit decide(CRef &decision_reason);
 	bool supportsEdgeDecisions(){
 		return true;
 	}

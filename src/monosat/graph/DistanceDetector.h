@@ -248,7 +248,7 @@ public:
 	void buildUnweightedDistanceGTReason(int node, int within_steps, vec<Lit> & conflict);
 	void buildReason(Lit p, vec<Lit> & reason, CRef marker);
 	bool checkSatisfied();
-	Lit decide();
+	Lit decide(CRef &decision_reason);
 	void updateShortestPaths();
 	void addUnweightedShortestPathLit(int from, int to, Var reach_var, int within_steps = -1);
 	bool getModel_Path(int node, std::vector<int> & store_path);

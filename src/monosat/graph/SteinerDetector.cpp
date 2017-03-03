@@ -429,7 +429,7 @@ bool SteinerDetector<Weight>::checkSatisfied() {
 	return true;
 }
 template<typename Weight>
-Lit SteinerDetector<Weight>::decide() {
+Lit SteinerDetector<Weight>::decide(CRef &decision_reason) {
 	
 	return lit_Undef;
 }

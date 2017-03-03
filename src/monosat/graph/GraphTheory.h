@@ -2082,14 +2082,14 @@ public:
 			}
 		}
 
-		decision_reason = CRef_Undef;
+
 		vec<Detector*> & detectors = (hasEdgeSets() && allEdgeSetsAssigned()) ? edge_set_detectors:normal_detectors;
 		for (int i = 0; i < detectors.size(); i++) {
 			Detector * r = detectors[i];
 			if(satisfied_detectors[r->getID()])
 				continue;
-
-			Lit l = r->decide();
+			decision_reason = graph_decision_reason;
+			Lit l = r->decide(decision_reason);
 			if (l != lit_Undef) {
 
 				if(opt_decide_graph_bv && !sign(l) && isEdgeVar(var(l)) && hasBitVector(getEdgeID(var(l))) && r->supportsEdgeDecisions()){
@@ -2152,7 +2152,7 @@ public:
 				return toSolver(l);
 			}
 		}
-
+		decision_reason=CRef_Undef;
 		stats_decision_time += rtime(1) - start;
 		return lit_Undef;
 	}

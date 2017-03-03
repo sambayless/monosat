@@ -894,7 +894,7 @@ bool WeightedDistanceDetector<Weight>::checkSatisfied() {
  */
 
 template<typename Weight>
-Lit WeightedDistanceDetector<Weight>::decide() {
+Lit WeightedDistanceDetector<Weight>::decide(CRef &decision_reason) {
 	if (!opt_decide_graph_distance || !overapprox_weighted_distance_detector)
 		return lit_Undef;
 	WeightedDistanceDetector *r = this;

@@ -1344,7 +1344,7 @@ void ReachDetector<Weight>::dbg_sync_reachability() {
  }*/
 
 template<typename Weight>
-Lit ReachDetector<Weight>::decide() {
+Lit ReachDetector<Weight>::decide(CRef &decision_reason) {
 	if (!opt_allow_reach_decisions)
 		return lit_Undef;
 	double startdecidetime = rtime(2);

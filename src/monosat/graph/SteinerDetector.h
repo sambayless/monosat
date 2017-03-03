@@ -109,7 +109,7 @@ public:
 
 	void buildReason(Lit p, vec<Lit> & reason, CRef marker);
 	bool checkSatisfied();
-	Lit decide();
+	Lit decide(CRef &decision_reason);
 
 	void addWeightLit(Weight &min_weight, Var weight_var);
 	void addTerminalNode(int node, Var theoryVar);
