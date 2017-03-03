@@ -694,7 +694,7 @@ void readGNF(Monosat::SimpSolver * S, const char  * filename){
 Monosat::GraphTheorySolver<int64_t> *  newGraph(Monosat::SimpSolver * S){
 	  MonosatData * d = (MonosatData*) S->_external_data;
 	  Monosat::GraphTheorySolver<int64_t> *graph = new Monosat::GraphTheorySolver<int64_t>(S);
-	  S->addTheory(graph);
+
 	  d->graphs.push(graph);
 	  if( d->bv_theory){
 		  graph->setBVTheory(d->bv_theory);
@@ -1456,7 +1456,7 @@ void assertPB_gt(Monosat::SimpSolver * S, int _rhs, int n_args, int * literals, 
 	if(d->fsm_theory)
 	    return d->fsm_theory;
 	Monosat::FSMTheorySolver  * theory = new Monosat::FSMTheorySolver(S);
-	S->addTheory(theory);
+
 	d->fsm_theory=theory;
 	return theory;
  }

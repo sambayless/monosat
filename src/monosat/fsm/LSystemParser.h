@@ -92,7 +92,7 @@ class LSystemParser: public Parser<B, Solver> {
 			parse_errorf("lsystem id %d declared twice!\n", lsystemID);
 		}
 		lsystems[lsystemID]= new LSystemSolver(&S);
-		S.addTheory(lsystems[lsystemID]);
+
 		rules.growTo(lsystemID+1);
 		produces.growTo(lsystemID+1);
 

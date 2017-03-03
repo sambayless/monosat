@@ -50,7 +50,6 @@ public:
 	void init(){
 		if (opt_pb_theory) {
 			pbtheory = new PbTheory(&S);
-			S.addTheory(pbtheory);
 
 		}else {
 			if(!S.getPB()) {

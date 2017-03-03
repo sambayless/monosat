@@ -213,6 +213,7 @@ public:
 			S(S_), id(_id){
 		strings = new vec<vec<int>>();
 		rnd_seed = opt_random_seed;
+		S->addTheory(this);
 	}
 	~FSMTheorySolver(){
 		if(this->strings){

@@ -131,7 +131,7 @@ class FSMParser: public Parser<B, Solver> {
 		}
 		//fsms[fsmID]= new FSMTheorySolver(&S);
 		fsmIDs[fsmID]=fsmID;
-		//S.addTheory(fsms[fsmID]);
+
 		transitions.growTo(fsmID+1);
 		accepts.growTo(fsmID+1);
 		generates.growTo(fsmID+1);
@@ -459,7 +459,6 @@ public:
 
 			if (!theory) {
 				theory = new FSMTheorySolver(&S);
-				S.addTheory(theory);
 				theory->setStrings(strings);
 			}
 				if (!theory->hasFSM(fsmID)) {

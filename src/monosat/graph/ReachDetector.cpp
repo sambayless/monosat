@@ -1350,7 +1350,7 @@ Lit ReachDetector<Weight>::decide(CRef &decision_reason) {
 	double startdecidetime = rtime(2);
 	auto * over_reach = overapprox_reach_detector;
 	auto * under_reach = underapprox_detector;
-	
+
 	if (!under_reach) {
 		under_reach = underapprox_fast_detector;
 	}
@@ -1447,9 +1447,9 @@ Lit ReachDetector<Weight>::decide(CRef &decision_reason) {
 	if (opt_rnd_order_graph_decisions) {
 		randomShuffle(rnd_seed, order_vec);
 	}
-	
+
 	if (opt_sort_graph_decisions == 0) {
-		
+
 		for (int k = 0; k < reach_lits.size(); k++) {
 			Lit l = reach_lits[order_vec[k]];
 			if (l == lit_Undef)

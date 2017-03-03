@@ -305,19 +305,19 @@ public:
 				/* space_1D.growTo(i+1,nullptr);
 				 if(!space_1D[i]){
 				 space_1D[i] = new GeometryTheorySolver<1,double>(&S);
-				 S.addTheory(space_1D[i]);
+
 				 }*/
 			} else if (D == 2) {
 				
 				if (!space_2D) {
 					space_2D = new GeometryTheorySolver<2, T>(&S);
-					S.addTheory(space_2D);
+
 				}
 			}/*else if (D==3){
 			 space_3D.growTo(i+1,nullptr);
 			 if(!space_3D[i]){
 			 space_3D[i] = new GeometryTheorySolver<3,double>(&S);
-			 S.addTheory(space_3D[i]);
+
 			 }
 			 }*/else {
 				

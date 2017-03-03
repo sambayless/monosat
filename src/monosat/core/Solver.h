@@ -149,6 +149,7 @@ public:
 			return;
 		}
 		int heuristic_id = all_decision_heuristics.size();
+        assert(heuristic_id>0);
 		t->setHeuristicIndex(heuristic_id);
 		all_decision_heuristics.push(t);
 		decision_heuristics.push(t);
@@ -221,6 +222,7 @@ public:
 		marker_theory.growTo(marker_num + 1, -1);
 
         if(is_decision){
+            assert(forTheory->getHeuristicIndex()>0);//heuristic indices must be strictly greater than 0
             marker_theory[marker_num]=-forTheory->getHeuristicIndex();
         }else{
             marker_theory[marker_num]=forTheory->getTheoryIndex();
@@ -399,6 +401,7 @@ public:
 		assert(isTheoryCause(cr));
 		assert(!ca.isClause(cr));
 		assert(cr != CRef_Undef);
+        assert(!isDecisionReason(cr));
 		int trail_pos = trail.size();
 		Theory * t = getTheory(cr);
         assert(t);
@@ -762,7 +765,7 @@ protected:
 	vec<double> activity;         // A heuristic measurement of the activity of a variable.
 	double var_inc;          // Amount to bump next variable with.
 	OccLists<Lit, vec<Watcher>, WatcherDeleted> watches; // 'watches[lit]' is a list of constraints watching 'lit' (will go there if literal becomes true).
-	Theory* theoryConflict=nullptr;
+	Heuristic* theoryConflict=nullptr;
 	vec<lbool> assigns;          // The current assignments.
 	vec<char> polarity;         // The preferred polarity of each variable.
 	vec<char> decision;         // Declares if a variable is eligible for selection in the decision heuristic.
@@ -1109,9 +1112,12 @@ inline CRef Solver::reasonOrDecision(Var x) const {
 
 
 inline bool Solver::isDecisionReason(CRef cr)const {
-    assert(isTheoryCause(cr));
     int marker = CRef_Undef - cr - 1;
-    return marker_theory[marker]<0;
+    if(marker >=0 && marker<marker_theory.size()) {
+        return marker_theory[marker] < 0;
+    }else{
+        return false;
+    }
 }
 
 inline int Solver::level(Var x) const {

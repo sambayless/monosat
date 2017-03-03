@@ -236,7 +236,7 @@ public:
 	
 	PbTheory(Solver * S) :
 			S(S), theory_index(0), propagationtime(0), stats_propagations(0), stats_propagations_skipped(0) {
-		
+		S->addTheory(this);
 	}
 	~PbTheory() {
 	}

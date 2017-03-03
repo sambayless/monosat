@@ -605,7 +605,8 @@ public:
 
     public:
         DetectorHeuristic(GraphTheorySolver * outer, Detector * normal_detector):outer(outer),normal_detector(normal_detector){
-            local_decision_reason= outer->newReasonMarker(normal_detector->detectorID,true);
+            outer->S->addHeuristic(this);
+            local_decision_reason= outer->newReasonMarker(this,true);//normal_detector->detectorID
         }
         void setEdgeSetDetector(Detector * d){
             assert(edge_set_detector==nullptr);
@@ -620,7 +621,7 @@ public:
             if(l!=lit_Undef)
                 return l;
             decision_reason = CRef_Undef;
-            Detector * r =  (outer->hasEdgeSets() && outer->allEdgeSetsAssigned()) ? edge_set_detector:normal_detector;
+            Detector * r =  (edge_set_detector && outer->hasEdgeSets() && outer->allEdgeSetsAssigned()) ? edge_set_detector:normal_detector;
             if(outer->satisfied_detectors[r->getID()])
                 return lit_Undef;
 
@@ -661,10 +662,10 @@ public:
                             if(bv_decision==lit_Undef)
                                 bv_decision = bvTheory->decideBV(Comparison::geq, outer->getEdgeBV(edgeID).getID(), edgeWeight);
                         }else{
-                            exit(1);//ne not supported yet...
+                            throw std::runtime_error("error in decision heuristic: not supported");
                         }
                         if(bv_decision!=lit_Undef){
-                            assert(S->value(bv_decision)==l_Undef);
+                            assert(outer->S->value(bv_decision)==l_Undef);
                             outer->stats_decisions++;
                             r->undecide(l);
                             if(outer->S->value(bv_decision)!=l_Undef){
@@ -674,16 +675,17 @@ public:
                         }
                     }
                 }
-                assert(l==lit_Undef || value(l)==l_Undef);
-                assert(l==lit_Undef || S->value(toSolver(l))==l_Undef);
+                assert(l==lit_Undef || outer->value(l)==l_Undef);
+                assert(l==lit_Undef || outer->S->value( outer->toSolver(l))==l_Undef);
                 outer->stats_decisions++;
                 r->stats_decisions++;
 
 
-                assert(l==lit_Undef || value(l)==l_Undef);
-                assert(l==lit_Undef || S->value(toSolver(l))==l_Undef);
+                assert(l==lit_Undef || outer->value(l)==l_Undef);
+                assert(l==lit_Undef || outer->S->value(outer->toSolver(l))==l_Undef);
                 return outer->toSolver(l);
             }
+            return l;
         }
 
     };
@@ -707,8 +709,9 @@ public:
 	vec<SteinerDetector<Weight>*> steiner_detectors;
 
 	struct MarkerEntry{
-		int id;
-		bool forTheory;
+		int id=-1;
+		bool forTheory=false;
+        bool forHeuristic=false;
 	};
 	vec<MarkerEntry> marker_map;
 
@@ -877,7 +880,7 @@ public:
 			t+="/LOG_GRAPH_CUT" +std::to_string(S->theories.size());
 			cutGraph.outfile = fopen(t.c_str(), "w");
 		}
-		graph_decision_reason = S->newReasonMarker(this,true);
+
 		g_under.disable_history_clears=opt_disable_history_clears;
 		g_over.disable_history_clears=opt_disable_history_clears;
 		cutGraph.disable_history_clears=opt_disable_history_clears;
@@ -901,7 +904,8 @@ public:
 
 
 		this->rnd_seed=drand(S->random_seed);
-
+        S->addTheory(this);
+        graph_decision_reason = S->newReasonMarker(this,true);
 	}
 	Lit const_true= lit_Undef;
 	Lit True(){
@@ -2747,9 +2751,18 @@ public:
 	bool propagateTheory(vec<Lit> & conflict) {
 		return propagateTheory(conflict,false);
 	}
+    Heuristic * conflictingHeuristic=nullptr;
+    virtual Heuristic * getConflictingHeuristic()override{
+        return conflictingHeuristic;
+    }
 
-	bool propagateTheory(vec<Lit> & conflict, bool force_propagation) {
+    DetectorHeuristic * getDetectorHeuristic(Detector * r){
+        return heuristics[r->getID()];
+    }
+
+    bool propagateTheory(vec<Lit> & conflict, bool force_propagation) {
 		dbg_check_trails();
+        conflictingHeuristic=this;
 		if(theoryIsSatisfied()){
 			S->setTheorySatisfied(this);
 			if(bvTheory){
@@ -2818,8 +2831,10 @@ public:
 		}
 
 		for(Theory * t:propagation_required_theories){
-			if(!t->propagateTheory(conflict))
-				return false;
+			if(!t->propagateTheory(conflict)) {
+                conflictingHeuristic=t->getConflictingHeuristic();
+                return false;
+            }
 		}
 		S->theoryPropagated(this);
 
@@ -2842,7 +2857,7 @@ public:
 		//printf("graph prop %d\n",stats_propagations);
 		for(Theory * t:theories){
 			if(!t->propagateTheory(conflict)){
-
+                conflictingHeuristic=t->getConflictingHeuristic();
 
 				return false;
 			}
@@ -2908,20 +2923,6 @@ public:
 						//(it might also be a good idea to add that assignment as a decision in the SAT solver.)
 
 						//if lits are unassigned, we may also want to put those at the head of the decision heuristic (to make the sat solver revisit them).
-
-	#ifndef NDEBUG
-						for (Lit l:conflict){
-							if(S->value(toSolver(l))!=value(l)){
-								assert(onLazyTrail(var(l)));
-								if(!onLazyTrail(var(l))){
-									exit(5);
-								}
-								if(value(~l)!=l_True){
-									exit(4);
-								}
-							}
-						}
-	#endif
 
 						// assert(!seen.contains(true));
 						//seen.growTo(vars.size());
@@ -3004,7 +3005,7 @@ public:
 						}
 					}
 					stats_num_conflicts++;
-
+                    conflictingHeuristic=getDetectorHeuristic(detectors[d]);
 					propagationtime += rtime(1) - startproptime;
 					return false;
 				}
@@ -3382,8 +3383,8 @@ public:
 	int nEdges() {
 		return edge_list.size();
 	}
-	CRef newReasonMarker(int detectorID,bool is_decision=false) {
-		CRef reasonMarker = S->newReasonMarker(this,is_decision);
+	CRef newReasonMarker(int detectorID) {
+		CRef reasonMarker = S->newReasonMarker(this);
 		int mnum = CRef_Undef - reasonMarker;
 		marker_map.growTo(mnum + 1);
 		marker_map[mnum].forTheory=false;
@@ -4272,7 +4273,7 @@ public:
             normal_detectors.push(detector);
             DetectorHeuristic * h = new DetectorHeuristic(this,detector);
             heuristics.push(h);
-            S->addHeuristic(h);
+
         }
 
 	}
@@ -4342,11 +4343,12 @@ public:
 	}
 
 	CRef newReasonMarker(Heuristic * theory,bool is_decision=false) override{
-		CRef reasonMarker = S->newReasonMarker(this, is_decision);
+		CRef reasonMarker = S->newReasonMarker(is_decision ? theory:this, is_decision);
 		int mnum = CRef_Undef - reasonMarker;
 		marker_map.growTo(mnum + 1);
-		marker_map[mnum].forTheory=true;
-		marker_map[mnum].id = theory->getTheoryIndex();
+		marker_map[mnum].forTheory=!is_decision;
+        marker_map[mnum].forHeuristic=is_decision;
+		marker_map[mnum].id = is_decision ? theory->getHeuristicIndex() :  theory->getTheoryIndex();
 		return reasonMarker;
 	}
 

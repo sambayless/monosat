@@ -59,6 +59,7 @@ public:
         return heuristic_index;
     }
     void setHeuristicIndex(int id){
+        assert(id>0);
         heuristic_index=id;
     }
     virtual Lit decideTheory(CRef & decision_reason){

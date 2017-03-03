@@ -65,6 +65,10 @@ public:
 
 	}
 
+    virtual Heuristic * getConflictingHeuristic(){
+        return this;
+    }
+
 	//Lazily construct the reason clause explaining this propagation
 	virtual void buildReason(Lit p, vec<Lit> & reason, CRef reason_marker){
 		return buildReason(p,reason);

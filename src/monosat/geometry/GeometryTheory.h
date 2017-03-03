@@ -141,7 +141,7 @@ public:
 		
 
 		rnd_seed = opt_random_seed;
-		
+		S->addTheory(this);
 	}
 	
 	~GeometryTheorySolver() {

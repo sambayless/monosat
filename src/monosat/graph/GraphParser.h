@@ -175,17 +175,17 @@ class GraphParser: public Parser<B, Solver> {
 			GraphTheorySolver<int64_t> *graph = new GraphTheorySolver<int64_t>(&S);
 			graph->newNodes(n);
 			graphs[g] = graph;
-			S.addTheory(graph);
+
 		} else if (graph_type == GraphType::FLOAT) {
 			GraphTheorySolver<double> *graph = new GraphTheorySolver<double>(&S);
 			graph->newNodes(n);
 			graphs_float[g] = graph;
-			S.addTheory(graph);
+
 		} else if (graph_type == GraphType::RATIONAL) {
 			GraphTheorySolver<mpq_class> *graph = new GraphTheorySolver<mpq_class>(&S);
 			graph->newNodes(n);
 			graphs_rational[g] = graph;
-			S.addTheory(graph);
+
 		}
 		//  return ev;
 	}
