@@ -59,7 +59,7 @@ public:
 
 
 //	std::vector<int> changed;
-	
+
 	bool has_undirected_cycle=false;
 	bool has_directed_cycle=false;
 
@@ -74,26 +74,7 @@ public:
 		undirected_prev.resize(n);
 		INF = g.nodes() + 1;
 	}
-	void checkDirectedCycle(){
-#ifndef NDEBUG
-		if(has_directed_cycle) {
-			std::vector<int> count;
-			count.clear();
-			count.resize(g.nodes(), 0);
-			for (int edgeID:directed_cycle) {
-				int f = g.getEdge(edgeID).from;
-				int t = g.getEdge(edgeID).to;
 
-				count[f] = count[f] - 1;
-				count[t] = count[t] + 1;
-			}
-
-			for (int i:count) {
-				assert(i == 0);
-			}
-		}
-#endif
-	}
 	void computeCycles(){
 
 		path.clear();
@@ -104,7 +85,7 @@ public:
 			processed[i]=0;
 			undirected_prev[i]=-1;
 		}
-		
+
 		directed_cycle.clear();
 		undirected_cycle.clear();
 		if(directed){
@@ -149,8 +130,18 @@ public:
 							directed_cycle.clear();
 							directed_cycle.push_back(id);
 							assert(path.size() == q.size() - 1);
-							for (int j = 1; j < q.size(); j++) {
-								if (seen[j]) {
+							//find the to node in the q
+							bool found=false;
+							int start = 0;
+							for(start =0;start<q.size();start++){
+								if(q[start]==v){
+									found=true;
+									break;
+								}
+							}
+							assert(found);
+							for (int j = start+ 1; j < q.size(); j++) {
+								if (seen[q[j]]) {
 									directed_cycle.push_back(path[j - 1]);
 								}
 							}
@@ -216,8 +207,18 @@ public:
 							//a directed cycle is also an undirected cycle.
 							has_undirected_cycle=true;
 							assert(path.size() == q.size() - 1);
-							for (int j = 1; j < q.size(); j++) {
-								if (seen[j]) {
+							bool found=false;
+							int start = 0;
+							for(start =0;start<q.size();start++){
+								if(q[start]==v){
+									found=true;
+									break;
+								}
+							}
+							assert(found);
+
+							for (int j = start+1; j < q.size(); j++) {
+								if (seen[q[j]]) {
 									undirected_cycle.push_back(path[j - 1]);
 								}
 							}
@@ -233,7 +234,7 @@ public:
 
 	DFSCycle(DynamicGraph<Weight> & graph, bool _directed = true, int _reportPolarity = 0) :
 			g(graph),  last_modification(-1), last_addition(-1), last_deletion(-1), history_qhead(
-					0), last_history_clear(0), INF(0), reportPolarity(_reportPolarity) {
+			0), last_history_clear(0), INF(0), reportPolarity(_reportPolarity) {
 
 	}
 
@@ -254,38 +255,36 @@ public:
 		}
 		has_undirected_cycle=false;
 		has_directed_cycle=false;
-		directed_cycle.clear();
-		undirected_cycle.clear();
+
+
 		stats_full_updates++;
 
 		computeCycles();
-		checkDirectedCycle();
+
 		last_modification = g.modifications;
 		last_deletion = g.deletions;
 		last_addition = g.additions;
-		
+
 		history_qhead = g.historySize();
 		last_history_clear = g.historyclears;
 		;
 	}
-	
+
 	bool hasDirectedCycle() {
 		update();
-		checkDirectedCycle();
 		return has_directed_cycle;
 	}
 	bool hasUndirectedCycle() {
 		update();
 		return has_undirected_cycle;
 	}
-	
+
 	std::vector<int> & getUndirectedCycle() {
 		update();
 		return undirected_cycle;
 	}
 	std::vector<int> & getDirectedCycle() {
 		update();
-		checkDirectedCycle();
 		return directed_cycle;
 	}
 };
