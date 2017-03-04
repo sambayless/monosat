@@ -130,7 +130,17 @@ public:
 							directed_cycle.clear();
 							directed_cycle.push_back(id);
 							assert(path.size() == q.size() - 1);
-							for (int j = 1; j < q.size(); j++) {
+							//find the to node in the q
+							bool found=false;
+							int start = 0;
+							for(start =0;start<q.size();start++){
+								if(q[start]==v){
+									found=true;
+									break;
+								}
+							}
+							assert(found);
+							for (int j = start+ 1; j < q.size(); j++) {
 								if (seen[q[j]]) {
 									directed_cycle.push_back(path[j - 1]);
 								}
@@ -197,7 +207,17 @@ public:
 							//a directed cycle is also an undirected cycle.
 							has_undirected_cycle=true;
 							assert(path.size() == q.size() - 1);
-							for (int j = 1; j < q.size(); j++) {
+							bool found=false;
+							int start = 0;
+							for(start =0;start<q.size();start++){
+								if(q[start]==v){
+									found=true;
+									break;
+								}
+							}
+							assert(found);
+
+							for (int j = start+1; j < q.size(); j++) {
 								if (seen[q[j]]) {
 									undirected_cycle.push_back(path[j - 1]);
 								}

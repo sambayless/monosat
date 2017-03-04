@@ -169,7 +169,7 @@ void CycleDetector<Weight>::buildReason(Lit p, vec<Lit> & reason, CRef marker) {
 template<typename Weight>
 bool CycleDetector<Weight>::propagate(vec<Lit> & conflict) {
 	static int it = 0;
-	if(++it==104){ //109
+	if(++it==6){ //109
 		int a=1;
 	}
 
@@ -180,7 +180,7 @@ bool CycleDetector<Weight>::propagate(vec<Lit> & conflict) {
 	 	underapprox_directed_cycle_detector->forceDAG();
 	}*/
 
-	
+	//g_over.drawFull(false,true);
 	
 	if (directed_acyclic_lit != lit_Undef) {
 		
