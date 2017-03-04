@@ -617,16 +617,36 @@ public:
         }
         Lit decideTheory(CRef & decision_reason) override {
             //first, give the main graph theory a chance to make a decision
-            Lit l = outer->decideTheory(decision_reason);
-            if(l!=lit_Undef)
-                return l;
+            outer->dbg_full_sync();
+            if(opt_lazy_backtrack && outer->supportsLazyBacktracking() && opt_lazy_backtrack_decisions && outer->detectors.size()){//the detectors.size() check is a hack, to prevent empty graphs from forcing the decisions that they didn't originally contribute to.
+                //assert(n_decisions<=decisionLevel());
+                //printf("g%d lazy dec start: decisionLevel %d, decisions %d\n", this->id, decisionLevel(),n_decisions);
+                //when redeciding a literal, should check to see whether it would still be recomended as a decision by its detector...
+                if(outer->lazy_trail_head!=var_Undef){
+                    assert(outer->value(outer->lazy_trail_head)!=l_Undef);
+                    assert(outer->S->value(outer->toSolver(outer->lazy_trail_head))==l_Undef);
+                    Lit d = mkLit(outer->lazy_trail_head, outer->value(outer->lazy_trail_head)==l_False);
+                    Lit solverLit = outer->toSolver(d);
+
+                    outer->stats_lazy_decisions++;
+                    outer->stats_decisions++;
+                    decision_reason = outer->graph_decision_reason;
+                    //printf("g%d: graph lazy decision %d: %d\n", this->id, iter, dimacs(d));
+                    return solverLit;
+                }
+            }
+
+
+            //Lit l = outer->decideTheory(decision_reason);
+            //if(l!=lit_Undef)
+            //    return l;
             decision_reason = CRef_Undef;
             Detector * r =  (edge_set_detector && outer->hasEdgeSets() && outer->allEdgeSetsAssigned()) ? edge_set_detector:normal_detector;
             if(outer->satisfied_detectors[r->getID()])
                 return lit_Undef;
 
             decision_reason = local_decision_reason;
-            l = r->decide(decision_reason);
+            Lit l = r->decide(decision_reason);
             if (l != lit_Undef) {
 
                 if(opt_decide_graph_bv && !sign(l) && outer->isEdgeVar(var(l)) && outer->hasBitVector(outer->getEdgeID(var(l))) && r->supportsEdgeDecisions()){
@@ -2149,29 +2169,108 @@ public:
 
 
 	Lit decideTheory(CRef & decision_reason) {
-		decision_reason=CRef_Undef;
-		dbg_full_sync();
-		if(opt_lazy_backtrack && supportsLazyBacktracking() && opt_lazy_backtrack_decisions && detectors.size()){//the detectors.size() check is a hack, to prevent empty graphs from forcing the decisions that they didn't originally contribute to.
-			//assert(n_decisions<=decisionLevel());
-			//printf("g%d lazy dec start: decisionLevel %d, decisions %d\n", this->id, decisionLevel(),n_decisions);
-			//when redeciding a literal, should check to see whether it would still be recomended as a decision by its detector...
-			if(lazy_trail_head!=var_Undef){
-				assert(value(lazy_trail_head)!=l_Undef);
-				assert(S->value(toSolver(lazy_trail_head))==l_Undef);
-				Lit d = mkLit(lazy_trail_head, value(lazy_trail_head)==l_False);
-				Lit solverLit = toSolver(d);
+        if (!opt_decide_theories || !opt_monolothic_theory_decisions)
+            return lit_Undef;
+        double start = rtime(1);
+        static int iter = 0;
+        iter++;
 
-				stats_lazy_decisions++;
-				stats_decisions++;
-				//printf("g%d: graph lazy decision %d: %d\n", this->id, iter, dimacs(d));
-				return solverLit;
-			}
-		}
+        if(iter==91 && theory_index==4){
+            int a=1;
+        }
+
+        dbg_full_sync();
+        if(opt_lazy_backtrack && supportsLazyBacktracking() && opt_lazy_backtrack_decisions && detectors.size()){//the detectors.size() check is a hack, to prevent empty graphs from forcing the decisions that they didn't originally contribute to.
+            //assert(n_decisions<=decisionLevel());
+            //printf("g%d lazy dec start: decisionLevel %d, decisions %d\n", this->id, decisionLevel(),n_decisions);
+            //when redeciding a literal, should check to see whether it would still be recomended as a decision by its detector...
+            if(lazy_trail_head!=var_Undef){
+                assert(value(lazy_trail_head)!=l_Undef);
+                assert(S->value(toSolver(lazy_trail_head))==l_Undef);
+                Lit d = mkLit(lazy_trail_head, value(lazy_trail_head)==l_False);
+                Lit solverLit = toSolver(d);
+
+                stats_lazy_decisions++;
+                stats_decisions++;
+                //printf("g%d: graph lazy decision %d: %d\n", this->id, iter, dimacs(d));
+                stats_decision_time += rtime(1) - start;
+                return solverLit;
+            }
+        }
 
 
-		decision_reason=CRef_Undef;
+        vec<Detector*> & detectors = (hasEdgeSets() && allEdgeSetsAssigned()) ? edge_set_detectors:normal_detectors;
+        for (int i = 0; i < detectors.size(); i++) {
+            Detector * r = detectors[i];
+            if(satisfied_detectors[r->getID()])
+                continue;
+			decision_reason = CRef_Undef;
+            Lit l = r->decide(decision_reason);
+            if (l != lit_Undef) {
 
-		return lit_Undef;
+                if(opt_decide_graph_bv && !sign(l) && isEdgeVar(var(l)) && hasBitVector(getEdgeID(var(l))) && r->supportsEdgeDecisions()){
+                    int edgeID = getEdgeID(var(l));
+                    EdgeDecider<Weight> * d = dynamic_cast<EdgeDecider<Weight> *>(r); //(EdgeDecider<Weight>*)r;
+                    Weight edgeWeight=-1;
+
+                    DetectorComparison op;
+                    if(d->decideEdgeWeight(edgeID,edgeWeight,op)){
+                        assert(edgeWeight>=0);
+                        Lit bv_decision = lit_Undef;
+
+                        Comparison bvOp;
+                        if (op==DetectorComparison::leq){
+                            bvOp=Comparison::leq;
+                            bv_decision = bvTheory->decideBV(bvOp, getEdgeBV(edgeID).getID(), edgeWeight);
+
+
+                        }else if (op==DetectorComparison::lt){
+                            bvOp=Comparison::lt;
+                            bv_decision = bvTheory->decideBV(bvOp, getEdgeBV(edgeID).getID(), edgeWeight);
+                        }else if (op==DetectorComparison::geq){
+                            /*printf("decide graph %d edge %d bv %d >= ",this->getTheoryIndex(), getEdgeBV(edgeID).getID(),edgeID);
+                            std::cout << edgeWeight <<"\n";*/
+                            bvOp=Comparison::geq;
+                            bv_decision = bvTheory->decideBV(bvOp, getEdgeBV(edgeID).getID(), edgeWeight);
+                        }else if (op==DetectorComparison::gt){
+                            bvOp=Comparison::gt;
+                            bv_decision = bvTheory->decideBV(bvOp, getEdgeBV(edgeID).getID(), edgeWeight);
+                        }else if (op==DetectorComparison::eq){
+                            bv_decision = bvTheory->decideBV(Comparison::leq, getEdgeBV(edgeID).getID(), edgeWeight);
+                            if(bv_decision==lit_Undef)
+                                bv_decision = bvTheory->decideBV(Comparison::geq, getEdgeBV(edgeID).getID(), edgeWeight);
+                        }else{
+                            exit(1);//ne not supported yet...
+                        }
+                        if(bv_decision!=lit_Undef){
+                            assert(S->value(bv_decision)==l_Undef);
+                            stats_decisions++;
+                            r->undecide(l);
+                            stats_decision_time += rtime(1) - start;
+                            if(S->value(bv_decision)!=l_Undef){
+
+                                printf("%d %d\n",var(l), dimacs(bv_decision));
+                                throw std::runtime_error("error in decision heuristic");
+                            }
+                            return bv_decision;
+                        }
+                    }
+                }
+                assert(l==lit_Undef || value(l)==l_Undef);
+                assert(l==lit_Undef || S->value(toSolver(l))==l_Undef);
+                stats_decisions++;
+                r->stats_decisions++;
+                stats_decision_time += rtime(1) - start;
+                if(opt_verb>2)
+                    printf("g%d: graph decision %d: %d\n", this->getTheoryIndex(), iter, dimacs(l));
+                assert(l==lit_Undef || value(l)==l_Undef);
+                assert(l==lit_Undef || S->value(toSolver(l))==l_Undef);
+                return toSolver(l);
+            }
+        }
+
+        stats_decision_time += rtime(1) - start;
+        return lit_Undef;
 	}
 
 
@@ -4266,14 +4365,17 @@ public:
             edge_set_detectors.push(detector);
             paired_edge_set_detectors[non_edgeset_detector->getID()] = detector;
             paired_edge_set_detectors[detector->getID()] = non_edgeset_detector;
-            DetectorHeuristic * h = heuristics[non_edgeset_detector->getID()];
-            h->setEdgeSetDetector(detector);
-            heuristics.push(h);
+            if(!opt_monolothic_theory_decisions) {
+                DetectorHeuristic *h = heuristics[non_edgeset_detector->getID()];
+                h->setEdgeSetDetector(detector);
+                heuristics.push(h);
+            }
         }else{
             normal_detectors.push(detector);
-            DetectorHeuristic * h = new DetectorHeuristic(this,detector);
-            heuristics.push(h);
-
+            if(!opt_monolothic_theory_decisions) {
+                DetectorHeuristic *h = new DetectorHeuristic(this, detector);
+                heuristics.push(h);
+            }
         }
 
 	}

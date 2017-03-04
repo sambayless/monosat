@@ -207,7 +207,7 @@ BoolOption Monosat::opt_theory_order_vsids(_cat_theory, "theory-order-vsids", "U
 BoolOption  Monosat::opt_theory_order_swapping(_cat_theory, "theory-order-swapping", "Use Alex Nadel-style theory order swapping decision heuristic to pick which theory solver to make decisions next",false);
 IntOption  Monosat::opt_theory_order_conflict_restart(_cat_theory, "theory-order-conflict-restart", "Use Alex Nadel-style theory order conflict counter-driven theory order restarts; restart the theory order after this many conflicts have occured in a theory (0 to disable)",0, IntRange(0, INT32_MAX));
 BoolOption Monosat::opt_theory_order_conflict_restart_sort(_cat_theory, "theory-order-restart-sorting", "Sort decision heuristics by conflict counter on restarts",false);
-
+BoolOption Monosat::opt_monolothic_theory_decisions(_cat_theory,"theory-combined-decisions","Make heuristic decisions within theories all at once, rather than individually per predicate.",false);
 
 BoolOption Monosat::opt_theory_internal_vsids(_cat_graph, "theory-internal-vsids", "Use vsids decision heuristic within theory solvers",false);
 BoolOption Monosat::opt_theory_internal_vsids_fsm(_cat_fsm, "theory-internal-vsids-fsm", "Use vsids decision heuristic within fsm theory solvers",true);

@@ -1384,7 +1384,7 @@ void Solver::detectPureTheoryLiterals(){
 	//Detect any theory literals that are occur only in positive or negative (or neither) polarity
 	if (opt_detect_pure_lits) {
 		//if(pure_literal_detections==0){
-
+        stats_pure_lits=0;
 		pure_literal_detections++;
 		double startTime = rtime(1);
 		lit_counts.growTo(nVars() * 2);
@@ -1489,7 +1489,8 @@ void Solver::detectPureTheoryLiterals(){
 			}
 
 		}
-		//assert(stats_pure_lits <= nVars() * 2);
+		assert(stats_pure_lits <= nVars() * 2);
+        assert(stats_pure_lits>=0);
 		stats_pure_lit_time += rtime(1) - startTime;
 		//}
 	}
