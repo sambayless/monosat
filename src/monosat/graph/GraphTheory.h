@@ -2143,7 +2143,7 @@ public:
 
 	}
 	bool supportsDecisions()override {
-		return false; //decideTheory in GraphTheorySolver is currently only called by the detector heuristics, and never directly
+		return true;
 	}
 
 

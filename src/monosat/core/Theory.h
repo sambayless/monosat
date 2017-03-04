@@ -66,7 +66,11 @@ public:
 	}
 
     virtual Heuristic * getConflictingHeuristic(){
-        return this;
+		if(this->supportsDecisions()){
+			return this;
+		}else{
+			return nullptr;
+		}
     }
 
 	//Lazily construct the reason clause explaining this propagation

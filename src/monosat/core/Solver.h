@@ -154,7 +154,7 @@ public:
 		all_decision_heuristics.push(t);
 		decision_heuristics.push(t);
 		theory_order_heap.insert(t);
-		theory_conflict_counters.growTo(decision_heuristics.size(),0);
+		theory_conflict_counters.growTo(all_decision_heuristics.size(),0);
 
 		t->setActivity(opt_randomize_theory_order ? drand(random_seed) * 0.00001 : 0);
 		t->setPriority(0);
@@ -765,7 +765,7 @@ protected:
 	vec<double> activity;         // A heuristic measurement of the activity of a variable.
 	double var_inc;          // Amount to bump next variable with.
 	OccLists<Lit, vec<Watcher>, WatcherDeleted> watches; // 'watches[lit]' is a list of constraints watching 'lit' (will go there if literal becomes true).
-	Heuristic* theoryConflict=nullptr;
+	Heuristic* conflicting_heuristic=nullptr;
 	vec<lbool> assigns;          // The current assignments.
 	vec<char> polarity;         // The preferred polarity of each variable.
 	vec<char> decision;         // Declares if a variable is eligible for selection in the decision heuristic.
