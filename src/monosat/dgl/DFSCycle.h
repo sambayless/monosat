@@ -131,7 +131,7 @@ public:
 							directed_cycle.push_back(id);
 							assert(path.size() == q.size() - 1);
 							for (int j = 1; j < q.size(); j++) {
-								if (seen[j]) {
+								if (seen[q[j]]) {
 									directed_cycle.push_back(path[j - 1]);
 								}
 							}
@@ -198,7 +198,7 @@ public:
 							has_undirected_cycle=true;
 							assert(path.size() == q.size() - 1);
 							for (int j = 1; j < q.size(); j++) {
-								if (seen[j]) {
+								if (seen[q[j]]) {
 									undirected_cycle.push_back(path[j - 1]);
 								}
 							}

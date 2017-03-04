@@ -187,7 +187,7 @@ private:
 			}
 			cycle.clear();
 			//search for a cycle
-			if(dfs_cycle.has_directed_cycle) {
+			if(dfs_cycle.hasDirectedCycle()) {
 				cycle = dfs_cycle.getDirectedCycle();
 				for (int edgeID:cycle) {
 					int from = g.getEdge(edgeID).from;
@@ -348,7 +348,7 @@ private:
 
 		for(int i:count){
 			if(i!=0){
-				exit(4);
+				throw std::runtime_error("Error in PKTopologicalSort");
 			}
 			assert(i==0);
 		}
@@ -513,7 +513,7 @@ public:
 		}
 		//g.drawFull();
 		int local_it = ++iteration;//7
-		if(local_it==5){
+		if(local_it==4){
 			int a=1;
 		}
 		if(last_modification<=0 || g.historyclears != last_history_clear  || g.changed()){

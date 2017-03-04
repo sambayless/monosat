@@ -169,16 +169,15 @@ void CycleDetector<Weight>::buildReason(Lit p, vec<Lit> & reason, CRef marker) {
 template<typename Weight>
 bool CycleDetector<Weight>::propagate(vec<Lit> & conflict) {
 	static int it = 0;
-/*	if(++it==687){
-		g_under.drawFull();
+	if(++it==687){
 		int a=1;
-	}*/
+	}
 
 	double startdreachtime = rtime(2);
 	if(directed_acyclic_lit != lit_Undef && outer->value(directed_acyclic_lit)==l_True && outer->level(var(directed_acyclic_lit))==0){
 		underapprox_directed_cycle_detector->forceDAG();
 	}
-	
+
 
 	
 	if (directed_acyclic_lit != lit_Undef) {
