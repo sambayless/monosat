@@ -1366,7 +1366,7 @@ bool Solver::simplify() {
 			}
 
 		}
-		assert(stats_pure_lits <= nVars() * 2);
+		//assert(stats_pure_lits <= nVars() * 2);
 		stats_pure_lit_time += rtime(1) - startTime;
 		//}
 	}

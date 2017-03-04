@@ -549,8 +549,16 @@ public:
 	// Statistics: (read-only member variable)
 	//
 	double stats_solution_checking_time=0;
-	uint64_t solves, starts, decisions, rnd_decisions, propagations, conflicts, stats_pure_lits, stats_pure_theory_lits,
-			pure_literal_detections, stats_removed_clauses;
+	uint64_t solves =0;
+	uint64_t starts=0;
+	uint64_t decisions=0;
+	uint64_t rnd_decisions=0;
+	uint64_t propagations=0;
+	uint64_t conflicts=0;
+	int64_t stats_pure_lits=0;
+	uint64_t stats_pure_theory_lits=0;
+	uint64_t pure_literal_detections=0;
+	uint64_t stats_removed_clauses=0;
 	uint64_t dec_vars, clauses_literals, learnts_literals, max_literals, tot_literals;
 	long stats_theory_conflicts =0;
 	long stats_solver_preempted_decisions=0;

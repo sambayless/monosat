@@ -1435,7 +1435,7 @@ lbool optimize_and_solve(SimpSolver & S,const vec<Lit> & assumes,const vec<Objec
 						assert(val>=min_values[i]);assert(val<=max_values[i]);
 						max_values[i] = val;
 					}else{
-						assert(val>=min_values[i]);assert(val<=max_values[i]);
+                        assert(val>=max_values[i]);assert(val<=min_values[i]);
 						min_values[i] = val;
 					}
 					if (hit_cutoff) {
