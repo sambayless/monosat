@@ -513,7 +513,7 @@ public:
 		}
 		//g.drawFull();
 		int local_it = ++iteration;//7
-		if(local_it==4){
+		if(local_it==79){
 			int a=1;
 		}
 		if(last_modification<=0 || g.historyclears != last_history_clear  || g.changed()){

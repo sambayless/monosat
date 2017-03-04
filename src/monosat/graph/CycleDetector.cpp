@@ -169,16 +169,18 @@ void CycleDetector<Weight>::buildReason(Lit p, vec<Lit> & reason, CRef marker) {
 template<typename Weight>
 bool CycleDetector<Weight>::propagate(vec<Lit> & conflict) {
 	static int it = 0;
-	if(++it==687){
+	if(++it==104){ //109
 		int a=1;
 	}
 
 	double startdreachtime = rtime(2);
-	if(directed_acyclic_lit != lit_Undef && outer->value(directed_acyclic_lit)==l_True && outer->level(var(directed_acyclic_lit))==0){
-		underapprox_directed_cycle_detector->forceDAG();
-	}
+	/*if(directed_acyclic_lit != lit_Undef && outer->value(directed_acyclic_lit)==l_True && outer->level(var(directed_acyclic_lit))==0 && opt_graph_prop_skip<=1 && !opt_lazy_backtrack){
+		//this doesn't work properly, if after a backtracking (which removes a cycle), a newly learnt clause forces
+	 	//a new cycle to be re-introduced at the same level that was back tracked to.
+	 	underapprox_directed_cycle_detector->forceDAG();
+	}*/
 
-
+	
 	
 	if (directed_acyclic_lit != lit_Undef) {
 		
