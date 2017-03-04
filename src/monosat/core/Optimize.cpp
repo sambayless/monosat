@@ -1475,13 +1475,13 @@ lbool optimize_and_solve(SimpSolver & S,const vec<Lit> & assumes,const vec<Objec
 						throw std::runtime_error("Unknown optimization type");
 					}
 
-					if(objectives[i].maximize){
-						assert(val>=max_values[i]);
-						max_values[i] = val;
-					}else{
-						assert(val<=min_values[i]);
-						min_values[i] = val;
-					}
+                    if(objectives[i].maximize){
+                        assert(val>=min_values[i]);assert(val<=max_values[i]);
+                        max_values[i] = val;
+                    }else{
+                        assert(val>=max_values[i]);assert(val<=min_values[i]);
+                        min_values[i] = val;
+                    }
 
 					if (hit_cutoff) {
 						found_optimal = false;
