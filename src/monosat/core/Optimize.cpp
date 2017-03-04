@@ -1476,10 +1476,10 @@ void resetDecisionPriority(SimpSolver & S,vec<std::pair<Var, int>> & decision_va
                         }
 
 						if(objectives[i].maximize){
-							assert(val>=max_values[i]);
+							assert(val>=min_values[i]);assert(val<=max_values[i]);
 							max_values[i] = val;
 						}else{
-							assert(val<=min_values[i]);
+							assert(val>=max_values[i]);assert(val<=min_values[i]);
 							min_values[i] = val;
 						}
 
