@@ -139,19 +139,19 @@ public:
 		assert(unassigned_negatives >= 0);
 	}
 	virtual void assign(Lit l) {
-		if (!sign(l))
-			unassigned_negatives++;
-		else
-			unassigned_positives++;
-		assert(unassigned_positives >= 0);
-		assert(unassigned_negatives >= 0);
-		
-	}
-	virtual void unassign(Lit l) {
-		if (!sign(l))
+		if (sign(l))
 			unassigned_negatives--;
 		else
 			unassigned_positives--;
+		assert(unassigned_positives >= 0);
+		assert(unassigned_negatives >= 0);
+
+	}
+	virtual void unassign(Lit l) {
+		if (sign(l))
+			unassigned_negatives++;
+		else
+			unassigned_positives++;
 	}
 	virtual void assignBV(int bvID) {
 
@@ -180,8 +180,8 @@ public:
 	 unassigned_positives++;
 	 }*/
 	virtual void addVar(Var v) {
-		//unassigned_negatives++;
-		//unassigned_positives++;
+		unassigned_negatives++;
+		unassigned_positives++;
 	}
 
 	virtual void debug_decidable(Var v){

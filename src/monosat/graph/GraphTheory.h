@@ -1446,7 +1446,7 @@ public:
 		g_under_weights_over.addNode();
 		g_over_weights_under.addNode();
 
-		if(opt_min_edgeset>=0){
+		if(hasEdgeSets()){
 			g_over_edgeset.addNode();
 			g_over_weights_under_edgeset.addNode();
 		}
@@ -1604,7 +1604,7 @@ public:
 						bassert(false);
 					}
 				}
-				if(opt_min_edgeset>=0 && edge_sets.size()){
+				if(hasEdgeSets() && edge_sets.size()){
 					if(!g_over_edgeset.edgeEnabled(e.edgeID)){
 						bassert(false);
 					}
@@ -1635,7 +1635,7 @@ public:
 					}
 				}
 
-				if(opt_min_edgeset>=0 && hasEdgeSets()){
+				if(hasEdgeSets() && hasEdgeSets()){
 					if(g_over_edgeset.edgeEnabled(e.edgeID)){
 						bassert(false);
 					}
@@ -2588,7 +2588,7 @@ public:
 			detectors[detectorID]->unassignBV(bvID);
 		}
 	}
-	//mark an atom as satisfied in the theory, so it doens't need to be tracked in the future
+	//mark an atom as satisfied in the theory, so it doesn't need to be tracked in the future
 	void enqueueSat(Lit l){
 		assert(value(l)==l_True);//the literal must be assigned true
 		if(opt_detect_satisfied_predicates) {
@@ -2778,7 +2778,7 @@ public:
 					}
 				}else{
 					g_over.disableEdge(edge_num);//edge set edges are never removed from g_over.
-					if(hasEdgeSets() || (opt_min_edgeset>=0 && decisionLevel()==0))
+					if(hasEdgeSets())
 						g_over_edgeset.disableEdge(edge_num);
 				}
 				if (opt_conflict_min_cut) {//can optimize this by also checking if any installed detectors are actually using the cutgraph!
@@ -3639,6 +3639,23 @@ public:
 
 	void newEdgeSet(vec<int> & edges, bool enforceEdgeAssignment=true){
 		if(opt_min_edgeset>=0 && opt_min_edgeset<=edges.size()){
+			if(detectors.size()){
+				throw std::runtime_error("All edge sets must be instantiated before any graph predicates.");
+			}
+			assert(S->decisionLevel()==0);
+			while(g_over_edgeset.nodes()<g_over.nodes()){
+				g_over_edgeset.addNode();
+				g_over_weights_under_edgeset.addNode();
+			}
+			while(g_over.edges()>g_over_edgeset.edges()){
+				int edgeID = g_over_edgeset.edges();
+
+				g_over_edgeset.addEdge(g_over.getEdge(edgeID).from, g_over.getEdge(edgeID).to,edgeID,g_over.getWeight(edgeID));
+				g_over_weights_under_edgeset.addEdge(g_over.getEdge(edgeID).from, g_over.getEdge(edgeID).to,edgeID,g_over.getWeight(edgeID));
+				g_over_edgeset.setEdgeEnabled(edgeID,g_over.edgeEnabled(edgeID));
+				g_over_weights_under_edgeset.setEdgeEnabled(edgeID,g_over.edgeEnabled(edgeID));
+			}
+
 			int edge_setID=edge_sets.size();
 			edge_sets.push(new EdgeSet(*this));
 			assert(edge_setID<edge_sets.size());
@@ -3740,7 +3757,7 @@ public:
 			g_under_weights_over.disableEdge(from, to, index);
 			g_over_weights_under.addEdge(from, to, index,bv.getUnder());
 
-			if(opt_min_edgeset>=0){
+			if(hasEdgeSets()){
 				g_over_edgeset.addEdge(from, to, index,bv.getOver());
 				g_over_weights_under_edgeset.addEdge(from, to, index,bv.getOver());
 			}
@@ -3836,7 +3853,7 @@ public:
 		g_under_weights_over.disableEdge(from, to, index);
 		g_over_weights_under.addEdge(from, to, index,bv.getUnder());
 
-		if(opt_min_edgeset>=0){
+		if(hasEdgeSets()){
 			g_over_edgeset.addEdge(from, to, index,bv.getOver());
 			g_over_weights_under_edgeset.addEdge(from, to, index,bv.getOver());
 		}
@@ -3899,7 +3916,7 @@ public:
 		g_under_weights_over.disableEdge(from, to, index);
 		g_over_weights_under.addEdge(from, to, index,weight);
 
-		if(opt_min_edgeset>=0){
+		if(hasEdgeSets()){
 			g_over_edgeset.addEdge(from, to, index,weight);
 			g_over_weights_under_edgeset.addEdge(from, to, index,weight);
 		}
@@ -4072,7 +4089,7 @@ public:
 		for (int i = 0; i < flow_detectors.size(); i++) {
 			if (flow_detectors[i]->source == from && flow_detectors[i]->target == to) {
 				flow_detectors[i]->addMaxFlowGEQ_BV(bvTheory->getBV(bvID), v,!strictComparison);
-				if(edgeset_flow_detectors[i])
+				if(hasEdgeSets() && edgeset_flow_detectors[i])
 					edgeset_flow_detectors[i]->addMaxFlowGEQ_BV(bvTheory->getBV(bvID), v,!strictComparison);
 				return;
 			}
@@ -4086,7 +4103,7 @@ public:
 		//setBVDetectorID(bvID, detectorID);
 		f->addMaxFlowGEQ_BV(bvTheory->getBV(bvID), v, !strictComparison);
 
-		if(opt_min_edgeset>=0){
+		if(hasEdgeSets()){
 			MaxflowDetector<Weight> *original_detector =f;
 			edgeset_flow_detectors.growTo(flow_detectors.size());
 			f = new MaxflowDetector<Weight>(detectors.size(), this,  g_under, g_over_edgeset, from,to, drand(rnd_seed),true);
@@ -4335,7 +4352,7 @@ public:
 
 		f->addFlowLit(max_flow, v,inclusive);
 
-		if(opt_min_edgeset>=0){
+		if(hasEdgeSets()){
 			edgeset_flow_detectors.growTo(flow_detectors.size());
 			MaxflowDetector<Weight> * original_detector = f;
 			f = new MaxflowDetector<Weight>(detectors.size(), this,  g_under, g_over_edgeset, from,to, drand(rnd_seed),true);

@@ -660,8 +660,8 @@ int main(int argc, char** argv) {
 
 		vec<std::pair<int, std::string> > & symbols  = symbolParser.getSymbols();
 		processSymbols( symbols,assume,opt_assume,opt_assume_symbols, using_symbols_asp);
-		processPriority(S,(const char *) opt_priority);
-		processDecidable(S , (const char*) opt_decidable);
+		//processPriority(S,(const char *) opt_priority);
+		//processDecidable(S , (const char*) opt_decidable);
 		for (Lit l:assume)
 			parser.assumptions.push(l);
 

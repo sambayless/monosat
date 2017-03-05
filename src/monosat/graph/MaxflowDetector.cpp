@@ -907,7 +907,7 @@ bool MaxflowDetector<Weight>::propagate(vec<Lit> & conflict, bool backtrackOnly,
 		return true;
 	}
 	static int iter1 = 0;
-	if (++iter1 == 79) {
+	if (++iter1 == 20) {
 		int a = 1;
 	}
 
@@ -930,7 +930,9 @@ bool MaxflowDetector<Weight>::propagate(vec<Lit> & conflict, bool backtrackOnly,
 	Weight under_maxflow = -1;
 	bool computed_under=false;
 	bool computed_over=false;
-
+	if(this->detectorID==2){
+		int a=1;
+	}
 
 	//If all flow lit requirements are >=0, including bitvectors, then we can skip this...
 	//probably the easiest way to do this is using the 'markSatisfied' approach.
@@ -1009,9 +1011,11 @@ bool MaxflowDetector<Weight>::propagate(vec<Lit> & conflict, bool backtrackOnly,
 			BitVector<Weight> & bv = f.bv;
 			Weight & max_flow_under = bv.getUnder();
 			Weight & max_flow_over = bv.getOver();
-
+			lbool v = outer->value(l);
 			//std::cout << "theory id " << outer->getTheoryIndex() << " maxflow " << getID()  << " bv "<< (outer->value(l) ==l_True ?  " true " : " undef " ) <<" [" << max_flow_under << "," <<max_flow_over << "]\n";
-
+			if(v!=l_Undef && this->detectorID==2){
+				int a=1;
+			}
 			if  ((max_flow_over==0) || (computed_under && ((inclusive && computeUnderApprox(under_maxflow)  >= max_flow_over) || (!inclusive && computeUnderApprox(under_maxflow)  > max_flow_over)))) {
 				if (outer->value(l) == l_True) {
 

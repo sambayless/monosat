@@ -1891,7 +1891,7 @@ lbool Solver::search(int nof_conflicts) {
 	n_theory_decision_rounds+=using_theory_decisions;
 	for (;;) {
 		static int iter = 0;
-		if (++iter ==  1319) {//3150 //3144
+		if (++iter ==  10) {//3150 //3144
 			int a = 1;
 		}
 		bool all_assumptions_assigned = decisionLevel() >= assumptions.size();
@@ -1935,32 +1935,32 @@ lbool Solver::search(int nof_conflicts) {
 				swapping_uninvolved_post_theories.clear();
 				swapping_involved_theory_order.clear();
 				//vec<int> involved_theories;
-				swapping_involved_theories.insert(conflicting_heuristic->getTheoryIndex());
+				swapping_involved_theories.insert(conflicting_heuristic->getHeuristicIndex());
 				for(Lit l:learnt_clause){
 					CRef r = reasonOrDecision(var(l));
 					if(r!=CRef_Undef){
-						if (isTheoryCause(r)){
+						if(isDecisionReason(r)){
+							Heuristic * h = getHeuristic(r);
+							swapping_involved_theories.insert(h->getHeuristicIndex());
+						}else if (isTheoryCause(r)){
                             Theory* theory = getTheory(r);
                             if(theory->supportsDecisions() && theory->getHeuristicIndex()>=0) {
                                 swapping_involved_theories.insert(theory->getHeuristicIndex());//yes, intentionalyl getting the heuristic index here
                             }
-                        }else if(isDecisionReason(r)){
-                            Heuristic * h = getTheory(r);
-                            swapping_involved_theories.insert(h->getHeuristicIndex());
                         }
 					}
 				}
 
-				Heuristic* conflict_theory=nullptr;
+
 				int lowest_involved_position=decision_heuristics.size();
 				for (int i = 0; i < decision_heuristics.size(); i++) {
 					Heuristic * t = decision_heuristics[i];
 					if(t==conflicting_heuristic){
-						conflict_theory=t;
+
 						if(i<lowest_involved_position){
 							lowest_involved_position=i;
 						}
-					}else if (swapping_involved_theories[t->getTheoryIndex()]){
+					}else if (swapping_involved_theories.has(t->getHeuristicIndex())){
 						swapping_involved_theory_order.push(t);
 						if(i<lowest_involved_position){
 							lowest_involved_position=i;
@@ -1971,10 +1971,10 @@ lbool Solver::search(int nof_conflicts) {
 						swapping_uninvolved_post_theories.push(t);
 					}
 				}
-				assert(conflict_theory);
+
 				decision_heuristics.clear();
 				swapping_uninvolved_pre_theories.copyTo(decision_heuristics);
-				decision_heuristics.push(conflict_theory);
+				decision_heuristics.push(conflicting_heuristic);
 				decision_heuristics.extend(swapping_involved_theory_order);
 				decision_heuristics.extend(swapping_uninvolved_post_theories);
 				assert(decision_heuristics.size()==start_size);
@@ -2030,15 +2030,15 @@ lbool Solver::search(int nof_conflicts) {
 
 			if(conflicting_heuristic){
 				assert(theory_conflict_counters.size()>conflicting_heuristic->getHeuristicIndex());
-				theory_conflict_counters[conflicting_heuristic->getTheoryIndex()]++;
-				if(opt_theory_order_conflict_restart>0 && theory_conflict_counters[conflicting_heuristic->getTheoryIndex()]>=opt_theory_order_conflict_restart){
+				theory_conflict_counters[conflicting_heuristic->getHeuristicIndex()]++;
+				if(opt_theory_order_conflict_restart>0 && theory_conflict_counters[conflicting_heuristic->getHeuristicIndex()]>=opt_theory_order_conflict_restart){
 
 
 
 
 					if(opt_theory_order_conflict_restart_sort){
 						//sort the heuristics by their conflict counter value, putting the highest value first
-						sort(decision_heuristics,[&](Heuristic * a ,Heuristic * b)->bool{return theory_conflict_counters[a->getTheoryIndex()]>=theory_conflict_counters[b->getTheoryIndex()];});
+						sort(decision_heuristics,[&](Heuristic * a ,Heuristic * b)->bool{return theory_conflict_counters[a->getHeuristicIndex()]>=theory_conflict_counters[b->getHeuristicIndex()];});
 						assert(decision_heuristics[0]==conflicting_heuristic);
 					}else {
 						//reorder the conflicting theories to put the decision theory first.
